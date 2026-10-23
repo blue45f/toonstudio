@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Nisi ispunila starost.",
-  "ageGate.cancel": "Otkazivanje",
+  "ageGate.deniedMessage": "Ne ispunjavate dobni uvjet.",
+  "ageGate.cancel": "Odustani",
   "ageGate.confirm": "Potvrdi"
 }

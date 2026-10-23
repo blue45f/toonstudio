@@ -62,17 +62,39 @@ export type StudioCustomFontRepositoryErrorCode =
   | "aborted"
   | "backpressure";
 
+// 구조화 세부 사유 (A4 D4 조건부 묶음, 설계 §4.3 A안): code는 거친 분류로 유지하고,
+// detail·params는 표시 지점의 리졸버(status-i18n/studio-producer-error-i18n-custom-font)가
+// 해석한다. message는 detail 문자열이며, repositoryError의 패스스루 1곳만 예외다.
+export type StudioCustomFontRepositoryErrorDetail =
+  | "fileNameEmpty" | "fileNameTooLong" | "idNotCanonical" | "contentHashNotCanonical"
+  | "manifestEntryNotObject" | "manifestEntryFieldsInvalid" | "idNotString" | "familyNotString"
+  | "fileNameNotString" | "formatUnsupported" | "familyNotCanonical" | "fileNameNotCanonical"
+  | "mimeFormatMismatch" | "byteLengthOutOfRange" | "createdAtInvalid" | "duplicateId"
+  | "duplicateFamily" | "libraryLogicalLimitExceeded" | "manifestTooLarge" | "manifestNotObject"
+  | "manifestVersionOrFieldsInvalid" | "manifestNotCanonical" | "emptyFontFile" | "fontFileTooLarge"
+  | "fontBytesUnsupportedFormat" | "libraryLogicalLimitExceededOnSave" | "providedContentHashMismatch"
+  | "manifestSizeLimitExceeded" | "manifestJsonCorrupt" | "manifestCorrupt" | "casMetadataMismatch"
+  | "casBlobMissingOrTruncated" | "casFormatMismatch" | "casOwnerHashMissing" | "casSaveReceiptMismatch"
+  | "committedEntryMissing" | "invalidCursorFormat" | "invalidCursorStale" | "aborted"
+  | "invalidPageSize" | "invalidPageHydrationBudget" | "backpressure" | "unavailable"
+  | "invalidMaterializationBudget" | "integrityFailed" | "quotaExceeded" | "operationFailed";
+
 export class StudioCustomFontRepositoryError extends Error {
   readonly code: StudioCustomFontRepositoryErrorCode;
+  readonly detail: StudioCustomFontRepositoryErrorDetail;
+  readonly params?: Readonly<Record<string, string>>;
 
   constructor(
     code: StudioCustomFontRepositoryErrorCode,
-    message: string,
-    options?: ErrorOptions,
+    detail: StudioCustomFontRepositoryErrorDetail,
+    params?: Readonly<Record<string, string>>,
+    options?: ErrorOptions & { readonly message?: string },
   ) {
-    super(message, options);
+    super(options?.message ?? detail, options);
     this.name = "StudioCustomFontRepositoryError";
     this.code = code;
+    this.detail = detail;
+    this.params = params;
   }
 }
 
@@ -169,21 +191,22 @@ export interface StudioCustomFontRepositoryOptions {
 
 function fail(
   code: StudioCustomFontRepositoryErrorCode,
-  message: string,
+  detail: StudioCustomFontRepositoryErrorDetail,
+  params?: Readonly<Record<string, string>>,
   cause?: unknown,
 ): never {
-  throw new StudioCustomFontRepositoryError(code, message, cause === undefined ? undefined : { cause });
+  throw new StudioCustomFontRepositoryError(code, detail, params, cause === undefined ? undefined : { cause });
 }
 
-function invalid(message: string): never {
-  fail("invalid", message);
+function invalid(detail: StudioCustomFontRepositoryErrorDetail, params?: Readonly<Record<string, string>>): never {
+  fail("invalid", detail, params);
 }
 
-function corrupt(message: string, cause?: unknown): never {
-  fail("corrupt", message, cause);
+function corrupt(detail: StudioCustomFontRepositoryErrorDetail, params?: Readonly<Record<string, string>>, cause?: unknown): never {
+  fail("corrupt", detail, params, cause);
 }
 
-function detail(error: unknown): string {
+function rawMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
@@ -192,26 +215,16 @@ function repositoryError(error: unknown, operation: string): StudioCustomFontRep
   const code = typeof error === "object" && error !== null && "code" in error
     ? (error as { readonly code?: unknown }).code
     : null;
-  const message = detail(error);
+  const raw = rawMessage(error);
   if (code === "INTEGRITY_FAILED" || code === "CORRUPT_ENTRY") {
-    return new StudioCustomFontRepositoryError(
-      "corrupt",
-      `사용자 글꼴 ${operation} 중 OPFS 무결성 검증에 실패했습니다.`,
-      { cause: error },
-    );
+    return new StudioCustomFontRepositoryError("corrupt", "integrityFailed", { operation }, { cause: error });
   }
-  if (code === "QUOTA_EXCEEDED" || /quota|SQLITE_FULL|disk is full|space/i.test(message)) {
-    return new StudioCustomFontRepositoryError(
-      "quota-exceeded",
-      `사용자 글꼴 ${operation} 중 기기 저장 공간이 부족합니다.`,
-      { cause: error },
-    );
+  if (code === "QUOTA_EXCEEDED" || /quota|SQLITE_FULL|disk is full|space/i.test(raw)) {
+    return new StudioCustomFontRepositoryError("quota-exceeded", "quotaExceeded", { operation }, { cause: error });
   }
-  return new StudioCustomFontRepositoryError(
-    "unavailable",
-    `사용자 글꼴 SQLite/OPFS ${operation}를 완료하지 못했습니다: ${message}`,
-    { cause: error },
-  );
+  // 패스스루 잔존 (설계 §4.3): 하위 SQLite/OPFS 원문(raw)을 message에 그대로 싣는 유일한 지점.
+  return new StudioCustomFontRepositoryError("unavailable", "operationFailed", { operation },
+    { cause: error, message: `사용자 글꼴 SQLite/OPFS ${operation}를 완료하지 못했습니다: ${raw}` });
 }
 
 function codePointLength(value: string): number {
@@ -234,66 +247,57 @@ function canonicalFileName(value: string): string {
   const cleaned = printable
     .replace(/\s+/gu, " ")
     .trim();
-  if (!cleaned) invalid("글꼴 원본 파일명이 비어 있습니다.");
+  if (!cleaned) invalid("fileNameEmpty");
   if (codePointLength(cleaned) > STUDIO_CUSTOM_FONT_LIMITS.fileNameCodePoints) {
-    invalid(`글꼴 원본 파일명은 ${STUDIO_CUSTOM_FONT_LIMITS.fileNameCodePoints}자 이하여야 합니다.`);
+    invalid("fileNameTooLong", { maxCodePoints: String(STUDIO_CUSTOM_FONT_LIMITS.fileNameCodePoints) });
   }
   return cleaned;
 }
 
 function canonicalId(value: string): string {
-  if (!ID_PATTERN.test(value)) invalid("사용자 글꼴 ID가 canonical 안전 형식이 아닙니다.");
+  if (!ID_PATTERN.test(value)) invalid("idNotCanonical");
   return value;
 }
 
 function canonicalHash(value: unknown): `sha256:${string}` {
   if (typeof value !== "string" || !HASH_PATTERN.test(value)) {
-    invalid("사용자 글꼴 contentHash가 canonical SHA-256이 아닙니다.");
+    invalid("contentHashNotCanonical");
   }
   return value as `sha256:${string}`;
 }
 
 function canonicalEntry(value: unknown): StudioCustomFontManifestEntry {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    invalid("사용자 글꼴 manifest entry가 객체가 아닙니다.");
+    invalid("manifestEntryNotObject");
   }
   const record = value as Record<string, unknown>;
-  if (!exactKeys(record, [
-    "id",
-    "family",
-    "fileName",
-    "format",
-    "mimeType",
-    "contentHash",
-    "byteLength",
-    "createdAt",
-  ])) {
-    invalid("사용자 글꼴 manifest entry에 누락되거나 알 수 없는 필드가 있습니다.");
+  if (!exactKeys(record, ["id", "family", "fileName", "format", "mimeType", "contentHash", "byteLength", "createdAt"])) {
+    invalid("manifestEntryFieldsInvalid");
   }
-  if (typeof record.id !== "string") invalid("사용자 글꼴 ID가 문자열이 아닙니다.");
-  if (typeof record.family !== "string") invalid("사용자 글꼴 family가 문자열이 아닙니다.");
-  if (typeof record.fileName !== "string") invalid("사용자 글꼴 파일명이 문자열이 아닙니다.");
+  if (typeof record.id !== "string") invalid("idNotString");
+  if (typeof record.family !== "string") invalid("familyNotString");
+  if (typeof record.fileName !== "string") invalid("fileNameNotString");
   if (typeof record.format !== "string" || !FORMATS.has(record.format as StudioCustomFontFormat)) {
-    invalid("사용자 글꼴 포맷이 지원 목록에 없습니다.");
+    invalid("formatUnsupported");
   }
   const format = record.format as StudioCustomFontFormat;
   const family = normalizeStudioCustomFontFamily(record.family);
   if (!family || family !== record.family
     || codePointLength(family) > STUDIO_CUSTOM_FONT_LIMITS.familyCodePoints) {
-    invalid("사용자 글꼴 family가 canonical CSS 안전 형식이 아닙니다.");
+    invalid("familyNotCanonical");
   }
   const fileName = canonicalFileName(record.fileName);
-  if (fileName !== record.fileName) invalid("사용자 글꼴 파일명이 canonical 형식이 아닙니다.");
+  if (fileName !== record.fileName) invalid("fileNameNotCanonical");
   if (record.mimeType !== studioCustomFontMime(format)) {
-    invalid("사용자 글꼴 MIME과 포맷이 일치하지 않습니다.");
+    invalid("mimeFormatMismatch");
   }
   if (!Number.isSafeInteger(record.byteLength)
     || (record.byteLength as number) < 1
     || (record.byteLength as number) > STUDIO_CUSTOM_FONT_LIMITS.individualBytes) {
-    invalid("사용자 글꼴 바이트 크기가 허용 범위를 벗어났습니다.");
+    invalid("byteLengthOutOfRange");
   }
   if (!Number.isSafeInteger(record.createdAt) || (record.createdAt as number) < 0) {
-    invalid("사용자 글꼴 생성 시각이 올바르지 않습니다.");
+    invalid("createdAtInvalid");
   }
   return {
     id: canonicalId(record.id),
@@ -316,13 +320,13 @@ function buildManifest(
   const families = new Set<string>();
   let totalBytes = 0;
   for (const entry of entries) {
-    if (ids.has(entry.id)) invalid(`중복 사용자 글꼴 ID입니다: ${entry.id}`);
-    if (families.has(entry.family)) invalid(`중복 사용자 글꼴 family입니다: ${entry.family}`);
+    if (ids.has(entry.id)) invalid("duplicateId", { id: entry.id });
+    if (families.has(entry.family)) invalid("duplicateFamily", { family: entry.family });
     ids.add(entry.id);
     families.add(entry.family);
     totalBytes += entry.byteLength;
     if (!Number.isSafeInteger(totalBytes) || totalBytes > STUDIO_CUSTOM_FONT_LIMITS.logicalBytes) {
-      invalid("사용자 글꼴 라이브러리가 2 GiB 논리 상한을 넘었습니다.");
+      invalid("libraryLogicalLimitExceeded");
     }
   }
   return { version: MANIFEST_VERSION, totalBytes, entries };
@@ -333,7 +337,7 @@ export function serializeStudioCustomFontManifest(
 ): string {
   const serialized = JSON.stringify(buildManifest(entries));
   if (UTF8.encode(serialized).byteLength > STUDIO_CUSTOM_FONT_LIMITS.manifestBytes) {
-    invalid("사용자 글꼴 SQLite manifest가 2 MiB 상한을 넘었습니다.");
+    invalid("manifestTooLarge");
   }
   return serialized;
 }
@@ -341,31 +345,31 @@ export function serializeStudioCustomFontManifest(
 export function parseStudioCustomFontManifest(raw: string | null): StudioCustomFontManifestV1 {
   if (raw === null) return buildManifest([]);
   if (UTF8.encode(raw).byteLength > STUDIO_CUSTOM_FONT_LIMITS.manifestBytes) {
-    corrupt("사용자 글꼴 SQLite manifest가 크기 상한을 넘었습니다.");
+    corrupt("manifestSizeLimitExceeded");
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch (error) {
-    corrupt("사용자 글꼴 SQLite manifest JSON이 끊어졌거나 손상되었습니다.", error);
+    corrupt("manifestJsonCorrupt", undefined, error);
   }
   try {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      invalid("사용자 글꼴 manifest가 객체가 아닙니다.");
+      invalid("manifestNotObject");
     }
     const record = parsed as Record<string, unknown>;
     if (!exactKeys(record, ["version", "totalBytes", "entries"])
       || record.version !== MANIFEST_VERSION || !Array.isArray(record.entries)) {
-      invalid("사용자 글꼴 manifest 버전 또는 필드가 올바르지 않습니다.");
+      invalid("manifestVersionOrFieldsInvalid");
     }
     const manifest = buildManifest(record.entries as StudioCustomFontManifestEntry[]);
     if (record.totalBytes !== manifest.totalBytes || JSON.stringify(manifest) !== raw) {
-      invalid("사용자 글꼴 manifest가 canonical 원장과 일치하지 않습니다.");
+      invalid("manifestNotCanonical");
     }
     return manifest;
   } catch (error) {
     if (error instanceof StudioCustomFontRepositoryError && error.code === "corrupt") throw error;
-    corrupt("사용자 글꼴 SQLite manifest가 손상되었습니다.", error);
+    corrupt("manifestCorrupt", undefined, error);
   }
 }
 
@@ -386,7 +390,7 @@ function decodePageCursor(
 ): number {
   if (cursor === null || cursor === undefined) return 0;
   if (typeof cursor !== "string" || cursor.length > 160 || !cursor.startsWith(PAGE_CURSOR_PREFIX)) {
-    fail("invalid-cursor", "사용자 글꼴 page cursor 형식이 올바르지 않습니다.");
+    fail("invalid-cursor", "invalidCursorFormat");
   }
   const body = cursor.slice(PAGE_CURSOR_PREFIX.length);
   const separator = body.indexOf(":");
@@ -402,13 +406,13 @@ function decodePageCursor(
     || offset.toString(36) !== rawOffset
     || encodePageCursor(digest, offset) !== cursor
   ) {
-    fail("invalid-cursor", "사용자 글꼴 page cursor가 오래됐거나 위조되었습니다.");
+    fail("invalid-cursor", "invalidCursorStale");
   }
   return offset;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) fail("aborted", "사용자 글꼴 page 읽기가 취소되었습니다.");
+  if (signal?.aborted) fail("aborted", "aborted");
 }
 
 function normalizePageRequest(request: StudioCustomFontPageRequest): {
@@ -420,10 +424,7 @@ function normalizePageRequest(request: StudioCustomFontPageRequest): {
     || request.pageSize < 1
     || request.pageSize > STUDIO_CUSTOM_FONT_MAX_PAGE_SIZE
   ) {
-    fail(
-      "invalid-page-size",
-      `사용자 글꼴 pageSize는 1~${STUDIO_CUSTOM_FONT_MAX_PAGE_SIZE}여야 합니다.`,
-    );
+    fail("invalid-page-size", "invalidPageSize", { maxPageSize: String(STUDIO_CUSTOM_FONT_MAX_PAGE_SIZE) });
   }
   const maxHydratedBytes = request.maxHydratedBytes
     ?? STUDIO_CUSTOM_FONT_MAX_PAGE_HYDRATED_BYTES;
@@ -432,10 +433,8 @@ function normalizePageRequest(request: StudioCustomFontPageRequest): {
     || maxHydratedBytes < 1
     || maxHydratedBytes > STUDIO_CUSTOM_FONT_MAX_PAGE_HYDRATED_BYTES
   ) {
-    fail(
-      "invalid-page-size",
-      `사용자 글꼴 page hydration 예산은 1~${STUDIO_CUSTOM_FONT_MAX_PAGE_HYDRATED_BYTES}바이트여야 합니다.`,
-    );
+    fail("invalid-page-size", "invalidPageHydrationBudget",
+      { maxHydratedBytes: String(STUDIO_CUSTOM_FONT_MAX_PAGE_HYDRATED_BYTES) });
   }
   throwIfAborted(request.signal);
   return { pageSize: request.pageSize, maxHydratedBytes };
@@ -453,14 +452,14 @@ async function verifiedFontBytes(
     const stat = await store.stat(entry.contentHash);
     if (!stat || stat.hash !== entry.contentHash || stat.bytes !== entry.byteLength
       || stat.mime !== entry.mimeType) {
-      corrupt(`사용자 글꼴 CAS metadata가 manifest와 일치하지 않습니다: ${entry.id}`);
+      corrupt("casMetadataMismatch", { entryId: entry.id });
     }
     const bytes = await store.get(entry.contentHash, { verify: true });
     if (!bytes || bytes.byteLength !== entry.byteLength) {
-      corrupt(`사용자 글꼴 CAS blob이 없거나 잘렸습니다: ${entry.id}`);
+      corrupt("casBlobMissingOrTruncated", { entryId: entry.id });
     }
     if (sniffStudioFontFormat(bytes) !== entry.format) {
-      corrupt(`사용자 글꼴 CAS 바이트의 포맷이 manifest와 다릅니다: ${entry.id}`);
+      corrupt("casFormatMismatch", { entryId: entry.id });
     }
     return bytes;
   } catch (error) {
@@ -555,7 +554,7 @@ export function createStudioCustomFontSqliteOpfsRepository(
   ): Promise<void> {
     const ownerRefs = new Set<string>(await store.ownerRefs(STUDIO_CUSTOM_FONT_CAS_OWNER));
     for (const hash of uniqueHashes(manifest.entries)) {
-      if (!ownerRefs.has(hash)) corrupt(`사용자 글꼴 CAS owner 원장에 hash가 없습니다: ${hash}`);
+      if (!ownerRefs.has(hash)) corrupt("casOwnerHashMissing", { hash });
     }
   }
 
@@ -580,10 +579,8 @@ export function createStudioCustomFontSqliteOpfsRepository(
       const entry = manifest.entries[position]!;
       if (hydratedBytes + entry.byteLength > maxHydratedBytes) {
         if (fonts.length === 0) {
-          fail(
-            "backpressure",
-            `다음 사용자 글꼴 ${entry.byteLength}바이트가 page hydration 예산 ${maxHydratedBytes}바이트를 넘습니다.`,
-          );
+          fail("backpressure", "backpressure",
+            { byteLength: String(entry.byteLength), maxBytes: String(maxHydratedBytes) });
         }
         break;
       }
@@ -638,10 +635,7 @@ export function createStudioCustomFontSqliteOpfsRepository(
     store: StudioOpfsAssetStore,
   ) => Promise<T>): Promise<T> {
     if (!runExclusive) {
-      fail(
-        "unavailable",
-        "Web Locks가 없어 여러 탭의 사용자 글꼴 쓰기를 안전하게 직렬화할 수 없습니다.",
-      );
+      fail("unavailable", "unavailable");
     }
     return runExclusive(async () => {
       const { database, store } = await resources();
@@ -668,10 +662,7 @@ export function createStudioCustomFontSqliteOpfsRepository(
         || request.maxHydratedBytes < 1
         || request.maxHydratedBytes > STUDIO_CUSTOM_FONT_MAX_COMPATIBILITY_HYDRATED_BYTES
       ) {
-        fail(
-          "invalid-page-size",
-          "사용자 글꼴 compatibility materialization 영수증 예산이 허용 범위를 벗어났습니다.",
-        );
+        fail("invalid-page-size", "invalidMaterializationBudget");
       }
       const pageSize = request.pageSize ?? STUDIO_CUSTOM_FONT_DEFAULT_PAGE_SIZE;
       normalizePageRequest({ pageSize, signal: request.signal });
@@ -751,19 +742,19 @@ export function createStudioCustomFontSqliteOpfsRepository(
     save(input) {
       return enqueue(() => mutation(async (database, store) => {
         if (!(input.bytes instanceof Uint8Array) || input.bytes.byteLength < 1) {
-          invalid("빈 글꼴 파일은 저장할 수 없습니다.");
+          invalid("emptyFontFile");
         }
         if (input.bytes.byteLength > STUDIO_CUSTOM_FONT_LIMITS.individualBytes) {
-          invalid("글꼴 파일이 128 MiB 상한을 넘었습니다.");
+          invalid("fontFileTooLarge");
         }
         const format = sniffStudioFontFormat(input.bytes);
-        if (!format) invalid("TTF·OTF·TTC·WOFF·WOFF2 글꼴 바이트가 아닙니다.");
+        if (!format) invalid("fontBytesUnsupportedFormat");
         const current = await readManifest(database);
         if (current.totalBytes + input.bytes.byteLength > STUDIO_CUSTOM_FONT_LIMITS.logicalBytes) {
-          invalid("사용자 글꼴 라이브러리가 2 GiB 논리 상한을 넘습니다.");
+          invalid("libraryLogicalLimitExceededOnSave");
         }
         const id = canonicalId(input.id ?? createId());
-        if (current.entries.some((entry) => entry.id === id)) invalid(`중복 사용자 글꼴 ID입니다: ${id}`);
+        if (current.entries.some((entry) => entry.id === id)) invalid("duplicateId", { id });
         const fileName = canonicalFileName(input.fileName);
         const family = deriveCustomFontFamily(
           fileName,
@@ -777,12 +768,12 @@ export function createStudioCustomFontSqliteOpfsRepository(
           throw repositoryError(error, "blob 저장");
         }
         if (input.contentHash !== undefined && input.contentHash !== put.ref.hash) {
-          invalid("제공된 contentHash가 실제 글꼴 바이트 SHA-256과 일치하지 않습니다.");
+          invalid("providedContentHashMismatch");
         }
         if (put.ref.bytes !== input.bytes.byteLength || put.ref.mime !== mimeType
           || put.entry.hash !== put.ref.hash || put.entry.bytes !== input.bytes.byteLength
           || put.entry.mime !== mimeType) {
-          corrupt("사용자 글꼴 OPFS CAS 저장 영수증이 입력 hash/size/MIME과 다릅니다.");
+          corrupt("casSaveReceiptMismatch");
         }
         const entry = canonicalEntry({
           id,
@@ -797,7 +788,7 @@ export function createStudioCustomFontSqliteOpfsRepository(
         const verified = await verifiedFontBytes(store, entry);
         const next = await commitManifest(database, store, current, [...current.entries, entry]);
         const committed = next.entries.find((candidate) => candidate.id === id);
-        if (!committed) corrupt("커밋된 사용자 글꼴 manifest에서 신규 항목을 찾지 못했습니다.");
+        if (!committed) corrupt("committedEntryMissing");
         return hydratedFont(committed, verified);
       }));
     },

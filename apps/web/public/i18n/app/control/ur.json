@@ -1,5 +1,7 @@
 {
   "control.language.label": "زبان",
+  "control.language.group.translated": "اعلی کوریج کے ترجمے",
+  "control.language.group.englishBase": "خودکار ترجمہ · انگریزی میں فال بیک",
   "control.sound.enable": "صوتی اثرات کو فعال کریں",
   "control.sound.disable": "صوتی اثرات کو غیر فعال کریں",
   "control.theme.dark": "روشنی موڈ میں سوئچ کریں",
@@ -8,7 +10,5 @@
   "control.settings.close": "بند سیٹنگز",
   "control.cluster.settings": "آواز، موضوع، زبان کنٹرول",
   "control.cluster.open": "کھلی ترتیبات",
-  "control.cluster.tooltip": "آواز، موضوع اور زبان کی ترتیبات",
-  "control.language.group.translated": "اعلی کوریج کے ترجمے",
-  "control.language.group.englishBase": "خودکار ترجمہ · انگریزی میں فال بیک"
+  "control.cluster.tooltip": "آواز، موضوع اور زبان کی ترتیبات"
 }

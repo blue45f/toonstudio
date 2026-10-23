@@ -14,7 +14,7 @@
  * 자동으로 덮지 않아 사용자가 놀라지 않는다.
  */
 import { Brush, Eraser, Eye, EyeOff, Loader2, PaintBucket, Plus, Trash2 } from "lucide-react";
-import { useId } from "react";
+import { useId } from "react"; import { r44CreatorStatusText } from "./r44-cat1-status-i18n";
 
 import { PANEL_CHIP_CLASS, StudioSliderRow, StudioToggleChip } from "./studio-panel-ui";
 
@@ -87,7 +87,7 @@ export function StudioColorizeMaskPanel({
   const statusText = busy
     ? "채색하는 중이에요. 완료될 때까지 다른 마스크 변경은 잠시 기다려 주세요."
     : !hasMask
-      ? "힌트 채색 마스크를 추가하면 선화 위에 색 힌트를 몇 획 그어 영역별로 한 번에 칠할 수 있어요. 선화 원본은 바뀌지 않습니다."
+      ? r44CreatorStatusText("r44cat1.creator.colorizeMask.noMaskStatus", "힌트 채색 마스크를 추가하면 선화 위에 색 힌트를 몇 획 그어 영역별로 한 번에 칠할 수 있어요. 선화 원본은 바뀌지 않습니다.")
       : !enabled
         ? "마스크가 꺼져 있어요(힌트는 남아있음) — 다시 켜면 이전 상태 그대로 적용됩니다."
         : hintCount === 0

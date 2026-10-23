@@ -40,6 +40,7 @@ import { useStudioCopyFeedback } from "../use-studio-copy-feedback";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
+import { r44AiStatusText } from "./r44-cat1-status-i18n";
 import { StudioAiEmotionBubbleMatcher } from "./studio-ai-emotion-bubble-matcher";
 import { StudioAiPromptEnhancer } from "./studio-ai-prompt-enhancer";
 import {
@@ -839,7 +840,7 @@ export function StudioAiSuperSuiteModal({
                     id={`${idPrefix}-dialogue-error`}
                     className="rounded-md border border-bad/35 bg-bad/10 px-2 py-1 text-[0.65rem] font-semibold text-bad"
                   >
-                    대사를 입력해 주세요. 빈 문장에는 감정이 없어 기본 말풍선만 나옵니다.
+                    {r44AiStatusText("r44cat1.ai.superSuite.dialogueRequired", "대사를 입력해 주세요. 빈 문장에는 감정이 없어 기본 말풍선만 나옵니다.")}
                   </p>
                 )}
               </div>

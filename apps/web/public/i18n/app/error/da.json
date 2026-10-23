@@ -1,7 +1,7 @@
 {
-  "error.reloading": "- Jeg overlader den nyeste version.",
-  "error.chunkRetryFailed": "Tjek forbindelsen og prøv igen.",
-  "error.reloadButton": "Omladning af siden",
-  "error.goHome": "Gå hjem",
+  "error.reloading": "Genindlæser den nyeste version…",
+  "error.chunkRetryFailed": "Der blev opdateret én gang, men problemet fortsætter. Kontrollér din forbindelse, og prøv igen.",
+  "error.reloadButton": "Genindlæs side",
+  "error.goHome": "Gå til forsiden",
   "error.retryDesc": "Prøv igen eller gå tilbage til hjemmesiden."
 }

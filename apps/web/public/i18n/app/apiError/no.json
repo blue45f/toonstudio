@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Logg er nødvendig.",
+  "apiError.loginRequired": "Innlogging kreves.",
   "apiError.adminRequired": "Admin-tillatelser kunne ikke verifiseres.",
   "apiError.adminOnlyPage": "Denne siden er begrenset til administratorer.",
   "apiError.notFound": "Det etterspurte var ikke funnet.",
-  "apiError.unsupportedType": "Ustøttet innholdstype.",
+  "apiError.unsupportedType": "Ikke støttet innholdstype.",
   "apiError.inactiveAccount": "Inaktiv kontoer kan ikke bruke administratorfunksjoner.",
-  "apiError.settlementFailed": "Avgjørelseprosessering mislyktes."
+  "apiError.settlementFailed": "Oppgjørsbehandlingen mislyktes. Prøv igjen om et øyeblikk."
 }

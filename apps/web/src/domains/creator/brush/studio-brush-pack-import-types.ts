@@ -13,9 +13,12 @@ import type { FormatIssue } from "../../../../../../packages/studio-format-gatew
  * 리졸버로 해석한다(status-i18n/studio-producer-error-i18n-brush.ts의
  * brushPack 구간). format 필드는 기존 계약 그대로 유지한다.
  * 잔존 4코드(bundleReadFailed·cspReadFailed·mybReadFailed·kppReadFailed)는
- * 하위 파서가 만든 동적 문자열(cause.message)을 분해할 수 없어, 정적 접두만
- * 코드화하고 동적부는 params.detail 패스스루로 싣는 부분 전환이다 — 하위
- * 파서가 코드를 방출하게 되면 params 코드화로 해소된다.
+ * R14에서 정적 접두만 코드화한 부분 전환이었으나, A4 D4 조건부 묶음 7호
+ * (R21)에서 하위 파서 코드가 params.causeCode(파서 접두 포함 문자열)로
+ * 전파되고 표시 지점이 gateway 구간 키로 2단 해석해 detail을 대체한다.
+ * params.detail 병행 유지는 폴백이다: 해석할 수 없는 causeCode(csp:aborted
+ * 등 표시 제외, 미등록 코드)에서는 detail이 그대로 표시된다. 동적 삽입이
+ * 남는 잔존 지점은 보고서(r21-d4-brush.md)에 지점별로 명시한다.
  * preserveOnly는 StudioBrushPackPreserveOnlyError가 같은 코드로 방출한다.
  */
 export type StudioBrushPackErrorCode =

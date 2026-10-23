@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days}-દિવસ સમર્થક અર્લી એક્સેસ",
   "paywall.creatorPage.preview": "પૂર્વાવલોકન",
   "paywall.creatorPage.save": "નીતિ સાચવો",
+  "paywall.creatorPage.statusDaysRange": "અર્લી એક્સેસ {min}–{max} દિવસ",
+  "paywall.creatorPage.statusDaysSingle": "અર્લી એક્સેસ {days} દિવસ",
+  "paywall.creatorPage.statusSummary": "{total} નીતિઓ · {active} ચાલુ",
   "paywall.creatorPage.subtitle": "અર્લી એક્સેસ સેટ કરો: સમર્થકો પહેલા, N દિવસ પછી બધા માટે મફત.",
   "paywall.creatorPage.title": "અર્લી એક્સેસ",
   "paywall.creatorPage.titleIdLabel": "કૃતિ ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "વાચક દૃશ્ય પૂર્વાવલોકન",
   "paywall.titleNotice.body": "આ કૃતિ સમર્થકો માટે {days} દિવસ વહેલા પ્રકાશિત થાય છે. રાહ જોશો તો તે મફત થશે.",
   "paywall.titleNotice.label": "અર્લી એક્સેસ સૂચના",
-  "paywall.titleNotice.title": "સમર્થક અર્લી એક્સેસ અમલમાં છે",
-  "paywall.creatorPage.statusDaysRange": "અર્લી એક્સેસ {min}–{max} દિવસ",
-  "paywall.creatorPage.statusDaysSingle": "અર્લી એક્સેસ {days} દિવસ",
-  "paywall.creatorPage.statusSummary": "{total} નીતિઓ · {active} ચાલુ"
+  "paywall.titleNotice.title": "સમર્થક અર્લી એક્સેસ અમલમાં છે"
 }

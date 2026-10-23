@@ -1,7 +1,7 @@
 {
   "feedback.loadError": "Jeg kunne ikke laste inn tilbakemeldingsundersøkelsen.",
   "feedback.thankYou": "Takk for din verdifulle tilbakemelding!",
-  "feedback.anonymousNote": "Svarene dine er anonymt.",
+  "feedback.anonymousNote": "Svarene dine holdes strengt anonyme.",
   "feedback.notAtAll": "Ikke i det hele tatt.",
   "feedback.definitely": "Det er helt sikkert"
 }

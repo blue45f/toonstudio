@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Lögð fram",
-  "review.progress.binge": "Hringur",
-  "review.progress.upcoming": "Skipulagt",
-  "review.progress.abandoned": "Lögð niður",
-  "review.progress.unknown": "Framfarir skjaldnir",
-  "review.spoilerRevealLabel": "Sýndu spoiler"
+  "review.progress.complete": "Lokið",
+  "review.progress.binge": "Í áhorfsátri",
+  "review.progress.upcoming": "Áætlað",
+  "review.progress.abandoned": "Hætt við",
+  "review.progress.unknown": "Framvinda falin",
+  "review.spoilerRevealLabel": "Sýna spoiler"
 }

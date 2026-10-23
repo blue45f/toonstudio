@@ -122,12 +122,21 @@ export type StudioLinked3dRenderValidationFailureCode =
   | "pass-integrity-mismatch"
   | "correction-integrity-mismatch";
 
+/** 템플릿 단위 서브코드 (A4 D4 R17): 표시 문구는 status-i18n의 linked3d 리졸버가 detail+params로 해석한다. */
+export type StudioLinked3dRenderValidationDetail =
+  | "documentCorrupt" | "stageCollectionMissing" | "linkStageMissing" | "dccSourceStageMissing"
+  | "linkStageHashMismatch" | "linkLayerSetMismatch" | "layerElementMissing" | "layerRoleMismatch"
+  | "linePassLocatorMismatch" | "linkLayerPlacementMismatch" | "sceneAnchorMissing"
+  | "sceneAnchorDuplicated" | "canvasStageHashMismatch" | "shotMissingInScene"
+  | "passRevisionMismatch" | "correctionProvenanceMismatch" | "reservedPassLocatorUnowned"
+  | "reservedCorrectionUnowned";
+
 export type StudioLinked3dRenderValidationResult =
   | { readonly ok: true; readonly document: StudioLinked3dRenderDocument }
   | {
-      readonly ok: false;
-      readonly code: StudioLinked3dRenderValidationFailureCode;
-      readonly message: string;
+      readonly ok: false; readonly code: StudioLinked3dRenderValidationFailureCode;
+      readonly detail: StudioLinked3dRenderValidationDetail;
+      readonly params?: Readonly<Record<string, string>>;
     };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -354,9 +363,12 @@ export function serializeStudioLinked3dRenderDocument(value: unknown): string | 
 
 function failure(
   code: StudioLinked3dRenderValidationFailureCode,
-  message: string,
+  detail: StudioLinked3dRenderValidationDetail,
+  params?: Readonly<Record<string, string>>,
 ): StudioLinked3dRenderValidationResult {
-  return Object.freeze({ ok: false as const, code, message });
+  return params
+    ? Object.freeze({ ok: false as const, code, detail, params })
+    : Object.freeze({ ok: false as const, code, detail });
 }
 
 function geometrySignature(element: StudioLinked3dRenderElementLike): string | null {
@@ -429,41 +441,41 @@ export function validateStudioLinked3dRenderDocumentAgainstPage(input: {
   readonly shared3dStage: StudioShared3dStagePersistedState | undefined;
 }): StudioLinked3dRenderValidationResult {
   const document = parseStudioLinked3dRenderDocument(input.value);
-  if (!document) return failure("invalid-document", "연결된 3D 렌더 인덱스가 손상되었습니다.");
+  if (!document) return failure("invalid-document", "documentCorrupt");
   const stageCollection = migrateStudioShared3dStageCollectionDocument(input.shared3dStage);
-  if (!stageCollection) return failure("missing-stage", "연결된 공유 3D Stage를 찾지 못했습니다.");
+  if (!stageCollection) return failure("missing-stage", "stageCollectionMissing");
   const elementsById = new Map(input.elements.map((element) => [element.id, element] as const));
 
   for (const link of document.links) {
     const stage = findStudioShared3dStageEntryByBundleId(stageCollection, link.bundleId);
-    if (!stage) return failure("missing-stage", `3D 링크 ${link.bundleId}의 Stage가 없습니다.`);
+    if (!stage) return failure("missing-stage", "linkStageMissing", { bundleId: link.bundleId });
     if (link.sourceShotId !== null && !stage.dccSource) {
-      return failure("missing-stage", `DCC Shot ${link.sourceShotId}의 원본 Stage가 없습니다.`);
+      return failure("missing-stage", "dccSourceStageMissing", { sourceShotId: link.sourceShotId });
     }
     if (
       stage.background.sourceHash !== link.stageSourceHash
       || link.passRevision.sourceHash !== link.stageSourceHash
-    ) return failure("stage-hash-mismatch", `3D 링크 ${link.bundleId}의 Stage 해시가 다릅니다.`);
+    ) return failure("stage-hash-mismatch", "linkStageHashMismatch", { bundleId: link.bundleId });
     const completeBundle = input.elements.filter((element) => element.bg3dLtBundleId === link.bundleId);
     if (
       completeBundle.length !== link.layers.length
       || completeBundle.some((element) => element.type !== "image" || safeRole(element.bg3dLtRole) === null)
       || completeBundle.some((element, index) =>
         element.id !== link.layers[index]?.elementId || element.bg3dLtRole !== link.layers[index]?.role)
-    ) return failure("invalid-layer", `3D 링크 ${link.bundleId}의 전체 레이어 집합이 다릅니다.`);
+    ) return failure("invalid-layer", "linkLayerSetMismatch", { bundleId: link.bundleId });
     const layerElements: StudioLinked3dRenderElementLike[] = [];
     for (const layer of link.layers) {
       const element = elementsById.get(layer.elementId);
-      if (!element) return failure("missing-layer", `3D 링크 레이어 ${layer.elementId}가 없습니다.`);
+      if (!element) return failure("missing-layer", "layerElementMissing", { elementId: layer.elementId });
       if (
         element.type !== "image"
         || element.bg3dLtBundleId !== link.bundleId
         || element.bg3dLtRole !== layer.role
-      ) return failure("invalid-layer", `3D 링크 레이어 ${layer.elementId}의 역할이 다릅니다.`);
+      ) return failure("invalid-layer", "layerRoleMismatch", { elementId: layer.elementId });
       if (
         layer.role === "main-line"
         && element.src !== link.passRevision.artifact.locator
-      ) return failure("pass-integrity-mismatch", "canonical line pass locator가 Canvas 레이어와 다릅니다.");
+      ) return failure("pass-integrity-mismatch", "linePassLocatorMismatch");
       layerElements.push(element);
     }
     const groupIds = new Set(layerElements.map(({ groupId }) => groupId));
@@ -473,33 +485,27 @@ export function validateStudioLinked3dRenderDocumentAgainstPage(input: {
       || groupIds.has(undefined)
       || geometry.size !== 1
       || geometry.has(null)
-    ) return failure("invalid-layer", `3D 링크 ${link.bundleId}의 레이어 배치가 일치하지 않습니다.`);
+    ) return failure("invalid-layer", "linkLayerPlacementMismatch", { bundleId: link.bundleId });
     const anchors = layerElements.filter(({ bg3dScene }) => bg3dScene !== undefined);
-    if (anchors.length < 1) return failure("missing-scene-anchor", "3D 장면 원본 앵커가 없습니다.");
-    if (anchors.length > 1) return failure("ambiguous-scene-anchor", "3D 장면 원본 앵커가 중복되었습니다.");
+    if (anchors.length < 1) return failure("missing-scene-anchor", "sceneAnchorMissing");
+    if (anchors.length > 1) return failure("ambiguous-scene-anchor", "sceneAnchorDuplicated");
     const scene = anchors[0]!.bg3dScene!;
     if (hashStudioShared3dStageBackground(scene) !== link.stageSourceHash) {
-      return failure("stage-hash-mismatch", "Canvas 장면과 공유 Stage의 해시가 다릅니다.");
+      return failure("stage-hash-mismatch", "canvasStageHashMismatch");
     }
     if (
       scene.activeShotId !== link.shotId
       || !scene.shots?.some(({ id }) => id === link.shotId)
       || ensureStudioLinked3dRenderShot(scene, { allowCreate: false }) !== scene
     ) {
-      return failure("missing-shot", `연결된 Shot ${link.shotId}를 장면에서 찾지 못했습니다.`);
+      return failure("missing-shot", "shotMissingInScene", { shotId: link.shotId });
     }
     if (!isStudioLinked3dPassRevisionForScene(link.passRevision, scene)) {
-      return failure(
-        "pass-integrity-mismatch",
-        `3D 링크 ${link.bundleId}의 pass revision이 canonical Scene과 다릅니다.`,
-      );
+      return failure("pass-integrity-mismatch", "passRevisionMismatch", { bundleId: link.bundleId });
     }
     const corrections = correctionReferencesFor(link.bundleId, link.passRevision, input.elements);
     if (!corrections || JSON.stringify(corrections) !== JSON.stringify(link.corrections)) {
-      return failure(
-        "correction-integrity-mismatch",
-        `3D 링크 ${link.bundleId}의 artist correction provenance가 다릅니다.`,
-      );
+      return failure("correction-integrity-mismatch", "correctionProvenanceMismatch", { bundleId: link.bundleId });
     }
   }
   return Object.freeze({ ok: true as const, document });
@@ -517,7 +523,7 @@ export function validateStudioLinked3dReservedPageState(input: {
     ? undefined
     : parseStudioLinked3dRenderDocument(input.value);
   if (input.value !== undefined && !document) {
-    return failure("invalid-document", "연결된 3D 렌더 인덱스가 손상되었습니다.");
+    return failure("invalid-document", "documentCorrupt");
   }
   const locatorOwners = new Map<string, string>();
   const correctionOwners = new Map<string, string>();
@@ -577,10 +583,7 @@ export function validateStudioLinked3dReservedPageState(input: {
       locatorOwners.get(element.id),
     );
     if (invalidLocatorPath) {
-      return failure(
-        "pass-integrity-mismatch",
-        `Canvas 요소 ${element.id}의 reserved 3D pass locator가 page receipt에 귀속되지 않았습니다.`,
-      );
+      return failure("pass-integrity-mismatch", "reservedPassLocatorUnowned", { elementId: element.id });
     }
     if (element.linked3dCorrection !== undefined) {
       const provenance = parseStudioLinked3dCorrectionProvenance(element.linked3dCorrection);
@@ -589,10 +592,7 @@ export function validateStudioLinked3dReservedPageState(input: {
         || element.type !== "draw"
         || correctionOwners.get(element.id) !== provenance.bundleId
       ) {
-        return failure(
-          "correction-integrity-mismatch",
-          `Canvas correction ${element.id}가 active 3D pass receipt에 귀속되지 않았습니다.`,
-        );
+        return failure("correction-integrity-mismatch", "reservedCorrectionUnowned", { elementId: element.id });
       }
     }
   }

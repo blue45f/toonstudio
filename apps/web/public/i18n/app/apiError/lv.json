@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Pievienošanās ir nepieciešama.",
+  "apiError.loginRequired": "Nepieciešama pierakstīšanās.",
   "apiError.adminRequired": "Administratora atļaujas nevarēja pārbaudīt.",
   "apiError.adminOnlyPage": "Šī lapa ir ierobežota administratoriem.",
-  "apiError.notFound": "Nē, pieprasītā robeža nevarēja atrast.",
-  "apiError.unsupportedType": "Neatbalsta satura veids.",
-  "apiError.inactiveAccount": "Neaktivizētie kontos nevar izmantot administratora funkcijas.",
-  "apiError.settlementFailed": "Apstrādāšana neizpildīta."
+  "apiError.notFound": "Pieprasīto vienumu neizdevās atrast.",
+  "apiError.unsupportedType": "Neatbalstīts satura veids.",
+  "apiError.inactiveAccount": "Neaktīvi konti nevar izmantot administratora funkcijas.",
+  "apiError.settlementFailed": "Norēķinu apstrāde neizdevās. Lūdzu, pēc brīža mēģiniet vēlreiz."
 }

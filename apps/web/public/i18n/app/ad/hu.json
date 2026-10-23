@@ -1,10 +1,10 @@
 {
   "ad.creativeFallbackAlt": "Szponzorált kép",
-  "ad.slotAriaLabel": "Reklámhely",
-  "ad.slotLabel": "Támogatás",
+  "ad.slotAriaLabel": "Hirdetési hely",
+  "ad.slotLabel": "Szponzorált",
   "ad.slotTitle": "Szponzorált tartalom",
-  "ad.ctaDetails": "A részleteket lásd",
-  "ad.placeholderAriaLabel": "Hirdetés helyőrző",
-  "ad.placeholderText": "Nincs támogatott tartalom.",
-  "ad.tag": "Ad"
+  "ad.ctaDetails": "Részletek megtekintése",
+  "ad.placeholderAriaLabel": "Hirdetési helyőrző",
+  "ad.placeholderText": "Nincs elérhető szponzorált tartalom.",
+  "ad.tag": "Hirdetés"
 }

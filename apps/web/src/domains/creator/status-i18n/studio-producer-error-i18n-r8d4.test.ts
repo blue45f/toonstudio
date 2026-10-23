@@ -25,14 +25,14 @@ import {
   STUDIO_TRANSLATION_MEMORY_KIND,
   STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES,
   STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES,
+  STUDIO_TRANSLATION_MEMORY_VERSION,
+  type StudioTranslationMemoryEntry,
   STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS,
   STUDIO_TRANSLATION_MEMORY_MAX_REVISION_CHARS,
   STUDIO_TRANSLATION_MEMORY_MAX_SCOPE_CHARS,
   STUDIO_TRANSLATION_MEMORY_MAX_SOURCE_CHARS,
   STUDIO_TRANSLATION_MEMORY_MAX_SPEAKER_CHARS,
   STUDIO_TRANSLATION_MEMORY_MAX_TRANSLATION_CHARS,
-  STUDIO_TRANSLATION_MEMORY_VERSION,
-  type StudioTranslationMemoryEntry,
   type StudioTranslationMemoryStatus,
 } from "../studio-translation-memory";
 import { parseStudioAnimaticSubtitles } from "../animatic/studio-animatic-subtitles";
@@ -45,10 +45,10 @@ import {
 import {
   resolveBg3dShotBatchPublicPlanErrorFromCause,
   resolveBg3dTemplateMigrationDataPreservedNote,
-  resolveStudioMusicPageError,
   resolveBg3dTemplateMigrationErrorByCode,
-  resolveStudioAnimaticError,
+  resolveStudioMusicPageError,
   resolveStudioTranslationMemoryCreateError,
+  resolveStudioAnimaticError,
   resolveStudioTranslationMemoryExportError,
   resolveStudioTranslationMemoryImportError,
 } from "./studio-producer-error-i18n";
@@ -183,22 +183,35 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
       "./studio-producer-error-i18n-scroll-rhythm.ts",
       "./studio-producer-error-i18n-sketch.ts",
       "./studio-producer-error-i18n-vector.ts",
+      "./studio-producer-error-i18n-linked3d.ts",
+      "./studio-producer-error-i18n-vrm-paint-artifact.ts",
+      "./studio-producer-error-i18n-vrm-proportion.ts",
+      "./studio-producer-error-i18n-bg3d-shot-batch-archive.ts",
+      "./studio-producer-error-i18n-custom-font.ts",
+      "./studio-producer-error-i18n-filter-worker.ts",
+      "./studio-producer-error-i18n-gateway.ts",
     ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
     const blocks: Record<string, string[]> = {};
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
     }
-    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1, shotBatch 2, music 4). 블록 단위 누적으로 패리티를 본다.
-    // R11: 형제 모듈 구간(glb 55 + palette 23 + dialogue 105 + bg3dLt 50 + bg3dMeasure·shotBatchPlan 56)이 더해져 누적 348키가 된다.
+    // R9: 등록 블록이 구간별로 늘었다(tm 11 + animatic 25 — 본체 23 + 자막 파서 2). 블록 단위 누적으로 패리티를 본다.
+    // R10: 코어에 create 11(라벨 7 + 메시지 4)·bg3dTemplate 6(이전 서브코드 5 + 보존 고지 1)·shotBatch 2·music 4가 더해져 코어 누적 59키가 됐다.
+    // R11: 형제 모듈 구간(glb 55 + palette 23 + dialogue 105 + bg3dLt 50 + bg3dMeasure·shotBatchPlan 56)이 더해져 전체 누적 348키가 된다.
     // R12: 형제 모듈 5개가 더해졌다(shotBatchRecovery 90 + projectArchive 168 + interchange cbz 62·ora 91 + liveRaster 99) — 전체 누적 858키.
     // R13: projectArchive 라벨 10 + liveCrdt 47(outbox 21·pageBridge 19·scene 7) + liveRoom 68(room 59·protocol 3·p2p 6)이 더해졌다 — 전체 누적 983키.
     // R14: storyworld 55 + license 19 + personalCloud 22 + vrmPaint 87 + vrmLibrary 34 + brush 30 + comments 60 + bg3dLt 확장 25(detach 23·shared3d 2) + projectArchive cause 11이 더해졌다 — 전체 누적 1,326키.
     // R15: exports 51 + exports-raster 58 + asset-library 66 + autosave 17 + opfs-recovery 84 + publish 51 + community-pack 42 + psd-import 85 + will-import 26 + generic3d 69 + shortcut 40 + bible 16 + revision-compare 33 + auto-actions 21 + path-boolean 15 + production 10 + promise 20 + scroll-rhythm 38 + sketch 31 + vector 34가 더해졌다 — 전체 누적 2,133키.
+    // R17: linked3d 23(템플릿 18 + save-projection 접두 2·고정 3)이 더해졌다 — 전체 누적 2,156키.
+    // R18: vrmPaintArtifact 52(표시 확정 템플릿) + vrmProportion 8(issue 6 + rig 폴백 2)이 더해졌다 — 전체 누적 2,216키.
+    // R19: bg3d-shot-batch-archive 64(archive 채널 고유 문구 64종, 워커 프로토콜 v5 운반)가 더해졌다 — 전체 누적 2,280키.
+    // R20: customFont 47(패널 병기용 detail 사전 — 템플릿 48종에서 중복 ID 템플릿 병합분 −1, operationFailed의 {detail} 슬롯만 잔존) + filterWorker 25(클라이언트 고유 20 + protocol assert 5, 프로토콜 선택 필드 운반)가 더해졌다 — 전체 누적 2,352키.
+    // R21: gateway 23(형식 게이트웨이 파서 코드 kpp 6 + krita-bundle 6 + csp 8 + myb 3 — brush-pack causeCode 2단 해석용, csp:aborted는 표시 제외라 키 없음)이 더해졌다 — 전체 누적 2,375키.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(2133);
+    expect(accumulated.ko).toHaveLength(2375);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });

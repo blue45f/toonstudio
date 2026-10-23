@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Príslušné práva a obsah",
+  "copyright.title": "Autorské práva a oznámenie o obsahu",
   "copyright.section1.title": "Zdroje obsahu a zásady",
-  "copyright.section1.body": "ToonStudio je indexová a objavová platforma, ktorá zhrnuje metadaty verejného katalógu (tituly, autory, žánry atď.) z webtoonových platforiem.",
+  "copyright.section1.body": "ToonStudio je platforma na indexovanie a objavovanie, ktorá zhrňuje verejne dostupné metadáta katalógu (názvy, autorov, žánre atď.) z platforiem webtoonov a webových románov. Nehostí ani ďalej nešíri hlavný obsah kapitol; čítanie prebieha výhradne cez oficiálne odkazy.",
   "copyright.section2.title": "Obrázky na obálke",
-  "copyright.section2.body": "Obrázky na obálke slúžia ako identifikátor miniatúr a referenčné originálne platformy s zdrojovými odkazy, kedykoľvek je to možné.",
+  "copyright.section2.body": "Titulné obrázky slúžia ako identifikačné miniatúry a podľa možnosti odkazujú na originálne obálky platforiem so zdrojovými odkazmi. Zobrazenie možno okamžite vypnúť na žiadosť držiteľa práv alebo pri aktualizácii pravidiel.",
   "copyright.section3.title": "Metriky a transparentnosť",
   "copyright.section4.title": "Oznámenie o právach",
   "copyright.section5.title": "Oznámenie o porušení autorských práv a odstránenie",
   "copyright.section5.body": "Ak si myslíte, že metadata alebo obaly porušujú vaše práva, prosím, predložte žiadosť s názvom, adresou URL a dôkazom o vlastníctve.",
-  "copyright.leaveInquiry": "Podanie vyšetrovania →"
+  "copyright.leaveInquiry": "Odoslať dopyt →"
 }

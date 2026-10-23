@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Completed",
-  "review.progress.binge": "Binging",
-  "review.progress.upcoming": "Plan",
-  "review.progress.abandoned": "Dropped",
-  "review.progress.unknown": "Progress hidden",
-  "review.spoilerRevealLabel": "Show spoiler"
+  "review.progress.complete": "Дуусгасан",
+  "review.progress.binge": "Шууд уншиж байгаа",
+  "review.progress.upcoming": "Төлөвлөсөн",
+  "review.progress.abandoned": "Орхисон",
+  "review.progress.unknown": "Явц нуугдсан",
+  "review.spoilerRevealLabel": "Спойлер харуулах"
 }

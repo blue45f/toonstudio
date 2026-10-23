@@ -1,12 +1,12 @@
 {
   "copyright.title": "Autorių teisių ir turinio pranešimas",
   "copyright.section1.title": "Turinio šaltiniai ir principai",
-  "copyright.section1.body": "ToonStudio yra indeksas ir atradimo platforma, apibendrinanti viešą katalogą metadata (titulus, autorius, žanrus ir kt.) iš interneto serijų / interneto romanų platformos. Ji neostato ar perskirsto pagrindinio skyrių turinio; skaitymo yra skirta tik per oficialius nuorodas.",
-  "copyright.section2.title": "Aprašymo nuotraukos",
-  "copyright.section2.body": "Užrašų nuotraukos yra miniatūros, o pagrindinės platformos užrašos yra nuorodos į šaltinį, kai įmanoma.",
+  "copyright.section1.body": "ToonStudio yra indeksavimo ir atradimo platforma, apibendrinanti viešus katalogų metaduomenis (pavadinimus, autorius, žanrus ir kt.) iš internetinių komiksų ir internetinių romanų platformų. Ji nesaugo ir neplatina pagrindinio skyrių turinio; skaityti galima tik per oficialias nuorodas.",
+  "copyright.section2.title": "Viršelių vaizdai",
+  "copyright.section2.body": "Viršelių vaizdai naudojami kaip identifikuojančios miniatiūros, o kai įmanoma, pateikiamos nuorodos į originalios platformos viršelius ir šaltinį. Rodymas gali būti nedelsiant išjungtas teisių turėtojo prašymu arba atnaujinus politiką.",
   "copyright.section3.title": "Metrikos ir skaidrumas",
   "copyright.section4.title": "Teisės pranešimas",
   "copyright.section5.title": "Autorių teisių pažeidimo pranešimas ir panaikinimas",
-  "copyright.section5.body": "Jei manote, kad metadanai ar uždaviniai pažeidžia jūsų teises, prašome pateikti užklausą su pavadinimu, URL ir nuosavybės įrodymu.",
-  "copyright.leaveInquiry": "Paskelbti tyrimą →"
+  "copyright.section5.body": "Jei manote, kad metaduomenys ar viršeliai pažeidžia jūsų teises, pateikite užklausą su pavadinimu, URL ir nuosavybės įrodymais.",
+  "copyright.leaveInquiry": "Pateikti užklausą →"
 }

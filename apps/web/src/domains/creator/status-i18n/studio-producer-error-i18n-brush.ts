@@ -12,9 +12,12 @@
  *   같은 코드로 방출되지만 원문이 달라, 생산자가 variant를 함께 싣고 이
  *   모듈이 variant별로 해석한다(palette 경고의 방출 지점 suffix 전례).
  * - brushPack 잔존 4키(bundleReadFailed·cspReadFailed·mybReadFailed·
- *   kppReadFailed)는 부분 전환이다: 정적 접두만 코드화했고, 하위 파서의
- *   동적 문자열은 params.detail 패스스루로 실어 현행 표시와 동등하게
- *   유지한다. cspReadFailed의 params.kind(SUT/SUTG)도 식별자 패스스루다.
+ *   kppReadFailed)는 R21(조건부 묶음 7호)에서 2단 해석으로 전환됐다:
+ *   생산자가 하위 파서 코드를 params.causeCode로 전파하고, 이 모듈이
+ *   gateway 구간(studio-producer-error-i18n-gateway.ts)으로 해석해
+ *   params.detail을 대체한다. 해석할 수 없는 causeCode(csp:aborted 등
+ *   표시 제외)에서는 detail 패스스루가 그대로 남는다. cspReadFailed의
+ *   params.kind(SUT/SUTG)도 식별자 패스스루다.
  * - preserveOnly는 삽입되던 issue.message를 issue.code로 대체해 전량
  *   코드화했다(params.issueCode — 선행 공백 포함, 없으면 빈 문자열).
  * - 경고의 warn.passthrough는 게이트웨이 파서의 동적 문자열(params.text)을
@@ -37,6 +40,7 @@ import type {
   StudioBrushPackWarning,
   StudioBrushProgramImportError,
 } from "../brush/studio-brush-pack-import";
+import { resolveStudioGatewayError } from "./studio-producer-error-i18n-gateway";
 
 function resolveProducerError(
   key: string,
@@ -216,14 +220,26 @@ const BRUSH_PACK_ERROR_KO: Readonly<Record<StudioBrushPackErrorCode, string>> = 
   preserveOnly: "원본 바이트는 변경하지 않고 보존 판정했지만 실제로 그릴 수 있는 브러시가 0개라 SQLite 카탈로그에는 저장하지 않았어요.{issueCode}",
 };
 
-/** 표시 지점 전용 해석 (brushPack 오류): 구조화 오류를 직접 받는 표시 지점이 부른다. */
+/**
+ * 표시 지점 전용 해석 (brushPack 오류): 구조화 오류를 직접 받는 표시 지점이 부른다.
+ * 2단 해석 (R21): params.causeCode가 gateway 구간에서 해석되면 그 문구가
+ * params.detail 패스스루를 대체한다(선행 공백 포함 — 이관 전 detail 합성
+ * 형태와 동일). 해석되지 않으면 detail이 그대로 쓰인다.
+ */
 export function resolveStudioBrushPackError(
   error: Pick<StudioBrushProgramImportError, "code" | "params">,
 ): string {
+  const params = error.params;
+  const gatewayText = params?.causeCode
+    ? resolveStudioGatewayError(params.causeCode)
+    : null;
+  const effectiveParams = gatewayText !== null && params
+    ? { ...params, detail: ` ${gatewayText}` }
+    : params;
   return resolveProducerError(
     BRUSH_PACK_ERROR_KEYS[error.code],
     BRUSH_PACK_ERROR_KO[error.code],
-    error.params,
+    effectiveParams,
   );
 }
 

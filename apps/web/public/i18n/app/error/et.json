@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Uusim versioon...",
-  "error.chunkRetryFailed": "Üks kord värskendati, aga probleem püsib.",
-  "error.reloadButton": "Üle laadida lehekülge",
+  "error.reloading": "Uusima versiooni uuesti laadimine…",
+  "error.chunkRetryFailed": "Värskendati üks kord, kuid probleem püsib. Kontrollige ühendust ja proovige uuesti.",
+  "error.reloadButton": "Laadi leht uuesti",
   "error.goHome": "Mine koju",
   "error.retryDesc": "Palun proovige uuesti või pöörduge tagasi koduleheküljele."
 }

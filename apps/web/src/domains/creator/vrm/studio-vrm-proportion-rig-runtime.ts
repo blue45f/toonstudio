@@ -1,15 +1,11 @@
 /**
- * Avatar Forge v4 proportion runtime.
- *
- * `studio-vrm-proportion-core` intentionally stops at engine-neutral targets. This module owns the
- * narrow Three.js integration boundary: it captures one raw humanoid generation, translates the
- * logical humanoid-parent targets back into each node's real local parent space, and runs the
- * normalized-rig/spring/pose lifecycle in a deterministic order.
- *
- * The runtime never stretches a bone with a non-uniform scale. Length edits are absolute joint
- * translations from the captured rest hierarchy; head/hand/foot edits multiply an already-uniform
- * local rest scale by one scalar. Non-humanoid intermediary parents are supported as long as their
- * transforms are finite and uniformly scaled.
+ * Avatar Forge v4 proportion runtime. `studio-vrm-proportion-core` stops at engine-neutral
+ * targets; this module owns the narrow Three.js boundary: capture one raw humanoid generation,
+ * translate logical humanoid-parent targets into each node's real local parent space, and run the
+ * normalized-rig/spring/pose lifecycle in a deterministic order. It never stretches a bone with a
+ * non-uniform scale: length edits are absolute joint translations from the captured rest
+ * hierarchy, head/hand/foot edits multiply an already-uniform local rest scale by one scalar.
+ * Non-humanoid intermediary parents are supported while finite and uniformly scaled.
  */
 
 import * as THREE from "three";
@@ -32,6 +28,7 @@ import {
   type StudioVrmBoneHierarchySnapshot,
   type StudioVrmProportionBoneTarget,
   type StudioVrmProportionMetrics,
+  type StudioVrmProportionPlanIssueCode,
   type StudioVrmProportions,
   type StudioVrmVec3,
 } from "./studio-vrm-proportion-core";
@@ -42,12 +39,9 @@ export type StudioVrmProportionModelGeneration = string | number;
 
 /**
  * A deliberately small adapter around `VRMHumanoid` and the currently authored pose.
- *
- * `rebuildNormalizedRig` must use a distinct fresh `VRMHumanoid` source built from rawHumanBones;
- * self-copy is not a supported contract. The adapter also owns normalized-root attachment: save the
- * old normalized root's parent/sibling position, copy from the fresh source, remove the old root,
- * and attach the replacement root at that position. The authored-pose callback is required so a
- * normalized rebuild can never silently erase the pose.
+ * `rebuildNormalizedRig` must use a distinct fresh `VRMHumanoid` source (self-copy unsupported)
+ * and owns normalized-root attachment (save old root position, copy, remove, attach replacement).
+ * The authored-pose callback is required so a rebuild can never silently erase the pose.
  */
 export type StudioVrmProportionRigAdapter = {
   /** Model/VRM scene root used as the logical parent frame of hips. */
@@ -55,11 +49,8 @@ export type StudioVrmProportionRigAdapter = {
   /** Must change before a replacement model becomes externally addressable. */
   readonly getModelGeneration: () => StudioVrmProportionModelGeneration;
   readonly getRawBoneNode: (name: StudioHumanoidBoneName) => THREE.Object3D | null;
-  /**
-   * Must temporarily make `root` identity TRS, explicitly reset raw and normalized pose, call
-   * humanoid.update(), and update matrices. Root translation/yaw/bodyScale must be restored by
-   * reapplyAuthoredPose.
-   */
+  /** Must make `root` identity TRS, reset raw/normalized pose, call humanoid.update() and update
+   * matrices. Root translation/yaw/bodyScale must be restored by reapplyAuthoredPose. */
   readonly resetNormalizedPoseAndSyncRawRest: () => boolean | void;
   readonly rebuildNormalizedRig: () => boolean | void;
   /** Must call nodeConstraintManager.setInitState(); omission means the VRM has no manager. */
@@ -69,16 +60,11 @@ export type StudioVrmProportionRigAdapter = {
   /**
    * Rescales spring-bone collider shapes and spring-joint hit radii to the body's new size,
    * absolute from their authored rest so repeated applies cannot accumulate. `setInitState()`
-   * recaptures joint rest only -- it never touches collider geometry -- so without this a collider
-   * keeps the size it was authored at while the body around it grows, and hair passes straight
-   * through the torso it was meant to ride on.
-   *
-   * `scaledSubtreeRoots` are the bone nodes this runtime gives a uniform scale to. Everything
-   * beneath one of them is carried whole by the scene graph; everything else only sees its joints
-   * move apart by `uniformScale`. The set is passed rather than inferred because the two cases are
-   * a matter of **membership**, not of magnitude -- `overallHeight` 1.25 with `headBodyRatio` 0.8
-   * leaves `head` at exactly 1, and reading that 1 as "not a scaled bone" would stretch the skull
-   * capsules 25% around a head that never grew.
+   * recaptures joint rest only -- never collider geometry -- so without this a collider keeps its
+   * authored size while the body grows, and hair passes through the torso it should ride on.
+   * `scaledSubtreeRoots` (nodes this runtime uniformly scales) is passed rather than inferred
+   * because membership, not magnitude, decides: `overallHeight` 1.25 with `headBodyRatio` 0.8
+   * leaves `head` at exactly 1, and reading that as "not scaled" would stretch skull capsules 25%.
    */
   readonly syncSpringBoneColliderShapes?: (
     uniformScale: number,
@@ -159,6 +145,10 @@ export type StudioVrmProportionRigFailureCode =
 
 export type StudioVrmProportionRigRecovery = "not-needed" | "restored" | "reload-required";
 
+/** 체형 플랜 세부 사유 코드: 코어 검증 issue 6종 + 이 런타임의 안전 타깃 폴백 2종. 표시는 status-i18n 리졸버가 해석한다. */
+export type StudioVrmProportionDetailCode = StudioVrmProportionPlanIssueCode | "targetCountMismatch" | "unsafeTargetTransform";
+type ProportionDetail = { readonly code: StudioVrmProportionDetailCode; readonly params?: Readonly<Record<string, string>> };
+
 export type StudioVrmProportionRigFailure = {
   readonly ok: false;
   readonly runtimeVersion: typeof STUDIO_VRM_PROPORTION_RIG_RUNTIME_VERSION;
@@ -169,6 +159,9 @@ export type StudioVrmProportionRigFailure = {
   readonly applyGeneration: number;
   readonly recovery: StudioVrmProportionRigRecovery;
   readonly message: string;
+  /** `invalid-proportion-plan` 세부 사유. 없는 실패(disposed·stale 등)는 표시 병기를 하지 않는다. */
+  readonly detailCode?: StudioVrmProportionDetailCode;
+  readonly detailParams?: Readonly<Record<string, string>>;
 };
 
 export type StudioVrmProportionRigApplyResult =
@@ -229,10 +222,9 @@ type OwnedTransform = {
   readonly scale: THREE.Vector3;
 };
 
-// glTF stores node transforms as float32. Values authored as an exact uniform scale can therefore
-// arrive one or two ULPs apart (for example 1 / 1.00000012 / 1). Keep materially non-uniform
-// hierarchies fail-closed, while admitting that serialization noise. Non-neutral writes below
-// collapse the admitted noise back to one scalar so the proportion runtime never amplifies it.
+// glTF stores transforms as float32, so an exact uniform scale can arrive 1-2 ULPs apart
+// (1 / 1.00000012 / 1). Admit that noise; keep materially non-uniform hierarchies fail-closed.
+// Non-neutral writes collapse the admitted noise back to one scalar so it is never amplified.
 const SCALE_EPSILON = 1e-6;
 const TRANSFORM_EPSILON = 1e-12;
 const QUATERNION_UNIT_EPSILON = 1e-6;
@@ -343,13 +335,11 @@ function hasSafeTransform(node: THREE.Object3D) {
 }
 
 /**
- * True when a non-uniform scale on `node` cannot reach anything rotatable below it.
- *
- * Humanoid membership is not the test -- a head with no eye or jaw bones can still carry an
- * accessory or spring hierarchy, and a rotation in there would inherit the shear. What makes the
- * sculpt safe is that every immediate child cancels the non-uniform part **without rotating**, which
- * is exactly what the generated avatar's inverse-scale `HairRoot` pivot does. A node with no children at all passes
- * vacuously.
+ * True when a non-uniform scale on `node` cannot reach anything rotatable below it. Humanoid
+ * membership is not the test (an accessory/spring hierarchy below a head would still inherit
+ * shear from a rotation). Safety means every immediate child cancels the non-uniform part
+ * **without rotating** -- what the generated avatar's inverse-scale `HairRoot` pivot does.
+ * A node with no children passes vacuously.
  */
 function containsNonUniformScale(node: THREE.Object3D) {
   if (isUniformPositiveScale(node.scale)) return true;
@@ -369,9 +359,9 @@ function containsNonUniformScale(node: THREE.Object3D) {
 }
 
 /**
- * A leaf bone -- one with no humanoid bone beneath it -- may carry a non-uniform rest scale. That
- * is the sculpting convention (`studio-vrm-humanoid-rig.ts`): shape lives on leaves so no rotated
- * child inherits shear. Everything else must still be finite, positive and invertible.
+ * A leaf bone (no humanoid bone beneath it) may carry a non-uniform rest scale -- the sculpting
+ * convention (`studio-vrm-humanoid-rig.ts`): shape lives on leaves so no rotated child inherits
+ * shear. Everything else must still be finite, positive and invertible.
  */
 function hasSafeLeafTransform(node: THREE.Object3D) {
   return (
@@ -495,11 +485,8 @@ function captureHierarchy(
     }
   }
 
-  // A bone that carries no other humanoid bone beneath it may hold a non-uniform rest scale.
-  // Sculpting rigs put shape on leaves exactly so nothing rotated can inherit shear, and this
-  // runtime only ever multiplies that rest scale by a uniform factor. Requiring uniformity here
-  // rejected every generated character whose face proportions differ from 1 -- 18 of the 21
-  // shipped presets -- so the body sliders were unusable on them.
+  // Bones carrying no humanoid bone beneath them may hold a non-uniform rest scale (leaf sculpt;
+  // see hasSafeLeafTransform). Requiring uniformity rejected 18 of 21 shipped presets' characters.
   const carryingFrames = new Set<THREE.Object3D>();
   for (const node of nodes.values()) {
     const chain = rootChain(node, adapter.root);
@@ -638,11 +625,9 @@ function writeTargets(
       capture.node.position.copy(capture.restLocalPosition);
       capture.node.scale.copy(capture.restLocalScale);
     } else {
-      // A rest scale that is uniform within tolerance is float32 container noise, so collapse it
-      // to its mean -- that is what keeps repeated applies from accumulating drift and keeps every
-      // carrying frame exactly orthogonal. A rest scale that is genuinely non-uniform is a
-      // deliberate sculpt on a leaf, and averaging it away would flatten the face the moment any
-      // body slider moved. Either way the factor this runtime introduces stays uniform.
+      // A within-tolerance uniform rest scale is float32 noise: collapse it to its mean so
+      // repeated applies cannot accumulate drift. A genuinely non-uniform rest scale is a
+      // deliberate leaf sculpt; keep it per-axis. The introduced factor stays uniform either way.
       if (isUniformPositiveScale(capture.restLocalScale)) {
         const restUniformScale =
           (capture.restLocalScale.x + capture.restLocalScale.y + capture.restLocalScale.z) / 3;
@@ -780,26 +765,26 @@ function resolveSafeTargets(
   expectedCount: number
 ):
   | { readonly ok: true; readonly targets: readonly StudioVrmProportionBoneTarget[] }
-  | { readonly ok: false; readonly message: string } {
-  const plan = resolveVrmProportionPlan(proportions, snapshot);
-  const issues = validateStudioVrmProportionPlan(plan, snapshot);
+  | { readonly ok: false; readonly issueCode: StudioVrmProportionDetailCode; readonly params?: Readonly<Record<string, string>> } {
+  const issues = validateStudioVrmProportionPlan(resolveVrmProportionPlan(proportions, snapshot), snapshot);
   const rawTargets = resolveVrmProportionBoneTargets(proportions, snapshot);
-  if (issues.length > 0 || rawTargets.length !== expectedCount) {
+  const firstIssue = issues[0];
+  if (firstIssue) {
     return {
       ok: false,
-      message: issues[0]?.message ?? "The resolved target set does not match the captured rig.",
+      issueCode: firstIssue.code,
+      params: {
+        boneName: firstIssue.boneName,
+        ...(firstIssue.ancestorBoneName ? { ancestorBoneName: firstIssue.ancestorBoneName } : {}),
+      },
     };
   }
+  if (rawTargets.length !== expectedCount) return { ok: false, issueCode: "targetCountMismatch" };
   const targets = Object.freeze(rawTargets.map(freezeTarget));
-  if (
-    targets.some(
-      (target) =>
-        !Number.isFinite(target.scale) || target.scale <= 0 || !allFinite(target.position)
-    )
-  ) {
-    return { ok: false, message: "The resolved proportion targets contain an unsafe transform." };
-  }
-  return { ok: true, targets };
+  const unsafe = targets.some(
+    (target) => !Number.isFinite(target.scale) || target.scale <= 0 || !allFinite(target.position)
+  );
+  return unsafe ? { ok: false, issueCode: "unsafeTargetTransform" } : { ok: true, targets };
 }
 
 function adapterContractIsValid(adapter: StudioVrmProportionRigAdapter) {
@@ -859,7 +844,8 @@ export function createStudioVrmProportionRigRuntime(
     code: StudioVrmProportionRigFailureCode,
     message: string,
     observed: StudioVrmProportionModelGeneration | null,
-    recovery: StudioVrmProportionRigRecovery = "not-needed"
+    recovery: StudioVrmProportionRigRecovery = "not-needed",
+    detail?: ProportionDetail
   ): StudioVrmProportionRigFailure =>
     Object.freeze({
       ok: false,
@@ -871,6 +857,7 @@ export function createStudioVrmProportionRigRuntime(
       applyGeneration,
       recovery,
       message,
+      ...(detail ? { detailCode: detail.code, ...(detail.params ? { detailParams: detail.params } : {}) } : {}),
     });
 
   const currentGeneration = () => {
@@ -901,8 +888,8 @@ export function createStudioVrmProportionRigRuntime(
 
   /**
    * Restores the last committed proportions, rebuilds every derived runtime, and reapplies pose.
-   * The exact pre-attempt raw TRS is retained as a final fallback, but a failed recovery is marked
-   * reload-required because raw and normalized ownership can no longer be proven coherent.
+   * The exact pre-attempt raw TRS is the final fallback; a failed recovery is reload-required
+   * because raw and normalized ownership can no longer be proven coherent.
    */
   const recoverCommittedLifecycle = (fallback: readonly OwnedTransform[]) => {
     const current = currentGeneration();
@@ -952,25 +939,22 @@ export function createStudioVrmProportionRigRuntime(
     let runtimeProportions = authoredProportions;
     const provisionalTargets = resolveSafeTargets(runtimeProportions, snapshot, captures.length);
     if (!provisionalTargets.ok) {
-      return makeFailure(
-        operation,
-        "invalid-proportion-plan",
-        provisionalTargets.message,
-        atStart.observed
-      );
+      return makeFailure(operation, "invalid-proportion-plan", provisionalTargets.issueCode, atStart.observed, "not-needed",
+        { code: provisionalTargets.issueCode, params: provisionalTargets.params });
     }
     let targets = provisionalTargets.targets;
 
     const rollback = captureOwnedTransforms(adapter.root, captures);
     const stages: StudioVrmProportionRigStage[] = [];
-    const failLifecycle = (stage: StudioVrmProportionRigStage, message: string) => {
+    const failLifecycle = (stage: StudioVrmProportionRigStage, message: string, detail?: ProportionDetail) => {
       const recovered = recoverCommittedLifecycle(rollback);
       return makeFailure(
         operation,
         recovered ? "lifecycle-failed" : "lifecycle-recovery-failed",
         `${stage}: ${message}`,
         currentGeneration().observed,
-        recovered ? "restored" : "reload-required"
+        recovered ? "restored" : "reload-required",
+        detail
       );
     };
     const failStale = (message: string, observed: StudioVrmProportionModelGeneration | null) => {
@@ -1028,7 +1012,8 @@ export function createStudioVrmProportionRigRuntime(
       presetClamped = modelResolved.clamped;
       const modelTargets = resolveSafeTargets(runtimeProportions, snapshot, captures.length);
       if (!modelTargets.ok) {
-        return failLifecycle("write-raw-proportion-targets", modelTargets.message);
+        return failLifecycle("write-raw-proportion-targets", modelTargets.issueCode,
+          { code: modelTargets.issueCode, params: modelTargets.params });
       }
       targets = modelTargets.targets;
       targetByBone = new Map(targets.map((target) => [target.boneName, target]));

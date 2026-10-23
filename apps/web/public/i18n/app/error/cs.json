@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Přepínám poslední verzi...",
-  "error.chunkRetryFailed": "Jednou jsem se obnovil, ale problém přetrvává.",
-  "error.reloadButton": "Přepínat stránku",
-  "error.goHome": "Běžte domů.",
-  "error.retryDesc": "Zkuste to znovu nebo se vrátíte na domovskou stránku."
+  "error.reloading": "Načítání nejnovější verze…",
+  "error.chunkRetryFailed": "Jednou jsme stránku obnovili, ale problém přetrvává. Zkontrolujte prosím připojení a zkuste to znovu.",
+  "error.reloadButton": "Znovu načíst stránku",
+  "error.goHome": "Přejít na domovskou stránku",
+  "error.retryDesc": "Zkuste to prosím znovu nebo se vraťte na domovskou stránku."
 }

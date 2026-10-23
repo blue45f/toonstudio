@@ -1,4 +1,5 @@
-import { STUDIO_PROJECT_ARCHIVE_LIMITS, type StudioProjectArchiveAttachmentInput, type StudioProjectArchiveDocumentReference, type StudioProjectArchiveImportedAttachment, type StudioProjectArchiveLimits, type StudioProjectArchiveManifest, type StudioProjectArchiveManifestAttachment } from "../studio-project-archive";
+import { STUDIO_PROJECT_ARCHIVE_LIMITS, type StudioProjectArchiveDocumentReference, type StudioProjectArchiveImportedAttachment, type StudioProjectArchiveManifest } from "../studio-project-archive";
+import type { StudioProjectArchiveManifestAttachment, StudioProjectArchiveAttachmentInput, StudioProjectArchiveLimits } from "../studio-project-archive";
 import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
 import { STUDIO_VRM_SCENE_DOCUMENT_KIND, parseStudioVrmSceneDocument, serializeStudioVrmSceneDocument, type StudioVrmSurfacePaintTexture } from "./studio-vrm-scene-document";

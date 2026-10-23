@@ -1,8 +1,8 @@
 {
   "ranking.detailTitle": "Se scorefordeling",
-  "ranking.metric.views": "Udsigter",
-  "ranking.why": "Hvorfor?",
-  "ranking.breakdownTitle": "Opdeling af resultaterne",
-  "ranking.totalScore": "Totalt score",
+  "ranking.metric.views": "Visninger",
+  "ranking.why": "Hvorfor",
+  "ranking.breakdownTitle": "Opdeling af score",
+  "ranking.totalScore": "Samlet score",
   "ranking.breakdownDescription": "Beregnet med aksevægter og titel-specifik normalisering."
 }

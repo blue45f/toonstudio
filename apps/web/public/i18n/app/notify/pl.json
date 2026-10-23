@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Nie mogłem założyć powiadomień.",
+  "notify.loadError": "Nie udało się wczytać powiadomień. Spróbuj ponownie za chwilę.",
   "notify.empty": "Nie ma nowych powiadomień."
 }

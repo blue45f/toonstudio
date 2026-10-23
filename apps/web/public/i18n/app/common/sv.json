@@ -5,12 +5,12 @@
   "common.open": "Öppna",
   "common.search": "Sök",
   "common.retry": "Försök igen",
-  "common.retry.short": "Försök igen.",
-  "common.backToTop": "Tillbaka till toppen.",
+  "common.retry.short": "Försök igen",
+  "common.backToTop": "Tillbaka till toppen",
   "common.backToHome": "Till startsidan",
-  "common.loading.search": "- Jag letar efter...",
-  "common.notFoundWithQuery": "Inga resultat för \" {query} \".",
-  "common.openSearch": "Hitta den i sökandet",
+  "common.loading.search": "Söker…",
+  "common.notFoundWithQuery": "Inga resultat för '{query}'.",
+  "common.openSearch": "Hitta det via Sök →",
   "common.loading.empty": "Ingen data returnerades.",
   "common.retry.all": "Försök igen eller gå hem."
 }

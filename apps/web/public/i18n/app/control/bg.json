@@ -1,5 +1,7 @@
 {
   "control.language.label": "Език",
+  "control.language.group.translated": "Преводи с голямо обхващане",
+  "control.language.group.englishBase": "Автоматичен превод · Английски fallback",
   "control.sound.enable": "Осигуряване на звукови ефекти",
   "control.sound.disable": "Отключване на звукови ефекти",
   "control.theme.dark": "Превключете към режим на светлината",
@@ -8,7 +10,5 @@
   "control.settings.close": "Настройки за затваряне",
   "control.cluster.settings": "Звук, тематика, езикови контрол",
   "control.cluster.open": "Отворете настройките",
-  "control.cluster.tooltip": "Звук, тема и езикови настройки",
-  "control.language.group.translated": "Преводи с голямо обхващане",
-  "control.language.group.englishBase": "Автоматичен превод · Английски fallback"
+  "control.cluster.tooltip": "Звук, тема и езикови настройки"
 }

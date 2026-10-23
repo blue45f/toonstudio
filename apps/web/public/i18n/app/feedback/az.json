@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Dərs sorğusunu yükləyə bilmədim.",
-  "feedback.thankYou": "Dəyərli rəyləriniz üçün təşəkkür edirəm!",
-  "feedback.anonymousNote": "Cavablarınız anonim saxlanılır.",
-  "feedback.notAtAll": "Heç olmasa.",
-  "feedback.definitely": "Şübhəsiz ki."
+  "feedback.loadError": "Rəy sorğusu yüklənə bilmədi. Bir az sonra yenidən cəhd edin.",
+  "feedback.thankYou": "Dəyərli rəyiniz üçün təşəkkür edirik!",
+  "feedback.anonymousNote": "Cavablarınız tam anonim saxlanılır.",
+  "feedback.notAtAll": "Qətiyyən yox",
+  "feedback.definitely": "Mütləq"
 }

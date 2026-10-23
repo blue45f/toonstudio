@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "ଖାତା ଧାରକ",
   "revenue.payout.holderPlaceholder": "ଧାରକଙ୍କ ନାମ",
   "revenue.payout.mockNote": "ଏହା ବର୍ତ୍ତମାନ ପାଇଁ ଏକ ମକ୍ ଅନୁରୋଧ। ପ୍ରକୃତ ଦେୟ ବ୍ୟାକଏଣ୍ଡ ସମାଧାନ ପାଇପଲାଇନ୍ ଦ୍ୱାରା ପ୍ରକ୍ରିୟାକରଣ ହୁଏ।",
+  "revenue.payout.notAvailableBody": "ଦେୟ ଅନୁରୋଧ ପ୍ରକୃତରେ ଏପର୍ଯ୍ୟନ୍ତ ଗ୍ରହଣ କରାଯାଉନାହିଁ, ଏବଂ ଆପଣ ଲେଖିଥିବା କୌଣସି ଖାତା ବିବରଣୀ ସଂରକ୍ଷିତ ହୁଏ ନାହିଁ। ଅନୁରୋଧ ଖୋଲିଲେ, ଆପଣ ଏଠାରେ ହିଁ ଆବେଦନ କରିପାରିବେ ଏବଂ ଆପଣଙ୍କ ଅନୁରୋଧ ଇତିହାସ ଏବଂ ସ୍ଥିତି ଟ୍ରାକ୍ କରିପାରିବେ।",
+  "revenue.payout.notAvailableTitle": "ଦେୟ ଅନୁରୋଧ ଏପର୍ଯ୍ୟନ୍ତ ଉପଲବ୍ଧ ନୁହେଁ",
   "revenue.payout.submit": "ଦେୟ ଅନୁରୋଧ କରନ୍ତୁ",
   "revenue.payout.title": "ଦେୟ",
   "revenue.settlement.belowMinimum": "{min} ଠାରୁ ଉପଲବ୍ଧ",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "ଶୀଘ୍ର ପ୍ରବେଶ",
   "revenue.source.market": "ବଜାର ବିକ୍ରୟ",
   "revenue.source.membership": "ସଦସ୍ୟତା",
-  "revenue.source.tips": "ଟିପ୍",
-  "revenue.payout.notAvailableBody": "ଦେୟ ଅନୁରୋଧ ପ୍ରକୃତରେ ଏପର୍ଯ୍ୟନ୍ତ ଗ୍ରହଣ କରାଯାଉନାହିଁ, ଏବଂ ଆପଣ ଲେଖିଥିବା କୌଣସି ଖାତା ବିବରଣୀ ସଂରକ୍ଷିତ ହୁଏ ନାହିଁ। ଅନୁରୋଧ ଖୋଲିଲେ, ଆପଣ ଏଠାରେ ହିଁ ଆବେଦନ କରିପାରିବେ ଏବଂ ଆପଣଙ୍କ ଅନୁରୋଧ ଇତିହାସ ଏବଂ ସ୍ଥିତି ଟ୍ରାକ୍ କରିପାରିବେ।",
-  "revenue.payout.notAvailableTitle": "ଦେୟ ଅନୁରୋଧ ଏପର୍ଯ୍ୟନ୍ତ ଉପଲବ୍ଧ ନୁହେଁ"
+  "revenue.source.tips": "ଟିପ୍"
 }

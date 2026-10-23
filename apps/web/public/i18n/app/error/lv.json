@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Atkārtojot jaunāko versiju...",
-  "error.chunkRetryFailed": "Vienkārši atjaunināts, bet problēma joprojām pastāv.",
-  "error.reloadButton": "Atkārtojiet lapu",
-  "error.goHome": "Atpakaļ uz mājām",
-  "error.retryDesc": "Lūdzu, mēģiniet vēlreiz vai atgriezties uz mājas lapā."
+  "error.reloading": "Ielādē jaunāko versiju…",
+  "error.chunkRetryFailed": "Vienreiz atsvaidzināts, taču problēma joprojām pastāv. Lūdzu, pārbaudiet savienojumu un mēģiniet vēlreiz.",
+  "error.reloadButton": "Pārlādēt lapu",
+  "error.goHome": "Uz sākumu",
+  "error.retryDesc": "Lūdzu, mēģiniet vēlreiz vai atgriezieties sākumlapā."
 }

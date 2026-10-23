@@ -1,16 +1,16 @@
 {
-  "common.loading": "Töltés",
-  "common.loading.short": "Töltés",
+  "common.loading": "Betöltés",
+  "common.loading.short": "Betöltés",
   "common.close": "Bezárás",
   "common.open": "Megnyitás",
   "common.search": "Keresés",
-  "common.retry": "Próbáld újra!",
-  "common.retry.short": "Próbáld újra!",
-  "common.backToTop": "Vissza a tetejére.",
-  "common.backToHome": "Menj haza!",
-  "common.loading.search": "Megkeressük...",
-  "common.notFoundWithQuery": "Nincs eredmény a {query} esetében.",
-  "common.openSearch": "Keresd meg a keresésben →",
-  "common.loading.empty": "Nincs visszaadott adat.",
-  "common.retry.all": "Próbáld meg újra, vagy menj haza."
+  "common.retry": "Újrapróbálás",
+  "common.retry.short": "Újrapróbálás",
+  "common.backToTop": "Vissza az oldal tetejére",
+  "common.backToHome": "Irány a főoldal",
+  "common.loading.search": "Keresés…",
+  "common.notFoundWithQuery": "Nincs eredmény: '{query}'.",
+  "common.openSearch": "Keresd meg a Keresésben →",
+  "common.loading.empty": "Nem érkezett adat.",
+  "common.retry.all": "Próbáld újra, vagy térj vissza a főoldalra."
 }

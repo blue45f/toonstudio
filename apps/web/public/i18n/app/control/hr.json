@@ -1,14 +1,14 @@
 {
   "control.language.label": "Jezik",
-  "control.sound.enable": "omogućiti zvučne efekte",
-  "control.sound.disable": "Neaktivirajte zvučne efekte",
-  "control.theme.dark": "Prebaci se na svjetlosni način",
+  "control.language.group.translated": "Prijevodi s visokom pokrivenošću",
+  "control.language.group.englishBase": "Automatski prijevod · engleska zamjena",
+  "control.sound.enable": "Omogući zvučne efekte",
+  "control.sound.disable": "Onemogući zvučne efekte",
+  "control.theme.dark": "Prebaci na svijetli način",
   "control.theme.light": "Prebaci se na tamni način",
-  "control.settings.open": "Otvorena postavka",
-  "control.settings.close": "Sljedeće postavke",
-  "control.cluster.settings": "Zvuči, tema, jezik",
-  "control.cluster.open": "Otvorena postavka",
-  "control.cluster.tooltip": "Zvučje, tema i jezik",
-  "control.language.group.translated": "Prevodovi s visokim pokrivenjem",
-  "control.language.group.englishBase": "Automatski prevod · Engleski fallback"
+  "control.settings.open": "Otvori postavke",
+  "control.settings.close": "Zatvori postavke",
+  "control.cluster.settings": "Kontrole zvuka, teme i jezika",
+  "control.cluster.open": "Otvori postavke",
+  "control.cluster.tooltip": "Postavke zvuka, teme i jezika"
 }

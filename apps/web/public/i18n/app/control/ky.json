@@ -1,14 +1,14 @@
 {
   "control.language.label": "Тил",
-  "control.sound.enable": "Үн эффектисин жасоого мүмкүнчүлүк берүү",
+  "control.language.group.translated": "Камтуусу жогору котормолор",
+  "control.language.group.englishBase": "Автоматтык котормо · Англисчеге кайтуу",
+  "control.sound.enable": "Үн эффекттерин иштетүү",
   "control.sound.disable": "Үн эффектисин өчүрүү",
   "control.theme.dark": "Жарык режимине өтүү",
   "control.theme.light": "Караңгы режимге өтүү",
-  "control.settings.open": "Ачык орнотуулар",
-  "control.settings.close": "Жабыркатуу орнотуулары",
-  "control.cluster.settings": "Үн, тема, тил контролдоо",
-  "control.cluster.open": "Ачык орнотуулар",
-  "control.cluster.tooltip": "Үн, тема жана тил орнотуулары",
-  "control.language.group.translated": "Көбүрөөк маалымат алуу үчүн котормолор",
-  "control.language.group.englishBase": "Автоматтык котормо · англисче fallback"
+  "control.settings.open": "Жөндөөлөрдү ачуу",
+  "control.settings.close": "Жөндөөлөрдү жабуу",
+  "control.cluster.settings": "Үн, тема жана тил башкаруусу",
+  "control.cluster.open": "Жөндөөлөрдү ачуу",
+  "control.cluster.tooltip": "Үн, тема жана тил орнотуулары"
 }

@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import { buildStudioBg3dShotBatchArchive } from "./studio-bg3d-shot-batch";
+import { StudioBg3dShotBatchArchiveError } from "./studio-bg3d-shot-batch-archive-error";
 import {
   STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION,
   isStudioBg3dShotBatchWorkerRequest,
@@ -44,11 +45,19 @@ scope.addEventListener("message", (event: MessageEvent<unknown>) => {
     kind: "result",
     requestId: request.requestId,
     archive,
-  })).catch(() => post({
+  })).catch((cause: unknown) => post({
     version: STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION,
     kind: "error",
     requestId: request.requestId,
     code: "build-failed",
+    // Protocol v5: a structured archive cause crosses the boundary as code/params only.
+    // Any other failure keeps the bare build-failed response (the cause is still discarded).
+    ...(cause instanceof StudioBg3dShotBatchArchiveError
+      ? {
+          causeCode: cause.code,
+          ...(cause.params ? { causeParams: cause.params } : {}),
+        }
+      : {}),
   }));
 });
 

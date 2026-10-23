@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Reikia prisijungti.",
-  "apiError.adminRequired": "Admin leidimų nepavyko patikrinti.",
+  "apiError.adminRequired": "Nepavyko patvirtinti administratoriaus teisių.",
   "apiError.adminOnlyPage": "Šis puslapis skirtas administratoriams.",
-  "apiError.notFound": "Prašomas daiktas nebuvo rastas.",
-  "apiError.unsupportedType": "Nepagrėstas turinio tipas.",
+  "apiError.notFound": "Prašomo elemento rasti nepavyko.",
+  "apiError.unsupportedType": "Nepalaikomas turinio tipas.",
   "apiError.inactiveAccount": "Neaktyvios paskyros negali naudoti administratoriaus funkcijų.",
-  "apiError.settlementFailed": "Susitikinimo procesas nesulaužęs."
+  "apiError.settlementFailed": "Nepavyko apdoroti atsiskaitymo. Po akimirkos bandykite dar kartą."
 }

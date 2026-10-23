@@ -151,13 +151,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       if (!realtimePlan.ok) {
         setError("code" in realtimePlan
           ? realtimePlan.code === "captureReceiptInvalid" || realtimePlan.code === "capturedLayerChanged"
-            ? resolveStudioShared3dVisibilityError({ code: realtimePlan.code, params: realtimePlan.params })
-            : resolveStudioBg3dLtLayerPlanError(
-              realtimePlan as Exclude<
-                typeof realtimePlan,
-                { readonly code: "captureReceiptInvalid" | "capturedLayerChanged" }
-              >,
-            )
+            ? resolveStudioShared3dVisibilityError(realtimePlan)
+            : resolveStudioBg3dLtLayerPlanError(realtimePlan)
           : realtimePlan.message);
         return false;
       }

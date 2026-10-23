@@ -1,9 +1,9 @@
 {
   "avatar.error.invalidType": "Uhlobo lwesithombe olungasekelwa.",
-  "avatar.error.processFailed": "Angikwazanga ukucubungula isithombe.",
+  "avatar.error.processFailed": "Ayikwazanga ukucubungula isithombe. Zama futhi ngesinye isithombe.",
   "avatar.processing": "Ukucubungula...",
   "avatar.select": "Shintsha isithombe",
   "avatar.remove": "Susa isithombe",
-  "avatar.uploadHint": "Izithombe ze-JPG, i-PNG ne-WEBP kuphela ezisekelwayo, bese ziqoshwa ukuze zibuke kuqala.",
+  "avatar.uploadHint": "Izithombe ze-JPG, i-PNG ne-WEBP kuphela ezisekelwayo, bese ziyanqunywa ukuze zibukwe kuqala.",
   "avatar.changeAria": "Shintsha isithombe sephrofayela"
 }

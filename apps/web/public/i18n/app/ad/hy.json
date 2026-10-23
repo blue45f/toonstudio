@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Փոխնախարարված պատկեր",
+  "ad.creativeFallbackAlt": "Հովանավորված պատկեր",
   "ad.slotAriaLabel": "Գովազդային տեղ",
-  "ad.slotLabel": "Փոխնախարարություն",
-  "ad.slotTitle": "Սպոնորացված բովանդակություն",
+  "ad.slotLabel": "Հովանավորված",
+  "ad.slotTitle": "Հովանավորված բովանդակություն",
   "ad.ctaDetails": "Նայեք մանրամասները",
   "ad.placeholderAriaLabel": "Գովազդային տեղակալ",
-  "ad.placeholderText": "Ոչ մի սփոնսորացված բովանդակություն չի հասանելի:",
+  "ad.placeholderText": "Հովանավորված բովանդակություն հասանելի չէ։",
   "ad.tag": "Գովազդ"
 }

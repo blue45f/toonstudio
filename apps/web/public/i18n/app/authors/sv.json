@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "Författarens förteckning",
+  "authors.eyebrow": "FÖRFATTARKATALOG",
   "authors.title": "Författare",
-  "authors.desc": "Klicka på en författare för att se titlarna, betyg och fancaféet på ett ställe.",
+  "authors.desc": "Författare rankade efter antal verk. Tryck på en författare för att se deras titlar, betyg och fancafé på ett ställe.",
   "authors.search": "Sök författarnamn",
-  "authors.error": "- Jag kunde inte ladda upp författarlistan.",
-  "authors.empty": "Ingen motsvarande författare.",
+  "authors.error": "Det gick inte att ladda författarlistan. Försök igen om en stund.",
+  "authors.empty": " — ingen matchande författare.",
   "authors.allOf": "av",
-  "authors.topOf": "· Över",
+  "authors.topOf": "· topp",
   "authors.people": "",
-  "authors.works": "Arbetsuppgifter",
-  "authors.views": "Ansikter",
+  "authors.works": " verk",
+  "authors.views": "visningar",
   "authors.pencafe": "Skapare fan café",
   "authors.stats": "{shown} av {total} författare",
-  "authors.noName": "Skaparen"
+  "authors.noName": "Skapare"
 }

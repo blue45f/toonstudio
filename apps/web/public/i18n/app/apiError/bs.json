@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Login je potreban.",
-  "apiError.adminRequired": "Admin ovlašćenja nisu mogli da se provere.",
+  "apiError.loginRequired": "Potrebna je prijava.",
+  "apiError.adminRequired": "Nije moguće provjeriti administratorske dozvole.",
   "apiError.adminOnlyPage": "Ova stranica je ograničena na administratore.",
-  "apiError.notFound": "Tražena roba nije mogla da se pronađe.",
-  "apiError.unsupportedType": "Tip sadržaja koji nije podržan.",
+  "apiError.notFound": "Tražena stavka nije pronađena.",
+  "apiError.unsupportedType": "Nepodržani tip sadržaja.",
   "apiError.inactiveAccount": "Neaktivni računi ne mogu koristiti funkcije administratora.",
-  "apiError.settlementFailed": "Proizvodnja poravnanja nije uspela."
+  "apiError.settlementFailed": "Obrada obračuna nije uspjela. Pokušajte ponovo za trenutak."
 }

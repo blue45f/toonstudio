@@ -46,6 +46,9 @@ import {
   DEFAULT_VRM_PROP_RIG_METRICS,
 } from "./studio-vrm-prop-rig";
 import {
+  resolveStudioVrmProportionDetailFromFailure,
+} from "../status-i18n/studio-producer-error-i18n-vrm-proportion";
+import {
   createStudioVrmProportionRigRuntime,
 } from "./studio-vrm-proportion-rig-runtime";
 import {
@@ -226,10 +229,16 @@ export function useStudioVrmPoserInstall(h: StudioVrmPoserHost): void {
         setCaptureSceneGeneration((generation: number) => generation + 1);
       }
       setProportionRigStatus(reloadRequired ? "reload-required" : "ready");
+      // 고정 문구(행동 안내)는 유지하고, 세부 사유가 실린 실패만 해석 문구를 뒤에 병기한다
+      // (구분자는 bg3d export-run failureDetail의 ` 원인: ` 관례를 따른다).
+      const fixedProportionMessage = reloadRequired
+        ? "리그를 안전한 상태로 되돌리지 못했습니다. 캐릭터를 다시 불러와 주세요."
+        : "새 체형을 적용하지 못해 직전의 안전한 체형으로 되돌렸습니다.";
+      const proportionDetailMessage = resolveStudioVrmProportionDetailFromFailure(result);
       setProportionRigMessage(
-        reloadRequired
-          ? "리그를 안전한 상태로 되돌리지 못했습니다. 캐릭터를 다시 불러와 주세요."
-          : "새 체형을 적용하지 못해 직전의 안전한 체형으로 되돌렸습니다.",
+        proportionDetailMessage
+          ? `${fixedProportionMessage} 원인: ${proportionDetailMessage}`
+          : fixedProportionMessage,
       );
       return reloadRequired ? "reload-required" as const : "recovered" as const;
     }

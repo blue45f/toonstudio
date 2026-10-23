@@ -1,7 +1,4 @@
 {
-  "page.notFound.home": "回家吧",
-  "page.notFound.title": "找不到頁面",
-  "page.notFound.message": "再次檢查 URL 或從主頁瀏覽標題。",
   "page.events.board.community": "社群公告板",
   "page.events.board.official": "官方活動",
   "page.events.board.title": "活動列表",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "查看測試版福利",
   "page.events.hero.secondary": "社群活動公告板",
   "page.events.hero.title": "活動公告板",
+  "page.notFound.home": "回家吧",
+  "page.notFound.message": "再次檢查 URL 或從主頁瀏覽標題。",
   "page.notFound.quip.1": "咦？這一格還沒畫出來呢！",
   "page.notFound.quip.2": "墨水還沒乾，你就迷路了。",
   "page.notFound.quip.3": "下一話見……大概吧！",
   "page.notFound.quip.4": "作者正在畫這一頁。",
-  "page.notFound.tapHint": "點一點這些數字"
+  "page.notFound.tapHint": "點一點這些數字",
+  "page.notFound.title": "找不到頁面"
 }

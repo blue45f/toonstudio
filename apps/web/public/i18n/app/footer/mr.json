@@ -30,6 +30,7 @@
   "footer.link.news": "टोन & वेब उपन्यास बातम्या",
   "footer.link.about": "ToonStudio बद्दल",
   "footer.link.guide": "क्रमांक धोरण",
+  "footer.link.features": "सर्व वैशिष्ट्ये एका दृष्टिक्षेपात",
   "footer.link.sitemap": "नकाशा",
   "footer.link.settings": "सेटिंग्ज",
   "footer.link.support": "पाठिंबा",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "होस्टिंग सेवा",
   "footer.business.serviceType": "प्लॅटफॉर्मचा प्रकार",
   "footer.copyrightLine": "© {year} ToonStudio (बीटा). सर्व हक्क राखीव.",
-  "footer.logoTag": "आपली पुढील कथा तयार करा",
-  "footer.link.features": "सर्व वैशिष्ट्ये एका दृष्टिक्षेपात"
+  "footer.logoTag": "आपली पुढील कथा तयार करा"
 }

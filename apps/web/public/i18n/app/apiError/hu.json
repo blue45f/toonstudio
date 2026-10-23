@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Be kell lépni.",
-  "apiError.adminRequired": "Az admin jogosultságokat nem lehetett ellenőrizni.",
-  "apiError.adminOnlyPage": "Ez a oldal csak adminisztrátorokra vonatkozik.",
-  "apiError.notFound": "Nem találták meg a kért tételt.",
+  "apiError.loginRequired": "Bejelentkezés szükséges.",
+  "apiError.adminRequired": "Az adminisztrátori jogosultság nem ellenőrizhető.",
+  "apiError.adminOnlyPage": "Ez az oldal csak adminisztrátoroknak érhető el.",
+  "apiError.notFound": "A kért elem nem található.",
   "apiError.unsupportedType": "Nem támogatott tartalomtípus.",
-  "apiError.inactiveAccount": "A nem aktív fiókok nem használhatnak adminisztrátor funkciókat.",
-  "apiError.settlementFailed": "A rendezés nem sikerült."
+  "apiError.inactiveAccount": "Inaktív fiókok nem használhatják az adminisztrátori funkciókat.",
+  "apiError.settlementFailed": "Az elszámolás feldolgozása sikertelen. Próbáld újra egy pillanat múlva."
 }

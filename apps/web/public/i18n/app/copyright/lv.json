@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Copyright & Content paziņojums",
-  "copyright.section1.title": "Saturs iegūts no \"WEB",
-  "copyright.section1.body": "ToonStudio ir indekss un atklāšanas platforma, kas apkopoda publisko katalogu metadatus (titulu, autori, žanri utt.) no webtūru/webnovēlu platformas.",
-  "copyright.section2.title": "Apvārsnis",
-  "copyright.section2.body": "Kopšbilds ir miniatūras identifikācijas līdzeklis, un atsauce uz oriģinālu platformu kopšveltu ar avotu saitiem, kad ir iespējams.",
-  "copyright.section3.title": "Metrikas un pārredzamība",
-  "copyright.section4.title": "Tiesības paziņojums",
-  "copyright.section5.title": "Copyright pārkāpuma paziņojums un atcelšana",
-  "copyright.section5.body": "Ja jūs domājat, ka metadati vai pārskati pārkāpj jūsu tiesības, lūdzam iesniegt pieprasījumu ar nosaukumu, URL un īpašumtiesību apliecinājumu.",
-  "copyright.leaveInquiry": "Apmeklēšana →"
+  "copyright.title": "Autortiesības un satura paziņojums",
+  "copyright.section1.title": "Satura avoti un principi",
+  "copyright.section1.body": "ToonStudio ir indeksēšanas un atklāšanas platforma, kas apkopo publiskā kataloga metadatus (nosaukumus, autorus, žanrus u. c.) no Webtoon un tīmekļa romānu platformām. Tā neuztur un neizplata galveno nodaļu saturu; lasīšana notiek tikai caur oficiālām saitēm.",
+  "copyright.section2.title": "Vāku attēli",
+  "copyright.section2.body": "Vāku attēli kalpo kā identificējoši sīktēli un, kad iespējams, atsaucas uz oriģinālās platformas vākiem ar avota saitēm. Attēlošanu var nekavējoties atspējot pēc tiesību īpašnieka pieprasījuma vai politikas atjauninājumiem.",
+  "copyright.section3.title": "Metrika un pārredzamība",
+  "copyright.section4.title": "Paziņojums par tiesībām",
+  "copyright.section5.title": "Paziņojums par autortiesību pārkāpumu un noņemšana",
+  "copyright.section5.body": "Ja uzskatāt, ka metadati vai vāki pārkāpj jūsu tiesības, lūdzu, iesniedziet pieprasījumu ar nosaukumu, URL un īpašumtiesību apliecinājumu.",
+  "copyright.leaveInquiry": "Iesniegt pieprasījumu →"
 }

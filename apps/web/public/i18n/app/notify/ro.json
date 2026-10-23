@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Nu am putut încărca notificările.",
-  "notify.empty": "Nu mai sunt notificări."
+  "notify.loadError": "Nu s-au putut încărca notificările. Vă rugăm să încercați din nou peste câteva momente.",
+  "notify.empty": "Nicio notificare nouă."
 }

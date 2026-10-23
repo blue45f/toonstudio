@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "- En saanut palautetta.",
-  "feedback.thankYou": "Kiitos arvokkaasta palautetta!",
-  "feedback.anonymousNote": "Vastauksesi ovat täysin anonyymiä.",
+  "feedback.loadError": "Palautekyselyä ei voitu ladata. Yritä hetken kuluttua uudelleen.",
+  "feedback.thankYou": "Kiitos arvokkaasta palautteestasi!",
+  "feedback.anonymousNote": "Vastauksesi pysyvät täysin nimettöminä.",
   "feedback.notAtAll": "Ei lainkaan.",
-  "feedback.definitely": "- Kyllä ."
+  "feedback.definitely": "Ehdottomasti"
 }

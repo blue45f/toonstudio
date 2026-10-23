@@ -26,10 +26,11 @@
   "footer.link.create": "Креаторська дошка",
   "footer.link.studio": "Універсальна студія створення",
   "footer.link.shaper": "Формер персонажів",
-  "footer.link.market": "Рынок творців",
+  "footer.link.market": "Ринок творців",
   "footer.link.news": "Новини романів для онлайн-видань",
   "footer.link.about": "Про ToonStudio",
   "footer.link.guide": "Політика ранжиювання",
+  "footer.link.features": "Усі функції одним поглядом",
   "footer.link.sitemap": "Карта сайту",
   "footer.link.settings": "Наклади",
   "footer.link.support": "Підтримка",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Сервіс хостингу",
   "footer.business.serviceType": "Тип платформи",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Усі права захищено.",
-  "footer.logoTag": "Спробуйте створити свою наступну історію",
-  "footer.link.features": "Усі функції одним поглядом"
+  "footer.logoTag": "Спробуйте створити свою наступну історію"
 }

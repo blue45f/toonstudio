@@ -1,16 +1,16 @@
 {
   "authors.eyebrow": "DIRECTORI DE L'AUTOR",
   "authors.title": "Autors",
-  "authors.desc": "Els autors classificats per nombre d'obres.",
-  "authors.search": "Nom de l'autor de cerca",
-  "authors.error": "No vaig poder carregar la llista d'autors.",
-  "authors.empty": "No hi ha autor corresponent.",
+  "authors.desc": "Autors classificats pel nombre d'obres. Toca un autor per veure'n els títols, les valoracions i el cafè de fans en un sol lloc.",
+  "authors.search": "Cerca el nom de l'autor",
+  "authors.error": "No s'ha pogut carregar la llista d'autors. Torna-ho a provar d'aquí a una estona.",
+  "authors.empty": " — cap autor coincident.",
   "authors.allOf": "de",
   "authors.topOf": "· Top",
   "authors.people": "",
-  "authors.works": "obres",
-  "authors.views": "Visions",
-  "authors.pencafe": "El creador fan cafe",
-  "authors.stats": "Top {shown} dels autors de {total}",
-  "authors.noName": "El Creador"
+  "authors.works": " obres",
+  "authors.views": "visualitzacions",
+  "authors.pencafe": "Cafè de fans del creador",
+  "authors.stats": "Els {shown} millors de {total} autors",
+  "authors.noName": "Creador"
 }

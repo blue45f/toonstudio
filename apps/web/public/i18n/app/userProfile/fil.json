@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Mga gawa na nilikha",
   "userProfile.tabs.series": "Mga serye",
   "userProfile.works.empty": "Ang gumagamit na ito ay walang pampublikong mga gawa pa.",
+  "userProfile.works.error": "Hindi ma-load ang mga nilikhang gawa. Pakisubukan muli.",
   "userProfile.series.empty": "Ang gumagamit na ito ay walang serye pa.",
+  "userProfile.series.error": "Hindi ma-load ang mga serye. Pakisubukan muli.",
   "userProfile.fetchError": "Hindi maaaring mag-load ng profile.",
   "userProfile.authorFallback": "Gumagamit",
   "userProfile.metaTemplate": "{author} profile · {reviews} reviews · {works} works · avg rating {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Mga nilalaman ng profile",
   "userProfile.refresh": "Pag-iipon",
   "userProfile.emptyReviews": "Walang mga pagsusuri na nai-publish ng gumagamit na ito pa.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "Iwan ang unang pagsusuri sa isang pamagat na gusto mo.",
+  "userProfile.emptyReviewsCta": "Mag-browse ng mga pamagat"
 }

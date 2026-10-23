@@ -1,5 +1,7 @@
 {
   "control.language.label": "La langue",
+  "control.language.group.translated": "Traduction à haute couverture",
+  "control.language.group.englishBase": "Traduction automatique en anglais",
   "control.sound.enable": "Activer les effets sonores",
   "control.sound.disable": "Désactiver les effets sonores",
   "control.theme.dark": "Passez au mode lumineux",
@@ -8,7 +10,5 @@
   "control.settings.close": "Réglages de fermeture",
   "control.cluster.settings": "Le son, le thème, les contrôles linguistiques",
   "control.cluster.open": "Paramètres ouverts",
-  "control.cluster.tooltip": "Le son, le thème et la langue",
-  "control.language.group.translated": "Traduction à haute couverture",
-  "control.language.group.englishBase": "Traduction automatique en anglais"
+  "control.cluster.tooltip": "Le son, le thème et la langue"
 }

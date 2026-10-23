@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Müəlliflik hüquqları və məzmun haqqında məlumat",
-  "copyright.section1.title": "Məzmun mənbələri və prinsipləri",
-  "copyright.section1.body": "ToonStudio, vebtoon / veb roman platformalarından ictimai kataloq metadatalarını (şöhrələr, müəlliflər, janrlar və s.) toplayan bir indeks və kəşf platformasıdır.",
-  "copyright.section2.title": "Qapı şəkillər",
-  "copyright.section2.body": "Əlyazmalar hüquq sahibinin istəyi və ya siyasət yeniləmələri ilə dərhal söndürülə bilər.",
-  "copyright.section3.title": "Metriklər və şəffaflıq",
-  "copyright.section4.title": "Hüquq haqqında bildiriş",
-  "copyright.section5.title": "Müəllif hüquqlarının pozulması haqqında məlumat",
-  "copyright.section5.body": "Metadata və ya örtüklərin hüquqlarını pozduğunu düşünürsünüzsə, xahiş edirik başlıq, URL və mülkiyyət sübutları ilə bir sorğu göndərin.",
-  "copyright.leaveInquiry": "İstintaq təqdim edin"
+  "copyright.title": "Müəllif hüququ və məzmun bildirişi",
+  "copyright.section1.title": "Məzmun mənbələri və prinsiplər",
+  "copyright.section1.body": "ToonStudio vebtun/vebroman platformalarından ictimai kataloq metadatasını (adlar, müəlliflər, janrlar və s.) ümumiləşdirən indeks və kəşf platformasıdır. Əsas fəsil məzmununu yerləşdirmir və yenidən yaymır; oxumaq yalnız rəsmi keçidlər vasitəsilə yönləndirilir.",
+  "copyright.section2.title": "Üz qabığı şəkilləri",
+  "copyright.section2.body": "Üz qabığı şəkilləri müəyyənedici miniatür kimi xidmət edir və mümkün olduqda mənbə keçidləri ilə orijinal platforma üz qabıqlarına istinad edir. Hüquq sahibinin sorğusu və ya siyasət yeniləmələri zamanı göstərilmə dərhal deaktiv edilə bilər.",
+  "copyright.section3.title": "Göstəricilər və şəffaflıq",
+  "copyright.section4.title": "Hüquqlar haqqında bildiriş",
+  "copyright.section5.title": "Müəllif hüququ pozuntusu bildirişi və silinmə",
+  "copyright.section5.body": "Metadatanın və ya üz qabıqlarının hüquqlarınızı pozduğunu düşünürsünüzsə, ad, URL və mülkiyyət sübutu ilə sorğu göndərin.",
+  "copyright.leaveInquiry": "Sorğu göndər →"
 }

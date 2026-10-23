@@ -1,6 +1,6 @@
 {
   "app.name": "ToonStudio",
-  "app.brandBeta": "Beta szolgáltatás  Adatok és funkciók változhatnak",
-  "app.loading": "Töltés",
-  "app.skipToContent": "Skip to main content"
+  "app.brandBeta": "Béta szolgáltatás — az adatok és a funkciók változhatnak",
+  "app.loading": "Betöltés",
+  "app.skipToContent": "Ugrás a fő tartalomra"
 }

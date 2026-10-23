@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "คอนโซลผู้บริหาร",
   "auth.menu.profile": "โปรไฟล์ของฉัน",
   "auth.menu.settings": "การตั้งค่า",
-  "auth.menu.signOut": "ลงทะเบียน",
+  "auth.menu.signOut": "ออกจากระบบ",
   "auth.menu.fallbackName": "นักอ่าน",
   "auth.callback.message.working": "จบการลงทะเบียน",
   "auth.callback.error.badState": "ปาเร็มเมตรสถานการณ์ไม่ถูกต้อง",

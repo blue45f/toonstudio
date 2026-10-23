@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "LÍSTAFARSÍFÍR",
+  "authors.eyebrow": "HÖFUNDAYFIRLIT",
   "authors.title": "Höfundar",
-  "authors.desc": "Höfundar í röð eftir fjöldi verka.",
-  "authors.search": "Leitarhöfundur nafn",
-  "authors.error": "Ég gat ekki hlaðið upp lista höfundar.",
-  "authors.empty": "engin samræmd höfundur.",
+  "authors.desc": "Höfundar raðað eftir fjölda verka. Pikkaðu á höfund til að sjá titla hans, einkunnir og aðdáendakaffihús á einum stað.",
+  "authors.search": "Leita að nafni höfundar",
+  "authors.error": "Ekki tókst að hlaða höfundalistanum. Vinsamlegast reyndu aftur eftir smástund.",
+  "authors.empty": " — enginn höfundur passar.",
   "authors.allOf": "af",
-  "authors.topOf": "· efst",
+  "authors.topOf": "· efstir",
   "authors.people": "",
-  "authors.works": "verk",
-  "authors.views": "skoðanir",
-  "authors.pencafe": "Skapandi aðdáenda kaffihús",
-  "authors.stats": "Top {shown} af höfundum {total}",
-  "authors.noName": "Skapari"
+  "authors.works": " verk",
+  "authors.views": "áhorf",
+  "authors.pencafe": "Aðdáendakaffihús höfundar",
+  "authors.stats": "{shown} efstu af {total} höfundum",
+  "authors.noName": "Höfundur"
 }

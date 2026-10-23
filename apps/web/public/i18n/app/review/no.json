@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Fikk ferdig",
+  "review.progress.complete": "Fullført",
   "review.progress.binge": "Binge",
   "review.progress.upcoming": "Planlagt",
-  "review.progress.abandoned": "Slipper",
+  "review.progress.abandoned": "Avbrutt",
   "review.progress.unknown": "Fremgang skjult",
   "review.spoilerRevealLabel": "Vis spoiler"
 }

@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Niepodtrzymywany typ obrazu.",
-  "avatar.error.processFailed": "Nie udało mi się przetworzyć obrazu.",
+  "avatar.error.invalidType": "Nieobsługiwany typ obrazu.",
+  "avatar.error.processFailed": "Nie udało się przetworzyć obrazu. Spróbuj ponownie z innym obrazem.",
   "avatar.processing": "Przetwarzanie...",
-  "avatar.select": "Zmiana obrazu",
-  "avatar.remove": "Usunięcie obrazu",
-  "avatar.uploadHint": "Tylko obrazy JPG, PNG i WEBP są obsługiwane, a następnie wycięte do przeglądu.",
-  "avatar.changeAria": "Zmiana obrazu profilu"
+  "avatar.select": "Zmień obraz",
+  "avatar.remove": "Usuń obraz",
+  "avatar.uploadHint": "Obsługiwane są tylko obrazy JPG, PNG i WEBP, a następnie są przycinane do podglądu.",
+  "avatar.changeAria": "Zmień zdjęcie profilowe"
 }

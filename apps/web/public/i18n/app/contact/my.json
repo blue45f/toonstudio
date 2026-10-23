@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "အထွေထွေ မေးမြန်းချက်",
+  "contact.body": "ဝန်ဆောင်မှု အသုံးပြုခြင်း၊ အကောင့်နှင့် ဒေတာ ပြသခြင်းတို့နှင့် ပတ်သက်သော အထွေထွေ မေးမြန်းချက်များကို ပေးပို့ပါ။",
+  "contact.bizTitle": "စီးပွားရေးနှင့် မိတ်ဖက် မေးမြန်းချက်များ",
+  "contact.bizBody": "ကြော်ငြာ၊ ပလက်ဖောင်း ချိတ်ဆက်မှုနှင့် အကြောင်းအရာ မိတ်ဖက်မှုများ အပါအဝင် စီးပွားရေး အဆိုပြုချက်များကို တင်ပြပါ။",
+  "contact.bugTitle": "ချို့ယွင်းချက် အစီရင်ခံရန်",
+  "contact.bugBody": "အမှားများ၊ မျက်နှာပြင် ပြသမှု ပြဿနာများ သို့မဟုတ် ဒေတာ ပြသမှု မူမမှန်မှုများကို အစီရင်ခံပါ။"
 }

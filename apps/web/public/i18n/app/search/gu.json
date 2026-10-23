@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "બધું સાફ કરો",
   "search.explorer.recent.delete": "તાજેતરની ક્વેરી કાઢી નાખો {query}",
   "search.explorer.recent.searchAgain": "તાજેતરના કીવર્ડ્સમાંથી ફરીથી શોધો",
+  "search.explorer.suggestions.popular": "લોકપ્રિય શોધો",
+  "search.explorer.suggestions.genres": "ભલામણ કરેલી શૈલીઓ",
+  "search.explorer.suggestions.searchFor": "{query} શોધો",
+  "search.explorer.suggestions.genreFilter": "શૈલી {genre} દ્વારા સંકુચિત કરો",
+  "search.explorer.suggestions.loading": "સૂચવેલી શોધો લોડ કરી રહ્યા છીએ",
+  "search.explorer.suggestions.error": "સૂચવેલી શોધો લોડ થઈ શકી નહીં. કૃપા કરીને થોડી વાર પછી ફરી પ્રયાસ કરો.",
+  "search.explorer.suggestions.empty": "હાલમાં કોઈ સૂચનો નથી. કૃતિ, લેખક અથવા ટેગ લખીને જુઓ.",
   "search.explorer.catalog.label": "કેટલોગ",
   "search.explorer.catalog.empty": "સૂચિ ખાલી છે",
   "search.explorer.currentFilter": "વર્તમાન ફિલ્ટર્સ",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m પહેલા",
   "search.explorer.time.hoursAgo": "{count} કલાક પહેલા",
   "search.explorer.time.daysAgo": "{count} દિવસ પહેલા",
-  "search.explorer.loadMore": "વધુ લોડ કરો",
-  "search.explorer.suggestions.popular": "લોકપ્રિય શોધો",
-  "search.explorer.suggestions.genres": "ભલામણ કરેલી શૈલીઓ",
-  "search.explorer.suggestions.searchFor": "{query} શોધો",
-  "search.explorer.suggestions.genreFilter": "શૈલી {genre} દ્વારા સંકુચિત કરો",
-  "search.explorer.suggestions.loading": "સૂચવેલી શોધો લોડ કરી રહ્યા છીએ",
-  "search.explorer.suggestions.error": "સૂચવેલી શોધો લોડ થઈ શકી નહીં. કૃપા કરીને થોડી વાર પછી ફરી પ્રયાસ કરો.",
-  "search.explorer.suggestions.empty": "હાલમાં કોઈ સૂચનો નથી. કૃતિ, લેખક અથવા ટેગ લખીને જુઓ."
+  "search.explorer.loadMore": "વધુ લોડ કરો"
 }

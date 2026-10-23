@@ -1,5 +1,7 @@
 {
   "control.language.label": "ഭാഷ",
+  "control.language.group.translated": "ഉയര് ന്ന പരിഭാഷകൾ",
+  "control.language.group.englishBase": "ഓട്ടോമാറ്റിക് വിവർത്തനം · ഇംഗ്ലീഷ് ഫാൽബാക്ക്",
   "control.sound.enable": "ശബ്ദ ഇഫക്റ്റുകൾ പ്രാപ്തമാക്കുക",
   "control.sound.disable": "ശബ്ദ ഇഫക്റ്റുകൾ പ്രവർത്തനരഹിതമാക്കുക",
   "control.theme.dark": "വെളിച്ചം മോഡിലേക്ക് മാറുക",
@@ -8,7 +10,5 @@
   "control.settings.close": "അടുത്ത ക്രമീകരണങ്ങൾ",
   "control.cluster.settings": "ശബ്ദം, തീം, ഭാഷാ നിയന്ത്രണങ്ങൾ",
   "control.cluster.open": "തുറന്ന ക്രമീകരണങ്ങൾ",
-  "control.cluster.tooltip": "ശബ്ദം, തീം, ഭാഷാ ക്രമീകരണങ്ങൾ",
-  "control.language.group.translated": "ഉയര് ന്ന പരിഭാഷകൾ",
-  "control.language.group.englishBase": "ഓട്ടോമാറ്റിക് വിവർത്തനം · ഇംഗ്ലീഷ് ഫാൽബാക്ക്"
+  "control.cluster.tooltip": "ശബ്ദം, തീം, ഭാഷാ ക്രമീകരണങ്ങൾ"
 }

@@ -8,9 +8,9 @@
   "common.retry.short": "Spróbuj ponownie.",
   "common.backToTop": "Wracaj na górę.",
   "common.backToHome": "Strona główna",
-  "common.loading.search": "Szukałem...",
-  "common.notFoundWithQuery": "Nie ma wyników w odniesieniu do \" {query} \".",
+  "common.loading.search": "Szukanie…",
+  "common.notFoundWithQuery": "Brak wyników dla zapytania '{query}'.",
   "common.openSearch": "Znajdź w wyszukiwarce",
-  "common.loading.empty": "Nie zwróciłem danych.",
-  "common.retry.all": "Spróbuj jeszcze raz, albo wróć do domu."
+  "common.loading.empty": "Brak zwróconych danych.",
+  "common.retry.all": "Spróbuj ponownie lub wróć na stronę główną."
 }

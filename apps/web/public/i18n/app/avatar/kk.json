@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Қолданбалмаған сурет түрі.",
-  "avatar.error.processFailed": "Суретті өңдеуге жетпеді.",
-  "avatar.processing": "Процессую...",
-  "avatar.select": "Бейне өзгертілсін",
+  "avatar.error.invalidType": "Қолдау көрсетілмейтін сурет түрі.",
+  "avatar.error.processFailed": "Суретті өңдеу сәтсіз аяқталды. Басқа суретпен қайталап көріңіз.",
+  "avatar.processing": "Өңделуде…",
+  "avatar.select": "Суретті өзгерту",
   "avatar.remove": "Суретті өшіру",
-  "avatar.uploadHint": "Тек JPG, PNG және WEBP суреттері қолдайды, содан кейін алдын ала қарау үшін кесіледі.",
+  "avatar.uploadHint": "Тек JPG, PNG және WEBP суреттеріне қолдау көрсетіледі, содан кейін алдын ала көру үшін қиылады.",
   "avatar.changeAria": "Профиль кескінін өзгерту"
 }

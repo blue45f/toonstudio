@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Negaliu įkrauti pranešimų.",
+  "notify.loadError": "Nepavyko įkelti pranešimų. Po akimirkos bandykite dar kartą.",
   "notify.empty": "Nėra naujų pranešimų."
 }

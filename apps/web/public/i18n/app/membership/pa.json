@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "ਮੈਂਬਰ",
   "membership.creatorPage.statMonthly": "ਮਾਸਿਕ ਗਾਹਕੀ ਫ਼ੀਸ ਕੁੱਲ",
   "membership.creatorPage.statTiers": "ਸਰਗਰਮ ਟੀਅਰ",
+  "membership.creatorPage.statusActive": "ਪਾਠਕ ਸਾਈਨ-ਅੱਪ ਸਕ੍ਰੀਨ 'ਤੇ {count} ਟੀਅਰ ਲਾਈਵ ਹਨ",
   "membership.creatorPage.subtitle": "ਪ੍ਰਸ਼ੰਸਕ ਮੈਂਬਰਸ਼ਿਪ ਟੀਅਰ ਬਣਾਓ ਅਤੇ ਮਾਸਿਕ ਗਾਹਕੀ ਆਮਦਨ ਟ੍ਰੈਕ ਕਰੋ।",
   "membership.creatorPage.tierList": "ਮੈਂਬਰਸ਼ਿਪ ਟੀਅਰ",
   "membership.creatorPage.tierMembers": "{count} ਮੈਂਬਰ",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "ਉਹ ਰਕਮ ਜੋ ਪ੍ਰਸ਼ੰਸਕ ਹਰ ਮਹੀਨੇ ਦਿੰਦੇ ਹਨ।",
   "membership.tierEditor.priceLabel": "ਮਾਸਿਕ ਕੀਮਤ (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "ਸੰਭਾਲੋ",
-  "membership.creatorPage.statusActive": "ਪਾਠਕ ਸਾਈਨ-ਅੱਪ ਸਕ੍ਰੀਨ 'ਤੇ {count} ਟੀਅਰ ਲਾਈਵ ਹਨ"
+  "membership.tierEditor.save": "ਸੰਭਾਲੋ"
 }

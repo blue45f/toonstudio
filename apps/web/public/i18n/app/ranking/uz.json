@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Koʻrish natijalari boʻlinishi",
-  "ranking.metric.views": "Koʻrinishlar",
-  "ranking.why": "Nega ?",
-  "ranking.breakdownTitle": "Ish natijalari bo'linishi",
-  "ranking.totalScore": "Umumiy natija",
-  "ranking.breakdownDescription": "O'z o'lchami va mavzuga oid normalashmalar bilan hisoblangan."
+  "ranking.detailTitle": "Baho tarkibini koʻrish",
+  "ranking.metric.views": "Koʻrishlar",
+  "ranking.why": "Nega?",
+  "ranking.breakdownTitle": "Baho tarkibi",
+  "ranking.totalScore": "Umumiy baho",
+  "ranking.breakdownDescription": "Oʻq ogʻirliklari va asarga xos normallashtirish bilan hisoblangan."
 }

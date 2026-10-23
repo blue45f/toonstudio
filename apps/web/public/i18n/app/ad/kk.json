@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Қолдалған сурет",
+  "ad.creativeFallbackAlt": "Демеушілік сурет",
   "ad.slotAriaLabel": "Жарнамалық орын",
-  "ad.slotLabel": "Қолдау",
-  "ad.slotTitle": "Қолданған мазмұн",
+  "ad.slotLabel": "Демеушілік",
+  "ad.slotTitle": "Демеушілік мазмұн",
   "ad.ctaDetails": "Толығырақ қарау",
-  "ad.placeholderAriaLabel": "Жарнамалық орындық",
-  "ad.placeholderText": "Қолда бар спонсорлық мазмұн жоқ.",
+  "ad.placeholderAriaLabel": "Жарнама орны",
+  "ad.placeholderText": "Қолжетімді демеушілік мазмұн жоқ.",
   "ad.tag": "Жарнама"
 }

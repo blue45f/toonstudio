@@ -1,5 +1,7 @@
 {
   "control.language.label": "ଭାଷା",
+  "control.language.group.translated": "ଉଚ୍ଚ ପ୍ରସାରଣର ଅନୁବାଦ",
+  "control.language.group.englishBase": "ସ୍ୱୟଂଚାଳିତ ଅନୁବାଦ · ଇଂରାଜୀ ଫଲବ୍ୟାକ୍",
   "control.sound.enable": "ଧ୍ୱନି ପ୍ରଭାବକୁ ସକ୍ଷମ କରିବା",
   "control.sound.disable": "ଧ୍ୱନି ପ୍ରଭାବକୁ ଅକ୍ଷମ କରନ୍ତୁ",
   "control.theme.dark": "ଆଲୋକ ମୋଡକୁ ସୁଇଚ୍ କରନ୍ତୁ",
@@ -8,7 +10,5 @@
   "control.settings.close": "ବନ୍ଦ ସେଟିଂସମୂହ",
   "control.cluster.settings": "ଧ୍ୱନି, ବିଷୟବସ୍ତୁ, ଭାଷା ନିୟନ୍ତ୍ରଣ",
   "control.cluster.open": "ଖୋଲାଯାଇଥିବା ସେଟିଂସମୂହ",
-  "control.cluster.tooltip": "ଧ୍ୱନି, ବିଷୟବସ୍ତୁ ଏବଂ ଭାଷା ସେଟିଙ୍ଗ୍",
-  "control.language.group.translated": "ଉଚ୍ଚ ପ୍ରସାରଣର ଅନୁବାଦ",
-  "control.language.group.englishBase": "ସ୍ୱୟଂଚାଳିତ ଅନୁବାଦ · ଇଂରାଜୀ ଫଲବ୍ୟାକ୍"
+  "control.cluster.tooltip": "ଧ୍ୱନି, ବିଷୟବସ୍ତୁ ଏବଂ ଭାଷା ସେଟିଙ୍ଗ୍"
 }

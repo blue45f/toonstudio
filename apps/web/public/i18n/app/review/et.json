@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "Täidetud",
-  "review.progress.binge": "Pärisõõõng",
+  "review.progress.binge": "Ahnelt lugemine",
   "review.progress.upcoming": "Planeeritud",
   "review.progress.abandoned": "Lükati maha",
-  "review.progress.unknown": "Progress peidetud",
+  "review.progress.unknown": "Edenemine peidetud",
   "review.spoilerRevealLabel": "Näita spoiler"
 }

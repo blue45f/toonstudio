@@ -1,5 +1,7 @@
 {
   "control.language.label": "भाषा",
+  "control.language.group.translated": "उच्च कवरेज अनुवाद",
+  "control.language.group.englishBase": "स्वचालित अनुवाद · अंग्रेजी fallback",
   "control.sound.enable": "ध्वनि प्रभाव सक्षम पार्न",
   "control.sound.disable": "ध्वनि प्रभावहरू अक्षम गर्नुहोस्",
   "control.theme.dark": "प्रकाश मोडमा स्विच गर्नुहोस्",
@@ -8,7 +10,5 @@
   "control.settings.close": "बन्द सेटिंग्स",
   "control.cluster.settings": "ध्वनि, विषयवस्तु, भाषा नियन्त्रण",
   "control.cluster.open": "खुला सेटिंग्स",
-  "control.cluster.tooltip": "ध्वनि, विषयवस्तु र भाषा सेटिंग्स",
-  "control.language.group.translated": "उच्च कवरेज अनुवाद",
-  "control.language.group.englishBase": "स्वचालित अनुवाद · अंग्रेजी fallback"
+  "control.cluster.tooltip": "ध्वनि, विषयवस्तु र भाषा सेटिंग्स"
 }

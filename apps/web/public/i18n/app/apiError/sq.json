@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Login required.",
+  "apiError.loginRequired": "Kërkohet identifikimi.",
   "apiError.adminRequired": "Lejet e administratorit nuk mund të verifikoheshin.",
-  "apiError.adminOnlyPage": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "apiError.notFound": "️️️️️️️️️️️️️️️️️️️️️",
-  "apiError.unsupportedType": "Type of content not supported.",
-  "apiError.inactiveAccount": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "apiError.settlementFailed": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️"
+  "apiError.adminOnlyPage": "Kjo faqe është e kufizuar për administratorët.",
+  "apiError.notFound": "Artikulli i kërkuar nuk u gjet.",
+  "apiError.unsupportedType": "Lloji i përmbajtjes nuk mbështetet.",
+  "apiError.inactiveAccount": "Llogaritë joaktive nuk mund të përdorin funksionet e administratorit.",
+  "apiError.settlementFailed": "Përpunimi i likuidimit dështoi. Provo sërish pas pak."
 }

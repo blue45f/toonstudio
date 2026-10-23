@@ -7,8 +7,6 @@
  * the planned renders and re-run validation with the resulting dimensions and byte sizes.
  */
 
-import { formatNumber } from "@toonstudio/core/format";
-
 import { isRecord, normalizeText } from "./publish-package/primitives";
 import {
   DEFAULT_STUDIO_PUBLISH_PACKAGE_AI_TRAINING,
@@ -17,8 +15,10 @@ import {
   type StudioPublishPackageRights,
 } from "./publish-package/rights";
 import { StudioPublishPackageError } from "./studio-publish-package-error";
-import { normalizeStudioReviewPdfProfileId, type StudioReviewPdfProfileId } from "./studio-review-pdf-profile";
+import { normalizeStudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 
+import type { StudioReviewPdfProfileId } from "./studio-review-pdf-profile";
+import { formatNumber } from "@toonstudio/core/format";
 export { StudioPublishPackageError, type StudioPublishPackageErrorCode } from "./studio-publish-package-error";
 
 export const STUDIO_PUBLISH_PACKAGE_SCHEMA = "toonstudio.publish-package" as const;

@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "Täytetty",
-  "review.progress.binge": "Pysäily",
+  "review.progress.binge": "Luetaan putkeen",
   "review.progress.upcoming": "Suunniteltu",
-  "review.progress.abandoned": "- Heitetään pois",
-  "review.progress.unknown": "Siihen on piilotettu edistymistä .",
+  "review.progress.abandoned": "Keskeytetty",
+  "review.progress.unknown": "Edistyminen piilotettu",
   "review.spoilerRevealLabel": "Näytä spoiler"
 }

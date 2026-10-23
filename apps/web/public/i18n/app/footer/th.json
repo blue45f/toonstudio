@@ -30,6 +30,7 @@
   "footer.link.news": "ข่าวหนังหนัง",
   "footer.link.about": "เกี่ยวกับ ToonStudio",
   "footer.link.guide": "การเมืองการจัดอันดับ",
+  "footer.link.features": "ดูฟีเจอร์ทั้งหมดในพริบตา",
   "footer.link.sitemap": "แผนที่สถานที่",
   "footer.link.settings": "การตั้งค่า",
   "footer.link.support": "การสนับสนุน",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "บริการรับรอง",
   "footer.business.serviceType": "ประเภทพื้นที่",
   "footer.copyrightLine": "© {year} ToonStudio (Beta) หุ้นส่วนทั้งหมด",
-  "footer.logoTag": "สร้างเรื่องราวต่อไปของคุณ",
-  "footer.link.features": "ดูฟีเจอร์ทั้งหมดในพริบตา"
+  "footer.logoTag": "สร้างเรื่องราวต่อไปของคุณ"
 }

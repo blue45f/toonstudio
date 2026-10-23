@@ -1,14 +1,14 @@
 {
   "control.language.label": "Język",
-  "control.sound.enable": "Wykorzystanie efektów dźwiękowych",
-  "control.sound.disable": "Wyłączenie efektów dźwiękowych",
-  "control.theme.dark": "Przełącz się do trybu światła",
-  "control.theme.light": "Przełącz się do trybu ciemnego",
-  "control.settings.open": "Otwarte ustawienia",
-  "control.settings.close": "Ustawienia zamknięcia",
-  "control.cluster.settings": "Głos, tema, kontrola języka",
-  "control.cluster.open": "Otwarte ustawienia",
-  "control.cluster.tooltip": "Ustawienia dźwięku, tematyki i języka",
-  "control.language.group.translated": "Wydatki na wyższe źródła",
-  "control.language.group.englishBase": "Automatyczny tłumaczenie · angielski fallback"
+  "control.language.group.translated": "Tłumaczenia o wysokim pokryciu",
+  "control.language.group.englishBase": "Tłumaczenie automatyczne · zapasowa wersja angielska",
+  "control.sound.enable": "Włącz efekty dźwiękowe",
+  "control.sound.disable": "Wyłącz efekty dźwiękowe",
+  "control.theme.dark": "Przełącz na tryb jasny",
+  "control.theme.light": "Przełącz na tryb ciemny",
+  "control.settings.open": "Otwórz ustawienia",
+  "control.settings.close": "Zamknij ustawienia",
+  "control.cluster.settings": "Elementy sterujące dźwiękiem, motywem i językiem",
+  "control.cluster.open": "Otwórz ustawienia",
+  "control.cluster.tooltip": "Ustawienia dźwięku, motywu i języka"
 }

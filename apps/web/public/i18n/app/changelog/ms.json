@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Tidak dapat memuat naik kemas kini.",
-  "changelog.empty": "Belum ada log kemas kini."
+  "changelog.loadError": "Tidak dapat memuatkan kemas kini. Sila cuba lagi sebentar lagi.",
+  "changelog.empty": "Belum ada log kemas kini yang disiarkan."
 }

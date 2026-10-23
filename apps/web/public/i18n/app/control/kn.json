@@ -1,5 +1,7 @@
 {
   "control.language.label": "ಭಾಷೆ",
+  "control.language.group.translated": "ಹೆಚ್ಚಿನ ವ್ಯಾಪ್ತಿಯ ಅನುವಾದಗಳು",
+  "control.language.group.englishBase": "ಸ್ವಯಂಚಾಲಿತ ಅನುವಾದ · ಇಂಗ್ಲಿಷ್ ಪತನ",
   "control.sound.enable": "ಧ್ವನಿ ಪರಿಣಾಮಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ",
   "control.sound.disable": "ಧ್ವನಿ ಪರಿಣಾಮಗಳನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ",
   "control.theme.dark": "ಬೆಳಕಿನ ಮೋಡ್ಗೆ ಬದಲಾಯಿಸಿ",
@@ -8,7 +10,5 @@
   "control.settings.close": "ಮುಚ್ಚುವ ಸೆಟ್ಟಿಂಗ್ಗಳು",
   "control.cluster.settings": "ಧ್ವನಿ, ಥೀಮ್, ಭಾಷಾ ನಿಯಂತ್ರಣಗಳು",
   "control.cluster.open": "ತೆರೆದ ಸೆಟ್ಟಿಂಗ್ಗಳು",
-  "control.cluster.tooltip": "ಧ್ವನಿ, ವಿಷಯ ಮತ್ತು ಭಾಷೆಯ ಸೆಟ್ಟಿಂಗ್ಗಳು",
-  "control.language.group.translated": "ಹೆಚ್ಚಿನ ವ್ಯಾಪ್ತಿಯ ಅನುವಾದಗಳು",
-  "control.language.group.englishBase": "ಸ್ವಯಂಚಾಲಿತ ಅನುವಾದ · ಇಂಗ್ಲಿಷ್ ಪತನ"
+  "control.cluster.tooltip": "ಧ್ವನಿ, ವಿಷಯ ಮತ್ತು ಭಾಷೆಯ ಸೆಟ್ಟಿಂಗ್ಗಳು"
 }

@@ -2,7 +2,7 @@
   "ranking.detailTitle": "Shikoni ndarjen e rezultateve",
   "ranking.metric.views": "Pamje",
   "ranking.why": "Pse",
-  "ranking.breakdownTitle": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
+  "ranking.breakdownTitle": "Ndarja e pikëve",
   "ranking.totalScore": "Rezultati total",
-  "ranking.breakdownDescription": "Calculate with axis weights and title-specific normalization."
+  "ranking.breakdownDescription": "Llogaritet me peshat e boshteve dhe normalizimin specifik për titullin."
 }

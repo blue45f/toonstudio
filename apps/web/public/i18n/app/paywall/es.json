@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Acceso anticipado de {days} días para patrocinadores",
   "paywall.creatorPage.preview": "Vista previa",
   "paywall.creatorPage.save": "Guardar política",
+  "paywall.creatorPage.statusDaysRange": "acceso anticipado de {min}–{max} días",
+  "paywall.creatorPage.statusDaysSingle": "acceso anticipado de {days} días",
+  "paywall.creatorPage.statusSummary": "{total} políticas · {active} activas",
   "paywall.creatorPage.subtitle": "Configura el acceso anticipado: primero los patrocinadores, gratis para todo el mundo pasados N días.",
   "paywall.creatorPage.title": "Acceso anticipado",
   "paywall.creatorPage.titleIdLabel": "ID de la obra",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Vista previa para lectores",
   "paywall.titleNotice.body": "Esta obra se publica para los patrocinadores {days} días antes. Si esperas, será gratis.",
   "paywall.titleNotice.label": "Aviso de acceso anticipado",
-  "paywall.titleNotice.title": "Acceso anticipado para patrocinadores en vigor",
-  "paywall.creatorPage.statusDaysRange": "acceso anticipado de {min}–{max} días",
-  "paywall.creatorPage.statusDaysSingle": "acceso anticipado de {days} días",
-  "paywall.creatorPage.statusSummary": "{total} políticas · {active} activas"
+  "paywall.titleNotice.title": "Acceso anticipado para patrocinadores en vigor"
 }

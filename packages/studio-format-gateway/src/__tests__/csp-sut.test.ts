@@ -52,6 +52,48 @@ describe("CSP pressure-graph clean-room subset", () => {
     const high = buildPressureGraph([0, 1.1]);
     expect(() => parseCspPressureGraph(high)).toThrow(/outside/u);
   });
+
+  it("emits structured codes for every pressure-graph rejection (R21)", () => {
+    const codeOf = (bytes: Uint8Array): string => {
+      try {
+        parseCspPressureGraph(bytes);
+      } catch (error) {
+        expect(error).toBeInstanceOf(CspToolFileError);
+        return (error as CspToolFileError).code;
+      }
+      throw new Error("expected parseCspPressureGraph to throw");
+    };
+    expect(codeOf(buildPressureGraph([0, 1], 2))).toBe("pressure-graph-unsupported-version");
+    expect(codeOf(buildPressureGraph([0, 1]).slice(0, -1))).toBe("pressure-graph-truncated");
+    // stride ≠ 8 is a header-shape rejection (a count<2 graph is shorter
+    // than 44 bytes, so it is claimed by the truncated check first).
+    const badStride = buildPressureGraph([0, 1]);
+    new DataView(badStride.buffer).setUint32(8, 4, false);
+    expect(codeOf(badStride)).toBe("pressure-graph-invalid-header");
+    const reserved = buildPressureGraph([0, 1]);
+    new DataView(reserved.buffer).setUint32(12, 1, false);
+    expect(codeOf(reserved)).toBe("pressure-graph-invalid-header");
+    const nan = buildPressureGraph([0, 1]);
+    new DataView(nan.buffer).setFloat64(28, Number.NaN, false);
+    expect(codeOf(nan)).toBe("pressure-graph-value-out-of-range");
+    expect(codeOf(buildPressureGraph([0, 1.1]))).toBe("pressure-graph-value-out-of-range");
+  });
+
+  it("absorbs snapshot validation failures into the read-failed issue with the original message (R21)", async () => {
+    const result = await importCspToolFile(buildAuthoredSutFixture(), {
+      kind: "sut",
+      sqliteReader: async () => ({
+        tables: [{ name: "T", columns: ["A"], rows: [{ B: 1 }] }],
+      }),
+    });
+    expect(result.supportLevel).toBe("preserve-only");
+    expect(result.unsupported).toContainEqual(
+      expect.objectContaining({
+        code: "sut-sqlite-read-failed",
+        message: expect.stringContaining("undeclared column B"),
+      }),
+    );
+  });
 });
 
 describe("SUT/SUTG preserve-first importer", () => {

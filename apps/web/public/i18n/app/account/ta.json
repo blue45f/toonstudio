@@ -27,7 +27,7 @@
   "account.profile.namePlaceholder": "காட்சி பெயர்",
   "account.profile.bioLabel": "உயிர்",
   "account.profile.bioPlaceholder": "உங்களை பற்றி ஒரு வரிசையில் சொல்லுங்கள்.",
-  "account.profile.bioLength": "{length} /280",
+  "account.profile.bioLength": "{length}/280",
   "account.profile.saveButton": "சுயவிவரத்தை சேமி",
   "account.profile.saving": "சேமிப்பு.",
   "account.profile.saved": "சேமிக்கப்பட்டது",

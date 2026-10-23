@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "- Logg in krävs.",
+  "apiError.loginRequired": "Inloggning krävs.",
   "apiError.adminRequired": "Admin-tillstånd kunde inte verifieras.",
   "apiError.adminOnlyPage": "Denna sida är begränsad till administratörer.",
-  "apiError.notFound": "Den begärda produkten kunde inte hittas.",
-  "apiError.unsupportedType": "Ostödda innehållstyper.",
-  "apiError.inactiveAccount": "Inaktivt konto kan inte använda administratörfunktioner.",
-  "apiError.settlementFailed": "Avvecklingsarbete misslyckades."
+  "apiError.notFound": "Det begärda objektet kunde inte hittas.",
+  "apiError.unsupportedType": "Innehållstypen stöds inte.",
+  "apiError.inactiveAccount": "Inaktiva konton kan inte använda administratörsfunktioner.",
+  "apiError.settlementFailed": "Avräkningen misslyckades. Försök igen om en stund."
 }

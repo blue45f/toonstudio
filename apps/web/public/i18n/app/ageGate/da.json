@@ -3,7 +3,7 @@
   "ageGate.description": "Angiv din fødselsdato for at bekræfte, at du er 19 år eller ældre.",
   "ageGate.birthDateLabel": "Fødselsdato",
   "ageGate.birthYearLabel": "Fødselsår",
-  "ageGate.birthYearPlaceholder": "Året",
+  "ageGate.birthYearPlaceholder": "År",
   "ageGate.birthMonthLabel": "Fødselsmåned",
   "ageGate.birthMonthPlaceholder": "Måned",
   "ageGate.birthDayLabel": "Fødselsdag",
@@ -12,6 +12,6 @@
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Du opfyldte ikke alderskravet.",
-  "ageGate.cancel": "Afbestilling",
-  "ageGate.confirm": "Bekræftelse"
+  "ageGate.cancel": "Annuller",
+  "ageGate.confirm": "Bekræft"
 }

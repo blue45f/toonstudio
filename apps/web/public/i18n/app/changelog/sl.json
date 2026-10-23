@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Ne morem naložiti posodobitev.",
-  "changelog.empty": "Še vedno ni objavljenih dnevnih zapisov."
+  "changelog.loadError": "Posodobitev ni bilo mogoče naložiti. Poskusite znova čez trenutek.",
+  "changelog.empty": "Ni še objavljenih dnevnikov posodobitev."
 }

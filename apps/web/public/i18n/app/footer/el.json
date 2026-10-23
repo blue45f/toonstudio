@@ -30,6 +30,7 @@
   "footer.link.news": "Νέα νουβελιά",
   "footer.link.about": "Σχετικά με το ToonStudio",
   "footer.link.guide": "Πολιτική κατάταξης",
+  "footer.link.features": "Όλες οι λειτουργίες με μια ματιά",
   "footer.link.sitemap": "Χάρτη του τόπου",
   "footer.link.settings": "Ρυθμίσεις",
   "footer.link.support": "Υποστήριξη",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Υπηρεσία φιλοξενίας",
   "footer.business.serviceType": "Τύπος πλατφόρμας",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Με επιφύλαξη παντός δικαιώματος.",
-  "footer.logoTag": "Δημιουργήστε την επόμενη ιστορία σας",
-  "footer.link.features": "Όλες οι λειτουργίες με μια ματιά"
+  "footer.logoTag": "Δημιουργήστε την επόμενη ιστορία σας"
 }

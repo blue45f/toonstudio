@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Потребно је улазак.",
-  "apiError.adminRequired": "Административне дозволе нису биле потврђене.",
+  "apiError.loginRequired": "Потребна је пријава.",
+  "apiError.adminRequired": "Администраторске дозволе није било могуће проверити.",
   "apiError.adminOnlyPage": "Ова страница је ограничена на администраторе.",
-  "apiError.notFound": "Не може се пронаћи тражена стока.",
+  "apiError.notFound": "Тражена ставка није пронађена.",
   "apiError.unsupportedType": "Тип садржаја који се не подржава.",
   "apiError.inactiveAccount": "Неактивни налози не могу користити функције администратора.",
-  "apiError.settlementFailed": "Процес расправе није успео."
+  "apiError.settlementFailed": "Обрада поравнања није успела. Покушајте поново за који тренутак."
 }

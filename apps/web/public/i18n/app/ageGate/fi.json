@@ -1,17 +1,17 @@
 {
-  "ageGate.title": "Kokonaisten sisällön tarkistaminen",
+  "ageGate.title": "Aikuissisällön tarkistus",
   "ageGate.description": "Kirjoita syntymäpäiväsi, jotta varmistat, että olet 19 tai vanhempi.",
-  "ageGate.birthDateLabel": "Syntyöpäivä",
-  "ageGate.birthYearLabel": "Syntyövuosi",
+  "ageGate.birthDateLabel": "Syntymäaika",
+  "ageGate.birthYearLabel": "Syntymävuosi",
   "ageGate.birthYearPlaceholder": "Vuosi",
-  "ageGate.birthMonthLabel": "Syntyökuukausi",
+  "ageGate.birthMonthLabel": "Syntymäkuukausi",
   "ageGate.birthMonthPlaceholder": "Kuukausi",
-  "ageGate.birthDayLabel": "Syntyöpäivä",
+  "ageGate.birthDayLabel": "Syntymäpäivä",
   "ageGate.birthDayPlaceholder": "Päivä",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Et täyttänyt ikävaatimuksia.",
-  "ageGate.cancel": "Perustetaan",
-  "ageGate.confirm": "Vahvistus"
+  "ageGate.cancel": "Peruuta",
+  "ageGate.confirm": "Vahvista"
 }

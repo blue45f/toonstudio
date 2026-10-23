@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "СУРЕДИЈА АВТИР",
+  "authors.eyebrow": "ИМЕНИК АУТОРА",
   "authors.title": "Аутори",
-  "authors.desc": "Натискајте аутора да бисте видели своје наслове, оцењивање и фана кафе на једном месту.",
-  "authors.search": "Име аутора претраге",
-  "authors.error": "Не могу да погрузим листу аутора.",
-  "authors.empty": "ниједан одговарајући аутор.",
+  "authors.desc": "Аутори рангирани према броју дела. Додирните аутора да бисте на једном месту видели његова дела, оцене и фан кафе.",
+  "authors.search": "Претражи име аутора",
+  "authors.error": "Учитавање листе аутора није успело. Покушајте поново за који тренутак.",
+  "authors.empty": " — нема одговарајућег аутора.",
   "authors.allOf": "од",
   "authors.topOf": "· врх",
   "authors.people": "",
-  "authors.works": "Дела",
-  "authors.views": "Видења",
+  "authors.works": " дела",
+  "authors.views": "прегледа",
   "authors.pencafe": "Креаторски фан кафе",
   "authors.stats": "Топ {shown} од {total} аутора",
-  "authors.noName": "Створитељ"
+  "authors.noName": "Стваралац"
 }

@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Консоль адміністраторів",
   "auth.menu.profile": "Моє профіль",
   "auth.menu.settings": "Наклади",
-  "auth.menu.signOut": "Підпишіться",
+  "auth.menu.signOut": "Вийти",
   "auth.menu.fallbackName": "Читач",
   "auth.callback.message.working": "Окончаємо реєстрацію...",
   "auth.callback.error.badState": "Параметр недійсного стану.",

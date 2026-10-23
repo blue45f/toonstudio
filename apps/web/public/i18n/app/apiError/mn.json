@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Login required.",
+  "apiError.loginRequired": "Нэвтрэх шаардлагатай.",
   "apiError.adminRequired": "Админы зөвшөөрлийг баталгаажуулж чадсангүй.",
-  "apiError.adminOnlyPage": "This page is restricted to administrators.This page is restricted to administrators.",
-  "apiError.notFound": "️️️️️️️️️️️️️️️️️️️️️",
-  "apiError.unsupportedType": "Type of content not supported.",
-  "apiError.inactiveAccount": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "apiError.settlementFailed": "️️️️️️️️️️️️️"
+  "apiError.adminOnlyPage": "Энэ хуудас зөвхөн админуудад зориулагдсан.",
+  "apiError.notFound": "Хүссэн зүйл олдсонгүй.",
+  "apiError.unsupportedType": "Дэмжигдээгүй агуулгын төрөл.",
+  "apiError.inactiveAccount": "Идэвхгүй бүртгэл админы боломжийг ашиглах боломжгүй.",
+  "apiError.settlementFailed": "Тооцоог боловсруулж чадсангүй. Түр хүлээгээд дахин оролдоно уу."
 }

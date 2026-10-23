@@ -26,7 +26,7 @@
 // (StudioPage.tsx의 AI 연동 그룹 wrapper)가 담당한다(2026-07-05 툴바 그룹화로 이관). 이 컴포넌트는
 // 자체 fixed/absolute wrapper 없이 flex-col gap-2 레이아웃만 유지한다(자식들이 margin이 아니라
 // 부모 gap에 의존하므로 이 한 겹은 남겨둬야 한다).
-import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07"; import { r44CreatorStatusText } from "./r44-cat1-status-i18n";
 import { Images, Loader2, Search, Settings2 } from "lucide-react";
 import { useState } from "react";
 
@@ -170,7 +170,7 @@ export function StudioStockImagePanel({ onInsert, onOpenSettings }: StudioStockI
               ? "Access Key를 먼저 등록하세요."
               : submittedQuery
                 ? r3c07StatusText("studio.panelStatus.r3c07.stockImage.searchEmpty", "검색 결과가 없습니다.")
-                : "검색어를 입력해 무료 사진을 찾아보세요."}
+                : r44CreatorStatusText("r44cat1.creator.stockImage.idlePrompt", "검색어를 입력해 무료 사진을 찾아보세요.")}
           </p>
         </div>
       )}

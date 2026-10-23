@@ -1,14 +1,14 @@
 {
   "control.language.label": "Keel",
-  "control.sound.enable": "Võimalda heliefektide tegemine",
-  "control.sound.disable": "Kõneefektide lülitamine",
-  "control.theme.dark": "Liigumine valguse liini",
-  "control.theme.light": "Liigu pimedase režiimile",
-  "control.settings.open": "Avatud seadmed",
-  "control.settings.close": "Lähedased seadmed",
-  "control.cluster.settings": "Kõne, teema, keelejuhtimine",
-  "control.cluster.open": "Avatud seadmed",
-  "control.cluster.tooltip": "Kõne, teema ja keeleseadmed",
-  "control.language.group.translated": "Suurte kaaludega tõlked",
-  "control.language.group.englishBase": "Automaatne tõlge · inglise keel fallback"
+  "control.language.group.translated": "Suure katvusega tõlked",
+  "control.language.group.englishBase": "Automaattõlge · inglise keele varuvariant",
+  "control.sound.enable": "Luba heliefektid",
+  "control.sound.disable": "Keela heliefektid",
+  "control.theme.dark": "Lülitu heledale režiimile",
+  "control.theme.light": "Lülitu tumedale režiimile",
+  "control.settings.open": "Ava seaded",
+  "control.settings.close": "Sulge seaded",
+  "control.cluster.settings": "Heli, teema ja keele juhtelemendid",
+  "control.cluster.open": "Ava seaded",
+  "control.cluster.tooltip": "Heli, teema ja keele seaded"
 }

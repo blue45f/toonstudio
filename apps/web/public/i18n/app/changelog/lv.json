@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Neatkarēju atjauninājumus.",
-  "changelog.empty": "Vēl nav publicētas atjaunināšanās datubāzes."
+  "changelog.loadError": "Neizdevās ielādēt atjauninājumus. Lūdzu, pēc brīža mēģiniet vēlreiz.",
+  "changelog.empty": "Vēl nav publicētu atjauninājumu žurnālu."
 }

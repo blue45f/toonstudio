@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "पृष्ठ नहीं मिला",
-  "page.notFound.message": "URL को फिर से जांचें या होम पेज से शीर्षक खोजें।",
-  "page.notFound.home": "घर जाओ",
   "page.events.board.community": "समुदाय बोर्ड",
   "page.events.board.official": "आधिकारिक इवेंट्स",
   "page.events.board.title": "इवेंट सूची",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "बीटा लाभ देखें",
   "page.events.hero.secondary": "समुदाय इवेंट्स बोर्ड",
   "page.events.hero.title": "इवेंट्स बोर्ड",
+  "page.notFound.home": "घर जाओ",
+  "page.notFound.message": "URL को फिर से जांचें या होम पेज से शीर्षक खोजें।",
   "page.notFound.quip.1": "अरे? यह पैनल अभी तक बनाया ही नहीं गया है!",
   "page.notFound.quip.2": "स्याही सूखने से पहले ही आप भटक गए।",
   "page.notFound.quip.3": "अगले एपिसोड में मिलते हैं… शायद!",
   "page.notFound.quip.4": "कलाकार अभी यह पृष्ठ बना रहा है।",
-  "page.notFound.tapHint": "संख्याओं को टैप करें"
+  "page.notFound.tapHint": "संख्याओं को टैप करें",
+  "page.notFound.title": "पृष्ठ नहीं मिला"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Создадени дела",
   "userProfile.tabs.series": "Серија",
   "userProfile.works.empty": "Овој корисник уште нема јавни дела.",
+  "userProfile.works.error": "Не можевме да ги вчитаме создадените дела. Обидете се повторно.",
   "userProfile.series.empty": "Овој корисник уште нема серија.",
+  "userProfile.series.error": "Не можевме да ги вчитаме сериите. Обидете се повторно.",
   "userProfile.fetchError": "Не може да се зареди профил.",
   "userProfile.authorFallback": "Корисник",
   "userProfile.metaTemplate": "{author} профил · {reviews} рецензии · {works} работи · avg рејтинг {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Содржина на профилот",
   "userProfile.refresh": "Преоснивање",
   "userProfile.emptyReviews": "Досега нема објавени коментари од овој корисник.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "Оставете ја првата рецензија за наслов што го сакате.",
+  "userProfile.emptyReviewsCta": "Разгледај наслови"
 }

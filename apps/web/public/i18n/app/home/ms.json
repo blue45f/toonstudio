@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Cerita-cerita yang tersebar-sebar,",
+  "home.hero.titleLine1": "Cerita yang berselerak,",
   "home.hero.titleShimmer": "Indeks tunggal",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Cari di Naver Webtoon, Siri, dan Kakao Webtoon, kemudian sempitkan apa yang perlu dibaca menggunakan isyarat masa nyata dan pilihan pembaca.",
-  "home.hero.searchButton": "Judul carian, pencipta, tag",
-  "home.hero.rankingButton": "Lihat ranking yang bersatu",
+  "home.hero.description": "Cari merentas Naver Webtoon, Series dan Kakao Webtoon, kemudian persempit pilihan bacaan anda dengan cepat menggunakan isyarat masa nyata dan keutamaan pembaca.",
+  "home.hero.searchButton": "Cari tajuk, pencipta, tag",
+  "home.hero.rankingButton": "Lihat kedudukan bersepadu",
   "home.hero.studioLink": "Studio Pencipta",
   "home.hero.createLink": "Papan pencipta",
-  "home.hero.stats.titles": "Judul",
+  "home.hero.stats.titles": "Tajuk",
   "home.hero.stats.platforms": "Platform penerbitan",
   "home.hero.stats.genres": "Spektrum genre",
   "home.hero.stats.reviews": "Ulasan pembaca",
-  "home.loadError": "Tidak dapat memuat turun data rumah.",
+  "home.loadError": "Tidak dapat memuatkan data laman utama.",
   "home.creatorTitle": "Dari idea ke adegan pertama anda"
 }

@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Nem tudtam feltölteni a frissítéseket.",
-  "changelog.empty": "Még nincs frissített napló."
+  "changelog.loadError": "Nem sikerült betölteni a frissítéseket. Próbáld újra egy pillanat múlva.",
+  "changelog.empty": "Még nincsenek közzétett frissítési naplók."
 }

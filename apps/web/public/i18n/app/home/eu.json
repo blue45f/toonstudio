@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Istorioak zabalduta.",
+  "home.hero.titleLine1": "Istorio sakabanatuak,",
   "home.hero.titleShimmer": "Indize bakarra",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Bilatu Naver Webtoon, Series eta Kakao Webtoon-en zehar, eta gero azkar murriztu zer irakurri denbora errealean seinaleak eta irakurlearen nahia erabiliz.",
-  "home.hero.searchButton": "Bilaketa izenburuak, sortzaileak, etiketak",
-  "home.hero.rankingButton": "Zerrenda bateratua ikusi",
+  "home.hero.description": "Bilatu Naver Webtoon, Series eta Kakao Webtoon-en artean, eta murriztu azkar zer irakurri denbora errealeko seinaleak eta irakurleen lehentasunak erabiliz.",
+  "home.hero.searchButton": "Bilatu izenburuak, sortzaileak, etiketak",
+  "home.hero.rankingButton": "Ikusi sailkapen bateratua",
   "home.hero.studioLink": "Sortzaileen estudioa",
   "home.hero.createLink": "Sortzaileen taula",
   "home.hero.stats.titles": "Izenburuak",
-  "home.hero.stats.platforms": "Argitalpenen plataformak",
+  "home.hero.stats.platforms": "Argitalpen-plataformak",
   "home.hero.stats.genres": "Generoaren espektroa",
   "home.hero.stats.reviews": "Irakurleen iritziak",
-  "home.loadError": "Ezin izan ditut etxeko datuak kargatu.",
+  "home.loadError": "Ezin izan dira hasierako datuak kargatu.",
   "home.creatorTitle": "Ideia batetik zure lehen eszenaraino."
 }

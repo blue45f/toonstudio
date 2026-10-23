@@ -642,7 +642,7 @@ describe("Studio BG3D durable shot-batch recovery", () => {
 
     expect(estimate).toHaveBeenCalledTimes(2);
     expect(session.mode).toBe("memory");
-    expect(session.degradedReason).toMatch(/저장 용량/iu);
+    expect(session.degradedReason).toEqual({ code: "quotaExceeded" });
     expect(session.queue.items[0]?.status).toBe("succeeded");
     await store.release(session);
   });

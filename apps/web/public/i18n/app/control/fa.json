@@ -1,5 +1,7 @@
 {
   "control.language.label": "زبان",
+  "control.language.group.translated": "ترجمه های با پوشش بالا",
+  "control.language.group.englishBase": "ترجمه خودکار · به زبان انگلیسی fallback",
   "control.sound.enable": "امکان ایجاد اثرات صوتی",
   "control.sound.disable": "فعال کردن اثرات صوتی",
   "control.theme.dark": "به حالت روشن شدن تغییر دهید",
@@ -8,7 +10,5 @@
   "control.settings.close": "تنظیمات نزدیک",
   "control.cluster.settings": "کنترل صدا، موضوع، زبان",
   "control.cluster.open": "تنظیمات باز",
-  "control.cluster.tooltip": "تنظیمات صدا، موضوع و زبان",
-  "control.language.group.translated": "ترجمه های با پوشش بالا",
-  "control.language.group.englishBase": "ترجمه خودکار · به زبان انگلیسی fallback"
+  "control.cluster.tooltip": "تنظیمات صدا، موضوع و زبان"
 }

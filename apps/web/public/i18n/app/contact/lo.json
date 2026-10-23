@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "ສອບຖາມທົ່ວໄປ",
+  "contact.body": "ສົ່ງຄຳສອບຖາມທົ່ວໄປກ່ຽວກັບການໃຊ້ບໍລິການ, ບັນຊີ ແລະ ການສະແດງຂໍ້ມູນ.",
+  "contact.bizTitle": "ສອບຖາມທຸລະກິດ ແລະ ການຮ່ວມມື",
+  "contact.bizBody": "ສົ່ງຂໍ້ສະເໜີທຸລະກິດ ລວມທັງການໂຄສະນາ, ການເຊື່ອມຕໍ່ແພລັດຟອມ ແລະ ການຮ່ວມມືດ້ານເນື້ອຫາ.",
+  "contact.bugTitle": "ລາຍງານຂໍ້ຜິດພາດ",
+  "contact.bugBody": "ລາຍງານຂໍ້ຜິດພາດ, ບັນຫາຮູບແບບໜ້າຈໍ ຫຼື ຄວາມຜິດປົກກະຕິໃນການສະແດງຂໍ້ມູນ."
 }

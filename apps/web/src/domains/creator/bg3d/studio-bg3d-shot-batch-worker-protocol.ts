@@ -9,9 +9,18 @@ import {
   type StudioBg3dShotBatchManifestContext,
   type StudioBg3dShotBatchProgress,
 } from "./studio-bg3d-shot-batch";
+import {
+  isStudioBg3dShotBatchArchiveErrorCode,
+  type StudioBg3dShotBatchArchiveErrorCode,
+} from "./studio-bg3d-shot-batch-archive-error";
 
-/** v4 adds an explicit ready handshake and verified v3-public-manifest archive responses. */
-export const STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION = 4;
+/**
+ * v4 adds an explicit ready handshake and verified v3-public-manifest archive responses.
+ * v5 (R19) adds causeCode/causeParams to error responses: when the archive build fails with a
+ * structured StudioBg3dShotBatchArchiveError, the Worker carries its code/params across the
+ * boundary so the display point can resolve them; other failures stay a bare "build-failed".
+ */
+export const STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION = 5;
 export const STUDIO_BG3D_SHOT_BATCH_MAX_ARCHIVE_BYTES = 400 * 1024 * 1024;
 
 export interface StudioBg3dShotBatchWorkerRequest {
@@ -47,6 +56,9 @@ export type StudioBg3dShotBatchWorkerResponse =
       readonly kind: "error";
       readonly requestId: number;
       readonly code: "build-failed" | "protocol";
+      /** Structured archive cause (v5): present only when the build failed with an ArchiveError. */
+      readonly causeCode?: StudioBg3dShotBatchArchiveErrorCode;
+      readonly causeParams?: Readonly<Record<string, string>>;
     };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -55,6 +67,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function validRequestId(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) > 0;
+}
+
+function validCauseParams(value: unknown): boolean {
+  return isRecord(value) &&
+    Object.keys(value).length <= 4 &&
+    Object.values(value).every((entry) => typeof entry === "string" && entry.length <= 64);
 }
 
 export function isStudioBg3dShotBatchWorkerRequest(
@@ -116,6 +134,13 @@ export function isStudioBg3dShotBatchWorkerResponse(
       value.archive.size <= STUDIO_BG3D_SHOT_BATCH_MAX_ARCHIVE_BYTES;
   }
   return value.kind === "error" &&
-    Object.keys(value).every((key) => ["version", "kind", "requestId", "code"].includes(key)) &&
-    (value.code === "build-failed" || value.code === "protocol");
+    Object.keys(value).every((key) =>
+      ["version", "kind", "requestId", "code", "causeCode", "causeParams"].includes(key)) &&
+    (value.code === "build-failed" || value.code === "protocol") &&
+    (value.causeCode === undefined || (
+      value.code === "build-failed" && isStudioBg3dShotBatchArchiveErrorCode(value.causeCode)
+    )) &&
+    (value.causeParams === undefined || (
+      value.causeCode !== undefined && validCauseParams(value.causeParams)
+    ));
 }

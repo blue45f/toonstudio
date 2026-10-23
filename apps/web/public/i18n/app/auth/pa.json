@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "ਪ੍ਰਬੰਧਕ ਕੰਸੋਲ",
   "auth.menu.profile": "ਮੇਰੀ ਪ੍ਰੋਫਾਈਲ",
   "auth.menu.settings": "ਸੈਟਿੰਗਜ਼",
-  "auth.menu.signOut": "ਸਾਈਨ ਅਪ ਕਰੋ",
+  "auth.menu.signOut": "ਸਾਈਨ ਆਊਟ ਕਰੋ",
   "auth.menu.fallbackName": "ਪਾਠਕ",
   "auth.callback.message.working": "ਸਾਈਨ-ਇਨ ਨੂੰ ਪੂਰਾ ਕਰਨਾ...",
   "auth.callback.error.badState": "ਅਵੈਧ ਰਾਜ ਪੈਰਾਮੀਟਰ.",

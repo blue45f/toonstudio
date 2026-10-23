@@ -1,7 +1,7 @@
 {
-  "error.reloading": "- Jag laddar om den senaste versionen.",
-  "error.chunkRetryFailed": "- Kontrollera anslutningen och försök igen.",
-  "error.reloadButton": "Överladen av sidan",
-  "error.goHome": "Gå hem",
+  "error.reloading": "Laddar om den senaste versionen…",
+  "error.chunkRetryFailed": "Uppdaterade en gång, men problemet kvarstår. Kontrollera din anslutning och försök igen.",
+  "error.reloadButton": "Ladda om sidan",
+  "error.goHome": "Gå till startsidan",
   "error.retryDesc": "Försök igen eller gå tillbaka till hemsidan."
 }

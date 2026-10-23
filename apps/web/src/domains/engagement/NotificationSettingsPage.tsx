@@ -1,4 +1,4 @@
-import { engagementStatusText } from "./engagement-status-i18n";
+import { engagementStatusText } from "./engagement-status-i18n"; import { r44EngagementStatusText } from "./r44-cat1-status-i18n";
 import { useSyncExternalStore } from "react";
 
 import { useEngagement } from "./engagement-store";
@@ -250,8 +250,7 @@ export function NotificationSettingsPage() {
         </div>
         {hydrated && enabledCategoryCount === 0 ? (
           <p role="alert" className="mt-3 text-xs leading-5 text-warn">
-            지금은 모든 종류가 꺼져 있어 알림 센터에 새 알림이 표시되지 않습니다. 필요한 종류만
-            골라 켜도 됩니다.
+            {r44EngagementStatusText("r44cat1.engagement.notificationSettings.allCategoriesOff", "지금은 모든 종류가 꺼져 있어 알림 센터에 새 알림이 표시되지 않습니다. 필요한 종류만 골라 켜도 됩니다.")}
           </p>
         ) : null}
         {!hydrated ? (

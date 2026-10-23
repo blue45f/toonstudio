@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Página não encontrada",
-  "page.notFound.message": "Verifique novamente o URL ou explore os títulos da página inicial.",
-  "page.notFound.home": "Volta para casa.",
   "page.events.board.community": "Quadro da comunidade",
   "page.events.board.official": "Eventos oficiais",
   "page.events.board.title": "Lista de eventos",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Ver benefícios beta",
   "page.events.hero.secondary": "Quadro de eventos da comunidade",
   "page.events.hero.title": "Quadro de eventos",
+  "page.notFound.home": "Volta para casa.",
+  "page.notFound.message": "Verifique novamente o URL ou explore os títulos da página inicial.",
   "page.notFound.quip.1": "Hã? Esta vinheta ainda não foi desenhada!",
   "page.notFound.quip.2": "Perdeu-se antes de a tinta secar sequer.",
   "page.notFound.quip.3": "Até ao próximo episódio… provavelmente!",
   "page.notFound.quip.4": "O artista está a desenhar esta página neste momento.",
-  "page.notFound.tapHint": "Toque nos números"
+  "page.notFound.tapHint": "Toque nos números",
+  "page.notFound.title": "Página não encontrada"
 }

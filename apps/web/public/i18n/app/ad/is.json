@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Sponsrað mynd",
-  "ad.slotAriaLabel": "Auglýsingasvæði",
-  "ad.slotLabel": "Gjaldað",
-  "ad.slotTitle": "Stuðningsþætti",
-  "ad.ctaDetails": "Sjá nánari upplýsingar",
-  "ad.placeholderAriaLabel": "Auglýsingarsetning",
-  "ad.placeholderText": "Engin styrkt efni í boði.",
+  "ad.creativeFallbackAlt": "Kostuð mynd",
+  "ad.slotAriaLabel": "Auglýsingapláss",
+  "ad.slotLabel": "Kostað",
+  "ad.slotTitle": "Kostað efni",
+  "ad.ctaDetails": "Sjá nánar",
+  "ad.placeholderAriaLabel": "Staðgengill auglýsingar",
+  "ad.placeholderText": "Ekkert kostað efni í boði.",
   "ad.tag": "Auglýsing"
 }

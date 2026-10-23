@@ -37,9 +37,9 @@ import {
 
 import type { StudioPortablePathGeometryContour } from "./render/studio-canvaskit-adapter";
 import type { StudioPathBooleanReasonCode, StudioPathBooleanReasonParams } from "./studio-path-boolean-reason";
-import type { DrawEl, El } from "./studio-element-model";
 
 export type { StudioPathBooleanReasonCode, StudioPathBooleanReasonParams } from "./studio-path-boolean-reason";
+import type { DrawEl, El } from "./studio-element-model";
 
 // ---------------------------------------------------------------------------
 // 카탈로그

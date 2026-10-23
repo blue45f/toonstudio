@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "अॅडमिन कन्सोल",
   "auth.menu.profile": "माझा प्रोफाइल",
   "auth.menu.settings": "सेटिंग्ज",
-  "auth.menu.signOut": "साइन अप करा",
+  "auth.menu.signOut": "साइन आउट करा",
   "auth.menu.fallbackName": "वाचक",
   "auth.callback.message.working": "नोंदणी पूर्ण करत आहे.",
   "auth.callback.error.badState": "अवैध राज्य घटक.",

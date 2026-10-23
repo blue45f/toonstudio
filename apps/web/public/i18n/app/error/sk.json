@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Prelodať najnovšiu verziu...",
-  "error.chunkRetryFailed": "Raz som sa oživil, ale problém pretrváva.",
-  "error.reloadButton": "Prelodať stránku",
-  "error.goHome": "Choď domov",
+  "error.reloading": "Načítava sa najnovšia verzia…",
+  "error.chunkRetryFailed": "Aktualizácia prebehla raz, ale problém pretrváva. Skontrolujte pripojenie a skúste to znova.",
+  "error.reloadButton": "Znova načítať stránku",
+  "error.goHome": "Prejsť na domovskú stránku",
   "error.retryDesc": "Prosím, skúste znova alebo sa vráťte na domovskú stránku."
 }

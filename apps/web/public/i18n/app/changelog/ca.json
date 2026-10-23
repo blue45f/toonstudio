@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "No vaig poder carregar les actualitzacions.",
+  "changelog.loadError": "No s'han pogut carregar les actualitzacions. Torna-ho a provar d'aquí a una estona.",
   "changelog.empty": "Encara no s'han publicat registres actualitzats."
 }

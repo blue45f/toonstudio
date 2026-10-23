@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "ad.slotAriaLabel": "Vende për reklamim",
-  "ad.slotLabel": "️️️️️️️️️️️️️️️️️️️️",
+  "ad.creativeFallbackAlt": "Imazh i sponsorizuar",
+  "ad.slotAriaLabel": "Vendi i reklamimit",
+  "ad.slotLabel": "E sponsorizuar",
   "ad.slotTitle": "Përmbajtje e sponsorizuar",
   "ad.ctaDetails": "Shiko detajet",
   "ad.placeholderAriaLabel": "Vendmbajtësi i reklamave",
-  "ad.placeholderText": "️️️️️️️️️️️",
-  "ad.tag": "Ad"
+  "ad.placeholderText": "Nuk ka përmbajtje të sponsorizuar të disponueshme.",
+  "ad.tag": "Reklamë"
 }

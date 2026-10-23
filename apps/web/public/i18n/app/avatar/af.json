@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Ondersteun nie beeld tipe.",
-  "avatar.error.processFailed": "Ek het nie die beeld verwerk nie.",
-  "avatar.processing": "Verwerking ...",
+  "avatar.error.invalidType": "Beeldtipe word nie ondersteun nie.",
+  "avatar.error.processFailed": "Kon nie die beeld verwerk nie. Probeer weer met ’n ander beeld.",
+  "avatar.processing": "Verwerk tans…",
   "avatar.select": "Verander beeld",
   "avatar.remove": "Verwyder beeld",
   "avatar.uploadHint": "Slegs JPG, PNG, en WEBP beelde word ondersteun, dan gesny vir voorskou.",
-  "avatar.changeAria": "Verander profiel beeld"
+  "avatar.changeAria": "Verander profielbeeld"
 }

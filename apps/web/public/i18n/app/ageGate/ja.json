@@ -1,17 +1,17 @@
 {
+  "ageGate.title": "アダルトコンテンツチェック",
+  "ageGate.description": "19 歳以上であることを確認するには、生年月日を入力してください。",
   "ageGate.birthDateLabel": "生年月日",
-  "ageGate.yearSuffix": "",
-  "ageGate.monthSuffix": "",
-  "ageGate.daySuffix": "",
+  "ageGate.birthYearLabel": "誕生年",
   "ageGate.birthYearPlaceholder": "年",
+  "ageGate.birthMonthLabel": "誕生月",
   "ageGate.birthMonthPlaceholder": "月",
   "ageGate.birthDayLabel": "誕生日",
   "ageGate.birthDayPlaceholder": "日",
+  "ageGate.yearSuffix": "",
+  "ageGate.monthSuffix": "",
+  "ageGate.daySuffix": "",
+  "ageGate.deniedMessage": "年齢条件を満たしていませんでした。",
   "ageGate.cancel": "キャンセル",
-  "ageGate.confirm": "確認する",
-  "ageGate.description": "19 歳以上であることを確認するには、生年月日を入力してください。",
-  "ageGate.birthYearLabel": "誕生年",
-  "ageGate.birthMonthLabel": "誕生月",
-  "ageGate.title": "アダルトコンテンツチェック",
-  "ageGate.deniedMessage": "年齢条件を満たしていませんでした。"
+  "ageGate.confirm": "確認する"
 }

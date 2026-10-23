@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "DIRECTORUL Autorului",
+  "authors.eyebrow": "DIRECTORUL AUTORILOR",
   "authors.title": "Autori",
-  "authors.desc": "Autaţi pe autorul pentru a vedea titlurile, ratingurile şi fan-cafeaua lor într-un singur loc.",
-  "authors.search": "Numele autorului de căutare",
-  "authors.error": "Nu am putut încărca lista de autori.",
-  "authors.empty": "nu există autor corespunzător.",
+  "authors.desc": "Autori ordonați după numărul de lucrări. Atingeți un autor pentru a-i vedea titlurile, evaluările și cafeneaua fanilor într-un singur loc.",
+  "authors.search": "Căutați numele autorului",
+  "authors.error": "Nu s-a putut încărca lista autorilor. Vă rugăm să încercați din nou peste câteva momente.",
+  "authors.empty": " — niciun autor potrivit.",
   "authors.allOf": "din",
-  "authors.topOf": "· în vârf",
+  "authors.topOf": "· în top",
   "authors.people": "",
-  "authors.works": "lucrări",
-  "authors.views": "viziuni",
+  "authors.works": " lucrări",
+  "authors.views": "vizualizări",
   "authors.pencafe": "Cafeneaua fanilor creatorului",
-  "authors.stats": "Top {shown} din autorii {total}",
-  "authors.noName": "Creatorul"
+  "authors.stats": "Primii {shown} din {total} autori",
+  "authors.noName": "Creator"
 }

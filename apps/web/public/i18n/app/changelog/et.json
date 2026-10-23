@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Ma ei suutnud värskendusi laadida.",
-  "changelog.empty": "Täiendavate andmete kohta pole veel avaldatud."
+  "changelog.loadError": "Uuendusi ei õnnestunud laadida. Proovige hetke pärast uuesti.",
+  "changelog.empty": "Uuenduste logisid pole veel postitatud."
 }

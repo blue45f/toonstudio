@@ -1,14 +1,14 @@
 {
   "control.language.label": "Språk",
-  "control.sound.enable": "Tillate lydeffekter",
-  "control.sound.disable": "Inaktivere lydeffekter",
-  "control.theme.dark": "Skip til lysmodus",
-  "control.theme.light": "Skip til mørk modus",
+  "control.language.group.translated": "Oversettelser med høy dekning",
+  "control.language.group.englishBase": "Automatisk oversettelse · Engelsk fallback",
+  "control.sound.enable": "Aktiver lydeffekter",
+  "control.sound.disable": "Deaktiver lydeffekter",
+  "control.theme.dark": "Bytt til lys modus",
+  "control.theme.light": "Bytt til mørk modus",
   "control.settings.open": "Åpne innstillinger",
-  "control.settings.close": "Nærm innstillinger",
+  "control.settings.close": "Lukk innstillinger",
   "control.cluster.settings": "Lyd, tema, språkkontroll",
   "control.cluster.open": "Åpne innstillinger",
-  "control.cluster.tooltip": "Lyd, tema og språkinnstillinger",
-  "control.language.group.translated": "Oversettelser med høy omslag",
-  "control.language.group.englishBase": "Automatisk oversettelse · Engelsk fallback"
+  "control.cluster.tooltip": "Lyd, tema og språkinnstillinger"
 }

@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Neatkarēju atsauksmes aptauju.",
+  "feedback.loadError": "Neizdevās ielādēt atsauksmju aptauju. Lūdzu, pēc brīža mēģiniet vēlreiz.",
   "feedback.thankYou": "Paldies par jūsu vērtīgu atsauksmi!",
-  "feedback.anonymousNote": "Jūsu atbildes ir strikt anonīmas.",
-  "feedback.notAtAll": "Nepatīkamīgi.",
-  "feedback.definitely": "Visbeidzot."
+  "feedback.anonymousNote": "Jūsu atbildes tiek saglabātas pilnīgi anonīmi.",
+  "feedback.notAtAll": "Nemaz",
+  "feedback.definitely": "Noteikti"
 }

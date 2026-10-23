@@ -1,8 +1,8 @@
 {
   "ranking.detailTitle": "Se resultatoppdeling",
-  "ranking.metric.views": "Synspunkter",
+  "ranking.metric.views": "Visninger",
   "ranking.why": "Hvorfor?",
-  "ranking.breakdownTitle": "Skillnadsskift",
+  "ranking.breakdownTitle": "Poengfordeling",
   "ranking.totalScore": "Totalt resultat",
-  "ranking.breakdownDescription": "Beregnet med aksespesifikk normalisering."
+  "ranking.breakdownDescription": "Beregnet med aksevekter og tittelspesifikk normalisering."
 }

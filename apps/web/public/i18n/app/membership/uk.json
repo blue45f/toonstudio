@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Учасники",
   "membership.creatorPage.statMonthly": "Загальна сума щомісячних підписок",
   "membership.creatorPage.statTiers": "Активні рівні",
+  "membership.creatorPage.statusActive": "{count} рівнів опубліковано на екрані реєстрації читачів",
   "membership.creatorPage.subtitle": "Створюйте рівні членства для шанувальників і відстежуйте дохід від щомісячних підписок.",
   "membership.creatorPage.tierList": "Рівні членства",
   "membership.creatorPage.tierMembers": "{count} учасників",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Сума, яку шанувальники платять щомісяця.",
   "membership.tierEditor.priceLabel": "Щомісячна ціна (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min}–{max}",
-  "membership.tierEditor.save": "Зберегти",
-  "membership.creatorPage.statusActive": "{count} рівнів опубліковано на екрані реєстрації читачів"
+  "membership.tierEditor.save": "Зберегти"
 }

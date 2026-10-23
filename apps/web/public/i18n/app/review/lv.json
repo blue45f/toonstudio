@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Piepildīts",
-  "review.progress.binge": "Bingušana",
+  "review.progress.complete": "Pabeigts",
+  "review.progress.binge": "Maratonlasīšana",
   "review.progress.upcoming": "Plānots",
-  "review.progress.abandoned": "Izkriss",
-  "review.progress.unknown": "Pazaudēts progress",
-  "review.spoilerRevealLabel": "Spēlers"
+  "review.progress.abandoned": "Atmests",
+  "review.progress.unknown": "Progress paslēpts",
+  "review.spoilerRevealLabel": "Rādīt spoileri"
 }

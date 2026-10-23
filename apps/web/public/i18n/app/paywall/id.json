@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Akses awal pendukung selama {days} hari",
   "paywall.creatorPage.preview": "Pratinjau",
   "paywall.creatorPage.save": "Simpan kebijakan",
+  "paywall.creatorPage.statusDaysRange": "akses awal {min}–{max} hari",
+  "paywall.creatorPage.statusDaysSingle": "akses awal {days} hari",
+  "paywall.creatorPage.statusSummary": "{total} kebijakan · {active} aktif",
   "paywall.creatorPage.subtitle": "Siapkan akses awal: pendukung terlebih dahulu, gratis untuk semua orang setelah N hari.",
   "paywall.creatorPage.title": "Akses awal",
   "paywall.creatorPage.titleIdLabel": "ID karya",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Pratinjau tampilan pembaca",
   "paywall.titleNotice.body": "Karya ini dirilis untuk pendukung {days} hari lebih awal. Karya ini menjadi gratis jika Anda menunggu.",
   "paywall.titleNotice.label": "Pemberitahuan akses awal",
-  "paywall.titleNotice.title": "Akses awal pendukung berlaku",
-  "paywall.creatorPage.statusDaysRange": "akses awal {min}–{max} hari",
-  "paywall.creatorPage.statusDaysSingle": "akses awal {days} hari",
-  "paywall.creatorPage.statusSummary": "{total} kebijakan · {active} aktif"
+  "paywall.titleNotice.title": "Akses awal pendukung berlaku"
 }

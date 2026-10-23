@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "Завяршана",
-  "review.progress.binge": "Бінгінг",
+  "review.progress.binge": "Запойнае чытанне",
   "review.progress.upcoming": "Плануецца",
-  "review.progress.abandoned": "Выкінуты",
-  "review.progress.unknown": "Дасягненні схаваны",
+  "review.progress.abandoned": "Кінута",
+  "review.progress.unknown": "Прагрэс схаваны",
   "review.spoilerRevealLabel": "Паказаць спойлер"
 }

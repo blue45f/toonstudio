@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Mengunggah semula versi terkini...",
-  "error.chunkRetryFailed": "Berjaya sekali, tapi masalah masih berlaku.",
-  "error.reloadButton": "memuat semula halaman",
-  "error.goHome": "Kembali ke Rumah",
+  "error.reloading": "Memuatkan semula versi terkini…",
+  "error.chunkRetryFailed": "Telah dimuat semula sekali, tetapi masalah masih berterusan. Sila semak sambungan anda dan cuba lagi.",
+  "error.reloadButton": "Muat semula halaman",
+  "error.goHome": "Pergi ke laman utama",
   "error.retryDesc": "Sila cuba lagi atau kembali ke laman utama."
 }

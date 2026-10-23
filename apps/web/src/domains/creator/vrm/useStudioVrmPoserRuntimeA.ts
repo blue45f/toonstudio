@@ -56,6 +56,9 @@ import {
 import {
   canonicalizeVrmContentHash,
 } from "./vrm-library";
+import {
+  resolveStudioVrmTexturePaintArtifactErrorFromCause,
+} from "../status-i18n/studio-producer-error-i18n-vrm-paint-artifact";
 
 import type { StudioVrmIkConstraint } from "./studio-vrm-scene-document";
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
@@ -314,10 +317,10 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
           || texturePaintRuntimeRef.current !== texturePaintRuntime
         ) return;
         setTexturePaintPersistenceStatus("error");
-        setTexturePaintPersistenceError(getErrorMessage(
-          cause,
-          "저장된 표면 페인팅 원본을 복원하지 못했습니다.",
-        ));
+        setTexturePaintPersistenceError(
+          resolveStudioVrmTexturePaintArtifactErrorFromCause(cause)
+          ?? getErrorMessage(cause, "저장된 표면 페인팅 원본을 복원하지 못했습니다."),
+        );
       });
 
     return () => {

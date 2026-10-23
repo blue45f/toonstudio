@@ -1,14 +1,14 @@
 {
   "control.language.label": "ភាសា",
-  "control.sound.enable": "អនុញ្ញាតឱ្យមានប្រសិទ្ធភាពនៃសំឡេង",
-  "control.sound.disable": "បិទ ផលិតផល សំឡេង",
-  "control.theme.dark": "ប្តូរ ទៅលើ mode ពន្លឺ",
-  "control.theme.light": "ប្តូរ ទៅ ក្នុង របៀប ងងឹត",
-  "control.settings.open": "ការកំណត់បើក",
-  "control.settings.close": "ការកំណត់ Close",
-  "control.cluster.settings": "Sound, Theme, Language Controls",
-  "control.cluster.open": "ការកំណត់បើក",
-  "control.cluster.tooltip": "ការកំណត់ សំឡេង, ប្រធានបទ និង ភាសា",
-  "control.language.group.translated": "ការបកប្រែ ដែលមាន ការបកស្រាយ ច្រើន",
-  "control.language.group.englishBase": "ការបកប្រែដោយចល័ត · English fallback"
+  "control.language.group.translated": "ការបកប្រែដែលមានគម្របខ្ពស់",
+  "control.language.group.englishBase": "ការបកប្រែដោយស្វ័យប្រវត្តិ · ត្រឡប់ទៅភាសាអង់គ្លេស",
+  "control.sound.enable": "បើកសំឡេងបែបផែន",
+  "control.sound.disable": "បិទសំឡេងបែបផែន",
+  "control.theme.dark": "ប្តូរទៅរបៀបភ្លឺ",
+  "control.theme.light": "ប្តូរទៅរបៀបងងឹត",
+  "control.settings.open": "បើកការកំណត់",
+  "control.settings.close": "បិទការកំណត់",
+  "control.cluster.settings": "ការគ្រប់គ្រងសំឡេង រូបរាង និងភាសា",
+  "control.cluster.open": "បើកការកំណត់",
+  "control.cluster.tooltip": "ការកំណត់សំឡេង រូបរាង និងភាសា"
 }

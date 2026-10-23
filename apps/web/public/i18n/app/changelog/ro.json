@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Nu am putut încărca actualizările.",
-  "changelog.empty": "Nu au fost încă postate date actualizate."
+  "changelog.loadError": "Nu s-au putut încărca actualizările. Vă rugăm să încercați din nou peste câteva momente.",
+  "changelog.empty": "Nu au fost publicate încă jurnale de actualizări."
 }

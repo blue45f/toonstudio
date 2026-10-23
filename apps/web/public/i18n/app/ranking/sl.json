@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Razčlenitev rezultatov glej",
-  "ranking.metric.views": "Pogled",
-  "ranking.why": "Zakaj?",
+  "ranking.detailTitle": "Ogled razčlenitve ocene",
+  "ranking.metric.views": "Ogledi",
+  "ranking.why": "Zakaj",
   "ranking.breakdownTitle": "Razčlenitev rezultatov",
   "ranking.totalScore": "Skupna ocena",
-  "ranking.breakdownDescription": "Izračuna se z osnimi težinami in normalizacijo, ki je specifična za naslov."
+  "ranking.breakdownDescription": "Izračunano z utežmi osi in normalizacijo za posamezen naslov."
 }

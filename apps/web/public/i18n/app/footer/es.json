@@ -30,6 +30,7 @@
   "footer.link.news": "Noticias de novelas en línea",
   "footer.link.about": "Acerca de ToonStudio",
   "footer.link.guide": "Política de clasificación",
+  "footer.link.features": "Todas las funciones de un vistazo",
   "footer.link.sitemap": "Mapa del sitio",
   "footer.link.settings": "Configuración",
   "footer.link.support": "Apoyo",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Servicio de alojamiento",
   "footer.business.serviceType": "Tipo de plataforma",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Todos los derechos reservados.",
-  "footer.logoTag": "Crea tu siguiente historia",
-  "footer.link.features": "Todas las funciones de un vistazo"
+  "footer.logoTag": "Crea tu siguiente historia"
 }

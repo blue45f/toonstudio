@@ -1,8 +1,8 @@
 {
   "ranking.detailTitle": "Онооны задаргааг харах",
-  "ranking.metric.views": "Views",
-  "ranking.why": "Why?",
-  "ranking.breakdownTitle": "️️️️️️️️️️️️",
-  "ranking.totalScore": "Total score",
-  "ranking.breakdownDescription": "Calculate with axis weights and title-specific normalization."
+  "ranking.metric.views": "Үзэлт",
+  "ranking.why": "Яагаад",
+  "ranking.breakdownTitle": "Онооны задаргаа",
+  "ranking.totalScore": "Нийт оноо",
+  "ranking.breakdownDescription": "Тэнхлэгийн жин болон бүтээл тус бүрийн хэвийн болголтоор тооцоолсон."
 }

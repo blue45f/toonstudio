@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Ne morem naložiti obvestil.",
+  "notify.loadError": "Obvestil ni bilo mogoče naložiti. Poskusite znova čez trenutek.",
   "notify.empty": "Nobenih novih obvestil."
 }

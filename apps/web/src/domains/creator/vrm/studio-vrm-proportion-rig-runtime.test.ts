@@ -503,7 +503,12 @@ describe("studio-vrm-proportion-rig-runtime", () => {
     expectTransform(fixture.root, originalRoot);
     const afterDispose = runtime.apply(NEUTRAL_STUDIO_VRM_PROPORTIONS);
     expect(afterDispose.ok).toBe(false);
-    if (!afterDispose.ok) expect(afterDispose.code).toBe("disposed");
+    if (!afterDispose.ok) {
+      expect(afterDispose.code).toBe("disposed");
+      // 세부 사유가 없는 실패는 detail을 싣지 않는다(표시 지점 병기 대상 아님).
+      expect(afterDispose.detailCode).toBeUndefined();
+      expect(afterDispose.detailParams).toBeUndefined();
+    }
   });
 
   it("runs normalized rebuild, constraint init, spring init, and pose in order with canonical root TRS", () => {

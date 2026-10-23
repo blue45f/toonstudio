@@ -175,16 +175,31 @@ export type StudioVrmTexturePaintArtifactErrorCode =
   | "RESOLVER_INVALID"
   | "SOURCE_INVALID";
 
+/** 템플릿 단위 서브코드 (A4 D4 R18): 표시는 status-i18n의 vrmPaintArtifact 리졸버가 detail+params로 해석한다. bundle/manifest/resolver 전용 detail은 키 없이 detail만 부착한다. */
+export type StudioVrmTexturePaintArtifactErrorDetail =
+  | "aborted" | "artifactInputInvalid" | "artifactMissing" | "bindingContentConflict" | "bindingCountLimitExceeded" | "bindingKeyInvalid"
+  | "blobMimeInvalid" | "blobReadFailed" | "blobSizeMismatch" | "bundleInputNotArray" | "contentHashFormatInvalid" | "contentReceiptConflict"
+  | "cryptoUnavailable" | "customDecoderFailed" | "decodeCanvasContextUnavailable" | "decodeCanvasFactoryInvalid" | "decodeEnvironmentUnavailable" | "decodeFailed"
+  | "decodedDimensionMismatch" | "decodedImageByteLengthMismatch" | "decodedImageMetadataMismatch" | "decodedPixelsReadFailed" | "decoderStartFailed" | "expectedDimensionInvalid"
+  | "hashComputeFailed" | "hashResultLengthInvalid" | "imageBitmapDecoderUnavailable" | "inputAggregateByteLimitExceeded" | "limitInvalidRange" | "limitsInvalid"
+  | "manifestAggregateByteLimitExceeded" | "manifestAggregatePixelLimitExceeded" | "manifestBindingKeyContentConflict" | "manifestBindingKeyDuplicated" | "manifestContentConflict" | "manifestInvalid"
+  | "metadataByteLimitExceeded" | "metadataDimensionLimitExceeded" | "metadataPixelLimitExceeded" | "metadataStructureInvalid" | "metadataValueInvalid" | "pngChunkBoundsExceeded"
+  | "pngChunkCrcMismatch" | "pngChunkLengthOutOfBounds" | "pngChunkTypeInvalid" | "pngDimensionLimitExceeded" | "pngDuplicateIhdr" | "pngFirstChunkNotIhdr"
+  | "pngIdatSequenceInvalid" | "pngIdatTotalExceeded" | "pngIendInvalid" | "pngIhdrDimensionMismatch" | "pngIhdrProfileMismatch" | "pngPixelLimitExceeded"
+  | "pngPlteInvalid" | "pngPlteMissingForIndexed" | "pngSignatureInvalid" | "pngStructureIncomplete" | "pngUnsupportedCriticalChunk" | "rehydratedAggregateByteLimitExceeded"
+  | "rehydratedAggregatePixelLimitExceeded" | "resolveFailed" | "resolverInvalid" | "sourceByteLimitExceeded" | "sourceTooSmall" | "sourceTypeInvalid"
+  | "storedByteLengthMismatch" | "storedHashMismatch" | "storedReceiptMismatch" | "uniqueAggregateByteLimitExceeded" | "uniqueAggregatePixelLimitExceeded" | "uniqueArtifactCountLimitExceeded";
+
 export class StudioVrmTexturePaintArtifactError extends Error {
   constructor(
     readonly code: StudioVrmTexturePaintArtifactErrorCode,
-    message: string,
+    readonly detail: StudioVrmTexturePaintArtifactErrorDetail,
+    readonly params?: Readonly<Record<string, string>>,
     options?: ErrorOptions,
   ) {
-    super(message, options);
-    this.name = code === "ABORTED"
-      ? "AbortError"
-      : "StudioVrmTexturePaintArtifactError";
+    // ABORTED는 이름 기반 처리라 리졸버 키가 없고, 기존 취소 문구를 message로 유지한다.
+    super(code === "ABORTED" ? "VRM 표면 페인팅 PNG 작업이 취소되었습니다." : detail, options);
+    this.name = code === "ABORTED" ? "AbortError" : "StudioVrmTexturePaintArtifactError";
   }
 }
 
@@ -246,21 +261,20 @@ interface StudioVrmTexturePaintArtifactInputSnapshot {
 
 function fail(
   code: StudioVrmTexturePaintArtifactErrorCode,
-  message: string,
+  detail: StudioVrmTexturePaintArtifactErrorDetail,
+  params?: Readonly<Record<string, string>>,
   cause?: unknown,
 ): never {
   throw new StudioVrmTexturePaintArtifactError(
     code,
-    message,
+    detail,
+    params,
     cause === undefined ? undefined : { cause },
   );
 }
 
 function abortError(): StudioVrmTexturePaintArtifactError {
-  return new StudioVrmTexturePaintArtifactError(
-    "ABORTED",
-    "VRM 표면 페인팅 PNG 작업이 취소되었습니다.",
-  );
+  return new StudioVrmTexturePaintArtifactError("ABORTED", "aborted");
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -334,10 +348,7 @@ function resolveLimit(
 ): number {
   if (value === undefined) return hardMaximum;
   if (!Number.isSafeInteger(value) || value < 1 || value > hardMaximum) {
-    fail(
-      "LIMIT_INVALID",
-      `${key} 한도는 1 이상 ${hardMaximum.toLocaleString("en-US")} 이하의 안전한 정수여야 합니다.`,
-    );
+    fail("LIMIT_INVALID", "limitInvalidRange", { limitKey: key, hardMaximum: hardMaximum.toLocaleString("en-US") });
   }
   return value;
 }
@@ -346,7 +357,7 @@ function resolveLimits(
   limits: Partial<StudioVrmTexturePaintArtifactLimits> | undefined,
 ): StudioVrmTexturePaintArtifactLimits {
   if (limits !== undefined && !isPlainDataRecord(limits)) {
-    fail("LIMIT_INVALID", "VRM 표면 페인팅 PNG 안전 한도가 올바르지 않습니다.");
+    fail("LIMIT_INVALID", "limitsInvalid");
   }
   return {
     maxArtifactBytes: resolveLimit(
@@ -400,10 +411,7 @@ function assertBindingKey(value: unknown): asserts value is string {
     value.includes("//") ||
     value.split("/").some((segment) => segment === "." || segment === "..")
   ) {
-    fail(
-      "BINDING_KEY_INVALID",
-      "VRM 표면 페인팅 bindingKey는 정규화된 안전 식별자여야 합니다.",
-    );
+    fail("BINDING_KEY_INVALID", "bindingKeyInvalid");
   }
 }
 
@@ -412,7 +420,7 @@ function assertExpectedDimension(value: unknown): asserts value is number | unde
     value !== undefined &&
     (!Number.isSafeInteger(value) || (value as number) < 1 || (value as number) > 0xffff_ffff)
   ) {
-    fail("DIMENSION_MISMATCH", "예상 PNG 해상도가 올바르지 않습니다.");
+    fail("DIMENSION_MISMATCH", "expectedDimensionInvalid");
   }
 }
 
@@ -421,17 +429,17 @@ function assertSourceShape(
   limits: StudioVrmTexturePaintArtifactLimits,
 ): asserts source is StudioVrmTexturePaintArtifactSource {
   if (!(source instanceof Blob) && !(source instanceof Uint8Array)) {
-    fail("SOURCE_INVALID", "VRM 표면 페인팅 artifact는 Blob 또는 Uint8Array여야 합니다.");
+    fail("SOURCE_INVALID", "sourceTypeInvalid");
   }
   if (source instanceof Blob && source.type !== STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME) {
-    fail("MIME_INVALID", "VRM 표면 페인팅 Blob MIME은 image/png여야 합니다.");
+    fail("MIME_INVALID", "blobMimeInvalid");
   }
   const byteLength = source instanceof Blob ? source.size : source.byteLength;
   if (!Number.isSafeInteger(byteLength) || byteLength < PNG_MINIMUM_BYTES) {
-    fail("SOURCE_INVALID", "VRM 표면 페인팅 PNG가 비었거나 잘렸습니다.");
+    fail("SOURCE_INVALID", "sourceTooSmall");
   }
   if (byteLength > limits.maxArtifactBytes) {
-    fail("BYTE_LIMIT_EXCEEDED", "VRM 표면 페인팅 PNG가 개별 바이트 예산을 초과했습니다.");
+    fail("BYTE_LIMIT_EXCEEDED", "sourceByteLimitExceeded");
   }
 }
 
@@ -461,7 +469,7 @@ async function prepareSource(
     throwIfAborted(signal);
     const bytes = new Uint8Array(buffer);
     if (bytes.byteLength !== source.size) {
-      fail("SOURCE_INVALID", "VRM 표면 페인팅 Blob 크기와 실제 바이트 수가 다릅니다.");
+      fail("SOURCE_INVALID", "blobSizeMismatch");
     }
     let retainSource = false;
     try {
@@ -482,7 +490,7 @@ async function prepareSource(
   } catch (cause) {
     if (cause instanceof StudioVrmTexturePaintArtifactError) throw cause;
     if (isAbortError(cause)) throw abortError();
-    fail("SOURCE_INVALID", "VRM 표면 페인팅 Blob을 읽지 못했습니다.", cause);
+    fail("SOURCE_INVALID", "blobReadFailed", undefined, cause);
   }
 }
 
@@ -535,7 +543,7 @@ async function verifyPng(
   if (
     bytes.byteLength < PNG_MINIMUM_BYTES ||
     PNG_SIGNATURE.some((byte, index) => bytes[index] !== byte)
-  ) fail("PNG_INVALID", "PNG signature 또는 전체 구조가 올바르지 않습니다.");
+  ) fail("PNG_INVALID", "pngSignatureInvalid");
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let offset = PNG_SIGNATURE.byteLength;
@@ -555,7 +563,7 @@ async function verifyPng(
     throwIfAborted(signal);
     chunkCount += 1;
     if (chunkCount > PNG_MAX_CHUNKS || offset + 12 > bytes.byteLength) {
-      fail("PNG_INVALID", "PNG chunk 수 또는 경계가 안전 범위를 벗어났습니다.");
+      fail("PNG_INVALID", "pngChunkBoundsExceeded");
     }
     const length = view.getUint32(offset, false);
     const typeOffset = offset + 4;
@@ -564,26 +572,26 @@ async function verifyPng(
     const crcOffset = dataEnd;
     const nextOffset = crcOffset + 4;
     if (!Number.isSafeInteger(dataEnd) || nextOffset > bytes.byteLength) {
-      fail("PNG_INVALID", "PNG chunk 길이가 파일 경계를 벗어났습니다.");
+      fail("PNG_INVALID", "pngChunkLengthOutOfBounds");
     }
     const type = chunkType(bytes, typeOffset);
     if (
       !PNG_CHUNK_TYPE_PATTERN.test(type) ||
       type.charCodeAt(2) < 0x41 ||
       type.charCodeAt(2) > 0x5a
-    ) fail("PNG_INVALID", "PNG chunk type 또는 reserved bit가 올바르지 않습니다.");
+    ) fail("PNG_INVALID", "pngChunkTypeInvalid");
     if (
       type.charCodeAt(0) >= 0x41 &&
       type.charCodeAt(0) <= 0x5a &&
       !PNG_CRITICAL_CHUNKS.has(type)
-    ) fail("PNG_INVALID", "지원하지 않는 PNG critical chunk가 있습니다.");
+    ) fail("PNG_INVALID", "pngUnsupportedCriticalChunk");
     if (await crc32(bytes, typeOffset, dataEnd, signal) !== view.getUint32(crcOffset, false)) {
-      fail("PNG_INVALID", "PNG chunk CRC가 올바르지 않습니다.");
+      fail("PNG_INVALID", "pngChunkCrcMismatch");
     }
 
     if (!sawIhdr) {
       if (type !== "IHDR" || length !== PNG_IHDR_DATA_BYTES) {
-        fail("PNG_INVALID", "PNG의 첫 chunk는 단일 13바이트 IHDR여야 합니다.");
+        fail("PNG_INVALID", "pngFirstChunkNotIhdr");
       }
       width = view.getUint32(dataOffset, false);
       height = view.getUint32(dataOffset + 4, false);
@@ -599,21 +607,21 @@ async function verifyPng(
         compression !== 0 ||
         filter !== 0 ||
         (interlace !== 0 && interlace !== 1)
-      ) fail("PNG_INVALID", "PNG IHDR 값이 표준 PNG profile과 일치하지 않습니다.");
+      ) fail("PNG_INVALID", "pngIhdrProfileMismatch");
       if (
         (expectedWidth !== undefined && width !== expectedWidth) ||
         (expectedHeight !== undefined && height !== expectedHeight)
-      ) fail("DIMENSION_MISMATCH", "PNG IHDR 해상도가 encoder 영수증과 일치하지 않습니다.");
+      ) fail("DIMENSION_MISMATCH", "pngIhdrDimensionMismatch");
       if (width > limits.maxWidth || height > limits.maxHeight) {
-        fail("DIMENSION_LIMIT_EXCEEDED", "PNG IHDR 해상도가 축별 안전 한도를 초과했습니다.");
+        fail("DIMENSION_LIMIT_EXCEEDED", "pngDimensionLimitExceeded");
       }
       const pixels = width * height;
       if (!Number.isSafeInteger(pixels) || pixels > limits.maxPixels) {
-        fail("PIXEL_LIMIT_EXCEEDED", "PNG IHDR 픽셀 수가 안전 예산을 초과했습니다.");
+        fail("PIXEL_LIMIT_EXCEEDED", "pngPixelLimitExceeded");
       }
       sawIhdr = true;
     } else if (type === "IHDR") {
-      fail("PNG_INVALID", "PNG에 IHDR chunk가 중복되었습니다.");
+      fail("PNG_INVALID", "pngDuplicateIhdr");
     } else if (type === "PLTE") {
       const paletteEntries = length / 3;
       if (
@@ -625,23 +633,23 @@ async function verifyPng(
         length > 768 ||
         length % 3 !== 0 ||
         (colorType === 3 && paletteEntries > 2 ** bitDepth)
-      ) fail("PNG_INVALID", "PNG PLTE chunk의 순서, 색상 profile 또는 길이가 올바르지 않습니다.");
+      ) fail("PNG_INVALID", "pngPlteInvalid");
       sawPlte = true;
     } else if (type === "IDAT") {
       if (endedIdat || length < 1) {
-        fail("PNG_INVALID", "PNG IDAT chunk가 비었거나 연속 순서를 벗어났습니다.");
+        fail("PNG_INVALID", "pngIdatSequenceInvalid");
       }
       if (colorType === 3 && !sawPlte) {
-        fail("PNG_INVALID", "Indexed PNG에는 IDAT 앞에 PLTE가 필요합니다.");
+        fail("PNG_INVALID", "pngPlteMissingForIndexed");
       }
       sawIdat = true;
       totalIdatBytes += length;
       if (!Number.isSafeInteger(totalIdatBytes) || totalIdatBytes > bytes.byteLength) {
-        fail("PNG_INVALID", "PNG IDAT 합계가 안전 범위를 벗어났습니다.");
+        fail("PNG_INVALID", "pngIdatTotalExceeded");
       }
     } else if (type === "IEND") {
       if (!sawIdat || length !== 0 || sawIend || nextOffset !== bytes.byteLength) {
-        fail("PNG_INVALID", "PNG IEND 또는 trailing bytes가 올바르지 않습니다.");
+        fail("PNG_INVALID", "pngIendInvalid");
       }
       sawIend = true;
     } else if (sawIdat) {
@@ -655,7 +663,7 @@ async function verifyPng(
     !sawIend ||
     totalIdatBytes < 1 ||
     offset !== bytes.byteLength
-  ) fail("PNG_INVALID", "PNG에 완전한 IHDR/IDAT/IEND 구조가 없습니다.");
+  ) fail("PNG_INVALID", "pngStructureIncomplete");
   return { width, height };
 }
 
@@ -666,21 +674,21 @@ async function sha256(
   throwIfAborted(signal);
   const subtle = globalThis.crypto?.subtle;
   if (!subtle || typeof subtle.digest !== "function") {
-    fail("CRYPTO_UNAVAILABLE", "이 브라우저에서는 PNG SHA-256 무결성을 확인할 수 없습니다.");
+    fail("CRYPTO_UNAVAILABLE", "cryptoUnavailable");
   }
   let digest: ArrayBuffer;
   try {
     digest = await awaitWithAbort(subtle.digest("SHA-256", bytes), signal);
   } catch (cause) {
     if (isAbortError(cause)) throw abortError();
-    fail("HASH_FAILED", "PNG SHA-256 계산에 실패했습니다.", cause);
+    fail("HASH_FAILED", "hashComputeFailed", undefined, cause);
   }
   throwIfAborted(signal);
   const hex = Array.from(
     new Uint8Array(digest),
     (byte) => byte.toString(16).padStart(2, "0"),
   ).join("");
-  if (hex.length !== 64) fail("HASH_FAILED", "PNG SHA-256 결과 길이가 올바르지 않습니다.");
+  if (hex.length !== 64) fail("HASH_FAILED", "hashResultLengthInvalid");
   return `sha256:${hex}`;
 }
 
@@ -688,7 +696,7 @@ export function studioVrmTexturePaintArtifactArchivePath(
   contentHash: StudioVrmTexturePaintArtifactHash,
 ): string {
   if (!CONTENT_HASH_PATTERN.test(contentHash)) {
-    fail("METADATA_INVALID", "VRM 표면 페인팅 contentHash 형식이 올바르지 않습니다.");
+    fail("METADATA_INVALID", "contentHashFormatInvalid");
   }
   return `artifacts/vrm-texture-paint/${contentHash.slice("sha256:".length)}.png`;
 }
@@ -737,7 +745,7 @@ function parseMetadata(value: unknown): StudioVrmTexturePaintArtifactMetadata {
     "byteLength",
     "width",
     "height",
-  ])) fail("METADATA_INVALID", "VRM 표면 페인팅 artifact metadata 구조가 올바르지 않습니다.");
+  ])) fail("METADATA_INVALID", "metadataStructureInvalid");
 
   const {
     schemaVersion,
@@ -762,7 +770,7 @@ function parseMetadata(value: unknown): StudioVrmTexturePaintArtifactMetadata {
     (width as number) < 1 ||
     !Number.isSafeInteger(height) ||
     (height as number) < 1
-  ) fail("METADATA_INVALID", "VRM 표면 페인팅 artifact metadata 값이 올바르지 않습니다.");
+  ) fail("METADATA_INVALID", "metadataValueInvalid");
   return canonicalMetadata(
     bindingKey,
     contentHash as StudioVrmTexturePaintArtifactHash,
@@ -777,14 +785,14 @@ function assertMetadataBudgets(
   limits: StudioVrmTexturePaintArtifactLimits,
 ): void {
   if (metadata.byteLength > limits.maxArtifactBytes) {
-    fail("BYTE_LIMIT_EXCEEDED", "저장된 PNG metadata가 개별 바이트 예산을 초과했습니다.");
+    fail("BYTE_LIMIT_EXCEEDED", "metadataByteLimitExceeded");
   }
   if (metadata.width > limits.maxWidth || metadata.height > limits.maxHeight) {
-    fail("DIMENSION_LIMIT_EXCEEDED", "저장된 PNG metadata가 축별 해상도 한도를 초과했습니다.");
+    fail("DIMENSION_LIMIT_EXCEEDED", "metadataDimensionLimitExceeded");
   }
   const pixels = metadata.width * metadata.height;
   if (!Number.isSafeInteger(pixels) || pixels > limits.maxPixels) {
-    fail("PIXEL_LIMIT_EXCEEDED", "저장된 PNG metadata가 픽셀 예산을 초과했습니다.");
+    fail("PIXEL_LIMIT_EXCEEDED", "metadataPixelLimitExceeded");
   }
 }
 
@@ -860,7 +868,7 @@ async function artifactFromPrepared(
   );
   const contentHash = await sha256(prepared.bytes, signal);
   if (expectedMetadata && contentHash !== expectedMetadata.contentHash) {
-    fail("HASH_MISMATCH", "저장된 VRM 표면 페인팅 PNG SHA-256이 metadata와 다릅니다.");
+    fail("HASH_MISMATCH", "storedHashMismatch");
   }
   const metadata = canonicalMetadata(
     bindingKey,
@@ -870,7 +878,7 @@ async function artifactFromPrepared(
     dimensions.height,
   );
   if (expectedMetadata && !metadataMatches(metadata, expectedMetadata)) {
-    fail("DIMENSION_MISMATCH", "저장된 VRM 표면 페인팅 PNG receipt가 metadata와 다릅니다.");
+    fail("DIMENSION_MISMATCH", "storedReceiptMismatch");
   }
   return registerVerifiedBlobArtifact(metadata, prepared.blob);
 }
@@ -884,7 +892,7 @@ export async function createStudioVrmTexturePaintArtifact(
 ): Promise<StudioVrmTexturePaintArtifact> {
   const limits = resolveLimits(options.limits);
   if (!isPlainDataRecord(input)) {
-    fail("SOURCE_INVALID", "VRM 표면 페인팅 artifact 입력이 올바르지 않습니다.");
+    fail("SOURCE_INVALID", "artifactInputInvalid");
   }
   assertBindingKey(input.bindingKey);
   assertExpectedDimension(input.expectedWidth);
@@ -916,7 +924,7 @@ export async function verifyStudioVrmTexturePaintArtifact(
   if (verified) return verified;
   const prepared = await prepareSource(source, limits, options.signal);
   if (prepared.bytes.byteLength !== metadata.byteLength) {
-    fail("HASH_MISMATCH", "저장된 VRM 표면 페인팅 PNG 바이트 수가 metadata와 다릅니다.");
+    fail("HASH_MISMATCH", "storedByteLengthMismatch");
   }
   return artifactFromPrepared(
     metadata.bindingKey,
@@ -939,26 +947,20 @@ function assertReadableImage(
     value.height !== metadata.height ||
     !(value.data instanceof Uint8ClampedArray)
   ) {
-    fail(
-      "DECODE_DIMENSION_MISMATCH",
-      "디코딩한 VRM 표면 페인팅 RGBA8 이미지가 PNG metadata와 일치하지 않습니다.",
-    );
+    fail("DECODE_DIMENSION_MISMATCH", "decodedImageMetadataMismatch");
   }
   const expectedBytes = metadata.width * metadata.height * 4;
   if (
     !Number.isSafeInteger(expectedBytes) ||
     value.data.byteLength !== expectedBytes
   ) {
-    fail(
-      "DECODE_DIMENSION_MISMATCH",
-      "디코딩한 VRM 표면 페인팅 RGBA8 바이트 수가 PNG 해상도와 일치하지 않습니다.",
-    );
+    fail("DECODE_DIMENSION_MISMATCH", "decodedImageByteLengthMismatch");
   }
 }
 
 function defaultCanvas(width: number, height: number): HTMLCanvasElement {
   if (typeof document !== "object" || typeof document.createElement !== "function") {
-    fail("DECODE_UNAVAILABLE", "이 환경에서는 PNG를 RGBA8 이미지로 디코딩할 수 없습니다.");
+    fail("DECODE_UNAVAILABLE", "decodeEnvironmentUnavailable");
   }
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -973,13 +975,13 @@ async function decodeWithBrowserCanvas(
 ): Promise<StudioVrmTexturePaintArtifactReadableImage> {
   const createBitmap = dependencies?.createImageBitmap ?? globalThis.createImageBitmap;
   if (typeof createBitmap !== "function") {
-    fail("DECODE_UNAVAILABLE", "이 브라우저에서는 PNG ImageBitmap 디코더를 사용할 수 없습니다.");
+    fail("DECODE_UNAVAILABLE", "imageBitmapDecoderUnavailable");
   }
   let bitmapPromise: Promise<ImageBitmap>;
   try {
     bitmapPromise = Promise.resolve(createBitmap(artifact.archiveEntry.data));
   } catch (cause) {
-    fail("DECODE_FAILED", "VRM 표면 페인팅 PNG 디코더를 시작하지 못했습니다.", cause);
+    fail("DECODE_FAILED", "decoderStartFailed", undefined, cause);
   }
   let bitmap: ImageBitmap;
   try {
@@ -989,7 +991,7 @@ async function decodeWithBrowserCanvas(
     // allowing it to mutate current state after the request has been cancelled.
     void bitmapPromise.then((lateBitmap) => lateBitmap.close(), () => undefined);
     if (isAbortError(cause)) throw abortError();
-    fail("DECODE_FAILED", "VRM 표면 페인팅 PNG를 디코딩하지 못했습니다.", cause);
+    fail("DECODE_FAILED", "decodeFailed", undefined, cause);
   }
   try {
     throwIfAborted(signal);
@@ -997,17 +999,14 @@ async function decodeWithBrowserCanvas(
       bitmap.width !== artifact.metadata.width ||
       bitmap.height !== artifact.metadata.height
     ) {
-      fail(
-        "DECODE_DIMENSION_MISMATCH",
-        "디코딩한 PNG 해상도가 검증된 IHDR과 일치하지 않습니다.",
-      );
+      fail("DECODE_DIMENSION_MISMATCH", "decodedDimensionMismatch");
     }
     const canvas = (dependencies?.createCanvas ?? defaultCanvas)(
       artifact.metadata.width,
       artifact.metadata.height,
     );
     if (!(canvas instanceof HTMLCanvasElement)) {
-      fail("DECODE_UNAVAILABLE", "PNG 디코딩 canvas factory가 올바르지 않습니다.");
+      fail("DECODE_UNAVAILABLE", "decodeCanvasFactoryInvalid");
     }
     canvas.width = artifact.metadata.width;
     canvas.height = artifact.metadata.height;
@@ -1017,7 +1016,7 @@ async function decodeWithBrowserCanvas(
       willReadFrequently: true,
     });
     if (!context) {
-      fail("DECODE_UNAVAILABLE", "PNG RGBA8 canvas context를 만들 수 없습니다.");
+      fail("DECODE_UNAVAILABLE", "decodeCanvasContextUnavailable");
     }
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(bitmap, 0, 0);
@@ -1033,7 +1032,7 @@ async function decodeWithBrowserCanvas(
   } catch (cause) {
     if (cause instanceof StudioVrmTexturePaintArtifactError) throw cause;
     if (isAbortError(cause)) throw abortError();
-    fail("DECODE_FAILED", "VRM 표면 페인팅 PNG의 RGBA8 픽셀을 읽지 못했습니다.", cause);
+    fail("DECODE_FAILED", "decodedPixelsReadFailed", undefined, cause);
   } finally {
     bitmap.close();
   }
@@ -1068,7 +1067,7 @@ export async function decodeStudioVrmTexturePaintArtifact(
   } catch (cause) {
     if (cause instanceof StudioVrmTexturePaintArtifactError) throw cause;
     if (isAbortError(cause)) throw abortError();
-    fail("DECODE_FAILED", "VRM 표면 페인팅 PNG RGBA8 디코더가 실패했습니다.", cause);
+    fail("DECODE_FAILED", "customDecoderFailed", undefined, cause);
   }
   throwIfAborted(options.signal);
   assertReadableImage(result, artifact.metadata);
@@ -1116,10 +1115,10 @@ function checkedAdd(
     | "AGGREGATE_BYTE_LIMIT_EXCEEDED"
     | "AGGREGATE_PIXEL_LIMIT_EXCEEDED"
     | "ARTIFACT_COUNT_LIMIT_EXCEEDED",
-  message: string,
+  detail: StudioVrmTexturePaintArtifactErrorDetail,
 ): number {
   const result = current + increment;
-  if (!Number.isSafeInteger(result) || result > maximum) fail(code, message);
+  if (!Number.isSafeInteger(result) || result > maximum) fail(code, detail);
   return result;
 }
 
@@ -1133,10 +1132,10 @@ export async function buildStudioVrmTexturePaintArtifactBundle(
 ): Promise<StudioVrmTexturePaintArtifactBundle> {
   const limits = resolveLimits(options.limits);
   if (!Array.isArray(inputValues)) {
-    fail("SOURCE_INVALID", "VRM 표면 페인팅 artifact 목록이 배열이 아닙니다.");
+    fail("SOURCE_INVALID", "bundleInputNotArray");
   }
   if (inputValues.length > limits.maxBindings) {
-    fail("ARTIFACT_COUNT_LIMIT_EXCEEDED", "VRM 표면 페인팅 binding 수가 안전 한도를 초과했습니다.");
+    fail("ARTIFACT_COUNT_LIMIT_EXCEEDED", "bindingCountLimitExceeded");
   }
   throwIfAborted(options.signal);
 
@@ -1145,7 +1144,7 @@ export async function buildStudioVrmTexturePaintArtifactBundle(
   // Snapshot every mutable byte view synchronously before the first await.
   for (const input of inputValues) {
     if (!isPlainDataRecord(input)) {
-      fail("SOURCE_INVALID", "VRM 표면 페인팅 artifact 입력이 올바르지 않습니다.");
+      fail("SOURCE_INVALID", "artifactInputInvalid");
     }
     assertBindingKey(input.bindingKey);
     assertExpectedDimension(input.expectedWidth);
@@ -1156,7 +1155,7 @@ export async function buildStudioVrmTexturePaintArtifactBundle(
       input.source instanceof Blob ? input.source.size : input.source.byteLength,
       limits.maxAggregateBytes,
       "AGGREGATE_BYTE_LIMIT_EXCEEDED",
-      "VRM 표면 페인팅 입력 PNG 합계가 안전 예산을 초과했습니다.",
+      "inputAggregateByteLimitExceeded",
     );
     snapshots.push({
       bindingKey: input.bindingKey,
@@ -1198,10 +1197,7 @@ export async function buildStudioVrmTexturePaintArtifactBundle(
     const existingBinding = bindings.get(artifact.metadata.bindingKey);
     if (existingBinding) {
       if (!metadataMatches(existingBinding, artifact.metadata)) {
-        fail(
-          "BINDING_CONFLICT",
-          "하나의 VRM 표면 bindingKey가 서로 다른 PNG를 가리킵니다.",
-        );
+        fail("BINDING_CONFLICT", "bindingContentConflict");
       }
       continue;
     }
@@ -1214,25 +1210,25 @@ export async function buildStudioVrmTexturePaintArtifactBundle(
         existingEntry.height !== artifact.archiveEntry.height ||
         existingEntry.mimeType !== artifact.archiveEntry.mimeType
       )
-    ) fail("CONTENT_CONFLICT", "동일한 SHA-256 PNG의 무결성 receipt가 서로 충돌합니다.");
+    ) fail("CONTENT_CONFLICT", "contentReceiptConflict");
 
     if (!existingEntry) {
       if (entries.size >= limits.maxArtifacts) {
-        fail("ARTIFACT_COUNT_LIMIT_EXCEEDED", "고유 PNG artifact 수가 안전 한도를 초과했습니다.");
+        fail("ARTIFACT_COUNT_LIMIT_EXCEEDED", "uniqueArtifactCountLimitExceeded");
       }
       totalBytes = checkedAdd(
         totalBytes,
         artifact.archiveEntry.byteLength,
         limits.maxAggregateBytes,
         "AGGREGATE_BYTE_LIMIT_EXCEEDED",
-        "고유 VRM 표면 페인팅 PNG 합계가 안전 예산을 초과했습니다.",
+        "uniqueAggregateByteLimitExceeded",
       );
       totalPixels = checkedAdd(
         totalPixels,
         artifact.archiveEntry.width * artifact.archiveEntry.height,
         limits.maxAggregatePixels,
         "AGGREGATE_PIXEL_LIMIT_EXCEEDED",
-        "고유 VRM 표면 페인팅 PNG의 decoded 픽셀 합계가 안전 예산을 초과했습니다.",
+        "uniqueAggregatePixelLimitExceeded",
       );
       entries.set(artifact.metadata.contentHash, artifact.archiveEntry);
     }
@@ -1251,7 +1247,7 @@ function parseManifest(
     value.kind !== MANIFEST_KIND ||
     !Array.isArray(value.bindings) ||
     value.bindings.length > limits.maxBindings
-  ) fail("MANIFEST_INVALID", "VRM 표면 페인팅 artifact manifest가 올바르지 않습니다.");
+  ) fail("MANIFEST_INVALID", "manifestInvalid");
 
   const bindings: StudioVrmTexturePaintArtifactMetadata[] = [];
   const bindingKeys = new Map<string, StudioVrmTexturePaintArtifactMetadata>();
@@ -1266,12 +1262,9 @@ function parseManifest(
     assertMetadataBudgets(metadata, limits);
     const existingBinding = bindingKeys.get(metadata.bindingKey);
     if (existingBinding) {
-      fail(
-        "BINDING_CONFLICT",
-        metadataMatches(existingBinding, metadata)
-          ? "VRM 표면 페인팅 manifest에 bindingKey가 중복되었습니다."
-          : "VRM 표면 페인팅 manifest의 bindingKey가 서로 다른 PNG를 가리킵니다.",
-      );
+      fail("BINDING_CONFLICT", metadataMatches(existingBinding, metadata)
+        ? "manifestBindingKeyDuplicated"
+        : "manifestBindingKeyContentConflict");
     }
     const existingContent = contentReceipts.get(metadata.contentHash);
     if (
@@ -1282,24 +1275,24 @@ function parseManifest(
         existingContent.height !== metadata.height ||
         existingContent.mimeType !== metadata.mimeType
       )
-    ) fail("CONTENT_CONFLICT", "동일한 SHA-256 PNG metadata가 서로 충돌합니다.");
+    ) fail("CONTENT_CONFLICT", "manifestContentConflict");
     if (!existingContent) {
       if (contentReceipts.size >= limits.maxArtifacts) {
-        fail("ARTIFACT_COUNT_LIMIT_EXCEEDED", "고유 PNG artifact 수가 안전 한도를 초과했습니다.");
+        fail("ARTIFACT_COUNT_LIMIT_EXCEEDED", "uniqueArtifactCountLimitExceeded");
       }
       totalBytes = checkedAdd(
         totalBytes,
         metadata.byteLength,
         limits.maxAggregateBytes,
         "AGGREGATE_BYTE_LIMIT_EXCEEDED",
-        "VRM 표면 페인팅 manifest 바이트 합계가 안전 예산을 초과했습니다.",
+        "manifestAggregateByteLimitExceeded",
       );
       totalPixels = checkedAdd(
         totalPixels,
         metadata.width * metadata.height,
         limits.maxAggregatePixels,
         "AGGREGATE_PIXEL_LIMIT_EXCEEDED",
-        "VRM 표면 페인팅 manifest의 decoded 픽셀 합계가 안전 예산을 초과했습니다.",
+        "manifestAggregatePixelLimitExceeded",
       );
       contentReceipts.set(metadata.contentHash, metadata);
     }
@@ -1323,7 +1316,7 @@ export async function rehydrateStudioVrmTexturePaintArtifactManifest(
   if (
     !isPlainDataRecord(resolver) ||
     typeof resolver.resolve !== "function"
-  ) fail("RESOLVER_INVALID", "VRM 표면 페인팅 artifact resolver가 올바르지 않습니다.");
+  ) fail("RESOLVER_INVALID", "resolverInvalid");
   throwIfAborted(options.signal);
 
   const bindings = new Map<string, StudioVrmTexturePaintArtifactMetadata>();
@@ -1345,11 +1338,11 @@ export async function rehydrateStudioVrmTexturePaintArtifactManifest(
     } catch (cause) {
       if (cause instanceof StudioVrmTexturePaintArtifactError) throw cause;
       if (isAbortError(cause)) throw abortError();
-      fail("RESOLVE_FAILED", "VRM 표면 페인팅 PNG를 artifact 저장소에서 읽지 못했습니다.", cause);
+      fail("RESOLVE_FAILED", "resolveFailed", undefined, cause);
     }
     throwIfAborted(options.signal);
     if (source === null) {
-      fail("ARTIFACT_MISSING", "VRM 표면 페인팅 PNG가 artifact 저장소에 없습니다.");
+      fail("ARTIFACT_MISSING", "artifactMissing");
     }
     const artifact = await verifyStudioVrmTexturePaintArtifact(
       metadata,
@@ -1361,14 +1354,14 @@ export async function rehydrateStudioVrmTexturePaintArtifactManifest(
       artifact.archiveEntry.byteLength,
       limits.maxAggregateBytes,
       "AGGREGATE_BYTE_LIMIT_EXCEEDED",
-      "재복원한 VRM 표면 페인팅 PNG 합계가 안전 예산을 초과했습니다.",
+      "rehydratedAggregateByteLimitExceeded",
     );
     totalPixels = checkedAdd(
       totalPixels,
       artifact.archiveEntry.width * artifact.archiveEntry.height,
       limits.maxAggregatePixels,
       "AGGREGATE_PIXEL_LIMIT_EXCEEDED",
-      "재복원한 VRM 표면 페인팅 PNG의 decoded 픽셀 합계가 안전 예산을 초과했습니다.",
+      "rehydratedAggregatePixelLimitExceeded",
     );
     entries.set(metadata.contentHash, artifact.archiveEntry);
   }

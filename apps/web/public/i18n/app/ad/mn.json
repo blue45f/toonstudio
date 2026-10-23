@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "ad.slotAriaLabel": "Advertising slot",
-  "ad.slotLabel": "️️️️️️️️️️️️️️️️️️️️",
-  "ad.slotTitle": "Sponsored content",
-  "ad.ctaDetails": "View details",
-  "ad.placeholderAriaLabel": "Ad placeholder",
-  "ad.placeholderText": "️️️️️️️️️️️",
-  "ad.tag": "Ad"
+  "ad.creativeFallbackAlt": "Ивээн тэтгэсэн зураг",
+  "ad.slotAriaLabel": "Зар сурталчилгааны хэсэг",
+  "ad.slotLabel": "Ивээн тэтгэсэн",
+  "ad.slotTitle": "Ивээн тэтгэсэн агуулга",
+  "ad.ctaDetails": "Дэлгэрэнгүйг харах",
+  "ad.placeholderAriaLabel": "Зар сурталчилгааны орлуулагч",
+  "ad.placeholderText": "Ивээн тэтгэсэн агуулга алга.",
+  "ad.tag": "Зар"
 }

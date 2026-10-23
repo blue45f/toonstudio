@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Qo'llab-quvvatlanmagan rasm turi.",
-  "avatar.error.processFailed": "Rasmni qayta ishlashda muvaffaqiyatsiz tugadi.",
-  "avatar.processing": "Ishlab chiqish...",
+  "avatar.error.invalidType": "Qoʻllab-quvvatlanmagan rasm turi.",
+  "avatar.error.processFailed": "Rasmni qayta ishlab boʻlmadi. Boshqa rasm bilan yana urinib koʻring.",
+  "avatar.processing": "Qayta ishlanmoqda…",
   "avatar.select": "Rasmni oʻzgartirish",
   "avatar.remove": "Rasmni olib tashlash",
-  "avatar.uploadHint": "Faqat JPG, PNG va WEBP rasmlari qo'llab-quvvatlanadi, so'ngra oldindan ko'rish uchun kesiladi.",
+  "avatar.uploadHint": "Faqat JPG, PNG va WEBP rasmlari qoʻllab-quvvatlanadi, soʻngra oldindan koʻrish uchun kesiladi.",
   "avatar.changeAria": "Profil rasmini oʻzgartirish"
 }

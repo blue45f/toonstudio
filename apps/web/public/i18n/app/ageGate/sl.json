@@ -2,16 +2,16 @@
   "ageGate.title": "Preverjanje vsebine za odrasle",
   "ageGate.description": "Vnesite datum rojstva, da preverite, da ste stari 19 let ali več.",
   "ageGate.birthDateLabel": "Datum rojstva",
-  "ageGate.birthYearLabel": "Leta rojstva",
-  "ageGate.birthYearPlaceholder": "Leta",
+  "ageGate.birthYearLabel": "Leto rojstva",
+  "ageGate.birthYearPlaceholder": "Leto",
   "ageGate.birthMonthLabel": "Mesec rojstva",
   "ageGate.birthMonthPlaceholder": "Mesec",
-  "ageGate.birthDayLabel": "rojstni dan",
+  "ageGate.birthDayLabel": "Dan rojstva",
   "ageGate.birthDayPlaceholder": "Dan",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Nisi izpolnil starostne zahteve.",
-  "ageGate.cancel": "Odpoved",
-  "ageGate.confirm": "Potrdite"
+  "ageGate.deniedMessage": "Niste izpolnili starostne zahteve.",
+  "ageGate.cancel": "Prekliči",
+  "ageGate.confirm": "Potrdi"
 }

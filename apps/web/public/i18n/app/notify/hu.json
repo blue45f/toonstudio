@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Nem tudtam feltölteni a bejelentéseket.",
+  "notify.loadError": "Nem sikerült betölteni az értesítéseket. Próbáld újra egy pillanat múlva.",
   "notify.empty": "Nincs új értesítés."
 }

@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "Գրողի հրատարակագիր",
+  "authors.eyebrow": "ՀԵՂԻՆԱԿՆԵՐԻ ՏԵՂԵԿԱՏՈՒ",
   "authors.title": "Գրողներ",
   "authors.desc": "Հեղինակները դասակարգվում են ըստ ստեղծագործությունների քանակի: Կտտացրեք հեղինակին, որպեսզի մի վայրում տեսնեք նրանց տիտղոսները, վարկանիշները եւ երկրպագուների սրճարանը:",
   "authors.search": "Փնտրեք հեղինակի անունը",
-  "authors.error": "Չկարողացա բեռնել հեղինակների ցուցակը:",
-  "authors.empty": "ոչ մի համապատասխան հեղինակ:",
-  "authors.allOf": "բ)",
+  "authors.error": "Չհաջողվեց բեռնել հեղինակների ցանկը։ Խնդրում ենք մի փոքր անց կրկին փորձել։",
+  "authors.empty": " — համապատասխան հեղինակ չկա։",
+  "authors.allOf": "ից",
   "authors.topOf": "· վերեւում",
   "authors.people": "",
-  "authors.works": "աշխատանքներ",
-  "authors.views": "տեսանկյուններ",
+  "authors.works": " աշխատանք",
+  "authors.views": "դիտումներ",
   "authors.pencafe": "Ստեղծիչների երկրպագուների սրճարան",
-  "authors.stats": "Top {shown} {total} հեղինակներից",
-  "authors.noName": "Արարիչը"
+  "authors.stats": "Լավագույն {shown}-ը {total} հեղինակներից",
+  "authors.noName": "Հեղինակ"
 }

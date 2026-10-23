@@ -1,6 +1,6 @@
 {
   "app.name": "ToonStudio",
-  "app.brandBeta": "Beta-tjenesten  data og funksjoner kan endres",
-  "app.loading": "Lasting",
-  "app.skipToContent": "Skip to main content"
+  "app.brandBeta": "Betatjeneste — data og funksjoner kan endres",
+  "app.loading": "Laster …",
+  "app.skipToContent": "Hopp til hovedinnhold"
 }

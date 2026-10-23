@@ -26,6 +26,7 @@ import type { StudioBg3dShot } from "./studio-bg3d-scene-document";
 import { formatNumber } from "@toonstudio/core/format";
 
 import { bg3dPanelStatusText } from "../studio-bg3d-panel-status-i18n";
+import { resolveStudioBg3dShotBatchRecoveryDegradedReason } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 
 const PRESET_LABELS: Readonly<Record<StudioBg3dProductionBatchPreset, string>> = Object.freeze({
   review: "검수",
@@ -353,7 +354,7 @@ export function StudioBg3dProductionMultiPassExporterPanel({
               {batch.recoverySummary.mode === "durable" ? " 복구 저장소" : " 현재 탭 메모리"}
               {batch.recoverySummary.downloadRequested ? " · 다운로드 이력 보존" : ""}
               {batch.recoverySummary.degradedReason
-                ? ` · ${batch.recoverySummary.degradedReason}`
+                ? ` · ${resolveStudioBg3dShotBatchRecoveryDegradedReason(batch.recoverySummary.degradedReason)}`
                 : ""}
             </p>
           </div>

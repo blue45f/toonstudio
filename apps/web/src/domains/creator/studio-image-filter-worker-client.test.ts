@@ -7,6 +7,7 @@ import {
   runStudioImageFilterWorker,
   type StudioImageFilterWorkerLike,
 } from "./studio-image-filter-worker-client";
+import { StudioImageFilterWorkerError } from "./studio-image-filter-worker-error";
 import {
   studioImageFilterSourceSuccessTransfers,
   studioImageFilterSuccessTransfers,
@@ -35,6 +36,13 @@ function makeImageData(width: number, height: number): { data: Uint8ClampedArray
 
 function requestFixture(el: ImageFilterFields = { brightness: 0.3, contrast: 20 }): StudioImageFilterWorkerRunRequest {
   return { imageData: makeImageData(3, 2), el };
+}
+
+async function rejectionOf(pending: Promise<unknown>): Promise<unknown> {
+  return pending.then(
+    () => { throw new Error("expected rejection"); },
+    (error: unknown) => error,
+  );
 }
 
 const testRegistry: KonvaLike = { Filters: {} };
@@ -129,6 +137,35 @@ class FailingWorker extends HangingWorker {
           version: 1,
           error: { name: "RangeError", message: "boom" },
         },
+      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+    });
+  }
+}
+
+class CodedFailingWorker extends HangingWorker {
+  override postMessage(): void {
+    queueMicrotask(() => {
+      this.onmessage?.({
+        data: {
+          type: "studio-image-filter/failure",
+          version: 1,
+          error: {
+            name: "StudioImageFilterWorkerError",
+            message: "protocolBufferLengthMismatch",
+            code: "protocolBufferLengthMismatch",
+            params: { label: "이미지 필터 입력" },
+          },
+        },
+      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+    });
+  }
+}
+
+class MalformedFailureWorker extends HangingWorker {
+  override postMessage(): void {
+    queueMicrotask(() => {
+      this.onmessage?.({
+        data: { type: "studio-image-filter/failure", version: 1 },
       } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
@@ -336,11 +373,12 @@ describe("runStudioImageFilterWorker", () => {
   });
 
   it.each([
-    ["worker unavailable", null],
-    ["worker postMessage failure", () => new ThrowingPostWorker()],
+    ["worker unavailable", null, "workerUnavailable"],
+    ["worker postMessage failure", () => new ThrowingPostWorker(), "requestPostFailed"],
   ] as const)("%s rejects without running an expensive advanced blur on the main thread", async (
     _label,
     workerFactory,
+    expectedCode,
   ) => {
     const width = 50_000;
     const request: StudioImageFilterWorkerRunRequest = {
@@ -356,15 +394,20 @@ describe("runStudioImageFilterWorker", () => {
     };
 
     await expect(runStudioImageFilterWorker(request, { workerFactory }))
-      .rejects.toMatchObject({ name: "StudioImageFilterWorkerUnavailableError" });
+      .rejects.toMatchObject({
+        name: "StudioImageFilterWorkerUnavailableError",
+        code: expectedCode,
+        message: expectedCode,
+      });
   });
 
   it.each([
-    ["worker unavailable", null],
-    ["worker postMessage failure", () => new ThrowingPostWorker()],
+    ["worker unavailable", null, "workerUnavailable"],
+    ["worker postMessage failure", () => new ThrowingPostWorker(), "requestPostFailed"],
   ] as const)("%s rejects without running an expensive professional filter on the main thread", async (
     _label,
     workerFactory,
+    expectedCode,
   ) => {
     const width = 120_000;
     const request: StudioImageFilterWorkerRunRequest = {
@@ -375,15 +418,20 @@ describe("runStudioImageFilterWorker", () => {
     };
 
     await expect(runStudioImageFilterWorker(request, { workerFactory }))
-      .rejects.toMatchObject({ name: "StudioImageFilterWorkerUnavailableError" });
+      .rejects.toMatchObject({
+        name: "StudioImageFilterWorkerUnavailableError",
+        code: expectedCode,
+        message: expectedCode,
+      });
   });
 
   it.each([
-    ["worker unavailable", null],
-    ["worker postMessage failure", () => new ThrowingPostWorker()],
+    ["worker unavailable", null, "workerUnavailable"],
+    ["worker postMessage failure", () => new ThrowingPostWorker(), "requestPostFailed"],
   ] as const)("%s rejects without running expensive tone cleanup on the main thread", async (
     _label,
     workerFactory,
+    expectedCode,
   ) => {
     const width = 400_000;
     const request: StudioImageFilterWorkerRunRequest = {
@@ -394,7 +442,11 @@ describe("runStudioImageFilterWorker", () => {
     };
 
     await expect(runStudioImageFilterWorker(request, { workerFactory }))
-      .rejects.toMatchObject({ name: "StudioImageFilterWorkerUnavailableError" });
+      .rejects.toMatchObject({
+        name: "StudioImageFilterWorkerUnavailableError",
+        code: expectedCode,
+        message: expectedCode,
+      });
   });
 
   it("projects an element-shaped source before direct execution and reads each filter field once", async () => {
@@ -733,7 +785,10 @@ describe("runStudioImageFilterWorker", () => {
     const worker = new ThrowingPostWorker();
 
     await expect(runStudioImageFilterWorker(request, { workerFactory: () => worker }))
-      .rejects.toMatchObject({ name: "StudioImageFilterWorkerUnavailableError" });
+      .rejects.toMatchObject({
+        name: "StudioImageFilterWorkerUnavailableError",
+        code: "requestPostFailed",
+      });
     expect(worker.terminateCount).toBe(1);
   });
 
@@ -741,17 +796,56 @@ describe("runStudioImageFilterWorker", () => {
     const request = requestFixture();
     const worker = new FailingWorker();
 
-    await expect(
+    const error = await rejectionOf(
       runStudioImageFilterWorker(request, { workerFactory: () => worker }),
-    ).rejects.toThrow("boom");
+    );
+    // 코드 없는 워커 오류는 현행 message 패스스루를 유지한다 (결정 2-A 하위 호환).
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(error).toMatchObject({ name: "RangeError", message: "boom" });
+  });
+
+  it("reconstitutes a coded worker failure as a structured error", async () => {
+    const worker = new CodedFailingWorker();
+
+    const error = await rejectionOf(
+      runStudioImageFilterWorker(requestFixture(), { workerFactory: () => worker }),
+    );
+
+    expect(error).toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(error).toMatchObject({
+      name: "StudioImageFilterWorkerError",
+      code: "protocolBufferLengthMismatch",
+      message: "protocolBufferLengthMismatch",
+      errorKind: "range",
+      params: { label: "이미지 필터 입력" },
+    });
+  });
+
+  it("rejects a malformed worker error envelope with a structured code", async () => {
+    const worker = new MalformedFailureWorker();
+
+    await expect(
+      runStudioImageFilterWorker(requestFixture(), { workerFactory: () => worker }),
+    ).rejects.toMatchObject({
+      name: "StudioImageFilterWorkerUnavailableError",
+      code: "errorResponseMalformed",
+    });
   });
 
   it("rejects on a worker load error before any request is posted", async () => {
     const request = requestFixture();
     const worker = new LoadErrorWorker();
 
-    await expect(runStudioImageFilterWorker(request, { workerFactory: () => worker }))
-      .rejects.toThrow("worker chunk failed to load");
+    const error = await rejectionOf(
+      runStudioImageFilterWorker(request, { workerFactory: () => worker }),
+    );
+    // 브라우저 Worker error 이벤트의 event.message는 코드 없이 패스스루된다 (잔존).
+    expect(error).not.toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(error).toMatchObject({
+      name: "StudioImageFilterWorkerUnavailableError",
+      message: "worker chunk failed to load",
+    });
     expect(worker.terminateCount).toBe(1);
   });
 
@@ -763,6 +857,7 @@ describe("runStudioImageFilterWorker", () => {
       const pending = runStudioImageFilterWorker(request, { workerFactory: () => worker });
       const rejection = expect(pending).rejects.toMatchObject({
         name: "StudioImageFilterWorkerUnavailableError",
+        code: "readyTimeout",
       });
 
       await vi.advanceTimersByTimeAsync(3_000);
@@ -776,14 +871,26 @@ describe("runStudioImageFilterWorker", () => {
 
   it("rejects malformed dimensions and oversized requests before constructing a worker", async () => {
     const constructed = vi.fn(() => new HangingWorker());
-    await expect(runStudioImageFilterWorker({
+    const bufferError = await rejectionOf(runStudioImageFilterWorker({
       imageData: { data: new Uint8ClampedArray(4), width: 2, height: 2 },
       el: {},
-    }, { workerFactory: constructed })).rejects.toThrow(/버퍼 길이/);
-    await expect(runStudioImageFilterWorker({
+    }, { workerFactory: constructed }));
+    expect(bufferError).toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(bufferError).toMatchObject({
+      code: "protocolBufferLengthMismatch",
+      errorKind: "range",
+      params: { label: "이미지 필터 입력" },
+    });
+    const limitError = await rejectionOf(runStudioImageFilterWorker({
       imageData: { data: new Uint8ClampedArray(4), width: 8193, height: 8193 },
       el: {},
-    }, { workerFactory: constructed })).rejects.toThrow(/안전 한도/);
+    }, { workerFactory: constructed }));
+    expect(limitError).toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(limitError).toMatchObject({
+      code: "protocolSizeOverLimit",
+      errorKind: "range",
+      params: { label: "이미지 필터 입력" },
+    });
     expect(constructed).not.toHaveBeenCalled();
   });
 
@@ -799,9 +906,15 @@ describe("runStudioImageFilterWorker", () => {
   it("rejects an invalid success payload and terminates the worker", async () => {
     const worker = new InvalidSuccessWorker();
 
-    await expect(runStudioImageFilterWorker(requestFixture(), {
+    const payloadError = await rejectionOf(runStudioImageFilterWorker(requestFixture(), {
       workerFactory: () => worker,
-    })).rejects.toThrow(/버퍼 길이/);
+    }));
+    expect(payloadError).toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(payloadError).toMatchObject({
+      code: "protocolBufferLengthMismatch",
+      errorKind: "range",
+      params: { label: "이미지 필터 Worker 결과" },
+    });
     expect(worker.terminateCount).toBe(1);
   });
 
@@ -817,7 +930,9 @@ describe("runStudioImageFilterWorker", () => {
     await Promise.resolve();
     controller.abort();
 
-    await expect(pending).rejects.toThrow(/취소/);
+    const abortError = await rejectionOf(pending);
+    expect(abortError).toMatchObject({ name: "AbortError" });
+    expect((abortError as Error).message).toContain("취소");
     expect(worker.terminateCount).toBe(1);
   });
 
@@ -845,6 +960,7 @@ describe("createStudioImageFilterWorkerSession", () => {
 
     await expect(session.run(requestFixture())).rejects.toMatchObject({
       name: "StudioImageFilterWorkerUnavailableError",
+      code: "workerUnavailable",
     });
     session.dispose();
   });
@@ -893,7 +1009,10 @@ describe("createStudioImageFilterResidentWorkerSession", () => {
     await expect(session.run(
       { imageData: source, el: { brightness: 0.2 } },
       { sourceRevision: "worker-required" },
-    )).rejects.toMatchObject({ name: "StudioImageFilterWorkerUnavailableError" });
+    )).rejects.toMatchObject({
+      name: "StudioImageFilterWorkerUnavailableError",
+      code: "workerUnavailable",
+    });
     expect(Array.from(source.data)).toEqual(before);
     session.dispose();
   });
@@ -1002,7 +1121,7 @@ describe("createStudioImageFilterResidentWorkerSession", () => {
       sourceGeneration: runMessage.sourceGeneration + 1,
     });
 
-    await expect(pending).rejects.toThrow(/오래되었거나 잘못된 필터 결과/);
+    await expect(pending).rejects.toMatchObject({ code: "staleFilterResult" });
     expect(worker.terminateCount).toBe(1);
   });
 
@@ -1092,7 +1211,10 @@ describe("createStudioImageFilterResidentWorkerSession", () => {
     expect(firstWorker.messages[1]?.type).toBe("studio-image-filter/run-source");
     firstWorker.onerror?.({ error: new Error("worker crashed"), preventDefault: vi.fn() });
 
-    await expect(first).rejects.toThrow("worker crashed");
+    const crashError = await rejectionOf(first);
+    // Worker error 이벤트의 Error 인스턴스는 코드 없이 그대로 전파된다 (잔존).
+    expect(crashError).not.toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(crashError).toMatchObject({ message: "worker crashed" });
     const second = session.run(request, { sourceRevision: 1 });
     await Promise.resolve();
 

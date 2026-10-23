@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "सृजित कृतियाँ",
   "userProfile.tabs.series": "श्रृंखला",
   "userProfile.works.empty": "इस उपयोगकर्ता के पास अभी तक कोई सार्वजनिक कार्य नहीं है।",
+  "userProfile.works.error": "बनाए गए कार्य लोड नहीं हो सके। कृपया फिर से प्रयास करें।",
   "userProfile.series.empty": "इस उपयोगकर्ता के पास अभी तक कोई श्रृंखला नहीं है।",
+  "userProfile.series.error": "श्रृंखला लोड नहीं हो सकी। कृपया फिर से प्रयास करें।",
   "userProfile.fetchError": "प्रोफ़ाइल लोड करने में असमर्थ।",
   "userProfile.authorFallback": "उपयोगकर्ता",
   "userProfile.metaTemplate": "{author} प्रोफ़ाइल · {reviews} समीक्षा · {works} कार्य · avg रेटिंग {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "प्रोफ़ाइल सामग्री",
   "userProfile.refresh": "ताज़ा करना",
   "userProfile.emptyReviews": "इस उपयोगकर्ता द्वारा अभी तक कोई समीक्षा प्रकाशित नहीं की गई है।",
-  "userProfile.works.error": "बनाए गए कार्य लोड नहीं हो सके। कृपया फिर से प्रयास करें।",
-  "userProfile.series.error": "श्रृंखला लोड नहीं हो सकी। कृपया फिर से प्रयास करें।",
   "userProfile.emptyReviewsHint": "अपने पसंदीदा शीर्षक पर पहली समीक्षा छोड़ें।",
   "userProfile.emptyReviewsCta": "शीर्षक ब्राउज़ करें"
 }

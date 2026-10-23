@@ -1,14 +1,14 @@
 {
   "control.language.label": "ভাষা",
+  "control.language.group.translated": "উচ্চ কভাৰেজ অনুবাদ",
+  "control.language.group.englishBase": "স্বয়ংক্ৰিয় অনুবাদ · ইংৰাজী বিকল্প",
   "control.sound.enable": "শব্দৰ প্ৰভাৱ সক্ষম কৰক",
   "control.sound.disable": "শব্দ প্ৰতিক্ৰিয়া নিষ্ক্ৰিয় কৰক",
-  "control.theme.dark": "লাইট মোডলৈ সঞ্চালন কৰক",
-  "control.theme.light": "অন্ধকাৰ মোডলৈ সলনি কৰক",
-  "control.settings.open": "খোলা ছেটিংছ",
-  "control.settings.close": "বন্ধ ছেটিংছ",
+  "control.theme.dark": "পোহৰ মোডলৈ সলনি কৰক",
+  "control.theme.light": "আন্ধাৰ মোডলৈ সলনি কৰক",
+  "control.settings.open": "ছেটিংছ খোলক",
+  "control.settings.close": "ছেটিংছ বন্ধ কৰক",
   "control.cluster.settings": "শব্দ, থিম, ভাষা নিয়ন্ত্ৰণ",
-  "control.cluster.open": "খোলা ছেটিংছ",
-  "control.cluster.tooltip": "শব্দ, বিষয়বস্তু আৰু ভাষাৰ ছেটিং",
-  "control.language.group.translated": "উচ্চ কভাৰেজ অনুবাদ",
-  "control.language.group.englishBase": "স্বয়ংক্ৰিয় অনুবাদ · ইংৰাজী fallback"
+  "control.cluster.open": "ছেটিংছ খোলক",
+  "control.cluster.tooltip": "শব্দ, থিম আৰু ভাষাৰ ছেটিংছ"
 }

@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Uppfylld",
-  "review.progress.binge": "Binge",
+  "review.progress.complete": "Slutförd",
+  "review.progress.binge": "Sträckläsning",
   "review.progress.upcoming": "Planerad",
-  "review.progress.abandoned": "- Jag har tappat.",
-  "review.progress.unknown": "Håll för framsteg",
+  "review.progress.abandoned": "Avbruten",
+  "review.progress.unknown": "Framsteg dolt",
   "review.spoilerRevealLabel": "Visa spoiler"
 }

@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "- En saanut ilmoituksia.",
+  "notify.loadError": "Ilmoituksia ei voitu ladata. Yritä hetken kuluttua uudelleen.",
   "notify.empty": "Ei uusia ilmoituksia."
 }

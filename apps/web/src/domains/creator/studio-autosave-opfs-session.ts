@@ -31,11 +31,6 @@ import type {
   StudioAutosaveSqlitePort,
   StudioAutosaveSqliteReadResult,
 } from "./studio-autosave-sqlite-store";
-import {
-  StudioAutosaveDocumentBusyError,
-  StudioAutosaveDurabilityError,
-  StudioAutosaveOpfsError,
-} from "./studio-autosave-opfs-error";
 
 export const STUDIO_AUTOSAVE_OPFS_ENVELOPE_KIND =
   "toonspectrum:studio-autosave-opfs-checkpoint" as const;
@@ -116,6 +111,11 @@ export {
   StudioAutosaveDurabilityError,
   StudioAutosaveOpfsError,
   type StudioAutosaveOpfsErrorCode,
+} from "./studio-autosave-opfs-error";
+import {
+  StudioAutosaveDocumentBusyError,
+  StudioAutosaveDurabilityError,
+  StudioAutosaveOpfsError,
 } from "./studio-autosave-opfs-error";
 
 /**

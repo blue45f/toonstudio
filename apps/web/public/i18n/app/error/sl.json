@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Ponovno natovarjam najnovejšo različico...",
-  "error.chunkRetryFailed": "-Prosim, preverite povezavo in poskusite znova.",
-  "error.reloadButton": "Ponovna naloga strani",
+  "error.reloading": "Ponovno nalaganje najnovejše različice…",
+  "error.chunkRetryFailed": "Enkrat je bilo osveženo, vendar težava ostaja. Preverite povezavo in poskusite znova.",
+  "error.reloadButton": "Ponovno naloži stran",
   "error.goHome": "Pojdi domov.",
-  "error.retryDesc": "Prosim, poskusite še enkrat ali se vrnite na naslovno stran."
+  "error.retryDesc": "Prosimo, poskusite znova ali se vrnite na domačo stran."
 }

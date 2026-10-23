@@ -27,7 +27,7 @@
   "account.profile.namePlaceholder": "ಪ್ರದರ್ಶನ ಹೆಸರು",
   "account.profile.bioLabel": "ಜೀವಶಾಸ್ತ್ರ",
   "account.profile.bioPlaceholder": "ಒಂದು ಸಾಲಿನಲ್ಲೇ ನಿಮ್ಮ ಬಗ್ಗೆ ನಮಗೆ ತಿಳಿಸಿ.",
-  "account.profile.bioLength": "{length} /280",
+  "account.profile.bioLength": "{length}/280",
   "account.profile.saveButton": "ಪ್ರೊಫೈಲ್ ಉಳಿಸಿ",
   "account.profile.saving": "ಉಳಿಸುವ.",
   "account.profile.saved": "ಉಳಿತಾಯ",

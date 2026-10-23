@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Titular de la cuenta",
   "revenue.payout.holderPlaceholder": "Nombre del titular",
   "revenue.payout.mockNote": "Por ahora es una solicitud simulada. Los cobros reales se procesan mediante el sistema de liquidación del servidor.",
+  "revenue.payout.notAvailableBody": "Las solicitudes de cobro aún no se están recibiendo de verdad, y los datos de cuenta que introduzcas no se guardan. Cuando se abran las solicitudes, podrás hacerlo aquí mismo y consultar el historial y el estado de tus solicitudes.",
+  "revenue.payout.notAvailableTitle": "Las solicitudes de cobro aún no están disponibles",
   "revenue.payout.submit": "Solicitar cobro",
   "revenue.payout.title": "Cobro",
   "revenue.settlement.belowMinimum": "Disponible a partir de {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Acceso anticipado",
   "revenue.source.market": "Ventas del mercado",
   "revenue.source.membership": "Membresía",
-  "revenue.source.tips": "Propinas",
-  "revenue.payout.notAvailableBody": "Las solicitudes de cobro aún no se están recibiendo de verdad, y los datos de cuenta que introduzcas no se guardan. Cuando se abran las solicitudes, podrás hacerlo aquí mismo y consultar el historial y el estado de tus solicitudes.",
-  "revenue.payout.notAvailableTitle": "Las solicitudes de cobro aún no están disponibles"
+  "revenue.source.tips": "Propinas"
 }

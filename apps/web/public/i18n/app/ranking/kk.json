@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Скорттардың бөлінісі",
+  "ranking.detailTitle": "Ұпайлар бөлінісін көру",
   "ranking.metric.views": "Көріністер",
-  "ranking.why": "Неге ?",
-  "ranking.breakdownTitle": "Скордтың бөлінісі",
+  "ranking.why": "Неге?",
+  "ranking.breakdownTitle": "Ұпайлар бөлінісі",
   "ranking.totalScore": "Жалпы балл",
-  "ranking.breakdownDescription": "Осының салмағы мен атау-намысы бойынша нормализация арқылы есептеледі."
+  "ranking.breakdownDescription": "Ось салмақтары мен туындыға тән қалыпқа келтіру арқылы есептеледі."
 }

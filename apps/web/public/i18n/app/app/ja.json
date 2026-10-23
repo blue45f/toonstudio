@@ -1,6 +1,6 @@
 {
-  "app.loading": "読み込み中…",
-  "app.brandBeta": "ベータサービス — データ・機能が変更される場合があります",
   "app.name": "トーン・スタジオ",
+  "app.brandBeta": "ベータサービス — データ・機能が変更される場合があります",
+  "app.loading": "読み込み中…",
   "app.skipToContent": "メインコンテンツへスキップ"
 }

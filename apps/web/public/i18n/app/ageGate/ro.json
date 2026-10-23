@@ -1,17 +1,17 @@
 {
   "ageGate.title": "Verificarea conținutului adulților",
-  "ageGate.description": "Introduceţi data naşterii pentru a verifica că sunteţi 19 ani sau mai în vârstă.",
+  "ageGate.description": "Introduceți data nașterii pentru a verifica dacă aveți 19 ani sau mai mult.",
   "ageGate.birthDateLabel": "Data nașterii",
   "ageGate.birthYearLabel": "Anul nașterii",
   "ageGate.birthYearPlaceholder": "Anul",
   "ageGate.birthMonthLabel": "Luna nașterii",
   "ageGate.birthMonthPlaceholder": "Luna",
-  "ageGate.birthDayLabel": "Ziua naşterii",
+  "ageGate.birthDayLabel": "Ziua nașterii",
   "ageGate.birthDayPlaceholder": "Ziua",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Nu ai îndeplinit cerinţa de vârstă.",
-  "ageGate.cancel": "Anularea",
+  "ageGate.deniedMessage": "Nu ați îndeplinit cerința de vârstă.",
+  "ageGate.cancel": "Anulare",
   "ageGate.confirm": "Confirmă"
 }

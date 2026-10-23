@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Imej yang disokong",
-  "ad.slotAriaLabel": "slot iklan",
-  "ad.slotLabel": "Dilengkapi",
+  "ad.creativeFallbackAlt": "Imej tajaan",
+  "ad.slotAriaLabel": "Slot iklan",
+  "ad.slotLabel": "Ditaja",
   "ad.slotTitle": "Kandungan yang ditaja",
   "ad.ctaDetails": "Lihat butiran",
-  "ad.placeholderAriaLabel": "Pengendali tempat iklan",
-  "ad.placeholderText": "Tiada kandungan yang disponsori.",
+  "ad.placeholderAriaLabel": "Ruang letak iklan",
+  "ad.placeholderText": "Tiada kandungan tajaan tersedia.",
   "ad.tag": "Iklan"
 }

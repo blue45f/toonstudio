@@ -1,9 +1,9 @@
 {
   "avatar.error.invalidType": "Tip slike koji nije podržan.",
-  "avatar.error.processFailed": "Nisam uspio da obraćam sliku.",
+  "avatar.error.processFailed": "Nije moguće obraditi sliku. Pokušajte ponovo s drugom slikom.",
   "avatar.processing": "Procesiranje...",
-  "avatar.select": "Promjena slike",
-  "avatar.remove": "Ukloniti sliku",
-  "avatar.uploadHint": "Podržane su samo slike JPG, PNG i WEBP, a zatim su preskribane za preuzimanje.",
-  "avatar.changeAria": "Promjena slike profila"
+  "avatar.select": "Promijeni sliku",
+  "avatar.remove": "Ukloni sliku",
+  "avatar.uploadHint": "Podržane su samo JPG, PNG i WEBP slike, zatim se izrezuju za pregled.",
+  "avatar.changeAria": "Promijeni sliku profila"
 }

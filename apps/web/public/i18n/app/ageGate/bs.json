@@ -4,14 +4,14 @@
   "ageGate.birthDateLabel": "Datum rođenja",
   "ageGate.birthYearLabel": "Godina rođenja",
   "ageGate.birthYearPlaceholder": "Godina",
-  "ageGate.birthMonthLabel": "Mesec rođenja",
-  "ageGate.birthMonthPlaceholder": "Mesec",
+  "ageGate.birthMonthLabel": "Mjesec rođenja",
+  "ageGate.birthMonthPlaceholder": "Mjesec",
   "ageGate.birthDayLabel": "Dan rođenja",
   "ageGate.birthDayPlaceholder": "Dan",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Nisi ispunila uslov starosti.",
-  "ageGate.cancel": "Otkazivanje",
+  "ageGate.deniedMessage": "Niste ispunili uslov starosti.",
+  "ageGate.cancel": "Otkaži",
   "ageGate.confirm": "Potvrdi"
 }

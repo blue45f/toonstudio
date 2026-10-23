@@ -30,6 +30,7 @@
   "footer.link.news": "Новости по новостям",
   "footer.link.about": "О ToonStudio",
   "footer.link.guide": "Политика рейтинга",
+  "footer.link.features": "Все функции одним взглядом",
   "footer.link.sitemap": "Карта сайта",
   "footer.link.settings": "Настройки",
   "footer.link.support": "Поддержка",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Хостинг",
   "footer.business.serviceType": "Тип платформы",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Все права защищены.",
-  "footer.logoTag": "Создайте свою следующую историю",
-  "footer.link.features": "Все функции одним взглядом"
+  "footer.logoTag": "Создайте свою следующую историю"
 }

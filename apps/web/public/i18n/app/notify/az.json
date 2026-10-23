@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Xəbərlər yükləyə bilmədim.",
+  "notify.loadError": "Bildirişlər yüklənə bilmədi. Bir az sonra yenidən cəhd edin.",
   "notify.empty": "Yeni bildiriş yoxdur."
 }

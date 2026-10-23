@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Žiūrėk rezultatų suskirstymą",
-  "ranking.metric.views": "Žvilgsniai",
-  "ranking.why": "Kodėl?",
-  "ranking.breakdownTitle": "Skaičių suskirstymas",
-  "ranking.totalScore": "Bendras rezultatas",
-  "ranking.breakdownDescription": "Apskaičiuota pagal ašies svorį ir pagal pavadinimą nustatytą normalizaciją."
+  "ranking.detailTitle": "Peržiūrėti balo sudėtį",
+  "ranking.metric.views": "Peržiūros",
+  "ranking.why": "Kodėl",
+  "ranking.breakdownTitle": "Balo sudėtis",
+  "ranking.totalScore": "Bendras balas",
+  "ranking.breakdownDescription": "Apskaičiuota taikant ašių svorius ir konkrečiam kūriniui skirtą normalizavimą."
 }

@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Ég gat ekki hlaðið upp uppfærslum.",
-  "changelog.empty": "Engar dagskrár eru sendar."
+  "changelog.loadError": "Ekki tókst að hlaða uppfærslum. Vinsamlegast reyndu aftur eftir smástund.",
+  "changelog.empty": "Engar uppfærslufærslur hafa verið birtar enn."
 }

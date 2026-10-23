@@ -8,7 +8,7 @@ import type {
 } from "react";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
-import { resourceStatusText } from "./resource-status-i18n";
+import { resourceStatusText } from "./resource-status-i18n"; import { r44ResourcesStatusText } from "./r44-cat1-status-i18n";
 import {
   addResearchNotebookEntry,
   isResearchNoteTextValid,
@@ -251,7 +251,7 @@ export function ResearchSynthesisBoard({
           </div>
         </> : <p className="rounded-xl border border-dashed border-line p-4 text-sm leading-6 text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceEmptyGuide", "먼저 시각 레퍼런스나 판본 자료를 저장하면 판단 노트에 출처를 연결할 수 있습니다.")}</p>}
       </aside>
-      <p id="research-note-status" role="status" aria-live="polite" className="text-sm text-fg-2 xl:col-span-5">{error || notice || (!ready ? resourceStatusText("resources.status.researchBoard.notesLoading", "판단 노트를 불러오는 중입니다.") : writable ? "노트는 이 브라우저에만 저장되며 계정과 동기화되지 않습니다." : "이 환경에서는 저장할 수 없어 현재 탭에서만 유지됩니다.")}</p>
+      <p id="research-note-status" role="status" aria-live="polite" className="text-sm text-fg-2 xl:col-span-5">{error || notice || (!ready ? resourceStatusText("resources.status.researchBoard.notesLoading", "판단 노트를 불러오는 중입니다.") : writable ? r44ResourcesStatusText("r44cat1.creatorResources.researchBoard.localOnlyNote", "노트는 이 브라우저에만 저장되며 계정과 동기화되지 않습니다.") : "이 환경에서는 저장할 수 없어 현재 탭에서만 유지됩니다.")}</p>
     </form>
 
     <div className="grid gap-4 xl:grid-cols-3" aria-label="판단 노트 보드">

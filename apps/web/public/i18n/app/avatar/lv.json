@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Neatbalsta attēla tipa.",
-  "avatar.error.processFailed": "Nav iespējams apstrādāt attēlu.",
-  "avatar.processing": "Apstrādāšana...",
-  "avatar.select": "Izmainīt attēlu",
-  "avatar.remove": "Izņem attēlu",
-  "avatar.uploadHint": "Tikai JPG, PNG un WEBP attēli ir atbalstīti, tad izskats par priekšroku.",
-  "avatar.changeAria": "Izmainīt profilu attēlu"
+  "avatar.error.invalidType": "Neatbalstīts attēla veids.",
+  "avatar.error.processFailed": "Neizdevās apstrādāt attēlu. Mēģiniet ar citu attēlu.",
+  "avatar.processing": "Apstrādā…",
+  "avatar.select": "Mainīt attēlu",
+  "avatar.remove": "Noņemt attēlu",
+  "avatar.uploadHint": "Tiek atbalstīti tikai JPG, PNG un WEBP attēli, kas pēc tam tiek apgriezti priekšskatījumam.",
+  "avatar.changeAria": "Mainīt profila attēlu"
 }

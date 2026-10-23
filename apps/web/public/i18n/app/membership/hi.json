@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "सदस्य",
   "membership.creatorPage.statMonthly": "मासिक आवर्ती",
   "membership.creatorPage.statTiers": "सक्रिय टीयर",
+  "membership.creatorPage.statusActive": "पाठक साइन-अप स्क्रीन पर {count} टीयर लाइव हैं",
   "membership.creatorPage.subtitle": "प्रशंसक सदस्यता टीयर बनाएं और मासिक सदस्यता राजस्व ट्रैक करें।",
   "membership.creatorPage.tierList": "सदस्यता टीयर",
   "membership.creatorPage.tierMembers": "{count} सदस्य",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "वह राशि जो प्रशंसक हर महीने चुकाते हैं।",
   "membership.tierEditor.priceLabel": "मासिक मूल्य (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "सहेजें",
-  "membership.creatorPage.statusActive": "पाठक साइन-अप स्क्रीन पर {count} टीयर लाइव हैं"
+  "membership.tierEditor.save": "सहेजें"
 }

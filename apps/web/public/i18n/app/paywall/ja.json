@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "サポーター向け{days}日間のアーリーアクセス",
   "paywall.creatorPage.preview": "プレビュー",
   "paywall.creatorPage.save": "ポリシーを保存",
+  "paywall.creatorPage.statusDaysRange": "アーリーアクセス {min}～{max}日",
+  "paywall.creatorPage.statusDaysSingle": "アーリーアクセス {days}日",
+  "paywall.creatorPage.statusSummary": "ポリシー{total}件 · オン{active}件",
   "paywall.creatorPage.subtitle": "サポーターに先行公開し、N日後に全員へ無料公開するアーリーアクセスを設定しましょう。",
   "paywall.creatorPage.title": "アーリーアクセス管理",
   "paywall.creatorPage.titleIdLabel": "作品ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "読者ビューのプレビュー",
   "paywall.titleNotice.body": "この作品はサポーターに{days}日先行公開されます。待てば無料で読めます。",
   "paywall.titleNotice.label": "アーリーアクセスのお知らせ",
-  "paywall.titleNotice.title": "サポーター向けアーリーアクセス実施中",
-  "paywall.creatorPage.statusDaysRange": "アーリーアクセス {min}～{max}日",
-  "paywall.creatorPage.statusDaysSingle": "アーリーアクセス {days}日",
-  "paywall.creatorPage.statusSummary": "ポリシー{total}件 · オン{active}件"
+  "paywall.titleNotice.title": "サポーター向けアーリーアクセス実施中"
 }

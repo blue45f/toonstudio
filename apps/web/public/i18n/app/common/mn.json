@@ -1,16 +1,16 @@
 {
-  "common.loading": "Loading",
-  "common.loading.short": "Loading",
+  "common.loading": "Ачаалж байна",
+  "common.loading.short": "Ачаалж байна",
   "common.close": "Хаах",
   "common.open": "Нээх",
   "common.search": "Хайх",
   "common.retry": "Дахин оролдох",
   "common.retry.short": "Дахин",
   "common.backToTop": "Дээд тал руу буцах",
-  "common.backToHome": "Get home",
-  "common.loading.search": "Searching…",
+  "common.backToHome": "Нүүр хуудас руу очих",
+  "common.loading.search": "Хайж байна…",
   "common.notFoundWithQuery": "'{query}' хайлт олдсонгүй.",
   "common.openSearch": "Хайлтаас → олоорой",
-  "common.loading.empty": "️️️️️️️️️️️️️️️️",
-  "common.retry.all": "Prove again or go home."
+  "common.loading.empty": "Өгөгдөл ирсэнгүй.",
+  "common.retry.all": "Дахин оролдох эсвэл нүүр хуудас руу буцаарай."
 }

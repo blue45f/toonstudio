@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Nem tudtam feltölteni a visszajelzési felméréseket.",
+  "feedback.loadError": "Nem sikerült betölteni a visszajelzési kérdőívet. Próbáld újra egy pillanat múlva.",
   "feedback.thankYou": "Köszönjük az értékes visszajelzést!",
-  "feedback.anonymousNote": "A válaszait szigorúan névtelenül tartják.",
-  "feedback.notAtAll": "Egyáltalán nem.",
-  "feedback.definitely": "Biztosan."
+  "feedback.anonymousNote": "Válaszaidat szigorúan anonim módon kezeljük.",
+  "feedback.notAtAll": "Egyáltalán nem",
+  "feedback.definitely": "Határozottan igen"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "படைக்கப்பட்ட படைப்புகள்",
   "userProfile.tabs.series": "தொடர்",
   "userProfile.works.empty": "இந்த பயனருக்கு இன்னும் பொதுப் படைப்புகள் இல்லை.",
+  "userProfile.works.error": "உருவாக்கப்பட்ட படைப்புகளை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "userProfile.series.empty": "இந்த பயனருக்கு இன்னும் தொடர் இல்லை.",
+  "userProfile.series.error": "தொடரை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "userProfile.fetchError": "சுயவிவரத்தை ஏற்ற இயலவில்லை.",
   "userProfile.authorFallback": "பயனர்",
   "userProfile.metaTemplate": "{author} சுயவிவரம் · {reviews} மதிப்புரைகள் · {works} படைப்புகள் · avg மதிப்பீடு {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "சுயவிவர உள்ளடக்கம்",
   "userProfile.refresh": "புதுப்பித்தல்",
   "userProfile.emptyReviews": "இந்த பயனர் இதுவரை வெளியிடாத மதிப்புரைகள்.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "நீங்கள் விரும்பும் தலைப்பில் முதல் மதிப்பாய்வை விடவும்.",
+  "userProfile.emptyReviewsCta": "தலைப்புகளை உலாவவும்"
 }

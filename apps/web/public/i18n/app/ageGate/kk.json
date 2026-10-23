@@ -1,6 +1,6 @@
 {
-  "ageGate.title": "Үлкендер құрамын тексеру",
-  "ageGate.description": "19 жасқа толғандығыңызды тексеру үшін туған күнін келтіріңіз.",
+  "ageGate.title": "Ересектерге арналған мазмұнды тексеру",
+  "ageGate.description": "19 жастан асқаныңызды растау үшін туған күніңізді енгізіңіз.",
   "ageGate.birthDateLabel": "Туған күні",
   "ageGate.birthYearLabel": "Туған жылы",
   "ageGate.birthYearPlaceholder": "Жыл",
@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Сіз жас талаптарыңызбен таныс емессіз.",
-  "ageGate.cancel": "Алу",
-  "ageGate.confirm": "Куәлікті растаңыз"
+  "ageGate.deniedMessage": "Сіз жас талабына сай емессіз.",
+  "ageGate.cancel": "Болдырмау",
+  "ageGate.confirm": "Растау"
 }

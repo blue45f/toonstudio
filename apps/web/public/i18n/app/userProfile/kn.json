@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "ಸೃಷ್ಟಿ ಮಾಡಿದ ಕೃತಿಗಳು",
   "userProfile.tabs.series": "ಸರಣಿ",
   "userProfile.works.empty": "ಈ ಬಳಕೆದಾರರಿಗೆ ಇನ್ನೂ ಯಾವುದೇ ಸಾರ್ವಜನಿಕ ಕೃತಿಗಳು ಇಲ್ಲ.",
+  "userProfile.works.error": "ರಚಿಸಿದ ಕೃತಿಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "userProfile.series.empty": "ಈ ಬಳಕೆದಾರರಿಗೆ ಇನ್ನೂ ಸರಣಿ ಇಲ್ಲ.",
+  "userProfile.series.error": "ಸರಣಿಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "userProfile.fetchError": "ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
   "userProfile.authorFallback": "ಬಳಕೆದಾರ",
   "userProfile.metaTemplate": "{author} ಪ್ರೊಫೈಲ್ · {reviews} ವಿಮರ್ಶೆಗಳು · {works} ಕೃತಿಗಳು · avg ರೇಟಿಂಗ್ {avg}  ಟೂನ್ಸ್ಪೆಕ್ಟ್ರಮ್.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ಪ್ರೊಫೈಲ್ ವಿಷಯ",
   "userProfile.refresh": "ರಿಫ್ರೆಶ್",
   "userProfile.emptyReviews": "ಈ ಬಳಕೆದಾರರಿಂದ ಇನ್ನೂ ಯಾವುದೇ ವಿಮರ್ಶೆಗಳನ್ನು ಪ್ರಕಟಿಸಿಲ್ಲ.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "ನಿಮಗೆ ಇಷ್ಟವಾದ ಶೀರ್ಷಿಕೆಯ ಮೇಲೆ ಮೊದಲ ವಿಮರ್ಶೆಯನ್ನು ಬರೆಯಿರಿ.",
+  "userProfile.emptyReviewsCta": "ಶೀರ್ಷಿಕೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ"
 }

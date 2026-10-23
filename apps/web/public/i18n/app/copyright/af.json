@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Kopiereg & Inhoud Kennisgewing",
+  "copyright.title": "Kopiereg- en inhoudskennisgewing",
   "copyright.section1.title": "Inhoudsbronne en beginsels",
-  "copyright.section1.body": "ToonStudio is 'n indeks- en ontdekkingsplatform wat openbare katalogusmetadata (titels, skrywers, genres, ens.) van webtoon / webroman-platforms opsom.",
-  "copyright.section2.title": "Dekkingbeelde",
-  "copyright.section2.body": "Cover beelde dien as identifiseer miniatures en verwysing oorspronklike platform cover met bron skakels wanneer moontlik. Displays kan onmiddellik gedeaktiveer word op versoek van reghebbendes of beleid updates.",
-  "copyright.section3.title": "Metrics & Deursigtigheid",
+  "copyright.section1.body": "ToonStudio is ’n indeks- en ontdekkingsplatform wat openbare katalogusmetadata (titels, outeurs, genres, ens.) van webtoon-/webromanplatforms opsom. Dit huisves of herversprei nie hoofstukinhoud nie; lees word uitsluitlik deur amptelike skakels gerig.",
+  "copyright.section2.title": "Voorbladbeelde",
+  "copyright.section2.body": "Voorbladbeelde dien as identifiserende kleinfoto's en verwys waar moontlik na die oorspronklike platformvoorblaaie met bronkakels. Vertonings kan onmiddellik gedeaktiveer word op versoek van die reghebber of met beleidsopdaterings.",
+  "copyright.section3.title": "Maatstawwe & Deursigtigheid",
   "copyright.section4.title": "Kennisgewing van regte",
-  "copyright.section5.title": "Kennisgewing van oortree-oortredings en aftrekking",
-  "copyright.section5.body": "As jy glo dat metadata of dekking jou regte inbreuk maak, stuur asseblief 'n navraag met titel, URL en bewys van eienaarskap.",
-  "copyright.leaveInquiry": "Stuur 'n ondersoek →"
+  "copyright.section5.title": "Kennisgewing van kopieregskending en verwydering",
+  "copyright.section5.body": "As jy glo dat metadata of voorblaaie jou regte skend, dien asseblief ’n navraag in met die titel, URL en bewys van eienaarskap.",
+  "copyright.leaveInquiry": "Dien navraag in →"
 }

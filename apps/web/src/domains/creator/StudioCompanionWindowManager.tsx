@@ -1,4 +1,5 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r45CreatorStatusText } from "./r45-cat1-status-i18n";
 import { ExternalLink, Images, ListChecks, Map, MonitorCog, Pin, X } from "lucide-react";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 
@@ -75,7 +76,9 @@ export function StudioCompanionWindowManager({ disabled, onOpenSurface, getOpenS
     const label = SURFACES.find((item) => item.surface === surface)?.label ?? surface;
     if (success) setOpened((previous) => ({ ...previous, [surface]: previous[surface] ?? profile.openMode }));
     setNotice({ error: !success, text: success
-      ? `${label} ${profile.openMode === "tab" ? "탭" : "창"}을 열거나 앞으로 가져오도록 요청했습니다.`
+      ? profile.openMode === "tab"
+        ? r45CreatorStatusText("r45cat1.creator.companionManager.openedTab", { label }, "{label} 탭을 열거나 앞으로 가져오도록 요청했습니다.")
+        : r45CreatorStatusText("r45cat1.creator.companionManager.openedWindow", { label }, "{label} 창을 열거나 앞으로 가져오도록 요청했습니다.")
       : `${studioCompanionPopupGuidance().text}${r3c07StatusText("studio.panelStatus.r3c07.companionManager.popupRetrySuffix", " 새 탭 방식으로 바꾸거나 다시 시도해 주세요.")}` });
   }
   function closeSurface(surface: DedicatedCompanionSurface) {

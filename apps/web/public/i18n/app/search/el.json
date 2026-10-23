@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Καθαρίστε τα όλα.",
   "search.explorer.recent.delete": "Διαγράψτε το πρόσφατο ερώτημα {query}",
   "search.explorer.recent.searchAgain": "Αναζήτηση ξανά από πρόσφατες λέξεις-κλειδιά",
+  "search.explorer.suggestions.popular": "Δημοφιλείς αναζητήσεις",
+  "search.explorer.suggestions.genres": "Προτεινόμενα είδη",
+  "search.explorer.suggestions.searchFor": "Αναζήτηση για {query}",
+  "search.explorer.suggestions.genreFilter": "Περιορισμός ανά είδος {genre}",
+  "search.explorer.suggestions.loading": "Φόρτωση προτεινόμενων αναζητήσεων",
+  "search.explorer.suggestions.error": "Δεν ήταν δυνατή η φόρτωση των προτεινόμενων αναζητήσεων. Δοκιμάστε ξανά σε λίγο.",
+  "search.explorer.suggestions.empty": "Δεν υπάρχουν προτάσεις αυτή τη στιγμή. Δοκιμάστε να πληκτρολογήσετε έναν τίτλο, συγγραφέα ή ετικέτα.",
   "search.explorer.catalog.label": "Καταλόγος",
   "search.explorer.catalog.empty": "Ο κατάλογος είναι άδειος.",
   "search.explorer.currentFilter": "Φιλτράρες τρέχουσας ενέργειας",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m πριν",
   "search.explorer.time.hoursAgo": "{count}h πριν",
   "search.explorer.time.daysAgo": "{count} π.μ. πριν",
-  "search.explorer.loadMore": "Περισσότερη φόρτωση",
-  "search.explorer.suggestions.popular": "Δημοφιλείς αναζητήσεις",
-  "search.explorer.suggestions.genres": "Προτεινόμενα είδη",
-  "search.explorer.suggestions.searchFor": "Αναζήτηση για {query}",
-  "search.explorer.suggestions.genreFilter": "Περιορισμός ανά είδος {genre}",
-  "search.explorer.suggestions.loading": "Φόρτωση προτεινόμενων αναζητήσεων",
-  "search.explorer.suggestions.error": "Δεν ήταν δυνατή η φόρτωση των προτεινόμενων αναζητήσεων. Δοκιμάστε ξανά σε λίγο.",
-  "search.explorer.suggestions.empty": "Δεν υπάρχουν προτάσεις αυτή τη στιγμή. Δοκιμάστε να πληκτρολογήσετε έναν τίτλο, συγγραφέα ή ετικέτα."
+  "search.explorer.loadMore": "Περισσότερη φόρτωση"
 }

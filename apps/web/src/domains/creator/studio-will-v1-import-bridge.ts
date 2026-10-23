@@ -10,6 +10,9 @@
 import { STUDIO_INK_MAX_BRUSH_SIZE } from "./brush/studio-ink-pressure-model";
 import { resolveStudioWillImportCommitStatus, resolveStudioWillImportConstraint } from "./status-i18n/studio-producer-error-i18n-will-import";
 import { StudioWillV1ImportError, type StudioWillV1ImportLabelCode } from "./studio-will-v1-import-bridge-error";
+
+export { StudioWillV1ImportError } from "./studio-will-v1-import-bridge-error";
+export type { StudioWillV1ImportErrorCode, StudioWillV1ImportLabelCode } from "./studio-will-v1-import-bridge-error";
 import { catmullRomPoint } from "./studio-curve-smoothing";
 import {
   summarizeStudioInterchangeLoss,
@@ -30,9 +33,6 @@ import type {
 import type {
   StudioWillV1OpcWorkerOptions,
 } from "./studio-will-v1-opc-worker-client";
-
-export { StudioWillV1ImportError } from "./studio-will-v1-import-bridge-error";
-export type { StudioWillV1ImportErrorCode, StudioWillV1ImportLabelCode } from "./studio-will-v1-import-bridge-error";
 
 export const STUDIO_WILL_V1_IMPORT_MEDIA_TYPE =
   "application/vnd.toonstudio.will-v1-bounded+zip" as const;

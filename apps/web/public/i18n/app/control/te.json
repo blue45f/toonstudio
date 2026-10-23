@@ -1,5 +1,7 @@
 {
   "control.language.label": "భాష",
+  "control.language.group.translated": "అధిక కవరేజ్ కలిగిన అనువాదాలు",
+  "control.language.group.englishBase": "ఆటోమేటిక్ అనువాదం · ఇంగ్లీష్ ఫాల్బ్యాక్",
   "control.sound.enable": "ధ్వని ప్రభావాలను ప్రారంభించండి",
   "control.sound.disable": "ధ్వని ప్రభావాలను నిలిపివేయండి",
   "control.theme.dark": "లైట్ మోడ్కు మారండి",
@@ -8,7 +10,5 @@
   "control.settings.close": "సన్నిహిత సెట్టింగులు",
   "control.cluster.settings": "ధ్వని, థీమ్, భాషా నియంత్రణలు",
   "control.cluster.open": "తెరిచిన సెట్టింగులు",
-  "control.cluster.tooltip": "ధ్వని, థీమ్, భాషా అమర్పులు",
-  "control.language.group.translated": "అధిక కవరేజ్ కలిగిన అనువాదాలు",
-  "control.language.group.englishBase": "ఆటోమేటిక్ అనువాదం · ఇంగ్లీష్ ఫాల్బ్యాక్"
+  "control.cluster.tooltip": "ధ్వని, థీమ్, భాషా అమర్పులు"
 }

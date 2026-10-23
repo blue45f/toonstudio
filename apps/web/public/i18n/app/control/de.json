@@ -1,5 +1,7 @@
 {
   "control.language.label": "Sprache",
+  "control.language.group.translated": "Übersetzungen mit hoher Abdeckung",
+  "control.language.group.englishBase": "Automatische Übersetzung · Englisch fallback",
   "control.sound.enable": "Solideffekte ermöglichen",
   "control.sound.disable": "Schallwirkung deaktivieren",
   "control.theme.dark": "Umschalten auf Lichtmodus",
@@ -8,7 +10,5 @@
   "control.settings.close": "Nähere Einstellungen",
   "control.cluster.settings": "Klang-, Themen- und Sprachsteuerungen",
   "control.cluster.open": "Offene Einstellungen",
-  "control.cluster.tooltip": "Klang-, Themen- und Sprachinstellungen",
-  "control.language.group.translated": "Übersetzungen mit hoher Abdeckung",
-  "control.language.group.englishBase": "Automatische Übersetzung · Englisch fallback"
+  "control.cluster.tooltip": "Klang-, Themen- und Sprachinstellungen"
 }

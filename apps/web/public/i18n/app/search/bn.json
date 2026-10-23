@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "সব পরিষ্কার",
   "search.explorer.recent.delete": "সাম্প্রতিক ক্যোয়ারী মুছে ফেলুন {query}",
   "search.explorer.recent.searchAgain": "সাম্প্রতিক কীওয়ার্ড থেকে আবার অনুসন্ধান করুন",
+  "search.explorer.suggestions.popular": "জনপ্রিয় অনুসন্ধান",
+  "search.explorer.suggestions.genres": "প্রস্তাবিত ধারা",
+  "search.explorer.suggestions.searchFor": "{query} অনুসন্ধান করুন",
+  "search.explorer.suggestions.genreFilter": "{genre} ধারা দিয়ে সংকীর্ণ করুন",
+  "search.explorer.suggestions.loading": "প্রস্তাবিত অনুসন্ধান লোড হচ্ছে",
+  "search.explorer.suggestions.error": "প্রস্তাবিত অনুসন্ধান লোড করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+  "search.explorer.suggestions.empty": "এখন কোনো পরামর্শ নেই। একটি শিরোনাম, লেখক বা ট্যাগ লিখে দেখুন।",
   "search.explorer.catalog.label": "ক্যাটালগ",
   "search.explorer.catalog.empty": "ক্যাটালগ খালি",
   "search.explorer.currentFilter": "বর্তমান ফিল্টার",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m আগে",
   "search.explorer.time.hoursAgo": "{count} ঘন্টা আগে",
   "search.explorer.time.daysAgo": "{count} d আগে",
-  "search.explorer.loadMore": "আরো লোড করুন",
-  "search.explorer.suggestions.popular": "জনপ্রিয় অনুসন্ধান",
-  "search.explorer.suggestions.genres": "প্রস্তাবিত ধারা",
-  "search.explorer.suggestions.searchFor": "{query} অনুসন্ধান করুন",
-  "search.explorer.suggestions.genreFilter": "{genre} ধারা দিয়ে সংকীর্ণ করুন",
-  "search.explorer.suggestions.loading": "প্রস্তাবিত অনুসন্ধান লোড হচ্ছে",
-  "search.explorer.suggestions.error": "প্রস্তাবিত অনুসন্ধান লোড করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পরে আবার চেষ্টা করুন।",
-  "search.explorer.suggestions.empty": "এখন কোনো পরামর্শ নেই। একটি শিরোনাম, লেখক বা ট্যাগ লিখে দেখুন।"
+  "search.explorer.loadMore": "আরো লোড করুন"
 }

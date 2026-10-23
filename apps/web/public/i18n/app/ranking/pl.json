@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Wyświetlenie wyników",
+  "ranking.detailTitle": "Zobacz rozbicie wyniku",
   "ranking.metric.views": "Widoki",
   "ranking.why": "Dlaczego ?",
   "ranking.breakdownTitle": "Podział wyników",
-  "ranking.totalScore": "Całkowita wynik",
-  "ranking.breakdownDescription": "Wykalkowane przy użyciu wag osi i normalizacji określonej w tytule."
+  "ranking.totalScore": "Wynik łączny",
+  "ranking.breakdownDescription": "Obliczane z użyciem wag osi i normalizacji właściwej dla tytułu."
 }

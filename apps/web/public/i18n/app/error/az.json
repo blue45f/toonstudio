@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Ən son versiyanı yenidən yükləyirəm...",
-  "error.chunkRetryFailed": "Bir dəfə yenilənib, amma problem davam edir. Xahiş edirəm bağlantınızı yoxlayın və yenidən cəhd edin.",
-  "error.reloadButton": "Saytı Yenidən yükləyin",
-  "error.goHome": "Evə gedin",
-  "error.retryDesc": "Xahiş edirəm yenidən cəhd edin və ya baş səhifəyə qayıtın."
+  "error.reloading": "Ən son versiya yenidən yüklənir…",
+  "error.chunkRetryFailed": "Bir dəfə yeniləndi, lakin problem davam edir. Bağlantınızı yoxlayıb yenidən cəhd edin.",
+  "error.reloadButton": "Səhifəni yenilə",
+  "error.goHome": "Ana səhifəyə keç",
+  "error.retryDesc": "Yenidən cəhd edin və ya ana səhifəyə qayıdın."
 }

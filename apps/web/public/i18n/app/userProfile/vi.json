@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Các tác phẩm được tạo ra",
   "userProfile.tabs.series": "Dòng",
   "userProfile.works.empty": "Người dùng này chưa có công trình công cộng.",
+  "userProfile.works.error": "Không tải được tác phẩm đã sáng tác. Vui lòng thử lại.",
   "userProfile.series.empty": "Người dùng này chưa có series.",
+  "userProfile.series.error": "Không tải được series đang đăng. Vui lòng thử lại.",
   "userProfile.fetchError": "Không thể tải hồ sơ.",
   "userProfile.authorFallback": "Người dùng",
   "userProfile.metaTemplate": "{author} hồ sơ · {reviews} đánh giá · {works} làm việc · AVG xếp hạng {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Nội dung hồ sơ",
   "userProfile.refresh": "Tới lỏng",
   "userProfile.emptyReviews": "Không có đánh giá được công bố bởi người dùng này.",
-  "userProfile.works.error": "Không tải được tác phẩm đã sáng tác. Vui lòng thử lại.",
-  "userProfile.series.error": "Không tải được series đang đăng. Vui lòng thử lại.",
   "userProfile.emptyReviewsHint": "Hãy để lại bài đánh giá đầu tiên cho tác phẩm bạn yêu thích.",
   "userProfile.emptyReviewsCta": "Xem các tác phẩm"
 }

@@ -1,17 +1,17 @@
 {
   "ageGate.title": "בדיקת תוכן מבוגרים",
-  "ageGate.description": "הכניסי את תאריך הלידה שלך כדי לאשר את גילך 19.",
+  "ageGate.description": "הזינו את תאריך הלידה שלכם כדי לאמת שאתם בני 19 ומעלה.",
   "ageGate.birthDateLabel": "תאריך לידה",
-  "ageGate.birthYearLabel": "שנה לידה",
+  "ageGate.birthYearLabel": "שנת לידה",
   "ageGate.birthYearPlaceholder": "שנה",
   "ageGate.birthMonthLabel": "חודש הלידה",
   "ageGate.birthMonthPlaceholder": "חודש",
-  "ageGate.birthDayLabel": "יום הולדת",
+  "ageGate.birthDayLabel": "יום לידה",
   "ageGate.birthDayPlaceholder": "יום",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "אתה לא פגשת את הדרישה לגיל.",
+  "ageGate.deniedMessage": "לא עמדתם בדרישת הגיל.",
   "ageGate.cancel": "ביטול",
   "ageGate.confirm": "אישור"
 }

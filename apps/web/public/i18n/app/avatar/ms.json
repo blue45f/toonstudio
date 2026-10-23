@@ -1,9 +1,9 @@
 {
   "avatar.error.invalidType": "Jenis imej yang tidak disokong.",
-  "avatar.error.processFailed": "Tidak berjaya memproses imej.",
-  "avatar.processing": "Mengproses...",
-  "avatar.select": "Mengubah imej",
-  "avatar.remove": "Hapus imej",
-  "avatar.uploadHint": "Hanya imej JPG, PNG, dan WEBP yang disokong, kemudian dipotong untuk tempahan.",
-  "avatar.changeAria": "Mengubah imej profil"
+  "avatar.error.processFailed": "Gagal memproses imej. Cuba lagi dengan imej yang berbeza.",
+  "avatar.processing": "Memproses…",
+  "avatar.select": "Tukar imej",
+  "avatar.remove": "Padam imej",
+  "avatar.uploadHint": "Hanya imej JPG, PNG dan WEBP yang disokong, kemudian dipangkas untuk pratonton.",
+  "avatar.changeAria": "Tukar imej profil"
 }

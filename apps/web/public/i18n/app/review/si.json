@@ -2,7 +2,7 @@
   "review.progress.complete": "නිමකරන ලද්දේ",
   "review.progress.binge": "බින්ග් කිරීම",
   "review.progress.upcoming": "සැලසුම් කර ඇත",
-  "review.progress.abandoned": "බිම වැටී",
-  "review.progress.unknown": "සැඟවුණු ප් රගතිය",
-  "review.spoilerRevealLabel": "පෙන්වන්න ස්පෝයිලර්"
+  "review.progress.abandoned": "අත්හැර දමන ලදී",
+  "review.progress.unknown": "සැඟවුණු ප්‍රගතිය",
+  "review.spoilerRevealLabel": "ස්පෝයිලරය පෙන්වන්න"
 }

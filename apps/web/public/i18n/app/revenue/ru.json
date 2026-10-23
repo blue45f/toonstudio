@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Владелец счёта",
   "revenue.payout.holderPlaceholder": "Имя владельца",
   "revenue.payout.mockNote": "Пока это пробный запрос. Реальные выплаты обрабатываются серверным конвейером расчётов.",
+  "revenue.payout.notAvailableBody": "Запросы выплат пока фактически не принимаются, и любые введённые вами данные счёта не сохраняются. Когда запросы откроются, вы сможете подать заявку прямо здесь и отслеживать историю и статус запросов.",
+  "revenue.payout.notAvailableTitle": "Запросы выплат пока недоступны",
   "revenue.payout.submit": "Запросить выплату",
   "revenue.payout.title": "Выплата",
   "revenue.settlement.belowMinimum": "Доступно от {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Ранний доступ",
   "revenue.source.market": "Продажи на рынке",
   "revenue.source.membership": "Членство",
-  "revenue.source.tips": "Чаевые",
-  "revenue.payout.notAvailableBody": "Запросы выплат пока фактически не принимаются, и любые введённые вами данные счёта не сохраняются. Когда запросы откроются, вы сможете подать заявку прямо здесь и отслеживать историю и статус запросов.",
-  "revenue.payout.notAvailableTitle": "Запросы выплат пока недоступны"
+  "revenue.source.tips": "Чаевые"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "సృష్టికర్తలు",
   "userProfile.tabs.series": "సిరీస్",
   "userProfile.works.empty": "ఈ వాడుకరికి ఇంకా పబ్లిక్ పనులు లేవు.",
+  "userProfile.works.error": "సృష్టించిన రచనలను లోడ్ చేయలేకపోయారు. దయచేసి మళ్లీ ప్రయత్నించండి.",
   "userProfile.series.empty": "ఈ వాడుకరికి ఇంకా సిరీస్ లేదు.",
+  "userProfile.series.error": "సిరీస్‌ను లోడ్ చేయలేకపోయారు. దయచేసి మళ్లీ ప్రయత్నించండి.",
   "userProfile.fetchError": "ప్రొఫైల్ లోడ్ చేయలేకపోయింది.",
   "userProfile.authorFallback": "వాడుకరి",
   "userProfile.metaTemplate": "{author} ప్రొఫైల్ · {reviews} సమీక్షలు · {works} రచనలు · AVG రేటింగ్ {avg}  టోన్ స్పెక్ట్రం.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ప్రొఫైల్ కంటెంట్",
   "userProfile.refresh": "తాజాగా",
   "userProfile.emptyReviews": "ఈ వాడుకరి ఇంకా ప్రచురించిన సమీక్షలు లేవు.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "మీకు నచ్చిన శీర్షికపై మొదటి సమీక్షను తెలియజేయండి.",
+  "userProfile.emptyReviewsCta": "శీర్షికలను బ్రౌజ్ చేయండి"
 }

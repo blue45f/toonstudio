@@ -255,6 +255,45 @@ describe("Studio BG3D shot batch archive Worker client", () => {
     await expect(result).rejects.toMatchObject({ code: "build-failed", name: "WorkerError" });
   });
 
+  it("propagates the v5 archive causeCode/causeParams onto the WorkerError", async () => {
+    const worker = new FakeWorker();
+    const result = buildStudioBg3dShotBatchArchiveInWorker([image()], {
+      workerFactory: () => worker,
+    });
+    emitReady(worker);
+    const request = worker.requests[0];
+    worker.emit({
+      version: STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION,
+      kind: "error",
+      requestId: request?.requestId,
+      code: "build-failed",
+      causeCode: "shotCountOverLimit",
+      causeParams: { maxShots: "64" },
+    });
+    await expect(result).rejects.toMatchObject({
+      code: "build-failed",
+      name: "WorkerError",
+      causeCode: "shotCountOverLimit",
+      causeParams: { maxShots: "64" },
+    });
+
+    const bareWorker = new FakeWorker();
+    const bare = buildStudioBg3dShotBatchArchiveInWorker([image()], {
+      workerFactory: () => bareWorker,
+    });
+    emitReady(bareWorker);
+    const bareRequest = bareWorker.requests[0];
+    bareWorker.emit({
+      version: STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION,
+      kind: "error",
+      requestId: bareRequest?.requestId,
+      code: "build-failed",
+    });
+    const bareError = await bare.catch((cause: unknown) => cause);
+    expect(bareError).toMatchObject({ code: "build-failed", name: "WorkerError" });
+    expect(bareError).not.toHaveProperty("causeCode");
+  });
+
   it("rejects PK local-header junk after ready as archive-invalid", async () => {
     const worker = new FakeWorker();
     const result = buildStudioBg3dShotBatchArchiveInWorker([image()], {
@@ -347,6 +386,32 @@ describe("Studio BG3D shot batch archive Worker client", () => {
       requestId: 1,
       images: [image()],
       manifest: { resumeKey: "forged" },
+    })).toBe(false);
+    // v5 error responses: a bare build-failed stays valid, a structured archive cause is
+    // carried only on build-failed with an enumerated code and string params.
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      ...base, kind: "error", code: "build-failed",
+    })).toBe(true);
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      ...base, kind: "error", code: "build-failed",
+      causeCode: "shotCountOverLimit", causeParams: { maxShots: "64" },
+    })).toBe(true);
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      ...base, kind: "error", code: "build-failed", causeCode: "bogus-code",
+    })).toBe(false);
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      ...base, kind: "error", code: "protocol", causeCode: "shotCountOverLimit",
+    })).toBe(false);
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      ...base, kind: "error", code: "build-failed", causeParams: { maxShots: "64" },
+    })).toBe(false);
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      ...base, kind: "error", code: "build-failed",
+      causeCode: "shotCountOverLimit", causeParams: { maxShots: 64 },
+    })).toBe(false);
+    // A v4 response is rejected fail-closed now that the protocol is v5.
+    expect(isStudioBg3dShotBatchWorkerResponse({
+      version: 4, kind: "error", requestId: 1, code: "build-failed",
     })).toBe(false);
   });
 });

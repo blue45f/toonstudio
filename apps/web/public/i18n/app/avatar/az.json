@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Dəstəksiz şəkil tipli.",
-  "avatar.error.processFailed": "Görüntüyü işlədə bilmədim.",
-  "avatar.processing": "İşləmə...",
-  "avatar.select": "Görüntüyü dəyişdirin",
-  "avatar.remove": "Görüntüyü çıxarmaq",
-  "avatar.uploadHint": "Yalnız JPG, PNG və WEBP şəkillər dəstəklənir, sonra əvvəlcədən görmək üçün kəsilmişdir.",
-  "avatar.changeAria": "Profil görüntüsünü dəyişdirin"
+  "avatar.error.invalidType": "Dəstəklənməyən şəkil növü.",
+  "avatar.error.processFailed": "Şəkil emal edilə bilmədi. Başqa şəkillə yenidən cəhd edin.",
+  "avatar.processing": "Emal olunur…",
+  "avatar.select": "Şəkli dəyiş",
+  "avatar.remove": "Şəkli sil",
+  "avatar.uploadHint": "Yalnız JPG, PNG və WEBP şəkilləri dəstəklənir, sonra önizləmə üçün kəsilir.",
+  "avatar.changeAria": "Profil şəklini dəyiş"
 }

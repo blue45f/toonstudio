@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Negaliu įkrauti atnaujinimų.",
-  "changelog.empty": "Kol kas nepaskelbiama jokių atnaujinimų."
+  "changelog.loadError": "Nepavyko įkelti naujienų. Po akimirkos bandykite dar kartą.",
+  "changelog.empty": "Atnaujinimų įrašų dar nepaskelbta."
 }

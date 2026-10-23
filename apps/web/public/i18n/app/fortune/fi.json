@@ -1,9 +1,9 @@
 {
-  "fortune.title": "Daily Webtoon Fortune · ToonStudio",
-  "fortune.subtitle": "Find the webtoon character that matches you and check today's fortune.",
-  "fortune.today": "Today's Fortune",
-  "fortune.zodiac": "Zodiac Fortune",
-  "fortune.saju": "Saju (Four Pillars)",
-  "fortune.compatibility": "Compatibility",
-  "fortune.tarot": "Today's Tarot"
+  "fortune.title": "Päivän webtoon-ennustus · ToonStudio",
+  "fortune.subtitle": "Löydä sinua vastaava webtoon-hahmo ja tarkista päivän ennustuksesi.",
+  "fortune.today": "Päivän ennustus",
+  "fortune.zodiac": "Horoskooppiennustus",
+  "fortune.saju": "Saju (neljä pilaria)",
+  "fortune.compatibility": "Yhteensopivuus",
+  "fortune.tarot": "Päivän tarot"
 }

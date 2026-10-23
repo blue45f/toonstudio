@@ -1,7 +1,7 @@
 {
-  "lang.switch": "語言",
-  "lang.change": "切換語言",
+  "lang.ko": "韓語",
   "lang.en": "英語",
+  "lang.switch": "語言",
   "lang.auto": "自動",
-  "lang.ko": "韓語"
+  "lang.change": "切換語言"
 }

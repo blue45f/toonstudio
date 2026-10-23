@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Console d'administration",
   "auth.menu.profile": "Mon profil",
   "auth.menu.settings": "Paramètres",
-  "auth.menu.signOut": "Je me suis inscrite .",
+  "auth.menu.signOut": "Se déconnecter",
   "auth.menu.fallbackName": "Lecteur",
   "auth.callback.message.working": "Je finaliserai l'inscription...",
   "auth.callback.error.badState": "Paramètre d'état non valide.",

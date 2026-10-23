@@ -27,6 +27,12 @@ import {
   StudioToneArtifactWorkerRequiredError,
   studioToneArtifactRequiresWorker,
 } from "./studio-tone-artifact-filters";
+import {
+  StudioImageFilterWorkerError,
+  isStudioImageFilterWorkerErrorCode,
+  studioImageFilterWorkerErrorParams,
+  type StudioImageFilterWorkerErrorCode,
+} from "./studio-image-filter-worker-error";
 
 import type { ImageFilterFields } from "./render/studio-konva-filter-fields";
 import type { StudioImageDataLike } from "./studio-filters";
@@ -104,7 +110,7 @@ function createAbortError(): Error {
   if (typeof DOMException === "function") {
     return new DOMException("이미지 필터 계산을 취소했습니다.", "AbortError");
   }
-  const error = new Error("이미지 필터 계산을 취소했습니다.");
+  const error = new StudioImageFilterWorkerError("aborted");
   error.name = "AbortError";
   return error;
 }
@@ -113,13 +119,16 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw createAbortError();
 }
 
-function createWorkerUnavailableError(message: string, cause?: unknown): Error {
-  const error = new Error(
-    message,
-    cause === undefined ? undefined : { cause },
-  );
+function createWorkerUnavailableError(message: string): Error {
+  const error = new Error(message);
   error.name = "StudioImageFilterWorkerUnavailableError";
   return error;
+}
+function workerUnavailableError(
+  code: StudioImageFilterWorkerErrorCode,
+  cause?: unknown,
+): StudioImageFilterWorkerError {
+  return new StudioImageFilterWorkerError(code, { cause, name: "StudioImageFilterWorkerUnavailableError" });
 }
 
 type ExhaustiveImageFilterFieldProjection = ImageFilterFields & Record<keyof ImageFilterFields, unknown>;
@@ -286,18 +295,18 @@ function runImageFilterDirect(
   return { execution: "direct", imageData: request.imageData };
 }
 
-function deserializeWorkerError(response: {
-  readonly error?: unknown;
-}): Error {
+function deserializeWorkerError(response: { readonly error?: unknown }): Error {
   const payload = response.error;
-  if (!payload || typeof payload !== "object"
-    || !("message" in payload) || typeof payload.message !== "string") {
-    return createWorkerUnavailableError("이미지 필터 Worker의 오류 응답 형식이 올바르지 않습니다.");
+  if (!payload || typeof payload !== "object" || !("message" in payload) || typeof payload.message !== "string") {
+    return workerUnavailableError("errorResponseMalformed");
+  }
+  const record = payload as { code?: unknown; name?: unknown; params?: unknown };
+  const name = typeof record.name === "string" && record.name ? record.name : "Error";
+  if (isStudioImageFilterWorkerErrorCode(record.code)) {
+    return new StudioImageFilterWorkerError(record.code, { name, params: studioImageFilterWorkerErrorParams(record.params) });
   }
   const error = new Error(payload.message);
-  error.name = "name" in payload && typeof payload.name === "string" && payload.name
-    ? payload.name
-    : "Error";
+  error.name = name;
   return error;
 }
 
@@ -307,7 +316,7 @@ function assertResultDimensions(
 ): void {
   assertStudioImageFilterImageData(result, "이미지 필터 Worker 결과");
   if (result.width !== source.width || result.height !== source.height) {
-    throw new RangeError("이미지 필터 Worker 결과 크기가 원본과 일치하지 않습니다.");
+    throw new StudioImageFilterWorkerError("resultSizeMismatch");
   }
 }
 
@@ -351,7 +360,7 @@ function runImageFilterWithWorker(
         || typeof response !== "object"
         || response.version !== STUDIO_IMAGE_FILTER_WORKER_PROTOCOL_VERSION
       ) {
-        finish(() => reject(new Error("이미지 필터 Worker가 알 수 없는 응답을 반환했습니다.")));
+        finish(() => reject(new StudioImageFilterWorkerError("unknownResponse")));
         return;
       }
       if (response.type === "studio-image-filter/ready") {
@@ -363,21 +372,18 @@ function runImageFilterWithWorker(
         try {
           requestPosted = true;
           runTimer = setTimeout(
-            () => finish(() => reject(new Error("이미지 필터 Worker 계산 시간이 초과되었습니다."))),
+            () => finish(() => reject(new StudioImageFilterWorkerError("computeTimeout"))),
             30_000,
           );
           worker.postMessage(message, studioImageFilterRequestTransfers(message));
         } catch (error) {
           requestPosted = false;
-          finish(() => reject(createWorkerUnavailableError(
-            "이미지 필터 Worker에 요청을 전달하지 못했습니다.",
-            error,
-          )));
+          finish(() => reject(workerUnavailableError("requestPostFailed", error)));
         }
         return;
       }
       if (!requestPosted) {
-        finish(() => reject(new Error("이미지 필터 Worker가 준비 전에 결과를 반환했습니다.")));
+        finish(() => reject(new StudioImageFilterWorkerError("resultBeforeReady")));
         return;
       }
       if (response.type === "studio-image-filter/failure") {
@@ -385,7 +391,7 @@ function runImageFilterWithWorker(
         return;
       }
       if (response.type !== "studio-image-filter/success") {
-        finish(() => reject(new Error("이미지 필터 Worker가 알 수 없는 응답을 반환했습니다.")));
+        finish(() => reject(new StudioImageFilterWorkerError("unknownResponse")));
         return;
       }
       try {
@@ -398,20 +404,15 @@ function runImageFilterWithWorker(
     };
     worker.onerror = (event) => {
       event.preventDefault?.();
-      const error =
-        event.error instanceof Error
-          ? event.error
-          : createWorkerUnavailableError(
-              event.message || (requestPosted
-                ? "이미지 필터 Worker 실행 중 오류가 발생했습니다."
-                : "이미지 필터 Worker를 준비하지 못했습니다."),
-            );
+      const error = event.error instanceof Error
+        ? event.error
+        : event.message
+          ? createWorkerUnavailableError(event.message)
+          : workerUnavailableError(requestPosted ? "workerExecutionFailed" : "workerPrepareFailed");
       finish(() => reject(error));
     };
 
-    worker.onmessageerror = () => finish(() => reject(createWorkerUnavailableError(
-      "이미지 필터 Worker 응답을 읽지 못했습니다.",
-    )));
+    worker.onmessageerror = () => finish(() => reject(workerUnavailableError("responseUnreadable")));
 
     signal?.addEventListener("abort", onAbort, { once: true });
     if (signal?.aborted) {
@@ -419,9 +420,7 @@ function runImageFilterWithWorker(
       return;
     }
     readyTimer = setTimeout(
-      () => finish(() => reject(createWorkerUnavailableError(
-        "이미지 필터 Worker가 준비 시간 안에 응답하지 않았습니다.",
-      ))),
+      () => finish(() => reject(workerUnavailableError("readyTimeout"))),
       3_000,
     );
   });
@@ -445,17 +444,17 @@ export async function runStudioImageFilterWorker(
   const factory =
     options.workerFactory === undefined ? createStudioImageFilterModuleWorker : options.workerFactory;
   if (!factory) {
-    throw createWorkerUnavailableError("이미지 필터 Worker를 사용할 수 없습니다.");
+    throw workerUnavailableError("workerUnavailable");
   }
 
   let worker: StudioImageFilterWorkerLike | null;
   try {
     worker = factory();
   } catch (error) {
-    throw createWorkerUnavailableError("이미지 필터 Worker를 만들지 못했습니다.", error);
+    throw workerUnavailableError("workerCreateFailed", error);
   }
   if (!worker) {
-    throw createWorkerUnavailableError("이미지 필터 Worker를 사용할 수 없습니다.");
+    throw workerUnavailableError("workerUnavailable");
   }
   return runImageFilterWithWorker(worker, cloneSafeRequest, options.signal);
 }
@@ -546,12 +545,9 @@ export function createStudioImageFilterWorkerSession(
     });
   };
 
-  const rejectCurrentWorkerUnavailable = (message: string, cause?: unknown) => {
+  const rejectCurrentWorkerUnavailable = (error: StudioImageFilterWorkerError) => {
     closeWorker();
-    completeCurrent((task) => settle(
-      task,
-      () => task.reject(createWorkerUnavailableError(message, cause)),
-    ));
+    completeCurrent((task) => settle(task, () => task.reject(error)));
   };
 
   const postCurrent = () => {
@@ -575,16 +571,13 @@ export function createStudioImageFilterWorkerSession(
         closeWorker();
         completeCurrent((pending) => settle(
           pending,
-          () => pending.reject(new Error("이미지 필터 Worker 계산 시간이 초과되었습니다.")),
+          () => pending.reject(new StudioImageFilterWorkerError("computeTimeout")),
         ));
       }, 30_000);
       worker.postMessage(message, studioImageFilterRequestTransfers(message));
     } catch (error) {
       task.posted = false;
-      rejectCurrentWorkerUnavailable(
-        "이미지 필터 Worker에 요청을 전달하지 못했습니다.",
-        error,
-      );
+      rejectCurrentWorkerUnavailable(workerUnavailableError("requestPostFailed", error));
     }
   };
 
@@ -603,7 +596,7 @@ export function createStudioImageFilterWorkerSession(
         closeWorker();
         completeCurrent((task) => settle(
           task,
-          () => task.reject(new Error("이미지 필터 Worker가 알 수 없는 응답을 반환했습니다.")),
+          () => task.reject(new StudioImageFilterWorkerError("unknownResponse")),
         ));
         if (!invalid) queueMicrotask(pump);
         return;
@@ -621,7 +614,7 @@ export function createStudioImageFilterWorkerSession(
         closeWorker();
         completeCurrent((pending) => settle(
           pending,
-          () => pending.reject(new Error("이미지 필터 Worker가 준비 전에 결과를 반환했습니다.")),
+          () => pending.reject(new StudioImageFilterWorkerError("resultBeforeReady")),
         ));
         return;
       }
@@ -635,7 +628,7 @@ export function createStudioImageFilterWorkerSession(
       if (response.type !== "studio-image-filter/success") {
         completeCurrent((pending) => settle(
           pending,
-          () => pending.reject(new Error("이미지 필터 Worker가 알 수 없는 응답을 반환했습니다.")),
+          () => pending.reject(new StudioImageFilterWorkerError("unknownResponse")),
         ));
         return;
       }
@@ -656,20 +649,18 @@ export function createStudioImageFilterWorkerSession(
       event.preventDefault?.();
       const error = event.error instanceof Error
         ? event.error
-        : createWorkerUnavailableError(
-            event.message || "이미지 필터 Worker 실행 중 오류가 발생했습니다.",
-          );
+        : event.message
+          ? createWorkerUnavailableError(event.message)
+          : workerUnavailableError("workerExecutionFailed");
       closeWorker();
       completeCurrent((pending) => settle(pending, () => pending.reject(error)));
     };
     worker.onmessageerror = () => {
       if (disposed || worker !== nextWorker) return;
-      rejectCurrentWorkerUnavailable("이미지 필터 Worker 응답을 읽지 못했습니다.");
+      rejectCurrentWorkerUnavailable(workerUnavailableError("responseUnreadable"));
     };
     readyTimer = setTimeout(
-      () => rejectCurrentWorkerUnavailable(
-        "이미지 필터 Worker가 준비 시간 안에 응답하지 않았습니다.",
-      ),
+      () => rejectCurrentWorkerUnavailable(workerUnavailableError("readyTimeout")),
       3_000,
     );
   };
@@ -677,18 +668,18 @@ export function createStudioImageFilterWorkerSession(
   const ensureWorker = () => {
     if (worker || disposed) return;
     if (!factory) {
-      rejectCurrentWorkerUnavailable("이미지 필터 Worker를 사용할 수 없습니다.");
+      rejectCurrentWorkerUnavailable(workerUnavailableError("workerUnavailable"));
       return;
     }
     try {
       const nextWorker = factory();
       if (!nextWorker) {
-        rejectCurrentWorkerUnavailable("이미지 필터 Worker를 사용할 수 없습니다.");
+        rejectCurrentWorkerUnavailable(workerUnavailableError("workerUnavailable"));
         return;
       }
       attachWorker(nextWorker);
     } catch (error) {
-      rejectCurrentWorkerUnavailable("이미지 필터 Worker를 만들지 못했습니다.", error);
+      rejectCurrentWorkerUnavailable(workerUnavailableError("workerCreateFailed", error));
     }
   };
 
@@ -803,7 +794,7 @@ function assertStudioImageFilterSourceRevision(
   ) {
     return;
   }
-  throw new TypeError("이미지 필터 상주 원본 revision 형식이 올바르지 않습니다.");
+  throw new StudioImageFilterWorkerError("sourceRevisionInvalid");
 }
 
 function residentSourceMatchesTask(
@@ -913,17 +904,14 @@ export function createStudioImageFilterResidentWorkerSession(
     });
   };
 
-  const rejectCurrentWorkerUnavailable = (message: string, cause?: unknown) => {
+  const rejectCurrentWorkerUnavailable = (error: StudioImageFilterWorkerError) => {
     closeWorker();
-    completeCurrent((task) => settle(
-      task,
-      () => task.reject(createWorkerUnavailableError(message, cause)),
-    ));
+    completeCurrent((task) => settle(task, () => task.reject(error)));
   };
 
-  const rejectCurrentProtocol = (message: string) => {
+  const rejectCurrentProtocol = (code: StudioImageFilterWorkerErrorCode) => {
     closeWorker();
-    completeCurrent((task) => settle(task, () => task.reject(new Error(message))));
+    completeCurrent((task) => settle(task, () => task.reject(new StudioImageFilterWorkerError(code))));
   };
 
   const armRunTimer = () => {
@@ -933,7 +921,7 @@ export function createStudioImageFilterResidentWorkerSession(
       closeWorker();
       completeCurrent((task) => settle(
         task,
-        () => task.reject(new Error("이미지 필터 Worker 계산 시간이 초과되었습니다.")),
+        () => task.reject(new StudioImageFilterWorkerError("computeTimeout")),
       ));
     }, 30_000);
   };
@@ -942,7 +930,7 @@ export function createStudioImageFilterResidentWorkerSession(
     const task = current;
     if (!task || !worker || !ready || task.settled) return;
     if (!residentSourceMatchesTask(loadedSource, task)) {
-      rejectCurrentProtocol("이미지 필터 Worker 상주 원본 정체성이 일치하지 않습니다.");
+      rejectCurrentProtocol("residentSourceIdentityMismatch");
       return;
     }
     if (task.signal?.aborted) {
@@ -969,10 +957,7 @@ export function createStudioImageFilterResidentWorkerSession(
       if (runTimer !== null) clearTimeout(runTimer);
       runTimer = null;
       task.phase = "queued";
-      rejectCurrentWorkerUnavailable(
-        "이미지 필터 Worker에 실행 요청을 전달하지 못했습니다.",
-        error,
-      );
+      rejectCurrentWorkerUnavailable(workerUnavailableError("runRequestPostFailed", error));
     }
   };
 
@@ -1021,10 +1006,7 @@ export function createStudioImageFilterResidentWorkerSession(
       runTimer = null;
       task.phase = "queued";
       loadingSource = null;
-      rejectCurrentWorkerUnavailable(
-        "이미지 필터 Worker에 원본을 전달하지 못했습니다.",
-        error,
-      );
+      rejectCurrentWorkerUnavailable(workerUnavailableError("sourcePostFailed", error));
     }
   };
 
@@ -1041,7 +1023,7 @@ export function createStudioImageFilterResidentWorkerSession(
         || typeof response !== "object"
         || response.version !== STUDIO_IMAGE_FILTER_WORKER_PROTOCOL_VERSION
       ) {
-        rejectCurrentProtocol("이미지 필터 Worker가 알 수 없는 응답을 반환했습니다.");
+        rejectCurrentProtocol("unknownResponse");
         return;
       }
       if (response.type === "studio-image-filter/ready") {
@@ -1055,7 +1037,7 @@ export function createStudioImageFilterResidentWorkerSession(
 
       const task = current;
       if (!task || task.phase === "queued") {
-        rejectCurrentProtocol("이미지 필터 Worker가 준비 전에 결과를 반환했습니다.");
+        rejectCurrentProtocol("resultBeforeReady");
         return;
       }
 
@@ -1068,7 +1050,7 @@ export function createStudioImageFilterResidentWorkerSession(
           || response.sourceGeneration !== expected.sourceGeneration
           || task.sourceGeneration !== response.sourceGeneration
         ) {
-          rejectCurrentProtocol("이미지 필터 Worker가 오래되었거나 잘못된 원본 응답을 반환했습니다.");
+          rejectCurrentProtocol("staleSourceResponse");
           return;
         }
         if (runTimer !== null) clearTimeout(runTimer);
@@ -1091,7 +1073,7 @@ export function createStudioImageFilterResidentWorkerSession(
           ? response.requestId === undefined
           : response.requestId === task.requestId;
         if (!sourceMatches || !requestMatches) {
-          rejectCurrentProtocol("이미지 필터 Worker가 오래되었거나 잘못된 실패 응답을 반환했습니다.");
+          rejectCurrentProtocol("staleFailureResponse");
           return;
         }
         if (task.phase === "loading-source") {
@@ -1106,7 +1088,7 @@ export function createStudioImageFilterResidentWorkerSession(
       }
 
       if (response.type !== "studio-image-filter/source-success") {
-        rejectCurrentProtocol("이미지 필터 Worker가 알 수 없는 응답을 반환했습니다.");
+        rejectCurrentProtocol("unknownResponse");
         return;
       }
       if (
@@ -1116,7 +1098,7 @@ export function createStudioImageFilterResidentWorkerSession(
         || response.requestId !== task.requestId
         || !residentSourceMatchesTask(loadedSource, task)
       ) {
-        rejectCurrentProtocol("이미지 필터 Worker가 오래되었거나 잘못된 필터 결과를 반환했습니다.");
+        rejectCurrentProtocol("staleFilterResult");
         return;
       }
       try {
@@ -1136,20 +1118,18 @@ export function createStudioImageFilterResidentWorkerSession(
       event.preventDefault?.();
       const error = event.error instanceof Error
         ? event.error
-        : createWorkerUnavailableError(
-            event.message || "이미지 필터 Worker 실행 중 오류가 발생했습니다.",
-          );
+        : event.message
+          ? createWorkerUnavailableError(event.message)
+          : workerUnavailableError("workerExecutionFailed");
       closeWorker();
       completeCurrent((pending) => settle(pending, () => pending.reject(error)));
     };
     worker.onmessageerror = () => {
       if (disposed || worker !== nextWorker) return;
-      rejectCurrentWorkerUnavailable("이미지 필터 Worker 응답을 읽지 못했습니다.");
+      rejectCurrentWorkerUnavailable(workerUnavailableError("responseUnreadable"));
     };
     readyTimer = setTimeout(
-      () => rejectCurrentWorkerUnavailable(
-        "이미지 필터 Worker가 준비 시간 안에 응답하지 않았습니다.",
-      ),
+      () => rejectCurrentWorkerUnavailable(workerUnavailableError("readyTimeout")),
       3_000,
     );
   };
@@ -1157,18 +1137,18 @@ export function createStudioImageFilterResidentWorkerSession(
   const ensureWorker = () => {
     if (worker || disposed) return;
     if (!factory) {
-      rejectCurrentWorkerUnavailable("이미지 필터 Worker를 사용할 수 없습니다.");
+      rejectCurrentWorkerUnavailable(workerUnavailableError("workerUnavailable"));
       return;
     }
     try {
       const nextWorker = factory();
       if (!nextWorker) {
-        rejectCurrentWorkerUnavailable("이미지 필터 Worker를 사용할 수 없습니다.");
+        rejectCurrentWorkerUnavailable(workerUnavailableError("workerUnavailable"));
         return;
       }
       attachWorker(nextWorker);
     } catch (error) {
-      rejectCurrentWorkerUnavailable("이미지 필터 Worker를 만들지 못했습니다.", error);
+      rejectCurrentWorkerUnavailable(workerUnavailableError("workerCreateFailed", error));
     }
   };
 

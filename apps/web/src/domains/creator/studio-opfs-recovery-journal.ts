@@ -2,13 +2,6 @@ import { calculateStudioCrc32 } from "./studio-crc32";
 
 import type { StudioOpfsFileSystem } from "./studio-opfs-filesystem";
 
-import {
-  describeStudioOpfsRecoveryJournalError,
-  StudioOpfsRecoveryJournalError,
-  type StudioOpfsRecoveryJournalErrorCode,
-  type StudioOpfsRecoveryJournalErrorSubcode,
-} from "./studio-opfs-recovery-journal-error";
-
 /**
  * Durable, storage-only crash journal for large Studio documents.
  *
@@ -60,6 +53,13 @@ const FRAME_KIND_CODE: Readonly<Record<FrameKind, number>> = Object.freeze({
   head: 3,
   descriptor: 4,
 });
+
+import {
+  describeStudioOpfsRecoveryJournalError,
+  StudioOpfsRecoveryJournalError,
+  type StudioOpfsRecoveryJournalErrorCode,
+  type StudioOpfsRecoveryJournalErrorSubcode,
+} from "./studio-opfs-recovery-journal-error";
 
 export {
   describeStudioOpfsRecoveryJournalError,
