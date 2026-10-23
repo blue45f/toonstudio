@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 29편.
- * 스물아홉 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 31편.
+ * 서른한 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~29편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~31편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -34,7 +34,9 @@ export interface ProductTourShort {
     | "episode-alert"
     | "library-shelves"
     | "deadline-dawn"
-    | "team-table";
+    | "team-table"
+    | "sketch-walk"
+    | "ink-closeup";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -477,6 +479,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Around the team table",
       body: "A team gathered around one table, passing sketches back and forth as the work comes together.",
+    },
+  },
+  {
+    id: "sketch-walk",
+    src: "/brand/promo-shorts/shorts-31-sketchwalk.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "산책길에서 여는 스케치북",
+      body: "공원 산책길에 멈춰 서서 눈앞의 풍경을 스케치북에 옮겨 담는 순간을 담았습니다.",
+    },
+    en: {
+      title: "A sketchbook opens on the path",
+      body: "Pausing on a park path to move the view ahead onto the pages of a sketchbook.",
+    },
+  },
+  {
+    id: "ink-closeup",
+    src: "/brand/promo-shorts/shorts-32-ink.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "펜촉에 맺히는 잉크",
+      body: "펜촉 끝에 잉크가 맺혔다가 종이 위로 흘러 선이 살아나는 순간을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "Ink gathering on the nib",
+      body: "Ink beads at the tip of a nib, then flows onto the paper as a line comes alive — caught up close.",
     },
   },
 ];
