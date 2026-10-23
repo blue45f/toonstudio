@@ -1,9 +1,10 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 46편.
- * 마흔여섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 48편.
+ * 마흔여덟 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
  * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
- * 안팎, 39~46편은 14초 안팎, 48편도 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 안팎, 39~46편은 14초 안팎, 48·49편도 14초 안팎, 50편은 8초 안팎이라
+ * 길이를 편마다 따로 적는다.
  * 47편(나침반)은 다이얼의 로마 숫자가 읽히는 품질 이슈가 있어 쇼츠 섹션에
  * 걸지 않고 홍보 영상 자료실에만 보관한다.
  */
@@ -54,7 +55,9 @@ export interface ProductTourShort {
     | "plant-water"
     | "seashell"
     | "steam-kettle"
-    | "hourglass";
+    | "hourglass"
+    | "typebars"
+    | "lantern";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -752,6 +755,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "The hourglass",
       body: "Sand slipping quietly through an hourglass — caught up close.",
+    },
+  },
+  {
+    id: "typebars",
+    src: "/brand/promo-shorts/shorts-49-typebars.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "타자기의 활자 막대",
+      body: "타자기의 금속 활자 막대가 오르내리는 순간을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "Typewriter typebars",
+      body: "Metal typebars of a typewriter rising and falling — caught up close.",
+    },
+  },
+  {
+    id: "lantern",
+    src: "/brand/promo-shorts/shorts-50-lantern.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:08",
+    ko: {
+      title: "밤의 종이 등불",
+      body: "밤공기 속에서 부드럽게 빛나는 종이 등불을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "A paper lantern at night",
+      body: "A paper lantern glowing softly in the night air — caught up close.",
     },
   },
 ];
