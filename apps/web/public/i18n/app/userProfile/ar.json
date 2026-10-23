@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "محتوى الملفات الشخصية",
   "userProfile.refresh": "التجديد",
   "userProfile.emptyReviews": "لا توجد مراجعات نشرتها هذا المستخدم حتى الآن.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "تعذر تحميل الأعمال المنشورة. يرجى المحاولة مرة أخرى.",
+  "userProfile.series.error": "تعذر تحميل السلاسل. يرجى المحاولة مرة أخرى.",
+  "userProfile.emptyReviewsHint": "اترك أول مراجعة لعمل تحبه.",
+  "userProfile.emptyReviewsCta": "تصفح الأعمال"
 }
