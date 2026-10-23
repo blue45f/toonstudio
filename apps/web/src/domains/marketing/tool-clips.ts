@@ -26,6 +26,10 @@
  * - poser: /studio/poser 독립 도구(데생 인형·매직 포저) 화면으로 직행하고,
  *   포즈를 주제로 한 소개 표면은 제품 투어 3D 챕터뿐인데 그 카드에는 이미
  *   같은 주제(턴테이블 마네킹)의 챕터 배경 루프가 깔려 있어 중복을 피했다.
+ *
+ * 세로 변형 3편(canvas·bg3d·shaper)은 위 12편과 별도로, 소셜 카드에 바로
+ * 쓸 수 있게 같은 주제를 세로(9:16)로 다시 그린 것이다. 표면에는 배선하지
+ * 않고 홍보 영상 자료실에만 수록한다(TOOL_CLIPS_VERTICAL).
  */
 export interface ToolClip {
   readonly src: string;
@@ -94,3 +98,18 @@ export function featureOverviewCategoryClip(categoryId: string): FeatureOverview
 export const TOOL_CLIPS_STAGED = [
   { toolId: "poser", src: "/brand/tool-clips/tool-poser.mp4", width: 1344, height: 768 },
 ] as const;
+
+export interface ToolVerticalClip extends ToolClip {
+  readonly toolId: ToolClipId;
+}
+
+/**
+ * 도구 클립의 세로(9:16) 변형 — 가로본과 같은 주제를 세로로 다시 그린
+ * 생성형 AI 영상이다. 표면에 배선하지 않고 소셜 카드 소재로 쓰기 위해
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const TOOL_CLIPS_VERTICAL: readonly ToolVerticalClip[] = [
+  { toolId: "canvas", src: "/brand/tool-clips/tool-canvas-vertical.mp4", width: 768, height: 1344 },
+  { toolId: "bg3d", src: "/brand/tool-clips/tool-bg3d-vertical.mp4", width: 768, height: 1344 },
+  { toolId: "shaper", src: "/brand/tool-clips/tool-shaper-vertical.mp4", width: 768, height: 1344 },
+];

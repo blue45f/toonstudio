@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 50편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 59편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,21 +8,24 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 8편: product-tour-shorts.ts (PRODUCT_TOUR_SHORTS)
+ * - 쇼츠 10편: product-tour-shorts.ts (PRODUCT_TOUR_SHORTS)
  * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
  * - 챕터 배경 루프 9편: product-tour-clips.ts + 챕터 이름은
  *   product-tour-content.ts의 PRODUCT_TOUR.chapters
- * - 브랜드 클립 8편: brand-clips.ts
- * - 도구 클립 12편: tool-clips.ts (제작 허브 1편 + 기능 요약 카테고리 7편 +
- *   보류 1편)와, 제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish —
- *   src·단계 매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
+ * - 브랜드 클립 9편: brand-clips.ts (배선 8편 + 자료실 보관인 밤 버전 1편)
+ * - 도구 클립 15편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
+ *   카테고리 7편 + 보류 1편)과 세로 변형 3편(TOOL_CLIPS_VERTICAL), 그리고
+ *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
+ *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
  *   여기서는 그 값을 옮겨 적고 출처를 밝힌다)
- * - 페이지 클립 8편: 이 파일이 첫 레지스트리다 (public/brand/page-clips/).
- *   전부 아직 표면에 배선하지 않은 자료실 보관분이다.
+ * - 페이지 클립 11편: 이 파일이 첫 레지스트리다 (public/brand/page-clips/).
+ *   전부 아직 표면에 배선하지 않은 자료실 보관분이고, 홈 무드는 결함본을
+ *   교체한 v2가 정본이며 계절 변형 2편(가을·겨울)을 함께 둔다.
  */
 import {
   BRAND_FILM_CLOSING_CLIP,
   BRAND_FILM_SCENE_CLIPS,
+  BRAND_NIGHT_STUDIO_CLIP,
   FEATURES_AMBIENT_CLIP,
   HOME_CORE_STUDIO_3D_BACKDROP_CLIP,
   STUDIO_INTRO_CLOSING_CLIP,
@@ -41,6 +44,7 @@ import { PRODUCT_TOUR_SHORTS } from "./product-tour-shorts";
 import {
   FEATURE_OVERVIEW_CATEGORY_CLIPS,
   TOOL_CLIPS_STAGED,
+  TOOL_CLIPS_VERTICAL,
   TOOL_SURFACE_CLIPS,
 } from "./tool-clips";
 
@@ -63,11 +67,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 제품 투어 페이지의 쇼츠 섹션에도 같은 여덟 편이 걸려 있습니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 제품 투어 페이지의 쇼츠 섹션에도 같은 열 편이 걸려 있습니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. The same eight also run in the shorts section of the product tour page.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. The same ten also run in the shorts section of the product tour page.",
     },
   },
   {
@@ -384,6 +388,21 @@ const brand: readonly PromoVideoItem[] = [
     },
     usage: { ko: "홈 · 핵심 작업실 그리드 3D 카드 배경", en: "Home · Core studios grid, 3D card backdrop" },
   },
+  {
+    id: "brand-night-studio",
+    categoryId: "brand",
+    ...BRAND_NIGHT_STUDIO_CLIP,
+    durationLabel: "0:14",
+    ko: {
+      title: "밤의 스튜디오",
+      body: "도시 불빛과 램프 아래 밤의 작업실을 그린 클립입니다. 낮 파노라마의 짝으로 만들었습니다.",
+    },
+    en: {
+      title: "Night studio",
+      body: "A night studio under city lights and a desk lamp — the counterpart to the daytime panorama.",
+    },
+    usage: LIBRARY_ONLY,
+  },
 ];
 
 const FEATURE_BAND_USAGE = {
@@ -463,6 +482,29 @@ const toolItem = (
   usage,
 });
 
+const SOCIAL_VERTICAL_USAGE = {
+  ko: "자료실 보관 · 소셜 카드용 세로 버전",
+  en: "Library only · Vertical version for social cards",
+} as const;
+
+const toolVerticalItem = (clip: (typeof TOOL_CLIPS_VERTICAL)[number]): PromoVideoItem => ({
+  id: `tool-${clip.toolId}-vertical`,
+  categoryId: "tools",
+  src: clip.src,
+  width: clip.width,
+  height: clip.height,
+  durationLabel: "0:14",
+  ko: {
+    title: `${toolCopy[clip.toolId].ko.title} · 세로`,
+    body: "같은 주제를 세로(9:16)로 다시 그린 소셜 카드용 변형입니다.",
+  },
+  en: {
+    title: `${toolCopy[clip.toolId].en.title} · Vertical`,
+    body: "The same subject redrawn vertically (9:16) as a social-card variant.",
+  },
+  usage: SOCIAL_VERTICAL_USAGE,
+});
+
 const tools: readonly PromoVideoItem[] = [
   ...TOOL_SURFACE_CLIPS.map((clip) =>
     toolItem(clip.toolId, clip, {
@@ -490,6 +532,7 @@ const tools: readonly PromoVideoItem[] = [
     WORKFLOW_STAGE_USAGE,
   ),
   ...TOOL_CLIPS_STAGED.map((clip) => toolItem(clip.toolId, clip, LIBRARY_ONLY)),
+  ...TOOL_CLIPS_VERTICAL.map(toolVerticalItem),
 ];
 
 const pageItem = (
@@ -499,6 +542,7 @@ const pageItem = (
   ko: { readonly title: string; readonly body: string },
   en: { readonly title: string; readonly body: string },
   note?: { readonly ko: string; readonly en: string },
+  usage: { readonly ko: string; readonly en: string } = LIBRARY_ONLY,
 ): PromoVideoItem => ({
   id: `page-${id}`,
   categoryId: "pages",
@@ -508,7 +552,7 @@ const pageItem = (
   durationLabel,
   ko,
   en,
-  usage: LIBRARY_ONLY,
+  usage,
   ...(note ? { note } : {}),
 });
 
@@ -549,15 +593,29 @@ const pages: readonly PromoVideoItem[] = [
     { title: "Getting-started mood", body: "A mood clip made to welcome creators who are just starting." },
   ),
   pageItem(
+    "home-v2",
+    "page-home-v2.mp4",
+    "0:14",
+    {
+      title: "홈 무드",
+      body: "창작 홈의 배경으로 쓰기 위해 만든 분위기 클립입니다. 달력 글자가 또렷하던 앞선 버전을 교체한 정본입니다.",
+    },
+    {
+      title: "Home mood",
+      body: "A mood clip made as a backdrop for the creator home — the canonical version, replacing the earlier take whose calendar text was too legible.",
+    },
+  ),
+  pageItem(
     "home",
     "page-home.mp4",
     "0:14",
-    { title: "홈 무드", body: "창작 홈의 배경으로 쓰기 위해 만든 분위기 클립입니다." },
-    { title: "Home mood", body: "A mood clip made as a backdrop for the creator home." },
+    { title: "홈 무드 · 이전 버전", body: "창작 홈 배경용으로 먼저 만들었던 버전입니다." },
+    { title: "Home mood · Earlier version", body: "The first take made as a backdrop for the creator home." },
     {
-      ko: "품질 메모: 달력 숫자와 'EPISODE' 글자가 또렷하게 보여, 배경으로 깔기 전에 확인이 필요합니다.",
-      en: "Quality note: the calendar numbers and the word 'EPISODE' are clearly visible — check before using it as a backdrop.",
+      ko: "품질 메모: 달력 숫자와 'EPISODE' 글자가 또렷하게 보여, 위의 교체본(v2)으로 대체했습니다. 비교용으로만 남깁니다.",
+      en: "Quality note: the calendar numbers and the word 'EPISODE' are clearly visible, so the v2 above supersedes this one. Kept for comparison only.",
     },
+    { ko: "자료실 보관 · 대체됨", en: "Library only · Superseded" },
   ),
   pageItem(
     "help",
@@ -572,6 +630,32 @@ const pages: readonly PromoVideoItem[] = [
     "0:14",
     { title: "투어 스팅어", body: "짧게 분위기를 열고 닫는 스팅어 용도로 만든 클립입니다." },
     { title: "Tour stinger", body: "A short stinger clip for opening and closing on a mood." },
+  ),
+  pageItem(
+    "season-autumn",
+    "season-autumn.mp4",
+    "0:14",
+    {
+      title: "계절 · 가을 스튜디오",
+      body: "가을빛이 드는 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Autumn studio",
+      body: "An autumn-lit studio — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageItem(
+    "season-winter",
+    "season-winter.mp4",
+    "0:14",
+    {
+      title: "계절 · 겨울 스튜디오",
+      body: "눈 오는 창밖과 따뜻한 실내를 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Winter studio",
+      body: "Snow outside the window and warmth inside — a seasonal variant kept for swapping event and season banners.",
+    },
   ),
 ];
 

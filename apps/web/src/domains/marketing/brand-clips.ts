@@ -11,6 +11,10 @@
  * - brand-4-cafe-street-flythrough(3D 카페 거리 비행): 투어 3D 챕터 카드에는
  *   챕터 배경 루프가 이미 깔려 있어 중복을 피하고, 홈 핵심 작업실 그리드의
  *   3D 카드 배경으로 배선했다(HOME_CORE_STUDIO_3D_BACKDROP_CLIP).
+ *
+ * brand-7-night-studio(밤의 스튜디오)는 낮 파노라마(home-hero-day)의 짝으로
+ * 만든 변형이라 아직 표면에 배선하지 않고 홍보 영상 자료실에만 수록한다
+ * (BRAND_NIGHT_STUDIO_CLIP).
  */
 export interface BrandClip {
   readonly src: string;
@@ -77,3 +81,14 @@ export const HOME_CORE_STUDIO_3D_BACKDROP_CLIP = {
   width: 1344,
   height: 768,
 } as const;
+
+/**
+ * 밤의 스튜디오 — 도시 불빛과 램프 아래 작업실을 그린 생성형 AI 영상이다.
+ * 낮 파노라마(STUDIO_INTRO_CLOSING_CLIP)의 짝으로 만들었고, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_NIGHT_STUDIO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-7-night-studio.mp4",
+  width: 1344,
+  height: 768,
+};
