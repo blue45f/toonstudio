@@ -20,31 +20,25 @@ import {
   type StudioLivingInkFluidReferenceRegion,
   type StudioLivingInkFluidReferenceStepParams,
 } from "../studio-living-ink-fluid-reference";
-
 import { STUDIO_WET_INK_INKWASH_DISPLAY } from "./studio-wet-ink-field";
-
 import type { StudioWetInkTileUpload } from "./studio-wet-ink-field";
 
 export const STUDIO_INKWASH_FLUID_VERSION = "inkwash-fluid-v1" as const;
-
 /** InkWash §04: fresh pen ink lays a faint wetness so a following wash can catch it. */
 export const STUDIO_INKWASH_PEN_FRESH_WETNESS = 0.16;
-
 /** InkWash §05: gaussian stamps spaced at 0.6 × radius. */
 export const STUDIO_INKWASH_STAMP_SPACING_RATIO = 0.6;
-
 /**
  * 획 평균 간격에 해당하는 기준 속도. `speedShrink = 1/(1 + pace*0.85)` 에 들어가므로 이 값이
  * 곧 "보통 속도로 그은 획"의 굵기·농도 배율을 정한다. 환경 변수로 흔들지 않는 고정 상수여야
  * 라이브·커밋·내보내기가 같은 그림을 만든다.
  */
 export const STUDIO_INKWASH_NOMINAL_PACE = 0.45;
-
+export const STUDIO_INKWASH_FLUID_MAX_DIMENSION = 4_096;
 const PAPER = Object.freeze({ r: 0.965, g: 0.956, b: 0.932 });
-const FIELD_MAX = 2_048;
+const FIELD_MAX = STUDIO_INKWASH_FLUID_MAX_DIMENSION;
 const HASH_OFFSET = 0x811c9dc5;
 const HASH_PRIME = 0x01000193;
-
 export interface StudioInkwashFluidSession {
   readonly version: typeof STUDIO_INKWASH_FLUID_VERSION;
   readonly fluid: StudioLivingInkFluidReferenceField;
@@ -53,7 +47,6 @@ export interface StudioInkwashFluidSession {
   simulationStep: number;
   revision: number;
 }
-
 export interface StudioInkwashFluidStamp {
   readonly x: number;
   readonly y: number;
@@ -65,14 +58,12 @@ export interface StudioInkwashFluidStamp {
   /** Coarse-grid motion impulse. Water stamps push; pen stamps stay near 0. */
   readonly velocity: readonly [number, number];
 }
-
 export interface StudioInkwashFluidStrokeSample {
   readonly x: number;
   readonly y: number;
   readonly pressure: number;
   readonly timeMs?: number;
 }
-
 export interface StudioInkwashFluidStrokeInput {
   readonly tool: "pen" | "water";
   readonly samples: readonly StudioInkwashFluidStrokeSample[];
@@ -82,7 +73,6 @@ export interface StudioInkwashFluidStrokeInput {
   readonly spectralAbsorption?: Readonly<{ r: number; g: number; b: number }>;
   readonly inkColor?: Readonly<{ r: number; g: number; b: number }>;
 }
-
 /**
  * Causal, suffix-only preview planner. It emits the same Gaussian/Beer-Lambert material inputs as
  * the committed InkWash deposit without mutating the authoritative shared wash or running Stam.
@@ -144,6 +134,7 @@ export const STUDIO_INKWASH_FLUID_STEP_PARAMS: StudioLivingInkFluidReferenceStep
   });
 
 function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
   return value <= min ? min : value >= max ? max : value;
 }
 
@@ -151,11 +142,18 @@ function clamp01(value: number): number {
   return clamp(value, 0, 1);
 }
 
+function safePressure(value: unknown, fallback = 0.55): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? clamp01(value)
+    : fallback;
+}
+
 function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
 function clampDimension(value: number): number {
+  if (!Number.isFinite(value)) return 8;
   return Math.max(8, Math.min(FIELD_MAX, Math.floor(value)));
 }
 
@@ -194,15 +192,18 @@ export function depositStudioInkwashFluidStamp(
   session: StudioInkwashFluidSession,
   stamp: StudioInkwashFluidStamp,
 ): void {
+  if (!finite(stamp.x) || !finite(stamp.y)) return;
   const { fluid } = session;
-  const radius = Math.max(0.5, stamp.radius);
+  const radius = Math.max(0.5, finite(stamp.radius) ? stamp.radius : 0.5);
   const reach = radius * 2;
   const left = Math.max(0, Math.floor(stamp.x - reach));
   const right = Math.min(fluid.width - 1, Math.ceil(stamp.x + reach));
   const bottom = Math.max(0, Math.floor(stamp.y - reach));
   const top = Math.min(fluid.height - 1, Math.ceil(stamp.y + reach));
-  const pigment = stamp.pigment;
-  const hasPigment = pigment[0] > 0 || pigment[1] > 0 || pigment[2] > 0;
+  const p0 = finite(stamp.pigment[0]) ? stamp.pigment[0] : 0;
+  const p1 = finite(stamp.pigment[1]) ? stamp.pigment[1] : 0;
+  const p2 = finite(stamp.pigment[2]) ? stamp.pigment[2] : 0;
+  const hasPigment = p0 > 0 || p1 > 0 || p2 > 0;
   const wetness = clamp(stamp.wetness, 0, STUDIO_LIVING_INK_FLUID_DEFAULTS.wetCeiling);
   for (let y = bottom; y <= top; y += 1) {
     for (let x = left; x <= right; x += 1) {
@@ -213,9 +214,9 @@ export function depositStudioInkwashFluidStamp(
       const cell = y * fluid.width + x;
       if (hasPigment) {
         const base = cell * 4;
-        fluid.pigment[base] = (fluid.pigment[base] ?? 0) + pigment[0] * weight;
-        fluid.pigment[base + 1] = (fluid.pigment[base + 1] ?? 0) + pigment[1] * weight;
-        fluid.pigment[base + 2] = (fluid.pigment[base + 2] ?? 0) + pigment[2] * weight;
+        fluid.pigment[base] = (fluid.pigment[base] ?? 0) + p0 * weight;
+        fluid.pigment[base + 1] = (fluid.pigment[base + 1] ?? 0) + p1 * weight;
+        fluid.pigment[base + 2] = (fluid.pigment[base + 2] ?? 0) + p2 * weight;
       }
       if (wetness > 0) {
         const nextWet = wetness * weight;
@@ -224,8 +225,8 @@ export function depositStudioInkwashFluidStamp(
       }
     }
   }
-  const impulseX = stamp.velocity[0];
-  const impulseY = stamp.velocity[1];
+  const impulseX = finite(stamp.velocity[0]) ? stamp.velocity[0] : 0;
+  const impulseY = finite(stamp.velocity[1]) ? stamp.velocity[1] : 0;
   if (impulseX === 0 && impulseY === 0) {
     session.revision += 1;
     return;
@@ -259,9 +260,7 @@ export function depositStudioInkwashFluidStamp(
   session.revision += 1;
 }
 
-function spectralColor(
-  input: StudioInkwashFluidStrokeInput,
-): [number, number, number] {
+function spectralColor(input: StudioInkwashFluidStrokeInput,): [number, number, number] {
   const spec = input.spectralAbsorption ?? { r: 1, g: 0.96, b: 0.88 };
   const color = input.inkColor;
   if (!color) return [spec.r, spec.g, spec.b];
@@ -275,9 +274,7 @@ function spectralColor(
   ];
 }
 
-export function createStudioInkwashFluidPreviewPlanner(
-  options: StudioInkwashFluidPreviewPlannerOptions,
-): StudioInkwashFluidPreviewPlannerState {
+export function createStudioInkwashFluidPreviewPlanner(options: StudioInkwashFluidPreviewPlannerOptions,): StudioInkwashFluidPreviewPlannerState {
   const baseRadius = Math.max(0.75, options.radius);
   const absorption = spectralColor({
     tool: options.tool,
@@ -338,7 +335,7 @@ export function planStudioInkwashFluidPreviewStamps(
     directionY: number,
     speed: number,
   ): void => {
-    const normalizedPressure = clamp01(pressure);
+    const normalizedPressure = safePressure(pressure, state.previousPressure);
     const speedShrink = 1 / (1 + speed * (isWater ? 0.35 : 0.85));
     const pressureGrow = 0.35 + 0.65 * normalizedPressure;
     // The committed deposit computes radius and density from exactly these terms. Any
@@ -381,10 +378,11 @@ export function planStudioInkwashFluidPreviewStamps(
   let firstIndex = 0;
   if (!state.started) {
     const first = samples[0]!;
+    const initialPressure = safePressure(first.pressure);
     emit(
       first.x,
       first.y,
-      first.pressure,
+      initialPressure,
       0,
       0,
       STUDIO_INKWASH_NOMINAL_PACE,
@@ -392,7 +390,7 @@ export function planStudioInkwashFluidPreviewStamps(
     state.started = true;
     state.previousX = first.x;
     state.previousY = first.y;
-    state.previousPressure = clamp01(first.pressure);
+    state.previousPressure = initialPressure;
     state.untilNextStamp = state.spacing;
     firstIndex = 1;
   }
@@ -402,10 +400,11 @@ export function planStudioInkwashFluidPreviewStamps(
     const dx = sample.x - state.previousX;
     const dy = sample.y - state.previousY;
     const span = Math.hypot(dx, dy);
+    const currentPressure = safePressure(sample.pressure, state.previousPressure);
     if (span <= 1e-9) {
       state.previousX = sample.x;
       state.previousY = sample.y;
-      state.previousPressure = clamp01(sample.pressure);
+      state.previousPressure = currentPressure;
       continue;
     }
 
@@ -419,7 +418,6 @@ export function planStudioInkwashFluidPreviewStamps(
       STUDIO_INKWASH_NOMINAL_PACE * Math.min(4, relativePace);
     const directionX = dx / span;
     const directionY = dy / span;
-    const currentPressure = clamp01(sample.pressure);
 
     for (
       let travelled = state.untilNextStamp;
@@ -487,7 +485,7 @@ export function depositStudioInkwashFluidStroke(
 ): number {
   const samples = input.samples.filter((sample) => finite(sample.x) && finite(sample.y));
   if (samples.length === 0) return 0;
-  const baseRadius = Math.max(0.75, input.radius);
+  const baseRadius = Math.max(0.75, finite(input.radius) ? input.radius : 0.75);
   const spacing = Math.max(0.35, baseRadius * STUDIO_INKWASH_STAMP_SPACING_RATIO);
   const absorption = spectralColor(input);
   const isWater = input.tool === "water";
@@ -505,10 +503,11 @@ export function depositStudioInkwashFluidStroke(
     vy: number,
     speed: number,
   ): void => {
+    const normalizedPressure = safePressure(pressure);
     const speedShrink = 1 / (1 + speed * (isWater ? 0.35 : 0.85));
-    const pressureGrow = 0.35 + 0.65 * clamp01(pressure);
+    const pressureGrow = 0.35 + 0.65 * normalizedPressure;
     const radius = baseRadius * pressureGrow * speedShrink;
-    const densityScale = input.pigmentLoad * (0.4 + 0.6 * clamp01(pressure)) * speedShrink;
+    const densityScale = input.pigmentLoad * (0.4 + 0.6 * normalizedPressure) * speedShrink;
     const pigment: [number, number, number] = isWater || densityScale <= 0
       ? [0, 0, 0]
       : [
@@ -517,7 +516,7 @@ export function depositStudioInkwashFluidStroke(
         absorption[2] * densityScale,
       ];
     const wetness = isWater
-      ? clamp01(input.wetnessLoad) * (0.55 + 0.45 * clamp01(pressure))
+      ? clamp01(input.wetnessLoad) * (0.55 + 0.45 * normalizedPressure)
       : clamp01(input.wetnessLoad);
     depositStudioInkwashFluidStamp(session, {
       x,
@@ -610,9 +609,7 @@ export function depositStudioInkwashFluidStroke(
   return stamped;
 }
 
-export function studioInkwashFluidStepParams(
-  overrides: Partial<StudioLivingInkFluidReferenceStepParams> = {},
-): StudioLivingInkFluidReferenceStepParams {
+export function studioInkwashFluidStepParams(overrides: Partial<StudioLivingInkFluidReferenceStepParams> = {},): StudioLivingInkFluidReferenceStepParams {
   return {
     ...STUDIO_INKWASH_FLUID_STEP_PARAMS,
     ...overrides,
@@ -727,7 +724,8 @@ export function readStudioInkwashFluidCell(
 }
 
 function clampByte(value: number): number {
-  return value <= 0 ? 0 : value >= 255 ? 255 : Math.round(value);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return value >= 255 ? 255 : Math.round(value);
 }
 
 /**

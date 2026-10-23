@@ -27,14 +27,12 @@ import {
   studioOssSprayTipCoverage,
   studioOssWatercolorTipCoverage,
 } from "../studio-oss-brush-kernels";
-
 import { resolveStudioBrushEngineLaneStampTuning } from "./studio-brush-engine-lane-catalog";
 import {
   getStudioPaperPresetV1,
   isStudioPaperPresetIdV1,
   resolveStudioPaperDepositScaleV1,
 } from "./studio-paper-media-profile-v1";
-
 import type { StudioBrushEngineLaneStampTuning } from "./studio-brush-engine-lane-catalog";
 import type { StudioCc0MypaintDabDynamicsStyle } from "../studio-cc0-mypaint-preset-import-v1";
 import type {
@@ -55,18 +53,14 @@ export type StudioStampBrushKind =
   | "chalk"
   | "charcoal"
   | "pastel";
-
 /**
  * One logical stamp stroke may be replayed from an imported/collaborative document. A finite cap
  * prevents a single enormous segment from monopolising the main thread while remaining far above
  * the amount of detail visible in a normal Studio viewport.
  */
 export const STUDIO_STAMP_BRUSH_MAX_DABS = 100_000;
-
 /** 스탬프 엔진을 쓰는 브러시 프리셋 id → 종류. 그 외 id 는 null(기존 패밀리 파이프라인). */
-export function resolveStudioStampBrushKind(
-  brushId: string | undefined
-): StudioStampBrushKind | null {
+export function resolveStudioStampBrushKind(brushId: string | undefined): StudioStampBrushKind | null {
   if (!brushId) return null;
   // CC0 MyPaint verbatim import pool (`mypaint-cc0--*`): each registered preset pins one of the
   // EXISTING verified stamp kinds (charcoal/pencil/ink/watercolor/mypaint/airbrush/pastel) as its
@@ -113,18 +107,15 @@ export function resolveStudioStampBrushKind(
       return null;
   }
 }
-
 // ---------------------------------------------------------------------------
 // Opt-in W7 paper tooth program — dry stamp lanes (2026-08-13 brush quality wave, F1)
 // ---------------------------------------------------------------------------
-
 /**
  * 카탈로그 스탬프 튜닝이 레인별로 핀하는 종이 프로그램 id.
  * wetEdgeBloomProgramId 와 같은 규약: 프로그램 id 가 없는 레인의 dab 계획은 종이 배선
  * 이전과 비트 단위로 동일하다(회귀 테스트가 이 계약을 고정한다).
  */
 export type StudioStampPaperProgramId = "dry-peak-catch-v1";
-
 export interface StudioStampPaperProgram {
   /**
    * 프로그램이 실제로 렌더하는 매체만 등재한다(레인 정직성 정책). 미등재 kind 로 프로그램을
@@ -138,7 +129,6 @@ export interface StudioStampPaperProgram {
     Partial<Record<StudioStampBrushKind, StudioPaperPresetIdV1>>
   >;
 }
-
 /**
  * dry-peak-catch-v1: W7 peak-catch(건식) — 저필압은 종이 봉우리에만 안료가 걸리고
  * (드라이브러시 스파클), 고필압은 골까지 메운다. 기본 낱장은 크레용·초크·목탄이 판화지
@@ -162,16 +152,12 @@ export const STUDIO_STAMP_PAPER_PROGRAMS: Readonly<
     }),
   }),
 });
-
-export function resolveStudioStampPaperProgram(
-  programId: string | null | undefined,
-): StudioStampPaperProgram | null {
+export function resolveStudioStampPaperProgram(programId: string | null | undefined,): StudioStampPaperProgram | null {
   if (!programId) return null;
   return (
     STUDIO_STAMP_PAPER_PROGRAMS as Record<string, StudioStampPaperProgram>
   )[programId] ?? null;
 }
-
 /** 스타일에 상주하는 해석 완료 종이 결합 — 프로그램을 핀한 레인의 스타일만 이 필드를 가진다. */
 export interface StudioStampPaperGrainStyle {
   readonly programId: StudioStampPaperProgramId;
@@ -353,11 +339,13 @@ export const STUDIO_STAMP_BRUSH_DEFAULTS: Record<
 
 const PARSED_COLOR_CACHE = new Map<string, Readonly<{ r: number; g: number; b: number }>>();
 
-function parseCssRgbColor(
-  color: string,
-): Readonly<{ r: number; g: number; b: number }> | null {
+function parseCssRgbColor(color: string,): Readonly<{ r: number; g: number; b: number }> | null {
   const cached = PARSED_COLOR_CACHE.get(color);
-  if (cached) return cached;
+  if (cached) {
+    PARSED_COLOR_CACHE.delete(color);
+    PARSED_COLOR_CACHE.set(color, cached);
+    return cached;
+  }
   const hex = /^#([\da-f]{3}|[\da-f]{6})$/iu.exec(color.trim());
   let result: { r: number; g: number; b: number } | null = null;
   if (hex) {
@@ -591,6 +579,7 @@ export function stampJitter(seed: number, salt: number): number {
 }
 
 function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0;
   return Math.min(1, Math.max(0, value));
 }
 
@@ -782,10 +771,7 @@ function stampDotPlan(
   }
   // 납작 촉: ratio 는 장축/단축 비, angle 은 장축 방향(도). 둘 다 선언된 레인만 타원을 낸다.
   const chisel = cc0Dynamics?.ellipticalRatio && cc0Dynamics.ellipticalRatio > 1
-    ? {
-        radiusY: radius / cc0Dynamics.ellipticalRatio,
-        angleRadians: (cc0Dynamics.ellipticalAngleDegrees ?? 0) * Math.PI / 180,
-      }
+    ? { radiusY: radius / cc0Dynamics.ellipticalRatio, angleRadians: (cc0Dynamics.ellipticalAngleDegrees ?? 0) * Math.PI / 180 }
     : null;
     
   let tipRotationRadians: number | undefined;
@@ -813,6 +799,10 @@ function stampDotPlan(
 const dabTipCanvasCache = new Map<string, HTMLCanvasElement>();
 const MAX_DAB_TIP_CACHE_SIZE = 128;
 
+export function studioStampDabTipCanvasCacheSizeForTests(): number {
+  return dabTipCanvasCache.size;
+}
+
 function getCachedDabTipCanvas(
   kind: StudioStampBrushKind,
   color: string,
@@ -823,7 +813,11 @@ function getCachedDabTipCanvas(
   const roundedHardness = Math.round(hardness * 20) / 20;
   const key = `${kind}:${color}:${roundedRadius}:${roundedHardness}`;
   const existing = dabTipCanvasCache.get(key);
-  if (existing) return existing;
+  if (existing) {
+    dabTipCanvasCache.delete(key);
+    dabTipCanvasCache.set(key, existing);
+    return existing;
+  }
 
   if (typeof document === "undefined") return null;
   const size = roundedRadius * 2 + 4;
@@ -899,7 +893,14 @@ function getCachedDabTipCanvas(
 
   if (dabTipCanvasCache.size >= MAX_DAB_TIP_CACHE_SIZE) {
     const firstKey = dabTipCanvasCache.keys().next().value;
-    if (firstKey) dabTipCanvasCache.delete(firstKey);
+    if (firstKey !== undefined) {
+      const evicted = dabTipCanvasCache.get(firstKey);
+      dabTipCanvasCache.delete(firstKey);
+      if (evicted) {
+        evicted.width = 1;
+        evicted.height = 1;
+      }
+    }
   }
   dabTipCanvasCache.set(key, canvas);
   return canvas;
@@ -1196,10 +1197,7 @@ function walkStampSegmentPlan(
       // 납작 촉은 stampDotPlan 과 같은 규약으로 실린다 — 시작 도트만 타원이고 본문은 원인
       // 상태가 되지 않도록 두 경로가 같은 필드를 낸다.
       ...(cc0Dynamics?.ellipticalRatio && cc0Dynamics.ellipticalRatio > 1
-        ? {
-            radiusY: radius / cc0Dynamics.ellipticalRatio,
-            angleRadians: (cc0Dynamics.ellipticalAngleDegrees ?? 0) * Math.PI / 180,
-          }
+        ? { radiusY: radius / cc0Dynamics.ellipticalRatio, angleRadians: (cc0Dynamics.ellipticalAngleDegrees ?? 0) * Math.PI / 180 }
         : {}),
       ...(tipRotationRadians !== undefined ? { tipRotationRadians } : {}),
       // 종이 스테이션 샘플: 핀된 레인만 dab 위치의 W7 peak-catch 침착을 곱한다. 저필압은

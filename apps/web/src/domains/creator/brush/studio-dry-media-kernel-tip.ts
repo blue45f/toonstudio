@@ -24,13 +24,11 @@
  * The two owners are mutually exclusive and cover the eligible material set exactly: the union
  * carrier is defined as the complement of this owner over eligible materials.
  */
-
 import {
   STUDIO_OSS_TIP_WAX_LATTICE_SCALE,
   studioOssDirectionalWaxSample,
   studioOssValueNoise2d,
 } from "../studio-oss-brush-kernels";
-
 import {
   isStudioDryMediaKernelDabProgramPin,
   isStudioDryMediaUnionComposableProgramPin,
@@ -40,7 +38,6 @@ import {
 } from "./studio-brush-dynamics";
 import { studioStampOssTipCoverage } from "./studio-brush-stamp-engine";
 import { STUDIO_DRY_MEDIA_ANISOTROPIC_PRESETS_V1 } from "./studio-dry-media-anisotropic-grain-v1";
-
 import type {
   NormalizedStudioBrushTipSettings,
   StudioBrushTipAlphaMap,
@@ -196,6 +193,7 @@ export function studioDryMediaKernelDabPathOwnsMaterial(
 }
 
 function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0;
   return Math.min(1, Math.max(0, value));
 }
 
