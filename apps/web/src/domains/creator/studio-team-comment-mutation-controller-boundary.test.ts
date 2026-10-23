@@ -126,7 +126,7 @@ describe("Studio team-comment mutation controller boundary", () => {
     );
 
     expect(controller.allImports).not.toContain("./StudioPage");
-    expect(controller.valueImports).toEqual(["./studio-comments"]);
+    expect(controller.valueImports).toEqual(["./studio-comments", "./status-i18n/studio-producer-error-i18n-comments"]);
     expect(controller.valueImports).not.toContain("./studio-team-comment-client");
     expect(controller.allImports).not.toContain("react");
     expect(execute).toContain("readCapabilities()");
