@@ -179,7 +179,11 @@ const paperTileCache = new Map<string, PaperHeightField>();
 function paperTile(kind: PaperGrainKind, seed: number): PaperHeightField {
   const key = `${kind}:${seed}`;
   const cached = paperTileCache.get(key);
-  if (cached) return cached;
+  if (cached) {
+    paperTileCache.delete(key);
+    paperTileCache.set(key, cached);
+    return cached;
+  }
   const field = createPaperHeightField({
     kind,
     width: INK_WASH_PAPER_TILE,
@@ -247,10 +251,12 @@ function boxBlurScalar(source: Uint8Array, width: number, height: number, radius
 }
 
 function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
   return value <= 0 ? 0 : value >= 1 ? 1 : value;
 }
 
 function clampByte(value: number): number {
+  if (!Number.isFinite(value)) return 0;
   return value <= 0 ? 0 : value >= 255 ? 255 : value;
 }
 

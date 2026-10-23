@@ -65,7 +65,7 @@ class ApplyingWorker implements StudioImageFilterWorkerLike {
     queueMicrotask(() => {
       this.onmessage?.({
         data: { type: "studio-image-filter/ready", version: 1 },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 

@@ -149,11 +149,11 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         dccSource: bg3dDccSourceRef.current,
       });
       if (!realtimePlan.ok) {
-        setError("code" in realtimePlan
-          ? realtimePlan.code === "captureReceiptInvalid" || realtimePlan.code === "capturedLayerChanged"
+        setError("subcode" in realtimePlan
+          ? resolveStudioBg3dLtLayerPlanError(realtimePlan)
+          : "code" in realtimePlan
             ? resolveStudioShared3dVisibilityError(realtimePlan)
-            : resolveStudioBg3dLtLayerPlanError(realtimePlan)
-          : realtimePlan.message);
+            : realtimePlan.message);
         return false;
       }
       if (!commit([...realtimePlan.nextElements], {

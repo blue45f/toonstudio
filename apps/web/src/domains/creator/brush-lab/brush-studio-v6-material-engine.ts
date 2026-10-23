@@ -727,7 +727,11 @@ export function renderBrushStudioV6MaterialMarks(context: CanvasRenderingContext
     if (mark.shape === "rect") context.fillRect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2);
     else if (mark.shape === "capsule") {
       context.beginPath();
-      context.roundRect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2, Math.min(mark.radiusX, mark.radiusY));
+      if (typeof context.roundRect === "function") {
+        context.roundRect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2, Math.min(mark.radiusX, mark.radiusY));
+      } else {
+        context.rect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2);
+      }
       context.fill();
     }
     else {

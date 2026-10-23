@@ -331,14 +331,28 @@ function makeClassicProfile(item: ProductProfileItem): StudioBrushProductProfile
   });
 }
 
+export const STUDIO_BRUSH_PRODUCT_PROFILE_CACHE_LIMIT = 512;
+
+export function studioBrushProductProfileCacheSizeForTests(): number {
+  return PROFILE_CACHE.size;
+}
+
 /** Lightweight cached product metadata used by search, tiles and the focused-brush inspector. */
 export function studioBrushProductProfile(item: ProductProfileItem): StudioBrushProductProfile {
   const cacheKey = `${item.id}\u0000${item.name}\u0000${item.defaultWidth}`;
   const cached = PROFILE_CACHE.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    PROFILE_CACHE.delete(cacheKey);
+    PROFILE_CACHE.set(cacheKey, cached);
+    return cached;
+  }
   const recipeId = studioV6RecipeIdFromCatalogId(item.id);
   const seed = recipeId ? V6_SEED_BY_ID.get(recipeId) : undefined;
   const profile = seed ? makeV6Profile(item, seed) : makeClassicProfile(item);
+  if (PROFILE_CACHE.size >= STUDIO_BRUSH_PRODUCT_PROFILE_CACHE_LIMIT) {
+    const oldestKey = PROFILE_CACHE.keys().next().value;
+    if (oldestKey !== undefined) PROFILE_CACHE.delete(oldestKey);
+  }
   PROFILE_CACHE.set(cacheKey, profile);
   return profile;
 }

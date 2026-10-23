@@ -6,6 +6,7 @@
  */
 
 import {
+  STUDIO_INKWASH_FLUID_MAX_DIMENSION,
   createStudioInkwashFluidSession,
   fixStudioInkwashFluid,
   readStudioInkwashFluidCell,
@@ -20,6 +21,16 @@ import type { DrawEl } from "../studio-element-model";
 
 
 export const STUDIO_INKWASH_WASH_KEY = "studio-inkwash-wash" as const;
+
+/** Maximum concurrent wash records kept in memory across page/key epochs (LRU). */
+export const STUDIO_INKWASH_WASH_MAX_RECORDS = 8;
+/** Maximum total fluid cells (`width * height`) in a single shared wash session (`4096 * 4096`). */
+export const STUDIO_INKWASH_WASH_MAX_CELLS =
+  STUDIO_INKWASH_FLUID_MAX_DIMENSION * STUDIO_INKWASH_FLUID_MAX_DIMENSION;
+/** Maximum stroke journal entries retained per wash record. */
+export const STUDIO_INKWASH_WASH_MAX_JOURNAL_ENTRIES = 256;
+/** Maximum applied stroke signatures retained per wash record. */
+export const STUDIO_INKWASH_WASH_MAX_APPLIED_ENTRIES = 512;
 
 export interface StudioInkwashWash {
   readonly key: string;
@@ -62,11 +73,18 @@ export function resetStudioInkwashWash(key: string = STUDIO_INKWASH_WASH_KEY): v
   washes.delete(key);
 }
 
+export function studioInkwashWashRecordCountForTests(): number {
+  return washes.size;
+}
+
 export function getStudioInkwashWash(
   key: string = STUDIO_INKWASH_WASH_KEY,
 ): StudioInkwashWash | null {
   const record = washes.get(key);
-  return record ? snapshot(record) : null;
+  if (!record) return null;
+  washes.delete(key);
+  washes.set(key, record);
+  return snapshot(record);
 }
 
 export function studioInkwashStrokeSignature(element: DrawEl): string {
@@ -120,49 +138,99 @@ export function ensureStudioInkwashWash(input: Readonly<{
   fieldScale: number;
 }>): StudioInkwashWash {
   const key = input.key ?? STUDIO_INKWASH_WASH_KEY;
+  const fieldScale = Number.isFinite(input.fieldScale) && input.fieldScale > 0 ? input.fieldScale : 4;
+  const inOriginX = Number.isFinite(input.originX) ? input.originX : 0;
+  const inOriginY = Number.isFinite(input.originY) ? input.originY : 0;
+  let inWidth = Number.isFinite(input.width)
+    ? Math.min(STUDIO_INKWASH_FLUID_MAX_DIMENSION, Math.max(8, Math.ceil(input.width)))
+    : 8;
+  let inHeight = Number.isFinite(input.height)
+    ? Math.min(STUDIO_INKWASH_FLUID_MAX_DIMENSION, Math.max(8, Math.ceil(input.height)))
+    : 8;
+  if (inWidth * inHeight > STUDIO_INKWASH_WASH_MAX_CELLS) {
+    const ratio = Math.sqrt(STUDIO_INKWASH_WASH_MAX_CELLS / (inWidth * inHeight));
+    inWidth = Math.max(8, Math.floor(inWidth * ratio));
+    inHeight = Math.max(8, Math.floor(inHeight * ratio));
+  }
+
   const existing = washes.get(key);
   if (
     existing
     && (input.pageEpoch === undefined || Object.is(existing.pageEpoch, input.pageEpoch))
-    && existing.fieldScale === input.fieldScale
-    && existing.originX <= input.originX + 1e-9
-    && existing.originY <= input.originY + 1e-9
+    && existing.fieldScale === fieldScale
+    && existing.originX <= inOriginX + 1e-9
+    && existing.originY <= inOriginY + 1e-9
     && existing.originX + existing.session.fluid.width / existing.fieldScale
-      >= input.originX + input.width / input.fieldScale - 1e-9
+      >= inOriginX + inWidth / fieldScale - 1e-9
     && existing.originY + existing.session.fluid.height / existing.fieldScale
-      >= input.originY + input.height / input.fieldScale - 1e-9
+      >= inOriginY + inHeight / fieldScale - 1e-9
   ) {
+    washes.delete(key);
+    washes.set(key, existing);
     return snapshot(existing);
   }
 
-  const fieldScale = input.fieldScale;
-  let originX = input.originX;
-  let originY = input.originY;
-  let width = Math.max(8, Math.ceil(input.width));
-  let height = Math.max(8, Math.ceil(input.height));
+  let originX = inOriginX;
+  let originY = inOriginY;
+  let width = inWidth;
+  let height = inHeight;
   if (existing && Object.is(existing.pageEpoch, input.pageEpoch ?? existing.pageEpoch)
     && existing.fieldScale === fieldScale) {
-    const endX = Math.max(
+    const inEndX = inOriginX + inWidth / fieldScale;
+    const inEndY = inOriginY + inHeight / fieldScale;
+    const unionOriginX = Math.min(existing.originX, inOriginX);
+    const unionOriginY = Math.min(existing.originY, inOriginY);
+    const unionEndX = Math.max(
       existing.originX + existing.session.fluid.width / fieldScale,
-      input.originX + input.width / fieldScale,
+      inEndX,
     );
-    const endY = Math.max(
+    const unionEndY = Math.max(
       existing.originY + existing.session.fluid.height / fieldScale,
-      input.originY + input.height / fieldScale,
+      inEndY,
     );
-    originX = Math.min(existing.originX, input.originX);
-    originY = Math.min(existing.originY, input.originY);
-    width = Math.max(8, Math.ceil((endX - originX) * fieldScale));
-    height = Math.max(8, Math.ceil((endY - originY) * fieldScale));
+    let unionWidth = Math.min(
+      STUDIO_INKWASH_FLUID_MAX_DIMENSION,
+      Math.max(inWidth, Math.ceil((unionEndX - unionOriginX) * fieldScale)),
+    );
+    let unionHeight = Math.min(
+      STUDIO_INKWASH_FLUID_MAX_DIMENSION,
+      Math.max(inHeight, Math.ceil((unionEndY - unionOriginY) * fieldScale)),
+    );
+    if (unionWidth * unionHeight > STUDIO_INKWASH_WASH_MAX_CELLS) {
+      const ratio = Math.sqrt(STUDIO_INKWASH_WASH_MAX_CELLS / (unionWidth * unionHeight));
+      unionWidth = Math.max(inWidth, Math.floor(unionWidth * ratio));
+      unionHeight = Math.max(inHeight, Math.floor(unionHeight * ratio));
+      if (unionWidth * unionHeight > STUDIO_INKWASH_WASH_MAX_CELLS) {
+        if (unionWidth > inWidth) {
+          unionWidth = Math.max(inWidth, Math.floor(STUDIO_INKWASH_WASH_MAX_CELLS / unionHeight));
+        }
+        if (unionWidth * unionHeight > STUDIO_INKWASH_WASH_MAX_CELLS && unionHeight > inHeight) {
+          unionHeight = Math.max(inHeight, Math.floor(STUDIO_INKWASH_WASH_MAX_CELLS / unionWidth));
+        }
+      }
+    }
+    width = unionWidth;
+    height = unionHeight;
+    originX = unionOriginX;
+    originY = unionOriginY;
+    // If the capped field cannot span from unionOrigin to the far edge of the active stroke,
+    // slide the origin on the integer cell lattice so the active stroke is 100% contained.
+    if (originX + width / fieldScale < inEndX - 1e-9) {
+      originX = inOriginX - (width - inWidth) / fieldScale;
+    }
+    if (originY + height / fieldScale < inEndY - 1e-9) {
+      originY = inOriginY - (height - inHeight) / fieldScale;
+    }
   }
 
   const session = createStudioInkwashFluidSession({ width, height });
-  if (existing && existing.fieldScale === fieldScale) {
+  if (existing && Object.is(existing.pageEpoch, input.pageEpoch ?? existing.pageEpoch) && existing.fieldScale === fieldScale) {
     const offsetX = (existing.originX - originX) * fieldScale;
     const offsetY = (existing.originY - originY) * fieldScale;
     copySession(existing.session, session, offsetX, offsetY);
   }
 
+  const sameEpoch = existing && Object.is(existing.pageEpoch, input.pageEpoch ?? existing.pageEpoch);
   const record: StudioInkwashWashRecord = {
     key,
     pageEpoch: input.pageEpoch ?? existing?.pageEpoch ?? null,
@@ -170,10 +238,16 @@ export function ensureStudioInkwashWash(input: Readonly<{
     originX,
     originY,
     fieldScale,
-    journal: existing?.journal ?? [],
-    applied: existing?.applied ?? new Map(),
+    journal: sameEpoch ? existing.journal : [],
+    applied: sameEpoch ? existing.applied : new Map(),
     displayCache: null,
   };
+  if (washes.has(key)) {
+    washes.delete(key);
+  } else if (washes.size >= STUDIO_INKWASH_WASH_MAX_RECORDS) {
+    const oldestKey = washes.keys().next().value;
+    if (oldestKey !== undefined) washes.delete(oldestKey);
+  }
   washes.set(key, record);
   return snapshot(record);
 }
@@ -210,8 +284,14 @@ export function upsertStudioInkwashWashStroke(
   if (!record) return;
   const index = record.journal.findIndex((entry) => entry.id === element.id);
   const copy = { ...element, points: [...element.points], pressures: element.pressures ? [...element.pressures] : undefined };
-  if (index >= 0) record.journal[index] = copy as DrawEl;
-  else record.journal.push(copy as DrawEl);
+  if (index >= 0) {
+    record.journal[index] = copy as DrawEl;
+  } else {
+    if (record.journal.length >= STUDIO_INKWASH_WASH_MAX_JOURNAL_ENTRIES) {
+      record.journal.shift();
+    }
+    record.journal.push(copy as DrawEl);
+  }
 }
 
 export function studioInkwashWashNeedsDeposit(
@@ -229,6 +309,12 @@ export function markStudioInkwashWashDeposited(
 ): void {
   const record = washes.get(key);
   if (!record) return;
+  if (record.applied.has(element.id)) {
+    record.applied.delete(element.id);
+  } else if (record.applied.size >= STUDIO_INKWASH_WASH_MAX_APPLIED_ENTRIES) {
+    const oldestId = record.applied.keys().next().value;
+    if (oldestId !== undefined) record.applied.delete(oldestId);
+  }
   record.applied.set(element.id, studioInkwashStrokeSignature(element));
 }
 
