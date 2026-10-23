@@ -37,9 +37,52 @@ const FIREWORKS: readonly StudioEmoteBurst[] = Object.freeze([
 
 const NO_BURSTS: readonly StudioEmoteBurst[] = Object.freeze([]);
 
+const KPOP_AURA_BURSTS: readonly StudioEmoteBurst[] = Object.freeze([
+  Object.freeze({ delayMs: 0, dx: -24, dy: -56, count: 10, color: FIREWORK_PINK }),
+  Object.freeze({ delayMs: 320, dx: 24, dy: -62, count: 12, color: FIREWORK_VIOLET }),
+  Object.freeze({ delayMs: 640, dx: 0, dy: -74, count: 14, color: FIREWORK_BLUE }),
+  Object.freeze({ delayMs: 960, dx: -18, dy: -60, count: 10, color: FIREWORK_YELLOW }),
+]);
+
+const WELLNESS_AURA_BURSTS: readonly StudioEmoteBurst[] = Object.freeze([
+  Object.freeze({ delayMs: 0, dx: 0, dy: -48, count: 8, color: FIREWORK_GREEN }),
+  Object.freeze({ delayMs: 450, dx: -20, dy: -58, count: 8, color: FIREWORK_BLUE }),
+  Object.freeze({ delayMs: 900, dx: 20, dy: -58, count: 8, color: FIREWORK_GREEN }),
+]);
+
+const CELEBRATION_AURA_BURSTS: readonly StudioEmoteBurst[] = Object.freeze([
+  Object.freeze({ delayMs: 0, dx: -16, dy: -54, count: 10, color: FIREWORK_YELLOW }),
+  Object.freeze({ delayMs: 300, dx: 16, dy: -60, count: 10, color: FIREWORK_RED }),
+  Object.freeze({ delayMs: 600, dx: 0, dy: -68, count: 12, color: FIREWORK_PINK }),
+]);
+
+export const STUDIO_STAGE_AURA_EMOTE_IDS: readonly StudioSpaceEmoteId[] = Object.freeze([
+  "fireworks",
+  "kpop-dance",
+  "shuffle",
+  "moonwalk",
+  "yoga",
+  "tai-chi",
+  "calisthenics",
+  "cheers",
+  "party",
+]);
+
 /** 이모트가 시작될 때 터뜨릴 파티클 계획. 연출이 없는 이모트는 빈 배열이다. 지연이 빠른 순서로 정렬돼 있다. */
 export function studioEmoteBurstPlan(id: StudioSpaceEmoteId): readonly StudioEmoteBurst[] {
   return id === "fireworks" ? FIREWORKS : NO_BURSTS;
+}
+
+/**
+ * 댄스·웰니스·축하 모션용 확장 스테이지 오라 파티클 플랜.
+ * 기본 폭죽 연출(`studioEmoteBurstPlan`) 계약을 보존하면서, 스테이지·스포트라이트·오피스 이벤트 연출에서 사용한다.
+ */
+export function studioEmoteStageAuraPlan(id: StudioSpaceEmoteId): readonly StudioEmoteBurst[] {
+  if (id === "fireworks") return FIREWORKS;
+  if (id === "kpop-dance" || id === "shuffle" || id === "moonwalk") return KPOP_AURA_BURSTS;
+  if (id === "yoga" || id === "tai-chi" || id === "calisthenics") return WELLNESS_AURA_BURSTS;
+  if (id === "cheers" || id === "party") return CELEBRATION_AURA_BURSTS;
+  return NO_BURSTS;
 }
 
 /**

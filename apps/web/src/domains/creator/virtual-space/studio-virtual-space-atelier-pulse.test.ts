@@ -58,10 +58,17 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.tone).toBe("rose");
     expect(pulse.synergyScore).toBe(200);
     expect(pulse.hyperScore).toBe(2000);
+    expect(pulse.omniScore).toBe(4000);
+    expect(pulse.omniTier).toBe("apex-quantum");
     expect(pulse.comboMultiplier).toBe(10);
+    expect(pulse.omniMultiplier).toBe(20);
     expect(pulse.hyperBadgeKo).toBe("하이퍼 포지 2,000pt");
+    expect(pulse.omniBadgeKo).toBe("옴니 포지 4,000pt (20x)");
     expect(pulse.dimensions.deepWorkFlow).toBe(400);
     expect(pulse.dimensions.officePresence).toBeGreaterThanOrEqual(300);
+    expect(pulse.dimensions.autonomousRhythm).toBeGreaterThanOrEqual(350);
+    expect(pulse.recommendedZoneId).toBe("review");
+    expect(pulse.recommendedRoutineKo).toContain("합평");
     expect(pulse.zoneResonance.sameZonePeerCount).toBe(2);
     expect(pulse.zoneResonance.focusedPeerCount).toBe(2);
     expect(pulse.badgeKo).toBe("창작 파동 200");
@@ -87,6 +94,8 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.zoneResonance.reviewingPeerCount).toBe(1);
     expect(pulse.synergyScore).toBeGreaterThanOrEqual(180);
     expect(pulse.hyperScore).toBeGreaterThanOrEqual(1800);
+    expect(pulse.omniScore).toBeGreaterThanOrEqual(3600);
+    expect(pulse.omniTier).toBe("apex-quantum");
     expect(pulse.dimensions.reviewCollaboration).toBeGreaterThanOrEqual(360);
   });
 
@@ -103,6 +112,8 @@ describe("computeStudioAtelierPulse", () => {
 
     expect(pulse.dimensions.wellnessVitality).toBe(400);
     expect(pulse.hyperScore).toBeGreaterThanOrEqual(1700);
+    expect(pulse.omniScore).toBeGreaterThanOrEqual(3400);
+    expect(pulse.recommendedZoneId).toBe("lounge");
   });
 });
 

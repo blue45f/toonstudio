@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { STUDIO_SPACE_EMOTE_IDS, studioSpaceEmoteById } from "./studio-virtual-space-emote-catalog";
-import { studioEmoteBurstPlan, studioEmoteBurstsDue, type StudioEmoteBurst } from "./studio-virtual-space-emote-fx";
+import {
+  STUDIO_STAGE_AURA_EMOTE_IDS,
+  studioEmoteBurstPlan,
+  studioEmoteBurstsDue,
+  studioEmoteStageAuraPlan,
+  type StudioEmoteBurst,
+} from "./studio-virtual-space-emote-fx";
 
 describe("이모트 시작 연출 계획", () => {
   it("폭죽만 연출이 있고 나머지 이모트는 말풍선과 몸동작만 쓴다", () => {
@@ -10,6 +16,19 @@ describe("이모트 시작 연출 계획", () => {
       if (id === "fireworks") expect(plan.length, id).toBeGreaterThan(0);
       else expect(plan, id).toEqual([]);
     }
+  });
+
+  it("스테이지 오라 플랜은 댄스·웰니스·축하 모션에 맞춰 정렬된 파티클 버스트를 제공한다", () => {
+    expect(STUDIO_STAGE_AURA_EMOTE_IDS).toContain("kpop-dance");
+    expect(STUDIO_STAGE_AURA_EMOTE_IDS).toContain("yoga");
+    expect(STUDIO_STAGE_AURA_EMOTE_IDS).toContain("cheers");
+    for (const id of STUDIO_STAGE_AURA_EMOTE_IDS) {
+      const plan = studioEmoteStageAuraPlan(id);
+      expect(plan.length, id).toBeGreaterThanOrEqual(3);
+      expect(Object.isFrozen(plan)).toBe(true);
+      expect(plan[0]?.delayMs).toBe(0);
+    }
+    expect(studioEmoteStageAuraPlan("wave")).toEqual([]);
   });
 
   it("폭죽은 지연이 빠른 순서로 여러 발이 터지고, 모두 머리 위에서 이모트가 끝나기 전에 끝난다", () => {
