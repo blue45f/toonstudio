@@ -55,6 +55,50 @@ export const BUILTIN_ARTIST_STYLE_PRESETS: readonly StoryboardArtistStyleBinding
   },
 ]);
 
+export interface ArtistStyleDnaPresetDescriptor {
+  readonly id: string;
+  readonly name: string;
+  readonly promptTokens: readonly string[];
+  readonly negativeTokens: readonly string[];
+  readonly profile: ArtistStyleDnaProfile;
+}
+
+export function getArtistStyleDnaPreset(presetId: string): ArtistStyleDnaPresetDescriptor | undefined {
+  const normalized = presetId.trim();
+  if (!normalized) return undefined;
+  const aliasMap: Readonly<Record<string, string>> = {
+    "k-action-sharp": "preset-k-action-ink",
+    "k-romance-soft": "preset-k-romance-fine",
+    "k-fantasy-cel": "preset-k-fantasy-cel",
+    "k-noir-thriller": "preset-k-noir-thriller",
+  };
+  const targetId = aliasMap[normalized] ?? normalized;
+  const matched =
+    BUILTIN_ARTIST_STYLE_PRESETS.find(
+      (preset) => preset.modelId === targetId || preset.triggerWord === targetId,
+    ) ?? BUILTIN_ARTIST_STYLE_PRESETS[0];
+  if (!matched) return undefined;
+  const profile = buildArtistStyleDnaProfile(matched);
+  return Object.freeze({
+    id: normalized,
+    name: matched.artistLabel,
+    promptTokens: Object.freeze(
+      profile.positiveStylePrompt
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+    negativeTokens: Object.freeze(
+      profile.stylePreservationNegativePrompt
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+    profile,
+  });
+}
+
+
 export type ArtistStrokePressureCurve =
   | "tapered-fine"
   | "uniform-clean"

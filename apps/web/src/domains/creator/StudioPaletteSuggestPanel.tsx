@@ -12,11 +12,11 @@ import {
 // StudioPaletteLibraryPanel이 관리하는 것과 완전히 같은 StudioNamedPalette 구조로 들어간다 — 이
 // 패널은 그 타입조차 몰라도 된다(onSaveToLibrary에 PaletteSuggestion만 그대로 넘긴다).
 import { Check, Loader2, Palette, Save, Sparkles } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AnswerTuningControls } from "./ai/AnswerTuningControls";
 import type { AnswerTuning } from "./ai/answer-tuning";
-import type { PaletteSuggestion } from "./studio-palette-suggest";
+import { buildLocalWebtoonPaletteSuggestion, type PaletteSuggestion } from "./studio-palette-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { StudioAiConnectionBadge } from "./ai/StudioAiConnectionBadge";
@@ -53,18 +53,20 @@ export function StudioPaletteSuggestPanel({
   onGenerate: () => void;
   onSaveToLibrary: (suggestion: PaletteSuggestion) => void;
 }) {
+  const [localSuggestion, setLocalSuggestion] = useState<PaletteSuggestion | null>(null);
+  const effectiveSuggestion = suggestion ?? localSuggestion;
   const canGenerate = configured && !busy && moodText.trim().length > 0;
   // 팝오버 높이가 화면보다 작으면 결과·에러가 fold 아래에 생긴다. 도착 시 스크롤로
   // 눈앞에 가져와야 "요청은 갔는데 아무 일도 없었다"로 오해하지 않는다.
   const feedbackRef = useRef<HTMLDivElement | null>(null);
-  const hasFeedback = Boolean(suggestion || error);
+  const hasFeedback = Boolean(effectiveSuggestion || error);
   useEffect(() => {
     if (hasFeedback) feedbackRef.current?.scrollIntoView?.({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [hasFeedback]);
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <Palette size={14} />
         {translateCurrentStaticSourceText("domains.creator.StudioPaletteSuggestPanel", "ko", "AI 색상 팔레트 추천")} <StudioAiConnectionBadge configured={configured} /></div>
 
@@ -92,16 +94,29 @@ export function StudioPaletteSuggestPanel({
         <AnswerTuningControls value={answerTuning} onChange={onAnswerTuningChange} disabled={busy} density="compact" />
       ) : null}
 
-      <button
-        type="button"
-        onClick={onGenerate}
-        disabled={!canGenerate}
-        title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
-        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Sparkles size={14} />}
-        {busy ? "배색을 구상하는 중…" : "팔레트 추천받기"}
-      </button>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Sparkles size={14} />}
+          {busy ? "배색을 구상하는 중…" : "팔레트 추천받기"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (busy || !moodText.trim()) return;
+            setLocalSuggestion(buildLocalWebtoonPaletteSuggestion(moodText));
+          }}
+          disabled={busy || !moodText.trim()}
+          className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          기본 웹툰 배색 즉시 추천
+        </button>
+      </div>
 
       <div ref={feedbackRef}>
         {error ? (
@@ -112,11 +127,11 @@ export function StudioPaletteSuggestPanel({
           />
         ) : null}
 
-        {suggestion && suggestion.colors.length > 0 && (
+        {effectiveSuggestion && effectiveSuggestion.colors.length > 0 && (
           <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-card/70 p-2">
-            <p className="text-[0.68rem] font-medium text-fg-2">{suggestion.name || translateCurrentStaticSourceText("domains.creator.StudioPaletteSuggestPanel", "ko", "이름 없는 팔레트")}</p>
+            <p className="text-[0.68rem] font-medium text-fg-2">{effectiveSuggestion.name || translateCurrentStaticSourceText("domains.creator.StudioPaletteSuggestPanel", "ko", "이름 없는 팔레트")}</p>
             <div className="flex flex-wrap gap-2">
-              {suggestion.colors.map((c, i) => (
+              {effectiveSuggestion.colors.map((c, i) => (
                 <div key={`${c.hex}-${i}`} className="flex flex-col items-center gap-0.5">
                   <div
                     className="h-7 w-7 rounded border border-line"
@@ -131,7 +146,7 @@ export function StudioPaletteSuggestPanel({
             </div>
             <button
               type="button"
-              onClick={() => onSaveToLibrary(suggestion)}
+              onClick={() => onSaveToLibrary(effectiveSuggestion)}
               className="inline-flex min-h-11 items-center justify-center gap-1 rounded-md border border-line bg-panel px-2 py-1.5 text-[0.63rem] font-medium text-fg-2 transition-colors hover:bg-raised"
             >
               <Save size={11} /> {translateCurrentStaticSourceText("domains.creator.StudioPaletteSuggestPanel", "ko", "내 팔레트에 저장")}</button>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildLocalScenarioScenesPlan,
   buildScenarioScenesPrompt,
   parseScenarioScenesResponse,
   SCENARIO_MAX_PARSED_SCENES,
@@ -214,4 +215,13 @@ describe("parseScenarioScenesResponse", () => {
     expect(result.data.characterDescription).toBe("외모 묘사");
     expect(result.data.scenes[0]).toEqual({ imagePrompt: "배경", dialogue: "민수: 안녕" });
   });
+
+  it("buildLocalScenarioScenesPlan generates structured scenes with continuity metadata", () => {
+    const plan = buildLocalScenarioScenesPlan("학교 교실에서 밤늦게 단서를 찾는다.", 3, "은빛 단발 교복");
+    expect(plan.scenes).toHaveLength(3);
+    expect(plan.characterDescription).toContain("은빛 단발 교복");
+    expect(plan.scenes[0]?.continuity?.location).toBe("학교 교실");
+    expect(plan.scenes[0]?.continuity?.time).toBe("밤");
+  });
 });
+

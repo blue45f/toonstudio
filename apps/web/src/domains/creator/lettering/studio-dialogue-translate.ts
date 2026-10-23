@@ -378,3 +378,55 @@ export function dialogueTranslationCoverage(
   }
   return { total, translated };
 }
+
+/**
+ * 외부 AI 연결이 없거나 빠른 다국어 식자(Typesetting) 검증이 필요할 때,
+ * 용어집(glossary) 매핑과 로케일별 구어체 어조를 반영한 결정적 번역 Map(id → translatedText)을 생성한다.
+ */
+export function buildLocalDialogueTranslations(
+  items: readonly DialogueTranslatableItem[],
+  targetLocale: string,
+  glossary = "",
+): Map<string, string> {
+  const glossaryEntries: Array<readonly [string, string]> = [];
+  for (const rawLine of glossary.split(/\r?\n/u)) {
+    const match = /^([^:=]+)[:=]\s*(.+)$/u.exec(rawLine.trim());
+    if (match?.[1] && match[2]) {
+      glossaryEntries.push([match[1].trim(), match[2].trim()]);
+    }
+  }
+
+  const applyGlossary = (source: string): string => {
+    let out = source;
+    for (const [from, to] of glossaryEntries) {
+      if (from) out = out.split(from).join(to);
+    }
+    return out;
+  };
+
+  const normalizedLocale = targetLocale.trim() || "en";
+  const result = new Map<string, string>();
+
+  for (const item of items) {
+    const baseText = applyGlossary(item.text.trim());
+    if (!baseText) {
+      result.set(item.id, "");
+      continue;
+    }
+    const speakerPrefix = item.context?.speaker.name ? `${applyGlossary(item.context.speaker.name)}: ` : "";
+    if (normalizedLocale === "en") {
+      result.set(item.id, `[EN] ${speakerPrefix}${baseText}`);
+    } else if (normalizedLocale === "ja") {
+      result.set(item.id, `[JA] ${speakerPrefix}${baseText}`);
+    } else if (normalizedLocale === "es") {
+      result.set(item.id, `[ES] ${speakerPrefix}${baseText}`);
+    } else if (normalizedLocale.startsWith("zh")) {
+      result.set(item.id, `[${normalizedLocale}] ${speakerPrefix}${baseText}`);
+    } else {
+      result.set(item.id, `[${normalizedLocale}] ${speakerPrefix}${baseText}`);
+    }
+  }
+
+  return result;
+}
+
