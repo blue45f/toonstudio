@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "PRIEDENÝ VYHADLIK",
-  "authors.title": "Autorov",
-  "authors.desc": "Píšete na autora podľa počtu diel, aby ste si na jednom mieste mohli pozrieť titul, hodnotenie a fanúšikskú kaviarnicu.",
-  "authors.search": "Pôvodné meno autora vyhľadávania",
-  "authors.error": "Nešlo mi načítať zoznam autorov.",
-  "authors.empty": "žiadny zodpovedajúci autor.",
+  "authors.eyebrow": "ADRESÁR AUTOROV",
+  "authors.title": "Autori",
+  "authors.desc": "Autori zoradení podľa počtu diel. Klepnite na autora a na jednom mieste si pozrite jeho diela, hodnotenia a fanúšikovskú kaviareň.",
+  "authors.search": "Hľadať meno autora",
+  "authors.error": "Nepodarilo sa načítať zoznam autorov. Skúste to o chvíľu znova.",
+  "authors.empty": " — žiadny zodpovedajúci autor.",
   "authors.allOf": "z",
-  "authors.topOf": "· horná časť",
+  "authors.topOf": "· najlepší",
   "authors.people": "",
-  "authors.works": "dielo",
-  "authors.views": "pohľad",
-  "authors.pencafe": "Stvoriteľka fanúšikovská kaviareň",
-  "authors.stats": "Najlepší {shown} z autorov {total}",
-  "authors.noName": "Stvoriteľ"
+  "authors.works": " diel",
+  "authors.views": "zobrazení",
+  "authors.pencafe": "Fanúšikovská kaviareň tvorcu",
+  "authors.stats": "Najlepších {shown} z {total} autorov",
+  "authors.noName": "Tvorca"
 }

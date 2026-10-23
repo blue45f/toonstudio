@@ -4,14 +4,14 @@
   "ageGate.birthDateLabel": "Dátum narodenia",
   "ageGate.birthYearLabel": "Rok narodenia",
   "ageGate.birthYearPlaceholder": "Rok",
-  "ageGate.birthMonthLabel": "Mesec narodenia",
+  "ageGate.birthMonthLabel": "Mesiac narodenia",
   "ageGate.birthMonthPlaceholder": "Mesiac",
-  "ageGate.birthDayLabel": "Dňa narodenia",
-  "ageGate.birthDayPlaceholder": "Dňa",
+  "ageGate.birthDayLabel": "Deň narodenia",
+  "ageGate.birthDayPlaceholder": "Deň",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Neplnil si vekovú požiadavku.",
+  "ageGate.deniedMessage": "Nesplnili ste vekovú požiadavku.",
   "ageGate.cancel": "Zrušiť",
-  "ageGate.confirm": "Potvrďte"
+  "ageGate.confirm": "Potvrdiť"
 }

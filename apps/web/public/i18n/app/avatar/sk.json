@@ -1,9 +1,9 @@
 {
   "avatar.error.invalidType": "Typ obrázka nepodporovaný.",
-  "avatar.error.processFailed": "Nedokázal spracovať obrázok.",
-  "avatar.processing": "Zpracovávanie...",
+  "avatar.error.processFailed": "Nepodarilo sa spracovať obrázok. Skúste to s iným obrázkom.",
+  "avatar.processing": "Spracúva sa…",
   "avatar.select": "Zmeniť obrázok",
-  "avatar.remove": "Odstraňte obrázok",
-  "avatar.uploadHint": "Podporujú sa iba obrázky JPG, PNG a WEBP, potom sa vyrežia na predbežné zobrazenie.",
+  "avatar.remove": "Odstrániť obrázok",
+  "avatar.uploadHint": "Podporované sú iba obrázky JPG, PNG a WEBP, ktoré sa potom orežú na ukážku.",
   "avatar.changeAria": "Zmeniť profilový obrázok"
 }
