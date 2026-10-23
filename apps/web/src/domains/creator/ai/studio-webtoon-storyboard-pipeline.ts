@@ -52,6 +52,33 @@ import {
   type FreehandRoughSketchAnalysis,
   type RoughSketchStroke,
 } from "./studio-rough-sketch-analyzer";
+import {
+  buildFabulatorNarrativeChain,
+  buildGenvasCharacterPoseLock,
+  decomposeCutIntoProductionLayers,
+  GENVAS_POSE_PRESETS,
+  WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
+  type CharacterRelationshipDynamicId,
+  type FabulatorNarrativeChainResult,
+  type GenvasCharacterPoseLockSpec,
+  type GenvasPosePresetId,
+  type RealDrawCutDecomposition,
+  type WebtoonAiBenchmarkEntry,
+} from "./studio-webtoon-industry-benchmarks";
+
+export {
+  buildFabulatorNarrativeChain,
+  buildGenvasCharacterPoseLock,
+  decomposeCutIntoProductionLayers,
+  GENVAS_POSE_PRESETS,
+  WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
+  type CharacterRelationshipDynamicId,
+  type FabulatorNarrativeChainResult,
+  type GenvasCharacterPoseLockSpec,
+  type GenvasPosePresetId,
+  type RealDrawCutDecomposition,
+  type WebtoonAiBenchmarkEntry,
+};
 
 export interface WebtoonStoryboardMasterInput {
   /** 작가가 직접 작성한 대본/지문. 비어 있으면 `storylineInput`으로 4막 대본을 자동 생성한다. */
@@ -60,6 +87,10 @@ export interface WebtoonStoryboardMasterInput {
   readonly storylineInput?: Partial<PlotDevelopmentInput>;
   /** 캐릭터 말투 아키타입 (대사 티키타카 추천용). */
   readonly voiceArchetype?: CharacterVoiceArchetype;
+  /** 오노마AI 페뷸레이터형 캐릭터 관계성 텐션 설정. */
+  readonly relationshipDynamic?: CharacterRelationshipDynamicId;
+  /** 라이언로켓 젠버스형 웹툰 포즈 프리셋 ID. */
+  readonly posePresetId?: GenvasPosePresetId;
   readonly protagonistName?: string;
   readonly partnerName?: string;
   /** 작가가 학습 데이터로 제공한 원고/일러스트 샘플 목록. */
@@ -88,6 +119,8 @@ export interface EnrichedStoryboardCutSpec {
   readonly localizedDialogues: readonly GlobalLocalizedDialogueEntry[];
   readonly cutWireframeDataUrl: string;
   readonly stylePreviewDataUrl: string;
+  /** 리얼드로우(RealDraw) 벤치마크: 4레이어(3D배경/밑색/명암/선화) 및 카메라 초점거리 분해 사양. */
+  readonly productionLayers: RealDrawCutDecomposition;
 }
 
 export interface CreatorEcosystemImpactReport {
@@ -110,10 +143,15 @@ export interface WebtoonStoryboardMasterOutput {
   readonly storylineArc: EpisodeStorylineArc;
   readonly cliffhangerDiagnostic: StorylineCliffhangerDiagnostic;
   readonly dialogueExchange: CharacterVoiceExchangeRecommendation;
+  /** 오노마AI 페뷸레이터 & 투툰 벤치마크: 5단계 서사 빌드업 체인. */
+  readonly fabulatorNarrativeChain: FabulatorNarrativeChainResult;
+  /** 라이언로켓 젠버스 벤치마크: 소량(10장) 캐릭터·화풍 고정 + 포즈 제어 + 클린 학습 인증. */
+  readonly genvasCharacterPoseLock: GenvasCharacterPoseLockSpec;
   readonly directingResult: StoryboardDirectingResult;
   readonly styleConsistencyAudit: StoryboardStyleConsistencyAudit;
   readonly enrichedCuts: readonly EnrichedStoryboardCutSpec[];
   readonly creatorEcosystemReport: CreatorEcosystemImpactReport;
+  readonly benchmarkMatrix: readonly WebtoonAiBenchmarkEntry[];
 }
 
 /**
@@ -211,12 +249,27 @@ export function runWebtoonStoryboardMasterPipeline(
   });
   const cliffhangerDiagnostic = evaluateStorylineCliffhangerAndPacing(storylineArc);
 
-  // 3. 캐릭터 말투 기반 대사·독백·효과음(SFX) 교차 추천
+  // 3. 캐릭터 말투 기반 대사·독백·효과음(SFX) 교차 추천 + 페뷸레이터 5단계 내러티브 체인 + 젠버스 캐릭터·포즈 고정
   const dialogueExchange = recommendCharacterVoiceDialogueExchange({
     situationText: storylineArc.coreConflict,
     protagonistName: input.protagonistName,
     partnerName: input.partnerName,
     archetype: input.voiceArchetype ?? "cold-strategist",
+  });
+
+  const fabulatorNarrativeChain = buildFabulatorNarrativeChain({
+    genre: storylineArc.genre,
+    coreConflict: storylineArc.coreConflict,
+    protagonistName: input.protagonistName,
+    partnerName: input.partnerName,
+    relationshipDynamic: input.relationshipDynamic ?? "fated-rivals",
+  });
+
+  const genvasCharacterPoseLock = buildGenvasCharacterPoseLock({
+    artistStyle: resolvedArtistStyle,
+    posePresetId: input.posePresetId,
+    sampleCount: input.artistTrainingSamples?.length ?? 10,
+    protagonistName: input.protagonistName,
   });
 
   // 4. 자유 드로잉 스케치 스트로크 분석 및 컷별 스케치 의도 병합
@@ -258,7 +311,7 @@ export function runWebtoonStoryboardMasterPipeline(
   });
   const artistStyleDna = styleConsistencyAudit.dnaProfile!;
 
-  // 7. 컷별 말풍선 감정 매칭 · 모바일 말풍선 분할 · 다국어 현지화 식자 · 와이어프레임/스타일 프리뷰 합성
+  // 7. 컷별 말풍선 감정 매칭 · 모바일 말풍선 분할 · 다국어 현지화 식자 · 와이어프레임/스타일 프리뷰 · 리얼드로우 4레이어 분해
   const bubbleMatcher = new StudioAiEmotionBubbleMatcher();
   const enrichedCuts: EnrichedStoryboardCutSpec[] = directingResult.cuts.map((cut, idx) => {
     const lineText = cut.dialogue ?? cut.narration ?? cut.summary;
@@ -278,6 +331,7 @@ export function runWebtoonStoryboardMasterPipeline(
       shadingMode: resolvedArtistStyle.shadingMode,
       paletteMood: resolvedArtistStyle.paletteMood,
     });
+    const productionLayers = decomposeCutIntoProductionLayers(cut, resolvedArtistStyle);
 
     return Object.freeze({
       cutPlan: cut,
@@ -287,6 +341,7 @@ export function runWebtoonStoryboardMasterPipeline(
       localizedDialogues,
       cutWireframeDataUrl,
       stylePreviewDataUrl: stylePreview.dataUrl,
+      productionLayers,
     });
   });
 
@@ -305,8 +360,8 @@ export function runWebtoonStoryboardMasterPipeline(
     creatorLevel,
     estimatedTimeSavedMinutes,
     proProductionGuide:
-      `[${resolvedArtistStyle.artistLabel}] 화풍 DNA(${artistStyleDna.summaryKo})가 전 컷(${directingResult.totalCuts}컷)에 일관 바인딩되어 ` +
-      `콘티·러프·밑색·글로벌 식자 사전 검수 공수를 약 ${estimatedTimeSavedMinutes}분 단축합니다.`,
+      `[${resolvedArtistStyle.artistLabel}] 화풍 DNA(${artistStyleDna.summaryKo}) 및 캐릭터 고정 시드(${genvasCharacterPoseLock.characterIdentityToken})가 ` +
+      `전 컷(${directingResult.totalCuts}컷)에 일관 바인딩되어 콘티·선화·밑색·명암 4레이어 분업 및 글로벌 식자 공수를 약 ${estimatedTimeSavedMinutes}분 단축합니다.`,
     aspiringCreatorCurriculum: Object.freeze([
       "1단계 (구도·스케치): 간단한 도형·실루엣과 동세선만으로 샷 스케일(CU/FS)과 카메라 앵글을 설계합니다.",
       "2단계 (스토리라인·호흡): 기·승·전·결 4막 텐션 곡선과 회차 엔딩 클리프행어 직전 180px 스크롤 여백 원리를 익힙니다.",
@@ -329,10 +384,13 @@ export function runWebtoonStoryboardMasterPipeline(
     storylineArc,
     cliffhangerDiagnostic,
     dialogueExchange,
+    fabulatorNarrativeChain,
+    genvasCharacterPoseLock,
     directingResult,
     styleConsistencyAudit,
     enrichedCuts: Object.freeze(enrichedCuts),
     creatorEcosystemReport,
+    benchmarkMatrix: WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
   });
 }
 

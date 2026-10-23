@@ -445,6 +445,16 @@ describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스
     fireEvent.click(screen.getByRole("button", { name: "로판·사극 귀족 (격식체)" }));
     fireEvent.click(screen.getByTestId("apply-voice-exchange-script-btn"));
     expect(scriptTextarea.value).toContain("가문의 이름으로 끝까지 책임을 묻겠습니다");
+
+    // 오노마AI 페뷸레이터 5단계 서사 체인 & 라이언로켓 젠버스 포즈 가이드 & Claude AI 수석 PD 코칭 검증
+    expect(screen.getByTestId("genvas-pose-guide").textContent).toContain("투시·동세 가이드:");
+    fireEvent.click(screen.getByTestId("apply-fabulator-chain-script-btn"));
+    expect(scriptTextarea.value.split("\n").length).toBeGreaterThanOrEqual(4);
+
+    expect(screen.getByTestId("claude-storyboard-assist-panel")).toBeTruthy();
+    expect(screen.getByTestId("claude-assist-cliffhanger-line").textContent).toContain("추천 엔딩 대사:");
+    fireEvent.click(screen.getByTestId("apply-claude-cliffhanger-btn"));
+    expect(scriptTextarea.value).toContain("(클리프행어 훅)");
   });
 });
 

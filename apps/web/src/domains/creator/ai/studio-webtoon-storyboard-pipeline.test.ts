@@ -8,9 +8,13 @@ import {
 import { analyzeArtistDatasetSamples } from "./studio-artist-style-dna";
 import { ROUGH_SKETCH_STROKE_TEMPLATES } from "./studio-rough-sketch-analyzer";
 import {
+  buildFabulatorNarrativeChain,
+  buildGenvasCharacterPoseLock,
   buildGlobalKWebtoonExportBundle,
+  decomposeCutIntoProductionLayers,
   renderStoryboardCutWireframeDataUrl,
   runWebtoonStoryboardMasterPipeline,
+  WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
 } from "./studio-webtoon-storyboard-pipeline";
 
 describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", () => {
@@ -184,5 +188,50 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     ]);
     expect(bundle.productionSheetMarkdown).toContain("# 글로벌 K-웹툰 프로덕션 스토리보드 시트");
     expect(bundle.productionSheetMarkdown).toContain("EN 식자:");
+  });
+
+  it("젠버스(Genvas)·페뷸레이터(Fabulator)·리얼드로우(RealDraw) 벤치마크 엔진이 5단계 서사 체인·포즈 고정·4레이어 분해를 수행한다", () => {
+    const chain = buildFabulatorNarrativeChain({
+      genre: "로맨스판타지",
+      coreConflict: "황실의 금기된 계약 결혼과 반역의 그림자",
+      protagonistName: "아델리아",
+      partnerName: "카시안",
+      relationshipDynamic: "contract-allies",
+    });
+    expect(chain.stages).toHaveLength(5);
+    expect(chain.worldviewPillars).toHaveLength(3);
+    expect(chain.episodeTreatmentBeats).toHaveLength(4);
+    expect(chain.readyToDirectScript).toContain("계약서 제3조");
+
+    const output = runWebtoonStoryboardMasterPipeline({
+      scriptText: chain.readyToDirectScript,
+      relationshipDynamic: "contract-allies",
+      posePresetId: "pose-lookback-closeup",
+      protagonistName: "아델리아",
+      partnerName: "카시안",
+    });
+
+    expect(output.genvasCharacterPoseLock.posePreset.id).toBe("pose-lookback-closeup");
+    expect(output.genvasCharacterPoseLock.copyrightProvenanceBadge.status).toBe(
+      "verified-artist-opt-in",
+    );
+    expect(output.genvasCharacterPoseLock.copyrightProvenanceBadge.commercialUseCleared).toBe(true);
+    expect(output.benchmarkMatrix).toEqual(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX);
+
+    const directPoseLock = buildGenvasCharacterPoseLock(
+      output.resolvedArtistStyle,
+      "pose-lookback-closeup",
+      12,
+    );
+    expect(directPoseLock.fewShotTrainingTargetCount).toBe(10);
+    expect(directPoseLock.copyrightProvenanceBadge.status).toBe("verified-artist-opt-in");
+
+    const firstCutLayers = decomposeCutIntoProductionLayers(
+      output.directingResult.cuts[0]!,
+      output.resolvedArtistStyle,
+    );
+    expect(firstCutLayers.layers).toHaveLength(4);
+    expect([18, 28, 50, 85]).toContain(firstCutLayers.lensFocalLengthMm);
+    expect(output.enrichedCuts[0]!.productionLayers.layers).toHaveLength(4);
   });
 });
