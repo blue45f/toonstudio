@@ -9,8 +9,8 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1618,
-    "bytes": 20139449
+    "modules": 1622,
+    "bytes": 20203379
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
@@ -18,8 +18,8 @@
       "bytes": 1189015
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1431,
-      "bytes": 19290251
+      "modules": 1435,
+      "bytes": 19354181
     }
   },
   "forbiddenDomains": {
@@ -60,7 +60,7 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 18,
-      "bytes": 288050,
+      "bytes": 287391,
       "files": [
         "apps/web/src/domains/creator/bg3d/StudioBg3dRetainedOwnerRouteBridge.tsx",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
@@ -382,7 +382,7 @@
     },
     "apps/web/src/domains/creator": {
       "modules": 564,
-      "bytes": 8542347
+      "bytes": 8550186
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -398,15 +398,15 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 18,
-      "bytes": 288050
+      "bytes": 287391
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
       "bytes": 2547
     },
     "apps/web/src/domains/creator/brush": {
-      "modules": 148,
-      "bytes": 2505695
+      "modules": 149,
+      "bytes": 2507100
     },
     "apps/web/src/domains/creator/brush-lab": {
       "modules": 29,
@@ -414,7 +414,7 @@
     },
     "apps/web/src/domains/creator/canvas": {
       "modules": 61,
-      "bytes": 669998
+      "bytes": 672516
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 2,
@@ -553,12 +553,12 @@
       "bytes": 31191
     },
     "apps/web/src/domains/creator/status-i18n": {
-      "modules": 12,
-      "bytes": 318625
+      "modules": 15,
+      "bytes": 366259
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
-      "bytes": 992787
+      "bytes": 997980
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -916,6 +916,7 @@
     "apps/web/src/domains/creator/brush/studio-brush-gpu-quality-evidence.generated.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-gpu-quality-evidence.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-intrinsic-symmetry.ts": 2,
+    "apps/web/src/domains/creator/brush/studio-brush-library-export-contract.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-library.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-material-dynamics.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-material-group.ts": 2,
@@ -1364,6 +1365,7 @@
     "apps/web/src/domains/creator/selection/studio-object-selection-set.ts": 2,
     "apps/web/src/domains/creator/selection/studio-selection-exact-mask.ts": 2,
     "apps/web/src/domains/creator/selection/studio-selection-transform-controller.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-comments-error.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-editor-shell-status-i18n-r3c11.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-frozen5-status-i18n.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-frozen6-status-i18n.ts": 2,
@@ -1371,11 +1373,13 @@
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c06-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c07-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-bg3d-lt.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-comments.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-glb.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-crdt.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-raster.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-room.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-vrm-panel-status-i18n-core.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-writer-room-error.ts": 2,
     "apps/web/src/domains/creator/studio-2d-source-size.ts": 2,
     "apps/web/src/domains/creator/studio-active-stroke-lifecycle.ts": 2,
     "apps/web/src/domains/creator/studio-active-tool-command.ts": 2,
@@ -2351,6 +2355,13 @@
       "increases": [
         "총 정적 도달 원본 +258.8 KiB",
         "앱 셸 폐포 +3.8 KiB"
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "reason": "i18n 14라운드 producerError 사전(brush/comments/license/personal-cloud/storyworld/vrm) 정적 도달 기준선 반영",
+      "increases": [
+        "총 정적 도달 원본 +62.4 KiB"
       ]
     }
   ]

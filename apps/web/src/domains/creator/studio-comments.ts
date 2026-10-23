@@ -19,9 +19,9 @@ import {
   type StudioCommentActor,
   type StudioCommentAnchor,
 } from "./contracts/studio-comments-primitives";
-import { StudioCommentError, type StudioCommentActorLabelCode } from "./studio-comments-error";
+import { StudioCommentError, type StudioCommentActorLabelCode } from "./status-i18n/studio-comments-error";
 
-export { StudioCommentError, type StudioCommentActorLabelCode, type StudioCommentErrorCode } from "./studio-comments-error";
+export { StudioCommentError, type StudioCommentActorLabelCode, type StudioCommentErrorCode } from "./status-i18n/studio-comments-error";
 /**
  * Local-first editorial comment threads for Studio documents.
  *

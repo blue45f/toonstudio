@@ -18,15 +18,15 @@ import {
   StudioTeamCommentInputError,
   StudioTeamCommentResponseContractError,
   type StudioTeamCommentErrorCode,
-} from "./studio-team-comment-error";
+} from "./status-i18n/studio-team-comment-error";
+
+import { api, toApiError } from "@/platform/api";
 
 export {
   StudioTeamCommentInputError,
   StudioTeamCommentResponseContractError,
   type StudioTeamCommentErrorCode,
-} from "./studio-team-comment-error";
-
-import { api, toApiError } from "@/platform/api";
+} from "./status-i18n/studio-team-comment-error";
 
 const TEAM_COMMENTS_BASE = "/creator/works";
 const MAX_WORK_ID_LENGTH = 160;

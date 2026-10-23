@@ -2,8 +2,9 @@ import { z } from "zod";
 
 import { STUDIO_CHARACTER_BIBLE_MAX_ID_LENGTH } from "./studio-character-bible";
 import { SFX_LIBRARY } from "./studio-sfx-presets";
-import { StudioWriterRoomError } from "./studio-writer-room-error";
-export { StudioWriterRoomError, type StudioWriterRoomErrorCode } from "./studio-writer-room-error";
+import { StudioWriterRoomError } from "./status-i18n/studio-writer-room-error";
+
+export { StudioWriterRoomError, type StudioWriterRoomErrorCode } from "./status-i18n/studio-writer-room-error";
 
 /**
  * A local, deterministic writer-room document.

@@ -16,9 +16,9 @@ import {
   registerI18nLocaleEntries,
   resolveTranslationForDisplay,
 } from "@/shared/lib/i18n";
-import type { StudioCommentErrorCode } from "../studio-comments-error";
-import type { StudioTeamCommentErrorCode } from "../studio-team-comment-error";
-import type { StudioWriterRoomErrorCode } from "../studio-writer-room-error";
+import type { StudioCommentErrorCode } from "./studio-comments-error";
+import type { StudioTeamCommentErrorCode } from "./studio-team-comment-error";
+import type { StudioWriterRoomErrorCode } from "./studio-writer-room-error";
 
 function resolveProducerError(
   key: string,
