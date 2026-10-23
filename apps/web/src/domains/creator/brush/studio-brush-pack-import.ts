@@ -59,6 +59,10 @@ import {
   STUDIO_BRUSH_PROGRAM_MAX_BYTES,
   STUDIO_EXTERNAL_BRUSH_PACK_MAX_BYTES,
 } from "./studio-brush-pack-format";
+// 집계자 예외 (A4 D4 R14): 이 파일의 생산자 방출은 전부 코드지만,
+// studioBrushPackImportNotes는 표시 문구를 조립하는 요약 함수라 이 경계에서만
+// 리졸버를 부른다 — animatic load/save의 문자열 집계 경계와 같은 예외다.
+import { resolveStudioBrushPackWarning } from "../status-i18n/studio-producer-error-i18n-brush";
 
 
 import type {
@@ -91,75 +95,30 @@ const MIN_STROKE_WIDTH = 1;
 const MAX_STROKE_WIDTH = 80;
 const MIN_OPACITY = 0.05;
 
-export class StudioBrushProgramImportError extends Error {
-  constructor(
-    message: string,
-    readonly format: "myb" | "kpp" | "sut" | "sutg" | "bundle",
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = "StudioBrushProgramImportError";
-  }
-}
-
-export interface StudioBrushPackCandidate {
-  /** Exact original file, kept separately from the drawable approximation. */
-  readonly originalSource?: StudioBrushOriginalSource;
-  readonly name: string;
-  readonly snapshot: StudioBrushSnapshot;
-  /** Stable source path for multi-resource bundles. */
-  readonly sourcePath?: string;
-  readonly tags?: readonly string[];
-}
-
-export interface StudioBrushPackRights {
-  readonly authors: readonly string[];
-  readonly licenses: readonly string[];
-  readonly websites: readonly string[];
-  readonly emails: readonly string[];
-  readonly tags: readonly string[];
-}
-
-export interface StudioBrushPackPreservation {
-  readonly status: "drawable" | "structured-partial" | "preserve-only";
-  readonly sourceFormat: string;
-  readonly originalBytesUnmodified: true;
-  /** FormatGateway holds the original bytes in its sourcePayload for this result. */
-  readonly sourcePayloadAvailable: boolean;
-}
-
-export interface StudioBrushPackImportResult {
-  readonly format: StudioBrushPackFormat;
-  readonly brushes: readonly StudioBrushPackCandidate[];
-  /**
-   * Source fields with no drawable counterpart. Shown to the artist verbatim —
-   * this is the honest half of "the brush imported".
-   */
-  readonly unmapped: readonly string[];
-  /** Approximations and parser notes worth reading before drawing. */
-  readonly warnings: readonly string[];
-  /** Structured unsupported ledger; never collapsed into a false success. */
-  readonly unsupported?: readonly FormatIssue[];
-  readonly rights?: StudioBrushPackRights;
-  readonly preservation?: StudioBrushPackPreservation;
-}
-
-export interface StudioBrushPackCommitResult {
-  readonly result: StudioBrushPackImportResult;
-  readonly materialized: readonly StudioSavedBrush[];
-  readonly saved: BrushLibraryBatchWriteSummary;
-}
-
-export class StudioBrushPackPreserveOnlyError extends Error {
-  constructor(readonly result: StudioBrushPackImportResult) {
-    const firstReason = result.unsupported?.[0];
-    super(
-      `원본 바이트는 변경하지 않고 보존 판정했지만 실제로 그릴 수 있는 브러시가 0개라 SQLite 카탈로그에는 저장하지 않았어요.${firstReason ? ` ${firstReason.message}` : ""}`,
-    );
-    this.name = "StudioBrushPackPreserveOnlyError";
-  }
-}
-
+import {
+  StudioBrushPackPreserveOnlyError,
+  StudioBrushProgramImportError,
+  packWarning,
+  passthroughWarning,
+  withWarningPrefix,
+  type StudioBrushPackCommitResult,
+  type StudioBrushPackImportResult,
+  type StudioBrushPackRights,
+  type StudioBrushPackWarning,
+} from "./studio-brush-pack-import-types";
+export {
+  StudioBrushPackPreserveOnlyError,
+  StudioBrushProgramImportError,
+  type StudioBrushPackCandidate,
+  type StudioBrushPackCommitResult,
+  type StudioBrushPackErrorCode,
+  type StudioBrushPackImportResult,
+  type StudioBrushPackPreservation,
+  type StudioBrushPackRights,
+  type StudioBrushPackWarning,
+  type StudioBrushPackWarningCode,
+  type StudioBrushProgramImportFormat,
+} from "./studio-brush-pack-import-types";
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 }
@@ -340,7 +299,7 @@ export interface StudioBrushProgramSnapshotResult {
   readonly snapshot: StudioBrushSnapshot;
   /** IR fields this map cannot carry into a drawable setting. */
   readonly unmapped: readonly string[];
-  readonly warnings: readonly string[];
+  readonly warnings: readonly StudioBrushPackWarning[];
 }
 
 /**
@@ -354,7 +313,7 @@ export function studioBrushSnapshotFromProgram(
   program: BrushProgramIR,
 ): StudioBrushProgramSnapshotResult {
   const unmapped: string[] = [];
-  const warnings: string[] = [];
+  const warnings: StudioBrushPackWarning[] = [];
 
   const size = resolveSize(program.sizeDynamics);
   const flow = resolveFlow(program.flowDynamics);
@@ -362,50 +321,49 @@ export function studioBrushSnapshotFromProgram(
   // 굵기·농도가 스튜디오 범위를 벗어나 잘렸으면 조용히 넘기지 않고 알린다 —
   // "가져왔는데 원본과 다르게 그려지는" 실패를 막는 것이 이 모듈의 규칙이다.
   if (size.requestedStrokeWidth !== size.strokeWidth) {
-    warnings.push(
-      `원본 브러시 굵기(약 ${size.requestedStrokeWidth}px)가 스튜디오 굵기 범위(${MIN_STROKE_WIDTH}~${MAX_STROKE_WIDTH}px)를 벗어나 ${size.strokeWidth}px로 등록했어요.`,
-    );
+    warnings.push(packWarning("warn.strokeWidthClamped", {
+      requested: String(size.requestedStrokeWidth),
+      applied: String(size.strokeWidth),
+      min: String(MIN_STROKE_WIDTH),
+      max: String(MAX_STROKE_WIDTH),
+    }));
   }
   if (Math.abs(flow.requestedOpacity - flow.opacity) > 1e-9) {
-    warnings.push("원본 브러시 농도가 스튜디오 범위를 벗어나 가장 가까운 값으로 등록했어요.");
+    warnings.push(packWarning("warn.opacityClamped"));
   }
 
   for (const mapping of program.sizeDynamics) {
     if (mapping.input !== "pressure" && mapping.input !== "constant") {
       unmapped.push(`sizeDynamics(${mapping.input})`);
     } else if (lutLinearityError(mapping) > LUT_LINEARITY_TOLERANCE) {
-      warnings.push(
-        `굵기 필압 곡선이 곡선형이라 최소~최대 구간의 직선 근사로 옮겼어요(${mapping.input}).`,
-      );
+      warnings.push(packWarning("warn.sizeCurveApproximated", { input: mapping.input }));
     }
   }
   for (const mapping of program.flowDynamics) {
     if (mapping.input !== "pressure" && mapping.input !== "constant") {
       unmapped.push(`flowDynamics(${mapping.input})`);
     } else if (lutLinearityError(mapping) > LUT_LINEARITY_TOLERANCE) {
-      warnings.push(
-        `농도 필압 곡선이 곡선형이라 최소~최대 구간의 직선 근사로 옮겼어요(${mapping.input}).`,
-      );
+      warnings.push(packWarning("warn.flowCurveApproximated", { input: mapping.input }));
     }
   }
 
   if (program.tip.kind === "image") {
     unmapped.push("tip.image");
-    warnings.push("이미지 펜촉은 아직 옮기지 못해 원형 촉으로 그려요.");
+    warnings.push(packWarning("warn.imageTipFallback"));
   } else if (program.tip.kind === "stamp") {
-    warnings.push("스탬프 촉은 절차적 원형 촉의 경도로 근사했어요.");
+    warnings.push(packWarning("warn.stampTipApproximated"));
   }
   if (program.tip.angleJitterDeg > 0) unmapped.push("tip.angleJitterDeg");
   if (program.mixing.kind !== "none") {
     unmapped.push(`mixing.${program.mixing.kind}`);
-    warnings.push("번짐·습식 혼합은 아직 그리기에 반영되지 않아요.");
+    warnings.push(packWarning("warn.wetMixNotReflected"));
   }
   if (program.geometry.kind !== "perfect-freehand") {
     unmapped.push(`geometry.${program.geometry.kind}`);
   }
   if (program.output.target !== "vector-path") unmapped.push(`output.${program.output.target}`);
   if (!size.hasPressure && program.sizeDynamics.length === 0) {
-    warnings.push("원본에 굵기 필압 정보가 없어 기본 굵기로 등록했어요.");
+    warnings.push(packWarning("warn.pressureDefaulted"));
   }
 
   const dynamics = normalizeStudioBrushDynamicsSettings({
@@ -507,9 +465,12 @@ export async function importStudioCspToolBytes(
     parsed = await importCspToolFile(bytes, { kind, sqliteReader, signal });
   } catch (cause) {
     if (cause instanceof CspToolFileError) {
+      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화하고, 하위 파서의 동적
+      // 문자열은 params.detail 패스스루, kind는 식별자 params로 싣는다.
       throw new StudioBrushProgramImportError(
-        `Clip Studio ${kind.toUpperCase()} 파일을 읽지 못했어요. ${cause.message}`,
+        "cspReadFailed",
         kind,
+        { kind: kind.toUpperCase(), detail: ` ${cause.message}` },
         { cause },
       );
     }
@@ -531,9 +492,9 @@ export async function importStudioCspToolBytes(
     unmapped: mapped.flatMap(({ program, mapped: lowered }) =>
       lowered.unmapped.map((field) => `${program.name}:${field}`)),
     warnings: [
-      ...parsed.warnings.map(issueText),
+      ...parsed.warnings.map((issue) => passthroughWarning(issueText(issue))),
       ...mapped.flatMap(({ program, mapped: lowered }) =>
-        lowered.warnings.map((message) => `${program.name}: ${message}`)),
+        lowered.warnings.map((warning) => withWarningPrefix(warning, program.name))),
     ],
     unsupported: parsed.unsupported,
     rights: cspRights(parsed),
@@ -552,17 +513,19 @@ export async function importStudioKritaBundleBytes(
   options: KritaBundleImportOptions = {},
 ): Promise<StudioBrushPackImportResult> {
   // Archive decoding is needed only after an explicit file-import request, not on editor entry.
-  if (options.signal?.aborted) throw new StudioBrushProgramImportError("브러시 가져오기가 취소되었습니다.", "bundle");
+  if (options.signal?.aborted) throw new StudioBrushProgramImportError("cancelled", "bundle");
   const { importKritaBundle: parseBundle, KritaBundleError } = await import("../../../../../../packages/studio-format-gateway/src/krita-bundle");
-  if (options.signal?.aborted) throw new StudioBrushProgramImportError("브러시 가져오기가 취소되었습니다.", "bundle");
+  if (options.signal?.aborted) throw new StudioBrushProgramImportError("cancelled", "bundle");
   let parsed: KritaBundleImportResult;
   try {
     parsed = await parseBundle(bytes, options);
   } catch (cause) {
     if (cause instanceof KritaBundleError) {
+      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
       throw new StudioBrushProgramImportError(
-        `Krita 브러시 번들(.bundle)을 읽지 못했어요. ${cause.message}`,
+        "bundleReadFailed",
         "bundle",
+        { detail: ` ${cause.message}` },
         { cause },
       );
     }
@@ -586,9 +549,9 @@ export async function importStudioKritaBundleBytes(
     unmapped: mapped.flatMap(({ brush, mapped: lowered }) =>
       lowered.unmapped.map((field) => `${brush.path}:${field}`)),
     warnings: [
-      ...parsed.warnings.map(issueText),
+      ...parsed.warnings.map((issue) => passthroughWarning(issueText(issue))),
       ...mapped.flatMap(({ brush, mapped: lowered }) =>
-        lowered.warnings.map((message) => `${brush.path}: ${message}`)),
+        lowered.warnings.map((warning) => withWarningPrefix(warning, brush.path))),
     ],
     unsupported: parsed.unsupported,
     rights: kritaRights(parsed),
@@ -607,7 +570,7 @@ export function importStudioMybBytes(
   fileName: string,
 ): StudioBrushPackImportResult {
   if (!bytes.byteLength || bytes.byteLength > STUDIO_BRUSH_PROGRAM_MAX_BYTES) {
-    throw new StudioBrushProgramImportError("브러시 원본이 비어 있거나 8MiB 크기 한도를 넘었습니다.", "myb");
+    throw new StudioBrushProgramImportError("sourceTooLarge", "myb");
   }
   const presetId = `myb:${fileName}`;
   let parsed;
@@ -615,9 +578,11 @@ export function importStudioMybBytes(
     parsed = importMybBrush(bytes, presetId, presetDisplayName("", fileName));
   } catch (error) {
     if (error instanceof MybParseError) {
+      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
       throw new StudioBrushProgramImportError(
-        `libmypaint 브러시(.myb)를 읽지 못했어요. ${error.message}`,
+        "mybReadFailed",
         "myb",
+        { detail: ` ${error.message}` },
         { cause: error },
       );
     }
@@ -651,16 +616,18 @@ export function importStudioKppBytes(
   fileName: string,
 ): StudioBrushPackImportResult {
   if (!bytes.byteLength || bytes.byteLength > STUDIO_BRUSH_PROGRAM_MAX_BYTES) {
-    throw new StudioBrushProgramImportError("브러시 원본이 비어 있거나 8MiB 크기 한도를 넘었습니다.", "kpp");
+    throw new StudioBrushProgramImportError("sourceTooLarge", "kpp");
   }
   let parsed;
   try {
     parsed = parseKppPreset(bytes);
   } catch (error) {
     if (error instanceof KppParseError) {
+      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
       throw new StudioBrushProgramImportError(
-        `Krita 브러시(.kpp)를 읽지 못했어요. ${error.message}`,
+        "kppReadFailed",
         "kpp",
+        { detail: ` ${error.message}` },
         { cause: error },
       );
     }
@@ -668,13 +635,14 @@ export function importStudioKppBytes(
   }
   const name = presetDisplayName(parsed.presetName, fileName);
   const mapped = studioBrushSnapshotFromProgram(parsed.program);
-  const warnings = [...mapped.warnings, ...parsed.warnings];
+  const warnings: StudioBrushPackWarning[] = [
+    ...mapped.warnings,
+    ...parsed.warnings.map((text) => passthroughWarning(text)),
+  ];
   if (parsed.program.providerPreference.length === 0) {
     // The gateway produces a shell for paintops with no mapping lane. Registering
     // it silently would be the "imported but draws nothing like it" failure.
-    warnings.push(
-      "이 Krita 엔진은 아직 대응 브러시가 없어 기본 잉크 입자 브러시 설정으로 등록했어요.",
-    );
+    warnings.push(packWarning("warn.kppEngineFallback"));
   }
   return {
     format: "kpp",
@@ -701,7 +669,9 @@ export function importStudioBrushJsonText(
   // (일반 설정 2MB 한도는 importBrushFromJson이 아카이브 판정 뒤에 계속 강제한다.)
   if (text.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS
     || new TextEncoder().encode(text).byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES) {
-    throw new Error("브러시 보존 파일이 허용 크기를 초과했습니다.");
+    // A4 D4 (R14): plain Error였던 이 방출을 ProgramImportError로 통일하고
+    // code(jsonTooLarge)를 신설했다 — format은 이 레인의 "json"이다.
+    throw new StudioBrushProgramImportError("jsonTooLarge", "json");
   }
   const fallbackName = fileName.replace(/\.json$/iu, "");
   const { brush, adjustedFields } = importBrushFromJson(text, fallbackName);
@@ -712,7 +682,7 @@ export function importStudioBrushJsonText(
     unmapped: [],
     warnings:
       adjustedFields.length > 0
-        ? [`일부 값(${adjustedFields.join(", ")})은 안전 범위로 보정했어요.`]
+        ? [packWarning("warn.valuesAdjusted", { fields: adjustedFields.join(", ") })]
         : [],
   };
 }
@@ -734,16 +704,17 @@ export async function importStudioBrushProgramFile(
     : STUDIO_BRUSH_PROGRAM_MAX_BYTES;
   if (file.size > maximumBytes) {
     throw new StudioBrushProgramImportError(
-      `브러시 파일이 너무 커요. ${Math.round(maximumBytes / 1_000_000)}MB 이하 파일만 가져올 수 있어요.`,
+      "fileTooLarge",
       format,
+      { maxMb: String(Math.round(maximumBytes / 1_000_000)) },
     );
   }
   if (options.signal?.aborted) {
-    throw new StudioBrushProgramImportError("브러시 가져오기가 취소되었습니다.", format);
+    throw new StudioBrushProgramImportError("cancelled", format);
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (options.signal?.aborted) {
-    throw new StudioBrushProgramImportError("브러시 가져오기가 취소되었습니다.", format);
+    throw new StudioBrushProgramImportError("cancelled", format);
   }
   if (format === "myb") return importStudioMybBytes(bytes, file.name);
   if (format === "kpp") return importStudioKppBytes(bytes, file.name);
@@ -778,9 +749,15 @@ function displayList(label: string, values: readonly string[]): string | null {
   return `${label}: ${shown.join(", ")}${remainder > 0 ? ` 외 ${remainder}개` : ""}.`;
 }
 
-/** Compact but explicit UI ledger for approximations, unsupported fields and rights. */
+/**
+ * Compact but explicit UI ledger for approximations, unsupported fields and rights.
+ * 집계자 예외 (A4 D4 R14): warnings는 구조화 코드로 방출되며, 해석은 이
+ * 조립 지점에서만 한다. Panel·Host 양쪽 표시 지점이 이 함수를 경유하므로
+ * 두 표시 모두 여기서 해석된 문구를 받는다. unmapped·unsupported·rights
+ * 합성 문구는 식별자·데이터 표기라 이 파일의 코드화 범위 밖(현행 유지).
+ */
 export function studioBrushPackImportNotes(result: StudioBrushPackImportResult): string[] {
-  const notes = [...result.warnings];
+  const notes = result.warnings.map((warning) => resolveStudioBrushPackWarning(warning));
   const unmapped = displayList("옮기지 못한 전용 설정", result.unmapped);
   if (unmapped) notes.push(unmapped);
   const unsupported = result.unsupported ?? [];

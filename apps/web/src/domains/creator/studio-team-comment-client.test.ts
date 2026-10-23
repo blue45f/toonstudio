@@ -200,7 +200,7 @@ describe("Studio team comment API client", () => {
         nextCursor: "cursor_cycle",
       }));
     await expect(listAllStudioTeamComments("work/한글"))
-      .rejects.toThrow("댓글 페이지 커서가 순환했습니다");
+      .rejects.toThrow("contractCursorCycle");
 
     apiGet
       .mockResolvedValueOnce(listResponse({
@@ -217,7 +217,7 @@ describe("Studio team comment API client", () => {
       }));
 
     await expect(listAllStudioTeamComments("work/한글"))
-      .rejects.toThrow("댓글 메시지 스냅샷이 지원 한도를 벗어났습니다");
+      .rejects.toThrow("contractSnapshotMessageLimit");
   });
 
   it("creates and replies with canonical trimmed bodies and exact semantic anchors", async () => {
@@ -380,17 +380,17 @@ describe("Studio team comment API client", () => {
       "work-1",
       "thread-1",
       { messageLimit: 52 }
-    )).rejects.toThrow("댓글 상세 조회 조건이 올바르지 않습니다");
+    )).rejects.toThrow("invalidThreadOptions");
     await expect(reanchorStudioTeamCommentThread("work-1", "thread-1", {
       mutationId: "mutation-reanchor-invalid-point",
       anchor: { type: "point", pageId: "page-1", x: -0.01, y: 0.5 },
       expectedActivitySequence: "2",
-    })).rejects.toThrow("댓글의 새 위치 또는 변경 기준이 올바르지 않습니다");
+    })).rejects.toThrow("invalidReanchorInput");
     await expect(reanchorStudioTeamCommentThread("work-1", "thread-1", {
       mutationId: "mutation-reanchor-invalid-sequence",
       anchor: PAGE_ANCHOR,
       expectedActivitySequence: "0",
-    })).rejects.toThrow("댓글의 새 위치 또는 변경 기준이 올바르지 않습니다");
+    })).rejects.toThrow("invalidReanchorInput");
     expect(apiGet).not.toHaveBeenCalled();
     expect(apiPost).not.toHaveBeenCalled();
 
@@ -494,33 +494,33 @@ describe("Studio team comment API client", () => {
   it("rejects invalid client input before a request and maps only transport failures", async () => {
     await expect(
       listStudioTeamComments("work-1", { limit: 51 })
-    ).rejects.toThrow("댓글 목록 조건이 올바르지 않습니다");
+    ).rejects.toThrow("invalidListOptions");
     await expect(
       createStudioTeamCommentThread("work-1", {
         mutationId: "mutation-invalid-anchor",
         anchor: { type: "point", pageId: "page-1", x: 2, y: 0.5 },
         body: "내용",
       })
-    ).rejects.toThrow("연결 위치가 올바르지 않습니다");
+    ).rejects.toThrow("invalidCreateInput");
     await expect(
       createStudioTeamCommentThread("work-1", {
         mutationId: "mutation-long-body",
         anchor: PAGE_ANCHOR,
         body: `${" ".repeat(4_000)}x`,
       })
-    ).rejects.toThrow("새 댓글 내용 또는 연결 위치가 올바르지 않습니다");
+    ).rejects.toThrow("invalidCreateInput");
     await expect(
       addStudioTeamCommentReply("work-1", "thread-1", {
         mutationId: "mutation-long-reply",
         body: `${" ".repeat(4_000)}x`,
       })
-    ).rejects.toThrow("답글 내용이 올바르지 않습니다");
+    ).rejects.toThrow("invalidReplyInput");
     await expect(
       addStudioTeamCommentReply("work-1", "thread-1", {
         mutationId: "bad\nmutation",
         body: "답글",
       })
-    ).rejects.toThrow("답글 내용이 올바르지 않습니다");
+    ).rejects.toThrow("invalidReplyInput");
     expect(apiGet).not.toHaveBeenCalled();
     expect(apiPost).not.toHaveBeenCalled();
 

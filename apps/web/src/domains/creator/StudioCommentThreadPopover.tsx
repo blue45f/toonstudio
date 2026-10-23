@@ -22,7 +22,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
-
+import { resolveStudioCommentClusterErrorFromCause } from "./status-i18n/studio-producer-error-i18n-comments";
 import {
   STUDIO_COMMENTS_MAX_BODY_LENGTH,
   STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD,
@@ -592,7 +592,7 @@ export function StudioCommentThreadPopover({
       setNotice(frozenStatus4Text("studio.frozenStatus4.comment.saved", "답글을 등록했어요."));
     } catch (cause) {
       if (mutationRevisionRef.current !== mutationRevision) return;
-      setError(cause instanceof Error ? cause.message : frozenStatus4Text("studio.frozenStatus4.comment.saveFailed", "답글을 저장하지 못했어요."));
+      setError(resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus4Text("studio.frozenStatus4.comment.saveFailed", "답글을 저장하지 못했어요.")));
       globalThis.requestAnimationFrame(() => textareaRef.current?.focus());
     } finally {
       if (mutationRevisionRef.current === mutationRevision) {
@@ -619,7 +619,7 @@ export function StudioCommentThreadPopover({
       setNotice(nextResolved ? frozenStatus4Text("studio.frozenStatus4.comment.resolvedNotice", "댓글을 해결 처리했어요.") : frozenStatus4Text("studio.frozenStatus4.comment.reopenedNotice", "댓글을 다시 열었어요."));
     } catch (cause) {
       if (mutationRevisionRef.current !== mutationRevision) return;
-      setError(cause instanceof Error ? cause.message : nextResolved ? frozenStatus4Text("studio.frozenStatus4.comment.resolveFailed", "댓글을 해결 처리하지 못했어요.") : frozenStatus4Text("studio.frozenStatus4.comment.reopenFailed", "댓글을 다시 열지 못했어요."));
+      setError(resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : nextResolved ? frozenStatus4Text("studio.frozenStatus4.comment.resolveFailed", "댓글을 해결 처리하지 못했어요.") : frozenStatus4Text("studio.frozenStatus4.comment.reopenFailed", "댓글을 다시 열지 못했어요.")));
     } finally {
       if (mutationRevisionRef.current === mutationRevision) {
         pendingMutationRef.current = null;

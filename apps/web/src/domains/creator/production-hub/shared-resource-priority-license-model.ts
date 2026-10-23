@@ -280,7 +280,8 @@ export type AssetLicenseIssueCode =
 export interface AssetLicenseIssue {
   readonly code: AssetLicenseIssueCode;
   readonly severity: "blocker" | "warning";
-  readonly message: string;
+  /** D4 구조화 방출: 표시 문구 대신 params만 싣는다. 해석은 표시 지점의 license 리졸버가 한다. */
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface AssetLicenseCheckResult {
@@ -304,73 +305,68 @@ export function checkAssetLicense(
   fallback: { readonly assetId: string; readonly title: string },
 ): AssetLicenseCheckResult {
   const issues: AssetLicenseIssue[] = [];
-  const block = (code: AssetLicenseIssueCode, message: string) =>
-    issues.push({ code, severity: "blocker", message });
-  const warn = (code: AssetLicenseIssueCode, message: string) =>
-    issues.push({ code, severity: "warning", message });
+  const block = (code: AssetLicenseIssueCode, params?: Readonly<Record<string, string>>) =>
+    issues.push({ code, severity: "blocker", ...(params ? { params } : {}) });
+  const warn = (code: AssetLicenseIssueCode, params?: Readonly<Record<string, string>>) =>
+    issues.push({ code, severity: "warning", ...(params ? { params } : {}) });
 
   if (!metadata) {
-    block(
-      "metadata-missing",
-      "라이선스 메타데이터가 없어 배분할 수 없습니다. 사용 조건을 먼저 등록하세요.",
-    );
+    block("metadata-missing");
     return { assetId: fallback.assetId, title: fallback.title, verdict: "block", issues };
   }
 
   if (!metadata.rightsConfirmed) {
-    block("rights-unconfirmed", "권리 확인이 끝나지 않은 에셋은 배분할 수 없습니다.");
+    block("rights-unconfirmed");
   }
 
   const licenseId = metadata.licenseId.trim();
   if (!licenseId || licenseId.toLowerCase() === "unknown") {
     if (context.use === "cross-project-share" || context.use === "publication") {
-      block("license-unknown", "라이선스를 알 수 없는 에셋은 공유·게시할 수 없습니다.");
+      block("license-unknown");
     } else {
-      warn("license-unknown", "라이선스가 확인되지 않았습니다. 공유·게시 전에 확인하세요.");
+      warn("license-unknown");
     }
   }
 
   if (context.commercialContext) {
     if (metadata.commercialUse === "forbidden") {
-      block(
-        "noncommercial-license",
-        "비상업 라이선스 에셋은 상업 작품에 쓸 수 없습니다 (라이선스 상업성 원칙).",
-      );
+      block("noncommercial-license");
     } else if (metadata.commercialUse === "unknown") {
-      warn("commercial-unknown", "상업 이용 가능 여부가 확인되지 않았습니다.");
+      warn("commercial-unknown");
     }
   }
 
   if (context.use === "cross-project-share") {
     if (metadata.redistribution === "forbidden") {
-      block("redistribution-forbidden", "재배포가 금지된 에셋은 다른 작품과 공유할 수 없습니다.");
+      block("redistribution-forbidden");
     } else if (metadata.redistribution === "unknown") {
-      warn("redistribution-unknown", "재배포 가능 여부가 확인되지 않았습니다.");
+      warn("redistribution-unknown");
     }
   }
 
   if (metadata.allowedProjectIds !== null && !metadata.allowedProjectIds.includes(context.projectId)) {
-    block("project-not-licensed", "이 작품에는 사용이 허가되지 않은 에셋입니다.");
+    block("project-not-licensed");
   }
 
   if (metadata.allowedUses !== null && !metadata.allowedUses.includes(context.use)) {
-    block("use-not-licensed", `이 용도(${ASSET_LICENSE_USE_LABELS[context.use].ko})는 허가되지 않았습니다.`);
+    // 용도는 라벨 문구가 아니라 용도 코드를 params로 싣는다 — 표시 지점이 용도 사전으로 해석한다.
+    block("use-not-licensed", { usage: context.use });
   }
 
   const expiresMs = parseTime(metadata.expiresAt);
   if (expiresMs !== null) {
     const atMs = context.at.getTime();
     if (expiresMs <= atMs) {
-      block("license-expired", "라이선스 기간이 만료됐습니다.");
+      block("license-expired");
     } else if (expiresMs - atMs <= LICENSE_EXPIRY_WARNING_DAYS * 24 * HOUR_MS) {
-      warn("license-expiring-soon", `라이선스가 ${LICENSE_EXPIRY_WARNING_DAYS}일 안에 만료됩니다.`);
+      warn("license-expiring-soon", { days: String(LICENSE_EXPIRY_WARNING_DAYS) });
     }
   }
 
   if (metadata.attributionRequired === true) {
-    warn("attribution-required", "출처표기가 필요합니다. 크레딧에 표기했는지 확인하세요.");
+    warn("attribution-required");
   } else if (metadata.attributionRequired === null) {
-    warn("attribution-unknown", "출처표기 필요 여부가 확인되지 않았습니다.");
+    warn("attribution-unknown");
   }
 
   const verdict = issues.some((issue) => issue.severity === "blocker")

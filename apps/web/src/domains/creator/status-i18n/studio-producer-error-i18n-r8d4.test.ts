@@ -140,6 +140,7 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     // R11: 사전이 코어(tm·animatic) + 형제 모듈 5개로 나뉘어, 패리티는 제품군 전체를 누적해 본다.
     // R12: 형제 모듈이 10개로 늘었다(shotBatchRecovery·projectArchive·interchange 2·liveRaster 추가).
     // R13: 형제 모듈이 12개로 늘었다(liveCrdt·liveRoom 추가, projectArchive에 라벨 10키 추가).
+    // R14: 형제 모듈이 19개로 늘었다(storyworld·license·personalCloud·vrmPaint·vrmLibrary·brush·comments 추가, bg3dLt에 detach·shared3d 25키, projectArchive에 cause 11키 추가).
     const source = [
       "./studio-producer-error-i18n.ts",
       "./studio-producer-error-i18n-glb.ts",
@@ -154,6 +155,13 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
       "./studio-producer-error-i18n-live-raster.ts",
       "./studio-producer-error-i18n-live-crdt.ts",
       "./studio-producer-error-i18n-live-room.ts",
+      "./studio-producer-error-i18n-storyworld.ts",
+      "./studio-producer-error-i18n-license.ts",
+      "./studio-producer-error-i18n-personal-cloud.ts",
+      "./studio-producer-error-i18n-vrm-paint.ts",
+      "./studio-producer-error-i18n-vrm-library.ts",
+      "./studio-producer-error-i18n-brush.ts",
+      "./studio-producer-error-i18n-comments.ts",
     ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
     const blocks: Record<string, string[]> = {};
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
@@ -163,11 +171,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     // R11: 형제 모듈 구간(glb 55 + palette 23 + dialogue 105 + bg3dLt 50 + bg3dMeasure·shotBatchPlan 56)이 더해져 누적 348키가 된다.
     // R12: 형제 모듈 5개가 더해졌다(shotBatchRecovery 90 + projectArchive 168 + interchange cbz 62·ora 91 + liveRaster 99) — 전체 누적 858키.
     // R13: projectArchive 라벨 10 + liveCrdt 47(outbox 21·pageBridge 19·scene 7) + liveRoom 68(room 59·protocol 3·p2p 6)이 더해졌다 — 전체 누적 983키.
+    // R14: storyworld 55 + license 19 + personalCloud 22 + vrmPaint 87 + vrmLibrary 34 + brush 30 + comments 60 + bg3dLt 확장 25(detach 23·shared3d 2) + projectArchive cause 11이 더해졌다 — 전체 누적 1,326키.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(983);
+    expect(accumulated.ko).toHaveLength(1326);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });

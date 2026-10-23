@@ -19,7 +19,9 @@ import {
   type StudioCommentActor,
   type StudioCommentAnchor,
 } from "./contracts/studio-comments-primitives";
+import { StudioCommentError, type StudioCommentActorLabelCode } from "./studio-comments-error";
 
+export { StudioCommentError, type StudioCommentActorLabelCode, type StudioCommentErrorCode } from "./studio-comments-error";
 /**
  * Local-first editorial comment threads for Studio documents.
  *
@@ -713,13 +715,13 @@ export function serializeStudioCommentsDocument(value: unknown): string {
 }
 
 function canonicalNow(now: Date): string {
-  if (!Number.isFinite(now.getTime())) throw new Error("댓글 작업 시간이 올바르지 않아요.");
+  if (!Number.isFinite(now.getTime())) throw new StudioCommentError("invalidTime");
   return now.toISOString();
 }
 
 function assertCanonicalDocument(document: StudioCommentsDocument): void {
   if (!StudioCommentsDocumentSchema.safeParse(document).success) {
-    throw new Error("댓글 문서가 손상되었습니다. 먼저 댓글 데이터를 정규화해 주세요.");
+    throw new StudioCommentError("invalidDocument");
   }
 }
 
@@ -729,15 +731,15 @@ function messageIdExists(document: StudioCommentsDocument, id: string): boolean 
   );
 }
 
-function canonicalActor(value: StudioCommentActor, label: string): StudioCommentActor {
+function canonicalActor(value: StudioCommentActor, label: StudioCommentActorLabelCode): StudioCommentActor {
   const parsed = StudioCommentActorSchema.safeParse(value);
-  if (!parsed.success) throw new Error(`${label} 정보가 올바르지 않아요.`);
+  if (!parsed.success) throw new StudioCommentError("invalidActor", { label });
   return parsed.data;
 }
 
 function canonicalMentions(value: unknown): StudioCommentActor[] {
   if (!value) return [];
-  if (!Array.isArray(value)) throw new Error("멘션 목록이 올바르지 않아요.");
+  if (!Array.isArray(value)) throw new StudioCommentError("invalidMentions");
   return normalizeMentions(value);
 }
 
@@ -746,17 +748,15 @@ function canonicalReferences(
   value: readonly StudioCommentReference[] | undefined
 ): StudioCommentReference[] | undefined {
   if (!value || value.length === 0) return undefined;
-  if (!Array.isArray(value)) throw new Error("레퍼런스 첨부 목록이 올바르지 않아요.");
+  if (!Array.isArray(value)) throw new StudioCommentError("invalidReferenceList");
   if (value.length > STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD) {
-    throw new Error(
-      `레퍼런스는 최대 ${STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD}개까지 첨부할 수 있어요.`
-    );
+    throw new StudioCommentError("tooManyReferences", { max: String(STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD) });
   }
   const parsed = z.array(StudioCommentReferenceSchema).safeParse(value);
-  if (!parsed.success) throw new Error("레퍼런스 첨부가 올바르지 않아요.");
+  if (!parsed.success) throw new StudioCommentError("invalidReference");
   const ids = new Set<string>();
   for (const reference of parsed.data) {
-    if (ids.has(reference.id)) throw new Error("레퍼런스 ID가 중복됐어요.");
+    if (ids.has(reference.id)) throw new StudioCommentError("duplicateReferenceId");
     ids.add(reference.id);
   }
   return parsed.data.map((reference) => ({ ...reference }));
@@ -783,19 +783,19 @@ function referencesEqual(
 
 function canonicalBody(value: unknown): string {
   const body = normalizeText(value, STUDIO_COMMENTS_MAX_BODY_LENGTH);
-  if (!body) throw new Error("댓글 내용을 입력해 주세요.");
+  if (!body) throw new StudioCommentError("emptyBody");
   return body;
 }
 
 function canonicalInputId(value: unknown): string {
   const id = normalizeId(value);
-  if (!id) throw new Error("댓글 ID는 클라이언트에서 발급한 유효한 문자열이어야 해요.");
+  if (!id) throw new StudioCommentError("invalidId");
   return id;
 }
 
 function canonicalInputAnchor(value: StudioCommentAnchor): StudioCommentAnchor {
   const parsed = StudioCommentAnchorSchema.safeParse(value);
-  if (!parsed.success) throw new Error("댓글 연결 위치가 올바르지 않아요.");
+  if (!parsed.success) throw new StudioCommentError("invalidAnchor");
   return parsed.data;
 }
 
@@ -828,24 +828,24 @@ export function addStudioCommentThread(
 ): StudioCommentsDocument {
   assertCanonicalDocument(document);
   if (document.threads.length >= STUDIO_COMMENTS_MAX_THREADS) {
-    throw new Error(`댓글 스레드는 최대 ${STUDIO_COMMENTS_MAX_THREADS}개까지 저장할 수 있어요.`);
+    throw new StudioCommentError("tooManyThreads", { max: String(STUDIO_COMMENTS_MAX_THREADS) });
   }
   const messageCount = document.threads.reduce(
     (count, thread) => count + 1 + thread.replies.length,
     0
   );
   if (messageCount >= STUDIO_COMMENTS_MAX_TOTAL_MESSAGES) {
-    throw new Error(`댓글과 답글은 합쳐서 최대 ${STUDIO_COMMENTS_MAX_TOTAL_MESSAGES}개까지 저장할 수 있어요.`);
+    throw new StudioCommentError("tooManyMessages", { max: String(STUDIO_COMMENTS_MAX_TOTAL_MESSAGES) });
   }
   const id = canonicalInputId(input.id);
-  if (messageIdExists(document, id)) throw new Error("이미 사용 중인 댓글 또는 답글 ID예요.");
+  if (messageIdExists(document, id)) throw new StudioCommentError("duplicateId");
   const timestamp = canonicalNow(now);
   const references = canonicalReferences(input.references);
   const drawing = input.drawing ? StudioCommentDrawingSchema.parse(input.drawing) : undefined;
   const thread = StudioCommentThreadSchema.parse({
     id,
     anchor: canonicalInputAnchor(input.anchor),
-    author: canonicalActor(input.author, "작성자"),
+    author: canonicalActor(input.author, "author"),
     body: canonicalBody(input.body),
     mentions: canonicalMentions(input.mentions),
     createdAt: timestamp,
@@ -869,21 +869,21 @@ export function addStudioCommentReply(
   if (index < 0) return document;
   const thread = document.threads[index];
   if (thread.replies.length >= STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD) {
-    throw new Error(`답글은 스레드당 최대 ${STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD}개까지 저장할 수 있어요.`);
+    throw new StudioCommentError("tooManyReplies", { max: String(STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD) });
   }
   const messageCount = document.threads.reduce(
     (count, candidate) => count + 1 + candidate.replies.length,
     0
   );
   if (messageCount >= STUDIO_COMMENTS_MAX_TOTAL_MESSAGES) {
-    throw new Error(`댓글과 답글은 합쳐서 최대 ${STUDIO_COMMENTS_MAX_TOTAL_MESSAGES}개까지 저장할 수 있어요.`);
+    throw new StudioCommentError("tooManyMessages", { max: String(STUDIO_COMMENTS_MAX_TOTAL_MESSAGES) });
   }
   const id = canonicalInputId(input.id);
-  if (messageIdExists(document, id)) throw new Error("이미 사용 중인 댓글 또는 답글 ID예요.");
+  if (messageIdExists(document, id)) throw new StudioCommentError("duplicateId");
   const timestamp = canonicalNow(now);
   const reply = StudioCommentReplySchema.parse({
     id,
-    author: canonicalActor(input.author, "작성자"),
+    author: canonicalActor(input.author, "author"),
     body: canonicalBody(input.body),
     mentions: canonicalMentions(input.mentions),
     createdAt: timestamp,
@@ -900,9 +900,9 @@ export function addStudioCommentReply(
 }
 
 function normalizeMessagePatch(patch: StudioCommentMessagePatch): StudioCommentMessagePatch {
-  if (!isRecord(patch)) throw new Error("댓글 수정 내용이 올바르지 않아요.");
+  if (!isRecord(patch)) throw new StudioCommentError("invalidPatch");
   for (const key of Object.keys(patch)) {
-    if (!MESSAGE_PATCH_KEYS.has(key)) throw new Error(`수정할 수 없는 댓글 필드예요: ${key}`);
+    if (!MESSAGE_PATCH_KEYS.has(key)) throw new StudioCommentError("forbiddenField", { field: key });
   }
   return {
     ...(Object.hasOwn(patch, "body") ? { body: canonicalBody(patch.body) } : {}),
@@ -1007,7 +1007,7 @@ export function resolveStudioCommentThread(
   const threadIndex = document.threads.findIndex((thread) => thread.id === threadId);
   if (threadIndex < 0 || document.threads[threadIndex].resolved) return document;
   const timestamp = canonicalNow(now);
-  const resolver = resolvedBy ? canonicalActor(resolvedBy, "해결한 사람") : undefined;
+  const resolver = resolvedBy ? canonicalActor(resolvedBy, "resolver") : undefined;
   const threads = document.threads.slice();
   threads[threadIndex] = StudioCommentThreadSchema.parse({
     ...threads[threadIndex],
@@ -1047,7 +1047,7 @@ export function assignStudioCommentThread(
   const threadIndex = document.threads.findIndex((thread) => thread.id === threadId);
   if (threadIndex < 0) return document;
   const current = document.threads[threadIndex];
-  const nextAssignee = assignee ? canonicalActor(assignee, "담당자") : undefined;
+  const nextAssignee = assignee ? canonicalActor(assignee, "assignee") : undefined;
   if (actorsEqual(current.assignee, nextAssignee)) return document;
   const { assignee: _assignee, ...thread } = current;
   const threads = document.threads.slice();

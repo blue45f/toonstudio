@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-
 import {
   collectStudioCommentMentionCandidates,
   studioCommentActorsRepresentSamePerson,
@@ -60,6 +59,7 @@ import {
 } from "./studio-comments";
 import { compileStudioReviewTask } from "./studio-review-task-compiler";
 import { frozenStatusText } from "./studio-frozen-status-i18n";
+import { resolveStudioCommentClusterErrorFromCause } from "./status-i18n/studio-producer-error-i18n-comments";
 import {
   actorInitial,
   fallbackAnchorLabel,
@@ -653,7 +653,7 @@ export function StudioCommentsPanel({
       setError(null);
       return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : fallbackMessage);
+      setError(resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : fallbackMessage));
       return false;
     } finally {
       setSaving(false);
@@ -752,7 +752,7 @@ export function StudioCommentsPanel({
         pendingReplyIdRef.current = null;
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.saveReplyFailed", "답글을 저장하지 못했어요."));
+      setError(resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.saveReplyFailed", "답글을 저장하지 못했어요.")));
     } finally {
       replySubmitInFlightRef.current = false;
     }
@@ -853,7 +853,7 @@ export function StudioCommentsPanel({
       if (accepted === false) throw new Error(frozenStatusText("studio.frozenStatus.comments.markReadFailed", "댓글을 읽음 처리하지 못했어요."));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.markReadFailed", "댓글을 읽음 처리하지 못했어요."));
+      setError(resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.markReadFailed", "댓글을 읽음 처리하지 못했어요.")));
     } finally {
       setReadMutation(null);
     }
@@ -867,7 +867,7 @@ export function StudioCommentsPanel({
       if (accepted === false) throw new Error(frozenStatusText("studio.frozenStatus.comments.markAllReadFailed", "모든 댓글을 읽음 처리하지 못했어요."));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.markAllReadFailed", "모든 댓글을 읽음 처리하지 못했어요."));
+      setError(resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.markAllReadFailed", "모든 댓글을 읽음 처리하지 못했어요.")));
     } finally {
       setReadMutation(null);
     }

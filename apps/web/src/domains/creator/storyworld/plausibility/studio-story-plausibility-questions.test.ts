@@ -262,12 +262,12 @@ describe("5. 우연·단서", () => {
     expect(scene(project, "s1").setupIds).toEqual(["clue:s3"]);
     expect(scene(project, "s3").payoffIds).toEqual(["clue:s3"]);
     expect(scene(project, "s3").plausibility?.coincidence).toEqual({ clue: "foreshadowed", clueSceneIds: ["s1"] });
-    expect(codes(project)).not.toContain("orphan-payoff");
+    expect(codes(project)).not.toContain("orphan-payoff-first-before-first-setup");
   });
 
   it("단서 장면을 이 장면 뒤로 옮기면 엔진이 심기 전의 회수로 알린다", () => {
     const project = setSceneCoincidence(BASE, "s1", { kind: "clue", clue: "foreshadowed", clueSceneIds: ["s3"] });
-    expect(codes(project)).toContain("orphan-payoff");
+    expect(codes(project)).toContain("orphan-payoff-first-before-first-setup");
   });
 
   it("다시 답하면 이전 복선 계약을 깨끗이 지운다", () => {

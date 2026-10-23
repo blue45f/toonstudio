@@ -6,6 +6,7 @@ import {
   type StudioCommentsDocument,
 } from "./studio-comments";
 
+import { resolveStudioCommentClusterErrorFromCause } from "./status-i18n/studio-producer-error-i18n-comments";
 import type { StudioTeamCommentCapabilities } from "./studio-team-comment-client";
 import type { StudioTeamCommentMutationPlan } from "./studio-team-comment-mutation-plan";
 import type {
@@ -281,9 +282,9 @@ export async function executeStudioTeamCommentMutation({
       const shouldReport = admitted || operationRegistry.isCurrent(ticket, readScope());
       operationRegistry.invalidate(ticket);
       if (!shouldReport) return false;
-      const message = cause instanceof Error
+      const message = resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error
         ? cause.message
-        : "팀 댓글 변경을 저장하지 못했어요.";
+        : "팀 댓글 변경을 저장하지 못했어요.");
       setSyncError(message);
       throw new Error(message, { cause });
     }

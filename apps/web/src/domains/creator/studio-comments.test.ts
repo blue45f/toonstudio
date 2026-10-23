@@ -279,31 +279,31 @@ describe("studio comments immutable operations", () => {
       anchor: PAGE_ANCHOR,
       author: AUTHOR,
       body: "duplicate",
-    })).toThrow(/사용 중/);
+    })).toThrow("duplicateId");
     expect(() => addStudioCommentThread(document, {
       id: "",
       anchor: PAGE_ANCHOR,
       author: AUTHOR,
       body: "invalid",
-    })).toThrow(/ID/);
+    })).toThrow("invalidId");
     expect(() => addStudioCommentThread(document, {
       id: "new",
       anchor: PAGE_ANCHOR,
       author: AUTHOR,
       body: "   ",
-    })).toThrow(/내용/);
+    })).toThrow("emptyBody");
     expect(() => addStudioCommentThread(document, {
       id: "new",
       anchor: { type: "frame", pageId: "page-1", frameId: "" },
       author: AUTHOR,
       body: "invalid anchor",
-    })).toThrow(/위치/);
+    })).toThrow("invalidAnchor");
     expect(() => addStudioCommentThread(document, {
       id: "new",
       anchor: PAGE_ANCHOR,
       author: AUTHOR,
       body: "invalid clock",
-    }, new Date("invalid"))).toThrow(/시간/);
+    }, new Date("invalid"))).toThrow("invalidTime");
   });
 
   it("adds replies with globally unique IDs and preserves unrelated identities", () => {
@@ -327,7 +327,7 @@ describe("studio comments immutable operations", () => {
       id: "thread-1",
       author: AUTHOR,
       body: "collision",
-    })).toThrow(/사용 중/);
+    })).toThrow("duplicateId");
     expect(addStudioCommentReply(source, "missing", {
       id: "unused",
       author: AUTHOR,
@@ -359,9 +359,9 @@ describe("studio comments immutable operations", () => {
     expect(editStudioCommentReply(editedReply, "thread-1", "reply-1", { body: "반영 완료" })).toBe(
       editedReply
     );
-    expect(() => editStudioCommentThread(withReply, "thread-1", { body: "" })).toThrow(/내용/);
+    expect(() => editStudioCommentThread(withReply, "thread-1", { body: "" })).toThrow("emptyBody");
     expect(() => editStudioCommentThread(withReply, "thread-1", { author: AUTHOR } as never)).toThrow(
-      /수정할 수 없는/
+      "forbiddenField"
     );
   });
 
@@ -534,7 +534,7 @@ describe("studio comments hard limits", () => {
       id: "overflow",
       author: AUTHOR,
       body: "overflow",
-    })).toThrow(/스레드당/);
+    })).toThrow("tooManyReplies");
 
     const fullThreads = normalizeStudioCommentsDocument({
       threads: Array.from({ length: STUDIO_COMMENTS_MAX_THREADS }, (_, index) =>
@@ -546,7 +546,7 @@ describe("studio comments hard limits", () => {
       anchor: PAGE_ANCHOR,
       author: AUTHOR,
       body: "overflow",
-    })).toThrow(/스레드는 최대/);
+    })).toThrow("tooManyThreads");
   });
 });
 

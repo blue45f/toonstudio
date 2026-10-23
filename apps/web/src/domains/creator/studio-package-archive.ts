@@ -89,15 +89,38 @@ export type StudioPackageArchiveErrorCode =
   | "TOTAL_SIZE_LIMIT"
   | "ZIP32_OVERFLOW";
 
+/**
+ * 경로 오류 구조화 서브코드 (A4 D4 R14) — PATH_INVALID·PATH_DUPLICATE 방출만 운반한다.
+ * project-archive 경계가 이 값을 causeVariant로 넘기고 표시 문구는 status-i18n 리졸버가 해석한다.
+ * 그 외 코드의 방출은 variant 없이 기존 message 경로를 유지한다.
+ */
+export type StudioPackageArchivePathErrorVariant =
+  | "pathEmpty"
+  | "pathUnicodeInvalid"
+  | "pathUnsafeCharacter"
+  | "pathUnsafeSegment"
+  | "pathTooLong"
+  | "pathDuplicate";
+
 export class StudioPackageArchiveError extends Error {
   readonly code: StudioPackageArchiveErrorCode;
   readonly path?: string;
+  readonly variant?: StudioPackageArchivePathErrorVariant;
+  readonly params?: Readonly<Record<string, string>>;
 
-  constructor(code: StudioPackageArchiveErrorCode, message: string, path?: string) {
+  constructor(
+    code: StudioPackageArchiveErrorCode,
+    message: string,
+    path?: string,
+    variant?: StudioPackageArchivePathErrorVariant,
+    params?: Readonly<Record<string, string>>,
+  ) {
     super(message);
     this.name = "StudioPackageArchiveError";
     this.code = code;
     if (path !== undefined) this.path = path;
+    if (variant !== undefined) this.variant = variant;
+    if (params !== undefined) this.params = params;
   }
 }
 
@@ -138,9 +161,11 @@ const textEncoder = new TextEncoder();
 function archiveError(
   code: StudioPackageArchiveErrorCode,
   message: string,
-  path?: string
+  path?: string,
+  variant?: StudioPackageArchivePathErrorVariant,
+  params?: Readonly<Record<string, string>>
 ): StudioPackageArchiveError {
-  return new StudioPackageArchiveError(code, message, path);
+  return new StudioPackageArchiveError(code, message, path, variant, params);
 }
 
 function resolveLimit(
@@ -240,10 +265,10 @@ function hasUnpairedSurrogate(value: string): boolean {
 
 function validatePath(value: unknown, maxPathBytes: number): EncodedPath {
   if (typeof value !== "string" || value.length === 0) {
-    throw archiveError("PATH_INVALID", "archive 파일 경로가 비어 있습니다.");
+    throw archiveError("PATH_INVALID", "archive 파일 경로가 비어 있습니다.", undefined, "pathEmpty");
   }
   if (hasUnpairedSurrogate(value)) {
-    throw archiveError("PATH_INVALID", "archive 파일 경로의 Unicode 문자열이 올바르지 않습니다.", value);
+    throw archiveError("PATH_INVALID", "archive 파일 경로의 Unicode 문자열이 올바르지 않습니다.", value, "pathUnicodeInvalid");
   }
   const path = value.normalize("NFKC");
   if (
@@ -258,7 +283,7 @@ function validatePath(value: unknown, maxPathBytes: number): EncodedPath {
     }) ||
     UNSAFE_BIDI_CHARACTER.test(path)
   ) {
-    throw archiveError("PATH_INVALID", "절대 경로 또는 안전하지 않은 문자가 포함되어 있습니다.", value);
+    throw archiveError("PATH_INVALID", "절대 경로 또는 안전하지 않은 문자가 포함되어 있습니다.", value, "pathUnsafeCharacter");
   }
 
   const segments = path.split("/");
@@ -271,16 +296,19 @@ function validatePath(value: unknown, maxPathBytes: number): EncodedPath {
       /[. ]$/u.test(segment) ||
       WINDOWS_RESERVED_NAME.test(segment)
     ) {
-      throw archiveError("PATH_INVALID", "archive 경로에 안전하지 않은 구간이 포함되어 있습니다.", value);
+      throw archiveError("PATH_INVALID", "archive 경로에 안전하지 않은 구간이 포함되어 있습니다.", value, "pathUnsafeSegment");
     }
   }
 
   const bytes = textEncoder.encode(path);
   if (bytes.length === 0 || bytes.length > ZIP16_MAX || bytes.length > maxPathBytes) {
+    const limit = Math.min(ZIP16_MAX, maxPathBytes).toLocaleString("en-US");
     throw archiveError(
       "PATH_INVALID",
-      `archive 파일 경로는 UTF-8 ${Math.min(ZIP16_MAX, maxPathBytes).toLocaleString("en-US")}바이트 이하여야 합니다.`,
-      value
+      `archive 파일 경로는 UTF-8 ${limit}바이트 이하여야 합니다.`,
+      value,
+      "pathTooLong",
+      { limit }
     );
   }
   return { path, bytes, comparisonKey: path.toLowerCase() };
@@ -470,7 +498,7 @@ function planArchive(
     }
     const encodedPath = validatePath(entry.path, limits.maxPathBytes);
     if (seen.has(encodedPath.comparisonKey)) {
-      throw archiveError("PATH_DUPLICATE", "archive 안에서 파일 경로가 충돌합니다.", encodedPath.path);
+      throw archiveError("PATH_DUPLICATE", "archive 안에서 파일 경로가 충돌합니다.", encodedPath.path, "pathDuplicate");
     }
     seen.add(encodedPath.comparisonKey);
     const source = snapshotSource(entry.data, encodedPath.path);

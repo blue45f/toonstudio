@@ -8,25 +8,10 @@
  */
 
 import { acquireStudioLocalDatabase } from "../studio-local-database-runtime";
-import {
-  createStudioOpfsAssetStore,
-  type StudioOpfsAssetStore,
-  type StudioOpfsDigest,
-  type StudioOpfsPutResult,
-} from "../studio-opfs-asset-store";
-import {
-  createStudioOpfsNativeFileSystem,
-  isStudioOpfsError,
-  type StudioOpfsFileSystem,
-  type StudioOpfsStorageManagerLike,
-} from "../studio-opfs-filesystem";
+import { createStudioOpfsAssetStore, type StudioOpfsAssetStore, type StudioOpfsDigest, type StudioOpfsPutResult } from "../studio-opfs-asset-store";
+import { createStudioOpfsNativeFileSystem, isStudioOpfsError, type StudioOpfsFileSystem, type StudioOpfsStorageManagerLike } from "../studio-opfs-filesystem";
 
-import {
-  STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_KIND,
-  STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME,
-  STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_SCHEMA_VERSION,
-  type StudioVrmTexturePaintArtifactMetadata,
-} from "./studio-vrm-texture-paint-artifact";
+import { STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_KIND, STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME, STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_SCHEMA_VERSION, type StudioVrmTexturePaintArtifactMetadata } from "./studio-vrm-texture-paint-artifact";
 
 import type { StudioLocalDatabase } from "../studio-local-database";
 
@@ -277,26 +262,34 @@ export interface StudioVrmAssetCleanupResult {
 }
 
 export type StudioVrmAssetRepositoryErrorCode =
-  | "aborted"
-  | "closed"
-  | "conflict"
-  | "corrupt"
-  | "invalid"
-  | "limit"
-  | "missing"
-  | "unavailable";
+  | "aborted" | "closed" | "conflict" | "corrupt" | "invalid" | "limit" | "missing" | "unavailable";
+
+/**
+ * D4 구조화 방출 (R14, 2026-10-23): 한글 표시 대상 방출에만 세부 코드를 부착한다.
+ * 기존 code(분류)는 유지하고, detailCode가 있는 방출만 표시 지점
+ * (status-i18n/studio-producer-error-i18n-vrm-library의 vrmRepo 구간)에서 해석한다.
+ * 영문 fail 방출은 세부 코드 없이 기존 메시지를 유지한다(범위 밖).
+ */
+export type StudioVrmAssetRepositoryDetailCode =
+  | "aborted" | "database-open-failed" | "delete-conflict" | "opfs-unavailable" | "thumbnail-base64-unavailable";
 
 export class StudioVrmAssetRepositoryError extends Error {
   readonly code: StudioVrmAssetRepositoryErrorCode;
+  readonly detailCode?: StudioVrmAssetRepositoryDetailCode;
+  readonly params?: Readonly<Record<string, string>>;
 
   constructor(
     code: StudioVrmAssetRepositoryErrorCode,
     message: string,
     options?: ErrorOptions,
+    detailCode?: StudioVrmAssetRepositoryDetailCode,
+    params?: Readonly<Record<string, string>>,
   ) {
     super(message, options);
     this.name = code === "aborted" ? "AbortError" : "StudioVrmAssetRepositoryError";
     this.code = code;
+    if (detailCode !== undefined) this.detailCode = detailCode;
+    if (params !== undefined) this.params = params;
   }
 }
 
@@ -394,16 +387,18 @@ function fail(
   code: StudioVrmAssetRepositoryErrorCode,
   message: string,
   cause?: unknown,
+  detailCode?: StudioVrmAssetRepositoryDetailCode,
 ): never {
   throw new StudioVrmAssetRepositoryError(
     code,
     message,
     cause === undefined ? undefined : { cause },
+    detailCode,
   );
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) fail("aborted", "VRM 자산 저장 작업이 취소되었습니다.", signal.reason);
+  if (signal?.aborted) fail("aborted", "VRM 자산 저장 작업이 취소되었습니다.", signal.reason, "aborted");
 }
 
 function storageFailure(cause: unknown, operation: string): never {
@@ -1389,6 +1384,8 @@ function productOpfsFileSystem(): StudioOpfsFileSystem {
     fail(
       "unavailable",
       "이 환경에서는 VRM 자산용 OPFS를 사용할 수 없습니다. 현재 탭 메모리 임시 상태만 사용할 수 있습니다.",
+      undefined,
+      "opfs-unavailable",
     );
   }
   return createStudioOpfsNativeFileSystem(manager, STUDIO_VRM_ASSET_OPFS_ROOT);
@@ -1437,6 +1434,7 @@ export function createStudioVrmAssetSqliteOpfsRepository(
         "unavailable",
         "VRM 자산용 shared SQLite/OPFS 권위를 열지 못했습니다. 현재 탭 메모리 임시 상태만 유지됩니다.",
         cause,
+        "database-open-failed",
       );
     }
   }

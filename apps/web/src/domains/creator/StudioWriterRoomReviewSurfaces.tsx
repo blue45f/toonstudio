@@ -27,6 +27,7 @@ import {
 } from "./studio-writer-room";
 import { STUDIO_WRITER_ROOM_STAGE_META } from "./studio-writer-room-ui";
 import { writerRoomReviewText } from "./studio-writer-room-review-status-i18n";
+import { resolveStudioWriterRoomErrorFromCause } from "./status-i18n/studio-producer-error-i18n-comments";
 
 import type { StudioCharacterBibleEntry } from "./studio-character-bible";
 
@@ -165,7 +166,7 @@ export function StudioWriterRoomSuggestionsPanel({
       onChange(next);
       onError(null);
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.decideFailed", "제안을 처리하지 못했어요."));
+      onError(resolveStudioWriterRoomErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.decideFailed", "제안을 처리하지 못했어요.")));
     }
   };
 
@@ -181,7 +182,7 @@ export function StudioWriterRoomSuggestionsPanel({
       onChange(next);
       onError(null);
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.bulkDecideFailed", "제안 묶음을 처리하지 못했어요."));
+      onError(resolveStudioWriterRoomErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.bulkDecideFailed", "제안 묶음을 처리하지 못했어요.")));
     }
   };
 
@@ -209,7 +210,7 @@ export function StudioWriterRoomSuggestionsPanel({
                   onError(null);
                 } catch (cause) {
                   onError(
-                    cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.undoFailed", "마지막 결정을 되돌리지 못했어요.")
+                    resolveStudioWriterRoomErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.undoFailed", "마지막 결정을 되돌리지 못했어요."))
                   );
                 }
               }}
