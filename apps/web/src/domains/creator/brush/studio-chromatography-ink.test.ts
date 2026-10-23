@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_CHROMATOGRAPHY_PRESET_CATALOG,
+  evaluateChromatographyRingMetrics,
   normalizeStudioChromatographyInk,
   resolveStudioChromatographyColor,
+  resolveStudioChromatographySubtractiveColor,
   studioChromatographyColorToCss,
   studioChromatographyConcentration,
   studioChromatographyInkBlackPreset,
@@ -87,4 +90,20 @@ describe("studio-chromatography-ink", () => {
       resolveStudioChromatographyColor(ink, 0.4, 0.6),
     );
   });
+
+  it("5종 개성 크로마토그래피 카탈로그와 Beer-Lambert 감산 색띠 분리가 높은 채도와 분리도를 보장한다", () => {
+    const presets = Object.values(STUDIO_CHROMATOGRAPHY_PRESET_CATALOG);
+    expect(presets).toHaveLength(5);
+    for (const preset of presets) {
+      const metrics = evaluateChromatographyRingMetrics(preset.ink, 0.95);
+      expect(metrics.centerToEdgeColorDelta, preset.id).toBeGreaterThan(75);
+      expect(metrics.midRingChroma, preset.id).toBeGreaterThan(15);
+      expect(metrics.separationIndex, preset.id).toBeGreaterThan(0.4);
+    }
+    const nebula = STUDIO_CHROMATOGRAPHY_PRESET_CATALOG["twilight-nebula"].ink;
+    const feathered = resolveStudioChromatographySubtractiveColor(nebula, 0.7, 0.9, 0.9);
+    const unfeathered = resolveStudioChromatographySubtractiveColor(nebula, 0.7, 0.9, 0.5);
+    expect(feathered).not.toEqual(unfeathered);
+  });
 });
+

@@ -154,3 +154,186 @@ export function studioChromatographyColorToCss(
 ): string {
   return `rgb(${clamp255(color[0])}, ${clamp255(color[1])}, ${clamp255(color[2])})`;
 }
+
+export type StudioChromatographyPresetId =
+  | "black-separation"
+  | "sumi-ochre"
+  | "twilight-nebula"
+  | "botanical-moss"
+  | "blood-moon-ember";
+
+export interface StudioChromatographyPresetDescriptor {
+  readonly id: StudioChromatographyPresetId;
+  readonly labelKo: string;
+  readonly summaryKo: string;
+  readonly ink: StudioChromatographyInk;
+}
+
+function mustInk(
+  components: readonly StudioChromatographyComponent[],
+  separation: number,
+): StudioChromatographyInk {
+  const normalized = normalizeStudioChromatographyInk(components, separation);
+  if (!normalized) {
+    throw new Error("Invalid chromatography ink preset");
+  }
+  return normalized;
+}
+
+/**
+ * 다성분 크로마토그래피 잉크 개성 프리셋 카탈로그 5종.
+ * 단순 단색 번짐을 넘어 만화·웹툰·일러스트 배경 및 이펙트에 개성 있는 색띠 분리를 제공한다.
+ */
+export const STUDIO_CHROMATOGRAPHY_PRESET_CATALOG: Readonly<
+  Record<StudioChromatographyPresetId, StudioChromatographyPresetDescriptor>
+> = Object.freeze({
+  "black-separation": {
+    id: "black-separation",
+    labelKo: "클래식 블랙 크로마토그래피",
+    summaryKo: "중심의 짙은 카본 블랙에서 코발트 블루와 크림슨 레드 외곽 링으로 분리되는 만년필 수성 잉크",
+    ink: mustInk(
+      [
+        { color: [20, 20, 28], mobility: 0.15, amount: 0.5 },
+        { color: [37, 99, 235], mobility: 0.55, amount: 0.3 },
+        { color: [220, 38, 38], mobility: 0.9, amount: 0.2 },
+      ],
+      0.75,
+    ),
+  },
+  "sumi-ochre": {
+    id: "sumi-ochre",
+    labelKo: "동양화 고묵·황토 분리",
+    summaryKo: "중심 농묵 주위로 다갈색 아교층과 따뜻한 황토색 번짐 테두리가 분리되는 동양화풍 수묵",
+    ink: mustInk(
+      [
+        { color: [24, 24, 27], mobility: 0.2, amount: 0.55 },
+        { color: [156, 116, 78], mobility: 0.5, amount: 0.25 },
+        { color: [196, 164, 118], mobility: 0.88, amount: 0.2 },
+      ],
+      0.68,
+    ),
+  },
+  "twilight-nebula": {
+    id: "twilight-nebula",
+    labelKo: "황혼 성운 듀오크롬 잉크",
+    summaryKo: "심해 남색 코어에서 로열 바이올렛을 거쳐 로즈 골드 외곽 링으로 분리되는 판타지·로맨스 배경 잉크",
+    ink: mustInk(
+      [
+        { color: [18, 28, 84], mobility: 0.16, amount: 0.48 },
+        { color: [124, 58, 237], mobility: 0.54, amount: 0.32 },
+        { color: [245, 158, 11], mobility: 0.92, amount: 0.2 },
+      ],
+      0.82,
+    ),
+  },
+  "botanical-moss": {
+    id: "botanical-moss",
+    labelKo: "보태니컬 이끼·감보지 잉크",
+    summaryKo: "짙은 숲 녹색에서 피콕 시안과 밝은 감보지 옐로 테두리로 갈라지는 자연물·수풀 표현 잉크",
+    ink: mustInk(
+      [
+        { color: [16, 62, 42], mobility: 0.18, amount: 0.5 },
+        { color: [14, 165, 233], mobility: 0.52, amount: 0.28 },
+        { color: [234, 179, 8], mobility: 0.9, amount: 0.22 },
+      ],
+      0.78,
+    ),
+  },
+  "blood-moon-ember": {
+    id: "blood-moon-ember",
+    labelKo: "블러드문 잔불 잉크",
+    summaryKo: "검붉은 응고 중심에서 선홍색 버밀리온과 호박색 불꽃 테두리로 번지는 액션·다크 판타지 효과 잉크",
+    ink: mustInk(
+      [
+        { color: [58, 10, 18], mobility: 0.14, amount: 0.52 },
+        { color: [225, 29, 72], mobility: 0.56, amount: 0.3 },
+        { color: [251, 146, 60], mobility: 0.91, amount: 0.18 },
+      ],
+      0.8,
+    ),
+  },
+});
+
+/**
+ * Beer-Lambert / Kubelka-Munk 광학 밀도(Optical Density) 기반 감산 크로마토그래피 색상 해석기.
+ * 선형 RGB 가중평균에서 발생하는 보색 간 회색 탁화 현상을 방지하고,
+ * 종이 섬유 모세관 깃털 번짐(fiberFeather01)에 따른 미세 반경 변조를 반영한다.
+ */
+export function resolveStudioChromatographySubtractiveColor(
+  ink: StudioChromatographyInk,
+  radial01: number,
+  dryness01: number,
+  fiberFeather01 = 0,
+): readonly [number, number, number] {
+  const featherShift = (clamp01(fiberFeather01) - 0.5) * 0.12 * clamp01(dryness01);
+  const effectiveRadial = clamp01(radial01 + featherShift);
+
+  let odR = 0;
+  let odG = 0;
+  let odB = 0;
+  let totalWeight = 0;
+
+  for (const component of ink.components) {
+    const conc = studioChromatographyConcentration(
+      component,
+      effectiveRadial,
+      dryness01,
+      ink.separation,
+    );
+    if (conc <= 1e-6) continue;
+    const tr = Math.max(0.02, component.color[0] / 255);
+    const tg = Math.max(0.02, component.color[1] / 255);
+    const tb = Math.max(0.02, component.color[2] / 255);
+    odR += -Math.log(tr) * conc;
+    odG += -Math.log(tg) * conc;
+    odB += -Math.log(tb) * conc;
+    totalWeight += conc;
+  }
+
+  if (totalWeight <= 1e-6) return [0, 0, 0] as const;
+
+  const normR = odR / totalWeight;
+  const normG = odG / totalWeight;
+  const normB = odB / totalWeight;
+  return Object.freeze([
+    clamp255(Math.exp(-normR) * 255),
+    clamp255(Math.exp(-normG) * 255),
+    clamp255(Math.exp(-normB) * 255),
+  ] as const);
+}
+
+export interface ChromatographyRingMetrics {
+  /** 중심(r=0.05)과 외곽(r=0.92) 사이의 유클리드 색차(0..441.67). */
+  readonly centerToEdgeColorDelta: number;
+  /** 중간 링(r=0.52)의 채도(최대-최소 채널 차, 0..255). */
+  readonly midRingChroma: number;
+  /** 분리 완료 지수 (0..1). */
+  readonly separationIndex: number;
+}
+
+/**
+ * 크로마토그래피 잉크 방울의 반경별 색띠 분리 품질 지표를 정량 평가한다.
+ */
+export function evaluateChromatographyRingMetrics(
+  ink: StudioChromatographyInk,
+  dryness01 = 0.95,
+): ChromatographyRingMetrics {
+  const center = resolveStudioChromatographySubtractiveColor(ink, 0.05, dryness01);
+  const mid = resolveStudioChromatographySubtractiveColor(ink, 0.52, dryness01);
+  const edge = resolveStudioChromatographySubtractiveColor(ink, 0.92, dryness01);
+
+  const centerToEdgeColorDelta = Math.hypot(
+    center[0] - edge[0],
+    center[1] - edge[1],
+    center[2] - edge[2],
+  );
+  const midRingChroma = Math.max(mid[0], mid[1], mid[2]) - Math.min(mid[0], mid[1], mid[2]);
+  const separationIndex = clamp01(centerToEdgeColorDelta / 180);
+
+  return {
+    centerToEdgeColorDelta: Math.round(centerToEdgeColorDelta * 100) / 100,
+    midRingChroma,
+    separationIndex: Math.round(separationIndex * 1000) / 1000,
+  };
+}
+

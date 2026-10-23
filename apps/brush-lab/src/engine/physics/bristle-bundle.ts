@@ -67,3 +67,75 @@ export function stepBristle(
   d[0] = angle;
   return { rx, ry, angle, asymmetry: asym };
 }
+
+export interface BristleClumpingInput {
+  readonly strokeSeed: number;
+  readonly strands: number;
+  /** 필압 [0, 1]. */
+  readonly pressure: number;
+  /** 브러시 수분·물감 함량 [0, 1]. 높을수록 모세관 표면장력으로 다발이 응집한다. */
+  readonly wetness: number;
+  /** 스트로크 속도 [0, 10] 정규화 값. 높을수록 끝단 갈필(Feathered Split)이 강해진다. */
+  readonly normalizedSpeed?: number;
+}
+
+export interface BristleClumpingProfile {
+  /** 모세관 응집으로 묶인 유효 부다발(Sub-Clump) 수. */
+  readonly clumpCount: number;
+  /** 외팔보(Cantilever) 휨에 의한 횡단 벌어짐 계수 (>= 1). */
+  readonly splayFactor: number;
+  /** 갈필(Dry-brush) 가닥 경계 대비도 [0, 1]. */
+  readonly featheredEdgeContrast: number;
+  /** 가닥별 정규화 횡단 위치 오프셋 [-1.5, 1.5]. */
+  readonly strandOffsets: Float32Array;
+  /** 가닥별 안료 전달 가중치 [0, 1]. */
+  readonly strandWeights: Float32Array;
+}
+
+/**
+ * 습식 모세관 응집(Capillary Clumping)과 건식 외팔보 벌어짐(Elastica Cantilever Splay)의
+ * 물리적 길항 작용을 계산해 가닥별 횡단 오프셋과 도포 가중치를 생성한다.
+ * - 수분(wetness)이 높을수록 표면장력이 인접 강모를 소수의 굵은 다발(clump)로 묶는다.
+ * - 수분이 마르고 필압·속도가 높을수록 강모가 개별 가닥으로 쪼개지며 갈필(Feathered Dry-Brush)을 형성한다.
+ */
+export function evaluateBristleClumpingProfile(
+  input: BristleClumpingInput,
+): BristleClumpingProfile {
+  const n = Math.max(1, Math.min(64, Math.trunc(input.strands)));
+  const p = Math.max(0, Math.min(1, Number.isFinite(input.pressure) ? input.pressure : 0.5));
+  const w = Math.max(0, Math.min(1, Number.isFinite(input.wetness) ? input.wetness : 0.5));
+  const spd = Math.max(0, Math.min(10, Number.isFinite(input.normalizedSpeed) ? (input.normalizedSpeed ?? 0) : 0));
+
+  // 모세관 응집도: 수분이 많고 압력이 낮을수록 클럼프 수가 적어지고 뭉친다
+  const capillaryCohesion = f(w * (1 - 0.35 * p));
+  const clumpCount = Math.max(1, Math.min(n, Math.round(1 + (n - 1) * (1 - capillaryCohesion * 0.82))));
+  const splayFactor = f(1 + p * (0.85 + 0.65 * (1 - w)) + spd * 0.04 * (1 - w));
+  const featheredEdgeContrast = f(Math.min(1, (1 - capillaryCohesion) * (0.55 + 0.45 * p + spd * 0.05)));
+
+  const strandOffsets = new Float32Array(n);
+  const strandWeights = new Float32Array(n);
+
+  for (let i = 0; i < n; i += 1) {
+    const phase = strandPhaseSeed(input.strokeSeed, i) / 0x00ff_ffff;
+    const basePos = n === 1 ? 0 : (i / (n - 1)) * 2 - 1;
+    const clumpIndex = Math.min(clumpCount - 1, Math.floor((i / n) * clumpCount));
+    const clumpCenter = clumpCount === 1 ? 0 : (clumpIndex / (clumpCount - 1)) * 2 - 1;
+    const jitter = (phase - 0.5) * 0.18 * (1 - capillaryCohesion * 0.7);
+    const mergedPos = basePos * (1 - capillaryCohesion) + clumpCenter * capillaryCohesion + jitter;
+    strandOffsets[i] = f(mergedPos * splayFactor);
+
+    const radialDist = Math.abs(basePos);
+    const tipLoad = 1 - radialDist * 0.35 * (1 - w);
+    const dryDrop = (1 - w) * radialDist * (0.25 + 0.35 * phase);
+    strandWeights[i] = f(Math.max(0.08, Math.min(1, tipLoad - dryDrop)));
+  }
+
+  return {
+    clumpCount,
+    splayFactor,
+    featheredEdgeContrast,
+    strandOffsets,
+    strandWeights,
+  };
+}
+

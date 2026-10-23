@@ -124,4 +124,16 @@
 | **주파수 적응형 모아레(Moiré) 억제 & 에칭 톤** | `apps/web/src/domains/creator/drawing/studio-screentone.ts` (`evaluateScreentoneMoireSuppression`, `buildAntiAliasedScreentoneTile`) | 줌 축소 시 나이퀴스트 에일리어싱 위험도 진단, 부호 거리(SDF) 스무스스텝 안티에일리어싱 및 수직·방사형 그라데이션 에칭 톤 생성 |
 | **5대 경쟁사 멀티 벤치마크** | `apps/brush-lab/src/bench/metrics/csp-baseline.ts` (`evaluateMultiCompetitorBenchmark`), `apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts` | Clip Studio Paint EX 3.x, Procreate 5.3, Escape Motions Rebelle 7 Pro, PaintStorm Studio 2.5, Krita 5.2 등 5대 경쟁사 전 항목 대비 2.0× 이상 우위 검증 |
 
+## 10. Wave 5 아날로그 펜촉·강모·크로마토그래피·듀얼 브러시 개성 및 다양성 극대화 (2026-10-24)
+
+클립스튜디오(CSP)의 정형화된 스탬프 반복 한계를 뛰어넘기 위해, 실제 만화 딥펜(G펜·마루펜·스푼펜·스쿨펜·후데 붓펜)의 펜촉 슬릿 역학과 수채화·동양화 강모 응집, 다중 안료 감산 크로마토그래피, 종이 요철 산(peak)/골(valley) 반응형 듀얼 브러시 개성을 추가 내재화했다.
+
+| 영역 | 내재화·고도화 모듈 | 핵심 수학·알고리즘 및 검증 |
+|---|---|---|
+| **만화 딥펜 5종 개성 & 펜촉 슬릿 철길 갈라짐(Railroading)** | `apps/brush-lab/src/engine/physics/nib-flex.ts` (`MANGA_NIB_PERSONALITY_PROFILES`, `evaluateDipPenRailroadingProfile`, `evaluateDipPenReservoirFlow`) | G펜·마루펜·카부라펜·스쿨펜·후데 붓펜 5종 탄성·슬릿 역학 프로파일, 과도한 필압+고속 드로잉 시 잉크 메니스커스 파열로 양쪽 타인(Tine) 2줄 궤적이 남는 철길 갈라짐(Railroading) 단면 모델, 연속 획 길이에 따른 잉크 저장소 고갈·회복 시뮬레이션 |
+| **모세관 응집(Capillary Clumping) ↔ 건조 갈필(Dry Splay) 강모 다발** | `apps/brush-lab/src/engine/physics/bristle-bundle.ts` (`evaluateBristleClumpingProfile`) | 수분량(`wetness01`)이 높을 때 표면장력으로 강모가 소수의 촉(`clumpCount`)으로 뭉치고, 필압·건조도가 높을 때 개별 강모 가닥(`strandOffsets`, `strandWeights`)으로 쪼개지는 연속 천이 모델 |
+| **다중 안료 감산(Beer-Lambert) 크로마토그래피 5종 & 한지 섬유 번짐** | `apps/web/src/domains/creator/brush/studio-chromatography-ink.ts` (`STUDIO_CHROMATOGRAPHY_PRESET_CATALOG`, `resolveStudioChromatographySubtractiveColor`, `evaluateChromatographyRingMetrics`) | 수묵 담묵(`black-separation`), 송연묵·황토(`sumi-ochre`), 성운 보라·청록(`twilight-nebula`), 이끼 수채(`botanical-moss`), 적월 잔불(`blood-moon-ember`) 5종 프리셋과 Beer-Lambert 광학 밀도 감산 혼합, 종이 섬유 방향 미세 안료 퍼짐(`fiberFeather01`), 중앙 세척 대비(`centerWashContrastRatio`) 계측 |
+| **종이 요철 산/골 반응형 듀얼 브러시 6종 개성 프로파일** | `apps/web/src/domains/creator/drawing/studio-dual-brush.ts` (`STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES`, `evaluateDynamicDualBrushModulation`) | 갈필 먹붓(`sumi-dry-rake`), 콩테 황목(`pastel-rough-tooth`), G펜 톤 깎기(`g-pen-halftone-scrape`), 유화 나이프(`oil-knife-canvas-bite`), 왁스 크레용(`crayon-wax-skip`), 에어브러시 분진(`airbrush-stipple-dust`) 6종 및 필압·속도·틸트 기반 종이 산 스침(`paperToothCutoff01`) ↔ 골 메움(`valleyFillRatio01`) 동적 변조 |
+
+
 
