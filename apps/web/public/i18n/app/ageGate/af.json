@@ -4,14 +4,14 @@
   "ageGate.birthDateLabel": "Datum van geboorte",
   "ageGate.birthYearLabel": "Geboortejaar",
   "ageGate.birthYearPlaceholder": "Jaar",
-  "ageGate.birthMonthLabel": "Geboorte maand",
+  "ageGate.birthMonthLabel": "Geboortemaand",
   "ageGate.birthMonthPlaceholder": "Maand",
-  "ageGate.birthDayLabel": "Verjaarsdag",
+  "ageGate.birthDayLabel": "Geboortedag",
   "ageGate.birthDayPlaceholder": "Dag",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Jy het nie aan die ouderdomsvereiste voldoen nie.",
-  "ageGate.cancel": "Afskaffing",
+  "ageGate.cancel": "Kanselleer",
   "ageGate.confirm": "Bevestig"
 }

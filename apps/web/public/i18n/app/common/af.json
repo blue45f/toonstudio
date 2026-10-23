@@ -6,11 +6,11 @@
   "common.search": "Soek",
   "common.retry": "Probeer weer",
   "common.retry.short": "Probeer weer",
-  "common.backToTop": "Terug na die top",
-  "common.backToHome": "Gaan huis toe.",
-  "common.loading.search": "Soek na...",
-  "common.notFoundWithQuery": "Geen resultate vir ' {query} '.",
+  "common.backToTop": "Terug na bo",
+  "common.backToHome": "Gaan na die tuisblad",
+  "common.loading.search": "Soek tans…",
+  "common.notFoundWithQuery": "Geen resultate vir '{query}'.",
   "common.openSearch": "Vind dit in Soek →",
   "common.loading.empty": "Geen data is teruggestuur nie.",
-  "common.retry.all": "Probeer weer of gaan huis toe."
+  "common.retry.all": "Probeer weer of gaan terug na die tuisblad."
 }
