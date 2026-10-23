@@ -208,10 +208,20 @@ export function CutsFeedPage() {
 
   // 작품별 팬 리믹스 목록 필터 (?fanOf={titleId}) — 원작자 작품에서 들어오는 동선.
   const fanOf = searchParams.get("fanOf");
-  const visibleClips = useMemo(
-    () => (fanOf ? selectFanRemixes(clips, fanOf) : clips),
-    [clips, fanOf],
-  );
+  const [feedCategory, setFeedCategory] = useState<"all" | "reward" | "remixable" | "popular">("all");
+  const visibleClips = useMemo(() => {
+    const base = fanOf ? selectFanRemixes(clips, fanOf) : clips;
+    if (feedCategory === "reward") {
+      return base.filter((clip) => isRewardEligibleClip(clip));
+    }
+    if (feedCategory === "remixable") {
+      return base.filter((clip) => isClipRemixAllowed(clip, DEMO_EPISODES, remixPolicyOverrides));
+    }
+    if (feedCategory === "popular") {
+      return [...base].sort((a, b) => b.likes * 3 + b.views - (a.likes * 3 + a.views));
+    }
+    return base;
+  }, [clips, fanOf, feedCategory, remixPolicyOverrides]);
   const fanOfWork = useMemo(() => {
     if (!fanOf) return null;
     const fromRemix = clips.find((clip) => clip.remix?.titleId === fanOf)?.remix;
@@ -369,7 +379,9 @@ export function CutsFeedPage() {
     element?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [visibleClips, activeId]);
 
-  // 키보드 탐색 — 위/아래 화살표로 클립 이동. 입력 필드·모달 안에서 누른 방향키는
+  const toggleMute = useCallback(() => setMuted((value) => !value), []);
+
+  // 키보드 탐색 — 위/아래 화살표로 클립 이동, M으로 음소거 토글. 입력 필드·모달 안에서 누른 키는
   // 가로채지 않는다(로그인 모달 입력의 커서 이동까지 막히던 문제).
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -385,19 +397,53 @@ export function CutsFeedPage() {
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
         scrollToClip(-1);
+      } else if (event.key === "m" || event.key === "M") {
+        event.preventDefault();
+        toggleMute();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [scrollToClip]);
-
-  const toggleMute = useCallback(() => setMuted((value) => !value), []);
+  }, [scrollToClip, toggleMute]);
 
   return (
     <div className="cuts-feed" ref={containerRef} aria-label={t("컷츠 피드", "Cuts feed")}>
       <header className="cuts-feed__header">
-        <h1 className="cuts-feed__title">{t("컷츠", "Cuts")}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="cuts-feed__title">{t("컷츠", "Cuts")}</h1>
+          <div
+            role="group"
+            aria-label={t("피드 필터", "Feed filter")}
+            className="flex flex-wrap items-center gap-1"
+          >
+            {(
+              [
+                { id: "all", label: t("전체 클립", "All clips") },
+                { id: "reward", label: t("리워드 대상", "Reward eligible") },
+                { id: "remixable", label: t("리믹스 가능", "Remixable") },
+                { id: "popular", label: t("인기순", "Popular") },
+              ] as const
+            ).map((chip) => (
+              <button
+                key={chip.id}
+                type="button"
+                aria-pressed={feedCategory === chip.id}
+                onClick={() => setFeedCategory(chip.id)}
+                className={`rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                  feedCategory === chip.id
+                    ? "bg-white text-black"
+                    : "bg-white/15 text-white/85 hover:bg-white/25"
+                }`}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="cuts-feed__header-actions">
+          <span className="hidden rounded-full bg-black/45 px-2.5 py-1 text-[0.72rem] font-medium text-white/75 md:inline-block">
+            {t("↑/↓ 클립 이동 · M 음소거 토글", "↑/↓ move · M toggle mute")}
+          </span>
           <Link href="/cuts/rewards" className="cuts-feed__rewards">
             <Coins size={15} aria-hidden="true" />
             {t("리워드", "Rewards")}

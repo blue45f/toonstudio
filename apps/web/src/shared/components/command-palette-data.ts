@@ -210,6 +210,48 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
     },
   },
   {
+    id: "cmd-open-cuts",
+    title: "숏폼 컷츠 피드 열기",
+    subtitle: "세로형 웹툰 명장면 클립 감상 및 리믹스 제작",
+    category: "navigation",
+    icon: Sparkles,
+    keywords: ["컷츠", "숏폼", "클립", "리믹스", "릴스", "쇼츠", "cuts", "short", "remix"],
+    description: "웹툰 명장면을 세로형 짧은 클립으로 감상하고 직접 팬 리믹스를 제작합니다.",
+    action: (ctx) => {
+      ctx.playSfx("pop");
+      ctx.closePalette();
+      ctx.router.push("/cuts");
+    },
+  },
+  {
+    id: "cmd-open-character-chat",
+    title: "AI 캐릭터 토크 열기",
+    subtitle: "작가가 승인한 설정으로 작품 속 캐릭터와 대화",
+    category: "navigation",
+    icon: MessageSquare,
+    keywords: ["캐릭터", "토크", "채팅", "대화", "챗봇", "character", "chat", "talk"],
+    description: "작가가 승인한 성격·말투·세계관 그대로 작품 속 인물과 1:1 대화를 나눕니다.",
+    action: (ctx) => {
+      ctx.playSfx("pop");
+      ctx.closePalette();
+      ctx.router.push("/character-chat");
+    },
+  },
+  {
+    id: "cmd-open-fit-lab",
+    title: "에셋 Fit Lab (원고 위 시험)",
+    subtitle: "구매·적용 전 내 원고 톤과 에셋 어울림 비교",
+    category: "studio",
+    icon: Layers,
+    keywords: ["핏랩", "fit lab", "fit", "에셋 시험", "비교", "미리보기", "적합성"],
+    description: "마켓 에셋을 실제 웹툰 원고 위에 올려 선 굵기·조명·색감이 어울리는지 즉시 시험합니다.",
+    action: (ctx) => {
+      ctx.playSfx("pop");
+      ctx.closePalette();
+      ctx.router.push("/market/fit-lab");
+    },
+  },
+  {
     id: "cmd-clear-history",
     title: "최근 검색 기록 전체 삭제",
     subtitle: "로컬에 저장된 모든 최근 검색어 비우기",

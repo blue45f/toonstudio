@@ -39,4 +39,15 @@ describe("StudioBrushLabPage 비-리믹스 상태 표시 (2026-10-08 소형 잔�
     expect(SOURCE).not.toMatch(/import[^;]*ProductionProjectStatusStrip/);
     expect(SOURCE).not.toContain("<ProductionProjectStatusStrip");
   });
+
+  it("카탈로그 패널은 내재화 브러시 엔진 요약 배지와 용도별 원클릭 필터를 제공한다", () => {
+    const catalogueSource = readFileSync(
+      new URL("./StudioBrushProductCataloguePanel.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(catalogueSource).toContain("brush-catalogue-engine-summary");
+    expect(catalogueSource).toContain("Kubelka-Munk 분광 안료 혼색");
+    expect(catalogueSource).toContain("브러시 용도별 빠른 필터");
+    expect(catalogueSource).toContain("입문자 필수 추천");
+  });
 });

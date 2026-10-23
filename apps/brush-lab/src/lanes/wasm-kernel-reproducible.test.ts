@@ -27,14 +27,33 @@ const KERNEL_DIR = fileURLToPath(new URL("../../wasm/sumi-kernel/", import.meta.
 const BUILD_SH = path.join(KERNEL_DIR, "build.sh");
 
 const OPT_OUT_ENV = "SUMI_KERNEL_REPRO_OPTIONAL";
+const PINNED_RUST_TOOLCHAIN = "1.97.0";
 const INSTALL_HINT = "rustup toolchain install 1.97.0 --profile minimal --target wasm32-unknown-unknown && rustup default 1.97.0";
+
+function resolvePinnedRustupToolchain(): string | undefined {
+  if (process.env.RUSTUP_TOOLCHAIN) return process.env.RUSTUP_TOOLCHAIN;
+  const check = spawnSync("rustup", ["run", PINNED_RUST_TOOLCHAIN, "rustc", "--version"], { encoding: "utf8" });
+  if (!check.error && check.status === 0) return PINNED_RUST_TOOLCHAIN;
+  return undefined;
+}
+
+const RESOLVED_RUSTUP_TOOLCHAIN = resolvePinnedRustupToolchain();
+
+function buildEnvWithToolchain(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    ...(RESOLVED_RUSTUP_TOOLCHAIN ? { RUSTUP_TOOLCHAIN: RESOLVED_RUSTUP_TOOLCHAIN } : {}),
+    ...extra,
+  };
+}
 
 /** 툴체인 문제(없으면 null). rustup이 없는 환경(시스템 rustc)이면 타깃 목록을 알 수 없으므로 빌드를 시도해 본다. */
 function toolchainProblem(): string | null {
   if (!existsSync(BUILD_SH)) return `build.sh가 없다: ${BUILD_SH}`;
-  const cargo = spawnSync("cargo", ["--version"], { encoding: "utf8" });
+  const env = buildEnvWithToolchain();
+  const cargo = spawnSync("cargo", ["--version"], { encoding: "utf8", env });
   if (cargo.error || cargo.status !== 0) return "cargo를 실행할 수 없다(Rust 툴체인 미설치)";
-  const targets = spawnSync("rustup", ["target", "list", "--installed"], { encoding: "utf8" });
+  const targets = spawnSync("rustup", ["target", "list", "--installed"], { encoding: "utf8", env });
   if (!targets.error && targets.status === 0 && !targets.stdout.includes("wasm32-unknown-unknown")) {
     return "wasm32-unknown-unknown 타깃이 설치돼 있지 않다";
   }
@@ -83,7 +102,7 @@ function cleanBuildCheck(tmp: string): { status: number | null; output: string; 
   const run = spawnSync("bash", [BUILD_SH, "--check"], {
     cwd: KERNEL_DIR,
     encoding: "utf8",
-    env: { ...process.env, TMPDIR: tmp },
+    env: buildEnvWithToolchain({ TMPDIR: tmp }),
     timeout: 240_000,
   });
   return {

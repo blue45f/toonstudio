@@ -1,11 +1,33 @@
-import { ArrowRight, Library, Search } from "lucide-react";
+import { ArrowRight, Cpu, Library, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 
-import { BRUSH_QUALITY_CATALOG } from "./brush-studio-v5-quality-catalog";
+import {
+  BRUSH_QUALITY_CATALOG,
+  brushQualityCatalogGroups,
+} from "./brush-studio-v5-quality-catalog";
 import { BRUSH_STUDIO_V6_RECIPES } from "./brush-studio-v6-engine";
 import { resolveProductBrushV6RecipeId } from "./brush-studio-version-integration";
+
+const INTERNALIZED_ENGINE_BADGES = [
+  {
+    title: "2차계 G펜·마루펜 닙 물리",
+    detail: "필압·속도에 따른 펜촉 갈라짐과 날카로운 끝 테이퍼",
+  },
+  {
+    title: "Kubelka-Munk 분광 안료 혼색",
+    detail: "파란색+노란색이 회색이 아닌 자연스러운 녹색으로 섞이는 감산 혼색",
+  },
+  {
+    title: "Krita·Libmypaint 다이내믹",
+    detail: "기울기·속도·슬로 트래킹 및 캔버스 하부 안료 스머지 반응",
+  },
+  {
+    title: "캘리그라피 리본 & 모서리 보존",
+    detail: "급격한 방향 전환에서도 뭉개지지 않는 선화·리본 외곽선",
+  },
+] as const;
 
 function editorHref(
   baseHref: string,
@@ -34,6 +56,8 @@ export function StudioBrushProductCataloguePanel({
 }) {
   const [open, setOpen] = useState(true);
   const [query, setQuery] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const groups = useMemo(() => brushQualityCatalogGroups(), []);
   const recipeNames = useMemo(
     () =>
       new Map(
@@ -43,13 +67,21 @@ export function StudioBrushProductCataloguePanel({
   );
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ko-KR");
-    if (!normalized) return BRUSH_QUALITY_CATALOG;
-    return BRUSH_QUALITY_CATALOG.filter((entry) =>
-      `${entry.name} ${entry.id} ${entry.group} ${entry.signature} ${entry.engine}`
+    return BRUSH_QUALITY_CATALOG.filter((entry) => {
+      if (selectedGroup === "essential" && !entry.quick) return false;
+      if (
+        selectedGroup !== "all" &&
+        selectedGroup !== "essential" &&
+        entry.group !== selectedGroup
+      ) {
+        return false;
+      }
+      if (!normalized) return true;
+      return `${entry.name} ${entry.id} ${entry.group} ${entry.signature} ${entry.engine}`
         .toLocaleLowerCase("ko-KR")
-        .includes(normalized),
-    );
-  }, [query]);
+        .includes(normalized);
+    });
+  }, [query, selectedGroup]);
 
   return (
     <section className="rounded-3xl border border-line bg-card/35 p-4 sm:p-5">
@@ -75,8 +107,74 @@ export function StudioBrushProductCataloguePanel({
         </button>
       </div>
 
+      <div
+        data-testid="brush-catalogue-engine-summary"
+        className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+        aria-label="내재화 브러시 엔진 핵심 기술"
+      >
+        {INTERNALIZED_ENGINE_BADGES.map((item) => (
+          <div
+            key={item.title}
+            className="rounded-2xl border border-line bg-panel/45 px-3 py-2.5"
+          >
+            <p className="flex items-center gap-1.5 text-xs font-extrabold text-fg">
+              <Cpu size={13} className="shrink-0 text-accent" aria-hidden="true" />
+              {item.title}
+            </p>
+            <p className="mt-1 text-[0.68rem] leading-4 text-fg-3">{item.detail}</p>
+          </div>
+        ))}
+      </div>
+
       {open ? (
         <div className="mt-5">
+          <div
+            role="group"
+            aria-label="브러시 용도별 빠른 필터"
+            className="mb-3 flex flex-wrap gap-1.5"
+          >
+            <button
+              type="button"
+              aria-pressed={selectedGroup === "all"}
+              onClick={() => setSelectedGroup("all")}
+              className={`inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
+                selectedGroup === "all"
+                  ? "border-accent/60 bg-accent-soft text-accent"
+                  : "border-line bg-panel text-fg-2 hover:bg-raised"
+              }`}
+            >
+              전체 ({BRUSH_QUALITY_CATALOG.length})
+            </button>
+            <button
+              type="button"
+              aria-pressed={selectedGroup === "essential"}
+              onClick={() => setSelectedGroup("essential")}
+              className={`inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
+                selectedGroup === "essential"
+                  ? "border-accent/60 bg-accent-soft text-accent"
+                  : "border-line bg-panel text-fg-2 hover:bg-raised"
+              }`}
+            >
+              <Sparkles size={12} aria-hidden="true" />
+              입문자 필수 추천 ({BRUSH_QUALITY_CATALOG.filter((b) => b.quick).length})
+            </button>
+            {groups.map((group) => (
+              <button
+                key={group}
+                type="button"
+                aria-pressed={selectedGroup === group}
+                onClick={() => setSelectedGroup(group)}
+                className={`inline-flex min-h-9 items-center rounded-full border px-3 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
+                  selectedGroup === group
+                    ? "border-accent/60 bg-accent-soft text-accent"
+                    : "border-line bg-panel text-fg-2 hover:bg-raised"
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+          </div>
+
           <label className="relative block max-w-xl">
             <span className="sr-only">제품 브러시 검색</span>
             <Search

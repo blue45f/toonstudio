@@ -237,6 +237,97 @@ export function MarketHomePage() {
         <MarketResourceFamilyExplorer />
       </Container>
 
+      <Container size="wide" className="pb-8 sm:pb-10">
+        <section
+          data-market-starter-guide="true"
+          aria-labelledby="market-starter-guide-heading"
+          className="rounded-2xl border border-accent/30 bg-panel/80 p-4 sm:p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
+                STAGE-BY-STAGE ASSET STARTER
+              </p>
+              <h2 id="market-starter-guide-heading" className="mt-0.5 text-base font-bold text-fg sm:text-lg">
+                {t("웹툰 5대 공정별 필수 에셋 스타터 가이드", "5-Stage Webtoon Essential Asset Starter Guide")}
+              </h2>
+              <p className="mt-0.5 text-xs text-fg-2">
+                {t(
+                  "입문 작가가 공정마다 가장 먼저 챙겨야 할 필수 소재와 원고 위 호환성 시험(Fit Lab) 동선입니다.",
+                  "Essential materials for beginners at each webtoon stage, plus direct Fit Lab testing.",
+                )}
+              </p>
+            </div>
+            <Link
+              href="/market/fit-lab"
+              className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-accent/40 bg-accent-soft/20 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent-soft/35"
+            >
+              {t("원고 위 시험 (Fit Lab) 바로가기", "Open Fit Lab")}
+              <ArrowRight size={13} aria-hidden="true" />
+            </Link>
+          </div>
+          <ol className="mt-3.5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              {
+                step: "01",
+                stageKo: "콘티·연출",
+                stageEn: "Storyboard & Layout",
+                descKo: "세로 스크롤 컷 분할 템플릿·구도 가이드",
+                descEn: "Vertical scroll panel templates & framing guides",
+                href: "/market/browse?kind=template",
+              },
+              {
+                step: "02",
+                stageKo: "3D 배경",
+                stageEn: "3D Backgrounds",
+                descKo: "학교·방·거리 등 카메라 앵글 회전형 3D 공간",
+                descEn: "Orbitable 3D scenes for rooms, schools, and streets",
+                href: "/market/browse?kind=3d-asset",
+              },
+              {
+                step: "03",
+                stageKo: "선화·펜",
+                stageEn: "Line Art & Pens",
+                descKo: "필압 G펜·거친 먹선·머리카락 전용 브러시",
+                descEn: "Pressure G-pens, rough ink, and hair brushes",
+                href: "/market/browse?kind=brush",
+              },
+              {
+                step: "04",
+                stageKo: "채색·음영",
+                stageEn: "Color & Shading",
+                descKo: "캐릭터 피부·시간대별 조명 팔레트와 스크린톤",
+                descEn: "Skin palettes, time-of-day lighting, and screentones",
+                href: "/market/browse?kind=palette",
+              },
+              {
+                step: "05",
+                stageKo: "말풍선·마감",
+                stageEn: "Balloons & Finish",
+                descKo: "대사 말풍선·효과음 레터링·분위기 보정 필터",
+                descEn: "Dialogue balloons, SFX lettering, and mood filters",
+                href: "/market/browse?kind=filter",
+              },
+            ].map((item) => (
+              <li key={item.step} className="flex flex-col justify-between rounded-xl border border-line bg-card p-3">
+                <div>
+                  <span className="text-[11px] font-bold text-accent">STEP {item.step}</span>
+                  <h3 className="mt-1 text-sm font-bold text-fg">{t(item.stageKo, item.stageEn)}</h3>
+                  <p className="mt-1 text-xs leading-5 text-fg-2">{t(item.descKo, item.descEn)}</p>
+                </div>
+                <Link
+                  href={item.href}
+                  className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+                >
+                  {t(`${item.stageKo} 소재 보기`, `Browse ${item.stageEn}`)}
+                  <ArrowRight size={12} aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </Container>
+
       <section className="border-y border-line bg-card/40 py-8 sm:py-10">
         <Container size="wide">
           <div className="flex items-baseline justify-between gap-3">

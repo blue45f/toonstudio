@@ -5,6 +5,9 @@ import {
   ChevronRight,
   ImageOff,
   ListOrdered,
+  Pause,
+  Play,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -41,6 +44,43 @@ interface ReaderTitleResponse {
   title: Title;
 }
 
+type ReaderTheme = "dark" | "oled" | "sepia" | "paper";
+type ReaderWidth = "narrow" | "standard" | "wide";
+type AutoScrollSpeed = 1 | 1.5 | 2;
+interface ReaderComfortPrefs { theme: ReaderTheme; width: ReaderWidth; speed: AutoScrollSpeed }
+
+const COMFORT_STORAGE_KEY = "toonstudio.reader-comfort.v1";
+const DEFAULT_COMFORT: ReaderComfortPrefs = { theme: "dark", width: "standard", speed: 1 };
+
+function loadComfortPrefs(): ReaderComfortPrefs {
+  try {
+    const raw = window.localStorage.getItem(COMFORT_STORAGE_KEY);
+    if (!raw) return DEFAULT_COMFORT;
+    const p = JSON.parse(raw) as Partial<ReaderComfortPrefs>;
+    const theme: ReaderTheme = p.theme === "oled" || p.theme === "sepia" || p.theme === "paper" ? p.theme : "dark";
+    const width: ReaderWidth = p.width === "narrow" || p.width === "wide" ? p.width : "standard";
+    const speed: AutoScrollSpeed = p.speed === 1.5 || p.speed === 2 ? p.speed : 1;
+    return { theme, width, speed };
+  } catch {
+    return DEFAULT_COMFORT;
+  }
+}
+
+function saveComfortPrefs(prefs: ReaderComfortPrefs): void {
+  try { window.localStorage.setItem(COMFORT_STORAGE_KEY, JSON.stringify(prefs)); } catch { /* ignore */ }
+}
+
+const THEME_CLASSES: Record<ReaderTheme, string> = {
+  dark: "bg-reader-canvas text-white",
+  oled: "bg-black text-white",
+  sepia: "bg-[#1c1813] text-[#f5ebd6]",
+  paper: "bg-[#23252b] text-[#f1f3f5]",
+};
+const WIDTH_CLASSES: Record<ReaderWidth, string> = {
+  narrow: "max-w-[580px]",
+  standard: "max-w-[720px]",
+  wide: "max-w-[900px]",
+};
 const CHROME_HIDE_DELAY_MS = 2600;
 
 function scrollableHeight(): number {
@@ -72,15 +112,24 @@ function ReaderShell({
   const [savedOnce, setSavedOnce] = useState(false);
   const [initialProgress] = useState(() => getReaderProgress(title.slug));
   const [resumeDismissed, setResumeDismissed] = useState(false);
+  const [comfort, setComfort] = useState<ReaderComfortPrefs>(() => loadComfortPrefs());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(false);
 
   const detailPath = `/title/${encodeURIComponent(title.slug)}`;
   const hasPrev = episode > 1;
   const hasNext = total == null || episode < total;
-  const showResume =
-    !resumeDismissed &&
-    initialProgress?.episode === episode &&
-    isResumable(initialProgress);
+  const showResume = !resumeDismissed && initialProgress?.episode === episode && isResumable(initialProgress);
   const progressKnown = savedOnce || initialProgress != null;
+
+  const updateComfort = useCallback((patch: Partial<ReaderComfortPrefs>) => {
+    setComfort((prev) => {
+      const next = { ...prev, ...patch };
+      saveComfortPrefs(next);
+      return next;
+    });
+  }, []);
 
   const scheduleHide = useCallback(() => {
     if (hideTimerRef.current != null) window.clearTimeout(hideTimerRef.current);
@@ -101,8 +150,21 @@ function ReaderShell({
     };
   }, [scheduleHide]);
 
-  // 스크롤 진도 측정 + 읽던 위치 저장(디바운스). 아래로 스크롤하면 크롬이 숨고,
-  // 위로 스크롤하거나 끝에 닿으면 다시 보인다.
+  // 자동 스크롤 타이머 — 끝에 도달하면 자동으로 멈춘다.
+  useEffect(() => {
+    if (!autoScroll) return;
+    const stepPx = Math.round(2 * comfort.speed);
+    const id = window.setInterval(() => {
+      if (ratioRef.current >= 0.99) {
+        setAutoScroll(false);
+        return;
+      }
+      window.scrollBy({ top: stepPx, behavior: "auto" });
+    }, 32);
+    return () => window.clearInterval(id);
+  }, [autoScroll, comfort.speed]);
+
+  // 스크롤 진도 측정 + 읽던 위치 저장(디바운스).
   useEffect(() => {
     let raf = 0;
     let lastY = window.scrollY;
@@ -139,18 +201,35 @@ function ReaderShell({
     };
   }, [title.slug, episode, scheduleHide]);
 
-  // Esc는 작품 상세로, 그 외 키 입력은 크롬을 다시 보여준다.
+  // Esc는 작품 상세로, [ / ]는 이전·다음 화 이동, M은 메뉴 토글, 그 외 키 입력은 크롬을 다시 보여준다.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         navigate(detailPath);
         return;
       }
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input,textarea,select,[contenteditable='true']")) return;
+      if (event.key === "[" && hasPrev) {
+        event.preventDefault();
+        navigate(`/title/${encodeURIComponent(title.slug)}/read/${episode - 1}`);
+        return;
+      }
+      if (event.key === "]" && hasNext) {
+        event.preventDefault();
+        navigate(`/title/${encodeURIComponent(title.slug)}/read/${episode + 1}`);
+        return;
+      }
+      if (event.key === "m" || event.key === "M") {
+        event.preventDefault();
+        setChromeVisible((visible) => !visible);
+        return;
+      }
       pokeChrome();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [navigate, detailPath, pokeChrome]);
+  }, [navigate, detailPath, pokeChrome, hasPrev, hasNext, title.slug, episode]);
 
   const handleContentPointerDown = (event: React.PointerEvent) => {
     const target = event.target as HTMLElement;
@@ -180,12 +259,21 @@ function ReaderShell({
   );
   const percent = Math.round(ratio * 100);
   const [coverFrom, coverTo] = title.cover;
+  const episodeTotalForDrawer = Math.min(total ?? Math.max(episode + 3, 6), 24);
+  const quickEpisodes = Array.from({ length: episodeTotalForDrawer }, (_, i) => i + 1);
+  const chipClass = (active: boolean) =>
+    cn(
+      "min-h-8 rounded-full border px-2.5 font-semibold transition-colors",
+      active ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
+    );
 
   return (
     <div
       ref={rootRef}
       tabIndex={-1}
-      className="min-h-[100dvh] bg-reader-canvas text-white outline-none"
+      data-reader-theme={comfort.theme}
+      data-reader-width={comfort.width}
+      className={cn("min-h-[100dvh] outline-none transition-colors duration-200", THEME_CLASSES[comfort.theme])}
     >
       {/* 최상단 진도 바 — 크롬이 숨겨져도 항상 보인다 */}
       <div
@@ -209,7 +297,7 @@ function ReaderShell({
           chromeClass,
         )}
       >
-        <div className="mx-auto flex h-14 w-full max-w-[720px] items-center gap-2 px-3 sm:px-4">
+        <div className={cn("mx-auto flex h-14 w-full items-center gap-2 px-3 sm:px-4", WIDTH_CLASSES[comfort.width])}>
           <Link
             href={detailPath}
             aria-label={bi("작품 상세로 나가기", "Back to title details")}
@@ -226,16 +314,85 @@ function ReaderShell({
             </p>
           </div>
           {progressKnown && (
-            <span className="flex shrink-0 items-center gap-1.5 text-xs text-white/65">
+            <span className="hidden shrink-0 items-center gap-1.5 text-xs text-white/65 sm:flex">
               <span className="size-1.5 rounded-full bg-[oklch(0.8_0.14_155)]" aria-hidden />
               <Check size={13} aria-hidden />
               {bi("읽던 위치 저장됨", "Position saved")}
             </span>
           )}
+          <button
+            type="button"
+            onClick={() => { setAutoScroll((prev) => !prev); pokeChrome(); }}
+            aria-pressed={autoScroll}
+            aria-label={bi("자동 스크롤", "Auto scroll")}
+            className={cn(
+              "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
+              autoScroll ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/20 bg-white/5 text-white/85 hover:bg-white/15",
+            )}
+          >
+            {autoScroll ? <Pause size={13} aria-hidden /> : <Play size={13} aria-hidden />}
+            <span>{autoScroll ? `${comfort.speed}x` : bi("자동 스크롤", "Auto scroll")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSettingsOpen((prev) => !prev); setEpisodeDrawerOpen(false); pokeChrome(); }}
+            aria-expanded={settingsOpen}
+            aria-label={bi("보기 설정", "Reader settings")}
+            className={cn(
+              "grid size-10 shrink-0 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
+              settingsOpen ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/85 hover:bg-white/15",
+            )}
+          >
+            <SlidersHorizontal size={16} aria-hidden />
+          </button>
         </div>
+
+        {/* 보기 설정 패널 (배경 톤 · 원고 폭 · 자동 스크롤 속도) */}
+        {settingsOpen && (
+          <section
+            aria-label={bi("뷰어 환경 설정", "Reader comfort settings")}
+            className={cn("mx-auto border-t border-white/10 px-4 py-3 text-xs", WIDTH_CLASSES[comfort.width])}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bi("배경 톤", "Background tone")}>
+                <span className="mr-1 font-semibold text-white/70">{bi("배경 톤", "Tone")}</span>
+                {([
+                  { id: "dark", label: bi("다크 기본", "Dark") },
+                  { id: "oled", label: bi("순수 블랙", "OLED Black") },
+                  { id: "sepia", label: bi("세피아", "Sepia") },
+                  { id: "paper", label: bi("소프트 종이", "Soft Paper") },
+                ] as const).map((item) => (
+                  <button key={item.id} type="button" aria-pressed={comfort.theme === item.id} onClick={() => updateComfort({ theme: item.id })} className={chipClass(comfort.theme === item.id)}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bi("원고 폭", "Canvas width")}>
+                <span className="mr-1 font-semibold text-white/70">{bi("원고 폭", "Width")}</span>
+                {([
+                  { id: "narrow", label: bi("좁게 580px", "Narrow") },
+                  { id: "standard", label: bi("표준 720px", "Standard") },
+                  { id: "wide", label: bi("넓게 900px", "Wide") },
+                ] as const).map((item) => (
+                  <button key={item.id} type="button" aria-pressed={comfort.width === item.id} onClick={() => updateComfort({ width: item.id })} className={chipClass(comfort.width === item.id)}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bi("자동 스크롤 속도", "Auto-scroll speed")}>
+                <span className="mr-1 font-semibold text-white/70">{bi("스크롤 속도", "Speed")}</span>
+                {([1, 1.5, 2] as const).map((spd) => (
+                  <button key={spd} type="button" aria-pressed={comfort.speed === spd} onClick={() => updateComfort({ speed: spd })} className={chipClass(comfort.speed === spd)}>
+                    {`${spd}x`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
       </header>
 
-      <div onPointerDown={handleContentPointerDown} className="mx-auto w-full max-w-[720px] px-4 pb-36 pt-[4.5rem]">
+      <div onPointerDown={handleContentPointerDown} className={cn("mx-auto w-full px-4 pb-36 pt-[4.5rem]", WIDTH_CLASSES[comfort.width])}>
         {/* 회차 시작 카드 — 회차 제목·날짜는 계약에 없어 작품 실데이터만 표기한다 */}
         <section aria-label={bi("회차 정보", "Episode info")} className="flex gap-4 rounded-2xl border border-white/10 bg-reader-panel p-4 sm:p-5">
           <span className="relative block aspect-[3/4] w-16 shrink-0 overflow-hidden rounded-lg sm:w-[4.5rem]">
@@ -363,7 +520,10 @@ function ReaderShell({
         )}
 
         <p className="mt-6 text-center text-xs text-white/45">
-          {bi("화면을 탭하면 메뉴가 사라져요 — Esc로 나가기", "Tap the screen to hide the menus — Esc to exit")}
+          {bi(
+            "화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · [ / ] 이전·다음 화 · M 메뉴 토글",
+            "Tap the screen to hide menus — Esc to exit · [ / ] prev/next ep · M toggle menu",
+          )}
         </p>
       </div>
 
@@ -374,7 +534,40 @@ function ReaderShell({
           chromeClass,
         )}
       >
-        <div className="mx-auto flex h-16 w-full max-w-[720px] items-center gap-1.5 px-3 sm:gap-2 sm:px-4">
+        {episodeDrawerOpen && (
+          <section
+            aria-label={bi("회차 빠른 이동 목록", "Quick episode drawer")}
+            className={cn("mx-auto border-b border-white/10 px-4 py-3", WIDTH_CLASSES[comfort.width])}
+          >
+            <div className="mb-2 flex items-center justify-between text-xs text-white/70">
+              <span className="font-semibold">{bi("회차 빠른 이동", "Quick episode jump")}</span>
+              <Link href={`${detailPath}#episodes`} className="font-semibold text-white/85 underline-offset-4 hover:underline">
+                {bi("전체 회차 상세 보기", "Full episode list")}
+              </Link>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {quickEpisodes.map((epNum) => {
+                const isCurrent = epNum === episode;
+                return (
+                  <Link
+                    key={epNum}
+                    href={`/title/${encodeURIComponent(title.slug)}/read/${epNum}`}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={cn(
+                      "inline-flex min-h-9 shrink-0 items-center rounded-full border px-3 text-xs font-semibold transition-colors",
+                      isCurrent
+                        ? "border-white bg-white text-[oklch(0.16_0.02_265)]"
+                        : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
+                    )}
+                  >
+                    {formatI18nTemplate(bi("{v0}화", "Ep.{v0}"), { v0: String(epNum) })}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+        <div className={cn("mx-auto flex h-16 w-full items-center gap-1.5 px-3 sm:gap-2 sm:px-4", WIDTH_CLASSES[comfort.width])}>
           <Link
             href={`${detailPath}#episodes`}
             aria-label={bi("회차 목록", "Episode list")}
@@ -382,6 +575,18 @@ function ReaderShell({
           >
             <ListOrdered size={19} aria-hidden />
           </Link>
+          <button
+            type="button"
+            onClick={() => { setEpisodeDrawerOpen((prev) => !prev); setSettingsOpen(false); pokeChrome(); }}
+            aria-expanded={episodeDrawerOpen}
+            aria-label={bi("회차 빠른 이동", "Quick episode jump")}
+            className={cn(
+              "inline-flex min-h-9 shrink-0 items-center rounded-full border px-2.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
+              episodeDrawerOpen ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
+            )}
+          >
+            {bi("회차 선택", "Episodes")}
+          </button>
           {hasPrev ? (
             <Link
               href={`/title/${encodeURIComponent(title.slug)}/read/${episode - 1}`}

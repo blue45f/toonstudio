@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { SumiError } from "../core/errors";
 
-import { applyDab, generateDabMask, type DabMode } from "./krita-concepts";
+import {
+  applyDab,
+  generateDabMask,
+  generateEllipticalDabMask,
+  smudgeDabColor,
+  type DabMode,
+} from "./krita-concepts";
 
 describe("Krita dab mask applicator 개념", () => {
   it("generateDabMask(16, 1.0): 중심 1.0, 가장자리 0.0(hard edge)", () => {
@@ -81,5 +87,25 @@ describe("Krita dab mask applicator 개념", () => {
     expect(() => applyDab(mask, [1, 1, 1, 1] as const, canvas, 0, 0, ("unknown" as unknown) as DabMode)).toThrow(
       SumiError,
     );
+  });
+
+  it("generateEllipticalDabMask: 납작한 치즐 비율(aspect)과 sharpness 양자화를 지원한다", () => {
+    const round = generateEllipticalDabMask(11, 0.8, { aspect: 1, angleRad: 0 });
+    const flat = generateEllipticalDabMask(11, 0.8, { aspect: 0.35, angleRad: 0, sharpness: 1 });
+    const roundCoverage = round.reduce((acc, v) => acc + (v > 0 ? 1 : 0), 0);
+    const flatCoverage = flat.reduce((acc, v) => acc + (v > 0 ? 1 : 0), 0);
+    expect(flatCoverage).toBeLessThan(roundCoverage);
+    expect(flat.every((v) => v === 0 || v === 1)).toBe(true);
+  });
+
+  it("smudgeDabColor: 캔버스 하부 안료를 샘플링해 K/S 공간에서 혼색한다", () => {
+    const canvas = new Float32Array(4 * 4 * 4);
+    // (1,1)에 노랑 안료 도포
+    canvas[20] = 0.95;
+    canvas[21] = 0.9;
+    canvas[22] = 0.05;
+    canvas[23] = 1;
+    const mixed = smudgeDabColor(canvas, 0, 0, 2, [0.05, 0.2, 0.9, 1], 0.5);
+    expect(mixed[1]).toBeGreaterThan(0.2);
   });
 });

@@ -38,6 +38,12 @@ export const STUDIO_WORK_MODE_PIPELINE: readonly StudioWorkMode[] = [
 
 export type StudioWorkModeExposure = "primary" | "visible" | "folded";
 
+export interface StudioWorkModeShortcut {
+  readonly key: string;
+  readonly label: string;
+  readonly labelEn?: string;
+}
+
 export interface StudioWorkModeMeta {
   readonly id: StudioWorkMode;
   /** i18n 사전 키 (사전 등록 전에는 ko 라벨로 폴백). */
@@ -46,7 +52,18 @@ export interface StudioWorkModeMeta {
   readonly labelEn: string;
   readonly descriptionKo: string;
   readonly descriptionEn: string;
+  /** 파이프라인 단계 번호 (1=콘티 .. 6=마감, 전체 모드는 생략). */
+  readonly pipelineStep?: number;
+  /** 파이프라인 원형 숫자 배지 (①..⑥). */
+  readonly stepBadge?: string;
+  /** 해당 공정에서 가장 자주 쓰는 추천 단축키. */
+  readonly recommendedShortcuts: readonly StudioWorkModeShortcut[];
+  /** 입문자를 위한 현재 공정 핵심 코칭 팁. */
+  readonly beginnerTip: string;
+  readonly beginnerTipEn: string;
 }
+
+export type StudioWorkModeDefinition = StudioWorkModeMeta;
 
 export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkModeMeta>> = {
   all: {
@@ -56,6 +73,14 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "All",
     descriptionKo: "모든 도구를 한 번에 봅니다. 단계 구분 없이 자유롭게 작업할 때 골라요.",
     descriptionEn: "See every tool at once, without stage scoping.",
+    recommendedShortcuts: [
+      { key: "⌘K", label: "통합 명령 검색", labelEn: "Command search" },
+      { key: "B", label: "브러시", labelEn: "Brush" },
+      { key: "V", label: "선택·이동", labelEn: "Select & move" },
+      { key: "?", label: "단축키 도움말", labelEn: "Shortcuts help" },
+    ],
+    beginnerTip: "처음이라면 ① 콘티부터 순서대로 모드를 눌러 보세요. 현재 단계에 꼭 필요한 도구만 남아 화면이 한결 깔끔해집니다.",
+    beginnerTipEn: "If you are new, step through ① Storyboard to ⑥ Finish in order so only the tools you need stay in front.",
   },
   storyboard: {
     id: "storyboard",
@@ -64,6 +89,16 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "Storyboard",
     descriptionKo: "컷을 나누고 장면 흐름을 잡는 단계예요. 그리기·채색 도구는 접어 둡니다.",
     descriptionEn: "Split cuts and shape the scene flow. Drawing and color tools stay folded.",
+    pipelineStep: 1,
+    stepBadge: "①",
+    recommendedShortcuts: [
+      { key: "V", label: "컷·오브젝트 선택", labelEn: "Select cut/object" },
+      { key: "B", label: "러프 스케치", labelEn: "Rough sketch" },
+      { key: "Space", label: "캔버스 이동", labelEn: "Pan canvas" },
+      { key: "⌘Z", label: "실행 취소", labelEn: "Undo" },
+    ],
+    beginnerTip: "① 콘티 단계에서는 세부 묘사보다 세로 스크롤 호흡과 말풍선이 들어갈 여백을 먼저 확보하세요.",
+    beginnerTipEn: "In ① Storyboard, focus on vertical scroll pacing and balloon breathing room before details.",
   },
   draw: {
     id: "draw",
@@ -72,6 +107,16 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "Draw",
     descriptionKo: "그리는 단계예요. 펜과 캔버스 주변 도구만 앞에 둡니다.",
     descriptionEn: "The drawing stage. Pen and canvas tools come first.",
+    pipelineStep: 2,
+    stepBadge: "②",
+    recommendedShortcuts: [
+      { key: "B", label: "펜·브러시", labelEn: "Pen & brush" },
+      { key: "E", label: "지우개", labelEn: "Eraser" },
+      { key: "[ / ]", label: "브러시 크기", labelEn: "Brush size" },
+      { key: "H", label: "좌우 반전 점검", labelEn: "Flip canvas" },
+    ],
+    beginnerTip: "② 스케치·선화 단계에서는 손떨림 보정을 켜고, H 키로 좌우 반전하며 인체·얼굴 균형을 수시로 점검하세요.",
+    beginnerTipEn: "In ② Draw, turn on stabilization and press H to flip the canvas horizontally to check proportions.",
   },
   color: {
     id: "color",
@@ -80,6 +125,16 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "Color",
     descriptionKo: "색을 입히는 단계예요. 스타일과 색 도구 위주로 봅니다.",
     descriptionEn: "The coloring stage. Style and color tools come first.",
+    pipelineStep: 3,
+    stepBadge: "③",
+    recommendedShortcuts: [
+      { key: "G", label: "채우기(버킷)", labelEn: "Fill bucket" },
+      { key: "Alt", label: "스포이트", labelEn: "Eyedropper" },
+      { key: "N", label: "색 섞기·스머지", labelEn: "Blend & smudge" },
+      { key: "X", label: "전경·배경색 전환", labelEn: "Swap colors" },
+    ],
+    beginnerTip: "③ 채색 단계에서는 선화 레이어를 기준 삼아 밑색(G)을 채우고, 클리핑 마스크로 명암을 얹으면 선 밖으로 색이 새지 않아요.",
+    beginnerTipEn: "In ③ Color, fill flat colors (G) under the line art and clip shading layers so colors stay clean.",
   },
   post: {
     id: "post",
@@ -88,6 +143,16 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "Post",
     descriptionKo: "채색 뒤 색감·명암·톤을 다듬는 단계예요. 조정과 색 도구 위주로 보고, 원본과 나란히 비교합니다.",
     descriptionEn: "After coloring: grading, levels, and tone. Adjustment and color tools come first, with the original beside you for comparison.",
+    pipelineStep: 4,
+    stepBadge: "④",
+    recommendedShortcuts: [
+      { key: "O", label: "닷지·번 명암", labelEn: "Dodge & burn" },
+      { key: "Q", label: "퀵 마스크 영역", labelEn: "Quick mask" },
+      { key: "⌥Q", label: "흑백 명암 검수", labelEn: "Grayscale check" },
+      { key: "⌘J", label: "레이어 복제 비교", labelEn: "Duplicate layer" },
+    ],
+    beginnerTip: "④ 후보정 단계에서는 ⌥Q로 흑백 명암 대비를 확인하고, 닷지·번(O)과 색보정 필터로 장면의 시간대 분위기를 통일하세요.",
+    beginnerTipEn: "In ④ Post, check value contrast with ⌥Q and unify scene mood using dodge/burn (O) and color grading.",
   },
   lettering: {
     id: "lettering",
@@ -96,6 +161,16 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "Lettering",
     descriptionKo: "대사와 글자를 넣는 단계예요. 그리기 도구는 접어 둡니다.",
     descriptionEn: "The lettering stage. Drawing tools stay folded.",
+    pipelineStep: 5,
+    stepBadge: "⑤",
+    recommendedShortcuts: [
+      { key: "T", label: "대사·말풍선 입력", labelEn: "Text & balloon" },
+      { key: "⌘Enter", label: "말풍선 확정", labelEn: "Confirm balloon" },
+      { key: "V", label: "말풍선 위치 이동", labelEn: "Move balloon" },
+      { key: "방향키", label: "1px 미세 정렬", labelEn: "Nudge 1px" },
+    ],
+    beginnerTip: "⑤ 식자 단계에서는 독자의 시선이 위에서 아래로, 왼쪽에서 오른쪽으로 자연스럽게 이어지도록 말풍선 간격을 배치하세요.",
+    beginnerTipEn: "In ⑤ Lettering, place speech balloons top-to-bottom and left-to-right to guide natural reading flow.",
   },
   finish: {
     id: "finish",
@@ -104,6 +179,16 @@ export const STUDIO_WORK_MODE_META: Readonly<Record<StudioWorkMode, StudioWorkMo
     labelEn: "Finish",
     descriptionKo: "최종 점검과 게시 준비로 마무리하는 단계예요. 장면·스타일·AI 도구를 앞에 둡니다.",
     descriptionEn: "The finishing stage. Final checks and publish prep. Scene, style, and AI tools come first.",
+    pipelineStep: 6,
+    stepBadge: "⑥",
+    recommendedShortcuts: [
+      { key: "⌘0", label: "화면 맞춤 보기", labelEn: "Fit to screen" },
+      { key: "`", label: "패널 숨기고 열람", labelEn: "Hide UI chrome" },
+      { key: "⌘K", label: "내보내기·검수 검색", labelEn: "Search export" },
+      { key: "?", label: "단축키 전체 보기", labelEn: "All shortcuts" },
+    ],
+    beginnerTip: "⑥ 마감 단계에서는 ` 키로 주변 패널을 숨기고 실제 독자처럼 스크롤하며 오탈자, 컷 간격, 에셋 출처를 최종 점검하세요.",
+    beginnerTipEn: "In ⑥ Finish, press ` to hide side panels and scroll like a reader to check typos, panel gaps, and credits.",
   },
 };
 

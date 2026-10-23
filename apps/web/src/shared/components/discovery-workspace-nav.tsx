@@ -46,6 +46,14 @@ const DESTINATIONS: readonly DiscoveryDestination[] = [
   },
 ] as const;
 
+const QUICK_SURFACES = [
+  { href: "/discover", ko: "발견 허브", en: "Discover Hub" },
+  { href: "/cuts", ko: "컷 쇼츠", en: "Cuts Shorts" },
+  { href: "/character-chat", ko: "캐릭터 대화", en: "Character Chat" },
+  { href: "/studio", ko: "웹툰 만들기", en: "Create in Studio" },
+  { href: "/market", ko: "소재 마켓", en: "Asset Market" },
+] as const;
+
 export function DiscoveryWorkspaceNav({
   current,
   className,
@@ -55,8 +63,6 @@ export function DiscoveryWorkspaceNav({
 }) {
   useBilingualI18nRevision();
   const [params] = useSearchParams();
-
-
 
   return (
     <nav
@@ -104,6 +110,23 @@ export function DiscoveryWorkspaceNav({
             </Link>
           );
         })}
+      </div>
+      <div
+        data-testid="discovery-quick-surfaces"
+        className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs"
+      >
+        <span className="px-1 text-[0.7rem] font-bold text-fg-3">
+          {bi("목적별 바로가기:", "Quick jump:")}
+        </span>
+        {QUICK_SURFACES.map((surface) => (
+          <Link
+            key={surface.href}
+            href={surface.href}
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card/65 px-2.5 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            {bi(surface.ko, surface.en)}
+          </Link>
+        ))}
       </div>
     </nav>
   );

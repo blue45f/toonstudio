@@ -64,6 +64,96 @@ const HASH_TABS: Readonly<Record<string, DeskTab>> = {
   "#research-export": "board",
 };
 
+interface StageResourceRecommendation {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly summaryKo: string;
+  readonly summaryEn: string;
+  readonly links: ReadonlyArray<{
+    readonly titleKo: string;
+    readonly titleEn: string;
+    readonly badgeKo: string;
+    readonly badgeEn: string;
+    readonly href: string;
+  }>;
+}
+
+const STAGE_RESOURCE_RECOMMENDATIONS: readonly StageResourceRecommendation[] = [
+  {
+    id: "planning",
+    labelKo: "기획·취재",
+    labelEn: "Planning & Research",
+    summaryKo: "세계관·시대 고증 자료와 판본·공공 데이터를 모으고 작품 기획서를 다듬는 단계입니다.",
+    summaryEn: "Gather historical/worldbuilding sources, editions, and public datasets to refine your story plan.",
+    links: [
+      { titleKo: "시대·복식·건축 고증 자료실", titleEn: "Historical & Costume Archive", badgeKo: "고증 DB", badgeEn: "Reference DB", href: "/research/assets" },
+      { titleKo: "도서·글로벌 판본 아카이브", titleEn: "Books & Editions", badgeKo: "문헌 DB", badgeEn: "Books DB", href: "/research/books" },
+      { titleKo: "작품 기획·회차 구조", titleEn: "Story Planner", badgeKo: "기획 도구", badgeEn: "Planner", href: "/research/story" },
+    ],
+  },
+  {
+    id: "storyboard",
+    labelKo: "콘티·구도",
+    labelEn: "Storyboard & Framing",
+    summaryKo: "세로 스크롤 시선 유도와 컷 분할, 캐릭터 앵글·포즈 구도를 빠르게 잡는 단계입니다.",
+    summaryEn: "Establish vertical scroll pacing, panel splits, and camera/character framing.",
+    links: [
+      { titleKo: "에피소드 콘티 플래너", titleEn: "Episode Storyboard", badgeKo: "Studio 도구", badgeEn: "Studio Tool", href: "/studio/episode" },
+      { titleKo: "포즈·손·표정 마스터 랩", titleEn: "Pose & Hand Lab", badgeKo: "드로잉 보조", badgeEn: "Drawing Aid", href: "/studio/pose" },
+      { titleKo: "세로 스크롤 원고 템플릿", titleEn: "Vertical Scroll Templates", badgeKo: "마켓 소재", badgeEn: "Market Asset", href: "/market/browse?kind=template" },
+    ],
+  },
+  {
+    id: "lineart",
+    labelKo: "선화·브러시",
+    labelEn: "Line Art & Brushes",
+    summaryKo: "필압 G펜·먹선 브러시를 고르고 손떨림 보정과 벡터 선화로 펜선을 완성하는 단계입니다.",
+    summaryEn: "Select G-pen/ink brushes and finish crisp line art with stabilization and vector strokes.",
+    links: [
+      { titleKo: "웹툰 원고 작화 캔버스", titleEn: "Manuscript Canvas", badgeKo: "Studio 캔버스", badgeEn: "Studio Canvas", href: "/studio" },
+      { titleKo: "선화·펜 브러시 카탈로그", titleEn: "Line-Art Brushes", badgeKo: "마켓 브러시", badgeEn: "Market Brushes", href: "/market/browse?kind=brush" },
+      { titleKo: "원고 위 브러시 시험 (Fit Lab)", titleEn: "Fit Lab Preview", badgeKo: "호환 시험", badgeEn: "Fit Lab", href: "/market/fit-lab" },
+    ],
+  },
+  {
+    id: "bg3d",
+    labelKo: "3D·배경",
+    labelEn: "3D & Backgrounds",
+    summaryKo: "CC0 3D 모델·HDRI 조명과 배경 세트를 배치하고 은선(Line Extraction)으로 컷 배경을 추출합니다.",
+    summaryEn: "Place CC0 3D models, HDRI lighting, and stage sets, then extract line-art backgrounds.",
+    links: [
+      { titleKo: "CC0 3D 모델·HDRI 탐색", titleEn: "CC0 3D & HDRI", badgeKo: "무료 3D DB", badgeEn: "Free 3D DB", href: "/research/3d-assets" },
+      { titleKo: "3D 배경 스테이지 조립", titleEn: "3D Background Stage", badgeKo: "Studio 3D", badgeEn: "Studio 3D", href: "/studio/bg3d" },
+      { titleKo: "3D 배경·소품 마켓", titleEn: "3D Market Assets", badgeKo: "마켓 3D", badgeEn: "Market 3D", href: "/market/browse?kind=3d-asset" },
+    ],
+  },
+  {
+    id: "coloring",
+    labelKo: "채색·후보정",
+    labelEn: "Coloring & Retouch",
+    summaryKo: "밑색 채우기와 클리핑 음영, 시간대별 조명 팔레트·분위기 필터로 작화 밀도를 높입니다.",
+    summaryEn: "Apply flat fills, clipping shadows, time-of-day palettes, and atmosphere LUT filters.",
+    links: [
+      { titleKo: "배색·조명 팔레트 소재", titleEn: "Color & Lighting Palettes", badgeKo: "마켓 팔레트", badgeEn: "Palettes", href: "/market/browse?kind=palette" },
+      { titleKo: "분위기 보정 필터·텍스처", titleEn: "Mood Filters & Textures", badgeKo: "마켓 보정", badgeEn: "Filters", href: "/market/browse?kind=filter" },
+      { titleKo: "캐릭터 지정색 시트 관리", titleEn: "Character Color Sheets", badgeKo: "Studio 도구", badgeEn: "Studio Tool", href: "/studio/characters" },
+    ],
+  },
+  {
+    id: "lettering",
+    labelKo: "식자·편집",
+    labelEn: "Lettering & Editing",
+    summaryKo: "상업용 무료 한글 폰트와 대사 말풍선·효과음을 얹고 플랫폼 규격으로 검수·발행합니다.",
+    summaryEn: "Add commercial-free Korean fonts, dialogue balloons, and SFX, then run preflight checks.",
+    links: [
+      { titleKo: "상업 이용 가능 폰트·레터링", titleEn: "Commercial-Free Fonts", badgeKo: "폰트 DB", badgeEn: "Font DB", href: "/research/fonts" },
+      { titleKo: "출하 전 권리·규격 체크리스트", titleEn: "Preflight Checklist", badgeKo: "검수 도구", badgeEn: "Preflight", href: "/research/checklist" },
+      { titleKo: "연재 원고 내보내기 (Export)", titleEn: "Manuscript Export", badgeKo: "Studio 출고", badgeEn: "Studio Export", href: "/studio/export" },
+    ],
+  },
+] as const;
+
 export interface CreatorHubPageProps {
   /**
    * 앱 계층이 주입하는 선택 기능. 문장 허브에서 사용자가 "AI로 다듬기"를 눌렀을 때만 호출된다.
@@ -110,6 +200,10 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   const [checksOpen, setChecksOpen] = useState(() => hash === "#research-coverage");
   // 첫 방문(아직 아무것도 안 한 상태) 가이드는 펼쳐 둔 채로 시작하고, 사용자가 접으면 그 선택을 존중한다.
   const [guideOpen, setGuideOpen] = useState(true);
+  const [selectedStageId, setSelectedStageId] = useState<string>("planning");
+  const activeStageRec =
+    STAGE_RESOURCE_RECOMMENDATIONS.find((item) => item.id === selectedStageId) ??
+    STAGE_RESOURCE_RECOMMENDATIONS[0]!;
   const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
   const [restoring, setRestoring] = useState(false);
   const [importNotice, setImportNotice] = useState("");
@@ -189,6 +283,62 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
       <Link to="/research/catalog" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
         {bt("작품 메타데이터를 비교하려면 작품 리서치 랩으로 →", "Compare title metadata in the Catalog Research Lab →")}
       </Link>
+    </section>
+    <section
+      data-research-stage-recommender="true"
+      aria-labelledby="research-stage-recommender-heading"
+      className="rounded-2xl border border-accent/30 bg-panel p-4 sm:p-5"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">STAGE-GUIDED RESOURCES</p>
+          <h2 id="research-stage-recommender-heading" className="mt-0.5 text-base font-bold text-fg sm:text-lg">
+            {bt("지금 어느 작업 단계이신가요? 공정별 맞춤 리소스 추천", "Which stage are you on? Stage-tailored resource recommendations")}
+          </h2>
+        </div>
+        <div
+          role="group"
+          aria-label={bt("작업 공정 선택", "Select production stage")}
+          className="flex flex-wrap gap-1.5"
+        >
+          {STAGE_RESOURCE_RECOMMENDATIONS.map((stage) => {
+            const active = stage.id === activeStageRec.id;
+            return (
+              <button
+                key={stage.id}
+                type="button"
+                aria-pressed={active}
+                data-stage-selector={stage.id}
+                onClick={() => setSelectedStageId(stage.id)}
+                className={`inline-flex min-h-9 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"
+                }`}
+              >
+                {bt(stage.labelKo, stage.labelEn)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <p className="mt-2.5 text-xs leading-5 text-fg-2">
+        {bt(activeStageRec.summaryKo, activeStageRec.summaryEn)}
+      </p>
+      <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
+        {activeStageRec.links.map((linkItem) => (
+          <Link
+            key={linkItem.href}
+            to={linkItem.href}
+            className="flex items-center justify-between gap-2 rounded-xl border border-line bg-canvas p-3 text-sm font-semibold text-fg transition-colors hover:border-accent/60 hover:text-accent"
+          >
+            <span>{bt(linkItem.titleKo, linkItem.titleEn)}</span>
+            <span className="shrink-0 rounded-full border border-accent/35 bg-accent-soft/20 px-2 py-0.5 text-[11px] font-bold text-accent">
+              {bt(linkItem.badgeKo, linkItem.badgeEn)}
+            </span>
+          </Link>
+        ))}
+      </div>
     </section>
     <ResearchCategoryTiles summary={summary} />
     <ResearchRecipeRail />

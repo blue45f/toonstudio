@@ -148,6 +148,31 @@ describe("TitleReaderPage — 뷰어 셸", () => {
     const saved = JSON.parse(raw as string) as Record<string, { episode: number }>;
     expect(saved["fog-signal"]?.episode).toBe(3);
   });
+
+  it("보기 설정 패널에서 배경 톤과 원고 폭을 바꾸고 로컬에 유지한다", () => {
+    renderReader("/title/fog-signal/read/2");
+    fireEvent.click(screen.getByRole("button", { name: "보기 설정" }));
+    expect(screen.getByRole("region", { name: "뷰어 환경 설정" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "세피아" }));
+    fireEvent.click(screen.getByRole("button", { name: "넓게 900px" }));
+    const saved = JSON.parse(
+      window.localStorage.getItem("toonstudio.reader-comfort.v1") ?? "{}",
+    ) as { theme?: string; width?: string };
+    expect(saved.theme).toBe("sepia");
+    expect(saved.width).toBe("wide");
+  });
+
+  it("회차 빠른 이동 서랍을 열어 원하는 회차 링크를 바로 볼 수 있다", () => {
+    renderReader("/title/fog-signal/read/2");
+    fireEvent.click(screen.getByRole("button", { name: "회차 빠른 이동" }));
+    const drawer = screen.getByRole("region", { name: "회차 빠른 이동 목록" });
+    expect(within(drawer).getByRole("link", { name: "1화" }).getAttribute("href")).toBe(
+      "/title/fog-signal/read/1",
+    );
+    expect(within(drawer).getByRole("link", { name: "2화" }).getAttribute("aria-current")).toBe(
+      "page",
+    );
+  });
 });
 
 describe("TitleReaderPage — 상태 구분", () => {

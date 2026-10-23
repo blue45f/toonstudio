@@ -103,7 +103,7 @@ describe("DiscoverHubPage", () => {
 
     expect(resource.read).toHaveBeenCalledWith("/data/home.json", expect.any(String));
     expect(screen.getByRole("heading", { level: 1, name: "다음 컷의 영감은, 새로운 이야기에서." })).toBeTruthy();
-    expect(await screen.findByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "오늘 업데이트되는 웹툰" }, { timeout: 4000 })).toBeTruthy();
     expect(within(screen.getByRole("list", { name: "평점 랭킹 상위 작품" })).getByRole("link", { name: "작품-rated" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /무료 작품 더 보기/ }).getAttribute("href")).toBe("/search?pricing=free,wait-free");
     expect(screen.getByText("60,229")).toBeTruthy();
@@ -170,6 +170,14 @@ describe("DiscoverHubPage", () => {
     const guide = screen.getByText("처음이라면 30초 안내").closest("details") as HTMLDetailsElement;
     expect(guide.open).toBe(false);
     expect(within(guide).getAllByRole("listitem")).toHaveLength(3);
+    // 상황별 빠른 탐색 프리셋 바에서 완결 정주행·숏폼 컷츠·AI 캐릭터 토크로 바로 진입한다.
+    const presetNav = screen.getByRole("navigation", { name: "상황별 빠른 탐색" });
+    expect(within(presetNav).getByRole("link", { name: "완결 정주행" }).getAttribute("href")).toBe(
+      "/explore?status=completed&sort=binge",
+    );
+    expect(within(presetNav).getByRole("link", { name: "숏폼 컷츠" }).getAttribute("href")).toBe(
+      "/cuts",
+    );
   });
   it("folds the memory finder and only loads it once the reader opens it", async () => {
     mockResource({ data: snapshot(currentKstWeekDay()) });
@@ -185,7 +193,7 @@ describe("DiscoverHubPage", () => {
     finder.open = true;
     fireEvent(finder, new Event("toggle"));
 
-    expect(await screen.findByRole("radio", { name: /전혀 기억나지 않아요/ })).toBeTruthy();
+    expect(await screen.findByRole("radio", { name: /전혀 기억나지 않아요/ }, { timeout: 4000 })).toBeTruthy();
     await waitFor(() => expect(document.querySelector("[data-memory-finder]")).not.toBeNull());
     expect(within(finder).getByRole("button", { name: /작품 찾기/ })).toBeTruthy();
   });

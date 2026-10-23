@@ -359,6 +359,32 @@ export function LearningHome() {
         <SiteSectionTabs tabs={hubTabs} value={activeTab} onChange={selectTab} label="학습 영역" idPrefix={LEARN_TAB_PREFIX} />
 
         <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="today" active={activeTab === "today"} mounted={isMounted("today")} className="learn-hub-panel">
+          <div className="learn-quick-goals" role="group" aria-label="빠른 학습 목표 선택">
+            <span className="learn-eyebrow">처음 오셨나요? 목표를 고르면 아래 추천 수업이 즉시 바뀝니다</span>
+            <div className="learn-card-chips">
+              {(
+                [
+                  { goal: "first-episode", level: "starter", label: "첫 3컷·첫 회차 완성" },
+                  { goal: "story", level: "starter", label: "스토리·컷 연출 강화" },
+                  { goal: "visual", level: "growing", label: "선화·채색 완성도" },
+                  { goal: "studio", level: "starter", label: "툰스튜디오 빠른 적응" },
+                  { goal: "publish", level: "advanced", label: "연재 전 원고 검수" },
+                ] as const
+              ).map((preset) => {
+                const isSelected = profile.goal === preset.goal;
+                return (
+                  <button
+                    key={preset.goal}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => updateProfile({ ...profile, goal: preset.goal, level: preset.level })}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <RevealOnScroll>
           <section className="learn-session-section" aria-labelledby="learn-session-title">
             <div className="learn-session-heading">
@@ -503,6 +529,22 @@ export function LearningHome() {
                   </label>
                 </div>
               </details>
+            </div>
+            <div className="learn-card-chips" role="group" aria-label="인기 학습 주제">
+              {(["전체", "콘티", "선화", "채색", "말풍선"] as const).map((topic) => {
+                const value = topic === "전체" ? "" : topic;
+                const active = query === value;
+                return (
+                  <button
+                    key={topic}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setFilter("q", value, true)}
+                  >
+                    #{topic}
+                  </button>
+                );
+              })}
             </div>
             <div className="learn-library-result-row">
               <p className="learn-small" role="status">검색 결과 {filteredLessons.length}개</p>

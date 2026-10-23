@@ -292,6 +292,27 @@ describe("카메라 프레이밍", () => {
     fireEvent.click(screen.getByRole("button", { name: "얼굴" }));
     expect(screen.getByText(/이미 해제된 엔진입니다/u)).toBeTruthy();
   });
+
+  it("단축키 F/B/C로 전신·상반신·얼굴 프레이밍을 전환하고 입력창 포커스 중에는 무시한다", () => {
+    const engine = createTestEngine();
+    renderPane({ engine });
+    fireEvent.keyDown(window, { key: "c" });
+    expect(screen.getByRole("button", { name: "얼굴" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(window, { key: "b" });
+    expect(screen.getByRole("button", { name: "상반신" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(window, { key: "f" });
+    expect(screen.getByRole("button", { name: "전신" }).getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("초기 온보딩 카드", () => {
+  it("엔진 idle 상태에서 3단계 빠른 시작 카드를 표시하고 버튼 클릭으로 WebGPU/WebGL2 엔진을 시작한다", () => {
+    const view = renderPane({ engine: null, status: { phase: "idle" }, plan: null });
+    const card = screen.getByTestId("viewport-onboarding-card");
+    expect(card.textContent).toContain("빠른 시작 3단계");
+    fireEvent.click(screen.getByTestId("onboarding-start-webgpu"));
+    expect(view.session.selected).toEqual(["webgpu"]);
+  });
 });
 
 describe("관절 핸들", () => {

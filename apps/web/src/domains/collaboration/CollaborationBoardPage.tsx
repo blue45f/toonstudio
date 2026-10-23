@@ -38,6 +38,15 @@ const templates = [
 const views = { all: "전체 공고", mine: "내 공고", applied: "지원한 공고", saved: "저장한 공고" } as const;
 const viewsEn = { all: "All posts", mine: "My posts", applied: "Applied", saved: "Saved" } as const;
 
+const PROCESS_ROLE_CHIPS = [
+  { role: "all", labelKo: "전체", labelEn: "All roles" },
+  { role: "ink", labelKo: "선화·펜선", labelEn: "Line art & inking" },
+  { role: "color", labelKo: "채색·밑색", labelEn: "Coloring & flats" },
+  { role: "background", labelKo: "3D·배경", labelEn: "3D & backgrounds" },
+  { role: "story", labelKo: "콘티·스토리", labelEn: "Storyboard & story" },
+  { role: "lettering", labelKo: "식자·후보정", labelEn: "Lettering & retouch" },
+] as const;
+
 // 작업 분야 이름표는 제작 공정과의 정본 매핑표(production-labels의 COLLABORATION_ROLE_PROCESS_MAP)가 맡는다.
 const EN_LABELS: Record<string, string> = {
   "유료": "Paid",
@@ -63,6 +72,7 @@ export function CollaborationBoardPage() {
   const [params, setParams] = useSearchParams();
   const view = params.get("view") || "all";
   const type = params.get("type") || "all";
+  const activeRole = params.get("role") || "all";
   const viewLabel = (key: keyof typeof views) => bt(views[key], viewsEn[key]);
   function change(key: string, value: string) {
     const next = new URLSearchParams(params); next.delete("cursor");
@@ -114,6 +124,35 @@ export function CollaborationBoardPage() {
       {visibleViews.length > 1 ? (
         <div className="flex flex-wrap gap-2">{visibleViews.map(([key]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => change("view", key)} className={`${collabButton} ${view === key ? "border-accent text-accent" : ""}`}>{viewLabel(key as keyof typeof views)}</button>)}</div>
       ) : null}
+      <div
+        role="group"
+        aria-label={bt("웹툰 공정별 어시스턴트·파트너 원클릭 필터", "Webtoon stage assistant & partner quick filter")}
+        data-collaboration-role-chips="true"
+        className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panel/70 p-3"
+      >
+        <span className="mr-1 text-xs font-bold text-fg-3">
+          {bt("공정별 빠른 필터:", "Stage role filter:")}
+        </span>
+        {PROCESS_ROLE_CHIPS.map((chip) => {
+          const selected = activeRole === chip.role;
+          return (
+            <button
+              key={chip.role}
+              type="button"
+              aria-pressed={selected}
+              data-collab-role-chip={chip.role}
+              onClick={() => change("role", selected && chip.role !== "all" ? "all" : chip.role)}
+              className={`inline-flex min-h-9 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                selected
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"
+              }`}
+            >
+              {bt(chip.labelKo, chip.labelEn)}
+            </button>
+          );
+        })}
+      </div>
       <form className="mt-5 flex gap-2" onSubmit={(event) => { event.preventDefault(); change("q", String(new FormData(event.currentTarget).get("q") || "").trim()); }}>
         <label className="min-w-0 flex-1"><span className="sr-only">{bt("공고 검색어", "Post search keyword")}</span><input key={params.get("q") || ""} name="q" type="search" maxLength={100} defaultValue={params.get("q") || ""} placeholder={bt("제목·작업 소개를 한글로 검색하세요", "Search titles and descriptions")} className={`${collabInput} mt-0`} /></label><button className={collabButton} type="submit"><Search size={17} aria-hidden="true" />{bt("검색", "Search")}</button>
       </form>

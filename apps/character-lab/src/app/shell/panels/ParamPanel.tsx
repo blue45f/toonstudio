@@ -69,6 +69,20 @@ const PALETTE_ROWS: readonly PaletteRowSpec[] = [
   { key: "brow", labelKo: "눈썹색", entries: HAIR_COLORS },
 ];
 
+export interface QuickProportionPreset {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly values: Readonly<Pick<Record<BodyParamKey, number>, "height" | "headSize" | "legLength" | "shoulderWidth">>;
+}
+
+export const QUICK_PROPORTION_PRESETS: readonly QuickProportionPreset[] = [
+  { id: "standard", labelKo: "표준 균형", values: { height: 0, headSize: 0, legLength: 0, shoulderWidth: 0 } },
+  { id: "tall-model", labelKo: "장신 모델형", values: { height: 0.45, headSize: -0.25, legLength: 0.4, shoulderWidth: 0.15 } },
+  { id: "compact", labelKo: "컴팩트형", values: { height: -0.35, headSize: 0.3, legLength: -0.25, shoulderWidth: -0.15 } },
+];
+
+const PROPORTION_PRESET_KEYS = ["height", "headSize", "legLength", "shoulderWidth"] as const;
+
 /** 소수 2자리 문자열. -0·-0.00을 만들지 않는다. */
 export function formatParam(value: number): string {
   const rounded = Math.round(value * 100) / 100;
@@ -238,6 +252,16 @@ export function ParamPanel() {
     if (which !== "body") for (const key of activeFace) setParam("face", key, 0, { coalesceKey });
   };
 
+  const applyProportionPreset = (preset: QuickProportionPreset): void => {
+    const coalesceKey = `preset:body:${preset.id}`;
+    for (const key of PROPORTION_PRESET_KEYS) {
+      setParam("body", key, preset.values[key], { coalesceKey });
+    }
+  };
+
+  const isProportionPresetActive = (preset: QuickProportionPreset): boolean =>
+    PROPORTION_PRESET_KEYS.every((key) => Math.abs(bodyValue(key) - preset.values[key]) < 1e-6);
+
   const proportions = resolveProportions(recipe.body);
   const headCount = proportions.height / (proportions.head.scale * 2);
   const armLength = proportions.upperArmLength + proportions.lowerArmLength;
@@ -274,6 +298,20 @@ export function ParamPanel() {
           ? `키트 베이스 키 ${meters(kitBaseHeight)} m(manifest 실측, 체형 슬라이더 반영 전 기준)`
           : `${isKit ? "참고값(절차 비례 계산, 키트 베이스 실측 아님) · " : ""}키 ${meters(proportions.height)} m · 약 ${headCount.toFixed(1)}등신 · 팔 ${meters(armLength)} m · 다리 ${meters(legLength)} m`}
       </p>
+
+      <div className="cl-param-presets" role="group" aria-label="빠른 체형 프리셋">
+        {QUICK_PROPORTION_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cl-button cl-button-small"
+            aria-pressed={isProportionPresetActive(preset)}
+            onClick={() => applyProportionPreset(preset)}
+          >
+            {preset.labelKo}
+          </button>
+        ))}
+      </div>
 
       <div className="cl-param-actions">
         <button type="button" onClick={() => resetGroup("body")} disabled={activeBody.length === 0}>

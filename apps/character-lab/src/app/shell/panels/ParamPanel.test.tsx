@@ -180,6 +180,27 @@ describe("ParamPanel — 슬라이더·숫자 입력·리셋", () => {
     expect(store.getState().history.depth).toBe(1);
     expect((slider("키")).value).toBe("0.45");
   });
+
+  it("빠른 체형 프리셋 클릭은 같은 coalesceKey로 체형 파라미터를 보내 되돌리기 1단계로 병합한다", () => {
+    const store = createLabStore({ catalog: createPresetCatalog([]), now: steadyClock(), initial: { capabilities: ALL_AVAILABLE_CAPABILITIES } });
+    render(
+      <MockLabProvider store={store}>
+        <ParamPanel />
+      </MockLabProvider>,
+    );
+    const group = screen.getByRole("group", { name: "빠른 체형 프리셋" });
+    fireEvent.click(within(group).getByRole("button", { name: "장신 모델형" }));
+    expect(store.getState().recipe.body).toEqual({
+      height: 0.45,
+      headSize: -0.25,
+      legLength: 0.4,
+      shoulderWidth: 0.15,
+    });
+    expect(store.getState().history.depth).toBe(1);
+    fireEvent.click(within(group).getByRole("button", { name: "표준 균형" }));
+    expect(store.getState().recipe.body).toEqual({});
+    expect(store.getState().history.depth).toBe(2);
+  });
 });
 
 describe("ParamPanel — 요약·사유", () => {

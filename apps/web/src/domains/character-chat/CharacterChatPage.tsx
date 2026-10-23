@@ -8,7 +8,7 @@
  * 볼 수 있다.
  */
 
-import { KeyRound, MessageCircle, Sparkles } from "lucide-react";
+import { KeyRound, MessageCircle, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -34,11 +34,23 @@ export function CharacterChatPage() {
   const hydrated = useCharacterChatHydrated();
   const [searchParams] = useSearchParams();
   const profiles = useCharacterChatStore((state) => state.profiles);
+  const [characterQuery, setCharacterQuery] = useState("");
 
   const publicProfiles = useMemo(
     () => selectPublicCharacterChatProfiles(profiles),
     [profiles],
   );
+
+  const filteredProfiles = useMemo(() => {
+    const q = characterQuery.trim().toLowerCase();
+    if (!q) return publicProfiles;
+    return publicProfiles.filter((profile) =>
+      [profile.characterName, profile.workTitle, profile.authorName, profile.description]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [publicProfiles, characterQuery]);
 
   const workSlugParam = searchParams.get("work");
   const characterParam = searchParams.get("character");
@@ -137,8 +149,20 @@ export function CharacterChatPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
           <section aria-label={t("대화할 캐릭터", "Characters to chat with")}>
+            <label className="mb-2.5 flex min-h-10 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:border-accent">
+              <Search size={14} className="shrink-0 text-fg-3" aria-hidden />
+              <span className="sr-only">{t("대화할 캐릭터 검색", "Search characters")}</span>
+              <input
+                type="search"
+                value={characterQuery}
+                onChange={(event) => setCharacterQuery(event.target.value)}
+                placeholder={t("캐릭터·작품명 검색…", "Search character or title…")}
+                aria-label={t("대화할 캐릭터 검색", "Search characters")}
+                className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-none placeholder:text-fg-3"
+              />
+            </label>
             <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
-              {publicProfiles.map((profile) => {
+              {filteredProfiles.map((profile) => {
                 const active = profile.id === selectedProfile?.id;
                 return (
                   <li key={profile.id} className="shrink-0 lg:shrink">
@@ -202,6 +226,29 @@ export function CharacterChatPage() {
                   </Link>
                 ) : null}
               </div>
+              <details className="border-b border-line bg-card/60 px-4 py-2 text-xs text-fg-2">
+                <summary className="cursor-pointer font-semibold text-fg-2">
+                  {t("캐릭터 성격·말투·금지 주제 안내 보기", "View character personality, tone & off-limits topics")}
+                </summary>
+                <dl className="mt-2 grid gap-1.5 text-xs sm:grid-cols-3">
+                  <div>
+                    <dt className="font-bold text-fg">{t("성격", "Personality")}</dt>
+                    <dd className="text-fg-2">{selectedProfile.personality}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-bold text-fg">{t("말투", "Speech style")}</dt>
+                    <dd className="text-fg-2">{selectedProfile.speechStyle}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-bold text-fg">{t("금지 주제", "Off-limits topics")}</dt>
+                    <dd className="text-fg-2">
+                      {selectedProfile.forbiddenTopics.length > 0
+                        ? selectedProfile.forbiddenTopics.join(", ")
+                        : t("지정된 금지 주제 없음", "None")}
+                    </dd>
+                  </div>
+                </dl>
+              </details>
               <CharacterChatThread profile={selectedProfile} engine={engine} ready={ready} />
             </section>
           ) : null}

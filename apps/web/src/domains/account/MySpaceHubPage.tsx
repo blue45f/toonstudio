@@ -7,7 +7,9 @@ import {
   BellRing,
   BookOpen,
   Clock3,
+  Coins,
   Images,
+  KeyRound,
   Layers,
   Library,
   Mail,
@@ -16,7 +18,7 @@ import {
   Store,
   UserRound,
 } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
@@ -42,6 +44,8 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("MySpaceHubPage", ko, en);
 
+type MySpaceCategory = "all" | "reader" | "creator" | "account";
+
 const COPY = {
   ko: {
     eyebrow: "MY SPACE",
@@ -52,6 +56,13 @@ const COPY = {
     statsLoading: "내 활동 요약을 불러오는 중",
     open: "열기",
     section: "내 공간 바로가기",
+    filterLabel: "내 공간 역할별 보기",
+    filters: [
+      ["all", "전체 보기"],
+      ["reader", "독자·감상"],
+      ["creator", "창작·스튜디오"],
+      ["account", "계정·AI 설정"],
+    ] as const,
     stats: ["읽기 상태", "평가", "컬렉션"],
     guideTitle: "내 데이터가 어디에 있는지 헷갈린다면",
     guideBody: "브라우저 기록, 계정 데이터, Studio 프로젝트는 역할이 다릅니다. 이 기준만 기억하면 됩니다.",
@@ -78,15 +89,17 @@ const COPY = {
       ["내 에셋", "설치·저장한 작업 재료 정리", "/market/library"],
     ],
     destinations: [
-      ["프로젝트", "최근 프로젝트, 로컬 초안, 공유 작업, 버전과 복구", "/studio"],
-      ["내 작품", "공개한 창작물과 시리즈, 작성자 활동", "/me?tab=posts"],
-      ["내 서재", "읽고 싶음·읽는 중·완독·평가·컬렉션", "/library"],
-      ["내 에셋", "설치·보관한 Studio 리소스와 관심 에셋", "/market/library"],
-      ["내 활동", "리뷰, 읽기 상태, 컬렉션 등 활동 요약", "/me?tab=activity"],
-      ["프로필", "이름, 소개, 아바타와 공개 프로필", "/me?tab=profile"],
-      ["메시지", "작품 피드백, 협업 제안과 비공개 문의", "/messages"],
-      ["설정", "언어, 기록, 필터, 데이터 가져오기·내보내기", "/settings"],
-    ],
+      ["프로젝트", "최근 프로젝트, 로컬 초안, 공유 작업, 버전과 복구", "/studio", "creator"],
+      ["내 작품", "공개한 창작물과 시리즈, 작성자 활동", "/me?tab=posts", "creator"],
+      ["내 서재", "읽고 싶음·읽는 중·완독·평가·컬렉션", "/library", "reader"],
+      ["내 에셋", "설치·보관한 Studio 리소스와 관심 에셋", "/market/library", "creator"],
+      ["내 활동", "리뷰, 읽기 상태, 컬렉션 등 활동 요약", "/me?tab=activity", "reader"],
+      ["프로필", "이름, 소개, 아바타와 공개 프로필", "/me?tab=profile", "account"],
+      ["메시지", "작품 피드백, 협업 제안과 비공개 문의", "/messages", "account"],
+      ["설정", "언어, 기록, 필터, 데이터 가져오기·내보내기", "/settings", "account"],
+      ["AI 연결 설정", "캐릭터 토크·스튜디오 보조용 내 AI 키(BYOK) 관리", "/settings/ai", "account"],
+      ["에셋 포인트·정산", "에셋 구매 포인트 지갑 및 판매·컷츠 리워드 내역", "/asset-points", "creator"],
+    ] as const,
   },
   en: {
     eyebrow: "MY SPACE",
@@ -97,6 +110,13 @@ const COPY = {
     statsLoading: "Loading your activity summary",
     open: "Open",
     section: "My Space destinations",
+    filterLabel: "Filter My Space by role",
+    filters: [
+      ["all", "All"],
+      ["reader", "Reading"],
+      ["creator", "Creator & Studio"],
+      ["account", "Account & AI"],
+    ] as const,
     stats: ["Reading states", "Ratings", "Collections"],
     guideTitle: "If you are unsure where your data lives",
     guideBody: "Browser history, account data and Studio projects have different roles. Remember these three rules.",
@@ -123,19 +143,21 @@ const COPY = {
       ["My assets", "Organize installed and saved production materials", "/market/library"],
     ],
     destinations: [
-      ["Projects", "Recent projects, local drafts, shared work, versions and recovery", "/studio"],
-      ["My works", "Published creator works, series and author activity", "/me?tab=posts"],
-      ["My library", "Want to read, reading, completed, ratings and collections", "/library"],
-      ["My assets", "Installed and saved Studio resources plus bookmarked assets", "/market/library"],
-      ["My activity", "Reviews, reading states, collections and activity summary", "/me?tab=activity"],
-      ["Profile", "Name, bio, avatar and public profile", "/me?tab=profile"],
-      ["Messages", "Private feedback, collaboration proposals and inquiries", "/messages"],
-      ["Settings", "Language, history, filters and data import/export", "/settings"],
-    ],
+      ["Projects", "Recent projects, local drafts, shared work, versions and recovery", "/studio", "creator"],
+      ["My works", "Published creator works, series and author activity", "/me?tab=posts", "creator"],
+      ["My library", "Want to read, reading, completed, ratings and collections", "/library", "reader"],
+      ["My assets", "Installed and saved Studio resources plus bookmarked assets", "/market/library", "creator"],
+      ["My activity", "Reviews, reading states, collections and activity summary", "/me?tab=activity", "reader"],
+      ["Profile", "Name, bio, avatar and public profile", "/me?tab=profile", "account"],
+      ["Messages", "Private feedback, collaboration proposals and inquiries", "/messages", "account"],
+      ["Settings", "Language, history, filters and data import/export", "/settings", "account"],
+      ["AI connection", "Manage your own AI keys (BYOK) for Character Talk and Studio", "/settings/ai", "account"],
+      ["Points & rewards", "Asset point wallet, sales and Cuts reward history", "/asset-points", "creator"],
+    ] as const,
   },
 } as const;
 
-const ICONS = [Layers, Images, Library, Store, BookOpen, UserRound, Mail, Settings] as const;
+const ICONS = [Layers, Images, Library, Store, BookOpen, UserRound, Mail, Settings, KeyRound, Coins] as const;
 const QUICK_ICONS = [BellRing, BookOpen, Store] as const;
 
 function visitTimeLabel(value: number, locale: "ko" | "en"): string {
@@ -162,6 +184,7 @@ export function MySpaceHubPage() {
   const reads = useApp((state) => state.reads);
   const ratings = useApp((state) => state.ratings);
   const collections = useApp((state) => state.collections);
+  const [roleFilter, setRoleFilter] = useState<MySpaceCategory>("all");
   const continuity = useSyncExternalStore(
     subscribeCreatorContinuity,
     getCreatorContinuitySnapshot,
@@ -180,6 +203,9 @@ export function MySpaceHubPage() {
     ?? null;
 
   const studioRecent = recent?.id === "studio";
+  const visibleDestinations = copy.destinations
+    .map((entry, index) => ({ entry, icon: ICONS[index] }))
+    .filter(({ entry }) => roleFilter === "all" || entry[3] === roleFilter);
 
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
@@ -278,10 +304,29 @@ export function MySpaceHubPage() {
       />
 
       <section className="mt-10" aria-labelledby="my-space-destinations">
-        <h2 id="my-space-destinations" className="text-xl font-bold tracking-tight text-fg sm:text-2xl">{copy.section}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="my-space-destinations" className="text-xl font-bold tracking-tight text-fg sm:text-2xl">{copy.section}</h2>
+          <div role="group" aria-label={copy.filterLabel} className="flex flex-wrap gap-1.5">
+            {copy.filters.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={roleFilter === id}
+                onClick={() => setRoleFilter(id)}
+                className={buttonClass({
+                  variant: roleFilter === id ? undefined : "outline",
+                  size: "sm",
+                  className: "min-h-9 rounded-full px-3 text-xs",
+                })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {copy.destinations.map(([title, body, href], index) => (
-            <SiteLinkCard key={href} href={href} icon={ICONS[index]} title={title} description={body} cta={copy.open} />
+          {visibleDestinations.map(({ entry: [title, body, href], icon }) => (
+            <SiteLinkCard key={href} href={href} icon={icon} title={title} description={body} cta={copy.open} />
           ))}
         </div>
       </section>

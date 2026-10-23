@@ -372,3 +372,26 @@ it("마켓에 없는 무료 CC0 재료는 리서치 데스크의 3D 자료 검�
   expect(screen.getByRole("link", { name: "무료 CC0 재료 더 찾기" }).getAttribute("href")).toBe("/research/3d-assets");
   expect(screen.getByLabelText("라이선스 필터")).toBeTruthy();
 });
+
+it("웹툰 제작 공정별 원클릭 프리셋 필터 바로 종류와 사용권 조건을 즉시 전환한다", () => {
+  useResources.mockReturnValue(marketPage());
+  render(
+    <MemoryRouter initialEntries={["/market/browse"]}>
+      <MarketBrowsePage />
+      <LocationProbe />
+    </MemoryRouter>,
+  );
+
+  const presetSection = screen.getByRole("region", { name: "웹툰 제작 공정별 원클릭 프리셋" });
+  expect(presetSection).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "3D 배경·소품" }));
+  expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("?kind=3d-asset");
+
+  fireEvent.click(screen.getByRole("button", { name: "무료/즉시 사용" }));
+  expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("?license=cc0-1.0");
+
+  fireEvent.click(screen.getByRole("button", { name: "전체 공정" }));
+  expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("");
+});
+

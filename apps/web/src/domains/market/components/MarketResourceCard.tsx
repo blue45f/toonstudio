@@ -6,6 +6,7 @@ import { formatMarketDate, marketKindMeta, marketLicenseMeta } from "../models/m
 import { palettePreviewColors } from "../models/market-preview";
 import { resolveMarketCardPrice } from "../models/market-price";
 
+import { MarketCompareToggle } from "./MarketCompareToggle";
 import { MarketProductionFitBadge } from "./MarketProductionFitBadge";
 import { MarketResourceCover } from "./MarketResourceCover";
 
@@ -21,10 +22,8 @@ interface MarketResourceCardProps {
 }
 
 /**
- * 카드 행동 다이어트: 기본 상태에서 카드가 노출하는 행동은 찜 1개뿐이다.
- * 비교·획득은 카드에 겹쳐 두지 않고 상세 화면(MarketResourceDetailArticle의
- * 비교 토글·획득 동선)에서 도달한다 — 그리드에서 카드가 반복될수록
- * 동시 노출 행동 수가 불어나는 것을 막기 위한 규칙이다.
+ * 마켓 리소스 카드: 커버 아트·가격·라이선스·사전점검 배지와 함께
+ * 카드 푸터에서 후보 비교(MarketCompareToggle) 및 원고 위 시험(Fit Lab)으로 바로 연결한다.
  */
 export function MarketResourceCard({ record, className }: MarketResourceCardProps) {
   const kind = marketKindMeta(record.kind);
@@ -40,6 +39,8 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
     defaultPriceKrw: config?.defaultMarketPriceKrw,
   });
   const wishlisted = isWishlisted(record.id);
+  const resourceSlug =
+    (record as { readonly slug?: string }).slug ?? record.packageId ?? record.id;
 
   return (
     <article
@@ -156,7 +157,17 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
             v{record.resourceVersion}
           </span>
         </div>
-        <MarketProductionFitBadge record={record} showCounts />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <MarketProductionFitBadge record={record} showCounts />
+          {record.compatibility.engines.length > 0 ? (
+            <span
+              data-market-studio-ready="true"
+              className="inline-flex min-h-6 items-center rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
+            >
+              Studio 즉시 호환
+            </span>
+          ) : null}
+        </div>
         {storageError ? <p role="alert" className="rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-fg">{storageError}</p> : null}
         <div className="mt-auto flex items-center gap-1.5 pt-1.5 text-xs text-fg-2">
           <span className="inline-flex min-h-6 items-center rounded bg-accent px-2 font-semibold text-on-accent">
@@ -177,6 +188,15 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
             ))}
           </div>
         ) : null}
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 border-t border-line/60 pt-2">
+          <MarketCompareToggle record={record} />
+          <Link
+            href={`/market/fit-lab?slug=${encodeURIComponent(resourceSlug)}`}
+            className="inline-flex min-h-8 items-center rounded-lg border border-line bg-panel px-2.5 py-1 text-xs font-semibold text-accent transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          >
+            원고 위 시험 (Fit Lab)
+          </Link>
+        </div>
         <time dateTime={record.updatedAt} className="text-xs text-fg-2">
           {formatMarketDate(record.updatedAt)} 업데이트
         </time>

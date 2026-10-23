@@ -131,6 +131,8 @@ describe("CompareView", { timeout: 30_000 }, () => {
     const compare = screen.getByRole("table", { name: "A/B 비교" });
     expect(compare.textContent).toContain("다름");
     expect(compare.textContent).toContain("커버리지 IoU");
+    expect(screen.getByRole("rowheader", { name: "커버리지 IoU" }).getAttribute("title")).toContain("교집합/합집합");
+    expect(screen.getByRole("rowheader", { name: "ΔE 평균 / p99 / 최대" }).getAttribute("title")).toContain("지각 색차");
     expect(store.get().results.comparison?.iou).toBe(1);
     expect(store.get().results.comparison?.hashEqual).toBe(false);
     expect(store.get().reports).toHaveLength(2);
