@@ -32,8 +32,9 @@
  * 소셜 카드에 바로 쓸 수 있게 같은 주제를 세로(9:16)로 다시 그린 것이다.
  * 표면에는 배선하지 않고 홍보 영상 자료실에만 수록한다(TOOL_CLIPS_VERTICAL).
  *
- * 정사각 변형은 12차 파도에서 캔버스 1편만 먼저 만들었다. 소셜 피드에
- * 바로 얹는 1:1 소재로, 이쪽도 자료실에만 수록한다(TOOL_CLIPS_SQUARE).
+ * 정사각 변형은 12차 파도에서 캔버스 1편을 먼저 만들고, 13차 파도에서
+ * 셰이퍼·3D 배경 2편을 더했다. 소셜 피드에 바로 얹는 1:1 소재로, 이쪽도
+ * 자료실에만 수록한다(TOOL_CLIPS_SQUARE).
  */
 export interface ToolClip {
   readonly src: string;
@@ -138,4 +139,6 @@ export interface ToolSquareClip extends ToolClip {
  */
 export const TOOL_CLIPS_SQUARE: readonly ToolSquareClip[] = [
   { toolId: "canvas", src: "/brand/tool-clips/tool-canvas-square.mp4", width: 768, height: 768 },
+  { toolId: "shaper", src: "/brand/tool-clips/tool-shaper-square.mp4", width: 768, height: 768 },
+  { toolId: "bg3d", src: "/brand/tool-clips/tool-bg3d-square.mp4", width: 768, height: 768 },
 ];

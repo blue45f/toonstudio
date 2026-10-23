@@ -22,6 +22,10 @@
  *
  * 12차 파도에서 자료실 보관 전용 3편을 더했다: 정사각 브랜드 스팅,
  * 스튜디오 와이드 팬, 비 오는 날의 히어로 무드(파노라마 세트의 네 번째).
+ *
+ * 13차 파도에서 자료실 보관 전용 3편을 더했다: 눈 오는 날의 히어로
+ * 무드(파노라마 세트의 다섯 번째), 황금빛 노을의 스튜디오, 정사각
+ * 궤도 스팅.
  */
 export interface BrandClip {
   readonly src: string;
@@ -192,5 +196,38 @@ export const BRAND_WIDE_PAN_CLIP: BrandClip = {
 export const HOME_HERO_RAIN_CLIP: BrandClip = {
   src: "/brand/brand-clips/home-hero-rain.mp4",
   width: 1344,
+  height: 768,
+};
+
+/**
+ * 눈의 히어로 무드 — 눈 내리는 창 너머의 스튜디오 파노라마를 그린 생성형
+ * AI 영상이다. 낮·노을·밤·비 파노라마와 한 세트로, 아직 표면에 배선하지
+ * 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_SNOW_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-snow.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 황금빛 노을의 스튜디오 — 노을이 황금빛으로 번지는 시간의 작업실을 그린
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const BRAND_GOLDEN_HOUR_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-13-golden-hour.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 궤도 스팅 — 빛의 궤도가 감도는 1:1 정사각 브랜드 스팅으로 그린
+ * 생성형 AI 영상이다. 정사각 스팅의 짝으로, 아직 표면에 배선하지 않아
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_ORBIT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-orbit.mp4",
+  width: 768,
   height: 768,
 };

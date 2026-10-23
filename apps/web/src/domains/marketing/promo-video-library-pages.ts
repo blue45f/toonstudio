@@ -1,11 +1,11 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 23편의 정본이다 (public/brand/page-clips/).
+ * 클립 24편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
- * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 10편을 함께 둔다.
+ * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 11편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -258,5 +258,12 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
       ko: "품질 메모: 화면 속 카드 한 장에 작은 숫자 '3'이 보입니다. 생성 과정에서 생긴 아티팩트라, 표면에 배선하기 전에 한 번 더 확인할 클립으로 남깁니다.",
       en: "Quality note: a small number '3' appears on one card in the frame — a generation artifact, so this clip stays flagged for another look before it is wired to any surface.",
     },
+  ),
+  pageVerticalItem(
+    "tour-intro-vertical",
+    "tour-intro-vertical.mp4",
+    "0:14",
+    { title: "투어 도입 · 세로", body: "제품 투어의 도입 장면을 세로(9:16)로 다시 그린 변형입니다. 마무리 세로본의 짝으로 보관합니다." },
+    { title: "Tour opening · Vertical", body: "The product tour's opening scene redrawn vertically (9:16), kept as the counterpart to the closing vertical." },
   ),
 ];

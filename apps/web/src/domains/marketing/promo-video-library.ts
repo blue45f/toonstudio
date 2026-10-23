@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 115편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 123편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,7 +8,7 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 26편: 투어 쇼츠 섹션의 25편은 product-tour-shorts.ts
+ * - 쇼츠 28편: 투어 쇼츠 섹션의 27편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
  * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
@@ -16,16 +16,17 @@
  *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 세로 변형
  *   9편(가로 9챕터와 1:1)은 이 파일이 첫 레지스트리다
  *   (public/brand/promo-chapter-loops/).
- * - 브랜드 클립 18편: brand-clips.ts (배선 8편 + 자료실 보관 10편 —
+ * - 브랜드 클립 21편: brand-clips.ts (배선 8편 + 자료실 보관 13편 —
  *   밤 버전·비 오는 날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·
- *   창가의 고양이·정사각 스팅·와이드 팬·비 히어로)
- * - 도구 클립 25편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
+ *   창가의 고양이·정사각 스팅·와이드 팬·비 히어로·눈 히어로·황금빛 노을·
+ *   정사각 궤도 스팅)
+ * - 도구 클립 27편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
  *   카테고리 7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고
  *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
  *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
- *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 1편
- *   (TOOL_CLIPS_SQUARE, 캔버스 1:1)
- * - 페이지 클립 23편: promo-video-library-pages.ts가 레지스트리다
+ *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 3편
+ *   (TOOL_CLIPS_SQUARE, 캔버스·셰이퍼·3D 배경 1:1)
+ * - 페이지 클립 24편: promo-video-library-pages.ts가 레지스트리다
  *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했다.
  */
 import {
@@ -33,8 +34,10 @@ import {
   BRAND_DESK_CLOSEUP_CLIP,
   BRAND_FILM_CLOSING_CLIP,
   BRAND_FILM_SCENE_CLIPS,
+  BRAND_GOLDEN_HOUR_CLIP,
   BRAND_NIGHT_STUDIO_CLIP,
   BRAND_RAINY_STUDIO_CLIP,
+  BRAND_SQUARE_ORBIT_CLIP,
   BRAND_SQUARE_STING_CLIP,
   BRAND_WEEKEND_MORNING_CLIP,
   BRAND_WIDE_PAN_CLIP,
@@ -43,7 +46,9 @@ import {
   HOME_HERO_EVENING_CLIP,
   HOME_HERO_NIGHT_CLIP,
   HOME_HERO_RAIN_CLIP,
+  HOME_HERO_SNOW_CLIP,
   STUDIO_INTRO_CLOSING_CLIP,
+  type BrandClip,
 } from "./brand-clips";
 import {
   PRODUCT_TOUR_INTRO_CLIP,
@@ -84,11 +89,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 스물다섯 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 스물일곱 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Twenty-five also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Twenty-seven also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
@@ -401,6 +406,24 @@ const brandScenes: readonly PromoVideoItem[] = BRAND_FILM_SCENE_CLIPS.map((clip)
   };
 });
 
+/** 자료실에만 보관하는 브랜드 클립 — 배선 항목과 같은 모양을 짧게 적기 위한 헬퍼. */
+const brandLibraryItem = (
+  id: string,
+  clip: BrandClip,
+  ko: { readonly title: string; readonly body: string },
+  en: { readonly title: string; readonly body: string },
+): PromoVideoItem => ({
+  id,
+  categoryId: "brand",
+  src: clip.src,
+  width: clip.width,
+  height: clip.height,
+  durationLabel: "0:14",
+  ko,
+  en,
+  usage: LIBRARY_ONLY,
+});
+
 const brand: readonly PromoVideoItem[] = [
   ...brandScenes,
   {
@@ -465,156 +488,97 @@ const brand: readonly PromoVideoItem[] = [
     },
     usage: { ko: "홈 · 핵심 작업실 그리드 3D 카드 배경", en: "Home · Core studios grid, 3D card backdrop" },
   },
-  {
-    id: "brand-night-studio",
-    categoryId: "brand",
-    ...BRAND_NIGHT_STUDIO_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "밤의 스튜디오",
-      body: "도시 불빛과 램프 아래 밤의 작업실을 그린 클립입니다. 낮 파노라마의 짝으로 만들었습니다.",
-    },
-    en: {
-      title: "Night studio",
-      body: "A night studio under city lights and a desk lamp — the counterpart to the daytime panorama.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-rainy-studio",
-    categoryId: "brand",
-    ...BRAND_RAINY_STUDIO_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "비 오는 날의 스튜디오",
-      body: "빗소리가 창을 두드리는 날의 작업실을 그린 클립입니다.",
-    },
-    en: {
-      title: "Rainy-day studio",
-      body: "A studio on a day when rain taps at the window.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-weekend-morning",
-    categoryId: "brand",
-    ...BRAND_WEEKEND_MORNING_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "주말 아침의 스튜디오",
-      body: "느긋한 주말 아침 빛이 드는 작업실을 그린 클립입니다.",
-    },
-    en: {
-      title: "Weekend-morning studio",
-      body: "A studio in slow weekend-morning light.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-desk-closeup",
-    categoryId: "brand",
-    ...BRAND_DESK_CLOSEUP_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "책상 클로즈업",
-      body: "펜과 태블릿, 원고가 놓인 책상을 가까이에서 담은 클립입니다.",
-    },
-    en: {
-      title: "Desk close-up",
-      body: "A close look at a desk with a pen, a tablet and manuscript pages.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-home-hero-night",
-    categoryId: "brand",
-    ...HOME_HERO_NIGHT_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "밤의 파노라마",
-      body: "낮 파노라마의 밤 버전으로 그린 스튜디오 파노라마입니다. 히어로 자리의 분위기 교체 소재로 보관합니다.",
-    },
-    en: {
-      title: "Night panorama",
-      body: "A studio panorama drawn as the night version of the daytime one — kept as a hero-mood swap.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-home-hero-evening",
-    categoryId: "brand",
-    ...HOME_HERO_EVENING_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "노을의 파노라마",
-      body: "노을빛이 드는 스튜디오 파노라마입니다. 낮·밤 파노라마와 한 세트로 보관합니다.",
-    },
-    en: {
-      title: "Evening panorama",
-      body: "A studio panorama in evening glow, kept as a set with the day and night panoramas.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-window-cat",
-    categoryId: "brand",
-    ...BRAND_CAT_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "창가의 고양이",
-      body: "창가에 앉아 작업실을 내려다보는 고양이를 그린 클립입니다.",
-    },
-    en: {
-      title: "A cat by the window",
-      body: "A cat sitting by the window, watching over the studio below.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-square-sting",
-    categoryId: "brand",
-    ...BRAND_SQUARE_STING_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "정사각 브랜드 스팅",
-      body: "짧은 소셜 포스트와 카드에 붙이는 1:1 정사각 브랜드 스팅입니다.",
-    },
-    en: {
-      title: "Square brand sting",
-      body: "A 1:1 square brand sting for short social posts and cards.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-wide-pan",
-    categoryId: "brand",
-    ...BRAND_WIDE_PAN_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "넓게 도는 스튜디오 팬",
-      body: "작업실을 넓게 가로지르며 도는 파노라마 팬 장면을 그린 클립입니다.",
-    },
-    en: {
-      title: "A wide studio pan",
-      body: "A panoramic pan sweeping wide across the studio.",
-    },
-    usage: LIBRARY_ONLY,
-  },
-  {
-    id: "brand-home-hero-rain",
-    categoryId: "brand",
-    ...HOME_HERO_RAIN_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "비의 파노라마",
-      body: "비 내리는 창 너머의 스튜디오 파노라마입니다. 낮·노을·밤 파노라마와 한 세트로 보관합니다.",
-    },
-    en: {
-      title: "Rain panorama",
-      body: "A studio panorama beyond a rain-streaked window, kept as a set with the day, evening and night panoramas.",
-    },
-    usage: LIBRARY_ONLY,
-  },
+  brandLibraryItem("brand-night-studio", BRAND_NIGHT_STUDIO_CLIP, {
+    title: "밤의 스튜디오",
+    body: "도시 불빛과 램프 아래 밤의 작업실을 그린 클립입니다. 낮 파노라마의 짝으로 만들었습니다.",
+  }, {
+    title: "Night studio",
+    body: "A night studio under city lights and a desk lamp — the counterpart to the daytime panorama.",
+  }),
+  brandLibraryItem("brand-rainy-studio", BRAND_RAINY_STUDIO_CLIP, {
+    title: "비 오는 날의 스튜디오",
+    body: "빗소리가 창을 두드리는 날의 작업실을 그린 클립입니다.",
+  }, {
+    title: "Rainy-day studio",
+    body: "A studio on a day when rain taps at the window.",
+  }),
+  brandLibraryItem("brand-weekend-morning", BRAND_WEEKEND_MORNING_CLIP, {
+    title: "주말 아침의 스튜디오",
+    body: "느긋한 주말 아침 빛이 드는 작업실을 그린 클립입니다.",
+  }, {
+    title: "Weekend-morning studio",
+    body: "A studio in slow weekend-morning light.",
+  }),
+  brandLibraryItem("brand-desk-closeup", BRAND_DESK_CLOSEUP_CLIP, {
+    title: "책상 클로즈업",
+    body: "펜과 태블릿, 원고가 놓인 책상을 가까이에서 담은 클립입니다.",
+  }, {
+    title: "Desk close-up",
+    body: "A close look at a desk with a pen, a tablet and manuscript pages.",
+  }),
+  brandLibraryItem("brand-home-hero-night", HOME_HERO_NIGHT_CLIP, {
+    title: "밤의 파노라마",
+    body: "낮 파노라마의 밤 버전으로 그린 스튜디오 파노라마입니다. 히어로 자리의 분위기 교체 소재로 보관합니다.",
+  }, {
+    title: "Night panorama",
+    body: "A studio panorama drawn as the night version of the daytime one — kept as a hero-mood swap.",
+  }),
+  brandLibraryItem("brand-home-hero-evening", HOME_HERO_EVENING_CLIP, {
+    title: "노을의 파노라마",
+    body: "노을빛이 드는 스튜디오 파노라마입니다. 낮·밤 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Evening panorama",
+    body: "A studio panorama in evening glow, kept as a set with the day and night panoramas.",
+  }),
+  brandLibraryItem("brand-window-cat", BRAND_CAT_CLIP, {
+    title: "창가의 고양이",
+    body: "창가에 앉아 작업실을 내려다보는 고양이를 그린 클립입니다.",
+  }, {
+    title: "A cat by the window",
+    body: "A cat sitting by the window, watching over the studio below.",
+  }),
+  brandLibraryItem("brand-square-sting", BRAND_SQUARE_STING_CLIP, {
+    title: "정사각 브랜드 스팅",
+    body: "짧은 소셜 포스트와 카드에 붙이는 1:1 정사각 브랜드 스팅입니다.",
+  }, {
+    title: "Square brand sting",
+    body: "A 1:1 square brand sting for short social posts and cards.",
+  }),
+  brandLibraryItem("brand-wide-pan", BRAND_WIDE_PAN_CLIP, {
+    title: "넓게 도는 스튜디오 팬",
+    body: "작업실을 넓게 가로지르며 도는 파노라마 팬 장면을 그린 클립입니다.",
+  }, {
+    title: "A wide studio pan",
+    body: "A panoramic pan sweeping wide across the studio.",
+  }),
+  brandLibraryItem("brand-home-hero-rain", HOME_HERO_RAIN_CLIP, {
+    title: "비의 파노라마",
+    body: "비 내리는 창 너머의 스튜디오 파노라마입니다. 낮·노을·밤 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Rain panorama",
+    body: "A studio panorama beyond a rain-streaked window, kept as a set with the day, evening and night panoramas.",
+  }),
+  brandLibraryItem("brand-home-hero-snow", HOME_HERO_SNOW_CLIP, {
+    title: "눈의 파노라마",
+    body: "눈 내리는 창 너머의 스튜디오 파노라마입니다. 낮·노을·밤·비 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Snow panorama",
+    body: "A studio panorama beyond a snow-falling window, kept as a set with the day, evening, night and rain panoramas.",
+  }),
+  brandLibraryItem("brand-golden-hour", BRAND_GOLDEN_HOUR_CLIP, {
+    title: "황금빛 노을의 스튜디오",
+    body: "노을이 황금빛으로 번지는 시간의 작업실을 그린 클립입니다.",
+  }, {
+    title: "Golden-hour studio",
+    body: "A studio in the hour when the evening glow turns golden.",
+  }),
+  brandLibraryItem("brand-square-orbit", BRAND_SQUARE_ORBIT_CLIP, {
+    title: "정사각 궤도 스팅",
+    body: "빛의 궤도가 감도는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅의 짝으로 보관합니다.",
+  }, {
+    title: "Square orbit sting",
+    body: "A 1:1 square brand sting with orbits of light winding through it — kept as the square sting's counterpart.",
+  }),
 ];
 
 const FEATURE_BAND_USAGE = {
