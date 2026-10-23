@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
  */
 const PAGE_SOURCE = "apps/web/src/app/routes/pricing-page.tsx";
 const ROUTE_SOURCE = "apps/web/src/app/routes/groups/marketing.routes.tsx";
+// lazy 선언은 route-group 줄 수 상한 때문에 marketing-route-pages.ts 가 소유한다.
+const ROUTE_PAGES_SOURCE = "apps/web/src/app/routes/groups/marketing-route-pages.ts";
 
 function readSource(path: string): string {
   return readFileSync(path, "utf8");
@@ -19,7 +21,8 @@ describe("pricing page contracts", () => {
     const routeSource = readSource(ROUTE_SOURCE);
     expect(routeSource).toContain('path: "/pricing"');
     expect(routeSource).toContain('id: "marketing-pricing"');
-    expect(routeSource).toContain('import("@/app/routes/pricing-page")');
+    expect(routeSource).toContain('path: "/pricing", element: <PricingPage />');
+    expect(readSource(ROUTE_PAGES_SOURCE)).toContain('import("@/app/routes/pricing-page")');
     expect(existsSync("apps/web/src/domains/marketing/PricingPage.tsx")).toBe(false);
   });
 
