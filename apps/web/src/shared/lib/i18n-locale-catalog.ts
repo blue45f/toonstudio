@@ -135,7 +135,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "lo": 0.2201,
   "lt": 0.2244,
   "lv": 0.2213,
-  "mk": 0.9808,
+  "mk": 0.98,
   "ml": 0.9843,
   "mn": 0.2237,
   "mr": 0.9843,
