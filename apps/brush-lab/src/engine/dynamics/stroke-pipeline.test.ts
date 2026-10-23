@@ -74,4 +74,66 @@ describe("StrokePipeline 배치 용량 추정", () => {
     expect(err.capacity).toBe(MAX_FRAME_DAB_CAPACITY);
     expect(String(err.details?.reasonKo)).toMatch(/비정상 입력/);
   });
+
+  it("장시간 정지·백그라운드 탭 복귀(10분 dt 스파이크) 후에도 시간 기반 브러시(airbrush·spray-splatter·ink-g-pen·watercolor-wet)가 오류나 지연 없이 이어진다", () => {
+    for (const presetId of ["airbrush", "spray-splatter", "ink-g-pen", "watercolor-wet"]) {
+      const pipeline = new StrokePipeline(presetById(presetId), 7);
+      const downFrame: RawSample[] = [
+        {
+          x: 40,
+          y: 60,
+          tMs: 0,
+          pressure: 0.55,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: "down",
+          source: "raw",
+        },
+        {
+          x: 52,
+          y: 64,
+          tMs: 16,
+          pressure: 0.65,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: "move",
+          source: "raw",
+        },
+      ];
+      // 10분(600,000 ms) 정지 후 재개 + 종료
+      const resumeFrame: RawSample[] = [
+        {
+          x: 53,
+          y: 64,
+          tMs: 600_016,
+          pressure: 0.65,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: "move",
+          source: "raw",
+        },
+        {
+          x: 80,
+          y: 72,
+          tMs: 600_032,
+          pressure: 0.2,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: "up",
+          source: "raw",
+        },
+      ];
+      const dabs = pipeline.push(downFrame).count + pipeline.push(resumeFrame).count + pipeline.finish().count;
+      expect(dabs, presetId).toBeGreaterThan(0);
+    }
+  });
 });
+

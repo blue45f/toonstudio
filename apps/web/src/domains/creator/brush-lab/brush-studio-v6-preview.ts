@@ -124,13 +124,60 @@ export function resolveBrushStudioV6PointerIntent(
   }
 }
 
-function fit(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
+export const MAX_LIVE_COALESCED_SAMPLES_PER_FRAME = 128;
+
+export function capBrushStudioV6CoalescedEvents<T>(
+  events: readonly T[],
+  maxCount = MAX_LIVE_COALESCED_SAMPLES_PER_FRAME,
+): readonly T[] {
+  const safeMax = Math.max(2, Math.floor(Number.isFinite(maxCount) ? maxCount : MAX_LIVE_COALESCED_SAMPLES_PER_FRAME));
+  if (events.length <= safeMax) return events;
+  const result: T[] = [];
+  const lastIndex = events.length - 1;
+  for (let i = 0; i < safeMax; i += 1) {
+    const idx = i === safeMax - 1 ? lastIndex : Math.round((i * lastIndex) / (safeMax - 1));
+    const item = events[idx];
+    if (item !== undefined) result.push(item);
+  }
+  return result;
+}
+
+function fit(canvas: HTMLCanvasElement, preserveProgram?: BrushStudioV6Program): CanvasRenderingContext2D | null {
   const devicePixelRatio = Math.min(2, Math.max(1, globalThis.devicePixelRatio || 1));
-  const width = Math.max(1, Math.round(canvas.clientWidth * devicePixelRatio));
-  const height = Math.max(1, Math.round(canvas.clientHeight * devicePixelRatio));
+  const cssWidth = canvas.clientWidth || Math.max(1, Math.round(canvas.width / devicePixelRatio));
+  const cssHeight = canvas.clientHeight || Math.max(1, Math.round(canvas.height / devicePixelRatio));
+  const width = Math.max(1, Math.round(cssWidth * devicePixelRatio));
+  const height = Math.max(1, Math.round(cssHeight * devicePixelRatio));
   if (canvas.width !== width || canvas.height !== height) {
+    let snapshot: HTMLCanvasElement | null = null;
+    if (preserveProgram && canvas.width > 0 && canvas.height > 0 && canvas.ownerDocument) {
+      snapshot = canvas.ownerDocument.createElement("canvas");
+      snapshot.width = canvas.width;
+      snapshot.height = canvas.height;
+      snapshot.getContext("2d")?.drawImage(canvas, 0, 0);
+    }
     canvas.width = width;
     canvas.height = height;
+    const resizedContext = canvas.getContext("2d");
+    if (!resizedContext) {
+      if (snapshot) snapshot.width = snapshot.height = 0;
+      return null;
+    }
+    resizedContext.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    if (preserveProgram) {
+      clearPaper(resizedContext, canvas, preserveProgram);
+      if (snapshot) {
+        resizedContext.save();
+        try {
+          resizedContext.setTransform(1, 0, 0, 1, 0, 0);
+          resizedContext.drawImage(snapshot, 0, 0);
+        } finally {
+          resizedContext.restore();
+          snapshot.width = snapshot.height = 0;
+        }
+      }
+    }
+    return resizedContext;
   }
   const context = canvas.getContext("2d");
   if (!context) return null;
@@ -230,13 +277,17 @@ function eventPoint(
   pressure = normalizeStudioMaterialPointerPressure(event.pointerType, event.pressure),
 ): LivePoint {
   const rect = canvas.getBoundingClientRect();
+  const safeClientX = Number.isFinite(event.clientX) ? event.clientX : 0;
+  const safeClientY = Number.isFinite(event.clientY) ? event.clientY : 0;
+  const safeLeft = Number.isFinite(rect.left) ? rect.left : 0;
+  const safeTop = Number.isFinite(rect.top) ? rect.top : 0;
   return mapBrushStudioMaterialInput({
-    x: event.clientX - rect.left - canvas.clientLeft,
-    y: event.clientY - rect.top - canvas.clientTop,
-    pressure,
-    tiltX: event.tiltX,
-    tiltY: event.tiltY,
-    twist: event.twist,
+    x: safeClientX - safeLeft - (canvas.clientLeft || 0),
+    y: safeClientY - safeTop - (canvas.clientTop || 0),
+    pressure: Number.isFinite(pressure) ? pressure : 0.5,
+    tiltX: Number.isFinite(event.tiltX) ? event.tiltX : 0,
+    tiltY: Number.isFinite(event.tiltY) ? event.tiltY : 0,
+    twist: Number.isFinite(event.twist) ? event.twist : 0,
   }, program.input);
 }
 
@@ -312,8 +363,11 @@ export function attachBrushStudioV6LivePreview(
     }
   };
   const draw = (stroke: LiveStroke, point: LivePoint): void => {
-    const drawContext = fit(canvas);
-    if (!drawContext || stroke.intent === "water") return;
+    if (stroke.intent === "water") return;
+    const drawContext = canvas.getContext("2d");
+    if (!drawContext) return;
+    const devicePixelRatio = Math.min(2, Math.max(1, globalThis.devicePixelRatio || 1));
+    drawContext.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     renderBrushStudioV6MaterialMarks(drawContext, stroke.material.push(point));
   };
 
@@ -326,7 +380,7 @@ export function attachBrushStudioV6LivePreview(
       emitIgnoredTelemetry(event, intent, transport, onTelemetry);
       return;
     }
-    if (!fit(canvas)) return;
+    if (!fit(canvas, program)) return;
     // A single writer owns one pre-stroke bitmap, released on every exit path.
     const previousSurface = canvas.ownerDocument.createElement("canvas");
     previousSurface.width = canvas.width;
@@ -372,12 +426,13 @@ export function attachBrushStudioV6LivePreview(
     }
     const transport = stroke.transport;
     if (!shouldBrushStudioV6HandleMoveEvent(event.type, transport)) return;
-    const sourceEvents = transport === "move-basic" ? [event]
+    const rawEvents = transport === "move-basic" ? [event]
       : typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
+    const sourceEvents = capBrushStudioV6CoalescedEvents(rawEvents.length > 0 ? rawEvents : [event]);
     let point = stroke.point;
     let lastContactPressure = stroke.lastContactPressure;
     try {
-      for (const source of sourceEvents.length > 0 ? sourceEvents : [event]) {
+      for (const source of sourceEvents) {
         lastContactPressure = normalizeStudioMaterialPointerPressure(source.pointerType, source.pressure);
         point = eventPoint(canvas, source, stroke.program, lastContactPressure);
         draw(stroke, point);

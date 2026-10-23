@@ -37,7 +37,7 @@ function OpticalLayerProbe({ pigment }: { readonly pigment: string }) {
       <input id={`${id}-substrate`} type="color" value={substrate} onChange={(event) => setSubstrate(event.currentTarget.value)} className="mt-2 h-10 w-full" />
     </label>
     <div className="flex items-center gap-3">
-      <span aria-hidden="true" className="h-10 w-20 rounded border border-line" style={{ backgroundColor: color }} />
+      <span aria-hidden="true" data-studio-pigment-swatch="true" className="h-10 w-20 rounded border border-line [forced-color-adjust:none]" style={{ backgroundColor: color }} />
       <output aria-label="광학 층 계산 결과" className="font-mono text-sm text-fg">{color}</output>
     </div>
   </div>;
@@ -56,8 +56,8 @@ export function StudioPigmentComparison({ primary, secondary, node, secondaryAct
       {palettes.map((mode) => <div key={mode.id} className="rounded-xl border border-line p-3">
         <button type="button" aria-pressed={node === mode.node} onClick={() => onSelect(mode.node)}
           className={`min-h-11 w-full rounded-lg border px-2 text-left text-xs font-bold text-fg hover:bg-raised ${node === mode.node ? "border-accent bg-accent/10" : "border-transparent"} ${STUDIO_FOCUS_RING}`}>{mode.label} 선택 {node === mode.node ? <span aria-hidden="true" className="ml-2 text-accent">선택됨</span> : null}</button>
-        <div aria-hidden="true" className="mt-1 flex h-8 overflow-hidden rounded">
-          {mode.colors.map((color, index) => <span key={index} style={{ backgroundColor: color }} className="min-w-0 flex-1" />)}
+        <div aria-hidden="true" className="mt-1 flex h-8 overflow-hidden rounded border border-line/60">
+          {mode.colors.map((color, index) => <span key={index} data-studio-pigment-swatch="true" style={{ backgroundColor: color }} className="min-w-0 flex-1 [forced-color-adjust:none]" />)}
         </div>
         <p className="mt-2 text-xs text-fg-2">중간 혼색 <code>{mode.colors[16]}</code></p>
         <p className="mt-1 text-xs leading-5 text-fg-3">{mode.note}</p>

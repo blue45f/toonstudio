@@ -3,7 +3,7 @@ import { StrokeBudgetExceededError } from "../core/errors";
 import { InputPipeline, resolveInputConfig } from "../input/input-pipeline";
 import { PHYSICS_DT_MS, PhysicsModel } from "../physics/physics-model";
 
-import { DabEmitter, MIN_SPACING_PX } from "./dab-emitter";
+import { DabEmitter, MAX_TIME_DABS_PER_STEP, MIN_SPACING_PX } from "./dab-emitter";
 
 import type { DabEmitterOptions } from "./dab-emitter";
 import type { ContactFootprint, ModeledSample, PreviewSample, RawSample } from "../core/types";
@@ -90,25 +90,27 @@ export class StrokePipeline {
     this.samplesCommitted += samples.length;
     const footprints: ContactFootprint[] = [];
     let pathLen = 0;
-    let spanMs = 0;
+    let cappedTimeDabs = 0;
+    const rate = Math.max(0, this.program.deposition.timeDabsPerSecond);
     // 이전 프레임의 마지막 위치에서 시작한다: 프레임당 표본이 1개인 빠른 획도 표본 사이 간격이 경로 길이에 잡힌다.
     let prevX: number | null = this.lastPos?.x ?? null;
     let prevY = this.lastPos?.y ?? 0;
     for (const s of samples) {
       const dt = this.lastT === null ? PHYSICS_DT_MS : Math.max(0, s.tMs - this.lastT);
       this.lastT = s.tMs;
-      spanMs += dt;
+      cappedTimeDabs += Math.min(MAX_TIME_DABS_PER_STEP, Math.ceil((dt * rate) / 1000));
       footprints.push(this.physics.step(s, dt));
       if (prevX !== null) pathLen += Math.hypot(s.x - prevX, s.y - prevY);
       prevX = s.x;
       prevY = s.y;
       this.lastPos = { x: s.x, y: s.y };
     }
-    // 보류 중인 끝 테이퍼 dab·시간 기반 dab까지 담을 수 있게 넉넉히 잡는다.
+    // 보류 중인 끝 테이퍼 dab·시간 기반 dab·입자 트레일 dab까지 담을 수 있게 넉넉히 잡는다.
     // 적응 간격(반경이 10 % 넘게 변하면 간격 0.5배)이 실제 간격을 절반까지 줄이므로 하한도 0.5배로 잡는다.
     const spacingFloor = Math.max(MIN_SPACING_PX, this.program.deposition.spacing * 0.05) * 0.5;
-    const timeDabs = Math.ceil((spanMs * this.program.deposition.timeDabsPerSecond) / 1000) + samples.length;
-    const estimate = Math.ceil(pathLen / spacingFloor) + samples.length + timeDabs + 64;
+    const trailFactor = this.program.tip.kind === "particle" && this.program.deposition.particleTrailSpacing > 0 ? 2 : 1;
+    const timeDabs = cappedTimeDabs + samples.length;
+    const estimate = Math.ceil(pathLen / spacingFloor) * trailFactor + samples.length + timeDabs + 64;
     const extra = final ? Math.ceil(this.program.edge.taperEndPx / spacingFloor) + 16 : 0;
     const capacity = (estimate + extra) * (this.dual ? 2 : 1) * (this.program.physics.contact === "nib" ? 3 : 1);
     if (!Number.isFinite(capacity) || capacity > MAX_FRAME_DAB_CAPACITY) {

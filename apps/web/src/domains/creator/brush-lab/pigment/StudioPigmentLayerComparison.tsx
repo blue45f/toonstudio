@@ -33,7 +33,7 @@ export function StudioPigmentLayerComparison({ primary, secondary }: { readonly 
     <div className="grid gap-3 sm:grid-cols-3">
       {swatches.map(([label, color]) => <div key={label} className="rounded-lg border border-line p-2">
         <p className="text-xs font-bold text-fg">{label}</p>
-        <div aria-hidden="true" className="my-2 h-9 rounded border border-line" style={{ backgroundColor: color }} />
+        <div aria-hidden="true" data-studio-pigment-swatch="true" className="my-2 h-9 rounded border border-line [forced-color-adjust:none]" style={{ backgroundColor: color }} />
         <output aria-label={label} className="font-mono text-sm text-fg">{color}</output>
       </div>)}
     </div>
