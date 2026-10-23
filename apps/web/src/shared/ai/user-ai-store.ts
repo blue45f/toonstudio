@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 
+import { isAnthropicBaseUrl } from "./claude/claude-protocol";
 import { decryptUserAiVault, encryptUserAiVault } from "./user-ai-crypto";
 import { freeAiConnectionPolicyIssue } from "./free-ai-policy";
 import {
@@ -371,8 +372,8 @@ export function hydrateDefaultEnvClaudeConnection(
   explicitToken?: string,
   textModel = "claude-haiku-5-5",
 ): boolean {
-  const existingClaude = snapshot.configuration.connections.some(
-    (conn) => conn.baseUrl.toLowerCase().includes("api.anthropic.com"),
+  const existingClaude = snapshot.configuration.connections.some((conn) =>
+    isAnthropicBaseUrl(conn.baseUrl),
   );
   if (existingClaude) {
     return true;
