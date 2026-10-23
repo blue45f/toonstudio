@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 31편.
- * 서른한 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 33편.
+ * 서른세 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~31편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~33편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -36,7 +36,9 @@ export interface ProductTourShort {
     | "deadline-dawn"
     | "team-table"
     | "sketch-walk"
-    | "ink-closeup";
+    | "ink-closeup"
+    | "eraser-closeup"
+    | "pencil-sharpen";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -509,6 +511,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Ink gathering on the nib",
       body: "Ink beads at the tip of a nib, then flows onto the paper as a line comes alive — caught up close.",
+    },
+  },
+  {
+    id: "eraser-closeup",
+    src: "/brand/promo-shorts/shorts-33-eraser.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "지우개가 닦아 내는 선",
+      body: "지우개가 종이 위를 지나며 선을 지우고 가루가 쌓이는 순간을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "An eraser wiping the line away",
+      body: "An eraser passing over the paper, lifting the line away as the crumbs gather — caught up close.",
+    },
+  },
+  {
+    id: "pencil-sharpen",
+    src: "/brand/promo-shorts/shorts-34-sharpen.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "뾰족해지는 색연필심",
+      body: "색연필을 깎을수록 심이 뾰족해지고 나무 부스러기가 쌓이는 순간을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "A colored pencil, sharpened to a point",
+      body: "A colored pencil turning in the sharpener, its core coming to a point as wood shavings pile up — caught up close.",
     },
   },
 ];
