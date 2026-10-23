@@ -1,12 +1,12 @@
 {
-  "copyright.title": "szerzői jog és tartalom",
+  "copyright.title": "Szerzői jog és tartalmi tájékoztató",
   "copyright.section1.title": "Tartalomforrások és elvek",
-  "copyright.section1.body": "A ToonStudio egy index- és felfedezési platform, amely összefoglalja a nyilvános katalógus metadátait (címeket, szerzőket, műfajokat stb.) a webtoon/webnovel platformokból. Nem tárolja vagy továbbosztja a fő fejezet tartalmát; az olvasás kizárólag hivatalos linkek segítségével történik.",
-  "copyright.section2.title": "A fedélzeti képek",
-  "copyright.section2.body": "A fedélzeti képek azonosító miniatűrként szolgálnak, és a referencia eredeti platform fedélzetek forráskötvényekkel, amikor csak lehetséges. A kijelzők a jogosult kérésére vagy a szabályzat frissítésével azonnal le lehet kapcsolni.",
-  "copyright.section3.title": "Métrikák és átláthatóság",
-  "copyright.section4.title": "Jogokról szóló értesítés",
-  "copyright.section5.title": "A szerzői jogi jogsértésről szóló értesítés",
-  "copyright.section5.body": "Ha úgy gondolja, hogy a metadatok vagy a fedélzetek megsértik jogait, kérjük, kérdezze meg a címet, az URL-t és a tulajdonjogot.",
-  "copyright.leaveInquiry": "Küldje be a kérelmet"
+  "copyright.section1.body": "A ToonStudio egy index- és felfedezőplatform, amely webtoon- és webregény-platformok nyilvános katalógus-metaadatait (címek, szerzők, műfajok stb.) foglalja össze. Nem tárolja és nem terjeszti újra a fő fejezetek tartalmát; az olvasás kizárólag hivatalos linkeken keresztül történik.",
+  "copyright.section2.title": "Borítóképek",
+  "copyright.section2.body": "A borítóképek azonosító bélyegképként szolgálnak, és amikor csak lehetséges, forráslinkkel hivatkoznak az eredeti platform borítóira. A megjelenítés a jogosult kérésére vagy a szabályzat frissítésekor azonnal letiltható.",
+  "copyright.section3.title": "Mutatók és átláthatóság",
+  "copyright.section4.title": "Jogokra vonatkozó tájékoztató",
+  "copyright.section5.title": "Szerzői jogi jogsértés bejelentése és eltávolítás",
+  "copyright.section5.body": "Ha úgy véled, hogy a metaadatok vagy a borítók sértik a jogaidat, küldj érdeklődést a mű címével, URL-jével és a tulajdonjog igazolásával.",
+  "copyright.leaveInquiry": "Érdeklődés küldése →"
 }

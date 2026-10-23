@@ -1,17 +1,17 @@
 {
-  "ageGate.title": "Felnőttek tartalmának ellenőrzése",
-  "ageGate.description": "Adja be a születési dátumát, hogy igazolja, hogy 19 éves vagy idősebb.",
+  "ageGate.title": "Felnőtt tartalom ellenőrzése",
+  "ageGate.description": "Add meg a születési dátumodat annak igazolására, hogy betöltötted a 19. életévedet.",
   "ageGate.birthDateLabel": "Születési dátum",
   "ageGate.birthYearLabel": "Születési év",
   "ageGate.birthYearPlaceholder": "Év",
   "ageGate.birthMonthLabel": "Születési hónap",
   "ageGate.birthMonthPlaceholder": "Hónap",
-  "ageGate.birthDayLabel": "Születésnap",
+  "ageGate.birthDayLabel": "Születési nap",
   "ageGate.birthDayPlaceholder": "Nap",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Nem felelt meg az életkorkövetelménynek.",
-  "ageGate.cancel": "Törölni",
-  "ageGate.confirm": "Biztosanítás"
+  "ageGate.deniedMessage": "Nem feleltél meg a korhatár-követelménynek.",
+  "ageGate.cancel": "Mégse",
+  "ageGate.confirm": "Megerősítés"
 }
