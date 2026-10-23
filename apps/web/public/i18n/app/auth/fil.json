@@ -1,6 +1,6 @@
 {
   "auth.menu.triggerLabel": "Menu ng account",
-  "auth.menu.adminPanel": "Admin console",
+  "auth.menu.adminPanel": "Console ng admin",
   "auth.menu.profile": "Ang aking profile",
   "auth.menu.settings": "Mga setting",
   "auth.menu.signOut": "Mag-sign out",
@@ -18,6 +18,6 @@
   "auth.callback.message.done": "Nakatapos ang pag-sign-in.",
   "auth.callback.message.doneDemo": "Nakumpleto ang demo sign-in.",
   "auth.callback.demo.message": "Ikaw ay naka-log in na may isang demo account.",
-  "auth.callback.backToLogin": "Back to sign in",
-  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
+  "auth.callback.backToLogin": "Bumalik sa pag-sign in",
+  "auth.callback.slowHelp": "Mas matagal ito kaysa karaniwan. Kung mananatili ang screen na ito, bumalik sa pag-sign in at subukang muli."
 }

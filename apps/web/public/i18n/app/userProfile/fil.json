@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Mga nilalaman ng profile",
   "userProfile.refresh": "Pag-iipon",
   "userProfile.emptyReviews": "Walang mga pagsusuri na nai-publish ng gumagamit na ito pa.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Hindi ma-load ang mga nilikhang gawa. Pakisubukan muli.",
+  "userProfile.series.error": "Hindi ma-load ang mga serye. Pakisubukan muli.",
+  "userProfile.emptyReviewsHint": "Iwan ang unang pagsusuri sa isang pamagat na gusto mo.",
+  "userProfile.emptyReviewsCta": "Mag-browse ng mga pamagat"
 }
