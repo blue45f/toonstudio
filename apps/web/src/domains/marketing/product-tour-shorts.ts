@@ -1,9 +1,9 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 43편.
- * 마흔세 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 45편.
+ * 마흔다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
  * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
- * 안팎, 39~44편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 안팎, 39~46편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -49,7 +49,9 @@ export interface ProductTourShort {
     | "tea-cup"
     | "candlelight"
     | "fountain-pen"
-    | "plant-water";
+    | "plant-water"
+    | "seashell"
+    | "steam-kettle";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -702,6 +704,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Watering the plant",
       body: "Slowly watering the plant by the window — caught up close.",
+    },
+  },
+  {
+    id: "seashell",
+    src: "/brand/promo-shorts/shorts-45-seashell.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "모래 위의 조개껍데기",
+      body: "모래 위에 놓인 조개껍데기를 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "A seashell on the sand",
+      body: "A seashell resting on the sand — caught up close.",
+    },
+  },
+  {
+    id: "steam-kettle",
+    src: "/brand/promo-shorts/shorts-46-steamkettle.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "김이 오르는 주전자",
+      body: "김이 모락모락 피어오르는 주전자를 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "The steaming kettle",
+      body: "A kettle with steam curling up — caught up close.",
     },
   },
 ];
