@@ -70,7 +70,7 @@ describe("auth rest status i18n r3c14", () => {
       expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
     }
     const referenced = new Set(
-      [...consumerSource.matchAll(new RegExp(`"(${PREFIX.replace(/\./g, "\\.")}[A-Za-z0-9.]+)"`, "g"))].map((m) => m[1] ?? ""),
+      [...consumerSource.matchAll(new RegExp(`"(${PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[A-Za-z0-9.]+)"`, "g"))].map((m) => m[1] ?? ""),
     );
     for (const key of referenced) {
       expect(ALL_KEYS.includes(key), `dangling key reference: ${key}`).toBe(true);

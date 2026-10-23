@@ -12,7 +12,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 const html = readFileSync(new NodeUrl("./spectacle-matrix.html", import.meta.url), "utf8");
 
 function inlineScript(): string {
-  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gu)].map((match) => match[1] ?? "");
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const blocks = [...doc.querySelectorAll("script")].map((node) => node.textContent ?? "");
   expect(blocks).toHaveLength(1);
   return blocks[0] ?? "";
 }
