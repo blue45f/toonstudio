@@ -26,6 +26,9 @@
  * 13차 파도에서 자료실 보관 전용 3편을 더했다: 눈 오는 날의 히어로
  * 무드(파노라마 세트의 다섯 번째), 황금빛 노을의 스튜디오, 정사각
  * 궤도 스팅.
+ *
+ * 15차 파도에서 자료실 보관 전용 3편을 더했다: 별빛 아래의 스튜디오,
+ * 새벽의 히어로 무드(파노라마 세트의 여섯 번째), 정사각 프리즘 스팅.
  */
 export interface BrandClip {
   readonly src: string;
@@ -228,6 +231,38 @@ export const BRAND_GOLDEN_HOUR_CLIP: BrandClip = {
  */
 export const BRAND_SQUARE_ORBIT_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-square-orbit.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 별빛 아래의 스튜디오 — 별이 빛나는 밤하늘 아래 작업실을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_STARLIGHT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-14-starlight.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 새벽의 히어로 무드 — 새벽빛이 드는 스튜디오 파노라마를 그린 생성형 AI
+ * 영상이다. 낮·노을·밤·비·눈 파노라마와 한 세트로, 아직 표면에 배선하지
+ * 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_DAWN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-dawn.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 프리즘 스팅 — 프리즘을 지난 빛이 색으로 갈라지는 1:1 정사각
+ * 브랜드 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_PRISM_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-prism.mp4",
   width: 768,
   height: 768,
 };

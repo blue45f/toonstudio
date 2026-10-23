@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 131편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 139편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,7 +8,7 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 30편: 투어 쇼츠 섹션의 29편은 product-tour-shorts.ts
+ * - 쇼츠 32편: 투어 쇼츠 섹션의 31편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
  * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
@@ -16,17 +16,16 @@
  *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 세로 변형
  *   9편(가로 9챕터와 1:1)은 이 파일이 첫 레지스트리다
  *   (public/brand/promo-chapter-loops/).
- * - 브랜드 클립 21편: brand-clips.ts (배선 8편 + 자료실 보관 13편 —
+ * - 브랜드 클립 24편: brand-clips.ts (배선 8편 + 자료실 보관 16편 —
  *   밤 버전·비 오는 날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·
  *   창가의 고양이·정사각 스팅·와이드 팬·비 히어로·눈 히어로·황금빛 노을·
- *   정사각 궤도 스팅)
- * - 도구 클립 33편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
+ *   정사각 궤도 스팅·별빛·새벽 히어로·정사각 프리즘 스팅)
+ * - 도구 클립 36편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
  *   카테고리 7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고
  *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
  *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
- *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 9편
- *   (TOOL_CLIPS_SQUARE, 캔버스·셰이퍼·3D 배경·스토리·컷툰·AI 변환실·
- *   배우기·협업·제작 관리 1:1)
+ *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 12편
+ *   (TOOL_CLIPS_SQUARE, 가로본 12편과 1:1)
  * - 페이지 클립 24편: promo-video-library-pages.ts가 레지스트리다
  *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했다.
  */
@@ -39,11 +38,14 @@ import {
   BRAND_NIGHT_STUDIO_CLIP,
   BRAND_RAINY_STUDIO_CLIP,
   BRAND_SQUARE_ORBIT_CLIP,
+  BRAND_SQUARE_PRISM_CLIP,
   BRAND_SQUARE_STING_CLIP,
+  BRAND_STARLIGHT_CLIP,
   BRAND_WEEKEND_MORNING_CLIP,
   BRAND_WIDE_PAN_CLIP,
   FEATURES_AMBIENT_CLIP,
   HOME_CORE_STUDIO_3D_BACKDROP_CLIP,
+  HOME_HERO_DAWN_CLIP,
   HOME_HERO_EVENING_CLIP,
   HOME_HERO_NIGHT_CLIP,
   HOME_HERO_RAIN_CLIP,
@@ -90,11 +92,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 스물아홉 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 서른한 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Twenty-nine also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Thirty-one also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
@@ -176,6 +178,16 @@ const SHORTS_USAGE = {
   en: "Product tour page · Shorts section",
 } as const;
 
+/**
+ * 펜촉·잉크 클로즈업 쇼츠(shorts-ink-closeup)의 품질 메모 — 제작 과정에서
+ * 보고된 사항을 자료실 항목에만 정직하게 단다. 쇼츠 섹션에서는 메모 없이
+ * 그대로 배선한다.
+ */
+const INK_CLOSEUP_NOTE = {
+  ko: "품질 메모: 펜촉의 금속 장식 부분에 작은 각인 같은 형태가 보일 수 있습니다. 읽을 수 있는 글자는 아니어서 그대로 수록합니다.",
+  en: "Quality note: the pen nib's metal ornament may show small engraving-like marks. They are not readable letters, so the clip is kept as is.",
+} as const;
+
 const shorts: readonly PromoVideoItem[] = [
   ...PRODUCT_TOUR_SHORTS.map((short) => ({
     id: `shorts-${short.id}`,
@@ -187,6 +199,7 @@ const shorts: readonly PromoVideoItem[] = [
     ko: short.ko,
     en: short.en,
     usage: SHORTS_USAGE,
+    ...(short.id === "ink-closeup" ? { note: INK_CLOSEUP_NOTE } : {}),
   })),
   {
     // 말풍선에 깨진 글자 형태가 섞인 품질 이슈가 있어 쇼츠 섹션에는 걸지
@@ -579,6 +592,27 @@ const brand: readonly PromoVideoItem[] = [
   }, {
     title: "Square orbit sting",
     body: "A 1:1 square brand sting with orbits of light winding through it — kept as the square sting's counterpart.",
+  }),
+  brandLibraryItem("brand-starlight", BRAND_STARLIGHT_CLIP, {
+    title: "별빛 아래의 스튜디오",
+    body: "별이 빛나는 밤하늘 아래 작업실을 그린 클립입니다.",
+  }, {
+    title: "Studio under starlight",
+    body: "A studio under a night sky full of starlight.",
+  }),
+  brandLibraryItem("brand-home-hero-dawn", HOME_HERO_DAWN_CLIP, {
+    title: "새벽의 파노라마",
+    body: "새벽빛이 드는 스튜디오 파노라마입니다. 낮·노을·밤·비·눈 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Dawn panorama",
+    body: "A studio panorama in dawn light, kept as a set with the day, evening, night, rain and snow panoramas.",
+  }),
+  brandLibraryItem("brand-square-prism", BRAND_SQUARE_PRISM_CLIP, {
+    title: "정사각 프리즘 스팅",
+    body: "프리즘을 지난 빛이 색으로 갈라지는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅 세트와 함께 보관합니다.",
+  }, {
+    title: "Square prism sting",
+    body: "A 1:1 square brand sting of light splitting into colors through a prism — kept with the square sting set.",
   }),
 ];
 

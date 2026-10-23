@@ -34,7 +34,8 @@
  *
  * 정사각 변형은 12차 파도에서 캔버스 1편을 먼저 만들고, 13차 파도에서
  * 셰이퍼·3D 배경 2편, 14차 파도에서 스토리·컷툰·AI 변환실·배우기·협업·
- * 제작 관리 6편을 더해 9편이 됐다. 소셜 피드에 바로 얹는 1:1 소재로,
+ * 제작 관리 6편, 15차 파도에서 포저·게시·커뮤니티 3편을 더해 가로본
+ * 12편과 1:1로 12편이 됐다. 소셜 피드에 바로 얹는 1:1 소재로,
  * 이쪽도 자료실에만 수록한다(TOOL_CLIPS_SQUARE).
  */
 export interface ToolClip {
@@ -148,4 +149,7 @@ export const TOOL_CLIPS_SQUARE: readonly ToolSquareClip[] = [
   { toolId: "learn", src: "/brand/tool-clips/tool-learn-square.mp4", width: 768, height: 768 },
   { toolId: "collab", src: "/brand/tool-clips/tool-collab-square.mp4", width: 768, height: 768 },
   { toolId: "production", src: "/brand/tool-clips/tool-production-square.mp4", width: 768, height: 768 },
+  { toolId: "poser", src: "/brand/tool-clips/tool-poser-square.mp4", width: 768, height: 768 },
+  { toolId: "publish", src: "/brand/tool-clips/tool-publish-square.mp4", width: 768, height: 768 },
+  { toolId: "community", src: "/brand/tool-clips/tool-community-square.mp4", width: 768, height: 768 },
 ];
