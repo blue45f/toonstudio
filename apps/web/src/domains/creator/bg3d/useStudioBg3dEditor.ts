@@ -8,6 +8,7 @@ import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { useStudioBg3dInplaceTools } from "./useStudioBg3dInplaceTools";
 import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
 import { useStudioBg3dGlbTexturePaintHost } from "./useStudioBg3dGlbTexturePaintHost";
+import { useStudioBg3dPrimitivePaintHost } from "./useStudioBg3dPrimitivePaintHost";
 import { isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import { useStudioBg3dEditorState } from "./useStudioBg3dEditorState";
 import { bindStudioBg3dEditorViewModel } from "./studio-bg3d-editor-view-model";
@@ -115,6 +116,14 @@ export function useStudioBg3dEditor(props) {
   });
   h.glbTexturePaint = glbTexturePaint;
   h.handleModelTexturePaintPointer = glbTexturePaint.handleModelTexturePaintPointer;
+  // 도형 표면 그리기(1단계) 호스트 — GLB 호스트와 같은 계약(핸들러는 그리기 모드이고 그릴 수 있을 때만 함수로 실린다).
+  const primitiveTexturePaint = useStudioBg3dPrimitivePaintHost({
+    primitive: h.selectedPrimitive ?? null,
+    setPrimitives: h.setPrimitives,
+    busy: h.isCapturing || h.isRestoringScene || h.physicsInteractionLocked || h.isBatchRenderingShots,
+  });
+  h.primitiveTexturePaint = primitiveTexturePaint;
+  h.handlePrimitiveTexturePaintPointer = primitiveTexturePaint.handlePrimitiveTexturePaintPointer;
   bindStudioBg3dEditorSceneGraph(h);
 
   const outlinerMutationDependencies = {

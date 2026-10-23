@@ -49,6 +49,7 @@
 - `package-load-flow.ts`(순수, 포트 주입): `loadPackageIndexFlow(port, url?, now?)`, `loadAuthoredPackageFlow(port, entry, { sha256, preferredLod?, now? })` → `{ plan, detail: { judgement, hairLod, conversion, gaps, warnings, glbBytes, observedSha256 } }`, `createFetchPackagePort(fetch)`, `DEFAULT_PACKAGE_INDEX_URL`.
 - `package-index.browser.ts`: `loadCharacterPackageIndex(url?)`. `package-loader.browser.ts`: `loadAuthoredPackage(entry, { preferredLod? })`(crypto.subtle SHA-256).
 - `glb-json-chunk.ts`: `readGlbJsonChunk(bytes)`, `isGlbBytes`. `vrm-extension-parser.ts`: `parseVrmFromGlb(bytes)` → `{ info: VrmcVrmInfo | null, nodeNames }`, `parseVrmcVrmFromGltfJson`, `vrmHumanoidToBoneMap`.
+- 키트 v2(A-1, 2026-10-23): `kit-plan.ts` `buildKitPlan(Detailed)(manifest v1|v2, source, slots, { rootUrl?, preferredHairLod?, now?, wardrobe? })`·`isKitManifestV2`, `kit-plan-v2-types.ts` `KitPlanV2`·`KitPlanCustom`·`KitPlanFile`·`KitPlanShape`·`KitPlanSkip`·`isKitPlanV2`, `kit-custom-capability.ts` `kitV1CustomCapabilities`·`deriveKitV2Offers`·`deriveKitWardrobeCapabilities`·`kitPlanCustomCapabilities`·`patternChannelsOf`·`kitFileLabelKo`, `kit-customization-diagnosis.ts` `diagnoseKitCustomization(plan, recipe)`, `source-custom-capability.ts` `sourceCustomCapabilities(source, { proceduralProportion? })`·`proceduralCustomCapabilities`, `package-capability.ts` `packageCustomCapabilities`, `kit-v1-projection.ts` `kitManifestV1View`·`toV1Mesh`·`toV1Material`, `custom-labels.ts` `shapeLabelKo`·`scopeLabelKo`·`KIT_BASE_LABELS_KO`.
 
 ### `src/domains/vision/`
 - `vision-ports.ts`: `VisionModelKey`(계약 2종 + `handLandmarker`), `VisionLoaders`, `LoadedModel<Port>{ port, observedSha256, pinned, bytes, license, delegate, dispose }`, `PoseDetectorPort`, `HandDetectorPort`, `VisionModelStatus`, `toContractVisionStatus`, `resolveHandSide(reported, { selfie })`, `VISION_MODEL_LABELS_KO`.
@@ -155,3 +156,27 @@ pnpm exec eslint --max-warnings=0 apps/character-lab/src/domains/authored apps/c
 | --- | --- | --- | --- | --- |
 | `kit.json` → `KitPlan` 빌더(`domains/authored/kit-plan.ts`), 슬롯 능력 판정(`kit-capability.ts` `deriveKitCapabilities`), 로드 흐름(`kit-load-flow.ts`, fetch 포트 주입) | 구현됨 | `domains/authored/kit-plan.test.ts`(16), `kit-capability.test.ts`(13), `kit-load-flow.test.ts`(11) | 미검증(실제 `fetch`는 `kit-loader.browser.ts`) | 합성 `kit.json`만 검증했다. 실제 키트 에셋으로는 돌리지 않았다(에셋 미안착) |
 | 본 이름 매핑 55/55(`bone-name-mapping.ts`의 `tsjaw → jaw`), 메시 이름 → 역할 규칙(키트 접두 `ts_top`·`ts_bottom`·`ts_shoes`·`ts_accessory`·`ts_underwear`·`ts_iris`, `TS_Mouth` 프리미티브 번호) | 구현됨 | `domains/authored/kit-name-rules.test.ts`(5: 55/55 매핑, `jaw` 누락 없음, 미매핑은 끝 본 13개) | 미검증 | 쪼개지지 않은 `TS_Mouth`는 역할을 정할 수 없어 `kit.json`이 명시한다 |
+
+## 10. 키트 v2 계획·커스터마이즈 능력 행 (A-1, 2026-10-23)
+
+설계 `../art-style-customization-design-20261023.md` §2.4·§3.3·§9의 A-1이다. 순수 도메인(`src/domains/authored/`)과 키트 등록소(`src/app/shell/kit-plan-registry.ts`)만 바꿨다.
+테스트 수는 2026-10-23 실측(루트·앱 두 vitest 설정 모두 통과)이다. **브라우저 미검증**: 렌더 엔진은 아직 `custom`을 읽지 않고(R-3b), 실제 키트 v2 에셋이 없어(B-1) 합성 `kit.json`(core `testing/kit-v2-fixtures` + 도메인 확장 `kit-v2-test-fixture.ts`)으로만 검증했다.
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| v1·v2 manifest 디스패치(`kit-plan.ts`·`kit-plan-common.ts`), v1 계획 항등 | 구현됨 | `kit-plan.test.ts`(31, 이 중 v1 digest 골든 13 — 수정 전 HEAD 4fa677b8c 코드로 만든 값, 변이 주입으로 깨지는 것 확인) | 해당 없음(순수) | v1 계획에는 `custom`이 없고 옷장 옵션을 줘도 같다 |
+| v2 계획(`kit-plan-v2.ts`·`kit-plan-v2-types.ts`): 계약 `KitPlan` 필드(베이스+슬롯 파츠, 메시·재질은 v1 투영 `kit-v1-projection.ts`) + `custom`(files·materials·shapes·capabilities·patternChannels·skipped·triangles·base) | 구현됨 | `kit-plan-v2.test.ts`(17) | 미검증(엔진 미소비, R-3b) | 계약 `KitPlan`에 `custom` 자리가 없어 추가 필드로 싣는다(계약 승격 요청). 채널 → 계열 기본 키, 공막은 고정색 |
+| 층 3개(inner→outer→legwear)·추가 소품 다중(인스턴스별 파일 항목, 같은 프리셋 여러 앵커)·형태 키 8개와 값 범위(+만·−만)·고른 LOD의 형태 키 | 구현됨 | `kit-plan-v2.test.ts` | 미검증 | 못 올린 층·소품은 계획 실패가 아니라 `custom.skipped` 사유(층 변형 없음·스킨 소품·중복 id·11개 초과·예산). 슬롯 파츠는 v1처럼 `kit-part-missing` |
+| 예산: 그리는 삼각형 합 ≤ `activeWorst`(200,000) | 구현됨 | `kit-plan-v2.test.ts`(경계 = 통과, +1 = `kit-budget-exceeded`, 층·소품은 넘는 것부터 사유) | 해당 없음 | `kit-budget-exceeded`는 계약 `KIT_FAILURE_CODES`에 없다(추가 요청) |
+| 커스터마이즈 능력 `SourceCapabilities.custom`: 키트 v2는 올린 파츠 기준(`kit-custom-capability.ts`), 키트 v1은 `NO_CUSTOM_CAPABILITIES` + v1 사유, 제작 패키지 `packageCustomCapabilities`, 절차 `proceduralCustomCapabilities`, 디스패치 `sourceCustomCapabilities` | 구현됨 | `kit-custom-capability.test.ts`(13), `source-custom-capability.test.ts`(4) | 미검증(엔진·앱 미배선) | 사유는 한글·계약 순서(채널 → 형태 → 층 → 앵커 → patternUv → hairFlow → proportion), 베이스는 "여성·남성 베이스". 계약 `patternUv`가 불리언이라 의상 본체 기준이고 채널별은 `custom.patternChannels` |
+| 층·추가 소품 프리셋 판정(UI용) `deriveKitWardrobeCapabilities` | 구현됨 | `kit-custom-capability.test.ts` | 미배선(U-3) | 15슬롯 능력과 같은 모양(`unavailablePresets` 사유) |
+| 적용 시점 진단 `diagnoseKitCustomization`(형태 값·채널 색·무늬·헤어 색·비례·옷장 대조) | 구현됨 | `kit-customization-diagnosis.test.ts`(6) | 미배선(S-1/U-1) | 형태 값·표면·헤어 색·비례 목표는 계획에 넣지 않는다(계획은 지오메트리 키가 바뀔 때만 다시 만들어져 낡는다) |
+| 슬롯 능력 v2(`kit-capability.ts` 구조적 입력, 베이스 변형 수) | 구현됨 | `kit-capability.test.ts`(17, v2 4) | 해당 없음 | 층 변형만 있는 프리셋은 슬롯 미제공·층 제공 |
+| 로드 흐름 v2(`kit-load-flow.ts`): v2 schema만 v2 파서, 결과 `version`·`legacyView` | 구현됨 | `kit-load-flow.test.ts`(16, v2 5 — 손상 manifest 누락·중복·범위 밖 거부 문구 포함) | 미검증(실제 `fetch`) | 모르는 schema는 이전과 같은 v1 파서 사유. zod 기본 형식 오류 문구는 영문(계약 쪽) |
+| 키트 등록소 v2(`kit-plan-registry.ts`): `ensureAny`·`peekAny`, `ensure`·`peek`·`loaded`는 v1 형식 보기, 레시피 옷장 전달, `wardrobe: "none"` | 구현됨 | `app/shell/kit-plan-registry.test.ts`(18, v2 4) | 미검증 | PackagePanel·ParamPanel은 코드 변경 없이 v2 키트의 출처·슬롯 파츠·베이스 키를 v1 보기로 읽는다 |
+
+알려진 한계(정직 표기):
+
+- 앱 적용 루프의 키트 재생성 키(`kitGeometryKey`, 계약)는 슬롯만 본다. 옷장(층·추가 소품)만 바꾸면 계획을 다시 만들지 않아 새 층·소품 파일이 올라가지 않는다 — core 요청. 그동안 `diagnoseKitCustomization`이 "아직 올라가지 않음"을 알린다.
+- 계약 `CustomCapabilities`에는 소품 인스턴스별 사유·형태 키 라벨·값 범위·채널별 무늬 자리가 없다. 플래너(state)는 스킨 소품·예산으로 빠진 인스턴스를 보이는 것으로 판정할 수 있다 — 계약 확장 요청(그때까지 `custom.skipped`·`diagnoseKitCustomization`).
+- 형태 키 한글 라벨은 도메인 기본 표(`custom-labels.ts`)다. 키트 v2 `shapes`에 라벨 자리가 없다(B-1 포지 보고서의 `shapes_ko`를 manifest가 싣도록 계약 요청).

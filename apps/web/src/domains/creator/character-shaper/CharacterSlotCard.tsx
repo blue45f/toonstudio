@@ -12,6 +12,7 @@ import { useId } from "react";
 import { useCharacterRuntimeThumbnail } from "../character-platform/thumbnail/character-runtime-thumbnail-store";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
+import { useCharacterHairThumbnail } from "./character-hair-thumbnail-source";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import { characterGridDirectionForKey, describeAvailabilityBadge } from "./character-shaper-ui-model";
 import { useCharacterPresetInteraction } from "./useCharacterPresetInteraction";
@@ -43,9 +44,12 @@ export function CharacterSlotCard({
 }: CharacterSlotCardProps) {
   const detailId = useId();
   const capturedThumbnail = useCharacterRuntimeThumbnail(entry.id);
+  // 헤어 카드는 전신 합성 대신 실제 헤어 생성기로 머리만 크롭한 렌더를 쓴다(A-07).
+  const hairRender = useCharacterHairThumbnail(entry.preview.kind === "hair" ? entry.preview : null, selected);
   // The recorder captures the committed composite, not an isolated candidate. Only the selected
   // card may truthfully label that image as its own runtime result.
-  const runtimeThumbnail = selected ? capturedThumbnail : null;
+  const runtimeThumbnail = selected && entry.preview.kind !== "hair" ? capturedThumbnail : null;
+  const kindLabel = runtimeThumbnail ? "현재 조합 · 실제 3D" : hairRender ? "헤어 렌더 · 실제 3D" : "모양 도해";
   const badge = describeAvailabilityBadge(availability);
   const unavailable = availability.status === "unavailable";
   const showBadge = availability.status !== "available";
@@ -110,11 +114,13 @@ export function CharacterSlotCard({
         ) : (
           <CharacterSlotPreview spec={entry.preview} selected={selected} className="h-full w-full" title={entry.label} />
         )}
-        <span data-character-slot-card-kind={runtimeThumbnail ? "runtime" : "diagram"}
-          title={runtimeThumbnail ? "현재 선택한 전체 캐릭터 조합의 실제 이미지입니다." : "모양을 설명하는 도해입니다. 실제 적용 결과는 3D 화면에서 확인하세요."}
+        <span data-character-slot-card-kind={runtimeThumbnail ? "runtime" : hairRender ? "hair-render" : "diagram"}
+          title={runtimeThumbnail ? "현재 선택한 전체 캐릭터 조합의 실제 이미지입니다."
+            : hairRender ? "실제 헤어 생성기로 지금 모델 두상에 씌워 그린 이미지입니다(지금 헤어 색 기준)."
+              : "모양을 설명하는 도해입니다. 실제 적용 결과는 3D 화면에서 확인하세요."}
           className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full border border-line/70 bg-panel/85 px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 backdrop-blur">
-          {runtimeThumbnail ? <Image size={9} aria-hidden /> : <PencilRuler size={9} aria-hidden />}
-          <span data-character-slot-card-kind-label="true">{runtimeThumbnail ? "현재 조합 · 실제 3D" : "모양 도해"}</span>
+          {runtimeThumbnail || hairRender ? <Image size={9} aria-hidden /> : <PencilRuler size={9} aria-hidden />}
+          <span data-character-slot-card-kind-label="true">{kindLabel}</span>
         </span>
         {previewed ? (
           <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border border-accent/60 bg-panel/90 px-1.5 py-0.5 text-[0.6rem] font-bold text-accent backdrop-blur">

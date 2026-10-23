@@ -108,9 +108,9 @@ async function measureLabKit(): Promise<Metrics> {
   return result;
 }
 
-/** 화풍 팩 계약이 생기면 그 개수를 센다(아직 없으면 0). */
+/** 화풍 팩 데이터의 개수를 센다(T1 팩 데이터는 2026-10-23 S-1부터 `presets/art-style-packs.ts`). */
 async function measureLabArtStyles(): Promise<Metrics> {
-  const candidates = [`${LAB_SRC}/contracts/art-style.ts`, `${LAB_SRC}/contracts/art-style-packs.ts`];
+  const candidates = [`${LAB_SRC}/presets/art-style-packs.ts`, `${LAB_SRC}/contracts/art-style.ts`, `${LAB_SRC}/contracts/art-style-packs.ts`];
   for (const candidate of candidates) {
     if (!existsSync(join(root, candidate))) continue;
     const mod = await load(candidate);
@@ -119,6 +119,39 @@ async function measureLabArtStyles(): Promise<Metrics> {
     }
   }
   return { artStylePacks: 0 };
+}
+
+/**
+ * 구성 공간(성공 지표 Q, 캐릭터 랩 설계 §11 — 2026-10-23 S-1). 측정은 `state/config-space.ts`가 하고 여기서는 입력만 고른다:
+ * - `contract.*`: 레시피 v3 계약 상한(27채널·범위당 형태 8·층 3·앵커 14·패턴·헤어 흐름·비례·look) × 외형 카탈로그 × 15슬롯 available.
+ * - `noCustom.*`: 커스터마이즈 능력을 보고하지 않는 소스(지금의 v2 엔진·v1 키트) — 실제로 그려지는 공간의 하한 기준.
+ * - 데이터 지표: 코디 세트·장르 수, 화풍 얼굴 매핑 수(팩 × 소스, unavailable 제외), 내 룩 범위·섞기 잠금 그룹 수.
+ */
+async function measureLabCustomization(): Promise<Metrics> {
+  const contracts = await load(`${LAB_SRC}/contracts/index.ts`);
+  const space = await load(`${LAB_SRC}/state/config-space.ts`);
+  const appearance = await load(`${LAB_SRC}/presets/appearance-presets.ts`);
+  const packs = await load(`${LAB_SRC}/presets/art-style-packs.ts`);
+  const bindings = await load(`${LAB_SRC}/presets/art-style-lab-bindings.ts`);
+  const sets = await load(`${LAB_SRC}/presets/look-sets.ts`);
+  const createPresetCatalog = contracts.createPresetCatalog as (entries: unknown) => unknown;
+  const measureConfigSpace = space.measureConfigSpace as (input: { catalog: unknown; capabilities: unknown; custom: unknown }) => unknown;
+  const configCapabilitiesFromCustom = space.configCapabilitiesFromCustom as (custom: undefined, options: { look: boolean }) => unknown;
+  const ledgerMetrics = space.configSpaceLedgerMetrics as (report: unknown, prefix: string) => Metrics;
+  const countStyleFaceBindings = bindings.countStyleFaceBindings as (packs: unknown) => number;
+  const catalog = createPresetCatalog(appearance.APPEARANCE_PRESETS);
+  const capabilities = contracts.ALL_AVAILABLE_CAPABILITIES;
+  const contract = measureConfigSpace({ catalog, capabilities, custom: space.CONTRACT_MAX_CONFIG_CAPABILITIES });
+  const noCustom = measureConfigSpace({ catalog, capabilities, custom: configCapabilitiesFromCustom(undefined, { look: false }) });
+  return {
+    ...ledgerMetrics(contract, "contract"),
+    ...ledgerMetrics(noCustom, "noCustom"),
+    lookSets: size(sets.LOOK_SETS),
+    lookSetGenres: size(sets.LOOK_SET_GENRES),
+    styleFaceBindings: countStyleFaceBindings(packs.ART_STYLE_PACKS),
+    lookScopes: size(contracts.LOOK_SCOPES),
+    mixerLockGroups: size(contracts.LOOK_LOCK_GROUPS),
+  };
 }
 
 async function measureMannequin(): Promise<Metrics> {
@@ -196,11 +229,12 @@ async function measureBg3d(): Promise<Metrics> {
 }
 
 async function measure(): Promise<Record<string, Section>> {
-  const [vocabulary, presets, kit, artStyles, mannequin, vrm, shaper, bg3d] = await Promise.all([
+  const [vocabulary, presets, kit, artStyles, customization, mannequin, vrm, shaper, bg3d] = await Promise.all([
     section(measureLabVocabulary),
     section(measureLabPresets),
     section(measureLabKit),
     section(measureLabArtStyles),
+    section(measureLabCustomization),
     section(measureMannequin),
     section(measureVrm),
     section(measureShaper),
@@ -211,6 +245,7 @@ async function measure(): Promise<Record<string, Section>> {
     "characterLab.presets": presets,
     "characterLab.kit": kit,
     "characterLab.artStyles": artStyles,
+    "characterLab.customization": customization,
     "studio.mannequin": mannequin,
     "studio.vrm": vrm,
     "studio.shaper": shaper,

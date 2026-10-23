@@ -18,7 +18,6 @@ import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
-import { hexToSrgb01 } from "../../shared/color";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
 import { qConjugate, qMultiply, qRotateVec3, v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
 import { stableStringify } from "../../shared/stable-json";
@@ -41,13 +40,14 @@ import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
+import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
 import { adaptLoadedMaterial, applyPresetParams, createPresetMaterial, setMaterialAlbedo } from "./materials/material-factory";
 import { createPassMaterial, setAlphaCutoff, setDepthUniform, setFlatTextures, setFlatUniforms, setIdUniform, setToonTextures, setToonUniforms, shaderLanguageFor } from "./materials/toon-shader";
-import { bindProceduralModel, RigBindError } from "./mesh-binding";
+import { bindProceduralModel } from "./mesh-binding";
 import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
@@ -167,34 +167,6 @@ export interface BabylonCharacterEngineDeps {
    * 앱 팩토리는 `EngineFactoryOptions.onFailure`를 넘긴다. 없으면 물리 브리지 상태(`unavailable`)에만 남는다.
    */
   readonly onFailure?: (failure: LabFailure) => void;
-}
-
-async function fetchBytesDefault(url: string): Promise<Uint8Array> {
-  const response = await fetch(url);
-  if (!response.ok) throw failVisible("package-fetch-failed", `제작 패키지 GLB를 받지 못했습니다(HTTP ${response.status}): ${url}`);
-  return new Uint8Array(await response.arrayBuffer());
-}
-
-/** 키트 파일 기본 로더. 실패는 키트 로더가 `kit-file-fetch-failed`로 감싸므로 HTTP 상태만 원인(detail)으로 남긴다. */
-async function fetchKitBytesDefault(url: string): Promise<Uint8Array> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return new Uint8Array(await response.arrayBuffer());
-}
-
-function srgb(hex: string): readonly [number, number, number] {
-  return hexToSrgb01(hex) ?? [0.5, 0.5, 0.5];
-}
-
-/** 베타 컨트롤러의 `releaseRig`는 `rig.parts`만 읽는다. 일부 파츠만 놓을 때 그 파츠만 가진 리그 모양을 만든다. */
-function rigWithParts(rig: CharacterRig, parts: readonly RigPart[]): CharacterRig {
-  return { ...rig, parts };
-}
-
-function toFailure(error: unknown, code: string, reasonKo: string, now: number): never {
-  if (error instanceof RigBindError) throw error.failure;
-  if (isLabFailure(error)) throw error;
-  throw failVisible(code, reasonKo, error, now);
 }
 
 /** 지금 influence > 0인 morph 타깃 수. `numInfluencers`는 attribute 모드에서 8개로 잘려 있어 초과분(무시되는 타깃)을 셀 수 없다. */

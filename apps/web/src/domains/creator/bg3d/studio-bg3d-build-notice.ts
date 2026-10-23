@@ -8,7 +8,7 @@
 // 그래프에 넣지 않으려는 경계다. 문구는 모두 해요체로 쓰고, 실패 문구는 "원인 + 다음 행동" 형태를 지킨다
 // (shared/language 의 두 가드가 시험에서 이 문자열을 직접 검사한다).
 
-import { STUDIO_BG3D_ROOM_WALL_PART_SUFFIX } from "./studio-bg3d-room-builder";
+import { STUDIO_BG3D_ROOM_WALL_LABELS } from "./studio-bg3d-room-builder";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -37,6 +37,16 @@ export interface StudioBg3dHiddenWallSummary {
   readonly walls: ReadonlyArray<{ readonly label: string; readonly pieces: number }>;
 }
 
+/**
+ * 숨긴 조각을 묶는 이름표. 벽에 붙은 조각(벽체·문틀·창짝·걸레받이 등)은 이름 앞의 벽 이름표("앞벽 문틀" → "앞벽")로,
+ * 천장 판·보는 "천장"으로 묶는다. 그 밖에는 이름 그대로다.
+ */
+const HIDDEN_GROUP_LABELS: readonly string[] = [...Object.values(STUDIO_BG3D_ROOM_WALL_LABELS), "천장"];
+
+function hiddenGroupLabel(name: string): string {
+  return HIDDEN_GROUP_LABELS.find((label) => name === label || name.startsWith(`${label} `)) ?? (name || "도형");
+}
+
 /** 방금 만든 도형 묶음에서 숨김 상태인 벽 조각을 모은다. 새 묶음에서 숨김은 자동 단면이 만든 것뿐이다. */
 export function summarizeStudioBg3dHiddenWalls(primitives: readonly BgPrimitive[]): StudioBg3dHiddenWallSummary {
   const ids: string[] = [];
@@ -44,10 +54,7 @@ export function summarizeStudioBg3dHiddenWalls(primitives: readonly BgPrimitive[
   for (const primitive of primitives) {
     if (primitive.visible !== false) continue;
     ids.push(primitive.id);
-    const name = primitive.name ?? "";
-    const label = name.endsWith(STUDIO_BG3D_ROOM_WALL_PART_SUFFIX)
-      ? name.slice(0, -STUDIO_BG3D_ROOM_WALL_PART_SUFFIX.length)
-      : name || "도형";
+    const label = hiddenGroupLabel(primitive.name ?? "");
     pieces.set(label, (pieces.get(label) ?? 0) + 1);
   }
   return { ids, walls: [...pieces].map(([label, count]) => ({ label, pieces: count })) };

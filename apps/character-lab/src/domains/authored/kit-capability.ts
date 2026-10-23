@@ -10,6 +10,10 @@
  * - body: `TS_Body` 체형 18타깃 + 필수 관절 오프셋 + 55본 매핑이 모두 있으면 available, 일부 partial, 전혀 없으면 unavailable.
  * - expression: `TS_Head`의 FACS 16 전부 available, 8~15 partial, 그 미만 unavailable.
  * - pose: 필수 15본, hand-pose: 손가락 30본(`skeleton.boneMap` 기준).
+ *
+ * 키트 v2(`toonstudio.character-kit/2`, 2026-10-23 A-1)도 같은 규칙이다: 슬롯 파츠 수는 베이스 변형(`variants`)만 센다 — 층 변형(`layerVariants`)은
+ * 슬롯이 아니라 층(inner·outer·legwear)에 입는 것이라 층 능력(`deriveKitWardrobeCapabilities`, kit-custom-capability.ts)이 따로 판정한다.
+ * 입력은 v1·v2가 공유하는 구조(`KitCapabilityManifest`)라 두 manifest를 그대로 받는다.
  */
 import {
   ALL_FACS_MORPH_NAMES,
@@ -32,7 +36,28 @@ import {
 
 import { EXPRESSION_AVAILABLE_MIN_UNITS } from "./package-capability";
 
-import type { FaceParamKey, HumanoidBoneName, KitBase, KitBaseId, KitManifest, KitPartSlot, PartRole, SlotCapability, SlotCapabilityMap, SlotKind } from "../../contracts";
+import type { FaceParamKey, HumanoidBoneName, KitBaseId, KitManifest, KitMesh, KitPartSlot, PartRole, SlotCapability, SlotCapabilityMap, SlotKind } from "../../contracts";
+
+/** 능력 판정이 읽는 베이스 부분(v1 `KitBase`·v2 `KitV2Base` 공통). v2 메시는 형태 morph(`shape:*`)도 가지므로 이름은 문자열로 읽는다. */
+export interface KitCapabilityBase {
+  readonly meshes: readonly (Pick<KitMesh, "role" | "primitiveRoles"> & { readonly morphs: readonly string[] })[];
+}
+
+/** 능력 판정이 읽는 파츠 부분(v1 `KitPart`·v2 `KitV2Part` 공통). 슬롯 수는 베이스 변형만 센다. */
+export interface KitCapabilityPart {
+  readonly id: string;
+  readonly variants: { readonly female?: unknown; readonly male?: unknown };
+  readonly unavailable: { readonly female?: string; readonly male?: string };
+}
+
+/** 능력 판정이 읽는 manifest 부분 — v1 `KitManifest`와 v2 `KitManifestV2`가 모두 만족한다. */
+export interface KitCapabilityManifest {
+  readonly skeleton: KitManifest["skeleton"];
+  readonly jointOffsets: KitManifest["jointOffsets"];
+  readonly bases: { readonly female?: KitCapabilityBase; readonly male?: KitCapabilityBase };
+  readonly parts: readonly KitCapabilityPart[];
+  readonly slotCapabilities: KitManifest["slotCapabilities"];
+}
 
 type IdentitySlot = "face-shape" | "eyes" | "nose" | "mouth" | "ears";
 const IDENTITY_SLOTS: readonly IdentitySlot[] = ["face-shape", "eyes", "nose", "mouth", "ears"];
@@ -56,7 +81,7 @@ function listFew(items: readonly string[], max = 4): string {
 }
 
 /** 베이스 안에서 해당 역할 메시들이 가진 morph 이름의 합집합 */
-function morphsOfRole(base: KitBase, role: PartRole): ReadonlySet<string> {
+function morphsOfRole(base: KitCapabilityBase, role: PartRole): ReadonlySet<string> {
   const names = new Set<string>();
   for (const mesh of base.meshes) {
     if (mesh.role === role || (mesh.primitiveRoles?.includes(role) ?? false)) for (const name of mesh.morphs) names.add(name);
@@ -90,9 +115,9 @@ function judgeIdentitySlot(slot: IdentitySlot, headMorphs: ReadonlySet<string>):
   return partial(reasons.join("; "));
 }
 
-function judgePartSlot(manifest: KitManifest, baseId: KitBaseId, slot: KitPartSlot): SlotCapability {
+function judgePartSlot(manifest: KitCapabilityManifest, baseId: KitBaseId, slot: KitPartSlot): SlotCapability {
   const names: readonly string[] = SLOT_PRESET_IDS[slot];
-  const partsById = new Map<string, KitManifest["parts"][number]>(manifest.parts.map((part) => [part.id, part]));
+  const partsById = new Map<string, KitCapabilityPart>(manifest.parts.map((part) => [part.id, part]));
   const missingNames: string[] = [];
   const unavailablePresets: Record<string, string> = {};
   for (const name of names) {
@@ -108,14 +133,14 @@ function judgePartSlot(manifest: KitManifest, baseId: KitBaseId, slot: KitPartSl
   return partial(`제공 ${provided}/${names.length}종, 미제공: ${missingNames.join(", ")}`, unavailablePresets);
 }
 
-function coveredBones(manifest: KitManifest): ReadonlySet<HumanoidBoneName> {
+function coveredBones(manifest: KitCapabilityManifest): ReadonlySet<HumanoidBoneName> {
   const joints = new Set(manifest.skeleton.joints);
   const covered = new Set<HumanoidBoneName>();
   for (const [joint, bone] of Object.entries(manifest.skeleton.boneMap)) if (joints.has(joint)) covered.add(bone);
   return covered;
 }
 
-function judgeBody(manifest: KitManifest, bodyMorphs: ReadonlySet<string>, bones: ReadonlySet<HumanoidBoneName>): SlotCapability {
+function judgeBody(manifest: KitCapabilityManifest, bodyMorphs: ReadonlySet<string>, bones: ReadonlySet<HumanoidBoneName>): SlotCapability {
   const missingMorphs = BODY_MORPH_NAMES.filter((name) => !bodyMorphs.has(name));
   const missingOffsets = KIT_REQUIRED_JOINT_OFFSET_MORPHS.filter((name) => Object.keys(manifest.jointOffsets[name] ?? {}).length === 0);
   const missingBones = HUMANOID_BONE_NAMES.filter((name) => !bones.has(name));
@@ -158,7 +183,7 @@ function missingBaseCapabilities(baseId: KitBaseId): SlotCapabilityMap {
  * 키트 베이스 하나의 15슬롯 능력을 규칙으로 계산한다. 같은 입력은 같은 결과(결정적)이며 사유 문구도 고정이다.
  * 베이스가 없으면 전부 unavailable이다(호출자는 `kit-base-missing`으로 먼저 걸러야 한다).
  */
-export function deriveKitCapabilities(manifest: KitManifest, baseId: KitBaseId): SlotCapabilityMap {
+export function deriveKitCapabilities(manifest: KitCapabilityManifest, baseId: KitBaseId): SlotCapabilityMap {
   const base = manifest.bases[baseId];
   if (base === undefined) return missingBaseCapabilities(baseId);
   const headMorphs = morphsOfRole(base, "head");
@@ -219,8 +244,8 @@ export function compareKitCapabilities(derived: SlotCapabilityMap, declared: Rea
   return differences;
 }
 
-/** 베이스별 선언과 규칙 판정이 어긋난 곳을 모두 모은다(manifest에 있는 베이스만). */
-export function kitCapabilityDifferences(manifest: KitManifest): ReadonlyMap<KitBaseId, readonly KitCapabilityDifference[]> {
+/** 베이스별 선언과 규칙 판정이 어긋난 곳을 모두 모은다(manifest에 있는 베이스만, v1·v2 공통). */
+export function kitCapabilityDifferences(manifest: KitCapabilityManifest): ReadonlyMap<KitBaseId, readonly KitCapabilityDifference[]> {
   const result = new Map<KitBaseId, readonly KitCapabilityDifference[]>();
   for (const baseId of KIT_BASE_IDS) {
     if (manifest.bases[baseId] === undefined) continue;

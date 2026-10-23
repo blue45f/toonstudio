@@ -23,8 +23,26 @@ import {
   studioBg3dRoomFurnitureParts,
   type StudioBg3dRoomFurnitureKind,
 } from "./studio-bg3d-room-furniture";
+import {
+  buildStudioBg3dRoomOpeningParts,
+  clampStudioBg3dRoomOpeningStyleFields,
+  studioBg3dRoomWallFrame,
+  type StudioBg3dOpeningHinge,
+  type StudioBg3dOpeningStyle,
+  type StudioBg3dRoomWallFrame,
+} from "./studio-bg3d-room-openings";
+import {
+  buildStudioBg3dRoomCeilingParts,
+  buildStudioBg3dRoomTrimParts,
+  clampStudioBg3dRoomCeiling,
+  clampStudioBg3dRoomTrims,
+  evaluateStudioBg3dRoomCeilingCutaway,
+  type StudioBg3dRoomCeilingStyle,
+  type StudioBg3dRoomTrims,
+} from "./studio-bg3d-room-trims";
 
 import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
+import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document-types";
 
 // 가구 카탈로그는 별도 모듈로 옮겼다(800줄 한도). 기존 가져오기 경로를 유지하려고 다시 내보낸다.
 export { STUDIO_BG3D_ROOM_FURNITURE_KINDS, STUDIO_BG3D_ROOM_FURNITURE_LABELS };
@@ -54,6 +72,14 @@ export interface StudioBg3dRoomOpening {
   readonly height: number;
   /** 바닥에서 오프닝 하단까지 높이(m). 문은 0으로 강제된다. */
   readonly sillHeight: number;
+  // 아래 넷은 선택 필드다(없으면 예전과 같은 빈 구멍) — studio-bg3d-room-openings.ts.
+  readonly style?: StudioBg3dOpeningStyle;
+  /** 0 = 닫힘(블라인드·셔터는 끝까지 내림), 1 = 가장 많이 열림. 없으면 스타일 기본값. */
+  readonly openRatio?: number;
+  /** 경첩 쪽(미닫이는 들어가는 쪽, 미서기는 움직이는 짝 쪽). 안에서 볼 때 기준, 없으면 왼쪽. */
+  readonly hinge?: StudioBg3dOpeningHinge;
+  /** 짝 수. 없으면 폭으로 정한다. */
+  readonly divisions?: number;
 }
 
 export interface StudioBg3dRoomFurnitureItem {
@@ -74,17 +100,25 @@ export interface StudioBg3dRoomSpec {
   readonly wallColor: string;
   readonly openings: readonly StudioBg3dRoomOpening[];
   readonly furniture: readonly StudioBg3dRoomFurnitureItem[];
+  /** 선택 필드. 없으면 천장 없음(예전과 같은 출력) — studio-bg3d-room-trims.ts. */
+  readonly ceiling?: StudioBg3dRoomCeilingStyle;
+  /** 선택 필드. 없으면 몰딩 없음. */
+  readonly trims?: StudioBg3dRoomTrims;
 }
 
 export interface StudioBg3dRoomPart {
   readonly kind: BgPrimitiveKind;
   readonly name: string;
-  /** 벽체 파츠가 속한 벽(바닥·가구는 없음). 자동 단면이 벽 단위로 숨길 때 쓴다. */
+  /** 벽에 붙은 파츠(벽체·문·창·몰딩)가 속한 벽(바닥·가구는 없음). 자동 단면이 벽 단위로 숨길 때 쓴다. */
   readonly wall?: StudioBg3dRoomWallId;
+  /** 천장 판·보. 자동 단면이 위에서 내려다보는 카메라 쪽 천장을 숨길 때 쓴다. */
+  readonly ceiling?: true;
   readonly position: readonly [number, number, number];
   readonly rotation: readonly [number, number, number];
   readonly scale: readonly [number, number, number];
   readonly color: string;
+  /** 유리처럼 색만으로 나타낼 수 없는 부품의 재질(기존 문서 필드). */
+  readonly materialOverride?: StudioBg3dMaterialOverride;
 }
 
 export const STUDIO_BG3D_ROOM_LIMITS = Object.freeze({
@@ -157,7 +191,15 @@ export function clampStudioBg3dRoomSpec(raw: Partial<StudioBg3dRoomSpec> | null 
       );
       const halfSpan = wallLength / 2 - limits.openingEdgeMargin - openingWidth / 2;
       const centerOffset = clampNumber(opening.centerOffset, 0, -Math.max(0, halfSpan), Math.max(0, halfSpan));
-      return { wall: opening.wall, type: opening.type, centerOffset, width: openingWidth, height, sillHeight };
+      return {
+        wall: opening.wall,
+        type: opening.type,
+        centerOffset,
+        width: openingWidth,
+        height,
+        sillHeight,
+        ...clampStudioBg3dRoomOpeningStyleFields(opening, opening.type),
+      };
     });
   const furniture = (Array.isArray(source.furniture) ? source.furniture : [])
     .slice(0, limits.maxFurniture)
@@ -169,6 +211,9 @@ export function clampStudioBg3dRoomSpec(raw: Partial<StudioBg3dRoomSpec> | null 
       z: clampNumber(item.z, 0, -depth / 2, depth / 2),
       yawDeg: clampNumber(item.yawDeg, 0, -360, 360),
     }));
+  // 천장·몰딩은 선택 필드라 값이 있을 때만 키를 만든다(없는 스펙의 clamp 결과는 예전과 같다).
+  const ceiling = clampStudioBg3dRoomCeiling(source.ceiling);
+  const trims = clampStudioBg3dRoomTrims(source.trims);
   return {
     width,
     depth,
@@ -178,6 +223,8 @@ export function clampStudioBg3dRoomSpec(raw: Partial<StudioBg3dRoomSpec> | null 
     wallColor: clampColor(source.wallColor, "#f2ead8"),
     openings,
     furniture,
+    ...(ceiling === undefined ? {} : { ceiling }),
+    ...(trims === undefined ? {} : { trims }),
   };
 }
 
@@ -195,7 +242,11 @@ export interface StudioBg3dWallSegment {
   readonly height: number;
 }
 
-interface AcceptedOpening {
+type WallOpeningGeometry = Pick<StudioBg3dRoomOpening, "centerOffset" | "width" | "height" | "sillHeight">;
+
+/** 벽 세그먼트 레이아웃이 받아들인 개구부와 그 사각형(벽-로컬 u·y). 부품(문틀·창짝)과 몰딩 끊김이 같은 판정을 쓴다. */
+export interface StudioBg3dAcceptedWallOpening<T extends WallOpeningGeometry = StudioBg3dRoomOpening> {
+  readonly opening: T;
   readonly left: number;
   readonly right: number;
   readonly bottom: number;
@@ -206,15 +257,15 @@ const EPSILON = 1e-6;
 
 /**
  * clamp를 통과한 오프닝이라도 벽 길이가 스펙 변경으로 줄었거나 서로 겹치면 여기서 탈락한다
- * (먼저 온 오프닝 우선 — 결정적). 반환 세그먼트는 u 오름차순 → 같은 오프닝의 창턱 → 인방 순.
+ * (먼저 온 오프닝 우선 — 결정적). 결과는 centerOffset 오름차순이다.
  */
-export function layoutStudioBg3dWallSegments(
+export function acceptStudioBg3dWallOpenings<T extends WallOpeningGeometry>(
   wallLength: number,
   wallHeight: number,
-  openings: readonly Pick<StudioBg3dRoomOpening, "centerOffset" | "width" | "height" | "sillHeight">[],
-): StudioBg3dWallSegment[] {
+  openings: readonly T[],
+): StudioBg3dAcceptedWallOpening<T>[] {
   const margin = STUDIO_BG3D_ROOM_LIMITS.openingEdgeMargin;
-  const accepted: AcceptedOpening[] = [];
+  const accepted: StudioBg3dAcceptedWallOpening<T>[] = [];
   const sorted = [...openings].sort((a, b) => a.centerOffset - b.centerOffset);
   for (const opening of sorted) {
     const left = opening.centerOffset - opening.width / 2;
@@ -225,8 +276,18 @@ export function layoutStudioBg3dWallSegments(
     if (right > wallLength / 2 - margin + EPSILON) continue;
     if (top - bottom < 0.05) continue;
     if (accepted.some((prev) => left < prev.right + EPSILON && right > prev.left - EPSILON)) continue;
-    accepted.push({ left, right, bottom, top });
+    accepted.push({ opening, left, right, bottom, top });
   }
+  return accepted;
+}
+
+/** 반환 세그먼트는 u 오름차순 → 같은 오프닝의 창턱 → 인방 순. */
+export function layoutStudioBg3dWallSegments(
+  wallLength: number,
+  wallHeight: number,
+  openings: readonly WallOpeningGeometry[],
+): StudioBg3dWallSegment[] {
+  const accepted = acceptStudioBg3dWallOpenings(wallLength, wallHeight, openings);
 
   const segments: StudioBg3dWallSegment[] = [];
   let cursor = -wallLength / 2;
@@ -273,24 +334,11 @@ export function layoutStudioBg3dWallSegments(
 // ── 벽 → 월드 배치 ────────────────────────────────────────────────────────────
 // "안(방 내부)에서 벽을 바라볼 때 +u가 오른쪽" 규약: 북벽은 +u=+x, 남벽은 +u=-x,
 // 서벽은 +u=-z, 동벽은 +u=+z. 이렇게 하면 UI의 "좌/우" 오프셋이 어느 벽에서도 직관과 일치한다.
+// 계산식은 벽 틀(studioBg3dRoomWallFrame, 개구부 모듈)이 한곳에 갖고 벽체·문창 부품·몰딩이 같이 쓴다.
 
-interface WallPlacement {
-  readonly toWorld: (u: number) => readonly [number, number];
-  /** 벽 길이 방향이 X축이면 true(스케일 매핑용). */
-  readonly alongX: boolean;
-}
-
-function wallPlacement(wall: StudioBg3dRoomWallId, width: number, depth: number): WallPlacement {
-  switch (wall) {
-    case "north":
-      return { toWorld: (u) => [u, -depth / 2], alongX: true };
-    case "south":
-      return { toWorld: (u) => [-u, depth / 2], alongX: true };
-    case "west":
-      return { toWorld: (u) => [-width / 2, -u], alongX: false };
-    case "east":
-      return { toWorld: (u) => [width / 2, u], alongX: false };
-  }
+function wallFrames(spec: StudioBg3dRoomSpec): Record<StudioBg3dRoomWallId, StudioBg3dRoomWallFrame> {
+  const frame = (wall: StudioBg3dRoomWallId) => studioBg3dRoomWallFrame(wall, spec.width, spec.depth, spec.wallThickness);
+  return { north: frame("north"), south: frame("south"), west: frame("west"), east: frame("east") };
 }
 
 // ── 방 전체 파츠 생성 ─────────────────────────────────────────────────────────
@@ -327,28 +375,74 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
     color: spec.floorColor,
   });
 
+  const frames = wallFrames(spec);
   for (const wall of STUDIO_BG3D_ROOM_WALL_IDS) {
-    const wallLength = wall === "north" || wall === "south" ? spec.width : spec.depth;
-    const placement = wallPlacement(wall, spec.width, spec.depth);
+    const frame = frames[wall];
     const segments = layoutStudioBg3dWallSegments(
-      wallLength,
+      frame.length,
       spec.wallHeight,
       spec.openings.filter((opening) => opening.wall === wall),
     );
     for (const segment of segments) {
-      const [x, z] = placement.toWorld(segment.centerU);
+      const [x, z] = frame.toWorld(segment.centerU, 0);
       parts.push({
         kind: "box",
         name: `${STUDIO_BG3D_ROOM_WALL_LABELS[wall]}${STUDIO_BG3D_ROOM_WALL_PART_SUFFIX}`,
         wall,
         position: [x, segment.centerY, z],
         rotation: [0, 0, 0],
-        scale: placement.alongX
+        scale: frame.alongX
           ? [segment.lengthU, segment.height, spec.wallThickness]
           : [spec.wallThickness, segment.height, segment.lengthU],
         color: spec.wallColor,
       });
     }
+  }
+
+  // 문·창 부품과 몰딩은 벽 세그먼트와 같은 개구부 판정을 쓴다. 스타일·몰딩·천장이 없는 스펙에서는 아무것도 더하지 않는다.
+  const accept = (wall: StudioBg3dRoomWallId) => acceptStudioBg3dWallOpenings(
+    frames[wall].length,
+    spec.wallHeight,
+    spec.openings.filter((opening) => opening.wall === wall),
+  );
+  const openingsByWall: Record<StudioBg3dRoomWallId, StudioBg3dAcceptedWallOpening[]> = {
+    north: accept("north"),
+    south: accept("south"),
+    west: accept("west"),
+    east: accept("east"),
+  };
+  for (const wall of STUDIO_BG3D_ROOM_WALL_IDS) {
+    const frame = frames[wall];
+    // 옆벽 안쪽 면 사이(모서리에서 옆벽 두께만큼 뺀 구간)에만 부품을 둔다.
+    const innerSpan = [-frame.length / 2 + spec.wallThickness / 2, frame.length / 2 - spec.wallThickness / 2] as const;
+    for (const accepted of openingsByWall[wall]) {
+      parts.push(...buildStudioBg3dRoomOpeningParts({
+        frame,
+        wallLabel: STUDIO_BG3D_ROOM_WALL_LABELS[wall],
+        opening: accepted.opening,
+        rect: accepted,
+        innerSpan,
+      }));
+    }
+  }
+  if (spec.trims) {
+    parts.push(...buildStudioBg3dRoomTrimParts({
+      frames,
+      wallLabels: STUDIO_BG3D_ROOM_WALL_LABELS,
+      walls: STUDIO_BG3D_ROOM_WALL_IDS,
+      wallHeight: spec.wallHeight,
+      openingsByWall,
+      trims: spec.trims,
+    }));
+  }
+  if (spec.ceiling) {
+    parts.push(...buildStudioBg3dRoomCeilingParts({
+      width: spec.width,
+      depth: spec.depth,
+      wallThickness: spec.wallThickness,
+      wallHeight: spec.wallHeight,
+      style: spec.ceiling,
+    }));
   }
 
   for (const item of spec.furniture) {
@@ -444,6 +538,8 @@ export interface StudioBg3dRoomBuildPlan {
   readonly primitives: BgPrimitive[];
   /** 숨김 상태로 만든 벽(북·남·서·동 순). 자동 단면을 쓰지 않았거나 가릴 벽이 없으면 빈 배열. */
   readonly hiddenWalls: readonly StudioBg3dRoomWallId[];
+  /** 위에서 내려다보는 카메라 때문에 천장(판·보)을 숨겼을 때만 true 로 있다(없으면 숨기지 않았다). */
+  readonly hiddenCeiling?: true;
   /** 기존 도형과 겹치지 않도록 방 전체에 더한 X 오프셋(m). */
   readonly anchorX: number;
 }
@@ -463,15 +559,28 @@ export function planStudioBg3dRoomBuild(
   const anchorX = existingCount > 0 ? existingCount * (clamped.width / 6) : 0;
   const camera = options.autoCutawayCamera;
   // 카메라 값이 비정상이면(배열이 아님 등) 단면 없이 만든다 — 방 추가 자체가 막히면 안 된다.
-  const hidden: ReadonlySet<StudioBg3dRoomWallId> = camera && Array.isArray(camera.position) && Array.isArray(camera.target)
+  const local = camera && Array.isArray(camera.position) && Array.isArray(camera.target)
+    ? {
+        cameraPosition: [camera.position[0] - anchorX, camera.position[1], camera.position[2]] as const,
+        focusPoint: [camera.target[0] - anchorX, camera.target[1], camera.target[2]] as const,
+      }
+    : null;
+  const hidden: ReadonlySet<StudioBg3dRoomWallId> = local
     ? evaluateStudioBg3dRoomAutoCutaway({
-        cameraPosition: [camera.position[0] - anchorX, camera.position[1], camera.position[2]],
-        focusPoint: [camera.target[0] - anchorX, camera.target[1], camera.target[2]],
+        ...local,
         roomWidth: clamped.width,
         roomDepth: clamped.depth,
         wallHeight: clamped.wallHeight,
       })
     : new Set();
+  const hideCeiling = local !== null && clamped.ceiling !== undefined && clamped.ceiling !== "none" &&
+    evaluateStudioBg3dRoomCeilingCutaway({
+      ...local,
+      roomWidth: clamped.width,
+      roomDepth: clamped.depth,
+      wallThickness: clamped.wallThickness,
+      wallHeight: clamped.wallHeight,
+    });
   const primitives = buildStudioBg3dRoomParts(clamped).map((part): BgPrimitive => ({
     id: idFactory(),
     kind: part.kind,
@@ -480,11 +589,13 @@ export function planStudioBg3dRoomBuild(
     rotation: [...part.rotation] as [number, number, number],
     scale: [...part.scale] as [number, number, number],
     color: part.color,
-    ...(part.wall !== undefined && hidden.has(part.wall) ? { visible: false } : {}),
+    ...(part.materialOverride ? { materialOverride: { ...part.materialOverride } } : {}),
+    ...((part.wall !== undefined && hidden.has(part.wall)) || (part.ceiling && hideCeiling) ? { visible: false } : {}),
   }));
   return {
     primitives,
     hiddenWalls: STUDIO_BG3D_ROOM_WALL_IDS.filter((wall) => hidden.has(wall)),
+    ...(hideCeiling ? { hiddenCeiling: true as const } : {}),
     anchorX,
   };
 }

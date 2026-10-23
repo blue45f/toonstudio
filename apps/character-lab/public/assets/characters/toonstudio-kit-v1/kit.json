@@ -3,7 +3,7 @@
   "kitId": "toonstudio-kit-v1",
   "kitVersion": 1,
   "displayName": "ToonStudio 캐릭터 키트 v1",
-  "generatedAt": "2026-10-11",
+  "generatedAt": "2026-10-23",
   "generator": {
     "tool": "tools/blender/character_kit",
     "blender": "5.2.2",
@@ -22,7 +22,7 @@
     "rootScale": 1
   },
   "provenance": {
-    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다.",
+    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다. 원본 파츠 기록: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered)은 tools/blender/character_kit/forge_hair가 이 저장소에서 절차 생성한 원본(license original)이며 Hyper3D 생성물이 아닙니다.",
     "noticeFile": "NOTICE.md",
     "sources": [
       {
@@ -37,10 +37,10 @@
       },
       {
         "id": "toonstudio-original",
-        "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·안경·귀걸이·텍스처)",
+        "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·소품 3종·헤어 7종·텍스처)",
         "license": "original",
         "derivative": false,
-        "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 안경·귀걸이는 베이스의 눈·귀 위치에서 계산해 만들었고 외부 에셋을 쓰지 않았습니다."
+        "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 외부 에셋·생성 AI를 쓰지 않았습니다. 파츠: build_irises — 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight): 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성; proc_accessories — 소품 3종(accessory/choker, accessory/earrings, accessory/glasses): 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성; forge_hair — 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered): 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님)."
       }
     ]
   },
@@ -380,135 +380,7 @@
       },
       "doubleSided": true
     },
-    "ts_top_tee": {
-      "role": "top",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "top"
-      },
-      "doubleSided": true
-    },
-    "ts_top_hoodie": {
-      "role": "top",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "top"
-      },
-      "doubleSided": true
-    },
-    "ts_top_shirt": {
-      "role": "top",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "top"
-      },
-      "doubleSided": true
-    },
-    "ts_top_blazer": {
-      "role": "top",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "top"
-      },
-      "doubleSided": true
-    },
-    "ts_top_sailor": {
-      "role": "top",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "top"
-      },
-      "doubleSided": true
-    },
-    "ts_bottom_jeans": {
-      "role": "bottom",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "bottom"
-      },
-      "doubleSided": true
-    },
-    "ts_bottom_shorts": {
-      "role": "bottom",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "bottom"
-      },
-      "doubleSided": true
-    },
-    "ts_bottom_pleated-skirt": {
-      "role": "bottom",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "bottom"
-      },
-      "doubleSided": true
-    },
-    "ts_bottom_long-skirt": {
-      "role": "bottom",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "bottom"
-      },
-      "doubleSided": true
-    },
-    "ts_bottom_slacks": {
-      "role": "bottom",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "bottom"
-      },
-      "doubleSided": true
-    },
-    "ts_shoes_sneakers": {
-      "role": "shoes",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "shoes"
-      },
-      "doubleSided": true
-    },
-    "ts_shoes_loafers": {
-      "role": "shoes",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "shoes"
-      },
-      "doubleSided": true
-    },
-    "ts_shoes_boots": {
-      "role": "shoes",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "shoes"
-      },
-      "doubleSided": true
-    },
-    "ts_shoes_sandals": {
-      "role": "shoes",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "shoes"
-      },
-      "doubleSided": true
-    },
     "ts_accessory_glasses": {
-      "role": "accessory",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "accessory"
-      },
-      "doubleSided": true
-    },
-    "ts_accessory_ribbon": {
-      "role": "accessory",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "accessory"
-      },
-      "doubleSided": true
-    },
-    "ts_accessory_cap": {
       "role": "accessory",
       "tint": {
         "mode": "recolor",
@@ -525,14 +397,6 @@
       "doubleSided": true
     },
     "ts_accessory_choker": {
-      "role": "accessory",
-      "tint": {
-        "mode": "recolor",
-        "colorKey": "accessory"
-      },
-      "doubleSided": true
-    },
-    "ts_accessory_headphones": {
       "role": "accessory",
       "tint": {
         "mode": "recolor",
@@ -3433,65 +3297,989 @@
     {
       "id": "hair/short-layered",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/short-layered.glb",
+            "bytes": 911116,
+            "sha256": "d79b4af90abf61ea376fa3a007e7fa38b0172a46328f7750056d6637dc605fb9"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_short-layered_LOD0",
+              "role": "hair",
+              "material": "ts_hair_short-layered",
+              "triangles": 9549,
+              "vertices": 4843,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_short-layered_LOD1",
+              "role": "hair",
+              "material": "ts_hair_short-layered",
+              "triangles": 3925,
+              "vertices": 2031,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_short-layered_LOD2",
+              "role": "hair",
+              "material": "ts_hair_short-layered",
+              "triangles": 1181,
+              "vertices": 647,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/short-layered.glb",
+            "bytes": 865260,
+            "sha256": "e8b81950f760b339dfd6cb1f6319c3a9fbd6a79874b86a1c838cd435cec584b3"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_short-layered_LOD0",
+              "role": "hair",
+              "material": "ts_hair_short-layered",
+              "triangles": 9021,
+              "vertices": 4579,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_short-layered_LOD1",
+              "role": "hair",
+              "material": "ts_hair_short-layered",
+              "triangles": 3733,
+              "vertices": 1935,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_short-layered_LOD2",
+              "role": "hair",
+              "material": "ts_hair_short-layered",
+              "triangles": 1109,
+              "vertices": 611,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "hair/soft-bob",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/soft-bob.glb",
+            "bytes": 983512,
+            "sha256": "801eeb2dcb1e156d0e42a11da085feec6d362325dcb4b7eabd20a38d56ff1773"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_soft-bob_LOD0",
+              "role": "hair",
+              "material": "ts_hair_soft-bob",
+              "triangles": 10626,
+              "vertices": 5386,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_soft-bob_LOD1",
+              "role": "hair",
+              "material": "ts_hair_soft-bob",
+              "triangles": 4282,
+              "vertices": 2214,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_soft-bob_LOD2",
+              "role": "hair",
+              "material": "ts_hair_soft-bob",
+              "triangles": 1005,
+              "vertices": 545,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/soft-bob.glb",
+            "bytes": 925604,
+            "sha256": "5ed0982f0df39ce8adf7bc0e9cbc114d3d73fe2731c7fdd8c254174e0a70339a"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_soft-bob_LOD0",
+              "role": "hair",
+              "material": "ts_hair_soft-bob",
+              "triangles": 9954,
+              "vertices": 5050,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_soft-bob_LOD1",
+              "role": "hair",
+              "material": "ts_hair_soft-bob",
+              "triangles": 3994,
+              "vertices": 2070,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_soft-bob_LOD2",
+              "role": "hair",
+              "material": "ts_hair_soft-bob",
+              "triangles": 965,
+              "vertices": 525,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "hair/romance-long",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/romance-long.glb",
+            "bytes": 1018644,
+            "sha256": "6ba65316f90a203e584f9887f9b73db6d38450368546cf432c0621dee429d09a"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_romance-long_LOD0",
+              "role": "hair",
+              "material": "ts_hair_romance-long",
+              "triangles": 11322,
+              "vertices": 5712,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_romance-long_LOD1",
+              "role": "hair",
+              "material": "ts_hair_romance-long",
+              "triangles": 5274,
+              "vertices": 2688,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_romance-long_LOD2",
+              "role": "hair",
+              "material": "ts_hair_romance-long",
+              "triangles": 1549,
+              "vertices": 813,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/romance-long.glb",
+            "bytes": 821136,
+            "sha256": "4fb7f45d5d7b21dcf86eab01ffb83699108f4836f1a874767ad87210d6b5c311"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_romance-long_LOD0",
+              "role": "hair",
+              "material": "ts_hair_romance-long",
+              "triangles": 8302,
+              "vertices": 4202,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_romance-long_LOD1",
+              "role": "hair",
+              "material": "ts_hair_romance-long",
+              "triangles": 3994,
+              "vertices": 2048,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_romance-long_LOD2",
+              "role": "hair",
+              "material": "ts_hair_romance-long",
+              "triangles": 1189,
+              "vertices": 633,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "hair/action-pony",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/action-pony.glb",
+            "bytes": 923044,
+            "sha256": "4938fbe36f0000a326badc579d8c4d56421e36cb18215da59a5684248f3e9267"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_action-pony_LOD0",
+              "role": "hair",
+              "material": "ts_hair_action-pony",
+              "triangles": 8969,
+              "vertices": 4560,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_action-pony_LOD1",
+              "role": "hair",
+              "material": "ts_hair_action-pony",
+              "triangles": 4389,
+              "vertices": 2270,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_action-pony_LOD2",
+              "role": "hair",
+              "material": "ts_hair_action-pony",
+              "triangles": 1472,
+              "vertices": 800,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/action-pony.glb",
+            "bytes": 866728,
+            "sha256": "6a652ed7c55baeba0d4ae475d213025ae4df2a543b163ca7cfdad14941fd2305"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_action-pony_LOD0",
+              "role": "hair",
+              "material": "ts_hair_action-pony",
+              "triangles": 8369,
+              "vertices": 4260,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_action-pony_LOD1",
+              "role": "hair",
+              "material": "ts_hair_action-pony",
+              "triangles": 4121,
+              "vertices": 2136,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_action-pony_LOD2",
+              "role": "hair",
+              "material": "ts_hair_action-pony",
+              "triangles": 1360,
+              "vertices": 744,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "hair/hime-cut",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/hime-cut.glb",
+            "bytes": 1071900,
+            "sha256": "9283875e4a28276eab9287177b35f1d5663a3499d49014d18ff5119c5412ee92"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_hime-cut_LOD0",
+              "role": "hair",
+              "material": "ts_hair_hime-cut",
+              "triangles": 11462,
+              "vertices": 5792,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_hime-cut_LOD1",
+              "role": "hair",
+              "material": "ts_hair_hime-cut",
+              "triangles": 5514,
+              "vertices": 2818,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_hime-cut_LOD2",
+              "role": "hair",
+              "material": "ts_hair_hime-cut",
+              "triangles": 1685,
+              "vertices": 891,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/hime-cut.glb",
+            "bytes": 924300,
+            "sha256": "62f693432f7c40463c0bc3c931964de1391e8cd61dc26269bdab07e9cd113061"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_hime-cut_LOD0",
+              "role": "hair",
+              "material": "ts_hair_hime-cut",
+              "triangles": 9182,
+              "vertices": 4652,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_hime-cut_LOD1",
+              "role": "hair",
+              "material": "ts_hair_hime-cut",
+              "triangles": 4538,
+              "vertices": 2330,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_hime-cut_LOD2",
+              "role": "hair",
+              "material": "ts_hair_hime-cut",
+              "triangles": 1389,
+              "vertices": 743,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "hair/wolf-layered",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/wolf-layered.glb",
+            "bytes": 1133756,
+            "sha256": "6b616a4180607b7f7d4b1e924df26d959526f990e3859f1f3afc59e57823fa4a"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_wolf-layered_LOD0",
+              "role": "hair",
+              "material": "ts_hair_wolf-layered",
+              "triangles": 12186,
+              "vertices": 6164,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_wolf-layered_LOD1",
+              "role": "hair",
+              "material": "ts_hair_wolf-layered",
+              "triangles": 4842,
+              "vertices": 2492,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_wolf-layered_LOD2",
+              "role": "hair",
+              "material": "ts_hair_wolf-layered",
+              "triangles": 1453,
+              "vertices": 785,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/wolf-layered.glb",
+            "bytes": 1077220,
+            "sha256": "28b27d282a81284e8fd14757275194c11ee35031020b8431a45025c2dd082788"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_wolf-layered_LOD0",
+              "role": "hair",
+              "material": "ts_hair_wolf-layered",
+              "triangles": 11490,
+              "vertices": 5816,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_wolf-layered_LOD1",
+              "role": "hair",
+              "material": "ts_hair_wolf-layered",
+              "triangles": 4634,
+              "vertices": 2388,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_wolf-layered_LOD2",
+              "role": "hair",
+              "material": "ts_hair_wolf-layered",
+              "triangles": 1381,
+              "vertices": 749,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "hair/twin-tail",
       "slot": "hair",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/hair/twin-tail.glb",
+            "bytes": 1224728,
+            "sha256": "6b80bf80c301e45c96b105f14e65cae205d126a55d1cf9270de227656ff781d9"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_twin-tail_LOD0",
+              "role": "hair",
+              "material": "ts_hair_twin-tail",
+              "triangles": 12472,
+              "vertices": 6335,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_twin-tail_LOD1",
+              "role": "hair",
+              "material": "ts_hair_twin-tail",
+              "triangles": 6148,
+              "vertices": 3173,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_twin-tail_LOD2",
+              "role": "hair",
+              "material": "ts_hair_twin-tail",
+              "triangles": 2276,
+              "vertices": 1226,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/hair/twin-tail.glb",
+            "bytes": 1101368,
+            "sha256": "c3528d11a1cb999a7ddb15491b30071c82fdb357385235dc6d5b1b2a53323df6"
+          },
+          "meshes": [
+            {
+              "node": "TS_AuthoredHair_twin-tail_LOD0",
+              "role": "hair",
+              "material": "ts_hair_twin-tail",
+              "triangles": 10684,
+              "vertices": 5441,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 0
+            },
+            {
+              "node": "TS_AuthoredHair_twin-tail_LOD1",
+              "role": "hair",
+              "material": "ts_hair_twin-tail",
+              "triangles": 5220,
+              "vertices": 2709,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 1
+            },
+            {
+              "node": "TS_AuthoredHair_twin-tail_LOD2",
+              "role": "hair",
+              "material": "ts_hair_twin-tail",
+              "triangles": 1876,
+              "vertices": 1026,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-"
+              ],
+              "lod": 2
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "top/tee",
@@ -5059,8 +5847,7 @@
         "status": "available"
       },
       "hair": {
-        "status": "unavailable",
-        "reasonKo": "키트가 female 베이스용 헤어 파츠를 제공하지 않습니다(0/7종)."
+        "status": "available"
       },
       "top": {
         "status": "unavailable",
@@ -5116,8 +5903,7 @@
         "status": "available"
       },
       "hair": {
-        "status": "unavailable",
-        "reasonKo": "키트가 male 베이스용 헤어 파츠를 제공하지 않습니다(0/7종)."
+        "status": "available"
       },
       "top": {
         "status": "unavailable",

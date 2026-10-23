@@ -1,9 +1,14 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
-import { KIT_ASSET_ROOT, KIT_DEFAULT_ID, KIT_DEFAULT_SLOTS, KIT_MORPH_NAMES, KIT_PART_SLOTS, createKitDefaultRecipe, isLabFailure, kitGeometryKey, parseKitManifest } from "../../contracts";
+import { KIT_ASSET_ROOT, KIT_DEFAULT_ID, KIT_DEFAULT_SLOTS, KIT_MORPH_NAMES, KIT_PART_SLOTS, createDefaultWardrobe, createKitDefaultRecipe, isLabFailure, kitGeometryKey, parseKitManifest } from "../../contracts";
+import { stableStringify } from "../../shared/stable-json";
+import { kitManifestFixture as coreKitManifestFixture } from "../../testing/kit-fixtures";
 
-import { deriveKitCapabilities } from "./kit-capability";
+import { deriveKitCapabilities, kitCapabilityDifferences } from "./kit-capability";
 import { buildKitPlan, buildKitPlanDetailed } from "./kit-plan";
+import { isKitPlanV2 } from "./kit-plan-v2-types";
 import { kitManifestFixture, kitManifestJson } from "./kit-test-fixture";
 
 import type { KitPlanSource } from "./kit-plan";
@@ -204,5 +209,58 @@ describe("authored/kit-plan — 실패는 한글 사유로 보이게 한다(무�
   it("buildKitPlan은 실패를 던지지 않고 LabFailure 값으로 돌려준다", () => {
     expect(() => buildKitPlan(manifest, { ...FEMALE, kitVersion: 99 }, KIT_DEFAULT_SLOTS)).not.toThrow();
     expect(isLabFailure(buildKitPlan(manifest, { ...FEMALE, kitVersion: 99 }, KIT_DEFAULT_SLOTS))).toBe(true);
+  });
+});
+
+/**
+ * v1 manifest 계획의 항등(레시피 v3·키트 v2 계획기 도입 전후, 2026-10-23 A-1). 아래 digest는 **수정 전 코드**(HEAD 4fa677b8c의
+ * kit-plan.ts·kit-capability.ts)로 같은 입력을 계획해 `stableStringify` → SHA-256으로 만든 값이다. 계획 값이 하나라도 바뀌면(필드 추가 포함) 깨진다.
+ */
+describe("authored/kit-plan — v1 manifest 계획은 키트 v2 도입 전과 항등이다", () => {
+  const digest = (value: unknown): string => createHash("sha256").update(stableStringify(value)).digest("hex");
+  const FULL = { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers", accessory: "accessory/glasses" };
+  const manifest = kitManifestFixture();
+  const partialMale = kitManifestFixture({ malePresets: ["irises/round-large", "hair/soft-bob", "top/tee"], omitFemale: ["hair/twin-tail"] });
+  const tamperedRaw = structuredClone(kitManifestJson()) as { slotCapabilities: { male: Record<string, unknown> } };
+  tamperedRaw.slotCapabilities.male.hair = { status: "available" };
+  const tampered = parseKitManifest(tamperedRaw);
+  if (!tampered.ok) throw new Error(tampered.failure.reasonKo);
+
+  const GOLDEN: ReadonlyArray<readonly [string, () => unknown, string]> = [
+    ["female-default", () => buildKitPlanDetailed(manifest, FEMALE, KIT_DEFAULT_SLOTS), "9a35eea06c51da097fa0db2092778615f52687aeebd580b5e6e73a353e128f05"],
+    ["female-full", () => buildKitPlanDetailed(manifest, FEMALE, FULL), "b3a1c31e0c050794a14c3249707951a8c3a8b30296ae76793d30a472618c75fd"],
+    [
+      "female-full-lod1-root",
+      () => buildKitPlanDetailed(manifest, FEMALE, FULL, { preferredHairLod: 1, rootUrl: "https://cdn.example.test/kit/" }),
+      "4627e86be8444bc0eea4eb6a0c0f9179aebcd33b1856963505e6d021af254727",
+    ],
+    ["female-sparse", () => buildKitPlanDetailed(manifest, FEMALE, {}), "dabfd22db46c1fd99a49246800c6bec0a9dbd4b746b93df60ff6b0bd32e2cf31"],
+    ["male-default", () => buildKitPlanDetailed(manifest, MALE, KIT_DEFAULT_SLOTS), "c6cf103bf98e98b4669446e75c70ff013382f22522d1e440117aaf1b7e70ac0a"],
+    ["male-partial", () => buildKitPlanDetailed(partialMale, MALE, { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob", top: "top/tee" }), "6fbded61311f565016dd411fa0d38bd04162654dd252defe8f6e8460bf454992"],
+    ["fail-male-hime", () => buildKitPlanDetailed(manifest, MALE, { ...KIT_DEFAULT_SLOTS, hair: "hair/hime-cut" }, { now: 7 }), "1cb8e5ea429b487381e825f895dee4eba9b3bef5aeaf59339316bf687498b8e5"],
+    ["fail-version", () => buildKitPlanDetailed(manifest, { ...FEMALE, kitVersion: 2 }, KIT_DEFAULT_SLOTS, { now: 7 }), "38a24780b6d352260b13b60ed5529406cb6299b51a23a77550e8bde8b5cb03f3"],
+    ["fail-capabilities", () => buildKitPlanDetailed(tampered.manifest, MALE, KIT_DEFAULT_SLOTS, { now: 7 }), "3a3c145b8d967d9fe8239febc81b020b81322aece33969353ec5344616ed983e"],
+    ["core-fixture-female-full", () => buildKitPlanDetailed(coreKitManifestFixture(), FEMALE, FULL), "b3a1c31e0c050794a14c3249707951a8c3a8b30296ae76793d30a472618c75fd"],
+    ["capabilities-female", () => deriveKitCapabilities(manifest, "female"), "76f3213b27a79ac69da3830e1c659d36ea586de301323c049ab54037eb10aaa5"],
+    ["capabilities-male-partial", () => deriveKitCapabilities(partialMale, "male"), "4639067045bac1f9c688cfad5a401f3d396cc184e57905cb17c8fba640c401bb"],
+    ["differences-tampered", () => [...kitCapabilityDifferences(tampered.manifest).entries()], "4af865f7f445fe206ff2de114811dbbf835e4bcc7dfdc61f8e882a3865cbaf8f"],
+  ];
+
+  it.each(GOLDEN)("%s: 수정 전 digest와 같다", (_name, make, expected) => {
+    expect(digest(make())).toBe(expected);
+  });
+
+  it("v1 계획에는 v2 필드(custom)가 없고 키 집합이 계약 KitPlan 그대로다", () => {
+    const plan = expectPlan(buildKitPlan(manifest, FEMALE, FULL));
+    expect(Object.keys(plan).sort()).toEqual(
+      ["baseId", "bodyRegions", "capabilities", "hairLodPolicy", "jointOffsets", "kitId", "kitVersion", "licenseNote", "materials", "morphNames", "parts", "skeleton"].sort(),
+    );
+    expect(isKitPlanV2(plan)).toBe(false);
+  });
+
+  it("v1 manifest는 옷장(층·추가 소품)을 받아도 계획이 바뀌지 않는다(층 변형·강체 소품이 없다 — 사유는 커스터마이즈 능력)", () => {
+    const wardrobe = { ...createDefaultWardrobe(), inner: "top/shirt", outer: "top/blazer", legwear: "bottom/slacks", accessories: [{ id: "acc-1", presetId: "accessory/ribbon" }] } as const;
+    const withWardrobe = buildKitPlanDetailed(manifest, FEMALE, FULL, { wardrobe });
+    expect(digest(withWardrobe)).toBe("b3a1c31e0c050794a14c3249707951a8c3a8b30296ae76793d30a472618c75fd");
   });
 });

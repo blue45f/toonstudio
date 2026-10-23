@@ -11,6 +11,8 @@ const reference = readFileSync(
   "utf8",
 );
 const renderer = readFileSync(new URL("./StudioVrmAvatarForge.tsx", import.meta.url), "utf8");
+// 헤어 메시·재질·외곽선 조립은 뷰포트와 카드 썸네일이 함께 쓰도록 이 모듈로 옮겼다.
+const hairRenderer = readFileSync(new URL("./studio-vrm-avatar-forge-hair-object.ts", import.meta.url), "utf8");
 const dialog = readFileSync(new URL("./StudioVrmPoserDialog.tsx", import.meta.url), "utf8");
 
 describe("Shaper-inspired character workshop product boundary", () => {
@@ -38,13 +40,14 @@ describe("Shaper-inspired character workshop product boundary", () => {
   });
 
   it("adds a merged authored toon silhouette without mutating source hair geometry", () => {
-    expect(renderer).toContain("new THREE.MeshToonMaterial");
-    expect(renderer).toContain("new THREE.MeshBasicMaterial");
-    expect(renderer).toContain("THREE.BackSide");
-    expect(renderer).toContain("createExpandedOutlineGeometry");
-    expect(renderer).toContain("normal.getX(index) * thickness");
-    expect(renderer).toContain("ToonStudioAvatarForgeHair_AuthoredMerged");
-    expect(renderer).toContain("mergeStudioVrmAuthoredHairGeometry(");
+    expect(renderer).toContain("addAvatarForgeHairParts(");
+    expect(hairRenderer).toContain("new THREE.MeshToonMaterial");
+    expect(hairRenderer).toContain("new THREE.MeshBasicMaterial");
+    expect(hairRenderer).toContain("THREE.BackSide");
+    expect(hairRenderer).toContain("createExpandedOutlineGeometry");
+    expect(hairRenderer).toContain("normal.getX(index) * thickness");
+    expect(hairRenderer).toContain("ToonStudioAvatarForgeHair_AuthoredMerged");
+    expect(hairRenderer).toContain("mergeStudioVrmAuthoredHairGeometry(");
     expect(dialog).toContain("max-w-[1480px]");
     expect(dialog).toContain("_460px");
   });

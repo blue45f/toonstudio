@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { KIT_ASSET_ROOT, createDefaultRecipe, createKitDefaultRecipe, failVisible, isLabFailure } from "../../contracts";
+import { DEFAULT_ACCESSORY_OFFSET, KIT_ASSET_ROOT, KIT_SCHEMA_ID, KIT_V2_SCHEMA_ID, createDefaultRecipe, createKitDefaultRecipe, failVisible, isLabFailure } from "../../contracts";
 import { loadKitManifestFlow } from "../../domains/authored/kit-load-flow";
 import { buildKitPlanDetailed } from "../../domains/authored/kit-plan";
+import { isKitPlanV2 } from "../../domains/authored/kit-plan-v2-types";
+import { finalizeKitV2, richKitV2Json } from "../../domains/authored/kit-v2-test-fixture";
 import { kitManifestFixture, kitManifestJson } from "../../testing/kit-fixtures";
+import { kitManifestV2Json } from "../../testing/kit-v2-fixtures";
 
 import { createKitPlanRegistry } from "./kit-plan-registry";
 
@@ -227,5 +230,63 @@ describe("app/shell/kit-plan-registry", () => {
     const original = failVisible("kit-manifest-invalid", "kit.json 검증 실패", undefined, 1);
     const registry = createKitPlanRegistry({ loadManifest: async () => ({ ok: false, failure: original }), buildPlan: buildKitPlanDetailed });
     expect(await failureOf(registry.plan(createKitDefaultRecipe()))).toBe(original);
+  });
+});
+
+describe("app/shell/kit-plan-registry — 키트 v2 manifest", () => {
+  const v2Json = (): Record<string, unknown> => finalizeKitV2(richKitV2Json(kitManifestV2Json())).json;
+  const outerRecipe = (): CharacterRecipe => {
+    const recipe = createKitDefaultRecipe();
+    return {
+      ...recipe,
+      slots: { ...recipe.slots, top: "top/tee" },
+      wardrobe: { inner: null, outer: "top/blazer", legwear: null, accessories: [{ id: "acc-1", presetId: "accessory/ribbon", anchor: "hair", offset: DEFAULT_ACCESSORY_OFFSET }] },
+    };
+  };
+
+  it("계획은 v2 원본으로 만들고 레시피 옷장(층·추가 소품)을 넘긴다", async () => {
+    const registry = createKitPlanRegistry(fakeKit(v2Json()).deps);
+    const plan = await registry.plan(outerRecipe());
+    expect(isKitPlanV2(plan)).toBe(true);
+    if (!isKitPlanV2(plan)) return;
+    expect(plan.parts.map((part) => part.id)).toEqual(["base/female", "top/tee", "irises/round-large"]);
+    expect(plan.custom.files.slice(3).map((file) => file.id)).toEqual(["outer:top/blazer", "acc-1:accessory/ribbon"]);
+  });
+
+  it("wardrobe: \"none\"이면 슬롯 파츠만 계획한다(슬롯 카드 썸네일 임시 리그용)", async () => {
+    const registry = createKitPlanRegistry(fakeKit(v2Json()).deps);
+    const plan = await registry.plan(outerRecipe(), { wardrobe: "none", preferredHairLod: 1 });
+    if (!isKitPlanV2(plan)) throw new Error("v2 계획이어야 합니다.");
+    expect(plan.custom.files.map((file) => file.kind)).toEqual(["base", "part", "part"]);
+    expect(plan.custom.skipped).toEqual([]);
+  });
+
+  it("ensure·peek·loaded는 v1 형식 보기를, ensureAny·peekAny는 v2 원본을 같은 캐시로 돌려준다(kit.json은 한 번만 받는다)", async () => {
+    const { deps, fetches } = fakeKit(v2Json());
+    const registry = createKitPlanRegistry(deps);
+    const source = createKitDefaultRecipe().source;
+    if (source.kind !== "kit") throw new Error("키트 소스여야 합니다.");
+    const view = await registry.ensure(source);
+    expect(view.schema).toBe(KIT_SCHEMA_ID);
+    const original = await registry.ensureAny(source);
+    expect(original.version).toBe(2);
+    expect(original.manifest.schema).toBe(KIT_V2_SCHEMA_ID);
+    expect(registry.peek(source)).toBe(view);
+    expect(registry.peekAny(source)).toBe(original);
+    expect(registry.loaded()).toEqual([view]);
+    expect(view.parts.map((part) => part.id)).toEqual(original.manifest.parts.map((part) => part.id));
+    expect(fetches).toEqual([MANIFEST_URL]);
+  });
+
+  it("v1 manifest는 ensure와 ensureAny가 같은 원본이고(version 1), 옷장을 넘겨도 계획이 v1 그대로다", async () => {
+    const registry = createKitPlanRegistry(fakeKit().deps);
+    const source = createKitDefaultRecipe().source;
+    if (source.kind !== "kit") throw new Error("키트 소스여야 합니다.");
+    const original = await registry.ensureAny(source);
+    expect(original.version).toBe(1);
+    expect(await registry.ensure(source)).toBe(original.manifest);
+    const plan = await registry.plan({ ...outerRecipe(), slots: createKitDefaultRecipe().slots });
+    expect(isKitPlanV2(plan)).toBe(false);
+    expect(plan).toEqual(await registry.plan(createKitDefaultRecipe()));
   });
 });

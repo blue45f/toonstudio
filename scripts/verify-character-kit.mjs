@@ -18,10 +18,6 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { inflateSync } from "node:zlib";
-
-import { Logger, NodeIO } from "@gltf-transform/core";
-import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 
 import {
   BODY_PARAM_KEYS,
@@ -36,10 +32,8 @@ import {
   KIT_DEFAULT_BASE_ID,
   KIT_DEFAULT_ID,
   KIT_DEFAULT_SLOTS,
-  KIT_ALLOWED_EXTENSIONS,
   KIT_ALLOWED_LICENSES,
   KIT_END_BONES,
-  KIT_FORBIDDEN_EXTENSIONS,
   KIT_HEAD_NODE,
   KIT_HYPER3D_EVIDENCE_PREFIX,
   KIT_JOINT_COUNT,
@@ -51,16 +45,28 @@ import {
   KIT_REGION_IDS,
   KIT_REQUIRED_JOINT_OFFSET_MORPHS,
   KIT_REQUIRED_PRESETS,
+  KIT_V2_SCHEMA_ID,
   OUTLINE_MESH_SUFFIX,
   AUTHORED_HAIR_MESH_PATTERN,
   SLOT_PRESET_IDS,
   isMorphTargetName,
   kitManifestObjectSchema,
   kitManifestSchema,
+  kitManifestV2ObjectSchema,
+  kitManifestV2Schema,
+  parseExtendedMorphName,
 } from "../apps/character-lab/src/contracts/index.ts";
 import { deriveKitCapabilities } from "../apps/character-lab/src/domains/authored/kit-capability.ts";
 import { classifyBoneNames } from "../apps/character-lab/src/domains/authored/bone-name-mapping.ts";
 import { stableStringify } from "../apps/character-lab/src/shared/stable-json.ts";
+
+import { checkContainerJson, loadGlbModel, parseGlbContainer, PointGrid, primsOf, targetNamesOf, triangleCountOf, trianglesOf, viewOf } from "./lib/character-kit-glb-model.mjs";
+import { decodeImageInfo } from "./lib/character-kit-image-decode.mjs";
+import * as v2 from "./lib/character-kit-v2-checks.mjs";
+
+// 옮긴 모듈의 공개 함수는 이 검증기의 공개 API로 계속 내보낸다(시험·도구 호환).
+export { checkContainerJson, decodeImageInfo, loadGlbModel, parseGlbContainer };
+export const { V2_CHECKS, V2_LIMITS } = v2;
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const DEFAULT_KIT_ROOT = path.join(REPO_ROOT, "apps/character-lab/public/assets/characters/toonstudio-kit-v1");
@@ -90,8 +96,13 @@ export const CHECKS = Object.freeze([
   { id: "V20", title: "메시 무결성" },
 ]);
 const CHECK_IDS = CHECKS.map((check) => check.id);
-/** GLB를 열어야 하는 검사 */
+/** 키트 v2 manifest에서만 도는 검사까지 합친 목록(v1 키트 보고서는 `CHECKS`만 담아 예전과 같다) */
+const ALL_CHECKS = Object.freeze([...CHECKS, ...v2.V2_CHECKS]);
+const ALL_CHECK_IDS = ALL_CHECKS.map((check) => check.id);
+const V2_CHECK_IDS = v2.V2_CHECKS.map((check) => check.id);
+/** GLB를 열어야 하는 검사(`verifyGlb`가 도는 v1 집합). v2 전용 검사도 GLB가 필요하다(`NEEDS_GLB_IDS`). */
 const GLB_CHECK_IDS = new Set(["V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V18", "V20"]);
+const NEEDS_GLB_IDS = new Set([...GLB_CHECK_IDS, ...V2_CHECK_IDS]);
 
 /** recolor 텍스처 평균 휘도 하한(계약 3.6) */
 export const RECOLOR_MIN_MEAN_LUMINANCE = 0.75;
@@ -146,6 +157,8 @@ export class Report {
   /** @param {Iterable<string>} selected 이번에 실행하는 검사 id */
   constructor(selected = CHECK_IDS) {
     this.selected = new Set(selected);
+    /** 요약에 싣는 검사 목록(키트 v2면 V21~V24까지) */
+    this.checks = CHECKS;
     /** @type {Array<{id: string, level: "error" | "warning", where: string, message: string}>} */
     this.findings = [];
     /** @type {Record<string, unknown>} */
@@ -197,7 +210,7 @@ export class Report {
 
   summary() {
     const checks = {};
-    for (const { id, title } of CHECKS) {
+    for (const { id, title } of this.checks) {
       if (!this.wants(id)) continue;
       const errors = this.count("error", id);
       const warnings = this.count("warning", id);
@@ -312,702 +325,6 @@ function allFinite(array) {
 function firstNonFinite(array) {
   for (let i = 0; i < array.length; i += 1) if (!Number.isFinite(array[i])) return i;
   return -1;
-}
-
-// ---------------------------------------------------------------- 이미지 해독(PNG/JPEG 헤더 + 평균 휘도)
-
-function isPng(bytes) {
-  return bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
-}
-
-function isJpeg(bytes) {
-  return bytes.length > 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-}
-
-function paethPredictor(a, b, c) {
-  const p = a + b - c;
-  const pa = Math.abs(p - a);
-  const pb = Math.abs(p - b);
-  const pc = Math.abs(p - c);
-  if (pa <= pb && pa <= pc) return a;
-  return pb <= pc ? b : c;
-}
-
-function decodePng(bytes) {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let position = 8;
-  let header = null;
-  let palette = null;
-  let transparency = null;
-  const idat = [];
-  while (position + 8 <= bytes.length) {
-    const length = view.getUint32(position);
-    const type = String.fromCharCode(bytes[position + 4], bytes[position + 5], bytes[position + 6], bytes[position + 7]);
-    const data = bytes.subarray(position + 8, position + 8 + length);
-    if (type === "IHDR" && data.length >= 13) {
-      const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
-      header = { width: dv.getUint32(0), height: dv.getUint32(4), depth: data[8], colorType: data[9], interlace: data[12] };
-    } else if (type === "PLTE") palette = data;
-    else if (type === "tRNS") transparency = data;
-    else if (type === "IDAT") idat.push(data);
-    position += 12 + length;
-    if (type === "IEND") break;
-  }
-  if (header === null) return { format: "png", width: 0, height: 0, hasAlpha: false, meanLuminance: null, note: "PNG IHDR 청크를 읽지 못했습니다." };
-  const { width, height, depth, colorType, interlace } = header;
-  const hasAlpha = colorType === 4 || colorType === 6 || transparency !== null;
-  const info = { format: "png", width, height, hasAlpha, meanLuminance: null, note: null, colorType, bitDepth: depth };
-  const channelsByType = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
-  const channels = channelsByType[colorType];
-  const depthOk = colorType === 3 || colorType === 0 ? [1, 2, 4, 8, 16].includes(depth) : depth === 8 || depth === 16;
-  if (channels === undefined || !depthOk) return { ...info, note: `지원하지 않는 PNG 색 유형/비트 깊이(${colorType}/${depth})라 휘도를 측정하지 않았습니다.` };
-  if (interlace !== 0) return { ...info, note: "인터레이스 PNG라 휘도를 측정하지 않았습니다." };
-  if (colorType === 3 && palette === null) return { ...info, note: "팔레트 PNG에 PLTE가 없습니다." };
-
-  let raw;
-  try {
-    raw = inflateSync(Buffer.concat(idat));
-  } catch (error) {
-    return { ...info, note: `PNG 데이터를 풀지 못했습니다: ${error instanceof Error ? error.message : String(error)}` };
-  }
-  const bitsPerPixel = channels * depth;
-  const rowBytes = Math.ceil((width * bitsPerPixel) / 8);
-  const bytesPerPixel = Math.max(1, bitsPerPixel >> 3);
-  if (raw.length < (rowBytes + 1) * height) return { ...info, note: "PNG 데이터 길이가 부족합니다." };
-  const pixels = new Uint8Array(rowBytes * height);
-  for (let y = 0; y < height; y += 1) {
-    const filter = raw[y * (rowBytes + 1)];
-    const source = y * (rowBytes + 1) + 1;
-    const target = y * rowBytes;
-    for (let x = 0; x < rowBytes; x += 1) {
-      const left = x >= bytesPerPixel ? pixels[target + x - bytesPerPixel] : 0;
-      const up = y > 0 ? pixels[target - rowBytes + x] : 0;
-      const upLeft = y > 0 && x >= bytesPerPixel ? pixels[target - rowBytes + x - bytesPerPixel] : 0;
-      let value = raw[source + x];
-      if (filter === 1) value += left;
-      else if (filter === 2) value += up;
-      else if (filter === 3) value += (left + up) >> 1;
-      else if (filter === 4) value += paethPredictor(left, up, upLeft);
-      else if (filter !== 0) return { ...info, note: `알 수 없는 PNG 필터 유형 ${filter}` };
-      pixels[target + x] = value & 255;
-    }
-  }
-  const max = 2 ** depth - 1;
-  const sample = (rowStart, index) => {
-    if (depth === 8) return pixels[rowStart + index];
-    if (depth === 16) return (pixels[rowStart + 2 * index] << 8) | pixels[rowStart + 2 * index + 1];
-    const bit = index * depth;
-    const byte = pixels[rowStart + (bit >> 3)];
-    return (byte >> (8 - depth - (bit & 7))) & max;
-  };
-  let weighted = 0;
-  let weight = 0;
-  for (let y = 0; y < height; y += 1) {
-    const rowStart = y * rowBytes;
-    for (let x = 0; x < width; x += 1) {
-      let r;
-      let g;
-      let b;
-      let a = 1;
-      if (colorType === 3) {
-        const entry = sample(rowStart, x);
-        r = (palette[entry * 3] ?? 0) / 255;
-        g = (palette[entry * 3 + 1] ?? 0) / 255;
-        b = (palette[entry * 3 + 2] ?? 0) / 255;
-        if (transparency !== null) a = (transparency[entry] ?? 255) / 255;
-      } else if (colorType === 0 || colorType === 4) {
-        r = sample(rowStart, x * channels) / max;
-        g = r;
-        b = r;
-        if (colorType === 4) a = sample(rowStart, x * channels + 1) / max;
-      } else {
-        r = sample(rowStart, x * channels) / max;
-        g = sample(rowStart, x * channels + 1) / max;
-        b = sample(rowStart, x * channels + 2) / max;
-        if (colorType === 6) a = sample(rowStart, x * channels + 3) / max;
-      }
-      weighted += (0.2126 * r + 0.7152 * g + 0.0722 * b) * a;
-      weight += a;
-    }
-  }
-  if (weight === 0) return { ...info, note: "모든 픽셀이 투명해 휘도를 측정할 수 없습니다." };
-  return { ...info, meanLuminance: weighted / weight };
-}
-
-function createBitReader(data, start) {
-  let position = start;
-  let current = 0;
-  let remaining = 0;
-  return {
-    get position() {
-      return position;
-    },
-    readBit() {
-      if (remaining === 0) {
-        if (position >= data.length) throw new Error("JPEG 데이터가 중간에 끝났습니다.");
-        let byte = data[position];
-        position += 1;
-        if (byte === 0xff) {
-          const next = data[position];
-          if (next === 0x00) position += 1;
-          else throw new Error("JPEG 엔트로피 데이터 안에서 예상치 못한 마커를 만났습니다.");
-          byte = 0xff;
-        }
-        current = byte;
-        remaining = 8;
-      }
-      remaining -= 1;
-      return (current >> remaining) & 1;
-    },
-    receive(count) {
-      let value = 0;
-      for (let i = 0; i < count; i += 1) value = (value << 1) | this.readBit();
-      return value;
-    },
-    /** 다음 RSTn 마커까지 건너뛰고 비트 버퍼를 비운다. */
-    restart() {
-      remaining = 0;
-      while (position + 1 < data.length && !(data[position] === 0xff && data[position + 1] >= 0xd0 && data[position + 1] <= 0xd7)) position += 1;
-      position += 2;
-    },
-  };
-}
-
-function buildHuffmanTable(counts, symbols) {
-  const maxcode = new Int32Array(17).fill(-1);
-  const valptr = new Int32Array(17);
-  const mincode = new Int32Array(17);
-  let code = 0;
-  let k = 0;
-  for (let length = 1; length <= 16; length += 1) {
-    const count = counts[length - 1] ?? 0;
-    valptr[length] = k;
-    mincode[length] = code;
-    code += count;
-    k += count;
-    maxcode[length] = count > 0 ? code - 1 : -1;
-    code <<= 1;
-  }
-  return { maxcode, valptr, mincode, symbols };
-}
-
-function decodeHuffmanSymbol(reader, table) {
-  let code = 0;
-  for (let length = 1; length <= 16; length += 1) {
-    code = (code << 1) | reader.readBit();
-    const max = table.maxcode[length];
-    if (max >= 0 && code <= max) return table.symbols[table.valptr[length] + code - table.mincode[length]];
-  }
-  throw new Error("잘못된 허프만 코드입니다.");
-}
-
-function extendDifference(value, size) {
-  return value < 1 << (size - 1) ? value - (1 << size) + 1 : value;
-}
-
-/** 베이스라인 JPEG 한 스캔을 해독해 Y 성분 DC 블록 평균을 누적한다. */
-function decodeJpegScan(bytes, start, frame, scanComponents, tables, restartInterval, quantTables, accumulator) {
-  const reader = createBitReader(bytes, start);
-  const predictors = new Map(scanComponents.map((component) => [component.index, 0]));
-  const horizontalMax = Math.max(...frame.components.map((component) => component.h));
-  const verticalMax = Math.max(...frame.components.map((component) => component.v));
-  const decodeBlock = (component) => {
-    const dcTable = tables.dc.get(component.dcTable);
-    const acTable = tables.ac.get(component.acTable);
-    if (dcTable === undefined || acTable === undefined) throw new Error("허프만 테이블이 정의되지 않았습니다.");
-    const size = decodeHuffmanSymbol(reader, dcTable);
-    const difference = size === 0 ? 0 : extendDifference(reader.receive(size), size);
-    const dc = (predictors.get(component.index) ?? 0) + difference;
-    predictors.set(component.index, dc);
-    let k = 1;
-    while (k < 64) {
-      const symbol = decodeHuffmanSymbol(reader, acTable);
-      const run = symbol >> 4;
-      const bits = symbol & 15;
-      if (bits === 0) {
-        if (run === 15) {
-          k += 16;
-          continue;
-        }
-        break;
-      }
-      k += run;
-      reader.receive(bits);
-      k += 1;
-    }
-    if (component.index === 0) {
-      const quant = quantTables.get(component.quantTable) ?? 1;
-      accumulator.sum += (dc * quant) / 8 + 128;
-      accumulator.count += 1;
-    }
-  };
-  let mcu = 0;
-  const afterMcu = () => {
-    mcu += 1;
-  };
-  const beforeMcu = (total) => {
-    if (restartInterval > 0 && mcu > 0 && mcu % restartInterval === 0 && mcu < total) {
-      reader.restart();
-      for (const key of predictors.keys()) predictors.set(key, 0);
-    }
-  };
-  if (scanComponents.length === 1) {
-    const component = scanComponents[0];
-    const componentWidth = Math.ceil((frame.width * component.h) / horizontalMax);
-    const componentHeight = Math.ceil((frame.height * component.v) / verticalMax);
-    const blocksX = Math.ceil(componentWidth / 8);
-    const blocksY = Math.ceil(componentHeight / 8);
-    const total = blocksX * blocksY;
-    for (let i = 0; i < total; i += 1) {
-      beforeMcu(total);
-      decodeBlock(component);
-      afterMcu();
-    }
-  } else {
-    const mcusX = Math.ceil(frame.width / (8 * horizontalMax));
-    const mcusY = Math.ceil(frame.height / (8 * verticalMax));
-    const total = mcusX * mcusY;
-    for (let i = 0; i < total; i += 1) {
-      beforeMcu(total);
-      for (const component of scanComponents) {
-        for (let b = 0; b < component.h * component.v; b += 1) decodeBlock(component);
-      }
-      afterMcu();
-    }
-  }
-  return reader.position;
-}
-
-function decodeJpeg(bytes) {
-  const info = { format: "jpeg", width: 0, height: 0, hasAlpha: false, meanLuminance: null, note: null };
-  let position = 2;
-  let frame = null;
-  let progressive = false;
-  let unsupportedFrame = false;
-  let restartInterval = 0;
-  const quantTables = new Map();
-  const tables = { dc: new Map(), ac: new Map() };
-  const accumulator = { sum: 0, count: 0 };
-  let decodeError = null;
-  while (position + 3 < bytes.length) {
-    if (bytes[position] !== 0xff) {
-      position += 1;
-      continue;
-    }
-    const marker = bytes[position + 1];
-    if (marker === 0xff) {
-      position += 1;
-      continue;
-    }
-    position += 2;
-    if (marker === 0x00 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) continue;
-    if (marker === 0xd9) break;
-    const length = (bytes[position] << 8) | bytes[position + 1];
-    const body = position + 2;
-    const end = position + length;
-    if (marker === 0xdb) {
-      let p = body;
-      while (p < end) {
-        const precision = bytes[p] >> 4;
-        const id = bytes[p] & 15;
-        p += 1;
-        quantTables.set(id, precision === 0 ? bytes[p] : (bytes[p] << 8) | bytes[p + 1]);
-        p += 64 * (precision === 0 ? 1 : 2);
-      }
-    } else if (marker === 0xc4) {
-      let p = body;
-      while (p < end) {
-        const type = bytes[p] >> 4;
-        const id = bytes[p] & 15;
-        p += 1;
-        const counts = Array.from(bytes.subarray(p, p + 16));
-        p += 16;
-        const total = counts.reduce((sum, value) => sum + value, 0);
-        const symbols = Array.from(bytes.subarray(p, p + total));
-        p += total;
-        (type === 0 ? tables.dc : tables.ac).set(id, buildHuffmanTable(counts, symbols));
-      }
-    } else if (marker === 0xdd) {
-      restartInterval = (bytes[body] << 8) | bytes[body + 1];
-    } else if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
-      const precision = bytes[body];
-      const height = (bytes[body + 1] << 8) | bytes[body + 2];
-      const width = (bytes[body + 3] << 8) | bytes[body + 4];
-      const count = bytes[body + 5];
-      const components = [];
-      for (let i = 0; i < count; i += 1) {
-        const base = body + 6 + i * 3;
-        components.push({ index: i, id: bytes[base], h: bytes[base + 1] >> 4, v: bytes[base + 1] & 15, quantTable: bytes[base + 2], dcTable: 0, acTable: 0 });
-      }
-      info.width = width;
-      info.height = height;
-      if (marker === 0xc2) progressive = true;
-      else if (marker !== 0xc0 && marker !== 0xc1) unsupportedFrame = true;
-      if (precision !== 8) unsupportedFrame = true;
-      frame = { width, height, components };
-    } else if (marker === 0xda) {
-      if (frame === null) {
-        decodeError = "SOF보다 먼저 SOS가 나왔습니다.";
-        break;
-      }
-      const count = bytes[body];
-      const scanComponents = [];
-      for (let i = 0; i < count; i += 1) {
-        const id = bytes[body + 1 + i * 2];
-        const selectors = bytes[body + 2 + i * 2];
-        const component = frame.components.find((candidate) => candidate.id === id);
-        if (component !== undefined) scanComponents.push({ ...component, dcTable: selectors >> 4, acTable: selectors & 15 });
-      }
-      if (progressive || unsupportedFrame) break;
-      if (!scanComponents.some((component) => component.index === 0)) {
-        position = end;
-        continue;
-      }
-      try {
-        position = decodeJpegScan(bytes, end, frame, scanComponents, tables, restartInterval, quantTables, accumulator);
-      } catch (error) {
-        decodeError = error instanceof Error ? error.message : String(error);
-        break;
-      }
-      continue;
-    }
-    position = end;
-  }
-  if (frame === null) return { ...info, note: "JPEG SOF 마커를 찾지 못했습니다." };
-  if (frame.components.length !== 1 && frame.components.length !== 3) return { ...info, note: `성분 ${frame.components.length}개 JPEG라 휘도를 측정하지 않았습니다.` };
-  if (progressive) return { ...info, note: "프로그레시브 JPEG라 휘도를 측정하지 않았습니다(베이스라인으로 저장하세요)." };
-  if (unsupportedFrame) return { ...info, note: "지원하지 않는 JPEG 방식(8비트 베이스라인만 해독)이라 휘도를 측정하지 않았습니다." };
-  if (decodeError !== null) return { ...info, note: `JPEG 해독 실패: ${decodeError}` };
-  if (accumulator.count === 0) return { ...info, note: "JPEG에서 Y 성분 블록을 읽지 못했습니다." };
-  return { ...info, meanLuminance: Math.min(1, Math.max(0, accumulator.sum / accumulator.count / 255)) };
-}
-
-/**
- * 이미지 바이트에서 형식·크기·알파 여부·평균 휘도를 읽는다. 형식은 확장자나 선언이 아니라 매직 바이트로 판정한다.
- * @returns {{format: "png" | "jpeg" | null, width: number, height: number, hasAlpha: boolean, meanLuminance: number | null, note: string | null}}
- */
-export function decodeImageInfo(bytes) {
-  if (isPng(bytes)) return decodePng(bytes);
-  if (isJpeg(bytes)) return decodeJpeg(bytes);
-  return { format: null, width: 0, height: 0, hasAlpha: false, meanLuminance: null, note: "PNG/JPEG가 아닌 이미지 형식입니다." };
-}
-
-// ---------------------------------------------------------------- GLB 읽기
-
-let sharedIo = null;
-
-function gltfIo() {
-  if (sharedIo === null) {
-    sharedIo = new NodeIO().registerExtensions(ALL_EXTENSIONS);
-    sharedIo.setLogger(new Logger(Logger.Verbosity.SILENCE));
-  }
-  return sharedIo;
-}
-
-const GLB_MAGIC = 0x46546c67;
-const CHUNK_JSON = 0x4e4f534a;
-
-/** GLB 헤더·청크를 읽어 JSON 청크를 돌려준다. 문제는 한글 문장 배열로 돌려준다. */
-export function parseGlbContainer(bytes) {
-  const problems = [];
-  if (bytes.length < 20) return { json: null, problems: ["GLB 헤더(20바이트)보다 짧습니다."] };
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (view.getUint32(0, true) !== GLB_MAGIC) return { json: null, problems: ["GLB 매직('glTF')이 아닙니다."] };
-  if (view.getUint32(4, true) !== 2) problems.push(`GLB 컨테이너 버전이 2가 아닙니다(${view.getUint32(4, true)}).`);
-  if (view.getUint32(8, true) !== bytes.length) problems.push(`GLB 헤더 길이(${view.getUint32(8, true)})가 파일 크기(${bytes.length})와 다릅니다.`);
-  const jsonLength = view.getUint32(12, true);
-  if (view.getUint32(16, true) !== CHUNK_JSON || 20 + jsonLength > bytes.length) {
-    problems.push("첫 청크가 JSON이 아니거나 길이가 파일을 넘습니다.");
-    return { json: null, problems };
-  }
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(20, 20 + jsonLength));
-    return { json: JSON.parse(text), problems };
-  } catch (error) {
-    problems.push(`GLB JSON 청크를 해석하지 못했습니다: ${error instanceof Error ? error.message : String(error)}`);
-    return { json: null, problems };
-  }
-}
-
-/**
- * V5: glTF 2.0, 허용 확장만, 임베드 이미지·버퍼만.
- * @returns {boolean} 더 읽을 수 없는 치명 오류가 있으면 true
- */
-export function checkContainerJson(json, report, where) {
-  let fatal = false;
-  const asset = json.asset;
-  if (asset === null || typeof asset !== "object" || asset.version !== "2.0") {
-    report.error("V5", where, `asset.version이 "2.0"이 아닙니다(${stableStringify(asset?.version)}).`);
-    fatal = true;
-  }
-  const allowed = new Set(KIT_ALLOWED_EXTENSIONS);
-  const forbidden = new Set(KIT_FORBIDDEN_EXTENSIONS);
-  const required = Array.isArray(json.extensionsRequired) ? json.extensionsRequired : [];
-  const used = Array.isArray(json.extensionsUsed) ? json.extensionsUsed : [];
-  for (const name of required) {
-    if (!allowed.has(name)) {
-      report.error("V5", where, `extensionsRequired의 ${String(name)}는 허용 목록 밖입니다${forbidden.has(name) ? "(압축/외부 디코더 의존으로 금지, kit-unsupported-extension)" : ""}.`);
-      fatal = true;
-    }
-  }
-  for (const name of used) {
-    if (forbidden.has(name)) {
-      report.error("V5", where, `금지 확장 ${String(name)}을 사용합니다(외부 디코더/CDN 의존, kit-unsupported-extension).`);
-      fatal = true;
-    } else if (!allowed.has(name)) {
-      report.warn("V5", where, `허용 목록에 없는 확장 ${String(name)}을 사용합니다(런타임이 무시할 수 있음).`);
-    }
-  }
-  const buffers = Array.isArray(json.buffers) ? json.buffers : [];
-  buffers.forEach((buffer, index) => {
-    if (typeof buffer?.uri === "string" && !buffer.uri.startsWith("data:")) report.error("V5", where, `buffers[${index}]가 외부 URI(${buffer.uri})를 가리킵니다. GLB에 임베드해야 합니다.`);
-  });
-  const images = Array.isArray(json.images) ? json.images : [];
-  images.forEach((image, index) => {
-    if (typeof image?.uri === "string" && !image.uri.startsWith("data:")) {
-      report.error("V5", where, `images[${index}]가 외부 URI(${image.uri})를 가리킵니다. 텍스처는 GLB에 임베드해야 합니다.`);
-    } else if (typeof image?.uri === "string") {
-      report.warn("V5", where, `images[${index}]가 data URI입니다. bufferView 임베드를 권장합니다.`);
-    }
-    if (image?.mimeType !== undefined && image.mimeType !== "image/jpeg" && image.mimeType !== "image/png") {
-      report.error("V5", where, `images[${index}] 형식 ${String(image.mimeType)}는 허용되지 않습니다(JPEG/PNG만).`);
-    }
-  });
-  return fatal;
-}
-
-function floatsOf(accessor) {
-  const array = accessor.getArray();
-  if (array instanceof Float32Array) return array;
-  const out = new Float32Array(array.length);
-  if (accessor.getNormalized()) {
-    let divisor = 1;
-    if (array instanceof Uint8Array) divisor = 255;
-    else if (array instanceof Uint16Array) divisor = 65535;
-    else if (array instanceof Int8Array) divisor = 127;
-    else if (array instanceof Int16Array) divisor = 32767;
-    for (let i = 0; i < array.length; i += 1) out[i] = Math.max(array[i] / divisor, -1);
-  } else {
-    out.set(array);
-  }
-  return out;
-}
-
-function targetNamesOf(mesh) {
-  const extras = mesh.getExtras();
-  const names = extras?.targetNames;
-  return Array.isArray(names) && names.every((name) => typeof name === "string") ? names : null;
-}
-
-/** 메시 노드의 프리미티브를 배열로 읽는다(결과는 메시 노드에 캐시). */
-function primsOf(meshNode) {
-  if (meshNode.prims !== undefined) return meshNode.prims;
-  meshNode.prims = meshNode.mesh.listPrimitives().map((prim, index) => {
-    const positionAccessor = prim.getAttribute("POSITION");
-    const indexAccessor = prim.getIndices();
-    const joints = prim.getAttribute("JOINTS_0");
-    const weights = prim.getAttribute("WEIGHTS_0");
-    const color = prim.getAttribute("COLOR_0");
-    const region = prim.getAttribute("_REGION");
-    const normal = prim.getAttribute("NORMAL");
-    const uv = prim.getAttribute("TEXCOORD_0");
-    return {
-      index,
-      mode: prim.getMode(),
-      semantics: prim.listSemantics(),
-      count: positionAccessor === null ? 0 : positionAccessor.getCount(),
-      positions: positionAccessor === null ? new Float32Array(0) : floatsOf(positionAccessor),
-      normals: normal === null ? null : floatsOf(normal),
-      uvs: uv === null ? null : floatsOf(uv),
-      indices: indexAccessor === null ? null : Uint32Array.from(indexAccessor.getArray()),
-      joints: joints === null ? null : joints.getArray(),
-      weights: weights === null ? null : floatsOf(weights),
-      weightsNormalizedType: weights === null ? null : weights.getComponentType(),
-      color0: color === null ? null : { data: floatsOf(color), size: color.getElementSize() },
-      region: region === null ? null : region.getArray(),
-      hasJoints1: prim.getAttribute("JOINTS_1") !== null || prim.getAttribute("WEIGHTS_1") !== null,
-      hasColor1: prim.getAttribute("COLOR_1") !== null,
-      targets: prim.listTargets().map((target) => {
-        const position = target.getAttribute("POSITION");
-        const targetNormal = target.getAttribute("NORMAL");
-        return { position: position === null ? null : floatsOf(position), normal: targetNormal === null ? null : floatsOf(targetNormal) };
-      }),
-      material: prim.getMaterial(),
-    };
-  });
-  return meshNode.prims;
-}
-
-function triangleCountOf(prim) {
-  return Math.floor((prim.indices === null ? prim.count : prim.indices.length) / 3);
-}
-
-function trianglesOf(prim) {
-  const length = prim.indices === null ? prim.count : prim.indices.length;
-  return { length: Math.floor(length / 3), at: (t, k) => (prim.indices === null ? t * 3 + k : prim.indices[t * 3 + k]) };
-}
-
-/** 프리미티브를 이어 붙인 메시 단위 뷰(정점 위치, 이름별 morph 델타, 스킨) */
-function viewOf(meshNode) {
-  if (meshNode.view !== undefined) return meshNode.view;
-  const prims = primsOf(meshNode);
-  const names = targetNamesOf(meshNode.mesh) ?? [];
-  const total = prims.reduce((sum, prim) => sum + prim.count, 0);
-  const concat = (select, stride, ArrayType) => {
-    if (prims.length === 1) return select(prims[0]) ?? new ArrayType(total * stride);
-    const out = new ArrayType(total * stride);
-    let offset = 0;
-    for (const prim of prims) {
-      const part = select(prim);
-      if (part !== null && part !== undefined) out.set(part, offset * stride);
-      offset += prim.count;
-    }
-    return out;
-  };
-  const positions = concat((prim) => prim.positions, 3, Float32Array);
-  const targets = new Map();
-  names.forEach((name, t) => targets.set(name, concat((prim) => prim.targets[t]?.position ?? null, 3, Float32Array)));
-  meshNode.view = {
-    count: total,
-    positions,
-    targets,
-    joints: prims.every((prim) => prim.joints !== null) ? concat((prim) => prim.joints, 4, Uint16Array) : null,
-    weights: prims.every((prim) => prim.weights !== null) ? concat((prim) => prim.weights, 4, Float32Array) : null,
-  };
-  return meshNode.view;
-}
-
-function buildModel(doc, json, where) {
-  const root = doc.getRoot();
-  const nodes = root.listNodes();
-  const meshNodes = nodes
-    .filter((node) => node.getMesh() !== null)
-    .map((node) => ({ name: node.getName(), node, mesh: node.getMesh(), skin: node.getSkin(), world: node.getWorldMatrix() }));
-  const skins = root.listSkins();
-  const nodeByName = new Map();
-  for (const node of nodes) {
-    const list = nodeByName.get(node.getName()) ?? [];
-    list.push(node);
-    nodeByName.set(node.getName(), list);
-  }
-  const meshNodeByName = new Map();
-  for (const meshNode of meshNodes) if (!meshNodeByName.has(meshNode.name)) meshNodeByName.set(meshNode.name, meshNode);
-  return {
-    where,
-    json,
-    doc,
-    nodes,
-    skins,
-    joints: skins[0] === undefined ? [] : skins[0].listJoints().map((joint) => joint.getName()),
-    jointNodes: skins[0] === undefined ? [] : skins[0].listJoints(),
-    nodeByName,
-    meshNodes,
-    meshNodeByName,
-  };
-}
-
-/** GLB 바이트를 열어 모델을 만든다. 실패하면 V5 오류를 남기고 null */
-export async function loadGlbModel(bytes, where, report) {
-  const container = parseGlbContainer(bytes);
-  if (container.json === null || container.problems.length > 0) {
-    report.require("V5");
-    for (const problem of container.problems) report.error("V5", where, problem);
-    if (container.json === null) return null;
-  }
-  report.begin("V5");
-  if (checkContainerJson(container.json, report, where)) return null;
-  try {
-    const doc = await gltfIo().readBinary(bytes);
-    return buildModel(doc, container.json, where);
-  } catch (error) {
-    report.require("V5");
-    report.error("V5", where, `GLB를 읽지 못했습니다(kit-glb-load-failed): ${error instanceof Error ? error.message : String(error)}`);
-    return null;
-  }
-}
-
-// ---------------------------------------------------------------- 공간 해시
-
-function cellHash(ix, iy, iz) {
-  return (Math.imul(ix, 73856093) ^ Math.imul(iy, 19349663) ^ Math.imul(iz, 83492791)) | 0;
-}
-
-class PointGrid {
-  constructor(positions, cell) {
-    this.positions = positions;
-    this.cell = cell;
-    this.cells = new Map();
-    const count = positions.length / 3;
-    for (let i = 0; i < count; i += 1) {
-      const key = cellHash(Math.floor(positions[i * 3] / cell), Math.floor(positions[i * 3 + 1] / cell), Math.floor(positions[i * 3 + 2] / cell));
-      const list = this.cells.get(key);
-      if (list === undefined) this.cells.set(key, [i]);
-      else list.push(i);
-    }
-  }
-
-  /** 반경 안 가장 가까운 점. 없으면 null */
-  nearest(x, y, z, maxRadius) {
-    const { cell, positions } = this;
-    const cx = Math.floor(x / cell);
-    const cy = Math.floor(y / cell);
-    const cz = Math.floor(z / cell);
-    const maxRing = Math.ceil(maxRadius / cell);
-    let best = -1;
-    let bestSquared = maxRadius * maxRadius;
-    const visit = (dx, dy, dz) => {
-      const list = this.cells.get(cellHash(cx + dx, cy + dy, cz + dz));
-      if (list === undefined) return;
-      for (const index of list) {
-        const ex = positions[index * 3] - x;
-        const ey = positions[index * 3 + 1] - y;
-        const ez = positions[index * 3 + 2] - z;
-        const squared = ex * ex + ey * ey + ez * ez;
-        if (squared <= bestSquared) {
-          bestSquared = squared;
-          best = index;
-        }
-      }
-    };
-    for (let ring = 0; ring <= maxRing; ring += 1) {
-      if (best >= 0 && (ring - 1) * cell > Math.sqrt(bestSquared)) break;
-      for (let dx = -ring; dx <= ring; dx += 1) {
-        for (let dy = -ring; dy <= ring; dy += 1) {
-          if (Math.abs(dx) === ring || Math.abs(dy) === ring) {
-            for (let dz = -ring; dz <= ring; dz += 1) visit(dx, dy, dz);
-          } else if (ring > 0) {
-            visit(dx, dy, -ring);
-            visit(dx, dy, ring);
-          }
-        }
-      }
-    }
-    return best;
-  }
-
-  /** 거리 `radius` 이내 모든 점(주변 27칸만 훑으므로 radius ≤ cell) */
-  within(x, y, z, radius) {
-    const { cell, positions } = this;
-    const cx = Math.floor(x / cell);
-    const cy = Math.floor(y / cell);
-    const cz = Math.floor(z / cell);
-    const result = [];
-    for (let dx = -1; dx <= 1; dx += 1) {
-      for (let dy = -1; dy <= 1; dy += 1) {
-        for (let dz = -1; dz <= 1; dz += 1) {
-          const list = this.cells.get(cellHash(cx + dx, cy + dy, cz + dz));
-          if (list === undefined) continue;
-          for (const index of list) {
-            const ex = positions[index * 3] - x;
-            const ey = positions[index * 3 + 1] - y;
-            const ez = positions[index * 3 + 2] - z;
-            if (ex * ex + ey * ey + ez * ez <= radius * radius) result.push(index);
-          }
-        }
-      }
-    }
-    return result;
-  }
 }
 
 // ---------------------------------------------------------------- 순수 검증 함수(export)
@@ -1248,7 +565,11 @@ function whereOf(file, node) {
 function checkNamesAndSkeleton(ctx, file, model) {
   const { report, manifest } = ctx;
   const where = file.path;
-  if (model.skins.length !== 1) {
+  // 키트 v2 강체 소품만 담은 파일은 스켈레톤 없이 둘 수 있다(스킨 없음 계약). 스킨이 있으면 아래 규칙을 그대로 지킨다.
+  const rigidOnly = model.skins.length === 0 && file.declared.length > 0 && file.declared.every((mesh) => mesh.skinned === false);
+  if (rigidOnly) {
+    // 스켈레톤·Armature 규칙 건너뜀 — 메시 집합·이름 규칙은 아래에서 그대로 본다
+  } else if (model.skins.length !== 1) {
     report.error("V6", where, `skin이 ${model.skins.length}개입니다. 정확히 1개여야 합니다(kit-joint-mismatch).`);
   } else {
     const expected = manifest.skeleton.joints;
@@ -1278,7 +599,7 @@ function checkNamesAndSkeleton(ctx, file, model) {
       }
     }
   }
-  if ((model.nodeByName.get(manifest.skeleton.root)?.length ?? 0) !== 1) {
+  if (!rigidOnly && (model.nodeByName.get(manifest.skeleton.root)?.length ?? 0) !== 1) {
     report.error("V6", where, `루트 노드 '${manifest.skeleton.root}'가 정확히 1개 있어야 합니다.`);
   }
   for (const [name, nodes] of model.nodeByName) {
@@ -1365,12 +686,18 @@ function checkTransforms(ctx, file, model) {
 /** V8: 모든 메시는 JOINTS_0/WEIGHTS_0, 영향 ≤ 4, 가중치 합, 인덱스 범위, IBM 수 */
 function checkSkin(ctx, file, model) {
   const { report } = ctx;
+  // 키트 v2 강체 소품(`skinned: false`)은 스킨이 없어야 한다(V8 강체 예외). v1 선언에는 false가 올 수 없다.
+  const rigid = new Set(file.declared.filter((mesh) => mesh.skinned === false).map((mesh) => mesh.node));
   const ibm = model.skins[0]?.getInverseBindMatrices() ?? null;
-  if (ibm === null || ibm.getCount() !== KIT_JOINT_COUNT) {
+  if ((ibm === null && !(model.skins.length === 0 && rigid.size === file.declared.length)) || (ibm !== null && ibm.getCount() !== KIT_JOINT_COUNT)) {
     report.error("V8", file.path, `inverseBindMatrices가 ${ibm === null ? "없습니다" : `${ibm.getCount()}개입니다`}. ${KIT_JOINT_COUNT}개여야 합니다.`);
   }
   for (const meshNode of model.meshNodes) {
     const where = whereOf(file, meshNode.name);
+    if (rigid.has(meshNode.name)) {
+      v2.checkRigidMeshV2(ctx, file, meshNode);
+      continue;
+    }
     if (meshNode.skin === null || meshNode.skin !== model.skins[0]) {
       report.error("V8", where, "스킨에 바인딩되지 않은 메시입니다. 모든 파츠는 베이스 스켈레톤에 스키닝해야 합니다(kit-skin-invalid).");
       continue;
@@ -1437,10 +764,12 @@ function checkMeshMorphs(ctx, file, declaration, meshNode) {
     return;
   }
   const actual = count === 0 ? [] : names;
-  const vocabulary = new Set(KIT_MORPH_NAMES);
+  // 키트 v2: 변형 shapes에 선언한 이름의 `shape:<이름>:±`만 더 허용한다(v1 파일 사양은 shapes가 비어 있다)
+  const vocabulary = new Set([...KIT_MORPH_NAMES, ...v2.allowedShapeMorphs(file)]);
   const unknown = actual.filter((name) => !vocabulary.has(name));
   if (unknown.length > 0) {
-    report.error("V9", where, `morph 이름이 어휘 64개 밖입니다${unknown.some((name) => name.startsWith("ext:")) ? "(`ext:*`는 v1 금지)" : ""}: ${listFew(unknown)}`);
+    const shapeNote = ctx.v2 && unknown.some((name) => name.startsWith("shape:")) ? "(형태 키는 변형 shapes에 선언한 이름만)" : "";
+    report.error("V9", where, `morph 이름이 어휘 64개 밖입니다${unknown.some((name) => name.startsWith("ext:")) ? "(`ext:*`는 v1 금지)" : ""}${shapeNote}: ${listFew(unknown)}`);
   }
   const duplicates = actual.filter((name, index) => actual.indexOf(name) !== index);
   if (duplicates.length > 0) report.error("V9", where, `morph 이름이 중복되었습니다: ${listFew(duplicates)}`);
@@ -1453,7 +782,8 @@ function checkMeshMorphs(ctx, file, declaration, meshNode) {
   if (notDeclared.length > 0) report.error("V9", where, `GLB에만 있고 선언하지 않은 morph ${notDeclared.length}개: ${listFew(notDeclared)}`);
   const roles = roleList(declaration);
   const missing = new Set();
-  for (const role of roles) for (const name of KIT_MORPH_COVERAGE[role] ?? []) if (!have.has(name)) missing.add(name);
+  // 강체 소품(v2 `skinned: false`)은 체형을 따라가지 않으므로 필수 morph가 없다(계약 fileIssues와 같은 예외)
+  if (declaration.skinned !== false) for (const role of roles) for (const name of KIT_MORPH_COVERAGE[role] ?? []) if (!have.has(name)) missing.add(name);
   if (missing.size > 0) report.error("V9", where, `역할 ${roles.join("/")}에 필수인 morph ${missing.size}개가 GLB에 없습니다: ${listFew([...missing])}`);
 
   const view = viewOf(meshNode);
@@ -1462,6 +792,7 @@ function checkMeshMorphs(ctx, file, declaration, meshNode) {
   for (const name of actual) {
     const delta = view.targets.get(name);
     if (delta === undefined) continue;
+    if (parseExtendedMorphName(name)?.kind === "shape") continue; // 형태 키 크기·비영은 변형 단위로 v2 규칙이 본다
     let max = 0;
     for (let v = 0; v < delta.length; v += 3) {
       const length = Math.hypot(delta[v], delta[v + 1], delta[v + 2]);
@@ -1523,7 +854,7 @@ function followSubjects(file) {
   const subjects = [];
   for (const declaration of file.declared) {
     for (const role of roleList(declaration)) {
-      if (role === "top" || role === "bottom" || role === "shoes" || role === "underwear") subjects.push({ declaration, role, reference: KIT_BODY_NODE });
+      if (["top", "bottom", "shoes", "underwear", "inner", "outer", "legwear"].includes(role)) subjects.push({ declaration, role, reference: KIT_BODY_NODE });
       else if (role === "lash" || role === "brow") subjects.push({ declaration, role, reference: KIT_HEAD_NODE });
     }
   }
@@ -1688,7 +1019,8 @@ function checkTriangles(ctx, file, model) {
   const roles = roleStatsOf(file, model);
   const budgets = KIT_BUDGET.triangles;
   const limit = (role, max, label) => {
-    const value = roles.get(role) ?? 0;
+    // 액세서리 슬롯은 v2 헤어 부속(hair-accessory) 역할까지 합친다(v1 파일에는 그 역할이 없다)
+    const value = (roles.get(role) ?? 0) + (role === "accessory" ? (roles.get("hair-accessory") ?? 0) : 0);
     if (value > max) report.error("V11", file.path, `${label} 삼각형 ${value}개가 예산 ${max}개를 넘습니다.`);
   };
   if (file.kind === "base") {
@@ -1697,7 +1029,8 @@ function checkTriangles(ctx, file, model) {
     limit("underwear", budgets.underwear, "TS_Underwear");
     const face = FACE_ROLES.reduce((sum, role) => sum + (roles.get(role) ?? 0), 0);
     if (face > budgets.faceParts) report.error("V11", file.path, `눈·입·속눈썹·눈썹 삼각형 합 ${face}개가 예산 ${budgets.faceParts}개를 넘습니다.`);
-  } else if (file.slot === "hair") limit("hair", budgets.hairLod0, "헤어 LOD0");
+  } else if (file.layer) limit(file.layer, budgets[v2.layerBudgetKey(file.layer)], `${file.layer} 층(${v2.layerBudgetKey(file.layer)} 예산)`);
+  else if (file.slot === "hair") limit("hair", budgets.hairLod0, "헤어 LOD0");
   else if (file.slot === "top") limit("top", budgets.top, "상의");
   else if (file.slot === "bottom") limit("bottom", budgets.bottom, "하의");
   else if (file.slot === "shoes") limit("shoes", budgets.shoes, "신발");
@@ -1790,11 +1123,14 @@ function checkMaterials(ctx, file, model) {
         return;
       }
       if (material.getName() !== declaredName) report.error("V13", where, `재질 이름 '${material.getName()}'이 선언 '${declaredName}'와 다릅니다.`);
-      const previous = roleMaterial.get(role);
+      // v1: (파츠, 역할)당 재질 1. 키트 v2: (파일, 역할, 채널)당 재질 1 — v1 재질에는 채널이 없어 키가 역할과 같다
+      const channel = manifest.materials[declaredName]?.channel;
+      const slotKey = channel === undefined ? role : `${role}|${channel}`;
+      const previous = roleMaterial.get(slotKey);
       if (previous !== undefined && previous !== material) {
-        report.error("V13", where, `역할 ${role}에 재질이 둘 이상입니다('${previous.getName()}', '${material.getName()}', kit-material-multiple).`);
+        report.error("V13", where, `역할 ${role}${channel === undefined ? "" : `·채널 ${channel}`}에 재질이 둘 이상입니다('${previous.getName()}', '${material.getName()}', kit-material-multiple).`);
       }
-      roleMaterial.set(role, material);
+      roleMaterial.set(slotKey, material);
       const entry = usage.get(material) ?? { nodes: new Set(), roles: new Set() };
       entry.nodes.add(declaration.node);
       entry.roles.add(role);
@@ -1923,6 +1259,7 @@ function checkIntegrity(ctx, file, model) {
       }
       if (prim.mode !== 4) report.error("V20", label, `프리미티브 모드가 TRIANGLES(4)가 아닙니다(${prim.mode}).`);
       const arrays = [["POSITION", prim.positions], ["NORMAL", prim.normals], ["TEXCOORD_0", prim.uvs], ["WEIGHTS_0", prim.weights]];
+      if (ctx.v2) arrays.push(["TEXCOORD_1", prim.uvs1]); // 키트 v2는 UV1(패턴·헤어 흐름)을 커스텀에 쓴다
       prim.targets.forEach((target, t) => {
         arrays.push([`morph[${t}].POSITION`, target.position]);
         arrays.push([`morph[${t}].NORMAL`, target.normal]);
@@ -2108,16 +1445,18 @@ function collectFileSpecs(manifest, baseIds) {
   for (const baseId of baseIds) {
     const base = manifest.bases[baseId];
     if (base === undefined) continue;
-    add({ path: base.file.path, bytes: base.file.bytes, sha256: base.file.sha256, kind: "base", baseId, declared: base.meshes, label: `bases.${baseId}`, slot: null, name: null, partId: null, hides: [] });
+    add({ path: base.file.path, bytes: base.file.bytes, sha256: base.file.sha256, kind: "base", baseId, declared: base.meshes, label: `bases.${baseId}`, slot: null, name: null, partId: null, hides: [], shapes: [], layer: null });
   }
+  // 키트 v2 메타(shapes·layer·anchor)는 사양에 함께 싣는다. v1 변형에는 없어 빈 값이다.
+  const partSpec = (part, baseId, variant, layer) => ({ path: variant.file.path, bytes: variant.file.bytes, sha256: variant.file.sha256, kind: "part", baseId, declared: variant.meshes, label: `${part.id}@${baseId}${layer === null ? "" : `#${layer}`}`, slot: part.slot, name: part.id.slice(part.id.indexOf("/") + 1), partId: part.id, hides: variant.hides, shapes: variant.shapes ?? [], layer, anchor: variant.anchor ?? null });
   for (const part of manifest.parts) {
-    const slash = part.id.indexOf("/");
     for (const baseId of baseIds) {
       const variant = part.variants[baseId];
       if (variant === undefined) continue;
-      add({ path: variant.file.path, bytes: variant.file.bytes, sha256: variant.file.sha256, kind: "part", baseId, declared: variant.meshes, label: `${part.id}@${baseId}`, slot: part.slot, name: part.id.slice(slash + 1), partId: part.id, hides: variant.hides });
+      add(partSpec(part, baseId, variant, null));
     }
   }
+  for (const part of manifest.parts) for (const baseId of baseIds) for (const [layer, variant] of Object.entries(part.layerVariants?.[baseId] ?? {})) if (variant !== undefined) add(partSpec(part, baseId, variant, layer));
   return [...specs.values()];
 }
 
@@ -2126,10 +1465,12 @@ function allReferencedPaths(manifest) {
   for (const baseId of KIT_BASE_IDS) {
     const base = manifest.bases[baseId];
     if (base !== undefined) paths.add(base.file.path);
+    if (base?.headRegionMask !== undefined) paths.add(base.headRegionMask.file.path);
   }
   for (const part of manifest.parts) for (const baseId of KIT_BASE_IDS) {
     const variant = part.variants[baseId];
     if (variant !== undefined) paths.add(variant.file.path);
+    for (const layered of Object.values(part.layerVariants?.[baseId] ?? {})) if (layered !== undefined) paths.add(layered.file.path);
   }
   return paths;
 }
@@ -2144,7 +1485,7 @@ export async function verifyKit(input) {
   const { source } = input;
   const only = input.only ?? null;
   const report = new Report(only === null ? CHECK_IDS : only);
-  if (only !== null && only.some((id) => GLB_CHECK_IDS.has(id))) report.selected.add("V5");
+  if (only !== null && only.some((id) => NEEDS_GLB_IDS.has(id))) report.selected.add("V5");
   const options = { followQuantile: input.followQuantile ?? 1, uvRasterSize: input.uvRasterSize ?? LIMITS.uvRasterSize };
   const strict = input.strict === true;
   const finish = (baseIds) => {
@@ -2177,14 +1518,22 @@ export async function verifyKit(input) {
     return finish([]);
   }
   report.begin("V1");
+  // 키트 v2(`toonstudio.character-kit/2`): v2 계약 스키마로 읽고 V21~V24와 v2 확장 규칙을 더 돈다. v1은 예전과 같다.
+  const isV2 = raw !== null && typeof raw === "object" && raw.schema === KIT_V2_SCHEMA_ID;
+  if (isV2 || V2_CHECK_IDS.some((id) => report.wants(id))) report.checks = ALL_CHECKS;
+  if (isV2) {
+    if (only === null) for (const id of V2_CHECK_IDS) report.selected.add(id);
+  } else {
+    for (const id of V2_CHECK_IDS) report.skip(id, "키트 v1 manifest에는 형태 키·층·UV1 메타가 없어 해당하지 않습니다");
+  }
   if (report.wants("V19")) {
     report.begin("V19");
     checkPhysics(raw, report);
   }
-  const full = kitManifestSchema.safeParse(raw);
+  const full = (isV2 ? kitManifestV2Schema : kitManifestSchema).safeParse(raw);
   let manifest = full.success ? full.data : null;
   if (!full.success) {
-    const lenient = kitManifestObjectSchema.safeParse(raw);
+    const lenient = (isV2 ? kitManifestV2ObjectSchema : kitManifestObjectSchema).safeParse(raw);
     manifest = lenient.success ? lenient.data : null;
     if (report.wants("V1") || manifest === null) {
       report.require("V1");
@@ -2194,7 +1543,7 @@ export async function verifyKit(input) {
     }
   }
   if (manifest === null) {
-    for (const check of CHECKS) report.skip(check.id, "kit.json 구조를 해석할 수 없어 건너뜀");
+    for (const check of report.checks) report.skip(check.id, "kit.json 구조를 해석할 수 없어 건너뜀");
     return finish([]);
   }
   if (report.wants("V1")) checkManifestConstants(manifest, report);
@@ -2233,6 +1582,12 @@ export async function verifyKit(input) {
     const limit = spec.kind === "base" ? KIT_BUDGET.baseGlbMaxBytes : KIT_BUDGET.partGlbMaxBytes;
     if (bytes.length > limit) report.error("V3", spec.path, `${spec.kind === "base" ? "베이스" : "파츠"} GLB ${(bytes.length / 1048576).toFixed(2)} MiB가 한도 ${(limit / 1048576).toFixed(1)} MiB를 넘습니다.`);
   }
+  if (isV2) {
+    v2.checkHeadRegionMasksV2(manifest, baseIds, bytesOf, report, decodeImageInfo);
+    const maskPaths = new Set(baseIds.map((baseId) => manifest.bases[baseId].headRegionMask?.file.path).filter((value) => value !== undefined));
+    for (const maskPath of maskPaths) totalBytes += bytesOf(maskPath)?.length ?? 0; // 마스크 PNG도 키트 총량에 든다(계약 manifestV2Issues와 같은 집계)
+    if (report.wants("V3")) v2.checkShapeCapacityV2(manifest, baseIds, report);
+  }
   report.metric("files", fileMetrics);
   report.metric("totalBytes", totalBytes);
   if (totalBytes > KIT_BUDGET.totalMaxBytes) report.error("V3", KIT_MANIFEST_FILENAME, `키트 고유 파일 합계 ${(totalBytes / 1048576).toFixed(2)} MiB가 한도 ${(KIT_BUDGET.totalMaxBytes / 1048576).toFixed(0)} MiB를 넘습니다.`);
@@ -2259,10 +1614,12 @@ export async function verifyKit(input) {
   if (report.wants("V16")) {
     report.begin("V16");
     checkPresets(manifest, baseIds, report);
+    if (isV2) v2.checkLayersV2(manifest, baseIds, report);
   }
   if (report.wants("V17")) {
     report.begin("V17");
     checkCapabilities(manifest, baseIds, report);
+    if (isV2) v2.checkCustomConsistencyV2(manifest, baseIds, report);
   }
   if (report.wants("V18")) {
     report.begin("V18");
@@ -2278,7 +1635,7 @@ export async function verifyKit(input) {
     }
   }
 
-  const needsGlb = [...GLB_CHECK_IDS].some((id) => report.wants(id));
+  const needsGlb = [...NEEDS_GLB_IDS].some((id) => report.wants(id));
   if (!needsGlb) return finish(baseIds);
 
   // GLB 열기
@@ -2287,12 +1644,14 @@ export async function verifyKit(input) {
     const bytes = bytesOf(spec.path);
     models.set(spec.path, bytes === null ? null : await loadGlbModel(bytes, spec.path, report));
   }
-  const ctx = { report, manifest, options, imageCache: new Map(), textures: [], meshes: [] };
+  const ctx = { report, manifest, options, imageCache: new Map(), textures: [], meshes: [], v2: isV2 };
   const statsByPath = new Map();
+  const perFileChecks = [["V6", checkNamesAndSkeleton], ["V7", checkTransforms], ["V8", checkSkin], ["V10", checkRegions], ["V12", checkUvs], ["V13", checkMaterials], ["V14", checkHairAndColors], ["V15", checkOutline], ["V20", checkIntegrity]];
+  if (isV2) perFileChecks.push(["V14", v2.checkHairFlowV2], ["V23", v2.checkHairUv0V2], ["V24", v2.checkPatternUvV2]);
   for (const spec of specs) {
     const model = models.get(spec.path);
     if (model === null || model === undefined) continue;
-    for (const [id, check] of [["V6", checkNamesAndSkeleton], ["V7", checkTransforms], ["V8", checkSkin], ["V10", checkRegions], ["V12", checkUvs], ["V13", checkMaterials], ["V14", checkHairAndColors], ["V15", checkOutline], ["V20", checkIntegrity]]) {
+    for (const [id, check] of perFileChecks) {
       if (!report.wants(id)) continue;
       report.begin(id);
       check(ctx, spec, model);
@@ -2303,6 +1662,7 @@ export async function verifyKit(input) {
         const meshNode = model.meshNodeByName.get(declaration.node);
         if (meshNode !== undefined) checkMeshMorphs(ctx, spec, declaration, meshNode);
       }
+      if (isV2) v2.checkShapeMorphsV2(ctx, spec, model);
       if (spec.kind === "base") checkSeam(ctx, spec, model);
     }
     report.begin("V11");
@@ -2328,8 +1688,21 @@ export async function verifyKit(input) {
     if (report.wants("V10")) {
       const ranges = new Set(base.bodyRegions.map((range) => range.id));
       for (const part of manifest.parts) {
-        const variant = part.variants[baseId];
-        for (const id of variant?.hides ?? []) if (!ranges.has(id)) report.error("V10", `kit.json:${part.id}@${baseId}`, `hides의 영역 ${id}가 bodyRegions에 없습니다.`);
+        // 키트 v2 층 변형의 hides도 같은 영역 표로 본다(층 몸 숨김 = 착용 층 hides의 합집합)
+        for (const [layer, variant] of [[null, part.variants[baseId]], ...Object.entries(part.layerVariants?.[baseId] ?? {})]) {
+          for (const id of variant?.hides ?? []) if (!ranges.has(id)) report.error("V10", `kit.json:${part.id}@${baseId}${layer === null ? "" : `#${layer}`}`, `hides의 영역 ${id}가 bodyRegions에 없습니다.`);
+        }
+      }
+    }
+    if (isV2 && ["V14", "V21", "V22"].some((id) => report.wants(id))) {
+      for (const id of ["V21", "V22"]) report.begin(id);
+      const surfaces = v2.baseSurfacesOf(ctx, baseModel, baseId);
+      for (const spec of specs) {
+        const model = models.get(spec.path);
+        if (spec.kind !== "part" || !spec.baseIds.has(baseId) || model === null || model === undefined) continue;
+        if (report.wants("V14")) v2.checkHairFlowDirectionV2(ctx, spec, model, surfaces, baseId);
+        if (report.wants("V21")) v2.checkShapePenetrationV2(ctx, spec, model, surfaces, baseId);
+        if (report.wants("V22")) v2.checkLayerGapV2(ctx, spec, model, surfaces, baseId);
       }
     }
     if (report.wants("V18")) {
@@ -2384,7 +1757,20 @@ export async function verifyKit(input) {
         total += best.triangles;
       }
       worstCase[baseId] = { baseTriangles: sumRoles(baseRoles), picks, totalTriangles: total };
-      if (total > KIT_BUDGET.triangles.activeWorst) report.error("V11", base.file.path, `활성 최악 합계 ${total} 삼각형이 예산 ${KIT_BUDGET.triangles.activeWorst}를 넘습니다(${Object.entries(picks).map(([slot, pick]) => `${slot}=${pick.id ?? "-"}:${pick.triangles}`).join(", ")}).`);
+      if (!isV2 && total > KIT_BUDGET.triangles.activeWorst) report.error("V11", base.file.path, `활성 최악 합계 ${total} 삼각형이 예산 ${KIT_BUDGET.triangles.activeWorst}를 넘습니다(${Object.entries(picks).map(([slot, pick]) => `${slot}=${pick.id ?? "-"}:${pick.triangles}`).join(", ")}).`);
+      if (isV2) {
+        // 키트 v2: 겹쳐 입기 층(이너·아우터·레그웨어)을 더하고, 소품 11개 추가(같은 소품 반복 포함)는 따로 경고한다(O3 예산 상향은 소유자 결정)
+        const layerPicks = {};
+        for (const part of manifest.parts) for (const [layer, variant] of Object.entries(part.layerVariants?.[baseId] ?? {})) {
+          const triangles = variant === undefined ? 0 : sumRoles(statsByPath.get(variant.file.path) ?? new Map());
+          if (triangles > (layerPicks[layer]?.triangles ?? 0)) layerPicks[layer] = { id: part.id, triangles };
+        }
+        const result = v2.activeWorstV2({ baseTriangles: sumRoles(baseRoles), slotWorst: Object.fromEntries(Object.entries(picks).map(([slot, pick]) => [slot, pick.triangles])), layerWorst: Object.fromEntries(Object.entries(layerPicks).map(([layer, pick]) => [layer, pick.triangles])), accessoryMax: picks.accessory?.triangles ?? 0 });
+        Object.assign(worstCase[baseId], { layers: layerPicks, totalWithLayers: result.withLayers, totalWithExtraAccessories: result.withAccessories });
+        const listed = [...Object.entries(picks), ...Object.entries(layerPicks)].map(([key, pick]) => `${key}=${pick.id ?? "-"}:${pick.triangles}`).join(", ");
+        if (result.withLayers > result.budget) report.error("V11", base.file.path, `활성 최악 합계(층 포함) ${result.withLayers} 삼각형이 예산 ${result.budget}를 넘습니다(${listed}).`);
+        else if (result.withAccessories > result.budget) report.warn("V11", base.file.path, `소품 12개(가장 큰 소품 반복)까지 얹으면 ${result.withAccessories} 삼각형으로 예산 ${result.budget}를 넘습니다(설계 O3 — 예산 상향 또는 소품 수 제한은 소유자 결정).`);
+      }
     }
     report.metric("worstCase", worstCase);
   }
@@ -2422,6 +1808,9 @@ export const HELP_TEXT = `캐릭터 키트 검증기 (docs/authored-kit-spec.md 
 
 검사 항목:
 ${CHECKS.map((check) => `  ${check.id.padEnd(4)} ${check.title}`).join("\n")}
+${v2.V2_CHECKS.map((check) => `  ${check.id.padEnd(4)} ${check.title} (키트 v2 전용)`).join("\n")}
+
+kit.json의 schema가 toonstudio.character-kit/2이면 v2 계약으로 읽고 V21~V24와 v2 확장 규칙(형태 키·층·강체 소품·채널 재질·UV1)을 더 돈다.
 
 종료 코드: 0 = 오류 없음, 1 = 오류 있음(--strict면 경고 포함), 2 = 사용법 오류`;
 
@@ -2452,7 +1841,7 @@ export function parseCliArgs(argv) {
         else result.base = value;
       } else if (arg === "--only") {
         const ids = value.split(",").map((id) => id.trim().toUpperCase()).filter((id) => id.length > 0);
-        const unknown = ids.filter((id) => !CHECK_IDS.includes(id));
+        const unknown = ids.filter((id) => !ALL_CHECK_IDS.includes(id));
         if (ids.length === 0 || unknown.length > 0) result.error = `--only에 알 수 없는 검사 id가 있습니다: ${unknown.join(", ") || "(비어 있음)"}`;
         else result.only = ids;
       } else {

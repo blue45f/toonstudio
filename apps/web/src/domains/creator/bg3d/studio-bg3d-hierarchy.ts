@@ -15,6 +15,14 @@ import type {
   StudioBg3dSceneDocument,
   StudioBg3dSceneMeta,
 } from "./studio-bg3d-scene-document-types";
+import type {
+  StudioBg3dSceneRecipeEnvelope,
+  StudioBg3dSurfaceOverlay,
+  StudioBg3dSurfaceOverlayKind,
+  StudioBg3dSurfaceRef,
+  StudioBg3dSurfaceText,
+  StudioBg3dSurfaceTextScript,
+} from "./studio-bg3d-scene-surface-types";
 
 export interface StudioBg3dHierarchyEntity {
   readonly id: string;
@@ -334,8 +342,9 @@ export function normalizeStudioBg3dComponentRef(value: unknown): StudioBg3dCompo
 }
 
 /**
- * 노드 객체에서 `tags`·`componentRef` 를 읽어 정규화한다. 비어 있거나 올바르지 않은 값은 키 자체를 만들지 않는다
- * (빈 배열을 쓰지 않으므로 태그·컴포넌트가 없는 노드는 기존 문서와 바이트가 같다).
+ * 노드 객체에서 `tags`·`componentRef`·`surface` 를 읽어 정규화한다. 비어 있거나 올바르지 않은 값은 키 자체를 만들지 않는다
+ * (빈 배열을 쓰지 않으므로 태그·컴포넌트·재질 참조가 없는 노드는 기존 문서와 바이트가 같다). `surface` 는 프리미티브
+ * 노드만 가진다 — 모델 노드에 있으면 버리므로 엄격 파싱은 그 문서를 거부한다.
  */
 export function normalizeStudioBg3dNodeOrganization(
   node: unknown,
@@ -344,10 +353,191 @@ export function normalizeStudioBg3dNodeOrganization(
   if (!isOrganizationRecord(node)) return {};
   const tags = normalizeStudioBg3dTags(node.tags, "node", overflow);
   const componentRef = normalizeStudioBg3dComponentRef(node.componentRef);
+  const surface = node.kind === "primitive" ? normalizeStudioBg3dSurfaceRef(node.surface) : undefined;
   return {
     ...(tags.length > 0 ? { tags } : {}),
     ...(componentRef ? { componentRef } : {}),
+    ...(surface ? { surface } : {}),
   };
+}
+
+// ── 절차 재질 참조(surface) · 장면 레시피 봉투(sceneRecipe) — 읽기 단계(Phase R) ─────────────────────────
+// 두 키는 "받아들여 그대로 보존"만 한다. 규칙에 맞는 값은 입력과 같은 구조로 돌려줘 엄격 왕복이 무손실이고, 맞지 않는
+// 값은 버린다: 너그러운 정규화는 그 필드만 빼고 문서를 열고, 엄격 파싱은 결과가 입력과 달라 문서 전체를 거부한다
+// (다른 필드와 같은 규칙). 레시피 본문의 의미 검증은 지연 로드되는 구성기 몫이라 여기서는 경계만 본다.
+// 진입 그래프 래칫 때문에 새 파일로 나누지 않고 이미 진입 그래프에 닿아 있는 이 모듈에 둔다(머리 주석 참고).
+
+// 노드 하나의 `surface` 크기는 아래 필드 규칙만으로 묶인다(모든 필드를 가장 길게 채워도 525 B — 시험이 잰다).
+// 바이트 상한을 따로 두지 않는다: 읽기가 쓰기보다 엄격하면 롤백한 빌드가 새 빌드의 문서를 열지 못한다. 컷 여유를 지키는
+// 노드당 크기 목표(설계 B4 의 256 B)는 재질을 쓰는 쪽(다음 단계)이 지킨다.
+export const STUDIO_BG3D_SURFACE_MAX_COLORS = 3;
+export const STUDIO_BG3D_SURFACE_TEXT_MAX_CODE_POINTS = 32;
+export const STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND = "toonstudio.bg3d-scene-recipe-set" as const;
+export const STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION = 1 as const;
+export const STUDIO_BG3D_SCENE_RECIPE_LIMITS = Object.freeze({
+  maxRecipes: 4,
+  /** 레시피 객체 자신이 깊이 1 이다. 이보다 깊은 객체·배열이 있으면 봉투를 버린다. */
+  maxDepth: 6,
+  maxKeysPerObject: 48,
+  maxArrayLength: 128,
+  maxStringCodePoints: 160,
+  maxEnvelopeBytes: 24 * 1024,
+});
+
+const SURFACE_ID_PATTERN = /^[a-z][a-z0-9-]{1,39}$/u;
+const SURFACE_COLOR_PATTERN = /^#[0-9a-f]{6}$/iu;
+const SURFACE_OVERLAY_KINDS: ReadonlySet<string> = new Set<StudioBg3dSurfaceOverlayKind>([
+  "wet", "snow", "petals", "leaves", "dust",
+]);
+const SURFACE_TEXT_SCRIPTS: ReadonlySet<string> = new Set<StudioBg3dSurfaceTextScript>(["ko", "ja", "latin"]);
+const RECIPE_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]{0,31}$/u;
+const RECIPE_INSTANCE_KEY_PATTERN = /^[0-9a-f]{8}$/u;
+const UINT32_MAX = 0xffff_ffff;
+
+/** JSON 문자열의 UTF-8 바이트 수. 진입 그래프 모듈이라 인코더 객체를 만들지 않고 코드 포인트로 센다. */
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    bytes += codePoint <= 0x7f ? 1 : codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
+  }
+  return bytes;
+}
+
+function boundedSurfaceNumber(value: unknown, minimum: number, maximum: number): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(maximum, Math.max(minimum, value))
+    : undefined;
+}
+
+function boundedSurfaceInteger(value: unknown, minimum: number, maximum: number): number | undefined {
+  const bounded = boundedSurfaceNumber(value, minimum, maximum);
+  return bounded === undefined ? undefined : Math.round(bounded);
+}
+
+function normalizeSurfaceColors(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const colors = value
+    .slice(0, STUDIO_BG3D_SURFACE_MAX_COLORS)
+    .filter((color): color is string => typeof color === "string" && SURFACE_COLOR_PATTERN.test(color))
+    .map((color) => color.toLowerCase());
+  return colors.length > 0 ? colors : undefined;
+}
+
+function normalizeSurfaceOverlay(value: unknown): StudioBg3dSurfaceOverlay | undefined {
+  if (!isOrganizationRecord(value) || typeof value.kind !== "string" || !SURFACE_OVERLAY_KINDS.has(value.kind)) {
+    return undefined;
+  }
+  const amount = boundedSurfaceNumber(value.amount, 0, 1);
+  const seed = boundedSurfaceInteger(value.seed, 0, UINT32_MAX);
+  if (amount === undefined || seed === undefined) return undefined;
+  return { kind: value.kind as StudioBg3dSurfaceOverlayKind, amount, seed };
+}
+
+function normalizeSurfaceText(value: unknown): StudioBg3dSurfaceText | undefined {
+  if (!isOrganizationRecord(value)) return undefined;
+  const text = normalizeStudioBg3dDocumentText(value.value, STUDIO_BG3D_SURFACE_TEXT_MAX_CODE_POINTS, true);
+  if (!text || typeof value.script !== "string" || !SURFACE_TEXT_SCRIPTS.has(value.script)) return undefined;
+  if (typeof value.vertical !== "boolean") return undefined;
+  return { value: text, script: value.script as StudioBg3dSurfaceTextScript, vertical: value.vertical };
+}
+
+/**
+ * 프리미티브 노드의 절차 재질 참조를 정규화한다. `id` 가 규칙에 맞지 않으면 참조 전체를 버리고, 선택 값은 형식이 맞을 때만
+ * 범위 안으로 눌러 담는다. 재질 id 가 실제로 있는지는 보지 않는다(이 빌드가 모르는 재질은 노드 색으로 그린다).
+ */
+export function normalizeStudioBg3dSurfaceRef(value: unknown): StudioBg3dSurfaceRef | undefined {
+  if (!isOrganizationRecord(value) || typeof value.id !== "string" || !SURFACE_ID_PATTERN.test(value.id)) {
+    return undefined;
+  }
+  const colors = normalizeSurfaceColors(value.colors);
+  const tileM = boundedSurfaceNumber(value.tileM, 0.02, 8);
+  const angleDeg = boundedSurfaceNumber(value.angleDeg, 0, 180);
+  const roughness = boundedSurfaceNumber(value.roughness, 0, 1);
+  const variant = boundedSurfaceInteger(value.variant, 0, 15);
+  const wear = boundedSurfaceNumber(value.wear, 0, 1);
+  const lineWeight = boundedSurfaceNumber(value.lineWeight, 0, 1);
+  const overlay = normalizeSurfaceOverlay(value.overlay);
+  const text = normalizeSurfaceText(value.text);
+  return {
+    id: value.id,
+    ...(colors ? { colors } : {}),
+    ...(tileM === undefined ? {} : { tileM }),
+    ...(angleDeg === undefined ? {} : { angleDeg }),
+    ...(roughness === undefined ? {} : { roughness }),
+    ...(variant === undefined ? {} : { variant }),
+    ...(wear === undefined ? {} : { wear }),
+    ...(lineWeight === undefined ? {} : { lineWeight }),
+    ...(typeof value.cutout === "boolean" ? { cutout: value.cutout } : {}),
+    ...(overlay ? { overlay } : {}),
+    ...(text ? { text } : {}),
+  };
+}
+
+/**
+ * 레시피 본문이 "경계 있는 JSON" 인가: null·불리언·유한수·짧은 문자열(제어 문자·외부 주소·자격 증명 모양 금지)과
+ * 깊이·키 수·키 모양·배열 길이 한도 안의 객체·배열만 허용한다. 값을 고치지 않고 판정만 한다.
+ */
+function isBoundedRecipeValue(value: unknown, depth: number): boolean {
+  const limits = STUDIO_BG3D_SCENE_RECIPE_LIMITS;
+  if (value === null || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "string") {
+    return Array.from(value).length <= limits.maxStringCodePoints &&
+      !containsStudioBg3dControlCharacter(value) &&
+      !EXTERNAL_REFERENCE_PATTERN.test(value) &&
+      !SENSITIVE_REFERENCE_PATTERN.test(value);
+  }
+  if (depth > limits.maxDepth) return false;
+  if (Array.isArray(value)) {
+    return value.length <= limits.maxArrayLength && value.every((item) => isBoundedRecipeValue(item, depth + 1));
+  }
+  if (!isOrganizationRecord(value)) return false;
+  const keys = Object.keys(value);
+  return keys.length <= limits.maxKeysPerObject && keys.every((key) =>
+    RECIPE_KEY_PATTERN.test(key) &&
+    !FORBIDDEN_ORGANIZATION_KEYS.has(key.toLowerCase()) &&
+    isBoundedRecipeValue(value[key], depth + 1));
+}
+
+/**
+ * 문서 루트의 장면 레시피 봉투를 검사한다. kind·version 이 맞고, 레시피가 1–4개이며, 각 레시피가 경계 있는 JSON 이고
+ * 서로 다른 8자리 소문자 hex `instanceKey` 를 가지며, 봉투 직렬화가 24 KiB 이하일 때만 같은 구조로 돌려준다.
+ * 하나라도 어기면 봉투 전체를 버린다(레시피를 고쳐 쓰지 않는다 — 고친 레시피는 사용자가 만든 것이 아니다).
+ */
+export function normalizeStudioBg3dSceneRecipeEnvelope(value: unknown): StudioBg3dSceneRecipeEnvelope | undefined {
+  const limits = STUDIO_BG3D_SCENE_RECIPE_LIMITS;
+  if (
+    !isOrganizationRecord(value) ||
+    value.kind !== STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND ||
+    value.version !== STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION ||
+    !Array.isArray(value.recipes) ||
+    value.recipes.length < 1 ||
+    value.recipes.length > limits.maxRecipes
+  ) {
+    return undefined;
+  }
+  const instanceKeys = new Set<string>();
+  const recipes: Readonly<Record<string, unknown>>[] = [];
+  for (const recipe of value.recipes as readonly unknown[]) {
+    if (!isOrganizationRecord(recipe) || !isBoundedRecipeValue(recipe, 1)) return undefined;
+    const instanceKey = recipe.instanceKey;
+    if (
+      typeof instanceKey !== "string" ||
+      !RECIPE_INSTANCE_KEY_PATTERN.test(instanceKey) ||
+      instanceKeys.has(instanceKey)
+    ) {
+      return undefined;
+    }
+    instanceKeys.add(instanceKey);
+    recipes.push(recipe);
+  }
+  const envelope: StudioBg3dSceneRecipeEnvelope = {
+    kind: STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND,
+    version: STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION,
+    recipes,
+  };
+  return utf8ByteLength(JSON.stringify(envelope)) <= limits.maxEnvelopeBytes ? envelope : undefined;
 }
 
 /**

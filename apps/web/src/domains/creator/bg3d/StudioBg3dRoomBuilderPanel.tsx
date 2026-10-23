@@ -17,6 +17,7 @@ import {
   summarizeStudioBg3dHiddenWalls,
   type StudioBg3dHiddenWallSummary,
 } from "./studio-bg3d-build-notice";
+import { StudioBg3dRoomFinishControls, StudioBg3dRoomOpeningStyleControls } from "./StudioBg3dRoomBuilderDetailControls";
 import { TemplateRangeControl, TemplateToggleRow } from "./StudioBg3dTemplateControls";
 import {
   STUDIO_BG3D_ROOM_FURNITURE_KINDS,
@@ -135,7 +136,7 @@ export function StudioBg3dRoomBuilderPanel({
   return (
     <div>
       <p className="mb-2.5 text-[0.68rem] leading-relaxed text-fg-3">
-        바닥과 벽 4면, 문·창 오프닝, 가구를 수치로 조정해 방 한 칸을 만듭니다. 씬 템플릿과 달리
+        바닥과 벽 4면, 문·창(모양·열림), 천장·몰딩, 가구를 수치로 조정해 방 한 칸을 만듭니다. 씬 템플릿과 달리
         추가하기 전에 크기와 배치를 자유롭게 바꿀 수 있어요.
       </p>
 
@@ -225,6 +226,8 @@ export function StudioBg3dRoomBuilderPanel({
         </div>
       </div>
 
+      <StudioBg3dRoomFinishControls spec={spec} disabled={disabled} onSpecChange={onSpecChange} />
+
       <div className="mt-3 rounded-xl border border-line bg-card/70 px-3 py-2.5">
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
@@ -240,7 +243,8 @@ export function StudioBg3dRoomBuilderPanel({
                 ...spec,
                 openings: [
                   ...spec.openings,
-                  { wall: "south", type: "door", centerOffset: 0, width: 0.95, height: 2.05, sillHeight: 0 },
+                  // 새 문·창은 빈 구멍 대신 틀과 짝이 있는 모양으로 시작한다(모양 목록에서 바꿀 수 있다).
+                  { wall: "south", type: "door", centerOffset: 0, width: 0.95, height: 2.05, sillHeight: 0, style: "hinged-door" },
                 ],
               })}
             >
@@ -254,7 +258,7 @@ export function StudioBg3dRoomBuilderPanel({
                 ...spec,
                 openings: [
                   ...spec.openings,
-                  { wall: "east", type: "window", centerOffset: 0, width: 1.5, height: 1.1, sillHeight: 0.9 },
+                  { wall: "east", type: "window", centerOffset: 0, width: 1.5, height: 1.1, sillHeight: 0.9, style: "window-sliding" },
                 ],
               })}
             >
@@ -367,6 +371,12 @@ export function StudioBg3dRoomBuilderPanel({
                     </label>
                   ) : null}
                 </div>
+                <StudioBg3dRoomOpeningStyleControls
+                  index={index + 1}
+                  opening={opening}
+                  disabled={disabled}
+                  onChange={(patch) => onSpecChange(updateOpening(spec, index, patch))}
+                />
               </li>
             ))}
           </ul>

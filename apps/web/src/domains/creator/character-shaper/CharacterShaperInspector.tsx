@@ -11,15 +11,13 @@
  * wardrobe, costume, props, expression, pose and hands write to the poser host directly, which
  * already owns their undo.
  */
-import { Check, ChevronRight, Eye, EyeOff, Info, RotateCcw, Trash2, TriangleAlert, X } from "lucide-react";
+import { Check, Eye, EyeOff, RotateCcw, Trash2, X } from "lucide-react";
 import { useId } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import {
-  AVATAR_FORGE_BANG_STYLE_OPTIONS,
   AVATAR_FORGE_BODY_PRESETS,
   AVATAR_FORGE_FACE_LIMITS,
-  AVATAR_FORGE_HAIR_LIMITS,
   DEFAULT_AVATAR_FORGE_STATE,
   applyAvatarForgeBodyPreset,
 } from "../vrm/studio-vrm-avatar-forge";
@@ -39,7 +37,7 @@ import { WARDROBE_FIT_MAX, WARDROBE_FIT_MIN, WARDROBE_SLOT_LABELS } from "../vrm
 
 import { CHARACTER_SEMANTIC_MORPH_LABELS } from "./character-shaper-capability";
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
-import { CHARACTER_HAIR_PALETTES, characterSlotMeta } from "./character-shaper-catalog";
+import { characterSlotMeta } from "./character-shaper-catalog";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
   CHARACTER_HAND_SIDE_OPTIONS,
@@ -48,12 +46,14 @@ import {
 } from "./character-shaper-ui-model";
 import { CharacterShaperBlenderPackage } from "./CharacterShaperBlenderPackage";
 import { CharacterChipGroup, CharacterColorControl, CharacterRangeControl } from "./CharacterShaperControls";
+import { CharacterShaperHairInspector } from "./CharacterShaperHairInspector";
+import { InspectorNote as Note, InspectorSection as Section } from "./CharacterShaperInspectorParts";
+import { CharacterShaperSkinSection } from "./CharacterShaperSkinSection";
 
 import type { CharacterSlotEntry, CharacterSlotKind } from "./character-shaper-contract";
 import type { CharacterShaperInspectorProps } from "./character-shaper-ui-contract";
 import type {
   AvatarForgeFaceParams,
-  AvatarForgeHairLimitKey,
   AvatarForgeSemanticFaceMorphId,
   AvatarForgeState,
 } from "../vrm/studio-vrm-avatar-forge";
@@ -65,7 +65,6 @@ import type { PropInstance } from "../vrm/studio-vrm-props";
 import type { WardrobeEquip, WardrobeSlot } from "../vrm/studio-vrm-wardrobe";
 import type { ReactNode } from "react";
 
-import { SwitchIndicator } from "@/shared/components/ui/switch";
 import { cn } from "@/shared/lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -87,8 +86,6 @@ const MORPH_IDS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly AvatarForgeS
   ears: ["earSize"],
   irises: ["irisSize"],
 };
-
-const HAIR_KEYS: readonly AvatarForgeHairLimitKey[] = ["length", "volume", "curl", "shine", "wave"];
 
 const WARDROBE_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly WardrobeSlot[]>> = {
   top: ["top", "outer"],
@@ -117,124 +114,11 @@ const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
 
 const SWATCH_TONE = "grid size-11 place-items-center rounded-lg border border-line hover:border-line-strong";
 
-/* -------------------------------------------------------------------------- */
-/* Small presentational helpers                                                */
-/* -------------------------------------------------------------------------- */
-
-function Section({
-  title,
-  hint,
-  collapsible = false,
-  defaultOpen = true,
-  children,
-}: {
-  readonly title: string;
-  readonly hint?: string;
-  /** 자주 쓰지 않는 정밀 조절은 접어 둔다 — 인스펙터는 프리셋이 먼저 보여야 한다. */
-  readonly collapsible?: boolean;
-  readonly defaultOpen?: boolean;
-  readonly children: ReactNode;
-}) {
-  const body = (
-    <>
-      {hint ? <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3">{hint}</p> : null}
-      <div className="mt-2 space-y-2">{children}</div>
-    </>
-  );
-  if (collapsible) {
-    return (
-      <details
-        className="group border-t border-line/60 px-3 py-3 first:border-t-0"
-        data-character-inspector-section={title}
-        open={defaultOpen}
-      >
-        <summary
-          className={cn(
-            "flex cursor-pointer list-none items-center gap-1.5 text-[0.78rem] font-bold text-fg",
-            STUDIO_FOCUS_RING,
-          )}
-        >
-          <ChevronRight
-            size={13}
-            aria-hidden
-            className="shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
-          />
-          {title}
-        </summary>
-        {body}
-      </details>
-    );
-  }
-  return (
-    <section className="border-t border-line/60 px-3 py-3 first:border-t-0" data-character-inspector-section={title}>
-      <h3 className="text-[0.78rem] font-bold text-fg">{title}</h3>
-      {body}
-    </section>
-  );
-}
-
-function Note({ tone = "muted", children }: { readonly tone?: "muted" | "warn"; readonly children: ReactNode }) {
-  return (
-    <p
-      className={cn(
-        "flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-[0.66rem] leading-relaxed",
-        tone === "warn" ? "border-warn/45 bg-warn/10 text-warn" : "border-dashed border-line bg-card/50 text-fg-3",
-      )}
-    >
-      {tone === "warn" ? (
-        <TriangleAlert size={13} aria-hidden className="mt-0.5 shrink-0" />
-      ) : (
-        <Info size={13} aria-hidden className="mt-0.5 shrink-0" />
-      )}
-      <span className="min-w-0">{children}</span>
-    </p>
-  );
-}
-
-/** 카탈로그의 "원본 유지" 헤어 항목(`hair:original`). 이 항목이면 절차형 헤어 조절은 보이지 않는다. */
-const ORIGINAL_HAIR_ENTRY_ID = "hair:original";
-
 const ROW_BUTTON = cn(
   "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.7rem] font-semibold text-fg-2",
   "transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
   STUDIO_FOCUS_RING,
 );
-
-function ToggleRow({
-  label,
-  hint,
-  checked,
-  disabled,
-  onToggle,
-}: {
-  readonly label: string;
-  readonly hint?: string;
-  readonly checked: boolean;
-  readonly disabled?: boolean;
-  readonly onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={onToggle}
-      className={cn(
-        "flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left",
-        "transition-colors disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
-        STUDIO_FOCUS_RING,
-        checked ? "border-accent/55 bg-accent-soft" : "border-line bg-card hover:bg-raised",
-      )}
-    >
-      <span className="min-w-0">
-        <span className={cn("block text-[0.72rem] font-bold", checked ? "text-accent" : "text-fg-2")}>{label}</span>
-        {hint ? <span className="mt-0.5 block text-[0.62rem] leading-relaxed text-fg-3">{hint}</span> : null}
-      </span>
-      <SwitchIndicator checked={checked} />
-    </button>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /* Inspector                                                                   */
@@ -273,25 +157,28 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
   /* ---------------------------------------------------------------------- */
 
   const renderFaceShape = () => (
-    <Section title="얼굴 비율" hint="두상·볼·턱을 직접 조절합니다. 카드 프리셋 위에 그대로 얹힙니다.">
-      {FACE_KEYS.map((key) => {
-        const limit = AVATAR_FORGE_FACE_LIMITS[key];
-        return (
-          <CharacterRangeControl
-            key={key}
-            label={limit.label}
-            value={face[key]}
-            min={limit.min}
-            max={limit.max}
-            step={limit.step}
-            unit={limit.unit}
-            defaultValue={DEFAULT_AVATAR_FORGE_STATE.face[key]}
-            disabled={locked}
-            onCommit={(value) => binding.commitFaceParams({ [key]: value }, `얼굴형: ${limit.label}`)}
-          />
-        );
-      })}
-    </Section>
+    <>
+      <CharacterShaperSkinSection binding={binding} locked={locked} />
+      <Section title="얼굴 비율" hint="두상·볼·턱을 직접 조절합니다. 카드 프리셋 위에 그대로 얹힙니다.">
+        {FACE_KEYS.map((key) => {
+          const limit = AVATAR_FORGE_FACE_LIMITS[key];
+          return (
+            <CharacterRangeControl
+              key={key}
+              label={limit.label}
+              value={face[key]}
+              min={limit.min}
+              max={limit.max}
+              step={limit.step}
+              unit={limit.unit}
+              defaultValue={DEFAULT_AVATAR_FORGE_STATE.face[key]}
+              disabled={locked}
+              onCommit={(value) => binding.commitFaceParams({ [key]: value }, `얼굴형: ${limit.label}`)}
+            />
+          );
+        })}
+      </Section>
+    </>
   );
 
   const renderMorphs = (ids: readonly AvatarForgeSemanticFaceMorphId[]) => (
@@ -349,120 +236,8 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     );
   };
 
-  const renderHair = () => {
-    const hair = forgeState?.hair ?? DEFAULT_AVATAR_FORGE_STATE.hair;
-    const baseColor = binding.snapshot.hairBaseColor ?? hair.baseColor;
-    const tipColor = binding.snapshot.hairTipColor ?? hair.tipColor;
-    const activePalette = CHARACTER_HAIR_PALETTES.find(
-      (palette) =>
-        palette.baseColor.toLowerCase() === String(baseColor).toLowerCase() &&
-        palette.tipColor.toLowerCase() === String(tipColor).toLowerCase(),
-    );
-    const replaceOriginal = binding.snapshot.hairReplaceOriginal ?? hair.replaceOriginal;
-    const originalHairCount = binding.profile.originalHairMeshCount ?? 0;
-    // 원본 헤어를 쓰는 동안 아래 설정은 절차형 헤어에만 반영되어 화면에 보이지 않는다. 먼저 알린다.
-    const usingOriginalHair = characterSlotSelection(binding.recipe, "hair").includes(ORIGINAL_HAIR_ENTRY_ID);
-    return (
-      <>
-        {usingOriginalHair ? (
-          <div className="px-3 pt-3" data-character-hair-original-note="true">
-            <Note>
-              지금은 모델의 원본 헤어를 쓰고 있어 앞머리·팔레트·형태 조절이 화면에 보이지 않습니다. 위에서 헤어 스타일 카드를 고르면 바로 적용됩니다.
-            </Note>
-          </div>
-        ) : null}
-        <Section title="앞머리" hint="스타일과 따로 조합합니다.">
-          <CharacterChipGroup
-            label="앞머리 형태"
-            value={binding.snapshot.hairBangStyle ?? hair.bangStyle}
-            disabled={locked}
-            columns={3}
-            options={AVATAR_FORGE_BANG_STYLE_OPTIONS.map((option) => ({
-              id: option.id,
-              label: option.label,
-              hint: option.hint,
-            }))}
-            onSelect={(id) => binding.commitHairParams({ bangStyle: id }, `헤어: 앞머리 ${id}`)}
-          />
-        </Section>
-        <Section title="헤어 팔레트">
-          <CharacterChipGroup
-            label="헤어 팔레트"
-            appearance="swatches"
-            value={activePalette?.id ?? null}
-            disabled={locked}
-            options={CHARACTER_HAIR_PALETTES.map((palette) => ({
-              id: palette.id,
-              label: palette.label,
-              swatch: palette.baseColor,
-              swatchTip: palette.tipColor,
-            }))}
-            onSelect={(id) => {
-              const palette = CHARACTER_HAIR_PALETTES.find((item) => item.id === id);
-              if (!palette) return;
-              binding.commitHairParams(
-                { baseColor: palette.baseColor, tipColor: palette.tipColor },
-                `헤어: ${palette.label}`,
-              );
-            }}
-          />
-          <CharacterColorControl
-            label="헤어 기본색"
-            value={baseColor}
-            disabled={locked}
-            onCommit={(color) => {
-              if (color === null) return;
-              binding.commitHairParams({ baseColor: color }, "헤어: 기본색");
-            }}
-          />
-          <CharacterColorControl
-            label="모발 끝 색"
-            value={tipColor}
-            disabled={locked}
-            onCommit={(color) => {
-              if (color === null) return;
-              binding.commitHairParams({ tipColor: color }, "헤어: 끝 색");
-            }}
-          />
-        </Section>
-        <Section title="헤어 형태">
-          {HAIR_KEYS.map((key) => {
-            const limit = AVATAR_FORGE_HAIR_LIMITS[key];
-            const value = typeof hair[key] === "number" ? hair[key] : DEFAULT_AVATAR_FORGE_STATE.hair[key];
-            return (
-              <CharacterRangeControl
-                key={key}
-                label={limit.label}
-                value={value}
-                min={limit.min}
-                max={limit.max}
-                step={limit.step}
-                unit={limit.unit}
-                defaultValue={DEFAULT_AVATAR_FORGE_STATE.hair[key]}
-                disabled={locked}
-                onCommit={(next) => binding.commitHairParams({ [key]: next }, `헤어: ${limit.label}`)}
-              />
-            );
-          })}
-          <ToggleRow
-            label="원본 헤어 감추기"
-            hint={
-              originalHairCount > 0
-                ? `모델이 가진 헤어 메시 ${originalHairCount}개를 숨기고 절차형 헤어만 남깁니다.`
-                : frozenStatus3Text("studio.frozenStatus3.shaper.noOriginalHairMesh", "이 모델에는 감출 원본 헤어 메시가 없습니다.")
-            }
-            checked={Boolean(replaceOriginal)}
-            disabled={locked || originalHairCount === 0}
-            onToggle={() =>
-              binding.commitHairParams(
-                { replaceOriginal: !replaceOriginal },
-                replaceOriginal ? "헤어: 원본 헤어 표시" : "헤어: 원본 헤어 감추기",
-              )}
-          />
-        </Section>
-      </>
-    );
-  };
+  // 헤어 구역은 CharacterShaperHairInspector(형태·팔레트·그라데이션·하이라이트)가 맡는다.
+  const renderHair = () => <CharacterShaperHairInspector h={h} binding={binding} locked={locked} />;
 
   const renderBody = () => {
     const proportions: StudioVrmProportions =
@@ -516,6 +291,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
             );
           })}
         </Section>
+        <CharacterShaperSkinSection binding={binding} locked={locked} />
         <Section title="정밀 제작" hint="Blender 파이프라인으로 만든 캐릭터 패키지를 이 셰이퍼로 가져옵니다.">
           <CharacterShaperBlenderPackage h={h} disabled={locked} />
         </Section>

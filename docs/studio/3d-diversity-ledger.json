@@ -44,7 +44,44 @@
     },
     "characterLab.artStyles": {
       "metrics": {
-        "artStylePacks": 0
+        "artStylePacks": 8
+      }
+    },
+    "characterLab.customization": {
+      "metrics": {
+        "contract.colorRegions": 27,
+        "contract.shapeSlidersMaxPerPart": 8,
+        "contract.shapeSlidersTotal": 152,
+        "contract.wornLayers": 7,
+        "contract.accessorySlots": 12,
+        "contract.simultaneousWear": 19,
+        "contract.surfaceChannels": 18,
+        "contract.surfaceMaterials": 7,
+        "contract.patternKinds": 6,
+        "contract.lookContinuous": 41,
+        "contract.lookDiscrete": 14,
+        "contract.styleParams": 81,
+        "contract.discreteLog10": 67.26,
+        "contract.continuousAxes": 454,
+        "noCustom.colorRegions": 8,
+        "noCustom.shapeSlidersMaxPerPart": 0,
+        "noCustom.shapeSlidersTotal": 0,
+        "noCustom.wornLayers": 4,
+        "noCustom.accessorySlots": 1,
+        "noCustom.simultaneousWear": 5,
+        "noCustom.surfaceChannels": 4,
+        "noCustom.surfaceMaterials": 7,
+        "noCustom.patternKinds": 0,
+        "noCustom.lookContinuous": 0,
+        "noCustom.lookDiscrete": 0,
+        "noCustom.styleParams": 20,
+        "noCustom.discreteLog10": 13.83,
+        "noCustom.continuousAxes": 64,
+        "lookSets": 24,
+        "lookSetGenres": 6,
+        "styleFaceBindings": 15,
+        "lookScopes": 5,
+        "mixerLockGroups": 6
       }
     },
     "studio.mannequin": {

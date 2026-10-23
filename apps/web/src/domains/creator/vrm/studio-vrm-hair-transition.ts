@@ -55,6 +55,10 @@ export function buildStudioVrmHairGeometryIdentity(
     wave: hair.wave,
     ahoge: hair.ahoge,
     tailHeight: hair.tailHeight,
+    // 색 확장은 정점 색에 구워지므로 바뀌면 다시 짓는다. 기본값이면 키가 없어 예전 정체성 그대로다.
+    ...(hair.accentMode ? { accentMode: hair.accentMode, accentColor: hair.accentColor ?? null } : {}),
+    ...(hair.gradientPosition !== undefined ? { gradientPosition: hair.gradientPosition } : {}),
+    ...(hair.gradientSoftness !== undefined ? { gradientSoftness: hair.gradientSoftness } : {}),
   };
   return `hair-geometry-v1:${hash(JSON.stringify(payload))}`;
 }

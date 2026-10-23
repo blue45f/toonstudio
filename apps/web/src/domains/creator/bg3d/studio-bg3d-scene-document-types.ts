@@ -7,6 +7,7 @@
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
 import type { StudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
+import type { StudioBg3dSceneRecipeEnvelope, StudioBg3dSurfaceRef } from "./studio-bg3d-scene-surface-types";
 
 export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;
 // 노드 tags·componentRef, 장면 meta, 컷 hiddenTags 는 v3 에 선택 필드로 더했고 버전은 올리지 않았다.
@@ -573,6 +574,8 @@ export interface StudioBg3dNodeOrganization {
   /** 정렬·중복 제거된 태그 목록(노드당 최대 8개). 태그 숨김은 `meta.hiddenTags` 가 정하며 `visible` 과 따로 움직인다. */
   readonly tags?: readonly string[];
   readonly componentRef?: StudioBg3dComponentRef;
+  /** 절차 재질 참조(읽기 단계: 받아들여 보존만 한다). 프리미티브 노드만 가진다 — 모델 노드의 값은 정규화가 버린다. */
+  readonly surface?: StudioBg3dSurfaceRef;
 }
 
 /**
@@ -766,4 +769,6 @@ export interface StudioBg3dSceneDocument {
   readonly pinnedVersionedCut?: StudioScene3dVersionedCut;
   /** 장면 이름·메모·숨긴 태그. 선택 필드라 이 키가 없는 기존 v3 문서는 바이트 단위로 그대로 열린다. */
   readonly meta?: StudioBg3dSceneMeta;
+  /** 장면 레시피 봉투(재편집 의도, 렌더 정본은 노드). 읽기 단계는 경계 검사 후 보존만 한다. 없으면 키를 만들지 않는다. */
+  readonly sceneRecipe?: StudioBg3dSceneRecipeEnvelope;
 }

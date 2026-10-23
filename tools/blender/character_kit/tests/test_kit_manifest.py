@@ -5,8 +5,10 @@
 - GLB 검사·파츠 찾기·레지스트리 검증·manifest 모양·`hides` 규칙을 작은 합성 키트로 확인한다.
 - Hyper3D 파생 파츠의 출처(`provenance.sources`, 요약, NOTICE.md)를 확인한다: 등록된 파츠에만 항목이 생기고, 계약·검증기 V4가 요구하는 값이
   모두 있으며, 값이 모자라면 한글 사유로 멈춘다.
-- 계약 덤프가 필요하다: `~/.cache/toonstudio-kit/out/contract.json`이 있으면 그것을, 없으면 저장소 루트에서
-  `pnpm exec tsx scripts/blender/dump-kit-contract.mjs`로 만든다. 둘 다 안 되면 그 시험은 건너뛴다.
+- 계약 덤프가 필요하다: `CHARACTER_KIT_CONTRACT_JSON` → `~/.cache/toonstudio-kit/out/contract.json` → 저장소 루트에서
+  `node_modules/.bin/tsx scripts/blender/dump-kit-contract.mjs` 순으로 구한다(pnpm은 링크된 작업 폴더에서 재설치를 시도하므로 쓰지 않는다).
+  셋 다 안 되면 그 시험은 건너뛴다.
+- 손 기록 보존(`PreservedRecords`): 이전 kit.json의 미제공 사유·hides·summaryKo와 NOTICE의 제외 역사 절이 새 파일로 옮겨지는지 본다.
 - `deriveKitCapabilities`(TS)는 합성 키트의 모양이 그 규칙의 입력으로 부적합해 시험에서는 대체하고, node/tsx가 있으면 실제 키트 형태의
   최소 manifest로 한 번 호출해 본다.
 """
@@ -36,6 +38,7 @@ from character_kit import glbwriter
 from character_kit import kit_manifest as km
 
 CACHE = Path.home() / ".cache" / "toonstudio-kit"
+TSX = REPO_ROOT / "node_modules" / ".bin" / "tsx"
 _CONTRACT_CACHE: dict[str, contract_mod.Contract | None] = {}
 
 
@@ -49,10 +52,10 @@ def load_contract() -> contract_mod.Contract | None:
         path = Path(explicit)
     elif (CACHE / "out" / "contract.json").exists():
         path = CACHE / "out" / "contract.json"
-    elif (REPO_ROOT / "node_modules").is_dir() and shutil.which("pnpm"):
+    elif TSX.exists():
         workdir = Path(tempfile.mkdtemp(prefix="kit-contract-"))
         target = workdir / "contract.json"
-        result = subprocess.run(["pnpm", "exec", "tsx", "scripts/blender/dump-kit-contract.mjs", "--out", str(target)], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
+        result = subprocess.run([str(TSX), "scripts/blender/dump-kit-contract.mjs", "--out", str(target)], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
         path = target if result.returncode == 0 and target.exists() else None
     _CONTRACT_CACHE["value"] = None if path is None else contract_mod.load(path)
     return _CONTRACT_CACHE["value"]
@@ -213,8 +216,15 @@ class ManifestBuildTest(unittest.TestCase):
             if not part["variants"]:
                 reason = part["unavailable"]["female"]
                 self.assertRegex(reason, r"[가-힣]", preset_id)
-        self.assertEqual(by_id["bottom/jeans"]["unavailable"]["female"], km.REQUIRED_REASON_KO)  # 필수 파츠는 필수라는 사유
+        # 미등록 프리셋의 기본 사유: 계약 필수 파츠면 필수라는 사유, 아니면 선택 사유(2026-10-14 이후 필수는 irises/round-large뿐이라 계약에서 읽는다)
+        required = set(self.contract.required_presets)
+        for preset_id, part in by_id.items():
+            if not part["variants"]:
+                self.assertEqual(part["unavailable"]["female"], km.REQUIRED_REASON_KO if preset_id in required else km.OPTIONAL_REASON_KO, preset_id)
         self.assertEqual(by_id["hair/short-layered"]["unavailable"]["female"], km.OPTIONAL_REASON_KO)
+        widened = contract_mod.Contract({**self.contract.raw, "requiredPresets": [*self.contract.required_presets, "bottom/jeans"]})
+        self.assertEqual(km.default_unavailable_reason("bottom/jeans", widened), km.REQUIRED_REASON_KO)  # 필수 파츠는 필수라는 사유
+        self.assertEqual(km.default_unavailable_reason("bottom/jeans", self.contract), km.REQUIRED_REASON_KO if "bottom/jeans" in required else km.OPTIONAL_REASON_KO)
 
     def test_two_bases_get_variants_per_base_and_korean_reasons_for_the_missing_one(self) -> None:
         kit = self.make_kit("two-bases", {"top/tee": self.TOP, "irises/round-large": self.IRIS})
@@ -315,8 +325,10 @@ class Hyper3dProvenanceTest(unittest.TestCase):
     def test_real_sources_file_loads_and_every_entry_is_valid(self) -> None:
         self.assertEqual(self.sources.record_doc, "apps/character-lab/docs/hyper3d-terms-record.md")
         self.assertTrue((REPO_ROOT / self.sources.record_doc).is_file())
-        # 필수 4종(파일럿)은 반드시 있고, 그 밖의 항목은 프리셋 표(garment_presets.PRESETS)에 있는 프리셋이어야 한다.
-        self.assertLessEqual({"bottom/jeans", "hair/soft-bob", "shoes/sneakers", "top/tee"}, set(self.sources.sources))
+        # 파일럿 Hyper3D 파생 3종(의상·신발)은 기록으로 남아 있고, 그 밖의 항목은 프리셋 표(garment_presets.PRESETS)에 있는 프리셋이어야 한다.
+        self.assertLessEqual({"bottom/jeans", "shoes/sneakers", "top/tee"}, set(self.sources.sources))
+        # 2026-10-23: 헤어 슬롯은 forge_hair 원본으로 다시 채웠다. hair/* 키가 표에 남으면 원본 헤어가 Hyper3D 파생으로 잘못 적힌다.
+        self.assertEqual([key for key in self.sources.sources if key.startswith("hair/")], [])
         from character_kit.garment_presets import PRESETS
 
         self.assertLessEqual({key.partition("@")[0] for key in self.sources.sources}, set(PRESETS))
@@ -332,9 +344,11 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         self.assertNotIn("hyper3d-hair-soft-bob", by_id)
         self.assertEqual({"hbm-1.4.1", "toonstudio-original", "hyper3d-top-tee"}, set(by_id))
         self.assertEqual(set(self.entries([])), {"hbm-1.4.1", "toonstudio-original"})  # 파츠가 없으면 항목도 없다
-        registered = {"hyper3d-hair-soft-bob", "hyper3d-bottom-jeans", "hyper3d-shoes-sneakers", "hyper3d-top-tee"}
-        derived = set(self.entries(["hair/soft-bob", "bottom/jeans", "shoes/sneakers", "top/tee"])) - {"hbm-1.4.1", "toonstudio-original"}
+        registered = {"hyper3d-accessory-ribbon", "hyper3d-bottom-jeans", "hyper3d-shoes-sneakers", "hyper3d-top-tee"}
+        derived = set(self.entries(["accessory/ribbon", "bottom/jeans", "shoes/sneakers", "top/tee"])) - {"hbm-1.4.1", "toonstudio-original"}
         self.assertLessEqual(registered, derived)
+        # 원본 헤어(forge_hair)를 등록해도 Hyper3D 항목은 생기지 않는다(출처 표에 hair/* 키가 없다)
+        self.assertEqual(set(self.entries(["hair/soft-bob", "hair/twin-tail"])), {"hbm-1.4.1", "toonstudio-original"})
         # 남성 전용 생성물(`슬롯/이름@male`)이 있는 프리셋은 기본 파츠가 등록돼 있을 때만 `-male` 항목이 따라온다. 그 밖의 항목은 없다.
         self.assertTrue(all(extra.endswith("-male") and extra.removesuffix("-male") in registered for extra in derived - registered), derived - registered)
 
@@ -460,7 +474,7 @@ class Hyper3dProvenanceTest(unittest.TestCase):
             "결과 페이지가 계속 열리는지는 확인하지 않았다",
         ):
             self.assertIn(fragment, notice)
-        self.assertNotIn(self.sources.sources["hair/soft-bob"]["generationId"], notice)  # 등록되지 않은 파츠는 적지 않는다
+        self.assertNotIn(self.sources.sources["shoes/sneakers"]["generationId"], notice)  # 등록되지 않은 파츠는 적지 않는다
         # HBM License 텍스트 불일치 고지는 그대로 유지한다
         for fragment in ("Rain Rig", "Creative Commons", "추정", "확인하지 못했다", "811f43accbb31a88266d932f8f5563b2d13586fca0ba2693aad1f5fe582b3515"):
             self.assertIn(fragment, notice)
@@ -487,7 +501,7 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         self.assertIn("top/tee", manifest["provenance"]["summaryKo"])
         self.assertNotIn("bottom/jeans", manifest["provenance"]["summaryKo"])
 
-    @unittest.skipUnless((REPO_ROOT / "node_modules").is_dir() and shutil.which("node"), "node와 node_modules가 필요합니다")
+    @unittest.skipUnless(TSX.exists() and shutil.which("node"), "node와 node_modules/.bin/tsx가 필요합니다")
     def test_verifier_v4_accepts_the_generated_provenance(self) -> None:
         helper = ManifestBuildTest("test_manifest_declares_every_vocabulary_preset_and_registered_parts")
         helper.contract = self.contract
@@ -510,25 +524,131 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         )
         km.write_manifest(manifest, kit / km.MANIFEST_FILE)
         (kit / km.KIT_NOTICE_FILE).write_text(km.notice_text(self.contract, manifest), encoding="utf-8")
-        result = subprocess.run(["pnpm", "exec", "tsx", "scripts/verify-character-kit.mjs", "--root", str(kit), "--base", "female", "--only", "V4"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
+        result = subprocess.run([str(TSX), "scripts/verify-character-kit.mjs", "--root", str(kit), "--base", "female", "--only", "V4"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
         self.assertIn("[통과] V4", result.stdout, result.stdout + result.stderr)
         # 반입 기록 문서 경로를 망가뜨리면 V4가 오류를 낸다(검증기가 실제로 이 항목을 검사하고 있음을 확인)
         for source in manifest["provenance"]["sources"]:
             if source["license"] == "hyper3d-rodin-output":
                 source["evidenceDoc"] = "apps/character-lab/docs/does-not-exist.md"
         km.write_manifest(manifest, kit / km.MANIFEST_FILE)
-        broken = subprocess.run(["pnpm", "exec", "tsx", "scripts/verify-character-kit.mjs", "--root", str(kit), "--base", "female", "--only", "V4"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
+        broken = subprocess.run([str(TSX), "scripts/verify-character-kit.mjs", "--root", str(kit), "--base", "female", "--only", "V4"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
         self.assertIn("[실패] V4", broken.stdout, broken.stdout + broken.stderr)
 
 
+class PreservedRecordsTest(unittest.TestCase):
+    """재생성해도 손으로 남긴 기록(제외 경위·미제공 사유·hides)이 사라지지 않고, 원본 파츠 설명은 키트 내용에서 다시 만들어진다(2026-10-23)."""
+
+    OLD_SUMMARY = "Blender … 원본 디자인, Hyper3D 파생 파츠 33종은 2026-10-14 이 키트에서 제외했습니다. 제외 기록은 apps/character-lab/docs/hyper3d-terms-record.md §9에 남겼습니다."
+    OLD_NOTICE = (
+        "# 고지\n\n## 원천 1 — HBM\n\n- 옛 문장\n\n"
+        "## 원천 3 — Hyper3D(Rodin Gen-2.5) 생성물의 파생 파츠 (license: hyper3d-rodin-output) — 2026-10-14 키트에서 제외\n\n"
+        "- **2026-10-14 제외 실행**: 33종 제외.\n\n### hair/short-layered (`hyper3d-hair-short-layered`)\n\n- 생성 id: `f63e1379-d77f-4351-9a6d-74ff796ff91a`\n\n"
+        "## 쓰지 않은 것\n\n- 옛 문장\n\n## 들어 있는 파일\n\n- 베이스: `bases/female.glb` (남성 베이스는 이번 빌드에서 만들지 않았다.)\n"
+        "- 제외한 Hyper3D 파생 변형 48개의 GLB 파일은 저장소에 없다. 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. (옛 안내)\n\n## 재현\n\n옛 명령\n"
+    )
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.contract = load_contract()
+        if cls.contract is None:
+            raise unittest.SkipTest("계약 덤프를 구하지 못했습니다.")
+
+    def build(self, kit: Path, preserved: km.PreservedRecords | None, hides: dict | None = None, hyper3d: km.Hyper3dSources | None = None, licenses: dict | None = None) -> dict:
+        meta = {"heightM": 1.64, "bodyRegions": [{"id": "torso", "mesh": "TS_Body", "indexStart": 0, "indexCount": 3}], "jointOffsets": {}}
+        with mock.patch.object(km, "derive_capabilities", return_value={"female": {"stub": True}}):
+            return km.build_manifest(
+                kit_dir=kit, contract=self.contract, base_id="female", base_path="bases/female.glb", base_meta=meta,
+                parts=km.discover_parts(kit, ["female"], km.merge_hides_table(preserved, hides)), repo_root=REPO_ROOT,
+                generator_command=["test"], blender_version="test", hyper3d_sources=hyper3d, preserved=preserved, registry_licenses=licenses,
+            )
+
+    def kit(self, name: str, parts: dict) -> Path:
+        helper = ManifestBuildTest("test_manifest_declares_every_vocabulary_preset_and_registered_parts")
+        helper.contract = self.contract
+        helper.workdir = Path(tempfile.mkdtemp(prefix=f"kit-preserve-{name}-"))
+        self.addCleanup(shutil.rmtree, helper.workdir, ignore_errors=True)
+        return helper.make_kit(name, parts)
+
+    def test_old_reasons_hides_and_summary_survive_and_the_original_note_is_added_once(self) -> None:
+        old = {
+            "provenance": {"summaryKo": self.OLD_SUMMARY},
+            "parts": [
+                {"id": "top/shirt", "variants": {}, "unavailable": {"female": "Hyper3D(Rodin) 파생 파츠입니다. 2026-10-14 키트에서 제외했습니다."}},
+                {"id": "top/tee", "variants": {"female": {"hides": ["torso"]}}, "unavailable": {}},
+            ],
+        }
+        preserved = km.PreservedRecords.from_kit(old, self.OLD_NOTICE)
+        kit = self.kit("keep", {"top/tee": ManifestBuildTest.TOP, "hair/soft-bob": ManifestBuildTest.HAIR, "irises/round-large": ManifestBuildTest.IRIS})
+        manifest = self.build(kit, preserved)
+        by_id = {part["id"]: part for part in manifest["parts"]}
+        self.assertEqual(by_id["top/shirt"]["unavailable"]["female"], old["parts"][0]["unavailable"]["female"])  # 손 사유가 기본 문장보다 먼저
+        self.assertEqual(by_id["hair/short-layered"]["unavailable"]["female"], km.OPTIONAL_REASON_KO)  # 기록이 없으면 기본 문장
+        self.assertEqual(by_id["top/tee"]["variants"]["female"]["hides"], ["torso"])  # 레지스트리가 없으면 이전 hides
+        self.assertEqual(self.build(kit, preserved, hides={"top/tee": {"female": {"hides": ["neck"]}}})["parts"][[p["id"] for p in manifest["parts"]].index("top/tee")]["variants"]["female"]["hides"], ["neck"])
+        summary = manifest["provenance"]["summaryKo"]
+        self.assertTrue(summary.startswith(self.OLD_SUMMARY), summary)
+        # 포지 도구 파츠만 기록한다(헤어 = forge_hair, 원본 상의 = forge_garments). 홍채(build_irises)는 첫 문장의 '원본 디자인'에 이미 들어 있다.
+        self.assertIn("원본 파츠 기록: 헤어 1종(hair/soft-bob)은 tools/blender/character_kit/forge_hair가, 상의 1종(top/tee)은 tools/blender/character_kit/forge_garments가 이 저장소에서 절차 생성한 원본(license original)이며 Hyper3D 생성물이 아닙니다.", summary)
+        self.assertNotIn("irises/round-large", summary)
+        # 새 요약을 다시 보존 원본으로 써도 원본 파츠 기록은 한 번만 들어간다(멱등)
+        again = self.build(kit, km.PreservedRecords.from_kit({**old, "provenance": manifest["provenance"]}, self.OLD_NOTICE))
+        self.assertEqual(again["provenance"]["summaryKo"], summary)
+        self.assertEqual(again["provenance"]["summaryKo"].count(kp_marker()), 1)
+
+    def test_original_source_lists_registered_original_parts_by_tool(self) -> None:
+        kit = self.kit("original", {"hair/soft-bob": ManifestBuildTest.HAIR, "irises/round-large": ManifestBuildTest.IRIS})
+        original = next(source for source in self.build(kit, None)["provenance"]["sources"] if source["id"] == "toonstudio-original")
+        self.assertEqual(original["name"], "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 1종·헤어 1종·텍스처)")
+        self.assertIn("build_irises — 홍채 1종(irises/round-large)", original["changesKo"])
+        self.assertIn("forge_hair — 헤어 1종(hair/soft-bob)", original["changesKo"])
+        self.assertEqual((original["license"], original["derivative"]), ("original", False))
+
+    def test_notice_keeps_the_exclusion_history_and_recounts_the_files(self) -> None:
+        preserved = km.PreservedRecords.from_kit({"provenance": {"summaryKo": self.OLD_SUMMARY}, "parts": []}, self.OLD_NOTICE)
+        kit = self.kit("notice", {"hair/soft-bob": ManifestBuildTest.HAIR, "irises/round-large": ManifestBuildTest.IRIS})
+        manifest = self.build(kit, preserved)
+        notice = km.notice_text(self.contract, manifest, preserved)
+        self.assertIn("— 2026-10-14 키트에서 제외", notice)  # 역사 절 머리줄과
+        self.assertIn("f63e1379-d77f-4351-9a6d-74ff796ff91a", notice)  # 그 안의 하위 절이 그대로
+        self.assertIn("- 제외한 Hyper3D 파생 변형 48개의 GLB 파일은 저장소에 없다.", notice)
+        self.assertNotIn("(옛 안내)", notice)  # 공통 안내 문장은 생성기가 다시 쓴다
+        self.assertNotIn("남성 베이스는 이번 빌드에서 만들지 않았다", notice)  # 고정 문장 결함(2026-10-22 지적)이 사라졌다
+        self.assertIn("- 베이스: `bases/female.glb`", notice)
+        self.assertIn("- 파츠(현재 제공 2종, 변형 파일 2개): hair/soft-bob, irises/round-large", notice)
+        self.assertIn("`forge_hair`: 헤어 1종(hair/soft-bob)", notice)
+        self.assertIn("위 원천 3 기록의 경위로 제외해 현재 키트에는 없다", notice)
+        self.assertEqual(notice.count("## 원천 3"), 1)
+        self.assertLess(notice.index("## 원천 3"), notice.index("## 쓰지 않은 것"))
+
+    def test_registry_original_conflicting_with_a_hyper3d_key_stops(self) -> None:
+        table = km.Hyper3dSources(record_doc="apps/character-lab/docs/hyper3d-terms-record.md", sources={"top/tee": km.load_hyper3d_sources(km.HYPER3D_SOURCES_FILE, REPO_ROOT).sources["top/tee"]})
+        kit = self.kit("conflict", {"top/tee": ManifestBuildTest.TOP})
+        with self.assertRaises(km.ManifestError) as caught:
+            self.build(kit, None, hyper3d=table, licenses={"top/tee": "original"})
+        self.assertIn("출처가 충돌합니다: top/tee", str(caught.exception))
+        # 레지스트리가 license를 밝히지 않으면 지금처럼 출처 표를 따른다(Hyper3D 항목이 생긴다)
+        ids = [source["id"] for source in self.build(kit, None, hyper3d=table)["provenance"]["sources"]]
+        self.assertIn("hyper3d-top-tee", ids)
+
+
+def kp_marker() -> str:
+    from character_kit import kit_provenance
+
+    return kit_provenance.ORIGINAL_SUMMARY_MARKER
+
+
 class ContractConstantParityTest(unittest.TestCase):
-    """`contract.json` 덤프에 없어 파이썬에 사본으로 둔 상수가 `character-kit.ts`와 같은지 확인한다."""
+    """`contract.json` 덤프에 없어 파이썬에 사본으로 둔 상수가 TS 계약과 같은지 확인한다.
+
+    2026-10-23 CORE-1이 두 상수를 `character-kit.ts`에서 `kit-provenance.ts`로 옮겼다(character-kit.ts는 다시 내보내기만 한다). 정의가 있는 파일을 읽는다.
+    """
 
     def test_license_vocabulary_and_evidence_prefix_match_the_typescript_contract(self) -> None:
-        source = (REPO_ROOT / "apps/character-lab/src/contracts/character-kit.ts").read_text(encoding="utf-8")
+        contracts = REPO_ROOT / "apps/character-lab/src/contracts"
+        source = "\n".join((contracts / name).read_text(encoding="utf-8") for name in ("kit-provenance.ts", "character-kit.ts") if (contracts / name).is_file())
         licenses = re.search(r"export const KIT_ALLOWED_LICENSES = \[([^\]]*)\] as const", source)
         prefix = re.search(r'export const KIT_HYPER3D_EVIDENCE_PREFIX = "([^"]+)"', source)
-        assert licenses is not None and prefix is not None
+        assert licenses is not None and prefix is not None, "KIT_ALLOWED_LICENSES·KIT_HYPER3D_EVIDENCE_PREFIX 정의를 찾지 못했습니다(계약 파일이 또 옮겨졌는지 확인)"
         self.assertEqual(re.findall(r'"([^"]+)"', licenses.group(1)), ["CC0-1.0", "original", km.HYPER3D_LICENSE])
         self.assertEqual(prefix.group(1), km.HYPER3D_EVIDENCE_PREFIX)
 

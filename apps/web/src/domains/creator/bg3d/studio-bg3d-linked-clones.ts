@@ -1,11 +1,12 @@
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
+import type { StudioBg3dSurfaceRef } from "./studio-bg3d-scene-surface-types";
 
 /**
  * 연결 복제(linked clone) 규칙 — 순수 함수 모듈.
  *
- * 연결 복제는 원본과 "외형"만 공유한다: 프리미티브는 color + materialOverride + texturePaint,
+ * 연결 복제는 원본과 "외형"만 공유한다: 프리미티브는 color + materialOverride + texturePaint + surface(절차 재질 참조),
  * 모델은 materialOverride + modelTexturePaint(GLB 텍스처 페인트)가 동기화 대상이다.
  * 위치·회전·크기(transform), 이름, 표시, 잠금, 계층은
  * 복제본마다 독립이다. 그림자 플래그는 런타임 타입이 들고 있지 않아(문서 층에서 상수 true로
@@ -35,6 +36,13 @@ function materialOverridesEqual(
     && left.wireframe === right.wireframe
     && left.doubleSided === right.doubleSided
   );
+}
+
+/** 재질 참조는 작은 JSON 값이라 구조로 비교한다(복원 경로마다 사본이 새로 만들어져 참조 비교로는 매번 다르다). */
+function surfaceRefsEqual(left: StudioBg3dSurfaceRef | undefined, right: StudioBg3dSurfaceRef | undefined): boolean {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 /**
@@ -86,6 +94,7 @@ export function syncLinkedCloneAppearance(input: {
       && materialOverridesEqual(root.materialOverride, primitive.materialOverride)
       // 페인트는 불변 데이터로 취급한다(모든 페인트 연산이 새 객체를 반환) — 참조 동등으로 충분.
       && root.texturePaint === primitive.texturePaint
+      && surfaceRefsEqual(root.surface, primitive.surface)
     ) {
       return primitive;
     }
@@ -95,6 +104,7 @@ export function syncLinkedCloneAppearance(input: {
       color: root.color,
       materialOverride: root.materialOverride ? { ...root.materialOverride } : undefined,
       texturePaint: root.texturePaint,
+      surface: root.surface,
     };
   });
 

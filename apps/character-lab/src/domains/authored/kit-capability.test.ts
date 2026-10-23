@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { CHARACTER_SLOT_KINDS, KIT_REQUIRED_PRESETS, SLOT_PRESET_IDS, parseKitManifest } from "../../contracts";
+import { kitManifestV2Json } from "../../testing/kit-v2-fixtures";
 
 import { compareKitCapabilities, deriveKitCapabilities, kitCapabilityDifferences } from "./kit-capability";
+import { deriveKitWardrobeCapabilities } from "./kit-custom-capability";
 import { kitManifestFixture, kitManifestJson } from "./kit-test-fixture";
+import { kitManifestV1View } from "./kit-v1-projection";
+import { finalizeKitV2, partOf, richKitV2Json } from "./kit-v2-test-fixture";
 
 import type { KitBaseId, KitManifest, SlotCapability, SlotCapabilityMap } from "../../contracts";
 
@@ -208,5 +212,44 @@ describe("authored/kit-capability — 선언 대조", () => {
     const original = parsed(raw);
     const lacking: KitManifest = { ...original, slotCapabilities: { female: original.slotCapabilities.female } };
     expect(kitCapabilityDifferences(lacking).get("male")).toEqual([{ slot: null, reasonKo: "slotCapabilities.male 선언이 없습니다." }]);
+  });
+});
+
+describe("authored/kit-capability — 키트 v2 슬롯 능력(베이스 변형 수, v1과 같은 규칙)", () => {
+  it("여성은 어휘 전부를 제공해 15슬롯 available, 남성은 필수 파츠만이라 파츠 슬롯이 unavailable·partial이다", () => {
+    const manifest = finalizeKitV2(richKitV2Json(kitManifestV2Json())).manifest;
+    const female = deriveKitCapabilities(manifest, "female");
+    for (const slot of CHARACTER_SLOT_KINDS) expect(female[slot], slot).toEqual({ status: "available" });
+    const male = deriveKitCapabilities(manifest, "male");
+    expect(male.hair).toEqual({ status: "unavailable", reasonKo: "키트가 male 베이스용 헤어 파츠를 제공하지 않습니다(0/7종)." });
+    expect(male.irises.status).toBe("partial");
+    expect(kitCapabilityDifferences(manifest).size).toBe(0);
+  });
+
+  it("여성 변형이 빠진 프리셋은 v2에서도 partial + 미제공 프리셋마다 manifest 사유", () => {
+    const manifest = finalizeKitV2(kitManifestV2Json({ omitFemale: ["hair/twin-tail", "top/sailor"] })).manifest;
+    const female = deriveKitCapabilities(manifest, "female");
+    expect(female.hair).toEqual({ status: "partial", reasonKo: "제공 6/7종, 미제공: twin-tail", unavailablePresets: { "hair/twin-tail": "여성 핏 미제작" } });
+    expect(female.top.unavailablePresets).toEqual({ "top/sailor": "여성 핏 미제작" });
+  });
+
+  it("층 변형만 있는 프리셋은 슬롯에서는 미제공(사유 그대로)이고 층에서는 제공이다 — 슬롯 수는 베이스 변형만 센다", () => {
+    const json = richKitV2Json(kitManifestV2Json());
+    const blazer = partOf(json, "top/blazer");
+    delete (blazer.variants as Record<string, unknown>).female;
+    (blazer.unavailable as Record<string, unknown>).female = "여성 베이스 상의 슬롯 핏 미제작(아우터 층 전용)";
+    const manifest = finalizeKitV2(json).manifest;
+    const top = deriveKitCapabilities(manifest, "female").top;
+    expect(top).toEqual({ status: "partial", reasonKo: "제공 4/5종, 미제공: blazer", unavailablePresets: { "top/blazer": "여성 베이스 상의 슬롯 핏 미제작(아우터 층 전용)" } });
+    const layers = deriveKitWardrobeCapabilities(manifest, "female").layers;
+    expect(layers.outer.unavailablePresets?.["top/blazer"]).toBeUndefined();
+    expect(layers.outer.reasonKo).toBe("제공 2/5종, 미제공: tee, shirt, sailor");
+  });
+
+  it("v1 형식 보기(legacyView)로 판정해도 15슬롯 능력·선언 대조가 원본과 같다", () => {
+    const manifest = finalizeKitV2(richKitV2Json(kitManifestV2Json({ omitFemale: ["shoes/boots"], malePresets: ["irises/round-large", "hair/soft-bob"] }))).manifest;
+    const view = kitManifestV1View(manifest);
+    for (const baseId of ["female", "male"] as const) expect(deriveKitCapabilities(view, baseId)).toEqual(deriveKitCapabilities(manifest, baseId));
+    expect(kitCapabilityDifferences(view)).toEqual(kitCapabilityDifferences(manifest));
   });
 });

@@ -72,6 +72,8 @@ function staticImporters(specifier: string): string[] {
 
 const LAZY_MODULES = [
   "./StudioBg3dRoomBuilderPanel",
+  "./StudioBg3dRoomBuilderDetailControls",
+  "./studio-bg3d-room-builder-i18n",
   "./StudioBg3dWebtoonBackgroundPicker",
   "./StudioBg3dBuildNotice",
   "./studio-bg3d-build-notice",
@@ -98,6 +100,9 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
 
   it("지연 모듈을 정적으로 가져오는 제품 코드는 정해진 곳뿐이다(편집기 활성화 번들로 새지 않는다)", () => {
     expect(staticImporters("./StudioBg3dRoomBuilderPanel")).toEqual([]);
+    // 문·창 모양·천장·몰딩 컨트롤과 그 문구 사전은 방 만들기 패널 청크 안에만 있다.
+    expect(staticImporters("./StudioBg3dRoomBuilderDetailControls")).toEqual(["StudioBg3dRoomBuilderPanel.tsx"]);
+    expect(staticImporters("./studio-bg3d-room-builder-i18n")).toEqual(["StudioBg3dRoomBuilderDetailControls.tsx"]);
     expect(staticImporters("./StudioBg3dWebtoonBackgroundPicker")).toEqual([]);
     expect(staticImporters("./studio-bg3d-webtoon-background-templates")).toEqual(["StudioBg3dWebtoonBackgroundPicker.tsx"]);
     expect(staticImporters("./studio-bg3d-street-builder")).toEqual(["studio-bg3d-webtoon-background-templates.ts"]);
@@ -119,12 +124,23 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
     }
   });
 
-  it("활성화 번들에 남는 룸 빌더와 가구 모듈은 렌더러·무거운 의존을 끌어오지 않는다", () => {
-    for (const file of ["studio-bg3d-room-builder.ts", "studio-bg3d-room-furniture.ts"]) {
+  it("활성화 번들에 남는 룸 빌더·가구·개구부·몰딩 모듈은 렌더러·무거운 의존을 끌어오지 않는다", () => {
+    // 개구부·몰딩(2026-10-23)은 룸 빌더가 정적으로 가져와 같은 청크에 들어간다 — 서로만 가져오는 순수 계산 모듈이다.
+    for (const file of [
+      "studio-bg3d-room-builder.ts",
+      "studio-bg3d-room-furniture.ts",
+      "studio-bg3d-room-openings.ts",
+      "studio-bg3d-room-trims.ts",
+    ]) {
       const edges = moduleEdges(file);
       expect(edges.dynamicEdges, file).toEqual([]);
-      for (const edge of edges.staticEdges) expect(edge, `${file} -> ${edge}`).toMatch(/^(\.\/studio-bg3d-room-furniture|\.\.\/studio-id)$/u);
+      for (const edge of edges.staticEdges) {
+        expect(edge, `${file} -> ${edge}`).toMatch(
+          /^(\.\/studio-bg3d-room-furniture|\.\/studio-bg3d-room-openings|\.\/studio-bg3d-room-trims|\.\.\/studio-id)$/u,
+        );
+      }
     }
+    expect(moduleEdges("studio-bg3d-room-openings.ts").staticEdges).toEqual([]);
   });
 
   it("선택기와 카탈로그·거리 생성기·안내는 three 나 렌더러를 가져오지 않는다", () => {
@@ -134,6 +150,8 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
       "studio-bg3d-build-notice.ts",
       "studio-bg3d-webtoon-background-templates.ts",
       "studio-bg3d-street-builder.ts",
+      "StudioBg3dRoomBuilderDetailControls.tsx",
+      "studio-bg3d-room-builder-i18n.ts",
     ]) {
       const edges = moduleEdges(file);
       expect(edges.dynamicEdges, file).toEqual([]);
