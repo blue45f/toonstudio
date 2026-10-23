@@ -5,7 +5,10 @@
  * 생산자는 {code, variant, params}만 방출하고, 표시는 이 모듈의 리졸버로만 해석한다.
  * 키는 기존 진단 코드(SCREAMING_SNAKE)를 kebab으로 바꾼 구간 + 문구 단위 서브코드(variant)로 구성한다.
  * 같은 진단 코드에 문구가 여러 종이면 variant로 분해했고, 동적 삽입(label·kind·collection·detail)은 params로 받는다.
- * detail params는 하위 생산자(package-archive·linked-3d pass)의 원문 패스스루다 — 그 생산자 구간 전환 전까지 문장 골격만 코드화한다.
+ * 하위 생산자 패스스루(R14): fromLinked3d·fromPackageArchive variant 5건은 하위 생산자가 구조화한
+ * {causeCode, causeVariant, causeParams}를 운반하고, 표시는 아래 cause.* 키로 경계 해석한다.
+ * 하위 방출 11곳(package 경로 6·linked evidence 5)이 전부 정적 문구 또는 {limit} params로 분해돼
+ * 원문 패스스루는 variant 없는 미전환 방출의 방어 폴백으로만 남는다(현행 트리에서는 도달 불가).
  * ko 값은 이관 전 생산자 원문과 글자 단위 동일하고, en은 신규 번역이다.
  * 한도 라벨(R13): 생산자(resolvePositiveLimit)는 {labelCode}만 운반하고, 표시 라벨은 아래 label.* 키로 해석해 {label} 자리에 넣는다.
  * canonical JSON 계열 variant(canonicalJsonParseFailed 등)의 {label}은 파일명(manifest.json) 원문이라 코드화 대상이 아니다.
@@ -213,6 +216,17 @@ registerI18nLocaleEntries("ko", {
   "studio.producerError.projectArchive.zip-bomb.totalDecompressedTooLarge": "ZIP 전체 해제 크기가 안전 한도를 넘었습니다.",
   "studio.producerError.projectArchive.zip-compression-unsupported.compressedEntryUnsupported": "압축된 ZIP 항목은 프로젝트 archive에서 지원하지 않습니다.",
   "studio.producerError.projectArchive.zip-entry-count-limit.entryCountExceeded": "ZIP 파일 수가 프로젝트 archive 안전 한도를 벗어났습니다.",
+  "studio.producerError.projectArchive.cause.pathEmpty": "archive 파일 경로가 비어 있습니다.",
+  "studio.producerError.projectArchive.cause.pathUnicodeInvalid": "archive 파일 경로의 Unicode 문자열이 올바르지 않습니다.",
+  "studio.producerError.projectArchive.cause.pathUnsafeCharacter": "절대 경로 또는 안전하지 않은 문자가 포함되어 있습니다.",
+  "studio.producerError.projectArchive.cause.pathUnsafeSegment": "archive 경로에 안전하지 않은 구간이 포함되어 있습니다.",
+  "studio.producerError.projectArchive.cause.pathTooLong": "archive 파일 경로는 UTF-8 {limit}바이트 이하여야 합니다.",
+  "studio.producerError.projectArchive.cause.pathDuplicate": "archive 안에서 파일 경로가 충돌합니다.",
+  "studio.producerError.projectArchive.cause.renderReceiptCorrupt": "연결형 3D render receipt가 손상되어 portable archive를 만들 수 없습니다.",
+  "studio.producerError.projectArchive.cause.locatorHashMismatch": "연결형 3D line pass locator가 receipt SHA-256과 다릅니다.",
+  "studio.producerError.projectArchive.cause.canvasSourceMismatch": "연결형 3D line pass가 canonical Canvas source와 다릅니다.",
+  "studio.producerError.projectArchive.cause.evidencePngMissing": "portable archive에 연결형 3D line pass PNG가 없습니다.",
+  "studio.producerError.projectArchive.cause.evidenceReceiptMismatch": "연결형 3D line pass attachment receipt가 프로젝트와 다릅니다.",
 });
 
 registerI18nLocaleEntries("en", {
@@ -394,6 +408,17 @@ registerI18nLocaleEntries("en", {
   "studio.producerError.projectArchive.zip-bomb.totalDecompressedTooLarge": "The total decompressed ZIP size exceeds the safety limit.",
   "studio.producerError.projectArchive.zip-compression-unsupported.compressedEntryUnsupported": "Compressed ZIP entries are not supported in project archives.",
   "studio.producerError.projectArchive.zip-entry-count-limit.entryCountExceeded": "The number of ZIP files is outside the project archive safety limit.",
+  "studio.producerError.projectArchive.cause.pathEmpty": "The archive file path is empty.",
+  "studio.producerError.projectArchive.cause.pathUnicodeInvalid": "The archive file path is not a valid Unicode string.",
+  "studio.producerError.projectArchive.cause.pathUnsafeCharacter": "The path contains an absolute path or unsafe characters.",
+  "studio.producerError.projectArchive.cause.pathUnsafeSegment": "The archive path contains an unsafe segment.",
+  "studio.producerError.projectArchive.cause.pathTooLong": "The archive file path must be at most {limit} bytes in UTF-8.",
+  "studio.producerError.projectArchive.cause.pathDuplicate": "File paths collide inside the archive.",
+  "studio.producerError.projectArchive.cause.renderReceiptCorrupt": "The linked 3D render receipt is corrupted, so a portable archive cannot be created.",
+  "studio.producerError.projectArchive.cause.locatorHashMismatch": "The linked 3D line pass locator differs from the receipt SHA-256.",
+  "studio.producerError.projectArchive.cause.canvasSourceMismatch": "The linked 3D line pass differs from the canonical Canvas source.",
+  "studio.producerError.projectArchive.cause.evidencePngMissing": "The portable archive does not contain the linked 3D line pass PNG.",
+  "studio.producerError.projectArchive.cause.evidenceReceiptMismatch": "The linked 3D line pass attachment receipt differs from the project.",
 });
 
 /** 코드별 ko 원문 템플릿 — 미등록 로케일·미해석 시 폴백이며 이관 전 원문과 동일하다. 키는 `${진단코드}:${variant}`다. */
@@ -568,6 +593,44 @@ const PROJECT_ARCHIVE_ERROR_KO: Readonly<Record<string, string>> = {
   "ZIP_ENTRY_COUNT_LIMIT:entryCountExceeded": "ZIP 파일 수가 프로젝트 archive 안전 한도를 벗어났습니다.",
 };
 
+/** 하위 생산자 원인 코드별 ko 원문 — `${causeCode}:${causeVariant}` 키이며 이관 전 하위 생산자 원문과 글자 단위 동일하다. */
+const PROJECT_ARCHIVE_CAUSE_KO: Readonly<Record<string, string>> = {
+  "PATH_INVALID:pathEmpty": "archive 파일 경로가 비어 있습니다.",
+  "PATH_INVALID:pathUnicodeInvalid": "archive 파일 경로의 Unicode 문자열이 올바르지 않습니다.",
+  "PATH_INVALID:pathUnsafeCharacter": "절대 경로 또는 안전하지 않은 문자가 포함되어 있습니다.",
+  "PATH_INVALID:pathUnsafeSegment": "archive 경로에 안전하지 않은 구간이 포함되어 있습니다.",
+  "PATH_INVALID:pathTooLong": "archive 파일 경로는 UTF-8 {limit}바이트 이하여야 합니다.",
+  "PATH_DUPLICATE:pathDuplicate": "archive 안에서 파일 경로가 충돌합니다.",
+  "invalid-project:renderReceiptCorrupt": "연결형 3D render receipt가 손상되어 portable archive를 만들 수 없습니다.",
+  "invalid-project:locatorHashMismatch": "연결형 3D line pass locator가 receipt SHA-256과 다릅니다.",
+  "invalid-project:canvasSourceMismatch": "연결형 3D line pass가 canonical Canvas source와 다릅니다.",
+  "attachment-missing:evidencePngMissing": "portable archive에 연결형 3D line pass PNG가 없습니다.",
+  "attachment-mismatch:evidenceReceiptMismatch": "연결형 3D line pass attachment receipt가 프로젝트와 다릅니다.",
+};
+
+function projectArchiveCauseKey(causeVariant: string): string {
+  return `studio.producerError.projectArchive.cause.${causeVariant}`;
+}
+
+/**
+ * 하위 생산자 원인 해석 (A4 D4 R14): fromLinked3d·fromPackageArchive variant가 운반한
+ * {causeCode, causeVariant}를 cause.* 키로 해석한다. causeCode가 없으면 null —
+ * 호출자는 기존 템플릿 경로({detail} 방어 폴백 포함)를 탄다. 알 수 없는 원인 쌍도
+ * null이라 미전환 하위 방출이 섞여도 기존 표시가 깨지지 않는다.
+ */
+function resolveProjectArchiveCause(
+  params?: Readonly<Record<string, string>>,
+): string | null {
+  if (!params?.causeCode || !params.causeVariant) return null;
+  const lookup = `${params.causeCode}:${params.causeVariant}`;
+  const fallback = PROJECT_ARCHIVE_CAUSE_KO[lookup];
+  if (fallback === undefined) return null;
+  const rest: Record<string, string> = { ...params };
+  delete rest.causeCode;
+  delete rest.causeVariant;
+  return resolveProducerError(projectArchiveCauseKey(params.causeVariant), fallback, rest);
+}
+
 function projectArchiveErrorKey(code: string, variant: string): string {
   return `studio.producerError.projectArchive.${code.toLowerCase().replaceAll("_", "-")}.${variant}`;
 }
@@ -612,11 +675,14 @@ function withProjectArchiveLabel(
 export function resolveStudioProjectArchiveError(
   error: Pick<StudioProjectArchiveError, "code" | "variant" | "params">,
 ): string {
+  const params = withProjectArchiveLabel(error.params);
+  const cause = resolveProjectArchiveCause(params);
+  if (cause !== null) return cause;
   const lookup = `${error.code}:${error.variant}`;
   return resolveProducerError(
     projectArchiveErrorKey(error.code, error.variant),
     PROJECT_ARCHIVE_ERROR_KO[lookup] ?? lookup,
-    withProjectArchiveLabel(error.params),
+    params,
   );
 }
 

@@ -6,6 +6,16 @@
  */
 import { disposeStudioVrmAsset as disposeVrm, loadStudioVrmAsset as loadVrmAsset } from "./studio-vrm-asset-runtime";
 import { getErrorMessage, getVrmLoadErrorMessage } from "./studio-vrm-poser-helpers";
+import { resolveStudioVrmLibraryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-vrm-library";
+
+/**
+ * 집계자 예외 (A4 D4 R14): 범용 getErrorMessage 자체는 바꾸지 않고, 이 파일의
+ * 라이브러리 오류 표시 지점에서만 code/detailCode 보유 시 리졸버로 해석한다.
+ * 구조화 코드가 없는 원인은 기존 메시지 경로를 유지한다.
+ */
+function libraryErrorMessage(caughtError: unknown, fallback: string): string {
+  return resolveStudioVrmLibraryErrorFromCause(caughtError) ?? getErrorMessage(caughtError, fallback);
+}
 import {
   createUploadedVrmRecord,
   deleteStoredVrmModel,
@@ -252,7 +262,7 @@ export function useStudioVrmModelLoading({
             : "일부 VRM은 현재 탭 메모리에만 유지되며, 저장된 라이브러리 새로고침에도 실패했습니다. 현재 목록과 페이지 위치를 보존했습니다. 다시 불러오기를 시도해 주세요.",
         );
       } else if (!refreshSucceeded) {
-        setLibraryError(getErrorMessage(
+        setLibraryError(libraryErrorMessage(
           refreshFailure,
           "VRM 저장은 완료했지만 라이브러리 새로고침에 실패했습니다. 현재 목록과 페이지 위치를 보존했습니다.",
         ));
@@ -264,7 +274,7 @@ export function useStudioVrmModelLoading({
       }
     } catch (caughtError: unknown) {
       setLibraryStatus("error");
-      setLibraryError(getErrorMessage(caughtError, "VRM 파일을 라이브러리에 저장하지 못했습니다."));
+      setLibraryError(libraryErrorMessage(caughtError, "VRM 파일을 라이브러리에 저장하지 못했습니다."));
     } finally {
       setIsUploading(false);
     }
@@ -297,7 +307,7 @@ export function useStudioVrmModelLoading({
       loadModelFromLibraryEntry(entry);
     } catch (caughtError: unknown) {
       setLibraryStatus("error");
-      setLibraryError(getErrorMessage(caughtError, "생성한 VRM을 라이브러리에 넣지 못했습니다."));
+      setLibraryError(libraryErrorMessage(caughtError, "생성한 VRM을 라이브러리에 넣지 못했습니다."));
     } finally {
       setIsUploading(false);
     }
@@ -348,7 +358,7 @@ export function useStudioVrmModelLoading({
         setLibraryStatus("ready");
       } else {
         setLibraryStatus("error");
-        setLibraryError(getErrorMessage(
+        setLibraryError(libraryErrorMessage(
           refreshFailure,
           "VRM 삭제는 완료했지만 라이브러리 새로고침에 실패했습니다. 삭제 항목만 제거하고 현재 목록과 페이지 위치를 보존했습니다.",
         ));
@@ -358,7 +368,7 @@ export function useStudioVrmModelLoading({
       }
     } catch (caughtError: unknown) {
       setLibraryStatus("error");
-      setLibraryError(getErrorMessage(caughtError, "VRM을 삭제하지 못했습니다."));
+      setLibraryError(libraryErrorMessage(caughtError, "VRM을 삭제하지 못했습니다."));
     } finally {
       setDeletingModelId(null);
     }

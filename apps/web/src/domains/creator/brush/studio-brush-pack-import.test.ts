@@ -271,7 +271,7 @@ describe("BrushProgramIR → snapshot mapping surfaces what it cannot carry", ()
         { input: "pressure", curve: [0, 0.02, 0.05, 0.1, 0.2, 0.45, 0.75, 1], min: 0, max: 1 },
       ],
     });
-    expect(warnings.some((warning) => warning.includes("직선 근사"))).toBe(true);
+    expect(warnings.some((warning) => warning.code === "warn.sizeCurveApproximated")).toBe(true);
   });
 });
 
@@ -290,7 +290,7 @@ describe("app-private .json stays on one reporting shape", () => {
   it("rejects JSON text over the archive character ceiling in this lane itself", () => {
     const oversized = "x".repeat(BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS + 1);
     expect(() => importStudioBrushJsonText(oversized, "huge.json"))
-      .toThrow("브러시 보존 파일이 허용 크기를 초과했습니다.");
+      .toThrow(expect.objectContaining({ name: "StudioBrushProgramImportError", code: "jsonTooLarge" }));
   });
 
   it("rejects JSON text over the archive byte ceiling even under the character ceiling", () => {
@@ -298,6 +298,6 @@ describe("app-private .json stays on one reporting shape", () => {
     const charCount = Math.floor(BRUSH_SOURCE_ARCHIVE_MAX_BYTES / 3) + 1;
     expect(charCount).toBeLessThanOrEqual(BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS);
     expect(() => importStudioBrushJsonText("붓".repeat(charCount), "huge.json"))
-      .toThrow("브러시 보존 파일이 허용 크기를 초과했습니다.");
+      .toThrow(expect.objectContaining({ name: "StudioBrushProgramImportError", code: "jsonTooLarge" }));
   });
 });

@@ -8,21 +8,11 @@ import {
   type StudioVrmModelAssetMetadata,
   type StudioVrmThumbnailAsset,
 } from "./studio-vrm-asset-sqlite-opfs-repository";
-import {
-  getProductStudioVrmLicenseAuthorityStore,
-  type StudioVrmLicenseAuthorityStore,
-} from "./studio-vrm-license-authority-store";
-import {
-  inspectStudioVrmLicenseAuthority,
-  type StudioVrmLicenseAuthority,
-} from "./studio-vrm-license-product-gate";
-import {
-  isStudioVrmTechnicallyAdmittedThumbnail,
-} from "./studio-vrm-thumbnail-technical-denylist.generated";
+import { getProductStudioVrmLicenseAuthorityStore, type StudioVrmLicenseAuthorityStore } from "./studio-vrm-license-authority-store";
+import { inspectStudioVrmLicenseAuthority, type StudioVrmLicenseAuthority } from "./studio-vrm-license-product-gate";
+import { isStudioVrmTechnicallyAdmittedThumbnail } from "./studio-vrm-thumbnail-technical-denylist.generated";
 import { isStudioVrmProductionThumbnailUrl } from "./studio-vrm-thumbnail-quality";
-import {
-  isStudioVrmTechnicallyAdmittedModel,
-} from "./studio-vrm-model-technical-denylist.generated";
+import { isStudioVrmTechnicallyAdmittedModel } from "./studio-vrm-model-technical-denylist.generated";
 import { isStudioVrmProductionModelUrl } from "./studio-vrm-model-quality";
 
 const DB_NAME = "toonstudio-studio-vrm-library";
@@ -46,6 +36,9 @@ export const MAX_VRM_UPLOAD_BYTES = 128 * 1024 * 1024;
 export const VRM_VALIDATION_VERSION = 1;
 export const VRM_LIBRARY_THUMBNAIL_WINDOW_MAX_ITEMS = 12;
 export const VRM_LIBRARY_THUMBNAIL_WINDOW_MAX_BYTES = 24 * 1024 * 1024;
+
+import { VrmLibraryError } from "./studio-vrm-library-error";
+export { VrmLibraryError, type VrmLibraryErrorCode } from "./studio-vrm-library-error";
 
 export type VrmContentHash = `sha256:${string}`;
 
@@ -486,21 +479,21 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 export function inspectVrmGlbBytes(input: ArrayBuffer | Uint8Array): InspectedVrmGlb {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   if (bytes.byteLength < GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES) {
-    throw new TypeError("VRM 파일이 너무 짧거나 GLB 헤더가 없습니다.");
+    throw new VrmLibraryError("glb-too-short");
   }
   if (bytes.byteLength > MAX_VRM_UPLOAD_BYTES) {
-    throw new RangeError(`VRM 파일은 ${MAX_VRM_UPLOAD_BYTES / (1024 * 1024)}MB 이하여야 합니다.`);
+    throw new VrmLibraryError("glb-too-large", { sizeMb: String(MAX_VRM_UPLOAD_BYTES / (1024 * 1024)) });
   }
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (view.getUint32(0, true) !== GLB_MAGIC) {
-    throw new TypeError("VRM 파일이 아닙니다. GLB 'glTF' 헤더를 확인해 주세요.");
+    throw new VrmLibraryError("glb-magic-invalid");
   }
   if (view.getUint32(4, true) !== GLB_VERSION) {
-    throw new TypeError("지원하지 않는 GLB 버전입니다. GLB 2.0 기반 VRM만 업로드할 수 있습니다.");
+    throw new VrmLibraryError("glb-version-unsupported");
   }
   if (view.getUint32(8, true) !== bytes.byteLength) {
-    throw new TypeError("VRM 파일 길이 정보가 실제 바이트 길이와 일치하지 않습니다.");
+    throw new VrmLibraryError("glb-length-mismatch");
   }
 
   let offset = GLB_HEADER_BYTES;
@@ -508,36 +501,36 @@ export function inspectVrmGlbBytes(input: ArrayBuffer | Uint8Array): InspectedVr
   let chunkIndex = 0;
   while (offset < bytes.byteLength) {
     if (bytes.byteLength - offset < GLB_CHUNK_HEADER_BYTES) {
-      throw new TypeError("VRM GLB 청크 헤더가 잘렸습니다.");
+      throw new VrmLibraryError("glb-chunk-header-truncated");
     }
     const chunkLength = view.getUint32(offset, true);
     const chunkType = view.getUint32(offset + 4, true);
     if (chunkLength % 4 !== 0) {
-      throw new TypeError("VRM GLB 청크 길이는 4바이트 경계에 맞아야 합니다.");
+      throw new VrmLibraryError("glb-chunk-alignment-invalid");
     }
     const payloadStart = offset + GLB_CHUNK_HEADER_BYTES;
     const payloadEnd = payloadStart + chunkLength;
     if (payloadEnd > bytes.byteLength) {
-      throw new TypeError("VRM GLB 청크 길이가 파일 범위를 벗어납니다.");
+      throw new VrmLibraryError("glb-chunk-out-of-bounds");
     }
 
     if (chunkIndex === 0) {
       if (chunkType !== GLB_JSON_CHUNK_TYPE) {
-        throw new TypeError("VRM GLB의 첫 청크는 JSON이어야 합니다.");
+        throw new VrmLibraryError("glb-first-chunk-not-json");
       }
       if (chunkLength === 0 || chunkLength > MAX_VRM_JSON_CHUNK_BYTES) {
-        throw new RangeError("VRM 메타데이터(JSON) 크기가 허용 범위를 벗어납니다.");
+        throw new VrmLibraryError("glb-json-chunk-size-invalid");
       }
       let jsonText: string;
       try {
         jsonText = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(payloadStart, payloadEnd));
       } catch {
-        throw new TypeError("VRM 메타데이터가 올바른 UTF-8 JSON이 아닙니다.");
+        throw new VrmLibraryError("glb-json-utf8-invalid");
       }
       try {
         json = JSON.parse(jsonText.trim());
       } catch {
-        throw new TypeError("VRM 메타데이터 JSON을 읽을 수 없습니다.");
+        throw new VrmLibraryError("glb-json-parse-failed");
       }
     }
 
@@ -546,26 +539,26 @@ export function inspectVrmGlbBytes(input: ArrayBuffer | Uint8Array): InspectedVr
   }
 
   if (offset !== bytes.byteLength || !isPlainObject(json)) {
-    throw new TypeError("VRM GLB 구조가 올바르지 않습니다.");
+    throw new VrmLibraryError("glb-structure-invalid");
   }
   if (!isPlainObject(json.asset) || json.asset.version !== "2.0") {
-    throw new TypeError("VRM 메타데이터의 glTF asset.version은 2.0이어야 합니다.");
+    throw new VrmLibraryError("glb-asset-version-invalid");
   }
   const extensions = json.extensions;
   if (!isPlainObject(extensions)) {
-    throw new TypeError("GLB에 VRM 확장(VRM 또는 VRMC_vrm)이 없습니다.");
+    throw new VrmLibraryError("glb-vrm-extension-missing");
   }
   const hasVrm1 = Object.prototype.hasOwnProperty.call(extensions, "VRMC_vrm");
   const hasVrm0 = Object.prototype.hasOwnProperty.call(extensions, "VRM");
   if (hasVrm1 && hasVrm0) {
-    throw new TypeError("VRM 0.x와 1.x 확장을 동시에 포함한 모호한 파일은 사용할 수 없습니다.");
+    throw new VrmLibraryError("glb-vrm-extension-ambiguous");
   }
   if (hasVrm1 && isPlainObject(extensions.VRMC_vrm)) return { vrmVersion: 1, json };
   if (hasVrm0 && isPlainObject(extensions.VRM)) return { vrmVersion: 0, json };
   if (hasVrm1 || hasVrm0) {
-    throw new TypeError("VRM 확장 메타데이터가 올바른 객체가 아닙니다.");
+    throw new VrmLibraryError("glb-vrm-extension-invalid");
   }
-  throw new TypeError("GLB에 VRM 확장(VRM 또는 VRMC_vrm)이 없습니다.");
+  throw new VrmLibraryError("glb-vrm-extension-missing");
 }
 
 /** Compatibility validation facade for callers that do not need the decoded JSON. */
@@ -671,10 +664,10 @@ function runSerializedBlobWork<T>(work: () => Promise<T>): Promise<T> {
 
 function assertSafeVrmBlobSize(blob: Pick<Blob, "size">) {
   if (!Number.isSafeInteger(blob.size) || blob.size <= 0) {
-    throw new TypeError("비어 있거나 길이가 올바르지 않은 VRM 파일입니다.");
+    throw new VrmLibraryError("blob-size-invalid");
   }
   if (blob.size > MAX_VRM_UPLOAD_BYTES) {
-    throw new RangeError(`VRM 파일은 ${MAX_VRM_UPLOAD_BYTES / (1024 * 1024)}MB 이하여야 합니다.`);
+    throw new VrmLibraryError("glb-too-large", { sizeMb: String(MAX_VRM_UPLOAD_BYTES / (1024 * 1024)) });
   }
 }
 
@@ -682,14 +675,14 @@ async function readVrmBlobBytes(blob: Blob): Promise<ArrayBuffer> {
   assertSafeVrmBlobSize(blob);
   const buffer = await blob.arrayBuffer();
   if (buffer.byteLength !== blob.size) {
-    throw new TypeError("VRM 파일을 완전히 읽지 못했습니다. 파일을 다시 선택해 주세요.");
+    throw new VrmLibraryError("read-incomplete");
   }
   return buffer;
 }
 
 function digestToContentHash(digest: ArrayBuffer): VrmContentHash {
   if (digest.byteLength !== 32) {
-    throw new TypeError("SHA-256 결과 길이가 올바르지 않습니다.");
+    throw new VrmLibraryError("hash-result-length-invalid");
   }
   const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
   return `sha256:${hex}`;
@@ -697,7 +690,7 @@ function digestToContentHash(digest: ArrayBuffer): VrmContentHash {
 
 async function sha256Bytes(bytes: ArrayBuffer): Promise<VrmContentHash> {
   const subtle = globalThis.crypto?.subtle;
-  if (!subtle) throw new Error("이 브라우저에서는 VRM 콘텐츠 해시를 계산할 수 없습니다.");
+  if (!subtle) throw new VrmLibraryError("hash-unavailable");
   return digestToContentHash(await subtle.digest("SHA-256", bytes));
 }
 
@@ -786,19 +779,19 @@ function normalizeVrmName(fileName: string) {
     .trim()
     .replace(/\s+/gu, " ");
   if (normalized.length > 120) {
-    throw new RangeError("VRM 캐릭터 이름은 120자 이하여야 합니다.");
+    throw new VrmLibraryError("name-too-long", { limit: "120" });
   }
   if (Array.from(normalized).some((character) => {
     const code = character.codePointAt(0) ?? 0;
     return code <= 0x1f || code === 0x7f;
   })) {
-    throw new TypeError("VRM 캐릭터 이름에 제어 문자를 사용할 수 없습니다.");
+    throw new VrmLibraryError("name-control-chars");
   }
   return normalized || "VRM 캐릭터";
 }
 
 function createIndexedDbError() {
-  return new Error("이 브라우저에서는 VRM 라이브러리 저장소를 사용할 수 없습니다.");
+  return new VrmLibraryError("storage-unavailable");
 }
 
 function usesLegacyIndexedDb(options: VrmLibraryStorageOptions): boolean {
@@ -1100,6 +1093,8 @@ function thumbnailToDataUrl(thumbnail: StudioVrmThumbnailAsset): string {
     throw new StudioVrmAssetRepositoryError(
       "unavailable",
       "이 환경에서는 VRM thumbnail base64를 만들 수 없습니다.",
+      undefined,
+      "thumbnail-base64-unavailable",
     );
   }
   return `data:${thumbnail.mimeType};base64,${globalThis.btoa(binary)}`;
@@ -1108,17 +1103,17 @@ function thumbnailToDataUrl(thumbnail: StudioVrmThumbnailAsset): string {
 function dataUrlToThumbnail(value: string): StudioVrmThumbnailAsset {
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/u.exec(value);
   if (!match || typeof globalThis.atob !== "function") {
-    throw new TypeError("VRM thumbnail은 canonical PNG/JPEG/WebP data URL이어야 합니다.");
+    throw new VrmLibraryError("thumbnail-data-url-invalid");
   }
   let decoded: string;
   try {
     decoded = globalThis.atob(match[2]);
   } catch (cause) {
-    throw new TypeError("VRM thumbnail base64가 손상되었습니다.", { cause });
+    throw new VrmLibraryError("thumbnail-base64-corrupt", undefined, { cause });
   }
   const bytes = Uint8Array.from(decoded, (character) => character.charCodeAt(0));
   if (bytes.byteLength < 1 || bytes.byteLength > 2 * 1024 * 1024) {
-    throw new RangeError("VRM thumbnail은 2 MiB 이하여야 합니다.");
+    throw new VrmLibraryError("thumbnail-too-large");
   }
   return {
     bytes,
@@ -1437,14 +1432,14 @@ export async function saveVerifiedVrmBlobWithDisposition(input: {
       ? null
       : canonicalizeVrmContentHash(input.expectedHash);
     if (input.expectedHash !== undefined && !expectedHash) {
-      throw new TypeError("예상 VRM 해시는 sha256: 뒤에 64자리 16진수여야 합니다.");
+      throw new VrmLibraryError("expected-hash-format-invalid");
     }
 
     // 검증·해시가 모두 끝나기 전에는 어떤 durable authority도 열거나 변경하지 않는다.
     const inspected = await inspectVrmBlobWithBytes(input.blob);
     const { bytes, gltfJson, ...identity } = inspected;
     if (expectedHash && identity.contentHash !== expectedHash) {
-      throw new TypeError("VRM 파일의 SHA-256 해시가 프로젝트에 기록된 값과 일치하지 않습니다.");
+      throw new VrmLibraryError("hash-mismatch");
     }
 
     if (!usesLegacyIndexedDb(options)) {
@@ -1582,6 +1577,8 @@ export async function deleteStoredVrmModel(
   throw new StudioVrmAssetRepositoryError(
     "conflict",
     "저장된 VRM은 프로젝트에서 콘텐츠 해시로 참조될 수 있어 현재 삭제할 수 없습니다. 프로젝트 참조 소유권 검사가 제공될 때까지 원본을 보존합니다.",
+    undefined,
+    "delete-conflict",
   );
 }
 

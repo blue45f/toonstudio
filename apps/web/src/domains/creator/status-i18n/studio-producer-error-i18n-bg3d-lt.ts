@@ -1,5 +1,6 @@
 /**
- * 생산자 구조화 에러 해석 모듈 — bg3d LT 계획 구간: studio-bg3d-lt-layer-plan 서브코드 46종 + 레이어 라벨 4종 (A4 D4, R11).
+ * 생산자 구조화 에러 해석 모듈 — bg3d LT 계획 구간: studio-bg3d-lt-layer-plan 서브코드 46종 + 레이어 라벨 4종 (A4 D4, R11),
+ * bg3d LT detach 서브코드 23종 + shared-3d visibility 코드 2종 (A4 D4, R14).
  *
  * 코어 모듈(studio-producer-error-i18n.ts)의 형제 모듈이다. 코어 모듈이
  * 소스 파일 크기 래칫(800줄 상한)에 닿아, R11 구간은 frozen 사전군과 같은
@@ -18,6 +19,8 @@ import type {
   StudioBg3dLtLayerPlanFailure,
   StudioBg3dLtLayerRole,
 } from "../bg3d/studio-bg3d-lt-layer-plan";
+import type { StudioBg3dEditableCompositeDetachFailure } from "../bg3d/studio-bg3d-editable-composite-detach-plan";
+import type { StudioShared3dSourceLayerVisibilityErrorCode } from "../studio-shared-3d-scene-bridge";
 
 
 function resolveProducerError(
@@ -136,6 +139,68 @@ registerI18nLocaleEntries("en", {
   "studio.producerError.bg3dLt.layerName.tone": "3D LT · Tone",
   "studio.producerError.bg3dLt.layerName.texture-line": "3D LT · Texture line",
   "studio.producerError.bg3dLt.layerName.main-line": "3D LT · Main line",
+});
+
+registerI18nLocaleEntries("ko", {
+  "studio.producerError.bg3dLtDetach.page-locked.pageLocked": "검토 잠금된 페이지에서는 3D 배경을 한 장으로 정리할 수 없어요.",
+  "studio.producerError.bg3dLtDetach.invalid-composite-png.compositePng": "한 장으로 정리할 3D 합성 PNG가 올바르지 않아요.",
+  "studio.producerError.bg3dLtDetach.invalid-plan.detachPlanInvalid": "3D LT 정리 계획이 올바르지 않아 원본을 유지했어요.",
+  "studio.producerError.bg3dLtDetach.invalid-plan.layerPlanInvalid": "3D LT 레이어 계획이 올바르지 않아 원본을 유지했어요.",
+  "studio.producerError.bg3dLtDetach.invalid-plan.duplicateLayerEntry": "3D LT 레이어 계획에 중복 항목이 있어 원본을 유지했어요.",
+  "studio.producerError.bg3dLtDetach.duplicate-element-id.duplicateElementId": "페이지 요소 ID가 중복되거나 올바르지 않아요.",
+  "studio.producerError.bg3dLtDetach.duplicate-group-id.duplicateGroupId": "페이지 그룹 ID가 중복되거나 올바르지 않아요.",
+  "studio.producerError.bg3dLtDetach.stale-plan.backgroundChanged": "3D 배경이 바뀌어 이전 정리 결과를 적용하지 않았어요.",
+  "studio.producerError.bg3dLtDetach.stale-plan.anchorLayerChanged": "3D 장면 기준 레이어가 바뀌어 이전 정리 결과를 적용하지 않았어요.",
+  "studio.producerError.bg3dLtDetach.stale-plan.anchorUnconfirmed": "3D 장면 기준 레이어를 정확히 확인하지 못했어요.",
+  "studio.producerError.bg3dLtDetach.stale-plan.bundleChanged": "3D LT 번들 구성이 바뀌어 이전 정리 결과를 적용하지 않았어요.",
+  "studio.producerError.bg3dLtDetach.invalid-bundle-element.nonImageElement": "3D LT 번들에 이미지가 아닌 요소가 섞여 있어요.",
+  "studio.producerError.bg3dLtDetach.invalid-bundle-metadata.metadataMismatch": "3D LT 번들 메타데이터가 현재 계획과 일치하지 않아요.",
+  "studio.producerError.bg3dLtDetach.noncontiguous-bundle.noncontiguous": "3D LT 레이어 사이에 다른 레이어가 끼어 있어요.",
+  "studio.producerError.bg3dLtDetach.inconsistent-bundle-geometry.invalidGeometry": "3D LT 레이어의 위치나 크기가 올바르지 않아요.",
+  "studio.producerError.bg3dLtDetach.inconsistent-bundle-geometry.geometryMismatch": "3D LT 레이어의 위치나 크기가 서로 달라요.",
+  "studio.producerError.bg3dLtDetach.inconsistent-bundle-group.groupMismatch": "3D LT 레이어의 전용 그룹 정보가 서로 달라요.",
+  "studio.producerError.bg3dLtDetach.missing-bundle-group.groupNotFound": "3D LT 전용 그룹을 찾지 못해 원본을 유지했어요.",
+  "studio.producerError.bg3dLtDetach.mixed-bundle-group.otherLayer": "3D LT 전용 그룹에 다른 레이어가 섞여 있어요.",
+  "studio.producerError.bg3dLtDetach.mixed-bundle-group.unrelatedLayer": "3D LT 전용 그룹에 관련 없는 레이어가 섞여 있어요.",
+  "studio.producerError.bg3dLtDetach.target-locked.layerLocked": "잠긴 3D LT 레이어는 한 장으로 정리할 수 없어요.",
+  "studio.producerError.bg3dLtDetach.bundle-group-locked.groupLocked": "잠긴 3D LT 그룹은 한 장으로 정리할 수 없어요.",
+  "studio.producerError.bg3dLtDetach.missing-scene.sceneUnconfirmed": "다시 편집할 3D 장면 원본을 정확히 확인하지 못했어요.",
+});
+
+registerI18nLocaleEntries("en", {
+  "studio.producerError.bg3dLtDetach.page-locked.pageLocked": "The 3D background cannot be flattened into a single image on a review-locked page.",
+  "studio.producerError.bg3dLtDetach.invalid-composite-png.compositePng": "The 3D composite PNG to flatten into a single image is invalid.",
+  "studio.producerError.bg3dLtDetach.invalid-plan.detachPlanInvalid": "The 3D LT detach plan is invalid, so the original was kept.",
+  "studio.producerError.bg3dLtDetach.invalid-plan.layerPlanInvalid": "The 3D LT layer plan is invalid, so the original was kept.",
+  "studio.producerError.bg3dLtDetach.invalid-plan.duplicateLayerEntry": "The 3D LT layer plan contains duplicate entries, so the original was kept.",
+  "studio.producerError.bg3dLtDetach.duplicate-element-id.duplicateElementId": "Page element IDs are duplicated or invalid.",
+  "studio.producerError.bg3dLtDetach.duplicate-group-id.duplicateGroupId": "Page group IDs are duplicated or invalid.",
+  "studio.producerError.bg3dLtDetach.stale-plan.backgroundChanged": "The 3D background changed, so the previous detach result was not applied.",
+  "studio.producerError.bg3dLtDetach.stale-plan.anchorLayerChanged": "The 3D scene anchor layer changed, so the previous detach result was not applied.",
+  "studio.producerError.bg3dLtDetach.stale-plan.anchorUnconfirmed": "Could not confirm the exact 3D scene anchor layer.",
+  "studio.producerError.bg3dLtDetach.stale-plan.bundleChanged": "The 3D LT bundle composition changed, so the previous detach result was not applied.",
+  "studio.producerError.bg3dLtDetach.invalid-bundle-element.nonImageElement": "The 3D LT bundle contains a non-image element.",
+  "studio.producerError.bg3dLtDetach.invalid-bundle-metadata.metadataMismatch": "The 3D LT bundle metadata does not match the current plan.",
+  "studio.producerError.bg3dLtDetach.noncontiguous-bundle.noncontiguous": "Another layer sits between the 3D LT layers.",
+  "studio.producerError.bg3dLtDetach.inconsistent-bundle-geometry.invalidGeometry": "The 3D LT layers have invalid positions or sizes.",
+  "studio.producerError.bg3dLtDetach.inconsistent-bundle-geometry.geometryMismatch": "The 3D LT layers have different positions or sizes.",
+  "studio.producerError.bg3dLtDetach.inconsistent-bundle-group.groupMismatch": "The 3D LT layers have different dedicated group information.",
+  "studio.producerError.bg3dLtDetach.missing-bundle-group.groupNotFound": "Could not find the dedicated 3D LT group, so the original was kept.",
+  "studio.producerError.bg3dLtDetach.mixed-bundle-group.otherLayer": "Another layer is mixed into the dedicated 3D LT group.",
+  "studio.producerError.bg3dLtDetach.mixed-bundle-group.unrelatedLayer": "An unrelated layer is mixed into the dedicated 3D LT group.",
+  "studio.producerError.bg3dLtDetach.target-locked.layerLocked": "A locked 3D LT layer cannot be flattened into a single image.",
+  "studio.producerError.bg3dLtDetach.bundle-group-locked.groupLocked": "A locked 3D LT group cannot be flattened into a single image.",
+  "studio.producerError.bg3dLtDetach.missing-scene.sceneUnconfirmed": "Could not confirm the exact original 3D scene to edit again.",
+});
+
+registerI18nLocaleEntries("ko", {
+  "studio.producerError.shared3d.captureReceiptInvalid": "연결 캐릭터 캡처 확인 정보가 올바르지 않아 원본 레이어를 유지했어요.",
+  "studio.producerError.shared3d.capturedLayerChanged": "연결된 3D 캐릭터 레이어가 바뀌었거나 잠겨 있어 원본을 숨기지 않았어요.",
+});
+
+registerI18nLocaleEntries("en", {
+  "studio.producerError.shared3d.captureReceiptInvalid": "The linked character capture receipt is invalid, so the original layers were kept.",
+  "studio.producerError.shared3d.capturedLayerChanged": "A linked 3D character layer changed or is locked, so the original was not hidden.",
 });
 
 const BG3D_LT_ERROR_KEYS: Readonly<Record<StudioBg3dLtLayerPlanFailure["code"], string>> = {
@@ -275,4 +340,87 @@ export function resolveStudioBg3dLtLayerPlanError(
     ? { ...error.params, layerName: resolveStudioBg3dLtLayerName(error.params.layerName) }
     : error.params;
   return resolveProducerError(BG3D_LT_ERROR_KEYS[error.code], BG3D_LT_ERROR_KO[error.code], params);
+}
+
+const BG3D_LT_DETACH_ERROR_KEYS: Readonly<Record<StudioBg3dEditableCompositeDetachFailure["code"], string>> = {
+  "page-locked.pageLocked": "studio.producerError.bg3dLtDetach.page-locked.pageLocked",
+  "invalid-composite-png.compositePng": "studio.producerError.bg3dLtDetach.invalid-composite-png.compositePng",
+  "invalid-plan.detachPlanInvalid": "studio.producerError.bg3dLtDetach.invalid-plan.detachPlanInvalid",
+  "invalid-plan.layerPlanInvalid": "studio.producerError.bg3dLtDetach.invalid-plan.layerPlanInvalid",
+  "invalid-plan.duplicateLayerEntry": "studio.producerError.bg3dLtDetach.invalid-plan.duplicateLayerEntry",
+  "duplicate-element-id.duplicateElementId": "studio.producerError.bg3dLtDetach.duplicate-element-id.duplicateElementId",
+  "duplicate-group-id.duplicateGroupId": "studio.producerError.bg3dLtDetach.duplicate-group-id.duplicateGroupId",
+  "stale-plan.backgroundChanged": "studio.producerError.bg3dLtDetach.stale-plan.backgroundChanged",
+  "stale-plan.anchorLayerChanged": "studio.producerError.bg3dLtDetach.stale-plan.anchorLayerChanged",
+  "stale-plan.anchorUnconfirmed": "studio.producerError.bg3dLtDetach.stale-plan.anchorUnconfirmed",
+  "stale-plan.bundleChanged": "studio.producerError.bg3dLtDetach.stale-plan.bundleChanged",
+  "invalid-bundle-element.nonImageElement": "studio.producerError.bg3dLtDetach.invalid-bundle-element.nonImageElement",
+  "invalid-bundle-metadata.metadataMismatch": "studio.producerError.bg3dLtDetach.invalid-bundle-metadata.metadataMismatch",
+  "noncontiguous-bundle.noncontiguous": "studio.producerError.bg3dLtDetach.noncontiguous-bundle.noncontiguous",
+  "inconsistent-bundle-geometry.invalidGeometry": "studio.producerError.bg3dLtDetach.inconsistent-bundle-geometry.invalidGeometry",
+  "inconsistent-bundle-geometry.geometryMismatch": "studio.producerError.bg3dLtDetach.inconsistent-bundle-geometry.geometryMismatch",
+  "inconsistent-bundle-group.groupMismatch": "studio.producerError.bg3dLtDetach.inconsistent-bundle-group.groupMismatch",
+  "missing-bundle-group.groupNotFound": "studio.producerError.bg3dLtDetach.missing-bundle-group.groupNotFound",
+  "mixed-bundle-group.otherLayer": "studio.producerError.bg3dLtDetach.mixed-bundle-group.otherLayer",
+  "mixed-bundle-group.unrelatedLayer": "studio.producerError.bg3dLtDetach.mixed-bundle-group.unrelatedLayer",
+  "target-locked.layerLocked": "studio.producerError.bg3dLtDetach.target-locked.layerLocked",
+  "bundle-group-locked.groupLocked": "studio.producerError.bg3dLtDetach.bundle-group-locked.groupLocked",
+  "missing-scene.sceneUnconfirmed": "studio.producerError.bg3dLtDetach.missing-scene.sceneUnconfirmed",
+};
+
+/** 코드별 ko 원문 템플릿 — 미등록 로케일·미해석 시 폴백이며 이관 전 원문과 동일하다. */
+const BG3D_LT_DETACH_ERROR_KO: Readonly<Record<StudioBg3dEditableCompositeDetachFailure["code"], string>> = {
+  "page-locked.pageLocked": "검토 잠금된 페이지에서는 3D 배경을 한 장으로 정리할 수 없어요.",
+  "invalid-composite-png.compositePng": "한 장으로 정리할 3D 합성 PNG가 올바르지 않아요.",
+  "invalid-plan.detachPlanInvalid": "3D LT 정리 계획이 올바르지 않아 원본을 유지했어요.",
+  "invalid-plan.layerPlanInvalid": "3D LT 레이어 계획이 올바르지 않아 원본을 유지했어요.",
+  "invalid-plan.duplicateLayerEntry": "3D LT 레이어 계획에 중복 항목이 있어 원본을 유지했어요.",
+  "duplicate-element-id.duplicateElementId": "페이지 요소 ID가 중복되거나 올바르지 않아요.",
+  "duplicate-group-id.duplicateGroupId": "페이지 그룹 ID가 중복되거나 올바르지 않아요.",
+  "stale-plan.backgroundChanged": "3D 배경이 바뀌어 이전 정리 결과를 적용하지 않았어요.",
+  "stale-plan.anchorLayerChanged": "3D 장면 기준 레이어가 바뀌어 이전 정리 결과를 적용하지 않았어요.",
+  "stale-plan.anchorUnconfirmed": "3D 장면 기준 레이어를 정확히 확인하지 못했어요.",
+  "stale-plan.bundleChanged": "3D LT 번들 구성이 바뀌어 이전 정리 결과를 적용하지 않았어요.",
+  "invalid-bundle-element.nonImageElement": "3D LT 번들에 이미지가 아닌 요소가 섞여 있어요.",
+  "invalid-bundle-metadata.metadataMismatch": "3D LT 번들 메타데이터가 현재 계획과 일치하지 않아요.",
+  "noncontiguous-bundle.noncontiguous": "3D LT 레이어 사이에 다른 레이어가 끼어 있어요.",
+  "inconsistent-bundle-geometry.invalidGeometry": "3D LT 레이어의 위치나 크기가 올바르지 않아요.",
+  "inconsistent-bundle-geometry.geometryMismatch": "3D LT 레이어의 위치나 크기가 서로 달라요.",
+  "inconsistent-bundle-group.groupMismatch": "3D LT 레이어의 전용 그룹 정보가 서로 달라요.",
+  "missing-bundle-group.groupNotFound": "3D LT 전용 그룹을 찾지 못해 원본을 유지했어요.",
+  "mixed-bundle-group.otherLayer": "3D LT 전용 그룹에 다른 레이어가 섞여 있어요.",
+  "mixed-bundle-group.unrelatedLayer": "3D LT 전용 그룹에 관련 없는 레이어가 섞여 있어요.",
+  "target-locked.layerLocked": "잠긴 3D LT 레이어는 한 장으로 정리할 수 없어요.",
+  "bundle-group-locked.groupLocked": "잠긴 3D LT 그룹은 한 장으로 정리할 수 없어요.",
+  "missing-scene.sceneUnconfirmed": "다시 편집할 3D 장면 원본을 정확히 확인하지 못했어요.",
+};
+
+const SHARED3D_VISIBILITY_ERROR_KEYS: Readonly<Record<StudioShared3dSourceLayerVisibilityErrorCode, string>> = {
+  "captureReceiptInvalid": "studio.producerError.shared3d.captureReceiptInvalid",
+  "capturedLayerChanged": "studio.producerError.shared3d.capturedLayerChanged",
+};
+
+const SHARED3D_VISIBILITY_ERROR_KO: Readonly<Record<StudioShared3dSourceLayerVisibilityErrorCode, string>> = {
+  "captureReceiptInvalid": "연결 캐릭터 캡처 확인 정보가 올바르지 않아 원본 레이어를 유지했어요.",
+  "capturedLayerChanged": "연결된 3D 캐릭터 레이어가 바뀌었거나 잠겨 있어 원본을 숨기지 않았어요.",
+};
+
+/**
+ * 표시 지점 전용 해석 (bg3d LT detach): bg3d-insert의 detach setError가 부른다.
+ * 생산자·래퍼는 이 함수를 부르지 않고 코드+파라미터를 그대로 통과시키는 것이 원칙이다.
+ */
+export function resolveStudioBg3dDetachError(
+  error: StudioBg3dEditableCompositeDetachFailure,
+): string {
+  return resolveProducerError(BG3D_LT_DETACH_ERROR_KEYS[error.code], BG3D_LT_DETACH_ERROR_KO[error.code], error.params);
+}
+
+/**
+ * 표시 지점 전용 해석 (shared-3d visibility): bg3d-insert의 visibility·realtime setError가 부른다.
+ * 생산자·래퍼는 이 함수를 부르지 않고 코드+파라미터를 그대로 통과시키는 것이 원칙이다.
+ */
+export function resolveStudioShared3dVisibilityError(
+  error: { readonly code: StudioShared3dSourceLayerVisibilityErrorCode; readonly params?: Readonly<Record<string, string>> },
+): string {
+  return resolveProducerError(SHARED3D_VISIBILITY_ERROR_KEYS[error.code], SHARED3D_VISIBILITY_ERROR_KO[error.code], error.params);
 }

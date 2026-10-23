@@ -22,6 +22,12 @@ import {
   type StoryworldIssueDispositionStatus,
 } from "./studio-storyworld-issue-dispositions";
 import { EmptyState, Panel } from "./StudioStoryworldLabShared";
+import {
+  resolveStoryworldIssue,
+  resolveStoryworldRepairProposal,
+} from "../status-i18n/studio-producer-error-i18n-storyworld";
+
+export { resolveStoryworldIssue };
 import { AXIS_LABELS, SEVERITY_LABELS, severityIcon } from "./studio-storyworld-lab-display";
 
 function IssueDispositionControls({ issueKey, dispositions, onSet, onClear }: {
@@ -129,7 +135,7 @@ export function IssueList({ issues, limit, dispositions, onSetDisposition, onCle
                 <span>{AXIS_LABELS[issue.axis]}</span>
                 {issue.sceneId ? <code>{issue.sceneId}</code> : null}
               </div>
-              <p>{issue.message}</p>
+              <p>{resolveStoryworldIssue(issue)}</p>
               <small>{issue.code}</small>
               {onSetDisposition && onClearDisposition ? (
                 <IssueDispositionControls
@@ -241,10 +247,10 @@ export function IssuesTab({ result, continuityIssues, dispositions, onSetDisposi
             <article className="storyworld-proposal" key={proposal.id}>
               <div className="storyworld-proposal__topline">
                 <WandSparkles aria-hidden size={17} />
-                <strong>{proposal.title}</strong>
+                <strong>{resolveStoryworldRepairProposal(proposal).title}</strong>
                 <span data-risk={proposal.risk}>위험 {proposal.risk}</span>
               </div>
-              <p>{proposal.rationale}</p>
+              <p>{resolveStoryworldRepairProposal(proposal).rationale}</p>
               <code>{proposal.intent.kind}</code>
             </article>
           ))}

@@ -176,7 +176,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
     });
 
     expectTypeOf(result).toEqualTypeOf<StudioBg3dEditableCompositeDetachResult<TestElement>>();
-    if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+    if (!result.ok) throw new Error(result.code);
     expect(result).toMatchObject({
       anchorElementId: "anchor-layer",
       detachedBundleId: "bundle-lt",
@@ -257,7 +257,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
       plan: inserted,
       compositePngDataUrl: PNG.composite,
     });
-    if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+    if (!result.ok) throw new Error(result.code);
     expect(result.removedElementIds).toEqual([]);
     expect(result.nextElements.map((element) => element.id)).toEqual(["sibling", "combined-anchor"]);
     expect(result.nextGroups).toEqual([]);
@@ -275,7 +275,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         anchorElementId: plan.anchorElementId,
       },
     });
-    expectFailure(result, "stale-plan");
+    expectFailure(result, "stale-plan.backgroundChanged");
   });
 
   it("rejects a stale anchor identity or changed layer set without producing partial state", () => {
@@ -286,7 +286,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: staleAnchor,
         compositePngDataUrl: PNG.composite,
       }),
-      "stale-plan"
+      "stale-plan.anchorLayerChanged"
     );
 
     const missingTone = {
@@ -298,7 +298,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: missingTone,
         compositePngDataUrl: PNG.composite,
       }),
-      "stale-plan"
+      "stale-plan.bundleChanged"
     );
   });
 
@@ -317,7 +317,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: mixed,
         compositePngDataUrl: PNG.composite,
       }),
-      "mixed-bundle-group"
+      "mixed-bundle-group.otherLayer"
     );
   });
 
@@ -336,7 +336,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: noncontiguous,
         compositePngDataUrl: PNG.composite,
       }),
-      "noncontiguous-bundle"
+      "noncontiguous-bundle.noncontiguous"
     );
 
     const inconsistentGeometry = replaceElement(plan, "texture-layer", { x: 999 });
@@ -345,7 +345,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: inconsistentGeometry,
         compositePngDataUrl: PNG.composite,
       }),
-      "inconsistent-bundle-geometry"
+      "inconsistent-bundle-geometry.geometryMismatch"
     );
 
     const malformedMetadata = replaceElement(plan, "texture-layer", {
@@ -356,7 +356,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: malformedMetadata,
         compositePngDataUrl: PNG.composite,
       }),
-      "invalid-bundle-metadata"
+      "invalid-bundle-metadata.metadataMismatch"
     );
   });
 
@@ -368,14 +368,14 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: withoutScene,
         compositePngDataUrl: PNG.composite,
       }),
-      "missing-scene"
+      "missing-scene.sceneUnconfirmed"
     );
     expectFailure(
       planStudioBg3dEditableCompositeDetach<TestElement, TestScene>({
         plan,
         compositePngDataUrl: `${PNG.composite}#stale-scene-fragment`,
       }),
-      "invalid-composite-png"
+      "invalid-composite-png.compositePng"
     );
   });
 
@@ -387,7 +387,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         compositePngDataUrl: PNG.composite,
         pageLocked: true,
       }),
-      "page-locked"
+      "page-locked.pageLocked"
     );
 
     const lockedElement = replaceElement(plan, "tone-layer", { locked: true });
@@ -396,7 +396,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: lockedElement,
         compositePngDataUrl: PNG.composite,
       }),
-      "target-locked"
+      "target-locked.layerLocked"
     );
 
     const lockedGroup: StudioBg3dLtLayerPlanSuccess<TestElement> = {
@@ -410,7 +410,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: lockedGroup,
         compositePngDataUrl: PNG.composite,
       }),
-      "bundle-group-locked"
+      "bundle-group-locked.groupLocked"
     );
   });
 
@@ -425,7 +425,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: duplicateElement,
         compositePngDataUrl: PNG.composite,
       }),
-      "duplicate-element-id"
+      "duplicate-element-id.duplicateElementId"
     );
 
     const duplicateGroup = {
@@ -437,7 +437,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: duplicateGroup,
         compositePngDataUrl: PNG.composite,
       }),
-      "duplicate-group-id"
+      "duplicate-group-id.duplicateGroupId"
     );
 
     const missingGroup = {
@@ -449,7 +449,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         plan: missingGroup,
         compositePngDataUrl: PNG.composite,
       }),
-      "missing-bundle-group"
+      "missing-bundle-group.groupNotFound"
     );
   });
 
@@ -465,7 +465,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
       plan: withGroups,
       compositePngDataUrl: PNG.composite,
     });
-    if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+    if (!result.ok) throw new Error(result.code);
     expect(result.nextGroups.map((group) => group.id)).toEqual([
       "before-group",
       "sibling-group",

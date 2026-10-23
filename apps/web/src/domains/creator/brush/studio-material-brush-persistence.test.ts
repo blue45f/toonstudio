@@ -69,8 +69,10 @@ describe("saved material brush preservation", () => {
     exported.enginePrograms = enginePrograms;
     const text = JSON.stringify(exported);
     expect(sanitizeBrushSnapshot(exported).adjustedFields).toContain("enginePrograms");
-    expect(() => importBrushFromJson(text)).toThrow(/브러시 엔진 설정을 그대로 복원할 수 없어 가져오지 않았어요/u);
-    expect(() => importBrushFromJson(text)).toThrow(/최신 스튜디오.*원본 브러시를 다시 내보내/u);
+    expect(() => importBrushFromJson(text)).toThrow(expect.objectContaining({
+      name: "StudioBrushLibraryError",
+      code: "engineNotRestorable",
+    }));
   });
 
   it("keeps valid legacy JSON without engine programs importable", () => {

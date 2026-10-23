@@ -94,6 +94,19 @@ export interface StudioLinked3dPassProjectArchiveEvidence {
   }[];
 }
 
+/**
+ * evidence 검증 경로 구조화 서브코드 (A4 D4 R14) — collect·assertEvidence 방출 5곳만 운반한다.
+ * project-archive 경계(linked3dArchiveCoverage)가 이 값을 causeVariant로 넘기고 표시 문구는
+ * status-i18n 리졸버가 해석한다. prepare·restore 등 그 외 경로의 방출은 variant 없이 기존
+ * message 경로를 유지한다.
+ */
+export type StudioLinked3dPassProjectArchiveEvidenceErrorVariant =
+  | "renderReceiptCorrupt"
+  | "locatorHashMismatch"
+  | "canvasSourceMismatch"
+  | "evidencePngMissing"
+  | "evidenceReceiptMismatch";
+
 export class StudioLinked3dPassProjectArchiveError extends Error {
   public constructor(
     public readonly code:
@@ -107,6 +120,7 @@ export class StudioLinked3dPassProjectArchiveError extends Error {
       | "commit-rejected",
     message: string,
     public readonly cause?: unknown,
+    public readonly variant?: StudioLinked3dPassProjectArchiveEvidenceErrorVariant,
   ) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = "StudioLinked3dPassProjectArchiveError";
@@ -117,8 +131,9 @@ function archiveError(
   code: StudioLinked3dPassProjectArchiveError["code"],
   message: string,
   cause?: unknown,
+  variant?: StudioLinked3dPassProjectArchiveEvidenceErrorVariant,
 ): never {
-  throw new StudioLinked3dPassProjectArchiveError(code, message, cause);
+  throw new StudioLinked3dPassProjectArchiveError(code, message, cause, variant);
 }
 
 function rawHash(hash: `sha256:${string}`): string {
@@ -316,13 +331,13 @@ export function collectStudioLinked3dPassProjectArchiveReferences(
     if (page.linked3dRender === undefined) continue;
     const document = parseStudioLinked3dRenderDocument(page.linked3dRender);
     if (!document) {
-      archiveError("invalid-project", "연결형 3D render receipt가 손상되어 portable archive를 만들 수 없습니다.");
+      archiveError("invalid-project", "연결형 3D render receipt가 손상되어 portable archive를 만들 수 없습니다.", undefined, "renderReceiptCorrupt");
     }
     for (let linkIndex = 0; linkIndex < document.links.length; linkIndex += 1) {
       const link = document.links[linkIndex]!;
       const artifact = link.passRevision.artifact;
       if (parseStudioLinked3dPassLocator(artifact.locator) !== artifact.contentHash) {
-        archiveError("invalid-project", "연결형 3D line pass locator가 receipt SHA-256과 다릅니다.");
+        archiveError("invalid-project", "연결형 3D line pass locator가 receipt SHA-256과 다릅니다.", undefined, "locatorHashMismatch");
       }
       const base = `/pagesList/${pageIndex}/linked3dRender/links/${linkIndex}/passRevision/artifact`;
       const mainLineElementId = link.layers.find(({ role }) => role === "main-line")?.elementId;
@@ -334,7 +349,7 @@ export function collectStudioLinked3dPassProjectArchiveReferences(
         || !isRecord(mainLineElement)
         || mainLineElement.src !== artifact.locator
       ) {
-        archiveError("invalid-project", "연결형 3D line pass가 canonical Canvas source와 다릅니다.");
+        archiveError("invalid-project", "연결형 3D line pass가 canonical Canvas source와 다릅니다.", undefined, "canvasSourceMismatch");
       }
       references.push(Object.freeze({
         pageId: page.id,
@@ -379,7 +394,7 @@ export function assertStudioLinked3dPassProjectArchiveEvidence(
       && candidate.usage === "raster"
       && candidate.mode === "sha256-prefixed") === true;
     if (!attachment) {
-      archiveError("attachment-missing", "portable archive에 연결형 3D line pass PNG가 없습니다.");
+      archiveError("attachment-missing", "portable archive에 연결형 3D line pass PNG가 없습니다.", undefined, "evidencePngMissing");
     }
     if (
       attachment.byteSize !== reference.byteSize
@@ -387,7 +402,7 @@ export function assertStudioLinked3dPassProjectArchiveEvidence(
       || !attachment.kinds.includes("raster")
       || !hasExactReference
     ) {
-      archiveError("attachment-mismatch", "연결형 3D line pass attachment receipt가 프로젝트와 다릅니다.");
+      archiveError("attachment-mismatch", "연결형 3D line pass attachment receipt가 프로젝트와 다릅니다.", undefined, "evidenceReceiptMismatch");
     }
     coveredLocatorPointers.add(reference.locatorPointer);
     coveredLocatorPointers.add(reference.canvasSourcePointer);

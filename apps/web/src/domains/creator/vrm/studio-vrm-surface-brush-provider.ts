@@ -27,6 +27,7 @@ import type {
   StudioVrmTexturePaintRayHit,
   StudioVrmTexturePaintRuntime,
   StudioVrmTexturePaintRuntimeError,
+  type StudioVrmTexturePaintRuntimeErrorCode,
   StudioVrmTexturePaintSurfaceProjection,
   StudioVrmTexturePaintSurfaceSession,
 } from "./studio-vrm-texture-paint-runtime";
@@ -51,6 +52,8 @@ export class StudioVrmSurfaceBrushBridgeError extends Error {
     message: string,
     readonly sampleIndex?: number,
     options?: ErrorOptions,
+    /** D4 (R14): 하위 런타임 오류의 구조화 코드 — 표시 문구는 분류 지점에서만 해석한다. */
+    readonly runtimeCode?: StudioVrmTexturePaintRuntimeErrorCode,
   ) {
     super(message, options);
     this.name = "StudioVrmSurfaceBrushBridgeError";
@@ -122,17 +125,23 @@ function bridgeFailure(
   message: string,
   sampleIndex?: number,
   cause?: unknown,
+  runtimeCode?: StudioVrmTexturePaintRuntimeErrorCode,
 ): StudioVrmSurfaceBrushBridgeError {
   return new StudioVrmSurfaceBrushBridgeError(
     code,
     message,
     sampleIndex,
     cause === undefined ? undefined : { cause },
+    runtimeCode,
   );
 }
 
-function runtimeFailureMessage(error: StudioVrmTexturePaintRuntimeError): string {
-  return `${error.code}: ${error.message}`;
+/**
+ * D4 (R14): 런타임 오류는 문구를 합성하지 않고 구조화 코드만 경계를 넘긴다.
+ * 표시는 surface-paint-tool의 classifyExecutionError(분류 지점)에서만 해석한다.
+ */
+function runtimeFailureCode(error: StudioVrmTexturePaintRuntimeError): StudioVrmTexturePaintRuntimeErrorCode {
+  return error.code;
 }
 
 function assertHitArrayLength(
@@ -439,7 +448,10 @@ export class StudioVrmSurfaceProjectionProvider implements SurfaceProjectionProv
     if (!committed.ok) {
       this.commitFailure = bridgeFailure(
         "runtime-commit-failed",
-        runtimeFailureMessage(committed.error),
+        runtimeFailureCode(committed.error),
+        undefined,
+        undefined,
+        runtimeFailureCode(committed.error),
       );
       throw this.commitFailure;
     }
@@ -465,8 +477,10 @@ async function resolveHitLane(
     if (!result.ok) {
       throw bridgeFailure(
         "runtime-projection-failed",
-        `selected provider sample[${sampleIndex}] ${runtimeFailureMessage(result.error)}`,
+        `selected provider sample[${sampleIndex}] ${runtimeFailureCode(result.error)}`,
         sampleIndex,
+        undefined,
+        runtimeFailureCode(result.error),
       );
     }
     if (result.value.sourcePressure !== sample.pressure) {
@@ -518,7 +532,10 @@ export async function prepareStudioVrmSurfaceProjectionProvider(
   if (!prepared.ok) {
     throw bridgeFailure(
       "runtime-prepare-failed",
-      runtimeFailureMessage(prepared.error),
+      runtimeFailureCode(prepared.error),
+      undefined,
+      undefined,
+      runtimeFailureCode(prepared.error),
     );
   }
 

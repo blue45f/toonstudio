@@ -248,7 +248,7 @@ describe("studio-writer-room", () => {
       });
     }
     expect(() => acceptStudioWriterRoomSuggestions(document, ["s1", "s2"], DECIDED_AT))
-      .toThrow("같은 필드");
+      .toThrow("duplicateFieldInBatch");
   });
 
   it("제안 뒤 원문이 바뀌면 stale 승인을 막는다", () => {
@@ -263,7 +263,7 @@ describe("studio-writer-room", () => {
       text: "사용자가 직접 수정",
       characterIds: [],
     });
-    expect(() => acceptStudioWriterRoomSuggestion(edited, "s1", DECIDED_AT)).toThrow("대상 값이 바뀌었어요");
+    expect(() => acceptStudioWriterRoomSuggestion(edited, "s1", DECIDED_AT)).toThrow("targetChanged");
   });
 
   it("batch 거절은 값 변경 없이 모두 해결하고 undo로 pending을 복원한다", () => {
@@ -294,14 +294,14 @@ describe("studio-writer-room", () => {
       proposedValue: "x",
       rationale: "x",
       createdAt: CREATED_AT,
-    })).toThrow("현재 Writer Room 문서에 없어요");
+    })).toThrow("targetMissing");
     expect(() => addStudioWriterRoomSuggestion(document, {
       id: "s2",
       targetPath: "stages.premise.text",
       proposedValue: document.stages.premise.text,
       rationale: "x",
       createdAt: CREATED_AT,
-    })).toThrow("다른 제안 값");
+    })).toThrow("sameValue");
     expect(() => addStudioWriterRoomSuggestion(document, {
       id: "s3",
       targetPath: "stages.premise.text",
@@ -309,7 +309,7 @@ describe("studio-writer-room", () => {
       rationale: "x",
       provenanceRef: "ai:__proto__/secret",
       createdAt: CREATED_AT,
-    })).toThrow("출처 참조");
+    })).toThrow("invalidSourceRef");
   });
 
   it("SFX는 기존 preset 또는 bounded custom text만 보존한다", () => {
@@ -495,7 +495,7 @@ describe("studio-writer-room", () => {
       `suggestion-${index}`
     );
     expect(() => rejectStudioWriterRoomSuggestions(populatedDocument(), ids, DECIDED_AT))
-      .toThrow("한 번에 최대 100개");
+      .toThrow("batchLimit");
   });
 
   it("직렬화는 결정적이고 다시 정규화해도 동일하다", () => {

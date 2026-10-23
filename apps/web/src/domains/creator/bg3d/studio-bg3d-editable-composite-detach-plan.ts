@@ -43,27 +43,34 @@ export interface PlanStudioBg3dEditableCompositeDetachInput<
 }
 
 export type StudioBg3dEditableCompositeDetachErrorCode =
-  | "page-locked"
-  | "invalid-composite-png"
-  | "invalid-plan"
-  | "duplicate-element-id"
-  | "duplicate-group-id"
-  | "stale-plan"
-  | "invalid-bundle-element"
-  | "invalid-bundle-metadata"
-  | "noncontiguous-bundle"
-  | "inconsistent-bundle-geometry"
-  | "inconsistent-bundle-group"
-  | "missing-bundle-group"
-  | "mixed-bundle-group"
-  | "target-locked"
-  | "bundle-group-locked"
-  | "missing-scene";
+  | "page-locked.pageLocked"
+  | "invalid-composite-png.compositePng"
+  | "invalid-plan.detachPlanInvalid"
+  | "invalid-plan.layerPlanInvalid"
+  | "invalid-plan.duplicateLayerEntry"
+  | "duplicate-element-id.duplicateElementId"
+  | "duplicate-group-id.duplicateGroupId"
+  | "stale-plan.backgroundChanged"
+  | "stale-plan.anchorLayerChanged"
+  | "stale-plan.anchorUnconfirmed"
+  | "stale-plan.bundleChanged"
+  | "invalid-bundle-element.nonImageElement"
+  | "invalid-bundle-metadata.metadataMismatch"
+  | "noncontiguous-bundle.noncontiguous"
+  | "inconsistent-bundle-geometry.invalidGeometry"
+  | "inconsistent-bundle-geometry.geometryMismatch"
+  | "inconsistent-bundle-group.groupMismatch"
+  | "missing-bundle-group.groupNotFound"
+  | "mixed-bundle-group.otherLayer"
+  | "mixed-bundle-group.unrelatedLayer"
+  | "target-locked.layerLocked"
+  | "bundle-group-locked.groupLocked"
+  | "missing-scene.sceneUnconfirmed";
 
 export interface StudioBg3dEditableCompositeDetachFailure {
   readonly ok: false;
   readonly code: StudioBg3dEditableCompositeDetachErrorCode;
-  readonly message: string;
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface StudioBg3dEditableCompositeDetachSuccess<
@@ -97,10 +104,9 @@ interface NormalizedGeometry {
 }
 
 function failure(
-  code: StudioBg3dEditableCompositeDetachErrorCode,
-  message: string
+  code: StudioBg3dEditableCompositeDetachErrorCode
 ): StudioBg3dEditableCompositeDetachFailure {
-  return { ok: false, code, message };
+  return { ok: false, code };
 }
 
 function isValidId(value: unknown): value is string {
@@ -222,10 +228,10 @@ export function planStudioBg3dEditableCompositeDetach<
   input: PlanStudioBg3dEditableCompositeDetachInput<TElement>
 ): StudioBg3dEditableCompositeDetachResult<TElement> {
   if (input.pageLocked) {
-    return failure("page-locked", "검토 잠금된 페이지에서는 3D 배경을 한 장으로 정리할 수 없어요.");
+    return failure("page-locked.pageLocked");
   }
   if (!isStudioBg3dLtPngDataUrl(input.compositePngDataUrl)) {
-    return failure("invalid-composite-png", "한 장으로 정리할 3D 합성 PNG가 올바르지 않아요.");
+    return failure("invalid-composite-png.compositePng");
   }
 
   const plan = input.plan;
@@ -247,7 +253,7 @@ export function planStudioBg3dEditableCompositeDetach<
     || !Array.isArray(plan.nextElements)
     || !Array.isArray(plan.nextGroups)
   ) {
-    return failure("invalid-plan", "3D LT 정리 계획이 올바르지 않아 원본을 유지했어요.");
+    return failure("invalid-plan.detachPlanInvalid");
   }
 
   const expected = input.expected;
@@ -259,22 +265,22 @@ export function planStudioBg3dEditableCompositeDetach<
       || expected.anchorElementId !== plan.anchorElementId
     )
   ) {
-    return failure("stale-plan", "3D 배경이 바뀌어 이전 정리 결과를 적용하지 않았어요.");
+    return failure("stale-plan.backgroundChanged");
   }
 
   if (firstDuplicateId(plan.nextElements.map((element) => element.id)) !== null) {
-    return failure("duplicate-element-id", "페이지 요소 ID가 중복되거나 올바르지 않아요.");
+    return failure("duplicate-element-id.duplicateElementId");
   }
   if (firstDuplicateId(plan.nextGroups.map((group) => group.id)) !== null) {
-    return failure("duplicate-group-id", "페이지 그룹 ID가 중복되거나 올바르지 않아요.");
+    return failure("duplicate-group-id.duplicateGroupId");
   }
 
   const group = plan.nextGroups.find((candidate) => candidate.id === plan.groupId);
   if (!group) {
-    return failure("missing-bundle-group", "3D LT 전용 그룹을 찾지 못해 원본을 유지했어요.");
+    return failure("missing-bundle-group.groupNotFound");
   }
   if (group.locked) {
-    return failure("bundle-group-locked", "잠긴 3D LT 그룹은 한 장으로 정리할 수 없어요.");
+    return failure("bundle-group-locked.groupLocked");
   }
 
   const plannedElementIds = new Set<string>();
@@ -290,22 +296,22 @@ export function planStudioBg3dEditableCompositeDetach<
       || layer.name !== STUDIO_BG3D_LT_LAYER_NAMES[layer.role]
       || !isStudioBg3dLtPngDataUrl(layer.pngDataUrl)
     ) {
-      return failure("invalid-plan", "3D LT 레이어 계획이 올바르지 않아 원본을 유지했어요.");
+      return failure("invalid-plan.layerPlanInvalid");
     }
     if (plannedElementIds.has(layer.elementId) || plannedRoles.has(layer.role)) {
-      return failure("invalid-plan", "3D LT 레이어 계획에 중복 항목이 있어 원본을 유지했어요.");
+      return failure("invalid-plan.duplicateLayerEntry");
     }
     plannedElementIds.add(layer.elementId);
     plannedRoles.add(layer.role);
     if (layer.sceneAnchor) {
       plannedAnchorCount += 1;
       if (layer.elementId !== plan.anchorElementId) {
-        return failure("stale-plan", "3D 장면 기준 레이어가 바뀌어 이전 정리 결과를 적용하지 않았어요.");
+        return failure("stale-plan.anchorLayerChanged");
       }
     }
   }
   if (plannedAnchorCount !== 1 || !plannedElementIds.has(plan.anchorElementId)) {
-    return failure("stale-plan", "3D 장면 기준 레이어를 정확히 확인하지 못했어요.");
+    return failure("stale-plan.anchorUnconfirmed");
   }
 
   const bundleEntries = plan.nextElements
@@ -316,7 +322,7 @@ export function planStudioBg3dEditableCompositeDetach<
   const groupEntries = plan.nextElements.filter((element) => element.groupId === plan.groupId);
 
   if (groupEntries.some((element) => !plannedElementIds.has(element.id))) {
-    return failure("mixed-bundle-group", "3D LT 전용 그룹에 다른 레이어가 섞여 있어요.");
+    return failure("mixed-bundle-group.otherLayer");
   }
   if (
     bundleEntries.length !== plannedElementIds.size
@@ -325,13 +331,13 @@ export function planStudioBg3dEditableCompositeDetach<
       (elementId) => !bundleEntries.some(({ element }) => element.id === elementId)
     )
   ) {
-    return failure("stale-plan", "3D LT 번들 구성이 바뀌어 이전 정리 결과를 적용하지 않았어요.");
+    return failure("stale-plan.bundleChanged");
   }
   if (bundleEntries.some(({ element }) => element.groupId !== plan.groupId)) {
-    return failure("inconsistent-bundle-group", "3D LT 레이어의 전용 그룹 정보가 서로 달라요.");
+    return failure("inconsistent-bundle-group.groupMismatch");
   }
   if (groupEntries.length !== bundleEntries.length) {
-    return failure("mixed-bundle-group", "3D LT 전용 그룹에 관련 없는 레이어가 섞여 있어요.");
+    return failure("mixed-bundle-group.unrelatedLayer");
   }
 
   const firstBundleIndex = bundleEntries[0]?.index;
@@ -340,7 +346,7 @@ export function planStudioBg3dEditableCompositeDetach<
     || firstBundleIndex !== plan.insertionIndex
     || bundleEntries.some(({ index }, offset) => index !== firstBundleIndex + offset)
   ) {
-    return failure("noncontiguous-bundle", "3D LT 레이어 사이에 다른 레이어가 끼어 있어요.");
+    return failure("noncontiguous-bundle.noncontiguous");
   }
 
   const layerByElementId = new Map(plan.layers.map((layer) => [layer.elementId, layer] as const));
@@ -349,10 +355,10 @@ export function planStudioBg3dEditableCompositeDetach<
   let sceneAnchorCount = 0;
   for (const { element } of bundleEntries) {
     if (!isImageElement<TScene>(element)) {
-      return failure("invalid-bundle-element", "3D LT 번들에 이미지가 아닌 요소가 섞여 있어요.");
+      return failure("invalid-bundle-element.nonImageElement");
     }
     if (element.locked) {
-      return failure("target-locked", "잠긴 3D LT 레이어는 한 장으로 정리할 수 없어요.");
+      return failure("target-locked.layerLocked");
     }
     const layer = layerByElementId.get(element.id);
     if (
@@ -364,28 +370,28 @@ export function planStudioBg3dEditableCompositeDetach<
       || element.src !== layer.pngDataUrl
       || element.name !== layer.name
     ) {
-      return failure("invalid-bundle-metadata", "3D LT 번들 메타데이터가 현재 계획과 일치하지 않아요.");
+      return failure("invalid-bundle-metadata.metadataMismatch");
     }
 
     const geometry = geometryOf(element);
     if (!geometry) {
-      return failure("inconsistent-bundle-geometry", "3D LT 레이어의 위치나 크기가 올바르지 않아요.");
+      return failure("inconsistent-bundle-geometry.invalidGeometry");
     }
     if (commonGeometry && !sameGeometry(commonGeometry, geometry)) {
-      return failure("inconsistent-bundle-geometry", "3D LT 레이어의 위치나 크기가 서로 달라요.");
+      return failure("inconsistent-bundle-geometry.geometryMismatch");
     }
     commonGeometry = geometry;
 
     if (element.bg3dScene !== undefined) {
       sceneAnchorCount += 1;
       if (element.id !== plan.anchorElementId || element.bg3dScene === null) {
-        return failure("missing-scene", "다시 편집할 3D 장면 원본을 정확히 확인하지 못했어요.");
+        return failure("missing-scene.sceneUnconfirmed");
       }
       anchor = element as TElement & StudioBg3dLtImageElementLike<TScene>;
     }
   }
   if (!anchor || sceneAnchorCount !== 1) {
-    return failure("missing-scene", "다시 편집할 3D 장면 원본을 정확히 확인하지 못했어요.");
+    return failure("missing-scene.sceneUnconfirmed");
   }
 
   const composite = withoutLtBundleMetadata(anchor, input.compositePngDataUrl);

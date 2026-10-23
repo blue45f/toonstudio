@@ -1078,9 +1078,8 @@ export function brushMatchesSnapshot(
 
 // ── JSON 내보내기/가져오기(이 앱 전용 포맷 — 브러시 설정엔 GPL 같은 표준이 없다) ──────
 
-export const BRUSH_EXPORT_KIND = "toonstudio-studio-brush";
-export const BRUSH_EXPORT_VERSION = 6;
-
+import { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError } from "./studio-brush-library-export-contract";
+export { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError, type StudioBrushLibraryErrorCode, type StudioBrushLibraryErrorVariant } from "./studio-brush-library-export-contract";
 /** StudioSavedBrush → JSON 텍스트(들여쓰기 2칸, 사람이 읽을 수 있게). */
 export function writeBrushJson(brush: StudioSavedBrush): string {
   const { snapshot } = sanitizeBrushSnapshot(brush);
@@ -1110,7 +1109,7 @@ export function writeBrushJson(brush: StudioSavedBrush): string {
   };
   const serialized = JSON.stringify(payload, null, 2);
   if (new TextEncoder().encode(serialized).byteLength > BRUSH_SOURCE_SETTINGS_MAX_CHARACTERS) {
-    throw new Error("브러시 설정이 보존 파일의 크기 한도를 넘었습니다. 원본을 제거하지 않았습니다.");
+    throw new StudioBrushLibraryError("settingsTooLarge");
   }
   if (!Object.hasOwn(brush, "originalSource")) return serialized;
   const originalSource = requireEmbeddedStudioBrushOriginalSource(brush.originalSource);
@@ -1118,7 +1117,7 @@ export function writeBrushJson(brush: StudioSavedBrush): string {
   const archive = JSON.stringify({ kind: BRUSH_SOURCE_ARCHIVE_KIND, version: 1, brush: payload, originalSource }, null, 2);
   if (archive.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS
     || new TextEncoder().encode(archive).byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES) {
-    throw new Error("원본 포함 파일이 가져오기 크기 한도를 넘었습니다. 원본을 제거하지 않았습니다.");
+    throw new StudioBrushLibraryError("archiveTooLarge", "write");
   }
   return archive;
 }
@@ -1146,16 +1145,16 @@ export function importBrushFromJson(
   fallbackName?: string
 ): { brush: StudioSavedBrush; adjustedFields: string[] } {
   if (typeof text !== "string" || text.trim().length === 0) {
-    throw new Error("빈 파일이에요. 브러시 설정(.json) 파일을 선택해주세요.");
+    throw new StudioBrushLibraryError("emptyFile");
   }
-  if (text.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS) throw new Error("브러시 보존 파일이 허용 크기를 초과했습니다.");
+  if (text.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS) throw new StudioBrushLibraryError("archiveTooLarge", "import");
   const byteLength = new TextEncoder().encode(text).byteLength;
-  if (byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES) throw new Error("브러시 보존 파일이 허용 크기를 초과했습니다.");
+  if (byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES) throw new StudioBrushLibraryError("archiveBytesTooLarge");
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error("브러시 설정 파일을 읽지 못했어요.");
+    throw new StudioBrushLibraryError("readFailed");
   }
   let originalSource: StudioBrushOriginalSource | undefined;
   const envelope = parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
@@ -1163,25 +1162,25 @@ export function importBrushFromJson(
     if (envelope.version !== 1 || Object.keys(envelope).length !== 4
       || !envelope.brush || typeof envelope.brush !== "object"
       || new TextEncoder().encode(JSON.stringify(envelope.brush)).byteLength > BRUSH_SOURCE_SETTINGS_MAX_CHARACTERS) {
-      throw new Error("지원하지 않거나 손상된 브러시 보존 파일입니다.");
+      throw new StudioBrushLibraryError("unsupportedOrCorrupt");
     }
     originalSource = requireEmbeddedStudioBrushOriginalSource(envelope.originalSource);
     const settings = envelope.brush as Record<string, unknown>;
     if (settings.version !== BRUSH_EXPORT_VERSION || Object.hasOwn(settings, "originalSource")) {
-      throw new Error("브러시 보존 파일의 설정 형식을 그대로 복원할 수 없습니다.");
+      throw new StudioBrushLibraryError("settingsNotRestorable");
     }
     parsed = settings;
   } else if (byteLength > BRUSH_SOURCE_SETTINGS_MAX_CHARACTERS) {
-    throw new Error("일반 브러시 설정은 2MB 이하 파일만 가져올 수 있어요.");
+    throw new StudioBrushLibraryError("plainSettingsTooLarge");
   }
   if (!parsed || typeof parsed !== "object" || (parsed as Record<string, unknown>).kind !== BRUSH_EXPORT_KIND) {
-    throw new Error("브러시 설정(.json) 파일이 아니에요.");
+    throw new StudioBrushLibraryError("notJsonFile");
   }
   const obj = parsed as Record<string, unknown>;
   if (Object.hasOwn(obj, "originalSource")) originalSource = requireEmbeddedStudioBrushOriginalSource(obj.originalSource);
   const { snapshot, adjustedFields } = sanitizeBrushSnapshot(obj);
   if (adjustedFields.includes("enginePrograms")) {
-    throw new Error("브러시 엔진 설정을 그대로 복원할 수 없어 가져오지 않았어요. 최신 스튜디오에서 다시 시도하거나 원본 브러시를 다시 내보내주세요.");
+    throw new StudioBrushLibraryError("engineNotRestorable");
   }
   const rawName = typeof obj.name === "string" ? obj.name.trim() : "";
   const now = Date.now();

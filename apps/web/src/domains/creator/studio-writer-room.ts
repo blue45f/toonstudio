@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { STUDIO_CHARACTER_BIBLE_MAX_ID_LENGTH } from "./studio-character-bible";
 import { SFX_LIBRARY } from "./studio-sfx-presets";
+import { StudioWriterRoomError } from "./studio-writer-room-error";
+export { StudioWriterRoomError, type StudioWriterRoomErrorCode } from "./studio-writer-room-error";
 
 /**
  * A local, deterministic writer-room document.
@@ -641,7 +643,7 @@ function normalizeTimestamp(value: unknown, fallback = LEGACY_TIMESTAMP): string
 
 function operationTimestamp(value: string): string {
   const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) throw new Error("결정 시각은 유효한 ISO 날짜여야 해요.");
+  if (!Number.isFinite(timestamp)) throw new StudioWriterRoomError("invalidTimestamp");
   return new Date(timestamp).toISOString();
 }
 
@@ -1442,7 +1444,7 @@ export function setStudioWriterRoomStageCompleted(
   stage: StudioWriterRoomStage,
   completed: boolean
 ): StudioWriterRoomDocument {
-  if (!STUDIO_WRITER_ROOM_STAGES.includes(stage)) throw new Error("알 수 없는 Writer Room 단계예요.");
+  if (!STUDIO_WRITER_ROOM_STAGES.includes(stage)) throw new StudioWriterRoomError("unknownStage");
   const document = normalizeStudioWriterRoomDocument(value);
   return finalized({
     ...document,
@@ -1492,16 +1494,16 @@ export function addStudioWriterRoomSuggestion(
   const inspectedInput = inspectSourceWithinByteBudget(input);
   if (!isRecord(inspectedInput)) throw new StudioWriterRoomAdmissionError();
   const id = normalizeSafeId(inspectedInput.id);
-  if (!id) throw new Error("제안 ID 형식이 올바르지 않아요.");
+  if (!id) throw new StudioWriterRoomError("invalidSuggestionId");
   if (document.suggestions.some((suggestion) => suggestion.id === id)) return document;
   const targetPath = normalizeText(inspectedInput.targetPath, 500);
   const target = parseTargetPath(targetPath);
-  if (!target) throw new Error("제안 대상 경로가 허용 목록에 없어요.");
+  if (!target) throw new StudioWriterRoomError("targetNotAllowed");
   const currentValue = findTargetValue(document, target);
-  if (currentValue === undefined) throw new Error("제안 대상이 현재 Writer Room 문서에 없어요.");
+  if (currentValue === undefined) throw new StudioWriterRoomError("targetMissing");
   const proposedValue = coerceTargetValue(target, inspectedInput.proposedValue);
-  if (proposedValue === undefined) throw new Error("제안 값이 대상 필드 형식과 맞지 않아요.");
-  if (valuesEqual(currentValue, proposedValue)) throw new Error("현재 값과 다른 제안 값이 필요해요.");
+  if (proposedValue === undefined) throw new StudioWriterRoomError("valueMismatch");
+  if (valuesEqual(currentValue, proposedValue)) throw new StudioWriterRoomError("sameValue");
   const rationale = normalizeText(
     inspectedInput.rationale,
     STUDIO_WRITER_ROOM_LIMITS.maxRationaleLength
@@ -1509,9 +1511,7 @@ export function addStudioWriterRoomSuggestion(
   const provenanceRef = inspectedInput.provenanceRef === undefined
     ? undefined
     : normalizeProvenanceRef(inspectedInput.provenanceRef);
-  if (inspectedInput.provenanceRef !== undefined && !provenanceRef) {
-    throw new Error("출처 참조 형식이 올바르지 않아요.");
-  }
+  if (inspectedInput.provenanceRef !== undefined && !provenanceRef) throw new StudioWriterRoomError("invalidSourceRef");
   const suggestion: StudioWriterRoomSuggestion = {
     id,
     targetPath,
@@ -1563,7 +1563,7 @@ function decideSuggestions(
   const inspectedSuggestionIds = inspectSourceWithinByteBudget(suggestionIds);
   if (!Array.isArray(inspectedSuggestionIds)) throw new StudioWriterRoomAdmissionError();
   if (inspectedSuggestionIds.length > STUDIO_WRITER_ROOM_LIMITS.maxDecisionBatch) {
-    throw new Error(`한 번에 최대 ${STUDIO_WRITER_ROOM_LIMITS.maxDecisionBatch}개 제안만 결정할 수 있어요.`);
+    throw new StudioWriterRoomError("batchLimit", { max: String(STUDIO_WRITER_ROOM_LIMITS.maxDecisionBatch) });
   }
   const document = normalizeStudioWriterRoomDocument(value);
   const decidedAt = operationTimestamp(decidedAtInput);
@@ -1583,16 +1583,16 @@ function decideSuggestions(
     const targetPaths = new Set<string>();
     for (const suggestion of selected) {
       if (targetPaths.has(suggestion.targetPath)) {
-        throw new Error("한 번의 승인 묶음에서 같은 필드를 두 번 변경할 수 없어요.");
+        throw new StudioWriterRoomError("duplicateFieldInBatch");
       }
       const target = parseTargetPath(suggestion.targetPath);
-      if (!target) throw new Error("승인할 제안의 대상 경로가 올바르지 않아요.");
+      if (!target) throw new StudioWriterRoomError("batchTargetInvalid");
       const currentValue = findTargetValue(document, target);
       if (currentValue === undefined || !valuesEqual(currentValue, suggestion.currentValue)) {
-        throw new Error("제안 이후 대상 값이 바뀌었어요. 새 제안으로 다시 검토해 주세요.");
+        throw new StudioWriterRoomError("targetChanged");
       }
       const proposedValue = coerceTargetValue(target, suggestion.proposedValue);
-      if (proposedValue === undefined) throw new Error("승인할 제안 값이 대상 필드와 맞지 않아요.");
+      if (proposedValue === undefined) throw new StudioWriterRoomError("batchValueMismatch");
       targetPaths.add(suggestion.targetPath);
       targetValues.push({ targetPath: suggestion.targetPath, value: cloneSuggestionValue(currentValue) });
     }
