@@ -9,6 +9,17 @@ import {
 
 import type { BrushProgramIR, DynamicMappingIR } from "@toonstudio/studio-project-model";
 
+import { CspToolFileError } from "./csp-sut-error";
+import {
+  constantMapping,
+  parseCspPressureGraph,
+  pressureMapping,
+  safeScalar,
+} from "./csp-sut-pressure-graph";
+
+export { CspToolFileError, type CspToolFileErrorCode } from "./csp-sut-error";
+export { parseCspPressureGraph, type CspPressureGraph } from "./csp-sut-pressure-graph";
+
 const SQLITE_SIGNATURE = new TextEncoder().encode("SQLite format 3\0");
 const PNG_SIGNATURE = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -111,16 +122,6 @@ export interface CspToolFileImportResult {
   warnings: FormatIssue[];
   unsupported: FormatIssue[];
   sourcePayload: { format: "csp-sut" | "csp-sutg"; base64: string };
-}
-
-export class CspToolFileError extends Error {
-  constructor(
-    message: string,
-    readonly code: "aborted" | "invalid-options" | "source-too-large",
-  ) {
-    super(message);
-    this.name = "CspToolFileError";
-  }
 }
 
 type ResolvedLimits = CspToolFileLimits;
@@ -363,64 +364,6 @@ function stringCell(
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
-export interface CspPressureGraph {
-  version: number;
-  count: number;
-  stride: number;
-  curve: number[];
-}
-
-export function parseCspPressureGraph(bytes: Uint8Array): CspPressureGraph {
-  if (bytes.byteLength < 44) throw new Error("pressure graph is shorter than header + 2 taps");
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const version = view.getUint32(0, false);
-  const count = view.getUint32(4, false);
-  const stride = view.getUint32(8, false);
-  const reserved = [
-    view.getUint32(12, false),
-    view.getUint32(16, false),
-    view.getUint32(20, false),
-    view.getUint32(24, false),
-  ];
-  if (version !== 1) throw new Error(`pressure graph version ${version} is unsupported (v1 only)`);
-  if (count < 2 || count > 4_096 || stride !== 8) {
-    throw new Error(`pressure graph count/stride ${count}/${stride} is unsupported`);
-  }
-  if (reserved.some((value) => value !== 0)) {
-    throw new Error("pressure graph reserved header words are non-zero");
-  }
-  if (bytes.byteLength !== 28 + count * stride) {
-    throw new Error(
-      `pressure graph length ${bytes.byteLength} does not match 28 + ${count}×${stride}`,
-    );
-  }
-  const curve: number[] = [];
-  for (let index = 0; index < count; index += 1) {
-    const value = view.getFloat64(28 + index * stride, false);
-    if (!Number.isFinite(value) || value < 0 || value > 1) {
-      throw new Error(`pressure graph tap ${index} is outside [0,1]`);
-    }
-    curve.push(value);
-  }
-  return { version, count, stride, curve };
-}
-
-function constantMapping(value: number): DynamicMappingIR {
-  return { input: "constant", curve: [value, value], min: 0, max: 1 };
-}
-
-function pressureMapping(curve: number[]): DynamicMappingIR {
-  return { input: "pressure", curve, min: 0, max: 1 };
-}
-
-function safeScalar(
-  value: number | null,
-  minimum: number,
-  maximum: number,
-): number | null {
-  return value !== null && value >= minimum && value <= maximum ? value : null;
-}
-
 const PNG_CRC_TABLE = (() => {
   const table = new Uint32Array(256);
   for (let index = 0; index < 256; index += 1) {
@@ -498,7 +441,10 @@ function extractValidatedPngs(
 
 function validateSnapshot(snapshot: CspSqliteSnapshot, limits: ResolvedLimits): void {
   if (!Array.isArray(snapshot.tables) || snapshot.tables.length > limits.maxTables) {
-    throw new Error("SQLite reader returned too many tables or a malformed table list");
+    throw new CspToolFileError(
+      "SQLite reader returned too many tables or a malformed table list",
+      "snapshot-invalid-structure",
+    );
   }
   let totalRows = 0;
   const tableNames = new Set<string>();
@@ -511,23 +457,42 @@ function validateSnapshot(snapshot: CspSqliteSnapshot, limits: ResolvedLimits): 
       table.columns.length > limits.maxColumnsPerTable ||
       !Array.isArray(table.rows)
     ) {
-      throw new Error("SQLite reader returned a malformed table snapshot");
+      throw new CspToolFileError(
+        "SQLite reader returned a malformed table snapshot",
+        "snapshot-invalid-structure",
+      );
     }
     tableNames.add(table.name);
     const columns = new Set(table.columns);
     if (columns.size !== table.columns.length || table.columns.some((column) => typeof column !== "string")) {
-      throw new Error(`SQLite table ${table.name} has invalid columns`);
+      throw new CspToolFileError(
+        `SQLite table ${table.name} has invalid columns`,
+        "snapshot-invalid-structure",
+      );
     }
     totalRows += table.rows.length;
-    if (totalRows > limits.maxRows) throw new Error("SQLite reader returned too many rows");
+    if (totalRows > limits.maxRows) {
+      throw new CspToolFileError("SQLite reader returned too many rows", "snapshot-limit-exceeded");
+    }
     for (const row of table.rows) {
       for (const [column, value] of Object.entries(row)) {
-        if (!columns.has(column)) throw new Error(`SQLite row uses undeclared column ${column}`);
+        if (!columns.has(column)) {
+          throw new CspToolFileError(
+            `SQLite row uses undeclared column ${column}`,
+            "snapshot-invalid-structure",
+          );
+        }
         if (typeof value === "string" && value.length > limits.maxTextCharacters) {
-          throw new Error(`SQLite text cell ${table.name}.${column} exceeds its safety limit`);
+          throw new CspToolFileError(
+            `SQLite text cell ${table.name}.${column} exceeds its safety limit`,
+            "snapshot-limit-exceeded",
+          );
         }
         if (value instanceof Uint8Array && value.byteLength > limits.maxBlobBytes) {
-          throw new Error(`SQLite blob cell ${table.name}.${column} exceeds its safety limit`);
+          throw new CspToolFileError(
+            `SQLite blob cell ${table.name}.${column} exceeds its safety limit`,
+            "snapshot-limit-exceeded",
+          );
         }
         if (
           value !== null &&
@@ -536,7 +501,10 @@ function validateSnapshot(snapshot: CspSqliteSnapshot, limits: ResolvedLimits): 
           typeof value !== "bigint" &&
           !(value instanceof Uint8Array)
         ) {
-          throw new Error(`SQLite cell ${table.name}.${column} has an invalid value type`);
+          throw new CspToolFileError(
+            `SQLite cell ${table.name}.${column} has an invalid value type`,
+            "snapshot-invalid-structure",
+          );
         }
       }
     }

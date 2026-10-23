@@ -465,12 +465,14 @@ export async function importStudioCspToolBytes(
     parsed = await importCspToolFile(bytes, { kind, sqliteReader, signal });
   } catch (cause) {
     if (cause instanceof CspToolFileError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화하고, 하위 파서의 동적
-      // 문자열은 params.detail 패스스루, kind는 식별자 params로 싣는다.
+      // A4 D4 조건부 묶음 7호 (R21): 하위 파서 코드를 params.causeCode로
+      // 전파한다(파서 접두 포함). detail은 병행 유지 — 표시 지점 리졸버가
+      // causeCode를 gateway 구간 키로 해석해 detail을 대체하고, 해석할 수
+      // 없는 코드(csp:aborted 등 표시 제외)에서는 detail이 그대로 남는다.
       throw new StudioBrushProgramImportError(
         "cspReadFailed",
         kind,
-        { kind: kind.toUpperCase(), detail: ` ${cause.message}` },
+        { kind: kind.toUpperCase(), detail: ` ${cause.message}`, causeCode: `csp:${cause.code}` },
         { cause },
       );
     }
@@ -521,11 +523,11 @@ export async function importStudioKritaBundleBytes(
     parsed = await parseBundle(bytes, options);
   } catch (cause) {
     if (cause instanceof KritaBundleError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
+      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
       throw new StudioBrushProgramImportError(
         "bundleReadFailed",
         "bundle",
-        { detail: ` ${cause.message}` },
+        { detail: ` ${cause.message}`, causeCode: `bundle:${cause.code}` },
         { cause },
       );
     }
@@ -578,11 +580,12 @@ export function importStudioMybBytes(
     parsed = importMybBrush(bytes, presetId, presetDisplayName("", fileName));
   } catch (error) {
     if (error instanceof MybParseError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
+      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
+      // 단 동적 삽입분(UTF-8 디코더·zod 원문)은 생산자 message에 그대로 남는 잔존이다.
       throw new StudioBrushProgramImportError(
         "mybReadFailed",
         "myb",
-        { detail: ` ${error.message}` },
+        { detail: ` ${error.message}`, causeCode: `myb:${error.code}` },
         { cause: error },
       );
     }
@@ -623,11 +626,11 @@ export function importStudioKppBytes(
     parsed = parseKppPreset(bytes);
   } catch (error) {
     if (error instanceof KppParseError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
+      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
       throw new StudioBrushProgramImportError(
         "kppReadFailed",
         "kpp",
-        { detail: ` ${error.message}` },
+        { detail: ` ${error.message}`, causeCode: `kpp:${error.code}` },
         { cause: error },
       );
     }

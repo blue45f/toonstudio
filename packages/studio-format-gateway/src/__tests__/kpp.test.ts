@@ -279,6 +279,22 @@ describe("kpp mypaintbrush delegation", () => {
     });
     expect(errorFrom(() => parseKppPreset(empty)).code).toBe("malformed-preset");
   });
+
+  it("wraps a myb-lane rejection as malformed-preset and keeps the lane detail in the message (R21)", () => {
+    const badJson = buildKppFile({
+      presetXml: serializeKppPresetXml({
+        name: "Bad Delegated",
+        paintopid: "mypaintbrush",
+        params: [
+          { name: "mypaint_json", type: "string", value: '{"version":3}' },
+        ],
+      }),
+    });
+    const error = errorFrom(() => parseKppPreset(badJson));
+    expect(error.code).toBe("malformed-preset");
+    // 하위 myb 레인의 동적 상세(zod 원문 포함)는 message에 남는 잔존이다.
+    expect(error.message).toContain("mypaint_json rejected by the myb lane: not a .myb v3 document:");
+  });
 });
 
 describe("kpp foreign paintop engines", () => {
