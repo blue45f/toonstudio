@@ -1,6 +1,7 @@
 import { BookOpen, Bot, Boxes, Brush, ClipboardCheck, FileOutput, Map as MapIcon, PanelsTopLeft, Sparkles, Users, Workflow, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { useReducedMotionPreference } from "@/shared/ambient/useAmbientExperience";
 import { WorkflowIllustration } from "@/shared/components/site-experience/WorkflowIllustration";
 import type { WorkflowVisual } from "@/shared/components/site-experience/workflow-illustration";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
@@ -163,6 +164,7 @@ export function StudioIntroHeroStage({
 /** 제작 흐름 6단계 카드. 단계마다 기존 워크플로 일러스트 세트를 그대로 쓴다. */
 export function StudioIntroFlow() {
   const bi = useBilingualLocalizer(SCOPE);
+  const reducedMotion = useReducedMotionPreference();
   return (
     <section id="creator-flow" className="cf-shell mt-14 sm:mt-20" aria-labelledby="creator-process-title">
       <IntroSectionHeading
@@ -180,7 +182,8 @@ export function StudioIntroFlow() {
           const backdrop = step.art === "create" ? PRODUCT_TOUR_TRANSITION_BG3D_CLIP : null;
           return (
             <li key={step.art} className={`${INTRO_CARD} grid min-w-0 gap-3 p-4 ${backdrop ? "studio-flow-card--clip relative overflow-hidden" : ""}`}>
-              {backdrop ? (
+              {/* 움직임 최소화를 선호하면 영상 요소를 만들지 않는다 — CSS 로 숨기기만 하면 <video> 와 내려받기가 남는다. */}
+              {backdrop && !reducedMotion ? (
                 <div className="studio-flow-card__media" aria-hidden="true">
                   <video
                     autoPlay
@@ -279,27 +282,31 @@ function BridgeRow({ item }: { readonly item: BridgeItem }) {
 /**
  * 마감: 소개 서사의 끝 문장과 시작 행동. 밝은 낮의 스튜디오 파노라마(생성형 AI
  * 영상)를 밴드 배경으로 깔고, 성격은 배지로 밝힌다. 장식 영상이라 본문
- * 흐름에서 빼고 움직임 최소화를 선호하면 숨긴다(다른 표면과 같은 계약).
+ * 흐름에서 빼고, 움직임 최소화를 선호하면 영상 요소를 만들지 않는다
+ * (CSS 로 숨기기만 하면 내려받기가 남는다).
  * 소개 여정 페이저는 호출부가 아래에 붙인다.
  */
 export function StudioIntroClosing() {
   const bi = useBilingualLocalizer(SCOPE);
+  const reducedMotion = useReducedMotionPreference();
   return (
     <section className="cf-shell mt-14 sm:mt-20" aria-labelledby="creator-closing-title">
       <div className="relative isolate overflow-hidden rounded-[2rem] border border-line/70 px-6 py-10 sm:px-10 sm:py-12">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-hidden="true"
-          tabIndex={-1}
-          src={STUDIO_INTRO_CLOSING_CLIP.src}
-          width={STUDIO_INTRO_CLOSING_CLIP.width}
-          height={STUDIO_INTRO_CLOSING_CLIP.height}
-          className="absolute inset-0 -z-10 h-full w-full object-cover opacity-50 motion-reduce:hidden"
-        />
+        {reducedMotion ? null : (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+            tabIndex={-1}
+            src={STUDIO_INTRO_CLOSING_CLIP.src}
+            width={STUDIO_INTRO_CLOSING_CLIP.width}
+            height={STUDIO_INTRO_CLOSING_CLIP.height}
+            className="absolute inset-0 -z-10 h-full w-full object-cover opacity-50"
+          />
+        )}
         <div
           aria-hidden="true"
           className="absolute inset-0 -z-10 bg-gradient-to-r from-canvas/85 via-canvas/70 to-canvas/40"

@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "Составить план (платно)",
   "claudeAssist.plan.planning": "Составление плана.",
   "claudeAssist.plan.stopped": "Составление плана было остановлено. Уже обработанная часть всё ещё могла быть оплачена. Попробуйте снова, когда будете готовы.",
-  "claudeAssist.plan.candidates": "Отправлено доступных команд: {count}.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "Сейчас ИИ недоступна ни одна команда. Откройте это снова с экрана студии.",
   "claudeAssist.plan.intent": "Что я понял",
   "claudeAssist.plan.stepsTitle": "Предложенные шаги",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "Выполнить сейчас",
   "claudeAssist.plan.menuOnly": "Использовать меню",
   "claudeAssist.plan.followUpsTitle": "Вы также могли бы спросить",
-  "claudeAssist.plan.preflightTransferDo": "Ваш запрос и названия, описания и сочетания доступных команд: {count}",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "Ваш вопрос и названия, описания и сочетания функций студии: {count}",
   "claudeAssist.plan.preflightTime": "Обычно от нескольких секунд до десяти с лишним. Если не завершится через 3 минуты, остановится и сообщит вам.",
   "claudeAssist.plan.preflightOutputDo": "Один предложенный порядок команд (выполнение вы подтверждаете отдельно)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "Изображение очень высокое: только верхние {covered}px ({percent}%) из его высоты {total}px можно разделить на разделы. Обрежьте остальное и загрузите снова.",
   "claudeAssist.localize.sameLanguage": "Исходный и целевой языки одинаковы. Измените один из них.",
   "claudeAssist.localize.glossaryDuplicate": "Строк, повторяющих исходный термин, уже указанный выше: {count}, поэтому используется только первая.",
-  "claudeAssist.localize.manyLinesHint": "Это много строк ({count}). Перевод примерно по 25 за раз снижает вероятность обрезки ответа, а результат легче проверить.",
-  "claudeAssist.localize.indexShifted": "Claude пронумеровал строки с 0, поэтому они были сдвинуты на единицу для выравнивания. Проверьте, пожалуйста, что каждая исходная строка и перевод правильно сопоставлены."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude пронумеровал строки с 0, поэтому они были сдвинуты на единицу для выравнивания. Проверьте, пожалуйста, что каждая исходная строка и перевод правильно сопоставлены.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

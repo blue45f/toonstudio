@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "Buat pelan (dibilkan)",
   "claudeAssist.plan.planning": "Sedang membuat pelan.",
   "claudeAssist.plan.stopped": "Pembuatan pelan telah dihentikan. Bahagian yang sudah diproses mungkin tetap dibilkan. Cuba lagi apabila anda sudah bersedia.",
-  "claudeAssist.plan.candidates": "{count} perintah tersedia telah dihantar.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "Tiada perintah yang tersedia untuk AI sekarang. Buka semula dari skrin studio.",
   "claudeAssist.plan.intent": "Pemahaman saya",
   "claudeAssist.plan.stepsTitle": "Langkah yang dicadangkan",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "Jalankan sekarang",
   "claudeAssist.plan.menuOnly": "Gunakan menu",
   "claudeAssist.plan.followUpsTitle": "Anda juga boleh bertanya",
-  "claudeAssist.plan.preflightTransferDo": "Permintaan anda serta nama, huraian dan pintasan bagi {count} perintah yang tersedia",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "Soalan anda serta nama, huraian dan pintasan bagi {count} ciri studio",
   "claudeAssist.plan.preflightTime": "Biasanya beberapa saat hingga belasan saat. Jika tidak selesai selepas 3 minit, proses akan berhenti dan memaklumkan anda.",
   "claudeAssist.plan.preflightOutputDo": "Satu cadangan susunan perintah (anda sahkan pelaksanaannya secara berasingan)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "Imej sangat tinggi: hanya {covered}px teratas ({percent}%) daripada ketinggian {total}px yang boleh dibahagikan kepada bahagian. Potong selebihnya dan muat naik semula.",
   "claudeAssist.localize.sameLanguage": "Bahasa sumber dan bahasa sasaran adalah sama. Tukar salah satu daripadanya.",
   "claudeAssist.localize.glossaryDuplicate": "{count} baris mengulangi istilah sumber yang sudah disenaraikan di atas, jadi hanya yang pertama digunakan.",
-  "claudeAssist.localize.manyLinesHint": "Itu banyak baris ({count}). Menterjemah kira-kira 25 baris pada satu masa mengurangkan kemungkinan jawapan terpotong, dan hasilnya lebih mudah disemak.",
-  "claudeAssist.localize.indexShifted": "Claude menomborkan baris dari 0, jadi baris telah dialihkan sebanyak satu untuk diselaraskan. Sila semak bahawa setiap baris sumber dan terjemahannya dipasangkan dengan betul."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude menomborkan baris dari 0, jadi baris telah dialihkan sebanyak satu untuk diselaraskan. Sila semak bahawa setiap baris sumber dan terjemahannya dipasangkan dengan betul.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

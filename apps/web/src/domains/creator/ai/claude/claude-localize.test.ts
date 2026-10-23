@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildLocalizeChunkRequest,
   buildLocalizeRequest,
   displayWidth,
   exceedsBudget,
@@ -12,11 +13,15 @@ import {
   localizeToJson,
   localizeToPlainText,
   localizeToTsv,
+  LOCALIZE_CHUNK_LINES,
+  mergeLocalizeViews,
   missingGlossaryTerms,
   normalizeLocalizeResult,
   parseGlossary,
   parseLocalizeLines,
+  planLocalizeChunks,
   widthRatio,
+  withMissingLocalizeLines,
   type LocalizeInput,
   type LocalizeRaw,
 } from "./claude-localize";
@@ -383,5 +388,84 @@ describe("내보내기", () => {
 
   it("JSON에는 방향과 줄을 담는다", () => {
     expect(JSON.parse(localizeToJson(lines, { sourceLang: "ko", targetLang: "en" }))).toEqual({ sourceLang: "ko", targetLang: "en", lines });
+  });
+});
+
+describe("묶음 나누기", () => {
+  it("25줄 이하는 한 묶음, 넘으면 같은 크기로 나눈다", () => {
+    expect(planLocalizeChunks(0)).toEqual([]);
+    expect(planLocalizeChunks(1)).toEqual([{ start: 0, end: 1 }]);
+    expect(planLocalizeChunks(LOCALIZE_CHUNK_LINES)).toEqual([{ start: 0, end: 25 }]);
+    expect(planLocalizeChunks(26)).toEqual([{ start: 0, end: 13 }, { start: 13, end: 26 }]);
+    expect(planLocalizeChunks(50)).toEqual([{ start: 0, end: 25 }, { start: 25, end: 50 }]);
+    expect(planLocalizeChunks(51).map((chunk) => chunk.end - chunk.start)).toEqual([17, 17, 17]);
+  });
+
+  it("어떤 줄 수든 묶음이 빠짐·겹침 없이 모든 줄을 덮고 25줄을 넘지 않는다", () => {
+    for (let count = 1; count <= 120; count += 1) {
+      const chunks = planLocalizeChunks(count);
+      expect(chunks[0]?.start).toBe(0);
+      expect(chunks.at(-1)?.end).toBe(count);
+      chunks.forEach((chunk, index) => {
+        expect(chunk.end - chunk.start).toBeGreaterThan(0);
+        expect(chunk.end - chunk.start).toBeLessThanOrEqual(LOCALIZE_CHUNK_LINES);
+        if (index > 0) expect(chunk.start).toBe(chunks[index - 1]?.end);
+      });
+    }
+  });
+
+  it("묶음 요청은 묶음 안에서 1부터 번호를 매기고 전체 위치와 앞 문맥을 알린다", () => {
+    const lines = Array.from({ length: 40 }, (_, index) => `줄${index + 1}`);
+    const request = buildLocalizeChunkRequest("claude-opus-5-5", { ...INPUT, lines }, "medium", { start: 20, end: 40 });
+    const text = String(request.messages[0]?.content);
+    expect(text).toContain("전체 40줄 중 21~40번째 줄");
+    expect(text).toContain("앞 문맥(번역하지 말고");
+    expect(text).toContain("- 줄18\n- 줄19\n- 줄20");
+    expect(text).toContain("1. 줄21");
+    expect(text).toContain("20. 줄40");
+    expect(text).not.toContain("21. 줄");
+    expect(request.max_tokens).toBe(localizeMaxOutputTokens(20));
+    // 용어집·말투 같은 공통 머리말은 묶음마다 그대로 들어간다.
+    expect(text).toContain("지훈 = Jihoon");
+  });
+
+  it("첫 묶음에는 앞 문맥이 없고, 전체와 같은 묶음은 한 번에 보내는 요청과 같다", () => {
+    const lines = Array.from({ length: 40 }, (_, index) => `줄${index + 1}`);
+    const first = String(buildLocalizeChunkRequest("claude-opus-5-5", { ...INPUT, lines }, "medium", { start: 0, end: 20 }).messages[0]?.content);
+    expect(first).toContain("전체 40줄 중 1~20번째 줄");
+    expect(first).not.toContain("앞 문맥");
+    expect(buildLocalizeChunkRequest("claude-opus-5-5", INPUT, "medium", { start: 0, end: 3 })).toEqual(buildLocalizeRequest("claude-opus-5-5", INPUT, "medium"));
+  });
+});
+
+describe("묶음 결과 합치기", () => {
+  const raw = (count: number): LocalizeRaw => ({
+    items: Array.from({ length: count }, (_, index) => ({ index: index + 1, translation: `T${index + 1}`, shorter: null, note: null })),
+    warnings: ["공통 경고"],
+  });
+
+  it("묶음 안의 번호를 전체 번호로 옮기고 경고·집계를 합친다", () => {
+    const sources = Array.from({ length: 6 }, (_, index) => `줄${index + 1}`);
+    const first = normalizeLocalizeResult({ ...raw(3), items: [...raw(3).items, { index: 9, translation: "버려질 항목", shorter: null, note: null }] }, { lines: sources.slice(0, 3) });
+    const second = normalizeLocalizeResult(raw(3), { lines: sources.slice(3) });
+
+    const merged = mergeLocalizeViews([{ chunk: { start: 0, end: 3 }, view: first }, { chunk: { start: 3, end: 6 }, view: second }]);
+
+    expect(merged.lines.map((line) => [line.index, line.source, line.translation])).toEqual([
+      [1, "줄1", "T1"], [2, "줄2", "T2"], [3, "줄3", "T3"], [4, "줄4", "T1"], [5, "줄5", "T2"], [6, "줄6", "T3"],
+    ]);
+    expect(merged.warnings).toEqual(["공통 경고"]);
+    expect(merged.discarded).toBe(1);
+  });
+
+  it("끝난 묶음만 있는 결과에 남은 줄을 '빠졌어요'로 채운다", () => {
+    const sources = ["가", "나", "다", "라"];
+    const done = normalizeLocalizeResult(raw(2), { lines: sources.slice(0, 2) });
+    const merged = mergeLocalizeViews([{ chunk: { start: 0, end: 2 }, view: done }]);
+
+    const filled = withMissingLocalizeLines(merged, sources);
+
+    expect(filled.lines.map((line) => [line.index, line.missing])).toEqual([[1, false], [2, false], [3, true], [4, true]]);
+    expect(filled.lines[2]).toMatchObject({ source: "다", translation: "" });
   });
 });

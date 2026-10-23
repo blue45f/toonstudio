@@ -22,8 +22,8 @@ export interface ClaudeCommandRequestPanelProps {
   readonly examples: readonly string[];
   readonly recents: readonly string[];
   readonly onClearRecents: () => void;
-  /** 도우미가 보내는 항목 수(실행 모드는 실행 가능한 명령, 알려 줘 모드는 카탈로그 전체). */
-  readonly itemCount: number;
+  /** 입력칸 아래에 보이는 "무엇을 몇 개 보냈는지" 한 줄(없으면 쓸 수 있는 명령이 없다는 안내). 호출자가 번역해 넘긴다. */
+  readonly countText: string;
   readonly textareaRef?: RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -40,7 +40,7 @@ export function ClaudeCommandRequestPanel({
   examples,
   recents,
   onClearRecents,
-  itemCount,
+  countText,
   textareaRef,
 }: ClaudeCommandRequestPanelProps) {
   const t = useT();
@@ -89,9 +89,7 @@ export function ClaudeCommandRequestPanel({
           onChange={(event) => onRequest(event.target.value)}
         />
         <p className="mt-1 text-xs text-fg-3">
-          {itemCount > 0
-            ? t(mode === "do" ? "claudeAssist.plan.candidates" : "claudeAssist.plan.knowledgeCount", { count: itemCount })
-            : t("claudeAssist.plan.noCandidates")}
+          {countText}
         </p>
       </div>
 

@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "Plan maken (betaald)",
   "claudeAssist.plan.planning": "Plan wordt gemaakt.",
   "claudeAssist.plan.stopped": "Het plannen is gestopt. Het deel dat al is verwerkt, kan toch in rekening zijn gebracht. Probeer het opnieuw wanneer je er klaar voor bent.",
-  "claudeAssist.plan.candidates": "{count} beschikbare opdrachten verzonden.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "Er zijn momenteel geen opdrachten beschikbaar voor de AI. Open dit opnieuw vanuit het studioscherm.",
   "claudeAssist.plan.intent": "Wat ik heb begrepen",
   "claudeAssist.plan.stepsTitle": "Voorgestelde stappen",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "Nu uitvoeren",
   "claudeAssist.plan.menuOnly": "Gebruik het menu",
   "claudeAssist.plan.followUpsTitle": "Je kunt ook vragen",
-  "claudeAssist.plan.preflightTransferDo": "Je verzoek en de namen, beschrijvingen en sneltoetsen van {count} beschikbare opdrachten",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "Je vraag en de namen, beschrijvingen en sneltoetsen van {count} studiofuncties",
   "claudeAssist.plan.preflightTime": "Meestal een paar seconden tot ruim tien seconden. Als het na 3 minuten niet klaar is, stopt het en krijg je bericht.",
   "claudeAssist.plan.preflightOutputDo": "Eén voorgestelde volgorde van opdrachten (uitvoeren bevestig je apart)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "De afbeelding is erg hoog: alleen de bovenste {covered}px ({percent}%) van de totale hoogte van {total}px kan in delen worden gesplitst. Knip de rest bij en upload deze opnieuw.",
   "claudeAssist.localize.sameLanguage": "De bron- en doeltaal zijn hetzelfde. Wijzig een van beide.",
   "claudeAssist.localize.glossaryDuplicate": "{count} regel(s) herhalen een bronterm die hierboven al staat, dus alleen de eerste wordt gebruikt.",
-  "claudeAssist.localize.manyLinesHint": "Dat zijn veel regels ({count}). Door ongeveer 25 tegelijk te vertalen, is de kans kleiner dat het antwoord wordt afgebroken en is het resultaat gemakkelijker te controleren.",
-  "claudeAssist.localize.indexShifted": "Claude nummerde de regels vanaf 0, dus ze zijn met één verschoven om op één lijn te komen. Controleer of elke bronregel en vertaling correct aan elkaar zijn gekoppeld."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude nummerde de regels vanaf 0, dus ze zijn met één verschoven om op één lijn te komen. Controleer of elke bronregel en vertaling correct aan elkaar zijn gekoppeld.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

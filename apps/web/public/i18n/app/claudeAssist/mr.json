@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "योजना बनवा (शुल्क आकारले जाईल)",
   "claudeAssist.plan.planning": "योजना बनवत आहे.",
   "claudeAssist.plan.stopped": "नियोजन थांबवले गेले. आधीच प्रक्रिया झालेल्या भागाचे बिल आकारले गेले असेल. तयार असाल तेव्हा पुन्हा प्रयत्न करा.",
-  "claudeAssist.plan.candidates": "उपलब्ध {count} कमांड पाठवल्या.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "सध्या AI कडे कोणत्याही कमांड उपलब्ध नाहीत. स्टुडिओ स्क्रीनवरून हे पुन्हा उघडा.",
   "claudeAssist.plan.intent": "मला काय समजले",
   "claudeAssist.plan.stepsTitle": "प्रस्तावित पावले",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "आता चालवा",
   "claudeAssist.plan.menuOnly": "मेनू वापरा",
   "claudeAssist.plan.followUpsTitle": "तुम्ही असेही विचारू शकता",
-  "claudeAssist.plan.preflightTransferDo": "तुमची विनंती आणि उपलब्ध {count} कमांडची नावे, वर्णने आणि शॉर्टकट",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "तुमचा प्रश्न आणि {count} स्टुडिओ वैशिष्ट्यांची नावे, वर्णने आणि शॉर्टकट",
   "claudeAssist.plan.preflightTime": "सहसा काही सेकंद ते दहा-एक सेकंद. 3 मिनिटांनंतर पूर्ण न झाल्यास ते थांबते आणि तुम्हाला सांगते.",
   "claudeAssist.plan.preflightOutputDo": "कमांडचा एक प्रस्तावित क्रम (चालवण्याची पुष्टी स्वतंत्रपणे करता)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "प्रतिमा खूप उंच आहे: तिच्या {total}px उंचीपैकी फक्त वरचे {covered}px ({percent}%) विभागांमध्ये विभागता येतात. उरलेला भाग कापा आणि पुन्हा अपलोड करा.",
   "claudeAssist.localize.sameLanguage": "स्रोत आणि लक्ष्य भाषा एकच आहेत. त्यापैकी एक बदला.",
   "claudeAssist.localize.glossaryDuplicate": "{count} ओळ(ओळी) वर आधीच सूचीबद्ध असलेली स्रोत संज्ञा पुन्हा देतात, त्यामुळे फक्त पहिलीच वापरली जाते.",
-  "claudeAssist.localize.manyLinesHint": "त्या खूप ओळी आहेत ({count}). एकावेळी सुमारे 25 भाषांतर केल्यास उत्तर कापले जाण्याची शक्यता कमी होते आणि निकाल तपासणे सोपे जाते.",
-  "claudeAssist.localize.indexShifted": "Claude ने ओळी 0 पासून क्रमांक दिले, त्यामुळे त्या जुळण्यासाठी एकने सरकवल्या. कृपया प्रत्येक स्रोत ओळ आणि भाषांतर योग्यरित्या जोडले गेले आहे का ते तपासा."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude ने ओळी 0 पासून क्रमांक दिले, त्यामुळे त्या जुळण्यासाठी एकने सरकवल्या. कृपया प्रत्येक स्रोत ओळ आणि भाषांतर योग्यरित्या जोडले गेले आहे का ते तपासा.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "திட்டத்தை உருவாக்கவும் (கட்டணம் உண்டு)",
   "claudeAssist.plan.planning": "திட்டத்தை உருவாக்குகிறது.",
   "claudeAssist.plan.stopped": "திட்டமிடல் நிறுத்தப்பட்டது. ஏற்கனவே செயலாக்கப்பட்ட பகுதிக்கு இன்னும் கட்டணம் வசூலிக்கப்பட்டிருக்கலாம். நீங்கள் தயாரானதும் மீண்டும் முயற்சிக்கவும்.",
-  "claudeAssist.plan.candidates": "கிடைக்கக்கூடிய {count} கட்டளைகள் அனுப்பப்பட்டன.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "இப்போது AI க்குக் கட்டளைகள் எதுவும் கிடைக்கவில்லை. ஸ்டுடியோ திரையிலிருந்து இதை மீண்டும் திறக்கவும்.",
   "claudeAssist.plan.intent": "நான் புரிந்துகொண்டது",
   "claudeAssist.plan.stepsTitle": "முன்மொழியப்பட்ட படிகள்",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "இப்போது இயக்கவும்",
   "claudeAssist.plan.menuOnly": "பட்டியலைப் பயன்படுத்தவும்",
   "claudeAssist.plan.followUpsTitle": "நீங்கள் இதையும் கேட்கலாம்",
-  "claudeAssist.plan.preflightTransferDo": "உங்கள் கோரிக்கை மற்றும் கிடைக்கக்கூடிய {count} கட்டளைகளின் பெயர்கள், விளக்கங்கள் மற்றும் குறுக்குவழிகள்",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "உங்கள் கேள்வி மற்றும் {count} ஸ்டுடியோ அம்சங்களின் பெயர்கள், விளக்கங்கள் மற்றும் குறுக்குவழிகள்",
   "claudeAssist.plan.preflightTime": "வழக்கமாக சில வினாடிகள் முதல் பத்து வினாடிகளுக்கு மேல். 3 நிமிடங்களுக்குப் பிறகும் அது முடியவில்லை என்றால், அது நின்று உங்களுக்குத் தெரிவிக்கும்.",
   "claudeAssist.plan.preflightOutputDo": "கட்டளைகளின் முன்மொழியப்பட்ட ஒரு வரிசை (இயக்குவதை நீங்கள் தனியாக உறுதிப்படுத்துகிறீர்கள்)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "படம் மிக உயரமாக உள்ளது: அதன் {total}px உயரத்தில் மேல் {covered}px ({percent}%) மட்டுமே பிரிவுகளாகப் பிரிக்க முடியும். மீதியை வெட்டி மீண்டும் பதிவேற்றவும்.",
   "claudeAssist.localize.sameLanguage": "மூல மற்றும் இலக்கு மொழிகள் ஒன்றே. அவற்றில் ஒன்றை மாற்றவும்.",
   "claudeAssist.localize.glossaryDuplicate": "{count} வரி(கள்) மேலே ஏற்கனவே பட்டியலிடப்பட்ட மூலச் சொல்லை மீண்டும் கூறுகின்றன, எனவே முதலாவது மட்டுமே பயன்படுத்தப்படும்.",
-  "claudeAssist.localize.manyLinesHint": "அது நிறைய வரிகள் ({count}). ஒரு நேரத்தில் சுமார் 25 ஐ மொழிபெயர்ப்பது பதில் துண்டிக்கப்படுவதற்கான வாய்ப்பைக் குறைக்கிறது, முடிவைச் சரிபார்ப்பதையும் எளிதாக்குகிறது.",
-  "claudeAssist.localize.indexShifted": "Claude வரிகளை 0 இலிருந்து எண்ணியது, எனவே அவை பொருந்த ஒன்றால் மாற்றப்பட்டன. ஒவ்வொரு மூல வரியும் மொழிபெயர்ப்பும் சரியாக இணைக்கப்பட்டுள்ளதா என்று சரிபார்க்கவும்."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude வரிகளை 0 இலிருந்து எண்ணியது, எனவே அவை பொருந்த ஒன்றால் மாற்றப்பட்டன. ஒவ்வொரு மூல வரியும் மொழிபெயர்ப்பும் சரியாக இணைக்கப்பட்டுள்ளதா என்று சரிபார்க்கவும்.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

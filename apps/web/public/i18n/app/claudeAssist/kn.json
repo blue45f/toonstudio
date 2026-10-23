@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "ಯೋಜನೆ ಮಾಡಿ (ಬಿಲ್ ಆಗುತ್ತದೆ)",
   "claudeAssist.plan.planning": "ಯೋಜನೆ ಮಾಡಲಾಗುತ್ತಿದೆ.",
   "claudeAssist.plan.stopped": "ಯೋಜನೆಯನ್ನು ನಿಲ್ಲಿಸಲಾಗಿದೆ. ಈಗಾಗಲೇ ಸಂಸ್ಕರಿಸಿದ ಭಾಗಕ್ಕೆ ಇನ್ನೂ ಬಿಲ್ ಆಗಿರಬಹುದು. ನೀವು ಸಿದ್ಧರಾದಾಗ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-  "claudeAssist.plan.candidates": "{count} ಲಭ್ಯವಿರುವ ಆಜ್ಞೆಗಳನ್ನು ಕಳುಹಿಸಲಾಗಿದೆ.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "ಈಗ AI ಗೆ ಯಾವುದೇ ಆಜ್ಞೆಗಳು ಲಭ್ಯವಿಲ್ಲ. ಸ್ಟುಡಿಯೋ ಪರದೆಯಿಂದ ಇದನ್ನು ಮತ್ತೆ ತೆರೆಯಿರಿ.",
   "claudeAssist.plan.intent": "ನಾನು ಅರ್ಥಮಾಡಿಕೊಂಡದ್ದು",
   "claudeAssist.plan.stepsTitle": "ಪ್ರಸ್ತಾವಿತ ಹಂತಗಳು",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "ಈಗ ಚಲಾಯಿಸಿ",
   "claudeAssist.plan.menuOnly": "ಮೆನು ಬಳಸಿ",
   "claudeAssist.plan.followUpsTitle": "ನೀವು ಇದನ್ನೂ ಕೇಳಬಹುದು",
-  "claudeAssist.plan.preflightTransferDo": "ನಿಮ್ಮ ವಿನಂತಿ ಮತ್ತು {count} ಲಭ್ಯವಿರುವ ಆಜ್ಞೆಗಳ ಹೆಸರುಗಳು, ವಿವರಣೆಗಳು ಮತ್ತು ಶಾರ್ಟ್‌ಕಟ್‌ಗಳು",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಮತ್ತು {count} ಸ್ಟುಡಿಯೋ ವೈಶಿಷ್ಟ್ಯಗಳ ಹೆಸರುಗಳು, ವಿವರಣೆಗಳು ಮತ್ತು ಶಾರ್ಟ್‌ಕಟ್‌ಗಳು",
   "claudeAssist.plan.preflightTime": "ಸಾಮಾನ್ಯವಾಗಿ ಕೆಲವು ಸೆಕೆಂಡುಗಳಿಂದ ಹತ್ತಾರು ಸೆಕೆಂಡುಗಳು. 3 ನಿಮಿಷಗಳ ನಂತರ ಅದು ಪೂರ್ಣಗೊಳ್ಳದಿದ್ದರೆ, ಅದು ನಿಲ್ಲುತ್ತದೆ ಮತ್ತು ನಿಮಗೆ ತಿಳಿಸುತ್ತದೆ.",
   "claudeAssist.plan.preflightOutputDo": "ಆಜ್ಞೆಗಳ ಒಂದು ಪ್ರಸ್ತಾವಿತ ಕ್ರಮ (ಚಲಾಯಿಸುವುದನ್ನು ನೀವು ಪ್ರತ್ಯೇಕವಾಗಿ ದೃಢೀಕರಿಸುತ್ತೀರಿ)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "ಚಿತ್ರವು ತುಂಬಾ ಎತ್ತರವಾಗಿದೆ: ಅದರ {total}px ಎತ್ತರದಲ್ಲಿ ಕೇವಲ ಮೇಲಿನ {covered}px ({percent}%) ಅನ್ನು ಮಾತ್ರ ವಿಭಾಗಗಳಾಗಿ ವಿಭಜಿಸಬಹುದು. ಉಳಿದದ್ದನ್ನು ಕತ್ತರಿಸಿ ಮತ್ತು ಅದನ್ನು ಮತ್ತೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
   "claudeAssist.localize.sameLanguage": "ಮೂಲ ಮತ್ತು ಗುರಿ ಭಾಷೆಗಳು ಒಂದೇ ಆಗಿವೆ. ಅವುಗಳಲ್ಲಿ ಒಂದನ್ನು ಬದಲಾಯಿಸಿ.",
   "claudeAssist.localize.glossaryDuplicate": "{count} ಸಾಲು(ಗಳು) ಮೇಲೆ ಈಗಾಗಲೇ ಪಟ್ಟಿ ಮಾಡಲಾದ ಮೂಲ ಪದವನ್ನು ಪುನರಾವರ್ತಿಸುತ್ತವೆ, ಆದ್ದರಿಂದ ಮೊದಲನೆಯದನ್ನು ಮಾತ್ರ ಬಳಸಲಾಗುತ್ತದೆ.",
-  "claudeAssist.localize.manyLinesHint": "ಅದು ತುಂಬಾ ಸಾಲುಗಳಿವೆ ({count}). ಒಂದು ಬಾರಿಗೆ ಸುಮಾರು 25 ಅನುವಾದಿಸುವುದರಿಂದ ಉತ್ತರವು ಕತ್ತರಿಸುವ ಸಾಧ್ಯತೆ ಕಡಿಮೆಯಾಗುತ್ತದೆ, ಮತ್ತು ಫಲಿತಾಂಶವನ್ನು ಪರಿಶೀಲಿಸುವುದು ಸುಲಭವಾಗುತ್ತದೆ.",
-  "claudeAssist.localize.indexShifted": "Claude ಸಾಲುಗಳನ್ನು 0 ರಿಂದ ಸಂಖ್ಯೆ ಮಾಡಿತು, ಆದ್ದರಿಂದ ಅವುಗಳನ್ನು ಹೊಂದಿಸಲು ಒಂದರಿಂದ ಸ್ಥಳಾಂತರಿಸಲಾಗಿದೆ. ಪ್ರತಿ ಮೂಲ ಸಾಲು ಮತ್ತು ಅನುವಾದವು ಸರಿಯಾಗಿ ಜೋಡಿಯಾಗಿದೆಯೇ ಎಂದು ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude ಸಾಲುಗಳನ್ನು 0 ರಿಂದ ಸಂಖ್ಯೆ ಮಾಡಿತು, ಆದ್ದರಿಂದ ಅವುಗಳನ್ನು ಹೊಂದಿಸಲು ಒಂದರಿಂದ ಸ್ಥಳಾಂತರಿಸಲಾಗಿದೆ. ಪ್ರತಿ ಮೂಲ ಸಾಲು ಮತ್ತು ಅನುವಾದವು ಸರಿಯಾಗಿ ಜೋಡಿಯಾಗಿದೆಯೇ ಎಂದು ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

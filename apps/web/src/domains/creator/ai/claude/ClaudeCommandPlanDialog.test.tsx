@@ -202,8 +202,8 @@ describe("ClaudeCommandPlanDialog", () => {
       installBindings();
       renderDialog();
 
-      // 비활성 눈금자는 보내지 않으므로 세 개다.
-      expect(screen.getByText("사용할 수 있는 명령 3개를 보냈어요.")).toBeTruthy();
+      // 비활성 눈금자도 이름은 보내므로(캐시가 상태에 흔들리지 않게) 네 개를 보내고 그중 세 개만 지금 쓸 수 있다.
+      expect(screen.getByText("명령 4개를 보냈어요. 지금 쓸 수 있는 것은 3개예요.")).toBeTruthy();
       const run = screen.getByRole("button", { name: MAKE }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
       const hint = screen.getByText("요청을 먼저 입력해 주세요.");
@@ -654,7 +654,7 @@ describe("ClaudeCommandPlanDialog", () => {
     renderDialog();
 
     expect(screen.getByRole("dialog", { name: "AI Command Helper" })).toBeTruthy();
-    expect(screen.getByText("Sent 3 available commands.")).toBeTruthy();
+    expect(screen.getByText("Sent 4 commands. 3 can be used right now.")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Make a plan/ })).toBeTruthy();
     expect(screen.getByRole("radio", { name: "Explain how" })).toBeTruthy();
   });

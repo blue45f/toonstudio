@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "Reja tuzish (pullik)",
   "claudeAssist.plan.planning": "Reja tuzilmoqda.",
   "claudeAssist.plan.stopped": "Rejalashtirish toʻxtatildi. Allaqachon qayta ishlangan qism uchun baribir toʻlov yozilgan boʻlishi mumkin. Tayyor boʻlganda qayta urinib koʻring.",
-  "claudeAssist.plan.candidates": "{count} ta mavjud buyruq yuborildi.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "Hozir AI uchun mavjud buyruqlar yoʻq. Buni studiya ekranidan qayta oching.",
   "claudeAssist.plan.intent": "Tushunganim",
   "claudeAssist.plan.stepsTitle": "Taklif qilingan qadamlar",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "Hozir ishga tushirish",
   "claudeAssist.plan.menuOnly": "Menyudan foydalanish",
   "claudeAssist.plan.followUpsTitle": "Yana soʻrashingiz mumkin",
-  "claudeAssist.plan.preflightTransferDo": "Soʻrovingiz hamda {count} ta mavjud buyruqning nomlari, tavsiflari va yorliqlari",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "Savolingiz hamda {count} ta studiya funksiyasining nomlari, tavsiflari va yorliqlari",
   "claudeAssist.plan.preflightTime": "Odatda bir necha soniyadan oʻnlab soniyagacha. 3 daqiqadan keyin ham tugamasa, u toʻxtaydi va sizga xabar beradi.",
   "claudeAssist.plan.preflightOutputDo": "Bitta taklif qilingan buyruqlar tartibi (ishga tushirishni alohida tasdiqlaysiz)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "Tasvir juda baland: uning {total}px balandligidan faqat yuqori {covered}px ({percent}%) qismini boʻlimlarga boʻlish mumkin. Qolganini kesib, qayta yuklang.",
   "claudeAssist.localize.sameLanguage": "Manba va maqsad tillari bir xil. Ulardan birini oʻzgartiring.",
   "claudeAssist.localize.glossaryDuplicate": "{count} ta satr yuqorida allaqachon koʻrsatilgan manba atamasini takrorlaydi, shuning uchun faqat birinchisi ishlatiladi.",
-  "claudeAssist.localize.manyLinesHint": "Bu koʻp satr ({count}). Bir vaqtda taxminan 25 tadan tarjima qilish javob kesilishi ehtimolini kamaytiradi va natijani tekshirishni osonlashtiradi.",
-  "claudeAssist.localize.indexShifted": "Claude satrlarni 0 dan raqamladi, shuning uchun ular moslash uchun bittaga siljitildi. Har bir manba satr va tarjima toʻgʻri juftlanganini tekshiring."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude satrlarni 0 dan raqamladi, shuning uchun ular moslash uchun bittaga siljitildi. Har bir manba satr va tarjima toʻgʻri juftlanganini tekshiring.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

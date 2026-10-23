@@ -56,13 +56,13 @@ CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/browser-probe.mjs 
 
 테스트 층(위에서 아래로 넓어진다): ① 영역 단위 테스트(각 영역은 모의 포트로 검증) → ② `src/app/composition.test.ts`·`src/app/composed-app.smoke.test.tsx`(실제 영역 모듈·패널 조립 + 모의 엔진 팩토리: 카탈로그 94, 능력 맵, 절차 소스 재생성 키, 지오메트리 프리셋 썸네일 소스, 모든 인스펙터 탭 마운트)
 → ③ `src/app/null-engine.integration.test.ts`(실제 humanoid·state·outfit·physics·export를 render의 NullEngine 하네스에 꽂아 소스 로드·플랜 적용 skipped 0·표정/포즈 30 프리셋·물리 전환·썸네일 64·PNG/PSD/GLB/레시피 출력을 끝까지 실행)
-→ ④ 브라우저 검증(아래 §4). 이 컨테이너에는 GPU가 없어 소프트웨어 렌더러(SwiftShader)의 WebGL2로 `scripts/browser-probe.mjs`만 돌릴 수 있고 실 GPU·WebGPU·성능은 검증하지 못한다. ③까지 통과해도 셰이더·readback 픽셀·성능은 검증되지 않는다.
+→ ④ 브라우저 검증(아래 §4). Linux 개발 컨테이너에는 GPU가 없어 소프트웨어 렌더러(SwiftShader)의 WebGL2로 `scripts/browser-probe.mjs`만 돌릴 수 있고 실 GPU·WebGPU·성능은 검증하지 못한다(로컬 Mac의 Metal GPU에서는 실GPU로 돌릴 수 있다 — §4). ③까지 통과해도 셰이더·readback 픽셀·성능은 검증되지 않는다.
 
 Node 버전: 저장소 루트는 `engines.node >= 24.16`이고 CI는 Node 24로 돈다. 개발 컨테이너는 Node 22.22였으며
 이 앱의 테스트·빌드는 양쪽에서 같은 결과를 내도록 `import.meta.dirname`/`process.cwd()` 기반 경로만 쓴다
 (`fileURLToPath(import.meta.url)`은 vitest 4.1에서 file 스킴이 아닐 수 있어 쓰지 않는다).
 
-## 4. GPU 환경 브라우저 검증 절차(이 컨테이너에는 GPU가 없다)
+## 4. GPU 환경 브라우저 검증 절차(Linux 컨테이너에는 GPU가 없고, 로컬 Mac에는 Metal GPU가 있다)
 
 브라우저 실기기 증거 없이 "동작"으로 보고하지 않는다. 다음 절차를 Chrome 113+(WebGPU 활성)에서 수행하고
 결과를 `docs/shaper-parity-checklist.md`의 **브라우저 검증** 열에 `YYYY-MM-DD·기기·backend`로 기록한다(미실행은 "미검증" 유지).
@@ -128,9 +128,9 @@ rapier 브라우저 성능, GLB 실파일 재import·외부 뷰어 sparse morph,
 
 ## 8. 의존성
 
-`@babylonjs/core`·`@babylonjs/loaders`·`@babylonjs/serializers` 9.19.0(exact, Apache-2.0), `ag-psd`(MIT, `patches/ag-psd@31.0.1.patch` 적용),
-`@mediapipe/tasks-vision`(Apache-2.0, wasm은 번들·모델만 CDN 지연 로드), `@dimforge/rapier3d-deterministic-compat` 0.19.3(Apache-2.0, 동적 import),
-`zod` 4.4.3, React 19. PNG 인코더는 자체 구현(`CompressionStream`)이라 추가 의존성이 없다. WebGPU 타입은 TypeScript 6 DOM lib이 제공한다.
+`@babylonjs/core`·`@babylonjs/loaders`·`@babylonjs/serializers` 9.31.0(exact, Apache-2.0), `ag-psd`(MIT, `patches/ag-psd@31.0.1.patch` 적용),
+`@mediapipe/tasks-vision`(Apache-2.0, wasm은 번들·모델만 CDN 지연 로드), `@dimforge/rapier3d-deterministic-compat` 0.21.0(Apache-2.0, 동적 import),
+`zod` 4.6.7, React 19(정본은 `package.json`). PNG 인코더는 자체 구현(`CompressionStream`)이라 추가 의존성이 없다. WebGPU 타입은 TypeScript 6 DOM lib이 제공한다.
 의존성 변경은 통합 담당이 `pnpm install`로 lockfile과 함께 갱신한다.
 
 ## 9. 모듈식 캐릭터 키트 소스 (2026-10-08)

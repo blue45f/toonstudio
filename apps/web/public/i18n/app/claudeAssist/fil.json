@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "Gumawa ng plano (may singil)",
   "claudeAssist.plan.planning": "Gumagawa ng plano.",
   "claudeAssist.plan.stopped": "Itinigil ang pagpaplano. Maaaring nasisingil pa rin ang bahaging naproseso na. Subukang muli kapag handa ka na.",
-  "claudeAssist.plan.candidates": "Ipinadala ang {count} magagamit na utos.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "Walang utos na magagamit ng AI sa ngayon. Buksan itong muli mula sa screen ng studio.",
   "claudeAssist.plan.intent": "Ano ang naunawaan ko",
   "claudeAssist.plan.stepsTitle": "Mga mungkahing hakbang",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "Patakbuhin ngayon",
   "claudeAssist.plan.menuOnly": "Gamitin ang menu",
   "claudeAssist.plan.followUpsTitle": "Maaari mo ring itanong",
-  "claudeAssist.plan.preflightTransferDo": "Ang iyong kahilingan at ang mga pangalan, paglalarawan at shortcut ng {count} magagamit na utos",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "Ang iyong tanong at ang mga pangalan, paglalarawan at shortcut ng {count} feature ng studio",
   "claudeAssist.plan.preflightTime": "Karaniwang ilang segundo hanggang sampu-odd. Kung hindi pa tapos pagkalipas ng 3 minuto, titigil ito at sasabihin sa iyo.",
   "claudeAssist.plan.preflightOutputDo": "Isang mungkahing pagkakasunud-sunod ng mga utos (hiwalay mong kukumpirmahin ang pagpapatakbo)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "Napakatangkad ng larawan: ang itaas na {covered}px ({percent}%) lamang ng kabuuang taas nitong {total}px ang mahahati sa mga seksyon. I-crop ang natitira at i-upload itong muli.",
   "claudeAssist.localize.sameLanguage": "Pareho ang wikang pinagmulan at target. Palitan ang isa sa mga ito.",
   "claudeAssist.localize.glossaryDuplicate": "{count} linya ang inuulit ang isang terminong pinagmulan na nakalista na sa itaas, kaya ang una lamang ang gagamitin.",
-  "claudeAssist.localize.manyLinesHint": "Maraming linya iyan ({count}). Ang pagsasalin ng humigit-kumulang 25 sa isang pagkakataon ay nagpapababa ng tsansang maputol ang sagot, at mas madaling suriin ang resulta.",
-  "claudeAssist.localize.indexShifted": "Minarkahan ni Claude ang mga linya mula 0, kaya inilipat ang mga ito nang isa para pumila. Pakisuri kung tama ang pagkakapares ng bawat linyang pinagmulan at salin."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Minarkahan ni Claude ang mga linya mula 0, kaya inilipat ang mga ito nang isa para pumila. Pakisuri kung tama ang pagkakapares ng bawat linyang pinagmulan at salin.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

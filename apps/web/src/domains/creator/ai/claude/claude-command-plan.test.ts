@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { candidatesFromStudioBindings } from "./claude-command-candidates";
 import {
+  buildCommandAvailabilityText,
   buildCommandCatalogText,
   buildCommandPlanRequest,
   COMMAND_PLAN_LIMITS,
@@ -21,15 +22,36 @@ const candidates: AiCommandCandidate[] = [
 ];
 
 describe("후보 직렬화", () => {
-  it("비활성 후보를 빼고 id 순으로 고정해 같은 집합이면 같은 문자열이다", () => {
+  it("id 순으로 고정해 같은 집합이면 같은 문자열이고, 지금 쓸 수 있는지는 싣지 않는다", () => {
     const first = buildCommandCatalogText(candidates);
     const second = buildCommandCatalogText([...candidates].reverse());
     expect(first).toBe(second);
     expect(first.split("\n")).toEqual([
       "tool.brush | 브러시",
       "view.grid | 격자 보기",
+      "view.rulers | 눈금자",
       "view.zoom-fit | 화면에 맞추기 | 캔버스를 창에 맞춰요 | 별칭: Fit on Screen",
     ]);
+  });
+
+  it("명령이 켜지고 꺼져도 캐시되는 카탈로그 글은 바뀌지 않는다", () => {
+    const allOn = candidates.map((candidate) => ({ ...candidate, disabled: false, unavailableReason: undefined }));
+    const flipped = candidates.map((candidate) => ({ ...candidate, disabled: !candidate.disabled }));
+    expect(buildCommandCatalogText(allOn)).toBe(buildCommandCatalogText(candidates));
+    expect(buildCommandCatalogText(flipped)).toBe(buildCommandCatalogText(candidates));
+  });
+
+  it("메뉴 이름이 상태에 따라 바뀌어도 고정 이름을 쓰면 글이 바뀌지 않는다", () => {
+    const off: AiCommandCandidate = { commandId: "view.rulers", label: "눈금자 켜기", stableLabel: "눈금자", disabled: false };
+    const on: AiCommandCandidate = { ...off, label: "눈금자 끄기" };
+    expect(buildCommandCatalogText([off])).toBe("view.rulers | 눈금자");
+    expect(buildCommandCatalogText([on])).toBe(buildCommandCatalogText([off]));
+  });
+
+  it("지금 쓸 수 없는 명령은 id 순으로 사유와 함께 따로 적고, 모두 쓸 수 있으면 비어 있다", () => {
+    expect(buildCommandAvailabilityText(candidates)).toBe("[지금 쓸 수 없는 명령 — 앱이 붙인 현재 상태예요. steps에 넣지 마세요]\n- view.rulers (페이지 없음)");
+    expect(buildCommandAvailabilityText(candidates.map((candidate) => ({ ...candidate, disabled: false })))).toBe("");
+    expect(buildCommandAvailabilityText([{ commandId: "tool.pen", label: "펜", disabled: true }])).toContain("- tool.pen");
   });
 
   it("후보 수를 상한까지만 싣는다", () => {
@@ -70,8 +92,25 @@ describe("계획 요청 생성", () => {
     expect(system[0]?.text).toContain("목록에 없는 명령을 만들어내지 마세요");
     expect(system[1]?.cache_control).toEqual({ type: "ephemeral" });
     expect(system[1]?.text).toContain("view.zoom-fit | 화면에 맞추기");
-    expect(system[1]?.text).not.toContain("view.rulers");
-    expect(params.messages).toEqual([{ role: "user", content: "격자 켜고 화면에 맞춰 줘" }]);
+    // 카탈로그(캐시 대상)에는 모든 명령이 고정 순서로 들어 있고, 지금 쓸 수 없다는 사실은 사용자 메시지에만 붙는다.
+    expect(system[1]?.text).toContain("view.rulers | 눈금자");
+    expect(system[1]?.text).not.toContain("페이지 없음");
+    expect(params.messages).toEqual([{
+      role: "user",
+      content: "격자 켜고 화면에 맞춰 줘\n\n[지금 쓸 수 없는 명령 — 앱이 붙인 현재 상태예요. steps에 넣지 마세요]\n- view.rulers (페이지 없음)",
+    }]);
+  });
+
+  it("사용 가능 여부가 바뀌어도 system(캐시 대상)은 그대로고 사용자 메시지만 달라진다", () => {
+    const before = buildCommandPlanRequest("claude-opus-5-5", "격자", candidates);
+    const after = buildCommandPlanRequest("claude-opus-5-5", "격자", candidates.map((candidate) => ({ ...candidate, disabled: !candidate.disabled })));
+    expect(after.system).toEqual(before.system);
+    expect(after.messages).not.toEqual(before.messages);
+  });
+
+  it("모두 쓸 수 있으면 사용자 메시지는 요청 문장뿐이다", () => {
+    const params = buildCommandPlanRequest("claude-opus-5-5", "격자 켜 줘", candidates.map((candidate) => ({ ...candidate, disabled: false })));
+    expect(params.messages).toEqual([{ role: "user", content: "격자 켜 줘" }]);
   });
 
   it("effort를 모르는 모델에는 output_config를 보내지 않는다", () => {
@@ -80,7 +119,7 @@ describe("계획 요청 생성", () => {
   });
 
   it("사용자 요청은 한 줄로 정리하고 길이를 제한한다", () => {
-    const params = buildCommandPlanRequest("claude-opus-5-5", `줄바꿈\n포함 ${"가".repeat(1_000)}`, candidates);
+    const params = buildCommandPlanRequest("claude-opus-5-5", `줄바꿈\n포함 ${"가".repeat(1_000)}`, candidates.map((candidate) => ({ ...candidate, disabled: false })));
     const content = params.messages[0]?.content as string;
     expect(content).not.toContain("\n");
     expect(content.length).toBeLessThanOrEqual(COMMAND_PLAN_LIMITS.maxRequestChars);
@@ -245,7 +284,9 @@ describe("라이브 바인딩 → 후보 변환", () => {
     const result = candidatesFromStudioBindings(bindings, catalog);
     expect(result).toEqual([{
       commandId: "view.grid",
+      // 화면에는 지금 메뉴 이름을, 프롬프트에는 카탈로그의 고정 이름을 쓴다.
       label: "격자 보기",
+      stableLabel: "격자",
       description: "격자를 보여요",
       aliases: ["Show Grid"],
       disabled: false,

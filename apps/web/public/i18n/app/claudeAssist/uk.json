@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "Створити план (платно)",
   "claudeAssist.plan.planning": "Створення плану.",
   "claudeAssist.plan.stopped": "Планування зупинено. Уже оброблена частина могла бути оплачена. Спробуйте ще раз, коли будете готові.",
-  "claudeAssist.plan.candidates": "Надіслано доступних команд: {count}.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "Зараз ШІ не має доступних команд. Відкрийте це знову з екрана студії.",
   "claudeAssist.plan.intent": "Що я зрозумів",
   "claudeAssist.plan.stepsTitle": "Запропоновані кроки",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "Запустити зараз",
   "claudeAssist.plan.menuOnly": "Використати меню",
   "claudeAssist.plan.followUpsTitle": "Ви також могли б запитати",
-  "claudeAssist.plan.preflightTransferDo": "Ваш запит і назви, описи та сполучення доступних команд: {count}",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "Ваше запитання й назви, описи та сполучення функцій студії: {count}",
   "claudeAssist.plan.preflightTime": "Зазвичай від кількох секунд до десяти з лишком. Якщо не завершиться за 3 хвилини, зупиниться й повідомить вам.",
   "claudeAssist.plan.preflightOutputDo": "Один запропонований порядок команд (запуск ви підтверджуєте окремо)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "Зображення дуже високе: лише верхні {covered}px ({percent}%) від його загальної висоти {total}px можна розділити на розділи. Обріжте решту й завантажте її знову.",
   "claudeAssist.localize.sameLanguage": "Мова оригіналу й цільова мова однакові. Змініть одну з них.",
   "claudeAssist.localize.glossaryDuplicate": "Рядків, що повторюють термін оригіналу, уже зазначений вище: {count}, тому використовується лише перший.",
-  "claudeAssist.localize.manyLinesHint": "Це багато рядків ({count}). Переклад приблизно по 25 за раз зменшує ймовірність обрізання відповіді, а результат легше перевірити.",
-  "claudeAssist.localize.indexShifted": "Claude пронумерував рядки від 0, тому їх зсунуто на один, щоб вирівняти. Перевірте, чи кожен рядок оригіналу й переклад правильно поєднані."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude пронумерував рядки від 0, тому їх зсунуто на один, щоб вирівняти. Перевірте, чи кожен рядок оригіналу й переклад правильно поєднані.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

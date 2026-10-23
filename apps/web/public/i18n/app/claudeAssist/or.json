@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "ଯୋଜନା ତିଆରି କରନ୍ତୁ (ବିଲ୍ ହେବ)",
   "claudeAssist.plan.planning": "ଯୋଜନା ତିଆରି କରୁଛି।",
   "claudeAssist.plan.stopped": "ଯୋଜନା ବନ୍ଦ କରାଗଲା। ଇତିମଧ୍ୟରେ ପ୍ରକ୍ରିୟାକୃତ ଅଂଶ ପାଇଁ ବିଲ୍ ହୋଇଥାଇପାରେ। ପ୍ରସ୍ତୁତ ହେଲେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
-  "claudeAssist.plan.candidates": "{count} ଉପଲବ୍ଧ କମାଣ୍ଡ ପଠାଗଲା।",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "ଏବେ AI ପାଇଁ କୌଣସି କମାଣ୍ଡ ଉପଲବ୍ଧ ନାହିଁ। ଷ୍ଟୁଡିଓ ସ୍କ୍ରିନରୁ ଏହାକୁ ପୁଣି ଖୋଲନ୍ତୁ।",
   "claudeAssist.plan.intent": "ମୁଁ କଣ ବୁଝିଲି",
   "claudeAssist.plan.stepsTitle": "ପ୍ରସ୍ତାବିତ ପଦକ୍ଷେପ",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "ଏବେ ଚଲାନ୍ତୁ",
   "claudeAssist.plan.menuOnly": "ମେନୁ ବ୍ୟବହାର କରନ୍ତୁ",
   "claudeAssist.plan.followUpsTitle": "ଆପଣ ମଧ୍ୟ ପଚାରିପାରିବେ",
-  "claudeAssist.plan.preflightTransferDo": "ଆପଣଙ୍କ ଅନୁରୋଧ ଏବଂ {count} ଉପଲବ୍ଧ କମାଣ୍ଡର ନାମ, ବର୍ଣ୍ଣନା ଏବଂ ସର୍ଟକଟ୍",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "ଆପଣଙ୍କ ପ୍ରଶ୍ନ ଏବଂ {count} ଷ୍ଟୁଡିଓ ବୈଶିଷ୍ଟ୍ୟର ନାମ, ବର୍ଣ୍ଣନା ଏବଂ ସର୍ଟକଟ୍",
   "claudeAssist.plan.preflightTime": "ସାଧାରଣତଃ କିଛି ସେକେଣ୍ଡରୁ ଦଶ-କିଛି ସେକେଣ୍ଡ। ଯଦି 3 ମିନିଟ୍ ପରେ ସରେ ନାହିଁ, ଏହା ବନ୍ଦ ହୁଏ ଏବଂ ଆପଣଙ୍କୁ କହେ।",
   "claudeAssist.plan.preflightOutputDo": "କମାଣ୍ଡର ଗୋଟିଏ ପ୍ରସ୍ତାବିତ କ୍ରମ (ଆପଣ ଚଲାଇବାକୁ ପୃଥକ ଭାବରେ ନିଶ୍ଚିତ କରନ୍ତି)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "ପ୍ରତିଛବି ବହୁତ ଲମ୍ବା: ଏହାର {total}px ଉଚ୍ଚତାର କେବଳ ଉପର {covered}px ({percent}%) ବିଭାଗରେ ବିଭକ୍ତ କରାଯାଇପାରେ। ବାକି ଅଂଶ କାଟନ୍ତୁ ଏବଂ ଏହାକୁ ପୁଣି ଅପଲୋଡ୍ କରନ୍ତୁ।",
   "claudeAssist.localize.sameLanguage": "ଉତ୍ସ ଏବଂ ଲକ୍ଷ୍ୟ ଭାଷା ସମାନ। ସେମାନଙ୍କ ମଧ୍ୟରୁ ଗୋଟିଏ ବଦଳାନ୍ତୁ।",
   "claudeAssist.localize.glossaryDuplicate": "{count} ଧାଡ଼ି(ଗୁଡ଼ିକ) ଉପରେ ଇତିମଧ୍ୟରେ ତାଲିକାଭୁକ୍ତ ଉତ୍ସ ଶବ୍ଦକୁ ପୁଣି କହେ, ତେଣୁ କେବଳ ପ୍ରଥମଟି ବ୍ୟବହୃତ ହୁଏ।",
-  "claudeAssist.localize.manyLinesHint": "ତାହା ଅନେକ ଧାଡ଼ି ({count})। ଥରକୁ ପ୍ରାୟ 25 ଅନୁବାଦ କଲେ ଉତ୍ତର କଟିଯିବାର ସମ୍ଭାବନା କମ୍ ହୁଏ, ଏବଂ ଫଳାଫଳ ଯାଞ୍ଚ କରିବା ସହଜ ହୁଏ।",
-  "claudeAssist.localize.indexShifted": "Claude ଧାଡ଼ିଗୁଡ଼ିକୁ 0 ରୁ ସଂଖ୍ୟା ଦେଲା, ତେଣୁ ସେଗୁଡ଼ିକୁ ମେଳ ଖାଇବା ପାଇଁ ଗୋଟିଏ ଘୁଞ୍ଚାଗଲା। ଦୟାକରି ଯାଞ୍ଚ କରନ୍ତୁ ଯେ ପ୍ରତ୍ୟେକ ଉତ୍ସ ଧାଡ଼ି ଏବଂ ଅନୁବାଦ ସଠିକ୍ ଭାବରେ ଯୋଡ଼ି ହୋଇଛି।"
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude ଧାଡ଼ିଗୁଡ଼ିକୁ 0 ରୁ ସଂଖ୍ୟା ଦେଲା, ତେଣୁ ସେଗୁଡ଼ିକୁ ମେଳ ଖାଇବା ପାଇଁ ଗୋଟିଏ ଘୁଞ୍ଚାଗଲା। ଦୟାକରି ଯାଞ୍ଚ କରନ୍ତୁ ଯେ ପ୍ରତ୍ୟେକ ଉତ୍ସ ଧାଡ଼ି ଏବଂ ଅନୁବାଦ ସଠିକ୍ ଭାବରେ ଯୋଡ଼ି ହୋଇଛି।",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

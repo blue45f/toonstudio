@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "გეგმის შექმნა (ფასიანი)",
   "claudeAssist.plan.planning": "მიმდინარეობს გეგმის შექმნა.",
   "claudeAssist.plan.stopped": "გეგმის შექმნა შეჩერდა. უკვე დამუშავებული ნაწილი შესაძლოა მაინც დაირიცხა. სცადეთ ხელახლა, როცა მზად იქნებით.",
-  "claudeAssist.plan.candidates": "გაიგზავნა {count} ხელმისაწვდომი ბრძანება.",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "AI-სთვის ამჟამად ბრძანებები ხელმისაწვდომი არ არის. გახსენით ეს ისევ სტუდიის ეკრანიდან.",
   "claudeAssist.plan.intent": "როგორც გავიგე",
   "claudeAssist.plan.stepsTitle": "შემოთავაზებული ნაბიჯები",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "ახლავე გაშვება",
   "claudeAssist.plan.menuOnly": "გამოიყენეთ მენიუ",
   "claudeAssist.plan.followUpsTitle": "ასევე შეგიძლიათ იკითხოთ",
-  "claudeAssist.plan.preflightTransferDo": "თქვენი მოთხოვნა და {count} ხელმისაწვდომი ბრძანების სახელები, აღწერები და მალსახმობები",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "თქვენი კითხვა და {count} სტუდიის ფუნქციის სახელები, აღწერები და მალსახმობები",
   "claudeAssist.plan.preflightTime": "ჩვეულებრივ რამდენიმე წამიდან ათიოდე წამამდე. თუ 3 წუთის შემდეგ არ დასრულდა, ის ჩერდება და გატყობინებთ.",
   "claudeAssist.plan.preflightOutputDo": "ბრძანებების ერთი შემოთავაზებული თანმიმდევრობა (გაშვებას ცალკე ადასტურებთ)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "სურათი ძალიან მაღალია: მისი {total}px სიმაღლიდან მხოლოდ ზედა {covered}px ({percent}%) შეიძლება მონაკვეთებად დაიყოს. ჩამოაჭერით დანარჩენი და ისევ ატვირთეთ.",
   "claudeAssist.localize.sameLanguage": "წყაროსა და სამიზნე ენები ერთნაირია. შეცვალეთ ერთ-ერთი მათგანი.",
   "claudeAssist.localize.glossaryDuplicate": "{count} ხაზი იმეორებს ზემოთ უკვე ჩამოთვლილ წყაროს ტერმინს, ამიტომ გამოიყენება მხოლოდ პირველი.",
-  "claudeAssist.localize.manyLinesHint": "ეს ბევრი ხაზია ({count}). ერთდროულად დაახლოებით 25-ის თარგმნა პასუხის გაწყვეტის ალბათობას ამცირებს და შედეგის შემოწმებას ამარტივებს.",
-  "claudeAssist.localize.indexShifted": "Claude-მა ხაზები 0-დან დანომრა, ამიტომ ისინი ერთით გადაინაცვლა გასწორებისთვის. გთხოვთ, შეამოწმოთ, რომ თითოეული წყაროს ხაზი და თარგმანი სწორად არის დაწყვილებული."
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude-მა ხაზები 0-დან დანომრა, ამიტომ ისინი ერთით გადაინაცვლა გასწორებისთვის. გთხოვთ, შეამოწმოთ, რომ თითოეული წყაროს ხაზი და თარგმანი სწორად არის დაწყვილებული.",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }

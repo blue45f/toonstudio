@@ -113,6 +113,7 @@ apps/web/src/domains/creator/StudioSelectionWorkbenchPanel.test.tsx
 apps/web/src/domains/creator/StudioWorkspaceMenu.test.tsx
 apps/web/src/domains/creator/a11y/use-studio-window-keyboard-focus.test.tsx
 apps/web/src/domains/creator/ai/StudioAiProvenancePanel.test.tsx
+apps/web/src/domains/creator/ai/canon/bundled-canon-avatars.test.ts
 apps/web/src/domains/creator/ai/studio-ai-client.test.ts
 apps/web/src/domains/creator/ai/studio-ai-codec-lazy-boundary.test.ts
 apps/web/src/domains/creator/ai/studio-scenario-image-generation.test.ts
@@ -601,6 +602,7 @@ apps/web/src/domains/creator/vrm/studio-vrm-torso-silhouette-measure.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-xpbd-skirt-attachment-boundary.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-xpbd-skirt.test.ts
+apps/web/src/domains/creator/vrm/vrm-rights-derived-assets.test.ts
 apps/web/src/domains/creator/work-session
 apps/web/src/domains/creator/work-session/StudioSessionEvidencePanel.test.tsx
 apps/web/src/domains/creator/work-session/studio-session-evidence-client.test.ts

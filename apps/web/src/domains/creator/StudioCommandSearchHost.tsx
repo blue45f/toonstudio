@@ -150,7 +150,13 @@ export function StudioCommandSearchHost({
 
   return (
     <>
-      {hideTrigger && !trailing ? null : (
+      {/* 모바일은 검색 트리거를 숨기지만 Claude 보조 입구는 남긴다. 연결이 없으면 아무것도 그리지 않아 빈 줄(empty:hidden)이 보이지 않는다. */}
+      {hideTrigger && !trailing ? (
+        <div className="flex min-w-0 items-center justify-end border-b border-line px-1 empty:hidden" data-claude-assist-mobile-row="true">
+          <ClaudeAssistLauncher />
+        </div>
+      ) : (
+        
         <div
           data-studio-command-search-row="true"
           className="flex min-w-0 items-center gap-1 border-b border-line"

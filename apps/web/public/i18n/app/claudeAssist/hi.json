@@ -135,7 +135,7 @@
   "claudeAssist.plan.make": "योजना बनाएँ (शुल्क लगेगा)",
   "claudeAssist.plan.planning": "योजना बनाई जा रही है।",
   "claudeAssist.plan.stopped": "योजना बनाना रोक दिया गया। पहले से संसाधित हिस्से का शुल्क फिर भी लग सकता है। तैयार हों तो फिर से प्रयास करें।",
-  "claudeAssist.plan.candidates": "उपलब्ध {count} कमांड भेजे गए।",
+  "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
   "claudeAssist.plan.noCandidates": "अभी AI के लिए कोई कमांड उपलब्ध नहीं है। इसे स्टूडियो स्क्रीन से फिर से खोलें।",
   "claudeAssist.plan.intent": "मैंने क्या समझा",
   "claudeAssist.plan.stepsTitle": "प्रस्तावित कदम",
@@ -244,7 +244,7 @@
   "claudeAssist.plan.runNow": "अभी चलाएँ",
   "claudeAssist.plan.menuOnly": "मेनू का उपयोग करें",
   "claudeAssist.plan.followUpsTitle": "आप यह भी पूछ सकते हैं",
-  "claudeAssist.plan.preflightTransferDo": "आपका अनुरोध और उपलब्ध {count} कमांड के नाम, विवरण और शॉर्टकट",
+  "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
   "claudeAssist.plan.preflightTransferAsk": "आपका प्रश्न और {count} स्टूडियो सुविधाओं के नाम, विवरण और शॉर्टकट",
   "claudeAssist.plan.preflightTime": "आमतौर पर कुछ सेकंड से लेकर दस से अधिक सेकंड तक। अगर 3 मिनट में पूरा न हो, तो यह रुक जाता है और आपको बताता है।",
   "claudeAssist.plan.preflightOutputDo": "कमांड का एक प्रस्तावित क्रम (चलाने की पुष्टि आप अलग से करते हैं)",
@@ -397,6 +397,11 @@
   "claudeAssist.art.coverageTruncated": "छवि बहुत लंबी है: इसकी {total}px ऊँचाई में से केवल ऊपरी {covered}px ({percent}%) को ही खंडों में बाँटा जा सकता है। बाकी हिस्से को काटकर फिर से अपलोड करें।",
   "claudeAssist.localize.sameLanguage": "स्रोत और लक्ष्य भाषाएँ एक ही हैं। उनमें से एक बदलें।",
   "claudeAssist.localize.glossaryDuplicate": "{count} पंक्तियाँ ऊपर पहले से सूचीबद्ध स्रोत शब्द को दोहराती हैं, इसलिए केवल पहली का उपयोग किया जाता है।",
-  "claudeAssist.localize.manyLinesHint": "यह बहुत सारी पंक्तियाँ हैं ({count})। एक बार में लगभग 25 का अनुवाद करने से जवाब के कटने की संभावना कम होती है, और परिणाम जाँचना आसान होता है।",
-  "claudeAssist.localize.indexShifted": "Claude ने पंक्तियों को 0 से नंबर दिया, इसलिए उन्हें एक स्थान खिसकाकर मिलाया गया। कृपया जाँचें कि प्रत्येक स्रोत पंक्ति और अनुवाद सही ढंग से जोड़े गए हैं।"
+  "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+  "claudeAssist.localize.indexShifted": "Claude ने पंक्तियों को 0 से नंबर दिया, इसलिए उन्हें एक स्थान खिसकाकर मिलाया गया। कृपया जाँचें कि प्रत्येक स्रोत पंक्ति और अनुवाद सही ढंग से जोड़े गए हैं।",
+  "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+  "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+  "claudeAssist.art.fromCanvas": "Use the canvas page",
+  "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+  "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
 }
