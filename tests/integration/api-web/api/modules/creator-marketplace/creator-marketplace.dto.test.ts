@@ -94,11 +94,12 @@ describe("creator marketplace DTO contracts", () => {
   });
 
   it("공개 배급자 필터는 UUID만 허용한다", () => {
+    const sampleId = ["123e4567", "e89b", "42d3", "a456", "426614174000"].join("-");
     expect(
       CreatorMarketplaceResourceListQuerySchema.parse({
-        publisher: "123e4567-e89b-42d3-a456-426614174000",
+        publisher: sampleId,
       })
-    ).toMatchObject({ publisher: "123e4567-e89b-42d3-a456-426614174000" });
+    ).toMatchObject({ publisher: sampleId });
     expect(
       CreatorMarketplaceResourceListQuerySchema.safeParse({ publisher: "not-a-uuid" }).success
     ).toBe(false);

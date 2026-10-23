@@ -1,0 +1,408 @@
+/**
+ * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
+ * 클립 36편의 정본이다 (public/brand/page-clips/).
+ *
+ * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
+ * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
+ * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
+ * 계절 변형 4편(봄·여름·가을·겨울)과 계절 정사각 변형 4편, 투어 도입
+ * 정사각 변형 1편, 세로 변형 18편을 함께 둔다. 세로 변형 중 나침반
+ * 클립(shorts-47-compass)은 원래 쇼츠로 만든 것인데 다이얼의 로마 숫자가
+ * 읽히는 품질 이슈가 있어, 쇼츠 섹션에 걸지 않고 품질 메모와 함께 여기에
+ * 보관한다(반응 쇼츠의 자료실 전용 보관과 같은 취지).
+ */
+import type { PromoVideoItem } from "./promo-video-library";
+
+/** promo-video-library.ts의 LIBRARY_ONLY와 같은 값 — 순환 import를 피하려고 이 파일에 따로 둔다. */
+const LIBRARY_ONLY = { ko: "자료실 보관", en: "Library only" } as const;
+
+const pageItem = (
+  id: string,
+  file: string,
+  durationLabel: string,
+  ko: { readonly title: string; readonly body: string },
+  en: { readonly title: string; readonly body: string },
+  note?: { readonly ko: string; readonly en: string },
+  usage: { readonly ko: string; readonly en: string } = LIBRARY_ONLY,
+): PromoVideoItem => ({
+  id: `page-${id}`,
+  categoryId: "pages",
+  src: `/brand/page-clips/${file}`,
+  width: 1344,
+  height: 768,
+  durationLabel,
+  ko,
+  en,
+  usage,
+  ...(note ? { note } : {}),
+});
+
+const PAGE_VERTICAL_USAGE = {
+  ko: "자료실 보관 · 소셜/페이지 세로 소재",
+  en: "Library only · Vertical material for social and pages",
+} as const;
+
+const pageVerticalItem = (
+  id: string,
+  file: string,
+  durationLabel: string,
+  ko: { readonly title: string; readonly body: string },
+  en: { readonly title: string; readonly body: string },
+  note?: { readonly ko: string; readonly en: string },
+): PromoVideoItem => ({
+  id: `page-${id}`,
+  categoryId: "pages",
+  src: `/brand/page-clips/${file}`,
+  width: 768,
+  height: 1344,
+  durationLabel,
+  ko,
+  en,
+  usage: PAGE_VERTICAL_USAGE,
+  ...(note ? { note } : {}),
+});
+
+const PAGE_SQUARE_USAGE = {
+  ko: "자료실 보관 · 소셜 피드용 정사각 소재",
+  en: "Library only · Square material for social feeds",
+} as const;
+
+const pageSquareItem = (
+  id: string,
+  file: string,
+  durationLabel: string,
+  ko: { readonly title: string; readonly body: string },
+  en: { readonly title: string; readonly body: string },
+): PromoVideoItem => ({
+  id: `page-${id}`,
+  categoryId: "pages",
+  src: `/brand/page-clips/${file}`,
+  width: 768,
+  height: 768,
+  durationLabel,
+  ko,
+  en,
+  usage: PAGE_SQUARE_USAGE,
+});
+
+export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
+  pageItem(
+    "about",
+    "page-about.mp4",
+    "0:14",
+    { title: "서비스 소개 무드", body: "서비스를 소개하는 자리에 깔기 위해 만든 분위기 클립입니다." },
+    { title: "About mood", body: "A mood clip made to sit behind the service introduction." },
+  ),
+  pageItem(
+    "pricing",
+    "page-pricing.mp4",
+    "0:14",
+    { title: "요금 안내 무드", body: "요금과 멤버십을 안내하는 자리에 깔기 위해 만든 분위기 클립입니다." },
+    { title: "Pricing mood", body: "A mood clip made to sit behind pricing and membership." },
+  ),
+  pageItem(
+    "workflow",
+    "page-workflow.mp4",
+    "0:14",
+    { title: "제작 과정 무드", body: "제작 과정이 흘러가는 자리에 깔기 위해 만든 분위기 클립입니다." },
+    { title: "Workflow mood", body: "A mood clip made to sit behind the production workflow." },
+  ),
+  pageItem(
+    "ir",
+    "page-ir.mp4",
+    "0:15",
+    { title: "IR 무드", body: "투자 소개 자리의 배경으로 쓰기 위해 만든 분위기 클립입니다." },
+    { title: "IR mood", body: "A mood clip made as a backdrop for the investor brief." },
+  ),
+  pageItem(
+    "start",
+    "page-start.mp4",
+    "0:14",
+    { title: "시작하기 무드", body: "처음 시작하는 창작자를 맞는 자리에 깔기 위해 만든 분위기 클립입니다." },
+    { title: "Getting-started mood", body: "A mood clip made to welcome creators who are just starting." },
+  ),
+  pageItem(
+    "home-v2",
+    "page-home-v2.mp4",
+    "0:14",
+    {
+      title: "홈 무드",
+      body: "창작 홈의 배경으로 쓰기 위해 만든 분위기 클립입니다. 달력 글자가 또렷하던 앞선 버전을 교체한 정본입니다.",
+    },
+    {
+      title: "Home mood",
+      body: "A mood clip made as a backdrop for the creator home — the canonical version, replacing the earlier take whose calendar text was too legible.",
+    },
+  ),
+  pageItem(
+    "home",
+    "page-home.mp4",
+    "0:14",
+    { title: "홈 무드 · 이전 버전", body: "창작 홈 배경용으로 먼저 만들었던 버전입니다." },
+    { title: "Home mood · Earlier version", body: "The first take made as a backdrop for the creator home." },
+    {
+      ko: "품질 메모: 달력 숫자와 'EPISODE' 글자가 또렷하게 보여, 위의 교체본(v2)으로 대체했습니다. 비교용으로만 남깁니다.",
+      en: "Quality note: the calendar numbers and the word 'EPISODE' are clearly visible, so the v2 above supersedes this one. Kept for comparison only.",
+    },
+    { ko: "자료실 보관 · 대체됨", en: "Library only · Superseded" },
+  ),
+  pageItem(
+    "help",
+    "page-help.mp4",
+    "0:14",
+    { title: "도움말 무드", body: "도움말과 안내 자리에 깔기 위해 만든 분위기 클립입니다." },
+    { title: "Help mood", body: "A mood clip made to sit behind help and guidance." },
+  ),
+  pageItem(
+    "tour-stinger",
+    "page-tour-stinger.mp4",
+    "0:14",
+    { title: "투어 스팅어", body: "짧게 분위기를 열고 닫는 스팅어 용도로 만든 클립입니다." },
+    { title: "Tour stinger", body: "A short stinger clip for opening and closing on a mood." },
+  ),
+  pageItem(
+    "season-spring",
+    "season-spring.mp4",
+    "0:14",
+    {
+      title: "계절 · 봄 스튜디오",
+      body: "벚꽃잎이 창가로 흩날리는 봄의 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Spring studio",
+      body: "Cherry blossom petals drifting past the window of a spring studio — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageItem(
+    "season-summer",
+    "season-summer.mp4",
+    "0:14",
+    {
+      title: "계절 · 여름 스튜디오",
+      body: "여름 햇살이 가득 들어오는 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Summer studio",
+      body: "A studio filled with summer sunlight — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageItem(
+    "season-autumn",
+    "season-autumn.mp4",
+    "0:14",
+    {
+      title: "계절 · 가을 스튜디오",
+      body: "가을빛이 드는 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Autumn studio",
+      body: "An autumn-lit studio — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageItem(
+    "season-winter",
+    "season-winter.mp4",
+    "0:14",
+    {
+      title: "계절 · 겨울 스튜디오",
+      body: "눈 오는 창밖과 따뜻한 실내를 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Winter studio",
+      body: "Snow outside the window and warmth inside — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageSquareItem(
+    "season-spring-square",
+    "season-spring-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 봄 스튜디오 정사각",
+      body: "벚꽃잎이 창가로 흩날리는 봄 작업실을 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Spring studio, square",
+      body: "A spring studio with cherry blossom petals drifting past the window, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageSquareItem(
+    "season-summer-square",
+    "season-summer-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 여름 스튜디오 정사각",
+      body: "여름 햇살이 가득 들어오는 작업실을 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Summer studio, square",
+      body: "A studio filled with summer sunlight, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageSquareItem(
+    "season-autumn-square",
+    "season-autumn-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 가을 스튜디오 정사각",
+      body: "단풍잎이 창가에 쌓이는 가을 작업실을 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Autumn studio, square",
+      body: "An autumn studio with maple leaves gathering at the window, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageSquareItem(
+    "season-winter-square",
+    "season-winter-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 겨울 스튜디오 정사각",
+      body: "눈 덮인 창가와 김 오르는 머그를 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Winter studio, square",
+      body: "A snow-covered window and a steaming mug, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageVerticalItem(
+    "start-vertical",
+    "page-start-vertical.mp4",
+    "0:14",
+    { title: "시작하기 무드 · 세로", body: "시작하기 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Getting-started mood · Vertical", body: "The getting-started clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "tour-stinger-vertical",
+    "tour-stinger-vertical.mp4",
+    "0:15",
+    { title: "투어 스팅어 · 세로", body: "투어 스팅어 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Tour stinger · Vertical", body: "The tour stinger redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "about-vertical",
+    "page-about-vertical.mp4",
+    "0:14",
+    { title: "서비스 소개 무드 · 세로", body: "서비스 소개 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "About mood · Vertical", body: "The about clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "help-vertical",
+    "page-help-vertical.mp4",
+    "0:14",
+    { title: "도움말 무드 · 세로", body: "도움말 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Help mood · Vertical", body: "The help clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "tour-outro-vertical",
+    "tour-outro-vertical.mp4",
+    "0:14",
+    { title: "투어 마무리 · 세로", body: "제품 투어의 마무리 장면을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Tour closing · Vertical", body: "The product tour's closing scene redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "pricing-vertical",
+    "page-pricing-vertical.mp4",
+    "0:14",
+    { title: "요금 안내 무드 · 세로", body: "요금 안내 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Pricing mood · Vertical", body: "The pricing clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "workflow-vertical",
+    "page-workflow-vertical.mp4",
+    "0:14",
+    { title: "제작 과정 무드 · 세로", body: "제작 과정 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Workflow mood · Vertical", body: "The workflow clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "ir-vertical",
+    "page-ir-vertical.mp4",
+    "0:14",
+    { title: "IR 무드 · 세로", body: "IR 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "IR mood · Vertical", body: "The IR clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "community-vertical",
+    "page-community-vertical.mp4",
+    "0:14",
+    { title: "커뮤니티 무드 · 세로", body: "작품이 오가고 반응이 쌓이는 커뮤니티 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Community mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind the community surface, where works are shared and reactions pile up." },
+  ),
+  pageVerticalItem(
+    "learn-vertical",
+    "page-learn-vertical.mp4",
+    "0:14",
+    { title: "학습 무드 · 세로", body: "강좌와 레퍼런스를 곁에 두는 학습 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Learning mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind the learning surface, with lessons and references at hand." },
+    {
+      ko: "품질 메모: 화면 속 카드 한 장에 작은 숫자 '3'이 보입니다. 생성 과정에서 생긴 아티팩트라, 표면에 배선하기 전에 한 번 더 확인할 클립으로 남깁니다.",
+      en: "Quality note: a small number '3' appears on one card in the frame — a generation artifact, so this clip stays flagged for another look before it is wired to any surface.",
+    },
+  ),
+  pageVerticalItem(
+    "tour-intro-vertical",
+    "tour-intro-vertical.mp4",
+    "0:14",
+    { title: "투어 도입 · 세로", body: "제품 투어의 도입 장면을 세로(9:16)로 다시 그린 변형입니다. 마무리 세로본의 짝으로 보관합니다." },
+    { title: "Tour opening · Vertical", body: "The product tour's opening scene redrawn vertically (9:16), kept as the counterpart to the closing vertical." },
+  ),
+  pageSquareItem(
+    "tour-intro-square",
+    "tour-intro-square.mp4",
+    "0:14",
+    { title: "투어 도입 · 정사각", body: "제품 투어의 도입 장면을 정사각(1:1)으로 다시 그린 변형입니다. 세로본과 나란히 소셜 소재로 보관합니다." },
+    { title: "Tour opening · Square", body: "The product tour's opening scene redrawn as a square (1:1), kept alongside the vertical cut as social material." },
+  ),
+  pageVerticalItem(
+    "studio-vertical",
+    "page-studio-vertical.mp4",
+    "0:10",
+    { title: "작업실 무드 · 세로", body: "작업실의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Studio mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of the studio." },
+  ),
+  pageVerticalItem(
+    "cafe-vertical",
+    "page-cafe-vertical.mp4",
+    "0:14",
+    { title: "카페 무드 · 세로", body: "카페의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Café mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a café." },
+  ),
+  pageVerticalItem(
+    "library-vertical",
+    "page-library-vertical.mp4",
+    "0:14",
+    { title: "도서관 무드 · 세로", body: "높은 책장이 이어지는 도서관의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Library mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a library with tall shelves." },
+  ),
+  pageVerticalItem(
+    "rooftop-vertical",
+    "page-rooftop-vertical.mp4",
+    "0:14",
+    { title: "옥상 무드 · 세로", body: "옥상에서 내려다보는 풍경의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Rooftop mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a view from a rooftop." },
+  ),
+  pageVerticalItem(
+    "market-vertical",
+    "page-market-vertical.mp4",
+    "0:14",
+    { title: "시장 무드 · 세로", body: "활기찬 시장의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Market mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a lively market." },
+  ),
+  pageVerticalItem(
+    "garden-vertical",
+    "page-garden-vertical.mp4",
+    "0:14",
+    { title: "정원 무드 · 세로", body: "정원의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Garden mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a garden." },
+  ),
+  pageVerticalItem(
+    "compass-vertical",
+    "page-compass-vertical.mp4",
+    "0:14",
+    { title: "나침반 무드 · 세로", body: "나침반이 놓인 책상의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Compass mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a desk with a compass resting on it." },
+    {
+      ko: "품질 메모: 나침반 다이얼의 로마 숫자가 또렷하게 읽힙니다. 원래 쇼츠(shorts-47-compass)로 만든 클립이지만, 읽히는 글자가 있는 소재는 쇼츠 섹션에 걸지 않는 원칙에 따라 자료실에만 보관합니다.",
+      en: "Quality note: the Roman numerals on the compass dial are clearly readable. The clip was made as a short (shorts-47-compass), but material with legible lettering stays out of the shorts section, so it is kept in the library only.",
+    },
+  ),
+];

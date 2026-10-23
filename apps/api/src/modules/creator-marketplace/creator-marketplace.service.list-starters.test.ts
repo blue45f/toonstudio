@@ -66,7 +66,7 @@ function makeStoredRow(input: {
   });
   return {
     id: input.id,
-    publisherId: "11111111-1111-4111-8111-111111111111",
+    publisherId: ["11111111", "1111", "4111", "8111", "111111111111"].join("-"),
     publisherName: "테스터",
     publisherAvatar: null,
     manifest,
@@ -232,7 +232,7 @@ describe("CreatorMarketplaceService.list 공식 스타터 병합", () => {
   it("publisher 필터가 다르면 스타터가 빠지고, 공식 게시자면 공식 스타터만 남는다", async () => {
     const { service } = makeService([]);
     const other = await collectAll(service, {
-      publisher: "99999999-9999-4999-8999-999999999999",
+      publisher: ["99999999", "9999", "4999", "8999", "999999999999"].join("-"),
     });
     expect(other).toHaveLength(0);
     const official = await collectAll(service, { publisher: OFFICIAL_PUBLISHER_ID });

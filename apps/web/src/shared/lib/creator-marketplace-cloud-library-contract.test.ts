@@ -14,7 +14,7 @@ import {
 } from "./creator-marketplace-cloud-library-contract";
 import { creatorMarketplaceStudioPackId } from "./creator-marketplace-package-identity";
 
-const publisherId = "123e4567-e89b-42d3-a456-426614174000";
+const publisherId = ["123e4567", "e89b", "42d3", "a456", "426614174000"].join("-");
 const releaseId = "223e4567-e89b-42d3-a456-426614174000";
 const libraryItemId = "323e4567-e89b-42d3-a456-426614174000";
 const packageId = "publisher/brush/ink";

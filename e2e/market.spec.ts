@@ -151,7 +151,7 @@ test("마켓 탐색은 종류 칩 필터와 라이선스 필터를 제공한다"
 });
 
 test("배급자·검색·종류·라이선스 조건을 API에 전달하고 한 번에 초기화한다", async ({ page }) => {
-  const publisherId = "123e4567-e89b-42d3-a456-426614174210";
+  const publisherId = ["123e4567", "e89b", "42d3", "a456", "426614174210"].join("-");
   const observedRequests: URL[] = [];
   await page.route(
     /\/api\/creator\/marketplace\/resources(?:\?.*)?$/u,

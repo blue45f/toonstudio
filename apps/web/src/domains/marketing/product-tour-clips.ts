@@ -12,6 +12,12 @@
  * domains/marketing/public/workflow-stages.ts가 소유한다), serial은 투어
  * 페이지 '새로 더해진 기능' 카드(제작 관리 보드)의 배경, bg3d는
  * /about/studio 제작 흐름의 '2D·3D 제작' 단계 카드 배경이다.
+ *
+ * 전환 클립 3편의 세로 변형은 아직 표면에 배선하지 않아, 이 파일 끝에
+ * 홍보 영상 자료실의 투어 카테고리 항목 모양으로 함께 둔다
+ * (promo-video-library.ts의 LIBRARY_ONLY와 같은 값을 순환 import를 피해
+ * 여기에 따로 적는다 — promo-video-library-pages.ts와 같은 방식).
+ * 18차 파도에서 만든 마무리 배경의 세로 변형도 같은 모양으로 함께 둔다.
  */
 export interface ProductTourAmbientClip {
   readonly id: "intro" | "outro";
@@ -118,3 +124,189 @@ export const PRODUCT_TOUR_TRANSITION_BG3D_CLIP = {
   width: 1344,
   height: 768,
 } as const;
+
+/**
+ * 전환 클립의 세로(9:16) 변형 — 가로본 전환 3편을 세로로 다시 그린
+ * 생성형 AI 영상 3편과, 19~23차 파도에서 세로로 새로 그린 나뭇잎·꽃잎·
+ * 연기·물방울·물결 전환 5편이다. 아직 표면에 배선하지 않아 홍보 영상 자료실의 투어
+ * 카테고리에만 수록하므로, 자료실 항목(PromoVideoItem) 모양으로 적는다.
+ */
+export interface ProductTourTransitionVerticalItem {
+  readonly id: string;
+  readonly categoryId: "tour";
+  readonly src: string;
+  readonly width: number;
+  readonly height: number;
+  readonly durationLabel: string;
+  readonly ko: { readonly title: string; readonly body: string };
+  readonly en: { readonly title: string; readonly body: string };
+  readonly usage: { readonly ko: string; readonly en: string };
+}
+
+const TRANSITION_VERTICAL_USAGE = { ko: "자료실 보관", en: "Library only" } as const;
+
+export const PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS: readonly ProductTourTransitionVerticalItem[] = [
+  {
+    id: "tour-transition-drawing-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-1-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 작화 세로",
+      body: "작화 전환 가로본을 세로(9:16)로 다시 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Drawing, vertical",
+      body: "The drawing transition clip redrawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-bg3d-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-2-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 3D 배경 세로",
+      body: "3D 배경 전환 가로본을 세로(9:16)로 다시 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · 3D backdrop, vertical",
+      body: "The 3D backdrop transition clip redrawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-serial-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-3-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 연재 세로",
+      body: "연재 전환 가로본을 세로(9:16)로 다시 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Serialisation, vertical",
+      body: "The serialisation transition clip redrawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-leaves-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-4-leaves.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 나뭇잎 세로",
+      body: "나뭇잎이 흩날리는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Leaves, vertical",
+      body: "A transition of leaves drifting, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-petals-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-5-petals.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 꽃잎 세로",
+      body: "꽃잎이 흩날리는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Petals, vertical",
+      body: "A transition of petals drifting, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-smoke-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-6-smoke.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 연기 세로",
+      body: "연기가 피어오르는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Smoke, vertical",
+      body: "A transition of smoke curling up, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-bubbles-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-7-bubbles.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 물방울 세로",
+      body: "물방울이 번지는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Bubbles, vertical",
+      body: "A transition of bubbles spreading, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-ripple-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-8-ripple.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 물결 세로",
+      body: "물결이 번지는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Ripples, vertical",
+      body: "A transition of ripples spreading, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+];
+
+/**
+ * 마무리 배경의 세로(9:16) 변형 — 투어 아웃트로 가로본
+ * (PRODUCT_TOUR_OUTRO_CLIP)의 분위기를 세로로 다시 그린 생성형 AI
+ * 영상이다. 페이지 카테고리에 이미 있는 동명의 세로 클립
+ * (page-tour-outro-vertical, 0:14)과는 별개로 18차 파도에서 만든
+ * 클립이라 길이가 다르다. 아직 표면에 배선하지 않아 홍보 영상 자료실의
+ * 투어 카테고리에만 수록하므로, 전환 세로 변형과 같은 자료실 항목
+ * 모양으로 적는다.
+ */
+export const PRODUCT_TOUR_OUTRO_VERTICAL_ITEM: ProductTourTransitionVerticalItem = {
+  id: "tour-outro-vertical",
+  categoryId: "tour",
+  src: "/brand/product-tour/tour-outro-vertical.mp4",
+  width: 768,
+  height: 1344,
+  durationLabel: "0:07",
+  ko: {
+    title: "투어 마무리 · 세로 변형",
+    body: "투어 마무리 배경을 세로(9:16)로 다시 그린 변형입니다.",
+  },
+  en: {
+    title: "Tour closing · Vertical variant",
+    body: "The tour closing backdrop redrawn vertically (9:16).",
+  },
+  usage: TRANSITION_VERTICAL_USAGE,
+};

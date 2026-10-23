@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 59편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 204편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,41 +8,70 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 10편: product-tour-shorts.ts (PRODUCT_TOUR_SHORTS)
- * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
- * - 챕터 배경 루프 9편: product-tour-clips.ts + 챕터 이름은
- *   product-tour-content.ts의 PRODUCT_TOUR.chapters
- * - 브랜드 클립 9편: brand-clips.ts (배선 8편 + 자료실 보관인 밤 버전 1편)
- * - 도구 클립 15편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
- *   카테고리 7편 + 보류 1편)과 세로 변형 3편(TOOL_CLIPS_VERTICAL), 그리고
- *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
- *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
- *   여기서는 그 값을 옮겨 적고 출처를 밝힌다)
- * - 페이지 클립 11편: 이 파일이 첫 레지스트리다 (public/brand/page-clips/).
- *   전부 아직 표면에 배선하지 않은 자료실 보관분이고, 홈 무드는 결함본을
- *   교체한 v2가 정본이며 계절 변형 2편(가을·겨울)을 함께 둔다.
+ * - 쇼츠 49편: 투어 쇼츠 섹션의 48편은 product-tour-shorts.ts
+ *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
+ *   품질 메모와 함께 이 파일에 직접 적는다.
+ * - 투어 도입·마무리·전환 14편: product-tour-clips.ts (전환 가로본 3편의 세로
+ *   변형 8편과 마무리 배경의 세로 변형 1편은 같은 파일이 자료실 항목 모양으로 함께 정본을 맡는다)
+ * - 챕터 배경 루프 18편: 가로본 9편은 product-tour-clips.ts + 챕터 이름은
+ *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 세로 변형
+ *   9편(가로 9챕터와 1:1)은 이 파일이 첫 레지스트리다
+ *   (public/brand/promo-chapter-loops/).
+ * - 브랜드 클립 51편: brand-clips.ts (배선 8편 + 자료실 보관 43편 — 밤 버전·비 오는
+ *   날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·창가의 고양이·정사각 스팅·와이드
+ *   팬·비 히어로·눈 히어로·황금빛 노을·정사각 궤도 스팅·별빛·새벽 히어로·정사각 프리즘
+ *   스팅·도서관·바다·안개 히어로·정사각 꽃 스팅·네온 골목·종이 모형 마을·황혼 히어로·정사각 잉크 스팅·숲빛·새벽 도시·봄 히어로·정사각 파도 스팅·산과 호수·작업 공방·정사각 벌집 스팅·강가의 바위·눈 덮인 들판·항구 히어로·정사각 테라조 스팅·가을 길·모래 언덕·초원 히어로·정사각 용암 스팅·폭포·대나무숲·절벽 바다 히어로·정사각 수정 스팅)
+ * - 도구 클립 36편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약 카테고리
+ *   7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고 제작
+ *   과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계 매핑의 정본은
+ *   public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라 여기서는 그 값을 옮겨 적고
+ *   출처를 밝힌다), 정사각 변형 12편(TOOL_CLIPS_SQUARE, 가로본 12편과 1:1)
+ * - 페이지 클립 36편: promo-video-library-pages.ts가 레지스트리다
+ *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했고, 브랜드 보관 항목의 17~23차 파도분 26편도 promo-video-library-brand.ts로 분리했다.
  */
 import {
+  BRAND_CAT_CLIP,
+  BRAND_DESK_CLOSEUP_CLIP,
   BRAND_FILM_CLOSING_CLIP,
   BRAND_FILM_SCENE_CLIPS,
+  BRAND_GOLDEN_HOUR_CLIP,
+  BRAND_LIBRARY_CLIP,
   BRAND_NIGHT_STUDIO_CLIP,
+  BRAND_RAINY_STUDIO_CLIP,
+  BRAND_SQUARE_ORBIT_CLIP,
+  BRAND_SQUARE_PRISM_CLIP,
+  BRAND_SQUARE_STING_CLIP,
+  BRAND_STARLIGHT_CLIP,
+  BRAND_WEEKEND_MORNING_CLIP,
+  BRAND_WIDE_PAN_CLIP,
   FEATURES_AMBIENT_CLIP,
   HOME_CORE_STUDIO_3D_BACKDROP_CLIP,
+  HOME_HERO_DAWN_CLIP,
+  HOME_HERO_EVENING_CLIP,
+  HOME_HERO_NIGHT_CLIP,
+  HOME_HERO_RAIN_CLIP,
+  HOME_HERO_SNOW_CLIP,
   STUDIO_INTRO_CLOSING_CLIP,
+  type BrandClip,
 } from "./brand-clips";
 import {
   PRODUCT_TOUR_INTRO_CLIP,
   PRODUCT_TOUR_OUTRO_CLIP,
+  PRODUCT_TOUR_OUTRO_VERTICAL_ITEM,
   PRODUCT_TOUR_TRANSITION_BG3D_CLIP,
   PRODUCT_TOUR_TRANSITION_DRAWING_CLIP,
   PRODUCT_TOUR_TRANSITION_SERIAL_CLIP,
+  PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS,
   productTourChapterLoop,
   type ProductTourChapterLoopId,
 } from "./product-tour-clips";
 import { PRODUCT_TOUR } from "./product-tour-content";
 import { PRODUCT_TOUR_SHORTS } from "./product-tour-shorts";
+import { PROMO_VIDEO_PAGE_ITEMS } from "./promo-video-library-pages";
+import { PROMO_VIDEO_BRAND_LIBRARY_ITEMS } from "./promo-video-library-brand";
 import {
   FEATURE_OVERVIEW_CATEGORY_CLIPS,
+  TOOL_CLIPS_SQUARE,
   TOOL_CLIPS_STAGED,
   TOOL_CLIPS_VERTICAL,
   TOOL_SURFACE_CLIPS,
@@ -67,11 +96,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 제품 투어 페이지의 쇼츠 섹션에도 같은 열 편이 걸려 있습니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 마흔여덟 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. The same ten also run in the shorts section of the product tour page.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Forty-eight also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
@@ -89,11 +118,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "chapter-loops",
     ko: {
       title: "챕터 배경 루프",
-      body: "제품 투어 챕터 카드마다 은은하게 깔리는 챕터별 분위기 루프입니다.",
+      body: "제품 투어 챕터 카드마다 은은하게 깔리는 챕터별 분위기 루프입니다. 가로 아홉 편은 챕터 카드 배경으로 걸려 있고, 세로 아홉 편은 가로본과 1:1로 맞춘 변형으로 함께 보관합니다.",
     },
     en: {
       title: "Chapter backdrop loops",
-      body: "One ambient loop per product tour chapter, laid softly behind each chapter card.",
+      body: "One ambient loop per product tour chapter, laid softly behind each chapter card. The nine horizontal loops back the chapter cards, and nine vertical variants matched to them one-to-one are kept alongside.",
     },
   },
   {
@@ -153,17 +182,52 @@ const SHORTS_USAGE = {
   en: "Product tour page · Shorts section",
 } as const;
 
-const shorts: readonly PromoVideoItem[] = PRODUCT_TOUR_SHORTS.map((short) => ({
-  id: `shorts-${short.id}`,
-  categoryId: "shorts",
-  src: short.src,
-  width: short.width,
-  height: short.height,
-  durationLabel: short.durationLabel,
-  ko: short.ko,
-  en: short.en,
-  usage: SHORTS_USAGE,
-}));
+/**
+ * 펜촉·잉크 클로즈업 쇼츠(shorts-ink-closeup)의 품질 메모 — 제작 과정에서 보고된
+ * 사항을 자료실 항목에만 정직하게 단다. 쇼츠 섹션에서는 메모 없이 그대로 배선한다.
+ */
+const INK_CLOSEUP_NOTE = {
+  ko: "품질 메모: 펜촉의 금속 장식 부분에 작은 각인 같은 형태가 보일 수 있습니다. 읽을 수 있는 글자는 아니어서 그대로 수록합니다.",
+  en: "Quality note: the pen nib's metal ornament may show small engraving-like marks. They are not readable letters, so the clip is kept as is.",
+} as const;
+
+const shorts: readonly PromoVideoItem[] = [
+  ...PRODUCT_TOUR_SHORTS.map((short) => ({
+    id: `shorts-${short.id}`,
+    categoryId: "shorts" as const,
+    src: short.src,
+    width: short.width,
+    height: short.height,
+    durationLabel: short.durationLabel,
+    ko: short.ko,
+    en: short.en,
+    usage: SHORTS_USAGE,
+    ...(short.id === "ink-closeup" ? { note: INK_CLOSEUP_NOTE } : {}),
+  })),
+  {
+    // 말풍선에 깨진 글자 형태가 섞인 품질 이슈가 있어 쇼츠 섹션에는 걸지 않고
+    // 자료실에만 보관한다 (홈 무드 v1의 결함 메모 방식과 동일).
+    id: "shorts-reactions",
+    categoryId: "shorts",
+    src: "/brand/promo-shorts/shorts-18-reactions.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "반응이 쏟아지는 순간",
+      body: "새 회차가 오르자 하트와 댓글 반응이 쏟아지는 장면을 그린 클립입니다.",
+    },
+    en: {
+      title: "Reactions pouring in",
+      body: "Hearts and comment reactions pouring in the moment a new episode drops.",
+    },
+    usage: { ko: "자료실 보관 · 품질 메모(말풍선 유사 글자)", en: "Library only · Quality note (letter-like shapes in balloons)" },
+    note: {
+      ko: "품질 메모: 말풍선에 읽을 수 없는 깨진 글자 형태가 일부 섞여 있어, 쇼츠 섹션에는 걸지 않고 자료실에만 보관합니다.",
+      en: "Quality note: some speech balloons hold garbled, unreadable letter-like shapes, so this clip stays in the library and out of the shorts section.",
+    },
+  },
+];
 
 const tour: readonly PromoVideoItem[] = [
   {
@@ -243,6 +307,9 @@ const tour: readonly PromoVideoItem[] = [
     },
     usage: { ko: "제품 투어 페이지 · 새로 더해진 기능 카드 배경", en: "Product tour page · What's-new card backdrop" },
   },
+  // 전환 세로 변형 3편과 마무리 세로 변형 1편 — 항목 정본은 product-tour-clips.ts다.
+  ...PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS,
+  PRODUCT_TOUR_OUTRO_VERTICAL_ITEM,
 ];
 
 const CHAPTER_LOOP_IDS: readonly ProductTourChapterLoopId[] = [
@@ -257,30 +324,65 @@ const CHAPTER_LOOP_IDS: readonly ProductTourChapterLoopId[] = [
   "finish",
 ];
 
-const chapterLoops: readonly PromoVideoItem[] = CHAPTER_LOOP_IDS.flatMap((chapterId) => {
-  const loop = productTourChapterLoop(chapterId);
-  const chapter = PRODUCT_TOUR.chapters.find((entry) => entry.id === chapterId);
-  if (!loop || !chapter) return [];
-  return [
-    {
-      id: `chapter-loop-${chapterId}`,
-      categoryId: "chapter-loops",
-      src: loop.src,
-      width: loop.width,
-      height: loop.height,
-      durationLabel: "0:14",
-      ko: {
-        title: `${chapter.ko} · 배경 루프`,
-        body: chapter.summary.ko,
-      },
-      en: {
-        title: `${chapter.en} · Backdrop loop`,
-        body: chapter.summary.en,
-      },
-      usage: { ko: "제품 투어 페이지 · 챕터 카드 배경", en: "Product tour page · Chapter card backdrop" },
-    },
-  ];
+/** 챕터 루프 세로 변형 — 가로본의 세로 짝이다. 제목만 챕터마다 다르고 본문 틀은 같다. */
+const chapterVerticalLoop = (
+  chapterId: string,
+  ko: { readonly title: string; readonly chapter: string },
+  en: { readonly title: string; readonly chapter: string },
+): PromoVideoItem => ({
+  id: `chapter-loop-${chapterId}-vertical`,
+  categoryId: "chapter-loops",
+  src: `/brand/promo-chapter-loops/chapter-${chapterId}-vertical.mp4`,
+  width: 768,
+  height: 1344,
+  durationLabel: "0:14",
+  ko: {
+    title: `${ko.title} · 배경 루프 세로`,
+    body: `${ko.chapter} 챕터의 가로 배경 루프를 세로(9:16)로 다시 그린 변형입니다. 세로 표면용 소재로 보관합니다.`,
+  },
+  en: {
+    title: `${en.title} · Backdrop loop, vertical`,
+    body: `The ${en.chapter} chapter's horizontal backdrop loop redrawn vertically (9:16), kept as material for vertical surfaces.`,
+  },
+  usage: LIBRARY_ONLY,
 });
+
+const chapterLoops: readonly PromoVideoItem[] = [
+  ...CHAPTER_LOOP_IDS.flatMap((chapterId) => {
+    const loop = productTourChapterLoop(chapterId);
+    const chapter = PRODUCT_TOUR.chapters.find((entry) => entry.id === chapterId);
+    if (!loop || !chapter) return [];
+    return [
+      {
+        id: `chapter-loop-${chapterId}`,
+        categoryId: "chapter-loops" as const,
+        src: loop.src,
+        width: loop.width,
+        height: loop.height,
+        durationLabel: "0:14",
+        ko: {
+          title: `${chapter.ko} · 배경 루프`,
+          body: chapter.summary.ko,
+        },
+        en: {
+          title: `${chapter.en} · Backdrop loop`,
+          body: chapter.summary.en,
+        },
+        usage: { ko: "제품 투어 페이지 · 챕터 카드 배경", en: "Product tour page · Chapter card backdrop" },
+      },
+    ];
+  }),
+  // 챕터 루프 세로 변형 9편 — 가로 9챕터와 1:1로 맞춘 세로 짝이다.
+  chapterVerticalLoop("plan", { title: "아이디어와 기획", chapter: "기획" }, { title: "Ideas and planning", chapter: "planning" }),
+  chapterVerticalLoop("draw", { title: "드로잉과 브러시", chapter: "작화" }, { title: "Drawing and brushes", chapter: "drawing" }),
+  chapterVerticalLoop("comic", { title: "컷과 말풍선", chapter: "컷과 말풍선" }, { title: "Panels and dialogue", chapter: "panels-and-dialogue" }),
+  chapterVerticalLoop("three-d", { title: "캐릭터·포즈·3D 장면", chapter: "3D" }, { title: "Characters, posing and 3D", chapter: "3D" }),
+  chapterVerticalLoop("space", { title: "가상 스튜디오", chapter: "가상 스튜디오" }, { title: "Virtual studio", chapter: "virtual studio" }),
+  chapterVerticalLoop("assist", { title: "AI 보조와 반복 작업", chapter: "AI 보조" }, { title: "AI assistance and repetition", chapter: "AI assistance" }),
+  chapterVerticalLoop("production", { title: "프로젝트·협업·검토", chapter: "제작" }, { title: "Projects, collaboration and review", chapter: "production" }),
+  chapterVerticalLoop("learn", { title: "학습·소재·사운드", chapter: "학습" }, { title: "Learning, assets and sound", chapter: "learning" }),
+  chapterVerticalLoop("finish", { title: "검사·내보내기·게시", chapter: "게시" }, { title: "Validate, export and publish", chapter: "publishing" }),
+];
 
 const brandSceneCopy = {
   imagine: {
@@ -322,6 +424,24 @@ const brandScenes: readonly PromoVideoItem[] = BRAND_FILM_SCENE_CLIPS.map((clip)
     en: copy.en,
     usage: copy.usage,
   };
+});
+
+/** 자료실에만 보관하는 브랜드 클립 — 배선 항목과 같은 모양을 짧게 적기 위한 헬퍼. */
+const brandLibraryItem = (
+  id: string,
+  clip: BrandClip,
+  ko: { readonly title: string; readonly body: string },
+  en: { readonly title: string; readonly body: string },
+): PromoVideoItem => ({
+  id,
+  categoryId: "brand",
+  src: clip.src,
+  width: clip.width,
+  height: clip.height,
+  durationLabel: "0:14",
+  ko,
+  en,
+  usage: LIBRARY_ONLY,
 });
 
 const brand: readonly PromoVideoItem[] = [
@@ -388,21 +508,126 @@ const brand: readonly PromoVideoItem[] = [
     },
     usage: { ko: "홈 · 핵심 작업실 그리드 3D 카드 배경", en: "Home · Core studios grid, 3D card backdrop" },
   },
-  {
-    id: "brand-night-studio",
-    categoryId: "brand",
-    ...BRAND_NIGHT_STUDIO_CLIP,
-    durationLabel: "0:14",
-    ko: {
-      title: "밤의 스튜디오",
-      body: "도시 불빛과 램프 아래 밤의 작업실을 그린 클립입니다. 낮 파노라마의 짝으로 만들었습니다.",
-    },
-    en: {
-      title: "Night studio",
-      body: "A night studio under city lights and a desk lamp — the counterpart to the daytime panorama.",
-    },
-    usage: LIBRARY_ONLY,
-  },
+  brandLibraryItem("brand-night-studio", BRAND_NIGHT_STUDIO_CLIP, {
+    title: "밤의 스튜디오",
+    body: "도시 불빛과 램프 아래 밤의 작업실을 그린 클립입니다. 낮 파노라마의 짝으로 만들었습니다.",
+  }, {
+    title: "Night studio",
+    body: "A night studio under city lights and a desk lamp — the counterpart to the daytime panorama.",
+  }),
+  brandLibraryItem("brand-rainy-studio", BRAND_RAINY_STUDIO_CLIP, {
+    title: "비 오는 날의 스튜디오",
+    body: "빗소리가 창을 두드리는 날의 작업실을 그린 클립입니다.",
+  }, {
+    title: "Rainy-day studio",
+    body: "A studio on a day when rain taps at the window.",
+  }),
+  brandLibraryItem("brand-weekend-morning", BRAND_WEEKEND_MORNING_CLIP, {
+    title: "주말 아침의 스튜디오",
+    body: "느긋한 주말 아침 빛이 드는 작업실을 그린 클립입니다.",
+  }, {
+    title: "Weekend-morning studio",
+    body: "A studio in slow weekend-morning light.",
+  }),
+  brandLibraryItem("brand-desk-closeup", BRAND_DESK_CLOSEUP_CLIP, {
+    title: "책상 클로즈업",
+    body: "펜과 태블릿, 원고가 놓인 책상을 가까이에서 담은 클립입니다.",
+  }, {
+    title: "Desk close-up",
+    body: "A close look at a desk with a pen, a tablet and manuscript pages.",
+  }),
+  brandLibraryItem("brand-home-hero-night", HOME_HERO_NIGHT_CLIP, {
+    title: "밤의 파노라마",
+    body: "낮 파노라마의 밤 버전으로 그린 스튜디오 파노라마입니다. 히어로 자리의 분위기 교체 소재로 보관합니다.",
+  }, {
+    title: "Night panorama",
+    body: "A studio panorama drawn as the night version of the daytime one — kept as a hero-mood swap.",
+  }),
+  brandLibraryItem("brand-home-hero-evening", HOME_HERO_EVENING_CLIP, {
+    title: "노을의 파노라마",
+    body: "노을빛이 드는 스튜디오 파노라마입니다. 낮·밤 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Evening panorama",
+    body: "A studio panorama in evening glow, kept as a set with the day and night panoramas.",
+  }),
+  brandLibraryItem("brand-window-cat", BRAND_CAT_CLIP, {
+    title: "창가의 고양이",
+    body: "창가에 앉아 작업실을 내려다보는 고양이를 그린 클립입니다.",
+  }, {
+    title: "A cat by the window",
+    body: "A cat sitting by the window, watching over the studio below.",
+  }),
+  brandLibraryItem("brand-square-sting", BRAND_SQUARE_STING_CLIP, {
+    title: "정사각 브랜드 스팅",
+    body: "짧은 소셜 포스트와 카드에 붙이는 1:1 정사각 브랜드 스팅입니다.",
+  }, {
+    title: "Square brand sting",
+    body: "A 1:1 square brand sting for short social posts and cards.",
+  }),
+  brandLibraryItem("brand-wide-pan", BRAND_WIDE_PAN_CLIP, {
+    title: "넓게 도는 스튜디오 팬",
+    body: "작업실을 넓게 가로지르며 도는 파노라마 팬 장면을 그린 클립입니다.",
+  }, {
+    title: "A wide studio pan",
+    body: "A panoramic pan sweeping wide across the studio.",
+  }),
+  brandLibraryItem("brand-home-hero-rain", HOME_HERO_RAIN_CLIP, {
+    title: "비의 파노라마",
+    body: "비 내리는 창 너머의 스튜디오 파노라마입니다. 낮·노을·밤 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Rain panorama",
+    body: "A studio panorama beyond a rain-streaked window, kept as a set with the day, evening and night panoramas.",
+  }),
+  brandLibraryItem("brand-home-hero-snow", HOME_HERO_SNOW_CLIP, {
+    title: "눈의 파노라마",
+    body: "눈 내리는 창 너머의 스튜디오 파노라마입니다. 낮·노을·밤·비 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Snow panorama",
+    body: "A studio panorama beyond a snow-falling window, kept as a set with the day, evening, night and rain panoramas.",
+  }),
+  brandLibraryItem("brand-golden-hour", BRAND_GOLDEN_HOUR_CLIP, {
+    title: "황금빛 노을의 스튜디오",
+    body: "노을이 황금빛으로 번지는 시간의 작업실을 그린 클립입니다.",
+  }, {
+    title: "Golden-hour studio",
+    body: "A studio in the hour when the evening glow turns golden.",
+  }),
+  brandLibraryItem("brand-square-orbit", BRAND_SQUARE_ORBIT_CLIP, {
+    title: "정사각 궤도 스팅",
+    body: "빛의 궤도가 감도는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅의 짝으로 보관합니다.",
+  }, {
+    title: "Square orbit sting",
+    body: "A 1:1 square brand sting with orbits of light winding through it — kept as the square sting's counterpart.",
+  }),
+  brandLibraryItem("brand-starlight", BRAND_STARLIGHT_CLIP, {
+    title: "별빛 아래의 스튜디오",
+    body: "별이 빛나는 밤하늘 아래 작업실을 그린 클립입니다.",
+  }, {
+    title: "Studio under starlight",
+    body: "A studio under a night sky full of starlight.",
+  }),
+  brandLibraryItem("brand-home-hero-dawn", HOME_HERO_DAWN_CLIP, {
+    title: "새벽의 파노라마",
+    body: "새벽빛이 드는 스튜디오 파노라마입니다. 낮·노을·밤·비·눈 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Dawn panorama",
+    body: "A studio panorama in dawn light, kept as a set with the day, evening, night, rain and snow panoramas.",
+  }),
+  brandLibraryItem("brand-square-prism", BRAND_SQUARE_PRISM_CLIP, {
+    title: "정사각 프리즘 스팅",
+    body: "프리즘을 지난 빛이 색으로 갈라지는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅 세트와 함께 보관합니다.",
+  }, {
+    title: "Square prism sting",
+    body: "A 1:1 square brand sting of light splitting into colors through a prism — kept with the square sting set.",
+  }),
+  brandLibraryItem("brand-library", BRAND_LIBRARY_CLIP, {
+    title: "책장 높은 도서관",
+    body: "높은 책장과 사다리가 있는 도서관의 고요한 공기를 그린 클립입니다.",
+  }, {
+    title: "The tall-shelved library",
+    body: "The quiet air of a library with tall shelves and a ladder.",
+  }),
+  ...PROMO_VIDEO_BRAND_LIBRARY_ITEMS,
 ];
 
 const FEATURE_BAND_USAGE = {
@@ -487,6 +712,29 @@ const SOCIAL_VERTICAL_USAGE = {
   en: "Library only · Vertical version for social cards",
 } as const;
 
+const SQUARE_USAGE = {
+  ko: "자료실 보관 · 소셜 피드용 정사각 버전",
+  en: "Library only · Square version for social feeds",
+} as const;
+
+const toolSquareItem = (clip: (typeof TOOL_CLIPS_SQUARE)[number]): PromoVideoItem => ({
+  id: `tool-${clip.toolId}-square`,
+  categoryId: "tools",
+  src: clip.src,
+  width: clip.width,
+  height: clip.height,
+  durationLabel: "0:14",
+  ko: {
+    title: `${toolCopy[clip.toolId].ko.title} · 정사각`,
+    body: "같은 주제를 정사각(1:1)으로 다시 그린 소셜 피드용 변형입니다.",
+  },
+  en: {
+    title: `${toolCopy[clip.toolId].en.title} · Square`,
+    body: "The same subject redrawn as a square (1:1) variant for social feeds.",
+  },
+  usage: SQUARE_USAGE,
+});
+
 const toolVerticalItem = (clip: (typeof TOOL_CLIPS_VERTICAL)[number]): PromoVideoItem => ({
   id: `tool-${clip.toolId}-vertical`,
   categoryId: "tools",
@@ -533,130 +781,7 @@ const tools: readonly PromoVideoItem[] = [
   ),
   ...TOOL_CLIPS_STAGED.map((clip) => toolItem(clip.toolId, clip, LIBRARY_ONLY)),
   ...TOOL_CLIPS_VERTICAL.map(toolVerticalItem),
-];
-
-const pageItem = (
-  id: string,
-  file: string,
-  durationLabel: string,
-  ko: { readonly title: string; readonly body: string },
-  en: { readonly title: string; readonly body: string },
-  note?: { readonly ko: string; readonly en: string },
-  usage: { readonly ko: string; readonly en: string } = LIBRARY_ONLY,
-): PromoVideoItem => ({
-  id: `page-${id}`,
-  categoryId: "pages",
-  src: `/brand/page-clips/${file}`,
-  width: 1344,
-  height: 768,
-  durationLabel,
-  ko,
-  en,
-  usage,
-  ...(note ? { note } : {}),
-});
-
-const pages: readonly PromoVideoItem[] = [
-  pageItem(
-    "about",
-    "page-about.mp4",
-    "0:14",
-    { title: "서비스 소개 무드", body: "서비스를 소개하는 자리에 깔기 위해 만든 분위기 클립입니다." },
-    { title: "About mood", body: "A mood clip made to sit behind the service introduction." },
-  ),
-  pageItem(
-    "pricing",
-    "page-pricing.mp4",
-    "0:14",
-    { title: "요금 안내 무드", body: "요금과 멤버십을 안내하는 자리에 깔기 위해 만든 분위기 클립입니다." },
-    { title: "Pricing mood", body: "A mood clip made to sit behind pricing and membership." },
-  ),
-  pageItem(
-    "workflow",
-    "page-workflow.mp4",
-    "0:14",
-    { title: "제작 과정 무드", body: "제작 과정이 흘러가는 자리에 깔기 위해 만든 분위기 클립입니다." },
-    { title: "Workflow mood", body: "A mood clip made to sit behind the production workflow." },
-  ),
-  pageItem(
-    "ir",
-    "page-ir.mp4",
-    "0:15",
-    { title: "IR 무드", body: "투자 소개 자리의 배경으로 쓰기 위해 만든 분위기 클립입니다." },
-    { title: "IR mood", body: "A mood clip made as a backdrop for the investor brief." },
-  ),
-  pageItem(
-    "start",
-    "page-start.mp4",
-    "0:14",
-    { title: "시작하기 무드", body: "처음 시작하는 창작자를 맞는 자리에 깔기 위해 만든 분위기 클립입니다." },
-    { title: "Getting-started mood", body: "A mood clip made to welcome creators who are just starting." },
-  ),
-  pageItem(
-    "home-v2",
-    "page-home-v2.mp4",
-    "0:14",
-    {
-      title: "홈 무드",
-      body: "창작 홈의 배경으로 쓰기 위해 만든 분위기 클립입니다. 달력 글자가 또렷하던 앞선 버전을 교체한 정본입니다.",
-    },
-    {
-      title: "Home mood",
-      body: "A mood clip made as a backdrop for the creator home — the canonical version, replacing the earlier take whose calendar text was too legible.",
-    },
-  ),
-  pageItem(
-    "home",
-    "page-home.mp4",
-    "0:14",
-    { title: "홈 무드 · 이전 버전", body: "창작 홈 배경용으로 먼저 만들었던 버전입니다." },
-    { title: "Home mood · Earlier version", body: "The first take made as a backdrop for the creator home." },
-    {
-      ko: "품질 메모: 달력 숫자와 'EPISODE' 글자가 또렷하게 보여, 위의 교체본(v2)으로 대체했습니다. 비교용으로만 남깁니다.",
-      en: "Quality note: the calendar numbers and the word 'EPISODE' are clearly visible, so the v2 above supersedes this one. Kept for comparison only.",
-    },
-    { ko: "자료실 보관 · 대체됨", en: "Library only · Superseded" },
-  ),
-  pageItem(
-    "help",
-    "page-help.mp4",
-    "0:14",
-    { title: "도움말 무드", body: "도움말과 안내 자리에 깔기 위해 만든 분위기 클립입니다." },
-    { title: "Help mood", body: "A mood clip made to sit behind help and guidance." },
-  ),
-  pageItem(
-    "tour-stinger",
-    "page-tour-stinger.mp4",
-    "0:14",
-    { title: "투어 스팅어", body: "짧게 분위기를 열고 닫는 스팅어 용도로 만든 클립입니다." },
-    { title: "Tour stinger", body: "A short stinger clip for opening and closing on a mood." },
-  ),
-  pageItem(
-    "season-autumn",
-    "season-autumn.mp4",
-    "0:14",
-    {
-      title: "계절 · 가을 스튜디오",
-      body: "가을빛이 드는 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
-    },
-    {
-      title: "Season · Autumn studio",
-      body: "An autumn-lit studio — a seasonal variant kept for swapping event and season banners.",
-    },
-  ),
-  pageItem(
-    "season-winter",
-    "season-winter.mp4",
-    "0:14",
-    {
-      title: "계절 · 겨울 스튜디오",
-      body: "눈 오는 창밖과 따뜻한 실내를 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
-    },
-    {
-      title: "Season · Winter studio",
-      body: "Snow outside the window and warmth inside — a seasonal variant kept for swapping event and season banners.",
-    },
-  ),
+  ...TOOL_CLIPS_SQUARE.map(toolSquareItem),
 ];
 
 export const PROMO_VIDEO_ITEMS: readonly PromoVideoItem[] = [
@@ -665,7 +790,7 @@ export const PROMO_VIDEO_ITEMS: readonly PromoVideoItem[] = [
   ...chapterLoops,
   ...brand,
   ...tools,
-  ...pages,
+  ...PROMO_VIDEO_PAGE_ITEMS,
 ];
 
 export function promoVideosByCategory(
