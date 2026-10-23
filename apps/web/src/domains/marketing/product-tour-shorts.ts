@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 27편.
- * 스물일곱 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 29편.
+ * 스물아홉 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~27편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~29편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -32,7 +32,9 @@ export interface ProductTourShort {
     | "reader-phone"
     | "handcam-work"
     | "episode-alert"
-    | "library-shelves";
+    | "library-shelves"
+    | "deadline-dawn"
+    | "team-table";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -445,6 +447,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Shelved in my library",
       body: "Bookmarking favorite works onto library shelves, ready to pull out and read again anytime.",
+    },
+  },
+  {
+    id: "deadline-dawn",
+    src: "/brand/promo-shorts/shorts-29-dawn.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "마감을 넘긴 새벽",
+      body: "긴 밤 작업 끝에 마감을 넘기고, 창밖이 밝아 오는 새벽의 고요를 담았습니다.",
+    },
+    en: {
+      title: "Dawn after the deadline",
+      body: "The quiet dawn outside the window after a long night of work finally meets its deadline.",
+    },
+  },
+  {
+    id: "team-table",
+    src: "/brand/promo-shorts/shorts-30-team.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "함께 둘러앉은 작업 테이블",
+      body: "여럿이 한 테이블에 둘러앉아 스케치를 주고받으며 작업하는 팀의 온기를 담았습니다.",
+    },
+    en: {
+      title: "Around the team table",
+      body: "A team gathered around one table, passing sketches back and forth as the work comes together.",
     },
   },
 ];
