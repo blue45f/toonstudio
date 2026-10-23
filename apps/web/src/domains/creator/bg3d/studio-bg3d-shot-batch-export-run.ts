@@ -953,8 +953,7 @@ export function createStudioBg3dShotBatchExportRunner(
             else if (budgetExceeded) failureCode = "artifact-budget-exceeded";
             else if (cause instanceof Error && cause.message.includes("복원")) {
               failureCode = "scene-restore-failed";
-            } else if (cause instanceof Error && (cause.message.includes("PNG") ||
-              (cause instanceof StudioBg3dShotBatchRecoveryError && cause.subcode.toLowerCase().includes("png")))) {
+            } else if (cause instanceof Error && (cause.message.includes("PNG") || (cause instanceof StudioBg3dShotBatchRecoveryError && cause.subcode.toLowerCase().includes("png")))) {
               failureCode = "encode-failed";
             }
             await shotBatchRecoveryStore.failShot(recoverySession, activeRunToken, failureCode);
