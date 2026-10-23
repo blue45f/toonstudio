@@ -57,6 +57,11 @@ const KIT_PREFIX_ROLES: readonly (readonly [RegExp, PartRole])[] = [
   [/^ts_accessory(?:_|$)/u, "accessory"],
   [/^ts_underwear(?:_|$)/u, "underwear"],
   [/^ts_iris(?:_|$)/u, "iris"],
+  // 레시피 v3 역할(키트 v2 노드 접두, character-kit-v2.ts): 층 의상과 헤어 부속. `ts_hairaccessory`는 키워드 `hair`보다 먼저 잡혀야 한다.
+  [/^ts_inner(?:_|$)/u, "inner"],
+  [/^ts_outer(?:_|$)/u, "outer"],
+  [/^ts_legwear(?:_|$)/u, "legwear"],
+  [/^ts_hairaccessory(?:_|$)/u, "hair-accessory"],
 ];
 
 /** `TS_Mouth`의 프리미티브 번호 → 역할(계약 3.4: 치아+잇몸이 0번, 혀+구강 포켓이 1번) */

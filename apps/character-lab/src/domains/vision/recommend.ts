@@ -14,7 +14,7 @@ import { oklabChroma, oklabHueDeg } from "./kmeans-palette";
 import { rankBySimilarity } from "./similarity";
 
 import type { PaletteEntry } from "./kmeans-palette";
-import type { Embedding, PresetCatalog, PresetId, RecipeColors, SlotKind } from "../../contracts";
+import type { Embedding, PresetCatalog, PresetId, RecipeColorKey, RecipeColors, SlotKind } from "../../contracts";
 
 export interface PresetRecommendation {
   readonly presetId: PresetId;
@@ -67,7 +67,8 @@ export function recommendPresets(
   };
 }
 
-type ColorKey = keyof RecipeColors;
+/** 추천은 기본 8채널만 채운다(상속 채널은 레시피 v3 상속 규칙이 만든다) */
+type ColorKey = RecipeColorKey;
 
 interface PaletteCandidate {
   readonly entry: PaletteEntry;

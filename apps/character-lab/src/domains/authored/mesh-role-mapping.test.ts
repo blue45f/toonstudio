@@ -106,4 +106,13 @@ describe("authored/mesh-role-mapping", () => {
     expect(chooseLodForTriangleBudget([3752, 1788, 960], 100)).toBe(2);
     expect(chooseLodForTriangleBudget([], 100)).toBe(0);
   });
+  it("레시피 v3 키트 v2 접두(TS_Inner·TS_Outer·TS_Legwear·TS_HairAccessory)는 키워드보다 먼저 층·헤어 부속 역할을 정한다", () => {
+    expect(classifyMeshName("TS_Inner_shirt")).toMatchObject({ role: "inner" });
+    expect(classifyMeshName("TS_Outer_blazer_Trim")).toMatchObject({ role: "outer" });
+    expect(classifyMeshName("TS_Legwear_jeans")).toMatchObject({ role: "legwear" });
+    // `hair` 키워드보다 접두가 먼저다(헤어로 오분류하지 않는다)
+    expect(classifyMeshName("TS_HairAccessory_ribbon_Accent")).toMatchObject({ role: "hair-accessory" });
+    // 접두 뒤는 `_`이거나 끝이어야 한다
+    expect(classifyMeshName("TS_Innerwear")).not.toMatchObject({ role: "inner" });
+  });
 });
