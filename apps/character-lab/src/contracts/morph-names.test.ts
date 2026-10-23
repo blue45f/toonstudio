@@ -9,8 +9,14 @@ import {
   expressionToMorphWeights,
   facsMorphName,
   paramMorphName,
+  isMorphTargetName,
+  isShapeName,
   paramToMorphWeights,
+  parseExtendedMorphName,
   parseMorphTargetName,
+  parseShapeMorphName,
+  shapeMorphName,
+  shapeToMorphWeights,
 } from "./morph-names";
 import { BODY_PARAM_KEYS, FACE_PARAM_KEYS } from "./params";
 
@@ -92,5 +98,41 @@ describe("contracts/morph-names", () => {
     const names = allParamMorphNames([...BODY_PARAM_KEYS, ...FACE_PARAM_KEYS]);
     expect(names).toHaveLength((BODY_PARAM_KEYS.length + FACE_PARAM_KEYS.length) * 2);
     expect(names.slice(0, 2)).toEqual(["param:height:+", "param:height:-"]);
+  });
+});
+
+describe("contracts/morph-names: 파츠 형태 morph(레시피 v3)", () => {
+  it("형태 이름은 소문자로 시작하는 camelCase·kebab-case 24자 이하(포지 sideLength 허용)", () => {
+    for (const name of ["length", "sideLength", "sleeve-length", "fit", "a1"]) expect(isShapeName(name), name).toBe(true);
+    for (const name of ["Length", "1st", "side_length", "-a", "a-", "a--b", "", "x".repeat(25)]) expect(isShapeName(name), name).toBe(false);
+    expect(isShapeName(5)).toBe(false);
+  });
+
+  it("shape:<이름>:± 문법을 만들고 읽는다", () => {
+    expect(shapeMorphName("length", "+")).toBe("shape:length:+");
+    expect(() => shapeMorphName("Bad", "+")).toThrowError(/형태 이름/u);
+    expect(parseShapeMorphName("shape:sideLength:-")).toEqual({ kind: "shape", name: "sideLength", sign: "-" });
+    expect(parseShapeMorphName("shape:length")).toBeNull();
+    expect(parseShapeMorphName("shape:length:*")).toBeNull();
+    expect(parseShapeMorphName("shape:Bad:+")).toBeNull();
+    expect(parseShapeMorphName("param:height:+")).toBeNull();
+  });
+
+  it("v1 어휘 판정(isMorphTargetName·parseMorphTargetName)은 형태 morph를 받지 않는다 — 키트 v1 검증이 shape:*를 거부해야 한다", () => {
+    expect(isMorphTargetName("shape:length:+")).toBe(false);
+    expect(parseMorphTargetName("shape:length:+")).toBeNull();
+    expect(parseExtendedMorphName("shape:length:+")).toEqual({ kind: "shape", name: "length", sign: "+" });
+    expect(parseExtendedMorphName("param:height:-")).toEqual({ kind: "param", key: "height", sign: "-" });
+    expect(parseExtendedMorphName("facs:jawOpen")).toEqual({ kind: "facs", unit: "jawOpen" });
+    expect(parseExtendedMorphName("ext:custom")).toBeNull();
+  });
+
+  it("형태 값(−1..1)을 ± 가중치로 나누고 0·NaN·규약 밖 이름은 뺀다(결정적 순서)", () => {
+    expect(shapeToMorphWeights({ volume: 0.4, length: -0.75, bangs: 0, curl: Number.NaN, Bad: 1, wave: 3 })).toEqual({
+      "shape:length:-": 0.75,
+      "shape:volume:+": 0.4,
+      "shape:wave:+": 1,
+    });
+    expect(Object.keys(shapeToMorphWeights({ b: 0.1, a: 0.1 }))).toEqual(["shape:a:+", "shape:b:+"]);
   });
 });
