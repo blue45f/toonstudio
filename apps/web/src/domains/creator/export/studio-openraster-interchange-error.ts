@@ -3,7 +3,7 @@
  * 분리한 파일. 생산자 본체는 이 파일에서 import하고, 외부 소비자 호환을 위해
  * 생산자 파일이 그대로 재수출한다.
  */
-import type { StudioOpenRasterErrorCode, StudioOpenRasterWarningCode } from "./studio-openraster-interchange";
+import type { StudioOpenRasterErrorCode, StudioOpenRasterWarningCode } from "../studio-openraster-interchange";
 
 export type StudioOpenRasterWarningVariant =
   | "dimensionMismatch"

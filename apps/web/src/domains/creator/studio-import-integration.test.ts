@@ -82,6 +82,7 @@ import {
   importStudioProjectArchive,
   StudioProjectArchiveError,
 } from "./studio-project-archive";
+import { resolveStudioPaletteInterchangeErrorFromCause } from "./status-i18n/studio-producer-error-i18n-palette";
 import { resolveStudioProjectArchiveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-project-archive";
 import { parseStudioProjectFile, serializeStudioProjectFile } from "./studio-project-file";
 import { importPsdFile } from "./studio-psd-import";
@@ -1255,8 +1256,13 @@ describe("팔레트 라이브러리 가져오기 왕복", () => {
   });
 
   it("판별 불가능한 바이트는 한국어 오류로 거부한다", () => {
-    expect(() => importStudioPalette("ase", Uint8Array.from([1, 2, 3, 4])))
-      .toThrow(/[가-힣]/u);
+    let caught: unknown;
+    try {
+      importStudioPalette("ase", Uint8Array.from([1, 2, 3, 4]));
+    } catch (error) {
+      caught = error;
+    }
+    expect(resolveStudioPaletteInterchangeErrorFromCause(caught)).toMatch(/[가-힣]/u);
   });
 });
 
