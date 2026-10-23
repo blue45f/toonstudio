@@ -5,8 +5,8 @@ import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { PRODUCT_TOUR_SHORTS } from "./product-tour-shorts";
 
 /**
- * 쇼츠로 보는 ToonStudio — 세로(9:16) 홍보 쇼츠 45편을 나란히 보여 주는 카드 섹션.
- * 마흔다섯 편 모두 생성형 AI로 만든 개념 영상이므로, 실제 화면 캡처로 오해하지 않게
+ * 쇼츠로 보는 ToonStudio — 세로(9:16) 홍보 쇼츠 46편을 나란히 보여 주는 카드 섹션.
+ * 마흔여섯 편 모두 생성형 AI로 만든 개념 영상이므로, 실제 화면 캡처로 오해하지 않게
  * 안내 문구와 카드 배지로 성격을 밝힌다(ProductTourAdditions의 표기 관행과 동일).
  */
 export function ProductTourShorts() {
@@ -15,11 +15,11 @@ export function ProductTourShorts() {
     <section className="mk-shell product-tour__shorts" aria-labelledby="product-tour-shorts-title">
       <div className="product-tour__more-head">
         <p className="mk-eyebrow">{bi("짧은 영상", "Short takes")}</p>
-        <h2 id="product-tour-shorts-title" className="mk-h2">{bi("쇼츠로 보는 ToonStudio", "ToonStudio in forty-five shorts")}</h2>
+        <h2 id="product-tour-shorts-title" className="mk-h2">{bi("쇼츠로 보는 ToonStudio", "ToonStudio in forty-six shorts")}</h2>
       </div>
       <p className="mk-body product-tour__note">{bi(
-        "9분 투어가 길게 느껴지면, 8초에서 29초 사이의 세로 영상 마흔다섯 편으로 먼저 만나 보세요. 마흔다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면과는 다를 수 있습니다.",
-        "If the nine-minute tour feels long, start with forty-five vertical clips of eight to twenty-nine seconds each. All forty-five are AI-generated concept clips, so they may differ from the actual product screens.",
+        "9분 투어가 길게 느껴지면, 8초에서 29초 사이의 세로 영상 마흔여섯 편으로 먼저 만나 보세요. 마흔여섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면과는 다를 수 있습니다.",
+        "If the nine-minute tour feels long, start with forty-six vertical clips of eight to twenty-nine seconds each. All forty-six are AI-generated concept clips, so they may differ from the actual product screens.",
       )}</p>
       <ul className="product-tour__shorts-grid">
         {PRODUCT_TOUR_SHORTS.map((short) => {

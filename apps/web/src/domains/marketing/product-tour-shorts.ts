@@ -1,9 +1,11 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 45편.
- * 마흔다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 46편.
+ * 마흔여섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
  * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
- * 안팎, 39~46편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 안팎, 39~46편은 14초 안팎, 48편도 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 47편(나침반)은 다이얼의 로마 숫자가 읽히는 품질 이슈가 있어 쇼츠 섹션에
+ * 걸지 않고 홍보 영상 자료실에만 보관한다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -51,7 +53,8 @@ export interface ProductTourShort {
     | "fountain-pen"
     | "plant-water"
     | "seashell"
-    | "steam-kettle";
+    | "steam-kettle"
+    | "hourglass";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -734,6 +737,21 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "The steaming kettle",
       body: "A kettle with steam curling up — caught up close.",
+    },
+  },
+  {
+    id: "hourglass",
+    src: "/brand/promo-shorts/shorts-48-hourglass.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "모래가 떨어지는 모래시계",
+      body: "모래가 가만히 떨어지는 모래시계를 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "The hourglass",
+      body: "Sand slipping quietly through an hourglass — caught up close.",
     },
   },
 ];
