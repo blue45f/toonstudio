@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "Completat",
-  "review.progress.binge": "Binguant",
+  "review.progress.binge": "Marató",
   "review.progress.upcoming": "Planificat",
-  "review.progress.abandoned": "Caigut",
-  "review.progress.unknown": "Progress ocult",
+  "review.progress.abandoned": "Abandonat",
+  "review.progress.unknown": "Progrés ocult",
   "review.spoilerRevealLabel": "Mostra spoiler"
 }

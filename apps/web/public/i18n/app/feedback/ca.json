@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "No vaig poder carregar la enquesta de retroalimentació.",
-  "feedback.thankYou": "Gràcies per la teva valent opinió!",
-  "feedback.anonymousNote": "Les seves respostes es mantenen estrictament anònimes.",
-  "feedback.notAtAll": "De cap manera.",
+  "feedback.loadError": "No s'ha pogut carregar l'enquesta de comentaris. Torna-ho a provar d'aquí a una estona.",
+  "feedback.thankYou": "Gràcies pels teus valuosos comentaris!",
+  "feedback.anonymousNote": "Les teves respostes es mantenen estrictament anònimes.",
+  "feedback.notAtAll": "Gens ni mica",
   "feedback.definitely": "Definitivament"
 }

@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Vegeu despartiment de puntuacions",
-  "ranking.metric.views": "Visions",
+  "ranking.detailTitle": "Veure el desglossament de la puntuació",
+  "ranking.metric.views": "Visualitzacions",
   "ranking.why": "Per què",
-  "ranking.breakdownTitle": "Divisió de puntuacions",
+  "ranking.breakdownTitle": "Desglossament de la puntuació",
   "ranking.totalScore": "Puntuació total",
-  "ranking.breakdownDescription": "Calculats amb pesos d'eix i normalització específica del títol."
+  "ranking.breakdownDescription": "Calculat amb ponderacions per eix i normalització específica de cada títol."
 }
