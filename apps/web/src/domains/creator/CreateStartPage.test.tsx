@@ -147,6 +147,14 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
     expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
   });
+
+  it("10초 상황별 맞춤 시작 가이드를 통해 처음 접하는 창작자도 자기 상황에 맞는 진입점으로 이동할 수 있다", () => {
+    renderStartSheet("/create");
+    const guide = screen.getByTestId("create-start-persona-guide");
+    expect(within(guide).getByText("10초 상황별 맞춤 시작 가이드")).toBeTruthy();
+    expect(within(guide).getByRole("link", { name: /그림·스토리 모두 처음이에요/ }).getAttribute("href")).toBe("/create?intent=my-story");
+    expect(within(guide).getByRole("link", { name: /일단 펜으로 바로 그리고 싶어요/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
+  });
 });
 
 /** 지연 로딩된 질문형 인터뷰를 기다리는 시간 — 부하가 큰 CI에서 첫 로딩이 기본 1초를 넘길 수 있다. */

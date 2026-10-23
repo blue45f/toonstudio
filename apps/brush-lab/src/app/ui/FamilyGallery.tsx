@@ -15,14 +15,44 @@ type GalleryGroupFilter = "all" | "ink" | "dry" | "wet" | "tone-fx" | "utility";
 const GALLERY_GROUPS: readonly {
   id: GalleryGroupFilter;
   label: string;
+  guide: string;
   families?: readonly BrushFamily[];
 }[] = [
-  { id: "all", label: `전체 (${PRESET_CATALOG.length})` },
-  { id: "ink", label: "선화·잉크·볼펜", families: ["ink", "ballpoint", "hatch"] },
-  { id: "dry", label: "연필·목탄·건식", families: ["pencil", "charcoal", "chalk", "conte", "crayon"] },
-  { id: "wet", label: "수채·수묵·유화", families: ["watercolor", "sumi", "gouache", "oil", "acrylic"] },
-  { id: "tone-fx", label: "마커·망점·특수", families: ["marker", "halftone", "texture", "airbrush", "spray", "special"] },
-  { id: "utility", label: "문지르기·지우개", families: ["smudge", "eraser"] },
+  {
+    id: "all",
+    label: `전체 (${PRESET_CATALOG.length})`,
+    guide: "전체 브러시 카탈로그입니다. 아래 매체군 칩이나 검색창으로 작업 목적에 맞는 브러시를 빠르게 좁혀 보세요.",
+  },
+  {
+    id: "ink",
+    label: "선화·잉크·볼펜",
+    guide: "웹툰 인물 펜선·외곽선·말풍선 테두리·해칭 명암 작화에 최적화된 탄성 잉크 브러시군입니다.",
+    families: ["ink", "ballpoint", "hatch"],
+  },
+  {
+    id: "dry",
+    label: "연필·목탄·건식",
+    guide: "콘티·러프 스케치·종이 요철이 살아 있는 드로잉 질감 표현에 적합한 건식 브러시군입니다.",
+    families: ["pencil", "charcoal", "chalk", "conte", "crayon"],
+  },
+  {
+    id: "wet",
+    label: "수채·수묵·유화",
+    guide: "배경 감성 채색·수분 번짐·두꺼운 불투명 물감 혼색(Kubelka-Munk K/S)에 적합한 습식 브러시군입니다.",
+    families: ["watercolor", "sumi", "gouache", "oil", "acrylic"],
+  },
+  {
+    id: "tone-fx",
+    label: "마커·망점·특수",
+    guide: "스크린톤 망점·에어브러시 그라데이션·하이라이트 특수 효과 연출에 쓰이는 브러시군입니다.",
+    families: ["marker", "halftone", "texture", "airbrush", "spray", "special"],
+  },
+  {
+    id: "utility",
+    label: "문지르기·지우개",
+    guide: "경계선 블렌딩(스머지)과 깔끔한 선 정리용 지우개 도구군입니다.",
+    families: ["smudge", "eraser"],
+  },
 ];
 
 /** 동시에 띄우는 Worker 요청 수. Worker 1개이므로 큐 길이만 제한한다. */
@@ -60,17 +90,30 @@ export function FamilyGallery() {
   const { gallery, galleryError, store, actions } = useLab();
   const state = useLabSelector((s) => s.gallery);
   const [groupFilter, setGroupFilter] = useState<GalleryGroupFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
     if (!gallery || state.status !== "idle") return;
     void renderGallery(gallery, store, actions, PRESET_CATALOG.map((p) => p.id));
   }, [gallery, state.status, store, actions]);
 
+  const activeGroup = useMemo(
+    () => GALLERY_GROUPS.find((g) => g.id === groupFilter) ?? GALLERY_GROUPS[0],
+    [groupFilter],
+  );
+
   const filteredPresets = useMemo(() => {
-    const group = GALLERY_GROUPS.find((g) => g.id === groupFilter);
-    if (!group?.families) return PRESET_CATALOG;
-    const allowed = new Set<BrushFamily>(group.families);
-    return PRESET_CATALOG.filter((p) => allowed.has(p.family));
-  }, [groupFilter]);
+    const allowed = activeGroup?.families ? new Set<BrushFamily>(activeGroup.families) : null;
+    const q = searchQuery.trim().toLowerCase();
+    return PRESET_CATALOG.filter((p) => {
+      if (allowed && !allowed.has(p.family)) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q) ||
+        p.family.toLowerCase().includes(q)
+      );
+    });
+  }, [activeGroup, searchQuery]);
 
   const entries = Object.values(state.entries);
   const done = entries.filter((e) => e.status === "done").length;
@@ -108,6 +151,23 @@ export function FamilyGallery() {
             {group.label}
           </button>
         ))}
+      </div>
+      <div className="lab-button-row" data-testid="lab-gallery-group-guide">
+        <span className="lab-muted">{activeGroup?.guide}</span>
+        <input
+          type="search"
+          className="lab-input"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="브러시 이름·ID 검색 (예: G펜, 수채, 6b)"
+          aria-label="브러시 이름 또는 ID 검색"
+          data-testid="lab-gallery-search-input"
+        />
+        {searchQuery.trim().length > 0 ? (
+          <button type="button" className="lab-button" onClick={() => setSearchQuery("")}>
+            검색 지우기
+          </button>
+        ) : null}
       </div>
       {!gallery ? (
         <p className="lab-error-list" role="alert">

@@ -359,6 +359,27 @@ export function PosePanel() {
           </select>
         </div>
         <CoordInputs idPrefix={`${ids}-target`} labelPrefix="목표" value={coords} onChange={setCoords} />
+        <div className="cl-pose-row" role="group" aria-label="IK 빠른 위치 이동" data-testid="pose-ik-quick-nudge">
+          {(
+            [
+              { id: "up", label: "위로 +10cm", delta: [0, 0.1, 0] as const },
+              { id: "down", label: "아래로 -10cm", delta: [0, -0.1, 0] as const },
+              { id: "forward", label: "앞으로 +10cm", delta: [0, 0, 0.1] as const },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="cl-preset-chip"
+              onClick={() => {
+                const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget);
+                setCoords(toCoords([base[0] + item.delta[0], base[1] + item.delta[1], base[2] + item.delta[2]]));
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
         {ikTarget !== "head" ? (
           <div className="cl-pose-row">
             <label className="cl-pose-radio" htmlFor={`${ids}-pole`}>

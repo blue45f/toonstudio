@@ -30,12 +30,13 @@ export function ReportView() {
     { name: "Kubelka-Munk K/S 안료 혼합", desc: "물리적 흡수·산란 스펙트럼 기반 감산 혼합" },
     { name: "Rebelle 7 모세관 수채 확산", desc: "종이 요철 저항, 중력 기울기 이류, 꽃양배추 테두리·과립화" },
     { name: "SAI / Lazy Nezumi 견인줄", desc: "가상 견인줄 데드존 코너 보존 및 S-1..S-7 고차 평활화" },
+    { name: "Procreate StreamLine·QuickShape", desc: "곡률 적응형 평활화, 코너 보존 후보정, 직선·원·다각선 도형 스냅" },
   ] as const;
 
   return (
     <div className="lab-tabpanel">
       <section className="lab-panel" aria-label="클린룸 내재화 브러시 엔진 아키텍처" data-testid="lab-cleanroom-engine-summary">
-        <h2>클린룸 내재화 6대 브러시 엔진 아키텍처</h2>
+        <h2>클린룸 내재화 7대 브러시 엔진 아키텍처</h2>
         <p className="lab-muted">
           외부 GPL·상용 런타임 의존성 없이 수학·물리 원리만으로 자체 내재화되어 라이선스 격리 및 결정론적 픽셀 검증을 통과한 엔진 모듈입니다.
         </p>

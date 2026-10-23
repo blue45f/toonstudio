@@ -220,6 +220,30 @@ export function TitleDetailHero({
             {saved ? bi("서재에 담김", "In your library") : bi("서재에 담기", "Save to library")}
           </button>
         </div>
+
+        <nav
+          data-testid="title-detail-section-nav"
+          aria-label={bi("작품 상세 섹션 바로가기", "Jump to title section")}
+          className="mt-2 flex flex-wrap items-center gap-1.5 pt-2"
+        >
+          {(
+            [
+              { href: "#title-episodes-anchor", ko: "회차 목록", en: "Episodes" },
+              { href: "#title-availability", ko: "감상 플랫폼·가격", en: "Where to read" },
+              { href: "#metrics", ko: "완독률·지표", en: "Metrics" },
+              { href: "#title-character-talk", ko: "캐릭터 대화", en: "Character talk" },
+              { href: "#title-reviews", ko: "독자 리뷰", en: "Reviews" },
+            ] as const
+          ).map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="inline-flex min-h-8 items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:border-white/45 hover:bg-white/20"
+            >
+              {bi(item.ko, item.en)}
+            </a>
+          ))}
+        </nav>
         </div>
       </div>
     </section>

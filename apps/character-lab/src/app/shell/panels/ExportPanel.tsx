@@ -212,6 +212,28 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           엔진 상태: {engineStatus.phase} — PNG·PSD·GLB는 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.
         </p>
       ) : null}
+      <div className="cl-export-row" role="group" aria-label="빠른 해상도 프리셋" data-testid="export-resolution-presets">
+        {(
+          [
+            { id: "webtoon-cut", label: "웹툰 컷 (800×1200)", w: 800, h: 1200 },
+            { id: "square-1k", label: "정방형 기본 (1024×1024)", w: 1024, h: 1024 },
+            { id: "manuscript-2k", label: "고해상도 원고 (2048×2048)", w: 2048, h: 2048 },
+          ] as const
+        ).map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cl-preset-chip"
+            aria-pressed={width === preset.w && height === preset.h}
+            onClick={() => {
+              setWidth(preset.w);
+              setHeight(preset.h);
+            }}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
       <div className="cl-export-row">
         <label htmlFor={`${ids}-width`}>너비(px)</label>
         <input id={`${ids}-width`} type="number" min={MIN_EXPORT_DIMENSION} max={MAX_PNG_EXPORT_DIMENSION} value={width} onChange={(event) => setWidth(clampInt(event.target.value, 1, MAX_PNG_EXPORT_DIMENSION, width))} />

@@ -106,6 +106,25 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
           ))}
         </ul>
       ) : null}
+      <div className="cl-paint-row" role="group" aria-label="빠른 브러시 프리셋" data-testid="paint-brush-presets">
+        {(
+          [
+            { id: "fine-line", label: "세밀 선화 (4px)", radiusPx: 4, opacity: 1, hardness: 0.92 },
+            { id: "soft-shade", label: "부드러운 음영 (36px)", radiusPx: 36, opacity: 0.45, hardness: 0.25 },
+            { id: "base-fill", label: "넓은 밑색 (96px)", radiusPx: 96, opacity: 1, hardness: 0.85 },
+          ] as const
+        ).map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cl-preset-chip"
+            aria-pressed={state.brush.radiusPx === preset.radiusPx}
+            onClick={() => session.setBrush({ radiusPx: preset.radiusPx, opacity: preset.opacity, hardness: preset.hardness })}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
       <div className="cl-paint-row">
         <label htmlFor={`${ids}-color`}>색</label>
         <input id={`${ids}-color`} type="color" value={state.brush.color} onChange={(event) => session.setBrush({ color: event.target.value })} />

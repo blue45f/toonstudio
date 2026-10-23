@@ -137,5 +137,11 @@ describe("GalleryView", { timeout: 30_000 }, () => {
 
     fireEvent.click(within(filterGroup).getByRole("button", { name: `전체 (${PRESET_CATALOG.length})` }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
+
+    const searchInput = screen.getByTestId("lab-gallery-search-input");
+    fireEvent.change(searchInput, { target: { value: "pencil-hb" } });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "검색 지우기" }));
+    expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
   });
 });

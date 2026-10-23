@@ -77,6 +77,7 @@ it("캐시로 복구한 소재는 현재 공개 상태 미확인임을 알린다
   detail.mockReturnValue({ ...absent, record: source, notFound: false, staleSavedAt: "2026-09-28T00:00:00Z" });
   mount([source.id]);
   expect(screen.getByText(/현재 공개 상태는 확인되지 않았어요/u)).toBeTruthy();
+  expect(screen.getByTestId("market-wishlist-quick-actions")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "다시 확인" }));
   expect(reload).toHaveBeenCalledOnce();
 });

@@ -129,4 +129,16 @@ describe("PhysicsPanel", () => {
     expect(stopped).toBe(1);
     expect(screen.getByRole("button", { name: "미리보기 재생" })).toBeTruthy();
   });
+
+  it("빠른 정착 스텝 프리셋 클릭 시 정착 스텝 입력값이 즉시 바뀐다", () => {
+    render(
+      <MockLabProvider>
+        <PhysicsPanel />
+      </MockLabProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "빠른 확인 (15스텝)" }));
+    expect((screen.getByLabelText(/정착 스텝/u) as HTMLInputElement).value).toBe("15");
+    fireEvent.click(screen.getByRole("button", { name: "완전 정착 (120스텝)" }));
+    expect((screen.getByLabelText(/정착 스텝/u) as HTMLInputElement).value).toBe("120");
+  });
 });

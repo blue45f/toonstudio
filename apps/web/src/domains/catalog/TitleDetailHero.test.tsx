@@ -131,4 +131,12 @@ describe("TitleDetailHero", () => {
     );
     expect(screen.queryByText(/안개 낀 항구 도시에서/)).toBeNull();
   });
+
+  it("작품 상세 섹션 바로가기 내비게이션 칩을 제공한다", () => {
+    renderHero(makeTitle());
+    const nav = screen.getByTestId("title-detail-section-nav");
+    expect(nav.querySelector('a[href="#title-episodes-anchor"]')?.textContent).toBe("회차 목록");
+    expect(nav.querySelector('a[href="#title-availability"]')?.textContent).toBe("감상 플랫폼·가격");
+    expect(nav.querySelector('a[href="#title-reviews"]')?.textContent).toBe("독자 리뷰");
+  });
 });
