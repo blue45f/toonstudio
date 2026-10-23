@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "មើល ការ បំបែក សន្លឹក ឆ្នោត",
+  "ranking.detailTitle": "មើលការបំបែកពិន្ទុ",
   "ranking.metric.views": "ការមើល",
-  "ranking.why": "ហេតុ អ្វី បាន ជា",
-  "ranking.breakdownTitle": "ការបែងចែកលទ្ធផល",
-  "ranking.totalScore": "សរុបលទ្ធផល",
-  "ranking.breakdownDescription": "ការគណនា ដោយប្រើ ទម្ងន់អាស និងការកំណត់ជាធម្មតាសម្រាប់ការដាក់បញ្ចូល។"
+  "ranking.why": "ហេតុអ្វី",
+  "ranking.breakdownTitle": "ការបំបែកពិន្ទុ",
+  "ranking.totalScore": "ពិន្ទុសរុប",
+  "ranking.breakdownDescription": "គណនាដោយទម្ងន់អ័ក្ស និងការធ្វើឱ្យធម្មតាតាមចំណងជើងនីមួយៗ។"
 }

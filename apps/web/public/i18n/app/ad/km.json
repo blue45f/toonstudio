@@ -1,10 +1,10 @@
 {
   "ad.creativeFallbackAlt": "រូបភាពដែលត្រូវបានឧបត្ថម្ភ",
-  "ad.slotAriaLabel": "ការ ផ្សព្វផ្សាយ",
-  "ad.slotLabel": "ការផ្តល់ជំនួយ",
-  "ad.slotTitle": "ការផ្តល់សេវាកម្ម",
-  "ad.ctaDetails": "មើល ព័ត៌មាន លម្អិត",
-  "ad.placeholderAriaLabel": "ការដាក់ទីតាំងការផ្សព្វផ្សាយ",
-  "ad.placeholderText": "គ្មាន វីដេអូ ដែល មាន ការ គាំទ្រ។",
-  "ad.tag": "ការ ផ្សព្វផ្សាយ"
+  "ad.slotAriaLabel": "កន្លែងផ្សាយពាណិជ្ជកម្ម",
+  "ad.slotLabel": "ឧបត្ថម្ភ",
+  "ad.slotTitle": "មាតិកាដែលត្រូវបានឧបត្ថម្ភ",
+  "ad.ctaDetails": "មើលព័ត៌មានលម្អិត",
+  "ad.placeholderAriaLabel": "កន្លែងទំនេរសម្រាប់ពាណិជ្ជកម្ម",
+  "ad.placeholderText": "មិនមានមាតិកាដែលត្រូវបានឧបត្ថម្ភទេ។",
+  "ad.tag": "ពាណិជ្ជកម្ម"
 }
