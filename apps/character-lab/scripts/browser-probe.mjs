@@ -34,6 +34,9 @@
 //     (무음 대체 금지: 절차 소스로 자동 전환하지 않는다). 이때 "백엔드 명시 선택" 단계는 사유 코드가 화면에 보이면 통과하지만, 그 뒤 ready를 전제로 한
 //     썸네일·PNG 단계와 '불러오기 뒤 실패 배너 없음' 검사는 실패하거나 건너뛴다 — 프로브 결함이 아니라 에셋 부재다. 이 경우 먼저
 //     `pnpm run verify:character-kit -- --root apps/character-lab/public/assets/characters/toonstudio-kit-v1`로 에셋을 확인한다.
+//   - 레시피 왕복(저장 → 실행 취소 → 파일 불러오기)은 슬롯 카드를 눌러야 하는데, 키트 부팅은 엔진이 키트 플랜을 올려 능력 맵이 정해지기 전까지
+//     모든 카드가 비활성이다(엔진 선택 전 화면에서 확인). 그래서 이 단계는 백엔드가 처음 ready가 된 뒤 한 번 실행하고, ready 엔진이 없으면
+//     건너뛴다(`--require-ready`로 ready를 강제할 수 있다).
 //   - 키트 렌더 자체(툰 외곽선 정책·정점색 AO·알파 컷오프·몸 가림)의 실브라우저(SwiftShader) 확인은 이 프로브가 아니라 `scripts/kit-preview.mjs`(docs/kit-preview.md)가 한다.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -359,7 +362,11 @@ async function main() {
       return ids.length >= 2 ? { detail: ids.join(", ") } : { fail: `패키지 ${ids.length}종(2종 이상 기대): ${ids.join(", ")}` };
     });
 
-    await step("레시피 저장 → 실행 취소 → 파일 불러오기 왕복: 저장 파일이 유효하고 불러오면 선택이 복원된다(history 1단계, 실패 배너 없음)", async () => {
+    // 레시피 왕복은 슬롯 카드를 눌러야 한다. 키트 부팅(2026-10-11~)에서는 엔진이 키트 플랜을 올려 능력 맵이 정해지기 전까지
+    // 모든 카드가 disabled("캐릭터 소스가 아직 로드되지 않았습니다.", lab-runtime.ts 초기 능력 = 전부 미지원)라 엔진 선택 전에는
+    // 누를 카드가 하나도 없다. 그래서 백엔드가 처음 ready가 된 뒤 한 번 실행한다(단언은 그대로, 순서만 앱의 부팅 계약에 맞춘다).
+    const RECIPE_ROUNDTRIP_STEP = "레시피 저장 → 실행 취소 → 파일 불러오기 왕복: 저장 파일이 유효하고 불러오면 선택이 복원된다(history 1단계, 실패 배너 없음)";
+    const recipeRoundTrip = async () => {
       const waitDepth = (expected) =>
         page.waitForFunction((value) => /깊이\s+(\d+)/u.exec(document.querySelector(".cl-topbar-group .cl-muted")?.textContent ?? "")?.[1] === String(value), expected, { timeout: 15000 });
       const base = await historyDepth();
@@ -381,7 +388,8 @@ async function main() {
       const banner = await page.locator(".cl-banner-item").allTextContents();
       if (banner.length > 0) return { fail: `불러오기 뒤 실패 배너: ${banner.join(" | ").slice(0, 160)}` };
       return { detail: `${download.suggestedFilename()} (version ${recipe.version}), ${presetId} 선택 → 취소 → 불러오기로 복원, history ${base}→${base + 1}→${base}→${base + 1}` };
-    });
+    };
+    let recipeRoundTripDone = false;
 
     for (const backend of options.backends) {
       const label = backend === "webgpu" ? "WebGPU" : "WebGL2";
@@ -443,7 +451,12 @@ async function main() {
         if (undone !== before) return { fail: `실행 취소 뒤 깊이 ${undone}(${before} 기대)` };
         return { detail: `깊이 ${before}→${after}→${undone}` };
       });
+      if (!recipeRoundTripDone) {
+        recipeRoundTripDone = true;
+        await step(RECIPE_ROUNDTRIP_STEP, recipeRoundTrip);
+      }
     }
+    if (!recipeRoundTripDone) record(RECIPE_ROUNDTRIP_STEP, "skip", "ready가 된 엔진이 없다 — 키트 부팅은 엔진이 소스를 올리기 전까지 슬롯 카드가 모두 비활성이다");
     await step("페이지 오류(pageerror) 없음", async () => (pageErrors.length > 0 ? { fail: pageErrors.slice(0, 3).join(" | ") } : { detail: "0건" }));
   } finally {
     report.consoleErrors = [...consoleErrors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([message, count]) => ({ count, message }));
