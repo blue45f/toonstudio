@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "მთელ საფლავებს გაწმენდით.",
   "search.explorer.recent.delete": "ბოლო გამოკითხვის წაშლა {query}",
   "search.explorer.recent.searchAgain": "ახლახანდელი საკვანძო სიტყვებიდან კვლავ ძებნა",
+  "search.explorer.suggestions.popular": "პოპულარული ძებნები",
+  "search.explorer.suggestions.genres": "რეკომენდებული ჟანრები",
+  "search.explorer.suggestions.searchFor": "{query}-ის ძებნა",
+  "search.explorer.suggestions.genreFilter": "გაფილტრეთ ჟანრით {genre}",
+  "search.explorer.suggestions.loading": "რეკომენდებული ძებნები იტვირთება",
+  "search.explorer.suggestions.error": "რეკომენდებული ძებნები ვერ ჩაიტვირთა. გთხოვთ, ცოტა ხანში ისევ სცადოთ.",
+  "search.explorer.suggestions.empty": "ამჟამად რეკომენდაციები არ არის. სცადეთ ნამუშევრის, ავტორის ან ტეგის შეყვანა.",
   "search.explorer.catalog.label": "კატალოგი",
   "search.explorer.catalog.empty": "კატალოგი ცარიელია.",
   "search.explorer.currentFilter": "მიმდინარე ფილტრები",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} მ წინ",
   "search.explorer.time.hoursAgo": "{count} საათის წინ",
   "search.explorer.time.daysAgo": "{count} წ წ წ წინ",
-  "search.explorer.loadMore": "დატვირთეთ მეტი",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "დატვირთეთ მეტი"
 }

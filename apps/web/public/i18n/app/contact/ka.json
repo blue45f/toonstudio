@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "ზოგადი შეკითხვა",
+  "contact.body": "გაგზავნეთ ზოგადი შეკითხვები სერვისის გამოყენების, ანგარიშებისა და მონაცემების ჩვენების შესახებ.",
+  "contact.bizTitle": "ბიზნესისა და პარტნიორობის შეკითხვები",
+  "contact.bizBody": "წარადგინეთ ბიზნეს წინადადებები, მათ შორის რეკლამა, პლატფორმის ინტეგრაციები და შიგთავსის პარტნიორობა.",
+  "contact.bugTitle": "შეცდომის შეტყობინება",
+  "contact.bugBody": "შეატყობინეთ შეცდომები, განლაგების პრობლემები ან მონაცემების ჩვენების ანომალიები."
 }
