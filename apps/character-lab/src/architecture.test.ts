@@ -7,6 +7,8 @@
  * - `*.browser.ts`·render/babylon/**는 테스트가 import하지 않는다(null-engine-harness 예외)
  * - render/babylon-character-engine 동적 import는 app/composition.ts 한 곳(엔진 모듈이 디스크에 있을 때 필수)
  * - Math.random·any·@ts-ignore·eslint-disable 금지, node:/vitest는 테스트 파일만, DOM 테스트는 jsdom 프라그마
+ * - (2026-10-23 CORE-1) 1-a: 렌더러 중립 승격 단위 계약(art-style·character-look·color-channels)은 `zod`만 import(상대 import 포함 금지),
+ *   2-a: src 최상위 디렉터리 허용 목록(목록 밖 디렉터리는 도메인 경계 검사를 피해 간다), 3-a: render/style/**는 `@babylonjs`·render/babylon 내부 금지
  *
  * 앱 설정(`pnpm --filter @toonstudio/character-lab test`)과 루트 설정(`pnpm exec vitest run apps/character-lab/...`)
  * 양쪽에서 돌아야 하므로 src 위치는 `import.meta.dirname` → file: URL → `process.cwd()` 기준 탐색 순으로 구한다
@@ -60,6 +62,13 @@ const SIDE_EFFECT_FILE = "render/babylon/babylon-side-effects.ts";
 const NULL_HARNESS = "render/testing/null-engine-harness";
 /** testing/ 모의가 쓸 수 있는 app/shell 모듈(Provider·런타임 조립기) */
 const TESTING_APP_IMPORTS: ReadonlySet<string> = new Set(["app/shell/lab-store-context", "app/shell/lab-runtime"]);
+/** 규칙 1-a: 렌더러 중립 승격 단위(나중에 packages/로 옮길 수 있게 자기완결) — `zod`만 import한다 */
+const NEUTRAL_CONTRACT_FILES: ReadonlySet<string> = new Set(["contracts/art-style.ts", "contracts/character-look.ts", "contracts/color-channels.ts"]);
+/** 규칙 2-a: src 최상위 디렉터리 허용 목록과 src 바로 아래에 둘 수 있는 파일 */
+const TOP_LEVEL_DIRS: ReadonlySet<string> = new Set(["app", "contracts", "shared", "testing", "render", "domains", "state", "presets", "animation", "paint", "export"]);
+const TOP_LEVEL_FILES: ReadonlySet<string> = new Set(["architecture.test.ts"]);
+/** 규칙 3-a: 순수 CPU 기준식·셰이더 문자열 디렉터리(Node 시험 대상) */
+const RENDER_STYLE_DIR = "render/style/";
 
 interface ImportRef {
   readonly specifier: string;
@@ -213,6 +222,31 @@ function domainBoundaryViolations(file: SourceFile): string[] {
   });
 }
 
+/** 규칙 1-a: 승격 단위 계약 파일은 `zod` 외 import 금지(테스트 파일은 제외 — 시험은 fixture·대조 대상을 import할 수 있다) */
+function neutralContractViolations(file: SourceFile): string[] {
+  if (file.isTest || !NEUTRAL_CONTRACT_FILES.has(file.rel)) return [];
+  return file.imports.filter((ref) => ref.specifier !== "zod").map((ref) => `승격 단위 계약의 zod 외 import: ${ref.specifier}`);
+}
+
+/** 규칙 2-a: 허용 목록 밖 최상위 디렉터리·src 바로 아래 파일 */
+function topLevelViolations(file: SourceFile): string[] {
+  const slash = file.rel.indexOf("/");
+  if (slash === -1) return TOP_LEVEL_FILES.has(file.rel) ? [] : ["src 바로 아래 파일(허용: architecture.test.ts)"];
+  const dir = file.rel.slice(0, slash);
+  return TOP_LEVEL_DIRS.has(dir) ? [] : [`허용 목록 밖 최상위 디렉터리: ${dir}`];
+}
+
+/** 규칙 3-a: render/style/**는 `@babylonjs`·render/babylon/** 내부를 import하지 않는다 */
+function renderStyleViolations(file: SourceFile): string[] {
+  if (!file.rel.startsWith(RENDER_STYLE_DIR)) return [];
+  return file.imports.flatMap((ref) => {
+    if (ref.specifier.startsWith("@babylonjs/")) return [`render/style의 @babylonjs import: ${ref.specifier}`];
+    if (isRelative(ref.specifier) && (resolveRelative(file.rel, ref.specifier) ?? "").startsWith("render/babylon/")) return [`render/style의 render/babylon 내부 import: ${ref.specifier}`];
+    if (isRelative(ref.specifier) && (resolveRelative(file.rel, ref.specifier) ?? "") === ENGINE_ENTRY) return [`render/style의 엔진 진입점 import: ${ref.specifier}`];
+    return [];
+  });
+}
+
 describe("architecture: 파일·경로 규칙", () => {
   it("src를 스캔했다(core 파일 포함)", () => {
     expect(byRel.has("contracts/index.ts")).toBe(true);
@@ -225,6 +259,10 @@ describe("architecture: 파일·경로 규칙", () => {
 
   it("`@/` alias를 쓰지 않는다", () => {
     expect(violations((file) => file.imports.filter((ref) => ref.specifier.startsWith("@/")).map((ref) => `@/ alias: ${ref.specifier}`))).toEqual([]);
+  });
+
+  it("src 최상위 디렉터리는 허용 목록 안에만 있다(규칙 2-a — 목록 밖 디렉터리는 도메인 경계 검사를 받지 않으므로 막는다)", () => {
+    expect(violations(topLevelViolations)).toEqual([]);
   });
 
   it("다른 앱 경로·src 밖 상대 경로를 import하지 않는다", () => {
@@ -327,6 +365,15 @@ describe("architecture: 순수 디렉터리·도메인 경계", () => {
         });
       }),
     ).toEqual([]);
+  });
+
+  it("렌더러 중립 승격 단위 계약(art-style·character-look·color-channels)은 zod만 import한다(규칙 1-a)", () => {
+    for (const rel of NEUTRAL_CONTRACT_FILES) expect(byRel.has(rel), rel).toBe(true);
+    expect(violations(neutralContractViolations)).toEqual([]);
+  });
+
+  it("render/style/** 는 @babylonjs·render/babylon 내부·엔진 진입점을 import하지 않는다(규칙 3-a, 순수 CPU 기준식)", () => {
+    expect(violations(renderStyleViolations)).toEqual([]);
   });
 
   it("도메인 디렉터리(src/<영역>·src/domains/<영역>)는 contracts/shared/같은 영역(+테스트는 testing, lab-store-context)만 import한다", () => {
@@ -510,6 +557,26 @@ describe("architecture: import 수집기·경계 게이트 회귀(여러 줄 imp
     // 같은 영역·contracts·shared는 여러 줄이어도 통과
     const allowed = makeSourceFile("domains/outfit/zz.ts", lines('import {', '  a,', '} from "./y";', 'import {', '  b,', '} from "../../contracts";', 'import {', '  c,', '} from "../../shared/math";'));
     expect(domainBoundaryViolations(allowed)).toEqual([]);
+  });
+
+  it("규칙 1-a·2-a·3-a 게이트는 위반을 실제로 잡는다(합성 소스)", () => {
+    // 1-a: 상대 import·shared import 모두 위반, zod만 통과, 테스트 파일은 대상 밖
+    expect(neutralContractViolations(makeSourceFile("contracts/color-channels.ts", lines('import { z } from "zod";', 'import { oklabToHex } from "../shared/color";')))).toEqual([
+      "승격 단위 계약의 zod 외 import: ../shared/color",
+    ]);
+    expect(neutralContractViolations(makeSourceFile("contracts/art-style.ts", 'import type { PartRole } from "./mesh-data";'))).toHaveLength(1);
+    expect(neutralContractViolations(makeSourceFile("contracts/art-style.ts", 'import { z } from "zod";'))).toEqual([]);
+    expect(neutralContractViolations(makeSourceFile("contracts/art-style.test.ts", 'import { x } from "../testing/recipe-fixtures";'))).toEqual([]);
+    expect(neutralContractViolations(makeSourceFile("contracts/recipe.ts", 'import { x } from "../shared/hash";'))).toEqual([]);
+    // 2-a: 목록 밖 디렉터리·src 바로 아래 파일
+    expect(topLevelViolations(makeSourceFile("style/pack.ts", ""))).toEqual(["허용 목록 밖 최상위 디렉터리: style"]);
+    expect(topLevelViolations(makeSourceFile("main.ts", ""))).toHaveLength(1);
+    expect(topLevelViolations(makeSourceFile("presets/x.ts", ""))).toEqual([]);
+    // 3-a: render/style에서 @babylonjs·render/babylon 내부는 위반, contracts·같은 디렉터리는 통과
+    const style = makeSourceFile("render/style/tone.ts", lines('import { Scene } from "@babylonjs/core/scene.js";', 'import { x } from "../babylon/character-engine";', 'import { y } from "./line-width";', 'import { z } from "../../contracts";'));
+    expect(renderStyleViolations(style)).toEqual(["render/style의 @babylonjs import: @babylonjs/core/scene.js", "render/style의 render/babylon 내부 import: ../babylon/character-engine"]);
+    expect(renderStyleViolations(makeSourceFile("render/style/tone.ts", 'import { a } from "../babylon-character-engine";'))).toHaveLength(1);
+    expect(renderStyleViolations(makeSourceFile("render/toon-reference.ts", 'import { Scene } from "@babylonjs/core/scene.js";'))).toEqual([]);
   });
 
   it("실제 소스의 여러 줄 import/export 닫는 줄(`} from \"…\"`)이 모두 수집돼 있다(수집기가 실소스에서 눈먼 곳이 없다)", () => {
