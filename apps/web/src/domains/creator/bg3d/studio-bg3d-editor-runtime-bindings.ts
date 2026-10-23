@@ -7,7 +7,7 @@ export { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
 export { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
 export { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
 export { TransformControls } from "@react-three/drei/core/TransformControls.js";
-export { View } from "@react-three/drei/web/View.js";
+export { StudioBg3dCanvasView as View } from "./StudioBg3dCanvasView";
 export { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
 export {
   Aperture,
