@@ -1,16 +1,16 @@
 {
-  "common.loading": "බර පැටවීම",
-  "common.loading.short": "බර පැටවීම",
+  "common.loading": "පූරණය වෙමින්",
+  "common.loading.short": "පූරණය වෙමින්",
   "common.close": "වසා දමන්න",
   "common.open": "විවෘත කරන්න",
   "common.search": "සොයන්න",
   "common.retry": "නැවත උත්සාහ කරන්න",
   "common.retry.short": "නැවත උත්සාහ කරන්න",
   "common.backToTop": "ආපහු උඩට",
-  "common.backToHome": "ගෙදර යන්න",
+  "common.backToHome": "මුල් පිටුවට යන්න",
   "common.loading.search": "හොයනවා...",
-  "common.notFoundWithQuery": "' {query} ' සඳහා ප් රතිඵලයක් නොලැබුණි.",
+  "common.notFoundWithQuery": "'{query}' සඳහා ප්‍රතිඵල නැත.",
   "common.openSearch": "සොයන්න →",
   "common.loading.empty": "කිසිම දත්තයක් ආපහු ලැබුනේ නෑ.",
-  "common.retry.all": "ආයෙත් උත්සහ කරන්න නැත්නම් ගෙදර යන්න."
+  "common.retry.all": "නැවත උත්සාහ කරන්න හෝ මුල් පිටුවට යන්න."
 }
