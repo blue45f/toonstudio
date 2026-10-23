@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Prikazi raspodjeljenje bodova",
-  "ranking.metric.views": "Smatrači",
-  "ranking.why": "Zasto?",
-  "ranking.breakdownTitle": "Razloženost rezultata",
-  "ranking.totalScore": "Ukupna ocena",
-  "ranking.breakdownDescription": "Računalo se uz težinu osi i normalizaciju za određene titule."
+  "ranking.detailTitle": "Pogledaj raspodjelu bodova",
+  "ranking.metric.views": "Pregledi",
+  "ranking.why": "Zašto?",
+  "ranking.breakdownTitle": "Raspodjela bodova",
+  "ranking.totalScore": "Ukupna ocjena",
+  "ranking.breakdownDescription": "Izračunato s težinama osa i normalizacijom specifičnom za naslov."
 }
