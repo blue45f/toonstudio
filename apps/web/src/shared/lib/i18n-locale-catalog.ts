@@ -93,7 +93,7 @@ export const APP_I18N_ASSET_LOCALES = [
  * 0.02 renders as English across 98% of the product surface.
  */
 export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> = {
-  "af": 0.2213,
+  "af": 0.9699,
   "am": 0.9789,
   "ar": 0.9789,
   "as": 0.9789,
@@ -117,7 +117,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "fr": 0.9582,
   "gl": 0.9777,
   "gu": 0.9824,
-  "he": 0.2236,
+  "he": 0.9808,
   "hi": 0.9824,
   "hr": 0.2217,
   "hu": 0.9781,
