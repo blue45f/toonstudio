@@ -6,9 +6,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import { LATENT_PIGMENT_TERMS } from "./latent-pigment-basis";
 import {
+  clearLatentPigmentCache,
+  getLatentPigmentCacheStats,
   latentPigmentToRgb,
   mixLatentPigments,
   mixRgbPigments,
+  mixRgbPigmentsChromaPreserving,
   rgbToLatentPigment,
 } from "./latent-pigment-mixer";
 import type { LatentPigment, LatentPigmentRgb } from "./latent-pigment-mixer";
@@ -471,4 +474,36 @@ describe("성능 스모크(느슨한 상한)", () => {
     expect(performance.now() - start).toBeLessThan(3000);
     expect(Number.isFinite(checksum)).toBe(true);
   });
+
+  it("정확 키 메모이제이션 캐시(getLatentPigmentCacheStats)와 채도 보존 혼합(mixRgbPigmentsChromaPreserving)이 결정적으로 동작한다", () => {
+    clearLatentPigmentCache();
+    expect(getLatentPigmentCacheStats().size).toBe(0);
+    const yellow: LatentPigmentRgb = [1, 0.88, 0];
+    const blue: LatentPigmentRgb = [0, 0.31, 0.86];
+    const first = rgbToLatentPigment(yellow);
+    const second = rgbToLatentPigment(yellow);
+    expect(second).toBe(first);
+    expect(getLatentPigmentCacheStats().hits).toBeGreaterThanOrEqual(1);
+
+    // 단일 색 항등 및 동일 색 항등 보존
+    expect(maxAbsoluteDifference(mixRgbPigmentsChromaPreserving([{ rgb: yellow, weight: 1 }]), yellow)).toBeLessThanOrEqual(1e-9);
+    expect(
+      maxAbsoluteDifference(
+        mixRgbPigmentsChromaPreserving([
+          { rgb: blue, weight: 0.35 },
+          { rgb: blue, weight: 0.65 },
+        ]),
+        blue,
+      ),
+    ).toBeLessThanOrEqual(1e-9);
+
+    // 노랑 + 파랑 혼합에서 초록 채널 우세 유지
+    const chromaMixed = mixRgbPigmentsChromaPreserving([
+      { rgb: yellow, weight: 0.5 },
+      { rgb: blue, weight: 0.5 },
+    ]);
+    expect(chromaMixed[1]).toBeGreaterThan(chromaMixed[0]);
+    expect(chromaMixed[1]).toBeGreaterThan(chromaMixed[2]);
+  });
 });
+

@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import golden from "../../../../test-data/perfect-freehand-golden.json" with { type: "json" };
 
 import {
+  computeStrokeOutlineMetrics,
   getStrokePoints,
   perfectFreehand,
+  simulateVelocityPressure,
+  streamlineStrokePoints,
   type FreehandOptions,
   type FreehandPoint,
 } from "./index";
@@ -119,4 +122,38 @@ describe("perfect-freehand", () => {
       }
     }
   });
+
+  it("simulateVelocityPressure: 고속 구간에서 압력이 감소하고 저속 구간에서 회복된다", () => {
+    const pts: FreehandPoint[] = [
+      { x: 0, y: 0, pressure: 0.5, time: 0 },
+      { x: 2, y: 0, pressure: 0.5, time: 20 },
+      { x: 120, y: 0, pressure: 0.5, time: 25 },
+      { x: 122, y: 0, pressure: 0.5, time: 50 },
+    ];
+    const simulated = simulateVelocityPressure(pts, 0.7, 0.2);
+    expect(simulated).toHaveLength(4);
+    expect(simulated[2].pressure).toBeLessThan(simulated[1].pressure);
+    expect(simulated[3].pressure).toBeGreaterThan(simulated[2].pressure);
+  });
+
+  it("streamlineStrokePoints & computeStrokeOutlineMetrics: 노이즈 완화와 폴리곤 기하 지표를 계산한다", () => {
+    const noisy: FreehandPoint[] = [
+      { x: 0, y: 0, pressure: 0.8, time: 0 },
+      { x: 25, y: 12, pressure: 0.8, time: 10 },
+      { x: 50, y: -12, pressure: 0.8, time: 20 },
+      { x: 75, y: 12, pressure: 0.8, time: 30 },
+      { x: 100, y: 0, pressure: 0.8, time: 40 },
+    ];
+    const streamlined = streamlineStrokePoints(noisy, 0.75);
+    expect(streamlined[0]).toEqual(noisy[0]);
+    expect(streamlined[4]).toEqual(noisy[4]);
+    expect(Math.abs(streamlined[1].y)).toBeLessThan(Math.abs(noisy[1].y));
+
+    const outline = perfectFreehand(streamlined, { ...baseOptions, size: 8, taper: false });
+    const metrics = computeStrokeOutlineMetrics(outline);
+    expect(metrics.area).toBeGreaterThan(0);
+    expect(metrics.perimeter).toBeGreaterThan(0);
+    expect(metrics.boundingWidth).toBeGreaterThanOrEqual(100);
+  });
 });
+

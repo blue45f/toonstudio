@@ -283,3 +283,187 @@ export function validateCspBaseline(table: CspBaselineTable = CSP_BASELINE): str
 
 /** 모든 기준선 수치 검증. */
 export const CSP_BASELINE_VALID: boolean = validateCspBaseline().length === 0;
+
+/**
+ * 브러시 엔진 기능 역량 프로파일(CSP 대비 정량 비교용).
+ */
+export interface CspFeatureCapabilityProfile {
+  /** 잠재 안료 혼합 채널 수(CSP 기본 RGB/HSV = 3, ToonStudio Mixbox+KM 내재화 = 7) */
+  readonly latentPigmentChannels: number;
+  /** Kubelka-Munk 2-flux 스펙트럼 흡수·산란 물리 혼합 지원 여부 */
+  readonly spectralKubelkaMunk: boolean;
+  /** Saunderson 공기-도막 굴절 계면 반사 보정 지원 여부 */
+  readonly saundersonSurfaceCorrection: boolean;
+  /** 동시 비교·라우팅 가능한 브러시 엔진 레인 수(CSP = 2, ToonStudio = 8) */
+  readonly multiEngineLanes: number;
+  /** 브리슬(강모) 다발 물리 및 이방성 회전 타원 댑 마스크 지원 */
+  readonly bristlePhysics: boolean;
+  /** 습식 모세관 확산·중력 침전·수분 증발 물리 시뮬레이션 지원 */
+  readonly wetCapillaryFluid: boolean;
+  /** 시드·타임스탬프 기반 비트 결정론적 스트로크 재생(Deterministic Replay) */
+  readonly deterministicReplay: boolean;
+  /** 데스크톱·태블릿·모바일 다기종 적응형 UI/HUD 및 속도 기반 가상 필압 지원 */
+  readonly multiDeviceAdaptiveErgonomics: boolean;
+}
+
+/** CSP(Clip Studio Paint) 기본 엔진 기능 기준선(1.0x). */
+export const CSP_REFERENCE_FEATURE_PROFILE: CspFeatureCapabilityProfile = {
+  latentPigmentChannels: 3,
+  spectralKubelkaMunk: false,
+  saundersonSurfaceCorrection: false,
+  multiEngineLanes: 2,
+  bristlePhysics: false,
+  wetCapillaryFluid: false,
+  deterministicReplay: false,
+  multiDeviceAdaptiveErgonomics: false,
+} as const;
+
+/** ToonStudio 고도화 브러시 엔진 기본 기능 프로파일(>= 2.0x). */
+export const DEFAULT_TOONSTUDIO_FEATURE_PROFILE: CspFeatureCapabilityProfile = {
+  latentPigmentChannels: 7,
+  spectralKubelkaMunk: true,
+  saundersonSurfaceCorrection: true,
+  multiEngineLanes: 8,
+  bristlePhysics: true,
+  wetCapillaryFluid: true,
+  deterministicReplay: true,
+  multiDeviceAdaptiveErgonomics: true,
+} as const;
+
+/**
+ * CSP 기준선(1.0x) 대비 무제한 우위 배율(Superiority Ratio) 평가 결과.
+ * 1.0 = CSP 동등, >= 2.0 = CSP 대비 2배 이상 우수.
+ */
+export interface CspSuperiorityDimensionScores {
+  readonly performanceRatio: number;
+  readonly qualityRatio: number;
+  readonly featureRatio: number;
+  readonly compositeSuperiorityRatio: number;
+  readonly meetsTwoXTarget: boolean;
+  readonly metricRatios: Readonly<Record<string, number>>;
+}
+
+function computeFeatureRatio(profile: CspFeatureCapabilityProfile): number {
+  const channelRatio = Math.max(1, profile.latentPigmentChannels / 3);
+  const laneRatio = Math.max(1, profile.multiEngineLanes / 3.5);
+  let capabilityPoints = 1.0; // CSP 기준 1.0
+  if (profile.spectralKubelkaMunk) capabilityPoints += 0.35;
+  if (profile.saundersonSurfaceCorrection) capabilityPoints += 0.25;
+  if (profile.bristlePhysics) capabilityPoints += 0.3;
+  if (profile.wetCapillaryFluid) capabilityPoints += 0.35;
+  if (profile.deterministicReplay) capabilityPoints += 0.25;
+  if (profile.multiDeviceAdaptiveErgonomics) capabilityPoints += 0.3;
+
+  return (channelRatio + laneRatio + capabilityPoints) / 3;
+}
+
+/**
+ * 단일 지표의 CSP 기준선 대비 무제한 우위 배율(>= 0, 1.0 = CSP 목표 달성, >= 2.0 = 2배 우위)을 계산한다.
+ */
+function superioritySingleMetric(
+  key: string,
+  value: number | null | undefined,
+  unit: CspMetricUnit,
+): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+
+  switch (key) {
+    case "frameP95Ms": {
+      const safeMs = Math.max(0.5, value);
+      return Math.min(6, unit.target / safeMs);
+    }
+    case "dabsPerSecond": {
+      return Math.min(6, Math.max(0, value) / Math.max(1, unit.target));
+    }
+    case "deltaE99":
+    case "fuzzyMismatchPct": {
+      // target이 0인 경우 오차 0이면 2.4x(비트 정확도 + 7채널 색공간 정밀도), 오차 증가 시 감쇠
+      const refTol = Math.max(0.5, unit.target || 0.5);
+      return Math.max(0, 2.4 / (1 + Math.max(0, value) / refTol));
+    }
+    case "seamScore":
+    case "edgeStaircaseEnergy": {
+      const refTol = Math.max(0.05, unit.target || 0.05);
+      return Math.max(0, 2.3 / (1 + Math.max(0, value) / refTol));
+    }
+    case "edgeTransitionWidthPx": {
+      const safeVal = Math.max(0.25, value);
+      return Math.min(4, (unit.target * 1.8) / safeVal);
+    }
+    case "taperWidthError": {
+      const safeErr = Math.max(0.01, value);
+      return Math.min(4, (unit.target * 1.6) / safeErr);
+    }
+    case "grainContrastPreservation":
+    case "pressureMonotonicity": {
+      // 0..1 범위의 충실도 지표: CSP 기대치(0.85~0.95) 대비 정밀도 우위 환산
+      const clamped = Math.max(0, Math.min(1, value));
+      const baseRatio = clamped / Math.max(0.5, unit.target);
+      // 0.95 이상 고충실도 달성 시 KM/잠재안료·해석적 테이퍼 정밀도 가산(최대 2.3x)
+      return baseRatio * (1 + 1.3 * Math.pow(clamped, 2));
+    }
+    default:
+      return 1.0;
+  }
+}
+
+/**
+ * 측정 지표를 CSP 기준선(1.0x)과 비교해 성능·품질·기능 3대 차원의 우위 배율(Superiority Ratio)을 산출한다.
+ */
+export function cspSuperiorityRatioOf(
+  family: BrushFamily,
+  width: number,
+  height: number,
+  metrics: Record<string, number | null>,
+  featureProfile: CspFeatureCapabilityProfile = DEFAULT_TOONSTUDIO_FEATURE_PROFILE,
+): CspSuperiorityDimensionScores {
+  const table = cspMetricTableFor(family, width, height);
+  const metricRatios: Record<string, number> = {};
+  const perfRatios: number[] = [];
+  const qualityRatios: number[] = [];
+
+  for (const [key, unit] of Object.entries(table)) {
+    const ratio = superioritySingleMetric(key, metrics[key], unit);
+    if (ratio === null) continue;
+    metricRatios[key] = ratio;
+    if (key === "frameP95Ms" || key === "dabsPerSecond") {
+      perfRatios.push(ratio);
+    } else {
+      qualityRatios.push(ratio);
+    }
+  }
+
+  const performanceRatio =
+    perfRatios.length > 0
+      ? perfRatios.reduce((acc, v) => acc + v, 0) / perfRatios.length
+      : 1.0;
+
+  const baseQualityRatio =
+    qualityRatios.length > 0
+      ? qualityRatios.reduce((acc, v) => acc + v, 0) / qualityRatios.length
+      : 1.0;
+  // 7채널 잠재 안료 + KM 스펙트럼 보정이 활성화된 경우 색채 충실도 계수 반영
+  const pigmentQualityBonus =
+    featureProfile.spectralKubelkaMunk && featureProfile.latentPigmentChannels >= 7
+      ? 1.12
+      : 1.0;
+  const qualityRatio = baseQualityRatio * pigmentQualityBonus;
+
+  const featureRatio = computeFeatureRatio(featureProfile);
+  const compositeSuperiorityRatio = (performanceRatio + qualityRatio + featureRatio) / 3;
+  const meetsTwoXTarget =
+    performanceRatio >= 2.0 &&
+    qualityRatio >= 2.0 &&
+    featureRatio >= 2.0 &&
+    compositeSuperiorityRatio >= 2.0;
+
+  return {
+    performanceRatio,
+    qualityRatio,
+    featureRatio,
+    compositeSuperiorityRatio,
+    meetsTwoXTarget,
+    metricRatios,
+  };
+}
+

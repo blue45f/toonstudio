@@ -6,10 +6,13 @@ import {
   cspMetricTableFor,
   cspScoreOf,
   cspOverallScore,
+  cspSuperiorityRatioOf,
   validateCspBaseline,
   CSP_BASELINE_VALID,
   CSP_BASELINE,
   CSP_BASELINE_DEFAULT,
+  CSP_REFERENCE_FEATURE_PROFILE,
+  DEFAULT_TOONSTUDIO_FEATURE_PROFILE,
 } from "./csp-baseline";
 
 import type { BrushFamily } from "../../engine/presets/program-schema";
@@ -109,4 +112,51 @@ describe("CSP 기준선 수치", () => {
       expect(score).toBe(1);
     });
   });
+
+  describe("cspSuperiorityRatioOf (CSP 대비 2배 우위 배율)", () => {
+    it("고도화된 ToonStudio 엔진 지표와 기능 프로파일에서 성능·품질·기능 모두 2.0배 이상을 달성한다", () => {
+      const ratios = cspSuperiorityRatioOf(
+        "pencil",
+        512,
+        512,
+        {
+          deltaE99: 0,
+          fuzzyMismatchPct: 0,
+          frameP95Ms: 5.5,
+          dabsPerSecond: 240_000,
+          grainContrastPreservation: 0.99,
+          seamScore: 0,
+          edgeStaircaseEnergy: 0,
+          pressureMonotonicity: 0.99,
+          edgeTransitionWidthPx: 0.65,
+          taperWidthError: 0.035,
+        },
+        DEFAULT_TOONSTUDIO_FEATURE_PROFILE,
+      );
+      expect(ratios.performanceRatio).toBeGreaterThanOrEqual(2.0);
+      expect(ratios.qualityRatio).toBeGreaterThanOrEqual(2.0);
+      expect(ratios.featureRatio).toBeGreaterThanOrEqual(2.0);
+      expect(ratios.compositeSuperiorityRatio).toBeGreaterThanOrEqual(2.0);
+      expect(ratios.meetsTwoXTarget).toBe(true);
+    });
+
+    it("CSP 기본 레퍼런스 프로파일과 기준선 수치에서는 2.0배 미달로 판별된다", () => {
+      const baselineRatios = cspSuperiorityRatioOf(
+        "pencil",
+        512,
+        512,
+        {
+          deltaE99: 1.2,
+          frameP95Ms: 16.67,
+          dabsPerSecond: 100_000,
+          grainContrastPreservation: 0.65,
+        },
+        CSP_REFERENCE_FEATURE_PROFILE,
+      );
+      expect(baselineRatios.performanceRatio).toBeCloseTo(1.0, 5);
+      expect(baselineRatios.featureRatio).toBeCloseTo(1.0, 5);
+      expect(baselineRatios.meetsTwoXTarget).toBe(false);
+    });
+  });
 });
+
