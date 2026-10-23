@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
   "home.hero.titleLine1": "Hadithi zilizotawanyika,",
-  "home.hero.titleShimmer": "Kiashiria kimoja",
+  "home.hero.titleShimmer": "Faharasa moja",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Tafuta kwenye Naver Webtoon, Series, na Kakao Webtoon, kisha haraka kupunguza nini kusoma kwa kutumia ishara za wakati halisi na upendeleo wa msomaji.",
+  "home.hero.description": "Tafuta kwenye Naver Webtoon, Series, na Kakao Webtoon, kisha punguza haraka cha kusoma kwa kutumia ishara za wakati halisi na mapendeleo ya wasomaji.",
   "home.hero.searchButton": "Tafuta majina, waundaji, vitambulisho",
   "home.hero.rankingButton": "Tazama orodha ya pamoja",
   "home.hero.studioLink": "Studio ya Muumba",
   "home.hero.createLink": "Jopo la Muumba",
   "home.hero.stats.titles": "Vichwa",
   "home.hero.stats.platforms": "Majukwaa ya kuchapisha",
-  "home.hero.stats.genres": "Aina ya aina",
+  "home.hero.stats.genres": "Wigo wa aina",
   "home.hero.stats.reviews": "Maoni ya Wasomaji",
-  "home.loadError": "Haikuweza kupakia data nyumbani.",
-  "home.creatorTitle": "Kutoka wazo hadi eneo lako la kwanza"
+  "home.loadError": "Imeshindwa kupakia data ya ukurasa wa nyumbani.",
+  "home.creatorTitle": "Kutoka wazo hadi tukio lako la kwanza"
 }

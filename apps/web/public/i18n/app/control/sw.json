@@ -1,14 +1,14 @@
 {
   "control.language.label": "Lugha",
   "control.language.group.translated": "Tafsiri zenye upatikanaji mkubwa",
-  "control.language.group.englishBase": "Tafsiri ya moja kwa moja · Kiingereza fallback",
-  "control.sound.enable": "Kuwezesha athari za sauti",
-  "control.sound.disable": "Kulemaza athari za sauti",
-  "control.theme.dark": "Badilisha mode mwanga",
-  "control.theme.light": "Badilisha mode giza",
-  "control.settings.open": "Mipangilio ya wazi",
-  "control.settings.close": "Mipangilio ya karibu",
+  "control.language.group.englishBase": "Tafsiri otomatiki · Kiingereza mbadala",
+  "control.sound.enable": "Washa athari za sauti",
+  "control.sound.disable": "Zima athari za sauti",
+  "control.theme.dark": "Badilisha hadi hali ya mwanga",
+  "control.theme.light": "Badilisha hadi hali ya giza",
+  "control.settings.open": "Fungua mipangilio",
+  "control.settings.close": "Funga mipangilio",
   "control.cluster.settings": "Sauti, mandhari, udhibiti wa lugha",
-  "control.cluster.open": "Mipangilio ya wazi",
+  "control.cluster.open": "Fungua mipangilio",
   "control.cluster.tooltip": "Mipangilio ya sauti, mandhari, na lugha"
 }

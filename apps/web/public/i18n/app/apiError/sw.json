@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Kuingia ni lazima.",
-  "apiError.adminRequired": "ruhusa za admin haziwezi kuthibitishwa.",
-  "apiError.adminOnlyPage": "Ukurasa huu ni mdogo kwa watendaji.",
+  "apiError.adminRequired": "Ruhusa za msimamizi hazikuweza kuthibitishwa.",
+  "apiError.adminOnlyPage": "Ukurasa huu umezuiwa kwa wasimamizi pekee.",
   "apiError.notFound": "Kitu kilichotakiwa hakikuweza kupatikana.",
   "apiError.unsupportedType": "Aina ya maudhui yasiyoungwa mkono.",
   "apiError.inactiveAccount": "Akaunti zisizo na kazi haziwezi kutumia huduma za msimamizi.",
-  "apiError.settlementFailed": "Mchakato wa kushughulikia mahakama ulikosa."
+  "apiError.settlementFailed": "Usindikaji wa malipo umeshindwa. Tafadhali jaribu tena baada ya muda mfupi."
 }
