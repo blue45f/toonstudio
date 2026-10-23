@@ -3,8 +3,8 @@
   "ad.slotAriaLabel": "Reklamní místo",
   "ad.slotLabel": "Sponzorované",
   "ad.slotTitle": "Sponzorovaný obsah",
-  "ad.ctaDetails": "Přehled detailů",
-  "ad.placeholderAriaLabel": "Udržovatel reklamy",
-  "ad.placeholderText": "Žádný sponzorovaný obsah.",
-  "ad.tag": "Reklamace"
+  "ad.ctaDetails": "Zobrazit podrobnosti",
+  "ad.placeholderAriaLabel": "Zástupný prvek reklamy",
+  "ad.placeholderText": "Žádný sponzorovaný obsah není k dispozici.",
+  "ad.tag": "Reklama"
 }

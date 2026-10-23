@@ -1,7 +1,7 @@
 {
-  "lang.ko": "Korejci",
+  "lang.ko": "Korejština",
   "lang.en": "Angličtina",
-  "lang.switch": "Jüzyk",
-  "lang.auto": "Auto",
-  "lang.change": "Změna jazyka"
+  "lang.switch": "Jazyk",
+  "lang.auto": "Automaticky",
+  "lang.change": "Změnit jazyk"
 }

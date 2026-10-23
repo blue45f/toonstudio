@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Úplně dokončené",
-  "review.progress.binge": "Zpívání",
+  "review.progress.complete": "Dokončeno",
+  "review.progress.binge": "Čtu v kuse",
   "review.progress.upcoming": "Plánované",
-  "review.progress.abandoned": "Odpadl",
+  "review.progress.abandoned": "Opustěno",
   "review.progress.unknown": "Pokrok skrytý",
-  "review.spoilerRevealLabel": "Spoiler na zobrazení"
+  "review.spoilerRevealLabel": "Zobrazit spoiler"
 }

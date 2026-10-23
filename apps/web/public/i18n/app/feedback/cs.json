@@ -1,6 +1,6 @@
 {
-  "feedback.loadError": "Nedokázal jsem načítat zpětnou vazbu.",
-  "feedback.thankYou": "Děkuji za vaši cennou zpětnou vazbu!",
+  "feedback.loadError": "Dotazník zpětné vazby se nepodařilo načíst. Zkuste to prosím za chvíli znovu.",
+  "feedback.thankYou": "Děkujeme za vaši cennou zpětnou vazbu!",
   "feedback.anonymousNote": "Vaše odpovědi zůstávají anonymní.",
   "feedback.notAtAll": "Vůbec ne.",
   "feedback.definitely": "Určitě."

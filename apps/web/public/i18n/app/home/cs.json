@@ -3,15 +3,15 @@
   "home.hero.titleLine1": "Rozptýlené příběhy,",
   "home.hero.titleShimmer": "Jednotný index",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Vyhledávat webovou stránku Naver, seriál a Kakao Webtoon, pak rychle omezit, co číst pomocí signálů v reálném čase a preferencí čtenáře.",
-  "home.hero.searchButton": "Název vyhledávání, tvůrci, značky",
+  "home.hero.description": "Hledejte napříč Naver Webtoon, Series a Kakao Webtoon a pak pomocí signálů v reálném čase a preferencí čtenářů rychle zužte výběr toho, co číst.",
+  "home.hero.searchButton": "Hledat díla, tvůrce, tagy",
   "home.hero.rankingButton": "Zobrazit jednotné hodnocení",
-  "home.hero.studioLink": "Stvořitelské studio",
-  "home.hero.createLink": "Stvořitelská deska",
+  "home.hero.studioLink": "Studio tvůrce",
+  "home.hero.createLink": "Nástěnka tvůrců",
   "home.hero.stats.titles": "Tituly",
   "home.hero.stats.platforms": "Vydávací platformy",
   "home.hero.stats.genres": "Spektrum žánru",
-  "home.hero.stats.reviews": "Ohlášení čtenářů",
-  "home.loadError": "Nemohl jsem načítat domácí data.",
-  "home.creatorTitle": "Od nápady k první scéně"
+  "home.hero.stats.reviews": "Recenze čtenářů",
+  "home.loadError": "Data domovské stránky se nepodařilo načíst.",
+  "home.creatorTitle": "Od nápadu k první scéně"
 }

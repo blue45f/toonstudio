@@ -1,8 +1,8 @@
 {
   "ranking.detailTitle": "Zobrazit rozdělení skóre",
-  "ranking.metric.views": "Pozorování",
-  "ranking.why": "Proč?",
+  "ranking.metric.views": "Zhlédnutí",
+  "ranking.why": "Proč",
   "ranking.breakdownTitle": "Rozdělení skóre",
-  "ranking.totalScore": "Celkový skóre",
-  "ranking.breakdownDescription": "Výpočet s hmotnostmi osů a normalizací podle názvu."
+  "ranking.totalScore": "Celkové skóre",
+  "ranking.breakdownDescription": "Vypočteno s váhami os a normalizací pro jednotlivá díla."
 }
