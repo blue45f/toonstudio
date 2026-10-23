@@ -1,5 +1,5 @@
 {
-  "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
+  "home.hero.eyebrow": "ዌብቱን × ዌብኖቭል",
   "home.hero.titleLine1": "የተበታተኑ ታሪኮች፣",
   "home.hero.titleShimmer": "ነጠላ መረጃ ጠቋሚ",
   "home.hero.titleSuffix": ".",
@@ -10,8 +10,8 @@
   "home.hero.createLink": "የፈጣሪ ቦርድ",
   "home.hero.stats.titles": "ርዕሶች",
   "home.hero.stats.platforms": "የማተሚያ መድረኮች",
-  "home.hero.stats.genres": "የወሲብ ዘርፍ",
+  "home.hero.stats.genres": "የዘውግ ስፔክትረም",
   "home.hero.stats.reviews": "የአንባቢዎች ግምገማዎች",
-  "home.loadError": "የቤት ውሂብ መጫን አልቻለም.",
+  "home.loadError": "የመነሻ ውሂብን መጫን አልተቻለም። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።",
   "home.creatorTitle": "ከአስተሳሰብ አንስቶ እስከ መጀመሪያው ትዕይንት"
 }

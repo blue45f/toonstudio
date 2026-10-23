@@ -1,5 +1,5 @@
 {
-  "feedback.loadError": "ግብረመልስ ጥናት መጫን አልቻለም.",
+  "feedback.loadError": "የግብረመልስ ጥናትን መጫን አልተቻለም። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።",
   "feedback.thankYou": "ስለሰጠኸው ጠቃሚ ግብረመልስ አመሰግናለሁ!",
   "feedback.anonymousNote": "ምላሾችዎ በጥብቅ ስም አልባ ሆነው ይቆያሉ።",
   "feedback.notAtAll": "በፍጹም አይደለም",

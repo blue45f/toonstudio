@@ -4,12 +4,12 @@
   "userProfile.tabs.works": "የተፈጠሩ ስራዎች",
   "userProfile.tabs.series": "ተከታታይ",
   "userProfile.works.empty": "ይህ ተጠቃሚ እስካሁን የሕዝብ ሥራ የለውም።",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
+  "userProfile.works.error": "የተፈጠሩ ሥራዎችን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
   "userProfile.series.empty": "ይህ ተጠቃሚ ገና ተከታታይ የለውም።",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.fetchError": "መገለጫ መጫን አልተቻለም።",
+  "userProfile.series.error": "ተከታታዮችን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "userProfile.fetchError": "መገለጫ መጫን አልተቻለም። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።",
   "userProfile.authorFallback": "ተጠቃሚ",
-  "userProfile.metaTemplate": "{author} መገለጫ · {reviews} ግምገማዎች · {works} ስራዎች · avg ደረጃ መስጠት {avg}  ToonStudio.",
+  "userProfile.metaTemplate": "{author} መገለጫ · {reviews} ግምገማዎች · {works} ስራዎች · አማካይ ደረጃ {avg} — ToonStudio.",
   "userProfile.bioFallback": "የአንባቢዎች መገለጫ እና የታተሙ ስራዎች",
   "userProfile.followHint": "ተጠቃሚዎች መግቢያ በኋላ መከታተል ይችላሉ.",
   "userProfile.follow": "ይከተሉ",
@@ -22,6 +22,6 @@
   "userProfile.tabsLabel": "የመገለጫ ይዘት",
   "userProfile.refresh": "ማደስ",
   "userProfile.emptyReviews": "ይህ ተጠቃሚ እስካሁን ያወጣው ግምገማ የለም።",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "በሚወዱት ርዕስ ላይ የመጀመሪያውን ግምገማ ይተዉ።",
+  "userProfile.emptyReviewsCta": "ርዕሶችን ያስሱ"
 }

@@ -1,7 +1,7 @@
 {
   "control.language.label": "ቋንቋ",
   "control.language.group.translated": "ከፍተኛ ሽፋን ያላቸው ትርጉሞች",
-  "control.language.group.englishBase": "አውቶማቲክ ትርጉም · እንግሊዝኛ fallback",
+  "control.language.group.englishBase": "አውቶማቲክ ትርጉም · የእንግሊዝኛ አማራጭ",
   "control.sound.enable": "የድምፅ ውጤቶችን ማስቻል",
   "control.sound.disable": "የድምፅ ውጤቶችን ማሰናከል",
   "control.theme.dark": "ወደ ብርሃን ሁነታ መቀየር",
