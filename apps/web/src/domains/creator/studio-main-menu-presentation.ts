@@ -138,8 +138,40 @@ const WORKFLOW_LABELS: Readonly<
   ai: { ko: "AI 도우미", en: "AI Assist" },
 });
 
+/**
+ * 접힌 고급 섹션에서도 1단계에 바로 보이는 대표 진입(추가 행, 실사용 감사 B-15).
+ *
+ * beginner 모드(simple·focus)는 3D 섹션을 통째로 '고급 도구 펼치기' 뒤로 접는다. 그런데
+ * 3D 데생 인형은 웹툰 작가가 컷마다 꺼내는 기본 도구라 접힌 메뉴 안에 숨으면 찾지 못했다.
+ * 섹션이 접혀 있는 동안에만 그 행을 복제한 바로가기를 펼침 행 바로 앞(1단계)에 더한다.
+ * 원래 행은 이름·역할·순서·위치를 바꾸지 않는다 — 펼치면 원래 행('기본 데생 인형')이 보이므로
+ * 바로가기는 빠진다(한 메뉴에 같은 명령 두 번 금지). 바로가기 id에는 접미사를 붙여 원래 행의
+ * `data-studio-menu-item-id`와 겹치지 않는다(게이트 선택자가 모호해지지 않게).
+ */
+export interface StudioMainMenuFoldedSectionShortcut {
+  readonly sourceGroupId: string;
+  readonly itemId: string;
+  readonly label: { readonly ko: string; readonly en: string };
+}
+
+export const STUDIO_MAIN_MENU_FOLDED_SHORTCUT_ID_SUFFIX = ":folded-shortcut";
+
+export const STUDIO_MAIN_MENU_FOLDED_SECTION_SHORTCUTS: Readonly<
+  Partial<Record<StudioMainMenuCompositeGroupId, readonly StudioMainMenuFoldedSectionShortcut[]>>
+> = Object.freeze({
+  insert: Object.freeze([
+    Object.freeze({
+      sourceGroupId: "3d",
+      itemId: "mannequin3d",
+      label: Object.freeze({ ko: "3D 데생 인형", en: "3D drawing mannequin" }),
+    }),
+  ]),
+});
+
 export interface StudioMainMenuPresentableItem {
   readonly id: string;
+  /** Visible label. Optional here because presentation only reads it for folded-section shortcuts. */
+  readonly label?: string;
   /** Caption naming the canonical catalogue group inside a workflow composite. */
   readonly sectionLabel?: string;
   readonly separatorAfter?: boolean;
@@ -276,6 +308,28 @@ function buildComposite<
   return { ...template, id: title, label, items } as TGroup;
 }
 
+/** 접힌 소스 섹션에서 1단계로 끌어올릴 바로가기 행들(원래 행을 복제하고 id·이름만 바꾼다). */
+function foldedSectionShortcutItems<TGroup extends StudioMainMenuPresentableGroup>(
+  title: StudioMainMenuCompositeGroupId,
+  foldedSourceIds: ReadonlySet<string>,
+  byId: ReadonlyMap<string, TGroup>,
+  korean: boolean,
+): StudioMainMenuPresentableItem[] {
+  const shortcuts = STUDIO_MAIN_MENU_FOLDED_SECTION_SHORTCUTS[title] ?? [];
+  return shortcuts.flatMap((shortcut) => {
+    if (!foldedSourceIds.has(shortcut.sourceGroupId)) return [];
+    const original = byId.get(shortcut.sourceGroupId)?.items.find((item) => item.id === shortcut.itemId);
+    if (!original) return [];
+    return [{
+      ...original,
+      id: `${original.id}${STUDIO_MAIN_MENU_FOLDED_SHORTCUT_ID_SUFFIX}`,
+      label: shortcut.label[korean ? "ko" : "en"],
+      sourceGroupId: shortcut.sourceGroupId,
+      separatorAfter: false,
+    }];
+  });
+}
+
 /** Build the workflow presentation without mutating the canonical catalogue. */
 export function createStudioMainMenuPresentation<
   TGroup extends StudioMainMenuPresentableGroup,
@@ -349,8 +403,15 @@ export function createStudioMainMenuPresentation<
       // (filter) keeps its legacy rendering untouched.
       foldedSources.length > 0 && sources.length === 1,
     );
-    if (built) compositeSources[title] = fullSources.map((group) => group.id);
-    return built;
+    if (!built) return built;
+    compositeSources[title] = fullSources.map((group) => group.id);
+    // 접힌 섹션의 대표 진입은 1단계 끝(펼침 행이 붙기 바로 앞)에 바로가기로 더한다.
+    const shortcuts = foldedSectionShortcutItems(title, foldedSet, byId, korean);
+    if (shortcuts.length === 0) return built;
+    const items: StudioMainMenuPresentableItem[] = [...built.items];
+    const lastIndex = items.length - 1;
+    if (lastIndex >= 0) items[lastIndex] = { ...items[lastIndex], separatorAfter: true } as StudioMainMenuPresentableItem;
+    return { ...built, items: [...items, ...shortcuts] } as TGroup;
   };
 
   const unknown = groups.filter(

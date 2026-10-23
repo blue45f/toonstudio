@@ -102,14 +102,39 @@ describe("StudioWebtoonPosePresetGrid (Shaper식 클릭 적용 UX)", () => {
     expect(screen.getByText("조건에 맞는 포즈가 없습니다. 필터나 검색어를 바꿔 보세요.")).toBeTruthy();
   });
 
-  it("한 줄 목적 설명(ko/en)을 아이콘과 함께 보여준다", () => {
-    render(<StudioWebtoonPosePresetGrid onApplyPreset={() => {}} />);
+  it("한 줄 목적 설명을 한국어로만 보여준다 (영문 병기 없음, B-09)", () => {
+    const { container } = render(<StudioWebtoonPosePresetGrid onApplyPreset={() => {}} />);
     expect(
       screen.getByText("포즈 카드를 클릭하면 3D 캐릭터에 바로 적용됩니다."),
     ).toBeTruthy();
+    expect(screen.queryByText(/Click a pose card/)).toBeNull();
+    expect(container.querySelector('[lang="en"]')).toBeNull();
+  });
+
+  it("검색어는 통합 포즈 라이브러리와 같은 기준을 따른다 (B-10)", () => {
+    render(<StudioWebtoonPosePresetGrid onApplyPreset={() => {}} />);
+    const search = screen.getByRole("textbox", { name: "포즈 프리셋 검색" });
+
+    // 한 글자 '검'은 칼 포즈만 찾는다(검지 같은 접두 오탐 없음).
+    fireEvent.change(search, { target: { value: "검" } });
+    const swordCards = screen
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label") ?? "")
+      .filter((label) => label.endsWith("포즈 적용"));
+    expect(swordCards).toEqual([
+      "일도양단 발도세 (Sword Draw Slash) 포즈 적용",
+      "기사의 맹세 (Knight Oath) 포즈 적용",
+    ]);
+
+    // 동의어: '칼'로도 같은 포즈를 찾는다.
+    fireEvent.change(search, { target: { value: "칼" } });
     expect(
-      screen.getByText("Click a pose card to apply it to the 3D character instantly."),
+      screen.getByRole("button", { name: "일도양단 발도세 (Sword Draw Slash) 포즈 적용" }),
     ).toBeTruthy();
+
+    // 웹툰 프리셋에는 주먹 포즈가 없으므로 빈 상태가 정확하다.
+    fireEvent.change(search, { target: { value: "주먹" } });
+    expect(screen.getByText("조건에 맞는 포즈가 없습니다. 필터나 검색어를 바꿔 보세요.")).toBeTruthy();
   });
 
   it("좁은 화면에서는 2열 그리드로 카드가 좁아지지 않는다", () => {

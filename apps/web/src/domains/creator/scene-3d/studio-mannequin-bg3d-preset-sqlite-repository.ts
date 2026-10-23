@@ -91,29 +91,22 @@ function sameQuantizedPoseNumber(left: number, right: number): boolean {
   return sameNumber(left, right) || Math.abs(left - right) <= 0.00000051;
 }
 
-function isCanonicalMannequinInput(
-  input: StudioMannequinPersistentState,
-  canonical: StudioMannequinPersistentState,
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** 값이 undefined 인 키는 JSON 에 실리지 않으므로 없는 키로 본다. */
+function definedKeys(value: Record<string, unknown>): string {
+  return Object.keys(value).filter((key) => value[key] !== undefined).sort().join("|");
+}
+
+function isCanonicalParams(
+  input: unknown,
+  canonical: StudioMannequinPersistentState["params"],
 ): boolean {
-  if (
-    typeof input !== "object" ||
-    input === null ||
-    Object.keys(input).sort().join("|") !== "params|pose"
-  ) {
-    return false;
-  }
-  if (
-    typeof input.params !== "object" ||
-    input.params === null ||
-    Array.isArray(input.params) ||
-    typeof input.pose !== "object" ||
-    input.pose === null ||
-    Array.isArray(input.pose)
-  ) {
-    return false;
-  }
-  const inputParamKeys = Object.keys(input.params).sort();
-  const canonicalParamKeys = Object.keys(canonical.params).sort();
+  if (!isPlainRecord(input)) return false;
+  const inputParamKeys = Object.keys(input).sort();
+  const canonicalParamKeys = Object.keys(canonical).sort();
   if (
     inputParamKeys.length !== canonicalParamKeys.length ||
     inputParamKeys.some((key, index) => key !== canonicalParamKeys[index])
@@ -122,37 +115,40 @@ function isCanonicalMannequinInput(
   }
   for (const key of canonicalParamKeys) {
     const param = key as keyof StudioMannequinPersistentState["params"];
-    const left = input.params[param];
-    const right = canonical.params[param];
+    const left = input[param];
+    const right = canonical[param];
     if (left === undefined || right === undefined) {
       if (left !== right) return false;
-    } else if (!sameNumber(left, right)) {
+    } else if (typeof left !== "number" || !sameNumber(left, right)) {
       return false;
     }
   }
-  if (Object.keys(input.pose).sort().join("|") !== "joints|pelvisOffset") {
+  return true;
+}
+
+function isCanonicalPose(
+  input: unknown,
+  canonical: StudioMannequinPersistentState["pose"],
+): boolean {
+  if (!isPlainRecord(input) || Object.keys(input).sort().join("|") !== "joints|pelvisOffset") {
     return false;
   }
+  const pose = input as unknown as StudioMannequinPersistentState["pose"];
   if (
-    !Array.isArray(input.pose.pelvisOffset) ||
-    input.pose.pelvisOffset.length !== 3 ||
-    input.pose.pelvisOffset.some((value) => !Number.isFinite(value)) ||
-    typeof input.pose.joints !== "object" ||
-    input.pose.joints === null ||
-    Array.isArray(input.pose.joints)
+    !Array.isArray(pose.pelvisOffset) ||
+    pose.pelvisOffset.length !== 3 ||
+    pose.pelvisOffset.some((value) => !Number.isFinite(value)) ||
+    !isPlainRecord(pose.joints)
   ) {
     return false;
   }
   for (let index = 0; index < 3; index += 1) {
-    if (!sameQuantizedPoseNumber(
-      input.pose.pelvisOffset[index],
-      canonical.pose.pelvisOffset[index],
-    )) {
+    if (!sameQuantizedPoseNumber(pose.pelvisOffset[index], canonical.pelvisOffset[index])) {
       return false;
     }
   }
-  const normalized = normalizeStudioMannequinPose(input.pose);
-  const inputJointKeys = Object.keys(input.pose.joints).sort();
+  const normalized = normalizeStudioMannequinPose(pose);
+  const inputJointKeys = Object.keys(pose.joints).sort();
   const normalizedJointKeys = Object.keys(normalized.joints).sort();
   if (
     inputJointKeys.length !== normalizedJointKeys.length ||
@@ -161,18 +157,48 @@ function isCanonicalMannequinInput(
     return false;
   }
   for (const jointId of normalizedJointKeys) {
-    const inputRotation = input.pose.joints[
-      jointId as keyof typeof input.pose.joints
-    ];
-    const normalizedRotation = normalized.joints[
-      jointId as keyof typeof normalized.joints
-    ];
+    const inputRotation = pose.joints[jointId as keyof typeof pose.joints];
+    const normalizedRotation = normalized.joints[jointId as keyof typeof normalized.joints];
     if (!inputRotation || !normalizedRotation) return false;
     for (let index = 0; index < 3; index += 1) {
       if (!sameQuantizedPoseNumber(inputRotation[index], normalizedRotation[index])) return false;
     }
   }
   return true;
+}
+
+/** 2인 구도 상대 인형도 주인공과 같은 엄격 계약(무손실·무클램프)을 따른다. */
+function isCanonicalPartner(
+  input: unknown,
+  canonical: NonNullable<StudioMannequinPersistentState["partner"]>,
+): boolean {
+  if (!isPlainRecord(input) || definedKeys(input) !== "offset|params|pose|yawRad") return false;
+  const offset = input.offset;
+  if (!Array.isArray(offset) || offset.length !== 3) return false;
+  for (let index = 0; index < 3; index += 1) {
+    const value: unknown = offset[index];
+    if (typeof value !== "number" || !sameQuantizedPoseNumber(value, canonical.offset[index])) {
+      return false;
+    }
+  }
+  if (typeof input.yawRad !== "number" || !sameQuantizedPoseNumber(input.yawRad, canonical.yawRad)) {
+    return false;
+  }
+  return isCanonicalParams(input.params, canonical.params) && isCanonicalPose(input.pose, canonical.pose);
+}
+
+function isCanonicalMannequinInput(
+  input: StudioMannequinPersistentState,
+  canonical: StudioMannequinPersistentState,
+): boolean {
+  if (!isPlainRecord(input)) return false;
+  const record = input as unknown as Record<string, unknown>;
+  const expectedKeys = canonical.partner ? "params|partner|pose" : "params|pose";
+  if (definedKeys(record) !== expectedKeys) return false;
+  if (!isCanonicalParams(record.params, canonical.params) || !isCanonicalPose(record.pose, canonical.pose)) {
+    return false;
+  }
+  return !canonical.partner || isCanonicalPartner(record.partner, canonical.partner);
 }
 
 export function parseCanonicalStudioMannequinSqliteState(

@@ -58,7 +58,7 @@ import { handleStudioHorizontalWheel } from "./studio-horizontal-wheel";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 import {
   STUDIO_UI_DENSITY_MODES,
-  studioUiAdvancedToolsToggleLabel,
+  studioUiAdvancedToolsToggleAccessibleName, studioUiAdvancedToolsToggleLabel, studioUiAdvancedToolsToggleTooltip,
   studioUiDensityLabel,
   type StudioUiDensityMode,
 } from "./studio-ui-density";
@@ -1662,7 +1662,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
           {uiDensityMode === "simple" && setUiAdvancedToolsExpanded && !mobileImmersive ? (
             <button
               type="button"
-              data-studio-advanced-tools-toggle="true"
+              data-studio-advanced-tools-toggle="true" aria-label={studioUiAdvancedToolsToggleAccessibleName(uiAdvancedToolsExpanded === true)} title={studioUiAdvancedToolsToggleTooltip(uiAdvancedToolsExpanded === true)}
               aria-expanded={uiAdvancedToolsExpanded === true}
               onClick={() => setUiAdvancedToolsExpanded(uiAdvancedToolsExpanded !== true)}
               className="hidden min-h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-line/70 bg-canvas/40 px-2 text-[0.68rem] font-bold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:text-fg lg:flex"

@@ -9,6 +9,7 @@
 
 import {
   STUDIO_MANNEQUIN_JOINT_IDS,
+  canonicalizeStudioMannequinAngle,
   clampStudioMannequinBodyParams,
   clampStudioMannequinJointRotation,
   isStudioMannequinJointId,
@@ -18,6 +19,8 @@ import {
 } from "./studio-mannequin-model";
 
 import { STUDIO_MANNEQUIN_POSE_PRESETS } from "./studio-mannequin-pose-presets";
+
+import type { StudioMannequinPoseGroundSpec } from "./studio-mannequin-pose-ground-contact";
 
 export { STUDIO_MANNEQUIN_POSE_PRESETS };
 
@@ -74,6 +77,13 @@ export interface StudioMannequinPosePreset {
   readonly scope?: StudioMannequinPoseScope;
   /** 연출에 필요한 인원수. 없으면 1인. 커플 포즈는 2. */
   readonly figures?: 1 | 2;
+  /**
+   * 지지 방식(서기·앉기·무릎·바닥·눕기·공중)과 바닥에 닿아야 하는 부위. 없으면 발로 선 자세다.
+   * 적용 시점에 현재 체형으로 골반 높이를 다시 계산하는 근거이자 품질 검사의 기준이다.
+   */
+  readonly ground?: StudioMannequinPoseGroundSpec;
+  /** 좌우 대칭 포즈 — 미러해도 같아야 한다(품질 검사가 대칭 오차를 잰다). */
+  readonly symmetric?: boolean;
 }
 
 /** 프리셋의 실제 적용 범위(기본값 규칙 적용). */
@@ -322,19 +332,83 @@ export function parseStudioMannequinPose(raw: unknown): StudioMannequinPose | nu
 export const STUDIO_MANNEQUIN_STATE_STORAGE_KEY = "toonstudio-studio-mannequin-state:v1";
 export const STUDIO_MANNEQUIN_STATE_DOC_KIND = "studio-mannequin-state" as const;
 export const STUDIO_MANNEQUIN_STATE_DOC_VERSION = 1 as const;
+/** 2인 구도 상대 인형을 담은 문서 버전. 상대가 없으면 v1 그대로(바이트 동일) 저장한다. */
+export const STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION = 2 as const;
 export const STUDIO_MANNEQUIN_STATE_DOC_MAX_BYTES = 24 * 1024;
+/** 상대 루트 위치 한계(m) — 주인공 로컬 프레임 기준. */
+const PARTNER_OFFSET_LIMIT = 5;
+
+/** 2인 구도의 상대 인형 — 체형·포즈와 주인공 로컬 프레임 기준 배치. */
+export interface StudioMannequinPersistentPartner {
+  readonly params: StudioMannequinBodyParams;
+  readonly pose: StudioMannequinPose;
+  /** 상대 루트 위치(m). 주인공 원점·+Z 응시 프레임. */
+  readonly offset: StudioMannequinVec3;
+  /** 상대 루트 요(rad). 0 = 같은 방향, π = 마주 보기. */
+  readonly yawRad: number;
+}
 
 export interface StudioMannequinPersistentState {
   readonly params: StudioMannequinBodyParams;
   readonly pose: StudioMannequinPose;
+  /** 2인 구도의 상대 인형. 구버전(v1) 문서와 1인 작업에는 없다. */
+  readonly partner?: StudioMannequinPersistentPartner;
+}
+
+function quantizePartnerAxis(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  const clamped = Math.min(PARTNER_OFFSET_LIMIT, Math.max(-PARTNER_OFFSET_LIMIT, value));
+  const quantized = Math.round(clamped * 1e6) / 1e6;
+  return Object.is(quantized, -0) ? 0 : quantized;
+}
+
+function canonicalPartner(source: {
+  readonly params?: unknown;
+  readonly pose?: unknown;
+  readonly offset?: unknown;
+  readonly yawRad?: unknown;
+}): StudioMannequinPersistentPartner {
+  const offset: readonly unknown[] = Array.isArray(source.offset) ? source.offset : [];
+  const yaw = canonicalizeStudioMannequinAngle(source.yawRad);
+  return {
+    params: clampStudioMannequinBodyParams(source.params),
+    pose: normalizeStudioMannequinPose(source.pose),
+    offset: [quantizePartnerAxis(offset[0]), quantizePartnerAxis(offset[1]), quantizePartnerAxis(offset[2])],
+    // −π 근처는 1e-6 격자 양자화와 [−π, π) 접기가 서로를 뒤집어 왕복이 흔들린다 —
+    // 같은 마주 보기 방향인 +π 쪽 격자점으로 고정해 정규화를 멱등하게 만든다.
+    yawRad: yaw <= -Math.PI + 1e-6 ? canonicalizeStudioMannequinAngle(Math.PI - 1e-6) : yaw,
+  };
+}
+
+/** 알 수 없는 입력을 유효한 상대 인형으로 정규화한다. 객체가 아니면 null(상대 없음). */
+export function normalizeStudioMannequinPartner(input: unknown): StudioMannequinPersistentPartner | null {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return null;
+  return canonicalPartner(input as Record<string, unknown>);
+}
+
+/** 이미 상대 인형 모양인 값을 직렬화 정본(클램프·양자화)으로 맞춘다. 저장 계약의 엄격 검사를 통과하는 값이다. */
+export function canonicalizeStudioMannequinPartner(
+  partner: StudioMannequinPersistentPartner,
+): StudioMannequinPersistentPartner {
+  return canonicalPartner(partner);
 }
 
 export function serializeStudioMannequinState(input: StudioMannequinPersistentState): string {
+  const partner = input.partner ? normalizeStudioMannequinPartner(input.partner) : null;
+  if (!partner) {
+    return JSON.stringify({
+      kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
+      version: STUDIO_MANNEQUIN_STATE_DOC_VERSION,
+      params: clampStudioMannequinBodyParams(input.params),
+      pose: normalizeStudioMannequinPose(input.pose),
+    });
+  }
   return JSON.stringify({
     kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
-    version: STUDIO_MANNEQUIN_STATE_DOC_VERSION,
+    version: STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION,
     params: clampStudioMannequinBodyParams(input.params),
     pose: normalizeStudioMannequinPose(input.pose),
+    partner,
   });
 }
 
@@ -349,12 +423,27 @@ export function parseStudioMannequinState(raw: unknown): StudioMannequinPersiste
     }
   }
   if (typeof value !== "object" || value === null) return null;
-  const doc = value as { kind?: unknown; version?: unknown; params?: unknown; pose?: unknown };
+  const doc = value as {
+    kind?: unknown;
+    version?: unknown;
+    params?: unknown;
+    pose?: unknown;
+    partner?: unknown;
+  };
   if (doc.kind !== STUDIO_MANNEQUIN_STATE_DOC_KIND) return null;
-  if (doc.version !== STUDIO_MANNEQUIN_STATE_DOC_VERSION) return null;
+  if (doc.version === STUDIO_MANNEQUIN_STATE_DOC_VERSION) {
+    // 구버전 문서: 상대 인형이 없다(1인 작업).
+    return {
+      params: clampStudioMannequinBodyParams(doc.params),
+      pose: normalizeStudioMannequinPose(doc.pose),
+    };
+  }
+  if (doc.version !== STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION) return null;
+  const partner = normalizeStudioMannequinPartner(doc.partner);
   return {
     params: clampStudioMannequinBodyParams(doc.params),
     pose: normalizeStudioMannequinPose(doc.pose),
+    ...(partner ? { partner } : {}),
   };
 }
 

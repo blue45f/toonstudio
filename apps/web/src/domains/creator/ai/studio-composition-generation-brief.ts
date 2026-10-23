@@ -117,6 +117,38 @@ function anglePrompt(camera: CompositionCameraSnapshot): string {
 }
 
 /**
+ * 사람이 읽는 한국어 브리프용 앵글 표현. 제공자 프롬프트(anglePrompt)와 같은 구간 경계를 쓰되
+ * 문장은 한국어로만 낸다 — 예전에는 한국어 브리프에 "three-quarter view …"가 그대로 섞였다.
+ * 방위 규약: 0 = 정면, +X 쪽(오른쪽)으로 돈다.
+ */
+function angleLabelKo(camera: CompositionCameraSnapshot): string {
+  const azimuth = ((camera.azimuthDegrees % 360) + 360) % 360;
+  const horizontal =
+    azimuth < 22.5 || azimuth >= 337.5
+      ? "정면"
+      : azimuth < 67.5
+        ? "오른쪽 3/4 앞모습"
+        : azimuth < 112.5
+          ? "오른쪽 옆모습"
+          : azimuth < 157.5
+            ? "오른쪽 3/4 뒷모습"
+            : azimuth < 202.5
+              ? "뒷모습"
+              : azimuth < 247.5
+                ? "왼쪽 3/4 뒷모습"
+                : azimuth < 292.5
+                  ? "왼쪽 옆모습"
+                  : "왼쪽 3/4 앞모습";
+  const vertical =
+    camera.elevationDegrees >= 15
+      ? "하이앵글(내려다봄)"
+      : camera.elevationDegrees <= -15
+        ? "로우앵글(올려다봄)"
+        : "눈높이";
+  return `${horizontal} · ${vertical}`;
+}
+
+/**
  * 스냅샷을 생성 요청 패킷으로 조립한다. 순수·결정적.
  * 캐릭터나 카메라가 없으면 부분 패킷을 만들지 않고 실패를 반환한다(fail-closed).
  */
@@ -172,9 +204,10 @@ export function buildCompositionGenerationBrief(
   if (snapshot.userPrompt?.trim()) promptParts.push(snapshot.userPrompt.trim());
   promptParts.push("keep the exact pose and camera angle of the composition reference");
 
+  // 한국어 브리프는 사람이 읽는다 — 이름이 있으면 이름만 쓰고 내부 id는 일관성 키·프롬프트에만 남긴다.
   const briefKoParts: string[] = [
-    `캐릭터: ${characterLabel}`,
-    `구도: ${FRAMING_LABEL_KO[camera.framing]} · ${anglePrompt(camera)} · 화각 ${Math.round(camera.fovDegrees)}도`,
+    `캐릭터: ${snapshot.characterName?.trim() || snapshot.characterId}`,
+    `구도: ${FRAMING_LABEL_KO[camera.framing]} · ${angleLabelKo(camera)} · 화각 ${Math.round(camera.fovDegrees)}도`,
   ];
   if (snapshot.poseDescription?.trim()) briefKoParts.push(`포즈: ${snapshot.poseDescription.trim()}`);
   if (snapshot.expressionDescription?.trim()) briefKoParts.push(`표정: ${snapshot.expressionDescription.trim()}`);

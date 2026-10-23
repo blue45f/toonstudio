@@ -35,7 +35,8 @@ describe("buildStudioMannequinCompositionSnapshot (E2 포저 호스트 스냅샷
     expect(snapshot.camera.framing).toBe("full-body");
     expect(snapshot.posePresetId).toBe("dash");
     expect(snapshot.poseDescription).toBe("달리기");
-    expect(snapshot.characterAppearance).toEqual(["신장 172cm", "재질 wood"]);
+    // 재질은 내부 id(wood)가 아니라 화면 이름으로 실린다(B-08).
+    expect(snapshot.characterAppearance).toEqual(["신장 172cm", "재질 목조 인형"]);
     const brief = buildCompositionGenerationBrief(snapshot);
     expect(brief.ok).toBe(true);
     if (brief.ok) {
@@ -43,6 +44,24 @@ describe("buildStudioMannequinCompositionSnapshot (E2 포저 호스트 스냅샷
       expect(brief.request.consistencyKeys).toContain("pose:dash");
       expect(brief.request.fallback).toBe("insert-capture-as-is");
     }
+  });
+
+  it("알 수 없는 재질 id는 그대로 싣고, 한국어 브리프에는 영문 앵글·내부 id가 섞이지 않는다 (B-08)", () => {
+    const unknown = buildStudioMannequinCompositionSnapshot({ cameraPreset: "home", materialStyle: "custom-x" });
+    expect(unknown.characterAppearance).toEqual(["신장 165cm", "재질 custom-x"]);
+    const brief = buildCompositionGenerationBrief(
+      buildStudioMannequinCompositionSnapshot({ cameraPreset: "home", materialStyle: "clay", poseLabel: "달리기", posePresetId: "run" }),
+    );
+    expect(brief.ok).toBe(true);
+    if (!brief.ok) return;
+    expect(brief.request.briefKo).toContain("캐릭터: 3D 데생 인형");
+    expect(brief.request.briefKo).not.toContain("studio-mannequin");
+    expect(brief.request.briefKo).toContain("오른쪽 3/4 앞모습 · 눈높이");
+    expect(brief.request.briefKo).toContain("재질 클레이");
+    expect(brief.request.briefKo).not.toMatch(/three-quarter|view|angle/u);
+    // 제공자 프롬프트(영문)와 일관성 키에는 내부 id가 그대로 남는다.
+    expect(brief.request.prompt).toContain("three-quarter view from the right");
+    expect(brief.request.consistencyKeys).toContain("character:studio-mannequin");
   });
 
   it("포즈 미적용·신장 이상값에서도 결정적으로 떨어진다", () => {

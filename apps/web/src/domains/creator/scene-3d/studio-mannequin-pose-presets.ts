@@ -11,6 +11,7 @@ import type { StudioMannequinPosePreset } from "./studio-mannequin-poses";
 
 import { STUDIO_MANNEQUIN_POSE_PRESETS_A } from "./studio-mannequin-pose-presets-a";
 import { STUDIO_MANNEQUIN_POSE_PRESETS_B } from "./studio-mannequin-pose-presets-b";
+import { STUDIO_MANNEQUIN_POSE_PRESETS_C } from "./studio-mannequin-pose-presets-c";
 
 /**
  * 프리셋 각도는 전부 관절 한계 안에서 손으로 저작했다(테스트가 클램프 불변을 검증).
@@ -20,4 +21,5 @@ import { STUDIO_MANNEQUIN_POSE_PRESETS_B } from "./studio-mannequin-pose-presets
 export const STUDIO_MANNEQUIN_POSE_PRESETS: readonly StudioMannequinPosePreset[] = Object.freeze([
   ...STUDIO_MANNEQUIN_POSE_PRESETS_A,
   ...STUDIO_MANNEQUIN_POSE_PRESETS_B,
+  ...STUDIO_MANNEQUIN_POSE_PRESETS_C,
 ]);

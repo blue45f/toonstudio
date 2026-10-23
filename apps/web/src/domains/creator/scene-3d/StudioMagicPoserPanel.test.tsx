@@ -11,7 +11,10 @@ import {
   createStudioMannequinRestPose,
   type StudioMannequinPose,
 } from "./studio-mannequin-poses";
-import type { StudioMannequinLightingRig } from "./studio-mannequin-lighting";
+import {
+  applyStudioMannequinTimeOfDay,
+  type StudioMannequinLightingRig,
+} from "./studio-mannequin-lighting";
 import type {
   StudioMannequinJointId,
   StudioMannequinVec3,
@@ -89,14 +92,18 @@ describe("StudioMagicPoserPanel", () => {
     ).toBeTruthy();
   });
 
-  it("마운트와 시간대 프리셋이 씬 setLightingRig로 전달된다 (MP3 실연결)", () => {
+  it("탭을 여는 것만으로는 씬 조명을 바꾸지 않고, 시간대 프리셋은 씬 setLightingRig로 전달된다 (MP3 실연결·B-12)", () => {
     const scene = createSceneStub();
     render(<StudioMagicPoserPanel scene={scene} />);
-    // 마운트 시점의 초기(빈) 릭도 씬에 동기화된다.
-    expect(scene.setLightingRig).toHaveBeenCalledWith(
-      expect.objectContaining({ lights: [], timeOfDay: "noon", shadowsEnabled: true }),
-    );
+    // 마운트가 빈 릭을 밀어 넣어 씬 조명을 기본값으로 덮어쓰던 동작을 막는다.
+    expect(scene.setLightingRig).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "조명" }));
+    // 릭이 없으면 실제 뷰포트의 기본 3점 리그를 그대로 말한다(조명 0개·명암 0%가 아니다).
+    expect(screen.getByText("3 / 4 (기본 3점 조명)")).toBeTruthy();
+    expect(screen.getByText("주광 명암 67% · 그림자 켬")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "기본 3점" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "정오" }).getAttribute("aria-pressed")).toBe("false");
+    expect(scene.setLightingRig).not.toHaveBeenCalled();
     expect(screen.getByText(/뷰포트 조명에 실시간으로 반영/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "황혼" }));
     expect(scene.setLightingRig).toHaveBeenLastCalledWith(
@@ -116,6 +123,78 @@ describe("StudioMagicPoserPanel", () => {
         expect.objectContaining({ timeOfDay }),
       );
     }
+  });
+
+  it("씬에 이미 적용된 릭에서 시작해 실제 조명 수·시간대를 보여 준다 (B-12)", () => {
+    const scene = {
+      ...createSceneStub(),
+      getLightingRig: vi.fn(() => applyStudioMannequinTimeOfDay("night")),
+    };
+    render(<StudioMagicPoserPanel scene={scene} />);
+    fireEvent.click(screen.getByRole("button", { name: "조명" }));
+    expect(screen.getByText("2 / 4")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "밤" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "기본 3점" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "그림자 끔" })).toBeTruthy();
+    // 다시 열어도 씬 조명을 기본값으로 덮어쓰지 않는다.
+    expect(scene.setLightingRig).not.toHaveBeenCalled();
+  });
+
+  it("기본 3점 조명에서도 그림자 토글이 씬에 전달되고 표시가 따라온다 (B-12)", () => {
+    const scene = createSceneStub();
+    render(<StudioMagicPoserPanel scene={scene} />);
+    fireEvent.click(screen.getByRole("button", { name: "조명" }));
+    fireEvent.click(screen.getByRole("button", { name: "그림자 켬" }));
+    expect(scene.setLightingRig).toHaveBeenLastCalledWith(
+      expect.objectContaining({ lights: [], shadowsEnabled: false }),
+    );
+    expect(screen.getByText("주광 명암 67% · 그림자 끔")).toBeTruthy();
+    expect(screen.getByText("3 / 4 (기본 3점 조명)")).toBeTruthy();
+  });
+
+  it("포즈 탭은 웹툰 프리셋 그리드를 다시 두지 않고 지금 포즈의 강도를 조절한다 (B-07)", () => {
+    const scene = createSceneStub();
+    const leaning: StudioMannequinPose = {
+      joints: { spine: [0.6, 0, 0], leftUpperArm: [-1, 0, 0.2] },
+      pelvisOffset: [0, -0.2, 0],
+    };
+    scene.getPose.mockReturnValue(leaning);
+    render(<StudioMagicPoserPanel scene={scene} />);
+    // 포즈 고르기는 포즈 탭의 통합 라이브러리가 맡는다 — 같은 카드가 여기 한 번 더 있으면 안 된다.
+    expect(screen.queryAllByRole("button", { name: /포즈 적용$/ })).toHaveLength(0);
+    expect(screen.queryByRole("heading", { name: "웹툰 포즈 프리셋" })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/포즈 강도/), { target: { value: "50" } });
+    const blended = scene.setPose.mock.lastCall?.[0] as StudioMannequinPose;
+    expect(blended.joints.spine?.[0]).toBeCloseTo(0.3, 6);
+    expect(blended.joints.leftUpperArm?.[0]).toBeCloseTo(-0.5, 6);
+    expect(blended.pelvisOffset[1]).toBeCloseTo(-0.1, 6);
+    expect(screen.getByText("50%")).toBeTruthy();
+  });
+
+  it("호스트가 포즈를 바꾸면 강도 기준을 새 포즈로 잡고 100%로 되돌린다", () => {
+    const scene = createSceneStub();
+    const first: StudioMannequinPose = { joints: { spine: [0.4, 0, 0] }, pelvisOffset: [0, 0, 0] };
+    scene.getPose.mockReturnValue(first);
+    const view = render(<StudioMagicPoserPanel scene={scene} currentPose={first} hostOwnsHistory />);
+    fireEvent.change(screen.getByLabelText(/포즈 강도/), { target: { value: "40" } });
+    expect(screen.getByText("40%")).toBeTruthy();
+
+    // 라이브러리에서 다른 포즈를 적용한 것처럼 호스트 포즈가 바뀐다.
+    const next: StudioMannequinPose = { joints: { neck: [0.2, 0, 0] }, pelvisOffset: [0, 0, 0] };
+    scene.getPose.mockReturnValue(next);
+    view.rerender(<StudioMagicPoserPanel scene={scene} currentPose={next} hostOwnsHistory />);
+    expect(screen.getByText("100%")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/포즈 강도/), { target: { value: "50" } });
+    const blended = scene.setPose.mock.lastCall?.[0] as StudioMannequinPose;
+    expect(blended.joints.neck?.[0]).toBeCloseTo(0.1, 6);
+    expect(blended.joints.spine).toBeUndefined();
+  });
+
+  it("호스트가 되돌리기를 소유하면 패널 자체 되돌리기 줄을 두지 않는다 (B-07)", () => {
+    render(<StudioMagicPoserPanel scene={createSceneStub()} hostOwnsHistory />);
+    expect(screen.queryByRole("button", { name: /포즈 되돌리기/ })).toBeNull();
+    expect(screen.queryByText(/되돌리기 \d+ · 다시실행 \d+/)).toBeNull();
   });
 
   it("그림자 토글이 씬 setLightingRig로 전달된다 (MP3 실연결)", () => {

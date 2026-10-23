@@ -6,13 +6,15 @@
  * 인앱 WebView·시크릿 모드에서도 깨지지 않게 저장소 접근은 전부 try/catch 다.
  *
  * - 다크/라이트: 기존 패널 토큰(border-line, bg-card, text-fg-*)만 사용.
- * - 모바일 390px: 작은 텍스트·유연한 레이아웃.
+ * - 모바일 390px: 작은 텍스트·유연한 레이아웃, 터치 누름 영역 44px.
  * - reduced-motion: 애니메이션 없음.
+ * - 언어: 단계마다 현재 앱 언어 한 가지만 보여 준다. 영문을 한국어 아래에 병기하지 않는다.
  */
 
 import { X, type LucideIcon } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import {
@@ -23,7 +25,7 @@ import {
 export interface StudioPoseGuideStep {
   /** 한글 한 줄 설명. */
   readonly ko: string;
-  /** 영어 한 줄 설명(선택). 있으면 작게 함께 표시한다. */
+  /** 영어 한 줄 설명(선택). 앱 언어가 영어일 때 한국어 대신 보여 준다. */
   readonly en?: string;
 }
 
@@ -45,6 +47,7 @@ export function StudioPoseFirstRunGuide({
 }: StudioPoseFirstRunGuideProps): ReactElement | null {
   const [dismissed, setDismissed] = useState<boolean>(() => readStudioPoseGuideDismissed(scope));
   const [doNotShowAgain, setDoNotShowAgain] = useState(false);
+  const bt = useBilingual("StudioPoseFirstRunGuide");
 
   if (dismissed) return null;
 
@@ -65,13 +68,13 @@ export function StudioPoseFirstRunGuide({
       <button
         type="button"
         onClick={handleClose}
-        aria-label="가이드 닫기"
-        title="가이드 닫기"
-        className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-md text-fg-3 transition-colors hover:bg-raised hover:text-fg"
+        aria-label={bt("가이드 닫기", "Close guide")}
+        title={bt("가이드 닫기", "Close guide")}
+        className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-md text-fg-3 transition-colors hover:bg-raised hover:text-fg pointer-coarse:right-0.5 pointer-coarse:top-0.5 pointer-coarse:size-11"
       >
         <X size={13} aria-hidden />
       </button>
-      <p className="flex items-center gap-1.5 pr-6 text-[0.72rem] font-bold text-fg">
+      <p className="flex items-center gap-1.5 pr-7 text-[0.72rem] font-bold text-fg pointer-coarse:pr-11">
         <Icon size={14} className="shrink-0 text-accent" aria-hidden />
         {title}
       </p>
@@ -84,24 +87,18 @@ export function StudioPoseFirstRunGuide({
             >
               {index + 1}
             </span>
-            <span className="min-w-0">
-              <span className="block">{step.ko}</span>
-              {step.en ? (
-                <span className="block text-[0.62rem] text-fg-3">{step.en}</span>
-              ) : null}
-            </span>
+            <span className="min-w-0">{step.en ? bt(step.ko, step.en) : step.ko}</span>
           </li>
         ))}
       </ol>
-      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[0.66rem] text-fg-3">
+      <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-[0.66rem] text-fg-3 pointer-coarse:min-h-11">
         <input
           type="checkbox"
           checked={doNotShowAgain}
           onChange={(event) => setDoNotShowAgain(event.target.checked)}
-          className="size-3.5"
+          className="size-3.5 pointer-coarse:size-5"
         />
-        다시 보지 않기
-        <span className="text-fg-3/70">(Don&apos;t show again)</span>
+        {bt("다시 보지 않기", "Don't show again")}
       </label>
     </div>
   );

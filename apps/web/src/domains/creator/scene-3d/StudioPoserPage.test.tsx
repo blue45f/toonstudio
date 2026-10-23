@@ -6,26 +6,38 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { StudioPoserPage } from "./StudioPoserPage";
 
+import { useToastStore } from "@/shared/lib/toast-store";
+
 afterEach(cleanup);
 
 vi.mock("./StudioMannequinPoserPanel", () => ({
   StudioMannequinPoserPanel: ({
     open,
     onClose,
+    onInsert,
     initialPosePresetId,
+    captureTarget,
   }: {
     open: boolean;
     onClose: () => void;
     onInsert: (result: unknown) => boolean;
     initialPosePresetId?: string;
+    captureTarget?: string;
   }) => (
     <div
       data-testid="poser-panel"
       data-open={String(open)}
       data-initial-preset={initialPosePresetId ?? ""}
+      data-capture-target={captureTarget ?? ""}
     >
       <button type="button" onClick={onClose}>
         닫기
+      </button>
+      <button
+        type="button"
+        onClick={() => onInsert({ pngDataUrl: "data:image/png;base64,AAAA", width: 4, height: 4 })}
+      >
+        캡처 저장
       </button>
     </div>
   ),
@@ -75,5 +87,25 @@ describe("StudioPoserPage (/studio/poser)", () => {
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: "닫기" }));
     expect(screen.getByTestId("location").textContent).toBe("/studio");
+  });
+
+  it("캡처는 PNG로 받고 포저를 열어 둔 채 저장 토스트를 띄운다 (B-01)", () => {
+    useToastStore.setState({ toasts: [] });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    renderPage();
+    const panel = screen.getByTestId("poser-panel");
+    // 독립 진입점은 캡처 뒤에도 포저를 닫지 않는 PNG 저장 모드로 연다.
+    expect(panel.getAttribute("data-capture-target")).toBe("download");
+    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
+    expect(click).toHaveBeenCalledTimes(1);
+    // 작품 라이브러리(/studio)로 이동하지 않고 포저가 그대로 열려 있다.
+    expect(screen.queryByTestId("location")).toBeNull();
+    expect(screen.getByTestId("poser-panel")).toBeTruthy();
+    const toasts = useToastStore.getState().toasts;
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0]).toMatchObject({ tone: "success" });
+    expect(toasts[0]?.message).toContain("PNG를 저장했어요");
+    click.mockRestore();
+    useToastStore.setState({ toasts: [] });
   });
 });

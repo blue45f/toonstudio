@@ -2,12 +2,14 @@
  * Shaper식 웹툰 포즈 프리셋 탐색 그리드.
  *
  * - 카테고리(액션/일상/드라마틱/감정) × 성별 × 인원수 필터 + 검색어.
+ * - 검색어는 통합 포즈 라이브러리와 같은 기준(studio-pose-library-search)으로 맞춘다.
  * - 각 포즈 카드는 실제 관절 각도에서 그린 SVG 실루엣 미니어처를 보여주고,
  *   카드 클릭 한 번으로 `onApplyPreset`이 호출된다(원클릭 적용).
  * - 즐겨찾기(핀)·최근 사용 목록은 localStorage에 방어적으로 저장된다.
- * - 팀 공유: 즐겨찾기 컬렉션을 JSON 파일로 내보내기/가져오기.
+ * - 팀 공유: 즐겨찾기 컬렉션을 JSON 파일로 내보내기/가져오기(StudioWebtoonPoseFavoritesShare).
  *
- * 데생 인형 포저 패널과 VRM 포저에서 함께 재사용한다. 적용 방식(마네킹/VRM)은
+ * VRM 포저가 이 그리드를 그대로 쓰고, 데생 인형 포저는 통합 포즈 라이브러리
+ * (StudioMannequinPoserPoseSection)가 실루엣·공유 부품만 가져다 쓴다. 적용 방식(마네킹/VRM)은
  * 호출자가 `onApplyPreset`으로 주입하므로 이 컴포넌트는 렌더링에만 집중한다.
  */
 
@@ -35,6 +37,11 @@ import {
   type WebtoonPoseGender,
   type WebtoonPosePresetFilter,
 } from "./studio-3d-advanced-poses-library";
+import {
+  buildStudioWebtoonPoseSearchIndex,
+  matchesStudioPoseSearch,
+  studioWebtoonPoseDisplayName as displayName,
+} from "./studio-pose-library-search";
 import {
   buildWebtoonPoseShareFileName,
   parseWebtoonPoseSharePayload,
@@ -68,10 +75,10 @@ const CATEGORY_LABELS: Readonly<Record<CharacterPoseCategory, string>> = Object.
   Object.fromEntries(WEBTOON_POSE_CATEGORY_META.map((meta) => [meta.id, meta.label])),
 ) as Readonly<Record<CharacterPoseCategory, string>>;
 
-function displayName(fullName: string): string {
-  const parenIndex = fullName.indexOf(" (");
-  return parenIndex > 0 ? fullName.slice(0, parenIndex) : fullName;
-}
+/** 프리셋별 검색 색인 — 통합 라이브러리와 같은 기준을 쓰도록 한 번만 만든다. */
+const SEARCH_INDEX_BY_ID = new Map(
+  ADVANCED_WEBTOON_POSES.map((preset) => [preset.id, buildStudioWebtoonPoseSearchIndex(preset)] as const),
+);
 
 function figureLabel(figures: WebtoonPoseFigureCount): string {
   return figures === 2 ? "2인" : "1인";
@@ -97,7 +104,8 @@ function movePoint(from: SilhouettePoint, forwardDeg: number, length: number): S
   return { x: from.x - length * Math.sin(rad), y: from.y + length * Math.cos(rad) };
 }
 
-function PoseSilhouette({ preset }: { preset: CharacterFullBodyPosePreset }): ReactElement {
+/** 웹툰 프리셋 측면 실루엣. 통합 포즈 라이브러리 카드도 같은 그림을 쓴다. */
+export function StudioWebtoonPoseSilhouette({ preset }: { preset: CharacterFullBodyPosePreset }): ReactElement {
   const rotations = preset.jointRotations;
   const spineLean = jointXDeg(rotations, "spine"); // X+ = 앞으로 숙임
   const hips: SilhouettePoint = { x: 32, y: 50 };
@@ -205,7 +213,7 @@ function PresetCard({
         aria-label={`${preset.name} 포즈 적용`}
         className="flex w-full flex-col rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
       >
-        <PoseSilhouette preset={preset} />
+        <StudioWebtoonPoseSilhouette preset={preset} />
         <span className="mt-1 block truncate text-[0.7rem] font-bold text-fg" title={preset.name}>
           {shortName}
         </span>
@@ -220,7 +228,8 @@ function PresetCard({
         aria-label={pinned ? `${shortName} 즐겨찾기 해제` : `${shortName} 즐겨찾기 고정`}
         title={pinned ? "즐겨찾기 해제" : "즐겨찾기에 고정"}
         className={cn(
-          "absolute right-1 top-1 grid size-6 place-items-center rounded-md transition-colors",
+          // 터치에서는 44px 누름 영역을 준다(카드 모서리에 겹쳐도 실루엣 클릭과 겹치지 않는다).
+          "absolute right-1 top-1 grid size-7 place-items-center rounded-md transition-colors pointer-coarse:size-11",
           pinned
             ? "text-accent hover:bg-accent-soft"
             : "text-fg-3 opacity-0 hover:bg-raised hover:text-fg focus-visible:opacity-100",
@@ -230,6 +239,104 @@ function PresetCard({
       >
         <Pin size={13} aria-hidden className={pinned ? "fill-accent" : undefined} />
       </button>
+    </div>
+  );
+}
+
+/**
+ * 웹툰 포즈 즐겨찾기 팀 공유(JSON 내보내기·가져오기). 이 그리드와 통합 포즈 라이브러리가
+ * 같은 부품을 쓴다. 결과 문구는 onMessage로 넘겨 호출자가 자기 상태 줄에 보여 준다.
+ */
+export function StudioWebtoonPoseFavoritesShare({
+  favorites,
+  onFavoritesChange,
+  onMessage,
+  ariaPrefix = "즐겨찾기 프리셋",
+}: {
+  readonly favorites: readonly string[];
+  readonly onFavoritesChange: (next: string[]) => void;
+  readonly onMessage: (message: string) => void;
+  /** 버튼 이름 앞말. 데생 인형 포저처럼 출처가 섞인 곳에서는 "웹툰 즐겨찾기"로 좁힌다. */
+  readonly ariaPrefix?: string;
+}): ReactElement {
+  const t = useT();
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportShare = () => {
+    try {
+      const json = serializeWebtoonPoseSharePayload({
+        presetIds: favorites.length > 0 ? [...favorites] : ADVANCED_WEBTOON_POSES.map((p) => p.id),
+        favoriteIds: [...favorites],
+      });
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = buildWebtoonPoseShareFileName();
+      anchor.click();
+      URL.revokeObjectURL(url);
+      onMessage(
+        favorites.length > 0
+          ? `즐겨찾기 ${favorites.length}개를 JSON으로 내보냈습니다.`
+          : "전체 프리셋 목록을 JSON으로 내보냈습니다.",
+      );
+    } catch {
+      onMessage(t("studio.scene3dStatus.posePresetGrid.exportFailed", "내보내기에 실패했습니다. 다시 시도해 주세요."));
+    }
+  };
+
+  const handleImportShareFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const payload = parseWebtoonPoseSharePayload(loadEvent.target?.result);
+      if (!payload) {
+        onMessage("가져올 수 없는 파일입니다. 웹툰 포즈 공유 JSON인지 확인해 주세요.");
+        return;
+      }
+      const merged = [...payload.favoriteIds];
+      for (const id of favorites) {
+        if (!merged.includes(id)) merged.push(id);
+      }
+      if (writeWebtoonPosePresetFavorites(merged)) onFavoritesChange(merged);
+      onMessage(`공유 프리셋 ${payload.presetIds.length}개 중 즐겨찾기 ${payload.favoriteIds.length}개를 가져왔습니다.`);
+    };
+    reader.onerror = () => {
+      onMessage(t("studio.scene3dStatus.posePresetGrid.fileReadFailed", "파일을 읽지 못했습니다. 다시 시도해 주세요."));
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="flex gap-1">
+      <button
+        type="button"
+        onClick={handleExportShare}
+        className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
+        title={`${ariaPrefix} — JSON 파일로 내보내기 (팀 공유)`}
+        aria-label={`${ariaPrefix} 내보내기`}
+      >
+        <Download size={13} aria-hidden /> 내보내기
+      </button>
+      <button
+        type="button"
+        onClick={() => importInputRef.current?.click()}
+        className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
+        title="팀원과 공유받은 포즈 프리셋 JSON 가져오기"
+        aria-label={`${ariaPrefix} 가져오기`}
+      >
+        <Upload size={13} aria-hidden /> 가져오기
+      </button>
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        aria-label="포즈 프리셋 공유 JSON 파일 가져오기"
+        onChange={handleImportShareFile}
+      />
     </div>
   );
 }
@@ -246,18 +353,18 @@ export function StudioWebtoonPosePresetGrid({
   const [favorites, setFavorites] = useState<string[]>(() => readWebtoonPosePresetFavorites());
   const [recent, setRecent] = useState<string[]>(() => readWebtoonPosePresetRecent());
   const [shareMessage, setShareMessage] = useState<string | null>(null);
-  const importInputRef = useRef<HTMLInputElement>(null);
 
   const isDefaultFilter = category === "all" && gender === "all" && figures === "all" && query.trim() === "";
 
   const filtered = useMemo(() => {
-    const filter: WebtoonPosePresetFilter = {
-      category,
-      gender,
-      figures,
-      query: query.trim() ? query : undefined,
-    };
-    return filterWebtoonPosePresets(filter);
+    const filter: WebtoonPosePresetFilter = { category, gender, figures };
+    // 검색어는 통합 포즈 라이브러리와 같은 기준(한 글자 낱말 정확 일치·동의어)으로 거른다.
+    return filterWebtoonPosePresets(filter).filter((preset) =>
+      matchesStudioPoseSearch(
+        SEARCH_INDEX_BY_ID.get(preset.id) ?? buildStudioWebtoonPoseSearchIndex(preset),
+        query,
+      ),
+    );
   }, [category, gender, figures, query]);
 
   const favoritePresets = useMemo(
@@ -287,88 +394,16 @@ export function StudioWebtoonPosePresetGrid({
     setFavorites(toggleWebtoonPosePresetFavorite(presetId));
   };
 
-  const handleExportShare = () => {
-    try {
-      const json = serializeWebtoonPoseSharePayload({
-        presetIds: favorites.length > 0 ? favorites : ADVANCED_WEBTOON_POSES.map((p) => p.id),
-        favoriteIds: favorites,
-      });
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = buildWebtoonPoseShareFileName();
-      anchor.click();
-      URL.revokeObjectURL(url);
-      setShareMessage(
-        favorites.length > 0
-          ? `즐겨찾기 ${favorites.length}개를 JSON으로 내보냈습니다.`
-          : "전체 프리셋 목록을 JSON으로 내보냈습니다.",
-      );
-    } catch {
-      setShareMessage(t("studio.scene3dStatus.posePresetGrid.exportFailed", "내보내기에 실패했습니다. 다시 시도해 주세요."));
-    }
-  };
-
-  const handleImportShareFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const payload = parseWebtoonPoseSharePayload(loadEvent.target?.result);
-      if (!payload) {
-        setShareMessage("가져올 수 없는 파일입니다. 웹툰 포즈 공유 JSON인지 확인해 주세요.");
-        return;
-      }
-      const merged = [...payload.favoriteIds];
-      for (const id of favorites) {
-        if (!merged.includes(id)) merged.push(id);
-      }
-      const ok = writeWebtoonPosePresetFavorites(merged);
-      if (ok) setFavorites(merged);
-      setShareMessage(
-        `공유 프리셋 ${payload.presetIds.length}개 중 즐겨찾기 ${payload.favoriteIds.length}개를 가져왔습니다.`,
-      );
-    };
-    reader.onerror = () => {
-      setShareMessage(t("studio.scene3dStatus.posePresetGrid.fileReadFailed", "파일을 읽지 못했습니다. 다시 시도해 주세요."));
-    };
-    reader.readAsText(file);
-  };
-
   return (
     <div className="space-y-3">
       <StudioSectionHeader
         title="웹툰 포즈 프리셋"
         action={
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={handleExportShare}
-              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
-              title="즐겨찾기 프리셋을 JSON 파일로 내보내기 (팀 공유)"
-              aria-label="즐겨찾기 프리셋 내보내기"
-            >
-              <Download size={13} aria-hidden /> 내보내기
-            </button>
-            <button
-              type="button"
-              onClick={() => importInputRef.current?.click()}
-              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
-              title="팀원과 공유받은 포즈 프리셋 JSON 가져오기"
-            >
-              <Upload size={13} aria-hidden /> 가져오기
-            </button>
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              aria-label="포즈 프리셋 공유 JSON 파일 가져오기"
-              onChange={handleImportShareFile}
-            />
-          </div>
+          <StudioWebtoonPoseFavoritesShare
+            favorites={favorites}
+            onFavoritesChange={setFavorites}
+            onMessage={setShareMessage}
+          />
         }
       />
 
@@ -379,13 +414,11 @@ export function StudioWebtoonPosePresetGrid({
       ) : null}
 
       {/* 한 줄 목적 설명: 처음 보는 사용자도 10초 안에 이해한다. 좁은 패널에서 머리글 버튼과
-          설명이 한 줄을 다투지 않도록 설명은 머리글 아래 전체 폭에 둔다. 실루엣은 실제 관절 각도로 그린다. */}
+          설명이 한 줄을 다투지 않도록 설명은 머리글 아래 전체 폭에 둔다. 실루엣은 실제 관절 각도로 그린다.
+          영문 병기는 두지 않는다 — 언어 전환은 앱 번역 계층의 일이다. */}
       <p className="flex items-start gap-1.5 text-[0.68rem] leading-relaxed text-fg-3">
         <MousePointerClick size={13} aria-hidden className="mt-0.5 shrink-0 text-accent" />
-        <span>
-          포즈 카드를 클릭하면 3D 캐릭터에 바로 적용됩니다.{" "}
-          <span lang="en">Click a pose card to apply it to the 3D character instantly.</span>
-        </span>
+        <span>포즈 카드를 클릭하면 3D 캐릭터에 바로 적용됩니다.</span>
       </p>
 
       {/* 필터: 카테고리 × 성별 × 인원수 */}
@@ -436,14 +469,14 @@ export function StudioWebtoonPosePresetGrid({
             onChange={(event) => setQuery(event.target.value.slice(0, 200))}
             placeholder="포즈 검색 — 예: 검, 포옹, 카페"
             aria-label="포즈 프리셋 검색"
-            className="w-full rounded-lg border border-line bg-card py-1 pl-7 pr-7 text-[0.7rem] placeholder:text-fg-3 outline-none transition-colors focus:border-accent"
+            className="w-full rounded-lg border border-line bg-card py-1 pl-7 pr-7 text-[0.7rem] placeholder:text-fg-3 outline-none transition-colors focus:border-accent pointer-coarse:min-h-11 pointer-coarse:pr-11"
           />
           {query ? (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="검색어 지우기"
-              className="absolute right-1.5 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-md text-fg-3 hover:bg-raised hover:text-fg"
+              className="absolute right-1 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:size-10"
             >
               <X size={12} aria-hidden />
             </button>
@@ -463,7 +496,7 @@ export function StudioWebtoonPosePresetGrid({
                 disabled={applyDisabled}
                 onClick={() => handleApply(preset.id)}
                 title={`${preset.name} — 클릭하면 바로 적용`}
-                className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-accent/40 bg-accent-soft/30 px-2.5 py-1 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-accent-soft/60 disabled:opacity-50"
+                className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-accent/40 bg-accent-soft/30 px-2.5 py-1 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-accent-soft/60 disabled:opacity-50 pointer-coarse:min-h-11"
               >
                 <span className="truncate">{displayName(preset.name)}</span>
               </button>

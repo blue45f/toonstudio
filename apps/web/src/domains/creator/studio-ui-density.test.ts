@@ -15,7 +15,9 @@ import {
   STUDIO_UI_DENSITY_MATRIX,
   STUDIO_UI_DENSITY_MODES,
   STUDIO_UI_DENSITY_POLICY,
+  studioUiAdvancedToolsToggleAccessibleName,
   studioUiAdvancedToolsToggleLabel,
+  studioUiAdvancedToolsToggleTooltip,
   studioUiDensityAdvancedExpanded,
   studioUiDensityAllows,
   studioUiDensityDescription,
@@ -256,5 +258,9 @@ describe("studio first-screen exposure (complexity diet)", () => {
     expect(studioUiAdvancedToolsToggleLabel(false, untranslated)).toBe("고급 도구 펼치기");
     expect(studioUiAdvancedToolsToggleLabel(true, untranslated)).toBe("고급 도구 접기");
     expect(studioUiAdvancedToolsToggleLabel(false, () => "Show advanced tools")).toBe("Show advanced tools");
+    // 메뉴 안의 '고급 도구 펼치기 (N개)' 행과 구분되는 접근 이름 — 보이는 글자로 시작한다(WCAG 2.5.3, B-15).
+    expect(studioUiAdvancedToolsToggleAccessibleName(false)).toBe("고급 도구 펼치기 (도구 막대)");
+    expect(studioUiAdvancedToolsToggleAccessibleName(true)).toBe("고급 도구 접기 (도구 막대)");
+    expect(studioUiAdvancedToolsToggleTooltip(false)).toContain("메뉴 안의");
   });
 });

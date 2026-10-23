@@ -95,8 +95,9 @@ describe("Studio 3D viewport Motion Coach integration", () => {
 
     expect(toolbar).toContain("<StudioToolHintTarget");
     expect(toolbar).not.toContain("title=");
-    expect(toolbar).toContain('unavailableReason={!canUndo ? "되돌릴 3D 장면 변경이 없습니다."');
-    expect(toolbar).toContain('unavailableReason={!canRedo ? "다시 적용할 3D 장면 변경이 없습니다."');
+    // 사유 문구는 frozen5 i18n 키로 옮겨졌다(한국어 원문은 폴백 인자) — 같은 사유를 키와 원문으로 함께 고정한다.
+    expect(toolbar).toContain('unavailableReason={!canUndo ? frozenStatus5Text("studio.frozenStatus5.bg3dViewport.undoUnavailable", "되돌릴 3D 장면 변경이 없습니다.")');
+    expect(toolbar).toContain('unavailableReason={!canRedo ? frozenStatus5Text("studio.frozenStatus5.bg3dViewport.redoUnavailable", "다시 적용할 3D 장면 변경이 없습니다.")');
     expect(toolbar).toContain("disabled={Boolean(groundSelectionDisabledReason)}");
     expect(toolbar).toContain("disabled={Boolean(focusSelectionDisabledReason)}");
     expect(cameraSelectionSource).toContain('"화면에 맞출 객체를 선택해 주세요."');
