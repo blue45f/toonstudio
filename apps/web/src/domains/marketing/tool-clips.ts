@@ -31,6 +31,9 @@
  * bg3d·poser·shaper·ailab·publish·learn·collab·community·production).
  * 소셜 카드에 바로 쓸 수 있게 같은 주제를 세로(9:16)로 다시 그린 것이다.
  * 표면에는 배선하지 않고 홍보 영상 자료실에만 수록한다(TOOL_CLIPS_VERTICAL).
+ *
+ * 정사각 변형은 12차 파도에서 캔버스 1편만 먼저 만들었다. 소셜 피드에
+ * 바로 얹는 1:1 소재로, 이쪽도 자료실에만 수록한다(TOOL_CLIPS_SQUARE).
  */
 export interface ToolClip {
   readonly src: string;
@@ -122,4 +125,17 @@ export const TOOL_CLIPS_VERTICAL: readonly ToolVerticalClip[] = [
   { toolId: "learn", src: "/brand/tool-clips/tool-learn-vertical.mp4", width: 768, height: 1344 },
   { toolId: "community", src: "/brand/tool-clips/tool-community-vertical.mp4", width: 768, height: 1344 },
   { toolId: "production", src: "/brand/tool-clips/tool-production-vertical.mp4", width: 768, height: 1344 },
+];
+
+export interface ToolSquareClip extends ToolClip {
+  readonly toolId: ToolClipId;
+}
+
+/**
+ * 도구 클립의 정사각(1:1) 변형 — 가로본과 같은 주제를 정사각으로 다시 그린
+ * 생성형 AI 영상이다. 표면에 배선하지 않고 소셜 피드 소재로 쓰기 위해
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const TOOL_CLIPS_SQUARE: readonly ToolSquareClip[] = [
+  { toolId: "canvas", src: "/brand/tool-clips/tool-canvas-square.mp4", width: 768, height: 768 },
 ];

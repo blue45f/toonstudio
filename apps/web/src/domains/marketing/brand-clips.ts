@@ -19,6 +19,9 @@
  * 자료실 보관 전용 변형 6편도 이 파일이 정본이다: 비 오는 날·주말 아침·
  * 책상 클로즈업·창가의 고양이 스튜디오와, 낮 파노라마의 짝인 밤·노을
  * 히어로 무드.
+ *
+ * 12차 파도에서 자료실 보관 전용 3편을 더했다: 정사각 브랜드 스팅,
+ * 스튜디오 와이드 팬, 비 오는 날의 히어로 무드(파노라마 세트의 네 번째).
  */
 export interface BrandClip {
   readonly src: string;
@@ -155,6 +158,39 @@ export const HOME_HERO_EVENING_CLIP: BrandClip = {
  */
 export const BRAND_CAT_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-11-cat.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 브랜드 스팅 — 소셜 포스트와 카드에 붙이는 1:1 정사각 스팅으로
+ * 그린 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const BRAND_SQUARE_STING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-sting.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 스튜디오 와이드 팬 — 작업실을 넓게 가로지르며 도는 파노라마 팬 장면을
+ * 그린 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const BRAND_WIDE_PAN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-12-wide-pan.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 비의 히어로 무드 — 비 내리는 창 너머의 스튜디오 파노라마를 그린 생성형
+ * AI 영상이다. 낮·노을·밤 파노라마와 한 세트로, 아직 표면에 배선하지 않아
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_RAIN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-rain.mp4",
   width: 1344,
   height: 768,
 };

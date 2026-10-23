@@ -1,11 +1,11 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 21편의 정본이다 (public/brand/page-clips/).
+ * 클립 23편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
- * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 8편을 함께 둔다.
+ * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 10편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -44,6 +44,7 @@ const pageVerticalItem = (
   durationLabel: string,
   ko: { readonly title: string; readonly body: string },
   en: { readonly title: string; readonly body: string },
+  note?: { readonly ko: string; readonly en: string },
 ): PromoVideoItem => ({
   id: `page-${id}`,
   categoryId: "pages",
@@ -54,6 +55,7 @@ const pageVerticalItem = (
   ko,
   en,
   usage: PAGE_VERTICAL_USAGE,
+  ...(note ? { note } : {}),
 });
 
 export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
@@ -238,5 +240,23 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     "0:14",
     { title: "IR 무드 · 세로", body: "IR 가로본을 세로(9:16)로 다시 그린 변형입니다." },
     { title: "IR mood · Vertical", body: "The IR clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "community-vertical",
+    "page-community-vertical.mp4",
+    "0:14",
+    { title: "커뮤니티 무드 · 세로", body: "작품이 오가고 반응이 쌓이는 커뮤니티 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Community mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind the community surface, where works are shared and reactions pile up." },
+  ),
+  pageVerticalItem(
+    "learn-vertical",
+    "page-learn-vertical.mp4",
+    "0:14",
+    { title: "학습 무드 · 세로", body: "강좌와 레퍼런스를 곁에 두는 학습 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Learning mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind the learning surface, with lessons and references at hand." },
+    {
+      ko: "품질 메모: 화면 속 카드 한 장에 작은 숫자 '3'이 보입니다. 생성 과정에서 생긴 아티팩트라, 표면에 배선하기 전에 한 번 더 확인할 클립으로 남깁니다.",
+      en: "Quality note: a small number '3' appears on one card in the frame — a generation artifact, so this clip stays flagged for another look before it is wired to any surface.",
+    },
   ),
 ];
