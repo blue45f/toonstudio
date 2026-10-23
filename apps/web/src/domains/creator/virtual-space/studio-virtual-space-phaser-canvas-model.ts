@@ -150,7 +150,7 @@ export function studioFacingToward(dx: number, dy: number): StudioVirtualSpaceFa
 }
 
 /** NPC가 다가온 사람을 돌아보는 거리와, 같은 NPC가 다시 '!'로 반응하기까지의 간격. */
-export const NPC_LOOK_DISTANCE = 96;
+export const NPC_LOOK_DISTANCE = 220;
 export const NPC_NOTICE_COOLDOWN_MS = 15_000;
 
 export interface OcclusionVisual {

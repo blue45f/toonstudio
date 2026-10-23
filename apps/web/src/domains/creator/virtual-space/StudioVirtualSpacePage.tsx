@@ -56,6 +56,7 @@ import {
   StudioVirtualSpacePhaserCanvas,
   type StudioVirtualSpaceEngineLocalState,
 } from "./StudioVirtualSpacePhaserCanvas";
+import { StudioVirtualSpaceThreeCanvas } from "./three/StudioVirtualSpaceThreeCanvas";
 import type { StudioSpaceSocialAction, StudioSpaceSocialRequest } from "./StudioVirtualSpaceSocialPanel";
 import { StudioVirtualSpaceUserList } from "./StudioVirtualSpaceUserList";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
@@ -1885,16 +1886,21 @@ export function VirtualSpaceExperience({
       moreItems={moreItems} workLauncher={workLauncher} dockRef={mobileDockRef} onPopover={setDockPopover} onEmote={emote}
       onTogglePeople={() => togglePanel("people")} onToggleMap={toggleMap} />;
 
+  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stage") === "2d" ? "2d" : "3d",
+  );
+  const StageCanvas = engineMode === "3d" && !authoringMode ? StudioVirtualSpaceThreeCanvas : StudioVirtualSpacePhaserCanvas;
+
   return (
     <div className="space-hud" data-own-control-size="true" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}
       data-route-ready="studio-live-space" data-hud-layout={desktop ? "desktop" : "mobile"} data-panel-open={panel ? "true" : undefined}
       data-dock-popover={dockPopover ?? undefined}
-      data-world-kind={builtin?.kind ?? "custom"} data-engine-status={engineStatus} data-handedness={experiencePreference.handedness}>
+      data-world-kind={builtin?.kind ?? "custom"} data-engine-status={engineStatus} data-engine-mode={engineMode} data-handedness={experiencePreference.handedness}>
       <h1 className="sr-only">{spaceName} · {bt("가상 스튜디오", "Virtual studio")}</h1>
       <div className="space-hud__stage" data-studio-virtual-space="true"
         data-handedness={experiencePreference.handedness} data-control-mode={experiencePreference.controlMode}
         data-quality-preset={experiencePreference.qualityPreset} data-spotlight-active={spotlightEventId ? "true" : undefined}>
-        {worldReady ? <StudioVirtualSpacePhaserCanvas
+        {worldReady ? <StageCanvas
           manifest={worldManifest}
           worldAssetUrls={publishedWorld?.assetUrls}
           snapshot={chatSnapshot}
@@ -1941,6 +1947,8 @@ export function VirtualSpaceExperience({
           <SpaceLocationChip spaceName={spaceName} zone={locationZone} compact={touch}
             connection={personal ? null : connection} onExit={exitSpace}
             pulse={worldReady && !authoringMode ? atelierPulse : null}
+            engineMode={authoringMode ? undefined : engineMode}
+            onToggleEngineMode={() => setEngineMode((current) => (current === "3d" ? "2d" : "3d"))}
             onQuickAction={handleAtelierPulseAction}
             onOpenSearch={() => { setDockPopover(null); setSearchOpen(true); }} />
           {homeHeader}
