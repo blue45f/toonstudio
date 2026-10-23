@@ -1,9 +1,9 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 37편.
- * 서른일곱 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 39편.
+ * 서른아홉 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
  * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
- * 안팎이라 길이를 편마다 따로 적는다.
+ * 안팎, 39·40편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -43,7 +43,9 @@ export interface ProductTourShort {
     | "paint-palette"
     | "fresh-note"
     | "coffee"
-    | "rain-ink";
+    | "rain-ink"
+    | "morning-desk"
+    | "book-stack";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -606,6 +608,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "An ink bottle on a rainy day",
       body: "An ink bottle and a pen by a rain-speckled window — caught up close.",
+    },
+  },
+  {
+    id: "morning-desk",
+    src: "/brand/promo-shorts/shorts-39-morningdesk.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "아침의 작업 책상",
+      body: "아침 햇살이 드는 작업 책상의 풍경을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "The work desk in the morning",
+      body: "Morning light falling across the work desk — caught up close.",
+    },
+  },
+  {
+    id: "book-stack",
+    src: "/brand/promo-shorts/shorts-40-bookstack.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "쌓인 책 더미",
+      body: "책상 한켠에 쌓인 책 더미를 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "A stack of books",
+      body: "A stack of books piled at the corner of the desk — caught up close.",
     },
   },
 ];
