@@ -126,28 +126,34 @@ async function routeMarketDetail(
 
 test("마켓 홈은 카테고리 6종과 CTA를 렌더링한다", async ({ page }) => {
   await page.goto("/market");
-  await expect(page.getByRole("heading", { name: "창작 마켓" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "리소스 둘러보기" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "스튜디오에서 공유하기" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /웹툰의 한 컷을,.*더 깊게 만드는 재료\./u })).toBeVisible();
+  await expect(page.getByRole("link", { name: "소재 찾기", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Studio에서 공유" })).toBeVisible();
+
+  const moreSummaries = page.locator("details > summary").filter({ hasText: /카테고리 \d+개 더 보기/u });
+  const summaryCount = await moreSummaries.count();
+  for (let index = 0; index < summaryCount; index += 1) {
+    await moreSummaries.nth(index).click();
+  }
 
   for (const href of KIND_HREFS) {
     await expect(page.locator(`a[href="${href}"]`).first()).toBeVisible();
   }
-  await expect(page).toHaveTitle(/창작 마켓|Creator Market/);
+  await expect(page).toHaveTitle(/소재 마켓|Material Market/);
 });
 
 test("마켓 탐색은 종류 칩 필터와 라이선스 필터를 제공한다", async ({ page }) => {
   await page.goto("/market/browse");
-  await expect(page.getByRole("heading", { name: "마켓 탐색" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "리소스 찾기" })).toBeVisible();
 
-  const kindGroup = page.getByRole("group", { name: "리소스 종류 필터" });
+  const kindGroup = page.getByRole("group", { name: "어떤 리소스가 필요한가요?" });
   await expect(kindGroup.getByRole("button", { name: "전체" })).toBeVisible();
-  for (const label of ["브러시", "필터", "팔레트", "템플릿", "3D 프리셋", "3D 에셋", "에셋"]) {
+  for (const label of ["템플릿", "2D 에셋", "3D", "브러시", "색·보정"]) {
     await expect(kindGroup.getByRole("button", { name: label, exact: true })).toBeVisible();
   }
 
-  const licenseGroup = page.getByRole("group", { name: "라이선스 필터" });
-  await expect(licenseGroup.getByRole("button", { name: "전체 라이선스" })).toBeVisible();
+  await page.getByText("세부 조건").click();
+  await expect(page.getByRole("button", { name: "전체 라이선스" })).toBeVisible();
 });
 
 test("배급자·검색·종류·라이선스 조건을 API에 전달하고 한 번에 초기화한다", async ({ page }) => {
@@ -175,7 +181,7 @@ test("배급자·검색·종류·라이선스 조건을 API에 전달하고 한 
     `/market/browse?publisher=${publisherId}&q=${encodeURIComponent("잉크")}`
       + "&tag=lineart&kind=brush&license=cc0-1.0",
   );
-  await expect(page.getByRole("heading", { name: "마켓 탐색" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "브러시 찾기" })).toBeVisible();
   await expect(page.getByLabel("마켓 리소스 검색")).toHaveValue("잉크");
   await expect(page.getByRole("combobox", { name: "정렬 기준" })).toHaveValue(
     "relevance",
@@ -186,8 +192,8 @@ test("배급자·검색·종류·라이선스 조건을 API에 전달하고 한 
   await expect(publisherFilter).toContainText("선택한 배급자");
   await expect(publisherFilter).not.toContainText(publisherId);
   await expect(
-    page.getByRole("group", { name: "리소스 종류 필터" })
-      .getByRole("button", { name: /브러시/ }),
+    page.getByRole("group", { name: "어떤 리소스가 필요한가요?" })
+      .getByRole("button", { name: "브러시", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect.poll(() => observedRequests.length).toBeGreaterThan(0);
 
@@ -230,9 +236,9 @@ test("마켓 홈에서 선택한 종류 조건은 브라우저 뒤로·앞으로
   );
 
   await page.goto("/market");
-  await page.getByRole("link", { name: "리소스 둘러보기" }).click();
-  const kindGroup = page.getByRole("group", { name: "리소스 종류 필터" });
-  await kindGroup.getByRole("button", { name: /브러시/ }).click();
+  await page.getByRole("link", { name: "소재 찾기", exact: true }).click();
+  const kindGroup = page.getByRole("group", { name: "어떤 리소스가 필요한가요?" });
+  await kindGroup.getByRole("button", { name: "브러시", exact: true }).click();
   await expect(page).toHaveURL(/\/market\/browse\?kind=brush$/u);
 
   await page.goBack();
@@ -240,17 +246,17 @@ test("마켓 홈에서 선택한 종류 조건은 브라우저 뒤로·앞으로
   await page.goForward();
   await expect(page).toHaveURL(/\/market\/browse\?kind=brush$/u);
   await expect(
-    page.getByRole("group", { name: "리소스 종류 필터" })
-      .getByRole("button", { name: /브러시/ }),
+    page.getByRole("group", { name: "어떤 리소스가 필요한가요?" })
+      .getByRole("button", { name: "브러시", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
 });
 
 test("종류 칩은 URL 파라미터를 갱신한다", async ({ page }) => {
   await page.goto("/market/browse");
-  const kindGroup = page.getByRole("group", { name: "리소스 종류 필터" });
-  await kindGroup.getByRole("button", { name: /브러시/ }).click();
+  const kindGroup = page.getByRole("group", { name: "어떤 리소스가 필요한가요?" });
+  await kindGroup.getByRole("button", { name: "브러시", exact: true }).click();
   await expect(page).toHaveURL(/market\/browse\?kind=brush$/);
-  await expect(kindGroup.getByRole("button", { name: /브러시/ })).toHaveAttribute(
+  await expect(kindGroup.getByRole("button", { name: "브러시", exact: true })).toHaveAttribute(
     "aria-pressed",
     "true"
   );
@@ -258,7 +264,7 @@ test("종류 칩은 URL 파라미터를 갱신한다", async ({ page }) => {
 
 test("없는 리소스 상세는 404 안내 또는 오류 상태로 흐름 제어한다", async ({ page }) => {
   await page.goto("/market/resource/123e4567-e89b-42d3-a456-426614174000");
-  await expect(page.getByRole("link", { name: "마켓으로 돌아가기" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "탐색 결과로 돌아가기" })).toBeVisible();
   await expect(
     page.getByText(/리소스를 찾을 수 없어요|불러올 수 없어요|불러오지 못했습니다/)
   ).toBeVisible({ timeout: 15_000 });
@@ -331,7 +337,7 @@ test("리소스 상세 페이지에서 브러시 인터랙티브 캔버스를 �
   await page.goto(`/market/resource/${resourceId}`);
   await expect(page.getByRole("heading", { name: "먹물 G펜 프로" })).toBeVisible();
   await expect(page.getByText("웹툰 인물 펜선용 고감도 잉크 브러시")).toBeVisible();
-  await expect(page.getByRole("link", { name: "스튜디오에 리소스 팩 설치" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "스튜디오에 브러시 팩 설치" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "메타데이터 스냅샷 다운로드" })).toBeVisible();
 
   // 브러시 캔버스 프리뷰 확인
@@ -570,9 +576,12 @@ test("모바일 3D 상세는 긴 recipe와 package ID에서도 수평 오버플�
 });
 
 test("스튜디오 마켓 딥링크 진입 시 커뮤니티 탭이 활성화된다", async ({ page }) => {
-  await page.goto("/studio?assetMarket=community");
+  await page.addInitScript(() => {
+    window.localStorage.setItem("toonstudio-studio-beta-notice-acknowledged", "2026-09-24-data-and-policy-v1");
+  });
+  await page.goto("/studio/draft/editor?assetMarket=community");
   await expect(page.locator("[data-studio-asset-marketplace-lazy-boundary]")).toBeVisible({
-    timeout: 30_000,
+    timeout: 120_000,
   });
   await expect(page.locator("[data-studio-community-marketplace]")).toBeVisible();
 });

@@ -15,7 +15,8 @@ import {
   registerI18nLocaleEntries,
   resolveTranslationForDisplay,
 } from "@/shared/lib/i18n";
-
+import type { StudioVrmAssetRepositoryDetailCode } from "../vrm/studio-vrm-asset-sqlite-opfs-repository";
+import type { VrmLibraryErrorCode } from "../vrm/vrm-library";
 
 function resolveProducerError(
   key: string,
@@ -28,9 +29,6 @@ function resolveProducerError(
     Object.hasOwn(values, token) ? String(values[token]) : placeholder,
   );
 }
-
-import type { StudioVrmAssetRepositoryDetailCode } from "../vrm/studio-vrm-asset-sqlite-opfs-repository";
-import type { VrmLibraryErrorCode } from "../vrm/vrm-library";
 
 // === vrmLibrary 구간 ===
 registerI18nLocaleEntries("ko", {
