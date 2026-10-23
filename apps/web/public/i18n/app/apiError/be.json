@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Падключэнне патрабуецца.",
+  "apiError.loginRequired": "Патрабуецца ўваход.",
   "apiError.adminRequired": "Адміністрацыйныя дазволы не змаглі праверыць.",
   "apiError.adminOnlyPage": "Гэтая старонка абмяжоўваецца адміністратарамі.",
-  "apiError.notFound": "Запрашанае прадметы не знойдзена.",
-  "apiError.unsupportedType": "Непадтрымлівае тып зместу.",
+  "apiError.notFound": "Запытаны элемент не знойдзены.",
+  "apiError.unsupportedType": "Непадтрыманы тып зместу.",
   "apiError.inactiveAccount": "Неактыўныя рахункі не могуць выкарыстоўваць функцыі адміністратара.",
-  "apiError.settlementFailed": "Выпрацоўка разліку не атрымалася."
+  "apiError.settlementFailed": "Апрацоўка разліку не ўдалася. Паспрабуйце яшчэ раз праз хвіліну."
 }

@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Пераклад паказчыкаў",
-  "ranking.metric.views": "Глядыні",
-  "ranking.why": "Чаму?",
+  "ranking.detailTitle": "Паглядзець разбіўку балаў",
+  "ranking.metric.views": "Прагляды",
+  "ranking.why": "Чаму",
   "ranking.breakdownTitle": "Падзел балаў",
   "ranking.totalScore": "Агульны бал",
-  "ranking.breakdownDescription": "Вылічаныя з вагой вага і спецыфічнай наміналізацыяй за назвай."
+  "ranking.breakdownDescription": "Разлічваецца з вагамі восяў і нармалізацыяй пад канкрэтны твор."
 }

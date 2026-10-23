@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Падтрымліваецца малюнак",
-  "ad.slotAriaLabel": "Рэкламны slot",
-  "ad.slotLabel": "Падтрымка",
-  "ad.slotTitle": "Падтрымлівае змест",
+  "ad.creativeFallbackAlt": "Рэкламная выява",
+  "ad.slotAriaLabel": "Рэкламнае месца",
+  "ad.slotLabel": "Рэклама",
+  "ad.slotTitle": "Рэкламны змест",
   "ad.ctaDetails": "Паглядзіце дэталі",
-  "ad.placeholderAriaLabel": "Падпісанне аб'явы",
+  "ad.placeholderAriaLabel": "Запаўняльнік рэкламы",
   "ad.placeholderText": "Няма спансаванага кантэнту.",
   "ad.tag": "Рэклама"
 }

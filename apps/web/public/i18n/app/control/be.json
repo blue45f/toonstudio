@@ -1,14 +1,14 @@
 {
   "control.language.label": "Мова",
   "control.language.group.translated": "Высокая колькасць перакладаў",
-  "control.language.group.englishBase": "Аўтаматычны пераклад · Англійскі fallback",
+  "control.language.group.englishBase": "Аўтаматычны пераклад · запасны варыянт — англійская",
   "control.sound.enable": "Дазволіць гукавыя эфекты",
   "control.sound.disable": "Адключыць гукавыя эфекты",
   "control.theme.dark": "Перайсці ў светлы рэжым",
   "control.theme.light": "Перайсці ў цёмны рэжым",
-  "control.settings.open": "Адкрытыя налады",
-  "control.settings.close": "Замыкаючыя налады",
-  "control.cluster.settings": "Гук, тэма, моўны кантроль",
-  "control.cluster.open": "Адкрытыя налады",
+  "control.settings.open": "Адкрыць налады",
+  "control.settings.close": "Зачыніць налады",
+  "control.cluster.settings": "Кіраванне гукам, тэмай і мовай",
+  "control.cluster.open": "Адкрыць налады",
   "control.cluster.tooltip": "Гук, тэма і моўныя налады"
 }
