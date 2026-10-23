@@ -218,12 +218,12 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     expect(output.genvasCharacterPoseLock.copyrightProvenanceBadge.commercialUseCleared).toBe(true);
     expect(output.benchmarkMatrix).toEqual(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX);
 
-    const directPoseLock = buildGenvasCharacterPoseLock(
-      output.resolvedArtistStyle,
-      "pose-lookback-closeup",
-      12,
-    );
-    expect(directPoseLock.fewShotTrainingTargetCount).toBe(10);
+    const directPoseLock = buildGenvasCharacterPoseLock({
+      artistStyle: output.resolvedArtistStyle,
+      posePresetId: "pose-lookback-closeup",
+      sampleCount: 12,
+    });
+    expect(directPoseLock.minimumFewShotTarget).toBe(10);
     expect(directPoseLock.copyrightProvenanceBadge.status).toBe("verified-artist-opt-in");
 
     const firstCutLayers = decomposeCutIntoProductionLayers(

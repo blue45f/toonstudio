@@ -330,9 +330,9 @@ export function decomposeCutIntoProductionLayers(
           : "28mm 와이드 배경 렌즈 (세계관 공간감 및 인물 동선 확보)";
 
   const lightingRigKo =
-    cut.emotion === "tension" || cut.emotion === "shock"
+    cut.emotion === "rage" || cut.emotion === "shock"
       ? "강한 역광 림라이트(Rim Light) + 고대비 측면 키라이트"
-      : cut.emotion === "lyrical"
+      : cut.emotion === "sorrow" || cut.emotion === "calm"
         ? "부드러운 확산 반사광(Soft Bounce) + 상단 골든아워 백라이트"
         : "표준 3점 조명(Key/Fill/Rim) + 피사체 얼굴 전면 가독성 확보";
 
