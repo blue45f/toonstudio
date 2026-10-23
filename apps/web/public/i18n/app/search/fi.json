@@ -82,7 +82,7 @@
   "search.explorer.time.noData": "Ei päivityksiä",
   "search.explorer.time.justNow": "Päivitetty juuri nyt",
   "search.explorer.time.minutesAgo": "{count} minuuttia sitten",
-  "search.explorer.time.hoursAgo": "{count}h sitten",
-  "search.explorer.time.daysAgo": "{count}d sitten",
+  "search.explorer.time.hoursAgo": "{count} tuntia sitten",
+  "search.explorer.time.daysAgo": "{count} päivää sitten",
   "search.explorer.loadMore": "Lataa lisää"
 }
