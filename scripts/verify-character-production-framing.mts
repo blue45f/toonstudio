@@ -1,8 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { readPsd } from "ag-psd";
-import { chromium } from "playwright";
+import { readPsd, type Layer } from "ag-psd";
+import { chromium, type Locator } from "playwright";
 
 const origin = process.env.TOONSPECTRUM_VERIFY_ORIGIN;
 if (!origin || !/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/u.test(origin)) {
@@ -31,10 +31,21 @@ const evidence: Record<string, unknown> = { capturedAt: new Date().toISOString()
 const assert = (value: boolean, message: string) => { if (!value) throw new Error(message); };
 const root = page.locator('[data-character-shaper="true"]');
 const canvas = root.locator('[data-character-shaper-viewport] canvas').first();
+// 개편된 화면은 해상도·비율·구도 가이드·설정화와 시트용 PNG/PSD 버튼을 '출력 설정' 시트에 접어 둔다
+// (CharacterShaperOutputDock 의 data-character-output-settings 토글, aria-expanded 로 상태를 알린다).
+// 시트 밖 도크에도 같은 이름의 PNG 저장·PSD 내보내기 버튼이 있으므로 내보내기는 시트 안으로 범위를 좁힌다.
+const outputSettings = root.locator('[data-character-output-settings="true"]');
+const exportSheet = root.locator("[data-character-export-sheet]");
+/** 사용자 경로 그대로 시트를 펼치거나 접는다. 이미 원하는 상태이면 누르지 않는다(토글이라 다시 누르면 반대로 간다). */
+async function setExportSheet(trigger: Locator, open: boolean) {
+  if ((await trigger.getAttribute("aria-expanded")) !== String(open)) await trigger.click();
+  await exportSheet.waitFor({ state: open ? "visible" : "detached", timeout: 30_000 });
+}
 async function download(name: string, fileName: string) {
+  await setExportSheet(outputSettings, true);
   const start = performance.now();
   const pending = page.waitForEvent("download", { timeout: 180_000 });
-  await root.getByRole("button", { name, exact: true }).click();
+  await exportSheet.getByRole("button", { name, exact: true }).click();
   const item = await pending;
   const filePath = join(out, fileName);
   await item.saveAs(filePath);
@@ -59,6 +70,7 @@ try {
     : /swiftshader/iu.test(renderer);
   assert(laneMatches, `Declared ${gpuLane} GPU lane required: ${renderer}`);
   evidence.gpuLane = gpuLane;
+  await setExportSheet(outputSettings, true);
   await root.getByLabel("파일 내보내기 해상도").selectOption("1024");
   await root.getByLabel("구도 가이드", { exact: true }).selectOption("thirds");
   await root.getByRole("button", { name: "안전 여백 5%" }).click();
@@ -92,11 +104,19 @@ try {
     captures.push({ aspect, width, height, bytes: item.bytes.length, milliseconds: item.milliseconds });
   }
   evidence.png = captures;
+  // 구도 증거 화면에는 시트가 가리지 않도록 접은 상태를 담고, PSD 내보내기에서 다시 펼친다.
+  await setExportSheet(outputSettings, false);
   await page.screenshot({ path: join(out, "desktop-composition.png") });
   const psdFile = await download("PSD 내보내기", "cinema.psd");
   const psd = readPsd(psdFile.bytes, { skipLayerImageData: true, skipCompositeImageData: true, skipThumbnail: true });
-  assert(psd.width === 1024 && psd.height === 576 && (psd.children?.length ?? 0) > 3, "cropped PSD layers or dimensions missing");
-  evidence.psd = { width: psd.width, height: psd.height, layers: psd.children?.map((layer) => layer.name), milliseconds: psdFile.milliseconds };
+  // PSD 는 주선·캐릭터(음영·밑색)·미리보기 그룹 안에 래스터 레이어를 중첩한다(character-shaper-psd-assembly.ts).
+  // 최상위 항목 수는 그룹 수이므로 그룹을 건너뛰고 래스터(잎) 레이어 수로 같은 기준(3장 초과)을 적용한다.
+  const rasterLayerCount = (layers: readonly Layer[] | undefined): number =>
+    (layers ?? []).reduce((total, layer) => total + (layer.children ? rasterLayerCount(layer.children) : 1), 0);
+  const psdRasterLayers = rasterLayerCount(psd.children);
+  assert(psd.width === 1024 && psd.height === 576 && psdRasterLayers > 3, "cropped PSD layers or dimensions missing");
+  evidence.psd = { width: psd.width, height: psd.height, layers: psd.children?.map((layer) => layer.name), rasterLayers: psdRasterLayers, milliseconds: psdFile.milliseconds };
+  await setExportSheet(outputSettings, true);
   await root.getByLabel("원고 출력 비율").selectOption("viewport");
   const sheet = await download("8방향 설정화", "turnaround-8.png");
   assert(sheet.bytes.readUInt32BE(16) === 3168 && sheet.bytes.readUInt32BE(20) === 2192, "incorrect turnaround sheet dimensions");
@@ -124,16 +144,19 @@ try {
   let cancelledDownloads = 0;
   const onDownload = () => { cancelledDownloads += 1; };
   page.on("download", onDownload);
-  await root.getByRole("button", { name: "8방향 설정화", exact: true }).click();
+  await setExportSheet(outputSettings, true);
+  await exportSheet.getByRole("button", { name: "8방향 설정화", exact: true }).click();
   await root.getByRole("button", { name: "내보내기 취소", exact: true }).click();
   await root.getByRole("status").filter({ hasText: "내보내기를 취소했습니다" }).waitFor();
   await page.waitForTimeout(500);
   page.off("download", onDownload);
   assert(cancelledDownloads === 0, "cancelled export downloaded a partial file");
   evidence.cancelledWithoutDownload = true;
+  // 데스크톱 시트 상태가 모바일 시트의 토글 상태로 이어지므로 접은 채로 모바일 배치로 넘어간다.
+  await setExportSheet(outputSettings, false);
   await page.setViewportSize({ width: 320, height: 800 });
   await page.waitForTimeout(1500);
-  await root.getByRole("button", { name: "내보내기 더 보기", exact: true }).click();
+  await setExportSheet(root.getByRole("button", { name: "내보내기 더 보기", exact: true }), true);
   await root.getByLabel("원고 출력 비율").selectOption("webtoon");
   const mobile = await root.locator("[data-character-export-sheet]").evaluate((element) => {
     const bounds = element.getBoundingClientRect();
