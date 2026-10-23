@@ -1,0 +1,124 @@
+{
+  "schema": "toonstudio.3d-diversity-ledger/1",
+  "sections": {
+    "characterLab.vocabulary": {
+      "metrics": {
+        "face-shape": 6,
+        "eyes": 6,
+        "irises": 5,
+        "nose": 5,
+        "mouth": 5,
+        "ears": 4,
+        "hair": 7,
+        "body": 6,
+        "top": 5,
+        "bottom": 5,
+        "shoes": 4,
+        "accessory": 6,
+        "expression": 12,
+        "pose": 10,
+        "hand-pose": 8
+      }
+    },
+    "characterLab.presets": {
+      "metrics": {
+        "appearancePresets": 64,
+        "performancePresets": 30,
+        "posePresets": 10,
+        "expressionPresets": 12,
+        "handPosePresets": 8,
+        "bodyParams": 9,
+        "faceParams": 15
+      }
+    },
+    "characterLab.kit": {
+      "metrics": {
+        "parts": 32,
+        "female.accessory": 3,
+        "female.irises": 5,
+        "female.provided": 8,
+        "male.accessory": 3,
+        "male.irises": 5,
+        "male.provided": 8
+      }
+    },
+    "characterLab.artStyles": {
+      "metrics": {
+        "artStylePacks": 0
+      }
+    },
+    "studio.mannequin": {
+      "metrics": {
+        "bodyPresets": 19,
+        "headPresets": 5,
+        "archetypePresets": 6,
+        "materialStyles": 9,
+        "joints": 19,
+        "coreParams": 7,
+        "headParams": 4,
+        "anatomyParams": 12,
+        "posePresets": 64,
+        "twoFigurePoses": 7,
+        "handOnlyPoses": 13,
+        "handPresets": 50,
+        "duoCompositions": 7
+      }
+    },
+    "studio.vrm": {
+      "metrics": {
+        "props": 109,
+        "posePresets": 34,
+        "costumePresets": 35,
+        "handShapes": 16,
+        "expressions": 17,
+        "cameraPresets": 23,
+        "wardrobeItems": 28,
+        "wardrobeSets": 25,
+        "wardrobeFabrics": 8,
+        "forgeHairStyles": 14,
+        "forgeBangStyles": 6,
+        "mtoonPresets": 7
+      }
+    },
+    "studio.shaper": {
+      "metrics": {
+        "entries": 264,
+        "slot.face-shape": 9,
+        "slot.eyes": 11,
+        "slot.irises": 13,
+        "slot.nose": 10,
+        "slot.mouth": 10,
+        "slot.ears": 7,
+        "slot.hair": 15,
+        "slot.body": 7,
+        "slot.top": 15,
+        "slot.bottom": 8,
+        "slot.shoes": 8,
+        "slot.accessory": 35,
+        "slot.expression": 28,
+        "slot.pose": 72,
+        "slot.hand-pose": 16
+      }
+    },
+    "studio.bg3d": {
+      "metrics": {
+        "environments": 31,
+        "starterAssets": 41,
+        "cinematicBlueprints": 24,
+        "webtoonBackgrounds": 3,
+        "roomPresets": 6,
+        "roomFurnitureKinds": 13,
+        "environmentTheme.home": 3,
+        "environmentTheme.hospitality": 1,
+        "environmentTheme.urban": 7,
+        "environmentTheme.education": 7,
+        "environmentTheme.fantasy": 2,
+        "environmentTheme.science-fiction": 1,
+        "environmentTheme.healthcare": 1,
+        "environmentTheme.heritage": 2,
+        "environmentTheme.retail": 5,
+        "environmentTheme.transit": 2
+      }
+    }
+  }
+}
