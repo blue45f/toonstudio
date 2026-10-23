@@ -6,6 +6,8 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
+import { STUDIO_INTRO_CLOSING_CLIP } from "./brand-clips";
+import { PRODUCT_TOUR_TRANSITION_BG3D_CLIP } from "./product-tour-clips";
 import { IntroPrimaryLink, IntroSecondaryLink, IntroSectionHeading } from "./public/intro-primitives";
 import { INTRO_CARD } from "./public/intro-tokens";
 
@@ -173,8 +175,26 @@ export function StudioIntroFlow() {
         {FLOW_STEPS.map((step, index) => {
           const Icon = step.icon;
           const copy = bi(step.ko, step.en);
+          // 2D·3D 제작 단계 카드에만 배경 클립을 깐다 — 투어 전환용으로 만든
+          // 3D 배경 클립을 재배선한 것으로, 단계 일러스트와는 별개의 장식이다.
+          const backdrop = step.art === "create" ? PRODUCT_TOUR_TRANSITION_BG3D_CLIP : null;
           return (
-            <li key={step.art} className={`${INTRO_CARD} grid min-w-0 gap-3 p-4`}>
+            <li key={step.art} className={`${INTRO_CARD} grid min-w-0 gap-3 p-4 ${backdrop ? "studio-flow-card--clip relative overflow-hidden" : ""}`}>
+              {backdrop ? (
+                <div className="studio-flow-card__media" aria-hidden="true">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    tabIndex={-1}
+                    src={backdrop.src}
+                    width={backdrop.width}
+                    height={backdrop.height}
+                  />
+                </div>
+              ) : null}
               <WorkflowIllustration kind={step.art} decorative sizes="(max-width: 640px) 90vw, 400px" />
               <div className="flex items-center gap-2">
                 <span className="text-sm font-black text-accent">{String(index + 1).padStart(2, "0")}</span>
@@ -185,6 +205,12 @@ export function StudioIntroFlow() {
               <Link href={step.href} className="mt-auto inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-accent hover:text-fg">
                 {copy.action}
               </Link>
+              {backdrop ? (
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
+                  <Sparkles size={13} aria-hidden="true" />
+                  {bi("생성형 AI 배경 영상", "AI-generated backdrop")}
+                </span>
+              ) : null}
             </li>
           );
         })}
@@ -250,21 +276,51 @@ function BridgeRow({ item }: { readonly item: BridgeItem }) {
   );
 }
 
-/** 마감: 소개 서사의 끝 문장과 시작 행동. 소개 여정 페이저는 호출부가 아래에 붙인다. */
+/**
+ * 마감: 소개 서사의 끝 문장과 시작 행동. 밝은 낮의 스튜디오 파노라마(생성형 AI
+ * 영상)를 밴드 배경으로 깔고, 성격은 배지로 밝힌다. 장식 영상이라 본문
+ * 흐름에서 빼고 움직임 최소화를 선호하면 숨긴다(다른 표면과 같은 계약).
+ * 소개 여정 페이저는 호출부가 아래에 붙인다.
+ */
 export function StudioIntroClosing() {
   const bi = useBilingualLocalizer(SCOPE);
   return (
     <section className="cf-shell mt-14 sm:mt-20" aria-labelledby="creator-closing-title">
-      <p className="eyebrow text-accent">ToonStudio</p>
-      <h2 id="creator-closing-title" tabIndex={-1} className="mt-2 max-w-3xl text-balance break-keep text-2xl font-bold tracking-tight text-fg sm:text-3xl">
-        {bi("작품을 시작하는 순간부터, 독자에게 공개하는 순간까지.", "From the moment a work begins to the moment readers see it.")}
-      </h2>
-      <p className="mt-3 max-w-[38rem] break-keep text-base leading-7 text-fg-2">
-        {bi("대본·콘티·2D·3D·소재·파일·일정·협업·검토와 연재 준비를 하나의 프로젝트에서 끝까지 이어가세요.", "Connect scripts, storyboards, 2D, 3D, assets, files, schedules, collaboration, review and publishing in one project.")}
-      </p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <IntroPrimaryLink href="/studio/new">{bi("새 작품 시작하기", "Start a new work")}</IntroPrimaryLink>
-        <IntroSecondaryLink href="/production/projects/sample-project/overview">{bi("샘플 제작 흐름 보기", "See a sample workflow")}</IntroSecondaryLink>
+      <div className="relative isolate overflow-hidden rounded-[2rem] border border-line/70 px-6 py-10 sm:px-10 sm:py-12">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex={-1}
+          src={STUDIO_INTRO_CLOSING_CLIP.src}
+          width={STUDIO_INTRO_CLOSING_CLIP.width}
+          height={STUDIO_INTRO_CLOSING_CLIP.height}
+          className="absolute inset-0 -z-10 h-full w-full object-cover opacity-50 motion-reduce:hidden"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-r from-canvas/85 via-canvas/70 to-canvas/40"
+        />
+        <div className="relative">
+          <p className="eyebrow text-accent">ToonStudio</p>
+          <h2 id="creator-closing-title" tabIndex={-1} className="mt-2 max-w-3xl text-balance break-keep text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+            {bi("작품을 시작하는 순간부터, 독자에게 공개하는 순간까지.", "From the moment a work begins to the moment readers see it.")}
+          </h2>
+          <p className="mt-3 max-w-[38rem] break-keep text-base leading-7 text-fg-2">
+            {bi("대본·콘티·2D·3D·소재·파일·일정·협업·검토와 연재 준비를 하나의 프로젝트에서 끝까지 이어가세요.", "Connect scripts, storyboards, 2D, 3D, assets, files, schedules, collaboration, review and publishing in one project.")}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <IntroPrimaryLink href="/studio/new">{bi("새 작품 시작하기", "Start a new work")}</IntroPrimaryLink>
+            <IntroSecondaryLink href="/production/projects/sample-project/overview">{bi("샘플 제작 흐름 보기", "See a sample workflow")}</IntroSecondaryLink>
+          </div>
+          <span className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
+            <Sparkles size={13} aria-hidden="true" />
+            {bi("생성형 AI 배경 영상", "AI-generated backdrop")}
+          </span>
+        </div>
       </div>
     </section>
   );

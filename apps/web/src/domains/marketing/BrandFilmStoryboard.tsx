@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Brush, Clapperboard, Rocket, type LucideIcon } from "lucide-react";
+import { ArrowRight, BookOpen, Brush, Clapperboard, Rocket, Sparkles, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
@@ -9,6 +9,8 @@ import {
   type BilingualText,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
+
+import { brandFilmSceneClip } from "./brand-clips";
 
 import "./brand-film-storyboard.css";
 
@@ -93,6 +95,7 @@ const COPY = {
     intro: "브랜드 필름의 네 장면을 실제 제품 흐름과 연결했습니다. 카드를 선택하면 해당 단계가 무엇을 의미하는지 이미지와 짧은 문장으로 바로 이해할 수 있어요.",
     visualAlt: "ToonStudio Remotion 브랜드 필름 챕터를 설명하는 비주얼",
     chapterLabel: "영상 챕터",
+    clipBadge: "생성형 AI 배경 영상",
   },
   en: {
     eyebrow: "4 SCENES · STORYBOARD",
@@ -100,6 +103,7 @@ const COPY = {
     intro: "Each brand-film chapter is connected to a real product journey. Select a card to see the outcome, visual context and next action immediately.",
     visualAlt: "Visual explaining a ToonStudio Remotion brand-film chapter",
     chapterLabel: "Film chapters",
+    clipBadge: "AI-generated backdrop",
   },
 } as const;
 
@@ -126,6 +130,7 @@ export function BrandFilmStoryboard() {
   const activeBody = translateBilingualText(t, `brandFilmStoryboard.chapter.${active.id}.body`, active.body);
   const activeAction = translateBilingualText(t, `brandFilmStoryboard.chapter.${active.id}.action`, active.action);
   const ActiveIcon = active.icon;
+  const activeClip = brandFilmSceneClip(active.id);
 
   return (
     <section className="brand-film-storyboard" aria-labelledby="brand-film-storyboard-title">
@@ -180,10 +185,31 @@ export function BrandFilmStoryboard() {
               exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
               transition={{ duration: .28, ease: [0.16, 1, 0.3, 1] }}
             >
+              {activeClip ? (
+                <div className="brand-film-storyboard__detail-media" aria-hidden="true">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    tabIndex={-1}
+                    src={activeClip.src}
+                    width={activeClip.width}
+                    height={activeClip.height}
+                  />
+                </div>
+              ) : null}
               <span>{active.time}s</span>
               <h3>{activeTitle}</h3>
               <p>{activeBody}</p>
               <Link href={active.href}>{activeAction}<ArrowRight size={15} aria-hidden="true" /></Link>
+              {activeClip ? (
+                <span className="brand-film-storyboard__clip-badge">
+                  <Sparkles size={13} aria-hidden="true" />
+                  {copy.clipBadge}
+                </span>
+              ) : null}
             </motion.div>
           </AnimatePresence>
         </div>
