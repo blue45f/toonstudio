@@ -241,14 +241,21 @@ describe("state/apply-plan: 레시피 v3 필드", () => {
   it("소스 능력이 있으면 따로 못 칠하는 직접 지정 채널·패턴·헤어 흐름·층을 알리고(기본 채널은 알리지 않음), 없으면 사유를 만들지 않는다", () => {
     const recipe = withRecipe({
       colors: { ...createDefaultRecipe().colors, top: "#cc2244", lip: "#aa3344", "shoes-lace": "#ffffff" },
-      surfaces: { top: { material: "cloth-cotton", pattern: { kind: "dot", scaleCm: 1, angleDeg: 0, ratio: 0.3, inkChannel: "top-trim" } } },
+      surfaces: {
+        top: { material: "cloth-cotton", pattern: { kind: "dot", scaleCm: 1, angleDeg: 0, ratio: 0.3, inkChannel: "top-trim" } },
+        bottom: { material: "cloth-denim", pattern: { kind: "check", scaleCm: 2, angleDeg: 45, ratio: 0.5, inkChannel: "bottom-trim" } },
+      },
       hairColor: { gradient: [0.5, 1], tipMix: 0.4, accent: "none" },
       wardrobe: { inner: "top/tee", outer: null, legwear: null, accessories: [] },
     });
     expect(planApply(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG).unsupportedCustom).toEqual([]);
     const none = createApplyPlanner({ custom: NO_CUSTOM_CAPABILITIES })(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG);
-    expect(none.unsupportedCustom?.map((item) => `${item.kind}:${item.key}`)).toEqual(["layer:inner", "channel:lip", "channel:shoes-lace", "surface:top", "hair-color:hairColor"]);
+    expect(none.unsupportedCustom?.map((item) => `${item.kind}:${item.key}`)).toEqual(["layer:inner", "channel:lip", "channel:shoes-lace", "surface:top", "surface:bottom", "hair-color:hairColor"]);
     for (const item of none.unsupportedCustom ?? []) expect(item.reasonKo).toMatch(/[가-힣]/u);
+    // 사유 순서는 계약 채널 순서다: 키 순서만 다른 같은 레시피(파일에서 다시 읽은 것처럼 정렬된 객체)도 같은 플랜을 낸다
+    const reversed = <T extends object>(value: T): T => Object.fromEntries(Object.entries(value).reverse()) as T;
+    const reordered = { ...recipe, colors: reversed(recipe.colors), surfaces: reversed(recipe.surfaces) };
+    expect(createApplyPlanner({ custom: NO_CUSTOM_CAPABILITIES })(reordered, ALL_AVAILABLE_CAPABILITIES, CATALOG)).toEqual(none);
     const full = createApplyPlanner({ custom: FULL_CUSTOM })(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG);
     expect(full.unsupportedCustom?.map((item) => `${item.kind}:${item.key}`)).toEqual(["channel:shoes-lace"]);
     // 사유가 있어도 값을 다른 것으로 바꾸지 않는다(채널 유효색은 그대로 낸다)

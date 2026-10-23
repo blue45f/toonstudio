@@ -10,6 +10,7 @@
  */
 import {
   ACCESSORY_ANCHOR_LABELS_KO,
+  CHANNEL_KEYS,
   CHANNEL_LABELS_KO,
   FACS_UNITS,
   SLOT_LABELS_KO,
@@ -20,7 +21,6 @@ import {
   hairColorIsActive,
   isAccessoryInstanceId,
   isBaseChannelKey,
-  isChannelKey,
   resolveChannelColors,
   shapeToMorphWeights,
 } from "../contracts";
@@ -165,15 +165,16 @@ export function planCustomization(input: CustomizePlanInput): CustomizePlanField
     if (Object.keys(weights).length > 0) partMorphWeights[scope] = weights;
   }
 
-  // 채널: 유효색은 언제나 내고, 능력이 있으면 직접 지정한 상속 채널 중 따로 못 칠하는 것을 알린다
+  // 채널: 유효색은 언제나 내고, 능력이 있으면 직접 지정한 상속 채널 중 따로 못 칠하는 것을 알린다.
+  // 순서는 계약 순서(CHANNEL_KEYS)다 — 레시피 객체의 키 삽입 순서(편집 이력·파일 정렬)에 따라 플랜이 달라지지 않게 한다.
   const channels = resolveChannelColors(recipe.colors);
   if (custom) {
-    for (const key of Object.keys(recipe.colors)) {
-      if (!isChannelKey(key) || isBaseChannelKey(key) || custom.channels.includes(key)) continue;
+    for (const key of CHANNEL_KEYS) {
+      if (recipe.colors[key] === undefined || isBaseChannelKey(key) || custom.channels.includes(key)) continue;
       push({ kind: "channel", key, reasonKo: reasonOf(custom, customReasonKey("channel", key), `이 소스는 ${CHANNEL_LABELS_KO[key]} 채널을 따로 칠할 수 없습니다.`) });
     }
-    for (const [channel, surface] of Object.entries(recipe.surfaces)) {
-      if (surface?.pattern && !custom.patternUv) push({ kind: "surface", key: channel, reasonKo: reasonOf(custom, customReasonKey("patternUv"), "이 소스는 패턴용 UV가 없어 무늬를 그릴 수 없습니다.") });
+    for (const channel of CHANNEL_KEYS) {
+      if (recipe.surfaces[channel]?.pattern && !custom.patternUv) push({ kind: "surface", key: channel, reasonKo: reasonOf(custom, customReasonKey("patternUv"), "이 소스는 패턴용 UV가 없어 무늬를 그릴 수 없습니다.") });
     }
     if (hairColorIsActive(recipe.hairColor) && !custom.hairFlow) {
       push({ kind: "hair-color", key: "hairColor", reasonKo: reasonOf(custom, customReasonKey("hairFlow"), "이 소스의 헤어는 끝 색·포인트를 그릴 수 없습니다.") });
