@@ -58,7 +58,7 @@ export function StudioVirtualSpaceThreeCanvas({
   snapshot,
   bridge,
   selfDisplayName,
-  spaceTheme = "manuscript-atelier",
+  spaceTheme = "webtoon-atelier",
   onRuntimeMetrics,
   onNpcInteract,
   onLocalState,
@@ -71,6 +71,7 @@ export function StudioVirtualSpaceThreeCanvas({
 }: StudioVirtualSpacePhaserCanvasProps) {
   const bt = useBilingual("StudioVirtualSpaceThreeCanvas");
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasMountRef = useRef<HTMLDivElement | null>(null);
   const [overlays, setOverlays] = useState<readonly ProjectedOverlayItem[]>([]);
 
   const snapshotRef = useRef(snapshot);
@@ -102,7 +103,8 @@ export function StudioVirtualSpaceThreeCanvas({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return undefined;
+    const canvasMount = canvasMountRef.current;
+    if (!container || !canvasMount) return undefined;
 
     let disposed = false;
     callbacksRef.current.onEngineStatusChange?.("loading");
@@ -111,7 +113,7 @@ export function StudioVirtualSpaceThreeCanvas({
     const scene = new THREE.Scene();
     const bgHex = spaceTheme === "celestial-observatory"
       ? 0x0f172a
-      : spaceTheme === "neon-color-suite"
+      : spaceTheme === "neon-night"
         ? 0x111827
         : 0xe2e8f0;
     scene.background = new THREE.Color(bgHex);
@@ -130,8 +132,8 @@ export function StudioVirtualSpaceThreeCanvas({
     renderer.toneMappingExposure = 1.08;
 
     renderer.domElement.tabIndex = 0;
-    container.innerHTML = "";
-    container.appendChild(renderer.domElement);
+    canvasMount.innerHTML = "";
+    canvasMount.appendChild(renderer.domElement);
 
     // 2. 건축 조명 (Hemisphere + Directional Sun + Warm Fill)
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.95);
@@ -210,7 +212,7 @@ export function StudioVirtualSpaceThreeCanvas({
       if (WORLD_KEY_CODES.has(event.code)) {
         keysDown.add(event.code);
       }
-      if (STUDIO_INTERACT_KEY_CODES.includes(event.code as (typeof STUDIO_INTERACT_KEY_CODES)[number])) {
+      if (STUDIO_INTERACT_KEY_CODES.has(event.code)) {
         bridge.requestInteract();
       }
     };
@@ -250,7 +252,7 @@ export function StudioVirtualSpaceThreeCanvas({
     };
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
-      bridge.userZoom.step(event.deltaY < 0 ? 1 : -1);
+      bridge.userZoom.apply(event.deltaY < 0 ? "in" : "out");
     };
 
     renderer.domElement.addEventListener("pointerdown", handlePointerDown);
@@ -457,7 +459,7 @@ export function StudioVirtualSpaceThreeCanvas({
               activityEn: "Assisting",
               skinKey: npc.skinKey,
               distance: dist,
-              interaction: studioNpcInteraction(def, npc.point),
+              interaction: studioNpcInteraction(manifest, def),
             });
           }
         }
@@ -482,12 +484,13 @@ export function StudioVirtualSpaceThreeCanvas({
         lastLocalStateSync = now;
         const zoneId = studioWorldRoomAt(manifest, currentPoint);
         callbacksRef.current.onLocalState?.({
-          x: Math.round(currentPoint.x),
-          y: Math.round(currentPoint.y),
+          point: {
+            x: Math.round(currentPoint.x),
+            y: Math.round(currentPoint.y),
+          },
           zoneId,
           facing: currentFacing,
           moving,
-          activity: moving ? "walking" : snapshotRef.current.self.activity,
         });
       }
 
@@ -550,12 +553,13 @@ export function StudioVirtualSpaceThreeCanvas({
           const zx = (zone.tiles.column + zone.tiles.width / 2) * 64;
           const zy = zone.tiles.row * 64 + 32;
           if (Math.hypot(zx - currentPoint.x, zy - currentPoint.y) > 980) continue;
-          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walled ? 2.95 : 1.6));
+          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walls.length > 0 ? 2.95 : 1.6));
           if (signPos.visible) {
+            const roomDef = manifest.rooms?.find((room) => room.id === zone.roomId);
             projected.push({
               id: `zone:${zone.roomId}`,
               label: zone.signEn,
-              sublabel: bt(zone.labelKo, zone.labelEn),
+              sublabel: roomDef ? bt(roomDef.labelKo, roomDef.labelEn) : zone.signEn,
               kind: "zone",
               x: signPos.x,
               y: signPos.y,
@@ -591,6 +595,11 @@ export function StudioVirtualSpaceThreeCanvas({
       aria-label={bt("3D 가상 스튜디오 공간", "3D Virtual Studio Space")}
       style={{ position: "relative", width: "100%", height: "100%", outline: "none" }}
     >
+      <div
+        ref={canvasMountRef}
+        className="studio-vspace-three-canvas-mount"
+        style={{ position: "absolute", inset: 0, zIndex: 1 }}
+      />
       <div
         className="studio-vspace-three-overlays"
         aria-hidden

@@ -356,7 +356,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     scene.add(northStrip);
 
     // 실내 구역은 북쪽 백월 + 좌우 파티션 월을 세워 입체적인 오피스 아키텍처를 표현한다
-    if (zone.walled) {
+    if (zone.walls.length > 0) {
       const wallHeight = 2.65;
       const wallMat = new THREE.MeshStandardMaterial({
         color: palette.wall,
@@ -476,16 +476,26 @@ export function loadStudioThreeAssets(
       });
   }
 
-  // NPC 및 로컬 플레이어 VRM 모델 로드
+  // NPC 및 로컬 플레이어 VRM 모델 로드 (SkinnedMesh 본 바인딩 보존을 위해 직접 로드)
   const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
   npcIds.forEach((actorId, index) => {
     const vrmUrl = STUDIO_THREE_VRM_URLS[index % STUDIO_THREE_VRM_URLS.length];
     if (!vrmUrl) return;
-    void loadNormalizedGlb(vrmUrl)
-      .then((vrmScene) => {
+    loader.load(
+      vrmUrl,
+      (gltf) => {
         if (isDisposed()) return;
+        const vrmScene = gltf.scene;
+        if (!vrmScene) return;
         const node = actorNodes.get(actorId);
         if (!node || node.vrmLoaded) return;
+        vrmScene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.frustumCulled = false;
+          }
+        });
         const box = new THREE.Box3().setFromObject(vrmScene);
         const size = new THREE.Vector3();
         box.getSize(size);
@@ -500,9 +510,11 @@ export function loadStudioThreeAssets(
         node.rigGroup.clear();
         node.rigGroup.add(vrmScene);
         node.vrmLoaded = true;
-      })
-      .catch(() => {
+      },
+      undefined,
+      () => {
         // VRM 로드 전·실패 시 스타일라이즈드 3D 캐릭터 리그를 그대로 유지한다.
-      });
+      },
+    );
   });
 }
