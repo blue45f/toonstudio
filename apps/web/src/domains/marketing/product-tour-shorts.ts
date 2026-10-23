@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 12편.
- * 열두 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 15편.
+ * 열다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~12편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~15편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -17,7 +17,10 @@ export interface ProductTourShort {
     | "brush-doodles"
     | "panel-layers"
     | "storyboard-panels"
-    | "compare-review";
+    | "compare-review"
+    | "device-handoff"
+    | "asset-library"
+    | "tone-finish";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -205,6 +208,51 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Two takes, side by side",
       body: "Two versions of the same panel side by side, the divider sliding across to check what changed.",
+    },
+  },
+  {
+    id: "device-handoff",
+    src: "/brand/promo-shorts/shorts-13-continuity.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "어디서든 이어 그리기",
+      body: "스마트폰에서 그리던 그림을 큰 화면에서 그대로 이어 그리는 장면을 담았습니다.",
+    },
+    en: {
+      title: "Pick up where you left off",
+      body: "A drawing started on a phone, picked up and continued on the big screen just as it was left.",
+    },
+  },
+  {
+    id: "asset-library",
+    src: "/brand/promo-shorts/shorts-14-assets.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "라이브러리에서 꺼내는 배경",
+      body: "라이브러리에서 3D 배경을 꺼내 컷에 배치해 구도를 완성하는 과정을 담았습니다.",
+    },
+    en: {
+      title: "A background from the library",
+      body: "A 3D background pulled from the library and placed into a panel to finish the composition.",
+    },
+  },
+  {
+    id: "tone-finish",
+    src: "/brand/promo-shorts/shorts-15-tone.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "톤으로 입히는 질감",
+      body: "흑백 컷 위에 스크린톤과 효과선이 입혀지며 장면의 질감이 살아나는 과정을 담았습니다.",
+    },
+    en: {
+      title: "Texture from screentones",
+      body: "Screentones and effect lines settle onto a black-and-white panel until the scene gains texture.",
     },
   },
 ];
