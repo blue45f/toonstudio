@@ -1,11 +1,11 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 20편의 정본이다 (public/brand/page-clips/).
+ * 클립 21편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
- * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 7편을 함께 둔다.
+ * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 8편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -231,5 +231,12 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     "0:14",
     { title: "제작 과정 무드 · 세로", body: "제작 과정 가로본을 세로(9:16)로 다시 그린 변형입니다." },
     { title: "Workflow mood · Vertical", body: "The workflow clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "ir-vertical",
+    "page-ir-vertical.mp4",
+    "0:14",
+    { title: "IR 무드 · 세로", body: "IR 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "IR mood · Vertical", body: "The IR clip redrawn vertically (9:16)." },
   ),
 ];
