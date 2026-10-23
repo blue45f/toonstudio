@@ -674,7 +674,7 @@ describe("StudioLiveRoom", () => {
       })
     );
     expect(() => roomA.publishCursor({ x: -1, y: 2, pageId: null, tool: null })).toThrow(
-      "유효하지 않은 실시간 협업 메시지"
+      "cursor-payload-invalid"
     );
     roomA.close();
     roomB.close();
