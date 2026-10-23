@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_STUDIO_STYLUS_PRESSURE_PROFILE,
+  evaluateStylusDynamicResponse,
   fitStudioStylusPressureProfile,
   normalizeStudioStylusPressureProfile,
   resolveStudioStylusPressureInput,
@@ -145,5 +146,33 @@ describe("studio stylus pressure profile", () => {
     expect(
       window.localStorage.getItem(STUDIO_STYLUS_PRESSURE_PROFILE_STORAGE_KEY),
     ).toBeNull();
+  });
+
+  it("evaluates hardware stylus pressure, velocity-simulated mouse pressure, and tilt-broadening factor", () => {
+    const penResponse = evaluateStylusDynamicResponse({
+      pointerType: "pen",
+      rawPressure: 0.72,
+      tiltDeg: 65,
+      profile: studioStylusPressurePreset("inking"),
+    });
+    expect(penResponse.sourceMode).toBe("hardware-stylus");
+    expect(penResponse.effectivePressure).toBeGreaterThan(0.7);
+    expect(penResponse.tiltBroadeningFactor).toBeGreaterThan(1.5);
+
+    const slowMouse = evaluateStylusDynamicResponse({
+      pointerType: "mouse",
+      rawPressure: 0.5,
+      velocityPxPerMs: 0.1,
+      tiltDeg: 0,
+    });
+    const fastMouse = evaluateStylusDynamicResponse({
+      pointerType: "mouse",
+      rawPressure: 0.5,
+      velocityPxPerMs: 3.5,
+      tiltDeg: 0,
+    });
+    expect(slowMouse.sourceMode).toBe("velocity-simulated");
+    expect(slowMouse.effectivePressure).toBeGreaterThan(fastMouse.effectivePressure);
+    expect(slowMouse.tiltBroadeningFactor).toBe(1);
   });
 });
