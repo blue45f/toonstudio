@@ -180,19 +180,21 @@ describe("measured translation coverage", () => {
     const byCode = new Map(options.map((option) => [option.code, option]));
 
     // 옵션의 fullyTranslated 는 카탈로그 비율과 하한에서 그대로 나온다. 내장 쌍은 번역 언어이고,
-    // af 는 번역 하한 동결 목록(BELOW_TRANSLATED_FLOOR)에 있어 번역 완료로 표시되지 않는다. ja 는 검수 번역 반영으로
+    // sl 은 번역 하한 동결 목록(BELOW_TRANSLATED_FLOOR)에 있어 번역 완료로 표시되지 않는다. ja·af 는 검수 번역 반영으로
     // 하한을 넘어 목록에서 빠졌고 번역 완료로 표시된다.
     expect(byCode.get("ko")?.fullyTranslated).toBe(true);
     expect(byCode.get("en")?.fullyTranslated).toBe(true);
-    for (const code of ["ja", "af"]) {
+    for (const code of ["ja", "sl"]) {
       expect(byCode.get(code)?.fullyTranslated).toBe(
         APP_I18N_LOCALE_TRANSLATED_RATIO[code] >= APP_I18N_TRANSLATED_LOCALE_THRESHOLD,
       );
     }
-    expect(BELOW_TRANSLATED_FLOOR).toContain("af");
+    expect(BELOW_TRANSLATED_FLOOR).toContain("sl");
     expect(BELOW_TRANSLATED_FLOOR).not.toContain("ja");
-    expect(byCode.get("af")?.fullyTranslated).toBe(false);
+    expect(BELOW_TRANSLATED_FLOOR).not.toContain("af");
+    expect(byCode.get("sl")?.fullyTranslated).toBe(false);
     expect(byCode.get("ja")?.fullyTranslated).toBe(true);
+    expect(byCode.get("af")?.fullyTranslated).toBe(true);
     // es-419 has no asset of its own; it inherits the Spanish asset's measured coverage.
     expect(byCode.get("es-419")?.translatedRatio).toBe(
       APP_I18N_LOCALE_TRANSLATED_RATIO.es,
