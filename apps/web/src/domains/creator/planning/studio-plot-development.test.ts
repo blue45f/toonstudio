@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import { recommendLocalDialogueCandidates } from "../lettering/studio-dialogue-suggest";
 import {
   applyDevelopmentSuggestion,
+  compileEpisodeArcToScript,
+  compileStorylinePackageToScript,
+  generateEpisodeStorylineArc,
   inferPlotStage,
   nextEpisodeSeedFromSuggestion,
+  recommendStorylineAndDialogues,
   suggestNextDevelopments,
 } from "./studio-plot-development";
 
@@ -127,3 +132,76 @@ describe("nextEpisodeSeedFromSuggestion — F-7 합류", () => {
     expect(nextEpisodeSeedFromSuggestion(undefined)).toBe("");
   });
 });
+
+describe("recommendStorylineAndDialogues & recommendLocalDialogueCandidates", () => {
+  it("장르·단계·인물명에 맞춘 스토리라인 지문·스케치 프리셋·대사 세트를 생성하고 대본으로 변환한다", () => {
+    const packages = recommendStorylineAndDialogues(
+      {
+        genre: "액션",
+        coreConflict: "봉인된 검의 각성",
+        turningPoints: ["던전 입구 봉인 해제", "첫 번째 수호자 격파"],
+      },
+      {
+        protagonistName: "강진",
+        partnerName: "백현",
+      },
+    );
+
+    expect(packages).toHaveLength(3);
+    const first = packages[0]!;
+    expect(first.stage).toBe("escalation");
+    expect(first.recommendedSketchPresetId).toBe("two-shot-dialogue");
+    expect(first.dialogues.some((d) => d.speaker === "강진")).toBe(true);
+    expect(first.dialogues.some((d) => d.speaker === "백현")).toBe(true);
+    expect(first.creatorCoachingTip.length).toBeGreaterThan(10);
+
+    const script = compileStorylinePackageToScript(first);
+    expect(script).toContain("강진:");
+    expect(script.split("\n").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("상황 지문과 감정 톤으로 웹툰 말풍선 대사·내레이션 후보 3종을 추천한다", () => {
+    const candidates = recommendLocalDialogueCandidates(
+      "주인공이 분노하며 검을 뽑아 적을 겨눈다.",
+      { speaker: "강진", emotion: "rage" },
+    );
+
+    expect(candidates).toHaveLength(3);
+    expect(candidates[0]?.kind).toBe("speech");
+    expect(candidates[0]?.speaker).toBe("강진");
+    expect(candidates[0]?.text).toContain("물러설 곳은 없어");
+    expect(candidates[2]?.kind).toBe("narration");
+  });
+
+  it("1화 전체 기승전결 4막 스토리라인 아크를 생성하고 다중 컷 대본으로 컴파일한다", () => {
+    const arc = generateEpisodeStorylineArc(
+      {
+        genre: "판타지",
+        coreConflict: "금지된 고대 유적의 각성",
+        turningPoints: [],
+      },
+      {
+        protagonistName: "아린",
+        partnerName: "카엘",
+      },
+    );
+
+    expect(arc.acts).toHaveLength(4);
+    expect(arc.acts.map((a) => a.actId)).toEqual([
+      "gi-opening",
+      "seung-development",
+      "jeon-twist",
+      "gyeol-cliffhanger",
+    ]);
+    expect(arc.totalRecommendedCuts).toBeGreaterThanOrEqual(8);
+    expect(arc.nextEpisodeHook.length).toBeGreaterThan(5);
+
+    const compiledScript = compileEpisodeArcToScript(arc);
+    expect(compiledScript.split("\n").length).toBeGreaterThanOrEqual(4);
+    expect(compiledScript).toContain("아린:");
+  });
+});
+
+
+
+

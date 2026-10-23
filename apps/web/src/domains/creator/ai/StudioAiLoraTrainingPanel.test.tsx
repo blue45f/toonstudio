@@ -11,9 +11,14 @@ import {
 } from "./studio-lora-fal";
 import {
   browserStudioLoraJobStorage,
+  buildStudioLoraGenerationPrompt,
   createStudioLoraJobRecord,
+  findCompletedStudioStyleModel,
+  listCompletedStudioStyleModels,
+  loadStudioLoraJobs,
   saveStudioLoraJobs,
   type StudioLoraTrainingJob,
+  validateStudioStyleTrainingDataset,
 } from "./studio-lora-training";
 import { StudioAiLoraTrainingPanel } from "./StudioAiLoraTrainingPanel";
 
@@ -185,4 +190,118 @@ describe("StudioAiLoraTrainingPanel", () => {
     expect(calls[1]).toContain("PUT");
     expect(calls[2]).toContain("/fal-ai/flux-lora-fast-training");
   });
+
+  it("작가 화풍 학습 모드에서는 그림체 특성 선택·본인 원고 확인 검증·완료 화풍 조회를 지원한다", () => {
+    const validCheck = validateStudioStyleTrainingDataset({
+      images: [
+        "data:image/png;base64,iVBORw0KGgo=",
+        "data:image/png;base64,iVBORw0KGg1=",
+        "data:image/png;base64,iVBORw0KGg2=",
+        "data:image/png;base64,iVBORw0KGg3=",
+      ],
+      artistOwnershipConfirmed: false,
+      kind: "style",
+    });
+    expect(validCheck.ready).toBe(false);
+    expect(validCheck.blockingReason).toContain("창작 그림체 데이터");
+
+    const styleJob: StudioLoraTrainingJob = {
+      ...createStudioLoraJobRecord({
+        id: "lora-style-moon",
+        characterLabel: "달빛 로맨스 화풍",
+        triggerWord: "moonrom",
+        kind: "style",
+        providerRequestId: "req-style-moon",
+        statusUrl: null,
+        responseUrl: null,
+        trainingImageCount: 8,
+        artistOwnershipConfirmed: true,
+        styleTraits: {
+          lineWeight: "fine",
+          shadingMode: "soft-gradient",
+          paletteMood: "pastel",
+        },
+      }),
+      status: "completed",
+      loraFileUrl: "https://cdn.example/moonrom.safetensors",
+    };
+
+    const storage = browserStudioLoraJobStorage();
+    saveStudioLoraJobs(storage, [styleJob]);
+    const loadedJobs = loadStudioLoraJobs(storage);
+
+    const completedStyles = listCompletedStudioStyleModels(loadedJobs);
+    expect(completedStyles).toHaveLength(1);
+    expect(findCompletedStudioStyleModel(loadedJobs, "달빛 로맨스 화풍")?.id).toBe("lora-style-moon");
+    expect(findCompletedStudioStyleModel(loadedJobs, "moonrom")?.id).toBe("lora-style-moon");
+
+    const prompt = buildStudioLoraGenerationPrompt(styleJob, "벚꽃 아래 마주 선 두 사람");
+    expect(prompt).toContain("moonrom");
+    expect(prompt).toContain("delicate fine lineart");
+    expect(prompt).toContain("pastel");
+
+    seedKey();
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "화풍 학습" }));
+    expect(screen.getByLabelText("선화 굵기·터치")).toBeTruthy();
+    expect(screen.getByLabelText("채색·명암 방식")).toBeTruthy();
+    expect(screen.getByLabelText("색감 무드")).toBeTruthy();
+    expect(screen.getByLabelText(/본인 창작 그림체 데이터/)).toBeTruthy();
+  });
+
+  it("BYOK 키 없이도 기본 화풍 엔진 모드로 즉시 화풍 모델을 생성하고 캔버스에 추가할 수 있다", async () => {
+    const pngDataUrl = (seed: number) => {
+      const bytes = new Uint8Array([137, 80, 78, 71, seed, 2, 3, 4]);
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return `data:image/png;base64,${btoa(binary)}`;
+    };
+    const onInsertImage = vi.fn();
+    const view = render(
+      <MemoryRouter>
+        <StudioAiLoraTrainingPanel
+          selectedImageSrc={pngDataUrl(1)}
+          onInsertImage={onInsertImage}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByTestId("enable-builtin-style-engine-btn"));
+    expect(screen.getByRole("button", { name: /학습 시작/ })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(/캐릭터\(또는 화풍\) 이름/), {
+      target: { value: "무협 수묵체" },
+    });
+    for (const seed of [1, 2, 3, 4]) {
+      view.rerender(
+        <MemoryRouter>
+          <StudioAiLoraTrainingPanel
+            selectedImageSrc={pngDataUrl(seed)}
+            onInsertImage={onInsertImage}
+          />
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /선택한 이미지 담기/ }));
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: /학습 시작/ }));
+    expect(await screen.findByText(/내장 화풍 DNA 엔진으로 작가 그림체 모델을 즉시 생성·등록했습니다/)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("만들 장면"), {
+      target: { value: "절벽 위에서 검을 뽑는 무사" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /학습 모델로 생성/ }));
+
+    const preview = await screen.findByAltText("학습 모델 생성 결과");
+    expect(preview.getAttribute("src")?.startsWith("data:image/svg+xml;base64,")).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "캔버스에 추가" }));
+    await waitFor(() => expect(onInsertImage).toHaveBeenCalledTimes(1));
+  });
 });
+
+
+
+
+
+

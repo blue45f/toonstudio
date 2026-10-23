@@ -17,8 +17,12 @@ const vite = await createServer({
   resolve: { alias: [...WEB_VITE_ALIASES] },
   server: { host: "127.0.0.1", port: 0,
     fs: { allow: [REPO_ROOT, scratch, realpathSync(join(REPO_ROOT, "node_modules"))] } },
+  // noDiscovery 라서 CJS 인 react 를 사전 번들(ESM 변환) 목록에 직접 적어야 한다. 장면 문서 → 생성형 3D 메타 →
+  // GLB 오류 i18n → shared/lib/i18n-core 가 react·zustand 를 값으로 import 한다(2026-10-22 2a79d520a 이후).
+  // 빠지면 브라우저가 node_modules/react/index.js 원본을 ESM 으로 읽다가 default export 가 없다며 죽고,
+  // 증명 객체가 생기지 않아 120초 대기 끝에 타임아웃이 난다. 형제 하니스(tiled·specialists)도 같은 방식이다.
   optimizeDeps: { noDiscovery: true, include: ["three", "three/webgpu", "three/tsl",
-    "three/examples/jsm/postprocessing/OutputPass.js"] },
+    "three/examples/jsm/postprocessing/OutputPass.js", "react"] },
   plugins: [{ name: "scene3d-capture-proof", configureServer(server) {
     server.middlewares.use((req, res, next) => {
       if (req.url !== "/__scene3d_capture__") return next();
