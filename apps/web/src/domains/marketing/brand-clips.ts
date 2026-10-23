@@ -15,6 +15,9 @@
  * brand-7-night-studio(밤의 스튜디오)는 낮 파노라마(home-hero-day)의 짝으로
  * 만든 변형이라 아직 표면에 배선하지 않고 홍보 영상 자료실에만 수록한다
  * (BRAND_NIGHT_STUDIO_CLIP).
+ *
+ * 자료실 보관 전용 변형 5편도 이 파일이 정본이다: 비 오는 날·주말 아침·
+ * 책상 클로즈업 스튜디오와, 낮 파노라마의 짝인 밤·노을 히어로 무드.
  */
 export interface BrandClip {
   readonly src: string;
@@ -89,6 +92,58 @@ export const HOME_CORE_STUDIO_3D_BACKDROP_CLIP = {
  */
 export const BRAND_NIGHT_STUDIO_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-7-night-studio.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 비 오는 날의 스튜디오 — 빗소리가 창을 두드리는 날의 작업실을 그린
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_RAINY_STUDIO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-8-rainy-studio.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 주말 아침의 스튜디오 — 느긋한 주말 아침 빛이 드는 작업실을 그린
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_WEEKEND_MORNING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-9-weekend-morning.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 책상 클로즈업 — 펜과 태블릿, 원고가 놓인 책상을 가까이에서 담은
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_DESK_CLOSEUP_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-10-desk-closeup.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 밤의 히어로 무드 — 낮 파노라마(STUDIO_INTRO_CLOSING_CLIP)의 밤 버전으로
+ * 그린 생성형 AI 영상이다. 히어로 자리의 분위기 교체 소재로, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_NIGHT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-night.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 노을의 히어로 무드 — 낮·밤 파노라마와 한 세트로, 노을빛이 드는 스튜디오를
+ * 그린 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const HOME_HERO_EVENING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-evening.mp4",
   width: 1344,
   height: 768,
 };
