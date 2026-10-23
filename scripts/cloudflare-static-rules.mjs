@@ -13,6 +13,32 @@ function mapPattern(source) {
   return source.replace(/\/\(\.\*\)$/u, "/*");
 }
 
+function sourceRegExp(source) {
+  const escaped = source.split("(.*)").map((part) => part.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"));
+  return new RegExp(`^${escaped.join(".*")}$`, "u");
+}
+
+/**
+ * 정책 파일은 더 좁은 규칙이 같은 헤더를 덮어쓴다는 뜻으로 쓰지만(Vercel 의미), Cloudflare `_headers` 는 겹치는
+ * 규칙의 값을 쉼표로 이어 붙인다. 그래서 `/assets/(.*)` 의 1년 immutable 과 매니페스트의 must-revalidate 가
+ * 한 Cache-Control 에 함께 나갔다. 다른 규칙이 이미 붙인 헤더를 좁은 규칙이 다시 정하면 `! 이름` 으로 먼저 뗀다
+ * (2026-10-23 미리보기 실측: 같은 블록에서 떼고 다시 쓰면 값 하나만 남고, 떼기만 하면 헤더가 아예 사라진다).
+ */
+function headersOverriddenByRule(responsePolicy, rule) {
+  const samplePath = rule.source.replaceAll("(.*)", "sample");
+  const overridden = new Set();
+  for (const other of responsePolicy.headers ?? []) {
+    if (other === rule || !other || typeof other.source !== "string" || !Array.isArray(other.headers)) continue;
+    if (!sourceRegExp(other.source).test(samplePath)) continue;
+    for (const header of other.headers) {
+      if (rule.headers.some((own) => own?.key?.toLowerCase() === header?.key?.toLowerCase())) {
+        overridden.add(header.key.toLowerCase());
+      }
+    }
+  }
+  return overridden;
+}
+
 export function renderCloudflareHeaders(responsePolicy) {
   const blocks = [
     `# Generated from ${RESPONSE_POLICY_PATH} by scripts/cloudflare-static-rules.mjs.`,
@@ -21,10 +47,12 @@ export function renderCloudflareHeaders(responsePolicy) {
   for (const rule of responsePolicy.headers ?? []) {
     if (!rule || typeof rule.source !== "string" || !Array.isArray(rule.headers)) continue;
     blocks.push("", mapPattern(rule.source));
+    const overridden = headersOverriddenByRule(responsePolicy, rule);
     for (const header of rule.headers) {
       if (typeof header?.key !== "string" || typeof header?.value !== "string") {
         throw new Error(`invalid response header rule for ${rule.source}`);
       }
+      if (overridden.has(header.key.toLowerCase())) blocks.push(`  ! ${header.key}`);
       blocks.push(`  ${header.key}: ${header.value}`);
     }
   }

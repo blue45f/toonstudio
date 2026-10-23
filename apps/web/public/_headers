@@ -117,10 +117,12 @@
   Cache-Control: public, max-age=31536000, immutable
 
 /assets/studio/cc0-20260906/manifest.json
+  ! Cache-Control
   Cache-Control: public, max-age=0, must-revalidate
   CDN-Cache-Control: no-cache
 
 /assets/studio/bundle-renders-v1/manifest.json
+  ! Cache-Control
   Cache-Control: public, max-age=0, must-revalidate
   CDN-Cache-Control: no-cache
 
