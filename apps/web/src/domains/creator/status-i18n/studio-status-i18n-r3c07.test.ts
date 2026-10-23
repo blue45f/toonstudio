@@ -468,11 +468,12 @@ const CONSUMERS = [
   "studio-mobile-dock-presets.tsx",
 ] as const;
 
-/** 탐지기 잔여 허용 목록 — 버튼 동사 라벨 (r3-c07.md 근거). */
-const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string }[] = [
-  { file: "StudioOnDemandModuleStatus.tsx", rule: "jsx-text", snippet: "다시 시도" },
-  { file: "StudioWorkspaceRegion.tsx", rule: "jsx-text", snippet: "다시 시도" },
-];
+/**
+ * 탐지기 잔여 허용 목록 — 원래 버튼 동사 라벨 2건 (r3-c07.md 근거)이었으나,
+ * 44라운드 cat1 이관에서 두 건 모두 이관돼 비었다 (r44-work/rep-w1.md —
+ * StudioWorkspaceRegion·StudioOnDemandModuleStatus 재시도 버튼 이관 후 탐지기 0건).
+ */
+const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string }[] = [];
 
 describe("studio panel status i18n r3c07", () => {
   it("신규 모듈의 ko/en 키가 패리티를 이루고 신규 키 ko 원문·플레이스홀더가 정확하다", () => {
@@ -509,7 +510,7 @@ describe("studio panel status i18n r3c07", () => {
     }
   });
 
-  it("이관 파일의 탐지기 위반이 문서화된 잔여 2건과 정확히 일치한다", () => {
+  it("이관 파일의 탐지기 위반이 문서화된 잔여 0건과 정확히 일치한다", () => {
     const actual: { file: string; rule: string; snippet: string }[] = [];
     for (const file of CONSUMERS) {
       for (const violation of scanHardcodedStatusStrings(readSource(file))) {
