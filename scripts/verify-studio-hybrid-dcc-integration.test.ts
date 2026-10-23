@@ -487,7 +487,7 @@ describe("Studio Hybrid DCC production-preview integration evidence", () => {
     expect(source).toContain("navigator.storage?.getDirectory");
     expect(source).toContain("new Proxy(nativeWorker");
     expect(source).toContain('value.kind === "export-batch"');
-    expect(source).toContain('name: /^3D 배경·컷 편집기로 열기/u');
+    expect(source).toContain('name: /^3D 배경 편집기로 열기/u');
     expect(source).toContain('page.getByTestId("studio-bg3d-dialog")');
     expect(source).toContain('canvas[aria-label="편집 메시 3D 렌더"], canvas[data-engine^="three.js"]');
     expect(source).not.toContain(".isVisible({ timeout:");
