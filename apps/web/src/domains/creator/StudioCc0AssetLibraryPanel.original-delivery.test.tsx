@@ -94,4 +94,38 @@ describe("CC0 original and optimized download controls", () => {
     ]);
     expect(dialog.textContent).toContain("다운로드만으로 모드가 바뀌지는 않습니다");
   });
+
+  it("inserts the verified rendered 384x384 PNG preview of a 3D model onto the 2D canvas", async () => {
+    const asset = catalog.find(({ id }) => id === "polyhaven-plastic-monobloc-chair-01")!;
+    const pngBytes = readFileSync(resolve(
+      process.cwd(),
+      "apps/web/public",
+      studioCc0AssetUrl(asset.previewPath!).slice(1),
+    ));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(pngBytes), {
+      status: 200,
+      headers: { "content-length": String(pngBytes.byteLength) },
+    })));
+    const onUseAsset = vi.fn(() => true);
+    await act(async () => {
+      root.render(createElement(StudioCc0AssetLibraryPanel, { onUseAsset }));
+    });
+    const insertButton = host.querySelector<HTMLButtonElement>(`[data-cc0-insert-preview="${asset.id}"]`)!;
+    expect(insertButton).not.toBeNull();
+    expect(insertButton.textContent).toContain("2D 미리보기 삽입");
+    await act(async () => {
+      insertButton.click();
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 30));
+    });
+    expect(onUseAsset).toHaveBeenCalledTimes(1);
+    const inserted = (onUseAsset.mock.calls[0] as unknown as [Record<string, unknown>])[0]!;
+    expect(inserted.id).toBe(`cc0-preview:${asset.id}`);
+    expect(inserted.width).toBe(640);
+    expect(inserted.height).toBeGreaterThanOrEqual(384);
+    expect(String(inserted.dataUrl)).toMatch(/^data:image\/png;base64,/u);
+    expect(inserted.rights).toMatchObject({
+      licenseId: "CC0-1.0",
+      rightsConfirmed: true,
+    });
+  });
 });

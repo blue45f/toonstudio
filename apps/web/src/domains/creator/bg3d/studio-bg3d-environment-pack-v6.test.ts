@@ -4,11 +4,18 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
+  STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES,
   STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS,
   getStudioBg3dEnvironmentAsset,
   getStudioBg3dEnvironmentAssetByHash,
+  getStudioBg3dEnvironmentCyclesPasses,
+  isStudioBg3dEnvironmentAssetId,
+  resolveStudioBg3dCc0CounterpartEnvironment,
 } from "./studio-bg3d-environment-catalog";
 import {
   DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
@@ -66,4 +73,72 @@ describe("Studio revised environment delivery v6", () => {
       expect([...thumbnail.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
     },
   );
+
+  it("wires all 48 Cycles multipass renders (beauty, 16-bit depth, 16-bit normal, AO) for the 12 V6 environments", () => {
+    expect(STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES).toHaveLength(12);
+    for (const v6 of STUDIO_BG3D_ENVIRONMENT_ASSETS_V6) {
+      const stem = v6.fileName.replace(/\.glb$/u, "");
+      const byV6Id = getStudioBg3dEnvironmentCyclesPasses(v6.id);
+      const byV1Id = getStudioBg3dEnvironmentCyclesPasses(v6.id.replace(/-v6$/u, "-v1"));
+      const byStem = getStudioBg3dEnvironmentCyclesPasses(stem);
+      expect(byV6Id).not.toBeNull();
+      expect(byV1Id).toBe(byV6Id);
+      expect(byStem).toBe(byV6Id);
+      expect(byV6Id!.engine).toBe("CYCLES");
+      expect(byV6Id!.resolution).toEqual([1000, 750]);
+      expect(byV6Id!.samples).toBe(24);
+      expect(byV6Id!.colorDepth).toEqual({
+        beauty: "8",
+        depth: "16",
+        normal: "16",
+        ao: "8",
+      });
+      for (const passUrl of [
+        byV6Id!.files.beautyUrl,
+        byV6Id!.files.depthUrl,
+        byV6Id!.files.normalUrl,
+        byV6Id!.files.aoUrl,
+      ]) {
+        const png = bytesFor(passUrl);
+        expect([...png.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+        expect(png.byteLength).toBeGreaterThan(1024);
+      }
+    }
+  });
+
+  it("resolves all 10 self-authored CC0 webtoon environments (authored-v1) and maps Tripo MCP environments to their CC0 counterparts", async () => {
+    expect(STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1).toHaveLength(10);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS).toHaveLength(31);
+    expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS.every((asset) => asset.provenance.license === "CC0-1.0")).toBe(true);
+
+    for (const authored of STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1) {
+      expect(isStudioBg3dEnvironmentAssetId(authored.id)).toBe(true);
+      expect(getStudioBg3dEnvironmentAssetByHash(authored.sha256)).toBe(authored);
+      expect(authored.provenance.license).toBe("CC0-1.0");
+      expect(authored.provenance.generator).toBe("scripts/generate_self_authored_environment_pack_v1.py");
+      expect(authored.url).toMatch(/^\/assets\/3d\/environments\/authored-v1\/[a-z0-9_]+\.glb$/u);
+
+      const bytes = bytesFor(authored.url);
+      const validation = await validateStudioBg3dGlb(bytes, {
+        declared: { byteSize: authored.byteSize, sha256: authored.sha256 },
+        cumulative: { usedBytes: 0, maximumBytes: 64 * 1024 * 1024 },
+        profile: "mobile",
+        budgets: DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
+        digest: async (input) => createHash("sha256").update(input).digest("hex"),
+      });
+      expect(validation.ok, validation.code).toBe(true);
+      const thumbnail = bytesFor(authored.thumbnailUrl);
+      expect([...thumbnail.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+    }
+
+    for (const mcpAsset of STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1) {
+      const counterpart = resolveStudioBg3dCc0CounterpartEnvironment(mcpAsset.id);
+      expect(counterpart).not.toBeNull();
+      expect(counterpart!.fileName).toBe(mcpAsset.fileName);
+      expect(counterpart!.provenance.license).toBe("CC0-1.0");
+      expect(counterpart!.url).toBe(`/assets/3d/environments/authored-v1/${mcpAsset.fileName}`);
+      expect(counterpart!.sha256).not.toBe(mcpAsset.sha256);
+    }
+  });
 });
+

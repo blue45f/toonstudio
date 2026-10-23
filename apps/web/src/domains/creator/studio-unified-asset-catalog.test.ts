@@ -191,4 +191,29 @@ describe("Studio unified asset catalog", () => {
     expect(searchStudioUnifiedAssets(items, { query: "말풍선" })[0]?.source.kind)
       .toBe("native-tool");
   });
+
+  it("uses image preview when a 3D object insert item provides thumbnailUrl", () => {
+    const items = buildStudioUnifiedAssetCatalog({
+      backgrounds: [],
+      sceneTemplates: [],
+      localAssets: [],
+      elements: [],
+      objects: [
+        object3d,
+        {
+          ...object3d,
+          id: "obj-prop-smartphone-v8",
+          thumbnailUrl: "/assets/3d/refined-v8/thumbnails/smartphone_camera.png",
+        },
+      ],
+      nativeTools: [],
+    });
+    const plain = items.find((item) => item.id === "3d:obj-prop-chair-test");
+    const withThumb = items.find((item) => item.id === "3d:obj-prop-smartphone-v8");
+    expect(plain?.preview.kind).toBe("none");
+    expect(withThumb?.preview).toEqual({
+      kind: "image",
+      src: "/assets/3d/refined-v8/thumbnails/smartphone_camera.png",
+    });
+  });
 });

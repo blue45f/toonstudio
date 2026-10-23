@@ -3,14 +3,15 @@
   "kitId": "toonstudio-kit-v1",
   "kitVersion": 1,
   "displayName": "ToonStudio 캐릭터 키트 v1",
-  "generatedAt": "2026-10-23",
+  "generatedAt": "2026-10-24",
   "generator": {
     "tool": "tools/blender/character_kit",
     "blender": "5.2.2",
     "command": [
       "build_base.py",
       "build_irises.py",
-      "build_kit_json.py"
+      "build_kit_json.py",
+      "forge_install.py"
     ]
   },
   "coordinateSystem": {
@@ -22,7 +23,7 @@
     "rootScale": 1
   },
   "provenance": {
-    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다. 원본 파츠 기록: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered)은 tools/blender/character_kit/forge_hair가 이 저장소에서 절차 생성한 원본(license original)이며 Hyper3D 생성물이 아닙니다.",
+    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다. 원본 파츠 기록: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered)은 tools/blender/character_kit/forge_hair가 이 저장소에서 절차 생성한 원본(license original)이며 Hyper3D 생성물이 아닙니다. forge 원본 파츠 18종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음).",
     "noticeFile": "NOTICE.md",
     "sources": [
       {
@@ -37,10 +38,10 @@
       },
       {
         "id": "toonstudio-original",
-        "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·소품 3종·헤어 7종·텍스처)",
+        "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·소품·forge 파츠·텍스처)",
         "license": "original",
         "derivative": false,
-        "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 외부 에셋·생성 AI를 쓰지 않았습니다. 파츠: build_irises — 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight): 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성; proc_accessories — 소품 3종(accessory/choker, accessory/earrings, accessory/glasses): 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성; forge_hair — 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered): 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님)."
+        "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 외부 에셋·생성 AI를 쓰지 않았습니다. 파츠: build_irises — 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight): 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성; proc_accessories — 소품 3종(accessory/choker, accessory/earrings, accessory/glasses): 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성; forge_hair — 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered): 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님). forge 원본 파츠 18종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음)."
       }
     ]
   },
@@ -380,7 +381,127 @@
       },
       "doubleSided": true
     },
+    "ts_top_tee": {
+      "role": "top",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "top"
+      },
+      "doubleSided": true
+    },
+    "ts_top_hoodie": {
+      "role": "top",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "top"
+      },
+      "doubleSided": true
+    },
+    "ts_top_shirt": {
+      "role": "top",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "top"
+      },
+      "doubleSided": true
+    },
+    "ts_top_sailor": {
+      "role": "top",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "top"
+      },
+      "doubleSided": true
+    },
+    "ts_bottom_jeans": {
+      "role": "bottom",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "bottom"
+      },
+      "doubleSided": true
+    },
+    "ts_bottom_shorts": {
+      "role": "bottom",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "bottom"
+      },
+      "doubleSided": true
+    },
+    "ts_bottom_pleated-skirt": {
+      "role": "bottom",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "bottom"
+      },
+      "doubleSided": true
+    },
+    "ts_bottom_long-skirt": {
+      "role": "bottom",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "bottom"
+      },
+      "doubleSided": true
+    },
+    "ts_bottom_slacks": {
+      "role": "bottom",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "bottom"
+      },
+      "doubleSided": true
+    },
+    "ts_shoes_sneakers": {
+      "role": "shoes",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "shoes"
+      },
+      "doubleSided": true
+    },
+    "ts_shoes_loafers": {
+      "role": "shoes",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "shoes"
+      },
+      "doubleSided": true
+    },
+    "ts_shoes_boots": {
+      "role": "shoes",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "shoes"
+      },
+      "doubleSided": true
+    },
+    "ts_shoes_sandals": {
+      "role": "shoes",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "shoes"
+      },
+      "doubleSided": true
+    },
     "ts_accessory_glasses": {
+      "role": "accessory",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "accessory"
+      },
+      "doubleSided": true
+    },
+    "ts_accessory_ribbon": {
+      "role": "accessory",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "accessory"
+      },
+      "doubleSided": true
+    },
+    "ts_accessory_cap": {
       "role": "accessory",
       "tint": {
         "mode": "recolor",
@@ -397,6 +518,14 @@
       "doubleSided": true
     },
     "ts_accessory_choker": {
+      "role": "accessory",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "accessory"
+      },
+      "doubleSided": true
+    },
+    "ts_accessory_headphones": {
       "role": "accessory",
       "tint": {
         "mode": "recolor",
@@ -4284,29 +4413,251 @@
     {
       "id": "top/tee",
       "slot": "top",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/top/tee.glb",
+            "bytes": 1007048,
+            "sha256": "4ef094acdafb10ead29e4c82c3865a1e73b0a9b2824b07fe0f5294f85d561fd8"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_tee",
+              "role": "top",
+              "material": "ts_top_tee",
+              "triangles": 11109,
+              "vertices": 6777,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/top/tee.glb",
+            "bytes": 1004216,
+            "sha256": "3b55ffae9cc7e3df8109d81ac59b52cc1d0f9179ad0d4a1d948cdb07f6b31a42"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_tee",
+              "role": "top",
+              "material": "ts_top_tee",
+              "triangles": 11047,
+              "vertices": 6751,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "top/hoodie",
       "slot": "top",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/top/hoodie.glb",
+            "bytes": 1177572,
+            "sha256": "ce2a4d0ea16879582675cc92d9658d9e0f68f5f6c2d6c927b872a984d4110249"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_hoodie",
+              "role": "top",
+              "material": "ts_top_hoodie",
+              "triangles": 13817,
+              "vertices": 8251,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/top/hoodie.glb",
+            "bytes": 1202296,
+            "sha256": "ef4c3a0dc6dc1d25f1ce76f2c09b322da82cc0609c6bb215a1838137e5cb68b7"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_hoodie",
+              "role": "top",
+              "material": "ts_top_hoodie",
+              "triangles": 14181,
+              "vertices": 8486,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "top/shirt",
       "slot": "top",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/top/shirt.glb",
+            "bytes": 1216412,
+            "sha256": "5cb16e42c82a4351d9968dc7b13d4f89aa64e25b5d7e50887d2eee336ad767ea"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_shirt",
+              "role": "top",
+              "material": "ts_top_shirt",
+              "triangles": 13893,
+              "vertices": 8527,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/top/shirt.glb",
+            "bytes": 1280576,
+            "sha256": "0f48ca2d97c95264cec4b246efd5e03817176813f7e1bdfe611350fc4976c637"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_shirt",
+              "role": "top",
+              "material": "ts_top_shirt",
+              "triangles": 14837,
+              "vertices": 8987,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "top/blazer",
@@ -4320,92 +4671,838 @@
     {
       "id": "top/sailor",
       "slot": "top",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/top/sailor.glb",
+            "bytes": 1259780,
+            "sha256": "925bc2e0c91f7dd1b4a7fe6b6579b33fb3416e12b8c8b6c2f401fb2cd278b907"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_sailor",
+              "role": "top",
+              "material": "ts_top_sailor",
+              "triangles": 14447,
+              "vertices": 8955,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/top/sailor.glb",
+            "bytes": 1250872,
+            "sha256": "d2f3285c0b12e542160e1bbdbc36290b2f256a6b07be95d9ae6f3fedf6fdf00f"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_sailor",
+              "role": "top",
+              "material": "ts_top_sailor",
+              "triangles": 14128,
+              "vertices": 8827,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "bottom/jeans",
       "slot": "bottom",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/bottom/jeans.glb",
+            "bytes": 979408,
+            "sha256": "88ec1321f364d01c730f0982e8e8100300e66a7e0dc16964a7578e1163f4a744"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_jeans",
+              "role": "bottom",
+              "material": "ts_bottom_jeans",
+              "triangles": 13768,
+              "vertices": 8032,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/bottom/jeans.glb",
+            "bytes": 1002972,
+            "sha256": "3fe9d452cb7c06279f1e6088ccca66bb357e4ab49784ddb0181b5bbd12a36496"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_jeans",
+              "role": "bottom",
+              "material": "ts_bottom_jeans",
+              "triangles": 14039,
+              "vertices": 8181,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "bottom/shorts",
       "slot": "bottom",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/bottom/shorts.glb",
+            "bytes": 623104,
+            "sha256": "853d15e1a66187dbef486788813fb5a961e34939f70b054a2fc354bb6c0fdbbc"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_shorts",
+              "role": "bottom",
+              "material": "ts_bottom_shorts",
+              "triangles": 7460,
+              "vertices": 4589,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/bottom/shorts.glb",
+            "bytes": 674876,
+            "sha256": "35f8dd976758565e152f4cf36c29f8653b7e81aac8b4bbb8b6d16013d2f2fe38"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_shorts",
+              "role": "bottom",
+              "material": "ts_bottom_shorts",
+              "triangles": 8262,
+              "vertices": 5054,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "bottom/pleated-skirt",
       "slot": "bottom",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/bottom/pleated-skirt.glb",
+            "bytes": 502620,
+            "sha256": "429fd49f4c1fadfcefb2433b42a8d6b7425a2779abd79b0c2aef5da9d036ed28"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_pleated-skirt",
+              "role": "bottom",
+              "material": "ts_bottom_pleated-skirt",
+              "triangles": 5530,
+              "vertices": 3492,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/bottom/pleated-skirt.glb",
+            "bytes": 528520,
+            "sha256": "e726b733d697e0237defc3cec5281ecc4fc9e6ae7497488c359470c59445badf"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_pleated-skirt",
+              "role": "bottom",
+              "material": "ts_bottom_pleated-skirt",
+              "triangles": 5530,
+              "vertices": 3492,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "bottom/long-skirt",
       "slot": "bottom",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/bottom/long-skirt.glb",
+            "bytes": 770428,
+            "sha256": "dbf2a163b400e69000b9ef5c2cd1946695a61235c6fd9e3351f9161249d614f0"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_long-skirt",
+              "role": "bottom",
+              "material": "ts_bottom_long-skirt",
+              "triangles": 12040,
+              "vertices": 6345,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/bottom/long-skirt.glb",
+            "bytes": 800672,
+            "sha256": "c7493143ed398da6834a6fab6de4ac248f13f7902cab5a623ca2d9e3ce609a53"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_long-skirt",
+              "role": "bottom",
+              "material": "ts_bottom_long-skirt",
+              "triangles": 12040,
+              "vertices": 6345,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "bottom/slacks",
       "slot": "bottom",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/bottom/slacks.glb",
+            "bytes": 731092,
+            "sha256": "2211a20d3641cb3f9ce712ec967af6de1130214325e7b5a64bea7d9837bb005e"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_slacks",
+              "role": "bottom",
+              "material": "ts_bottom_slacks",
+              "triangles": 10505,
+              "vertices": 6068,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/bottom/slacks.glb",
+            "bytes": 740272,
+            "sha256": "32ff6b11549ecb412b4c755933bf67c8a8fa56f6f958b404aa3e377e6cca2ef0"
+          },
+          "meshes": [
+            {
+              "node": "TS_Bottom_slacks",
+              "role": "bottom",
+              "material": "ts_bottom_slacks",
+              "triangles": 10517,
+              "vertices": 6082,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "shoes/sneakers",
       "slot": "shoes",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/shoes/sneakers.glb",
+            "bytes": 557496,
+            "sha256": "30fa82a1a8f81083253186aa92634961d579b48c00b64a42d3272e570bac02aa"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_sneakers",
+              "role": "shoes",
+              "material": "ts_shoes_sneakers",
+              "triangles": 7984,
+              "vertices": 4384,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/shoes/sneakers.glb",
+            "bytes": 557304,
+            "sha256": "01db7c9e2f04b36e6b02123660803cbc1edbf8dadf814e354de88dd583bc7f37"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_sneakers",
+              "role": "shoes",
+              "material": "ts_shoes_sneakers",
+              "triangles": 7984,
+              "vertices": 4384,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "shoes/loafers",
       "slot": "shoes",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/shoes/loafers.glb",
+            "bytes": 401824,
+            "sha256": "81f567499fac1654977f961c287d6e9073bdc1de049c220fe6349c96ea64d5b5"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_loafers",
+              "role": "shoes",
+              "material": "ts_shoes_loafers",
+              "triangles": 6300,
+              "vertices": 3484,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/shoes/loafers.glb",
+            "bytes": 401600,
+            "sha256": "e1b7688cb9440cec0bbfd1f36bade8378ca6eb51b33008946765423489373759"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_loafers",
+              "role": "shoes",
+              "material": "ts_shoes_loafers",
+              "triangles": 6300,
+              "vertices": 3484,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "shoes/boots",
       "slot": "shoes",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/shoes/boots.glb",
+            "bytes": 505400,
+            "sha256": "c764bf746b526b7782a39a8feba0876cda329023592ff2441857096a877fcd84"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_boots",
+              "role": "shoes",
+              "material": "ts_shoes_boots",
+              "triangles": 7276,
+              "vertices": 4006,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": [
+            "foot.L",
+            "foot.R"
+          ]
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/shoes/boots.glb",
+            "bytes": 505620,
+            "sha256": "e9f2247969d4859da2b3399ec956931e5ab02a674e91e0c29ce4c78f3567f6cb"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_boots",
+              "role": "shoes",
+              "material": "ts_shoes_boots",
+              "triangles": 7276,
+              "vertices": 4006,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": [
+            "foot.L",
+            "foot.R"
+          ]
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "shoes/sandals",
       "slot": "shoes",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/shoes/sandals.glb",
+            "bytes": 419668,
+            "sha256": "b1913bce18ff997190c9da77c6627364a5cd5a53c9a37c03801c94eaca0f1bf8"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_sandals",
+              "role": "shoes",
+              "material": "ts_shoes_sandals",
+              "triangles": 5792,
+              "vertices": 3162,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/shoes/sandals.glb",
+            "bytes": 419728,
+            "sha256": "041d1310c058effe7499b6f22e308e79471f14c3c1ef72adc47a24f3df6dbf7a"
+          },
+          "meshes": [
+            {
+              "node": "TS_Shoes_sandals",
+              "role": "shoes",
+              "material": "ts_shoes_sandals",
+              "triangles": 5792,
+              "vertices": 3162,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "accessory/glasses",
@@ -4414,26 +5511,52 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/glasses.glb",
-            "bytes": 150040,
-            "sha256": "f66438f55ef89b1c0843d45b2a5f2a3a763c627639de07f7edf740132451e582"
+            "bytes": 415504,
+            "sha256": "5450af5d785390dbf74dd9ac18b731d103cdede2f6517a603fd4de8c8f22aa7a"
           },
           "meshes": [
             {
               "node": "TS_Accessory_glasses",
               "role": "accessory",
               "material": "ts_accessory_glasses",
-              "triangles": 2064,
-              "vertices": 1038,
+              "triangles": 2264,
+              "vertices": 1142,
               "skinned": true,
               "morphs": [
                 "param:height:+",
                 "param:height:-",
                 "param:legLength:+",
                 "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
                 "param:neckLength:+",
                 "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:noseHeight:+",
+                "param:noseHeight:-",
+                "param:noseWidth:+",
+                "param:noseWidth:-",
+                "param:noseDepth:+",
+                "param:noseDepth:-",
+                "param:mouthWidth:+",
+                "param:mouthWidth:-",
+                "param:lipFullness:+",
+                "param:lipFullness:-",
+                "param:earSize:+",
+                "param:earSize:-",
+                "param:earAngle:+",
+                "param:earAngle:-"
               ]
             }
           ],
@@ -4442,26 +5565,52 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/glasses.glb",
-            "bytes": 150124,
-            "sha256": "f9574ca79a752ac2f05f20c6369fa41542892fd9d9ebf2d3ecef2cd18c61fda9"
+            "bytes": 416228,
+            "sha256": "f93a651355c16ae41c5a3e9f87356e6d786a5cacd80c98b525712f84d2844f0c"
           },
           "meshes": [
             {
               "node": "TS_Accessory_glasses",
               "role": "accessory",
               "material": "ts_accessory_glasses",
-              "triangles": 2064,
-              "vertices": 1038,
+              "triangles": 2264,
+              "vertices": 1142,
               "skinned": true,
               "morphs": [
                 "param:height:+",
                 "param:height:-",
                 "param:legLength:+",
                 "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
                 "param:neckLength:+",
                 "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:noseHeight:+",
+                "param:noseHeight:-",
+                "param:noseWidth:+",
+                "param:noseWidth:-",
+                "param:noseDepth:+",
+                "param:noseDepth:-",
+                "param:mouthWidth:+",
+                "param:mouthWidth:-",
+                "param:lipFullness:+",
+                "param:lipFullness:-",
+                "param:earSize:+",
+                "param:earSize:-",
+                "param:earAngle:+",
+                "param:earAngle:-"
               ]
             }
           ],
@@ -4473,20 +5622,184 @@
     {
       "id": "accessory/ribbon",
       "slot": "accessory",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/accessory/ribbon.glb",
+            "bytes": 575944,
+            "sha256": "84a30d3414f1be898ee1ac84c292b74ae986a7d94cf4186d2c723e9feae325e6"
+          },
+          "meshes": [
+            {
+              "node": "TS_Accessory_ribbon",
+              "role": "accessory",
+              "material": "ts_accessory_ribbon",
+              "triangles": 3856,
+              "vertices": 2249,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:earSize:+",
+                "param:earSize:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/accessory/ribbon.glb",
+            "bytes": 576028,
+            "sha256": "d9c9781bd962246c7d3df69eed3e734965d5baa274a6f29bf0d5c41e86688175"
+          },
+          "meshes": [
+            {
+              "node": "TS_Accessory_ribbon",
+              "role": "accessory",
+              "material": "ts_accessory_ribbon",
+              "triangles": 3856,
+              "vertices": 2249,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:earSize:+",
+                "param:earSize:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "accessory/cap",
       "slot": "accessory",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/accessory/cap.glb",
+            "bytes": 840776,
+            "sha256": "68285d5acc11acdc79524af5524d596b489e39cd74bd92b8f1df6e539b53ddb8"
+          },
+          "meshes": [
+            {
+              "node": "TS_Accessory_cap",
+              "role": "accessory",
+              "material": "ts_accessory_cap",
+              "triangles": 5456,
+              "vertices": 3127,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:earSize:+",
+                "param:earSize:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/accessory/cap.glb",
+            "bytes": 841028,
+            "sha256": "81da443be215bbf845fa6139f2ee3b40e883705fad3706f6465c48739833e88c"
+          },
+          "meshes": [
+            {
+              "node": "TS_Accessory_cap",
+              "role": "accessory",
+              "material": "ts_accessory_cap",
+              "triangles": 5456,
+              "vertices": 3127,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:earSize:+",
+                "param:earSize:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "accessory/earrings",
@@ -4558,26 +5871,34 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/choker.glb",
-            "bytes": 47152,
-            "sha256": "7fe13969d8fda10a0945b4545306a22f8708c543f1e26d60dfb6e224181ea5a5"
+            "bytes": 94088,
+            "sha256": "13410c33ead2b5e7c968ddedd63ed10e22b028d148f0ac659f66ee89f34b9341"
           },
           "meshes": [
             {
               "node": "TS_Accessory_choker",
               "role": "accessory",
               "material": "ts_accessory_choker",
-              "triangles": 464,
-              "vertices": 234,
+              "triangles": 608,
+              "vertices": 359,
               "skinned": true,
               "morphs": [
                 "param:height:+",
                 "param:height:-",
                 "param:legLength:+",
                 "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
                 "param:neckLength:+",
                 "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
+                "param:faceShape:+",
+                "param:faceShape:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:chinLength:+",
+                "param:chinLength:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-"
               ]
             }
           ],
@@ -4586,26 +5907,34 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/choker.glb",
-            "bytes": 47232,
-            "sha256": "26f3031c98e4c660c2e0ca4aee7e5dc6f8656496efb7f7c61929940cfa8797c4"
+            "bytes": 94200,
+            "sha256": "7bfa63179eaca98c227a20327d7249e19f3df797e7b009c6c2dca0eea997a0cb"
           },
           "meshes": [
             {
               "node": "TS_Accessory_choker",
               "role": "accessory",
               "material": "ts_accessory_choker",
-              "triangles": 464,
-              "vertices": 234,
+              "triangles": 608,
+              "vertices": 359,
               "skinned": true,
               "morphs": [
                 "param:height:+",
                 "param:height:-",
                 "param:legLength:+",
                 "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
                 "param:neckLength:+",
                 "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
+                "param:faceShape:+",
+                "param:faceShape:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:chinLength:+",
+                "param:chinLength:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-"
               ]
             }
           ],
@@ -4617,11 +5946,93 @@
     {
       "id": "accessory/headphones",
       "slot": "accessory",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/accessory/headphones.glb",
+            "bytes": 746668,
+            "sha256": "36f840eec84a553b2bf3f9da4e8e9249292513e69de226f668bc5450d3700265"
+          },
+          "meshes": [
+            {
+              "node": "TS_Accessory_headphones",
+              "role": "accessory",
+              "material": "ts_accessory_headphones",
+              "triangles": 5116,
+              "vertices": 2848,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:earSize:+",
+                "param:earSize:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/accessory/headphones.glb",
+            "bytes": 747312,
+            "sha256": "46a07cd619e02805b787f0f0f449725276b9456d5a7cec4be345493ef0aef28b"
+          },
+          "meshes": [
+            {
+              "node": "TS_Accessory_headphones",
+              "role": "accessory",
+              "material": "ts_accessory_headphones",
+              "triangles": 5116,
+              "vertices": 2848,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:jawWidth:+",
+                "param:jawWidth:-",
+                "param:cheekVolume:+",
+                "param:cheekVolume:-",
+                "param:forehead:+",
+                "param:forehead:-",
+                "param:eyeSize:+",
+                "param:eyeSize:-",
+                "param:eyeSpacing:+",
+                "param:eyeSpacing:-",
+                "param:eyeTilt:+",
+                "param:eyeTilt:-",
+                "param:earSize:+",
+                "param:earSize:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "irises/round-large",
@@ -5850,25 +7261,20 @@
         "status": "available"
       },
       "top": {
-        "status": "unavailable",
-        "reasonKo": "키트가 female 베이스용 상의 파츠를 제공하지 않습니다(0/5종)."
+        "status": "partial",
+        "reasonKo": "제공 4/5종, 미제공: blazer",
+        "unavailablePresets": {
+          "top/blazer": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        }
       },
       "bottom": {
-        "status": "unavailable",
-        "reasonKo": "키트가 female 베이스용 하의 파츠를 제공하지 않습니다(0/5종)."
+        "status": "available"
       },
       "shoes": {
-        "status": "unavailable",
-        "reasonKo": "키트가 female 베이스용 신발 파츠를 제공하지 않습니다(0/4종)."
+        "status": "available"
       },
       "accessory": {
-        "status": "partial",
-        "reasonKo": "제공 3/6종, 미제공: ribbon, cap, headphones",
-        "unavailablePresets": {
-          "accessory/ribbon": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-          "accessory/cap": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-          "accessory/headphones": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-        }
+        "status": "available"
       },
       "irises": {
         "status": "available"
@@ -5906,25 +7312,20 @@
         "status": "available"
       },
       "top": {
-        "status": "unavailable",
-        "reasonKo": "키트가 male 베이스용 상의 파츠를 제공하지 않습니다(0/5종)."
+        "status": "partial",
+        "reasonKo": "제공 4/5종, 미제공: blazer",
+        "unavailablePresets": {
+          "top/blazer": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        }
       },
       "bottom": {
-        "status": "unavailable",
-        "reasonKo": "키트가 male 베이스용 하의 파츠를 제공하지 않습니다(0/5종)."
+        "status": "available"
       },
       "shoes": {
-        "status": "unavailable",
-        "reasonKo": "키트가 male 베이스용 신발 파츠를 제공하지 않습니다(0/4종)."
+        "status": "available"
       },
       "accessory": {
-        "status": "partial",
-        "reasonKo": "제공 3/6종, 미제공: ribbon, cap, headphones",
-        "unavailablePresets": {
-          "accessory/ribbon": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-          "accessory/cap": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-          "accessory/headphones": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-        }
+        "status": "available"
       },
       "irises": {
         "status": "available"

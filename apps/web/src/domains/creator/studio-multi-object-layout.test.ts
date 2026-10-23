@@ -4,8 +4,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_BUNDLED_SCENE_PROP_CATALOG,
+  STUDIO_REFINED_V8_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
+  STUDIO_SCENE_PROP_LAYOUT_PRESETS,
   StudioMultiObjectLayoutManager,
+  findStudio3DPropCatalogEntry,
 } from "./studio-multi-object-layout";
 
 describe("StudioMultiObjectLayoutManager", () => {
@@ -87,5 +91,45 @@ describe("StudioMultiObjectLayoutManager", () => {
     ]) {
       expect(license).toContain(`\`${filename}\``);
     }
+  });
+
+  it("wires all 11 refined-v8 GLBs and their 11 rendered PNG thumbnails in STUDIO_REFINED_V8_PROP_CATALOG", () => {
+    expect(STUDIO_REFINED_V8_PROP_CATALOG).toHaveLength(11);
+    for (const entry of STUDIO_REFINED_V8_PROP_CATALOG) {
+      expect(findStudio3DPropCatalogEntry(entry.id)).toBe(entry);
+      expect(entry.modelUrl).toMatch(/^\/assets\/3d\/refined-v8\/[a-z_]+\.glb$/u);
+      expect(entry.thumbnailUrl).toMatch(/^\/assets\/3d\/refined-v8\/thumbnails\/[a-z_]+\.png$/u);
+      const glbStat = statSync(join(process.cwd(), "apps/web/public", entry.modelUrl));
+      expect(glbStat.isFile(), entry.modelUrl).toBe(true);
+      expect(glbStat.size, entry.modelUrl).toBeGreaterThan(10 * 1024);
+      const pngBytes = readFileSync(join(process.cwd(), "apps/web/public", entry.thumbnailUrl!));
+      expect([...pngBytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+    }
+  });
+
+  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG and STUDIO_SCENE_PROP_LAYOUT_PRESETS with real public GLBs", () => {
+    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG.length).toBeGreaterThanOrEqual(40);
+    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(6);
+
+    for (const entry of STUDIO_BUNDLED_SCENE_PROP_CATALOG) {
+      const stat = statSync(join(process.cwd(), "apps/web/public", entry.modelUrl));
+      expect(stat.isFile(), entry.modelUrl).toBe(true);
+      expect(stat.size, entry.modelUrl).toBeGreaterThan(1024);
+    }
+
+    const manager = new StudioMultiObjectLayoutManager();
+    for (const preset of STUDIO_SCENE_PROP_LAYOUT_PRESETS) {
+      const loaded = manager.loadPreset(preset.id);
+      expect(loaded).toHaveLength(preset.objects.length);
+      for (const obj of loaded) {
+        const stat = statSync(join(process.cwd(), "apps/web/public", obj.modelUrl));
+        expect(stat.isFile(), obj.modelUrl).toBe(true);
+      }
+    }
+
+    const added = manager.addCatalogProp("v8_traffic_light");
+    expect(added).not.toBeNull();
+    expect(added!.modelUrl).toBe("/assets/3d/refined-v8/traffic_light.glb");
+    expect(manager.addCatalogProp("missing_prop")).toBeNull();
   });
 });
