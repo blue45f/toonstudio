@@ -13,9 +13,6 @@
  */
 import { loadStudioSvgExportWorkerClientModule } from "./export/studio-document-export-loaders";
 import { StudioVectorReferenceError } from "./studio-vector-fill-reference-error";
-
-export { StudioVectorReferenceError } from "./studio-vector-fill-reference-error";
-export type { StudioVectorFillDetailCode } from "./studio-vector-fill-reference-error";
 import type { StudioVectorFillDetailCode } from "./studio-vector-fill-reference-error";
 import {
   currentStudioAdvancedFillBrowserMaxPixels,
@@ -44,6 +41,9 @@ import type { StudioSvgExportWorkerFactory } from "./export/studio-svg-export-wo
 import type { El } from "./studio-element-model";
 import type { SelectionFrame } from "./studio-selection-tools";
 import type { StudioVectorReferenceSourceBudgetReceipt } from "./studio-vector-reference-source-budget-receipt";
+
+export { StudioVectorReferenceError } from "./studio-vector-fill-reference-error";
+export type { StudioVectorFillDetailCode } from "./studio-vector-fill-reference-error";
 
 export const STUDIO_VECTOR_REFERENCE_MAX_SOURCE_BYTES = 16 * 1024 * 1024;
 export const STUDIO_VECTOR_REFERENCE_MAX_SVG_BYTES = 16 * 1024 * 1024;
