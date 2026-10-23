@@ -7,7 +7,7 @@
 
 - `apps/character-lab`(`@toonstudio/character-lab`)은 서버 기능이 없는 **정적 Vite 실험 앱**이며 운영 배포 대상이 아니다.
 - 목표는 네이버웹툰 SHAPER(설치형)와 같은 3D 캐릭터 제작 흐름을 **웹에서** 재현하는 것이다. 설치·플러그인·외부 에디터 없이 브라우저만으로 동작해야 한다.
-- 주 엔진은 Babylon.js 9.19 `WebGPUEngine`(사용자 명시 선택), 대안은 같은 버전 `Engine`(WebGL2, 역시 명시 선택)이다. 자동 선택·자동 전환은 없다(ADR-0018, ADR-0026).
+- 주 엔진은 Babylon.js 9.31 `WebGPUEngine`(사용자 명시 선택), 대안은 같은 버전 `Engine`(WebGL2, 역시 명시 선택)이다. 자동 선택·자동 전환은 없다(ADR-0018, ADR-0026).
 - `apps/web`, `apps/admin-web`, `apps/api`, `apps/brush-lab`의 application source를 import하지 않는다. 공유 코드는 `packages/*`의 공개 진입점만 쓴다.
 
 ## 2. 디렉터리와 유일 소유자
@@ -52,7 +52,7 @@
 - 패널은 `lab-store-context.tsx`의 훅(`useLabState`/`useLabSelector`/`useDispatch`/`useEngineSession`/`useCatalog`/`useApplyPlan`/`useUiState`/`useUiActions`/`useViewportRegistry`/`usePackagePlans`)만 쓰고, 단위 테스트는 `testing/mock-store.tsx`의 `MockLabProvider`로 한다. Babylon 객체는 React state에 넣지 않는다(`useEngineSession().engine()` ref 접근).
 - 패널 스타일 클래스는 `cl-<panel>-…` 접두를 쓰고, 정의는 core가 `src/app/styles/character-lab.css`에 한 번에 추가한다(작업자는 공유 CSS를 편집하지 않는다).
 - 영역 작업자는 `docs/parity/<area>.md`에 자기 영역 행만 쓴다(열: 구현 상태 / Node 검증 테스트 파일 / 브라우저 검증 / 비고). core가 `docs/shaper-parity-checklist.md`로 집계한다.
-- 브라우저(GPU)에서만 확인할 수 있는 동작은 "브라우저 미검증"으로 정직하게 표기한다. 이 저장소의 컨테이너에는 GPU가 없다.
+- 브라우저(GPU)에서만 확인할 수 있는 동작은 "브라우저 미검증"으로 정직하게 표기한다. Linux 개발 컨테이너에는 GPU가 없고 소프트웨어 렌더러(SwiftShader)만 쓴다. 로컬 Mac(Apple M2 Max, Metal)에서는 실GPU 브라우저 검증이 가능하다(README §4) — 증거에는 어느 쪽에서 얻었는지 `YYYY-MM-DD·기기·backend`로 적는다.
 - 절차 소스 조립 규약(humanoid ↔ outfit, 2026-10-01): core 조립기 `src/app/shell/procedural-source.ts`는 humanoid의
   `buildHumanoidModel(recipe, { subdivisionLevels, seed, outfit: OutfitBuilderPort })`를 받는다(조립 완료: `app/composition.ts`). 그 함수 안에서
   (1) `outfit.buildHair`·`buildGarments` 결과를 `combineOutfitResults([hair, garments])`로 합치고 outfit 파츠의 jointIndices ≥ 55는 합친 결과의 `bones[index-55]`다,
@@ -90,4 +90,4 @@ pnpm exec eslint --max-warnings=0 apps/character-lab/src/<자기 디렉터리>
 ## 6. 의존성 메모
 
 - WebGPU 타입은 TypeScript 6의 DOM lib이 제공하므로 `@webgpu/types`를 추가하지 않는다. top-level await와 ES module worker(`worker.format = "es"`)는 Vite 설정이 허용한다.
-- 선언된 런타임 의존성: `@babylonjs/core|loaders|serializers` 9.19.0(exact), `@dimforge/rapier3d-deterministic-compat` 0.19.3, `@mediapipe/tasks-vision`, `ag-psd`(패치 적용), `zod` 4.4.3, React 19. 새 의존성은 금지이며 필요하면 통합 담당에게 요청한다(fast-png·`@babylonjs/havok`·three/three-vrm/playcanvas는 이번 범위에서 채택하지 않았다).
+- 선언된 런타임 의존성: `@babylonjs/core|loaders|serializers` 9.31.0(exact), `@dimforge/rapier3d-deterministic-compat` 0.21.0, `@mediapipe/tasks-vision`, `ag-psd`(패치 적용), `zod` 4.6.7, React 19(정본은 `package.json`). 새 의존성은 금지이며 필요하면 통합 담당에게 요청한다(fast-png·`@babylonjs/havok`·three/three-vrm/playcanvas는 이번 범위에서 채택하지 않았다).
