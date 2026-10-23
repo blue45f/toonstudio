@@ -2,6 +2,7 @@
 
 - 문서 상태: `target`(평가·제안 보고서). 이 문서는 현재 기능을 설명하지 않는다.
   Studio 3D 편집·캡처·출력 경로에는 Godot가 연결되어 있지 않다. 운영 중인 Godot는 가상스튜디오 `godot-space`, `/play`, `/cuts` 세 곳의 게임형 섬(`current`)뿐이다.
+  **2026-10-23 정정**: 이 세 섬은 2026-10-21 PR #2354 로 제거됐다([ADR-0028](../adr/0028-godot-3d-adoption-modes.md)의 정정 기록). 이 문서의 `current` 서술은 2026-10-15 시점이고 본문은 바꾸지 않았다.
 - 기준: 저장소 커밋 `7e0a45710b1b1c9517005b0fee98be5c410269ed`, 조사·측정일 2026-10-15, 작성 브랜치 `claude/swq-godot`.
 - 짝 문서: [ADR-0028](../adr/0028-godot-3d-adoption-modes.md)(모드별 채택 조건 제안), [PoC README](../../tools/godot-3d-poc/README.md), [측정 증거](../evidence/godot-3d-poc/2026-10-15/README.md).
 - 증거 표기: **[저장소]** 기준 커밋의 `파일:줄`, **[공식]** Godot 공식 문서(URL과 확인일 2026-10-15는 §12), **[측정]** 이 PoC의 결과 JSON, **[산술]** 위 값들로 계산한 값, **[추정]** 위 넷으로 직접 확인하지 못한 추론(그렇게 표시한다).

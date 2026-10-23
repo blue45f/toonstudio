@@ -8,7 +8,7 @@
 
 ## 1. 엔진 결정과 어댑터 구조
 
-- 주 엔진: Babylon.js 9.19.0 `WebGPUEngine`, 명시 대안: 같은 버전 `Engine`(WebGL2). **사용자가 고른 backend 하나만 만들고** 실패·timeout·소프트웨어 어댑터는
+- 주 엔진: Babylon.js 9.31.0 `WebGPUEngine`(이 문서의 실측·소스 주석은 9.19.0 시점 기록이다 — 2026-10 의존성 갱신으로 9.31.0), 명시 대안: 같은 버전 `Engine`(WebGL2). **사용자가 고른 backend 하나만 만들고** 실패·timeout·소프트웨어 어댑터는
   `LabFailure`로 reject한다. 자동 선택·자동 전환·무음 fallback은 없다(ADR-0018). 요청 backend가 WebGPU면 WebGL 컨텍스트를 요청하지 않는 것을
   `render/babylon-engine-factory.test.ts`가 실제 Babylon 생성자로 확인한다.
 - import 정책: `@babylonjs/core` 배럴 금지(서브패스 `….js`만), side-effect import는 `render/babylon/babylon-side-effects.ts` **한 곳**(모든 모듈의 실제 파일
