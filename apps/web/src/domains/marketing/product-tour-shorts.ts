@@ -1,8 +1,9 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 35편.
- * 서른다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 37편.
+ * 서른일곱 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~35편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
+ * 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -40,7 +41,9 @@ export interface ProductTourShort {
     | "eraser-closeup"
     | "pencil-sharpen"
     | "paint-palette"
-    | "fresh-note";
+    | "fresh-note"
+    | "coffee"
+    | "rain-ink";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -573,6 +576,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "The first page of a fresh notebook",
       body: "A fresh notebook opening, the first line landing on its first page — caught up close.",
+    },
+  },
+  {
+    id: "coffee",
+    src: "/brand/promo-shorts/shorts-37-coffee.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:11",
+    ko: {
+      title: "김 오르는 커피 한 잔",
+      body: "작업 책상 위에서 김이 천천히 오르는 커피 잔을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "A cup of coffee, still steaming",
+      body: "Steam curling slowly off a cup of coffee on the work desk — caught up close.",
+    },
+  },
+  {
+    id: "rain-ink",
+    src: "/brand/promo-shorts/shorts-38-rainink.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:08",
+    ko: {
+      title: "비 내리는 날의 잉크병",
+      body: "빗방울이 맺힌 창가에서 잉크병과 펜을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "An ink bottle on a rainy day",
+      body: "An ink bottle and a pen by a rain-speckled window — caught up close.",
     },
   },
 ];
