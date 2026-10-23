@@ -3,15 +3,15 @@
   "ageGate.description": "Նշեք ձեր ծննդյան ամսաթիվը, որպեսզի հաստատեք, որ դուք 19 տարեկան եք կամ ավելի մեծ:",
   "ageGate.birthDateLabel": "Ծննդյան ամսաթիվ",
   "ageGate.birthYearLabel": "Ծննդյան տարի",
-  "ageGate.birthYearPlaceholder": "Տարիներ",
+  "ageGate.birthYearPlaceholder": "Տարի",
   "ageGate.birthMonthLabel": "Ծննդյան ամիս",
-  "ageGate.birthMonthPlaceholder": "Մесяц",
+  "ageGate.birthMonthPlaceholder": "Ամիս",
   "ageGate.birthDayLabel": "Ծննդյան օր",
-  "ageGate.birthDayPlaceholder": "Օրը",
+  "ageGate.birthDayPlaceholder": "Օր",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Դուք չեք համապատասխանում տարիքային պահանջներին:",
-  "ageGate.cancel": "Արգելել",
-  "ageGate.confirm": "Համոզվեք"
+  "ageGate.cancel": "Չեղարկել",
+  "ageGate.confirm": "Հաստատել"
 }

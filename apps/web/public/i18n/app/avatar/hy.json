@@ -1,8 +1,8 @@
 {
-  "avatar.error.invalidType": "Աջակցված չէ պատկերների տիպը:",
-  "avatar.error.processFailed": "Չկարողացա վերամշակել պատկերները:",
-  "avatar.processing": "Գործողություն...",
-  "avatar.select": "Լուսանկարը փոխել",
+  "avatar.error.invalidType": "Պատկերի տեսակը չի աջակցվում։",
+  "avatar.error.processFailed": "Չհաջողվեց մշակել պատկերը։ Փորձեք այլ պատկերով։",
+  "avatar.processing": "Մշակվում է…",
+  "avatar.select": "Փոխել պատկերը",
   "avatar.remove": "Հեռացնել պատկեր",
   "avatar.uploadHint": "Միայն JPG, PNG եւ WEBP պատկերները աջակցվում են, ապա կտրվում են նախօրոք դիտելու համար:",
   "avatar.changeAria": "Փոխել պրոֆիլային պատկեր"
