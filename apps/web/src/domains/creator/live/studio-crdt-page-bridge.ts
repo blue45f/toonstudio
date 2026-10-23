@@ -38,6 +38,9 @@ import {
   type StudioCrdtPayloadSceneElementType,
 } from "./studio-crdt-scene-schema";
 import { jsonObject, jsonValue } from "./studio-crdt-json-value";
+import { StudioCrdtPageBridgeError } from "./studio-crdt-page-bridge-error";
+
+export { StudioCrdtPageBridgeError, type StudioCrdtPageBridgeErrorCode } from "./studio-crdt-page-bridge-error";
 import type { StudioCrdtCompatibleOrderedPage } from "./studio-crdt-page-payload";
 
 import type {
@@ -153,7 +156,7 @@ function hasCanonicalRendererSignificantR8Grain(
   const source = grain.source;
   const canonical = serializeStudioBrushR8TextureGrainSourceCanonical(source);
   if (canonical === null || canonical !== JSON.stringify(source)) {
-    throw new Error("R8 브러시 그레인 자산 참조가 올바르지 않습니다.");
+    throw new StudioCrdtPageBridgeError("r8-grain-reference-invalid");
   }
   return true;
 }
@@ -163,11 +166,11 @@ export function studioCrdtStrokeToDrawElement(
 ): StudioCrdtCompatibleDrawElement {
   const payload = record.payload;
   if (!isStudioCrdtStrokePayloadVersion(payload.version)) {
-    throw new Error("지원하지 않는 획 페이로드 버전입니다.");
+    throw new StudioCrdtPageBridgeError("stroke-payload-version-unsupported");
   }
   const extensions = payload.extensions ?? {};
   if (!hasValidStudioBrushEngineProgramExtension(payload.version, extensions.brushEnginePrograms)) {
-    throw new Error("브러시 엔진 프로그램과 획 페이로드 버전이 호환되지 않습니다.");
+    throw new StudioCrdtPageBridgeError("brush-program-version-incompatible");
   }
   const result: StudioCrdtCompatibleDrawElement = {
     id: record.id,
@@ -228,20 +231,20 @@ export function studioCrdtStrokeToDrawElement(
   if (isStudioPaperSubstrateModel(paperModel)) result.paperModel = paperModel;
   if (extensions.outlineStroke !== undefined) {
     if (!studioCrdtStrokePayloadSupportsContinuation(payload.version)) {
-      throw new Error("외곽선 획 계약과 페이로드 버전이 호환되지 않습니다.");
+      throw new StudioCrdtPageBridgeError("outline-stroke-version-incompatible");
     }
     const outlineStroke = normalizeStudioOutlineStrokeContract(
       extensions.outlineStroke,
     );
     if (!outlineStroke) {
-      throw new Error("외곽선 획 계약이 올바르지 않습니다.");
+      throw new StudioCrdtPageBridgeError("outline-stroke-invalid");
     }
     result.outlineStroke = outlineStroke;
   }
   if (extensions.inkInput !== undefined) {
     const inkInput = normalizeStudioInkInputContract(extensions.inkInput);
     if (!inkInput) {
-      throw new Error("획 입력 센서 계약이 올바르지 않습니다.");
+      throw new StudioCrdtPageBridgeError("stroke-input-contract-invalid");
     }
     result.inkInput = inkInput;
   }
@@ -250,10 +253,9 @@ export function studioCrdtStrokeToDrawElement(
     && payload.version !== STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
     && payload.version !== STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
   ) {
-    throw new Error("테이퍼 간격 브러시는 획 페이로드 v5가 필요합니다.");
+    throw new StudioCrdtPageBridgeError("taper-spacing-version-required");
   }
-  const dynamicMinimumDiameterRatio =
-    payload.brushDynamics?.minimumDiameterRatio;
+  const dynamicMinimumDiameterRatio = payload.brushDynamics?.minimumDiameterRatio;
   if (
     dynamicMinimumDiameterRatio !== undefined
     && (
@@ -266,7 +268,7 @@ export function studioCrdtStrokeToDrawElement(
       )
     )
   ) {
-    throw new Error("동적 브러시 최소 굵기 스냅샷이 올바르지 않습니다.");
+    throw new StudioCrdtPageBridgeError("dynamic-min-diameter-invalid");
   }
   if (
     studioDynamicBrushDepositPipelineUsesContinuation(
@@ -274,38 +276,35 @@ export function studioCrdtStrokeToDrawElement(
     )
     && !studioCrdtStrokePayloadSupportsContinuation(payload.version)
   ) {
-    throw new Error("분할 연속 브러시 파이프라인과 페이로드 버전이 호환되지 않습니다.");
+    throw new StudioCrdtPageBridgeError("continuation-pipeline-version-incompatible");
   }
   if (
     hasCanonicalRendererSignificantR8Grain(payload.brushDynamics)
     && !studioCrdtStrokePayloadSupportsContinuation(payload.version)
   ) {
-    throw new Error("R8 브러시 그레인과 페이로드 버전이 호환되지 않습니다.");
+    throw new StudioCrdtPageBridgeError("r8-grain-version-incompatible");
   }
   const materialPressureModel = extensions.materialPressureModel;
-  const materialMinimumDiameterRatio =
-    extensions.materialMinimumDiameterRatio;
-  const hasMaterialPressureSnapshot =
-    materialPressureModel !== undefined
-    || materialMinimumDiameterRatio !== undefined;
+  const materialMinimumDiameterRatio = extensions.materialMinimumDiameterRatio;
+  const hasMaterialPressureSnapshot = materialPressureModel !== undefined || materialMinimumDiameterRatio !== undefined;
   if (
     hasMaterialPressureSnapshot
     && payload.version !== STUDIO_CRDT_MATERIAL_STROKE_PAYLOAD_VERSION
     && !studioCrdtStrokePayloadSupportsContinuation(payload.version)
   ) {
-    throw new Error("획 재질 필압 모델과 페이로드 버전이 호환되지 않습니다.");
+    throw new StudioCrdtPageBridgeError("material-pressure-version-incompatible");
   }
   if (
     hasMaterialPressureSnapshot
     && !isStudioMaterialPressureModel(materialPressureModel)
   ) {
-    throw new Error("획 재질 필압 모델이 올바르지 않습니다.");
+    throw new StudioCrdtPageBridgeError("material-pressure-invalid");
   }
   if (
     hasMaterialPressureSnapshot
     && !isStudioMaterialMinimumDiameterRatio(materialMinimumDiameterRatio)
   ) {
-    throw new Error("획 재질 최소 굵기 스냅샷이 올바르지 않습니다.");
+    throw new StudioCrdtPageBridgeError("material-min-diameter-invalid");
   }
   if (hasMaterialPressureSnapshot) {
     result.materialPressureModel = materialPressureModel;
@@ -332,7 +331,7 @@ export function studioSceneElementToCrdtElement(
   element: StudioCrdtCompatibleSceneElement
 ): StudioCrdtSceneElementInput {
   if (!isStudioCrdtPayloadSceneElementType(element.type)) {
-    throw new Error(`${element.type} 요소는 장면 CRDT에서 지원하지 않습니다.`);
+    throw new StudioCrdtPageBridgeError("element-type-unsupported", { elementType: element.type });
   }
   const propsSource: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(element)) {
@@ -363,7 +362,7 @@ export function studioElementToCrdtSceneElement(
   element: StudioCrdtCompatibleElement
 ): StudioCrdtSceneElementInput {
   if (element.type === "draw") {
-    throw new Error("드로우 요소는 획 CRDT로 동기화해야 합니다.");
+    throw new StudioCrdtPageBridgeError("draw-element-stroke-sync-required");
   }
   if (isStudioCrdtPayloadSceneElementType(element.type)) {
     return studioSceneElementToCrdtElement(
@@ -389,11 +388,11 @@ export function studioElementToCrdtSceneElement(
     props.hidden = source.hidden;
   }
   if (source.filterMaskSurfaceId !== undefined && element.type !== "image") {
-    throw new Error("필터 마스크 surface는 이미지 참조에만 연결할 수 있습니다.");
+    throw new StudioCrdtPageBridgeError("filter-mask-non-image-reference");
   }
   if (element.type === "image" && source.filterMaskSurfaceId !== undefined) {
     if (!isStudioFilterMaskSurfaceId(source.filterMaskSurfaceId)) {
-      throw new Error("필터 마스크 surface ID가 올바르지 않습니다.");
+      throw new StudioCrdtPageBridgeError("filter-mask-surface-id-invalid");
     }
     const filterMaskProps: StudioCrdtJsonObject = {
       filterMaskSurfaceId: source.filterMaskSurfaceId,
@@ -402,7 +401,7 @@ export function studioElementToCrdtSceneElement(
       filterMaskProps.filterMaskEnabled = jsonValue(source.filterMaskEnabled)!;
     }
     if (!isStudioFilterMaskReferenceProps(filterMaskProps)) {
-      throw new Error("필터 마스크 surface 상태가 올바르지 않습니다.");
+      throw new StudioCrdtPageBridgeError("filter-mask-surface-state-invalid");
     }
     for (const key of STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS) {
       if (Object.hasOwn(filterMaskProps, key)) props[key] = filterMaskProps[key]!;
@@ -432,7 +431,7 @@ export function studioCrdtElementToSceneElement<
       !referenceSource || referenceSource.id !== record.id ||
       referenceSource.type !== elementType
     ) {
-      throw new Error("참조 장면 요소를 복원할 원본 에셋 요소가 없습니다.");
+      throw new StudioCrdtPageBridgeError("reference-source-missing");
     }
     const referenceProps = { ...record.payload.props };
     delete referenceProps.elementType;

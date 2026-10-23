@@ -191,7 +191,7 @@ describe("phase-two brush CRDT bridge", () => {
         status: "finalized",
         deleted: false,
         orderIndex: 0,
-      })).toThrow("동적 브러시 최소 굵기 스냅샷이 올바르지 않습니다");
+      })).toThrow("dynamic-min-diameter-invalid");
     }
     expect(() => studioDrawElementToCrdtStroke("page-brush", {
       id: "invalid-dynamic-floor",
@@ -881,7 +881,7 @@ describe("studio CRDT page bridge", () => {
         orderIndex: 0,
         status: "finalized",
         deleted: false,
-      })).toThrow("분할 연속 브러시 파이프라인과 페이로드 버전이 호환되지 않습니다");
+      })).toThrow("continuation-pipeline-version-incompatible");
     }
   });
 
@@ -938,7 +938,7 @@ describe("studio CRDT page bridge", () => {
         orderIndex: 0,
         status: "finalized",
         deleted: false,
-      })).toThrow("R8 브러시 그레인과 페이로드 버전이 호환되지 않습니다");
+      })).toThrow("r8-grain-version-incompatible");
     }
 
     expect(() => studioDrawElementToCrdtStroke("page-a", {
@@ -1060,7 +1060,7 @@ describe("studio CRDT page bridge", () => {
           materialMinimumDiameterRatio: 0.73,
         },
       },
-    }))).toThrow("재질 필압 모델이 올바르지 않습니다");
+    }))).toThrow("material-pressure-invalid");
 
     expect(() => studioDrawElementToCrdtStroke("page-a", {
       ...element,
@@ -1085,7 +1085,7 @@ describe("studio CRDT page bridge", () => {
       status: "finalized",
       deleted: false,
       orderIndex: 0,
-    })).toThrow("재질 최소 굵기 스냅샷이 올바르지 않습니다");
+    })).toThrow("material-min-diameter-invalid");
     expect(() => studioCrdtStrokeToDrawElement({
       ...record("forged-minimum-only", "page-a", 0),
       payload: {
@@ -1095,7 +1095,7 @@ describe("studio CRDT page bridge", () => {
       status: "finalized",
       deleted: false,
       orderIndex: 0,
-    })).toThrow("재질 필압 모델이 올바르지 않습니다");
+    })).toThrow("material-pressure-invalid");
     for (const legacyVersion of [
       STUDIO_CRDT_LEGACY_STROKE_PAYLOAD_VERSION,
       STUDIO_CRDT_PAINT_STROKE_PAYLOAD_VERSION,
@@ -1106,7 +1106,7 @@ describe("studio CRDT page bridge", () => {
         status: "finalized",
         deleted: false,
         orderIndex: 0,
-      })).toThrow("재질 필압 모델과 페이로드 버전이 호환되지 않습니다");
+      })).toThrow("material-pressure-version-incompatible");
     }
     expect(() => studioCrdtStrokeToDrawElement({
       ...record("forged-minimum", "page-a", 0),
@@ -1119,7 +1119,7 @@ describe("studio CRDT page bridge", () => {
           materialMinimumDiameterRatio: -0.1,
         },
       },
-    })).toThrow("재질 최소 굵기 스냅샷이 올바르지 않습니다");
+    })).toThrow("material-min-diameter-invalid");
   });
 
   it("preserves omitted legacy pressure semantics and ignores unknown pressure models", () => {

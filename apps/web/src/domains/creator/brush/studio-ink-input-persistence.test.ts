@@ -179,6 +179,6 @@ describe("Studio ink input persistence", () => {
           inkInput: futureContract,
         },
       },
-    }))).toThrow("획 입력 센서 계약이 올바르지 않습니다");
+    }))).toThrow("stroke-input-contract-invalid");
   });
 });

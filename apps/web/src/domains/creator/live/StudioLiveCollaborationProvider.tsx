@@ -7,11 +7,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-
 import { useStudioLiveAutoReconnect } from "./use-studio-live-auto-reconnect";
+import { resolveStudioLiveProducerErrorFromCause } from "../status-i18n/studio-producer-error-i18n-live-room";
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { studioAutomergeOfflineBranchEnabled } from "../offline-branch/studio-offline-branch-feature";
-
 import { resolveStudioLiveCanonicalAuthority } from "./studio-live-canonical-authority";
 import { readOrCreateStudioLiveClientInstanceId } from "./studio-live-client-identity";
 import {
@@ -27,7 +26,6 @@ import {
   type StudioCrdtSyncTelemetry,
   type StudioLivePersistenceDurability,
 } from "./studio-live-sync-safety";
-
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 import type { StudioOfflineBranchRuntime } from "../offline-branch/studio-offline-branch-runtime";
 import type { StudioCrdtRecoveryVaultEntry } from "./studio-crdt-recovery-vault";
@@ -106,7 +104,8 @@ function localSessionId(workId: string): string {
 }
 
 function messageFrom(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
+  // A4 D4 (R13): liveRoom·liveProtocol·liveP2p 구조화 오류는 코드로 해석하고, 그 외는 기존 경로를 유지한다.
+  return resolveStudioLiveProducerErrorFromCause(error) ?? (error instanceof Error && error.message ? error.message : fallback);
 }
 
 type StudioCrdtBindingStatusTelemetry = StudioCrdtBindingStatus &
