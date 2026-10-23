@@ -24409,11 +24409,8 @@ function clearSelectionForEdit() {
       clearPendingPixelSelectionRasterGesture();
       disarmAllPixelTools();
       const { resolveStudioRasterEditErrorFromCause } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
-      setError(
-        preparationError instanceof Error
-          ? (resolveStudioRasterEditErrorFromCause(preparationError) ?? preparationError.message)
-          : t("studio.hostStatus.pixelSelectionRasterPrepareFailed", "픽셀 선택용 래스터 복사본을 준비하지 못했습니다."),
-      );
+      setError(preparationError instanceof Error
+        ? (resolveStudioRasterEditErrorFromCause(preparationError) ?? preparationError.message) : t("studio.hostStatus.pixelSelectionRasterPrepareFailed", "픽셀 선택용 래스터 복사본을 준비하지 못했습니다."));
     } finally {
       if (runId === pixelMarqueeRasterPreparationRunIdRef.current) {
         if (pixelMarqueeRasterPreparationActivationRef.current?.runId === runId) {
@@ -24852,11 +24849,8 @@ function clearSelectionForEdit() {
     } catch (filterError) {
       if (controller.signal.aborted || runId !== studioFilterPreparationRunIdRef.current) return;
       const { resolveStudioRasterEditErrorFromCause } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
-      setError(
-        filterError instanceof Error
-          ? (resolveStudioRasterEditErrorFromCause(filterError) ?? filterError.message)
-          : t("studio.hostStatus.filterPreviewPrepareFailed", "현재 페이지의 필터 미리보기를 준비하지 못했습니다.")
-      );
+      setError(filterError instanceof Error
+        ? (resolveStudioRasterEditErrorFromCause(filterError) ?? filterError.message) : t("studio.hostStatus.filterPreviewPrepareFailed", "현재 페이지의 필터 미리보기를 준비하지 못했습니다."));
     } finally {
       if (runId === studioFilterPreparationRunIdRef.current) {
         studioFilterPreparationAbortRef.current = null;
@@ -25078,11 +25072,8 @@ function clearSelectionForEdit() {
         clearPendingRasterRetouchGesture();
       }
       const { resolveStudioRasterEditErrorFromCause } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
-      setError(
-        preparationError instanceof Error
-          ? (resolveStudioRasterEditErrorFromCause(preparationError) ?? preparationError.message)
-          : t("studio.hostStatus.editRasterPrepareFailed", "편집용 래스터 복사본을 준비하지 못했습니다."),
-      );
+      setError(preparationError instanceof Error
+        ? (resolveStudioRasterEditErrorFromCause(preparationError) ?? preparationError.message) : t("studio.hostStatus.editRasterPrepareFailed", "편집용 래스터 복사본을 준비하지 못했습니다."));
     } finally {
       if (runId === studioFilterPreparationRunIdRef.current) {
         studioFilterPreparationAbortRef.current = null;

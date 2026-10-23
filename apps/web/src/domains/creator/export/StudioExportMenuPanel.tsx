@@ -869,10 +869,7 @@ export function StudioExportMenuPanel({
       });
     } catch (error) {
       if (!mountedRef.current) return;
-      setVectorPdfStatus({
-        tone: "warn",
-        text: resolveStudioPdfVectorErrorFromCause(error) ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.vectorFailed", "벡터 PDF를 만들지 못했습니다.")),
-      });
+      setVectorPdfStatus({ tone: "warn", text: resolveStudioPdfVectorErrorFromCause(error) ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.vectorFailed", "벡터 PDF를 만들지 못했습니다.")) });
     } finally {
       if (mountedRef.current) setVectorPdfBusy(false);
     }
