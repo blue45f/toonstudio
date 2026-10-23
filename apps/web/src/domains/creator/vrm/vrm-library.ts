@@ -15,6 +15,8 @@ import { isStudioVrmProductionThumbnailUrl } from "./studio-vrm-thumbnail-qualit
 import { isStudioVrmTechnicallyAdmittedModel } from "./studio-vrm-model-technical-denylist.generated";
 import { isStudioVrmProductionModelUrl } from "./studio-vrm-model-quality";
 
+import { VrmLibraryError } from "./studio-vrm-library-error";
+
 const DB_NAME = "toonstudio-studio-vrm-library";
 const DB_VERSION = 1;
 const MODEL_STORE = "models";
@@ -36,8 +38,6 @@ export const MAX_VRM_UPLOAD_BYTES = 128 * 1024 * 1024;
 export const VRM_VALIDATION_VERSION = 1;
 export const VRM_LIBRARY_THUMBNAIL_WINDOW_MAX_ITEMS = 12;
 export const VRM_LIBRARY_THUMBNAIL_WINDOW_MAX_BYTES = 24 * 1024 * 1024;
-
-import { VrmLibraryError } from "./studio-vrm-library-error";
 export { VrmLibraryError, type VrmLibraryErrorCode } from "./studio-vrm-library-error";
 
 export type VrmContentHash = `sha256:${string}`;

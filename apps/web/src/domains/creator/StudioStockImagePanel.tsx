@@ -103,7 +103,7 @@ export function StudioStockImagePanel({ onInsert, onOpenSettings }: StudioStockI
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+        <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
           <Images size={14} />
           스톡 사진 검색 (Unsplash)
         </div>
@@ -119,7 +119,7 @@ export function StudioStockImagePanel({ onInsert, onOpenSettings }: StudioStockI
       </div>
 
       {!configured && (
-        <p className="rounded-lg border border-dashed border-line px-2 py-2 text-[0.66rem] leading-relaxed text-fg-4">
+        <p className="rounded-lg border border-dashed border-line px-2 py-2 text-[0.66rem] leading-relaxed text-fg-3">
           설정에서 Unsplash Access Key를 등록하세요.{" "}
           <button type="button" onClick={onOpenSettings} className="font-medium text-accent hover:underline">
             연동 설정 열기
@@ -184,7 +184,7 @@ export function StudioStockImagePanel({ onInsert, onOpenSettings }: StudioStockI
                 onClick={() => void onPick(photo)}
                 disabled={insertingId !== null}
                 title={photo.description || "이 사진을 캔버스에 삽입"}
-                className="group relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-neutral-100 disabled:cursor-not-allowed dark:bg-neutral-800"
+                className="group relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-card disabled:cursor-not-allowed"
               >
                 <img
                   src={photo.thumbUrl}

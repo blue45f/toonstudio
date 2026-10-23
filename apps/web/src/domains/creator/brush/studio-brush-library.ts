@@ -34,6 +34,10 @@ import {
   type StudioStabilizerMode,
 } from "./studio-stroke-stabilizer";
 
+// ── JSON 내보내기/가져오기(이 앱 전용 포맷 — 브러시 설정엔 GPL 같은 표준이 없다) ──────
+
+import { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError } from "./studio-brush-library-export-contract";
+
 // ── 브러시 설정 스냅샷 ───────────────────────────────────────────────────
 // StudioPage.tsx의 "그리기 도구 설정" 패널에서 drawMode === "pen"일 때 실제로 그리기에 쓰이는
 // state를 그대로 미러링한 필드들. 정확한 대응은 docs/studio-brush-library-integration.md 참고.
@@ -1075,10 +1079,6 @@ export function brushMatchesSnapshot(
     && jsonStructureEqual(brush.enginePrograms ?? null, snapshot.enginePrograms ?? null)
     && studioBrushDynamicsSettingsEqual(brush.brushDynamics, snapshot.brushDynamics);
 }
-
-// ── JSON 내보내기/가져오기(이 앱 전용 포맷 — 브러시 설정엔 GPL 같은 표준이 없다) ──────
-
-import { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError } from "./studio-brush-library-export-contract";
 export { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError, type StudioBrushLibraryErrorCode, type StudioBrushLibraryErrorVariant } from "./studio-brush-library-export-contract";
 /** StudioSavedBrush → JSON 텍스트(들여쓰기 2칸, 사람이 읽을 수 있게). */
 export function writeBrushJson(brush: StudioSavedBrush): string {

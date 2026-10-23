@@ -17,6 +17,15 @@ import {
   resolveTranslationForDisplay,
 } from "@/shared/lib/i18n";
 
+import type {
+  StudioVrmTexturePaintProjectLibraryDetailCode,
+  StudioVrmTexturePaintProjectNoticeCode,
+} from "../vrm/studio-vrm-texture-paint-project-library";
+import type {
+  StudioVrmTexturePaintRuntimeError,
+  StudioVrmTexturePaintRuntimeGuidance,
+} from "../vrm/studio-vrm-texture-paint-runtime";
+
 
 function resolveProducerError(
   key: string,
@@ -29,15 +38,6 @@ function resolveProducerError(
     Object.hasOwn(values, token) ? String(values[token]) : placeholder,
   );
 }
-
-import type {
-  StudioVrmTexturePaintProjectLibraryDetailCode,
-  StudioVrmTexturePaintProjectNoticeCode,
-} from "../vrm/studio-vrm-texture-paint-project-library";
-import type {
-  StudioVrmTexturePaintRuntimeError,
-  StudioVrmTexturePaintRuntimeGuidance,
-} from "../vrm/studio-vrm-texture-paint-runtime";
 
 // === vrmPaintLibrary 구간 ===
 registerI18nLocaleEntries("ko", {

@@ -1,5 +1,12 @@
 import { brushProgramIRSchema } from "@toonstudio/studio-project-model";
 
+import { CspToolFileError } from "./csp-sut-error";
+import {
+  constantMapping,
+  parseCspPressureGraph,
+  pressureMapping,
+  safeScalar,
+} from "./csp-sut-pressure-graph";
 import {
   bytesToBase64,
   fnv1a64Hex,
@@ -9,13 +16,6 @@ import {
 
 import type { BrushProgramIR, DynamicMappingIR } from "@toonstudio/studio-project-model";
 
-import { CspToolFileError } from "./csp-sut-error";
-import {
-  constantMapping,
-  parseCspPressureGraph,
-  pressureMapping,
-  safeScalar,
-} from "./csp-sut-pressure-graph";
 
 export { CspToolFileError, type CspToolFileErrorCode } from "./csp-sut-error";
 export { parseCspPressureGraph, type CspPressureGraph } from "./csp-sut-pressure-graph";

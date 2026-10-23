@@ -31,7 +31,6 @@ import {
   StudioPsdImportError,
   type PsdAlternativeCode,
   type PsdBlockingReason,
-  type PsdImportSkipCode,
   type PsdImportSkipEntry,
   type PsdLossDecisionCode,
 } from "./studio-psd-import-error";

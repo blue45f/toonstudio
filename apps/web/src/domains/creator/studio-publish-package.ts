@@ -19,6 +19,7 @@ import { normalizeStudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 
 import type { StudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 import { formatNumber } from "@toonstudio/core/format";
+
 export { StudioPublishPackageError, type StudioPublishPackageErrorCode } from "./studio-publish-package-error";
 
 export const STUDIO_PUBLISH_PACKAGE_SCHEMA = "toonstudio.publish-package" as const;

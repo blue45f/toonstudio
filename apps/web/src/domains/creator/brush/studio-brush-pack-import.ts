@@ -1,4 +1,4 @@
-import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES, BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS, createStudioBrushOriginalSource, requireStudioBrushOriginalSource, type StudioBrushOriginalSource } from "./studio-brush-original-source";
+import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES, BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS, createStudioBrushOriginalSource, requireStudioBrushOriginalSource } from "./studio-brush-original-source";
 /**
  * Brush pack import router — one entry point for every brush file the studio
  * can actually turn into a drawable brush.
@@ -53,7 +53,6 @@ import {
   sanitizeBrushSnapshot,
   importBrushFromJson,
   type StudioBrushSnapshot,
-  type StudioSavedBrush,
 } from "./studio-brush-library";
 import {
   STUDIO_BRUSH_PROGRAM_MAX_BYTES,
@@ -66,7 +65,6 @@ import { resolveStudioBrushPackWarning } from "../status-i18n/studio-producer-er
 
 
 import type {
-  BrushLibraryBatchWriteSummary,
   BrushLibraryRepositoryPort,
 } from "./studio-brush-library-repository";
 import type { StudioBrushPackFormat } from "./studio-brush-pack-format";
@@ -75,6 +73,15 @@ import type {
   BrushProgramIR,
   DynamicMappingIR,
 } from "@toonstudio/studio-project-model";
+
+import {
+  StudioBrushPackPreserveOnlyError, StudioBrushProgramImportError,
+  packWarning, passthroughWarning, withWarningPrefix,
+  type StudioBrushPackCommitResult,
+  type StudioBrushPackImportResult,
+  type StudioBrushPackRights,
+  type StudioBrushPackWarning,
+} from "./studio-brush-pack-import-types";
 
 export {
   STUDIO_BRUSH_PACK_ACCEPT,
@@ -94,15 +101,6 @@ export const MYPAINT_LOG_RADIUS_SCALE = 6;
 const MIN_STROKE_WIDTH = 1;
 const MAX_STROKE_WIDTH = 80;
 const MIN_OPACITY = 0.05;
-
-import {
-  StudioBrushPackPreserveOnlyError, StudioBrushProgramImportError,
-  packWarning, passthroughWarning, withWarningPrefix,
-  type StudioBrushPackCommitResult,
-  type StudioBrushPackImportResult,
-  type StudioBrushPackRights,
-  type StudioBrushPackWarning,
-} from "./studio-brush-pack-import-types";
 export {
   StudioBrushPackPreserveOnlyError,
   StudioBrushProgramImportError,
