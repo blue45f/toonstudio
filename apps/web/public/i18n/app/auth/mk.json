@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Конзола за администратори",
   "auth.menu.profile": "Мојот профил",
   "auth.menu.settings": "Поставки",
-  "auth.menu.signOut": "Подпишете се.",
+  "auth.menu.signOut": "Одјави се",
   "auth.menu.fallbackName": "Читател",
   "auth.callback.message.working": "Окончаваме пријавување...",
   "auth.callback.error.badState": "Параметрот на невалидна состојба.",

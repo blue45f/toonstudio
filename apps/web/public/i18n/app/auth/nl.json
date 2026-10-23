@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Admin-console",
   "auth.menu.profile": "Mijn profiel",
   "auth.menu.settings": "Instellingen",
-  "auth.menu.signOut": "- Ik ben er niet .",
+  "auth.menu.signOut": "Uitloggen",
   "auth.menu.fallbackName": "Lezer",
   "auth.callback.message.working": "Ik sluit aan.",
   "auth.callback.error.badState": "Niet geldige staatparameter.",

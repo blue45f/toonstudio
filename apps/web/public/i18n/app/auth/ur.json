@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "ایڈمن کنسول",
   "auth.menu.profile": "میرا پروفائل",
   "auth.menu.settings": "ترتیبات",
-  "auth.menu.signOut": "دستخط کریں",
+  "auth.menu.signOut": "سائن آؤٹ کریں",
   "auth.menu.fallbackName": "قارئین",
   "auth.callback.message.working": "سائن ان کی تکمیل...",
   "auth.callback.error.badState": "غیر قانونی حالت کا پیرامیٹر۔",

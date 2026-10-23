@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Admin-Konsole",
   "auth.menu.profile": "Mein Profil",
   "auth.menu.settings": "Einstellungen",
-  "auth.menu.signOut": "Unterschreiben",
+  "auth.menu.signOut": "Abmelden",
   "auth.menu.fallbackName": "Leser",
   "auth.callback.message.working": "Abschluss der Anmeldung...",
   "auth.callback.error.badState": "Unzulässiger Zustandparameter.",

@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "ადმინ კონსოლი",
   "auth.menu.profile": "ჩემი პროფილი",
   "auth.menu.settings": "პარამეტრები",
-  "auth.menu.signOut": "დარეგისტრირდით",
+  "auth.menu.signOut": "გასვლა",
   "auth.menu.fallbackName": "მკითხველი",
   "auth.callback.message.working": "ოჲჟლვევ ეა ჟვ ჟლსპვმ...",
   "auth.callback.error.badState": "არასწორი მდგომარეობის პარამეტრი.",

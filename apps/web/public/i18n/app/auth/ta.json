@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "நிர்வாகி கன்சோல்",
   "auth.menu.profile": "என் சுயவிவரம்",
   "auth.menu.settings": "அமைப்புகள்",
-  "auth.menu.signOut": "பதிவு செய்யுங்கள்",
+  "auth.menu.signOut": "வெளியேறு",
   "auth.menu.fallbackName": "வாசகர்",
   "auth.callback.message.working": "பதிவு முடிக்க.",
   "auth.callback.error.badState": "செல்லாத நிலை அளவுரு.",

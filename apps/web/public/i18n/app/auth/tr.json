@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Yöneticiler konsolu",
   "auth.menu.profile": "Profilüm .",
   "auth.menu.settings": "Ayarlar",
-  "auth.menu.signOut": "İmzalayın .",
+  "auth.menu.signOut": "Çıkış yap",
   "auth.menu.fallbackName": "Okuyucu",
   "auth.callback.message.working": "Kayıt tamamlanıyor...",
   "auth.callback.error.badState": "Geçersiz durum parametri.",

@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "أداة الإدارة",
   "auth.menu.profile": "ملفي الشخصي",
   "auth.menu.settings": "الإعدادات",
-  "auth.menu.signOut": "توقّفوا",
+  "auth.menu.signOut": "تسجيل الخروج",
   "auth.menu.fallbackName": "القارئ",
   "auth.callback.message.working": "إنهاء التسجيل",
   "auth.callback.error.badState": "المعلمة غير صالحة للحالة",

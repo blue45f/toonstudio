@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "ପ୍ରଶାସକ କନସୋଲ",
   "auth.menu.profile": "ମୋର ପ୍ରୋଫାଇଲ",
   "auth.menu.settings": "ସେଟିଂସମୂହ",
-  "auth.menu.signOut": "ସାଇନଅପ୍ କରନ୍ତୁ",
+  "auth.menu.signOut": "ସାଇନ୍ ଆଉଟ୍ କରନ୍ତୁ",
   "auth.menu.fallbackName": "ପାଠକ",
   "auth.callback.message.working": "ସାଇନ୍ ଇନ୍ ଶେଷ କରିବା...",
   "auth.callback.error.badState": "ଅବାଧ ସ୍ଥିତି ପାରାମିଟର",

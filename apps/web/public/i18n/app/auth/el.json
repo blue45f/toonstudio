@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Η κονσόλα διοίκησης",
   "auth.menu.profile": "Το προφίλ μου",
   "auth.menu.settings": "Ρυθμίσεις",
-  "auth.menu.signOut": "Υπογράψτε .",
+  "auth.menu.signOut": "Αποσύνδεση",
   "auth.menu.fallbackName": "Διαβάτης",
   "auth.callback.message.working": "Τελειώνοντας την εγγραφή...",
   "auth.callback.error.badState": "Παραμέτρο άκυρης κατάστασης.",

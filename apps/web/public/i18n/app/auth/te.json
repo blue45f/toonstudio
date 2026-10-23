@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "అడ్మిన్ కన్సోల్",
   "auth.menu.profile": "నా ప్రొఫైల్",
   "auth.menu.settings": "సెట్టింగులు",
-  "auth.menu.signOut": "సైన్ అప్ చేయండి",
+  "auth.menu.signOut": "సైన్ అవుట్ చేయండి",
   "auth.menu.fallbackName": "పాఠకుడు",
   "auth.callback.message.working": "లాగిన్ అప్ పూర్తి.",
   "auth.callback.error.badState": "చెల్లుబాటు అయ్యే స్థితి పారామితి.",

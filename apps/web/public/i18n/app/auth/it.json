@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Console di amministrazione",
   "auth.menu.profile": "Il mio profilo .",
   "auth.menu.settings": "Impostazioni",
-  "auth.menu.signOut": "Scarica .",
+  "auth.menu.signOut": "Esci",
   "auth.menu.fallbackName": "Leggente",
   "auth.callback.message.working": "Finisco l'iscrizione...",
   "auth.callback.error.badState": "Parametro di stato invalido.",
