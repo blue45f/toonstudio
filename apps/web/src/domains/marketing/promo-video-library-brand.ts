@@ -1,13 +1,13 @@
 /**
- * 홍보 영상 자료실의 브랜드 카테고리 보관 항목(17~20차 파도분) — 통합
+ * 홍보 영상 자료실의 브랜드 카테고리 보관 항목(17~21차 파도분) — 통합
  * 레지스트리 promo-video-library.ts가 소스 파일 800줄 상한에 닿아,
  * 페이지 카테고리(promo-video-library-pages.ts)와 같은 방식으로
  * 17차 파도에서 더한 브랜드 보관 항목 3편의 표시 항목을 이 파일로
  * 분리했고, 18차 파도 보관 항목 4편과 19차 파도 보관 항목 4편, 20차 파도
- * 보관 항목 3편도 이어서 여기에 둔다. 전부 생성형 AI로 만든 개념
- * 영상이고, 아직 표면에 배선하지 않은 자료실 보관분이다. 클립 규격의
- * 정본은 brand-clips.ts다. 18차 파도부터는 클립 길이가 편마다 달라,
- * 길이를 항목마다 실측으로 적는다.
+ * 보관 항목 3편, 21차 파도 보관 항목 4편도 이어서 여기에 둔다. 전부
+ * 생성형 AI로 만든 개념 영상이고, 아직 표면에 배선하지 않은 자료실
+ * 보관분이다. 클립 규격의 정본은 brand-clips.ts다. 18차 파도부터는
+ * 클립 길이가 편마다 달라, 길이를 항목마다 실측으로 적는다.
  */
 import {
   BRAND_CITY_DAWN_CLIP,
@@ -16,13 +16,17 @@ import {
   BRAND_NEON_ALLEY_CLIP,
   BRAND_OCEAN_CLIP,
   BRAND_PAPER_CRAFT_CLIP,
+  BRAND_RIVER_ROCKS_CLIP,
+  BRAND_SNOWFIELD_CLIP,
   BRAND_SQUARE_BLOOM_CLIP,
   BRAND_SQUARE_HONEYCOMB_CLIP,
   BRAND_SQUARE_INKDROP_CLIP,
+  BRAND_SQUARE_TERRAZZO_CLIP,
   BRAND_SQUARE_WAVE_CLIP,
   BRAND_WORKSHOP_CLIP,
   HOME_HERO_DUSK_CLIP,
   HOME_HERO_FOG_CLIP,
+  HOME_HERO_HARBOR_CLIP,
   HOME_HERO_SPRING_CLIP,
   type BrandClip,
 } from "./brand-clips";
@@ -31,13 +35,14 @@ import type { PromoVideoItem } from "./promo-video-library";
 /** promo-video-library.ts의 LIBRARY_ONLY와 같은 값 — 순환 import를 피하려고 이 파일에 따로 둔다. */
 const LIBRARY_ONLY = { ko: "자료실 보관", en: "Library only" } as const;
 
-/** promo-video-library.ts의 brandLibraryItem과 같은 모양 — 분리한 항목만 여기서 만든다. 길이는 편마다 실측으로 받는다. */
+/** promo-video-library.ts의 brandLibraryItem과 같은 모양 — 분리한 항목만 여기서 만든다. 길이는 편마다 실측으로 받고, 품질 메모가 있으면 함께 받는다. */
 const brandLibraryItem = (
   id: string,
   clip: BrandClip,
   durationLabel: string,
   ko: { readonly title: string; readonly body: string },
   en: { readonly title: string; readonly body: string },
+  note?: { readonly ko: string; readonly en: string },
 ): PromoVideoItem => ({
   id,
   categoryId: "brand",
@@ -48,6 +53,7 @@ const brandLibraryItem = (
   ko,
   en,
   usage: LIBRARY_ONLY,
+  ...(note ? { note } : {}),
 });
 
 export const PROMO_VIDEO_BRAND_LIBRARY_ITEMS: readonly PromoVideoItem[] = [
@@ -148,5 +154,36 @@ export const PROMO_VIDEO_BRAND_LIBRARY_ITEMS: readonly PromoVideoItem[] = [
   }, {
     title: "Square honeycomb sting",
     body: "A 1:1 square brand sting of a glowing honeycomb pattern — kept with the square sting set.",
+  }),
+  brandLibraryItem("brand-river-rocks", BRAND_RIVER_ROCKS_CLIP, "0:14", {
+    title: "강가의 바위",
+    body: "강물이 바위 사이를 흐르는 풍경을 그린 클립입니다.",
+  }, {
+    title: "Rocks by the river",
+    body: "A river running between the rocks.",
+  }),
+  brandLibraryItem("brand-snowfield", BRAND_SNOWFIELD_CLIP, "0:14", {
+    title: "눈 덮인 들판",
+    body: "눈이 소복이 쌓인 들판의 풍경을 그린 클립입니다.",
+  }, {
+    title: "Snowfield",
+    body: "A field lying quiet under a blanket of snow.",
+  }),
+  brandLibraryItem("brand-home-hero-harbor", HOME_HERO_HARBOR_CLIP, "0:14", {
+    title: "항구의 파노라마",
+    body: "항구가 내려다보이는 스튜디오 파노라마입니다. 낮·노을·밤·비·눈·새벽·안개·황혼·봄 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Harbor panorama",
+    body: "A studio panorama looking out over a harbor, kept as a set with the day, evening, night, rain, snow, dawn, fog, dusk and spring panoramas.",
+  }, {
+    ko: "품질 메모: 일부 프레임에 먼 돛대와 왼쪽 가장자리에 잘린 구조물이 보입니다. 읽을 수 있는 글자는 아니어서 그대로 수록합니다.",
+    en: "Quality note: a few frames show a distant mast and a structure cut off at the left edge. There are no readable letters, so the clip is kept as is.",
+  }),
+  brandLibraryItem("brand-square-terrazzo", BRAND_SQUARE_TERRAZZO_CLIP, "0:14", {
+    title: "정사각 테라조 스팅",
+    body: "테라조 무늬가 번지는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅 세트와 함께 보관합니다.",
+  }, {
+    title: "Square terrazzo sting",
+    body: "A 1:1 square brand sting of a terrazzo pattern spreading — kept with the square sting set.",
   }),
 ];

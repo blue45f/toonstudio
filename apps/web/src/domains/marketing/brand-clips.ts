@@ -434,3 +434,47 @@ export const BRAND_SQUARE_HONEYCOMB_CLIP: BrandClip = {
   width: 768,
   height: 768,
 };
+
+/**
+ * 강가의 바위 — 강물이 바위 사이를 흐르는 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_RIVER_ROCKS_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-23-riverrocks.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 눈 덮인 들판 — 눈이 소복이 쌓인 들판의 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SNOWFIELD_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-24-snowfield.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 항구의 히어로 무드 — 항구가 내려다보이는 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개·황혼·봄 파노라마와
+ * 한 세트로, 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ * 일부 프레임에 먼 돛대와 왼쪽 가장자리에 잘린 구조물이 보여 자료실
+ * 항목에 품질 메모를 붙인다.
+ */
+export const HOME_HERO_HARBOR_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-harbor.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 테라조 스팅 — 테라조 무늬가 번지는 모습을 담은 1:1 정사각
+ * 브랜드 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께,
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_TERRAZZO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-terrazzo.mp4",
+  width: 768,
+  height: 768,
+};
