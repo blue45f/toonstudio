@@ -211,13 +211,13 @@ export class StudioMotionFeelRuntime {
     const dust = density > 0 ? studioDustSpawnCount(speed, frame.surface.surface, density, frame.reducedMotion, frame.deltaSeconds) : 0;
     if (dust > 0) this.emit(dust, frame.x, frame.y + 3, frame.surface.color);
     // 2) 발걸음 조각·발소리: 표면 보폭마다 한 걸음(규칙: stepStudioFootsteps).
-    //    파티클과 같은 이벤트로 합성 발소리를 재생한다(엔진 미등록·꺼짐이면 무음).
-    if (density > 0 && moved > 0 && moved < MAX_STEP_DELTA && speed >= 8) {
+    //    파티클 밀도가 0이어도(모션 줄이기가 아닌 한) 발소리는 정상 재생한다.
+    if (!frame.reducedMotion && moved > 0 && moved < MAX_STEP_DELTA && speed >= 8) {
       const strideOverride = Number.isFinite(frame.stepPx) && frame.stepPx > 0 ? frame.stepPx : undefined;
       const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed, strideOverride);
       this.footstepState = stepped.state;
       for (const event of stepped.events) {
-        this.emit(1, frame.x, frame.y + 2, frame.surface.color);
+        if (density > 0) this.emit(1, frame.x, frame.y + 2, frame.surface.color);
         playStudioFootstepSound(event);
       }
     }

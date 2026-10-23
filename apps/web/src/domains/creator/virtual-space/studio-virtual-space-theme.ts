@@ -13,10 +13,14 @@
  *   호스트 배경 그라데이션을 테마에서 가져간다. 방 단위 공유가 아니라 이 브라우저의 로컬
  *   적용이며 선택은 localStorage에 저장돼 재입장 시 유지된다.
  */
+import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import type { StudioCampusZoneTone } from "./studio-virtual-space-campus-blueprint";
 
 export const STUDIO_SPACE_THEME_KEYS = [
   "modern-office",
+  "webtoon-atelier",
+  "celestial-observatory",
+  "cinema-screening",
   "cozy-wood",
   "neon-night",
   "garden-terrace",
@@ -54,10 +58,42 @@ export interface StudioSpaceThemeFloorSpec {
 /** 구역 톤 전체를 키로 가지는 맵. 톤이 빠지면 그 구역만 기본 스타일로 남아 테마가 반쪽이 되므로 전 톤 명시를 강제한다. */
 export type StudioSpaceThemeToneMap<T> = Readonly<Record<StudioCampusZoneTone, T>>;
 
+export type StudioSpaceThemeStructureKind =
+  | "modern-plaza"
+  | "atelier-gallery"
+  | "astral-orrery"
+  | "cinema-stage"
+  | "lodge-hearth"
+  | "cyber-grid"
+  | "botanical-pergola"
+  | "archive-rotunda"
+  | "sakura-courtyard"
+  | "harbor-beacon";
+
+export interface StudioSpaceThemeCharacterHarmony {
+  readonly accessory: "none" | "headset" | "beret" | "star" | "glasses";
+  readonly aura: "none" | "sparkle" | "focus" | "neon";
+  readonly trail: "none" | "petal" | "star" | "pixel";
+  readonly nameplate: "violet" | "rose" | "sky" | "amber";
+}
+
 export interface StudioSpaceTheme {
   readonly key: StudioSpaceThemeKey;
   readonly labelKo: string;
   readonly labelEn: string;
+  readonly badgeKo: string;
+  readonly badgeEn: string;
+  readonly recommendedArtStyle: StudioVirtualArtStyleKey;
+  /** 테마 분위기에 자연스럽게 녹아드는 대표 캐릭터 스킨 키 목록. */
+  readonly recommendedCharacterKeys: readonly string[];
+  /** 캐릭터와 배경의 색온도를 하나로 묶는 은은한 하모니 틴트. */
+  readonly characterHarmonyTint: number;
+  /** 테마별 광장·작업실의 물리적/시각적 중심 건축 구조. */
+  readonly structureKind: StudioSpaceThemeStructureKind;
+  /** 원클릭 사무실 꾸미기에 연결되는 테마 맞춤 데코 프리셋. */
+  readonly recommendedDecorPreset: "minimal" | "creator-garden" | "festival" | "night-market";
+  /** 테마 무드에 어울리는 캐릭터 치장(액세서리·오라·발자국·명찰) 추천 조합. */
+  readonly recommendedCharacterCustomization: StudioSpaceThemeCharacterHarmony;
   readonly descriptionKo: string;
   readonly descriptionEn: string;
   /** 월드 밖 배경 그라데이션 (위→아래 CSS hex 3단). */
@@ -86,6 +122,14 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     key: "modern-office",
     labelKo: "모던 오피스",
     labelEn: "Modern Office",
+    badgeKo: "스탠다드",
+    badgeEn: "Standard",
+    recommendedArtStyle: "webtoon",
+    recommendedCharacterKeys: ["pink", "silver", "theme-avatar-webtoon", "lpc-player-minjae"],
+    characterHarmonyTint: 0xfefcf8,
+    structureKind: "modern-plaza",
+    recommendedDecorPreset: "minimal",
+    recommendedCharacterCustomization: { accessory: "glasses", aura: "focus", trail: "none", nameplate: "sky" },
     descriptionKo: "밝은 대리석과 밝은 우드, 차분한 카펫으로 정리한 지금의 스튜디오 기본 모습이에요.",
     descriptionEn: "The studio's default look: bright marble, pale wood and calm carpet.",
     backgroundGradient: ["#bfe0f7", "#e8f3fb", "#f7fafc"],
@@ -113,9 +157,131 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     decorAccent: 0x8d93a6,
   },
   {
+    key: "webtoon-atelier",
+    labelKo: "웹툰 원고 아틀리에",
+    labelEn: "Webtoon Manuscript Atelier",
+    badgeKo: "작화·펜선 특화",
+    badgeEn: "Line Art & Inking",
+    recommendedArtStyle: "webtoon",
+    recommendedCharacterKeys: ["theme-avatar-webtoon", "pink", "lpc-player-seoha", "lpc-player-doyun"],
+    characterHarmonyTint: 0xfffaf0,
+    structureKind: "atelier-gallery",
+    recommendedDecorPreset: "creator-garden",
+    recommendedCharacterCustomization: { accessory: "beret", aura: "focus", trail: "star", nameplate: "violet" },
+    descriptionKo: "캔손 원고지 톤의 크림 대리석과 애쉬 우드 데스크, 인디고 잉크 포인트로 눈의 피로를 줄인 웹툰 전용 제작실이에요.",
+    descriptionEn: "Cream Canson-paper marble, ash-wood desks and indigo ink accents tailored for long webtoon drawing sessions.",
+    backgroundGradient: ["#e7dfcf", "#f4efe4", "#fcfaf5"],
+    backgroundColor: 0xf1eadb,
+    wallTints: {
+      marble: 0xe3d8c4, wood: 0x9b7a5e, oak: 0x7c6f64, cafe: 0xad7856, carpet: 0x72698a,
+      stone: 0x9e978b, stage: 0x353b6c, mosaic: 0xd6cbb8, sand: 0xc49c6e, lavender: 0x685a96, grass: 0x7fa378,
+    },
+    floors: {
+      marble: floor("marble", 0xf2ece1, 0xd5cbb8),
+      wood: floor("planks", 0xdec4a1, 0xb8966b),
+      oak: floor("planks", 0xc8a67e, 0x9d7b54),
+      cafe: floor("deck", 0xb8845c, 0x8f5f3b),
+      carpet: floor("carpet", 0x7d749c, 0x5d547a),
+      stone: floor("slate", 0xc8c1b4, 0xa1998a),
+      stage: floor("slate", 0x2f365f, 0x4f63b8),
+      mosaic: floor("checker", 0xf5efe4, 0x685a96),
+      sand: floor("sand", 0xebd6ac, 0xcfb484),
+      lavender: floor("carpet", 0x9486bd, 0x72639e),
+      grass: floor("lawn", 0x8cc483, 0x67a15e),
+    },
+    cliff: 0x63584e,
+    plazaStone: 0xe4ddd0,
+    decorVariant: "atelier-indigo",
+    decorAccent: 0x5b6ee1,
+  },
+  {
+    key: "celestial-observatory",
+    labelKo: "셀레스티얼 천문 공방",
+    labelEn: "Celestial Story Observatory",
+    badgeKo: "세계관·콘티 기획",
+    badgeEn: "Worldbuilding & Lore",
+    recommendedArtStyle: "sky-island",
+    recommendedCharacterKeys: ["theme-avatar-sky-island", "purple", "lpc-player-hana", "lpc-player-teo"],
+    characterHarmonyTint: 0xdce6ff,
+    structureKind: "astral-orrery",
+    recommendedDecorPreset: "festival",
+    recommendedCharacterCustomization: { accessory: "star", aura: "sparkle", trail: "star", nameplate: "amber" },
+    descriptionKo: "성운 빛 네이비 슬레이트와 황동 아스트롤라베 포인트, 문스톤 회랑으로 장편 판타지·세계관 기획에 몰입감을 더해요.",
+    descriptionEn: "Nebula-navy slate, astral brass accents and moonstone corridors crafted for fantasy worldbuilding and storyboarding.",
+    backgroundGradient: ["#111936", "#1e2c59", "#334780"],
+    backgroundColor: 0x182347,
+    wallTints: {
+      marble: 0x4b5b8c, wood: 0x434d75, oak: 0x394266, cafe: 0x52446e, carpet: 0x483b78,
+      stone: 0x414f78, stage: 0x2a2f5e, mosaic: 0x566699, sand: 0x5c5375, lavender: 0x59478c, grass: 0x2d4f5c,
+    },
+    floors: {
+      marble: floor("marble", 0x35436e, 0xd8b45c),
+      wood: floor("deck", 0x2e395c, 0x4c5d8f),
+      oak: floor("planks", 0x293352, 0x45537d),
+      cafe: floor("slate", 0x382f59, 0xe0b960),
+      carpet: floor("carpet", 0x3a2e66, 0x6552a3),
+      stone: floor("stone", 0x313e63, 0x526494),
+      stage: floor("checker", 0x22284d, 0xe8c36b),
+      mosaic: floor("checker", 0x3b4a78, 0x1d2542),
+      sand: floor("slate", 0x364266, 0x7488bd),
+      lavender: floor("carpet", 0x47387a, 0x9b82e0),
+      grass: floor("lawn", 0x264a54, 0x48858f),
+    },
+    cliff: 0x283152,
+    plazaStone: 0x475685,
+    decorVariant: "astral-brass",
+    decorAccent: 0xe6be5a,
+  },
+  {
+    key: "cinema-screening",
+    labelKo: "시네마 컬러 스위트",
+    labelEn: "Cinema Color Suite",
+    badgeKo: "채색·최종 검수",
+    badgeEn: "Color Grading & QC",
+    recommendedArtStyle: "neon",
+    recommendedCharacterKeys: ["theme-avatar-neon", "dark", "lpc-player-luka", "lpc-player-kai"],
+    characterHarmonyTint: 0xffe5d4,
+    structureKind: "cinema-stage",
+    recommendedDecorPreset: "night-market",
+    recommendedCharacterCustomization: { accessory: "headset", aura: "neon", trail: "star", nameplate: "amber" },
+    descriptionKo: "색 왜곡을 막는 캘리브레이션 차콜 슬레이트와 벨벳 크림슨 카펫, 앰버 조명으로 채색·하이라이트 시사회에 최적화했어요.",
+    descriptionEn: "Color-calibrated charcoal slate, velvet crimson carpet and warm amber accents for coloring and screening reviews.",
+    backgroundGradient: ["#121016", "#211c27", "#32293a"],
+    backgroundColor: 0x19151f,
+    wallTints: {
+      marble: 0x453e4f, wood: 0x4a383b, oak: 0x3d333b, cafe: 0x57383b, carpet: 0x632938,
+      stone: 0x3f3a47, stage: 0x4f1f30, mosaic: 0x4d4357, sand: 0x54423d, lavender: 0x4f3554, grass: 0x2f3d38,
+    },
+    floors: {
+      marble: floor("slate", 0x2b2633, 0xf29f4b),
+      wood: floor("planks", 0x362a2e, 0x543f45),
+      oak: floor("planks", 0x2e2429, 0x473840),
+      cafe: floor("deck", 0x3d282e, 0xd97b38),
+      carpet: floor("carpet", 0x592231, 0x853247),
+      stone: floor("slate", 0x292530, 0x453e52),
+      stage: floor("carpet", 0x421725, 0xf5a64c),
+      mosaic: floor("checker", 0x332c3d, 0x1c1822),
+      sand: floor("slate", 0x382f33, 0x665459),
+      lavender: floor("carpet", 0x45284a, 0x73437a),
+      grass: floor("slate", 0x24302c, 0x3d594f),
+    },
+    cliff: 0x26212e,
+    plazaStone: 0x3d3647,
+    decorVariant: "cinema-amber",
+    decorAccent: 0xf5a64c,
+  },
+  {
     key: "cozy-wood",
     labelKo: "코지 우드",
     labelEn: "Cozy Wood",
+    badgeKo: "집필·콘티 휴식",
+    badgeEn: "Writing & Lounge",
+    recommendedArtStyle: "webtoon",
+    recommendedCharacterKeys: ["silver", "pink", "lpc-player-jeongho", "lpc-player-amara"],
+    characterHarmonyTint: 0xffefd8,
+    structureKind: "lodge-hearth",
+    recommendedDecorPreset: "creator-garden",
+    recommendedCharacterCustomization: { accessory: "glasses", aura: "sparkle", trail: "petal", nameplate: "amber" },
     descriptionKo: "원목 벽과 따뜻한 바닥, 러그 같은 카펫으로 산장 로지처럼 포근하게 바꾼 테마예요.",
     descriptionEn: "Warm timber walls, honeyed floors and rug-like carpet for a lodge feel.",
     backgroundGradient: ["#f3d9ae", "#f7e8cf", "#fbf3e2"],
@@ -146,6 +312,14 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     key: "neon-night",
     labelKo: "네온 나이트",
     labelEn: "Neon Night",
+    badgeKo: "야간 마감·사이버",
+    badgeEn: "Night Sprint & Cyber",
+    recommendedArtStyle: "neon",
+    recommendedCharacterKeys: ["theme-avatar-neon", "purple", "dark", "lpc-player-kai"],
+    characterHarmonyTint: 0xd4f2ff,
+    structureKind: "cyber-grid",
+    recommendedDecorPreset: "night-market",
+    recommendedCharacterCustomization: { accessory: "headset", aura: "neon", trail: "pixel", nameplate: "sky" },
     descriptionKo: "짙은 슬레이트 바닥과 어두운 벽, 시안 포인트로 빛나는 야간 크리에이터 허브예요. 어둡지만 막을 씌우지 않아 선명해요.",
     descriptionEn: "Deep slate floors, dark walls and cyan accents for a night creator hub — dark, never hazed.",
     backgroundGradient: ["#070b18", "#101a33", "#1b2840"],
@@ -176,6 +350,14 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     key: "garden-terrace",
     labelKo: "가든 테라스",
     labelEn: "Garden Terrace",
+    badgeKo: "브레인스토밍·힐링",
+    badgeEn: "Ideation & Botanical",
+    recommendedArtStyle: "pastel",
+    recommendedCharacterKeys: ["theme-avatar-pastel", "pink", "lpc-player-amara", "lpc-player-lea"],
+    characterHarmonyTint: 0xf2fce8,
+    structureKind: "botanical-pergola",
+    recommendedDecorPreset: "creator-garden",
+    recommendedCharacterCustomization: { accessory: "beret", aura: "sparkle", trail: "petal", nameplate: "rose" },
     descriptionKo: "잔디와 데크, 테라코타 벽으로 온실 테라스처럼 싱그럽게 바꾼 테마예요.",
     descriptionEn: "Lawns, deck boards and terracotta walls for a fresh greenhouse terrace.",
     backgroundGradient: ["#cdeec2", "#e6f6da", "#f4fbef"],
@@ -206,6 +388,14 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     key: "library",
     labelKo: "클래식 라이브러리",
     labelEn: "Classic Library",
+    badgeKo: "자료 고증·아카이브",
+    badgeEn: "Research & Archive",
+    recommendedArtStyle: "ink",
+    recommendedCharacterKeys: ["theme-avatar-ink", "silver", "lpc-player-noor", "lpc-player-jeongho"],
+    characterHarmonyTint: 0xf5e9d6,
+    structureKind: "archive-rotunda",
+    recommendedDecorPreset: "minimal",
+    recommendedCharacterCustomization: { accessory: "glasses", aura: "focus", trail: "none", nameplate: "amber" },
     descriptionKo: "짙은 원목과 버건디 카펫, 흑백 체커 대리석으로 오래된 서재처럼 묵직하게 바꾼 테마예요.",
     descriptionEn: "Dark timber, burgundy carpet and black-and-white checker marble for an old library.",
     backgroundGradient: ["#3a3f35", "#574a38", "#6e5c42"],
@@ -236,6 +426,14 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     key: "sakura-campus",
     labelKo: "벚꽃 캠퍼스",
     labelEn: "Sakura Campus",
+    badgeKo: "로맨스·학원물",
+    badgeEn: "Romance & Campus",
+    recommendedArtStyle: "pastel",
+    recommendedCharacterKeys: ["theme-avatar-pastel", "pink", "lpc-player-mio", "lpc-player-seoha"],
+    characterHarmonyTint: 0xfff0f6,
+    structureKind: "sakura-courtyard",
+    recommendedDecorPreset: "festival",
+    recommendedCharacterCustomization: { accessory: "star", aura: "sparkle", trail: "petal", nameplate: "rose" },
     descriptionKo: "연분홍 벽과 밝은 잔디, 흩날리는 봄기운으로 캠퍼스처럼 화사하게 바꾼 테마예요.",
     descriptionEn: "Blossom-pink walls, bright lawns and a spring breeze for a campus in bloom.",
     backgroundGradient: ["#f9c6dd", "#fde8f2", "#fff7ef"],
@@ -266,6 +464,14 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     key: "sunset-harbor",
     labelKo: "노을 하버",
     labelEn: "Sunset Harbor",
+    badgeKo: "드라마·감성 씬",
+    badgeEn: "Drama & Golden Hour",
+    recommendedArtStyle: "retro",
+    recommendedCharacterKeys: ["theme-avatar-retro", "dark", "lpc-player-doyun", "lpc-player-teo"],
+    characterHarmonyTint: 0xffe8d1,
+    structureKind: "harbor-beacon",
+    recommendedDecorPreset: "night-market",
+    recommendedCharacterCustomization: { accessory: "beret", aura: "sparkle", trail: "pixel", nameplate: "amber" },
     descriptionKo: "테라코타 벽과 짙은 데크, 청록 포인트로 노을 진 항구 산책로처럼 바꾼 테마예요.",
     descriptionEn: "Terracotta walls, deep deck boards and teal accents for a harbor at dusk.",
     backgroundGradient: ["#e2703a", "#f5a56b", "#ffd9a8"],
@@ -302,6 +508,12 @@ export function studioSpaceTheme(key: StudioSpaceThemeKey): StudioSpaceTheme {
   return STUDIO_SPACE_THEMES.find((theme) => theme.key === key) ?? STUDIO_SPACE_THEMES[0]!;
 }
 
+/** 테마 키(문자열)로부터 캐릭터 환경광 하모니 틴트를 조회한다. */
+export function studioSpaceThemeCharacterHarmonyTint(themeKey: string | null | undefined): number {
+  if (!themeKey || !isStudioSpaceThemeKey(themeKey)) return 0xffffff;
+  return studioSpaceTheme(themeKey).characterHarmonyTint;
+}
+
 /** 구역의 벽 틴트: 테마가 톤별로 정한 값을 쓰고, 해석할 수 없으면 블루프린트 기본값으로 되돌린다. */
 export function studioSpaceThemeWallTint(
   theme: StudioSpaceTheme,
@@ -326,8 +538,14 @@ export interface StudioSpaceThemeSwatch {
   readonly gradientCss: string;
   /** 대표 바닥색 (로비 톤 기준). */
   readonly floor: string;
+  /** 대표 바닥 보조색 (로비 톤 기준). */
+  readonly floorAccent: string;
+  /** 대표 바닥 패턴 식별자. */
+  readonly floorPattern: StudioSpaceThemeFloorPattern;
   /** 대표 벽색 (로비 톤 기준). */
   readonly wall: string;
+  /** 데스크·가구 포인트색 (우드 톤 기준). */
+  readonly desk: string;
   /** 장식 포인트색. */
   readonly accent: string;
 }
@@ -337,7 +555,10 @@ export function studioSpaceThemeSwatch(theme: StudioSpaceTheme): StudioSpaceThem
   return Object.freeze({
     gradientCss: `linear-gradient(180deg, ${top} 0%, ${middle} 55%, ${bottom} 100%)`,
     floor: hex(theme.floors.marble.base),
+    floorAccent: hex(theme.floors.marble.accent),
+    floorPattern: theme.floors.marble.pattern,
     wall: hex(theme.wallTints.marble),
+    desk: hex(theme.floors.wood.base),
     accent: hex(theme.decorAccent),
   });
 }

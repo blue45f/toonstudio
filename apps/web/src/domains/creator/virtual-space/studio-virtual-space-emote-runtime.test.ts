@@ -71,6 +71,10 @@ describe("studio emote playback schedule", () => {
     expect(facings).toEqual(["down", "left", "up", "right", "down"]);
     expect(studioEmoteBodyMotion("dance", 4_000, 4_000, false).facing).toBeNull();
     expect(Math.abs(studioEmoteBodyMotion("doze", 400, 4_000, false).bodyY)).toBeGreaterThan(0);
+    expect(studioEmoteBodyMotion("calisthenics", 125, 4_000, false).bodyY).toBeLessThan(-2);
+    expect(studioEmoteBodyMotion("yoga", 500, 4_000, false).bodyY).toBeLessThan(-4);
+    expect(Math.abs(studioEmoteBodyMotion("kpop-dance", 160, 4_000, false).bodyX)).toBeGreaterThan(1);
+    expect(Math.abs(studioEmoteBodyMotion("shuffle", 140, 4_000, false).bodyX)).toBeGreaterThan(1);
   });
 
   it("표정 있는 이모트는 표정을 함께 알려 준다", () => {
@@ -78,6 +82,8 @@ describe("studio emote playback schedule", () => {
     expect(studioEmotePose(startStudioEmotePlayback("wow", 0), 10, false)?.expression).toBe("surprised");
     expect(studioEmotePose(startStudioEmotePlayback("sleep", 0), 10, false)?.expression).toBe("calm");
     expect(studioEmotePose(startStudioEmotePlayback("dance", 0), 10, false)?.expression).toBeNull();
+    expect(studioEmotePose(startStudioEmotePlayback("calisthenics", 0), 10, false)?.expression).toBe("happy");
+    expect(studioEmotePose(startStudioEmotePlayback("yoga", 0), 10, false)?.expression).toBe("calm");
   });
 
   it("Phaser 색 정수를 #rrggbb로 바꾼다", () => {

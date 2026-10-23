@@ -144,4 +144,34 @@ describe("StudioVirtualSpaceCustomizationPanel", () => {
     expect(screen.getByRole("button", { name: "배치 실행 취소" }).hasAttribute("disabled")).toBe(true);
     expect(onDecorations).not.toHaveBeenCalled();
   });
+
+  it("오피스 직군 원클릭 코디 프리셋과 웰니스·댄스 모션 즉시 실행 버튼을 지원한다", () => {
+    const onCharacter = vi.fn();
+    const onTriggerEmote = vi.fn();
+    render(<StudioVirtualSpaceCustomizationPanel
+      nickname="희준 작가"
+      character={DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION}
+      decorations={studioVirtualDecorationPreset("minimal")}
+      selfPoint={{ x: 780, y: 700 }}
+      onNickname={vi.fn()}
+      onCharacter={onCharacter}
+      onDecorations={vi.fn()}
+      onTriggerEmote={onTriggerEmote}
+    />);
+
+    fireEvent.click(screen.getByRole("button", { name: /오피스 웰니스 · 리프레시/u }));
+    expect(onCharacter).toHaveBeenCalledWith(expect.objectContaining({
+      accessoryKey: "sprout",
+      auraKey: "lotus",
+      trailKey: "leaf",
+      nameplateKey: "sky",
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /아침 체조/u }));
+    expect(onTriggerEmote).toHaveBeenCalledWith("calisthenics");
+
+    fireEvent.click(screen.getByRole("button", { name: /아이돌 군무/u }));
+    expect(onTriggerEmote).toHaveBeenCalledWith("kpop-dance");
+  });
 });
+

@@ -1,10 +1,50 @@
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import { STUDIO_TOWN_DISTRICT_IDS, type StudioTownDistrictId } from "./studio-virtual-space-town-layout";
 
-export const STUDIO_VIRTUAL_ACCESSORY_KEYS = ["none", "headset", "beret", "star", "glasses"] as const;
-export const STUDIO_VIRTUAL_AURA_KEYS = ["none", "sparkle", "focus", "neon"] as const;
-export const STUDIO_VIRTUAL_TRAIL_KEYS = ["none", "petal", "star", "pixel"] as const;
-export const STUDIO_VIRTUAL_NAMEPLATE_KEYS = ["violet", "rose", "sky", "amber"] as const;
+export const STUDIO_VIRTUAL_ACCESSORY_KEYS = [
+  "none",
+  "headset",
+  "beret",
+  "star",
+  "glasses",
+  "crown",
+  "cat-ears",
+  "halo",
+  "flower-crown",
+  "vr-visor",
+  "pen-wing",
+  "sprout",
+] as const;
+export const STUDIO_VIRTUAL_AURA_KEYS = [
+  "none",
+  "sparkle",
+  "focus",
+  "neon",
+  "aurora",
+  "prism",
+  "flame",
+  "lotus",
+] as const;
+export const STUDIO_VIRTUAL_TRAIL_KEYS = [
+  "none",
+  "petal",
+  "star",
+  "pixel",
+  "music-note",
+  "ink-drop",
+  "rainbow",
+  "leaf",
+] as const;
+export const STUDIO_VIRTUAL_NAMEPLATE_KEYS = [
+  "violet",
+  "rose",
+  "sky",
+  "amber",
+  "emerald",
+  "cyber",
+  "gold",
+  "obsidian",
+] as const;
 export type StudioVirtualAccessoryKey = typeof STUDIO_VIRTUAL_ACCESSORY_KEYS[number];
 export type StudioVirtualAuraKey = typeof STUDIO_VIRTUAL_AURA_KEYS[number];
 export type StudioVirtualTrailKey = typeof STUDIO_VIRTUAL_TRAIL_KEYS[number];
@@ -16,6 +56,73 @@ export interface StudioVirtualCharacterCustomization {
   readonly trailKey: StudioVirtualTrailKey;
   readonly nameplateKey: StudioVirtualNameplateKey;
 }
+
+export interface StudioVirtualCharacterPreset {
+  readonly id: string;
+  readonly icon: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly roleSummaryKo: string;
+  readonly roleSummaryEn: string;
+  readonly customization: StudioVirtualCharacterCustomization;
+}
+
+export const STUDIO_VIRTUAL_CHARACTER_PRESETS: readonly StudioVirtualCharacterPreset[] = Object.freeze([
+  Object.freeze({
+    id: "pd-standup",
+    icon: "🎧",
+    labelKo: "총괄 PD · 스탠드업",
+    labelEn: "Lead PD · Standup",
+    roleSummaryKo: "회의·일정 조율용 노이즈캔슬링 헤드셋 코디",
+    roleSummaryEn: "Noise-canceling headset look for standups & sync",
+    customization: Object.freeze({ accessoryKey: "headset", auraKey: "neon", trailKey: "pixel", nameplateKey: "cyber" }),
+  }),
+  Object.freeze({
+    id: "editor-review",
+    icon: "👓",
+    labelKo: "수석 편집 · 검수 모드",
+    labelEn: "Chief Editor · Review",
+    roleSummaryKo: "원고 합평·피드백 집중용 안경 & 잉크 코디",
+    roleSummaryEn: "Editorial glasses & ink trail for manuscript review",
+    customization: Object.freeze({ accessoryKey: "glasses", auraKey: "prism", trailKey: "ink-drop", nameplateKey: "emerald" }),
+  }),
+  Object.freeze({
+    id: "artist-deepwork",
+    icon: "🖋️",
+    labelKo: "메인 작화 · 딥워크",
+    labelEn: "Lead Artist · Deep Work",
+    roleSummaryKo: "초집중 선화·채색 마감용 펜촉 배지 & 불꽃 오라",
+    roleSummaryEn: "Stylus wing badge & flame aura for deep drawing",
+    customization: Object.freeze({ accessoryKey: "pen-wing", auraKey: "flame", trailKey: "star", nameplateKey: "amber" }),
+  }),
+  Object.freeze({
+    id: "spatial-director",
+    icon: "🥽",
+    labelKo: "3D 배경 · 공간 디렉터",
+    labelEn: "3D Spatial Director",
+    roleSummaryKo: "홀로그램 바이저 & 오로라 파동 테크 코디",
+    roleSummaryEn: "Hologram visor & aurora wave for 3D scene craft",
+    customization: Object.freeze({ accessoryKey: "vr-visor", auraKey: "aurora", trailKey: "rainbow", nameplateKey: "violet" }),
+  }),
+  Object.freeze({
+    id: "office-wellness",
+    icon: "🌱",
+    labelKo: "오피스 웰니스 · 리프레시",
+    labelEn: "Office Wellness · Refresh",
+    roleSummaryKo: "체조·요가·휴식 라운지용 새싹 & 연꽃 오라",
+    roleSummaryEn: "Refresh sprout & lotus aura for office stretch",
+    customization: Object.freeze({ accessoryKey: "sprout", auraKey: "lotus", trailKey: "leaf", nameplateKey: "sky" }),
+  }),
+  Object.freeze({
+    id: "deadline-mvp",
+    icon: "👑",
+    labelKo: "마감 세이브 MVP",
+    labelEn: "Deadline Save MVP",
+    roleSummaryKo: "에피소드 완결·런칭 기념 황금 왕관 & 음표 코디",
+    roleSummaryEn: "Golden crown & music notes for episode launch",
+    customization: Object.freeze({ accessoryKey: "crown", auraKey: "sparkle", trailKey: "music-note", nameplateKey: "gold" }),
+  }),
+]);
 
 export const DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION: StudioVirtualCharacterCustomization = Object.freeze({
   accessoryKey: "none",
@@ -271,5 +378,17 @@ export const STUDIO_VIRTUAL_DECOR_FRAME: Readonly<Record<StudioVirtualDecorType,
 });
 
 export const STUDIO_VIRTUAL_ACCESSORY_FRAME: Readonly<Record<StudioVirtualAccessoryKey, number>> = Object.freeze({
-  none: 0, headset: 1, beret: 2, star: 3, glasses: 4,
+  none: 0,
+  headset: 1,
+  beret: 2,
+  star: 3,
+  glasses: 4,
+  // 신규 크리에이티브·오피스 파츠는 StudioActorAuraRuntime(faceGraphics)에서 고해상도 벡터로 직접 그린다.
+  crown: 0,
+  "cat-ears": 0,
+  halo: 0,
+  "flower-crown": 0,
+  "vr-visor": 0,
+  "pen-wing": 0,
+  sprout: 0,
 });
