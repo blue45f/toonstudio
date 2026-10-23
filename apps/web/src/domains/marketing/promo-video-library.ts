@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 59편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 67편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,19 +8,19 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 10편: product-tour-shorts.ts (PRODUCT_TOUR_SHORTS)
+ * - 쇼츠 12편: product-tour-shorts.ts (PRODUCT_TOUR_SHORTS)
  * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
  * - 챕터 배경 루프 9편: product-tour-clips.ts + 챕터 이름은
  *   product-tour-content.ts의 PRODUCT_TOUR.chapters
  * - 브랜드 클립 9편: brand-clips.ts (배선 8편 + 자료실 보관인 밤 버전 1편)
- * - 도구 클립 15편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
- *   카테고리 7편 + 보류 1편)과 세로 변형 3편(TOOL_CLIPS_VERTICAL), 그리고
+ * - 도구 클립 19편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
+ *   카테고리 7편 + 보류 1편)과 세로 변형 7편(TOOL_CLIPS_VERTICAL), 그리고
  *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
  *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
  *   여기서는 그 값을 옮겨 적고 출처를 밝힌다)
- * - 페이지 클립 11편: 이 파일이 첫 레지스트리다 (public/brand/page-clips/).
+ * - 페이지 클립 13편: 이 파일이 첫 레지스트리다 (public/brand/page-clips/).
  *   전부 아직 표면에 배선하지 않은 자료실 보관분이고, 홈 무드는 결함본을
- *   교체한 v2가 정본이며 계절 변형 2편(가을·겨울)을 함께 둔다.
+ *   교체한 v2가 정본이며 계절 변형 4편(봄·여름·가을·겨울)으로 사계절을 함께 둔다.
  */
 import {
   BRAND_FILM_CLOSING_CLIP,
@@ -67,11 +67,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 제품 투어 페이지의 쇼츠 섹션에도 같은 열 편이 걸려 있습니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 제품 투어 페이지의 쇼츠 섹션에도 같은 열두 편이 걸려 있습니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. The same ten also run in the shorts section of the product tour page.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. The same twelve also run in the shorts section of the product tour page.",
     },
   },
   {
@@ -630,6 +630,32 @@ const pages: readonly PromoVideoItem[] = [
     "0:14",
     { title: "투어 스팅어", body: "짧게 분위기를 열고 닫는 스팅어 용도로 만든 클립입니다." },
     { title: "Tour stinger", body: "A short stinger clip for opening and closing on a mood." },
+  ),
+  pageItem(
+    "season-spring",
+    "season-spring.mp4",
+    "0:14",
+    {
+      title: "계절 · 봄 스튜디오",
+      body: "벚꽃잎이 창가로 흩날리는 봄의 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Spring studio",
+      body: "Cherry blossom petals drifting past the window of a spring studio — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageItem(
+    "season-summer",
+    "season-summer.mp4",
+    "0:14",
+    {
+      title: "계절 · 여름 스튜디오",
+      body: "여름 햇살이 가득 들어오는 작업실을 그린 계절 변형입니다. 이벤트·시즌 배너를 교체할 때 쓰는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Summer studio",
+      body: "A studio filled with summer sunlight — a seasonal variant kept for swapping event and season banners.",
+    },
   ),
   pageItem(
     "season-autumn",

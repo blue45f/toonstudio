@@ -27,9 +27,9 @@
  *   포즈를 주제로 한 소개 표면은 제품 투어 3D 챕터뿐인데 그 카드에는 이미
  *   같은 주제(턴테이블 마네킹)의 챕터 배경 루프가 깔려 있어 중복을 피했다.
  *
- * 세로 변형 3편(canvas·bg3d·shaper)은 위 12편과 별도로, 소셜 카드에 바로
- * 쓸 수 있게 같은 주제를 세로(9:16)로 다시 그린 것이다. 표면에는 배선하지
- * 않고 홍보 영상 자료실에만 수록한다(TOOL_CLIPS_VERTICAL).
+ * 세로 변형 7편(canvas·bg3d·shaper·story·comic·publish·collab)은 위 12편과
+ * 별도로, 소셜 카드에 바로 쓸 수 있게 같은 주제를 세로(9:16)로 다시 그린
+ * 것이다. 표면에는 배선하지 않고 홍보 영상 자료실에만 수록한다(TOOL_CLIPS_VERTICAL).
  */
 export interface ToolClip {
   readonly src: string;
@@ -112,4 +112,8 @@ export const TOOL_CLIPS_VERTICAL: readonly ToolVerticalClip[] = [
   { toolId: "canvas", src: "/brand/tool-clips/tool-canvas-vertical.mp4", width: 768, height: 1344 },
   { toolId: "bg3d", src: "/brand/tool-clips/tool-bg3d-vertical.mp4", width: 768, height: 1344 },
   { toolId: "shaper", src: "/brand/tool-clips/tool-shaper-vertical.mp4", width: 768, height: 1344 },
+  { toolId: "story", src: "/brand/tool-clips/tool-story-vertical.mp4", width: 768, height: 1344 },
+  { toolId: "comic", src: "/brand/tool-clips/tool-comic-vertical.mp4", width: 768, height: 1344 },
+  { toolId: "publish", src: "/brand/tool-clips/tool-publish-vertical.mp4", width: 768, height: 1344 },
+  { toolId: "collab", src: "/brand/tool-clips/tool-collab-vertical.mp4", width: 768, height: 1344 },
 ];

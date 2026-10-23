@@ -120,7 +120,7 @@ export const marketingRoutes = defineAppRoutes([
   { id: "marketing-pricing", path: "/pricing", element: <PricingPage /> },
   { id: "marketing-features-overview", path: "/features", element: <FeaturesOverviewPage /> },
   { id: "marketing-brand-film", path: "/brand-film", element: <BrandFilmPage /> },
-  // 홍보 영상 자료실: 만든 홍보 영상 59편을 카테고리별로 모아 미리 보고 원본을 내려받는 보관함.
+  // 홍보 영상 자료실: 만든 홍보 영상 67편을 카테고리별로 모아 미리 보고 원본을 내려받는 보관함.
   // 개별 영상의 배선처는 각 표면이 소유하고, 이 페이지는 소재를 꺼내 쓰는 입구만 소유한다.
   { id: "marketing-promo-library", path: "/promo-library", element: <PromoVideoLibraryPage /> },
   { id: "marketing-events", path: "/events", element: <EventsHubPage /> },
