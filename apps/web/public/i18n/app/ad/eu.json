@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Laguntzen den irudia",
-  "ad.slotAriaLabel": "Iragarki-lekuak",
+  "ad.creativeFallbackAlt": "Babestutako irudia",
+  "ad.slotAriaLabel": "Publizitate-lekua",
   "ad.slotLabel": "Babestuta",
-  "ad.slotTitle": "Babestuta dagoen edukiak",
+  "ad.slotTitle": "Babestutako edukia",
   "ad.ctaDetails": "Xehetasunak ikusi",
-  "ad.placeholderAriaLabel": "Iragarki-leku-jabea",
-  "ad.placeholderText": "Ez dago eduki babesik.",
+  "ad.placeholderAriaLabel": "Iragarkiaren leku-marka",
+  "ad.placeholderText": "Ez dago babestutako edukirik eskuragarri.",
   "ad.tag": "Iragarkia"
 }

@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Sartu beharra dago.",
-  "apiError.adminRequired": "Admin baimena ezin da egiaztatu.",
-  "apiError.adminOnlyPage": "Orri hau administratzaileentzat da.",
-  "apiError.notFound": "Ez da aurkitu eskaera.",
-  "apiError.unsupportedType": "Ez da euskarri mota.",
+  "apiError.loginRequired": "Saioa hasi behar da.",
+  "apiError.adminRequired": "Ezin izan dira administratzaile-baimenak egiaztatu.",
+  "apiError.adminOnlyPage": "Orri hau administratzaileentzat mugatuta dago.",
+  "apiError.notFound": "Eskatutako elementua ezin izan da aurkitu.",
+  "apiError.unsupportedType": "Onartzen ez den eduki-mota.",
   "apiError.inactiveAccount": "Kontu ez aktiboek ezin dituzte administratzaileen funtzioak erabili.",
-  "apiError.settlementFailed": "Ez dabil."
+  "apiError.settlementFailed": "Likidazioaren prozesamenduak huts egin du. Saiatu berriro une batean."
 }

@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Ezin izan dut erantzun-enketarik kargatu.",
+  "feedback.loadError": "Ezin izan da iritzi-inkesta kargatu. Saiatu berriro une batean.",
   "feedback.thankYou": "Eskerrik asko zure iritzi baliotsuagatik!",
-  "feedback.anonymousNote": "Zure erantzunak anonimoak dira.",
-  "feedback.notAtAll": "Ezta pentsatu ere.",
-  "feedback.definitely": "-Ez, ez."
+  "feedback.anonymousNote": "Zure erantzunak guztiz anonimo mantentzen dira.",
+  "feedback.notAtAll": "Batere ez",
+  "feedback.definitely": "Zalantzarik gabe"
 }
