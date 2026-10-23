@@ -47,5 +47,7 @@ describe("통합 랭킹 페이지", () => {
     const current = screen.getByText(/현재 축:/u);
     expect(current.textContent).toContain(label);
     expect(current.textContent).not.toContain("rating");
+    expect(screen.getByTestId("ranking-quick-axes")).toBeTruthy();
   });
 });
+

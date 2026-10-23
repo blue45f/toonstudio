@@ -461,7 +461,7 @@ describe("OpenRaster interchange", () => {
       "STACK_XML_INVALID",
       "../escape0.png",
     );
-    expect(unsafe.message).toContain("안전하지 않은 경로");
+    expect(unsafe.variant).toBe("layerSourcePathSegmentUnsafe");
 
     await expectOraError(
       importStudioOpenRaster(await customOra(wrap('<layer src="mergedimage.png"/>'))),
@@ -480,7 +480,7 @@ describe("OpenRaster interchange", () => {
       "STACK_XML_INVALID",
       "DATA/LAYER.PNG",
     );
-    expect(duplicate.message).toContain("중복 참조");
+    expect(duplicate.variant).toBe("layerSourceDuplicate");
   });
 
   it("does not interpret supported-looking descendants inside unknown XML extensions", async () => {
@@ -495,7 +495,10 @@ describe("OpenRaster interchange", () => {
       "UNSUPPORTED_XML_ELEMENT",
       "UNSUPPORTED_XML_ATTRIBUTE",
     ]);
-    expect(imported.warnings.every((warning) => warning.message.includes("보존") || warning.message.includes("저장"))).toBe(true);
+    expect(imported.warnings.map((warning) => warning.variant)).toEqual([
+      "unsupportedElement",
+      "unsupportedAttribute",
+    ]);
   });
 
   it("rejects ambiguous ZIP paths and preserves the offending archive path", async () => {
@@ -509,7 +512,8 @@ describe("OpenRaster interchange", () => {
       "ARCHIVE_INVALID",
       "data/layer.png",
     );
-    expect(error.message).toContain("경로");
+    expect(error.variant).toBe("archiveInvalid");
+    expect(error.params?.detail).toContain("경로");
   });
 
   it("normalizes deferred ZIP CRC failures into a path-aware ORA error", async () => {
@@ -527,7 +531,8 @@ describe("OpenRaster interchange", () => {
       "ARCHIVE_INVALID",
       "data/layer.png",
     );
-    expect(error.message).toContain("CRC-32");
+    expect(error.variant).toBe("archiveEntryVerifyFailed");
+    expect(error.params?.detail).toContain("CRC-32");
   });
 
   it("fails closed on invalid XML placement, declarations, comments, and resolution metadata", async () => {
@@ -608,7 +613,7 @@ describe("OpenRaster interchange", () => {
       "IMAGE_INVALID",
       "data/layer.png"
     );
-    expect(incompleteError.message).toContain("IHDR");
+    expect(incompleteError.variant).toBe("pngIhdrIncomplete");
 
     const zeroWidth = png(4);
     new DataView(zeroWidth.buffer).setUint32(16, 0, false);
@@ -617,7 +622,7 @@ describe("OpenRaster interchange", () => {
       "IMAGE_INVALID",
       "mergedimage.png"
     );
-    expect(dimensionError.message).toContain("너비와 높이");
+    expect(dimensionError.variant).toBe("pngDimensionsZero");
 
     const wrongFirstChunk = png(5);
     wrongFirstChunk.set([73, 68, 65, 84], 12);
@@ -626,7 +631,7 @@ describe("OpenRaster interchange", () => {
       "IMAGE_INVALID",
       "Thumbnails/thumbnail.png"
     );
-    expect(chunkError.message).toContain("첫 chunk");
+    expect(chunkError.variant).toBe("pngFirstChunkNotIhdr");
   });
 
   it("enforces conservative per-image pixels and cumulative decoded RGBA memory", async () => {
@@ -641,7 +646,8 @@ describe("OpenRaster interchange", () => {
       "SIZE_LIMIT",
       "data/layer.png"
     );
-    expect(perImageError.message).toContain("16,777,216px");
+    expect(perImageError.variant).toBe("pngPixelLimit");
+    expect(perImageError.params).toMatchObject({ max: "16,777,216" });
 
     const cumulativeError = await expectOraError(
       importStudioOpenRaster(
@@ -654,8 +660,11 @@ describe("OpenRaster interchange", () => {
       "SIZE_LIMIT",
       "data/layer.png"
     );
-    expect(cumulativeError.message).toContain("디코딩 RGBA 메모리");
-    expect(cumulativeError.message).toContain("134,217,728바이트");
+    expect(cumulativeError.variant).toBe("imageBudgetExceeded");
+    expect(cumulativeError.params).toMatchObject({
+      label: "decodedRgba",
+      max: "134,217,728",
+    });
   });
 
   it("applies decoded image budgets to export inputs before ZIP creation", async () => {

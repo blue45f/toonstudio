@@ -1,8 +1,8 @@
 import type {
-  StudioPeerFabricEvent,
-  StudioPeerFabricPeer,
+  StudioPeerFabricEvent, StudioPeerFabricPeer,
   StudioPeerFabricPort,
 } from "./studio-peer-fabric";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 export const STUDIO_PEER_BULK_WIRE = "studio-peer-bulk-v1" as const;
 export const STUDIO_PEER_BULK_DEFAULT_CHUNK_BYTES = 24 * 1024;
@@ -642,7 +642,7 @@ export class StudioPeerBulkTransfer implements StudioPeerBulkTransferPort {
       await this.onReceive({ sender: transfer.sender, offer: transfer.offer, bytes });
     } catch (error) {
       status = "failed";
-      reason = error instanceof Error ? error.message : "P2P 수신 처리에 실패했습니다.";
+      reason = error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.peerBulk.receiveFailed", "P2P 수신 처리에 실패했습니다.");
     }
     if (this.closed || this.incoming.get(key) !== transfer) return;
     this.cancelSchedule(transfer.timer);

@@ -13,6 +13,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { PERSONAL_CLOUD_PROVIDER_IDS, getPersonalCloudAccessToken, type PersonalCloudProviderId } from "../save-first/personal-cloud-client";
 import { PersonalCloudUploadError, uploadPersonalCloudProjectPackage, type PersonalCloudUploadProgress } from "../save-first/personal-cloud-upload";
+import { resolvePersonalCloudUploadErrorFromCause } from "../status-i18n/studio-producer-error-i18n-personal-cloud";
 import { STUDIO_EXPORT_PRESETS } from "../save-first/studio-export-presets";
 import { chooseStudioProjectPackageSaveTarget, studioProjectPackageFileName, writeStudioProjectPackageToTarget } from "../save-first/studio-project-package";
 import { buildStudioProjectPackageWithWorkspace } from "../save-first/studio-project-package-with-workspace";
@@ -122,6 +123,9 @@ function personalCloudProviderLabel(provider: PersonalCloudProviderId): string {
 }
 
 function uploadFailureMessage(error: unknown, bt: (ko: string, en: string) => string): string {
+  // D4 표시 지점 해석: PersonalCloudUploadError는 세부 코드+params만 방출하므로 여기서 리졸버로 해석한다.
+  const resolved = resolvePersonalCloudUploadErrorFromCause(error);
+  if (resolved) return resolved.slice(0, 500);
   if (error instanceof Error && error.message.trim()) {
     return error.message.trim().slice(0, 500);
   }

@@ -185,3 +185,136 @@ export function perfectFreehand(
   const stroked = getStrokePoints(points, { ...DEFAULT_OPTIONS, ...options });
   return getOutlinePoints(stroked, { ...DEFAULT_OPTIONS, ...options });
 }
+
+export interface StrokeOutlineMetrics {
+  readonly area: number;
+  readonly perimeter: number;
+  readonly compactness: number;
+  readonly boundingWidth: number;
+  readonly boundingHeight: number;
+}
+
+/**
+ * 하드웨어 필압이 없는 마우스·터치 입력에서 이동 속도 기반으로 자연스러운 가상 필압을 생성한다.
+ * 속도가 빠를수록 thinning 비율만큼 압력이 감소하며 지수 이동평균으로 급격한 폭 점프를 억제한다.
+ */
+export function simulateVelocityPressure(
+  points: readonly FreehandPoint[],
+  thinning = 0.5,
+  smoothing = 0.45,
+): FreehandPoint[] {
+  if (points.length === 0) return [];
+  if (points.length === 1) {
+    return [{ ...points[0], pressure: clamp01(points[0].pressure || 0.5) }];
+  }
+  const thin = clamp01(thinning);
+  const smooth = clamp01(smoothing);
+
+  const speeds: number[] = [0];
+  let maxSpeed = 1e-3;
+  for (let i = 1; i < points.length; i += 1) {
+    const prev = points[i - 1];
+    const cur = points[i];
+    const dt = Math.max(1, cur.time - prev.time);
+    const spd = Math.hypot(cur.x - prev.x, cur.y - prev.y) / dt;
+    speeds.push(spd);
+    if (spd > maxSpeed) maxSpeed = spd;
+  }
+
+  const out: FreehandPoint[] = [];
+  let prevPressure = clamp01(points[0].pressure || 0.5);
+  for (let i = 0; i < points.length; i += 1) {
+    const normSpeed = clamp01(speeds[i] / maxSpeed);
+    const targetPressure = clamp01(0.85 - thin * 0.65 * normSpeed);
+    const blended =
+      i === 0 ? targetPressure : prevPressure * smooth + targetPressure * (1 - smooth);
+    prevPressure = clamp01(blended);
+    out.push({
+      x: points[i].x,
+      y: points[i].y,
+      pressure: prevPressure,
+      time: points[i].time,
+    });
+  }
+  return out;
+}
+
+/**
+ * 스트림라인(Streamline) 안정화 필터: 손떨림 고주파 노이즈를 억제하면서 양 끝점을 보존한다.
+ */
+export function streamlineStrokePoints(
+  points: readonly FreehandPoint[],
+  streamline: number,
+): FreehandPoint[] {
+  if (points.length <= 2) return [...points];
+  const s = clamp01(streamline);
+  if (s === 0) return [...points];
+
+  const alpha = 1 - s * 0.82;
+  const out: FreehandPoint[] = [points[0]];
+  let rx = points[0].x;
+  let ry = points[0].y;
+  let rp = points[0].pressure;
+
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const cur = points[i];
+    rx += (cur.x - rx) * alpha;
+    ry += (cur.y - ry) * alpha;
+    rp += (cur.pressure - rp) * alpha;
+    out.push({
+      x: rx,
+      y: ry,
+      pressure: clamp01(rp),
+      time: cur.time,
+    });
+  }
+  out.push(points[points.length - 1]);
+  return out;
+}
+
+/**
+ * 아웃라인 폴리곤의 기하 품질 지표(신발끈 면적, 둘레, 밀집도, 경계 상자)를 계산한다.
+ */
+export function computeStrokeOutlineMetrics(
+  outline: readonly OutlinePoint[],
+): StrokeOutlineMetrics {
+  const n = outline.length;
+  if (n < 3) {
+    return {
+      area: 0,
+      perimeter: 0,
+      compactness: 0,
+      boundingWidth: 0,
+      boundingHeight: 0,
+    };
+  }
+
+  let twiceArea = 0;
+  let perimeter = 0;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (let i = 0; i < n; i += 1) {
+    const cur = outline[i];
+    const next = outline[(i + 1) % n];
+    twiceArea += cur.x * next.y - next.x * cur.y;
+    perimeter += Math.hypot(next.x - cur.x, next.y - cur.y);
+    if (cur.x < minX) minX = cur.x;
+    if (cur.x > maxX) maxX = cur.x;
+    if (cur.y < minY) minY = cur.y;
+    if (cur.y > maxY) maxY = cur.y;
+  }
+
+  const area = Math.abs(twiceArea) * 0.5;
+  const compactness = perimeter > 1e-6 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0;
+  return {
+    area,
+    perimeter,
+    compactness: clamp01(compactness),
+    boundingWidth: Math.max(0, maxX - minX),
+    boundingHeight: Math.max(0, maxY - minY),
+  };
+}
+

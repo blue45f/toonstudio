@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "പ്രൊഫൈല് ഉള്ളടക്കം",
   "userProfile.refresh": "പുതുക്കൽ",
   "userProfile.emptyReviews": "ഈ ഉപയോക്താവ് ഇതുവരെ അവലോകനങ്ങൾ പ്രസിദ്ധീകരിച്ചിട്ടില്ല.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "സൃഷ്ടിച്ച കൃതികൾ ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
+  "userProfile.series.error": "പരമ്പരകൾ ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
+  "userProfile.emptyReviewsHint": "നിങ്ങൾക്ക് ഇഷ്ടമുള്ള ഒരു ശീർഷകത്തിന് ആദ്യ അവലോകനം എഴുതൂ.",
+  "userProfile.emptyReviewsCta": "ശീർഷകങ്ങൾ ബ്രൗസ് ചെയ്യുക"
 }

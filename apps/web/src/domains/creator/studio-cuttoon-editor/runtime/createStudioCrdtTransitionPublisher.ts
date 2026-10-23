@@ -3,6 +3,8 @@ import {
   stageStudioOfflineSceneTransition,
 } from "../../offline-branch/studio-offline-host-integration";
 
+import { resolveStudioCrdtScenePublishNotice } from "../../status-i18n/studio-producer-error-i18n-live-crdt";
+
 import type { StudioCrdtDocument } from "../../live/studio-crdt-document";
 import type { StudioCrdtSceneGraphRuntime } from "../../live/StudioLiveCollaborationProvider";
 import type { PageState } from "../../studio-page-state";
@@ -70,11 +72,8 @@ export function createStudioCrdtTransitionPublisher(
       runtime.publish(document, previousPages, nextPages, { registerNewDraws });
       return true;
     } catch (cause) {
-      input.reportError(
-        cause instanceof Error
-          ? `실시간 장면 동기화: ${cause.message}`
-          : "장면 요소와 페이지 순서를 팀 문서에 반영하지 못했습니다.",
-      );
+      // A4 D4 (R13): scene·page-bridge 구조화 오류는 표시 지점인 여기서 해석한다(설계 §3.2·§3.6).
+      input.reportError(resolveStudioCrdtScenePublishNotice(cause));
       return false;
     }
   };

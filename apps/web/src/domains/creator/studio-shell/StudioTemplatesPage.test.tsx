@@ -65,4 +65,26 @@ describe("StudioTemplatesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /^즐겨찾기$|^Favorites$/u }));
     expect(screen.getAllByText(/세로 웹툰 기본 원고|Vertical webtoon episode/u).length).toBeGreaterThan(0);
   });
+
+  it("filters by spec/purpose presets and displays pre-configured layer stack summary badges", () => {
+    render(
+      <MemoryRouter>
+        <StudioTemplatesPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getAllByText(/콘티 \+ 선화 \+ 밑색 \+ 말풍선 레이어 기본 포함|Includes storyboard \+ line \+ flat color \+ balloon layers/u).length,
+    ).toBeGreaterThan(0);
+
+    const scrollBtn = screen.getByRole("button", { name: /세로 스크롤 웹툰 \(800px\)|Vertical webtoon \(800px\)/u });
+    fireEvent.click(scrollBtn);
+    expect(scrollBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByText(/세로 웹툰 기본 원고|Vertical webtoon episode/u).length).toBeGreaterThan(0);
+
+    const shortformBtn = screen.getByRole("button", { name: /인스타툰·숏폼 \(1:1\)|Instatoon & short-form \(1:1\)/u });
+    fireEvent.click(shortformBtn);
+    expect(shortformBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByText(/4컷·컷툰|Four-panel comic/u).length).toBeGreaterThan(0);
+  });
 });

@@ -5,12 +5,15 @@ import "../studio-brush-canvas-status-i18n";
 
 import { studioToolSearchTerms } from "../studio-tool-search";
 
+import { STUDIO_BRUSH_CREATE_ROUTE } from "./studio-brush-product-model";
 import { searchStudioShortcutBrushes } from "./studio-shortcut-brush-search";
 import {
   STUDIO_SUB_TOOL_PALETTE_CATEGORIES,
   type StudioSubToolPaletteCategory,
 } from "./studio-sub-tool-palette-data";
 import { StudioSubToolPreview } from "./StudioSubToolPreview";
+
+const QUICK_SEARCH_CHIPS = ["선화", "연필", "수채", "망점"] as const;
 
 export interface StudioSubToolPaletteProps {
   activeCategory: string;
@@ -124,6 +127,29 @@ export function StudioSubToolPalette({
           />
           {query ? <button type="button" onClick={clearQuery} aria-label="브러시 검색 지우기" className={`absolute right-0 top-0 grid min-h-11 min-w-11 place-items-center rounded-lg text-xs text-fg-3 hover:text-fg ${FOCUS}`}>지움</button> : null}
         </div>
+        <div role="group" aria-label="용도별 빠른 검색어" className="flex flex-wrap items-center gap-1">
+          {QUICK_SEARCH_CHIPS.map((keyword) => {
+            const activeChip = query.trim() === keyword;
+            return (
+              <button
+                key={keyword}
+                type="button"
+                aria-pressed={activeChip}
+                onClick={() => {
+                  setQuery(activeChip ? "" : keyword);
+                  setFocusedToolId(null);
+                }}
+                className={`rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold transition-colors ${FOCUS} ${
+                  activeChip
+                    ? "border-accent/60 bg-accent-soft text-accent"
+                    : "border-line bg-panel text-fg-3 hover:bg-raised hover:text-fg"
+                }`}
+              >
+                #{keyword}
+              </button>
+            );
+          })}
+        </div>
         <p id={`${id}-scope`} className="text-[0.65rem] leading-relaxed text-fg-3">
           {searching ? "전체 대표 도구에서 검색합니다." : "획 특징 예시와 용도로 선택하세요."}
         </p>
@@ -184,9 +210,17 @@ export function StudioSubToolPalette({
           {!currentTools.length ? <div className="p-4 text-center text-xs leading-relaxed text-fg-3">{searching ? t("studio.brushCanvasStatus.brush.subToolSearchEmpty", "일치하는 대표 도구가 없습니다. 다른 표현은 전체 라이브러리에서 찾을 수 있습니다.") : t("studio.brushCanvasStatus.brush.subToolEmpty", "도구가 없습니다.")}</div> : null}
         </div>
       </div>
-      <p className="border-t border-line px-3 py-2 text-[0.65rem] leading-relaxed text-fg-3">
-        {allTools.some((tool) => tool.id === activeSubToolId) ? "세부 변형은 전체 라이브러리에서 선택할 수 있습니다." : "현재 브러시는 전체 라이브러리의 항목입니다. 선택은 그대로 유지됩니다."}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2 text-[0.65rem] leading-relaxed text-fg-3">
+        <span>
+          {allTools.some((tool) => tool.id === activeSubToolId) ? "세부 변형은 전체 라이브러리에서 선택할 수 있습니다." : "현재 브러시는 전체 라이브러리의 항목입니다. 선택은 그대로 유지됩니다."}
+        </span>
+        <a
+          href={STUDIO_BRUSH_CREATE_ROUTE}
+          className={`font-bold text-accent hover:underline ${FOCUS}`}
+        >
+          브러시 스튜디오 열기 →
+        </a>
+      </div>
     </section>
   );
 }

@@ -136,7 +136,6 @@ describe("StudioGeneric3dModelModePanel", () => {
     const failure: StudioBg3dGlbValidationFailure = {
       ok: false,
       code: "model-byte-budget-exceeded",
-      message: "이 기기의 모델 용량 기준을 초과했습니다.",
     };
     const manifest = createStudioGeneric3dGlbManifest({
       name: "oversized.glb",
@@ -150,6 +149,8 @@ describe("StudioGeneric3dModelModePanel", () => {
     render(<StudioGeneric3dModelModePanel {...props} />);
 
     expect(screen.getByRole("alert").textContent).toContain("사용 차단");
+    // A4 D4 (R11): 실패 코드는 집계 경계에서 해석돼 이관 전 생산자 원문이 표시된다.
+    expect(screen.getAllByText(/이 기기의 3D 모델 용량 기준을 초과했습니다/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "전체" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByRole("button", { name: "부위" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByRole("button", { name: "포즈" }).hasAttribute("disabled")).toBe(true);

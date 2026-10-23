@@ -397,19 +397,19 @@ describe("Studio BG3D shot batch plan v2", () => {
   it("rejects missing, duplicate, unknown, over-budget, and malformed plan prerequisites", async () => {
     await expect(createStudioBg3dShotBatchPlan(SHOTS, options(SHOTS, {
       selectedShotIds: [],
-    }))).resolves.toMatchObject({ ok: false, code: "empty-selection" });
+    }))).resolves.toMatchObject({ ok: false, code: "empty-selection", subcode: "emptySelection" });
     await expect(createStudioBg3dShotBatchPlan(SHOTS, options(SHOTS, {
       selectedShotIds: ["shot-a", "shot-a"],
-    }))).resolves.toMatchObject({ ok: false, code: "duplicate-selection" });
+    }))).resolves.toMatchObject({ ok: false, code: "duplicate-selection", subcode: "duplicateSelection" });
     await expect(createStudioBg3dShotBatchPlan(SHOTS, options(SHOTS, {
       selectedShotIds: ["shot-missing"],
-    }))).resolves.toMatchObject({ ok: false, code: "unknown-selection" });
+    }))).resolves.toMatchObject({ ok: false, code: "unknown-selection", subcode: "unknownSelection" });
     await expect(createStudioBg3dShotBatchPlan(SHOTS, options(SHOTS, {
       passes: [],
-    }))).resolves.toMatchObject({ ok: false, code: "empty-passes" });
+    }))).resolves.toMatchObject({ ok: false, code: "empty-passes", subcode: "emptyPasses" });
     await expect(createStudioBg3dShotBatchPlan(SHOTS, options(SHOTS, {
       passes: ["color", "color"],
-    }))).resolves.toMatchObject({ ok: false, code: "duplicate-pass" });
+    }))).resolves.toMatchObject({ ok: false, code: "duplicate-pass", subcode: "duplicatePass" });
 
     const missingCaptureBase = options();
     const missingCapture: CreateStudioBg3dShotBatchPlanOptions = {
@@ -422,6 +422,7 @@ describe("Studio BG3D shot batch plan v2", () => {
     await expect(createStudioBg3dShotBatchPlan(SHOTS, missingCapture)).resolves.toMatchObject({
       ok: false,
       code: "invalid-capture",
+      subcode: "planInvalid",
     });
     const overBudgetBase = options();
     const overBudget: CreateStudioBg3dShotBatchPlanOptions = {
@@ -439,9 +440,11 @@ describe("Studio BG3D shot batch plan v2", () => {
           : shot),
       },
     };
+    // 픽셀 예산 초과는 계획 오류 일반(planInvalid)이 아니라 전용 서브코드로 구분해 방출한다(A4 D4).
     await expect(createStudioBg3dShotBatchPlan(SHOTS, overBudget)).resolves.toMatchObject({
       ok: false,
       code: "invalid-capture",
+      subcode: "budgetExceeded",
     });
     const mismatchedEngineBase = options();
     await expect(createStudioBg3dShotBatchPlan(SHOTS, {
@@ -450,12 +453,12 @@ describe("Studio BG3D shot batch plan v2", () => {
         ...mismatchedEngineBase.capture,
         owner: { ...mismatchedEngineBase.capture.owner, backend: "babylon-webgl" },
       },
-    })).resolves.toMatchObject({ ok: false, code: "invalid-capture" });
+    })).resolves.toMatchObject({ ok: false, code: "invalid-capture", subcode: "planInvalid" });
     const duplicateShots = [SHOTS[0], { ...SHOTS[1], id: SHOTS[0].id }];
     await expect(createStudioBg3dShotBatchPlan(
       duplicateShots,
       options(SHOTS),
-    )).resolves.toMatchObject({ ok: false, code: "duplicate-shot-id" });
+    )).resolves.toMatchObject({ ok: false, code: "duplicate-shot-id", subcode: "duplicateShotId" });
   });
 
   it("normalizes source-equivalent colors and rejects capture facts that disagree with the source", async () => {
@@ -480,40 +483,41 @@ describe("Studio BG3D shot batch plan v2", () => {
       ok: true,
     });
     const invalidPlans = [
-      patchCaptureShot(perShotBase, 0, {
+      { plan: patchCaptureShot(perShotBase, 0, {
         requestedHeight: perShotBase.capture.shots[0]!.requestedHeight + 1,
         wasReduced: true,
-      }),
-      patchCaptureShot(perShotBase, 0, {
+      }), subcode: "resolutionMismatch" },
+      { plan: patchCaptureShot(perShotBase, 0, {
         width: perShotBase.capture.shots[0]!.width - 1,
-      }),
-      patchCaptureShot(perShotBase, 1, {
+      }), subcode: "resolutionMismatch" },
+      { plan: patchCaptureShot(perShotBase, 1, {
         includeDepth: true,
-      }),
-      patchCaptureShot(depthBase, 1, {
+      }), subcode: "depthMismatch" },
+      { plan: patchCaptureShot(depthBase, 1, {
         includeDepth: false,
-      }),
-      patchCaptureShot(normalBase, 1, {
+      }), subcode: "depthMismatch" },
+      { plan: patchCaptureShot(normalBase, 1, {
         includeDepth: false,
-      }),
-      patchCaptureShot(perShotBase, 0, {
+      }), subcode: "depthMismatch" },
+      { plan: patchCaptureShot(perShotBase, 0, {
         background: { color: "#000000", alpha: 1 },
-      }),
-      patchCaptureShot(perShotBase, 0, {
+      }), subcode: "backgroundMismatch" },
+      { plan: patchCaptureShot(perShotBase, 0, {
         background: { color: "#bfe3f5", alpha: 0 },
-      }),
-      patchCaptureShot(perShotBase, 0, {
+      }), subcode: "backgroundMismatch" },
+      { plan: patchCaptureShot(perShotBase, 0, {
         background: { color: "#bfe3f5", alpha: 0.5 },
-      }),
-      patchCaptureShot(fixedBase, 0, {
+      }), subcode: "planInvalid" },
+      { plan: patchCaptureShot(fixedBase, 0, {
         ...perShotBase.capture.shots[0],
-      }),
-    ];
+      }), subcode: "resolutionMismatch" },
+    ] as const;
 
     for (const invalid of invalidPlans) {
-      await expect(createStudioBg3dShotBatchPlan(SHOTS, invalid)).resolves.toMatchObject({
+      await expect(createStudioBg3dShotBatchPlan(SHOTS, invalid.plan)).resolves.toMatchObject({
         ok: false,
         code: "invalid-capture",
+        subcode: invalid.subcode,
       });
     }
   });
@@ -523,6 +527,7 @@ describe("Studio BG3D shot batch plan v2", () => {
     await expect(createStudioBg3dShotBatchPlan(SHOTS, options())).resolves.toMatchObject({
       ok: false,
       code: "digest-unavailable",
+      subcode: "planDigest",
     });
   });
 
@@ -655,6 +660,7 @@ describe("컷 배치 계획의 깊이 캡처 판정(내부선 억제)", () => {
     await expect(createStudioBg3dShotBatchPlan(SHOTS, withoutDepth)).resolves.toMatchObject({
       ok: false,
       code: "invalid-capture",
+      subcode: "depthMismatch",
     });
 
     const withDepth = patchCaptureShot(withoutDepth, 1, { includeDepth: true });
@@ -676,7 +682,7 @@ describe("컷 배치 계획의 깊이 캡처 판정(내부선 억제)", () => {
       await expect(createStudioBg3dShotBatchPlan(SHOTS, base)).resolves.toMatchObject({ ok: true });
       await expect(
         createStudioBg3dShotBatchPlan(SHOTS, patchCaptureShot(base, 1, { includeDepth: true })),
-      ).resolves.toMatchObject({ ok: false, code: "invalid-capture" });
+      ).resolves.toMatchObject({ ok: false, code: "invalid-capture", subcode: "depthMismatch" });
     }
   });
 

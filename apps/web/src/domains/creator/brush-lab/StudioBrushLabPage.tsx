@@ -203,6 +203,42 @@ export function StudioBrushLabPage() {
             </div>
           </div>
         </details>
+
+        <section
+          aria-label="타사 툴 브러시 1:1 매칭 가이드"
+          data-testid="brush-lab-competitor-matching"
+          className="mt-4 rounded-2xl border border-accent/25 bg-accent/5 p-3.5"
+        >
+          <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-accent">
+            COMPETITOR 1:1 MATCHING GUIDE · 익숙한 타사 브러시 그대로 시작하기
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
+              <strong className="block text-xs font-bold text-fg">클립스튜디오 리얼 G펜·마루펜</strong>
+              <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
+                → ToonStudio G펜 / 마루펜 (2차계 닙 갈라짐 + S-레벨 견인줄 보정)
+              </span>
+            </div>
+            <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
+              <strong className="block text-xs font-bold text-fg">프로크리에이트 6B 연필·시럽 잉크</strong>
+              <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
+                → 6B 스케치 연필 / 캘리그라피 리본 펜 (종이 요철 침착 + 예각 코너 보존)
+              </span>
+            </div>
+            <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
+              <strong className="block text-xs font-bold text-fg">사이툴(SAI) 연필·수채 블렌더</strong>
+              <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
+                → 샤프·수채 혼색 브러시 (S-1~S-7 견인줄 평활화 + K/S 감산 혼색)
+              </span>
+            </div>
+            <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
+              <strong className="block text-xs font-bold text-fg">리벨 7·크리타 습식 수채·유화</strong>
+              <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
+                → 젖은 수채 / 임파스토 유화 (모세관 번짐·꽃양배추 테두리·비등방 스머지)
+              </span>
+            </div>
+          </div>
+        </section>
       </header>
 
       <div className="mt-5 space-y-5">

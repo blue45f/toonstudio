@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { fnv1a64 } from "../core/hash";
 
 import { buildMipChain } from "./mip-chain";
-import { DEFAULT_PAPER_SPEC, generatePaper, periodicFbm, periodicValueNoise, samplePaper } from "./paper-grain";
+import {
+  DEFAULT_PAPER_SPEC,
+  evaluatePaperToothContact,
+  generatePaper,
+  periodicFbm,
+  periodicValueNoise,
+  samplePaper,
+} from "./paper-grain";
 import { SAMPLING_FILTERS, lodFor, sampleMask } from "./sampling";
 import { generateTip } from "./tip-generators";
 
@@ -148,6 +155,21 @@ describe("절차적 종이", () => {
     // (x, y) → (−y, x) 회전: 문서 (10, 0)은 텍셀 (0, 10)을 본다
     expect(samplePaper(field, 10, 0, rot).bump).toBeCloseTo(samplePaper(field, 0, 10, s1).bump, 6);
     expect(samplePaper(field, 10, 0, rot).dir).toBeCloseTo(samplePaper(field, 0, 10, s1).dir + Math.PI / 2, 6);
+  });
+
+  it("evaluatePaperToothContact: 필압 상승 시 평균 접촉 알파와 골짜기 안료 보유량이 단조 증가한다", () => {
+    const field = generatePaper({ ...spec, roughness: 0.75, tooth: 0.4 }, 64);
+    let lowContactSum = 0;
+    let highContactSum = 0;
+    for (let i = 0; i < 32; i += 1) {
+      const low = evaluatePaperToothContact(field, i * 3.7, i * 2.1, 0.2, spec, 0.3);
+      const high = evaluatePaperToothContact(field, i * 3.7, i * 2.1, 0.9, spec, 0.3);
+      lowContactSum += low.contactAlpha;
+      highContactSum += high.contactAlpha;
+      expect(low.anisotropicDrag).toBeGreaterThanOrEqual(0);
+      expect(low.anisotropicDrag).toBeLessThanOrEqual(1);
+    }
+    expect(highContactSum).toBeGreaterThan(lowContactSum);
   });
 });
 

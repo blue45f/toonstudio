@@ -12,7 +12,10 @@ import {
   type StudioCrdtCompatibleElement,
   type StudioCrdtCompatibleOrderedPage,
 } from "./studio-crdt-page-bridge";
+import { StudioCrdtScenePublishError } from "./studio-crdt-scene-publisher-error";
 import { studioCrdtLayerGroupKey } from "./studio-crdt-scene-schema";
+
+export { StudioCrdtScenePublishError, type StudioCrdtScenePublishErrorCode } from "./studio-crdt-scene-publisher-error";
 
 import type {
   StudioCrdtDocument,
@@ -79,10 +82,7 @@ function jsonValueEqual(left: unknown, right: unknown): boolean {
       jsonValueEqual(leftRecord[key], rightRecord[key]));
 }
 
-function diffStrokePayloadKeys(
-  previous: StudioCrdtDrawStrokePayload,
-  next: StudioCrdtDrawStrokePayload
-): StudioCrdtStrokePayloadKey[] {
+function diffStrokePayloadKeys(previous: StudioCrdtDrawStrokePayload, next: StudioCrdtDrawStrokePayload): StudioCrdtStrokePayloadKey[] {
   const previousRecord = previous as unknown as Record<string, unknown>;
   const nextRecord = next as unknown as Record<string, unknown>;
   const keys = new Set([...Object.keys(previousRecord), ...Object.keys(nextRecord)]);
@@ -196,7 +196,7 @@ function supportedSceneInputs<
     );
     for (const element of page.elements) {
       if (isCompatibleDrawElement(element)) continue;
-      if (result.has(element.id)) throw new Error("페이지 간에 중복된 장면 요소 식별자가 있습니다.");
+      if (result.has(element.id)) throw new StudioCrdtScenePublishError("duplicate-scene-element-id");
       // `hidden` remains the artist-authored visibility scalar. A Shared Stage receipt owns only a
       // derived overlay, so connect/unlink never creates a cross-root LWW race between the element
       // scalar and the remove-wins receipt events.
@@ -252,7 +252,7 @@ function supportedLayerGroupInputs<
   for (const page of pages) {
     for (const group of page.groups ?? []) {
       const key = studioCrdtLayerGroupKey(page.id, group.id);
-      if (result.has(key)) throw new Error("같은 페이지에 중복된 레이어 그룹 식별자가 있습니다.");
+      if (result.has(key)) throw new StudioCrdtScenePublishError("duplicate-layer-group-id");
       result.set(key, studioLayerGroupToCrdtGroup(page.id, group));
     }
   }
@@ -273,7 +273,7 @@ function supportedDrawInputs<
   for (const page of pages) {
     for (const element of page.elements) {
       if (!isCompatibleDrawElement(element)) continue;
-      if (result.has(element.id)) throw new Error("페이지 간에 중복된 드로우 식별자가 있습니다.");
+      if (result.has(element.id)) throw new StudioCrdtScenePublishError("duplicate-draw-id");
       result.set(element.id, {
         pageId: page.id,
         layerId: element.groupId ?? "page-root",
@@ -500,7 +500,7 @@ function publishSceneElementRecords(
     }
     if (!previousInput) continue; // Durable remote addition already won; never overwrite it here.
     if (current.payload.type !== nextInput.payload.type) {
-      throw new Error("같은 장면 요소 식별자의 타입을 변경할 수 없습니다.");
+      throw new StudioCrdtScenePublishError("element-type-change-not-allowed");
     }
     const diff = diffProperties(previousInput.payload.props, nextInput.payload.props);
     // A pre-existing topology reference may predate the synchronized image visibility scalar.
@@ -681,7 +681,7 @@ export function publishStudioCrdtSceneGraphDiff<
         ? null
         : migrateStudioShared3dStageCollectionDocument(page.shared3dStage);
       if (page.shared3dStage !== undefined && canonical === null) {
-        throw new Error("페이지 공유 3D 장면 연결 정보가 손상되었습니다.");
+        throw new StudioCrdtScenePublishError("shared-stage-corrupted");
       }
       return [page.id, canonical] as const;
     }),

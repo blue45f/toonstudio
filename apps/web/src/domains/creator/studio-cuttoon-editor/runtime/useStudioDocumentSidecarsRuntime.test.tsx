@@ -276,7 +276,7 @@ describe("retained Undo followed by persisted comments or AI references", () => 
       const generation = editor.result.current.studioRevisionProjectGenerationRef.current;
       expect(() => editor.result.current.setStudioComments(value => addStudioCommentReply(value, "thread", {
         id: "thread", author: { displayName: "Editor" }, body: "Duplicate",
-      }))).toThrow("이미 사용 중인 댓글 또는 답글 ID예요.");
+      }))).toThrow("duplicateId");
       expect(editor.result.current.studioComments.threads[0]?.replies).toEqual([]);
       expect(editor.result.current.studioRevisionProjectGenerationRef.current).toBe(generation);
       expect(editor.discardPixels).not.toHaveBeenCalled();

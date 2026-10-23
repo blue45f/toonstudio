@@ -40,6 +40,7 @@ import { filterDialogueItems } from "./lettering/studio-dialogue-batch-search";
 import {
   parseStudioDialogueInterchange,
   serializeStudioDialogueInterchange,
+  StudioDialogueInterchangeError,
   studioDialogueItemsToInterchange,
   type StudioDialogueImportApplyResult,
   type StudioDialogueImportMatchMode,
@@ -68,6 +69,7 @@ import type { StudioStoryBible } from "./studio-story-bible";
 
 import { cx } from "@/shared/lib/cx";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
+import { resolveStudioDialogueFdxLossDetail, resolveStudioDialogueInterchangeError, resolveStudioDialogueInterchangeWarning } from "./status-i18n/studio-producer-error-i18n-dialogue";
 
 export type StudioDialogueBatchPanelProps = {
   /** 전체 페이지(요소·그룹 포함) — StudioPage 의 pages 를 그대로 받는다. */
@@ -659,9 +661,9 @@ export function StudioDialogueBatchPanel({
         new Blob([file.text], { type: file.mimeType }),
         `toonstudio-dialogue${file.extension}`
       );
-      setInterchangeStatus({ tone: file.lossy ? "warn" : "good", text: [frozenStatus2Text("studio.frozenStatus2.dialogue.exported", { count: draftItems.length, ext: file.extension }, "{count}개 대사를 {ext} 파일로 내보냈어요."), ...file.warnings].join(" ") });
+      setInterchangeStatus({ tone: file.lossy ? "warn" : "good", text: [frozenStatus2Text("studio.frozenStatus2.dialogue.exported", { count: draftItems.length, ext: file.extension }, "{count}개 대사를 {ext} 파일로 내보냈어요."), ...file.warnings.map((warning) => resolveStudioDialogueInterchangeWarning(warning))].join(" ") });
     } catch (error) {
-      setInterchangeStatus({ tone: "bad", text: error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.createFileFailed", "대사 파일을 만들지 못했습니다.") });
+      setInterchangeStatus({ tone: "bad", text: error instanceof StudioDialogueInterchangeError ? resolveStudioDialogueInterchangeError(error) : error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.createFileFailed", "대사 파일을 만들지 못했습니다.") });
     }
   };
 
@@ -678,7 +680,7 @@ export function StudioDialogueBatchPanel({
       applied.locked > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.appliedLocked", { count: applied.locked }, "잠긴 대사 {count}개 제외.") : "",
       applied.missing > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.appliedMissing", { count: applied.missing }, "연결하지 못한 대사 {count}개.") : "",
       applied.droppedMetadata > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.appliedDroppedMeta", { count: applied.droppedMetadata }, "화자·시간 메타데이터 {count}개는 캔버스에 쓰지 않았어요.") : "",
-      ...parsed.warnings,
+      ...parsed.warnings.map((warning) => resolveStudioDialogueInterchangeWarning(warning)),
     ].filter(Boolean);
     setInterchangeStatus({
       tone: applied.missing > 0 || applied.locked > 0 || parsed.lossy ? "warn" : "good",
@@ -702,16 +704,14 @@ export function StudioDialogueBatchPanel({
     try {
       const parsed = parseStudioDialogueInterchange(format, await file.arrayBuffer());
       if (format === "fdx") {
-        if (!parsed.lossPreview) {
-          throw new Error(frozenStatus2Text("studio.frozenStatus2.dialogue.fdxPreviewFailed", "FDX 손실 미리보기를 만들지 못해 적용을 중단했습니다."));
-        }
+        if (!parsed.lossPreview) throw new Error(frozenStatus2Text("studio.frozenStatus2.dialogue.fdxPreviewFailed", "FDX 손실 미리보기를 만들지 못해 적용을 중단했습니다."));
         setPendingFdxImport({ fileName: file.name, parsed });
         setInterchangeStatus({ tone: "warn", text: frozenStatus2Text("studio.frozenStatus2.dialogue.fdxPreviewNotice", "FDX는 장면·액션 구조를 페이지와 컷으로 바꿉니다. 아래 손실 미리보기를 확인한 뒤 적용해 주세요.") });
       } else {
         await applyParsedInterchange(parsed);
       }
     } catch (error) {
-      setInterchangeStatus({ tone: "bad", text: error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.importFailed", "대사 파일을 가져오지 못했습니다.") });
+      setInterchangeStatus({ tone: "bad", text: error instanceof StudioDialogueInterchangeError ? resolveStudioDialogueInterchangeError(error) : error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.importFailed", "대사 파일을 가져오지 못했습니다.") });
     } finally {
       setInterchangeBusy(false);
     }
@@ -725,7 +725,7 @@ export function StudioDialogueBatchPanel({
       await applyParsedInterchange(pendingFdxImport.parsed);
       setPendingFdxImport(null);
     } catch (error) {
-      setInterchangeStatus({ tone: "bad", text: error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.fdxApplyFailed", "FDX 대사를 반영하지 못했습니다.") });
+      setInterchangeStatus({ tone: "bad", text: error instanceof StudioDialogueInterchangeError ? resolveStudioDialogueInterchangeError(error) : error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.fdxApplyFailed", "FDX 대사를 반영하지 못했습니다.") });
     } finally {
       setInterchangeBusy(false);
     }
@@ -923,7 +923,7 @@ export function StudioDialogueBatchPanel({
                               {item.sourceType} · {item.preview}
                             </strong>
                           </div>
-                          <p className="mt-0.5 pl-1">{item.detail}</p>
+                          <p className="mt-0.5 pl-1">{resolveStudioDialogueFdxLossDetail(item.detail)}</p>
                         </div>
                       ))}
                     {pendingFdxImport.parsed.lossPreview.items.filter(

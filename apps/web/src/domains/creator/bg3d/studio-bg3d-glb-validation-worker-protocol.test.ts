@@ -63,6 +63,9 @@ describe("studio BG3D worker protocol guards", () => {
       { path: "hash", mutate: (response: Record<string, unknown>) => {
         (response.result as Record<string, unknown>).verifiedSha256 = "sha256:not-a-hash";
       } },
+      { path: "missing success message", mutate: (response: Record<string, unknown>) => {
+        delete (response.result as Record<string, unknown>).message;
+      } },
       { path: "bytes", mutate: (response: Record<string, unknown>) => {
         (response.result as Record<string, unknown>).verifiedBytes = new ArrayBuffer(4);
       } },
@@ -95,12 +98,12 @@ describe("studio BG3D worker protocol guards", () => {
     }
   });
 
-  it("accepts only declared validator failure codes with a non-empty message", () => {
+  it("accepts only declared validator failure codes, carried without a message", () => {
     const base = {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 3,
-      result: { ok: false, code: "invalid-magic", message: "safe" },
+      result: { ok: false, code: "invalid-magic" },
     };
     expect(isStudioBg3dGlbWorkerResponse(base)).toBe(true);
     expect(isStudioBg3dGlbWorkerResponse({
@@ -109,7 +112,7 @@ describe("studio BG3D worker protocol guards", () => {
     })).toBe(false);
     expect(isStudioBg3dGlbWorkerResponse({
       ...base,
-      result: { ...base.result, message: "" },
+      result: { ok: false },
     })).toBe(false);
     expect(isStudioBg3dGlbWorkerResponse({
       ...base,

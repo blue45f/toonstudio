@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildLocalStorySeed,
+  buildStorySeedAiPrompt,
+  createAiStorySeedProvider,
   localStorySeedProvider,
+  parseStorySeedAiResponse,
   storySeedGenreKit,
   storySeedPlanPatch,
 } from "./studio-story-seed";
@@ -132,7 +135,7 @@ describe("storySeedPlanPatch", () => {
   });
 });
 
-describe("localStorySeedProvider", () => {
+describe("localStorySeedProvider & createAiStorySeedProvider", () => {
   it("제공자 계약으로 같은 초안을 돌려준다", async () => {
     const viaProvider = await localStorySeedProvider.generate({
       genre: "무협",
@@ -143,4 +146,37 @@ describe("localStorySeedProvider", () => {
     );
     expect(localStorySeedProvider.kind).toBe("local");
   });
+
+  it("AI 프롬프트 생성 및 응답 파싱이 source='ai' 초안으로 병합된다", () => {
+    const input = { genre: "판타지", keywords: ["차원의 열쇠"] };
+    const prompt = buildStorySeedAiPrompt(input);
+    expect(prompt.user).toContain("판타지");
+    expect(prompt.user).toContain("차원의 열쇠");
+
+    const parsed = parseStorySeedAiResponse(
+      JSON.stringify({
+        loglineCandidates: ["로그라인 A", "로그라인 B", "로그라인 C"],
+        goalDraft: "AI 목표 초안",
+        coreConflictDraft: "AI 핵심 갈등",
+        synopsisDraft: "AI 줄거리 초안",
+        openingHookDraft: "AI 첫 3컷 훅",
+        turningPointScaffold: ["기 전환", "승 전환", "전결 전환"],
+        emotionalArc: { from: "불안", to: "각성" },
+      }),
+      input,
+    );
+    expect(parsed).not.toBeNull();
+    expect(parsed?.source).toBe("ai");
+    expect(parsed?.goalDraft).toBe("AI 목표 초안");
+    expect(parsed?.emotionalArc).toEqual({ from: "불안", to: "각성" });
+  });
+
+  it("AI 제공자는 네트워크 미연결 또는 오류 시 로컬 씨앗 초안으로 안전하게 폴백한다", async () => {
+    const provider = createAiStorySeedProvider({ baseUrl: "", apiKey: "", textModel: "" });
+    const draft = await provider.generate({ genre: "로맨스", keywords: ["첫눈"] });
+    expect(provider.kind).toBe("ai");
+    expect(draft).not.toBeNull();
+    expect(draft?.genre).toBe("로맨스");
+  });
 });
+

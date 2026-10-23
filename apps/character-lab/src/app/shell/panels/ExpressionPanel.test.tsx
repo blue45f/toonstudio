@@ -69,6 +69,9 @@ describe("ExpressionPanel", () => {
     expect(last.weights.jawOpen).toBe(0.9);
     expect(last.weights.mouthSmile).toBeCloseTo((joy.mouthSmile ?? 0) * 0.25, 9);
     expect("coalesceKey" in last).toBe(false);
+    // 빠른 강도 프리셋 버튼 클릭으로 세기를 즉시 변경할 수 있다
+    fireEvent.click(screen.getByRole("button", { name: "자연스럽게 70%" }));
+    expect(screen.getByLabelText("프리셋 세기")).toHaveProperty("value", "0.7");
     // 프리셋을 바꾸면 세기와 덮어쓰기 목록이 초기화된다
     fireEvent.click(card("놀람"));
     expect(screen.getByLabelText("프리셋 세기")).toHaveProperty("value", "1");

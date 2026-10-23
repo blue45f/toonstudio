@@ -63,10 +63,8 @@ const TARGET_TRANSFORM = Object.freeze({
   scale: [1, 1, 1.5] as const,
 });
 const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
-  "/api/auth/session",
-  "/api/kmas/merge-on-access",
-  "/api/studio-ai/status",
-  "/api/analytics/traffic/",
+  "/api/auth/session", "/api/kmas/merge-on-access", "/api/studio-ai/status", "/api/analytics/traffic/",
+  "/api/health/capabilities", "/api/studio-realtime/tickets", // 능력 점검과 즉석 작업방 티켓: API 없는 preview 에서는 502 가 정상이다
 ] as const;
 
 type Vec3 = readonly [number, number, number];
@@ -1124,7 +1122,7 @@ async function countVisibleNativeLayers(page: Page): Promise<number> {
   const navigator = page.getByTestId("studio-inspector-navigator");
   await navigator.waitFor({ state: "visible", timeout: 10_000 });
   const layers = navigator.locator('[data-studio-inspector-primary-tab="layers"]');
-  if (await layers.getAttribute("aria-selected") !== "true") await layers.click();
+  if (await layers.count() > 0 && await layers.getAttribute("aria-selected") !== "true") await layers.click(); // 레이어 패널이 속성과 통합된 배치에는 탭이 없다
   return page.locator('[data-studio-layer-row="true"]').count();
 }
 
@@ -1238,24 +1236,6 @@ async function readNeutralBg3dSubjectFraming(
   }, { encoded: base64 });
 }
 
-async function openProjectActions(page: Page): Promise<Locator> {
-  const menu = page.locator('[data-studio-project-actions-menu="true"]');
-  if (await menu.isVisible().catch(() => false)) return menu;
-  const trigger = page.getByRole("button", { name: "프로젝트 센터", exact: true });
-  await visibleOrBlock(
-    trigger,
-    "project-actions-trigger",
-    "Shipped Studio project-actions trigger is not visible",
-  );
-  await trigger.click();
-  await visibleOrBlock(
-    menu,
-    "project-actions-menu",
-    "Shipped Studio project-actions portal did not open",
-  );
-  return menu;
-}
-
 async function openHybridDcc(page: Page): Promise<Locator> {
   const dialog = page.locator('[data-studio-hybrid-dcc-dialog="true"]');
   const panel = dialog.locator('[data-studio-hybrid-dcc-panel="true"]');
@@ -1274,15 +1254,21 @@ async function openHybridDcc(page: Page): Promise<Locator> {
       detail?.trim() || "Route-owned Hybrid DCC panel never passed recovery after reload",
     );
   }
-  const projectActions = await openProjectActions(page);
-  const entry = projectActions.locator('[data-studio-hybrid-dcc-open="true"]');
-  await visibleOrBlock(
-    entry,
-    "hybrid-dcc-entry",
-    "Hybrid DCC entry is not visible inside the shipped project-actions portal",
-  );
-  await entry.scrollIntoViewIfNeeded();
-  await entry.click();
+  // 로드 직후 몇 초는 하이드레이션 중이라 메뉴 열기·진입 클릭이 무시되고, 이어서 권한·원고 확인이 끝나기 전에는 진입이
+  // '잠시 뒤 다시 시도해 주세요' 알림만 남긴다. 사용자가 하듯 다시 누르고, 끝내 안 열리면 어느 경계에서 막혔는지 가른다.
+  const trigger = page.getByRole("button", { name: "프로젝트 센터", exact: true });
+  const projectMenu = page.locator('[data-studio-project-actions-menu="true"]');
+  const entry = projectMenu.locator('[data-studio-hybrid-dcc-open="true"]');
+  for (let attempt = 0; attempt < 10 && !await dialog.isVisible(); attempt += 1) {
+    if (!await projectMenu.isVisible()) await trigger.click({ timeout: 4_000 }).catch(() => undefined);
+    await entry.click({ timeout: 4_000 }).catch(() => undefined);
+    await dialog.waitFor({ state: "visible", timeout: 4_000 }).catch(() => undefined);
+  }
+  if (!await dialog.isVisible()) {
+    await visibleOrBlock(trigger, "project-actions-trigger", "Shipped Studio project-actions trigger is not visible");
+    await visibleOrBlock(projectMenu, "project-actions-menu", "Shipped Studio project-actions portal did not open");
+    await visibleOrBlock(entry, "hybrid-dcc-entry", "Hybrid DCC entry is not visible inside the shipped project-actions portal");
+  }
   await visibleOrBlock(dialog, "hybrid-dcc-dialog", "Hybrid DCC dialog did not open from its UI entry");
   if (!await panel.waitFor({ state: "visible", timeout: 20_000 })
     .then(() => true)
@@ -1554,7 +1540,7 @@ async function runVerticalSlice(
   }, undefined, { timeout: 12_000 });
   const assetId = await stats.getAttribute("data-active");
   if (!assetId || assetId === "none") block("primitive-identity", "Created cube has no stable asset ID");
-  const outlinerIdentity = panel.locator('aside[aria-label="DCC 아웃라이너"] button')
+  const outlinerIdentity = panel.locator('[data-studio-hybrid-dcc-outliner="true"] button')
     .filter({ hasText: assetId }).first();
   const selectionSummary = panel.locator(
     '[data-studio-hybrid-dcc-component-selection-summary="true"]',
@@ -1689,10 +1675,7 @@ async function runVerticalSlice(
     );
   }
 
-  const shotMode = recoveredPanel.getByRole("button", {
-    name: "컷과 비사실 렌더 작업 모드",
-    exact: true,
-  });
+  const shotMode = recoveredPanel.locator('[data-studio-hybrid-dcc-mode="shot"]');
   await visibleOrBlock(shotMode, "bg3d-handoff-mode", "Shot workbench mode is not visible");
   await shotMode.click();
   await page.waitForURL((url) => url.pathname.endsWith("/studio/3d/dcc/shot"), {
@@ -1703,7 +1686,7 @@ async function runVerticalSlice(
     'section[aria-labelledby="studio-dcc-quick-tools-title"]',
   );
   const handoff = recoveredQuickTools.getByRole("button", {
-    name: /^3D 배경·컷 편집기로 열기/u,
+    name: /^3D 배경 편집기로 열기/u,
   });
   await visibleOrBlock(handoff, "bg3d-handoff-button", "Verified GLB handoff is not visible");
   const handoffButtonVisible = await handoff.isVisible();
@@ -1730,6 +1713,10 @@ async function runVerticalSlice(
       .textContent().catch(() => null);
     block("bg3d-handoff", handoffLog?.trim() || "BG3D handoff did not open its shipped dialog");
   }
+  // 핸드오프는 BG3D 를 간편 모드('장면 도우미')로 연다. 보기·레이어 탭은 '정밀 편집'(640px 미만은 '정밀')에만 있다.
+  const professionalMode = bg3dDialog.getByRole("group", { name: "3D 편집 모드", exact: true }).getByRole("button", { name: /^정밀(?: 편집)?$/u });
+  await visibleOrBlock(professionalMode, "bg3d-professional-mode", "BG3D professional editing switch is not visible");
+  await professionalMode.click();
   // This shipped integration scenario deliberately exercises one preselected backend. The
   // headless browser does not expose a WebGPU adapter, so choose WebGL2 before the scene starts
   // instead of waiting for a WebGPU failure and conditionally substituting another engine.

@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Nội dung hồ sơ",
   "userProfile.refresh": "Tới lỏng",
   "userProfile.emptyReviews": "Không có đánh giá được công bố bởi người dùng này.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Không tải được tác phẩm đã sáng tác. Vui lòng thử lại.",
+  "userProfile.series.error": "Không tải được series đang đăng. Vui lòng thử lại.",
+  "userProfile.emptyReviewsHint": "Hãy để lại bài đánh giá đầu tiên cho tác phẩm bạn yêu thích.",
+  "userProfile.emptyReviewsCta": "Xem các tác phẩm"
 }

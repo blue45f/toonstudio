@@ -11,7 +11,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
@@ -56,10 +56,15 @@ export function MarketComparePage() {
     removeCompare,
     clearCompare,
   } = useMarketCompare();
+  const [onlyDiffs, setOnlyDiffs] = useState(false);
   const tableViewportRef = useRef<HTMLDivElement>(null);
   const rows = useMemo(
     () => createMarketComparisonRows(compareItems),
     [compareItems],
+  );
+  const visibleRows = useMemo(
+    () => (onlyDiffs ? rows.filter((row) => row.different) : rows),
+    [onlyDiffs, rows],
   );
   const summary = useMemo(
     () => summarizeMarketComparison(compareItems),
@@ -242,7 +247,24 @@ export function MarketComparePage() {
 
           <section className="mt-5 rounded-xl border border-line bg-card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line p-3">
-              <p className="text-xs text-fg-3">{t("표가 넓으면 이동 버튼으로 다른 열을 확인하세요.", "If the table is wide, use the move buttons to see other columns.")}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs text-fg-3">{t("표가 넓으면 이동 버튼으로 다른 열을 확인하세요.", "If the table is wide, use the move buttons to see other columns.")}</p>
+                <button
+                  type="button"
+                  aria-pressed={onlyDiffs}
+                  data-testid="market-compare-diff-toggle"
+                  onClick={() => setOnlyDiffs((prev) => !prev)}
+                  className={buttonClass({
+                    variant: onlyDiffs ? "solid" : "outline",
+                    size: "sm",
+                    className: "min-h-9 text-xs",
+                  })}
+                >
+                  {onlyDiffs
+                    ? t("전체 항목 보기", "Show all rows")
+                    : t("차이점만 강조 보기", "Show differences only")}
+                </button>
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -291,7 +313,7 @@ export function MarketComparePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/70">
-                  {rows.map((comparisonRow) => (
+                  {visibleRows.map((comparisonRow) => (
                     <tr key={comparisonRow.key} className={comparisonRow.different ? "bg-accent/[0.035]" : undefined}>
                       <th
                         scope="row"

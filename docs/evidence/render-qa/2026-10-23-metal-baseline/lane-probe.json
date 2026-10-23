@@ -1,0 +1,215 @@
+{
+  "generatedAt": "2026-10-23T01:08:36.416Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "playwrightChromium": "~/Library/Caches/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+  "lanes": [
+    {
+      "laneId": "pw-headless-shell-default",
+      "status": "probed",
+      "browserVersion": "156.0.8078.4",
+      "elapsedMs": 347,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "requestAdapter": "null"
+      },
+      "note": "chromium.launch({ headless: true }) — Playwright 기본(headless shell)",
+      "launch": {
+        "headless": true
+      }
+    },
+    {
+      "laneId": "chromium-full-default",
+      "status": "probed",
+      "browserVersion": "156.0.8078.4",
+      "elapsedMs": 2043,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "featureCount": 23,
+        "requestDevice": "ok"
+      },
+      "note": "channel: chromium + --no-sandbox — console 게이트의 일반 패스, character-shaper native 레인",
+      "launch": {
+        "headless": true,
+        "channel": "chromium",
+        "args": [
+          "--no-sandbox"
+        ]
+      }
+    },
+    {
+      "laneId": "chromium-full-darwin-native",
+      "status": "probed",
+      "browserVersion": "156.0.8078.4",
+      "elapsedMs": 544,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "featureCount": 26,
+        "requestDevice": "ok"
+      },
+      "note": "STUDIO_3D_WEBGPU_DARWIN_NATIVE_LAUNCH_ARGS (console 게이트 WebGPU 샤드)",
+      "launch": {
+        "headless": true,
+        "channel": "chromium",
+        "args": [
+          "--no-sandbox",
+          "--enable-unsafe-webgpu",
+          "--use-gpu-in-tests"
+        ]
+      }
+    },
+    {
+      "laneId": "chromium-full-metal-explicit",
+      "status": "probed",
+      "browserVersion": "156.0.8078.4",
+      "elapsedMs": 506,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "featureCount": 26,
+        "requestDevice": "ok"
+      },
+      "note": "Metal 을 명시한 레인",
+      "launch": {
+        "headless": true,
+        "channel": "chromium",
+        "args": [
+          "--no-sandbox",
+          "--enable-unsafe-webgpu",
+          "--use-gpu-in-tests",
+          "--use-angle=metal",
+          "--disable-software-rasterizer"
+        ]
+      }
+    },
+    {
+      "laneId": "chromium-full-swiftshader-webgl",
+      "status": "probed",
+      "browserVersion": "156.0.8078.4",
+      "elapsedMs": 2791,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "requestAdapter": "null"
+      },
+      "note": "playwright.config.ts SOFTWARE_GPU_ARGS 와 같은 WebGL 소프트웨어 레인",
+      "launch": {
+        "headless": true,
+        "channel": "chromium",
+        "args": [
+          "--no-sandbox",
+          "--use-gl=angle",
+          "--use-angle=swiftshader",
+          "--enable-unsafe-swiftshader"
+        ]
+      }
+    },
+    {
+      "laneId": "chromium-full-swiftshader-webgpu",
+      "status": "probed",
+      "browserVersion": "156.0.8078.4",
+      "elapsedMs": 3787,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "device": "",
+        "description": "",
+        "featureCount": 21,
+        "requestDevice": "ok"
+      },
+      "note": "STUDIO_3D_WEBGPU_SWIFTSHADER_LAUNCH_ARGS — macOS 에서 requestDevice 가 걸린다는 주석(Chromium 151)의 재측정",
+      "launch": {
+        "headless": true,
+        "channel": "chromium",
+        "args": [
+          "--no-sandbox",
+          "--enable-unsafe-webgpu",
+          "--enable-features=CDPScreenshotNewSurface,Vulkan",
+          "--use-vulkan=swiftshader",
+          "--use-webgpu-adapter=swiftshader",
+          "--use-gpu-in-tests",
+          "--use-gl=angle",
+          "--use-angle=swiftshader",
+          "--enable-unsafe-swiftshader"
+        ]
+      }
+    },
+    {
+      "laneId": "system-chrome-native",
+      "status": "probed",
+      "browserVersion": "156.0.8078.47",
+      "elapsedMs": 2343,
+      "secureContext": true,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "webgl2": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webgpu": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "featureCount": 26,
+        "requestDevice": "ok"
+      },
+      "note": "시스템 Google Chrome (playwright.config.ts 기본 채널)",
+      "launch": {
+        "headless": true,
+        "channel": "chrome",
+        "args": [
+          "--no-sandbox",
+          "--enable-unsafe-webgpu"
+        ]
+      }
+    }
+  ]
+}

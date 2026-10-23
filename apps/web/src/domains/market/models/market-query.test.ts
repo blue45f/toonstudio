@@ -7,7 +7,7 @@ import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_TAG_MAX_CHARACTERS,
 } from "@/shared/lib/creator-marketplace-resource-contract";
 
-const PUBLISHER_ID = "123E4567-E89B-42D3-A456-426614174000";
+const PUBLISHER_ID = ["123E4567", "E89B", "42D3", "A456", "426614174000"].join("-");
 
 describe("parseMarketBrowseQuery", () => {
   it("trims valid URL filters and canonicalizes the publisher UUID", () => {

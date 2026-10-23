@@ -189,7 +189,7 @@ describe("studio CRDT universal reference topology", () => {
     });
     document.addSceneElement(encoded3d, "image-a");
     expect(() => studioCrdtElementToSceneElement(document.getSceneElement("image-a")!))
-      .toThrow("원본 에셋");
+      .toThrow("reference-source-missing");
     expect(studioCrdtElementToSceneElement(
       document.getSceneElement("image-a")!,
       admittedImage
@@ -275,9 +275,9 @@ describe("studio CRDT universal reference topology", () => {
       filterMaskSurfaceId: FILTER_MASK_SURFACE_ID,
     };
     expect(() => studioElementToCrdtSceneElement("page-a", malformedMaskImage))
-      .toThrow("surface ID");
+      .toThrow("filter-mask-surface-id-invalid");
     expect(() => studioElementToCrdtSceneElement("page-a", maskedModel))
-      .toThrow("이미지 참조");
+      .toThrow("filter-mask-non-image-reference");
   });
 
   it("converges an image page move with a peer z-order edit and resolves same-named groups by page", () => {

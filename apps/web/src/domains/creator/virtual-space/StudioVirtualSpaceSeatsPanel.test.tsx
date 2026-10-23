@@ -59,4 +59,23 @@ describe("shared workspace panel", () => {
     fireEvent.click(screen.getByRole("button", { name: `${slot.labelKo} 사용하기` }));
     expect(onSelect).not.toHaveBeenCalled();
   });
+  it("빠른 빈자리 추천 착석 버튼은 비어 있는 내 선호 자리를 우선 선택하고 점유 현황 배지를 표시한다", () => {
+    const onSelect = vi.fn();
+    const { container } = render(
+      <StudioVirtualSpaceSeatsPanel
+        slots={slots}
+        snapshot={{
+          ...idle,
+          occupied: [{ slotId: slots[0]!.id, owner: { sessionId: "bob", displayName: "Bob", role: "editor" }, claimId: "bob-fence" }],
+        }}
+        approachingSlotId={null}
+        preferredSlotId={slots[1]!.id}
+        onSelect={onSelect}
+        onRelease={vi.fn()}
+      />,
+    );
+    expect(container.querySelector("[data-occupied-seats='1']")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "빠른 빈자리 추천 착석" }));
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith(slots[1]!.id);
+  });
 });

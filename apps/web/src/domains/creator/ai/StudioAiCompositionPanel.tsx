@@ -27,6 +27,7 @@ import {
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
+import { buildLocalSceneCompositionSuggestion } from "./studio-ai-composition-suggestion";
 import { reducedMotion } from "@/shared/hooks/use-in-view";
 
 export interface StudioAiCompositionOperationSettlement {
@@ -103,6 +104,14 @@ export function StudioAiCompositionPanel({
     setBusy(false);
   };
 
+  const runLocalFallback = () => {
+    const prompt = sceneTextValue.trim();
+    if (busy || !prompt) return;
+    setFailure(null);
+    setCopyState("idle");
+    setSuggestion(buildLocalSceneCompositionSuggestion(prompt));
+  };
+
   const copySuggestion = async () => {
     if (!suggestion) return;
     try {
@@ -115,7 +124,7 @@ export function StudioAiCompositionPanel({
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <Clapperboard size={14} />
         {translateCurrentStaticSourceText("domains.creator.ai.StudioAiCompositionPanel", "ko", "장면 구성 제안 (콘티→그림 보조)")} <StudioAiConnectionBadge configured={configured} /></div>
 
@@ -141,16 +150,26 @@ export function StudioAiCompositionPanel({
 
       <AnswerTuningControls value={answerTuning} onChange={setAnswerTuning} disabled={busy} density="compact" />
 
-      <button
-        type="button"
-        onClick={() => void run()}
-        disabled={!configured || busy || !sceneTextValue.trim()}
-        title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
-        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Clapperboard size={14} />}
-        {busy ? "구상하는 중…" : "구도 제안 받기"}
-      </button>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => void run()}
+          disabled={!configured || busy || !sceneTextValue.trim()}
+          title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Clapperboard size={14} />}
+          {busy ? "구상하는 중…" : "구도 제안 받기"}
+        </button>
+        <button
+          type="button"
+          onClick={runLocalFallback}
+          disabled={busy || !sceneTextValue.trim()}
+          className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          기본 연출 구도 즉시 제안
+        </button>
+      </div>
 
       <div ref={feedbackRef}>
         {failure ? (

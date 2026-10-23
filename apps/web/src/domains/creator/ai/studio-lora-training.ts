@@ -29,11 +29,74 @@ import { resolveAiErrorText } from "./studio-ai-error-i18n";
 export type StudioLoraJobKind = "character" | "style";
 export type StudioLoraJobStatus = "queued" | "training" | "completed" | "failed";
 
+/** 작가 그림체 모델의 선화 두께·터치 특성. */
+export type StudioArtistLineWeight = "fine" | "balanced" | "bold" | "brush";
+/** 작가 그림체 모델의 채색·명암 기법. */
+export type StudioArtistShadingMode = "cel" | "soft-gradient" | "hatching" | "painterly";
+/** 작가 그림체 모델의 대표 색감 무드. */
+export type StudioArtistPaletteMood = "vibrant" | "pastel" | "monochrome" | "noir";
+
+export interface StudioArtistStyleTrait {
+  readonly lineWeight: StudioArtistLineWeight;
+  readonly shadingMode: StudioArtistShadingMode;
+  readonly paletteMood: StudioArtistPaletteMood;
+  /** 작가명·작품명 출처 표기(선택). */
+  readonly artistAttribution?: string;
+}
+
+export const DEFAULT_STUDIO_ARTIST_STYLE_TRAIT: StudioArtistStyleTrait = Object.freeze({
+  lineWeight: "balanced",
+  shadingMode: "cel",
+  paletteMood: "vibrant",
+});
+
+export const STUDIO_ARTIST_LINE_WEIGHT_LABELS: Readonly<Record<StudioArtistLineWeight, string>> = Object.freeze({
+  fine: "섬세한 세필 선화",
+  balanced: "표준 웹툰 펜선",
+  bold: "강렬한 굵은 외곽선",
+  brush: "먹·붓터치 필압",
+});
+
+export const STUDIO_ARTIST_SHADING_MODE_LABELS: Readonly<Record<StudioArtistShadingMode, string>> = Object.freeze({
+  cel: "깔끔한 셀 채색",
+  "soft-gradient": "부드러운 그라데이션",
+  hatching: "펜선 해칭 명암",
+  painterly: "밀도 높은 회화풍",
+});
+
+export const STUDIO_ARTIST_PALETTE_MOOD_LABELS: Readonly<Record<StudioArtistPaletteMood, string>> = Object.freeze({
+  vibrant: "선명한 K-웹툰 원색",
+  pastel: "따뜻한 파스텔 톤",
+  monochrome: "단색·흑백 만화 톤",
+  noir: "느와르 하이콘트라스트",
+});
+
+const LINE_WEIGHT_PROMPT_TOKENS: Readonly<Record<StudioArtistLineWeight, string>> = {
+  fine: "delicate fine lineart, crisp thin contours",
+  balanced: "clean balanced manhwa lineart, expressive contours",
+  bold: "bold dynamic ink outlines, strong silhouette weight",
+  brush: "expressive calligraphy brush strokes, variable ink pressure",
+};
+
+const SHADING_MODE_PROMPT_TOKENS: Readonly<Record<StudioArtistShadingMode, string>> = {
+  cel: "crisp cel shading, clean two-tone shadow planes",
+  "soft-gradient": "soft atmospheric airbrush gradients, luminous skin shading",
+  hatching: "detailed cross-hatching ink shadows, comic screentone texture",
+  painterly: "rich painterly brushstrokes, dimensional color blending",
+};
+
+const PALETTE_MOOD_PROMPT_TOKENS: Readonly<Record<StudioArtistPaletteMood, string>> = {
+  vibrant: "vibrant K-webtoon color palette, high clarity saturation",
+  pastel: "soft pastel color harmony, gentle warm daylight",
+  monochrome: "monochrome manga ink and screentone contrast",
+  noir: "dramatic noir chiaroscuro lighting, deep desaturated shadows",
+};
+
 export interface StudioLoraTrainingJob {
   readonly id: string;
-  /** 연결 대상 캐릭터 식별자 — 캐릭터 이름에서 만든 안정 슬러그다. */
+  /** 연결 대상 캐릭터/화풍 식별자 — 이름에서 만든 안정 슬러그다. */
   readonly characterId: string;
-  /** 화면 표시용 캐릭터 이름(학습 신청 시점의 이름 스냅샷). */
+  /** 화면 표시용 캐릭터 또는 작가 그림체 이름(학습 신청 시점의 이름 스냅샷). */
   readonly characterLabel: string;
   readonly triggerWord: string;
   readonly kind: StudioLoraJobKind;
@@ -54,6 +117,10 @@ export interface StudioLoraTrainingJob {
   readonly lastError: string | null;
   /** lastError 코드의 보간 파라미터({status} 등). 구 레코드에는 없을 수 있다. */
   readonly lastErrorParams?: Readonly<Record<string, string | number>> | null;
+  /** 작가 본인의 그림체 데이터 권리·소유 확인 여부. */
+  readonly artistOwnershipConfirmed?: boolean;
+  /** 화풍 학습(`kind === "style"`) 시 기록된 작가 그림체 특성 프로필. */
+  readonly styleTraits?: StudioArtistStyleTrait | null;
 }
 
 /**
@@ -67,10 +134,12 @@ export function studioLoraJobErrorText(job: StudioLoraTrainingJob): string | nul
 
 /** fal 학습 문서의 권고 하한 — "at least 4 images". 이보다 적으면 제출을 막는다. */
 export const STUDIO_LORA_MIN_TRAINING_IMAGES = 4;
+/** 화풍 일반화 품질이 안정되는 권장 이미지 매수. */
+export const STUDIO_LORA_RECOMMENDED_STYLE_IMAGES = 8;
 /** 한 번에 묶을 수 있는 학습 이미지 상한 — 브라우저 메모리에서 zip을 만들기 때문이다. */
 export const STUDIO_LORA_MAX_TRAINING_IMAGES = 20;
 
-/** 캐릭터 이름 → 안정 식별자. 한글이면 라틴/숫자만 남기고, 비면 기본값을 쓴다. */
+/** 캐릭터·화풍 이름 → 안정 식별자. 한글이면 라틴/숫자만 남기고, 비면 기본값을 쓴다. */
 export function studioLoraCharacterIdFromLabel(label: string): string {
   const slug = label
     .trim()
@@ -91,14 +160,31 @@ export function suggestStudioLoraTriggerWord(label: string): string {
   return "toonchar";
 }
 
-/** 생성 프롬프트에 트리거 워드가 없으면 앞에 붙인다(이미 있으면 그대로 둔다). */
+/** 작가 화풍 특성을 프롬프트 토큰 문자열로 직렬화한다. */
+export function describeStudioArtistStyleTraits(traits?: StudioArtistStyleTrait | null): string {
+  if (!traits) return "";
+  return [
+    LINE_WEIGHT_PROMPT_TOKENS[traits.lineWeight],
+    SHADING_MODE_PROMPT_TOKENS[traits.shadingMode],
+    PALETTE_MOOD_PROMPT_TOKENS[traits.paletteMood],
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+/** 생성 프롬프트에 트리거 워드(+화풍 학습 모델이면 작가 그림체 특성 토큰)가 없으면 앞에 붙인다. */
 export function buildStudioLoraGenerationPrompt(job: StudioLoraTrainingJob, prompt: string): string {
   const trimmed = prompt.trim();
   if (!trimmed) return trimmed;
   const trigger = job.triggerWord.trim();
-  if (!trigger) return trimmed;
-  if (trimmed.toLocaleLowerCase().includes(trigger.toLocaleLowerCase())) return trimmed;
-  return `${trigger}, ${trimmed}`;
+  const traitTokens = job.kind === "style" ? describeStudioArtistStyleTraits(job.styleTraits) : "";
+  const hasTrigger = trigger.length > 0 && trimmed.toLocaleLowerCase().includes(trigger.toLocaleLowerCase());
+  const prefixParts: string[] = [];
+  if (trigger && !hasTrigger) prefixParts.push(trigger);
+  if (traitTokens && !trimmed.toLocaleLowerCase().includes(traitTokens.toLocaleLowerCase())) {
+    prefixParts.push(traitTokens);
+  }
+  return prefixParts.length > 0 ? `${prefixParts.join(", ")}, ${trimmed}` : trimmed;
 }
 
 /** 학습 제출 직후의 잡 레코드 — 상태는 fal이 돌려준 제출 응답이 근거이다. */
@@ -111,8 +197,11 @@ export function createStudioLoraJobRecord(options: {
   readonly statusUrl: string | null;
   readonly responseUrl: string | null;
   readonly trainingImageCount: number;
-  readonly nowIso: string;
+  readonly nowIso?: string;
+  readonly artistOwnershipConfirmed?: boolean;
+  readonly styleTraits?: StudioArtistStyleTrait | null;
 }): StudioLoraTrainingJob {
+  const nowIso = options.nowIso ?? new Date().toISOString();
   return Object.freeze({
     id: options.id,
     characterId: studioLoraCharacterIdFromLabel(options.characterLabel),
@@ -126,10 +215,16 @@ export function createStudioLoraJobRecord(options: {
     loraFileUrl: null,
     configFileUrl: null,
     trainingImageCount: options.trainingImageCount,
-    createdAt: options.nowIso,
-    updatedAt: options.nowIso,
+    createdAt: nowIso,
+    updatedAt: nowIso,
     lastError: null,
     lastErrorParams: null,
+    ...(options.artistOwnershipConfirmed !== undefined
+      ? { artistOwnershipConfirmed: options.artistOwnershipConfirmed }
+      : {}),
+    ...(options.styleTraits !== undefined
+      ? { styleTraits: options.styleTraits ? Object.freeze({ ...options.styleTraits }) : null }
+      : {}),
   });
 }
 
@@ -297,6 +392,30 @@ function readJobErrorParams(record: Record<string, unknown>): Readonly<Record<st
   return params;
 }
 
+function normalizeStudioStyleTrait(value: unknown): StudioArtistStyleTrait | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const lineWeight = readJobString(record, "lineWeight");
+  const shadingMode = readJobString(record, "shadingMode");
+  const paletteMood = readJobString(record, "paletteMood");
+  if (lineWeight !== "fine" && lineWeight !== "balanced" && lineWeight !== "bold" && lineWeight !== "brush") {
+    return null;
+  }
+  if (shadingMode !== "cel" && shadingMode !== "soft-gradient" && shadingMode !== "hatching" && shadingMode !== "painterly") {
+    return null;
+  }
+  if (paletteMood !== "vibrant" && paletteMood !== "pastel" && paletteMood !== "monochrome" && paletteMood !== "noir") {
+    return null;
+  }
+  const artistAttribution = readJobString(record, "artistAttribution")?.trim();
+  return Object.freeze({
+    lineWeight,
+    shadingMode,
+    paletteMood,
+    ...(artistAttribution ? { artistAttribution } : {}),
+  });
+}
+
 function normalizeStudioLoraJob(value: unknown): StudioLoraTrainingJob | null {
   if (typeof value !== "object" || value === null) return null;
   const record = value as Record<string, unknown>;
@@ -315,6 +434,10 @@ function normalizeStudioLoraJob(value: unknown): StudioLoraTrainingJob | null {
   if (status !== "queued" && status !== "training" && status !== "completed" && status !== "failed") return null;
   if (kind !== "character" && kind !== "style") return null;
   const trainingImageCount = record["trainingImageCount"];
+  const artistOwnershipConfirmed =
+    typeof record["artistOwnershipConfirmed"] === "boolean" ? record["artistOwnershipConfirmed"] : undefined;
+  const styleTraits =
+    record["styleTraits"] !== undefined ? normalizeStudioStyleTrait(record["styleTraits"]) : undefined;
   return Object.freeze({
     id,
     characterId,
@@ -334,6 +457,8 @@ function normalizeStudioLoraJob(value: unknown): StudioLoraTrainingJob | null {
     updatedAt,
     lastError: readJobString(record, "lastError"),
     lastErrorParams: readJobErrorParams(record),
+    ...(artistOwnershipConfirmed !== undefined ? { artistOwnershipConfirmed } : {}),
+    ...(styleTraits !== undefined ? { styleTraits } : {}),
   });
 }
 
@@ -403,6 +528,133 @@ export function findCompletedStudioLoraJob(
   return best;
 }
 
+/** 학습이 완료된 작가 그림체 모델(`kind === "style"`) 목록을 최신순으로 돌려준다. */
+export function listCompletedStudioStyleModels(
+  jobs: readonly StudioLoraTrainingJob[],
+): readonly StudioLoraTrainingJob[] {
+  return Object.freeze(
+    jobs
+      .filter((job) => job.kind === "style" && job.status === "completed" && Boolean(job.loraFileUrl))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+  );
+}
+
+/** 식별자·이름·트리거 워드로 완료된 작가 그림체 모델을 찾는다. */
+export function findCompletedStudioStyleModel(
+  jobs: readonly StudioLoraTrainingJob[],
+  query: string,
+): StudioLoraTrainingJob | null {
+  const normalized = query.trim().toLocaleLowerCase();
+  if (!normalized) return null;
+  const slug = studioLoraCharacterIdFromLabel(query);
+  for (const job of listCompletedStudioStyleModels(jobs)) {
+    if (
+      job.id.toLocaleLowerCase() === normalized ||
+      job.characterId.toLocaleLowerCase() === normalized ||
+      job.characterId === slug ||
+      job.characterLabel.trim().toLocaleLowerCase() === normalized ||
+      job.triggerWord.trim().toLocaleLowerCase() === normalized
+    ) {
+      return job;
+    }
+  }
+  return null;
+}
+
+export interface StudioStyleDatasetValidationResult {
+  readonly ready: boolean;
+  readonly validImageCount: number;
+  readonly duplicateCount: number;
+  readonly invalidFormatCount: number;
+  readonly recommendedSteps: number;
+  readonly qualityTier: "insufficient" | "minimum" | "optimal";
+  readonly blockingReason: string | null;
+  readonly coachingTip: string;
+}
+
+/**
+ * 작가 그림체 학습 데이터셋 검증기 — 이미지 수량·중복·포맷·권리 확인 여부를 점검하고
+ * 예비/전문 작가를 위한 학습 품질 코칭 팁을 돌려준다.
+ */
+export function validateStudioStyleTrainingDataset(options: {
+  readonly images: readonly string[];
+  readonly kind: StudioLoraJobKind;
+  readonly artistOwnershipConfirmed?: boolean;
+}): StudioStyleDatasetValidationResult {
+  const seen = new Set<string>();
+  let validImageCount = 0;
+  let duplicateCount = 0;
+  let invalidFormatCount = 0;
+  options.images.forEach((raw, idx) => {
+    const trimmed = raw.trim();
+    if (seen.has(trimmed)) {
+      duplicateCount += 1;
+      return;
+    }
+    seen.add(trimmed);
+    if (!studioLoraArchiveEntryFromDataUrl(trimmed, idx)) invalidFormatCount += 1;
+    else validImageCount += 1;
+  });
+  const baseCounts = { validImageCount, duplicateCount, invalidFormatCount };
+  if (options.kind === "style" && options.artistOwnershipConfirmed === false) {
+    return Object.freeze({
+      ...baseCounts,
+      ready: false,
+      recommendedSteps: 1000,
+      qualityTier: "insufficient",
+      blockingReason: "작가 본인의 창작 그림체 데이터(또는 학습 허락을 받은 원고)인지 확인해 주세요.",
+      coachingTip: "작가 고유 화풍 보호를 위해 본인 소유 또는 명시적으로 허락된 학습 데이터만 모델로 생성할 수 있습니다.",
+    });
+  }
+  if (invalidFormatCount > 0) {
+    return Object.freeze({
+      ...baseCounts,
+      ready: false,
+      recommendedSteps: 1000,
+      qualityTier: "insufficient",
+      blockingReason: "학습 세트에 지원하지 않는 형식의 이미지가 섞여 있습니다(PNG·JPEG·WebP만 가능).",
+      coachingTip: "선화와 채색 경계가 깨지지 않도록 PNG 또는 고화질 WebP 원고를 권장합니다.",
+    });
+  }
+  if (validImageCount < STUDIO_LORA_MIN_TRAINING_IMAGES) {
+    return Object.freeze({
+      ...baseCounts,
+      ready: false,
+      recommendedSteps: 1000,
+      qualityTier: "insufficient",
+      blockingReason: `학습 이미지가 ${validImageCount}장입니다. fal 학습은 최소 ${STUDIO_LORA_MIN_TRAINING_IMAGES}장을 권합니다.`,
+      coachingTip:
+        options.kind === "style"
+          ? `클로즈업·미디엄·전신 컷과 대표 채색 컷을 섞어 최소 ${STUDIO_LORA_MIN_TRAINING_IMAGES}장(${STUDIO_LORA_RECOMMENDED_STYLE_IMAGES}장 이상 권장)을 담아 주세요.`
+          : `정면·측면·반측면 표정이 보이는 컷을 최소 ${STUDIO_LORA_MIN_TRAINING_IMAGES}장 담아 주세요.`,
+    });
+  }
+  if (validImageCount > STUDIO_LORA_MAX_TRAINING_IMAGES) {
+    return Object.freeze({
+      ...baseCounts,
+      ready: false,
+      recommendedSteps: 1400,
+      qualityTier: "optimal",
+      blockingReason: `학습 이미지는 최대 ${STUDIO_LORA_MAX_TRAINING_IMAGES}장까지 담을 수 있습니다.`,
+      coachingTip: "가장 선명하고 화풍 특징이 잘 드러나는 대표 원고 20장 이내로 추려 주세요.",
+    });
+  }
+  const qualityTier = validImageCount >= STUDIO_LORA_RECOMMENDED_STYLE_IMAGES ? "optimal" : "minimum";
+  const recommendedSteps = Math.min(1600, Math.max(800, validImageCount * 110));
+  const coachingTip =
+    qualityTier === "optimal"
+      ? "화풍 일반화에 충분한 데이터셋입니다! 스토리보드 컷 생성 시 선 굵기와 채색 톤이 안정적으로 재현됩니다."
+      : `최소 학습 요건을 충족했습니다. ${STUDIO_LORA_RECOMMENDED_STYLE_IMAGES}장 이상 담으면 다양한 카메라 앵글에서도 그림체 일관성이 한층 높아집니다.`;
+  return Object.freeze({
+    ...baseCounts,
+    ready: true,
+    recommendedSteps,
+    qualityTier,
+    blockingReason: null,
+    coachingTip,
+  });
+}
+
 // ── 상태 새로고침 ──────────────────────────────────────────────────────────
 
 export interface StudioLoraRefreshOutcome {
@@ -443,36 +695,21 @@ export async function refreshStudioLoraJob(
     return statusOutcome;
   }
   const { status, httpStatus } = statusOutcome.data;
+  const queriedResult = (patch: Partial<StudioLoraTrainingJob>): StudioLoraResult<StudioLoraRefreshOutcome> => ({
+    ok: true,
+    data: { queried: true, job: withJobPatch(job, patch, nowIso) },
+  });
   if (httpStatus === 404) {
-    return {
-      ok: true,
-      data: {
-        queried: true,
-        job: withJobPatch(job, {
-          status: "failed",
-          lastError: "studio.aiError.fal.jobRequestNotFound",
-          lastErrorParams: null,
-        }, nowIso),
-      },
-    };
+    return queriedResult({ status: "failed", lastError: "studio.aiError.fal.jobRequestNotFound", lastErrorParams: null });
   }
   if (httpStatus < 200 || httpStatus >= 300) {
-    return {
-      ok: true,
-      data: {
-        queried: true,
-        job: withJobPatch(job, {
-          lastError: "studio.aiError.fal.jobStatusRejected",
-          lastErrorParams: { status: httpStatus },
-        }, nowIso),
-      },
-    };
+    return queriedResult({ lastError: "studio.aiError.fal.jobStatusRejected", lastErrorParams: { status: httpStatus } });
   }
   if (status === "IN_QUEUE") {
-    return { ok: true, data: { queried: true, job: withJobPatch(job, { status: "queued", lastError: null, lastErrorParams: null }, nowIso) } };
+    return queriedResult({ status: "queued", lastError: null, lastErrorParams: null });
   }
   if (status === "IN_PROGRESS") {
-    return { ok: true, data: { queried: true, job: withJobPatch(job, { status: "training", lastError: null, lastErrorParams: null }, nowIso) } };
+    return queriedResult({ status: "training", lastError: null, lastErrorParams: null });
   }
   if (status === "COMPLETED") {
     const result = await fetchFalQueueResult(deps, apiKey, {
@@ -481,67 +718,31 @@ export async function refreshStudioLoraJob(
       responseUrl: job.responseUrl,
     });
     if (!result.ok) {
-      return {
-        ok: true,
-        data: {
-          queried: true,
-          job: withJobPatch(job, {
-            lastError: "studio.aiError.fal.jobResultFetchFailed",
-            lastErrorParams: null,
-          }, nowIso),
-        },
-      };
+      return queriedResult({ lastError: "studio.aiError.fal.jobResultFetchFailed", lastErrorParams: null });
     }
     if (result.data.httpStatus < 200 || result.data.httpStatus >= 300) {
-      return {
-        ok: true,
-        data: {
-          queried: true,
-          job: withJobPatch(job, {
-            status: "failed",
-            lastError: "studio.aiError.fal.jobEndedWithoutResult",
-            lastErrorParams: { status: result.data.httpStatus },
-          }, nowIso),
-        },
-      };
+      return queriedResult({
+        status: "failed",
+        lastError: "studio.aiError.fal.jobEndedWithoutResult",
+        lastErrorParams: { status: result.data.httpStatus },
+      });
     }
     const parsed = parseFalLoraTrainingResult(result.data.payload);
     if (!parsed) {
-      return {
-        ok: true,
-        data: {
-          queried: true,
-          job: withJobPatch(job, {
-            status: "failed",
-            lastError: "studio.aiError.fal.jobResultLoraMissing",
-            lastErrorParams: null,
-          }, nowIso),
-        },
-      };
+      return queriedResult({
+        status: "failed",
+        lastError: "studio.aiError.fal.jobResultLoraMissing",
+        lastErrorParams: null,
+      });
     }
-    return {
-      ok: true,
-      data: {
-        queried: true,
-        job: withJobPatch(job, {
-          status: "completed",
-          loraFileUrl: parsed.loraFileUrl,
-          configFileUrl: parsed.configFileUrl,
-          lastError: null,
-          lastErrorParams: null,
-        }, nowIso),
-      },
-    };
+    return queriedResult({
+      status: "completed",
+      loraFileUrl: parsed.loraFileUrl,
+      configFileUrl: parsed.configFileUrl,
+      lastError: null,
+      lastErrorParams: null,
+    });
   }
   // 문서화되지 않은 상태 값 — 실패로 단정하지 않고 마지막 상태를 유지한다.
-  return {
-    ok: true,
-    data: {
-      queried: true,
-      job: withJobPatch(job, {
-        lastError: "studio.aiError.fal.jobUnknownStatus",
-        lastErrorParams: null,
-      }, nowIso),
-    },
-  };
+  return queriedResult({ lastError: "studio.aiError.fal.jobUnknownStatus", lastErrorParams: null });
 }

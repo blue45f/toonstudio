@@ -141,7 +141,7 @@ describe("editable composite + shared Stage detach integration", () => {
       },
       targetElementId: "anchor-a",
     });
-    if (!ltPlan.ok) throw new Error(`${ltPlan.code}: ${ltPlan.message}`);
+    if (!ltPlan.ok) throw new Error(ltPlan.code);
     const detached = planStudioBg3dEditableCompositeDetach<
       TestElement,
       StudioBg3dSceneDocument
@@ -149,7 +149,7 @@ describe("editable composite + shared Stage detach integration", () => {
       plan: ltPlan,
       compositePngDataUrl: PNG.composite,
     });
-    if (!detached.ok) throw new Error(`${detached.code}: ${detached.message}`);
+    if (!detached.ok) throw new Error(detached.code);
     const removedA = planStudioShared3dStageCollectionRemoval({
       value: second.nextState,
       bundleIds: ["bundle-a"],

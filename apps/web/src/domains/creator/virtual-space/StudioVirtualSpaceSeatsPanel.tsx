@@ -14,11 +14,46 @@ export function StudioVirtualSpaceSeatsPanel({ slots, snapshot, approachingSlotI
 }) {
   const bt = useBilingual("StudioVirtualSpaceSeatsPanel");
   if (!slots.length) return null;
+  const occupiedIds = new Set(snapshot.occupied.map((item) => item.slotId));
+  const freeSlots = snapshot.available ? slots.filter((slot) => !occupiedIds.has(slot.id)) : [];
+  const preferredFreeSlot = preferredSlotId ? freeSlots.find((slot) => slot.id === preferredSlotId) ?? null : null;
+  const recommendedSlot = preferredFreeSlot ?? freeSlots[0] ?? null;
+  const hasActiveClaim =
+    snapshot.status === "held" ||
+    snapshot.status === "requesting" ||
+    approachingSlotId !== null;
+
   return <section className="vs2-panel" aria-label={bt("함께 쓰는 작업 자리", "Shared workspaces")} data-space-interactive="true">
-    <h2 className="font-bold">{bt("작업 자리", "Workspaces")}</h2>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="font-bold">{bt("작업 자리", "Workspaces")}</h2>
+      {snapshot.available ? (
+        <span
+          className="rounded-full border border-line px-2.5 py-0.5 text-[11px] font-semibold text-fg-2"
+          data-available-seats={freeSlots.length}
+          data-occupied-seats={occupiedIds.size}
+        >
+          {bt(`여유 ${freeSlots.length}석 · 사용 ${occupiedIds.size}석`, `${freeSlots.length} open · ${occupiedIds.size} in use`)}
+        </span>
+      ) : null}
+    </div>
     <p className="mt-2 text-xs text-fg-2">{bt("빈 자리를 선택하면 그곳으로 이동해 사용을 확인해요. 문서 편집 권한은 달라지지 않아요.", "Choose an available desk to walk there and confirm its use. Document permissions remain separate.")}</p>
     {onPreferSlot ? <p className="mt-2 text-xs text-fg-2">{bt("자주 쓰는 자리를 기억할 수 있어요. 기억한 자리도 사용할 때마다 빈자리인지 확인해요.", "Remember a preferred desk. Its availability is checked each time you use it.")}</p> : null}
     {!snapshot.available ? <p role="status" className="mt-2 text-xs text-fg-2">{bt("공유 자리 확인을 지원하는 팀 서버 연결이 필요해요.", "Shared spaces require a team connection that supports server-confirmed reservations.")}</p> : null}
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        className="min-h-9 rounded-lg border border-line px-3 text-xs font-semibold disabled:opacity-50"
+        disabled={!snapshot.available || !recommendedSlot || hasActiveClaim}
+        onClick={() => {
+          if (recommendedSlot) onSelect(recommendedSlot.id);
+        }}
+        aria-label={bt("빠른 빈자리 추천 착석", "Quick claim recommended desk")}
+      >
+        {preferredFreeSlot
+          ? bt(`⚡ 내 선호 자리(${preferredFreeSlot.labelKo}) 바로 이동`, `⚡ Walk to preferred desk (${preferredFreeSlot.labelEn})`)
+          : bt("⚡ 빠른 빈자리 추천 착석", "⚡ Quick claim available desk")}
+      </button>
+    </div>
     <ul className="mt-3 space-y-2">
       {slots.map((slot) => {
         const occupied = snapshot.occupied.find((item) => item.slotId === slot.id);

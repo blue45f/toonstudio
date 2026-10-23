@@ -631,7 +631,7 @@ describe("studio raster CRDT replay runtime", () => {
       ).then((result) => {
         leakedResult = result;
       })
-    ).rejects.toMatchObject({ code: "asset_download_failed" });
+    ).rejects.toMatchObject({ code: "asset-download-failed" });
     expect(leakedResult).toBeUndefined();
 
     const controller = new AbortController();
@@ -687,7 +687,7 @@ describe("studio raster CRDT replay runtime", () => {
       fixtureDependencies([asset], {
         decode: async () => ({ width: 1, height: 1, rgba: new Uint8ClampedArray(3) }),
       })
-    )).rejects.toMatchObject({ code: "decoded_rgba_length_mismatch" });
+    )).rejects.toMatchObject({ code: "decoded-rgba-length-mismatch" });
   });
 
   it("rejects a content-addressed PNG with a corrupt chunk CRC before decode", async () => {
@@ -712,7 +712,7 @@ describe("studio raster CRDT replay runtime", () => {
         ]),
       },
       fixtureDependencies([corruptedAsset], { decode })
-    )).rejects.toMatchObject({ code: "invalid_png_crc" });
+    )).rejects.toMatchObject({ code: "invalid-png-crc" });
     expect(decode).not.toHaveBeenCalled();
   });
 
@@ -744,7 +744,7 @@ describe("studio raster CRDT replay runtime", () => {
           ]),
         },
         fixtureDependencies([asset], { decode })
-      )).rejects.toMatchObject({ code: "unsupported_png_profile" });
+      )).rejects.toMatchObject({ code: "unsupported-png-profile" });
       expect(decode).not.toHaveBeenCalled();
     }
   );
@@ -768,7 +768,7 @@ describe("studio raster CRDT replay runtime", () => {
         ]),
       },
       fixtureDependencies([webp], { download })
-    )).rejects.toMatchObject({ code: "unsupported_media_type" });
+    )).rejects.toMatchObject({ code: "asset-not-png" });
     expect(download).not.toHaveBeenCalled();
   });
 
@@ -780,7 +780,7 @@ describe("studio raster CRDT replay runtime", () => {
         pngChunk("IDAT", Uint8Array.of(0x78, 0x01, 1)),
         pngChunk("IEND", new Uint8Array()),
       ],
-      "invalid_png_chunk_type",
+      "invalid-png-chunk-type",
     ],
     [
       "unknown critical chunk",
@@ -789,12 +789,12 @@ describe("studio raster CRDT replay runtime", () => {
         pngChunk("IDAT", Uint8Array.of(0x78, 0x01, 1)),
         pngChunk("IEND", new Uint8Array()),
       ],
-      "unsupported_png_critical_chunk",
+      "unsupported-png-critical-chunk",
     ],
     [
       "empty IDAT",
       [pngChunk("IDAT", new Uint8Array()), pngChunk("IEND", new Uint8Array())],
-      "invalid_png_idat_sequence",
+      "invalid-png-idat-sequence",
     ],
     [
       "non-contiguous IDAT",
@@ -804,7 +804,7 @@ describe("studio raster CRDT replay runtime", () => {
         pngChunk("IDAT", Uint8Array.of(2)),
         pngChunk("IEND", new Uint8Array()),
       ],
-      "invalid_png_idat_sequence",
+      "invalid-png-idat-sequence",
     ],
   ] satisfies readonly (readonly [string, readonly Uint8Array[], string])[])(
     "fails closed on a PNG with %s",

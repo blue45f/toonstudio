@@ -9,7 +9,16 @@
 import type { StudioFootstepFoot, StudioFootstepSurface } from "./studio-virtual-space-footsteps";
 
 /** 상호작용 효과음 종류. 이벤트 하나에 소리 하나가 원칙이다. */
-export type StudioSfxKind = "activate" | "peer-join" | "peer-leave" | "emote";
+export type StudioSfxKind =
+  | "activate"
+  | "peer-join"
+  | "peer-leave"
+  | "emote"
+  | "focus-start"
+  | "focus-break"
+  | "wellness-chime"
+  | "dance-beat"
+  | "seat-settle";
 
 export interface StudioSfxToneStep {
   readonly wave: "sine" | "triangle";
@@ -62,10 +71,73 @@ const SFX_SPECS: Record<StudioSfxKind, StudioSfxSpec> = {
       { wave: "sine", fromHz: 880, toHz: 660, startOffsetMs: 0, durationMs: 70, peak: 0.35 },
     ],
   },
+  // 포모도로 집중 시작: 맑은 완전 5도 상승 차임.
+  "focus-start": {
+    throttleMs: 300,
+    steps: [
+      { wave: "sine", fromHz: 587, toHz: 587, startOffsetMs: 0, durationMs: 90, peak: 0.34 },
+      { wave: "sine", fromHz: 880, toHz: 880, startOffsetMs: 65, durationMs: 110, peak: 0.32 },
+    ],
+  },
+  // 포모도로 휴식 전환: 부드럽고 따뜻한 안정 2톤.
+  "focus-break": {
+    throttleMs: 300,
+    steps: [
+      { wave: "triangle", fromHz: 659, toHz: 523, startOffsetMs: 0, durationMs: 95, peak: 0.3 },
+      { wave: "sine", fromHz: 523, toHz: 523, startOffsetMs: 70, durationMs: 115, peak: 0.28 },
+    ],
+  },
+  // 웰니스(체조·요가·타이치): 맑은 싱잉볼 고역 하모닉 차임.
+  "wellness-chime": {
+    throttleMs: 220,
+    steps: [
+      { wave: "sine", fromHz: 740, toHz: 740, startOffsetMs: 0, durationMs: 100, peak: 0.28 },
+      { wave: "sine", fromHz: 1110, toHz: 1110, startOffsetMs: 35, durationMs: 120, peak: 0.22 },
+    ],
+  },
+  // 댄스·그루브·문워크: 경쾌한 리듬 스냅.
+  "dance-beat": {
+    throttleMs: 160,
+    steps: [
+      { wave: "triangle", fromHz: 220, toHz: 140, startOffsetMs: 0, durationMs: 75, peak: 0.38 },
+      { wave: "sine", fromHz: 960, toHz: 720, startOffsetMs: 20, durationMs: 60, peak: 0.25 },
+    ],
+  },
+  // 착석 안착음: 부드러운 저중역 쿠션 톤.
+  "seat-settle": {
+    throttleMs: 250,
+    steps: [
+      { wave: "triangle", fromHz: 320, toHz: 210, startOffsetMs: 0, durationMs: 85, peak: 0.3 },
+    ],
+  },
 };
 
 export function studioSfxSpec(kind: StudioSfxKind): StudioSfxSpec {
   return SFX_SPECS[kind];
+}
+
+/** 이모트 성격(웰니스/댄스/일반)에 맞는 효과음 종류를 돌려준다. */
+export function studioEmoteSfxKind(emoteId?: string | null): StudioSfxKind {
+  if (!emoteId) return "emote";
+  if (
+    emoteId === "stretch"
+    || emoteId === "calisthenics"
+    || emoteId === "yoga"
+    || emoteId === "neck-stretch"
+    || emoteId === "tai-chi"
+  ) {
+    return "wellness-chime";
+  }
+  if (
+    emoteId === "dance"
+    || emoteId === "groove"
+    || emoteId === "kpop-dance"
+    || emoteId === "shuffle"
+    || emoteId === "moonwalk"
+  ) {
+    return "dance-beat";
+  }
+  return "emote";
 }
 
 /** 발소리 합성 레시피. 노이즈 버스트(필터) + 표면에 따라 짧은 톤(노크/클릭)을 겹친다. */

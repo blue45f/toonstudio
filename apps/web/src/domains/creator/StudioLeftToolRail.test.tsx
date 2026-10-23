@@ -857,6 +857,38 @@ describe("StudioLeftToolRail", () => {
     expect(document.querySelector<HTMLInputElement>('input[type="file"][accept]')?.disabled).toBe(true);
   });
 
+  it("renders lock reasons resolved at render time instead of module constants (D3)", () => {
+    // 모듈 상수 시절의 상수 단언이 아니라, 실제 렌더된 사유 문구를 단언한다.
+    const reviewLocked = render(<StudioLeftToolRail {...createProps({
+      activeSurfaceReviewLocked: true,
+    })} />);
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "펜 (B)" })
+        .getAttribute("data-unavailable-reason"),
+    ).toBe("현재 작업면의 검토 잠금을 먼저 해제하세요.");
+    reviewLocked.unmount();
+
+    const imageLocked = render(<StudioLeftToolRail {...createProps({
+      selected: IMAGE,
+      selectedImageMutationLocked: true,
+    })} />);
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "사각 선택 (M)" })
+        .getAttribute("data-unavailable-reason"),
+    ).toBe("선택한 이미지 레이어의 편집 잠금을 먼저 해제하세요.");
+    imageLocked.unmount();
+
+    render(<StudioLeftToolRail {...createProps({
+      pixelToolTargetAvailable: false,
+      rasterRetouchTargetAvailable: false,
+      selected: null,
+    })} />);
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "자르기 (C)" })
+        .getAttribute("data-unavailable-reason"),
+    ).toBe("편집 가능한 이미지도, 편집용 이미지 복사본을 자동 준비할 벡터 선·도형도 없습니다.");
+  });
+
   it("keeps toolbar settings outside the independently scrolling tool list", () => {
     render(<StudioLeftToolRail {...createProps()} />);
 

@@ -68,4 +68,22 @@ describe("구인·의뢰 게시판 상태", () => {
     expect(await screen.findByText("조건에 맞는 공고가 아직 없어요.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "제작 관리" }).getAttribute("href")).toBe("/production");
   });
+
+  it("첫 화면에 노출된 웹툰 공정별 어시스턴트·파트너 원클릭 필터 칩으로 분야별 공고를 즉시 필터링한다", async () => {
+    list.mockResolvedValue({ items: [], nextCursor: null, hasMore: false, canModerate: false });
+    renderBoard();
+
+    const chipGroup = screen.getByRole("group", { name: "웹툰 공정별 어시스턴트·파트너 원클릭 필터" });
+    expect(chipGroup).toBeTruthy();
+
+    fireEvent.click(within(chipGroup).getByRole("button", { name: "선화·펜선" }));
+    await waitFor(() => expect(list).toHaveBeenLastCalledWith({ role: "ink" }, expect.any(AbortSignal)));
+
+    fireEvent.click(within(chipGroup).getByRole("button", { name: "3D·배경" }));
+    await waitFor(() => expect(list).toHaveBeenLastCalledWith({ role: "background" }, expect.any(AbortSignal)));
+
+    fireEvent.click(within(chipGroup).getByRole("button", { name: "전체" }));
+    await waitFor(() => expect(list).toHaveBeenLastCalledWith({}, expect.any(AbortSignal)));
+  });
 });
+

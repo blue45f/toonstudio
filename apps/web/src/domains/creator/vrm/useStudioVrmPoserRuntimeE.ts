@@ -105,6 +105,7 @@ import {
 
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { VrmLibraryEntry } from "./vrm-library";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
   const {
@@ -414,7 +415,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
         name: currentEntry.name,
       };
     } else {
-      setError("업로드한 VRM의 콘텐츠 해시를 확인하지 못했거나 휴대 가능한 프로젝트 자산 크기(96MB)를 넘었습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.hashOrSizeExceeded", "업로드한 VRM의 콘텐츠 해시를 확인하지 못했거나 휴대 가능한 프로젝트 자산 크기(96MB)를 넘었습니다."));
       return null;
     }
 
@@ -491,47 +492,45 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     ) {
       setError(
         proportionRigStatus === "reload-required"
-          ? "체형 리그를 안전하게 확인할 수 없습니다. 캐릭터를 다시 불러온 뒤 추가해 주세요."
-          : "현재 체형의 관절·의상·소품 계산이 끝난 뒤 다시 추가해 주세요.",
+          ? frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.rigUnverifiable", "체형 리그를 안전하게 확인할 수 없습니다. 캐릭터를 다시 불러온 뒤 추가해 주세요.")
+          : frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.jointsPending", "현재 체형의 관절·의상·소품 계산이 끝난 뒤 다시 추가해 주세요."),
       );
       setStatus("ready");
       return;
     }
     const insertLibraryEntry = libraryEntries.find((entry: VrmLibraryEntry) => entry.id === activeModelId);
     if (insertLibraryEntry?.source === "memory") {
-      setError(
-        "현재 VRM은 SQLite/OPFS 저장 실패로 이 탭 메모리에만 있습니다. 새로고침 후 손실되지 않도록 저장소를 복구하고 다시 업로드한 뒤 프로젝트에 추가해 주세요.",
-      );
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.memoryOnlyVrm", "현재 VRM은 SQLite/OPFS 저장 실패로 이 탭 메모리에만 있습니다. 새로고침 후 손실되지 않도록 저장소를 복구하고 다시 업로드한 뒤 프로젝트에 추가해 주세요."));
       setStatus("ready");
       return;
     }
     if (texturePaintSurfaceStrokeActive) {
-      setError("V12 UV 표면 획의 저장 또는 취소가 끝난 뒤 이 포즈를 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.surfaceStrokeBusy", "V12 UV 표면 획의 저장 또는 취소가 끝난 뒤 이 포즈를 추가해 주세요."));
       setStatus("ready");
       return;
     }
     const activeTexturePaintPointerId =
       texturePaintSnapshotRef.current?.activePointerId;
     if (typeof activeTexturePaintPointerId === "number") {
-      setError("표면 페인트 획을 마친 뒤 이 포즈를 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.paintStrokeActive", "표면 페인트 획을 마친 뒤 이 포즈를 추가해 주세요."));
       setStatus("ready");
       return;
     }
     if (texturePaintPersistenceStatus === "restoring") {
-      setError("저장된 표면 페인팅 복원이 끝난 뒤 이 포즈를 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.restoringPaint", "저장된 표면 페인팅 복원이 끝난 뒤 이 포즈를 추가해 주세요."));
       setStatus("ready");
       return;
     }
     if (texturePaintPersistenceStatus === "error") {
       setError(
         texturePaintPersistenceError
-        || "저장된 표면 페인팅 원본을 복원하지 못해 재편집 장면을 안전하게 저장할 수 없습니다.",
+        || frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.restoreOriginalFailed", "저장된 표면 페인팅 원본을 복원하지 못해 재편집 장면을 안전하게 저장할 수 없습니다."),
       );
       setStatus("ready");
       return;
     }
     if (texturePaintRestoreRequired && texturePaintPersistenceStatus !== "ready") {
-      setError("저장된 표면 페인팅의 모델 준비가 끝난 뒤 이 포즈를 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.modelPreparing", "저장된 표면 페인팅의 모델 준비가 끝난 뒤 이 포즈를 추가해 주세요."));
       setStatus("ready");
       return;
     }
@@ -551,7 +550,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
       currentTexturePaintRuntime?.getContentRevision() ?? 0;
 
     if (!currentCapture.gl || !currentCapture.scene || !currentCapture.camera || !currentVrm) {
-      setError("캡처할 VRM 장면이 아직 준비되지 않았습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.sceneNotReady", "캡처할 VRM 장면이 아직 준비되지 않았습니다."));
       setStatus(vrmRef.current ? "ready" : "error");
       return;
     }
@@ -564,17 +563,17 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
       return sync ? [{ slot, sync }] : [];
     });
     if (captureXpbdSkirtSyncEntries.length !== captureXpbdSkirtSlots.length) {
-      setError("천 물리 스커트의 최신 포즈 계산이 준비된 뒤 다시 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.clothPosePending", "천 물리 스커트의 최신 포즈 계산이 준비된 뒤 다시 추가해 주세요."));
       setStatus("ready");
       return;
     }
     if (!persistentIkCaptureIsReady()) {
-      setError("손·발 고정점을 현재 포즈에 맞추는 중입니다. 보정 완료 후 다시 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.ikFixing", "손·발 고정점을 현재 포즈에 맞추는 중입니다. 보정 완료 후 다시 추가해 주세요."));
       setStatus("ready");
       return;
     }
     if (!avatarForgeFaceCaptureIsReady()) {
-      setError("얼굴 조형이 현재 리그에 안전하게 반영된 뒤 다시 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.faceRigPending", "얼굴 조형이 현재 리그에 안전하게 반영된 뒤 다시 추가해 주세요."));
       setStatus("ready");
       return;
     }
@@ -582,13 +581,13 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
       constraint.enabled && constraint.locked
     ));
     if (webcamActive || idleAnimation) {
-      setError("실시간 추적·대기 애니메이션을 끈 뒤 현재 포즈를 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.trackingActive", "실시간 추적·대기 애니메이션을 끈 뒤 현재 포즈를 추가해 주세요."));
       setStatus("ready");
       return;
     }
 
     if (!acquireVrmCaptureOperation("insert")) {
-      setError("다른 3D 캡처가 진행 중입니다. 완료된 뒤 다시 추가해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureBusy", "다른 3D 캡처가 진행 중입니다. 완료된 뒤 다시 추가해 주세요."));
       setStatus("ready");
       return;
     }
@@ -596,7 +595,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     const captureCameraIdentity = readVrmCaptureCameraIdentity();
     if (!captureVisualAuthority || !captureCameraIdentity) {
       releaseVrmCaptureOperation("insert");
-      setError("추가할 3D 화면과 카메라가 아직 준비되지 않았습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureViewNotReady", "추가할 3D 화면과 카메라가 아직 준비되지 않았습니다."));
       setStatus("ready");
       return;
     }
@@ -662,7 +661,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
         !captureController.signal.aborted
         && !wardrobeCaptureAuthorityIsCurrent()
       ) {
-        setError("캡처 중 의상 설정이 바뀌어 이미지를 추가하지 않았습니다. 현재 의상으로 다시 추가해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.wardrobeChanged", "캡처 중 의상 설정이 바뀌어 이미지를 추가하지 않았습니다. 현재 의상으로 다시 추가해 주세요."));
         setStatus("ready");
       }
     };
@@ -821,7 +820,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
             captureGeneration === insertCaptureGenerationRef.current
             && captureRequest === captureRequestRef.current
           ) {
-            setError(getErrorMessage(caughtError, "3D 데생 인형 캡처를 추가하지 못했습니다."));
+            setError(getErrorMessage(caughtError, frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureAddFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
             setStatus(vrmRef.current ? "ready" : "error");
           }
         } finally {

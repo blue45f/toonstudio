@@ -28,8 +28,8 @@ export const LIBRARY_AREA_SERVER_DATA: LibraryGuideArea = {
     {
       title: t("정적은 서버를 깨우지 않는다", "Static files never wake the server"),
       body: t(
-        "화면 파일은 Cloudflare Static Assets가 코드 실행 없이 내주고, Worker는 지정한 27개 경로(API·링크 미리보기·대형 파일)만 먼저 받습니다. 방문자가 늘어도 Worker 호출과 잠든 API 서버를 깨우는 일은 동적 요청으로만 한정됩니다.",
-        "Cloudflare Static Assets serves screen files without running code, and the Worker first receives only 27 listed path patterns (API, link previews, large files). Even with more visitors, Worker calls and wake-ups of the sleeping API server stay limited to dynamic requests.",
+        "화면 파일은 Cloudflare Static Assets가 코드 실행 없이 내주고, Worker는 지정한 55개 경로(API·링크 미리보기·대형 파일·R2 미디어)만 먼저 받습니다. 방문자가 늘어도 Worker 호출과 잠든 API 서버를 깨우는 일은 동적 요청으로만 한정됩니다.",
+        "Cloudflare Static Assets serves screen files without running code, and the Worker first receives only 55 listed path patterns (API, link previews, large files, R2 media). Even with more visitors, Worker calls and wake-ups of the sleeping API server stay limited to dynamic requests.",
       ),
     },
     {
@@ -63,14 +63,14 @@ export const LIBRARY_AREA_SERVER_DATA: LibraryGuideArea = {
       "Cloudflare serves screens directly, ledger records pass the NestJS server into a single database, and the device receives working originals first.",
     ),
     alt: t(
-      "위에서 아래로 여섯 층입니다. Cloudflare가 화면 파일은 곧장 내주고, API·링크 미리보기·대형 파일의 지정 경로 27개만 Worker가 먼저 받습니다. 그 뒤 Render에서 도는 NestJS 서버가 Zod로 요청 모양을 검사하고, Drizzle ORM과 pg로 Supabase PostgreSQL 원장에 씁니다. 옛 Neon은 legacy로 보존만 합니다. 맨 아래 층은 기기가 먼저 받는 것으로, 작업 중인 원본은 내 기기의 OPFS에 먼저 쓰이고 서버 저장은 별도 단계입니다.",
-      "Six layers from top to bottom. Cloudflare serves screen files directly, and the Worker first receives only 27 listed paths for API, link previews and large files. Then the NestJS server running on Render checks each request shape with Zod and writes to the Supabase PostgreSQL ledger through Drizzle ORM and pg. The old Neon is only kept as legacy. The bottom layer is what the device receives first: working originals are written to OPFS on your device before, and separately from, any server save.",
+      "위에서 아래로 여섯 층입니다. Cloudflare가 화면 파일은 곧장 내주고, API·링크 미리보기·대형 파일·R2 미디어의 지정 경로 55개만 Worker가 먼저 받습니다. 그 뒤 Render에서 도는 NestJS 서버가 Zod로 요청 모양을 검사하고, Drizzle ORM과 pg로 Supabase PostgreSQL 원장에 씁니다. 옛 Neon은 legacy로 보존만 합니다. 맨 아래 층은 기기가 먼저 받는 것으로, 작업 중인 원본은 내 기기의 OPFS에 먼저 쓰이고 서버 저장은 별도 단계입니다.",
+      "Six layers from top to bottom. Cloudflare serves screen files directly, and the Worker first receives only 55 listed paths for API, link previews, large files and R2 media. Then the NestJS server running on Render checks each request shape with Zod and writes to the Supabase PostgreSQL ledger through Drizzle ORM and pg. The old Neon is only kept as legacy. The bottom layer is what the device receives first: working originals are written to OPFS on your device before, and separately from, any server save.",
     ),
     layers: [
       {
         id: "edge",
         label: t("엣지: 정적은 곧장", "Edge: static goes straight"),
-        sub: t("화면 파일은 곧장, 지정한 27개 경로만 Worker가 먼저", "Screens go straight; only 27 listed paths meet the Worker"),
+        sub: t("화면 파일은 곧장, 지정한 55개 경로만 Worker가 먼저", "Screens go straight; only 55 listed paths meet the Worker"),
         tone: "edge",
         chips: ["Cloudflare Workers", "Static Assets", "R2"],
       },
@@ -231,10 +231,10 @@ export const LIBRARY_AREA_SERVER_DATA: LibraryGuideArea = {
       id: "cloudflare-workers",
       name: "Cloudflare Workers",
       kind: "service",
-      oneLine: t("화면 파일은 곧장 내주고 지정한 27개 경로만 먼저 받는 Cloudflare 문지기", "A Cloudflare gatekeeper that serves screen files directly and takes only 27 listed paths first"),
+      oneLine: t("화면 파일은 곧장 내주고 지정한 55개 경로만 먼저 받는 Cloudflare 문지기", "A Cloudflare gatekeeper that serves screen files directly and takes only 55 listed paths first"),
       usedFor: t(
-        "화면(SPA)과 카탈로그 JSON은 Static Assets가 코드 실행 없이 내주고, Worker는 지정한 27개 경로(API·링크 미리보기·대형 파일)만 먼저 받아 알맞은 서버로 보냅니다.",
-        "Static Assets serve the app (SPA) and catalog JSON without running code, and the Worker first takes only 27 listed paths (API, link previews, large files) and forwards them to the right server.",
+        "화면(SPA)과 카탈로그 JSON은 Static Assets가 코드 실행 없이 내주고, Worker는 지정한 55개 경로(API·링크 미리보기·대형 파일·R2 미디어)만 먼저 받아 알맞은 서버로 보냅니다.",
+        "Static Assets serve the app (SPA) and catalog JSON without running code, and the Worker first takes only 55 listed paths (API, link previews, large files, R2 media) and forwards them to the right server.",
       ),
       why: t(
         "방문자가 늘어도 정적 요청이 Worker 호출량과 잠든 API 서버를 깨우지 않게 하려는 최소 비용 정책(2026-09-15)에 맞습니다. /api/health/live는 엣지가 직접 답해 서버를 깨우지 않습니다.",
@@ -245,8 +245,8 @@ export const LIBRARY_AREA_SERVER_DATA: LibraryGuideArea = {
         "A single Worker proxying every request turns each file into a Worker invocation and reaches the free allowance quickly, and a self-run reverse proxy means managing another server.",
       ),
       cost: t(
-        "먼저 실행 목록(27개)은 사람이 관리하고, 넓히면 정적 트래픽이 Worker 호출량이 됩니다. SPA 모드는 없는 파일도 200으로 답해 sw.js 누락 같은 사고를 배포 전 검사가 막아야 합니다.",
-        "The worker-first list (27 patterns) is maintained by people, and widening it turns static traffic into Worker invocations. SPA mode answers 200 even for a missing file, so a pre-deploy check must stop releases missing sw.js.",
+        "먼저 실행 목록(55개)은 사람이 관리하고, 넓히면 정적 트래픽이 Worker 호출량이 됩니다. SPA 모드는 없는 파일도 200으로 답해 sw.js 누락 같은 사고를 배포 전 검사가 막아야 합니다.",
+        "The worker-first list (55 patterns) is maintained by people, and widening it turns static traffic into Worker invocations. SPA mode answers 200 even for a missing file, so a pre-deploy check must stop releases missing sw.js.",
       ),
       paths: [
         "deploy/cloudflare-static/wrangler.jsonc",

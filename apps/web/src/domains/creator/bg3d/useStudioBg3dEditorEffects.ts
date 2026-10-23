@@ -20,6 +20,7 @@ export function useStudioBg3dEditorEffects(h) {
     Scissors, Trash2, SunMoon, Undo2,
     Unlock, Upload, WandSparkles, X,
     ZoomIn, ZoomOut, Suspense, useEffect,
+    resolveBg3dTemplateMigrationDataPreservedNote, resolveBg3dTemplateMigrationErrorByCode,
     useEffectEvent, useCallback, useLayoutEffect, useRef,
     useState, Fragment, lazy, createPortal,
     flushSync, createStudioBg3dAiMethodReferenceCapture, COMPOSITE_CATEGORIES, COMPOSITE_CATEGORY_LABELS,
@@ -568,28 +569,6 @@ export function useStudioBg3dEditorEffects(h) {
     };
   }, [ltPresetPanelActivated, ltUserPresetRepository, open]);
 
-  useEffect(() => {
-    if (!open || typeof window === "undefined") return;
-    const browserNavigator = navigator as BrowserNavigatorCapabilities;
-    const coarse = window.matchMedia?.("(pointer: coarse)");
-    const fine = window.matchMedia?.("(pointer: fine)");
-    const refresh = () => setDeviceSignals(collectDeviceSignals(viewportHostRef.current));
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(refresh) : null;
-    if (viewportHostRef.current) observer?.observe(viewportHostRef.current);
-    window.addEventListener("resize", refresh, { passive: true });
-    coarse?.addEventListener?.("change", refresh);
-    fine?.addEventListener?.("change", refresh);
-    browserNavigator.connection?.addEventListener?.("change", refresh);
-    refresh();
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", refresh);
-      coarse?.removeEventListener?.("change", refresh);
-      fine?.removeEventListener?.("change", refresh);
-      browserNavigator.connection?.removeEventListener?.("change", refresh);
-    };
-  }, [open, setTemplateLibrary, setTemplateLibraryStatus]);
-
   // 모델 라이브러리 목록은 모달이 열릴 때 한 번 읽어온다(VRM 포저의 listVrmLibraryEntries() 패턴과 동일).
   useEffect(() => {
     if (!open || !modelsPanelActivated) return;
@@ -645,18 +624,16 @@ export function useStudioBg3dEditorEffects(h) {
       .catch((cause: unknown) => {
         if (!active) return;
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-          const migrationFailed = Boolean(
-            cause && typeof cause === "object" &&
-              "code" in cause && cause.code === "migration-failed",
-          );
-          const migrationFailureMessage = migrationFailed && cause instanceof Error
-            ? cause.message
-            : null;
+          const migrationFailureMessage =
+            cause && typeof cause === "object" && "code" in cause &&
+            typeof cause.code === "string"
+              ? resolveBg3dTemplateMigrationErrorByCode(cause.code)
+              : null;
           setTemplateLibraryStatus("error");
           setTemplateLibraryNotice({
             tone: "error",
             message: migrationFailureMessage
-              ? `${migrationFailureMessage} 기존 IndexedDB 데이터는 삭제하지 않았습니다.`
+              ? `${migrationFailureMessage} ${resolveBg3dTemplateMigrationDataPreservedNote()}`
               : "SQLite/OPFS 템플릿 저장소를 열지 못했습니다. 브라우저 저장공간과 사이트 권한을 확인한 뒤 다시 시도해 주세요.",
           });
         });
@@ -747,29 +724,6 @@ export function useStudioBg3dEditorEffects(h) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  useEffect(() => {
-    const host = viewportHostRef.current;
-    if (!open || !host || typeof ResizeObserver === "undefined") {
-      setViewportBoxSize(null);
-      return;
-    }
-    const sync = () => {
-      const rect = host.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return;
-      setViewportBoxSize((previous) => (
-        previous &&
-          Math.abs(previous.width - rect.width) < 0.5 &&
-          Math.abs(previous.height - rect.height) < 0.5
-          ? previous
-          : { width: rect.width, height: rect.height }
-      ));
-    };
-    sync();
-    const observer = new ResizeObserver(sync);
-    observer.observe(host);
-    return () => observer.disconnect();
   }, [open]);
 
   const pausePhysicsWhenHidden = useEffectEvent(() => pausePhysicsPreview());

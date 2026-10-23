@@ -6,39 +6,24 @@ import { parsePublicSharePath } from "../../../packages/core/src/public-share-pa
 
 import { CORE_CLIENT_IP_HEADER, trustedConnectingIp } from "./core-client-ip";
 import {
-  CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
   cloudflareLargeAssetDescriptor,
   cloudflareLargeAssetKey,
   cloudflareSameOriginOnlyAllows,
   isCloudflareOversizedAssetPath,
   matchesIfNoneMatch,
   matchesIfRange,
+  r2AssetResponseHeaders,
+  r2PreflightHeaders,
   r2RangeHeaders,
+  staticMediaFallback,
+  type AssetsBinding,
+  type R2BucketBinding,
+  type R2ObjectBinding,
+  type R2ObjectBodyBinding,
 } from "./large-static-assets";
 import { createNeisCreatorResourceEdge } from "./neis-creator-resource-edge";
 
-export interface AssetsBinding {
-  fetch(request: Request): Promise<Response>;
-}
-
-export interface R2ObjectBinding {
-  readonly size: number;
-  readonly httpEtag: string;
-  readonly range?: { readonly offset: number; readonly length: number };
-  writeHttpMetadata(headers: Headers): void;
-}
-
-export interface R2ObjectBodyBinding extends R2ObjectBinding {
-  readonly body: ReadableStream<Uint8Array>;
-}
-
-export interface R2BucketBinding {
-  get(
-    key: string,
-    options?: { readonly range?: Headers },
-  ): Promise<R2ObjectBodyBinding | null>;
-  head(key: string): Promise<R2ObjectBinding | null>;
-}
+export type { AssetsBinding, R2BucketBinding, R2ObjectBinding, R2ObjectBodyBinding } from "./large-static-assets";
 
 export interface CloudflareStaticEnv {
   readonly ASSETS: AssetsBinding;
@@ -90,7 +75,7 @@ export const COMMON_SECURITY_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://sharer.kakao.com https://*.tosspayments.com; script-src 'self' 'sha256-BWhbEGcNa8uwq1jepRHRSXlu8tgsEcnKrHTJQEooJUM=' 'wasm-unsafe-eval' https://accounts.google.com https://t1.kakaocdn.net https://static.cloudflareinsights.com https://js.tosspayments.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' blob: https://api.artic.edu https://openaccess-api.clevelandart.org https://commons.wikimedia.org https://ko.wikipedia.org https://api.open-meteo.com https://accounts.google.com https://www.googleapis.com https://graph.microsoft.com https://storage.googleapis.com https://api.unsplash.com https://images.unsplash.com https://api.openai.com https://openrouter.ai https://api.z.ai https://api.deepseek.com https://ybsgfhofuvkhywbpytnl.supabase.co https://cdn.jsdelivr.net https://kapi.kakao.com https://cloudflareinsights.com https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://*.tosspayments.com; frame-src 'self' https://accounts.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.tosspayments.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests; block-all-mixed-content",
+  "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://sharer.kakao.com https://*.tosspayments.com; script-src 'self' 'sha256-BWhbEGcNa8uwq1jepRHRSXlu8tgsEcnKrHTJQEooJUM=' 'sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM=' 'wasm-unsafe-eval' https://accounts.google.com https://t1.kakaocdn.net https://static.cloudflareinsights.com https://js.tosspayments.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' blob: https://api.artic.edu https://openaccess-api.clevelandart.org https://commons.wikimedia.org https://ko.wikipedia.org https://api.open-meteo.com https://accounts.google.com https://www.googleapis.com https://graph.microsoft.com https://storage.googleapis.com https://api.unsplash.com https://images.unsplash.com https://api.openai.com https://api.anthropic.com https://openrouter.ai https://api.z.ai https://api.deepseek.com https://ybsgfhofuvkhywbpytnl.supabase.co https://cdn.jsdelivr.net https://kapi.kakao.com https://cloudflareinsights.com https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://*.tosspayments.com; frame-src 'self' https://accounts.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.tosspayments.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests; block-all-mixed-content",
   "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(), cross-origin-isolated=(self)",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 } as const);
@@ -591,43 +576,6 @@ function retryableRead(request: Request, route: DynamicRoute): boolean {
     && !isWebSocketUpgrade(request);
 }
 
-function r2LargeAssetHeaders(
-  object: R2ObjectBinding,
-  contentType: string,
-  partial: boolean,
-  cacheControl: string = CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
-  sameOriginOnly = false,
-): Headers {
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("content-type", contentType);
-  headers.set("cache-control", cacheControl);
-  headers.set("etag", object.httpEtag);
-  headers.set("accept-ranges", "bytes");
-  if (sameOriginOnly) {
-    headers.append("vary", "Sec-Fetch-Site");
-  } else {
-    headers.set("access-control-allow-origin", "*");
-    headers.set(
-      "access-control-expose-headers",
-      "Accept-Ranges, Content-Length, Content-Range, ETag",
-    );
-  }
-  headers.set("x-toonstudio-large-asset-source", "r2");
-  if (partial && object.range) {
-    const end = object.range.offset + object.range.length - 1;
-    headers.set(
-      "content-range",
-      `bytes ${object.range.offset}-${end}/${object.size}`,
-    );
-    headers.set("content-length", String(object.range.length));
-  } else {
-    headers.delete("content-range");
-    headers.set("content-length", String(object.size));
-  }
-  return headers;
-}
-
 async function serveR2LargeAsset(
   request: Request,
   env: CloudflareStaticEnv,
@@ -646,17 +594,7 @@ async function serveR2LargeAsset(
   if (!key || !env.LARGE_ASSETS) return null;
 
   if (method === "OPTIONS") {
-    return withSecurityHeaders(new Response(null, {
-      status: 204,
-      headers: descriptor.sameOriginOnly
-        ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" }
-        : {
-          "access-control-allow-origin": "*",
-          "access-control-allow-methods": "GET, HEAD, OPTIONS",
-          "access-control-allow-headers": "Range, If-Range, If-None-Match",
-          "access-control-max-age": "86400",
-        },
-    }));
+    return withSecurityHeaders(new Response(null, { status: 204, headers: r2PreflightHeaders(descriptor) }));
   }
   if (method !== "GET" && method !== "HEAD") {
     return withSecurityHeaders(new Response(null, {
@@ -688,13 +626,7 @@ async function serveR2LargeAsset(
     }
     if (!object) return null;
 
-    const headers = r2LargeAssetHeaders(
-      object,
-      descriptor.contentType,
-      partial,
-      descriptor.cacheControl ?? CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
-      descriptor.sameOriginOnly,
-    );
+    const headers = r2AssetResponseHeaders(object, descriptor, partial);
     if (matchesIfNoneMatch(request, object.httpEtag)) {
       headers.delete("content-length");
       headers.delete("content-range");
@@ -749,8 +681,11 @@ export function createCloudflareStaticGateway(
       // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
       const r2Response = await serveR2LargeAsset(request, env);
       if (r2Response) return r2Response;
+      const largeAsset = cloudflareLargeAssetDescriptor(requestUrl.pathname);
+      // R2 미디어 이관 경로는 R2에 아직 없으면 Static Assets로 돌린다(단계 이관·롤백 안전망).
+      if (largeAsset?.staticFallback) return withSecurityHeaders(await staticMediaFallback(request, env.ASSETS));
       // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
-      if (cloudflareLargeAssetDescriptor(requestUrl.pathname)?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE", { vary: "Sec-Fetch-Site" });
+      if (largeAsset?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE", { vary: "Sec-Fetch-Site" });
     }
 
     const configuredCoreSecret = env.CORE_ORIGIN_SECRET;

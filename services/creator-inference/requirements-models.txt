@@ -3,16 +3,22 @@
 -r requirements-core.txt
 # Security floor: GHSA-98h9-4798-4q5v and GHSA-7wx4-6vff-v64p.
 diffusers==0.38.0
-# Security: transformers 4.x 전체가 GHSA-29pf-2h5f-8g72(<5.3.0)·GHSA-fgcw-684q-jj6r(<5.5.0)·GHSA-x9r9-c232-4q39(4.49~5.8.1)
-# 영향권이고 수정본은 5.10 이상(huggingface-hub 1.5 이상 필요)뿐이다. 이 작업자는 검토한 로컬 가중치를
-# `local_files_only=True`·`use_safetensors=True` 로만 읽고 trust_remote_code·Trainer·save_pretrained·load_custom_generate·
-# 채팅 템플릿을 쓰지 않아 해당 경로를 부르지 않는다. 5.x 이행은 gpu-smoke.py 로 GPU 자격 검증을 마친 뒤 올린다.
-transformers>=4.49,<5
+# Security floor: 5.10.1 이상이면 transformers 의 알려진 GHSA 16건을 모두 벗어난다(2026-10-22 OSV 기준).
+# 4.x 는 GHSA-29pf-2h5f-8g72·GHSA-fgcw-684q-jj6r·GHSA-x9r9-c232-4q39·GHSA-69w3-r845-3855 와
+# GHSA-xrqw-3rrv-vx5w(수정본 5.10.0 은 철회되어 5.10.1 부터) 영향권이라 5.x 로 올렸다. 5.x 는 huggingface-hub 1.5 이상이 필요하다.
+# 이 파일은 GPU 자격 검증을 마친 lock 이 아니다. 5.x 로 만든 새 runtime image 는 gpu-smoke.py 로
+# 세 엔진의 실제 추론을 검증한 뒤에만 승인한다. CPU 에서는 TripoSR upstream main 의 이미지 토크나이저와
+# diffusers SDXL ControlNet·Wan I2V 호출 모양이 5.x 에서 도는 것까지 확인했다(2026-10-23).
+transformers>=5.10.1,<6
 # Security floor: GHSA-4j2p-28q2-5m79 (sharded checkpoint weight_map 경로 순회, 1.14.0 까지 영향).
 accelerate>=1.15.0,<2
 # Diffusers 0.38 requires safetensors 0.8; keep stable releases only.
 safetensors>=0.8,<1
-huggingface-hub>=0.34,<1
+# transformers 5.x 가 1.5 이상을 요구하고 diffusers 0.38 이 2.0 미만만 허용한다.
+huggingface-hub>=1.5,<2
+# Wan I2V 의 프롬프트 정리(diffusers pipeline_wan_i2v.basic_clean)가 ftfy.fix_text 를 직접 부른다. diffusers 는
+# ftfy 를 test·dev extra 로만 두므로 빠지면 첫 Wan 작업이 NameError: name 'ftfy' is not defined 로 실패한다.
+ftfy>=6.3.1,<7
 sentencepiece>=0.2.2,<1
 numpy>=1.26,<3
 imageio[ffmpeg]>=2.34,<3

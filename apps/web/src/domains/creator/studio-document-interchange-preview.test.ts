@@ -232,7 +232,7 @@ describe("studio document interchange preview adapters", () => {
         hasComicInfo: false,
         ignoredEntryCount: 0,
       },
-      warnings: [{ code: "COMICINFO_MISSING", message: "ComicInfo.xml이 없습니다." }],
+      warnings: [{ code: "COMICINFO_MISSING", variant: "missing" }],
     } satisfies StudioCbzImportResult, OPTIONS);
     const summary = summarizeStudioInterchangeLoss(preview);
 
@@ -275,7 +275,8 @@ describe("studio document interchange preview adapters", () => {
   it("uses one real representative CBZ page and aggregates repeated codec warnings", () => {
     const warnings = Array.from({ length: 100 }, (_, index) => ({
       code: "IGNORED_ENTRY" as const,
-      message: `무시 ${index + 1}`,
+      variant: "nonImage" as const,
+      params: { path: `entry-${index + 1}` },
     }));
     const preview = createStudioCbzImportLossPreview("mixed.cbz", {
       pages: [

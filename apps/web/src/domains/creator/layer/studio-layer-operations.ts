@@ -49,6 +49,7 @@ import type { StudioExtendedBlendModeId } from "../studio-extended-blend";
 import type { PageState } from "../studio-page-state";
 import type { StudioLayerNavigatorAction } from "./StudioLayerNavigator";
 import type { SetStateAction } from "react";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 /**
  * Editor surface the layer commands operate on. Values are captured per render (the
@@ -203,7 +204,7 @@ export function createStudioLayerOperations(
       // 현재 레이어 그룹은 중첩 구조가 아니라 평면 메타데이터다. 기존 그룹 멤버를 다시
       // Cmd/Ctrl+G 하면 이전 그룹을 비워 둔 채 새 groupId로 덮어쓸 수 있으므로, PPT의
       // "이미 그룹인 선택은 다시 묶지 않음"처럼 명시적으로 fail-close한다.
-      setError("기존 그룹이 포함된 선택입니다. 먼저 그룹을 해제한 뒤 다시 그룹화해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.alreadyGrouped", "기존 그룹이 포함된 선택입니다. 먼저 그룹을 해제한 뒤 다시 그룹화해 주세요."));
       announceDrawingShortcut("기존 그룹을 먼저 해제한 뒤 다시 그룹화해 주세요");
       return false;
     }
@@ -390,19 +391,17 @@ export function createStudioLayerOperations(
       : null;
   }
 
-  async function commitLayerMergePlan(
-    result: ReturnType<typeof planStudioLayerMergeDown>
-  ) {
+  async function commitLayerMergePlan(result: ReturnType<typeof planStudioLayerMergeDown>) {
     if (!result.ok) {
       setError(result.reason);
       return;
     }
     if (masterEditMode) {
-      setError("마스터 편집 중에는 레이어 병합을 사용할 수 없습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.masterMergeBlocked", "마스터 편집 중에는 레이어 병합을 사용할 수 없습니다."));
       return;
     }
     if (pageEditLocked && !masterEditMode) {
-      setError("이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.reviewLockedEdit", "이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 편집해 주세요."));
       return;
     }
     if (layerMergeBusy) return;
@@ -488,11 +487,11 @@ export function createStudioLayerOperations(
       return;
     }
     if (masterEditMode) {
-      setError("마스터 편집 중에는 레이어 병합을 사용할 수 없습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.masterMergeBlocked", "마스터 편집 중에는 레이어 병합을 사용할 수 없습니다."));
       return;
     }
     if (pageEditLocked && !masterEditMode) {
-      setError("이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.reviewLockedEdit", "이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 편집해 주세요."));
       return;
     }
     if (layerMergeBusy) return;
@@ -531,7 +530,7 @@ export function createStudioLayerOperations(
         .map((entry) => sources.find((source) => source.id === entry.id))
         .filter((source): source is (typeof sources)[number] => Boolean(source));
       if (ordered.length !== 2 || ordered.some((source) => source.type !== "image" || !source.src)) {
-        setError("이미지 레이어끼리만 확장 블렌드로 합칠 수 있습니다.");
+        setError(frozenStatus6Text("studio.frozenStatus6.layerOps.imageLayersOnly", "이미지 레이어끼리만 확장 블렌드로 합칠 수 있습니다."));
         return;
       }
       const bounds = studioMergeBoundsFromSources(ordered, plan.bounds);
@@ -583,7 +582,7 @@ export function createStudioLayerOperations(
       setError(null);
     } catch (err) {
       console.error("Failed to apply extended blend merge:", err);
-      setError("확장 블렌드를 적용하지 못했습니다(이미지 픽셀 읽기/인코딩 실패).");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.blendApplyFailed", "확장 블렌드를 적용하지 못했습니다(이미지 픽셀 읽기/인코딩 실패)."));
     } finally {
       setLayerMergeBusy(false);
       endLiveResourceEdit();
@@ -596,7 +595,7 @@ export function createStudioLayerOperations(
       // 표본마다 토스트를 띄우면 안내가 아니라 폭주다 — 조용히 무시하고, 사용자가 포인터를
       // 놓는 순간 오는 확정 액션 하나만 잠금 사유를 알린다.
       if (action.type === "set-items-opacity" && action.live) return;
-      setError("이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.reviewLockedEdit", "이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 편집해 주세요."));
       return;
     }
     switch (action.type) {
@@ -638,7 +637,7 @@ export function createStudioLayerOperations(
         if (masterEditMode) return;
         const frame = elements.find((el) => el.id === action.frameId && el.type === "frame");
         if (!frame) {
-          setError("컷 폴더로 묶을 프레임을 찾지 못했습니다.");
+          setError(frozenStatus6Text("studio.frozenStatus6.layerOps.frameNotFound", "컷 폴더로 묶을 프레임을 찾지 못했습니다."));
           return;
         }
         const plan = planBindSelectionToFrameFolder({
@@ -652,7 +651,7 @@ export function createStudioLayerOperations(
           groups,
         });
         if (!plan) {
-          setError("컷 폴더에 묶을 다른 레이어를 먼저 선택해 주세요.");
+          setError(frozenStatus6Text("studio.frozenStatus6.layerOps.selectOtherLayers", "컷 폴더에 묶을 다른 레이어를 먼저 선택해 주세요."));
           return;
         }
         updateActivePage({
@@ -854,7 +853,7 @@ export function createStudioLayerOperations(
   // 이동/변형을 막지만 사용자가 직접 요청한 삭제는 허용하며, 실제로 제거된 ID의 타임라인만 함께 지운다.
   function deleteLayerElements(ids: readonly string[]) {
     if (activeSurfaceReviewLocked) {
-      setError("이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 삭제해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.reviewLockedDelete", "이 페이지는 검토 잠금 상태입니다. 잠금을 해제한 뒤 레이어를 삭제해 주세요."));
       return false;
     }
     const removal = removeLayerItems(elements, ids);
@@ -886,7 +885,7 @@ export function createStudioLayerOperations(
         })
       : null;
     if (removedSharedStageBundleIds.length > 0 && !stageRemoval) {
-      setError("삭제할 3D 배경의 원본 연결을 안전하게 정리하지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.layerOps.stageLinkCleanupFailed", "삭제할 3D 배경의 원본 연결을 안전하게 정리하지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요."));
       return false;
     }
     const visibilityRelease = stageRemoval ?? {

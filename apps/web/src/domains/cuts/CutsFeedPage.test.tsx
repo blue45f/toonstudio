@@ -48,5 +48,12 @@ describe("CutsFeedPage 준비 상태", () => {
     });
     expect(screen.queryByText("클립을 불러오는 중…")).toBeNull();
     expect(screen.queryByText("아직 공개된 클립이 없어요.")).toBeNull();
+
+    // 피드 필터 칩과 단축키 안내가 상단에 노출된다.
+    const filterGroup = screen.getByRole("group", { name: "피드 필터" });
+    expect(filterGroup).toBeTruthy();
+    expect(screen.getByRole("button", { name: "리워드 대상" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "리믹스 가능" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "인기순" })).toBeTruthy();
   });
 });

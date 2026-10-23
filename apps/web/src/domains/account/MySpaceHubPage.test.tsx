@@ -120,4 +120,11 @@ describe("MySpaceHubPage next-action center", () => {
     expect(screen.queryByRole("heading", { name: "가장 최근 작업부터 이어가세요" })).toBeNull();
     expect(screen.getByRole("link", { name: /이어서 보기/ }).getAttribute("href")).toBe("/ranking");
   });
+
+  it("exposes role-based filter buttons and direct links to AI settings and asset points", () => {
+    renderPage();
+    expect(screen.getByRole("group", { name: "내 공간 역할별 보기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /AI 연결 설정/ }).getAttribute("href")).toBe("/settings/ai");
+    expect(screen.getByRole("link", { name: /에셋 포인트·정산/ }).getAttribute("href")).toBe("/asset-points");
+  });
 });

@@ -2,7 +2,9 @@
 
 > 기준일: 2026-09-29
 >
-> **2026-10-22 변경(마이그레이션 중)**: 소유자 결정으로 PostgreSQL 원장의 정본을 onpod `toonstudio-db`(서울, 무료
+> **2026-10-23 컷오버 완료**: Core API는 onpod `toonstudio-db`를 원장으로 쓴다. Render는 삭제했고 Neon `toonspectrum-production`은 소유자가 Neon 사용을 중단하며 2026-10-22에 삭제했고, Supabase `toonspectrum-collaboration`은 더 이상 쓰지 않는다. 아래 표는 퇴역 전 구성의 기록이다.
+>
+> **2026-10-22 변경**: 소유자 결정으로 PostgreSQL 원장의 정본을 onpod `toonstudio-db`(서울, 무료
 > dev 플랜)로 옮기는 재구축이 진행 중이다. 아래 표의 Supabase·Neon 행은 legacy exception으로 내려가며, 컷오버 전까지는
 > 현행 Core API(Render)가 읽던 구성을 설명한다. 현재 사실은 [인프라 지도](infrastructure-map.md)와
 > [ADR-0030](../adr/0030-seoul-origin-hybrid-infrastructure.md)을 따른다.

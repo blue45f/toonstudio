@@ -141,4 +141,36 @@ describe("StudioCanvasContextMenu", () => {
     expect(parentClick).not.toHaveBeenCalled();
     document.body.removeEventListener("click", parentClick);
   });
+
+  it("renders quick canvas control strip when undo/redo/flip/zoom callbacks are provided", () => {
+    const onUndo = vi.fn();
+    const onRedo = vi.fn();
+    const onFlipHorizontal = vi.fn();
+    const onZoomReset = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <StudioCanvasContextMenu
+        {...createProps({
+          onUndo,
+          onRedo,
+          onFlipHorizontal,
+          onZoomReset,
+          onClose,
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("canvas-context-quick-strip")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소 (⌘Z)" }));
+    fireEvent.click(screen.getByRole("button", { name: "다시 실행 (⇧⌘Z)" }));
+    fireEvent.click(screen.getByRole("button", { name: "좌우 반전 데생 점검" }));
+    fireEvent.click(screen.getByRole("button", { name: "화면 맞춤 (100%)" }));
+
+    expect(onUndo).toHaveBeenCalledOnce();
+    expect(onRedo).toHaveBeenCalledOnce();
+    expect(onFlipHorizontal).toHaveBeenCalledOnce();
+    expect(onZoomReset).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenCalledTimes(4);
+  });
 });
+

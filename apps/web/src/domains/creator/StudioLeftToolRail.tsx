@@ -87,6 +87,7 @@ import {
   STUDIO_RETOUCH_EDITABLE_COPY_NOTE,
   studioRetouchToolHelp,
 } from "./studio-retouch-help";
+import { imageEditLockReason, rasterRetouchAutoTargetUnavailableReason, reviewLockReason } from "./status-i18n/studio-lock-reason-i18n";
 import { isSelectionUsable } from "./studio-selection-tools";
 import { suppressNextStudioToolHintFocus } from "./studio-tool-hint-focus-suppression";
 import { studioUiDensityAllows } from "./studio-ui-density";
@@ -98,11 +99,7 @@ import { cn } from "@/shared/lib/utils";
 
 type StudioRailToolDefinition = StudioRailToolButtonProps & { [key: `data-${string}`]: string | boolean | undefined };
 
-const REVIEW_LOCK_REASON = "현재 작업면의 검토 잠금을 먼저 해제하세요.";
-const IMAGE_EDIT_LOCK_REASON = "선택한 이미지 레이어의 편집 잠금을 먼저 해제하세요.";
 const RASTER_RETOUCH_AUTO_TARGET_GUIDANCE = STUDIO_RETOUCH_EDITABLE_COPY_NOTE;
-const RASTER_RETOUCH_AUTO_TARGET_UNAVAILABLE_REASON =
-  "편집 가능한 이미지도, 편집용 이미지 복사본을 자동 준비할 벡터 선·도형도 없습니다.";
 const STUDIO_CANVAS_IMAGE_ACCEPT =
   "image/*,.bmp,.dib,.tga,.icb,.vda,.vst,.ppm,.pam,.qoi,.tif,.tiff";
 const STUDIO_RAIL_MORE_GAP_PX = 4;
@@ -321,11 +318,11 @@ function StudioLeftToolRailConnected() {
       : `${base} ${RASTER_RETOUCH_AUTO_TARGET_GUIDANCE}`;
   const rasterRetouchUnavailableReason = (active: boolean): string | undefined => {
     if (active) return undefined;
-    if (activeSurfaceReviewLocked) return REVIEW_LOCK_REASON;
-    if (selectedImageLocked) return IMAGE_EDIT_LOCK_REASON;
+    if (activeSurfaceReviewLocked) return reviewLockReason();
+    if (selectedImageLocked) return imageEditLockReason();
     return rasterRetouchTargetAvailable
       ? undefined
-      : RASTER_RETOUCH_AUTO_TARGET_UNAVAILABLE_REASON;
+      : rasterRetouchAutoTargetUnavailableReason();
   };
   const railMoreDialogRef = useRef<HTMLDivElement>(null);
   const [railMorePosition, setRailMorePosition] = useState<PositionedStudioRailMore>({
@@ -634,9 +631,9 @@ function StudioLeftToolRailConnected() {
 "active": false,
 "disabled": activeSurfaceReviewLocked || selectedImageLocked,
 "unavailableReason": activeSurfaceReviewLocked
-                  ? REVIEW_LOCK_REASON
+                  ? reviewLockReason()
                   : selectedImageMutationLocked
-                    ? IMAGE_EDIT_LOCK_REASON
+                    ? imageEditLockReason()
                     : undefined,
 "className": pixelTransformRecoveryAvailable || objectTransformPickRecoveryAvailable
                   ? "size-11"
@@ -679,7 +676,7 @@ function StudioLeftToolRailConnected() {
 "description": "자유선으로 그립니다. 필압·보정·브러시 프리셋은 하단 옵션 도크와 현재 브러시 편집에서 조절해요.",
 "active": tool === "draw" && drawMode === "pen" && !drawToolTemporarilyOverridden,
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "grouped": true,
 "onClick": () => activateDrawTool("pen")
 },
@@ -690,7 +687,7 @@ function StudioLeftToolRailConnected() {
 "description": "1px 하드 픽셀 펜으로 그립니다. 안티앨리어스·필압 없이 또렷한 선을 남깁니다.",
 "active": tool === "draw" && drawMode === "pixel" && !drawToolTemporarilyOverridden,
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => activateDrawTool("pixel")
 },
 "eraser": {
@@ -700,7 +697,7 @@ function StudioLeftToolRailConnected() {
 "description": "현재 레이어/획 위를 지웁니다. 굵기는 펜과 같은 크기 칩으로 맞출 수 있어요.",
 "active": tool === "draw" && drawMode === "eraser" && !drawToolTemporarilyOverridden,
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => activateDrawTool("eraser")
 },
 "blend": {
@@ -779,7 +776,7 @@ function StudioLeftToolRailConnected() {
 "description": "닫힌 궤적을 그려 현재 색으로 채웁니다.",
 "active": tool === "draw" && drawMode === "lasso-fill",
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => activateDrawTool("lasso-fill")
 },
 "eyedropper": {
@@ -803,9 +800,9 @@ function StudioLeftToolRailConnected() {
 "active": pixelTool === "rect" && !pixelForceCircle,
 "disabled": activeSurfaceReviewLocked || (selected?.type === "image" && selectedImageMutationLocked),
 "unavailableReason": activeSurfaceReviewLocked
-                  ? REVIEW_LOCK_REASON
+                  ? reviewLockReason()
                   : selected?.type === "image" && selectedImageMutationLocked
-                    ? IMAGE_EDIT_LOCK_REASON
+                    ? imageEditLockReason()
                     : undefined,
 "onClick": () => togglePixelMarquee("rect")
 },
@@ -817,9 +814,9 @@ function StudioLeftToolRailConnected() {
 "active": pixelTool === "ellipse" && pixelForceCircle,
 "disabled": activeSurfaceReviewLocked || (selected?.type === "image" && selectedImageMutationLocked),
 "unavailableReason": activeSurfaceReviewLocked
-                  ? REVIEW_LOCK_REASON
+                  ? reviewLockReason()
                   : selected?.type === "image" && selectedImageMutationLocked
-                    ? IMAGE_EDIT_LOCK_REASON
+                    ? imageEditLockReason()
                     : undefined,
 "onClick": () => togglePixelMarquee("circle")
 },
@@ -840,9 +837,9 @@ function StudioLeftToolRailConnected() {
 "active": (pixelTool === "lasso" || pixelTool === "poly-lasso") && !pixelForceCircle,
 "disabled": activeSurfaceReviewLocked || (selected?.type === "image" && selectedImageMutationLocked),
 "unavailableReason": activeSurfaceReviewLocked
-                  ? REVIEW_LOCK_REASON
+                  ? reviewLockReason()
                   : selected?.type === "image" && selectedImageMutationLocked
-                    ? IMAGE_EDIT_LOCK_REASON
+                    ? imageEditLockReason()
                     : undefined,
 "onClick": () => {
                 if (activeSurfaceReviewLocked || (selected?.type === "image" && selectedImageMutationLocked)) return;
@@ -888,7 +885,7 @@ function StudioLeftToolRailConnected() {
 "hintPreviewVariant": quickShapeActive ? "disable" : "enable",
 "active": quickShapeActive,
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "accented": true,
 "onClick": () => {
                 const next = !quickShapeActive;
@@ -909,7 +906,7 @@ function StudioLeftToolRailConnected() {
 "description": "드래그로 사각형을 그립니다. Shift를 누르면 정사각형으로 맞출 수 있어요.",
 "active": tool === "draw" && drawMode === "shape" && drawShape === "rect",
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => activateDrawTool("shape", "rect")
 },
 "shape-ellipse": {
@@ -919,7 +916,7 @@ function StudioLeftToolRailConnected() {
 "description": "드래그로 타원을 그립니다. Shift를 누르면 정원으로 맞출 수 있어요.",
 "active": tool === "draw" && drawMode === "shape" && drawShape === "ellipse",
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => activateDrawTool("shape", "ellipse")
 },
 "text": {
@@ -928,7 +925,7 @@ function StudioLeftToolRailConnected() {
 "label": "텍스트 추가",
 "description": "캔버스에 글자 상자를 추가합니다. 폰트·정렬·효과는 우측 속성에서 편집해요.",
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => {
                 addText(undefined, true);
               }
@@ -939,7 +936,7 @@ function StudioLeftToolRailConnected() {
 "label": "말풍선 추가",
 "description": "만화 말풍선을 넣습니다. 꼬리 위치·스타일 프리셋은 말풍선 패널에서 바꿀 수 있어요.",
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => {
                 addBubble("speech", undefined, true);
               }
@@ -967,7 +964,7 @@ function StudioLeftToolRailConnected() {
 "description": "소실점 가이드로 원근을 맞춥니다.",
 "active": perspectiveRulerActive,
 "disabled": activeSurfaceReviewLocked,
-"unavailableReason": activeSurfaceReviewLocked ? REVIEW_LOCK_REASON : undefined,
+"unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "onClick": () => {
                 const next = !perspectiveRulerActive;
                 setPerspectiveRulerActive(next);
@@ -991,9 +988,9 @@ function StudioLeftToolRailConnected() {
 "active": frameAnimOpen && frameAnimTargetId === selected?.id,
 "disabled": activeSurfaceReviewLocked || selectedImageLocked,
 "unavailableReason": activeSurfaceReviewLocked
-                  ? REVIEW_LOCK_REASON
+                  ? reviewLockReason()
                   : selectedImageMutationLocked
-                    ? IMAGE_EDIT_LOCK_REASON
+                    ? imageEditLockReason()
                     : undefined,
 "className": frameAnimationRecoveryAvailable ? "size-11" : undefined,
 "onClick": frameAnimationRecoveryAvailable
@@ -1066,7 +1063,7 @@ function StudioLeftToolRailConnected() {
 "onFocus": preloadStudioReferencePanel
 },
 
-image: { icon: ImagePlus, label: "이미지 추가", description: "이미지 파일을 현재 원고에 추가합니다.", disabled: activeSurfaceReviewLocked, unavailableReason: REVIEW_LOCK_REASON, onClick: () => imageFileInputRef.current?.click() },
+image: { icon: ImagePlus, label: "이미지 추가", description: "이미지 파일을 현재 원고에 추가합니다.", disabled: activeSurfaceReviewLocked, unavailableReason: reviewLockReason(), onClick: () => imageFileInputRef.current?.click() },
 zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? "현재 확대·축소 HUD를 닫고 적용한 보기 배율은 그대로 유지합니다." : "확대·축소 HUD를 열어 배율·화면 맞춤·100% 보기를 빠르게 조절합니다.", active: zoomViewToolOpen, disabled: viewTransformSuppressed, unavailableReason: "내보내기·저장이 끝난 뒤 보기를 조절하세요.", ...zoomViewToolHintProps, "aria-expanded": zoomViewToolOpen, "aria-controls": "studio-view-tools-hud-zoom", "data-studio-view-tool-trigger": "zoom", onClick: () => setViewTool((current) => current === "zoom" ? null : "zoom") },
 "zoom-fit": { icon: ScanLine, label: "너비에 맞춤 (Home)", description: "캔버스 폭에 맞춰 확대·축소합니다.", disabled: viewTransformSuppressed, unavailableReason: "내보내기·저장이 끝난 뒤 보기를 조절하세요.", hintPreview: "zoom-view", hintPreviewVariant: "fit-width", onClick: fitCanvasToWidthWithWorkspace },
 "rotate-view": { icon: RotateCw, label: rotateViewToolLabel, description: rotateViewToolOpen ? "현재 회전 HUD를 닫고 적용한 보기 회전·반전 상태는 그대로 유지합니다." : "회전 HUD를 열어 캔버스를 좌·우 90°로 돌리거나 수평 반전합니다. 문서와 내보내기는 바뀌지 않아요.", active: rotateViewToolOpen, disabled: viewTransformSuppressed, unavailableReason: "내보내기·저장이 끝난 뒤 보기를 조절하세요.", ...rotateViewToolHintProps, "aria-expanded": rotateViewToolOpen, "aria-controls": "studio-view-tools-hud-rotate", "data-studio-view-tool-trigger": "rotate", onClick: () => setViewTool((current) => current === "rotate" ? null : "rotate") }

@@ -238,7 +238,7 @@ export class StudioCampusRuntime {
     return this.theme ? studioSpaceThemeWallTint(this.theme, zone) : zone.wallTint;
   }
 
-  /** 테마 바닥: 구역 사각형 전체에 테마 패턴 타일을 깐다 (타일맵 바닥 위, 장식 아래). 아트 스타일과 무관하게 테마 색으로만 그린다. */
+  /** 테마 바닥: 구역 사각형 전체에 테마 패턴 타일을 깔고 테마 장식 테두리를 두른다 (타일맵 바닥 위, 장식 아래). */
   private drawZoneFloor(scene: CampusScene, zone: StudioCampusZoneBlueprint): void {
     if (!this.theme) return;
     const spec = studioSpaceThemeFloorSpec(this.theme, zone.tone);
@@ -246,7 +246,9 @@ export class StudioCampusRuntime {
     const width = zone.tiles.width * 64, height = zone.tiles.height * 64;
     const floor = scene.add.tileSprite(x, y, width, height, campusThemeFloorTexture(scene, spec))
       .setOrigin(0).setTileScale(1 / CAMPUS_TEXTURE_SCALE).setDepth(ZONE_FLOOR_DEPTH);
-    this.objects.push(floor);
+    const trim = scene.add.graphics().setDepth(ZONE_FLOOR_DEPTH + 1);
+    trim.lineStyle(2, this.theme.decorAccent, 0.28).strokeRect(x + 8, y + 8, width - 16, height - 16);
+    this.objects.push(floor, trim);
   }
 
   private drawIslandRim(scene: CampusScene, style: StudioVirtualArtStyleKey): void {
@@ -275,19 +277,53 @@ export class StudioCampusRuntime {
 
   private drawPlaza(scene: CampusScene, style: StudioVirtualArtStyleKey, translate: StudioCampusRuntimeOptions["translate"]): void {
     const stone = campusStyleColor(this.theme ? this.theme.plazaStone : 0xd9d2c3, style);
+    const accent = campusStyleColor(this.theme ? this.theme.decorAccent : CAMPUS_ART.gold, style);
+    const structureKind = this.theme?.structureKind ?? "modern-plaza";
     const inlay = scene.add.graphics().setDepth(GROUND_ART_DEPTH);
     const cx = 1472, cy = 1110;
     inlay.fillStyle(campusShade(stone, -0.35), 0.35).fillEllipse(cx, cy + 6, 540, 300);
     inlay.fillStyle(stone, 0.55).fillEllipse(cx, cy, 520, 280);
     inlay.lineStyle(3, campusShade(stone, 0.4), 0.8).strokeEllipse(cx, cy, 520, 280);
-    inlay.lineStyle(2, campusShade(stone, -0.25), 0.55).strokeEllipse(cx, cy, 440, 232);
+    inlay.lineStyle(2, accent, 0.55).strokeEllipse(cx, cy, 440, 232);
     for (let index = 0; index < 16; index += 1) {
       const angle = index / 16 * Math.PI * 2;
       inlay.lineStyle(2, campusShade(stone, -0.2), 0.45)
         .lineBetween(cx + Math.cos(angle) * 220, cy + Math.sin(angle) * 116, cx + Math.cos(angle) * 260, cy + Math.sin(angle) * 140);
     }
+    // 테마별 광장 중심 건축 인레이 구조물
+    if (structureKind === "astral-orrery" || structureKind === "archive-rotunda" || structureKind === "harbor-beacon") {
+      inlay.lineStyle(2, accent, 0.65).strokeEllipse(cx, cy, 320, 168);
+      inlay.lineStyle(1.5, accent, 0.45).strokeEllipse(cx, cy, 180, 96);
+      inlay.lineBetween(cx - 240, cy, cx + 240, cy);
+      inlay.lineBetween(cx, cy - 128, cx, cy + 128);
+      for (let i = 0; i < 8; i += 1) {
+        const a = (i / 8) * Math.PI * 2;
+        inlay.fillStyle(accent, 0.78).fillCircle(cx + Math.cos(a) * 160, cy + Math.sin(a) * 84, 4.5);
+      }
+    } else if (structureKind === "atelier-gallery" || structureKind === "cinema-stage") {
+      inlay.fillStyle(accent, 0.14).fillRect(cx - 190, cy - 86, 380, 172);
+      inlay.lineStyle(2, accent, 0.62).strokeRect(cx - 190, cy - 86, 380, 172);
+      for (const [dx, dy] of [[-190, -86], [190, -86], [-190, 86], [190, 86]] as const) {
+        inlay.lineStyle(3, accent, 0.85)
+          .lineBetween(cx + dx, cy + dy, cx + dx + (dx < 0 ? 22 : -22), cy + dy)
+          .lineBetween(cx + dx, cy + dy, cx + dx, cy + dy + (dy < 0 ? 18 : -18));
+      }
+    } else if (structureKind === "cyber-grid") {
+      for (const r of [120, 210, 300]) {
+        inlay.lineStyle(1.8, accent, 0.52).strokeEllipse(cx, cy, r * 1.4, r * 0.76);
+      }
+      for (let x = cx - 180; x <= cx + 180; x += 60) {
+        inlay.lineStyle(1, accent, 0.28).lineBetween(x, cy - 95, x, cy + 95);
+      }
+    } else if (structureKind === "sakura-courtyard" || structureKind === "botanical-pergola" || structureKind === "lodge-hearth") {
+      for (let i = 0; i < 6; i += 1) {
+        const a = (i / 6) * Math.PI * 2;
+        inlay.fillStyle(accent, 0.22).fillEllipse(cx + Math.cos(a) * 110, cy + Math.sin(a) * 58, 92, 50);
+        inlay.lineStyle(1.6, accent, 0.55).strokeEllipse(cx + Math.cos(a) * 110, cy + Math.sin(a) * 58, 92, 50);
+      }
+    }
     for (const [x, y] of [[cx, cy - 140], [cx, cy + 140], [cx - 260, cy], [cx + 260, cy]] as const) {
-      inlay.fillStyle(campusStyleColor(CAMPUS_ART.gold, style), 0.7).fillCircle(x, y, 6);
+      inlay.fillStyle(accent, 0.78).fillCircle(x, y, 6);
     }
     this.objects.push(inlay);
     const motto = scene.add.text(CAMPUS_PLAZA_MOTTO.x, CAMPUS_PLAZA_MOTTO.y, translate(CAMPUS_PLAZA_MOTTO.textKo, CAMPUS_PLAZA_MOTTO.textEn), {

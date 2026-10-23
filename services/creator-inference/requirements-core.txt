@@ -1,3 +1,6 @@
-fastapi==0.128.2
+# Security floor: fastapi 0.128.x 는 starlette<0.51 로 막아 GHSA 5건(82w8·wqp7·86qp·x746·jp82)이 걸린
+# starlette 0.50 에 머물게 한다. 수정본은 starlette 1.3.1 이상이다(2026-10-22 OSV 기준).
+fastapi==0.161.0
+starlette>=1.3.1,<2
 uvicorn==0.48.0
 pillow==13.0.0

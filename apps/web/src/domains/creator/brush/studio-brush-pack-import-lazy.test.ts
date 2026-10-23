@@ -18,7 +18,8 @@ describe("Krita archive parser intent boundary", () => {
     await expect(router.importStudioKritaBundleBytes(new Uint8Array())).rejects.toMatchObject({
       name: "StudioBrushProgramImportError",
       format: "bundle",
-      message: "Krita 브러시 번들(.bundle)을 읽지 못했어요. Invalid fixture",
+      code: "bundleReadFailed",
+      params: { detail: " Invalid fixture" },
       cause: expect.objectContaining({ message: "Invalid fixture" }),
     });
     expect(observations.moduleLoaded).toHaveBeenCalledOnce();

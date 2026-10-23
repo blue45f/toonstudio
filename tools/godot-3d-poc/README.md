@@ -2,6 +2,7 @@
 
 - 상태: `target` — 평가용 실험 도구다. 운영 앱(`apps/web`, `apps/api`, `packages/*`)에 연결되어 있지 않고 배포 대상도 아니다.
   운영 중인 Godot 섬(가상스튜디오 `godot-space`, `/play`, `/cuts`)과 `tools/play-godot`·`tools/cuts-godot`는 이 도구와 별개이며 이 도구가 바꾸지 않는다.
+  **2026-10-23 정정**: 그 섬과 두 빌드 도구는 2026-10-21 PR #2354 로 제거됐고 ADR-0028 은 Superseded 다. 이 도구는 역사 측정 재현용으로만 남아 있다.
 - 날짜: 2026-10-15
 - 근거 문서: [ADR-0028](../../docs/adr/0028-godot-3d-adoption-modes.md)(적용 모드 제안), [평가 보고서](../../docs/reports/godot-3d-evaluation-2026-10-15.md),
   [측정 증거](../../docs/evidence/godot-3d-poc/2026-10-15/README.md)

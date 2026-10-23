@@ -1,7 +1,7 @@
 # ADR-0028: Godot 3D 적용 모드(브라우저 섬·빌드 도구·데스크톱 동반·서버 렌더)의 판정과 채택 조건
 
-- 상태: Proposed
-- 날짜: 2026-10-15
+- 상태: Superseded — 2026-10-21 소유자 결정(PR #2354)으로 이 ADR이 전제한 운영 Godot 섬이 제거됐다. 대체 ADR은 없다. 모드 B~D는 채택하지 않고 보류한다(아래 정정 기록).
+- 날짜: 2026-10-15 (상태 정정 2026-10-23)
 - 범위: Studio 3D(편집·캡처·출력)에 Godot를 쓰는 네 가지 방식의 판정·조건·롤백, 실험 도구 `tools/godot-3d-poc`의 지위, 기존 Godot 섬(가상스튜디오 `godot-space`, `/play`, `/cuts`)의
   운영 보완 항목(라이선스 고지, 엔진 중복 전송, 소스 편입). 이 ADR은 `apps/*`, `packages/*`, 배포 설정, `STUDIO_RENDERER_ROLE_LEDGER`를 바꾸지 않는다.
 - 관련: [ADR-0003](0003-one-primary-surface-owner.md)(Surface/Island당 주 소유자 1개), [ADR-0008](0008-license-isolation-policy.md)(라이선스 격리),
@@ -10,6 +10,16 @@
   [PoC README](../../tools/godot-3d-poc/README.md), [측정 증거](../evidence/godot-3d-poc/2026-10-15/README.md),
   [전문 런타임 토폴로지(2026-07-18)](../studio-3d-engine-specialist-topology-2026-07-18.md)의 채택 게이트, [3D 차세대 구조(2026-09-10)](../studio/studio-3d-next-platform-architecture-2026-09-10.md) §3.4
 - 문서 상태: 맥락의 "현재 상태"는 `current`, 결정은 `target`(제안)이다. 이 문서는 **제안만** 한다. 수용되기 전에는 아래 결정이 코드·배포·원장 어디에도 반영되지 않는다.
+
+> **2026-10-23 상태 정정 (문서만 — 아래 본문과 결정 내용은 바꾸지 않았다)**
+>
+> - 2026-10-20 PR #2346 이 가상스튜디오 3D 무대를 Godot→Unity 로 바꿨고, 2026-10-21 PR #2354 가 소유자 결정("Unity 전환 취소 + Godot 버전도 제거")으로
+>   Unity·Godot 3D 무대를 모두 걷어냈다: `public/godot-space`·`cuts-godot`·`play-godot` wasm 임베드, `tools/cuts-godot`·`tools/play-godot` 빌드 파이프라인, 엣지 워커의 무대 규칙.
+>   가상스튜디오 무대는 클래식 2D(Phaser)만 남는다. 아래 "현재 상태"의 세 섬(godot-space·`/play`·`/cuts`)과 4.4.1 wasm 서술은 **2026-10-15 시점 기록**이며 더는 현재가 아니다.
+> - 모드 A(브라우저 섬)의 운영 보완 항목(라이선스 고지·엔진 중복 전송·소스 편입)은 대상이 없어져 무효다. 모드 B~D(빌드타임 도구·데스크톱 동반·서버 렌더)는 채택하지 않고 **보류**한다.
+>   Rejected 판정은 소유자 확인 뒤에 한다.
+> - `tools/godot-3d-poc` 와 `docs/evidence/godot-3d-poc/` 측정 기록은 역사 자료로 남긴다. DB 테이블 `studio_godot_space_layout`·`studio_godot_space_background` 와
+>   마이그레이션 0106·0107 은 PR #2354 가 의도적으로 dormant 상태로 남겼다.
 
 ## 맥락
 

@@ -32,6 +32,7 @@ export function useStudioBg3dEditorState(props) {
     getStudioBg3dRoomPreset, collectDeviceSignals, canonicalSceneDocument,
     DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, StudioBg3dDestructiveMutationGuard, THREE,
     applyOrDeferStudioBg3dHistoryCamera,
+    resolveBg3dTemplateMigrationDataPreservedNote, resolveBg3dTemplateMigrationErrorByCode,
   } = R;
   const [primitiveGeometryPool] = useState(() => new StudioBg3dPrimitiveGeometryPool());
   const [adaptiveDprScale, setAdaptiveDprScale] = useState(1);
@@ -368,7 +369,7 @@ export function useStudioBg3dEditorState(props) {
   const cameraLensGestureBeforeViewRef = useRef<StudioBg3dCameraSettings | null>(null);
   const cameraLensGestureLatestViewRef = useRef<StudioBg3dCameraSettings | null>(null);
   const cameraLensGestureTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const viewportHostRef = useRef<HTMLDivElement>(null);
+  const viewportHostRef = R.useStudioBg3dViewportHostRef();
   // 세이프 프레임 오버레이는 캡처와 같은 식을 쓰려면 살아 있는 뷰포트 CSS 박스를 알아야 한다.
   const [viewportBoxSize, setViewportBoxSize] = useState<{ width: number; height: number } | null>(
     null,
@@ -453,13 +454,12 @@ export function useStudioBg3dEditorState(props) {
 
 
 
-
-
   const historyRef = useRef<StudioBg3dHistorySnapshot[]>([]);
   const historyIndexRef = useRef(-1);
   const historyCommandTimelineRef = useRef<StudioBg3dHistoryCommandTimeline | null>(null);
 
   Object.assign(h, {
+    resolveBg3dTemplateMigrationDataPreservedNote, resolveBg3dTemplateMigrationErrorByCode,
     primitiveGeometryPool,
     adaptiveDprScale,
     setAdaptiveDprScale,

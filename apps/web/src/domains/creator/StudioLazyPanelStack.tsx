@@ -10,6 +10,7 @@ import {
 
 import { createEmptyStudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
 import { selectWheelColors } from "./studio-color-wheel";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   StudioAiProvenancePanel,
   StudioAutoActionsPanel,
@@ -421,10 +422,8 @@ export interface StudioLazyPanelStackProps {
 
 function StudioReferencePanelLoadingFallback() {
   return (
-    <div
-      role="status"
-      aria-label="레퍼런스 캔버스 불러오는 중"
-      aria-live="polite"
+    <div role="status" aria-live="polite"
+      aria-label={frozenStatus5Text("studio.frozenStatus5.lazy.referenceLoadingLabel", "레퍼런스 캔버스 불러오는 중")}
       data-studio-reference-panel-loading="true"
       className="fixed right-3 top-20 z-[70] flex min-h-24 w-[min(300px,calc(100vw-1.5rem))] items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 shadow-[0_12px_36px_oklch(0.05_0.01_70/0.4)]"
     >
@@ -437,7 +436,7 @@ function StudioReferencePanelLoadingFallback() {
       <span className="min-w-0">
         <span className="block text-xs font-bold text-fg">레퍼런스 캔버스</span>
         <span className="mt-0.5 block text-[0.7rem] leading-relaxed text-fg-3">
-          자유 보드와 저장된 배치를 준비하고 있어요…
+          {frozenStatus5Text("studio.frozenStatus5.lazy.referenceLoadingText", "자유 보드와 저장된 배치를 준비하고 있어요…")}
         </span>
       </span>
     </div>
@@ -1131,7 +1130,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              <Suspense fallback={<div className="py-8 text-center text-xs text-fg-3">불러오는 중…</div>}>
+              <Suspense fallback={<div className="py-8 text-center text-xs text-fg-3">{frozenStatus5Text("studio.frozenStatus5.lazy.loading", "불러오는 중…")}</div>}>
                 <WorkFxPanel
                   work={loadedWork}
                   onUpdated={(doc, revision) => {

@@ -234,5 +234,13 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
     const ep2 = items.find((item) => item.textContent?.includes("안개가 짙어지면"));
     expect(ep1?.textContent).toContain("읽음");
     expect(ep2?.textContent).toContain("읽는 중 82%");
+    expect(screen.getByTestId("episodes-binge-estimate").textContent).toContain("예상 정주행 약 12분");
+
+    const searchInput = screen.getByTestId("episodes-search-input");
+    fireEvent.change(searchInput, { target: { value: "마지막" } });
+    const filteredItems = within(screen.getByRole("list")).getAllByRole("listitem");
+    expect(filteredItems).toHaveLength(1);
+    expect(filteredItems[0]?.textContent).toContain("마지막 전파");
   });
 });
+

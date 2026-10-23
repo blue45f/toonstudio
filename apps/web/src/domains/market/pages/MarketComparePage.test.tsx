@@ -66,6 +66,11 @@ describe("MarketComparePage", () => {
     expect(viewport.scrollLeft).toBe(480);
     fireEvent.click(previous);
     expect(viewport.scrollLeft).toBe(0);
+
+    const diffToggle = screen.getByTestId("market-compare-diff-toggle");
+    expect(diffToggle.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(diffToggle);
+    expect(diffToggle.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("keeps the empty state free of scroll controls for a missing table", () => {

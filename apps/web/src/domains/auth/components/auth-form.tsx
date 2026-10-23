@@ -1002,10 +1002,10 @@ export function AuthForm({
                   </div>
                 )}
                 {providerStatus === "error" && (
-                  <div className="rounded-xl border border-line bg-card p-3 text-center">
+                  <div className="rounded-xl border border-bad/35 bg-bad/5 p-3 text-center">
                     <p
-                      className="text-xs leading-relaxed text-fg-3"
-                      role="status"
+                      className="text-xs leading-relaxed text-bad"
+                      role="alert"
                     >
                       {translateCurrentStaticSourceText(
                         "domains.auth.components.auth.modal",

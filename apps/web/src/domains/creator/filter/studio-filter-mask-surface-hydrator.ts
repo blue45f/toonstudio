@@ -1,9 +1,14 @@
 import {
   replayStudioRasterCrdtPixels,
   type StudioRasterReplayRuntimeDependencies,
+  type StudioRasterReplayRuntimeErrorCode,
   type StudioRasterReplayRuntimeResult,
 } from "../live/studio-crdt-raster-replay-runtime";
 import { downloadStudioRasterAsset } from "../render/studio-raster-asset-client";
+import {
+  resolveStudioRasterReplayError,
+  studioRasterReplayErrorInfoFromCause,
+} from "../status-i18n/studio-producer-error-i18n-live-raster";
 
 import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type {
@@ -97,25 +102,48 @@ function isAbortError(error: unknown): boolean {
   );
 }
 
+/** replay 코드 중 실행 환경·자원 부족으로 분류하는 코드 (A4 D4, R12 코드 기반 분류). */
+const REPLAY_RESOURCE_CODES: ReadonlySet<StudioRasterReplayRuntimeErrorCode> = new Set([
+  "resident-memory-budget",
+  "asset-byte-budget",
+  "canvas-unavailable",
+  "canvas-context-unavailable",
+  "canvas-context-unavailable-html",
+  "png-decoder-unavailable",
+  "sha256-unavailable",
+]);
+
 function hydrationError(
   error: unknown
 ): Pick<
   Extract<StudioFilterMaskSurfaceHydrationState, { status: "error" }>,
   "code" | "message"
 > {
+  // A4 D4 (R12): replay 생산자가 구조화 코드를 방출하므로 분류는 한글 정규식이 아니라
+  // 코드로만 한다. hydration 상태의 message는 문자열로 고정된 경계라, 이 집계 지점에서만
+  // 리졸버로 해석해 저장한다(집계자 예외).
+  const info = studioRasterReplayErrorInfoFromCause(error);
+  if (info) {
+    const message = resolveStudioRasterReplayError(info);
+    if (info.code === "asset-download-failed") {
+      const cause = (error as { cause?: unknown }).cause;
+      const status = cause && typeof cause === "object"
+        ? (cause as { status?: unknown }).status
+        : undefined;
+      return { code: status === 404 ? "missing" : "network", message };
+    }
+    if (REPLAY_RESOURCE_CODES.has(info.code)) return { code: "resource", message };
+    return { code: "invalid", message };
+  }
   const message = error instanceof Error
     ? error.message
     : "필터 마스크 표면을 불러오지 못했습니다.";
-  if (/찾을 수|없습니다|missing|404/iu.test(message)) {
-    return { code: "missing", message };
-  }
-  if (/메모리|예산|resource|canvas/iu.test(message)) {
-    return { code: "resource", message };
-  }
-  if (/형식|올바르지|불변|Magic|마스크|surface|래스터/iu.test(message)) {
-    return { code: "invalid", message };
-  }
-  return { code: "network", message };
+  const status = error && typeof error === "object"
+    ? (error as { status?: unknown }).status
+    : undefined;
+  if (status === 404) return { code: "missing", message };
+  if (typeof status === "number") return { code: "network", message };
+  return { code: "invalid", message };
 }
 
 function boundedPositiveInteger(

@@ -113,6 +113,7 @@ apps/web/src/domains/creator/StudioSelectionWorkbenchPanel.test.tsx
 apps/web/src/domains/creator/StudioWorkspaceMenu.test.tsx
 apps/web/src/domains/creator/a11y/use-studio-window-keyboard-focus.test.tsx
 apps/web/src/domains/creator/ai/StudioAiProvenancePanel.test.tsx
+apps/web/src/domains/creator/ai/canon/bundled-canon-avatars.test.ts
 apps/web/src/domains/creator/ai/studio-ai-client.test.ts
 apps/web/src/domains/creator/ai/studio-ai-codec-lazy-boundary.test.ts
 apps/web/src/domains/creator/ai/studio-scenario-image-generation.test.ts
@@ -601,6 +602,7 @@ apps/web/src/domains/creator/vrm/studio-vrm-torso-silhouette-measure.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-xpbd-skirt-attachment-boundary.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-xpbd-skirt.test.ts
+apps/web/src/domains/creator/vrm/vrm-rights-derived-assets.test.ts
 apps/web/src/domains/creator/work-session
 apps/web/src/domains/creator/work-session/StudioSessionEvidencePanel.test.tsx
 apps/web/src/domains/creator/work-session/studio-session-evidence-client.test.ts
@@ -642,6 +644,8 @@ apps/web/tests/vite-react-compiler-runtime-interop.test.ts
 apps/web/tools/browser-harnesses/studio-p2p-direct-diagnostics.test.ts
 deploy/cloudflare-analytics/src/index.test.ts
 deploy/cloudflare-apex-redirect/src/index.test.ts
+deploy/cloudflare-static/src/index.test.ts
+deploy/cloudflare-static/src/r2-media-assets.test.ts
 packages/contracts/src/production-workflow.test.ts
 packages/core/src/catalog/home.cpu-cache.test.ts
 packages/core/src/fortune/fortune-engine.security.test.ts
@@ -665,6 +669,7 @@ scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
 scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
+scripts/cloudflare-static-rules.test.mjs
 scripts/creator-bundle-pack-rights-form.test.mjs
 scripts/creator-bundle-pack-rights-gate.test.mjs
 scripts/creator-bundle-pack-rights.test.mjs
@@ -692,6 +697,7 @@ scripts/lib/studio-verify-shape-readiness.test.tsx
 scripts/pigment-dependency-install-policy.test.mjs
 scripts/plan-creator-bundle-deploy-cli.test.mjs
 scripts/plan-creator-bundle-deploy.test.mjs
+scripts/prepare-cloudflare-static-assets.test.ts
 scripts/prepare-managed-database-bootstrap.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs
 scripts/provision-gcp-free-data-plane.test.mjs
@@ -699,6 +705,7 @@ scripts/release-static-chunk-boundary.test.ts
 scripts/run-production-database-migrations.test.mjs
 scripts/setup-toonstudio-blender-pipeline.test.mjs
 scripts/studio-production-realtime.test.ts
+scripts/sync-cloudflare-r2-assets.test.ts
 scripts/ux-audit/aggregate.test.mjs
 scripts/ux-audit/cli-args.test.mjs
 scripts/ux-audit/copy-heuristics.test.mjs

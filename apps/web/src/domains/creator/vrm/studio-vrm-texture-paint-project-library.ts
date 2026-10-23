@@ -1,23 +1,8 @@
-import {
-  STUDIO_PROJECT_ARCHIVE_LIMITS,
-  type StudioProjectArchiveDocumentReference,
-  type StudioProjectArchiveImportedAttachment,
-  type StudioProjectArchiveManifest,
-  type StudioProjectArchiveManifestAttachment,
-  type StudioProjectArchiveAttachmentInput,
-  type StudioProjectArchiveLimits,
-} from "../studio-project-archive";
-import {
-  parseStudioProjectFile,
-  type StudioProjectFile,
-} from "../studio-project-file";
+import { STUDIO_PROJECT_ARCHIVE_LIMITS, type StudioProjectArchiveDocumentReference, type StudioProjectArchiveImportedAttachment, type StudioProjectArchiveManifest } from "../studio-project-archive";
+import type { StudioProjectArchiveManifestAttachment, StudioProjectArchiveAttachmentInput, StudioProjectArchiveLimits } from "../studio-project-archive";
+import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
-import {
-  STUDIO_VRM_SCENE_DOCUMENT_KIND,
-  parseStudioVrmSceneDocument,
-  serializeStudioVrmSceneDocument,
-  type StudioVrmSurfacePaintTexture,
-} from "./studio-vrm-scene-document";
+import { STUDIO_VRM_SCENE_DOCUMENT_KIND, parseStudioVrmSceneDocument, serializeStudioVrmSceneDocument, type StudioVrmSurfacePaintTexture } from "./studio-vrm-scene-document";
 import {
   STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_KIND,
   STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME,
@@ -31,14 +16,11 @@ import {
   type StudioVrmTexturePaintArtifactResolver,
   type StudioVrmTexturePaintArtifactSource,
 } from "./studio-vrm-texture-paint-artifact";
-import {
-  StudioVrmTexturePaintLibraryError,
-  deleteStudioVrmTexturePaintLibraryCreationBatchIfMatches,
-  getStudioVrmTexturePaintLibraryArtifact,
-  saveStudioVrmTexturePaintLibraryArtifact,
-  type StudioVrmTexturePaintLibraryCreationReceipt,
-  type StudioVrmTexturePaintLibraryOptions,
-} from "./studio-vrm-texture-paint-library";
+// 집계자 예외: 이 파일의 프레젠테이션 함수(고지 생성)는 결과 타입이 문자열로 고정된
+// 집계 경계라, 그 함수 내부에서만 아래 리졸버로 해석한다. 그 밖의 생산자는 코드를
+// 그대로 방출하고 표시 지점(오케스트레이션 런타임)에서 해석한다.
+import { resolveStudioVrmPaintLibraryNotice } from "../status-i18n/studio-producer-error-i18n-vrm-paint";
+import { StudioVrmTexturePaintLibraryError, deleteStudioVrmTexturePaintLibraryCreationBatchIfMatches, getStudioVrmTexturePaintLibraryArtifact, saveStudioVrmTexturePaintLibraryArtifact, type StudioVrmTexturePaintLibraryCreationReceipt, type StudioVrmTexturePaintLibraryOptions } from "./studio-vrm-texture-paint-library";
 
 /**
  * Project/archive bridge for content-addressed VRM surface-paint PNGs.
@@ -64,29 +46,43 @@ export interface StudioVrmTexturePaintProjectLibraryDiagnostic {
 }
 
 export type StudioVrmTexturePaintProjectLibraryErrorCode =
-  | "ABORTED"
-  | "ARCHIVE_METADATA_CONFLICT"
-  | "ARTIFACT_VERIFICATION_FAILED"
-  | "CANONICAL_SCENE_FINGERPRINT_MISMATCH"
-  | "CRYPTO_UNAVAILABLE"
-  | "LIBRARY_INSTALL_FAILED"
-  | "LIBRARY_READ_FAILED"
-  | "PROJECT_INVALID"
-  | "PROJECT_LIMIT_EXCEEDED"
-  | "SCENE_INVALID"
-  | "SURFACE_PAINT_METADATA_CONFLICT";
+  | "ABORTED" | "ARCHIVE_METADATA_CONFLICT" | "ARTIFACT_VERIFICATION_FAILED" | "CANONICAL_SCENE_FINGERPRINT_MISMATCH"
+  | "CRYPTO_UNAVAILABLE" | "LIBRARY_INSTALL_FAILED" | "LIBRARY_READ_FAILED" | "PROJECT_INVALID"
+  | "PROJECT_LIMIT_EXCEEDED" | "SCENE_INVALID" | "SURFACE_PAINT_METADATA_CONFLICT";
+
+/**
+ * D4 구조화 방출 (R14, 2026-10-23): 생산자는 표시 문구 대신 구조화 코드를 방출한다.
+ * code는 기존 11종 분류(category), detailCode는 방출 지점별 세부 코드이며,
+ * 표시는 표시 지점(status-i18n/studio-producer-error-i18n-vrm-paint의
+ * vrmPaintLibrary 구간 리졸버)에서만 해석한다. message는 세부 코드 문자열 자체다.
+ */
+export type StudioVrmTexturePaintProjectLibraryDetailCode =
+  | "aborted" | "aggregate-apply-compensation-failed" | "archive-export-unresolved" | "archive-manifest-duplicate-hash"
+  | "archive-manifest-incomplete" | "archive-manifest-range-conflict" | "archive-metadata-mismatch" | "crypto-fingerprint-failed"
+  | "crypto-fingerprint-format-invalid" | "crypto-fingerprint-unavailable" | "fingerprint-mismatch-apply" | "fingerprint-mismatch-archive"
+  | "fingerprint-mismatch-parser" | "install-recheck-failed" | "install-result-invalid" | "install-rollback-blocked"
+  | "install-rollback-failed" | "install-save-failed" | "install-session-invalid" | "limit-device-png-count"
+  | "limit-device-png-single" | "limit-device-png-total" | "limit-png-count" | "limit-png-single" | "limit-png-total"
+  | "limit-preflight-invalid" | "limit-refs" | "limit-scenes-or-refs" | "metadata-binding-missing" | "metadata-mime-conflict"
+  | "metadata-pointer-duplicate" | "project-page-structure-invalid" | "project-reference-invalid" | "project-structure-invalid"
+  | "read-local-png-failed" | "scene-id-invalid" | "scene-not-canonical-v6" | "scene-png-hash-invalid" | "scene-pointer-invalid"
+  | "verify-failed" | "verify-receipt-mismatch";
+
+export type StudioVrmTexturePaintProjectNoticeCode =
+  | "export-missing-references" | "export-missing-vrm" | "export-self-contained" | "export-with-warnings"
+  | "import-fully-resolved" | "import-partially-resolved" | "json-import-missing" | "json-import-missing-suffix"
+  | "json-import-unavailable" | "json-import-unavailable-suffix" | "json-inspect-failed" | "json-receipts-only";
 
 export class StudioVrmTexturePaintProjectLibraryError extends Error {
   constructor(
     readonly code: StudioVrmTexturePaintProjectLibraryErrorCode,
-    message: string,
+    readonly detailCode: StudioVrmTexturePaintProjectLibraryDetailCode,
     readonly pointer?: string,
     options?: ErrorOptions,
+    readonly params?: Readonly<Record<string, string>>,
   ) {
-    super(message, options);
-    this.name = code === "ABORTED"
-      ? "AbortError"
-      : "StudioVrmTexturePaintProjectLibraryError";
+    super(detailCode, options);
+    this.name = code === "ABORTED" ? "AbortError" : "StudioVrmTexturePaintProjectLibraryError";
   }
 }
 
@@ -343,15 +339,17 @@ const PREPARED_TEXTURE_IMPORTS = new WeakMap<object, {
 
 function fail(
   code: StudioVrmTexturePaintProjectLibraryErrorCode,
-  message: string,
+  detailCode: StudioVrmTexturePaintProjectLibraryDetailCode,
   pointer?: string,
   cause?: unknown,
+  params?: Readonly<Record<string, string>>,
 ): never {
   throw new StudioVrmTexturePaintProjectLibraryError(
     code,
-    message,
+    detailCode,
     pointer,
     cause === undefined ? undefined : { cause },
+    params,
   );
 }
 
@@ -364,7 +362,7 @@ function compareText(left: string, right: string): number {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+  if (signal?.aborted) fail("ABORTED", "aborted");
 }
 
 function isAbortError(error: unknown): boolean {
@@ -390,23 +388,19 @@ function scanStrictScene(
     !isRecord(element.vrmScene)
     || element.vrmScene.kind !== STUDIO_VRM_SCENE_DOCUMENT_KIND
   ) {
-    fail("SCENE_INVALID", "프로젝트의 VRM 장면 식별자가 올바르지 않습니다.", scenePointer);
+    fail("SCENE_INVALID", "scene-id-invalid", scenePointer);
   }
   const serialized = serializeStudioVrmSceneDocument(element.vrmScene);
   if (!serialized) {
     fail(
-      "SCENE_INVALID",
-      "프로젝트의 VRM 표면 페인팅 장면이 canonical v6 형식이 아닙니다.",
-      scenePointer,
-    );
+      "SCENE_INVALID", "scene-not-canonical-v6",
+      scenePointer);
   }
   const scene = parseStudioVrmSceneDocument(serialized);
   if (!scene || serializeStudioVrmSceneDocument(scene) !== serialized) {
     fail(
-      "SCENE_INVALID",
-      "프로젝트의 VRM 표면 페인팅 장면이 canonical v6 형식이 아닙니다.",
-      scenePointer,
-    );
+      "SCENE_INVALID", "scene-not-canonical-v6",
+      scenePointer);
   }
   return {
     pointer: scenePointer,
@@ -420,7 +414,7 @@ function scanStrictProjectScenes(
   signal?: AbortSignal,
 ): readonly StrictSceneScan[] {
   if (!isRecord(value) || !Array.isArray(value.pagesList)) {
-    fail("PROJECT_INVALID", "VRM 표면 페인팅 참조를 수집할 프로젝트 구조가 올바르지 않습니다.");
+    fail("PROJECT_INVALID", "project-structure-invalid");
   }
   const scenes: StrictSceneScan[] = [];
   let sceneBytes = 0;
@@ -434,9 +428,7 @@ function scanStrictProjectScenes(
       || surfaceReferences > STUDIO_PROJECT_ARCHIVE_LIMITS.maxReferences
     ) {
       fail(
-        "PROJECT_LIMIT_EXCEEDED",
-        "프로젝트의 VRM 표면 페인팅 장면 또는 참조가 archive 안전 한도를 넘었습니다.",
-      );
+        "PROJECT_LIMIT_EXCEEDED", "limit-scenes-or-refs");
     }
     scenes.push(scene);
   };
@@ -444,7 +436,7 @@ function scanStrictProjectScenes(
     throwIfAborted(signal);
     const page = value.pagesList[pageIndex];
     if (!isRecord(page) || !Array.isArray(page.elements)) {
-      fail("PROJECT_INVALID", "프로젝트 페이지 요소 구조가 올바르지 않습니다.");
+      fail("PROJECT_INVALID", "project-page-structure-invalid");
     }
     for (let elementIndex = 0; elementIndex < page.elements.length; elementIndex += 1) {
       throwIfAborted(signal);
@@ -470,7 +462,7 @@ async function defaultDigestText(value: string, signal?: AbortSignal): Promise<s
   throwIfAborted(signal);
   const subtle = globalThis.crypto?.subtle;
   if (!subtle || typeof subtle.digest !== "function") {
-    fail("CRYPTO_UNAVAILABLE", "VRM 표면 페인팅 장면 fingerprint를 계산할 수 없습니다.");
+    fail("CRYPTO_UNAVAILABLE", "crypto-fingerprint-unavailable");
   }
   const bytes = textEncoder.encode(value);
   let digest: ArrayBuffer;
@@ -478,9 +470,9 @@ async function defaultDigestText(value: string, signal?: AbortSignal): Promise<s
     digest = await subtle.digest("SHA-256", bytes);
   } catch (cause) {
     if (isAbortError(cause) || signal?.aborted) {
-      fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+      fail("ABORTED", "aborted");
     }
-    fail("CRYPTO_UNAVAILABLE", "VRM 표면 페인팅 장면 fingerprint 계산에 실패했습니다.", undefined, cause);
+    fail("CRYPTO_UNAVAILABLE", "crypto-fingerprint-failed", undefined, cause);
   }
   throwIfAborted(signal);
   return Array.from(
@@ -495,7 +487,7 @@ function addTextureReference(
   pointer: string,
 ): void {
   if (!CONTENT_HASH_PATTERN.test(texture.hash)) {
-    fail("SCENE_INVALID", "VRM 표면 페인팅 PNG hash가 올바르지 않습니다.", pointer);
+    fail("SCENE_INVALID", "scene-png-hash-invalid", pointer);
   }
   const contentHash = texture.hash as StudioVrmTexturePaintArtifactHash;
   const reference: StudioVrmTexturePaintProjectReference = {
@@ -514,12 +506,12 @@ function addTextureReference(
     ) {
       fail(
         "SURFACE_PAINT_METADATA_CONFLICT",
-        "같은 VRM 표면 페인팅 PNG hash에 서로 다른 MIME, 크기 또는 해상도가 선언되었습니다.",
+        "metadata-mime-conflict",
         pointer,
       );
     }
     if (existing.references.some((candidate) => candidate.pointer === pointer)) {
-      fail("SURFACE_PAINT_METADATA_CONFLICT", "VRM 표면 페인팅 참조 포인터가 중복되었습니다.", pointer);
+      fail("SURFACE_PAINT_METADATA_CONFLICT", "metadata-pointer-duplicate", pointer);
     }
     existing.references.push(reference);
     return;
@@ -561,7 +553,7 @@ async function collectCanonicalProjectPlan(
   try {
     project = parseStudioProjectFile(rawProject);
   } catch (cause) {
-    fail("PROJECT_INVALID", "VRM 표면 페인팅 참조를 수집할 프로젝트가 올바르지 않습니다.", undefined, cause);
+    fail("PROJECT_INVALID", "project-reference-invalid", undefined, cause);
   }
   const sourceScenes = scanStrictProjectScenes(rawProject, signal);
   const canonicalScenes = scanStrictProjectScenes(project, signal);
@@ -569,9 +561,7 @@ async function collectCanonicalProjectPlan(
   const canonicalFingerprint = sceneFingerprintSource(canonicalScenes);
   if (sourceFingerprint !== canonicalFingerprint) {
     fail(
-      "CANONICAL_SCENE_FINGERPRINT_MISMATCH",
-      "프로젝트 파서 전후의 VRM 장면 fingerprint가 일치하지 않습니다.",
-    );
+      "CANONICAL_SCENE_FINGERPRINT_MISMATCH", "fingerprint-mismatch-parser");
   }
 
   const byHash = new Map<StudioVrmTexturePaintArtifactHash, MutableArtifactPlan>();
@@ -580,12 +570,12 @@ async function collectCanonicalProjectPlan(
     for (let textureIndex = 0; textureIndex < scene.textures.length; textureIndex += 1) {
       const pointer = `${scene.pointer}/surfacePaint/textures/${textureIndex}/hash`;
       if (!SURFACE_PAINT_POINTER_PATTERN.test(pointer)) {
-        fail("SCENE_INVALID", "VRM 표면 페인팅 RFC 6901 포인터를 만들 수 없습니다.", pointer);
+        fail("SCENE_INVALID", "scene-pointer-invalid", pointer);
       }
       addTextureReference(byHash, scene.textures[textureIndex], pointer);
       referenceCount += 1;
       if (referenceCount > STUDIO_PROJECT_ARCHIVE_LIMITS.maxReferences) {
-        fail("PROJECT_LIMIT_EXCEEDED", "VRM 표면 페인팅 참조 수가 archive 안전 한도를 넘었습니다.");
+        fail("PROJECT_LIMIT_EXCEEDED", "limit-refs");
       }
     }
   }
@@ -593,22 +583,22 @@ async function collectCanonicalProjectPlan(
     .map(canonicalArtifactPlan)
     .sort((left, right) => compareText(left.contentHash, right.contentHash));
   if (artifacts.length > STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachments) {
-    fail("PROJECT_LIMIT_EXCEEDED", "VRM 표면 페인팅 PNG 수가 archive 안전 한도를 넘었습니다.");
+    fail("PROJECT_LIMIT_EXCEEDED", "limit-png-count");
   }
   let totalBytes = 0;
   for (const artifact of artifacts) {
     if (artifact.byteLength > STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachmentBytes) {
-      fail("PROJECT_LIMIT_EXCEEDED", "VRM 표면 페인팅 PNG 하나가 archive 안전 한도를 넘었습니다.");
+      fail("PROJECT_LIMIT_EXCEEDED", "limit-png-single");
     }
     totalBytes += artifact.byteLength;
     if (totalBytes > STUDIO_PROJECT_ARCHIVE_LIMITS.maxTotalAttachmentBytes) {
-      fail("PROJECT_LIMIT_EXCEEDED", "VRM 표면 페인팅 PNG 합계가 archive 안전 한도를 넘었습니다.");
+      fail("PROJECT_LIMIT_EXCEEDED", "limit-png-total");
     }
   }
   const digest = dependencies?.digestText ?? defaultDigestText;
   const rawFingerprint = await digest(canonicalFingerprint, signal);
   if (!RAW_SHA256_PATTERN.test(rawFingerprint)) {
-    fail("CRYPTO_UNAVAILABLE", "VRM 표면 페인팅 장면 fingerprint 형식이 올바르지 않습니다.");
+    fail("CRYPTO_UNAVAILABLE", "crypto-fingerprint-format-invalid");
   }
   return Object.freeze({
     schemaVersion: STUDIO_VRM_TEXTURE_PAINT_PROJECT_LIBRARY_SCHEMA_VERSION,
@@ -667,9 +657,7 @@ async function collectMatchingPlans(
   );
   if (!plansMatch(projectPlan, canonicalPlan)) {
     fail(
-      "CANONICAL_SCENE_FINGERPRINT_MISMATCH",
-      "archive 입력 프로젝트와 canonical 프로젝트의 VRM 장면 fingerprint가 일치하지 않습니다.",
-    );
+      "CANONICAL_SCENE_FINGERPRINT_MISMATCH", "fingerprint-mismatch-archive");
   }
   return projectPlan;
 }
@@ -691,7 +679,7 @@ function metadataForPlan(
     .map((reference) => reference.bindingKey)
     .sort(compareText)[0];
   if (!bindingKey) {
-    fail("SURFACE_PAINT_METADATA_CONFLICT", "VRM 표면 페인팅 PNG에 binding 참조가 없습니다.");
+    fail("SURFACE_PAINT_METADATA_CONFLICT", "metadata-binding-missing");
   }
   return {
     schemaVersion: STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_SCHEMA_VERSION,
@@ -794,9 +782,9 @@ async function resolveLibrarySource(
     return source;
   } catch (cause) {
     if (isAbortError(cause) || signal?.aborted) {
-      fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+      fail("ABORTED", "aborted");
     }
-    fail("LIBRARY_READ_FAILED", "로컬 VRM 표면 페인팅 PNG를 읽지 못했습니다.", undefined, cause);
+    fail("LIBRARY_READ_FAILED", "read-local-png-failed", undefined, cause);
   }
 }
 
@@ -812,21 +800,19 @@ async function verifyAgainstPlan(
     verified = await verifier(metadataForPlan(plan), source, { signal });
   } catch (cause) {
     if (isAbortError(cause) || signal?.aborted) {
-      fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+      fail("ABORTED", "aborted");
     }
     fail(
       "ARTIFACT_VERIFICATION_FAILED",
-      "VRM 표면 페인팅 PNG의 hash, MIME, 크기 또는 해상도 검증에 실패했습니다.",
+      "verify-failed",
       plan.references[0]?.pointer,
       cause,
     );
   }
   if (!verifiedArtifactMatchesPlan(verified, plan)) {
     fail(
-      "ARTIFACT_VERIFICATION_FAILED",
-      "검증기가 반환한 VRM 표면 페인팅 PNG receipt가 프로젝트와 일치하지 않습니다.",
-      plan.references[0]?.pointer,
-    );
+      "ARTIFACT_VERIFICATION_FAILED", "verify-receipt-mismatch",
+      plan.references[0]?.pointer);
   }
   return verified;
 }
@@ -855,7 +841,7 @@ function exportPreflightLimit(
 ): number {
   if (value === undefined) return hardMaximum;
   if (!Number.isSafeInteger(value) || value < 1 || value > hardMaximum) {
-    fail("PROJECT_LIMIT_EXCEEDED", `${label} archive 사전검사 한도가 올바르지 않습니다.`);
+    fail("PROJECT_LIMIT_EXCEEDED", "limit-preflight-invalid", undefined, undefined, { label });
   }
   return value;
 }
@@ -881,25 +867,19 @@ function assertExportPlanWithinLimits(
   );
   if (plan.artifacts.length > maxAttachments) {
     fail(
-      "PROJECT_LIMIT_EXCEEDED",
-      "VRM 표면 페인팅 PNG 수가 현재 기기의 archive 사전검사 한도를 넘었습니다.",
-    );
+      "PROJECT_LIMIT_EXCEEDED", "limit-device-png-count");
   }
   if (plan.totalBytes > maxTotalAttachmentBytes) {
     fail(
-      "PROJECT_LIMIT_EXCEEDED",
-      "VRM 표면 페인팅 PNG 합계가 현재 기기의 archive 사전검사 한도를 넘었습니다.",
-    );
+      "PROJECT_LIMIT_EXCEEDED", "limit-device-png-total");
   }
   const oversized = plan.artifacts.find(
     (artifact) => artifact.byteLength > maxAttachmentBytes,
   );
   if (oversized) {
     fail(
-      "PROJECT_LIMIT_EXCEEDED",
-      "VRM 표면 페인팅 PNG 하나가 현재 기기의 archive 사전검사 한도를 넘었습니다.",
-      oversized.references[0]?.pointer,
-    );
+      "PROJECT_LIMIT_EXCEEDED", "limit-device-png-single",
+      oversized.references[0]?.pointer);
   }
 }
 
@@ -933,7 +913,7 @@ export async function auditStudioVrmTexturePaintProjectLibraryAvailability(
       throwIfAborted(input.signal);
     } catch (cause) {
       if (isAbortError(cause) || input.signal?.aborted) {
-        fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+        fail("ABORTED", "aborted");
       }
       return Object.freeze({
         status: "unavailable",
@@ -1113,10 +1093,8 @@ function validateNoForeignSurfacePaintReferences(
         || seen.has(reference.pointer)
       ) {
         fail(
-          "ARCHIVE_METADATA_CONFLICT",
-          "archive manifest의 VRM 표면 페인팅 참조 범위가 canonical 프로젝트와 다릅니다.",
-          reference.pointer,
-        );
+          "ARCHIVE_METADATA_CONFLICT", "archive-manifest-range-conflict",
+          reference.pointer);
       }
       seen.add(reference.pointer);
     }
@@ -1137,16 +1115,16 @@ async function installVerifiedArtifact(
     disposition = await library.install(artifact, { signal });
   } catch (cause) {
     if (isAbortError(cause) || signal?.aborted) {
-      fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+      fail("ABORTED", "aborted");
     }
-    fail("LIBRARY_INSTALL_FAILED", "검증된 VRM 표면 페인팅 PNG를 로컬 라이브러리에 저장하지 못했습니다.", undefined, cause);
+    fail("LIBRARY_INSTALL_FAILED", "install-save-failed", undefined, cause);
   }
   if (disposition !== "installed" && disposition !== "reused") {
-    fail("LIBRARY_INSTALL_FAILED", "로컬 VRM 표면 페인팅 라이브러리가 올바르지 않은 저장 결과를 반환했습니다.");
+    fail("LIBRARY_INSTALL_FAILED", "install-result-invalid");
   }
   const installed = await resolveLibrarySource(library, plan.contentHash, signal);
   if (!installed) {
-    fail("LIBRARY_INSTALL_FAILED", "저장한 VRM 표면 페인팅 PNG를 로컬 라이브러리에서 다시 확인하지 못했습니다.");
+    fail("LIBRARY_INSTALL_FAILED", "install-recheck-failed");
   }
   await verifyAgainstPlan(plan, installed, signal, dependencies);
   return disposition;
@@ -1165,17 +1143,13 @@ async function compensateTextureImport(
     compensated = await library.compensateCreated(receipts, mutationGenerations, {});
   } catch (cause) {
     fail(
-      "LIBRARY_INSTALL_FAILED",
-      "프로젝트 적용 실패 뒤 새로 만든 VRM 표면 페인팅 PNG를 되돌리지 못했습니다.",
+      "LIBRARY_INSTALL_FAILED", "install-rollback-failed",
       undefined,
-      cause,
-    );
+      cause);
   }
   if (!compensated) {
     fail(
-      "LIBRARY_INSTALL_FAILED",
-      "프로젝트 적용 실패 뒤 VRM 표면 페인팅 저장소가 변경되어 안전한 보상을 완료하지 못했습니다.",
-    );
+      "LIBRARY_INSTALL_FAILED", "install-rollback-blocked");
   }
 }
 
@@ -1187,7 +1161,7 @@ export async function prepareStudioVrmTexturePaintProjectArchiveImport(
   const manifestByHash = new Map<string, StudioProjectArchiveManifestAttachment>();
   for (const attachment of input.manifest.attachments) {
     if (manifestByHash.has(attachment.sha256)) {
-      fail("ARCHIVE_METADATA_CONFLICT", "archive manifest에 중복된 attachment hash가 있습니다.");
+      fail("ARCHIVE_METADATA_CONFLICT", "archive-manifest-duplicate-hash");
     }
     manifestByHash.set(attachment.sha256, attachment);
   }
@@ -1221,18 +1195,14 @@ export async function prepareStudioVrmTexturePaintProjectArchiveImport(
       || imported.blob.type !== STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME
     ) {
       fail(
-        "ARCHIVE_METADATA_CONFLICT",
-        "archive의 VRM 표면 페인팅 attachment metadata가 canonical 프로젝트와 일치하지 않습니다.",
-        artifactPlan.references[0]?.pointer,
-      );
+        "ARCHIVE_METADATA_CONFLICT", "archive-metadata-mismatch",
+        artifactPlan.references[0]?.pointer);
     }
     candidates.push({ plan: artifactPlan, imported });
   }
   if (coveredPointerCount !== plannedPointers.size && diagnostics.length === 0) {
     fail(
-      "ARCHIVE_METADATA_CONFLICT",
-      "archive manifest가 canonical 프로젝트의 모든 VRM 표면 페인팅 참조를 포함하지 않습니다.",
-    );
+      "ARCHIVE_METADATA_CONFLICT", "archive-manifest-incomplete");
   }
   const library = input.library ?? defaultAtomicLibraryAdapter(input.dependencies);
   if (diagnostics.length > 0) {
@@ -1292,7 +1262,7 @@ export async function installPreparedStudioVrmTexturePaintProjectArchiveImportAn
 ): Promise<InstallPreparedStudioVrmTexturePaintProjectArchiveImportResult<ApplyResult>> {
   const state = PREPARED_TEXTURE_IMPORTS.get(prepared);
   if (!state) {
-    fail("LIBRARY_INSTALL_FAILED", "VRM 표면 페인팅 archive 준비 결과가 현재 검증 세션에 속하지 않습니다.");
+    fail("LIBRARY_INSTALL_FAILED", "install-session-invalid");
   }
   // Atomically take the one-shot capability before the first asynchronous fingerprint/hash step.
   // A concurrent caller therefore observes absence instead of sharing the same prepared bytes.
@@ -1300,9 +1270,7 @@ export async function installPreparedStudioVrmTexturePaintProjectArchiveImportAn
   const currentPlan = await collectCanonicalProjectPlan(project, state.signal, state.dependencies);
   if (!plansMatch(prepared.plan, currentPlan)) {
     fail(
-      "CANONICAL_SCENE_FINGERPRINT_MISMATCH",
-      "검증한 VRM 표면 페인팅 장면과 적용할 프로젝트가 일치하지 않습니다.",
-    );
+      "CANONICAL_SCENE_FINGERPRINT_MISMATCH", "fingerprint-mismatch-apply");
   }
   if (prepared.status === "unresolved") {
     const applyResult = await applyProject(currentPlan.project);
@@ -1344,17 +1312,15 @@ export async function installPreparedStudioVrmTexturePaintProjectArchiveImportAn
         result = await state.library.installWithCreationReceipt(artifact, { signal: state.signal });
       } catch (cause) {
         if (isAbortError(cause) || state.signal?.aborted) {
-          fail("ABORTED", "VRM 표면 페인팅 프로젝트 센터이 취소되었습니다.");
+          fail("ABORTED", "aborted");
         }
         fail(
-          "LIBRARY_INSTALL_FAILED",
-          "검증된 VRM 표면 페인팅 PNG를 로컬 라이브러리에 저장하지 못했습니다.",
+          "LIBRARY_INSTALL_FAILED", "install-save-failed",
           undefined,
-          cause,
-        );
+          cause);
       }
       if (result.disposition !== "installed" && result.disposition !== "reused") {
-        fail("LIBRARY_INSTALL_FAILED", "로컬 VRM 표면 페인팅 라이브러리가 올바르지 않은 저장 결과를 반환했습니다.");
+        fail("LIBRARY_INSTALL_FAILED", "install-result-invalid");
       }
       if (result.creationReceipt) creationReceipts.push(result.creationReceipt);
       if (result.mutationGeneration !== null) mutationGenerations.push(result.mutationGeneration);
@@ -1364,7 +1330,7 @@ export async function installPreparedStudioVrmTexturePaintProjectArchiveImportAn
         state.signal,
       );
       if (!persisted) {
-        fail("LIBRARY_INSTALL_FAILED", "저장한 VRM 표면 페인팅 PNG를 로컬 라이브러리에서 다시 확인하지 못했습니다.");
+        fail("LIBRARY_INSTALL_FAILED", "install-recheck-failed");
       }
       await verifyAgainstPlan(artifactPlan, persisted, state.signal, state.dependencies);
       if (result.disposition === "installed") installed += 1;
@@ -1397,11 +1363,14 @@ export async function installPreparedStudioVrmTexturePaintProjectArchiveImportAn
         mutationGenerations,
       );
     } catch (rollbackCause) {
-      throw new AggregateError(
+      const aggregate = new AggregateError(
         [cause, rollbackCause],
-        "VRM 표면 페인팅 archive 적용과 보상에 실패했습니다.",
+        "aggregate-apply-compensation-failed",
         { cause: rollbackCause },
       );
+      (aggregate as { detailCode?: string }).detailCode =
+        "aggregate-apply-compensation-failed";
+      throw aggregate;
     }
     throw cause;
   }
@@ -1415,7 +1384,7 @@ export async function importStudioVrmTexturePaintProjectLibrary(
   const manifestByHash = new Map<string, StudioProjectArchiveManifestAttachment>();
   for (const attachment of input.manifest.attachments) {
     if (manifestByHash.has(attachment.sha256)) {
-      fail("ARCHIVE_METADATA_CONFLICT", "archive manifest에 중복된 attachment hash가 있습니다.");
+      fail("ARCHIVE_METADATA_CONFLICT", "archive-manifest-duplicate-hash");
     }
     manifestByHash.set(attachment.sha256, attachment);
   }
@@ -1452,10 +1421,8 @@ export async function importStudioVrmTexturePaintProjectLibrary(
       || imported.blob.type !== STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME
     ) {
       fail(
-        "ARCHIVE_METADATA_CONFLICT",
-        "archive의 VRM 표면 페인팅 attachment metadata가 canonical 프로젝트와 일치하지 않습니다.",
-        artifactPlan.references[0]?.pointer,
-      );
+        "ARCHIVE_METADATA_CONFLICT", "archive-metadata-mismatch",
+        artifactPlan.references[0]?.pointer);
     }
     archiveCandidates.push({ plan: artifactPlan, imported });
   }
@@ -1470,9 +1437,7 @@ export async function importStudioVrmTexturePaintProjectLibrary(
   }
   if (coveredPointerCount !== plannedPointers.size) {
     fail(
-      "ARCHIVE_METADATA_CONFLICT",
-      "archive manifest가 canonical 프로젝트의 모든 VRM 표면 페인팅 참조를 포함하지 않습니다.",
-    );
+      "ARCHIVE_METADATA_CONFLICT", "archive-manifest-incomplete");
   }
 
   // Authenticate every archive PNG before the first IndexedDB mutation.
@@ -1552,12 +1517,14 @@ export async function inspectStudioVrmTexturePaintJsonExport(
     if (plan.artifacts.length === 0) return null;
     return Object.freeze({
       tone: "warn",
-      text: `JSON에는 VRM 표면 페인팅 PNG ${plan.artifacts.length}개의 SHA-256 영수증만 저장됩니다. 다른 기기로 옮길 때는 원본 PNG가 포함되는 무결성 archive(.toonproject.zip)를 함께 저장해 주세요.`,
+      text: resolveStudioVrmPaintLibraryNotice("json-receipts-only", {
+        count: String(plan.artifacts.length),
+      }),
     });
   } catch {
     return Object.freeze({
       tone: "warn",
-      text: "JSON 파일은 저장했지만 VRM 표면 페인팅 영수증을 검사하지 못했습니다. 이 JSON만으로 3D 재편집이 가능하다고 보장할 수 없으므로 원본 PNG가 포함되는 무결성 archive(.toonproject.zip)도 저장해 주세요.",
+      text: resolveStudioVrmPaintLibraryNotice("json-inspect-failed"),
     });
   }
 }
@@ -1574,18 +1541,22 @@ export async function auditStudioVrmTexturePaintJsonImport(
     return Object.freeze({
       notice: Object.freeze({
         tone: "warn",
-        text: `JSON 프로젝트를 불러왔지만 VRM 표면 페인팅 PNG ${missingCount}개가 이 기기에 없습니다. 기존 캡처는 보이지만 3D 재편집을 위해 원본이 든 .toonproject.zip archive를 가져와 주세요.`,
+        text: resolveStudioVrmPaintLibraryNotice("json-import-missing", {
+          missingCount: String(missingCount),
+        }),
       }),
-      alertSuffix: `\n\nVRM 표면 페인팅 원본 ${missingCount}개가 없어 3D 재편집은 archive 복구 후 가능합니다.`,
+      alertSuffix: resolveStudioVrmPaintLibraryNotice("json-import-missing-suffix", {
+        missingCount: String(missingCount),
+      }),
     });
   }
   if (availability.status === "unavailable") {
     return Object.freeze({
       notice: Object.freeze({
         tone: "warn",
-        text: "JSON 프로젝트를 불러왔지만 이 브라우저의 VRM 표면 페인팅 로컬 저장소를 확인할 수 없습니다. 기존 캡처는 보이지만 3D 재편집 가능 여부를 보장할 수 없으므로 원본이 든 .toonproject.zip archive를 가져와 주세요.",
+        text: resolveStudioVrmPaintLibraryNotice("json-import-unavailable"),
       }),
-      alertSuffix: "\n\nVRM 표면 페인팅 로컬 저장소를 확인할 수 없어 3D 재편집 가능 여부가 불확실합니다. 원본 archive로 복구해 주세요.",
+      alertSuffix: resolveStudioVrmPaintLibraryNotice("json-import-unavailable-suffix"),
     });
   }
   return Object.freeze({ notice: null, alertSuffix: "" });
@@ -1596,9 +1567,13 @@ export async function prepareStudioVrmTexturePaintProjectArchiveExport(
 ): Promise<readonly StudioProjectArchiveAttachmentInput[]> {
   const result = await exportStudioVrmTexturePaintProjectLibrary(input);
   if (result.status !== "ready") {
-    throw new Error(
-      `VRM 표면 페인팅 PNG ${result.diagnostics.length}개를 이 기기의 검증 저장소에서 찾지 못해 휴대 가능한 archive를 만들지 않았습니다.`,
-    );
+    const unresolved = new Error("archive-export-unresolved") as Error & {
+      detailCode?: string;
+      params?: Readonly<Record<string, string>>;
+    };
+    unresolved.detailCode = "archive-export-unresolved";
+    unresolved.params = { count: String(result.diagnostics.length) };
+    throw unresolved;
   }
   return result.attachments;
 }
@@ -1609,19 +1584,23 @@ export function presentStudioVrmTexturePaintProjectArchiveExport(
   return input.isSelfContained
     ? Object.freeze({
         tone: "good",
-        text: `프로젝트와 중복 제거 자산 ${input.attachmentCount}개를 무결성 검증형 archive로 저장 요청했어요.`,
+        text: resolveStudioVrmPaintLibraryNotice("export-self-contained", {
+          attachmentCount: String(input.attachmentCount),
+        }),
       })
     : Object.freeze({
         tone: "warn",
-        text: `archive를 저장했지만 외부 종속성 경고 ${input.warningCount}건이 있어 다른 기기에서 일부 원본 자산을 다시 연결해야 할 수 있어요.${
-          input.missingReferenceCount > 0
-            ? ` 참고 이미지 원본 ${input.missingReferenceCount}개를 이 기기에서 찾지 못했습니다.`
-            : ""
-        }${
-          input.missingVrmCount > 0
-            ? ` 업로드 VRM 원본 ${input.missingVrmCount}개를 이 기기에서 찾지 못했거나 검증하지 못했습니다.`
-            : ""
-        }`,
+        text: resolveStudioVrmPaintLibraryNotice("export-with-warnings", {
+          warningCount: String(input.warningCount),
+        }) + (input.missingReferenceCount > 0
+          ? resolveStudioVrmPaintLibraryNotice("export-missing-references", {
+              missingReferenceCount: String(input.missingReferenceCount),
+            })
+          : "") + (input.missingVrmCount > 0
+          ? resolveStudioVrmPaintLibraryNotice("export-missing-vrm", {
+              missingVrmCount: String(input.missingVrmCount),
+            })
+          : ""),
       });
 }
 
@@ -1638,7 +1617,16 @@ export function presentStudioVrmTexturePaintProjectArchiveImport(
       fullyResolved: true,
       notice: Object.freeze({
         tone: "good",
-        text: `SHA-256·CRC-32·MIME 검증을 통과한 프로젝트와 자산 ${input.attachmentCount}개를 복구했어요. 참고 이미지 ${input.referenceInstalled}개 설치·${input.referenceReused}개 재사용, VRM ${input.vrmInstalled}개 설치·${input.vrmReused}개 재사용, VRM 표면 페인팅 PNG ${input.texturePaint.installed}개 설치·${input.texturePaint.reused}개 재사용, 3D 배경 모델 ${input.background3dInstalled}개를 로컬 라이브러리에 원자적으로 설치했어요.`,
+        text: resolveStudioVrmPaintLibraryNotice("import-fully-resolved", {
+          attachmentCount: String(input.attachmentCount),
+          referenceInstalled: String(input.referenceInstalled),
+          referenceReused: String(input.referenceReused),
+          vrmInstalled: String(input.vrmInstalled),
+          vrmReused: String(input.vrmReused),
+          textureInstalled: String(input.texturePaint.installed),
+          textureReused: String(input.texturePaint.reused),
+          background3dInstalled: String(input.background3dInstalled),
+        }),
       }),
     });
   }
@@ -1646,7 +1634,14 @@ export function presentStudioVrmTexturePaintProjectArchiveImport(
     fullyResolved: false,
     notice: Object.freeze({
       tone: "warn",
-      text: `프로젝트를 복구했지만 외부 종속성 경고 ${input.warningCount}건, 미해결 참고 이미지 ${input.referenceUnresolved}개, 미해결 VRM ${input.vrmUnresolved}개, 미해결 VRM 표면 페인팅 ${input.texturePaint.status === "unresolved" ? input.texturePaint.diagnostics.length : 0}개가 있어 원본 자산 확인이 필요해요.`,
+      text: resolveStudioVrmPaintLibraryNotice("import-partially-resolved", {
+        warningCount: String(input.warningCount),
+        referenceUnresolved: String(input.referenceUnresolved),
+        vrmUnresolved: String(input.vrmUnresolved),
+        textureUnresolved: String(
+          input.texturePaint.status === "unresolved" ? input.texturePaint.diagnostics.length : 0,
+        ),
+      }),
     }),
   });
 }

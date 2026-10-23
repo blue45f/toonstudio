@@ -10,10 +10,14 @@ import {
 } from "./studio-virtual-space-emote-catalog";
 
 describe("studio virtual space emote catalog", () => {
-  it("17종 id는 고유하고 기존 wave·heart·sparkles·thumbs-up을 포함한다", () => {
-    expect(STUDIO_SPACE_EMOTE_IDS).toHaveLength(17);
-    expect(new Set(STUDIO_SPACE_EMOTE_IDS).size).toBe(17);
-    for (const legacy of ["wave", "heart", "sparkles", "thumbs-up"]) {
+  it("25종 id는 고유하고 기존 wave·heart·sparkles·thumbs-up 및 체조·요가·댄스·건배·문워크 모션을 포함한다", () => {
+    expect(STUDIO_SPACE_EMOTE_IDS).toHaveLength(25);
+    expect(new Set(STUDIO_SPACE_EMOTE_IDS).size).toBe(25);
+    for (const legacy of [
+      "wave", "heart", "sparkles", "thumbs-up",
+      "calisthenics", "yoga", "kpop-dance", "shuffle",
+      "neck-stretch", "tai-chi", "cheers", "moonwalk",
+    ]) {
       expect(STUDIO_SPACE_EMOTE_IDS).toContain(legacy);
     }
     // 정의 배열 순서가 선택기 순서(id 배열 순서)와 같다.
@@ -56,10 +60,20 @@ describe("studio virtual space emote catalog", () => {
 
   it("id 조회·판별과 지속 시간 제한을 제공한다", () => {
     expect(studioSpaceEmoteById("dance")?.motion).toBe("dance");
+    expect(studioSpaceEmoteById("calisthenics")?.motion).toBe("calisthenics");
+    expect(studioSpaceEmoteById("yoga")?.motion).toBe("yoga");
+    expect(studioSpaceEmoteById("kpop-dance")?.motion).toBe("kpop-dance");
+    expect(studioSpaceEmoteById("shuffle")?.motion).toBe("shuffle");
+    expect(studioSpaceEmoteById("neck-stretch")?.motion).toBe("neck-stretch");
+    expect(studioSpaceEmoteById("tai-chi")?.motion).toBe("tai-chi");
+    expect(studioSpaceEmoteById("cheers")?.motion).toBe("cheers");
+    expect(studioSpaceEmoteById("moonwalk")?.motion).toBe("moonwalk");
     expect(studioSpaceEmoteById("sleep")?.motion).toBe("doze");
     expect(studioSpaceEmoteById("wow")?.expression).toBe("surprised");
     expect(studioSpaceEmoteById("nope")).toBeNull();
     expect(isStudioSpaceEmoteId("party")).toBe(true);
+    expect(isStudioSpaceEmoteId("calisthenics")).toBe(true);
+    expect(isStudioSpaceEmoteId("moonwalk")).toBe(true);
     expect(isStudioSpaceEmoteId("cheer")).toBe(false);
     expect(isStudioSpaceEmoteId(3)).toBe(false);
     expect(studioSpaceEmoteDurationMs("dance")).toBe(4_000);

@@ -19,10 +19,10 @@ function memoryStorage(): StudioEmoteKeymapStorage {
   };
 }
 
-const picker = () => screen.getByRole("group", { name: "리액션 17종" });
+const picker = () => screen.getByRole("group", { name: `리액션 ${STUDIO_SPACE_EMOTES.length}종` });
 
 describe("리액션 선택기", () => {
-  it("이모트 17종을 단추로 보여 주고 단축키 배지를 달며, 누르면 알린다", () => {
+  it("이모트 21종을 단추로 보여 주고 단축키 배지를 달며, 누르면 알린다", () => {
     const onEmote = vi.fn();
     render(<SpaceEmotePicker onEmote={onEmote} keymap={new StudioEmoteKeymapStore(memoryStorage())} />);
     const emotes = within(picker()).getAllByRole("button").filter((button) => button.hasAttribute("data-emote-id"));
@@ -144,7 +144,7 @@ describe("리액션 선택기(영어)", () => {
     useI18n.getState().setLang("en");
     const keymap = new StudioEmoteKeymapStore(memoryStorage());
     render(<SpaceEmotePicker onEmote={vi.fn()} keymap={keymap} />);
-    const group = screen.getByRole("group", { name: "17 reactions" });
+    const group = screen.getByRole("group", { name: `${STUDIO_SPACE_EMOTES.length} reactions` });
     expect(within(group).getByRole("button", { name: "Wave (shortcut 1)" })).toBeTruthy();
     fireEvent.click(within(group).getByRole("button", { name: "Edit shortcuts" }));
     const coffee = within(group).getByRole("combobox", { name: "Coffee break shortcut" }) as HTMLSelectElement;

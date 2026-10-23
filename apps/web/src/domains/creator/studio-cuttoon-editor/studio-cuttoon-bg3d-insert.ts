@@ -17,6 +17,7 @@ import { createCanvasImageElement } from "../studio-image-placement";
 import { isEffectivelyLocked } from "../studio-layers";
 import { commitStudioLinked3dPreparedPass, prepareStudioLinked3dLinePass } from "../studio-linked-3d-pass-transaction";
 import { detachStudioLinked3dCorrections, materializeStudioLinked3dLinePassLocator, removeStudioLinked3dRenderLinks, upsertStudioLinked3dRenderLink } from "../studio-linked-3d-render-document";
+import { resolveStudioBg3dDetachError, resolveStudioBg3dLtLayerPlanError, resolveStudioShared3dVisibilityError } from "../status-i18n/studio-producer-error-i18n-bg3d-lt";
 import { studioShared3dStageEntryAsDocument } from "../studio-shared-3d-stage-collection";
 
 // The host is a mutable runtime bag by design; keep the dynamic seam isolated to this adapter.
@@ -148,7 +149,11 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         dccSource: bg3dDccSourceRef.current,
       });
       if (!realtimePlan.ok) {
-        setError(realtimePlan.message);
+        setError("code" in realtimePlan
+          ? "subcode" in realtimePlan
+            ? resolveStudioBg3dLtLayerPlanError(realtimePlan)
+            : resolveStudioShared3dVisibilityError(realtimePlan)
+          : realtimePlan.message);
         return false;
       }
       if (!commit([...realtimePlan.nextElements], {
@@ -235,7 +240,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       newElementTemplate: template,
     });
     if (!plan.ok) {
-      setError(plan.message);
+      setError(resolveStudioBg3dLtLayerPlanError(plan));
       return false;
     }
     const detachResolution = planStudioBg3dLtDetachComposite({
@@ -245,7 +250,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       pageLocked: pageEditLocked,
     });
     if (!detachResolution.ok) {
-      setError(detachResolution.message);
+      setError("code" in detachResolution ? resolveStudioBg3dDetachError(detachResolution) : detachResolution.message);
       return false;
     }
     const { detachEditableComposite, detachPlan } = detachResolution;
@@ -278,7 +283,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       groups,
     });
     if (!visibilityResolution.ok) {
-      setError(visibilityResolution.message);
+      setError("code" in visibilityResolution ? resolveStudioShared3dVisibilityError(visibilityResolution) : visibilityResolution.message);
       return false;
     }
     const { currentStageCollection, sharedCharacterVisibility } = visibilityResolution;

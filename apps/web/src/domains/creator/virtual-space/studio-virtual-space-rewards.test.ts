@@ -22,6 +22,10 @@ describe("Virtual Studio cosmetic rewards", () => {
     expect(unlockStudioVirtualReward(unlocked, "review-sparkle")).toBe(unlocked);
     expect(applyStudioVirtualReward(DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION, "review-sparkle"))
       .toMatchObject({ auraKey: "sparkle" });
+    expect(applyStudioVirtualReward(DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION, "deep-work-pen"))
+      .toMatchObject({ accessoryKey: "pen-wing", auraKey: "focus" });
+    expect(applyStudioVirtualReward(DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION, "kpop-stage-wings"))
+      .toMatchObject({ accessoryKey: "angel-wings", auraKey: "sparkle", trailKey: "star" });
   });
 
   it("persists a bounded inventory and rejects unknown identifiers", () => {

@@ -26,6 +26,22 @@ function thresholdText(rule: ThresholdRule | undefined): string {
   return rule ? `${rule.op} ${rule.threshold}` : "—";
 }
 
+const METRIC_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  "fidelity.deltaEMean": "기준선 대비 평균 색차(CIEDE2000/OKLab ΔE) — 낮을수록 기준선과 색이 일치함",
+  "fidelity.deltaEP99": "상위 99% 픽셀 색차 — 가장자리나 겹침 구간의 이상치 색차 확인용",
+  "fidelity.deltaEMax": "최대 픽셀 색차",
+  "fidelity.iou": "그려진 영역의 교집합/합집합 비율(0~1) — 1에 가까울수록 획 외곽선이 일치함",
+  "fidelity.fuzzyMismatchPct": "3×3 이웃 내 허용 오차(δ48)를 벗어난 픽셀 비율(%) — 낮을수록 좋음",
+  "performance.dabsPerSecond": "초당 처리한 브러시 스탬프(dab) 수 — 높을수록 처리량이 큼",
+  "performance.frameP50Ms": "프레임 처리 시간 중앙값(ms)",
+  "performance.frameP95Ms": "프레임 처리 시간 상위 95%(ms) — 끊김(히치) 지표",
+  "performance.inputToSubmitP95Ms": "입력 샘플 수신부터 GPU/엔진 제출까지 지연 상위 95%(ms)",
+};
+
+function describeMetricKey(key: string): string | undefined {
+  return METRIC_DESCRIPTIONS[key];
+}
+
 function verdictClass(verdict: Verdict | undefined, excluded: boolean): string | undefined {
   if (excluded) return "lab-verdict-EXCLUDED";
   return verdict ? `lab-verdict-${verdict}` : undefined;
@@ -65,18 +81,19 @@ export function MetricsTable({ reportA, reportB, comparison, laneA, laneB }: Met
     if (!report) continue;
     for (const [key, note] of Object.entries(report.metricNotes)) notes.push({ key, note, slot });
   }
-  const perfRows: { label: string; a: string; b: string }[] = comparison
+  const perfRows: { label: string; title?: string; a: string; b: string }[] = comparison
     ? [
-        { label: "dabs/s", a: formatMetric(comparison.perfA.dabsPerSecond), b: formatMetric(comparison.perfB.dabsPerSecond) },
-        { label: "프레임 p50(ms)", a: formatMetric(comparison.perfA.frameP50Ms), b: formatMetric(comparison.perfB.frameP50Ms) },
-        { label: "프레임 p95(ms)", a: formatMetric(comparison.perfA.frameP95Ms), b: formatMetric(comparison.perfB.frameP95Ms) },
+        { label: "dabs/s", title: "초당 렌더링한 브러시 스탬프(dab) 처리량 (높을수록 빠름)", a: formatMetric(comparison.perfA.dabsPerSecond), b: formatMetric(comparison.perfB.dabsPerSecond) },
+        { label: "프레임 p50(ms)", title: "프레임당 소요 시간 중앙값(ms)", a: formatMetric(comparison.perfA.frameP50Ms), b: formatMetric(comparison.perfB.frameP50Ms) },
+        { label: "프레임 p95(ms)", title: "프레임당 소요 시간 상위 95%(ms)", a: formatMetric(comparison.perfA.frameP95Ms), b: formatMetric(comparison.perfB.frameP95Ms) },
         {
           label: "입력→제출 p95(ms)",
+          title: "포인터 입력부터 렌더 제출까지 지연 시간 상위 95%(ms)",
           a: formatMetric(comparison.perfA.inputToSubmitP95Ms),
           b: formatMetric(comparison.perfB.inputToSubmitP95Ms),
         },
-        { label: "GPU 시간(ms)", a: formatMetric(comparison.perfA.gpuTimeMs), b: formatMetric(comparison.perfB.gpuTimeMs) },
-        { label: "submit 수", a: formatMetric(comparison.perfA.submitCount), b: formatMetric(comparison.perfB.submitCount) },
+        { label: "GPU 시간(ms)", title: "GPU 타임스탬프 쿼리로 측정한 순수 커널/패스 실행 시간(ms)", a: formatMetric(comparison.perfA.gpuTimeMs), b: formatMetric(comparison.perfB.gpuTimeMs) },
+        { label: "submit 수", title: "획 전체 동안 발생한 커맨드 버퍼 제출 횟수", a: formatMetric(comparison.perfA.submitCount), b: formatMetric(comparison.perfB.submitCount) },
       ]
     : [];
   return (
@@ -99,7 +116,7 @@ export function MetricsTable({ reportA, reportB, comparison, laneA, laneB }: Met
               const rule = reportA?.thresholds[key] ?? reportB?.thresholds[key];
               return (
                 <tr key={key} data-testid={`lab-metric-${key}`}>
-                  <th scope="row" className="lab-mono">
+                  <th scope="row" className="lab-mono" title={describeMetricKey(key)}>
                     {key}
                   </th>
                   <td>{formatMetric(flatA?.[key])}</td>
@@ -125,34 +142,34 @@ export function MetricsTable({ reportA, reportB, comparison, laneA, laneB }: Met
           </thead>
           <tbody>
             <tr>
-              <th scope="row">커버리지 IoU</th>
+              <th scope="row" title="두 레인이 칠한 불투명 픽셀 영역의 교집합/합집합 비율(1.0이면 외곽 일치)">커버리지 IoU</th>
               <td colSpan={2}>{formatMetric(comparison.iou)}</td>
             </tr>
             <tr>
-              <th scope="row">ΔE 평균 / p99 / 최대</th>
+              <th scope="row" title="두 레인 출력 픽셀 간 지각 색차(평균 / 상위 99% / 최댓값, 0에 가까울수록 동일)">ΔE 평균 / p99 / 최대</th>
               <td colSpan={2}>
                 {formatMetric(comparison.deltaE.mean)} / {formatMetric(comparison.deltaE.p99)} /{" "}
                 {formatMetric(comparison.deltaE.max)}
               </td>
             </tr>
             <tr>
-              <th scope="row">퍼지 불일치(δ48, 3×3) %</th>
+              <th scope="row" title="3×3 주변 픽셀과 비교해도 허용 색차(δ48)를 넘는 불일치 픽셀 비율(%)">퍼지 불일치(δ48, 3×3) %</th>
               <td colSpan={2}>{formatMetric(comparison.fuzzyMismatchPct)}</td>
             </tr>
             <tr>
-              <th scope="row">픽셀 해시 동일</th>
+              <th scope="row" title="비트 단위로 완전히 동일한 이미지인지 여부(FNV-1a 64비트 해시 비교)">픽셀 해시 동일</th>
               <td colSpan={2} className={comparison.hashEqual ? "lab-verdict-PASS" : "lab-verdict-FAIL"}>
                 {comparison.hashEqual ? "동일" : "다름"}
               </td>
             </tr>
             <tr>
-              <th scope="row">픽셀 해시</th>
+              <th scope="row" title="출력 RGBA 버퍼의 FNV-1a 64비트 해시값">픽셀 해시</th>
               <td className="lab-mono">{comparison.hashA}</td>
               <td className="lab-mono">{comparison.hashB}</td>
             </tr>
             {perfRows.map((row) => (
               <tr key={row.label}>
-                <th scope="row">{row.label}</th>
+                <th scope="row" title={row.title}>{row.label}</th>
                 <td>{row.a}</td>
                 <td>{row.b}</td>
               </tr>

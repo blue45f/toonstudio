@@ -120,43 +120,40 @@ export interface PlanStudioBg3dLtLayersInput<
   readonly newElementTemplate?: TElement & StudioBg3dLtImageElementLike<TScene>;
 }
 
+/**
+ * D4 생산자 계약: 실패는 표시 문구가 아니라 서브코드+파라미터로 방출한다. 서브코드는
+ * `<기존 code>.<문구 슬러그>`이며 표시는 표시 지점이 status-i18n 리졸버로 해석한다.
+ */
 export type StudioBg3dLtLayerPlanErrorCode =
-  | "page-locked"
-  | "duplicate-element-id"
-  | "duplicate-group-id"
-  | "invalid-render-mode"
-  | "invalid-render-dimensions"
-  | "missing-render-layer"
-  | "duplicate-render-role"
-  | "mismatched-layer-dimensions"
-  | "invalid-png-data-url"
-  | "missing-scene"
-  | "target-not-found"
-  | "target-not-image"
-  | "target-locked"
-  | "invalid-bundle-metadata"
-  | "invalid-bundle-element"
-  | "duplicate-bundle-role"
-  | "noncontiguous-bundle"
-  | "inconsistent-bundle-geometry"
-  | "inconsistent-bundle-group"
-  | "missing-bundle-group"
-  | "mixed-bundle-group"
-  | "bundle-group-locked"
-  | "missing-allocation"
-  | "invalid-allocation-id"
-  | "allocation-collision"
-  | "bundle-id-collision"
-  | "group-id-collision"
-  | "missing-element-template"
-  | "invalid-element-template"
-  | "template-source-mismatch"
-  | "template-aspect-mismatch";
+  | "invalid-render-mode.renderResultFormat" | "invalid-render-mode.mixedModes"
+  | "invalid-render-mode.unknownLayerRole" | "invalid-render-mode.unsupportedFormat"
+  | "invalid-render-dimensions.outOfRange" | "missing-scene.missingScene"
+  | "missing-render-layer.missingLayer" | "duplicate-render-role.duplicateRole"
+  | "mismatched-layer-dimensions.layerSizeMismatch" | "invalid-png-data-url.layerPng"
+  | "invalid-png-data-url.combinedPng" | "invalid-png-data-url.existingPngOrFragment"
+  | "page-locked.pageLocked" | "duplicate-element-id.duplicateElementId"
+  | "duplicate-group-id.duplicateGroupId" | "target-not-found.targetNotFound"
+  | "target-not-image.targetNotImage" | "target-locked.layerLocked"
+  | "target-locked.bundleLayerLocked" | "target-locked.groupPngLocked"
+  | "invalid-bundle-metadata.incomplete" | "invalid-bundle-metadata.mismatch"
+  | "invalid-bundle-element.nonImageElement" | "noncontiguous-bundle.noncontiguous"
+  | "inconsistent-bundle-geometry.placement" | "inconsistent-bundle-geometry.positionOrSize"
+  | "inconsistent-bundle-geometry.existingPngPlacement"
+  | "inconsistent-bundle-group.missingDedicatedGroup" | "inconsistent-bundle-group.groupMismatch"
+  | "duplicate-bundle-role.duplicateRole" | "missing-bundle-group.groupNotFound"
+  | "bundle-group-locked.groupLocked" | "mixed-bundle-group.mixedGroup"
+  | "missing-allocation.bundleAndGroupIds" | "missing-allocation.identifiersUndecided"
+  | "missing-allocation.layerId" | "bundle-id-collision.bundleIdCollision"
+  | "group-id-collision.groupIdCollision" | "allocation-collision.existingElement"
+  | "allocation-collision.mutual" | "missing-element-template.missingTemplate"
+  | "invalid-element-template.template" | "invalid-element-template.templatePlacement"
+  | "invalid-element-template.commonPlacementUndecided"
+  | "template-source-mismatch.sourceMismatch" | "template-aspect-mismatch.aspectMismatch";
 
 export interface StudioBg3dLtLayerPlanFailure {
   readonly ok: false;
   readonly code: StudioBg3dLtLayerPlanErrorCode;
-  readonly message: string;
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface StudioBg3dLtPlannedLayer {
@@ -272,9 +269,9 @@ const MAX_LEGACY_SCENE_FRAGMENT_LENGTH = 2 * 1024 * 1024;
 
 function failure(
   code: StudioBg3dLtLayerPlanErrorCode,
-  message: string
+  params?: Readonly<Record<string, string>>
 ): StudioBg3dLtLayerPlanFailure {
-  return { ok: false, code, message };
+  return params ? { ok: false, code, params } : { ok: false, code };
 }
 
 function isFailure<TScene>(
@@ -373,41 +370,38 @@ function normalizeRender<TScene>(
   render: StudioBg3dLtRenderOutput<TScene>
 ): NormalizedRender<TScene> | StudioBg3dLtLayerPlanFailure {
   if (render === null || typeof render !== "object") {
-    return failure("invalid-render-mode", "3D LT 렌더 결과 형식이 올바르지 않아요.");
+    return failure("invalid-render-mode.renderResultFormat");
   }
   if (!isValidRasterDimension(render.width) || !isValidRasterDimension(render.height)) {
-    return failure("invalid-render-dimensions", "3D LT 렌더 크기가 허용 범위를 벗어났어요.");
+    return failure("invalid-render-dimensions.outOfRange");
   }
   if (render.bg3dScene === undefined || render.bg3dScene === null) {
-    return failure("missing-scene", "다시 편집할 3D 장면 정보가 없어요.");
+    return failure("missing-scene.missingScene");
   }
 
   if (render.kind === "separated") {
     if (render.pngDataUrl !== undefined || !Array.isArray(render.layers)) {
-      return failure("invalid-render-mode", "분리 렌더와 통합 렌더 값이 섞여 있어요.");
+      return failure("invalid-render-mode.mixedModes");
     }
     if (render.layers.length === 0) {
-      return failure("missing-render-layer", "삽입할 3D LT 레이어가 없어요.");
+      return failure("missing-render-layer.missingLayer");
     }
 
     const seenRoles = new Set<StudioBg3dLtLayerRole>();
     const byRole = new Map<StudioBg3dLtLayerRole, NormalizedRaster>();
     for (const layer of render.layers) {
       if (!layer || typeof layer !== "object" || !isRole(layer.role)) {
-        return failure("invalid-render-mode", "알 수 없는 3D LT 레이어 역할이 포함되어 있어요.");
+        return failure("invalid-render-mode.unknownLayerRole");
       }
       if (seenRoles.has(layer.role)) {
-        return failure("duplicate-render-role", "같은 역할의 3D LT 레이어가 중복되었어요.");
+        return failure("duplicate-render-role.duplicateRole");
       }
       seenRoles.add(layer.role);
       if (layer.width !== render.width || layer.height !== render.height) {
-        return failure(
-          "mismatched-layer-dimensions",
-          "분리된 3D LT 레이어의 렌더 크기가 서로 달라요."
-        );
+        return failure("mismatched-layer-dimensions.layerSizeMismatch");
       }
       if (!isStudioBg3dLtPngDataUrl(layer.pngDataUrl)) {
-        return failure("invalid-png-data-url", "3D LT 레이어 PNG 데이터가 올바르지 않아요.");
+        return failure("invalid-png-data-url.layerPng");
       }
       byRole.set(layer.role, { role: layer.role, pngDataUrl: layer.pngDataUrl });
     }
@@ -418,7 +412,7 @@ function normalizeRender<TScene>(
     });
     const anchorRole = layers.at(-1)?.role;
     if (!anchorRole) {
-      return failure("missing-render-layer", "삽입할 3D LT 레이어가 없어요.");
+      return failure("missing-render-layer.missingLayer");
     }
     return {
       mode: "separated",
@@ -431,10 +425,10 @@ function normalizeRender<TScene>(
   }
 
   if (render.kind !== undefined && render.kind !== "combined") {
-    return failure("invalid-render-mode", "지원하지 않는 3D LT 렌더 형식이에요.");
+    return failure("invalid-render-mode.unsupportedFormat");
   }
   if (render.layers !== undefined || !isStudioBg3dLtPngDataUrl(render.pngDataUrl)) {
-    return failure("invalid-png-data-url", "통합 3D PNG 데이터가 올바르지 않아요.");
+    return failure("invalid-png-data-url.combinedPng");
   }
   return {
     mode: "combined",
@@ -591,14 +585,14 @@ export function planStudioBg3dLtLayers<
   input: PlanStudioBg3dLtLayersInput<TElement, TScene>
 ): StudioBg3dLtLayerPlanResult<TElement> {
   if (input.pageLocked) {
-    return failure("page-locked", "검토 잠금된 페이지에는 3D LT 레이어를 적용할 수 없어요.");
+    return failure("page-locked.pageLocked");
   }
 
   if (firstDuplicateId(input.elements.map((element) => element.id))) {
-    return failure("duplicate-element-id", "페이지에 중복된 요소 ID가 있어 안전하게 적용할 수 없어요.");
+    return failure("duplicate-element-id.duplicateElementId");
   }
   if (firstDuplicateId(input.groups.map((group) => group.id))) {
-    return failure("duplicate-group-id", "페이지에 중복된 그룹 ID가 있어 안전하게 적용할 수 없어요.");
+    return failure("duplicate-group-id.duplicateGroupId");
   }
 
   const normalized = normalizeRender(input.render);
@@ -612,7 +606,7 @@ export function planStudioBg3dLtLayers<
       : input.elements.findIndex((element) => element.id === input.targetElementId);
 
   if (input.targetElementId !== undefined && targetIndex < 0) {
-    return failure("target-not-found", "다시 적용할 3D LT 레이어를 찾지 못했어요.");
+    return failure("target-not-found.targetNotFound");
   }
 
   let operation: StudioBg3dLtLayerPlanSuccess<TElement>["operation"] = "insert";
@@ -630,11 +624,11 @@ export function planStudioBg3dLtLayers<
   if (targetIndex >= 0) {
     const target = input.elements[targetIndex]!;
     if (!isImageElement<TScene>(target)) {
-      return failure("target-not-image", "선택한 요소는 3D LT 이미지 레이어가 아니에요.");
+      return failure("target-not-image.targetNotImage");
     }
     const targetGroup = target.groupId ? groupById.get(target.groupId) : undefined;
     if (target.locked) {
-      return failure("target-locked", "잠긴 3D LT 레이어는 변경할 수 없어요.");
+      return failure("target-locked.layerLocked");
     }
 
     const hasBundleId = hasOwn(target, "bg3dLtBundleId") && target.bg3dLtBundleId !== undefined;
@@ -649,7 +643,7 @@ export function planStudioBg3dLtLayers<
         !isRole(target.bg3dLtRole) ||
         (target.bg3dLtRenderMode !== "combined" && target.bg3dLtRenderMode !== "separated")
       ) {
-        return failure("invalid-bundle-metadata", "기존 3D LT 번들 메타데이터가 불완전해요.");
+        return failure("invalid-bundle-metadata.incomplete");
       }
 
       operation = "update";
@@ -664,22 +658,22 @@ export function planStudioBg3dLtLayers<
       });
 
       if (bundleElements.length !== bundleIndices.length || bundleElements.length === 0) {
-        return failure("invalid-bundle-element", "3D LT 번들에 이미지가 아닌 요소가 섞여 있어요.");
+        return failure("invalid-bundle-element.nonImageElement");
       }
       insertionIndex = bundleIndices[0]!;
       if (bundleIndices.some((index, offset) => index !== insertionIndex + offset)) {
-        return failure("noncontiguous-bundle", "3D LT 번들 레이어 사이에 다른 레이어가 끼어 있어요.");
+        return failure("noncontiguous-bundle.noncontiguous");
       }
 
       const first = bundleElements[0]!;
       const firstGeometry = geometryOf(first);
       if (!firstGeometry) {
-        return failure("inconsistent-bundle-geometry", "기존 3D LT 번들의 배치 값이 올바르지 않아요.");
+        return failure("inconsistent-bundle-geometry.placement");
       }
       commonGeometry = firstGeometry;
       groupId = first.groupId;
       if (!isValidId(groupId)) {
-        return failure("inconsistent-bundle-group", "기존 3D LT 번들에 전용 그룹이 없어요.");
+        return failure("inconsistent-bundle-group.missingDedicatedGroup");
       }
 
       for (const element of bundleElements) {
@@ -689,33 +683,30 @@ export function planStudioBg3dLtLayers<
           element.bg3dLtBundleId !== bundleId ||
           (element.bg3dLtRenderMode !== "combined" && element.bg3dLtRenderMode !== "separated")
         ) {
-          return failure("invalid-bundle-metadata", "기존 3D LT 번들 메타데이터가 일치하지 않아요.");
+          return failure("invalid-bundle-metadata.mismatch");
         }
         if (existingByRole.has(element.bg3dLtRole)) {
-          return failure("duplicate-bundle-role", "기존 3D LT 번들에 같은 역할의 레이어가 중복되었어요.");
+          return failure("duplicate-bundle-role.duplicateRole");
         }
         const geometry = geometryOf(element);
         if (!geometry || !sameGeometry(firstGeometry, geometry)) {
-          return failure(
-            "inconsistent-bundle-geometry",
-            "기존 3D LT 번들 레이어의 위치나 크기가 서로 달라요."
-          );
+          return failure("inconsistent-bundle-geometry.positionOrSize");
         }
         if (element.groupId !== groupId) {
-          return failure("inconsistent-bundle-group", "기존 3D LT 번들 레이어의 그룹이 서로 달라요.");
+          return failure("inconsistent-bundle-group.groupMismatch");
         }
         if (element.locked) {
-          return failure("target-locked", "잠긴 3D LT 번들 레이어는 변경할 수 없어요.");
+          return failure("target-locked.bundleLayerLocked");
         }
         existingByRole.set(element.bg3dLtRole, element);
       }
 
       const bundleGroup = groupById.get(groupId);
       if (!bundleGroup) {
-        return failure("missing-bundle-group", "기존 3D LT 번들의 전용 그룹을 찾지 못했어요.");
+        return failure("missing-bundle-group.groupNotFound");
       }
       if (bundleGroup.locked) {
-        return failure("bundle-group-locked", "잠긴 3D LT 그룹은 변경할 수 없어요.");
+        return failure("bundle-group-locked.groupLocked");
       }
       if (
         input.elements.some(
@@ -724,14 +715,14 @@ export function planStudioBg3dLtLayers<
             (element as Partial<StudioBg3dLtImageElementLike<TScene>>).bg3dLtBundleId !== bundleId
         )
       ) {
-        return failure("mixed-bundle-group", "3D LT 전용 그룹에 관련 없는 레이어가 섞여 있어요.");
+        return failure("mixed-bundle-group.mixedGroup");
       }
     } else {
       if (targetGroup?.locked) {
-        return failure("target-locked", "잠긴 그룹의 기존 3D PNG는 변경할 수 없어요.");
+        return failure("target-locked.groupPngLocked");
       }
       if (!canonicalizeLegacyStudioBg3dPngDataUrl(target.src)) {
-        return failure("invalid-png-data-url", "기존 3D PNG 데이터나 장면 프래그먼트가 올바르지 않아요.");
+        return failure("invalid-png-data-url.existingPngOrFragment");
       }
       operation = "upgrade-legacy";
       insertionIndex = targetIndex;
@@ -739,7 +730,7 @@ export function planStudioBg3dLtLayers<
       bundleElements = [target as TElement & StudioBg3dLtImageElementLike<TScene>];
       const geometry = geometryOf(target);
       if (!geometry) {
-        return failure("inconsistent-bundle-geometry", "기존 3D PNG의 배치 값이 올바르지 않아요.");
+        return failure("inconsistent-bundle-geometry.existingPngPlacement");
       }
       commonGeometry = geometry;
       existingByRole.set(normalized.anchorRole, target as TElement & StudioBg3dLtImageElementLike<TScene>);
@@ -750,7 +741,7 @@ export function planStudioBg3dLtLayers<
     bundleId = input.allocations?.bundleId;
     groupId = input.allocations?.groupId;
     if (!isValidId(bundleId) || !isValidId(groupId)) {
-      return failure("missing-allocation", "새 3D LT 번들과 그룹 ID가 필요해요.");
+      return failure("missing-allocation.bundleAndGroupIds");
     }
     if (
       input.elements.some(
@@ -758,16 +749,16 @@ export function planStudioBg3dLtLayers<
           (element as Partial<StudioBg3dLtImageElementLike<TScene>>).bg3dLtBundleId === bundleId
       )
     ) {
-      return failure("bundle-id-collision", "새 3D LT 번들 ID가 기존 번들과 겹쳐요.");
+      return failure("bundle-id-collision.bundleIdCollision");
     }
     if (groupById.has(groupId)) {
-      return failure("group-id-collision", "새 3D LT 그룹 ID가 기존 그룹과 겹쳐요.");
+      return failure("group-id-collision.groupIdCollision");
     }
   }
 
   // TypeScript cannot retain the narrowing through the operation branches above.
   if (!bundleId || !groupId) {
-    return failure("missing-allocation", "3D LT 번들 식별자를 결정하지 못했어요.");
+    return failure("missing-allocation.identifiersUndecided");
   }
 
   const elementIdByRole = new Map<StudioBg3dLtLayerRole, string>();
@@ -780,10 +771,10 @@ export function planStudioBg3dLtLayers<
     }
     const allocated = input.allocations?.elementIds?.[layer.role];
     if (!isValidId(allocated)) {
-      return failure("missing-allocation", `${STUDIO_BG3D_LT_LAYER_NAMES[layer.role]} 레이어 ID가 필요해요.`);
+      return failure("missing-allocation.layerId", { layerName: layer.role });
     }
     if (existingElementIds.has(allocated)) {
-      return failure("allocation-collision", "새 3D LT 레이어 ID가 기존 요소와 겹쳐요.");
+      return failure("allocation-collision.existingElement");
     }
     elementIdByRole.set(layer.role, allocated);
     createdRoles.add(layer.role);
@@ -791,34 +782,34 @@ export function planStudioBg3dLtLayers<
 
   const plannedIds = normalized.layers.map((layer) => elementIdByRole.get(layer.role)!);
   if (firstDuplicateId(plannedIds)) {
-    return failure("allocation-collision", "새 3D LT 레이어 ID가 서로 겹쳐요.");
+    return failure("allocation-collision.mutual");
   }
 
   const template = input.newElementTemplate;
   if (createdRoles.size > 0) {
     if (!template) {
-      return failure("missing-element-template", "새 3D LT 레이어를 만들 이미지 템플릿이 필요해요.");
+      return failure("missing-element-template.missingTemplate");
     }
     if (!isImageElement<TScene>(template) || template.locked) {
-      return failure("invalid-element-template", "새 3D LT 이미지 템플릿이 올바르지 않아요.");
+      return failure("invalid-element-template.template");
     }
     const templateGeometry = geometryOf(template);
     if (!templateGeometry) {
-      return failure("invalid-element-template", "새 3D LT 이미지 템플릿의 배치 값이 올바르지 않아요.");
+      return failure("invalid-element-template.templatePlacement");
     }
     const anchorRaster = normalized.layers.find((layer) => layer.role === normalized.anchorRole)!;
     if (template.src !== anchorRaster.pngDataUrl) {
-      return failure("template-source-mismatch", "이미지 템플릿이 현재 3D LT 렌더와 일치하지 않아요.");
+      return failure("template-source-mismatch.sourceMismatch");
     }
     const expectedHeight = templateGeometry.width * (normalized.height / normalized.width);
     if (Math.abs(templateGeometry.height - expectedHeight) > 1) {
-      return failure("template-aspect-mismatch", "이미지 템플릿과 3D LT 렌더의 화면 비율이 달라요.");
+      return failure("template-aspect-mismatch.aspectMismatch");
     }
     if (!commonGeometry) commonGeometry = templateGeometry;
   }
 
   if (!commonGeometry) {
-    return failure("invalid-element-template", "3D LT 레이어의 공통 배치 값을 결정하지 못했어요.");
+    return failure("invalid-element-template.commonPlacementUndecided");
   }
 
   // Updates keep the existing width/position but adopt the new render aspect ratio atomically.

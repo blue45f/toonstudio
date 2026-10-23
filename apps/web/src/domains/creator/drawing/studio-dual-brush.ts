@@ -21,8 +21,13 @@ import type { StudioNaturalMediaBrushId } from "./studio-natural-media-brushes";
 /* 결합 모드·질감 종류                                                  */
 /* ------------------------------------------------------------------ */
 
-/** 이중 브러시 결합 모드. Canvas2D globalCompositeOperation과 1:1 매핑. */
-export type StudioDualBrushBlendMode = "multiply" | "screen" | "overlay";
+/** 이중 브러시 결합 모드. Canvas2D 및 순수 Float32 버퍼 합성과 1:1 매핑. */
+export type StudioDualBrushBlendMode =
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "linear-burn"
+  | "hard-light";
 
 export type StudioDualBrushTextureId =
   | "paper"
@@ -133,7 +138,7 @@ export function validateDualBrushConfig(
   if (!getDualBrushTexture(config.textureId)) {
     errors.push(`알 수 없는 질감 id: ${String(config.textureId)}`);
   }
-  if (!["multiply", "screen", "overlay"].includes(config.blendMode)) {
+  if (!["multiply", "screen", "overlay", "linear-burn", "hard-light"].includes(config.blendMode)) {
     errors.push(`알 수 없는 결합 모드: ${String(config.blendMode)}`);
   }
   if (
@@ -347,6 +352,59 @@ export function generateTextureTile(
   return tile;
 }
 
+const DUAL_BRUSH_TILE_CACHE_MAX = 64;
+const dualBrushTileCache = new Map<string, Float32Array>();
+let dualBrushTileCacheHits = 0;
+let dualBrushTileCacheMisses = 0;
+
+/**
+ * 절차적 이중 브러시 질감 타일 메모이제이션 캐시 조회.
+ * 동일 질감 ID·크기·시드 요청 시 128×128 fBm 노이즈 재계산 없이 O(1)로 반환한다.
+ */
+export function getCachedTextureTile(
+  id: StudioDualBrushTextureId,
+  options: GenerateTextureTileOptions = {},
+): Float32Array {
+  const texture = getDualBrushTexture(id);
+  const size = Math.max(8, Math.min(512, Math.floor(options.size ?? texture?.tileSize ?? 128)));
+  const seed = options.seed ?? id.length * 7919 + 17;
+  const key = `${id}:${size}:${seed}`;
+  const cached = dualBrushTileCache.get(key);
+  if (cached) {
+    dualBrushTileCacheHits += 1;
+    return cached;
+  }
+  dualBrushTileCacheMisses += 1;
+  const generated = generateTextureTile(id, { size, seed });
+  if (dualBrushTileCache.size >= DUAL_BRUSH_TILE_CACHE_MAX) {
+    const oldestKey = dualBrushTileCache.keys().next().value;
+    if (oldestKey !== undefined) dualBrushTileCache.delete(oldestKey);
+  }
+  dualBrushTileCache.set(key, generated);
+  return generated;
+}
+
+export function clearDualBrushTileCache(): void {
+  dualBrushTileCache.clear();
+  dualBrushTileCacheHits = 0;
+  dualBrushTileCacheMisses = 0;
+}
+
+export function getDualBrushTileCacheStats(): {
+  readonly size: number;
+  readonly hits: number;
+  readonly misses: number;
+  readonly hitRate: number;
+} {
+  const total = dualBrushTileCacheHits + dualBrushTileCacheMisses;
+  return {
+    size: dualBrushTileCache.size,
+    hits: dualBrushTileCacheHits,
+    misses: dualBrushTileCacheMisses,
+    hitRate: total > 0 ? dualBrushTileCacheHits / total : 0,
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /* 결합 연산 (순수 함수)                                                   */
 /* ------------------------------------------------------------------ */
@@ -368,6 +426,12 @@ export function blendDualBrushValue(
       return b < 0.5
         ? 2 * b * t
         : 1 - 2 * (1 - b) * (1 - t);
+    case "linear-burn":
+      return Math.max(0, b + t - 1);
+    case "hard-light":
+      return t < 0.5
+        ? 2 * b * t
+        : 1 - 2 * (1 - b) * (1 - t);
     default:
       return b;
   }
@@ -384,6 +448,43 @@ export function applyDualBrushStrength(
 ): number {
   const s = Math.max(0, Math.min(1, strength));
   return base + (blended - base) * s;
+}
+
+/**
+ * DOM/Canvas2D 없이 워커나 헤드리스 파이프라인에서도 즉시 실행 가능한
+ * 순수 Float32Array 이중 브러시 스트로크 버퍼 합성기.
+ */
+export function compositeDualBrushFloatBuffer(
+  baseMask: Float32Array,
+  textureTile: Float32Array,
+  tileSize: number,
+  width: number,
+  height: number,
+  config: Pick<StudioDualBrushConfig, "blendMode" | "textureStrength" | "textureScale">,
+): Float32Array {
+  const out = new Float32Array(baseMask.length);
+  const safeTileSize = Math.max(1, Math.floor(tileSize));
+  const scale = Math.max(0.25, Math.min(4, config.textureScale || 1));
+  const strength = Math.max(0, Math.min(1, config.textureStrength));
+
+  for (let y = 0; y < height; y += 1) {
+    const ty = Math.floor(y / scale) % safeTileSize;
+    const wrappedY = ty < 0 ? ty + safeTileSize : ty;
+    for (let x = 0; x < width; x += 1) {
+      const idx = y * width + x;
+      const b = baseMask[idx] ?? 0;
+      if (b <= 0) {
+        out[idx] = 0;
+        continue;
+      }
+      const tx = Math.floor(x / scale) % safeTileSize;
+      const wrappedX = tx < 0 ? tx + safeTileSize : tx;
+      const t = textureTile[wrappedY * safeTileSize + wrappedX] ?? 1;
+      const blended = blendDualBrushValue(b, t, config.blendMode);
+      out[idx] = applyDualBrushStrength(b, blended, strength);
+    }
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ */
@@ -452,7 +553,8 @@ export function compositeDualBrushStroke(
   const rctx = result.getContext("2d");
   if (!rctx) return null;
   rctx.drawImage(strokeCanvas, 0, 0);
-  rctx.globalCompositeOperation = config.blendMode;
+  rctx.globalCompositeOperation =
+    config.blendMode === "linear-burn" ? "color-burn" : config.blendMode;
   rctx.globalAlpha = Math.max(0, Math.min(1, config.textureStrength));
   rctx.drawImage(patternCanvas, 0, 0);
   rctx.globalAlpha = 1;

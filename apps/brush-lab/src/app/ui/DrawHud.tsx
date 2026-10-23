@@ -70,29 +70,34 @@ export function DrawHud() {
           </span>
         ) : null}
       </p>
+      {strokes === 0 ? (
+        <p className="lab-muted lab-draw-hud-onboarding" data-testid="lab-draw-hud-onboarding">
+          캔버스 위에 마우스나 펜으로 첫 획을 그으면 실시간 입력 지연(p50/p95)과 dab 통계가 이곳에 표시됩니다.
+        </p>
+      ) : null}
       <dl className="lab-stats" aria-label="마지막 획 지표">
         <div>
           <dt>획 수</dt>
           <dd data-testid="lab-draw-hud-strokes">{strokes}</dd>
         </div>
         <div>
-          <dt>addSamples p50 / p95 (ms)</dt>
+          <dt title="프레임당 포인터 샘플을 엔진에 전달해 처리한 호스트 측 소요 시간(중앙값 / 상위 95%)">addSamples p50 / p95 (ms)</dt>
           <dd data-testid="lab-draw-hud-add">{stats ? `${fmt(stats.addSamplesP50Ms)} / ${fmt(stats.addSamplesP95Ms)}` : "—"}</dd>
         </div>
         <div>
-          <dt>endStroke (ms)</dt>
+          <dt title="획 종료 시 잔여 버퍼 플러시 및 합성 마무리 시간">endStroke (ms)</dt>
           <dd data-testid="lab-draw-hud-end">{stats ? fmt(stats.endStrokeMs) : "—"}</dd>
         </div>
         <div>
-          <dt>readback (ms)</dt>
+          <dt title="GPU/엔진 결과를 호스트 이미지 버퍼로 읽어오는 시간">readback (ms)</dt>
           <dd data-testid="lab-draw-hud-readback">{stats ? fmt(stats.readbackMs) : "—"}</dd>
         </div>
         <div>
-          <dt>dab 수</dt>
+          <dt title="이번 획에서 찍힌 브러시 스탬프(dab) 총 개수">dab 수</dt>
           <dd data-testid="lab-draw-hud-dabs">{stats ? stats.dabCount : "—"}</dd>
         </div>
         <div>
-          <dt>비닝 초과 dab</dt>
+          <dt title="타일당 최대 dab 한도를 초과해 절단된 스탬프 수 (0이어야 정상)">비닝 초과 dab</dt>
           <dd className={stats && stats.overflowDabs > 0 ? "lab-verdict-FAIL" : undefined}>{stats ? stats.overflowDabs : "—"}</dd>
         </div>
       </dl>

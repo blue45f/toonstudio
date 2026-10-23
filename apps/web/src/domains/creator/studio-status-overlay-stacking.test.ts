@@ -7,8 +7,20 @@ const saveCenter = readFileSync(new URL("./StudioDraftSaveCenterImpl.tsx", impor
 const overlayCss = readFileSync(new URL("../../app/styles/studio-overlay-stacking.css", import.meta.url), "utf8");
 const responsiveCss = readFileSync(new URL("./studio-inspector-responsive.css", import.meta.url), "utf8");
 const offlinePanel = readFileSync(new URL("./offline/StudioOfflinePanel.tsx", import.meta.url), "utf8");
+const saveStatusMount = readFileSync(new URL("./StudioSaveStatusChromeMount.tsx", import.meta.url), "utf8");
+const editorChrome = readFileSync(new URL("./studio-cuttoon-editor/StudioCuttoonEditorChrome.tsx", import.meta.url), "utf8");
 
 describe("Studio global status overlay stacking", () => {
+  it("오류 안내가 떠 있는 동안 첫 게시 제안 카드가 닫기(✕)를 덮지 않는다", () => {
+    // 카드는 메뉴바(z-50 쌓임 맥락)에 붙어 상태 레일의 오류 닫기 버튼 위에 놓일 수 있다 — 오류가 우선이다.
+    expect(overlayCss).toMatch(
+      /html:has\(\[data-studio-status-error-dismiss\]\)\s+\[data-studio-first-publish-suggestion-anchor="true"\]\s*\{\s*display:\s*none\s*!important;/u,
+    );
+    // 규칙이 가리키는 두 속성은 실제 마크업에 있어야 한다(이름이 바뀌면 규칙이 조용히 무효가 된다).
+    expect(saveStatusMount).toContain('data-studio-first-publish-suggestion-anchor="true"');
+    expect(editorChrome).toContain("data-studio-status-error-dismiss");
+  });
+
   it("loads the narrowly scoped Studio overlay boundary", () => {
     expect(appEntry).toContain('import "./styles/studio-overlay-stacking.css";');
     expect(overlayCss).toContain('[data-studio-status-notice-dismiss="true"]');

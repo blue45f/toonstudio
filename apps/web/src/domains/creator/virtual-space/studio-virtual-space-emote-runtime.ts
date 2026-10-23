@@ -118,6 +118,98 @@ export function studioEmoteBodyMotion(
       return elapsed < 1_000 ? { ...none, bodyY: Math.max(0, Math.sin(elapsed / 500 * Math.PI * 2)) * 2 } : none;
     case "doze":
       return { ...none, bodyY: Math.sin(elapsed / 1_600 * Math.PI * 2) * 1.5, bodyAngle: Math.sin(elapsed / 3_200 * Math.PI * 2) * 2 };
+    case "calisthenics": {
+      // 시작·종료 구간(240ms)을 부드럽게 감쇠해 자세가 끊기지 않고 자연스럽게 이어지도록 한다.
+      const env = Math.min(1, elapsed / 240, (durationMs - elapsed) / 280);
+      const beat = elapsed / 500 * Math.PI * 2;
+      const stretchFacings: readonly StudioVirtualSpaceFacing[] = ["down", "left", "down", "right"];
+      return {
+        bodyX: Math.sin(beat * 0.5) * 3.8 * env,
+        bodyY: -Math.abs(Math.sin(beat)) * 6.5 * env,
+        bodyAngle: Math.sin(beat * 0.5) * 8.5 * env,
+        facing: stretchFacings[Math.floor(elapsed / 500) % stretchFacings.length] ?? "down",
+      };
+    }
+    case "yoga": {
+      // 요가·명상 호흡: 깊은 들숨·날숨 주기로 부드럽게 떠오르며 균형을 잡는다.
+      const env = Math.min(1, elapsed / 320, (durationMs - elapsed) / 360);
+      const breath = elapsed / 2_000 * Math.PI * 2;
+      return {
+        bodyX: Math.sin(breath * 0.5) * 1.4 * env,
+        bodyY: (-2.8 - Math.sin(breath) * 2.6) * env,
+        bodyAngle: Math.sin(breath * 0.5) * 3.2 * env,
+        facing: "down",
+      };
+    }
+    case "kpop-dance": {
+      // 아이돌 군무: 경쾌한 비트 스냅과 4방향 턴을 부드러운 엔벨로프로 연결한다.
+      const env = Math.min(1, elapsed / 200, (durationMs - elapsed) / 240);
+      const groove = elapsed / 320 * Math.PI * 2;
+      return {
+        bodyX: Math.sin(groove * 0.5) * 5.2 * env,
+        bodyY: -Math.abs(Math.cos(groove)) * 7.2 * env,
+        bodyAngle: Math.cos(groove * 0.5) * 9.5 * env,
+        facing: DANCE_FACINGS[Math.floor(elapsed / 160) % DANCE_FACINGS.length] ?? "down",
+      };
+    }
+    case "shuffle": {
+      // 셔플·문워크 그루브: 좌우로 미끄러지듯 리드미컬하게 스텝을 밟는다.
+      const env = Math.min(1, elapsed / 200, (durationMs - elapsed) / 240);
+      const slide = elapsed / 280 * Math.PI * 2;
+      const shuffleFacings: readonly StudioVirtualSpaceFacing[] = ["left", "down", "right", "down"];
+      return {
+        bodyX: Math.sin(slide * 0.5) * 6.4 * env,
+        bodyY: -Math.abs(Math.sin(slide)) * 4.2 * env,
+        bodyAngle: -Math.sin(slide * 0.5) * 6.5 * env,
+        facing: shuffleFacings[Math.floor(elapsed / 280) % shuffleFacings.length] ?? "down",
+      };
+    }
+    case "neck-stretch": {
+      // 목·어깨 풀기: 좌우로 천천히 고개를 기울이고 어깨를 들어 올렸다 내리며 이완한다.
+      const env = Math.min(1, elapsed / 260, (durationMs - elapsed) / 300);
+      const roll = elapsed / 1_200 * Math.PI * 2;
+      return {
+        bodyX: Math.sin(roll) * 2.2 * env,
+        bodyY: (-1.8 - Math.abs(Math.cos(roll)) * 2.4) * env,
+        bodyAngle: Math.sin(roll) * 7.2 * env,
+        facing: "down",
+      };
+    }
+    case "tai-chi": {
+      // 타이치 기공: 부드러운 태극 원 궤적을 따라 무게중심을 옮기며 호흡한다.
+      const env = Math.min(1, elapsed / 320, (durationMs - elapsed) / 360);
+      const flow = elapsed / 1_800 * Math.PI * 2;
+      const taiChiFacings: readonly StudioVirtualSpaceFacing[] = ["down", "left", "down", "right"];
+      return {
+        bodyX: Math.sin(flow) * 4.6 * env,
+        bodyY: (-2.2 + Math.cos(flow * 2) * 2.4) * env,
+        bodyAngle: Math.sin(flow) * 4.8 * env,
+        facing: taiChiFacings[Math.floor(elapsed / 900) % taiChiFacings.length] ?? "down",
+      };
+    }
+    case "cheers": {
+      // 마감 건배: 잔을 높이 들어 경쾌하게 두 번 부딪치듯 도약한다.
+      const env = Math.min(1, elapsed / 160, (durationMs - elapsed) / 220);
+      const clink = elapsed / 360 * Math.PI * 2;
+      return {
+        bodyX: Math.sin(clink * 0.5) * 2.8 * env,
+        bodyY: -Math.abs(Math.sin(clink)) * 6.8 * env,
+        bodyAngle: Math.sin(clink * 0.5) * 6.2 * env,
+        facing: "down",
+      };
+    }
+    case "moonwalk": {
+      // 문워크 슬라이드: 좌우 글라이드와 발끝 바운스를 결합한 시그니처 슬라이드 모션.
+      const env = Math.min(1, elapsed / 200, (durationMs - elapsed) / 240);
+      const glide = elapsed / 400 * Math.PI * 2;
+      const moonwalkFacings: readonly StudioVirtualSpaceFacing[] = ["left", "left", "right", "right"];
+      return {
+        bodyX: Math.cos(glide * 0.5) * 7.4 * env,
+        bodyY: -Math.abs(Math.sin(glide * 2)) * 3.4 * env,
+        bodyAngle: -Math.cos(glide * 0.5) * 5.8 * env,
+        facing: moonwalkFacings[Math.floor(elapsed / 400) % moonwalkFacings.length] ?? "left",
+      };
+    }
   }
 }
 

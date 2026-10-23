@@ -1,5 +1,6 @@
 import { createDefaultMotionExportDeps, pickMotionVideoMime, recommendVideoBitsPerSecond, type MotionExportDeps, type MotionStreamLike } from "../export/studio-motion-export";
 import { planStudioAnimaticPreview, sampleStudioAnimaticPreview } from "../studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
 import { scheduleStudioAnimaticAudio } from "./studio-animatic-audio";
 import { drawStudioAnimaticFrame, type StudioAnimaticImages } from "./studio-animatic-renderer";
 import { finalizeStudioAnimaticRecordedWebm } from "./studio-animatic-recorded-webm";
@@ -20,7 +21,7 @@ export interface StudioAnimaticVideoRequest {
 /** Uses the existing recorder adapters, with the same frame renderer as the visible preview. */
 export async function exportStudioAnimaticVideo(request: StudioAnimaticVideoRequest): Promise<Blob> {
   const planned = planStudioAnimaticPreview(request.snapshot.timeline, false);
-  if (!planned.ok) throw new Error(planned.error);
+  if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
   const { plan } = planned;
   if (plan.totalDurationMs <= 0) throw new Error("내보낼 컷이 없습니다.");
   for (const segment of request.snapshot.timeline.segments) {

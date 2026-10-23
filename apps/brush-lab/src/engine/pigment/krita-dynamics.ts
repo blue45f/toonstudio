@@ -146,3 +146,91 @@ export function smoothColor(
   const t = alpha < 0 ? 0 : alpha > 1 ? 1 : alpha;
   return kmMixRgb(prev as [number, number, number], target as [number, number, number], t);
 }
+
+/**
+ * 비선형 필압 전달 곡선(감마 + 3차 에르미트 S-커브 블렌드).
+ * 입력 pressure ∈ [0, 1]에 대해 단조 증가하는 f32 응답을 반환한다.
+ */
+export function evaluatePressureCurve(
+  pressure: number,
+  gamma = 1.0,
+  sCurveStrength = 0.0,
+): number {
+  if (!Number.isFinite(pressure)) {
+    throw new SumiError("kd-invalid-config", "pressure는 유한값이어야 한다", { pressure });
+  }
+  const p = pressure < 0 ? 0 : pressure > 1 ? 1 : pressure;
+  if (p === 0 || p === 1) return Math.fround(p);
+  const g = Number.isFinite(gamma) && gamma > 0 ? gamma : 1.0;
+  const s = !Number.isFinite(sCurveStrength)
+    ? 0
+    : sCurveStrength < 0
+      ? 0
+      : sCurveStrength > 1
+        ? 1
+        : sCurveStrength;
+  const gammaVal = Math.pow(p, g);
+  const hermiteVal = p * p * (3 - 2 * p);
+  return Math.fround(gammaVal * (1 - s) + hermiteVal * s);
+}
+
+/**
+ * 에어브러시 시간율(Hz)과 스트로크 이동 속도를 결합한 유효 댑 방출 빈도(dabs/sec).
+ */
+export function computeDabAirbrushRate(
+  baseRateHz: number,
+  pressure: number,
+  speedPxPerSec: number,
+): number {
+  const rate = Number.isFinite(baseRateHz) && baseRateHz > 0 ? baseRateHz : 0;
+  const p = pressure < 0 ? 0 : pressure > 1 ? 1 : pressure;
+  const spd = Number.isFinite(speedPxPerSec) && speedPxPerSec > 0 ? speedPxPerSec : 0;
+  const pressureFactor = 0.25 + 0.75 * p;
+  const velocityBoost = 1 + Math.min(4, spd / 600);
+  return Math.fround(rate * pressureFactor * velocityBoost);
+}
+
+/**
+ * 진행 방향 접선(dx, dy)과 펜 기울기(tiltX, tiltY)를 결합한 브러시 팁 회전각(라디안, [-π, π]).
+ */
+export function computeTangentialAngle(
+  dx: number,
+  dy: number,
+  tiltX: number,
+  tiltY: number,
+  tiltWeight = 0.5,
+): number {
+  const tw = tiltWeight < 0 ? 0 : tiltWeight > 1 ? 1 : tiltWeight;
+  const strokeLen = Math.hypot(dx, dy);
+  const tiltLen = Math.hypot(tiltX, tiltY);
+  const vx = (strokeLen > 1e-5 ? dx / strokeLen : 1) * (1 - tw) + (tiltLen > 1e-5 ? tiltX / tiltLen : 0) * tw;
+  const vy = (strokeLen > 1e-5 ? dy / strokeLen : 0) * (1 - tw) + (tiltLen > 1e-5 ? tiltY / tiltLen : 0) * tw;
+  if (Math.hypot(vx, vy) <= 1e-6) return 0;
+  return Math.fround(Math.atan2(vy, vx));
+}
+
+/**
+ * 웨트 스머지/컬러 레이트 혼합: 캔버스 픽업 색상(pickupRgb)과 브러시 고유 색상(brushRgb)을
+ * 스머지 길이(smudgeLength), 물감 적재량(paintLoad), 필압(pressure)에 따라 KM 색공간에서 혼합한다.
+ */
+export function computeWetSmudgeMix(
+  brushRgb: readonly [number, number, number],
+  pickupRgb: readonly [number, number, number],
+  smudgeLength: number,
+  paintLoad: number,
+  pressure: number,
+): [number, number, number] {
+  const sl = smudgeLength < 0 ? 0 : smudgeLength > 1 ? 1 : smudgeLength;
+  const pl = paintLoad < 0 ? 0 : paintLoad > 1 ? 1 : paintLoad;
+  const p = pressure < 0 ? 0 : pressure > 1 ? 1 : pressure;
+  // 브러시 신규 물감 투입 비율(paintLoad * pressure가 높을수록 브러시 색 우세, smudgeLength가 높을수록 픽업 색 유지)
+  const freshRatio = Math.fround(
+    Math.min(1, Math.max(0, pl * (0.4 + 0.6 * p) * (1 - sl * 0.65))),
+  );
+  return kmMixRgb(
+    pickupRgb as [number, number, number],
+    brushRgb as [number, number, number],
+    freshRatio,
+  );
+}
+

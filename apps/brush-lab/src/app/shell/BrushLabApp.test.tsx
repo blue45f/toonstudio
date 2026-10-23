@@ -148,4 +148,14 @@ describe("BrushLabApp", { timeout: 30_000 }, () => {
     expect(store.get().errors).toEqual([]);
     expect(screen.queryByRole("list", { name: "오류 목록" })).toBeNull();
   });
+
+  it("4단계 워크플로 안내 바를 표시하고 단계 버튼으로 해당 탭으로 바로 이동한다", () => {
+    const store = createLabStore({ tab: "draw" });
+    renderApp(store, { autoProbe: false });
+    const bar = screen.getByTestId("lab-workflow-bar");
+    expect(bar.getAttribute("aria-label")).toBe("브러시 실험실 워크플로 안내");
+    fireEvent.click(screen.getByRole("button", { name: /③ A\/B 비교/u }));
+    expect(store.get().tab).toBe("compare");
+    expect(screen.getByRole("button", { name: /③ A\/B 비교/u }).getAttribute("aria-current")).toBe("step");
+  });
 });

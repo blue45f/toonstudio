@@ -126,6 +126,8 @@ export type StudioLiveLockAcquireResult =
       status: "timeout";
       resource: string;
       requestId: string;
+      /** A4 D4 (R13): 잠금 결과는 조건부 구간이라 코드만 부착할 수 있게 선택 필드로 둔다. */
+      code?: string;
       message: string;
     }
   | {
@@ -294,9 +296,12 @@ export interface ParseStudioLiveEnvelopeOptions {
   now?: number;
 }
 
+/** A4 D4 (R13): 생산자는 표시 문구 대신 구조화 코드만 방출한다(message = 코드, 도메인 liveProtocol). */
+export type StudioLiveProtocolErrorCode = "cursor-payload-invalid" | "envelope-create-failed" | "work-id-required";
+
 export class StudioLiveProtocolError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(readonly code: StudioLiveProtocolErrorCode) {
+    super(code);
     this.name = "StudioLiveProtocolError";
   }
 }
@@ -458,15 +463,7 @@ function isEmptyPayload(value: unknown): value is Record<string, never> {
 }
 
 const CURSOR_ALLOWED_KEYS = new Set([
-  "x",
-  "y",
-  "pageId",
-  "tool",
-  "drawing",
-  "strokeColor",
-  "strokeWidth",
-  "strokeOpacity",
-  "points",
+  "x", "y", "pageId", "tool", "drawing", "strokeColor", "strokeWidth", "strokeOpacity", "points",
 ]);
 
 function isCursorPayload(value: unknown): value is StudioLiveCursorPayload {
@@ -490,7 +487,7 @@ export function assertStudioLiveCursorPayload(
   value: unknown
 ): asserts value is StudioLiveCursorPayload {
   if (!isCursorPayload(value)) {
-    throw new StudioLiveProtocolError("유효하지 않은 실시간 협업 메시지입니다.");
+    throw new StudioLiveProtocolError("cursor-payload-invalid");
   }
 }
 
@@ -855,14 +852,14 @@ export function createStudioLiveEnvelope<K extends StudioLiveMessageKind>(
     expectedWorkId: input.workId,
     now: input.sentAt,
   });
-  if (!parsed) throw new StudioLiveProtocolError("유효하지 않은 실시간 협업 메시지입니다.");
+  if (!parsed) throw new StudioLiveProtocolError("envelope-create-failed");
   return candidate;
 }
 
 /** Stable, non-secret room name. Work-id collision is still rejected by the envelope parser. */
 export function studioLocalLiveChannelName(workId: string): string {
   if (!exactIdentifier(workId, MAX_ID_LENGTH)) {
-    throw new StudioLiveProtocolError("유효한 작품 ID가 필요합니다.");
+    throw new StudioLiveProtocolError("work-id-required");
   }
   let hash = 2_166_136_261;
   for (const character of workId) {

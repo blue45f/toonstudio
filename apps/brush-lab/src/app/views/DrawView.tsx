@@ -380,6 +380,31 @@ export function DrawView() {
     drawActions.clearDocument();
   };
 
+  const currentSizePx = overrides.sizePx ?? resolved.program?.tip.sizePx ?? 8;
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (store.get().tab !== "draw") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === "[" || e.key === "]") {
+        e.preventDefault();
+        const cur = drawStore.get().overrides.sizePx ?? programRef.current?.tip.sizePx ?? 8;
+        const step = cur <= 12 ? 2 : 4;
+        const nextSize = e.key === "[" ? Math.max(1, cur - step) : Math.min(200, cur + step);
+        drawActions.setOverride({ sizePx: nextSize });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [store, drawStore, drawActions]);
+
   const desc = laneId ? findDescriptor(registry, laneId) : null;
   const surfaceLabel = `그리기 캔버스(${docSize.width}×${docSize.height}, ${desc ? desc.label : "레인 미정"}) — 마우스·펜·터치로 그린다`;
 
@@ -430,6 +455,12 @@ export function DrawView() {
           >
             {panelOpen ? "설정 패널 접기" : "설정 패널 펴기"}
           </button>
+          <span className="lab-badge lab-draw-status-pill" data-testid="lab-draw-brush-pill">
+            브러시 {currentSizePx}px · 안정화 {stabilizerMode}
+          </span>
+          <span className="lab-muted lab-draw-shortcut-hint" data-testid="lab-draw-shortcut-hint">
+            단축키: [ / ] 크기 조절
+          </span>
         </div>
         <div ref={fitBoxRef} className="lab-draw-fitbox">
           <DrawCanvas

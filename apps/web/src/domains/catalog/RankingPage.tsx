@@ -21,6 +21,7 @@ import {
   useBilingual,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import Link from "@/shared/navigation/router-link";
 import { MotionIllustration } from "@/shared/motion-assets";
 
 const SCOPE = "domains.catalog.RankingPage";
@@ -90,6 +91,32 @@ export function RankingPage() {
           </>
         }
       />
+
+      <div
+        role="group"
+        aria-label={bt("랭킹 관점 빠른 전환", "Quick ranking view switcher")}
+        data-testid="ranking-quick-axes"
+        className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card/65 px-3.5 py-2.5"
+      >
+        <span className="text-xs font-bold text-fg-2">{bt("관점 바로가기:", "Quick views:")}</span>
+        {RANK_AXES.slice(0, 5).map((entry) => {
+          const isCurrent = entry.key === axis;
+          return (
+            <Link
+              key={entry.key}
+              href={`/ranking?axis=${entry.key}`}
+              aria-current={isCurrent ? "page" : undefined}
+              className={
+                isCurrent
+                  ? "inline-flex min-h-8 items-center rounded-full border border-accent bg-accent px-3 py-1 text-xs font-bold text-on-accent"
+                  : "inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              }
+            >
+              {entry.label}
+            </Link>
+          );
+        })}
+      </div>
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
         <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>

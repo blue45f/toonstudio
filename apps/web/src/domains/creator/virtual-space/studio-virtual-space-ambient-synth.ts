@@ -7,7 +7,13 @@
  * 생성은 결정적이다(고정 시드) — 같은 종류는 항상 같은 소리를 낸다.
  */
 
-export type StudioAmbientSynthKind = "wind" | "room";
+export type StudioAmbientSynthKind =
+  | "wind"
+  | "room"
+  | "ocean"
+  | "hearth"
+  | "focus-stream"
+  | "atelier-breeze";
 
 export interface StudioAmbientSynthSpec {
   /** 저역 필터 기본 차단 주파수(Hz). */
@@ -30,6 +36,14 @@ const SYNTH_SPECS: Record<StudioAmbientSynthKind, StudioAmbientSynthSpec> = {
   wind: { baseCutoffHz: 420, swingCutoffHz: 380, gustCycles: 1, swellCycles: 2, swellDepth: 0.35, targetRms: 0.13, seed: 0x51ab3 },
   // 실내 공기감: 낮은 대역의 거의 일정한 공기 소리. 환풍기처럼 배경에 깔린다.
   room: { baseCutoffHz: 190, swingCutoffHz: 25, gustCycles: 1, swellCycles: 1, swellDepth: 0.08, targetRms: 0.035, seed: 0x9c41d },
+  // 노을 파도 소리: 밀물과 썰물의 깊은 스웰과 포말 필터 스윙.
+  ocean: { baseCutoffHz: 260, swingCutoffHz: 540, gustCycles: 2, swellCycles: 2, swellDepth: 0.52, targetRms: 0.14, seed: 0x73c91 },
+  // 코지 원목 벽난로: 포근한 저역 온기와 잔잔한 일렁임.
+  hearth: { baseCutoffHz: 240, swingCutoffHz: 160, gustCycles: 3, swellCycles: 3, swellDepth: 0.24, targetRms: 0.09, seed: 0x84e2a },
+  // 딥워크 시냇물·브라운 노이즈: 귀의 피로를 낮추고 집중력을 높이는 차분한 저중역 흐름.
+  "focus-stream": { baseCutoffHz: 310, swingCutoffHz: 95, gustCycles: 2, swellCycles: 1, swellDepth: 0.14, targetRms: 0.08, seed: 0x39f4c },
+  // 가든 테라스 산들바람: 잎사귀가 스치는 산뜻한 중대역 미풍.
+  "atelier-breeze": { baseCutoffHz: 520, swingCutoffHz: 320, gustCycles: 2, swellCycles: 3, swellDepth: 0.3, targetRms: 0.11, seed: 0x62b8e },
 };
 
 export function studioAmbientSynthSpec(kind: StudioAmbientSynthKind): StudioAmbientSynthSpec {

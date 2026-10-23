@@ -7,7 +7,7 @@ export { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
 export { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
 export { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
 export { TransformControls } from "@react-three/drei/core/TransformControls.js";
-export { View } from "@react-three/drei/web/View.js";
+export { StudioBg3dCanvasView as View } from "./StudioBg3dCanvasView";
 export { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
 export {
   Aperture,
@@ -126,8 +126,13 @@ export {
   type StudioGeneric3dControlMode,
 } from "../StudioGeneric3dModelModePanel";
 export { StudioToolHintTarget } from "../StudioToolHint";
+export {
+  resolveBg3dTemplateMigrationDataPreservedNote,
+  resolveBg3dTemplateMigrationErrorByCode,
+} from "../status-i18n/studio-producer-error-i18n";
 export { useStudioBg3dSharedCharacterStatus } from "../useStudioBg3dSharedCharacterStatus";
 export { useStudioModalSheet } from "../useStudioModalSheet";
+export { useStudioBg3dViewportHostRef } from "./useStudioBg3dViewportHost";
 
 export { snapshotStudioBg3dLiveAnimationPlayback } from "./studio-bg3d-animation-time";
 export {
@@ -306,6 +311,7 @@ export {
   type StudioBg3dWorldMeasurement,
 } from "./studio-bg3d-measurement";
 export { readStudioBg3dMeasurementPointFromThreeEvent } from "./studio-bg3d-measurement-three-adapter";
+export { resolveStudioBg3dMeasurementError } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
 export {
   StudioBg3dStaleModalOperationError,
   studioBg3dModalOperationCoordinator,

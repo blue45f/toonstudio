@@ -1,100 +1,21 @@
 import { defineAppRoutes } from "../app-route-definition";
 
-import { lazyRetry } from "@/shared/lib/lazy-retry";
-
-const WorkspaceHomeRoute = lazyRetry(
-  () => import("@/domains/creator/workspace/WorkspaceHomeRoute").then((module) => ({
-    default: module.WorkspaceHomeRoute,
-  })),
-  "WorkspaceHomeRoute",
-);
-
-const ComicIntroHost = lazyRetry(
-  () => import("@/domains/marketing/comic-intro/ComicIntroHost").then((module) => ({
-    default: module.ComicIntroHost,
-  })),
-  "ComicIntroHost",
-);
-
-const ProductTourPage = lazyRetry(
-  () => import("@/domains/marketing/ProductTourPage").then((module) => ({
-    default: module.ProductTourPage,
-  })),
-  "ProductTourPage",
-);
-
-const BrandFilmPage = lazyRetry(
-  () => import("@/domains/marketing/BrandFilmPage").then((module) => ({
-    default: module.BrandFilmPage,
-  })),
-  "BrandFilmPage",
-);
-
-const PromoVideoLibraryPage = lazyRetry(
-  () => import("@/domains/marketing/PromoVideoLibraryPage").then((module) => ({
-    default: module.PromoVideoLibraryPage,
-  })),
-  "PromoVideoLibraryPage",
-);
-
-const MembershipPolicyPage = lazyRetry(
-  () => import("@/domains/marketing/MembershipPolicyPage").then((module) => ({
-    default: module.MembershipPolicyPage,
-  })),
-  "MembershipPolicyPage",
-);
-
-const PricingPage = lazyRetry(
-  () => import("@/app/routes/pricing-page").then((module) => ({
-    default: module.PricingPage,
-  })),
-  "PricingPage",
-);
-
-const FeaturesOverviewPage = lazyRetry(
-  () => import("@/domains/marketing/FeaturesOverviewPage").then((module) => ({
-    default: module.FeaturesOverviewPage,
-  })),
-  "FeaturesOverviewPage",
-);
-
-const EventsHubPage = lazyRetry(
-  () => import("@/domains/marketing/events/EventsHubPage").then((module) => ({
-    default: module.EventsHubPage,
-  })),
-  "EventsHubPage",
-);
-
-const BetaOpenEventPage = lazyRetry(
-  () => import("@/domains/marketing/events/BetaOpenEventPage").then((module) => ({
-    default: module.BetaOpenEventPage,
-  })),
-  "BetaOpenEventPage",
-);
-
-const StudioWorkspacePage = lazyRetry(
-  () => import("@/domains/creator/workspace/StudioWorkspacePage").then((module) => ({ default: module.StudioWorkspacePage })),
-  "StudioWorkspacePage",
-);
-
-const StudioIntroductionPage = lazyRetry(
-  () => import("@/domains/marketing/CreatorHomeExperience").then((module) => ({ default: module.CreatorHomeExperience })),
-  "StudioIntroductionPage",
-);
-
-const IrPitchPage = lazyRetry(
-  () => import("@/domains/marketing/IrPitchPage").then((module) => ({
-    default: module.IrPitchPage,
-  })),
-  "IrPitchPage",
-);
-
-const IrPresentPage = lazyRetry(
-  () => import("@/domains/marketing/IrPresentPage").then((module) => ({
-    default: module.IrPresentPage,
-  })),
-  "IrPresentPage",
-);
+import {
+  BetaOpenEventPage,
+  BrandFilmPage,
+  ComicIntroHost,
+  EventsHubPage,
+  FeaturesOverviewPage,
+  IrPitchPage,
+  IrPresentPage,
+  MembershipPolicyPage,
+  PricingPage,
+  ProductTourPage,
+  PromoVideoLibraryPage,
+  StudioIntroductionPage,
+  StudioWorkspacePage,
+  WorkspaceHomeRoute,
+} from "./marketing-route-pages";
 
 export const marketingRoutes = defineAppRoutes([
   { id: "marketing-studio-introduction", path: "/about/studio", element: <StudioIntroductionPage /> },

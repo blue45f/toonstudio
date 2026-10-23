@@ -5758,31 +5758,11 @@ export function StudioCuttoonEditor({
         typeof importer.importAndCommitStudioBrushProgramFile
       >>;
       switch (format) {
-        case "myb":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "myb", product.repository,
-          );
-          break;
-        case "kpp":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "kpp", product.repository,
-          );
-          break;
-        case "sut":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "sut", product.repository,
-          );
-          break;
-        case "sutg":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "sutg", product.repository,
-          );
-          break;
-        case "bundle":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "bundle", product.repository,
-          );
-          break;
+        case "myb": committed = await importer.importAndCommitStudioBrushProgramFile(file, "myb", product.repository); break;
+        case "kpp": committed = await importer.importAndCommitStudioBrushProgramFile(file, "kpp", product.repository); break;
+        case "sut": committed = await importer.importAndCommitStudioBrushProgramFile(file, "sut", product.repository); break;
+        case "sutg": committed = await importer.importAndCommitStudioBrushProgramFile(file, "sutg", product.repository); break;
+        case "bundle": committed = await importer.importAndCommitStudioBrushProgramFile(file, "bundle", product.repository); break;
       }
       if (committed.saved.savedCount === 0) {
         setError(t("studio.hostStatus.brushNoNewItems", "브러시 파일에 새로 저장할 항목이 없어요."));
@@ -5796,8 +5776,14 @@ export function StudioCuttoonEditor({
       );
       openBrushLibraryFromMenu();
     } catch (caught) {
+      // A4 D4 (R14): 브러시 팩 생산자는 구조화 코드만 방출하므로, 이 표시
+      // 지점에서 리졸버로 해석한다(리졸버는 가벼워 동적 import로 경계 유지).
+      const { resolveStudioBrushPackErrorFromCause } = await import(
+        "./status-i18n/studio-producer-error-i18n-brush"
+      );
       setError(
-        caught instanceof Error ? caught.message : t("studio.hostStatus.brushPresetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요."),
+        resolveStudioBrushPackErrorFromCause(caught)
+        ?? (caught instanceof Error ? caught.message : t("studio.hostStatus.brushPresetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요.")),
       );
     } finally {
       setBrushPackImporting(false);

@@ -220,3 +220,18 @@ it("마켓 홈은 구매 밴드 → 탐색 밴드 → 판매자 밴드 → 안�
   expect(within(sell).getByRole("link", { name: "소재 공유하기" }).getAttribute("href")).toBe("/market/publish");
   expect(within(sell).getByRole("link", { name: "Studio에서 공유" }).getAttribute("href")).toBe("/studio?assetMarket=community&communityView=share");
 });
+
+it("웹툰 5대 공정별 필수 에셋 스타터 가이드를 통해 공정별 필터 탐색과 Fit Lab으로 바로 연결한다", () => {
+  useResources.mockReturnValue(marketPage());
+  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+
+  const starterSection = screen.getByRole("region", { name: "웹툰 5대 공정별 필수 에셋 스타터 가이드" });
+  expect(starterSection).toBeTruthy();
+  expect(within(starterSection).getByRole("link", { name: /원고 위 시험 \(Fit Lab\) 바로가기/u }).getAttribute("href"))
+    .toBe("/market/fit-lab");
+  expect(within(starterSection).getByRole("link", { name: /3D 배경 소재 보기/u }).getAttribute("href"))
+    .toBe("/market/browse?kind=3d-asset");
+  expect(within(starterSection).getByRole("link", { name: /선화·펜 소재 보기/u }).getAttribute("href"))
+    .toBe("/market/browse?kind=brush");
+});
+

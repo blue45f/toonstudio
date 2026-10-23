@@ -1,5 +1,6 @@
 import type { StudioMarketplaceImageAsset } from "./studio-marketplace-assets";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
+import { frozenD1Text } from "./status-i18n/studio-frozen-d1-status-i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -180,21 +181,35 @@ function hasExactCreatorMarketplacePublicEvidence(
     && creatorMarketplaceStudioPackId(current) === creatorMarketplaceStudioPackId(expected);
 }
 
+type PublicRevalidationAction = "localInstall" | "assetInsert";
+
+function publicRevalidationActionLabel(action: PublicRevalidationAction): string {
+  return action === "localInstall"
+    ? frozenD1Text("studio.frozenD1.community.actionLocalInstall", "로컬 설치를")
+    : frozenD1Text("studio.frozenD1.community.actionAssetInsert", "에셋 삽입을");
+}
+
+class PublicRevalidationError extends Error {} // 상품명이 든 완결 문장이라 설치 실패 표시에서 이름을 다시 붙이지 않는다.
 function publicRevalidationError(
   record: CreatorMarketplaceResourceRecord,
-  actionLabel: string,
+  action: PublicRevalidationAction,
   caught: unknown,
 ): Error {
+  const actionLabel = publicRevalidationActionLabel(action);
   if (caught instanceof NotFoundError) {
-    return new Error(
-      `${record.name}은(는) 더 이상 공개 상태를 확인할 수 없어 ${actionLabel}을(를) 중단했습니다. `
-      + "관리자 숨김, 배급자 목록 내림 또는 배급자 계정 상태 변경일 수 있습니다. 공개 목록을 새로고침한 뒤 다시 시도해 주세요.",
-    );
+    return new PublicRevalidationError(frozenD1Text(
+      "studio.frozenD1.community.revalidationNotFound",
+      { name: record.name, action: actionLabel },
+      "{name}의 공개 상태를 더 이상 확인할 수 없어 {action} 중단했습니다. 관리자 숨김, 배급자 목록 내림 또는 배급자 계정 상태 변경일 수 있습니다. 공개 목록을 새로고침한 뒤 다시 시도해 주세요."));
   }
-  return new Error(
-    `${record.name}의 현재 공개 상태를 다시 확인하지 못해 ${actionLabel}을(를) 안전하게 중단했습니다. `
-    + `${errorText(caught, "네트워크 상태를 확인해 주세요.")} 다시 시도해 주세요.`,
-  );
+  return new PublicRevalidationError(frozenD1Text(
+    "studio.frozenD1.community.revalidationUnconfirmed",
+    {
+      name: record.name,
+      action: actionLabel,
+      detail: errorText(caught, frozenD1Text("studio.frozenD1.community.revalidationDetailFallback", "네트워크 상태를 확인해 주세요.")),
+    },
+    "{name}의 현재 공개 상태를 다시 확인하지 못해 {action} 안전하게 중단했습니다. {detail} 다시 시도해 주세요."));
 }
 
 type StudioCommunityT = (key: string, fallback?: string) => string;
@@ -679,7 +694,7 @@ function CommunityRecordCard({
   }, [publicEvidenceKey]);
 
   async function revalidateExactPublicRecord(
-    actionLabel: string,
+    action: PublicRevalidationAction,
     controller: AbortController,
     generation: number,
   ): Promise<CreatorMarketplaceResourceRecord | null> {
@@ -691,17 +706,17 @@ function CommunityRecordCard({
         controller.signal.aborted
         || publicActionGenerationRef.current !== generation
       ) return null;
-      throw publicRevalidationError(record, actionLabel, caught);
+      throw publicRevalidationError(record, action, caught);
     }
     if (
       controller.signal.aborted
       || publicActionGenerationRef.current !== generation
     ) return null;
     if (!hasExactCreatorMarketplacePublicEvidence(record, current)) {
-      throw new Error(
-        `${record.name}의 현재 공개 릴리스 증거가 이 카드와 달라 ${actionLabel}을(를) 중단했습니다. `
-        + "공개 목록을 새로고침한 뒤 정확한 최신 릴리스에서 다시 시도해 주세요.",
-      );
+      throw new PublicRevalidationError(frozenD1Text(
+        "studio.frozenD1.community.revalidationEvidenceChanged",
+        { name: record.name, action: publicRevalidationActionLabel(action) },
+        "{name}의 현재 공개 릴리스 증거가 이 카드와 달라 {action} 중단했습니다. 공개 목록을 새로고침한 뒤 정확한 최신 릴리스에서 다시 시도해 주세요."));
     }
     return current;
   }
@@ -780,7 +795,7 @@ function CommunityRecordCard({
     try {
       if (publicGeneration !== null && publicController) {
         const current = await revalidateExactPublicRecord(
-          "로컬 설치",
+          "localInstall",
           publicController,
           publicGeneration,
         );
@@ -835,10 +850,9 @@ function CommunityRecordCard({
       onInstallStateChanged();
     } catch (caught: unknown) {
       if (cloudOperationGenerationRef.current !== operationGeneration) return;
-      onStatus(
-        `${record.name} · ${errorText(caught, "로컬 설치 작업을 완료하지 못했습니다.")}`,
-        true,
-      );
+      onStatus(caught instanceof PublicRevalidationError
+        ? caught.message
+        : `${record.name} · ${errorText(caught, "로컬 설치 작업을 완료하지 못했습니다.")}`, true);
     } finally {
       if (publicActionControllerRef.current === publicController) {
         publicActionControllerRef.current = null;
@@ -917,7 +931,7 @@ function CommunityRecordCard({
     setPublicActionPending("asset");
     try {
       const current = await revalidateExactPublicRecord(
-        "에셋 삽입",
+        "assetInsert",
         controller,
         generation,
       );

@@ -37,6 +37,13 @@ describe("학습 홈 탭 구성", () => {
     expect(hrefs).toContain("/learn/classroom");
     // 예전 자료 카드의 중복(같은 목적지 두 번)이 없다.
     expect(new Set(hrefs).size).toBe(hrefs.length);
+
+    // 1클릭 목표 프리셋으로 학습 목표를 즉시 바꿀 수 있다.
+    const goalGroup = screen.getByRole("group", { name: "빠른 학습 목표 선택" });
+    fireEvent.click(within(goalGroup).getByRole("button", { name: "툰스튜디오 빠른 적응" }));
+    expect(
+      within(goalGroup).getByRole("button", { name: "툰스튜디오 빠른 적응" }).getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 
   it("공유된 섹션 앵커와 강좌 필터 주소는 해당 탭으로 바로 열린다", async () => {

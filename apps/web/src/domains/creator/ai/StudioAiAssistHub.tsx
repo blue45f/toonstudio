@@ -31,6 +31,7 @@ import {
   type StudioAiRecentPromptsState,
 } from "./studio-ai-assist-ux";
 import { planStudioAiExecutionPreflight } from "./studio-ai-execution-preflight";
+import { ClaudeAssistHubEntry } from "./claude/ClaudeAssistHubEntry";
 import { StudioAiProductionLaunchpad } from "./StudioAiProductionLaunchpad";
 
 import type { KeyboardEvent as ReactKeyboardEvent, ReactElement, ReactNode } from "react";
@@ -230,6 +231,8 @@ export function StudioAiAssistHub({
         scenarioDisabled={scenarioDisabled}
         scenarioDisabledReason={scenarioDisabledReason}
       />
+
+      <ClaudeAssistHubEntry onOpenSettings={onOpenSettings} onPreloadSettings={onPreloadSettings} />
 
       {providerSlot ? <div className="shrink-0">{providerSlot}</div> : null}
 

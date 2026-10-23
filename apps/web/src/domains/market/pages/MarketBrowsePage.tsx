@@ -20,6 +20,7 @@ import { MarketFamilyPicker } from "../components/MarketFamilyPicker";
 import { MarketViewToggle } from "../components/MarketViewToggle";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketSentenceSearch } from "../components/MarketSentenceSearch";
+import { MARKET_COMPARE_MAX_ITEMS, useMarketCompare } from "../hooks/use-market-compare";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
@@ -59,6 +60,25 @@ import "../components/market-atelier.css";
 
 const PAGE_SIZE = 12;
 
+interface ProcessPresetFilter {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly kind: string | null;
+  readonly tag: string | null;
+  readonly license: string | null;
+}
+
+const PROCESS_PRESET_FILTERS: readonly ProcessPresetFilter[] = [
+  { id: "all", labelKo: "전체 공정", labelEn: "All stages", kind: null, tag: null, license: null },
+  { id: "3d-bg", labelKo: "3D 배경·소품", labelEn: "3D backgrounds & props", kind: "3d-asset", tag: null, license: null },
+  { id: "line-brush", labelKo: "선화·펜 브러시", labelEn: "Line-art & pen brushes", kind: "brush", tag: null, license: null },
+  { id: "pose-char", labelKo: "포즈·캐릭터", labelEn: "Poses & characters", kind: "3d-preset", tag: null, license: null },
+  { id: "color-tone", labelKo: "채색·톤·텍스처", labelEn: "Color, tone & textures", kind: "palette", tag: null, license: null },
+  { id: "lettering", labelKo: "식자·말풍선", labelEn: "Lettering & balloons", kind: "template", tag: null, license: null },
+  { id: "free-cc0", labelKo: "무료/즉시 사용", labelEn: "Free / CC0 ready", kind: null, tag: null, license: "cc0-1.0" },
+] as const;
+
 /** 세부 조건(라이선스) 목록의 선택 버튼. */
 function filterChipClass(active: boolean): string {
   return cn(
@@ -72,6 +92,7 @@ function filterChipClass(active: boolean): string {
 
 export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boolean } = {}) {
   const t = useBilingual("MarketBrowsePage");
+  const { compareCount, clearCompare } = useMarketCompare();
   const marketBrowseDescription = t(
     "웹툰 템플릿, 2D·3D 에셋, 브러시, 팔레트와 필터를 제작 목적과 사용권으로 찾아보세요.",
     "Find webtoon templates, 2D/3D assets, brushes, palettes, and filters by production purpose and license.",
@@ -258,9 +279,79 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       </section>
 
       <Container size="wide" className="py-6 sm:py-8">
+        {compareCount > 0 ? (
+          <div
+            data-market-compare-tray-banner="true"
+            className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/50 bg-accent-soft/20 px-4 py-3 shadow-sm"
+          >
+            <p className="text-sm font-bold text-fg">
+              {t(
+                `선택한 에셋 ${compareCount}/${MARKET_COMPARE_MAX_ITEMS}개`,
+                `Selected assets ${compareCount}/${MARKET_COMPARE_MAX_ITEMS}`,
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={clearCompare}
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-9" })}
+              >
+                {t("비교함 비우기", "Clear comparison tray")}
+              </button>
+              <Link
+                href="/market/compare"
+                className={buttonClass({ variant: "solid", size: "sm", className: "min-h-9" })}
+              >
+                {t("나란히 비교하기", "Compare side by side")}
+              </Link>
+            </div>
+          </div>
+        ) : null}
         <ListTemplate
           filters={
             <>
+        <section
+          aria-label={t("웹툰 제작 공정별 원클릭 프리셋", "Webtoon production stage presets")}
+          className="mb-4 rounded-2xl border border-line bg-card/70 p-3"
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-xs font-bold text-fg-3">
+              {t("공정별 프리셋:", "Stage presets:")}
+            </span>
+            {PROCESS_PRESET_FILTERS.map((preset) => {
+              const selected =
+                preset.id === "all"
+                  ? !activeKind && !query.tag && !activeLicense
+                  : preset.id === "free-cc0"
+                    ? activeLicense === "cc0-1.0" && !activeKind
+                    : activeKind === preset.kind && (preset.tag ? query.tag === preset.tag : !query.tag);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={selected}
+                  data-market-process-preset={preset.id}
+                  onClick={() =>
+                    patchParams({
+                      kind: preset.kind,
+                      tag: preset.tag,
+                      license: preset.license,
+                    })
+                  }
+                  className={cn(
+                    "min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors",
+                    selected
+                      ? "border-accent bg-accent text-on-accent"
+                      : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {t(preset.labelKo, preset.labelEn)}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <section aria-labelledby="market-work-family-title">
           <h2 id="market-work-family-title" className="text-sm font-bold text-fg">{t("어떤 리소스가 필요한가요?", "What kind of resource do you need?")}</h2>
           <p className="mt-1 text-sm text-fg-2 max-sm:sr-only">{t("한 번 선택하면 그 작업군에 필요한 세부 카테고리만 아래에 보여줍니다.", "Once selected, only the subcategories for that work family are shown below.")}</p>

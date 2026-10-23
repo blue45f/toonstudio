@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildLocalWebtoonPaletteSuggestion,
   buildPaletteSuggestPrompt,
   PALETTE_SUGGEST_MAX_COLORS,
   PALETTE_SUGGEST_MAX_PARSED,
@@ -139,4 +140,15 @@ describe("parsePaletteSuggestResponse", () => {
     if (!result.ok) return;
     expect(result.data.colors).toHaveLength(PALETTE_SUGGEST_MAX_PARSED);
   });
+
+  it("buildLocalWebtoonPaletteSuggestion returns a genre-matched 6-color webtoon palette", () => {
+    const noir = buildLocalWebtoonPaletteSuggestion("스릴러, 어둡고 차가운 밤거리");
+    expect(noir.colors).toHaveLength(6);
+    expect(noir.name).toContain("다크 느와르");
+
+    const romance = buildLocalWebtoonPaletteSuggestion("청춘 로맨스 파스텔톤 봄날");
+    expect(romance.colors).toHaveLength(6);
+    expect(romance.name).toContain("소프트 파스텔");
+  });
 });
+

@@ -43,9 +43,28 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
               data-space-theme={theme.key}
               onClick={() => onChange(theme.key)}
             >
-              <span className="studio-theme-picker__thumb" style={{ background: swatch.gradientCss }} aria-hidden>
+              <span
+                className="studio-theme-picker__thumb"
+                data-floor-pattern={swatch.floorPattern}
+                style={{ background: swatch.gradientCss }}
+                aria-hidden
+              >
+                <span className="studio-theme-picker__window" />
+                <span className="studio-theme-picker__badge">
+                  {bt(theme.badgeKo, theme.badgeEn)}
+                </span>
                 <span className="studio-theme-picker__wall" style={{ background: swatch.wall }} />
-                <span className="studio-theme-picker__floor" style={{ background: swatch.floor }} />
+                <span
+                  className="studio-theme-picker__floor"
+                  style={{
+                    backgroundColor: swatch.floor,
+                    backgroundImage: `repeating-linear-gradient(90deg, transparent 0 10px, ${swatch.floorAccent}33 10px 12px)`,
+                  }}
+                />
+                <span
+                  className="studio-theme-picker__desk"
+                  style={{ background: swatch.desk, borderColor: swatch.accent }}
+                />
                 <span className="studio-theme-picker__accent" style={{ background: swatch.accent }} />
               </span>
               <span className="studio-theme-picker__copy">

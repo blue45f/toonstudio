@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { SectionArt } from "@/shared/components/section-art";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { resolveStudioBg3dGlbErrorFromCause } from "../status-i18n/studio-producer-error-i18n-glb";
 import { downloadConversion, prepareCharacterImage } from "./conversion-browser";
 import { CHARACTER_VIEWS, CONVERSION_STYLES, DEFAULT_CONVERSION_SETTINGS, PASS_LABELS, QUALITY_PROFILES, VIEW_LABELS, validateReferenceSet, type CharacterRender, type CharacterView, type ConversionSettings, type PreparedCharacterImage, type RenderPass, type ShapeEngine } from "./conversion-contract";
 import { buildCharacterKit } from "./conversion-kit";
@@ -62,7 +63,7 @@ export function StudioCharacterConversionPage() {
     if (active.current) return;
     const controller = new AbortController(); active.current = controller; setBusy(true); setError(undefined);
     try { await action(controller.signal); }
-    catch (cause) { if (active.current === controller) { if (controller.signal.aborted) setStatus(bt("취소했습니다. 원본 파일은 변경하지 않았습니다.", "Cancelled. The original files were not changed.")); else setError(cause instanceof Error ? cause.message : bt("작업을 완료하지 못했습니다.", "Couldn't finish the task.")); } }
+    catch (cause) { if (active.current === controller) { if (controller.signal.aborted) setStatus(bt("취소했습니다. 원본 파일은 변경하지 않았습니다.", "Cancelled. The original files were not changed.")); else setError(resolveStudioBg3dGlbErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : bt("작업을 완료하지 못했습니다.", "Couldn't finish the task."))); } }
     finally { if (active.current === controller) { active.current = null; setBusy(false); } }
   }
   async function prepare(signal: AbortSignal) {

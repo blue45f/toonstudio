@@ -195,6 +195,10 @@ export interface StudioShared3dSourceLayer {
   readonly hidden?: boolean;
 }
 
+export type StudioShared3dSourceLayerVisibilityErrorCode =
+  | "captureReceiptInvalid"
+  | "capturedLayerChanged";
+
 export type StudioShared3dSourceLayerVisibilityPlan<T extends StudioShared3dSourceLayer> =
   | {
       readonly ok: true;
@@ -203,7 +207,8 @@ export type StudioShared3dSourceLayerVisibilityPlan<T extends StudioShared3dSour
     }
   | {
       readonly ok: false;
-      readonly message: string;
+      readonly code: StudioShared3dSourceLayerVisibilityErrorCode;
+      readonly params?: Readonly<Record<string, string>>;
     };
 
 export type StudioShared3dCharacterTransformPlan<T extends StudioShared3dSourceLayer> =
@@ -609,10 +614,7 @@ export function planStudioShared3dCapturedSourceLayerVisibility<
     new Set(capturedElementIds).size !== capturedElementIds.length ||
     capturedElementIds.some((id) => !safeElementId(id))
   ) {
-    return Object.freeze({
-      ok: false as const,
-      message: "연결 캐릭터 캡처 확인 정보가 올바르지 않아 원본 레이어를 유지했어요.",
-    });
+    return Object.freeze({ ok: false as const, code: "captureReceiptInvalid" as const });
   }
 
   const captured = new Set(capturedElementIds);
@@ -630,10 +632,7 @@ export function planStudioShared3dCapturedSourceLayerVisibility<
         && !(source.hidden === true && reusableHiddenElementIds?.has(id))
       )
     ) {
-      return Object.freeze({
-        ok: false as const,
-        message: "연결된 3D 캐릭터 레이어가 바뀌었거나 잠겨 있어 원본을 숨기지 않았어요.",
-      });
+      return Object.freeze({ ok: false as const, code: "capturedLayerChanged" as const });
     }
   }
 

@@ -29,8 +29,11 @@ describe("creator home experience contracts", () => {
     expect(source).toContain("<CreatorHomeExperience />");
     expect(source).not.toContain("<StudioWorkspacePage");
     const routes = readFileSync("apps/web/src/app/routes/groups/marketing.routes.tsx", "utf8");
+    // lazy 선언은 route-group 줄 수 상한 때문에 marketing-route-pages.ts 가 소유한다.
+    const pages = readFileSync("apps/web/src/app/routes/groups/marketing-route-pages.ts", "utf8");
     expect(routes).toContain('path: "/about/studio"');
-    expect(routes).toContain('default: module.CreatorHomeExperience');
+    expect(routes).toContain('path: "/about/studio", element: <StudioIntroductionPage />');
+    expect(pages).toContain('default: module.CreatorHomeExperience');
     expect(source).not.toContain("CreatorHubEntry");
     expect(source).toContain('pathname: "/about/studio"');
   });

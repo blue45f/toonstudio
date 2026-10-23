@@ -195,7 +195,6 @@ describe("generic 3D model manifest", () => {
     const failure: StudioBg3dGlbValidationFailure = {
       ok: false,
       code: "triangle-budget-exceeded",
-      message: "기기 삼각형 예산을 초과했습니다.",
     };
     const manifest = createStudioGeneric3dGlbManifest({
       name: "oversized.glb",
@@ -204,6 +203,8 @@ describe("generic 3D model manifest", () => {
     });
 
     expect(manifest.admission.status).toBe("blocked");
+    // A4 D4 (R11): 집계 경계에서 코드를 해석해 이관 전 생산자 원문과 같은 문구가 실린다.
+    expect(manifest.admission.message).toBe("이 기기의 삼각형 수 기준을 초과했습니다. 메시를 경량화해 주세요.");
     expect(manifest.rigStatus).toBe("unverified");
     expect(manifest.classification).toBe("creature");
     expect(manifest.classificationSource).toBe("manual");

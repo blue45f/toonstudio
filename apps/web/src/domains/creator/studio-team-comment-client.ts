@@ -14,7 +14,19 @@ import {
   type StudioCommentsDocument,
 } from "./studio-comments";
 
+import {
+  StudioTeamCommentInputError,
+  StudioTeamCommentResponseContractError,
+  type StudioTeamCommentErrorCode,
+} from "./status-i18n/studio-team-comment-error";
+
 import { api, toApiError } from "@/platform/api";
+
+export {
+  StudioTeamCommentInputError,
+  StudioTeamCommentResponseContractError,
+  type StudioTeamCommentErrorCode,
+} from "./status-i18n/studio-team-comment-error";
 
 const TEAM_COMMENTS_BASE = "/creator/works";
 const MAX_WORK_ID_LENGTH = 160;
@@ -386,27 +398,9 @@ export type ReanchorStudioTeamCommentThreadInput = z.input<
   typeof ReanchorStudioTeamCommentThreadInputSchema
 >;
 
-export class StudioTeamCommentResponseContractError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StudioTeamCommentResponseContractError";
-  }
-}
-
-export class StudioTeamCommentInputError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StudioTeamCommentInputError";
-  }
-}
-
 export function createStudioTeamCommentMutationId(): string {
   const generated = globalThis.crypto?.randomUUID?.();
-  if (!generated) {
-    throw new StudioTeamCommentInputError(
-      "이 브라우저에서는 안전한 댓글 요청 식별자를 만들 수 없습니다."
-    );
-  }
+  if (!generated) throw new StudioTeamCommentInputError("mutationIdUnavailable");
   return generated;
 }
 
@@ -416,15 +410,15 @@ export function isStudioTeamCommentResponseContractError(
   return error instanceof StudioTeamCommentResponseContractError;
 }
 
-function parseInput<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
+function parseInput<T>(schema: z.ZodType<T>, value: unknown, code: StudioTeamCommentErrorCode): T {
   const parsed = schema.safeParse(value);
-  if (!parsed.success) throw new StudioTeamCommentInputError(message);
+  if (!parsed.success) throw new StudioTeamCommentInputError(code);
   return parsed.data;
 }
 
-function parseResponse<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
+function parseResponse<T>(schema: z.ZodType<T>, value: unknown, code: StudioTeamCommentErrorCode): T {
   const parsed = schema.safeParse(value);
-  if (!parsed.success) throw new StudioTeamCommentResponseContractError(message);
+  if (!parsed.success) throw new StudioTeamCommentResponseContractError(code);
   return parsed.data;
 }
 
@@ -437,19 +431,11 @@ function commentThreadPath(workId: string, threadId: string): string {
 }
 
 function canonicalWorkId(value: string): string {
-  return parseInput(
-    StudioTeamCommentWorkIdSchema,
-    value,
-    "댓글을 연결할 작품 ID가 올바르지 않습니다."
-  );
+  return parseInput(StudioTeamCommentWorkIdSchema, value, "invalidWorkId");
 }
 
 function canonicalThreadId(value: string): string {
-  return parseInput(
-    StudioTeamCommentOpaqueIdSchema,
-    value,
-    "댓글 스레드 ID가 올바르지 않습니다."
-  );
+  return parseInput(StudioTeamCommentOpaqueIdSchema, value, "invalidThreadId");
 }
 
 async function requestStudioTeamComment<T>({
@@ -457,14 +443,14 @@ async function requestStudioTeamComment<T>({
   schema,
   validateScope,
   fallback,
-  contractMessage,
+  contractCode,
   signal,
 }: {
   run: () => Promise<unknown>;
   schema: z.ZodType<T>;
   validateScope?: (response: T) => boolean;
   fallback: string;
-  contractMessage: string;
+  contractCode: StudioTeamCommentErrorCode;
   signal?: AbortSignal;
 }): Promise<T> {
   let payload: unknown;
@@ -474,11 +460,9 @@ async function requestStudioTeamComment<T>({
     if (signal?.aborted) throw error;
     throw await toApiError(error, fallback);
   }
-  const response = parseResponse(schema, payload, contractMessage);
+  const response = parseResponse(schema, payload, contractCode);
   if (validateScope && !validateScope(response)) {
-    throw new StudioTeamCommentResponseContractError(
-      "다른 작품 또는 댓글 스레드의 응답을 받았습니다."
-    );
+    throw new StudioTeamCommentResponseContractError("contractScopeMismatch");
   }
   return response;
 }
@@ -489,11 +473,7 @@ export async function listStudioTeamComments(
   signal?: AbortSignal
 ): Promise<StudioTeamCommentListResponse> {
   const workId = canonicalWorkId(workIdValue);
-  const query = parseInput(
-    ListStudioTeamCommentsOptionsSchema,
-    options,
-    "댓글 목록 조건이 올바르지 않습니다."
-  );
+  const query = parseInput(ListStudioTeamCommentsOptionsSchema, options, "invalidListOptions");
   const response = await requestStudioTeamComment({
     run: () =>
       api.get<unknown>(commentCollectionPath(workId), {
@@ -508,16 +488,14 @@ export async function listStudioTeamComments(
     schema: ListStudioTeamCommentsResponseSchema,
     validateScope: (response) => response.workId === workId,
     fallback: "팀 댓글을 불러오지 못했습니다.",
-    contractMessage: "팀 댓글 목록 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractListResponse",
     signal,
   });
   if (
     response.items.length > query.limit
     || response.items.some((thread) => thread.messages.length > query.messageLimit)
   ) {
-    throw new StudioTeamCommentResponseContractError(
-      "요청한 댓글 페이지 범위를 벗어난 응답을 받았습니다."
-    );
+    throw new StudioTeamCommentResponseContractError("contractPageRangeExceeded");
   }
   return response;
 }
@@ -530,11 +508,7 @@ export async function getStudioTeamCommentThread(
 ): Promise<StudioTeamCommentThread> {
   const workId = canonicalWorkId(workIdValue);
   const threadId = canonicalThreadId(threadIdValue);
-  const options = parseInput(
-    GetStudioTeamCommentThreadOptionsSchema,
-    optionsValue,
-    "댓글 상세 조회 조건이 올바르지 않습니다."
-  );
+  const options = parseInput(GetStudioTeamCommentThreadOptionsSchema, optionsValue, "invalidThreadOptions");
   const response = await requestStudioTeamComment({
     run: () => api.get<unknown>(commentThreadPath(workId, threadId), {
       params: { messageLimit: options.messageLimit },
@@ -543,13 +517,11 @@ export async function getStudioTeamCommentThread(
     schema: StudioTeamCommentThreadSchema,
     validateScope: (thread) => thread.workId === workId && thread.id === threadId,
     fallback: "팀 댓글을 불러오지 못했습니다.",
-    contractMessage: "팀 댓글 상세 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractThreadResponse",
     signal,
   });
   if (response.messages.length > options.messageLimit) {
-    throw new StudioTeamCommentResponseContractError(
-      "요청한 댓글 메시지 범위를 벗어난 응답을 받았습니다."
-    );
+    throw new StudioTeamCommentResponseContractError("contractMessageRangeExceeded");
   }
   return response;
 }
@@ -588,34 +560,24 @@ export async function listAllStudioTeamComments(
         || capabilities.resolve !== page.capabilities.resolve
         || (capabilities.reanchor ?? false) !== (page.capabilities.reanchor ?? false))
     ) {
-      throw new StudioTeamCommentResponseContractError(
-        "댓글 목록을 불러오는 동안 팀 권한이 변경되었습니다."
-      );
+      throw new StudioTeamCommentResponseContractError("contractCapabilitiesChanged");
     }
     capabilities = page.capabilities;
     for (const thread of page.items) {
       if (thread.messagesTruncated || thread.messageCount !== thread.messages.length) {
-        throw new StudioTeamCommentResponseContractError(
-          "전체 댓글 기록이 포함되지 않은 응답을 받았습니다."
-        );
+        throw new StudioTeamCommentResponseContractError("contractIncompleteHistory");
       }
       if (threadIds.has(thread.id)) {
-        throw new StudioTeamCommentResponseContractError(
-          "페이지 사이에 중복된 댓글 스레드를 받았습니다."
-        );
+        throw new StudioTeamCommentResponseContractError("contractDuplicateThread");
       }
       threadIds.add(thread.id);
       items.push(thread);
       messageCount += thread.messageCount;
       if (items.length > MAX_COMPLETE_SNAPSHOT_THREADS) {
-        throw new StudioTeamCommentResponseContractError(
-          "팀 댓글 스냅샷이 지원 한도를 벗어났습니다."
-        );
+        throw new StudioTeamCommentResponseContractError("contractSnapshotThreadLimit");
       }
       if (messageCount > MAX_COMPLETE_SNAPSHOT_MESSAGES) {
-        throw new StudioTeamCommentResponseContractError(
-          "팀 댓글 메시지 스냅샷이 지원 한도를 벗어났습니다."
-        );
+        throw new StudioTeamCommentResponseContractError("contractSnapshotMessageLimit");
       }
     }
     if (page.nextCursor === null) {
@@ -623,18 +585,14 @@ export async function listAllStudioTeamComments(
       break;
     }
     if (cursors.has(page.nextCursor)) {
-      throw new StudioTeamCommentResponseContractError(
-        "댓글 페이지 커서가 순환했습니다."
-      );
+      throw new StudioTeamCommentResponseContractError("contractCursorCycle");
     }
     cursors.add(page.nextCursor);
     cursor = page.nextCursor;
   }
 
   if (!capabilities || !complete) {
-    throw new StudioTeamCommentResponseContractError(
-      "팀 댓글 전체 페이지를 안전한 범위 안에서 불러오지 못했습니다."
-    );
+    throw new StudioTeamCommentResponseContractError("contractSnapshotIncomplete");
   }
   items.sort((left, right) =>
     Date.parse(right.updatedAt) - Date.parse(left.updatedAt)
@@ -649,11 +607,7 @@ export async function createStudioTeamCommentThread(
   signal?: AbortSignal
 ): Promise<StudioTeamCommentThread> {
   const workId = canonicalWorkId(workIdValue);
-  const input = parseInput(
-    CreateStudioTeamCommentThreadInputSchema,
-    inputValue,
-    "새 댓글 내용 또는 연결 위치가 올바르지 않습니다."
-  );
+  const input = parseInput(CreateStudioTeamCommentThreadInputSchema, inputValue, "invalidCreateInput");
   const mutationId = input.mutationId ?? createStudioTeamCommentMutationId();
   const mentions = input.mentions
     ? studioCommentActorsToTeamCommentMentions(input.mentions)
@@ -673,7 +627,7 @@ export async function createStudioTeamCommentThread(
     schema: StudioTeamCommentThreadSchema,
     validateScope: (response) => response.workId === workId,
     fallback: "팀 댓글을 등록하지 못했습니다.",
-    contractMessage: "새 팀 댓글 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractCreateResponse",
     signal,
   });
 }
@@ -686,11 +640,7 @@ export async function addStudioTeamCommentReply(
 ): Promise<StudioTeamCommentReplyResponse> {
   const workId = canonicalWorkId(workIdValue);
   const threadId = canonicalThreadId(threadIdValue);
-  const input = parseInput(
-    AddStudioTeamCommentReplyInputSchema,
-    inputValue,
-    "답글 내용이 올바르지 않습니다."
-  );
+  const input = parseInput(AddStudioTeamCommentReplyInputSchema, inputValue, "invalidReplyInput");
   const mutationId = input.mutationId ?? createStudioTeamCommentMutationId();
   const mentions = input.mentions
     ? studioCommentActorsToTeamCommentMentions(input.mentions)
@@ -708,7 +658,7 @@ export async function addStudioTeamCommentReply(
     schema: AddStudioTeamCommentReplyResponseSchema,
     validateScope: (response) => response.threadId === threadId,
     fallback: "팀 댓글에 답글을 등록하지 못했습니다.",
-    contractMessage: "팀 댓글 답글 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractReplyResponse",
     signal,
   });
 }
@@ -721,11 +671,7 @@ export async function reanchorStudioTeamCommentThread(
 ): Promise<StudioTeamCommentReanchorResponse> {
   const workId = canonicalWorkId(workIdValue);
   const threadId = canonicalThreadId(threadIdValue);
-  const input = parseInput(
-    ReanchorStudioTeamCommentThreadInputSchema,
-    inputValue,
-    "댓글의 새 위치 또는 변경 기준이 올바르지 않습니다."
-  );
+  const input = parseInput(ReanchorStudioTeamCommentThreadInputSchema, inputValue, "invalidReanchorInput");
   const mutationId = input.mutationId ?? createStudioTeamCommentMutationId();
   return requestStudioTeamComment({
     run: () => api.post<unknown>(`${commentThreadPath(workId, threadId)}/reanchor`, {
@@ -738,7 +684,7 @@ export async function reanchorStudioTeamCommentThread(
     schema: ReanchorStudioTeamCommentResponseSchema,
     validateScope: (response) => response.threadId === threadId,
     fallback: "팀 댓글 위치를 변경하지 못했습니다.",
-    contractMessage: "팀 댓글 위치 변경 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractReanchorResponse",
     signal,
   });
 }
@@ -763,7 +709,7 @@ async function transitionStudioTeamCommentThread(
     fallback: action === "resolve"
       ? "팀 댓글을 해결 처리하지 못했습니다."
       : "팀 댓글을 다시 열지 못했습니다.",
-    contractMessage: "팀 댓글 상태 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractTransitionResponse",
     signal,
   });
 }
@@ -797,7 +743,7 @@ export async function markStudioTeamCommentRead(
     schema: ReadStudioTeamCommentResponseSchema,
     validateScope: (response) => response.threadId === threadId,
     fallback: "팀 댓글 읽음 상태를 저장하지 못했습니다.",
-    contractMessage: "팀 댓글 읽음 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractReadResponse",
     signal,
   });
 }
@@ -813,7 +759,7 @@ export async function markAllStudioTeamCommentsRead(
     schema: ReadAllStudioTeamCommentsResponseSchema,
     validateScope: (response) => response.workId === workId,
     fallback: "모든 팀 댓글을 읽음 처리하지 못했습니다.",
-    contractMessage: "팀 댓글 전체 읽음 응답 형식이 올바르지 않습니다.",
+    contractCode: "contractReadAllResponse",
     signal,
   });
 }
@@ -988,7 +934,7 @@ export function studioTeamCommentsOrLocalFallback(
   options: StudioTeamCommentLocalProjectionOptions
 ): StudioCommentsDocument {
   if (!StudioCommentsDocumentSchema.safeParse(localDocument).success) {
-    throw new StudioTeamCommentInputError("기존 로컬 댓글 문서가 올바르지 않습니다.");
+    throw new StudioTeamCommentInputError("invalidLocalDocument");
   }
   return studioTeamCommentsToLocalDocument(response, options) ?? localDocument;
 }

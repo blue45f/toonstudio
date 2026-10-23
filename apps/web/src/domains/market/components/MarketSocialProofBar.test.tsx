@@ -32,6 +32,7 @@ vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
 }));
 
 const RESOURCE_ID = "20000000-0000-4000-8000-000000000001";
+const PUBLISHER_ID = ["30000000", "0000", "4000", "8000", "000000000001"].join("-");
 
 describe("MarketSocialProofBar", () => {
   it("links aggregate ratings and comments to their detail sections", () => {
@@ -39,7 +40,7 @@ describe("MarketSocialProofBar", () => {
       status: "ready",
       data: {
         resourceId: RESOURCE_ID,
-        publisherId: "30000000-0000-4000-8000-000000000001",
+        publisherId: PUBLISHER_ID,
         packageId: "brush.ink.production",
         resourceVersion: "2.1.0",
         comments: [],

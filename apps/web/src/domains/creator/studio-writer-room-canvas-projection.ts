@@ -24,6 +24,7 @@ import {
   type StudioWriterRoomScene,
   type StudioWriterRoomSfx,
 } from "./studio-writer-room";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
 export const STUDIO_WRITER_ROOM_CANVAS_PROJECTION_VERSION = 1 as const;
 
@@ -428,7 +429,7 @@ function diagnoseDuplicateOrders<T extends { id: string; order: number }>(
     addDiagnostic(collector, {
       severity: "warning",
       code,
-      message: "같은 순서 값이 중복되어 ID 오름차순으로 안정적으로 정렬했어요.",
+      message: frozenStatus6Text("studio.frozenStatus6.writerProjection.duplicateSortOrder", "같은 순서 값이 중복되어 ID 오름차순으로 안정적으로 정렬했어요."),
       path: `${path}[${index}].order`,
       referenceId: firstId,
       ...context(item),
@@ -447,9 +448,8 @@ function diagnoseMissingCharacterIds(
   characterIds.forEach((characterId, index) => {
     if (roster.byId.has(characterId)) return;
     addDiagnostic(collector, {
-      severity: "error",
-      code: "CHARACTER_NOT_FOUND",
-      message: "캐릭터 바이블에서 참조한 캐릭터를 찾을 수 없어요.",
+      severity: "error", code: "CHARACTER_NOT_FOUND",
+      message: frozenStatus6Text("studio.frozenStatus6.writerProjection.characterNotFound", "캐릭터 바이블에서 참조한 캐릭터를 찾을 수 없어요."),
       path: `${path}[${index}]`,
       characterId,
       ...context,
@@ -711,7 +711,7 @@ function groupPages(
       addDiagnostic(collector, {
         severity: "warning",
         code: "PANEL_EXCEEDS_PAGE_HEIGHT_TARGET",
-        message: "패널 하나가 페이지 목표 높이보다 커서 단독 페이지로 유지했어요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.panelTallerThanPage", "패널 하나가 페이지 목표 높이보다 커서 단독 페이지로 유지했어요."),
         path: `pageGrouping.pages[${page.index}]`,
         ...(panelId ? { panelId } : {}),
       });
@@ -721,7 +721,7 @@ function groupPages(
       addDiagnostic(collector, {
         severity: "warning",
         code: "SCENE_SPLIT_ACROSS_PAGES",
-        message: "장면이 페이지 높이 또는 패널 수 한도를 넘어 다음 페이지로 이어져요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.sceneOverflow", "장면이 페이지 높이 또는 패널 수 한도를 넘어 다음 페이지로 이어져요."),
         path: `pageGrouping.pages[${page.index}]`,
         ...(sceneId ? { sceneId } : {}),
       });
@@ -787,7 +787,7 @@ function diagnoseSourceReferences(input: {
       addDiagnostic(collector, {
         severity: "warning",
         code: "SCENE_BEAT_NOT_FOUND",
-        message: "장면이 참조한 비트를 찾을 수 없어 캔버스에는 비트 정보 없이 전달해요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.beatNotFound", "장면이 참조한 비트를 찾을 수 없어 캔버스에는 비트 정보 없이 전달해요."),
         path: `stages.scenes.items[${sceneIndex}].beatIds[${beatIndex}]`,
         sceneId: scene.id,
         beatId,
@@ -809,7 +809,7 @@ function diagnoseSourceReferences(input: {
       addDiagnostic(collector, {
         severity: "error",
         code: "DIALOGUE_PANEL_ID_MISSING",
-        message: "대사를 배치할 패널 ID가 비어 있어요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.dialoguePanelIdEmpty", "대사를 배치할 패널 ID가 비어 있어요."),
         path: `stages.dialogue-sfx.dialogue[${dialogueIndex}].panelId`,
         dialogueId: dialogue.id,
       });
@@ -818,7 +818,7 @@ function diagnoseSourceReferences(input: {
       addDiagnostic(collector, {
         severity: "error",
         code: "DIALOGUE_PANEL_NOT_FOUND",
-        message: "대사가 참조한 패널을 찾을 수 없어요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.dialoguePanelNotFound", "대사가 참조한 패널을 찾을 수 없어요."),
         path: `stages.dialogue-sfx.dialogue[${dialogueIndex}].panelId`,
         dialogueId: dialogue.id,
         referenceId: dialogue.panelId,
@@ -842,7 +842,7 @@ function diagnoseSourceReferences(input: {
       addDiagnostic(collector, {
         severity: "error",
         code: "SFX_PANEL_ID_MISSING",
-        message: "효과음을 배치할 패널 ID가 비어 있어요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.sfxPanelIdEmpty", "효과음을 배치할 패널 ID가 비어 있어요."),
         path: `stages.dialogue-sfx.sfx[${sfxIndex}].panelId`,
         sfxId: sfx.id,
       });
@@ -851,7 +851,7 @@ function diagnoseSourceReferences(input: {
       addDiagnostic(collector, {
         severity: "error",
         code: "SFX_PANEL_NOT_FOUND",
-        message: "효과음이 참조한 패널을 찾을 수 없어요.",
+        message: frozenStatus6Text("studio.frozenStatus6.writerProjection.sfxPanelNotFound", "효과음이 참조한 패널을 찾을 수 없어요."),
         path: `stages.dialogue-sfx.sfx[${sfxIndex}].panelId`,
         sfxId: sfx.id,
         referenceId: sfx.panelId,
@@ -897,7 +897,7 @@ export function projectStudioWriterRoomToCanvasPlan(
     addDiagnostic(collector, {
       severity: "error",
       code: "NO_PANELS",
-      message: "캔버스로 보낼 패널 계획이 없어요.",
+      message: frozenStatus6Text("studio.frozenStatus6.writerProjection.noPanelPlan", "캔버스로 보낼 패널 계획이 없어요."),
       path: "stages.panel-plan.items",
     });
   }
@@ -905,7 +905,7 @@ export function projectStudioWriterRoomToCanvasPlan(
     addDiagnostic(collector, {
       severity: "error",
       code: "PANEL_PROJECTION_LIMIT_EXCEEDED",
-      message: "안전한 한 번 적용 한도를 넘은 패널이 있어 일부를 보류했어요.",
+      message: frozenStatus6Text("studio.frozenStatus6.writerProjection.applyLimitHeld", "안전한 한 번 적용 한도를 넘은 패널이 있어 일부를 보류했어요."),
       path: "stages.panel-plan.items",
     });
   }
@@ -925,7 +925,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "error",
           code: "PANEL_SCENE_ID_MISSING",
-          message: "패널에 연결된 장면 ID가 비어 있어요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.panelSceneIdEmpty", "패널에 연결된 장면 ID가 비어 있어요."),
           path: `stages.panel-plan.items[${panelIndex}].sceneId`,
           panelId: panel.id,
         });
@@ -933,7 +933,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "error",
           code: "PANEL_SCENE_NOT_FOUND",
-          message: "패널이 참조한 장면을 찾을 수 없어요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.panelSceneNotFound", "패널이 참조한 장면을 찾을 수 없어요."),
           path: `stages.panel-plan.items[${panelIndex}].sceneId`,
           panelId: panel.id,
           referenceId: panel.sceneId,
@@ -963,7 +963,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "error",
           code: "PANEL_DIALOGUE_LIMIT_EXCEEDED",
-          message: "한 패널의 안전한 대사 수 한도를 넘어 일부 대사를 보류했어요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.dialogueCapHeld", "한 패널의 안전한 대사 수 한도를 넘어 일부 대사를 보류했어요."),
           path: `stages.dialogue-sfx.dialogue(panel:${panel.id})`,
           panelId: panel.id,
         });
@@ -974,7 +974,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "warning",
           code: "DIALOGUE_EMPTY",
-          message: "빈 대사는 시나리오 말풍선 입력에서 제외했어요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.emptyDialogueExcluded", "빈 대사는 시나리오 말풍선 입력에서 제외했어요."),
           path: `stages.dialogue-sfx.dialogue(id:${line.id}).text`,
           panelId: panel.id,
           dialogueId: line.id,
@@ -1001,7 +1001,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "error",
           code: "PANEL_SFX_LIMIT_EXCEEDED",
-          message: "한 패널의 안전한 효과음 수 한도를 넘어 일부 효과음을 보류했어요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.sfxCapHeld", "한 패널의 안전한 효과음 수 한도를 넘어 일부 효과음을 보류했어요."),
           path: `stages.dialogue-sfx.sfx(panel:${panel.id})`,
           panelId: panel.id,
         });
@@ -1026,7 +1026,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "error",
           code: "PANEL_EMPTY",
-          message: "장면 설명, 동작, 대사, 효과음이 모두 비어 있는 패널이에요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.emptyPanel", "장면 설명, 동작, 대사, 효과음이 모두 비어 있는 패널이에요."),
           path: `stages.panel-plan.items[${panelIndex}]`,
           panelId: panel.id,
           ...(scene ? { sceneId: scene.id } : {}),
@@ -1055,7 +1055,7 @@ export function projectStudioWriterRoomToCanvasPlan(
         addDiagnostic(collector, {
           severity: "error",
           code: "DIALOGUE_LAYOUT_OVERFLOW",
-          message: "대사 말풍선 높이가 패널 최대 높이를 넘어 패널 분할이 필요해요.",
+          message: frozenStatus6Text("studio.frozenStatus6.writerProjection.balloonSplitNeeded", "대사 말풍선 높이가 패널 최대 높이를 넘어 패널 분할이 필요해요."),
           path: `stages.dialogue-sfx.dialogue(panel:${panel.id})`,
           panelId: panel.id,
           ...(scene ? { sceneId: scene.id } : {}),

@@ -1,7 +1,7 @@
 # 보안 advisory 예외 정책
 
 - 상태: **현재 보안 정책**
-- 최종 갱신: **2026-10-08**
+- 최종 갱신: **2026-10-24**
 
 `pnpm run audit:security`는 production·development dependency를 모든 severity에서 검사한다. 의존성 파일이
 바뀐 푸시의 pre-push 훅, 야간 진단(`main-full-qa-fast-diagnostics.yml`), `pnpm run verify:push`와 수동
@@ -39,12 +39,18 @@ Naver Login, coturn TURN REST, SVG processing mode의 공식 protocol 문서를 
 
 ## secret-scanning 검토
 
-hand-written diagnostic token과 test publisher UUID는 synthetic fixture로 확인해 `used_in_tests`로
+hand-written diagnostic token(#1)과 test publisher UUID(#2)는 synthetic fixture로 확인해 `used_in_tests`로
 종료했고 provider-neutral redaction string과 generated UUID로 교체했다.
 
-2026-09-17 OpenVSX token alert #3, #4, #5는 서로 다른 synthetic publisher UUID를 credential로 오인한
-false positive였다. path ignore를 넓히지 않고 fixture가 같은 UUID를 segment에서 조립하도록 바꾸고
-`false_positive`로 종료했다.
+2026-09-17~2026-10-24 OpenVSX token alert #3, #4, #5, #6, #7은 마켓 테스트·스타터 픽스처의 고정 게시자 UUID가
+`PUBLISHER` 문맥과 결합되어 credential로 오인된 false positive였다. path ignore를 넓히지 않고 모든 관련
+테스트 픽스처가 세그먼트 조립(`["...", ...].join("-")`) 또는 카탈로그 유도값을 사용하도록 정리했으며,
+GitHub alert #3~#7 모두 `false_positive`로 종료했다.
+
+2026-10-24 Cloudflare Account API Token alert #8(PR #2446 초기 본문 오입력)은 생성 직후 PR 본문에서 제거되었고
+Cloudflare API 검증에서 폐기(`Invalid API Token`, code 1000) 상태임을 확인한 뒤 `revoked`로 종료했다.
+아울러 `scripts/secretlint-files.mjs`(`pnpm run quality:secrets`)에 OpenVSX publisher UUID 리터럴·Cloudflare
+Account API Token·Stripe API Key 사전 차단 규칙을 추가해 푸시 전에 로컬에서 검출한다.
 
 새 예외를 추가하기보다 dependency 또는 code를 수정한다. 불가피한 protocol 예외는 정확한 발생 위치,
 data flow, 공식 protocol 근거, review date와 회귀 검사를 함께 기록한다.

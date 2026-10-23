@@ -227,6 +227,54 @@ function TemplatePreview({
   );
 }
 
+type TemplateSpecPreset =
+  | "all"
+  | "beginner"
+  | "webtoon-scroll"
+  | "shortform-square"
+  | "print-page";
+
+const SPEC_PRESETS: readonly {
+  readonly id: TemplateSpecPreset;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}[] = [
+  { id: "all", labelKo: "전체 규격", labelEn: "All specs" },
+  { id: "beginner", labelKo: "입문 추천", labelEn: "Beginner picks" },
+  { id: "webtoon-scroll", labelKo: "세로 스크롤 웹툰 (800px)", labelEn: "Vertical webtoon (800px)" },
+  { id: "shortform-square", labelKo: "인스타툰·숏폼 (1:1)", labelEn: "Instatoon & short-form (1:1)" },
+  { id: "print-page", labelKo: "출판·페이지 만화", labelEn: "Print & page manga" },
+] as const;
+
+function matchesSpecPreset(
+  template: StudioTemplateCatalogItem,
+  preset: TemplateSpecPreset,
+): boolean {
+  switch (preset) {
+    case "all":
+      return true;
+    case "beginner":
+      return template.difficulty === "easy";
+    case "webtoon-scroll":
+      return (
+        template.category === "webtoon" &&
+        !template.id.includes("four-panel")
+      );
+    case "shortform-square":
+      return (
+        template.id.includes("four-panel") ||
+        template.category === "promotion" ||
+        template.tags.some((tag) => tag.includes("4컷") || tag.includes("SNS"))
+      );
+    case "print-page":
+      return (
+        template.category === "storyboard" ||
+        template.category === "presentation" ||
+        template.category === "illustration"
+      );
+  }
+}
+
 /** 템플릿 레인(S2-6): 독립 시작 표면이 아니라 /create 시작 관문의 "템플릿에서" 레인이다.
  * URL(/studio/templates)은 유지하되, 관문으로 돌아가는 길을 상단에 두고 카드의
  * 주 행동을 "이 템플릿으로 시작"으로 삼는다(선택·구성 보기는 부수 행동). */
@@ -235,6 +283,7 @@ export function StudioTemplatesPage() {
   const language = useI18n((state) => state.lang);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StudioTemplateCategory>("all");
+  const [specPreset, setSpecPreset] = useState<TemplateSpecPreset>("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<readonly string[]>([]);
   const [selectedId, setSelectedId] = useState<string>(STUDIO_TEMPLATE_CATALOG[0]?.id ?? "");
@@ -244,12 +293,15 @@ export function StudioTemplatesPage() {
     setFavoriteIds(readStudioTemplateFavorites(window.localStorage));
   }, []);
 
-  const templates = useMemo(() => searchStudioTemplates({
-    text: query,
-    category,
-    favoriteIds,
-    favoritesOnly,
-  }), [category, favoriteIds, favoritesOnly, query]);
+  const templates = useMemo(() => {
+    const base = searchStudioTemplates({
+      text: query,
+      category,
+      favoriteIds,
+      favoritesOnly,
+    });
+    return base.filter((item) => matchesSpecPreset(item, specPreset));
+  }, [category, favoriteIds, favoritesOnly, query, specPreset]);
 
   const selected = useMemo(() => (
     templates.find((template) => template.id === selectedId)
@@ -268,7 +320,8 @@ export function StudioTemplatesPage() {
   };
 
   // 필터가 없을 때만 첫 카드로 고정한다(F3.2) — 검색·즐겨찾기 결과에는 끼워 넣지 않는다.
-  const showBlankCanvasCard = query === "" && category === "all" && !favoritesOnly;
+  const showBlankCanvasCard =
+    query === "" && category === "all" && specPreset === "all" && !favoritesOnly;
 
   const toggleFavorite = (templateId: string) => {
     setFavoriteIds((current) => {
@@ -356,6 +409,35 @@ export function StudioTemplatesPage() {
               {bt("즐겨찾기", "Favorites")}
             </button>
           </div>
+          <div
+            role="group"
+            aria-label={bt("규격·목적별 빠른 필터", "Quick filters by spec and purpose")}
+            className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line/60 pt-3"
+          >
+            <span className="mr-1 text-[0.7rem] font-bold text-fg-3">
+              {bt("규격·목적 빠른 필터:", "Spec & purpose:")}
+            </span>
+            {SPEC_PRESETS.map((preset) => {
+              const active = specPreset === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => setSpecPreset(preset.id)}
+                  aria-pressed={active}
+                  data-template-spec-preset={preset.id}
+                  className={cn(
+                    "min-h-8 rounded-full border px-2.5 text-xs font-semibold transition-colors",
+                    active
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
+                  )}
+                >
+                  {bt(preset.labelKo, preset.labelEn)}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -416,9 +498,16 @@ export function StudioTemplatesPage() {
                           onClick={() => setSelectedId(template.id)}
                           className="min-w-0 flex-1 text-left focus-visible:outline-none"
                         >
-                          <span className="inline-flex rounded-full bg-accent-soft px-2 py-1 text-[0.6rem] font-black text-accent">
-                            {bt(CATEGORY_LABELS[template.category].ko, CATEGORY_LABELS[template.category].en)}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="inline-flex rounded-full bg-accent-soft px-2 py-1 text-[0.6rem] font-black text-accent">
+                              {bt(CATEGORY_LABELS[template.category].ko, CATEGORY_LABELS[template.category].en)}
+                            </span>
+                            {template.difficulty === "easy" ? (
+                              <span className="inline-flex rounded-full border border-accent/30 bg-panel px-2 py-0.5 text-[0.6rem] font-bold text-accent">
+                                {bt("입문 추천", "Beginner pick")}
+                              </span>
+                            ) : null}
+                          </div>
                           <h2 className="mt-3 text-base font-black leading-6 text-fg">
                             {templateTitle(template, bt)}
                           </h2>
@@ -437,9 +526,29 @@ export function StudioTemplatesPage() {
                         {templateDescription(template, bt)}
                       </p>
                       {template.definition.composition ? (
-                        <p className="mt-3 text-[0.68rem] font-semibold text-fg-3">
-                          {bt(`${template.definition.composition.pages.length}페이지 · ${template.definition.composition.pages.reduce((total, page) => total + page.panelCount, 0)}컷·영역 · 편집 슬롯 ${template.definition.slots.length}`, `${template.definition.composition.pages.length} pages · ${template.definition.composition.pages.reduce((total, page) => total + page.panelCount, 0)} panels · ${template.definition.slots.length} slots`)}
-                        </p>
+                        <div className="mt-3 space-y-1.5 rounded-xl border border-line/70 bg-panel/70 p-2.5">
+                          <p className="text-[0.68rem] font-bold text-fg">
+                            {bt(
+                              template.definition.composition.canvasLabelKo,
+                              template.definition.composition.canvasLabelEn,
+                            )}
+                          </p>
+                          <p className="text-[0.66rem] font-semibold text-fg-3">
+                            {bt(
+                              `${template.definition.composition.pages.length}페이지 · ${template.definition.composition.pages.reduce((total, page) => total + page.panelCount, 0)}컷·영역 · 편집 슬롯 ${template.definition.slots.length}`,
+                              `${template.definition.composition.pages.length} pages · ${template.definition.composition.pages.reduce((total, page) => total + page.panelCount, 0)} panels · ${template.definition.slots.length} slots`,
+                            )}
+                          </p>
+                          <p
+                            data-template-layer-stack-badge="true"
+                            className="inline-flex rounded-md bg-accent/10 px-2 py-0.5 text-[0.64rem] font-bold text-accent"
+                          >
+                            {bt(
+                              "콘티 + 선화 + 밑색 + 말풍선 레이어 기본 포함",
+                              "Includes storyboard + line + flat color + balloon layers",
+                            )}
+                          </p>
+                        </div>
                       ) : null}
                       <div className="mt-4 space-y-2">
                         <Link
@@ -473,6 +582,7 @@ export function StudioTemplatesPage() {
                   onClick={() => {
                     setQuery("");
                     setCategory("all");
+                    setSpecPreset("all");
                     setFavoritesOnly(false);
                   }}
                   className="mt-4 min-h-11 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"

@@ -1,4 +1,5 @@
 import { isPrivateOrLocalAiHostname } from "./ai-host-policy";
+import { anthropicConnectionIssue, isAnthropicBaseUrl } from "./claude/claude-protocol";
 
 export const USER_AI_COST_POLICIES = [
   "unverified",
@@ -45,6 +46,7 @@ export interface FreeAiPreset {
 const PROVIDER_FREE_TIER_ENDPOINTS: Readonly<Record<string, string>> = Object.freeze({
   "api.groq.com": "/openai/v1",
   "generativelanguage.googleapis.com": "/v1beta/openai",
+  "models.github.ai": "/inference",
   "api.sambanova.ai": "/v1",
   "api.mistral.ai": "/v1",
   "api.z.ai": "/api/paas/v4",
@@ -299,6 +301,10 @@ export function freeAiConnectionPolicyIssue(
   if (!connection.apiKey.trim()) {
     return "클라우드 AI 연결에는 본인 API 키가 필요합니다.";
   }
+  // Claude(Anthropic)는 무료 티어가 없고 Messages API를 쓰므로 전용 정책으로 판정한다.
+  if (isAnthropicBaseUrl(connection.baseUrl)) {
+    return anthropicConnectionIssue(connection, capability);
+  }
   if (connection.costPolicy === "user-funded-byok") {
     return capabilityModelIssue(connection, capability);
   }
@@ -354,3 +360,17 @@ export function connectionFromFreeAiPreset(
     costPolicy: preset.costPolicy,
   };
 }
+
+export function createGithubModelsFreeConnection(
+  apiKey: string,
+  textModel = "openai/gpt-4o-mini",
+): FreeAiConnectionLike {
+  return {
+    baseUrl: "https://models.github.ai/inference",
+    apiKey: apiKey.trim(),
+    textModel: textModel.trim() || "openai/gpt-4o-mini",
+    imageModel: "",
+    costPolicy: "provider-free-tier",
+  };
+}
+

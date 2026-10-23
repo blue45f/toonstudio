@@ -41,7 +41,7 @@ ENVF="<경로>" ../onpod-run.sh node node_modules/tsx/dist/cli.mjs scripts/onpod
 
 ### 알려진 한계
 
-- **마켓플레이스 ACL 플래그 6개가 false**: 단일 소유자 역할에서는 SQL로 풀 수 없다. 비소유 로그인 역할이 필요하다([인프라 지도 7.3절](../../docs/operations/infrastructure-map.md)).
+- **마켓플레이스 ACL 플래그 6개가 false**: 단일 소유자 역할에서는 SQL로 풀 수 없다. 운영은 2026-10-23부터 `DATABASE_RUNTIME_ROLE_MODE=single-owner` 옵트인(#2420)으로 이 여섯 비교만 건너뛰어 준비성 200을 얻는다. 근본 해결은 비소유 로그인 역할이다([인프라 지도 7.3절](../../docs/operations/infrastructure-map.md)). 5단계 준비성 재생은 고정 커밋 `37b5183`의 `isSchemaReady()`를 실행하므로 옵트인을 반영하지 않고 늘 6개 false를 보고한다.
 - `0093_review_voice_note_constraints_repair`의 비한정 `CREATE FUNCTION`은 실행 SQL에서만 `public.` 한정으로 치환했다. 같은 결함이 슈퍼유저가 아닌 운영 마이그레이터에서도 난다.
 - `sql/40-out-of-manifest-objects.sql`은 매니페스트에 없는 표 4개의 DDL이며 **실행하지 않았다**.
 - 출력 마스킹은 `redact.mjs`가 `PG*` 환경변수 값, `postgres://` URL, IPv4 리터럴을 가린다. 그래도 로그를 채팅에 붙이기 전에 한 번 더 확인한다.

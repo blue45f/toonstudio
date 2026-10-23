@@ -105,6 +105,13 @@ const LAZY_APP_BUILTIN_GROUPS = [
     namespaces: ["anchorLab"],
     target: "apps/web/src/domains/creator/anchor-consistency/i18n/generated/i18n-anchor-lab-builtins.json",
   },
+  // Claude(Anthropic) 연결 카드·AI 아트 디렉터·AI 명령 도우미 화면만 쓰는 신규 네임스페이스. 셸 내장 사전에 넣지 않고
+  // 소비 모듈이 등록한다 — apps/web/src/shared/ai/claude/claude-assist-i18n.ts.
+  {
+    id: "claude-assist",
+    namespaces: ["claudeAssist"],
+    target: "apps/web/src/shared/ai/claude/i18n/generated/i18n-claude-assist-builtins.json",
+  },
 ];
 
 const LAZY_APP_BUILTIN_NAMESPACES = new Set(

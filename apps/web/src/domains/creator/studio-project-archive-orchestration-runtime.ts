@@ -12,10 +12,12 @@ import type { StudioReleaseSchedule } from "./studio-release-schedule";
 import type { StudioReleaseScheduleRuntime } from "./studio-release-schedule-loader";
 import type { StudioWriterRoomDocument } from "./studio-writer-room";
 import type {
-  StudioVrmProjectArchiveAttestationPlan,
-  StudioVrmProjectArchiveUseContextInput,
+  StudioVrmProjectArchiveAttestationPlan, StudioVrmProjectArchiveUseContextInput,
 } from "./vrm/studio-vrm-license-product-gate";
 import type { MutableRefObject } from "react";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
+import { resolveStudioProjectArchiveErrorMessage } from "./status-i18n/studio-producer-error-i18n-project-archive";
+import { resolveStudioVrmPaintLibraryErrorFromCause } from "./status-i18n/studio-producer-error-i18n-vrm-paint";
 
 const STUDIO_PROJECT_ARCHIVE_IMPORT_COPY_SCOPE = "creator.studio.projectArchive";
 
@@ -301,7 +303,7 @@ export function createStudioProjectArchiveOrchestration({
       setError(
         cause instanceof Error
           ? `프로젝트 JSON 내보내기: ${cause.message} 대용량 원본 자산은 무결성 archive를 이용해 주세요.`
-          : "프로젝트 JSON을 만들지 못했습니다. 대용량 원본 자산은 무결성 archive를 이용해 주세요."
+          : frozenStatus6Text("studio.frozenStatus6.archiveOrch.jsonExportFailed", "프로젝트 JSON을 만들지 못했습니다. 대용량 원본 자산은 무결성 archive를 이용해 주세요.")
       );
     }
   }
@@ -528,8 +530,7 @@ export function createStudioProjectArchiveOrchestration({
       );
       setError(null);
     } catch (cause) {
-      const message =
-        cause instanceof Error ? cause.message : "프로젝트 archive를 만들지 못했어요.";
+      const message = resolveStudioVrmPaintLibraryErrorFromCause(cause) ?? resolveStudioProjectArchiveErrorMessage(cause, frozenStatus6Text("studio.frozenStatus6.archiveOrch.createFailed", "프로젝트 archive를 만들지 못했어요."));
       setProjectArchiveStatus({ tone: "bad", text: message });
       setError(message);
     } finally {
@@ -595,13 +596,7 @@ export function createStudioProjectArchiveOrchestration({
       });
       setError(null);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : studioProjectArchiveImportCopy(
-              "프로젝트 파일을 읽는 도중 오류가 발생했습니다.",
-              "Something went wrong while reading the project file.",
-            );
+      const message = resolveStudioVrmPaintLibraryErrorFromCause(error) ?? resolveStudioProjectArchiveErrorMessage(error, studioProjectArchiveImportCopy("프로젝트 파일을 읽는 도중 오류가 발생했습니다.", "Something went wrong while reading the project file."));
       setProjectArchiveStatus({ tone: "bad", text: message });
       setError(message);
     }
@@ -829,8 +824,7 @@ export function createStudioProjectArchiveOrchestration({
       setProjectArchiveStatus(texturePaintArchivePresentation.notice);
       setError(null);
     } catch (cause) {
-      const message =
-        cause instanceof Error ? cause.message : "프로젝트 archive를 읽지 못했어요.";
+      const message = resolveStudioVrmPaintLibraryErrorFromCause(cause) ?? resolveStudioProjectArchiveErrorMessage(cause, frozenStatus6Text("studio.frozenStatus6.archiveOrch.readFailed", "프로젝트 archive를 읽지 못했어요."));
       setProjectArchiveStatus({ tone: "bad", text: message });
       setError(message);
     } finally {

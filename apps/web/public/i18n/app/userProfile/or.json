@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "ପ୍ରୋଫାଇଲ ବିଷୟବସ୍ତୁ",
   "userProfile.refresh": "ସତେଜତା",
   "userProfile.emptyReviews": "ଏହି ବ୍ୟବହାରକାରୀଙ୍କ ଦ୍ୱାରା ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ସମୀକ୍ଷା ପ୍ରକାଶିତ ହୋଇନାହିଁ ।",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "ସୃଷ୍ଟି ହୋଇଥିବା କାର୍ଯ୍ୟ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "userProfile.series.error": "ସିରିଜ୍ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "userProfile.emptyReviewsHint": "ଆପଣ ଭଲ ପାଉଥିବା ଏକ ଶୀର୍ଷକରେ ପ୍ରଥମ ସମୀକ୍ଷା ଛାଡ଼ନ୍ତୁ।",
+  "userProfile.emptyReviewsCta": "ଶୀର୍ଷକ ବ୍ରାଉଜ୍ କରନ୍ତୁ"
 }

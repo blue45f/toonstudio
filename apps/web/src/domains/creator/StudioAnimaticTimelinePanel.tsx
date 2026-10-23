@@ -30,6 +30,7 @@ import {
   type StudioAnimaticPersistencePort,
 } from "./studio-animatic-sqlite-persistence";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
+import { resolveStudioAnimaticError } from "./status-i18n/studio-producer-error-i18n";
 import {
   addStudioAnimaticCue,
   createStudioAnimaticFromPages,
@@ -126,7 +127,7 @@ function initializePanelState(input: {
       return {
         document: null,
         storageStatus: "empty",
-        documentError: validated.error,
+        documentError: resolveStudioAnimaticError(validated.error),
       };
     }
     if (
@@ -157,7 +158,7 @@ function initializePanelState(input: {
     document: created.ok ? created.document : null,
     storageStatus: loaded.status,
     storageError: loaded.error,
-    documentError: created.ok ? undefined : created.error,
+    documentError: created.ok ? undefined : resolveStudioAnimaticError(created.error),
   };
 }
 
@@ -446,7 +447,7 @@ export function StudioAnimaticTimelinePanel({
   function resetFromPages(): void {
     const created = createStudioAnimaticFromPages(pages, { workScope });
     if (!created.ok) {
-      setNotice({ tone: "bad", message: created.error });
+      setNotice({ tone: "bad", message: resolveStudioAnimaticError(created.error) });
       return;
     }
     setSelectedSegmentId(created.document.segments[0]?.id ?? null);
@@ -492,7 +493,7 @@ export function StudioAnimaticTimelinePanel({
     try {
       const imported = importStudioAnimaticDocument(await file.text());
       if (!imported.ok) {
-        setNotice({ tone: "bad", message: imported.error });
+        setNotice({ tone: "bad", message: resolveStudioAnimaticError(imported.error) });
         return;
       }
       if (
@@ -517,7 +518,7 @@ export function StudioAnimaticTimelinePanel({
     if (!animatic) return;
     const exported = exportStudioAnimaticDocument(animatic);
     if (!exported.ok) {
-      setNotice({ tone: "bad", message: exported.error });
+      setNotice({ tone: "bad", message: resolveStudioAnimaticError(exported.error) });
       return;
     }
     if (

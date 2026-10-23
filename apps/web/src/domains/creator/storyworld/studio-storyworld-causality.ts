@@ -293,36 +293,22 @@ export interface StoryworldProject {
   readonly metadata?: Readonly<Record<string, StoryworldPrimitive>>;
 }
 
+export type StoryworldIssueCode =
+  | "duplicate-id" | "invalid-mutation" | "dependency-cycle" | "inactive-dependency" | "dependency-order" | "time-regression"
+  | "impossible-travel" | "missing-precondition" | "contradicted-precondition" | "knowledge-leak" | "premature-reader-reveal" | "reader-reveal-missed"
+  | "unpaid-setup" | "motif-underused" | "motif-gap" | "emotional-whiplash" | "localization-overflow" | "missing-provenance"
+  | "production-bottleneck" | "production-over-capacity" | "dangling-effect-fact" | "dangling-dependency-scene" | "dangling-character-fact" | "dangling-participant"
+  | "dangling-assignee" | "dangling-premise-fact" | "dangling-knowledge-character" | "dangling-knowledge-fact" | "dangling-reveal-fact" | "dangling-reveal-audience"
+  | "dangling-emotion-character" | "accessibility-evidence-missing" | "accessibility-evidence-short" | "rights-license-status" | "rights-consent-status"
+  | "orphan-payoff-before-setup" | "orphan-payoff-first-before-first-setup";
+
 export interface StoryworldIssue {
   readonly id: string;
   readonly axis: StoryworldAxisId;
   readonly severity: StoryworldSeverity;
-  readonly code:
-    | "duplicate-id"
-    | "dangling-reference"
-    | "dependency-cycle"
-    | "dependency-order"
-    | "inactive-dependency"
-    | "missing-precondition"
-    | "contradicted-precondition"
-    | "invalid-mutation"
-    | "knowledge-leak"
-    | "premature-reader-reveal"
-    | "reader-reveal-missed"
-    | "orphan-payoff"
-    | "unpaid-setup"
-    | "motif-underused"
-    | "motif-gap"
-    | "time-regression"
-    | "impossible-travel"
-    | "emotional-whiplash"
-    | "localization-overflow"
-    | "accessibility-gap"
-    | "rights-risk"
-    | "missing-provenance"
-    | "production-over-capacity"
-    | "production-bottleneck";
-  readonly message: string;
+  readonly code: StoryworldIssueCode;
+  /** D4 구조화 방출: 표시 문구 대신 세부 코드+params만 싣는다. 해석은 표시 지점의 storyworld 리졸버가 한다. */
+  readonly params?: Readonly<Record<string, string>>;
   readonly sceneId?: string;
   readonly characterId?: string;
   readonly factId?: string;
@@ -384,11 +370,15 @@ export interface StoryworldProductionSummary {
   readonly uniqueAssetCount: number;
 }
 
+export type StoryworldRepairCode =
+  | "knowledge-leak" | "premature-reader-reveal" | "unpaid-setup" | "emotional-whiplash" | "localization-overflow"
+  | "accessibility-gap" | "rights-risk" | "production-split" | "review-manually";
+
 export interface StoryworldRepairProposal {
   readonly id: string;
   readonly issueId: string;
-  readonly title: string;
-  readonly rationale: string;
+  /** D4 구조화 방출: title/rationale 문구 대신 수선 코드만 싣고 표시 지점이 repair 키 쌍으로 해석한다. */
+  readonly repairCode: StoryworldRepairCode;
   readonly risk: "low" | "medium" | "high";
   /** Provider-neutral, reviewable mutation intent. Never applied automatically. */
   readonly intent:
@@ -557,7 +547,7 @@ function pushIssue(
       issue.setupId,
       issue.motifId,
       issue.assetId,
-      fingerprintStoryworldValue(issue.evidence ?? issue.message),
+      fingerprintStoryworldValue(issue.evidence ?? issue.params ?? issue.code),
     ]),
   });
 }
@@ -608,8 +598,8 @@ function applyMutation(
     pushIssue(state, {
       axis: "canon",
       severity: "error",
-      code: "dangling-reference",
-      message: `장면 ‘${scene.title}’의 효과가 정의되지 않은 사실 ${mutation.factId}을(를) 가리킵니다.`,
+      code: "dangling-effect-fact",
+      params: { sceneTitle: scene.title, factId: mutation.factId },
       sceneId: scene.id,
       factId: mutation.factId,
     });
@@ -630,7 +620,7 @@ function applyMutation(
       axis: "canon",
       severity: "error",
       code: "invalid-mutation",
-      message: `장면 ‘${scene.title}’에서 숫자가 아닌 사실 ${mutation.factId}에 증감 연산을 시도했습니다.`,
+      params: { sceneTitle: scene.title, factId: mutation.factId },
       sceneId: scene.id,
       factId: mutation.factId,
     });
@@ -661,7 +651,7 @@ function detectDuplicateIds(project: StoryworldProject, state: MutableSimulation
         axis: "canon",
         severity: "error",
         code: "duplicate-id",
-        message: `${family} id ‘${value.id}’가 중복됩니다.`,
+        params: { family, id: value.id },
         evidence: { family, duplicateId: value.id },
       });
     }
@@ -690,7 +680,7 @@ function detectDependencyCycles(
           axis: "canon",
           severity: "error",
           code: "dependency-cycle",
-          message: `장면 의존성이 순환합니다: ${cycle.join(" → ")}`,
+          params: { cycle: cycle.join(" → ") },
           sceneId,
           evidence: { cycle: cycle.join(" -> ") },
         });
@@ -706,8 +696,8 @@ function detectDependencyCycles(
         pushIssue(state, {
           axis: "canon",
           severity: "error",
-          code: "dangling-reference",
-          message: `장면 ‘${scene.title}’이 존재하지 않는 선행 장면 ${dependencyId}을(를) 요구합니다.`,
+          code: "dangling-dependency-scene",
+          params: { sceneTitle: scene.title, id: dependencyId },
           sceneId: scene.id,
           evidence: { dependencyId },
         });
@@ -718,7 +708,7 @@ function detectDependencyCycles(
             axis: "canon",
             severity: "error",
             code: "inactive-dependency",
-            message: `활성 장면 ‘${scene.title}’이 비활성 선행 장면 ‘${dependency.title}’에 의존합니다.`,
+            params: { sceneTitle: scene.title, dependencyTitle: dependency.title },
             sceneId: scene.id,
             evidence: { dependencyId },
           });
@@ -732,7 +722,7 @@ function detectDependencyCycles(
             axis: "canon",
             severity: "error",
             code: "dependency-order",
-            message: `장면 ‘${scene.title}’의 선행 장면 ‘${dependency.title}’이 현재 장면보다 뒤에 배치되어 있습니다.`,
+            params: { sceneTitle: scene.title, dependencyTitle: dependency.title },
             sceneId: scene.id,
             evidence: {
               dependencyId,
@@ -765,8 +755,8 @@ function validateProjectReferences(
       pushIssue(state, {
         axis: "character-knowledge",
         severity: "error",
-        code: "dangling-reference",
-        message: `인물 ‘${character.name}’이 정의되지 않은 사실 ${factId}을(를) 참조합니다.`,
+        code: "dangling-character-fact",
+        params: { characterName: character.name, factId },
         characterId: character.id,
         factId,
       });
@@ -779,8 +769,8 @@ function validateProjectReferences(
       pushIssue(state, {
         axis: "canon",
         severity: "error",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’의 참여 인물 ${characterId}이(가) 존재하지 않습니다.`,
+        code: "dangling-participant",
+        params: { sceneTitle: scene.title, characterId },
         sceneId: scene.id,
         characterId,
       });
@@ -790,8 +780,8 @@ function validateProjectReferences(
       pushIssue(state, {
         axis: "production",
         severity: "warning",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’의 담당자 ${assigneeId}이(가) 프로젝트 인물/역할 목록에 없습니다.`,
+        code: "dangling-assignee",
+        params: { sceneTitle: scene.title, assigneeId },
         sceneId: scene.id,
         characterId: assigneeId,
       });
@@ -813,7 +803,7 @@ function analyzeSceneContinuity(
       axis: "canon",
       severity: "warning",
       code: "time-regression",
-      message: `‘${scene.title}’의 시간 인덱스가 직전 장면보다 뒤로 이동합니다. 회상 표식이 필요합니다.`,
+      params: { sceneTitle: scene.title },
       sceneId: scene.id,
       evidence: {
         previousTimeIndex: previousScene.timeIndex,
@@ -838,7 +828,7 @@ function analyzeSceneContinuity(
       axis: "canon",
       severity: "warning",
       code: "impossible-travel",
-      message: `같은 시간에 ${shared.join(", ")}이(가) ${previousScene.locationId}에서 ${scene.locationId}(으)로 이동합니다.`,
+      params: { sharedNames: shared.join(", "), fromLocation: previousScene.locationId, toLocation: scene.locationId },
       sceneId: scene.id,
       evidence: {
         from: previousScene.locationId,
@@ -853,8 +843,8 @@ function analyzeSceneContinuity(
       pushIssue(state, {
         axis: "canon",
         severity: "error",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’이 정의되지 않은 사실 ${predicate.factId}을(를) 전제로 사용합니다.`,
+        code: "dangling-premise-fact",
+        params: { sceneTitle: scene.title, factId: predicate.factId },
         sceneId: scene.id,
         factId: predicate.factId,
       });
@@ -866,9 +856,7 @@ function analyzeSceneContinuity(
       axis: "canon",
       severity: missing ? "error" : "warning",
       code: missing ? "missing-precondition" : "contradicted-precondition",
-      message: missing
-        ? `‘${scene.title}’에 필요한 사실 ${predicate.factId}이 아직 성립하지 않았습니다.`
-        : `‘${scene.title}’의 전제 ${predicate.factId}이 현재 세계 상태와 모순됩니다.`,
+      params: { sceneTitle: scene.title, factId: predicate.factId },
       sceneId: scene.id,
       factId: predicate.factId,
       evidence: {
@@ -887,8 +875,8 @@ function analyzeKnowledge(scene: StoryworldScene, state: MutableSimulationState)
       pushIssue(state, {
         axis: "character-knowledge",
         severity: "error",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’이 존재하지 않는 인물 ${use.characterId}의 지식을 사용합니다.`,
+        code: "dangling-knowledge-character",
+        params: { sceneTitle: scene.title, characterId: use.characterId },
         sceneId: scene.id,
         characterId: use.characterId,
         factId: use.factId,
@@ -899,8 +887,8 @@ function analyzeKnowledge(scene: StoryworldScene, state: MutableSimulationState)
       pushIssue(state, {
         axis: "character-knowledge",
         severity: "error",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’이 정의되지 않은 사실 ${use.factId}을(를) 지식으로 사용합니다.`,
+        code: "dangling-knowledge-fact",
+        params: { sceneTitle: scene.title, factId: use.factId },
         sceneId: scene.id,
         characterId: use.characterId,
         factId: use.factId,
@@ -912,7 +900,7 @@ function analyzeKnowledge(scene: StoryworldScene, state: MutableSimulationState)
       axis: "character-knowledge",
       severity: "error",
       code: "knowledge-leak",
-      message: `‘${scene.title}’에서 ${use.characterId}이(가) 아직 알 수 없는 사실 ${use.factId}을(를) 사용합니다.`,
+      params: { sceneTitle: scene.title, characterId: use.characterId, factId: use.factId },
       sceneId: scene.id,
       characterId: use.characterId,
       factId: use.factId,
@@ -926,8 +914,8 @@ function analyzeKnowledge(scene: StoryworldScene, state: MutableSimulationState)
       pushIssue(state, {
         axis: "canon",
         severity: "error",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’의 공개가 정의되지 않은 사실 ${reveal.factId}을(를) 가리킵니다.`,
+        code: "dangling-reveal-fact",
+        params: { sceneTitle: scene.title, factId: reveal.factId },
         sceneId: scene.id,
         factId: reveal.factId,
       });
@@ -943,7 +931,7 @@ function analyzeKnowledge(scene: StoryworldScene, state: MutableSimulationState)
             axis: "spoiler-safety",
             severity: "warning",
             code: "premature-reader-reveal",
-            message: `사실 ${fact.label}이(가) 계획보다 일찍 독자에게 노출됩니다.`,
+            params: { factLabel: fact.label },
             sceneId: scene.id,
             factId: fact.id,
             evidence: {
@@ -960,8 +948,8 @@ function analyzeKnowledge(scene: StoryworldScene, state: MutableSimulationState)
         pushIssue(state, {
           axis: "character-knowledge",
           severity: "error",
-          code: "dangling-reference",
-          message: `장면 ‘${scene.title}’의 공개 대상 인물 ${audience}이(가) 존재하지 않습니다.`,
+          code: "dangling-reveal-audience",
+          params: { sceneTitle: scene.title, characterId: audience },
           sceneId: scene.id,
           characterId: audience,
           factId: fact.id,
@@ -979,8 +967,8 @@ function analyzeEmotion(scene: StoryworldScene, state: MutableSimulationState): 
       pushIssue(state, {
         axis: "emotional-continuity",
         severity: "error",
-        code: "dangling-reference",
-        message: `장면 ‘${scene.title}’의 감정 비트가 존재하지 않는 인물 ${beat.characterId}을(를) 가리킵니다.`,
+        code: "dangling-emotion-character",
+        params: { sceneTitle: scene.title, characterId: beat.characterId },
         sceneId: scene.id,
         characterId: beat.characterId,
       });
@@ -996,7 +984,7 @@ function analyzeEmotion(scene: StoryworldScene, state: MutableSimulationState): 
           axis: "emotional-continuity",
           severity: "warning",
           code: "emotional-whiplash",
-          message: `‘${scene.title}’에서 ${beat.characterId}의 감정이 연결 비트 없이 크게 점프합니다.`,
+          params: { sceneTitle: scene.title, characterId: beat.characterId },
           sceneId: scene.id,
           characterId: beat.characterId,
           evidence: { distance: Number(distance.toFixed(3)) },
@@ -1017,7 +1005,7 @@ function analyzeLocalization(scene: StoryworldScene, state: MutableSimulationSta
       axis: "localization",
       severity: overflow / Math.max(1, capacity) > 0.35 ? "error" : "warning",
       code: "localization-overflow",
-      message: `‘${scene.title}’의 ${probe.locale} 번역이 말풍선 용량을 ${overflow}자 초과합니다.`,
+      params: { sceneTitle: scene.title, locale: probe.locale, overflowChars: String(overflow) },
       sceneId: scene.id,
       evidence: {
         locale: probe.locale,
@@ -1035,8 +1023,8 @@ function analyzeAccessibility(scene: StoryworldScene, state: MutableSimulationSt
     pushIssue(state, {
       axis: "accessibility",
       severity: "info",
-      code: "accessibility-gap",
-      message: `‘${scene.title}’에 접근성 근거가 기록되지 않았습니다.`,
+      code: "accessibility-evidence-missing",
+      params: { sceneTitle: scene.title },
       sceneId: scene.id,
       evidence: { missing: "all" },
     });
@@ -1053,8 +1041,8 @@ function analyzeAccessibility(scene: StoryworldScene, state: MutableSimulationSt
   pushIssue(state, {
     axis: "accessibility",
     severity: missing.length >= 3 ? "warning" : "info",
-    code: "accessibility-gap",
-    message: `‘${scene.title}’의 접근성 증거가 ${missing.length}개 부족합니다.`,
+    code: "accessibility-evidence-short",
+    params: { sceneTitle: scene.title, missingCount: String(missing.length) },
     sceneId: scene.id,
     evidence: { missing: missing.join(",") },
   });
@@ -1066,8 +1054,8 @@ function analyzeAssets(scene: StoryworldScene, state: MutableSimulationState): v
       pushIssue(state, {
         axis: "rights-provenance",
         severity: asset.licenseStatus === "unknown" ? "warning" : "error",
-        code: "rights-risk",
-        message: `‘${scene.title}’의 자산 ‘${asset.label}’ 사용 권리가 ${asset.licenseStatus} 상태입니다.`,
+        code: "rights-license-status",
+        params: { sceneTitle: scene.title, assetLabel: asset.label, licenseStatus: asset.licenseStatus },
         sceneId: scene.id,
         assetId: asset.assetId,
         evidence: {
@@ -1080,8 +1068,8 @@ function analyzeAssets(scene: StoryworldScene, state: MutableSimulationState): v
       pushIssue(state, {
         axis: "rights-provenance",
         severity: "error",
-        code: "rights-risk",
-        message: `‘${scene.title}’의 자산 ‘${asset.label}’에 필요한 동의가 ${asset.consentStatus} 상태입니다.`,
+        code: "rights-consent-status",
+        params: { sceneTitle: scene.title, assetLabel: asset.label, consentStatus: asset.consentStatus },
         sceneId: scene.id,
         assetId: asset.assetId,
         evidence: { consentStatus: asset.consentStatus },
@@ -1092,7 +1080,7 @@ function analyzeAssets(scene: StoryworldScene, state: MutableSimulationState): v
         axis: "rights-provenance",
         severity: "warning",
         code: "missing-provenance",
-        message: `생성 자산 ‘${asset.label}’의 모델·입력·원본 해시 영수증이 없습니다.`,
+        params: { assetLabel: asset.label },
         sceneId: scene.id,
         assetId: asset.assetId,
       });
@@ -1130,7 +1118,7 @@ function finalizeReaderReveals(project: StoryworldProject, state: MutableSimulat
         axis: "spoiler-safety",
         severity: "warning",
         code: "reader-reveal-missed",
-        message: `사실 ‘${fact.label}’의 예정 공개 시점이 지났지만 독자 공개 장면이 없습니다.`,
+        params: { factLabel: fact.label },
         factId: fact.id,
         evidence: { intendedOrder: fact.intendedReaderRevealOrder, finalOrder },
       });
@@ -1163,8 +1151,8 @@ function buildSetupLedger(
         pushIssue(state, {
           axis: "setup-payoff",
           severity: "error",
-          code: "orphan-payoff",
-          message: `복선 ${contract?.label ?? setupId}의 회수가 설치보다 먼저 또는 설치 없이 등장합니다.`,
+          code: "orphan-payoff-before-setup",
+          params: { setupLabel: contract?.label ?? setupId },
           sceneId,
           setupId,
         });
@@ -1179,7 +1167,7 @@ function buildSetupLedger(
         axis: "setup-payoff",
         severity: "error",
         code: "unpaid-setup",
-        message: `복선 ${contract.label}의 회수가 ${contract.payoffDueByOrder}화 순서까지 완료되지 않았습니다.`,
+        params: { setupLabel: contract.label, dueOrder: String(contract.payoffDueByOrder) },
         sceneId: setupSceneIds.at(-1),
         setupId,
         evidence: {
@@ -1208,8 +1196,8 @@ function buildSetupLedger(
       pushIssue(state, {
         axis: "setup-payoff",
         severity: "error",
-        code: "orphan-payoff",
-        message: `복선 ${contract?.label ?? setupId}의 첫 회수가 첫 설치보다 앞섭니다.`,
+        code: "orphan-payoff-first-before-first-setup",
+        params: { setupLabel: contract?.label ?? setupId },
         sceneId: payoffSceneIds[0],
         setupId,
       });
@@ -1259,7 +1247,7 @@ function buildMotifLedger(
         axis: "setup-payoff",
         severity: "warning",
         code: "motif-underused",
-        message: `모티프 ${definition?.label ?? motifId}이(가) 목표 횟수보다 적게 등장합니다.`,
+        params: { motifLabel: definition?.label ?? motifId },
         motifId,
         evidence: {
           minimum: definition?.minOccurrences ?? 0,
@@ -1275,7 +1263,7 @@ function buildMotifLedger(
         axis: "setup-payoff",
         severity: "warning",
         code: "motif-gap",
-        message: `모티프 ${definition.label}의 등장 간격이 ${largestGapScenes}개 장면까지 벌어집니다.`,
+        params: { motifLabel: definition.label, gapScenes: String(largestGapScenes) },
         motifId,
         evidence: { largestGapScenes, maximum: definition.maxGapScenes },
       });
@@ -1324,7 +1312,7 @@ function buildProductionSummary(
         axis: "production",
         severity: "warning",
         code: "production-bottleneck",
-        message: `‘${scene.title}’의 제작 복잡도 ${production?.complexity}가 병목 경고선 ${MAX_SCENE_COMPLEXITY}을 넘습니다.`,
+        params: { sceneTitle: scene.title, complexity: String(production?.complexity ?? 0), threshold: String(MAX_SCENE_COMPLEXITY) },
         sceneId: scene.id,
         evidence: { complexity: production?.complexity ?? 0 },
       });
@@ -1343,7 +1331,7 @@ function buildProductionSummary(
       axis: "production",
       severity: totalMinutes > capacityMinutes * 1.25 ? "error" : "warning",
       code: "production-over-capacity",
-      message: `예상 제작 시간 ${totalMinutes}분이 가용 시간 ${capacityMinutes}분을 초과합니다.`,
+      params: { totalMinutes: String(totalMinutes), capacityMinutes: String(capacityMinutes) },
       evidence: { totalMinutes, capacityMinutes },
     });
   }
@@ -1391,8 +1379,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "지식 획득 비트 제안",
-          rationale: "사용 장면보다 앞선 장면에 명시적 전달·목격·추론 공개를 추가합니다.",
+          repairCode: "knowledge-leak",
           risk: "medium",
           intent: {
             kind: "add-reveal",
@@ -1405,8 +1392,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "독자 공개 시점 복원",
-          rationale: "시각·대사·메타데이터에서 해당 사실을 계획된 공개 순서까지 숨깁니다.",
+          repairCode: "premature-reader-reveal",
           risk: "medium",
           intent: {
             kind: "move-reveal",
@@ -1418,8 +1404,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "최소 회수 장면 제안",
-          rationale: "기존 설정을 폐기하지 않고 가장 가까운 장면에 짧은 시각·행동 회수를 배치합니다.",
+          repairCode: "unpaid-setup",
           risk: "medium",
           intent: {
             kind: "add-payoff",
@@ -1431,8 +1416,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "감정 연결 비트 추가",
-          rationale: "표정·행동·침묵·컷 여백 중 하나로 변화 원인을 독자가 관찰할 수 있게 합니다.",
+          repairCode: "emotional-whiplash",
           risk: "low",
           intent: {
             kind: "add-transition",
@@ -1444,8 +1428,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "번역 레이아웃 안전 영역 확대",
-          rationale: "원문을 훼손하지 않고 말풍선 재배치·자동 행갈이·대체 짧은 번역을 비교합니다.",
+          repairCode: "localization-overflow",
           risk: "low",
           intent: {
             kind: "resize-balloon",
@@ -1453,22 +1436,22 @@ function buildRepairProposals(
             locale: String(issue.evidence?.locale ?? "unknown"),
           },
         };
-      case "accessibility-gap":
+      case "accessibility-evidence-missing":
+      case "accessibility-evidence-short":
         return {
           id: prefix,
           issueId: issue.id,
-          title: "접근성 증거 채우기",
-          rationale: "읽기 순서·비색상 단서·대체 텍스트·동작 대체를 장면 체크리스트로 기록합니다.",
+          repairCode: "accessibility-gap",
           risk: "low",
           intent: { kind: "add-accessibility-evidence", sceneId: issue.sceneId ?? "" },
         };
-      case "rights-risk":
+      case "rights-license-status":
+      case "rights-consent-status":
       case "missing-provenance":
         return {
           id: prefix,
           issueId: issue.id,
-          title: "권리 안전 자산으로 교체",
-          rationale: "정확한 리비전과 사용 근거가 있는 자산으로 분기 교체하고 원본은 보존합니다.",
+          repairCode: "rights-risk",
           risk: "high",
           intent: {
             kind: "replace-asset",
@@ -1481,8 +1464,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "제작 단위 분할",
-          rationale: "장면을 배경·인물·레터링·검수 작업으로 분리해 병렬화와 자산 재사용을 검토합니다.",
+          repairCode: "production-split",
           risk: "medium",
           intent: { kind: "split-production", sceneId: issue.sceneId ?? "" },
         };
@@ -1490,8 +1472,7 @@ function buildRepairProposals(
         return {
           id: prefix,
           issueId: issue.id,
-          title: "근거와 함께 수동 검토",
-          rationale: "자동 수정은 적용하지 않고 문제 장면과 현재 세계 상태를 함께 엽니다.",
+          repairCode: "review-manually",
           risk: "low",
           intent: { kind: "review-manually", ...(issue.sceneId ? { sceneId: issue.sceneId } : {}) },
         };

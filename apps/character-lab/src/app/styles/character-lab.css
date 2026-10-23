@@ -38,6 +38,19 @@ body {
   flex-direction: column;
 }
 
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+
 /* ---------- 공통 */
 .cl-eyebrow {
   margin: 0;
@@ -85,6 +98,7 @@ body {
   border-color: var(--lab-accent);
 }
 
+.cl-button--primary,
 .cl-button[aria-pressed="true"] {
   background: var(--lab-accent);
   border-color: var(--lab-accent);
@@ -148,6 +162,57 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.cl-help-panel {
+  flex: 1 1 100%;
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: var(--lab-panel-2);
+  font-size: 0.8rem;
+}
+
+.cl-help-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cl-help-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.cl-help-shortcuts dt {
+  font-weight: 600;
+  color: var(--lab-fg);
+}
+
+.cl-help-shortcuts dd {
+  margin: 2px 0 0;
+  color: var(--lab-muted);
+}
+
+.cl-help-shortcuts kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--lab-line);
+  border-radius: 4px;
+  background: var(--lab-canvas);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+}
+
+.cl-param-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 
 .cl-engine-badge {
@@ -2003,6 +2068,49 @@ body {
   z-index: 2;
   outline: 2px dashed var(--lab-accent);
   outline-offset: -2px;
+}
+
+.cl-viewport-onboarding {
+  z-index: 3;
+}
+
+.cl-viewport-onboarding-inner {
+  max-width: 520px;
+  padding: 16px 20px;
+  border: 1px solid var(--lab-line);
+  border-radius: 12px;
+  background: rgba(18, 26, 43, 0.94);
+  color: var(--lab-fg);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.cl-viewport-onboarding-title {
+  margin: 0 0 6px;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.cl-viewport-onboarding-desc {
+  margin: 0 0 10px;
+  color: var(--lab-muted);
+  font-size: 0.8rem;
+}
+
+.cl-viewport-onboarding-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cl-viewport-onboarding-actions {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* ---------- RenderPanel: 셰이딩·그림자·후처리·IBL·툰 옵션과 엔진 기능 표 */

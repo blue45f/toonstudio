@@ -26,6 +26,16 @@ import {
   type StudioCrdtRecoveryVaultEntry,
 } from "./studio-crdt-recovery-vault";
 
+import {
+  resolveStudioCrdtOutboxError,
+  resolveStudioCrdtOutboxErrorFromCause,
+} from "../status-i18n/studio-producer-error-i18n-live-crdt";
+import {
+  resolveStudioLiveCodeMessage,
+  resolveStudioLiveProducerErrorFromCause,
+  resolveStudioLiveRoomError,
+} from "../status-i18n/studio-producer-error-i18n-live-room";
+
 import type {
   StudioCrdtBatchSubscription,
   StudioCrdtDocument,
@@ -35,6 +45,24 @@ import type {
   StudioLiveRoom,
   StudioLiveRoomEvent,
 } from "./studio-live-collaboration-room";
+
+/** A4 D4 (R13): throw 채널은 이 클래스의 구조화 코드만 통과시킨다(도메인 liveRoom, 설계 §3.5). */
+export type StudioCrdtRoomBindingErrorCode =
+  | "secure-id-unavailable" | "binding-closed" | "room-not-ready" | "sync-blocked-by-recovery" | "binding-not-started" | "draft-protection-timeout" | "draft-ack-local-record-unverified" | "delivery-timeout"
+  | "delivery-channel-disconnected" | "peer-draft-protection-timeout" | "save-before-server-ack-blocked-local" | "save-blocked-server-disconnected" | "in-progress-sync-wait-timeout" | "final-sequence-check-timeout" | "save-boundary-transport-changed" | "save-sequence-unconfirmed"
+  | "authoritative-ack-timeout" | "sync-channel-not-ready" | "authoritative-sync-response-missing" | "outbox-response-timeout" | "transport-changed" | "draft-saved-cleaned" | "status-closed" | "syncing-missing-strokes"
+  | "ready-synced" | "enqueue-saving-to-server" | "enqueue-keep-in-recovery" | "persisted-local-copy-checked" | "persisted-keep-until-reconnect" | "retrying-direct-server-save" | "ready-local-synced" | "retrying-non-authoritative"
+  | "repair-gap-detected" | "repair-sequence-gap" | "ready-but-durability-degraded" | "update-encode-failed" | "outbox-put-failed" | "outbox-cleanup-failed" | "publish-retry" | "retry-metadata-failed"
+  | "resync-after-reconnect-failed" | "background-resync-failed" | "remote-update-corrupted" | "repair-missing-failed" | "peer-sync-respond-failed" | "stored-update-corrupted" | "outbox-load-failed" | "recovery-vault-unavailable"
+  | "recovery-vault-recheck" | "recovery-orphaned-marker" | "recovery-pending-export" | "recovery-outbox-unreadable" | "recovery-permanent-denied" | "recovery-no-scope-suffix" | "recovery-preserve-failed-prefix" | "recovery-marker-preserved-note"
+  | "recovery-marker-not-preserved-note" | "recovery-preserved-note" | "recovery-cleanup-failed-note";
+
+export class StudioCrdtRoomBindingError extends Error {
+  constructor(
+    readonly code: StudioCrdtRoomBindingErrorCode,
+    readonly params?: Readonly<Record<string, string>>,
+  ) { super(code); this.name = "StudioCrdtRoomBindingError"; }
+}
 
 export type StudioCrdtBindingStatusPayload =
   | { state: "idle"; message: string }
@@ -148,7 +176,7 @@ const POSTGRES_BIGINT_MAX = BigInt("9223372036854775807");
 
 function defaultRandomId(): string {
   if (typeof crypto === "undefined" || typeof crypto.randomUUID !== "function") {
-    throw new Error("안전한 CRDT 업데이트 식별자를 만들 수 없습니다.");
+    throw new StudioCrdtRoomBindingError("secure-id-unavailable");
   }
   return crypto.randomUUID();
 }
@@ -161,8 +189,24 @@ function defaultClearTimeout(handle: unknown): void {
   globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>);
 }
 
-function messageFrom(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message.trim() ? error.message : fallback;
+/**
+ * 집계자 예외 (설계 §3.5): 상태 채널의 message는 문자열로 고정된 경계라, 해석은
+ * binding 안에서 생산 시점에만 수행한다. 구조화 오류(이 구간·liveOutbox)는 코드로
+ * 해석하고, 비구조화 오류는 기존대로 원문 메시지를 패스스루하며, 폴백도 코드로
+ * 해석한다. throw 채널은 이 헬퍼들을 거치지 않고 코드를 그대로 통과시킨다.
+ */
+function statusFrom(
+  code: StudioCrdtRoomBindingErrorCode,
+  params?: Readonly<Record<string, string>>
+): string {
+  return resolveStudioLiveRoomError({ code, params });
+}
+
+function statusMessageFrom(error: unknown, fallbackCode: StudioCrdtRoomBindingErrorCode): string {
+  const resolved = resolveStudioLiveProducerErrorFromCause(error)
+    ?? resolveStudioCrdtOutboxErrorFromCause(error);
+  if (resolved !== null) return resolved;
+  return error instanceof Error && error.message.trim() ? error.message : statusFrom(fallbackCode);
 }
 
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
@@ -236,9 +280,9 @@ export class StudioCrdtRoomBinding {
   }
 
   async start(): Promise<void> {
-    if (this.closed) throw new Error("이미 닫힌 CRDT 바인딩입니다.");
+    if (this.closed) throw new StudioCrdtRoomBindingError("binding-closed");
     if (this.started) return this.syncNow();
-    if (!this.room.ready) throw new Error("실시간 작업실 연결이 준비되지 않았습니다.");
+    if (!this.room.ready) throw new StudioCrdtRoomBindingError("room-not-ready");
     this.started = true;
     this.authoritativeSyncReady = !this.hasAuthoritativeServer();
     if (this.canEdit && this.outboxScope) await this.restoreOutbox();
@@ -266,11 +310,9 @@ export class StudioCrdtRoomBinding {
   }
 
   syncNow(): Promise<void> {
-    if (this.closed) return Promise.reject(new Error("이미 닫힌 CRDT 바인딩입니다."));
+    if (this.closed) return Promise.reject(new StudioCrdtRoomBindingError("binding-closed"));
     if (this.recoveryState) {
-      return Promise.reject(new Error(
-        "서버 권위 원고를 다시 불러오기 전에는 CRDT 동기화를 재개할 수 없습니다."
-      ));
+      return Promise.reject(new StudioCrdtRoomBindingError("sync-blocked-by-recovery"));
     }
     if (this.syncPromise) return this.syncPromise;
     const run = this.synchronize().catch(async (error: unknown) => {
@@ -315,8 +357,8 @@ export class StudioCrdtRoomBinding {
         protectedUpdateIds: [],
       };
     }
-    if (this.closed) throw new Error("이미 닫힌 CRDT 바인딩입니다.");
-    if (!this.started) throw new Error("CRDT 바인딩이 아직 시작되지 않았습니다.");
+    if (this.closed) throw new StudioCrdtRoomBindingError("binding-closed");
+    if (!this.started) throw new StudioCrdtRoomBindingError("binding-not-started");
     if (this.recoveryState) throw new Error(this.recoveryState.message);
 
     // Include the final sub-frame batch before taking the durable-outbox boundary.
@@ -328,7 +370,7 @@ export class StudioCrdtRoomBinding {
       const persisted = await this.completeBeforeDeadline(
         Promise.all(pendingAtBoundary.map((pending) => this.ensurePendingPersistence(pending))),
         deadline,
-        "초안을 이 기기의 복구 저장소에 보호하는 시간이 초과됐습니다."
+        "draft-protection-timeout"
       );
       if (persisted.every(Boolean)) {
         // Keep the exact stable update ids until a real server ACK removes them.
@@ -360,8 +402,8 @@ export class StudioCrdtRoomBinding {
     protectedUpdateIds: readonly string[]
   ): Promise<void> {
     if (protectedUpdateIds.length === 0) return;
-    if (this.closed) throw new Error("이미 닫힌 CRDT 바인딩입니다.");
-    if (!this.started) throw new Error("CRDT 바인딩이 아직 시작되지 않았습니다.");
+    if (this.closed) throw new StudioCrdtRoomBindingError("binding-closed");
+    if (!this.started) throw new StudioCrdtRoomBindingError("binding-not-started");
     if (this.recoveryState) throw new Error(this.recoveryState.message);
 
     const uniqueIds = [...new Set(protectedUpdateIds)];
@@ -372,7 +414,7 @@ export class StudioCrdtRoomBinding {
       if (scope) {
         const persisted = await this.ensurePendingPersistence(pending);
         if (!persisted) {
-          throw new Error("서버에 저장된 초안의 로컬 동기화 기록을 확인하지 못했습니다.");
+          throw new StudioCrdtRoomBindingError("draft-ack-local-record-unverified");
         }
         this.outbox.removeEmergency?.(
           scope,
@@ -389,10 +431,7 @@ export class StudioCrdtRoomBinding {
     }
     if (!this.closed && !this.recoveryState) {
       this.captureOutboxStatus();
-      this.emitStatus({
-        state: "ready",
-        message: "초안이 서버에 저장되었고 로컬 동기화 기록도 정리되었습니다.",
-      });
+      this.emitStatus({ state: "ready", message: statusFrom("draft-saved-cleaned") });
     }
   }
 
@@ -406,47 +445,47 @@ export class StudioCrdtRoomBinding {
     }
 
     const deadline = Date.now() + Math.max(100, Math.min(10_000, timeoutMs));
-    const timeoutMessage = "공동 편집 변경의 전송을 기다리는 시간이 초과됐습니다.";
+    const timeoutCode: StudioCrdtRoomBindingErrorCode = "delivery-timeout";
     this.batchSubscription?.flush();
     // A sync started before acquiring the edit lease may represent an older peer frontier.
     // Join it first, then request a fresh frontier while the caller still holds that lease.
     if (this.syncPromise) {
-      await this.completeBeforeDeadline(this.syncPromise, deadline, timeoutMessage);
+      await this.completeBeforeDeadline(this.syncPromise, deadline, timeoutCode);
       this.assertDeliveryActive();
     }
-    await this.completeBeforeDeadline(this.syncNow(), deadline, timeoutMessage);
+    await this.completeBeforeDeadline(this.syncNow(), deadline, timeoutCode);
     this.assertDeliveryActive();
     while (this.pending.size > 0) {
       if (this.retryTimer !== null) {
         this.cancelTimeout(this.retryTimer);
         this.retryTimer = null;
       }
-      await this.completeBeforeDeadline(this.drainPending(), deadline, timeoutMessage);
+      await this.completeBeforeDeadline(this.drainPending(), deadline, timeoutCode);
       this.assertDeliveryActive();
       if (this.pending.size > 0) {
         await this.completeBeforeDeadline(new Promise<void>((resolve) => {
           this.scheduleTimeout(resolve, 25);
-        }), deadline, timeoutMessage);
+        }), deadline, timeoutCode);
         this.assertDeliveryActive();
       }
     }
   }
 
   private assertDeliveryActive(): void {
-    if (this.closed) throw new Error("이미 닫힌 CRDT 바인딩입니다.");
-    if (!this.started) throw new Error("CRDT 바인딩이 아직 시작되지 않았습니다.");
+    if (this.closed) throw new StudioCrdtRoomBindingError("binding-closed");
+    if (!this.started) throw new StudioCrdtRoomBindingError("binding-not-started");
     if (this.recoveryState) throw new Error(this.recoveryState.message);
-    if (!this.room.ready) throw new Error("공동 편집 전송 채널의 연결이 끊겼습니다.");
+    if (!this.room.ready) throw new StudioCrdtRoomBindingError("delivery-channel-disconnected");
   }
 
   private async flushAndWaitForPeerDraftDelivery(deadline: number): Promise<void> {
-    const timeoutMessage = "공동 편집 변경을 기기·참여자에게 보호하는 시간이 초과됐습니다.";
+    const timeoutCode: StudioCrdtRoomBindingErrorCode = "peer-draft-protection-timeout";
     this.assertDeliveryActive();
     if (this.syncPromise) {
-      await this.completeBeforeDeadline(this.syncPromise, deadline, timeoutMessage);
+      await this.completeBeforeDeadline(this.syncPromise, deadline, timeoutCode);
       this.assertDeliveryActive();
     }
-    await this.completeBeforeDeadline(this.syncNow(), deadline, timeoutMessage);
+    await this.completeBeforeDeadline(this.syncNow(), deadline, timeoutCode);
     this.assertDeliveryActive();
 
     const hasUndeliveredPending = () => [...this.pending.values()].some(
@@ -457,12 +496,12 @@ export class StudioCrdtRoomBinding {
         this.cancelTimeout(this.retryTimer);
         this.retryTimer = null;
       }
-      await this.completeBeforeDeadline(this.drainPending(), deadline, timeoutMessage);
+      await this.completeBeforeDeadline(this.drainPending(), deadline, timeoutCode);
       this.assertDeliveryActive();
       if (hasUndeliveredPending()) {
         await this.completeBeforeDeadline(new Promise<void>((resolve) => {
           this.scheduleTimeout(resolve, 25);
-        }), deadline, timeoutMessage);
+        }), deadline, timeoutCode);
         this.assertDeliveryActive();
       }
     }
@@ -471,8 +510,8 @@ export class StudioCrdtRoomBinding {
   async flushAndWaitForAuthoritativeAck(
     timeoutMs = 2_000
   ): Promise<StudioCrdtAuthoritativeAckBarrierResult> {
-    if (this.closed) throw new Error("이미 닫힌 CRDT 바인딩입니다.");
-    if (!this.started) throw new Error("CRDT 바인딩이 아직 시작되지 않았습니다.");
+    if (this.closed) throw new StudioCrdtRoomBindingError("binding-closed");
+    if (!this.started) throw new StudioCrdtRoomBindingError("binding-not-started");
 
     // Saving must include the final sub-frame stroke, not merely the updates that happened to
     // leave the 40 ms batch already. enqueueUpdate preserves the same stable IDs across retries.
@@ -485,10 +524,10 @@ export class StudioCrdtRoomBinding {
         throw new Error(this.recoveryState.message);
       }
       if (!this.hasAuthoritativeServer()) {
-        throw new Error("로컬·P2P 협업 모드에서는 서버 승인 전 원고를 저장할 수 없습니다.");
+        throw new StudioCrdtRoomBindingError("save-before-server-ack-blocked-local");
       }
       if (!this.room.ready) {
-        throw new Error("팀 서버 연결이 끊겨 미승인 변경을 저장할 수 없습니다.");
+        throw new StudioCrdtRoomBindingError("save-blocked-server-disconnected");
       }
       if (this.pending.size === 0) {
         // A background/reconnect sync may already be in flight when Save begins. Waiting for
@@ -500,18 +539,18 @@ export class StudioCrdtRoomBinding {
           await this.completeBeforeDeadline(
             preExistingSync,
             deadline,
-            "진행 중인 서버 원고 동기화를 기다리는 시간이 초과됐습니다."
+            "in-progress-sync-wait-timeout"
           );
           continue;
         }
         await this.completeBeforeDeadline(
           this.syncNow(),
           deadline,
-          "서버 원고의 최종 순번을 확인하는 시간이 초과됐습니다."
+          "final-sequence-check-timeout"
         );
         this.assertDeliveryActive();
         if (!this.hasAuthoritativeServer()) {
-          throw new Error("서버 연결이 변경되어 원고 저장 경계를 다시 확인해야 합니다.");
+          throw new StudioCrdtRoomBindingError("save-boundary-transport-changed");
         }
         if (this.pending.size > 0) continue;
         const authoritativeServerSequence = this.authoritativeServerSequence;
@@ -520,7 +559,7 @@ export class StudioCrdtRoomBinding {
           authoritativeServerSequence < BigInt(0) ||
           authoritativeServerSequence > POSTGRES_BIGINT_MAX
         ) {
-          throw new Error("서버가 저장 경계에 필요한 CRDT 순번을 확인해 주지 않았습니다.");
+          throw new StudioCrdtRoomBindingError("save-sequence-unconfirmed");
         }
         return {
           serverSequence: authoritativeServerSequence.toString(),
@@ -528,7 +567,7 @@ export class StudioCrdtRoomBinding {
         };
       }
       if (Date.now() >= deadline) {
-        throw new Error("공동 편집 변경의 서버 승인을 기다리는 시간이 초과됐습니다.");
+        throw new StudioCrdtRoomBindingError("authoritative-ack-timeout");
       }
       if (this.retryTimer !== null) {
         this.cancelTimeout(this.retryTimer);
@@ -536,7 +575,7 @@ export class StudioCrdtRoomBinding {
       }
       const drained = await this.settlesBeforeDeadline(this.drainPending(), deadline);
       if (!drained) {
-        throw new Error("공동 편집 변경의 서버 승인을 기다리는 시간이 초과됐습니다.");
+        throw new StudioCrdtRoomBindingError("authoritative-ack-timeout");
       }
       if (this.pending.size > 0 && !this.recoveryState) {
         const remaining = deadline - Date.now();
@@ -603,13 +642,13 @@ export class StudioCrdtRoomBinding {
     this.backgroundSyncTimer = null;
     this.pending.clear();
     this.authoritativeSyncReady = false;
-    this.emitStatus({ state: "idle", message: "실시간 원고 동기화를 종료했습니다." });
+    this.emitStatus({ state: "idle", message: statusFrom("status-closed") });
   }
 
   private async synchronize(): Promise<void> {
     if (this.recoveryState) return;
-    if (!this.room.ready) throw new Error("CRDT 동기화 채널이 준비되지 않았습니다.");
-    this.emitStatus({ state: "syncing", message: "팀 원고의 누락된 획을 맞추는 중입니다." });
+    if (!this.room.ready) throw new StudioCrdtRoomBindingError("sync-channel-not-ready");
+    this.emitStatus({ state: "syncing", message: statusFrom("syncing-missing-strokes") });
     const request: StudioCrdtSyncRequest = {
       protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
       workId: this.room.workId,
@@ -646,14 +685,14 @@ export class StudioCrdtRoomBinding {
       }
     }
     if (this.hasAuthoritativeServer() && !response) {
-      throw new Error("서버가 권위 CRDT 동기화 응답을 반환하지 않았습니다.");
+      throw new StudioCrdtRoomBindingError("authoritative-sync-response-missing");
     }
     if (this.syncRetryTimer !== null) this.cancelTimeout(this.syncRetryTimer);
     this.syncRetryTimer = null;
     if (this.backgroundSyncTimer !== null) this.cancelTimeout(this.backgroundSyncTimer);
     this.backgroundSyncTimer = null;
     this.scheduleBackgroundSync();
-    this.emitStatus({ state: "ready", message: "팀 원고가 실시간으로 동기화됩니다." });
+    this.emitStatus({ state: "ready", message: statusFrom("ready-synced") });
     await this.drainPending();
   }
 
@@ -663,10 +702,7 @@ export class StudioCrdtRoomBinding {
     try {
       encoded = encodeStudioCrdtUpdate(update);
     } catch (error) {
-      this.emitStatus({
-        state: "error",
-        message: messageFrom(error, "실시간 획 묶음이 전송 한도를 초과했습니다."),
-      });
+      this.emitStatus({ state: "error", message: statusMessageFrom(error, "update-encode-failed") });
       return;
     }
     const updateId = this.randomId();
@@ -686,9 +722,7 @@ export class StudioCrdtRoomBinding {
     this.pending.set(updateId, pending);
     this.emitStatus({
       state: this.room.ready ? "syncing" : "retrying",
-      message: this.room.ready
-        ? "새 원고 변경을 팀 서버에 보존하는 중입니다."
-        : "서버가 다시 연결될 때까지 새 원고 변경을 복구 저장소에 보관합니다.",
+      message: this.room.ready ? statusFrom("enqueue-saving-to-server") : statusFrom("enqueue-keep-in-recovery"),
     });
     if (this.outboxScope) this.beginPendingPersistence(pending);
     void this.drainPending();
@@ -711,9 +745,7 @@ export class StudioCrdtRoomBinding {
         if (!this.closed && !this.recoveryState) {
           this.emitStatus({
             state: this.room.ready ? "syncing" : "retrying",
-            message: this.room.ready
-              ? "로컬 복구 사본을 확인하고 팀 서버 승인을 기다립니다."
-              : "서버 재연결까지 새 변경을 이 기기의 복구 저장소에 보관합니다.",
+            message: this.room.ready ? statusFrom("persisted-local-copy-checked") : statusFrom("persisted-keep-until-reconnect"),
           });
         }
         return true;
@@ -721,16 +753,9 @@ export class StudioCrdtRoomBinding {
       (error: unknown) => {
         if (pending.persisted === persisted) pending.persistenceState = "failed";
         this.persistenceChecked = true;
-        this.durabilityWarning = messageFrom(
-          error,
-          "오프라인 CRDT 보관함에 획을 저장하지 못했습니다."
-        );
+        this.durabilityWarning = statusMessageFrom(error, "outbox-put-failed");
         if (!this.closed) {
-          this.emitStatus({
-            state: "error",
-            message: messageFrom(error, "오프라인 CRDT 보관함에 획을 저장하지 못했습니다."),
-            durabilityAtRisk: true,
-          });
+          this.emitStatus({ state: "error", message: statusMessageFrom(error, "outbox-put-failed"), durabilityAtRisk: true });
         }
         return false;
       }
@@ -750,7 +775,7 @@ export class StudioCrdtRoomBinding {
         callback();
       };
       timeoutHandle = this.scheduleTimeout(
-        () => finish(() => reject(new Error("오프라인 CRDT 보관함 응답 시간이 초과됐습니다."))),
+        () => finish(() => reject(new StudioCrdtRoomBindingError("outbox-response-timeout"))),
         this.persistenceTimeoutMs
       );
       void operation.then(
@@ -792,10 +817,10 @@ export class StudioCrdtRoomBinding {
   private async completeBeforeDeadline<T>(
     promise: Promise<T>,
     deadline: number,
-    timeoutMessage: string
+    timeoutCode: StudioCrdtRoomBindingErrorCode
   ): Promise<T> {
     const remaining = deadline - Date.now();
-    if (remaining <= 0) throw new Error(timeoutMessage);
+    if (remaining <= 0) throw new StudioCrdtRoomBindingError(timeoutCode);
     return new Promise<T>((resolve, reject) => {
       let settled = false;
       let timeoutHandle: unknown = null;
@@ -806,7 +831,7 @@ export class StudioCrdtRoomBinding {
         callback();
       };
       timeoutHandle = this.scheduleTimeout(
-        () => finish(() => reject(new Error(timeoutMessage))),
+        () => finish(() => reject(new StudioCrdtRoomBindingError(timeoutCode))),
         remaining
       );
       void promise.then(
@@ -881,10 +906,7 @@ export class StudioCrdtRoomBinding {
       if (!persisted) {
         // If the server is reachable it can still be the durable sink. We only remove the
         // same-page emergency copy after the authoritative ACK succeeds.
-        this.emitStatus({
-          state: "retrying",
-          message: "로컬 보관함을 복구하는 동안 서버에 획을 직접 보존합니다.",
-        });
+        this.emitStatus({ state: "retrying", message: statusFrom("retrying-direct-server-save") });
       }
       const transport = this.captureTransport();
       try {
@@ -910,17 +932,11 @@ export class StudioCrdtRoomBinding {
             .then(() => {
               this.captureOutboxStatus();
               if (!this.closed && !this.durabilityWarning) {
-                this.emitStatus({
-                  state: "ready",
-                  message: "팀 원고와 로컬 복구 저장소가 동기화됩니다.",
-                });
+                this.emitStatus({ state: "ready", message: statusFrom("ready-local-synced") });
               }
             })
             .catch((error) => {
-              this.emitStatus({
-                state: "error",
-                message: messageFrom(error, "전송 완료된 CRDT 보관 항목을 정리하지 못했습니다."),
-              });
+              this.emitStatus({ state: "error", message: statusMessageFrom(error, "outbox-cleanup-failed") });
             });
         }
       } catch (error) {
@@ -935,10 +951,7 @@ export class StudioCrdtRoomBinding {
         }
         pending.attempts += 1;
         await this.persistRetryMetadata(pending, classification);
-        this.emitStatus({
-          state: "retrying",
-          message: messageFrom(error, "실시간 획 전송을 다시 시도합니다."),
-        });
+        this.emitStatus({ state: "retrying", message: statusMessageFrom(error, "publish-retry") });
         this.scheduleRetry(pending.attempts);
         return;
       }
@@ -948,11 +961,10 @@ export class StudioCrdtRoomBinding {
         this.emitStatus({
           state: "retrying",
           nonAuthoritativeDeliveryPending: true,
-          message:
-            "참여자에게 전달됐지만 팀 서버 승인은 아직 없습니다. 서버 재연결까지 이 기기의 복구 저장소에 보관합니다.",
+          message: statusFrom("retrying-non-authoritative"),
         });
       } else {
-        this.emitStatus({ state: "ready", message: "팀 원고가 실시간으로 동기화됩니다." });
+        this.emitStatus({ state: "ready", message: statusFrom("ready-synced") });
       }
     }
   }
@@ -988,15 +1000,8 @@ export class StudioCrdtRoomBinding {
         }),
       );
     } catch (error) {
-      this.durabilityWarning = messageFrom(
-        error,
-        "CRDT 재시도 메타데이터를 로컬 SQLite 보관함에 기록하지 못했습니다.",
-      );
-      this.emitStatus({
-        state: "error",
-        message: this.durabilityWarning,
-        durabilityAtRisk: true,
-      });
+      this.durabilityWarning = statusMessageFrom(error, "retry-metadata-failed");
+      this.emitStatus({ state: "error", message: this.durabilityWarning, durabilityAtRisk: true });
     }
   }
 
@@ -1011,10 +1016,7 @@ export class StudioCrdtRoomBinding {
         return;
       }
       void this.syncNow().catch((error) => {
-        this.emitStatus({
-          state: "retrying",
-          message: messageFrom(error, "재연결 후 원고를 다시 동기화하지 못했습니다."),
-        });
+        this.emitStatus({ state: "retrying", message: statusMessageFrom(error, "resync-after-reconnect-failed") });
         this.scheduleSyncRetry(attempt + 1);
       });
     }, delay);
@@ -1026,10 +1028,7 @@ export class StudioCrdtRoomBinding {
       this.backgroundSyncTimer = null;
       if (this.closed || !this.room.ready) return;
       void this.syncNow().catch((error) => {
-        this.emitStatus({
-          state: "retrying",
-          message: messageFrom(error, "백그라운드 원고 수렴을 다시 시도합니다."),
-        });
+        this.emitStatus({ state: "retrying", message: statusMessageFrom(error, "background-resync-failed") });
         this.scheduleSyncRetry();
       });
     }, BACKGROUND_SYNC_MS);
@@ -1052,10 +1051,7 @@ export class StudioCrdtRoomBinding {
       return;
     }
     void this.syncNow().catch((error) => {
-      this.emitStatus({
-        state: "retrying",
-        message: messageFrom(error, "재연결 후 원고를 다시 동기화하지 못했습니다."),
-      });
+      this.emitStatus({ state: "retrying", message: statusMessageFrom(error, "resync-after-reconnect-failed") });
       this.scheduleSyncRetry();
     });
   }
@@ -1070,15 +1066,10 @@ export class StudioCrdtRoomBinding {
         if (sequenceState === "contiguous") {
           this.authoritativeServerSequence = BigInt(event.update.serverSequence);
         } else if (sequenceState === "gap") {
-          this.requestAuthoritativeRepair(
-            "실시간 전달 순서에 누락이 감지되어 서버 원고와 즉시 다시 맞춥니다."
-          );
+          this.requestAuthoritativeRepair(statusFrom("repair-gap-detected"));
         }
       } catch (error) {
-        this.emitStatus({
-          state: "error",
-          message: messageFrom(error, "팀원의 획 업데이트가 손상되어 적용하지 못했습니다."),
-        });
+        this.emitStatus({ state: "error", message: statusMessageFrom(error, "remote-update-corrupted") });
       }
       return;
     }
@@ -1092,7 +1083,7 @@ export class StudioCrdtRoomBinding {
       return;
     }
     if (event.type === "error") {
-      this.emitStatus({ state: "retrying", message: event.message });
+      this.emitStatus({ state: "retrying", message: resolveStudioLiveCodeMessage(event.message) ?? event.message });
     }
   }
 
@@ -1111,8 +1102,8 @@ export class StudioCrdtRoomBinding {
       && snapshot.fanout === this.room.crdtFanout;
   }
 
-  private transportChangedError(): Error {
-    return new Error("원고 연결이 변경되어 이전 응답을 사용하지 않습니다. 새 연결에서 다시 동기화합니다.");
+  private transportChangedError(): StudioCrdtRoomBindingError {
+    return new StudioCrdtRoomBindingError("transport-changed");
   }
 
   /** Signaling can be server-backed while the document itself is peer-to-peer. Peer counters
@@ -1166,9 +1157,7 @@ export class StudioCrdtRoomBinding {
     if (sequenceState === "gap") {
       // Another durable operation committed before this ACK but its realtime broadcast was lost.
       // Repair immediately instead of waiting for the periodic ten-second convergence pass.
-      this.requestAuthoritativeRepair(
-        "서버 승인 순번에서 누락된 팀 편집을 감지해 즉시 복구합니다."
-      );
+      this.requestAuthoritativeRepair(statusFrom("repair-sequence-gap"));
     }
   }
 
@@ -1185,10 +1174,7 @@ export class StudioCrdtRoomBinding {
       return;
     }
     void this.syncNow().catch((error) => {
-      this.emitStatus({
-        state: "retrying",
-        message: messageFrom(error, "서버 원고의 누락된 편집을 복구하지 못했습니다."),
-      });
+      this.emitStatus({ state: "retrying", message: statusMessageFrom(error, "repair-missing-failed") });
       this.scheduleSyncRetry();
     });
   }
@@ -1215,10 +1201,7 @@ export class StudioCrdtRoomBinding {
         senderSessionId
       );
     } catch (error) {
-      this.emitStatus({
-        state: "error",
-        message: messageFrom(error, "이 기기 테스트 탭에 원고 상태를 전달하지 못했습니다."),
-      });
+      this.emitStatus({ state: "error", message: statusMessageFrom(error, "peer-sync-respond-failed") });
     }
   }
 
@@ -1238,9 +1221,9 @@ export class StudioCrdtRoomBinding {
       this.recoveryState = {
         code: "recovery_vault_unavailable",
         updateId: "recovery-vault-unavailable",
-        message:
-          "거부된 공동 편집 변경의 복구 저장소를 확인하지 못해 원고를 잠갔습니다. " +
-          messageFrom(error, "복구 저장소를 다시 확인해 주세요."),
+        message: statusFrom("recovery-vault-unavailable", {
+          detail: statusMessageFrom(error, "recovery-vault-recheck"),
+        }),
         recoveryUpdateCount: 0,
         outboxCleanupAtRisk: true,
         recoveryVaultId: null,
@@ -1260,9 +1243,7 @@ export class StudioCrdtRoomBinding {
       this.recoveryState = {
         code: newest.failureCode,
         updateId: newest.rejectedUpdateId,
-        message:
-          "이 기기에 영구 거절된 공동 편집 표식과 재전송 원본이 남아 있어 원고를 잠갔습니다. " +
-          "복구 frontier 저장이 완료되지 않았으므로 서버 원고를 덮어쓰거나 재전송하지 마세요.",
+        message: statusFrom("recovery-orphaned-marker"),
         recoveryUpdateCount: orphanedMarkers.reduce(
           (sum, marker) => sum + marker.recoveryUpdateCount,
           0
@@ -1282,9 +1263,7 @@ export class StudioCrdtRoomBinding {
       this.recoveryState = {
         code: newest.failureCode,
         updateId: newest.rejectedUpdateId,
-        message:
-          "이 기기에 아직 내보내지 않은 공동 편집 복구 frontier가 있습니다. " +
-          "복구 파일을 내보낸 뒤 서버 원고를 명시적으로 다시 열어 주세요.",
+        message: statusFrom("recovery-pending-export"),
         recoveryUpdateCount: pendingRecoveryEntries.reduce(
           (sum, entry) => sum + entry.updates.length,
           0
@@ -1322,16 +1301,11 @@ export class StudioCrdtRoomBinding {
     } catch (error) {
       if (this.closed) return;
       this.persistenceChecked = true;
-      this.durabilityWarning = messageFrom(
-        error,
-        "오프라인 CRDT 보관함을 불러오지 못했습니다."
-      );
+      this.durabilityWarning = statusMessageFrom(error, "outbox-load-failed");
       this.recoveryState = {
         code: "outbox_unreadable",
         updateId: "outbox-unreadable",
-        message:
-          "미승인 공동 편집 보관함을 신뢰할 수 없어 원고를 잠갔습니다. " +
-          this.durabilityWarning,
+        message: statusFrom("recovery-outbox-unreadable", { detail: this.durabilityWarning }),
         recoveryUpdateCount: 0,
         outboxCleanupAtRisk: true,
         recoveryVaultId: null,
@@ -1343,11 +1317,7 @@ export class StudioCrdtRoomBinding {
     this.persistenceChecked = true;
     this.captureOutboxStatus();
     if (this.durabilityWarning && !this.closed) {
-      this.emitStatus({
-        state: "error",
-        message: this.durabilityWarning,
-        durabilityAtRisk: true,
-      });
+      this.emitStatus({ state: "error", message: this.durabilityWarning, durabilityAtRisk: true });
     }
     if (this.closed) return;
     for (const request of requests) {
@@ -1355,10 +1325,7 @@ export class StudioCrdtRoomBinding {
       try {
         this.document.applyUpdate(decodeStudioCrdtUpdate(request.update), STUDIO_CRDT_ORIGIN_SYNC);
       } catch (error) {
-        this.emitStatus({
-          state: "error",
-          message: messageFrom(error, "보관된 CRDT 업데이트가 손상되어 복원하지 못했습니다."),
-        });
+        this.emitStatus({ state: "error", message: statusMessageFrom(error, "stored-update-corrupted") });
         continue;
       }
       this.clientSequence = Math.max(this.clientSequence, request.clientSequence);
@@ -1394,9 +1361,9 @@ export class StudioCrdtRoomBinding {
       rejectedUpdateId ??
       rejectedFrontier[0]?.request.updateId ??
       `sync-${failure.code}-${this.randomId()}`;
-    const message =
-      `서버가 공동 편집 변경을 영구 거부했습니다. 원고를 서버 기준으로 다시 불러오기 전까지 ` +
-      `공동 편집을 중지합니다. ${failure.message}`;
+    const message = statusFrom("recovery-permanent-denied", {
+      detail: resolveStudioLiveCodeMessage(failure.message) ?? failure.message,
+    });
     this.recoveryState = {
       code: failure.code,
       updateId: effectiveRejectedUpdateId,
@@ -1426,8 +1393,7 @@ export class StudioCrdtRoomBinding {
       this.recoveryState = {
         ...this.recoveryState,
         outboxCleanupAtRisk: true,
-        message:
-          `${message} 영구 복구 저장소 범위가 없어 이 탭을 닫기 전에 원고를 별도로 보존해야 합니다.`,
+        message: statusFrom("recovery-no-scope-suffix", { message }),
       };
       this.emitRecoveryRequiredStatus();
       return;
@@ -1469,11 +1435,11 @@ export class StudioCrdtRoomBinding {
         ...this.recoveryState,
         outboxCleanupAtRisk: true,
         message:
-          `${message} 거부된 변경을 영구 복구 저장소에 복사하지 못해 재전송 보관함을 그대로 유지합니다. ` +
-          (rejectionMarkerPreserved
-            ? "영구 거절 표식은 보존되어 다음 세션에서도 재전송이 차단됩니다. "
-            : "이 페이지의 재전송은 차단했지만 영구 거절 표식도 저장하지 못했습니다. ") +
-          messageFrom(error, messageFrom(rejectionMarkerError, "복구 저장소를 확인해 주세요.")),
+          statusFrom("recovery-preserve-failed-prefix", { message }) +
+          statusFrom(rejectionMarkerPreserved ? "recovery-marker-preserved-note" : "recovery-marker-not-preserved-note") +
+          (error instanceof Error && error.message.trim()
+            ? (resolveStudioLiveCodeMessage(error.message) ?? error.message)
+            : statusMessageFrom(rejectionMarkerError, "recovery-vault-recheck")),
       };
       this.emitRecoveryRequiredStatus();
       return;
@@ -1484,9 +1450,9 @@ export class StudioCrdtRoomBinding {
       ...this.recoveryState,
       recoveryVaultId: recoveryEntry.vaultId,
       recoveryExportAvailable: true,
-      message:
-        `${message} 거부된 변경 ${recoveryEntry.updates.length}개를 별도 복구 저장소에 보존했습니다. ` +
-        "복구 파일을 내보낸 뒤 서버 원고를 다시 열어 주세요.",
+      message: statusFrom("recovery-preserved-note", {
+        message, count: String(recoveryEntry.updates.length),
+      }),
     };
     this.pending.clear();
     this.emitRecoveryRequiredStatus();
@@ -1517,13 +1483,12 @@ export class StudioCrdtRoomBinding {
     this.recoveryState = {
       ...currentRecovery,
       outboxCleanupAtRisk: true,
-      message:
-        `${message} 별도 복구 저장소에는 안전하게 보존했지만 재전송 보관함 정리를 완료하지 못했습니다. ` +
-        "복구 파일을 내보낸 뒤 서버 원고를 다시 열어 주세요.",
+      message: statusFrom("recovery-cleanup-failed-note", { message }),
     };
     this.emitRecoveryRequiredStatus();
   }
 
+  // 집계자 예외 (설계 §3.5): recoveryState.message는 생성 시점에 statusFrom으로 해석해 둔다.
   private emitRecoveryRequiredStatus(): void {
     const recovery = this.recoveryState;
     if (!recovery) return;
@@ -1541,12 +1506,13 @@ export class StudioCrdtRoomBinding {
     });
   }
 
+  // 집계자 예외 (설계 §3.5): 호출부는 statusFrom으로 해석한 문자열만 넘긴다.
   private emitStatus(status: StudioCrdtBindingStatusPayload): void {
     const telemetry = this.bindingTelemetry();
     if (status.state === "ready" && this.durabilityWarning) {
       this.onStatus?.({
         state: "error",
-        message: `실시간 서버 동기화는 유지되지만 로컬 복구 저장소가 저하되었습니다. ${this.durabilityWarning}`,
+        message: statusFrom("ready-but-durability-degraded", { detail: this.durabilityWarning }),
         durabilityAtRisk: true,
         ...telemetry,
       });
@@ -1583,6 +1549,8 @@ export class StudioCrdtRoomBinding {
   private captureOutboxStatus(): void {
     const status = this.outbox.getStatus?.();
     if (!status) return;
-    this.durabilityWarning = status.state === "degraded" ? status.message : null;
+    // liveOutbox 코드 상태는 코드만 중계받아 이 경계에서 해석한다(집계자 예외).
+    this.durabilityWarning = status.state !== "degraded" ? null
+      : status.code ? resolveStudioCrdtOutboxError({ code: status.code, params: status.params }) : status.message;
   }
 }

@@ -181,4 +181,21 @@ describe('StudioSubToolPalette', () => {
 
     expect(screen.getByText('도구가 없습니다.')).toBeTruthy();
   });
+
+  it('supports one-click quick search chips and renders the Brush Studio link', () => {
+    render(
+      <StudioSubToolPalette
+        activeCategory="pen"
+        activeSubToolId="gpen"
+        onSelectSubTool={onSelectSubToolMock}
+      />
+    );
+
+    const chipGroup = screen.getByRole('group', { name: '용도별 빠른 검색어' });
+    expect(chipGroup).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '#수채' }));
+    const searchbox = screen.getByRole('searchbox', { name: '빠른 브러시 검색' }) as HTMLInputElement;
+    expect(searchbox.value).toBe('수채');
+    expect(screen.getByRole('link', { name: /브러시 스튜디오 열기/ })).toBeTruthy();
+  });
 });
