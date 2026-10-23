@@ -1,3 +1,4 @@
+import { oraError, StudioOpenRasterError, type StudioOpenRasterWarning } from "./export/studio-openraster-interchange-error";
 import {
   buildStudioPackageArchiveBlob,
   buildStudioPackageArchiveBytes,
@@ -127,12 +128,11 @@ export type StudioOpenRasterWarningCode =
   | "UNSUPPORTED_XML_ATTRIBUTE"
   | "UNSUPPORTED_XML_ELEMENT";
 
-export interface StudioOpenRasterWarning {
-  code: StudioOpenRasterWarningCode;
-  message: string;
-  layerIndex?: number;
-  path?: string;
-}
+/** 같은 경고 코드라도 방출 지점마다 원문이 달라 리졸버 키를 가르는 접미사. */
+export type { StudioOpenRasterWarning } from "./export/studio-openraster-interchange-error";
+export { StudioOpenRasterError } from "./export/studio-openraster-interchange-error";
+export type { StudioOpenRasterErrorVariant, StudioOpenRasterWarningVariant } from "./export/studio-openraster-interchange-error";
+
 
 export type StudioOpenRasterGroupIsolation = "isolate" | "auto";
 
@@ -244,17 +244,13 @@ export type StudioOpenRasterErrorCode =
   | "SIZE_LIMIT"
   | "STACK_XML_INVALID";
 
-export class StudioOpenRasterError extends Error {
-  readonly code: StudioOpenRasterErrorCode;
-  readonly path?: string;
+/** 방출 지점 단위 서브코드 — 리졸버 키는 기존 코드가 아니라 이 variant로 가른다. */
 
-  constructor(code: StudioOpenRasterErrorCode, message: string, path?: string) {
-    super(message);
-    this.name = "StudioOpenRasterError";
-    this.code = code;
-    if (path !== undefined) this.path = path;
-  }
-}
+/**
+ * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다
+ * (message = 코드). 문구는 표시 지점에서 리졸버로 해석한다
+ * (status-i18n/studio-producer-error-i18n-interchange-ora.ts).
+ */
 
 interface PreparedOpenRaster {
   entries: StudioPackageArchiveEntry[];
@@ -339,13 +335,6 @@ const COMPOSITE_TO_BLEND = new Map(
   [...BLEND_TO_COMPOSITE].map(([blend, composite]) => [composite, blend] as const)
 );
 
-function oraError(
-  code: StudioOpenRasterErrorCode,
-  message: string,
-  path?: string
-): StudioOpenRasterError {
-  return new StudioOpenRasterError(code, message, path);
-}
 
 function freezeWarnings(
   warnings: readonly StudioOpenRasterWarning[],
@@ -354,7 +343,7 @@ function freezeWarnings(
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw oraError("ABORTED", "OpenRaster 작업이 취소되었습니다.");
+  if (signal?.aborted) throw oraError("ABORTED", "aborted");
 }
 
 function resolveIntegerLimit(
@@ -364,10 +353,10 @@ function resolveIntegerLimit(
 ): number {
   if (value === undefined) return maximum;
   if (!Number.isSafeInteger(value) || value < 0 || value > maximum) {
-    throw oraError(
-      "LIMIT_INVALID",
-      `${key} 한도는 0 이상 ${maximum.toLocaleString("en-US")} 이하의 정수여야 합니다.`
-    );
+    throw oraError("LIMIT_INVALID", "limitInvalid", {
+      key,
+      max: maximum.toLocaleString("en-US"),
+    });
   }
   return value;
 }
@@ -476,7 +465,7 @@ function snapshotSource(source: unknown, path: string): StudioPackageArchiveSour
   if (source instanceof Uint8Array) return source.slice();
   if (source instanceof ArrayBuffer) return source.slice(0);
   if (typeof Blob !== "undefined" && source instanceof Blob) return source;
-  throw oraError("IMAGE_INVALID", "지원하지 않는 OpenRaster 이미지 데이터입니다.", path);
+  throw oraError("IMAGE_INVALID", "imageUnsupportedData", undefined, path);
 }
 
 function sourceSize(source: StudioPackageArchiveSource): number {
@@ -498,7 +487,7 @@ async function sourceBytes(
       bytes = new Uint8Array(await source.arrayBuffer());
     } catch (cause) {
       const detail = cause instanceof Error ? `: ${cause.message}` : "";
-      throw oraError("IMAGE_INVALID", `OpenRaster 이미지를 읽지 못했습니다${detail}`, path);
+      throw oraError("IMAGE_INVALID", "imageReadFailed", { detail }, path);
     }
   }
   throwIfAborted(signal);
@@ -519,10 +508,10 @@ function inspectPngIhdr(
   limits: StudioOpenRasterLimits
 ): Omit<StudioOpenRasterImageInfo, "path" | "byteLength"> {
   if (!hasPngSignature(bytes)) {
-    throw oraError("IMAGE_INVALID", "OpenRaster 항목이 유효한 PNG signature를 갖지 않습니다.", path);
+    throw oraError("IMAGE_INVALID", "pngSignatureInvalid", undefined, path);
   }
   if (bytes.byteLength < 33) {
-    throw oraError("IMAGE_INVALID", "OpenRaster PNG의 IHDR가 완전하지 않습니다.", path);
+    throw oraError("IMAGE_INVALID", "pngIhdrIncomplete", undefined, path);
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (
@@ -532,24 +521,31 @@ function inspectPngIhdr(
     bytes[14] !== 68 ||
     bytes[15] !== 82
   ) {
-    throw oraError("IMAGE_INVALID", "OpenRaster PNG의 첫 chunk가 13바이트 IHDR가 아닙니다.", path);
+    throw oraError("IMAGE_INVALID", "pngFirstChunkNotIhdr", undefined, path);
   }
   const width = view.getUint32(16, false);
   const height = view.getUint32(20, false);
   if (width === 0 || height === 0) {
-    throw oraError("IMAGE_INVALID", "OpenRaster PNG IHDR의 너비와 높이는 1 이상이어야 합니다.", path);
+    throw oraError("IMAGE_INVALID", "pngDimensionsZero", undefined, path);
   }
   if (width > limits.maxDimension || height > limits.maxDimension) {
     throw oraError(
       "SIZE_LIMIT",
-      `OpenRaster PNG '${path}'의 IHDR 크기 ${width.toLocaleString("en-US")}×${height.toLocaleString("en-US")}가 축 한도 ${limits.maxDimension.toLocaleString("en-US")}px를 넘었습니다.`,
+      "pngDimensionLimit",
+      {
+        path,
+        width: width.toLocaleString("en-US"),
+        height: height.toLocaleString("en-US"),
+        max: limits.maxDimension.toLocaleString("en-US"),
+      },
       path
     );
   }
   if (width > Math.floor(limits.maxDecodedPixelsPerImage / height)) {
     throw oraError(
       "SIZE_LIMIT",
-      `OpenRaster PNG '${path}'의 IHDR 픽셀 수가 이미지당 디코딩 한도 ${limits.maxDecodedPixelsPerImage.toLocaleString("en-US")}px를 넘었습니다.`,
+      "pngPixelLimit",
+      { path, max: limits.maxDecodedPixelsPerImage.toLocaleString("en-US") },
       path
     );
   }
@@ -571,7 +567,7 @@ function inspectPngIhdr(
     || filterMethod !== 0
     || (interlaceMethod !== 0 && interlaceMethod !== 1)
   ) {
-    throw oraError("IMAGE_INVALID", "OpenRaster PNG IHDR의 색상 또는 압축 형식이 올바르지 않습니다.", path);
+    throw oraError("IMAGE_INVALID", "pngIhdrFormatInvalid", undefined, path);
   }
   const decodedBytesPerPixel = bitDepth === 16 ? 8 : 4;
   return {
@@ -594,7 +590,8 @@ function addImageBudget(
   if (added > maximum - current) {
     throw oraError(
       "SIZE_LIMIT",
-      `OpenRaster '${path}'에서 ${label} 누적 한도 ${maximum.toLocaleString("en-US")}바이트를 넘었습니다.`,
+      "imageBudgetExceeded",
+      { path, label, max: maximum.toLocaleString("en-US") },
       path
     );
   }
@@ -611,14 +608,14 @@ function validateDimension(width: number, height: number, limits: StudioOpenRast
     height > limits.maxDimension ||
     width * height > limits.maxPixels
   ) {
-    throw oraError("DIMENSION_INVALID", "OpenRaster 캔버스 크기가 안전 범위를 벗어났습니다.");
+    throw oraError("DIMENSION_INVALID", "canvasDimensionOutOfRange");
   }
 }
 
 function validateOffset(value: number | undefined, limits: StudioOpenRasterLimits): number {
   const offset = value ?? 0;
   if (!Number.isSafeInteger(offset) || Math.abs(offset) > limits.maxOffsetMagnitude) {
-    throw oraError("LAYER_INVALID", "OpenRaster 레이어 오프셋이 안전 범위를 벗어났습니다.");
+    throw oraError("LAYER_INVALID", "layerOffsetOutOfRange");
   }
   return offset;
 }
@@ -626,7 +623,7 @@ function validateOffset(value: number | undefined, limits: StudioOpenRasterLimit
 function validateOpacity(value: number | undefined): number {
   const opacity = value ?? 1;
   if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
-    throw oraError("LAYER_INVALID", "OpenRaster 레이어 불투명도는 0부터 1 사이여야 합니다.");
+    throw oraError("LAYER_INVALID", "layerOpacityOutOfRange");
   }
   return opacity;
 }
@@ -638,7 +635,7 @@ function validateXmlText(value: unknown, label: string, maxCharacters: number): 
     value.length > maxCharacters ||
     hasUnsafeXmlControl(value)
   ) {
-    throw oraError("LAYER_INVALID", `${label}이 비어 있거나 안전 범위를 벗어났습니다.`);
+    throw oraError("LAYER_INVALID", "xmlTextOutOfRange", { label });
   }
   return value;
 }
@@ -680,11 +677,11 @@ async function validatePngSource(
 ): Promise<ValidatedPngSource> {
   const size = sourceSize(source);
   if (!Number.isSafeInteger(size) || size < 0 || size > maxBytes) {
-    throw oraError("SIZE_LIMIT", "OpenRaster PNG 크기가 안전 한도를 벗어났습니다.", path);
+    throw oraError("SIZE_LIMIT", "pngSizeLimit", undefined, path);
   }
   const bytes = await sourceBytes(source, path, signal);
   if (bytes.byteLength !== size) {
-    throw oraError("IMAGE_INVALID", "OpenRaster PNG를 읽는 동안 바이트 크기가 변경되었습니다.", path);
+    throw oraError("IMAGE_INVALID", "pngSizeChanged", undefined, path);
   }
   const dimensions = inspectPngIhdr(bytes, path, limits);
   return { bytes: bytes.slice(), ...dimensions };
@@ -717,15 +714,22 @@ function appendPreviewMetadataWarnings(
   if (mergedImage.width !== width || mergedImage.height !== height) {
     warnings.push({
       code: "PREVIEW_DIMENSION_MISMATCH",
+      variant: "dimensionMismatch",
+      params: {
+        width: String(mergedImage.width),
+        height: String(mergedImage.height),
+        docWidth: String(width),
+        docHeight: String(height),
+      },
       path: "mergedimage.png",
-      message: `mergedimage.png ${mergedImage.width}×${mergedImage.height}px가 문서 ${width}×${height}px와 달라 미리보기와 편집 레이어가 다를 수 있습니다.`,
     });
   }
   if (mergedImage.bitDepth !== 8 && mergedImage.bitDepth !== 16) {
     warnings.push({
       code: "PREVIEW_PROFILE_MISMATCH",
+      variant: "mergedBitDepth",
+      params: { bitDepth: String(mergedImage.bitDepth) },
       path: "mergedimage.png",
-      message: `mergedimage.png의 ${mergedImage.bitDepth}-bit PNG 프로필은 ORA 호환 프로필(8-bit 또는 16-bit)과 다릅니다.`,
     });
   }
   if (
@@ -736,8 +740,9 @@ function appendPreviewMetadataWarnings(
   ) {
     warnings.push({
       code: "PREVIEW_PROFILE_MISMATCH",
+      variant: "thumbnailProfile",
+      params: { width: String(thumbnail.width), height: String(thumbnail.height) },
       path: "Thumbnails/thumbnail.png",
-      message: `thumbnail.png ${thumbnail.width}×${thumbnail.height}px가 ORA 권장 프로필(최대 256×256, 8-bit, non-interlaced)과 달라 외부 탐색기 호환성이 낮을 수 있습니다.`,
     });
   }
 }
@@ -753,8 +758,9 @@ function normalizeBlendForExport(
   }
   warnings.push({
     code: "UNSUPPORTED_BLEND_MODE",
+    variant: "export",
+    params: { mode: candidate },
     layerIndex,
-    message: `지원하지 않는 혼합 모드 '${candidate}'를 normal로 내보냈습니다.`,
   });
   return "normal";
 }
@@ -768,7 +774,7 @@ async function prepareOpenRaster(
   throwIfAborted(options.signal);
   validateDimension(input.width, input.height, limits);
   if (input.layers.length === 0 || input.layers.length > limits.maxLayers) {
-    throw oraError("LAYER_COUNT_LIMIT", "OpenRaster 레이어 수가 안전 범위를 벗어났습니다.");
+    throw oraError("LAYER_COUNT_LIMIT", "layerCountOutOfRange");
   }
 
   const warnings: StudioOpenRasterWarning[] = [];
@@ -801,18 +807,18 @@ async function prepareOpenRaster(
       totalImageBytes,
       validated.bytes.byteLength,
       limits.maxTotalImageBytes,
-      "압축 해제 이미지 바이트",
+      "uncompressedBytes",
       path
     );
     totalDecodedRgbaBytes = addImageBudget(
       totalDecodedRgbaBytes,
       validated.decodedRgbaBytes,
       limits.maxTotalDecodedRgbaBytes,
-      "디코딩 RGBA 메모리",
+      "decodedRgba",
       path
     );
     preparedLayers.push({
-      name: validateXmlText(layer.name, "레이어 이름", limits.maxLayerNameCharacters),
+      name: validateXmlText(layer.name, "layerName", limits.maxLayerNameCharacters),
       path,
       png: validated.bytes,
       x: validateOffset(layer.x, limits),
@@ -846,21 +852,21 @@ async function prepareOpenRaster(
       totalImageBytes,
       image.bytes.byteLength,
       limits.maxTotalImageBytes,
-      "압축 해제 이미지 바이트",
+      "uncompressedBytes",
       path
     );
     totalDecodedRgbaBytes = addImageBudget(
       totalDecodedRgbaBytes,
       image.decodedRgbaBytes,
       limits.maxTotalDecodedRgbaBytes,
-      "디코딩 RGBA 메모리",
+      "decodedRgba",
       path
     );
   }
 
   const imageName = input.name === undefined
     ? ""
-    : ` name="${escapeXml(validateXmlText(input.name, "문서 이름", limits.maxLayerNameCharacters))}"`;
+    : ` name="${escapeXml(validateXmlText(input.name, "documentName", limits.maxLayerNameCharacters))}"`;
   const layerXml = [...preparedLayers]
     .reverse()
     .map(
@@ -872,7 +878,7 @@ async function prepareOpenRaster(
     `<?xml version="1.0" encoding="UTF-8"?>\n<image version="0.0.3" w="${input.width}" h="${input.height}"${imageName}>\n  <stack>\n${layerXml}\n  </stack>\n</image>\n`
   );
   if (stackXml.byteLength > limits.maxStackXmlBytes) {
-    throw oraError("SIZE_LIMIT", "OpenRaster stack.xml이 안전 한도를 넘었습니다.");
+    throw oraError("SIZE_LIMIT", "sizeStackXmlLimit");
   }
 
   return {
@@ -940,7 +946,7 @@ function decodeXmlEntities(value: string): string {
   const entityPattern = /&(?:amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);/gu;
   const unescaped = value.replaceAll(entityPattern, "");
   if (unescaped.includes("&") || unescaped.includes("<")) {
-    throw oraError("STACK_XML_INVALID", "stack.xml에 알 수 없는 문자 entity가 있습니다.");
+    throw oraError("STACK_XML_INVALID", "stackUnknownEntity");
   }
   return value.replaceAll(entityPattern, (entity) => {
     if (entity === "&amp;") return "&";
@@ -951,7 +957,7 @@ function decodeXmlEntities(value: string): string {
     const hexadecimal = entity.startsWith("&#x");
     const numeric = Number.parseInt(entity.slice(hexadecimal ? 3 : 2, -1), hexadecimal ? 16 : 10);
     if (!isValidXmlCodePoint(numeric)) {
-      throw oraError("STACK_XML_INVALID", "stack.xml에 유효하지 않은 문자 entity가 있습니다.");
+      throw oraError("STACK_XML_INVALID", "stackInvalidEntity");
     }
     return String.fromCodePoint(numeric);
   });
@@ -977,14 +983,14 @@ function parseXmlTag(source: string, maximumAttributes: number): ParsedXmlTag {
   }
   while (/\s/u.test(source[cursor] ?? "")) cursor += 1;
   const nameMatch = XML_NAME.exec(source.slice(cursor));
-  if (!nameMatch) throw oraError("STACK_XML_INVALID", "stack.xml tag 이름이 올바르지 않습니다.");
+  if (!nameMatch) throw oraError("STACK_XML_INVALID", "stackTagNameInvalid");
   const name = nameMatch[0];
   cursor += name.length;
   const attributes = new Map<string, string>();
 
   if (closing) {
     if (source.slice(cursor).trim().length !== 0) {
-      throw oraError("STACK_XML_INVALID", "stack.xml 닫는 tag가 올바르지 않습니다.");
+      throw oraError("STACK_XML_INVALID", "stackClosingTagInvalid");
     }
     return { name, attributes, closing, selfClosing: false };
   }
@@ -998,34 +1004,34 @@ function parseXmlTag(source: string, maximumAttributes: number): ParsedXmlTag {
       cursor += 1;
       while (/\s/u.test(source[cursor] ?? "")) cursor += 1;
       if (cursor !== source.length) {
-        throw oraError("STACK_XML_INVALID", "stack.xml self-closing tag가 올바르지 않습니다.");
+        throw oraError("STACK_XML_INVALID", "stackSelfClosingTagInvalid");
       }
       break;
     }
     const attributeMatch = XML_NAME.exec(source.slice(cursor));
     if (!attributeMatch) {
-      throw oraError("STACK_XML_INVALID", "stack.xml attribute 이름이 올바르지 않습니다.");
+      throw oraError("STACK_XML_INVALID", "stackAttributeNameInvalid");
     }
     const attributeName = attributeMatch[0];
     cursor += attributeName.length;
     while (/\s/u.test(source[cursor] ?? "")) cursor += 1;
     if (source[cursor] !== "=") {
-      throw oraError("STACK_XML_INVALID", "stack.xml attribute에 =가 없습니다.");
+      throw oraError("STACK_XML_INVALID", "stackAttributeMissingEquals");
     }
     cursor += 1;
     while (/\s/u.test(source[cursor] ?? "")) cursor += 1;
     const quote = source[cursor];
     if (quote !== '"' && quote !== "'") {
-      throw oraError("STACK_XML_INVALID", "stack.xml attribute 값은 인용되어야 합니다.");
+      throw oraError("STACK_XML_INVALID", "stackAttributeNotQuoted");
     }
     cursor += 1;
     const end = source.indexOf(quote, cursor);
-    if (end < 0) throw oraError("STACK_XML_INVALID", "stack.xml attribute 값이 닫히지 않았습니다.");
+    if (end < 0) throw oraError("STACK_XML_INVALID", "stackAttributeUnclosed");
     if (attributes.has(attributeName)) {
-      throw oraError("STACK_XML_INVALID", "stack.xml tag에 중복 attribute가 있습니다.");
+      throw oraError("STACK_XML_INVALID", "stackAttributeDuplicate");
     }
     if (attributes.size >= maximumAttributes) {
-      throw oraError("STACK_XML_INVALID", "stack.xml tag의 attribute 수가 안전 한도를 넘었습니다.");
+      throw oraError("STACK_XML_INVALID", "stackAttributeTooMany");
     }
     attributes.set(attributeName, decodeXmlEntities(source.slice(cursor, end)));
     cursor = end + 1;
@@ -1055,11 +1061,11 @@ function parseIntegerAttribute(
   maximum: number
 ): number {
   if (value === undefined || !/^-?\d+$/u.test(value)) {
-    throw oraError("STACK_XML_INVALID", `stack.xml ${label} 값이 정수가 아닙니다.`);
+    throw oraError("STACK_XML_INVALID", "stackIntegerInvalid", { label });
   }
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < minimum || parsed > maximum) {
-    throw oraError("STACK_XML_INVALID", `stack.xml ${label} 값이 안전 범위를 벗어났습니다.`);
+    throw oraError("STACK_XML_INVALID", "stackIntegerOutOfRange", { label });
   }
   return parsed;
 }
@@ -1113,7 +1119,7 @@ function validateLayerSourcePath(value: string | undefined): string {
     || hasUnpairedSurrogate(value)
     || !value.toLowerCase().endsWith(".png")
   ) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster 레이어 src가 안전한 상대 PNG 경로가 아닙니다.", value);
+    throw oraError("STACK_XML_INVALID", "layerSourcePathInvalid", undefined, value);
   }
   for (const segment of value.split("/")) {
     if (
@@ -1124,7 +1130,7 @@ function validateLayerSourcePath(value: string | undefined): string {
       || /[. ]$/u.test(segment)
       || ORA_WINDOWS_RESERVED_NAME.test(segment)
     ) {
-      throw oraError("STACK_XML_INVALID", "OpenRaster 레이어 src에 안전하지 않은 경로 구간이 있습니다.", value);
+      throw oraError("STACK_XML_INVALID", "layerSourcePathSegmentUnsafe", undefined, value);
     }
   }
   if (
@@ -1132,7 +1138,7 @@ function validateLayerSourcePath(value: string | undefined): string {
     || value === "Thumbnails/thumbnail.png"
     || value === "stack.xml"
   ) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster 레이어가 예약된 archive 항목을 참조합니다.", value);
+    throw oraError("STACK_XML_INVALID", "layerSourceReservedEntry", undefined, value);
   }
   return value;
 }
@@ -1140,11 +1146,11 @@ function validateLayerSourcePath(value: string | undefined): string {
 function parseOpacityAttribute(value: string | undefined, path?: string): number {
   const source = value ?? "1";
   if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u.test(source)) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster opacity가 올바른 실수가 아닙니다.", path);
+    throw oraError("STACK_XML_INVALID", "opacityNotNumber", undefined, path);
   }
   const opacity = Number(source);
   if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster opacity는 0부터 1 사이여야 합니다.", path);
+    throw oraError("STACK_XML_INVALID", "opacityOutOfRange", undefined, path);
   }
   return opacity;
 }
@@ -1152,7 +1158,7 @@ function parseOpacityAttribute(value: string | undefined, path?: string): number
 function parseVisibilityAttribute(value: string | undefined, path?: string): boolean {
   const visibility = value ?? "visible";
   if (visibility !== "visible" && visibility !== "hidden") {
-    throw oraError("STACK_XML_INVALID", "OpenRaster visibility가 올바르지 않습니다.", path);
+    throw oraError("STACK_XML_INVALID", "visibilityInvalid", undefined, path);
   }
   return visibility === "visible";
 }
@@ -1167,9 +1173,10 @@ function parseBlendAttributes(
   if (blendMode) return { blendMode, sourceCompositeOp };
   warnings.push({
     code: "UNSUPPORTED_BLEND_MODE",
+    variant: "import",
+    params: { mode: sourceCompositeOp },
     ...(context.layerIndex === undefined ? {} : { layerIndex: context.layerIndex }),
     path: context.path,
-    message: `지원하지 않는 ORA 혼합 모드 '${sourceCompositeOp}'를 normal로 가져왔습니다. 원본 값은 metadata에 남겼습니다.`,
   });
   return { blendMode: "normal", sourceCompositeOp };
 }
@@ -1189,8 +1196,9 @@ function warnUnsupportedAttributes(
   warningKeys.add(key);
   warnings.push({
     code: "UNSUPPORTED_XML_ATTRIBUTE",
+    variant: "unsupportedAttribute",
+    params: { element: elementName, attributes: unsupported.join(", ") },
     path,
-    message: `OpenRaster '${elementName}'의 지원하지 않는 attribute(${unsupported.join(", ")})는 보존하지 않습니다.`,
   });
 }
 
@@ -1207,7 +1215,7 @@ function parseLayerTag(
   const path = validateLayerSourcePath(attributes.get("src"));
   const comparisonPath = path.toLocaleLowerCase("en-US");
   if (referencedPaths.has(comparisonPath)) {
-    throw oraError("STACK_XML_INVALID", "여러 OpenRaster 레이어가 같은 PNG 경로를 중복 참조합니다.", path);
+    throw oraError("STACK_XML_INVALID", "layerSourceDuplicate", undefined, path);
   }
   referencedPaths.add(comparisonPath);
   warnUnsupportedAttributes("layer", attributes, ORA_LAYER_ATTRIBUTES, warnings, warningKeys, path);
@@ -1217,7 +1225,7 @@ function parseLayerTag(
     || hasUnsafeXmlControl(name)
     || hasUnpairedSurrogate(name)
   ) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster 레이어 이름이 안전 범위를 벗어났습니다.", path);
+    throw oraError("STACK_XML_INVALID", "layerNameOutOfRange", undefined, path);
   }
   const x = attributes.has("x")
     ? parseIntegerAttribute(attributes.get("x"), "x", -limits.maxOffsetMagnitude, limits.maxOffsetMagnitude)
@@ -1251,16 +1259,16 @@ function parseLayerTag(
 
 function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): ParsedStackXml {
   if (bytes.byteLength === 0 || bytes.byteLength > limits.maxStackXmlBytes) {
-    throw oraError("SIZE_LIMIT", "OpenRaster stack.xml 크기가 안전 범위를 벗어났습니다.", "stack.xml");
+    throw oraError("SIZE_LIMIT", "sizeStackXmlBytesOutOfRange", undefined, "stack.xml");
   }
   let xml: string;
   try {
     xml = decoder.decode(bytes);
   } catch {
-    throw oraError("STACK_XML_INVALID", "OpenRaster stack.xml이 올바른 UTF-8이 아닙니다.", "stack.xml");
+    throw oraError("STACK_XML_INVALID", "stackNotUtf8", undefined, "stack.xml");
   }
   if (/<!\s*(?:DOCTYPE|ENTITY)/iu.test(xml)) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster stack.xml의 DTD/entity 선언은 허용되지 않습니다.", "stack.xml");
+    throw oraError("STACK_XML_INVALID", "stackDtdForbidden", undefined, "stack.xml");
   }
 
   const elementStack: XmlElementFrame[] = [];
@@ -1281,10 +1289,15 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
   let elementCount = 0;
   let cursor = 0;
 
-  function warnElementOnce(elementName: string, message: string): void {
+  function warnElementOnce(elementName: string): void {
     if (warnedElements.has(elementName)) return;
     warnedElements.add(elementName);
-    warnings.push({ code: "UNSUPPORTED_XML_ELEMENT", path: "stack.xml", message });
+    warnings.push({
+      code: "UNSUPPORTED_XML_ELEMENT",
+      variant: "unsupportedElement",
+      params: { element: elementName },
+      path: "stack.xml",
+    });
   }
 
   while (cursor < xml.length) {
@@ -1292,18 +1305,18 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
     if (open < 0) {
       const trailingText = xml.slice(cursor);
       if (trailingText.trim().length !== 0 && elementStack.at(-1)?.kind !== "ignored") {
-        throw oraError("STACK_XML_INVALID", "stack.xml root 밖에 텍스트가 있습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "stackTextOutsideRoot", undefined, "stack.xml");
       }
       break;
     }
     const textBeforeTag = xml.slice(cursor, open);
     if (textBeforeTag.trim().length !== 0 && elementStack.at(-1)?.kind !== "ignored") {
-      throw oraError("STACK_XML_INVALID", "stack.xml element 사이에 예상하지 못한 텍스트가 있습니다.", "stack.xml");
+      throw oraError("STACK_XML_INVALID", "stackUnexpectedText", undefined, "stack.xml");
     }
     if (xml.startsWith("<!--", open)) {
       const end = xml.indexOf("-->", open + 4);
       if (end < 0 || xml.slice(open + 4, end).includes("--")) {
-        throw oraError("STACK_XML_INVALID", "stack.xml 주석이 올바르게 닫히지 않았습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "stackCommentUnclosed", undefined, "stack.xml");
       }
       cursor = end + 3;
       continue;
@@ -1311,7 +1324,7 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
     if (xml.startsWith("<?", open)) {
       const end = xml.indexOf("?>", open + 2);
       if (end < 0) {
-        throw oraError("STACK_XML_INVALID", "stack.xml 처리 지시문이 닫히지 않았습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "stackProcessingInstructionUnclosed", undefined, "stack.xml");
       }
       const declaration = xml.slice(open + 2, end).trim();
       if (
@@ -1320,18 +1333,18 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
         || xml.slice(0, open).trim().length !== 0
         || !/^xml\s+version\s*=\s*(['"])1\.[01]\1(?:\s+encoding\s*=\s*(['"])UTF-8\2)?(?:\s+standalone\s*=\s*(['"])(?:yes|no)\3)?\s*$/iu.test(declaration)
       ) {
-        throw oraError("STACK_XML_INVALID", "stack.xml에는 선두의 안전한 XML 선언만 허용됩니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "stackDeclarationInvalid", undefined, "stack.xml");
       }
       xmlDeclarationSeen = true;
       cursor = end + 2;
       continue;
     }
     if (xml.startsWith("<!", open)) {
-      throw oraError("STACK_XML_INVALID", "stack.xml 선언 element는 허용되지 않습니다.", "stack.xml");
+      throw oraError("STACK_XML_INVALID", "stackDeclarationElementForbidden", undefined, "stack.xml");
     }
     const end = findTagEnd(xml, open + 1);
     if (end < 0) {
-      throw oraError("STACK_XML_INVALID", "stack.xml tag가 닫히지 않았습니다.", "stack.xml");
+      throw oraError("STACK_XML_INVALID", "stackTagUnclosed", undefined, "stack.xml");
     }
     const tag = parseXmlTag(
       xml.slice(open + 1, end),
@@ -1342,16 +1355,16 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
     if (tag.closing) {
       const frame = elementStack.pop();
       if (frame?.name !== tag.name) {
-        throw oraError("STACK_XML_INVALID", "stack.xml element 중첩이 올바르지 않습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "stackNestingInvalid", undefined, "stack.xml");
       }
       continue;
     }
     elementCount += 1;
     if (elementCount > limits.maxXmlElements) {
-      throw oraError("STACK_XML_INVALID", "stack.xml element 수가 안전 한도를 넘었습니다.", "stack.xml");
+      throw oraError("STACK_XML_INVALID", "stackElementCountLimit", undefined, "stack.xml");
     }
     if (elementStack.length >= limits.maxXmlDepth) {
-      throw oraError("STACK_XML_INVALID", "stack.xml element 깊이가 안전 한도를 넘었습니다.", "stack.xml");
+      throw oraError("STACK_XML_INVALID", "stackDepthLimit", undefined, "stack.xml");
     }
 
     const parent = elementStack.at(-1);
@@ -1360,7 +1373,7 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
       frame = { name: tag.name, kind: "ignored", nextVisualChildIndex: 0 };
     } else if (tag.name === "image") {
       if (imageSeen || parent) {
-        throw oraError("STACK_XML_INVALID", "stack.xml에는 image root가 하나만 있어야 합니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "stackImageRootNotUnique", undefined, "stack.xml");
       }
       imageSeen = true;
       width = parseIntegerAttribute(tag.attributes.get("w"), "w", 1, limits.maxDimension);
@@ -1371,16 +1384,16 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
         name !== undefined
         && (name.length > limits.maxLayerNameCharacters || hasUnsafeXmlControl(name) || hasUnpairedSurrogate(name))
       ) {
-        throw oraError("STACK_XML_INVALID", "OpenRaster 문서 이름이 안전 범위를 벗어났습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "documentNameOutOfRange", undefined, "stack.xml");
       }
       version = tag.attributes.get("version");
       if (version !== undefined && !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(version)) {
-        throw oraError("STACK_XML_INVALID", "OpenRaster version이 올바른 SemVer가 아닙니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "versionNotSemver", undefined, "stack.xml");
       }
       const xResolution = tag.attributes.get("xres");
       const yResolution = tag.attributes.get("yres");
       if ((xResolution === undefined) !== (yResolution === undefined)) {
-        throw oraError("STACK_XML_INVALID", "OpenRaster xres와 yres는 함께 지정되어야 합니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "resolutionPairRequired", undefined, "stack.xml");
       }
       if (xResolution !== undefined && yResolution !== undefined) {
         resolution = Object.freeze({
@@ -1391,18 +1404,18 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
       warnUnsupportedAttributes("image", tag.attributes, ORA_IMAGE_ATTRIBUTES, warnings, warningKeys);
       frame = { name: tag.name, kind: "image", nextVisualChildIndex: 0 };
     } else if (!parent) {
-      throw oraError("STACK_XML_INVALID", "stack.xml에는 image root 외의 최상위 element가 있을 수 없습니다.", "stack.xml");
+      throw oraError("STACK_XML_INVALID", "stackTopLevelElementForbidden", undefined, "stack.xml");
     } else if (tag.name === "stack") {
       if (parent.kind === "image") {
         if (rootStackSeen) {
-          throw oraError("STACK_XML_INVALID", "OpenRaster image에는 root stack이 하나만 있어야 합니다.", "stack.xml");
+          throw oraError("STACK_XML_INVALID", "rootStackNotUnique", undefined, "stack.xml");
         }
         rootStackSeen = true;
         warnUnsupportedAttributes("root stack", tag.attributes, new Set(), warnings, warningKeys);
         frame = { name: tag.name, kind: "root-stack", nextVisualChildIndex: 0 };
       } else if (parent.kind === "root-stack" || parent.kind === "group") {
         if (groups.length >= limits.maxGroups) {
-          throw oraError("STACK_XML_INVALID", "OpenRaster 그룹 수가 안전 한도를 넘었습니다.", "stack.xml");
+          throw oraError("STACK_XML_INVALID", "groupCountLimit", undefined, "stack.xml");
         }
         const ancestors = elementStack
           .filter((candidate): candidate is XmlElementFrame & { group: ParsedStackGroup } => candidate.kind === "group" && candidate.group !== undefined)
@@ -1414,14 +1427,14 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
           groupNameSource !== undefined
           && (groupNameSource.length > limits.maxLayerNameCharacters || hasUnsafeXmlControl(groupNameSource) || hasUnpairedSurrogate(groupNameSource))
         ) {
-          throw oraError("STACK_XML_INVALID", "OpenRaster 그룹 이름이 안전 범위를 벗어났습니다.", id);
+          throw oraError("STACK_XML_INVALID", "groupNameOutOfRange", undefined, id);
         }
         const opacity = parseOpacityAttribute(tag.attributes.get("opacity"), id);
         const visible = parseVisibilityAttribute(tag.attributes.get("visibility"), id);
         const blend = parseBlendAttributes(tag.attributes, warnings, { path: id });
         const isolationSource = tag.attributes.get("isolation") ?? "isolate";
         if (isolationSource !== "isolate" && isolationSource !== "auto") {
-          throw oraError("STACK_XML_INVALID", "OpenRaster 그룹 isolation이 올바르지 않습니다.", id);
+          throw oraError("STACK_XML_INVALID", "groupIsolationInvalid", undefined, id);
         }
         const groupIds = [...ancestors.map((group) => group.id), id];
         const groupPath = [
@@ -1448,14 +1461,14 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
         groups.push(group);
         frame = { name: tag.name, kind: "group", group, nextVisualChildIndex: 0 };
       } else {
-        throw oraError("STACK_XML_INVALID", "OpenRaster 그룹 stack이 레이어 stack 밖에 있습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "groupStackOutsideLayerStack", undefined, "stack.xml");
       }
     } else if (tag.name === "layer") {
       if (parent.kind !== "root-stack" && parent.kind !== "group") {
-        throw oraError("STACK_XML_INVALID", "OpenRaster layer가 stack 밖에 있습니다.", "stack.xml");
+        throw oraError("STACK_XML_INVALID", "layerOutsideStack", undefined, "stack.xml");
       }
       if (frontToBackLayers.length >= limits.maxLayers) {
-        throw oraError("LAYER_COUNT_LIMIT", "OpenRaster 레이어 수가 안전 한도를 넘었습니다.", "stack.xml");
+        throw oraError("LAYER_COUNT_LIMIT", "layerCountLimit", undefined, "stack.xml");
       }
       const ancestors = elementStack
         .filter((candidate): candidate is XmlElementFrame & { group: ParsedStackGroup } => candidate.kind === "group" && candidate.group !== undefined)
@@ -1477,16 +1490,13 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
         warningKeys.add("mask");
         warnings.push({
           code: "MASKS_IGNORED",
+          variant: "masksIgnored",
           path: "stack.xml",
-          message: "OpenRaster 레이어 마스크는 가져오지 않으며 원본 편집 효과가 달라질 수 있습니다.",
         });
       }
       frame = { name: tag.name, kind: "ignored", nextVisualChildIndex: 0 };
     } else {
-      warnElementOnce(
-        tag.name,
-        `OpenRaster의 '${tag.name}' extension element는 가져오거나 다시 저장할 수 없습니다.`,
-      );
+      warnElementOnce(tag.name);
       frame = { name: tag.name, kind: "ignored", nextVisualChildIndex: 0 };
     }
 
@@ -1499,10 +1509,10 @@ function parseStackXml(bytes: Uint8Array, limits: StudioOpenRasterLimits): Parse
     || width === undefined
     || height === undefined
   ) {
-    throw oraError("STACK_XML_INVALID", "OpenRaster stack.xml 구조가 완전하지 않습니다.", "stack.xml");
+    throw oraError("STACK_XML_INVALID", "stackStructureIncomplete", undefined, "stack.xml");
   }
   if (frontToBackLayers.length === 0) {
-    throw oraError("LAYER_COUNT_LIMIT", "OpenRaster에 가져올 레이어가 없습니다.", "stack.xml");
+    throw oraError("LAYER_COUNT_LIMIT", "noLayersToImport", undefined, "stack.xml");
   }
   return {
     width,
@@ -1534,14 +1544,16 @@ async function readOpenRasterArchiveEntry(
     if (cause instanceof StudioZipReaderError) {
       throw oraError(
         cause.code === "ABORTED" ? "ABORTED" : "ARCHIVE_INVALID",
-        `OpenRaster ZIP 항목 '${entry.path}'을 검증하지 못했습니다: ${cause.message}`,
+        "archiveEntryVerifyFailed",
+        { path: entry.path, detail: cause.message },
         cause.path ?? entry.path,
       );
     }
     const detail = cause instanceof Error ? `: ${cause.message}` : "";
     throw oraError(
       "ARCHIVE_INVALID",
-      `OpenRaster ZIP 항목 '${entry.path}'을 읽지 못했습니다${detail}`,
+      "archiveEntryReadFailed",
+      { path: entry.path, detail },
       entry.path,
     );
   }
@@ -1585,60 +1597,49 @@ export async function importStudioOpenRaster(
     const detail = cause instanceof Error ? `: ${cause.message}` : "";
     throw oraError(
       "ARCHIVE_INVALID",
-      `OpenRaster ZIP이 올바르지 않습니다${detail}`,
+      "archiveInvalid",
+      { detail },
       cause instanceof StudioZipReaderError ? cause.path : undefined,
     );
   }
 
   const firstEntry = archive.entries[0];
   if (!firstEntry || firstEntry.path !== "mimetype" || firstEntry.compressionMethod !== 0) {
-    throw oraError("MIMETYPE_INVALID", "OpenRaster mimetype은 첫 번째 stored 항목이어야 합니다.");
+    throw oraError("MIMETYPE_INVALID", "mimetypeNotFirstStored");
   }
   if (firstEntry.uncompressedBytes !== encoder.encode(STUDIO_OPENRASTER_MIME).byteLength) {
-    throw oraError("MIMETYPE_INVALID", "OpenRaster mimetype 바이트 길이가 올바르지 않습니다.", "mimetype");
+    throw oraError("MIMETYPE_INVALID", "mimetypeLengthInvalid", undefined, "mimetype");
   }
   const mimetype = await readOpenRasterArchiveEntry(archive, firstEntry, options.signal);
   let mimetypeValue: string;
   try {
     mimetypeValue = decoder.decode(mimetype);
   } catch {
-    throw oraError("MIMETYPE_INVALID", "OpenRaster mimetype이 올바른 UTF-8이 아닙니다.");
+    throw oraError("MIMETYPE_INVALID", "mimetypeNotUtf8");
   }
   if (mimetypeValue !== STUDIO_OPENRASTER_MIME) {
-    throw oraError("MIMETYPE_INVALID", "OpenRaster mimetype 값이 올바르지 않습니다.");
+    throw oraError("MIMETYPE_INVALID", "mimetypeValueInvalid");
   }
   const stackEntry = archive.getEntry("stack.xml");
   const mergedEntry = archive.getEntry("mergedimage.png");
   const thumbnailEntry = archive.getEntry("Thumbnails/thumbnail.png");
   if (!stackEntry || stackEntry.directory) {
-    throw oraError("REQUIRED_ENTRY_MISSING", "OpenRaster stack.xml이 없습니다.", "stack.xml");
+    throw oraError("REQUIRED_ENTRY_MISSING", "requiredStackXmlMissing", undefined, "stack.xml");
   }
   if (!mergedEntry || mergedEntry.directory) {
-    throw oraError("REQUIRED_ENTRY_MISSING", "OpenRaster mergedimage.png가 없습니다.", "mergedimage.png");
+    throw oraError("REQUIRED_ENTRY_MISSING", "requiredMergedImageMissing", undefined, "mergedimage.png");
   }
   if (!thumbnailEntry || thumbnailEntry.directory) {
-    throw oraError(
-      "REQUIRED_ENTRY_MISSING",
-      "OpenRaster thumbnail.png가 없습니다.",
-      "Thumbnails/thumbnail.png"
-    );
+    throw oraError("REQUIRED_ENTRY_MISSING", "requiredThumbnailMissing", undefined, "Thumbnails/thumbnail.png");
   }
   if (stackEntry.uncompressedBytes > limits.maxStackXmlBytes) {
-    throw oraError("SIZE_LIMIT", "OpenRaster stack.xml이 안전 바이트 한도를 넘었습니다.", "stack.xml");
+    throw oraError("SIZE_LIMIT", "sizeStackXmlByteLimit", undefined, "stack.xml");
   }
   if (mergedEntry.uncompressedBytes > limits.maxMergedImageBytes) {
-    throw oraError(
-      "SIZE_LIMIT",
-      "OpenRaster mergedimage.png가 안전 바이트 한도를 넘었습니다.",
-      "mergedimage.png",
-    );
+    throw oraError("SIZE_LIMIT", "sizeMergedImageByteLimit", undefined, "mergedimage.png",);
   }
   if (thumbnailEntry.uncompressedBytes > limits.maxThumbnailBytes) {
-    throw oraError(
-      "SIZE_LIMIT",
-      "OpenRaster thumbnail.png가 안전 바이트 한도를 넘었습니다.",
-      "Thumbnails/thumbnail.png",
-    );
+    throw oraError("SIZE_LIMIT", "sizeThumbnailByteLimit", undefined, "Thumbnails/thumbnail.png",);
   }
 
   const stackXml = await readOpenRasterArchiveEntry(archive, stackEntry, options.signal);
@@ -1646,18 +1647,10 @@ export async function importStudioOpenRaster(
   const mergedBytes = await readOpenRasterArchiveEntry(archive, mergedEntry, options.signal);
   const thumbnailBytes = await readOpenRasterArchiveEntry(archive, thumbnailEntry, options.signal);
   if (mergedBytes.byteLength > limits.maxMergedImageBytes) {
-    throw oraError(
-      "SIZE_LIMIT",
-      "OpenRaster mergedimage.png가 안전 바이트 한도를 넘었습니다.",
-      "mergedimage.png"
-    );
+    throw oraError("SIZE_LIMIT", "sizeMergedImageByteLimit", undefined, "mergedimage.png");
   }
   if (thumbnailBytes.byteLength > limits.maxThumbnailBytes) {
-    throw oraError(
-      "SIZE_LIMIT",
-      "OpenRaster thumbnail.png가 안전 바이트 한도를 넘었습니다.",
-      "Thumbnails/thumbnail.png"
-    );
+    throw oraError("SIZE_LIMIT", "sizeThumbnailByteLimit", undefined, "Thumbnails/thumbnail.png");
   }
   const mergedDimensions = inspectPngIhdr(mergedBytes, "mergedimage.png", limits);
   const thumbnailDimensions = inspectPngIhdr(
@@ -1682,14 +1675,14 @@ export async function importStudioOpenRaster(
       totalImageBytes,
       bytes.byteLength,
       limits.maxTotalImageBytes,
-      "압축 해제 이미지 바이트",
+      "uncompressedBytes",
       path
     );
     totalDecodedRgbaBytes = addImageBudget(
       totalDecodedRgbaBytes,
       decodedRgbaBytes,
       limits.maxTotalDecodedRgbaBytes,
-      "디코딩 RGBA 메모리",
+      "decodedRgba",
       path
     );
   }
@@ -1698,10 +1691,10 @@ export async function importStudioOpenRaster(
     throwIfAborted(options.signal);
     const entry = archive.getEntry(layer.path);
     if (!entry || entry.directory) {
-      throw oraError("REQUIRED_ENTRY_MISSING", "OpenRaster 레이어 PNG가 없습니다.", layer.path);
+      throw oraError("REQUIRED_ENTRY_MISSING", "requiredLayerPngMissing", undefined, layer.path);
     }
     if (entry.uncompressedBytes > limits.maxLayerBytes) {
-      throw oraError("SIZE_LIMIT", "OpenRaster 레이어 PNG가 안전 한도를 넘었습니다.", layer.path);
+      throw oraError("SIZE_LIMIT", "sizeLayerPngLimit", undefined, layer.path);
     }
     const png = await readOpenRasterArchiveEntry(archive, entry, options.signal);
     const dimensions = inspectPngIhdr(png, layer.path, limits);
@@ -1709,14 +1702,14 @@ export async function importStudioOpenRaster(
       totalImageBytes,
       png.byteLength,
       limits.maxTotalImageBytes,
-      "압축 해제 이미지 바이트",
+      "uncompressedBytes",
       layer.path
     );
     totalDecodedRgbaBytes = addImageBudget(
       totalDecodedRgbaBytes,
       dimensions.decodedRgbaBytes,
       limits.maxTotalDecodedRgbaBytes,
-      "디코딩 RGBA 메모리",
+      "decodedRgba",
       layer.path
     );
     frontToBackLayers.push({

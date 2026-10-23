@@ -126,13 +126,29 @@ export interface StudioRasterReplayRuntimeResult {
   readonly appliedPatchCount: number;
 }
 
+/**
+ * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+params만 방출한다(message = 코드).
+ * 해석은 표시 지점에서만 status-i18n/studio-producer-error-i18n-live-raster.ts로 한다.
+ */
+export type StudioRasterReplayRuntimeErrorCode =
+  | "invalid-option" | "invalid-work-id" | "invalid-png-chunk-type" | "invalid-png-signature" | "png-chunk-limit" | "invalid-png-chunk-truncated"
+  | "invalid-png-chunk-length" | "invalid-png-crc" | "animated-png-unsupported" | "unsupported-png-critical-chunk" | "invalid-png-first-chunk" | "asset-dimension-mismatch"
+  | "unsupported-png-profile" | "invalid-png-duplicate-ihdr" | "invalid-png-palette" | "invalid-png-idat-sequence" | "invalid-png-iend" | "invalid-png-zlib-header"
+  | "invalid-png-missing-idat-iend" | "sha256-unavailable" | "invalid-sha256-result" | "asset-byte-length-mismatch" | "asset-blob-mismatch" | "invalid-download-result"
+  | "invalid-decoded-png" | "decoded-rgba-length-mismatch" | "unsupported-media-type" | "png-decoder-unavailable" | "decoded-dimension-mismatch" | "canvas-context-unavailable"
+  | "canvas-unavailable" | "canvas-context-unavailable-html" | "visible-filter-failed" | "invalid-visible-filter-result" | "checkpoint-surface-mismatch" | "checkpoint-operation-mismatch"
+  | "checkpoint-undo-horizon" | "checkpoint-undo-restore-horizon" | "asset-identity-conflict" | "resident-memory-budget" | "asset-not-png" | "asset-byte-budget"
+  | "asset-download-failed" | "asset-sha256-mismatch" | "png-decode-failed" | "asset-cache-incomplete" | "invalid-request" | "invalid-dependencies"
+  | "invalid-decoder" | "invalid-sha256-implementation" | "invalid-visible-filter" | "checkpoint-asset-cache-incomplete" | "tile-dependency-incomplete" | "patch-tile-missing"
+  | "output-tile-missing" | "aborted" | "browser-png-decode-failed";
+
 export class StudioRasterReplayRuntimeError extends Error {
   constructor(
-    readonly code: string,
-    message: string,
+    readonly code: StudioRasterReplayRuntimeErrorCode,
+    readonly params?: Readonly<Record<string, string>>,
     cause?: unknown
   ) {
-    super(message, cause === undefined ? undefined : { cause });
+    super(code, cause === undefined ? undefined : { cause });
     this.name = "StudioRasterReplayRuntimeError";
   }
 }
@@ -163,13 +179,13 @@ export interface StudioRasterBrowserDecodeEnvironment {
   readonly createHtmlCanvas?: () => HTMLCanvasElement;
 }
 
-function fail(code: string, message: string, cause?: unknown): never {
-  throw new StudioRasterReplayRuntimeError(code, message, cause);
+function fail(code: StudioRasterReplayRuntimeErrorCode, params?: Readonly<Record<string, string>>, cause?: unknown): never {
+  throw new StudioRasterReplayRuntimeError(code, params, cause);
 }
 
 function abortError(signal: AbortSignal): Error {
   if (signal.reason instanceof Error) return signal.reason;
-  return new DOMException("래스터 CRDT 재생이 취소되었습니다.", "AbortError");
+  return new StudioRasterReplayRuntimeError("aborted");
 }
 
 function throwIfAborted(signal: AbortSignal): void {
@@ -184,7 +200,7 @@ function positiveBoundedInteger(
 ): number {
   const resolved = value ?? fallback;
   if (!Number.isSafeInteger(resolved) || resolved < 1 || resolved > maximum) {
-    fail("invalid_option", `${label} 값이 허용 범위를 벗어났습니다.`);
+    fail("invalid-option", { label });
   }
   return resolved;
 }
@@ -194,7 +210,7 @@ function assertSafeWorkId(workId: string): void {
     typeof workId !== "string" || workId.length < 1 || workId.length > MAX_ID_LENGTH ||
     !SAFE_ID_PATTERN.test(workId)
   ) {
-    fail("invalid_work_id", "작업 범위 식별자가 올바르지 않습니다.");
+    fail("invalid-work-id");
   }
 }
 
@@ -278,7 +294,7 @@ function pngChunkName(bytes: Uint8Array, offset: number): string {
     // PNG reserves the third type-code bit for future expansion. It must remain uppercase/zero.
     ((typeBytes[2] ?? 0) & 0x20) !== 0
   ) {
-    fail("invalid_png_chunk_type", "PNG 청크 타입 또는 예약 비트가 올바르지 않습니다.");
+    fail("invalid-png-chunk-type");
   }
   return String.fromCharCode(...typeBytes);
 }
@@ -312,7 +328,7 @@ function assertPngEnvelope(
     bytes.byteLength < 57 ||
     !PNG_SIGNATURE.every((value, index) => bytes[index] === value)
   ) {
-    fail("invalid_png", `래스터 자산 ${reference.assetId}에 PNG 서명이 없습니다.`);
+    fail("invalid-png-signature", { assetId: reference.assetId });
   }
   let offset = PNG_SIGNATURE.byteLength;
   let chunkIndex = 0;
@@ -325,10 +341,10 @@ function assertPngEnvelope(
   let sawIend = false;
   while (offset < bytes.byteLength) {
     if (chunkIndex >= PNG_MAX_CHUNKS) {
-      fail("png_chunk_limit", `래스터 자산 ${reference.assetId}의 PNG 청크 수가 안전 한도를 넘었습니다.`);
+      fail("png-chunk-limit", { assetId: reference.assetId });
     }
     if (offset > bytes.byteLength - 12) {
-      fail("invalid_png", `래스터 자산 ${reference.assetId}의 PNG 청크가 잘렸습니다.`);
+      fail("invalid-png-chunk-truncated", { assetId: reference.assetId });
     }
     const length = readUint32BigEndian(bytes, offset);
     const typeOffset = offset + 4;
@@ -340,27 +356,27 @@ function assertPngEnvelope(
       length > STUDIO_RASTER_MAX_ASSET_BYTES ||
       !Number.isSafeInteger(chunkEnd) || chunkEnd > bytes.byteLength
     ) {
-      fail("invalid_png", `래스터 자산 ${reference.assetId}의 PNG 청크 길이가 올바르지 않습니다.`);
+      fail("invalid-png-chunk-length", { assetId: reference.assetId });
     }
     const expectedCrc = readUint32BigEndian(bytes, offset + 8 + length);
     if (pngChunkCrc32(bytes, offset + 4, length) !== expectedCrc) {
-      fail("invalid_png_crc", `래스터 자산 ${reference.assetId}의 PNG 청크 CRC가 올바르지 않습니다.`);
+      fail("invalid-png-crc", { assetId: reference.assetId });
     }
     if (type === PNG_ACTL || type === PNG_FCTL || type === PNG_FDAT) {
-      fail("animated_png_unsupported", "래스터 CRDT 자산은 정적 PNG만 사용할 수 있습니다.");
+      fail("animated-png-unsupported");
     }
     const isCritical = (bytes[typeOffset]! & 0x20) === 0;
     if (isCritical && !PNG_KNOWN_CRITICAL_CHUNKS.has(type)) {
-      fail("unsupported_png_critical_chunk", `지원하지 않는 PNG 필수 청크(${typeName})가 있습니다.`);
+      fail("unsupported-png-critical-chunk", { typeName });
     }
     if (chunkIndex === 0) {
       if (type !== PNG_IHDR || length !== 13) {
-        fail("invalid_png", `래스터 자산 ${reference.assetId}의 첫 청크가 IHDR가 아닙니다.`);
+        fail("invalid-png-first-chunk", { assetId: reference.assetId });
       }
       const width = readUint32BigEndian(bytes, offset + 8);
       const height = readUint32BigEndian(bytes, offset + 12);
       if (width !== reference.width || height !== reference.height) {
-        fail("asset_dimension_mismatch", `래스터 자산 ${reference.assetId}의 PNG 크기가 참조와 다릅니다.`);
+        fail("asset-dimension-mismatch", { assetId: reference.assetId });
       }
       const bitDepth = bytes[offset + 16]!;
       const colorType = bytes[offset + 17]!;
@@ -368,27 +384,21 @@ function assertPngEnvelope(
         bitDepth !== 8 || colorType !== 6 || bytes[offset + 18] !== 0 ||
         bytes[offset + 19] !== 0 || bytes[offset + 20] !== 0
       ) {
-        fail(
-          "unsupported_png_profile",
-          `래스터 자산 ${reference.assetId}은 8-bit RGBA 비인터레이스 PNG가 아닙니다.`
-        );
+        fail("unsupported-png-profile", { assetId: reference.assetId });
       }
     } else if (type === PNG_IHDR) {
-      fail("invalid_png", `래스터 자산 ${reference.assetId}에 IHDR가 중복되었습니다.`);
+      fail("invalid-png-duplicate-ihdr", { assetId: reference.assetId });
     }
     if (type === PNG_PLTE) {
       if (
         sawPalette || sawIdat || length < 3 || length > 768 || length % 3 !== 0
       ) {
-        fail("invalid_png_palette", `래스터 자산 ${reference.assetId}의 PLTE 청크가 올바르지 않습니다.`);
+        fail("invalid-png-palette", { assetId: reference.assetId });
       }
       sawPalette = true;
     } else if (type === PNG_IDAT) {
       if (idatEnded || length === 0 || idatChunkCount >= PNG_MAX_IDAT_CHUNKS) {
-        fail(
-          "invalid_png_idat_sequence",
-          `래스터 자산 ${reference.assetId}의 IDAT 청크가 비어 있거나 연속되지 않습니다.`
-        );
+        fail("invalid-png-idat-sequence", { assetId: reference.assetId });
       }
       sawIdat = true;
       idatChunkCount += 1;
@@ -403,7 +413,7 @@ function assertPngEnvelope(
       if (
         length !== 0 || !sawIdat || totalIdatBytes < 2 || chunkEnd !== bytes.byteLength
       ) {
-        fail("invalid_png", `래스터 자산 ${reference.assetId}의 IEND 또는 후행 바이트가 올바르지 않습니다.`);
+        fail("invalid-png-iend", { assetId: reference.assetId });
       }
       const [compressionMethod, flags] = zlibHeader;
       if (
@@ -411,7 +421,7 @@ function assertPngEnvelope(
         (compressionMethod & 0x0f) !== 8 || (compressionMethod >> 4) > 7 ||
         ((compressionMethod << 8) + flags) % 31 !== 0 || (flags & 0x20) !== 0
       ) {
-        fail("invalid_png_zlib_header", `래스터 자산 ${reference.assetId}의 IDAT zlib 헤더가 올바르지 않습니다.`);
+        fail("invalid-png-zlib-header", { assetId: reference.assetId });
       }
       sawIend = true;
     }
@@ -420,14 +430,14 @@ function assertPngEnvelope(
     if (sawIend) break;
   }
   if (!sawIdat || !sawIend) {
-    fail("invalid_png", `래스터 자산 ${reference.assetId}에 IDAT/IEND가 없습니다.`);
+    fail("invalid-png-missing-idat-iend", { assetId: reference.assetId });
   }
 }
 
 async function defaultSha256(bytes: Uint8Array, signal: AbortSignal): Promise<string> {
   throwIfAborted(signal);
   if (!globalThis.crypto?.subtle) {
-    fail("sha256_unavailable", "이 브라우저에서는 SHA-256을 사용할 수 없습니다.");
+    fail("sha256-unavailable");
   }
   const owned = Uint8Array.from(bytes);
   const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", owned.buffer));
@@ -443,7 +453,7 @@ async function checkedSha256(
   const digest = await sha256(Uint8Array.from(bytes), signal);
   throwIfAborted(signal);
   if (!SHA256_PATTERN.test(digest)) {
-    fail("invalid_sha256_result", "SHA-256 구현이 소문자 64자리 digest를 반환하지 않았습니다.");
+    fail("invalid-sha256-result");
   }
   return digest;
 }
@@ -456,19 +466,19 @@ async function downloadedBytes(
   throwIfAborted(signal);
   if (value instanceof Uint8Array) {
     if (value.byteLength !== reference.byteLength) {
-      fail("asset_byte_length_mismatch", `래스터 자산 ${reference.assetId} 바이트 길이가 참조와 다릅니다.`);
+      fail("asset-byte-length-mismatch", { assetId: reference.assetId });
     }
     return Uint8Array.from(value);
   }
   if (typeof Blob !== "undefined" && value instanceof Blob) {
     if (value.size !== reference.byteLength || (value.type !== "" && value.type !== "image/png")) {
-      fail("asset_blob_mismatch", `래스터 자산 ${reference.assetId} Blob 메타데이터가 참조와 다릅니다.`);
+      fail("asset-blob-mismatch", { assetId: reference.assetId });
     }
     const bytes = new Uint8Array(await value.arrayBuffer());
     throwIfAborted(signal);
     return bytes;
   }
-  fail("invalid_download_result", `래스터 자산 ${reference.assetId} 다운로드 결과가 바이트나 Blob이 아닙니다.`);
+  fail("invalid-download-result", { assetId: reference.assetId });
 }
 
 function copyDecodedPixels(
@@ -481,11 +491,11 @@ function copyDecodedPixels(
     decoded.width !== reference.width || decoded.height !== reference.height ||
     (!(decoded.rgba instanceof Uint8Array) && !(decoded.rgba instanceof Uint8ClampedArray))
   ) {
-    fail("invalid_decoded_png", `래스터 자산 ${reference.assetId} 디코드 결과가 올바르지 않습니다.`);
+    fail("invalid-decoded-png", { assetId: reference.assetId });
   }
   const expectedLength = reference.width * reference.height * 4;
   if (decoded.rgba.byteLength !== expectedLength) {
-    fail("decoded_rgba_length_mismatch", `래스터 자산 ${reference.assetId} RGBA 길이가 크기와 다릅니다.`);
+    fail("decoded-rgba-length-mismatch", { assetId: reference.assetId });
   }
   return Uint8ClampedArray.from(decoded.rgba);
 }
@@ -515,11 +525,11 @@ export async function decodeStudioRasterPngInBrowser(
 ): Promise<StudioRasterDecodedPng> {
   throwIfAborted(signal);
   if (reference.mediaType !== "image/png") {
-    fail("unsupported_media_type", "브라우저 래스터 재생기는 PNG 자산만 디코드합니다.");
+    fail("unsupported-media-type");
   }
   const createBitmap = environment.createImageBitmap;
   if (typeof createBitmap !== "function") {
-    fail("png_decoder_unavailable", "이 브라우저에서는 createImageBitmap을 사용할 수 없습니다.");
+    fail("png-decoder-unavailable");
   }
   let bitmap: ImageBitmap | undefined;
   try {
@@ -533,7 +543,7 @@ export async function decodeStudioRasterPngInBrowser(
     );
     throwIfAborted(signal);
     if (bitmap.width !== reference.width || bitmap.height !== reference.height) {
-      fail("decoded_dimension_mismatch", "디코드된 PNG 크기가 자산 참조와 다릅니다.");
+      fail("decoded-dimension-mismatch");
     }
 
     const offscreen = environment.createOffscreenCanvas?.(reference.width, reference.height);
@@ -542,7 +552,7 @@ export async function decodeStudioRasterPngInBrowser(
         alpha: true,
         willReadFrequently: true,
       });
-      if (!context) fail("canvas_context_unavailable", "PNG readback 캔버스를 만들 수 없습니다.");
+      if (!context) fail("canvas-context-unavailable");
       context.clearRect(0, 0, reference.width, reference.height);
       context.drawImage(bitmap, 0, 0);
       throwIfAborted(signal);
@@ -556,14 +566,14 @@ export async function decodeStudioRasterPngInBrowser(
     }
 
     const canvas = environment.createHtmlCanvas?.();
-    if (!canvas) fail("canvas_unavailable", "PNG readback 캔버스를 만들 수 없습니다.");
+    if (!canvas) fail("canvas-unavailable");
     canvas.width = reference.width;
     canvas.height = reference.height;
     const context = canvas.getContext("2d", {
       alpha: true,
       willReadFrequently: true,
     });
-    if (!context) fail("canvas_context_unavailable", "PNG readback 컨텍스트를 만들 수 없습니다.");
+    if (!context) fail("canvas-context-unavailable-html");
     context.clearRect(0, 0, reference.width, reference.height);
     context.drawImage(bitmap, 0, 0);
     throwIfAborted(signal);
@@ -577,11 +587,7 @@ export async function decodeStudioRasterPngInBrowser(
   } catch (error) {
     if (signal.aborted) throw abortError(signal);
     if (error instanceof StudioRasterReplayRuntimeError) throw error;
-    throw new StudioRasterReplayRuntimeError(
-      "png_decode_failed",
-      `래스터 자산 ${reference.assetId} PNG 디코드에 실패했습니다.`,
-      error
-    );
+    return fail("browser-png-decode-failed", { assetId: reference.assetId }, error);
   } finally {
     bitmap?.close();
   }
@@ -639,10 +645,10 @@ function selectedTileKeys(
         try {
           include = filter(frozenInput);
         } catch (error) {
-          fail("visible_filter_failed", "표시 타일 필터 실행에 실패했습니다.", error);
+          fail("visible-filter-failed", undefined, error);
         }
         if (typeof include !== "boolean") {
-          fail("invalid_visible_filter_result", "표시 타일 필터는 boolean을 반환해야 합니다.");
+          fail("invalid-visible-filter-result");
         }
       }
       if (include) selected.add(tileKey(tileX, tileY));
@@ -662,7 +668,7 @@ function prepareCheckpoint(
   if (checkpoint === undefined) return null;
   const value = createStudioRasterCompactionCheckpoint(checkpoint);
   if (canonicalStudioRasterJson(value.surface) !== canonicalStudioRasterJson(log.surface)) {
-    fail("checkpoint_surface_mismatch", "checkpoint와 래스터 작업 로그의 표면이 일치하지 않습니다.");
+    fail("checkpoint-surface-mismatch");
   }
 
   const sealedOperationIds = new Set(value.sealedOperationIds);
@@ -672,10 +678,7 @@ function prepareCheckpoint(
       value.through
     ) <= 0;
     if (beforeOrAtCheckpoint !== sealedOperationIds.has(operation.operationId)) {
-      fail(
-        "checkpoint_operation_mismatch",
-        "checkpoint 봉인 경계와 래스터 작업 로그의 operation 집합이 일치하지 않습니다."
-      );
+      fail("checkpoint-operation-mismatch");
     }
   }
 
@@ -686,7 +689,7 @@ function prepareCheckpoint(
       sealedOperationIds.has(undo.targetOperationId) &&
       !sealedUndoOperationIds.has(undo.undoOperationId)
     ) {
-      fail("checkpoint_undo_horizon", "checkpoint으로 봉인된 작업을 뒤늦게 실행 취소할 수 없습니다.");
+      fail("checkpoint-undo-horizon");
     }
   }
   for (const acknowledgement of log.undoAcknowledgements) {
@@ -694,7 +697,7 @@ function prepareCheckpoint(
       sealedUndoOperationIds.has(acknowledgement.undoOperationId) &&
       !sealedUndoAcknowledgementIds.has(acknowledgement.acknowledgementId)
     ) {
-      fail("checkpoint_undo_horizon", "checkpoint으로 봉인된 실행 취소를 뒤늦게 복원할 수 없습니다.");
+      fail("checkpoint-undo-restore-horizon");
     }
   }
 
@@ -772,10 +775,7 @@ function uniqueReplayAssets(
       existing &&
       canonicalStudioRasterJson(existing) !== canonicalStudioRasterJson(reference)
     ) {
-      fail(
-        "asset_identity_conflict",
-        `checkpoint와 tail이 같은 자산 ID ${reference.assetId}에 서로 다른 내용을 선언합니다.`
-      );
+      fail("asset-identity-conflict", { assetId: reference.assetId });
     }
     assets.set(reference.assetId, reference);
   };
@@ -813,10 +813,7 @@ function assertMemoryBudget(
   const largestTile = Math.min(surface.tileSize, STUDIO_RASTER_MAX_TILE_SIZE) ** 2 * 4;
   const required = tileBytes + decodedBytes + largestEncoded + largestTile;
   if (!Number.isSafeInteger(required) || required > maxResidentBytes) {
-    fail(
-      "resident_memory_budget",
-      "표시 타일, 디코드 자산, 동시 다운로드 및 해시 복사본이 래스터 재생 메모리 예산을 초과했습니다."
-    );
+    fail("resident-memory-budget");
   }
 }
 
@@ -827,23 +824,23 @@ async function loadAsset(
 ): Promise<DecodedAssetState> {
   throwIfAborted(signal);
   if (reference.mediaType !== "image/png") {
-    fail("unsupported_media_type", `래스터 자산 ${reference.assetId}은 PNG가 아닙니다.`);
+    fail("asset-not-png", { assetId: reference.assetId });
   }
   if (reference.byteLength < 1 || reference.byteLength > STUDIO_RASTER_MAX_ASSET_BYTES) {
-    fail("asset_byte_budget", `래스터 자산 ${reference.assetId} 크기가 허용 범위를 벗어났습니다.`);
+    fail("asset-byte-budget", { assetId: reference.assetId });
   }
   let downloaded: StudioRasterDownloadedAsset;
   try {
     downloaded = await dependencies.download(reference, signal);
   } catch (error) {
     if (signal.aborted) throw abortError(signal);
-    fail("asset_download_failed", `래스터 자산 ${reference.assetId} 다운로드에 실패했습니다.`, error);
+    fail("asset-download-failed", { assetId: reference.assetId }, error);
   }
   const bytes = await downloadedBytes(downloaded, reference, signal);
   assertPngEnvelope(bytes, reference);
   const digest = await checkedSha256(bytes, signal, dependencies.sha256);
   if (digest !== reference.sha256) {
-    fail("asset_sha256_mismatch", `래스터 자산 ${reference.assetId} 내용 해시가 참조와 다릅니다.`);
+    fail("asset-sha256-mismatch", { assetId: reference.assetId });
   }
   let decoded: StudioRasterDecodedPng;
   try {
@@ -851,7 +848,7 @@ async function loadAsset(
   } catch (error) {
     if (signal.aborted) throw abortError(signal);
     if (error instanceof StudioRasterReplayRuntimeError) throw error;
-    fail("png_decode_failed", `래스터 자산 ${reference.assetId} 디코드에 실패했습니다.`, error);
+    fail("png-decode-failed", { assetId: reference.assetId }, error);
   }
   throwIfAborted(signal);
   return {
@@ -954,7 +951,7 @@ function applyPatch(
   const payload = assets.get(patch.effect.payload.assetId);
   const mask = patch.selectionMask ? assets.get(patch.selectionMask.assetId) : undefined;
   if (!payload || (patch.selectionMask && !mask)) {
-    fail("asset_cache_incomplete", "재생에 필요한 래스터 자산이 검증 캐시에 없습니다.");
+    fail("asset-cache-incomplete");
   }
   const width = patch.region.width;
   const height = patch.region.height;
@@ -993,19 +990,19 @@ export async function replayStudioRasterCrdtPixels(
   request: StudioRasterReplayRuntimeRequest,
   dependencies: StudioRasterReplayRuntimeDependencies
 ): Promise<StudioRasterReplayRuntimeResult> {
-  if (!request || typeof request !== "object") fail("invalid_request", "래스터 재생 요청이 필요합니다.");
+  if (!request || typeof request !== "object") fail("invalid-request");
   assertSafeWorkId(request.workId);
   if (!dependencies || typeof dependencies !== "object" || typeof dependencies.download !== "function") {
-    fail("invalid_dependencies", "래스터 자산 downloader가 필요합니다.");
+    fail("invalid-dependencies");
   }
   if (dependencies.decode !== undefined && typeof dependencies.decode !== "function") {
-    fail("invalid_dependencies", "PNG decoder가 함수가 아닙니다.");
+    fail("invalid-decoder");
   }
   if (dependencies.sha256 !== undefined && typeof dependencies.sha256 !== "function") {
-    fail("invalid_dependencies", "SHA-256 구현이 함수가 아닙니다.");
+    fail("invalid-sha256-implementation");
   }
   if (request.visibleTileFilter !== undefined && typeof request.visibleTileFilter !== "function") {
-    fail("invalid_visible_filter", "표시 타일 필터가 함수가 아닙니다.");
+    fail("invalid-visible-filter");
   }
 
   const log = createStudioRasterOperationLog(request.log);
@@ -1013,13 +1010,13 @@ export async function replayStudioRasterCrdtPixels(
     request.concurrency,
     STUDIO_RASTER_REPLAY_DEFAULT_CONCURRENCY,
     STUDIO_RASTER_REPLAY_MAX_CONCURRENCY,
-    "동시 자산 처리 수"
+    "concurrency"
   );
   const maxResidentBytes = positiveBoundedInteger(
     request.maxResidentBytes,
     STUDIO_RASTER_REPLAY_DEFAULT_RESIDENT_BYTES,
     STUDIO_RASTER_REPLAY_MAX_RESIDENT_BYTES,
-    "상주 메모리 예산"
+    "residentBytes"
   );
   const controller = new AbortController();
   const externalSignal = request.signal;
@@ -1060,7 +1057,7 @@ export async function replayStudioRasterCrdtPixels(
         ? assetById.get(checkpointReference.assetId)
         : undefined;
       if (checkpointReference && !checkpointAsset) {
-        fail("asset_cache_incomplete", "checkpoint 타일 자산이 검증 캐시에 없습니다.");
+        fail("checkpoint-asset-cache-incomplete");
       }
       tileByKey.set(key, {
         ...dimensions,
@@ -1084,7 +1081,7 @@ export async function replayStudioRasterCrdtPixels(
       let conflict = false;
       for (const [key, expectedSha256] of conditionalTiles) {
         const tile = tileByKey.get(key);
-        if (!tile) fail("tile_dependency_incomplete", "조건부 교체 타일 의존성이 누락되었습니다.");
+        if (!tile) fail("tile-dependency-incomplete");
         tile.sha256 ??= await checkedSha256(tile.rgba, controller.signal, runtimeDependencies.sha256);
         if (tile.sha256 !== expectedSha256) {
           conflict = true;
@@ -1097,7 +1094,7 @@ export async function replayStudioRasterCrdtPixels(
       }
       for (const patch of patches) {
         const tile = tileByKey.get(tileKey(patch.tileX, patch.tileY));
-        if (!tile) fail("tile_dependency_incomplete", "래스터 패치 대상 타일이 누락되었습니다.");
+        if (!tile) fail("patch-tile-missing");
         applyPatch(tile, patch, assetById);
         appliedPatchCount += 1;
       }
@@ -1113,7 +1110,7 @@ export async function replayStudioRasterCrdtPixels(
     for (const key of sortedSelected) {
       throwIfAborted(controller.signal);
       const tile = tileByKey.get(key);
-      if (!tile) fail("tile_dependency_incomplete", "출력 타일이 재생 집합에 없습니다.");
+      if (!tile) fail("output-tile-missing");
       tile.sha256 ??= await checkedSha256(tile.rgba, controller.signal, runtimeDependencies.sha256);
       frames.push(createImmutableFrame(tile, tile.sha256));
     }

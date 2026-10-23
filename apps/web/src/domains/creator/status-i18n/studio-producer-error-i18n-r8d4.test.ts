@@ -138,6 +138,7 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
 
   it("keeps ko/en key parity in the resolver module", () => {
     // R11: 사전이 코어(tm·animatic) + 형제 모듈 5개로 나뉘어, 패리티는 제품군 전체를 누적해 본다.
+    // R12: 형제 모듈이 10개로 늘었다(shotBatchRecovery·projectArchive·interchange 2·liveRaster 추가).
     const source = [
       "./studio-producer-error-i18n.ts",
       "./studio-producer-error-i18n-glb.ts",
@@ -145,6 +146,11 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
       "./studio-producer-error-i18n-dialogue.ts",
       "./studio-producer-error-i18n-bg3d-lt.ts",
       "./studio-producer-error-i18n-bg3d-measure.ts",
+      "./studio-producer-error-i18n-shot-batch-recovery.ts",
+      "./studio-producer-error-i18n-project-archive.ts",
+      "./studio-producer-error-i18n-interchange-cbz.ts",
+      "./studio-producer-error-i18n-interchange-ora.ts",
+      "./studio-producer-error-i18n-live-raster.ts",
     ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
     const blocks: Record<string, string[]> = {};
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
@@ -152,11 +158,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     }
     // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1, shotBatch 2, music 4). 블록 단위 누적으로 패리티를 본다.
     // R11: 형제 모듈 구간(glb 55 + palette 23 + dialogue 105 + bg3dLt 50 + bg3dMeasure·shotBatchPlan 56)이 더해져 누적 348키가 된다.
+    // R12: 형제 모듈 5개가 더해졌다(shotBatchRecovery 90 + projectArchive 168 + interchange cbz 62·ora 91 + liveRaster 99) — 전체 누적 858키.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(348);
+    expect(accumulated.ko).toHaveLength(858);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });

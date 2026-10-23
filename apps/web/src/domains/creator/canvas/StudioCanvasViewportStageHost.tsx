@@ -17,9 +17,7 @@ import { studioBackgroundGradientColorStops } from "../studio-background-gradien
 import { vignetteCss } from "../studio-page-grade";
 import { shouldRenderStudioDrawingPracticeGuide } from "../studio-drawing-practice-runtime";
 import { createStudioLiveTransformDraftStore } from "../studio-live-transform-draft-store";
-import {
-  STUDIO_KONVA_DOCUMENT_SHADOW_NAME,
-} from "../studio-single-object-drag-layer";
+import { STUDIO_KONVA_DOCUMENT_SHADOW_NAME } from "../studio-single-object-drag-layer";
 import {
   StudioRasterCrdtSurface,
   StudioRemoteCursorOverlay,
@@ -27,6 +25,7 @@ import {
   preloadStudioCommentThreadPopover,
 } from "../studio-page-lazy-ui";
 import { colorBlindFilterStyle } from "../StudioColorBlindPreview";
+import { resolveStudioRasterReplayError } from "../status-i18n/studio-producer-error-i18n-live-raster";
 
 import { isStudioBrushCursorMode } from "./studio-canvas-cursor";
 import {
@@ -834,7 +833,7 @@ export function StudioCanvasViewportStageHost({
                 authorizedAuthorityKey={studioRasterAuthorizedAuthorityKey}
                 hidden={studioRasterHandoffBlocked}
                 onHandoffCandidateChange={setStudioRasterHandoffCandidate}
-                onError={(message) => setError((current) => current ?? message)}
+                onError={(error) => setError((current) => current ?? (typeof error === "string" ? error : resolveStudioRasterReplayError(error)))}
               />
             </Suspense>
           ) : null}

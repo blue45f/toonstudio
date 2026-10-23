@@ -13,6 +13,7 @@ export const STUDIO_SPACE_EMOTE_IDS = [
   "wave", "heart", "party", "thumbs-up", "laugh", "clap", "wow", "think",
   "idea", "dance", "fireworks", "sparkles", "question", "exclaim", "coffee", "music", "sleep",
   "calisthenics", "yoga", "kpop-dance", "shuffle",
+  "neck-stretch", "tai-chi", "cheers", "moonwalk",
 ] as const;
 
 export type StudioSpaceEmoteId = typeof STUDIO_SPACE_EMOTE_IDS[number];
@@ -28,7 +29,11 @@ export type StudioSpaceEmoteMotion =
   | "calisthenics"
   | "yoga"
   | "kpop-dance"
-  | "shuffle";
+  | "shuffle"
+  | "neck-stretch"
+  | "tai-chi"
+  | "cheers"
+  | "moonwalk";
 export type StudioSpaceEmoteShortcut = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "Z" | "F";
 
 export interface StudioSpaceEmoteDefinition {
@@ -80,6 +85,10 @@ export const STUDIO_SPACE_EMOTES: readonly StudioSpaceEmoteDefinition[] = Object
   emote({ id: "yoga", labelKo: "요가 명상", labelEn: "Yoga flow", glyph: "🧘", shortcut: null, expression: "calm", motion: "yoga", durationMs: 4_000 }),
   emote({ id: "kpop-dance", labelKo: "아이돌 군무", labelEn: "Idol dance", glyph: "🕺", shortcut: null, expression: "happy", motion: "kpop-dance", durationMs: 4_000 }),
   emote({ id: "shuffle", labelKo: "셔플 그루브", labelEn: "Shuffle groove", glyph: "🪩", shortcut: null, expression: "happy", motion: "shuffle", durationMs: 4_000 }),
+  emote({ id: "neck-stretch", labelKo: "목·어깨 풀기", labelEn: "Neck stretch", glyph: "💆", shortcut: null, expression: "calm", motion: "neck-stretch", durationMs: 3_600 }),
+  emote({ id: "tai-chi", labelKo: "타이치 기공", labelEn: "Tai chi flow", glyph: "☯️", shortcut: null, expression: "calm", motion: "tai-chi", durationMs: 4_000 }),
+  emote({ id: "cheers", labelKo: "마감 건배", labelEn: "Deadline cheers", glyph: "🥂", shortcut: null, expression: "happy", motion: "cheers", durationMs: 3_000 }),
+  emote({ id: "moonwalk", labelKo: "문워크 슬라이드", labelEn: "Moonwalk slide", glyph: "🕴️", shortcut: null, expression: "happy", motion: "moonwalk", durationMs: 4_000 }),
 ]);
 
 const EMOTE_BY_ID: ReadonlyMap<string, StudioSpaceEmoteDefinition> = new Map(

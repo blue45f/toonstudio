@@ -1,9 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { STUDIO_FOOTSTEP_SURFACES } from "./studio-virtual-space-footsteps";
-import { studioFootstepSynthSpec, studioSfxSpec, type StudioSfxKind } from "./studio-virtual-space-sound-synth";
+import {
+  studioEmoteSfxKind,
+  studioFootstepSynthSpec,
+  studioSfxSpec,
+  type StudioSfxKind,
+} from "./studio-virtual-space-sound-synth";
 
 describe("studioSfxSpec", () => {
-  it.each(["activate", "peer-join", "peer-leave", "emote"] as const satisfies readonly StudioSfxKind[])(
+  it.each([
+    "activate",
+    "peer-join",
+    "peer-leave",
+    "emote",
+    "focus-start",
+    "focus-break",
+    "wellness-chime",
+    "dance-beat",
+    "seat-settle",
+  ] as const satisfies readonly StudioSfxKind[])(
     "%s: 절제된 톤 단계와 스로틀을 돌려준다",
     (kind) => {
       const spec = studioSfxSpec(kind);
@@ -25,6 +40,22 @@ describe("studioSfxSpec", () => {
     const leave = studioSfxSpec("peer-leave");
     expect(join.steps.at(-1)!.fromHz).toBeGreaterThan(join.steps[0]!.fromHz);
     expect(leave.steps.at(-1)!.fromHz).toBeLessThan(leave.steps[0]!.fromHz);
+  });
+
+  it("포모도로 시작은 상승 차임, 휴식 전환은 안정 하강 패턴이다", () => {
+    const focusStart = studioSfxSpec("focus-start");
+    const focusBreak = studioSfxSpec("focus-break");
+    expect(focusStart.steps.at(-1)!.fromHz).toBeGreaterThan(focusStart.steps[0]!.fromHz);
+    expect(focusBreak.steps.at(-1)!.toHz).toBeLessThan(focusBreak.steps[0]!.fromHz);
+  });
+
+  it("이모트 성격별로 웰니스 차임·댄스 비트·일반 팝 SFX를 매핑한다", () => {
+    expect(studioEmoteSfxKind("yoga")).toBe("wellness-chime");
+    expect(studioEmoteSfxKind("tai-chi")).toBe("wellness-chime");
+    expect(studioEmoteSfxKind("dance")).toBe("dance-beat");
+    expect(studioEmoteSfxKind("moonwalk")).toBe("dance-beat");
+    expect(studioEmoteSfxKind("wave")).toBe("emote");
+    expect(studioEmoteSfxKind(null)).toBe("emote");
   });
 });
 

@@ -164,6 +164,52 @@ export function studioEmoteBodyMotion(
         facing: shuffleFacings[Math.floor(elapsed / 280) % shuffleFacings.length] ?? "down",
       };
     }
+    case "neck-stretch": {
+      // 목·어깨 풀기: 좌우로 천천히 고개를 기울이고 어깨를 들어 올렸다 내리며 이완한다.
+      const env = Math.min(1, elapsed / 260, (durationMs - elapsed) / 300);
+      const roll = elapsed / 1_200 * Math.PI * 2;
+      return {
+        bodyX: Math.sin(roll) * 2.2 * env,
+        bodyY: (-1.8 - Math.abs(Math.cos(roll)) * 2.4) * env,
+        bodyAngle: Math.sin(roll) * 7.2 * env,
+        facing: "down",
+      };
+    }
+    case "tai-chi": {
+      // 타이치 기공: 부드러운 태극 원 궤적을 따라 무게중심을 옮기며 호흡한다.
+      const env = Math.min(1, elapsed / 320, (durationMs - elapsed) / 360);
+      const flow = elapsed / 1_800 * Math.PI * 2;
+      const taiChiFacings: readonly StudioVirtualSpaceFacing[] = ["down", "left", "down", "right"];
+      return {
+        bodyX: Math.sin(flow) * 4.6 * env,
+        bodyY: (-2.2 + Math.cos(flow * 2) * 2.4) * env,
+        bodyAngle: Math.sin(flow) * 4.8 * env,
+        facing: taiChiFacings[Math.floor(elapsed / 900) % taiChiFacings.length] ?? "down",
+      };
+    }
+    case "cheers": {
+      // 마감 건배: 잔을 높이 들어 경쾌하게 두 번 부딪치듯 도약한다.
+      const env = Math.min(1, elapsed / 160, (durationMs - elapsed) / 220);
+      const clink = elapsed / 360 * Math.PI * 2;
+      return {
+        bodyX: Math.sin(clink * 0.5) * 2.8 * env,
+        bodyY: -Math.abs(Math.sin(clink)) * 6.8 * env,
+        bodyAngle: Math.sin(clink * 0.5) * 6.2 * env,
+        facing: "down",
+      };
+    }
+    case "moonwalk": {
+      // 문워크 슬라이드: 좌우 글라이드와 발끝 바운스를 결합한 시그니처 슬라이드 모션.
+      const env = Math.min(1, elapsed / 200, (durationMs - elapsed) / 240);
+      const glide = elapsed / 400 * Math.PI * 2;
+      const moonwalkFacings: readonly StudioVirtualSpaceFacing[] = ["left", "left", "right", "right"];
+      return {
+        bodyX: Math.cos(glide * 0.5) * 7.4 * env,
+        bodyY: -Math.abs(Math.sin(glide * 2)) * 3.4 * env,
+        bodyAngle: -Math.cos(glide * 0.5) * 5.8 * env,
+        facing: moonwalkFacings[Math.floor(elapsed / 400) % moonwalkFacings.length] ?? "left",
+      };
+    }
   }
 }
 

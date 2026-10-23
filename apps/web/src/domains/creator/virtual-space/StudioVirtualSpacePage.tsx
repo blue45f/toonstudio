@@ -1997,7 +1997,7 @@ export function VirtualSpaceExperience({
               <button type="button" className="space-pill-button" onClick={() => engineBridge.setGhostMode(false)}>{bt("끄기", "Turn off")}</button>
             </div> : null}
             {worldReady && !authoringMode ? <SpaceFocusChip session={focusSession} now={focusNow}
-              onPause={pauseFocusSession} onResume={resumeFocusSession} onStop={stopFocusSession} /> : null}
+              onPause={pauseFocusSession} onResume={resumeFocusSession} onStop={stopFocusSession} onEmote={emote} /> : null}
             {worldReady && !authoringMode && activeSuggestion ? <SpaceContextSuggestion suggestion={activeSuggestion}
               onAccept={acceptSuggestion} onDismiss={dismissSuggestion} /> : null}
             {worldReady ? <SpaceInteractPrompt target={interactTarget} touch={touch} onActivate={activateInteractPrompt} /> : null}

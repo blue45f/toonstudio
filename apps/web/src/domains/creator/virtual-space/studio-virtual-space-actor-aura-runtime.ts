@@ -35,6 +35,7 @@ const JOY_REACTIONS = new Set([
   "wave",
   "celebrate",
   "cheer",
+  "cheers",
   "clap",
   "thumbs-up",
   "heart",
@@ -46,6 +47,7 @@ const JOY_REACTIONS = new Set([
   "calisthenics",
   "kpop-dance",
   "shuffle",
+  "moonwalk",
   "dance",
 ]);
 
@@ -219,17 +221,31 @@ export class StudioActorAuraRuntime {
     }
 
     const activeReaction = (input.reaction ?? (input.sprite?.getData("actorReaction") as string | null | undefined) ?? "").trim().toLowerCase();
-    // 웰니스(체조·요가) 및 댄스(아이돌 군무·셔플·춤) 바닥 리듬 서클 연출
-    if (!input.ghost && (activeReaction === "calisthenics" || activeReaction === "yoga" || activeReaction === "kpop-dance" || activeReaction === "shuffle" || activeReaction === "dance")) {
-      const wave = input.reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(input.timeMs * (activeReaction === "yoga" ? 0.004 : 0.014));
+    // 웰니스(체조·요가·목풀기·타이치) 및 댄스(아이돌 군무·셔플·문워크·춤·건배) 바닥 리듬 서클 연출
+    if (
+      !input.ghost && (
+        activeReaction === "calisthenics" ||
+        activeReaction === "yoga" ||
+        activeReaction === "neck-stretch" ||
+        activeReaction === "tai-chi" ||
+        activeReaction === "cheers" ||
+        activeReaction === "kpop-dance" ||
+        activeReaction === "shuffle" ||
+        activeReaction === "moonwalk" ||
+        activeReaction === "dance"
+      )
+    ) {
+      const isCalmWellness = activeReaction === "yoga" || activeReaction === "neck-stretch" || activeReaction === "tai-chi";
+      const wave = input.reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(input.timeMs * (isCalmWellness ? 0.004 : 0.014));
       const primaryHex =
-        activeReaction === "calisthenics" ? 0xfbbf24
-          : activeReaction === "yoga" ? 0x34d399
+        activeReaction === "calisthenics" || activeReaction === "cheers" ? 0xfbbf24
+          : isCalmWellness ? 0x34d399
             : activeReaction === "kpop-dance" ? 0xf472b6
-              : 0x38bdf8;
+              : activeReaction === "moonwalk" ? 0xa78bfa
+                : 0x38bdf8;
       const secondaryHex =
         activeReaction === "calisthenics" ? 0x34d399
-          : activeReaction === "yoga" ? 0xa78bfa
+          : isCalmWellness ? 0xa78bfa
             : 0xfde047;
       const rx = 24 + wave * 6;
       const ry = 9.5 + wave * 2.2;
@@ -295,7 +311,7 @@ export class StudioActorAuraRuntime {
       }
     }
 
-    // 3) 프로시저럴 크리에이티브·오피스 액세서리(왕관·고양이 귀·헤일로·화관·VR 바이저·펜촉 날개·새싹)
+    // 3) 프로시저럴 크리에이티브·오피스 액세서리(왕관·고양이 귀·헤일로·화관·VR 바이저·펜촉 날개·새싹·커피잔·불꽃·음파·천사 날개)
     const accessoryKey = (input.accessoryKey ?? (input.sprite?.getData("actorAccessoryKey") as string | null | undefined) ?? "none").trim();
     if (!input.ghost && accessoryKey !== "none") {
       const bob = input.reducedMotion ? 0 : Math.sin(input.timeMs * 0.005) * 1.2;
@@ -352,6 +368,39 @@ export class StudioActorAuraRuntime {
         this.faceGraphics.fillStyle(0x4ade80, 0.95 * fade);
         this.faceGraphics.fillEllipse(spriteX - 3.2, sy - 5, 5.2, 2.8);
         this.faceGraphics.fillEllipse(spriteX + 3.2, sy - 4.2, 5.2, 2.8);
+      } else if (accessoryKey === "coffee-cup") {
+        const cx = spriteX + 9.5;
+        const cy = headTopY + 1 + bob * 0.6;
+        this.faceGraphics.fillStyle(0xf8fafc, 0.94 * fade);
+        this.faceGraphics.fillRect(cx - 3.5, cy - 2.5, 7, 6);
+        this.faceGraphics.fillStyle(0x78350f, 0.95 * fade);
+        this.faceGraphics.fillRect(cx - 2.5, cy - 2, 5, 1.8);
+        this.faceGraphics.lineStyle(1.1, 0xe2e8f0, 0.85 * fade);
+        this.faceGraphics.lineBetween(cx - 1.2, cy - 4.2, cx - 1.2, cy - 7);
+        this.faceGraphics.lineBetween(cx + 1.2, cy - 3.8, cx + 1.2, cy - 6.4);
+      } else if (accessoryKey === "deadline-fire") {
+        const fy = headTopY - 3 + bob * 0.5;
+        this.faceGraphics.fillStyle(0xf97316, 0.92 * fade);
+        this.faceGraphics.fillCircle(spriteX, fy, 4.4);
+        this.faceGraphics.fillCircle(spriteX - 4.2, fy + 1.2, 3);
+        this.faceGraphics.fillCircle(spriteX + 4.2, fy + 1.2, 3);
+        this.faceGraphics.fillStyle(0xfef08a, 0.95 * fade);
+        this.faceGraphics.fillCircle(spriteX, fy + 0.6, 2.4);
+      } else if (accessoryKey === "music-beam") {
+        const my = headTopY + bob * 0.4;
+        this.faceGraphics.lineStyle(1.8, 0x38bdf8, 0.92 * fade);
+        this.faceGraphics.strokeEllipse(spriteX, my + 2, 18, 8);
+        this.faceGraphics.fillStyle(0xc084fc, 0.95 * fade);
+        this.faceGraphics.fillCircle(spriteX - 9, my + 3, 2.6);
+        this.faceGraphics.fillCircle(spriteX + 9, my + 3, 2.6);
+      } else if (accessoryKey === "angel-wings") {
+        const wy = faceCenterY + 6 + bob * 0.5;
+        this.faceGraphics.fillStyle(0xf8fafc, 0.9 * fade);
+        this.faceGraphics.fillEllipse(spriteX - 11.5, wy, 8.5, 4.6);
+        this.faceGraphics.fillEllipse(spriteX + 11.5, wy, 8.5, 4.6);
+        this.faceGraphics.lineStyle(1.1, 0xbae6fd, 0.85 * fade);
+        this.faceGraphics.strokeEllipse(spriteX - 11.5, wy, 8.5, 4.6);
+        this.faceGraphics.strokeEllipse(spriteX + 11.5, wy, 8.5, 4.6);
       }
     }
   }

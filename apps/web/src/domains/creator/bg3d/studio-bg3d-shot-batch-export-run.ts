@@ -69,6 +69,7 @@ import type { RefObject } from "react";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
 import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
+import { resolveStudioBg3dShotBatchRecoveryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
@@ -493,7 +494,7 @@ export function createStudioBg3dShotBatchExportRunner(
           setLineArtPreview(originalLineArtPreview);
           setIsCapturing(false);
           setShotBatchProgress(null);
-          setError(resolveStudioBg3dShotBatchPlanErrorFromCause(cause) ?? (cause instanceof StudioBg3dShotBatchRecoveryError ? cause.message
+          setError(resolveStudioBg3dShotBatchPlanErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof StudioBg3dShotBatchRecoveryError ? cause.message
             : cause instanceof Error && cause.name === "AbortError"
             ? recoveryAccessRevoked
               ? frozenStatus6Text("studio.frozenStatus6.shotBatch.accessChangedAbort", "작품 열람 권한 또는 저장 대상이 변경되어 컷 일괄 렌더를 안전하게 중단했습니다.")
@@ -952,7 +953,7 @@ export function createStudioBg3dShotBatchExportRunner(
             else if (budgetExceeded) failureCode = "artifact-budget-exceeded";
             else if (cause instanceof Error && cause.message.includes("복원")) {
               failureCode = "scene-restore-failed";
-            } else if (cause instanceof Error && cause.message.includes("PNG")) {
+            } else if (cause instanceof Error && (cause.message.includes("PNG") || (cause instanceof StudioBg3dShotBatchRecoveryError && cause.subcode.toLowerCase().includes("png")))) {
               failureCode = "encode-failed";
             }
             await shotBatchRecoveryStore.failShot(recoverySession, activeRunToken, failureCode);
@@ -980,8 +981,7 @@ export function createStudioBg3dShotBatchExportRunner(
         : recoverySession.degradedReason
           ? ` ${recoverySession.degradedReason}`
           : "";
-      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause)
-        ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message.trim() : "");
       const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {

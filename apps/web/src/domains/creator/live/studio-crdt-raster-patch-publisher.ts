@@ -148,15 +148,20 @@ export type StudioRasterPatchPublishResult =
   | StudioRasterPatchPublishSkippedResult
   | StudioRasterPatchPublishAppendedResult;
 
+/** A4 D4 (R12): 생산자는 구조화 코드+params만 방출한다(message = 코드). 해석은 표시 지점에서만 한다. */
+export type StudioRasterPatchPublicationErrorCode =
+  | "layer-write-guard-failed" | "invalid-layer-write-guard-result" | "layer-locked" | "invalid-id" | "invalid-operation-id" | "invalid-logical-clock" | "unsupported-intent" | "invalid-semantic-hash"
+  | "invalid-rect" | "invalid-rect-value" | "patch-out-of-bounds" | "input-byte-budget" | "image-data-dimension-mismatch" | "invalid-rgba" | "rgba-length-mismatch" | "patch-count-budget"
+  | "sha256-unavailable" | "invalid-sha256-result" | "invalid-png-signature" | "invalid-png-ihdr" | "encoded-dimension-mismatch" | "invalid-option" | "upload-receipt-mismatch" | "invalid-dependencies"
+  | "invalid-dependency-functions" | "raw-sha256-collision" | "invalid-encoder-result" | "asset-byte-budget" | "encoded-sha256-collision" | "total-byte-budget" | "internal-asset-mapping" | "png-export-unavailable"
+  | "canvas-context-unavailable" | "invalid-canvas-image-data" | "png-media-type-mismatch" | "canvas-unavailable" | "aborted" | "cleanup-timeout" | "upload-incomplete";
+
 export class StudioRasterPatchPublicationError extends Error {
   constructor(
-    readonly code: string,
-    message: string,
+    readonly code: StudioRasterPatchPublicationErrorCode,
+    readonly params?: Readonly<Record<string, string>>,
     cause?: unknown
-  ) {
-    super(message, cause === undefined ? undefined : { cause });
-    this.name = "StudioRasterPatchPublicationError";
-  }
+  ) { super(code, cause === undefined ? undefined : { cause }); this.name = "StudioRasterPatchPublicationError"; }
 }
 
 interface TileCrop {
@@ -186,13 +191,12 @@ interface EncodedPayload {
   readonly reference: StudioRasterAssetReference;
 }
 
-function fail(code: string, message: string, cause?: unknown): never {
-  throw new StudioRasterPatchPublicationError(code, message, cause);
+function fail(code: StudioRasterPatchPublicationErrorCode, params?: Readonly<Record<string, string>>, cause?: unknown): never {
+  throw new StudioRasterPatchPublicationError(code, params, cause);
 }
 
 function abortError(signal: AbortSignal): Error {
-  if (signal.reason instanceof Error) return signal.reason;
-  return new DOMException("래스터 패치 게시가 취소되었습니다.", "AbortError");
+  return signal.reason instanceof StudioRasterPatchPublicationError ? signal.reason : new StudioRasterPatchPublicationError("aborted", undefined, signal.reason);
 }
 
 function throwIfAborted(signal: AbortSignal): void {
@@ -218,14 +222,14 @@ async function assertLayerWritable(
   } catch (error) {
     if (signal.aborted) throw abortError(signal);
     if (error instanceof StudioRasterPatchPublicationError) throw error;
-    fail("layer_write_guard_failed", "레이어 잠금 상태를 확인하지 못했습니다.", error);
+    fail("layer-write-guard-failed", undefined, error);
   }
   throwIfAborted(signal);
   if (typeof writable !== "boolean") {
-    fail("invalid_layer_write_guard_result", "레이어 쓰기 정책은 boolean을 반환해야 합니다.");
+    fail("invalid-layer-write-guard-result");
   }
   if (!writable) {
-    fail("layer_locked", "잠긴 레이어에는 실시간 픽셀 획을 게시할 수 없습니다.");
+    fail("layer-locked");
   }
 }
 
@@ -236,49 +240,49 @@ function exactKeys(value: object, keys: readonly string[]): boolean {
 
 function assertSafeId(value: string, label: string): void {
   if (value.length < 1 || value.length > MAX_ID_LENGTH || !SAFE_ID_PATTERN.test(value)) {
-    fail("invalid_id", `${label} 식별자가 올바르지 않습니다.`);
+    fail("invalid-id", { label });
   }
 }
 
 function assertMetadata(input: StudioRasterPatchPublishInput): void {
   assertStudioRasterSurfaceSpec(input.surface, "input.surface");
   if (!UUID_PATTERN.test(input.operationId)) {
-    fail("invalid_operation_id", "래스터 작업 ID는 소문자 UUID여야 합니다.");
+    fail("invalid-operation-id");
   }
-  assertSafeId(input.actorId, "작업자");
-  assertSafeId(input.pageId, "페이지");
-  assertSafeId(input.layerId, "레이어");
+  assertSafeId(input.actorId, "actor");
+  assertSafeId(input.pageId, "page");
+  assertSafeId(input.layerId, "layer");
   if (
     !DECIMAL_CLOCK_PATTERN.test(input.logicalClock) ||
     input.logicalClock.length > MAX_UINT64_DECIMAL.length ||
     (input.logicalClock.length === MAX_UINT64_DECIMAL.length && input.logicalClock > MAX_UINT64_DECIMAL)
   ) {
-    fail("invalid_logical_clock", "Lamport 시계는 uint64 범위의 정규 십진 문자열이어야 합니다.");
+    fail("invalid-logical-clock");
   }
   if (!["paint", "erase", "fill", "clear"].includes(input.intent)) {
-    fail("unsupported_intent", "현재 게시 파이프라인은 paint/erase/fill/clear만 지원합니다.");
+    fail("unsupported-intent");
   }
   if (!SHA256_PATTERN.test(input.semanticParametersSha256)) {
-    fail("invalid_semantic_hash", "도구 의미 해시는 소문자 SHA-256이어야 합니다.");
+    fail("invalid-semantic-hash");
   }
 }
 
 function assertRect(rect: StudioRasterPixelRect, surface: StudioRasterSurfaceSpec): void {
   if (!exactKeys(rect, ["x", "y", "width", "height"])) {
-    fail("invalid_rect", "패치 영역은 x/y/width/height만 포함해야 합니다.");
+    fail("invalid-rect");
   }
   for (const [key, value] of Object.entries(rect)) {
-    if (!Number.isSafeInteger(value)) fail("invalid_rect", `패치 ${key}는 안전한 정수여야 합니다.`);
+    if (!Number.isSafeInteger(value)) fail("invalid-rect-value", { key });
   }
   if (
     rect.x < 0 || rect.y < 0 || rect.width < 1 || rect.height < 1 ||
     rect.x > surface.width - rect.width || rect.y > surface.height - rect.height
   ) {
-    fail("patch_out_of_bounds", "문서 픽셀 영역이 래스터 표면 경계를 벗어났습니다.");
+    fail("patch-out-of-bounds");
   }
   const byteLength = rect.width * rect.height * 4;
   if (!Number.isSafeInteger(byteLength) || byteLength > STUDIO_RASTER_PATCH_PUBLISH_MAX_INPUT_BYTES) {
-    fail("input_byte_budget", "래스터 입력 픽셀이 클라이언트 메모리 예산을 초과했습니다.");
+    fail("input-byte-budget");
   }
 }
 
@@ -299,14 +303,14 @@ function copyInputPixels(input: StudioRasterPatchPublishInput): Uint8ClampedArra
   if (isImageDataLike(source) && (
     source.width !== input.rect.width || source.height !== input.rect.height
   )) {
-    fail("image_data_dimension_mismatch", "ImageData 크기가 문서 패치 영역과 일치하지 않습니다.");
+    fail("image-data-dimension-mismatch");
   }
   const bytes = isImageDataLike(source) ? source.data : source;
   if (!(bytes instanceof Uint8Array) && !(bytes instanceof Uint8ClampedArray)) {
-    fail("invalid_rgba", "RGBA 픽셀은 ImageData 또는 8비트 typed array여야 합니다.");
+    fail("invalid-rgba");
   }
   if (bytes.byteLength !== expectedLength) {
-    fail("rgba_length_mismatch", "RGBA 바이트 길이가 패치 픽셀 수와 일치하지 않습니다.");
+    fail("rgba-length-mismatch");
   }
   return Uint8ClampedArray.from(bytes);
 }
@@ -372,7 +376,7 @@ function splitAtTileBoundaries(
       const sourceY = intersectionTop - rect.y;
       if (!cropHasVisibleAlpha(rgba, rect.width, sourceX, sourceY, width, height)) continue;
       if (crops.length >= maximumPatches) {
-        fail("patch_count_budget", "불투명 타일 패치 수가 작업별 예산을 초과했습니다.");
+        fail("patch-count-budget");
       }
       crops.push({
         tileX,
@@ -403,7 +407,7 @@ function equalBytes(
 
 async function defaultSha256(bytes: Uint8Array, signal: AbortSignal): Promise<string> {
   throwIfAborted(signal);
-  if (!globalThis.crypto?.subtle) fail("sha256_unavailable", "이 브라우저에서는 SHA-256을 사용할 수 없습니다.");
+  if (!globalThis.crypto?.subtle) fail("sha256-unavailable");
   const owned = Uint8Array.from(bytes);
   const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", owned.buffer));
   throwIfAborted(signal);
@@ -420,7 +424,7 @@ async function checkedSha256(
   const result = await digest(Uint8Array.from(bytes), signal);
   throwIfAborted(signal);
   if (!SHA256_PATTERN.test(result)) {
-    fail("invalid_sha256_result", "SHA-256 구현이 소문자 64자리 digest를 반환하지 않았습니다.");
+    fail("invalid-sha256-result");
   }
   return result;
 }
@@ -436,16 +440,16 @@ function readUint32BigEndian(bytes: Uint8Array, offset: number): number {
 
 function assertPngDimensions(bytes: Uint8Array, width: number, height: number): void {
   if (bytes.byteLength < 24 || !PNG_SIGNATURE.every((value, index) => bytes[index] === value)) {
-    fail("invalid_png", "인코더가 올바른 PNG 서명을 반환하지 않았습니다.");
+    fail("invalid-png-signature");
   }
   if (
     readUint32BigEndian(bytes, 8) !== 13 ||
     bytes[12] !== 0x49 || bytes[13] !== 0x48 || bytes[14] !== 0x44 || bytes[15] !== 0x52
   ) {
-    fail("invalid_png", "인코더 PNG에 표준 IHDR가 없습니다.");
+    fail("invalid-png-ihdr");
   }
   if (readUint32BigEndian(bytes, 16) !== width || readUint32BigEndian(bytes, 20) !== height) {
-    fail("encoded_dimension_mismatch", "인코더 PNG 크기가 타일 패치 크기와 일치하지 않습니다.");
+    fail("encoded-dimension-mismatch");
   }
 }
 
@@ -487,25 +491,15 @@ async function mapConcurrent<T, R>(
   return results;
 }
 
-function positiveBoundedInteger(
-  value: number | undefined,
-  fallback: number,
-  maximum: number,
-  label: string
-): number {
+function positiveBoundedInteger(value: number | undefined, fallback: number, maximum: number, label: string): number {
   const resolved = value ?? fallback;
   if (!Number.isSafeInteger(resolved) || resolved < 1 || resolved > maximum) {
-    fail("invalid_option", `${label} 값이 허용 범위를 벗어났습니다.`);
+    fail("invalid-option", { label });
   }
   return resolved;
 }
 
-function exactReference(
-  sha256: string,
-  byteLength: number,
-  width: number,
-  height: number
-): StudioRasterAssetReference {
+function exactReference(sha256: string, byteLength: number, width: number, height: number): StudioRasterAssetReference {
   return Object.freeze({
     scope: "work" as const,
     assetId: sha256,
@@ -524,7 +518,7 @@ function assertExactUploadReceipt(
 ): void {
   assertStudioRasterAssetReference(receipt, `uploadReceipts[${index}]`);
   if (canonicalStudioRasterJson(receipt) !== canonicalStudioRasterJson(expected)) {
-    fail("upload_receipt_mismatch", "업로드 영수증이 content-addressed PNG 참조와 정확히 일치하지 않습니다.");
+    fail("upload-receipt-mismatch");
   }
 }
 
@@ -558,7 +552,7 @@ async function compensateVerifiedUploadReceipts(
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<void>((resolve) => {
     timeoutId = setTimeout(() => {
-      controller.abort(new DOMException("래스터 업로드 정리 제한 시간이 지났습니다.", "TimeoutError"));
+      controller.abort(new StudioRasterPatchPublicationError("cleanup-timeout"));
       resolve();
     }, STUDIO_RASTER_COMPENSATION_TIMEOUT_MS);
   });
@@ -581,7 +575,7 @@ export async function publishStudioRasterPatch(
   assertMetadata(input);
   assertRect(input.rect, input.surface);
   if (!dependencies || typeof dependencies !== "object") {
-    fail("invalid_dependencies", "래스터 게시 의존성이 필요합니다.");
+    fail("invalid-dependencies");
   }
   if (
     typeof dependencies.encode !== "function" ||
@@ -591,26 +585,26 @@ export async function publishStudioRasterPatch(
     (dependencies.canWriteLayer !== undefined && typeof dependencies.canWriteLayer !== "function") ||
     (dependencies.sha256 !== undefined && typeof dependencies.sha256 !== "function")
   ) {
-    fail("invalid_dependencies", "인코더, 업로더, CRDT append 및 선택적 SHA-256 함수가 올바르지 않습니다.");
+    fail("invalid-dependency-functions");
   }
 
   const concurrency = positiveBoundedInteger(
     options.concurrency,
     STUDIO_RASTER_PATCH_PUBLISH_DEFAULT_CONCURRENCY,
     STUDIO_RASTER_PATCH_PUBLISH_MAX_CONCURRENCY,
-    "동시 작업 수"
+    "concurrency"
   );
   const maximumPatches = positiveBoundedInteger(
     options.maxPatchCount,
     STUDIO_RASTER_MAX_PATCHES_PER_OPERATION,
     STUDIO_RASTER_MAX_PATCHES_PER_OPERATION,
-    "패치 수 예산"
+    "patchCount"
   );
   const maximumBytes = positiveBoundedInteger(
     options.maxTotalBytes,
     STUDIO_RASTER_MAX_OPERATION_REFERENCED_BYTES,
     STUDIO_RASTER_MAX_OPERATION_REFERENCED_BYTES,
-    "전체 PNG 바이트 예산"
+    "totalBytes"
   );
   const controller = new AbortController();
   const verifiedUploadReceipts: StudioRasterAssetReference[] = [];
@@ -646,7 +640,7 @@ export async function publishStudioRasterPatch(
       const identity = `${crop.region.width}:${crop.region.height}:${rawDigests[index]}`;
       const existing = rawPayloadByIdentity.get(identity);
       if (existing && !equalBytes(existing.rgba, crop.rgba)) {
-        fail("raw_sha256_collision", "서로 다른 RGBA 패치가 같은 SHA-256 식별자를 만들었습니다.");
+        fail("raw-sha256-collision");
       }
       if (!existing) {
         const payload: RawPayload = {
@@ -678,11 +672,11 @@ export async function publishStudioRasterPatch(
           !exactKeys(encoded, ["bytes", "mediaType"]) ||
           encoded.mediaType !== "image/png" || !(encoded.bytes instanceof Uint8Array)
         ) {
-          fail("invalid_encoder_result", "인코더는 bytes와 image/png 미디어 타입만 반환해야 합니다.");
+          fail("invalid-encoder-result");
         }
         const bytes = Uint8Array.from(encoded.bytes);
         if (bytes.byteLength < 1 || bytes.byteLength > STUDIO_RASTER_MAX_ASSET_BYTES) {
-          fail("asset_byte_budget", "인코딩된 PNG 크기가 자산별 예산을 벗어났습니다.");
+          fail("asset-byte-budget");
         }
         assertPngDimensions(bytes, payload.width, payload.height);
         const sha256 = await checkedSha256(bytes, signal, digest);
@@ -701,14 +695,14 @@ export async function publishStudioRasterPatch(
           existing.width !== result.payload.width || existing.height !== result.payload.height ||
           !equalBytes(existing.bytes, result.bytes)
         ) {
-          fail("encoded_sha256_collision", "같은 PNG SHA-256이 다른 픽셀 크기나 바이트를 가리킵니다.");
+          fail("encoded-sha256-collision");
         }
         encodedByRawIdentity.set(result.payload.identity, existing);
         continue;
       }
       totalBytes += result.bytes.byteLength;
       if (totalBytes > maximumBytes) {
-        fail("total_byte_budget", "고유 PNG 패치 전체 크기가 작업별 예산을 초과했습니다.");
+        fail("total-byte-budget");
       }
       const prepared: EncodedPayload = {
         sha256: result.sha256,
@@ -753,7 +747,7 @@ export async function publishStudioRasterPatch(
       : "source-over";
     const patches: StudioRasterTilePatch[] = crops.map((crop, index) => {
       const payload = encodedByRawIdentity.get(rawIdentityByCrop[index]!);
-      if (!payload) fail("internal_asset_mapping", "타일 패치 자산 매핑을 만들지 못했습니다.");
+      if (!payload) fail("internal-asset-mapping");
       return {
         tileX: crop.tileX,
         tileY: crop.tileY,
@@ -850,13 +844,13 @@ async function canvasToPngBlob(canvas: StudioRasterPngCanvas): Promise<Blob> {
     return canvas.convertToBlob({ type: "image/png" });
   }
   if (typeof canvas.toBlob !== "function") {
-    fail("png_export_unavailable", "캔버스가 PNG Blob 내보내기를 지원하지 않습니다.");
+    fail("png-export-unavailable");
   }
   return new Promise<Blob>((resolve, reject) => {
     try {
       canvas.toBlob!((blob) => {
         if (blob) resolve(blob);
-        else reject(new StudioRasterPatchPublicationError("png_encode_failed", "PNG 인코딩에 실패했습니다."));
+        else reject(new StudioRasterPatchPublicationError("upload-incomplete"));
       }, "image/png");
     } catch (error) {
       reject(error);
@@ -871,17 +865,17 @@ async function encodeWithCanvas(
   throwIfAborted(input.signal);
   const canvas = factory(input.width, input.height);
   const context = canvas?.getContext("2d");
-  if (!canvas || !context) fail("canvas_context_unavailable", "PNG 캔버스 2D context를 만들지 못했습니다.");
+  if (!canvas || !context) fail("canvas-context-unavailable");
   const imageData = context.createImageData(input.width, input.height);
   if (!(imageData.data instanceof Uint8ClampedArray) || imageData.data.byteLength !== input.rgba.byteLength) {
-    fail("invalid_canvas_image_data", "캔버스 ImageData 버퍼 크기가 패치와 일치하지 않습니다.");
+    fail("invalid-canvas-image-data");
   }
   imageData.data.set(input.rgba);
   context.putImageData(imageData, 0, 0);
   const blob = await canvasToPngBlob(canvas);
   throwIfAborted(input.signal);
   if (blob.type.toLowerCase() !== "image/png") {
-    fail("png_media_type_mismatch", "캔버스가 PNG가 아닌 형식을 반환했습니다.");
+    fail("png-media-type-mismatch");
   }
   const bytes = new Uint8Array(await blob.arrayBuffer());
   throwIfAborted(input.signal);
@@ -903,7 +897,7 @@ export function createStudioRasterBrowserPngEncoder(
       : environment.createHtmlCanvas;
   return async (input) => {
     if (typeof factory !== "function") {
-      fail("canvas_unavailable", `선택한 ${backend} PNG 백엔드를 사용할 수 없습니다.`);
+      fail("canvas-unavailable", { backend });
     }
     return encodeWithCanvas(input, factory);
   };
