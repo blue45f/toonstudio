@@ -504,4 +504,21 @@ describe("studio-writer-room", () => {
     expect(second).toBe(first);
     expect(normalizeStudioWriterRoomDocument(first)).toEqual(populatedDocument());
   });
+
+  it("buildLocalStudioWriterRoomAiDraft는 7개 모든 단계에 대해 유효한 후보 초안을 결정적으로 생성한다", async () => {
+    const { buildLocalStudioWriterRoomAiDraft, parseStudioWriterRoomAiDraft } = await import("./studio-writer-room-ai");
+    const emptyDoc = createEmptyStudioWriterRoomDocument();
+    for (const stage of STUDIO_WRITER_ROOM_STAGES) {
+      const localDraft = buildLocalStudioWriterRoomAiDraft({
+        stage,
+        document: emptyDoc,
+        direction: "긴장감 있는 전환 강조",
+      });
+      expect(localDraft.stage).toBe(stage);
+      expect(localDraft.rationale).toContain("긴장감 있는 전환 강조");
+      const parsed = parseStudioWriterRoomAiDraft(JSON.stringify(localDraft), stage);
+      expect(parsed.ok).toBe(true);
+    }
+  });
 });
+

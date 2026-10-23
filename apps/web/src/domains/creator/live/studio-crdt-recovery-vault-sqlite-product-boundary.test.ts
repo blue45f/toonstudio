@@ -40,6 +40,6 @@ describe("Studio CRDT recovery SQLite product boundary", () => {
     expect(binding).toContain("options.recoveryVault ?? createStudioCrdtRecoveryVault()");
     expect(binding).toContain('code: "recovery_vault_unavailable"');
     expect(binding).toContain("outboxCleanupAtRisk: true");
-    expect(binding).toContain("영구 거절 표식도 저장하지 못했습니다");
+    expect(binding).toContain("recovery-marker-not-preserved-note");
   });
 });

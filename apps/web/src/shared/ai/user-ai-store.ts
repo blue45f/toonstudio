@@ -87,6 +87,7 @@ function connectionQualityRank(connection: UserAiConnection): number {
     return 10_000;
   }
   if (host === "generativelanguage.googleapis.com") return 10;
+  if (host === "models.github.ai") return 15;
   if (host.endsWith(".cn-beijing.maas.aliyuncs.com")) return 20;
   if (host === "api.groq.com") return 30;
   if (host === "api.cerebras.ai") return 35;
@@ -321,6 +322,68 @@ export function migrateLegacyUserAi(): boolean {
   return true;
 }
 
+function readDefaultEnvUserAiToken(): string {
+  const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+  const env = proc?.env ?? {};
+  const metaEnv = (import.meta as { env?: Record<string, unknown> }).env ?? {};
+  const candidates = [
+    metaEnv.VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY,
+    metaEnv.VITE_STUDIO_DEFAULT_AI_API_KEY,
+    env.VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY,
+    env.GITHUB_MODELS_API_KEY,
+    env.GITHUB_PERSONAL_ACCESS_TOKEN,
+    env.GITHUB_TOKEN,
+  ];
+  for (const val of candidates) {
+    if (typeof val === "string" && val.trim().length > 0) {
+      return val.trim();
+    }
+  }
+  return "";
+}
+
+/**
+ * Opt-in helper to hydrate the in-memory UserAiConfiguration from the default environment
+ * GitHub Models token (`models.github.ai/inference`, `openai/gpt-4o-mini`, `provider-free-tier`)
+ * when no connections are configured yet.
+ */
+export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boolean {
+  if (snapshot.configuration.connections.length > 0) {
+    return true;
+  }
+  const token = (explicitToken ?? readDefaultEnvUserAiToken()).trim();
+  if (!token) {
+    return false;
+  }
+  const configuration = normalizeUserAiConfiguration({
+    version: 1,
+    connections: [
+      {
+        ...EMPTY_AI_CONNECTION,
+        id: "env-github-models",
+        label: "GitHub Models 기본 무료 연결",
+        baseUrl: "https://models.github.ai/inference",
+        apiKey: token,
+        textModel: "openai/gpt-4o-mini",
+        imageModel: "",
+        costPolicy: "provider-free-tier",
+      },
+    ],
+    assignments: {
+      text: "env-github-models",
+      image: null,
+      inference: null,
+      "three-d": null,
+    },
+  });
+  publish(
+    configuration,
+    "기본 환경변수(GitHub Models) 무료 연결을 메모리에 로드했습니다.",
+    false,
+  );
+  return true;
+}
+
 if (typeof globalThis.addEventListener === "function") {
   globalThis.addEventListener("storage", (event: StorageEvent) => {
     if (
@@ -334,3 +397,4 @@ if (typeof globalThis.addEventListener === "function") {
   globalThis.addEventListener("pagehide", () => lockUserAi(false));
   globalThis.addEventListener("toonspectrum:session-ended", () => lockUserAi());
 }
+

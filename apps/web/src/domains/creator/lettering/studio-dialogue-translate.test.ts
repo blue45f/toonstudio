@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyDialogueTranslations,
+  buildLocalDialogueTranslations,
   buildTranslationPrompt,
   chunkDialogueItemsForTranslation,
   dialogueLocalesForPages,
@@ -286,4 +287,14 @@ describe("dialogueLocalesForPages / dialogueTranslationCoverage", () => {
     // p2: b2(대사, ja 번역 있음) = total 1, translated 1.
     expect(dialogueTranslationCoverage(pages, "ja")).toEqual({ total: 3, translated: 2 });
   });
+
+  it("buildLocalDialogueTranslations는 용어집 치환과 대상 로케일 프리픽스를 반영한 번역 맵을 반환한다", () => {
+    const map = buildLocalDialogueTranslations(
+      [{ id: "b1", text: "안녕 민수야" }],
+      "en",
+      "민수: Minsu",
+    );
+    expect(map.get("b1")).toBe("[EN] 안녕 Minsu야");
+  });
 });
+

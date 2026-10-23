@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildLocalSceneCompositionSuggestion,
   normalizeStudioAiCompositionSuggestion,
   STUDIO_AI_COMPOSITION_SUGGESTION_NORMALIZE_LIMITS,
 } from "./studio-ai-composition-suggestion";
@@ -58,4 +59,12 @@ describe("normalizeStudioAiCompositionSuggestion", () => {
     const result = normalizeStudioAiCompositionSuggestion(JSON.stringify(entries));
     expect(result.split("\n")).toHaveLength(STUDIO_AI_COMPOSITION_SUGGESTION_NORMALIZE_LIMITS.maxStrings);
   });
+
+  it("buildLocalSceneCompositionSuggestion은 장르·상황별 5줄 웹툰 구도 가이드를 결정적으로 생성한다", () => {
+    const actionBullets = buildLocalSceneCompositionSuggestion("주인공이 옥상에서 검을 휘두르며 적에게 돌진한다.");
+    expect(actionBullets.split("\n")).toHaveLength(5);
+    expect(actionBullets).toContain("더치 틸트");
+    expect(actionBullets).toContain("말풍선 세이프존");
+  });
 });
+

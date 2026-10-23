@@ -279,7 +279,7 @@ describe("studio CRDT scene publisher", () => {
       document,
       [page("page-a")],
       [page("page-a", [text("must-not-publish")], { shared3dStage: invalid })],
-    )).toThrow("공유 3D 장면 연결 정보가 손상되었습니다");
+    )).toThrow("shared-stage-corrupted");
     expect(document.getPages(true)).toEqual([]);
     expect(document.getSceneElements({ includeDeleted: true })).toEqual([]);
     expect(document.getShared3dStageFrontier()).toEqual([]);

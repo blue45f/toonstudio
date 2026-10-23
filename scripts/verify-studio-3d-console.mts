@@ -862,12 +862,9 @@ async function dismissHydratedQuickStart(page: Page): Promise<void> {
 const STUDIO_INSERT_MENU_TITLE = "삽입";
 
 /**
- * Opens the dropdown that now carries the 3D rows.
- *
- * The §15.3 catalogue still owns a `3d` group, but the menubar presentation
- * (UX 감사 2026-09-02) folds the six thin groups — 캔버스·변형·애니메이션·3D·협업·AI —
- * into one 도구 title, so there is no top-level "3D" trigger any more. The rows
- * themselves keep their ids and labels, so everything below this helper is unchanged.
+ * Opens the dropdown that carries the 3D rows. Simple/focus density folds the `3d` section behind
+ * the title's "고급 도구 펼치기" row, so expand it like a user does (it stays expanded while the
+ * menubar is mounted; `full` density has no such row). Row labels follow the shipped catalogue.
  */
 async function openThreeDMenu(page: Page): Promise<Locator> {
   const mainMenu = page.locator('[data-studio-main-menu="true"]');
@@ -875,6 +872,8 @@ async function openThreeDMenu(page: Page): Promise<Locator> {
   await mainMenu.getByRole("menuitem", { name: STUDIO_INSERT_MENU_TITLE, exact: true }).click();
   const menu = page.locator(`[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]`);
   await menu.waitFor({ state: "visible", timeout: 5_000 });
+  const fold = menu.locator('[data-studio-menu-item-id="advanced-sections-fold:insert"]');
+  if (await fold.count() > 0 && await fold.getAttribute("aria-expanded") !== "true") await fold.click();
   return menu;
 }
 
@@ -1189,7 +1188,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
 
   const backgroundMenu = await openThreeDMenu(page);
   const backgroundMenuItem = backgroundMenu.getByRole("menuitem", {
-    name: "3D 배경",
+    name: "장면 도우미",
     exact: true,
   });
   await backgroundMenuItem.hover();
@@ -1212,7 +1211,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
   // The shipped entry defaults to the simple scene director. Choose professional controls
   // through the visible product UI before exercising engine diagnostics and imported assets.
   const professionalMode = backgroundDialog.getByRole("group", { name: "3D 편집 모드", exact: true })
-    .getByRole("button", { name: "전문", exact: true });
+    .getByRole("button", { name: "정밀 편집", exact: true });
   await professionalMode.click();
   assertCondition(await professionalMode.getAttribute("aria-pressed") === "true",
     "the explicit professional-mode control did not activate");
@@ -1364,10 +1363,9 @@ async function run(page: Page, studioUrl: string): Promise<void> {
   await backgroundDialog.getByText("모델 렌더 인스턴스를 준비하는 중입니다.", {
     exact: true,
   }).waitFor({ state: "hidden", timeout: 30_000 });
-  assertCondition(
-    await backgroundDialog.getByRole("alert").count() === 0,
-    "the KTX2 model produced a scene-recovery or render-clone failure",
-  );
+  // Alert regions that are not failures stay mounted: the empty sr-only inference live region and the unlinked shared-stage hint.
+  const failureAlerts = (await backgroundDialog.getByRole("alert").allInnerTexts()).map((text) => text.trim()).filter((text) => text && text !== "아직 이 배경과 캐릭터 원본이 연결되지 않았어요.");
+  assertCondition(failureAlerts.length === 0, `the KTX2 model produced a scene-recovery or render-clone failure: ${failureAlerts.join(" | ")}`);
   assertCondition(
     glbValidationWorkers.length > glbValidationWorkersBefore,
     "the KTX2 model did not run through the off-main GLB validation worker",

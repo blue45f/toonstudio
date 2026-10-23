@@ -569,28 +569,6 @@ export function useStudioBg3dEditorEffects(h) {
     };
   }, [ltPresetPanelActivated, ltUserPresetRepository, open]);
 
-  useEffect(() => {
-    if (!open || typeof window === "undefined") return;
-    const browserNavigator = navigator as BrowserNavigatorCapabilities;
-    const coarse = window.matchMedia?.("(pointer: coarse)");
-    const fine = window.matchMedia?.("(pointer: fine)");
-    const refresh = () => setDeviceSignals(collectDeviceSignals(viewportHostRef.current));
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(refresh) : null;
-    if (viewportHostRef.current) observer?.observe(viewportHostRef.current);
-    window.addEventListener("resize", refresh, { passive: true });
-    coarse?.addEventListener?.("change", refresh);
-    fine?.addEventListener?.("change", refresh);
-    browserNavigator.connection?.addEventListener?.("change", refresh);
-    refresh();
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", refresh);
-      coarse?.removeEventListener?.("change", refresh);
-      fine?.removeEventListener?.("change", refresh);
-      browserNavigator.connection?.removeEventListener?.("change", refresh);
-    };
-  }, [open, setTemplateLibrary, setTemplateLibraryStatus]);
-
   // 모델 라이브러리 목록은 모달이 열릴 때 한 번 읽어온다(VRM 포저의 listVrmLibraryEntries() 패턴과 동일).
   useEffect(() => {
     if (!open || !modelsPanelActivated) return;
@@ -746,29 +724,6 @@ export function useStudioBg3dEditorEffects(h) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  useEffect(() => {
-    const host = viewportHostRef.current;
-    if (!open || !host || typeof ResizeObserver === "undefined") {
-      setViewportBoxSize(null);
-      return;
-    }
-    const sync = () => {
-      const rect = host.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return;
-      setViewportBoxSize((previous) => (
-        previous &&
-          Math.abs(previous.width - rect.width) < 0.5 &&
-          Math.abs(previous.height - rect.height) < 0.5
-          ? previous
-          : { width: rect.width, height: rect.height }
-      ));
-    };
-    sync();
-    const observer = new ResizeObserver(sync);
-    observer.observe(host);
-    return () => observer.disconnect();
   }, [open]);
 
   const pausePhysicsWhenHidden = useEffectEvent(() => pausePhysicsPreview());

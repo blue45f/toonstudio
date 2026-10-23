@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildCompositionGenerationBrief,
+  renderCompositionBriefPreviewDataUrl,
   type CompositionGenerationSnapshot,
 } from "./studio-composition-generation-brief";
 
@@ -107,4 +108,23 @@ describe("buildCompositionGenerationBrief", () => {
     expect(result.request.briefKo).toContain("포즈: 경악하며 뒷걸음질");
     expect(result.request.briefKo).toContain("조명: twilight");
   });
+
+  it("작가 화풍 DNA(styleDnaId)와 스크롤 호흡을 브리프에 결합하고 SVG 와이어프레임 프리뷰를 생성한다", () => {
+    const snapshot: CompositionGenerationSnapshot = {
+      ...BASE,
+      styleDnaId: "k-action-sharp",
+      scrollPacingHint: "fast-action",
+    };
+    const result = buildCompositionGenerationBrief(snapshot);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.request.consistencyKeys).toContain("style-dna:k-action-sharp");
+    expect(result.request.briefKo).toContain("화풍 DNA:");
+    expect(result.request.briefKo).toContain("빠른 액션 스크롤");
+
+    const previewUrl = renderCompositionBriefPreviewDataUrl(snapshot, result.request);
+    expect(previewUrl.startsWith("data:image/svg+xml;utf8,")).toBe(true);
+    expect(decodeURIComponent(previewUrl)).toContain("주인공");
+  });
 });
+

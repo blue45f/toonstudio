@@ -39,10 +39,6 @@ const SCRATCH =
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
   ?? mkdtempSync(join(tmpdir(), "toonstudio-bg3d-inapp-"));
 
-const QUICK_START_KEY = "toonstudio-studio-quickstart-dismissed:v1";
-const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed:v1";
-const UI_DENSITY_KEY = "toonstudio-studio-ui-density:v1";
-
 /** The minimum comfortable touch target this repository holds mobile controls to. */
 const MIN_TOUCH_TARGET_PX = 44;
 const INAPP_CONTEXT_OPTIONS = Object.freeze({ deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -200,7 +196,7 @@ async function verifyFramingProfile(
   let guideAspectRatio: number | null = null;
   page.on("pageerror", (error) => pageErrors.push(error.message));
   try {
-    await seedStudioPreferences(page);
+    await prepareStudioPage(page);
     await openBackground3d(page, baseUrl);
     await selectWebGl2Engine(page);
     // The backend badge reports the selected plan before R3F has created its renderer and
@@ -296,18 +292,10 @@ function writeJson(fileName: string, value: unknown): void {
   writeFileSync(join(SCRATCH, fileName), `${JSON.stringify(value, null, 2)}\n`);
 }
 
-async function seedStudioPreferences(page: Page): Promise<void> {
+/** 빠른 시작·모바일 안내의 닫힘은 SQLite/OPFS, UI 밀도는 앱 설정이 정해 예전 localStorage 시드는 효력이 없다. */
+async function prepareStudioPage(page: Page): Promise<void> {
   // tsx names nested helpers with __name when serializing this file's page callbacks.
   await page.addInitScript("globalThis.__name ??= (target) => target;");
-  await page.addInitScript(({ quickStartKey, mobileHintKey, uiDensityKey }) => {
-    try {
-      localStorage.setItem(quickStartKey, "1");
-      localStorage.setItem(mobileHintKey, "1");
-      localStorage.setItem(uiDensityKey, JSON.stringify({ mode: "full" }));
-    } catch {
-      // The visible assertions below stay authoritative when storage is blocked.
-    }
-  }, { quickStartKey: QUICK_START_KEY, mobileHintKey: MOBILE_HINT_KEY, uiDensityKey: UI_DENSITY_KEY });
 }
 
 async function dismissQuickStart(page: Page): Promise<void> {
@@ -732,6 +720,10 @@ async function selectWebGl2Engine(page: Page): Promise<void> {
 async function openBackground3d(page: Page, baseUrl: string): Promise<void> {
   await page.goto(`${baseUrl}/studio/bg3d`, { waitUntil: "domcontentloaded" });
   await dismissQuickStart(page);
+  // 딥링크는 간편 모드('장면 도우미')로 열린다. 보기 탭·엔진 선택은 헤더의 '정밀 편집'(좁은 폭은 '정밀')에만 있다.
+  await page.getByRole("group", { name: "3D 편집 모드", exact: true })
+    .getByRole("button", { name: /^정밀(?: 편집)?$/u }).click();
+  await page.getByRole("dialog", { name: "정밀 3D 편집", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
 /**
@@ -808,7 +800,7 @@ async function runProfile(
   let railEntryVisible = false;
 
   try {
-    await seedStudioPreferences(page);
+    await prepareStudioPage(page);
     await openBackground3d(page, baseUrl);
     await selectWebGl2Engine(page);
 

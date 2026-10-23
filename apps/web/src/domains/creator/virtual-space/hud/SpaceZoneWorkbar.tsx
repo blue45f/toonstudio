@@ -47,6 +47,9 @@ export const SpaceZoneWorkbar = memo(function SpaceZoneWorkbar({
           type="button"
           className="space-zone-workbar__item space-zone-workbar__item--pulse"
           data-zone-work-item="atelier-pulse"
+          data-pulse-omni-score={pulse.omniScore}
+          data-pulse-omni-tier={pulse.omniTier}
+          title={pulse.recommendedRoutineKo ? `${bt(pulse.omniBadgeKo ?? pulse.badgeKo, pulse.omniBadgeEn ?? pulse.badgeEn)} · ${bt(pulse.recommendedRoutineKo, pulse.recommendedRoutineEn)}` : undefined}
           onClick={onPulseAction}
         >
           <Sparkles size={15} aria-hidden />

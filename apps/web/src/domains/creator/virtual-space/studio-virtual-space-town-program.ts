@@ -94,6 +94,10 @@ export const STUDIO_TOWN_BLUEPRINTS: readonly StudioTownBlueprint[] = Object.fre
     { type: "rug", offsetX: 0, offsetY: 0, scale: 1.15 }, { type: "banner", offsetX: -58, offsetY: -28 },
     { type: "banner", offsetX: 58, offsetY: -28 }, { type: "lamp", offsetX: -70, offsetY: 32 }, { type: "lamp", offsetX: 70, offsetY: 32 },
   ] },
+  { id: "wellness-zen-lounge", labelKo: "웰니스 요가·명상 라운지", labelEn: "Wellness yoga & zen lounge", roomId: "live", decor: [
+    { type: "rug", offsetX: 0, offsetY: 0, scale: .88 }, { type: "sofa", offsetX: -48, offsetY: 16, scale: .78 },
+    { type: "flower-bed", offsetX: 48, offsetY: 16, scale: .78 }, { type: "lamp", offsetX: 0, offsetY: -40, scale: .8 },
+  ] },
 ]);
 
 export const STUDIO_TOWN_DESK_PODS: readonly StudioTownDeskPod[] = Object.freeze([

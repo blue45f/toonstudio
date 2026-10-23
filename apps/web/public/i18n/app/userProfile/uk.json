@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Контент профілю",
   "userProfile.refresh": "Оновлення",
   "userProfile.emptyReviews": "До цього часу цього користувача не було опубліковано відгуків.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Не вдалося завантажити створені твори. Спробуйте знову.",
+  "userProfile.series.error": "Не вдалося завантажити серії. Спробуйте знову.",
+  "userProfile.emptyReviewsHint": "Залиште перший відгук про твір, який вам подобається.",
+  "userProfile.emptyReviewsCta": "Переглянути твори"
 }

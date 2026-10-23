@@ -25,6 +25,8 @@ describe("studioSuggestionPlaceKind", () => {
     expect(studioSuggestionPlaceKind("focus-zone")).toBe("focus");
     expect(studioSuggestionPlaceKind("zone-cafe")).toBe("cafe");
     expect(studioSuggestionPlaceKind("library")).toBe("library");
+    expect(studioSuggestionPlaceKind("review-room")).toBe("review");
+    expect(studioSuggestionPlaceKind("wellness-lounge")).toBe("wellness");
     expect(studioSuggestionPlaceKind("personal-atelier")).toBe("other");
     expect(studioSuggestionPlaceKind(null)).toBe("other");
     expect(studioSuggestionPlaceKind(undefined)).toBe("other");
@@ -76,7 +78,7 @@ describe("집중 제안", () => {
   });
 });
 
-describe("휴식·자료 제안", () => {
+describe("휴식·자료·검수·웰니스 제안", () => {
   it("집중을 마치면 휴식을 제안하고, 수락하면 자격이 소진된다", () => {
     const state = reduceStudioSuggestion(EMPTY_STUDIO_SUGGESTION_STATE, { kind: "focus-completed" });
     expect(pickStudioSuggestion(state, IDLE, NOW)?.id).toBe("take-break");
@@ -95,6 +97,19 @@ describe("휴식·자료 제안", () => {
   it("카페에 들어가면 휴식을, 자료실에 들어가면 자료 열기를 제안한다", () => {
     expect(pickStudioSuggestion(enter(EMPTY_STUDIO_SUGGESTION_STATE, "cafe"), IDLE, NOW)?.id).toBe("take-break");
     expect(pickStudioSuggestion(enter(EMPTY_STUDIO_SUGGESTION_STATE, "library"), IDLE, NOW)?.id).toBe("browse-materials");
+  });
+
+  it("검수 구역에 들어가면 원고 합평 보드 열기를, 웰니스 라운지에 들어가면 체조·요가를 제안한다", () => {
+    const reviewSuggestion = pickStudioSuggestion(enter(EMPTY_STUDIO_SUGGESTION_STATE, "review"), IDLE, NOW);
+    expect(reviewSuggestion?.id).toBe("review-sync");
+    expect(reviewSuggestion?.decisions).toEqual([{ kind: "panel", panel: "annotation" }]);
+
+    const wellnessSuggestion = pickStudioSuggestion(enter(EMPTY_STUDIO_SUGGESTION_STATE, "wellness"), IDLE, NOW);
+    expect(wellnessSuggestion?.id).toBe("wellness-stretch");
+    expect(wellnessSuggestion?.decisions).toEqual([
+      { kind: "status", userStatus: "break" },
+      { kind: "emote", emoteId: "yoga" },
+    ]);
   });
 
   it("이미 휴식 중이면 카페에서도 제안하지 않는다", () => {

@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Περιεχόμενο προφίλ",
   "userProfile.refresh": "Αναζωογόνηση",
   "userProfile.emptyReviews": "Δεν έχουν δημοσιευθεί κριτικές από αυτόν τον χρήστη ακόμα.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Δεν ήταν δυνατή η φόρτωση των δημιουργημένων έργων. Δοκιμάστε ξανά.",
+  "userProfile.series.error": "Δεν ήταν δυνατή η φόρτωση των σειρών. Δοκιμάστε ξανά.",
+  "userProfile.emptyReviewsHint": "Αφήστε την πρώτη κριτική σε έναν τίτλο που αγαπάτε.",
+  "userProfile.emptyReviewsCta": "Περιήγηση τίτλων"
 }

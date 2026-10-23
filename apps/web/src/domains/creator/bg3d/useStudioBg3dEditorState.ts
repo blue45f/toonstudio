@@ -369,7 +369,7 @@ export function useStudioBg3dEditorState(props) {
   const cameraLensGestureBeforeViewRef = useRef<StudioBg3dCameraSettings | null>(null);
   const cameraLensGestureLatestViewRef = useRef<StudioBg3dCameraSettings | null>(null);
   const cameraLensGestureTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const viewportHostRef = useRef<HTMLDivElement>(null);
+  const viewportHostRef = R.useStudioBg3dViewportHostRef();
   // 세이프 프레임 오버레이는 캡처와 같은 식을 쓰려면 살아 있는 뷰포트 CSS 박스를 알아야 한다.
   const [viewportBoxSize, setViewportBoxSize] = useState<{ width: number; height: number } | null>(
     null,

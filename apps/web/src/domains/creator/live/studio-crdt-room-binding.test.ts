@@ -398,7 +398,7 @@ describe("StudioCrdtRoomBinding", () => {
     await delivery;
     expect(peer.getStroke("sub-frame-delivery")).not.toBeNull();
     expect(statuses.at(-1)).toMatchObject({ pendingCount: 0, lastAckAt: null, lastAckServerSequence: null });
-    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("서버 승인 전");
+    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("save-before-server-ack-blocked-local");
     binding.close();
     client.destroy();
     peer.destroy();
@@ -455,7 +455,7 @@ describe("StudioCrdtRoomBinding", () => {
     let release!: () => void;
     fake.publishBarrier = new Promise<void>((resolve) => { release = resolve; });
     add(client, "slow-local-delivery", 23);
-    const timeout = expect(binding.flushAndWaitForDelivery(100)).rejects.toThrow("전송을 기다리는 시간이 초과");
+    const timeout = expect(binding.flushAndWaitForDelivery(100)).rejects.toThrow("delivery-timeout");
     await vi.advanceTimersByTimeAsync(100);
     await timeout;
     expect(statuses.at(-1)).toMatchObject({ pendingCount: 1 });
@@ -475,17 +475,17 @@ describe("StudioCrdtRoomBinding", () => {
     const client = new StudioCrdtDocument();
     const fake = new FakeRoom(peer, "local");
     const binding = new StudioCrdtRoomBinding({ document: client, room: room(fake) });
-    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("시작되지 않았습니다");
+    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("binding-not-started");
     await binding.start();
     let release!: () => void;
     fake.publishBarrier = new Promise<void>((resolve) => { release = resolve; });
     add(client, "closing-local-delivery", 24);
-    const rejected = expect(binding.flushAndWaitForDelivery()).rejects.toThrow("이미 닫힌");
+    const rejected = expect(binding.flushAndWaitForDelivery()).rejects.toThrow("binding-closed");
     await vi.waitFor(() => expect(fake.publications).toHaveLength(1));
     binding.close();
     release();
     await rejected;
-    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("이미 닫힌");
+    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("binding-closed");
     client.destroy();
     peer.destroy();
   });
@@ -497,7 +497,7 @@ describe("StudioCrdtRoomBinding", () => {
     const binding = new StudioCrdtRoomBinding({ document: client, room: room(fake) });
     await binding.start();
     fake.ready = false;
-    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("연결이 끊겼습니다");
+    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("delivery-channel-disconnected");
     fake.ready = true;
     fake.nextSyncError = createStudioCrdtServerAckError("storage_corruption", "corrupt delivery frontier");
     await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("corrupt delivery frontier");
@@ -537,7 +537,7 @@ describe("StudioCrdtRoomBinding", () => {
       recoveryVault: new MemoryRecoveryVault(), onStatus: (status) => statuses.push(status) });
     await binding.start();
     add(client, "requires-server-delivery", 26);
-    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("서버 승인 전");
+    await expect(binding.flushAndWaitForDelivery()).rejects.toThrow("save-before-server-ack-blocked-local");
     await vi.advanceTimersByTimeAsync(40);
     expect(statuses.at(-1)).toMatchObject({ pendingCount: 1, lastAckAt: null });
     expect(outbox.requests.size).toBe(kind === "scoped-local" ? 1 : 0);
@@ -577,7 +577,7 @@ describe("StudioCrdtRoomBinding", () => {
       lastAckAt: null,
       lastAckServerSequence: null,
     });
-    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("서버 승인 전");
+    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("save-before-server-ack-blocked-local");
 
     await binding.acknowledgeDraftProtection(protection.protectedUpdateIds);
     expect(outbox.requests.size).toBe(0);
@@ -1326,7 +1326,7 @@ describe("StudioCrdtRoomBinding", () => {
     expect(list).not.toHaveBeenCalled();
     expect(put).not.toHaveBeenCalled();
     expect(remove).not.toHaveBeenCalled();
-    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("서버 승인 전");
+    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("save-before-server-ack-blocked-local");
 
     binding.close();
     client.destroy();
@@ -1526,7 +1526,7 @@ describe("StudioCrdtRoomBinding", () => {
       state: "retrying", pendingCount: 1, lastAckAt: null,
       nonAuthoritativeDeliveryPending: true,
     });
-    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("서버 승인 전");
+    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("save-before-server-ack-blocked-local");
     await vi.advanceTimersByTimeAsync(20_000);
     expect(serverRoom.publications).toHaveLength(1);
 
@@ -2119,7 +2119,7 @@ describe("드로잉 동기화 연결 세대 경계", () => {
         return response;
       });
       const syncing = binding.syncNow();
-      const rejected = expect(syncing).rejects.toThrow(/연결/);
+      const rejected = expect(syncing).rejects.toThrow("transport-changed");
       await responseReady.promise;
       transportState(fake, "disconnected");
       fake.server = current;
@@ -2142,7 +2142,7 @@ describe("드로잉 동기화 연결 세대 경계", () => {
       const response = deferred();
       fake.nextSyncBarrier = response.promise;
       const saving = binding.flushAndWaitForAuthoritativeAck();
-      const rejected = expect(saving).rejects.toThrow(/닫힌|종료/);
+      const rejected = expect(saving).rejects.toThrow("binding-closed");
       binding.close();
       response.release();
       await rejected;

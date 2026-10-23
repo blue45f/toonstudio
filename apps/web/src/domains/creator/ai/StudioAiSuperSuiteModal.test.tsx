@@ -8,11 +8,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_WORKBENCH_PREFS_STORAGE_KEY } from "../studio-workbench-prefs";
 
+import {
+  browserStudioLoraJobStorage,
+  createStudioLoraJobRecord,
+  saveStudioLoraJobs,
+} from "./studio-lora-training";
 import { StudioAiSuperSuiteModal } from "./StudioAiSuperSuiteModal";
 
 // jsdom 환경에서는 import.meta.url 이 http 스킴이라 new URL(...) 로는 파일을 못 연다.
 const modalSource = readFileSync(
   resolve(process.cwd(), "apps/web/src/domains/creator/ai/StudioAiSuperSuiteModal.tsx"),
+  "utf8"
+);
+const directorSectionSource = readFileSync(
+  resolve(process.cwd(), "apps/web/src/domains/creator/ai/StudioAiStoryboardDirectorSection.tsx"),
   "utf8"
 );
 
@@ -316,12 +325,14 @@ describe("StudioAiSuperSuiteModal — 색·토큰", () => {
   });
 
   it("생 팔레트 색과 하드코딩 hex 를 쓰지 않는다", () => {
-    expect(modalSource).not.toMatch(
-      /\b(?:emerald|rose|amber|sky|indigo|violet|zinc|neutral|stone|gray|grey|slate|red|green|blue|yellow|teal|cyan|lime|orange|fuchsia|pink|purple)-\d{2,3}\b/u
-    );
-    expect(modalSource).not.toContain("#ffffff");
-    expect(modalSource).not.toContain("bg-black");
-    expect(modalSource).not.toContain("text-white");
+    for (const src of [modalSource, directorSectionSource]) {
+      expect(src).not.toMatch(
+        /\b(?:emerald|rose|amber|sky|indigo|violet|zinc|neutral|stone|gray|grey|slate|red|green|blue|yellow|teal|cyan|lime|orange|fuchsia|pink|purple)-\d{2,3}\b/u
+      );
+      expect(src).not.toContain("#ffffff");
+      expect(src).not.toContain("bg-black");
+      expect(src).not.toContain("text-white");
+    }
   });
 
   it("공용 모달 계약·프리미티브를 그대로 쓴다", () => {
@@ -357,3 +368,86 @@ describe("StudioAiSuperSuiteModal — 색·토큰", () => {
     expect(modalSource).toContain("animate-pulse text-accent motion-reduce:animate-none");
   });
 });
+
+describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스케치·스토리라인·대사)", () => {
+  it("스토리라인 + 대사 추천 카드를 대본·스케치에 적용하고 컷별 대사 후보로 교체할 수 있다", () => {
+    saveStudioLoraJobs(browserStudioLoraJobStorage(), [
+      {
+        ...createStudioLoraJobRecord({
+          id: "lora-style-ktoon",
+          characterLabel: "K-액션 먹선 작가체",
+          triggerWord: "ktoonink",
+          kind: "style",
+          providerRequestId: "req-ktoon",
+          statusUrl: null,
+          responseUrl: null,
+          trainingImageCount: 9,
+          artistOwnershipConfirmed: true,
+          styleTraits: {
+            lineWeight: "bold",
+            shadingMode: "cel",
+            paletteMood: "vibrant",
+          },
+        }),
+        status: "completed",
+        loraFileUrl: "https://cdn.example/ktoonink.safetensors",
+      },
+    ]);
+
+    render(<StudioAiSuperSuiteModal open onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("tab", { name: "콘티 자동 디렉터" }));
+
+    const styleSelect = screen.getByLabelText("그림체 모델 선택") as HTMLSelectElement;
+    fireEvent.change(styleSelect, { target: { value: "lora-style-ktoon" } });
+
+    const applyStorylineButtons = screen.getAllByRole("button", {
+      name: "스토리라인·대사·스케치 콘티에 반영",
+    });
+    expect(applyStorylineButtons.length).toBeGreaterThan(0);
+    fireEvent.click(applyStorylineButtons[0]!);
+
+    const scriptTextarea = screen.getByLabelText("대본 / 시나리오 줄글 입력") as HTMLTextAreaElement;
+    expect(scriptTextarea.value).toContain("주인공:");
+
+    expect(screen.getAllByText(/작가 그림체 모델 프롬프트 \(K-액션 먹선 작가체\)/u).length).toBeGreaterThan(0);
+    expect(screen.getByText(/번역 말풍선 안전율:/u)).toBeTruthy();
+
+    // 대본이 비어 있어도 스케치 구도가 선택되어 있으면 스케치 단독 모드로 1컷 콘티를 유지한다.
+    fireEvent.change(scriptTextarea, { target: { value: "   " } });
+    expect(screen.getByText(/자동 생성된 컷별 콘티 \(1개 컷\)/u)).toBeTruthy();
+  });
+
+  it("BYOK 없이도 화풍 DNA·보조 화풍 블렌딩·1화 기승전결 4막 자동 설계·자유 스케치 스트로크 분석·다국어 프리뷰가 동작한다", () => {
+    render(<StudioAiSuperSuiteModal open onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("tab", { name: "콘티 자동 디렉터" }));
+
+    expect(screen.getByTestId("storyboard-ai-engine-mode-badge")).toBeTruthy();
+    expect(screen.getByTestId("artist-style-dna-summary").textContent).toContain("화풍 DNA 분석:");
+    expect(screen.getByTestId("storyboard-style-consistency-badge").textContent).toContain("화풍 일관성");
+
+    const secondarySelect = screen.getByLabelText("보조 화풍 블렌딩 선택") as HTMLSelectElement;
+    fireEvent.change(secondarySelect, { target: { value: "preset-k-noir-thriller" } });
+    expect(screen.getByTestId("artist-style-dna-summary").textContent).toContain("블렌딩(");
+
+    fireEvent.click(screen.getByTestId("generate-episode-arc-btn"));
+    const scriptTextarea = screen.getByLabelText("대본 / 시나리오 줄글 입력") as HTMLTextAreaElement;
+    expect(scriptTextarea.value.split("\n").length).toBeGreaterThanOrEqual(4);
+
+    fireEvent.click(screen.getByRole("button", { name: "대각선 돌진 액션 스케치" }));
+    expect(screen.getByTestId("freehand-sketch-geometry-note").textContent).toContain("스트로크 기하 분석");
+
+    const expandButtons = screen.getAllByRole("button", { name: "이 컷 추천 대사·나레이션 보기" });
+    fireEvent.click(expandButtons[0]!);
+    expect(screen.getByTestId("cut-global-locale-preview-1").textContent).toContain("EN");
+
+    expect(screen.getByTestId("studio-webtoon-master-pipeline-card")).toBeTruthy();
+    expect(screen.getByTestId("dataset-dna-auto-caption").textContent).toContain("자동 학습 캡션 예시:");
+    fireEvent.click(screen.getByRole("button", { name: "로판·사극 귀족 (격식체)" }));
+    fireEvent.click(screen.getByTestId("apply-voice-exchange-script-btn"));
+    expect(scriptTextarea.value).toContain("가문의 이름으로 끝까지 책임을 묻겠습니다");
+  });
+});
+
+
+
+

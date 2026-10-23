@@ -321,3 +321,443 @@ export function nextEpisodeSeedFromSuggestion(
   const hook = normalize(cliffhanger ?? "");
   return hook ? `${hook} — 그 여파가 여는 첫 장면에서 다음 화가 시작된다` : "";
 }
+
+// ── 웹툰 스토리라인 & 대사·지문·스케치 통합 추천 엔진 ──────────────────────────
+
+export type RecommendedSketchPresetId =
+  | "center-focus"
+  | "diagonal-action"
+  | "low-horizon-hero"
+  | "high-angle-isolation"
+  | "two-shot-dialogue"
+  | "split-reaction";
+
+export interface StorylineRecommendedDialogueLine {
+  readonly speaker: string;
+  readonly text: string;
+  readonly kind: "speech" | "narration";
+  readonly emotion: "determination" | "shock" | "joy" | "rage" | "sorrow" | "calm";
+  readonly bubbleTip: string;
+}
+
+export interface StorylineDialoguePackage {
+  readonly id: string;
+  readonly stage: PlotDevelopmentStageId;
+  readonly stageLabel: string;
+  readonly title: string;
+  /** 핵심 사건(turningPoints)에 들어갈 스토리라인 전개 문장. */
+  readonly storylineBeat: string;
+  /** 스토리보드 디렉터에 바로 넣을 수 있는 시각 연출 지문. */
+  readonly stageDirection: string;
+  /** 이 비트의 의도를 가장 잘 살리는 간단 스케치 구도 프리셋. */
+  readonly recommendedSketchPresetId: RecommendedSketchPresetId;
+  /** 비트에 어울리는 추천 대사·나레이션 세트. */
+  readonly dialogues: readonly StorylineRecommendedDialogueLine[];
+  /** 예비·전문 웹툰 작가를 위한 연출·스크롤 호흡 가이드. */
+  readonly creatorCoachingTip: string;
+  readonly nextEpisodeSeed?: string;
+}
+
+export interface RecommendStorylineDialogueOptions extends SuggestDevelopmentsOptions {
+  readonly protagonistName?: string;
+  readonly partnerName?: string;
+}
+
+const STAGE_SKETCH_PRESET: Readonly<Record<PlotDevelopmentStageId, RecommendedSketchPresetId>> = {
+  opening: "center-focus",
+  inciting: "split-reaction",
+  escalation: "two-shot-dialogue",
+  midpoint: "high-angle-isolation",
+  complication: "two-shot-dialogue",
+  crisis: "high-angle-isolation",
+  climax: "diagonal-action",
+  hook: "low-horizon-hero",
+};
+
+const STAGE_DIRECTION_BY_STAGE: Readonly<Record<PlotDevelopmentStageId, string>> = {
+  opening: "[미디엄샷] 조용한 공간에서 주인공의 시선이 멈추며 일상의 빈자리가 드러난다.",
+  inciting: "[익스트림 클로즈업] 예상치 못한 소식에 주인공의 동공이 흔들리고 숨결이 멎는다.",
+  escalation: "[미디엄샷] 마주 선 두 인물 사이로 팽팽한 침묵이 흐르고 선택의 시간이 다가온다.",
+  midpoint: "[버즈아이] 숨겨져 있던 진실의 단서가 바닥에 드러나며 주인공이 홀로 서 있다.",
+  complication: "[미디엄샷] 조력자가 뜻밖의 조건을 건네며 주인공의 표정이 굳어진다.",
+  crisis: "[하이앵글] 물러설 곳 없는 막다른 공간에서 주인공이 주먹을 움켜쥔다.",
+  climax: "[풀샷] 주인공이 분노와 결의를 담아 정면으로 검을 뽑아들고 돌진한다.",
+  hook: "[웜즈아이] 어둠 너머에서 정체를 알 수 없는 인물이 모습을 드러내며 바라본다.",
+};
+
+function buildDialoguesForStage(params: {
+  readonly stage: PlotDevelopmentStageId;
+  readonly genre: string;
+  readonly conflict: string;
+  readonly protagonist: string;
+  readonly partner: string;
+  readonly beatText: string;
+}): readonly StorylineRecommendedDialogueLine[] {
+  const { stage, conflict, protagonist, partner, beatText } = params;
+  const focusTopic = conflict ? shorten(conflict, 22) : shorten(beatText, 22);
+
+  switch (stage) {
+    case "opening":
+      return Object.freeze([
+        {
+          speaker: "",
+          text: `그날까지는 모든 것이 평소와 다름없을 줄 알았다.`,
+          kind: "narration",
+          emotion: "calm",
+          bubbleTip: "도입부 사각 나레이션 박스를 컷 상단에 배치해 차분하게 호흡을 여세요.",
+        },
+        {
+          speaker: protagonist,
+          text: `왜 자꾸 그 일이 마음에 걸리는 거지…?`,
+          kind: "speech",
+          emotion: "calm",
+          bubbleTip: "점선 말풍선(독백)으로 주인공의 내면 결핍을 자연스럽게 보여주세요.",
+        },
+      ]);
+    case "inciting":
+      return Object.freeze([
+        {
+          speaker: partner,
+          text: `지금 당장 확인해 봐. ${focusTopic}, 우연이 아니었어!`,
+          kind: "speech",
+          emotion: "shock",
+          bubbleTip: "강조 말풍선으로 사건 발생의 긴박감을 전달하세요.",
+        },
+        {
+          speaker: protagonist,
+          text: `말도 안 돼… 지금 그게 무슨 소리야?!`,
+          kind: "speech",
+          emotion: "shock",
+          bubbleTip: "인물 클로즈업 위쪽에 짧은 반응 대사를 두어 스크롤 속도를 높이세요.",
+        },
+      ]);
+    case "escalation":
+    case "complication":
+      return Object.freeze([
+        {
+          speaker: partner,
+          text: `여기서 멈추면 전부 끝이야. 어느 쪽을 택할지 지금 결정해.`,
+          kind: "speech",
+          emotion: "determination",
+          bubbleTip: "2인 대화 역샷의 좌상단→우하단 시선 흐름에 맞춰 말풍선을 배치하세요.",
+        },
+        {
+          speaker: protagonist,
+          text: `시간이 없군… 조건은 받아들이겠어.`,
+          kind: "speech",
+          emotion: "determination",
+          bubbleTip: "짧고 단호한 문장으로 갈등의 대가를 수용하는 긴장감을 살리세요.",
+        },
+      ]);
+    case "midpoint":
+    case "crisis":
+      return Object.freeze([
+        {
+          speaker: "",
+          text: `믿어 왔던 마지막 단서마저 한순간에 뒤집혔다.`,
+          kind: "narration",
+          emotion: "sorrow",
+          bubbleTip: "컷 위아래 여백을 넓히고 독백 나레이션을 독립 배치해 절망감을 강조하세요.",
+        },
+        {
+          speaker: protagonist,
+          text: `처음부터 전부 계산된 함정이었단 말이야…?`,
+          kind: "speech",
+          emotion: "shock",
+          bubbleTip: "떨리는 테두리 말풍선으로 인물의 심리적 동요를 표현하세요.",
+        },
+      ]);
+    case "climax":
+      return Object.freeze([
+        {
+          speaker: protagonist,
+          text: `더 이상 도망치지 않아. 내 손으로 직접 끝내겠어!`,
+          kind: "speech",
+          emotion: "rage",
+          bubbleTip: "뾰족한 외침 말풍선과 굵은 폰트로 클라이맥스 타격감을 극대화하세요.",
+        },
+        {
+          speaker: "",
+          text: `망설임이 사라진 자리에 오직 단 하나의 선택만 남았다.`,
+          kind: "narration",
+          emotion: "determination",
+          bubbleTip: "액션 컷 직후 짧은 나레이션으로 결전의 무게를 잡아주세요.",
+        },
+      ]);
+    case "hook":
+      return Object.freeze([
+        {
+          speaker: partner,
+          text: `오랜만이네, ${protagonist}. 아직 끝난 줄 알았어?`,
+          kind: "speech",
+          emotion: "determination",
+          bubbleTip: "회차 마지막 컷 하단에 대사를 배치해 다음 화 클릭(클리프행어)을 유도하세요.",
+        },
+        {
+          speaker: "",
+          text: `닫힌 줄 알았던 문 너머에서 진짜 이야기가 시작되고 있었다.`,
+          kind: "narration",
+          emotion: "shock",
+          bubbleTip: "마지막 여운을 남기는 엔딩 나레이션으로 스크롤을 마무리하세요.",
+        },
+      ]);
+  }
+}
+
+/**
+ * 현재 기획 상태에서 다음 스토리라인 전개 후보와 그에 맞춘 지문·대사·스케치 구도 패키지를 추천한다.
+ * 결정적(deterministic) 순수 함수이므로 오프라인에서도 즉시 동작한다.
+ */
+export function recommendStorylineAndDialogues(
+  input: PlotDevelopmentInput,
+  options: RecommendStorylineDialogueOptions = {},
+): readonly StorylineDialoguePackage[] {
+  const baseSuggestions = suggestNextDevelopments(input, options);
+  const protagonist = options.protagonistName?.trim() || "주인공";
+  const partner = options.partnerName?.trim() || "상대역";
+  const genre = (input.genre ?? "").trim();
+  const conflict = normalize(input.coreConflict ?? "");
+
+  return Object.freeze(
+    baseSuggestions.map((suggestion): StorylineDialoguePackage => {
+      const stageDirection = `${STAGE_DIRECTION_BY_STAGE[suggestion.stage]} (${suggestion.title})`;
+      const dialogues = buildDialoguesForStage({
+        stage: suggestion.stage,
+        genre,
+        conflict,
+        protagonist,
+        partner,
+        beatText: suggestion.text,
+      });
+      return Object.freeze({
+        id: `pkg-${suggestion.id}`,
+        stage: suggestion.stage,
+        stageLabel: suggestion.stageLabel,
+        title: suggestion.title,
+        storylineBeat: suggestion.text,
+        stageDirection,
+        recommendedSketchPresetId: STAGE_SKETCH_PRESET[suggestion.stage],
+        dialogues,
+        creatorCoachingTip: `${suggestion.stageLabel} 단계 연출 팁: ${suggestion.rationale} 추천 스케치 구도(${STAGE_SKETCH_PRESET[suggestion.stage]})와 함께 쓰면 시선 유도가 한결 명확해집니다.`,
+        ...(suggestion.nextEpisodeSeed ? { nextEpisodeSeed: suggestion.nextEpisodeSeed } : {}),
+      });
+    }),
+  );
+}
+
+/**
+ * 추천된 스토리라인·대사 패키지를 `StudioAiStoryboardDirector.direct()`가 즉시 분석할 수 있는
+ * 지문+대사 콘티 대본 문자열로 변환한다.
+ */
+export function compileStorylinePackageToScript(pkg: StorylineDialoguePackage): string {
+  const lines: string[] = [pkg.stageDirection];
+  for (const item of pkg.dialogues) {
+    if (item.kind === "narration") {
+      lines.push(`${pkg.stageLabel} 장면 연출 계속. (나레이션: ${item.text})`);
+    } else {
+      lines.push(`${item.speaker || "주인공"}: "${item.text}"`);
+    }
+  }
+  return lines.join("\n");
+}
+
+// ── 기·승·전·결 4막 회차 스토리라인 아크 & 텐션 곡선 생성기 ────────────────────
+
+export type EpisodeStorylineActId =
+  | "gi-opening"
+  | "seung-development"
+  | "jeon-twist"
+  | "gyeol-cliffhanger";
+
+export interface EpisodeStorylineArcAct {
+  readonly actId: EpisodeStorylineActId;
+  readonly actLabel: string;
+  readonly stage: PlotDevelopmentStageId;
+  readonly tensionScore: number;
+  readonly recommendedCutCount: number;
+  readonly package: StorylineDialoguePackage;
+}
+
+export interface EpisodeStorylineArc {
+  readonly genre: string;
+  readonly coreConflict: string;
+  readonly acts: readonly EpisodeStorylineArcAct[];
+  readonly totalRecommendedCuts: number;
+  readonly averageTension: number;
+  readonly pacingSummary: string;
+  readonly nextEpisodeHook: string;
+}
+
+const EPISODE_ACT_SPECS: readonly {
+  readonly actId: EpisodeStorylineActId;
+  readonly actLabel: string;
+  readonly stage: PlotDevelopmentStageId;
+  readonly seedPoints: readonly string[];
+  readonly baseTension: number;
+  readonly recommendedCutCount: number;
+}[] = [
+  {
+    actId: "gi-opening",
+    actLabel: "기 (도입·결핍 제시)",
+    stage: "opening",
+    seedPoints: [],
+    baseTension: 38,
+    recommendedCutCount: 3,
+  },
+  {
+    actId: "seung-development",
+    actLabel: "승 (전개·갈등 고조)",
+    stage: "escalation",
+    seedPoints: ["도입 사건", "사건 촉발"],
+    baseTension: 66,
+    recommendedCutCount: 4,
+  },
+  {
+    actId: "jeon-twist",
+    actLabel: "전 (절정·클라이맥스)",
+    stage: "climax",
+    seedPoints: ["도입", "촉발", "심화", "발견", "변수", "위기"],
+    baseTension: 94,
+    recommendedCutCount: 4,
+  },
+  {
+    actId: "gyeol-cliffhanger",
+    actLabel: "결 (여운·클리프행어 훅)",
+    stage: "hook",
+    seedPoints: ["도입", "촉발", "심화", "발견", "변수", "위기", "결전"],
+    baseTension: 88,
+    recommendedCutCount: 3,
+  },
+];
+
+/**
+ * 한 회차 전체의 기·승·전·결 4막 스토리라인 아크와 대사·지문·스케치 구도·텐션 곡선을
+ * 한 번에 설계한다. 예비 작가도 클릭 한 번으로 웹툰 1화 분량의 기승전결 콘티 대본을 얻을 수 있다.
+ */
+export function generateEpisodeStorylineArc(
+  input: PlotDevelopmentInput,
+  options: RecommendStorylineDialogueOptions = {},
+): EpisodeStorylineArc {
+  const genre = (input.genre ?? "").trim() || "판타지";
+  const conflict = normalize(input.coreConflict ?? "") || "숨겨진 진실과 선택의 대가";
+  const genreTensionBonus = /액션|스릴러|무협|공포/u.test(genre) ? 4 : 0;
+
+  const acts: EpisodeStorylineArcAct[] = EPISODE_ACT_SPECS.map((spec) => {
+    const packages = recommendStorylineAndDialogues(
+      {
+        genre,
+        coreConflict: conflict,
+        turningPoints: spec.seedPoints,
+        logline: input.logline,
+        cliffhanger: input.cliffhanger,
+      },
+      { ...options, limit: 1 },
+    );
+    const pkg = packages[0]!;
+    const tensionScore = Math.min(99, spec.baseTension + genreTensionBonus);
+    return Object.freeze({
+      actId: spec.actId,
+      actLabel: spec.actLabel,
+      stage: spec.stage,
+      tensionScore,
+      recommendedCutCount: spec.recommendedCutCount,
+      package: pkg,
+    });
+  });
+
+  const totalRecommendedCuts = acts.reduce((acc, a) => acc + a.recommendedCutCount, 0);
+  const averageTension = Math.round(
+    acts.reduce((acc, a) => acc + a.tensionScore, 0) / Math.max(1, acts.length),
+  );
+  const lastAct = acts[acts.length - 1]!;
+  const nextEpisodeHook =
+    nextEpisodeSeedFromSuggestion(lastAct.package, input.cliffhanger) ||
+    "마지막 컷의 질문에서 다음 화 첫 장면이 곧바로 이어진다";
+
+  const pacingSummary =
+    `${genre} 장르 4막 구조 · 총 권장 ${totalRecommendedCuts}컷 · 평균 텐션 ${averageTension}점 ` +
+    `(기 ${acts[0]!.tensionScore} → 승 ${acts[1]!.tensionScore} → 전 ${acts[2]!.tensionScore} → 결 ${acts[3]!.tensionScore})`;
+
+  return Object.freeze({
+    genre,
+    coreConflict: conflict,
+    acts: Object.freeze(acts),
+    totalRecommendedCuts,
+    averageTension,
+    pacingSummary,
+    nextEpisodeHook,
+  });
+}
+
+/**
+ * 4막 회차 스토리라인 아크 전체를 스토리보드 디렉터 대본 문자열로 직렬화한다.
+ */
+export function compileEpisodeArcToScript(arc: EpisodeStorylineArc): string {
+  return arc.acts.map((act) => compileStorylinePackageToScript(act.package)).join("\n");
+}
+
+export interface StorylineCliffhangerDiagnostic {
+  readonly hookPowerScore: number;
+  readonly scrollRetentionScore: number;
+  readonly tensionContrastDelta: number;
+  readonly globalSerialReadiness: "excellent" | "solid" | "needs-hook-boost";
+  readonly plotDoctorNotes: readonly string[];
+}
+
+/**
+ * 4막(`기·승·전·결`) 스토리라인 아크의 텐션 상승 폭, 클라이맥스·클리프행어 강도,
+ * 독자 스크롤 이탈 방지 지표를 정밀 평가해 프로·지망생 작가를 위한 플롯 처방(`plotDoctorNotes`)을 반환한다.
+ */
+export function evaluateStorylineCliffhangerAndPacing(
+  arc: EpisodeStorylineArc,
+): StorylineCliffhangerDiagnostic {
+  const scores = arc.acts.map((a) => a.tensionScore);
+  const minTension = scores.length > 0 ? Math.min(...scores) : 70;
+  const maxTension = scores.length > 0 ? Math.max(...scores) : 90;
+  const tensionContrastDelta = Math.max(0, maxTension - minTension);
+
+  const lastAct = arc.acts[arc.acts.length - 1];
+  const hookBonus = /진실|정체|반전|검|눈빛|비밀|각성|충격|선언|시작/u.test(arc.nextEpisodeHook)
+    ? 8
+    : 3;
+  const hookPowerScore = Math.min(
+    100,
+    Math.round((lastAct?.tensionScore ?? 85) * 0.85 + hookBonus + Math.min(10, tensionContrastDelta * 0.4)),
+  );
+  const scrollRetentionScore = Math.min(
+    100,
+    Math.round(arc.averageTension * 0.75 + Math.min(25, tensionContrastDelta * 1.1)),
+  );
+
+  const plotDoctorNotes: string[] = [];
+  if (tensionContrastDelta < 15) {
+    plotDoctorNotes.push(
+      "기(도입)와 전(절정) 사이의 텐션 낙차가 작습니다. 2막(승)에서 일상적 호흡을 한 템포 낮추면 3막 절정의 폭발력이 2배 이상 살아납니다.",
+    );
+  } else {
+    plotDoctorNotes.push(
+      `기→전 텐션 상승 폭(${tensionContrastDelta}점)이 이상적인 K-웹툰 롤러코스터 곡선을 그리고 있습니다.`,
+    );
+  }
+  plotDoctorNotes.push(
+    `엔딩 클리프행어("${arc.nextEpisodeHook}") 직전에 180px 이상의 세로 여백(블랙/화이트 스크롤 공백)을 배치하면 다음 화 결제·열람 전환율이 높아집니다.`,
+  );
+
+  const globalSerialReadiness =
+    hookPowerScore >= 88
+      ? "excellent"
+      : hookPowerScore >= 75
+        ? "solid"
+        : "needs-hook-boost";
+
+  return Object.freeze({
+    hookPowerScore,
+    scrollRetentionScore,
+    tensionContrastDelta,
+    globalSerialReadiness,
+    plotDoctorNotes: Object.freeze(plotDoctorNotes),
+  });
+}
+
+
+

@@ -498,7 +498,7 @@ describe("studio live collaboration protocol", () => {
       })
     ).toBeNull();
     expect(() => studioLocalLiveChannelName(` ${WORK_ID}`)).toThrow(
-      "유효한 작품 ID가 필요합니다."
+      "work-id-required"
     );
   });
 
@@ -553,7 +553,7 @@ describe("studio live collaboration protocol", () => {
     expect(first).toBe(studioLocalLiveChannelName("private/work/123"));
     expect(first).not.toContain("private/work/123");
     expect(first).not.toBe(studioLocalLiveChannelName("private/work/124"));
-    expect(() => studioLocalLiveChannelName(" ")).toThrow("유효한 작품 ID");
+    expect(() => studioLocalLiveChannelName(" ")).toThrow("work-id-required");
   });
 });
 

@@ -35,19 +35,28 @@ import {
   buildStudioLoraGenerationPrompt,
   createStudioLoraArchive,
   createStudioLoraJobRecord,
+  DEFAULT_STUDIO_ARTIST_STYLE_TRAIT,
   loadStudioLoraJobs,
   refreshStudioLoraJob,
   removeStudioLoraJob,
   saveStudioLoraJobs,
+  STUDIO_ARTIST_LINE_WEIGHT_LABELS,
+  STUDIO_ARTIST_PALETTE_MOOD_LABELS,
+  STUDIO_ARTIST_SHADING_MODE_LABELS,
   studioLoraArchiveEntryFromDataUrl,
   studioLoraJobErrorText,
   suggestStudioLoraTriggerWord,
   upsertStudioLoraJob,
+  validateStudioStyleTrainingDataset,
   STUDIO_LORA_MAX_TRAINING_IMAGES,
   STUDIO_LORA_MIN_TRAINING_IMAGES,
+  type StudioArtistLineWeight,
+  type StudioArtistPaletteMood,
+  type StudioArtistShadingMode,
   type StudioLoraJobKind,
   type StudioLoraTrainingJob,
 } from "./studio-lora-training";
+import { synthesizeLocalStyleModelPreviewDataUrl } from "./studio-artist-style-dna";
 
 function text(source: string): string {
   return translateCurrentStaticSourceText("domains.creator.ai.StudioAiLoraTrainingPanel", "ko", source);
@@ -85,6 +94,7 @@ export function StudioAiLoraTrainingPanel({
 }: StudioAiLoraTrainingPanelProps) {
   const deps = useMemo<StudioLoraClientDeps>(() => clientDeps ?? {}, [clientDeps]);
   const [apiKey, setApiKey] = useState<string>(() => loadStudioFalApiKey());
+  const [localEngineMode, setLocalEngineMode] = useState(false);
   const [jobs, setJobs] = useState<readonly StudioLoraTrainingJob[]>(() =>
     loadStudioLoraJobs(browserStudioLoraJobStorage()),
   );
@@ -92,6 +102,16 @@ export function StudioAiLoraTrainingPanel({
   const [triggerWord, setTriggerWord] = useState("");
   const [triggerEdited, setTriggerEdited] = useState(false);
   const [kind, setKind] = useState<StudioLoraJobKind>("character");
+  const [lineWeight, setLineWeight] = useState<StudioArtistLineWeight>(
+    DEFAULT_STUDIO_ARTIST_STYLE_TRAIT.lineWeight,
+  );
+  const [shadingMode, setShadingMode] = useState<StudioArtistShadingMode>(
+    DEFAULT_STUDIO_ARTIST_STYLE_TRAIT.shadingMode,
+  );
+  const [paletteMood, setPaletteMood] = useState<StudioArtistPaletteMood>(
+    DEFAULT_STUDIO_ARTIST_STYLE_TRAIT.paletteMood,
+  );
+  const [artistOwnershipConfirmed, setArtistOwnershipConfirmed] = useState(true);
   const [trainingImages, setTrainingImages] = useState<readonly string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -147,8 +167,18 @@ export function StudioAiLoraTrainingPanel({
     () => completedJobs.find((job) => job.id === generationJobId) ?? completedJobs[0] ?? null,
     [completedJobs, generationJobId],
   );
+  const datasetValidation = useMemo(
+    () =>
+      validateStudioStyleTrainingDataset({
+        images: trainingImages,
+        kind,
+        artistOwnershipConfirmed,
+      }),
+    [trainingImages, kind, artistOwnershipConfirmed],
+  );
 
   const configured = isStudioFalConfigured(apiKey);
+  const effectiveReady = configured || localEngineMode;
 
   const handleLabelChange = (value: string) => {
     setCharacterLabel(value);
@@ -189,12 +219,8 @@ export function StudioAiLoraTrainingPanel({
       setError(text("트리거 워드를 입력해 주세요. 학습된 모습을 부를 때 쓰는 고유 단어입니다."));
       return;
     }
-    if (trainingImages.length < STUDIO_LORA_MIN_TRAINING_IMAGES) {
-      setError(
-        text(
-          `학습 이미지가 ${trainingImages.length}장입니다. fal 학습은 최소 ${STUDIO_LORA_MIN_TRAINING_IMAGES}장을 권합니다.`,
-        ),
-      );
+    if (!datasetValidation.ready && datasetValidation.blockingReason) {
+      setError(text(datasetValidation.blockingReason));
       return;
     }
     const entries = trainingImages.map((src, index) => studioLoraArchiveEntryFromDataUrl(src, index));
@@ -208,6 +234,36 @@ export function StudioAiLoraTrainingPanel({
     setBusy("training");
     try {
       const archive = createStudioLoraArchive(validEntries);
+      if (!configured && localEngineMode) {
+        const nowIso = new Date().toISOString();
+        const localReqId = `local-${trigger}-${validEntries.length}`;
+        const localJob: StudioLoraTrainingJob = {
+          ...createStudioLoraJobRecord({
+            id: `lora-${localReqId}`,
+            characterLabel: label,
+            triggerWord: trigger,
+            kind,
+            providerRequestId: localReqId,
+            statusUrl: null,
+            responseUrl: null,
+            trainingImageCount: validEntries.length,
+            nowIso,
+            artistOwnershipConfirmed: kind === "style" ? artistOwnershipConfirmed : undefined,
+            styleTraits:
+              kind === "style"
+                ? { lineWeight, shadingMode, paletteMood, artistAttribution: label }
+                : null,
+          }),
+          status: "completed",
+          loraFileUrl: `lora://builtin-style/${trigger}.safetensors`,
+        };
+        persistJobs(upsertStudioLoraJob(jobsRef.current, localJob));
+        setTrainingImages([]);
+        setNotice(
+          text("내장 화풍 DNA 엔진으로 작가 그림체 모델을 즉시 생성·등록했습니다. 스토리보드 디렉터와 아래 생성 섹션에서 바로 사용할 수 있습니다."),
+        );
+        return;
+      }
       const blob = new Blob([archive], { type: "application/zip" });
       const upload = await uploadStudioLoraFile(deps, apiKey, {
         name: `${label}-lora-training.zip`,
@@ -224,6 +280,7 @@ export function StudioAiLoraTrainingPanel({
         imagesDataUrl: upload.data.fileUrl,
         triggerWord: trigger,
         isStyle: kind === "style",
+        steps: datasetValidation.recommendedSteps,
       });
       if (!submission.ok) {
         setError(submission.error);
@@ -240,6 +297,11 @@ export function StudioAiLoraTrainingPanel({
         responseUrl: submission.data.responseUrl,
         trainingImageCount: validEntries.length,
         nowIso,
+        artistOwnershipConfirmed: kind === "style" ? artistOwnershipConfirmed : undefined,
+        styleTraits:
+          kind === "style"
+            ? { lineWeight, shadingMode, paletteMood, artistAttribution: label }
+            : null,
       });
       persistJobs(upsertStudioLoraJob(jobsRef.current, job));
       setTrainingImages([]);
@@ -265,6 +327,22 @@ export function StudioAiLoraTrainingPanel({
     }
     setBusy("generation");
     try {
+      if (!configured || generationJob.loraFileUrl.startsWith("lora://builtin-style/")) {
+        const traits = generationJob.styleTraits ?? { lineWeight, shadingMode, paletteMood };
+        const preview = synthesizeLocalStyleModelPreviewDataUrl({
+          artistLabel: generationJob.characterLabel,
+          triggerWord: generationJob.triggerWord,
+          prompt,
+          lineWeight: traits.lineWeight,
+          shadingMode: traits.shadingMode,
+          paletteMood: traits.paletteMood,
+          width: 832,
+          height: 1216,
+        });
+        setGenerated({ url: preview.dataUrl, width: preview.width, height: preview.height });
+        setNotice(text("내장 화풍 DNA 엔진으로 스타일 프리뷰 컷을 생성했습니다."));
+        return;
+      }
       // ⚠️ 과금 경계: 생성 제출이 성공하면 사용자 본인 fal 계정에 생성 요금이 청구된다.
       const result = await generateStudioLoraImage(deps, apiKey, {
         prompt,
@@ -287,6 +365,11 @@ export function StudioAiLoraTrainingPanel({
   const insertGenerated = async () => {
     if (!generated) return;
     setError(null);
+    if (generated.url.startsWith("data:")) {
+      onInsertImage(generated.url, generated.width, generated.height);
+      setNotice(text("생성 이미지를 캔버스에 추가했습니다."));
+      return;
+    }
     try {
       const response = await (deps.fetchImpl ?? fetch)(generated.url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -314,7 +397,7 @@ export function StudioAiLoraTrainingPanel({
             <Layers className="h-3.5 w-3.5 text-accent" aria-hidden />
             {text("캐릭터·화풍 학습 (LoRA)")}
           </h4>
-          <StudioAiConnectionBadge configured={configured} className="mt-1" />
+          <StudioAiConnectionBadge configured={effectiveReady} className="mt-1" />
           <p className="mt-1 text-[11px] leading-5 text-fg-3">
             {text(
               "참조 이미지를 몇 장 모아 학습시키면, 그 캐릭터·화풍을 부를 수 있는 나만의 모델이 됩니다. 학습과 생성은 본인의 fal.ai 키로 실행됩니다.",
@@ -323,7 +406,7 @@ export function StudioAiLoraTrainingPanel({
         </div>
       </div>
 
-      {!configured ? (
+      {!effectiveReady ? (
         <div className="mt-3 rounded-xl border border-dashed border-line bg-panel px-3 py-3">
           <p className="flex items-start gap-1.5 text-[11px] leading-5 text-fg-2" role="status">
             <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
@@ -331,12 +414,22 @@ export function StudioAiLoraTrainingPanel({
               "fal.ai 키가 없어 학습 기능이 꺼져 있습니다. 키가 없을 때는 위쪽 참조 이미지 방식(캐릭터 일관성)이 그대로 동작합니다.",
             )}
           </p>
-          <Link
-            to="/settings/api-keys"
-            className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-[12px] font-bold text-white transition hover:bg-accent-strong"
-          >
-            {text("통합 API 키 설정에서 fal.ai 키 등록하기")}
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Link
+              to="/settings/api-keys"
+              className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-[12px] font-bold text-white transition hover:bg-accent-2"
+            >
+              {text("통합 API 키 설정에서 fal.ai 키 등록하기")}
+            </Link>
+            <button
+              type="button"
+              data-testid="enable-builtin-style-engine-btn"
+              onClick={() => setLocalEngineMode(true)}
+              className="inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent-soft px-3 text-[12px] font-bold text-accent transition hover:bg-panel"
+            >
+              {text("기본 화풍 엔진으로 즉시 시작 (BYOK 키 없이 동작)")}
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -375,7 +468,7 @@ export function StudioAiLoraTrainingPanel({
                   aria-pressed={kind === option.value}
                   className={`min-h-11 flex-1 rounded-lg border px-2 text-[12px] font-bold transition ${
                     kind === option.value
-                      ? "border-accent bg-accent-soft text-accent-strong"
+                      ? "border-accent bg-accent-soft text-accent"
                       : "border-line bg-panel text-fg-2 hover:border-accent"
                   }`}
                 >
@@ -383,6 +476,75 @@ export function StudioAiLoraTrainingPanel({
                 </button>
               ))}
             </div>
+            {kind === "style" ? (
+              <div className="grid gap-2 rounded-xl border border-line bg-panel px-2.5 py-2 text-[11px]">
+                <span className="font-bold text-fg">
+                  {text("작가 그림체 특성 프로필 (스토리보드·작화 생성에 반영)")}
+                </span>
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                  <label className="grid gap-0.5 text-fg-2">
+                    {text("선화 굵기·터치")}
+                    <select
+                      aria-label={text("선화 굵기·터치")}
+                      value={lineWeight}
+                      onChange={(e) => setLineWeight(e.target.value as StudioArtistLineWeight)}
+                      className="min-h-9 rounded-lg border border-line bg-panel px-2 text-[11px] text-fg"
+                    >
+                      {(Object.keys(STUDIO_ARTIST_LINE_WEIGHT_LABELS) as StudioArtistLineWeight[]).map(
+                        (key) => (
+                          <option key={key} value={key}>
+                            {STUDIO_ARTIST_LINE_WEIGHT_LABELS[key]}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                  <label className="grid gap-0.5 text-fg-2">
+                    {text("채색·명암 방식")}
+                    <select
+                      aria-label={text("채색·명암 방식")}
+                      value={shadingMode}
+                      onChange={(e) => setShadingMode(e.target.value as StudioArtistShadingMode)}
+                      className="min-h-9 rounded-lg border border-line bg-panel px-2 text-[11px] text-fg"
+                    >
+                      {(Object.keys(STUDIO_ARTIST_SHADING_MODE_LABELS) as StudioArtistShadingMode[]).map(
+                        (key) => (
+                          <option key={key} value={key}>
+                            {STUDIO_ARTIST_SHADING_MODE_LABELS[key]}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                  <label className="grid gap-0.5 text-fg-2">
+                    {text("색감 무드")}
+                    <select
+                      aria-label={text("색감 무드")}
+                      value={paletteMood}
+                      onChange={(e) => setPaletteMood(e.target.value as StudioArtistPaletteMood)}
+                      className="min-h-9 rounded-lg border border-line bg-panel px-2 text-[11px] text-fg"
+                    >
+                      {(Object.keys(STUDIO_ARTIST_PALETTE_MOOD_LABELS) as StudioArtistPaletteMood[]).map(
+                        (key) => (
+                          <option key={key} value={key}>
+                            {STUDIO_ARTIST_PALETTE_MOOD_LABELS[key]}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                </div>
+                <label className="flex items-center gap-1.5 text-[11px] text-fg-2">
+                  <input
+                    type="checkbox"
+                    checked={artistOwnershipConfirmed}
+                    onChange={(e) => setArtistOwnershipConfirmed(e.target.checked)}
+                    className="h-3.5 w-3.5 accent-accent"
+                  />
+                  {text("본인 창작 그림체 데이터(또는 학습 허락을 받은 원고)임을 확인합니다")}
+                </label>
+              </div>
+            ) : null}
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold text-fg-2">
@@ -397,6 +559,9 @@ export function StudioAiLoraTrainingPanel({
                   {text("선택한 이미지 담기")}
                 </button>
               </div>
+              <p className="mt-1 text-[10px] leading-4 text-fg-3" data-testid="lora-dataset-coaching">
+                {text(datasetValidation.coachingTip)}
+              </p>
               {trainingImages.length > 0 ? (
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {trainingImages.map((src, index) => (
@@ -431,7 +596,7 @@ export function StudioAiLoraTrainingPanel({
               type="button"
               onClick={() => void startTraining()}
               disabled={busy !== null}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-[12px] font-bold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-[12px] font-bold text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy === "training" ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -454,7 +619,7 @@ export function StudioAiLoraTrainingPanel({
                           ? "bg-success-soft text-success"
                           : job.status === "failed"
                             ? "bg-danger-soft text-danger"
-                            : "bg-accent-soft text-accent-strong"
+                            : "bg-accent-soft text-accent"
                       }`}
                       role="status"
                     >
@@ -468,6 +633,13 @@ export function StudioAiLoraTrainingPanel({
                     {" · "}
                     {text(`학습 이미지 ${job.trainingImageCount}장`)}
                   </p>
+                  {job.kind === "style" && job.styleTraits ? (
+                    <p className="mt-0.5 text-[10px] font-semibold text-accent">
+                      {STUDIO_ARTIST_LINE_WEIGHT_LABELS[job.styleTraits.lineWeight]} ·{" "}
+                      {STUDIO_ARTIST_SHADING_MODE_LABELS[job.styleTraits.shadingMode]} ·{" "}
+                      {STUDIO_ARTIST_PALETTE_MOOD_LABELS[job.styleTraits.paletteMood]}
+                    </p>
+                  ) : null}
                   {job.lastError ? (
                     <p className="mt-1 text-[11px] leading-5 text-danger">{studioLoraJobErrorText(job)}</p>
                   ) : null}
@@ -495,7 +667,7 @@ export function StudioAiLoraTrainingPanel({
                         <button
                           type="button"
                           onClick={() => setGenerationJobId(job.id)}
-                          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-2.5 text-[11px] font-bold text-white transition hover:bg-accent-strong"
+                          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-2.5 text-[11px] font-bold text-white transition hover:bg-accent-2"
                         >
                           {text("이 모델로 생성")}
                         </button>
@@ -556,7 +728,7 @@ export function StudioAiLoraTrainingPanel({
                   type="button"
                   onClick={() => void runGeneration()}
                   disabled={busy !== null}
-                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-[12px] font-bold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-[12px] font-bold text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {busy === "generation" ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -575,7 +747,7 @@ export function StudioAiLoraTrainingPanel({
                     <button
                       type="button"
                       onClick={() => void insertGenerated()}
-                      className="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent px-3 text-[12px] font-bold text-accent-strong transition hover:bg-accent-soft"
+                      className="inline-flex min-h-11 items-center justify-center rounded-lg border border-accent px-3 text-[12px] font-bold text-accent transition hover:bg-accent-soft"
                     >
                       {text("캔버스에 추가")}
                     </button>

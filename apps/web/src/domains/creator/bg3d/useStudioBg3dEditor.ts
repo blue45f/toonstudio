@@ -18,6 +18,7 @@ import { attachStudioBg3dEditorHosts } from "./studio-bg3d-editor-attach-hosts";
 import { bindStudioBg3dEditorSceneGraph } from "./StudioBg3dEditorSceneGraph";
 import { useStudioBg3dEditorEffects } from "./useStudioBg3dEditorEffects";
 import { useStudioBg3dEditorRestoreEffects } from "./useStudioBg3dEditorRestoreEffects";
+import { useStudioBg3dViewportHostObservers } from "./useStudioBg3dViewportHost";
 import { createStudioBg3dSceneOutlinerController } from "./studio-bg3d-scene-outliner-controller";
 import {
   applyStudioBg3dOutlinerSelectionEffect,
@@ -250,5 +251,12 @@ export function useStudioBg3dEditor(props) {
     : undefined;
   useStudioBg3dEditorEffects(h);
   useStudioBg3dEditorRestoreEffects(h);
+  // 정밀 편집 전환처럼 뷰포트 호스트가 다시 마운트돼도 박스 크기·기기 신호가 지금 호스트를 따라가게 한다.
+  useStudioBg3dViewportHostObservers({
+    open: h.open,
+    viewportHostRef: h.viewportHostRef,
+    setViewportBoxSize: h.setViewportBoxSize,
+    setDeviceSignals: h.setDeviceSignals,
+  });
   return h;
 }

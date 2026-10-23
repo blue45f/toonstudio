@@ -64,37 +64,45 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
     {pulse && !compact ? (() => {
       const dims = pulse.dimensions;
       const dimSummary = dims
-        ? ` [오피스 ${dims.officePresence}·딥워크 ${dims.deepWorkFlow}·협업 ${dims.reviewCollaboration}·웰니스 ${dims.wellnessVitality}·미학 ${dims.atelierAesthetics}]`
+        ? ` [오피스 ${dims.officePresence}·딥워크 ${dims.deepWorkFlow}·협업 ${dims.reviewCollaboration}·웰니스 ${dims.wellnessVitality}·미학 ${dims.atelierAesthetics}·리듬 ${dims.autonomousRhythm}·추진 ${dims.creativeVelocity}]`
         : "";
       const dimData = dims
-        ? `${dims.officePresence},${dims.deepWorkFlow},${dims.reviewCollaboration},${dims.wellnessVitality},${dims.atelierAesthetics}`
+        ? `${dims.officePresence},${dims.deepWorkFlow},${dims.reviewCollaboration},${dims.wellnessVitality},${dims.atelierAesthetics},${dims.autonomousRhythm},${dims.creativeVelocity}`
         : undefined;
+      const omniBadge = bt(pulse.quantumBadgeKo ?? pulse.omniBadgeKo ?? pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.quantumBadgeEn ?? pulse.omniBadgeEn ?? pulse.hyperBadgeEn ?? pulse.badgeEn);
+      const routineHint = pulse.recommendedRoutineKo ? ` · ${bt(pulse.recommendedRoutineKo, pulse.recommendedRoutineEn)}` : "";
       return onQuickAction && pulse.quickActionId ? (
         <button
           type="button"
           className="space-location__pulse"
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
+          data-omni-tier={pulse.omniTier}
+          data-omni-score={pulse.omniScore}
+          data-quantum-score={pulse.quantumScore}
           data-hyper-dimensions={dimData}
           onClick={onQuickAction}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${bt(pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.hyperBadgeEn ?? pulse.badgeEn)}${dimSummary} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
-          aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${pulse.synergyScore}pt / ${pulse.hyperScore ?? pulse.synergyScore * 10}pt) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${omniBadge}${dimSummary}${routineHint} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${pulse.synergyScore}pt / ${pulse.omniScore ?? pulse.hyperScore ?? pulse.synergyScore * 10}pt) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
         >
           <Sparkles size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
-          <strong className="space-location__pulse-score">{pulse.hyperScore ?? pulse.synergyScore}pt</strong>
+          <strong className="space-location__pulse-score">{pulse.omniScore ?? pulse.hyperScore ?? pulse.synergyScore}pt</strong>
         </button>
       ) : (
         <span
           className="space-location__pulse"
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
+          data-omni-tier={pulse.omniTier}
+          data-omni-score={pulse.omniScore}
+          data-quantum-score={pulse.quantumScore}
           data-hyper-dimensions={dimData}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${bt(pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.hyperBadgeEn ?? pulse.badgeEn)}${dimSummary}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${omniBadge}${dimSummary}${routineHint}`}
         >
           <Sparkles size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
-          <strong className="space-location__pulse-score">{pulse.hyperScore ?? pulse.synergyScore}pt</strong>
+          <strong className="space-location__pulse-score">{pulse.omniScore ?? pulse.hyperScore ?? pulse.synergyScore}pt</strong>
         </span>
       );
     })() : null}

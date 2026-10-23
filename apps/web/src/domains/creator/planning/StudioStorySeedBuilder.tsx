@@ -21,9 +21,11 @@ import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { GENRES } from "@/shared/lib/taxonomy";
 
 import { StudioAiConnectionBadge, StudioAiConnectionNotice } from "../ai/StudioAiConnectionBadge";
+import { loadEffectiveStudioAiSettings } from "../ai/studio-ai-settings";
 
 import {
   buildLocalStorySeed,
+  createAiStorySeedProvider,
   localStorySeedProvider,
   storySeedPlanPatch,
   type StorySeedDraft,
@@ -173,7 +175,7 @@ export function StudioStorySeedBuilder({
                 className={
                   genre === candidate
                     ? "min-h-8 rounded-full bg-accent px-3 text-xs font-bold text-white"
-                    : "min-h-8 rounded-full border border-line px-3 text-xs text-fg-2 hover:bg-panel-2"
+                    : "min-h-8 rounded-full border border-line px-3 text-xs text-fg-2 hover:bg-raised"
                 }
               >
                 {candidate}
@@ -284,7 +286,7 @@ export function StudioStorySeedBuilder({
                 const cited = !deselectedSettingIds.has(ref.id);
                 return (
                   <li key={ref.id}>
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-line px-3 py-2 text-sm text-fg hover:bg-panel-2">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-line px-3 py-2 text-sm text-fg hover:bg-raised">
                       <input
                         type="checkbox"
                         checked={cited}
@@ -317,6 +319,20 @@ export function StudioStorySeedBuilder({
           >
             {phase === "loading" ? "초안 만드는 중…" : "씨앗 초안 만들기"}
           </button>
+          <button
+            type="button"
+            disabled={genre.trim() === "" || phase === "loading"}
+            onClick={() => {
+              const effective = loadEffectiveStudioAiSettings(
+                typeof window !== "undefined" ? window.sessionStorage : undefined,
+              );
+              const aiProvider = createAiStorySeedProvider(effective.settings);
+              void runGenerate(aiProvider);
+            }}
+            className="min-h-11 rounded-full border border-accent/40 bg-accent/10 px-4 text-sm font-bold text-accent hover:bg-accent/15 disabled:opacity-40"
+          >
+            AI 씨앗 확장 만들기
+          </button>
           {genre.trim() === "" && (
             <span className="text-xs text-fg-3">장르를 먼저 골라 주세요.</span>
           )}
@@ -327,7 +343,7 @@ export function StudioStorySeedBuilder({
       </div>
 
       {phase === "error" && (
-        <div role="alert" className="mt-3 rounded-xl border border-red-300/50 bg-red-50/10 px-3 py-2">
+        <div role="alert" className="mt-3 rounded-xl border border-danger/50 bg-danger-soft/20 px-3 py-2">
           <p className="text-sm text-fg">{errorMessage}</p>
           <div className="mt-2 flex gap-2">
             <button
@@ -370,7 +386,7 @@ export function StudioStorySeedBuilder({
               {draft.loglineCandidates.map((candidate, index) => (
                 <label
                   key={candidate}
-                  className="flex cursor-pointer items-start gap-2 rounded-xl border border-line px-3 py-2 text-sm text-fg hover:bg-panel-2"
+                  className="flex cursor-pointer items-start gap-2 rounded-xl border border-line px-3 py-2 text-sm text-fg hover:bg-raised"
                 >
                   <input
                     type="radio"
@@ -470,7 +486,7 @@ export function StudioStorySeedBuilder({
       )}
 
       {phase === "applied" && (
-        <p className="mt-3 rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm text-fg">
+        <p className="mt-3 rounded-xl border border-line bg-raised px-3 py-2 text-sm text-fg">
           회차 기획에 넣었어요. 아래 줄거리 표면에서 전환점 골격을 채우고 다듬어 보세요.
           <button
             type="button"
