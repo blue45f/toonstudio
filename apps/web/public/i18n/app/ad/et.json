@@ -1,10 +1,10 @@
 {
   "ad.creativeFallbackAlt": "Sponsoritud pilt",
-  "ad.slotAriaLabel": "Reklamitööaeg",
+  "ad.slotAriaLabel": "Reklaamipesa",
   "ad.slotLabel": "Sponsoritud",
   "ad.slotTitle": "Sponsoritud sisu",
   "ad.ctaDetails": "Vaata üksikasju",
-  "ad.placeholderAriaLabel": "Reklamide kohtus",
-  "ad.placeholderText": "Sponsoritavat sisu pole olemas.",
-  "ad.tag": "Üldtöö"
+  "ad.placeholderAriaLabel": "Reklaami kohatäide",
+  "ad.placeholderText": "Sponsoreeritud sisu pole saadaval.",
+  "ad.tag": "Reklaam"
 }

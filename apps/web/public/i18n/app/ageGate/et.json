@@ -1,17 +1,17 @@
 {
-  "ageGate.title": "Täiskasvanud sisalduse kontroll",
-  "ageGate.description": "Kirjuta oma sünnipäev, et kinnitada, et olete 19 või vanem.",
-  "ageGate.birthDateLabel": "Sündmusaeg",
-  "ageGate.birthYearLabel": "Sündmusaasta",
+  "ageGate.title": "Täiskasvanute sisu kontroll",
+  "ageGate.description": "Sisestage oma sünnikuupäev, et kinnitada, et olete 19-aastane või vanem.",
+  "ageGate.birthDateLabel": "Sünnikuupäev",
+  "ageGate.birthYearLabel": "Sünniaasta",
   "ageGate.birthYearPlaceholder": "Aasta",
-  "ageGate.birthMonthLabel": "Sündmusaasta",
+  "ageGate.birthMonthLabel": "Sünnikuu",
   "ageGate.birthMonthPlaceholder": "Kuu",
-  "ageGate.birthDayLabel": "Sündmusaeg",
+  "ageGate.birthDayLabel": "Sünnipäev",
   "ageGate.birthDayPlaceholder": "Päev",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Sa ei vasta vanuse nõuetele.",
-  "ageGate.cancel": "Künsistamine",
-  "ageGate.confirm": "Tõendamine"
+  "ageGate.cancel": "Tühista",
+  "ageGate.confirm": "Kinnita"
 }

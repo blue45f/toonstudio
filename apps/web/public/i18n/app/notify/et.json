@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Ma ei suutnud märkusid laadida.",
-  "notify.empty": "Ei ole uutest teatustest."
+  "notify.loadError": "Teavitusi ei õnnestunud laadida. Proovige hetke pärast uuesti.",
+  "notify.empty": "Uusi teavitusi ei ole."
 }

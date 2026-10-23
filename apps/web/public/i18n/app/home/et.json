@@ -1,17 +1,17 @@
 {
-  "home.hero.eyebrow": "WEBTOON × WEBROVEL",
+  "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
   "home.hero.titleLine1": "Hajutatud lugusid,",
   "home.hero.titleShimmer": "Üks indeks",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Otsige Naver Webtoon, Series ja Kakao Webtoon'i kaudu, siis kitsastage kiiresti, mida lugeda, kasutades reaalajas signaale ja lugejate eelistusi.",
-  "home.hero.searchButton": "Otsingute pealkirjad, loojad, tagid",
-  "home.hero.rankingButton": "Vaadake ühtne rangitus",
+  "home.hero.description": "Otsige Naver Webtoonist, Seriesist ja Kakao Webtoonist ning kitsendage kiiresti lugemisvalikut reaalajas signaalide ja lugejate eelistuste abil.",
+  "home.hero.searchButton": "Otsi pealkirju, loojaid, silte",
+  "home.hero.rankingButton": "Vaata ühtset edetabelit",
   "home.hero.studioLink": "Looja stuudio",
-  "home.hero.createLink": "Looja laud",
-  "home.hero.stats.titles": "Titulid",
-  "home.hero.stats.platforms": "Publikatsiooniplatvormid",
-  "home.hero.stats.genres": "Soolise spektri",
+  "home.hero.createLink": "Looja tahvel",
+  "home.hero.stats.titles": "Pealkirjad",
+  "home.hero.stats.platforms": "Avaldamisplatvormid",
+  "home.hero.stats.genres": "Žanrispekter",
   "home.hero.stats.reviews": "Lugejate arvustused",
-  "home.loadError": "Ma ei suutnud kodudetaadmeid laadida.",
-  "home.creatorTitle": "Ideaalt sinu esimesele stseenele"
+  "home.loadError": "Avalehe andmeid ei õnnestunud laadida.",
+  "home.creatorTitle": "Ideest teie esimese stseenini"
 }

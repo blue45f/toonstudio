@@ -1,8 +1,8 @@
 {
   "ranking.detailTitle": "Vaata punktide jaotust",
-  "ranking.metric.views": "Vaatused",
+  "ranking.metric.views": "Vaatamised",
   "ranking.why": "Miks?",
-  "ranking.breakdownTitle": "Punktide jaotamine",
-  "ranking.totalScore": "Kokkuvõtt",
-  "ranking.breakdownDescription": "Arvestatud akselisõnumitega ja pealkirja-spetsiaalse normalisatsiooniga."
+  "ranking.breakdownTitle": "Punktide jaotus",
+  "ranking.totalScore": "Koguskoor",
+  "ranking.breakdownDescription": "Arvutatud telgede kaalude ja pealkirjapõhise normaliseerimisega."
 }
