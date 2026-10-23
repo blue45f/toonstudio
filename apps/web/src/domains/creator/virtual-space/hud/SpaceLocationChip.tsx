@@ -61,15 +61,23 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
     {zone.privateZone ? <span className="space-location__private">
       <Lock size={13} aria-hidden />{bt("프라이빗", "Private")}
     </span> : null}
-    {pulse && !compact ? (
-      onQuickAction && pulse.quickActionId ? (
+    {pulse && !compact ? (() => {
+      const dims = pulse.dimensions;
+      const dimSummary = dims
+        ? ` [오피스 ${dims.officePresence}·딥워크 ${dims.deepWorkFlow}·협업 ${dims.reviewCollaboration}·웰니스 ${dims.wellnessVitality}·미학 ${dims.atelierAesthetics}]`
+        : "";
+      const dimData = dims
+        ? `${dims.officePresence},${dims.deepWorkFlow},${dims.reviewCollaboration},${dims.wellnessVitality},${dims.atelierAesthetics}`
+        : undefined;
+      return onQuickAction && pulse.quickActionId ? (
         <button
           type="button"
           className="space-location__pulse"
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
+          data-hyper-dimensions={dimData}
           onClick={onQuickAction}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${bt(pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.hyperBadgeEn ?? pulse.badgeEn)} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${bt(pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.hyperBadgeEn ?? pulse.badgeEn)}${dimSummary} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
           aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${pulse.synergyScore}pt / ${pulse.hyperScore ?? pulse.synergyScore * 10}pt) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
         >
           <Sparkles size={13} aria-hidden />
@@ -81,14 +89,15 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           className="space-location__pulse"
           data-tempo={pulse.tempo}
           data-atelier-pulse-tempo={pulse.tempo}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${bt(pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.hyperBadgeEn ?? pulse.badgeEn)}`}
+          data-hyper-dimensions={dimData}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${bt(pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.hyperBadgeEn ?? pulse.badgeEn)}${dimSummary}`}
         >
           <Sparkles size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
           <strong className="space-location__pulse-score">{pulse.hyperScore ?? pulse.synergyScore}pt</strong>
         </span>
-      )
-    ) : null}
+      );
+    })() : null}
     {connection && !compact ? <span className="space-location__connection" data-tone={connection.tone}>
       <span className="space-location__dot" aria-hidden />{connection.label}
     </span> : null}

@@ -130,6 +130,10 @@ export const STUDIO_NPC_EMOTE_RESPONSES: Readonly<Partial<Record<StudioSpaceEmot
   yoga: "yoga",
   "kpop-dance": "kpop-dance",
   shuffle: "shuffle",
+  "neck-stretch": "neck-stretch",
+  "tai-chi": "tai-chi",
+  cheers: "cheers",
+  moonwalk: "moonwalk",
 });
 
 /** 말 대신 머리 위 이모트로 기분을 드러내는 역할별 습관. */

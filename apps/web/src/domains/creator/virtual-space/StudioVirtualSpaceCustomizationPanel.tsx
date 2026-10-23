@@ -52,6 +52,10 @@ const ACCESSORY_LABELS = {
   "vr-visor": ["3D 바이저", "3D visor"],
   "pen-wing": ["펜촉 날개", "Stylus wing"],
   sprout: ["리프레시 새싹", "Sprout"],
+  "coffee-cup": ["아틀리에 커피잔", "Coffee mug"],
+  "deadline-fire": ["크런치 불꽃", "Crunch fire"],
+  "music-beam": ["사운드 웨이브", "Sound beam"],
+  "angel-wings": ["수호천사 날개", "Angel wings"],
 } as const;
 const AURA_LABELS = {
   none: ["없음", "None"],
@@ -91,8 +95,12 @@ const WELLNESS_MOTION_ACTIONS: ReadonlyArray<{
 }> = [
   { id: "calisthenics", icon: "🤸", labelKo: "아침 체조", labelEn: "Morning stretch" },
   { id: "yoga", icon: "🧘", labelKo: "요가 명상", labelEn: "Yoga flow" },
+  { id: "neck-stretch", icon: "💆", labelKo: "목·어깨 풀기", labelEn: "Neck stretch" },
+  { id: "tai-chi", icon: "☯️", labelKo: "타이치 기공", labelEn: "Tai chi flow" },
   { id: "kpop-dance", icon: "🕺", labelKo: "아이돌 군무", labelEn: "Idol dance" },
   { id: "shuffle", icon: "🪩", labelKo: "셔플 그루브", labelEn: "Shuffle groove" },
+  { id: "moonwalk", icon: "🕴️", labelKo: "문워크 슬라이드", labelEn: "Moonwalk slide" },
+  { id: "cheers", icon: "🥂", labelKo: "마감 건배", labelEn: "Deadline cheers" },
 ];
 const PRESET_LABELS: Readonly<Record<StudioVirtualDecorPresetKey, readonly [string, string]>> = {
   minimal: ["미니멀", "Minimal"], "creator-garden": ["창작 정원", "Creator garden"],
