@@ -8,7 +8,6 @@ export { StudioWriterRoomError, type StudioWriterRoomErrorCode } from "./status-
 
 /**
  * A local, deterministic writer-room document.
- *
  * This module stores planning structure and review suggestions only. It does not call AI, apply a
  * suggestion implicitly, or duplicate Character Bible records: characters are referenced by ID.
  */
