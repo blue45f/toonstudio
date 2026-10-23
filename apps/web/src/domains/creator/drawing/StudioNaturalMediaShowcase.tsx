@@ -21,6 +21,10 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { CountUp } from "@/shared/components/count-up";
 import {
+  STUDIO_DUAL_BRUSH_COMBOS,
+  type StudioDualBrushCombo,
+} from "./studio-dual-brush";
+import {
   STUDIO_NATURAL_MEDIA_PRESETS,
   type StudioNaturalMediaBrushId,
   type StudioNaturalMediaPreset,
@@ -29,6 +33,8 @@ import {
   vectorizeFreehandStroke,
   type StudioVectorizerPoint,
 } from "./studio-stroke-vectorizer";
+
+type StudioNaturalMediaCraft = StudioNaturalMediaPreset["crafts"][number];
 
 /* ------------------------------------------------------------------ */
 /* 브러시별 프리뷰 스트로크 생성                                          */
@@ -88,6 +94,15 @@ const CRAFT_LABEL_KO: Record<string, string> = {
   tone: "톤",
   effect: "효과",
 };
+
+const CRAFT_FILTER_OPTIONS: readonly { readonly id: "all" | StudioNaturalMediaCraft; readonly labelKo: string }[] = [
+  { id: "all", labelKo: "전체 공정" },
+  { id: "sketch", labelKo: "스케치" },
+  { id: "lineart", labelKo: "선화" },
+  { id: "coloring", labelKo: "채색" },
+  { id: "tone", labelKo: "톤" },
+  { id: "effect", labelKo: "효과" },
+];
 
 /** 브러시 ID → 프리뷰 렌더 스타일. */
 const BRUSH_PREVIEW_STYLES: Record<StudioNaturalMediaBrushId, BrushPreviewStyle> = {
@@ -208,7 +223,7 @@ function BrushCard({
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         selected
           ? "border-accent bg-gradient-to-br from-accent/25 via-accent-2/15 to-cool/20 shadow-lg shadow-accent/20"
-          : "border-white/10 bg-white/[0.04] hover:border-accent/50 hover:bg-white/[0.07]",
+          : "border-line bg-card/70 hover:border-accent/50 hover:bg-raised/80",
       ].join(" ")}
     >
       {selected && (
@@ -218,19 +233,19 @@ function BrushCard({
       )}
       <BrushPreviewArt preset={preset} selected={selected} />
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-[15px] font-bold text-white">{preset.labelKo}</span>
-        <span className="text-[11px] uppercase tracking-wide text-white/40">
+        <span className="text-[15px] font-bold text-fg">{preset.labelKo}</span>
+        <span className="text-[11px] uppercase tracking-wide text-fg-3">
           {preset.labelEn}
         </span>
       </div>
-      <p className="mt-1 line-clamp-2 min-h-[2.5em] text-xs leading-relaxed text-white/60">
+      <p className="mt-1 line-clamp-2 min-h-[2.5em] text-xs leading-relaxed text-fg-2">
         {preset.descriptionKo}
       </p>
       <div className="mt-2 flex flex-wrap gap-1">
         {preset.crafts.slice(0, 3).map((craft) => (
           <span
             key={craft}
-            className="rounded-full bg-white/[0.07] px-2 py-0.5 text-[10px] text-white/55"
+            className="rounded-full bg-raised px-2 py-0.5 text-[10px] text-fg-2"
           >
             {CRAFT_LABEL_KO[craft]}
           </span>
@@ -248,12 +263,14 @@ export interface StudioNaturalMediaShowcaseProps {
   readonly selectedBrushId?: StudioNaturalMediaBrushId;
   readonly onSelectBrush?: (preset: StudioNaturalMediaPreset) => void;
   readonly onStartDrawing?: (preset: StudioNaturalMediaPreset) => void;
+  readonly onApplyDualBrushCombo?: (combo: StudioDualBrushCombo) => void;
 }
 
 export function StudioNaturalMediaShowcase({
   selectedBrushId,
   onSelectBrush,
   onStartDrawing,
+  onApplyDualBrushCombo,
 }: StudioNaturalMediaShowcaseProps): ReactElement {
   useBilingualI18nRevision();
   const locale = getCurrentUiLocale();
@@ -262,6 +279,8 @@ export function StudioNaturalMediaShowcase({
 
   const [internalSelected, setInternalSelected] =
     useState<StudioNaturalMediaBrushId>("pencil-2b");
+  const [craftFilter, setCraftFilter] = useState<"all" | StudioNaturalMediaCraft>("all");
+  const [activeComboId, setActiveComboId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [strokeWeight, setStrokeWeight] = useState(1);
 
@@ -270,16 +289,31 @@ export function StudioNaturalMediaShowcase({
     STUDIO_NATURAL_MEDIA_PRESETS.find((p) => p.id === selectedId)
     ?? STUDIO_NATURAL_MEDIA_PRESETS[0];
 
+  const visiblePresets = useMemo(
+    () =>
+      craftFilter === "all"
+        ? STUDIO_NATURAL_MEDIA_PRESETS
+        : STUDIO_NATURAL_MEDIA_PRESETS.filter((preset) => preset.crafts.includes(craftFilter)),
+    [craftFilter],
+  );
+
   const handleSelect = (id: StudioNaturalMediaBrushId): void => {
     setInternalSelected(id);
     const preset = STUDIO_NATURAL_MEDIA_PRESETS.find((p) => p.id === id);
     if (preset) onSelectBrush?.(preset);
   };
 
+  const handleSelectDualBrushCombo = (combo: StudioDualBrushCombo): void => {
+    setActiveComboId(combo.id);
+    handleSelect(combo.config.baseBrushId);
+    onApplyDualBrushCombo?.(combo);
+  };
+
   return (
     <section
       aria-label={tx("내추럴 미디어 브러시 쇼케이스")}
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#171226] via-[#12101d] to-[#0d0b14] p-6 sm:p-8"
+      style={{ containerType: "inline-size" }}
+      className="@container relative overflow-hidden rounded-3xl border border-line bg-gradient-to-b from-panel via-canvas to-canvas p-6 sm:p-8"
     >
       <style>{`
         @keyframes studio-brush-card-enter {
@@ -319,23 +353,80 @@ export function StudioNaturalMediaShowcase({
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
               {tx("무료 내추럴 미디어")}
             </p>
-            <h2 className="mt-1 bg-gradient-to-r from-white via-accent to-cool bg-clip-text text-2xl font-black text-transparent sm:text-3xl">
+            <h2 className="mt-1 bg-gradient-to-r from-fg via-accent to-cool bg-clip-text text-2xl font-black text-transparent sm:text-3xl">
               {tx("마음에 드는 브러시를 하나 골라보세요")}
             </h2>
-            <p className="mt-2 max-w-xl text-sm text-white/55">
+            <p className="mt-2 max-w-xl text-sm text-fg-2">
               {tx("카드를 누르면 바로 선택됩니다. 굵기·색상 같은 세부 설정은 아래 고급 설정에 있습니다.")}
             </p>
           </div>
           <div
-            className="rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-center"
+            className="rounded-2xl border border-line bg-card/80 px-5 py-3 text-center"
             aria-label={tx("브러시 종류 수")}
           >
             <div className="bg-gradient-to-r from-accent to-cool bg-clip-text text-3xl font-black tabular-nums text-transparent">
               <CountUp value={STUDIO_NATURAL_MEDIA_PRESETS.length} duration={0.9} />
             </div>
-            <div className="text-[11px] text-white/50">{tx("종의 브러시")}</div>
+            <div className="text-[11px] text-fg-3">{tx("종의 브러시")}</div>
           </div>
         </header>
+
+        {/* 웹툰 제작 공정별 1-탭 필터 바 */}
+        <div
+          className="mt-5 flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={tx("웹툰 공정별 브러시 필터")}
+        >
+          {CRAFT_FILTER_OPTIONS.map((option) => {
+            const active = craftFilter === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                data-studio-craft-filter={option.id}
+                aria-pressed={active}
+                onClick={() => setCraftFilter(option.id)}
+                className={
+                  active
+                    ? "rounded-full border border-accent bg-accent/20 px-3 py-1 text-xs font-bold text-fg"
+                    : "rounded-full border border-line bg-card/70 px-3 py-1 text-xs font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {tx(option.labelKo)}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 이중 브러시(Dual-Brush) 시그니처 조합 빠른 적용 바 */}
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card/60 px-3.5 py-2.5"
+          role="group"
+          aria-label={tx("이중 브러시 조합 빠른 적용")}
+        >
+          <span className="text-[11px] font-bold text-accent">
+            {tx("이중 브러시 추천 조합:")}
+          </span>
+          {STUDIO_DUAL_BRUSH_COMBOS.map((combo) => {
+            const active = activeComboId === combo.id;
+            return (
+              <button
+                key={combo.id}
+                type="button"
+                data-studio-dual-brush-combo={combo.id}
+                aria-pressed={active}
+                onClick={() => handleSelectDualBrushCombo(combo)}
+                className={
+                  active
+                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-1 text-[11px] font-semibold text-fg"
+                    : "rounded-full border border-line bg-raised/70 px-2.5 py-1 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {combo.labelKo}
+              </button>
+            );
+          })}
+        </div>
 
         {/* 브러시 카드 그리드 */}
         <div
@@ -343,7 +434,7 @@ export function StudioNaturalMediaShowcase({
           role="group"
           aria-label={tx("브러시 목록")}
         >
-          {STUDIO_NATURAL_MEDIA_PRESETS.map((preset, index) => (
+          {visiblePresets.map((preset, index) => (
             <BrushCard
               key={preset.id}
               preset={preset}
@@ -364,33 +455,33 @@ export function StudioNaturalMediaShowcase({
           >
             {tx("이 브러시로 그리기 시작")}
           </button>
-          <p className="text-xs text-white/45">
-            {tx("선택 중:")} <span className="font-semibold text-white/75">{selectedPreset.labelKo}</span>
+          <p className="text-xs text-fg-3">
+            {tx("선택 중:")} <span className="font-semibold text-fg">{selectedPreset.labelKo}</span>
           </p>
         </div>
 
         {/* 고급 설정 (접기) */}
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03]">
+        <div className="mt-4 rounded-2xl border border-line bg-card/50">
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
             aria-expanded={showAdvanced}
-            className="flex w-full items-center justify-between px-5 py-3 text-sm text-white/70 transition-colors hover:text-white"
+            className="flex w-full items-center justify-between px-5 py-3 text-sm text-fg-2 transition-colors hover:text-fg"
           >
             <span className="font-semibold">{tx("고급 설정")}</span>
             <span
               aria-hidden="true"
-              className={`text-white/40 transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`}
+              className={`text-fg-3 transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`}
             >
               ▾
             </span>
           </button>
           {showAdvanced && (
-            <div className="space-y-4 border-t border-white/10 px-5 py-4">
+            <div className="space-y-4 border-t border-line px-5 py-4">
               <label className="block">
-                <span className="mb-2 flex justify-between text-xs text-white/60">
+                <span className="mb-2 flex justify-between text-xs text-fg-2">
                   <span>{tx("스트로크 굵기 배율")}</span>
-                  <span className="tabular-nums text-white/80">{strokeWeight.toFixed(1)}×</span>
+                  <span className="tabular-nums text-fg">{strokeWeight.toFixed(1)}×</span>
                 </span>
                 <input
                   type="range"
@@ -403,7 +494,7 @@ export function StudioNaturalMediaShowcase({
                   aria-label={tx("스트로크 굵기 배율")}
                 />
               </label>
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-fg-3">
                 {tx("색상·질감 프리셋 등 더 많은 옵션은 브러시 스튜디오에서 조정할 수 있습니다.")}
               </p>
             </div>
