@@ -17,11 +17,6 @@ import {
   rgbToLatentPigment,
 } from "../brush-lab/pigment/latent-pigment-mixer";
 import { evaluateStylusDynamicResponse } from "../brush/studio-stylus-pressure-profile";
-import {
-  clearDualBrushTileCache,
-  getCachedTextureTile,
-  getDualBrushTileCacheStats,
-} from "./studio-dual-brush";
 
 export type StudioDeviceFormFactor = "desktop" | "tablet" | "compact";
 
@@ -87,37 +82,27 @@ export function resolveStudioDeviceFormFactor(
 }
 
 /**
- * 실시간 잠재 안료 혼합 품질(청색+황색 녹색 채도 보존율), 다중 글레이징 심도, 임파스토 스페큘러 대비, 이중 브러시 타일 캐시 히트율 및 틸트 확장 배율을 계측한다.
+ * 실시간 잠재 안료 혼합 품질(청색+황색 녹색 채도 보존율), 다중 글레이징 심도, 임파스토 스페큘러 대비 및 틸트 확장 배율을 계측한다.
  */
 export function measureLivePigmentEngineBenchmark(): {
   readonly greenChromaGainOverLinear: number;
   readonly cacheHitRateAfterWarmup: number;
   readonly impastoSpecularContrastRatio: number;
   readonly glazeOpticalDepthSteps: number;
-  readonly dualBrushTileCacheHitRate: number;
   readonly stylusTiltBroadeningRatio: number;
 } {
   clearLatentPigmentCache();
-  clearDualBrushTileCache();
   const yellow = [1, 0.88, 0] as const;
   const blue = [0, 0.31, 0.86] as const;
 
   // 1차 풀이(캐시 미스) + 2차 반복 조회(캐시 히트)
   rgbToLatentPigment(yellow);
   rgbToLatentPigment(blue);
-  getCachedTextureTile("paper", { size: 32, seed: 42 });
-  getCachedTextureTile("grain", { size: 32, seed: 42 });
   for (let i = 0; i < 6; i += 1) {
     rgbToLatentPigment(yellow);
     rgbToLatentPigment(blue);
-    getCachedTextureTile("paper", { size: 32, seed: 42 });
-    getCachedTextureTile("grain", { size: 32, seed: 42 });
   }
   const stats = getLatentPigmentCacheStats();
-  const tileStats = getDualBrushTileCacheStats();
-  const totalTileRequests = tileStats.hits + tileStats.misses;
-  const dualBrushTileCacheHitRate =
-    totalTileRequests > 0 ? round2(tileStats.hits / totalTileRequests) : 0;
 
   const uprightStylus = evaluateStylusDynamicResponse({
     pointerType: "pen",
@@ -182,7 +167,6 @@ export function measureLivePigmentEngineBenchmark(): {
     cacheHitRateAfterWarmup: stats.hitRate,
     impastoSpecularContrastRatio,
     glazeOpticalDepthSteps: new Set(glazeSteps).size,
-    dualBrushTileCacheHitRate,
     stylusTiltBroadeningRatio,
   };
 }

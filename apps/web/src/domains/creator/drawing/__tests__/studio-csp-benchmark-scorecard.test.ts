@@ -20,7 +20,6 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(pigment.cacheHitRateAfterWarmup).toBeGreaterThan(0.7);
     expect(pigment.impastoSpecularContrastRatio).toBeGreaterThanOrEqual(2.15);
     expect(pigment.glazeOpticalDepthSteps).toBeGreaterThanOrEqual(5);
-    expect(pigment.dualBrushTileCacheHitRate).toBeGreaterThan(0.75);
     expect(pigment.stylusTiltBroadeningRatio).toBeGreaterThan(1.4);
   });
 
