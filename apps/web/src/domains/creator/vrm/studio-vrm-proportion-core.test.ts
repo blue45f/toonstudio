@@ -696,6 +696,8 @@ describe("휴머노이드 유효성 검증", () => {
     const missing = issues.filter((issue) => issue.code === "missing-required-bone").map((i) => i.boneName);
     expect(missing).toContain("leftHand");
     expect(missing).toContain("head");
+    // 표시 문구는 방출하지 않는다 — 해석은 status-i18n 리졸버 몫이다.
+    expect(issues.every((issue) => !("message" in issue))).toBe(true);
     expect(STUDIO_VRM_REQUIRED_HUMANOID_BONES).toHaveLength(15);
   });
 
@@ -709,6 +711,9 @@ describe("휴머노이드 유효성 검증", () => {
     const issues = validateStudioVrmProportionPlan(illegal);
     expect(issues.map((issue) => issue.code)).toContain("scaled-ancestor-of-translated-bone");
     expect(issues[0]?.boneName).toBe("leftIndexProximal");
+    // 스케일된 조상은 문자열이 아니라 전용 필드로 실린다.
+    expect(issues[0]?.ancestorBoneName).toBe("leftHand");
+    expect(issues[0]).not.toHaveProperty("message");
   });
 
   it("허용 목록 밖 본과 비정상 수치를 보고한다", () => {
