@@ -3,15 +3,18 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_DUAL_BRUSH_COMBOS,
   STUDIO_DUAL_BRUSH_TEXTURES,
+  STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES,
   applyDualBrushStrength,
   blendDualBrushValue,
   clearDualBrushTileCache,
   compositeDualBrushFloatBuffer,
+  evaluateDynamicDualBrushModulation,
   generateTextureTile,
   getCachedTextureTile,
   getDualBrushCombo,
   getDualBrushTexture,
   getDualBrushTileCacheStats,
+  getExpressiveDualBrushProfile,
   validateDualBrushConfig,
   type StudioDualBrushConfig,
 } from "./studio-dual-brush";
@@ -204,3 +207,42 @@ describe("getCachedTextureTile & compositeDualBrushFloatBuffer", () => {
     expect(out[5]).toBeLessThan(0.8);
   });
 });
+
+describe("STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES & evaluateDynamicDualBrushModulation", () => {
+  it("6종의 표현력 특화 듀얼 브러시 개성 프로파일이 모두 유효한 설정을 갖는다", () => {
+    expect(STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES).toHaveLength(6);
+    for (const profile of STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES) {
+      expect(validateDualBrushConfig(profile.config).ok).toBe(true);
+      expect(getExpressiveDualBrushProfile(profile.id)).toEqual(profile);
+    }
+  });
+
+  it("저필압·고속·고틸트에서는 종이 산 스침(paperToothCutoff01)과 이방성 늘어남이 증가하고 고필압에서는 골 메움(valleyFillRatio01)이 증가한다", () => {
+    const lightFastGrazing = evaluateDynamicDualBrushModulation({
+      profileId: "sumi-dry-rake",
+      pressure01: 0.15,
+      velocity01: 0.9,
+      tilt01: 0.8,
+    });
+    const heavySlowSaturated = evaluateDynamicDualBrushModulation({
+      profileId: "sumi-dry-rake",
+      pressure01: 0.95,
+      velocity01: 0.1,
+      tilt01: 0.05,
+    });
+
+    expect(lightFastGrazing.paperToothCutoff01).toBeGreaterThan(
+      heavySlowSaturated.paperToothCutoff01 * 3,
+    );
+    expect(heavySlowSaturated.valleyFillRatio01).toBeGreaterThan(
+      lightFastGrazing.valleyFillRatio01 * 5,
+    );
+    expect(lightFastGrazing.effectiveTextureStrength).toBeGreaterThan(
+      heavySlowSaturated.effectiveTextureStrength,
+    );
+    expect(lightFastGrazing.anisotropicScaleX).toBeGreaterThan(
+      heavySlowSaturated.anisotropicScaleX,
+    );
+  });
+});
+

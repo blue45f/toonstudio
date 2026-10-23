@@ -227,6 +227,207 @@ export function getDualBrushCombo(
 }
 
 /* ------------------------------------------------------------------ */
+/* 표현력 특화 듀얼 브러시 개성 프로파일 6종 & 동적 필압·틸트 변조       */
+/* ------------------------------------------------------------------ */
+
+export type StudioExpressiveDualBrushProfileId =
+  | "sumi-dry-rake"
+  | "pastel-rough-tooth"
+  | "g-pen-halftone-scrape"
+  | "oil-knife-canvas-bite"
+  | "crayon-wax-skip"
+  | "airbrush-stipple-dust";
+
+export interface StudioExpressiveDualBrushProfile {
+  readonly id: StudioExpressiveDualBrushProfileId;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly craft: "lineart" | "sketch" | "coloring" | "tone" | "effect";
+  readonly config: StudioDualBrushConfig;
+  /** 저필압에서 종이 요철 산(peak)만 스치며 빈틈이 생기는 감도 (0..1). */
+  readonly grazingToothSensitivity01: number;
+  /** 고필압에서 안료가 종이 골(valley)까지 메워지는 포화 지수 (0.5..3). */
+  readonly valleyFillGamma: number;
+  /** 속도·틸트에 따라 질감 입자가 스트로크 방향으로 늘어나는 최대 배율 (1..3). */
+  readonly directionalStretchMax: number;
+}
+
+/**
+ * 클립스튜디오 듀얼 브러시 및 아날로그 화구(갈필 먹붓, 콩테 파스텔, 톤 깎기 나이프,
+ * 유화 팔레트 나이프, 왁스 크레용, 에어브러시 분진)를 역공학한 6종 개성 프로파일.
+ */
+export const STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES: ReadonlyArray<StudioExpressiveDualBrushProfile> =
+  Object.freeze([
+    {
+      id: "sumi-dry-rake",
+      labelKo: "갈필 먹붓 (Dry Sumi Rake)",
+      labelEn: "Dry Sumi Rake",
+      craft: "lineart",
+      config: {
+        baseBrushId: "pen",
+        textureId: "fibers",
+        blendMode: "linear-burn",
+        textureStrength: 0.78,
+        textureScale: 0.65,
+      },
+      grazingToothSensitivity01: 0.88,
+      valleyFillGamma: 1.85,
+      directionalStretchMax: 2.4,
+    },
+    {
+      id: "pastel-rough-tooth",
+      labelKo: "콩테·오일 파스텔 거친 황목",
+      labelEn: "Rough Tooth Pastel",
+      craft: "coloring",
+      config: {
+        baseBrushId: "pastel",
+        textureId: "grain",
+        blendMode: "hard-light",
+        textureStrength: 0.72,
+        textureScale: 1.15,
+      },
+      grazingToothSensitivity01: 0.82,
+      valleyFillGamma: 1.45,
+      directionalStretchMax: 1.6,
+    },
+    {
+      id: "g-pen-halftone-scrape",
+      labelKo: "G펜 스크린톤 깎기 (Tone Scrape)",
+      labelEn: "G-Pen Halftone Scrape",
+      craft: "tone",
+      config: {
+        baseBrushId: "rotring",
+        textureId: "mesh",
+        blendMode: "overlay",
+        textureStrength: 0.8,
+        textureScale: 0.55,
+      },
+      grazingToothSensitivity01: 0.74,
+      valleyFillGamma: 2.1,
+      directionalStretchMax: 1.35,
+    },
+    {
+      id: "oil-knife-canvas-bite",
+      labelKo: "유화 나이프 캔버스 스침",
+      labelEn: "Oil Knife Canvas Bite",
+      craft: "coloring",
+      config: {
+        baseBrushId: "marker",
+        textureId: "canvas-weave",
+        blendMode: "multiply",
+        textureStrength: 0.68,
+        textureScale: 1.1,
+      },
+      grazingToothSensitivity01: 0.79,
+      valleyFillGamma: 1.6,
+      directionalStretchMax: 1.9,
+    },
+    {
+      id: "crayon-wax-skip",
+      labelKo: "왁스 크레용 입자 건너뛰기",
+      labelEn: "Wax Crayon Skip",
+      craft: "sketch",
+      config: {
+        baseBrushId: "crayon",
+        textureId: "paper",
+        blendMode: "hard-light",
+        textureStrength: 0.75,
+        textureScale: 0.9,
+      },
+      grazingToothSensitivity01: 0.85,
+      valleyFillGamma: 1.5,
+      directionalStretchMax: 1.5,
+    },
+    {
+      id: "airbrush-stipple-dust",
+      labelKo: "에어브러시 모래 분진 스플래터",
+      labelEn: "Airbrush Stipple Dust",
+      craft: "effect",
+      config: {
+        baseBrushId: "spray",
+        textureId: "sand",
+        blendMode: "screen",
+        textureStrength: 0.62,
+        textureScale: 0.75,
+      },
+      grazingToothSensitivity01: 0.65,
+      valleyFillGamma: 1.25,
+      directionalStretchMax: 2.1,
+    },
+  ]);
+
+export function getExpressiveDualBrushProfile(
+  id: StudioExpressiveDualBrushProfileId,
+): StudioExpressiveDualBrushProfile | undefined {
+  return STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES.find((p) => p.id === id);
+}
+
+export interface DynamicDualBrushModulationInput {
+  readonly profileId: StudioExpressiveDualBrushProfileId;
+  /** 정규화 필압 (0..1). */
+  readonly pressure01: number;
+  /** 정규화 스트로크 속도 (0..1). */
+  readonly velocity01: number;
+  /** 정규화 펜 기울기 (0..1, 0=수직, 1=최대 눕힘). */
+  readonly tilt01: number;
+}
+
+export interface DynamicDualBrushModulationResult {
+  /** 필압·속도·기울기가 반영된 실효 질감 강도 (0..1). */
+  readonly effectiveTextureStrength: number;
+  /** 종이 요철 산(peak)만 스치는 임계 높이 (0..1). 높을수록 여백(갈필)이 많아진다. */
+  readonly paperToothCutoff01: number;
+  /** 종이 골(valley)까지 안료가 채워진 비율 (0..1). */
+  readonly valleyFillRatio01: number;
+  /** 스트로크 방향 이방성 질감 스케일 배율 (>= 1). */
+  readonly anisotropicScaleX: number;
+  readonly anisotropicScaleY: number;
+}
+
+/**
+ * 필압·속도·펜 기울기에 따라 종이 요철 산(peak) 스침과 골(valley) 메움,
+ * 그리고 방향성 질감 늘어남을 동적으로 계산한다.
+ * - 저필압 + 고속/고틸트: 종이 산만 스치며 거친 갈필(grazing) 질감 극대화
+ * - 고필압 + 저속: 안료가 종이 골까지 밀려 들어가며 진하고 매끄러운 포화 획 형성
+ */
+export function evaluateDynamicDualBrushModulation(
+  input: DynamicDualBrushModulationInput,
+): DynamicDualBrushModulationResult {
+  const profile =
+    getExpressiveDualBrushProfile(input.profileId) ?? STUDIO_EXPRESSIVE_DUAL_BRUSH_PROFILES[0];
+  const p = Math.max(0, Math.min(1, Number.isFinite(input.pressure01) ? input.pressure01 : 0.5));
+  const v = Math.max(0, Math.min(1, Number.isFinite(input.velocity01) ? input.velocity01 : 0));
+  const tilt = Math.max(0, Math.min(1, Number.isFinite(input.tilt01) ? input.tilt01 : 0));
+
+  const valleyFillRatio01 = Math.max(0, Math.min(1, Math.pow(p, profile.valleyFillGamma)));
+  const grazingDrive = (1 - valleyFillRatio01) * (0.7 + 0.18 * v + 0.12 * tilt);
+  const paperToothCutoff01 = Math.max(
+    0.05,
+    Math.min(0.92, grazingDrive * profile.grazingToothSensitivity01),
+  );
+
+  // 저필압 갈필 구간에서는 질감 대비가 강해지고, 고필압 포화 구간에서는 질감이 완만해져 골이 메워진다
+  const dynamicContrastBoost = 1 + 0.35 * paperToothCutoff01 - 0.45 * valleyFillRatio01;
+  const effectiveTextureStrength = Math.max(
+    0.08,
+    Math.min(1, profile.config.textureStrength * dynamicContrastBoost),
+  );
+
+  const stretchFactor =
+    1 + (profile.directionalStretchMax - 1) * Math.min(1, 0.65 * v + 0.55 * tilt);
+  const baseScale = profile.config.textureScale;
+
+  return {
+    effectiveTextureStrength,
+    paperToothCutoff01,
+    valleyFillRatio01,
+    anisotropicScaleX: baseScale * stretchFactor,
+    anisotropicScaleY: baseScale / Math.sqrt(stretchFactor),
+  };
+}
+
+
+/* ------------------------------------------------------------------ */
 /* 시드 기반 밸류 노이즈 (순수 함수)                                       */
 /* ------------------------------------------------------------------ */
 

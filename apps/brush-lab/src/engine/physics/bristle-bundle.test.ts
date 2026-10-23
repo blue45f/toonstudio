@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createBristleState, stepBristle, strandPhaseSeed } from "./bristle-bundle";
+import {
+  createBristleState,
+  evaluateBristleClumpingProfile,
+  stepBristle,
+  strandPhaseSeed,
+} from "./bristle-bundle";
 import { DEFAULT_BRISTLE_SPEC } from "./physics-model";
 
 const DT = 1000 / 240;
@@ -57,4 +62,27 @@ describe("붓모 다발", () => {
     expect(strandPhaseSeed(7, 3)).toBe(strandPhaseSeed(7, 3));
     expect(strandPhaseSeed(8, 3)).not.toBe(strandPhaseSeed(7, 3));
   });
+
+  it("습식 모세관 응집(Clumping)과 건식 외팔보 벌어짐(Splay)을 물리적으로 구분한다", () => {
+    const wetClumped = evaluateBristleClumpingProfile({
+      strokeSeed: 42,
+      strands: 24,
+      pressure: 0.3,
+      wetness: 0.92,
+      normalizedSpeed: 1,
+    });
+    const drySplayed = evaluateBristleClumpingProfile({
+      strokeSeed: 42,
+      strands: 24,
+      pressure: 0.85,
+      wetness: 0.08,
+      normalizedSpeed: 6,
+    });
+    expect(drySplayed.clumpCount).toBeGreaterThan(wetClumped.clumpCount * 2);
+    expect(drySplayed.splayFactor).toBeGreaterThan(wetClumped.splayFactor);
+    expect(drySplayed.featheredEdgeContrast).toBeGreaterThan(wetClumped.featheredEdgeContrast);
+    expect(drySplayed.strandOffsets.length).toBe(24);
+    expect(drySplayed.strandWeights.length).toBe(24);
+  });
 });
+

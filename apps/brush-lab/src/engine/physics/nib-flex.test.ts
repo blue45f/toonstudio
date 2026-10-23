@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { Pcg32 } from "../core/rng";
 
-import { createNibFlexState, nibTarget, stepNibFlex } from "./nib-flex";
+import {
+  MANGA_NIB_PERSONALITY_PROFILES,
+  createNibFlexState,
+  evaluateDipPenRailroadingProfile,
+  evaluateDipPenReservoirFlow,
+  nibTarget,
+  stepNibFlex,
+} from "./nib-flex";
 import { DEFAULT_NIB_SPEC } from "./physics-model";
 
 import type { NibSpec } from "./physics-model";
@@ -78,4 +85,29 @@ describe("닙 2차계", () => {
     expect(out.rx).toBeCloseTo(width / 2, 5);
     expect(out.ry).toBeCloseTo((width * 0.5) / 2, 5);
   });
+
+  it("5종 만화 딥펜 프로파일이 고유한 탄성·선폭 개성을 가지며 철길 갈라짐과 잉크 소모를 재현한다", () => {
+    const gPen = MANGA_NIB_PERSONALITY_PROFILES["g-pen"];
+    const maruPen = MANGA_NIB_PERSONALITY_PROFILES["maru-pen"];
+    const kaburaPen = MANGA_NIB_PERSONALITY_PROFILES["kabura-pen"];
+    expect(gPen.spec.gapMax).toBeGreaterThan(maruPen.spec.gapMax * 2.5);
+    expect(maruPen.spec.stiffness).toBeGreaterThan(gPen.spec.stiffness);
+    expect(kaburaPen.spec.damping).toBeGreaterThan(gPen.spec.damping);
+
+    // 과압 시 철길 현상(Railroading): 외곽 트랙 알파가 중심 알파보다 진해진다
+    const intact = evaluateDipPenRailroadingProfile(1.5, 6.5, 0.72, 0);
+    const splitCenter = evaluateDipPenRailroadingProfile(6.2, 6.5, 0.72, 0);
+    const splitRidge = evaluateDipPenRailroadingProfile(6.2, 6.5, 0.72, 0.72);
+    expect(intact.splitRatio).toBe(0);
+    expect(splitCenter.splitRatio).toBeGreaterThan(0.75);
+    expect(splitRidge.crossSectionAlpha).toBeGreaterThan(splitCenter.crossSectionAlpha);
+
+    // 연속 장거리 드로잉 시 잉크 저장소 완만 감쇠
+    const fresh = evaluateDipPenReservoirFlow(20, gPen.reservoirCapacityPx, 0.7);
+    const depleted = evaluateDipPenReservoirFlow(1800, gPen.reservoirCapacityPx, 0.7);
+    expect(fresh.inkRemainingRatio).toBeGreaterThan(depleted.inkRemainingRatio);
+    expect(fresh.flowScale).toBeGreaterThan(depleted.flowScale);
+    expect(fresh.widthScale).toBeGreaterThan(depleted.widthScale);
+  });
 });
+

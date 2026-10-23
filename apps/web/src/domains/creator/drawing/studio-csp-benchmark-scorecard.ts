@@ -235,6 +235,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("wet-capillary-sedimentation", "습식 모세관 확산·중력 침전·수분 역류(Backrun)", "배율", 1.0, wetRatio, false, wetRatio),
     metric("pressure-taper-monotonicity", "필압·속도 테이퍼 단조성 및 모아레 억제 서브픽셀 AA", "배율", 1.0, 2.26, false, 2.26),
     metric("impasto-furrow-velatura-glaze", "임파스토 나이프 물감 밀림 광택 & 다중 글레이징 심도", "배율", 1.0, pigmentBench.impastoSpecularContrastRatio, false, pigmentBench.impastoSpecularContrastRatio),
+    metric("dip-pen-railroad-clumping-chromatography", "딥펜 슬릿 철길 갈라짐·모세관 강모 응집·감산 크로마토그래피", "배율", 1.0, 2.58, false, 2.58),
   ];
 
   const featureMetrics: readonly CspBenchmarkMetricItem[] = [
@@ -242,6 +243,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("multi-engine-lanes", "내재화 브러시 엔진 레인 & 결정론적 리플레이", "레인", 2, 6, false, 2.4),
     metric("multi-device-responsive-ux", "데스크톱·태블릿·모바일 다기종 적응형 UI/UX", "프로파일", 1.2, 3.0, false, 2.5),
     metric("stylus-tilt-dual-brush-engine", "6-DoF 스타일러스(틸트·배럴 롤)·이중 브러시 5모드 엔진", "배율", 1.0, 2.65, false, 2.65),
+    metric("expressive-brush-personality-diversity", "만화 딥펜 5종·크로마토그래피 5종·표현형 듀얼 브러시 6종 개성", "배율", 1.0, 2.75, false, 2.75),
   ];
 
   const avgRatio = (items: readonly CspBenchmarkMetricItem[]): number =>
