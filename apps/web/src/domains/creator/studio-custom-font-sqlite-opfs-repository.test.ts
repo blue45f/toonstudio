@@ -2,8 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   createStudioCustomFontSqliteOpfsRepository,
+  isStudioCustomFontMemoryFallbackError,
   parseStudioCustomFontManifest,
   serializeStudioCustomFontManifest,
+  StudioCustomFontRepositoryError,
   STUDIO_CUSTOM_FONT_CAS_OWNER,
   STUDIO_CUSTOM_FONT_MAX_COMPATIBILITY_ENTRIES,
   STUDIO_CUSTOM_FONT_MAX_PAGE_SIZE,
@@ -114,6 +116,15 @@ function proxyDatabase(
   });
 }
 
+function thrownError(run: () => unknown): unknown {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("expected the callback to throw");
+}
+
 function manifestEntry(index: number, overrides: Partial<StudioCustomFontManifestEntry> = {}) {
   const format = "ttf" as const;
   return {
@@ -190,7 +201,11 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
     );
     await store.delete(saved.contentHash);
 
-    await expect(repository.page({ pageSize: 16 })).rejects.toMatchObject({ code: "corrupt" });
+    await expect(repository.page({ pageSize: 16 })).rejects.toMatchObject({
+      code: "corrupt",
+      detail: "casMetadataMismatch",
+      params: { entryId: saved.id },
+    });
     expect(await database.kvGet(
       STUDIO_CUSTOM_FONT_SQLITE_NAMESPACE,
       STUDIO_CUSTOM_FONT_SQLITE_MANIFEST_KEY,
@@ -228,10 +243,10 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
 
   it("rejects an extra entry field and a MIME/format mismatch", () => {
     const entry = manifestEntry(1);
-    expect(() => serializeStudioCustomFontManifest([{ ...entry, future: true } as typeof entry]))
-      .toThrow(/알 수 없는 필드/u);
-    expect(() => serializeStudioCustomFontManifest([{ ...entry, mimeType: "font/woff2" }]))
-      .toThrow(/MIME/u);
+    expect(thrownError(() => serializeStudioCustomFontManifest([{ ...entry, future: true } as typeof entry])))
+      .toMatchObject({ code: "invalid", detail: "manifestEntryFieldsInvalid" });
+    expect(thrownError(() => serializeStudioCustomFontManifest([{ ...entry, mimeType: "font/woff2" }])))
+      .toMatchObject({ code: "invalid", detail: "mimeFormatMismatch" });
   });
 
   it("serializes overlapping saves in invocation order without losing entries", async () => {
@@ -300,7 +315,11 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
     const failed = await fixture({ database: failing, fs, store, createId: () => "failed-font" });
 
     await expect(failed.repository.save({ fileName: "Failed.ttf", bytes: fontBytes(29) }))
-      .rejects.toMatchObject({ code: "quota-exceeded" });
+      .rejects.toMatchObject({
+        code: "quota-exceeded",
+        detail: "quotaExceeded",
+        params: { operation: "manifest 커밋" },
+      });
     expect(await database.kvGet(
       STUDIO_CUSTOM_FONT_SQLITE_NAMESPACE,
       STUDIO_CUSTOM_FONT_SQLITE_MANIFEST_KEY,
@@ -336,7 +355,11 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
     await expect(candidate.repository.save({
       fileName: "Candidate.ttf",
       bytes: fontBytes(37),
-    })).rejects.toMatchObject({ code: "unavailable" });
+    })).rejects.toMatchObject({
+      code: "unavailable",
+      detail: "operationFailed",
+      params: { operation: "manifest 커밋" },
+    });
 
     const ownerRefs = await store.ownerRefs(STUDIO_CUSTOM_FONT_CAS_OWNER);
     expect(ownerRefs).toContain(first.contentHash);
@@ -347,9 +370,9 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
   it("retains per-file and 2 GiB logical limits without a product-total count limit", async () => {
     expect(STUDIO_CUSTOM_FONT_LIMITS.individualBytes).toBe(128 * 1024 * 1024);
     expect(STUDIO_CUSTOM_FONT_LIMITS.logicalBytes).toBe(2 * 1024 * 1024 * 1024);
-    expect(() => serializeStudioCustomFontManifest([
+    expect(thrownError(() => serializeStudioCustomFontManifest([
       manifestEntry(1, { byteLength: STUDIO_CUSTOM_FONT_LIMITS.individualBytes + 1 }),
-    ])).toThrow(/바이트 크기/u);
+    ]))).toMatchObject({ code: "invalid", detail: "byteLengthOutOfRange" });
 
     const fullEntries = Array.from({ length: 16 }, (_, index) => manifestEntry(index, {
       contentHash: `sha256:${index.toString(16).padStart(64, "0")}`,
@@ -364,7 +387,7 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
       fullManifest,
     );
     await expect(repository.save({ fileName: "Overflow.ttf", bytes: fontBytes(31) }))
-      .rejects.toMatchObject({ code: "invalid" });
+      .rejects.toMatchObject({ code: "invalid", detail: "libraryLogicalLimitExceededOnSave" });
     expect(put).not.toHaveBeenCalled();
     expect(await database.kvGet(
       STUDIO_CUSTOM_FONT_SQLITE_NAMESPACE,
@@ -446,33 +469,37 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
     expect(first.nextCursor).toEqual(expect.any(String));
 
     await expect(repository.page({ pageSize: 1, cursor: "forged" }))
-      .rejects.toMatchObject({ code: "invalid-cursor" });
+      .rejects.toMatchObject({ code: "invalid-cursor", detail: "invalidCursorFormat" });
     await repository.save({ id: "font-c", fileName: "C.ttf", bytes: fontBytes(49) });
     await expect(repository.page({ pageSize: 1, cursor: first.nextCursor }))
-      .rejects.toMatchObject({ code: "invalid-cursor" });
+      .rejects.toMatchObject({ code: "invalid-cursor", detail: "invalidCursorStale" });
 
     const get = vi.spyOn(store, "get");
     const callsBeforeAbort = get.mock.calls.length;
     const controller = new AbortController();
     controller.abort();
     await expect(repository.page({ pageSize: 1, signal: controller.signal }))
-      .rejects.toMatchObject({ code: "aborted" });
+      .rejects.toMatchObject({ code: "aborted", detail: "aborted" });
     expect(get.mock.calls).toHaveLength(callsBeforeAbort);
   });
 
   it("rejects invalid page and compatibility budgets instead of clamping caller intent", async () => {
     const { repository } = await fixture();
     await expect(repository.page({ pageSize: 0 }))
-      .rejects.toMatchObject({ code: "invalid-page-size" });
+      .rejects.toMatchObject({
+        code: "invalid-page-size",
+        detail: "invalidPageSize",
+        params: { maxPageSize: String(STUDIO_CUSTOM_FONT_MAX_PAGE_SIZE) },
+      });
     await expect(repository.page({ pageSize: STUDIO_CUSTOM_FONT_MAX_PAGE_SIZE + 1 }))
-      .rejects.toMatchObject({ code: "invalid-page-size" });
+      .rejects.toMatchObject({ code: "invalid-page-size", detail: "invalidPageSize" });
     await expect(repository.materialize({
       maxEntries: STUDIO_CUSTOM_FONT_MAX_COMPATIBILITY_ENTRIES + 1,
       maxHydratedBytes: 1,
     }))
-      .rejects.toMatchObject({ code: "invalid-page-size" });
+      .rejects.toMatchObject({ code: "invalid-page-size", detail: "invalidMaterializationBudget" });
     await expect(repository.materialize({ maxEntries: 1, maxHydratedBytes: 0 }))
-      .rejects.toMatchObject({ code: "invalid-page-size" });
+      .rejects.toMatchObject({ code: "invalid-page-size", detail: "invalidMaterializationBudget" });
   });
 
   it("applies byte backpressure before the next CAS hydration and returns explicit materialization receipts", async () => {
@@ -510,7 +537,11 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
     expect(receipt.nextCursor).toEqual(expect.any(String));
 
     await expect(repository.page({ pageSize: 1, maxHydratedBytes: 95 }))
-      .rejects.toMatchObject({ code: "backpressure" });
+      .rejects.toMatchObject({
+        code: "backpressure",
+        detail: "backpressure",
+        params: { byteLength: "96", maxBytes: "95" },
+      });
   });
 
   it("rejects a caller-provided hash that differs from the actual font bytes", async () => {
@@ -519,7 +550,49 @@ describe("custom-font SQLite canonical manifest plus OPFS SHA-256 CAS", () => {
       fileName: "Hash.ttf",
       bytes: fontBytes(33),
       contentHash: `sha256:${"f".repeat(64)}`,
-    })).rejects.toMatchObject({ code: "invalid" });
+    })).rejects.toMatchObject({ code: "invalid", detail: "providedContentHashMismatch" });
+  });
+
+  it("emits structured detail and params alongside the coarse code", async () => {
+    const torn = thrownError(() => parseStudioCustomFontManifest('{"version":1,"totalBytes":'));
+    expect(torn).toMatchObject({ code: "corrupt", detail: "manifestJsonCorrupt" });
+    expect(torn).toBeInstanceOf(StudioCustomFontRepositoryError);
+    expect((torn as Error).message).toBe("manifestJsonCorrupt");
+
+    const notObject = thrownError(() => parseStudioCustomFontManifest("123"));
+    expect(notObject).toMatchObject({ code: "corrupt", detail: "manifestCorrupt" });
+
+    const duplicate = thrownError(() => serializeStudioCustomFontManifest([
+      manifestEntry(1),
+      manifestEntry(2, { family: "CJK Family 1" }),
+    ]));
+    expect(duplicate).toMatchObject({
+      code: "invalid",
+      detail: "duplicateFamily",
+      params: { family: "CJK Family 1" },
+    });
+
+    const { repository } = await fixture();
+    await repository.save({ id: "dup-font", fileName: "Dup.ttf", bytes: fontBytes(53) });
+    await expect(repository.save({ id: "dup-font", fileName: "Dup2.ttf", bytes: fontBytes(55) }))
+      .rejects.toMatchObject({ code: "invalid", detail: "duplicateId", params: { id: "dup-font" } });
+
+    // code 기반 메모리 폴백 분기 계약은 detail 도입 후에도 유지된다.
+    const quota = new StudioCustomFontRepositoryError(
+      "quota-exceeded", "quotaExceeded", { operation: "manifest 커밋" },
+    );
+    expect(isStudioCustomFontMemoryFallbackError(quota)).toBe(true);
+    const passthrough = new StudioCustomFontRepositoryError(
+      "unavailable",
+      "operationFailed",
+      { operation: "blob 저장" },
+      { message: "사용자 글꼴 SQLite/OPFS blob 저장을 완료하지 못했습니다: raw failure" },
+    );
+    expect(isStudioCustomFontMemoryFallbackError(passthrough)).toBe(true);
+    expect(passthrough.message).toBe("사용자 글꼴 SQLite/OPFS blob 저장을 완료하지 못했습니다: raw failure");
+    expect(isStudioCustomFontMemoryFallbackError(
+      new StudioCustomFontRepositoryError("corrupt", "integrityFailed", { operation: "blob 읽기" }),
+    )).toBe(false);
   });
 
   it("deletes metadata first-class and reclaims the unreferenced CAS blob", async () => {

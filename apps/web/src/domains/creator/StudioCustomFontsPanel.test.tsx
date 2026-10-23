@@ -438,4 +438,65 @@ describe("StudioCustomFontsPanel", () => {
     expect(importInput().disabled).toBe(true);
     expect(screen.getByText(/저장소 무결성 확인 실패/u)).toBeTruthy();
   });
+
+  it("appends the resolved producer detail to the hydration integrity alert", async () => {
+    const { set } = fakeFontSet();
+    render(
+      <StudioCustomFontsPanel
+        loadRepository={async () => Promise.reject({
+          name: "StudioCustomFontRepositoryError",
+          code: "corrupt",
+          detail: "casBlobMissingOrTruncated",
+          params: { entryId: "font-9" },
+        })}
+        fontSet={set}
+        createFontFace={okFactory()}
+      />,
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/일부 항목을 표시하지 않았어요/u);
+    expect(alert.textContent).toContain("원인: 사용자 글꼴 CAS blob이 없거나 잘렸습니다: font-9");
+  });
+
+  it("appends the resolved producer detail to the delete integrity alert", async () => {
+    const font = durableFont("삭제글꼴", "font-del");
+    const repository = fakeRepository({
+      page: vi.fn(async () => fontPage([font])),
+      delete: vi.fn(async () => Promise.reject({
+        name: "StudioCustomFontRepositoryError",
+        code: "corrupt",
+        detail: "manifestCorrupt",
+      })),
+    });
+    const { set } = fakeFontSet();
+    render(
+      <StudioCustomFontsPanel
+        repository={repository}
+        fontSet={set}
+        createFontFace={okFactory()}
+      />,
+    );
+    expect(await screen.findByText("삭제글꼴")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "삭제글꼴 글꼴 삭제" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/무결성 오류로 삭제를 중단했어요/u);
+    expect(alert.textContent).toContain("원인: 사용자 글꼴 SQLite manifest가 손상되었습니다.");
+  });
+
+  it("does not append a detail for a bare code-only storage error", async () => {
+    const { set } = fakeFontSet();
+    render(
+      <StudioCustomFontsPanel
+        loadRepository={async () => Promise.reject({ code: "corrupt" })}
+        fontSet={set}
+        createFontFace={okFactory()}
+      />,
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).not.toContain("원인:");
+  });
 });
