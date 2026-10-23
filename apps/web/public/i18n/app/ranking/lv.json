@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Izskatīt punktu sadalījums",
+  "ranking.detailTitle": "Skatīt punktu sadalījumu",
   "ranking.metric.views": "Skatījumi",
   "ranking.why": "Kāpēc?",
-  "ranking.breakdownTitle": "Skoru sadalījums",
+  "ranking.breakdownTitle": "Punktu sadalījums",
   "ranking.totalScore": "Kopējais rezultāts",
-  "ranking.breakdownDescription": "Izskaita ar aksa svērumiem un titulu specifisko normalizāciju."
+  "ranking.breakdownDescription": "Aprēķināts ar asu svariem un nosaukumam specifisku normalizāciju."
 }

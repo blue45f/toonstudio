@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "AUTOR DIRECTORY",
+  "authors.eyebrow": "AUTORU KATALOGS",
   "authors.title": "Autori",
-  "authors.desc": "Autori pēc darba numura: uzlika autoru, lai redzētu viņu tituļus, vērtējumus un fankafeju vienā vietā.",
-  "authors.search": "Izmeklēšanas autors",
-  "authors.error": "Neatkarēju autoru sarakstu.",
-  "authors.empty": "nav cita veida autoru.",
+  "authors.desc": "Autori sakārtoti pēc darbu skaita. Pieskarieties autoram, lai vienā vietā skatītu viņa darbus, vērtējumus un fanu kafejnīcu.",
+  "authors.search": "Meklēt autora vārdu",
+  "authors.error": "Neizdevās ielādēt autoru sarakstu. Lūdzu, pēc brīža mēģiniet vēlreiz.",
+  "authors.empty": " — nav atbilstoša autora.",
   "authors.allOf": "no",
-  "authors.topOf": "· augsts",
+  "authors.topOf": "· labākie",
   "authors.people": "",
-  "authors.works": "darījumi",
+  "authors.works": " darbi",
   "authors.views": "skatījumi",
-  "authors.pencafe": "Skaidrs fankafe",
-  "authors.stats": "TOP {shown} no {total} autoriem",
-  "authors.noName": "Kūrētājs"
+  "authors.pencafe": "Autora fanu kafejnīca",
+  "authors.stats": "Labākie {shown} no {total} autoriem",
+  "authors.noName": "Autors"
 }
