@@ -187,6 +187,8 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
       "./studio-producer-error-i18n-vrm-paint-artifact.ts",
       "./studio-producer-error-i18n-vrm-proportion.ts",
       "./studio-producer-error-i18n-bg3d-shot-batch-archive.ts",
+      "./studio-producer-error-i18n-custom-font.ts",
+      "./studio-producer-error-i18n-filter-worker.ts",
     ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
     const blocks: Record<string, string[]> = {};
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
@@ -202,11 +204,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     // R17: linked3d 23(템플릿 18 + save-projection 접두 2·고정 3)이 더해졌다 — 전체 누적 2,156키.
     // R18: vrmPaintArtifact 52(표시 확정 템플릿) + vrmProportion 8(issue 6 + rig 폴백 2)이 더해졌다 — 전체 누적 2,216키.
     // R19: bg3d-shot-batch-archive 64(archive 채널 고유 문구 64종, 워커 프로토콜 v5 운반)가 더해졌다 — 전체 누적 2,280키.
+    // R20: customFont 47(패널 병기용 detail 사전 — 템플릿 48종에서 중복 ID 템플릿 병합분 −1, operationFailed의 {detail} 슬롯만 잔존) + filterWorker 25(클라이언트 고유 20 + protocol assert 5, 프로토콜 선택 필드 운반)가 더해졌다 — 전체 누적 2,352키.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(2280);
+    expect(accumulated.ko).toHaveLength(2352);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });
