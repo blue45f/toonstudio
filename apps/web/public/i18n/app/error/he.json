@@ -1,7 +1,7 @@
 {
-  "error.reloading": "-מעלה מחדש את הגרסה האחרונה...",
-  "error.chunkRetryFailed": "הרענח פעם אחת, אבל הבעיה ממשיכה, אנא בדוק את החיבור שלך ותנסה שוב.",
-  "error.reloadButton": "להפעיל מחדש את הדף",
-  "error.goHome": "לך הביתה.",
+  "error.reloading": "טוען מחדש את הגרסה האחרונה…",
+  "error.chunkRetryFailed": "הדף רוענן פעם אחת, אך הבעיה נמשכת. בדקו את החיבור ונסו שוב.",
+  "error.reloadButton": "טעינת הדף מחדש",
+  "error.goHome": "מעבר לדף הבית",
   "error.retryDesc": "אנא נסה שוב או תחזור לדף הבית."
 }

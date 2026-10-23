@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "צפית נקודות",
+  "ranking.detailTitle": "צפייה בפירוט הניקוד",
   "ranking.metric.views": "תצפיות",
   "ranking.why": "למה?",
-  "ranking.breakdownTitle": "הפרדה של הציונים",
-  "ranking.totalScore": "סכום הכולל",
-  "ranking.breakdownDescription": "חישוב עם משקלים על העצים והנורמליזציה ספציפית לכותרת."
+  "ranking.breakdownTitle": "פירוט ניקוד",
+  "ranking.totalScore": "ניקוד כולל",
+  "ranking.breakdownDescription": "מחושב לפי משקלי צירים ונרמול ייעודי לכל יצירה."
 }

@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "לא הצלחתי להעלות את סקר התגובה.",
-  "feedback.thankYou": "תודה על התגובה היקרה שלך!",
+  "feedback.loadError": "לא ניתן לטעון את סקר המשוב. נסו שוב בעוד רגע.",
+  "feedback.thankYou": "תודה על המשוב החשוב שלכם!",
   "feedback.anonymousNote": "התשובות שלך נשמרות אנונימיות לחלוטין.",
-  "feedback.notAtAll": "לא בכלל.",
+  "feedback.notAtAll": "כלל לא",
   "feedback.definitely": "בהחלט."
 }

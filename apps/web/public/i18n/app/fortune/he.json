@@ -1,9 +1,9 @@
 {
-  "fortune.title": "Daily Webtoon Fortune · ToonStudio",
-  "fortune.subtitle": "Find the webtoon character that matches you and check today's fortune.",
-  "fortune.today": "Today's Fortune",
-  "fortune.zodiac": "Zodiac Fortune",
-  "fortune.saju": "Saju (Four Pillars)",
-  "fortune.compatibility": "Compatibility",
-  "fortune.tarot": "Today's Tarot"
+  "fortune.title": "מזל וובטון יומי · ToonStudio",
+  "fortune.subtitle": "מצאו את דמות הוובטון שמתאימה לכם ובדקו את מזל היום.",
+  "fortune.today": "מזל היום",
+  "fortune.zodiac": "מזל לפי גלגל המזלות",
+  "fortune.saju": "סאג׳ו (ארבעת העמודים)",
+  "fortune.compatibility": "התאמה",
+  "fortune.tarot": "טארוט היום"
 }

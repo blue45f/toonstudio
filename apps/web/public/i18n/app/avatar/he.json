@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "סוג תמונה לא תומך.",
-  "avatar.error.processFailed": "לא הצלחתי לעבד תמונה.",
+  "avatar.error.invalidType": "סוג תמונה לא נתמך.",
+  "avatar.error.processFailed": "עיבוד התמונה נכשל. נסו שוב עם תמונה אחרת.",
   "avatar.processing": "עיבוד...",
   "avatar.select": "לשנות תמונה",
   "avatar.remove": "להסיר תמונה",
-  "avatar.uploadHint": "רק תמונות JPG, PNG ו- WEBP תומכות, ואז ניתנות לצרוך.",
-  "avatar.changeAria": "לשנות תמונה פרופיל"
+  "avatar.uploadHint": "נתמכות רק תמונות JPG, PNG ו-WEBP, ולאחר מכן הן נחתכות לתצוגה מקדימה.",
+  "avatar.changeAria": "שינוי תמונת פרופיל"
 }
