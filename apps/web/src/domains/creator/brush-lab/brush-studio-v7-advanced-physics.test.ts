@@ -13,6 +13,7 @@ import {
 } from "./brush-studio-v6-material-engine";
 import { BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-material-v7-advanced";
 import {
+  computeBrushStudioV7ImpastoShading,
   sampleBrushStudioV7BackrunLobes,
   sampleBrushStudioV7BristleBundle,
   sampleBrushStudioV7Sediment,
@@ -202,4 +203,35 @@ function signature(marks: readonly BrushStudioV6MaterialMark[]): string[] {
       expect(signature(dense), id).toEqual(signature(sparse));
     },
   );
+
+  it("computes Blinn-Phong specular and bristle furrow shading for impasto ridges while preserving flat height", () => {
+    const flat = computeBrushStudioV7ImpastoShading({
+      hex: "#3a5f8a",
+      strokeAngleRad: 0,
+      height: 0,
+      gloss: 0.85,
+    });
+    expect(flat.shadedHex).toBe("#3a5f8a");
+    expect(flat.diffuseFactor).toBe(1);
+    expect(flat.specularBoost).toBe(0);
+
+    const lit = computeBrushStudioV7ImpastoShading({
+      hex: "#3a5f8a",
+      strokeAngleRad: -Math.PI * 0.28,
+      height: 0.9,
+      gloss: 0.85,
+      bristleFurrow: 0.6,
+    });
+    const shadow = computeBrushStudioV7ImpastoShading({
+      hex: "#3a5f8a",
+      strokeAngleRad: Math.PI * 0.72,
+      height: 0.9,
+      gloss: 0.85,
+      bristleFurrow: 0.6,
+    });
+    expect(lit.diffuseFactor).toBeGreaterThan(shadow.diffuseFactor);
+    expect(lit.specularBoost).toBeGreaterThan(0);
+    expect(shadow.specularBoost).toBe(0);
+    expect(lit.furrowDepth).toBeGreaterThan(0);
+  });
 });

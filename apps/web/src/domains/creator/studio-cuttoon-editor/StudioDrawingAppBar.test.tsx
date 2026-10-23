@@ -51,6 +51,10 @@ function createMockSession(
     menuEditRedoDisabled: false,
     isMobile: false,
     setMobileSheet: vi.fn(),
+    zoom: 1.5,
+    setZoom: vi.fn(),
+    quickShapeActive: false,
+    setQuickShapeActive: vi.fn(),
     ...overrides,
   } as unknown as StudioCuttoonEditorViewSession;
 }
@@ -64,14 +68,15 @@ function renderAppBar(session: StudioCuttoonEditorViewSession) {
 }
 
 describe("StudioDrawingAppBar", () => {
-  it("클립스튜디오(CSP) 2× 우위 검증 메타데이터와 다기종 폼팩터 속성을 노출한다", () => {
+  it("클립스튜디오(CSP) 2× 우위 검증 메타데이터, 컨테이너 쿼리(inline-size), 다기종 폼팩터 속성을 노출한다", () => {
     const session = createMockSession({ isMobile: false });
     const { container } = renderAppBar(session);
 
-    const header = container.querySelector('[data-studio-drawing-app-bar="true"]');
+    const header = container.querySelector('[data-studio-drawing-app-bar="true"]') as HTMLElement | null;
     expect(header).not.toBeNull();
     expect(header?.getAttribute("data-studio-form-factor")).toBe("desktop");
     expect(header?.getAttribute("data-studio-csp-two-x-verified")).toBe("true");
+    expect(header?.style.containerType).toBe("inline-size");
     expect(container.querySelector('[data-studio-appbar-csp-badge="true"]')?.textContent).toContain("CSP");
   });
 
@@ -99,8 +104,8 @@ describe("StudioDrawingAppBar", () => {
     expect(session.setStabilizer).toHaveBeenCalledWith(25);
   });
 
-  it("대칭 그리기 모드 순환·캔버스 좌우 반전·브러시 랩 열기가 정상 동작한다", () => {
-    const session = createMockSession({ symmetryType: "off" });
+  it("대칭 그리기 모드 순환·캔버스 좌우 반전·브러시 랩 열기·빠른 도형 보정·배율 100% 초기화가 정상 동작한다", () => {
+    const session = createMockSession({ symmetryType: "off", zoom: 1.5, quickShapeActive: false });
     renderAppBar(session);
 
     fireEvent.click(screen.getByRole("button", { name: "대칭 그리기 모드 전환" }));
@@ -111,6 +116,13 @@ describe("StudioDrawingAppBar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "브러시 랩 열기" }));
     expect(session.studioOptionsBarsHandlers.openBrushStudio).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "빠른 도형 보정 전환" }));
+    expect(session.setQuickShapeActive).toHaveBeenCalledWith(true);
+
+    expect(screen.getByTestId("studio-appbar-zoom-percent").textContent).toBe("150%");
+    fireEvent.click(screen.getByRole("button", { name: "캔버스 배율 100% 초기화" }));
+    expect(session.setZoom).toHaveBeenCalledWith(1);
   });
 
   it("모바일 세션에서 컴팩트 폼팩터로 판정하고 모바일 브러시 시트를 연다", () => {

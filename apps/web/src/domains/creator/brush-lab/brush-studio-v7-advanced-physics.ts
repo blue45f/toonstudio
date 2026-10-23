@@ -200,3 +200,73 @@ export function shadeBrushStudioV7ReliefColor(
   const values = [1, 3, 5].map((offset) => Math.round(channel(hex, offset) * (1 - weight) + target * weight));
   return `#${values.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
 }
+
+export interface BrushStudioV7ImpastoShadingInput {
+  readonly hex: string;
+  readonly strokeAngleRad: number;
+  readonly height: number;
+  readonly gloss: number;
+  readonly bristleFurrow?: number;
+  readonly lightAzimuthRad?: number;
+  readonly lightElevationRad?: number;
+}
+
+export interface BrushStudioV7ImpastoShadingResult {
+  readonly shadedHex: string;
+  readonly diffuseFactor: number;
+  readonly specularBoost: number;
+  readonly furrowDepth: number;
+}
+
+/**
+ * V7.2 고해상도 임파스토 법선 + Blinn-Phong 스페큘러 + 브리슬 고랑(furrow) 미세 음영 계산기.
+ * 평탄면(height === 0)에서는 원본 색상을 무변형으로 보존하고,
+ * 두꺼운 물감 능선에서는 램버트 확산광과 정반사 하이라이트를 함께 합성한다.
+ */
+export function computeBrushStudioV7ImpastoShading(
+  input: BrushStudioV7ImpastoShadingInput,
+): BrushStudioV7ImpastoShadingResult {
+  const safeHeight = unit(input.height);
+  if (!/^#[0-9a-f]{6}$/iu.test(input.hex) || safeHeight <= 0) {
+    return Object.freeze({
+      shadedHex: input.hex,
+      diffuseFactor: 1,
+      specularBoost: 0,
+      furrowDepth: 0,
+    });
+  }
+  const safeGloss = unit(input.gloss);
+  const safeFurrow = unit(input.bristleFurrow ?? 0.35);
+  const lightAzimuth = input.lightAzimuthRad ?? -Math.PI * 0.28;
+  const lightElevation = Math.max(0.15, Math.min(1.4, input.lightElevationRad ?? 0.82));
+
+  // 법선 기울기: 브러시 진행 방향의 측면 능선(ridge)과 브리슬 고랑(furrow) 반영
+  const ridgeNormalAngle = input.strokeAngleRad;
+  const facing = Math.cos(ridgeNormalAngle - lightAzimuth);
+  const crossFacing = Math.abs(Math.sin(ridgeNormalAngle - lightAzimuth));
+  const furrowDepth = unit(safeHeight * safeFurrow * (0.35 + crossFacing * 0.65));
+
+  // Lambertian 확산 계수 (0.65 .. 1.25)
+  const slope = safeHeight * (0.45 + furrowDepth * 0.35);
+  const lambertDelta = facing * slope * Math.cos(lightElevation);
+  const diffuseFactor = Math.max(0.62, Math.min(1.28, 1 + lambertDelta * 0.42 - furrowDepth * 0.08));
+
+  // Blinn-Phong 정반사 부스트 (능선이 광원을 향할 때만 발생)
+  const halfAngleCos = Math.max(0, facing * 0.55 + Math.sin(lightElevation) * 0.45);
+  const shininess = 12 + safeGloss * 28;
+  const rawSpec = Math.pow(halfAngleCos, shininess) * safeHeight * (0.12 + safeGloss * 0.42);
+  const specularBoost = facing > 0 ? unit(rawSpec * (1 + furrowDepth * 0.25)) : 0;
+
+  const rgb = [1, 3, 5].map((offset) => {
+    const base = channel(input.hex, offset);
+    const lit = base * diffuseFactor + specularBoost * 255;
+    return Math.max(0, Math.min(255, Math.round(lit)));
+  });
+
+  return Object.freeze({
+    shadedHex: `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}`,
+    diffuseFactor: Number(diffuseFactor.toFixed(4)),
+    specularBoost: Number(specularBoost.toFixed(4)),
+    furrowDepth: Number(furrowDepth.toFixed(4)),
+  });
+}

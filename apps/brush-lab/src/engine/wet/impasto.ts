@@ -103,6 +103,122 @@ export function impastoSpecular(
   return out;
 }
 
+export interface ImpastoCompositeShadingOptions {
+  readonly light?: readonly [number, number, number];
+  readonly gain?: number;
+  readonly shininess?: number;
+}
+
+export interface ImpastoCompositeShadingResult {
+  readonly diffuse: Float32Array;
+  readonly specularDelta: Float32Array;
+  readonly normalX: Float32Array;
+  readonly normalY: Float32Array;
+}
+
+/**
+ * 단일 패스 임파스토 복합 셰이딩:
+ * 중앙차분 법선 (nx, ny, nz), 램버트 확산 조명(diffuse), 평탄면 기준 차감된 Blinn-Phong 하이라이트 변위(specularDelta)를
+ * 한 번의 높이장 순회로 계산한다. 평탄면(h 일정)에서는 specularDelta === 0을 정확히 보장한다.
+ */
+export function impastoCompositeShading(
+  height: Float32Array,
+  width: number,
+  options: ImpastoCompositeShadingOptions = {},
+): ImpastoCompositeShadingResult {
+  const light = options.light ?? [-0.45, -0.55, 0.7];
+  const gain = options.gain ?? 1;
+  const shininess = options.shininess ?? IMPASTO_SHININESS;
+  const n = height.length;
+  const rows = Math.floor(n / width);
+  const diffuse = new Float32Array(n);
+  const specularDelta = new Float32Array(n);
+  const normalX = new Float32Array(n);
+  const normalY = new Float32Array(n);
+
+  const ll = Math.hypot(light[0], light[1], light[2]) || 1;
+  const lx = light[0] / ll;
+  const ly = light[1] / ll;
+  const lz = light[2] / ll;
+  const hx0 = lx;
+  const hy0 = ly;
+  const hz0 = lz + 1;
+  const hl = Math.hypot(hx0, hy0, hz0) || 1;
+  const hx = hx0 / hl;
+  const hy = hy0 / hl;
+  const hz = hz0 / hl;
+  const flatSpec = impastoSpecularFlat(light, shininess);
+
+  for (let y = 0; y < rows; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = y * width + x;
+      const hL = height[y * width + Math.max(0, x - 1)] ?? 0;
+      const hR = height[y * width + Math.min(width - 1, x + 1)] ?? 0;
+      const hU = height[Math.max(0, y - 1) * width + x] ?? 0;
+      const hD = height[Math.min(rows - 1, y + 1) * width + x] ?? 0;
+      const rawNx = -(hR - hL) * 0.5 * gain;
+      const rawNy = -(hD - hU) * 0.5 * gain;
+      const nl = Math.hypot(rawNx, rawNy, 1);
+      const ux = rawNx / nl;
+      const uy = rawNy / nl;
+      const uz = 1 / nl;
+      normalX[i] = f(ux);
+      normalY[i] = f(uy);
+      const lambert = ux * lx + uy * ly + uz * lz;
+      diffuse[i] = f(lambert < 0 ? 0 : lambert > 1 ? 1 : lambert);
+      const ndh = ux * hx + uy * hy + uz * hz;
+      const spec = ndh <= 0 ? 0 : Math.min(1, ndh) ** shininess;
+      specularDelta[i] = f(spec - flatSpec);
+    }
+  }
+  return { diffuse, specularDelta, normalX, normalY };
+}
+
+/**
+ * 이방성 브리슬 고랑(furrow) + 측면 물감 둑(lateral berm) 높이 스탬프.
+ * 붓 진행 방향(strokeAngleRad)에 수직인 축을 따라 브리슬 결을 생성하고
+ * 가장자리에는 밀려난 물감 능선(berm)을 쌓아 실제 유화·아크릴 붓자국의 입체감을 재현한다.
+ */
+export function stampBristleFurrowRidge(
+  height: Float32Array,
+  width: number,
+  center: { readonly x: number; readonly y: number },
+  radius: number,
+  strokeAngleRad: number,
+  ridgeAmplitude: number,
+  bristleCount = 9,
+): void {
+  if (radius <= 0 || ridgeAmplitude <= 0) return;
+  const rows = Math.floor(height.length / width);
+  const cosA = Math.cos(strokeAngleRad);
+  const sinA = Math.sin(strokeAngleRad);
+  const x0 = Math.max(0, Math.floor(center.x - radius));
+  const x1 = Math.min(width - 1, Math.ceil(center.x + radius));
+  const y0 = Math.max(0, Math.floor(center.y - radius));
+  const y1 = Math.min(rows - 1, Math.ceil(center.y + radius));
+  const safeBristles = Math.max(2, Math.min(32, Math.round(bristleCount)));
+
+  for (let y = y0; y <= y1; y += 1) {
+    for (let x = x0; x <= x1; x += 1) {
+      const dx = x - center.x;
+      const dy = y - center.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > radius) continue;
+      const normDist = dist / radius;
+      // 진행 방향 수직 좌표 (-1..1)
+      const cross = (-dx * sinA + dy * cosA) / radius;
+      const furrow = 0.5 + 0.5 * Math.cos(cross * safeBristles * Math.PI);
+      // 가장자리 물감 둑(berm): 중심부보다 r ∈ [0.65, 0.95] 구간에서 능선이 솟아오름
+      const berm = Math.exp(-(((normDist - 0.8) / 0.16) ** 2)) * 0.45;
+      const envelope = (1 - normDist * normDist) * 0.65 + berm;
+      const delta = ridgeAmplitude * envelope * (0.45 + 0.55 * furrow);
+      const idx = y * width + x;
+      const next = (height[idx] ?? 0) + delta;
+      height[idx] = f(next < 0 ? 0 : next);
+    }
+  }
+}
+
 /** 높이 채널의 픽셀 단위 접근기(타일 풀 위). 읽기는 미할당 타일을 0으로 보고, 쓰기는 타일을 할당한다. */
 export interface HeightAccess {
   get(px: number, py: number): number;
