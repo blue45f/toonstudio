@@ -31,15 +31,16 @@ const ARTIFACT_DIR = process.env.TOONSPECTRUM_BG3D_PHYSICS_VERIFY_DIR ??
   process.env.TOONSPECTRUM_BG3D_VERIFY_DIR ??
   join(process.cwd(), "artifacts", "browser", "studio-bg3d-physics");
 const LOG_PATH = join(ARTIFACT_DIR, "verify.log");
-const QUICK_START_KEY = "toonstudio-studio-quick-start-dismissed";
-const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed";
-const UI_DENSITY_KEY = "toonstudio-studio-ui-density:v1";
 const LANGUAGE_KEY = "toonstudio-lang";
+// `vite preview` 에는 API 가 없어 아래 동일 출처 요청은 502 가 정상이다. capabilities·realtime tickets 는 서버 없이도
+// 편집기가 열리는 best-effort 요청이고 verify-studio-launch.mts 도 같은 경로를 허용한다. 정확히 일치해야 한다.
 const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
   "/api/auth/session",
   "/api/health/ready",
+  "/api/health/capabilities",
   "/api/kmas/merge-on-access",
   "/api/studio-ai/status",
+  "/api/studio-realtime/tickets",
   "/api/analytics/traffic/page-view",
 ] as const;
 const VITE_ERROR_OVERLAY_SELECTOR = [
@@ -174,14 +175,10 @@ function collectBrowserErrors(page: Page, studioUrl: string): BrowserErrorCollec
 }
 
 async function configureStudioPage(page: Page): Promise<void> {
+  // 빠른 시작·모바일 안내의 닫힘 기억은 SQLite/OPFS 로, UI 밀도는 앱 설정으로 옮겨 가 예전 localStorage 시드는
+  // 효력이 없다. 첫 실행 안내는 사용자처럼 직접 닫는다. 언어 저장소만 아직 localStorage 다.
   await page.addInitScript((configuration) => {
     try {
-      window.localStorage.setItem(configuration.quickStartKey, "1");
-      window.localStorage.setItem(configuration.mobileHintKey, "1");
-      window.localStorage.setItem(
-        configuration.uiDensityKey,
-        JSON.stringify({ mode: "full" }),
-      );
       window.localStorage.setItem(
         configuration.languageKey,
         JSON.stringify({ state: { lang: "ko" }, version: 0 }),
@@ -190,9 +187,6 @@ async function configureStudioPage(page: Page): Promise<void> {
       // Storage may be blocked, but the UI assertions below will still fail clearly.
     }
   }, {
-    quickStartKey: QUICK_START_KEY,
-    mobileHintKey: MOBILE_HINT_KEY,
-    uiDensityKey: UI_DENSITY_KEY,
     languageKey: LANGUAGE_KEY,
   });
 }
@@ -232,6 +226,16 @@ async function dismissQuickStartIfPresent(page: Page): Promise<void> {
   await backdrop.waitFor({ state: "hidden", timeout: 5_000 });
 }
 
+/** 모바일 첫 화면의 풀 편집 안내와 빈 캔버스 시작 도크를 사용자처럼 닫는다. 시작 패널은 도크가 펼쳐진 동안 물러난다. */
+async function dismissFirstRunSurfaces(page: Page): Promise<void> {
+  const notice = page.locator('[data-testid="mobile-full-edit-notice"]');
+  const dock = page.locator('[data-studio-cinematic-canvas-welcome="true"]');
+  await dock.waitFor({ state: "visible", timeout: 20_000 });
+  if (await notice.isVisible()) await notice.getByRole("button", { name: "이해했어요", exact: true }).click();
+  await dock.getByRole("button", { name: "시작 안내 닫기", exact: true }).click();
+  await dock.waitFor({ state: "hidden", timeout: 5_000 });
+}
+
 /** Composite menubar title that absorbed the 3D group (studio-main-menu-presentation.ts). */
 const STUDIO_INSERT_MENU_TITLE = "삽입";
 
@@ -239,12 +243,13 @@ async function openDesktopBackground3d(page: Page): Promise<Locator> {
   const mainMenu = page.locator('[data-studio-main-menu="true"]');
   await mainMenu.waitFor({ state: "visible", timeout: 20_000 });
   await dismissQuickStartIfPresent(page);
-  // 메뉴바 프레젠테이션(UX 감사 2026-09-02)이 3D 를 삽입 메뉴의 3D 구획으로 옮겼다. 항목 id·라벨은
-  // 그대로이므로 진입 지점만 바뀐다.
   await mainMenu.getByRole("menuitem", { name: STUDIO_INSERT_MENU_TITLE, exact: true }).click();
-  const threeDMenu = page.locator(`[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]`);
-  await threeDMenu.waitFor({ state: "visible", timeout: 5_000 });
-  await threeDMenu.getByRole("menuitem", { name: "3D 배경", exact: true }).click();
+  const insertMenu = page.locator(`[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]`);
+  await insertMenu.waitFor({ state: "visible", timeout: 5_000 });
+  // 점진 공개: 3D 도구는 '고급 도구 펼치기 (N개)' 행 뒤에 접혀 있다. 표시 문구는 '장면 도우미'(예전 '3D 배경')다.
+  const fold = insertMenu.locator('[data-studio-menu-item-id="advanced-sections-fold:insert"]');
+  if (await fold.getAttribute("aria-expanded") !== "true") await fold.click();
+  await insertMenu.locator('[data-studio-menu-item-id="bg3d"]').click();
   return waitForBackground3dDialog(page);
 }
 
@@ -259,6 +264,7 @@ async function openMobileBackground3d(page: Page): Promise<Locator> {
   );
   const dock = page.locator('nav[aria-label="스튜디오 모바일 도구막대"]');
   await dock.waitFor({ state: "visible", timeout: 20_000 });
+  await dismissFirstRunSurfaces(page);
   const workspaceToggle = dock.locator('[data-studio-mobile-workspace-toggle="true"]');
   const workspaceExpanded = await workspaceToggle.getAttribute("aria-expanded");
   if (workspaceExpanded === "false") {
@@ -288,12 +294,15 @@ async function openMobileBackground3d(page: Page): Promise<Locator> {
   await newWorkButton.click();
   const starter = page.locator('[data-studio-creative-starter="true"]');
   await starter.waitFor({ state: "visible", timeout: 5_000 });
+  // 시작 패널은 접힌 '사용법' 알약으로 뜬다 — 펼쳐야 '다른 작업 바로 열기'에 닿는다.
+  const starterToggle = starter.locator('button[aria-controls="studio-quickstart-content"]');
+  if (await starterToggle.getAttribute("aria-expanded") !== "true") await starterToggle.click();
   const moreTools = starter.locator('[data-studio-quickstart-more="true"]');
   await moreTools.locator("summary").click();
   const backgroundCard = starter.locator('[data-studio-quick-tool="background-3d"]');
   await backgroundCard.waitFor({ state: "visible", timeout: 5_000 });
   assertCondition(
-    (await backgroundCard.innerText()).includes("3D로 장면 잡기"),
+    (await backgroundCard.innerText()).includes("장면 도우미"), // 예전 '3D로 장면 잡기'
     "mobile quick-start 3D scene card lost its visible action label",
   );
   await backgroundCard.scrollIntoViewIfNeeded();
@@ -306,12 +315,20 @@ async function waitForBackground3dDialog(page: Page): Promise<Locator> {
   await dialog.waitFor({ state: "visible", timeout: 25_000 });
   await waitForElementAnimations(dialog);
   const namedDialog = page.getByRole("dialog", {
-    name: "3D 장면 연출",
+    name: "장면 도우미",
     exact: true,
   });
   assertCondition(await namedDialog.count() === 1, "3D dialog lost its accessible name contract");
+  await openPrecisionEditing(page, dialog);
   await selectPhysicsRenderer(dialog);
   return dialog;
+}
+
+/** 편집기는 간편 모드('장면 도우미')로 열린다. 탭·엔진 선택·물리 배치는 헤더의 '정밀 편집'(640px 미만은 '정밀')에만 있다. */
+async function openPrecisionEditing(page: Page, dialog: Locator): Promise<void> {
+  await dialog.getByRole("group", { name: "3D 편집 모드", exact: true })
+    .getByRole("button", { name: /^정밀(?: 편집)?$/u }).click();
+  await page.getByRole("dialog", { name: "정밀 3D 편집", exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
 async function selectPhysicsRenderer(dialog: Locator): Promise<void> {
