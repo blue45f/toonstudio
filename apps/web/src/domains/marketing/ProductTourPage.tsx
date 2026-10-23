@@ -12,6 +12,8 @@ import { ServiceStoryJourney } from "@/shared/components/service-story-journey";
 import { creatorHomeLocale } from "./creator-home-content";
 import { ProductTourPlayer } from "./ProductTourPlayer";
 import { ProductTourAdditions } from "./ProductTourAdditions";
+import { ProductTourShorts } from "./ProductTourShorts";
+import { ProductTourChapterBackdrop, ProductTourIntroBackdrop, ProductTourOutroBand } from "./ProductTourAmbientClips";
 import { ProductTourMadeNote } from "./ProductTourMadeNote";
 import { ProductTourTechLinks } from "./ProductTourTechLinks";
 import { RouteConditionBadges } from "./RouteConditionBadges";
@@ -96,6 +98,7 @@ export function ProductTourPage() {
   return (
     <div className="mk-page product-tour" lang={locale}>
       <header className="mk-shell product-tour__hero">
+        <ProductTourIntroBackdrop />
         <div className="product-tour__hero-copy">
           <p className="mk-eyebrow">
             <Clapperboard size={15} aria-hidden="true" />
@@ -136,11 +139,16 @@ export function ProductTourPage() {
           {(id) => id === "chapters" ? (
             <>
               <p className="mk-body product-tour__note">{copy.featuresBody}</p>
+              <p className="mk-body product-tour__note">{bi(
+                "각 카드 배경에 은은하게 흐르는 영상은 챕터 분위기를 그린 생성형 AI 루프 영상입니다. 실제 제품 화면이 아니라 장식용 배경입니다.",
+                "The soft motion behind each card is an AI-generated loop drawn for the chapter's mood — a decorative backdrop, not an actual product screen.",
+              )}</p>
               <ol className="product-tour-page__journey-grid mk-rail">
                 {PRODUCT_TOUR.chapters.map((chapter, index) => {
                   const title = bi(chapter.ko, chapter.en);
                   return (
                     <li key={chapter.id} className="product-tour__feature mk-card">
+                      <ProductTourChapterBackdrop chapterId={chapter.id} />
                       <figure data-visual={chapter.visual}>
                         <img src={chapter.image} alt="" width={1440} height={1000} loading="lazy" decoding="async" />
                         <figcaption><span>{String(index + 1).padStart(2, "0")}</span>{formatProductTourTime(chapter.start)}</figcaption>
@@ -193,6 +201,8 @@ export function ProductTourPage() {
         </IntroTabs>
       </section>
 
+      <ProductTourShorts />
+
       <section className="mk-shell product-tour__downloads" aria-labelledby="product-tour-downloads-title">
         <div className="product-tour__more-head">
           <p className="mk-eyebrow">{bi("자료 다운로드", "Downloads")}</p>
@@ -220,6 +230,8 @@ export function ProductTourPage() {
           </a>
         </div>
       </section>
+
+      <ProductTourOutroBand />
 
       <section className="mk-shell product-tour__next" aria-label={bi("이어서 보기", "Keep exploring")}>
         <ServiceFlowNext current="tour" />

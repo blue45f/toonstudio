@@ -31,7 +31,47 @@
 .brand-film-page__production-note { max-width: 70ch; margin-top: 8px; font-weight: 650; }
 .brand-film-page__production-links { display: flex; flex-wrap: wrap; gap: 0 20px; margin-top: 4px; }
 .brand-film-page__production-grid { display: grid; gap: 12px; padding-block: 12px 4px; }
-.brand-film-page__closing { margin-top: 6px; }
+.brand-film-page__closing { position: relative; overflow: hidden; margin-top: 6px; }
+
+/* 마무리 배경 클립: 생성형 AI 영상을 패널 맨 뒤에 깔고 표면색 스크림으로 본문
+   가독성을 지킨다. 성격은 패널 안 배지로 밝히고, 움직임 최소화·고대비에서는
+   영상 자체를 숨긴다(투어 배경 클립과 같은 장식 영상 계약). */
+.brand-film-page__closing-media {
+  position: absolute;
+  inset: 0;
+}
+
+.brand-film-page__closing-media video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.45;
+}
+
+.brand-film-page__closing-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--mk-surface) 84%, transparent) 30%,
+    color-mix(in srgb, var(--mk-surface) 58%, transparent) 75%);
+}
+
+.brand-film-page__closing > :not(.brand-film-page__closing-media) { position: relative; }
+
+.brand-film-page__clip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--mk-media-scrim);
+  color: var(--mk-on-media);
+  font-size: 12px;
+  font-weight: 750;
+}
 .brand-film-page__journey { margin: 4px 12px 12px; }
 .brand-film-page__back { display: flex; }
 
@@ -68,9 +108,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .brand-film-page * { scroll-behavior: auto; }
+  .brand-film-page__closing-media { display: none; }
 }
 
 @media (prefers-contrast: more), (forced-colors: active) {
   .brand-film-page__production-grid article { border: 2px solid CanvasText; background: Canvas; color: CanvasText; }
   .brand-film-page__production-grid svg { color: CanvasText; }
+  .brand-film-page__closing-media { display: none; }
+  .brand-film-page__clip-badge { border: 2px solid CanvasText; background: Canvas; color: CanvasText; }
 }
