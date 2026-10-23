@@ -216,28 +216,118 @@ function WizardSteps({ step }: { readonly step: number }) {
   </ol>;
 }
 
+interface StudioPollWorkTemplate {
+  readonly key: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly questionKo: string;
+  readonly questionEn: string;
+  readonly optionsKo: readonly string[];
+  readonly optionsEn: readonly string[];
+}
+
+const WORK_DECISION_TEMPLATES: readonly StudioPollWorkTemplate[] = [
+  {
+    key: "deadline",
+    labelKo: "마감 일정 조율",
+    labelEn: "Deadline alignment",
+    questionKo: "이번 화 마감·업로드 일정을 어떻게 조율할까요?",
+    questionEn: "How should we align this episode's deadline?",
+    optionsKo: [
+      "기존 마감 유지 (핵심 컷 우선)",
+      "검수 후 2시간 연장",
+      "내일 오전 최종본 제출",
+    ],
+    optionsEn: [
+      "Keep current deadline (core cuts first)",
+      "Extend by 2 hours after review",
+      "Submit final cut tomorrow morning",
+    ],
+  },
+  {
+    key: "draft-review",
+    labelKo: "검수 시안 선택",
+    labelEn: "Review draft choice",
+    questionKo: "현재 화 연출·채색 시안 중 어느 안으로 확정할까요?",
+    questionEn: "Which directing/coloring draft should we finalize?",
+    optionsKo: [
+      "A안 — 콘트라스트·연출 강조",
+      "B안 — 가독성·안정감 중심",
+      "A·B 절충안으로 부분 수정",
+    ],
+    optionsEn: [
+      "Draft A — High contrast & dramatic staging",
+      "Draft B — Readability & balanced tone",
+      "Hybrid — Combine key strengths of A & B",
+    ],
+  },
+  {
+    key: "meeting-slot",
+    labelKo: "회의·합평 시간",
+    labelEn: "Critique meeting slot",
+    questionKo: "오늘 원고 합평·중간 검수 회의 시간을 골라주세요",
+    questionEn: "Pick today's manuscript critique & review time",
+    optionsKo: [
+      "오후 2시 (15분 집중 체크)",
+      "오후 4시 (컷별 상세 리뷰)",
+      "비동기 코멘트로 대체",
+    ],
+    optionsEn: [
+      "2:00 PM (15m quick sync)",
+      "4:00 PM (Detailed panel review)",
+      "Async written comments instead",
+    ],
+  },
+];
+
 function WizardQuestionStep({
   question,
   onQuestionChange,
+  onApplyTemplate,
   error,
 }: {
   readonly question: string;
   readonly onQuestionChange: (value: string) => void;
+  readonly onApplyTemplate: (question: string, options: readonly string[]) => void;
   readonly error: string | null;
 }) {
   const bt = useBilingual("StudioVirtualSpacePoll");
-  return <label className="studio-poll-field">
-    <span>{bt("질문", "Question")}</span>
-    <input
-      value={question}
-      maxLength={STUDIO_POLL_MAX_QUESTION_LENGTH + 20}
-      placeholder={bt("예) 다음 스프린트 주제를 골라주세요", "e.g. Pick the next sprint theme")}
-      onChange={(event) => onQuestionChange(event.target.value)}
-      aria-invalid={error != null}
-      aria-describedby="studio-poll-question-error"
-    />
-    {error ? <PollFieldError id="studio-poll-question-error" message={error} /> : null}
-  </label>;
+  return <div className="studio-poll-question-step">
+    <div
+      role="group"
+      aria-label={bt("실무 의사결정 템플릿", "Work decision templates")}
+      className="studio-poll-work-templates"
+    >
+      {WORK_DECISION_TEMPLATES.map((tpl) => (
+        <button
+          key={tpl.key}
+          type="button"
+          className="studio-poll-template-btn"
+          data-poll-template={tpl.key}
+          onClick={() =>
+            onApplyTemplate(
+              bt(tpl.questionKo, tpl.questionEn),
+              tpl.optionsKo.map((ko, index) => bt(ko, tpl.optionsEn[index] ?? ko)),
+            )
+          }
+        >
+          {bt(tpl.labelKo, tpl.labelEn)}
+        </button>
+      ))}
+    </div>
+    <label className="studio-poll-field">
+      <span>{bt("질문", "Question")}</span>
+      <input
+        value={question}
+        maxLength={STUDIO_POLL_MAX_QUESTION_LENGTH + 20}
+        placeholder={bt("예) 다음 스프린트 주제를 골라주세요", "e.g. Pick the next sprint theme")}
+        onChange={(event) => onQuestionChange(event.target.value)}
+        aria-invalid={error != null}
+        aria-describedby="studio-poll-question-error"
+      />
+      {error ? <PollFieldError id="studio-poll-question-error" message={error} /> : null}
+    </label>
+  </div>;
 }
 
 function WizardOptionsStep({
@@ -445,6 +535,10 @@ function PollWizard({
       {step === 0 && <WizardQuestionStep
         question={question}
         onQuestionChange={setQuestion}
+        onApplyTemplate={(nextQuestion, nextOptions) => {
+          setQuestion(nextQuestion);
+          setOptions([...nextOptions]);
+        }}
         error={questionError}
       />}
       {step === 1 && <WizardOptionsStep

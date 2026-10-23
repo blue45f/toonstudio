@@ -69,7 +69,10 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
       const dimData = dims
         ? `${dims.officePresence},${dims.deepWorkFlow},${dims.reviewCollaboration},${dims.wellnessVitality},${dims.atelierAesthetics},${dims.autonomousRhythm},${dims.creativeVelocity}`
         : undefined;
-      const omniBadge = bt(pulse.quantumBadgeKo ?? pulse.omniBadgeKo ?? pulse.hyperBadgeKo ?? pulse.badgeKo, pulse.quantumBadgeEn ?? pulse.omniBadgeEn ?? pulse.hyperBadgeEn ?? pulse.badgeEn);
+      const workBadge = bt(
+        pulse.workStatusBadgeKo ?? pulse.quickActionLabelKo,
+        pulse.workStatusBadgeEn ?? pulse.quickActionLabelEn,
+      );
       const routineHint = pulse.recommendedRoutineKo ? ` · ${bt(pulse.recommendedRoutineKo, pulse.recommendedRoutineEn)}` : "";
       return onQuickAction && pulse.quickActionId ? (
         <button
@@ -82,12 +85,12 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           data-quantum-score={pulse.quantumScore}
           data-hyper-dimensions={dimData}
           onClick={onQuickAction}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${omniBadge}${dimSummary}${routineHint} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
-          aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${pulse.synergyScore}pt / ${pulse.omniScore ?? pulse.hyperScore ?? pulse.synergyScore * 10}pt) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${dimSummary}${routineHint} · ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
+          aria-label={`${bt(pulse.headlineKo, pulse.headlineEn)} (${workBadge}) — ${bt(pulse.quickActionLabelKo, pulse.quickActionLabelEn)}`}
         >
           <Sparkles size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
-          <strong className="space-location__pulse-score">{pulse.omniScore ?? pulse.hyperScore ?? pulse.synergyScore}pt</strong>
+          <strong className="space-location__pulse-score">{workBadge}</strong>
         </button>
       ) : (
         <span
@@ -98,11 +101,11 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
           data-omni-score={pulse.omniScore}
           data-quantum-score={pulse.quantumScore}
           data-hyper-dimensions={dimData}
-          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${omniBadge}${dimSummary}${routineHint}`}
+          title={`${bt(pulse.sublineKo, pulse.sublineEn)} · ${workBadge}${dimSummary}${routineHint}`}
         >
           <Sparkles size={13} aria-hidden />
           <span className="space-location__pulse-label">{bt(pulse.headlineKo, pulse.headlineEn)}</span>
-          <strong className="space-location__pulse-score">{pulse.omniScore ?? pulse.hyperScore ?? pulse.synergyScore}pt</strong>
+          <strong className="space-location__pulse-score">{workBadge}</strong>
         </span>
       );
     })() : null}

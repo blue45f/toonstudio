@@ -161,4 +161,18 @@ describe("StudioVirtualSpaceUserList", () => {
     expect(onActivate).toHaveBeenLastCalledWith("u2");
     expect(screen.queryByRole("button", { name: "나 선택" })).toBeNull();
   });
+
+  it("협업 가능 인원을 요약하고 작업 상태 필터로 즉시 대화 가능한 팀원과 집중·회의 중인 팀원을 구분한다", () => {
+    render(<StudioVirtualSpaceUserList users={users} zones={zones} selfId="self" />);
+    expect(screen.getByRole("status").textContent).toContain("협업 가능 2명");
+
+    fireEvent.click(screen.getByRole("button", { name: "협업 가능 (2)" }));
+    const collabRows = document.querySelectorAll("ul.studio-vspace-user-list li");
+    expect(collabRows).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "집중·회의 (1)" }));
+    const focusRows = document.querySelectorAll("ul.studio-vspace-user-list li");
+    expect(focusRows).toHaveLength(1);
+    expect(focusRows[0]?.getAttribute("data-user-id")).toBe("u2");
+  });
 });

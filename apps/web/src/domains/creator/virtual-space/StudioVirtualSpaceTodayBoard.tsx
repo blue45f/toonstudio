@@ -1,4 +1,5 @@
 import { CalendarClock, CheckCircle2, ClipboardList, RefreshCw, Route, TriangleAlert } from "lucide-react";
+import { useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -12,7 +13,10 @@ import {
 } from "./studio-virtual-space-production-route";
 
 const ACTIVE_REVIEW = new Set(["internal-review", "external-review", "changes-requested", "conditionally-approved"]);
+const BLOCKED_OR_WAITING = new Set(["blocked", "needs-input", "changes-requested"]);
 const CLOSED = new Set(["approved", "done", "cancelled", "out-of-scope"]);
+
+type TodayTaskFilter = "all" | "review" | "blocked";
 
 function when(value: string | null | undefined, locale: string): string {
   if (!value) return "—";
@@ -28,13 +32,20 @@ export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGu
 }) {
   const bt = useBilingual("StudioVirtualSpaceTodayBoard");
   const locale = bt("ko-KR", "en-US");
+  const [taskFilter, setTaskFilter] = useState<TodayTaskFilter>("all");
   const aggregate = snapshot.project?.aggregate;
   const totalTasks = aggregate?.tasks.length ?? 0;
   const openTasks = (aggregate?.tasks ?? []).filter((task) => !CLOSED.has(task.status));
   const completionRatePercent = totalTasks > 0 ? Math.round(((totalTasks - openTasks.length) / totalTasks) * 100) : 100;
-  const nextTasks = [...openTasks].sort((a, b) => (a.dueAt ? new Date(a.dueAt).getTime() : Infinity) - (b.dueAt ? new Date(b.dueAt).getTime() : Infinity)).slice(0, 4);
-  const topTask = nextTasks[0] ?? null;
   const reviews = openTasks.filter((task) => ACTIVE_REVIEW.has(task.status));
+  const blockedTasks = openTasks.filter((task) => BLOCKED_OR_WAITING.has(task.status));
+  const filteredOpenTasks = openTasks.filter((task) => {
+    if (taskFilter === "review") return ACTIVE_REVIEW.has(task.status);
+    if (taskFilter === "blocked") return BLOCKED_OR_WAITING.has(task.status);
+    return true;
+  });
+  const nextTasks = [...filteredOpenTasks].sort((a, b) => (a.dueAt ? new Date(a.dueAt).getTime() : Infinity) - (b.dueAt ? new Date(b.dueAt).getTime() : Infinity)).slice(0, 4);
+  const topTask = nextTasks[0] ?? null;
   const calendar = [...snapshot.calendar].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()).slice(0, 3);
   return <section className="vs2-panel studio-vspace-today-board" aria-label={bt("오늘의 스튜디오 보드", "Studio today board")} data-space-interactive="true">
     <header><div><p><CalendarClock size={15} aria-hidden /> TODAY BOARD</p><h2>{aggregate?.title ?? bt("오늘의 제작 동선", "Today's production flow")}</h2></div>
@@ -42,13 +53,31 @@ export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGu
     {snapshot.phase === "loading" ? <p role="status">{bt("일정과 작업을 불러오는 중…", "Loading schedule and work…")}</p> : null}
     {snapshot.phase === "unavailable" ? <div className="studio-vspace-empty-state"><TriangleAlert size={18} aria-hidden /><p>{bt("이 작품에 연결된 프로덕션 프로젝트가 아직 없어요. 공간 이동과 제작 도구는 계속 사용할 수 있어요.", "This work is not linked to a production project yet. Spatial navigation and creation tools remain available.")}</p></div> : null}
     {aggregate ? <>
-      <div className="studio-vspace-today-metrics" data-completion-rate={completionRatePercent}>
+      <div className="studio-vspace-today-metrics" data-completion-rate={completionRatePercent} data-blocked-count={blockedTasks.length}>
         <span><ClipboardList size={15} aria-hidden /><b>{openTasks.length}</b>{bt("진행 작업", "open tasks")}</span>
         <span><CheckCircle2 size={15} aria-hidden /><b>{reviews.length}</b>{bt("검수 대기", "reviews")}</span>
+        <span><TriangleAlert size={15} aria-hidden /><b>{blockedTasks.length}</b>{bt("차단·보완", "blocked")}</span>
         <span><CalendarClock size={15} aria-hidden /><b>{calendar.length}</b>{bt("예정 일정", "events")}</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <h3>{bt("다음 작업", "Next work")}</h3>
+        <div role="group" aria-label={bt("작업 상태 필터", "Task status filter")} style={{ display: "flex", gap: 4 }}>
+          {([
+            ["all", bt("전체", "All")],
+            ["review", bt("검수·피드백", "Review")],
+            ["blocked", bt("차단·긴급", "Blocked")],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className="vs2-focus-chip"
+              aria-pressed={taskFilter === id}
+              onClick={() => setTaskFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         {topTask && onGuide ? (
           <button
             type="button"

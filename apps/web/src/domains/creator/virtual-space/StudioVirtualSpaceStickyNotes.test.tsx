@@ -146,4 +146,20 @@ describe("StudioVirtualSpaceStickyNotes", () => {
     expect(screen.getByText(/읽기 전용으로 보고 있어요/)).toBeDefined();
     expect(screen.getByText(/편집 권한을 요청하세요/)).toBeDefined();
   });
+
+  it("실무 빠른 메모 템플릿 버튼으로 검수 피드백·수정 요청·블로커 포스트잇을 즉시 생성한다", () => {
+    const { onCreate } = mount([note("a")]);
+    fireEvent.click(screen.getByRole("button", { name: "+ 검수 피드백" }));
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: "[검수 피드백] 확인 필요한 컷·대사 메모",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "+ 블로커 공유" }));
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: "[블로커] 일정 지연·의존성 이슈 공유",
+      }),
+    );
+  });
 });

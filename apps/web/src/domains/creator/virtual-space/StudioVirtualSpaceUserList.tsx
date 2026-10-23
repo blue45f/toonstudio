@@ -79,12 +79,38 @@ export interface StudioVirtualSpaceUserListProps {
   readonly onActivate?: (id: string) => void;
 }
 
+export type StudioUserListFilter = "all" | "collaborative" | "deep-work";
+
+function isCollaborativeEntry(entry: StudioUserListEntry): boolean {
+  if (entry.userStatus) return entry.userStatus === "available";
+  return entry.activity === "available" || entry.activity === "reviewing";
+}
+
+function isDeepWorkEntry(entry: StudioUserListEntry): boolean {
+  if (entry.userStatus) {
+    return (
+      entry.userStatus === "focusing" ||
+      entry.userStatus === "in-meeting" ||
+      entry.userStatus === "presenting"
+    );
+  }
+  return entry.activity === "focused";
+}
+
 /** 실시간 유저 리스트: 아바타 id/이름/현재 구역/상태를 보여준다. */
 export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }: StudioVirtualSpaceUserListProps) {
   const bt = useBilingual("StudioVirtualSpaceUserList");
-  const entries = buildUserListEntries(users, zones, selfId);
+  const allEntries = buildUserListEntries(users, zones, selfId);
+  const [statusFilter, setStatusFilter] = useState<StudioUserListFilter>("all");
   const [activeIndex, setActiveIndex] = useState(0);
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
+  const collaborativeCount = allEntries.filter(isCollaborativeEntry).length;
+  const deepWorkCount = allEntries.filter(isDeepWorkEntry).length;
+  const entries = allEntries.filter((entry) => {
+    if (statusFilter === "collaborative") return isCollaborativeEntry(entry);
+    if (statusFilter === "deep-work") return isDeepWorkEntry(entry);
+    return true;
+  });
   // 목록이 줄어들어도 roving tabindex가 유효한 항목을 가리키도록 보정한다.
   const clampedActiveIndex = entries.length === 0 ? 0 : Math.min(activeIndex, entries.length - 1);
 
@@ -129,15 +155,45 @@ export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }:
   return (
     <section aria-label={bt("작업 중인 사용자", "Users working now")} className="vs2-panel">
       <h2 className="font-bold">{bt("작업 중인 사용자", "Users working now")}</h2>
-      {entries.length === 0 ? (
+      {allEntries.length === 0 ? (
         <p className="mt-2 text-xs text-fg-2" role="status">
           {bt("현재 공간에 표시할 사용자가 없어요.", "No users to show in the space right now.")}
         </p>
       ) : (
         <>
-          <p className="mt-1 text-xs text-fg-2" role="status">
-            {bt(`총 ${entries.length}명 작업 중`, `${entries.length} people working`)}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5">
+            <p className="text-xs text-fg-2" role="status" data-collaborative-count={collaborativeCount}>
+              {bt(
+                `총 ${allEntries.length}명 작업 중 · 협업 가능 ${collaborativeCount}명`,
+                `${allEntries.length} people working · ${collaborativeCount} open to collaborate`,
+              )}
+            </p>
+            <div
+              role="group"
+              aria-label={bt("작업 상태 필터", "Work status filter")}
+              className="flex flex-wrap gap-1"
+            >
+              {([
+                { key: "all", label: bt("전체", "All"), count: allEntries.length },
+                { key: "collaborative", label: bt("협업 가능", "Open to collab"), count: collaborativeCount },
+                { key: "deep-work", label: bt("집중·회의", "Focus & Meeting"), count: deepWorkCount },
+              ] as const).map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  aria-pressed={statusFilter === item.key}
+                  onClick={() => {
+                    setStatusFilter(item.key);
+                    setActiveIndex(0);
+                  }}
+                  className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium"
+                  data-user-filter={item.key}
+                >
+                  {item.label} ({item.count})
+                </button>
+              ))}
+            </div>
+          </div>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- WAI-ARIA roving tabindex 패턴: 방향키 핸들러는 목록 컨테이너에 두고 각 항목은 li 시맨틱을 유지한다 */}
           <ul
             onKeyDown={handleKeyDown}

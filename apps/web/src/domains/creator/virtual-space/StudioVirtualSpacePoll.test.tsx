@@ -116,4 +116,27 @@ describe("StudioVirtualSpacePoll", () => {
       closesInMs: 15 * 60_000,
     });
   });
+
+  it("실무 의사결정 템플릿 버튼으로 마감 일정 조율·검수 시안 투표 질문과 선택지를 원클릭으로 채운다", () => {
+    const onCreate = vi.fn();
+    render(<StudioVirtualSpacePoll poll={null} {...baseProps} onCreate={onCreate} />);
+    fireEvent.click(screen.getByRole("button", { name: "마감 일정 조율" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect((screen.getByLabelText("선택지 1") as HTMLInputElement).value).toBe(
+      "기존 마감 유지 (핵심 컷 우선)",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    fireEvent.click(screen.getByRole("button", { name: "투표 시작" }));
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: "이번 화 마감·업로드 일정을 어떻게 조율할까요?",
+        options: [
+          "기존 마감 유지 (핵심 컷 우선)",
+          "검수 후 2시간 연장",
+          "내일 오전 최종본 제출",
+        ],
+      }),
+    );
+  });
 });

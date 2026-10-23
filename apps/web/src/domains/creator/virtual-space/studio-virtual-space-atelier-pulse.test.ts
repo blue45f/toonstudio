@@ -19,6 +19,7 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.synergyScore).toBeLessThanOrEqual(200);
     expect(pulse.quickActionId).toBe("start-focus");
     expect(pulse.badgeKo).toContain("아틀리에");
+    expect(pulse.workStatusBadgeKo).toBe("작업 대기");
   });
 
   it("switches to focused-flow when focus session is active or seated in a creative zone", () => {
@@ -38,6 +39,7 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.synergyScore).toBeGreaterThanOrEqual(170);
     expect(pulse.quickActionId).toBe("stop-focus");
     expect(pulse.badgeKo).toContain("집중 몰입");
+    expect(pulse.workStatusBadgeKo).toBe("집중 작업 중");
   });
 
   it("escalates to creative-surge when focusing alongside focused teammates in a creative zone", () => {
@@ -67,6 +69,7 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.hyperBadgeKo).toBe("하이퍼 포지 2,000pt");
     expect(pulse.omniBadgeKo).toBe("옴니 포지 4,000pt (20x)");
     expect(pulse.quantumBadgeKo).toBe("퀀텀 포지 10,000pt (50x)");
+    expect(pulse.workStatusBadgeKo).toBe("공동 작업 3명");
     expect(pulse.dimensions.deepWorkFlow).toBe(400);
     expect(pulse.dimensions.officePresence).toBeGreaterThanOrEqual(300);
     expect(pulse.dimensions.autonomousRhythm).toBeGreaterThanOrEqual(350);
@@ -101,6 +104,7 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.omniScore).toBeGreaterThanOrEqual(3600);
     expect(pulse.omniTier).toBe("apex-quantum");
     expect(pulse.dimensions.reviewCollaboration).toBeGreaterThanOrEqual(360);
+    expect(pulse.workStatusBadgeKo).toBe("근처 협업 1명");
   });
 
   it("rewards wellness vitality during break phase or lounge relaxation", () => {
