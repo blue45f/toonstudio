@@ -19,6 +19,8 @@
     "dev": "vite --config apps/web/vite.config.ts --host 0.0.0.0",
     "music:providers": "tsx scripts/ai-music-provider-toolkit.mts list",
     "music:handoff": "tsx scripts/ai-music-provider-toolkit.mts handoff",
+    "varco3d": "tsx scripts/varco3d-cli.mts",
+    "varco3d:check": "tsx scripts/varco3d-cli.mts doctor --check",
     "build": "NODE_OPTIONS='--max-old-space-size=12288' tsc -p tsconfig.json && NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
     "build:bundle": "NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
     "prebuild:bundle": "pnpm run prebuild",
