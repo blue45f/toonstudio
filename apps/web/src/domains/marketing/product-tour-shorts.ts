@@ -1,9 +1,9 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 41편.
- * 마흔한 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 43편.
+ * 마흔세 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
  * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
- * 안팎, 39~42편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 안팎, 39~44편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -47,7 +47,9 @@ export interface ProductTourShort {
     | "morning-desk"
     | "book-stack"
     | "tea-cup"
-    | "candlelight";
+    | "candlelight"
+    | "fountain-pen"
+    | "plant-water";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -670,6 +672,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "The desk by candlelight",
       body: "The work desk in the flickering light of a candle — caught up close.",
+    },
+  },
+  {
+    id: "fountain-pen",
+    src: "/brand/promo-shorts/shorts-43-fountainpen.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "만년필 클로즈업",
+      body: "종이 위를 미끄러지는 만년필의 펜촉을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "The fountain pen, up close",
+      body: "A fountain pen nib gliding across the page — caught up close.",
+    },
+  },
+  {
+    id: "plant-water",
+    src: "/brand/promo-shorts/shorts-44-plantwater.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "화분에 물 주기",
+      body: "창가의 화분에 천천히 물을 주는 손길을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "Watering the plant",
+      body: "Slowly watering the plant by the window — caught up close.",
     },
   },
 ];
