@@ -7,8 +7,9 @@ import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
 import { STUDIO_VIRTUAL_ART_STYLES, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
 import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
+import { studioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
 
-type CharacterFilter = "all" | "base" | StudioVirtualArtStyleKey;
+type CharacterFilter = "all" | "theme-match" | "base" | StudioVirtualArtStyleKey;
 
 const CHARACTERS = STUDIO_CHARACTER_SKINS.map((skin, index) => ({ skin, index }));
 const THEME_CHARACTERS = CHARACTERS.filter(({ skin }) => skin.selectionOnly && skin.nativeArtStyle);
@@ -19,8 +20,9 @@ const THEME_CHARACTERS = CHARACTERS.filter(({ skin }) => skin.selectionOnly && s
  * - all: 기본·테마 캐릭터를 한 격자에 모으고 스타일 필터 칩으로 좁힌다. 로비와 꾸미기 탭이 같은 선택기를 쓴다.
  * 선택은 사용자의 명시적 클릭만 onSelect(avatarIndex)로 알린다.
  */
-export function StudioVirtualThemeCharacterPicker({ artStyle, avatarIndex, onSelect, mode = "theme", includeAuto = false }: {
+export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, avatarIndex, onSelect, mode = "theme", includeAuto = false }: {
   readonly artStyle: StudioVirtualArtStyleKey;
+  readonly spaceTheme?: StudioSpaceThemeKey;
   readonly avatarIndex: number;
   readonly onSelect: (index: number) => void;
   readonly mode?: "theme" | "all";
@@ -29,6 +31,9 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, avatarIndex, onSel
 }) {
   const bt = useBilingual("StudioVirtualThemeCharacterPicker");
   const [filter, setFilter] = useState<CharacterFilter>("all");
+  const activeSpaceTheme = spaceTheme ? studioSpaceTheme(spaceTheme) : null;
+  const recommendedKeys = new Set<string>(activeSpaceTheme?.recommendedCharacterKeys ?? []);
+
   if (mode === "theme") {
     if (!THEME_CHARACTERS.length) return null;
     return <fieldset className="studio-vspace-theme-characters">
@@ -37,12 +42,13 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, avatarIndex, onSel
       <div className="studio-vspace-theme-characters__grid">
         {THEME_CHARACTERS.map(({ skin, index }) => {
           const theme = STUDIO_VIRTUAL_ART_STYLES.find((item) => item.key === skin.nativeArtStyle);
+          const matchesTheme = skin.nativeArtStyle === artStyle || recommendedKeys.has(skin.key);
           return <button type="button" key={skin.key} className="studio-vspace-theme-character" aria-pressed={avatarIndex === index}
             aria-label={bt(`${skin.labelKo} 테마 캐릭터 선택`, `Select ${skin.labelEn} theme character`)} onClick={() => onSelect(index)}>
             <span className="studio-vspace-theme-character__preview"><StudioVirtualCharacterPreview skin={skin} /></span>
             <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
             {theme ? <small>{bt(theme.labelKo, theme.labelEn)}</small> : null}
-            {skin.nativeArtStyle === artStyle ? <em>{bt("현재 테마와 어울려요", "Matches your theme")}</em> : null}
+            {matchesTheme ? <em>{bt("현재 테마와 어울려요", "Matches your theme")}</em> : null}
           </button>;
         })}
       </div>
@@ -50,12 +56,14 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, avatarIndex, onSel
   }
   const filters: readonly { readonly id: CharacterFilter; readonly ko: string; readonly en: string }[] = [
     { id: "all", ko: "전체", en: "All" },
+    ...(activeSpaceTheme ? [{ id: "theme-match" as const, ko: `${activeSpaceTheme.labelKo} 추천`, en: `${activeSpaceTheme.labelEn} picks` }] : []),
     { id: "base", ko: "기본", en: "Base" },
     ...STUDIO_VIRTUAL_ART_STYLES.filter((style) => THEME_CHARACTERS.some(({ skin }) => skin.nativeArtStyle === style.key))
       .map((style) => ({ id: style.key, ko: style.labelKo, en: style.labelEn })),
   ];
   const shown = CHARACTERS.filter(({ skin }) => filter === "all"
-    || (filter === "base" ? !skin.nativeArtStyle : skin.nativeArtStyle === filter));
+    || (filter === "theme-match" ? recommendedKeys.has(skin.key)
+      : filter === "base" ? !skin.nativeArtStyle : skin.nativeArtStyle === filter));
   return <fieldset className="studio-vspace-character-picker">
     <legend>{bt("내 캐릭터", "My character")}</legend>
     <div className="studio-vspace-character-picker__filters" role="group" aria-label={bt("캐릭터 스타일", "Character style")}>
@@ -73,10 +81,13 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, avatarIndex, onSel
       {shown.map(({ skin, index }) => {
         const presented = skin.nativeArtStyle ? skin : studioCharacterSkinForArtStyle(skin, artStyle);
         const selected = avatarIndex === index;
-        return <button key={skin.key} type="button" className="studio-vspace-character-picker__item" aria-pressed={selected}
+        const recommended = recommendedKeys.has(skin.key);
+        return <button key={skin.key} type="button" className="studio-vspace-character-picker__item"
+          data-theme-recommended={recommended || undefined} aria-pressed={selected}
           aria-label={bt(`${skin.labelKo} 캐릭터 선택`, `Select ${skin.labelEn} character`)} onClick={() => onSelect(index)}>
           <span className="studio-vspace-character-picker__preview"><StudioVirtualCharacterPreview skin={presented} /></span>
           <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
+          {recommended ? <small className="studio-vspace-character-picker__badge">{bt("테마 추천", "Theme pick")}</small> : null}
           {selected ? <b className="studio-vspace-character-picker__check" aria-hidden><Check size={12} /></b> : null}
         </button>;
       })}

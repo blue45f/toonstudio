@@ -407,3 +407,51 @@ export function collisionShake(
     durationMs: 120 + 180 * intensity,
   });
 }
+
+export interface StudioLocomotionStopSettle {
+  readonly offsetY: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  readonly leanDeg: number;
+}
+
+/** 정지 직후 잔여 관성이 감쇠 진동으로 흡수되는 세틀 지속 시간(ms). */
+export const LOCOMOTION_STOP_SETTLE_DURATION_MS = 320;
+
+/**
+ * 보행·질주 후 멈추는 순간 캐릭터가 한 프레임에 정지 PNG로 얼어붙지 않도록
+ * 직전 속도에 비례한 감쇠 조화 진동(damped harmonic settle)을 계산한다.
+ * 멈춘 직후 무릎이 살짝 눌렸다가(`offsetY > 0`, `scaleY < 1`, `scaleX > 1`)
+ * 탄성 있게 원복하며, `reducedMotion`에서는 중립값을 반환한다.
+ */
+export function studioLocomotionStopSettle(
+  elapsedSinceStopMs: number,
+  preStopSpeed: number,
+  maxSpeed: number,
+  reducedMotion: boolean,
+): StudioLocomotionStopSettle {
+  if (
+    reducedMotion ||
+    !Number.isFinite(elapsedSinceStopMs) ||
+    elapsedSinceStopMs < 0 ||
+    elapsedSinceStopMs >= LOCOMOTION_STOP_SETTLE_DURATION_MS ||
+    !Number.isFinite(preStopSpeed) ||
+    preStopSpeed < 24 ||
+    !Number.isFinite(maxSpeed) ||
+    maxSpeed <= 0
+  ) {
+    return Object.freeze({ offsetY: 0, scaleX: 1, scaleY: 1, leanDeg: 0 });
+  }
+  const speedRatio = clampUnit(preStopSpeed / maxSpeed);
+  const progress = elapsedSinceStopMs / LOCOMOTION_STOP_SETTLE_DURATION_MS;
+  const damping = Math.exp(-3.6 * progress) * (1 - progress);
+  const wave = Math.sin(progress * Math.PI * 1.75) * damping * speedRatio;
+  const squashDepth = 0.022 * wave;
+  return Object.freeze({
+    offsetY: Number((1.8 * wave).toFixed(4)),
+    scaleX: Number((1 + squashDepth * 0.65).toFixed(5)),
+    scaleY: Number((1 - squashDepth).toFixed(5)),
+    leanDeg: Number((1.35 * wave).toFixed(4)),
+  });
+}
+

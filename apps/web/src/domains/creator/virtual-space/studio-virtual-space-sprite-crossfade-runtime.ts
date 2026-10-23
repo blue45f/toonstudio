@@ -115,6 +115,11 @@ export class StudioSpriteCrossfadeRuntime {
       .setDepth(owner.depth - 0.5)
       .setVisible(owner.visible)
       .setAlpha(owner.alpha);
+    if (owner.isTinted) {
+      fadeSprite.setTint(owner.tintTopLeft, owner.tintTopRight, owner.tintBottomLeft, owner.tintBottomRight);
+    } else {
+      fadeSprite.clearTint();
+    }
   }
 
   /** 프레임 끝에 불러 진행 중인 페이드를 배우 변환에 맞추고 알파를 진행시킨다. */
@@ -139,6 +144,11 @@ export class StudioSpriteCrossfadeRuntime {
         .setDepth(owner.depth - 0.5)
         .setVisible(owner.visible)
         .setAlpha(alpha * owner.alpha);
+      if (owner.isTinted) {
+        fadeSprite.setTint(owner.tintTopLeft, owner.tintTopRight, owner.tintBottomLeft, owner.tintBottomRight);
+      } else {
+        fadeSprite.clearTint();
+      }
     }
   }
 
