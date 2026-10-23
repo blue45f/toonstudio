@@ -19,6 +19,7 @@ import { resolvePartColorHex } from "../material-presets";
 
 import { addFloat32, toFloat32, toQuaternion, toVector3 } from "./convert";
 import { createJointOffsetRig } from "./joint-offset-rig";
+import { pinMorphInfluencerCount } from "./morph-shader-pin";
 
 import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { HumanoidBoneName, HumanoidModelData, LabFailure, MaterialPresetId, MeshPartData, Quat } from "../../contracts";
@@ -145,14 +146,23 @@ export function bindProceduralModel(model: HumanoidModelData, deps: ProceduralBi
     if (part.morphs.length > 0) {
       const manager = new MorphTargetManager(scene);
       manager.useTextureToStoreTargets = true;
-      for (const morph of part.morphs) {
-        const target = new MorphTarget(morph.name, 0, scene);
-        target.setPositions(addFloat32(part.positions, morph.deltaPositions));
-        if (morph.deltaNormals) target.setNormals(addFloat32(part.normals, morph.deltaNormals));
-        manager.addTarget(target);
-        const list = morphs.get(morph.name) ?? [];
-        list.push(target);
-        morphs.set(morph.name, list);
+      // Babylon `addTarget`은 타깃을 하나 더할 때마다 morph 텍스처 전체를 다시 만든다(타깃 n개 = O(n²) 복사·n번 업로드).
+      // 실측(2026-10-23, M2 Max WebGL2): 썸네일 임시 리그 1개에 texImage3D 약 300회, 슬라이더 1회에 1.1초. 갱신을 얼린 채 모두 더하고 한 번만 동기화한다.
+      manager.areUpdatesFrozen = true;
+      try {
+        // 활성 morph 수가 바뀔 때마다 셰이더를 다시 만들지 않도록 define을 전체 타깃 수로 고정한다(morph-shader-pin.ts).
+        pinMorphInfluencerCount(manager, scene.getEngine(), part.morphs.length);
+        for (const morph of part.morphs) {
+          const target = new MorphTarget(morph.name, 0, scene);
+          target.setPositions(addFloat32(part.positions, morph.deltaPositions));
+          if (morph.deltaNormals) target.setNormals(addFloat32(part.normals, morph.deltaNormals));
+          manager.addTarget(target);
+          const list = morphs.get(morph.name) ?? [];
+          list.push(target);
+          morphs.set(morph.name, list);
+        }
+      } finally {
+        manager.areUpdatesFrozen = false;
       }
       mesh.morphTargetManager = manager;
       disposables.push(manager);

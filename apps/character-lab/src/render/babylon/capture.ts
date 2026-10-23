@@ -1,6 +1,6 @@
 /**
- * 멀티패스 캡처·썸네일: 요청 해상도 전용 RenderTargetTexture(RGBA8, mip 없음, flat/lit는 MSAA)에 패스별 재질을
- * `setMaterialForRendering`으로 바꿔 끼워 그린 뒤 `readPixels` → export/raster-convert로 top-down straight sRGB 규약으로
+ * 멀티패스 캡처·썸네일: 요청 해상도 RenderTargetTexture(RGBA8, mip 없음, flat/lit는 MSAA, 작은 크기는 장면별 풀 재사용 — capture-targets.ts)에 패스별 재질을
+ * `setMaterialForRendering`으로 바꿔 끼워 그린 뒤 readback(WebGL2는 PBO 비동기) → export/raster-convert로 top-down straight sRGB 규약으로
  * 바꾼다(backend별 flipY/premultiplied 상수는 readback.ts). readback이 null인 레인(NullEngine)은 파츠 AABB를 투영한
  * 합성 래스터로 대체하고 provenance.synthetic=true를 표시한다. swap chain은 읽지 않는다.
  *
@@ -12,8 +12,6 @@
  * 뷰포트 프레임이 썸네일 플랜을 그리지 않도록 하기 위해서다(깜빡임 방지). 복원은 `readPixels()` 호출 직후이므로 렌더 명령은
  * 이미 제출된 뒤다(WebGL·WebGPU 모두 제출 순서대로 실행).
  */
-import { Constants } from "@babylonjs/core/Engines/constants.js";
-import { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture.js";
 import { Color4 } from "@babylonjs/core/Maths/math.color.js";
 
 import { CAPTURE_PROFILE_ID, estimateCaptureBytes, failVisible } from "../../contracts";
@@ -23,6 +21,7 @@ import { waitUntilReady } from "../material-readiness";
 import { DEPTH_CLEAR_RGBA01, RTT_READBACK_FLIP_Y, RTT_READBACK_PREMULTIPLIED, rasterizeSyntheticDepth, rasterizeSyntheticPass } from "../readback";
 import { projectAabb } from "../synthetic-projection";
 
+import { acquireCaptureTarget, readCaptureTarget } from "./capture-targets";
 import { computeRigBounds, rigVisibleMeshes } from "./character-rig";
 import { fromVector3 } from "./convert";
 
@@ -34,6 +33,7 @@ import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js
 import type { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
 import type { Material } from "@babylonjs/core/Materials/material.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
+import type { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture.js";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
@@ -121,19 +121,61 @@ export function withScatteringOff<T>(rig: CharacterRig, enabled: boolean, fn: ()
   }
 }
 
+/**
+ * 준비 검사 한 번(동기 구간)에 쓰는 시간 상한(ms). 새 셰이더 변종을 만드는 `isReady`는 JS 전처리가 무거워(개발 서버에서 변종 하나 20~60 ms)
+ * 여러 재질을 한 태스크에 몰면 수백 ms long task가 된다(실측 2026-10-23: 카드 1회 620~811 ms). 상한을 넘으면 나머지는 다음 폴링에서 검사한다.
+ */
+export const READINESS_SLICE_MS = 24;
+
+function yieldToMainThread(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
 async function ensureReady(deps: CaptureDeps, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean): Promise<void> {
   if (!deps.waitForShaders) return;
   // forceCompilationAsync는 임시 서브메시로 컴파일해 실제 렌더 변종과 어긋날 수 있다 → 실제 isReady를 폴링한다(material-readiness.ts).
   // lit 패스는 SSS 없는 변종으로 그리므로 그 변종의 준비 여부를 본다(검사 호출이 변종 컴파일을 시작시킨다).
+  // SSS 토글은 재질을 dirty로 표시하므로(장면 메시를 훑는다) 폴링 한 번에 **한 번만** 끄고 검사한다 — 쌍마다 토글하면
+  // 폴링 1회 비용이 쌍 수 × 파츠 수가 된다(실측: 헤어 카드 1회에 5초).
   const timeoutMs = deps.compileTimeoutMs ?? CAPTURE_COMPILE_TIMEOUT_MS;
-  const result = await waitUntilReady(
-    pairs.map(([mesh, material]) => () => withScatteringOff(deps.rig, scatteringOff, () => material.isReady(mesh))),
-    { timeoutMs },
-  );
+  // 리그 바인딩·플랜 적용(호출자와 같은 태스크)과 셰이더 준비 검사를 다른 태스크로 나눈다(입력·뷰포트 프레임이 끼어들게).
+  await yieldToMainThread();
+  const ready = pairs.map(() => false);
+  let cursor = 0;
+  let pending = pairs.length;
+  const sweep = (): boolean =>
+    withScatteringOff(deps.rig, scatteringOff, () => {
+      const started = performance.now();
+      // 1) 아직 준비되지 않은 쌍을 시간 상한 안에서 차례로 검사한다(상한을 넘으면 다음 폴링이 이어서 본다).
+      for (let step = 0; step < pairs.length; step += 1) {
+        const index = (cursor + step) % pairs.length;
+        const pair = pairs[index];
+        if (ready[index] || !pair) continue;
+        ready[index] = pair[1].isReady(pair[0]);
+        if (performance.now() - started > READINESS_SLICE_MS) {
+          cursor = (index + 1) % pairs.length;
+          break;
+        }
+      }
+      pending = ready.reduce((count, value) => count + (value ? 0 : 1), 0);
+      if (pending > 0) return false;
+      // 2) 모두 한 번씩 준비됐으면 같은 동기 구간에서 전체를 다시 확인한다(그사이 dirty가 된 재질을 놓치지 않는다).
+      for (let index = 0; index < pairs.length; index += 1) {
+        const pair = pairs[index];
+        if (pair && !pair[1].isReady(pair[0])) {
+          ready[index] = false;
+          pending += 1;
+        }
+      }
+      return pending === 0;
+    });
+  const result = await waitUntilReady([sweep], { timeoutMs });
   if (!result.ready) {
     throw failVisible(
       "capture-shader-timeout",
-      `캡처 셰이더 컴파일·텍스처 준비가 ${timeoutMs >= 1000 ? `${Math.round(timeoutMs / 1000)}초` : `${timeoutMs}ms`} 안에 끝나지 않았습니다(미준비 ${result.pending}개). 소프트웨어 렌더러에서는 오래 걸릴 수 있습니다.`,
+      `캡처 셰이더 컴파일·텍스처 준비가 ${timeoutMs >= 1000 ? `${Math.round(timeoutMs / 1000)}초` : `${timeoutMs}ms`} 안에 끝나지 않았습니다(미준비 ${pending}개). 소프트웨어 렌더러에서는 오래 걸릴 수 있습니다.`,
       undefined,
       deps.now,
     );
@@ -189,17 +231,13 @@ export interface CaptureAround {
 
 async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: () => readonly Mesh[], around: CaptureAround | undefined): Promise<PassRenderResult> {
   const multisample = pass === "flat" || pass === "lit";
-  const rtt = new RenderTargetTexture(`capture-${pass}`, { width, height }, deps.scene, {
-    generateMipMaps: false,
-    type: Constants.TEXTURETYPE_UNSIGNED_BYTE,
-    format: Constants.TEXTUREFORMAT_RGBA,
-    samplingMode: Constants.TEXTURE_NEAREST_SAMPLINGMODE,
-    generateDepthBuffer: true,
-    generateStencilBuffer: false,
-  });
+  const engine = deps.scene.getEngine();
+  const samples = multisample ? Math.max(1, Math.min(4, engine.getCaps().maxMSAASamples || 1)) : 1;
+  // 작은 타깃(썸네일)은 장면별 풀에서 재사용한다(renderPassId 누적 방지, capture-targets.ts).
+  const lease = acquireCaptureTarget(deps.scene, pass, width, height, samples);
+  const rtt = lease.rtt;
   let meshes: readonly Mesh[] = [];
   try {
-    if (multisample) rtt.samples = Math.max(1, Math.min(4, deps.scene.getEngine().getCaps().maxMSAASamples || 1));
     rtt.activeCamera = camera;
     rtt.ignoreCameraViewport = true;
     rtt.clearColor = pass === "depth" ? new Color4(...DEPTH_CLEAR_RGBA01) : new Color4(0, 0, 0, 0);
@@ -234,7 +272,8 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
         }
       }
       withScatteringOff(deps.rig, pass === "lit", () => rtt.render(false, false));
-      pending = rtt.readPixels();
+      // WebGL2는 PBO 비동기 readback으로 읽기 명령만 제출한다(GPU 완료를 메인 스레드에서 기다리지 않는다, capture-targets.ts).
+      pending = readCaptureTarget(engine, rtt, width, height);
       if (pending === null) boxes = syntheticBoxes(deps, camera, width, height);
     } finally {
       around?.after();
@@ -247,7 +286,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
     throw failVisible("capture-readback-type", `RTT readback 타입이 RGBA8이 아닙니다(${buffer.constructor.name}).`, undefined, deps.now);
   } finally {
     for (const mesh of meshes) rtt.setMaterialForRendering(mesh, undefined);
-    rtt.dispose();
+    lease.release();
   }
 }
 

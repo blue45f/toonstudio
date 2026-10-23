@@ -96,6 +96,8 @@ interface PaneOptions {
   readonly hudIntervalMs?: number;
   readonly ui?: UiStateStore;
   readonly paintSession?: ReturnType<typeof createPaintSession>;
+  /** 처음 켤 오버레이. 앱 기본은 둘 다 꺼짐(A-03)이고, 핸들·HUD 동작을 보는 기존 시험은 켠 상태로 시작한다. */
+  readonly overlays?: { readonly handles?: boolean; readonly hud?: boolean } | null;
 }
 
 function renderPane(options: PaneOptions = {}) {
@@ -108,7 +110,11 @@ function renderPane(options: PaneOptions = {}) {
   const plan = options.plan === undefined ? applyPlanFixture({ revision: 1 }) : options.plan;
   const view = render(
     <MockLabProvider initialState={{ engine: status }} dispatchSpy={(command) => dispatched.push(command)} engineSession={session} shell={{ viewport: registry, ui, applyLoop: plan === null && options.plan === undefined ? null : fakeApplyLoop(plan) }}>
-      <ViewportPane hudIntervalMs={options.hudIntervalMs ?? 0} {...(options.paintSession ? { paintSession: options.paintSession } : {})} />
+      <ViewportPane
+        hudIntervalMs={options.hudIntervalMs ?? 0}
+        {...(options.overlays === null ? {} : { initialOverlays: options.overlays ?? { handles: true, hud: true } })}
+        {...(options.paintSession ? { paintSession: options.paintSession } : {})}
+      />
     </MockLabProvider>,
   );
   return { ...view, dispatched, registry, ui, session };
@@ -224,6 +230,46 @@ describe("엔진 상태·캔버스 등록", () => {
     expect(engine.calls.filter((call) => call.method === "resize").map((call) => call.args)).toEqual([[800, 800]]);
     vi.unstubAllGlobals();
   });
+
+  it("devicePixelRatio는 상한 2로 자르고(F-03) 1 미만·비정상 값은 1로 본다", () => {
+    vi.stubGlobal("devicePixelRatio", 3);
+    const engine = createTestEngine();
+    renderPane({ engine });
+    expect(engine.calls.filter((call) => call.method === "resize").map((call) => call.args)).toEqual([[800, 800]]);
+    cleanup();
+    vi.stubGlobal("devicePixelRatio", 0.5);
+    const low = createTestEngine();
+    renderPane({ engine: low });
+    expect(low.calls.filter((call) => call.method === "resize").map((call) => call.args)).toEqual([[400, 400]]);
+    vi.unstubAllGlobals();
+  });
+
+  it("캔버스는 Tab으로 포커스되는 tabIndex 0이고(H-03) 키보드 조작 단축키를 알린다", () => {
+    renderPane();
+    const canvas = screen.getByLabelText("캐릭터 뷰포트");
+    expect(canvas.getAttribute("tabindex")).toBe("0");
+    expect(canvas.getAttribute("aria-keyshortcuts")).toContain("ArrowLeft");
+    expect(canvas.getAttribute("aria-keyshortcuts")).toContain("+");
+    canvas.focus();
+    expect(document.activeElement).toBe(canvas);
+  });
+});
+
+describe("오버레이 기본값(A-03)", () => {
+  it("관절 핸들·HUD는 기본으로 꺼져 있고 도구 막대 버튼으로 켠다", () => {
+    renderPane({ overlays: null });
+    flushFrames();
+    expect(screen.getByRole("button", { name: "관절 핸들" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "HUD" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByRole("group", { name: "관절 핸들" })).toBeNull();
+    expect(screen.queryByLabelText("성능 HUD")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "관절 핸들" }));
+    fireEvent.click(screen.getByRole("button", { name: "HUD" }));
+    flushFrames();
+    expect(screen.getByRole("group", { name: "관절 핸들" })).toBeTruthy();
+    expect(document.querySelector('circle[data-bone="leftLowerArm"]')).not.toBeNull();
+    expect(screen.getByLabelText("성능 HUD")).toBeTruthy();
+  });
 });
 
 describe("HUD", () => {
@@ -281,6 +327,20 @@ describe("카메라 프레이밍", () => {
     ]);
     expect(screen.getByRole("button", { name: "상반신" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: "얼굴" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("시점 초기화 버튼은 현재 프레이밍을 다시 적용하고 엔진이 없으면 비활성이다", () => {
+    const engine = createTestEngine();
+    renderPane({ engine });
+    fireEvent.click(screen.getByRole("button", { name: "얼굴" }));
+    fireEvent.click(screen.getByRole("button", { name: "시점 초기화" }));
+    expect(engine.calls.filter((call) => call.method === "setCamera").map((call) => call.args[0])).toEqual([
+      { ...DEFAULT_FRAMING, mode: "face" },
+      { ...DEFAULT_FRAMING, mode: "face" },
+    ]);
+    cleanup();
+    renderPane({ engine: null, status: { phase: "idle" }, plan: null });
+    expect((screen.getByRole("button", { name: "시점 초기화" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("setCamera가 LabFailure를 던지면 사유를 보인다", () => {

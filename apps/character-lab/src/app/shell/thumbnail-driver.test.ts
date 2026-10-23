@@ -73,6 +73,35 @@ describe("app/shell/thumbnail-driver", () => {
     stop();
   });
 
+  it("활성 슬롯이 연기 슬롯(포즈)이면 레시피가 바뀔 때도 그 카드를 가시로 다시 요청한다(연 채로 체형을 바꿔도 카드가 갱신된다)", () => {
+    const store = createMockLabStore();
+    const session = createMockEngineSession();
+    const engine = createMockEngine();
+    const scheduler = schedulerSpy();
+    const ui = createUiStateStore({ activeSlot: "pose" });
+    const poseIds = catalog.bySlot("pose").map((entry) => entry.id);
+    expect(poseIds.length).toBeGreaterThan(0);
+    const visibleRequests = (): PresetId[] => scheduler.requests.filter(([, options]) => options?.visible).map(([id]) => id);
+    const stop = createThumbnailDriver({ store, catalog, engineSession: session, scheduler, ui }).start();
+    session.setEngine(engine);
+    session.setStatus({ phase: "ready", backend: "webgpu", diagnostics: engine.diagnostics });
+    // 외형 슬롯은 전부(보이지 않음으로), 열린 포즈 슬롯 카드는 가시로
+    expect(scheduler.requests).toHaveLength(appearanceCount + poseIds.length);
+    expect(scheduler.visible).toEqual(poseIds);
+    expect(visibleRequests()).toEqual(poseIds);
+    // 체형을 바꾸면(revision 증가) 열린 포즈 카드도 다시 요청한다
+    const state = store.getState();
+    store.setState({ recipe: { ...state.recipe, body: { ...state.recipe.body, height: 0.6 } }, history: { ...state.history, revision: state.history.revision + 1 } });
+    expect(scheduler.requests).toHaveLength((appearanceCount + poseIds.length) * 2);
+    expect(visibleRequests()).toEqual([...poseIds, ...poseIds]);
+    // 외형 슬롯이 열려 있으면 연기 슬롯 카드는 요청하지 않는다(열 때 요청 — 기존 동작)
+    ui.setActiveSlot("hair");
+    const before = scheduler.requests.length;
+    store.setState({ history: { ...store.getState().history, revision: store.getState().history.revision + 1 } });
+    expect(scheduler.requests.slice(before).some(([id]) => poseIds.includes(id))).toBe(false);
+    stop();
+  });
+
   it("applyLoop이 있으면 소스 로드·첫 적용이 끝난 뒤에만 요청한다(ready 직후 소스 없는 엔진 렌더 방지)", () => {
     const store = createMockLabStore();
     const session = createMockEngineSession();

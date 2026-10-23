@@ -17,6 +17,7 @@ import { unionAabb } from "../synthetic-projection";
 import { fromQuaternion, fromVector3, toQuaternion } from "./convert";
 import { passMaterialAlphaCutoff, passMaterialUsesVertexColor } from "./materials/toon-shader";
 import { readRigMeshMetadata } from "./mesh-binding";
+import { pinMorphInfluencerCount } from "./morph-shader-pin";
 
 import type {
   ApplyPlan,
@@ -197,6 +198,8 @@ export interface ApplyRigPlanOptions {
 export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyRigPlanOptions): ApplyReceipt {
   let appliedMorphs = 0;
   const skippedMorphs: string[] = [];
+  // 키트·패키지 리그(glTF 로더가 만든 매니저 포함)도 활성 morph 수가 바뀔 때마다 셰이더를 다시 만들지 않게 고정한다(첫 플랜에서 한 번, 이후 비교만).
+  for (const part of rig.parts) for (const mesh of part.meshes) pinMorphInfluencerCount(mesh.morphTargetManager, mesh.getEngine());
   for (const targets of rig.morphs.values()) for (const target of targets) target.influence = 0;
   for (const [name, weight] of Object.entries(plan.morphWeights)) {
     const targets = rig.morphs.get(name);

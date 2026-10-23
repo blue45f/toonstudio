@@ -13,13 +13,15 @@ import { Color3, Color4 } from "@babylonjs/core/Maths/math.color.js";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Scene } from "@babylonjs/core/scene.js";
 
-import { describeDetail } from "../../contracts";
+import { DEFAULT_FRAMING, describeDetail } from "../../contracts";
 import { v3Negate, v3Scale } from "../../shared/math";
 import { DEFAULT_VERTICAL_FOV, FALLBACK_BOUNDS, resolveFraming } from "../camera-framing";
 import { DEFAULT_SKY } from "../procedural-sky";
 import { featureActive, featureOff, featureUnavailable } from "../scene-features";
+import { resolveOrbitLimits } from "../viewport-orbit";
 
 import { toVector3 } from "./convert";
+import { attachViewportControls, setPanBounds } from "./viewport-controls";
 
 import type { CameraFraming, ShadingProfile, ToneMapping, Vec3 } from "../../contracts";
 import type { WorldBounds } from "../camera-framing";
@@ -47,8 +49,13 @@ export interface CharacterScene {
   sssState(): SceneFeatureState;
   applyShadowProfile(shadows: ShadingProfile["shadows"]): void;
   setToneMapping(mode: ToneMapping): void;
-  /** 프레이밍을 카메라에 적용(aspect = 렌더 종횡비) */
+  /**
+   * 프레이밍을 카메라에 적용(aspect = 렌더 종횡비). 대상 크기 기반 궤도 한계(최소·최대 거리, 팬 범위 = 캐릭터 경계 상자)도 함께 건다(F-01, `viewport-orbit.ts`).
+   * 프레이밍이 정한 반경은 항상 한계 안이라 캡처 카메라 결과는 바뀌지 않는다.
+   */
   applyFraming(camera: ArcRotateCamera, framing: CameraFraming, bounds: WorldBounds | null, aspect: number): void;
+  /** 뷰포트 카메라 입력(회전·핀치는 Babylon, 휠·팬·키보드·더블클릭은 `viewport-controls.ts`)을 캔버스에 붙인다. `resetView`는 시점 초기화. */
+  attachControls(canvas: HTMLCanvasElement, resetView: () => void): () => void;
   addShadowCasters(meshes: readonly AbstractMesh[]): void;
   clearShadowCasters(): void;
   dispose(): void;
@@ -59,8 +66,10 @@ function createCamera(name: string, scene: Scene): ArcRotateCamera {
   camera.minZ = CAMERA_NEAR;
   camera.maxZ = CAMERA_FAR;
   camera.fov = DEFAULT_VERTICAL_FOV;
-  camera.lowerRadiusLimit = 0.15;
-  camera.upperRadiusLimit = 30;
+  // 소스를 올리기 전 기본 한계(1.7 m 인체 bbox 전신 기준). 이전 고정 하한 0.15 m는 얼굴 프레이밍에서 머리 안이었다(F-01).
+  const limits = resolveOrbitLimits(DEFAULT_FRAMING, FALLBACK_BOUNDS);
+  camera.lowerRadiusLimit = limits.lowerRadius;
+  camera.upperRadiusLimit = limits.upperRadius;
   return camera;
 }
 
@@ -170,12 +179,21 @@ export function createCharacterScene(engine: AbstractEngine): CharacterScene {
       imageProcessing.toneMappingType = mode === "aces" ? ImageProcessingConfiguration.TONEMAPPING_ACES : ImageProcessingConfiguration.TONEMAPPING_KHR_PBR_NEUTRAL;
     },
     applyFraming(target, framing, bounds, aspect) {
-      const resolved = resolveFraming(framing, bounds ?? FALLBACK_BOUNDS, DEFAULT_VERTICAL_FOV, aspect > 0 ? aspect : 1);
+      const box = bounds ?? FALLBACK_BOUNDS;
+      const ratio = aspect > 0 ? aspect : 1;
+      const resolved = resolveFraming(framing, box, DEFAULT_VERTICAL_FOV, ratio);
+      const limits = resolveOrbitLimits(framing, box, DEFAULT_VERTICAL_FOV, ratio);
+      target.lowerRadiusLimit = limits.lowerRadius;
+      target.upperRadiusLimit = limits.upperRadius;
       target.target = toVector3(resolved.target);
       target.alpha = resolved.alpha;
       target.beta = resolved.beta;
       target.radius = resolved.radius;
       target.fov = resolved.fov;
+      setPanBounds(target, limits.panBounds);
+    },
+    attachControls(canvas, resetView) {
+      return attachViewportControls(camera, canvas, resetView);
     },
     addShadowCasters(meshes) {
       for (const mesh of meshes) {

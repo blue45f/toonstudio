@@ -1,6 +1,6 @@
 /**
- * 썸네일 드라이버: 엔진이 준비되고 레시피·셰이딩 모드가 바뀔 때마다 외형 12슬롯의 프리셋 카드 썸네일을
- * thumbnail-scheduler 큐에 넣는다(활성 슬롯 카드 우선). SlotPanel이 직접 scheduler를 쓰지 않아도
+ * 썸네일 드라이버: 엔진이 준비되고 레시피·셰이딩 모드가 바뀔 때마다 외형 12슬롯의 프리셋 카드 썸네일과
+ * (열려 있으면) 활성 연기 슬롯 카드 썸네일을 thumbnail-scheduler 큐에 넣는다(활성 슬롯 카드 우선). SlotPanel이 직접 scheduler를 쓰지 않아도
  * 카드 썸네일이 채워지도록 셸이 구동한다. 엔진이 없어지면 큐를 비운다.
  *
  * `applyLoop`이 주어지면 현재 엔진에 소스가 올라가고 첫 적용 단계가 끝난 뒤에만 요청한다: 엔진 `ready` 직후에는 적용 루프가
@@ -69,6 +69,11 @@ export function createThumbnailDriver(deps: ThumbnailDriverDeps): ThumbnailDrive
       for (const entry of deps.catalog.bySlot(slot)) {
         deps.scheduler.request(entry.id, { visible: slot === activeSlot });
       }
+    }
+    // 연기 슬롯(표정·포즈·손 포즈) 카드는 열려 있을 때만 그린다. 열린 채로 레시피가 바뀌어도 다시 요청한다
+    // (빠뜨리면 포즈 슬롯을 연 채 체형을 바꿨을 때 카드가 옛 체형으로 남고, 슬롯을 다시 열어야 갱신됐다 — 2026-10-23 실브라우저 확인).
+    if (activeSlot && !APPEARANCE_SLOT_KINDS.includes(activeSlot)) {
+      for (const id of activeSlotIds()) deps.scheduler.request(id, { visible: true });
     }
   };
 

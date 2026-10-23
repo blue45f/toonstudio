@@ -13,6 +13,11 @@
  *   `updatePaintTexture`를 구동하고 포인터를 놓을 때 undo 토큰 1개를 `paint/stroke`로 dispatch한다. 이 모드에서는 카메라 조작이 꺼진다.
  *   투영 페인트(베타)가 켜져 있으면 `projection-paint-driver`가 같은 계약(스트로크당 `paint/stroke` 1개)으로 투영 브러시를 구동한다.
  *
+ * - 오버레이 기본값(A-03): 관절 핸들·HUD는 기본 꺼짐(HUD가 캐릭터 팔을 가렸다). 도구 막대 버튼으로 켠다.
+ * - 카메라(F-01·H-03): 휠·팬·키보드는 엔진 뷰포트 입력(render/babylon/viewport-controls)이 처리한다. 캔버스는 `tabIndex=0`이라 Tab으로 포커스되고
+ *   포커스가 있으면 방향키 회전·+/- 줌·0(Home) 시점 초기화가 된다. "시점 초기화" 버튼·캔버스 더블클릭은 현재 프레이밍을 다시 적용한다.
+ * - 백버퍼 크기(F-03): 컨테이너 CSS 크기 × devicePixelRatio(상한 2, render/viewport-math `viewportPixelRatio`).
+ *
  * 구조적 배치(position·inset·pointer-events)는 인라인으로 두어 공유 CSS 없이도 동작하고, 모양은 `cl-viewport-*` 클래스로 core CSS가 입힌다.
  * 관절 핸들은 포인터 전용이다(SVG 원에 키보드 동작이 없어 role·tabIndex를 주지 않는다). 키보드·수치 입력 대안은 PosePanel(IK 목표·스코프)이다.
  * Babylon 객체는 React state에 넣지 않는다 — 엔진은 `engineSession.engine()` ref로만 접근한다.
@@ -26,7 +31,7 @@ import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
 import { readProjectionPaint } from "../../../render/projection-paint";
 import { readViewportCamera } from "../../../render/viewport-camera";
-import { clientToRenderPixel } from "../../../render/viewport-math";
+import { clientToRenderPixel, viewportPixelRatio } from "../../../render/viewport-math";
 import { describeEngineStatus } from "../engine-status-text";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
 
@@ -45,6 +50,8 @@ export interface ViewportPaneProps {
   readonly paintSession?: PaintSession;
   /** HUD 갱신 주기(ms). 0 이하면 폴링하지 않는다. */
   readonly hudIntervalMs?: number;
+  /** 처음 켜 둘 오버레이(기본: 관절 핸들·HUD 모두 꺼짐, A-03). 테스트·임베드가 켠 상태로 시작할 때 쓴다. */
+  readonly initialOverlays?: { readonly handles?: boolean; readonly hud?: boolean };
 }
 
 export const DEFAULT_HUD_INTERVAL_MS = 250;
@@ -74,7 +81,10 @@ function failureText(error: unknown, fallback: string): string {
   return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
 }
 
-export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVAL_MS }: ViewportPaneProps) {
+/** 캔버스 키보드 조작(H-03) — aria-keyshortcuts 값 */
+const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
+
+export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVAL_MS, initialOverlays }: ViewportPaneProps) {
   const labState = useLabState();
   const dispatch = useDispatch();
   const engineSession = useEngineSession();
@@ -90,9 +100,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const engineText = describeEngineStatus(labState.engine);
   const engine = labState.engine.phase === "ready" ? engineSession.engine() : null;
 
-  const [showHandles, setShowHandles] = useState(true);
+  const [showHandles, setShowHandles] = useState(initialOverlays?.handles ?? false);
   const [showFingers, setShowFingers] = useState(false);
-  const [showHud, setShowHud] = useState(true);
+  const [showHud, setShowHud] = useState(initialOverlays?.hud ?? false);
   const [framing, setFraming] = useState<CameraFraming["mode"]>(DEFAULT_FRAMING.mode);
   const [hud, setHud] = useState<HudSample | null>(null);
   const [handles, setHandles] = useState<readonly JointDragHandle[]>([]);
@@ -126,7 +136,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   // 캔버스를 새로 마운트한다(동기: claim()을 부른 클릭 핸들러가 곧바로 새 캔버스를 받아야 한다).
   useEffect(() => registry.setRenewer(() => flushSync(() => setCanvasGeneration((generation) => generation + 1))), [registry]);
 
-  // ---- 크기: 컨테이너 크기를 엔진 렌더 크기에 반영(DPR 포함)
+  // ---- 크기: 컨테이너 크기를 엔진 렌더 크기에 반영(DPR 포함, 상한 2 — 엔진 하드웨어 스케일과 같은 배율)
   useEffect(() => {
     if (!engine) return undefined;
     const container = containerRef.current;
@@ -134,7 +144,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     const apply = (): void => {
       const rect = container.getBoundingClientRect();
       if (!(rect.width > 0) || !(rect.height > 0)) return;
-      const ratio = typeof window.devicePixelRatio === "number" && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
+      const ratio = viewportPixelRatio(window.devicePixelRatio);
       engine.resize(Math.round(rect.width * ratio), Math.round(rect.height * ratio));
     };
     apply();
@@ -230,6 +240,17 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     },
     [engine],
   );
+
+  // ---- 시점 초기화(현재 프레이밍을 다시 적용 — 휠·팬·회전으로 바뀐 시점을 되돌린다). 캔버스 더블클릭·0 키는 엔진 입력이 같은 일을 한다.
+  const onResetView = useCallback((): void => {
+    if (!engine) return;
+    try {
+      engine.setCamera({ ...DEFAULT_FRAMING, mode: framing });
+      setNotice(null);
+    } catch (error) {
+      setNotice(failureText(error, "시점을 초기화하지 못했습니다."));
+    }
+  }, [engine, framing]);
 
   // ---- 관절 드래그
   const cancelDrag = useCallback((): void => {
@@ -373,12 +394,19 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
   const hudList = hud ? hudRows(hud) : [];
   const viewBox = renderSize ? `0 0 ${renderSize.width} ${renderSize.height}` : undefined;
-  const ratio = typeof window !== "undefined" && typeof window.devicePixelRatio === "number" && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
+  const ratio = typeof window !== "undefined" ? viewportPixelRatio(window.devicePixelRatio) : 1;
   const noHandleReason = engine && showHandles && handles.length === 0 ? "이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다." : null;
 
   return (
     <div ref={containerRef} className="cl-viewport" style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
-      <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" />
+      <canvas
+        key={canvasGeneration}
+        ref={registerCanvas}
+        className="cl-viewport-canvas"
+        aria-label="캐릭터 뷰포트"
+        aria-keyshortcuts={CANVAS_KEY_SHORTCUTS}
+        tabIndex={0}
+      />
 
       <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "absolute", top: 8, left: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
         <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
@@ -387,6 +415,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
               {entry.label}
             </button>
           ))}
+          <button type="button" className="cl-viewport-button" disabled={!engine} onClick={onResetView} title="현재 프레이밍으로 시점을 되돌립니다(캔버스 더블클릭·0 키와 같음)">
+            시점 초기화
+          </button>
         </span>
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>

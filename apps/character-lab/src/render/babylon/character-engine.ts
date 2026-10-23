@@ -342,9 +342,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.frameStats.push(this.engine.getDeltaTime());
   }
 
-  /** 뷰포트 카메라 조작(ArcRotate 포인터·휠)을 캔버스에 붙인다. 드로잉 모드는 ViewportPane이 오버레이로 가로챈다. */
+  /** 뷰포트 카메라 조작(회전·핀치·휠·팬·키보드·더블클릭 초기화, scene-builder `attachControls`)을 캔버스에 붙인다. 드로잉 모드는 ViewportPane 오버레이가 가로챈다. */
   attachCameraControl(canvas: HTMLCanvasElement): void {
-    this.character.camera.attachControl(canvas, true);
+    this.character.attachControls(canvas, () => this.setCamera(this.framing));
   }
 
   // ---------------------------------------------------------------- 소스

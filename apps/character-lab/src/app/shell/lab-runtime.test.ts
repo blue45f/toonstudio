@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ALL_AVAILABLE_CAPABILITIES,
@@ -17,7 +17,11 @@ import { createMockEngine } from "../../testing/mock-engine";
 import { createMockRuntime, splitCatalogSources } from "../../testing/mock-runtime";
 import { minimalHumanoidModelFixture, presetEntryFixture } from "../../testing/recipe-fixtures";
 
+import { THUMBNAIL_SOURCE_CACHE_LIMIT } from "./lab-runtime";
+import { fallbackThumbnailCacheKey } from "./thumbnail-driver";
+
 import type { KitPlanRegistryDeps } from "./kit-plan-registry";
+import type { ThumbnailPacing } from "./thumbnail-scheduler";
 import type { AuthoredPackagePlan, KitPlan, ThumbnailRequest } from "../../contracts";
 
 function canvasStub(): HTMLCanvasElement {
@@ -434,3 +438,114 @@ describe("app/shell/lab-runtime", () => {
     runtime.dispose();
   });
 });
+
+/** 가짜 타이머로 도는 양보 정책(실브라우저 기본값과 같은 모양) */
+function fakeTimerPacing(quietMs: number): ThumbnailPacing {
+  return {
+    quietMs,
+    schedule(callback, ms) {
+      const handle = setTimeout(callback, ms);
+      return () => clearTimeout(handle);
+    },
+    yieldToMain: () => new Promise((resolve) => setTimeout(resolve, 0)),
+    whenIdle: () => new Promise((resolve) => setTimeout(resolve, 20)),
+  };
+}
+
+describe("app/shell/lab-runtime 썸네일 반응성·정확성(P-01)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("슬라이더를 끄는 동안에는 썸네일을 그리지 않고 옛 그림을 유지하며, 멈추면 보이는 슬롯 카드를 마지막 레시피로 한 번씩 다시 그린다", async () => {
+    vi.useFakeTimers();
+    const engine = createMockEngine();
+    const { runtime, store } = createMockRuntime({ engine, overrides: { thumbnailPacing: fakeTimerPacing(100) } });
+    /** 약속이 풀릴 때까지 가짜 시간을 조금씩 진행한다(적용 루프·스케줄러 양보가 가짜 타이머라 그냥 기다리면 멈춘다). */
+    const drive = async (promise: Promise<unknown>): Promise<void> => {
+      let done = false;
+      void promise.then(() => {
+        done = true;
+      });
+      for (let tick = 0; tick < 2_000 && !done; tick += 1) await vi.advanceTimersByTimeAsync(25);
+      expect(done).toBe(true);
+    };
+    /** 적용 루프와 썸네일 큐가 모두 빌 때까지 */
+    const settle = async (): Promise<void> => {
+      await drive(runtime.applyLoop.flush());
+      await drive(runtime.thumbnails.idle());
+    };
+    runtime.start();
+    await drive(runtime.engineSession.select("webgpu", canvasStub()));
+    await settle();
+    const appearance = APPEARANCE_SLOT_KINDS.flatMap((slot) => runtime.catalog.bySlot(slot).map((entry) => entry.id));
+    const renders = (): string[] => engine.calls.filter((call) => call.method === "renderThumbnail").map((call) => (call.args[0] as ThumbnailRequest).presetId);
+    // 처음에는 모든 외형 카드를 그린다(보이지 않는 슬롯은 유휴 시간에 미리)
+    expect(new Set(renders())).toEqual(new Set(appearance));
+    const before = renders().length;
+    const visibleSlot = runtime.ui.getState().activeSlot;
+    const visible = runtime.catalog.bySlot(visibleSlot).map((entry) => entry.id);
+
+    // 드래그: 16 ms마다 키를 바꾼다(레시피 변경 = revision 증가)
+    for (let step = 1; step <= 10; step += 1) {
+      const state = store.getState();
+      store.setState({ recipe: { ...state.recipe, body: { ...state.recipe.body, height: step / 20 } }, history: { ...state.history, revision: state.history.revision + 1 } });
+      await vi.advanceTimersByTimeAsync(16);
+      // 그림이 사라지지 않는다: 모든 외형 카드가 그림을 가진 ready다
+      for (const id of appearance) expect(store.getState().thumbnails[id]).toMatchObject({ status: "ready", raster: expect.anything() });
+    }
+    expect(renders()).toHaveLength(before);
+    await settle();
+    // 멈춘 뒤: 보이는 슬롯 카드만 정확히 한 번씩 다시 그리고, 그 키는 마지막 레시피의 키다
+    const after = renders().slice(before);
+    expect([...after].sort()).toEqual([...visible].sort());
+    const recipe = store.getState().recipe;
+    for (const id of visible) expect(store.getState().thumbnails[id]?.cacheKey).toBe(fallbackThumbnailCacheKey(id, recipe, recipe.shading.mode));
+
+    // 다른 슬롯을 열면 그 슬롯 카드를 그때 마지막 레시피로 다시 그린다(늦게라도 올바르게 갱신)
+    const other = APPEARANCE_SLOT_KINDS.find((slot) => slot !== visibleSlot && runtime.catalog.bySlot(slot).length > 0);
+    if (!other) throw new Error("다른 외형 슬롯이 없습니다.");
+    const otherIds = runtime.catalog.bySlot(other).map((entry) => entry.id);
+    for (const id of otherIds) expect(store.getState().thumbnails[id]?.cacheKey).not.toBe(fallbackThumbnailCacheKey(id, recipe, recipe.shading.mode));
+    runtime.ui.setActiveSlot(other);
+    await settle();
+    for (const id of otherIds) expect(store.getState().thumbnails[id]).toMatchObject({ status: "ready", cacheKey: fallbackThumbnailCacheKey(id, recipe, recipe.shading.mode) });
+    expect(renders().slice(before + after.length).sort()).toEqual([...otherIds].sort());
+    runtime.dispose();
+  });
+
+  it("절차 지오메트리 카드 임시 소스는 지오메트리 키로 캐시해 파라미터만 바뀌면 다시 만들지 않는다(null은 캐시하지 않는다)", async () => {
+    const engine = createMockEngine({ thumbnailSources: true });
+    const builds: string[] = [];
+    const { runtime, store } = createMockRuntime({
+      engine,
+      overrides: {
+        thumbnailPacing: null,
+        proceduralGeometryKey: (recipe) => `hair=${recipe.slots.hair ?? "-"}`,
+        buildThumbnailSource: (recipe, slot) => {
+          if (slot !== "hair") return null;
+          builds.push(recipe.slots.hair ?? "-");
+          return { kind: "procedural", model: minimalHumanoidModelFixture() };
+        },
+      },
+    });
+    runtime.start();
+    await runtime.engineSession.select("webgpu", canvasStub());
+    await runtime.applyLoop.flush();
+    await runtime.thumbnails.idle();
+    const hair = runtime.catalog.bySlot("hair").map((entry) => entry.id);
+    expect(hair.length).toBeLessThanOrEqual(THUMBNAIL_SOURCE_CACHE_LIMIT);
+    expect([...builds].sort()).toEqual([...hair].sort());
+    const state = store.getState();
+    store.setState({ recipe: { ...state.recipe, body: { ...state.recipe.body, height: 0.5 } }, history: { ...state.history, revision: state.history.revision + 1 } });
+    await runtime.applyLoop.flush();
+    await runtime.thumbnails.idle();
+    // 모든 카드를 다시 그렸지만(양보 없음) 헤어 임시 모델은 다시 만들지 않았다
+    expect(builds).toHaveLength(hair.length);
+    const hairRenders = engine.calls.filter((call) => call.method === "renderThumbnail" && (call.args[0] as ThumbnailRequest).presetId.startsWith("hair/"));
+    expect(hairRenders).toHaveLength(hair.length * 2);
+    expect(hairRenders.every((call) => (call.args[0] as ThumbnailRequest).source !== undefined)).toBe(true);
+    runtime.dispose();
+  });
+});
+
