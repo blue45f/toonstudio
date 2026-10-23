@@ -19,7 +19,7 @@ import { createEngineSession } from "./engine-session";
 import { createKitPlanRegistry } from "./kit-plan-registry";
 import { createPackagePlanRegistry } from "./package-plan-registry";
 import { createThumbnailDriver, fallbackThumbnailCacheKey, presetRecipe } from "./thumbnail-driver";
-import { createThumbnailScheduler } from "./thumbnail-scheduler";
+import { createThumbnailScheduler, defaultThumbnailPacing } from "./thumbnail-scheduler";
 import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
 
@@ -27,7 +27,7 @@ import type { ApplyLoop } from "./apply-loop";
 import type { CatalogSources } from "./catalog-registry";
 import type { KitPlanRegistry, KitPlanRegistryDeps } from "./kit-plan-registry";
 import type { PackagePlanRegistry } from "./package-plan-registry";
-import type { ThumbnailScheduler } from "./thumbnail-scheduler";
+import type { ThumbnailPacing, ThumbnailScheduler } from "./thumbnail-scheduler";
 import type { UiStateStore } from "./ui-state";
 import type { ViewportRegistry } from "./viewport-registry";
 import type {
@@ -115,6 +115,11 @@ export interface LabRuntimeDeps {
    * composition은 여기서 페인트 세션의 레이어를 새 엔진 텍스처로 다시 올린다(device lost 뒤 복원 포함).
    */
   readonly onSourceLoaded?: (engine: CharacterEngine, source: CharacterSource) => void;
+  /**
+   * 썸네일 스케줄러·적용 루프의 메인 스레드 양보 정책(조용해질 때까지 대기·작업 사이 양보·보이지 않는 카드는 유휴 시간). 생략하면
+   * `defaultThumbnailPacing()`(실브라우저면 켜고 Node·jsdom이면 끈다), null이면 양보 없이 바로 이어서 그린다(P-01 이전 동작).
+   */
+  readonly thumbnailPacing?: ThumbnailPacing | null;
   readonly panels: LabPanels;
   readonly initialRecipe?: CharacterRecipe;
   readonly initTimeoutMs?: number;
@@ -144,6 +149,13 @@ export interface LabRuntime {
 /** 키트 지오메트리 카드 썸네일의 임시 리그가 받는 헤어 LOD(카드 128px라 LOD1이면 충분하다) */
 const KIT_THUMBNAIL_HAIR_LOD = 1;
 
+/**
+ * 절차 지오메트리 카드 임시 소스 캐시 크기. 소스는 지오메트리 키(`proceduralGeometryKey`)로만 달라지므로(파라미터·색·포즈는 플랜이 적용한다 — 적용 루프와 같은 규약)
+ * 슬라이더·색·포즈를 바꿔도 같은 키의 모델을 다시 만들지 않는다. 실측(2026-10-23, Node): 세분 0단계 모델 1개 빌드 약 130 ms·2.3 MiB(헤어·의상 없음) —
+ * 한 슬롯 카드 수(최대 10)를 넘지 않게 8개만 둔다(최근 사용 우선).
+ */
+export const THUMBNAIL_SOURCE_CACHE_LIMIT = 8;
+
 export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
   const now = deps.now ?? (() => Date.now());
   const catalogResult = tryCreateCatalog(deps.catalogSources, now());
@@ -170,6 +182,8 @@ export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
   const kitPlans = createKitPlanRegistry(deps.kit);
   const viewport = createViewportRegistry();
   const ui = createUiStateStore();
+  // 메인 스레드 양보 정책: 썸네일 스케줄러와 적용 루프(지오메트리 빌드 ↔ 엔진 바인딩 사이)가 함께 쓴다.
+  const pacing = deps.thumbnailPacing === undefined ? defaultThumbnailPacing() : deps.thumbnailPacing;
 
   const buildSource = async (recipe: CharacterRecipe): Promise<CharacterSource> => {
     if (recipe.source.kind === "package") {
@@ -194,6 +208,7 @@ export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
     ...(deps.proceduralGeometryKey ? { proceduralGeometryKey: deps.proceduralGeometryKey } : {}),
     // "키트 다시 불러오기": kit.json 캐시를 비워 새로 받는다(실패한 로드는 캐시하지 않지만 성공한 로드는 남아 있다).
     beforeRetrySource: () => kitPlans.clear(),
+    ...(pacing ? { yieldBeforeLoad: pacing.yieldToMain } : {}),
   });
 
   /** 패널이 reloadSource로 올린 패키지 플랜은 레지스트리에 등록하고 루프가 중복 로드하지 않도록 표시한다. */
@@ -218,7 +233,48 @@ export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
   };
 
   const cacheKey = deps.thumbnailCacheKey ?? fallbackThumbnailCacheKey;
+
+  /**
+   * 지오메트리 키 → 임시 소스(만든 것만, 최근 사용 우선). 진행 중 빌드는 따로 두어 같은 키 요청이 한 빌드를 기다리게 한다.
+   * null(지오메트리와 무관한 슬롯)·실패는 캐시하지 않는다 — null 항목이 캐시를 밀어내 실제 모델이 빠지지 않게.
+   */
+  const thumbnailSourceCache = new Map<string, CharacterSource>();
+  const thumbnailSourceBuilds = new Map<string, Promise<CharacterSource | null>>();
+  const proceduralThumbnailSource = (recipe: CharacterRecipe, slot: SlotKind): CharacterSource | null | Promise<CharacterSource | null> | undefined => {
+    const build = deps.buildThumbnailSource;
+    if (!build) return undefined;
+    const geometryKey = deps.proceduralGeometryKey?.(recipe);
+    if (geometryKey === undefined) return build(recipe, slot);
+    const key = `${slot}|${geometryKey}`;
+    const cached = thumbnailSourceCache.get(key);
+    if (cached) {
+      thumbnailSourceCache.delete(key);
+      thumbnailSourceCache.set(key, cached);
+      return cached;
+    }
+    const building = thumbnailSourceBuilds.get(key);
+    if (building) return building;
+    const pending = Promise.resolve(build(recipe, slot)).then(
+      (source) => {
+        thumbnailSourceBuilds.delete(key);
+        if (!source) return source;
+        thumbnailSourceCache.set(key, source);
+        for (const oldest of thumbnailSourceCache.keys()) {
+          if (thumbnailSourceCache.size <= THUMBNAIL_SOURCE_CACHE_LIMIT) break;
+          thumbnailSourceCache.delete(oldest);
+        }
+        return source;
+      },
+      (error: unknown) => {
+        thumbnailSourceBuilds.delete(key);
+        throw error;
+      },
+    );
+    thumbnailSourceBuilds.set(key, pending);
+    return pending;
+  };
   const scheduler = createThumbnailScheduler({
+    ...(pacing ? { pacing } : {}),
     engine: () => innerSession.engine(),
     planForPreset(presetId) {
       const entry = catalog.get(presetId);
@@ -247,7 +303,7 @@ export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
         return { kind: "kit", plan };
       }
       if (source.kind !== "procedural") return undefined;
-      return deps.buildThumbnailSource?.(presetRecipe(state.recipe, entry), entry.slot);
+      return proceduralThumbnailSource(presetRecipe(state.recipe, entry), entry.slot);
     },
     currentEntry: (presetId) => store.getState().thumbnails[presetId],
     onUpdate: (presetId, entry) => store.applyEvent({ type: "thumbnail/update", presetId, entry }),
@@ -306,6 +362,8 @@ export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
     dispose() {
       stop?.();
       thumbnails.clear();
+      thumbnailSourceCache.clear();
+      thumbnailSourceBuilds.clear();
       innerSession.dispose();
     },
   };

@@ -15,8 +15,9 @@ import { z } from "zod";
 
 import { stableStringify } from "../shared/stable-json";
 
-import { HUMANOID_BONE_NAMES, isHumanoidBoneName } from "./bones";
 import { failVisible } from "./errors";
+import { kitProvenanceIssues, kitSourceSchema } from "./kit-provenance";
+import { KIT_JOINT_COUNT, kitJointOffsetIssues, kitJointOffsetsSchema, kitSkeletonIssues, kitSkeletonSchema, listFew } from "./kit-skeleton";
 import { PART_ROLES, RECIPE_COLOR_KEYS } from "./mesh-data";
 import { ALL_FACS_MORPH_NAMES, allParamMorphNames, facsMorphName, isMorphTargetName } from "./morph-names";
 import { AUTHORED_HAIR_MESH_PATTERN, OUTLINE_MESH_SUFFIX, slotCapabilityMapSchema } from "./package-manifest";
@@ -24,8 +25,8 @@ import { BODY_PARAM_KEYS, FACE_PARAM_KEYS } from "./params";
 import { SLOT_PRESET_IDS } from "./preset-vocabulary";
 import { CHARACTER_SLOT_KINDS, isPresetId } from "./slots";
 
-import type { HumanoidBoneName } from "./bones";
 import type { LabFailure } from "./errors";
+import type { KitIssue, KitJointOffsets, KitSkeleton } from "./kit-skeleton";
 import type { PartRole, RecipeColorKey } from "./mesh-data";
 import type { MorphTargetName } from "./morph-names";
 import type { BodyRegion } from "./outfit-port";
@@ -60,89 +61,11 @@ const HANGUL = /[가-힣]/u;
 const MATERIAL_NAME_PATTERN = /^ts_[a-z0-9_-]+$/u;
 const NODE_NAME_PATTERN = /^[A-Za-z0-9_.:-]+$/u;
 
-export const KIT_ROOT_JOINT = "Armature" as const;
-
-// ---------------------------------------------------------------- 스켈레톤(68 joint)
-
-const MIXAMO_PREFIX = "mixamorig:";
-const KIT_SIDES = ["Left", "Right"] as const;
-const KIT_FINGERS = ["Thumb", "Index", "Middle", "Ring", "Pinky"] as const;
-/** Mixamo 손가락 이름 → VRM 어휘 접미(마디 1~3). 마디 4는 끝 본이라 매핑하지 않는다. */
-const FINGER_VRM_NAMES: Readonly<Record<(typeof KIT_FINGERS)[number], readonly [string, string, string]>> = {
-  Thumb: ["ThumbMetacarpal", "ThumbProximal", "ThumbDistal"],
-  Index: ["IndexProximal", "IndexIntermediate", "IndexDistal"],
-  Middle: ["MiddleProximal", "MiddleIntermediate", "MiddleDistal"],
-  Ring: ["RingProximal", "RingIntermediate", "RingDistal"],
-  Pinky: ["LittleProximal", "LittleIntermediate", "LittleDistal"],
-};
-
-function buildSkeleton(): {
-  readonly joints: string[];
-  readonly parents: Record<string, string | null>;
-  readonly boneMap: Record<string, HumanoidBoneName>;
-  readonly endBones: string[];
-} {
-  const joints: string[] = [];
-  const parents: Record<string, string | null> = {};
-  const boneMap: Record<string, HumanoidBoneName> = {};
-  const endBones: string[] = [];
-
-  const add = (node: string, parent: string | null, vrm: string | null): void => {
-    joints.push(node);
-    parents[node] = parent;
-    if (vrm === null) {
-      endBones.push(node);
-      return;
-    }
-    if (!isHumanoidBoneName(vrm)) throw new Error(`키트 본 매핑이 VRM 어휘 밖입니다: ${node} → ${vrm}`);
-    boneMap[node] = vrm;
-  };
-  const m = (name: string): string => `${MIXAMO_PREFIX}${name}`;
-
-  add(m("Hips"), null, "hips");
-  add(m("Spine"), m("Hips"), "spine");
-  add(m("Spine1"), m("Spine"), "chest");
-  add(m("Spine2"), m("Spine1"), "upperChest");
-  add(m("Neck"), m("Spine2"), "neck");
-  add(m("Head"), m("Neck"), "head");
-  add(m("HeadTop_End"), m("Head"), null);
-  for (const side of KIT_SIDES) {
-    const lower = side.toLowerCase();
-    add(m(`${side}Shoulder`), m("Spine2"), `${lower}Shoulder`);
-    add(m(`${side}Arm`), m(`${side}Shoulder`), `${lower}UpperArm`);
-    add(m(`${side}ForeArm`), m(`${side}Arm`), `${lower}LowerArm`);
-    add(m(`${side}Hand`), m(`${side}ForeArm`), `${lower}Hand`);
-    for (const finger of KIT_FINGERS) {
-      const vrm = FINGER_VRM_NAMES[finger];
-      for (let segment = 1; segment <= 4; segment += 1) {
-        const parent = segment === 1 ? m(`${side}Hand`) : m(`${side}Hand${finger}${segment - 1}`);
-        const vrmName = segment <= 3 ? `${lower}${vrm[segment - 1] ?? ""}` : null;
-        add(m(`${side}Hand${finger}${segment}`), parent, vrmName);
-      }
-    }
-    add(m(`${side}UpLeg`), m("Hips"), `${lower}UpperLeg`);
-    add(m(`${side}Leg`), m(`${side}UpLeg`), `${lower}LowerLeg`);
-    add(m(`${side}Foot`), m(`${side}Leg`), `${lower}Foot`);
-    add(m(`${side}ToeBase`), m(`${side}Foot`), `${lower}Toes`);
-    add(m(`${side}Toe_End`), m(`${side}ToeBase`), null);
-  }
-  add("TS_Jaw", m("Head"), "jaw");
-  add("TS_Eye.L", m("Head"), "leftEye");
-  add("TS_Eye.R", m("Head"), "rightEye");
-  return { joints, parents, boneMap, endBones };
-}
-
-const SKELETON = buildSkeleton();
-
-/** 키트 joint 68개(Mixamo 65 + `TS_Jaw` + `TS_Eye.L/R`). 순서는 정본 예시이며 manifest는 같은 이름 집합이면 순서를 정할 수 있다(모든 GLB `skin.joints`와 동일해야 함). */
-export const KIT_SKELETON_JOINTS: readonly string[] = Object.freeze(SKELETON.joints);
-/** joint → 부모 joint(루트 `mixamorig:Hips`만 null) */
-export const KIT_SKELETON_PARENTS: Readonly<Record<string, string | null>> = Object.freeze(SKELETON.parents);
-/** 기대 본 매핑(55). 계약 어휘 `HUMANOID_BONE_NAMES` 전부를 1회씩 덮는다. */
-export const KIT_BONE_MAP: Readonly<Record<string, HumanoidBoneName>> = Object.freeze(SKELETON.boneMap);
-/** 의도된 미매핑 끝 본 13개: HeadTop_End, Toe_End×2, 손가락 끝 마디×10 */
-export const KIT_END_BONES: readonly string[] = Object.freeze(SKELETON.endBones);
-export const KIT_JOINT_COUNT = 68 as const;
+// 스켈레톤·관절 오프셋(kit-skeleton.ts)과 출처(kit-provenance.ts)는 2026-10-23 파일 크기 래칫 상쇄로 옮겼다. 기존 import 경로를 위해 다시 내보낸다.
+export { KIT_ALLOWED_LICENSES, KIT_HYPER3D_EVIDENCE_PREFIX, kitSourceSchema } from "./kit-provenance";
+export { KIT_BONE_MAP, KIT_END_BONES, KIT_JOINT_COUNT, KIT_ROOT_JOINT, KIT_SKELETON_JOINTS, KIT_SKELETON_PARENTS, kitJointOffsetsSchema, kitSkeletonSchema } from "./kit-skeleton";
+export type { KitIssue, KitJointOffsets, KitSkeleton } from "./kit-skeleton";
+export type { KitSource } from "./kit-provenance";
 
 // ---------------------------------------------------------------- 영역(몸 가림)
 
@@ -267,6 +190,11 @@ export const KIT_MORPH_COVERAGE: Readonly<Record<PartRole, readonly MorphTargetN
   tongue: [...HEAD_BODY_MORPHS, ...faceMorphs(MOUTH_FACE_KEYS), ...MOUTH_FACS_MORPHS],
   hair: HEAD_BODY_MORPHS,
   accessory: HEAD_BODY_MORPHS,
+  // 레시피 v3 역할(키트 v2에서만 나온다): 층 의상은 몸을, 헤어 부속은 머리를 따라간다.
+  inner: BODY_MORPHS,
+  outer: BODY_MORPHS,
+  legwear: BODY_MORPHS,
+  "hair-accessory": HEAD_BODY_MORPHS,
 };
 
 /** 정체성 슬롯별 계약 축(능력 판정: 모든 ± 타깃이 `TS_Head`에 있으면 available). 합계 15축. */
@@ -339,18 +267,6 @@ export const KIT_ALLOWED_EXTENSIONS = [
 /** 금지 glTF 확장(외부 디코더·CDN 의존으로 무음 실패 위험) */
 export const KIT_FORBIDDEN_EXTENSIONS = ["KHR_draco_mesh_compression", "EXT_meshopt_compression", "KHR_texture_basisu", "EXT_texture_webp"] as const;
 
-/**
- * 출처 라이선스 어휘.
- * - `CC0-1.0`: 내려받은 CC0 원천(예: Human Base Meshes). https URL과 원천 SHA-256이 필요하다.
- * - `original`: 이 저장소에서 새로 만든 원본 디자인.
- * - `hyper3d-rodin-output`(2026-10-11 추가): Hyper3D(Rodin) 구독 플랜으로 생성한 산출물과 그 파생물. 법적 허용을 뜻하지 않는다 —
- *   약관상 닫히지 않은 점은 `docs/hyper3d-terms-record.md`에 있고, 그 기록을 가리키는 `evidenceDoc`과 `generationId`가 없으면 거부해
- *   기록 없이 반입하지 못하게 하는 것이 목적이다.
- */
-export const KIT_ALLOWED_LICENSES = ["CC0-1.0", "original", "hyper3d-rodin-output"] as const;
-
-/** `hyper3d-rodin-output` 출처가 가리켜야 하는 반입 기록 문서(저장소 루트 기준 경로 접두) */
-export const KIT_HYPER3D_EVIDENCE_PREFIX = "apps/character-lab/docs/";
 
 // ---------------------------------------------------------------- 파츠 슬롯·필수 파츠·기본값
 
@@ -591,39 +507,7 @@ export const kitPartSchema = z
   .strict();
 export type KitPart = z.infer<typeof kitPartSchema>;
 
-export const kitSourceSchema = z
-  .object({
-    id: z.string().min(1),
-    name: z.string().min(1),
-    version: z.string().optional(),
-    url: z.string().optional(),
-    /** 내려받은 원천의 SHA-256(zip 또는, Hyper3D 생성물이면 원본 GLB) */
-    zipSha256: sha256Schema.optional(),
-    license: z.enum(KIT_ALLOWED_LICENSES),
-    derivative: z.boolean(),
-    changesKo: z.string(),
-    /** `hyper3d-rodin-output` 전용: Hyper3D 생성 id(uuid) */
-    generationId: z.string().uuid().optional(),
-    /** `hyper3d-rodin-output` 전용: 반입 기록 문서 경로(저장소 루트 기준, `apps/character-lab/docs/` 아래) */
-    evidenceDoc: z.string().optional(),
-  })
-  .strict();
-export type KitSource = z.infer<typeof kitSourceSchema>;
 
-export const kitSkeletonSchema = z
-  .object({
-    root: z.literal(KIT_ROOT_JOINT),
-    joints: z.array(z.string()),
-    parents: z.record(z.string(), z.string().nullable()),
-    boneMap: z.record(z.string(), z.enum(HUMANOID_BONE_NAMES)),
-    endBones: z.array(z.string()),
-  })
-  .strict();
-export type KitSkeleton = z.infer<typeof kitSkeletonSchema>;
-
-const jointOffsetSchema = z.record(z.string(), vec3Schema);
-export const kitJointOffsetsSchema = z.record(z.string(), jointOffsetSchema);
-export type KitJointOffsets = z.infer<typeof kitJointOffsetsSchema>;
 
 const budgetsSchema = z.custom<typeof KIT_BUDGET>((value) => stableStringify(value) === stableStringify(KIT_BUDGET), {
   message: "budgets는 계약 상수 KIT_BUDGET의 사본과 같아야 합니다.",
@@ -681,10 +565,6 @@ export const kitManifestObjectSchema = z
 
 // ---------------------------------------------------------------- 교차 검증
 
-interface KitIssue {
-  readonly path: ReadonlyArray<string | number>;
-  readonly message: string;
-}
 
 type ManifestShape = z.infer<typeof kitManifestObjectSchema>;
 
@@ -698,9 +578,6 @@ function meshMaterials(mesh: KitMesh): readonly string[] {
   return mesh.primitiveMaterials ?? [];
 }
 
-function listFew(items: readonly string[], limit = 4): string {
-  return items.length <= limit ? items.join(", ") : `${items.slice(0, limit).join(", ")} 외 ${items.length - limit}개`;
-}
 
 /** 메시 하나의 단독 규칙: 역할/재질 선언 형태, 외곽선 셸 금지, morph 중복·필수 커버리지 */
 function singleMeshIssues(mesh: KitMesh, path: ReadonlyArray<string | number>): KitIssue[] {
@@ -919,35 +796,9 @@ function partIssues(part: KitPart, index: number, baseIds: readonly KitBaseId[],
   return issues;
 }
 
-function skeletonIssues(manifest: ManifestShape): KitIssue[] {
-  const issues: KitIssue[] = [];
-  const { joints, parents, boneMap, endBones } = manifest.skeleton;
-  const path = ["skeleton"];
-  const expected = new Set(KIT_SKELETON_JOINTS);
-  const given = new Set(joints);
-  if (joints.length !== KIT_JOINT_COUNT || given.size !== joints.length) {
-    issues.push({ path: [...path, "joints"], message: `joint는 중복 없이 정확히 ${KIT_JOINT_COUNT}개여야 합니다(현재 ${joints.length}개, 고유 ${given.size}개).` });
-  }
-  const missing = KIT_SKELETON_JOINTS.filter((name) => !given.has(name));
-  const extra = joints.filter((name) => !expected.has(name));
-  if (missing.length > 0 || extra.length > 0) {
-    issues.push({ path: [...path, "joints"], message: `joint 이름 집합이 계약과 다릅니다. 없음: [${listFew(missing, 5)}], 여분: [${listFew(extra, 5)}]` });
-  }
-  if (stableStringify(parents) !== stableStringify(KIT_SKELETON_PARENTS)) {
-    issues.push({ path: [...path, "parents"], message: "부모 관계가 계약(KIT_SKELETON_PARENTS)과 다릅니다." });
-  }
-  // 상수 KIT_BONE_MAP·KIT_SKELETON_PARENTS가 VRM 계약 부모 관계와 맞는지는 character-kit.test.ts가 고정한다.
-  if (stableStringify(boneMap) !== stableStringify(KIT_BONE_MAP)) {
-    issues.push({ path: [...path, "boneMap"], message: "boneMap이 계약(KIT_BONE_MAP, 55본)과 다릅니다. TS_Jaw → jaw, TS_Eye.L/R → leftEye/rightEye 포함 명시 매핑이 필요합니다." });
-  }
-  if (stableStringify([...endBones].sort()) !== stableStringify([...KIT_END_BONES].sort())) {
-    issues.push({ path: [...path, "endBones"], message: "endBones가 계약의 끝 본 13개와 다릅니다." });
-  }
-  return issues;
-}
 
 function manifestIssues(manifest: ManifestShape): KitIssue[] {
-  const issues: KitIssue[] = [...skeletonIssues(manifest)];
+  const issues: KitIssue[] = [...kitSkeletonIssues(manifest.skeleton)];
 
   // 재질 틴트 규칙
   for (const [name, material] of Object.entries(manifest.materials)) {
@@ -961,36 +812,8 @@ function manifestIssues(manifest: ManifestShape): KitIssue[] {
     }
   }
 
-  // provenance: 내려받은 소스는 https URL + zip SHA-256, 변경 내용은 한글
-  manifest.provenance.sources.forEach((source, index) => {
-    const path = ["provenance", "sources", index];
-    if (source.license !== "original") {
-      if (source.url === undefined || !source.url.startsWith("https://")) issues.push({ path: [...path, "url"], message: `${source.id}: 내려받은 소스는 https URL이 필요합니다.` });
-      if (source.zipSha256 === undefined) issues.push({ path: [...path, "zipSha256"], message: `${source.id}: 내려받은 소스는 zipSha256이 필요합니다.` });
-    }
-    if (!HANGUL.test(source.changesKo)) issues.push({ path: [...path, "changesKo"], message: `${source.id}: changesKo에 한글 변경 내용이 필요합니다.` });
-    if (source.license === "hyper3d-rodin-output") {
-      if (!source.derivative) issues.push({ path: [...path, "derivative"], message: `${source.id}: Hyper3D 산출물은 리타깃·재베이크를 거친 파생물이어야 합니다(derivative: true).` });
-      if (source.generationId === undefined) issues.push({ path: [...path, "generationId"], message: `${source.id}: Hyper3D 산출물은 generationId(uuid)가 필요합니다.` });
-      const evidence = source.evidenceDoc;
-      if (evidence === undefined || !evidence.startsWith(KIT_HYPER3D_EVIDENCE_PREFIX) || evidence.includes("..")) {
-        issues.push({ path: [...path, "evidenceDoc"], message: `${source.id}: Hyper3D 산출물은 반입 기록 문서 경로(evidenceDoc, ${KIT_HYPER3D_EVIDENCE_PREFIX} 아래)가 필요합니다.` });
-      }
-    } else if (source.generationId !== undefined || source.evidenceDoc !== undefined) {
-      issues.push({ path: [...path, "generationId"], message: `${source.id}: generationId·evidenceDoc은 hyper3d-rodin-output 출처에만 쓸 수 있습니다.` });
-    }
-  });
-
-  // 관절 오프셋: 키는 morph 어휘, 본은 joint, 크기 상한
-  for (const [morph, table] of Object.entries(manifest.jointOffsets)) {
-    if (!isMorphTargetName(morph)) issues.push({ path: ["jointOffsets", morph], message: `관절 오프셋 키 ${morph}가 morph 어휘에 없습니다.` });
-    for (const [joint, offset] of Object.entries(table)) {
-      if (!KIT_SKELETON_JOINTS.includes(joint)) issues.push({ path: ["jointOffsets", morph, joint], message: `관절 오프셋의 본 ${joint}가 skeleton.joints에 없습니다.` });
-      if (Math.hypot(offset[0], offset[1], offset[2]) > KIT_BUDGET.maxJointOffsetM) {
-        issues.push({ path: ["jointOffsets", morph, joint], message: `관절 오프셋 크기가 ${KIT_BUDGET.maxJointOffsetM} m를 넘습니다.` });
-      }
-    }
-  }
+  issues.push(...kitProvenanceIssues(manifest.provenance.sources));
+  issues.push(...kitJointOffsetIssues(manifest.jointOffsets, KIT_BUDGET.maxJointOffsetM));
 
   const baseIds = KIT_BASE_IDS.filter((id) => manifest.bases[id] !== undefined);
   if (manifest.bases.female === undefined) issues.push({ path: ["bases", "female"], message: "여성 베이스(female)는 필수입니다(기본 베이스)." });

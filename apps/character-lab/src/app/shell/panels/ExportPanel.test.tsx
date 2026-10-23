@@ -9,6 +9,7 @@ import { createPaintSession } from "../../../paint/paint-session";
 import { createMockEngine } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
 import { installPsdCanvasStub } from "../../../testing/psd-canvas-stub";
+import { legacyRecipeV1Fixture } from "../../../testing/recipe-fixtures";
 
 import { ExportPanel, readTextFile } from "./ExportPanel";
 
@@ -57,7 +58,7 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.fileName).toMatch(/\.character\.json$/u);
     expect(calls[0]?.mime).toBe("application/json");
-    expect(JSON.parse(new TextDecoder().decode(calls[0]?.bytes)).version).toBe(2);
+    expect(JSON.parse(new TextDecoder().decode(calls[0]?.bytes)).version).toBe(3);
     expect(screen.getByText(/저장됨: character-/u)).toBeTruthy();
   });
 
@@ -206,7 +207,8 @@ describe("ExportPanel", () => {
 
   it("v1 레시피 파일을 불러오면 변환 안내를 상태 문구로 보이고, 다음 작업을 시작하면 지운다", async () => {
     const dispatched: LabCommand[] = [];
-    const v1Text = JSON.stringify({ ...createDefaultRecipe(), version: 1, body: { height: 0.25 } });
+    // v1 파일 모양은 fixture로 만든다(v3 기본 레시피를 펼치면 v3 전용 필드가 섞여 v1 파일이 아니다)
+    const v1Text = JSON.stringify(legacyRecipeV1Fixture({ ...createDefaultRecipe(), body: { height: 0.25 } }));
     const calls: SaveCall[] = [];
     render(
       <MockLabProvider dispatchSpy={(command) => dispatched.push(command)}>
@@ -218,7 +220,7 @@ describe("ExportPanel", () => {
     });
     await waitFor(() => expect(dispatched).toHaveLength(1));
     const list = screen.getByRole("list", { name: "레시피 불러오기 안내" });
-    expect(list.textContent).toBe("레시피 v1 파일을 현재 형식(v2)으로 변환해 열었습니다. 저장하면 v2 파일로 기록됩니다.");
+    expect(list.textContent).toBe("레시피 v1 파일을 현재 형식(v3)으로 변환해 열었습니다. 저장하면 v3 파일로 기록됩니다.");
     expect(screen.queryByRole("alert")).toBeNull();
     // 다른 작업(레시피 저장)을 시작하면 안내는 사라진다
     fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));

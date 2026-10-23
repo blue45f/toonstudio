@@ -15,25 +15,13 @@
 import {
   AlertTriangle,
   Camera,
-  Check,
-  Download,
-  FlipHorizontal2,
-  ImageIcon,
-  Hand,
-  Loader2,
-  Lock,
   PersonStanding,
   Redo2,
   RotateCcw,
-  ScanFace,
-  Share2,
   Sliders,
   Sparkles,
   Undo2,
-  Unlock,
-  Upload,
   UserRound,
-  Video,
   Wand2,
   X,
 } from "lucide-react";
@@ -59,14 +47,16 @@ import {
 import {
   getWebtoonPosePresetById,
 } from "./studio-3d-advanced-poses-library";
+import { StudioMannequinDuoFigureSwitch, StudioMannequinDuoPartnerCard } from "./StudioMannequinDuoPartnerCard";
 import {
-  describeStudioMannequinDuoPlacement,
-  findStudioMannequinDuoComposition,
-  solveStudioMannequinDuoPlacement,
-  type StudioMannequinDuoPlacement,
-} from "./studio-mannequin-duo-composition";
-import { convertWebtoonPresetToMannequinPose } from "./studio-webtoon-pose-mannequin-adapter";
-import { StudioWebtoonPosePresetGrid } from "./StudioWebtoonPosePresetGrid";
+  isStudioMannequinDuoPreset,
+  resolveStudioMannequinLibraryPresetPose,
+  resolveStudioMannequinWebtoonPresetPose,
+} from "./studio-mannequin-preset-application";
+import { composeStudioMannequinDuoState, useStudioMannequinDuoPartner } from "./use-studio-mannequin-duo-partner";
+import { StudioMannequinCameraSection, type StudioMannequinWebcamLoadingStage } from "./StudioMannequinCameraSection";
+import { StudioMannequinPoserHeaderActions } from "./StudioMannequinPoserHeaderActions";
+import { studioMannequinPosesNearlyEqual, useStudioMannequinViewportGestures } from "./use-studio-mannequin-viewport-gestures";
 
 import { getProductStudioMannequinStateSqliteRepository } from "./studio-mannequin-bg3d-preset-sqlite-repository";
 import {
@@ -106,13 +96,13 @@ import {
 import {
   STUDIO_MANNEQUIN_POSE_PRESETS,
   createStudioMannequinRestPose,
-  applyStudioMannequinHandPreset,
-  studioMannequinPosePresetScope,
   encodeStudioMannequinShareHash,
   exportStudioMannequinStateToJSON,
   importStudioMannequinStateFromJSON,
   mirrorStudioMannequinPose,
   normalizeStudioMannequinPose,
+  type StudioMannequinPersistentPartner,
+  type StudioMannequinPersistentState,
   type StudioMannequinPose,
   type StudioMannequinPoseCategory,
 } from "./studio-mannequin-poses";
@@ -163,16 +153,11 @@ import "../studio-3d-ui/studio-3d-reference-workspace.css";
 
 import type { ReactElement } from "react";
 
+import { ModalStatusSlot } from "@/shared/components/modal-status-slot";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
-// ── 마네킹 포즈 실루엣 (측면 스틱 피규어) ─────────────────────────────────
-// 프리셋마다 "이게 어떤 포즈인지" 10초 안에 파악할 수 있게, 실제 관절 각도에서
-// 그린 실루엣 미니어처다. 이미지 에셋이 없어도 동작하는 순수 SVG라
-// 다크/라이트·모바일·reduced-motion 대응이 자동으로 된다.
-// 좌표 감각(studio-mannequin-poses.ts): 몸통 X+ = 앞으로 숙임,
-// 팔다리 X− = 앞으로 스윙, 팔꿈치 X− = 앞굽힘, 무릎 X+ = 뒤굽힘.
-
+// 포즈 탭 본문(통합 포즈 라이브러리·실루엣 카드)은 StudioMannequinPoserPoseSection 이 맡는다.
 import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
 
 export type { StudioMannequinCaptureResult } from "./studio-mannequin-scene";
@@ -187,10 +172,11 @@ export interface StudioMannequinPoserPanelProps {
    * 알 수 없는 id는 무시한다.
    */
   readonly initialPosePresetId?: string;
+  /** "canvas"(기본): 캡처를 편집기에 넣고 닫는다. "download": 독립 진입점 — PNG로 받고 포저는 열어 둔다. */
+  readonly captureTarget?: "canvas" | "download";
 }
 
 type MannequinTabId = "shaper" | "body" | "pose" | "magic" | "joint" | "camera";
-type StudioMannequinWebcamLoadingStage = "engine" | "camera" | null;
 type StudioMannequinPersistenceStatus =
   | "idle"
   | "loading"
@@ -206,7 +192,6 @@ interface StudioMannequinPhotoPoseApplyStatus {
 
 const RAD_TO_DEG = 180 / Math.PI;
 const DEG_TO_RAD = Math.PI / 180;
-const CAPTURE_SCALES = [1, 2, 3] as const;
 const STUDIO_MANNEQUIN_PHOTO_MIN_APPLIED_JOINTS = 6;
 /** 손 detectForVideo 가 이 횟수만큼 연속 실패하면 손 추적만 중단한다(신체 추적 유지). */
 const STUDIO_MANNEQUIN_HAND_MAX_FRAME_FAILURES = 20;
@@ -431,7 +416,7 @@ export function StudioMannequinBodySection({
   );
 }
 
-export { StudioMannequinPoseSection };
+export { StudioMannequinCameraSection, StudioMannequinPoseSection };
 
 export function StudioMannequinJointSection({
   selectedJointId,
@@ -522,253 +507,6 @@ export function StudioMannequinJointSection({
   );
 }
 
-export function StudioMannequinCameraSection({
-  projection,
-  onProjectionChange,
-  captureScale,
-  onCaptureScaleChange,
-  onCameraPreset,
-  onResetCamera,
-  onCapture,
-  capturing,
-  captureDisabled = false,
-  webcamActive,
-  webcamLoadingStage,
-  webcamError,
-  onToggleWebcam,
-  poseFrozen = false,
-  onTogglePoseFreeze,
-  mirrorMode = true,
-  onToggleMirrorMode,
-  handTracking = false,
-  onToggleHandTracking,
-  handTrackingLoading = false,
-  handTrackingError = null,
-  facialTracking = true,
-  onToggleFacialTracking,
-}: {
-  projection: StudioMannequinProjection;
-  onProjectionChange: (projection: StudioMannequinProjection) => void;
-  captureScale: number;
-  onCaptureScaleChange: (scale: number) => void;
-  onCameraPreset: (preset: "front" | "side" | "back" | "top" | "high" | "low") => void;
-  onResetCamera: () => void;
-  onCapture: () => void;
-  capturing: boolean;
-  captureDisabled?: boolean;
-  webcamActive: boolean;
-  webcamLoadingStage: StudioMannequinWebcamLoadingStage;
-  webcamError: string | null;
-  onToggleWebcam: () => void;
-  poseFrozen?: boolean;
-  onTogglePoseFreeze?: () => void;
-  mirrorMode?: boolean;
-  onToggleMirrorMode?: () => void;
-  handTracking?: boolean;
-  onToggleHandTracking?: () => void;
-  handTrackingLoading?: boolean;
-  handTrackingError?: string | null;
-  facialTracking?: boolean;
-  onToggleFacialTracking?: () => void;
-}): ReactElement {
-  const webcamLoading = webcamLoadingStage !== null;
-
-  return (
-    <div className="space-y-3">
-      <StudioSectionHeader
-        title="카메라·캡처"
-        description="드래그 = 회전, 휠 = 줌, 우클릭 드래그 = 이동."
-        action={
-          <button
-            type="button"
-            onClick={onResetCamera}
-            className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1" })}
-            title="카메라 초기 위치로"
-          >
-            <RotateCcw size={13} aria-hidden /> 리셋
-          </button>
-        }
-      />
-      <div className="space-y-1">
-        <span className="text-xs text-fg-2">실시간 웹캠 동작 인식 (Live Motion Tracking)</span>
-        <button
-          type="button"
-          onClick={onToggleWebcam}
-          aria-pressed={webcamActive}
-          aria-busy={webcamLoading}
-          className={buttonClass({
-            size: "sm",
-            variant: webcamActive ? "solid" : "quiet",
-            className: "w-full justify-center gap-1.5",
-          })}
-        >
-          {webcamLoading ? (
-            <Loader2 size={13} className="animate-spin" aria-hidden />
-          ) : (
-            <Video size={13} aria-hidden />
-          )}
-          {webcamLoading
-            ? webcamLoadingStage === "engine"
-              ? "엔진 준비 취소"
-              : "카메라 연결 취소"
-            : webcamActive
-              ? "실시간 동작 인식 중지"
-              : webcamError
-                ? "웹캠 동작 인식 다시 시도"
-                : "웹캠 실시간 동작 인식 시작"}
-        </button>
-
-        {webcamLoadingStage === "engine" ? (
-          <p role="status" className="mt-1 text-[0.7rem] leading-relaxed text-fg-3">
-            동작 인식 엔진을 준비하고 있습니다. 처음 실행할 때는 모델을 내려받아 잠시 걸릴 수 있습니다.
-          </p>
-        ) : webcamLoadingStage === "camera" ? (
-          <p role="status" className="mt-1 text-[0.7rem] leading-relaxed text-fg-3">
-            엔진 준비 완료. 브라우저의 카메라 권한을 허용해 주세요. 권한 창이 보이지 않으면 주소창의 카메라 아이콘을 확인하세요.
-          </p>
-        ) : null}
-
-        {webcamActive && (
-          <div className="grid grid-cols-2 gap-1 pt-1.5" role="group" aria-label="모션 캡처 옵션">
-            <button
-              type="button"
-              onClick={onTogglePoseFreeze}
-              className={buttonClass({
-                size: "sm",
-                variant: poseFrozen ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
-            >
-              {poseFrozen ? <Lock size={13} aria-hidden /> : <Unlock size={13} aria-hidden />}
-              {poseFrozen ? "포즈 고정됨" : "포즈 고정"}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleMirrorMode}
-              className={buttonClass({
-                size: "sm",
-                variant: mirrorMode ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
-            >
-              <FlipHorizontal2 size={13} aria-hidden />
-              {mirrorMode ? "좌우 반전 ON" : "좌우 반전"}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleHandTracking}
-              aria-pressed={handTracking}
-              aria-busy={handTrackingLoading}
-              title={frozenStatus2Text("studio.frozenStatus2.mannequin.handTrackingTitle", "웹캠에서 손을 인식해 손목 방향을 실시간으로 반영합니다. 손 인식 엔진 준비에 실패해도 신체 동작 인식은 계속됩니다.")}
-              className={buttonClass({
-                size: "sm",
-                variant: handTracking ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
-            >
-              {handTrackingLoading ? (
-                <Loader2 size={13} className="animate-spin" aria-hidden />
-              ) : (
-                <Hand size={13} aria-hidden />
-              )}
-              {handTrackingLoading
-                ? frozenStatus2Text("studio.frozenStatus2.mannequin.handPreparing", "손 인식 준비 중")
-                : handTracking
-                  ? "라이브 손 트래킹 ON"
-                  : "라이브 손 트래킹"}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleFacialTracking}
-              className={buttonClass({
-                size: "sm",
-                variant: facialTracking ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
-            >
-              <ScanFace size={13} aria-hidden />
-              {facialTracking ? "표정 맵핑 ON" : "표정 맵핑"}
-            </button>
-          </div>
-        )}
-
-        {webcamError ? (
-          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">
-            {webcamError}
-          </p>
-        ) : null}
-        {handTrackingError ? (
-          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">
-            {handTrackingError}
-          </p>
-        ) : null}
-      </div>
-      <div className="space-y-1">
-        <span className="text-xs text-fg-2">카메라 앵글 프리셋</span>
-        <div className="grid grid-cols-3 gap-1" role="group" aria-label="카메라 앵글">
-          {[
-            { id: "front", label: "정면" },
-            { id: "side", label: "측면" },
-            { id: "back", label: "후면" },
-            { id: "top", label: "탑뷰" },
-            { id: "high", label: "하이앵글" },
-            { id: "low", label: "로우앵글" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onCameraPreset(item.id as "front" | "side" | "back" | "top" | "high" | "low")}
-              className={buttonClass({ size: "sm", variant: "quiet", className: "text-[0.7rem]" })}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="투영 방식">
-        <StudioToggleChip
-          active={projection === "perspective"}
-          onClick={() => onProjectionChange("perspective")}
-        >
-          원근
-        </StudioToggleChip>
-        <StudioToggleChip
-          active={projection === "orthographic"}
-          onClick={() => onProjectionChange("orthographic")}
-        >
-          직교
-        </StudioToggleChip>
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="캡처 배율">
-        <span className="text-xs text-fg-2">캡처 배율</span>
-        {CAPTURE_SCALES.map((scale) => (
-          <StudioToggleChip
-            key={scale}
-            active={captureScale === scale}
-            onClick={() => onCaptureScaleChange(scale)}
-          >
-            {scale}x
-          </StudioToggleChip>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={onCapture}
-        disabled={capturing || captureDisabled}
-        title={captureDisabled ? "SQLite 저장 상태를 확인한 뒤 캡처할 수 있습니다." : undefined}
-        className={buttonClass({ size: "md", variant: "solid", className: "w-full gap-1.5" })}
-      >
-        {capturing ? (
-          <Loader2 size={15} className="animate-spin" aria-hidden />
-        ) : (
-          <Camera size={15} aria-hidden />
-        )}
-        캔버스로 캡처
-      </button>
-    </div>
-  );
-}
-
 // ── 패널 본체 ────────────────────────────────────────────────────────────────
 
 export function StudioMannequinPoserPanel({
@@ -776,6 +514,7 @@ export function StudioMannequinPoserPanel({
   onClose,
   onInsert,
   initialPosePresetId,
+  captureTarget = "canvas",
 }: StudioMannequinPoserPanelProps): ReactElement | null {
   const dialogTitleId = useId();
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -791,13 +530,14 @@ export function StudioMannequinPoserPanel({
   const [pose, setPose] = useState<StudioMannequinPose>(createStudioMannequinRestPose);
   const [materialStyle, setMaterialStyle] = useState<StudioMannequinMaterialStyle>("wood");
   const [poseCategory, setPoseCategory] = useState<StudioMannequinPoseCategory | "all">("all");
-  /** 마지막으로 적용한 2인 구도의 상대 배치 계산 결과(1인 프리셋을 적용하면 비운다). */
-  const [duoPlacement, setDuoPlacement] = useState<StudioMannequinDuoPlacement | null>(null);
   const [tab, setTab] = useState<MannequinTabId>("pose");
   const [selectedJointId, setSelectedJointId] = useState<StudioMannequinJointId | null>(null);
   const [projection, setProjection] = useState<StudioMannequinProjection>("perspective");
   // 구도 브리프(E2) 스냅샷의 근거 — 카메라 프리셋은 씬 핸들 명령과 함께 상태로도 남긴다.
   const [cameraPreset, setCameraPreset] = useState<StudioMannequinCameraPreset>("home");
+  // 앵글 칩 선택 표시 — 궤도 회전·이동·부위 확대·리셋으로 화면이 프리셋에서 벗어나면 null.
+  const [selectedCameraAngle, setSelectedCameraAngle] = useState<StudioMannequinCameraPreset | null>(null);
+  const [captureNotice, setCaptureNotice] = useState<string | null>(null);
   const [lastPosePresetId, setLastPosePresetId] = useState<string | null>(initialPosePresetId ?? null);
   const [captureScale, setCaptureScale] = useState<number>(2);
   const [capturing, setCapturing] = useState(false);
@@ -847,8 +587,15 @@ export function StudioMannequinPoserPanel({
   const persistenceGenerationRef = useRef(0);
   const stateRevisionRef = useRef(0);
   const poseRef = useRef(pose);
-  const stateRef = useRef({ params, pose });
-  stateRef.current = { params, pose };
+  const stateRef = useRef<StudioMannequinPersistentState>({ params, pose });
+  // 2인 구도 상대 인형(B-02) — 씬·상대 히스토리는 훅이 맡고, 바뀐 상대는 같은 틱에 영속 스냅샷에 싣는다.
+  const commitDuoPartnerState = useCallback((partner: StudioMannequinPersistentPartner | null, userEdit: boolean) => {
+    if (userEdit) stateRevisionRef.current += 1;
+    stateRef.current = composeStudioMannequinDuoState(stateRef.current, partner);
+  }, []);
+  const duo = useStudioMannequinDuoPartner({ sceneRef, onPartnerCommitted: commitDuoPartnerState, groundPose: groundFootPose });
+  const { attachScene: attachDuoScene, placeDuo, applyPoseToPartner, restorePartner: restoreDuoPartner } = duo;
+  stateRef.current = composeStudioMannequinDuoState({ params, pose }, duo.partner);
   const webcamLoading = webcamLoadingStage !== null;
   webcamActiveRef.current = webcamActive;
   webcamLoadingRef.current = webcamLoading;
@@ -887,9 +634,26 @@ export function StudioMannequinPoserPanel({
     [commitPose, groundFootPose],
   );
 
-  function resetPoseHistoryGesture(): void {
+  const resetPoseHistoryGesture = useCallback(() => {
     rotateGestureRecordedRef.current = false;
-  }
+  }, []);
+
+  /** 연속 제스처(슬라이더·뷰포트 드래그·매직 포저 조작)는 제스처당 한 번만 기록한다 — 드래그 1회 = 되돌리기 1단계. */
+  const recordPoseHistoryOncePerGesture = useCallback(() => {
+    if (rotateGestureRecordedRef.current) return;
+    rotateGestureRecordedRef.current = true;
+    poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current);
+    setPoseHistorySnapshot(poseHistoryRef.current);
+  }, []);
+  // 키보드 조작도 키를 새로 누를 때마다 제스처 경계다(누르고 있는 반복 입력은 한 단계).
+  const resetPoseHistoryGestureOnKey = (event: React.KeyboardEvent) => {
+    if (!event.repeat) resetPoseHistoryGesture();
+  };
+  const viewportGestures = useStudioMannequinViewportGestures({
+    onGestureStart: resetPoseHistoryGesture,
+    onCameraMoved: () => setSelectedCameraAngle(null),
+  });
+  const notePoseEdited = viewportGestures.notePoseEdited;
 
   /**
    * 매직 포저 탭(`StudioMagicPoserPanel`)용 씬 어댑터. 고아 컴포넌트 해소 마운트이며,
@@ -903,10 +667,14 @@ export function StudioMannequinPoserPanel({
    */
   const magicPoserScene = useMemo<StudioMagicPoserScene>(
     () => ({
-      setPose: (nextPose: StudioMannequinPose) => commitPoseWithHistory(nextPose),
+      setPose: (nextPose: StudioMannequinPose) => {
+        recordPoseHistoryOncePerGesture();
+        return commitPose(groundFootPose(nextPose, stateRef.current.params).pose);
+      },
       getPose: () => poseRef.current,
       setJointRotation: (jointId, rotation) => {
         const clamped = clampStudioMannequinJointRotation(jointId, rotation);
+        recordPoseHistoryOncePerGesture();
         commitPose(
           normalizeStudioMannequinPose({
             joints: { ...poseRef.current.joints, [jointId]: clamped },
@@ -921,7 +689,7 @@ export function StudioMannequinPoserPanel({
       getLightingRig: () =>
         sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
     }),
-    [commitPose, commitPoseWithHistory],
+    [commitPose, groundFootPose, recordPoseHistoryOncePerGesture],
   );
 
   const handleUndoPose = useCallback(() => {
@@ -1405,6 +1173,7 @@ export function StudioMannequinPoserPanel({
         poseRef.current = stored.pose;
         setParams(stored.params);
         setPose(stored.pose);
+        restoreDuoPartner(stored.partner ?? null);
       }
       hydrationSafeForFinalFlushRef.current = true;
       setPersistenceStatus("ready");
@@ -1420,7 +1189,7 @@ export function StudioMannequinPoserPanel({
         hydrationGenerationRef.current += 1;
       }
     };
-  }, [open, stateRepository]);
+  }, [open, restoreDuoPartner, stateRepository]);
 
   useEffect(() => {
     if (!open) return;
@@ -1438,12 +1207,16 @@ export function StudioMannequinPoserPanel({
         onPoseEdited: (editedPose) => {
           // IK·직접 드래그 종료 시점에만 접지를 적용한다(드래그 중에는 포즈를 빼앗지 않는다).
           // 보정이 있으면 씬에도 보정 포즈를 다시 동기화해야 하므로 from-scene 플래그를 내린다.
+          // 드래그 1회 = 되돌리기 1단계: 뷰포트 pointerdown이 그은 경계 안에서 한 번 기록한다(바뀐 게 없으면 생략).
+          notePoseEdited();
           const grounded = groundFootPose(editedPose, stateRef.current.params);
+          if (!studioMannequinPosesNearlyEqual(grounded.pose, poseRef.current)) recordPoseHistoryOncePerGesture();
           poseFromSceneRef.current = !grounded.applied;
           commitPose(grounded.pose);
         },
       });
       sceneRef.current = handle;
+      attachDuoScene(handle);
       setSceneError(null);
     } catch (cause) {
       setSceneError(getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.sceneInitFailed", "3D 데생 인형 씬을 초기화하지 못했습니다. WebGL 지원을 확인하세요.")));
@@ -1463,7 +1236,7 @@ export function StudioMannequinPoserPanel({
       sceneRef.current = null;
       handle.dispose();
     };
-  }, [commitPose, groundFootPose, open]);
+  }, [attachDuoScene, commitPose, groundFootPose, notePoseEdited, open, recordPoseHistoryOncePerGesture]);
 
   useEffect(() => {
     sceneRef.current?.setBodySpec(spec);
@@ -1488,61 +1261,35 @@ export function StudioMannequinPoserPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, capturing, closeWithPersist, persistenceStatus]);
 
+  // 프리셋은 적용 시점에 지금 체형으로 지지 방식대로 접지한다(손 전용은 손만 얹는다).
+  // 2인 프리셋은 같은 클릭 한 번으로 상대 인형까지 계산된 거리·시선·접지로 씬에 넣고,
+  // 상대를 조작 중이면 1인 프리셋은 상대에게 적용한다.
   const applyPosePreset = useCallback((presetId: string) => {
     const preset = STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === presetId);
     if (!preset) return;
     setLastPosePresetId(presetId);
-    // 손 전용 프리셋은 손목만 얹는다 — 힘들여 맞춘 몸 포즈를 지우지 않는 것이 분리 라이브러리의 계약이다.
-    if (studioMannequinPosePresetScope(preset) === "hand-only") {
-      commitPoseWithHistory(
-        normalizeStudioMannequinPose(applyStudioMannequinHandPreset(poseRef.current, preset)),
-      );
+    if (isStudioMannequinDuoPreset(preset)) {
+      const leadPose = resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current);
+      commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose);
       return;
     }
-    // 2인 프리셋은 같은 클릭 한 번으로 상대 배치(거리·시선·접지)까지 계산한다.
-    // 주인공에는 시선 보정이 반영된 포즈를 적용하고, 상대 포즈·배치는 상태로
-    // 남겨 "상대 포즈로 보기"로 같은 동선에서 바로 확인할 수 있게 한다.
-    if ((preset.figures ?? 1) === 2 || findStudioMannequinDuoComposition(preset.id)) {
-      const plan = solveStudioMannequinDuoPlacement({
-        presetId: preset.id,
-        leadPose: normalizeStudioMannequinPose(preset.pose),
-        leadBodyParams: params,
-      });
-      setDuoPlacement(plan);
-      commitPoseWithHistory(plan.leadPose);
-      return;
-    }
-    setDuoPlacement(null);
-    commitPoseWithHistory(normalizeStudioMannequinPose(preset.pose));
-  }, [commitPoseWithHistory, params]);
+    if (applyPoseToPartner((partner) => resolveStudioMannequinLibraryPresetPose(preset, partner.params, partner.pose))) return;
+    commitPoseWithHistory(resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current));
+  }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
-  // 웹툰 포즈 프리셋(Shaper식 클릭 적용): 휴머노이드 관절 오일러를
-  // 데생 인형 포즈로 변환해 한 번의 클릭으로 씬에 반영한다.
+  // 웹툰 포즈 프리셋(Shaper식 클릭 적용): 데생 인형 정본 포즈로 바꿔 같은 규칙으로 적용한다.
   const applyWebtoonPosePreset = useCallback((presetId: string) => {
     const preset = getWebtoonPosePresetById(presetId);
     if (!preset) return;
     setLastPosePresetId(presetId);
-    const converted = convertWebtoonPresetToMannequinPose(preset);
-    // 웹툰 라이브러리의 2인 포즈(포옹·벽치기 등)도 같은 원클릭 상대 배치를 탄다.
-    if (preset.figures === 2 || findStudioMannequinDuoComposition(preset.id)) {
-      const plan = solveStudioMannequinDuoPlacement({
-        presetId: preset.id,
-        leadPose: converted,
-        leadBodyParams: params,
-      });
-      setDuoPlacement(plan);
-      commitPoseWithHistory(plan.leadPose);
+    if (isStudioMannequinDuoPreset(preset)) {
+      const leadPose = resolveStudioMannequinWebtoonPresetPose(preset, params);
+      commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose);
       return;
     }
-    setDuoPlacement(null);
-    commitPoseWithHistory(converted);
-  }, [commitPoseWithHistory, params]);
-
-  /** 계산된 상대역 포즈를 주인공 자리에 적용한다 — 상대 샷을 같은 동선으로 캡처하기 위한 전환. */
-  const applyDuoPartnerPose = useCallback(() => {
-    if (!duoPlacement) return;
-    commitPoseWithHistory(duoPlacement.partnerPose);
-  }, [commitPoseWithHistory, duoPlacement]);
+    if (applyPoseToPartner((partner) => resolveStudioMannequinWebtoonPresetPose(preset, partner.params))) return;
+    commitPoseWithHistory(resolveStudioMannequinWebtoonPresetPose(preset, params));
+  }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
   /**
    * `?starter=` 자동 적용. 패널이 열리는 동안 최초 1회만 시도한다.
@@ -1565,10 +1312,7 @@ export function StudioMannequinPoserPanel({
     (rotation: StudioMannequinVec3) => {
       if (!selectedJointId) return;
       // 슬라이더 드래그 같은 연속 제스처에서는 제스처당 한 번만 기록한다.
-      if (!rotateGestureRecordedRef.current) {
-        rotateGestureRecordedRef.current = true;
-        recordPoseHistory();
-      }
+      recordPoseHistoryOncePerGesture();
       const clamped = clampStudioMannequinJointRotation(selectedJointId, rotation);
       commitPose(
         normalizeStudioMannequinPose({
@@ -1577,7 +1321,7 @@ export function StudioMannequinPoserPanel({
         }),
       );
     },
-    [commitPose, selectedJointId],
+    [commitPose, recordPoseHistoryOncePerGesture, selectedJointId],
   );
 
   const handleExportJson = useCallback(() => {
@@ -1601,6 +1345,7 @@ export function StudioMannequinPoserPanel({
       if (imported) {
         commitParams(imported.params);
         commitPoseWithHistory(imported.pose);
+        restoreDuoPartner(imported.partner ?? null, { userEdit: true });
         setError(null);
       } else {
         setError("유효하지 않은 데생 인형 JSON 파일입니다.");
@@ -1608,7 +1353,7 @@ export function StudioMannequinPoserPanel({
     };
     reader.readAsText(file);
     event.target.value = "";
-  }, [commitParams, commitPoseWithHistory]);
+  }, [commitParams, commitPoseWithHistory, restoreDuoPartner]);
 
   // 인앱 WebView 는 navigator.clipboard 자체를 안 주기도 한다. 그때 프로퍼티 접근이 onClick
   // 안에서 동기 throw 라 에러 바운더리가 3D 패널을 통째로 날렸다. 성공 여부를 기다린 뒤에만
@@ -1855,14 +1600,23 @@ export function StudioMannequinPoserPanel({
         if (accepted === false) {
           throw new Error(frozenStatus2Text("studio.frozenStatus2.mannequin.docChanged", "편집 중 문서가 바뀌어 캡처를 삽입하지 않았습니다. 현재 페이지에서 다시 시도해 주세요."));
         }
-        if (await persistState()) onClose();
+        if (!(await persistState())) return;
+        // 독립 진입점(PNG 저장)은 다른 각도로 다시 캡처할 수 있게 포저를 열어 둔다. 편집기 삽입은 넣고 닫는다.
+        if (captureTarget === "download") setCaptureNotice(`PNG로 저장했습니다 (${result.width}×${result.height})`);
+        else onClose();
       } catch (cause) {
         setError(getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.captureFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
       } finally {
         setCapturing(false);
       }
     })();
-  }, [captureScale, capturing, onClose, onInsert, persistState, persistenceStatus]);
+  }, [captureScale, captureTarget, capturing, onClose, onInsert, persistState, persistenceStatus]);
+
+  useEffect(() => {
+    if (!captureNotice) return;
+    const timer = window.setTimeout(() => setCaptureNotice(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [captureNotice]);
 
   if (!open) return null;
 
@@ -1892,62 +1646,38 @@ export function StudioMannequinPoserPanel({
       />
       <div data-studio-mannequin-surface="true" className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
         <header data-studio-mannequin-header="true" className="flex items-center justify-between gap-2 border-b border-line/70 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <h2 id={dialogTitleId} className="flex items-center gap-1.5 text-sm font-bold tracking-tight">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 id={dialogTitleId} className="flex shrink-0 items-center gap-1.5 text-sm font-bold tracking-tight">
               <PersonStanding size={16} className="text-accent" aria-hidden />
               3D 데생 인형
             </h2>
+            {/* 휴대폰에서는 화면 읽기용으로만 남겨 저장 상태·캡처 저장 알림을 대화상자 안에서 읽어 준다. */}
             <span
               aria-live="polite"
               className={cn(
-                "hidden text-[0.66rem] sm:inline",
+                "sr-only text-[0.66rem] sm:not-sr-only sm:inline",
                 persistenceStatus === "memory-only" ? "text-warn" : "text-fg-3",
               )}
             >
-              {persistenceStatus === "loading"
+              {captureNotice ?? (persistenceStatus === "loading"
                 ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoading", "SQLite 불러오는 중")
                 : persistenceStatus === "saving"
                   ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteSaving", "SQLite 저장 중")
                   : persistenceStatus === "memory-only"
                     ? frozenStatus2Text("studio.frozenStatus2.mannequin.memoryOnlyTab", "현재 탭 메모리 임시")
-                    : ""}
+                    : "")}
             </span>
-            <div className="hidden items-center gap-1 sm:flex">
-              <button
-                type="button"
-                onClick={handleExportJson}
-                className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
-                title="포즈 및 체형 JSON 다운로드"
-              >
-                <Download size={13} aria-hidden /> 내보내기
-              </button>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
-                title="JSON 포즈 파일 불러오기"
-              >
-                <Upload size={13} aria-hidden /> 가져오기
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyShareLink}
-                className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
-                title="공유 해시 URL 복사"
-              >
-                {copiedLink ? <Check size={13} className="text-accent" /> : <Share2 size={13} />}
-                공유
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("pose")}
-                className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" })}
-                title="MediaPipe 사진 포즈 스캐너 열기"
-              >
-                <ImageIcon size={13} aria-hidden /> 사진 포즈
-              </button>
-            </div>
+            <StudioMannequinPoserHeaderActions
+              onExportJson={handleExportJson}
+              onImportJson={() => fileInputRef.current?.click()}
+              onCopyShareLink={handleCopyShareLink}
+              copiedLink={copiedLink}
+              onOpenPhotoPose={() => setTab("pose")}
+            />
           </div>
+          <div className="flex min-w-0 items-center gap-1.5">
+          {/* 온라인 상태 알림은 떠서 뷰포트·검색창을 가리지 않고 이 자리에 한 줄로 들어온다. */}
+          <ModalStatusSlot className="flex min-w-0 justify-end" />
           <button
             type="button"
             onClick={persistenceStatus === "memory-only" ? closeWithoutPersist : closeWithPersist}
@@ -1963,11 +1693,12 @@ export function StudioMannequinPoserPanel({
                   ? "현재 탭의 변경을 저장하지 않고 닫습니다. 먼저 JSON으로 내보내세요."
                   : undefined
             }
-            className={buttonClass({ size: "icon", variant: "quiet" })}
+            className={buttonClass({ size: "icon", variant: "quiet", className: "pointer-coarse:size-11" })}
             aria-label="3D 데생 인형 닫기"
           >
             <X size={16} aria-hidden />
           </button>
+          </div>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
@@ -1986,8 +1717,10 @@ export function StudioMannequinPoserPanel({
                 className="h-full w-full"
                 data-studio-mannequin-viewport="true"
                 aria-label="3D 데생 인형 뷰포트 — 몸 드래그로 관절 회전, 손·발 핸들 드래그로 IK, 더블클릭으로 부위 확대"
+                {...viewportGestures.handlers}
               />
             )}
+            {sceneError ? null : <StudioMannequinDuoFigureSwitch duo={duo} />}
             {error ? (
               <p
                 role="alert"
@@ -2027,7 +1760,7 @@ export function StudioMannequinPoserPanel({
                 disabled={!poseHistoryDescription.canUndo}
                 title={poseHistoryDescription.canUndo ? `이전 포즈로 되돌리기 (${poseHistoryDescription.undoCount}개)` : frozenStatus2Text("studio.frozenStatus2.mannequin.undoUnavailable", "되돌릴 변경이 없습니다")}
                 aria-label={`되돌리기${poseHistoryDescription.canUndo ? ` (${poseHistoryDescription.undoCount}개 가능)` : ""}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:px-3"
               >
                 <Undo2 size={13} aria-hidden /> 되돌리기
               </button>
@@ -2037,7 +1770,7 @@ export function StudioMannequinPoserPanel({
                 disabled={!poseHistoryDescription.canRedo}
                 title={poseHistoryDescription.canRedo ? `다시 실행하기 (${poseHistoryDescription.redoCount}개)` : frozenStatus2Text("studio.frozenStatus2.mannequin.redoUnavailable", "다시 실행할 변경이 없습니다")}
                 aria-label={`다시실행${poseHistoryDescription.canRedo ? ` (${poseHistoryDescription.redoCount}개 가능)` : ""}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:px-3"
               >
                 <Redo2 size={13} aria-hidden /> 다시실행
               </button>
@@ -2093,57 +1826,25 @@ export function StudioMannequinPoserPanel({
                       </div>
                     </div>
                   ) : null}
-                  <StudioWebtoonPosePresetGrid
-                    onApplyPreset={applyWebtoonPosePreset}
-                    applyDisabled={capturing}
-                  />
                   <StudioMannequinPoseSection
                     selectedCategory={poseCategory}
                     onCategorySelect={setPoseCategory}
                     onApplyPreset={applyPosePreset}
+                    onApplyWebtoonPreset={applyWebtoonPosePreset}
+                    applyDisabled={capturing}
                     onMirror={() => commitPoseWithHistory(mirrorStudioMannequinPose(poseRef.current))}
                     onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose())}
                   />
-                  {duoPlacement ? (
-                    <div
-                      role="status"
-                      data-studio-mannequin-duo-placement={duoPlacement.compositionId}
-                      className="space-y-1.5 rounded-xl border border-line bg-card px-3 py-2.5"
-                    >
-                      <p className="text-xs font-semibold text-fg-2">
-                        {describeStudioMannequinDuoPlacement(duoPlacement)}
-                      </p>
-                      <p className="text-[0.7rem] leading-relaxed text-fg-3">
-                        상대 위치 — 앞뒤 {duoPlacement.partnerOffset[2].toFixed(2)}m · 좌우{" "}
-                        {duoPlacement.partnerOffset[0].toFixed(2)}m · 높이{" "}
-                        {duoPlacement.partnerOffset[1].toFixed(2)}m
-                        {duoPlacement.warnings[0] ? ` — ${duoPlacement.warnings[0]}` : ""}
-                      </p>
-                      <div className="flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={applyDuoPartnerPose}
-                          className={buttonClass({ size: "sm", variant: "quiet", className: "text-[0.7rem]" })}
-                        >
-                          상대 포즈로 보기
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDuoPlacement(null)}
-                          className={buttonClass({ size: "sm", variant: "quiet", className: "text-[0.7rem]" })}
-                        >
-                          닫기
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
+                  <StudioMannequinDuoPartnerCard duo={duo} />
                 </>
               ) : null}
               {tab === "magic" ? (
-                <StudioMagicPoserPanel scene={magicPoserScene} />
+                <div onPointerDownCapture={resetPoseHistoryGesture} onKeyDownCapture={resetPoseHistoryGestureOnKey}>
+                  <StudioMagicPoserPanel scene={magicPoserScene} currentPose={pose} hostOwnsHistory />
+                </div>
               ) : null}
               {tab === "joint" ? (
-                <div onPointerDownCapture={resetPoseHistoryGesture}>
+                <div onPointerDownCapture={resetPoseHistoryGesture} onKeyDownCapture={resetPoseHistoryGestureOnKey}>
                   <StudioMannequinJointSection
                     selectedJointId={selectedJointId}
                     rotation={selectedRotation}
@@ -2168,15 +1869,19 @@ export function StudioMannequinPoserPanel({
                   onCaptureScaleChange={setCaptureScale}
                   onCameraPreset={(preset) => {
                     setCameraPreset(preset);
+                    setSelectedCameraAngle(preset);
                     sceneRef.current?.setCameraPreset(preset);
                   }}
+                  selectedCameraAngle={selectedCameraAngle}
                   onResetCamera={() => {
                     setCameraPreset("home");
+                    setSelectedCameraAngle(null);
                     sceneRef.current?.resetCamera();
                   }}
                   onCapture={handleCapture}
                   capturing={capturing}
                   captureDisabled={persistenceStatus !== "ready"}
+                  captureLabel={captureTarget === "download" ? "PNG로 저장" : "캔버스로 캡처"}
                   webcamActive={webcamActive}
                   webcamLoadingStage={webcamLoadingStage}
                   webcamError={webcamError}

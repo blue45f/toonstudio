@@ -4,6 +4,8 @@ import {
   STUDIO_MAIN_MENU_ACTION_ORDER,
   STUDIO_MAIN_MENU_ADVANCED_COMPOSITE_SOURCES,
   STUDIO_MAIN_MENU_COMPOSITE_GROUPS,
+  STUDIO_MAIN_MENU_FOLDED_SECTION_SHORTCUTS,
+  STUDIO_MAIN_MENU_FOLDED_SHORTCUT_ID_SUFFIX,
   STUDIO_MAIN_MENU_PRESENTATION_ORDER,
   STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS,
   createStudioMainMenuPresentation,
@@ -465,5 +467,76 @@ describe("composite section fold for menu-depth relief", () => {
         buildFoldItem,
       ),
     ).toBe(collapsed.groups);
+  });
+});
+
+describe("접힌 3D 섹션의 '3D 데생 인형' 바로가기 (B-15)", () => {
+  function catalogueWithMannequin(labels: Record<string, string> = KO_LABELS): StudioMainMenuPresentableGroup[] {
+    return catalogue(2, labels).map((group) =>
+      group.id === "3d"
+        ? {
+          ...group,
+          items: [
+            { id: "bg3d", label: "장면 도우미" },
+            { id: "mannequin3d", label: "기본 데생 인형" },
+            { id: "char", label: "인물·포즈 편집" },
+          ],
+        }
+        : group,
+    );
+  }
+
+  const buildFoldItem = (groupId: string, advancedCount: number): StudioMainMenuPresentableItem => ({
+    id: `fold:${groupId}:${advancedCount}`,
+  });
+
+  it("접혀 있으면 1단계 끝(펼침 행 바로 앞)에 바로가기를 더하고 원래 행·펼침 수는 그대로 둔다", () => {
+    const presentation = createStudioMainMenuPresentation(catalogueWithMannequin(), { densityMode: "simple" });
+    const insertSection = presentation.compositeAdvancedSections.find((section) => section.groupId === "insert");
+    // 펼침 행의 개수(접힌 원래 행 수)는 바뀌지 않는다 — 원래 '기본 데생 인형'은 여전히 접힌 3D 섹션 안에 있다.
+    expect(insertSection?.itemCount).toBe(5);
+    const groups = insertStudioMainMenuAdvancedSectionFoldRows(
+      presentation.groups,
+      presentation.compositeAdvancedSections,
+      false,
+      buildFoldItem,
+    );
+    const insert = groups.find((group) => group.id === "insert")!;
+    expect(insert.items.map((item) => item.id)).toEqual([
+      "text-command-0",
+      "text-command-1",
+      `mannequin3d${STUDIO_MAIN_MENU_FOLDED_SHORTCUT_ID_SUFFIX}`,
+      "fold:insert:5",
+    ]);
+    const shortcut = insert.items[2];
+    expect(shortcut?.label).toBe("3D 데생 인형");
+    expect(shortcut?.sourceGroupId).toBe("3d");
+    // 바로가기 앞에 구분선을 두어 일상 행과 나눈다.
+    expect(insert.items[1]?.separatorAfter).toBe(true);
+    expect(STUDIO_MAIN_MENU_FOLDED_SECTION_SHORTCUTS.insert?.[0]?.itemId).toBe("mannequin3d");
+  });
+
+  it("펼치거나 full 모드면 원래 '기본 데생 인형' 행만 있고 바로가기는 없다", () => {
+    for (const options of [
+      { densityMode: "simple" as const, advancedSectionsExpanded: true },
+      { densityMode: "full" as const },
+      {},
+    ]) {
+      const insert = createStudioMainMenuPresentation(catalogueWithMannequin(), options).groups.find(
+        (group) => group.id === "insert",
+      )!;
+      const ids = insert.items.map((item) => item.id);
+      expect(ids).toContain("mannequin3d");
+      expect(ids.some((id) => id.endsWith(STUDIO_MAIN_MENU_FOLDED_SHORTCUT_ID_SUFFIX))).toBe(false);
+      expect(insert.items.find((item) => item.id === "mannequin3d")?.label).toBe("기본 데생 인형");
+    }
+  });
+
+  it("영어 카탈로그에서는 영어 이름을 쓴다", () => {
+    const englishLabels = { ...KO_LABELS, file: "File", help: "Help" };
+    const insert = createStudioMainMenuPresentation(catalogueWithMannequin(englishLabels), {
+      densityMode: "focus",
+    }).groups.find((group) => group.id === "insert")!;
+    expect(insert.items.at(-1)?.label).toBe("3D drawing mannequin");
   });
 });

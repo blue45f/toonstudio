@@ -17,6 +17,11 @@
 //   studio-vrm-avatar-forge.test.ts의 V1_GEOMETRY_DIGESTS가 이 계약을 SHA-256으로 잠근다.
 
 import {
+  decorateAvatarForgeHairParts,
+  sanitizeAvatarForgeHairColorExtras,
+  type AvatarForgeHairAccentMode,
+} from "./studio-vrm-avatar-forge-hair-color";
+import {
   NEUTRAL_STUDIO_VRM_PROPORTIONS,
   sanitizeStudioVrmProportions,
   type StudioVrmProportions,
@@ -124,6 +129,14 @@ export type AvatarForgeHairParams = {
   ahoge: number;
   /** v2: 묶음(포니/트윈/번/하프업) 높이. 0.5가 v1 위치. */
   tailHeight: number;
+  /** 하이라이트 방식(브릿지·이너 컬러). 생략 = 없음. 색 확장 필드는 전부 기본값이면 키가 없다. */
+  accentMode?: Exclude<AvatarForgeHairAccentMode, "none">;
+  /** 하이라이트 색. 방식을 꺼도 남겨 다시 켤 때 쓴다. */
+  accentColor?: string;
+  /** 끝 색이 시작되는 길이 비율(0 뿌리 ~ 1 끝). 생략 = 0.5(예전 선형 그라데이션). */
+  gradientPosition?: number;
+  /** 기본색→끝 색 경계 폭(0 또렷한 투톤 ~ 1 예전 선형). 생략 = 1. */
+  gradientSoftness?: number;
 };
 
 export type AvatarForgeFaceAccent = {
@@ -189,6 +202,11 @@ export type AvatarForgeHairPart = {
   wave?: number;
   /** v2 웨이브 주기(파장 수). wave와 항상 짝으로만 존재한다. */
   waveFrequency?: number;
+  /** 색 확장(studio-vrm-avatar-forge-hair-color.ts). 상태에 확장이 없으면 키 자체가 없다. */
+  gradientPosition?: number;
+  gradientSoftness?: number;
+  accentMode?: Exclude<AvatarForgeHairAccentMode, "none">;
+  accentColor?: string;
 };
 
 export type AvatarForgePreset = {
@@ -655,6 +673,8 @@ export function sanitizeAvatarForgeState(raw: unknown): AvatarForgeState {
       tailHeight: legacy
         ? V1_EQUIVALENT_HAIR.tailHeight
         : clampNumber(hair.tailHeight, AVATAR_FORGE_HAIR_LIMITS.tailHeight, DEFAULT_HAIR.tailHeight),
+      // v1 문서가 색 확장 키를 가질 방법은 없다 — 있다면 오염된 입력이므로 v2 필드처럼 무시한다.
+      ...(legacy ? {} : sanitizeAvatarForgeHairColorExtras(hair)),
     },
     faceAccents: DEFAULT_ACCENTS.map((fallback) => {
       const entry = byId.get(fallback.id) ?? {};
@@ -762,65 +782,6 @@ export function applyAvatarForgeBodyPreset(
       current.proportions,
     ),
   });
-}
-
-export type AvatarForgeBodyBoneName =
-  | "hips"
-  | "spine"
-  | "chest"
-  | "upperChest"
-  | "leftLowerArm"
-  | "rightLowerArm"
-  | "leftHand"
-  | "rightHand"
-  | "leftLowerLeg"
-  | "rightLowerLeg"
-  | "leftFoot"
-  | "rightFoot";
-
-export type AvatarForgeBodyBoneAdjustment = {
-  readonly bone: AvatarForgeBodyBoneName;
-  readonly positionMultiplier: readonly [number, number, number];
-  readonly scaleMultiplier: readonly [number, number, number];
-};
-
-/**
- * Builds a renderer-independent, deterministic rig adjustment plan. Width is applied as a
- * conservative torso scale; length uses child-bone offsets so arbitrary source bone axes remain
- * intact and the original mesh/geometry buffers never change.
- */
-export function buildAvatarForgeBodyAdjustmentPlan(
-  body: AvatarForgeBodyParams,
-): readonly AvatarForgeBodyBoneAdjustment[] {
-  const shoulder = clampNumber(
-    body.shoulderWidth,
-    AVATAR_FORGE_BODY_LIMITS.shoulderWidth,
-    DEFAULT_BODY.shoulderWidth,
-  );
-  const torso = clampNumber(
-    body.torsoLength,
-    AVATAR_FORGE_BODY_LIMITS.torsoLength,
-    DEFAULT_BODY.torsoLength,
-  );
-  const hip = clampNumber(body.hipWidth, AVATAR_FORGE_BODY_LIMITS.hipWidth, DEFAULT_BODY.hipWidth);
-  const arm = clampNumber(body.armLength, AVATAR_FORGE_BODY_LIMITS.armLength, DEFAULT_BODY.armLength);
-  const leg = clampNumber(body.legLength, AVATAR_FORGE_BODY_LIMITS.legLength, DEFAULT_BODY.legLength);
-  const unchanged = [1, 1, 1] as const;
-
-  return [
-    { bone: "hips", positionMultiplier: unchanged, scaleMultiplier: [hip, 1, 1] },
-    { bone: "spine", positionMultiplier: [torso, torso, torso], scaleMultiplier: unchanged },
-    { bone: "chest", positionMultiplier: [torso, torso, torso], scaleMultiplier: [shoulder, 1, 1] },
-    { bone: "upperChest", positionMultiplier: [torso, torso, torso], scaleMultiplier: [shoulder, 1, 1] },
-    { bone: "leftLowerArm", positionMultiplier: [arm, arm, arm], scaleMultiplier: unchanged },
-    { bone: "rightLowerArm", positionMultiplier: [arm, arm, arm], scaleMultiplier: unchanged },
-    { bone: "leftHand", positionMultiplier: [arm, arm, arm], scaleMultiplier: unchanged },
-    { bone: "rightHand", positionMultiplier: [arm, arm, arm], scaleMultiplier: unchanged },
-    { bone: "leftLowerLeg", positionMultiplier: [leg, leg, leg], scaleMultiplier: unchanged },
-    { bone: "rightLowerLeg", positionMultiplier: [leg, leg, leg], scaleMultiplier: unchanged },
-    { bone: "leftFoot", positionMultiplier: [leg, leg, leg], scaleMultiplier: unchanged },
-    { bone: "rightFoot", positionMultiplier: [leg, leg, leg], scaleMultiplier: unchanged },
-  ];
 }
 
 /** 웨이브 스펙. amount가 0이면 파츠에 키를 만들지 않는다(하위호환 계약). */
@@ -1142,5 +1103,6 @@ export function buildAvatarForgeHairParts(
     );
   }
 
-  return parts;
+  // 색 확장(그라데이션·하이라이트)이 없으면 같은 배열 그대로 — 파츠 JSON 바이트 동일 계약.
+  return decorateAvatarForgeHairParts(parts, hair);
 }

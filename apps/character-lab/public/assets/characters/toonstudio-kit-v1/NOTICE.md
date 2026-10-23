@@ -1,7 +1,7 @@
 # ToonStudio 캐릭터 키트 v1 — 출처와 라이선스 고지
 
 이 파일은 `tools/blender/character_kit`가 `kit.json`과 함께 만든 사람용 요약입니다. 기준은 `kit.json`의 `provenance`입니다.
-생성일 2026-10-11, 도구 `tools/blender/character_kit`, Blender(bpy) 5.2.2.
+생성일 2026-10-23, 도구 `tools/blender/character_kit`, Blender(bpy) 5.2.2.
 
 ## 원천 1 — Blender Foundation Human Base Meshes Bundle v1.4.1 (CC0 1.0)
 
@@ -18,8 +18,11 @@
 
 ## 원천 2 — ToonStudio 원본 (license: original)
 
-- 속옷·구강 내부(치아·잇몸·혀)·속눈썹·눈썹·홍채·캐치라이트의 지오메트리와 몸 쪽 텍스처(피부·눈·치아·혀·속옷·속눈썹·눈썹·홍채)는
+- 속옷·구강 내부(치아·잇몸·혀)·속눈썹·눈썹·캐치라이트의 지오메트리와 몸 쪽 텍스처(피부·눈·치아·혀·속옷·속눈썹·눈썹)는
   `tools/blender/character_kit`가 절차 생성했다. 이 항목들에는 외부 이미지·스캔·사진을 쓰지 않았다.
+- `build_irises`: 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight) — 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성.
+- `proc_accessories`: 소품 3종(accessory/choker, accessory/earrings, accessory/glasses) — 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성.
+- `forge_hair`: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered) — 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님).
 
 ## 원천 3 — Hyper3D(Rodin Gen-2.5) 생성물의 파생 파츠 (license: hyper3d-rodin-output) — 2026-10-14 키트에서 제외
 
@@ -300,21 +303,24 @@
 
 ## 쓰지 않은 것
 
-- 상용 제품 에셋과 라이선스가 불명확한 에셋은 이 키트에 들어 있지 않다. Hyper3D(Rodin) 생성물은 위 원천 3에 적은 파생 파츠만 들어 있다.
-  이 키트에 쓰인 라이선스 값은 `CC0-1.0`, `original`이다. `hyper3d-rodin-output` 파생 파츠는 2026-10-14(33종)·2026-10-15(남성 리타깃 15종) 제외해 현재 키트에는 없다(위 원천 3의 기록 참조).
+- 상용 제품 에셋과 라이선스가 불명확한 에셋은 이 키트에 들어 있지 않다. 이 키트에 쓰인 라이선스 값은 `CC0-1.0`, `original`이다.
+  `hyper3d-rodin-output` 파생 파츠는 위 원천 3 기록의 경위로 제외해 현재 키트에는 없다.
 
 ## 들어 있는 파일
 
 - 베이스: `bases/female.glb`, `bases/male.glb`
-- 파츠(현재 제공 8종, 남녀 베이스 각 1파일씩 16개): accessory/choker, accessory/earrings, accessory/glasses, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight
-- 제외한 Hyper3D 파생 변형 48개(출처 33종분 + 남성 리타깃 15종)의 GLB 파일은 저장소에 없다. 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. (2026-10-22 실측 정정 — 이 절의 이전 목록은 2026-10-11 생성 당시 것이었다. 생성기 `tools/blender/character_kit/kit_manifest.py`의 베이스 고정 문장도 남아 있어, 키트를 재생성하면 이 절이 다시 낡을 수 있으니 재생성 전에 생성기부터 고칠 것.)
+- 파츠(현재 제공 15종, 변형 파일 30개): accessory/choker, accessory/earrings, accessory/glasses, hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight
+- 제외한 Hyper3D 파생 변형 48개(출처 33종분 + 남성 리타깃 15종)의 GLB 파일은 저장소에 없다.
+- 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. 이 절은 생성기(`kit_provenance.notice_text`)가 `kit.json`에서 다시 센다.
 
 ## 재현
 
 ```text
 pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>
 <venv>/bin/python -I tools/blender/character_kit/build_base.py --contract <contract.json> ...
-<venv>/bin/python -I tools/blender/character_kit/build_irises.py ...
-<venv>/bin/python -I tools/blender/character_kit/build_kit_json.py ...
-pnpm exec tsx scripts/verify-character-kit.mjs --root <키트 폴더> --base female
+<venv>/bin/python -I tools/blender/character_kit/build_irises.py --base <female|male> ...
+<venv>/bin/python -I tools/blender/character_kit/build_parts.py --base <female|male> ...   # 절차 소품(proc_accessories)
+<venv>/bin/python -I tools/blender/character_kit/forge_build_hair.py --base <female|male> --base-model <base_model_<base>.npz> --out <포지 산출물>
+<venv>/bin/python -I tools/blender/character_kit/build_kit_json.py --kit-dir <키트 폴더> --meta <base_meta_female.json> --extra-meta <base_meta_male.json> --contract <contract.json> --parts-json <레지스트리>
+pnpm exec tsx scripts/verify-character-kit.mjs --root <키트 폴더> --base all
 ```

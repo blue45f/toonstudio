@@ -25,10 +25,12 @@ import {
   STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
 } from "./studio-mannequin-model";
 import {
+  STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION,
   STUDIO_MANNEQUIN_STATE_DOC_KIND,
   STUDIO_MANNEQUIN_STATE_DOC_MAX_BYTES,
   STUDIO_MANNEQUIN_STATE_DOC_VERSION,
   STUDIO_MANNEQUIN_POSE_PRESETS,
+  canonicalizeStudioMannequinPartner,
   parseStudioMannequinState,
   serializeStudioMannequinState,
   type StudioMannequinPersistentState,
@@ -48,6 +50,20 @@ function mannequinState(heightCm = 168): StudioMannequinPersistentState {
   return {
     params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm },
     pose: STUDIO_MANNEQUIN_POSE_PRESETS.find((preset) => preset.id === "run")!.pose,
+  };
+}
+
+/** 2인 구도 상대 인형이 있는 상태(B-02) — 상대는 저장 정본으로 만든다(훅과 같은 경로). */
+function duoMannequinState(): StudioMannequinPersistentState {
+  const base = mannequinState();
+  return {
+    ...base,
+    partner: canonicalizeStudioMannequinPartner({
+      params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 158 },
+      pose: base.pose,
+      offset: [0, 0, 0.42],
+      yawRad: Math.PI,
+    }),
   };
 }
 
@@ -200,6 +216,67 @@ describe("mannequin and BG3D LT shared SQLite repositories", () => {
     const malformed = { params: null, pose: null } as unknown as StudioMannequinPersistentState;
     await expect(Promise.resolve().then(() => repository.save(malformed)))
       .rejects.toMatchObject({ code: "invalid" });
+  });
+
+  it("2인 구도 상대 인형을 v2 정본 바이트로 저장·복원하고, 상대를 빼면 v1 바이트로 돌아간다", async () => {
+    const database = await memoryDatabase();
+    const repository = createStudioMannequinStateSqliteRepository({
+      acquireDatabase: async () => database,
+    });
+    const saved = await repository.save(duoMannequinState());
+    const raw = await database.kvGet(
+      STUDIO_MANNEQUIN_STATE_SQLITE_NAMESPACE,
+      STUDIO_MANNEQUIN_STATE_SQLITE_KEY,
+    );
+    expect((JSON.parse(raw!) as { version: number }).version).toBe(STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION);
+    expect(raw).toBe(serializeStudioMannequinState(saved));
+    expect(saved.partner?.params.heightCm).toBe(158);
+    const reopened = createStudioMannequinStateSqliteRepository({
+      acquireDatabase: async () => database,
+    });
+    await expect(reopened.load()).resolves.toEqual(saved);
+
+    const solo = await repository.save(mannequinState());
+    const soloRaw = await database.kvGet(
+      STUDIO_MANNEQUIN_STATE_SQLITE_NAMESPACE,
+      STUDIO_MANNEQUIN_STATE_SQLITE_KEY,
+    );
+    expect((JSON.parse(soloRaw!) as { version: number }).version).toBe(STUDIO_MANNEQUIN_STATE_DOC_VERSION);
+    expect("partner" in solo).toBe(false);
+  });
+
+  it("상대 인형도 조용한 클램프·필드 제거가 필요한 값은 저장을 거부한다", async () => {
+    const database = await memoryDatabase();
+    const repository = createStudioMannequinStateSqliteRepository({
+      acquireDatabase: async () => database,
+    });
+    const base = duoMannequinState();
+    const partner = base.partner!;
+    const rejected = [
+      { ...base, partner: { ...partner, offset: [99, 0, 0.42] } },
+      { ...base, partner: { ...partner, params: { ...partner.params, heightCm: 999 } } },
+      { ...base, partner: { ...partner, futureField: true } },
+      { ...base, partner: "partner" },
+    ] as unknown as StudioMannequinPersistentState[];
+    for (const state of rejected) {
+      await expect(Promise.resolve().then(() => repository.save(state)))
+        .rejects.toMatchObject({ code: "invalid" });
+    }
+    // 값이 undefined 인 partner 키는 JSON 에 실리지 않으므로 상대 없음과 같다.
+    const withUndefined = { ...mannequinState(), partner: undefined };
+    await expect(repository.save(withUndefined)).resolves.toEqual(
+      parseStudioMannequinState(serializeStudioMannequinState(mannequinState())),
+    );
+
+    // 상대 키가 빠진 v2 행은 정본이 아니다(저장 계약은 상대가 없으면 v1 이다).
+    const document = JSON.parse(serializeStudioMannequinState(base)) as Record<string, unknown>;
+    delete document.partner;
+    await database.kvSet(
+      STUDIO_MANNEQUIN_STATE_SQLITE_NAMESPACE,
+      STUDIO_MANNEQUIN_STATE_SQLITE_KEY,
+      JSON.stringify(document),
+    );
+    await expect(repository.load()).rejects.toMatchObject({ code: "invalid" });
   });
 
   it("queues overlapping complete snapshots in invocation order", async () => {

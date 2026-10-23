@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ServiceDegradedBanner } from "./ServiceDegradedBanner";
 
 import { useI18n } from "@/shared/lib/i18n";
+import { registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 
 const availableCapabilities = {
   publicCatalog: "available",
@@ -335,5 +336,56 @@ describe("연결 준비 칩의 자리", () => {
     view.unmount();
     expect(document.documentElement.style.getPropertyValue(property)).toBe("");
     bounds.mockRestore();
+  });
+});
+
+describe("모달이 내준 상태 자리(B-05)", () => {
+  it("떠 있는 배너 대신 모달의 자리에 한 줄 칩으로 들어가고, 자리가 사라지면 다시 뜬다", () => {
+    const slot = document.createElement("div");
+    document.body.appendChild(slot);
+    let unregister: () => void = () => {};
+    act(() => {
+      unregister = registerModalStatusSlot(slot);
+    });
+    try {
+      renderBanner(true);
+      const chip = screen.getByRole("status");
+      expect(slot.contains(chip)).toBe(true);
+      expect(chip.getAttribute("data-service-status-placement")).toBe("modal-slot");
+      // 떠 있는 배너의 고정 배치(z-90 하단 고정)를 쓰지 않는다 — 모달 조작을 가리지 않는다.
+      expect(chip.className).not.toContain("fixed");
+      expect(chip.className).not.toContain("z-[90]");
+      expect(chip.textContent).toContain("일부 온라인 기능을 잠시 사용할 수 없습니다");
+      // 알림은 숨기지 않는다: 설명은 화면 읽기용으로 남고 다시 확인도 그대로 된다.
+      expect(chip.textContent).toContain("로컬 편집은 계속 사용할 수 있습니다");
+      fireEvent.click(screen.getByRole("button", { name: "다시 확인" }));
+      expect(mocks.refresh).toHaveBeenCalledOnce();
+    } finally {
+      act(() => unregister());
+    }
+    const floating = screen.getByRole("status");
+    expect(slot.contains(floating)).toBe(false);
+    expect(floating.className).toContain("fixed");
+    slot.remove();
+  });
+
+  it("웜업 안내도 모달 자리가 있으면 그 안에 들어간다", () => {
+    mocks.state = { ...mocks.state, report: null, warmingUp: true };
+    const slot = document.createElement("div");
+    document.body.appendChild(slot);
+    let unregister: () => void = () => {};
+    act(() => {
+      unregister = registerModalStatusSlot(slot);
+    });
+    try {
+      renderBanner(true);
+      const chip = screen.getByRole("status");
+      expect(slot.contains(chip)).toBe(true);
+      expect(chip.getAttribute("data-service-degraded-banner")).toBe("warming");
+      expect(chip.textContent).toContain("온라인 기능을 연결하는 중이에요.");
+    } finally {
+      act(() => unregister());
+      slot.remove();
+    }
   });
 });

@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import { resolveStudioMannequinOutlineVisible } from "./studio-mannequin-readability";
 
-const source = readFileSync(new URL("./studio-mannequin-scene.ts", import.meta.url), "utf8");
+// 인형 그래프(메시·윤곽선·IK 핸들)는 2인 구도를 위해 인형 한 체 모듈로 분리됐다 — 계약은 두 파일을 함께 본다.
+const sceneSource = readFileSync(new URL("./studio-mannequin-scene.ts", import.meta.url), "utf8");
+const figureSource = readFileSync(new URL("./studio-mannequin-scene-figure.ts", import.meta.url), "utf8");
+const source = `${sceneSource}\n${figureSource}`;
 
 describe("3D mannequin direct-manipulation runtime boundary", () => {
   it("keeps mouse, pen and touch on one constrained pointer-rotation path", () => {
@@ -28,13 +31,18 @@ describe("3D mannequin direct-manipulation runtime boundary", () => {
     expect(source).toContain("new THREE.CylinderGeometry(");
     expect(source).toContain("const hasAnatomicalTaper");
     expect(source).toContain("side: THREE.BackSide");
-    // 윤곽선 표시 여부는 읽기성 헬퍼 한 곳이 정한다 — 메시를 만들 때와 스타일·모드를 바꿀 때 모두 그 헬퍼를 거쳐야 한다.
-    expect(source.match(/outline\.visible = resolveStudioMannequinOutlineVisible\(\{/gu)).toHaveLength(2);
+    // 윤곽선 표시 여부는 읽기성 헬퍼 한 곳이 정한다 — 씬의 재질 공급자가 헬퍼를 한 번만 부르고,
+    // 인형 그래프는 메시를 만들 때와 스타일·모드를 바꿀 때 모두 그 공급자를 거쳐야 한다.
+    expect(sceneSource.match(/resolveStudioMannequinOutlineVisible\(\{/gu)).toHaveLength(1);
+    expect(figureSource.match(/outline\.visible = materials\.outlineVisible\(/gu)).toHaveLength(2);
+    expect(figureSource).not.toContain("resolveStudioMannequinOutlineVisible");
     expect(source).toContain("style: currentMaterialStyle,");
     // 기존 규칙("shaded 스타일에서만 윤곽선")은 auto 모드가 그대로 유지한다.
     expect(resolveStudioMannequinOutlineVisible({ mode: "auto", style: "shaded", role: "body" })).toBe(true);
     expect(resolveStudioMannequinOutlineVisible({ mode: "auto", style: "wood", role: "body" })).toBe(false);
-    expect(source).toContain("renderer.shadowMap.type = THREE.PCFSoftShadowMap");
+    // three r186 에서 PCFSoftShadowMap 은 제거됐다(매 진입 경고) — PCFShadowMap 을 명시한다.
+    expect(source).toContain("renderer.shadowMap.type = THREE.PCFShadowMap");
+    expect(source).not.toContain("PCFSoftShadowMap;");
     expect(source).toContain('addEventListener("dblclick", handleDoubleClick)');
   });
 });

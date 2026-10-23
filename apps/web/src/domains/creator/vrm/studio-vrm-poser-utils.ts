@@ -8,6 +8,14 @@ import { POSER_FINGER_BONES } from "../studio-pose-presets";
 
 import { classifyMeshName } from "./studio-vrm-costume";
 import {
+  VRM_MATERIAL_FX_SHADE_OVERRIDE,
+  classifyVrmCustomColorPartForMaterial,
+  readVrmPristineShadeColor,
+  resolveVrmCustomColorHex,
+  restoreVrmShadeColor,
+  syncVrmSkinToneShade,
+} from "./studio-vrm-custom-color-target";
+import {
   cloneStudioVrmIkConstraints,
   parseStudioVrmIkConstraints,
 } from "./studio-vrm-ik-constraints";
@@ -1277,77 +1285,8 @@ export function isVrmNearBlackLitColor(color: THREE.Color): boolean {
   return color.r <= 0.02 && color.g <= 0.02 && color.b <= 0.02;
 }
 
-/**
- * Map a single mesh/material name to a recolor slot.
- * Hair before bare "top" (Hair_Top); face before body/head; cloth before generic body.
- */
-export function classifyVrmCustomColorPart(nameRaw: string): string | null {
-  const name = nameRaw.toLowerCase();
-  if (!name.trim()) return null;
-  if (name.includes("hair") || name.includes("kami")) return "hair";
-  if (
-    name.includes("face")
-    || name.includes("eye")
-    || name.includes("mouth")
-    || name.includes("brow")
-    || name.includes("lash")
-    || name.includes("tooth")
-  ) {
-    return "face";
-  }
-  // Clothing before body — VRoid bakes Tops/Bottoms materials onto a node named "Body".
-  // Bottoms before generic "cloth" so names like Bottoms_01_CLOTH do not fall into tops.
-  if (
-    name.includes("bottoms")
-    || name.includes("bottom")
-    || name.includes("pants")
-    || name.includes("skirt")
-    || name.includes("shoes")
-    || name.includes("boot")
-    || name.includes("sock")
-    || name.includes("acc")
-  ) {
-    return "bottoms";
-  }
-  if (
-    name.includes("tops")
-    || name.includes("clothes")
-    || name.includes("cloth")
-    || name.includes("shirt")
-    || name.includes("jacket")
-    || name.includes("coat")
-    || name.includes("wear")
-    || /(^|[^a-z])top([^a-z]|$)/.test(name)
-  ) {
-    return "tops";
-  }
-  if (
-    name.includes("body")
-    || name.includes("skin")
-    || name.includes("hand")
-    || name.includes("leg")
-    || name.includes("arm")
-    || name.includes("foot")
-    || name.includes("head")
-    || name.includes("neck")
-    || name.includes("torso")
-  ) {
-    return "body";
-  }
-  return null;
-}
-
-/**
- * Prefer material name over mesh name so multi-material "Body" meshes (skin + tops + bottoms
- * + hair) recolor only the matching primitive, not the entire body as one slot.
- */
-export function classifyVrmCustomColorPartForMaterial(
-  meshName: string,
-  materialName?: string | null,
-): string | null {
-  return classifyVrmCustomColorPart(materialName ?? "")
-    ?? classifyVrmCustomColorPart(meshName);
-}
+// 사용자 색 부위 분류는 피부색 규칙과 함께 studio-vrm-custom-color-target.ts 로 옮겼다(같은 이름으로 다시 내보냄).
+export { classifyVrmCustomColorPart, classifyVrmCustomColorPartForMaterial } from "./studio-vrm-custom-color-target";
 
 function isActiveCustomColorHex(hex: string | undefined): hex is string {
   if (!hex || typeof hex !== "string") return false;
@@ -1724,7 +1663,7 @@ export function applyVrmCustomColors(vrm: VRM, customColors: Record<string, stri
       if (isMToonOutlineMaterial(colored)) return;
 
       const part = classifyVrmCustomColorPartForMaterial(mesh.name, colored.name);
-      const customHex = part ? customColors[part] : undefined;
+      const customHex = resolveVrmCustomColorHex(part, colored.name, customColors);
       const hasCustom = isActiveCustomColorHex(customHex);
       let original = colored.userData.__vrmCustomColorOriginal as THREE.Color | undefined;
 
@@ -1746,12 +1685,15 @@ export function applyVrmCustomColors(vrm: VRM, customColors: Record<string, stri
         }
         const textureColorApplied = applyVrmCustomColorTexture(colored, customHex);
         colored.color.set(textureColorApplied ? "#ffffff" : customHex);
+        // 피부는 그림자 색도 같은 비율로(어두운 텍스처 경로는 그림자 텍스처가 이미 함께 바뀐다).
+        syncVrmSkinToneShade(colored, colored.name, textureColorApplied ? null : customHex);
         colored.needsUpdate = true;
         colored.userData.__vrmCustomColorApplied = true;
         return;
       }
 
       restoreVrmCustomColorTexture(colored);
+      syncVrmSkinToneShade(colored, colored.name, null);
       if (colored.userData.__vrmCustomColorApplied === true && original) {
         colored.color.copy(original);
         colored.needsUpdate = true;
@@ -1851,7 +1793,7 @@ export function applyVrmMaterialFx(vrm: VRM, fx: VrmMaterialFx) {
       let original = mat.userData.__vrmMaterialFxOriginal as VrmMaterialFxOriginal | undefined;
       if (!original) {
         original = {
-          shadeColor: mat.shadeColorFactor?.clone(),
+          shadeColor: readVrmPristineShadeColor(mat)?.clone(),
           outlineColor: mat.outlineColorFactor?.clone(),
           rimColor: mat.parametricRimColorFactor?.clone(),
           rimIntensity: mat.rimLightingMixFactor,
@@ -1861,8 +1803,9 @@ export function applyVrmMaterialFx(vrm: VRM, fx: VrmMaterialFx) {
         mat.userData.__vrmMaterialFxOriginal = original;
       }
 
+      mat.userData[VRM_MATERIAL_FX_SHADE_OVERRIDE] = Boolean(fx.shadeColor);
       if (fx.shadeColor) mat.shadeColorFactor?.set(fx.shadeColor);
-      else if (original.shadeColor) mat.shadeColorFactor?.copy(original.shadeColor);
+      else if (original.shadeColor) restoreVrmShadeColor(mat, original.shadeColor);
 
       if (fx.outlineColor) mat.outlineColorFactor?.set(fx.outlineColor);
       else if (original.outlineColor) mat.outlineColorFactor?.copy(original.outlineColor);

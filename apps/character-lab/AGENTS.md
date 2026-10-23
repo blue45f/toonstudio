@@ -1,6 +1,6 @@
 # Character Lab 작업 규칙
 
-상태: current (2026-10-01). 이 디렉터리에서는 루트 `AGENTS.md`와 이 규칙을 함께 적용한다. 충돌하면 루트가 우선한다.
+상태: current (2026-10-01, 2026-10-23 레시피 v3 계약 반영). 이 디렉터리에서는 루트 `AGENTS.md`와 이 규칙을 함께 적용한다. 충돌하면 루트가 우선한다.
 경계 규칙은 `src/architecture.test.ts`가 fs 스캔으로 기계 강제하므로, 규칙을 바꾸려면 그 테스트부터 바꾼다.
 
 ## 1. 앱 성격
@@ -18,11 +18,11 @@
 | `AGENTS.md` `README.md` `docs/shaper-parity-checklist.md` `scripts/browser-probe.mjs` | core | 규칙·안내·패리티 집계표, 실브라우저 프로브(Playwright, `CHARACTER_LAB_BROWSER_PROBE=1`일 때만 동작) |
 | `docs/parity/<area>.md` | 각 영역 작업자 | 자기 영역 행만 쓰는 패리티 단일 소스(집계 전 원본) |
 | `docs/authored-asset-pipeline.md` `public/assets/characters/**` | Blender 에셋 레인 | 제작 패키지(`index.json`, `<id>/manifest.json`, `*.glb`, `slot-mapping.json`) |
-| `src/contracts/**` | core(0단계 동결) | 슬롯·프리셋 어휘·파라미터·morph/본 이름·레시피(zod)·명령/이벤트·엔진 포트·물리·캡처·manifest·비전·상태 계약. **변경은 core만** 한다 |
-| `src/shared/**` | core | 수학·색(OKLab)·PRNG(mulberry32)·해시(fnv1a·SHA-256)·typed array·stable-json |
+| `src/contracts/**` | core(0단계 동결) | 슬롯·프리셋 어휘·파라미터·morph/본 이름·레시피(zod)·명령/이벤트·엔진 포트·물리·캡처·manifest·비전·상태 계약. 레시피 v3(2026-10-23): `color-channels`(27채널 상속)·`art-style`(화풍 팩·look)·`customization`(층·소품·형태·표면·헤어 흐름)·`character-look`(+`-recipe`, 내 룩 look/1)·`character-kit-v2`(kit/2 스키마). **변경은 core만** 한다 |
+| `src/shared/**` | core | 수학·색(OKLab)·PRNG(mulberry32)·해시(fnv1a·SHA-256)·typed array·stable-json·종이 결 타일(`paper-grain`, 뷰포트·내보내기 공용 바이트) |
 | `src/testing/**` | core | mock-engine·mock-store(`MockLabProvider`)·mock-runtime·recipe/raster/manifest fixtures·minimal-glb·psd-canvas-stub |
 | `src/app/**` | core(+패널은 각 작업자) | `composition.ts`(영역 모듈을 꽂는 유일한 조립 파일), `shell/*`(런타임·엔진 세션·적용 루프·썸네일·TopBar·FailureBanner·레이아웃·컨텍스트), `shell/panels/<Panel>.tsx`(아래 표), `styles/character-lab.css`(패널 클래스도 core가 한 번에 관리) |
-| `src/state/**` `src/presets/**` | state-presets | reducer·history·store·planApply·recipe-io·thumbnail-cache·외형 프리셋 64 |
+| `src/state/**` `src/presets/**` | state-presets | reducer·history·store·planApply·recipe-io·thumbnail-cache·외형 프리셋 64. 레시피 v3 명령 reducer(`customize-reducer`)·플랜 v3 필드(`customize-plan`)는 CORE-1이 만들었고 이후 S-1이 인수한다 |
 | `src/domains/humanoid/**` | humanoid | 절차 파라메트릭 휴머노이드(케이지·세분·UV·morph·스켈레톤·스킨 웨이트) |
 | `src/domains/outfit/**` `src/domains/physics/**` | outfit-physics | 헤어 7·의상 파츠·`createOutfitBuilder`, 결정적 XPBD 체인·캡슐·cloth·provider(builtin-pbd/rapier/havok) |
 | `src/animation/**` | animation | two-bone IK·FABRIK·관절 제한·드래그·표정 합성·포즈 병합·연기 프리셋 30 |
@@ -37,8 +37,9 @@
 ## 3. 모듈 경계(architecture.test.ts가 강제)
 
 1. `contracts/`·`shared/`·`testing/`은 순수 TS다. 외부 import는 `zod`만(`testing/`은 `react`와 `testing/psd-canvas-stub.ts`의 `ag-psd` 추가 허용), 상대 경로는 서로와 `contracts`·`shared`만. `testing/`은 `app/shell/lab-store-context`·`app/shell/lab-runtime`만 추가로 import할 수 있다. `contracts/`·`shared/`의 **테스트**는 `testing/` fixture를 쓸 수 있다.
-2. 도메인 디렉터리는 `contracts`·`shared`·같은 영역만 import한다. 영역 간 교차 import 금지 — 타입이 필요하면 `contracts/`로 올리고(core에 요청), 함수는 `app/composition.ts`에서 DI로 주입한다. 외부 패키지는 영역별 허용 목록(physics: rapier, vision: `@mediapipe/tasks-vision`, export: `ag-psd`, 공통: `zod`·`react`)만.
-3. `@babylonjs/` 문자열이 들어간 import는 `src/render/**`에만 있다. side-effect import(`import "…"`)는 `render/babylon/babylon-side-effects.ts` 한 파일에만 둔다(앱 CSS 제외). `app/**`는 `render/babylon/**` 내부를 import하지 않는다.
+   - 1-a(2026-10-23): 렌더러 중립 승격 단위 `contracts/art-style.ts`·`character-look.ts`·`color-channels.ts`는 `zod` 외 import 금지(상대 import 포함). 나중에 `packages/`로 옮길 수 있게 자기완결이어야 한다 — 그래서 `color-channels.ts`는 `shared/color.ts`와 같은 OKLab 식을 파일 안에 두고 시험이 두 구현을 대조한다.
+2. `src` 최상위 디렉터리는 {app, contracts, shared, testing, render, domains, state, presets, animation, paint, export}만 둔다(2-a, 목록 밖 디렉터리는 경계 검사를 피해 가므로 금지). 도메인 디렉터리는 `contracts`·`shared`·같은 영역만 import한다. 영역 간 교차 import 금지 — 타입이 필요하면 `contracts/`로 올리고(core에 요청), 함수는 `app/composition.ts`에서 DI로 주입한다. 외부 패키지는 영역별 허용 목록(physics: rapier, vision: `@mediapipe/tasks-vision`, export: `ag-psd`, 공통: `zod`·`react`)만.
+3. `@babylonjs/` 문자열이 들어간 import는 `src/render/**`에만 있고, 그 안에서도 `render/style/**`(순수 CPU 기준식·셰이더 문자열, Node 시험)는 `@babylonjs`·`render/babylon/**`·엔진 진입점을 import하지 않는다(3-a). side-effect import(`import "…"`)는 `render/babylon/babylon-side-effects.ts` 한 파일에만 둔다(앱 CSS 제외). `app/**`는 `render/babylon/**` 내부를 import하지 않는다.
 4. `render/babylon-character-engine.ts`는 `app/composition.ts`의 **단 하나의 동적 `import()`**로만 로드한다(엔진 청크 분리). 그 파일이 디스크에 있으면 composition이 반드시 꽂아야 하고, 없으면 어느 파일도 import하지 않는다(typecheck TS2307 방지). 정적 import는 render 밖에서 금지.
 5. 브라우저 전용 모듈은 `*.browser.ts` 접미 또는 `render/babylon/**`에만 둔다. 테스트 파일은 이들을 import하지 않는다(`render/testing/null-engine-harness` 경유만 허용). `render/testing/**`(하네스·fixture)는 테스트 파일처럼 core `testing/` fixture(minimal-glb 등)를 import할 수 있다. `app/shell/panels/*.tsx`는 전부 `app/composition.ts`가 import해 조립해야 한다(미조립 패널 방지). `app/` 밖의 Node 모듈은 `*.browser` 모듈을 정적 import하지 않는다.
 6. `@/` alias 금지(vite alias·tsconfig paths 없음), `.mts`/`.cts`/JS 파일 금지, 타 앱 경로 문자열 금지, `src` 밖 상대 경로 금지, `node:`·`vitest` import는 테스트 파일만.
@@ -66,7 +67,13 @@
   4. 패널이 `engineSession.reloadSource`로 직접 올린 소스는 런타임이 `applyLoop.markSourceLoaded`로 알리고, 레시피가 그 소스를 가리키는 입력 변경(`source/set`)이 올 때까지 루프는 기존 소스로 되돌리지 않는다.
   5. 썸네일은 현재 엔진에서 소스 로드와 첫 적용이 끝난 뒤(`applyLoop.settled()`)에만 요청한다. 엔진이 `thumbnailSources`를 선언하면 지오메트리 슬롯 카드는 프리셋을 입힌 임시 절차 소스(`ThumbnailRequest.source`, level 0)로 요청한다.
   6. 적용한 플랜의 `revision`은 history revision이다(플래너는 0).
-- 베타 기능 토글(NodeMaterial 툰·IBL Shadows·OpenPBR·투영 페인트)은 **엔진 세션 상태**다. `ShadingProfile`·레시피는 core가 동결한 strict 계약이라 베타 필드를 더하지 않고, 엔진의 구조적 포트(`betaFeatures()`·`setBetaFeature()`, `render/beta-features.ts`)를 RenderPanel이 읽는다. 지원하지 않는 엔진에서는 켜지지 않고 한글 사유를 보이며 다른 경로로 대체하지 않는다.
+- 레시피 v3 계약(2026-10-23 CORE-1, 설계 `design-P1-art-style-system` §2·§12):
+  1. 레시피 v3는 v1 → v2 → v3 **명시** 사슬로만 열린다(`parseRecipe`의 `migratedFrom` 1·2). v2를 올린 레시피는 그림이 같다(8키 색 그대로·`LOOK_V2_IDENTITY`·새 필드 없음 — `state/apply-plan.test.ts`의 v2 플랜 골든이 강제).
+  2. 색은 27채널(`color-channels.ts`)이다. 레시피에는 지정한 채널만 저장하고 나머지는 `resolveChannelColor`가 OKLab 상속으로 만든다. 메시는 v2 엔진용 기본 키 `colorKey`를 유지하고 정밀 채널은 `channel`(계열 기본 키와 일치해야 함)로 준다.
+  3. 플랜의 v3 필드(`partMorphWeights`·`channels`·`surfaces`·`hairColor`·`accessories`·`proportion`·`unsupportedCustom`, 영수증 `proportion`·`skippedShapes`)는 모두 선택이다. 모르는 엔진은 무시하고, 지원하지 않는 소스는 `SourceCapabilities.custom`으로 사유를 보고한다(대체 없음).
+  4. 화풍 팩은 copy-on-apply다(`style/apply`). 팩 데이터는 presets에 두고 reducer는 명령에 실린 팩·얼굴 바인딩만 쓴다(영역 경계). 층(`wardrobe/set`)·소품·룩 적용은 프리셋 patch로 사용자 색을 덮어쓰지 않는다.
+  5. 화풍 패스 `lit-clean`·`tone`·`line`은 `CharacterEngine.supportedPasses`로 밝힌 엔진에만 요청한다. 기본 6종 `RENDER_PASS_IDS`는 그대로다.
+- 베타 기능 토글(NodeMaterial 툰·IBL Shadows·OpenPBR·투영 페인트)은 **엔진 세션 상태**다. `ShadingProfile`·레시피는 core가 동결한 strict 계약이라 베타 필드를 더하지 않고(화풍 `look`은 베타가 아니라 저장되는 사용자 산출물이라 v3 계약에 들어갔다), 엔진의 구조적 포트(`betaFeatures()`·`setBetaFeature()`, `render/beta-features.ts`)를 RenderPanel이 읽는다. 지원하지 않는 엔진에서는 켜지지 않고 한글 사유를 보이며 다른 경로로 대체하지 않는다.
 - 레이아웃 규약: 데스크톱 폭(≥1181px)에서 워크벤치는 창 높이에 갇히고 좌·우 열이 각자 스크롤한다(뷰포트 캔버스는 고정). 패널 루트에 `height: 100vh`·`min-height: 100vh`를 두지 않는다 — 열이 늘어나 페이지 전체가 스크롤된다.
 - 라이선스: 상업 이용 가능 라이선스(MIT/Apache-2.0/BSD/ISC/Zlib/CC0)만. 참고 코드는 개념·수식만 재구현하고 출처를 주석에 남긴다. 경쟁 제품 코드·에셋 복제 금지. 모든 프리셋은 `license: "original"`.
   모듈식 키트 파츠는 예외로 `provenance.license`에 `hyper3d-rodin-output`(Hyper3D 구독 플랜 생성물의 파생물)을 쓸 수 있다. 이 값은 `docs/hyper3d-terms-record.md`의 반입 기록과 생성 id를 가리켜야 하고,

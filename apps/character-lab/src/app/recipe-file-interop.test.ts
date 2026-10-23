@@ -8,12 +8,12 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { recipeDigest } from "../contracts";
+import { mergeLook, recipeDigest } from "../contracts";
 import { embedPaintLayers, extractPaintLayers, parseRecipeFile, recipeFileName as exportFileName, serializeRecipe as exportSerialize, RECIPE_FILE_SUFFIX } from "../export/recipe-file";
 import { createPaintLayer } from "../paint/paint-layer";
 import { bytesEqual } from "../shared/typed-array";
 import { RECIPE_FILE_NAME_PATTERN, deserializeRecipe, recipeFileName as stateFileName, serializeRecipe as stateSerialize } from "../state/recipe-io";
-import { defaultRecipeFixture, recipeWithSlots } from "../testing/recipe-fixtures";
+import { defaultRecipeFixture, legacyRecipeV1Fixture, legacyRecipeV2Fixture, recipeWithSlots } from "../testing/recipe-fixtures";
 
 import type { CharacterRecipe } from "../contracts";
 
@@ -21,6 +21,26 @@ import type { CharacterRecipe } from "../contracts";
 function customizedRecipe(): CharacterRecipe {
   const base = recipeWithSlots({ hair: "hair/soft-bob", top: null });
   return { ...base, body: { ...base.body, height: 0.35 }, colors: { ...base.colors, skin: "#c8a080" } };
+}
+
+/** 레시피 v3 전용 필드를 모두 기본값에서 바꾼 레시피(2026-10-23 CORE-1) */
+function customizedV3Recipe(): CharacterRecipe {
+  const base = customizedRecipe();
+  return {
+    ...base,
+    colors: { ...base.colors, "top-trim": "#223344", lip: "#bb4455" },
+    wardrobe: {
+      inner: "top/shirt",
+      outer: "top/blazer",
+      legwear: null,
+      accessories: [{ id: "acc-1", presetId: "accessory/ribbon", anchor: "hair", offset: { tMm: [0, 12, 0], rDeg: [0, 0, 15], scale: 1.1 } }],
+    },
+    partParams: { outer: { length: 0.4 }, "acc-1": { fit: -0.2 } },
+    surfaces: { top: { material: "cloth-knit", pattern: { kind: "stripe", scaleCm: 1.5, angleDeg: 30, ratio: 0.4, inkChannel: "top-trim" } } },
+    hairColor: { gradient: [0.5, 1], tipMix: 0.3, accent: "inner" },
+    shading: { ...base.shading, look: mergeLook(base.shading.look, { line: { widthMm: 6, inner: { enabled: true } }, tone: { kind: "halftone" } }) },
+    style: { packId: "kr-webtoon-romance", packRevision: 1, proportion: null, neutralFacs: { browInnerUp: 0.1 } },
+  };
 }
 
 describe("레시피 파일 상호 읽기(state/recipe-io ↔ export/recipe-file)", () => {
@@ -83,6 +103,33 @@ describe("레시피 파일 상호 읽기(state/recipe-io ↔ export/recipe-file)
     expect(c.ok).toBe(false);
     expect(d.ok).toBe(false);
     expect(!c.ok && !d.ok && c.failure.code).toBe(!d.ok ? d.failure.code : "");
+  });
+
+  it("레시피 v3 커스터마이즈(채널·옷장·소품·표면·형태·헤어 흐름·look·화풍)도 두 파서가 같은 바이트·레시피로 주고받는다", () => {
+    const recipe = customizedV3Recipe();
+    const text = stateSerialize(recipe);
+    expect(exportSerialize(recipe)).toBe(text);
+    for (const parsed of [parseRecipeFile(text), deserializeRecipe(text)]) {
+      if (!parsed.ok) throw new Error(parsed.failure.reasonKo);
+      expect(parsed.recipe).toEqual(recipe);
+      expect(parsed.migratedFrom).toBeUndefined();
+      expect(recipeDigest(parsed.recipe)).toBe(recipeDigest(recipe));
+    }
+  });
+
+  it("레시피 v2·v1 파일은 두 파서가 같은 v3 레시피로 올리고 migratedFrom을 알린다", () => {
+    const recipe = customizedRecipe();
+    for (const [legacy, from] of [[legacyRecipeV2Fixture(recipe), 2], [legacyRecipeV1Fixture(recipe), 1]] as const) {
+      const text = JSON.stringify(legacy);
+      const viaExport = parseRecipeFile(text);
+      const viaState = deserializeRecipe(text);
+      if (!viaExport.ok) throw new Error(viaExport.failure.reasonKo);
+      if (!viaState.ok) throw new Error(viaState.failure.reasonKo);
+      expect(viaExport.migratedFrom).toBe(from);
+      expect(viaState.migratedFrom).toBe(from);
+      expect(viaExport.recipe).toEqual(recipe);
+      expect(viaState.recipe).toEqual(recipe);
+    }
   });
 
   it("두 파일 이름 규칙은 같은 digest 앞 8자리를 쓰고, export 이름도 ExportPanel 열기 필터(.character.json·.json)에 걸린다", () => {

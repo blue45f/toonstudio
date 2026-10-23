@@ -11,17 +11,38 @@
  * - expression: shape key·VRM 표정에서 도달 가능한 FACS 유닛 수로 available(≥8)/partial/unavailable.
  * - pose: 필수 15본 커버리지, hand-pose: 손가락 30본 커버리지.
  * - `characterLab.slotCapabilities`(Blender 레인 slot-mapping.json 선언)는 규칙 판정을 덮어쓴다. basis로 출처를 구분한다.
+ *
+ * 커스터마이즈 능력(레시피 v3, 2026-10-23 A-1, `packageCustomCapabilities`): 제작 패키지는 GLB 한 개로 구운 캐릭터라 채널·파츠 형태 키·층·앵커·UV1·
+ * 비례 목표를 하나도 지원하지 않는다 → `NO_CUSTOM_CAPABILITIES` + 제작 패키지 사유(계약 순서). 다른 값으로 바꾸지 않고 사유만 보인다.
  */
-import { CHARACTER_SLOT_KINDS, FACE_PARAM_LABELS_KO, SLOT_LABELS_KO, isPresetId, presetName, presetSlot } from "../../contracts";
+import {
+  ACCESSORY_ANCHORS,
+  ACCESSORY_ANCHOR_LABELS_KO,
+  CHANNEL_LABELS_KO,
+  CHARACTER_SLOT_KINDS,
+  DERIVED_CHANNEL_KEYS,
+  FACE_PARAM_LABELS_KO,
+  NO_CUSTOM_CAPABILITIES,
+  PART_SCOPES,
+  REGION_CHANNEL_KEYS,
+  SLOT_LABELS_KO,
+  WARDROBE_LAYERS,
+  WARDROBE_LAYER_LABELS_KO,
+  customReasonKey,
+  isPresetId,
+  presetName,
+  presetSlot,
+} from "../../contracts";
 
 import { classifyBoneNames } from "./bone-name-mapping";
+import { scopeLabelKo } from "./custom-labels";
 import { classifyMeshRoles } from "./mesh-role-mapping";
 import { classifyShapeKeys, faceParamPairCoverage, facsUnitsInMap, resolveShapeKeyAlias } from "./shape-key-mapping";
 
 import type { BoneClassification } from "./bone-name-mapping";
 import type { MeshClassification } from "./mesh-role-mapping";
 import type { ShapeKeyClassification } from "./shape-key-mapping";
-import type { CharacterPackageManifest, FaceParamKey, FacsUnit, PartRole, PresetId, SlotCapability, SlotCapabilityMap, SlotKind } from "../../contracts";
+import type { CharacterPackageManifest, CustomCapabilities, FaceParamKey, FacsUnit, PartRole, PresetId, SlotCapability, SlotCapabilityMap, SlotKind } from "../../contracts";
 
 type IdentitySlot = "face-shape" | "eyes" | "nose" | "mouth" | "ears";
 
@@ -229,6 +250,36 @@ export function compareCapabilities(rule: SlotCapabilityMap, declared: SlotCapab
     else divergent.push({ slot, rule: a, declared: b });
   }
   return { agreeing, divergent };
+}
+
+/** 제작 패키지의 커스터마이즈 능력: 지원 항목 없음 + 제작 패키지 사유(계약 순서: 채널 → 형태 → 층 → 앵커 → patternUv → hairFlow → proportion) */
+export function packageCustomCapabilities(manifest: CharacterPackageManifest): CustomCapabilities {
+  const reasons: Record<string, string> = {};
+  for (const key of DERIVED_CHANNEL_KEYS) {
+    const label = CHANNEL_LABELS_KO[key];
+    reasons[customReasonKey("channel", key)] = (REGION_CHANNEL_KEYS as readonly string[]).includes(key)
+      ? `제작 패키지에는 머리 영역 마스크가 없어 ${label} 채널을 따로 칠할 수 없습니다.`
+      : key === "sclera"
+        ? "제작 패키지 안구는 패키지 재질 그대로라 흰자위 채널을 칠할 수 없습니다."
+        : `제작 패키지는 재질 채널을 나누지 않아 ${label} 채널을 따로 칠할 수 없습니다.`;
+  }
+  for (const scope of PART_SCOPES) {
+    reasons[customReasonKey("shape", scope)] = `제작 패키지에는 ${scopeLabelKo(scope)} 파츠 형태 키가 없습니다(셰이프 키는 얼굴·표정 파라미터에만 대응합니다).`;
+  }
+  for (const layer of WARDROBE_LAYERS) {
+    reasons[customReasonKey("layer", layer)] = `제작 패키지는 교체·겹쳐 입기 의상을 제공하지 않아 ${WARDROBE_LAYER_LABELS_KO[layer]} 층을 입힐 수 없습니다.`;
+  }
+  for (const anchor of ACCESSORY_ANCHORS) {
+    reasons[customReasonKey("anchor", anchor)] = `제작 패키지에는 소품 앵커가 없어 ${ACCESSORY_ANCHOR_LABELS_KO[anchor]} 앵커에 소품을 붙일 수 없습니다.`;
+  }
+  reasons[customReasonKey("patternUv")] = "제작 패키지 의상에는 패턴용 UV1 선언이 없어 무늬를 그릴 수 없습니다.";
+  const hair = manifest.capabilities.authoredHair;
+  reasons[customReasonKey("hairFlow")] =
+    hair.enabled && hair.style !== null
+      ? `제작 패키지 헤어('${hair.style}')에는 흐름용 UV1 선언이 없어 끝 색·포인트를 그릴 수 없습니다.`
+      : "제작 패키지에 제작 헤어 메시가 없어 헤어 색 흐름을 그릴 곳이 없습니다.";
+  reasons[customReasonKey("proportion")] = "제작 패키지 소스는 비례 목표를 지원하지 않습니다.";
+  return { ...NO_CUSTOM_CAPABILITIES, reasonsKo: reasons };
 }
 
 /** 헤어 프리셋별 판정: 패키지가 구운 스타일만 available, 나머지는 unavailable. */

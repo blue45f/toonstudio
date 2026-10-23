@@ -62,8 +62,30 @@ describe("summarizeStudioBg3dHiddenWalls", () => {
     expect(summary.walls[0]!.pieces).toBeGreaterThan(5);
     expect(summary.ids).toHaveLength(summary.walls[0]!.pieces);
     expect(new Set(summary.ids).size).toBe(summary.ids.length);
-    // 조각 이름이 모두 같아 레이어 목록만으로는 구분하기 어렵다 — 그래서 id 목록이 필요하다.
-    expect(new Set(build.primitives.filter((p) => p.visible === false).map((p) => p.name)).size).toBe(1);
+    // 벽체 조각 이름이 모두 같아 레이어 목록만으로는 구분하기 어렵다 — 그래서 id 목록이 필요하다. 그 벽의 창틀·창짝·
+    // 걸레받이도 같은 벽 이름표(앞벽)로 함께 숨고 함께 센다.
+    const hiddenNames = build.primitives.filter((p) => p.visible === false).map((p) => p.name ?? "");
+    expect(hiddenNames.filter((name) => name === "앞벽 벽체").length).toBeGreaterThan(5);
+    expect(hiddenNames.every((name) => name.startsWith("앞벽 "))).toBe(true);
+  });
+
+  it("벽에 붙은 문창·몰딩 조각은 그 벽 이름표로, 천장 판·보는 '천장'으로 묶는다", () => {
+    const summary = summarizeStudioBg3dHiddenWalls([
+      wall("a", "앞벽 벽체", false),
+      wall("b", "앞벽 문틀", false),
+      wall("c", "앞벽 걸레받이", false),
+      wall("d", "천장", false),
+      wall("e", "천장 서까래", false),
+      wall("f", "오른벽 창짝", false),
+      wall("g", "앞벽길", false),
+    ]);
+    expect(summary.walls).toEqual([
+      { label: "앞벽", pieces: 3 },
+      { label: "천장", pieces: 2 },
+      { label: "오른벽", pieces: 1 },
+      // 이름표 뒤에 띄어쓰기가 없으면 다른 이름이다.
+      { label: "앞벽길", pieces: 1 },
+    ]);
   });
 });
 

@@ -6,6 +6,7 @@ import {
 } from "./studio-mannequin-foot-grounding";
 import { describeStudioMannequinFootGroundingResult } from "./studio-mannequin-foot-grounding-status-text";
 import { buildStudioMannequinSpec } from "./studio-mannequin-model";
+import { groundStudioMannequinPresetPoseForBody } from "./studio-mannequin-pose-ground-contact";
 import {
   STUDIO_MANNEQUIN_POSE_PRESETS,
   createStudioMannequinRestPose,
@@ -23,10 +24,9 @@ function degreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-// 솔버는 발목이 지면에서 2cm 이하일 때만 toe roll 을 0 으로 낸다. 마네킹의 발목은 발바닥보다
-// 발목 높이만큼 위에 있어 서 있는 rest 자세도 양수 toe roll 이므로, "양발 접지 중"·"접지 보정
-// 없음" 분기는 일반 포즈의 실제 결과로는 도달하지 않는다. 그 두 분기는 실제 결과에서 toe roll 과
-// 접지 여부만 바꾼 판정으로 고정하고, 나머지 분기는 접지 어댑터의 실제 결과로 고정한다.
+// 접지 어댑터는 발바닥 앞뒤 점으로 접촉을 다시 재므로(뒤꿈치가 들리고 앞꿈치가 닿을 때만
+// toe roll) 모든 분기가 실제 포즈 결과로 도달한다. "양발 접지 중"·"접지 보정 없음" 분기는
+// 판정 필드만 바꾼 결과로도 한 번 더 고정해 문구 계약을 분리 검증한다.
 function withGroundingState(
   base: StudioMannequinFootGroundingResult,
   patch: Partial<StudioMannequinFootGroundingResult["groundingState"]>,
@@ -53,11 +53,12 @@ describe("describeStudioMannequinFootGroundingResult", () => {
     );
   });
 
-  it("뒤꿈치가 들린 걸음 자세는 솔버가 산출한 toe roll 각도를 알려 준다", () => {
+  it("뒤꿈치가 들린 걸음 자세는 발바닥으로 잰 toe roll 각도를 알려 준다", () => {
+    // 오른다리를 뒤로 빼 앞꿈치만 바닥에 닿은 실제 걸음 자세(왼발은 평평).
     const pose: StudioMannequinPose = {
       joints: {
-        leftUpperLeg: [degreesToRadians(-90), 0, 0],
-        leftLowerLeg: [degreesToRadians(90), 0, 0],
+        rightUpperLeg: [degreesToRadians(14), 0, 0],
+        rightLowerLeg: [degreesToRadians(28), 0, 0],
       },
       pelvisOffset: [0, 0, 0],
     };
@@ -69,6 +70,43 @@ describe("describeStudioMannequinFootGroundingResult", () => {
     expect(toeRoll).toBeGreaterThan(0);
     expect(describeStudioMannequinFootGroundingResult(result)).toBe(
       `자동 접지: toe roll ${toeRoll}° (걸음 자세)`,
+    );
+  });
+
+  it("서 있는 rest 자세는 실제 판정으로 양발 접지 중이라고 알려 준다(걸음 자세 오분류 회귀)", () => {
+    const rest = groundStudioMannequinPose(createStudioMannequinRestPose(), spec);
+    expect(describeStudioMannequinFootGroundingResult(rest)).toBe("자동 접지: 양발 접지 중");
+  });
+
+  it("공중에 든 발은 걸음 자세가 아니라 접지 보정 없음으로 알려 준다", () => {
+    const raisedKnee: StudioMannequinPose = {
+      joints: {
+        leftUpperLeg: [degreesToRadians(-90), 0, 0],
+        leftLowerLeg: [degreesToRadians(90), 0, 0],
+      },
+      pelvisOffset: [0, 0, 0],
+    };
+    const result = groundStudioMannequinPose(raisedKnee, spec);
+    expect(describeStudioMannequinFootGroundingResult(result)).toBe("자동 접지: 접지 보정 없음");
+  });
+
+  it("무릎·바닥·공중 자세는 전신 접촉 분류로 알려 준다", () => {
+    const presetResult = (id: string) => {
+      const preset = STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === id);
+      if (!preset) throw new Error(`${id} 프리셋을 찾지 못했습니다.`);
+      return groundStudioMannequinPose(
+        groundStudioMannequinPresetPoseForBody(preset.pose, undefined, preset.ground),
+        spec,
+      );
+    };
+    expect(describeStudioMannequinFootGroundingResult(presetResult("hero-landing"))).toBe(
+      "자동 접지: 무릎을 바닥에 댄 자세예요",
+    );
+    expect(describeStudioMannequinFootGroundingResult(presetResult("sit-floor-cross"))).toBe(
+      "자동 접지: 바닥에 앉거나 누운 자세예요",
+    );
+    expect(describeStudioMannequinFootGroundingResult(presetResult("jump"))).toBe(
+      "자동 접지: 공중 자세라 바닥으로 내리지 않았어요",
     );
   });
 

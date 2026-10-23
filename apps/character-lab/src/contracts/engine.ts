@@ -7,14 +7,17 @@ import type { EngineBackend } from "./backend";
 import type { HumanoidBoneName } from "./bones";
 import type { CameraFraming, CaptureRequest, CaptureResult, CapturedRaster, ThumbnailRequest } from "./capture";
 import type { KitPlan } from "./character-kit";
+import type { ChannelKey } from "./color-channels";
+import type { AccessoryAnchor, PartScope, WardrobeLayer } from "./customization";
 import type { LabFailure } from "./errors";
 import type { HumanoidModelData, PartIdPalette, PartRole } from "./mesh-data";
 import type { AuthoredPackagePlan } from "./package-manifest";
 import type { PaintLayer } from "./paint";
+import type { RenderPassId } from "./passes";
 import type { PhysicsProviderFactory, PhysicsProviderId, PhysicsStatus, SettleReceipt } from "./physics";
 import type { Vec3 } from "./pose";
 import type { ShadingMode, ShadingProfile } from "./shading";
-import type { SlotCapabilityMap } from "./slots";
+import type { SlotCapabilityMap, SlotCapabilityStatus } from "./slots";
 
 export const ENGINE_INIT_TIMEOUT_MS = 15_000;
 
@@ -55,11 +58,56 @@ export type CharacterSource =
   | { readonly kind: "package"; readonly plan: AuthoredPackagePlan }
   | { readonly kind: "kit"; readonly plan: KitPlan };
 
+/**
+ * 소스가 지원하는 커스터마이즈(레시피 v3, 2026-10-23 CORE-1). 없는 항목은 `reasonsKo`에 한글 사유를 둔다(키 = `customReasonKey`).
+ * 플래너는 이 값이 주어지면 지원하지 않는 커스터마이즈를 `ApplyPlan.unsupportedCustom`에 올리고 다른 값으로 바꾸지 않는다.
+ */
+export interface CustomCapabilities {
+  /** 따로 칠할 수 있는 채널(없는 채널의 색은 그 채널 파츠가 없거나 계열 기본 채널로 그려진다) */
+  readonly channels: readonly ChannelKey[];
+  /** 범위별 형태 키 이름(`shape:<이름>:±`의 이름) */
+  readonly shapes: Readonly<Partial<Record<PartScope, readonly string[]>>>;
+  readonly layers: readonly WardrobeLayer[];
+  readonly anchors: readonly AccessoryAnchor[];
+  /** 표면 패턴용 UV1(균일 밀도) */
+  readonly patternUv: boolean;
+  /** 헤어 흐름 UV1(뿌리 → 끝) */
+  readonly hairFlow: boolean;
+  /** 비례 목표: available(지오메트리)·partial(본 균일 배율 근사)·unavailable */
+  readonly proportion: SlotCapabilityStatus;
+  readonly reasonsKo: Readonly<Record<string, string>>;
+}
+
+export type CustomCapabilityTopic = "channel" | "shape" | "layer" | "anchor" | "patternUv" | "hairFlow" | "proportion";
+
+/** `CustomCapabilities.reasonsKo` 키: `channel:<키>`·`shape:<범위>`·`layer:<층>`·`anchor:<앵커>`·`patternUv`·`hairFlow`·`proportion` */
+export function customReasonKey(topic: CustomCapabilityTopic, key?: string): string {
+  return key === undefined ? topic : `${topic}:${key}`;
+}
+
+/** 커스터마이즈를 하나도 지원하지 않는 소스(v1 키트·제작 패키지)의 능력. 사유는 공통 문구다. */
+export const NO_CUSTOM_CAPABILITIES: CustomCapabilities = Object.freeze({
+  channels: Object.freeze([]),
+  shapes: Object.freeze({}),
+  layers: Object.freeze([]),
+  anchors: Object.freeze([]),
+  patternUv: false,
+  hairFlow: false,
+  proportion: "unavailable",
+  reasonsKo: Object.freeze({
+    patternUv: "이 소스는 패턴용 UV1이 없어 무늬를 그릴 수 없습니다.",
+    hairFlow: "이 소스의 헤어에는 흐름 UV1이 없어 끝 색·포인트를 그릴 수 없습니다.",
+    proportion: "이 소스는 비례 목표를 지원하지 않습니다.",
+  }),
+}) as CustomCapabilities;
+
 export interface SourceCapabilities {
   readonly capabilities: SlotCapabilityMap;
   readonly morphNames: readonly string[];
   readonly boneNames: readonly string[];
   readonly partIdPalette: PartIdPalette;
+  /** 커스터마이즈 능력(선택, v3). 없으면 플래너는 커스터마이즈 미지원 사유를 만들지 않는다(v2 엔진). */
+  readonly custom?: CustomCapabilities;
 }
 
 export interface PickHit {
@@ -100,6 +148,16 @@ export interface CharacterEngine {
    * true인 엔진에만 셸이 임시 소스를 만들어 보낸다 — false·미정의 엔진은 현재 로드된 소스를 그린다(source를 무시).
    */
   readonly thumbnailSources?: boolean;
+  /**
+   * `renderThumbnail`이 `ThumbnailRequest.shading`(화풍 카드 미리보기)을 처리하는지(선택, 기본 false, 레시피 v3).
+   * false·미정의 엔진에는 셸이 shading을 보내지 않고 카드에 미지원 사유를 보인다(대체 없음).
+   */
+  readonly thumbnailShading?: boolean;
+  /**
+   * 그릴 수 있는 캡처 패스(선택, 레시피 v3). 없으면 기본 6종(`RENDER_PASS_IDS`)만이다 — 화풍 패스(`lit-clean`·`tone`·`line`)는
+   * 선언한 엔진에만 요청하고, 선언하지 않은 엔진에 요청해야 하면 "엔진이 톤·선 패스를 지원하지 않습니다"로 실패를 보인다.
+   */
+  readonly supportedPasses?: readonly RenderPassId[];
   loadSource(source: CharacterSource): Promise<SourceCapabilities>;
   applyPlan(plan: ApplyPlan): ApplyReceipt;
   setShading(profile: ShadingProfile): void;

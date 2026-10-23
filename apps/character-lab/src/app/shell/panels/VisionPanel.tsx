@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
-import { CHARACTER_SLOT_KINDS, LANDMARK_APPLY_SCOPES, LANDMARK_VISIBILITY_MIN, POSE_SCOPE_LABELS_KO, RECIPE_COLOR_KEYS, SLOT_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { CHANNEL_LABELS_KO, CHARACTER_SLOT_KINDS, LANDMARK_APPLY_SCOPES, LANDMARK_VISIBILITY_MIN, POSE_SCOPE_LABELS_KO, RECIPE_COLOR_KEYS, SLOT_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
 import { handLandmarksToPose } from "../../../domains/vision/hand-landmarks-to-pose";
 import { downsampleRgba } from "../../../domains/vision/image-sampling";
 import { extractPalette } from "../../../domains/vision/kmeans-palette";
@@ -174,7 +174,7 @@ function useImageLifecycle(): ImageLifecycle {
   );
 }
 
-const COLOR_LABELS_KO: Readonly<Record<RecipeColorKey, string>> = { skin: "피부", iris: "눈동자", hair: "헤어", brow: "눈썹", top: "상의", bottom: "하의", shoes: "신발", accessory: "액세서리" };
+const COLOR_LABELS_KO: Readonly<Record<RecipeColorKey, string>> = CHANNEL_LABELS_KO; // 라벨 단일 기준: 계약 색 채널 라벨(레시피 v3)
 const PALETTE_K = 6;
 const PALETTE_SEED = 1;
 const PALETTE_MAX_SIDE = 160;

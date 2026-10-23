@@ -10,6 +10,10 @@
  *   있으면 그 슬롯을 같은 방식으로 `unsupported`(사유 = 맵의 한글 문구)로 계획한다. 다른 프리셋으로 바꾸지 않는다.
  * - `conflictsWith` 충돌과 `partial` 능력은 `partial` 사유로 노출한다(적용은 된다).
  *
+ * - 레시피 v3(2026-10-23 CORE-1): 파츠 색 = 채널 유효색(기본 8채널은 레시피 값 그대로), 표면 재질이 있으면 그 재질, 층 역할(inner·outer·legwear)의
+ *   가시성은 옷장 층, 헤어 부속(hair-accessory)은 액세서리 슬롯을 따른다. 화풍 중립 표정은 표정 가중치에 더한다.
+ *   형태·채널·표면·헤어 흐름·소품·비례는 선택 필드로 따로 낸다(`customize-plan.ts`). v2 레시피를 올린 레시피의 v2 필드는 v2 플래너와 같다(골든 시험).
+ *
  * 플래너 계약(`ApplyPlanner`)에는 파츠 레이아웃·소스 feature가 없으므로 `createApplyPlanner`로 주입한다.
  * 기본 `planApply`는 PART_ROLES 순서로 역할당 파츠 1개(partId = 순서+1, `allocatePartIds`와 동일)를 가정한다.
  * revision은 플래너가 알 수 없으므로 0이며 store(`getPlan`)가 history revision으로 덮어쓴다.
@@ -21,18 +25,22 @@ import {
   expressionToMorphWeights,
   isSlotKind,
   paramToMorphWeights,
+  pickBaseChannelColors,
   presetName,
   presetSlot,
 } from "../contracts";
 import { qNormalize } from "../shared/math";
 
+import { LAYER_OF_ROLE, addNeutralFacs, layerUnavailableReasonKo, planCustomization } from "./customize-plan";
 import { QUAT_MIN_LENGTH, reduceRecipe } from "./recipe-reducer";
 
 import type {
   ApplyPlan,
   ApplyPlanPart,
   ApplyPlanner,
+  ChannelKey,
   CharacterRecipe,
+  CustomCapabilities,
   HumanoidBoneName,
   MaterialPresetId,
   ParamKey,
@@ -44,7 +52,6 @@ import type {
   PresetEntry,
   PresetId,
   Quat,
-  RecipeColorKey,
   SlotCapability,
   SlotCapabilityMap,
   SlotKind,
@@ -85,6 +92,8 @@ export interface ApplyPlannerOptions {
   readonly features?: SourceFeatures;
   /** 플랜 적용 시 물리 settle 스텝(기본 0 = 상호작용 중 settle 없음) */
   readonly settleSteps?: number;
+  /** 소스 커스터마이즈 능력(엔진 `SourceCapabilities.custom`). 주면 미지원 커스터마이즈를 `unsupportedCustom`에 올린다(레시피 v3). */
+  readonly custom?: CustomCapabilities;
 }
 
 export interface PartialSlot {
@@ -108,7 +117,8 @@ export const SLOT_PART_ROLES: Readonly<Partial<Record<SlotKind, readonly PartRol
   top: ["top"],
   bottom: ["bottom"],
   shoes: ["shoes"],
-  accessory: ["accessory"],
+  // 헤어 부속(hair-accessory, 레시피 v3)은 액세서리 프리셋의 파츠다.
+  accessory: ["accessory", "hair-accessory"],
 };
 
 const ROLE_SLOT: Readonly<Partial<Record<PartRole, PatchPartSlot>>> = (() => {
@@ -119,8 +129,8 @@ const ROLE_SLOT: Readonly<Partial<Record<PartRole, PatchPartSlot>>> = (() => {
   return map;
 })();
 
-/** 파츠 역할 → 레시피 색 키(없으면 재질 프리셋 기본색) */
-export const PART_COLOR_KEYS: Readonly<Partial<Record<PartRole, RecipeColorKey>>> = {
+/** 파츠 역할 → 색 채널(없으면 재질 프리셋 기본색). 기본 8채널은 레시피 v2 색 키와 같다. */
+export const PART_COLOR_KEYS: Readonly<Partial<Record<PartRole, ChannelKey>>> = {
   skin: "skin",
   head: "skin",
   iris: "iris",
@@ -132,6 +142,10 @@ export const PART_COLOR_KEYS: Readonly<Partial<Record<PartRole, RecipeColorKey>>
   bottom: "bottom",
   shoes: "shoes",
   accessory: "accessory",
+  inner: "inner",
+  outer: "outer",
+  legwear: "legwear",
+  "hair-accessory": "hair-accessory",
 };
 
 const ROLE_MATERIAL_DEFAULTS: Readonly<Record<PartRole, MaterialPresetId>> = {
@@ -151,6 +165,10 @@ const ROLE_MATERIAL_DEFAULTS: Readonly<Record<PartRole, MaterialPresetId>> = {
   shoes: "leather",
   accessory: "plastic",
   underwear: "cloth-cotton",
+  inner: "cloth-cotton",
+  outer: "cloth-cotton",
+  legwear: "cloth-knit",
+  "hair-accessory": "plastic",
 };
 
 /** 프리셋별 재질 프리셋(의상·신발·액세서리). 없으면 역할 기본값. */
@@ -258,26 +276,41 @@ function patchParamKeys(entry: PresetEntry | undefined): readonly ParamKey[] {
   return [...Object.keys(entry.patch.body ?? {}), ...Object.keys(entry.patch.face ?? {})] as ParamKey[];
 }
 
-function planPart(
-  layoutEntry: PartLayoutEntry,
-  recipe: CharacterRecipe,
-  applied: ReadonlyMap<SlotKind, PresetEntry>,
-  unsupportedSlots: ReadonlySet<SlotKind>,
-): ApplyPlanPart {
+interface PartPlanContext {
+  readonly recipe: CharacterRecipe;
+  readonly applied: ReadonlyMap<SlotKind, PresetEntry>;
+  readonly unsupportedSlots: ReadonlySet<SlotKind>;
+  readonly channels: Readonly<Record<ChannelKey, string>>;
+  readonly capabilities: SlotCapabilityMap;
+  readonly custom: CustomCapabilities | undefined;
+}
+
+function planPart(layoutEntry: PartLayoutEntry, context: PartPlanContext): ApplyPlanPart {
+  const { recipe, applied, unsupportedSlots } = context;
   const { partId, role } = layoutEntry;
   const colorKey = PART_COLOR_KEYS[role];
-  const color = colorKey ? recipe.colors[colorKey] : undefined;
+  const color = colorKey ? context.channels[colorKey] : undefined;
+  // 표면 재질(레시피 v3): 그 역할의 기본 채널에 재질을 정했으면 프리셋·역할 기본 재질 대신 쓴다. 미지원 슬롯은 소스 기본값을 그대로 둔다.
+  const surfaceMaterial = colorKey ? recipe.surfaces[colorKey]?.material : undefined;
+  const material = (fallback: MaterialPresetId): MaterialPresetId => surfaceMaterial ?? fallback;
   const withColor = (part: Omit<ApplyPlanPart, "color">): ApplyPlanPart => (color === undefined ? part : { ...part, color });
+  const layer = LAYER_OF_ROLE[role];
+  if (layer) {
+    const presetId = recipe.wardrobe[layer];
+    const drawable = presetId !== null && layerUnavailableReasonKo(layer, context.capabilities, context.custom) === null;
+    const visible = drawable && (layoutEntry.variant === undefined || layoutEntry.variant === presetName(presetId));
+    return withColor({ partId, visible, materialPreset: material(materialPresetFor(role, presetId)) });
+  }
   const slot = ROLE_SLOT[role];
-  if (!slot) return withColor({ partId, visible: true, materialPreset: materialPresetFor(role, null) });
+  if (!slot) return withColor({ partId, visible: true, materialPreset: material(materialPresetFor(role, null)) });
   const presetId = recipe.slots[slot];
   // 미지원 슬롯은 적용하지 않는다: 소스가 가진 기본 파츠를 그대로 둔다(대체 없음).
   if (unsupportedSlots.has(slot)) return withColor({ partId, visible: true, materialPreset: materialPresetFor(role, null) });
-  if (presetId === null) return withColor({ partId, visible: false, materialPreset: materialPresetFor(role, null) });
+  if (presetId === null) return withColor({ partId, visible: false, materialPreset: material(materialPresetFor(role, null)) });
   const entry = applied.get(slot);
   const wanted = entry?.patch.parts?.[slot] ?? presetName(presetId);
   const visible = layoutEntry.variant === undefined || layoutEntry.variant === wanted;
-  return withColor({ partId, visible, materialPreset: materialPresetFor(role, presetId) });
+  return withColor({ partId, visible, materialPreset: material(materialPresetFor(role, presetId)) });
 }
 
 export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedApplyPlanner {
@@ -340,7 +373,8 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
     const params: Partial<Record<ParamKey, number>> = { ...recipe.body, ...recipe.face };
     for (const key of excluded) delete params[key];
     const morphWeights: Record<string, number> = { ...paramToMorphWeights(params) };
-    if (!unsupportedSlots.has("expression")) Object.assign(morphWeights, expressionToMorphWeights(recipe.expression));
+    // 화풍 중립 표정(레시피 v3 style.neutralFacs)은 표정 가중치에 더한다(없으면 v2와 같다).
+    if (!unsupportedSlots.has("expression")) Object.assign(morphWeights, expressionToMorphWeights(addNeutralFacs(recipe.expression, recipe.style.neutralFacs)));
 
     const boneRotations: Partial<Record<HumanoidBoneName, Quat>> = {};
     if (!unsupportedSlots.has("pose")) addPose(boneRotations, recipe.pose);
@@ -349,17 +383,20 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
       addPose(boneRotations, recipe.handPose.right);
     }
 
-    const parts = layout.map((layoutEntry) => planPart(layoutEntry, recipe, applied, unsupportedSlots));
+    const customization = planCustomization({ recipe, capabilities, catalog, unsupportedSlots, presetUnavailableReason: presetUnavailableReasonKo, materialPresetFor, ...(options.custom ? { custom: options.custom } : {}) });
+    const context: PartPlanContext = { recipe, applied, unsupportedSlots, channels: customization.channels, capabilities, custom: options.custom };
+    const parts = layout.map((layoutEntry) => planPart(layoutEntry, context));
 
     return {
       revision: 0,
       morphWeights,
       boneRotations,
       parts,
-      colors: recipe.colors,
+      colors: pickBaseChannelColors(recipe.colors),
       physics: { provider: recipe.physics.provider, settleSteps },
       unsupported,
       partial,
+      ...customization,
     };
   };
 }

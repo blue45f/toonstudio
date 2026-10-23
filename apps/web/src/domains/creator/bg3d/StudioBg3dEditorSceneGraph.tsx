@@ -281,6 +281,12 @@ export function bindStudioBg3dEditorSceneGraph(h) {
           onSurfacePreview={
             measurementActive ? handleMeasurementSurfacePreview : undefined
           }
+          onPaintPointer={
+            // 1단계(도형 표면 그리기) 호스트 핸들러가 있을 때만 연결한다 — 없으면 기존 동선 그대로.
+            typeof h.handlePrimitiveTexturePaintPointer === "function"
+              ? h.handlePrimitiveTexturePaintPointer
+              : undefined
+          }
           registerRef={registerPrimitiveRef}
         >
           {children}
@@ -561,6 +567,8 @@ export function bindStudioBg3dEditorSceneGraph(h) {
       enableDamping
       dampingFactor={0.08}
       enablePan
+      // 표면 그리기 핸들러가 있는 동안 왼쪽 드래그는 붓질이다 — 회전만 멈추고 확대·이동(휠·오른쪽 드래그)은 그대로 둔다.
+      enableRotate={typeof h.handlePrimitiveTexturePaintPointer !== "function" && typeof h.handleModelTexturePaintPointer !== "function"}
       enabled={
         !immersiveSceneActive
         && !isTransforming

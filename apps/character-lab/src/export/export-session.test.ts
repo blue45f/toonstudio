@@ -177,7 +177,7 @@ describe("키트 소스 GLB·레시피 내보내기 (계약 문서 8.2절)", () 
     expect(!result.ok && result.failure.reasonKo).toMatch(/키트/u);
   });
 
-  it("키트 레시피 JSON은 v2·kit 소스를 보존하며 다시 파싱되고, 헤어 같은 변형 의존 페인트 레이어도 함께 실린다", async () => {
+  it("키트 레시피 JSON은 v3·kit 소스를 보존하며 다시 파싱되고, 헤어 같은 변형 의존 페인트 레이어도 함께 실린다", async () => {
     const recipe = createKitDefaultRecipe("male");
     const hair = { part: "hair" as const, width: 4, height: 4, rgba: new Uint8ClampedArray(64).fill(200), revision: 1 };
     const result = await exportRecipe(recipe, [hair], { now: () => Date.UTC(2026, 9, 8) });
@@ -185,7 +185,7 @@ describe("키트 소스 GLB·레시피 내보내기 (계약 문서 8.2절)", () 
     expect(result.receipt.fileName).toMatch(/^character-[0-9a-f]{8}-20261008\.character\.json$/u);
     const parsed = parseRecipeFile(new TextDecoder().decode(result.bytes));
     if (!parsed.ok) throw new Error(parsed.failure.reasonKo);
-    expect(parsed.recipe.version).toBe(2);
+    expect(parsed.recipe.version).toBe(3);
     expect(parsed.recipe.source).toEqual(recipe.source);
     expect(parsed.recipe.source.kind).toBe("kit");
     expect(parsed.recipe.paint.layers.map((l) => l.part)).toEqual(["hair"]);

@@ -19,6 +19,10 @@ export function describeStudioMannequinFootGroundingResult(
   if (result.supportGuardBlocked) {
     return "자동 접지: 앉은 자세로 보고 발 관통을 그대로 뒀어요";
   }
+  // 전신 접촉 분류 — 무릎·바닥·공중 자세를 걸음 자세로 잘못 부르지 않는다.
+  if (result.stance === "kneeling") return "자동 접지: 무릎을 바닥에 댄 자세예요";
+  if (result.stance === "floor") return "자동 접지: 바닥에 앉거나 누운 자세예요";
+  if (result.stance === "airborne") return "자동 접지: 공중 자세라 바닥으로 내리지 않았어요";
   const { leftToeAngleDeg, rightToeAngleDeg } = result.groundingState;
   const toeRoll = Math.max(leftToeAngleDeg, rightToeAngleDeg);
   if (toeRoll > 0) return `자동 접지: toe roll ${toeRoll}° (걸음 자세)`;

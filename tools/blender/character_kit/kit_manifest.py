@@ -35,6 +35,12 @@ Hyper3D 파생 파츠의 출처
 `zipSha256 = rawSha256`(원본 GLB의 SHA-256), `generationId`, `evidenceDoc = recordDoc`. 계약(`kitSourceSchema`·`manifestIssues`)과
 검증기 V4가 요구하는 값과 같다. **이 license 값은 법적 허용을 뜻하지 않는다** — 약관상 닫히지 않은 점은 `recordDoc`에 있다.
 `provenance.summaryKo`와 `NOTICE.md`도 Hyper3D 파생 파츠가 있을 때 그 사실을 적는다(원본 GLB는 저장소에 없다).
+출처·고지 문장 작성(원본 파츠 설명, 손 기록 보존 `PreservedRecords`)은 `kit_provenance` 모듈이 하고 이 모듈이 같은 이름으로 다시 내보낸다.
+
+손으로 남긴 기록 지키기(2026-10-23)
+----------------------------------
+`build_manifest(preserved=...)`에 이전 `kit.json`의 기록을 주면 미제공 사유(`unavailable_reasons`보다 먼저)·`hides`(레지스트리 표가 덮는다)·
+`summaryKo`(Hyper3D 제외 경위)를 그대로 옮긴다. `build_kit_json.py`는 키트 폴더에 `kit.json`이 있으면 기본으로 이것을 쓴다(`--no-preserve`로 끈다).
 
 파츠가 morph를 따라가는지 재는 척도 (리타깃 작업이 같은 기준으로 자체 검증하는 법)
 ---------------------------------------------------------------------------------
@@ -59,13 +65,31 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from . import contract as contract_mod
+from .kit_provenance import (  # noqa: F401 — 이 모듈의 공개 이름으로 다시 내보낸다(forge_install·시험 호환)
+    HYPER3D_EVIDENCE_PREFIX,
+    HYPER3D_LICENSE,
+    HYPER3D_SOURCE_NAME,
+    HYPER3D_SOURCES_FILE,
+    HYPER3D_SOURCES_SCHEMA,
+    KIT_NOTICE_FILE,
+    Hyper3dSources,
+    ManifestError,
+    PreservedRecords,
+    hyper3d_notice_section,
+    hyper3d_provenance_sources,
+    hyper3d_source_entry,
+    load_hyper3d_sources,
+    notice_text,
+    original_source_entry,
+    provenance_block,
+    provenance_summary_ko,
+)
 
 #: 고정색 재질(눈·치아·혀·속옷·캐치라이트)의 `tint.hex`. 텍스처가 색을 나르고 이 값은 거의 흰색의 곱이다.
 FIXED_TINT_HEX = "#f4f4f6"
-KIT_NOTICE_FILE = "NOTICE.md"
 MANIFEST_FILE = "kit.json"
 ROOT_JOINT = "Armature"
 
@@ -73,24 +97,9 @@ HAIR_PATTERN = re.compile(r"^TS_AuthoredHair_(?P<style>[a-z0-9-]+)_LOD(?P<lod>\d
 GARMENT_PREFIX = {"top": "TS_Top", "bottom": "TS_Bottom", "shoes": "TS_Shoes", "accessory": "TS_Accessory"}
 IRIS_PREFIX = {"iris": "TS_Iris", "eye-highlight": "TS_Highlight", "pupil": "TS_Pupil"}
 
-#: 계약 `KIT_ALLOWED_LICENSES`·`KIT_HYPER3D_EVIDENCE_PREFIX`의 사본이다(`contract.json` 덤프에는 들어 있지 않다). 어긋나면
-#: `tests/test_kit_manifest.py`가 `character-kit.ts`를 읽어 잡아낸다.
-HYPER3D_LICENSE = "hyper3d-rodin-output"
-HYPER3D_EVIDENCE_PREFIX = "apps/character-lab/docs/"
-HYPER3D_SOURCES_SCHEMA = "toonstudio.hyper3d-sources/1"
-HYPER3D_SOURCE_NAME = "Hyper3D(Rodin Gen-2.5) 생성물"
-HYPER3D_SOURCES_FILE = Path(__file__).resolve().parent / "hyper3d_sources.json"
-_UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
-_HANGUL_PATTERN = re.compile(r"[가-힣]")
-
 REQUIRED_REASON_KO = "필수 파츠인데 아직 만들어 넣지 못했습니다(Hyper3D 생성물의 리타깃 단계를 기다리는 중입니다)."
 OPTIONAL_REASON_KO = "이번 키트 빌드에서는 제작하지 않았습니다(필수 파츠 5종 이후 과제)."
 MALE_SKIPPED_NOTE_KO = "남성 베이스(male)는 이번 빌드에서 만들지 않아 kit.json에 넣지 않았습니다(계약은 여성 베이스만 필수입니다)."
-
-
-class ManifestError(ValueError):
-    """키트 파일이 계약에 어긋나 manifest를 만들 수 없을 때(한글 사유)."""
 
 
 # ---------------------------------------------------------------- GLB 읽기(구조만)
@@ -129,6 +138,8 @@ class PrimInfo:
     has_joints: bool
     has_weights: bool
     target_count: int
+    #: `TEXCOORD_1`(키트 v2 패턴·헤어 흐름 UV1)이 있는지
+    has_uv1: bool = False
 
 
 @dataclass
@@ -235,6 +246,7 @@ def inspect_glb(data: bytes, path: str = "(memory)") -> GlbInfo:
                     has_joints="JOINTS_0" in attributes,
                     has_weights="WEIGHTS_0" in attributes,
                     target_count=len(primitive.get("targets", [])),
+                    has_uv1="TEXCOORD_1" in attributes,
                 )
             )
         morphs = list(mesh.get("extras", {}).get("targetNames", []))
@@ -479,123 +491,6 @@ def _file_entry(kit_dir: Path, relative: str) -> tuple[dict[str, Any], bytes]:
     return {"path": relative, "bytes": len(data), "sha256": sha256_of(data)}, data
 
 
-@dataclass(frozen=True)
-class Hyper3dSources:
-    """`hyper3d_sources.json`의 내용(형식 검사를 마친 것). `sources`의 키는 프리셋 id다."""
-
-    record_doc: str
-    sources: dict[str, dict[str, Any]]
-
-
-def load_hyper3d_sources(path: Path, repo_root: Path) -> Hyper3dSources:
-    """Hyper3D 출처 표를 읽어 형식과 반입 기록 문서의 존재를 검사한다(항목별 값 검사는 파츠가 등록될 때 `hyper3d_source_entry`가 한다)."""
-    try:
-        document = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise ManifestError(f"Hyper3D 출처 표를 읽지 못했습니다({path}): {error}") from error
-    if not isinstance(document, dict) or document.get("schema") != HYPER3D_SOURCES_SCHEMA:
-        raise ManifestError(f"Hyper3D 출처 표의 schema가 {HYPER3D_SOURCES_SCHEMA}가 아닙니다({path}).")
-    record_doc = document.get("recordDoc")
-    if not isinstance(record_doc, str) or not record_doc.startswith(HYPER3D_EVIDENCE_PREFIX) or ".." in record_doc or "\\" in record_doc:
-        raise ManifestError(f"Hyper3D 출처 표의 recordDoc는 {HYPER3D_EVIDENCE_PREFIX} 아래의 상대 경로여야 합니다: {record_doc!r}")
-    if not (Path(repo_root) / record_doc).is_file():
-        raise ManifestError(f"Hyper3D 반입 기록 문서가 저장소에 없습니다: {record_doc}")
-    sources = document.get("sources")
-    if not isinstance(sources, dict):
-        raise ManifestError("Hyper3D 출처 표에 sources 객체가 없습니다.")
-    return Hyper3dSources(record_doc=record_doc, sources=sources)
-
-
-def hyper3d_source_entry(preset_id: str, record: dict[str, Any], record_doc: str) -> dict[str, Any]:
-    """파츠 하나의 `provenance.sources[]` 항목을 만든다. 계약(`manifestIssues`)·검증기 V4가 요구하는 값이 모자라면 ManifestError."""
-    base_key, _, base_id = preset_id.partition("@")  # `슬롯/이름@베이스`: 그 베이스만 다른 생성물을 쓸 때(남성 전용 헤어·의상)
-    if "/" not in base_key or ("@" in preset_id and not base_id):
-        raise ManifestError(f"Hyper3D 출처 표의 키가 슬롯/이름[@베이스] 형식이 아닙니다: {preset_id}")
-    if not isinstance(record, dict):
-        raise ManifestError(f"{preset_id}: Hyper3D 출처 표 항목이 객체가 아닙니다.")
-
-    def text(key: str, valid: Any, expectation: str) -> str:
-        value = record.get(key)
-        if not isinstance(value, str) or not valid(value):
-            raise ManifestError(f"{preset_id}: Hyper3D 출처 표의 {key}가 올바르지 않습니다({expectation}): {value!r}")
-        return value
-
-    slot, name = base_key.split("/", 1)
-    return {
-        "id": f"hyper3d-{slot}-{name}" + (f"-{base_id}" if base_id else ""),
-        "name": f"{HYPER3D_SOURCE_NAME} {preset_id}",
-        "version": text("tier", bool, "비어 있지 않은 문자열"),
-        "url": text("displayUrl", lambda value: value.startswith("https://"), "https URL"),
-        "zipSha256": text("rawSha256", _SHA256_PATTERN.match, "원본 GLB의 SHA-256, 소문자 64자리 hex"),
-        "license": HYPER3D_LICENSE,
-        "derivative": True,
-        "changesKo": text("changesKo", _HANGUL_PATTERN.search, "한글 변경 내용"),
-        "generationId": text("generationId", _UUID_PATTERN.match, "소문자 uuid"),
-        "evidenceDoc": record_doc,
-    }
-
-
-def hyper3d_provenance_sources(hyper3d: Hyper3dSources | None, registered_ids: Iterable[str]) -> list[tuple[str, dict[str, Any]]]:
-    """키트에 **등록된** 파츠 중 출처 표에 키가 있는 것의 (프리셋 id, 출처 항목). 등록되지 않은 파츠는 넣지 않는다."""
-    if hyper3d is None:
-        return []
-    registered = list(registered_ids)
-    keys = [key for key in registered if key in hyper3d.sources]
-    # `슬롯/이름@베이스` 항목은 기본 파츠가 등록돼 있을 때만 넣는다(그 베이스 변형이 키트에 있다는 뜻)
-    keys += [key for key in hyper3d.sources if "@" in key and key.partition("@")[0] in registered]
-    return [(key, hyper3d_source_entry(key, hyper3d.sources[key], hyper3d.record_doc)) for key in keys]
-
-
-def provenance_summary_ko(derived: list[tuple[str, dict[str, Any]]]) -> str:
-    """`provenance.summaryKo`. Hyper3D 파생 파츠가 있으면 그 사실과 한계를 적는다."""
-    base = "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인"
-    if not derived:
-        return f"{base}입니다."
-    record_docs = sorted({entry["evidenceDoc"] for _, entry in derived})
-    return (
-        f"{base}, 그리고 Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 {len(derived)}종({', '.join(preset_id for preset_id, _ in derived)})입니다. "
-        f"Hyper3D 파츠의 license 값({HYPER3D_LICENSE})은 법적 허용을 뜻하지 않습니다. 약관상 닫히지 않은 점은 {', '.join(record_docs)}에 있고 "
-        "파츠별 생성 id는 provenance.sources[].generationId에 있습니다. Hyper3D 원본 GLB는 저장소에 없습니다."
-    )
-
-
-def provenance_block(
-    contract: contract_mod.Contract,
-    hyper3d: Hyper3dSources | None = None,
-    registered_ids: Iterable[str] = (),
-) -> dict[str, Any]:
-    """출처·라이선스: Human Base Meshes(CC0), 이 저장소의 절차 생성 원본, 그리고 키트에 등록된 Hyper3D 파생 파츠(출처 표에 있는 것만)."""
-    del contract
-    derived = hyper3d_provenance_sources(hyper3d, registered_ids)
-    return {
-        "summaryKo": provenance_summary_ko(derived),
-        "noticeFile": KIT_NOTICE_FILE,
-        "sources": [
-            {
-                "id": "hbm-1.4.1",
-                "name": "Blender Foundation Human Base Meshes Bundle",
-                "version": "1.4.1",
-                "url": "https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip",
-                "zipSha256": "811f43accbb31a88266d932f8f5563b2d13586fca0ba2693aad1f5fe582b3515",
-                "license": "CC0-1.0",
-                "derivative": True,
-                "changesKo": (
-                    "GEO-body_female_realistic 사용. 멀티레스 레벨 1 적용, 목에서 몸/머리 분할, A-포즈에서 T-포즈로 변환, 68 joint 리깅과 스킨 웨이트, "
-                    "UV 재전개와 텍스처 새로 제작, 체형·얼굴·표정 morph 추가, 속옷·구강 내부(치아·혀)·속눈썹·눈썹 추가, 눈 메시 재구성(공막과 홍채 분리)."
-                ),
-            },
-            {
-                "id": "toonstudio-original",
-                "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·안경·귀걸이·텍스처)",
-                "license": "original",
-                "derivative": False,
-                "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 안경·귀걸이는 베이스의 눈·귀 위치에서 계산해 만들었고 외부 에셋을 쓰지 않았습니다.",
-            },
-            *(entry for _, entry in derived),
-        ],
-    }
-
-
 def default_unavailable_reason(preset_id: str, contract: contract_mod.Contract) -> str:
     return REQUIRED_REASON_KO if preset_id in contract.required_presets else OPTIONAL_REASON_KO
 
@@ -636,14 +531,18 @@ def build_manifest(
     hyper3d_sources: Hyper3dSources | None = None,
     now: datetime.date | None = None,
     extra_bases: list[dict[str, Any]] | None = None,
+    preserved: PreservedRecords | None = None,
+    registry_licenses: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """키트 폴더의 GLB들을 검사해 `kit.json` 내용을 만든다. `hyper3d_sources`는 등록된 파츠 가운데 출처 표에 있는 것의 출처 항목을 더한다.
 
     `extra_bases`는 기본 베이스(`base_id`) 말고 더 넣을 베이스들 `[{"base_id", "base_path", "base_meta"}]`(예: 남성). 파츠 항목은 베이스마다 `variants[<베이스>]`를 갖고,
-    그 베이스용 GLB가 없으면 `unavailable[<베이스>]`에 한글 사유를 적는다(`unavailable_reasons`는 프리셋 id 또는 `프리셋id@베이스`로 지정).
+    그 베이스용 GLB가 없으면 `unavailable[<베이스>]`에 한글 사유를 적는다. 사유는 `preserved.unavailable`(이전 kit.json의 `프리셋@베이스`) →
+    `unavailable_reasons`(`프리셋id@베이스` → `프리셋id`) → 기본 문장 순으로 고른다. `preserved.summary_ko`가 있으면 `summaryKo`를 지키고 원본 파츠 기록만 새로 단다.
+    `registry_licenses`(레지스트리의 프리셋별 license)는 원본 파츠가 Hyper3D 출처 표와 충돌하는지 보는 데 쓴다.
     """
     kit_dir = Path(kit_dir)
-    unavailable_reasons = unavailable_reasons or {}
+    unavailable_reasons = {**(unavailable_reasons or {}), **(preserved.unavailable if preserved else {})}
     materials: dict[str, dict[str, Any]] = {}
 
     all_bases = [{"base_id": base_id, "base_path": base_path, "base_meta": base_meta}, *(extra_bases or [])]
@@ -691,7 +590,13 @@ def build_manifest(
         "generatedAt": (now or datetime.date.today()).isoformat(),
         "generator": {"tool": "tools/blender/character_kit", "blender": blender_version, "command": generator_command},
         "coordinateSystem": {"up": "+Y", "forward": "+Z", "unit": "m", "handedness": "right", "rest": "T-pose", "rootScale": 1},
-        "provenance": provenance_block(contract, hyper3d_sources, [part["id"] for part in part_blocks if part["variants"]]),
+        "provenance": provenance_block(
+            contract,
+            hyper3d_sources,
+            [part["id"] for part in part_blocks if part["variants"]],
+            preserved=preserved,
+            registry_licenses=registry_licenses,
+        ),
         "skeleton": {
             "root": ROOT_JOINT,
             "joints": contract.joints,
@@ -716,89 +621,24 @@ def write_manifest(manifest: dict[str, Any], path: Path) -> None:
     Path(path).write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def hyper3d_notice_section(entries: list[dict[str, Any]]) -> str:
-    """`NOTICE.md`의 Hyper3D 파생 파츠 절. `kit.json`의 출처 항목에서만 만든다(없으면 빈 문자열)."""
-    if not entries:
-        return ""
-    record_docs = ", ".join(f"`{doc}`" for doc in sorted({entry["evidenceDoc"] for entry in entries}))
-    lines = [
-        "## 원천 3 — Hyper3D(Rodin Gen-2.5) 생성물의 파생 파츠 (license: hyper3d-rodin-output)",
-        "",
-        f"- 이 파츠 {len(entries)}종은 Hyper3D(Rodin) 구독 플랜으로 생성한 결과물을 이 저장소에서 리타깃·재베이크한 **파생물**이다.",
-        f"- **`{HYPER3D_LICENSE}` 값은 법적 허용을 뜻하지 않는다.** 구독 약관의 상업 이용·소유권·수정·공개 호스팅 조항과 약관상 닫히지 않은 점은",
-        f"  반입 기록 {record_docs}에 있다. 이 값은 그 기록과 생성 id 없이는 반입하지 못하게 하는 장치일 뿐이다(계약 `KIT_ALLOWED_LICENSES`).",
-        "- Hyper3D가 돌려준 **원본 GLB는 저장소에 없다**(커밋하지 않았다). 아래 SHA-256은 그 원본 파일의 해시이고, 결과 페이지가 계속 열리는지는 확인하지 않았다.",
-        "",
-    ]
-    for entry in entries:
-        lines += [
-            f"### {entry['name'].removeprefix(HYPER3D_SOURCE_NAME + ' ')} (`{entry['id']}`)",
-            "",
-            f"- 생성 id: `{entry['generationId']}`",
-            f"- 결과 페이지: {entry['url']}",
-            f"- 등급: {entry.get('version', '미기재')}",
-            f"- 원본 GLB SHA-256: `{entry['zipSha256']}`",
-            f"- 가공 내용: {entry['changesKo']}",
-            "",
-        ]
-    return "\n".join(lines) + "\n"
+def merge_hides_table(preserved: PreservedRecords | None, table: dict[str, dict[str, dict[str, Any]]] | None) -> dict[str, dict[str, dict[str, Any]]]:
+    """이전 kit.json의 `hides`를 기본값으로 깔고 레지스트리 표(`--parts-json`)가 (프리셋, 베이스) 단위로 덮는다(`discover_parts`의 입력 형식)."""
+    merged: dict[str, dict[str, dict[str, Any]]] = {}
+    for preset_id, by_base in (preserved.hides if preserved else {}).items():
+        for base_id, hides in by_base.items():
+            merged.setdefault(preset_id, {})[base_id] = {"hides": list(hides)}
+    for preset_id, by_base in (table or {}).items():
+        for base_id, entry in by_base.items():
+            if isinstance(entry, dict):
+                merged.setdefault(preset_id, {}).setdefault(base_id, {}).update(entry)
+    return merged
 
 
-def notice_text(contract: contract_mod.Contract, manifest: dict[str, Any]) -> str:
-    """`NOTICE.md`(사람용 출처·라이선스 요약). 기준은 `kit.json`의 provenance다."""
-    hbm = next(source for source in manifest["provenance"]["sources"] if source["id"] == "hbm-1.4.1")
-    hyper3d_entries = [source for source in manifest["provenance"]["sources"] if source["license"] == HYPER3D_LICENSE]
-    parts_present = sorted(part["id"] for part in manifest["parts"] if part["variants"])
-    if hyper3d_entries:
-        not_used = (
-            "- 상용 제품 에셋과 라이선스가 불명확한 에셋은 이 키트에 들어 있지 않다. Hyper3D(Rodin) 생성물은 위 원천 3에 적은 파생 파츠만 들어 있다.\n"
-            f"  이 키트에 쓰인 라이선스 값은 `CC0-1.0`, `original`, `{HYPER3D_LICENSE}`이다(마지막 값은 법적 허용을 뜻하지 않는다)."
-        )
-    else:
-        not_used = (
-            "- Hyper3D(Rodin) 생성물, 상용 제품 에셋, 라이선스가 불명확한 에셋은 이 키트에 들어 있지 않다. 이 키트에 쓰인 라이선스 값은\n"
-            f"  `CC0-1.0`과 `original`뿐이다(계약은 `{HYPER3D_LICENSE}`도 허용하지만 이 키트에는 그 출처의 파츠가 없다)."
-        )
-    return f"""# ToonStudio 캐릭터 키트 v1 — 출처와 라이선스 고지
-
-이 파일은 `tools/blender/character_kit`가 `kit.json`과 함께 만든 사람용 요약입니다. 기준은 `kit.json`의 `provenance`입니다.
-생성일 {manifest["generatedAt"]}, 도구 `{manifest["generator"]["tool"]}`, Blender(bpy) {manifest["generator"]["blender"]}.
-
-## 원천 1 — Blender Foundation Human Base Meshes Bundle v{hbm["version"]} (CC0 1.0)
-
-- 사용한 에셋: `GEO-body_female_realistic`(몸, 저자 Dan Ulrich)와 그 눈 구(`.eye.L/.eye.R`). 번들 `human_base_meshes_bundle.blend`에서 추출했다.
-- 내려받기: {hbm["url"]}
-- 번들 zip SHA-256: `{hbm["zipSha256"]}` (내려받은 파일과 일치함을 확인했다)
-- 라이선스: CC0 1.0. 근거 — 번들 README("All provided assets are public domain under the CC0 license"), 번들 안 에셋 메타데이터
-  25개 전부 `license = CC0`, Blender 공식 데모 파일 페이지의 라이선스 표기.
-- **번들 안의 불일치 1건(그대로 적는다)**: 번들의 `License` 텍스트 데이터블록에는 "The Rain Rig is released under the Creative Commons
-  Attribution 4.0 license"라는 문장이 있다. 번들에는 아마추어(리그) 오브젝트가 없고(오브젝트는 메시 382개와 카메라 25개뿐) 이름에
-  `rain`/`rig`가 들어간 오브젝트도 없다. 그래서 이 문장은 이 번들에 들어 있지 않은 다른 배포물의 문구가 남은 것으로 **추정**한다
-  (추정이며 확인하지 못했다). 이 키트는 Rain Rig를 쓰지 않는다 — 스켈레톤은 이 저장소에서 새로 만든 68 joint다.
-- 가공 내용: {hbm["changesKo"]}
-
-## 원천 2 — ToonStudio 원본 (license: original)
-
-- 속옷·구강 내부(치아·잇몸·혀)·속눈썹·눈썹·홍채·캐치라이트의 지오메트리와 몸 쪽 텍스처(피부·눈·치아·혀·속옷·속눈썹·눈썹·홍채)는
-  `tools/blender/character_kit`가 절차 생성했다. 이 항목들에는 외부 이미지·스캔·사진을 쓰지 않았다.
-
-{hyper3d_notice_section(hyper3d_entries)}## 쓰지 않은 것
-
-{not_used}
-
-## 들어 있는 파일
-
-- 베이스: `bases/female.glb` (남성 베이스는 이번 빌드에서 만들지 않았다.)
-- 파츠: {", ".join(parts_present) if parts_present else "없음(필수 파츠 5종은 아직 만들어 넣지 못했다)"}
-- 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다.
-
-## 재현
-
-```text
-pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>
-<venv>/bin/python -I tools/blender/character_kit/build_base.py --contract <contract.json> ...
-<venv>/bin/python -I tools/blender/character_kit/build_irises.py ...
-<venv>/bin/python -I tools/blender/character_kit/build_kit_json.py ...
-pnpm exec tsx scripts/verify-character-kit.mjs --root <키트 폴더> --base female
-```
-"""
+def registry_licenses_of(table: dict[str, dict[str, dict[str, Any]]] | None) -> dict[str, str]:
+    """레지스트리 표에서 프리셋별 `license`(어느 베이스든 처음 밝힌 값)를 모은다. 없으면 빈 표."""
+    licenses: dict[str, str] = {}
+    for preset_id, by_base in (table or {}).items():
+        for entry in by_base.values():
+            if isinstance(entry, dict) and isinstance(entry.get("license"), str):
+                licenses.setdefault(preset_id, entry["license"])
+    return licenses

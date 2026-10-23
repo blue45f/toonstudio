@@ -82,6 +82,24 @@ describe("buildCompositionGenerationBrief", () => {
     expect(result.request.prompt).toContain("high angle looking down");
   });
 
+  it("한국어 브리프의 앵글은 한국어로만 쓰고 캐릭터는 이름으로 부른다 (B-08)", () => {
+    const front = buildCompositionGenerationBrief({ ...BASE, camera: { ...BASE.camera, azimuthDegrees: 0, elevationDegrees: 0 } });
+    const back = buildCompositionGenerationBrief({ ...BASE, camera: { ...BASE.camera, azimuthDegrees: 180, elevationDegrees: 30 } });
+    const low = buildCompositionGenerationBrief({ ...BASE, camera: { ...BASE.camera, azimuthDegrees: 270, elevationDegrees: -20 } });
+    if (!front.ok || !back.ok || !low.ok) throw new Error("brief failed");
+    expect(front.request.briefKo).toContain("정면 · 눈높이");
+    expect(back.request.briefKo).toContain("뒷모습 · 하이앵글(내려다봄)");
+    expect(low.request.briefKo).toContain("왼쪽 옆모습 · 로우앵글(올려다봄)");
+    for (const result of [front, back, low]) {
+      expect(result.request.briefKo).not.toMatch(/view|angle|looking/u);
+      expect(result.request.briefKo).toContain("캐릭터: 주인공");
+      expect(result.request.briefKo).not.toContain("char-hero-01");
+    }
+    // 이름이 없으면 id로라도 캐릭터를 밝힌다.
+    const unnamed = buildCompositionGenerationBrief({ ...BASE, characterName: undefined });
+    expect(unnamed.ok && unnamed.request.briefKo).toContain("캐릭터: char-hero-01");
+  });
+
   it("한국어 브리프에는 구도·포즈·조명이 줄 단위로 담긴다", () => {
     const result = buildCompositionGenerationBrief(BASE);
     expect(result.ok).toBe(true);

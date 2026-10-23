@@ -30,7 +30,7 @@ import {
   normalizeStudioBg3dDocumentText as normalizedText,
   normalizeStudioBg3dHierarchyParents,
   normalizeStudioBg3dNodeOrganization,
-  normalizeStudioBg3dSceneMeta,
+  normalizeStudioBg3dSceneMeta, normalizeStudioBg3dSceneRecipeEnvelope,
   normalizeStudioBg3dTags,
   withStudioBg3dHiddenTags,
 } from "./studio-bg3d-hierarchy";
@@ -1486,7 +1486,7 @@ function normalizeDecodedCurrentDocument(
         return null;
       }
     }
-    const meta = normalizeStudioBg3dSceneMeta(value.meta);
+    const meta = normalizeStudioBg3dSceneMeta(value.meta); const sceneRecipe = normalizeStudioBg3dSceneRecipeEnvelope(value.sceneRecipe);
     const normalized: StudioBg3dSceneDocument = {
       kind: STUDIO_BG3D_SCENE_DOCUMENT_KIND,
       version: STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
@@ -1502,7 +1502,7 @@ function normalizeDecodedCurrentDocument(
       ...(shots ? { shots } : {}),
       ...(activeShotId && shotIds.has(activeShotId) ? { activeShotId } : {}),
       ...(pinnedVersionedCut ? { pinnedVersionedCut } : {}),
-      ...(meta ? { meta } : {}),
+      ...(meta ? { meta } : {}), ...(sceneRecipe ? { sceneRecipe } : {}),
     };
     if (canonicalDocumentByteLength(normalized) > STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES) {
       failBudget("document-byte-budget-exceeded");
@@ -1670,7 +1670,7 @@ function migrateSchemaV1Budgets(value: unknown): Record<string, unknown> | null 
 function migrateSchemaV2Nodes(value: readonly unknown[]): readonly unknown[] | null {
   const nodes: unknown[] = [];
   for (const node of value) {
-    if (isRecord(node) && (hasOwn(node, "tags") || hasOwn(node, "componentRef"))) return null;
+    if (isRecord(node) && (hasOwn(node, "tags") || hasOwn(node, "componentRef") || hasOwn(node, "surface"))) return null;
     if (!isRecord(node) || node.kind !== "model" || !hasOwn(node, "constraints")) {
       nodes.push(node);
       continue;
@@ -1696,7 +1696,7 @@ function migrateDecodedSchemaV2Document(value: unknown): StudioBg3dSceneDocument
     )) ||
     hasOwn(value, "shots") ||
     hasOwn(value, "activeShotId") ||
-    hasOwn(value, "meta")
+    hasOwn(value, "meta") || hasOwn(value, "sceneRecipe")
   ) {
     return null;
   }
@@ -1718,14 +1718,14 @@ function migrateDecodedSchemaV1Document(value: unknown): StudioBg3dSceneDocument
     )) ||
     hasOwn(value, "shots") ||
     hasOwn(value, "activeShotId") ||
-    hasOwn(value, "meta")
+    hasOwn(value, "meta") || hasOwn(value, "sceneRecipe")
   ) {
     return null;
   }
   if (
     value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints") || hasOwn(node, "tags") || hasOwn(node, "componentRef")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints") || hasOwn(node, "tags") || hasOwn(node, "componentRef") || hasOwn(node, "surface")
       ))
   ) return null;
   const budgets = migrateSchemaV1Budgets(value.budgets);
@@ -1757,7 +1757,7 @@ function migrateDecodedSchemaPanoramaDocument(
     value.version === STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION
     && value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints") || hasOwn(node, "tags") || hasOwn(node, "componentRef")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints") || hasOwn(node, "tags") || hasOwn(node, "componentRef") || hasOwn(node, "surface")
       ))
   ) {
     return null;
@@ -1771,7 +1771,7 @@ function migrateDecodedSchemaPanoramaDocument(
   }
   if (
     value.version !== STUDIO_BG3D_SCENE_DOCUMENT_VERSION &&
-    (hasOwn(value, "shots") || hasOwn(value, "activeShotId") || hasOwn(value, "meta"))
+    (hasOwn(value, "shots") || hasOwn(value, "activeShotId") || hasOwn(value, "meta") || hasOwn(value, "sceneRecipe"))
   ) {
     return null;
   }

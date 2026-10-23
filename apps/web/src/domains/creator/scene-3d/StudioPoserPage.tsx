@@ -7,7 +7,9 @@
  * (`StudioMannequinPoserPanel`, 매직 포저 탭 포함)를 직접 마운트한다.
  *
  * - 닫기 → `/studio`로 복귀.
- * - 캡처 삽입 → 독립 진입점에는 삽입할 문서가 없으므로 PNG를 다운로드한다.
+ * - 캡처 → 독립 진입점에는 삽입할 문서가 없으므로 PNG를 다운로드한다. 포저는 닫지 않고
+ *   (다른 각도로 다시 캡처할 수 있게) 저장했다는 토스트만 띄운다. 예전에는 캡처하자마자
+ *   포저가 닫히고 작품 라이브러리로 이동했으며 저장 안내도 없었다.
  * - `?starter=` 쿼리(예: `action-pose-rig`)는 데생 인형·웹툰 포즈 프리셋에서 찾아
  *   패널이 열릴 때 자동으로 적용한다. 알 수 없는 id는 무시하고 빈 포저를 연다.
  */
@@ -21,6 +23,8 @@ import {
   StudioMannequinPoserPanel,
   type StudioMannequinCaptureResult,
 } from "./StudioMannequinPoserPanel";
+
+import { toast } from "@/shared/lib/toast-store";
 
 export function StudioPoserPage(): ReactElement {
   const navigate = useNavigate();
@@ -39,6 +43,7 @@ export function StudioPoserPage(): ReactElement {
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
+      toast("포즈 PNG를 저장했어요 · 다운로드 폴더", { tone: "success", durationMs: 4_000 });
       return true;
     },
     [],
@@ -58,6 +63,7 @@ export function StudioPoserPage(): ReactElement {
         onClose={handleClose}
         onInsert={handleInsert}
         initialPosePresetId={starterPresetId}
+        captureTarget="download"
       />
     </div>
   );

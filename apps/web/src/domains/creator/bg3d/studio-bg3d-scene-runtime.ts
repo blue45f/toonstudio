@@ -263,7 +263,7 @@ function settingsOnlyDocument(
     ...(base.shots === undefined ? {} : { shots: base.shots }),
     ...(base.activeShotId === undefined ? {} : { activeShotId: base.activeShotId }),
     ...(base.pinnedVersionedCut === undefined ? {} : { pinnedVersionedCut: base.pinnedVersionedCut }),
-    ...(base.meta === undefined ? {} : { meta: base.meta }),
+    ...(base.meta === undefined ? {} : { meta: base.meta }), ...(base.sceneRecipe === undefined ? {} : { sceneRecipe: base.sceneRecipe }),
   };
 }
 

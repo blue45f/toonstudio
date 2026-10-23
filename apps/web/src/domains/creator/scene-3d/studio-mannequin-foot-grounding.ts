@@ -32,7 +32,14 @@ import {
   type FootGroundingState,
   type Vector3D,
 } from "./studio-3d-foot-contact-lock";
+import { computeStudioMannequinJointFrames } from "./studio-mannequin-forward-kinematics";
 import { studioMannequinMatrixFromEulerXyz } from "./studio-mannequin-ik";
+import {
+  analyzeStudioMannequinFootSole,
+  listStudioMannequinFloorContacts,
+  measureStudioMannequinBodyFloor,
+  type StudioMannequinFootSoleState,
+} from "./studio-mannequin-pose-ground-contact";
 import type {
   StudioMannequinJointId,
   StudioMannequinSpec,
@@ -153,6 +160,19 @@ export function buildStudioMannequinFootContactSnapshot(
   };
 }
 
+/**
+ * 전신 접촉으로 본 자세 분류. 발만 보던 판정은 무릎 꿇기·바닥 앉기·점프를 전부
+ * "걸음(toe roll)"으로 오분류했다 — 무릎·엉덩이·손 접촉과 발바닥 상태를 함께 본다.
+ */
+export type StudioMannequinGroundStance =
+  | "standing"
+  | "stepping"
+  | "single-leg"
+  | "seated"
+  | "kneeling"
+  | "floor"
+  | "airborne";
+
 export interface StudioMannequinFootGroundingResult {
   /** 접지 보정이 반영된 포즈. 보정이 없으면 입력 포즈와 같은 값이다. */
   readonly pose: StudioMannequinPose;
@@ -162,9 +182,74 @@ export interface StudioMannequinFootGroundingResult {
   readonly pelvisLiftMeters: number;
   /** 관통은 있지만 지지 가드가 보정을 막았는지(앉기·무릎 등 발이 지지가 아닌 자세). */
   readonly supportGuardBlocked: boolean;
-  /** 솔버 판정 원본 — 접지 여부·관통 깊이·toe roll 각도를 UI 표시에 쓴다. */
+  /**
+   * 접지 판정 — 접지 여부·관통 깊이·발끝 각도를 UI 표시에 쓴다. 관통 깊이·골반 보정량은
+   * 솔버 값이고, 접지 여부·발끝 각도는 발바닥 앞뒤 점으로 다시 잰 값이다(떠 있는 발은 0°).
+   */
   readonly groundingState: FootGroundingState;
+  /** 보정 후 포즈의 전신 접촉 기반 자세 분류. */
+  readonly stance?: StudioMannequinGroundStance;
   readonly summary: string;
+}
+
+/**
+ * 솔버의 toe roll 은 발목 관절 높이를 발뒤꿈치 들림으로 읽어, 서 있는 rest 자세도 25°,
+ * 공중에 든 발은 65°(상한)로 보고했다. 발바닥 앞뒤 점으로 실제 접촉을 다시 재서
+ * "앞꿈치가 바닥에 닿고 뒤꿈치가 들린" 경우에만 발끝 각도를 남긴다.
+ */
+function soleToeAngleDeg(sole: StudioMannequinFootSoleState): number {
+  return sole.contact === "toe" ? Math.max(0, Math.round(sole.pitchDeg)) : 0;
+}
+
+function classifyStance(
+  spec: StudioMannequinSpec,
+  pose: StudioMannequinPose,
+  feet: { readonly left: StudioMannequinFootSoleState; readonly right: StudioMannequinFootSoleState },
+  groundY: number,
+): StudioMannequinGroundStance {
+  const contacts = new Set(
+    listStudioMannequinFloorContacts(measureStudioMannequinBodyFloor(spec, pose), { groundY }),
+  );
+  if (contacts.size === 0) return "airborne";
+  if (contacts.has("leftKnee") || contacts.has("rightKnee")) return "kneeling";
+  if (contacts.has("hips") || contacts.has("torso") || contacts.has("head")) return "floor";
+  const leftDown = feet.left.contact !== "air";
+  const rightDown = feet.right.contact !== "air";
+  if (!leftDown && !rightDown) return "floor";
+  const restPelvis = spec.joints.find((joint) => joint.id === "pelvis");
+  const pelvisHeight = (restPelvis?.offset[1] ?? 0) + pose.pelvisOffset[1];
+  if (
+    restPelvis !== undefined
+    && pelvisHeight - groundY < restPelvis.offset[1] * STUDIO_MANNEQUIN_FOOT_GROUNDING_STANDING_PELVIS_RATIO
+  ) {
+    return "seated";
+  }
+  if (leftDown !== rightDown) return "single-leg";
+  return feet.left.contact === "flat" && feet.right.contact === "flat" ? "standing" : "stepping";
+}
+
+function refineGroundingState(
+  spec: StudioMannequinSpec,
+  pose: StudioMannequinPose,
+  solved: FootGroundingState,
+  groundY: number,
+): { readonly groundingState: FootGroundingState; readonly stance: StudioMannequinGroundStance } {
+  const frames = computeStudioMannequinJointFrames(spec, pose);
+  const left = analyzeStudioMannequinFootSole(spec, frames, "left", { groundY });
+  const right = analyzeStudioMannequinFootSole(spec, frames, "right", { groundY });
+  const stance = classifyStance(spec, pose, { left, right }, groundY);
+  // 무릎·바닥 자세의 발끝은 걸음의 뒤꿈치 들림이 아니다 — 각도를 남기지 않는다.
+  const footSupported = stance !== "kneeling" && stance !== "floor";
+  return {
+    stance,
+    groundingState: {
+      ...solved,
+      isLeftGrounded: left.contact !== "air",
+      isRightGrounded: right.contact !== "air",
+      leftToeAngleDeg: footSupported ? soleToeAngleDeg(left) : 0,
+      rightToeAngleDeg: footSupported ? soleToeAngleDeg(right) : 0,
+    },
+  };
 }
 
 /** 골반이 rest 높이의 이 비율 이상이면 "서 있는 자세"로 본다(지지 가드 기준). */
@@ -195,19 +280,21 @@ export function groundStudioMannequinPose(
   });
   const solved = solver.solve(snapshot);
   const lift = solved.groundingState.pelvisVerticalOffset;
+  const groundY = options.groundLevelY ?? 0;
   if (options.enabled === false || !(lift > 0)) {
+    const refined = refineGroundingState(spec, pose, solved.groundingState, groundY);
     return {
       pose,
       applied: false,
       pelvisLiftMeters: 0,
       supportGuardBlocked: false,
-      groundingState: solved.groundingState,
+      groundingState: refined.groundingState,
+      stance: refined.stance,
       summary: solved.summary,
     };
   }
   // 지지 가드 — 관통한 발의 발목이 지면 위에 있거나(발바닥만 잠김) 골반이
   // 서 있는 높이에 있을 때만 발 접지가 지지라고 보고 들어 올린다.
-  const groundY = options.groundLevelY ?? 0;
   const soleOnlyPenetration =
     (solved.groundingState.leftPenetrationDepth <= 0 || snapshot.leftLeg.ankle.y >= groundY) &&
     (solved.groundingState.rightPenetrationDepth <= 0 || snapshot.rightLeg.ankle.y >= groundY);
@@ -216,12 +303,14 @@ export function groundStudioMannequinPose(
     restPelvis !== undefined &&
     snapshot.pelvis.y >= restPelvis.offset[1] * STUDIO_MANNEQUIN_FOOT_GROUNDING_STANDING_PELVIS_RATIO;
   if (!soleOnlyPenetration && !standingLike) {
+    const refined = refineGroundingState(spec, pose, solved.groundingState, groundY);
     return {
       pose,
       applied: false,
       pelvisLiftMeters: 0,
       supportGuardBlocked: true,
-      groundingState: solved.groundingState,
+      groundingState: refined.groundingState,
+      stance: refined.stance,
       summary: solved.summary,
     };
   }
@@ -229,12 +318,14 @@ export function groundStudioMannequinPose(
     joints: pose.joints,
     pelvisOffset: [pose.pelvisOffset[0], pose.pelvisOffset[1] + lift, pose.pelvisOffset[2]],
   });
+  const refined = refineGroundingState(spec, grounded, solved.groundingState, groundY);
   return {
     pose: grounded,
     applied: true,
     pelvisLiftMeters: lift,
     supportGuardBlocked: false,
-    groundingState: solved.groundingState,
+    groundingState: refined.groundingState,
+    stance: refined.stance,
     summary: solved.summary,
   };
 }

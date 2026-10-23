@@ -9,13 +9,21 @@ import {
   SLOT_PRESET_IDS,
   allocatePartIds,
   createDefaultRecipe,
+  createDefaultRecipeStyle,
+  createDefaultWardrobe,
+  createDefaultHairColor,
+  isLookV2Identity,
   paramMorphName,
+  pickBaseChannelColors,
 } from "../contracts";
+import { stableStringify } from "../shared/stable-json";
 
 import type {
   ApplyPlan,
   BoneData,
   CharacterRecipe,
+  CharacterRecipeV1,
+  CharacterRecipeV2,
   HumanoidModelData,
   MeshPartData,
   Pose,
@@ -28,6 +36,41 @@ import type {
 /** 기본 레시피(매 호출 새 객체) */
 export function defaultRecipeFixture(): CharacterRecipe {
   return createDefaultRecipe();
+}
+
+/**
+ * v3 레시피를 v2 파일 모양으로 낮춘다(시험 전용 — 레시피 v1·v2 파일 불러오기 시험의 입력을 만든다).
+ * 값을 잃는 변환을 시험이 몰래 쓰지 않도록 v3 전용 값(화풍·옷장·형태·표면·헤어 흐름·상속 채널 지정·비항등 look)이 있으면 throw한다.
+ */
+export function legacyRecipeV2Fixture(recipe: CharacterRecipe = createDefaultRecipe()): CharacterRecipeV2 {
+  const v3Only = { style: recipe.style, wardrobe: recipe.wardrobe, partParams: recipe.partParams, surfaces: recipe.surfaces, hairColor: recipe.hairColor };
+  const defaults = { style: createDefaultRecipeStyle(), wardrobe: createDefaultWardrobe(), partParams: {}, surfaces: {}, hairColor: createDefaultHairColor() };
+  if (stableStringify(v3Only) !== stableStringify(defaults)) throw new Error("v3 전용 값이 있는 레시피는 v2 모양으로 낮출 수 없습니다(시험 fixture).");
+  const colors = pickBaseChannelColors(recipe.colors);
+  if (Object.keys(recipe.colors).length !== Object.keys(colors).length) throw new Error("상속 채널을 직접 지정한 레시피는 v2 모양으로 낮출 수 없습니다(시험 fixture).");
+  if (!isLookV2Identity(recipe.shading.look)) throw new Error("look이 v2 항등이 아닌 레시피는 v2 모양으로 낮출 수 없습니다(시험 fixture).");
+  const { mode, toneMapping, shadows, postfx, ibl, toon } = recipe.shading;
+  return {
+    version: 2,
+    source: recipe.source,
+    slots: recipe.slots,
+    body: recipe.body,
+    face: recipe.face,
+    colors: { ...colors },
+    expression: recipe.expression,
+    pose: recipe.pose,
+    handPose: recipe.handPose,
+    physics: recipe.physics,
+    shading: { mode, toneMapping, shadows, postfx, ibl, toon },
+    paint: recipe.paint,
+  };
+}
+
+/** v3 레시피를 v1 파일 모양으로 낮춘다(시험 전용). v1에는 키트 소스가 없으므로 키트 소스 레시피는 throw한다. */
+export function legacyRecipeV1Fixture(recipe: CharacterRecipe = createDefaultRecipe()): CharacterRecipeV1 {
+  const v2 = legacyRecipeV2Fixture(recipe);
+  if (v2.source.kind === "kit") throw new Error("키트 소스 레시피는 v1 모양으로 낮출 수 없습니다(시험 fixture).");
+  return { ...v2, version: 1, source: v2.source };
 }
 
 /** 기본 레시피에 얕은 덮어쓰기 */

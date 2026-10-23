@@ -5,6 +5,7 @@ import {
   buildStudioMannequinFootContactSnapshot,
   groundStudioMannequinPose,
 } from "./studio-mannequin-foot-grounding";
+import { groundStudioMannequinPresetPoseForBody } from "./studio-mannequin-pose-ground-contact";
 import {
   STUDIO_MANNEQUIN_POSE_PRESETS,
   createStudioMannequinRestPose,
@@ -107,8 +108,29 @@ describe("groundStudioMannequinPose", () => {
   });
 
   it("뒤꿈치가 들린 걸음 자세에서는 toe roll 각도를 판정으로 돌려준다", () => {
-    // 왼쪽 다리를 앞으로 90° 들고 정강이를 90° 내리면 발목만 높고
-    // 발끝 방향은 지면을 향한다 — 솔버의 toe roll 판정 구간이다.
+    // 오른다리를 뒤로 14° 빼고 무릎을 28° 굽히면 앞꿈치는 바닥에 닿고 뒤꿈치만 들린다
+    // (발바닥 앞뒤 점으로 잰 실제 걸음 자세). 왼발은 평평하게 디딘다.
+    const pose: StudioMannequinPose = {
+      joints: {
+        rightUpperLeg: [deg(14), 0, 0],
+        rightLowerLeg: [deg(28), 0, 0],
+      },
+      pelvisOffset: [0, 0, 0],
+    };
+    const result = groundStudioMannequinPose(pose, spec);
+    expect(result.groundingState.rightToeAngleDeg).toBeGreaterThan(15);
+    expect(result.groundingState.leftToeAngleDeg).toBe(0);
+    expect(result.groundingState.isLeftGrounded).toBe(true);
+    expect(result.groundingState.isRightGrounded).toBe(true);
+    expect(result.stance).toBe("stepping");
+    // 관통이 없으므로 포즈(관절 회전 포함)는 바꾸지 않는다.
+    expect(result.applied).toBe(false);
+    expect(result.pose).toBe(pose);
+  });
+
+  it("공중으로 든 발은 걸음(toe roll)이 아니다 — 발끝 각도 0, 한 발 접지로 분류", () => {
+    // 왼쪽 다리를 앞으로 90° 들고 정강이를 90° 내리면 발이 공중에 뜬다. 예전 판정은 발목
+    // 높이를 뒤꿈치 들림으로 읽어 65°(걸음 자세)로 오분류했다.
     const pose: StudioMannequinPose = {
       joints: {
         leftUpperLeg: [deg(-90), 0, 0],
@@ -117,9 +139,32 @@ describe("groundStudioMannequinPose", () => {
       pelvisOffset: [0, 0, 0],
     };
     const result = groundStudioMannequinPose(pose, spec);
-    expect(result.groundingState.leftToeAngleDeg).toBeGreaterThan(15);
-    // 관통이 없으므로 포즈(관절 회전 포함)는 바꾸지 않는다.
+    expect(result.groundingState.leftToeAngleDeg).toBe(0);
+    expect(result.groundingState.isLeftGrounded).toBe(false);
+    expect(result.groundingState.isRightGrounded).toBe(true);
+    expect(result.stance).toBe("single-leg");
     expect(result.applied).toBe(false);
-    expect(result.pose).toBe(pose);
+  });
+
+  it("서 있는 rest 자세는 양발 평평 접지로 분류한다(발목 높이를 뒤꿈치 들림으로 읽지 않는다)", () => {
+    const result = groundStudioMannequinPose(createStudioMannequinRestPose(), spec);
+    expect(result.groundingState.leftToeAngleDeg).toBe(0);
+    expect(result.groundingState.rightToeAngleDeg).toBe(0);
+    expect(result.stance).toBe("standing");
+  });
+
+  it("무릎·바닥·공중 자세를 전신 접촉으로 분류한다", () => {
+    const presetPose = (id: string) => {
+      const preset = STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === id);
+      if (!preset) throw new Error(`${id} 프리셋을 찾지 못했습니다.`);
+      return groundStudioMannequinPresetPoseForBody(preset.pose, undefined, preset.ground);
+    };
+    const kneel = groundStudioMannequinPose(presetPose("kneel"), spec);
+    expect(kneel.stance).toBe("kneeling");
+    // 무릎 꿇은 뒷발의 앞꿈치는 걸음의 뒤꿈치 들림이 아니다.
+    expect(kneel.groundingState.leftToeAngleDeg + kneel.groundingState.rightToeAngleDeg).toBe(0);
+    expect(groundStudioMannequinPose(presetPose("sit-floor-cross"), spec).stance).toBe("floor");
+    expect(groundStudioMannequinPose(presetPose("jump"), spec).stance).toBe("airborne");
+    expect(groundStudioMannequinPose(presetPose("sit-chair"), spec).stance).toBe("seated");
   });
 });

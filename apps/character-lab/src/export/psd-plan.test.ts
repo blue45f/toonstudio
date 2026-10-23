@@ -145,9 +145,11 @@ const LEGACY_MASK_COLORS = {
 } as const;
 
 describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
-  it("속옷은 PART_ROLES 끝에 붙어 기존 15개 역할의 마스크 색이 그대로이고 새 색을 받는다", () => {
-    expect(PART_ROLES).toHaveLength(16);
-    expect(PART_ROLES[PART_ROLES.length - 1]).toBe("underwear");
+  it("속옷은 기존 15개 역할 뒤(16번째)에 붙어 그 역할들의 마스크 색이 그대로이고 새 색을 받는다", () => {
+    // 레시피 v3(2026-10-23)는 속옷 뒤 끝에 층·헤어 부속 역할 4개를 더 붙였다. 앞 16개 역할의 순서·색은 그대로다.
+    expect(PART_ROLES).toHaveLength(20);
+    expect(PART_ROLES.indexOf("underwear")).toBe(15);
+    expect(PART_ROLES.slice(16)).toEqual(["inner", "outer", "legwear", "hair-accessory"]);
     expect(PART_ROLE_LABELS_KO.underwear).toBe("속옷");
     for (const [role, color] of Object.entries(LEGACY_MASK_COLORS)) {
       expect(idMaskColor(role as keyof typeof LEGACY_MASK_COLORS), role).toEqual(color);
@@ -157,23 +159,25 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(new Set(colors).size).toBe(PART_ROLES.length);
   });
 
-  it("역할 고정 팔레트(allocatePartIdsByRole)로 16개 역할 전부가 PART_ROLES 순서의 마스크 레이어가 된다", () => {
+  it("역할 고정 팔레트(allocatePartIdsByRole)로 역할 전부(20개)가 PART_ROLES 순서의 마스크 레이어가 된다", () => {
     const palette = allocatePartIdsByRole(PART_ROLES.map((role) => ({ role })));
-    // 한 줄에 역할 16개를 가로로 배치한다(partId = rolePartId).
+    // 한 줄에 역할 전부를 가로로 배치한다(partId = rolePartId).
     const width = PART_ROLES.length;
     const ids = new Uint16Array(width).map((_, x) => rolePartId(PART_ROLES[x] ?? "skin"));
     const masks = buildIdMaskLayers(ids, width, 1, palette);
     expect(masks.map((m) => m.name)).toEqual(PART_ROLES.map((role) => PART_ROLE_LABELS_KO[role]));
-    expect(masks[masks.length - 1]?.name).toBe("속옷");
-    const underwear = masks[masks.length - 1];
-    expect(underwear && pixelAt(underwear.raster, width - 1, 0)).toEqual([144, 85, 242, 255]);
+    const underwearX = PART_ROLES.indexOf("underwear");
+    const underwear = masks[underwearX];
+    expect(underwear?.name).toBe("속옷");
+    expect(underwear && pixelAt(underwear.raster, underwearX, 0)).toEqual([144, 85, 242, 255]);
     expect(underwear && pixelAt(underwear.raster, 0, 0)[3]).toBe(0);
+    expect(masks[masks.length - 1]?.name).toBe(PART_ROLE_LABELS_KO["hair-accessory"]);
   });
 
   it("키트 파츠 구성(속옷 포함, 눈 좌우는 한 역할)의 part-id 캡처가 PSD 마스크 그룹에 속옷 레이어를 만든다", () => {
     const keptRoles = PART_ROLES.filter((role) => role !== "pupil"); // 필수 구성: pupil은 선택 파츠(홍채 텍스처에 구워짐)
     const palette = allocatePartIdsByRole(keptRoles.map((role) => ({ role })));
-    const size = 16;
+    const size = 24; // 첫 줄에 역할 19개(동공 제외, 키트 v2 층·헤어 부속 포함)가 다 들어가는 폭
     const idPass = idPassRaster(size, size, (x, y) => (y === 0 ? rolePartId(keptRoles[x] ?? "skin") : 0));
     const capture = captureResultFixture({
       width: size,

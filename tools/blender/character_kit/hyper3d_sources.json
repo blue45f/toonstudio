@@ -2,6 +2,7 @@
   "schema": "toonstudio.hyper3d-sources/1",
   "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
   "summaryKo": "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다.",
+  "removedKo": "2026-10-23: hair/* 12키(여성 7 + 남성 5)를 뺐다. 헤어 슬롯은 tools/blender/character_kit/forge_hair가 새로 만든 원본(license original)으로 채웠고, 이 표에 키가 남으면 build_kit_json이 원본 헤어를 Hyper3D 파생으로 잘못 적는다(레지스트리 license가 original이면 충돌로 멈춘다). 옛 생성 id·원본 SHA-256은 recordDoc §9~§12와 hyper3d_generations.json에 남아 있다.",
   "common": {
     "tool": "mcp__hyper3d__rodin_generate (로컬 Claude Code, OAuth 인증 계정)",
     "geometryFileFormat": "glb",
@@ -131,76 +132,6 @@
       "changesKo": "스트랩 샌들 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
       "qualityOverride": 8000
     },
-    "hair/soft-bob": {
-      "generationId": "f2ef0164-fae1-41ac-b321-2b6dd346cb21",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/f2ef0164-fae1-41ac-b321-2b6dd346cb21",
-      "tier": "Gen-2.5-Medium",
-      "rawSha256": "33e6cd66dd06fe243d534679b137d3076609868c70d10353b25a83ca6600680e",
-      "rawBytes": 5892028,
-      "intent": "청크형 단발 분리",
-      "changesKo": "청크형(저폴리 3,000 설정) 보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "42912266-eab6-4237-a85f-cd3501c0f92d"
-    },
-    "hair/hime-cut": {
-      "generationId": "555ced0b-d341-4401-ad26-50824a80b2e1",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/555ced0b-d341-4401-ad26-50824a80b2e1",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "8f6c9a6f28dbc4c92ea1af3b44ea5b3ae5c1228b31c42d2874d5d0b10f6c6e55",
-      "rawBytes": 11194488,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 히메컷 헤어 흉상 생성물(블런트 뱅·볼 옆 머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,200/2,800/1,500 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "eddc9763-c60d-4954-ae48-deaa2b731fb5"
-    },
-    "hair/short-layered": {
-      "generationId": "f63e1379-d77f-4351-9a6d-74ff796ff91a",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/f63e1379-d77f-4351-9a6d-74ff796ff91a",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "f0856ff722688fc43049c261ac940f8ae116eae1811b7c192351a822b4ac4acb",
-      "rawBytes": 10086240,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 겉 껍데기·안쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "a8c16431-1b7f-4aa3-af0a-cf7d91509665"
-    },
-    "hair/wolf-layered": {
-      "generationId": "579b60ac-dff8-42a9-a39e-0b4fa99878c8",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/579b60ac-dff8-42a9-a39e-0b4fa99878c8",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "30f85d4bf4f61ec45040a6fb3d5ad3f20c4462ce9f163d65f9bd1f0607fdd272",
-      "rawBytes": 10444432,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 울프 컷 헤어 흉상 생성물(커튼 뱅 레이어드)을 BANG으로 분리한 겉 껍데기·뒤쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,200/1,700 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "36aa4448-4a5c-49ca-8562-6982d4cb6152"
-    },
-    "hair/action-pony": {
-      "generationId": "49c429e4-3e07-42ac-8382-8adb611bf1b7",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/49c429e4-3e07-42ac-8382-8adb611bf1b7",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "68407efd1a80cc99fe30caeb213b2fe03e749bf8f1076d33ba94a0ab76a4e3b9",
-      "rawBytes": 11514448,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "133fd92f-d5b1-40d7-9386-2024ecb34228"
-    },
-    "hair/twin-tail": {
-      "generationId": "ee5b4422-7df7-4fb8-842b-0385146cafab",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/ee5b4422-7df7-4fb8-842b-0385146cafab",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "90ce5579422168feb15138c64ee68cf9ffe56069854bca542881faaefe28b8f9",
-      "rawBytes": 8854236,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 두개골 폭에 맞춘 배율이 꼬리를 머리에 붙은 단발로 만들어 묶음 아래 꼬리를 아래로 1.7배·바깥으로 4 cm 늘림, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "ec3cc86a-bdbc-44bd-b14e-70542f29289a"
-    },
-    "hair/romance-long": {
-      "generationId": "832d34d6-59d9-449c-8bfd-d490eb472e44",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/832d34d6-59d9-449c-8bfd-d490eb472e44",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "544ade474b9becea64d90fd90329025da9f65cc73c1832b353378b7d8ff9327d",
-      "rawBytes": 8776992,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,500/2,400/1,300 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "130b7db2-ed3c-4d88-858d-d02888157f70"
-    },
     "accessory/cap": {
       "generationId": "da32af22-d1e3-4103-a160-002557e24c2a",
       "displayUrl": "https://hyper3d.ai/workspace/rodin/da32af22-d1e3-4103-a160-002557e24c2a",
@@ -280,56 +211,6 @@
       "intent": "top/hoodie 분리(남성)",
       "changesKo": "베이스 T-포즈 몸에 캥거루 주머니·목 둘레 접힘을 입체로 넣은 프록시 후디(앞·뒤·옆 3장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 후디 몸통 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 생성 모델이 모든 시도에서 후드 볼륨을 만들지 못해(칼라로 읽거나 BANG이 머리 파츠에 붙였다) 후드(목 둘레 접힘 토러스 + 등에 늘어진 주머니)는 이 저장소가 맞춰진 셸 위에 직접 만들어 붙인다(원본 Hyper3D 형상이 아님).",
       "parentGenerationId": "4fe7fb20-3dae-4356-bdf6-feb0f91e49ae"
-    },
-    "hair/soft-bob@male": {
-      "generationId": "6eec895d-0347-468c-a3be-0d0086f1dedb",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/6eec895d-0347-468c-a3be-0d0086f1dedb",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "31915c605a2683805c0b6861e28a98f9c77216c5ac557350e30111c46df6b09e",
-      "rawBytes": 8516176,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 3,000 설정) 보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "28f34d32-0e96-4769-aa87-a7511036a321"
-    },
-    "hair/short-layered@male": {
-      "generationId": "f821fc5a-0d1a-4e84-84a4-8793a1ee2c3d",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/f821fc5a-0d1a-4e84-84a4-8793a1ee2c3d",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "a1c3144ccfde518bf550cdb929230fc569fb4aeb4c0880f25cfa426783264f57",
-      "rawBytes": 10554100,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 겉 껍데기·안쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "5e5a3201-6e2b-4e02-b0ef-82dfc63efada"
-    },
-    "hair/wolf-layered@male": {
-      "generationId": "65af7240-df63-4931-8ac1-0d0826328eac",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/65af7240-df63-4931-8ac1-0d0826328eac",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "0d788088242a8f65b10ac6315565d3a524c3d75306b8d524387b52c16d3f92c4",
-      "rawBytes": 8142356,
-      "intent": "청크형 헤어(저폴리 5,000) 흉상 — m-wolf-chunky",
-      "changesKo": "청크형(저폴리 5,000 설정) 울프 컷 헤어 흉상 생성물(커튼 뱅 레이어드)을 BANG으로 분리한 겉 껍데기·뒤쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,200/1,700 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "qualityOverride": 5000
-    },
-    "hair/action-pony@male": {
-      "generationId": "122f0174-fcc0-4a20-83a6-0745481be836",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/122f0174-fcc0-4a20-83a6-0745481be836",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "ce69ae0ef8032e470390e5082cb4a1b00f7f64dacb151d1ae26109f5847c9ebc",
-      "rawBytes": 11406176,
-      "intent": "청크형 헤어 분리",
-      "changesKo": "청크형(저폴리 5,000 설정) 하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "parentGenerationId": "f40acd1e-d5ab-451c-818c-d30fb9e4286e"
-    },
-    "hair/romance-long@male": {
-      "generationId": "02dac44e-f730-453f-aefe-4eb25ddf83f1",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/02dac44e-f730-453f-aefe-4eb25ddf83f1",
-      "tier": "Gen-2.5-High",
-      "rawSha256": "a7c55980d24b76370c85126f3e06d534be0af9d02f02dc745e650cd5b7a2df97",
-      "rawBytes": 8817248,
-      "intent": "청크형 헤어(저폴리 5,000) 흉상 — m-long-chunky",
-      "changesKo": "청크형(저폴리 5,000 설정) 가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,500/2,400/1,300 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
-      "qualityOverride": 5000
     },
     "top/hoodie": {
       "generationId": "4949cb5c-98d3-4842-9f05-02dbcf651c61",

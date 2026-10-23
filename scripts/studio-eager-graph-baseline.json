@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1622,
-    "bytes": 20203379
+    "modules": 1623,
+    "bytes": 20221542
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
       "modules": 226,
-      "bytes": 1189015
+      "bytes": 1189016
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1435,
-      "bytes": 19354181
+      "modules": 1436,
+      "bytes": 19372343
     }
   },
   "forbiddenDomains": {
@@ -60,7 +60,7 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 18,
-      "bytes": 287391,
+      "bytes": 298146,
       "files": [
         "apps/web/src/domains/creator/bg3d/StudioBg3dRetainedOwnerRouteBridge.tsx",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
@@ -229,10 +229,11 @@
       ]
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 13,
-      "bytes": 451543,
+      "modules": 14,
+      "bytes": 458142,
       "files": [
         "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx",
+        "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts",
         "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts",
         "apps/web/src/domains/creator/vrm/studio-vrm-body-silhouette.ts",
         "apps/web/src/domains/creator/vrm/studio-vrm-joint-limits.ts",
@@ -366,7 +367,7 @@
     },
     "apps/web/src/app/routes": {
       "modules": 47,
-      "bytes": 170059
+      "bytes": 170060
     },
     "apps/web/src/app/spatial-campus": {
       "modules": 3,
@@ -382,7 +383,7 @@
     },
     "apps/web/src/domains/creator": {
       "modules": 564,
-      "bytes": 8550186
+      "bytes": 8550772
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -398,7 +399,7 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 18,
-      "bytes": 287391
+      "bytes": 298146
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -558,7 +559,7 @@
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
-      "bytes": 997980
+      "bytes": 998202
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -585,8 +586,8 @@
       "bytes": 17648
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 13,
-      "bytes": 451543
+      "modules": 14,
+      "bytes": 458142
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
@@ -1989,6 +1990,7 @@
     "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-preview.ts": 2,
     "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-subject.ts": 2,
     "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx": 2,
+    "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-body-silhouette.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-joint-limits.ts": 2,
@@ -2362,6 +2364,15 @@
       "reason": "i18n 14라운드 producerError 사전(brush/comments/license/personal-cloud/storyworld/vrm) 정적 도달 기준선 반영",
       "increases": [
         "총 정적 도달 원본 +62.4 KiB"
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "reason": "3D 기능 고도화 및 14라운드 병합 정적 도달 기준선 동기화",
+      "increases": [
+        "총 정적 도달 원본 +17.7 KiB",
+        "앱 셸 폐포 +0.0 KiB",
+        "금지 도메인 apps/web/src/domains/creator/vrm +1개"
       ]
     }
   ]

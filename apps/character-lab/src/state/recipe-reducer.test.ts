@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultRecipe, createKitDefaultRecipe, createPresetCatalog } from "../contracts";
-import { presetEntryFixture, samplePose, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
+import { createDefaultRecipe, createKitDefaultRecipe, createPresetCatalog, migrateRecipeV1ToV2, migrateRecipeV2ToV3 } from "../contracts";
+import { legacyRecipeV1Fixture, legacyRecipeV2Fixture, presetEntryFixture, samplePose, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
 
 import { RecipeCommandError, describeCommandKo, mergePoseScoped, normalizePose, reduceRecipe } from "./recipe-reducer";
 
@@ -167,7 +167,8 @@ describe("state/recipe-reducer", () => {
     const next = reduceRecipe(base, { type: "recipe/load", recipe: JSON.parse(JSON.stringify(loaded)) as CharacterRecipe }, catalog);
     expect(next).toEqual(loaded);
     try {
-      reduceRecipe(base, { type: "recipe/load", recipe: { ...base, version: 3 } as never }, catalog);
+      // 2026-10-23 v3 도입으로 3은 지원 버전이 됐다 — 미래 버전 예시를 4로 올림
+      reduceRecipe(base, { type: "recipe/load", recipe: { ...base, version: 4 } as never }, catalog);
       expect.unreachable();
     } catch (error) {
       expect((error as RecipeCommandError).code).toBe("recipe-unsupported-version");
@@ -191,7 +192,7 @@ describe("state/recipe-reducer", () => {
     expect(describeCommandKo({ type: "recipe/load", recipe: createDefaultRecipe() })).toMatch(/[가-힣]/u);
   });
 
-  describe("키트 소스·레시피 v2", () => {
+  describe("키트 소스·레시피 v2·v3", () => {
     const KIT_SOURCE = { kind: "kit", kitId: "toonstudio-kit-v1", baseId: "female", kitVersion: 1 } as const;
 
     it("source/set은 키트 소스를 받아 저장하고 슬롯·색 등 다른 필드는 건드리지 않는다", () => {
@@ -261,18 +262,26 @@ describe("state/recipe-reducer", () => {
       expect(next.slots.hair).toBe("hair/twin-tail");
     });
 
-    it("recipe/load는 v1 JSON을 명시 마이그레이션으로 v2로 열고 소스 종류를 바꾸지 않는다", () => {
-      const procedural = JSON.parse(JSON.stringify({ ...createDefaultRecipe(), version: 1 })) as CharacterRecipe;
+    it("recipe/load는 v1 JSON을 명시 마이그레이션 사슬로 v3로 열고 소스 종류를 바꾸지 않는다", () => {
+      // v3 도입(2026-10-23): v1 파일 모양은 시험 fixture로 만들고, 결과는 v1 → v2 → v3 사슬과 같다(이전 단언 `{ ...loaded, version: 1 }`는 v3 필드 때문에 대체).
+      const v1 = legacyRecipeV1Fixture();
+      const procedural = JSON.parse(JSON.stringify(v1)) as CharacterRecipe;
       const loaded = reduceRecipe(createKitDefaultRecipe(), { type: "recipe/load", recipe: procedural }, catalog);
-      expect(loaded.version).toBe(2);
+      expect(loaded.version).toBe(3);
       expect(loaded.source).toEqual({ kind: "procedural" });
-      expect({ ...loaded, version: 1 }).toEqual(procedural);
+      expect(loaded).toEqual(migrateRecipeV2ToV3(migrateRecipeV1ToV2(v1)));
+      expect(loaded).toEqual(createDefaultRecipe());
       const pkgSource = { kind: "package", characterId: "avatar-orion-authored", sha256: "a".repeat(64) } as const;
-      const pkg = JSON.parse(JSON.stringify({ ...createDefaultRecipe(), version: 1, source: pkgSource })) as CharacterRecipe;
+      const pkg = JSON.parse(JSON.stringify({ ...v1, source: pkgSource })) as CharacterRecipe;
       expect(reduceRecipe(createDefaultRecipe(), { type: "recipe/load", recipe: pkg }, catalog).source).toEqual(pkgSource);
     });
 
-    it("recipe/load는 v2 키트 레시피를 그대로 열고, v1에 키트 소스가 섞인 파일은 recipe-invalid로 거부한다", () => {
+    it("recipe/load는 v2 JSON도 v3로 열어 키트 기본 레시피와 같아진다", () => {
+      const v2 = JSON.parse(JSON.stringify(legacyRecipeV2Fixture(createKitDefaultRecipe("male")))) as CharacterRecipe;
+      expect(reduceRecipe(createDefaultRecipe(), { type: "recipe/load", recipe: v2 }, catalog)).toEqual(createKitDefaultRecipe("male"));
+    });
+
+    it("recipe/load는 v3 키트 레시피를 그대로 열고, v1에 키트 소스가 섞인 파일은 recipe-invalid로 거부한다", () => {
       const kit = createKitDefaultRecipe("male");
       expect(reduceRecipe(createDefaultRecipe(), { type: "recipe/load", recipe: JSON.parse(JSON.stringify(kit)) as CharacterRecipe }, catalog)).toEqual(kit);
       const forged = { ...kit, version: 1 } as unknown as CharacterRecipe;
@@ -291,7 +300,10 @@ describe("state/recipe-reducer", () => {
       expect(label({ kind: "package", characterId: "avatar-orion-authored", sha256: "b".repeat(64) })).toBe("소스: 제작 패키지 avatar-orion-authored");
       expect(label({ kind: "procedural" })).toBe("소스: 절차적");
       const v1 = { ...createDefaultRecipe(), version: 1 } as unknown as CharacterRecipe;
-      expect(describeCommandKo({ type: "recipe/load", recipe: v1 })).toBe("레시피 불러오기(v1 → v2 변환)");
+      // v3 도입(2026-10-23): 변환 목표가 v3라 라벨 문구가 바뀐다(골든 갱신). v2 파일도 변환 라벨을 남긴다.
+      expect(describeCommandKo({ type: "recipe/load", recipe: v1 })).toBe("레시피 불러오기(v1 → v3 변환)");
+      const v2 = { ...createDefaultRecipe(), version: 2 } as unknown as CharacterRecipe;
+      expect(describeCommandKo({ type: "recipe/load", recipe: v2 })).toBe("레시피 불러오기(v2 → v3 변환)");
       expect(describeCommandKo({ type: "recipe/load", recipe: createDefaultRecipe() })).toBe("레시피 불러오기");
     });
   });

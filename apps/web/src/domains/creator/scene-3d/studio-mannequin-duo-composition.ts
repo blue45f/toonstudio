@@ -18,6 +18,12 @@
  */
 
 import {
+  computeStudioMannequinJointFrames,
+  studioMannequinMat3Apply as mat3Rotate,
+  studioMannequinMat3FromEulerXyz as mat3FromEulerXYZ,
+  type StudioMannequinJointFrame,
+} from "./studio-mannequin-forward-kinematics";
+import {
   buildStudioMannequinSpec,
   clampStudioMannequinBodyParams,
   clampStudioMannequinJointRotation,
@@ -28,237 +34,36 @@ import {
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import {
+  STUDIO_MANNEQUIN_DUO_COMPOSITIONS,
+  STUDIO_MANNEQUIN_DUO_FALLBACK_COMPOSITION,
+  STUDIO_MANNEQUIN_DUO_RELAXED_STAND_JOINTS,
+  findStudioMannequinDuoComposition,
+  type StudioMannequinDuoArrangement,
+  type StudioMannequinDuoCompositionSpec,
+  type StudioMannequinDuoGazeMode,
+  type StudioMannequinDuoPartnerPoseSource,
+} from "./studio-mannequin-duo-composition-specs";
+import { applyStudioMannequinDuoHandContacts } from "./studio-mannequin-duo-contacts";
+import { measureStudioMannequinBodyFloor } from "./studio-mannequin-pose-ground-contact";
+import {
   mirrorStudioMannequinPose,
   normalizeStudioMannequinPose,
   type StudioMannequinPose,
 } from "./studio-mannequin-poses";
 
-// ── 구도 스펙 ────────────────────────────────────────────────────────────────
-
-/** 상대의 배치 방식. */
-export type StudioMannequinDuoArrangement =
-  | "face-to-face" // 마주 보기 (포옹·하이파이브·벽치기)
-  | "front-same-facing" // 주인공 앞, 같은 방향 (백허그의 상대)
-  | "side-by-side"; // 나란히 (손잡기·팔짱·어깨 기대기)
-
-export type StudioMannequinDuoPartnerPoseSource =
-  | "mirror-lead" // 주인공 포즈를 좌우 반전해 대칭 상대역으로
-  | "stand-relaxed" // 편안히 선 기본 자세
-  | "authored"; // 구도 전용으로 저작한 상대 포즈
-
-export type StudioMannequinDuoGazeMode =
-  | "mutual" // 서로 바라보기
-  | "lead-to-partner" // 주인공만 상대를 바라보기
-  | "partner-to-lead" // 상대만 주인공을 바라보기
-  | "none"; // 시선 보정 없음 (걷기 등 전방 주시 연출)
-
-export interface StudioMannequinDuoCompositionSpec {
-  readonly id: string;
-  /** 이 구도가 대응하는 포즈 프리셋 id들(데생 인형/웹툰 라이브러리 공용). */
-  readonly presetIds: readonly string[];
-  readonly label: string;
-  readonly arrangement: StudioMannequinDuoArrangement;
-  /** 나란히 배치일 때 상대가 서는 쪽. +1 = 주인공 왼쪽(+X), -1 = 오른쪽(−X). */
-  readonly side: 1 | -1;
-  /** 몸통 표면 사이 목표 간격(m). 음수면 그만큼 닿아 겹치는 접촉 연출. */
-  readonly gapM: number;
-  /** 충돌 보정 시 허용하는 몸통 관통 깊이 상한(m). gapM이 이보다 깊이 겹치려 하면 밀어낸다. */
-  readonly maxOverlapM: number;
-  readonly partnerPoseSource: StudioMannequinDuoPartnerPoseSource;
-  /** partnerPoseSource 가 "authored" 일 때 쓰는 상대 관절 맵(도 단위 저작 → rad 변환본). */
-  readonly partnerJoints?: Readonly<
-    Partial<Record<StudioMannequinJointId, StudioMannequinVec3>>
-  >;
-  readonly gaze: StudioMannequinDuoGazeMode;
-}
-
-function deg3(x: number, y: number, z: number): StudioMannequinVec3 {
-  return [(x * Math.PI) / 180, (y * Math.PI) / 180, (z * Math.PI) / 180];
-}
-
-/** 백허그·어깨 기대기의 상대역처럼 포즈 없이 서 있는 기본 자세(stand 프리셋과 같은 감각). */
-const RELAXED_STAND_JOINTS: Readonly<
-  Partial<Record<StudioMannequinJointId, StudioMannequinVec3>>
-> = Object.freeze({
-  spine: deg3(2, 0, 0),
-  leftUpperArm: deg3(-4, 0, 8),
-  rightUpperArm: deg3(-4, 0, -8),
-  leftLowerArm: deg3(-14, 0, 0),
-  rightLowerArm: deg3(-14, 0, 0),
-  leftUpperLeg: deg3(0, 0, 4),
-  rightUpperLeg: deg3(0, 0, -4),
-});
-
-/** 벽치기 상대역 — 벽에 등을 붙이고 살짝 놀란 자세. */
-const WALL_PRESSED_JOINTS: Readonly<
-  Partial<Record<StudioMannequinJointId, StudioMannequinVec3>>
-> = Object.freeze({
-  spine: deg3(-5, 0, 0),
-  chest: deg3(-3, 0, 0),
-  head: deg3(-8, 14, 0),
-  leftUpperArm: deg3(6, 0, 14),
-  leftLowerArm: deg3(-22, 0, 0),
-  rightUpperArm: deg3(6, 0, -14),
-  rightLowerArm: deg3(-22, 0, 0),
-  leftUpperLeg: deg3(0, 0, 3),
-  rightUpperLeg: deg3(0, 0, -3),
-});
-
-export const STUDIO_MANNEQUIN_DUO_COMPOSITIONS: readonly StudioMannequinDuoCompositionSpec[] =
-  Object.freeze([
-    {
-      id: "duo-hug-front",
-      presetIds: ["couple-hug-front", "dramatic-romantic-hug"],
-      label: "마주 안기",
-      arrangement: "face-to-face",
-      side: 1,
-      gapM: -0.08,
-      maxOverlapM: 0.05,
-      partnerPoseSource: "mirror-lead",
-      gaze: "mutual",
-    },
-    {
-      id: "duo-back-hug",
-      presetIds: ["couple-back-hug"],
-      label: "뒤에서 안기(백허그)",
-      arrangement: "front-same-facing",
-      side: 1,
-      gapM: -0.08,
-      maxOverlapM: 0.05,
-      partnerPoseSource: "stand-relaxed",
-      gaze: "lead-to-partner",
-    },
-    {
-      id: "duo-hand-hold-walk",
-      presetIds: ["couple-hand-hold-walk", "couple-hand-hold"],
-      label: "손잡고 걷기",
-      arrangement: "side-by-side",
-      side: -1,
-      gapM: 0.02,
-      maxOverlapM: 0.03,
-      partnerPoseSource: "mirror-lead",
-      gaze: "none",
-    },
-    {
-      id: "duo-shoulder-lean",
-      presetIds: ["couple-shoulder-lean"],
-      label: "어깨에 기대기",
-      arrangement: "side-by-side",
-      side: 1,
-      gapM: -0.06,
-      maxOverlapM: 0.04,
-      partnerPoseSource: "stand-relaxed",
-      gaze: "none",
-    },
-    {
-      id: "duo-high-five",
-      presetIds: ["couple-high-five"],
-      label: "하이파이브",
-      arrangement: "face-to-face",
-      side: 1,
-      gapM: 0.16,
-      maxOverlapM: 0.02,
-      partnerPoseSource: "mirror-lead",
-      gaze: "mutual",
-    },
-    {
-      id: "duo-arm-link",
-      presetIds: ["couple-arm-link"],
-      label: "팔짱 끼고 서기",
-      arrangement: "side-by-side",
-      side: -1,
-      gapM: -0.05,
-      maxOverlapM: 0.04,
-      partnerPoseSource: "mirror-lead",
-      gaze: "mutual",
-    },
-    {
-      id: "duo-wall-slam",
-      presetIds: ["dramatic-wall-slam-kabe-don", "wall-slam"],
-      label: "벽치기(카베동)",
-      arrangement: "face-to-face",
-      side: 1,
-      gapM: 0.05,
-      maxOverlapM: 0.04,
-      partnerPoseSource: "authored",
-      partnerJoints: WALL_PRESSED_JOINTS,
-      gaze: "mutual",
-    },
-  ]);
-
-/** 스펙이 없는 2인 프리셋의 기본 구도 — 마주 보고 적당한 대화 거리. */
-export const STUDIO_MANNEQUIN_DUO_FALLBACK_COMPOSITION: StudioMannequinDuoCompositionSpec =
-  Object.freeze({
-    id: "duo-fallback-face-to-face",
-    presetIds: [],
-    label: "마주 보기(기본 2인 구도)",
-    arrangement: "face-to-face",
-    side: 1,
-    gapM: 0.24,
-    maxOverlapM: 0.02,
-    partnerPoseSource: "mirror-lead",
-    gaze: "mutual",
-  });
-
-export function findStudioMannequinDuoComposition(
-  presetId: unknown,
-): StudioMannequinDuoCompositionSpec | null {
-  if (typeof presetId !== "string") return null;
-  return (
-    STUDIO_MANNEQUIN_DUO_COMPOSITIONS.find(
-      (spec) => spec.id === presetId || spec.presetIds.includes(presetId),
-    ) ?? null
-  );
-}
+// FK 와 구도 스펙 표는 각자 모듈로 옮겼다 — 기존 공개 계약(테스트·호출부)을 위해 같은 이름으로 다시 내보낸다.
+export { computeStudioMannequinJointFrames, type StudioMannequinJointFrame };
+export {
+  STUDIO_MANNEQUIN_DUO_COMPOSITIONS,
+  STUDIO_MANNEQUIN_DUO_FALLBACK_COMPOSITION,
+  findStudioMannequinDuoComposition,
+  type StudioMannequinDuoArrangement,
+  type StudioMannequinDuoCompositionSpec,
+  type StudioMannequinDuoGazeMode,
+  type StudioMannequinDuoPartnerPoseSource,
+};
 
 // ── 작은 3D 수학 (three 미사용, 씬의 오일러 XYZ 계약 재현) ────────────────────
-
-type Mat3 = readonly [
-  number, number, number,
-  number, number, number,
-  number, number, number,
-];
-
-function mat3Multiply(a: Mat3, b: Mat3): Mat3 {
-  return [
-    a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
-    a[0] * b[1] + a[1] * b[4] + a[2] * b[7],
-    a[0] * b[2] + a[1] * b[5] + a[2] * b[8],
-    a[3] * b[0] + a[4] * b[3] + a[5] * b[6],
-    a[3] * b[1] + a[4] * b[4] + a[5] * b[7],
-    a[3] * b[2] + a[4] * b[5] + a[5] * b[8],
-    a[6] * b[0] + a[7] * b[3] + a[8] * b[6],
-    a[6] * b[1] + a[7] * b[4] + a[8] * b[7],
-    a[6] * b[2] + a[7] * b[5] + a[8] * b[8],
-  ];
-}
-
-/** THREE Euler 'XYZ' 와 같은 합성: R = Rx · Ry · Rz. */
-function mat3FromEulerXYZ(rotation: StudioMannequinVec3): Mat3 {
-  const [x, y, z] = rotation;
-  const cx = Math.cos(x);
-  const sx = Math.sin(x);
-  const cy = Math.cos(y);
-  const sy = Math.sin(y);
-  const cz = Math.cos(z);
-  const sz = Math.sin(z);
-  const rx: Mat3 = [1, 0, 0, 0, cx, -sx, 0, sx, cx];
-  const ry: Mat3 = [cy, 0, sy, 0, 1, 0, -sy, 0, cy];
-  const rz: Mat3 = [cz, -sz, 0, sz, cz, 0, 0, 0, 1];
-  return mat3Multiply(mat3Multiply(rx, ry), rz);
-}
-
-function mat3Rotate(m: Mat3, v: StudioMannequinVec3): StudioMannequinVec3 {
-  return [
-    m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
-    m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
-    m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
-  ];
-}
-
-function vecAdd(a: StudioMannequinVec3, b: StudioMannequinVec3): StudioMannequinVec3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
 
 function vecSub(a: StudioMannequinVec3, b: StudioMannequinVec3): StudioMannequinVec3 {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -275,54 +80,6 @@ function round4(value: number): number {
 
 function roundVec3(v: StudioMannequinVec3): StudioMannequinVec3 {
   return [round4(v[0]), round4(v[1]), round4(v[2])];
-}
-
-// ── FK (씬 applyPoseToGraph 와 같은 계약) ────────────────────────────────────
-
-export interface StudioMannequinJointFrame {
-  readonly position: StudioMannequinVec3;
-  readonly rotation: Mat3;
-}
-
-/**
- * 포즈를 적용한 관절 월드 프레임. 루트(골반 부모)는 rootOffset 위치와
- * rootYawRad(Y축 회전)에 놓이며, 골반 그룹 위치 = rest 오프셋 + pelvisOffset,
- * 관절 회전은 관절 한계로 클램프한 오일러 XYZ — 씬 렌더와 동일하다.
- */
-export function computeStudioMannequinJointFrames(
-  spec: StudioMannequinSpec,
-  pose: StudioMannequinPose,
-  rootOffset: StudioMannequinVec3 = [0, 0, 0],
-  rootYawRad = 0,
-): ReadonlyMap<StudioMannequinJointId, StudioMannequinJointFrame> {
-  const frames = new Map<StudioMannequinJointId, StudioMannequinJointFrame>();
-  const rootRotation = mat3FromEulerXYZ([0, rootYawRad, 0]);
-  for (const jointSpec of spec.joints) {
-    const localRotation = mat3FromEulerXYZ(
-      clampStudioMannequinJointRotation(
-        jointSpec.id,
-        pose.joints[jointSpec.id] ?? [0, 0, 0],
-      ),
-    );
-    if (jointSpec.parentId === null) {
-      const pelvisPosition = vecAdd(
-        rootOffset,
-        mat3Rotate(rootRotation, vecAdd(jointSpec.offset, pose.pelvisOffset)),
-      );
-      frames.set(jointSpec.id, {
-        position: pelvisPosition,
-        rotation: mat3Multiply(rootRotation, localRotation),
-      });
-      continue;
-    }
-    const parent = frames.get(jointSpec.parentId);
-    if (!parent) continue;
-    frames.set(jointSpec.id, {
-      position: vecAdd(parent.position, mat3Rotate(parent.rotation, jointSpec.offset)),
-      rotation: mat3Multiply(parent.rotation, localRotation),
-    });
-  }
-  return frames;
 }
 
 /**
@@ -351,8 +108,6 @@ function facingDirection(
 interface DuoBodyMeasure {
   readonly halfWidthM: number;
   readonly halfDepthM: number;
-  /** 서 있을 때 발목 관절의 지면으로부터 높이 = 발바닥까지의 여유. */
-  readonly ankleClearanceM: number;
   readonly heightM: number;
 }
 
@@ -385,24 +140,8 @@ function measureBody(spec: StudioMannequinSpec): DuoBodyMeasure {
   return {
     halfWidthM: halfWidth,
     halfDepthM: halfDepth,
-    ankleClearanceM: studioMannequinRestJointPosition(spec, "leftFoot")[1],
     heightM: spec.heightM,
   };
-}
-
-/** 포즈의 가장 낮은 발바닥 높이(월드). 접지 보정량의 기준. */
-function lowestFootBottomY(
-  spec: StudioMannequinSpec,
-  measure: DuoBodyMeasure,
-  frames: ReadonlyMap<StudioMannequinJointId, StudioMannequinJointFrame>,
-): number {
-  const left = frames.get("leftFoot");
-  const right = frames.get("rightFoot");
-  const ys = [left?.position[1], right?.position[1]].filter(
-    (value): value is number => typeof value === "number" && Number.isFinite(value),
-  );
-  if (ys.length === 0) return 0;
-  return Math.min(...ys) - measure.ankleClearanceM;
 }
 
 // ── 시선 보정 ────────────────────────────────────────────────────────────────
@@ -526,6 +265,8 @@ export interface StudioMannequinDuoCorrections {
   readonly groundAdjustM: number;
   /** 주인공 포즈 자체의 접지 어긋남(m). 호스트가 주인공에도 적용할 수 있다. */
   readonly leadGroundAdjustM: number;
+  /** 손 접촉 IK — 맞춘 손 수와 목표 손목까지 남은 최대 거리(m). */
+  readonly handContacts: { readonly count: number; readonly maxErrorM: number };
   readonly gaze: {
     readonly leadYawDeg: number;
     readonly leadPitchDeg: number;
@@ -568,7 +309,7 @@ function resolvePartnerBasePose(
     });
   }
   return normalizeStudioMannequinPose({
-    joints: RELAXED_STAND_JOINTS,
+    joints: STUDIO_MANNEQUIN_DUO_RELAXED_STAND_JOINTS,
     pelvisOffset: [0, 0, 0],
   });
 }
@@ -606,9 +347,11 @@ export function solveStudioMannequinDuoPlacement(
   const partnerBasePose = resolvePartnerBasePose(composition, leadPose);
 
   // ── 거리·방향(1차 배치 + 충돌 보정) ──
+  // 앞뒤로 서는 배치(마주 보기·앞에 서기·등 맞대기)는 몸통 두께로, 나란히는 어깨 폭으로 띄운다.
   const faceToFace =
     composition.arrangement === "face-to-face" ||
-    composition.arrangement === "front-same-facing";
+    composition.arrangement === "front-same-facing" ||
+    composition.arrangement === "back-to-back";
   const leadHalf = faceToFace ? leadMeasure.halfDepthM : leadMeasure.halfWidthM;
   const partnerHalf = faceToFace
     ? partnerMeasure.halfDepthM
@@ -619,15 +362,18 @@ export function solveStudioMannequinDuoPlacement(
   let distance = Math.max(desiredDistance, minDistance);
   let collisionPush = Math.max(0, minDistance - desiredDistance);
 
-  const axis: StudioMannequinVec3 = faceToFace
-    ? [0, 0, 1]
-    : [composition.side, 0, 0];
+  const axis: StudioMannequinVec3 = composition.arrangement === "back-to-back"
+    ? [0, 0, -1]
+    : faceToFace
+      ? [0, 0, 1]
+      : [composition.side, 0, 0];
   const partnerYawRad =
-    composition.arrangement === "face-to-face" ? Math.PI : 0;
+    composition.arrangement === "face-to-face" || composition.arrangement === "back-to-back" ? Math.PI : 0;
 
   // 주인공 접지 어긋남(영수증용 — 주인공 포즈는 호출부가 이미 적용한 값이라 건드리지 않는다)
   const leadFrames = computeStudioMannequinJointFrames(leadSpec, leadPose, [0, 0, 0], 0);
-  const leadGroundAdjust = -lowestFootBottomY(leadSpec, leadMeasure, leadFrames);
+  // 접지 기준은 발목이 아니라 씬이 그리는 전신 프리미티브의 최저점이다(기울어진 발·무릎 접지 포함).
+  const leadGroundAdjust = -measureStudioMannequinBodyFloor(leadSpec, leadPose).lowestY;
   const leadHead = leadFrames.get("head")?.position;
 
   // ── 얼굴 간격 보정 ──
@@ -662,13 +408,12 @@ export function solveStudioMannequinDuoPlacement(
   ];
 
   // ── 접지 보정(상대) ──
-  const partnerFramesBase = computeStudioMannequinJointFrames(
+  const groundAdjust = -measureStudioMannequinBodyFloor(
     partnerSpec,
     partnerBasePose,
     partnerOffsetBase,
     partnerYawRad,
-  );
-  const groundAdjust = -lowestFootBottomY(partnerSpec, partnerMeasure, partnerFramesBase);
+  ).lowestY;
   const partnerOffset: StudioMannequinVec3 = [
     partnerOffsetBase[0],
     groundAdjust,
@@ -716,8 +461,27 @@ export function solveStudioMannequinDuoPlacement(
     }
   }
 
+  // ── 손 접촉(포옹·하이파이브·손잡기·팔짱·벽치기) ──
+  // 저작한 팔 각도는 한 거리·한 체형 기준이라 실제 배치에서는 손이 상대 몸을 뚫거나 엇갈린다.
+  const contacts = applyStudioMannequinDuoHandContacts({
+    compositionId: composition.id,
+    lead: { spec: leadSpec, pose: finalLeadPose, offset: [0, 0, 0], yawRad: 0, halfDepthM: leadMeasure.halfDepthM },
+    partner: {
+      spec: partnerSpec,
+      pose: finalPartnerPose,
+      offset: partnerOffset,
+      yawRad: partnerYawRad,
+      halfDepthM: partnerMeasure.halfDepthM,
+    },
+  });
+  finalLeadPose = contacts.lead;
+  finalPartnerPose = contacts.partner;
+
   // ── 경고 영수증 ──
   const warnings: string[] = [];
+  if (contacts.maxErrorM > 0.05) {
+    warnings.push("팔 길이가 모자라 손이 닿을 자리까지 다 뻗지 못했어요.");
+  }
   const heightDiff = Math.abs(leadMeasure.heightM - partnerMeasure.heightM);
   if (heightDiff >= 0.2) {
     warnings.push(
@@ -748,6 +512,7 @@ export function solveStudioMannequinDuoPlacement(
       collisionPushM: round4(collisionPush),
       groundAdjustM: round4(groundAdjust),
       leadGroundAdjustM: round4(leadGroundAdjust),
+      handContacts: { count: contacts.count, maxErrorM: round4(contacts.maxErrorM) },
       gaze: {
         leadYawDeg: leadGaze.yawDeg,
         leadPitchDeg: leadGaze.pitchDeg,
@@ -771,6 +536,7 @@ export function describeStudioMannequinDuoPlacement(
   if (placement.arrangement === "face-to-face") parts.push("마주 보기");
   if (placement.arrangement === "side-by-side") parts.push("나란히 서기");
   if (placement.arrangement === "front-same-facing") parts.push("앞에 서기");
+  if (placement.arrangement === "back-to-back") parts.push("등 맞대기");
   if (Math.abs(placement.corrections.groundAdjustM) > 0.005) {
     parts.push("접지 보정 완료");
   }

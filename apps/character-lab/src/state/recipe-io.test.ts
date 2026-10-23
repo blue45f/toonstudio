@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { RECIPE_VERSION, createDefaultRecipe, createKitDefaultRecipe } from "../contracts";
+import { legacyRecipeV1Fixture, legacyRecipeV2Fixture } from "../testing/recipe-fixtures";
 
 import { RECIPE_FILE_NAME_PATTERN, deserializeRecipe, isAbortError, openMethodFor, recipeFileName, recipeMigrationNoticeKo, saveMethodFor, serializeRecipe } from "./recipe-io";
 
@@ -20,7 +21,7 @@ describe("state/recipe-io", () => {
     const a = createDefaultRecipe();
     const b = JSON.parse(JSON.stringify({ ...a, colors: Object.fromEntries(Object.entries(a.colors).reverse()) }));
     expect(serializeRecipe(b)).toBe(serializeRecipe(a));
-    expect(serializeRecipe(a)).toContain('"version": 2');
+    expect(serializeRecipe(a)).toContain('"version": 3');
   });
 
   it("손상된 JSON은 recipe-json-syntax 한글 사유로 실패한다", () => {
@@ -36,17 +37,18 @@ describe("state/recipe-io", () => {
     const base = createDefaultRecipe();
     const invalid = deserializeRecipe(JSON.stringify({ ...base, extra: 1 }));
     expect(!invalid.ok && invalid.failure.code).toBe("recipe-invalid");
-    const future = deserializeRecipe(JSON.stringify({ ...base, version: 3 }));
+    const future = deserializeRecipe(JSON.stringify({ ...base, version: 4 }));
     expect(!future.ok && future.failure.code).toBe("recipe-unsupported-version");
     expect(!future.ok && future.failure.reasonKo).toContain("지원하지 않는 레시피 버전");
   });
 
-  describe("레시피 v1 → v2 불러오기", () => {
+  describe("레시피 v1 → v3 불러오기", () => {
+    // 2026-10-23 v3 도입: v1 파일 모양은 시험 fixture(legacyRecipeV1Fixture)로 만든다. 변환 목표는 v3다.
     function v1Text(overrides: Record<string, unknown> = {}): string {
-      return JSON.stringify({ ...createDefaultRecipe(), version: 1, ...overrides });
+      return JSON.stringify({ ...legacyRecipeV1Fixture(), ...overrides });
     }
 
-    it("v1 파일은 v2로 변환되어 열리고 migratedFrom=1과 한글 안내문이 따라온다", () => {
+    it("v1 파일은 v3로 변환되어 열리고 migratedFrom=1과 한글 안내문이 따라온다", () => {
       const result = deserializeRecipe(v1Text({ body: { height: 0.25 } }));
       expect(result.ok).toBe(true);
       if (!result.ok) return;
@@ -57,15 +59,15 @@ describe("state/recipe-io", () => {
       const notice = recipeMigrationNoticeKo(result);
       expect(notice).toMatch(/[가-힣]/u);
       expect(notice).toContain("v1");
-      expect(notice).toContain("v2");
+      expect(notice).toContain("v3");
     });
 
-    it("변환된 레시피를 저장하면 v2 텍스트이고, 다시 열면 변환 없이 같은 레시피다(저장 후 안내가 반복되지 않는다)", () => {
+    it("변환된 레시피를 저장하면 v3 텍스트이고, 다시 열면 변환 없이 같은 레시피다(저장 후 안내가 반복되지 않는다)", () => {
       const first = deserializeRecipe(v1Text());
       expect(first.ok).toBe(true);
       if (!first.ok) return;
       const saved = serializeRecipe(first.recipe);
-      expect(saved).toContain('"version": 2');
+      expect(saved).toContain('"version": 3');
       expect(saved).not.toContain('"version": 1');
       const second = deserializeRecipe(saved);
       expect(second.ok).toBe(true);
@@ -76,19 +78,29 @@ describe("state/recipe-io", () => {
       expect(serializeRecipe(second.recipe)).toBe(saved);
     });
 
-    it("v1에서 연 레시피의 파일 이름은 같은 내용의 v2 레시피와 같다(digest는 v2 기준)", () => {
+    it("v1에서 연 레시피의 파일 이름은 같은 내용의 v3 레시피와 같다(digest는 v3 기준)", () => {
       const migrated = deserializeRecipe(v1Text());
       expect(migrated.ok && recipeFileName(migrated.recipe)).toBe(recipeFileName(createDefaultRecipe()));
     });
 
-    it("안내문은 v2 파일·실패 결과에는 null이다", () => {
+    it("안내문은 현재(v3) 파일·실패 결과에는 null이다", () => {
       expect(recipeMigrationNoticeKo(deserializeRecipe(serializeRecipe(createDefaultRecipe())))).toBeNull();
       expect(recipeMigrationNoticeKo(deserializeRecipe("{ not json"))).toBeNull();
-      expect(recipeMigrationNoticeKo(deserializeRecipe(JSON.stringify({ ...createDefaultRecipe(), version: 3 })))).toBeNull();
+      expect(recipeMigrationNoticeKo(deserializeRecipe(JSON.stringify({ ...createDefaultRecipe(), version: 4 })))).toBeNull();
+    });
+
+    it("v2 파일도 v3로 변환되어 열리고 migratedFrom=2 안내가 따라오며, 파일 이름은 같은 내용의 v3 레시피와 같다", () => {
+      const result = deserializeRecipe(JSON.stringify(legacyRecipeV2Fixture(createKitDefaultRecipe("male"))));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.migratedFrom).toBe(2);
+      expect(result.recipe).toEqual(createKitDefaultRecipe("male"));
+      expect(recipeMigrationNoticeKo(result)).toBe("레시피 v2 파일을 현재 형식(v3)으로 변환해 열었습니다. 저장하면 v3 파일로 기록됩니다.");
+      expect(recipeFileName(result.recipe)).toBe(recipeFileName(createKitDefaultRecipe("male")));
     });
 
     it("v1 스키마에 없는 키트 소스를 v1로 선언한 파일은 변환하지 않고 recipe-invalid로 거부한다", () => {
-      const result = deserializeRecipe(v1Text({ source: createKitDefaultRecipe().source }));
+      const result = deserializeRecipe(JSON.stringify({ ...legacyRecipeV2Fixture(createKitDefaultRecipe()), version: 1 }));
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.failure.code).toBe("recipe-invalid");
@@ -101,7 +113,7 @@ describe("state/recipe-io", () => {
       expect(!result.ok && result.failure.code).toBe("recipe-invalid");
     });
 
-    it("키트 소스 v2 레시피는 직렬화 round-trip이 바이트 동일하다", () => {
+    it("키트 소스 v3 레시피는 직렬화 round-trip이 바이트 동일하다", () => {
       const recipe = createKitDefaultRecipe("male");
       const text = serializeRecipe(recipe);
       const parsed = deserializeRecipe(text);

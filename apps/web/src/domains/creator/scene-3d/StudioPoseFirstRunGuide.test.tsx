@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readStudioPoseGuideDismissed } from "./studio-pose-guide-storage";
 import { StudioPoseFirstRunGuide } from "./StudioPoseFirstRunGuide";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 const SCOPE = "test-guide-scope";
 
 function renderGuide() {
@@ -26,18 +28,31 @@ function renderGuide() {
 describe("StudioPoseFirstRunGuide (첫 진입 가이드)", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    useI18n.getState().setLang("ko");
   });
 
   afterEach(() => {
     cleanup();
+    useI18n.getState().setLang("ko");
   });
 
-  it("처음에는 가이드가 보이고 단계를 렌더링한다", () => {
+  it("처음에는 가이드가 보이고 단계를 렌더링한다(한국어만, 영문 병기 없음)", () => {
     renderGuide();
-    expect(screen.getByRole("note", { name: "포즈 패널 30초 가이드 안내" })).toBeTruthy();
+    const note = screen.getByRole("note", { name: "포즈 패널 30초 가이드 안내" });
     expect(screen.getByText("카드를 클릭하면 3D에 바로 적용됩니다.")).toBeTruthy();
+    expect(screen.queryByText("Click a card to apply instantly.")).toBeNull();
+    expect(screen.getByLabelText("다시 보지 않기")).toBeTruthy();
+    expect(note.textContent).not.toMatch(/Don.t show again/);
+  });
+
+  it("앱 언어가 영어면 영문 단계와 영문 확인란을 대신 보여 준다", () => {
+    useI18n.getState().setLang("en");
+    renderGuide();
     expect(screen.getByText("Click a card to apply instantly.")).toBeTruthy();
-    expect(screen.getByLabelText(/다시 보지 않기/)).toBeTruthy();
+    expect(screen.queryByText("카드를 클릭하면 3D에 바로 적용됩니다.")).toBeNull();
+    expect(screen.getByLabelText("Don't show again")).toBeTruthy();
+    // 영문이 없는 단계는 한국어 원문을 그대로 쓴다.
+    expect(screen.getByText("강도 슬라이더로 조절하세요.")).toBeTruthy();
   });
 
   it("다시 보지 않기를 체크하고 닫으면 다음 진입부터 숨겨진다", () => {

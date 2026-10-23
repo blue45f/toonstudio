@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, LoaderCircle, RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 
 import {
   requestServiceCapabilityRefresh,
@@ -7,6 +8,7 @@ import {
 } from "@/platform/service-capability-state";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useModalStatusSlot } from "@/shared/lib/modal-status-slot";
 import { useOverlayClearance } from "@/shared/lib/overlay-clearance";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -49,13 +51,16 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
   const compact = immersive && collapsed;
   const bannerRef = useRef<HTMLDivElement>(null);
   const visible = state.status === "degraded" || recoveryVisible;
+  // 거의 전체 화면을 쓰는 모달이 상태 자리를 내주면 떠 있는 배너 대신 그 자리에 한 줄 칩으로 들어간다.
+  // 떠 있는 배너(z-90)가 모달의 뷰포트 아래쪽·검색창을 가리던 문제를 막는다(알림은 숨기지 않는다).
+  const modalStatusSlot = useModalStatusSlot();
 
   // 실제 알림 높이를 공유해 OST·베타 안내가 경고·재시도 버튼을 가리거나 그 아래 숨지 않게 한다.
   // 웜업 동안에는 이 컴포넌트가 연결 칩을 따로 렌더링해 bannerRef가 비어 있으므로,
   // 렌더링 형태가 바뀌는 전이(웜업→저하·복구)에서도 다시 재도록 상태 조합을 다시 잼 키에 넣는다.
   useOverlayClearance(
     bannerRef,
-    visible && immersive,
+    visible && immersive && modalStatusSlot === null,
     `${state.status}:${state.warmingUp === true}:${compact}`,
   );
 
@@ -72,7 +77,18 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
     [state.report?.capabilities],
   );
   if (!visible) return null;
-  if (state.warmingUp === true && state.status === "degraded") return <ServiceWarmupNotice />;
+  if (state.warmingUp === true && state.status === "degraded") {
+    return modalStatusSlot
+      ? createPortal(
+        <ServiceStatusSlotChip
+          tone="warming"
+          title={bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}
+          description={bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}
+        />,
+        modalStatusSlot,
+      )
+      : <ServiceWarmupNotice />;
+  }
 
   const recovered = state.status === "available" && recoveryVisible;
   const hiddenCount = Math.max(0, unavailable.length - DETAIL_LIMIT);
@@ -98,6 +114,19 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
         "일부 온라인 요청의 응답을 확인하지 못했습니다. 서비스 전체 장애로 확인된 것은 아니며, 탐색과 로컬 편집은 계속 사용할 수 있습니다.",
         "Some online requests did not respond. This is not a confirmed full outage, and browsing and local editing keep working.",
       );
+
+  if (modalStatusSlot) {
+    return createPortal(
+      <ServiceStatusSlotChip
+        tone={recovered ? "recovered" : "degraded"}
+        title={title}
+        description={description}
+        checking={state.checking}
+        onRefresh={recovered ? undefined : requestServiceCapabilityRefresh}
+      />,
+      modalStatusSlot,
+    );
+  }
 
   return (
     <div
@@ -199,6 +228,68 @@ function ServiceWarmupNotice() {
         <strong className="font-bold text-fg">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
         <span className="sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
       </span>
+    </div>
+  );
+}
+
+/**
+ * 모달이 내준 상태 자리에 들어가는 한 줄 칩. 떠 있는 배너와 같은 상태·문구를 쓰되
+ * 설명은 화면 읽기용(sr-only)과 툴팁으로만 두고, 다시 확인 버튼 하나만 남긴다.
+ */
+function ServiceStatusSlotChip({
+  tone,
+  title,
+  description,
+  checking = false,
+  onRefresh,
+}: {
+  readonly tone: "degraded" | "recovered" | "warming";
+  readonly title: string;
+  readonly description: string;
+  readonly checking?: boolean;
+  readonly onRefresh?: () => void;
+}): ReactElement {
+  const bt = useBilingual(COPY_SCOPE);
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-service-degraded-banner={tone}
+      data-service-status-placement="modal-slot"
+      title={description}
+      className={cn(
+        "inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border py-0.5 pl-2 pr-0.5 text-[0.68rem] font-semibold",
+        tone === "recovered" && "border-good/35 bg-good/10 text-good",
+        tone === "degraded" && "border-warn/40 bg-warn/10 text-fg",
+        tone === "warming" && "border-line bg-panel/90 text-fg-2",
+        !onRefresh && "pr-2",
+      )}
+    >
+      {tone === "recovered" ? (
+        <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+      ) : tone === "warming" ? (
+        <LoaderCircle className="size-3.5 shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
+      ) : (
+        <AlertTriangle className="size-3.5 shrink-0 text-warn" aria-hidden="true" />
+      )}
+      <span className="min-w-0 truncate">{title}</span>
+      <span className="sr-only">{description}</span>
+      {onRefresh ? (
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={checking}
+          aria-label={checking ? bt("확인 중", "Checking") : bt("다시 확인", "Check again")}
+          title={checking ? bt("확인 중", "Checking") : bt("다시 확인", "Check again")}
+          className="grid size-7 shrink-0 place-items-center rounded-full hover:bg-warn/15 disabled:opacity-50 pointer-coarse:size-11"
+        >
+          <RefreshCw
+            className={cn("size-3.5", checking && "animate-spin motion-reduce:animate-none")}
+            aria-hidden="true"
+          />
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -12,6 +12,7 @@
  */
 import { useId } from "react";
 
+import { CharacterHairRenderArt } from "./CharacterHairRenderArt";
 import { characterHandGlyphLayout } from "./character-shaper-hand-glyph";
 import { characterPoseGlyphJoints, resolveCharacterPoseGlyphDetail } from "./character-shaper-pose-glyph";
 
@@ -1768,17 +1769,12 @@ function renderArt(spec: CharacterSlotPreviewSpec, selected: boolean, idBase: st
     case "ears":
       return <EarsArt glyph={spec.glyph} selected={selected} size={spec.size} />;
     case "hair":
+      // 실제 헤어 생성기 렌더가 준비되면 도해 대신 그린다(A-07). 렌더 전·WebGL 없음이면 도해 그대로.
       return (
-        <HairArt
-          bangStyle={spec.bangStyle}
-          baseColor={spec.baseColor}
-          idBase={idBase}
-          length={spec.length}
-          selected={selected}
-          style={spec.style}
-          tipColor={spec.tipColor}
-          volume={spec.volume}
-        />
+        <CharacterHairRenderArt spec={spec} selected={selected}>
+          <HairArt bangStyle={spec.bangStyle} baseColor={spec.baseColor} idBase={idBase} length={spec.length}
+            selected={selected} style={spec.style} tipColor={spec.tipColor} volume={spec.volume} />
+        </CharacterHairRenderArt>
       );
     case "hair-original":
       return <HairOriginalArt selected={selected} />;

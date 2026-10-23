@@ -1,15 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { failVisible } from "../../contracts";
 import { createMockEngine } from "../../testing/mock-engine";
 import { applyPlanFixture, minimalHumanoidModelFixture } from "../../testing/recipe-fixtures";
 
-import { createThumbnailScheduler } from "./thumbnail-scheduler";
+import { createBrowserThumbnailPacing, createThumbnailScheduler, defaultThumbnailPacing } from "./thumbnail-scheduler";
 
-import type { ThumbnailSchedulerDeps } from "./thumbnail-scheduler";
+import type { ThumbnailPacing, ThumbnailSchedulerDeps } from "./thumbnail-scheduler";
 import type { CharacterEngine, CharacterSource, PresetId, ThumbnailEntry, ThumbnailRequest } from "../../contracts";
 
-function harness(engine: CharacterEngine | null, options: { keyVersion?: () => string; sourceFor?: ThumbnailSchedulerDeps["sourceFor"] } = {}) {
+function harness(engine: CharacterEngine | null, options: { keyVersion?: () => string; sourceFor?: ThumbnailSchedulerDeps["sourceFor"]; pacing?: ThumbnailPacing } = {}) {
   const entries = new Map<PresetId, ThumbnailEntry>();
   const updates: Array<{ presetId: PresetId; entry: ThumbnailEntry }> = [];
   const scheduler = createThumbnailScheduler({
@@ -22,6 +22,7 @@ function harness(engine: CharacterEngine | null, options: { keyVersion?: () => s
       updates.push({ presetId, entry });
     },
     ...(options.sourceFor ? { sourceFor: options.sourceFor } : {}),
+    ...(options.pacing ? { pacing: options.pacing } : {}),
   });
   return { scheduler, entries, updates };
 }
@@ -160,3 +161,198 @@ describe("app/shell/thumbnail-scheduler", () => {
     });
   });
 });
+
+/** 가짜 타이머로 도는 양보 정책: 매크로태스크 양보 = setTimeout 0, 유휴 대기 = setTimeout 50 */
+function fakeTimerPacing(quietMs = 100): ThumbnailPacing {
+  return {
+    quietMs,
+    schedule(callback, ms) {
+      const handle = setTimeout(callback, ms);
+      return () => clearTimeout(handle);
+    },
+    yieldToMain: () => new Promise((resolve) => setTimeout(resolve, 0)),
+    whenIdle: () => new Promise((resolve) => setTimeout(resolve, 50)),
+  };
+}
+
+describe("app/shell/thumbnail-scheduler 메인 스레드 양보(P-01)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  const rendered = (engine: ReturnType<typeof createMockEngine>): string[] =>
+    engine.calls.filter((call) => call.method === "renderThumbnail").map((call) => (call.args[0] as { presetId: string }).presetId);
+
+  it("다시 그릴 요청 뒤 quietMs 동안 조용해야 시작하고, 요청이 이어지면(슬라이더 드래그) 계속 미뤘다가 마지막 키로 한 번만 그린다", async () => {
+    vi.useFakeTimers();
+    let version = 1;
+    const engine = createMockEngine();
+    const { scheduler, entries } = harness(engine, { keyVersion: () => `v${version}`, pacing: fakeTimerPacing(100) });
+    scheduler.request("hair/soft-bob", { visible: true });
+    expect(scheduler.isRunning()).toBe(false);
+    for (let step = 0; step < 6; step += 1) {
+      await vi.advanceTimersByTimeAsync(40);
+      version += 1;
+      scheduler.request("hair/soft-bob", { visible: true });
+    }
+    // 드래그 6스텝(240 ms) 동안 한 번도 그리지 않았다
+    expect(rendered(engine)).toEqual([]);
+    await vi.advanceTimersByTimeAsync(150);
+    await scheduler.idle();
+    expect(rendered(engine)).toEqual(["hair/soft-bob"]);
+    expect(entries.get("hair/soft-bob")).toMatchObject({ status: "ready", cacheKey: `hair/soft-bob#v${version}` });
+  });
+
+  it("보이는 카드를 먼저 그리고 보이지 않는 카드는 유휴 대기 뒤에 그린다", async () => {
+    vi.useFakeTimers();
+    const engine = createMockEngine();
+    const { scheduler } = harness(engine, { pacing: fakeTimerPacing(100) });
+    scheduler.request("hair/hime-cut");
+    scheduler.request("eyes/almond", { visible: true });
+    const done = scheduler.idle();
+    await vi.advanceTimersByTimeAsync(400);
+    await done;
+    expect(rendered(engine)).toEqual(["eyes/almond", "hair/hime-cut"]);
+  });
+
+  it("작업마다 매크로태스크로 양보한다(한 태스크에서 여러 장을 연달아 그리지 않는다)", async () => {
+    // 양보를 손으로 풀어 주는 정책: 양보 1번 = 매크로태스크 1개
+    const hops: Array<() => void> = [];
+    const pacing: ThumbnailPacing = { ...fakeTimerPacing(0), yieldToMain: () => new Promise<void>((resolve) => hops.push(resolve)) };
+    const engine = createMockEngine();
+    const { scheduler } = harness(engine, { pacing });
+    scheduler.request("hair/soft-bob", { visible: true });
+    scheduler.request("hair/hime-cut", { visible: true });
+    scheduler.request("eyes/almond", { visible: true });
+    const flushMicrotasks = async (): Promise<void> => {
+      for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    };
+    await flushMicrotasks();
+    // 마이크로태스크만으로는 아무것도 그리지 않는다
+    expect(rendered(engine)).toEqual([]);
+    for (const expected of [["hair/soft-bob"], ["hair/soft-bob", "hair/hime-cut"], ["hair/soft-bob", "hair/hime-cut", "eyes/almond"]]) {
+      expect(hops).toHaveLength(1);
+      hops.shift()?.();
+      await flushMicrotasks();
+      // 양보 한 번마다 정확히 한 장
+      expect(rendered(engine)).toEqual(expected);
+    }
+    await scheduler.idle();
+    expect(scheduler.isRunning()).toBe(false);
+  });
+
+  it("시작 전에 레시피가 바뀐(cacheKey 불일치) 작업은 그리지 않고, 새 키 요청은 그린다", async () => {
+    vi.useFakeTimers();
+    let version = 1;
+    const engine = createMockEngine();
+    const { scheduler, entries } = harness(engine, { keyVersion: () => `v${version}`, pacing: fakeTimerPacing(0) });
+    scheduler.request("hair/soft-bob", { visible: true });
+    version = 2;
+    await vi.advanceTimersByTimeAsync(5);
+    await scheduler.idle();
+    expect(rendered(engine)).toEqual([]);
+    expect(entries.get("hair/soft-bob")).toMatchObject({ status: "pending", cacheKey: "hair/soft-bob#v1" });
+    scheduler.request("hair/soft-bob", { visible: true });
+    await vi.advanceTimersByTimeAsync(5);
+    await scheduler.idle();
+    expect(rendered(engine)).toEqual(["hair/soft-bob"]);
+    expect(entries.get("hair/soft-bob")).toMatchObject({ status: "ready", cacheKey: "hair/soft-bob#v2" });
+  });
+
+  it("임시 소스를 만든 뒤 레시피가 바뀌면 렌더하지 않는다(소스 빌드와 렌더 사이에도 양보한다)", async () => {
+    vi.useFakeTimers();
+    let version = 1;
+    const engine = createMockEngine({ thumbnailSources: true });
+    const { scheduler } = harness(engine, {
+      keyVersion: () => `v${version}`,
+      pacing: fakeTimerPacing(0),
+      sourceFor: () => {
+        version = 2;
+        return { kind: "procedural", model: minimalHumanoidModelFixture() };
+      },
+    });
+    scheduler.request("hair/soft-bob", { visible: true });
+    await vi.advanceTimersByTimeAsync(5);
+    await scheduler.idle();
+    expect(rendered(engine)).toEqual([]);
+  });
+});
+
+describe("app/shell/thumbnail-scheduler 다시 그리는 동안 옛 그림 유지", () => {
+  it("이미 그려진 카드는 새 키로 다시 요청돼도 pending으로 바꾸지 않고(그림이 사라지지 않는다) 새 그림이 나오면 바꾼다", async () => {
+    let version = 1;
+    const engine = createMockEngine({ holdThumbnails: true });
+    const { scheduler, entries, updates } = harness(engine, { keyVersion: () => `v${version}` });
+    scheduler.request("hair/soft-bob");
+    expect(entries.get("hair/soft-bob")?.status).toBe("pending");
+    await Promise.resolve();
+    engine.releaseThumbnail();
+    await scheduler.idle();
+    const first = entries.get("hair/soft-bob");
+    expect(first?.status).toBe("ready");
+    version = 2;
+    const before = updates.length;
+    scheduler.request("hair/soft-bob");
+    // 옛 그림(ready·v1)을 그대로 둔다
+    expect(updates.length).toBe(before);
+    expect(entries.get("hair/soft-bob")).toBe(first);
+    await Promise.resolve();
+    engine.releaseThumbnail();
+    await scheduler.idle();
+    expect(entries.get("hair/soft-bob")).toMatchObject({ status: "ready", cacheKey: "hair/soft-bob#v2" });
+    // 실패한 카드는 그림이 없으므로 다시 요청하면 pending이다
+    const failing = harness(createMockEngine({ failThumbnail: () => failVisible("thumb-fail", "실패", undefined, 0) }));
+    failing.scheduler.request("eyes/almond");
+    await failing.scheduler.idle();
+    expect(failing.entries.get("eyes/almond")?.status).toBe("failed");
+  });
+});
+
+describe("app/shell/thumbnail-scheduler 기본 양보 정책", () => {
+  it("실브라우저(문서·MessageChannel, jsdom 아님)에서만 켜고 Node·jsdom에서는 끈다(requestIdleCallback이 없는 Safari도 켠다)", () => {
+    const host = { setTimeout: (callback: () => void) => callback(), clearTimeout: () => undefined };
+    // Node: 문서 없음
+    expect(defaultThumbnailPacing({ ...host, MessageChannel })).toBeNull();
+    // jsdom
+    expect(defaultThumbnailPacing({ ...host, MessageChannel, document: {}, navigator: { userAgent: "Mozilla/5.0 (darwin) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/26.1.0" } })).toBeNull();
+    // Chrome·Safari(requestIdleCallback 없음)
+    const chrome = defaultThumbnailPacing({ ...host, MessageChannel, document: {}, navigator: { userAgent: "Mozilla/5.0 Chrome/156" }, requestIdleCallback: () => 1 });
+    const safari = defaultThumbnailPacing({ ...host, MessageChannel, document: {}, navigator: { userAgent: "Mozilla/5.0 Version/26 Safari/605" } });
+    expect(chrome?.quietMs).toBeGreaterThan(0);
+    expect(safari?.quietMs).toBeGreaterThan(0);
+  });
+
+  it("브라우저 정책의 양보·유휴 대기·타이머가 끝난다(취소 포함)", async () => {
+    const calls: string[] = [];
+    const pacing = createBrowserThumbnailPacing(
+      {
+        setTimeout: (callback: () => void, ms: number) => {
+          calls.push(`timeout:${ms}`);
+          return setTimeout(callback, 0);
+        },
+        clearTimeout: (handle: unknown) => {
+          calls.push("clear");
+          clearTimeout(handle as ReturnType<typeof setTimeout>);
+        },
+        requestIdleCallback: (callback: () => void, options?: { readonly timeout: number }) => {
+          calls.push(`idle:${options?.timeout ?? 0}`);
+          setTimeout(callback, 0);
+          return 1;
+        },
+        MessageChannel,
+      },
+      30,
+    );
+    await pacing.yieldToMain();
+    await pacing.whenIdle?.();
+    let fired = false;
+    const cancel = pacing.schedule(() => {
+      fired = true;
+    }, 30);
+    cancel();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(fired).toBe(false);
+    expect(calls).toEqual(["idle:1500", "timeout:30", "clear"]);
+    expect(pacing.quietMs).toBe(30);
+  });
+});
+

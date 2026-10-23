@@ -186,6 +186,10 @@ const PART_FIELD_ROLES: Readonly<Record<string, PartRole>> = {
   shoes: "shoes",
   accessory: "accessory",
   underwear: "underwear",
+  inner: "inner",
+  outer: "outer",
+  legwear: "legwear",
+  "hair-accessory": "hair-accessory",
 };
 
 export interface AuthoredGap {

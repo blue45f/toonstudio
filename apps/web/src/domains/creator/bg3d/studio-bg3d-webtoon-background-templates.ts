@@ -6,6 +6,10 @@
 //
 // 결과는 장면 문서의 일반 도형 노드(BgPrimitive[])라 추가 뒤에도 벽·책상·가로등을 하나씩 고르고 옮기고 지울 수 있다.
 // 이 모듈은 선택기(StudioBg3dWebtoonBackgroundPicker)와 같은 지연 청크에서만 쓴다 — 편집기 활성화 번들에 넣지 않는다.
+//
+// 교실·복도는 룸 빌더의 개구부 스타일(미닫이문·미서기 창·유리문)·평천장·걸레받이를 쓴다(2026-10-23). 빈 구멍 대신 문틀·
+// 문짝·창틀·유리창이 생겨 노드가 늘었다(교실 99 → 134, 복도 39 → 100). 같은 학교 장면(교실 + 복도)은 기본 장면 예산
+// 256 안에 들어가지만, 거리(96)까지 셋을 한 장면에 넣으면 예산을 넘는다 — 템플릿 시험이 이 경계를 고정한다.
 
 import {
   clampStudioBg3dRoomSpec,
@@ -22,6 +26,16 @@ import {
 } from "./studio-bg3d-street-builder";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
+
+const CLASSROOM_SLIDING_DOOR = { style: "sliding-door" } as const;
+const SCHOOL_WINDOW = { style: "window-sliding" } as const;
+/** 학교 바닥 걸레받이(높이 10cm, 두께 1.5cm). 나머지 몰딩은 쓰지 않는다. */
+const SCHOOL_TRIMS = {
+  baseboard: { enabled: true, heightM: 0.1, depthM: 0.015 },
+  crown: { style: "none", heightM: 0.1 },
+  wainscot: { enabled: false, heightM: 0.9 },
+  chairRail: false,
+} as const;
 
 export const STUDIO_BG3D_WEBTOON_BACKGROUND_IDS = ["classroom", "corridor", "street"] as const;
 export type StudioBg3dWebtoonBackgroundId = (typeof STUDIO_BG3D_WEBTOON_BACKGROUND_IDS)[number];
@@ -74,14 +88,16 @@ function classroomSpec(): StudioBg3dRoomSpec {
     floorColor: "#cdb98f",
     wallColor: "#f2ead8",
     openings: [
-      // 서쪽 벽: 안에서 볼 때 +오프셋이 북쪽(-Z). 앞문은 칠판 쪽, 뒷문은 뒤쪽.
-      { wall: "west", type: "door", centerOffset: 2.6, width: 1, height: 2.1, sillHeight: 0 },
-      { wall: "west", type: "door", centerOffset: -2.6, width: 1, height: 2.1, sillHeight: 0 },
-      // 동쪽 벽: 오프셋 = Z 좌표.
-      { wall: "east", type: "window", centerOffset: -2.4, width: 1.8, height: 1.3, sillHeight: 0.9 },
-      { wall: "east", type: "window", centerOffset: 0, width: 1.8, height: 1.3, sillHeight: 0.9 },
-      { wall: "east", type: "window", centerOffset: 2.4, width: 1.8, height: 1.3, sillHeight: 0.9 },
+      // 서쪽 벽: 안에서 볼 때 +오프셋이 북쪽(-Z). 앞문은 칠판 쪽, 뒷문은 뒤쪽. 둘 다 위가 유리인 미닫이문.
+      { wall: "west", type: "door", centerOffset: 2.6, width: 1, height: 2.1, sillHeight: 0, ...CLASSROOM_SLIDING_DOOR },
+      { wall: "west", type: "door", centerOffset: -2.6, width: 1, height: 2.1, sillHeight: 0, ...CLASSROOM_SLIDING_DOOR },
+      // 동쪽 벽: 오프셋 = Z 좌표. 두 짝 미서기 창.
+      { wall: "east", type: "window", centerOffset: -2.4, width: 1.8, height: 1.3, sillHeight: 0.9, ...SCHOOL_WINDOW },
+      { wall: "east", type: "window", centerOffset: 0, width: 1.8, height: 1.3, sillHeight: 0.9, ...SCHOOL_WINDOW },
+      { wall: "east", type: "window", centerOffset: 2.4, width: 1.8, height: 1.3, sillHeight: 0.9, ...SCHOOL_WINDOW },
     ],
+    ceiling: "flat",
+    trims: SCHOOL_TRIMS,
     furniture: [
       // 칠판 뒷면이 북쪽 벽 안쪽 면에 닿는다(틀 두께 0.05m의 절반 0.025m).
       { kind: "blackboard", x: 0, z: northInner + 0.025, yawDeg: 0 },
@@ -109,6 +125,7 @@ function corridorSpec(): StudioBg3dRoomSpec {
     width: 1,
     height: 2.1,
     sillHeight: 0,
+    ...CLASSROOM_SLIDING_DOOR,
   }));
   const windows: StudioBg3dRoomOpening[] = [-5.25, -1.75, 1.75, 5.25].map((centerOffset) => ({
     wall: "south",
@@ -117,6 +134,7 @@ function corridorSpec(): StudioBg3dRoomSpec {
     width: 1.5,
     height: 1.3,
     sillHeight: 1,
+    ...SCHOOL_WINDOW,
   }));
   return clampStudioBg3dRoomSpec({
     width: CORRIDOR_WIDTH,
@@ -128,8 +146,11 @@ function corridorSpec(): StudioBg3dRoomSpec {
     openings: [
       ...classroomDoors,
       ...windows,
-      { wall: "east", type: "door", centerOffset: 0, width: 1.6, height: 2.1, sillHeight: 0 },
+      // 복도 끝 양문 유리문.
+      { wall: "east", type: "door", centerOffset: 0, width: 1.6, height: 2.1, sillHeight: 0, style: "glass-door" },
     ],
+    ceiling: "flat",
+    trims: SCHOOL_TRIMS,
     // 사물함은 문과 문 사이 빈 벽(폭 2.5m)에 한 단(폭 1.8m)씩. 복도 쪽 앞면(+Z)을 본다.
     furniture: [-3.5, 0, 3.5].map((x): StudioBg3dRoomFurnitureItem => ({
       kind: "locker",

@@ -13,7 +13,13 @@
  */
 
 import type { CompositionGenerationSnapshot } from "../ai/studio-composition-generation-brief";
+import { STUDIO_MANNEQUIN_MATERIAL_STYLES } from "./studio-mannequin-model";
 import type { StudioMannequinCameraPreset } from "./studio-mannequin-scene";
+
+/** 재질 id → 화면 이름(목조 인형·클레이 …). 브리프에 "재질 wood"처럼 내부 id가 새지 않게 한다. */
+const MATERIAL_STYLE_LABEL = new Map(
+  STUDIO_MANNEQUIN_MATERIAL_STYLES.map((style) => [style.id as string, style.label] as const),
+);
 
 /** 브리프에서 포저 캐릭터를 가리키는 안정 식별자. 일관성 키 character:<id>의 근거. */
 export const STUDIO_MANNEQUIN_COMPOSITION_CHARACTER_ID = "studio-mannequin";
@@ -74,7 +80,8 @@ export function buildStudioMannequinCompositionSnapshot(
       ? Math.round(input.heightCm)
       : 165;
   const appearance: string[] = [`신장 ${heightCm}cm`];
-  if (input.materialStyle?.trim()) appearance.push(`재질 ${input.materialStyle.trim()}`);
+  const materialStyle = input.materialStyle?.trim();
+  if (materialStyle) appearance.push(`재질 ${MATERIAL_STYLE_LABEL.get(materialStyle) ?? materialStyle}`);
   const angles = resolveStudioMannequinCameraAngles(input.cameraPreset);
   const posePresetId = input.posePresetId?.trim() ? input.posePresetId.trim() : undefined;
   return {

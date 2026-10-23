@@ -327,9 +327,22 @@ export const STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN: StudioMannequinLightingPlan
 });
 
 /**
+ * 기본 3점 리그에서 그림자만 끈 계획. 빈 릭(조명 0개)은 "기본 조명"을 뜻하므로, 그 릭의
+ * 그림자 끔도 기본 조명 그대로 그림자만 빼는 것으로 존중한다(예전에는 무시돼 토글이 먹지 않았다).
+ */
+const STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN_WITHOUT_SHADOWS: StudioMannequinLightingPlan = Object.freeze({
+  ...STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN,
+  lights: Object.freeze(
+    STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN.lights.map((light) => Object.freeze({ ...light, castShadow: false })),
+  ),
+  shadowsEnabled: false,
+});
+
+/**
  * 라이팅 릭을 씬 마운트 계획으로 변환합니다(순수 함수 — WebGL 없이 테스트 가능).
  *
- * - rig가 null이거나 조명이 0개면 기본 계획(기존 고정 3점 리그)을 돌립니다.
+ * - rig가 null이거나 조명이 0개면 기본 계획(기존 고정 3점 리그)을 돌립니다. 빈 릭의
+ *   `shadowsEnabled: false`는 기본 조명에서 그림자만 끈 계획으로 존중합니다.
  * - 그림자는 `shadowsEnabled`일 때 directional/spot 중 첫 번째 조명만 만듭니다.
  *   point 조명은 큐브 섀도맵 비용이 커서 그림자를 만들지 않습니다.
  * - rig가 있을 때는 형태가 완전히 어두워지지 않도록 약한 헤미스피어 보조광을 둡니다.
@@ -337,7 +350,11 @@ export const STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN: StudioMannequinLightingPlan
 export function resolveStudioMannequinLightingPlan(
   rig: StudioMannequinLightingRig | null | undefined,
 ): StudioMannequinLightingPlan {
-  if (!rig || rig.lights.length === 0) return STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN;
+  if (!rig || rig.lights.length === 0) {
+    return rig && !rig.shadowsEnabled
+      ? STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN_WITHOUT_SHADOWS
+      : STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN;
+  }
   let shadowAssigned = false;
   const lights = rig.lights.map((light): StudioMannequinSceneLightPlan => {
     const castShadow =
@@ -393,5 +410,46 @@ export function studioMannequinLightingToToneHint(
     keyLightDirection: [position[0] / length, position[1] / length, position[2] / length],
     contrast: Math.round(contrast * 100) / 100,
     shadows: rig.shadowsEnabled,
+  };
+}
+
+/** 라이팅 스튜디오 표시값 — 패널이 "지금 뷰포트에 실제로 켜진 조명"을 보여 주는 근거. */
+export interface StudioMannequinLightingReadout {
+  /** 실제로 마운트되는 조명 수(기본 3점 리그면 3). */
+  readonly lightCount: number;
+  readonly maxLights: number;
+  /** 릭을 적용하지 않았거나 빈 릭이라 기본 3점 리그를 쓰는지. */
+  readonly usesDefaultRig: boolean;
+  /** 주광 명암(가장 밝은 directional/spot ÷ 전체 밝기) 백분율. */
+  readonly contrastPercent: number;
+  readonly shadowsEnabled: boolean;
+  /** 시간대 프리셋 릭일 때만 그 시간대. 기본 3점 리그면 어떤 시간대도 켜져 있지 않다. */
+  readonly activeTimeOfDay: StudioMannequinTimeOfDay | null;
+}
+
+/**
+ * 릭(없으면 null)을 표시값으로 바꿉니다. 빈 릭을 "조명 0개·명암 0%"로 읽으면 화면은 기본
+ * 3점 리그로 밝은데 패널은 조명이 없다고 말하게 된다. 그래서 씬과 같은 계획
+ * (resolveStudioMannequinLightingPlan)에서 읽어 패널과 뷰포트가 같은 사실을 말하게 한다.
+ */
+export function describeStudioMannequinLightingReadout(
+  rig: StudioMannequinLightingRig | null | undefined,
+): StudioMannequinLightingReadout {
+  const plan = resolveStudioMannequinLightingPlan(rig);
+  const key = plan.lights
+    .filter((light) => light.kind !== "point")
+    .reduce<StudioMannequinSceneLightPlan | null>(
+      (best, light) => (best === null || light.intensity > best.intensity ? light : best),
+      null,
+    );
+  const total = plan.lights.reduce((sum, light) => sum + light.intensity, 0);
+  const contrast = key && total > 0 ? Math.min(1, key.intensity / total) : 0;
+  return {
+    lightCount: plan.lights.length,
+    maxLights: STUDIO_MANNEQUIN_MAX_LIGHTS,
+    usesDefaultRig: plan.isDefault,
+    contrastPercent: Math.round(contrast * 100),
+    shadowsEnabled: plan.shadowsEnabled,
+    activeTimeOfDay: plan.isDefault || !rig ? null : rig.timeOfDay,
   };
 }

@@ -9,8 +9,9 @@ import {
   type StudioDestructiveActionRequest,
 } from "../studio-destructive-action-preview";
 
-import { STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS } from "./studio-mannequin-model";
+import { STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, buildStudioMannequinSpec } from "./studio-mannequin-model";
 import { STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN } from "./studio-mannequin-lighting";
+import { groundStudioMannequinPresetPoseForBody, measureStudioMannequinBodyFloor } from "./studio-mannequin-pose-ground-contact";
 import { STUDIO_MANNEQUIN_POSE_PRESETS, normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
 
 import { snapshotStudioMannequinLightingPlan, type StudioMannequinSceneHandle } from "./studio-mannequin-scene";
@@ -577,11 +578,17 @@ describe("StudioMannequinPoserPanel", () => {
         initialPosePresetId="run"
       />,
     );
+    // 프리셋은 적용 시점에 지금 체형으로 접지된다(B-03) — 저작 골반 높이 그대로면 달리기가 23cm 떴다.
+    const grounded = groundStudioMannequinPresetPoseForBody(
+      normalizeStudioMannequinPose(preset!.pose),
+      STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+      preset!.ground,
+    );
     await waitFor(() => {
-      expect(sceneHandle.setPose).toHaveBeenCalledWith(
-        normalizeStudioMannequinPose(preset!.pose),
-      );
+      expect(sceneHandle.setPose).toHaveBeenCalledWith(grounded);
     });
+    const floor = measureStudioMannequinBodyFloor(buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS), grounded);
+    expect(floor.lowestY).toBeCloseTo(0, 5);
   });
 
   it("알 수 없는 initialPosePresetId는 무시하고 빈 포저를 연다", async () => {
@@ -1039,7 +1046,8 @@ describe("StudioMannequinPoserPanel", () => {
 
   it("포즈 검색으로 그리드를 필터링한다", () => {
     renderPanel();
-    const search = screen.getByLabelText("데생 인형 포즈 프리셋 검색") as HTMLInputElement;
+    // 웹툰 프리셋·데생 인형·손 포즈를 한 검색창으로 찾는다(B-07: 검색창을 하나로 합침).
+    const search = screen.getByLabelText("포즈 라이브러리 검색") as HTMLInputElement;
     fireEvent.change(search, { target: { value: "달리기" } });
     expect(screen.getByRole("button", { name: "달리기" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "앉기(의자)" })).toBeNull();
@@ -1065,23 +1073,22 @@ describe("StudioMannequinPoserPanel", () => {
     // 씬 미연결 빈 상태가 아니다 — 호스트 어댑터가 주입됐다.
     expect(screen.queryByText("3D 씬이 연결되지 않았습니다")).toBeNull();
 
+    // B-07: 포즈 고르기는 포즈 탭의 통합 라이브러리 한 곳이 맡는다 — 매직 포저에 웹툰 카드 그리드를
+    // 다시 두지 않고, 되돌리기 줄도 호스트 것 하나만 보인다.
     const applyButtons = screen
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label") ?? "")
       .filter((label) => label.endsWith("포즈 적용"));
-    expect(applyButtons.length).toBeGreaterThan(0);
+    expect(applyButtons).toHaveLength(0);
+    expect(screen.getAllByText(/되돌리기 \d+ · 다시실행 \d+/)).toHaveLength(1);
 
-    // 매직 포즈 탭(기본)에서 프리셋 적용 → 어댑터가 호스트 pose 상태로 전달 →
-    // effect가 실제 씬 핸들에 setPose한다.
+    // 매직 손 프리셋 적용 → 어댑터가 호스트 pose 상태로 전달 → effect가 실제 씬 핸들에 setPose한다.
+    // 손목 관절 여러 개를 바꾸지만 클릭 한 번이므로 호스트 히스토리에 한 단계로 기록된다.
     vi.mocked(sceneHandle.setPose).mockClear();
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "히어로 3점 착지 (Superhero Landing) 포즈 적용",
-      }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "손" }));
+    fireEvent.click(screen.getByRole("button", { name: "주먹" }));
     await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalled());
-    // 호스트와 매직 패널 양쪽 히스토리에 사용자 결정 단위로 기록된다.
-    expect(screen.getAllByText("되돌리기 1 · 다시실행 0")).toHaveLength(2);
+    expect(screen.getByText("되돌리기 1 · 다시실행 0")).toBeTruthy();
   });
 
   it("포즈 핀으로 즐겨찾기를 고정하고 localStorage에 유지된다", () => {
@@ -1175,5 +1182,160 @@ describe("StudioMannequinPoserPanel", () => {
     });
     // 보정이 없으면 씬이 이미 그 포즈라 다시 동기화하지 않는다.
     expect(sceneHandle.setPose).not.toHaveBeenCalled();
+  });
+});
+
+describe("StudioMannequinPoserPanel 실사용 감사 B 수정", () => {
+  function sceneOptions(): { onPoseEdited: (pose: StudioMannequinPose) => void } {
+    return vi.mocked(createScene).mock.calls[0]?.[0] as { onPoseEdited: (pose: StudioMannequinPose) => void };
+  }
+
+  function viewport(): HTMLElement {
+    const element = document.querySelector<HTMLElement>('[data-studio-mannequin-viewport="true"]');
+    if (!element) throw new Error("viewport missing");
+    return element;
+  }
+
+  /** 뷰포트에서 누르고(제스처 경계) 씬이 드래그 종료 포즈를 알린 뒤 뗀다. */
+  function dragInViewport(editedPose: StudioMannequinPose | null, to = { x: 60, y: 10 }): void {
+    fireEvent.pointerDown(viewport(), { pointerId: 1, clientX: 10, clientY: 10, button: 0 });
+    if (editedPose) {
+      act(() => {
+        sceneOptions().onPoseEdited(editedPose);
+      });
+    }
+    fireEvent.pointerUp(viewport(), { pointerId: 1, clientX: to.x, clientY: to.y, button: 0 });
+  }
+
+  it("B-04: 뷰포트 드래그 1회가 되돌리기 1단계이고, 되돌리기는 마지막 드래그만 취소한다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    fireEvent.click(screen.getByRole("button", { name: "달리기" }));
+    expect(screen.getByText("되돌리기 1 · 다시실행 0")).toBeTruthy();
+
+    const dragA = normalizeStudioMannequinPose({ joints: { rightUpperArm: [-0.6, 0, 0] }, pelvisOffset: [0, 0, 0] });
+    const dragB = normalizeStudioMannequinPose({ joints: { ...dragA.joints, leftUpperLeg: [-0.4, 0, 0] }, pelvisOffset: [0, 0, 0] });
+    const dragC = normalizeStudioMannequinPose({ joints: { ...dragB.joints, neck: [0.3, 0, 0] }, pelvisOffset: [0, 0, 0] });
+    dragInViewport(dragA);
+    expect(screen.getByText("되돌리기 2 · 다시실행 0")).toBeTruthy();
+    dragInViewport(dragB);
+    dragInViewport(dragC);
+    expect(screen.getByText("되돌리기 4 · 다시실행 0")).toBeTruthy();
+
+    vi.mocked(sceneHandle.setPose).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /되돌리기/ }));
+    await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalledTimes(1));
+    // 직전 드래그(C)만 취소되고 B 포즈로 돌아간다 — 드래그 셋과 프리셋이 한꺼번에 사라지지 않는다.
+    const restored = vi.mocked(sceneHandle.setPose).mock.calls[0]?.[0];
+    expect(restored?.joints.neck).toBeUndefined();
+    expect(restored?.joints.leftUpperLeg?.[0]).toBeCloseTo(-0.4, 6);
+    expect(screen.getByText("되돌리기 3 · 다시실행 1")).toBeTruthy();
+  });
+
+  it("B-04: 움직이지 않은 핸들 클릭(포즈 그대로)은 되돌리기 단계를 만들지 않는다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    dragInViewport({ joints: {}, pelvisOffset: [0, 0, 0] }, { x: 10, y: 10 });
+    expect(screen.getByText("되돌리기 0 · 다시실행 0")).toBeTruthy();
+  });
+
+  it("B-13: 카메라 앵글 칩이 선택 상태를 보이고, 궤도 회전·리셋 뒤에는 선택이 풀린다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    const front = screen.getByRole("button", { name: "정면" });
+    expect(front.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(front);
+    expect(sceneHandle.setCameraPreset).toHaveBeenCalledWith("front");
+    expect(screen.getByRole("button", { name: "정면" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "측면" }).getAttribute("aria-pressed")).toBe("false");
+
+    // 빈 곳 드래그(포즈 편집 없음) = 궤도 회전 → 화면이 더는 '정면'이 아니다.
+    dragInViewport(null);
+    expect(screen.getByRole("button", { name: "정면" }).getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(screen.getByRole("button", { name: "하이앵글" }));
+    expect(screen.getByRole("button", { name: "하이앵글" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "리셋" }));
+    expect(screen.getByRole("button", { name: "하이앵글" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("B-01: 독립 진입점(PNG 저장)은 캡처 뒤에도 포저를 열어 두고 저장을 알린다", async () => {
+    const onClose = vi.fn();
+    const onInsert = vi.fn(() => true);
+    render(
+      <StudioMannequinPoserPanel open onClose={onClose} onInsert={onInsert} captureTarget="download" />,
+    );
+    await waitForPersistenceReady();
+    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    expect(screen.queryByRole("button", { name: /캔버스로 캡처/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /PNG로 저장/ }));
+    await waitFor(() => {
+      expect(onInsert).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("PNG로 저장했습니다 (640×480)")).toBeTruthy();
+    });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(persistenceRuntimeMocks.save).toHaveBeenCalled();
+  });
+
+  it("B-06: 휴대폰 폭에서도 파일·공유 동작이 ⋯ 메뉴로 열린다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    fireEvent.click(screen.getByRole("button", { name: /^체형/ }));
+    const trigger = screen.getByRole("button", { name: /데생 인형 파일·공유 메뉴/ });
+    expect(trigger.closest('[data-studio-mannequin-header-actions="menu"]')).toBeTruthy();
+    // 손가락 대상 크기: ⋯ 트리거는 44px, 히스토리 버튼은 굵은 포인터(터치)에서 44px 높이를 갖는다.
+    expect(trigger.className).toContain("size-11");
+    expect(screen.getByRole("button", { name: "3D 데생 인형 닫기" }).className).toContain("pointer-coarse:size-11");
+    const historyButtons = [...(document.querySelector('[aria-label="포즈 변경 히스토리"]')?.querySelectorAll("button") ?? [])].slice(0, 2);
+    expect(historyButtons.map((button) => button.textContent?.trim())).toEqual(["되돌리기", "다시실행"]);
+    for (const button of historyButtons) expect(button.className).toContain("pointer-coarse:min-h-11");
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: "mouse" });
+    const menu = await screen.findByRole("menu");
+    // 메뉴는 대화상자 안(aria-modal 범위)에 열린다.
+    expect(screen.getByRole("dialog").contains(menu)).toBe(true);
+    for (const label of ["내보내기", "가져오기", "공유", "사진 포즈"]) {
+      expect(screen.getByRole("menuitem", { name: new RegExp(`^${label}`) })).toBeTruthy();
+    }
+    fireEvent.click(screen.getByRole("menuitem", { name: /^사진 포즈/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^포즈/ }).getAttribute("aria-pressed")).toBe("true");
+    });
+  });
+
+  it("B-05: 머리글에 온라인 상태 알림 자리를 등록해 떠 있는 배너가 뷰포트를 가리지 않게 한다", async () => {
+    const { getActiveModalStatusSlot } = await import("@/shared/lib/modal-status-slot");
+    const view = renderPanel();
+    await waitForPersistenceReady();
+    const slot = document.querySelector('[data-studio-mannequin-header="true"] [data-modal-status-slot="true"]');
+    expect(slot).toBeTruthy();
+    expect(getActiveModalStatusSlot()).toBe(slot);
+    view.unmount();
+    expect(getActiveModalStatusSlot()).toBeNull();
+  });
+
+  it("B-07: 통합 라이브러리 — 출처 칩으로 나누고, 겹치는 웹툰 판은 '전체'에서 한 번만 보이며 웹툰 카드도 바로 적용된다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    // 검색창은 하나뿐이다.
+    expect(screen.getAllByRole("textbox")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "손잡고 걷기" })).toHaveLength(1);
+
+    vi.mocked(sceneHandle.setPose).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "일도양단 발도세" }));
+    await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalled());
+    expect(screen.getByText(/적용된 포즈: 일도양단 발도세/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /^웹툰 프리셋 \d+$/ }));
+    expect(screen.getByRole("button", { name: /^웹툰 프리셋 \d+$/ }).getAttribute("aria-pressed")).toBe("true");
+    // 출처 칩과 분류 칩의 이름이 겹치지 않는다('웹툰 연출'은 분류 이름).
+    expect(screen.queryAllByRole("button", { name: /^웹툰 프리셋 \d+$/ })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "손잡고 걷기" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "달리기" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^손 \d+$/ }));
+    expect(screen.getByRole("button", { name: "주먹 (Fist)" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "일도양단 발도세" })).toBeNull();
   });
 });

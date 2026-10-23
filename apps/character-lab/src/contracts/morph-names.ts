@@ -3,9 +3,14 @@
  *
  * - 파라미터: `param:<key>:<+|->` (예: "param:eyeSize:+")
  * - 표정:     `facs:<unit>`        (예: "facs:jawOpen")
+ * - 파츠 형태(레시피 v3, 2026-10-23): `shape:<name>:<+|->` (예: "shape:length:+", "shape:sideLength:-")
  *
  * 절차적 모델(humanoid)과 제작 패키지(authored, Blender shape key 별칭)가 같은 이름으로
  * 엔진에 바인딩되므로 플래너는 소스 종류를 몰라도 된다.
+ *
+ * `MorphTargetName`·`parseMorphTargetName`·`isMorphTargetName`은 v1 어휘(param·facs, 키트 64개)만 다룬다 — 키트 v1 검증이 이 함수로
+ * `shape:*`를 거부해야 하기 때문이다(형태 키는 키트 v2부터). 형태 이름까지 읽으려면 `parseExtendedMorphName`을 쓴다.
+ * 형태 morph는 파츠 범위(`plan.partMorphWeights[범위]`)의 메시에만 적용하므로 다른 파츠의 같은 이름과 충돌하지 않는다.
  */
 import { FACS_UNITS, isFacsUnit, type FacsUnit } from "./expression";
 import { isParamKey, type BodyParamKey, type FaceParamKey, type ParamKey, type ParamValues } from "./params";
@@ -48,6 +53,64 @@ export function parseMorphTargetName(name: string): ParsedMorphTargetName | null
 
 export function isMorphTargetName(name: string): name is MorphTargetName {
   return parseMorphTargetName(name) !== null;
+}
+
+// ---------------------------------------------------------------- 파츠 형태 morph(레시피 v3)
+
+/**
+ * 형태 이름: 소문자로 시작하는 camelCase 또는 kebab-case 식별자, 24자 이하.
+ * 설계 정규식(`^[a-z][a-z0-9-]{0,23}$`)보다 넓다 — B-1 포지 산출물이 이미 `sideLength`(camelCase, 기존 파라미터 키 관례)를 쓰기 때문이다.
+ * 하이픈 연속·끝 하이픈은 거부한다.
+ */
+export const SHAPE_NAME_PATTERN = /^[a-z][a-zA-Z0-9]*(?:-[a-zA-Z0-9]+)*$/u;
+export const SHAPE_NAME_MAX_LENGTH = 24;
+
+export type ShapeMorphTargetName = `shape:${string}:${MorphSign}`;
+
+export interface ParsedShapeMorphName {
+  readonly kind: "shape";
+  readonly name: string;
+  readonly sign: MorphSign;
+}
+
+export type ParsedExtendedMorphName = ParsedMorphTargetName | ParsedShapeMorphName;
+
+export function isShapeName(name: unknown): name is string {
+  return typeof name === "string" && name.length <= SHAPE_NAME_MAX_LENGTH && SHAPE_NAME_PATTERN.test(name);
+}
+
+/** 형태 이름이 규약 밖이면 throw(계약 위반을 조용히 넘기지 않는다) */
+export function shapeMorphName(name: string, sign: MorphSign): ShapeMorphTargetName {
+  if (!isShapeName(name)) throw new Error(`형태 이름이 규약(소문자로 시작하는 24자 이하 식별자)에 맞지 않습니다: ${name}`);
+  return `shape:${name}:${sign}`;
+}
+
+export function parseShapeMorphName(name: string): ParsedShapeMorphName | null {
+  const parts = name.split(":");
+  if (parts[0] !== "shape" || parts.length !== 3) return null;
+  const shape = parts[1] ?? "";
+  const sign = parts[2];
+  if (!isShapeName(shape)) return null;
+  if (sign !== "+" && sign !== "-") return null;
+  return { kind: "shape", name: shape, sign };
+}
+
+/** param·facs·shape 세 문법을 모두 읽는다(키트 v2·플랜 형태 가중치용). */
+export function parseExtendedMorphName(name: string): ParsedExtendedMorphName | null {
+  return parseMorphTargetName(name) ?? parseShapeMorphName(name);
+}
+
+/** 형태 값(−1..1)을 ± morph 가중치로 분리한다. v>0 → "+":v, v<0 → "-":−v, 0·NaN·규약 밖 이름은 생략. */
+export function shapeToMorphWeights(values: Readonly<Record<string, number>>): Record<ShapeMorphTargetName, number> {
+  const result: Partial<Record<ShapeMorphTargetName, number>> = {};
+  for (const name of Object.keys(values).sort()) {
+    const value = values[name];
+    if (value === undefined || Number.isNaN(value) || value === 0 || !isShapeName(name)) continue;
+    const clamped = Math.min(1, Math.max(-1, value));
+    if (clamped > 0) result[shapeMorphName(name, "+")] = clamped;
+    else result[shapeMorphName(name, "-")] = -clamped;
+  }
+  return result as Record<ShapeMorphTargetName, number>;
 }
 
 /**

@@ -62,3 +62,15 @@ export function clientToRenderPixel(clientX: number, clientY: number, box: Clien
   if (!(box.width > 0) || !(box.height > 0)) return null;
   return [((clientX - box.left) / box.width) * camera.width, ((clientY - box.top) / box.height) * camera.height];
 }
+
+/**
+ * 뷰포트 백버퍼 장치 픽셀비 상한(F-03). Retina(DPR 2)에서 백버퍼를 CSS 크기로 두면 흐리게 보이고, DPR 3 이상까지 따라가면 fill-rate만 늘어난다.
+ * 엔진 하드웨어 스케일(engine-factory `limitDeviceRatio`)과 뷰포트 리사이즈(ViewportPane)가 같은 값을 쓴다. 캡처·썸네일 RTT는 요청 크기라 영향이 없다.
+ */
+export const VIEWPORT_MAX_PIXEL_RATIO = 2;
+
+/** 창 devicePixelRatio를 뷰포트 백버퍼 배율로 바꾼다(1 이상, 상한 `VIEWPORT_MAX_PIXEL_RATIO`, 잘못된 값은 1). */
+export function viewportPixelRatio(devicePixelRatio: number): number {
+  if (!Number.isFinite(devicePixelRatio) || devicePixelRatio <= 0) return 1;
+  return Math.min(VIEWPORT_MAX_PIXEL_RATIO, Math.max(1, devicePixelRatio));
+}

@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { KIT_ASSET_ROOT, KIT_DEFAULT_ID, KIT_DEFAULT_SLOTS, failVisible } from "../../contracts";
+import { KIT_ASSET_ROOT, KIT_DEFAULT_ID, KIT_DEFAULT_SLOTS, KIT_SCHEMA_ID, KIT_V2_SCHEMA_ID, failVisible } from "../../contracts";
+import { kitManifestV2Json } from "../../testing/kit-v2-fixtures";
 
+import { deriveKitCapabilities } from "./kit-capability";
 import { defaultKitManifestUrl, loadKitManifestFlow, loadKitPlanFlow } from "./kit-load-flow";
+import { isKitPlanV2 } from "./kit-plan-v2-types";
 import { kitManifestJson } from "./kit-test-fixture";
+import { baseOf, finalizeKitV2, partOf, richKitV2Json, variantOf } from "./kit-v2-test-fixture";
 
 import type { KitFetchPort } from "./kit-load-flow";
+import type { Json } from "./kit-v2-test-fixture";
 import type { FetchBytesResult, FetchJsonResult } from "./package-load-flow";
 
 const MANIFEST_URL = `${KIT_ASSET_ROOT}/kit.json`;
@@ -174,5 +179,97 @@ describe("authored/kit-load-flow — 계획까지", () => {
     const maleHime = await loadKitPlanFlow(port, { ...SOURCE, baseId: "male" }, { ...KIT_DEFAULT_SLOTS, hair: "hair/hime-cut" }, { sha256: sha256Of(OBSERVED), now: 1 });
     expect(maleHime.ok === false && maleHime.failure.code).toBe("kit-part-missing");
     expect(maleHime.ok === false && maleHime.failure.reasonKo).toContain("남성 핏 미제작");
+  });
+});
+
+describe("authored/kit-load-flow — 키트 v2 manifest", () => {
+  const richJson = (): Json => finalizeKitV2(richKitV2Json(kitManifestV2Json())).json;
+
+  it("v2 kit.json은 version 2와 원본, v1 형식만 아는 소비자용 보기(legacyView)를 함께 돌려준다", async () => {
+    const result = await loadKitManifestFlow(portOf({ [MANIFEST_URL]: richJson() }).port, REQUEST, { sha256: sha256Of(OBSERVED), now: 1 });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(result.version).toBe(2);
+    if (result.version !== 2) return;
+    expect(result.manifest.schema).toBe(KIT_V2_SCHEMA_ID);
+    expect(result.legacyView.schema).toBe(KIT_SCHEMA_ID);
+    expect(result.legacyView.parts.map((part) => part.id)).toEqual(result.manifest.parts.map((part) => part.id));
+    expect(result.legacyView.bases.female?.heightM).toBe(result.manifest.bases.female?.heightM);
+    expect(result.legacyView.provenance).toBe(result.manifest.provenance);
+    expect(deriveKitCapabilities(result.legacyView, "female")).toEqual(deriveKitCapabilities(result.manifest, "female"));
+    // v1 보기에는 층 변형·형태 이름·앵커가 없다
+    expect(JSON.stringify(result.legacyView)).not.toMatch(/layerVariants|headHeightM|"anchors"|"shapes"/u);
+  });
+
+  it("레시피 해시를 요구하면 v2도 바이트로 읽어 대조한 뒤 파싱한다", async () => {
+    const result = await loadKitManifestFlow(portOf({}, { [MANIFEST_URL]: encode(richJson()) }).port, { ...REQUEST, manifestSha256: OBSERVED }, { sha256: sha256Of(OBSERVED), now: 1 });
+    expect(result.ok && result.version).toBe(2);
+    expect(result.ok && result.observedSha256).toBe(OBSERVED);
+  });
+
+  it("손상된 v2 manifest(누락·중복·범위 밖)는 kit-manifest-invalid와 한글 머리말·이슈 경로·한글 규칙 문구로 거부한다", async () => {
+    const load = async (edit: (json: Json) => void): Promise<string> => {
+      const json = richJson();
+      edit(json);
+      const result = await loadKitManifestFlow(portOf({ [MANIFEST_URL]: json }).port, REQUEST, { sha256: sha256Of(OBSERVED), now: 1 });
+      if (result.ok) throw new Error("거부를 기대했습니다.");
+      expect(result.failure.code).toBe("kit-manifest-invalid");
+      expect(result.failure.reasonKo).toMatch(/^키트 v2 manifest 형식이 올바르지 않습니다: /u);
+      return result.failure.reasonKo;
+    };
+    // 누락: 베이스 머리 높이, 선언한 형태의 morph, 어휘의 파츠
+    expect(await load((json) => delete baseOf(json).headHeightM)).toMatch(/bases\.female\.headHeightM: /u);
+    expect(
+      await load((json) => {
+        const tee = variantOf(json, "top/tee");
+        tee.shapes = ["hem"];
+      }),
+    ).toContain("형태 hem을 선언했지만 shape:hem:± morph를 가진 메시가 없습니다.");
+    expect(await load((json) => (json.parts = (json.parts as Json[]).filter((part) => part.id !== "shoes/boots")))).toContain("어휘의 프리셋 shoes/boots가 parts에 없습니다");
+    // 중복: 파츠 id, 형태 이름
+    expect(await load((json) => (json.parts as Json[]).push(structuredClone(partOf(json, "top/tee"))))).toContain("파츠 id가 중복되었습니다: top/tee");
+    expect(
+      await load((json) => {
+        const hair = variantOf(json, "hair/soft-bob");
+        hair.shapes = [...(hair.shapes as string[]).slice(0, 7), "length"];
+      }),
+    ).toContain("shapes에 같은 이름이 두 번 있습니다.");
+    // 범위 밖: 머리 높이 상한(0.5 m), 변형당 형태 9개(상한 8), 스켈레톤에 없는 앵커 joint, 그 슬롯이 입을 수 없는 층
+    expect(await load((json) => (baseOf(json).headHeightM = 0.6))).toMatch(/bases\.female\.headHeightM: /u);
+    expect(
+      await load((json) => {
+        const hair = variantOf(json, "hair/soft-bob");
+        hair.shapes = [...(hair.shapes as string[]), "extra"];
+      }),
+    ).toMatch(/parts\.\d+\.variants\.female\.shapes: /u);
+    expect(await load((json) => ((baseOf(json).anchors as Json).hair = { joint: "TS_Nope", offsetM: [0, 0, 0] }))).toContain("앵커 hair의 joint TS_Nope가 skeleton.joints에 없습니다.");
+    expect(
+      await load((json) => {
+        const shirt = partOf(json, "top/shirt");
+        const layered = (shirt.layerVariants as Json).female as Json;
+        layered.legwear = layered.inner;
+      }),
+    ).toContain("top/shirt: 슬롯 top은 legwear 층에 입을 수 없습니다(허용: inner, outer).");
+  });
+
+  it("v2도 두 베이스의 능력 선언을 규칙과 대조한다", async () => {
+    const json = richJson();
+    ((json.slotCapabilities as Json).male as Json).hair = { status: "available" };
+    const result = await loadKitManifestFlow(portOf({ [MANIFEST_URL]: json }).port, REQUEST, { sha256: sha256Of(OBSERVED), now: 1 });
+    expect(result.ok === false && result.failure.code).toBe("kit-capabilities-mismatch");
+  });
+
+  it("계획까지: v2 manifest와 옷장 옵션으로 층 파일이 실린 v2 계획을 만든다", async () => {
+    const result = await loadKitPlanFlow(
+      portOf({ [MANIFEST_URL]: richJson() }).port,
+      { kitId: KIT_DEFAULT_ID, kitVersion: 1, baseId: "female" },
+      { ...KIT_DEFAULT_SLOTS, top: "top/tee" },
+      { sha256: sha256Of(OBSERVED), now: 1 },
+      { wardrobe: { inner: null, outer: "top/blazer", legwear: null, accessories: [] } },
+    );
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(isKitPlanV2(result.plan)).toBe(true);
+    if (!isKitPlanV2(result.plan)) return;
+    expect(result.plan.custom.files.map((file) => file.id)).toContain("outer:top/blazer");
+    expect(result.manifest.schema).toBe(KIT_V2_SCHEMA_ID);
   });
 });

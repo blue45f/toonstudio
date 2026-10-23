@@ -12,14 +12,20 @@ import {
   STUDIO_MANNEQUIN_POSE_DOC_KIND,
   STUDIO_MANNEQUIN_POSE_DOC_VERSION,
   STUDIO_MANNEQUIN_POSE_PRESETS,
+  STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION,
+  STUDIO_MANNEQUIN_STATE_DOC_KIND,
+  STUDIO_MANNEQUIN_STATE_DOC_VERSION,
   applyStudioMannequinHandPreset,
+  canonicalizeStudioMannequinPartner,
   countStudioMannequinPosePresetsByCategory,
   createStudioMannequinRestPose,
+  encodeStudioMannequinShareHash,
   filterStudioMannequinPosePresets,
   findStudioMannequinPosePreset,
   mirrorStudioMannequinPose,
   normalizeStudioMannequinPose,
   parseStudioMannequinPose,
+  parseStudioMannequinShareHash,
   parseStudioMannequinState,
   serializeStudioMannequinPose,
   serializeStudioMannequinState,
@@ -169,6 +175,94 @@ describe("studio-mannequin-poses 세션 상태 영속", () => {
     expect(parseStudioMannequinState(null)).toBeNull();
     expect(parseStudioMannequinState("garbage")).toBeNull();
     expect(parseStudioMannequinState(JSON.stringify({ kind: "studio-mannequin-state" }))).toBeNull();
+  });
+});
+
+describe("studio-mannequin-poses 2인 구도 상대 인형 영속(B-02)", () => {
+  const leadPose = findStudioMannequinPosePreset("couple-hug-front")!.pose;
+  const partner = {
+    params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 158 },
+    pose: mirrorStudioMannequinPose(leadPose),
+    offset: [0, 0, 0.42] as const,
+    yawRad: Math.PI,
+  };
+
+  it("상대가 없으면 구버전(v1) 문서와 바이트 단위로 같다", () => {
+    const state = { params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, pose: leadPose };
+    expect(serializeStudioMannequinState(state)).toBe(
+      JSON.stringify({
+        kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
+        version: STUDIO_MANNEQUIN_STATE_DOC_VERSION,
+        params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+        pose: normalizeStudioMannequinPose(leadPose),
+      }),
+    );
+    const parsed = parseStudioMannequinState(serializeStudioMannequinState(state));
+    expect(parsed).not.toBeNull();
+    expect("partner" in parsed!).toBe(false);
+  });
+
+  it("상대가 있으면 v2 문서로 저장하고 왕복이 멱등하다(마주 보기 π 도 흔들리지 않는다)", () => {
+    for (const yawRad of [Math.PI, -Math.PI, 3.1416, 0, Math.PI / 2]) {
+      const raw = serializeStudioMannequinState({
+        params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+        pose: leadPose,
+        partner: { ...partner, yawRad },
+      });
+      const doc = JSON.parse(raw) as { version: number; partner: { yawRad: number } };
+      expect(doc.version).toBe(STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION);
+      const parsed = parseStudioMannequinState(raw);
+      expect(parsed?.partner).toBeDefined();
+      expect(serializeStudioMannequinState(parsed!)).toBe(raw);
+      // 방향은 2π 주기로 같은 각이어야 한다(값 표현만 정본으로 바뀐다).
+      const turn = Math.abs(Math.atan2(Math.sin(doc.partner.yawRad - yawRad), Math.cos(doc.partner.yawRad - yawRad)));
+      expect(turn).toBeLessThan(1e-4);
+    }
+  });
+
+  it("상대 체형·포즈·배치를 저장 계약대로 클램프·정규화하고 정본 함수와 일치한다", () => {
+    const wild = {
+      params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 999 },
+      pose: { joints: { bogus: [1, 2, 3], leftLowerLeg: [9, 0, 0] }, pelvisOffset: [0, 0.1, 0] },
+      offset: [99, Number.NaN, -0.5],
+      yawRad: 7,
+    };
+    const parsed = parseStudioMannequinState(
+      JSON.stringify({
+        kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
+        version: STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION,
+        params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+        pose: leadPose,
+        partner: wild,
+      }),
+    );
+    expect(parsed?.partner?.params.heightCm).toBe(STUDIO_MANNEQUIN_PARAM_RANGES.heightCm[1]);
+    expect(parsed?.partner?.offset).toEqual([5, 0, -0.5]);
+    expect(Object.keys(parsed?.partner?.pose.joints ?? {})).toEqual(["leftLowerLeg"]);
+    expect(parsed?.partner?.yawRad).toBeCloseTo(7 - 2 * Math.PI, 5);
+    const canonical = canonicalizeStudioMannequinPartner(parsed!.partner!);
+    expect(canonical).toEqual(parsed!.partner);
+  });
+
+  it("v2 문서의 상대가 객체가 아니면 상대 없이 읽고, 모르는 버전은 거부한다", () => {
+    const base = {
+      kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
+      params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+      pose: leadPose,
+    };
+    const withoutPartner = parseStudioMannequinState(
+      JSON.stringify({ ...base, version: STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION, partner: "x" }),
+    );
+    expect(withoutPartner).not.toBeNull();
+    expect("partner" in withoutPartner!).toBe(false);
+    expect(parseStudioMannequinState(JSON.stringify({ ...base, version: 3, partner }))).toBeNull();
+  });
+
+  it("공유 해시도 상대 인형을 담아 그대로 되살린다", () => {
+    const state = { params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, pose: leadPose, partner };
+    const restored = parseStudioMannequinShareHash(encodeStudioMannequinShareHash(state));
+    expect(restored?.partner).toEqual(canonicalizeStudioMannequinPartner(partner));
+    expect(restored?.pose).toEqual(normalizeStudioMannequinPose(leadPose));
   });
 });
 

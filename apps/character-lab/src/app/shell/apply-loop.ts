@@ -49,6 +49,11 @@ export interface ApplyLoopDeps {
    * 이 훅이 던지면 failure 이벤트로 노출하고 재시도는 계속한다.
    */
   readonly beforeRetrySource?: () => void;
+  /**
+   * 소스를 만든 뒤 엔진에 올리기 전에 메인 스레드에 양보한다(다음 매크로태스크). 절차 지오메트리 빌드(CPU)와 엔진 바인딩·재질 준비가
+   * 한 long task로 붙지 않게 한다(반응성 결함 P-01, 헤어 카드 1회 최대 long task). 없으면 바로 이어서 올린다.
+   */
+  readonly yieldBeforeLoad?: () => Promise<void>;
   readonly now?: () => number;
 }
 
@@ -195,6 +200,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       let loaded: SourceCapabilities;
       try {
         source = await deps.buildSource(recipe);
+        if (deps.yieldBeforeLoad) await deps.yieldBeforeLoad();
         loaded = await engine.loadSource(source);
       } catch (error) {
         // 엔진은 새 소스를 올리기 전에 이전 리그를 해제하므로(render `loadSource`) 실패 뒤의 엔진 상태는 알 수 없다 — 이전 소스 키도 버려서

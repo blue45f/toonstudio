@@ -4,16 +4,20 @@
  *
  * GLB 바이트의 fetch·SHA 검증은 렌더 엔진이 한다(계약 4.2): 이 흐름은 manifest와 계획까지만 책임진다.
  * 모든 실패는 무음 대체 없이 `LabFailure{code, reasonKo}`다. 절차 소스로 자동 전환하지 않는다(계약 6절).
+ *
+ * 키트 v2(2026-10-23 A-1): `schema`가 `toonstudio.character-kit/2`이면 v2 파서로 읽고 결과에 `version: 2`와 v1 형식 보기(`legacyView`,
+ * `kit-v1-projection.ts`)를 함께 싣는다. 그 밖의 schema(v1·모르는 값)는 이전과 같이 v1 파서가 읽어 같은 사유로 거부한다.
  */
-import { KIT_ASSET_ROOT, KIT_MANIFEST_FILENAME, failVisible, isLabFailure, parseKitManifest } from "../../contracts";
+import { KIT_ASSET_ROOT, KIT_MANIFEST_FILENAME, KIT_V2_SCHEMA_ID, failVisible, isLabFailure, parseKitManifest, parseKitManifestV2 } from "../../contracts";
 
 import { kitCapabilityDifferences } from "./kit-capability";
 import { buildKitPlanDetailed } from "./kit-plan";
+import { kitManifestV1View } from "./kit-v1-projection";
 import { joinPackageUrl } from "./package-plan";
 
-import type { KitPlanOptions, KitPlanSlots, KitPlanSource } from "./kit-plan";
+import type { AnyKitManifest, KitPlanOptions, KitPlanSlots, KitPlanSource } from "./kit-plan";
 import type { PackageFetchPort } from "./package-load-flow";
-import type { KitManifest, KitPlan, LabFailure } from "../../contracts";
+import type { KitManifest, KitManifestV2, KitPlan, LabFailure } from "../../contracts";
 
 /** 제작 패키지 로더와 같은 fetch 포트(`fetchJson`·`fetchBytes`)를 쓴다. 테스트는 가짜 포트를 넣는다. */
 export type KitFetchPort = PackageFetchPort;
@@ -33,19 +37,26 @@ export interface KitLoadDeps {
   readonly now?: number;
 }
 
+interface KitManifestLoadedCommon {
+  readonly ok: true;
+  readonly manifestUrl: string;
+  readonly rootUrl: string;
+  /** `manifestSha256`을 요청했을 때만 계산한 실제 해시 */
+  readonly observedSha256: string | null;
+}
+
 export type KitManifestLoadResult =
-  | {
-      readonly ok: true;
-      readonly manifest: KitManifest;
-      readonly manifestUrl: string;
-      readonly rootUrl: string;
-      /** `manifestSha256`을 요청했을 때만 계산한 실제 해시 */
-      readonly observedSha256: string | null;
-    }
+  | (KitManifestLoadedCommon & { readonly version: 1; readonly manifest: KitManifest })
+  | (KitManifestLoadedCommon & {
+      readonly version: 2;
+      readonly manifest: KitManifestV2;
+      /** v1 형식만 아는 소비자(키트 등록소 `ensure`·`peek`)용 보기 — 층·형태·앵커·UV1·채널은 없다 */
+      readonly legacyView: KitManifest;
+    })
   | { readonly ok: false; readonly failure: LabFailure };
 
 export type KitPlanLoadResult =
-  | { readonly ok: true; readonly plan: KitPlan; readonly manifest: KitManifest; readonly observedSha256: string | null }
+  | { readonly ok: true; readonly plan: KitPlan; readonly manifest: AnyKitManifest; readonly observedSha256: string | null }
   | { readonly ok: false; readonly failure: LabFailure };
 
 export function defaultKitManifestUrl(rootUrl: string = KIT_ASSET_ROOT): string {
@@ -54,6 +65,19 @@ export function defaultKitManifestUrl(rootUrl: string = KIT_ASSET_ROOT): string 
 
 function describeStatus(status: number | null): string {
   return status === null ? "네트워크" : String(status);
+}
+
+type ParsedKit = { readonly ok: true; readonly version: 1; readonly manifest: KitManifest } | { readonly ok: true; readonly version: 2; readonly manifest: KitManifestV2 } | { readonly ok: false; readonly failure: LabFailure };
+
+/** v2 schema만 v2 파서로 읽는다. 나머지(v1·모르는 schema)는 v1 파서가 이전과 같은 사유로 판정한다. */
+function parseKitJson(json: unknown, now: number | undefined): ParsedKit {
+  const schema = typeof json === "object" && json !== null ? (json as { readonly schema?: unknown }).schema : undefined;
+  if (schema === KIT_V2_SCHEMA_ID) {
+    const v2 = parseKitManifestV2(json, now);
+    return v2.ok ? { ok: true, version: 2, manifest: v2.manifest } : v2;
+  }
+  const v1 = parseKitManifest(json, now);
+  return v1.ok ? { ok: true, version: 1, manifest: v1.manifest } : v1;
 }
 
 /** `kit.json`을 끝까지 읽고 검증한다. 성공하면 검증된 manifest(두 베이스 능력 선언까지 규칙과 일치)를 돌려준다. */
@@ -94,7 +118,7 @@ export async function loadKitManifestFlow(port: KitFetchPort, request: KitManife
     }
   }
 
-  const parsed = parseKitManifest(json, now);
+  const parsed = parseKitJson(json, now);
   if (!parsed.ok) return { ok: false, failure: parsed.failure };
   const manifest = parsed.manifest;
 
@@ -113,7 +137,8 @@ export async function loadKitManifestFlow(port: KitFetchPort, request: KitManife
       .join(" / ");
     return fail("kit-capabilities-mismatch", `kit.json이 선언한 슬롯 능력이 규칙 판정과 다릅니다 — ${summary}`);
   }
-  return { ok: true, manifest, manifestUrl, rootUrl, observedSha256 };
+  const common = { ok: true, manifestUrl, rootUrl, observedSha256 } as const;
+  return parsed.version === 2 ? { ...common, version: 2, manifest: parsed.manifest, legacyView: kitManifestV1View(parsed.manifest) } : { ...common, version: 1, manifest: parsed.manifest };
 }
 
 /** manifest 로드 + 계획 생성을 한 번에(캐시가 필요 없는 호출자·테스트용). 앱 셸은 manifest를 캐시하고 `buildKitPlan`을 따로 쓴다. */

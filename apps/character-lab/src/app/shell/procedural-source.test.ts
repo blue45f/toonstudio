@@ -24,7 +24,7 @@ describe("app/shell/procedural-source", () => {
     const fixture = minimalHumanoidModelFixture();
     const build = createProceduralSourceBuilder({
       humanoid: (recipe, options) => {
-        expect(recipe.version).toBe(2);
+        expect(recipe.version).toBe(3);
         seen.push(options);
         return fixture;
       },

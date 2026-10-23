@@ -390,6 +390,22 @@ export function studioUiAdvancedToolsToggleLabel(
   );
 }
 
+/**
+ * 메뉴바 머리의 '고급 도구 펼치기' 버튼(도구 막대 묶음 펼침)의 접근 이름과 툴팁.
+ * 삽입·창작 메뉴 안에도 같은 글자의 펼침 행('고급 도구 펼치기 (N개)', 메뉴 섹션 펼침)이 있어
+ * 둘이 헷갈렸다(실사용 감사 B-15). 보이는 글자는 그대로 두고, 접근 이름은 보이는 글자로
+ * 시작해(WCAG 2.5.3) 범위를 덧붙인다.
+ */
+export function studioUiAdvancedToolsToggleAccessibleName(expanded: boolean): string {
+  return `${studioUiAdvancedToolsToggleLabel(expanded)} (도구 막대)`;
+}
+
+export function studioUiAdvancedToolsToggleTooltip(expanded: boolean): string {
+  return expanded
+    ? "도구 막대에서 펼친 고급 도구 묶음을 다시 접습니다. 메뉴 안의 '고급 도구 펼치기 (N개)'와는 별개입니다."
+    : "도구 막대에 접어 둔 고급 도구 묶음을 펼칩니다. 메뉴 안의 '고급 도구 펼치기 (N개)'와는 별개입니다.";
+}
+
 /** Map the existing mobile immersive flag without changing established non-immersive sessions. */
 export function studioUiDensityFromImmersive(mobileImmersive: boolean): StudioUiDensityMode {
   return mobileImmersive ? "focus" : "full";

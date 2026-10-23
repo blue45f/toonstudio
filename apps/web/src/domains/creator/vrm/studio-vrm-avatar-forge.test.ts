@@ -14,7 +14,6 @@ import {
   applyAvatarForgeHairStyleRecipe,
   avatarForgeBraidSegmentCount,
   buildAvatarForgeHairParts,
-  buildAvatarForgeBodyAdjustmentPlan,
   createAvatarForgeState,
   migrateAvatarForgeBodyToStudioVrmProportions,
   parseAvatarForgeState,
@@ -23,6 +22,7 @@ import {
   type AvatarForgeHairPart,
   type AvatarForgeHairStyle,
 } from "./studio-vrm-avatar-forge";
+import { buildAvatarForgeBodyAdjustmentPlan } from "./studio-vrm-avatar-forge-body-plan";
 import {
   NEUTRAL_STUDIO_VRM_PROPORTIONS,
   STUDIO_VRM_PROPORTION_PRESETS,

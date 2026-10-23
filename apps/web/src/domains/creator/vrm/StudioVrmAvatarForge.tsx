@@ -2,40 +2,30 @@ import { createPortal } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { createStudioVrmAuthoredHairGeometry } from "./studio-vrm-authored-hair-geometry";
 import {
-  createStudioVrmAuthoredHairGeometry,
-  createStudioVrmAuthoredHairGradientTexture,
-  mergeStudioVrmAuthoredHairGeometry,
-  type StudioVrmAuthoredHairInstance,
-} from "./studio-vrm-authored-hair-geometry";
-import {
-  buildAvatarForgeHairParts,
   sanitizeAvatarForgeState,
   type AvatarForgeFaceAccent,
   type AvatarForgeHairPart,
   type AvatarForgeHairParams,
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
+import { addAvatarForgeHairParts, disposeAvatarForgeObject } from "./studio-vrm-avatar-forge-hair-object";
 import { classifyMeshName } from "./studio-vrm-costume";
 import { planStudioVrmHairTransition } from "./studio-vrm-hair-transition";
+import { measureStudioVrmHeadFit } from "./studio-vrm-head-measure";
+import { publishStudioVrmHairPreviewHair, publishStudioVrmHairPreviewHead } from "./studio-vrm-hair-preview-source";
 import { applyStudioVrmSemanticFaceMorphs } from "./studio-vrm-semantic-face-morph";
 
 import type { StudioVrmAvatarForgeFaceController } from "./studio-vrm-avatar-forge-face-controller";
+import type { StudioVrmHeadFit } from "./studio-vrm-head-fit";
 import type { VRM } from "@pixiv/three-vrm";
 
 const AVATAR_FORGE_MARKER = "toonSpectrumAvatarForge";
-const AVATAR_FORGE_OWNED_TEXTURES = "toonSpectrumAvatarForgeOwnedTextures";
 const AVATAR_FORGE_HAIR_IDENTITY = "toonSpectrumAvatarForgeHairIdentity";
+/** 마지막 두상 맞춤(진단·브라우저 게이트용). 포지 그룹 userData 에 둔다. */
+const AVATAR_FORGE_HEAD_FIT = "toonSpectrumAvatarForgeHeadFit";
 const HAIR_VISIBILITY_LEASES = new WeakMap<THREE.Object3D, { count: number; visible: boolean }>();
-
-type HeadFit = {
-  center: THREE.Vector3;
-  eyeCenter: THREE.Vector3;
-  radiusX: number;
-  radiusY: number;
-  radiusZ: number;
-  frontSign: 1 | -1;
-};
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -151,160 +141,21 @@ function acquireHiddenHair(meshes: readonly THREE.Mesh[]) {
   };
 }
 
-function localPosition(head: THREE.Object3D, bone: THREE.Object3D | null) {
-  if (!bone) return null;
-  return head.worldToLocal(bone.getWorldPosition(new THREE.Vector3()));
-}
-
-function measureHeadFit(vrm: VRM, head: THREE.Object3D): HeadFit {
-  vrm.scene.updateMatrixWorld(true);
-  head.updateWorldMatrix(true, true);
-
-  const leftEye = localPosition(head, vrm.humanoid?.getNormalizedBoneNode("leftEye") ?? null);
-  const rightEye = localPosition(head, vrm.humanoid?.getNormalizedBoneNode("rightEye") ?? null);
-  const hasEyePair = Boolean(leftEye && rightEye && leftEye.distanceTo(rightEye) > 1e-4);
-  const eyeCenter = hasEyePair
-    ? leftEye!.clone().add(rightEye!).multiplyScalar(0.5)
-    : new THREE.Vector3(0, 0.061, 0.018);
-
-  const explicitFront = vrm.lookAt?.faceFront?.z;
-  const inferredFront = Math.abs(eyeCenter.z) > 0.002 ? Math.sign(eyeCenter.z) : 1;
-  const frontSign: 1 | -1 = (Math.abs(explicitFront ?? 0) > 0.5 ? Math.sign(explicitFront!) : inferredFront) < 0 ? -1 : 1;
-
-  const sceneSize = new THREE.Box3().setFromObject(vrm.scene).getSize(new THREE.Vector3());
-  const worldScale = head.getWorldScale(new THREE.Vector3());
-  const localHeight = clamp(sceneSize.y / Math.max(0.001, Math.abs(worldScale.y)), 0.75, 3.5);
-  const eyeDistance = hasEyePair ? leftEye!.distanceTo(rightEye!) : 0;
-  const radiusX = hasEyePair
-    ? clamp(eyeDistance * 2.15, localHeight * 0.035, localHeight * 0.07)
-    : localHeight * 0.044;
-  const radiusY = radiusX * 1.18;
-  const radiusZ = radiusX * 0.95;
-  const center = new THREE.Vector3(
-    eyeCenter.x,
-    eyeCenter.y + radiusY * 0.18,
-    eyeCenter.z - frontSign * radiusZ * 0.56
-  );
-
-  return { center, eyeCenter, radiusX, radiusY, radiusZ, frontSign };
-}
-
 /** The shipped runtime and tests share the same authored clump generator. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function createAvatarForgeHairGeometry(part: AvatarForgeHairPart) {
   return createStudioVrmAuthoredHairGeometry(part);
 }
 
-function transformHairPart(part: AvatarForgeHairPart, fit: HeadFit) {
-  const scaleX = fit.radiusX / 0.56;
-  const scaleY = fit.radiusY / 0.46;
-  const scaleZ = fit.radiusZ / 0.54;
-  const position = new THREE.Vector3(
-    fit.center.x + part.position[0] * scaleX,
-    fit.center.y + (part.position[1] - 0.18) * scaleY,
-    fit.center.z + (part.position[2] - 0.015) * scaleZ * fit.frontSign
-  );
-  const rotation = new THREE.Euler(
-    part.rotation[0] * fit.frontSign,
-    part.rotation[1],
-    part.rotation[2],
-    "XYZ"
-  );
-  const scale = new THREE.Vector3(
-    part.scale[0] * scaleX,
-    part.scale[1] * scaleY,
-    part.scale[2] * scaleZ
-  );
-  return { position, rotation, scale };
-}
-
-function authoredHairInstance(
-  part: AvatarForgeHairPart,
-  fit: HeadFit,
-): StudioVrmAuthoredHairInstance {
-  const transform = transformHairPart(part, fit);
-  const matrix = new THREE.Matrix4().compose(
-    transform.position,
-    new THREE.Quaternion().setFromEuler(transform.rotation),
-    transform.scale,
-  );
-  return Object.freeze({ part, matrix });
-}
-
-function createExpandedOutlineGeometry(source: THREE.BufferGeometry): THREE.BufferGeometry {
-  const outline = source.clone();
-  const position = outline.getAttribute("position");
-  const normal = outline.getAttribute("normal");
-  if (!position || !normal) return outline;
-  outline.computeBoundingSphere();
-  const thickness = Math.max(0.00045, (outline.boundingSphere?.radius ?? 0.08) * 0.0085);
-  const values = new Float32Array(position.count * 3);
-  for (let index = 0; index < position.count; index += 1) {
-    values[index * 3] = position.getX(index) + normal.getX(index) * thickness;
-    values[index * 3 + 1] = position.getY(index) + normal.getY(index) * thickness;
-    values[index * 3 + 2] = position.getZ(index) + normal.getZ(index) * thickness;
-  }
-  outline.setAttribute("position", new THREE.Float32BufferAttribute(values, 3));
-  outline.computeBoundingBox();
-  outline.computeBoundingSphere();
-  return outline;
-}
-
-function createHairMaterial(state: AvatarForgeState, gradientMap: THREE.DataTexture) {
-  const material = new THREE.MeshToonMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-    gradientMap,
-    side: THREE.DoubleSide,
-  });
-  material.emissive.set(state.hair.baseColor);
-  material.emissiveIntensity = clamp(0.012 + state.hair.shine * 0.045, 0.012, 0.057);
-  return material;
-}
-
-function createHairOutlineMaterial(state: AvatarForgeState) {
-  const outline = new THREE.Color(state.hair.shadowColor ?? state.hair.baseColor)
-    .lerp(new THREE.Color("#090708"), 0.62);
-  return new THREE.MeshBasicMaterial({
-    color: outline,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0.9,
-    depthWrite: false,
-    toneMapped: false,
-  });
-}
-
-function addHairParts(group: THREE.Group, state: AvatarForgeState, fit: HeadFit) {
-  const parts = buildAvatarForgeHairParts(state);
-  const merged = mergeStudioVrmAuthoredHairGeometry(
-    parts.map((part) => authoredHairInstance(part, fit)),
-  );
-  if (!merged) return;
-
-  const gradientMap = createStudioVrmAuthoredHairGradientTexture();
-  const mesh = new THREE.Mesh(merged, createHairMaterial(state, gradientMap));
-  const outline = new THREE.Mesh(
-    createExpandedOutlineGeometry(merged),
-    createHairOutlineMaterial(state),
-  );
-  mesh.name = "ToonStudioAvatarForgeHair_AuthoredMerged";
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.renderOrder = 6;
-  mesh.userData.partCount = parts.length;
-  outline.name = "ToonStudioAvatarForgeHairOutline_AuthoredMerged";
-  outline.renderOrder = 5;
-  outline.userData.partCount = parts.length;
-  group.userData[AVATAR_FORGE_OWNED_TEXTURES] = [gradientMap];
-  group.add(outline, mesh);
-}
-
-function faceSurfaceZ(fit: HeadFit, x: number, y: number, outset: number) {
-  const normalizedX = (x - fit.center.x) / Math.max(1e-5, fit.radiusX);
-  const normalizedY = (y - fit.center.y) / Math.max(1e-5, fit.radiusY);
+/**
+ * 볼 터치·주근깨는 실측 두개골 타원체 표면에 얹는다. 예전에는 눈 간격으로 추정한 작은 타원체
+ * 위라 얼굴 안쪽에 묻혀 보이지 않았다.
+ */
+function faceSurfaceZ(fit: StudioVrmHeadFit, x: number, y: number, outset: number) {
+  const normalizedX = (x - fit.center[0]) / Math.max(1e-5, fit.radiusX);
+  const normalizedY = (y - fit.center[1]) / Math.max(1e-5, fit.radiusY);
   const surface = Math.sqrt(Math.max(0.06, 1 - normalizedX * normalizedX - normalizedY * normalizedY));
-  return fit.center.z + fit.frontSign * (fit.radiusZ * surface + outset);
+  return fit.center[2] + fit.frontSign * (fit.radiusZ * surface + outset);
 }
 
 function createAccentMaterial(accent: AvatarForgeFaceAccent, opacityMultiplier = 1) {
@@ -322,7 +173,7 @@ function createAccentMaterial(accent: AvatarForgeFaceAccent, opacityMultiplier =
 
 function addFaceDisc(
   group: THREE.Group,
-  fit: HeadFit,
+  fit: StudioVrmHeadFit,
   accent: AvatarForgeFaceAccent,
   id: string,
   x: number,
@@ -342,16 +193,18 @@ function addFaceDisc(
   group.add(mesh);
 }
 
-function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: HeadFit) {
+function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: StudioVrmHeadFit) {
+  // 얼굴이 −z 인 VRM0 은 캐릭터 기준 좌우가 x 부호와 반대다. 비대칭 장식(매력점)의 위치를 맞춘다.
+  const side = fit.frontSign;
   for (const accent of state.faceAccents ?? []) {
     if (!accent.enabled || accent.intensity <= 0) continue;
 
     if (accent.id === "blush") {
-      const cheekY = fit.eyeCenter.y - fit.radiusY * (0.22 + state.face.chinLength * 0.03);
+      const cheekY = fit.eyeCenter[1] - fit.radiusY * (0.22 + state.face.chinLength * 0.03);
       const cheekX = fit.radiusX * (0.52 + state.face.cheekVolume * 0.07);
       const radius = fit.radiusY * (0.105 + state.face.cheekVolume * 0.035);
-      addFaceDisc(group, fit, accent, "blush-left", fit.center.x - cheekX, cheekY, radius, 1.75, 0.52);
-      addFaceDisc(group, fit, accent, "blush-right", fit.center.x + cheekX, cheekY, radius, 1.75, 0.52);
+      addFaceDisc(group, fit, accent, "blush-left", fit.center[0] - cheekX, cheekY, radius, 1.75, 0.52);
+      addFaceDisc(group, fit, accent, "blush-right", fit.center[0] + cheekX, cheekY, radius, 1.75, 0.52);
       continue;
     }
 
@@ -366,8 +219,8 @@ function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: HeadFi
           fit,
           accent,
           `freckle-${index}`,
-          fit.center.x + fit.radiusX * x,
-          fit.eyeCenter.y + fit.radiusY * y,
+          fit.center[0] + side * fit.radiusX * x,
+          fit.eyeCenter[1] + fit.radiusY * y,
           fit.radiusX * (index % 2 === 0 ? 0.018 : 0.014),
           1,
           0.8
@@ -382,8 +235,8 @@ function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: HeadFi
         fit,
         accent,
         "beauty-mark",
-        fit.center.x + fit.radiusX * 0.34,
-        fit.eyeCenter.y - fit.radiusY * 0.28,
+        fit.center[0] + side * fit.radiusX * 0.34,
+        fit.eyeCenter[1] - fit.radiusY * 0.28,
         fit.radiusX * 0.026,
         1,
         0.9
@@ -392,33 +245,14 @@ function addFaceAccents(group: THREE.Group, state: AvatarForgeState, fit: HeadFi
   }
 }
 
-function buildAvatarForgeObject(state: AvatarForgeState, fit: HeadFit) {
+function buildAvatarForgeObject(state: AvatarForgeState, fit: StudioVrmHeadFit) {
   const group = new THREE.Group();
   group.name = "ToonStudioAvatarForge";
   group.userData[AVATAR_FORGE_MARKER] = true;
-  addHairParts(group, state, fit);
+  group.userData[AVATAR_FORGE_HEAD_FIT] = fit;
+  addAvatarForgeHairParts(group, state, fit);
   addFaceAccents(group, state, fit);
   return group;
-}
-
-function disposeAvatarForgeObject(object: THREE.Object3D) {
-  const geometries = new Set<THREE.BufferGeometry>();
-  const materials = new Set<THREE.Material>();
-  object.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    geometries.add(mesh.geometry);
-    const childMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    childMaterials.forEach((material) => materials.add(material));
-  });
-  geometries.forEach((geometry) => geometry.dispose());
-  materials.forEach((material) => material.dispose());
-  const textures = object.userData[AVATAR_FORGE_OWNED_TEXTURES];
-  if (Array.isArray(textures)) {
-    for (const texture of textures) {
-      if (texture instanceof THREE.Texture) texture.dispose();
-    }
-  }
 }
 
 function useStudioVrmStableSnapshot<T>(value: T, identity: string): T {
@@ -450,13 +284,21 @@ export function StudioVrmAvatarForge({
   const safeState = useMemo(() => sanitizeAvatarForgeState(state), [state]);
   const normalizedHead = vrm.humanoid?.getNormalizedBoneNode("head") ?? null;
   const rawHead = vrm.humanoid?.getRawBoneNode("head") ?? null;
+  // 두상은 머리 본이 지배하는 스킨 정점으로 잰다(A-01). 리그가 바뀔 때만 다시 잰다 — 얼굴형 배율은
+  // 머리 본 스케일로 들어가 헤어가 자식으로 함께 따라간다.
   const fit = useMemo(
     () => {
       void rigRevision;
-      return normalizedHead ? measureHeadFit(vrm, normalizedHead) : null;
+      return normalizedHead
+        ? measureStudioVrmHeadFit(vrm, normalizedHead, { skip: isGeneratedForgeObject }).fit
+        : null;
     },
     [normalizedHead, rigRevision, vrm]
   );
+  useLayoutEffect(() => {
+    if (!fit) return;
+    return publishStudioVrmHairPreviewHead(fit);
+  }, [fit]);
 
   // Generated surface ownership is independent from the original-hair visibility lease. A pure
   // visibility toggle keeps the current buffers, while any style/shape/material change gets a fresh
@@ -490,6 +332,10 @@ export function StudioVrmAvatarForge({
     next.userData[AVATAR_FORGE_HAIR_IDENTITY] = hairGeometryIdentity;
     return next;
   }, [fit, hairGeometryIdentity, stableObjectState]);
+  // 헤어 카드 썸네일이 선택된 카드를 지금 헤어 그대로 그리도록 알린다.
+  useLayoutEffect(() => {
+    publishStudioVrmHairPreviewHair(stableObjectState.hair);
+  }, [hairGeometryIdentity, stableObjectState.hair]);
 
   // Dispose in the same layout phase that swaps the primitive. The old and new hairstyles are never
   // painted together, and every geometry/material/owned texture is released exactly once.

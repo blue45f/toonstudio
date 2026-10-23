@@ -2,10 +2,12 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import {
+  bendStudioVrmAuthoredHairAlongSpine,
   createStudioVrmAuthoredHairClumpGeometry,
   createStudioVrmAuthoredHairGeometry,
   mergeStudioVrmAuthoredHairGeometry,
   resolveStudioVrmAuthoredHairClumpCenter,
+  studioVrmAuthoredCapHairlineHeight,
 } from "./studio-vrm-authored-hair-geometry";
 
 import type { AvatarForgeHairPart } from "./studio-vrm-avatar-forge";
@@ -147,5 +149,73 @@ describe("studio-vrm-authored-hair-geometry", () => {
     expect(merged?.getAttribute("position").count).toBeGreaterThan(500);
     expect(merged?.getAttribute("color").count).toBe(merged?.getAttribute("position").count);
     merged?.dispose();
+  });
+
+  it("묶은 꼬리는 둥근 다발, 앞머리는 넓고 얕은 면이다 — 꼬리가 옆에서 막대 한 개로 보이지 않게", () => {
+    const tail = bounds(createStudioVrmAuthoredHairClumpGeometry({ ...CLUMP, role: "tail", curl: 0, wave: 0 }));
+    const bang = bounds(createStudioVrmAuthoredHairClumpGeometry({ ...CLUMP, curl: 0, wave: 0 }));
+    expect(tail.z / tail.x).toBeGreaterThan(0.4);
+    expect(bang.z / bang.x).toBeLessThan(0.33);
+  });
+
+  it("캡 헤어라인은 이마 가운데가 가장 높고 관자놀이·옆으로 갈수록 내려간다(좌우 대칭)", () => {
+    expect(studioVrmAuthoredCapHairlineHeight(0)).toBeCloseTo(0.28, 6);
+    expect(studioVrmAuthoredCapHairlineHeight(0.5)).toBeLessThan(studioVrmAuthoredCapHairlineHeight(0.2));
+    expect(studioVrmAuthoredCapHairlineHeight(0.9)).toBeLessThan(studioVrmAuthoredCapHairlineHeight(0.5));
+    expect(studioVrmAuthoredCapHairlineHeight(-0.5)).toBeCloseTo(studioVrmAuthoredCapHairlineHeight(0.5), 9);
+    expect(Number.isFinite(studioVrmAuthoredCapHairlineHeight(Number.NaN))).toBe(true);
+  });
+
+  it("가닥을 굽은 중심선을 따라 깐다 — 뿌리·끝이 중심선 양 끝에 오고 단면은 중심선 둘레에 머문다", () => {
+    const part: AvatarForgeHairPart = { ...CLUMP, curl: 0, wave: 0 };
+    const points = Array.from({ length: 9 }, (_, index) => {
+      const t = index / 8;
+      return new THREE.Vector3(0.01 * t, 0.1 - 0.1 * t, 0.05 + 0.02 * Math.sin(Math.PI * t));
+    });
+    const spine = {
+      points,
+      normals: points.map(() => new THREE.Vector3(0, 0, 1)),
+      halfWidth: 0.012,
+      thickness: 0.006,
+    };
+    const merged = mergeStudioVrmAuthoredHairGeometry([{ part, matrix: new THREE.Matrix4().makeScale(9, 9, 9), spine }]);
+    expect(merged).not.toBeNull();
+    const position = merged!.getAttribute("position");
+    const columns = 9;
+    const rowCentre = (row: number) => {
+      const centre = new THREE.Vector3();
+      for (let column = 0; column < columns; column += 1) {
+        centre.add(new THREE.Vector3().fromBufferAttribute(position, row * columns + column));
+      }
+      return centre.divideScalar(columns);
+    };
+    expect(rowCentre(0).distanceTo(points[0]!)).toBeLessThan(spine.thickness);
+    expect(rowCentre(24).distanceTo(points[8]!)).toBeLessThan(spine.thickness);
+    // 행렬(×9 확대)은 무시되고, 모든 정점이 중심선에서 반폭 + 두께 안쪽이다.
+    const segment = new THREE.Line3();
+    const closest = new THREE.Vector3();
+    for (let index = 0; index < position.count; index += 1) {
+      const vertex = new THREE.Vector3().fromBufferAttribute(position, index);
+      let nearest = Number.POSITIVE_INFINITY;
+      for (let point = 0; point < points.length - 1; point += 1) {
+        segment.set(points[point]!, points[point + 1]!).closestPointToPoint(vertex, true, closest);
+        nearest = Math.min(nearest, closest.distanceTo(vertex));
+      }
+      expect(nearest).toBeLessThan(spine.halfWidth + spine.thickness);
+    }
+    // 앞면(국소 +z)은 중심선 법선(+z) 쪽, 뒷면은 반대쪽이다.
+    expect(new THREE.Vector3().fromBufferAttribute(position, 12 * columns + 4).z).toBeGreaterThan(points[4]!.z);
+    expect(new THREE.Vector3().fromBufferAttribute(position, (25 + 12) * columns + 4).z).toBeLessThan(points[4]!.z);
+    merged!.dispose();
+  });
+
+  it("중심선 점이 둘 미만이면 지오메트리를 건드리지 않는다", () => {
+    const geometry = createStudioVrmAuthoredHairClumpGeometry(CLUMP);
+    const before = Array.from(geometry.getAttribute("position").array);
+    bendStudioVrmAuthoredHairAlongSpine(geometry, {
+      points: [new THREE.Vector3()], normals: [new THREE.Vector3(0, 0, 1)], halfWidth: 1, thickness: 1,
+    });
+    expect(Array.from(geometry.getAttribute("position").array)).toEqual(before);
+    geometry.dispose();
   });
 });

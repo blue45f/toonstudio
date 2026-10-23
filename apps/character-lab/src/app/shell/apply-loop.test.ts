@@ -524,3 +524,41 @@ describe("app/shell/apply-loop", () => {
     expect(store.getState().failures).toEqual([]);
   });
 });
+
+describe("app/shell/apply-loop 빌드 ↔ 바인딩 양보(P-01)", () => {
+  it("yieldBeforeLoad가 있으면 소스를 만든 뒤 양보가 풀릴 때까지 엔진에 올리지 않는다(지오메트리 빌드와 바인딩이 한 long task로 붙지 않는다)", async () => {
+    const store = createMockLabStore();
+    const session = createMockEngineSession();
+    const engine = createMockEngine();
+    const order: string[] = [];
+    const hops: Array<() => void> = [];
+    const loop = createApplyLoop({
+      store,
+      catalog: createPresetCatalog([]),
+      planner,
+      engineSession: session,
+      buildSource: () => {
+        order.push("build");
+        return { kind: "procedural", model: minimalHumanoidModelFixture() };
+      },
+      yieldBeforeLoad: () =>
+        new Promise<void>((resolve) => {
+          order.push("yield");
+          hops.push(resolve);
+        }),
+      now: () => 1,
+    });
+    loop.start();
+    session.setEngine(engine);
+    session.setStatus({ phase: "ready", backend: "webgpu", diagnostics: engine.diagnostics });
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+    expect(order).toEqual(["build", "yield"]);
+    expect(engine.calls.filter((call) => call.method === "loadSource")).toHaveLength(0);
+    expect(loop.settled()).toBe(false);
+    hops.shift()?.();
+    await loop.flush();
+    expect(engine.calls.map((call) => call.method)).toEqual(["loadSource", "setShading", "setPhysicsProvider", "applyPlan"]);
+    expect(loop.settled()).toBe(true);
+  });
+});
+

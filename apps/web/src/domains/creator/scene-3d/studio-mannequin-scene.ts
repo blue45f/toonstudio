@@ -14,7 +14,6 @@
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "../bg3d/studio-bg3d-lt-render";
 import {
@@ -22,18 +21,16 @@ import {
   encodeStudioVrmCapturePngDataUrl,
 } from "../vrm/studio-vrm-raster-capture";
 
+import { fitStudioMannequinCameraToBounds } from "./studio-mannequin-camera-framing";
 import { solveStudioMannequinTwoBoneIk } from "./studio-mannequin-ik";
 import {
   buildStudioMannequinSpec,
   clampStudioMannequinJointRotation,
   getStudioMannequinJointLimit,
   isStudioMannequinJointId,
-  STUDIO_MANNEQUIN_CHAIN_IDS,
-  type StudioMannequinChainId,
   type StudioMannequinChainSpec,
   type StudioMannequinJointId,
   type StudioMannequinMaterialStyle,
-  type StudioMannequinPrimitiveMaterialRole,
   type StudioMannequinSpec,
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
@@ -55,6 +52,21 @@ import {
   type StudioMannequinLightingRig,
   type StudioMannequinSceneLightPlan,
 } from "./studio-mannequin-lighting";
+import {
+  createStudioMannequinSceneFigure,
+  type StudioMannequinBodyMeshUserData,
+  type StudioMannequinEffectorHandleUserData,
+  type StudioMannequinFigureId,
+  type StudioMannequinFigureMaterials,
+  type StudioMannequinSceneFigure,
+} from "./studio-mannequin-scene-figure";
+import {
+  createStudioMannequinMaterialPalette,
+  createStudioMannequinToonGradientTexture,
+  disposeStudioMannequinMaterialPalette,
+} from "./studio-mannequin-scene-materials";
+
+export type { StudioMannequinFigureId } from "./studio-mannequin-scene-figure";
 
 export type StudioMannequinProjection = "perspective" | "orthographic";
 
@@ -125,6 +137,23 @@ export interface StudioMannequinSceneOptions {
   readonly onPoseEdited?: (pose: StudioMannequinPose) => void;
 }
 
+/** 2인 구도의 상대 인형 — 스펙·포즈와 주인공 로컬 프레임 기준 배치(위치·요). */
+export interface StudioMannequinScenePartner {
+  readonly spec: StudioMannequinSpec;
+  readonly pose: StudioMannequinPose;
+  readonly offset: StudioMannequinVec3;
+  readonly yawRad: number;
+}
+
+/** 상대 인형을 뷰포트에서 직접 다듬을 때의 알림(2인 구도 훅이 구독한다). */
+export interface StudioMannequinScenePartnerListener {
+  /** 상대 인형 IK·관절 드래그가 끝날 때 최종 포즈로 1회 호출된다. */
+  readonly onPoseEdited?: (pose: StudioMannequinPose) => void;
+  readonly onSelectJoint?: (jointId: StudioMannequinJointId | null) => void;
+  /** 다른 인형을 눌러 조작 대상이 바뀌었을 때. */
+  readonly onActiveFigureChange?: (figure: StudioMannequinFigureId) => void;
+}
+
 export interface StudioMannequinSceneHandle {
   setBodySpec(spec: StudioMannequinSpec): void;
   setPose(pose: StudioMannequinPose): void;
@@ -159,6 +188,17 @@ export interface StudioMannequinSceneHandle {
     scale: number,
     options?: { signal?: AbortSignal },
   ): Promise<StudioMannequinCaptureResult>;
+  // ── 2인 구도(선택 기능 — 테스트 스텁·구형 호스트는 생략할 수 있다) ──
+  /** 상대 인형을 넣거나 갱신한다. null 이면 제거한다. 캡처에도 함께 담긴다. */
+  setPartner?(partner: StudioMannequinScenePartner | null): void;
+  /**
+   * 뷰포트 IK 핸들·관절 드래그를 받을 인형. 상대가 없으면 항상 주인공이다. 바뀌면 이전
+   * 인형의 관절 선택을 비우고(소유자에게 null 통지) 리스너에 새 대상을 알린다.
+   */
+  setActiveFigure?(figure: StudioMannequinFigureId): void;
+  setPartnerListener?(listener: StudioMannequinScenePartnerListener | null): void;
+  /** 그려진 인형(들)이 모두 보이도록 지금 방향 그대로 카메라를 다시 맞춘다. */
+  frameAll?(): void;
   dispose(): void;
 }
 
@@ -548,147 +588,20 @@ export function readStudioMannequinLightingSnapshot(
   };
 }
 
-/** 4스텝 절차 생성 툰 그라디언트 — 외부 matcap 에셋 없이 CSP 인형풍 셰이딩을 만든다. */
-function createToonGradientTexture(): THREE.DataTexture {
-  const data = new Uint8Array([88, 88, 88, 255, 148, 148, 148, 255, 208, 208, 208, 255, 244, 244, 244, 255]);
-  const texture = new THREE.DataTexture(data, 4, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
-  texture.minFilter = THREE.NearestFilter;
-  texture.magFilter = THREE.NearestFilter;
-  texture.generateMipmaps = false;
-  texture.needsUpdate = true;
-  return texture;
+/** 인형 루트 아래에서 선택·드래그된 메시가 속한 인형을 찾는다. */
+function figureIdOf(object: THREE.Object3D): StudioMannequinFigureId {
+  const userData = object.userData as Partial<StudioMannequinBodyMeshUserData>;
+  return userData.studioMannequinFigureId === "partner" ? "partner" : "lead";
 }
 
-interface StudioMannequinMaterialPalette {
-  readonly body: THREE.Material;
-  readonly joint: THREE.Material;
-  readonly landmark: THREE.Material;
-  readonly eye: THREE.Material;
-}
-
-function standardMaterial(
-  color: THREE.ColorRepresentation,
-  roughness: number,
-  metalness = 0,
-  emissive?: THREE.ColorRepresentation,
-  emissiveIntensity = 0,
-): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness,
-    metalness,
-    ...(emissive === undefined ? {} : { emissive, emissiveIntensity }),
-  });
-}
-
-/**
- * 같은 형상 안에서도 관절구·랜드마크·시선 가이드를 읽을 수 있게 역할별 재질을 만든다.
- * 외부 텍스처 없이 재현 가능하며, 색만 달라져도 동일한 포즈·캡처 계약을 유지한다.
- */
-function createStudioMannequinMaterialPalette(
-  style: StudioMannequinMaterialStyle,
-  gradientMap: THREE.Texture,
-): StudioMannequinMaterialPalette {
-  if (style === "clay") {
-    return {
-      body: standardMaterial(0xe8e2da, 0.86, 0.02),
-      joint: standardMaterial(0xc9beb2, 0.72, 0.03),
-      landmark: standardMaterial(0xf8f3ed, 0.66, 0.01),
-      eye: standardMaterial(0x36312d, 0.74, 0),
-    };
-  }
-  if (style === "wireframe") {
-    return {
-      body: new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.9 }),
-      joint: new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true, transparent: true, opacity: 0.96 }),
-      landmark: new THREE.MeshBasicMaterial({ color: 0xe2e8f0, wireframe: true, transparent: true, opacity: 0.95 }),
-      eye: new THREE.MeshBasicMaterial({ color: 0x0f172a, wireframe: true }),
-    };
-  }
-  if (style === "shaded") {
-    return {
-      body: new THREE.MeshToonMaterial({ color: 0x94a3b8, gradientMap }),
-      joint: new THREE.MeshToonMaterial({ color: 0xc27d59, gradientMap }),
-      landmark: new THREE.MeshToonMaterial({ color: 0xdbe6ee, gradientMap }),
-      eye: new THREE.MeshToonMaterial({ color: 0x111827, gradientMap }),
-    };
-  }
-  if (style === "magma") {
-    return {
-      body: standardMaterial(0x18181b, 0.3, 0, 0xf97316, 0.68),
-      joint: standardMaterial(0x211216, 0.25, 0, 0xef4444, 0.95),
-      landmark: standardMaterial(0x2b1806, 0.2, 0, 0xfacc15, 1.15),
-      eye: standardMaterial(0x020204, 0.4, 0, 0xffedd5, 0.8),
-    };
-  }
-  if (style === "stencil") {
-    return {
-      body: new THREE.MeshBasicMaterial({ color: 0x09090b }),
-      joint: new THREE.MeshBasicMaterial({ color: 0x17171b }),
-      landmark: new THREE.MeshBasicMaterial({ color: 0x27272a }),
-      eye: new THREE.MeshBasicMaterial({ color: 0x000000 }),
-    };
-  }
-  if (style === "bronze") {
-    return {
-      body: standardMaterial(0x9c6b30, 0.28, 0.72),
-      joint: standardMaterial(0x71451f, 0.24, 0.8),
-      landmark: standardMaterial(0xc5944d, 0.22, 0.68),
-      eye: standardMaterial(0x1e1813, 0.32, 0.55),
-    };
-  }
-  if (style === "porcelain") {
-    const physical = (color: THREE.ColorRepresentation, roughness: number) => new THREE.MeshPhysicalMaterial({
-      color,
-      metalness: 0,
-      roughness,
-      clearcoat: 0.62,
-      clearcoatRoughness: 0.18,
-    });
-    return {
-      body: physical(0xf5efe7, 0.24),
-      joint: physical(0xd9cfc4, 0.3),
-      landmark: physical(0xffffff, 0.18),
-      eye: physical(0x27313c, 0.26),
-    };
-  }
-  if (style === "skin") {
-    const skin = (color: THREE.ColorRepresentation, roughness: number, sheen: number) => new THREE.MeshPhysicalMaterial({
-      color,
-      metalness: 0,
-      roughness,
-      clearcoat: 0.08,
-      clearcoatRoughness: 0.58,
-      sheen,
-      sheenRoughness: 0.72,
-      sheenColor: new THREE.Color(0xffd6c2),
-    });
-    return {
-      body: skin(0xd7a07d, 0.48, 0.24),
-      joint: skin(0xc78669, 0.52, 0.18),
-      landmark: skin(0xedb69b, 0.44, 0.28),
-      eye: standardMaterial(0x2b211d, 0.42, 0),
-    };
-  }
-  return {
-    body: standardMaterial(0xc58b57, 0.62, 0.02),
-    joint: standardMaterial(0x9f6437, 0.54, 0.03),
-    landmark: standardMaterial(0xd39a63, 0.54, 0.01),
-    eye: standardMaterial(0x30251d, 0.48, 0),
-  };
-}
-
-function disposeStudioMannequinMaterialPalette(palette: StudioMannequinMaterialPalette): void {
-  for (const material of new Set(Object.values(palette))) material.dispose();
-}
-
-interface EffectorHandleUserData {
-  studioMannequinChainId: StudioMannequinChainId;
-}
-
-interface BodyMeshUserData {
-  studioMannequinJointId: StudioMannequinJointId;
-  studioMannequinMaterialRole: StudioMannequinPrimitiveMaterialRole;
+/** 프리셋 앵글의 시선 방향(타깃 → 카메라). 크기는 프레이밍이 경계 상자로 다시 정한다. */
+function cameraPresetDirection(preset: StudioMannequinCameraPreset): StudioMannequinVec3 {
+  const frame = resolveStudioMannequinCameraFrame(CAMERA_REFERENCE_HEIGHT_M, preset);
+  return [
+    frame.position[0] - frame.target[0],
+    frame.position[1] - frame.target[1],
+    frame.position[2] - frame.target[2],
+  ];
 }
 
 export function createStudioMannequinScene(
@@ -709,7 +622,8 @@ export function createStudioMannequinScene(
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // three r186 은 PCFSoftShadowMap 을 없애고 PCFShadowMap 으로 대체하며 매 진입 경고를 냈다.
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   const initialWidth = Math.max(1, container.clientWidth || 1);
   const initialHeight = Math.max(1, container.clientHeight || 1);
   renderer.setSize(initialWidth, initialHeight, false);
@@ -747,8 +661,8 @@ export function createStudioMannequinScene(
   helpers.add(grid, shadowCatcher);
   scene.add(helpers);
 
-  // 머티리얼 — 몸체·관절구·랜드마크·시선 가이드를 역할별로 분리한다.
-  const gradientMap = createToonGradientTexture();
+  // 머티리얼 — 몸체·관절구·랜드마크·시선 가이드를 역할별로 분리하고 두 인형이 공유한다.
+  const gradientMap = createStudioMannequinToonGradientTexture();
   let currentMaterialStyle: StudioMannequinMaterialStyle = "wood";
   let materialPalette = createStudioMannequinMaterialPalette(currentMaterialStyle, gradientMap);
   const selectedMaterial = new THREE.MeshToonMaterial({ color: 0xe0925c, gradientMap });
@@ -772,6 +686,19 @@ export function createStudioMannequinScene(
     options.initialOutlineMode ?? STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT,
   );
   let showJointRangeArc = options.initialShowJointRangeArc ?? true;
+  const figureMaterials: StudioMannequinFigureMaterials = {
+    palette: () => materialPalette,
+    selected: selectedMaterial,
+    handle: handleMaterial,
+    handleGeometry,
+    outline: outlineMaterial,
+    // 윤곽선 표시 여부는 읽기성 헬퍼 한 곳이 정한다 — 메시를 만들 때와 스타일·모드를 바꿀 때 모두 이 경로다.
+    outlineVisible: (role) => resolveStudioMannequinOutlineVisible({
+      mode: outlineMode,
+      style: currentMaterialStyle,
+      role,
+    }),
+  };
 
   // 선택 관절의 가동범위 아크(라인+끝점+현재 각도 마커). 관절 그룹의 자식으로 붙이지 않고
   // 씬 직속 그룹에 두어, 매 프레임 관절 월드 행렬로 위치·자세를 동기화한다(아크 자체가
@@ -802,20 +729,77 @@ export function createStudioMannequinScene(
   let rangeArcLimitDots: THREE.Mesh[] = [];
   let rangeArcMarker: THREE.Mesh | null = null;
   let rangeArcBuiltKey: string | null = null;
-
-  const mannequinRoot = new THREE.Group();
-  scene.add(mannequinRoot);
   scene.add(rangeArcGroup);
 
-  let joints = new Map<StudioMannequinJointId, THREE.Group>();
-  let bodyMeshes: THREE.Mesh[] = [];
-  let outlineMeshes: THREE.Mesh[] = [];
-  let effectorHandles: THREE.Mesh[] = [];
-  let pelvisRestOffset = new THREE.Vector3();
-  let selectedJointId: StudioMannequinJointId | null = null;
+  // ── 인형(주인공 + 2인 구도 상대) ────────────────────────────────────────
+  // 주인공은 패널의 포즈 상태와 1:1 이고, 상대는 2인 구도 훅이 setPartner 로 넣는다.
   let currentPose = normalizeStudioMannequinPose(
     options.initialPose ?? createStudioMannequinRestPose(),
   );
+  const lead = createStudioMannequinSceneFigure({
+    id: "lead",
+    spec,
+    pose: currentPose,
+    materials: figureMaterials,
+  });
+  scene.add(lead.root);
+  let partner: StudioMannequinSceneFigure | null = null;
+  let partnerListener: StudioMannequinScenePartnerListener | null = null;
+  let activeFigureId: StudioMannequinFigureId = "lead";
+  let selectedJointId: StudioMannequinJointId | null = null;
+
+  function figureById(id: StudioMannequinFigureId): StudioMannequinSceneFigure | null {
+    return id === "partner" ? partner : lead;
+  }
+
+  function activeFigure(): StudioMannequinSceneFigure {
+    return figureById(activeFigureId) ?? lead;
+  }
+
+  function allFigures(): StudioMannequinSceneFigure[] {
+    return partner ? [lead, partner] : [lead];
+  }
+
+  function applySelectionTint(): void {
+    lead.setSelection(activeFigureId === "lead" ? selectedJointId : null);
+    partner?.setSelection(activeFigureId === "partner" ? selectedJointId : null);
+  }
+
+  /** IK 핸들은 지금 조작 중인 인형에만 보인다 — 어느 인형을 다듬는지 화면에서 바로 읽힌다. */
+  function applyHandleVisibility(): void {
+    lead.setHandlesVisible(activeFigureId === "lead");
+    partner?.setHandlesVisible(activeFigureId === "partner");
+  }
+
+  function applyPoseToGraph(pose: StudioMannequinPose): void {
+    lead.applyPose(pose);
+  }
+
+  function applyOutlineVisibility(): void {
+    for (const figure of allFigures()) figure.refreshOutlines();
+  }
+
+  function notifySelection(figureId: StudioMannequinFigureId, jointId: StudioMannequinJointId | null): void {
+    if (figureId === "partner") partnerListener?.onSelectJoint?.(jointId);
+    else options.onSelectJoint?.(jointId);
+  }
+
+  /** 조작 대상 인형을 바꾼다. 이전 인형의 선택은 비워 관절 탭이 엉뚱한 인형을 가리키지 않게 한다. */
+  function setActiveFigureInternal(next: StudioMannequinFigureId, notify: boolean): void {
+    const resolved = next === "partner" && partner ? "partner" : "lead";
+    if (resolved === activeFigureId) return;
+    const previous = activeFigureId;
+    activeFigureId = resolved;
+    selectedJointId = null;
+    applySelectionTint();
+    applyHandleVisibility();
+    clearJointRangeArc();
+    if (notify) {
+      notifySelection(previous, null);
+      partnerListener?.onActiveFigureChange?.(resolved);
+    }
+    invalidate();
+  }
 
   // ── 카메라 + 컨트롤 ───────────────────────────────────────────────────────
   let viewWidth = initialWidth;
@@ -864,6 +848,37 @@ export function createStudioMannequinScene(
     controls.update();
   }
 
+  /**
+   * 그려진 인형(들)의 월드 경계 상자가 화면에 들어오도록 카메라를 맞춘다. 방향을 주지 않으면
+   * 지금 보는 방향을 유지한다 — 3등신 SD·쪼그린 포즈·2인 구도에서도 발이 잘리지 않는다.
+   */
+  function frameFigures(direction?: StudioMannequinVec3): void {
+    scene.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    for (const figure of allFigures()) {
+      for (const mesh of figure.bodyMeshes()) box.expandByObject(mesh);
+    }
+    if (box.isEmpty()) return;
+    const current = activeCamera.position.clone().sub(cameraTarget);
+    const viewDirection: StudioMannequinVec3 = direction
+      ?? (current.lengthSq() > 1e-9 ? [current.x, current.y, current.z] : cameraPresetDirection("home"));
+    const frame = fitStudioMannequinCameraToBounds({
+      bounds: { min: [box.min.x, box.min.y, box.min.z], max: [box.max.x, box.max.y, box.max.z] },
+      viewDirection,
+      fovDeg: perspectiveCamera.fov,
+      aspect: viewWidth / viewHeight,
+      minDistance: controls?.minDistance ?? 0.5,
+    });
+    cameraTarget.copy(toVec3(frame.target));
+    for (const camera of [perspectiveCamera, orthographicCamera]) {
+      camera.position.copy(toVec3(frame.position));
+      camera.lookAt(cameraTarget);
+    }
+    controls?.target.copy(cameraTarget);
+    controls?.update();
+    updateOrthographicFrustum();
+  }
+
   // ── on-demand 렌더 루프 (invalidate 기반, 상시 rAF 없음) ────────────────
   let pendingFrame = 0;
 
@@ -879,215 +894,6 @@ export function createStudioMannequinScene(
       pendingFrame = 0;
       renderNow();
     });
-  }
-
-  // ── 마네킹 빌드 ──────────────────────────────────────────────────────────
-
-  function disposeMannequinGraph(): void {
-    // outline은 body geometry를 공유하므로 먼저 scene에서만 분리하고 geometry는 body가 한 번만 dispose한다.
-    for (const outline of outlineMeshes) outline.removeFromParent();
-    outlineMeshes = [];
-    for (const mesh of [...bodyMeshes, ...effectorHandles]) {
-      mesh.geometry.dispose();
-      mesh.removeFromParent();
-    }
-    bodyMeshes = [];
-    effectorHandles = [];
-    for (const group of joints.values()) group.removeFromParent();
-    joints = new Map();
-    mannequinRoot.clear();
-  }
-
-  function buildPrimitiveMesh(
-    primitive: StudioMannequinSpec["primitives"][number],
-  ): THREE.Mesh {
-    const role = primitive.materialRole ?? "body";
-    const material = materialPalette[role];
-    let mesh: THREE.Mesh;
-    if (primitive.kind === "sphere") {
-      const relativeRadius = primitive.radius / Math.max(0.001, spec.headUnit);
-      const widthSegments = relativeRadius < 0.055 ? 16 : relativeRadius < 0.11 ? 24 : 40;
-      const heightSegments = relativeRadius < 0.055 ? 10 : relativeRadius < 0.11 ? 16 : 28;
-      mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(primitive.radius, widthSegments, heightSegments),
-        material,
-      );
-      mesh.position.copy(toVec3(primitive.center));
-      if (primitive.scale) mesh.scale.copy(toVec3(primitive.scale));
-    } else if (primitive.kind === "box") {
-      const minimumSize = Math.min(...primitive.size);
-      const radius = Math.min(minimumSize * 0.24, spec.headUnit * 0.08);
-      mesh = new THREE.Mesh(
-        new RoundedBoxGeometry(
-          primitive.size[0],
-          primitive.size[1],
-          primitive.size[2],
-          5,
-          Math.max(0.001, radius),
-        ),
-        material,
-      );
-      mesh.position.copy(toVec3(primitive.center));
-    } else {
-      const from = toVec3(primitive.from);
-      const to = toVec3(primitive.to);
-      const segment = new THREE.Vector3().subVectors(to, from);
-      const segmentLength = segment.length();
-      const endRadius = primitive.endRadius;
-      const hasAnatomicalTaper = typeof endRadius === "number"
-        && Number.isFinite(endRadius)
-        && endRadius > 0
-        && Math.abs(endRadius - primitive.radius) > 1e-6;
-      const relativeRadius = primitive.radius / Math.max(0.001, spec.headUnit);
-      const radialSegments = relativeRadius < 0.055 ? 12 : relativeRadius < 0.11 ? 20 : 28;
-      const middleLength = Math.max(0.001, segmentLength - primitive.radius * 2);
-      const geometry = hasAnatomicalTaper
-        ? new THREE.CylinderGeometry(
-            endRadius,
-            primitive.radius,
-            Math.max(0.001, segmentLength),
-            radialSegments,
-            3,
-            false,
-          )
-        : new THREE.CapsuleGeometry(
-            primitive.radius,
-            middleLength,
-            relativeRadius < 0.055 ? 6 : 10,
-            radialSegments,
-          );
-      mesh = new THREE.Mesh(geometry, material);
-      mesh.position.copy(from).addScaledVector(segment, 0.5);
-      if (segmentLength > 1e-9) {
-        mesh.quaternion.setFromUnitVectors(
-          new THREE.Vector3(0, 1, 0),
-          segment.clone().normalize(),
-        );
-      }
-    }
-    mesh.name = `studio-mannequin-part:${primitive.jointId}:${role}`;
-    return mesh;
-  }
-
-  function rebuildMannequin(): void {
-    disposeMannequinGraph();
-
-    for (const jointSpec of spec.joints) {
-      const group = new THREE.Group();
-      group.name = `studio-mannequin-joint:${jointSpec.id}`;
-      group.position.copy(toVec3(jointSpec.offset));
-      const parent = jointSpec.parentId ? joints.get(jointSpec.parentId) : null;
-      (parent ?? mannequinRoot).add(group);
-      joints.set(jointSpec.id, group);
-      if (jointSpec.id === "pelvis") pelvisRestOffset = toVec3(jointSpec.offset);
-    }
-
-    for (const primitive of spec.primitives) {
-      const jointGroup = joints.get(primitive.jointId);
-      if (!jointGroup) continue;
-      const mesh = buildPrimitiveMesh(primitive);
-      const materialRole = primitive.materialRole ?? "body";
-      Object.assign(mesh.userData as BodyMeshUserData, {
-        studioMannequinJointId: primitive.jointId,
-        studioMannequinMaterialRole: materialRole,
-      });
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      jointGroup.add(mesh);
-      bodyMeshes.push(mesh);
-
-      const outline = new THREE.Mesh(mesh.geometry, outlineMaterial);
-      outline.position.copy(mesh.position);
-      outline.quaternion.copy(mesh.quaternion);
-      outline.scale.copy(mesh.scale).multiplyScalar(1.026);
-      Object.assign(outline.userData as BodyMeshUserData, {
-        studioMannequinJointId: primitive.jointId,
-        studioMannequinMaterialRole: materialRole,
-      });
-      outline.visible = resolveStudioMannequinOutlineVisible({
-        mode: outlineMode,
-        style: currentMaterialStyle,
-        role: materialRole,
-      });
-      outline.castShadow = false;
-      outline.receiveShadow = false;
-      outline.renderOrder = -1;
-      jointGroup.add(outline);
-      outlineMeshes.push(outline);
-    }
-
-    // 손목/발목 IK 핸들 — 항상 위에 그려지는 반투명 구.
-    const handleRadius = spec.headUnit * 0.16;
-    for (const chainId of STUDIO_MANNEQUIN_CHAIN_IDS) {
-      const chain = spec.chains[chainId];
-      const effectorGroup = joints.get(chain.effectorJointId);
-      if (!effectorGroup) continue;
-      const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-      handle.scale.setScalar(handleRadius);
-      handle.renderOrder = 10;
-      (handle.userData as EffectorHandleUserData).studioMannequinChainId = chainId;
-      effectorGroup.add(handle);
-      effectorHandles.push(handle);
-    }
-
-    applyPoseToGraph(currentPose);
-    applySelectionTint();
-  }
-
-  function applyPoseToGraph(pose: StudioMannequinPose): void {
-    for (const jointSpec of spec.joints) {
-      const group = joints.get(jointSpec.id);
-      if (!group) continue;
-      const rotation = clampStudioMannequinJointRotation(
-        jointSpec.id,
-        pose.joints[jointSpec.id] ?? [0, 0, 0],
-      );
-      group.rotation.set(rotation[0], rotation[1], rotation[2]);
-    }
-    const pelvis = joints.get("pelvis");
-    pelvis?.position.set(
-      pelvisRestOffset.x + pose.pelvisOffset[0],
-      pelvisRestOffset.y + pose.pelvisOffset[1],
-      pelvisRestOffset.z + pose.pelvisOffset[2],
-    );
-  }
-
-  function readPoseFromGraph(): StudioMannequinPose {
-    const jointRotations: Partial<Record<StudioMannequinJointId, StudioMannequinVec3>> = {};
-    for (const jointSpec of spec.joints) {
-      const group = joints.get(jointSpec.id);
-      if (!group) continue;
-      jointRotations[jointSpec.id] = [group.rotation.x, group.rotation.y, group.rotation.z];
-    }
-    const pelvis = joints.get("pelvis");
-    const pelvisOffset: StudioMannequinVec3 = pelvis
-      ? [
-          pelvis.position.x - pelvisRestOffset.x,
-          pelvis.position.y - pelvisRestOffset.y,
-          pelvis.position.z - pelvisRestOffset.z,
-        ]
-      : [0, 0, 0];
-    return normalizeStudioMannequinPose({ joints: jointRotations, pelvisOffset });
-  }
-
-  function applySelectionTint(): void {
-    for (const mesh of bodyMeshes) {
-      const userData = mesh.userData as BodyMeshUserData;
-      mesh.material = userData.studioMannequinJointId === selectedJointId
-        ? selectedMaterial
-        : materialPalette[userData.studioMannequinMaterialRole];
-    }
-  }
-
-  function applyOutlineVisibility(): void {
-    for (const outline of outlineMeshes) {
-      const role = (outline.userData as BodyMeshUserData).studioMannequinMaterialRole;
-      outline.visible = resolveStudioMannequinOutlineVisible({
-        mode: outlineMode,
-        style: currentMaterialStyle,
-        role,
-      });
-    }
   }
 
   function clearJointRangeArc(): void {
@@ -1116,7 +922,8 @@ export function createStudioMannequinScene(
       rangeArcGroup.visible = false;
       return;
     }
-    const jointGroup = joints.get(selectedJointId);
+    const figure = activeFigure();
+    const jointGroup = figure.joints().get(selectedJointId);
     if (!jointGroup) {
       clearJointRangeArc();
       return;
@@ -1129,8 +936,8 @@ export function createStudioMannequinScene(
       clearJointRangeArc();
       return;
     }
-    const radius = spec.headUnit * 0.85;
-    const key = `${arc.jointId}:${arc.axis}`;
+    const radius = figure.spec().headUnit * 0.85;
+    const key = `${figure.id}:${arc.jointId}:${arc.axis}`;
     if (rangeArcBuiltKey !== key) {
       clearJointRangeArc();
       rangeArcBuiltKey = key;
@@ -1186,10 +993,12 @@ export function createStudioMannequinScene(
   const dragPlane = new THREE.Plane();
   const dragPoint = new THREE.Vector3();
   let draggingChain: StudioMannequinChainSpec | null = null;
+  let draggingFigureId: StudioMannequinFigureId = "lead";
   let dragPointerId: number | null = null;
   let dragStartPose: StudioMannequinPose | null = null;
   let directDrag: {
     pointerId: number;
+    figureId: StudioMannequinFigureId;
     jointId: StudioMannequinJointId;
     startClientX: number;
     startClientY: number;
@@ -1206,9 +1015,18 @@ export function createStudioMannequinScene(
     );
   }
 
-  function solveChainToward(chain: StudioMannequinChainSpec, worldTarget: THREE.Vector3): void {
-    const upperJoint = joints.get(chain.rootJointId);
-    const midJoint = joints.get(chain.midJointId);
+  function allBodyMeshes(): THREE.Mesh[] {
+    return allFigures().flatMap((figure) => [...figure.bodyMeshes()]);
+  }
+
+  function solveChainToward(
+    figure: StudioMannequinSceneFigure,
+    chain: StudioMannequinChainSpec,
+    worldTarget: THREE.Vector3,
+  ): void {
+    const figureJoints = figure.joints();
+    const upperJoint = figureJoints.get(chain.rootJointId);
+    const midJoint = figureJoints.get(chain.midJointId);
     const parent = upperJoint?.parent;
     if (!upperJoint || !midJoint || !parent) return;
 
@@ -1253,19 +1071,30 @@ export function createStudioMannequinScene(
     midJoint.rotation.set(...solved.lowerEuler);
   }
 
+  /** 드래그가 끝난 인형의 포즈를 소유자(패널: 주인공, 2인 구도 훅: 상대)에게 알린다. */
+  function commitFigurePose(figureId: StudioMannequinFigureId): void {
+    if (figureId === "partner") {
+      if (partner) partnerListener?.onPoseEdited?.(partner.readPose());
+      return;
+    }
+    currentPose = lead.readPose();
+    options.onPoseEdited?.(currentPose);
+  }
+
   function handlePointerDown(event: PointerEvent): void {
     if (disposed || event.button !== 0 || !event.isPrimary || directDrag || draggingChain) return;
     updatePointerNdc(event);
     raycaster.setFromCamera(pointerNdc, activeCamera);
 
-    const handleHits = raycaster.intersectObjects(effectorHandles, false);
+    const handleHits = raycaster.intersectObjects([...activeFigure().effectorHandles()], false);
     const handleHit = handleHits[0];
     if (handleHit) {
-      const chainId = (handleHit.object.userData as EffectorHandleUserData)
+      const chainId = (handleHit.object.userData as StudioMannequinEffectorHandleUserData)
         .studioMannequinChainId;
-      draggingChain = spec.chains[chainId];
+      draggingFigureId = activeFigureId;
+      draggingChain = activeFigure().spec().chains[chainId];
       dragPointerId = event.pointerId;
-      dragStartPose = readPoseFromGraph();
+      dragStartPose = activeFigure().readPose();
       const cameraDirection = new THREE.Vector3();
       activeCamera.getWorldDirection(cameraDirection);
       const handleWorld = new THREE.Vector3();
@@ -1278,19 +1107,22 @@ export function createStudioMannequinScene(
       return;
     }
 
-    const bodyHits = raycaster.intersectObjects(bodyMeshes, false);
+    const bodyHits = raycaster.intersectObjects(allBodyMeshes(), false);
     const bodyHit = bodyHits[0];
     const jointId = bodyHit
-      ? (bodyHit.object.userData as BodyMeshUserData).studioMannequinJointId
+      ? (bodyHit.object.userData as StudioMannequinBodyMeshUserData).studioMannequinJointId
       : null;
-    if (isStudioMannequinJointId(jointId)) {
+    if (bodyHit && isStudioMannequinJointId(jointId)) {
+      // 다른 인형을 누르면 그 인형이 조작 대상이 된다(상대 ↔ 주인공 전환).
+      setActiveFigureInternal(figureIdOf(bodyHit.object), true);
       selectedJointId = jointId;
       applySelectionTint();
-      options.onSelectJoint?.(jointId);
-      const group = joints.get(jointId);
+      notifySelection(activeFigureId, jointId);
+      const group = activeFigure().joints().get(jointId);
       if (group) {
         directDrag = {
           pointerId: event.pointerId,
+          figureId: activeFigureId,
           jointId,
           startClientX: event.clientX,
           startClientY: event.clientY,
@@ -1309,7 +1141,7 @@ export function createStudioMannequinScene(
     selectedJointId = null;
     applySelectionTint();
     invalidate();
-    options.onSelectJoint?.(null);
+    notifySelection(activeFigureId, null);
   }
 
   function handlePointerMove(event: PointerEvent): void {
@@ -1318,7 +1150,7 @@ export function createStudioMannequinScene(
       const deltaX = event.clientX - directDrag.startClientX;
       const deltaY = event.clientY - directDrag.startClientY;
       if (!directDrag.didMove && Math.hypot(deltaX, deltaY) < 3) return;
-      const group = joints.get(directDrag.jointId);
+      const group = figureById(directDrag.figureId)?.joints().get(directDrag.jointId);
       if (!group) return;
       const rotation = resolveStudioMannequinPointerRotation({
         jointId: directDrag.jointId,
@@ -1337,10 +1169,12 @@ export function createStudioMannequinScene(
       return;
     }
     if (!draggingChain || event.pointerId !== dragPointerId) return;
+    const figure = figureById(draggingFigureId);
+    if (!figure) return;
     updatePointerNdc(event);
     raycaster.setFromCamera(pointerNdc, activeCamera);
     if (!raycaster.ray.intersectPlane(dragPlane, dragPoint)) return;
-    solveChainToward(draggingChain, dragPoint);
+    solveChainToward(figure, draggingChain, dragPoint);
     invalidate();
     event.preventDefault();
   }
@@ -1349,13 +1183,12 @@ export function createStudioMannequinScene(
     if (directDrag && event.pointerId === directDrag.pointerId) {
       const session = directDrag;
       directDrag = null;
-      const group = joints.get(session.jointId);
+      const group = figureById(session.figureId)?.joints().get(session.jointId);
       if (cancelled && group) {
         group.rotation.set(...session.startRotation);
         invalidate();
       } else if (session.didMove) {
-        currentPose = readPoseFromGraph();
-        options.onPoseEdited?.(currentPose);
+        commitFigurePose(session.figureId);
       }
       if (controls) controls.enabled = true;
       renderer.domElement.style.cursor = "grab";
@@ -1366,6 +1199,7 @@ export function createStudioMannequinScene(
     }
     if (!draggingChain || event.pointerId !== dragPointerId) return;
     const startPose = dragStartPose;
+    const figureId = draggingFigureId;
     draggingChain = null;
     dragPointerId = null;
     dragStartPose = null;
@@ -1375,13 +1209,16 @@ export function createStudioMannequinScene(
       renderer.domElement.releasePointerCapture(event.pointerId);
     }
     if (cancelled && startPose) {
-      currentPose = startPose;
-      applyPoseToGraph(currentPose);
+      if (figureId === "partner") {
+        partner?.applyPose(startPose);
+      } else {
+        currentPose = startPose;
+        applyPoseToGraph(currentPose);
+      }
       invalidate();
       return;
     }
-    currentPose = readPoseFromGraph();
-    options.onPoseEdited?.(currentPose);
+    commitFigurePose(figureId);
   }
 
   function handlePointerUp(event: PointerEvent): void {
@@ -1400,16 +1237,18 @@ export function createStudioMannequinScene(
     if (disposed) return;
     updatePointerNdc(event as PointerEvent);
     raycaster.setFromCamera(pointerNdc, activeCamera);
-    const bodyHit = raycaster.intersectObjects(bodyMeshes, false)[0];
+    const bodyHit = raycaster.intersectObjects(allBodyMeshes(), false)[0];
     const jointId = bodyHit
-      ? (bodyHit.object.userData as BodyMeshUserData).studioMannequinJointId
+      ? (bodyHit.object.userData as StudioMannequinBodyMeshUserData).studioMannequinJointId
       : null;
-    if (!isStudioMannequinJointId(jointId)) return;
-    const group = joints.get(jointId);
+    if (!bodyHit || !isStudioMannequinJointId(jointId)) return;
+    setActiveFigureInternal(figureIdOf(bodyHit.object), true);
+    const figure = activeFigure();
+    const group = figure.joints().get(jointId);
     if (!group) return;
     const worldTarget = group.getWorldPosition(new THREE.Vector3());
     const offset = activeCamera.position.clone().sub(cameraTarget);
-    const minimumDistance = Math.max(spec.headUnit * 2.2, 0.28);
+    const minimumDistance = Math.max(figure.spec().headUnit * 2.2, 0.28);
     offset.setLength(Math.max(minimumDistance, offset.length() * 0.58));
     cameraTarget.copy(worldTarget);
     activeCamera.position.copy(cameraTarget).add(offset);
@@ -1419,7 +1258,7 @@ export function createStudioMannequinScene(
     if (projection === "orthographic") updateOrthographicFrustum();
     selectedJointId = jointId;
     applySelectionTint();
-    options.onSelectJoint?.(jointId);
+    notifySelection(activeFigureId, jointId);
     invalidate();
     event.preventDefault();
   }
@@ -1459,19 +1298,20 @@ export function createStudioMannequinScene(
     // 캡처가 어떤 조명으로 렌더되는지, 마운트된 조명 객체에서 실측해 결과에 싣는다.
     const lighting = readStudioMannequinLightingSnapshot(lightingGroup);
 
-    // 헬퍼(그리드·IK 핸들)와 선택 틴트는 참고용 이미지에 굽지 않는다.
+    // 헬퍼(그리드·IK 핸들)와 선택 틴트는 참고용 이미지에 굽지 않는다. 2인 구도의 상대도
+    // 같은 씬에 있으므로 두 인형이 함께 캡처된다.
     const previousSelection = selectedJointId;
     selectedJointId = null;
     applySelectionTint();
     helpers.visible = false;
     rangeArcGroup.visible = false;
-    for (const handle of effectorHandles) handle.visible = false;
+    for (const figure of allFigures()) figure.setHandlesVisible(false);
     let rgba: Uint8ClampedArray;
     try {
       rgba = captureStudioVrmRgba(renderer, scene, activeCamera, { width, height });
     } finally {
       helpers.visible = true;
-      for (const handle of effectorHandles) handle.visible = true;
+      applyHandleVisibility();
       selectedJointId = previousSelection;
       applySelectionTint();
       invalidate();
@@ -1516,28 +1356,55 @@ export function createStudioMannequinScene(
     invalidate();
   }
 
+  /** 상대 인형을 넣거나 갱신·제거한다. 처음 들어오거나 빠질 때만 두 인형이 보이도록 다시 프레이밍한다. */
+  function applyPartner(next: StudioMannequinScenePartner | null): void {
+    if (!next) {
+      if (!partner) return;
+      if (activeFigureId === "partner") setActiveFigureInternal("lead", true);
+      partner.dispose();
+      partner = null;
+      frameFigures();
+      invalidate();
+      return;
+    }
+    const pose = normalizeStudioMannequinPose(next.pose);
+    const isNew = partner === null;
+    if (!partner) {
+      partner = createStudioMannequinSceneFigure({
+        id: "partner",
+        spec: next.spec,
+        pose,
+        materials: figureMaterials,
+      });
+      scene.add(partner.root);
+    } else if (partner.spec() !== next.spec) {
+      partner.rebuild(next.spec, pose);
+    } else {
+      partner.applyPose(pose);
+    }
+    partner.setPlacement(next.offset, next.yawRad);
+    applySelectionTint();
+    applyHandleVisibility();
+    if (isNew) frameFigures();
+    invalidate();
+  }
+
   // ── 핸들 구성 ────────────────────────────────────────────────────────────
 
-  rebuildMannequin();
+  applyHandleVisibility();
   attachControls();
+  frameFigures(cameraPresetDirection("home"));
   renderNow();
 
   return {
     setBodySpec(nextSpec) {
       if (disposed) return;
-      const previousTarget = cameraTarget.clone();
-      const heightScale = nextSpec.heightM / Math.max(0.5, spec.heightM);
       spec = nextSpec;
-      rebuildMannequin();
-      cameraTarget.set(0, spec.heightM / 2, 0);
-      for (const camera of [perspectiveCamera, orthographicCamera]) {
-        const offset = camera.position.clone().sub(previousTarget).multiplyScalar(heightScale);
-        camera.position.copy(cameraTarget).add(offset);
-        camera.lookAt(cameraTarget);
-      }
-      controls?.target.copy(cameraTarget);
-      controls?.update();
-      updateOrthographicFrustum();
+      lead.rebuild(spec, currentPose);
+      applySelectionTint();
+      applyHandleVisibility();
+      // 체형이 바뀌면 지금 보는 방향을 유지한 채 인형(들)이 화면에 들어오게 다시 맞춘다.
+      frameFigures();
       invalidate();
     },
     setPose(posePatch) {
@@ -1547,24 +1414,26 @@ export function createStudioMannequinScene(
       invalidate();
     },
     getPose() {
-      return disposed ? currentPose : readPoseFromGraph();
+      return disposed ? currentPose : lead.readPose();
     },
     setJointRotation(jointId, rotation) {
       if (disposed) return;
-      const group = joints.get(jointId);
+      const group = lead.joints().get(jointId);
       if (!group) return;
       const clamped = clampStudioMannequinJointRotation(jointId, rotation);
       group.rotation.set(clamped[0], clamped[1], clamped[2]);
-      currentPose = readPoseFromGraph();
+      currentPose = lead.readPose();
       invalidate();
     },
     getJointRotation(jointId) {
-      const group = joints.get(jointId);
+      const group = lead.joints().get(jointId);
       if (!group) return [0, 0, 0];
       return [group.rotation.x, group.rotation.y, group.rotation.z];
     },
     selectJoint(jointId) {
       if (disposed) return;
+      // 패널의 관절 탭은 주인공 전용이다 — 주인공 관절을 고르면 조작 대상도 주인공으로 돌아온다.
+      if (jointId && activeFigureId !== "lead") setActiveFigureInternal("lead", true);
       selectedJointId = jointId;
       applySelectionTint();
       invalidate();
@@ -1574,7 +1443,7 @@ export function createStudioMannequinScene(
       currentMaterialStyle = style;
       const previousPalette = materialPalette;
       materialPalette = createStudioMannequinMaterialPalette(style, gradientMap);
-      applySelectionTint();
+      for (const figure of allFigures()) figure.refreshMaterials();
       disposeStudioMannequinMaterialPalette(previousPalette);
       applyOutlineVisibility();
       invalidate();
@@ -1615,15 +1484,7 @@ export function createStudioMannequinScene(
     },
     setCameraPreset(preset) {
       if (disposed) return;
-      const frame = resolveStudioMannequinCameraFrame(spec.heightM, preset);
-      cameraTarget.copy(toVec3(frame.target));
-      activeCamera.position.copy(toVec3(frame.position));
-      activeCamera.lookAt(cameraTarget);
-      if (controls) {
-        controls.target.copy(cameraTarget);
-        controls.update();
-      }
-      if (projection === "orthographic") updateOrthographicFrustum();
+      frameFigures(cameraPresetDirection(preset));
       invalidate();
     },
     setProjection(nextProjection) {
@@ -1642,13 +1503,7 @@ export function createStudioMannequinScene(
     },
     resetCamera() {
       if (disposed) return;
-      const frame = resolveStudioMannequinCameraFrame(spec.heightM);
-      cameraTarget.copy(toVec3(frame.target));
-      activeCamera.position.copy(toVec3(frame.position));
-      activeCamera.lookAt(cameraTarget);
-      if (projection === "orthographic") updateOrthographicFrustum();
-      controls?.target.copy(cameraTarget);
-      controls?.update();
+      frameFigures(cameraPresetDirection("home"));
       invalidate();
     },
     resize(width, height) {
@@ -1663,6 +1518,22 @@ export function createStudioMannequinScene(
     },
     invalidate,
     captureDataUrl,
+    setPartner(next) {
+      if (disposed) return;
+      applyPartner(next);
+    },
+    setActiveFigure(figure) {
+      if (disposed) return;
+      setActiveFigureInternal(figure, true);
+    },
+    setPartnerListener(listener) {
+      partnerListener = listener;
+    },
+    frameAll() {
+      if (disposed) return;
+      frameFigures();
+      invalidate();
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -1678,11 +1549,13 @@ export function createStudioMannequinScene(
       renderer.domElement.removeEventListener("dblclick", handleDoubleClick);
       controls?.dispose();
       controls = null;
+      partnerListener = null;
       for (const child of [...lightingGroup.children]) {
         disposeStudioMannequinLightObject(child);
       }
       lightingGroup.removeFromParent();
-      disposeMannequinGraph();
+      for (const figure of allFigures()) figure.dispose();
+      partner = null;
       clearJointRangeArc();
       rangeArcLineMaterial.dispose();
       rangeArcLimitMaterial.dispose();

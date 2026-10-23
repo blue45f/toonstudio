@@ -84,13 +84,14 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     fireEvent.click(card("교실"));
     expect(onBuild).toHaveBeenCalledTimes(1);
     expect(committed).toHaveLength(1);
-    expect(committed[0]).toHaveLength(99);
+    // 교실은 미닫이문·미서기 창·평천장·걸레받이를 쓴다(2026-10-23, 99 → 134).
+    expect(committed[0]).toHaveLength(134);
     expect(committed[0].every((item) => typeof item.id === "string" && item.id.length > 0)).toBe(true);
   });
 
   it.each([
-    ["교실", 99],
-    ["복도", 39],
+    ["교실", 134],
+    ["복도", 100],
     ["거리", 96],
   ] as const)("%s: 호스트가 넘긴 기존 도형 수와 카메라 뷰로 %i개 도형을 만든다", (label, count) => {
     const { committed } = renderPicker({ existingCount: 7 });
@@ -104,7 +105,7 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     const { committed } = renderPicker({ autoCutaway: false, onShowParts: vi.fn() });
     fireEvent.click(card("교실"));
     expect(committed[0].some((item) => item.visible === false)).toBe(false);
-    expect(screen.getByRole("status").textContent).toBe("교실 추가 완료 · 오브젝트 99개.");
+    expect(screen.getByRole("status").textContent).toBe("교실 추가 완료 · 오브젝트 134개.");
     expect(restoreButton()).toBeNull();
   });
 
@@ -113,9 +114,11 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     fireEvent.click(card("교실"));
     const hidden = committed[0].filter((item) => item.visible === false);
     expect(hidden.length).toBeGreaterThan(0);
-    expect(hidden.every((item) => item.name === "앞벽 벽체")).toBe(true);
+    // 숨긴 벽에 붙은 걸레받이도 함께 숨고, 안내는 벽 이름표(앞벽)로 묶어 센다.
+    expect(hidden.every((item) => item.name?.startsWith("앞벽 "))).toBe(true);
+    expect(hidden.some((item) => item.name === "앞벽 벽체")).toBe(true);
     expect(screen.getByRole("status").textContent).toBe(
-      `교실 추가 완료 · 오브젝트 99개. 시선을 가리는 앞벽 ${hidden.length}조각을 숨겼어요. 아래 '숨긴 벽 되돌리기'나 레이어 목록의 눈 아이콘으로 다시 켤 수 있어요.`,
+      `교실 추가 완료 · 오브젝트 134개. 시선을 가리는 앞벽 ${hidden.length}조각을 숨겼어요. 아래 '숨긴 벽 되돌리기'나 레이어 목록의 눈 아이콘으로 다시 켤 수 있어요.`,
     );
     expect(restoreButton()).toBeTruthy();
   });
@@ -124,10 +127,13 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     const { committed } = renderPicker({ autoCutaway: true, view: CORNER_OUTSIDE, onShowParts: vi.fn() });
     fireEvent.click(card("복도"));
     const count = (name: string) => committed[0].filter((item) => item.visible === false && item.name === name).length;
+    // 벽 이름표로 묶은 수: 벽체 조각 + 그 벽의 창틀·창짝·문틀·걸레받이.
+    const group = (wall: string) => committed[0].filter((item) => item.visible === false && item.name?.startsWith(`${wall} `)).length;
     expect(count("앞벽 벽체")).toBeGreaterThan(1);
     expect(count("오른벽 벽체")).toBeGreaterThan(0);
+    expect(group("앞벽")).toBeGreaterThan(count("앞벽 벽체"));
     expect(screen.getByRole("status").textContent).toContain(
-      `시선을 가리는 앞벽 ${count("앞벽 벽체")}조각·오른벽 ${count("오른벽 벽체")}조각을 숨겼어요.`,
+      `시선을 가리는 앞벽 ${group("앞벽")}조각·오른벽 ${group("오른벽")}조각을 숨겼어요.`,
     );
   });
 
@@ -140,7 +146,7 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     expect(onShowParts).toHaveBeenCalledTimes(1);
     expect(onShowParts).toHaveBeenCalledWith(hiddenIds);
     expect(screen.getByRole("status").textContent).toBe(
-      `교실 추가 완료 · 오브젝트 99개. 숨겼던 앞벽 ${hiddenIds.length}조각을 다시 보이게 했어요.`,
+      `교실 추가 완료 · 오브젝트 134개. 숨겼던 앞벽 ${hiddenIds.length}조각을 다시 보이게 했어요.`,
     );
     expect(restoreButton()).toBeNull();
   });
@@ -176,7 +182,7 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     const { committed } = renderPicker({ autoCutaway: true, view: INSIDE, onShowParts: vi.fn() });
     fireEvent.click(card("복도"));
     expect(committed[0].some((item) => item.visible === false)).toBe(false);
-    expect(screen.getByRole("status").textContent).toBe("복도 추가 완료 · 오브젝트 39개.");
+    expect(screen.getByRole("status").textContent).toBe("복도 추가 완료 · 오브젝트 100개.");
     expect(restoreButton()).toBeNull();
   });
 
@@ -240,7 +246,7 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     const onBuild = vi.fn((buildParts: StudioBg3dWebtoonBuildParts) => buildParts(0, OUTSIDE_SOUTH));
     render(<StudioBg3dWebtoonBackgroundPicker autoCutaway={false} onAutoCutawayChange={vi.fn()} onBuild={onBuild} />);
     fireEvent.click(card("복도"));
-    expect(screen.getByRole("status").textContent).toBe("복도 추가 완료 · 오브젝트 39개.");
+    expect(screen.getByRole("status").textContent).toBe("복도 추가 완료 · 오브젝트 100개.");
   });
 
   it("두 번째 추가는 첫 번째 안내를 새 안내로 바꾼다", () => {

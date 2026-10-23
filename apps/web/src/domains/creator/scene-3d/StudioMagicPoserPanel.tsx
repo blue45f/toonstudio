@@ -6,8 +6,8 @@
  * 카메라 등을 즉시 적용하고, VRM 표정은 `onApplyExpression` 콜백으로 전달합니다.
  *
  * - MP1: 손 프리셋 50종 갤러리 + 손가락 컬 슬라이더 + 좌우 미러
- * - MP2: 포즈 강도 슬라이더(중립↔프리셋 블렌딩)
- * - MP3: 라이팅 스튜디오(조명 3종·시간대 프리셋·그림자·LT 명암 힌트)
+ * - MP2: 포즈 강도 슬라이더(지금 포즈 ↔ 중립 블렌딩). 포즈 고르기는 포즈 탭의 통합 라이브러리가 맡는다.
+ * - MP3: 라이팅 스튜디오(조명 3종·시간대 프리셋·그림자·LT 명암 힌트). 표시값은 씬의 실제 계획을 따른다.
  * - MP4: 카메라 북마크 저장·복원 + FOV 슬라이더
  * - MP5: 신체 모프(근육·체지방·슬림) + 두신 프리셋 4종
  * - MP6: 포즈 복제(깊은 복사·붙여넣기)
@@ -15,7 +15,7 @@
  * - MP8: VRM 표정 블렌드셰이프 콤보·강도
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useMemo, useRef, useState, type ReactElement } from "react";
 import { Hand, Pin, Redo2, Undo2 } from "lucide-react";
 
 import {
@@ -66,8 +66,8 @@ import {
   STUDIO_MANNEQUIN_TIME_OF_DAY_LABELS,
   applyStudioMannequinTimeOfDay,
   createStudioMannequinLightingRig,
+  describeStudioMannequinLightingReadout,
   setStudioMannequinShadows,
-  studioMannequinLightingToToneHint,
   type StudioMannequinLightingRig,
   type StudioMannequinTimeOfDay,
 } from "./studio-mannequin-lighting";
@@ -89,12 +89,7 @@ import {
   type StudioBodyMorph,
   type StudioHeadRatioPresetId,
 } from "./studio-body-morphs";
-import {
-  applyStudioPoseIntensity,
-  clampStudioPoseIntensity,
-  STUDIO_POSE_INTENSITY_MAX,
-  STUDIO_POSE_INTENSITY_MIN,
-} from "./studio-pose-intensity";
+import { StudioMagicPoserIntensitySection } from "./StudioMagicPoserIntensitySection";
 import { cloneStudioMannequinPose } from "./studio-pose-clone";
 import { STUDIO_MANNEQUIN_HANDLE_GUIDES } from "./studio-handle-guides";
 import {
@@ -103,11 +98,6 @@ import {
   findStudioVrmExpressionCombo,
   type StudioVrmExpressionWeights,
 } from "./studio-vrm-expressions";
-import {
-  convertWebtoonPresetToMannequinPose,
-} from "./studio-webtoon-pose-mannequin-adapter";
-import { getWebtoonPosePresetById } from "./studio-3d-advanced-poses-library";
-import { StudioWebtoonPosePresetGrid } from "./StudioWebtoonPosePresetGrid";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -152,6 +142,10 @@ export interface StudioMagicPoserPanelProps {
    * 반영합니다. 없으면 FOV만 패널 내부 상태로 복원됩니다.
    */
   readonly onApplyCameraBookmark?: (bookmark: StudioCameraBookmark) => void;
+  /** 호스트의 현재 포즈(포즈 강도가 다른 경로의 포즈 변경을 알아채는 근거). */
+  readonly currentPose?: StudioMannequinPose;
+  /** 호스트가 되돌리기를 소유하면 패널 자체 되돌리기 줄을 숨기고 기록도 호스트에 맡긴다. */
+  readonly hostOwnsHistory?: boolean;
   readonly className?: string;
 }
 
@@ -359,6 +353,8 @@ export function StudioMagicPoserPanel({
   onApplyExpression,
   onBodyMorphChange,
   onApplyCameraBookmark,
+  currentPose,
+  hostOwnsHistory = false,
   className,
 }: StudioMagicPoserPanelProps): ReactElement {
   const [tab, setTab] = useState<MagicPoserTab>("pose");
@@ -368,10 +364,6 @@ export function StudioMagicPoserPanel({
   const [historySnapshot, setHistorySnapshot] =
     useState<StudioPoseHistory>(historyRef.current);
   const historyGestureRecordedRef = useRef(false);
-
-  // MP2 포즈 강도
-  const [intensity, setIntensity] = useState(100);
-  const [lastPresetId, setLastPresetId] = useState<string | null>(null);
   const [lastAppliedHandId, setLastAppliedHandId] = useState<string | null>(null);
 
   // MP1 손
@@ -395,9 +387,10 @@ export function StudioMagicPoserPanel({
     little: 0,
   });
 
-  // MP3 라이팅
-  const [lightingRig, setLightingRig] = useState<StudioMannequinLightingRig>(() =>
-    createStudioMannequinLightingRig(),
+  // MP3 라이팅 — 씬에 이미 적용된 릭에서 시작한다(null = 기본 3점 리그). 빈 릭으로 시작해
+  // 탭을 열 때마다 씬 조명을 기본값으로 덮어쓰고 "조명 0개"로 표시하던 문제를 막는다.
+  const [lightingRig, setLightingRig] = useState<StudioMannequinLightingRig | null>(
+    () => scene?.getLightingRig?.() ?? null,
   );
 
   // MP4 카메라
@@ -447,27 +440,14 @@ export function StudioMagicPoserPanel({
 
   const handPinnedSet = useMemo(() => new Set(handFavorites), [handFavorites]);
 
-  const toneHint = useMemo(() => {
-    const hint = studioMannequinLightingToToneHint(lightingRig);
-    const contrastPct = Math.round(hint.contrast * 100);
-    return `주광 명암 ${contrastPct}% · 그림자 ${hint.shadows ? "켬" : "끔"}`;
-  }, [lightingRig]);
-
-  // MP3 실연결: 릭이 바뀔 때마다(마운트·시간대 프리셋·그림자 토글) 씬 핸들로
-  // 그대로 전달한다. 이전에는 패널 상태만 바뀌고 실제 뷰포트 조명은 고정
-  // 3점 리그로 남아 있어, 스튜디오 설정과 화면이 어긋나는 격차가 있었다.
-  useEffect(() => {
-    scene?.setLightingRig?.(lightingRig);
-  }, [scene, lightingRig]);
+  // 표시값은 씬과 같은 계획에서 읽는다 — 기본 3점 리그면 "3 / 4"와 그 명암을 그대로 말한다.
+  const lightingReadout = useMemo(() => describeStudioMannequinLightingReadout(lightingRig), [lightingRig]);
 
   const historyDescription = useMemo(
     () => describeStudioPoseHistory(historySnapshot),
     [historySnapshot],
   );
 
-  const lastPresetName = lastPresetId
-    ? getWebtoonPosePresetById(lastPresetId)?.name ?? lastPresetId
-    : null;
   const lastHandName = lastAppliedHandId
     ? getStudioMannequinHandPreset(lastAppliedHandId)?.name ?? lastAppliedHandId
     : null;
@@ -476,9 +456,9 @@ export function StudioMagicPoserPanel({
     scene?.setPose(pose);
   }
 
-  /** 사용자 결정(프리셋 적용·슬라이더 제스처) 직전에 현재 포즈를 히스토리에 기록한다. */
+  /** 사용자 결정(프리셋 적용·슬라이더 제스처) 직전에 현재 포즈를 히스토리에 기록한다. 호스트 소유면 호스트가 기록한다. */
   function pushPoseHistory(): void {
-    if (!scene) return;
+    if (!scene || hostOwnsHistory) return;
     historyRef.current = recordStudioPoseHistory(historyRef.current, scene.getPose());
     setHistorySnapshot(historyRef.current);
   }
@@ -510,36 +490,6 @@ export function StudioMagicPoserPanel({
     historyRef.current = step.history;
     setHistorySnapshot(step.history);
     scene.setPose(step.pose);
-  }
-
-  function handleApplyWebtoonPreset(presetId: string): void {
-    const preset = getWebtoonPosePresetById(presetId);
-    if (!preset) return;
-    pushPoseHistory();
-    const mannequinPose = convertWebtoonPresetToMannequinPose(preset);
-    const blended = applyStudioPoseIntensity(mannequinPose, intensity);
-    applyPoseToScene(blended);
-    setLastPresetId(presetId);
-    resetHistoryGesture();
-  }
-
-  function handleIntensityChange(value: number): void {
-    const clamped = clampStudioPoseIntensity(value);
-    setIntensity(clamped);
-    if (lastPresetId) {
-      pushPoseHistoryOncePerGesture();
-      handleApplyWebtoonPresetWithoutHistory(lastPresetId, clamped);
-    }
-  }
-
-  /** 히스토리 기록 없이 프리셋을 다시 적용한다(강도 슬라이더 내부용). */
-  function handleApplyWebtoonPresetWithoutHistory(presetId: string, intensityValue: number): void {
-    const preset = getWebtoonPosePresetById(presetId);
-    if (!preset) return;
-    const mannequinPose = convertWebtoonPresetToMannequinPose(preset);
-    const blended = applyStudioPoseIntensity(mannequinPose, intensityValue);
-    applyPoseToScene(blended);
-    setLastPresetId(presetId);
   }
 
   function handleApplyHandPreset(preset: StudioMannequinHandPreset): void {
@@ -596,14 +546,21 @@ export function StudioMagicPoserPanel({
     }
   }
 
+  /** 릭 교체는 사용자가 고를 때만 씬에 보낸다(탭을 여는 것만으로 씬 조명을 바꾸지 않는다). */
+  function commitLightingRig(next: StudioMannequinLightingRig): void {
+    setLightingRig(next);
+    scene?.setLightingRig?.(next);
+  }
+
   function handleTimeOfDay(time: StudioMannequinTimeOfDay): void {
-    // 시간대 프리셋은 릭을 통째로 교체한다 (인자 1개). 교체된 릭은 위
-    // useEffect가 씬 핸들의 setLightingRig로 전달해 뷰포트에 반영한다.
-    setLightingRig(applyStudioMannequinTimeOfDay(time));
+    // 시간대 프리셋은 릭을 통째로 교체한다 (인자 1개).
+    commitLightingRig(applyStudioMannequinTimeOfDay(time));
   }
 
   function handleToggleShadows(): void {
-    setLightingRig((rig) => setStudioMannequinShadows(rig, !rig.shadowsEnabled));
+    // 기본 3점 리그(null)도 빈 릭의 그림자 플래그로 켜고 끈다.
+    const base = lightingRig ?? createStudioMannequinLightingRig();
+    commitLightingRig(setStudioMannequinShadows(base, !lightingReadout.shadowsEnabled));
   }
 
   function handleSaveBookmark(): void {
@@ -681,7 +638,9 @@ export function StudioMagicPoserPanel({
         ))}
       </div>
 
-      {/* 되돌리기/다시실행 — 사용자 결정 단위 히스토리. 상태가 숫자로 보인다. */}
+      {/* 되돌리기/다시실행 — 사용자 결정 단위 히스토리. 호스트(데생 인형 패널)가 되돌리기를
+          소유하면 같은 줄을 두 번 보이지 않도록 숨기고, 기록은 호스트 히스토리 한 곳에 쌓인다. */}
+      {hostOwnsHistory ? null : (
       <div className="flex flex-wrap items-center gap-1.5" aria-label="포즈 변경 히스토리">
         <button
           type="button"
@@ -707,41 +666,16 @@ export function StudioMagicPoserPanel({
           되돌리기 {historyDescription.undoCount} · 다시실행 {historyDescription.redoCount}
         </span>
       </div>
+      )}
 
+      {/* 포즈 고르기는 포즈 탭의 통합 라이브러리 한 곳이 맡는다(같은 그리드를 두 번 두지 않는다). */}
       {tab === "pose" && (
-        <section aria-label="포즈 프리셋">
-          <StudioPoseFirstRunGuide
-            scope="magic-poser-pose"
-            icon={Hand}
-            title="포즈 프리셋 — 10초 가이드"
-            steps={[
-              { ko: "포즈 카드를 클릭하면 3D 캐릭터에 바로 적용됩니다 (실시간 미리보기).", en: "Click a pose card to apply it to the 3D character instantly." },
-              { ko: "강도 슬라이더로 중립↔프리셋 사이를 블렌딩하세요.", en: "Blend between neutral and the preset with the intensity slider." },
-              { ko: "핀으로 즐겨찾기를 고정하면 위에서 바로 꺼내 쓸 수 있습니다.", en: "Pin favorites to reach them quickly at the top." },
-            ]}
-          />
-          <StudioSectionHeader
-            title="포즈 프리셋 갤러리"
-            description="카드를 누르면 3D 캐릭터에 바로 적용됩니다. 강도 슬라이더로 중립↔프리셋을 블렌딩하세요."
-          />
-          <div className="mb-2" onPointerDownCapture={resetHistoryGesture}>
-            <StudioSliderRow
-              label="포즈 강도"
-              min={STUDIO_POSE_INTENSITY_MIN}
-              max={STUDIO_POSE_INTENSITY_MAX}
-              step={1}
-              value={intensity}
-              onChange={handleIntensityChange}
-              readout={`${intensity}%`}
-            />
-          </div>
-          <p role="status" className="mb-2 text-[0.66rem] text-fg-3">
-            {lastPresetName
-              ? frozenStatus4Text("studio.frozenStatus4.magic.poseApplied", { name: lastPresetName, intensity }, "적용된 포즈: {name} · 강도 {intensity}%")
-              : frozenStatus4Text("studio.frozenStatus4.magic.poseNone", "아직 적용된 포즈가 없습니다. 카드를 클릭해 보세요.")}
-          </p>
-          <StudioWebtoonPosePresetGrid onApplyPreset={handleApplyWebtoonPreset} />
-        </section>
+        <StudioMagicPoserIntensitySection
+          scene={scene}
+          currentPose={currentPose}
+          onBeforeChange={pushPoseHistoryOncePerGesture}
+          onGestureStart={resetHistoryGesture}
+        />
       )}
 
       {tab === "hand" && (
@@ -888,28 +822,38 @@ export function StudioMagicPoserPanel({
             title="라이팅 스튜디오"
             description="시간대 프리셋과 그림자 옵션을 조절하세요. LT 명암 힌트는 선화 변환 시 참고값입니다."
           />
-          <div className="mb-2 flex flex-wrap gap-1.5">
+          <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="조명 프리셋">
+            <StudioToggleChip
+              active={lightingReadout.usesDefaultRig}
+              onClick={() => commitLightingRig(createStudioMannequinLightingRig())}
+              title="처음 열 때의 기본 3점 조명(키·필·림)으로 되돌립니다."
+            >
+              기본 3점
+            </StudioToggleChip>
             {TIME_OF_DAY_ORDER.map((time) => (
               <StudioToggleChip
                 key={time}
-                active={lightingRig.timeOfDay === time}
+                active={lightingReadout.activeTimeOfDay === time}
                 onClick={() => handleTimeOfDay(time)}
               >
                 {STUDIO_MANNEQUIN_TIME_OF_DAY_LABELS[time]}
               </StudioToggleChip>
             ))}
-            <StudioToggleChip active={lightingRig.shadowsEnabled} onClick={handleToggleShadows}>
-              그림자 {lightingRig.shadowsEnabled ? "켬" : "끔"}
+            <StudioToggleChip active={lightingReadout.shadowsEnabled} onClick={handleToggleShadows}>
+              그림자 {lightingReadout.shadowsEnabled ? "켬" : "끔"}
             </StudioToggleChip>
           </div>
           <dl className="rounded-lg border p-3 text-xs">
             <div className="flex justify-between py-0.5">
               <dt className="text-fg-3">조명 수</dt>
-              <dd>{lightingRig.lights.length} / 4</dd>
+              <dd>
+                {lightingReadout.lightCount} / {lightingReadout.maxLights}
+                {lightingReadout.usesDefaultRig ? " (기본 3점 조명)" : ""}
+              </dd>
             </div>
             <div className="flex justify-between py-0.5">
               <dt className="text-fg-3">LT 명암 힌트</dt>
-              <dd>{toneHint}</dd>
+              <dd>주광 명암 {lightingReadout.contrastPercent}% · 그림자 {lightingReadout.shadowsEnabled ? "켬" : "끔"}</dd>
             </div>
           </dl>
           <p role="status" className="mt-2 text-[0.66rem] text-fg-3">

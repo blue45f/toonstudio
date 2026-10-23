@@ -27,6 +27,7 @@
 14. 위험
 15. 부록 — 내가 실행해 확인한 것
 16. 부록 B — KT-04 엔진 통합 결과
+17. 부록 C — 키트 v2(`toonstudio.character-kit/2`) 계약 요약(2026-10-23)
 
 ---
 
@@ -898,3 +899,31 @@ pnpm run verify:character-kit -- [--root apps/character-lab/public/assets/charac
 - 외곽선 정책은 A-5(눈·입 안 계열)에 **A-9(머리)** 가 더해져 확정됐다(4.8). 위 "결정은 리드 몫"은 닫혔다.
 - 안경은 프레임만(A-8, 3.6·4.9), 키트 툰 기본 셰이딩은 램프 2단·림 끔(A-10, 3.9), 부팅 기본 소스는 키트 에셋 안착 전까지 절차(6절 1항).
 - 키트 소스에서 켜지는 기능 중 **브라우저에서만 확인되는 것**의 목록은 `docs/parity/render.md` §10.2(WGSL 컴파일, 앱 뷰포트의 머리 윤곽·가림, 썸네일 임시 리그 비용 R5, `instantiateModelsToScene` 복제, NodeMaterial 툰/toon-reference의 정점색 AO·알파 컷오프 미구현, BLEND 미지원)에 있다.
+
+## 17. 부록 C — 키트 v2(`toonstudio.character-kit/2`) 계약 요약(2026-10-23)
+
+상태: **target — 스키마·정합성 규칙만 구현**(CORE-1, `src/contracts/character-kit-v2.ts`). 로더(`kit-loader-v2`)·계획기(`domains/authored/kit-plan`)·
+엔진 반영·검증기 V21~V24는 후속 WP(A-1·R-3b·B-1·I-1)다. v1 매니페스트는 `parseKitManifest`가 그대로 읽고, `parseAnyKitManifest`가 `schema` 문자열로
+v1·v2 파서를 고른다(모르는 schema는 대체 없이 `kit-manifest-invalid`). v1 스켈레톤·관절 오프셋·출처 검증은 v1·v2가 같은 코드를 쓴다
+(`kit-skeleton.ts`·`kit-provenance.ts`, character-kit.ts에서 옮김 — 규칙·문구 변경 없음).
+
+| 항목 | v1 | v2 |
+| --- | --- | --- |
+| 재질 | `{ role, tint: recolor{colorKey}·fixed{hex}, doubleSided }` | `{ role, channel?, tint: recolor·fixed{hex}, doubleSided }`. 칠할 채널이 있는 역할(`PART_ROLE_CHANNELS`)은 recolor + 허용 채널, 없는 역할(눈 하이라이트·치아·혀·속옷)은 fixed + 채널 없음 |
+| 재질 개수 규칙 | (파츠, 역할)당 1(kit-material-multiple) | (파일, 역할, 채널)당 1. 채널 경계 = 프리미티브(면) 경계라 마스크 텍스처 불필요 |
+| 안구 | fixed | `sclera` 채널 recolor |
+| morph | param·facs 64 어휘만 | + `shape:<이름>:±`(변형 `shapes`에 선언한 이름만, 변형당 이름 ≤ 8, 메시당 타깃 ≤ 96) |
+| 층 | 없음 | `layerVariants[베이스][층]`: top/* → inner·outer, bottom/* → legwear. 층 변형 메시 역할 = 층 이름, 채널 = 층 채널(`LAYER_CHANNEL_MAP`) |
+| 소품 | 스킨 메시만 | 액세서리 슬롯 변형은 강체(`skinned: false`) 허용 + 기본 `anchor`(앵커 14). 헤어 부속은 역할 `hair-accessory`(액세서리 슬롯) |
+| UV1 메타 | 없음 | 메시 `uv1`: `pattern{cmPerUnit}`(패턴 실제 크기 환산) 또는 `hair-flow`(V = 뿌리 0 → 끝 1) |
+| 베이스 | — | `headHeightM`(두신 = heightM ÷ headHeightM), `anchors{앵커 → joint + offsetM}`, `headRegionMask{file, width, height, channels{lip·blush → r·g·b·a}}` |
+| 노드 이름 | `TS_Top_<이름>` 등 정확히 | `<접두>_<이름>` + 선택 채널 접미(`_Trim`·`_Accent`·`_Sole` …). 접두: TS_Top·TS_Bottom·TS_Shoes·TS_Accessory·TS_HairAccessory·TS_Inner·TS_Outer·TS_Legwear. 헤어·홍채는 v1과 같다 |
+| 예산 | `KIT_BUDGET` 사본 | `KIT_V2_BUDGET`(= v1 + `maxShapesPerVariant: 8`) 사본. 층·소품·화풍 베이스로 activeWorst·총량 초과 위험(O3)은 소유자 결정 |
+
+채널 이름 규약(B-1 포지 산출물과 맞춤):
+
+- 포지 보고서의 "역할" 이름 `top-trim`·`outer-accent`·`shoes-sole`·`shoes-lace`·`hair-tip`·`hair-accent`·`hair-accessory-accent`는 계약의 **채널**이다.
+  메시 역할은 `top`·`outer`·`shoes`·`hair`·`hair-accessory` 그대로 두고 재질 `channel`에 채널 이름을 쓴다.
+- 채널 키는 kebab-case다. 포지 제안 colorKey `hairTip`·`hairAccent`는 계약에서 `hair-tip`·`hair-accent`다.
+- 형태 이름은 소문자로 시작하는 camelCase 또는 kebab-case(24자 이하)다 — 포지의 `sideLength`가 그대로 유효하다.
+- 27채널 상속 표·라벨은 `src/contracts/color-channels.ts`가 단일 기준이다. 채널을 모르는 v2 엔진·메시는 계열 기본 키(`CHANNEL_FAMILY`)로 칠한다.

@@ -4,6 +4,7 @@ import {
   addStudioMannequinLight,
   applyStudioMannequinTimeOfDay,
   createStudioMannequinLightingRig,
+  describeStudioMannequinLightingReadout,
   removeStudioMannequinLight,
   resolveStudioMannequinLightingPlan,
   setStudioMannequinShadows,
@@ -146,5 +147,42 @@ describe("studio mannequin lighting", () => {
     const length = Math.hypot(...hint.keyLightDirection);
     expect(length).toBeCloseTo(1, 10);
     expect(hint.shadows).toBe(true);
+  });
+});
+
+describe("라이팅 스튜디오 표시값 (B-12)", () => {
+  it("릭이 없으면 실제 뷰포트의 기본 3점 리그를 그대로 말한다(조명 0개·명암 0%가 아니다)", () => {
+    for (const rig of [null, createStudioMannequinLightingRig()]) {
+      const readout = describeStudioMannequinLightingReadout(rig);
+      expect(readout.lightCount).toBe(STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN.lights.length);
+      expect(readout.lightCount).toBe(3);
+      expect(readout.maxLights).toBe(STUDIO_MANNEQUIN_MAX_LIGHTS);
+      expect(readout.usesDefaultRig).toBe(true);
+      // 기본 키 라이트 1.45 ÷ (1.45 + 0.42 + 0.28) ≈ 67%.
+      expect(readout.contrastPercent).toBe(67);
+      expect(readout.shadowsEnabled).toBe(true);
+      expect(readout.activeTimeOfDay).toBeNull();
+    }
+  });
+
+  it("시간대 프리셋 릭은 그 릭의 조명 수·시간대·명암을 말한다", () => {
+    const night = describeStudioMannequinLightingReadout(applyStudioMannequinTimeOfDay("night"));
+    expect(night.lightCount).toBe(2);
+    expect(night.usesDefaultRig).toBe(false);
+    expect(night.activeTimeOfDay).toBe("night");
+    expect(night.shadowsEnabled).toBe(false);
+    const noon = describeStudioMannequinLightingReadout(applyStudioMannequinTimeOfDay("noon"));
+    expect(noon.contrastPercent).toBe(100);
+  });
+
+  it("빈 릭의 그림자 끔은 기본 조명에서 그림자만 끈 계획이 된다", () => {
+    const rig = setStudioMannequinShadows(createStudioMannequinLightingRig(), false);
+    const plan = resolveStudioMannequinLightingPlan(rig);
+    expect(plan.isDefault).toBe(true);
+    expect(plan.shadowsEnabled).toBe(false);
+    expect(plan.lights.map((light) => light.intensity)).toEqual([1.45, 0.42, 0.28]);
+    expect(plan.lights.every((light) => !light.castShadow)).toBe(true);
+    expect(plan.hemisphere?.intensity).toBe(0.95);
+    expect(describeStudioMannequinLightingReadout(rig).shadowsEnabled).toBe(false);
   });
 });

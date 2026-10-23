@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultRecipe, createEmptyRaster, createKitDefaultRecipe, createPresetCatalog } from "../contracts";
+import { LOOK_V2_IDENTITY, createDefaultRecipe, createEmptyRaster, createKitDefaultRecipe, createPresetCatalog, mergeLook } from "../contracts";
 import { presetEntryFixture, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
 
 import { THUMBNAIL_CACHE_DEFAULT_LIMIT, createThumbnailCache, thumbnailCacheKey } from "./thumbnail-cache";
@@ -33,13 +33,16 @@ describe("state/thumbnail-cache", () => {
     expect(thumbnailCacheKey("hair/twin-tail", { ...base, body: { height: 0.3 } }, "pbr")).not.toBe(key);
   });
 
-  it("paint 레이어·셰이딩 모드 외 셰이딩 옵션은 키에 영향을 주지 않는다", () => {
+  it("paint 레이어·후처리 옵션, 그리고 PBR 모드의 툰 옵션·look은 키에 영향을 주지 않는다", () => {
     const base = createDefaultRecipe();
     const key = thumbnailCacheKey("eyes/round", base, "pbr");
     const painted = { ...base, paint: { layers: [{ part: "skin" as const, width: 2, height: 2, pngBase64: "AAAA" }] } };
     expect(thumbnailCacheKey("eyes/round", painted, "pbr")).toBe(key);
     const bloom = { ...base, shading: { ...base.shading, postfx: { ...base.shading.postfx, bloom: true } } };
     expect(thumbnailCacheKey("eyes/round", bloom, "pbr")).toBe(key);
+    // PBR은 툰 필드·look을 그리지 않는다(엔진 외곽선·툰 재질 경로) — 바꿔도 같은 키
+    const toonEdited = { ...base, shading: { ...base.shading, toon: { ...base.shading.toon, rampSteps: 2 as const, rim: false }, look: mergeLook(base.shading.look, { line: { widthMm: 7 } }) } };
+    expect(thumbnailCacheKey("eyes/round", toonEdited, "pbr")).toBe(key);
   });
 
   it("카탈로그를 주면 그 프리셋의 patch가 덮어쓰는 파라미터·색은 키에서 제외된다", () => {
@@ -122,6 +125,65 @@ describe("state/thumbnail-cache", () => {
       const v2 = createDefaultRecipe();
       const v1Like = { ...v2, version: 1 } as unknown as typeof v2;
       expect(thumbnailCacheKey("hair/soft-bob", v1Like, "pbr", CATALOG)).toBe(thumbnailCacheKey("hair/soft-bob", v2, "pbr", CATALOG));
+    });
+  });
+
+  describe("레시피 v3·화풍 카드(2026-10-23 S-1)", () => {
+    it("그림을 바꾸는 v3 값(상속 채널 지정색·옷장·형태 값·표면·헤어 흐름·비례·중립 표정)이 바뀌면 키가 바뀐다", () => {
+      const base = createDefaultRecipe();
+      const key = thumbnailCacheKey("hair/soft-bob", base, "toon", CATALOG);
+      const variants: ReadonlyArray<readonly [string, typeof base]> = [
+        ["상속 채널 지정색", { ...base, colors: { ...base.colors, lip: "#aa3344" } }],
+        ["아우터 층", { ...base, wardrobe: { ...base.wardrobe, outer: "top/blazer" } }],
+        [
+          "추가 소품",
+          { ...base, wardrobe: { ...base.wardrobe, accessories: [{ id: "acc-1", presetId: "accessory/ribbon", anchor: "hair", offset: { tMm: [0, 0, 0], rDeg: [0, 0, 0], scale: 1 } }] } },
+        ],
+        ["형태 값", { ...base, partParams: { hair: { length: 0.4 } } }],
+        ["표면", { ...base, surfaces: { top: { material: "cloth-knit", pattern: null } } }],
+        ["헤어 흐름", { ...base, hairColor: { gradient: [0.4, 1], tipMix: 0.5, accent: "inner" } }],
+        ["비례", { ...base, style: { ...base.style, proportion: { headsTall: 3, legRatio: 0.3, armRatio: 0.33, shoulderHeads: 1.2, headWidthRatio: 1, handScale: 0.8 } } }],
+        ["중립 표정", { ...base, style: { ...base.style, neutralFacs: { mouthSmile: 0.2 } } }],
+      ];
+      for (const [label, recipe] of variants) expect(thumbnailCacheKey("hair/soft-bob", recipe, "toon", CATALOG), label).not.toBe(key);
+    });
+
+    it("화풍 출처(packId·packRevision)만 바뀌면 키는 그대로다(값은 이미 레시피에 복사돼 있다 — copy-on-apply)", () => {
+      const base = createDefaultRecipe();
+      const tagged = { ...base, style: { ...base.style, packId: "kr-webtoon-romance" as const, packRevision: 3 } };
+      expect(thumbnailCacheKey("hair/soft-bob", tagged, "toon", CATALOG)).toBe(thumbnailCacheKey("hair/soft-bob", base, "toon", CATALOG));
+    });
+
+    it("툰 모드에서는 툰 4필드와 look이 키에 들어간다", () => {
+      const base = createDefaultRecipe();
+      const key = thumbnailCacheKey("top/tee", base, "toon", CATALOG);
+      expect(thumbnailCacheKey("top/tee", { ...base, shading: { ...base.shading, toon: { ...base.shading.toon, rim: false } } }, "toon", CATALOG)).not.toBe(key);
+      expect(thumbnailCacheKey("top/tee", { ...base, shading: { ...base.shading, look: mergeLook(base.shading.look, { tone: { kind: "halftone", strength: 0.5 } }) } }, "toon", CATALOG)).not.toBe(key);
+    });
+
+    it("화풍 카드(options.shading): 팩마다 키가 달라 서로 덮어쓰지 않고, 같은 셰이딩이면 같은 키, 일반 카드와 겹치지 않으며 레시피 셰이딩은 무시한다", () => {
+      const base = createDefaultRecipe();
+      const shadingFor = (widthMm: number, rampSteps: 2 | 3) => ({ ...base.shading, mode: "toon" as const, toon: { ...base.shading.toon, rampSteps }, look: mergeLook(LOOK_V2_IDENTITY, { line: { widthMm } }) });
+      const cel = thumbnailCacheKey("body/standard", base, "pbr", CATALOG, { shading: shadingFor(3, 2) });
+      const ink = thumbnailCacheKey("body/standard", base, "pbr", CATALOG, { shading: shadingFor(6.5, 2) });
+      const soft = thumbnailCacheKey("body/standard", base, "pbr", CATALOG, { shading: shadingFor(3, 3) });
+      expect(new Set([cel, ink, soft]).size).toBe(3);
+      expect(thumbnailCacheKey("body/standard", base, "pbr", CATALOG, { shading: shadingFor(3, 2) })).toBe(cel);
+      expect(cel.startsWith("body/standard|toon|style|")).toBe(true);
+      // 화풍 카드 키는 같은 프리셋·같은 툰 셰이딩의 일반 카드 키와 다르다
+      const sameAsRecipe = { ...base, shading: shadingFor(3, 2) };
+      expect(thumbnailCacheKey("body/standard", sameAsRecipe, "toon", CATALOG)).not.toBe(cel);
+      // 화풍 카드는 레시피 셰이딩(지금 그리는 툰 값)을 보지 않는다
+      const otherRecipeShading = { ...base, shading: { ...base.shading, mode: "toon" as const, toon: { ...base.shading.toon, rim: false } } };
+      expect(thumbnailCacheKey("body/standard", otherRecipeShading, "toon", CATALOG, { shading: shadingFor(3, 2) })).toBe(cel);
+    });
+
+    it("카탈로그 patch가 덮어쓰는 기본 색은 키에서 빠져도 직접 지정한 상속 채널 색은 남는다", () => {
+      const base = createDefaultRecipe();
+      const edited = { ...base, colors: { ...base.colors, skin: "#000000" } };
+      expect(thumbnailCacheKey("face-shape/heart", edited, "pbr", CATALOG)).toBe(thumbnailCacheKey("face-shape/heart", base, "pbr", CATALOG));
+      const lip = { ...edited, colors: { ...edited.colors, lip: "#aa3344" } };
+      expect(thumbnailCacheKey("face-shape/heart", lip, "pbr", CATALOG)).not.toBe(thumbnailCacheKey("face-shape/heart", edited, "pbr", CATALOG));
     });
   });
 
