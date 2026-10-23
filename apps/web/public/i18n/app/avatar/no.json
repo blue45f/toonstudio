@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Ustøttede bildetype.",
-  "avatar.error.processFailed": "- Jeg har ikke behandlet bildet.",
+  "avatar.error.invalidType": "Ikke støttet bildetype.",
+  "avatar.error.processFailed": "Kunne ikke behandle bildet. Prøv igjen med et annet bilde.",
   "avatar.processing": "Behandling...",
   "avatar.select": "Endre bilde",
   "avatar.remove": "Fjern bilde",
-  "avatar.uploadHint": "Bare JPG, PNG og WEBP bilder støttes, deretter skåret for forhåndsvisning.",
+  "avatar.uploadHint": "Kun JPG-, PNG- og WEBP-bilder støttes, og de beskjæres deretter for forhåndsvisning.",
   "avatar.changeAria": "Endre profilbilde"
 }
