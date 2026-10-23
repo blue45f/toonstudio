@@ -45,12 +45,21 @@ import {
   writeAntigravityMcpConfig,
   writeClaudeDesktopMcpConfig,
 } from "./lib/varco3d-runtime.mts";
+import {
+  isHttpCreditsExhausted,
+  runVarco3dWorldbuildBatch,
+  synthesizeDeterministicGlb,
+  VARCO3D_WEBTOON_WORLDBUILD_MANIFEST,
+  type Varco3dWorldbuildAssetSpec,
+  type WebtoonUniverseId,
+} from "./lib/varco3d-worldbuild.mts";
 
 export {
   type DccBridgeName,
   encodeMultipartFormData,
   inferImageMimeType,
   inspectMcpSetup,
+  isHttpCreditsExhausted,
   type LoadConfigOptions,
   loadVarco3dConfig,
   parseEnvFile,
@@ -59,7 +68,9 @@ export {
   REPO_ROOT,
   requireApiKey,
   requestVarco3dJson,
-   validatePolygonCount,
+  runVarco3dWorldbuildBatch,
+  synthesizeDeterministicGlb,
+  validatePolygonCount,
   type Varco3dApiProvider,
   type Varco3dResolvedConfig,
   VARCO3D_ANIMATION_CATALOG,
@@ -74,6 +85,9 @@ export {
   VARCO3D_FLOW_NODE_CATALOG,
   VARCO3D_MCP_FLOW_TOOLS,
   VARCO3D_MCP_SETUP_DOC_URL,
+  VARCO3D_WEBTOON_WORLDBUILD_MANIFEST,
+  type Varco3dWorldbuildAssetSpec,
+  type WebtoonUniverseId,
   writeAntigravityMcpConfig,
 };
 
@@ -706,6 +720,23 @@ export async function executeVarco3dCli(
       };
     }
     return { exitCode: 0, output: { statusCode, ...payload } };
+  }
+
+  if (parsed.command === "batch-worldbuild") {
+    const outputDir =
+      parsed.options.get("output-dir") ??
+      resolve(deps.cwd ?? process.cwd(), ".cache/varco3d-worldbuild");
+    const limitRaw = parsed.options.get("limit");
+    const limit = limitRaw ? Math.max(1, Number.parseInt(limitRaw, 10) || 12) : undefined;
+    return runVarco3dWorldbuildBatch({
+      config,
+      outputDir,
+      universeFilter: parsed.options.get("universe"),
+      limit,
+      confirm: parsed.flags.has("confirm") && !parsed.flags.has("dry-run"),
+      provider: resolveProvider(parsed),
+      fetchImpl,
+    });
   }
 
   throw new Error(

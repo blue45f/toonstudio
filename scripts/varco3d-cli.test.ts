@@ -9,12 +9,14 @@ import {
   executeVarco3dCli,
   loadVarco3dConfig,
   parseCliArguments,
+  synthesizeDeterministicGlb,
   validatePolygonCount,
   VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE,
   VARCO3D_DEFAULT_API_BASE,
   VARCO3D_DEFAULT_MCP_URL,
   VARCO3D_DEFAULT_NC_OPENAPI_BASE,
   VARCO3D_MCP_FLOW_TOOLS,
+  VARCO3D_WEBTOON_WORLDBUILD_MANIFEST,
 } from "./varco3d-cli.mts";
 
 const tempDirs: string[] = [];
@@ -442,5 +444,71 @@ describe("varco3d-cli", () => {
       "multipart/form-data; boundary=----Varco3DFormBoundaryfixedseed",
     );
     expect(multipart.body.toString("utf8")).toContain("Content-Type: image/webp");
+  });
+
+  it("batch-worldbuild 명령이 잔여 크레딧 소진(HTTP 402)까지 VARCO API를 호출한 뒤 남은 웹툰 세계관 에셋을 표준 GLB로 합성한다", async () => {
+    const dir = createTempDir();
+    const outDir = join(dir, "worldbuild-out");
+    let ncApiCallCount = 0;
+    let studioCrossCheckCount = 0;
+
+    const fetchStub: typeof fetch = async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.endsWith("/3d/varco/v1/image-to-3d")) {
+        ncApiCallCount += 1;
+        if (ncApiCallCount === 1) {
+          return new Response(
+            JSON.stringify({ requestId: "varco-live-task-1", status: "COMPLETED" }),
+            { status: 200 },
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            statusCode: 402,
+            error: "No available credits to process the request",
+          }),
+          { status: 402 },
+        );
+      }
+      if (url.endsWith("/v2/generate")) {
+        studioCrossCheckCount += 1;
+        return new Response(
+          JSON.stringify({
+            statusCode: 402,
+            error: "No available credits to process the request",
+          }),
+          { status: 402 },
+        );
+      }
+      return new Response("{}", { status: 404 });
+    };
+
+    const res = await executeVarco3dCli(
+      ["batch-worldbuild", "--output-dir", outDir, "--limit", "4", "--confirm"],
+      {
+        env: { VARCO_3D_API_KEY: "test-worldbuild-key" },
+        cwd: dir,
+        repoRoot: dir,
+        homeDir: dir,
+        fetchImpl: fetchStub,
+      },
+    );
+
+    expect(res.exitCode).toBe(0);
+    expect(res.output.totalAssets).toBe(4);
+    expect(res.output.apiSubmittedCount).toBe(1);
+    expect(res.output.fallbackSynthesizedCount).toBe(3);
+    expect(res.output.creditsExhausted).toBe(true);
+    expect(res.output.creditsExhaustedHttpStatus).toBe(402);
+    expect(res.output.studioFallbackChecked).toBe(true);
+    expect(res.output.studioFallbackStatusCode).toBe(402);
+    expect(ncApiCallCount).toBe(2);
+    expect(studioCrossCheckCount).toBe(1);
+
+    const firstSpec = VARCO3D_WEBTOON_WORLDBUILD_MANIFEST[0]!;
+    const glbBytes = synthesizeDeterministicGlb(firstSpec);
+    expect(glbBytes.readUInt32LE(0)).toBe(0x46546c67); // 'glTF'
+    expect(glbBytes.readUInt32LE(4)).toBe(2);
+    expect(glbBytes.readUInt32LE(8)).toBe(glbBytes.byteLength);
   });
 });

@@ -19,3 +19,16 @@ export {
   appearancePresetsForSlot,
   requiresForPatch,
 } from "./appearance-presets";
+export {
+  WEBTOON_UNIVERSE_SHAPER_IDS,
+  WEBTOON_UNIVERSE_SHAPER_PRESETS,
+  applyShaperFineSlidersToRecipe,
+  blendWebtoonUniverseRecipes,
+  composeWebtoonUniverseRecipe,
+  webtoonUniverseShaperPreset,
+  type ComposeWebtoonUniverseRecipeResult,
+  type ShaperFineSliderPatch,
+  type Varco3dLabAccessoryBinding,
+  type WebtoonUniverseShaperId,
+  type WebtoonUniverseShaperPreset,
+} from "./webtoon-universe-shaper";

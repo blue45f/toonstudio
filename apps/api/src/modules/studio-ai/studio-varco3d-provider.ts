@@ -76,6 +76,23 @@ function sanitizeBaseUrl(value: string | undefined, fallback: string): string {
   return parsed.toString().replace(/\/+$/u, "");
 }
 
+export const VARCO_3D_CREDITS_EXHAUSTED_PROVIDER_CODE = "credits-exhausted" as const;
+
+export function isVarco3dCreditsExhaustedError(error: unknown): boolean {
+  return (
+    error instanceof Studio3dGenerationProviderError &&
+    (error.responseStatus === 402 ||
+      error.providerCode === VARCO_3D_CREDITS_EXHAUSTED_PROVIDER_CODE)
+  );
+}
+
+function parseConsumedCredits(payload: JsonRecord): number | null {
+  const candidate = payload.consumedCredits ?? payload.creditsUsed ?? payload.creditCost;
+  return typeof candidate === "number" && Number.isFinite(candidate) && candidate >= 0
+    ? candidate
+    : null;
+}
+
 function mapHttpFailure(
   status: number,
   payload: unknown,
@@ -91,6 +108,19 @@ function mapHttpFailure(
       message: "VARCO 3D authentication failed.",
       responseStatus: status,
       providerCode: rawMessage,
+    });
+  }
+  if (
+    status === 402 ||
+    rec?.statusCode === 402 ||
+    /no available credits/iu.test(rawMessage)
+  ) {
+    return new Studio3dGenerationProviderError({
+      code: "provider-rejected",
+      message: `VARCO 3D credits are exhausted: ${rawMessage}`,
+      retryable: false,
+      responseStatus: 402,
+      providerCode: VARCO_3D_CREDITS_EXHAUSTED_PROVIDER_CODE,
     });
   }
   if (status === 429) {
@@ -322,7 +352,7 @@ export class Varco3dProvider implements Studio3dGenerationProvider {
         taskUuid,
         subscriptionKey: "nc-openapi",
         jobUuids: [taskUuid],
-        consumedCredits: null,
+        consumedCredits: parseConsumedCredits(payload),
         submittedAt: new Date(this.#now()).toISOString(),
       };
     }
@@ -381,7 +411,7 @@ export class Varco3dProvider implements Studio3dGenerationProvider {
       taskUuid,
       subscriptionKey,
       jobUuids: [taskUuid],
-      consumedCredits: null,
+      consumedCredits: parseConsumedCredits(payload),
       submittedAt: new Date(this.#now()).toISOString(),
     };
   }

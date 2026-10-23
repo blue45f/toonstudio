@@ -4,6 +4,8 @@ import { Studio3dGenerationService } from "./studio-3d-generation.service";
 import { STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION } from "./studio-3d-generation-provider";
 import {
   createVarco3dProvider,
+  isVarco3dCreditsExhaustedError,
+  VARCO_3D_CREDITS_EXHAUSTED_PROVIDER_CODE,
   VARCO_3D_PROVIDER_ID,
   type Varco3dFetch,
 } from "./studio-varco3d-provider";
@@ -249,5 +251,51 @@ describe("Varco3dProvider", () => {
     const stored = await service.artifact("user-varco-1", ready.artifactRevision!.id);
     expect(stored.bytes).toEqual(glbBytes);
     expect(stored.revision.mimeType).toBe("model/gltf-binary");
+  });
+
+  it("maps HTTP 402 No available credits to non-retryable credits-exhausted error", async () => {
+    const fetchImpl: Varco3dFetch = async () =>
+      new Response(
+        JSON.stringify({
+          statusCode: 402,
+          error: "No available credits to process the request",
+        }),
+        { status: 402, headers: { "Content-Type": "application/json" } },
+      );
+
+    const provider = createVarco3dProvider({
+      apiKey: "varco:credit-depleted-key",
+      surface: "nc-openapi",
+      fetchImpl,
+    });
+
+    let caught: unknown = null;
+    try {
+      await provider.submit(
+        {
+          schemaVersion: STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION,
+          requestId: "req-402",
+          mode: "image-to-3d",
+          images: [
+            {
+              filename: "prop.png",
+              mimeType: "image/png",
+              bytes: new Uint8Array([137, 80, 78, 71]),
+            },
+          ],
+        },
+        new AbortController().signal,
+      );
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(isVarco3dCreditsExhaustedError(caught)).toBe(true);
+    expect(caught).toMatchObject({
+      code: "provider-rejected",
+      retryable: false,
+      responseStatus: 402,
+      providerCode: VARCO_3D_CREDITS_EXHAUSTED_PROVIDER_CODE,
+    });
   });
 });
