@@ -322,6 +322,26 @@ export function migrateLegacyUserAi(): boolean {
   return true;
 }
 
+export function readDefaultEnvClaudeToken(): string {
+  const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+  const env = proc?.env ?? {};
+  const metaEnv = (import.meta as { env?: Record<string, unknown> }).env ?? {};
+  const candidates = [
+    metaEnv.VITE_STUDIO_DEFAULT_ANTHROPIC_KEY,
+    metaEnv.VITE_ANTHROPIC_API_KEY,
+    env.VITE_STUDIO_DEFAULT_ANTHROPIC_KEY,
+    env.VITE_ANTHROPIC_API_KEY,
+    env.ANTHROPIC_API_KEY,
+    env.CLAUDE_API_KEY,
+  ];
+  for (const val of candidates) {
+    if (typeof val === "string" && val.trim().length > 0) {
+      return val.trim();
+    }
+  }
+  return "";
+}
+
 function readDefaultEnvUserAiToken(): string {
   const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
   const env = proc?.env ?? {};
@@ -343,42 +363,126 @@ function readDefaultEnvUserAiToken(): string {
 }
 
 /**
+ * Opt-in helper to hydrate an Anthropic Claude connection (`https://api.anthropic.com`,
+ * `claude-haiku-5-5` or custom model, `user-funded-byok`) from environment variables
+ * (`VITE_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` / `CLAUDE_API_KEY`) when no Claude route is active.
+ */
+export function hydrateDefaultEnvClaudeConnection(
+  explicitToken?: string,
+  textModel = "claude-haiku-5-5",
+): boolean {
+  const existingClaude = snapshot.configuration.connections.some(
+    (conn) => conn.baseUrl.toLowerCase().includes("api.anthropic.com"),
+  );
+  if (existingClaude) {
+    return true;
+  }
+  const token = (explicitToken ?? readDefaultEnvClaudeToken()).trim();
+  if (!token) {
+    return false;
+  }
+  const claudeConnection: UserAiConnection = {
+    ...EMPTY_AI_CONNECTION,
+    id: "env-anthropic-claude",
+    label: "Claude (Anthropic) 로컬 환경변수 연결",
+    baseUrl: "https://api.anthropic.com",
+    apiKey: token,
+    textModel,
+    imageModel: "",
+    costPolicy: "user-funded-byok",
+    priority: 10,
+    apiKeys: undefined,
+    models: undefined,
+  };
+  const nextConnections = [...snapshot.configuration.connections, claudeConnection];
+  const configuration = normalizeUserAiConfiguration({
+    version: 1,
+    connections: nextConnections,
+    assignments: {
+      ...snapshot.configuration.assignments,
+      text: snapshot.configuration.assignments.text ?? "env-anthropic-claude",
+    },
+    routing: {
+      ...userAiRoutingSettings(snapshot.configuration),
+      allowPaidFallback: true,
+    },
+  });
+  publish(
+    configuration,
+    "기본 환경변수(Claude Anthropic) 연결을 메모리에 로드했습니다.",
+    false,
+  );
+  return true;
+}
+
+/**
  * Opt-in helper to hydrate the in-memory UserAiConfiguration from the default environment
  * GitHub Models token (`models.github.ai/inference`, `openai/gpt-4o-mini`, `provider-free-tier`)
+ * and/or Anthropic Claude token (`api.anthropic.com`, `claude-haiku-5-5`, `user-funded-byok`)
  * when no connections are configured yet.
  */
 export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boolean {
   if (snapshot.configuration.connections.length > 0) {
     return true;
   }
-  const token = (explicitToken ?? readDefaultEnvUserAiToken()).trim();
-  if (!token) {
+  const rawExplicit = explicitToken?.trim() ?? "";
+  if (rawExplicit.startsWith("sk-ant-")) {
+    return hydrateDefaultEnvClaudeConnection(rawExplicit);
+  }
+  const githubToken = (rawExplicit || readDefaultEnvUserAiToken()).trim();
+  const claudeToken = rawExplicit ? "" : readDefaultEnvClaudeToken();
+  if (!githubToken && !claudeToken) {
     return false;
   }
+  const connections: UserAiConnection[] = [];
+  if (githubToken) {
+    connections.push({
+      ...EMPTY_AI_CONNECTION,
+      id: "env-github-models",
+      label: "GitHub Models 기본 무료 연결",
+      baseUrl: "https://models.github.ai/inference",
+      apiKey: githubToken,
+      textModel: "openai/gpt-4o-mini",
+      imageModel: "",
+      costPolicy: "provider-free-tier",
+      priority: 10,
+      apiKeys: undefined,
+      models: undefined,
+    });
+  }
+  if (claudeToken) {
+    connections.push({
+      ...EMPTY_AI_CONNECTION,
+      id: "env-anthropic-claude",
+      label: "Claude (Anthropic) 로컬 환경변수 연결",
+      baseUrl: "https://api.anthropic.com",
+      apiKey: claudeToken,
+      textModel: "claude-haiku-5-5",
+      imageModel: "",
+      costPolicy: "user-funded-byok",
+      priority: 20,
+      apiKeys: undefined,
+      models: undefined,
+    });
+  }
+  const primaryId = connections[0]?.id ?? null;
   const configuration = normalizeUserAiConfiguration({
     version: 1,
-    connections: [
-      {
-        ...EMPTY_AI_CONNECTION,
-        id: "env-github-models",
-        label: "GitHub Models 기본 무료 연결",
-        baseUrl: "https://models.github.ai/inference",
-        apiKey: token,
-        textModel: "openai/gpt-4o-mini",
-        imageModel: "",
-        costPolicy: "provider-free-tier",
-      },
-    ],
+    connections,
     assignments: {
-      text: "env-github-models",
+      text: primaryId,
       image: null,
       inference: null,
       "three-d": null,
     },
+    routing: {
+      ...userAiRoutingSettings(snapshot.configuration),
+      allowPaidFallback: Boolean(claudeToken),
+    },
   });
   publish(
     configuration,
-    "기본 환경변수(GitHub Models) 무료 연결을 메모리에 로드했습니다.",
+    "기본 환경변수 AI 연결을 메모리에 로드했습니다.",
     false,
   );
   return true;
