@@ -17,9 +17,22 @@ import { STUDIO_MATERIALS_HREF, type StudioWorkDecision } from "./studio-virtual
  */
 
 /** 제안이 바라보는 장소 종류. 룸 id 패턴에서 정규화한다. */
-export type StudioSuggestionPlaceKind = "meeting-room" | "focus" | "cafe" | "library" | "other";
+export type StudioSuggestionPlaceKind =
+  | "meeting-room"
+  | "focus"
+  | "cafe"
+  | "library"
+  | "review"
+  | "wellness"
+  | "other";
 
-export type StudioSuggestionId = "meeting-start" | "focus-mode" | "take-break" | "browse-materials";
+export type StudioSuggestionId =
+  | "meeting-start"
+  | "focus-mode"
+  | "take-break"
+  | "browse-materials"
+  | "review-sync"
+  | "wellness-stretch";
 
 /** 제안 무시·수락 후 같은 제안을 다시 띄우지 않는 시간 (ms). */
 export const STUDIO_SUGGESTION_COOLDOWN_MS = 5 * 60_000;
@@ -91,11 +104,36 @@ export const STUDIO_CONTEXT_SUGGESTIONS: Readonly<Record<StudioSuggestionId, Stu
       decision({ kind: "route", href: STUDIO_MATERIALS_HREF }),
     ]),
   }),
+  "review-sync": Object.freeze({
+    id: "review-sync",
+    titleKo: "원고 합평 보드를 열까요?",
+    titleEn: "Open the manuscript review board?",
+    bodyKo: "검수·갤러리 구역에 들어왔어요. 실시간 원고 비교·핀 피드백 패널을 바로 열 수 있어요.",
+    bodyEn: "You're in the review zone. Open the live manuscript comparison and pin feedback panel.",
+    acceptKo: "검수 열기",
+    acceptEn: "Open review",
+    decisions: Object.freeze([
+      decision({ kind: "panel", panel: "annotation" }),
+    ]),
+  }),
+  "wellness-stretch": Object.freeze({
+    id: "wellness-stretch",
+    titleKo: "오피스 체조·요가로 리프레시할까요?",
+    titleEn: "Refresh with office calisthenics or yoga?",
+    bodyKo: "웰니스 라운지에 들어왔어요. 손목과 어깨를 푸는 요가·체조 루틴으로 활력을 채워 보세요.",
+    bodyEn: "You're in the wellness lounge. Recharge with a wrist and shoulder yoga routine.",
+    acceptKo: "체조·요가 시작",
+    acceptEn: "Start wellness",
+    decisions: Object.freeze([
+      decision({ kind: "status", userStatus: "break" }),
+      decision({ kind: "emote", emoteId: "yoga" }),
+    ]),
+  }),
 });
 
 /**
  * 룸 id를 제안용 장소 종류로 정규화한다. 패턴은 spatial-actions/zone-workflow와
- * 같은 관례(meeting·focus·cafe·library 부분 일치)를 따른다.
+ * 같은 관례(meeting·focus·cafe·library·review·wellness 부분 일치)를 따른다.
  */
 export function studioSuggestionPlaceKind(roomId: string | null | undefined): StudioSuggestionPlaceKind {
   if (!roomId) return "other";
@@ -104,6 +142,8 @@ export function studioSuggestionPlaceKind(roomId: string | null | undefined): St
   if (/focus|silent|quiet/.test(id)) return "focus";
   if (/cafe|cafeteria|kitchen/.test(id)) return "cafe";
   if (/library|archive|reference/.test(id)) return "library";
+  if (/review|critique|gallery/.test(id)) return "review";
+  if (/wellness|yoga|gym|lounge/.test(id)) return "wellness";
   return "other";
 }
 
@@ -163,6 +203,8 @@ function candidateIds(state: StudioSuggestionState, context: StudioSuggestionCon
   if ((state.seatedAtDesk || state.place === "focus")
     && context.userStatus !== "focusing" && !context.focusActive) ids.push("focus-mode");
   if ((state.breakPending || state.place === "cafe") && context.userStatus !== "break") ids.push("take-break");
+  if (state.place === "wellness" && context.userStatus !== "break") ids.push("wellness-stretch");
+  if (state.place === "review") ids.push("review-sync");
   if (state.place === "library") ids.push("browse-materials");
   return Object.freeze(ids);
 }
