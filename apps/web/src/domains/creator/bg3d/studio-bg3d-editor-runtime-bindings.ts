@@ -132,6 +132,7 @@ export {
 } from "../status-i18n/studio-producer-error-i18n";
 export { useStudioBg3dSharedCharacterStatus } from "../useStudioBg3dSharedCharacterStatus";
 export { useStudioModalSheet } from "../useStudioModalSheet";
+export { useStudioBg3dViewportHostRef } from "./useStudioBg3dViewportHost";
 
 export { snapshotStudioBg3dLiveAnimationPlayback } from "./studio-bg3d-animation-time";
 export {
