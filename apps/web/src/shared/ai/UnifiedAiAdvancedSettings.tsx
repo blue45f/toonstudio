@@ -4,6 +4,7 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { useEffect, useMemo, useState } from "react";
 
+import { aiSharedStatusText } from "./ai-status-i18n";
 import { getFreeAiRuntimeBudgetSnapshot } from "./free-ai-runtime-budget";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
 import {
@@ -204,7 +205,7 @@ function AiSettingsEditor({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "설정을 처리하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : aiSharedStatusText("shared.aiStatus.settings.processFailed", "설정을 처리하지 못했습니다."));
     } finally {
       setBusy(false);
       setPassword("");
@@ -688,7 +689,7 @@ function AiSettingsEditor({
           setMessage("선택한 클라우드 텍스트 경로의 모델 목록 요청에 성공했습니다.");
         })}>{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "모델 목록 연결 확인")}</button>
         <button type="button" className={BUTTON} disabled={busy} onClick={() => void run(() => {
-          if (!migrateLegacyUserAi()) setMessage("가져올 기존 Studio 클라우드 키 설정이 없습니다.");
+          if (!migrateLegacyUserAi()) setMessage(aiSharedStatusText("shared.aiStatus.settings.legacyEmpty", "가져올 기존 Studio 클라우드 키 설정이 없습니다."));
         })}>{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "기존 Studio 설정 가져오기")}</button>
       </div>
 

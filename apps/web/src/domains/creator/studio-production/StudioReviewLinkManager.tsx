@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { studioReviewLinkHref } from "./studio-review-link-url";
@@ -65,7 +66,7 @@ export function StudioReviewLinkManager({
     } catch (cause) {
       if (signal?.aborted) return;
       setState("error");
-      setError(cause instanceof Error ? cause.message : "검토 링크를 불러오지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.reviewLink.loadFailed", "검토 링크를 불러오지 못했습니다."));
     }
   }, [workId]);
   useEffect(() => {
@@ -96,7 +97,7 @@ export function StudioReviewLinkManager({
       setLinks((current) => [next, ...current.filter((link) => link.id !== next.id)]);
       onNotice("외부 검토 링크를 만들었습니다. 원문 토큰은 이 화면에서 한 번만 표시됩니다.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "검토 링크를 만들지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.reviewLink.createFailed", "검토 링크를 만들지 못했습니다."));
     } finally {
       setMutating(false);
     }
@@ -112,7 +113,7 @@ export function StudioReviewLinkManager({
       if (created?.id === next.id) setCreated(null);
       onNotice("검토 링크를 폐기했습니다.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "검토 링크를 폐기하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.reviewLink.revokeFailed", "검토 링크를 폐기하지 못했습니다."));
     } finally {
       setMutating(false);
     }
@@ -123,7 +124,7 @@ export function StudioReviewLinkManager({
       await navigator.clipboard.writeText(studioReviewLinkHref(created.token));
       onNotice("검토 링크를 클립보드에 복사했습니다.");
     } catch {
-      setError("클립보드 권한이 없어 링크를 복사하지 못했습니다.");
+      setError(r3c04StatusText("studio.r3c04Status.production.reviewLink.copyFailed", "클립보드 권한이 없어 링크를 복사하지 못했습니다."));
     }
   };
 
@@ -274,12 +275,10 @@ export function StudioReviewLinkManager({
         <h3 className="text-sm font-black">발급 기록</h3>
         <p className="mt-1 text-xs text-fg-2">토큰 원문은 표시하지 않고 정책과 폐기 상태만 관리합니다.</p>
         {state === "loading" ? (
-          <p className="mt-4 text-xs text-fg-2" role="status">검토 링크를 불러오는 중입니다.</p>
+          <p className="mt-4 text-xs text-fg-2" role="status">{r3c04StatusText("studio.r3c04Status.production.reviewLink.loading", "검토 링크를 불러오는 중입니다.")}</p>
         ) : null}
         {state === "ready" && links.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-2">
-            아직 발급한 검토 링크가 없습니다.
-          </p>
+          <p className="mt-4 rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-2">{r3c04StatusText("studio.r3c04Status.production.reviewLink.empty", "아직 발급한 검토 링크가 없습니다.")}</p>
         ) : null}
         <div className="mt-3 space-y-2">
           {links.map((link) => {
@@ -296,7 +295,7 @@ export function StudioReviewLinkManager({
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                           : "border-line bg-raised text-fg-3",
                       )}>
-                        {status === "active" ? "활성" : status === "expired" ? "만료" : "폐기"}
+                        {status === "active" ? r3c04StatusText("studio.r3c04Status.production.reviewLink.statusActive", "활성") : status === "expired" ? r3c04StatusText("studio.r3c04Status.production.reviewLink.statusExpired", "만료") : r3c04StatusText("studio.r3c04Status.production.reviewLink.statusRevoked", "폐기")}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-fg-2">

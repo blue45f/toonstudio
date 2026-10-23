@@ -45,9 +45,10 @@ describe("StudioPage lazy precision stabilizer product boundary", () => {
       /drawingPredictionPreviewRef\.current\s*\?\s*precisionBridge\.preview\([\s\S]*:\s*precisionBridge\.commit\(/u
     );
     // 권위 상태(안정화 상태와 도출 필압 계수)는 같은 커밋 전용 가드 안에서만 전진한다.
-    // 가드 안에는 줄 주석이 끼어 있을 수 있다(weighted 모드의 추 테이퍼 설명).
+    // 가드 안에는 줄 주석이 끼어 있을 수 있다(weighted 모드의 추 테이퍼 설명). 주석 줄은 줄바꿈으로 시작하게 해
+    // 공백 매칭과 겹치지 않게 한다(겹치면 정규식이 지수적으로 되돌아가며 CodeQL js/redos 경고가 난다).
     expect(append).toMatch(
-      /if \(!drawingPredictionPreviewRef\.current\) \{\s*drawingStabilizerRef\.current = stabilized\.state;(?:\s*\/\/[^\n]*)*\s*pressure = pressure \* \(stabilized\.derivedPressure \?\? 1\);\s*\}/u
+      /if \(!drawingPredictionPreviewRef\.current\) \{\s*drawingStabilizerRef\.current = stabilized\.state;(?:\n[ \t]*\/\/[^\n]*)*\s*pressure = pressure \* \(stabilized\.derivedPressure \?\? 1\);\s*\}/u
     );
     expect(append).toContain("stabilizeStudioStrokeSample(");
     expect(append).toMatch(
@@ -70,7 +71,7 @@ describe("StudioPage lazy precision stabilizer product boundary", () => {
 
     const finish = sourceBetween(
       "function finishDrawingPointer(",
-      "function onStagePointerCancel("
+      "return finishDrawingPointer;"
     );
     expect(finish.indexOf("authoritativeLiveStroke = sealStudioDrawReleaseInput("))
       .toBeLessThan(finish.indexOf("planStudioDrawPointerRelease({"));

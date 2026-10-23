@@ -16,7 +16,11 @@ import {
   describeStudioBg3dSkpWarning,
   formatStudioBg3dSkpDimensions,
 } from "./studio-bg3d-skp-import-copy";
+import { StudioBg3dSkpSidecarScopeNote } from "./StudioBg3dSkpSidecarScopeNote";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { STUDIO_BG3D_SKP_UNIT_LABELS } from "./studio-bg3d-skp-unit";
 
 import type {
@@ -41,6 +45,7 @@ function UnitQuestionCard({
   readonly question: StudioBg3dSkpUnitQuestion;
   readonly onAnswer: (decision: StudioBg3dSkpUnitDecision) => void;
 }) {
+  const t = useT();
   const titleId = useId();
   const descriptionId = useId();
   const groupRef = useRef<HTMLDivElement>(null);
@@ -124,7 +129,7 @@ function UnitQuestionCard({
         className={cx(SMALL_BUTTON, "mt-2 border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg")}
       >
         <X size={14} aria-hidden />
-        가져오기 취소
+        {t("studio.bg3dPanelStatus.skpImport.cancelImport", "가져오기 취소")}
       </button>
     </div>
   );
@@ -137,6 +142,7 @@ function ResultCard({
   readonly entry: StudioBg3dSkpResultEntry;
   readonly onDismiss: (id: string) => void;
 }) {
+  const t = useT();
   const titleId = useId();
   const { report } = entry;
   const imported = entry.status === "imported";
@@ -159,7 +165,7 @@ function ResultCard({
             {entry.sourceName}
           </h4>
           <p className="break-words text-fg-2 [overflow-wrap:anywhere]">
-            {imported ? "SketchUp 변환 보고서 · 가져옴" : `가져오지 못함 · ${entry.reason ?? ""}`}
+            {imported ? "SketchUp 변환 보고서 · 가져옴" : t("studio.bg3dPanelStatus.skpImport.importFailedWithReason", { reason: entry.reason ?? "" }, "가져오지 못함 · {reason}")}
           </p>
         </div>
         <button
@@ -215,6 +221,7 @@ function ResultCard({
           <li>{describeStudioBg3dSkpNameList("컴포넌트", report.names.components)}</li>
           <li>{describeStudioBg3dSkpNameList("태그", report.names.tags)}</li>
           <li>{describeStudioBg3dSkpNameList("장면", report.names.scenes)}</li>
+          {imported ? <li><StudioBg3dSkpSidecarScopeNote /></li> : null}
           {imported ? <li>{describeStudioBg3dSkpMetadataStatus(entry.metadata)}</li> : null}
         </ul>
       </details>
@@ -251,6 +258,7 @@ export function StudioBg3dSkpImportPanel({
           SketchUp(.skp) 가져오기 안내
         </summary>
         <p className="pb-1">{STUDIO_BG3D_SKP_SUPPORT_SUMMARY}</p>
+        <p className="pb-1"><StudioBg3dSkpSidecarScopeNote /></p>
         <p className="pb-1">{STUDIO_BG3D_SKP_LEGAL_NOTICE}</p>
       </details>
 

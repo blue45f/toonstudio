@@ -11,7 +11,7 @@ import {
   type StudioBg3dBundleThemePacks,
 } from "./studio-bg3d-bundle-theme-packs";
 
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../studio-bg3d-panel-status-i18n";
 
@@ -74,7 +74,7 @@ export function StudioBg3dBundleThemePackPanel({
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setLoadError(error instanceof Error ? error.message : t("studio.bg3dPanelStatus.bundleThemePack.loadFailed", "테마 팩을 불러오지 못했습니다."));
+          setLoadError(error instanceof Error ? error.message : translateNow("studio.bg3dPanelStatus.bundleThemePack.loadFailed", "테마 팩을 불러오지 못했습니다."));
         }
       });
     return () => controller.abort();

@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Box, LoaderCircle, Rotate3d, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
@@ -116,7 +117,7 @@ async function createThreePreviewObject(
     const { buildPropObject, propDefById } = await import("./vrm/studio-vrm-props");
     const definition = propDefById(source.propId);
     if (!definition || definition.geometrySource.kind !== "procedural") {
-      throw new Error("절차형 3D 소품 원본을 찾지 못했습니다.");
+      throw new Error(r3c07StatusText("studio.panelStatus.r3c07.unifiedPreview.propSourceNotFound", "절차형 3D 소품 원본을 찾지 못했습니다."));
     }
     return buildPropObject(
       THREE as unknown as Parameters<typeof buildPropObject>[0],
@@ -154,7 +155,7 @@ async function createThreePreviewObject(
       import("./studio-background-3d-primitives"),
     ]);
   const template = BG_SCENE_TEMPLATES.find((candidate) => candidate.id === source.templateId);
-  if (!template) throw new Error("3D 장면 템플릿 원본을 찾지 못했습니다.");
+  if (!template) throw new Error(r3c07StatusText("studio.panelStatus.r3c07.unifiedPreview.templateSourceNotFound", "3D 장면 템플릿 원본을 찾지 못했습니다."));
   const group = new THREE.Group();
   group.name = `asset-preview:${template.id}`;
   for (const primitive of instantiateSceneTemplate(template, 0)) {
@@ -490,7 +491,7 @@ function ThreePreview({
         <div className="absolute inset-0 grid place-items-center p-4 text-center text-xs text-fg-3">
           <div>
             <TriangleAlert size={22} className="mx-auto mb-2 text-warn" aria-hidden />
-            <p className="font-semibold text-fg-2">3D 미리보기를 표시하지 못했습니다</p>
+            <p className="font-semibold text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.unifiedPreview.previewFailed", "3D 미리보기를 표시하지 못했습니다")}</p>
             <p className="mt-1">선택한 모델은 3D 편집기에서 계속 열 수 있습니다.</p>
           </div>
         </div>

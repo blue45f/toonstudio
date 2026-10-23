@@ -12,6 +12,7 @@ import {
   type StudioHybridDccTransformPart,
 } from "./studio-hybrid-dcc-transform-utilities";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 const CONTROL = "min-h-9 pointer-coarse:min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:cursor-not-allowed";
 const PARTS = [["all", "전체 변환"], ["position", "위치"], ["rotationEulerRad", "회전"], ["scale", "크기"]] as const;
@@ -33,7 +34,7 @@ function UtilitiesEditor(props: StudioHybridDccViewportProps & {
   const [error, setError] = useState("");
   const projection = useMemo(() => {
     try { return { snapshot: deriveStudioHybridDccViewportSnapshot(workspace), error: "" }; }
-    catch (problem) { return { snapshot: null, error: problem instanceof Error ? problem.message : "메시를 읽지 못했습니다." }; }
+    catch (problem) { return { snapshot: null, error: problem instanceof Error ? problem.message : subStatusText("studio.subStatus.utilities.meshReadFailed", "메시를 읽지 못했습니다.") }; }
   }, [workspace]);
   const assets = projection.snapshot?.assets ?? [];
   const selected = assets.find(({ assetId }) => assetId === workspace.activeAssetId);
@@ -47,17 +48,17 @@ function UtilitiesEditor(props: StudioHybridDccViewportProps & {
     try {
       const next = make();
       if (hashStudioHybridDccObjectTransform(next) === hashStudioHybridDccObjectTransform(transform)) {
-        setNotice("이미 같은 변환입니다. 편집 기록을 추가하지 않았습니다.");
+        setNotice(subStatusText("studio.subStatus.utilities.sameTransform", "이미 같은 변환입니다. 편집 기록을 추가하지 않았습니다."));
         return;
       }
       onCommitAssetTransform(selected.assetId, next);
-      setNotice("변환 적용을 요청했습니다. 실행 결과는 편집기 상태에서 확인하세요.");
-    } catch (problem) { setError(problem instanceof Error ? problem.message : "변환 값을 확인하세요."); }
+      setNotice(subStatusText("studio.subStatus.utilities.requested", "변환 적용을 요청했습니다. 실행 결과는 편집기 상태에서 확인하세요."));
+    } catch (problem) { setError(problem instanceof Error ? problem.message : subStatusText("studio.subStatus.precision.valueCheck", "변환 값을 확인하세요.")); }
   };
   return (
     <div className="space-y-3 border-t border-line p-3">
       <p className="text-[11px] leading-relaxed text-fg-3">복사는 현재 작업대 메모리에만 보관합니다. 붙여넣기·초기화·반전·정렬은 기존 되돌리기 명령으로 적용하며 메시 원본을 굽지 않습니다.</p>
-      {unavailable ? <p role="status" className="text-xs text-fg-3">편집 가능한 오브젝트 모드에서 사용할 수 있습니다.</p> : null}
+      {unavailable ? <p role="status" className="text-xs text-fg-3">{subStatusText("studio.subStatus.utilities.unavailable", "편집 가능한 오브젝트 모드에서 사용할 수 있습니다.")}</p> : null}
       <fieldset disabled={unavailable} className="flex flex-wrap items-end gap-2">
         <legend className="sr-only">변환 복사와 초기화</legend>
         <div className="grid gap-1">
@@ -68,8 +69,8 @@ function UtilitiesEditor(props: StudioHybridDccViewportProps & {
         </div>
         <button type="button" className={CONTROL} onClick={() => {
           if (!transform || unavailable) return;
-          try { onCopy(normalizeStudioHybridDccObjectTransform(transform)); setError(""); setNotice("변환을 복사했습니다. 다른 오브젝트를 선택해 붙여넣으세요."); }
-          catch (problem) { setError(problem instanceof Error ? problem.message : "복사하지 못했습니다."); }
+          try { onCopy(normalizeStudioHybridDccObjectTransform(transform)); setError(""); setNotice(subStatusText("studio.subStatus.utilities.copied", "변환을 복사했습니다. 다른 오브젝트를 선택해 붙여넣으세요.")); }
+          catch (problem) { setError(problem instanceof Error ? problem.message : subStatusText("studio.subStatus.utilities.copyFailed", "복사하지 못했습니다.")); }
         }}>변환 복사</button>
         <button type="button" className={CONTROL} disabled={!copied} onClick={() => commit(() => copyStudioHybridDccTransformPart(transform!, copied!, part))}>변환 붙여넣기</button>
         <button type="button" className={CONTROL} onClick={() => commit(() => resetStudioHybridDccTransformPart(transform!, part))}>선택 항목 초기화</button>
@@ -81,7 +82,7 @@ function UtilitiesEditor(props: StudioHybridDccViewportProps & {
         if (!reference || !selected || !transform) return;
         commit(() => {
           const referenceTransform = workspace.session.state.objectTransforms[reference.assetId];
-          if (!referenceTransform) throw new Error("기준 오브젝트의 변환이 없습니다.");
+          if (!referenceTransform) throw new Error(subStatusText("studio.subStatus.utilities.noReferenceTransform", "기준 오브젝트의 변환이 없습니다."));
           return alignStudioHybridDccObjectBounds(transform,
             measureStudioHybridDccPrecisionBounds(selected.positions, transform),
             measureStudioHybridDccPrecisionBounds(reference.positions, referenceTransform),

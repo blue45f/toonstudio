@@ -15,6 +15,7 @@ import {
 } from "@/platform/creator-marketplace-client";
 
 import "./studio-panel-status-i18n";
+import "./status-i18n/studio-panel-status-i18n-r4cat5";
 
 const FOCUS =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-panel";
@@ -156,7 +157,7 @@ export function StudioOwnedReleaseLifecycleActions({
   if (release.hidden && release.delistedAt) {
     return (
       <p className="mt-2 rounded-md border border-bad/25 bg-bad/10 px-2 py-2 text-[0.56rem] leading-relaxed text-bad">
-        이 head는 관리자 숨김과 목록 내림 상태입니다. 관리자 숨김이 해제되기 전에는 다시 공개하거나 새 릴리스를 게시할 수 없습니다.
+        {t("studio.panelStatusCat5.marketplaceLifecycle.hiddenDelistedNotice", "이 head는 관리자 숨김과 목록 내림 상태입니다. 관리자 숨김이 해제되기 전에는 다시 공개하거나 새 릴리스를 게시할 수 없습니다.")}
       </p>
     );
   }
@@ -167,7 +168,7 @@ export function StudioOwnedReleaseLifecycleActions({
     <div className="mt-2">
       {release.hidden ? (
         <p className="mb-2 rounded-md border border-bad/25 bg-bad/10 px-2 py-2 text-[0.56rem] leading-relaxed text-bad">
-          관리자 숨김 중에도 이 head를 목록에서 내릴 수 있습니다. 숨김이 해제되기 전에는 다시 공개하거나 새 릴리스를 게시할 수 없습니다.
+          {t("studio.panelStatusCat5.marketplaceLifecycle.hiddenDelistableNotice", "관리자 숨김 중에도 이 head를 목록에서 내릴 수 있습니다. 숨김이 해제되기 전에는 다시 공개하거나 새 릴리스를 게시할 수 없습니다.")}
         </p>
       ) : null}
       {armedAction === action ? (

@@ -183,10 +183,12 @@ export function StudioBubbleLibraryPanel({
         </div>
       </div>
 
+      {/* 결과 영역은 구역(group)이다. list 는 구역마다 따로 둔다 — list 안에 group 을 끼우면
+          aria-required-children/-parent 위반이고, listitem 이 list 밖으로 밀려 항목 수가 낭독되지 않는다. */}
       <div
         id="studio-bubble-library-results"
         className="space-y-3 p-2.5"
-        role="list"
+        role="group"
         aria-label={localizeText(t, "말풍선 종류", "studio.bubble.kindMenuAria")}
       >
         {sections.length > 0 ? (
@@ -217,7 +219,11 @@ export function StudioBubbleLibraryPanel({
                 )}
                 {section.label}
               </h3>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+              <div
+                role="list"
+                aria-labelledby={`studio-bubble-section-${sectionIndex}`}
+                className="grid grid-cols-2 gap-1.5 sm:grid-cols-3"
+              >
                 {section.variants.map((variant) => {
                   const favorite = preferences.favoriteIds.includes(variant.id);
                   return (

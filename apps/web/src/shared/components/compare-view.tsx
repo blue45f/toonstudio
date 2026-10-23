@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { Swords, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
@@ -115,7 +116,7 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
       <div
         className="grid grid-cols-2 gap-6 sm:grid-cols-[1fr_auto_1fr]"
         role="status"
-        aria-label="작품 비교 불러오는 중"
+        aria-label={restStatusText("rest.status.compare.loading", "작품 비교 불러오는 중")}
       >
         <div className="skeleton aspect-[3/4] rounded-2xl" />
         {/* 스피너 대신 스켈레톤 'VS' 칩 — 양옆 표지와 톤을 맞춰 로딩 상태를 일관되게(DESIGN.md). */}
@@ -144,14 +145,14 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
 
       {loadFailed && !a && !b ? (
         <div role="alert" className="rounded-2xl border border-bad/40 bg-bad/10 p-5 text-center">
-          <p className="text-sm font-semibold text-fg">작품 목록을 불러오지 못했어요.</p>
-          <p className="mt-1 text-xs leading-5 text-fg-2">네트워크 상태를 확인한 뒤 다시 시도해 주세요. 작품을 아직 고르지 않은 상태와는 다른, 불러오기 실패 상태입니다.</p>
+          <p className="text-sm font-semibold text-fg">{restStatusText("rest.status.compare.loadFailed", "작품 목록을 불러오지 못했어요.")}</p>
+          <p className="mt-1 text-xs leading-5 text-fg-2">{restStatusText("rest.status.compare.loadFailedMessage", "네트워크 상태를 확인한 뒤 다시 시도해 주세요. 작품을 아직 고르지 않은 상태와는 다른, 불러오기 실패 상태입니다.")}</p>
           <button
             type="button"
             onClick={() => setAttempt((value) => value + 1)}
             className="mt-4 min-h-11 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            다시 시도
+            {restStatusText("rest.status.common.retry", "다시 시도")}
           </button>
         </div>
       ) : !a || !b ? (

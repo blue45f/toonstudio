@@ -27,6 +27,9 @@ import {
 } from "./studio-dialogue-length-budget";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 export type StudioDialogueLengthBudgetSectionProps = {
   /** 코어 예산 계산 결과 전체(프로필·합계·경고·요약). */
@@ -49,6 +52,7 @@ export function StudioDialogueLengthBudgetSection({
   result,
   onSelectElement,
 }: StudioDialogueLengthBudgetSectionProps) {
+  const t = useT();
   const { totals, warnings, summary } = result;
   const groups = groupLengthBudgetWarnings(warnings);
 
@@ -94,7 +98,7 @@ export function StudioDialogueLengthBudgetSection({
         >
           {summary.checkedBubbleCount > 0
             ? `검사한 말풍선 ${summary.checkedBubbleCount}개 모두 번역 예상 길이로도 들어갈 것으로 보여요.`
-            : "말풍선 크기가 없어 번역 넘침까지는 확인하지 못했어요. 위 예상 길이를 참고해 주세요."}
+            : t("studio.brushCanvasStatus.lettering.lengthBudgetUnchecked", "말풍선 크기가 없어 번역 넘침까지는 확인하지 못했어요. 위 예상 길이를 참고해 주세요.")}
         </p>
       ) : (
         <div className="space-y-2.5">

@@ -26,6 +26,7 @@ import { ProductionEmptyState, ProductionMetric, ProductionPill, ProductionSecti
 
 import { LazyContractReviewChecklist } from "@/shared/components/contract-review/LazyContractReviewChecklist";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 function label<K extends string>(map: Readonly<Record<K, BilingualLabel>>, key: K, localize: ProductionLocalize): string {
@@ -119,6 +120,7 @@ const RIGHTS_TYPE: Readonly<Record<RightsInterestType, BilingualLabel>> = {
 
 export function ProductionProcurementSurface({ aggregate }: { readonly aggregate: ProductionProjectAggregate }) {
   const bt = useBilingual("ProductionProcurementSurface");
+  const t = useT();
   const pendingPayments = aggregate.paymentRecords.filter((entry) => entry.status === "recorded-pending-verification");
   const activeAgreements = aggregate.agreements.filter((entry) => entry.status === "active" || entry.status === "signed");
   return (
@@ -147,7 +149,7 @@ export function ProductionProcurementSurface({ aggregate }: { readonly aggregate
                   <div className="mt-3 space-y-1.5">{proposal.milestoneDrafts.map((milestone) => <div key={milestone.title} className="flex justify-between rounded-lg bg-raised px-3 py-2 text-xs"><span className="text-fg-2">{milestone.title}</span><span className="font-semibold text-fg">{milestone.amountMinor.toLocaleString("ko-KR")}{hubText("원")}</span></div>)}</div>
                 </article>
               ))}
-              {proposals.length === 0 ? <ProductionEmptyState title={hubText("제안서가 없습니다")} description={hubText("범위 revision에 고정된 제안서를 접수해 가격·일정·수정 조건을 비교하세요.")} /> : null}
+              {proposals.length === 0 ? <ProductionEmptyState title={t("productionHub.status.commercialEmptyProposals", "제안서가 없어요")} description={hubText("범위 revision에 고정된 제안서를 접수해 가격·일정·수정 조건을 비교하세요.")} /> : null}
             </div>
           </ProductionSectionCard>
         );
@@ -184,6 +186,7 @@ export function ProductionProcurementSurface({ aggregate }: { readonly aggregate
 
 export function ProductionRightsSurface({ aggregate }: { readonly aggregate: ProductionProjectAggregate }) {
   const bt = useBilingual("ProductionRightsSurface");
+  const t = useT();
   const manifest = aggregate.creditManifests[0] ?? null;
   const preflight = preflightCreditManifest({
     manifest,
@@ -201,7 +204,7 @@ export function ProductionRightsSurface({ aggregate }: { readonly aggregate: Pro
           {[...manifest.entries].sort((a, b) => a.order - b.order).map((entry) => <div key={entry.id} className="flex items-center gap-3 rounded-xl border border-line bg-panel p-3"><div className="flex size-9 items-center justify-center rounded-full bg-raised font-black text-accent">{entry.order}</div><div><p className="text-sm font-semibold text-fg">{entry.publicName}</p><p className="text-xs text-fg-2">{entry.roleLabel} · {entry.media.join(", ")}</p></div></div>)}
           {preflight.blockers.map((entry) => <p key={entry} className="rounded-xl border border-bad/30 bg-bad/10 p-3 text-xs text-fg">{entry}</p>)}
           {preflight.warnings.map((entry) => <p key={entry} className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs text-fg">{entry}</p>)}
-        </div> : <ProductionEmptyState title={hubText("공개 크레딧 목록이 없습니다")} description={hubText("기여 기록과 계약 버전을 근거로 작성하세요.")} />}
+        </div> : <ProductionEmptyState title={t("productionHub.status.commercialEmptyCredits", "공개 크레딧 목록이 없어요")} description={hubText("기여 기록과 계약 버전을 근거로 작성하세요.")} />}
       </ProductionSectionCard>
 
       <ProductionSectionCard title={hubText("권리·동의 원장")} description={hubText("AI 처리 동의와 AI 학습 동의를 별도 권리 항목으로 보존합니다.")}>
@@ -228,7 +231,7 @@ export function ProductionRightsSurface({ aggregate }: { readonly aggregate: Pro
               {rule.deductions.length ? <p className="mt-3 text-[0.6875rem] leading-5 text-fg-3">{hubText("공제: ")}{rule.deductions.join(", ")}</p> : null}
             </div>
           ))}
-        </div> : <ProductionEmptyState title={hubText("활성 보상 계획이 없습니다")} description={hubText("고정 대가와 수익원별 배분 기준을 계약 버전에 연결하세요.")} />}
+        </div> : <ProductionEmptyState title={t("productionHub.status.commercialEmptyCompensation", "활성 보상 계획이 없어요")} description={hubText("고정 대가와 수익원별 배분 기준을 계약 버전에 연결하세요.")} />}
       </ProductionSectionCard>
 
       <ProductionSectionCard

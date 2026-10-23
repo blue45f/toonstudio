@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import {
   AlertCircle,
@@ -185,7 +186,7 @@ export function RankingBoard({
           cache: "no-store",
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error("랭킹 API 응답을 받지 못했습니다.");
+        if (!res.ok) throw new Error(restStatusText("rest.status.ranking.apiFailed", "랭킹 API 응답을 받지 못했습니다."));
         const data = (await res.json()) as RankingResponse;
         if (!alive) return;
         setRanked(data.items);
@@ -198,7 +199,7 @@ export function RankingBoard({
         setState("ready");
       } catch (err) {
         if (!alive || controller.signal.aborted) return;
-        setError(err instanceof Error ? err.message : "랭킹을 불러오지 못했습니다.");
+        setError(err instanceof Error ? err.message : restStatusText("rest.status.ranking.loadFailed", "랭킹을 불러오지 못했습니다."));
         setState("error");
       } finally {
         forceRefresh.current = false;
@@ -533,14 +534,14 @@ export function RankingBoard({
         <RankingSkeleton />
       ) : state === "error" ? (
         <ErrorState
-          title="랭킹을 불러오지 못했습니다."
-          message="연결 상태를 확인한 뒤 다시 시도해 주세요."
+          title={restStatusText("rest.status.ranking.loadFailed", "랭킹을 불러오지 못했습니다.")}
+          message={restStatusText("rest.status.ranking.loadFailedMessage", "연결 상태를 확인한 뒤 다시 시도해 주세요.")}
           onRetry={retry}
         />
       ) : visibleRanked.length === 0 ? (
         <div className="rounded-xl border border-line bg-panel/30 px-5 py-14 text-center">
           <BookOpen className="mx-auto mb-3 text-fg-3" size={24} />
-          <p className="text-sm font-medium text-fg">해당 조건의 작품이 없습니다.</p>
+          <p className="text-sm font-medium text-fg">{restStatusText("rest.status.ranking.emptyFiltered", "해당 조건의 작품이 없습니다.")}</p>
           <p className="mt-1 text-sm text-fg-3">
             {clientFilterCount > 0 ? "찜·장르·이용가 필터를 넓혀보세요." : "장르나 플랫폼 필터를 넓혀보세요."}
           </p>

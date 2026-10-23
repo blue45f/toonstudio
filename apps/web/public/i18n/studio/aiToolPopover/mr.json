@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "AI प्रदाता मजकूर",
   "studio.aiToolPopover.serverTextAiProviderAria": "सर्व्हर मजकूर AI प्रदाता",
   "studio.aiToolPopover.serverProviderAuto": "स्वयंचलित स्विचिंग",
-  "studio.aiToolPopover.serverFallbackMessage": "शिल्लक/पॅकेज मर्यादा संपल्यावर, तुम्ही दुसऱ्या प्रदात्याकडे स्विच कराल. दुहेरी चार्जिंग टाळण्यासाठी सामान्य त्रुटी आपोआप पाठवल्या जात नाहीत."
+  "studio.aiToolPopover.serverFallbackMessage": "शिल्लक/पॅकेज मर्यादा संपल्यावर, तुम्ही दुसऱ्या प्रदात्याकडे स्विच कराल. दुहेरी चार्जिंग टाळण्यासाठी सामान्य त्रुटी आपोआप पाठवल्या जात नाहीत.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

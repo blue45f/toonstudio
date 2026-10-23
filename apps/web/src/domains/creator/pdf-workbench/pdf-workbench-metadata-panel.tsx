@@ -13,6 +13,7 @@
  *   buildMergedPdfBytes({ state, bytesBySourceId, metadata: metadataFromFormValue(form) ?? undefined })
  */
 
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import {
   PDF_METADATA_FIELD_LIMITS,
   describePdfSourceMetadataRows,
@@ -125,7 +126,7 @@ export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }
                     ))}
                   </dl>
                 ) : (
-                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">기록된 속성이 없어요.</p>
+                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{creatorRestStatusText("creatorRest.status.pdfMetadata.empty", "기록된 속성이 없어요.")}</p>
                 )}
               </div>
             );

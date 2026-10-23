@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import { createStudioNativeBrushProbeClient } from "./studio-native-brush-probe-client";
 import {
@@ -16,6 +19,7 @@ interface Gesture {
 }
 const CONTROL = "min-h-11 rounded-lg border border-line bg-card px-3 text-sm text-fg disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
 export default function StudioNativeBrushEngineProbe({ color, strokeWidth }: { color: string; strokeWidth: number }) {
+  const t = useT();
   const [engine, setEngine] = useState<NativeBrushProbeEngine>("libmypaint");
   const [style, setStyle] = useState<NativeBrushProbeStyle>("ink");
   const [ready, setReady] = useState(false), [active, setActive] = useState(false);
@@ -101,7 +105,7 @@ export default function StudioNativeBrushEngineProbe({ color, strokeWidth }: { c
     if (!ready || !owner || gesture.current || !event.isPrimary || event.button !== 0) return;
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
     const current: Gesture = { pointer: event.pointerId, start: event.timeStamp, lastTime: 0, pending: [], accepted: 0, busy: false, initialized: false, ended: false };
-    gesture.current = current; setActive(true); setStatus("시험 획 처리 중…");
+    gesture.current = current; setActive(true); setStatus(t("studio.brushCanvasStatus.brush.nativeProcessingStroke", "시험 획 처리 중…"));
     enqueue(event);
     void owner.request({ type: "begin", config: {
       size: Math.min(128, Math.max(1, Number.isFinite(strokeWidth) ? strokeWidth : 12)),

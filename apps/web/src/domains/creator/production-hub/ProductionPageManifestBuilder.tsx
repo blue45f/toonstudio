@@ -183,7 +183,7 @@ export function ProductionPageManifestBuilder({
         openImportHandoff(editorHref, file);
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : t("productionHub.status.manifestPackageFailed", "페이지 버전 패키지를 만들지 못했습니다."));
+      setNotice(error instanceof Error ? error.message : t("productionHub.status.manifestPackageFailed", "페이지 버전 패키지를 만들지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setBusy(null);
     }

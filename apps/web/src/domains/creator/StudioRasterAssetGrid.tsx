@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { BadgeCheck, Loader2, Plus, Shapes, Sparkles, Star } from "lucide-react";
 
 import {
@@ -102,7 +103,7 @@ export function StudioRasterAssetGrid({
           className="rounded-xl border border-dashed border-line bg-card px-3 py-5 text-center"
         >
           <Star size={18} className="mx-auto text-fg-3" aria-hidden />
-          <p className="mt-2 text-[0.68rem] font-semibold text-fg-2">아직 즐겨찾기한 소품이 없습니다.</p>
+          <p className="mt-2 text-[0.68rem] font-semibold text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.rasterAssetGrid.favoritesEmpty", "아직 즐겨찾기한 소품이 없습니다.")}</p>
           <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
             별 버튼을 눌러 자주 쓰는 소품을 이곳에 모아보세요.
           </p>

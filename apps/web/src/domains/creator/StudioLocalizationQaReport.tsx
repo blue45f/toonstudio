@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4"; import { r5CreatorStatusText } from "./r5-cat1-status-i18n";
 // 현지화 QA 리포트 — 대사 번역 패널 안에서 열리는 회차 단위 품질 보고서.
 //
 // 계산은 하나도 하지 않는다. `studio-localization-qa.runStudioLocalizationQa()`가 낸
@@ -38,13 +39,13 @@ const SEVERITY_META: Readonly<
 const VERDICT_META = {
   pass: { label: "통과", chip: "border-good/35 bg-good/10 text-good", icon: CheckCircle2 },
   fail: { label: "미달", chip: "border-bad/35 bg-bad/10 text-bad", icon: ShieldAlert },
-  unscorable: { label: "채점 불가", chip: "border-warn/35 bg-warn/10 text-warn", icon: Info },
+  unscorable: { label: r5CreatorStatusText("r5cat1.creator.localizationQa.unscorable", "채점 불가"), chip: "border-warn/35 bg-warn/10 text-warn", icon: Info },
 } as const;
 
 const FAIL_REASON_LABEL: Readonly<Record<string, string>> = {
-  "critical-error": "치명 오류가 있으면 점수와 무관하게 미달입니다.",
+  "critical-error": panelStatusTextR4("studio.panelStatus.localizationQa.criticalErrorFailReason", "치명 오류가 있으면 점수와 무관하게 미달입니다."),
   "below-threshold": "품질 점수가 합격선에 못 미칩니다.",
-  "empty-denominator": "검사할 대사가 없어 점수를 낼 수 없습니다.",
+  "empty-denominator": r5CreatorStatusText("r5cat1.creator.localizationQa.emptyCues", "검사할 대사가 없어 점수를 낼 수 없습니다."),
 };
 
 function severityChip(severity: StudioMqmSeverity) {
@@ -236,8 +237,7 @@ export function StudioLocalizationQaReport({
         )}
         {character.status === "ran" && character.attributedCueCount === 0 && (
           <p className="mt-1.5 rounded-lg border border-warn/35 bg-warn/10 px-1.5 py-1 text-[0.58rem] leading-relaxed text-warn">
-            화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요. 인물 카드에서 대사 화자를
-            지정하세요. 인물 규칙 오류 0건을 &quot;통과&quot;로 읽지 마세요.
+            {panelStatusText("studio.panelStatus.localizationQa.noAttributedCues", "화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요. 인물 카드에서 대사 화자를 지정하세요. 인물 규칙 오류 0건을 \"통과\"로 읽지 마세요.")}
           </p>
         )}
         {character.status === "ran" && character.attributedCueCount > 0 && character.unattributedCueCount > 0 && (
@@ -276,8 +276,7 @@ export function StudioLocalizationQaReport({
         )}
         {report.legibilityCheckedCueCount === 0 && report.checkedCueCount > 0 && (
           <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
-            명도 대비를 판정한 대사가 없습니다(반투명·그라데이션 채우기이거나 색을 읽지
-            못했습니다). 대비 미달 0개를 "통과"로 읽지 마세요.
+            {panelStatusText("studio.panelStatus.localizationQa.noLegibilityCues", "명도 대비를 판정한 대사가 없습니다(반투명·그라데이션 채우기이거나 색을 읽지 못했습니다). 대비 미달 0개를 \"통과\"로 읽지 마세요.")}
           </p>
         )}
         {/* 점수의 한계를 화면이 직접 말한다 — 임계값 99는 단어 분모로만 교정돼 있다. */}
@@ -321,8 +320,8 @@ export function StudioLocalizationQaReport({
       {sections.length === 0 ? (
         <StudioEmptyState
           icon={<CheckCircle2 size={20} aria-hidden />}
-          title="지적할 곳이 없어요"
-          description={`${report.checkedCueCount}개 대사에서 문체·넘침 문제를 찾지 못했습니다.`}
+          title={panelStatusText("studio.panelStatus.localizationQa.emptyTitle", "지적할 곳이 없어요")}
+          description={panelStatusText("studio.panelStatus.localizationQa.emptyDescription", {"count": report.checkedCueCount}, "{count}개 대사에서 문체·넘침 문제를 찾지 못했습니다.")}
         />
       ) : (
         <div className="space-y-2.5">

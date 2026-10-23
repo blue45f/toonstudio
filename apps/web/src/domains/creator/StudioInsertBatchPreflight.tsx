@@ -47,11 +47,11 @@ import {
 } from "./studio-insert-batch-model";
 
 import type { StudioToolBeltContentProps } from "./StudioToolBeltContent";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 
-const REVIEW_LOCKED_MESSAGE =
-  "이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 이미지를 삽입해 주세요.";
+const reviewLockedMessage = (): string => frozenStatus4Text("studio.frozenStatus4.batch.reviewLocked", "이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 이미지를 삽입해 주세요.");
 const FOCUS =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-panel";
 const CONTROL = `min-h-11 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS}`;
@@ -117,7 +117,7 @@ function createBatchItemId(file: File): string {
 function errorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim()
     ? error.message
-    : "이미지를 준비하지 못했습니다.";
+    : frozenStatus4Text("studio.frozenStatus4.batch.prepareFailed", "이미지를 준비하지 못했습니다.");
 }
 
 function resolveSelectionBounds(
@@ -157,13 +157,13 @@ function summarizeRejections(
   if (rejected.length === 1) {
     return `${first.file.name}: ${first.reason}`;
   }
-  return `${first.file.name}: ${first.reason} 외 ${rejected.length - 1}개 파일을 제외했습니다.`;
+  return frozenStatus4Text("studio.frozenStatus4.batch.rejectedSummary", { name: first.file.name, reason: first.reason, count: rejected.length - 1 }, "{name}: {reason} 외 {count}개 파일을 제외했습니다.");
 }
 
 function itemStatusLabel(item: BatchItem): string {
-  if (item.status === "preparing") return "안전 검사·미리보기 준비 중";
+  if (item.status === "preparing") return frozenStatus4Text("studio.frozenStatus4.batch.preparing", "안전 검사·미리보기 준비 중");
   if (item.status === "error") return item.message;
-  const animation = item.prepared.isAnimatedGif ? " · 애니메이션 GIF" : "";
+  const animation = item.prepared.isAnimatedGif ? frozenStatus4Text("studio.frozenStatus4.batch.animatedGif", " · 애니메이션 GIF") : "";
   return `${item.prepared.width} × ${item.prepared.height}${animation}`;
 }
 
@@ -428,10 +428,7 @@ export function StudioInsertBatchPreflight({
         ),
       ]);
       setExpanded(true);
-      setNotice({
-        tone: "info",
-        message: `${staged.length}개 이미지를 안전하게 준비하고 있습니다.`,
-      });
+      setNotice({ tone: "info", message: frozenStatus4Text("studio.frozenStatus4.batch.staging", { count: staged.length }, "{count}개 이미지를 안전하게 준비하고 있습니다.") });
       void prepareAccepted(staged).then(() => {
         if (!aliveRef.current) return;
         const stagedIds = new Set(staged.map((item) => item.id));
@@ -446,15 +443,9 @@ export function StudioInsertBatchPreflight({
         setNotice((current) => {
           if (current?.tone === "error") return current;
           if (failedCount > 0) {
-            return {
-              tone: "error",
-              message: `${readyCount}개 준비 완료 · ${failedCount}개 파일은 목록에서 오류를 확인해 주세요.`,
-            };
+            return { tone: "error", message: frozenStatus4Text("studio.frozenStatus4.batch.readyCheckFailed", { ready: readyCount, failed: failedCount }, "{ready}개 준비 완료 · {failed}개 파일은 목록에서 오류를 확인해 주세요.") };
           }
-          return {
-            tone: "success",
-            message: `${readyCount}개 파일의 준비를 마쳤습니다.`,
-          };
+          return { tone: "success", message: frozenStatus4Text("studio.frozenStatus4.batch.readyDone", { ready: readyCount }, "{ready}개 파일의 준비를 마쳤습니다.") };
         });
       });
     }
@@ -540,10 +531,7 @@ export function StudioInsertBatchPreflight({
           : item,
       ),
     );
-    setNotice({
-      tone: "info",
-      message: `${retryItems.length}개 오류 파일을 다시 준비하고 있습니다.`,
-    });
+    setNotice({ tone: "info", message: frozenStatus4Text("studio.frozenStatus4.batch.retrying", { count: retryItems.length }, "{count}개 오류 파일을 다시 준비하고 있습니다.") });
     await prepareAccepted(retryItems);
     if (!aliveRef.current) return;
     const retryIds = new Set(retryItems.map((item) => item.id));
@@ -553,23 +541,15 @@ export function StudioInsertBatchPreflight({
         Number(retryIds.has(item.id) && item.status === "error"),
       0,
     );
-    setNotice(
-      failedCount > 0
-        ? {
-            tone: "error",
-            message: `${failedCount}개 파일을 다시 준비하지 못했습니다.`,
-          }
-        : {
-            tone: "success",
-            message: `${retryItems.length}개 파일을 다시 준비했습니다.`,
-          },
-    );
+    setNotice(failedCount > 0
+      ? { tone: "error", message: frozenStatus4Text("studio.frozenStatus4.batch.retryFailed", { count: failedCount }, "{count}개 파일을 다시 준비하지 못했습니다.") }
+      : { tone: "success", message: frozenStatus4Text("studio.frozenStatus4.batch.retryDone", { count: retryItems.length }, "{count}개 파일을 다시 준비했습니다.") });
   }
 
   async function insertReadyItems(): Promise<void> {
     if (!canInsert) {
       if (toolBelt.activeSurfaceReviewLocked) {
-        setNotice({ tone: "error", message: REVIEW_LOCKED_MESSAGE });
+        setNotice({ tone: "error", message: reviewLockedMessage() });
       }
       return;
     }
@@ -596,16 +576,13 @@ export function StudioInsertBatchPreflight({
     const succeeded = new Set<string>();
     const failures: string[] = [];
     setInserting(true);
-    setNotice({
-      tone: "info",
-      message: `${readyItems.length}개 이미지를 캔버스에 삽입하고 있습니다.`,
-    });
+    setNotice({ tone: "info", message: frozenStatus4Text("studio.frozenStatus4.batch.inserting", { count: readyItems.length }, "{count}개 이미지를 캔버스에 삽입하고 있습니다.") });
 
     try {
       for (const item of readyItems) {
         const placement = placementById.get(item.id);
         if (!placement) {
-          failures.push(`${item.file.name}: 배치 위치를 만들지 못했습니다.`);
+          failures.push(frozenStatus4Text("studio.frozenStatus4.batch.placementFailed", { name: item.file.name }, "{name}: 배치 위치를 만들지 못했습니다."));
           continue;
         }
         try {
@@ -625,7 +602,7 @@ export function StudioInsertBatchPreflight({
             ),
           );
           if (result === false) {
-            throw new Error("캔버스가 이미지 삽입을 거절했습니다.");
+            throw new Error(frozenStatus4Text("studio.frozenStatus4.batch.canvasRejected", "캔버스가 이미지 삽입을 거절했습니다."));
           }
           succeeded.add(item.id);
         } catch (error) {
@@ -642,16 +619,10 @@ export function StudioInsertBatchPreflight({
       );
     }
     if (failures.length > 0) {
-      setNotice({
-        tone: "error",
-        message: `${succeeded.size}개 삽입, ${failures.length}개 실패 · ${failures[0]}`,
-      });
+      setNotice({ tone: "error", message: frozenStatus4Text("studio.frozenStatus4.batch.insertPartial", { succeeded: succeeded.size, failed: failures.length, first: failures[0] }, "{succeeded}개 삽입, {failed}개 실패 · {first}") });
       return;
     }
-    setNotice({
-      tone: "success",
-      message: `${succeeded.size}개 이미지를 ${STUDIO_INSERT_BATCH_LAYOUT_LABELS[layout]}로 삽입했습니다.`,
-    });
+    setNotice({ tone: "success", message: frozenStatus4Text("studio.frozenStatus4.batch.inserted", { count: succeeded.size, label: STUDIO_INSERT_BATCH_LAYOUT_LABELS[layout] }, "{count}개 이미지를 {label}로 삽입했습니다.") });
   }
 
   return (
@@ -751,7 +722,7 @@ export function StudioInsertBatchPreflight({
                       disabled={disabled}
                       title={
                         disabled
-                          ? "먼저 캔버스에서 배치할 요소나 영역을 선택하세요."
+                          ? frozenStatus4Text("studio.frozenStatus4.batch.selectFirst", "먼저 캔버스에서 배치할 요소나 영역을 선택하세요.")
                           : undefined
                       }
                       className={cn(
@@ -833,9 +804,9 @@ export function StudioInsertBatchPreflight({
             <div className="mt-3">
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <p className="text-[0.6875rem] font-bold text-fg-3">
-                  준비 목록 · {readyItems.length}개 준비 완료
-                  {preparingCount > 0 ? ` · ${preparingCount}개 검사 중` : ""}
-                  {errorCount > 0 ? ` · ${errorCount}개 오류` : ""}
+                  {frozenStatus4Text("studio.frozenStatus4.batch.summaryReady", { count: readyItems.length }, "준비 목록 · {count}개 준비 완료")}
+                  {preparingCount > 0 ? frozenStatus4Text("studio.frozenStatus4.batch.summaryPreparing", { count: preparingCount }, " · {count}개 검사 중") : ""}
+                  {errorCount > 0 ? frozenStatus4Text("studio.frozenStatus4.batch.summaryErrors", { count: errorCount }, " · {count}개 오류") : ""}
                 </p>
                 <span className="text-[0.6875rem] text-fg-3">
                   {formatStudioInsertBatchBytes(totalBytes)}
@@ -909,7 +880,7 @@ export function StudioInsertBatchPreflight({
 
           {toolBelt.activeSurfaceReviewLocked ? (
             <p className="mt-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
-              {REVIEW_LOCKED_MESSAGE}
+              {reviewLockedMessage()}
             </p>
           ) : null}
 
@@ -962,7 +933,7 @@ export function StudioInsertBatchPreflight({
               (!notice || notice.tone === "info") && "text-fg-3",
             )}
           >
-            {notice?.message ?? "파일은 확정 전까지 캔버스와 문서 기록을 변경하지 않습니다."}
+            {notice?.message ?? frozenStatus4Text("studio.frozenStatus4.batch.defaultNotice", "파일은 확정 전까지 캔버스와 문서 기록을 변경하지 않습니다.")}
           </div>
         </div>
       ) : null}

@@ -76,6 +76,39 @@ describe("Studio BG3D runtime adapter boundary", () => {
     expect(Object.isFrozen(snapshot)).toBe(true);
   });
 
+  it("숨긴 태그를 특화 런타임 스냅샷의 노드 visible 에 굽고 저장 문서는 그대로 둔다", () => {
+    const node = (id: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      name: id,
+      kind: "primitive",
+      primitiveKind: "box",
+      color: "#c9a876",
+      transform: { position: [0, 0.5, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+      parentId: null,
+      visible: true,
+      locked: false,
+      castsShadow: true,
+      receivesShadow: true,
+      ...extra,
+    });
+    const document = normalizeStudioBg3dSceneDocument({
+      ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+      meta: { hiddenTags: ["벽"] },
+      nodes: [node("wall", { tags: ["벽"] }), node("floor")],
+    });
+
+    const snapshot = createStudioBg3dRuntimeSnapshot(document, new Map());
+
+    expect(JSON.parse(snapshot.canonicalDocumentJson)).toMatchObject({
+      meta: { hiddenTags: ["벽"] },
+      nodes: [
+        { id: "wall", visible: false, tags: ["벽"] },
+        { id: "floor", visible: true },
+      ],
+    });
+    expect(document.nodes.map((entry) => entry.visible)).toEqual([true, true]);
+  });
+
   it("checks capabilities, sanitizes DTO results, and disposes registered adapters", async () => {
     const adapter = metricsAdapter();
     const registry = new StudioBg3dRuntimeAdapterRegistry();

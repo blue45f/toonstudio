@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Profilinhalt",
   "userProfile.refresh": "Erfrischungen",
   "userProfile.emptyReviews": "Noch keine Bewertungen von diesem Benutzer veröffentlicht.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Erstellte Werke konnten nicht geladen werden. Bitte erneut versuchen.",
+  "userProfile.series.error": "Serien konnten nicht geladen werden. Bitte erneut versuchen.",
+  "userProfile.emptyReviewsHint": "Erste Bewertung zu einem Lieblingstitel hinterlassen.",
+  "userProfile.emptyReviewsCta": "Titel durchsuchen"
 }

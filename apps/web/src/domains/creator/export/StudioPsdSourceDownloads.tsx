@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { parseStudioPsdSource, type StudioPsdSource } from "./studio-psd-source";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 /** 현재 문서에 연결된 원본만 표시한다. 다른 문서의 로컬 원본 목록은 노출하지 않는다. */
 export function StudioPsdSourceDownloads({ pages }: {
@@ -21,9 +22,9 @@ export function StudioPsdSourceDownloads({ pages }: {
     try {
       const { downloadStudioPsdSource } = await import("./studio-psd-source");
       await downloadStudioPsdSource(source);
-      setStatus(`${source.name} 원본을 내려받았어요.`);
+      setStatus(subStatusText("studio.subStatus.psd.downloaded", { name: source.name }, "{name} 원본을 내려받았어요."));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "PSD 원본을 읽지 못했어요.");
+      setStatus(error instanceof Error ? error.message : subStatusText("studio.subStatus.psd.readFailed", "PSD 원본을 읽지 못했어요."));
     } finally { setBusy(false); }
   };
   return <div className="flex w-full flex-wrap items-center gap-2" aria-label="연결된 PSD 원본">

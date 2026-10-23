@@ -12,7 +12,9 @@ import {
 } from "./lib/studio-verify-preview-harness.mjs";
 
 const OUTPUT = resolve("artifacts/vrm-hand-visual-audit");
-const CHARACTER_IDS = ["sample-vrm", "avatar-a", "avatar-b", "avatar-c", "mio", "noa"] as const;
+// 저장소에 번들되어 재배포가 허용된 모델만 쓴다(apps/web/public/vrm/LICENSES.md). VRoidPreset(AvatarSample A–C)과
+// fem_vroid·masc_vroid 는 권리 사유로 저장소에서 제거됐으므로 harness 단추와 이 목록에 다시 넣지 않는다.
+const CHARACTER_IDS = ["sample-vrm", "shino", "fumi", "kage", "alicia", "jennifer"] as const;
 const errors: string[] = [];
 const receipt: Record<string, unknown> = {
   generatedAt: new Date().toISOString(),
@@ -67,6 +69,17 @@ async function clickCharacter(page: Page, id: string) {
   await button.waitFor({ state: "visible", timeout: 30_000 });
   const name = await button.getAttribute("data-name");
   if (!name) throw new Error(`missing character name for ${id}`);
+  const modelUrl = await button.getAttribute("data-url");
+  if (!modelUrl) throw new Error(`missing model url for ${id}`);
+  // 모델 파일이 없으면 Vite 가 index.html 을 200 으로 돌려줘 GLTFLoader 가 JSON 파싱 오류만 남기고 60초를 기다리게 된다.
+  // 기다리기 전에 실제 파일이 서빙되는지 먼저 확인해 원인을 바로 알린다.
+  const response = await page.request.get(new URL(modelUrl, page.url()).toString());
+  const contentType = response.headers()["content-type"] ?? "";
+  if (!response.ok() || contentType.includes("text/html")) {
+    throw new Error(
+      `model file for ${id} is not served: ${modelUrl} (status=${response.status()}, content-type=${contentType || "none"})`,
+    );
+  }
   await button.click();
   return name;
 }
@@ -106,7 +119,8 @@ try {
   });
   page.on("crash", () => errors.push("page crashed while rendering VRM hand evidence"));
 
-  await page.goto(`${origin}/tools/browser-harnesses/hand-compare.html`, { waitUntil: "load" });
+  // Vite 개발 서버의 첫 요청은 의존성 최적화가 끝나야 응답한다. 부하가 있는 기기에서는 기본 30초를 넘기므로 넉넉히 기다린다.
+  await page.goto(`${origin}/tools/browser-harnesses/hand-compare.html`, { waitUntil: "load", timeout: 120_000 });
   const handReceipts: unknown[] = [];
   for (const id of CHARACTER_IDS) {
     const name = await clickCharacter(page, id);
@@ -125,7 +139,7 @@ try {
   }
   receipt.hand = handReceipts;
 
-  await page.goto(`${origin}/tools/browser-harnesses/props-compare.html`, { waitUntil: "load" });
+  await page.goto(`${origin}/tools/browser-harnesses/props-compare.html`, { waitUntil: "load", timeout: 120_000 });
   const propReceipts: unknown[] = [];
   for (const id of CHARACTER_IDS) {
     const name = await clickCharacter(page, id);

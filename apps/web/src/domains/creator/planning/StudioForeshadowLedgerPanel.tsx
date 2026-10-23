@@ -10,6 +10,7 @@
  *   안 쓰는 작가의 기획 동선을 방해하지 않기 위해서다.
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   FORESHADOW_STATUSES,
@@ -130,7 +131,7 @@ export function StudioForeshadowLedgerPanel({
 
       {seeds.length === 0 ? (
         <details>
-          <summary>아직 등록된 복선이 없어요 — 첫 복선 등록하기</summary>
+          <summary>{r3c04StatusText("studio.r3c04Status.planning.foreshadow.emptySeeds", "아직 등록된 복선이 없어요 — 첫 복선 등록하기")}</summary>
           <SeedForm
             episodes={episodes}
             facts={facts}
@@ -196,7 +197,7 @@ export function StudioForeshadowLedgerPanel({
               </li>
             ))}
           </ul>
-          {visibleSeeds.length === 0 && <p>이 상태의 복선이 없어요.</p>}
+          {visibleSeeds.length === 0 && <p>{r3c04StatusText("studio.r3c04Status.planning.foreshadow.emptyByStatus", "이 상태의 복선이 없어요.")}</p>}
           {editingSeed ? (
             <SeedForm
               key={editingSeed.id}

@@ -31,7 +31,7 @@ export function StudioBg3dProSuitePanel(props: StudioBg3dProSuitePanelProps) {
 
   return (
     <Suspense
-      fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.proTools3d", "3D 전문 도구를 불러오는 중입니다.")} />}
+      fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.proTools3d", "3D 전문 도구를 불러오는 중이에요.")} />}
     >
       <LazyProSuiteContent
         {...props}

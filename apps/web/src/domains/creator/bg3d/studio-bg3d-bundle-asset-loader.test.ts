@@ -2,24 +2,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
 import {
-  STUDIO_BG3D_BUNDLE_LICENSE_NAME,
   loadStudioBg3dBundleAssetBytes,
   loadStudioBg3dBundleThemePackRecord,
   loadStudioBg3dBundleThemePackRecordByHash,
   releaseStudioBg3dBundleAssetBytes,
   resolveStudioBg3dBundleRecordSource,
   resolveStudioBg3dBundleRecordSourceByHash,
+  studioBg3dBundleAssetRights,
   type StudioBg3dBundleRecordPreparer,
 } from "./studio-bg3d-bundle-asset-loader";
 import {
   findStudioBg3dBundleAsset,
   loadStudioBg3dBundleThemePacks,
+  parseStudioBg3dBundleThemePacks,
   resetStudioBg3dBundleThemePacksCache,
   type StudioBg3dBundleThemePacks,
 } from "./studio-bg3d-bundle-theme-packs";
 
 const SHA_1 = "c".repeat(64);
 const SHA_2 = "d".repeat(64);
+const TEST_PACK_LICENSE_NAME = "Creator Bundle: Volume 1 — Test Pack License";
+const TEST_PACK_RIGHTS = {
+  serve: "allow",
+  status: "licensed",
+  licenseName: TEST_PACK_LICENSE_NAME,
+  commercialUse: true,
+  attributionRequired: false,
+} as const;
 const JSON_CHUNK = 0x4e4f534a;
 
 function writeUint32(bytes: Uint8Array, offset: number, value: number): void {
@@ -65,6 +74,7 @@ function rawThemePacks(): Record<string, unknown> {
       placeable: 2,
       twinCovered: 0,
       deferred: { fbx: 0, gltf: 0, blend: 0, overBudget: {} },
+      rights: TEST_PACK_RIGHTS,
       note: null,
     }],
     assets: [
@@ -135,7 +145,7 @@ describe("resolveStudioBg3dBundleRecordSource", () => {
       status: "licensed",
       commercialUse: true,
       attributionRequired: false,
-      licenseName: STUDIO_BG3D_BUNDLE_LICENSE_NAME,
+      licenseName: TEST_PACK_LICENSE_NAME,
     });
   });
 
@@ -172,7 +182,7 @@ describe("loadStudioBg3dBundleAssetBytes", () => {
     const asset = findStudioBg3dBundleAsset("cbv1-ingest-test-001");
     if (!asset) throw new Error("fixture asset missing");
     stubGlbFetch(GLB);
-    const loaded = await loadStudioBg3dBundleAssetBytes(asset, "/assets/studio/bundle-v2/test-pack/one.glb");
+    const loaded = await loadStudioBg3dBundleAssetBytes(asset, `/assets/studio/bundle-v2/${SHA_1}.glb`);
     expect(loaded.mimeType).toBe("model/gltf-binary");
     expect(loaded.bytes.byteLength).toBe(GLB.byteLength);
   });
@@ -195,7 +205,7 @@ describe("loadStudioBg3dBundleAssetBytes", () => {
     const notGlb = new Uint8Array(GLB.byteLength);
     stubGlbFetch(notGlb);
     await expect(
-      loadStudioBg3dBundleAssetBytes(asset, "/assets/studio/bundle-v2/test-pack/one.glb"),
+      loadStudioBg3dBundleAssetBytes(asset, `/assets/studio/bundle-v2/${SHA_1}.glb`),
     ).rejects.toThrow();
   });
 });
@@ -213,7 +223,7 @@ describe("loadStudioBg3dBundleThemePackRecord", () => {
     expect(prepare).toHaveBeenCalledTimes(1);
     const [input, options] = prepare.mock.calls[0] ?? [];
     expect(input?.expectedSha256).toBe(`sha256:${SHA_2}`);
-    expect(input?.rights?.licenseName).toBe(STUDIO_BG3D_BUNDLE_LICENSE_NAME);
+    expect(input?.rights?.licenseName).toBe(TEST_PACK_LICENSE_NAME);
     expect(input?.file.name).toBe("two.glb");
     expect(options?.profile).toBe("mobile");
     expect(options?.idFactory?.()).toBe("cbv1-ingest-test-002");
@@ -236,3 +246,124 @@ describe("loadStudioBg3dBundleThemePackRecord", () => {
     expect(prepare).not.toHaveBeenCalled();
   });
 });
+
+describe("studioBg3dBundleAssetRights (팩별 권리 조회)", () => {
+  function multiPackRaw(): Record<string, unknown> {
+    const raw = rawThemePacks();
+    const [first] = raw.packs as Record<string, unknown>[];
+    const { rights: _rights, ...legacyPack } = first ?? {};
+    raw.packs = [
+      first,
+      {
+        ...first,
+        title: "Public Domain Pack",
+        ingestPackIds: ["pd-pack"],
+        rights: {
+          serve: "allow",
+          status: "public-domain",
+          licenseName: "CC0 1.0 — Test Pack",
+          commercialUse: true,
+          attributionRequired: false,
+        },
+      },
+      { ...legacyPack, title: "Pre-ledger Pack", ingestPackIds: ["legacy-pack"] },
+    ];
+    raw.assets = [
+      { id: "cbv1-ingest-test-001", pack: 0, path: "test-pack/one.glb", bytes: GLB.byteLength, sha256: SHA_1, tris: 3 },
+      { id: "cbv1-ingest-test-002", pack: 1, path: "pd-pack/two.glb", bytes: GLB.byteLength, sha256: SHA_2, tris: 5 },
+      { id: "cbv1-ingest-test-003", pack: 2, path: "legacy-pack/three.glb", bytes: GLB.byteLength, sha256: "e".repeat(64), tris: 7 },
+    ];
+    raw.totals = { packs: 3, placeableAssets: 3, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
+    return raw;
+  }
+
+  it("gives every asset its own pack's rights instead of one bundle-wide constant", () => {
+    const data = parseStudioBg3dBundleThemePacks(multiPackRaw());
+    const [licensed, publicDomain] = data.assets;
+    expect(licensed && studioBg3dBundleAssetRights(licensed, data)).toEqual({
+      status: "licensed",
+      commercialUse: true,
+      attributionRequired: false,
+      licenseName: TEST_PACK_LICENSE_NAME,
+    });
+    expect(publicDomain && studioBg3dBundleAssetRights(publicDomain, data)).toEqual({
+      status: "public-domain",
+      commercialUse: true,
+      attributionRequired: false,
+      licenseName: "CC0 1.0 — Test Pack",
+    });
+  });
+
+  it.each([
+    { commercialUse: false, attributionRequired: false },
+    { commercialUse: true, attributionRequired: true },
+    { commercialUse: false, attributionRequired: true },
+  ])("passes a restrictive pack grant through unchanged (commercialUse=$commercialUse, attributionRequired=$attributionRequired)", async (grant) => {
+    // 기본값(상업 이용 가능·출처 표기 불필요)과 다른 값이 레코드 권리까지 그대로 가야 한다 — 권리를 넓히는 정규화가 없다.
+    const raw = multiPackRaw();
+    const packs = raw.packs as Record<string, unknown>[];
+    packs[1] = {
+      ...packs[1],
+      rights: { serve: "allow", status: "licensed", licenseName: "Restrictive Test License", ...grant },
+    };
+    const data = parseStudioBg3dBundleThemePacks(raw);
+    const restrictive = data.assets[1];
+    if (!restrictive) throw new Error("fixture asset missing");
+    const expected = { status: "licensed", licenseName: "Restrictive Test License", ...grant };
+    expect(studioBg3dBundleAssetRights(restrictive, data)).toEqual(expected);
+    // 같은 값이 레코드 소스의 권리로도 전달된다 (다른 팩의 권리와 섞이지 않는다).
+    const source = await resolveStudioBg3dBundleRecordSource("cbv1-ingest-test-002", {
+      loadData: () => loadStudioBg3dBundleThemePacks({
+        fetcher: async () => ({ ok: true, status: 200, json: async () => raw }),
+      }),
+    });
+    expect(source?.rights).toEqual(expected);
+    const sibling = data.assets[0];
+    if (!sibling) throw new Error("fixture asset missing");
+    expect(studioBg3dBundleAssetRights(sibling, data).commercialUse).toBe(true);
+    expect(studioBg3dBundleAssetRights(sibling, data).attributionRequired).toBe(false);
+  });
+
+  it("closes the rights as unknown and non-commercial when the pack carries no rights block", async () => {
+    const data = parseStudioBg3dBundleThemePacks(multiPackRaw());
+    const legacy = data.assets[2];
+    if (!legacy) throw new Error("fixture asset missing");
+    expect(studioBg3dBundleAssetRights(legacy, data)).toEqual({
+      status: "unknown",
+      commercialUse: false,
+      attributionRequired: false,
+    });
+    // 에셋 조회 색인은 로더(loadStudioBg3dBundleThemePacks)가 채우므로 같은 경로로 불러온다.
+    const source = await resolveStudioBg3dBundleRecordSource("cbv1-ingest-test-003", {
+      loadData: () => loadStudioBg3dBundleThemePacks({
+        fetcher: async () => ({ ok: true, status: 200, json: async () => multiPackRaw() }),
+      }),
+    });
+    expect(source?.rights).toEqual({ status: "unknown", commercialUse: false, attributionRequired: false });
+  });
+
+  it("falls back to unknown for an asset whose pack index does not exist", () => {
+    const data = parseStudioBg3dBundleThemePacks(rawThemePacks());
+    const [asset] = data.assets;
+    if (!asset) throw new Error("fixture asset missing");
+    expect(studioBg3dBundleAssetRights({ ...asset, packIndex: 99 }, data).status).toBe("unknown");
+  });
+});
+
+describe("bundle serving URL", () => {
+  it("requests the asset by its sha256 key and never puts the original path in the URL", async () => {
+    stubFetchRouter(GLB);
+    releaseStudioBg3dBundleAssetBytes("cbv1-ingest-test-001");
+    const source = await resolveStudioBg3dBundleRecordSource("cbv1-ingest-test-001", { loadData: loadFixtureData });
+    if (!source) throw new Error("source missing");
+    await source.loadSource();
+    const requested = vi.mocked(fetch).mock.calls
+      .map(([input]) => String(input))
+      .filter((url) => !url.includes("theme-packs.json"));
+    expect(requested).toEqual([`/assets/studio/bundle-v2/${SHA_1}.glb`]);
+    expect(requested[0]).not.toContain("test-pack");
+    expect(requested[0]).not.toContain("one.glb");
+    source.releaseSource();
+  });
+});
+

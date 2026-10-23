@@ -13,6 +13,7 @@ import { useEffect, useId, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { STUDIO_FOCUS_RING, StudioEmptyState } from "../studio-panel-ui";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { StudioVrmPoserViewport } from "../vrm/StudioVrmPoserViewport";
 import { useStudio3dVisualViewport } from "../studio-3d-ui/useStudio3dVisualViewport";
 import "./studio-character-shaper-workspace.css";
@@ -74,7 +75,7 @@ const VIEWPORT_WRAPPER_CLASS = "relative grid min-h-0 min-w-0 grid-cols-[minmax(
 
 function ShelfSkeleton() {
   return (
-    <div role="status" aria-label="프리셋 불러오는 중" aria-busy="true" className="flex h-full min-h-0 flex-col bg-panel">
+    <div role="status" aria-label={r3c04StatusText("studio.r3c04Status.shaper.dialog.presetsLoading", "프리셋 불러오는 중")} aria-busy="true" className="flex h-full min-h-0 flex-col bg-panel">
       <div className="space-y-2 border-b border-line px-3 pb-3 pt-3">
         <div className="skeleton h-4 w-24 motion-reduce:animate-none" />
         <div className="skeleton h-11 w-full motion-reduce:animate-none" />
@@ -241,7 +242,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
       ? binding.commitPreview(entry)
       : binding.commit(entry);
     if (!result.ok) {
-      setCommitNotice(result.reason ?? "지금은 적용할 수 없습니다.");
+      setCommitNotice(result.reason ?? t("studio.r3c04Status.shaper.dialog.commitUnavailable", "지금은 적용할 수 없습니다."));
     }
   };
 
@@ -377,10 +378,10 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
     <div className="flex h-full min-h-0 flex-col justify-center p-3">
       <StudioEmptyState
         icon={<UserRound size={20} aria-hidden />}
-        title={status === "error" ? "모델을 불러오지 못했습니다" : "VRM 캐릭터를 불러오세요"}
+        title={status === "error" ? t("studio.r3c04Status.shaper.dialog.modelLoadFailed", "모델을 불러오지 못했습니다") : t("studio.r3c04Status.shaper.dialog.loadPrompt", "VRM 캐릭터를 불러오세요")}
         description={
           status === "error"
-            ? errorMessage || "파일 형식이나 경로를 확인한 뒤 다시 시도해 주세요."
+            ? errorMessage || t("studio.r3c04Status.shaper.dialog.loadHint", "파일 형식이나 경로를 확인한 뒤 다시 시도해 주세요.")
             : "샘플 캐릭터로 바로 시작하거나 내 .vrm 파일을 올릴 수 있습니다."
         }
         action={

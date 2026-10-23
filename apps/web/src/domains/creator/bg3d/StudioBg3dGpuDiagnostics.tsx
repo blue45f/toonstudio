@@ -1,9 +1,25 @@
 import { useId, useSyncExternalStore } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import type {
   GpuDiagnosticReason,
   StudioScene3dGpuDiagnostics,
 } from "../scene3d/studio-scene3d-gpu-diagnostics";
+
+const MESSAGE_KEYS: Readonly<Record<GpuDiagnosticReason, string>> = {
+  "not-mounted": "studio.bg3dPanelStatus.gpuDiagnostics.notMounted",
+  unsupported: "studio.bg3dPanelStatus.gpuDiagnostics.unsupported",
+  "other-profiler": "studio.bg3dPanelStatus.gpuDiagnostics.otherProfiler",
+  paused: "studio.bg3dPanelStatus.gpuDiagnostics.paused",
+  "waiting-for-frame": "studio.bg3dPanelStatus.gpuDiagnostics.waitingForFrame",
+  "reading-gpu": "studio.bg3dPanelStatus.gpuDiagnostics.readingGpu",
+  "no-fresh-timestamps": "studio.bg3dPanelStatus.gpuDiagnostics.noFreshTimestamps",
+  "render-failed": "studio.bg3dPanelStatus.gpuDiagnostics.renderFailed",
+  "readback-failed": "studio.bg3dPanelStatus.gpuDiagnostics.readbackFailed",
+  "timed-out": "studio.bg3dPanelStatus.gpuDiagnostics.timedOut",
+};
 
 const MESSAGES: Readonly<Record<GpuDiagnosticReason, string>> = {
   "not-mounted": "3D 뷰포트가 준비되면 측정할 수 있습니다.",
@@ -21,6 +37,7 @@ const MESSAGES: Readonly<Record<GpuDiagnosticReason, string>> = {
 export function StudioBg3dGpuDiagnostics({ diagnostics }: {
   readonly diagnostics: StudioScene3dGpuDiagnostics;
 }) {
+  const t = useT();
   const state = useSyncExternalStore(diagnostics.subscribe, diagnostics.getSnapshot, diagnostics.getSnapshot);
   const descriptionId = useId();
   return (
@@ -41,7 +58,7 @@ export function StudioBg3dGpuDiagnostics({ diagnostics }: {
         첫 측정에는 준비 비용이 포함될 수 있습니다. CPU 제출 시간은 별도로 표시합니다.
       </p>
       <div role="status" aria-live="polite" className="mt-2 text-xs text-fg-2">
-        {state.reason ? MESSAGES[state.reason] : state.sample ? (
+        {state.reason ? t(MESSAGE_KEYS[state.reason], MESSAGES[state.reason]) : state.sample ? (
           <dl className="grid grid-cols-2 gap-1 font-mono tabular-nums">
             <dt>GPU 패스 합계</dt><dd>{state.sample.gpuPassTotalMs.toFixed(3)} ms</dd>
             <dt>CPU 제출 시간</dt><dd>{state.sample.cpuSubmitMs.toFixed(3)} ms</dd>

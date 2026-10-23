@@ -27,6 +27,14 @@ describe("StudioInspectorAsideShell mobile accessibility contract", () => {
     expect(asideSource).not.toContain('aria-label={isMobile ? "속성" : undefined}');
   });
 
+  it("모바일 대화상자(dialog)와 데스크톱 영역(region) 역할을 모두 허용하는 section 요소를 쓴다", () => {
+    // aside(complementary 랜드마크)는 dialog 역할을 허용하지 않아 모바일 시트가 axe aria-allowed-role 위반이었다.
+    // section 은 dialog·region 을 모두 허용하고, 전역 테마 규칙(aside.bg-panel/section.bg-panel)도 둘을 같게 다룬다.
+    expect(asideSource).toMatch(/<section\s+id="studio-inspector"/u);
+    expect(asideSource).not.toContain("<aside");
+    expect(asideSource).toContain('role={isMobile ? "dialog" : "region"}');
+  });
+
   it("reopens a collapsed desktop Inspector before command-search navigation or palette focus", () => {
     // 세 경로(엣지 레일 onRequestOpen · 인스펙터 내비게이션 · 팔레트 펼치기)에 더해, 분리형 패널
     // 웨이브가 "인스펙터를 띄울 때도 접힌 패널을 먼저 편다"는 네 번째 경로를 넣었다.

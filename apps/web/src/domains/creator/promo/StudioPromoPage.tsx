@@ -28,6 +28,7 @@ import { PromoPanelEditor } from "./PromoPanelEditor";
 import { PromoPreflight } from "./PromoPreflight";
 import { promoPreflight } from "./promo-preflight";
 import { PromoPreview } from "./PromoPreview";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 import { PROMO_STEP_ANCHOR, promoStepStatuses } from "./promo-steps";
 import { PromoStepNav } from "./PromoStepNav";
 import {
@@ -110,8 +111,8 @@ export function StudioPromoPage() {
   };
   const failed = (reason: unknown, signal: AbortSignal) => {
     if (!mounted.current) return;
-    if (signal.aborted) setMessage("작업을 취소했어요. 원본 프로젝트는 유지됩니다.");
-    else setError(reason instanceof Error ? reason.message : "작업을 완료하지 못했어요.");
+    if (signal.aborted) setMessage(subStatusText("studio.subStatus.promoPage.workCancelled", "작업을 취소했어요. 원본 프로젝트는 유지됩니다."));
+    else setError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.promoPage.workFailed", "작업을 완료하지 못했어요."));
   };
   const finish = (controller: AbortController) => {
     if (operation.current === controller) operation.current = null;
@@ -245,7 +246,7 @@ export function StudioPromoPage() {
   };
   const addSoundtrack = (style: PromoSoundtrack) => {
     try { const data = createPromoSoundtrack(project.seconds, style); void uploadAudio(new File([data], `toonstudio-${style}.wav`, { type: "audio/wav" })); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "사운드트랙을 만들지 못했어요."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.promoPage.soundtrackFailed", "사운드트랙을 만들지 못했어요.")); }
   };
   const generate = async () => {
     const controller = start("ai");
@@ -266,12 +267,12 @@ export function StudioPromoPage() {
     if (!controller) return;
     try {
       const blob = await recordPromoVideo(project, { signal: controller.signal, onProgress: (value) => { if (mounted.current) setProgress(value); }, shortSide: quality });
-      if (!controller.signal.aborted) { downloadPromoBlob(blob, `toonstudio-promo.${blob.type.includes("mp4") ? "mp4" : "webm"}`); setMessage("영상 파일을 저장했어요. 업로드 전 영상과 BGM을 재생해 확인해 주세요."); }
+      if (!controller.signal.aborted) { downloadPromoBlob(blob, `toonstudio-promo.${blob.type.includes("mp4") ? "mp4" : "webm"}`); setMessage(subStatusText("studio.subStatus.promoPage.videoSaved", "영상 파일을 저장했어요. 업로드 전 영상과 BGM을 재생해 확인해 주세요.")); }
     } catch (reason) { failed(reason, controller.signal); } finally { finish(controller); }
   };
   const exportRemotion = () => {
-    try { downloadPromoRemotion(project); setMessage("Remotion 프로젝트 ZIP을 저장했어요. 압축 해제 후 README의 명령으로 H.264 MP4를 렌더링할 수 있어요."); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "프로젝트 내보내기에 실패했어요."); }
+    try { downloadPromoRemotion(project); setMessage(subStatusText("studio.subStatus.promoPage.remotionSaved", "Remotion 프로젝트 ZIP을 저장했어요. 압축 해제 후 README의 명령으로 H.264 MP4를 렌더링할 수 있어요.")); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.promoPage.exportFailed", "프로젝트 내보내기에 실패했어요.")); }
   };
   const issues = promoPreflight(project);
   const steps = promoStepStatuses(project, issues);
@@ -347,7 +348,7 @@ export function StudioPromoPage() {
             {!project.panels.length ? (
               <EmptyTeach
                 icon={Clapperboard}
-                title="아직 컷이 없어요"
+                title={subStatusText("studio.subStatus.promoPage.noCutsTitle", "아직 컷이 없어요")}
                 desc="3~6컷으로 첫 번째 예고편을 만들어보세요. 위에서 웹툰 컷을 추가하면 여기에 장면이 쌓입니다."
               />
             ) : null}
@@ -395,7 +396,7 @@ export function StudioPromoPage() {
             <h2 id="promo-export-title">04 · 내보내기</h2>
             <label htmlFor="promo-quality">브라우저 영상 해상도<select id="promo-quality" value={quality} disabled={busy} onChange={(event) => setQuality(Number(event.target.value) as 720 | 1080)}><option value={720}>720p · 빠른 저장</option><option value={1080}>1080p · 높은 해상도</option></select></label>
             <button type="button" className="promo-primary promo-full" disabled={busy || !project.panels.length || !mime} onClick={() => void exportVideo()}>영상 저장 · {mime?.includes("mp4") ? "MP4" : "WebM"}</button>
-            <p className="promo-muted">{mime ? "실시간 녹화 중 이 탭을 유지해 주세요. 다른 탭으로 이동하면 취소합니다. 정확한 프레임 렌더링·H.264 MP4는 Remotion을 사용하세요." : "이 브라우저는 영상 녹화를 지원하지 않아요. Remotion 프로젝트로 내보낼 수 있어요."}</p>
+            <p className="promo-muted">{mime ? "실시간 녹화 중 이 탭을 유지해 주세요. 다른 탭으로 이동하면 취소합니다. 정확한 프레임 렌더링·H.264 MP4는 Remotion을 사용하세요." : subStatusText("studio.subStatus.promoPage.recordingUnsupported", "이 브라우저는 영상 녹화를 지원하지 않아요. Remotion 프로젝트로 내보낼 수 있어요.")}</p>
             <button type="button" className="promo-full" disabled={busy || !project.panels.length} onClick={exportRemotion}>Remotion 프로젝트 ZIP</button>
             <p className="promo-muted">원본 컷·BGM·자막·렌더 코드가 포함됩니다. 별도 Node.js 환경에서 MP4로 렌더링하며, 클라우드 서버나 유료 라이선스 구매는 자동 실행하지 않습니다.</p>
             <div className="promo-button-row">
@@ -419,16 +420,16 @@ export function StudioPromoPage() {
             ) : null}
           </details>
           <div className="promo-feedback" aria-live="polite" aria-atomic="true">
-            {phase === "ai" ? <p>AI가 홍보 문구와 컷 순서를 구성하고 있어요.</p> : null}
-            {phase === "poster" ? <p>썸네일과 콘티를 렌더링하고 있어요.</p> : null}
-            {phase === "import" ? <p>파일을 검사하고 불러오는 중이에요.</p> : null}
-            {phase === "record" ? <><p>영상 저장 중 · {Math.round(progress * 100)}%</p><progress value={progress} max={1} aria-label="영상 저장 진행률" /></> : null}
+            {phase === "ai" ? <p>{subStatusText("studio.subStatus.promoPage.phaseAi", "AI가 홍보 문구와 컷 순서를 구성하고 있어요.")}</p> : null}
+            {phase === "poster" ? <p>{subStatusText("studio.subStatus.promoPage.phasePoster", "썸네일과 콘티를 렌더링하고 있어요.")}</p> : null}
+            {phase === "import" ? <p>{subStatusText("studio.subStatus.promoPage.phaseImport", "파일을 검사하고 불러오는 중이에요.")}</p> : null}
+            {phase === "record" ? <><p>{subStatusText("studio.subStatus.promoPage.phaseRecord", { percent: Math.round(progress * 100) }, "영상 저장 중 · {percent}%")}</p><progress value={progress} max={1} aria-label="영상 저장 진행률" /></> : null}
             {phase === "voice" ? (
               progress > 0
-                ? <><p>클라우드 AI 음성을 자막 타임라인에 맞춰 만드는 중 · {Math.round(progress * 100)}%</p><progress value={progress} max={1} aria-label="AI 음성 생성 진행률" /></>
-                : <p>무료 시스템 음성을 로컬 오디오 파일로 만들고 있어요. 공유창에서는 현재 탭과 탭 오디오를 선택해 주세요.</p>
+                ? <><p>{subStatusText("studio.subStatus.promoPage.phaseVoiceProgress", { percent: Math.round(progress * 100) }, "클라우드 AI 음성을 자막 타임라인에 맞춰 만드는 중 · {percent}%")}</p><progress value={progress} max={1} aria-label="AI 음성 생성 진행률" /></>
+                : <p>{subStatusText("studio.subStatus.promoPage.phaseVoiceLocal", "무료 시스템 음성을 로컬 오디오 파일로 만들고 있어요. 공유창에서는 현재 탭과 탭 오디오를 선택해 주세요.")}</p>
             ) : null}
-            {!busy ? <p>{message}</p> : phase !== "idle" ? <button type="button" onClick={() => operation.current?.abort()}>작업 취소</button> : <p role="status">초안을 불러오는 중이에요…</p>}
+            {!busy ? <p>{message}</p> : phase !== "idle" ? <button type="button" onClick={() => operation.current?.abort()}>작업 취소</button> : <p role="status">{subStatusText("studio.subStatus.promoPage.draftLoading", "초안을 불러오는 중이에요…")}</p>}
           </div>
           {error ? <p className="promo-error" role="alert">{error}</p> : null}
         </aside>

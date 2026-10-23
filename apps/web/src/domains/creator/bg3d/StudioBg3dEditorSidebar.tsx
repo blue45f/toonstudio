@@ -593,7 +593,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 </h3>
                 {activePanelTab === "templates" ? (
                   <Suspense fallback={(
-                    <StudioPanelLoading label={t("studio.canvas.panelLoading.templateTools", "템플릿 도구를 불러오는 중입니다…")} />
+                    <StudioPanelLoading label={t("studio.canvas.panelLoading.templateTools", "템플릿 도구를 불러오는 중이에요…")} />
                   )}>
                     <StudioBg3dSceneTemplatePanel
                       templates={BG_SCENE_TEMPLATES}

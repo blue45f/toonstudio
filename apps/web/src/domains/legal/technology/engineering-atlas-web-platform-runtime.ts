@@ -9,7 +9,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     id: "worker-envelope-64-workers",
     category: "web-platform",
     name: "Dedicated Worker",
-    title: t("워커 69개가 따르는 공통 봉투 규약", "One envelope contract for 69 Workers"),
+    title: t("워커 70개가 따르는 공통 봉투 규약", "One envelope contract for 70 Workers"),
     status: "live",
     tagline: t(
       "요청 번호·취소·소유권 이전·제한 시간, 대부분의 워커 클라이언트가 같은 네 가지 약속을 따릅니다.",
@@ -277,7 +277,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     technologies: ["Dedicated Worker", "Transferable", "AbortController", "Web Workers", "Vite"],
     facts: [
       {
-        value: "69",
+        value: "70",
         label: t("apps/web/src 의 *.worker.ts 파일 수(packages 는 0)", "*.worker.ts files in apps/web/src (0 in packages)"),
         source: "apps/web/src",
       },

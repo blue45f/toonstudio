@@ -14,6 +14,7 @@ import {
   type StudioAnimaticLoadResult,
   type StudioAnimaticSaveResult,
 } from "./studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "./status-i18n/studio-producer-error-i18n";
 import { acquireStudioLocalDatabase } from "./studio-local-database-runtime";
 
 import type { StudioLocalDatabase } from "./studio-local-database";
@@ -54,7 +55,8 @@ export function createStudioAnimaticSqlitePersistence(
         if (raw === null) return { document: null, status: "empty" };
         const imported = importStudioAnimaticDocument(raw);
         if (!imported.ok) {
-          return { document: null, status: "invalid", error: imported.error };
+          // LoadResult.error 문자열 집계 경계 — loadStudioAnimaticDocument와 같은 예외 지점(D4).
+          return { document: null, status: "invalid", error: resolveStudioAnimaticError(imported.error) };
         }
         if (
           studioAnimaticStorageKey(imported.document.workScope)
@@ -74,7 +76,8 @@ export function createStudioAnimaticSqlitePersistence(
 
     async save(document) {
       const exported = exportStudioAnimaticDocument(document);
-      if (!exported.ok) return exported;
+      // SaveResult.error 문자열 집계 경계 — saveStudioAnimaticDocument와 같은 예외 지점(D4).
+      if (!exported.ok) return { ok: false, error: resolveStudioAnimaticError(exported.error) };
       try {
         const database = await acquireDatabase();
         await database.kvSet(

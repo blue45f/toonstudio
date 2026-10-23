@@ -7,6 +7,9 @@ import { dateInput } from "./hiring-form-values";
 import type { CreatorRoomInput } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { api, getApiErrorMessage } from "@/platform/api";
+import { useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
 
 type Scope = Pick<CreatorRoomInput, "kind" | "applicationId" | "teamId" | "participantIds">;
 interface Props { scope: Scope; onCreated: (id: string) => void }
@@ -16,6 +19,7 @@ export function MeetingScheduleForm(props: Props) {
   return <ScheduleForm key={identity} {...props} />;
 }
 function ScheduleForm({ scope, onCreated }: Props) {
+  const t = useT();
   const [title, setTitle] = useState(scope.kind === "interview" ? "지원자 면접" : "팀 회의");
   const [start, setStart] = useState(() => dateInput(new Date(Date.now() + 5 * 60000).toISOString()));
   const [end, setEnd] = useState(() => dateInput(new Date(Date.now() + 35 * 60000).toISOString()));
@@ -33,10 +37,10 @@ function ScheduleForm({ scope, onCreated }: Props) {
       const response = await api.post<unknown>("/collaborations/rooms", { ...scope, title, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() }, { signal: controller.signal, timeout: 10000, retry: 0 });
       if (pending.current !== controller || controller.signal.aborted) return;
       const result = z.object({ id: z.string().min(1).max(256) }).safeParse(response);
-      if (!result.success) throw new Error("생성된 회의의 응답을 확인하지 못했어요.");
+      if (!result.success) throw new Error(t("collaboration.meetingSchedule.createdResponseUnconfirmed", "생성된 회의의 응답을 확인하지 못했어요."));
       onCreated(result.data.id);
     } catch (cause) {
-      const message = await getApiErrorMessage(cause, "일정 저장 결과를 확인하지 못했어요.");
+      const message = await getApiErrorMessage(cause, t("collaboration.meetingSchedule.saveResultUnconfirmed", "일정 저장 결과를 확인하지 못했어요."));
       if (pending.current === controller && !controller.signal.aborted) setError(message);
     } finally {
       if (pending.current === controller) { pending.current = null; setBusy(false); }
@@ -50,7 +54,7 @@ function ScheduleForm({ scope, onCreated }: Props) {
       <CollabField label="시작 (기기 시간대)"><input type="datetime-local" required className={collabInput} value={start} onChange={(event) => setStart(event.target.value)} /></CollabField>
       <CollabField label="종료 (기기 시간대)"><input type="datetime-local" required className={collabInput} value={end} onChange={(event) => setEnd(event.target.value)} /></CollabField>
       {error && <CollabNotice error>{error}<p>자동 재전송하지 않습니다. 이미 저장됐을 수 있으니 회의 목록을 먼저 확인해 주세요.</p></CollabNotice>}
-      <button type="submit" className={collabPrimary}>{busy ? "일정 저장 확인 중…" : "일정·초대 저장"}</button>
+      <button type="submit" className={collabPrimary}>{busy ? t("collaboration.meetingSchedule.savingCheck", "일정 저장 확인 중…") : "일정·초대 저장"}</button>
     </fieldset>
     <p className="text-xs text-fg-3">참여 대상이 바뀌면 입력 화면도 새로 시작합니다. 화면 전환은 서버에서 이미 처리한 예약을 취소하지 않습니다.</p>
   </form>;

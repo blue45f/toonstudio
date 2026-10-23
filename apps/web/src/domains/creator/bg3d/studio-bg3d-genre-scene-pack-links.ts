@@ -2,8 +2,8 @@
  * Studio BG3D 장르 씬팩 ↔ Creator Bundle 연결 데이터 (G8, 2026-10-22).
  *
  * 씬팩(studio-bg3d-scene-composition-presets.ts)은 카메라+조명만 들고 있고, 실제로 무대를
- * 채울 소품·배경은 Creator Bundle 테마 팩(theme-packs.json, 배치 가능 5,303개 — D2 정정
- * 기준)이 들고 있다. 이 모듈은 두 데이터를 잇는 순수 데이터 계층이다: 팩마다 어떤 번들
+ * 채울 소품·배경은 Creator Bundle 테마 팩(theme-packs.json, 배치 가능 14,928개 — 2026-10-22 GLB 텍스처
+ * 임베드 병합·5라운드 재생성+후속 병합 기준)이 들고 있다. 이 모듈은 두 데이터를 잇는 순수 데이터 계층이다: 팩마다 어떤 번들
  * 테마/팩에서 에셋을 가져올 수 있는지와, 그 팩에 실재하는 대표 에셋 id를 기록한다.
  *
  * 정직성 계약:
@@ -66,9 +66,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "NatureForge — Stylized Woodland Forest Pack",
         placeableCount: 255,
         sampleAssetIds: [
-          "cbv1-ingest-143-natureforgeprostylizedwoodland-godot-2026-10-18--m001",
-          "cbv1-ingest-143-natureforgeprostylizedwoodland-godot-2026-10-18--m002",
-          "cbv1-ingest-143-natureforgeprostylizedwoodland-godot-2026-10-18--m003",
+          "cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18--m001",
+          "cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18--m002",
+          "cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18--m003",
         ],
       },
       {
@@ -76,9 +76,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "LumaGrove — Wonky Woods",
         placeableCount: 206,
         sampleAssetIds: [
-          "cbv1-ingest-135-lumagrovewonkywoods-godot-2026-09-29-m001",
-          "cbv1-ingest-135-lumagrovewonkywoods-godot-2026-09-29-m002",
-          "cbv1-ingest-135-lumagrovewonkywoods-godot-2026-09-29-m003",
+          "cbv1-ingest-231-lumagrovewonkywoods-m001",
+          "cbv1-ingest-231-lumagrovewonkywoods-m002",
+          "cbv1-ingest-231-lumagrovewonkywoods-m003",
         ],
       },
     ]),
@@ -88,9 +88,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "Old Town — Courtyards",
         placeableCount: 192,
         sampleAssetIds: [
-          "cbv1-ingest-145-oldtownenvironmentcourtyardslite-2026-08-20-m002",
-          "cbv1-ingest-145-oldtownenvironmentcourtyardslite-2026-08-20-m004",
-          "cbv1-ingest-145-oldtownenvironmentcourtyardslite-2026-08-20-m006",
+          "cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20-m002",
+          "cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20-m004",
+          "cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20-m006",
         ],
       },
     ]),
@@ -98,11 +98,11 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
       {
         packIndex: 30,
         packTitle: "Swamp Builder — Nature·Architecture",
-        placeableCount: 247,
+        placeableCount: 510,
         sampleAssetIds: [
-          "cbv1-ingest-235-swamp-builder-godot-m001",
-          "cbv1-ingest-235-swamp-builder-godot-m002",
-          "cbv1-ingest-235-swamp-builder-godot-m003",
+          "cbv1-ingest-293-swamparch-m001",
+          "cbv1-ingest-293-swamparch-m002",
+          "cbv1-ingest-293-swamparch-m003",
         ],
       },
     ]),
@@ -112,9 +112,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "Sci-Fi Arena: 1",
         placeableCount: 30,
         sampleAssetIds: [
-          "cbv1-ingest-162-sci-fi-arena-pack-2022-3-6f1-m002",
-          "cbv1-ingest-162-sci-fi-arena-pack-2022-3-6f1-m004",
-          "cbv1-ingest-162-sci-fi-arena-pack-2022-3-6f1-m006",
+          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m002",
+          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m004",
+          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m006",
         ],
       },
       {
@@ -122,9 +122,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "Sci-Fi Arena: 2",
         placeableCount: 29,
         sampleAssetIds: [
-          "cbv1-ingest-161-sci-fi-arena-pack-2-2022-3-6f1-m002",
-          "cbv1-ingest-161-sci-fi-arena-pack-2-2022-3-6f1-m004",
-          "cbv1-ingest-161-sci-fi-arena-pack-2-2022-3-6f1-m006",
+          "cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1-m002",
+          "cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1-m004",
+          "cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1-m006",
         ],
       },
     ]),
@@ -134,9 +134,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "CosmoKit — Stylized Low Poly Planets",
         placeableCount: 34,
         sampleAssetIds: [
-          "cbv1-ingest-032-cosmokitstylizedlowpolyplanets-godot-2026-09-29-m001",
-          "cbv1-ingest-032-cosmokitstylizedlowpolyplanets-godot-2026-09-29-m002",
-          "cbv1-ingest-032-cosmokitstylizedlowpolyplanets-godot-2026-09-29-m003",
+          "cbv1-ingest-046-cosmokitstylizedlowpolyplanets-m001",
+          "cbv1-ingest-046-cosmokitstylizedlowpolyplanets-m002",
+          "cbv1-ingest-046-cosmokitstylizedlowpolyplanets-m003",
         ],
       },
     ]),
@@ -146,8 +146,8 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "Sci-Fi Arena: 1",
         placeableCount: 30,
         sampleAssetIds: [
-          "cbv1-ingest-162-sci-fi-arena-pack-2022-3-6f1-m004",
-          "cbv1-ingest-162-sci-fi-arena-pack-2022-3-6f1-m006",
+          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m004",
+          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m006",
         ],
       },
     ]),
@@ -157,9 +157,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "NecroPOLY — Stylized Graveyard",
         placeableCount: 148,
         sampleAssetIds: [
-          "cbv1-ingest-125-lowpolycemeterykitnecropolygravesmodule-2026-09--m002",
-          "cbv1-ingest-125-lowpolycemeterykitnecropolygravesmodule-2026-09--m004",
-          "cbv1-ingest-125-lowpolycemeterykitnecropolygravesmodule-2026-09--m006",
+          "cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09--m002",
+          "cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09--m004",
+          "cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09--m006",
         ],
       },
       {
@@ -167,9 +167,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "Cemetery Statues Pack",
         placeableCount: 50,
         sampleAssetIds: [
-          "cbv1-ingest-028-cemeterystatuespack-godot-2026-09-29-m001",
-          "cbv1-ingest-028-cemeterystatuespack-godot-2026-09-29-m003",
-          "cbv1-ingest-028-cemeterystatuespack-godot-2026-09-29-m005",
+          "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29-m001",
+          "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29-m003",
+          "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29-m005",
         ],
       },
     ]),
@@ -179,9 +179,9 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
         packTitle: "PixelDrift Metro — 3D Pixel Art Subway (VR)",
         placeableCount: 256,
         sampleAssetIds: [
-          "cbv1-ingest-138-metro-2026-31-1-00-17-18-m002",
-          "cbv1-ingest-138-metro-2026-31-1-00-17-18-m004",
-          "cbv1-ingest-138-metro-2026-31-1-00-17-18-m006",
+          "cbv1-ingest-238-metro-2026-31-1-00-17-18-m002",
+          "cbv1-ingest-238-metro-2026-31-1-00-17-18-m004",
+          "cbv1-ingest-238-metro-2026-31-1-00-17-18-m006",
         ],
       },
     ]),

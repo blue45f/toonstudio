@@ -6,6 +6,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { resolveStudioBg3dFocusSelection } from "./studio-bg3d-camera-selection";
+import { isStudioBg3dTagHidden, projectStudioBg3dTagVisibility, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
 
 export function bindStudioBg3dEditorLayoutViewModel(h) {
   const {
@@ -286,6 +287,8 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
         tip: "객체를 클릭해도 현재 선택은 바뀌지 않습니다.",
       }
     : BG3D_VIEWPORT_HINTS.surfaceSnap;
+  // 숨긴 태그는 오브젝트 visible 과 따로 렌더에서만 빠진다(저장되는 visible 값은 그대로).
+  const hiddenTagSet = readStudioBg3dHiddenTagSet(sceneBaseDocument);
   const layerListItems: StudioBg3dLayerListItem[] = [
     ...primitives.map((prim, index) => {
       const kindCountBefore = primitives.slice(0, index).filter((p) => p.kind === prim.kind).length;
@@ -296,6 +299,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
         visible: isBgObjectVisible(prim),
         locked: isBgObjectLocked(prim),
         parentId: prim.parentId,
+        tags: prim.tags,
       };
     }),
     ...customModels.map((inst, index) => {
@@ -308,11 +312,12 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
         visible: isBgObjectVisible(inst),
         locked: isBgObjectLocked(inst),
         parentId: inst.parentId,
+        tags: inst.tags,
       };
     }),
   ];
   const sceneHierarchy = resolveStudioBg3dHierarchy(layerListItems);
-  const effectivelyVisibleLayerIds = collectStudioBg3dEffectivelyVisibleEntityIds(layerListItems);
+  const effectivelyVisibleLayerIds = collectStudioBg3dEffectivelyVisibleEntityIds(layerListItems, hiddenTagSet);
   const surfaceSnapDisabledReason = isQuadView
     ? "표면 붙이기는 단일 뷰에서만 사용할 수 있습니다."
     : isCapturing || isBatchRenderingShots
@@ -372,7 +377,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     for (const id of selectedIds) {
       const entity = primitives.find((primitive) => primitive.id === id) ??
         customModels.find((model) => model.id === id);
-      if (!entity || !isBgObjectVisible(entity)) {
+      if (!entity || !isBgObjectVisible(entity) || isStudioBg3dTagHidden(entity, hiddenTagSet)) {
         physicsSelectionUnavailableReason = "숨긴 오브젝트는 물리 미리보기에 사용할 수 없습니다.";
         break;
       }
@@ -513,8 +518,10 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     120,
     Math.ceil(Math.max(fogNear + STUDIO_BG3D_FOG_MIN_GAP, fogFar) / 10) * 10,
   );
-  const primitiveById = new Map(primitives.map((primitive) => [primitive.id, primitive] as const));
-  const customModelById = new Map(customModels.map((model) => [model.id, model] as const));
+  const renderPrimitives = projectStudioBg3dTagVisibility(primitives, hiddenTagSet);
+  const renderCustomModels = projectStudioBg3dTagVisibility(customModels, hiddenTagSet);
+  const primitiveById = new Map(renderPrimitives.map((primitive) => [primitive.id, primitive] as const));
+  const customModelById = new Map(renderCustomModels.map((model) => [model.id, model] as const));
   const sharedCharacterGroundSurfaceRevision =
     createStudioBg3dSharedCharacterGroundSurfaceRevision({
       primitives,
@@ -522,7 +529,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
       readyCloneIds,
     });
   const batchCandidatesByModelId = new Map<string, BgCustomModelInstance[]>();
-  for (const model of customModels) {
+  for (const model of renderCustomModels) {
     const cacheEntry = modelRootCacheRef.current.get(model.modelId);
     if (
       !cacheEntry || unbatchableModelIds.has(model.modelId) || !isBgObjectVisible(model) ||
@@ -561,7 +568,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     }
   }
   const shadowSceneBounds = collectStudioBg3dShadowSceneBounds([
-    ...primitives.map((primitive) => ({
+    ...renderPrimitives.map((primitive) => ({
       id: primitive.id,
       parentId: primitive.parentId,
       position: primitive.position,
@@ -572,7 +579,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
         primitiveGeometryPool.get(primitive.kind).geometry,
       ),
     })),
-    ...customModels.map((model) => ({
+    ...renderCustomModels.map((model) => ({
       id: model.id,
       parentId: model.parentId,
       position: model.position,

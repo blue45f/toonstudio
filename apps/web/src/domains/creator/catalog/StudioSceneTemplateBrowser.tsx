@@ -1,5 +1,6 @@
 import { Eye, Search, Star, X } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { queryStudioCatalog, type StudioCatalogSort } from "./studio-catalog-query";
 import { summarizeStudioSceneTemplate } from "./studio-scene-template-summary";
@@ -47,14 +48,14 @@ export function StudioSceneTemplateBrowser({ templates, categories, loading, err
     try {
       const inserted = await onAdd(template);
       if (inserted === false) {
-        setNotice("장면을 추가하지 못했습니다. 화면 상태를 확인한 뒤 다시 시도해 주세요.");
+        setNotice(creatorSub2StatusText("studio.creatorSub2.status.catalog.sceneTemplate.addFailed", "장면을 추가하지 못했습니다. 화면 상태를 확인한 뒤 다시 시도해 주세요."));
         return;
       }
       preferences.dispatch({ kind: "recent", id: template.id });
       setPreviewId(null);
       setNotice(`${template.label} 적용 요청을 처리했습니다.`);
     } catch {
-      setNotice("장면을 추가하지 못했습니다. 화면 상태를 확인한 뒤 다시 시도해 주세요.");
+      setNotice(creatorSub2StatusText("studio.creatorSub2.status.catalog.sceneTemplate.addFailed", "장면을 추가하지 못했습니다. 화면 상태를 확인한 뒤 다시 시도해 주세요."));
     } finally { inserting.current = false; setPendingId(null); }
   }
   function reset() { setQuery(""); setCategory("all"); setFavoritesOnly(false); setSort("relevance"); }
@@ -74,12 +75,12 @@ export function StudioSceneTemplateBrowser({ templates, categories, loading, err
     <StudioCatalogControls view={preferences.state.view} onView={(value) => preferences.dispatch({ kind: "view", value })}
       sort={sort} onSort={setSort} favoritesOnly={favoritesOnly} onFavoritesOnly={setFavoritesOnly} favoriteCount={favoriteCount} />
     <StudioCatalogStorageNotice authority={preferences.authority} onRetry={preferences.retry} />
-    {loading && <p role="status" className="text-xs text-fg-3">장면 템플릿을 불러오는 중…</p>}
+    {loading && <p role="status" className="text-xs text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.catalog.sceneTemplate.loading", "장면 템플릿을 불러오는 중…")}</p>}
     {error && <p role="alert" className="rounded-lg border border-bad/40 p-2 text-xs text-bad">{error}</p>}
     <div className="flex items-center justify-between gap-2"><p role="status" aria-live="polite" className="text-xs text-fg-3">{visible.length}개 장면 · 네이티브 편집형</p>
       {(query || category !== "all" || favoritesOnly) && <button type="button" className={STUDIO_CATALOG_CONTROL} onClick={reset}>필터 초기화</button>}</div>
     {!loading && visible.length === 0 && <div className="rounded-xl border border-dashed border-line p-4 text-center">
-      <p className="text-sm font-medium text-fg">조건에 맞는 장면이 없습니다</p><button type="button" onClick={reset} className={`${STUDIO_CATALOG_CONTROL} mt-2`}>전체 장면 보기</button></div>}
+      <p className="text-sm font-medium text-fg">{creatorSub2StatusText("studio.creatorSub2.status.catalog.sceneTemplate.empty", "조건에 맞는 장면이 없습니다")}</p><button type="button" onClick={reset} className={`${STUDIO_CATALOG_CONTROL} mt-2`}>전체 장면 보기</button></div>}
     <div className="studio-catalog-grid max-h-96 overflow-y-auto overscroll-contain" data-view={preferences.state.view}>
       {visible.map((template) => <article key={template.id} className="studio-catalog-card rounded-xl border border-line bg-card" data-studio-scene-card={template.id}>
         <button type="button" aria-label={`${template.label} 구성 미리보기`} onClick={() => setPreviewId(template.id)} className="studio-catalog-primary block w-full rounded-lg p-2 text-left focus-visible:ring-2 focus-visible:ring-accent">

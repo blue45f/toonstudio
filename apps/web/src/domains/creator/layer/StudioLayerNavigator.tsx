@@ -40,6 +40,7 @@ import {
   type StudioLiveLayerOwnership,
 } from "../live/studio-live-layer-ownership";
 import { useStudioStableHandlers } from "../studio-stable-handlers";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 
 import { studioLayerSourcesBakeToSingleLayer } from "./studio-layer-merge";
 import {
@@ -310,7 +311,7 @@ function mergeGroupFallbackNote(sources: readonly StudioLayerNavigatorItem[]): s
   if (sources.length < 2) return null;
   if (studioLayerSourcesBakeToSingleLayer(sources)) return null;
   const vectorCount = sources.filter((item) => item.type !== "image").length;
-  return `이미지가 아닌 레이어 ${vectorCount}개가 있어 한 장으로 굽지 못해요 — 원본을 지키는 그룹으로 묶이고 레이어 수는 줄지 않습니다.`;
+  return frozenStatus3Text("studio.frozenStatus3.layer.mergeFallbackNote", { count: vectorCount }, "이미지가 아닌 레이어 {count}개가 있어 한 장으로 굽지 못해요 — 원본을 지키는 그룹으로 묶이고 레이어 수는 줄지 않습니다.");
 }
 
 
@@ -446,15 +447,15 @@ export function StudioLayerNavigator({
     (item) => item.groupId !== undefined
   );
   const createGroupUnavailableReason = readOnly
-    ? "읽기 전용 작업공간에서는 그룹을 만들 수 없어요."
+    ? frozenStatus3Text("studio.frozenStatus3.layer.createGroupReadOnly", "읽기 전용 작업공간에서는 그룹을 만들 수 없어요.")
     : groupingDisabled
-      ? "현재 작업면은 레이어 그룹을 지원하지 않아요."
+      ? frozenStatus3Text("studio.frozenStatus3.layer.groupUnsupported", "현재 작업면은 레이어 그룹을 지원하지 않아요.")
       : filterActive
-        ? "검색·필터를 지운 뒤 그룹을 만들 수 있어요."
+        ? frozenStatus3Text("studio.frozenStatus3.layer.createGroupFilterFirst", "검색·필터를 지운 뒤 그룹을 만들 수 있어요.")
         : selectionContainsGroupedItems
-          ? "기존 그룹이 포함되어 있어요. 먼저 그룹을 해제해 주세요."
+          ? frozenStatus3Text("studio.frozenStatus3.layer.createGroupAlreadyGrouped", "기존 그룹이 포함되어 있어요. 먼저 그룹을 해제해 주세요.")
           : liveSelectionBlocked
-            ? (selectionEditGate.reason ?? "다른 참가자가 편집 중인 레이어예요.")
+            ? (selectionEditGate.reason ?? frozenStatus3Text("studio.frozenStatus3.layer.otherEditingLayer", "다른 참가자가 편집 중인 레이어예요."))
             : undefined;
   const commonSelectedRole = commonValue(batchSelectedItems.map((item) => item.role));
   const commonSelectedColor = commonValue(batchSelectedItems.map((item) => item.color));
@@ -804,12 +805,12 @@ export function StudioLayerNavigator({
       if (mutationDisabled || groupingDisabled || filterActive
         || (!event.shiftKey && createGroupUnavailableReason !== undefined)) {
         setDragAnnouncement(readOnly
-          ? "읽기 전용 작업공간에서는 그룹을 바꿀 수 없어요."
+          ? frozenStatus3Text("studio.frozenStatus3.layer.changeGroupReadOnly", "읽기 전용 작업공간에서는 그룹을 바꿀 수 없어요.")
           : groupingDisabled
-            ? "현재 작업면은 레이어 그룹을 지원하지 않아요."
+            ? frozenStatus3Text("studio.frozenStatus3.layer.groupUnsupported", "현재 작업면은 레이어 그룹을 지원하지 않아요.")
             : filterActive
-              ? "검색·필터를 지운 뒤 그룹을 바꿀 수 있어요."
-              : selectionEditGate.reason ?? createGroupUnavailableReason ?? "현재 선택의 그룹을 바꿀 수 없어요.");
+              ? frozenStatus3Text("studio.frozenStatus3.layer.createGroupFilterFirst", "검색·필터를 지운 뒤 그룹을 만들 수 있어요.")
+              : selectionEditGate.reason ?? createGroupUnavailableReason ?? frozenStatus3Text("studio.frozenStatus3.layer.changeGroupFallback", "현재 선택의 그룹을 바꿀 수 없어요."));
         return;
       }
       onAction({
@@ -835,7 +836,7 @@ export function StudioLayerNavigator({
           ? selectedIds
           : [target.entry.item.id];
       if (filterActive) {
-        setDragAnnouncement("검색·필터를 지운 뒤 레이어 순서를 바꿀 수 있어요.");
+        setDragAnnouncement(frozenStatus3Text("studio.frozenStatus3.layer.reorderFilterFirst", "검색·필터를 지운 뒤 레이어 순서를 바꿀 수 있어요."));
         return;
       }
       const reorderGate = studioLiveSelectionEditGate({
@@ -843,15 +844,11 @@ export function StudioLayerNavigator({
         ownershipByItemId: liveOwnershipByItemId,
       });
       if (readOnly || reorderGate.allowed === false || reorderIds.length === 0) {
-        setDragAnnouncement(
-          reorderGate.reason ?? "현재 상태에서는 레이어 순서를 바꿀 수 없어요."
-        );
+        setDragAnnouncement(reorderGate.reason ?? frozenStatus3Text("studio.frozenStatus3.layer.reorderFallback", "현재 상태에서는 레이어 순서를 바꿀 수 없어요."));
         return;
       }
       onAction({ type: "reorder-items", ids: [...reorderIds], direction: reorderDirection });
-      setDragAnnouncement(
-        `${reorderIds.length}개 레이어를 ${layerOrderDirectionLabel(reorderDirection)} 이동했습니다.`
-      );
+      setDragAnnouncement(frozenStatus3Text("studio.frozenStatus3.layer.reorderMoved", { count: reorderIds.length, direction: layerOrderDirectionLabel(reorderDirection) }, "{count}개 레이어를 {direction} 이동했습니다."));
       return;
     }
     if ((event.shiftKey && event.key === "F10") || event.key === "ContextMenu") {
@@ -1031,7 +1028,7 @@ export function StudioLayerNavigator({
     });
     if (gate.allowed === false) {
       event.preventDefault();
-      setDragAnnouncement(gate.reason ?? "다른 참가자가 편집 중인 레이어예요.");
+      setDragAnnouncement(gate.reason ?? frozenStatus3Text("studio.frozenStatus3.layer.otherEditingLayer", "다른 참가자가 편집 중인 레이어예요."));
       return;
     }
     if (!selectedIdSet.has(itemId)) {
@@ -1062,7 +1059,7 @@ export function StudioLayerNavigator({
     });
     if (gate.allowed === false) {
       event.preventDefault();
-      setDragAnnouncement(gate.reason ?? "다른 참가자가 편집 중인 그룹이에요.");
+      setDragAnnouncement(gate.reason ?? frozenStatus3Text("studio.frozenStatus3.layer.otherEditingGroup", "다른 참가자가 편집 중인 그룹이에요."));
       return;
     }
     if (!itemIds.every((id) => selectedIdSet.has(id))) replaceWithGroupItems(itemIds);
@@ -1154,7 +1151,7 @@ export function StudioLayerNavigator({
         ids: [...payload.ids],
         groupId: intent.groupId,
       });
-      setDragAnnouncement(`${payload.label}를 그룹 안으로 이동했습니다.`);
+      setDragAnnouncement(frozenStatus3Text("studio.frozenStatus3.layer.movedIntoGroup", { label: payload.label }, "{label}를 그룹 안으로 이동했습니다."));
     } else if (intent.mode === "within-group" || intent.mode === "into-group") {
       onAction({
         type: "drop-items",
@@ -1164,7 +1161,7 @@ export function StudioLayerNavigator({
         mode: intent.mode,
         groupId: intent.groupId,
       });
-      setDragAnnouncement(`${payload.label}의 그룹 내 순서를 변경했습니다.`);
+      setDragAnnouncement(frozenStatus3Text("studio.frozenStatus3.layer.reorderedInGroup", { label: payload.label }, "{label}의 그룹 내 순서를 변경했습니다."));
     } else {
       onAction({
         type: "drop-items",
@@ -1540,17 +1537,7 @@ export function StudioLayerNavigator({
           mutationDisabled={mutationDisabled}
           readOnly={readOnly}
           reorderDisabled={mutationDisabled || filterActive || batchSelectedIds.length === 0}
-          reorderUnavailableReason={
-            readOnly
-              ? "읽기 전용 작업공간에서는 레이어 순서를 바꿀 수 없어요."
-              : filterActive
-                ? "검색·필터를 지운 뒤 전체 레이어 순서를 바꿀 수 있어요."
-                : liveSelectionBlocked
-                  ? selectionEditGate.reason ?? undefined
-                  : batchSelectedIds.length === 0
-                    ? "먼저 레이어를 선택하세요."
-                    : undefined
-          }
+          reorderUnavailableReason={readOnly ? frozenStatus3Text("studio.frozenStatus3.layer.reorderReadOnly", "읽기 전용 작업공간에서는 레이어 순서를 바꿀 수 없어요.") : filterActive ? frozenStatus3Text("studio.frozenStatus3.layer.reorderAllFilterFirst", "검색·필터를 지운 뒤 전체 레이어 순서를 바꿀 수 있어요.") : liveSelectionBlocked ? selectionEditGate.reason ?? undefined : batchSelectedIds.length === 0 ? frozenStatus3Text("studio.frozenStatus3.layer.selectLayerFirst", "먼저 레이어를 선택하세요.") : undefined}
           batchMergeFallbackNote={batchMergeFallbackNote}
           flattenVisibleFallbackNote={flattenVisibleFallbackNote}
           mergeFallbackNoteId={mergeFallbackNoteId}
@@ -1726,13 +1713,7 @@ export function StudioLayerNavigator({
                   disabled={mutationDisabled || groupingDisabled || filterActive || batchSelectedIds.length === 0}
                   onChange={(event) => setSelectedGroup(event.target.value, batchSelectedIds)}
                   aria-label="선택 레이어 그룹"
-                  title={
-                    groupingDisabled
-                      ? "현재 작업면은 레이어 그룹을 지원하지 않아요"
-                      : filterActive
-                        ? "검색·필터를 지운 뒤 그룹을 바꿀 수 있어요"
-                        : undefined
-                  }
+                  title={groupingDisabled ? frozenStatus3Text("studio.frozenStatus3.layer.groupUnsupportedBare", "현재 작업면은 레이어 그룹을 지원하지 않아요") : filterActive ? frozenStatus3Text("studio.frozenStatus3.layer.groupTitleFilterFirst", "검색·필터를 지운 뒤 그룹을 바꿀 수 있어요") : undefined}
                   className={cn("mt-1 min-h-9 w-full rounded-md border border-line bg-card px-2 text-xs text-fg max-lg:min-h-11 pointer-coarse:min-h-11", focusRing)}
                 >
                   {commonSelectedGroup === "__mixed__" ? <option value="__mixed__" disabled>여러 그룹</option> : null}
@@ -1964,13 +1945,7 @@ export function StudioLayerNavigator({
                   value={availableGroups.some((group) => group.id === activeItem.groupId) ? activeItem.groupId : ""}
                   disabled={mutationDisabled || groupingDisabled || filterActive}
                   onChange={(event) => setSelectedGroup(event.target.value, [activeItem.id])}
-                  title={
-                    groupingDisabled
-                      ? "현재 작업면은 레이어 그룹을 지원하지 않아요"
-                      : filterActive
-                        ? "검색·필터를 지운 뒤 그룹을 바꿀 수 있어요"
-                        : undefined
-                  }
+                  title={groupingDisabled ? frozenStatus3Text("studio.frozenStatus3.layer.groupUnsupportedBare", "현재 작업면은 레이어 그룹을 지원하지 않아요") : filterActive ? frozenStatus3Text("studio.frozenStatus3.layer.groupTitleFilterFirst", "검색·필터를 지운 뒤 그룹을 바꿀 수 있어요") : undefined}
                   className={cn("mt-1 min-h-9 w-full rounded-md border border-line bg-card px-2 text-xs text-fg max-lg:min-h-11 pointer-coarse:min-h-11", focusRing)}
                 >
                   <option value="">그룹 없음</option>
@@ -2106,13 +2081,7 @@ export function StudioLayerNavigator({
                 disabled={mutationDisabled || groupingDisabled || filterActive}
                 onClick={() => onAction({ type: "ungroup", groupId: activeGroup.id })}
                 className={cn(compactControl, "col-span-2")}
-                title={
-                  groupingDisabled
-                    ? "현재 작업면은 레이어 그룹을 지원하지 않아요"
-                    : filterActive
-                      ? "검색·필터를 지운 뒤 그룹을 해제할 수 있어요"
-                      : undefined
-                }
+                title={groupingDisabled ? frozenStatus3Text("studio.frozenStatus3.layer.groupUnsupportedBare", "현재 작업면은 레이어 그룹을 지원하지 않아요") : filterActive ? frozenStatus3Text("studio.frozenStatus3.layer.ungroupTitleFilterFirst", "검색·필터를 지운 뒤 그룹을 해제할 수 있어요") : undefined}
               >
                 <FolderMinus size={13} /> 그룹 해제 · 레이어 보존
               </button>

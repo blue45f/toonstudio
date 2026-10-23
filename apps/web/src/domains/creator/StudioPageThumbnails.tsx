@@ -9,6 +9,7 @@
  * 실제 순서 변경은 호출 측이 studio-pages.reorderPages 순수 함수로 수행한다.
  * 키보드/터치 대체 수단은 기존 이동 버튼(위/아래/맨위/맨아래)을 그대로 유지한다(a11y).
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useEffect, useRef, useState, type ReactElement, type RefObject } from "react";
 
 import { CANVAS_W } from "./studio-assets";
@@ -48,7 +49,7 @@ function StudioThumbImage({ node }: { readonly node: StudioThumbImageNode }): Re
         transform={transform}
         opacity={node.opacity}
       >
-        <title>검증된 이미지 바이트를 안전하게 불러오는 중</title>
+        <title>{r3c07StatusText("studio.panelStatus.r3c07.pageThumbnails.loadingImageBytes", "검증된 이미지 바이트를 안전하게 불러오는 중")}</title>
         <rect
           x={node.x}
           y={node.y}

@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Tekst AI-udbyder",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Tekst AI-udbyder",
   "studio.aiToolPopover.serverProviderAuto": "automatisk skift",
-  "studio.aiToolPopover.serverFallbackMessage": "Når saldo-/pakkegrænsen er opbrugt, skifter du til en anden udbyder. Generelle fejl sendes ikke automatisk igen for at forhindre dobbelt opladning."
+  "studio.aiToolPopover.serverFallbackMessage": "Når saldo-/pakkegrænsen er opbrugt, skifter du til en anden udbyder. Generelle fejl sendes ikke automatisk igen for at forhindre dobbelt opladning.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

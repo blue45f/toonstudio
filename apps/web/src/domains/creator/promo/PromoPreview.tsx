@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { preparePromoAudioPreview } from "./promo-audio";
 import { drawPromoFrame, loadPromoImages, releasePromoTextCache } from "./promo-canvas";
 import { PROMO_FPS, promoFrameCount, promoSize, promoTimeline } from "./promo-model";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import type { PromoImages } from "./promo-canvas";
 import type { PromoPanel, PromoProject } from "./promo-model";
@@ -34,7 +35,7 @@ export function PromoPreview({ project, disabled, seekRequest }: { project: Prom
     loadPromoImages(project, controller.signal).then((loaded) => {
       if (!controller.signal.aborted) { imageCache.current = { sources: project.panels.map(({ id, src, foregroundSrc }) => ({ id, src, foregroundSrc })), images: loaded }; setImages(loaded); setLoading(false); }
     }).catch(() => {
-      if (!controller.signal.aborted) { setError("미리보기 이미지를 읽지 못했어요."); setLoading(false); }
+      if (!controller.signal.aborted) { setError(subStatusText("studio.subStatus.preview.imageLoadFailed", "미리보기 이미지를 읽지 못했어요.")); setLoading(false); }
     });
     return () => controller.abort();
   }, [project]);
@@ -103,7 +104,7 @@ export function PromoPreview({ project, disabled, seekRequest }: { project: Prom
       audioPreview.current = handle;
       handle?.start(nextFrame);
     } catch (reason) {
-      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "오디오를 준비하지 못했어요.");
+      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.preview.audioPrepareFailed", "오디오를 준비하지 못했어요."));
       return;
     } finally { if (!controller.signal.aborted) setPreparingAudio(false); }
     setPlaying(true);
@@ -113,7 +114,7 @@ export function PromoPreview({ project, disabled, seekRequest }: { project: Prom
       <div className="promo-preview-top"><span>미리보기</span><span>{project.ratio} · {project.seconds}초 · 30fps</span></div>
       <div className="promo-canvas-wrap"><canvas ref={canvasRef} width={size.width} height={size.height} aria-label={`${project.title} 홍보영상. 아래 컷 편집 영역에서 장면별 자막을 확인할 수 있어요.`} /></div>
       <div className="promo-playback">
-        <button type="button" onClick={() => void play()} disabled={disabled || loading || preparingAudio || project.panels.some((panel) => !images.has(panel.id) || (panel.foregroundSrc && !images.has(`${panel.id}:foreground`))) || !project.panels.length}>{preparingAudio ? "오디오 준비 중" : playing ? "일시정지" : "재생"}</button>
+        <button type="button" onClick={() => void play()} disabled={disabled || loading || preparingAudio || project.panels.some((panel) => !images.has(panel.id) || (panel.foregroundSrc && !images.has(`${panel.id}:foreground`))) || !project.panels.length}>{preparingAudio ? subStatusText("studio.subStatus.preview.audioPreparing", "오디오 준비 중") : playing ? "일시정지" : "재생"}</button>
         <label className="promo-sr-only" htmlFor="promo-seek">영상 탐색</label>
         <input id="promo-seek" type="range" min={0} max={total - 1} value={frame} disabled={disabled || playing} onChange={(event) => setFrame(Number(event.target.value))} />
         <output>{(frame / PROMO_FPS).toFixed(1)} / {project.seconds}초</output>
@@ -125,7 +126,7 @@ export function PromoPreview({ project, disabled, seekRequest }: { project: Prom
       </div>
       <div className="promo-scene-strip" aria-label="장면 타임라인">{promoTimeline(project).map((scene, index) => <button type="button" key={scene.panel.id} aria-pressed={frame >= scene.from && frame < scene.from + scene.duration} disabled={disabled || preparingAudio} onClick={() => { setPlaying(false); setFrame(scene.from); }}>컷 {index + 1}<br />{(scene.from / PROMO_FPS).toFixed(1)}초</button>)}</div>
       {preparingAudio ? <button type="button" onClick={() => { audioOperation.current?.abort(); setPreparingAudio(false); }}>오디오 준비 취소</button> : null}
-      {loading ? <p role="status">컷을 준비하고 있어요.</p> : null}
+      {loading ? <p role="status">{subStatusText("studio.subStatus.preview.loadingCuts", "컷을 준비하고 있어요.")}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
       <p className="promo-muted">원본 컷에 카메라·장면 전환·입자·자막을 적용하는 모션툰입니다. 투명 전경을 추가하면 2.5D 연출을 사용할 수 있어요. 인물 동작·립싱크·새 프레임을 생성하는 기능은 아닙니다.</p>
     </section>

@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { UnifiedAiSettings } from "@/shared/ai/UnifiedAiSettings";
+import { ClaudeConnectionCard } from "@/shared/ai/claude/ClaudeConnectionCard";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
@@ -55,6 +56,7 @@ export function AiSettingsPage() {
         }
       >
         <UnifiedAiSettings />
+        <ClaudeConnectionCard />
       </Suspense>
     </Container>
   );

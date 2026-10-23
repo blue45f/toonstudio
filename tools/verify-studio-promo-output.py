@@ -52,11 +52,41 @@ def timing(data: dict[str, Any], seconds: float) -> dict[str, Any]:
     return report
 
 
+# ffmpeg 의 scale 필터는 yuv420p 스트림에 붙은 color_range 태그를 따르지 않고 limited 범위로 가정한다. Chromium 이 full range(pc)·BT.709
+# 로 태그해 쓴 녹화를 그대로 RGB 로 바꾸면 어둡게 읽혀(검은색이 눌려) 같은 화면인데도 배경 오차가 12 를 넘는다. 스트림이 선언한 범위와 행렬로
+# 변환해야 두 영상을 같은 기준에서 비교한다. 태그가 없으면(unknown) ffmpeg 기본값을 그대로 쓴다.
+COLOR_MATRIX = {"bt709": "bt709", "bt470bg": "bt601", "smpte170m": "bt601", "bt2020nc": "bt2020"}
+COLOR_RANGE = {"pc": "full", "tv": "limited"}
+
+
+def scale_color_options(stream: dict[str, Any]) -> str:
+    options = []
+    value_range = COLOR_RANGE.get(str(stream.get("color_range")))
+    if value_range:
+        options.append(f"in_range={value_range}")
+    matrix = COLOR_MATRIX.get(str(stream.get("color_space")))
+    if matrix:
+        options.append(f"in_color_matrix={matrix}")
+    return ":".join(options)
+
+
+def video_color_options(path: Path) -> str:
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=color_range,color_space", "-of", "json", str(path)],
+        check=True, capture_output=True, timeout=40,
+    )
+    streams = json.loads(result.stdout).get("streams") or [{}]
+    return scale_color_options(streams[0])
+
+
 def ending(path: Path, seconds: float) -> bytes:
+    color = video_color_options(path)
+    scale = f"scale={WIDTH}:{HEIGHT}:flags=area" + (f":{color}" if color else "")
     result = subprocess.run(
         ["ffmpeg", "-nostdin", "-v", "error", "-threads", "1", "-i", str(path),
          "-map", "0:v:0", "-an", "-filter_threads", "1", "-vf",
-         f"select=gte(t\\,{seconds - 0.5}),scale={WIDTH}:{HEIGHT}:flags=area,format=rgb24",
+         f"select=gte(t\\,{seconds - 0.5}),{scale},format=rgb24",
          "-fps_mode", "passthrough", "-frames:v", "1", "-f", "rawvideo", "pipe:1"],
         check=True, capture_output=True, timeout=40,
     )
@@ -122,7 +152,12 @@ def self_test() -> None:
         pass
     else:
         raise AssertionError("A blank ending must fail even on a matching dark background")
-    print("Native output verifier self-tests passed (valid, truncated, 10s short-form, matching, blank)")
+    # 선언된 색 범위·행렬을 변환에 넘기는지(태그를 무시하면 full range 녹화가 어둡게 읽힌다). ffmpeg 없이 확인한다.
+    assert scale_color_options({"color_range": "pc", "color_space": "bt709"}) == "in_range=full:in_color_matrix=bt709"
+    assert scale_color_options({"color_range": "tv", "color_space": "bt470bg"}) == "in_range=limited:in_color_matrix=bt601"
+    assert scale_color_options({"color_range": "unknown"}) == ""
+    assert scale_color_options({}) == ""
+    print("Native output verifier self-tests passed (valid, truncated, 10s short-form, matching, blank, color tags)")
 
 
 def main() -> None:

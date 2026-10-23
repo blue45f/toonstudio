@@ -32,7 +32,6 @@ import {
   failAdapter,
   type StudioBg3dDocumentToRuntimeInput,
   type StudioBg3dDocumentToRuntimeResult,
-  type StudioBg3dRuntimeAdapterCounts,
   type StudioBg3dRuntimeAdapterDiagnostic,
   type StudioBg3dRuntimeAdapterDiagnosticCode,
   type StudioBg3dRuntimeAdapterDirection,
@@ -40,6 +39,14 @@ import {
   type StudioBg3dRuntimeToDocumentInput,
   type StudioBg3dRuntimeToDocumentResult,
 } from "./studio-bg3d-scene-runtime-contract";
+
+import { readStudioBg3dRuntimeNodeExtras, studioBg3dNodeRuntimeExtras } from "./studio-bg3d-runtime-organization";
+
+import type { BgCustomModelInstance } from "../studio-background-3d-model";
+import type {
+  BgPrimitive,
+  BgPrimitiveKind,
+} from "../studio-background-3d-primitives";
 
 export {
   STUDIO_BG3D_RUNTIME_ADAPTER_MAX_DIAGNOSTICS,
@@ -55,12 +62,6 @@ export {
   type StudioBg3dRuntimeToDocumentInput,
   type StudioBg3dRuntimeToDocumentResult,
 } from "./studio-bg3d-scene-runtime-contract";
-
-import type { BgCustomModelInstance } from "../studio-background-3d-model";
-import type {
-  BgPrimitive,
-  BgPrimitiveKind,
-} from "../studio-background-3d-primitives";
 
 interface PendingNode {
   readonly node: StudioBg3dSceneNode;
@@ -262,6 +263,7 @@ function settingsOnlyDocument(
     ...(base.shots === undefined ? {} : { shots: base.shots }),
     ...(base.activeShotId === undefined ? {} : { activeShotId: base.activeShotId }),
     ...(base.pinnedVersionedCut === undefined ? {} : { pinnedVersionedCut: base.pinnedVersionedCut }),
+    ...(base.meta === undefined ? {} : { meta: base.meta }),
   };
 }
 
@@ -317,9 +319,7 @@ function primitiveNodeFromRuntime(value: BgPrimitive): StudioBg3dSceneNode | nul
     castsShadow: true,
     receivesShadow: true,
     parentId: value.parentId ?? null,
-    ...(typeof value.linkedSourceId === "string" && value.linkedSourceId !== value.id
-      ? { linkedSourceId: value.linkedSourceId }
-      : {}),
+    ...readStudioBg3dRuntimeNodeExtras(value),
   };
 }
 
@@ -406,9 +406,7 @@ function modelNodeFromRuntime(
       castsShadow: true,
       receivesShadow: true,
       parentId: value.parentId ?? null,
-      ...(typeof value.linkedSourceId === "string" && value.linkedSourceId !== value.id
-        ? { linkedSourceId: value.linkedSourceId }
-        : {}),
+      ...readStudioBg3dRuntimeNodeExtras(value),
       ...(materialOverride ? { materialOverride } : {}),
       ...(modelTexturePaint ? { modelTexturePaint } : {}),
       ...(animation ? { animation } : {}),
@@ -713,7 +711,7 @@ export function hydrateStudioBg3dDocumentToRuntime(
         visible: node.visible !== false,
         locked: node.locked === true,
         parentId: node.parentId ?? null,
-        linkedSourceId: node.linkedSourceId,
+        ...studioBg3dNodeRuntimeExtras(node),
       });
       continue;
     }
@@ -763,7 +761,7 @@ export function hydrateStudioBg3dDocumentToRuntime(
       visible: node.visible !== false,
       locked: node.locked === true,
       parentId: node.parentId ?? null,
-      linkedSourceId: node.linkedSourceId,
+      ...studioBg3dNodeRuntimeExtras(node),
       materialOverride: node.materialOverride ? { ...node.materialOverride } : undefined,
       modelTexturePaint: node.modelTexturePaint ? {
         ...node.modelTexturePaint,

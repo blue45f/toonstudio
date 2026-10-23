@@ -48,8 +48,11 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "lucide-react",
       "react",
       "@/shared/lib/i18n-bilingual-copy",
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
       "./StudioBg3dAssetAiUseFields",
       "./StudioBg3dAssetCardRightsActions",
+      "./StudioBg3dAssetNameMatchHint",
       "./StudioBg3dAssetRightsFilterBar",
       "./StudioBg3dAssetRightsInfo",
       "./StudioBg3dSkpImportPanel",
@@ -83,6 +86,9 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "./StudioReferenceRebuildPresets",
       "./studio-bg3d-asset-rights-catalog",
       "./useStudioBg3dAssetRights",
+      // 상태 문구를 번역 함수로 그리면서 번역기와 문구 사전 등록 모듈이 값 import 로 들어왔다. 둘 다 렌더러·파일 입력과 무관하다.
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
     ]);
     expect(imports.dynamicImports).toEqual([]);
     const wrapper = moduleSource("./StudioBg3dAssetLibraryPanelWithPresets.tsx");
@@ -99,7 +105,14 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     // meshes is constructed by a renderer-free client module (studio-host-architecture-ratchet
     // keeps `new Worker(` out of creator components).
     const presets = moduleImports("./StudioReferenceRebuildPresets.tsx");
-    expect(presets.valueImports).toEqual(["react", "./studio-reference-rebuild-worker-client"]);
+    // 번역 함수와 상태 문구 사전 등록(부수 효과 모듈) 둘만 더해졌고 렌더러·브라우저 API 는 여전히 없다.
+    expect(presets.valueImports).toEqual([
+      "react",
+      "./studio-reference-rebuild-worker-client",
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
+      "../status-i18n/studio-bg3d-panel-status-i18n-r4cat5",
+    ]);
     expect(presets.dynamicImports).toEqual([]);
     const workerClient = moduleImports("./studio-reference-rebuild-worker-client.ts");
     expect(workerClient.valueImports).toEqual([]);
@@ -110,6 +123,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     for (const file of [
       "./StudioBg3dAssetAiUseFields.tsx",
       "./StudioBg3dAssetCardRightsActions.tsx",
+      "./StudioBg3dAssetNameMatchHint.tsx",
       "./StudioBg3dAssetRecipeMenu.tsx",
       "./StudioBg3dAssetRightsFilterBar.tsx",
       "./StudioBg3dAssetRightsInfo.tsx",

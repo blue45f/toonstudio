@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, BookOpen, ShieldCheck, Sparkles } from "lucide-react";
 import { FORTUNE_EXPERIENCES, fortuneKstDate } from "@toonstudio/core/fortune";
 import { FortuneSceneArt } from "./FortuneSceneArt";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import { FORTUNE_INTENTS } from "./fortune-cinematic-model";
 
 export function FortuneStoryPortal({ onNavigate, compact = false, cast = "ara", onCastChange }: { onNavigate: (id: string) => void; compact?: boolean; cast?: ComicCastId; onCastChange?: (id: ComicCastId) => void }) {
@@ -41,5 +42,5 @@ export function FortuneStoryPortal({ onNavigate, compact = false, cast = "ara", 
 
 export function FortuneJourney({ hasReading, running }: { hasReading: boolean; running: boolean }) {
   const active = hasReading ? 2 : 1;
-  return <ol className="fo-journey" aria-label="운세 읽기 진행 단계">{["이야기 선택", "나의 단서", "해석 펼치기"].map((title, i) => <li key={title} aria-current={active === i ? "step" : undefined} data-done={i < active}><span>{i < active ? "✓" : `0${i + 1}`}</span>{i === 2 && running ? "해석 준비 중" : title}</li>)}</ol>;
+  return <ol className="fo-journey" aria-label="운세 읽기 진행 단계">{["이야기 선택", "나의 단서", "해석 펼치기"].map((title, i) => <li key={title} aria-current={active === i ? "step" : undefined} data-done={i < active}><span>{i < active ? "✓" : `0${i + 1}`}</span>{i === 2 && running ? fortuneStatusText("fortune.status.storyPortal.journeyPreparing", "해석 준비 중") : title}</li>)}</ol>;
 }

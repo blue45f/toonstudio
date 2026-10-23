@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Suspense } from "react";
 
 import { CANVAS_W } from "./studio-assets";
@@ -100,9 +101,7 @@ export function StudioProceduralArtisticBrushInspectorSection({
               targetMasterEditMode,
             )
           ) {
-            throw new Error(
-              "절차적 질감 레이어를 현재 문서에 추가하지 못했습니다.",
-            );
+            throw new Error(r3c07StatusText("studio.panelStatus.r3c07.proceduralBrushInspector.layerAddFailed", "절차적 질감 레이어를 현재 문서에 추가하지 못했습니다."));
           }
           return { message: result.message };
         }}

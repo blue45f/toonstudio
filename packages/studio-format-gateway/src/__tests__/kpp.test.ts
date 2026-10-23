@@ -373,6 +373,17 @@ describe("kpp 프리셋 XML 엔티티 해독", () => {
     expect(presetNameOf(reference)).toBe(`a${reference}b`);
   });
 
+  it.each(["&#x110000;", "&#1114112;", "&#xFFFFFFFF;", "&#99999999999;", "&#xD800;", "&#57343;"])(
+    "코드 포인트 범위 밖이거나 대리쌍인 %s 는 예외 없이 원문 그대로 둔다",
+    (reference) => {
+      expect(presetNameOf(reference)).toBe(`a${reference}b`);
+    },
+  );
+
+  it("가장 큰 유효 코드 포인트 &#x10FFFF; 는 푼다", () => {
+    expect(presetNameOf("&#x10FFFF;")).toBe(`a${String.fromCodePoint(0x10ffff)}b`);
+  });
+
   it.each(Object.getOwnPropertyNames(Object.prototype))(
     "&%s; 는 Object.prototype 의 속성 이름이어도 풀리지 않고 원문 그대로 남는다",
     (name) => {

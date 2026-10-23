@@ -1,5 +1,8 @@
 import { useId, useState } from "react";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import { BRUSH_STUDIO_V6_RECIPES } from "./brush-studio-v6-engine";
 import { BRUSH_STUDIO_V6_RECIPE_GROUPS, searchBrushStudioV6Recipes } from "./brush-studio-v6-recipe-search";
 
@@ -7,6 +10,7 @@ const FIELD = `min-h-11 rounded-xl border border-line bg-card px-3 text-sm text-
 interface Props { readonly selectedId: string; readonly onChoose: (id: string) => void; }
 
 export function StudioBrushV6RecipeShelf({ selectedId, onChoose }: Props) {
+  const t = useT();
   const id = useId();
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState("all");
@@ -28,7 +32,7 @@ export function StudioBrushV6RecipeShelf({ selectedId, onChoose }: Props) {
     </div>
     <p role="status" aria-live="polite" className="text-xs text-fg-3">{recipes.length} / {BRUSH_STUDIO_V6_RECIPES.length}개 레시피</p>
     {!recipes.length ? <div className="rounded-xl border border-line bg-bg-2/55 p-4">
-      <p className="text-sm text-fg-2">검색 결과가 없습니다. 다른 이름이나 용도로 검색해 주세요.</p>
+      <p className="text-sm text-fg-2">{t("studio.brushCanvasStatus.brushLab.v6SearchEmpty", "검색 결과가 없습니다. 다른 이름이나 용도로 검색해 주세요.")}</p>
       <button type="button" onClick={reset} className={`${FIELD} mt-3 font-bold`}>검색·필터 초기화</button>
     </div> : null}
     {BRUSH_STUDIO_V6_RECIPE_GROUPS.map((name) => {

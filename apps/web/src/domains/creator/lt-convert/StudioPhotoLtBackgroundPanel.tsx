@@ -9,6 +9,7 @@
  *
  * 원본 사진 파일은 바꾸지 않고, 변환은 전부 기기 안에서 일어난다.
  */
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { ImagePlus, Layers, Loader2 } from "lucide-react";
 import {
   useEffect,
@@ -67,7 +68,7 @@ function imageDataToCanvas(imageData: ImageData): HTMLCanvasElement | null {
 
 function defaultSerializeImageData(imageData: ImageData): string {
   const canvas = imageDataToCanvas(imageData);
-  if (!canvas) throw new Error("이미지를 만들 캔버스가 없습니다.");
+  if (!canvas) throw new Error(creatorRestStatusText("creatorRest.status.ltConvert.noCanvas", "이미지를 만들 캔버스가 없습니다."));
   return canvas.toDataURL("image/png");
 }
 

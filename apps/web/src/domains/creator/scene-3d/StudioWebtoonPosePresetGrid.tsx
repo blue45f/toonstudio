@@ -14,6 +14,9 @@
 import { Download, MousePointerClick, Pin, Search, Sparkles, Upload, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-scene3d-status-i18n";
+
 import {
   StudioSectionHeader,
   StudioToggleChip,
@@ -235,6 +238,7 @@ export function StudioWebtoonPosePresetGrid({
   onApplyPreset,
   applyDisabled = false,
 }: StudioWebtoonPosePresetGridProps): ReactElement {
+  const t = useT();
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [gender, setGender] = useState<GenderFilter>("all");
   const [figures, setFigures] = useState<FiguresFilter>("all");
@@ -302,7 +306,7 @@ export function StudioWebtoonPosePresetGrid({
           : "전체 프리셋 목록을 JSON으로 내보냈습니다.",
       );
     } catch {
-      setShareMessage("내보내기에 실패했습니다. 다시 시도해 주세요.");
+      setShareMessage(t("studio.scene3dStatus.posePresetGrid.exportFailed", "내보내기에 실패했습니다. 다시 시도해 주세요."));
     }
   };
 
@@ -328,7 +332,7 @@ export function StudioWebtoonPosePresetGrid({
       );
     };
     reader.onerror = () => {
-      setShareMessage("파일을 읽지 못했습니다. 다시 시도해 주세요.");
+      setShareMessage(t("studio.scene3dStatus.posePresetGrid.fileReadFailed", "파일을 읽지 못했습니다. 다시 시도해 주세요."));
     };
     reader.readAsText(file);
   };
@@ -498,7 +502,7 @@ export function StudioWebtoonPosePresetGrid({
         </h4>
         {filtered.length === 0 ? (
           <p className="rounded-xl border border-dashed border-line/60 bg-card/30 px-3 py-5 text-center text-[0.7rem] text-fg-3">
-            조건에 맞는 포즈가 없습니다. 필터나 검색어를 바꿔 보세요.
+            {t("studio.scene3dStatus.posePresetGrid.noMatchingPoses", "조건에 맞는 포즈가 없습니다. 필터나 검색어를 바꿔 보세요.")}
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-1.5 min-[420px]:grid-cols-3" role="group" aria-label="포즈 프리셋">

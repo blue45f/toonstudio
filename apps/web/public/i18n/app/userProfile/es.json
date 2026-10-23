@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Contenido del perfil",
   "userProfile.refresh": "Refresco",
   "userProfile.emptyReviews": "No hay comentarios publicados por este usuario todavía.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "No se pudieron cargar las obras creadas. Inténtalo de nuevo.",
+  "userProfile.series.error": "No se pudieron cargar las series. Inténtalo de nuevo.",
+  "userProfile.emptyReviewsHint": "Deja la primera reseña de una obra que te encante.",
+  "userProfile.emptyReviewsCta": "Explorar obras"
 }

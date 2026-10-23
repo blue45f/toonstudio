@@ -170,7 +170,7 @@ function sealKey(): Buffer {
 
 function sealIdentity(identity: unknown): string {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", sealKey(), iv);
+  const cipher = createCipheriv("aes-256-gcm", sealKey(), iv, { authTagLength: 16 });
   const plaintext = Buffer.from(JSON.stringify(identity), "utf8");
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString("base64url");
@@ -182,7 +182,7 @@ function openIdentity(sealed: string): unknown {
   const iv = payload.subarray(0, 12);
   const tag = payload.subarray(12, 28);
   const ciphertext = payload.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", sealKey(), iv);
+  const decipher = createDecipheriv("aes-256-gcm", sealKey(), iv, { authTagLength: 16 });
   decipher.setAuthTag(tag);
   return JSON.parse(Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8")) as unknown;
 }

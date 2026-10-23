@@ -1,4 +1,5 @@
 import { BellRing, CircleAlert, Clock3, Info } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useMemo } from "react";
 
 import { creatorRoleNotifications } from "./creator-role-notifications";
@@ -48,7 +49,7 @@ export function CreatorRoleNotificationCenter({
       {notifications.length === 0 ? (
         <div className="mt-4 rounded-xl border border-dashed border-line bg-panel/45 px-4 py-5 text-center">
           <Info className="mx-auto size-5 text-good" aria-hidden="true" />
-          <p className="mt-2 text-xs font-bold text-fg">지금 바로 확인할 직무 알림이 없습니다</p>
+          <p className="mt-2 text-xs font-bold text-fg">{r3c04StatusText("studio.r3c04Status.production.notificationCenter.empty", "지금 바로 확인할 직무 알림이 없습니다")}</p>
           <p className="mt-1 text-[0.7rem] leading-5 text-fg-3">
             새 담당 작업이나 인계 요청이 생기면 여기에 표시됩니다.
           </p>

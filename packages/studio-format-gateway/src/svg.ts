@@ -492,7 +492,7 @@ function parseColorValue(raw: string, currentColor: ColorIR): ColorIR | "none" |
   if (value.startsWith("#")) return parseHexColor(value.slice(1));
   const fnMatch = /^rgba?\(([^)]*)\)$/i.exec(value);
   if (fnMatch) return parseRgbFunction(fnMatch[1] ?? "");
-  const named = NAMED_COLORS[lower];
+  const named = Object.hasOwn(NAMED_COLORS, lower) ? NAMED_COLORS[lower] : undefined; // 소유 속성만: `constructor`·`__proto__` 등 Object.prototype 키는 색이 아니다
   return named ? rgb8(named[0], named[1], named[2]) : null;
 }
 

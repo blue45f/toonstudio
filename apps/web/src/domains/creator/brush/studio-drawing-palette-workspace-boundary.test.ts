@@ -333,9 +333,10 @@ describe("Studio drawing palette workspace integration boundary", () => {
   });
 
   it("contains desktop drawing overflow at the palette shell and scrolls each open body", () => {
+    // 껍데기 요소 이름(aside → section)이 아니라 고정 id 에서 시작해, 요소를 바꿔도 이 경계 시험이 깨지지 않게 한다.
     const inspectorShell = sourceBetween(
       inspectorSource,
-      "<aside",
+      'id="studio-inspector"',
       "style={",
       "inspector shell",
     );

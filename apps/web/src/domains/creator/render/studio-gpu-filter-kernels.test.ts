@@ -252,13 +252,14 @@ describe("studio-gpu-filter-kernels: 파라미터 패커", () => {
     const view = new DataView(packStudioGpuHslParams({ saturation, hue }));
 
     const s = Math.pow(2, saturation);
-    const h = Math.abs((((hue % 360) + 360) % 360) + 360) % 360;
+    const h = ((hue % 360) + 360) % 360;
     const vsu = s * Math.cos((h * Math.PI) / 180);
     const vsw = s * Math.sin((h * Math.PI) / 180);
+    // konva 10.9 HSL 계수(10.3 의 0.167·0.293·0.586·0.2 가 0.168·0.292·0.588·0.203 으로 바뀌었다).
     const expected = {
-      rowR: [0.299 + 0.701 * vsu + 0.167 * vsw, 0.587 - 0.587 * vsu + 0.33 * vsw, 0.114 - 0.114 * vsu - 0.497 * vsw],
-      rowG: [0.299 - 0.299 * vsu - 0.328 * vsw, 0.587 + 0.413 * vsu + 0.035 * vsw, 0.114 - 0.114 * vsu + 0.293 * vsw],
-      rowB: [0.299 - 0.3 * vsu + 1.25 * vsw, 0.587 - 0.586 * vsu - 1.05 * vsw, 0.114 + 0.886 * vsu - 0.2 * vsw],
+      rowR: [0.299 + 0.701 * vsu + 0.168 * vsw, 0.587 - 0.587 * vsu + 0.33 * vsw, 0.114 - 0.114 * vsu - 0.497 * vsw],
+      rowG: [0.299 - 0.299 * vsu - 0.328 * vsw, 0.587 + 0.413 * vsu + 0.035 * vsw, 0.114 - 0.114 * vsu + 0.292 * vsw],
+      rowB: [0.299 - 0.3 * vsu + 1.25 * vsw, 0.587 - 0.588 * vsu - 1.05 * vsw, 0.114 + 0.886 * vsu - 0.203 * vsw],
     } as const;
     for (const [row, offset] of [
       ["rowR", STUDIO_GPU_HSL_OFFSETS.rowR],

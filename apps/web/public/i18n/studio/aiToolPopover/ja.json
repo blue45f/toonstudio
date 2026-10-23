@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "テキストAIプロバイダー",
   "studio.aiToolPopover.serverTextAiProviderAria": "サーバーテキストAIプロバイダー",
   "studio.aiToolPopover.serverProviderAuto": "オートスイッチ",
-  "studio.aiToolPopover.serverFallbackMessage": "クォータまたはパッケージ制限を使い果たした場合は、別のプロバイダーに切り替えます。重複請求を防ぐため、エラーは自動的に再試行されません。"
+  "studio.aiToolPopover.serverFallbackMessage": "クォータまたはパッケージ制限を使い果たした場合は、別のプロバイダーに切り替えます。重複請求を防ぐため、エラーは自動的に再試行されません。",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

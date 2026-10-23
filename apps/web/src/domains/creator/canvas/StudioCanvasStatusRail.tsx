@@ -241,7 +241,7 @@ function SelectionLayoutAction({
       hint={hint}
       disabled={disabled}
       unavailableReason={unavailableReason}
-      preferredSide="top"
+      preferredSide="top" className="shrink-0"
     >
       <button
         type="button"
@@ -249,7 +249,7 @@ function SelectionLayoutAction({
         disabled={disabled}
         className={cn(
           className,
-          "max-lg:min-h-11 max-lg:min-w-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+          "min-h-6 min-w-6 max-lg:min-h-11 max-lg:min-w-11 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
           "disabled:cursor-not-allowed disabled:opacity-45"
         )}
@@ -570,7 +570,7 @@ export function StudioCanvasStatusRail({
               </span>
             ) : null}
           </span>
-          <span className="hidden shrink-0 text-fg-3 xl:inline">
+          <span className="hidden min-w-0 flex-1 truncate text-fg-3 xl:inline">
             {selectionGroupName
               ? "드래그·방향키 이동 · Alt/⌥ 드래그 복제 · 더블클릭 내부 편집"
               : "드래그 이동 · Shift 비율·15° · Alt/⌥ 중심·드래그 복제"}
@@ -814,7 +814,7 @@ export function StudioCanvasStatusRail({
               <button
                 type="button"
                 onClick={onApplyAdvancedFillPreview}
-                className="min-h-11 flex-1 rounded-lg bg-accent px-4 font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:flex-none"
+                className="min-h-11 flex-1 rounded-lg bg-accent px-4 font-bold text-on-accent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:flex-none"
               >
                 적용 · 실행취소 1회
               </button>

@@ -33,6 +33,9 @@ import {
 } from "./studio-dialogue-voice";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 export interface StudioDialogueVoiceCharacter {
   readonly id: string;
@@ -89,6 +92,7 @@ export function StudioDialogueVoiceSection({
   onDispositionsChange,
   onSelectElement,
 }: StudioDialogueVoiceSectionProps) {
+  const t = useT();
   const [internalDispositions, setInternalDispositions] =
     useState<VoiceReviewDispositions>(EMPTY_VOICE_DISPOSITIONS);
   const dispositions = controlledDispositions ?? internalDispositions;
@@ -142,8 +146,7 @@ export function StudioDialogueVoiceSection({
   if (characters.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.62rem] leading-relaxed text-fg-4">
-        캐릭터 정보가 없어 말투 지문을 만들 수 없어요. 스토리 바이블에 캐릭터를
-        등록하면 캐릭터별 말투를 모아요.
+        {t("studio.brushCanvasStatus.lettering.voiceNoCharacters", "캐릭터 정보가 없어 말투 지문을 만들 수 없어요. 스토리 바이블에 캐릭터를 등록하면 캐릭터별 말투를 모아요.")}
       </p>
     );
   }
@@ -305,7 +308,7 @@ export function StudioDialogueVoiceSection({
         </ul>
       ) : readyCount > 0 ? (
         <p className="rounded-lg border border-good/35 bg-good/10 px-2 py-1.5 text-[0.6rem] text-good" role="status">
-          지문에서 크게 벗어난 대사가 없어요.
+          {t("studio.brushCanvasStatus.lettering.voiceNoDeviations", "지문에서 크게 벗어난 대사가 없어요.")}
         </p>
       ) : null}
       {deviations.length > 20 ? (

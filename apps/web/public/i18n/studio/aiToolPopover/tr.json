@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Metin Yapay Zeka Sağlayıcısı",
   "studio.aiToolPopover.serverTextAiProviderAria": "Sunucu Metni Yapay Zeka Sağlayıcısı",
   "studio.aiToolPopover.serverProviderAuto": "otomatik geçiş",
-  "studio.aiToolPopover.serverFallbackMessage": "Bakiye/paket limitiniz dolduğunda başka bir sağlayıcıya geçeceksiniz. Çift şarjı önlemek için genel hatalar otomatik olarak yeniden gönderilmez."
+  "studio.aiToolPopover.serverFallbackMessage": "Bakiye/paket limitiniz dolduğunda başka bir sağlayıcıya geçeceksiniz. Çift şarjı önlemek için genel hatalar otomatik olarak yeniden gönderilmez.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

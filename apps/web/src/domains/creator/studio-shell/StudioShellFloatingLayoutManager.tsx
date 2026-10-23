@@ -36,6 +36,7 @@ import {
   studioWorkspaceArrangingSnapshot,
   subscribeStudioWorkspaceArranging,
 } from "../studio-workspace-arrangement";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { useStudioShellFloatingLayout } from "./studio-shell-floating-layout-context";
 import { StudioShellFloatingTarget } from "./StudioShellFloatingTarget";
 import { STUDIO_SHELL_FLOATING_LAYOUT_OPEN_EVENT } from "./studio-shell-floating-layout-events";
@@ -513,7 +514,7 @@ export function StudioShellFloatingLayoutManager() {
                 {shell.authority === "sqlite-opfs"
                   ? "이 기기에 배치·표시 설정 저장됨"
                   : shell.authority === "checking"
-                    ? "설정 저장소 확인 중"
+                    ? editorShellStatusText("studio.editorShellStatus.floatingLayout.storageChecking", "설정 저장소 확인 중")
                     : "현재 탭에 설정 유지"}
               </span>
               <span className="inline-flex items-center gap-1">

@@ -100,6 +100,17 @@ const ENGLISH: Readonly<Record<string, string>> = {
   "완료 기준 · 한 줄에 하나": "Completion criteria · one per line",
   "검수 단계로 이동할 때 검수자 필수": "Require a reviewer before entering review",
   "작업 설명 · 시각적 블록 편집": "Task brief · visual blocks",
+  "선택한 작업 전체를 담당할 수 있는 활성 구성원이 없습니다. 회차별로 나누어 선택하세요.": "No active member can take on all of the selected tasks. Split the selection by episode.",
+  "본문·제목·체크 항목을 추가해 작업 지시서를 만드세요. 체크리스트는 작업 메모이며 공식 승인을 대신하지 않습니다.": "Add body text, headings and check items to build the task brief. The checklist is a work note and does not replace formal approval.",
+  "다른 변경이 감지되었습니다. 작성한 내용은 보존했으며 덮어쓰지 않습니다.": "Another change was detected. Your writing has been kept and nothing was overwritten.",
+  "편집을 버리고 최신 내용 불러오기": "Discard edits and load the latest content",
+  "작업을 시작하려면 사용할 입력 버전을 고정하고 선행 작업을 완료해야 합니다. 최신 버전으로 자동 교체하지 않습니다.": "To start the task, pin the input version to use and finish the prerequisite tasks. It is not swapped for the latest version automatically.",
+  "저장하지 않은 변경 있음": "Unsaved changes",
+  "작업 설명은 자동 저장되지 않습니다.": "Task descriptions are not saved automatically.",
+  "공정을 직접 배치하고 선행 관계·역할·동시 작업 수를 설정하세요. 공정 설정은 공식 검수나 승인 권한을 바꾸지 않습니다.": "Place processes directly and set prerequisites, roles and work-in-progress limits. Process settings do not change formal review or approval permissions.",
+  "편집을 버리고 최신 설정 불러오기": "Discard edits and load the latest settings",
+  "공정은 열람할 수 있습니다. 변경·저장은 프로젝트 관리 권한이 필요합니다.": "Processes can be viewed. Changing and saving them requires project management permission.",
+  "하나라도 선행 조건을 충족하지 못하면 선택한 작업 전체가 이동하지 않습니다. 필터를 바꾸면 선택이 해제됩니다.": "If any prerequisite is unmet, none of the selected tasks move. Changing the filters clears the selection.",
 };
 
 /** 작성자 콘텐츠는 번역하지 않고, UI의 고정 문구만 등록한다. */

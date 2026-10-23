@@ -37,7 +37,7 @@ import type {
   StudioVrmPoseMaterialCaptureOptions,
 } from "./studio-vrm-pose-material-adapter";
 
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../studio-vrm-panel-status-i18n";
 
@@ -244,7 +244,7 @@ export function StudioVrmPoseMaterialPanel({
       setPanelState({
         loadStatus: "read-error",
         payload: EMPTY_STUDIO_POSE_MATERIAL_LIBRARY,
-        message: t(
+        message: translateNow(
           "studio.vrmPanelStatus.poseMaterial.hydrationFailed",
           { detail: error instanceof Error ? error.message : String(error) },
           "SQLite/OPFS 포즈 소재를 검증해 불러오지 못했습니다. 원문 보호를 위해 변경을 막았습니다: {detail}",

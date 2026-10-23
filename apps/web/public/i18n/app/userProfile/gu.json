@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "પ્રોફાઇલ સામગ્રી",
   "userProfile.refresh": "તાજું કરવું",
   "userProfile.emptyReviews": "આ વપરાશકર્તા દ્વારા હજુ સુધી કોઈ સમીક્ષાઓ પ્રકાશિત નથી.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "સર્જેલી કૃતિઓ લોડ થઈ શકી નહીં. કૃપા કરીને ફરી પ્રયાસ કરો.",
+  "userProfile.series.error": "શ્રેણી લોડ થઈ શકી નહીં. કૃપા કરીને ફરી પ્રયાસ કરો.",
+  "userProfile.emptyReviewsHint": "તમને ગમતી કૃતિ પર પ્રથમ સમીક્ષા મૂકો.",
+  "userProfile.emptyReviewsCta": "કૃતિઓ બ્રાઉઝ કરો"
 }

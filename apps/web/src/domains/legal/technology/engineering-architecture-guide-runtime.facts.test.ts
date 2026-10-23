@@ -26,17 +26,21 @@ function section(id: string) {
 }
 
 describe("화면을 여는 순간 (request-journey)", () => {
-  it("Worker 가 먼저 받는 경로 패턴은 27개이고 API 4·대형 파일 7·미리보기 16 으로 나뉜다", () => {
+  it("Worker 가 먼저 받는 경로 패턴은 55개이고 API 4·대형 파일 7·R2 미디어 28·미리보기 16 으로 나뉜다", () => {
     const wrangler = read("deploy/cloudflare-static/wrangler.jsonc");
     const block = /"run_worker_first":\s*\[([\s\S]*?)\]/u.exec(wrangler)?.[1] ?? "";
     const patterns = (block.match(/"[^"]+"/gu) ?? []).map((item) => item.slice(1, -1));
-    expect(patterns).toHaveLength(27);
+    expect(patterns).toHaveLength(55);
     const api = patterns.filter((pattern) => pattern.startsWith("/api") || pattern.startsWith("/socket.io"));
-    const large = patterns.filter((pattern) => pattern.startsWith("/assets/") || pattern.startsWith("/brand/"));
+    // R2 미디어는 "<경로 접두>*.<확장자>" 모양이다(large-static-assets.ts 의 CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS).
+    const media = patterns.filter((pattern) => /^\/(?:assets\/(?:studio\/cc0-20260906|virtual-studio|3d)|vrm)\/\*\.[a-z0-9]+$/u.test(pattern));
+    const large = patterns.filter((pattern) =>
+      (pattern.startsWith("/assets/") || pattern.startsWith("/brand/")) && !media.includes(pattern));
     expect(api).toHaveLength(4);
     expect(large).toHaveLength(7);
-    expect(patterns.length - api.length - large.length).toBe(16);
-    expect(section("request-journey").facts?.find((fact) => fact.value === "27")?.source).toBe("deploy/cloudflare-static/wrangler.jsonc");
+    expect(media).toHaveLength(28);
+    expect(patterns.length - api.length - large.length - media.length).toBe(16);
+    expect(section("request-journey").facts?.find((fact) => fact.value === "55")?.source).toBe("deploy/cloudflare-static/wrangler.jsonc");
   });
 
   it("동적 요청 갈래는 7개이고 정적 파일 한도는 25 MiB 이다", () => {
@@ -63,11 +67,11 @@ describe("브라우저 안의 작업실 (browser-studio)", () => {
     expect(count("packages")).toBe(0);
   });
 
-  it("서비스 워커 요청 분류는 10종류이고 필수 미리받기 예산은 2.25 MiB 이다", () => {
+  it("서비스 워커 요청 분류는 10종류이고 필수 미리받기 예산은 2.5 MiB 이다", () => {
     const policy = read("apps/web/src/app/service-worker/studio-service-worker-policy.ts");
     const union = /export type StudioServiceWorkerRouteClass =([\s\S]*?)export type StudioServiceWorkerStrategy/u.exec(policy)?.[1] ?? "";
     expect(union.match(/\n\s*\|\s*"[a-z-]+"/gu)).toHaveLength(10);
-    expect(read("apps/web/src/app/service-worker/studio-service-worker-precache-plan.ts")).toContain("criticalBytes: 9 * 256 * 1024");
+    expect(read("apps/web/src/app/service-worker/studio-service-worker-precache-plan.ts")).toContain("criticalBytes: 10 * 256 * 1024");
   });
 
   it("기기 안 SQLite 스키마는 v6 까지이고 자동 저장은 편집이 1.5초 멈춘 뒤에 일어난다", () => {

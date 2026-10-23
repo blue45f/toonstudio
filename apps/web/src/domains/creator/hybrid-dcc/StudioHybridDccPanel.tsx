@@ -65,6 +65,7 @@ import {
   type StudioHybridDccToolContext,
 } from "./studio-hybrid-dcc-tool-catalog";
 import { detectStudioHybridDccWebglCapability } from "./studio-hybrid-dcc-webgl-probe";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { useStudioHybridDccModeLabel } from "./studio-hybrid-dcc-workbench-modes";
 
 import type { StudioHybridDccBg3dHandoffResult } from "./studio-hybrid-dcc-bg3d-handoff";
@@ -254,7 +255,7 @@ export function StudioHybridDccPanel({
         if (cancelled) return;
         const message = error instanceof Error ? error.message : String(error);
         setModifierError(message);
-        setLog(`비파괴 변형 미리보기 복구 실패 · ${message}`);
+        setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.previewRestoreFailed", { detail: message }, "비파괴 변형 미리보기 복구 실패 · {detail}"));
       });
     return () => {
       cancelled = true;
@@ -283,12 +284,10 @@ export function StudioHybridDccPanel({
         requestedSelection ?? current,
         next,
       ));
-      setLog(
-        `${label} 완료 · 오브젝트 ${Object.keys(next.session.state.geometry.records).length}개 · 컷 ${next.bridge.shots.length}개 · UV ${next.lastUvMap?.mode ?? "없음"} · 오류 ${workspaceDiagnostics(next).errorCount}개`,
-      );
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.lastUvMap?.mode ?? frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
     } catch (error) {
       if (!mountedRef.current || generation !== runGenerationRef.current) return;
-      setLog(`${label} 실패 · ${error instanceof Error ? error.message : String(error)}`);
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runFailed", { label, detail: error instanceof Error ? error.message : String(error) }, "{label} 실패 · {detail}"));
     } finally {
       if (mountedRef.current && generation === runGenerationRef.current) setBusy(false);
     }
@@ -421,12 +420,12 @@ export function StudioHybridDccPanel({
 
   const resolveSelectedFaces = (): readonly number[] => {
     const source = hybridDccSelectionSource(ws);
-    if (!source) throw new Error("먼저 오브젝트를 선택하세요.");
+    if (!source) throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.selectObjectFirst", "먼저 오브젝트를 선택하세요."));
     if (componentSelection.mode !== "object" && componentSelection.mode !== "face") {
-      throw new Error("면 편집 도구입니다. 3번 키 또는 ‘면’을 누른 뒤 면을 선택하세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.faceToolGuide", "면 편집 도구입니다. 3번 키 또는 ‘면’을 누른 뒤 면을 선택하세요."));
     }
     if (componentSelection.mode === "face" && componentSelection.elementIds.length === 0) {
-      throw new Error("선택한 면이 없습니다. 3D 화면에서 편집할 면을 먼저 선택하세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.faceNoneSelected", "선택한 면이 없습니다. 3D 화면에서 편집할 면을 먼저 선택하세요."));
     }
     return selectionResultValue(
       resolveStudioHybridDccSelectedOrDefaultFaceIds(componentSelection, source),
@@ -434,12 +433,12 @@ export function StudioHybridDccPanel({
   };
   const resolveSelectedEdge = (): number => {
     const source = hybridDccSelectionSource(ws);
-    if (!source) throw new Error("먼저 오브젝트를 선택하세요.");
+    if (!source) throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.selectObjectFirst", "먼저 오브젝트를 선택하세요."));
     if (componentSelection.mode !== "object" && componentSelection.mode !== "edge") {
-      throw new Error("모서리 편집 도구입니다. 2번 키 또는 ‘선’을 누른 뒤 모서리를 선택하세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.edgeToolGuide", "모서리 편집 도구입니다. 2번 키 또는 ‘선’을 누른 뒤 모서리를 선택하세요."));
     }
     if (componentSelection.mode === "edge" && componentSelection.elementIds.length === 0) {
-      throw new Error("선택한 모서리가 없습니다. 3D 화면에서 편집할 모서리를 먼저 선택하세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.edgeNoneSelected", "선택한 모서리가 없습니다. 3D 화면에서 편집할 모서리를 먼저 선택하세요."));
     }
     return selectionResultValue(
       resolveStudioHybridDccSelectedOrDefaultUndirectedEdgeIds(componentSelection, source),
@@ -447,12 +446,12 @@ export function StudioHybridDccPanel({
   };
   const resolveSelectedEdges = (): readonly number[] => {
     const source = hybridDccSelectionSource(ws);
-    if (!source) throw new Error("먼저 오브젝트를 선택하세요.");
+    if (!source) throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.selectObjectFirst", "먼저 오브젝트를 선택하세요."));
     if (componentSelection.mode !== "object" && componentSelection.mode !== "edge") {
-      throw new Error("모서리 편집 도구입니다. 2번 키 또는 ‘선’을 누른 뒤 모서리를 선택하세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.edgeToolGuide", "모서리 편집 도구입니다. 2번 키 또는 ‘선’을 누른 뒤 모서리를 선택하세요."));
     }
     if (componentSelection.mode === "edge" && componentSelection.elementIds.length === 0) {
-      throw new Error("선택한 모서리가 없습니다. 3D 화면에서 편집할 모서리를 먼저 선택하세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.edgeNoneSelected", "선택한 모서리가 없습니다. 3D 화면에서 편집할 모서리를 먼저 선택하세요."));
     }
     return selectionResultValue(
       resolveStudioHybridDccSelectedOrDefaultUndirectedEdgeIds(componentSelection, source),
@@ -465,7 +464,7 @@ export function StudioHybridDccPanel({
       setWs(next);
       setComponentSelection((current) => alignHybridDccSelectionToWorkspace(current, next));
     } catch (error) {
-      setLog(`오브젝트 선택 실패 · ${error instanceof Error ? error.message : String(error)}`);
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.objectSelectFailed", { detail: error instanceof Error ? error.message : String(error) }, "오브젝트 선택 실패 · {detail}"));
     }
   };
 
@@ -484,7 +483,7 @@ export function StudioHybridDccPanel({
         return;
       }
       const source = hybridDccSelectionSource(ws);
-      if (!source) throw new Error("점·선·면 편집을 시작할 오브젝트를 먼저 선택하세요.");
+      if (!source) throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.startObjectFirst", "점·선·면 편집을 시작할 오브젝트를 먼저 선택하세요."));
       setComponentSelection((current) => selectionResultValue(
         mutateStudioHybridDccComponentSelection(current, {
           mode,
@@ -494,7 +493,7 @@ export function StudioHybridDccPanel({
         }),
       ));
     } catch (error) {
-      setLog(`편집 선택 모드 변경 실패 · ${error instanceof Error ? error.message : String(error)}`);
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.modeChangeFailed", { detail: error instanceof Error ? error.message : String(error) }, "편집 선택 모드 변경 실패 · {detail}"));
     }
   };
 
@@ -507,7 +506,7 @@ export function StudioHybridDccPanel({
     try {
       const nextWorkspace = workspaceSelectAsset(ws, assetId);
       const source = hybridDccSelectionSource(nextWorkspace, assetId);
-      if (!source) throw new Error("선택한 메시 원본을 찾지 못했습니다.");
+      if (!source) throw new Error(frozenStatus3Text("studio.frozenStatus3.hybrid.meshSourceNotFound", "선택한 메시 원본을 찾지 못했습니다."));
       setWs(nextWorkspace);
       setComponentSelection((current) => {
         const base = current.mode === mode && current.provenance?.assetId === assetId
@@ -522,7 +521,7 @@ export function StudioHybridDccPanel({
         }));
       });
     } catch (error) {
-      setLog(`메시 요소 선택 실패 · ${error instanceof Error ? error.message : String(error)}`);
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.meshSelectFailed", { detail: error instanceof Error ? error.message : String(error) }, "메시 요소 선택 실패 · {detail}"));
     }
   };
 
@@ -539,7 +538,7 @@ export function StudioHybridDccPanel({
         }),
       ));
     } catch (error) {
-      setLog(`선택 해제 실패 · ${error instanceof Error ? error.message : String(error)}`);
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.clearSelectionFailed", { detail: error instanceof Error ? error.message : String(error) }, "선택 해제 실패 · {detail}"));
     }
   };
 
@@ -561,9 +560,7 @@ export function StudioHybridDccPanel({
         !mountedRef.current ||
         generation !== runGenerationRef.current
       ) return;
-      setLog(
-        `3D 배경 편집기로 전달 완료 · 모델 ${result.assets.length}개 · 컷 ${result.shots.length}개 · 보존 보고 ${result.losses.length}개`,
-      );
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.handoffCompleted", { assets: result.assets.length, shots: result.shots.length, losses: result.losses.length }, "3D 배경 편집기로 전달 완료 · 모델 {assets}개 · 컷 {shots}개 · 보존 보고 {losses}개"));
       onOpenInBackground3D(result);
     } catch (error) {
       if (
@@ -571,9 +568,7 @@ export function StudioHybridDccPanel({
         !mountedRef.current ||
         generation !== runGenerationRef.current
       ) return;
-      setLog(
-        `3D 배경 편집기 전달 실패 · ${error instanceof Error ? error.message : String(error)}`,
-      );
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.handoffFailed", { detail: error instanceof Error ? error.message : String(error) }, "3D 배경 편집기 전달 실패 · {detail}"));
     } finally {
       if (handoffAbortRef.current === controller) handoffAbortRef.current = null;
       if (mountedRef.current && generation === runGenerationRef.current) setBusy(false);
@@ -605,7 +600,7 @@ export function StudioHybridDccPanel({
     if (!ws.activeAssetId || !activeTransform) return;
     const parsed = Number(displayValue);
     if (!Number.isFinite(parsed)) {
-      setLog("숫자 변환 실패: 유효한 숫자를 입력해 주세요.");
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.numberConvertFailed", "숫자 변환 실패: 유효한 숫자를 입력해 주세요."));
       return;
     }
     const value = channel === "rotationEulerRad" ? parsed * Math.PI / 180 : parsed;
@@ -765,7 +760,7 @@ export function StudioHybridDccPanel({
               void run("오브젝트 변형", () => workspaceCommitObjectTransform(ws, assetId, transform));
             }}
             onComponentSelectionError={(message) => {
-              setLog(`메시 요소 선택 실패 · ${message}`);
+              setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.meshSelectFailed", { detail: message }, "메시 요소 선택 실패 · {detail}"));
             }}
             onComponentSelectionModeChange={changeComponentSelectionMode}
             onClearComponentSelection={clearMeshComponentSelection}
@@ -1041,9 +1036,9 @@ export function StudioHybridDccPanel({
                     onClick={() => {
                       try {
                         setWs(workspaceSetAssetVisibility(ws, record.assetId, !visible));
-                        setLog(`${record.assetId} ${visible ? "숨김" : "표시"} · 원본은 그대로 보존됩니다.`);
+                        setLog(visible ? frozenStatus3Text("studio.frozenStatus3.hybrid.visibilityNowHidden", { asset: record.assetId }, "{asset} 숨김 · 원본은 그대로 보존됩니다.") : frozenStatus3Text("studio.frozenStatus3.hybrid.visibilityNowShown", { asset: record.assetId }, "{asset} 표시 · 원본은 그대로 보존됩니다."));
                       } catch (error) {
-                        setLog(`표시 상태 변경 실패 · ${error instanceof Error ? error.message : String(error)}`);
+                        setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.visibilityChangeFailed", { detail: error instanceof Error ? error.message : String(error) }, "표시 상태 변경 실패 · {detail}"));
                       }
                     }}
                   >

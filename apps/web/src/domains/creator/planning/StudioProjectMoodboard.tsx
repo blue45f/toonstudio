@@ -9,6 +9,7 @@
  *   "새 무드보드로 시작하기"를 눌렀을 때만 기본 보드로 교체·저장한다.
  */
 import { useEffect, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { StudioMoodboardPanel } from "./StudioMoodboardPanel";
 import {
@@ -50,7 +51,7 @@ function loadMoodboard(projectId: string): LoadState {
   } catch (error) {
     return {
       kind: "broken",
-      reason: error instanceof Error ? error.message : "무드보드를 불러올 수 없어요.",
+      reason: error instanceof Error ? error.message : r3c04StatusText("studio.r3c04Status.planning.projectMoodboard.loadFailed", "무드보드를 불러올 수 없어요."),
     };
   }
 }

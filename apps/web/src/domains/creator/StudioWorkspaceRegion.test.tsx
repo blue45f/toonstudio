@@ -32,7 +32,13 @@ function regionNode() { return document.querySelector<HTMLDivElement>('[data-stu
 function Harness({ disabled = false }: { disabled?: boolean }) {
   return <><StudioWorkspaceArrangementToolbar disabled={disabled} /><StudioWorkspaceRegion surfaceId="test" label="테스트 도구" disabled={disabled}><button type="button">도구 실행</button></StudioWorkspaceRegion></>;
 }
-async function edit() { fireEvent.click(screen.getByRole("button", { name: "배치 편집" })); await screen.findByRole("button", { name: "배치 완료" }); }
+// 영역 크롬(이동 손잡이·배치 설정 등)은 배치 모드가 켜질 때 지연 로딩돼 툴바의 "배치 완료"보다 늦게 뜰 수 있다.
+// 크롬이 뜬 뒤에 돌려줘야 호출부의 동기 조회가 부하 큰 CI 에서 먼저 실행돼 실패하지 않는다.
+async function edit() {
+  fireEvent.click(screen.getByRole("button", { name: "배치 편집" }));
+  await screen.findByRole("button", { name: "배치 완료" });
+  await screen.findByRole("button", { name: "테스트 도구 이동" });
+}
 
 describe("StudioWorkspaceRegion", () => {
   it("suspends a hidden authored sidebar without forgetting its arrangement", async () => {

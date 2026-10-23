@@ -8,6 +8,7 @@
  */
 import { ChevronLeft, ChevronRight, Download, Eye, EyeOff, FileText, GanttChartSquare, Ghost, Lock, Pause, Play, Plus, Printer, Trash2, X } from "lucide-react";
 import { Fragment, useEffect } from "react";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 import {
   MAX_CLIP_NAME_LENGTH,
@@ -390,9 +391,7 @@ export function StudioAnimTimelinePanel({
 
         {/* 그리드 */}
         {rows.length === 0 ? (
-          <p className="text-[0.72rem] leading-relaxed text-fg-3" role="status">
-            이 페이지에는 아직 레이어가 없어요.
-          </p>
+          <p className="text-[0.72rem] leading-relaxed text-fg-3" role="status">{frozenStatus5Text("studio.frozenStatus5.anim.layersEmpty", "이 페이지에는 아직 레이어가 없어요.")}</p>
         ) : (
           <div className="overflow-auto rounded-lg border border-line" style={{ maxHeight: "16rem" }}>
             <div
@@ -578,9 +577,7 @@ export function StudioAnimTimelinePanel({
           </summary>
           <div className="space-y-2 px-2.5 pb-2.5">
             {timesheet.totalSegments === 0 ? (
-              <p className="text-[0.7rem] leading-relaxed text-fg-3" role="status">
-                아직 키프레임이 없어 도출할 셀이 없어요. 키프레임을 추가하면 노출 구간이 표로 펼쳐져요.
-              </p>
+              <p className="text-[0.7rem] leading-relaxed text-fg-3" role="status">{frozenStatus5Text("studio.frozenStatus5.anim.cellsEmpty", "아직 키프레임이 없어 도출할 셀이 없어요. 키프레임을 추가하면 노출 구간이 표로 펼쳐져요.")}</p>
             ) : (
               <div className="overflow-auto rounded-lg border border-line/60" style={{ maxHeight: "14rem" }}>
                 <table className="w-full border-collapse text-[0.7rem] text-fg-2">
@@ -761,7 +758,7 @@ export function StudioAnimTimelinePanel({
                 })();
               }}
               disabled={!hasTrack(doc, focusedRow.id)}
-              title={hasTrack(doc, focusedRow.id) ? undefined : "삭제할 키프레임이 없어요"}
+              title={hasTrack(doc, focusedRow.id) ? undefined : frozenStatus5Text("studio.frozenStatus5.anim.noKeyframeToDelete", "삭제할 키프레임이 없어요")}
               className={cn(buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-11 gap-1.5 text-bad hover:text-bad" }), "w-full")}
             >
               <Trash2 size={13} />

@@ -44,15 +44,26 @@ describe("StudioColorHarmoniesPanel", () => {
 
     expect(screen.getByLabelText("현재 그리기 색").textContent).toBe("#00ffff");
     expect(baseColor()).toBe("#00ffff");
-    expect(screen.getByRole("button", { name: "배색 기준색 고정" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "배색 기준 고정" }).getAttribute("aria-pressed")).toBe("false");
     expect(swatches()[1]).toBe(complementary);
     expect(document.activeElement).toBe(complementary);
+  });
+
+  it("keeps the lock label and its accessible name unchanged in both states (WCAG 2.5.3)", () => {
+    render(<ControlledHarmony />);
+    const lock = screen.getByRole("button", { name: "배색 기준 고정" });
+    expect(lock.getAttribute("aria-label")).toContain(lock.textContent!.trim());
+    expect(lock.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(lock);
+    expect(lock.getAttribute("aria-pressed")).toBe("true");
+    expect(lock.textContent!.trim()).toBe("기준 고정");
+    expect(lock.getAttribute("aria-label")).toContain(lock.textContent!.trim());
   });
 
   it("keeps a pinned triadic palette stable while picking two derived colors and saving", () => {
     const onSave = vi.fn();
     render(<ControlledHarmony onSave={onSave} />);
-    fireEvent.click(screen.getByRole("button", { name: "배색 기준색 고정" }));
+    fireEvent.click(screen.getByRole("button", { name: "배색 기준 고정" }));
     fireEvent.click(screen.getByRole("tab", { name: "3색 조화 (Triadic)" }));
 
     const green = swatches()[1]!;
@@ -75,7 +86,7 @@ describe("StudioColorHarmoniesPanel", () => {
 
   it("lets the artist explicitly rebase a locked harmony and return to follow mode", () => {
     render(<ControlledHarmony />);
-    const lock = screen.getByRole("button", { name: "배색 기준색 고정" });
+    const lock = screen.getByRole("button", { name: "배색 기준 고정" });
     fireEvent.click(lock);
     const rebase = screen.getByRole("button", { name: "현재 색을 기준으로" });
     expect(rebase.hasAttribute("disabled")).toBe(true);
@@ -113,7 +124,7 @@ describe("StudioColorHarmoniesPanel", () => {
 
   it("navigates every pinned swatch with a single tab stop and labels the actual analogous base", () => {
     render(<ControlledHarmony />);
-    fireEvent.click(screen.getByRole("button", { name: "배색 기준색 고정" }));
+    fireEvent.click(screen.getByRole("button", { name: "배색 기준 고정" }));
     fireEvent.click(screen.getByRole("tab", { name: "유사색 (Analogous)" }));
     const radios = swatches();
     expect(screen.getByText("기준색").previousElementSibling?.textContent).toBe("#ff0000");

@@ -27,6 +27,7 @@ import {
   type CreatorPublicationVisibility,
 } from "@/shared/lib/creator-publication-contract";
 import { cn } from "@/shared/lib/utils";
+import { r5CreatorStatusText } from "./r5-cat1-status-i18n";
 
 import {
   formatStudioPublicationLocalDateTime,
@@ -589,8 +590,7 @@ export function StudioPublicationControls({
         </h3>
         {preflight.issues.length === 0 ? (
           <p className="mt-2 text-xs leading-relaxed text-good">
-            공개를 막는 문제가 없습니다. 최종 미리보기에서 독자 화면을
-            확인하세요.
+            {r5CreatorStatusText("r5cat1.creator.publication.noBlockingIssues", "공개를 막는 문제가 없습니다. 최종 미리보기에서 독자 화면을 확인하세요.")}
           </p>
         ) : (
           <ul className="mt-3 space-y-2">

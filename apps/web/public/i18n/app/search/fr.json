@@ -74,15 +74,15 @@
   "search.explorer.unit.itemSuffix": "les articles",
   "search.explorer.time.noData": "Aucune mise à jour",
   "search.explorer.time.justNow": "Récemment mis à jour",
-  "search.explorer.time.minutesAgo": "il y a {count} millions",
+  "search.explorer.time.minutesAgo": "il y a {count} min",
   "search.explorer.time.hoursAgo": "il y a {count}h",
   "search.explorer.time.daysAgo": "Il y a {count}j",
   "search.explorer.loadMore": "Charger plus",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "Recherches populaires",
+  "search.explorer.suggestions.genres": "Genres recommandés",
+  "search.explorer.suggestions.searchFor": "Rechercher {query}",
+  "search.explorer.suggestions.genreFilter": "Affiner par genre {genre}",
+  "search.explorer.suggestions.loading": "Chargement des recherches suggérées",
+  "search.explorer.suggestions.error": "Impossible de charger les recherches suggérées. Veuillez réessayer dans un instant.",
+  "search.explorer.suggestions.empty": "Aucune suggestion pour le moment. Essayez de saisir un titre, un auteur ou une étiquette."
 }

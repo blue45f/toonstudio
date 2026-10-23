@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -83,9 +84,7 @@ export function StudioProductionBibleWorkspace({
           backend: "unavailable",
           persisted: false,
           localOnly: true,
-          warning: `SQLite/OPFS 바이블 읽기에 실패했습니다: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          warning: r3c07StatusText("studio.panelStatus.r3c07.productionBible.readFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite/OPFS 바이블 읽기에 실패했습니다: {detail}"),
         });
       }
     );
@@ -110,9 +109,7 @@ export function StudioProductionBibleWorkspace({
           backend: "memory",
           persisted: false,
           localOnly: true,
-          warning: `SQLite/OPFS 저장에 실패해 변경을 세션 메모리에만 유지합니다: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          warning: r3c07StatusText("studio.panelStatus.r3c07.productionBible.saveFailedMemoryOnly", { detail: error instanceof Error ? error.message : String(error) }, "SQLite/OPFS 저장에 실패해 변경을 세션 메모리에만 유지합니다: {detail}"),
         });
       }
     );

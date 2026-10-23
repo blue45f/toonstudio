@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Bookmark, Check, Star } from "lucide-react";
 import { useState } from "react";
 
@@ -123,7 +124,7 @@ export function StudioUnifiedAssetSmartManager({
           </div>
           <p className="mt-1 text-[0.52rem] leading-relaxed text-fg-3">
             {STUDIO_UNIFIED_ASSET_BULK_ADJUSTMENT_PRESETS.length === 0
-              ? "이미지 조정 프리셋 일괄 적용은 아직 지원하지 않아요. 조정은 에셋을 삽입한 뒤 에디터에서 적용해 주세요."
+              ? r3c07StatusText("studio.panelStatus.r3c07.unifiedSmartManager.bulkAdjustUnsupported", "이미지 조정 프리셋 일괄 적용은 아직 지원하지 않아요. 조정은 에셋을 삽입한 뒤 에디터에서 적용해 주세요.")
               : "이미지 조정 프리셋은 선택한 에셋에 한 번에 적용됩니다."}
           </p>
           <div className="mt-1.5 max-h-64 space-y-1 overflow-y-auto pr-1" aria-label="스마트 에셋 관리 목록">

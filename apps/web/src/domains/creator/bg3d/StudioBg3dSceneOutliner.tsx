@@ -16,7 +16,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
 
+import "../studio-bg3d-panel-status-i18n";
+
+import {
+  StudioBg3dOutlinerComponentGroupRow,
+  type StudioBg3dComponentGroupRowData,
+} from "./StudioBg3dOutlinerComponentGroupRow";
+import {
+  StudioBg3dOutlinerOrganizationPanel,
+} from "./StudioBg3dOutlinerOrganizationPanel";
+
+import type { StudioBg3dSkpSidecarLoader } from "./StudioBg3dOutlinerSkpSourceSection";
 import type {
   StudioBg3dOutlinerItem,
   StudioBg3dSceneOutlinerController,
@@ -26,34 +38,93 @@ interface StudioBg3dSceneOutlinerProps {
   readonly controller: StudioBg3dSceneOutlinerController;
   readonly variant?: "dock" | "panel";
   readonly className?: string;
+  /** 시험이 .skp 이름 기록 저장소 대신 가짜를 주입한다. */
+  readonly loadSkpSidecar?: StudioBg3dSkpSidecarLoader;
 }
 
-interface VisibleOutlinerRow {
+type OutlinerViewMode = "hierarchy" | "components";
+
+interface ObjectOutlinerRow {
+  readonly kind: "object";
+  /** 목록에서 행을 가리키는 키 — 오브젝트 id. */
+  readonly key: string;
   readonly item: StudioBg3dOutlinerItem;
   readonly depth: number;
   readonly childIds: readonly string[];
+  /** 컴포넌트 보기에서 이 행이 속한 묶음의 행 키. 계층 보기에서는 없다. */
+  readonly groupKey?: string;
 }
 
-function visibleOutlinerRows(
+interface GroupOutlinerRow extends StudioBg3dComponentGroupRowData {
+  readonly kind: "group";
+}
+
+type OutlinerRow = ObjectOutlinerRow | GroupOutlinerRow;
+
+/** 묶음 머리글의 접힘 상태 키. 오브젝트 id 와 섞이지 않게 접두사를 둔다. */
+const GROUP_KEY_PREFIX = "component-group:";
+const NO_COMPONENT_GROUP_KEY = `${GROUP_KEY_PREFIX}none`;
+
+function groupKeyFor(groupId: string | null): string {
+  return groupId === null ? NO_COMPONENT_GROUP_KEY : `${GROUP_KEY_PREFIX}${groupId}`;
+}
+
+function hierarchyRows(
   controller: StudioBg3dSceneOutlinerController,
   collapsedIds: ReadonlySet<string>,
-): readonly VisibleOutlinerRow[] {
+): readonly ObjectOutlinerRow[] {
   const filteredById = new Map(controller.filteredItems.map((item) => [item.id, item] as const));
   if (controller.query.trim()) {
-    return controller.filteredItems.map((item) => ({ item, depth: 0, childIds: [] }));
+    return controller.filteredItems.map((item) => ({ kind: "object", key: item.id, item, depth: 0, childIds: [] }));
   }
 
-  const rows: VisibleOutlinerRow[] = [];
+  const rows: ObjectOutlinerRow[] = [];
   const visit = (id: string, depth: number) => {
     const item = filteredById.get(id);
     if (!item) return;
     const childIds = (controller.hierarchy.childrenByParent.get(id) ?? [])
       .filter((childId) => filteredById.has(childId));
-    rows.push({ item, depth, childIds });
+    rows.push({ kind: "object", key: id, item, depth, childIds });
     if (collapsedIds.has(id)) return;
     childIds.forEach((childId) => visit(childId, depth + 1));
   };
   controller.hierarchy.roots.forEach((id) => visit(id, 0));
+  return rows;
+}
+
+/** 컴포넌트 보기: 묶음 머리글 아래에 인스턴스를 나열한다. 컴포넌트가 없거나 검색 중이면 계층 보기와 같다. */
+function componentRows(
+  controller: StudioBg3dSceneOutlinerController,
+  collapsedIds: ReadonlySet<string>,
+  noComponentName: string,
+): readonly OutlinerRow[] {
+  const organization = controller.organization;
+  if (!organization || controller.query.trim() || organization.view.componentGroups.length === 0) {
+    return hierarchyRows(controller, collapsedIds);
+  }
+  const filteredById = new Map(controller.filteredItems.map((item) => [item.id, item] as const));
+  const rows: OutlinerRow[] = [];
+  const grouped = new Set<string>();
+  const pushGroup = (groupId: string | null, name: string, memberIds: readonly string[]) => {
+    const visibleIds = memberIds.filter((id) => filteredById.has(id));
+    if (visibleIds.length === 0) return;
+    const key = groupKeyFor(groupId);
+    rows.push({ kind: "group", key, groupId, name, memberIds: visibleIds });
+    if (collapsedIds.has(key)) return;
+    for (const id of visibleIds) {
+      const item = filteredById.get(id);
+      if (item) rows.push({ kind: "object", key: id, item, depth: 1, childIds: [], groupKey: key });
+    }
+  };
+  for (const group of organization.view.componentGroups) {
+    for (const id of group.memberIds) grouped.add(id);
+    pushGroup(group.id, group.name, group.memberIds);
+  }
+  pushGroup(
+    null,
+    noComponentName,
+    controller.filteredItems.filter((item) => !grouped.has(item.id)).map((item) => item.id),
+  );
   return rows;
 }
 
@@ -66,57 +137,83 @@ function actionButtonClass(variant: "dock" | "panel"): string {
   );
 }
 
+function viewModeButtonClass(active: boolean): string {
+  return cx(
+    "min-h-11 rounded-md px-2 text-xs font-semibold transition-colors sm:min-h-8",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
+    active ? "bg-accent-soft text-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
+  );
+}
+
 export function StudioBg3dSceneOutliner({
   controller,
   variant = "panel",
   className,
+  loadSkpSidecar,
 }: StudioBg3dSceneOutlinerProps) {
+  const t = useT();
+  const organization = controller.organization;
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
+  const [requestedMode, setRequestedMode] = useState<OutlinerViewMode>("hierarchy");
+  const viewMode: OutlinerViewMode = organization ? requestedMode : "hierarchy";
   const rowButtonRefs = useRef(new Map<string, HTMLButtonElement>());
-  const rows = useMemo(
-    () => visibleOutlinerRows(controller, collapsedIds),
-    [collapsedIds, controller],
+  const noComponentName = t("studio.bg3dScene.view.noComponent", "컴포넌트 없음");
+  const rows = useMemo<readonly OutlinerRow[]>(
+    () => (viewMode === "components"
+      ? componentRows(controller, collapsedIds, noComponentName)
+      : hierarchyRows(controller, collapsedIds)),
+    [collapsedIds, controller, noComponentName, viewMode],
   );
-  const rowIndexById = useMemo(
-    () => new Map(rows.map((row, index) => [row.item.id, index] as const)),
+  const rowIndexByKey = useMemo(
+    () => new Map(rows.map((row, index) => [row.key, index] as const)),
     [rows],
   );
   const expandableIds = useMemo(
-    () => new Set(controller.items.flatMap((item) =>
-      (controller.hierarchy.childrenByParent.get(item.id)?.length ?? 0) > 0 ? [item.id] : [])),
-    [controller.hierarchy.childrenByParent, controller.items],
+    () => (viewMode === "components"
+      ? new Set(rows.flatMap((row) => (row.kind === "group" ? [row.key] : [])))
+      : new Set(controller.items.flatMap((item) =>
+        (controller.hierarchy.childrenByParent.get(item.id)?.length ?? 0) > 0 ? [item.id] : []))),
+    [controller.hierarchy.childrenByParent, controller.items, rows, viewMode],
   );
+  const entityIds = useMemo(() => controller.items.map((item) => item.id), [controller.items]);
 
   useEffect(() => {
-    const validIds = new Set(controller.items.map((item) => item.id));
+    const validIds = new Set<string>(controller.items.map((item) => item.id));
+    validIds.add(NO_COMPONENT_GROUP_KEY);
+    for (const group of organization?.view.componentGroups ?? []) validIds.add(groupKeyFor(group.id));
     setCollapsedIds((current) => {
       const next = new Set([...current].filter((id) => validIds.has(id)));
       if (next.size === current.size && [...next].every((id) => current.has(id))) return current;
       return next;
     });
-  }, [controller.items]);
+  }, [controller.items, organization?.view.componentGroups]);
+
+  const selectRow = (row: OutlinerRow) => {
+    if (row.kind === "group") organization?.selectEntities(row.memberIds);
+    else controller.select(row.item.id, "replace");
+  };
 
   const focusAndSelect = (index: number) => {
     const row = rows[index];
     if (!row) return;
-    controller.select(row.item.id, "replace");
-    requestAnimationFrame(() => rowButtonRefs.current.get(row.item.id)?.focus());
+    selectRow(row);
+    requestAnimationFrame(() => rowButtonRefs.current.get(row.key)?.focus());
   };
 
-  const toggleCollapsed = (id: string) => {
+  const toggleCollapsed = (key: string) => {
     setCollapsedIds((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
   const handleTreeKeyDown = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
-    row: VisibleOutlinerRow,
+    row: OutlinerRow,
   ) => {
-    const index = rowIndexById.get(row.item.id) ?? -1;
+    const index = rowIndexByKey.get(row.key) ?? -1;
     if (event.key === "ArrowDown") {
       event.preventDefault();
       focusAndSelect(Math.min(rows.length - 1, index + 1));
@@ -137,6 +234,24 @@ export function StudioBg3dSceneOutliner({
       focusAndSelect(rows.length - 1);
       return;
     }
+    if (row.kind === "group") {
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        if (collapsedIds.has(row.key)) toggleCollapsed(row.key);
+        else focusAndSelect(index + 1);
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        if (!collapsedIds.has(row.key)) toggleCollapsed(row.key);
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectRow(row);
+      }
+      return;
+    }
     if (event.key === "ArrowRight" && row.childIds.length > 0) {
       event.preventDefault();
       if (collapsedIds.has(row.item.id)) toggleCollapsed(row.item.id);
@@ -149,9 +264,9 @@ export function StudioBg3dSceneOutliner({
         toggleCollapsed(row.item.id);
         return;
       }
-      const parentId = controller.hierarchy.parentById.get(row.item.id);
-      if (parentId) {
-        const parentIndex = rowIndexById.get(parentId);
+      const parentKey = row.groupKey ?? controller.hierarchy.parentById.get(row.item.id);
+      if (parentKey) {
+        const parentIndex = rowIndexByKey.get(parentKey);
         if (parentIndex !== undefined) focusAndSelect(parentIndex);
       }
       return;
@@ -166,6 +281,8 @@ export function StudioBg3dSceneOutliner({
 
   const allExpandableCollapsed = expandableIds.size > 0
     && [...expandableIds].every((id) => collapsedIds.has(id));
+  const showCollapseAll = expandableIds.size > 0 && !controller.query.trim();
+  const componentHint = viewMode === "components" && (organization?.view.componentGroups.length ?? 0) === 0;
 
   return (
     <section
@@ -194,7 +311,7 @@ export function StudioBg3dSceneOutliner({
           <span className="whitespace-nowrap text-[0.68rem] text-fg-3">
             {controller.filteredItems.length}/{controller.items.length}
           </span>
-          {expandableIds.size > 0 && !controller.query.trim() ? (
+          {showCollapseAll ? (
             <button
               type="button"
               className={actionButtonClass("dock")}
@@ -235,28 +352,98 @@ export function StudioBg3dSceneOutliner({
         />
       </label>
 
+      {organization ? (
+        <div
+          role="group"
+          aria-label={t("studio.bg3dScene.view.label", "목록 보기 방식")}
+          className={cx(
+            "grid shrink-0 grid-cols-2 gap-1 rounded-lg border border-line bg-card p-1",
+            variant === "dock" ? "mx-3 mb-2" : "mb-2",
+          )}
+        >
+          <button
+            type="button"
+            aria-pressed={viewMode === "hierarchy"}
+            className={viewModeButtonClass(viewMode === "hierarchy")}
+            onClick={() => setRequestedMode("hierarchy")}
+          >
+            {t("studio.bg3dScene.view.hierarchy", "계층")}
+          </button>
+          <button
+            type="button"
+            aria-pressed={viewMode === "components"}
+            className={viewModeButtonClass(viewMode === "components")}
+            onClick={() => setRequestedMode("components")}
+          >
+            {t("studio.bg3dScene.view.components", "컴포넌트")}
+          </button>
+        </div>
+      ) : null}
+      {componentHint ? (
+        <p className={cx(
+          "shrink-0 rounded-lg border border-dashed border-line px-3 py-2 text-xs leading-relaxed text-fg-2",
+          variant === "dock" ? "mx-3 mb-2" : "mb-2",
+        )}>
+          {t(
+            "studio.bg3dScene.view.componentsEmpty",
+            "컴포넌트로 묶은 오브젝트가 아직 없어요. 오브젝트를 고른 뒤 아래 '태그와 장면 정보'에서 묶어 보세요.",
+          )}
+        </p>
+      ) : null}
+
       <div className={cx(
         "min-h-0 flex-1 overflow-y-auto overscroll-contain",
         variant === "dock" ? "px-2 pb-3" : "max-h-[24rem]",
       )}>
         {controller.items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-3 py-4 text-xs leading-relaxed text-fg-3">
-            아직 장면 객체가 없습니다. 도형·템플릿·에셋을 추가하면 이곳에서 계층으로 관리할 수 있어요.
+            {t("studio.bg3dPanelStatus.sceneOutliner.objectsEmpty", "아직 장면 객체가 없습니다. 도형·템플릿·에셋을 추가하면 이곳에서 계층으로 관리할 수 있어요.")}
           </p>
         ) : controller.filteredItems.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-3 py-4 text-xs leading-relaxed text-fg-3">
-            검색 결과가 없습니다.
+            {t("studio.bg3dPanelStatus.sceneOutliner.searchEmpty", "검색 결과가 없습니다.")}
           </p>
         ) : (
           <ul className="space-y-1" role="tree" aria-label="3D 장면 객체">
             {rows.map((row) => {
+              if (row.kind === "group") {
+                const collapsed = collapsedIds.has(row.key);
+                const selected = row.memberIds.length > 0 && row.memberIds.every((id) => controller.selectedIds.has(id));
+                return (
+                  <li
+                    key={row.key}
+                    role="treeitem"
+                    aria-level={1}
+                    aria-selected={selected}
+                    aria-expanded={!collapsed}
+                  >
+                    {organization ? (
+                      <StudioBg3dOutlinerComponentGroupRow
+                        row={row}
+                        organization={organization}
+                        variant={variant}
+                        collapsed={collapsed}
+                        selected={selected}
+                        setButtonRef={(node) => {
+                          if (node) rowButtonRefs.current.set(row.key, node);
+                          else rowButtonRefs.current.delete(row.key);
+                        }}
+                        onToggleCollapsed={() => toggleCollapsed(row.key)}
+                        onKeyDown={(event) => handleTreeKeyDown(event, row)}
+                      />
+                    ) : null}
+                  </li>
+                );
+              }
               const { item } = row;
               const selected = controller.selectedIds.has(item.id);
               const collapsed = collapsedIds.has(item.id);
               const hasChildren = row.childIds.length > 0;
+              const tags = organization?.view.tagsByEntityId.get(item.id);
+              const tagHidden = organization?.view.tagHiddenIds.has(item.id) === true;
               return (
                 <li
-                  key={item.id}
+                  key={row.key}
                   role="treeitem"
                   aria-level={row.depth + 1}
                   aria-selected={selected}
@@ -268,7 +455,7 @@ export function StudioBg3dSceneOutliner({
                       selected
                         ? "border-accent/55 bg-accent-soft text-accent"
                         : "border-line/80 bg-card text-fg-2 hover:bg-raised",
-                      !item.visible && "opacity-60",
+                      (!item.visible || tagHidden) && "opacity-60",
                     )}
                     style={{ marginLeft: `${Math.min(row.depth, 8) * 12}px` }}
                   >
@@ -290,8 +477,8 @@ export function StudioBg3dSceneOutliner({
                     )}
                     <button
                       ref={(node) => {
-                        if (node) rowButtonRefs.current.set(item.id, node);
-                        else rowButtonRefs.current.delete(item.id);
+                        if (node) rowButtonRefs.current.set(row.key, node);
+                        else rowButtonRefs.current.delete(row.key);
                       }}
                       type="button"
                       className={cx(
@@ -314,7 +501,21 @@ export function StudioBg3dSceneOutliner({
                       ) : (
                         <Hexagon size={13} className="shrink-0 text-fg-3" aria-hidden />
                       )}
-                      <span className="truncate font-semibold">{item.label}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">{item.label}</span>
+                        {tags && tags.length > 0 ? (
+                          <span className="block truncate text-[0.68rem] font-normal text-fg-3">
+                            <span className="sr-only">{t("studio.bg3dScene.row.tagsLabel", "태그")}: </span>
+                            {tags.join(" · ")}
+                          </span>
+                        ) : null}
+                      </span>
+                      {tagHidden ? (
+                        <>
+                          <EyeOff size={11} className="shrink-0 opacity-80" aria-hidden />
+                          <span className="sr-only">{t("studio.bg3dScene.row.tagHidden", "태그로 숨김")}</span>
+                        </>
+                      ) : null}
                       {item.locked ? <Lock size={11} className="shrink-0 opacity-80" aria-hidden /> : null}
                     </button>
                     <div className={cx(
@@ -374,6 +575,16 @@ export function StudioBg3dSceneOutliner({
           </ul>
         )}
       </div>
+
+      {organization ? (
+        <StudioBg3dOutlinerOrganizationPanel
+          organization={organization}
+          entityIds={entityIds}
+          selectedIds={controller.selectedIds}
+          variant={variant}
+          {...(loadSkpSidecar ? { loadSidecar: loadSkpSidecar } : {})}
+        />
+      ) : null}
     </section>
   );
 }

@@ -7,6 +7,7 @@
  * busy 잠금 아래에 있어야 동시 실행 경쟁을 막을 수 있다 — 이 패널 안에 독립된 busy state 를
  * 두면 그 잠금이 깨진다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { LayoutGrid, Loader2 } from "lucide-react";
 
 import { CONTACT_SHEET_COLUMN_CHOICES, CONTACT_SHEET_PAGE_PRESETS, CONTACT_SHEET_ROW_CHOICES } from "./studio-pdf-contact-sheet";
@@ -152,7 +153,7 @@ export function StudioContactSheetPanel({
             : disabled
               ? "다른 내보내기가 끝난 뒤 이용할 수 있어요"
               : pageCount < 1
-                ? "내보낼 페이지가 없어요"
+                ? r3c07StatusText("studio.panelStatus.r3c07.contactSheet.noPages", "내보낼 페이지가 없어요")
                 : `전체 ${pageCount}페이지를 ${columns}×${rows} 격자로 모은 인쇄용 PDF로 저장`
         }
       >

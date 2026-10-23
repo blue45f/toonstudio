@@ -66,7 +66,7 @@ export function ProductionTaskBulkEditor({
     problem =
       cause instanceof Error
         ? cause.message
-        : t("productionHub.status.bulkEditCheckFailed", "변경 내용을 확인하지 못했습니다.");
+        : t("productionHub.status.bulkEditCheckFailed", "변경 내용을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
   }
   const dirty =
     edit.priority !== "keep" ||

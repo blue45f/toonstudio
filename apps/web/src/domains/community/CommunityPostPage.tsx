@@ -1,3 +1,4 @@
+import { communityStatusText } from "./community-status-i18n";
 import {
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
@@ -47,7 +48,7 @@ export function CommunityPostPage() {
 
   const { data: post, loading, error, notFound, reload } = useApiResource<FanCafePost>(
     id ? `/api/community/posts/${encodeURIComponent(id)}` : null,
-    "토론 글을 불러오지 못했습니다."
+    communityStatusText("community.status.post.loadFailed", "토론 글을 불러오지 못했습니다.")
   );
 
   const shareable = post ? canShareCommunityPost(post) : false;
@@ -61,7 +62,7 @@ export function CommunityPostPage() {
     ? shareDescription
     : "웹툰 작품과 작가를 주제로 이야기를 나누는 커뮤니티입니다.";
 
-  useDocumentTitle(post ? post.title : notFound ? "토론 글을 찾을 수 없어요" : "커뮤니티 토론");
+  useDocumentTitle(post ? post.title : notFound ? communityStatusText("community.status.post.notFoundTitle", "토론 글을 찾을 수 없어요") : "커뮤니티 토론");
   useMetaDescription(post ? publicMetaDescription : null);
   usePageSocialMeta({
     canonicalPath: sharePath,
@@ -145,7 +146,7 @@ export function CommunityPostPage() {
       });
       navigate(boardHref, { replace: true });
     } catch {
-      setDeleteError("글을 삭제하지 못했습니다.");
+      setDeleteError(communityStatusText("community.status.post.deleteFailed", "글을 삭제하지 못했습니다."));
       setDeleting(false);
     }
   }

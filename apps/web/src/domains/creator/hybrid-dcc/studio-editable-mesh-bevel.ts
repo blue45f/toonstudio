@@ -13,6 +13,11 @@ import type {
   StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
 
+import {
+  STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES,
+  validateStudioHybridDccFanPolygon,
+} from "./studio-hybrid-dcc-polygon-validation";
+
 /** Kernel pieces the bevel needs from the mesh module. */
 export interface StudioEditableMeshBevelKernel {
   readonly faceLoopVertexIds: (mesh: StudioEditableMesh, faceId: number) => number[];
@@ -53,8 +58,27 @@ function cross(a: StudioMeshVec3, b: StudioMeshVec3): StudioMeshVec3 {
   return vec(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
+function dot(a: StudioMeshVec3, b: StudioMeshVec3): number {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
 function length(a: StudioMeshVec3): number {
   return Math.hypot(a.x, a.y, a.z);
+}
+
+/**
+ * Unit normal of a polygon, summed as cross products fanned from its first corner. Working from differences to that
+ * corner keeps the sum exact for a polygon far from the origin, where summing products of absolute coordinates cancels
+ * down to noise.
+ */
+function polygonNormal(positions: readonly StudioMeshVec3[], polygon: readonly number[]): StudioMeshVec3 {
+  const origin = positions[polygon[0]!]!;
+  let sum = vec(0, 0, 0);
+  for (let i = 1; i + 1 < polygon.length; i += 1) {
+    sum = add(sum, cross(sub(positions[polygon[i]!]!, origin), sub(positions[polygon[i + 1]!]!, origin)));
+  }
+  const size = length(sum);
+  return size > 0 ? scale(sum, 1 / size) : sum;
 }
 
 interface StudioBevelCorner {
@@ -105,6 +129,11 @@ function chainStudioBevelCorners(corners: readonly StudioBevelCorner[]): StudioB
  * Cube, one edge: 8v/6f/12e -> 10v/7f/15e. Cube, all 12 edges: 24v/26f/48e. Boundary edges, vertices on the open
  * boundary and non-manifold vertices are rejected instead of returning an open mesh. Face material and smooth flags
  * are inherited by the faces made from them; chamfer and cap faces inherit from an adjacent face.
+ *
+ * A result the viewport could not draw (a face with more corners than it accepts, one it cannot fan into triangles),
+ * two faces folded back over each other, and a closed solid that ends up with no volume are rejected as
+ * `topology-failed`. A chamfer on convex edges only removes material, so the solid must also get smaller; a chamfer on a
+ * concave edge fills the corner in and the solid grows, which is allowed.
  */
 export function bevelEditableMeshEdges(
   kernel: StudioEditableMeshBevelKernel,
@@ -168,6 +197,20 @@ export function bevelEditableMeshEdges(
     if (use.forward.length !== 1) return fail("invalid-mesh", "faces on a selected edge disagree on orientation");
     bevelVertices.add(lo);
     bevelVertices.add(hi);
+  }
+
+  // A chamfer on a convex edge takes material off the solid; on a concave edge (the floor of a pit, the inside corner of
+  // an L) it fills the corner and the solid grows. The volume check at the end has to know which one it is looking at.
+  // With outward-facing faces, normal(lo->hi face) x normal(hi->lo face) points along lo->hi at a convex edge.
+  let concaveEdgeCount = 0;
+  for (const [key, [lo, hi]] of selected) {
+    const use = uses.get(key)!;
+    const along = sub(positions[hi]!, positions[lo]!);
+    const turn = dot(
+      cross(polygonNormal(positions, faceLoops[use.forward[0]!]!), polygonNormal(positions, faceLoops[use.backward[0]!]!)),
+      along,
+    );
+    if (turn < -1e-9 * length(along)) concaveEdgeCount += 1;
   }
 
   const cornersAt = new Map<number, StudioBevelCorner[]>();
@@ -341,24 +384,77 @@ export function bevelEditableMeshEdges(
     }
     return polygonArea(polygon) <= Math.max(kernel.areaEpsilon, 1e-9 * longest * longest);
   };
-  // A cap whose two ports lie on one straight line through the kept vertex (an untouched edge meets a straight line
-  // of edges) would be a zero-area triangle. The kept vertex slides along that line to the cap's next point instead,
-  // which closes the same corner with no flat face and keeps both neighbours planar.
+  // The viewport fans every face from its first corner and refuses zero-area, non-planar and concave fans, so faces the
+  // bevel made or changed need a start corner that fans cleanly.
+  const fanReady = (loop: readonly number[]): boolean => {
+    try {
+      validateStudioHybridDccFanPolygon(loop.map((vertex) => [positions[vertex]!.x, positions[vertex]!.y, positions[vertex]!.z] as const), -1);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const rotateToFan = (loop: readonly number[]): number[] | null => {
+    for (let start = 0; start < loop.length; start += 1) {
+      const rotated = loop.map((_, index) => loop[(start + index) % loop.length]!);
+      if (fanReady(rotated)) return rotated;
+    }
+    return null;
+  };
+  const normalOf = (polygon: readonly number[]): StudioMeshVec3 => polygonNormal(positions, polygon);
+  // A kept vertex whose cap is a triangle would leave that cap lying over its neighbours when it cannot be told apart
+  // from them: the cap is flat (its two ports lie on one straight line through the vertex), or every other face at the
+  // vertex shares the cap's plane (an untouched edge between coplanar faces ends here). The vertex then moves within that
+  // plane, which closes the same corner with no flap and keeps the neighbours planar: onto one of the cap's ports, or,
+  // when that would make a neighbour concave, onto a new point halfway between the ports (the chamfer's end edge then
+  // passes through it, so the mesh stays closed).
+  const trySlide = (cap: { readonly vertices: number[] }, kept: number): boolean => {
+    const at = cap.vertices.indexOf(kept);
+    const next = cap.vertices[(at + 1) % 3]!;
+    const previous = cap.vertices[(at + 2) % 3]!;
+    const flat = isFlat(cap.vertices);
+    if (!flat) {
+      const normal = normalOf(cap.vertices);
+      let reach = 0;
+      for (const vertex of cap.vertices) reach = Math.max(reach, length(sub(positions[vertex]!, positions[kept]!)));
+      const around = polygons.filter((polygon) => polygon.includes(kept));
+      const sharesPlane = around.length > 0 && around.every((polygon) => polygon.every((vertex) => {
+        const offset = sub(positions[vertex]!, positions[kept]!);
+        return Math.abs(dot(offset, normal)) <= 1e-9 * Math.max(reach, 1e-12);
+      }));
+      if (!sharesPlane) return false;
+    }
+    const accept = (rewritten: number[][]): boolean => {
+      const sound = rewritten.every((polygon, index) => polygon === polygons[index] || (polygon.length >= 3
+        && rotateToFan(polygon) !== null && dot(normalOf(polygon), normalOf(polygons[index]!)) > 0));
+      if (sound) rewritten.forEach((polygon, index) => { polygons[index] = polygon; });
+      return sound;
+    };
+    for (const target of flat ? [next] : [next, previous]) {
+      if (accept(polygons.map((polygon) => (polygon.includes(kept)
+        ? withoutRepeats(polygon.map((vertex) => (vertex === kept ? target : vertex)))
+        : polygon)))) return true;
+    }
+    if (flat) return false;
+    const middle = addPoint(scale(add(positions[next]!, positions[previous]!), 0.5));
+    hostOf.set(middle, kept);
+    const rewritten = polygons.map((polygon) => {
+      const moved = polygon.map((vertex) => (vertex === kept ? middle : vertex));
+      const end = moved.findIndex((vertex, i) => vertex === previous && moved[(i + 1) % moved.length] === next);
+      return end < 0 ? moved : [...moved.slice(0, end + 1), middle, ...moved.slice(end + 1)];
+    });
+    if (accept(rewritten)) return true;
+    positions.pop();
+    hostOf.delete(middle);
+    return false;
+  };
   for (const cap of caps) {
     const kept = cap.vertices.find((vertex) => bevelVertices.has(vertex));
-    const slidable = cap.vertices.length === 3 && kept !== undefined && isFlat(cap.vertices)
+    const single = kept !== undefined && cap.vertices.length === 3
       && caps.filter((other) => other.vertices.includes(kept)).length === 1;
-    if (!slidable) {
-      polygons.push(cap.vertices);
-      sourceFace.push(cap.source);
-      continue;
-    }
-    const target = cap.vertices[(cap.vertices.indexOf(kept) + 1) % 3]!;
-    for (let i = 0; i < faceLoops.length; i += 1) {
-      if (polygons[i]!.includes(kept)) {
-        polygons[i] = withoutRepeats(polygons[i]!.map((vertex) => (vertex === kept ? target : vertex)));
-      }
-    }
+    if (single && trySlide(cap, kept)) continue;
+    polygons.push(cap.vertices);
+    sourceFace.push(cap.source);
   }
 
   const closed = collectDirected();
@@ -381,6 +477,125 @@ export function bevelEditableMeshEdges(
   const collapsed = polygons.findIndex((polygon, index) =>
     polygon.length < 3 || new Set(polygon).size !== polygon.length || (isFlat(polygon) && !flatBefore.has(index)));
   if (collapsed >= 0) return fail("topology-failed", "bevel collapsed a face; use a smaller amount");
+
+  // The viewport fans every face from its first corner and refuses zero-area, non-planar and concave fans. Faces the
+  // bevel made or changed therefore start at a corner that fans cleanly; a non-planar quad (a chamfer between two
+  // tilted faces) is split along its shorter diagonal; anything else is rejected instead of returned as an object
+  // the viewport would silently drop.
+  const drawable: number[][] = [];
+  const drawableSource: number[] = [];
+  for (let index = 0; index < polygons.length; index += 1) {
+    const polygon = polygons[index]!;
+    const original = index < faceLoops.length ? faceLoops[index]! : undefined;
+    if (original && original.length === polygon.length && original.every((vertex, i) => vertex === polygon[i])) {
+      drawable.push(polygon);
+      drawableSource.push(sourceFace[index]!);
+      continue;
+    }
+    if (polygon.length > STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES) {
+      // A face that was already past the limit is not the bevel's doing.
+      if (original && original.length > STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES) {
+        drawable.push(polygon);
+        drawableSource.push(sourceFace[index]!);
+        continue;
+      }
+      return fail(
+        "topology-failed",
+        `bevel would make a face with ${polygon.length} corners, past the viewport's limit of ${STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES}; select fewer edges`,
+      );
+    }
+    const rotated = rotateToFan(polygon);
+    if (rotated) {
+      drawable.push(rotated);
+      drawableSource.push(sourceFace[index]!);
+      continue;
+    }
+    if (polygon.length === 4) {
+      const [a, b, c, d] = polygon as [number, number, number, number];
+      const shortAcross = length(sub(positions[a]!, positions[c]!)) <= length(sub(positions[b]!, positions[d]!));
+      const halves = shortAcross ? [[a, b, c], [a, c, d]] : [[a, b, d], [b, c, d]];
+      const fans = halves.map(rotateToFan);
+      if (fans.every((fan) => fan !== null)) {
+        for (const fan of fans) {
+          drawable.push(fan!);
+          drawableSource.push(sourceFace[index]!);
+        }
+        continue;
+      }
+    }
+    // A face that already could not be drawn before the bevel is not the bevel's doing.
+    if (original && !rotateToFan(original)) {
+      drawable.push(polygon);
+      drawableSource.push(sourceFace[index]!);
+      continue;
+    }
+    return fail("topology-failed", "bevel would make a face the viewport cannot draw; select fewer edges or use a smaller amount");
+  }
+  polygons.length = 0;
+  polygons.push(...drawable);
+  sourceFace.length = 0;
+  sourceFace.push(...drawableSource);
+
+  // Two faces that share an edge must not fold back over each other (opposite normals), and a closed solid must keep a
+  // positive, smaller volume; both mean the amount reached past the geometry it cut into.
+  const owner = new Map<string, number>();
+  polygons.forEach((polygon, index) => {
+    for (let i = 0; i < polygon.length; i += 1) owner.set(directedKey(polygon[i]!, polygon[(i + 1) % polygon.length]!), index);
+  });
+  const normals = new Map<number, StudioMeshVec3>();
+  for (let index = 0; index < polygons.length; index += 1) {
+    const polygon = polygons[index]!;
+    for (let i = 0; i < polygon.length; i += 1) {
+      const from = polygon[i]!;
+      const to = polygon[(i + 1) % polygon.length]!;
+      if (!(touched(from) || touched(to))) continue;
+      const other = owner.get(directedKey(to, from));
+      if (other === undefined) continue;
+      const here = normals.get(index) ?? normalOf(polygon);
+      const there = normals.get(other) ?? normalOf(polygons[other]!);
+      normals.set(index, here);
+      normals.set(other, there);
+      if (here.x * there.x + here.y * there.y + here.z * there.z < -0.995) {
+        return fail("topology-failed", "bevel folded a face back over its neighbour; select fewer edges or use a smaller amount");
+      }
+    }
+  }
+  // Volume is summed against the middle of the original bounding box, not the world origin, so a solid far from the
+  // origin does not lose its volume to cancellation.
+  const centre = (() => {
+    const low = { x: Infinity, y: Infinity, z: Infinity };
+    const high = { x: -Infinity, y: -Infinity, z: -Infinity };
+    for (let i = 0; i < originalVertexCount; i += 1) {
+      const { x, y, z } = positions[i]!;
+      low.x = Math.min(low.x, x);
+      low.y = Math.min(low.y, y);
+      low.z = Math.min(low.z, z);
+      high.x = Math.max(high.x, x);
+      high.y = Math.max(high.y, y);
+      high.z = Math.max(high.z, z);
+    }
+    return vec((low.x + high.x) / 2, (low.y + high.y) / 2, (low.z + high.z) / 2);
+  })();
+  const volumeOf = (faces: readonly (readonly number[])[]): number => {
+    let sum = 0;
+    for (const face of faces) {
+      const origin = sub(positions[face[0]!]!, centre);
+      for (let i = 1; i + 1 < face.length; i += 1) {
+        sum += dot(origin, cross(sub(positions[face[i]!]!, centre), sub(positions[face[i + 1]!]!, centre)));
+      }
+    }
+    return sum / 6;
+  };
+  if (kernel.meshStats(mesh).boundaryEdgeCount === 0) {
+    const volumeBefore = volumeOf(faceLoops);
+    const volumeAfter = volumeOf(polygons);
+    // Cutting convex edges can only shrink the solid, so a result that did not shrink went wrong. Filling a concave edge
+    // makes it grow (a mix of both can go either way); there the most to ask is a solid that still has volume.
+    const shrank = volumeAfter < volumeBefore * (1 + 1e-9);
+    if (volumeBefore > 0 && !(volumeAfter > 0 && (concaveEdgeCount > 0 || shrank))) {
+      return fail("topology-failed", "bevel amount is too large for this solid; use a smaller amount");
+    }
+  }
 
   // Bevel vertices no polygon uses any more are dropped; every other position keeps its relative order.
   const used = new Set<number>();

@@ -65,8 +65,8 @@ export interface StudioHybridDccFaceModelingHost {
 
 const EMPTY_SELECTION: StudioHybridDccComponentSelection = createStudioHybridDccComponentSelection();
 
-/** Esc 를 자기 몫으로 받는 층: 대화상자와 `data-studio-escape-scope` 팝오버(모달 시트와 같은 규약). */
-const ESCAPE_SCOPE = '[role="dialog"], [data-studio-escape-scope="true"]';
+/** Esc 를 자기 몫으로 받는 층: 대화상자·알림 대화상자·`aria-modal` 층과 `data-studio-escape-scope` 팝오버(모달 시트와 같은 규약). */
+const ESCAPE_SCOPE = '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-studio-escape-scope="true"]';
 const EDITABLE = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
 
 /**

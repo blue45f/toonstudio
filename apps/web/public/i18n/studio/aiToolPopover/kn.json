@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ಪಠ್ಯ AI ಒದಗಿಸುವವರು",
   "studio.aiToolPopover.serverTextAiProviderAria": "ಸರ್ವರ್ ಪಠ್ಯ AI ಒದಗಿಸುವವರು",
   "studio.aiToolPopover.serverProviderAuto": "ಸ್ವಯಂಚಾಲಿತ ಸ್ವಿಚಿಂಗ್",
-  "studio.aiToolPopover.serverFallbackMessage": "ಬ್ಯಾಲೆನ್ಸ್/ಪ್ಯಾಕೇಜ್ ಮಿತಿಯು ಮುಗಿದ ನಂತರ, ನೀವು ಇನ್ನೊಂದು ಪೂರೈಕೆದಾರರಿಗೆ ಬದಲಾಯಿಸುತ್ತೀರಿ. ಡಬಲ್ ಚಾರ್ಜಿಂಗ್ ತಡೆಯಲು ಸಾಮಾನ್ಯ ದೋಷಗಳು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮರುಕಳಿಸುವುದಿಲ್ಲ."
+  "studio.aiToolPopover.serverFallbackMessage": "ಬ್ಯಾಲೆನ್ಸ್/ಪ್ಯಾಕೇಜ್ ಮಿತಿಯು ಮುಗಿದ ನಂತರ, ನೀವು ಇನ್ನೊಂದು ಪೂರೈಕೆದಾರರಿಗೆ ಬದಲಾಯಿಸುತ್ತೀರಿ. ಡಬಲ್ ಚಾರ್ಜಿಂಗ್ ತಡೆಯಲು ಸಾಮಾನ್ಯ ದೋಷಗಳು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮರುಕಳಿಸುವುದಿಲ್ಲ.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

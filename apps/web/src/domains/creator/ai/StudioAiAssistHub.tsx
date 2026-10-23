@@ -31,11 +31,15 @@ import {
   type StudioAiRecentPromptsState,
 } from "./studio-ai-assist-ux";
 import { planStudioAiExecutionPreflight } from "./studio-ai-execution-preflight";
+import { ClaudeAssistHubEntry } from "./claude/ClaudeAssistHubEntry";
 import { StudioAiProductionLaunchpad } from "./StudioAiProductionLaunchpad";
 
 import type { KeyboardEvent as ReactKeyboardEvent, ReactElement, ReactNode } from "react";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "./studio-ai-status-i18n";
 
 import { reducedMotion } from "@/shared/hooks/use-in-view";
 
@@ -96,6 +100,7 @@ export function StudioAiAssistHub({
   toolPanel,
   className,
 }: StudioAiAssistHubProps): ReactElement {
+  const t = useT();
   const toolPanelRef = useRef<HTMLDivElement>(null);
   const preflightDetailsId = useId();
   const rawTabsId = useId();
@@ -227,6 +232,8 @@ export function StudioAiAssistHub({
         scenarioDisabledReason={scenarioDisabledReason}
       />
 
+      <ClaudeAssistHubEntry onOpenSettings={onOpenSettings} onPreloadSettings={onPreloadSettings} />
+
       {providerSlot ? <div className="shrink-0">{providerSlot}</div> : null}
 
       {/* Tool tabs — sticky within hub scroll is not needed; kept fixed above body */}
@@ -314,7 +321,7 @@ export function StudioAiAssistHub({
           >
             {executionPreflight.available
               ? executionPreflight.costCategory
-              : "실행 불가"}
+              : t("studio.aiStatus.assistHub.unavailable", "실행 불가")}
           </span>
           <ChevronDown
             size={14}
@@ -361,7 +368,7 @@ export function StudioAiAssistHub({
           <dt className="font-semibold text-fg-3">출력 수</dt>
           <dd className="min-w-0 text-fg-2">{executionPreflight.outputCountLabel}</dd>
 
-          <dt className="font-semibold text-fg-3">실패 정책</dt>
+          <dt className="font-semibold text-fg-3">{t("studio.aiStatus.assistHub.failurePolicyLabel", "실패 정책")}</dt>
           <dd className="min-w-0 text-fg-2">
             {executionPreflight.fallbackRetryPolicy}
           </dd>

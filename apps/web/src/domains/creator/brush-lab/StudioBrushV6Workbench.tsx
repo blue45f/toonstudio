@@ -5,6 +5,10 @@ import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { translateNow, useT } from "@/shared/lib/i18n";
+import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import { StudioPigmentComparison } from "./pigment/StudioPigmentComparison";
 import { StudioBrushV6ProviderPlan } from "./StudioBrushV6ProviderPlan";
 import { StudioBrushV6RecipeShelf } from "./StudioBrushV6RecipeShelf";
@@ -274,7 +278,7 @@ function ToggleNode({ node, selected, onChange, topology = false }: { readonly n
     ? "공통 접촉 계산에 직접 적용합니다. 관련 재료·촉 조합에 따라 표현이 달라집니다."
     : execution === "adapter"
       ? "외부 엔진의 선택 의미를 보존한 명시적 호환 경로입니다. 네이티브 실행과 구분해 저장합니다."
-      : "현재 획에는 적용되지 않습니다. 가져온 설정은 보관합니다.";
+      : r5CreatorStatusText("r5cat1.creator.brushV6.notAppliedToCurrentStroke", "현재 획에는 적용되지 않습니다. 가져온 설정은 보관합니다.");
   return (
     <button type="button" aria-pressed={selected} disabled={!connected && !selected} onClick={onChange} className={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "{v0} min-h-[92px] text-left transition-colors disabled:opacity-50 {v1} {v2}"), { v0: String(SUB), v1: String(selected ? "border-accent/60 bg-accent/10" : "hover:border-line-strong"), v2: String(STUDIO_FOCUS_RING) })}>
       <span className="flex items-start justify-between gap-2"><span className="text-sm font-black text-fg">{node.label}</span><span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[0.62rem] font-black text-accent">{badge}</span></span>
@@ -319,6 +323,7 @@ export function StudioBrushV6Workbench({ scope, initialProgram }: {
 function StudioBrushV6Editor({ scope, initialProgram }: {
   readonly scope: string; readonly initialProgram: BrushStudioV6Program;
 }) {
+  const t = useT();
   const storageKey = `toonstudio.brush-program-v6:${encodeURIComponent(scope)}`;
   const [history, dispatchHistory] = useReducer(reduceBrushStudioV6EditHistory, initialProgram, createBrushStudioV6EditHistory);
   const program = history.present;
@@ -366,7 +371,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
     try { globalThis.localStorage?.setItem(BRUSH_STUDIO_EXPERIENCE_KEY, experience); } catch { /* UI preference is optional */ }
   }, [experience]);
   useEffect(() => {
-    try { globalThis.localStorage?.setItem(storageKey, serializeBrushStudioV6Authoring(program)); } catch { setStatus("설정 자동 저장에 실패했습니다. 현재 설정을 JSON으로 내보내 보관하세요."); }
+    try { globalThis.localStorage?.setItem(storageKey, serializeBrushStudioV6Authoring(program)); } catch { setStatus(translateNow("studio.brushCanvasStatus.brushLab.v6AutosaveFailed", "설정 자동 저장에 실패했습니다. 현재 설정을 JSON으로 내보내 보관하세요.")); }
     globalThis.dispatchEvent?.(new CustomEvent("toonspectrum:brush-v6-program", { detail: program }));
   }, [program, storageKey]);
   useEffect(() => {
@@ -433,12 +438,12 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
     const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (!file) return;
     const generation = ++editGenerationRef.current;
     try {
-      if (file.size > 1_048_576) throw new Error("브러시 파일이 허용 크기를 초과했습니다.");
+      if (file.size > 1_048_576) throw new Error(t("studio.brushCanvasStatus.brushLab.v6FileTooLarge", "브러시 파일이 허용 크기를 초과했습니다."));
       const serialized = await file.text();
       if (generation !== editGenerationRef.current) return;
       replace(parseBrushStudioV6Import(serialized), `${file.name}에서 브러시 설정을 가져왔습니다.`);
     } catch (error) {
-      if (generation === editGenerationRef.current) setStatus(`${error instanceof Error ? error.message : "브러시 파일을 읽지 못했습니다."} 현재 브러시 설정은 유지됩니다.`);
+      if (generation === editGenerationRef.current) setStatus(t("studio.brushCanvasStatus.brushLab.v6ImportFailedKept", { message: error instanceof Error ? error.message : t("studio.brushCanvasStatus.brushLab.v5FileReadFailed", "브러시 파일을 읽지 못했습니다.") }, "{message} 현재 브러시 설정은 유지됩니다."));
     }
   };
 
@@ -461,7 +466,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
       setStatus(`‘${saved.name}’ 브러시를 라이브러리에 저장하고 다시 읽어 확인했습니다. 원고에서 사용하기로 그릴 수 있습니다.`);
     } catch (error) {
       if (generation !== editGenerationRef.current) return;
-      setStatus(error instanceof Error ? `브러시 저장 실패: ${error.message}` : "브러시를 저장하지 못했습니다. 설정은 유지됩니다.");
+      setStatus(error instanceof Error ? t("studio.brushCanvasStatus.brushLab.v6SaveFailedWithMessage", { message: error.message }, "브러시 저장 실패: {message}") : t("studio.brushCanvasStatus.brushLab.v6SaveFailed", "브러시를 저장하지 못했습니다. 설정은 유지됩니다."));
     } finally { setSaving(false); }
   };
 

@@ -9,9 +9,13 @@ const CODEQL_DEFAULT_SETUP_WORKFLOW_PATH = "dynamic/github-code-scanning/codeql"
 
 export function isProtectedActionsRun(run) {
   if (run.event === "dynamic" && run.path === CODEQL_DEFAULT_SETUP_WORKFLOW_PATH) return true;
+  const isMainPush = run.event === "push" && ["main", "refs/heads/main"].includes(run.head_branch);
   // ci.yml owns coalescing pending main runs; a started main verification must finish.
-  if (run.event === "push" && ["main", "refs/heads/main"].includes(run.head_branch) &&
-    (run.path === ".github/workflows/ci.yml" || run.name === "CI")) return true;
+  if (isMainPush && (run.path === ".github/workflows/ci.yml" || run.name === "CI")) return true;
+  // codeql.yml 도 동시성 그룹으로 대기 실행을 직접 합친다. javascript-typescript 분석은 70분 넘게 걸려서
+  // 새 main push 마다 취소하면 끝난 기준 분석이 남지 않고, PR 은 비교할 main 분석이 없어 새 알림을
+  // 판정하지 못한다(2026-10-22 기준 최근 main push 실행 30건 중 26건이 취소됨).
+  if (isMainPush && (run.path === ".github/workflows/codeql.yml" || run.name === "CodeQL")) return true;
   // This workflow intentionally runs AFTER a PR closes. Closed is not stale here.
   return run.path === ".github/workflows/cleanup-merged-pr-branches.yml" ||
     run.name === "Cleanup merged PR branches";

@@ -17,6 +17,7 @@ import {
   subscribeStudioCommandSearchFromAppShell,
 } from "@/shared/lib/studio-command-search-bridge";
 
+import { ClaudeAssistLauncher } from "./ai/claude/ClaudeAssistLauncher";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "./studio-chrome-ui";
 import {
   subscribeStudioCommandSearchRequests,
@@ -186,6 +187,7 @@ export function StudioCommandSearchHost({
               </span>
             </button>
           )}
+          <ClaudeAssistLauncher />
           {trailing}
         </div>
       )}

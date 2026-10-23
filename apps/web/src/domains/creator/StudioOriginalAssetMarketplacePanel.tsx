@@ -27,6 +27,7 @@ import {
 } from "react";
 
 import { writeStudioAssetDragPayload } from "./studio-insert-drag-writer";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import {
   getProductStudioMarketplaceLibrarySqliteRepository,
   type StudioMarketplaceLibrarySqliteRepository,
@@ -144,7 +145,7 @@ function PackageLibraryButton({
         type="button"
         onClick={() => onLibraryChange(
           removeStudioMarketplacePackageFromLibrary(library, pkg.id),
-          `${pkg.name}을(를) 이 기기의 스타터 라이브러리에서 제거했습니다.`
+          frozenStatus4Text("studio.frozenStatus4.market.removedFromLibrary", { name: pkg.name }, "{name}을(를) 이 기기의 스타터 라이브러리에서 제거했습니다.")
         )}
         className={cx(CONTROL, "inline-flex flex-1 items-center justify-center gap-1.5")}
         aria-label={`${pkg.name} 로컬 라이브러리에서 제거`}
@@ -163,8 +164,8 @@ function PackageLibraryButton({
       onClick={() => onLibraryChange(
         cloneStudioMarketplacePackageToLibrary(library, pkg),
         resolution.status === "update"
-          ? `${pkg.name}을(를) ${pkg.version}(으)로 업데이트했습니다.`
-          : `${pkg.name}을(를) 이 기기의 스타터 라이브러리에 추가했습니다.`
+          ? frozenStatus4Text("studio.frozenStatus4.market.packageUpdated", { name: pkg.name, version: pkg.version }, "{name}을(를) {version}(으)로 업데이트했습니다.")
+          : frozenStatus4Text("studio.frozenStatus4.market.packageAdded", { name: pkg.name }, "{name}을(를) 이 기기의 스타터 라이브러리에 추가했습니다.")
       )}
       className={cx(
         PRIMARY_CONTROL,
@@ -405,12 +406,7 @@ export function StudioOriginalAssetMarketplacePanel({
       setLibrary(persisted);
     }).catch((error: unknown) => {
       if (operationGenerationRef.current !== generation) return;
-      setStatus({
-        message: `SQLite 라이브러리를 열지 못했습니다. 설치 상태를 저장 가능한 것으로 표시하지 않습니다: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        error: true,
-      });
+      setStatus({ message: frozenStatus4Text("studio.frozenStatus4.market.libraryOpenFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite 라이브러리를 열지 못했습니다. 설치 상태를 저장 가능한 것으로 표시하지 않습니다: {detail}"), error: true });
     });
     return () => {
       if (operationGenerationRef.current === generation) {
@@ -478,23 +474,13 @@ export function StudioOriginalAssetMarketplacePanel({
     }).catch((error: unknown) => {
       if (operationGenerationRef.current !== generation) return;
       setLibrary(previous);
-      setStatus({
-        message: `SQLite/OPFS에 기록하지 못해 설치 상태를 되돌렸습니다: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        error: true,
-      });
+      setStatus({ message: frozenStatus4Text("studio.frozenStatus4.market.libraryRecordFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite/OPFS에 기록하지 못해 설치 상태를 되돌렸습니다: {detail}"), error: true });
     });
   };
 
   const handleUse = (asset: StudioOriginalFreeAsset): boolean => {
     const added = onUseAsset(createStudioOriginalFreeAssetRecord(asset));
-    setStatus({
-      message: added
-        ? `${asset.name}을(를) 선택한 컷 또는 현재 보이는 위치에 추가했습니다.`
-        : `${asset.name}을(를) 추가하지 못했습니다. 캔버스 상태를 확인하고 다시 시도하세요.`,
-      error: !added,
-    });
+    setStatus({ message: added ? frozenStatus4Text("studio.frozenStatus4.market.assetAdded", { name: asset.name }, "{name}을(를) 선택한 컷 또는 현재 보이는 위치에 추가했습니다.") : frozenStatus4Text("studio.frozenStatus4.market.assetAddFailed", { name: asset.name }, "{name}을(를) 추가하지 못했습니다. 캔버스 상태를 확인하고 다시 시도하세요."), error: !added });
     return added;
   };
 
@@ -519,15 +505,9 @@ export function StudioOriginalAssetMarketplacePanel({
       anchor.download = `${pkg.id}-${pkg.version}.manifest.json`;
       document.body.append(anchor);
       anchor.click();
-      setStatus({
-        message: `${pkg.name}의 메타데이터 전용 로컬 명세를 내보냈습니다. 에셋 파일은 포함되지 않습니다.`,
-        error: false,
-      });
+      setStatus({ message: frozenStatus4Text("studio.frozenStatus4.market.manifestExported", { name: pkg.name }, "{name}의 메타데이터 전용 로컬 명세를 내보냈습니다. 에셋 파일은 포함되지 않습니다."), error: false });
     } catch {
-      setStatus({
-        message: `${pkg.name} 명세를 내보내지 못했습니다. 브라우저 다운로드 권한을 확인하고 다시 시도하세요.`,
-        error: true,
-      });
+      setStatus({ message: frozenStatus4Text("studio.frozenStatus4.market.manifestExportFailed", { name: pkg.name }, "{name} 명세를 내보내지 못했습니다. 브라우저 다운로드 권한을 확인하고 다시 시도하세요."), error: true });
     } finally {
       anchor?.remove();
       if (url) URL.revokeObjectURL(url);
@@ -896,7 +876,7 @@ export function StudioOriginalAssetMarketplacePanel({
             <div>
               <Search size={20} className="mx-auto text-fg-3" aria-hidden />
               <p className="mt-2 text-xs font-bold text-fg-2">
-                조건에 맞는 원본 에셋이 없습니다
+                {frozenStatus4Text("studio.frozenStatus4.market.emptyNoAssets", "조건에 맞는 원본 에셋이 없습니다")}
               </p>
               <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
                 검색어·카테고리·라이브러리 보기를 바꿔보세요.

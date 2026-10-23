@@ -157,6 +157,14 @@ export function classifyStudioServiceWorkerRequest(
   if (SW_RUNTIME_PATHS.has(pathname)) return "sw-runtime";
   // Release catalogues change independently of audio files; never replay a cached empty catalogue.
   if (pathname === "/audio/playlist.json") return "passthrough";
+  // The bundle deploy index is an availability signal (re-upload or rollback must show immediately),
+  // so it is never replayed from the immutable cache. The GLBs next to it are content-addressed
+  // (`<sha256>.glb`) and stay under the `/assets/` immutable rule below.
+  if (pathname === "/assets/studio/bundle-v2/manifest.json") return "passthrough";
+  // The bundle render manifest carries the rights stamps from the pack-rights ledger (a slot is delivered only while its
+  // `rights` block is present), so opening and withdrawing a pack must reach installed clients immediately instead of
+  // being replayed from the immutable cache. Images stay under the `/assets/` rule: only slots the manifest lists are requested.
+  if (pathname === "/assets/studio/bundle-renders-v1/manifest.json") return "passthrough";
 
   if (facts.mode === "navigate") {
     return isStudioServiceWorkerIsolatedPath(pathname)
@@ -325,6 +333,31 @@ export interface StudioServiceWorkerCachedResponseFacts {
   readonly url: string;
   readonly status: number;
   readonly crossOriginResourcePolicy?: string | null;
+  readonly contentType?: string | null;
+}
+
+const ASSET_ROUTE_CLASSES: ReadonlySet<StudioServiceWorkerRouteClass> = new Set([
+  "immutable-asset",
+  "heavy-asset",
+  "static-media",
+]);
+
+/**
+ * Whether an asset request was answered with the SPA shell. Static Assets answers
+ * a missing path with `index.html` (200), and that response still carries the
+ * path's `immutable` cache header — on 2026-10-23 a misrouted deploy served HTML
+ * for every R2-backed model for two minutes. Such a response is never a usable
+ * asset: it must not be cached, a cached copy must be dropped, and a fresh fetch
+ * must bypass the HTTP cache that may hold the same HTML.
+ */
+export function isStudioServiceWorkerSpaFallbackForAsset(facts: {
+  readonly routeClass: StudioServiceWorkerRouteClass;
+  readonly url: string;
+  readonly contentType: string | null;
+}): boolean {
+  if (!ASSET_ROUTE_CLASSES.has(facts.routeClass)) return false;
+  if (!(facts.contentType ?? "").toLowerCase().startsWith("text/html")) return false;
+  return !new URL(facts.url).pathname.toLowerCase().endsWith(".html");
 }
 
 /**
@@ -357,6 +390,9 @@ export function isStudioServiceWorkerCachedResponseUsable(
   facts: StudioServiceWorkerCachedResponseFacts,
 ): boolean {
   if (facts.status < 200 || facts.status >= 400) return false;
+  if (isStudioServiceWorkerSpaFallbackForAsset({
+    routeClass: facts.routeClass, url: facts.url, contentType: facts.contentType ?? null,
+  })) return false;
   const isWorkerScript =
     facts.destination === "worker"
     || facts.destination === "sharedworker"

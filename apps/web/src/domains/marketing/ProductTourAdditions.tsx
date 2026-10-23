@@ -4,6 +4,7 @@ import Link from "@/shared/navigation/router-link";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 
 import { PRODUCT_TOUR_ADDITIONS } from "./product-tour-additions";
+import { ProductTourAdditionBackdrop } from "./ProductTourAmbientClips";
 
 /**
  * 영상 제작 이후 더해진 핵심 기능(제작 관리 보드) — 제품 투어 페이지의 '새로 더해진 기능' 탭 본문.
@@ -14,14 +15,15 @@ export function ProductTourAdditions() {
   return (
     <div className="product-tour__after" data-product-tour-additions="">
       <p className="mk-body product-tour__note">{bi(
-        "9분 투어에는 나오지 않는 기능입니다. 영상 대신 지금 바로 열어 보세요.",
-        "This feature is not in the 9-minute tour. Open it directly instead.",
+        "9분 투어에는 나오지 않는 기능입니다. 영상 대신 지금 바로 열어 보세요. 카드 배경에 은은하게 흐르는 영상은 연재와 마감의 분위기를 그린 생성형 AI 배경 영상입니다.",
+        "This feature is not in the 9-minute tour. Open it directly instead. The soft video behind the card is an AI-generated backdrop evoking the serialisation routine.",
       )}</p>
       <ul className="product-tour__after-grid mk-rail">
         {PRODUCT_TOUR_ADDITIONS.map((item) => {
           const copy = bi(item.ko, item.en);
           return (
             <li key={item.id} className="product-tour__after-card mk-card" data-addition={item.id}>
+              <ProductTourAdditionBackdrop />
               <figure data-visual={item.visual}>
                 <img src={item.image} alt="" width={item.imageWidth} height={item.imageHeight} loading="lazy" decoding="async" />
                 <span className="product-tour__visual-badge product-tour__visual-badge--new"><Film size={13} aria-hidden="true" />{bi("영상에 없음", "Not in the tour")}</span>

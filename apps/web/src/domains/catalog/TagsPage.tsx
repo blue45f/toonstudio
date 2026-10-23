@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import { Hash, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -26,7 +27,7 @@ const VISIBLE_STEP = 120;
 export function TagsPage() {
   const { data, loading, error, reload } = useApiResource<TagsResponse>(
     "/api/tags",
-    "태그를 불러오지 못했습니다.",
+    catalogStatusText("catalog.status.tags.loadFailed", "태그를 불러오지 못했습니다."),
   );
   const [params, setParams] = useSearchParams();
   const query = (params.get("q") ?? "").slice(0, 80);
@@ -124,16 +125,16 @@ export function TagsPage() {
 
       <p className="mt-5 text-xs text-fg-3" role="status" aria-live="polite">
         {loading
-          ? "태그를 불러오는 중입니다."
+          ? catalogStatusText("catalog.status.tags.loading", "태그를 불러오는 중입니다.")
           : `${filtered.length.toLocaleString("ko-KR")}개 태그 중 ${visible.length.toLocaleString("ko-KR")}개 표시`}
       </p>
 
       {error ? (
         <div className="mt-5">
-          <ErrorState title="태그를 불러오지 못했습니다." message={error} onRetry={reload} />
+          <ErrorState title={catalogStatusText("catalog.status.tags.loadFailed", "태그를 불러오지 못했습니다.")} message={error} onRetry={reload} />
         </div>
       ) : loading ? (
-        <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="태그 목록 불러오는 중">
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label={catalogStatusText("catalog.status.tags.loadingAria", "태그 목록 불러오는 중")}>
           {Array.from({ length: 24 }).map((_, index) => (
             <span key={index} className="skeleton h-12 rounded-xl" />
           ))}
@@ -166,7 +167,7 @@ export function TagsPage() {
       ) : (
         <div className="mt-5 rounded-2xl border border-dashed border-line-strong bg-panel/50 p-8 text-center">
           <Hash size={28} className="mx-auto text-accent" aria-hidden="true" />
-          <h2 className="mt-3 font-display text-lg font-bold text-fg">일치하는 태그가 없습니다.</h2>
+          <h2 className="mt-3 font-display text-lg font-bold text-fg">{catalogStatusText("catalog.status.tags.searchEmpty", "일치하는 태그가 없습니다.")}</h2>
           <p className="mt-2 text-sm leading-6 text-fg-3">검색어를 줄이거나 다른 표현으로 찾아보세요.</p>
           <button
             type="button"

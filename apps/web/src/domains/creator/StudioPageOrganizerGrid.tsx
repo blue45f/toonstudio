@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Search } from "lucide-react";
 import type {
   KeyboardEvent as ReactKeyboardEvent,
@@ -60,7 +61,7 @@ export function StudioPageOrganizerGrid({
       <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed border-line bg-card/40 px-6 text-center">
         <div>
           <Search size={24} aria-hidden className="mx-auto mb-3 text-fg-3" />
-          <p className="text-sm font-semibold text-fg">일치하는 페이지가 없습니다.</p>
+          <p className="text-sm font-semibold text-fg">{r3c07StatusText("studio.panelStatus.r3c07.pageOrganizerGrid.searchEmpty", "일치하는 페이지가 없습니다.")}</p>
           <p className="mt-1 text-xs text-fg-3">검색어를 줄이거나 필터를 초기화해 보세요.</p>
           <button
             type="button"

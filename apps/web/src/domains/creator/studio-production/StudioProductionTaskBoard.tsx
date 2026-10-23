@@ -1,4 +1,5 @@
 import { StudioProductionCalendar } from "./StudioProductionCalendar";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { StudioProductionSavedViews } from "./StudioProductionSavedViews";
 import { StudioProductionDependencyImpact } from "./StudioProductionDependencyImpact";
 import { sortProductionTasks } from "./studio-production-calendar";
@@ -140,10 +141,10 @@ function TaskEditor({
         return update(workspaceNow);
       }, message);
       void Promise.resolve(result).catch((cause: unknown) => {
-        if (current()) setError(cause instanceof Error ? cause.message : "작업 정보를 저장하지 못했습니다. 입력은 유지됩니다.");
+        if (current()) setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.taskBoard.saveFailed", "작업 정보를 저장하지 못했습니다. 입력은 유지됩니다."));
       }).finally(finish);
     } catch (cause) {
-      if (current()) setError(cause instanceof Error ? cause.message : "작업 정보를 저장하지 못했습니다. 입력은 유지됩니다.");
+      if (current()) setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.taskBoard.saveFailed", "작업 정보를 저장하지 못했습니다. 입력은 유지됩니다."));
       finish();
     }
   };
@@ -154,11 +155,11 @@ function TaskEditor({
     if (!canEdit || conflicted || pendingRef.current) return;
     const title = draft.title.trim();
     if (!title) {
-      setError("작업 제목을 입력해 주세요.");
+      setError(r3c04StatusText("studio.r3c04Status.production.taskBoard.titleRequired", "작업 제목을 입력해 주세요."));
       return;
     }
     if (!productionDueDay(draft.due)) {
-      setError("마감일을 올바르게 입력해 주세요.");
+      setError(r3c04StatusText("studio.r3c04Status.production.taskBoard.dueInvalid", "마감일을 올바르게 입력해 주세요."));
       return;
     }
     const nextStage = draft.stage === "publishing" && !canPublish

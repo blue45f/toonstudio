@@ -10,6 +10,8 @@
  */
 import { ArrowLeft, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import type { StoryworldProject, StoryworldQuestionId, StoryworldSceneRole } from "../studio-storyworld-causality";
 import {
@@ -83,6 +85,7 @@ function focusSoon(element: HTMLElement | null) {
 
 export function StudioStoryPlausibilityQuestionnaire(props: QuestionnaireProps) {
   const { project, readOnly } = props;
+  const t = useT();
   const scenes = useMemo(
     () => project.scenes.filter((scene) => scene.disabled !== true).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)),
     [project.scenes],
@@ -116,7 +119,7 @@ export function StudioStoryPlausibilityQuestionnaire(props: QuestionnaireProps) 
     return (
       <div className="plausibility-hub">
         <div className="plausibility-empty">
-          <h3>질문할 장면이 아직 없어요</h3>
+          <h3>{t("studio.storyworldStatus.questionnaire.emptyScenes", "질문할 장면이 아직 없어요")}</h3>
           <p>장면이 있어야 질문할 수 있어요. 원고로 시작하거나 설정 관리에서 장면을 만들어 주세요.</p>
           <div className="plausibility-empty__actions">
             <button className="storyworld-button" onClick={props.onClose} type="button"><ArrowLeft aria-hidden size={14} /> 리포트로 돌아가기</button>

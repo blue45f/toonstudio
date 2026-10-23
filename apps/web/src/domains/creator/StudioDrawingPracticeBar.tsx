@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 import {
   Check,
   Eye,
@@ -77,8 +78,8 @@ export function StudioDrawingPracticeBar({
         className="pointer-events-auto absolute inset-x-2 bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+0.5rem)] z-40 mx-auto flex w-auto max-w-[680px] flex-wrap items-center justify-between gap-2 rounded-xl border border-danger/40 bg-panel/95 px-3 py-2 shadow-xl backdrop-blur lg:inset-x-auto lg:bottom-auto lg:left-1/2 lg:top-3 lg:w-[min(92vw,680px)] lg:-translate-x-1/2"
       >
         <div className="min-w-0">
-          <p className="text-xs font-bold text-fg">따라 그리기 원본을 찾지 못했어요</p>
-          <p className="text-[0.7rem] text-fg-3">내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.</p>
+          <p className="text-xs font-bold text-fg">{r3c07StatusText("studio.panelStatus.r3c07.drawingPractice.originalNotFound", "따라 그리기 원본을 찾지 못했어요")}</p>
+          <p className="text-[0.7rem] text-fg-3">{r3c07StatusText("studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription", "내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.")}</p>
         </div>
         <button type="button" className={buttonClass} onClick={onOpenReferencePanel}>
           <Images size={14} aria-hidden /> 레퍼런스 열기

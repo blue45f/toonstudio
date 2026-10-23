@@ -3,6 +3,7 @@
  * User-facing language follows ToonStudio's task vocabulary rather than competitor labels.
  */
 
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Check,
   Eye,
@@ -392,7 +393,7 @@ export function StudioColorMatchPanel({
             <p className="text-[11px] leading-relaxed text-fg-3" role="status">
               {episodeSummary.appliedCount}컷에 색감을 적용했습니다.
               {episodeSummary.refusedCount > 0 &&
-                ` ${episodeSummary.refusedCount}컷은 적용하지 못했습니다.`}
+                r3c07StatusText("studio.panelStatus.r3c07.colorMatch.cutsNotApplied", { count: episodeSummary.refusedCount }, " {count}컷은 적용하지 못했습니다.")}
             </p>
           ) : (
             <p className="text-[11px] leading-relaxed text-fg-3">

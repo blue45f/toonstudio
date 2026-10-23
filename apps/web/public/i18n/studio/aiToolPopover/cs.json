@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Poskytovatel textové AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Provider",
   "studio.aiToolPopover.serverProviderAuto": "automatické přepínání",
-  "studio.aiToolPopover.serverFallbackMessage": "Po vyčerpání limitu zůstatku/balíčku přejdete k jinému poskytovateli. Obecné chyby nejsou automaticky znovu odesílány, aby se zabránilo dvojímu nabíjení."
+  "studio.aiToolPopover.serverFallbackMessage": "Po vyčerpání limitu zůstatku/balíčku přejdete k jinému poskytovateli. Obecné chyby nejsou automaticky znovu odesílány, aby se zabránilo dvojímu nabíjení.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

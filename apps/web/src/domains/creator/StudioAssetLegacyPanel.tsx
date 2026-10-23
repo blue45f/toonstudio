@@ -70,7 +70,7 @@ export function StudioAssetLegacyPanel({
   } = toolBelt.stableHandlers;
 
   return (
-    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetLibrary", "에셋 보관함을 여는 중...")} />}>
+    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetLibrary", "소재 서재를 여는 중...")} />}>
       <StudioAssetMenuPanel
         assetTab={assetTab}
         setAssetTab={setAssetTab}

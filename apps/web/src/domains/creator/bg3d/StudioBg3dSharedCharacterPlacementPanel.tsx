@@ -15,6 +15,9 @@ import type {
 
 import { cn } from "@/shared/lib/utils";
 
+import { useT } from "@/shared/lib/i18n";
+import { bg3dPanelStatusText } from "../studio-bg3d-panel-status-i18n";
+
 export interface StudioBg3dSharedCharacterPlacementPanelProps {
   readonly characters: readonly StudioShared3dCharacterSource[];
   readonly statuses: Readonly<
@@ -107,7 +110,7 @@ function PlacementNumberField({
 function statusCopy(status: StudioShared3dCharacterRuntimeStatus | undefined): string {
   if (status === "ready") return "표시 준비됨";
   if (status === "unavailable") return "모델 확인 필요";
-  return "불러오는 중";
+  return bg3dPanelStatusText("studio.bg3dPanelStatus.sharedCharacterPlacement.loadingStatus", "불러오는 중");
 }
 
 export function StudioBg3dSharedCharacterPlacementPanel({
@@ -119,6 +122,7 @@ export function StudioBg3dSharedCharacterPlacementPanel({
   onSelect,
   onCommit,
 }: StudioBg3dSharedCharacterPlacementPanelProps) {
+  const t = useT();
   const [notice, setNotice] = useState<PlacementNotice | null>(null);
   const selected = characters.find(({ elementId }) => elementId === selectedElementId)
     ?? characters[0]
@@ -262,7 +266,7 @@ export function StudioBg3dSharedCharacterPlacementPanel({
               ? "렌더 준비 완료"
               : runtimeStatus === "unavailable"
                 ? "3D 표시 확인 필요"
-                : "3D 불러오는 중"}
+                : t("studio.bg3dPanelStatus.sharedCharacterPlacement.loading3d", "3D 불러오는 중")}
           </span>
         </div>
 
@@ -287,7 +291,7 @@ export function StudioBg3dSharedCharacterPlacementPanel({
                   ? "바닥에서 떠 있음"
                   : groundingReceipt?.diagnosis === "penetrating"
                     ? "바닥과 겹침"
-                    : "바닥 확인 중"}
+                    : t("studio.bg3dPanelStatus.sharedCharacterPlacement.groundingChecking", "바닥 확인 중")}
             </p>
             <p className="mt-0.5">{groundingMessage}</p>
             {groundingReceipt?.surface.source === "stage-plane" ? (

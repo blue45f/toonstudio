@@ -40,6 +40,7 @@ import { filterDialogueItems } from "./lettering/studio-dialogue-batch-search";
 import {
   parseStudioDialogueInterchange,
   serializeStudioDialogueInterchange,
+  StudioDialogueInterchangeError,
   studioDialogueItemsToInterchange,
   type StudioDialogueImportApplyResult,
   type StudioDialogueImportMatchMode,
@@ -67,6 +68,8 @@ import type { StudioStoryBibleNarrative } from "./planning/studio-character-prof
 import type { StudioStoryBible } from "./studio-story-bible";
 
 import { cx } from "@/shared/lib/cx";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
+import { resolveStudioDialogueFdxLossDetail, resolveStudioDialogueInterchangeError, resolveStudioDialogueInterchangeWarning } from "./status-i18n/studio-producer-error-i18n-dialogue";
 
 export type StudioDialogueBatchPanelProps = {
   /** 전체 페이지(요소·그룹 포함) — StudioPage 의 pages 를 그대로 받는다. */
@@ -195,22 +198,22 @@ function playbackStatusText(
   const progress =
     playback.currentIndex >= 0 && playback.total > 0
       ? `${playback.currentIndex + 1}/${playback.total}`
-      : null;
+      : frozenStatus2Text("studio.frozenStatus2.dialogue.ready", "준비");
   switch (playback.status) {
     case "unsupported":
-      return "이 브라우저는 대사 낭독을 지원하지 않아요.";
+      return frozenStatus2Text("studio.frozenStatus2.dialogue.unsupported", "이 브라우저는 대사 낭독을 지원하지 않아요.");
     case "playing":
-      return `낭독 중 · ${progress ?? "준비"}`;
+      return frozenStatus2Text("studio.frozenStatus2.dialogue.playing", { progress }, "낭독 중 · {progress}");
     case "paused":
-      return `일시 정지 · ${progress ?? "준비"}`;
+      return frozenStatus2Text("studio.frozenStatus2.dialogue.paused", { progress }, "일시 정지 · {progress}");
     case "completed":
-      return `낭독 검수 완료 · ${playback.total}개`;
+      return frozenStatus2Text("studio.frozenStatus2.dialogue.completed", { total: playback.total }, "낭독 검수 완료 · {total}개");
     case "stopped":
-      return "낭독을 중지했어요.";
+      return frozenStatus2Text("studio.frozenStatus2.dialogue.stopped", "낭독을 중지했어요.");
     case "error":
-      return "낭독을 시작하지 못했어요. 시스템 음성을 확인해 주세요.";
+      return frozenStatus2Text("studio.frozenStatus2.dialogue.error", "낭독을 시작하지 못했어요. 시스템 음성을 확인해 주세요.");
     default:
-      return queueSize > 0 ? `검수할 대사 ${queueSize}개` : "낭독할 대사가 없어요.";
+      return queueSize > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.queueCount", { count: queueSize }, "검수할 대사 {count}개") : frozenStatus2Text("studio.frozenStatus2.dialogue.noLines", "낭독할 대사가 없어요.");
   }
 }
 
@@ -428,12 +431,7 @@ export function StudioDialogueBatchPanel({
         : shown.filter((item) => !item.locked);
     const ids = pool.map((item) => item.id);
     if (ids.length === 0) {
-      setFormatStatus({
-        tone: "warn",
-        text: formatScope === "selected"
-          ? "선택된 잠기지 않은 대사가 없어요. 목록에서 대사를 고르거나 범위를 ‘목록 전체’로 바꿔 주세요."
-          : "목록에 적용할 잠기지 않은 대사가 없어요.",
-      });
+      setFormatStatus({ tone: "warn", text: formatScope === "selected" ? frozenStatus2Text("studio.frozenStatus2.dialogue.noUnlockedSelected", "선택된 잠기지 않은 대사가 없어요. 목록에서 대사를 고르거나 범위를 ‘목록 전체’로 바꿔 주세요.") : frozenStatus2Text("studio.frozenStatus2.dialogue.noUnlockedList", "목록에 적용할 잠기지 않은 대사가 없어요.") });
       return;
     }
     onApplyFormat(ids, patch);
@@ -446,10 +444,7 @@ export function StudioDialogueBatchPanel({
   const convertAllVisibleTextToBubble = () => {
     const targets = shown.filter((item) => item.elType === "text" && !item.locked);
     if (targets.length === 0) {
-      setFormatStatus({
-        tone: "warn",
-        text: "말풍선으로 바꿀 자유 텍스트가 목록에 없어요.",
-      });
+      setFormatStatus({ tone: "warn", text: frozenStatus2Text("studio.frozenStatus2.dialogue.noFreeText", "말풍선으로 바꿀 자유 텍스트가 목록에 없어요.") });
       return;
     }
     if (onConvertTextsToBubbles) {
@@ -464,10 +459,7 @@ export function StudioDialogueBatchPanel({
     } else {
       return;
     }
-    setFormatStatus({
-      tone: "good",
-      text: `자유 텍스트 ${targets.length}개를 말풍선으로 바꿨어요. 실행 취소 1회로 되돌릴 수 있어요.`,
-    });
+    setFormatStatus({ tone: "good", text: frozenStatus2Text("studio.frozenStatus2.dialogue.convertedMany", { count: targets.length }, "자유 텍스트 {count}개를 말풍선으로 바꿨어요. 실행 취소 1회로 되돌릴 수 있어요.") });
   };
   const readAloudQueue = buildDialogueReadAloudQueue(shown, drafts);
   const confirmedLocalVoices = voices.filter(isConfirmedLocalDialogueVoice);
@@ -615,10 +607,7 @@ export function StudioDialogueBatchPanel({
     clearDraft(item.id);
     setStructureMenuId(null);
     onConvertTextToBubble(item.pageId, item.id);
-    setFormatStatus({
-      tone: "good",
-      text: "텍스트를 말풍선으로 바꿨어요. 내용·위치는 그대로이고 실행 취소로 되돌릴 수 있어요.",
-    });
+    setFormatStatus({ tone: "good", text: frozenStatus2Text("studio.frozenStatus2.dialogue.convertedOne", "텍스트를 말풍선으로 바꿨어요. 내용·위치는 그대로이고 실행 취소로 되돌릴 수 있어요.") });
   };
 
   const captureTextareaSelection = (itemId: string) => {
@@ -672,18 +661,9 @@ export function StudioDialogueBatchPanel({
         new Blob([file.text], { type: file.mimeType }),
         `toonstudio-dialogue${file.extension}`
       );
-      setInterchangeStatus({
-        tone: file.lossy ? "warn" : "good",
-        text: [
-          `${draftItems.length}개 대사를 ${file.extension} 파일로 내보냈어요.`,
-          ...file.warnings,
-        ].join(" "),
-      });
+      setInterchangeStatus({ tone: file.lossy ? "warn" : "good", text: [frozenStatus2Text("studio.frozenStatus2.dialogue.exported", { count: draftItems.length, ext: file.extension }, "{count}개 대사를 {ext} 파일로 내보냈어요."), ...file.warnings.map((warning) => resolveStudioDialogueInterchangeWarning(warning))].join(" ") });
     } catch (error) {
-      setInterchangeStatus({
-        tone: "bad",
-        text: error instanceof Error ? error.message : "대사 파일을 만들지 못했습니다.",
-      });
+      setInterchangeStatus({ tone: "bad", text: error instanceof StudioDialogueInterchangeError ? resolveStudioDialogueInterchangeError(error) : error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.createFileFailed", "대사 파일을 만들지 못했습니다.") });
     }
   };
 
@@ -691,18 +671,16 @@ export function StudioDialogueBatchPanel({
     parsed: StudioDialogueInterchangeResult
   ): Promise<void> => {
     if (!onImportInterchange) {
-      throw new Error("현재 문서에서는 대사 가져오기를 사용할 수 없습니다.");
+      throw new Error(frozenStatus2Text("studio.frozenStatus2.dialogue.importUnavailable", "현재 문서에서는 대사 가져오기를 사용할 수 없습니다."));
     }
     const applied = await onImportInterchange(parsed.document, interchangeMatchMode);
     setDrafts({});
     const details = [
-      `${applied.changed}개 대사를 한 번에 반영했어요.`,
-      applied.locked > 0 ? `잠긴 대사 ${applied.locked}개 제외.` : "",
-      applied.missing > 0 ? `연결하지 못한 대사 ${applied.missing}개.` : "",
-      applied.droppedMetadata > 0
-        ? `화자·시간 메타데이터 ${applied.droppedMetadata}개는 캔버스에 쓰지 않았어요.`
-        : "",
-      ...parsed.warnings,
+      frozenStatus2Text("studio.frozenStatus2.dialogue.appliedCount", { count: applied.changed }, "{count}개 대사를 한 번에 반영했어요."),
+      applied.locked > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.appliedLocked", { count: applied.locked }, "잠긴 대사 {count}개 제외.") : "",
+      applied.missing > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.appliedMissing", { count: applied.missing }, "연결하지 못한 대사 {count}개.") : "",
+      applied.droppedMetadata > 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.appliedDroppedMeta", { count: applied.droppedMetadata }, "화자·시간 메타데이터 {count}개는 캔버스에 쓰지 않았어요.") : "",
+      ...parsed.warnings.map((warning) => resolveStudioDialogueInterchangeWarning(warning)),
     ].filter(Boolean);
     setInterchangeStatus({
       tone: applied.missing > 0 || applied.locked > 0 || parsed.lossy ? "warn" : "good",
@@ -713,11 +691,11 @@ export function StudioDialogueBatchPanel({
   const importInterchange = async (file: File) => {
     const format = dialogueFormatFromFileName(file.name);
     if (!format) {
-      setInterchangeStatus({ tone: "bad", text: "지원하는 대사 파일 확장자가 아닙니다." });
+      setInterchangeStatus({ tone: "bad", text: frozenStatus2Text("studio.frozenStatus2.dialogue.unsupportedExtension", "지원하는 대사 파일 확장자가 아닙니다.") });
       return;
     }
     if (!onImportInterchange) {
-      setInterchangeStatus({ tone: "bad", text: "현재 문서에서는 대사 가져오기를 사용할 수 없습니다." });
+      setInterchangeStatus({ tone: "bad", text: frozenStatus2Text("studio.frozenStatus2.dialogue.importUnavailable", "현재 문서에서는 대사 가져오기를 사용할 수 없습니다.") });
       return;
     }
     setInterchangeBusy(true);
@@ -726,22 +704,14 @@ export function StudioDialogueBatchPanel({
     try {
       const parsed = parseStudioDialogueInterchange(format, await file.arrayBuffer());
       if (format === "fdx") {
-        if (!parsed.lossPreview) {
-          throw new Error("FDX 손실 미리보기를 만들지 못해 적용을 중단했습니다.");
-        }
+        if (!parsed.lossPreview) throw new Error(frozenStatus2Text("studio.frozenStatus2.dialogue.fdxPreviewFailed", "FDX 손실 미리보기를 만들지 못해 적용을 중단했습니다."));
         setPendingFdxImport({ fileName: file.name, parsed });
-        setInterchangeStatus({
-          tone: "warn",
-          text: "FDX는 장면·액션 구조를 페이지와 컷으로 바꿉니다. 아래 손실 미리보기를 확인한 뒤 적용해 주세요.",
-        });
+        setInterchangeStatus({ tone: "warn", text: frozenStatus2Text("studio.frozenStatus2.dialogue.fdxPreviewNotice", "FDX는 장면·액션 구조를 페이지와 컷으로 바꿉니다. 아래 손실 미리보기를 확인한 뒤 적용해 주세요.") });
       } else {
         await applyParsedInterchange(parsed);
       }
     } catch (error) {
-      setInterchangeStatus({
-        tone: "bad",
-        text: error instanceof Error ? error.message : "대사 파일을 가져오지 못했습니다.",
-      });
+      setInterchangeStatus({ tone: "bad", text: error instanceof StudioDialogueInterchangeError ? resolveStudioDialogueInterchangeError(error) : error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.importFailed", "대사 파일을 가져오지 못했습니다.") });
     } finally {
       setInterchangeBusy(false);
     }
@@ -755,10 +725,7 @@ export function StudioDialogueBatchPanel({
       await applyParsedInterchange(pendingFdxImport.parsed);
       setPendingFdxImport(null);
     } catch (error) {
-      setInterchangeStatus({
-        tone: "bad",
-        text: error instanceof Error ? error.message : "FDX 대사를 반영하지 못했습니다.",
-      });
+      setInterchangeStatus({ tone: "bad", text: error instanceof StudioDialogueInterchangeError ? resolveStudioDialogueInterchangeError(error) : error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.dialogue.fdxApplyFailed", "FDX 대사를 반영하지 못했습니다.") });
     } finally {
       setInterchangeBusy(false);
     }
@@ -767,19 +734,12 @@ export function StudioDialogueBatchPanel({
   const cancelPendingFdxImport = () => {
     if (interchangeBusy) return;
     setPendingFdxImport(null);
-    setInterchangeStatus({
-      tone: "good",
-      text: "FDX 가져오기를 취소했어요. 문서는 변경되지 않았습니다.",
-    });
+    setInterchangeStatus({ tone: "good", text: frozenStatus2Text("studio.frozenStatus2.dialogue.fdxCancelled", "FDX 가져오기를 취소했어요. 문서는 변경되지 않았습니다.") });
   };
 
   const canPause = playback.status === "playing" || playback.status === "paused";
   const isActive = playback.status === "playing" || playback.status === "paused";
-  const statusText = selectedVoice
-    ? playbackStatusText(playback, readAloudQueue.length)
-    : voices.length === 0
-      ? "사용 가능한 시스템 음성을 불러오는 중이에요."
-      : "확인된 기기 내 음성이 없어요. 온라인 음성을 사용하려면 아래에서 명시적으로 허용하세요.";
+  const statusText = selectedVoice ? playbackStatusText(playback, readAloudQueue.length) : voices.length === 0 ? frozenStatus2Text("studio.frozenStatus2.dialogue.voicesLoading", "사용 가능한 시스템 음성을 불러오는 중이에요.") : frozenStatus2Text("studio.frozenStatus2.dialogue.noLocalVoice", "확인된 기기 내 음성이 없어요. 온라인 음성을 사용하려면 아래에서 명시적으로 허용하세요.");
   const safeMobileKeyboardInset = Number.isFinite(mobileKeyboardInset)
     ? Math.max(0, Math.round(mobileKeyboardInset))
     : 0;
@@ -876,7 +836,7 @@ export function StudioDialogueBatchPanel({
                 "flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent text-[0.66rem] font-semibold text-on-accent transition-opacity hover:opacity-90 focus-within:outline focus-within:outline-2 focus-within:outline-accent",
                 interchangeBusy && "cursor-wait opacity-50"
               )}>
-                <Upload size={13} aria-hidden /> {interchangeBusy ? "읽는 중" : "가져오기"}
+                <Upload size={13} aria-hidden /> {interchangeBusy ? frozenStatus2Text("studio.frozenStatus2.dialogue.busyReading", "읽는 중") : "가져오기"}
                 <input
                   type="file"
                   accept=".csv,.tsv,.json,.fountain,.fdx,.srt,.vtt,.md,.txt,text/plain,text/csv,text/vtt,application/json,application/xml,text/xml"
@@ -963,7 +923,7 @@ export function StudioDialogueBatchPanel({
                               {item.sourceType} · {item.preview}
                             </strong>
                           </div>
-                          <p className="mt-0.5 pl-1">{item.detail}</p>
+                          <p className="mt-0.5 pl-1">{resolveStudioDialogueFdxLossDetail(item.detail)}</p>
                         </div>
                       ))}
                     {pendingFdxImport.parsed.lossPreview.items.filter(
@@ -980,7 +940,7 @@ export function StudioDialogueBatchPanel({
                   </div>
                 ) : (
                   <p className="rounded-lg border border-good/35 bg-good/10 px-2 py-1.5 text-[0.6rem] text-good">
-                    지원 범위 밖에서 제외되는 문단이 없습니다.
+                    {frozenStatus2Text("studio.frozenStatus2.dialogue.noExcludedParagraphs", "지원 범위 밖에서 제외되는 문단이 없습니다.")}
                   </p>
                 )}
 
@@ -1086,7 +1046,7 @@ export function StudioDialogueBatchPanel({
                 {plan.elementCount}개 · {plan.pageCount}페이지
               </>
             ) : (
-              "일치하는 대사가 없어요."
+              frozenStatus2Text("studio.frozenStatus2.dialogue.noMatchingLines", "일치하는 대사가 없어요.")
             )}
             {plan.lockedSkipped > 0 && (
               <span> · 잠긴 요소 {plan.lockedSkipped}개 제외</span>
@@ -1268,7 +1228,7 @@ export function StudioDialogueBatchPanel({
             role="status"
             className="rounded-lg border border-line bg-card/45 px-2.5 py-2 text-[0.65rem] leading-relaxed text-fg-3"
           >
-            이 브라우저는 음성 낭독을 지원하지 않아요. 대사 편집은 그대로 사용할 수 있습니다.
+            {frozenStatus2Text("studio.frozenStatus2.dialogue.speechUnsupportedLong", "이 브라우저는 음성 낭독을 지원하지 않아요. 대사 편집은 그대로 사용할 수 있습니다.")}
           </p>
         ) : (
           <>
@@ -1426,12 +1386,11 @@ export function StudioDialogueBatchPanel({
         </div>
         {items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed">
-            아직 말풍선·텍스트가 없어요. 상단 도구의 말풍선 메뉴에서 대사를 넣으면 여기에서 한꺼번에
-            고칠 수 있어요.
+            {frozenStatus2Text("studio.frozenStatus2.dialogue.emptyNoDialogue", "아직 말풍선·텍스트가 없어요. 상단 도구의 말풍선 메뉴에서 대사를 넣으면 여기에서 한꺼번에 고칠 수 있어요.")}
           </p>
         ) : shown.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed">
-            검색과 일치하는 대사가 없어요.
+            {frozenStatus2Text("studio.frozenStatus2.dialogue.emptySearch", "검색과 일치하는 대사가 없어요.")}
           </p>
         ) : (
           <div className="space-y-2.5">

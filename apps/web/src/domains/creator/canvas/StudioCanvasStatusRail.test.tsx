@@ -40,6 +40,7 @@ vi.mock("../StudioToolHint", () => ({
   StudioToolHintTarget: ({
     hint,
     children,
+    className,
   }: {
     hint: {
       id: string;
@@ -48,8 +49,10 @@ vi.mock("../StudioToolHint", () => ({
       previewVariant?: string;
     };
     children: ReactNode;
+    className?: string;
   }) => (
     <span
+      className={className}
       data-testid={`hint-${hint.id}`}
       data-hint-description={hint.description}
       data-hint-preview={hint.preview}
@@ -276,6 +279,28 @@ describe("StudioCanvasStatusRail", () => {
     expect(filledLane?.className).toBe(emptyLane?.className);
     expect(container.querySelector("[data-studio-selection-command-reserve]")).toBeNull();
     expect(screen.getByRole("button", { name: "선택 요소 그룹화" })).toBeTruthy();
+  });
+
+  it("선택 동작 줄: 단추는 줄어들거나 겹치지 않고, 안내 문구가 남는 폭만 쓴다", () => {
+    // 접근성 점검(axe target-size)이 1440px 에서 잡은 결함: 안내 문구가 폭을 그대로 차지해 오른쪽
+    // 단추(복제·삭제·해제)가 줄 밖으로 잘렸고, 힌트 래퍼가 폭 0 으로 줄어 단추끼리 겹쳤다.
+    const props = createProps({ selectionCount: 2 });
+    const { container } = render(<StudioCanvasStatusRail {...props} />);
+    const lane = container.querySelector("[data-studio-selection-command-lane]");
+    const row = lane?.firstElementChild;
+    expect(row).toBeTruthy();
+
+    // 안내 문구는 흐르는 칸이다: 남는 폭만 쓰고(flex-1 min-w-0), 넘치면 줄임표로 줄어든다(truncate).
+    const hint = Array.from(row?.children ?? []).find((child) => child.className.includes("xl:inline"));
+    expect(hint?.className.split(/\s/u)).toEqual(expect.arrayContaining(["min-w-0", "flex-1", "truncate"]));
+    expect(hint?.className).not.toContain("shrink-0");
+
+    // 힌트 래퍼(StudioToolHintTarget)는 줄어들지 않고, 단추는 24px 이상(WCAG 2.5.8)을 보장한다.
+    const lock = screen.getByRole("button", { name: "선택 잠금" });
+    expect(lock.className.split(/\s/u)).toEqual(expect.arrayContaining(["min-h-6", "min-w-6"]));
+    expect(lock.parentElement?.className.split(/\s/u)).toContain("shrink-0");
+    const remove = screen.getByRole("button", { name: "삭제" });
+    expect(remove.className.split(/\s/u)).toContain("shrink-0");
   });
 
   it("drops the selection command lane entirely below lg, selected or not", () => {

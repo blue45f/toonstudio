@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Szöveges AI szolgáltató",
   "studio.aiToolPopover.serverTextAiProviderAria": "Szerver szöveges AI szolgáltató",
   "studio.aiToolPopover.serverProviderAuto": "automatikus kapcsolás",
-  "studio.aiToolPopover.serverFallbackMessage": "Amikor az egyenleg/csomag limit kimerül, másik szolgáltatóra vált. Az általános hibákat a rendszer nem küldi el automatikusan a dupla töltés elkerülése érdekében."
+  "studio.aiToolPopover.serverFallbackMessage": "Amikor az egyenleg/csomag limit kimerül, másik szolgáltatóra vált. Az általános hibákat a rendszer nem küldi el automatikusan a dupla töltés elkerülése érdekében.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

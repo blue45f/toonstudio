@@ -13,9 +13,9 @@ import * as THREE from "three";
 import {
   createStudioBg3dEditableThreeClone,
   sampleStudioBg3dAnimationActionAtTime,
+  type BgCustomModelInstance,
   type StudioBg3dEditableThreeClone,
 } from "../studio-background-3d-model";
-import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import { resolveStudioBg3dAnimationSchedule } from "./studio-bg3d-animation-scheduler";
 import {
   isStudioBg3dAnimationOnceComplete,

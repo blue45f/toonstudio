@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -74,6 +74,24 @@ describe("useStudioVirtualSpaceRecordingBooth", () => {
     expect(result.current.takes).toHaveLength(1);
     expect(result.current.takes[0]?.take.boothId).toBe("booth-a");
     expect(result.current.takes[0]?.blob).toBeNull();
+  });
+
+  it("녹음을 시작한 직후 렌더 효과가 돌기 전에 종료해도 세션을 놓치지 않는다", async () => {
+    // 시작 뒤의 상태 갱신이 act 밖에서 일어나 렌더와 효과가 아직 돌기 전에 종료를 부르는 구간을 그대로 만든다.
+    // 세션 ref 를 렌더 효과로만 맞추면 이 구간의 종료가 조용히 무시돼 녹음이 끝나지 않았다(CI 샤드에서 간헐 적색).
+    const environment = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
+    const previous = environment.IS_REACT_ACT_ENVIRONMENT;
+    environment.IS_REACT_ACT_ENVIRONMENT = false;
+    try {
+      const { result } = setup();
+      const { startRecording, stopRecording } = result.current;
+      await startRecording();
+      await stopRecording();
+      await waitFor(() => expect(result.current.takes).toHaveLength(1));
+      expect(result.current.recording).toBe(false);
+    } finally {
+      environment.IS_REACT_ACT_ENVIRONMENT = previous;
+    }
   });
 
   it("반향 프리셋을 바꾼 뒤 녹음을 시작하면 세션에 반영된다", async () => {

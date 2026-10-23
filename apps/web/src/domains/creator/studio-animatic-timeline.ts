@@ -7,6 +7,8 @@
  * metadata.
  */
 
+import { resolveStudioAnimaticError } from "./status-i18n/studio-producer-error-i18n";
+
 export const STUDIO_ANIMATIC_VERSION = 1;
 export const STUDIO_ANIMATIC_KIND = "toonstudio.webtoon-animatic";
 export const STUDIO_ANIMATIC_STORAGE_PREFIX =
@@ -189,9 +191,15 @@ export interface StudioAnimaticExportResult {
   readonly bytes: number;
 }
 
+/** D4 생산자 계약: 실패는 표시 문구가 아니라 구조화 코드+파라미터로 방출한다. 표시는 표시 지점이 status-i18n/studio-producer-error-i18n 리졸버로 해석한다. 단 LoadResult·SaveResult의 error는 문자열로 고정된 집계 경계라 load/save 함수 안에서만 해석한다(집계자 예외). */
+export type StudioAnimaticErrorCode = "notDocument" | "unsupportedDocument" | "invalidSettings" | "invalidItems" | "duplicateSegmentId" | "textLimitExceeded" | "invalidWorkScope" | "invalidPageId" | "duplicatePageId" | "tooManySegments" | "invalidCutId" | "stripTooLong" | "invalidSegmentDuration" | "totalDurationTooLong" | "tooManyFrames" | "exportTooLarge" | "importTooLarge" | "importInvalidJson" | "storageUnavailable" | "storageReadFailed" | "wrongWorkScope" | "saveNoStorage" | "saveStorageFull" | "subtitlesEmpty" | "subtitlesNoCues";
+export interface StudioAnimaticError {
+  readonly code: StudioAnimaticErrorCode;
+  readonly params?: Readonly<Record<string, string>>;
+}
 export interface StudioAnimaticFailure {
   readonly ok: false;
-  readonly error: string;
+  readonly error: StudioAnimaticError;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -511,17 +519,14 @@ export function validateStudioAnimaticDocument(
   | { readonly ok: true; readonly document: StudioAnimaticDocument }
   | StudioAnimaticFailure {
   if (!value || typeof value !== "object") {
-    return { ok: false, error: "애니매틱 문서 형식이 아닙니다." };
+    return { ok: false, error: { code: "notDocument" } };
   }
   const raw = value as Record<string, unknown>;
   if (
     raw.kind !== STUDIO_ANIMATIC_KIND
     || raw.version !== STUDIO_ANIMATIC_VERSION
   ) {
-    return {
-      ok: false,
-      error: "지원하는 ToonStudio 애니매틱 v1 문서가 아닙니다.",
-    };
+    return { ok: false, error: { code: "unsupportedDocument" } };
   }
   if (
     typeof raw.workScope !== "string"
@@ -537,18 +542,18 @@ export function validateStudioAnimaticDocument(
     || !Array.isArray(raw.segments)
     || raw.segments.length > STUDIO_ANIMATIC_MAX_SEGMENTS
   ) {
-    return { ok: false, error: "애니매틱 설정 또는 세그먼트 한도가 올바르지 않습니다." };
+    return { ok: false, error: { code: "invalidSettings" } };
   }
   const segments = raw.segments.map(sanitizeSegment);
   if (segments.some((segment) => segment === null)) {
-    return { ok: false, error: "유효하지 않은 컷·카메라·cue 항목이 있습니다." };
+    return { ok: false, error: { code: "invalidItems" } };
   }
   const normalizedSegments = segments as StudioAnimaticSegment[];
   if (
     new Set(normalizedSegments.map((segment) => segment.id)).size
     !== normalizedSegments.length
   ) {
-    return { ok: false, error: "중복된 애니매틱 세그먼트 ID가 있습니다." };
+    return { ok: false, error: { code: "duplicateSegmentId" } };
   }
   const document: StudioAnimaticDocument = {
     kind: STUDIO_ANIMATIC_KIND,
@@ -560,7 +565,7 @@ export function validateStudioAnimaticDocument(
     segments: normalizedSegments,
   };
   if (totalTextChars(document) > STUDIO_ANIMATIC_MAX_TOTAL_TEXT_CHARS) {
-    return { ok: false, error: "애니매틱 텍스트 메타데이터 한도를 넘었습니다." };
+    return { ok: false, error: { code: "textLimitExceeded" } };
   }
   const plan = planStudioAnimaticPreview(document, false);
   if (!plan.ok) return plan;
@@ -681,7 +686,7 @@ export function createStudioAnimaticFromPages(
     !workScope
     || workScope.length > STUDIO_ANIMATIC_MAX_SCOPE_CHARS
   ) {
-    return { ok: false, error: "유효한 작품 범위가 필요합니다." };
+    return { ok: false, error: { code: "invalidWorkScope" } };
   }
   const pageIds = new Set<string>();
   const segments: StudioAnimaticSegment[] = [];
@@ -689,10 +694,10 @@ export function createStudioAnimaticFromPages(
   for (const [pageIndex, page] of pages.entries()) {
     const pageId = normalizeText(page.id);
     if (!pageId || pageId.length > STUDIO_ANIMATIC_MAX_ID_CHARS) {
-      return { ok: false, error: `${pageIndex + 1}페이지 ID가 올바르지 않습니다.` };
+      return { ok: false, error: { code: "invalidPageId", params: { page: String(pageIndex + 1) } } };
     }
     if (pageIds.has(pageId)) {
-      return { ok: false, error: "중복된 페이지 ID가 있습니다." };
+      return { ok: false, error: { code: "duplicatePageId" } };
     }
     pageIds.add(pageId);
     const pageHeight = Math.round(
@@ -709,10 +714,7 @@ export function createStudioAnimaticFromPages(
       frames.length > 0 ? frames : [null];
     for (const [cutIndex, frame] of sources.entries()) {
       if (segments.length >= STUDIO_ANIMATIC_MAX_SEGMENTS) {
-        return {
-          ok: false,
-          error: `애니매틱은 최대 ${STUDIO_ANIMATIC_MAX_SEGMENTS}개 페이지·컷까지 만들 수 있습니다.`,
-        };
+        return { ok: false, error: { code: "tooManySegments", params: { max: String(STUDIO_ANIMATIC_MAX_SEGMENTS) } } };
       }
       const transition: StudioAnimaticTransition =
         segments.length === 0
@@ -725,7 +727,7 @@ export function createStudioAnimaticFromPages(
         STUDIO_ANIMATIC_DEFAULT_HOLD_MS + transition.durationMs;
       const cutId = frame ? normalizeText(frame.element.id) : null;
       if (cutId !== null && (!cutId || cutId.length > STUDIO_ANIMATIC_MAX_ID_CHARS)) {
-        return { ok: false, error: "유효하지 않은 컷 ID가 있습니다." };
+        return { ok: false, error: { code: "invalidCutId" } };
       }
       const identity = JSON.stringify([pageId, cutId]);
       const sourceRect: StudioAnimaticSourceRect = frame
@@ -763,7 +765,7 @@ export function createStudioAnimaticFromPages(
     }
     pageStripY += pageHeight;
     if (pageStripY > STUDIO_ANIMATIC_MAX_CANVAS_EXTENT) {
-      return { ok: false, error: "세로 페이지 스트립 길이 한도를 넘었습니다." };
+      return { ok: false, error: { code: "stripTooLong" } };
     }
   }
 
@@ -795,7 +797,7 @@ export function planStudioAnimaticPreview(
       !Number.isFinite(durationMs)
       || durationMs < STUDIO_ANIMATIC_MIN_HOLD_MS
     ) {
-      return { ok: false, error: "유효하지 않은 컷 길이가 있습니다." };
+      return { ok: false, error: { code: "invalidSegmentDuration" } };
     }
     const startMs = cursorMs;
     const effectiveTransitionMs = reducedMotion
@@ -827,19 +829,13 @@ export function planStudioAnimaticPreview(
     });
     cursorMs = endMs;
     if (cursorMs > STUDIO_ANIMATIC_MAX_TOTAL_DURATION_MS) {
-      return {
-        ok: false,
-        error: `총 길이는 ${STUDIO_ANIMATIC_MAX_TOTAL_DURATION_MS / 60_000}분 이하여야 합니다.`,
-      };
+      return { ok: false, error: { code: "totalDurationTooLong", params: { minutes: String(STUDIO_ANIMATIC_MAX_TOTAL_DURATION_MS / 60_000) } } };
     }
   }
   const frameCount =
     cursorMs > 0 ? Math.max(1, Math.ceil((cursorMs * fps) / 1_000)) : 0;
   if (frameCount > STUDIO_ANIMATIC_MAX_PREVIEW_FRAMES) {
-    return {
-      ok: false,
-      error: `미리보기는 최대 ${STUDIO_ANIMATIC_MAX_PREVIEW_FRAMES.toLocaleString("ko-KR")}프레임까지 만들 수 있습니다.`,
-    };
+    return { ok: false, error: { code: "tooManyFrames", params: { max: STUDIO_ANIMATIC_MAX_PREVIEW_FRAMES.toLocaleString("ko-KR") } } };
   }
   return {
     ok: true,
@@ -1368,10 +1364,7 @@ export function exportStudioAnimaticDocument(
   const json = JSON.stringify(validated.document, null, 2);
   const bytes = utf8Bytes(json);
   if (bytes > STUDIO_ANIMATIC_MAX_EXPORT_BYTES) {
-    return {
-      ok: false,
-      error: `애니매틱 JSON은 ${(STUDIO_ANIMATIC_MAX_EXPORT_BYTES / 1_000).toFixed(0)}KB 이하여야 합니다.`,
-    };
+    return { ok: false, error: { code: "exportTooLarge", params: { size: (STUDIO_ANIMATIC_MAX_EXPORT_BYTES / 1_000).toFixed(0) } } };
   }
   return { ok: true, json, bytes };
 }
@@ -1382,16 +1375,13 @@ export function importStudioAnimaticDocument(
   | { readonly ok: true; readonly document: StudioAnimaticDocument }
   | StudioAnimaticFailure {
   if (utf8Bytes(raw) > STUDIO_ANIMATIC_MAX_IMPORT_BYTES) {
-    return {
-      ok: false,
-      error: `가져오기 파일은 ${(STUDIO_ANIMATIC_MAX_IMPORT_BYTES / 1_000).toFixed(0)}KB 이하여야 합니다.`,
-    };
+    return { ok: false, error: { code: "importTooLarge", params: { size: (STUDIO_ANIMATIC_MAX_IMPORT_BYTES / 1_000).toFixed(0) } } };
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { ok: false, error: "애니매틱 JSON을 해석하지 못했습니다." };
+    return { ok: false, error: { code: "importInvalidJson" } };
   }
   return validateStudioAnimaticDocument(parsed);
 }
@@ -1406,33 +1396,22 @@ export function loadStudioAnimaticDocument(
   workScope: string
 ): StudioAnimaticLoadResult {
   if (!storage) {
-    return {
-      document: null,
-      status: "unavailable",
-      error: "브라우저 로컬 저장소를 사용할 수 없습니다.",
-    };
+    // LoadResult.error는 문자열로 고정된 집계 경계라 이 함수 안에서만 해석한다(집계자 예외, D4).
+    return { document: null, status: "unavailable", error: resolveStudioAnimaticError({ code: "storageUnavailable" }) };
   }
   let raw: string | null;
   try {
     raw = storage.getItem(studioAnimaticStorageKey(workScope));
   } catch {
-    return {
-      document: null,
-      status: "unavailable",
-      error: "브라우저 로컬 저장소를 읽을 수 없습니다.",
-    };
+    return { document: null, status: "unavailable", error: resolveStudioAnimaticError({ code: "storageReadFailed" }) };
   }
   if (!raw) return { document: null, status: "empty" };
   const imported = importStudioAnimaticDocument(raw);
   if (!imported.ok) {
-    return { document: null, status: "invalid", error: imported.error };
+    return { document: null, status: "invalid", error: resolveStudioAnimaticError(imported.error) };
   }
   if (imported.document.workScope !== normalizeText(workScope)) {
-    return {
-      document: null,
-      status: "invalid",
-      error: "다른 작품 범위의 애니매틱 문서입니다.",
-    };
+    return { document: null, status: "invalid", error: resolveStudioAnimaticError({ code: "wrongWorkScope" }) };
   }
   return { document: imported.document, status: "ok" };
 }
@@ -1442,13 +1421,11 @@ export function saveStudioAnimaticDocument(
   document: StudioAnimaticDocument
 ): StudioAnimaticSaveResult {
   if (!storage) {
-    return {
-      ok: false,
-      error: "로컬 저장소가 없어 현재 탭에서만 유지됩니다.",
-    };
+    // SaveResult.error도 문자열 집계 경계라 여기서만 해석한다(집계자 예외, D4).
+    return { ok: false, error: resolveStudioAnimaticError({ code: "saveNoStorage" }) };
   }
   const exported = exportStudioAnimaticDocument(document);
-  if (!exported.ok) return exported;
+  if (!exported.ok) return { ok: false, error: resolveStudioAnimaticError(exported.error) };
   try {
     storage.setItem(
       studioAnimaticStorageKey(document.workScope),
@@ -1456,10 +1433,7 @@ export function saveStudioAnimaticDocument(
     );
     return { ok: true };
   } catch {
-    return {
-      ok: false,
-      error: "브라우저 저장 공간이 부족하거나 로컬 저장이 차단되었습니다.",
-    };
+    return { ok: false, error: resolveStudioAnimaticError({ code: "saveStorageFull" }) };
   }
 }
 

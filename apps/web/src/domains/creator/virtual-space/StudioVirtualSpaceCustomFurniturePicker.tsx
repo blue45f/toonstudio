@@ -16,6 +16,7 @@ import {
 import type { StudioVirtualDecorationState } from "./studio-virtual-space-customization";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-manifest";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 /**
  * 사용자가 직접 올린 가구를 나란히 놓는 창.
@@ -23,12 +24,12 @@ import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-wor
  * 아틀라스 카탈로그와 섞지 않는다. 카탈로그는 내장 아트만 다루고, 여기는 사용자의
  * 이미지만 다룬다. 그래야 "내 가구"가 조명이나 나무처럼 보이지 않는다.
  */
-const PLACE_REASON: Record<string, string> = {
-  bounds: "여기에는 놓을 수 없어요.",
-  occupied: "이미 다른 것이 있어요.",
-  access: "길가에만 놓을 수 있어요.",
-  limit: "가구를 더 놓을 수 없어요.",
-  invalid: "지금 놓을 수 없어요.",
+const PLACE_REASON: Record<string, { readonly key: string; readonly ko: string }> = {
+  bounds: { key: "studio.creatorSub2.status.virtualSpace.furniture.bounds", ko: "여기에는 놓을 수 없어요." },
+  occupied: { key: "studio.creatorSub2.status.virtualSpace.furniture.occupied", ko: "이미 다른 것이 있어요." },
+  access: { key: "studio.creatorSub2.status.virtualSpace.furniture.access", ko: "길가에만 놓을 수 있어요." },
+  limit: { key: "studio.creatorSub2.status.virtualSpace.furniture.limit", ko: "가구를 더 놓을 수 없어요." },
+  invalid: { key: "studio.creatorSub2.status.virtualSpace.furniture.invalid", ko: "지금 놓을 수 없어요." },
 };
 
 /**
@@ -84,7 +85,8 @@ export function StudioVirtualSpaceCustomFurniturePicker({
         ? addStudioVirtualDecorationSafely(decorations, "custom", selfPoint, world)
         : { ok: true, state: addStudioVirtualDecoration(decorations, "custom", selfPoint) };
       if (!result.ok) {
-        setNotice(PLACE_REASON[result.reason]);
+        const placeReason = PLACE_REASON[result.reason] ?? PLACE_REASON.invalid;
+        setNotice(creatorSub2StatusText(placeReason.key, placeReason.ko));
         return;
       }
       const placement = {

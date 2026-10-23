@@ -9,7 +9,7 @@ describe("auth session import graph", () => {
     const apiClient = readFileSync(join(process.cwd(), "apps/web/src/platform/api.ts"), "utf8");
 
     expect(authStore).not.toMatch(/import\s*\(\s*["']@\/src\/infrastructure\/api["']\s*\)/);
-    expect(authStore).toContain('import { api, apiPath } from "@/platform/api"');
+    expect(authStore).toContain('import { api, apiPath, WRITE_TIMEOUT_MS } from "@/platform/api"');
     expect(apiClient).not.toContain("@/domains/auth/public/session/auth-session-store");
     expect(apiClient).toContain("@/domains/auth/public/session/auth-session-state");
   });

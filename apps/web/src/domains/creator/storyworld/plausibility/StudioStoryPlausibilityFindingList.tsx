@@ -7,6 +7,8 @@
  */
 import { Search } from "lucide-react";
 import { useMemo, useRef, type KeyboardEvent } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import { ConfidenceBadge, SeverityBadge } from "./StudioStoryPlausibilityParts";
 import {
@@ -91,6 +93,7 @@ function Row({ finding, selected, tabbable, titles, handled, onSelect, onKeyDown
 
 export function StudioStoryPlausibilityFindingList(props: FindingListProps) {
   const { open, handled, filters, selectedId, coveragePercent } = props;
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const visibleOpen = useMemo(() => filterPlausibilityFindings(open, toFilters(filters)), [open, filters]);
@@ -185,7 +188,7 @@ export function StudioStoryPlausibilityFindingList(props: FindingListProps) {
         </div>
         <p aria-live="polite" className="plausibility-hint" role="status">
           {visibleOpen.length}개 표시{filtered ? ` (전체 ${open.length}개 중)` : ""}
-          {props.omittedCount > 0 ? ` · 목록 상한 때문에 ${props.omittedCount}개는 담지 못했어요` : ""}
+          {props.omittedCount > 0 ? t("studio.storyworldStatus.findingList.omitted", { count: props.omittedCount }, " · 목록 상한 때문에 {count}개는 담지 못했어요") : ""}
         </p>
       </div>
 
@@ -213,7 +216,7 @@ export function StudioStoryPlausibilityFindingList(props: FindingListProps) {
           <div className="plausibility-empty">
             {filtered && !nothingOpen ? (
               <>
-                <h3>조건에 맞는 항목이 없어요</h3>
+                <h3>{t("studio.storyworldStatus.findingList.emptyFiltered", "조건에 맞는 항목이 없어요")}</h3>
                 <p>거르는 조건을 바꾸거나 모두 지워 보세요.</p>
                 <div className="plausibility-empty__actions">
                   <button className="storyworld-button" onClick={() => props.onFiltersChange(DEFAULT_PLAUSIBILITY_LIST_FILTERS)} type="button">조건 모두 지우기</button>
@@ -221,7 +224,7 @@ export function StudioStoryPlausibilityFindingList(props: FindingListProps) {
               </>
             ) : coveragePercent < 40 ? (
               <>
-                <h3>찾은 문제가 없지만, 아직 모르는 부분이 많아요</h3>
+                <h3>{t("studio.storyworldStatus.findingList.emptyUnknown", "찾은 문제가 없지만, 아직 모르는 부분이 많아요")}</h3>
                 <p>점검할 수 있었던 칸이 {coveragePercent}%뿐이라 ‘문제 없음’이 아니라 ‘아직 모름’에 가까워요. 질문지에서 장면마다 동기·원인·정보를 알려 주면 더 많이 확인할 수 있어요.</p>
                 <div className="plausibility-empty__actions">
                   <button className="storyworld-button storyworld-button--primary" onClick={props.onOpenQuestionnaire} type="button">질문지로 채우기</button>
@@ -229,7 +232,7 @@ export function StudioStoryPlausibilityFindingList(props: FindingListProps) {
               </>
             ) : (
               <>
-                <h3>점검한 범위에서는 어긋남을 찾지 못했어요</h3>
+                <h3>{t("studio.storyworldStatus.findingList.emptyChecked", "점검한 범위에서는 어긋남을 찾지 못했어요")}</h3>
                 <p>점검 가능 범위 {coveragePercent}% 안에서 확인한 결과예요. 기계가 읽지 못하는 부분(말투, 암시, 반어)은 여전히 작가님의 눈이 필요해요.</p>
               </>
             )}
@@ -243,7 +246,7 @@ export function StudioStoryPlausibilityFindingList(props: FindingListProps) {
               {" "}(해결함 {props.handledCounts.resolved} · 의도된 설정 {props.handledCounts.intended} · 나중에 {props.handledCounts.deferred} · 무시함 {props.handledCounts.ignored})
             </summary>
             {visibleHandled.length === 0 ? (
-              <p className="plausibility-hint">거르는 조건에 맞는 처리한 항목이 없어요.</p>
+              <p className="plausibility-hint">{t("studio.storyworldStatus.findingList.emptyHandled", "거르는 조건에 맞는 처리한 항목이 없어요.")}</p>
             ) : (
               <ul className="plausibility-rows">
                 {visibleHandled.map((item) => (

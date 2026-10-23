@@ -1,3 +1,5 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r5CreatorStatusText } from "./r5-cat1-status-i18n";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -279,7 +281,7 @@ export function StudioRevisionCompareView({
           <div className="grid min-h-64 place-items-center rounded-2xl border border-bad/30 bg-bad/10 px-6 text-center">
             <div>
               <AlertTriangle size={26} className="mx-auto text-bad" aria-hidden />
-              <p className="mt-3 text-sm font-semibold text-fg">변경 내용을 확인하지 못했어요</p>
+              <p className="mt-3 text-sm font-semibold text-fg">{r3c07StatusText("studio.panelStatus.r3c07.revisionCompare.loadFailed", "변경 내용을 확인하지 못했어요")}</p>
               <p role="alert" className="mt-1 max-w-md text-xs leading-relaxed text-bad">{error}</p>
               <button
                 type="button"
@@ -462,7 +464,7 @@ export function StudioRevisionCompareView({
           ) : (
             <div className="flex items-center gap-2">
               <p className="min-w-0 flex-1 text-xs leading-relaxed text-fg-3">
-                {restoreMeaningful ? `복원하면 현재 서버·편집 상태와 다른 버전이 새 기록으로 남습니다.` : "복원해도 서버와 편집 내용은 달라지지 않습니다."}
+                {restoreMeaningful ? `복원하면 현재 서버·편집 상태와 다른 버전이 새 기록으로 남습니다.` : r5CreatorStatusText("r5cat1.creator.revisionCompare.noChangeOnRestore", "복원해도 서버와 편집 내용은 달라지지 않습니다.")}
               </p>
               <button
                 ref={requestRestoreRef}

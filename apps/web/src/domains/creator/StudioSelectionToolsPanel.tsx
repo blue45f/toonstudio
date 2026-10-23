@@ -62,6 +62,7 @@ import {
   type SelectionToolKind,
 } from "./studio-selection-tools";
 import { StudioToolHintTarget } from "./StudioToolHint";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 
 import type { StudioToolHintPreviewKind } from "./studio-tool-hint-preview-kind";
 import type { StudioToolHintSpec } from "./studio-tool-hints";
@@ -460,32 +461,18 @@ export function StudioSelectionToolsPanel({
   const hasTransformableBoundary = subpathCount > 0;
   const canAdjust = usable && !busy;
   const tools = onBrushRadiusChange ? SELECTION_TOOLS : SELECTION_TOOLS.filter((t) => t.id !== "brush");
-  const busyUnavailableReason = busy ? "다른 픽셀 작업을 적용하는 동안 기다려 주세요." : undefined;
-  const selectionUnavailableReason = busyUnavailableReason
-    ?? (!usable ? "먼저 이미지에서 픽셀 영역을 선택하세요." : undefined);
-  const boundaryUnavailableReason = selectionUnavailableReason
-    ?? (!hasTransformableBoundary
-      ? "전체 이미지 선택에는 변형할 점선 선택 경계가 없습니다."
-      : undefined);
-  const clearUnavailableReason = busyUnavailableReason
-    ?? (!selection ? "해제할 선택 영역이 없습니다." : undefined);
-  const lastSubpathUnavailableReason = busyUnavailableReason
-    ?? (!selection || subpathCount === 0 ? "제거할 하위 선택 영역이 없습니다." : undefined);
-  const undoUnavailableReason = busyUnavailableReason
-    ?? (!canUndoSelection ? "되돌릴 선택 작업이 없습니다." : undefined);
-  const redoUnavailableReason = busyUnavailableReason
-    ?? (!canRedoSelection ? "다시 적용할 선택 작업이 없습니다." : undefined);
-  const contentApplyUnavailableReason = selectionUnavailableReason
-    ?? (contentScale === 1 && contentRotate === 0
-      ? "내용 스케일이나 회전 값을 먼저 변경하세요."
-      : undefined);
-  const brightnessUnavailableReason = selectionUnavailableReason
-    ?? (brightness === 0 ? "밝기 값을 0이 아닌 값으로 조절하세요." : undefined);
-  const hueUnavailableReason = selectionUnavailableReason
-    ?? (hue === 0 ? "색조 값을 0°가 아닌 값으로 조절하세요." : undefined);
+  const busyUnavailableReason = busy ? frozenStatus3Text("studio.frozenStatus3.sel.busyWait", "다른 픽셀 작업을 적용하는 동안 기다려 주세요.") : undefined;
+  const selectionUnavailableReason = busyUnavailableReason ?? (!usable ? frozenStatus3Text("studio.frozenStatus3.sel.selectPixelsFirst", "먼저 이미지에서 픽셀 영역을 선택하세요.") : undefined);
+  const boundaryUnavailableReason = selectionUnavailableReason ?? (!hasTransformableBoundary ? frozenStatus3Text("studio.frozenStatus3.sel.noTransformableBoundary", "전체 이미지 선택에는 변형할 점선 선택 경계가 없습니다.") : undefined);
+  const clearUnavailableReason = busyUnavailableReason ?? (!selection ? frozenStatus3Text("studio.frozenStatus3.sel.noSelectionToClear", "해제할 선택 영역이 없습니다.") : undefined);
+  const lastSubpathUnavailableReason = busyUnavailableReason ?? (!selection || subpathCount === 0 ? frozenStatus3Text("studio.frozenStatus3.sel.noSubpathToRemove", "제거할 하위 선택 영역이 없습니다.") : undefined);
+  const undoUnavailableReason = busyUnavailableReason ?? (!canUndoSelection ? frozenStatus3Text("studio.frozenStatus3.sel.noSelectionUndo", "되돌릴 선택 작업이 없습니다.") : undefined);
+  const redoUnavailableReason = busyUnavailableReason ?? (!canRedoSelection ? frozenStatus3Text("studio.frozenStatus3.sel.noSelectionRedo", "다시 적용할 선택 작업이 없습니다.") : undefined);
+  const contentApplyUnavailableReason = selectionUnavailableReason ?? (contentScale === 1 && contentRotate === 0 ? frozenStatus3Text("studio.frozenStatus3.sel.contentChangeFirst", "내용 스케일이나 회전 값을 먼저 변경하세요.") : undefined);
+  const brightnessUnavailableReason = selectionUnavailableReason ?? (brightness === 0 ? frozenStatus3Text("studio.frozenStatus3.sel.brightnessNonZero", "밝기 값을 0이 아닌 값으로 조절하세요.") : undefined);
+  const hueUnavailableReason = selectionUnavailableReason ?? (hue === 0 ? frozenStatus3Text("studio.frozenStatus3.sel.hueNonZero", "색조 값을 0°가 아닌 값으로 조절하세요.") : undefined);
   const colorRangeSectionVisible = onColorRangeApply !== undefined;
-  const colorRangeNoSamplesReason =
-    colorRangeSamples.length === 0 ? "먼저 캔버스에서 색을 추출하세요." : undefined;
+  const colorRangeNoSamplesReason = colorRangeSamples.length === 0 ? frozenStatus3Text("studio.frozenStatus3.sel.extractColorFirst", "먼저 캔버스에서 색을 추출하세요.") : undefined;
   const colorRangeApplyUnavailableReason = busyUnavailableReason ?? colorRangeNoSamplesReason;
   const colorRangePickDisabled = busy && !colorRangePickArmed;
   const colorRangePreviewDisabled =
@@ -829,10 +816,7 @@ export function StudioSelectionToolsPanel({
             <StudioToolHintTarget
               hint={COLOR_RANGE_HINTS.clearSamples}
               disabled={Boolean(busyUnavailableReason ?? colorRangeNoSamplesReason)}
-              unavailableReason={
-                busyUnavailableReason
-                ?? (colorRangeSamples.length === 0 ? "지울 색 샘플이 없습니다." : undefined)
-              }
+              unavailableReason={busyUnavailableReason ?? (colorRangeSamples.length === 0 ? frozenStatus3Text("studio.frozenStatus3.sel.noSamplesToClear", "지울 색 샘플이 없습니다.") : undefined)}
               preferredSide="left"
             >
               <button
@@ -885,7 +869,7 @@ export function StudioSelectionToolsPanel({
             </div>
           ) : (
             <p className="text-[0.68rem] leading-relaxed text-fg-3">
-              아직 추출한 색이 없습니다. 아래 버튼을 켜고 이미지에서 색을 클릭하세요.
+              {frozenStatus3Text("studio.frozenStatus3.sel.emptyNoSamples", "아직 추출한 색이 없습니다. 아래 버튼을 켜고 이미지에서 색을 클릭하세요.")}
             </p>
           )}
 

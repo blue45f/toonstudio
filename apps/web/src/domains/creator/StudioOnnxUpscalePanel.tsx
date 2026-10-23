@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Loader2, Scaling, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -59,7 +60,7 @@ export function StudioOnnxUpscalePanel({
           ? "업스케일을 취소했어요."
           : cause instanceof Error
             ? cause.message
-            : "업스케일에 실패했어요.",
+            : r3c07StatusText("studio.panelStatus.r3c07.onnxUpscale.upscaleFailed", "업스케일에 실패했어요."),
       );
     } finally {
       if (mountedRef.current) {

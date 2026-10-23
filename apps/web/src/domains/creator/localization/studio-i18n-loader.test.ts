@@ -63,7 +63,15 @@ describe("Studio lazy i18n assets", () => {
       // 캐릭터 선반 조작 안내 studio.character.shelf.interactionHint{Touch,Mouse,Keyboard}·
       // shapeNote·favoritesNote 5키이며, 75개 팩이 모두 같은 키 집합을 가진다. 래칫이므로 이후
       // 키를 늘리거나 줄이는 변경은 여기서 한 번 더 눈에 띄어야 한다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_530);
+      // 1_530 → 1_635: 네임스페이스 정본에 있던 103키를 동기화로 평면 팩에 옮겼다(2026-10-22). canvas 네임스페이스의
+      // studio.canvas.panelLoading.* 69키, customFonts 네임스페이스의 studio.customFonts.* 33키, aiToolPopover 의
+      // studio.aiToolPopover.masterEditAiCutDisabled 1키다. 여기에 평면 팩에만 있어 정본이 없던
+      // studio.settings.advancedTools.{expand,collapse} 2키를 settings 네임스페이스로 옮겨 105키가 늘었다.
+      // 에디터 호스트의 상태 문구(studio.hostStatus.* 등)는 TS 등록이라 이 숫자에 들지 않는다.
+      // 동기화(sync-i18n-legacy-assets)로 75개 팩이 모두 같은 키 집합을 가진다.
+      // 1_635 → 1_726: 3D 배경 편집기의 태그·컴포넌트·장면 정보 화면과 .skp 원본 이름·소재 이름 검색 안내를 전용 네임스페이스
+      // (studio.bg3dScene.*) 91키로 게시했다(2026-10-22). 75개 팩이 모두 같은 키 집합을 가진다.
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_726);
     }
     // The mobile dock used to hardcode Korean labels; every pack must now carry the keys that
     // replaced them, so an `en` viewport cannot fall back to Korean chrome.

@@ -14,6 +14,7 @@
  * 데이터는 전부 props 다. 선택 상태는 controlled(selectedAssetId)를
  * 우선하고, 없으면 내부 상태로 동작한다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { History, Layers, MapPin, Repeat2 } from "lucide-react";
 import { useState } from "react";
 
@@ -107,7 +108,7 @@ export function StudioSceneAssetReusePanel({
 
       {graph.ledgers.length === 0 ? (
         <p className="py-4 text-center text-xs text-fg-3">
-          등록된 에셋이 없습니다.
+          {r3c07StatusText("studio.panelStatus.r3c07.sceneAssetReuse.assetsEmpty", "등록된 에셋이 없습니다.")}
         </p>
       ) : (
         <ul className="space-y-1.5">
@@ -156,7 +157,7 @@ export function StudioSceneAssetReusePanel({
             이력
           </h4>
           {selectedHistory.unused ? (
-            <p className="text-xs text-fg-3">아직 사용 기록이 없어요.</p>
+            <p className="text-xs text-fg-3">{r3c07StatusText("studio.panelStatus.r3c07.sceneAssetReuse.historyEmpty", "아직 사용 기록이 없어요.")}</p>
           ) : (
             <ul className="space-y-2">
               {selectedHistory.episodeUses.map((episodeUse) => (
@@ -213,7 +214,7 @@ export function StudioSceneAssetReusePanel({
           </h4>
           {!cutReuse || cutReuse.assets.length === 0 ? (
             <p className="text-xs text-fg-3">
-              이 컷에 기록된 에셋 사용이 없습니다.
+              {r3c07StatusText("studio.panelStatus.r3c07.sceneAssetReuse.cutUsageEmpty", "이 컷에 기록된 에셋 사용이 없습니다.")}
             </p>
           ) : cutReuse.reusedAssets.length === 0 ? (
             <p className="text-xs text-fg-3">

@@ -12,6 +12,7 @@
  *   있는데 연표 사건만 없을 때(사건으로 추가하기). 둘 다 출구는 허브다.
  */
 import { useMemo } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import type { StudioStoryCharacter } from "../studio-story-bible";
 import type { StudioWorldLore } from "./studio-world-lore";
@@ -52,7 +53,7 @@ export function StudioLoreTimeline({ lore, characters, worldHref }: StudioLoreTi
       {view.eventCount === 0 ? (
         view.totalEntryCount === 0 ? (
           <div>
-            <p>아직 세계관 설정이 없어서 보여 줄 연표가 없어요.</p>
+            <p>{r3c04StatusText("studio.r3c04Status.planning.loreTimeline.empty", "아직 세계관 설정이 없어서 보여 줄 연표가 없어요.")}</p>
             <p>
               세계관 설정에서 장소·세력 같은 항목과 함께 사건을 적어 두면,
               그 사건들이 여기서 시간 순서대로 쌓입니다. 예시 세계로 시작하면

@@ -81,6 +81,7 @@ const CURATED_TRAILS: Record<string, AppBreadcrumbItem[]> = {
   "/about/technology/playbook": [HOME, ABOUT, TECHNOLOGY, { ko: "플레이북", en: "Playbook" }],
   "/product-tour": [HOME, { ko: "제품 투어", en: "Product tour" }],
   "/brand-film": [HOME, { ko: "브랜드 필름", en: "Brand film" }],
+  "/promo-library": [HOME, { ko: "홍보 영상 자료실", en: "Promo video library" }],
   "/membership": [HOME, { ko: "멤버십", en: "Membership" }],
   "/membership/usage": [HOME, { ko: "멤버십", en: "Membership", href: "/membership" }, { ko: "이용 내역", en: "Usage" }],
   "/account/points": [HOME, { ko: "내 정보", en: "My profile", href: "/me" }, { ko: "포인트 지갑", en: "Points wallet" }],

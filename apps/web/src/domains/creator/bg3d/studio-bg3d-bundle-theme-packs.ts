@@ -10,18 +10,22 @@
  * - 다운로드 동선 필드(original/download/downloadUrl/downloadPath)를 가진 항목은
  *   어느 층위에서도 거부한다.
  * - 에셋은 참조로만 다루고, 파일 다운로드/내보내기 경로는 만들지 않는다.
+ * - 팩별 권리(`packs[].rights`)는 생성기가 권리 원장에서 allow된 팩에만 싣는다. 로더는 이 값으로만
+ *   레코드 권리를 만들고, 값이 없는 팩(원장 이전 스냅샷)은 권리 미상으로 닫는다.
  */
 
 export const STUDIO_BG3D_BUNDLE_THEME_PACKS_SCHEMA = "toonstudio.bg3d-bundle-theme-packs.v1" as const;
 export const STUDIO_BG3D_BUNDLE_THEME_PACKS_URL =
   "/assets/3d/environments/bundle-v1/theme-packs.json" as const;
-/** 매니페스트 v2 파일 트리가 서빙되는 루트. 에셋 경로는 이 아래 상대 경로다. */
+/** 매니페스트 v2 파일 트리가 서빙되는 루트. 에셋은 이 아래 `<sha256>.glb` 키로 서빙된다. */
 export const STUDIO_BG3D_BUNDLE_ASSET_ROOT = "/assets/studio/bundle-v2/" as const;
 /** 인제스션 에셋 id 접두사. 환경 카탈로그(ts-bg3d-*)·로컬 저장 id와 겹치지 않는다. */
 export const STUDIO_BG3D_BUNDLE_ASSET_ID_PREFIX = "cbv1-ingest-" as const;
 
 export type StudioBg3dBundlePackCategory = "environment" | "prop";
 export type StudioBg3dBundleAssetClassification = "environment" | "prop";
+/** 팩별 권리 상태. 구매 번들은 `licensed`, CC0 문서로 증빙된 팩은 `public-domain`이다. */
+export type StudioBg3dBundlePackRightsStatus = "licensed" | "public-domain";
 
 export interface StudioBg3dBundleTheme {
   readonly id: string;
@@ -35,6 +39,18 @@ export interface StudioBg3dBundlePackDeferred {
   readonly overBudget: Readonly<Record<string, number>>;
 }
 
+/**
+ * 팩별 권리 요약. 생성기가 권리 원장(config/creator-bundle-pack-rights.json)에서 allow된 팩에만 싣는다.
+ * 증빙 경로·hold 사유 같은 내부 기록은 공개 데이터에 넣지 않는다.
+ */
+export interface StudioBg3dBundlePackRights {
+  readonly serve: "allow";
+  readonly status: StudioBg3dBundlePackRightsStatus;
+  readonly licenseName: string;
+  readonly commercialUse: boolean;
+  readonly attributionRequired: boolean;
+}
+
 export interface StudioBg3dBundleThemePack {
   readonly catalogIds: readonly string[];
   readonly title: string;
@@ -46,13 +62,15 @@ export interface StudioBg3dBundleThemePack {
   readonly placeable: number;
   readonly twinCovered: number;
   readonly deferred: StudioBg3dBundlePackDeferred;
+  /** 원장 이전 스냅샷 데이터에는 없다(null). 로더는 이런 팩의 에셋 권리를 unknown으로 닫는다. */
+  readonly rights: StudioBg3dBundlePackRights | null;
   readonly note: string | null;
 }
 
 export interface StudioBg3dBundleThemePackAsset {
   readonly id: string;
   readonly packIndex: number;
-  /** 에셋 루트 기준 상대 서빙 경로 (GLB 단일 파일). */
+  /** 인제스션 트리 기준 원본 상대 경로 (GLB 단일 파일). 표시 이름과 소속 팩 검증용이며 서빙 URL에는 쓰지 않는다. */
   readonly path: string;
   readonly bytes: number;
   readonly sha256: `sha256:${string}`;
@@ -178,6 +196,33 @@ function parseDeferred(value: unknown): StudioBg3dBundlePackDeferred {
   });
 }
 
+const PACK_RIGHTS_STATUSES: readonly string[] = ["licensed", "public-domain"];
+
+/**
+ * 팩별 권리 블록 파서. 블록이 없으면 null(원장 이전 스냅샷), 있으면 allow만 받아들인다 —
+ * 서빙이 허용되지 않은 팩은 생성기가 theme-packs에 넣지 않으므로 hold가 들어 있으면 데이터가 잘못된 것이다.
+ */
+function parsePackRights(value: unknown): StudioBg3dBundlePackRights | null {
+  if (value === undefined || value === null) return null;
+  const rights = record(value);
+  if (!rights) throw new TypeError("테마 팩 권리 표기 형식이 올바르지 않습니다.");
+  assertNoDownloadFields(rights);
+  if (rights.serve !== "allow") {
+    throw new TypeError("서빙이 허용되지 않은 팩은 테마 팩 데이터에 있을 수 없습니다.");
+  }
+  if (typeof rights.status !== "string" || !PACK_RIGHTS_STATUSES.includes(rights.status)
+    || typeof rights.commercialUse !== "boolean" || typeof rights.attributionRequired !== "boolean") {
+    throw new TypeError("테마 팩 권리 표기가 올바르지 않습니다.");
+  }
+  return Object.freeze({
+    serve: "allow" as const,
+    status: rights.status as StudioBg3dBundlePackRightsStatus,
+    licenseName: requiredText(rights.licenseName, 200, "테마 팩 라이선스 이름이 올바르지 않습니다."),
+    commercialUse: rights.commercialUse,
+    attributionRequired: rights.attributionRequired,
+  });
+}
+
 function parsePack(value: unknown): StudioBg3dBundleThemePack {
   const pack = record(value);
   if (!pack) throw new TypeError("테마 팩 형식이 올바르지 않습니다.");
@@ -203,6 +248,7 @@ function parsePack(value: unknown): StudioBg3dBundleThemePack {
     placeable: count(pack.placeable, "테마 팩 에셋 수가 올바르지 않습니다."),
     twinCovered: count(pack.twinCovered, "테마 팩 에셋 수가 올바르지 않습니다."),
     deferred: parseDeferred(pack.deferred),
+    rights: parsePackRights(pack.rights),
     note: optionalText(pack.note, 500, "테마 팩 비고가 올바르지 않습니다."),
   });
 }
@@ -441,13 +487,16 @@ export function studioBg3dBundleAssetName(asset: StudioBg3dBundleThemePackAsset)
   return name.length > 0 ? name : asset.id;
 }
 
-/** 에셋 루트 + 상대 경로를 서빙 URL로 바꾼다 (경로 조각마다 인코딩). */
+/**
+ * 에셋 루트 + sha256 내용 주소 키를 서빙 URL로 바꾼다. 원본 폴더·파일명은 URL에 들어가지 않는다
+ * (배포 플래너 scripts/plan-creator-bundle-deploy.mjs의 bundleV2PublicPath와 같은 규칙).
+ */
 export function studioBg3dBundleAssetUrl(
   asset: StudioBg3dBundleThemePackAsset,
   data: Pick<StudioBg3dBundleThemePacks, "assetRoot">,
 ): string {
   const root = data.assetRoot.endsWith("/") ? data.assetRoot : `${data.assetRoot}/`;
-  return root + asset.path.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+  return `${root}${asset.sha256.slice("sha256:".length)}.glb`;
 }
 
 /** 팩의 보류 에셋 총수 (변환 없음·예산 초과·외부 참조 합산). */
@@ -459,14 +508,16 @@ export function countStudioBg3dBundlePackDeferred(pack: StudioBg3dBundleThemePac
 /* ── 배포 가용성 판정 ──────────────────────────────────────────────────────
  * theme-packs.json은 메타데이터라 GLB 실물 배포 여부와 무관하게 읽힌다.
  * 실물 배포의 완료 신호는 배포 절차(scripts/plan-creator-bundle-deploy.mjs)가
- * 마지막 객체로 올리는 배포 인덱스다. 인덱스가 없거나 합계가 테마 팩
- * 데이터와 어긋나면 "배포 미완료"로 판정해, 패널이 배치 가능으로
+ * 마지막 객체로 올리는 배포 인덱스다. 인덱스가 없거나 키 방식(keyScheme)이 다르거나
+ * 합계가 테마 팩 데이터와 어긋나면 "배포 미완료"로 판정해, 패널이 배치 가능으로
  * 오인시키지 않게 한다. */
 
 export const STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL =
   "/assets/studio/bundle-v2/manifest.json" as const;
 export const STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_SCHEMA =
   "toonstudio.bundle-v2-deploy-index.v1" as const;
+/** 로더 URL(studioBg3dBundleAssetUrl)과 짝인 R2 키 방식. 인덱스가 다른 방식이면 객체를 찾을 수 없다. */
+export const STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_KEY_SCHEME = "sha256" as const;
 
 export type StudioBg3dBundleDeployAvailability = "available" | "unavailable";
 
@@ -495,6 +546,8 @@ export async function loadStudioBg3dBundleDeployAvailability(
     if (!index || index.schema !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_SCHEMA || index.version !== 1) {
       return "unavailable";
     }
+    // 옛 경로형 키로 올라간 인덱스(keyScheme 없음)는 합계가 같아도 sha256 URL의 객체를 가리키지 못한다.
+    if (index.keyScheme !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_KEY_SCHEME) return "unavailable";
     const expectedBytes = data.assets.reduce((sum, asset) => sum + asset.bytes, 0);
     return index.files === data.totals.placeableAssets && index.bytes === expectedBytes
       ? "available"

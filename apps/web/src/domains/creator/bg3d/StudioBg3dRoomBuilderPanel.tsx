@@ -5,6 +5,9 @@
 import { DoorOpen, Home, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import { StudioBg3dBuildNotice } from "./StudioBg3dBuildNotice";
 import {
   describeStudioBg3dBuildNotice,
@@ -90,6 +93,7 @@ export function StudioBg3dRoomBuilderPanel({
   onAutoCutawayChange,
   onShowParts,
 }: StudioBg3dRoomBuilderPanelProps) {
+  const t = useT();
   const limits = STUDIO_BG3D_ROOM_LIMITS;
   const partCount = buildStudioBg3dRoomParts(spec).length;
   const [notice, setNotice] = useState<RoomPanelNotice | null>(null);
@@ -260,7 +264,7 @@ export function StudioBg3dRoomBuilderPanel({
         </div>
         {spec.openings.length === 0 ? (
           <p className="py-1 text-[0.66rem] leading-relaxed text-fg-3">
-            아직 오프닝이 없어요. 문·창을 추가하면 벽이 자동으로 갈라집니다.
+            {t("studio.bg3dPanelStatus.roomBuilder.openingsEmpty", "아직 오프닝이 없어요. 문·창을 추가하면 벽이 자동으로 갈라집니다.")}
           </p>
         ) : (
           <ul className="space-y-2">

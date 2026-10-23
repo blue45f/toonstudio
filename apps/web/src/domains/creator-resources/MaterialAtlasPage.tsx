@@ -25,6 +25,8 @@ import {
 import "./material-discovery/material-discovery.css";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { ResourceLayout } from "./ResourceLayout";
+import { resourceStatusText } from "./resource-status-i18n";
+import { r5ResourcesStatusText } from "./r5-cat1-status-i18n";
 
 const CATALOG = parseMaterialCatalog(catalogData);
 const PAGE_SIZE = 24;
@@ -40,7 +42,7 @@ function MaterialPreview({ asset, enabled }: { asset: MaterialAsset; enabled: bo
   return <div className="md-card-preview grid aspect-[4/3] place-items-center overflow-hidden rounded-xl border border-line bg-raised">
     {enabled && asset.thumbnailUrl && !failed
       ? <img className="h-full w-full object-contain" src={asset.thumbnailUrl} alt={`${asset.title} 제공처 미리보기`} width={256} height={256} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
-      : <div className="p-4 text-center"><p className="text-2xl font-bold text-accent" aria-hidden="true">{asset.kind === "texture" ? "▧" : asset.kind === "model" ? "◇" : "◐"}</p><p className="mt-2 text-sm text-fg-2">{failed ? "미리보기를 불러오지 못했습니다" : enabled ? "원문에서 이미지 확인" : MATERIAL_KINDS[asset.kind]}</p></div>}
+      : <div className="p-4 text-center"><p className="text-2xl font-bold text-accent" aria-hidden="true">{asset.kind === "texture" ? "▧" : asset.kind === "model" ? "◇" : "◐"}</p><p className="mt-2 text-sm text-fg-2">{failed ? resourceStatusText("resources.status.atlas.previewFailed", "미리보기를 불러오지 못했습니다") : enabled ? "원문에서 이미지 확인" : MATERIAL_KINDS[asset.kind]}</p></div>}
   </div>;
 }
 function MaterialCard({ asset, selected, previews, onToggle, onSendToStudio }: {
@@ -103,9 +105,9 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
   };
   const sendToStudio = (asset: MaterialAsset) => {
     if (storeMaterialDrop(asset)) {
-      setStatus(`"${asset.title}" 소재를 스튜디오로 보냈습니다. 새 작업 화면에서 불러오세요.`);
+      setStatus(resourceStatusText("resources.status.atlas.sentToStudio", { title: asset.title }, "\"{title}\" 소재를 스튜디오로 보냈습니다. 새 작업 화면에서 불러오세요."));
     } else {
-      setError("소재 전달 정보를 저장하지 못했습니다. 브라우저 저장소를 확인하세요.");
+      setError(resourceStatusText("resources.status.atlas.dropSaveFailed", "소재 전달 정보를 저장하지 못했습니다. 브라우저 저장소를 확인하세요."));
     }
   };
   const submitSearch = (term: string) => {
@@ -118,7 +120,7 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
       if (format === "json") downloadMaterialFile("toonstudio-material-board.json", JSON.stringify(makeMaterialBoard(selectedIds, note, study?.id ?? ""), null, 2), "application/json;charset=utf-8");
       else downloadMaterialFile("toonstudio-material-specification.md", materialSpecification(catalog, selectedIds, note, study), "text/markdown;charset=utf-8");
       setStatus(format === "json" ? "보드 JSON 내보내기를 요청했습니다. 다운로드 목록을 확인하세요." : "출처가 포함된 소재 명세서 내보내기를 요청했습니다.");
-    } catch { setError("파일 내보내기를 시작하지 못했습니다. 브라우저의 다운로드 권한을 확인하세요."); }
+    } catch { setError(resourceStatusText("resources.status.atlas.exportStartFailed", "파일 내보내기를 시작하지 못했습니다. 브라우저의 다운로드 권한을 확인하세요.")); }
   };
   const importFile = async (file: File) => {
     setError("");
@@ -127,15 +129,15 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
       const { board, missing } = parseMaterialBoard(await file.text(), catalog.assets, MATERIAL_STUDIES);
       changeParams({ items: board.selectedIds.join(","), study: board.studyId, q: "", kind: "", provider: "" });
       setNote(board.note);
-      setStatus(missing ? `보드를 불러왔습니다. 현재 카탈로그에 없는 소재 ${missing}개는 제외했습니다.` : "보드와 제작 메모를 불러왔습니다.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "보드를 불러오지 못했습니다."); }
+      setStatus(missing ? r5ResourcesStatusText("r5cat1.creatorResources.atlas.boardLoadedMissing", { missing }, "보드를 불러왔습니다. 현재 카탈로그에 없는 소재 {missing}개는 제외했습니다.") : r5ResourcesStatusText("r5cat1.creatorResources.atlas.boardLoaded", "보드와 제작 메모를 불러왔습니다."));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : resourceStatusText("resources.status.atlas.boardLoadFailed", "보드를 불러오지 못했습니다.")); }
   };
   const share = async () => {
     const url = materialShareUrl(window.location.origin, selectedIds, study?.id ?? ""); setShareUrl(url);
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(url); setStatus("소재 링크를 복사했습니다. 제작 메모는 링크에 포함되지 않습니다.");
-    } catch { setStatus("소재 링크를 만들었습니다. 아래 링크 입력란에서 직접 복사하세요. 제작 메모는 포함되지 않습니다."); }
+      await navigator.clipboard.writeText(url); setStatus(resourceStatusText("resources.status.atlas.linkCopied", "소재 링크를 복사했습니다. 제작 메모는 링크에 포함되지 않습니다."));
+    } catch { setStatus(resourceStatusText("resources.status.atlas.linkCreatedFallback", "소재 링크를 만들었습니다. 아래 링크 입력란에서 직접 복사하세요. 제작 메모는 포함되지 않습니다.")); }
   };
   return <ResourceLayout title="무료 배경·소품 소재 도감" intro="Poly Haven과 ambientCG의 공개 API 자료로 만든 작은 CC0 소재 카탈로그입니다. 재질, 3D 소품, 빛과 환경을 한글로 찾아 장면별 소재 목록과 출처 명세서로 정리하세요.">
     <MaterialAdvantageBanner assetCount={catalog.assets.length} providerCount={Object.keys(MATERIAL_PROVIDERS).length} />
@@ -171,7 +173,7 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
     </section>
     <p role="status" className="text-sm text-fg-2">검색 결과 {results.length}개 · {page}/{totalPages} 페이지 · 표시 {shown.length}개</p>
     {shown.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="소재 검색 결과">{shown.map((asset) => <MaterialCard key={asset.id} asset={asset} selected={selectedIds.includes(asset.id)} previews={previews} onToggle={() => toggleSelected(asset.id)} onSendToStudio={() => sendToStudio(asset)} />)}</div>
-      : <div className="rounded-2xl border border-line bg-panel p-6"><h3 className="font-bold">조건에 맞는 소재가 없습니다</h3><p className="mt-2 text-sm leading-7 text-fg-2">이 도감은 선별된 작은 목록입니다. 아래 추천 검색어로 다시 찾아보세요.</p>
+      : <div className="rounded-2xl border border-line bg-panel p-6"><h3 className="font-bold">{resourceStatusText("resources.status.atlas.searchEmpty", "조건에 맞는 소재가 없습니다")}</h3><p className="mt-2 text-sm leading-7 text-fg-2">이 도감은 선별된 작은 목록입니다. 아래 추천 검색어로 다시 찾아보세요.</p>
         <div className="md-empty-suggest" aria-label="추천 검색어">{TRENDING_MATERIAL_KEYWORDS.slice(0, 8).map((word) => <button key={word} type="button" className={RESOURCE_BUTTON} onClick={() => { saveRecentMaterialSearch(word); changeParams({ q: word, provider: "", kind: "", study: "" }); }}>{word}</button>)}</div></div>}
     <nav className="flex flex-wrap items-center justify-center gap-3" aria-label="소재 결과 페이지"><button type="button" className={RESOURCE_BUTTON} disabled={page <= 1} onClick={() => changeParams({ page: String(page - 1) }, false)}>이전</button><span className="text-sm">{page}/{totalPages}</span><button type="button" className={RESOURCE_BUTTON} disabled={page >= totalPages} onClick={() => changeParams({ page: String(page + 1) }, false)}>다음</button></nav>
     <section id="material-board" aria-labelledby="material-board-title" className="scroll-mt-24 space-y-4 rounded-3xl border border-accent/30 bg-panel p-5 sm:p-7">
@@ -192,6 +194,6 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
   </ResourceLayout>;
 }
 export function MaterialAtlasPage() {
-  if (!CATALOG) return <ResourceLayout title="무료 소재 도감" intro="소재 카탈로그를 확인하지 못했습니다."><p role="alert">잘못된 자료를 표시하지 않도록 검색을 중단했습니다. 자료 출처 페이지에서 제공처 원문을 확인하세요.</p><Link to="/insights/resources" className={RESOURCE_BUTTON}>자료 출처로 돌아가기</Link></ResourceLayout>;
+  if (!CATALOG) return <ResourceLayout title="무료 소재 도감" intro={resourceStatusText("resources.status.atlas.catalogCheckFailed", "소재 카탈로그를 확인하지 못했습니다.")}><p role="alert">{resourceStatusText("resources.status.atlas.catalogInvalidStopped", "잘못된 자료를 표시하지 않도록 검색을 중단했습니다. 자료 출처 페이지에서 제공처 원문을 확인하세요.")}</p><Link to="/insights/resources" className={RESOURCE_BUTTON}>자료 출처로 돌아가기</Link></ResourceLayout>;
   return <MaterialAtlasWorkspace catalog={CATALOG} />;
 }

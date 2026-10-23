@@ -13,6 +13,7 @@ import {
   studioLoraArchiveEntryFromDataUrl,
   studioLoraCharacterIdFromLabel,
   studioLoraCrc32,
+  studioLoraJobErrorText,
   suggestStudioLoraTriggerWord,
   upsertStudioLoraJob,
   type StudioLoraJobStorage,
@@ -151,6 +152,28 @@ describe("잡 저장소", () => {
     expect(loadStudioLoraJobs(storage)).toEqual([]);
   });
 
+  it("구 레코드(해석済 문자열 lastError·params 없음)도 그대로 표시된다 (T2 하위호환)", () => {
+    const storage = memoryStorage();
+    const legacy = { ...baseJob(), lastError: "예전에 저장된 오류 문구" };
+    const legacyRecord: Record<string, unknown> = { ...legacy };
+    delete legacyRecord["lastErrorParams"];
+    storage.map.set("toonstudio-studio-lora-jobs-v1", JSON.stringify([legacyRecord]));
+    const loaded = loadStudioLoraJobs(storage);
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0]?.lastErrorParams).toBeNull();
+    expect(loaded[0] && studioLoraJobErrorText(loaded[0])).toBe("예전에 저장된 오류 문구");
+
+    const coded = {
+      ...baseJob(),
+      lastError: "studio.aiError.fal.jobEndedWithoutResult",
+      lastErrorParams: { status: 500 },
+    };
+    storage.map.set("toonstudio-studio-lora-jobs-v1", JSON.stringify([coded]));
+    const loadedCoded = loadStudioLoraJobs(storage);
+    expect(loadedCoded[0]?.lastErrorParams).toEqual({ status: 500 });
+    expect(loadedCoded[0] && studioLoraJobErrorText(loadedCoded[0])).toContain("500");
+  });
+
   it("upsert/remove와 완료 모델 조회가 동작한다", () => {
     const queued = baseJob();
     const completed = baseJob({
@@ -262,7 +285,10 @@ describe("잡 상태 새로고침 전이", () => {
       baseJob(),
     );
     expect(serverOutcome.ok && serverOutcome.data.job.status).toBe("queued");
-    expect(serverOutcome.ok && serverOutcome.data.job.lastError).toContain("503");
+    // T2 영속 코드화: lastError는 해석 문구가 아니라 코드(키)+파라미터로 저장된다.
+    expect(serverOutcome.ok && serverOutcome.data.job.lastError).toBe("studio.aiError.fal.jobStatusRejected");
+    expect(serverOutcome.ok && serverOutcome.data.job.lastErrorParams).toEqual({ status: 503 });
+    expect(serverOutcome.ok && studioLoraJobErrorText(serverOutcome.data.job)).toContain("503");
 
     const unknown = routingFetch({ status: () => jsonResponse(200, { status: "SOMETHING_ELSE" }) });
     const unknownOutcome = await refreshStudioLoraJob(
@@ -271,7 +297,9 @@ describe("잡 상태 새로고침 전이", () => {
       baseJob(),
     );
     expect(unknownOutcome.ok && unknownOutcome.data.job.status).toBe("queued");
-    expect(unknownOutcome.ok && unknownOutcome.data.job.lastError).toContain("알 수 없는");
+    // T2 영속 코드화: 코드로 저장되고, 표시 해석(ko)에서 기존 문구가 재현된다.
+    expect(unknownOutcome.ok && unknownOutcome.data.job.lastError).toBe("studio.aiError.fal.jobUnknownStatus");
+    expect(unknownOutcome.ok && studioLoraJobErrorText(unknownOutcome.data.job)).toContain("알 수 없는");
   });
 
   it("키가 없으면 잡을 바꾸지 않고 오류를 돌려준다", async () => {

@@ -1,0 +1,101 @@
+--- a/run-production-database-migrations.mjs
++++ b/run-production-database-migrations.mjs
+@@ -44,6 +44,9 @@
+ const LEDGER_RELATION = "toonspectrum_ops.deployment_migration";
+ const LOCK_RELATION = "toonspectrum_ops.deployment_migration_lock";
+ const REPAIR_LOCK_STALE_AFTER = "60 minutes";
++// [ONPOD PATCH] The onpod role cannot CREATE ROLE, so there is no separate runtime role. In this mode every step that
++// names the runtime role (separation probe, per-role REVOKE/GRANT/POLICY, role capability probes) is skipped and logged.
++const SINGLE_ROLE_MODE = process.env.ONPOD_SINGLE_ROLE === "1";
+ // 릴레이션 분류표는 줄 수 래칫 때문에 형제 모듈에 있다. 공개 이름은 그대로 유지한다.
+ export { POST_BASELINE_RELATIONS };
+ 
+@@ -2824,6 +2827,10 @@
+   runtimeDatabaseRole,
+   { requireRuntimeLogin = true } = {},
+ ) {
++  if (SINGLE_ROLE_MODE) {
++    process.stdout.write("[onpod] SKIPPED role separation probe (single owner role)\n");
++    return;
++  }
+   const boundaryState = queryScalar(
+     databaseUrl,
+     `SELECT ${buildRuntimeDatabaseRoleBoundaryStateSql(runtimeDatabaseRole, {
+@@ -2841,6 +2848,17 @@
+   databaseUrl,
+   runtimeDatabaseRole,
+ ) {
++  if (SINGLE_ROLE_MODE) {
++    psql(
++      databaseUrl,
++      `
++        REVOKE ALL ON SCHEMA toonspectrum_ops FROM PUBLIC;
++        REVOKE ALL ON ALL TABLES IN SCHEMA toonspectrum_ops FROM PUBLIC;
++      `,
++    );
++    process.stdout.write("[onpod] ledger ACL: PUBLIC revoked; runtime-role revoke/verify SKIPPED (single owner role)\n");
++    return;
++  }
+   psql(
+     databaseUrl,
+     `
+@@ -3296,11 +3314,40 @@
+   }
+ }
+ 
++// [ONPOD PATCH] Execution-only SQL adaptations. The ledger checksum is still the SHA-256 of the UNMODIFIED reviewed file.
++// 0093 runs `SET LOCAL search_path = pg_catalog, public` and then creates studio_review_voice_note_guard() unqualified, so
++// the function would be created in pg_catalog: denied for any non-superuser ("permission denied for schema pg_catalog").
++// Qualifying it with public. matches the clear intent (replace the public guard function created by 0090).
++const EXECUTION_OVERRIDES = Object.freeze({
++  "0093_review_voice_note_constraints_repair": Object.freeze([
++    [
++      "CREATE OR REPLACE FUNCTION studio_review_voice_note_guard() RETURNS trigger",
++      "CREATE OR REPLACE FUNCTION public.studio_review_voice_note_guard() RETURNS trigger",
++    ],
++  ]),
++});
++
++function executionSql(migration) {
++  const edits = EXECUTION_OVERRIDES[migration.id];
++  if (!edits) return migration.contents;
++  let sql = migration.contents;
++  for (const [search, replacement] of edits) {
++    if (sql.split(search).length !== 2) {
++      fail(`Execution override for ${migration.id} no longer matches exactly once`);
++    }
++    sql = sql.replace(search, () => replacement);
++    process.stdout.write(
++      `[onpod] EXECUTION OVERRIDE ${migration.id}: ${JSON.stringify(search)} -> ${JSON.stringify(replacement)}\n`,
++    );
++  }
++  return sql;
++}
++
+ function applyMigration(databaseUrl, migration, releaseSha, action) {
+   claimMigration(databaseUrl, migration, releaseSha, action);
+   process.stdout.write(`Applying ${migration.id} ...\n`);
+   try {
+-    psql(databaseUrl, migration.contents);
++    psql(databaseUrl, executionSql(migration));
+     markMigrationApplied(databaseUrl, migration, releaseSha);
+   } catch (error) {
+     markMigrationFailed(databaseUrl, migration, releaseSha);
+@@ -3665,6 +3712,9 @@
+ 
+     // Normalize dynamic-role ACLs on every run. This also repairs providers that do not preserve
+     // ALTER DEFAULT PRIVILEGES across independently owned migration and application roles.
++    if (SINGLE_ROLE_MODE) {
++      process.stdout.write("[onpod] SKIPPED 30 runtime-role ACL/capability statements (single owner role)\n");
++    } else {
+     psql(databaseUrl, buildAuthRuntimeAclSql(runtimeDatabaseRole));
+     psql(databaseUrl, buildTrafficAnalyticsRuntimeAclSql(runtimeDatabaseRole));
+     psql(databaseUrl, buildCreatorRoleWorkspaceRuntimeAclSql(runtimeDatabaseRole));
+@@ -3701,6 +3751,7 @@
+       databaseUrl,
+       buildCreatorAssetObjectStorageRuntimeAclSql(runtimeDatabaseRole),
+     );
++    }
+ 
+     process.stdout.write(
+       `Production migration manifest complete: ${adopted} adopted, ${applied} applied, ${skipped} checksum-verified skips\n`,

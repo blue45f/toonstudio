@@ -19,13 +19,32 @@ import {
 const TONES = [...new Set(CAMPUS_ZONES.map((zone) => zone.tone))] as StudioCampusZoneTone[];
 
 describe("공간 테마 모델", () => {
-  it("테마 7종이 모두 등록돼 있고 기본 테마가 존재한다", () => {
+  it("테마 10종이 모두 등록돼 있고 기본 테마와 창작 특화 메타데이터가 존재한다", () => {
     expect(STUDIO_SPACE_THEMES.map((theme) => theme.key)).toEqual([...STUDIO_SPACE_THEME_KEYS]);
-    expect(STUDIO_SPACE_THEME_KEYS).toEqual(["modern-office", "cozy-wood", "neon-night", "garden-terrace", "library", "sakura-campus", "sunset-harbor"]);
+    expect(STUDIO_SPACE_THEME_KEYS).toEqual([
+      "modern-office",
+      "webtoon-atelier",
+      "celestial-observatory",
+      "cinema-screening",
+      "cozy-wood",
+      "neon-night",
+      "garden-terrace",
+      "library",
+      "sakura-campus",
+      "sunset-harbor",
+    ]);
     expect(studioSpaceTheme(DEFAULT_STUDIO_SPACE_THEME).key).toBe("modern-office");
+    expect(isStudioSpaceThemeKey("webtoon-atelier")).toBe(true);
+    expect(isStudioSpaceThemeKey("celestial-observatory")).toBe(true);
+    expect(isStudioSpaceThemeKey("cinema-screening")).toBe(true);
     expect(isStudioSpaceThemeKey("neon-night")).toBe(true);
     expect(isStudioSpaceThemeKey("pastel")).toBe(false);
     expect(isStudioSpaceThemeKey(null)).toBe(false);
+    for (const theme of STUDIO_SPACE_THEMES) {
+      expect(theme.badgeKo.length).toBeGreaterThan(0);
+      expect(theme.badgeEn.length).toBeGreaterThan(0);
+      expect(theme.recommendedArtStyle.length).toBeGreaterThan(0);
+    }
   });
 
   it("모든 테마가 실제 캠퍼스에 쓰이는 구역 톤 전체에 벽·바닥을 정의한다", () => {

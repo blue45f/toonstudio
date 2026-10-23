@@ -18,6 +18,9 @@ import {
 import { useId, useMemo, useState } from "react";
 
 import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { resolveStudioBg3dProductionBatchPreset } from "./studio-bg3d-production-multipass";
 import { resolveStudioBg3dProductionBatchPresetForLook } from "./studio-bg3d-production-pass-readiness";
 import {
@@ -106,6 +109,7 @@ export function StudioBg3dProductionWorkflowPanel({
   variant = "director",
   defaultExpanded = variant === "director",
 }: StudioBg3dProductionWorkflowPanelProps) {
+  const t = useT();
   const runtime = useStudioBg3dProSuiteRuntime();
   const titleId = useId();
   const bodyId = useId();
@@ -192,7 +196,7 @@ export function StudioBg3dProductionWorkflowPanel({
       setActionError(
         error instanceof Error && error.message.trim().length > 0
           ? error.message
-          : "3D 제작 작업을 완료하지 못했습니다. 장면 상태를 확인한 뒤 다시 시도하세요.",
+          : t("studio.bg3dPanelStatus.productionWorkflow.actionFailed", "3D 제작 작업을 완료하지 못했습니다. 장면 상태를 확인한 뒤 다시 시도하세요."),
       );
     } finally {
       setLocalBusy(false);

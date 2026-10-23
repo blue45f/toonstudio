@@ -8,6 +8,7 @@ import { useCampusPaletteSave } from "@/shared/components/spatial-campus/campus-
 import { fortunePillarDetails, FORTUNE_ELEMENT_KEYS, FORTUNE_ELEMENT_NAMES, FORTUNE_EXPERIENCES } from "@toonstudio/core/fortune";
 import type { FortuneReading, SajuResult } from "@toonstudio/core/fortune";
 import { FortuneStoryReader } from "./FortuneStoryReader";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import { FortuneElementOrbit, FortuneExperienceArt } from "./FortuneVisuals";
 import { FortuneCreativeMission, FortuneReadingTools } from "./FortuneReadingTools";
 import { TarotCardFace } from "./TarotCardFace";
@@ -40,7 +41,7 @@ export function FortuneReadingView({ reading, cast = "ara", onCastChange }: { re
     } catch (cause) {
       setPaletteNotice(cause instanceof DOMException && cause.name === "AbortError"
         ? "화면이나 계정이 바뀌어 팔레트 저장을 취소했어요."
-        : "Studio 색상 라이브러리에 저장하지 못했어요. 기존 팔레트는 변경하지 않았습니다.");
+        : fortuneStatusText("fortune.status.readingView.paletteSaveFailed", "Studio 색상 라이브러리에 저장하지 못했어요. 기존 팔레트는 변경하지 않았습니다."));
     } finally {
       setPaletteSaving(false);
     }
@@ -52,13 +53,13 @@ export function FortuneReadingView({ reading, cast = "ara", onCastChange }: { re
     {reading.chart && <div className={reading.partnerChart ? "fo-chart-pair" : ""}><Pillars chart={reading.chart} label={reading.partnerChart ? "나의 원국" : "나를 이루는 네 기둥"} />{reading.partnerChart && <Pillars chart={reading.partnerChart} label="상대의 원국" />}</div>}
     {reading.cards && mode === "report" && <div className="fo-tarot-results">{reading.cards.map((card) => <figure key={card.id}><figcaption>{card.position}</figcaption><TarotCardFace card={card} /><p>{card.name} · {card.type === "upright" ? "정방향" : "역방향"}</p></figure>)}</div>}
     {reading.colors && <><div className="fo-palettes">{reading.colors.map((color) => <div key={color.hex}><div style={{ backgroundColor: color.hex }} aria-hidden="true" /><strong>{color.name}</strong><code>{color.hex}</code><button type="button" aria-label={`${color.name} ${color.hex} 색상 복사`} onClick={() => { void tryCopyFortuneText(color.hex).then((ok) => setPaletteNotice(ok ? `${color.hex} 색상을 복사했어요.` : `자동 복사가 제한되어 있어요. ${color.hex} 값을 직접 복사해 주세요.`)); }}>HEX 복사</button></div>)}</div>
-      {saveCampusPalette && <div className="fo-reading-tool-actions"><button type="button" className="fo-button" disabled={paletteSaving} onClick={() => { void savePalette(); }}><Palette size={16} />{paletteSaving ? "Studio에 저장 중…" : "이 색만 Studio 팔레트로 저장"}</button><span className="fo-help">해석·생일·질문은 넘기지 않고 HEX 색상만 현재 기기의 Studio 라이브러리에 저장합니다.</span></div>}
+      {saveCampusPalette && <div className="fo-reading-tool-actions"><button type="button" className="fo-button" disabled={paletteSaving} onClick={() => { void savePalette(); }}><Palette size={16} />{paletteSaving ? fortuneStatusText("fortune.status.readingView.paletteSaving", "Studio에 저장 중…") : "이 색만 Studio 팔레트로 저장"}</button><span className="fo-help">해석·생일·질문은 넘기지 않고 HEX 색상만 현재 기기의 Studio 라이브러리에 저장합니다.</span></div>}
     </>}
     {paletteNotice && <p className="fo-tool-status" role="status">{paletteNotice}</p>}
     {reading.calendar && <section className="fo-calendar-section"><h3>{reading.calendar[0]?.date.slice(0, 7)} 만세력</h3>
       <div className="fo-calendar"><div className="fo-weekdays">{["일", "월", "화", "수", "목", "금", "토"].map((day) => <span key={day}>{day}</span>)}</div>
       <div className="fo-days">{reading.calendar.map((day, i) => <button type="button" key={day.date} style={i === 0 ? { gridColumnStart: day.weekday + 1 } : undefined} onClick={() => setSelectedDay(day.date)} aria-pressed={selectedDay === day.date} aria-label={`${day.date} 음력 ${day.lunar.month}월 ${day.lunar.day}일 ${day.gapja}`}><strong>{Number(day.date.slice(8))}</strong><small>{day.lunar.intercalation ? "윤" : ""}{day.lunar.month}.{day.lunar.day}</small><span>{day.terms[0]?.name ?? day.gapja.replace("일", "")}</span></button>)}</div></div>
-      {detail && <div className="fo-day-detail" role="status"><strong>{detail.date} · {detail.gapja}</strong><p>음력 {detail.lunar.year}년 {detail.lunar.intercalation ? "윤" : ""}{detail.lunar.month}월 {detail.lunar.day}일</p><p>{detail.terms.length ? detail.terms.map((term) => `${term.name} ${term.atKst.slice(11)} KST`).join(" · ") : "이 날짜에는 절입이 없습니다."}</p></div>}
+      {detail && <div className="fo-day-detail" role="status"><strong>{detail.date} · {detail.gapja}</strong><p>음력 {detail.lunar.year}년 {detail.lunar.intercalation ? "윤" : ""}{detail.lunar.month}월 {detail.lunar.day}일</p><p>{detail.terms.length ? detail.terms.map((term) => `${term.name} ${term.atKst.slice(11)} KST`).join(" · ") : fortuneStatusText("fortune.status.readingView.noTerms", "이 날짜에는 절입이 없습니다.")}</p></div>}
     </section>}
     {reading.terms && <details className="fo-terms" open={reading.id === "terms"}><summary>24절기 시각 · 한국 표준시</summary><div className="fo-terms-grid">{reading.terms.map((term) => <div key={term.name}><strong>{term.name} <small>{term.chinese}</small></strong><time>{term.atKst}</time><span>{term.isMonthBoundary ? "월주가 바뀌는 절입" : "계절의 중기"}</span></div>)}</div></details>}
     {reading.trend && <section className="fo-trend"><h3>날짜별 키워드</h3><p className="fo-help">콘텐츠 지수 0~100 · 통계·확률·길일이 아닌 재미용 표현입니다.</p><div className="fo-trend-list">{reading.trend.map((point) => <div key={point.label}><strong>{point.label}</strong><span className="fo-trend-track" aria-hidden="true"><i style={{ width: `${point.value}%` }} /></span><b>{point.value}</b><span>{point.keyword}</span><p>{point.detail}</p></div>)}</div></section>}

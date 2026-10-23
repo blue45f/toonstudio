@@ -22,10 +22,10 @@ import {
   readPdf,
   type StudioPdfReadDocument,
 } from "./render/studio-canvaskit-pdf-reader";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 import { sha256HexPortable } from "./studio-sha256";
 
-export const STUDIO_PDF_CONFORMANCE_SCANNER_ID =
-  "toonstudio.studio.pdf-classic-xref-scanner" as const;
+export const STUDIO_PDF_CONFORMANCE_SCANNER_ID = "toonstudio.studio.pdf-classic-xref-scanner" as const;
 export const STUDIO_PDF_CONFORMANCE_SCANNER_VERSION = 1 as const;
 export const STUDIO_PDF_CONFORMANCE_RECEIPT_SCHEMA =
   "toonstudio.studio.pdf-conformance-receipt" as const;
@@ -828,7 +828,7 @@ export function scanStudioPdfConformanceEvidence(
       sourceDigest,
       error: {
         code: "scanner-failed",
-        message: "PDF conformance evidence를 끝까지 수집하지 못했습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.pdfProfile.scanFailed", "PDF conformance evidence를 끝까지 수집하지 못했습니다."),
       },
     });
   }

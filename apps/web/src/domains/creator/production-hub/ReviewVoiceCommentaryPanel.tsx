@@ -134,12 +134,12 @@ export function ReviewVoiceCommentaryPanel({
 
   const startRecording = async () => {
     if (!recorderSupported()) {
-      setRecorder({ kind: "unsupported", reason: t("productionHub.status.voiceRecordingUnsupported", "이 브라우저에서는 음성 녹음을 지원하지 않아 해설을 녹화할 수 없습니다. 핀으로 남겨 주세요.") });
+      setRecorder({ kind: "unsupported", reason: t("productionHub.status.voiceRecordingUnsupported", "이 브라우저에서는 음성 녹음을 지원하지 않아 해설을 녹화할 수 없어요. 핀으로 남겨 주세요.") });
       return;
     }
     const capture = captureView?.();
     if (!capture) {
-      setRecorder({ kind: "error", message: t("productionHub.status.voiceCaptureStateFailed", "현재 화면 상태를 읽지 못해 녹화를 시작할 수 없습니다.") });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceCaptureStateFailed", "현재 화면 상태를 읽지 못해 녹화를 시작할 수 없어요. 화면을 새로고침한 뒤 다시 시도해 주세요.") });
       return;
     }
     try {
@@ -165,7 +165,7 @@ export function ReviewVoiceCommentaryPanel({
       setElapsedMs(0);
       setRecorder({ kind: "recording", startedAtMs: Date.now() });
     } catch {
-      setRecorder({ kind: "error", message: t("productionHub.status.voiceMicPermissionFailed", "마이크 권한을 얻지 못해 녹화를 시작하지 못했습니다. 브라우저 권한을 확인해 주세요.") });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceMicPermissionFailed", "마이크 권한을 얻지 못해 녹화를 시작하지 못했어요. 브라우저 권한을 확인해 주세요.") });
     }
   };
 
@@ -189,7 +189,7 @@ export function ReviewVoiceCommentaryPanel({
     if (blob && voiceCommentaryAudioSizeProblem(blob.size) === "too-large") {
       setRecorder({
         kind: "error",
-        message: `녹음이 저장 상한(${Math.round(VOICE_COMMENTARY_MAX_AUDIO_BYTES / (1024 * 1024))}MB)을 넘어 서버에 저장·공유할 수 없습니다. 더 짧게 나눠 녹화해 주세요. 방금 녹음은 이 탭에서만 들을 수 있습니다.`,
+        message: t("productionHub.status.voiceRecordingTooLarge", { mb: Math.round(VOICE_COMMENTARY_MAX_AUDIO_BYTES / (1024 * 1024)) }, "녹음이 저장 상한({mb}MB)을 넘어 서버에 저장·공유할 수 없어요. 더 짧게 나눠 녹화해 주세요. 방금 녹음은 이 탭에서만 들을 수 있어요."),
       });
     } else {
       setRecorder({ kind: "idle" });
@@ -265,13 +265,13 @@ export function ReviewVoiceCommentaryPanel({
             <button type="button" onClick={() => void startRecording()} disabled={!captureView}>
               <Mic size={14} aria-hidden /> 해설 녹화 시작
             </button>
-            {!captureView ? <p style={{ fontSize: 12, opacity: 0.7 }}>이 표면에서는 아직 화면 위치 기록을 연결하지 않아 녹화를 시작할 수 없습니다. 핀은 종전대로 남길 수 있습니다.</p> : null}
+            {!captureView ? <p style={{ fontSize: 12, opacity: 0.7 }}>{t("productionHub.status.voiceCaptureUnavailable", "이 표면에서는 아직 화면 위치 기록을 연결하지 않아 녹화를 시작할 수 없어요. 핀은 종전대로 남길 수 있어요.")}</p> : null}
           </div>
         )
       ) : null}
 
       {tracks.length === 0 && !loading ? (
-        <p>{t("productionHub.status.noVoiceCommentary", "아직 음성 해설이 없습니다. 해설이 없어도 핀 검수는 종전대로 동작합니다.")}</p>
+        <p>{t("productionHub.status.noVoiceCommentary", "아직 음성 해설이 없어요. 해설이 없어도 핀 검수는 종전대로 동작해요.")}</p>
       ) : null}
 
       {tracks.length > 0 ? (
@@ -321,7 +321,7 @@ export function ReviewVoiceCommentaryPanel({
               />
             </audio>
           ) : (
-            <p style={{ fontSize: 12, opacity: 0.7 }}>이 해설의 음성은 아직 서버에 저장되지 않아 재생할 수 없습니다. 위치 기록은 아래 목록으로 확인할 수 있습니다.</p>
+            <p style={{ fontSize: 12, opacity: 0.7 }}>{t("productionHub.status.voiceNotStored", "이 해설의 음성은 아직 서버에 저장되지 않아 재생할 수 없어요. 위치 기록은 아래 목록으로 확인할 수 있어요.")}</p>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {/* 오디오가 없어도 버튼은 살아 있어야 한다 — togglePlay가 첫 키프레임

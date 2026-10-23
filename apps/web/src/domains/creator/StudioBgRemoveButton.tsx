@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Layers3, Loader2, Scissors, ShieldCheck } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -59,7 +60,7 @@ export function StudioBgRemoveButton({
       onResult(result);
     } catch (e) {
       setFallbackNote(null);
-      setError(e instanceof Error ? e.message : "배경 제거에 실패했어요.");
+      setError(e instanceof Error ? e.message : r3c07StatusText("studio.panelStatus.r3c07.bgRemove.removeFailed", "배경 제거에 실패했어요."));
     } finally {
       setBusy(false);
     }

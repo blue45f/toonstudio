@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { ProviderStatus } from "./ProviderStatus";
+import { resourceStatusText } from "./resource-status-i18n";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
 import { WeatherLightBoard } from "./WeatherLightBoard";
 import { downloadText, useCreatorWorkspace } from "./workspace";
@@ -312,12 +313,12 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
     void apiFetch(apiPath(`/api/creator-resources/search?${search}`), { signal: controller.signal, headers: { Accept: "application/json" } })
       .then(async (response) => {
         if (response.status === 429) throw new Error("요청이 많습니다. 1분 후 다시 검색하세요.");
-        if (!response.ok) throw new Error("검색 서버에 연결하지 못했습니다. 공식 사이트를 이용하거나 다시 시도하세요.");
+        if (!response.ok) throw new Error(resourceStatusText("resources.status.resourceSearch.serverConnectFailed", "검색 서버에 연결하지 못했습니다. 공식 사이트를 이용하거나 다시 시도하세요."));
         const parsed = parseSearchResult(await response.json());
-        if (!parsed || parsed.provider !== provider) throw new Error("검색 응답의 형식을 확인하지 못했습니다.");
+        if (!parsed || parsed.provider !== provider) throw new Error(resourceStatusText("resources.status.resourceSearch.responseFormatFailed", "검색 응답의 형식을 확인하지 못했습니다."));
         if (!disposed) setResult(parsed);
       }).catch((cause: unknown) => {
-        if (!disposed) setRequestError(controller.signal.aborted ? "검색 시간이 초과되었습니다. 다시 시도하세요." : cause instanceof Error ? cause.message : "검색하지 못했습니다.");
+        if (!disposed) setRequestError(controller.signal.aborted ? resourceStatusText("resources.status.resourceSearch.searchTimeout", "검색 시간이 초과되었습니다. 다시 시도하세요.") : cause instanceof Error ? cause.message : resourceStatusText("resources.status.resourceSearch.searchFailed", "검색하지 못했습니다."));
       }).finally(() => { window.clearTimeout(timeout); if (!disposed) setLoading(false); });
     return () => { disposed = true; window.clearTimeout(timeout); controller.abort(); };
   }, [provider, query, effectiveQuery, page, retry, savedOnly]);
@@ -372,7 +373,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
     <div aria-live="polite" aria-atomic="true" className="text-sm leading-6 text-fg-2">
       {!savedOnly && loading && <p role="status">공식 제공처에서 자료를 확인하고 있습니다…</p>}
       {!savedOnly && requestError && <p role="alert">{requestError}</p>}
-      {!savedOnly && result && <p>{result.status === "not_configured" ? "API 연결 대기 · " : result.status === "unavailable" ? "일시적으로 이용 불가 · " : ""}{result.message}</p>}
+      {!savedOnly && result && <p>{result.status === "not_configured" ? "API 연결 대기 · " : result.status === "unavailable" ? resourceStatusText("resources.status.resourceSearch.temporarilyUnavailable", "일시적으로 이용 불가 · ") : ""}{result.message}</p>}
       {!savedOnly && !query && (provider === "wikimedia"
         ? <WikimediaPreSearch
             isSaved={(itemId) => workspace.saved.some((saved) => saved.id === itemId)}
@@ -383,13 +384,13 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
         : preSearchGuide ? preSearchGuide(searchFor) : <PreSearchGuide provider={provider} onRunSearch={searchFor} />)}
       {!loading && !items.length && (savedOnly || result?.status === "ready") && <div className="flex flex-col items-center py-4 text-center">
         <EmptySearchArt />
-        <p>{savedOnly ? "이 제공처에서 저장한 자료가 없습니다." : "현재 검색 범위에 표시할 자료가 없습니다. 다른 검색어 또는 다음 페이지를 확인하세요."}</p>
+        <p>{savedOnly ? resourceStatusText("resources.status.resourceSearch.savedEmpty", "이 제공처에서 저장한 자료가 없습니다.") : resourceStatusText("resources.status.resourceSearch.resultsEmpty", "현재 검색 범위에 표시할 자료가 없습니다. 다른 검색어 또는 다음 페이지를 확인하세요.")}</p>
         {!savedOnly && <div className="mt-3 flex flex-wrap justify-center gap-2">
           {config.examples.filter((value) => value !== query).map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => searchFor(value)}>{value}</button>)}
         </div>}
       </div>}
     </div>
-    {!savedOnly && (requestError || result?.status === "unavailable" || result?.status === "partial") && <button className={RESOURCE_BUTTON} onClick={() => setRetry((value) => value + 1)}>다시 시도</button>}
+    {!savedOnly && (requestError || result?.status === "unavailable" || result?.status === "partial") && <button className={RESOURCE_BUTTON} onClick={() => setRetry((value) => value + 1)}>{resourceStatusText("resources.status.resourceSearch.retry", "다시 시도")}</button>}
     {dashboardItem ? (
       <WikimediaInterestDashboard
         item={dashboardItem}

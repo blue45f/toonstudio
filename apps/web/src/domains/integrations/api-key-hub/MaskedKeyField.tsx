@@ -2,6 +2,7 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
 import type { ApiKeyExpiryStatus } from "./api-key-hub-model";
+import { integrationsStatusText } from "../integrations-status-i18n";
 
 /**
  * 저장된 키 한 건의 행 — 마스킹 값만 표시하고 원문은 절대 렌더하지 않는다.
@@ -73,11 +74,11 @@ export function StoredKeyRow({
         aria-label={`${label} 복사`}
       >
         {copied ? <Check size={14} className="text-good" aria-hidden /> : <Copy size={14} aria-hidden />}
-        {copied ? "복사됨" : copyFailed ? "복사 실패" : "복사"}
+        {copied ? "복사됨" : copyFailed ? integrationsStatusText("integrations.status.maskedKey.copyFailedLabel", "복사 실패") : "복사"}
       </button>
       {copyFailed ? (
         <span role="alert" className="w-full text-[0.7rem] font-medium text-bad">
-          클립보드에 복사하지 못했어요. 브라우저의 클립보드 권한을 확인해 주세요.
+          {integrationsStatusText("integrations.status.maskedKey.copyFailedAlert", "클립보드에 복사하지 못했어요. 브라우저의 클립보드 권한을 확인해 주세요.")}
         </span>
       ) : null}
       <button

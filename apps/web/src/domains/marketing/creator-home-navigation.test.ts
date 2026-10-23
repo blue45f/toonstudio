@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
-import { CREATOR_HOME_SECTIONS, bindCreatorSectionNavigation, creatorSectionFromHash, creatorWorkflowIndex, focusCreatorSection, isPlainCreatorJump, type CreatorNavigationHost } from "./creator-home-navigation";
+import { CREATOR_HOME_SECTIONS, CREATOR_SECTION_TARGET_WAIT_FRAMES, bindCreatorSectionNavigation, creatorSectionFromHash, creatorWorkflowIndex, focusCreatorSection, isPlainCreatorJump, type CreatorNavigationHost } from "./creator-home-navigation";
 
 test("public jump links have unique targets and bilingual labels", () => {
   assert.equal(new Set(CREATOR_HOME_SECTIONS.map((section) => section.id)).size, 4);
@@ -81,16 +81,17 @@ function navigationHarness(initialHash = "#creator-film") {
   let subscription: (() => void) | undefined;
   let unsubscribed = 0;
   let blocked = false;
+  let targetReady = true;
   let unblocked: (() => void) | undefined;
   const frames = new Map<number, () => void>();
   const cancelled: number[] = [];
   const calls: unknown[][] = [];
   const host: CreatorNavigationHost = {
     getHash: () => hash,
-    findTarget: (id) => ({
+    findTarget: (id) => (targetReady ? {
       scrollIntoView: (options) => calls.push(["scroll", id, options]),
       focus: (options) => calls.push(["focus", id, options]),
-    }),
+    } : null),
     requestFrame: (callback) => { frames.set(++serial, callback); return serial; },
     // Retain cancelled callbacks so tests can deliberately run an already queued one.
     cancelFrame: (id) => { cancelled.push(id); },
@@ -109,6 +110,7 @@ function navigationHarness(initialHash = "#creator-film") {
     get unsubscribed() { return unsubscribed; },
     change(value: string, notify = true) { hash = value; if (notify) subscription?.(); },
     block(value: boolean) { blocked = value; unblocked?.(); },
+    setTargetReady(value: boolean) { targetReady = value; },
     flush(id: number) { const callback = frames.get(id); frames.delete(id); callback?.(); },
   };
 }
@@ -123,6 +125,50 @@ test("lazy initial fragment lands after mount with instant scrolling and readabl
     ["focus", "creator-process-title", { preventScroll: true }],
   ]);
   dispose();
+});
+
+test("a heading that mounts after the first frame still receives focus", () => {
+  const h = navigationHarness();
+  h.setTargetReady(false);
+  const dispose = bindCreatorSectionNavigation(h.host);
+  h.flush(1);
+  h.flush(2);
+  assert.deepEqual(h.calls, []);
+  assert.equal(h.frames.size, 1, "제목이 없으면 다음 프레임에 다시 찾는다");
+  h.setTargetReady(true);
+  h.flush(3);
+  assert.deepEqual(h.calls, [
+    ["scroll", "creator-process-title", { block: "start", behavior: "instant" }],
+    ["focus", "creator-process-title", { preventScroll: true }],
+  ]);
+  assert.equal(h.frames.size, 0);
+  dispose();
+});
+
+test("waiting for a missing heading is bounded and stops on unmount", () => {
+  const h = navigationHarness();
+  h.setTargetReady(false);
+  const dispose = bindCreatorSectionNavigation(h.host);
+  let handle = 1;
+  for (let i = 0; i <= CREATOR_SECTION_TARGET_WAIT_FRAMES; i += 1) {
+    assert.equal(h.frames.size, 1);
+    h.flush(handle);
+    handle += 1;
+  }
+  assert.equal(h.frames.size, 0, "한도를 넘기면 더 기다리지 않는다");
+  assert.deepEqual(h.calls, []);
+  dispose();
+
+  const second = navigationHarness();
+  second.setTargetReady(false);
+  const disposeSecond = bindCreatorSectionNavigation(second.host);
+  second.flush(1);
+  assert.equal(second.frames.size, 1);
+  disposeSecond();
+  assert.deepEqual(second.cancelled, [2], "대기 중인 프레임은 정리 때 취소된다");
+  second.setTargetReady(true);
+  second.flush(2);
+  assert.deepEqual(second.calls, [], "정리된 뒤에는 초점을 옮기지 않는다");
 });
 
 test("an initial fragment waits for a blocking modal without taking its focus", () => {

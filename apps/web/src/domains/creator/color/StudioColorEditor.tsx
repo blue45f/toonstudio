@@ -12,6 +12,9 @@ import { StudioColorSlidersPanel } from "../StudioColorSlidersPanel";
 import { StudioColorHarmoniesPanel } from "../StudioColorHarmoniesPanel";
 import { StudioWebtoonCelShadePanel } from "../StudioWebtoonCelShadePanel";
 import type { StudioColorSession } from "./studio-color-session";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import type { StudioPalette } from "../studio-color-palettes";
 import { studioPaletteFamilyHint } from "../studio-color-popover-hints";
 
@@ -46,6 +49,7 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
   recentColors, documentColors = [], initialView = "quick", libraryContent, compact = false, error,
   historyStatus = "saved", onRetryHistory, onRequestCanvasEyedropper,
 }: StudioColorEditorProps) {
+  const t = useT();
   const id = useId();
   const initialTab: Tab = initialView === "palettes" || initialView === "library" ? "palettes"
     : initialView === "harmonies" || initialView === "cel-shade" ? "harmony" : "select";
@@ -90,7 +94,7 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
       await getProductStudioPaletteSqliteRepository().save(createPalette(name, uniqueColors(colors)));
       if (aliveRef.current && ownerRef.current === key) setNotice("내 팔레트에 저장했습니다.");
     } catch {
-      if (aliveRef.current && ownerRef.current === key) setNotice("팔레트를 저장하지 못했습니다. 다시 시도해 주세요.");
+      if (aliveRef.current && ownerRef.current === key) setNotice(t("studio.brushCanvasStatus.color.paletteSaveFailed", "팔레트를 저장하지 못했습니다. 다시 시도해 주세요."));
     } finally { saveRef.current = false; if (aliveRef.current) setSaving(false); }
   };
   const swatches = (title: string, colors: readonly string[]) => <StudioColorSwatches
@@ -172,8 +176,8 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
         {swatches("문서 사용 색", authored)}
         <details className="rounded-lg border border-line p-2">
           <summary className="min-h-9 cursor-pointer text-xs font-semibold">추천 팔레트</summary>
-          {paletteFailure ? <p role="alert" className="text-xs text-warn">추천 팔레트를 불러오지 못했습니다. <button type="button" className={button} onClick={() => setPaletteRetry((value) => value + 1)}>다시 불러오기</button></p>
-            : !palettes.length ? <p role="status" className="text-xs">추천 팔레트를 불러오는 중…</p> : <>
+          {paletteFailure ? <p role="alert" className="text-xs text-warn">{t("studio.brushCanvasStatus.color.paletteLoadFailed", "추천 팔레트를 불러오지 못했습니다.")} <button type="button" className={button} onClick={() => setPaletteRetry((value) => value + 1)}>{t("studio.brushCanvasStatus.color.reload", "다시 불러오기")}</button></p>
+            : !palettes.length ? <p role="status" className="text-xs">{t("studio.brushCanvasStatus.color.palettesLoading", "추천 팔레트를 불러오는 중…")}</p> : <>
               {activePalette ? <StudioToolHintTarget
                 hint={studioPaletteFamilyHint(activePalette.label, activePalette.tip, activePalette.id)}
                 preferredSide="bottom" className="w-full"
@@ -188,7 +192,7 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
           <h4 className="text-xs font-semibold">내 팔레트 · 이름 / 가져오기 / 내보내기</h4>
           <button type="button" className={button} disabled={saving}
             onClick={() => void save(`작업 색 ${session.color}`, [session.color, ...recent])}>현재 색 모음을 내 팔레트에 저장</button>
-          {libraryContent ?? <Suspense fallback={<p role="status" className="text-xs">내 팔레트를 불러오는 중…</p>}>
+          {libraryContent ?? <Suspense fallback={<p role="status" className="text-xs">{t("studio.brushCanvasStatus.color.myPalettesLoading", "내 팔레트를 불러오는 중…")}</p>}>
             <PaletteLibrary onPickColor={choose} seedColors={[session.color, ...recent]} />
           </Suspense>}
         </section>
@@ -231,10 +235,10 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
           }} className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-3 font-mono text-sm text-fg focus-visible:ring-2 focus-visible:ring-accent" />
         <button type="button" className={`${button} grid size-11 shrink-0 place-items-center p-0`} disabled={!session.valid} aria-label="색상 코드 복사" onClick={() => {
           const key = session.targetKey;
-          if (!navigator.clipboard) { setNotice("이 브라우저에서는 복사를 사용할 수 없습니다."); return; }
+          if (!navigator.clipboard) { setNotice(t("studio.brushCanvasStatus.color.clipboardUnavailable", "이 브라우저에서는 복사를 사용할 수 없습니다.")); return; }
           void navigator.clipboard.writeText(session.color).then(() => {
             if (aliveRef.current && ownerRef.current === key) setNotice("색상 코드를 복사했습니다.");
-          }).catch(() => { if (aliveRef.current && ownerRef.current === key) setNotice("색상 코드 복사에 실패했습니다."); });
+          }).catch(() => { if (aliveRef.current && ownerRef.current === key) setNotice(t("studio.brushCanvasStatus.color.copyCodeFailed", "색상 코드 복사에 실패했습니다.")); });
         }}><Copy size={16} aria-hidden /></button>
         {onRequestCanvasEyedropper ? <button type="button" className={`${button} grid size-11 shrink-0 place-items-center p-0`} aria-label="캔버스에서 정밀 색 가져오기"
           onClick={onRequestCanvasEyedropper}><Pipette size={16} aria-hidden /></button> : null}
@@ -243,14 +247,14 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
       {error && session.valid ? <p role="alert" className="text-xs text-warn">{error}</p> : null}
     </div>
     {swatches("최근 선택 색", recent)}
-    {historyStatus === "loading" ? <p role="status" className="text-xs text-fg-2">최근 색을 불러오는 중…</p>
-      : historyStatus === "saving" ? <p role="status" className="text-xs text-fg-2">최근 색 저장 중…</p>
+    {historyStatus === "loading" ? <p role="status" className="text-xs text-fg-2">{t("studio.brushCanvasStatus.color.recentLoading", "최근 색을 불러오는 중…")}</p>
+      : historyStatus === "saving" ? <p role="status" className="text-xs text-fg-2">{t("studio.brushCanvasStatus.color.recentSaving", "최근 색 저장 중…")}</p>
         : historyStatus === "session-only" ? <div className="space-y-2 rounded-lg border border-line p-2">
-          <p role="status" aria-label="최근 색 저장 상태" className="text-xs text-warn">최근 색을 저장하지 못했습니다. 현재 세션에서만 사용할 수 있으며 창을 닫으면 사라질 수 있습니다.</p>
+          <p role="status" aria-label="최근 색 저장 상태" className="text-xs text-warn">{t("studio.brushCanvasStatus.color.recentSaveFailed", "최근 색을 저장하지 못했습니다. 현재 세션에서만 사용할 수 있으며 창을 닫으면 사라질 수 있습니다.")}</p>
           <details><summary className="min-h-9 cursor-pointer text-xs font-semibold">저장 문제 해결</summary>
             <p className="text-xs leading-relaxed text-fg-2">다른 Studio 탭의 저장 작업, 기기 저장 공간, 브라우저의 저장 제한을 확인하세요. 제한된 창에서는 일반 창을 사용해 보세요. 중요한 색상 코드는 먼저 복사해 두세요. 사이트 데이터를 삭제하기 전에 중요한 원고를 백업하세요.</p>
           </details>
-          {onRetryHistory ? <button type="button" className={button} onClick={onRetryHistory}>저장 다시 시도</button> : null}
+          {onRetryHistory ? <button type="button" className={button} onClick={onRetryHistory}>{t("studio.brushCanvasStatus.color.retrySave", "저장 다시 시도")}</button> : null}
         </div> : null}
     <details className="rounded-lg border border-line p-2">
       <summary className="min-h-9 cursor-pointer text-xs font-semibold">시스템 색상 선택기</summary>

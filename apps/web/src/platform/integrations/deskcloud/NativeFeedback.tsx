@@ -12,6 +12,7 @@
  *
  * env-gate: VITE_SURVEYDESK_URL 미설정 시 마운트되지 않는다.
  */
+import { restStatusText } from "../../../shared/rest-status-i18n";
 import { createSurveyClient, DeskError, type Survey, type SurveyAnswerValue, type SurveyQuestion } from "@heejun/deskcloud";
 import { Check, MessageSquarePlus, Star, TriangleAlert, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -145,7 +146,7 @@ export function NativeFeedback() {
     const missingIds = findMissing(survey.questions, answers);
     if (missingIds.length > 0) {
       setMissing(new Set(missingIds));
-      setFormError("필수 항목을 입력해 주세요.");
+      setFormError(restStatusText("rest.status.feedback.requiredMissing", "필수 항목을 입력해 주세요."));
       window.setTimeout(() => {
         dialogRef.current?.querySelector<HTMLElement>("[data-survey-error]")?.scrollIntoView({ block: "center", behavior: "smooth" });
       }, 0);
@@ -167,7 +168,7 @@ export function NativeFeedback() {
       .then(() => setPhase("success"))
       .catch((e: unknown) => {
         setPhase("ready");
-        setFormError(e instanceof Error ? e.message : "제출에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        setFormError(e instanceof Error ? e.message : restStatusText("rest.status.feedback.submitFailed", "제출에 실패했어요. 잠시 후 다시 시도해 주세요."));
       });
   }, [survey, client, answers, userId]);
 
@@ -212,7 +213,7 @@ export function NativeFeedback() {
                   <span className="skeleton block h-10 w-full" />
                   <span className="skeleton block h-4 w-1/2" />
                 </div>
-                <p className="mt-4 text-sm text-fg-3">설문을 불러오는 중…</p>
+                <p className="mt-4 text-sm text-fg-3">{restStatusText("rest.status.feedback.loading", "설문을 불러오는 중…")}</p>
               </div>
             )}
 
@@ -221,16 +222,16 @@ export function NativeFeedback() {
                 <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-bad/15 text-bad">
                   <TriangleAlert size={24} aria-hidden="true" />
                 </span>
-                <h2 className="text-base font-bold text-fg">설문을 불러오지 못했어요</h2>
+                <h2 className="text-base font-bold text-fg">{restStatusText("rest.status.feedback.loadFailed", "설문을 불러오지 못했어요")}</h2>
                 <p className="mx-auto mt-2 max-w-[34ch] text-pretty text-sm leading-relaxed text-fg-2">
-                  네트워크 상태를 확인하고 다시 시도해 주세요.
+                  {restStatusText("rest.status.feedback.loadFailedMessage", "네트워크 상태를 확인하고 다시 시도해 주세요.")}
                 </p>
                 <div className="mt-5 flex justify-center gap-2.5">
                   <Button variant="ghost" size="sm" onClick={closeDialog}>
                     닫기
                   </Button>
                   <Button size="sm" onClick={load}>
-                    다시 시도
+                    {restStatusText("rest.status.common.retry", "다시 시도")}
                   </Button>
                 </div>
               </div>

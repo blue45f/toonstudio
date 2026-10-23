@@ -9,6 +9,11 @@ import { buildMarketCc0ReleaseManifests } from "./seed/market-cc0-release-manife
 
 const server = await createServer({
   configFile: fileURLToPath(new URL("../apps/web/vite.config.ts", import.meta.url)),
+  // 기본 `bundle` 로더는 루트 package.json 에 "type": "module" 이 없어 설정을 CJS 로 묶고, 그때 설정 안으로
+  // 들어온 `@vitejs/plugin-react` 6.1 의 reactCompilerPreset 이 쓰는 `import.meta.resolve` 가 사라져
+  // Babel 이 "define_import_meta_default.resolve is not a function" 으로 하네스 변환을 거부한다.
+  // `runner` 로더는 설정을 ESM 그대로 실행해 이 문제를 피한다.
+  configLoader: "runner",
   server: { host: "127.0.0.1", port: 5237, strictPort: true },
   mode: "test",
 });

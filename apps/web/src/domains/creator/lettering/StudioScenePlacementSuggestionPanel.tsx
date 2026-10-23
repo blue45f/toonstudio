@@ -14,6 +14,9 @@
  */
 
 import { useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import {
   buildScenePlacementPatch,
@@ -53,6 +56,7 @@ export interface StudioScenePlacementSuggestionPanelProps {
 export function StudioScenePlacementSuggestionPanel(
   props: StudioScenePlacementSuggestionPanelProps,
 ) {
+  const t = useT();
   const suggestions = useMemo(
     () => suggestScenePlacements(props.requests, props.scene),
     [props.requests, props.scene],
@@ -169,7 +173,7 @@ export function StudioScenePlacementSuggestionPanel(
             </p>
           ))}
           {patches.length === 0 ? (
-            <p className="text-xs text-fg-3">적용할 후보가 없어요.</p>
+            <p className="text-xs text-fg-3">{t("studio.brushCanvasStatus.lettering.scenePlacementNoCandidates", "적용할 후보가 없어요.")}</p>
           ) : null}
         </div>
       ) : null}

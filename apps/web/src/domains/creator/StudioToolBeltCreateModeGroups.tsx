@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 import {
   ChevronDown,
   Eraser,
@@ -135,7 +136,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
   };
   const documentLocked = toolBelt.collaborationDocumentLocked || activeSurfaceReviewLocked;
   const lockedReason = toolBelt.collaborationDocumentLocked
-    ? toolBelt.collaborationLockMessage() || "이 문서는 지금 편집할 수 없어요."
+    ? toolBelt.collaborationLockMessage() || r3c07StatusText("studio.panelStatus.r3c07.toolBeltGroups.documentLocked", "이 문서는 지금 편집할 수 없어요.")
     : activeSurfaceReviewLocked ? "검토 중인 페이지의 편집 잠금을 먼저 해제해 주세요." : undefined;
 
   const activatePen = () => {
@@ -234,7 +235,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
                 contentClassName: "overflow-y-auto overflow-x-hidden",
               }}
             >
-              <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetMenu", "에셋 메뉴를 여는 중...")} />}>
+              <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetMenu", "소재 메뉴를 여는 중...")} />}>
                 <LazyStudioAssetToolPopoverBody toolBelt={toolBelt} />
               </Suspense>
             </StudioFloatingToolPopover>

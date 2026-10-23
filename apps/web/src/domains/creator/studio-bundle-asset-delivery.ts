@@ -12,17 +12,38 @@ import type { StudioAsset } from "./studio-asset-library";
  * 서비스 내 사용 전용 팩이다. 렌더 이미지만 나가고 원본 모델·텍스처 파일은 나가지
  * 않으므로 다운로드 관련 필드·동선은 존재 자체를 허용하지 않고, kind도 렌더 이미지
  * 종류(prop-image·background)로만 제한한다.
+ *
+ * 전달 여부와 권리 표기는 매니페스트의 자체 `license` 선언이 아니라 팩별 권리 원장
+ * (config/creator-bundle-pack-rights.json)이 정한다. 원장은 클라이언트에 실리지 않으므로 3D 경로의
+ * 팩별 `rights`(theme-packs.json)와 같은 방식이다: 원장이 연 팩의 완성 슬롯에만
+ * scripts/sync-creator-bundle-render-rights.mjs가 원장 투영 `rights` 블록을 스탬프하고 CI가 원장과 대조한다.
+ * 이 로더는 그 블록이 없는 완성 슬롯(닫힌 팩·원장에 없는 팩·아직 스탬프 전)을 초안 슬롯처럼 건너뛰고
+ * (fail-closed), 블록이 있는데 형식이 잘못됐으면 던진다.
  */
 export const STUDIO_BUNDLE_DELIVERY_ROOT = "/assets/studio/bundle-renders-v1/";
 const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
 const SHA256 = /^[a-f0-9]{64}$/u;
-/** 이 팩의 에셋이 CC0라고 표기하는 것은 권리 오표기라 명시적으로 거부한다. */
-const MISLABELED_LICENSE_IDS: ReadonlySet<string> = new Set(["CC0-1.0"]);
+/** 이 팩의 에셋이 CC0라고 표기하는 것은 권리 오표기라 명시적으로 거부한다(대소문자 무시: contracts의 알려진 id는 소문자 `cc0-1.0`이다). */
+const MISLABELED_LICENSE_IDS: ReadonlySet<string> = new Set(["cc0-1.0"]);
 const DOWNLOAD_FIELD_KEYS: readonly string[] = ["original", "download", "downloadUrl", "downloadPath"];
 const RENDER_VARIANTS: ReadonlySet<string> = new Set(["color", "line"]);
+const RIGHTS_STATUSES: readonly string[] = ["licensed", "public-domain"];
 
 export type StudioBundleAssetKind = "background" | "prop-image";
+
+/**
+ * 원장이 이 슬롯의 파생 팩을 열었다는 증거. 원장 투영(packRightsProjection)에 팩 id를 더한 값이고, 이 경로가 받는 값만
+ * 타입에 남긴다(상업 이용 가능 · 귀속 표기 없음). 닫힌 팩의 슬롯에는 블록이 없어 로더가 건너뛴다.
+ */
+export interface StudioBundleAssetRights {
+  readonly ledgerPackId: string;
+  readonly serve: "allow";
+  readonly status: "licensed" | "public-domain";
+  readonly licenseName: string;
+  readonly commercialUse: true;
+  readonly attributionRequired: false;
+}
 
 export interface StudioBundleAsset {
   readonly id: string;
@@ -41,6 +62,8 @@ export interface StudioBundleAsset {
   readonly licenseUrl: string | null;
   readonly provider: string;
   readonly sourceUrl: string;
+  /** 원장이 연 팩이라는 증거(권리 표기의 근거). 매니페스트 자체 선언(licenseId·provider)은 표시용이다. */
+  readonly rights: StudioBundleAssetRights;
   /** Expression style is independent of technical and visual approval. */
   readonly style: string;
   readonly visualReviewed: boolean;
@@ -50,7 +73,8 @@ export interface StudioBundleAsset {
   readonly technicalChecks: readonly string[];
   readonly renderVariants: readonly string[];
   readonly derivedFrom?: string;
-  readonly derivedFromPack?: string;
+  /** 파생 팩의 공식 카탈로그 번호. 원장 항목을 가리키는 키라 전달되는 슬롯은 반드시 가진다. */
+  readonly derivedFromPack: string;
   readonly sourceModelSha256?: string;
 }
 
@@ -124,7 +148,7 @@ function parseLicenseDeclarations(pack: Record<string, unknown>): ReadonlyMap<st
     const declaration = record(input);
     if (!declaration) throw new TypeError("팩 라이선스 선언 형식이 올바르지 않습니다.");
     const id = requiredText(declaration.id, 80, "팩 라이선스 선언 형식이 올바르지 않습니다.");
-    if (MISLABELED_LICENSE_IDS.has(id) || declarations.has(id)) {
+    if (MISLABELED_LICENSE_IDS.has(id.toLowerCase()) || declarations.has(id)) {
       throw new TypeError("팩 라이선스 선언이 중복되거나 올바르지 않습니다.");
     }
     const provider = requiredText(declaration.provider, 80, "팩 라이선스 선언 형식이 올바르지 않습니다.");
@@ -169,7 +193,7 @@ function verifyLicense(
   const license = record(asset.license);
   if (!license) throw new TypeError("에셋 라이선스 기록이 없습니다.");
   const licenseId = requiredText(license.id, 80, "에셋 라이선스 식별자가 올바르지 않습니다.");
-  if (MISLABELED_LICENSE_IDS.has(licenseId)) {
+  if (MISLABELED_LICENSE_IDS.has(licenseId.toLowerCase())) {
     throw new TypeError("번들 렌더 팩의 에셋은 CC0로 표기할 수 없습니다.");
   }
   const provider = requiredText(license.provider, 80, "에셋 제공자 기록이 올바르지 않습니다.");
@@ -223,6 +247,42 @@ function parseStringList(asset: Record<string, unknown>, key: string, maximumEnt
   return Object.freeze([...value] as string[]);
 }
 
+/**
+ * 슬롯의 원장 권리 블록. 없으면 null — 원장이 연 팩이라는 증거가 없으므로 호출자가 그 슬롯을 건너뛴다.
+ * 있으면 알려진 값은 전부 형식 검사를 거치고, `serve`는 "allow"만 받는다(닫힌 팩의 슬롯에는 블록 자체가 없어야 한다).
+ * 상업 이용 불가·귀속 표기가 필요한 블록은 이 경로가 받지 않으므로 null과 같이 닫는다.
+ */
+function parseLedgerRights(asset: Record<string, unknown>): StudioBundleAssetRights | null {
+  if (asset.rights === undefined || asset.rights === null) return null;
+  const rights = record(asset.rights);
+  const malformed = "에셋 권리 블록 형식이 올바르지 않습니다.";
+  if (!rights) throw new TypeError(malformed);
+  // 알려진 키만 읽고 모르는 키는 무시한다 — 늦게 갱신된 JS와 새 매니페스트가 만나도 패널이 깨지지 않게 하고, 정확한 키 일치는 CI가 본다.
+  // 다운로드 동선 필드는 어느 층위에서도 거부한다.
+  if (DOWNLOAD_FIELD_KEYS.some((key) => Object.hasOwn(rights, key))) throw new TypeError(malformed);
+  if (rights.serve !== "allow") throw new TypeError("서빙이 허용되지 않은 팩의 에셋은 렌더 매니페스트에 있을 수 없습니다.");
+  if (typeof rights.status !== "string" || !RIGHTS_STATUSES.includes(rights.status)
+    || typeof rights.commercialUse !== "boolean" || typeof rights.attributionRequired !== "boolean") {
+    throw new TypeError(malformed);
+  }
+  const ledgerPackId = requiredText(rights.ledgerPackId, 200, malformed);
+  const licenseName = requiredText(rights.licenseName, 200, malformed);
+  if (!rights.commercialUse || rights.attributionRequired) return null;
+  return Object.freeze({
+    ledgerPackId, serve: "allow" as const, status: rights.status as StudioBundleAssetRights["status"],
+    licenseName, commercialUse: true as const, attributionRequired: false as const,
+  });
+}
+
+/** 슬롯 폴더(`assets/<슬롯 id>/`) 바로 아래 파일 경로만 통과시킨다. */
+function slotFilePath(slotId: string, path: string): string {
+  const directory = `assets/${slotId}/`;
+  if (!path.startsWith(directory) || path.slice(directory.length).includes("/")) {
+    throw new TypeError("에셋 파일은 자기 슬롯 폴더 안에 있어야 합니다.");
+  }
+  return path;
+}
+
 export function studioBundleAssetUrl(relativePath: string): string {
   if (!/^(?:assets|previews)\/[a-zA-Z0-9_./-]+\.(?:webp|png|jpg)$/u.test(relativePath)
     || relativePath.split("/").some(part => !part || part === "." || part === "..")) {
@@ -252,6 +312,12 @@ export function parseStudioBundleCatalog(value: unknown): readonly StudioBundleA
     // 렌더 전 초안 슬롯(curationStatus가 draft-로 시작)은 납품 가능한 에셋이 아니라 건너뜐다.
     // 무결성 필드가 채워진 완성 항목만 아래 전수 검증을 통과해야 노출된다.
     if (typeof asset.curationStatus === "string" && asset.curationStatus.startsWith("draft")) continue;
+    // 원장이 연 팩이라는 증거(rights 블록)와 파생 팩 id가 없는 완성 슬롯도 건너뛴다. 닫힌 팩·원장에 없는 팩의 슬롯이 여기서 걸러지고,
+    // 무결성 필드가 덜 채워졌어도 카탈로그 전체를 막지 않는다 — 전달 대상이 아닌 슬롯의 자료 품질은 사용자에게 닿지 않는다.
+    const rights = parseLedgerRights(asset);
+    if (!rights) continue;
+    const derivedFromPack = parseOptionalText(asset, "derivedFromPack", 200);
+    if (!derivedFromPack) continue;
     if (typeof asset.name !== "string" || asset.name.length > 160
       || !["background", "prop-image"].includes(String(asset.kind))
       || typeof asset.category !== "string" || asset.category.length > 80
@@ -260,10 +326,11 @@ export function parseStudioBundleCatalog(value: unknown): readonly StudioBundleA
       throw new TypeError("에셋 출처·해시·종류 검증에 실패했습니다.");
     }
     const license = verifyLicense(asset, declarations, derived);
-    studioBundleAssetUrl(asset.path);
+    // 권리 블록은 슬롯 단위라 이미지 파일도 그 슬롯의 폴더 안에 있어야 한다 — 다른 슬롯(닫힌 팩)의 파일을 가리켜 전달하지 못하게 한다.
+    studioBundleAssetUrl(slotFilePath(asset.id, asset.path));
     if (asset.previewPath !== undefined) {
       if (typeof asset.previewPath !== "string") throw new TypeError("에셋 미리보기 경로가 올바르지 않습니다.");
-      studioBundleAssetUrl(asset.previewPath);
+      studioBundleAssetUrl(slotFilePath(asset.id, asset.previewPath));
     }
     const kind = asset.kind as StudioBundleAssetKind;
     if (!asset.path.endsWith(".webp") || !Number.isSafeInteger(asset.width) || !Number.isSafeInteger(asset.height)
@@ -278,7 +345,6 @@ export function parseStudioBundleCatalog(value: unknown): readonly StudioBundleA
       }
     }
     const derivedFrom = parseOptionalText(asset, "derivedFrom", 200);
-    const derivedFromPack = parseOptionalText(asset, "derivedFromPack", 200);
     let sourceModelSha256: string | undefined;
     if (asset.sourceModelSha256 !== undefined && asset.sourceModelSha256 !== null) {
       if (typeof asset.sourceModelSha256 !== "string" || !SHA256.test(asset.sourceModelSha256) || !derivedFrom) {
@@ -301,7 +367,7 @@ export function parseStudioBundleCatalog(value: unknown): readonly StudioBundleA
       bytes: Number(asset.bytes), sha256: asset.sha256,
       width: Number(asset.width), height: Number(asset.height),
       licenseId: license.licenseId, licenseUrl: license.licenseUrl,
-      provider: license.provider, sourceUrl: license.sourceUrl,
+      provider: license.provider, sourceUrl: license.sourceUrl, rights,
       style: curationText(asset, "style", "unspecified", 80),
       visualReviewed: curationBoolean(asset, "visualReviewed"),
       curationStatus: curationText(asset, "curationStatus", "unreviewed", 80),
@@ -310,7 +376,7 @@ export function parseStudioBundleCatalog(value: unknown): readonly StudioBundleA
       technicalChecks: parseStringList(asset, "technicalChecks", 16),
       renderVariants,
       ...(derivedFrom ? {derivedFrom} : {}),
-      ...(derivedFromPack ? {derivedFromPack} : {}),
+      derivedFromPack,
       ...(sourceModelSha256 ? {sourceModelSha256} : {}),
     }));
   }
@@ -325,7 +391,7 @@ export function isStudioBundleAssetEligibleForSelection(asset: StudioBundleAsset
 export function filterStudioBundleAssets(assets: readonly StudioBundleAsset[], query: string, kind?: StudioBundleAssetKind): readonly StudioBundleAsset[] {
   const terms = query.normalize("NFKC").toLocaleLowerCase("ko-KR").split(/\s+/u).filter(Boolean);
   return assets.filter(asset => (!kind || asset.kind === kind) && terms.every(term =>
-    [asset.name, asset.category, STUDIO_BUNDLE_CATEGORY_LABELS[asset.category] ?? "", asset.provider, asset.licenseId, asset.selectionTerm]
+    [asset.name, asset.category, STUDIO_BUNDLE_CATEGORY_LABELS[asset.category] ?? "", asset.provider, asset.licenseId, asset.rights.licenseName, asset.selectionTerm]
       .join(" ").normalize("NFKC").toLocaleLowerCase("ko-KR").includes(term)));
 }
 
@@ -369,7 +435,7 @@ export async function createStudioBundleImageRecord(asset: StudioBundleAsset, si
   for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
   return {id: `bundle:${asset.id}`, name: asset.name, dataUrl: `data:image/webp;base64,${btoa(binary)}`,
     contentHash: `sha256:${hash}`, width: asset.width, height: asset.height, createdAt: Date.UTC(2026, 9, 20), kind: "imported",
-    rights: {sourceKind: "imported", sourceId: asset.id, licenseId: asset.licenseId, licenseLabel: asset.licenseId,
-      licenseUrl: asset.licenseUrl, attributionRequired: false,
+    rights: {sourceKind: "imported", sourceId: asset.id, licenseId: `creator-bundle-ledger:${asset.rights.ledgerPackId}`, licenseLabel: asset.rights.licenseName,
+      licenseUrl: asset.licenseUrl, attributionRequired: asset.rights.attributionRequired,
       attributionText: `${asset.provider} — ${asset.sourceUrl}`, rightsConfirmed: true}};
 }

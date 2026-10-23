@@ -1,4 +1,5 @@
 import { directPromo, PROMO_DEFAULT_PRESENTATION, PROMO_DIRECTOR_TEMPLATES, PROMO_ENDING_SECONDS, PROMO_SHORT_MAX_PANELS, PROMO_SHORT_SECONDS, promoMaxPanels, type PromoProject } from "./promo-model";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export function PromoDirectorControls({ project, disabled, onApply, onShortPreset, onPatch }: {
   project: PromoProject; disabled: boolean; onApply: (project: PromoProject) => void;
@@ -21,7 +22,7 @@ export function PromoDirectorControls({ project, disabled, onApply, onShortPrese
         <strong>{template.label}</strong><span>{template.description}</span>
       </button>)}</div>
     {shortOverCap
-      ? <p id="promo-short-preset-note" className="promo-error" role="alert">10초 쇼츠 프리셋은 컷 {PROMO_SHORT_MAX_PANELS}개까지만 쓸 수 있어요. 지금은 {project.panels.length}개라서 적용할 수 없어요. 컷은 지우지 않았어요.</p>
+      ? <p id="promo-short-preset-note" className="promo-error" role="alert">{subStatusText("studio.subStatus.director.shortOverCap", { max: PROMO_SHORT_MAX_PANELS, current: project.panels.length }, "10초 쇼츠 프리셋은 컷 {max}개까지만 쓸 수 있어요. 지금은 {current}개라서 적용할 수 없어요. 컷은 지우지 않았어요.")}</p>
       : <p id="promo-short-preset-note" className="promo-muted">10초 쇼츠 트레일러는 전체 길이를 {PROMO_SHORT_SECONDS}초(본편 {PROMO_SHORT_SECONDS - PROMO_ENDING_SECONDS}초 + 마지막 {PROMO_ENDING_SECONDS}초), 화면 비율을 세로 9:16으로 맞추고 컷을 최대 {PROMO_SHORT_MAX_PANELS}개로 제한해요. 컷마다 읽기 시간을 계산해 상대 길이를 다시 맞춥니다.</p>}
     <div className="promo-inline-grid">
       <label htmlFor="promo-caption-style">자막 스타일<select id="promo-caption-style" value={options.captionStyle} onChange={(event) => patch({ captionStyle: event.target.value as typeof options.captionStyle })}><option value="classic">시네마틱</option><option value="boxed">가독성 박스</option><option value="typewriter">타자 등장</option></select></label>

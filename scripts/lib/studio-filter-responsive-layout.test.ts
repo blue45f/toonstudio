@@ -100,6 +100,16 @@ describe("필터 실행 영역 반응형 판정", () => {
     expect(issue).toContain("취소: 다른 요소가 입력을 가로막습니다");
     expect(issue).toContain('div#overlay[data-testid="sheet"]');
   });
+  it("패널이 뷰포트 밖이면 사각형·뷰포트·translate 를 실패 사유에 함께 적는다", () => {
+    const [issue] = studioFilterResponsiveLayoutIssues({
+      ...valid, width: 568, height: 320, panelWithinViewport: false,
+      panelBox: { top: -6, bottom: 269, left: 12, right: 556, translate: "4px -28.4px" },
+    });
+    expect(issue).toContain("필터 창이 뷰포트 밖에 있습니다");
+    expect(issue).toContain("패널 위 -6·아래 269");
+    expect(issue).toContain("뷰포트 568x320");
+    expect(issue).toContain("translate 4px -28.4px");
+  });
   it("본문 소실·가로 넘침·패널 이탈·누락 버튼을 모두 검출한다", () => {
     expect(studioFilterResponsiveLayoutIssues({ ...valid, bodyHeight: 32, panelOverflowX: 8,
       panelWithinViewport: false, actions: [] })).toHaveLength(4);

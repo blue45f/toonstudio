@@ -23,6 +23,7 @@ ToonStudio은 사람과 여러 코딩 에이전트가 많은 worktree에서 동�
 | `scripts/agent-harness.mjs` | doctor/check/verify 명령과 변경 범위 분류 |
 | `scripts/agent-harness.test.mjs` | 하네스 파일·분류·CI 연결의 회귀 방지 |
 | PR 템플릿 | 목적·검증·위험·배포 분리 기록 |
+| [`infrastructure-map.md`](infrastructure-map.md) | 인프라 위치·비용·상태·비밀 저장 위치(이름만)·절차의 단일 지도. 인프라를 바꾸면 같은 변경에서 갱신한다 |
 
 ## 단일 기준 원칙
 

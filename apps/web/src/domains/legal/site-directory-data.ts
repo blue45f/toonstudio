@@ -284,6 +284,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/studio/3d/dcc/material", "재질·UV", "Materials & UV", "표면 재질과 UV 구성", "Build surface materials and UV layouts"),
       destination("/studio/3d/dcc/shot", "컷·선화", "Shot & line art", "카메라 컷과 비사실 렌더 설계", "Design camera shots and non-photoreal rendering"),
       destination("/studio/lift3d", "2D → 3D 변환", "2D to 3D lift", "이미지 소재를 3D 장면으로 확장", "Lift image subjects into 3D scenes"),
+      destination("/studio/anchor-lab", "캐릭터 앵커 연구실 (실험)", "Character anchor lab (experimental)", "정/반측 턴테이블 앵커 세트를 만들고 후보 이미지를 휴리스틱 참고 점수로 견주기", "Build front/side/back anchor sets and compare candidate images with a heuristic reference score"),
     ],
   },
   {
@@ -301,6 +302,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/studio/jobs", "처리 중 작업", "Production jobs", "무거운 제작 작업과 결과 영수증 관리", "Manage production jobs and result receipts"),
       destination("/studio/ai-lab", "AI 실험실", "AI lab", "사용자 키로 창작 추론 작업 실행", "Run creator-funded inference workflows"),
       destination("/studio/ai-runtime", "개인 AI 런타임", "Personal AI runtime", "직접 운영하는 추론 서버 연결", "Connect a creator-operated inference server"),
+      destination("/studio/branching-cuttoon", "분기형 컷툰 실험", "Branching cuttoon lab", "독자가 선택지로 이야기를 고르는 컷툰을 만들고 미리 읽기", "Build and preview a cuttoon whose story branches by reader choices"),
       destination("/settings/ai", "AI 연결과 사용 순서", "AI connections and routing", "자동 무료 AI, 내 API 키와 기능별 사용 순서 관리", "Manage automatic free AI, personal credentials and per-capability routing"),
       destination("/studio/ecosystem", "창작 생태계", "Creator ecosystem", "제작 도구·작업·리소스를 한곳에서 관리", "Manage creation tools, work and resources together"),
       destination("/studio/analytics", "창작자 애널리틱스", "Creator analytics", "시리즈별 조회·반응·구독 전환과 회차별 리텐션 확인", "Review series views, reactions, subscriptions and episode retention"),
@@ -469,6 +471,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
     items: [
       destination("/product-tour", "툰스튜디오 전체 제품 투어", "ToonStudio full product tour", "9분 18초 장편 영상으로 제품 화면 캡처와 개념 도해를 따라가며 전체 제작 흐름 이해", "Understand the full production journey through a 9m 18s tour of product captures and concept illustrations"),
       destination("/brand-film", "툰스튜디오 홍보영상", "ToonStudio brand film", "24초 브랜드 필름으로 핵심 제작 경험 빠르게 보기", "Watch the 24-second brand film for a quick product overview"),
+      destination("/promo-library", "홍보 영상 자료실", "Promo video library", "홍보에 쓴 생성형 AI 영상 50편을 카테고리별로 모아 미리 보고 원본을 내려받는 자료실", "Preview and download the library of 50 AI-generated promo clips, organized by category"),
       destination("/features", "기능 한눈에 보기", "Features at a glance", "툰스튜디오의 모든 기능을 카테고리별로 한눈에 확인", "Browse every ToonStudio feature by category at a glance"),
       destination("/about", "서비스 소개", "About ToonStudio", "핵심 기능·제작 흐름·역할별 시작점과 소개 영상을 한눈에", "Core features, the production flow, starting points by role and intro films at a glance"),
       destination("/ir", "IR · 투자 소개", "IR · Investor brief", "핵심 메시지·제품 역량·시장·BM·검증 로드맵과 IR 영상을 발표 흐름 한 페이지로", "The pitch in one page: key message, product capabilities, market, business model, validation roadmap and the IR film"),

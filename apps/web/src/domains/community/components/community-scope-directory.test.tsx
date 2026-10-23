@@ -7,7 +7,11 @@ import { CommunityScopeDirectory, type DirectoryScope } from "./community-scope-
 
 const resource = vi.hoisted(() => ({ read: vi.fn(), reload: vi.fn() }));
 vi.mock("@/platform/use-api-resource", () => ({ useApiResource: resource.read }));
-vi.mock("@/shared/lib/i18n", () => ({ useT: () => (key: string) => key }));
+vi.mock("@/shared/lib/i18n", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  // 상태 문구 사전 모듈이 import 시점에 등록 함수를, 렌더 중에는 번역 해석 함수를 쓴다 — 번역기만 바꾸고 나머지는 실제 모듈을 쓴다.
+  useT: () => (key: string) => key,
+}));
 
 beforeEach(() => {
   resource.read.mockReset(); resource.reload.mockReset();

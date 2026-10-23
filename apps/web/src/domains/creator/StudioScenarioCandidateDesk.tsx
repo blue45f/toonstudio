@@ -1,3 +1,5 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 import { Check, Images, ShieldCheck, Sparkles, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -162,7 +164,7 @@ export function StudioScenarioCandidateDesk({
           <p className="mt-1 text-[0.62rem] font-semibold text-fg-2" role="status" aria-live="polite">
             승인 {readiness.approved}/{readiness.total}
             {" · "}승인 필요 {readiness.unapproved + readiness.stale}
-            {" · "}미생성·실패 {readiness.missing + readiness.failed}
+            {" · "}{r4CreatorStatusText("r4cat1.creator.scenarioDesk.missingOrFailed", "미생성·실패")} {readiness.missing + readiness.failed}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-1">
@@ -172,7 +174,7 @@ export function StudioScenarioCandidateDesk({
             disabled={busy || readiness.missingIndexes.length === 0}
             className="min-h-11 rounded-md border border-line bg-panel px-2 text-[0.65rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-45 sm:min-h-7"
           >
-            미생성·실패
+            {r4CreatorStatusText("r4cat1.creator.scenarioDesk.missingOrFailed", "미생성·실패")}
           </button>
           <button
             type="button"
@@ -430,7 +432,7 @@ export function StudioScenarioCandidateDesk({
                 </div>
               ) : (
                 <p className="mt-2 rounded-md border border-dashed border-line px-2 py-2 text-[0.65rem] text-fg-3">
-                  아직 후보가 없습니다. 이 컷을 선택해 생성하거나 기존 단일 생성 버튼을 사용하세요.
+                  {r3c07StatusText("studio.panelStatus.r3c07.scenarioDesk.candidatesEmpty", "아직 후보가 없습니다. 이 컷을 선택해 생성하거나 기존 단일 생성 버튼을 사용하세요.")}
                 </p>
               )}
 

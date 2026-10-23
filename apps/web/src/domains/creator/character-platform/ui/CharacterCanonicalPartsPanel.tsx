@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
 
@@ -80,7 +81,7 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
         <div className="mb-2 flex items-center gap-2 font-bold text-fg-2">
           <Boxes size={15} aria-hidden />Production Library
         </div>
-        승인된 교체 파츠가 아직 없습니다. 품질 리포트, 라이선스, 원본 SHA-256, 리그/토폴로지 호환 조건을 모두 통과한 실제 메시만 이 라이브러리에 노출됩니다.
+        {creatorSub2StatusText("studio.creatorSub2.status.character.partsPanel.libraryEmpty", "승인된 교체 파츠가 아직 없습니다. 품질 리포트, 라이선스, 원본 SHA-256, 리그/토폴로지 호환 조건을 모두 통과한 실제 메시만 이 라이브러리에 노출됩니다.")}
       </div>
     );
   }
@@ -121,7 +122,7 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
           <strong className="mt-0.5 block text-base text-accent">{selectedOptions.length}</strong>
         </div>
         <div className="rounded-xl border border-warn/30 bg-warn/8 p-2.5">
-          <span className="block text-[0.58rem] font-semibold text-fg-3">호환 불가</span>
+          <span className="block text-[0.58rem] font-semibold text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.character.partsPanel.incompatible", "호환 불가")}</span>
           <strong className="mt-0.5 block text-base text-warn">{unavailableCount}</strong>
         </div>
       </div>
@@ -204,7 +205,7 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
 
       {visibleOptions.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line p-5 text-center text-[0.68rem] text-fg-3">
-          조건에 맞는 production part가 없습니다.
+          {creatorSub2StatusText("studio.creatorSub2.status.character.partsPanel.partsEmpty", "조건에 맞는 production part가 없습니다.")}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -243,7 +244,7 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
                     "absolute left-2 top-2 rounded-full border px-1.5 py-0.5 text-[0.54rem] font-extrabold backdrop-blur",
                     option.status === "supported" ? "border-good/45 bg-panel/85 text-good" : "border-warn/45 bg-panel/85 text-warn",
                   )}>
-                    {option.status === "supported" ? `Q${Math.round(option.part.quality.minimumScore)}` : "호환 불가"}
+                    {option.status === "supported" ? `Q${Math.round(option.part.quality.minimumScore)}` : creatorSub2StatusText("studio.creatorSub2.status.character.partsPanel.incompatible", "호환 불가")}
                   </span>
                   {selected ? (
                     <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-accent text-on-accent shadow">

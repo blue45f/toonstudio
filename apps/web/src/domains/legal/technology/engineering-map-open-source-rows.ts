@@ -104,8 +104,8 @@ const APP_AND_STORAGE_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT · Apache-2.0"),
       mode: t("빌드 · 개발 전용", "Build · dev only"),
       note: t(
-        "Vite 8의 번들러는 Rolldown 1.0.3(전이 의존성). 3D·CRDT 같은 무거운 엔진이 첫 화면 번들로 돌아오면 번들 검사(check-studio-bundle.mjs)가 실패한다. 접근성 검사 axe-core/playwright는 MPL-2.0(개발 전용).",
-        "Vite 8 bundles with Rolldown 1.0.3 (a transitive dependency). If heavy engines such as 3D or CRDT creep back into the first-screen bundle, the bundle check (check-studio-bundle.mjs) fails. The accessibility checker axe-core/playwright is MPL-2.0 (dev only).",
+        "Vite 8의 번들러는 Rolldown 1.2.14(전이 의존성). 3D·CRDT 같은 무거운 엔진이 첫 화면 번들로 돌아오면 번들 검사(check-studio-bundle.mjs)가 실패한다. 접근성 검사 axe-core/playwright는 MPL-2.0(개발 전용).",
+        "Vite 8 bundles with Rolldown 1.2.14 (a transitive dependency). If heavy engines such as 3D or CRDT creep back into the first-screen bundle, the bundle check (check-studio-bundle.mjs) fails. The accessibility checker axe-core/playwright is MPL-2.0 (dev only).",
       ),
     },
     evidence: ["package.json", "apps/web/vite.config.ts", "apps/web/config/vite-manual-chunks.ts", "scripts/check-studio-bundle.mjs"],

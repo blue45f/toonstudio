@@ -1,5 +1,6 @@
 import { enterStudioSelectionTransform } from "./studio-transform-entry";
 import "./studio-host-status-i18n";
+import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";
 import {
   formatI18nTemplate,
   getActiveI18nLocale,
@@ -1461,7 +1462,7 @@ import { scheduleIdle } from "@/domains/auth/components/schedule-idle";
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 import { useResizable } from "@/shared/hooks/use-resizable";
 import { loadChunkWithReloadRecovery } from "@/shared/lib/chunk-load-recovery";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK } from "@/shared/lib/studio-work-asset-contract";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
@@ -1940,7 +1941,7 @@ export function StudioCuttoonEditor({
         && !flushPendingStrokeCommitsRef.current()
       ) {
         setError(
-          t("studio.hostStatus.pageStrokeCommitFailed", "마지막 획을 원래 페이지에 확정하지 못해 페이지를 전환하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.")
+          translateNow("studio.hostStatus.pageStrokeCommitFailed", "마지막 획을 원래 페이지에 확정하지 못해 페이지를 전환하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.")
         );
         return false;
       }
@@ -3052,7 +3053,7 @@ export function StudioCuttoonEditor({
         const projected = commentClient.studioTeamCommentsToLocalDocument(snapshot, {
           unfilteredSnapshotComplete: true,
         });
-        if (!projected) throw new Error(t("studio.hostStatus.teamCommentsProjectFailed", "팀 댓글 전체 기록을 안전하게 투영하지 못했어요."));
+        if (!projected) throw new Error(translateNow("studio.hostStatus.teamCommentsProjectFailed", "팀 댓글 전체 기록을 안전하게 투영하지 못했어요."));
         if (
           signal.aborted
           || studioTeamCommentsLoadGenerationRef.current !== generation
@@ -3113,7 +3114,7 @@ export function StudioCuttoonEditor({
         if (signal.aborted) return;
         setStudioTeamCommentCapabilities(null);
         setStudioCommentSyncError(
-          cause instanceof Error ? cause.message : t("studio.hostStatus.teamCommentsLoadFailed", "팀 댓글을 불러오지 못했어요.")
+          cause instanceof Error ? cause.message : translateNow("studio.hostStatus.teamCommentsLoadFailed", "팀 댓글을 불러오지 못했어요.")
         );
       }
     };
@@ -4905,7 +4906,7 @@ export function StudioCuttoonEditor({
       .catch((err) => {
         if (!editorMountedRef.current || generation !== clipHydrationGenerationRef.current) return;
         setClipStorageState("unavailable");
-        setError(t("studio.hostStatus.clipStorageOpenFailed", { detail: err instanceof Error ? err.message : String(err) }, "SQLite/OPFS 클립 보관함을 열지 못했습니다. 기존 저장 키는 자동으로 읽지 않으며 현재 목록은 저장되지 않았습니다: {detail}"));
+        setError(translateNow("studio.hostStatus.clipStorageOpenFailed", { detail: err instanceof Error ? err.message : String(err) }, "SQLite/OPFS 클립 보관함을 열지 못했습니다. 기존 저장 키는 자동으로 읽지 않으며 현재 목록은 저장되지 않았습니다: {detail}"));
         clipsLoadRef.current = null;
       });
     return () => {
@@ -5175,7 +5176,7 @@ export function StudioCuttoonEditor({
       })
       .catch(() => {
         if (active) {
-          setError(t("studio.hostStatus.brushLibraryOpenFailed", "브러시 라이브러리를 열지 못했어요. 저장소 권한과 여유 공간을 확인해주세요."));
+          setError(translateNow("studio.hostStatus.brushLibraryOpenFailed", "브러시 라이브러리를 열지 못했어요. 저장소 권한과 여유 공간을 확인해주세요."));
         }
       });
     return () => {
@@ -9074,7 +9075,7 @@ export function StudioCuttoonEditor({
       livingInkRejectedAuthorityRef.current = null;
       livingInkConfigRef.current = null;
       setLivingInkState("unavailable");
-      setLivingInkStateMessage(qualityFailure ?? t("studio.hostStatus.livingInkFieldUnavailable", "수채 번짐 필드를 만들 수 없습니다."));
+      setLivingInkStateMessage(qualityFailure ?? translateNow("studio.hostStatus.livingInkFieldUnavailable", "수채 번짐 필드를 만들 수 없습니다."));
       if (qualityFailure) setError(qualityFailure);
       void livingInkCoordinatorRef.current.dispose();
       return;
@@ -9093,7 +9094,7 @@ export function StudioCuttoonEditor({
       livingInkConfigRef.current = null;
       setLivingInkState("failed");
       setLivingInkStateMessage(
-        t("studio.hostStatus.livingInkWorkerAcceptFailed", "로컬 canonical 저장 뒤 Worker 상태 수락에 실패했습니다. PNG는 보존하고 다시 열기 전까지 물리 편집을 비활성화합니다."),
+        translateNow("studio.hostStatus.livingInkWorkerAcceptFailed", "로컬 canonical 저장 뒤 Worker 상태 수락에 실패했습니다. PNG는 보존하고 다시 열기 전까지 물리 편집을 비활성화합니다."),
       );
       return;
     }
@@ -9159,7 +9160,7 @@ export function StudioCuttoonEditor({
       if (!ready && receipt) {
         livingInkAcceptedAuthorityRef.current = null;
         setError(
-          t("studio.hostStatus.livingInkGpuReopenVerifyFailed", "저장된 수채 번짐 PNG는 그대로 보존했지만 GPU 상태 재열기 검증에 실패해 물·정착 편집을 비활성화했습니다."),
+          translateNow("studio.hostStatus.livingInkGpuReopenVerifyFailed", "저장된 수채 번짐 PNG는 그대로 보존했지만 GPU 상태 재열기 검증에 실패해 물·정착 편집을 비활성화했습니다."),
         );
         return;
       }
@@ -9175,7 +9176,7 @@ export function StudioCuttoonEditor({
       if (!isCurrent() || (cause instanceof DOMException && cause.name === "AbortError")) return;
       const message = cause instanceof Error
         ? cause.message
-        : t("studio.hostStatus.livingInkPngIntegrityFailed", "수채 번짐 저장 PNG 무결성을 확인하지 못했습니다.");
+        : translateNow("studio.hostStatus.livingInkPngIntegrityFailed", "수채 번짐 저장 PNG 무결성을 확인하지 못했습니다.");
       livingInkAcceptedAuthorityRef.current = null;
       livingInkRejectedAuthorityRef.current = null;
       livingInkConfigRef.current = null;
@@ -9250,7 +9251,7 @@ export function StudioCuttoonEditor({
     pendingCatalogInputRef.current ??= new StudioPendingCatalogInput((message) => announceDrawingShortcutRef.current(message), (gesture, restoredStrokeId) => {
       const record = serializeStudioCatalogInputRecovery(gesture, restoredStrokeId);
       void acquireStudioCatalogInputRecoveryRepository().then((repository) => repository.save(record)).catch(() => {
-        announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoverySaveFailed", "브러시 원본 입력은 메모리에 보관했지만 기기 복구 저장을 마치지 못했어요."));
+        announceDrawingShortcutRef.current(translateNow("studio.hostStatus.brushInputRecoverySaveFailed", "브러시 원본 입력은 메모리에 보관했지만 기기 복구 저장을 마치지 못했어요."));
       });
     });
     return pendingCatalogInputRef.current;
@@ -9278,7 +9279,7 @@ export function StudioCuttoonEditor({
       const records = await repository.loadUnrestored(catalogInputOwnerScope, autosaveKey);
       if (cancelled || !stageRef.current) return;
       pendingCatalogInput().restore(records.map((record) => restoreStudioCatalogInputRecovery(record, stageRef.current!, catalogInputScope)));
-    }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoveryReadFailed", "보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다.")); });
+    }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current(translateNow("studio.hostStatus.brushInputRecoveryReadFailed", "보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다.")); });
     return () => { cancelled = true; };
   }, [catalogInputOwnerScope, catalogInputScope, autosaveKey, pendingCatalogInput]);
   const pendingStrokeAdmissionRef = useRef<StudioPendingStrokeAdmissionQueue | null>(null);
@@ -10240,7 +10241,7 @@ export function StudioCuttoonEditor({
             !active || !barrier || access.locked || access.workId !== workScope ||
             access.authScopeKey !== authScope || studioCrdtDocumentRef.current !== document
           ) {
-            throw new DOMException("래스터 서버 승인 범위가 변경되었습니다.", "AbortError");
+            throw new DOMException(hostErrorText("studio.hostError.rasterAuthorityScopeChanged", "래스터 서버 승인 범위가 변경되었습니다."), "AbortError");
           }
           return barrier(10_000);
         },
@@ -12985,7 +12986,7 @@ export function StudioCuttoonEditor({
           durable: false,
           message: ownershipBusy
             ? STUDIO_WATERMARK_PREFERENCES_OWNERSHIP_BUSY_HINT
-            : t("studio.hostStatus.watermarkLoadFailed", { detail }, "워터마크 설정 저장소를 불러오지 못했습니다. 현재 탭에서만 유지됩니다: {detail}"),
+            : translateNow("studio.hostStatus.watermarkLoadFailed", { detail }, "워터마크 설정 저장소를 불러오지 못했습니다. 현재 탭에서만 유지됩니다: {detail}"),
           cause,
         }));
       });
@@ -13372,29 +13373,29 @@ export function StudioCuttoonEditor({
           : null);
   const paperVectorRefinementUnavailableReason = (() => {
     if (selected?.type !== "draw") {
-      return "자유선 펜 획 하나를 선택하세요.";
+      return t("studio.hostReason.paperVectorSelectFreehand", "자유선 펜 획 하나를 선택하세요.");
     }
     if (elementById.get(selected.id) !== selected) {
-      return "획 저장이 끝난 뒤 경로를 정리할 수 있어요.";
+      return t("studio.hostReason.paperVectorStrokeSaving", "획 저장이 끝난 뒤 경로를 정리할 수 있어요.");
     }
     if (activeSurfaceReviewLocked || (pageEditLocked && !masterEditMode)) {
-      return "작업면 잠금을 해제한 뒤 경로를 정리하세요.";
+      return t("studio.hostReason.paperVectorSurfaceLocked", "작업면 잠금을 해제한 뒤 경로를 정리하세요.");
     }
     if (isEffectivelyLocked(selected, groups)) {
-      return "선택한 획이나 상위 그룹의 잠금을 해제하세요.";
+      return t("studio.hostReason.paperVectorStrokeLocked", "선택한 획이나 상위 그룹의 잠금을 해제하세요.");
     }
     const reason = studioPaperVectorDocumentIneligibilityReason(selected);
     if (!reason) return null;
     if ((selected.kind ?? "freehand") !== "freehand") {
-      return "자유선 펜 획만 경로 정리를 지원해요.";
+      return t("studio.hostReason.paperVectorFreehandOnly", "자유선 펜 획만 경로 정리를 지원해요.");
     }
     if ((selected.mode ?? "pen") !== "pen") {
-      return "지우개 획은 경로 정리를 지원하지 않아요.";
+      return t("studio.hostReason.paperVectorEraserUnsupported", "지우개 획은 경로 정리를 지원하지 않아요.");
     }
     if ((selected.symmetry?.type ?? "none") !== "none") {
-      return "대칭 브러시 결과를 먼저 확정한 뒤 경로를 정리하세요.";
+      return t("studio.hostReason.paperVectorSymmetryPending", "대칭 브러시 결과를 먼저 확정한 뒤 경로를 정리하세요.");
     }
-    return "이 브러시는 질감·스탬프 의미를 보존하기 위해 경로 정리를 제한해요.";
+    return t("studio.hostReason.paperVectorTexturePreserved", "이 브러시는 질감·스탬프 의미를 보존하기 위해 경로 정리를 제한해요.");
   })();
   const selectedForInspector: El | null = useMemo(() => {
     if (selected === null || selected.type !== "draw") {
@@ -13428,20 +13429,20 @@ export function StudioCuttoonEditor({
       : null;
   const studioFilterDialogMutationLockReason = !studioFilterDialogImage ||
     studioFilterDialogImage.type !== "image"
-    ? "필터 대상이 현재 페이지에 없습니다. 대화상자를 닫고 다시 선택해 주세요."
+    ? t("studio.hostReason.filterTargetMissing", "필터 대상이 현재 페이지에 없습니다. 대화상자를 닫고 다시 선택해 주세요.")
     : activeSurfaceReviewLocked
-      ? "검토 잠금을 해제한 뒤 필터를 적용하세요."
+      ? t("studio.hostReason.filterReviewLocked", "검토 잠금을 해제한 뒤 필터를 적용하세요.")
       : timelinePlaying
-        ? "타임라인 재생을 멈춘 뒤 필터를 적용하세요."
+        ? t("studio.hostReason.filterTimelinePlaying", "타임라인 재생을 멈춘 뒤 필터를 적용하세요.")
         : timelapseCapturing
-          ? "타임랩스 캡처가 끝난 뒤 필터를 적용하세요."
+          ? t("studio.hostReason.filterTimelapseCapturing", "타임랩스 캡처가 끝난 뒤 필터를 적용하세요.")
           : saving
-            ? "저장이 끝난 뒤 필터를 적용하세요."
+            ? t("studio.hostReason.filterSaving", "저장이 끝난 뒤 필터를 적용하세요.")
             : studioFilterDialogImageEditReason
               ? studioFilterDialogImageEditReason
               : studioFilterSession?.target === "image" &&
                   isEffectivelyLocked(studioFilterDialogImage, groups)
-                ? "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요."
+                ? t("studio.hostReason.filterLayerLocked", "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요.")
                 : null;
   const studioFilterDialogMutationLocked = studioFilterDialogMutationLockReason !== null;
   useEffect(() => {
@@ -13929,10 +13930,10 @@ export function StudioCuttoonEditor({
   ]);
   const studioCommentPinReanchorDisabledReason = studioTeamCommentsWorkId
     ? studioTeamCommentCapabilities === null
-      ? "팀 댓글 권한을 확인하고 있어요."
-      : "자신이 작성한 핀만 옮길 수 있어요."
+      ? t("studio.hostReason.commentPinCheckingPermission", "팀 댓글 권한을 확인하고 있어요.")
+      : t("studio.hostReason.commentPinOwnOnly", "자신이 작성한 핀만 옮길 수 있어요.")
     : collaborationDocumentLocked
-      ? "읽기 전용 원고에서는 위치를 변경할 수 없어요."
+      ? t("studio.hostReason.commentPinReadOnly", "읽기 전용 원고에서는 위치를 변경할 수 없어요.")
       : undefined;
   const studioCommentThreadSessionThreads = useMemo(
     () => selectStudioCommentThreadSessionSourceThreads(
@@ -14162,7 +14163,7 @@ export function StudioCuttoonEditor({
     const session = studioCommentThreadSessionRef.current;
     if (session.selectedThreadId !== threadId) return false;
     if (studioCommentThreadSessionDraftBlocksResolutionChange(session, threadId, resolved)) {
-      throw new Error("작성 중인 답글을 등록하거나 내용을 비운 뒤 해결 상태를 변경해 주세요.");
+      throw new Error(hostErrorText("studio.hostError.commentReplyDraftBlocksResolution", "작성 중인 답글을 등록하거나 내용을 비운 뒤 해결 상태를 변경해 주세요."));
     }
     const plan = resolved
       ? { kind: "resolve" as const, threadId }
@@ -14300,22 +14301,22 @@ export function StudioCuttoonEditor({
     collaborationDocumentLocked
       ? collaborationLockMessage()
       : masterEditMode
-        ? "마스터 편집을 끝낸 뒤 페이지 래스터를 채울 수 있어요."
+        ? t("studio.hostReason.fillMasterEditActive", "마스터 편집을 끝낸 뒤 페이지 래스터를 채울 수 있어요.")
       : pageEditLocked
-        ? "검토 잠금을 해제한 뒤 채울 수 있어요."
+        ? t("studio.hostReason.fillReviewLocked", "검토 잠금을 해제한 뒤 채울 수 있어요.")
         : null;
   function advancedFillTargetUnsupportedReason(target: El | null): string | null {
     if (advancedFillDocumentUnsupportedReason) return advancedFillDocumentUnsupportedReason;
-    if (target?.type !== "image") return "래스터 이미지 레이어를 먼저 선택하세요.";
+    if (target?.type !== "image") return t("studio.hostReason.fillSelectRasterLayer", "래스터 이미지 레이어를 먼저 선택하세요.");
     const durableRasterReason = studioLinked3dPassDestructiveEditReason(target)
       ?? studioWorkAssetDestructiveEditReason(target);
     if (durableRasterReason) return durableRasterReason;
-    if (isEffectivelyLocked(target, groups)) return "잠긴 레이어는 채울 수 없어요.";
-    if (isEffectivelyHidden(target, groups)) return "숨긴 레이어를 표시한 뒤 채울 수 있어요.";
+    if (isEffectivelyLocked(target, groups)) return t("studio.hostReason.fillLayerLocked", "잠긴 레이어는 채울 수 없어요.");
+    if (isEffectivelyHidden(target, groups)) return t("studio.hostReason.fillLayerHidden", "숨긴 레이어를 표시한 뒤 채울 수 있어요.");
     if (target.isAnimatedGif || (target.frames?.length ?? 0) > 1) {
-      return "애니메이션 레이어는 현재 프레임을 정적 이미지로 만든 뒤 채울 수 있어요.";
+      return t("studio.hostReason.fillAnimatedLayer", "애니메이션 레이어는 현재 프레임을 정적 이미지로 만든 뒤 채울 수 있어요.");
     }
-    if (timelinePlaying) return "타임라인 재생을 멈춘 뒤 채울 수 있어요.";
+    if (timelinePlaying) return t("studio.hostReason.fillTimelinePlaying", "타임라인 재생을 멈춘 뒤 채울 수 있어요.");
     const referenceLayerCount = collectOverlappingStudioFillReferenceLayers(
       advancedFillRasterLayers,
       target.id,
@@ -14326,14 +14327,14 @@ export function StudioCuttoonEditor({
       && referenceLayerCount === 0
       && !advancedFillHasVisibleVectorLineArt
     ) {
-      return "표시 중인 다른 래스터를 채우기 참조로 지정하거나 벡터 선화를 추가하세요.";
+      return t("studio.hostReason.fillReferenceOtherRaster", "표시 중인 다른 래스터를 채우기 참조로 지정하거나 벡터 선화를 추가하세요.");
     }
     if (
       advancedFillSettings.referenceScope === "all-visible"
       && referenceLayerCount === 0
       && !advancedFillHasVisibleVectorLineArt
     ) {
-      return "대상과 겹치는 다른 표시 래스터나 벡터 선화가 없어 현재 레이어 참조를 사용해야 해요.";
+      return t("studio.hostReason.fillReferenceCurrentLayerOnly", "대상과 겹치는 다른 표시 래스터나 벡터 선화가 없어 현재 레이어 참조를 사용해야 해요.");
     }
     return null;
   }
@@ -14362,13 +14363,13 @@ export function StudioCuttoonEditor({
         : advancedFillEligibleRasterElements.length === 1
           ? null
           : advancedFillEligibleRasterElements.length > 1
-            ? `채울 수 있는 래스터가 ${advancedFillEligibleRasterElements.length}개예요. 레이어에서 하나를 선택하세요.`
+            ? t("studio.hostReason.fillEligibleRastersCount", { count: advancedFillEligibleRasterElements.length }, "채울 수 있는 래스터가 {count}개예요. 레이어에서 하나를 선택하세요.")
             : advancedFillRasterLayers.length === 0
               ? null
             : advancedFillHasVisibleVectorLineArt
               ? null
               : selectedAdvancedFillRasterReason
-                ?? "채울 래스터 이미지나 표시 중인 벡터 선화가 없습니다.";
+                ?? t("studio.hostReason.fillNoRasterOrLineArt", "채울 래스터 이미지나 표시 중인 벡터 선화가 없습니다.");
   const advancedFillRasterArmed =
     selected?.type === "image" && advancedFillTargetUnsupportedReason(selected) === null;
   const advancedFillVectorArmed =
@@ -14467,7 +14468,7 @@ const pixelToolArmed =
         if (runId !== pixelMagneticFieldRunIdRef.current) return;
         const reason = error instanceof Error && error.message.trim()
           ? error.message.trim()
-          : t("studio.hostStatus.magneticLassoFieldLoadFailed", "자석 올가미 휘도장을 불러오지 못했습니다.");
+          : translateNow("studio.hostStatus.magneticLassoFieldLoadFailed", "자석 올가미 휘도장을 불러오지 못했습니다.");
         pixelMagneticFieldStateRef.current = {
           status: "unavailable",
           key: magneticLassoFieldKey,
@@ -14808,7 +14809,7 @@ const puppetWarpArmed =
         if (!isStudioCuttoonSourceFormat(w.format)) {
           setWorkHydrationFailed(true);
           setWorkHydrationUnsupportedFormat(true);
-          setError(t("studio.hostStatus.uploadWorkEditorBlocked", "업로드형 작품은 컷툰 편집기로 열 수 없어요. 업로드 편집 화면에서 수정해 주세요."));
+          setError(translateNow("studio.hostStatus.uploadWorkEditorBlocked", "업로드형 작품은 컷툰 편집기로 열 수 없어요. 업로드 편집 화면에서 수정해 주세요."));
           return;
         }
         const doc = w.doc as {
@@ -14972,7 +14973,7 @@ const puppetWarpArmed =
       .catch((e) => {
         if (!alive || controller.signal.aborted) return;
         setWorkHydrationFailed(true);
-        const message = e instanceof Error ? e.message : t("studio.hostStatus.workLoadFailed", "원고를 불러오지 못했습니다.");
+        const message = e instanceof Error ? e.message : translateNow("studio.hostStatus.workLoadFailed", "원고를 불러오지 못했습니다.");
         setWorkHydrationError(message);
         setError(message);
       });
@@ -15857,7 +15858,7 @@ const puppetWarpArmed =
         if (controller.signal.aborted) return;
         setSharedError(caughtError instanceof Error
           ? caughtError.message
-          : t("studio.hostStatus.sharedAssetsLoadFailed", "공유 에셋을 불러오지 못했어요."));
+          : translateNow("studio.hostStatus.sharedAssetsLoadFailed", "공유 에셋을 불러오지 못했어요."));
         setShared([]);
         setSharedNextOffset(null);
       })
@@ -16338,7 +16339,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (cause) {
       ecosystemSampleImportRef.current = sampleId;
-      setError(cause instanceof Error ? cause.message : t("studio.hostStatus.sampleWorkLoadFailed", "예제 작품을 불러오지 못했습니다."));
+      setError(cause instanceof Error ? cause.message : translateNow("studio.hostStatus.sampleWorkLoadFailed", "예제 작품을 불러오지 못했습니다."));
     }
   }, [autosaveChecked, commitPages, elements.length, hasAutosave, pages.length, params, remixId,
     setCurrentPageId, setQuickStartOpen, setTitle, sourceHydrationPending, workHydrated, workId]);
@@ -22028,8 +22029,8 @@ const puppetWarpArmed =
       setMarqueeIds([]);
       const shouldAutoSelectLatestDraw = selected?.type !== "image" && selected?.type !== "draw";
       const readyStatus = entry.target.sourceElementCount > 0
-        ? `표시 중인 벡터 선화 ${entry.target.sourceElementCount}개를 참조합니다. 닫힌 영역을 탭하세요. 적용 전까지 문서는 바뀌지 않습니다.`
-        : "빈 페이지 전체를 채울 준비가 됐어요. 캔버스를 탭하면 가장 아래에 색 레이어를 만들고, 적용 전까지 문서는 바뀌지 않습니다.";
+        ? t("studio.hostFillGuide.vectorReference", { count: entry.target.sourceElementCount }, "표시 중인 벡터 선화 {count}개를 참조합니다. 닫힌 영역을 탭하세요. 적용 전까지 문서는 바뀌지 않습니다.")
+        : t("studio.hostFillGuide.emptyPage", "빈 페이지 전체를 채울 준비가 됐어요. 캔버스를 탭하면 가장 아래에 색 레이어를 만들고, 적용 전까지 문서는 바뀌지 않습니다.");
       const openInspector = () => {
         if (shouldAutoSelectLatestDraw) {
           for (let i = activeElementsRef.current.length - 1; i >= 0; i -= 1) {
@@ -22095,7 +22096,7 @@ const puppetWarpArmed =
     setTool("select");
     const readyStatus = automaticallySelected
       ? `‘${target.name || elementLabel(target)}’ 레이어를 선택하고 채우기를 준비했어요. 캔버스의 닫힌 영역을 탭하세요.`
-      : "캔버스의 닫힌 영역을 탭하세요. 적용 전까지는 문서가 바뀌지 않습니다.";
+      : t("studio.hostFillGuide.tapClosedArea", "캔버스의 닫힌 영역을 탭하세요. 적용 전까지는 문서가 바뀌지 않습니다.");
     if (selected?.id !== target.id || marqueeIds.length > 0) {
       if (automaticallySelected) {
         advancedFillAutoArmTargetRef.current = { targetId: target.id, status: readyStatus };
@@ -23843,7 +23844,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
 
   async function captureReadyStageForPage(page: PageState, onReady?: (page: PageState) => void): Promise<Konva.Stage> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 캡처할 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredCapture", "공동 문서를 불러온 뒤 캡처할 수 있어요."));
     }
     const { waitForStudioCaptureReady } = await loadStudioCaptureReadinessRuntime();
     return waitForStudioCaptureReady({
@@ -23866,7 +23867,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     historyIndex: number
   ): Promise<Konva.Stage> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 타임랩스를 만들 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredTimelapse", "공동 문서를 불러온 뒤 타임랩스를 만들 수 있어요."));
     }
     const {
       collectStudioCaptureAssetSources,
@@ -25324,23 +25325,23 @@ function clearSelectionForEdit() {
     webtoonTheme,
   ]);
   const studioFilterUnavailableReason = timelinePlaying
-    ? "타임라인 재생을 멈춘 뒤 필터를 적용하세요."
+    ? t("studio.hostReason.filterTimelinePlaying", "타임라인 재생을 멈춘 뒤 필터를 적용하세요.")
     : timelapseCapturing
-      ? "타임랩스 캡처가 끝난 뒤 필터를 적용하세요."
+      ? t("studio.hostReason.filterTimelapseCapturing", "타임랩스 캡처가 끝난 뒤 필터를 적용하세요.")
       : saving
-        ? "저장이 끝난 뒤 필터를 적용하세요."
+        ? t("studio.hostReason.filterSaving", "저장이 끝난 뒤 필터를 적용하세요.")
         : activeSurfaceReviewLocked
-          ? "검토 잠금을 해제한 뒤 필터를 적용하세요."
+          ? t("studio.hostReason.filterReviewLocked", "검토 잠금을 해제한 뒤 필터를 적용하세요.")
           : sharedDocument && !studioDirectImageFilterTarget
-            ? "공동 작업 문서의 페이지 합성 필터는 준비 중입니다. 지금은 이미지 레이어를 선택해 필터를 적용하세요."
+            ? t("studio.hostReason.filterSharedPageCompositePending", "공동 작업 문서의 페이지 합성 필터는 준비 중입니다. 지금은 이미지 레이어를 선택해 필터를 적용하세요.")
           : masterEditMode && selected?.type !== "image"
-            ? "마스터 편집에서는 필터를 적용할 이미지 레이어를 선택하세요."
+            ? t("studio.hostReason.filterMasterSelectImageLayer", "마스터 편집에서는 필터를 적용할 이미지 레이어를 선택하세요.")
             : masterEditMode && selectedImageMutationLocked
-              ? "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요."
+              ? t("studio.hostReason.filterLayerLocked", "이미지와 상위 그룹의 잠금을 해제한 뒤 필터를 적용하세요.")
               : masterEditMode && menuSelectedAnimatedImage
-                ? "애니메이션 이미지는 정적 프레임으로 만든 뒤 필터를 적용하세요."
+                ? t("studio.hostReason.filterAnimatedImage", "애니메이션 이미지는 정적 프레임으로 만든 뒤 필터를 적용하세요.")
                 : masterEditMode && selected && isEffectivelyHidden(selected, groups)
-                  ? "숨긴 이미지 레이어를 다시 표시한 뒤 필터를 적용하세요."
+                  ? t("studio.hostReason.filterHiddenImageLayer", "숨긴 이미지 레이어를 다시 표시한 뒤 필터를 적용하세요.")
                   // 세션 사유가 전부 통과했으면 마지막으로 문서 자체를 묻는다.
                   : studioFilterDocumentPreflightReason;
   const menuFilterDisabled = studioFilterPreparationBusy || studioFilterUnavailableReason !== null;
@@ -25935,7 +25936,7 @@ function clearSelectionForEdit() {
   // 현재 페이지 → 벡터 SVG 직렬화(요소 데이터 필요라 여기서 조립). 다운로드·고지는 내보내기 패널이 담당.
   async function exportCurrentPageToSvg(): Promise<SvgExportResult> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 SVG로 내보낼 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredSvg", "공동 문서를 불러온 뒤 SVG로 내보낼 수 있어요."));
     }
     const [
       { runStudioSvgExportWorker },
@@ -25960,7 +25961,7 @@ function clearSelectionForEdit() {
 
   async function exportCurrentPageToVectorPdf(): Promise<import("./export/studio-vector-pdf-product").StudioVectorPdfExportResult> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 벡터 PDF로 내보낼 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredVectorPdf", "공동 문서를 불러온 뒤 벡터 PDF로 내보낼 수 있어요."));
     }
     const captured = await handleCapturePagesForPreset("current");
     const canvas = captured[0];
@@ -25982,7 +25983,7 @@ function clearSelectionForEdit() {
 
   async function exportCurrentPageToInkMl(): Promise<StudioInkMlExportResult> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 InkML로 내보낼 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredInkMl", "공동 문서를 불러온 뒤 InkML로 내보낼 수 있어요."));
     }
     const { exportStudioInkMl } = await import("./studio-inkml-interchange");
     const pageGroups = activePage.groups ?? EMPTY_LAYER_GROUPS;
@@ -25995,7 +25996,7 @@ function clearSelectionForEdit() {
 
   async function exportCurrentPageToWillV1(): Promise<StudioWillV1PageExportResult> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 WILL v1으로 내보낼 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredWill", "공동 문서를 불러온 뒤 WILL v1으로 내보낼 수 있어요."));
     }
     const pageGroups = activePage.groups ?? EMPTY_LAYER_GROUPS;
     const drawElements = activePage.elements.filter(
@@ -26015,7 +26016,7 @@ function clearSelectionForEdit() {
   // isEffectivelyHidden 기준으로 미리 걸러 넘긴다.
   async function exportCurrentPageToPsd(): Promise<PsdExportResult> {
     if (!ensureSharedDocumentAvailableForExport()) {
-      throw new Error("공동 문서를 불러온 뒤 PSD로 내보낼 수 있어요.");
+      throw new Error(hostErrorText("studio.hostError.sharedDocRequiredPsd", "공동 문서를 불러온 뒤 PSD로 내보낼 수 있어요."));
     }
     const originalMasterEditMode = masterEditMode;
     setSelectedId(null);
@@ -26468,7 +26469,7 @@ function clearSelectionForEdit() {
       })
       .catch((cause) => {
         if (!requestIsCurrent()) return;
-        setServerRevisionError(cause instanceof Error ? cause.message : t("studio.hostStatus.serverRevisionsLoadFailed", "서버 버전 목록을 불러오지 못했어요."));
+        setServerRevisionError(cause instanceof Error ? cause.message : translateNow("studio.hostStatus.serverRevisionsLoadFailed", "서버 버전 목록을 불러오지 못했어요."));
       })
       .finally(() => {
         if (editorMountedRef.current && requestId === serverRevisionRequestRef.current) {
@@ -27668,9 +27669,7 @@ function clearSelectionForEdit() {
       });
       if (!transaction.ok) throw new Error(transaction.message);
       if (!commit([...transaction.transaction.nextElements], undefined, activePage.id)) {
-        throw new Error(
-          `문서가 잠겨 Living Ink ${kind === "fix" ? "정착" : "지우기"}를 저장하지 못했습니다.`,
-        );
+        throw new Error(t("studio.hostLivingInk.lockedSaveFailed", { action: kind === "fix" ? t("studio.hostLivingInk.actionFix", "정착") : t("studio.hostLivingInk.actionClear", "지우기") }, "문서가 잠겨 Living Ink {action}를 저장하지 못했습니다."));
       }
       transactionCommitted = true;
       if (livingInkClearRequest) {
@@ -27700,7 +27699,7 @@ function clearSelectionForEdit() {
       if (!livingInkCoordinatorRef.current.acceptAction(work)) {
         livingInkAcceptedAuthorityRef.current = null;
         livingInkRejectedAuthorityRef.current = committedAuthority;
-        const actionLabel = kind === "fix" ? "정착" : "지우기";
+        const actionLabel = kind === "fix" ? t("studio.hostLivingInk.actionFix", "정착") : t("studio.hostLivingInk.actionClear", "지우기");
         const message = t("studio.hostStatus.livingInkPngSavedStateFailed", { actionLabel }, "{actionLabel} PNG는 저장됐지만 물리 상태 고정에 실패해 재열기 전까지 편집을 비활성화합니다.");
         setError(message);
         void livingInkCoordinatorRef.current.failClosed(message);
@@ -27710,7 +27709,8 @@ function clearSelectionForEdit() {
       }
       setSelectedId(transaction.transaction.selectionId);
       announceDrawingShortcut(
-        `수채 번짐 · ${scope === "selection" ? "선택 영역" : "전체"} ${kind === "fix" ? "정착" : "지우기"}`,
+        t("studio.hostLivingInk.announce", { scope: scope === "selection" ? t("studio.hostLivingInk.scopeSelection", "선택 영역") : t("studio.hostLivingInk.scopeAll", "전체"), action: kind === "fix" ? t("studio.hostLivingInk.actionFix", "정착") : t("studio.hostLivingInk.actionClear", "지우기") },
+          "수채 번짐 · {scope} {action}"),
       );
     } catch (cause) {
       if (work && !transactionCommitted) {
@@ -27723,7 +27723,7 @@ function clearSelectionForEdit() {
       setError(
         cause instanceof Error
           ? cause.message
-          : `수채 번짐 ${kind === "fix" ? "정착" : "지우기"}를 완료하지 못했습니다.`,
+          : t("studio.hostLivingInk.actionFailed", { action: kind === "fix" ? t("studio.hostLivingInk.actionFix", "정착") : t("studio.hostLivingInk.actionClear", "지우기") }, "수채 번짐 {action}를 완료하지 못했습니다."),
       );
     } finally {
       // A committed action remains input-exclusive until StudioKonvaImageNode proves that the

@@ -6,6 +6,7 @@
  * 효과음이 없는 페이지는 점선 테두리로 비워 표시해 공백 구간이 한눈에 보이게 한다.
  * 판정은 분석기가 이미 끝낸 수치뿐이며, 이 컴포넌트는 새로 계산하지 않는다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import type { ReactElement } from "react";
 
 import {
@@ -34,7 +35,7 @@ export function StudioScrollRhythmSfxStrip({
         <p className="text-[11px] text-fg-3">
           {analysis.totalSfxCount > 0
             ? `효과음 ${analysis.totalSfxCount}개 · 화면당 밀집 페이지 ${analysis.sfxDensePageCount}곳 · 가장 긴 효과음 없는 구간 ${analysis.longestSfxGapScreens.toFixed(1)}화면`
-            : "이 회차에는 효과음이 없습니다."}
+            : r3c07StatusText("studio.panelStatus.r3c07.scrollRhythmSfx.sfxEmpty", "이 회차에는 효과음이 없습니다.")}
         </p>
       </div>
 

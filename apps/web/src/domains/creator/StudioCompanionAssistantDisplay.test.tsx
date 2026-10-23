@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -236,7 +236,58 @@ describe("StudioCompanionAssistantDisplay — 효과음 목록", () => {
     fireEvent.click(screen.getByRole("button", { name: "쿵 캔버스에 삽입" }));
 
     expect(onInsertSfxText).toHaveBeenCalledWith("쿵");
-    expect(screen.getByRole("status").textContent).toContain("캔버스에 삽입했습니다");
+    // kind="inserted" 상태가 리졸버 문구로 렌더되고 톤은 성공(text-good)으로 도출된다.
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("“쿵”을 캔버스에 삽입했습니다");
+    expect(status.className).toContain("text-good");
+    expect(status.className).not.toContain("text-bad");
+  });
+});
+
+describe("StudioCompanionAssistantDisplay — 삽입 피드백 상태 전이 (D2)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("삽입 콜백이 던지면 kind=insertFailed 문구와 실패 톤으로 알린다", () => {
+    const onInsertSfxText = vi.fn(() => {
+      throw new Error("canvas unavailable");
+    });
+    render(<StudioCompanionAssistantDisplay onInsertSfxText={onInsertSfxText} />);
+    openTab("효과음 사전");
+
+    fireEvent.click(screen.getByRole("button", { name: "쿵 캔버스에 삽입" }));
+
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("“쿵” 삽입에 실패했습니다");
+    expect(status.className).toContain("text-bad");
+  });
+
+  it("삽입 피드백은 1800ms 뒤 자동으로 소멸한다(null 전이)", () => {
+    vi.useFakeTimers();
+    const onInsertSfxText = vi.fn();
+    render(<StudioCompanionAssistantDisplay onInsertSfxText={onInsertSfxText} />);
+    openTab("효과음 사전");
+
+    fireEvent.click(screen.getByRole("button", { name: "쿵 캔버스에 삽입" }));
+    expect(screen.getByRole("status").textContent).toBe("“쿵”을 캔버스에 삽입했습니다");
+
+    act(() => {
+      vi.advanceTimersByTime(1800);
+    });
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
+  it("복사 버튼을 누르면 삽입 피드백이 즉시 비워진다(null 전이)", () => {
+    const onInsertSfxText = vi.fn();
+    render(<StudioCompanionAssistantDisplay onInsertSfxText={onInsertSfxText} />);
+    openTab("효과음 사전");
+
+    fireEvent.click(screen.getByRole("button", { name: "쿵 캔버스에 삽입" }));
+    expect(screen.getByRole("status").textContent).toContain("삽입했습니다");
+
+    fireEvent.click(screen.getByRole("button", { name: "쿵 복사" }));
+    expect(screen.getByRole("status").textContent).not.toContain("삽입했습니다");
   });
 });
 

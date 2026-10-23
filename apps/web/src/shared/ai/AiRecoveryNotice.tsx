@@ -9,6 +9,7 @@ import {
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { cn } from "@/shared/lib/utils";
 
+import { aiSharedStatusText } from "./ai-status-i18n";
 import { inferAiRecoveryCode, type AiRecoveryCode } from "./ai-recovery-code";
 
 const META: Record<AiRecoveryCode, {
@@ -48,17 +49,27 @@ const META: Record<AiRecoveryCode, {
     iconTone: "text-warn",
   },
   http_error: {
-    title: "AI 요청을 완료하지 못했어요",
+    title: "AI 요청을 완료하지 못했어요", // i18n-exempt: ko 폴백 원문 데이터 — 렌더 지점에서 META_TITLE_KEYS(shared.aiStatus.recovery.*)로 해석한다.
     icon: TriangleAlert,
     tone: "border-bad/35 bg-bad/10",
     iconTone: "text-bad",
   },
   parse_error: {
-    title: "AI 응답을 안전하게 읽지 못했어요",
+    title: "AI 응답을 안전하게 읽지 못했어요", // i18n-exempt: ko 폴백 원문 데이터 — 렌더 지점에서 META_TITLE_KEYS(shared.aiStatus.recovery.*)로 해석한다.
     icon: TriangleAlert,
     tone: "border-warn/40 bg-warn/10",
     iconTone: "text-warn",
   },
+};
+
+const META_TITLE_KEYS: Record<AiRecoveryCode, string> = {
+  login_required: "shared.aiStatus.recovery.loginRequired",
+  free_exhausted: "shared.aiStatus.recovery.freeExhausted",
+  not_configured: "shared.aiStatus.recovery.notConfigured",
+  invalid_input: "shared.aiStatus.recovery.invalidInput",
+  network_error: "shared.aiStatus.recovery.networkError",
+  http_error: "shared.aiStatus.recovery.httpError",
+  parse_error: "shared.aiStatus.recovery.parseError",
 };
 
 export function AiRecoveryNotice({
@@ -107,7 +118,7 @@ export function AiRecoveryNotice({
           <Icon size={15} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <strong className="block text-xs font-black text-fg">{meta.title}</strong>
+          <strong className="block text-xs font-black text-fg">{aiSharedStatusText(META_TITLE_KEYS[recoveryCode], meta.title)}</strong>
           <p className="mt-1 text-[0.67rem] leading-relaxed text-fg-2">{message}</p>
           {(recoveryCode === "login_required" || showSettings || showRetry) ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -138,7 +149,7 @@ export function AiRecoveryNotice({
                   onClick={onRetry}
                   className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-panel px-3 text-xs font-bold text-fg-2 hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  <RefreshCw size={13} aria-hidden /> 다시 시도
+                  <RefreshCw size={13} aria-hidden /> {aiSharedStatusText("shared.aiStatus.recovery.retry", "다시 시도")}
                 </button>
               ) : null}
             </div>

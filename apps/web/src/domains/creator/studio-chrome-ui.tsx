@@ -1,4 +1,5 @@
 import { toolbarViewWidth } from "./studio-toolbar-configuration";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import type { StudioToolbarView } from "./studio-app-settings";
 /**
  * Studio chrome UI — toolbar, dock, and menu-shell primitives shared by StudioPage.
@@ -42,6 +43,7 @@ import {
 } from "./studio-rail-tool-localization";
 import { studioToolHintFromLabel } from "./studio-tool-hints";
 import { StudioToolHintTarget } from "./StudioToolHint";
+import { useStudioWindowKeyboardFocus } from "./a11y/use-studio-window-keyboard-focus";
 
 import type { StudioToolHintConsumerPreviewFields } from "./studio-tool-hint-preview-kind";
 import type { LucideIcon } from "lucide-react";
@@ -217,10 +219,8 @@ export function StudioToolBelt({
   );
 }
 
-/**
- * 툴바 그룹 팝오버 — document.body 포털.
- * 데스크톱에서 레거시 툴벨트가 off-screen fixed 로 파킹돼 있어도 뷰포트 기준으로 표시된다.
- */
+/** 툴바 그룹 팝오버 — document.body 포털. 레거시 툴벨트가 off-screen fixed 로 파킹돼 있어도 뷰포트 기준으로 표시된다.
+ * 키보드로 연 창은 포커스를 받고 닫히면 여는 단추로 돌려준다(use-studio-window-keyboard-focus). */
 export interface StudioFloatingToolPopoverDesktopWindow {
   readonly label: string;
   readonly onClose: () => void;
@@ -247,6 +247,7 @@ export function StudioFloatingToolPopover({
   desktopWindow?: StudioFloatingToolPopoverDesktopWindow;
 }): ReactElement | null {
   const desktop = useMediaQuery(STUDIO_DESKTOP_FLOATING_QUERY);
+  useStudioWindowKeyboardFocus(`[data-studio-tool-popover="${id}"]`, open);
   if (!open || typeof document === "undefined") return null;
   if (desktop && desktopWindow) {
     return createPortal(
@@ -278,7 +279,7 @@ export function StudioFloatingToolPopover({
     <div
       data-studio-tool-popover={id}
       role="dialog"
-      aria-modal="false"
+      aria-modal="false" tabIndex={-1}
       className={className}
     >
       {children}
@@ -655,9 +656,7 @@ export const StudioDockButton = forwardRef<
     <StudioToolHintTarget
       disabled={disabled}
       unavailableReason={
-        disabled
-          ? hintUnavailableReason ?? (typeof title === "string" ? title : "현재 작업 상태에서는 이 도구를 사용할 수 없어요.")
-          : undefined
+        disabled ? hintUnavailableReason ?? (typeof title === "string" ? title : frozenStatus5Text("studio.frozenStatus5.chrome.toolUnavailable", "현재 작업 상태에서는 이 도구를 사용할 수 없어요.")) : undefined
       }
       preferredSide="top"
       className="min-w-11 flex-none"

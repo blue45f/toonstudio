@@ -1,4 +1,5 @@
 import { Download, Plus } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   createStudioPitchPptxBlob,
@@ -52,7 +53,7 @@ export function StudioPitchPptxCard({
       globalThis.setTimeout(() => URL.revokeObjectURL(url), 0);
       onNotice("편집 가능한 PowerPoint(.pptx)를 저장했습니다.");
     } catch (cause) {
-      onNotice(cause instanceof Error ? cause.message : "PPTX를 만들지 못했습니다.");
+      onNotice(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.pitchPptx.createFailed", "PPTX를 만들지 못했습니다."));
     }
   };
 
@@ -92,7 +93,7 @@ export function StudioPitchPptxCard({
                     const value = normalizedPitchTitle(event.currentTarget.value);
                     if (value === null) {
                       event.currentTarget.value = slide.title;
-                      onNotice("슬라이드 제목은 비워 둘 수 없습니다.");
+                      onNotice(r3c04StatusText("studio.r3c04Status.production.pitchPptx.titleEmpty", "슬라이드 제목은 비워 둘 수 없습니다."));
                       return;
                     }
                     event.currentTarget.value = value;

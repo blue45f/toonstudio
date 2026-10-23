@@ -19,6 +19,7 @@ import {
 } from "./integration-platform-storage";
 import type { IntegrationProviderStatus, PublishPackageResponse } from "./integration-platform-types";
 import { SerialCenterOverview } from "./SerialCenterOverview";
+import { integrationsStatusText } from "./integrations-status-i18n";
 
 import { PublishSurfaceGuide } from "@/shared/components/publish-surface-guide";
 import { EpisodeStageStepper } from "@/shared/components/episode-stage-stepper";
@@ -123,7 +124,7 @@ export function PublishCenterPage() {
       });
       setResult(response);
     } catch (reason) {
-      setMessage(await getApiErrorMessage(reason, "게시 패키지를 만들지 못했습니다."));
+      setMessage(await getApiErrorMessage(reason, integrationsStatusText("integrations.status.publish.packageFailed", "게시 패키지를 만들지 못했습니다.")));
     } finally {
       setBusy(false);
     }
@@ -151,7 +152,7 @@ export function PublishCenterPage() {
       });
       setFeedResult(response);
     } catch (reason) {
-      setMessage(await getApiErrorMessage(reason, "피드 미리보기를 만들지 못했습니다."));
+      setMessage(await getApiErrorMessage(reason, integrationsStatusText("integrations.status.publish.feedPreviewFailed", "피드 미리보기를 만들지 못했습니다.")));
     } finally {
       setBusy(false);
     }
@@ -379,7 +380,7 @@ export function PublishCenterPage() {
                 {!result ? <p className="mt-3 text-sm leading-6 text-fg-2">{ko ? "입력과 채널을 확인한 뒤 게시 패키지를 생성하세요." : "Build a package after reviewing details and channels."}</p> : (
                   <>
                     <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-panel p-3"><p className="text-xs text-fg-3">{ko ? "규격" : "Valid"}</p><p className="mt-1 font-bold text-fg">{result.ready ? "통과" : "실패"}</p></div>
+                      <div className="rounded-xl bg-panel p-3"><p className="text-xs text-fg-3">{ko ? "규격" : "Valid"}</p><p className="mt-1 font-bold text-fg">{result.ready ? integrationsStatusText("integrations.status.publish.validationPassed", "통과") : integrationsStatusText("integrations.status.publish.validationFailed", "실패")}</p></div>
                       <div className="rounded-xl bg-panel p-3"><p className="text-xs text-fg-3">{ko ? "직접 실행" : "Direct"}</p><p className="mt-1 font-bold text-fg">{result.directlyExecutable ? "바로 실행" : "전달 필요"}</p></div>
                     </div>
                     <ul className="mt-4 space-y-2">

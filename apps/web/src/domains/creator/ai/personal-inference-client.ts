@@ -3,6 +3,42 @@ import {
   validateUserAiBaseUrl,
 } from "@/shared/ai/unified-ai-settings";
 
+import { aiErrorText } from "./studio-ai-error-i18n";
+
+/**
+ * 개인 추론 클라이언트 오류 (T3, 2026-10-22). 메시지는 생산 시점에 현재
+ * 로케일로 해석해 싣고(aiErrorText), 기계 판정용 code를 함께 보유한다 —
+ * 호출부의 `cause.message` 표시 계약은 그대로이며, code가 영속·전송돼도
+ * 표시측이 키(studio.aiError.personal.*)로 재해석할 수 있다.
+ */
+export type PersonalInferenceErrorCode =
+  | "runtime_not_configured"
+  | "response_size_unknown"
+  | "response_too_large"
+  | "invalid_path"
+  | "request_rejected"
+  | "invalid_json"
+  | "invalid_job"
+  | "invalid_artifact_info"
+  | "capabilities_unknown"
+  | "asset_too_large"
+  | "invalid_upload_response"
+  | "job_list_unknown"
+  | "invalid_idempotency_key"
+  | "invalid_job_id"
+  | "unverified_artifact"
+  | "artifact_chunk_truncated"
+  | "integrity_mismatch";
+
+export class PersonalInferenceError extends Error {
+  readonly code: PersonalInferenceErrorCode;
+  constructor(code: PersonalInferenceErrorCode, message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "PersonalInferenceError";
+    this.code = code;
+  }
+}
+
 export type PersonalInferenceMode = "image-to-video" | "image-to-3d" | "model-to-2d";
 export interface PersonalInferenceArtifact { name: string; bytes: number; mime: string; sha256: string }
 export interface PersonalInferenceJob {
@@ -38,12 +74,12 @@ const STATES = new Set(["queued", "running", "succeeded", "failed", "cancelled",
 function object(value: unknown): value is Record<string, unknown> { return Boolean(value && typeof value === "object" && !Array.isArray(value)); }
 function connection() {
   const settings = getUnifiedAiAuxSettings();
-  if (!settings.creatorRuntimeBaseUrl || !settings.creatorRuntimeToken) throw new Error("통합 AI 설정에서 외부 Creator Runtime 주소와 토큰을 등록하세요.");
+  if (!settings.creatorRuntimeBaseUrl || !settings.creatorRuntimeToken) throw new PersonalInferenceError("runtime_not_configured", aiErrorText("studio.aiError.personal.runtimeNotConfigured", "통합 AI 설정에서 외부 Creator Runtime 주소와 토큰을 등록하세요."));
   return { base: validateUserAiBaseUrl(settings.creatorRuntimeBaseUrl, false), token: settings.creatorRuntimeToken, owner: settings.creatorRuntimeOwner };
 }
 async function boundedBytes(response: Response, maximum: number): Promise<Uint8Array> {
   const declared = Number(response.headers.get("content-length") ?? 0);
-  if (declared > maximum || !response.body) { await response.body?.cancel(); throw new Error("클라우드 추론 런타임 응답 크기를 확인할 수 없습니다."); }
+  if (declared > maximum || !response.body) { await response.body?.cancel(); throw new PersonalInferenceError("response_size_unknown", aiErrorText("studio.aiError.personal.responseSizeUnknown", "클라우드 추론 런타임 응답 크기를 확인할 수 없습니다.")); }
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -52,7 +88,7 @@ async function boundedBytes(response: Response, maximum: number): Promise<Uint8A
       const next = await reader.read();
       if (next.done) break;
       total += next.value.byteLength;
-      if (total > maximum) { await reader.cancel(); throw new Error("클라우드 추론 런타임 응답이 허용 크기를 초과했습니다."); }
+      if (total > maximum) { await reader.cancel(); throw new PersonalInferenceError("response_too_large", aiErrorText("studio.aiError.personal.responseTooLarge", "클라우드 추론 런타임 응답이 허용 크기를 초과했습니다.")); }
       chunks.push(next.value);
     }
   } finally { reader.releaseLock(); }
@@ -78,20 +114,20 @@ export function isPersonalInferenceRequestPath(path: string): boolean {
 }
 
 async function request(path: string, init: RequestInit = {}, maximum = 1536 * 1024): Promise<Response> {
-  if (!isPersonalInferenceRequestPath(path)) throw new Error("클라우드 추론 런타임 경로가 올바르지 않습니다.");
+  if (!isPersonalInferenceRequestPath(path)) throw new PersonalInferenceError("invalid_path", aiErrorText("studio.aiError.personal.invalidPath", "클라우드 추론 런타임 경로가 올바르지 않습니다."));
   const current = connection();
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${current.token}`);
   headers.set("X-Creator-Owner", current.owner);
   const response = await fetch(`${current.base}${path}`, { ...init, headers, credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", cache: "no-store" });
   const bytes = await boundedBytes(response, maximum);
-  if (!response.ok) throw new Error(`클라우드 추론 런타임 요청 실패 (HTTP ${response.status}). 자동 재시도하지 않았습니다.`);
+  if (!response.ok) throw new PersonalInferenceError("request_rejected", aiErrorText("studio.aiError.personal.requestRejected", { status: response.status }, "클라우드 추론 런타임 요청 실패 (HTTP {status}). 자동 재시도하지 않았습니다."));
   return new Response(Uint8Array.from(bytes).buffer, { status: response.status, headers: response.headers });
 }
 async function json<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await request(path, init);
   try { return await response.json() as T; }
-  catch (error) { throw new Error("클라우드 추론 런타임 JSON 응답을 확인하지 못했습니다.", { cause: error }); }
+  catch (error) { throw new PersonalInferenceError("invalid_json", aiErrorText("studio.aiError.personal.invalidJson", "클라우드 추론 런타임 JSON 응답을 확인하지 못했습니다."), { cause: error }); }
 }
 function base64(bytes: Uint8Array): string {
   let value = "";
@@ -107,11 +143,11 @@ export function validatePersonalInferenceJob(value: unknown): PersonalInferenceJ
     || typeof value.mode !== "string" || !["image-to-video", "image-to-3d", "model-to-2d"].includes(value.mode)
     || typeof value.state !== "string" || !STATES.has(value.state)
     || typeof value.progress !== "number" || value.progress < 0 || value.progress > 100
-    || typeof value.stage !== "string" || !Array.isArray(value.artifacts) || value.artifacts.length > 16) throw new Error("클라우드 추론 작업 응답이 올바르지 않습니다.");
+    || typeof value.stage !== "string" || !Array.isArray(value.artifacts) || value.artifacts.length > 16) throw new PersonalInferenceError("invalid_job", aiErrorText("studio.aiError.personal.invalidJob", "클라우드 추론 작업 응답이 올바르지 않습니다."));
   const artifacts = value.artifacts.map((entry) => {
     if (!object(entry) || typeof entry.name !== "string" || !/^[a-z0-9_-]+\.(?:mp4|glb|png|json|srt)$/u.test(entry.name)
       || typeof entry.bytes !== "number" || !Number.isSafeInteger(entry.bytes) || entry.bytes <= 0 || entry.bytes > 256 * CHUNK
-      || typeof entry.mime !== "string" || typeof entry.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(entry.sha256)) throw new Error("클라우드 추론 결과 파일 정보가 올바르지 않습니다.");
+      || typeof entry.mime !== "string" || typeof entry.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(entry.sha256)) throw new PersonalInferenceError("invalid_artifact_info", aiErrorText("studio.aiError.personal.invalidArtifactInfo", "클라우드 추론 결과 파일 정보가 올바르지 않습니다."));
     return { name: entry.name, bytes: entry.bytes, mime: entry.mime, sha256: entry.sha256 };
   });
   return { id: value.id, mode: value.mode as PersonalInferenceMode, state: value.state as PersonalInferenceJob["state"], progress: value.progress, stage: value.stage.slice(0, 160), error: typeof value.error === "string" ? value.error.slice(0, 500) : null, artifacts };
@@ -119,7 +155,7 @@ export function validatePersonalInferenceJob(value: unknown): PersonalInferenceJ
 
 export async function personalInferenceCapabilities(signal?: AbortSignal): Promise<PersonalInferenceCapabilities> {
   const value = await json<unknown>("/capabilities", { signal });
-  if (!object(value) || typeof value.enabled !== "boolean" || !object(value.engines)) throw new Error("클라우드 추론 런타임 기능 정보를 확인하지 못했습니다.");
+  if (!object(value) || typeof value.enabled !== "boolean" || !object(value.engines)) throw new PersonalInferenceError("capabilities_unknown", aiErrorText("studio.aiError.personal.capabilitiesUnknown", "클라우드 추론 런타임 기능 정보를 확인하지 못했습니다."));
   const engines: PersonalInferenceCapabilities["engines"] = {};
   for (const mode of ["image-to-video", "image-to-3d", "model-to-2d"] as const) {
     const raw = value.engines[mode];
@@ -131,11 +167,11 @@ export async function personalInferenceCapabilities(signal?: AbortSignal): Promi
 export async function uploadPersonalInferenceAsset(file: File, signal: AbortSignal, onProgress: (percent: number) => void): Promise<string> {
   const mime = file.name.toLowerCase().endsWith(".glb") ? "model/gltf-binary" : file.type;
   const maximum = mime === "model/gltf-binary" ? 32 * CHUNK : 8 * CHUNK;
-  if (!["image/png", "image/jpeg", "image/webp", "model/gltf-binary"].includes(mime) || !file.size || file.size > maximum) throw new Error("이미지는 8MB, GLB는 32MB 이하만 사용할 수 있습니다.");
+  if (!["image/png", "image/jpeg", "image/webp", "model/gltf-binary"].includes(mime) || !file.size || file.size > maximum) throw new PersonalInferenceError("asset_too_large", aiErrorText("studio.aiError.personal.assetTooLarge", "이미지는 8MB, GLB는 32MB 이하만 사용할 수 있습니다."));
   const checksum = await sha256(await file.arrayBuffer());
   signal.throwIfAborted();
   const upload = await json<{ id: string; chunkBytes: number; chunks: number }>("/uploads", { method: "POST", signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mime, bytes: file.size, sha256: checksum }) });
-  if (!ID.test(upload.id) || upload.chunkBytes !== CHUNK || upload.chunks !== Math.ceil(file.size / CHUNK)) throw new Error("클라우드 추론 런타임 업로드 응답이 올바르지 않습니다.");
+  if (!ID.test(upload.id) || upload.chunkBytes !== CHUNK || upload.chunks !== Math.ceil(file.size / CHUNK)) throw new PersonalInferenceError("invalid_upload_response", aiErrorText("studio.aiError.personal.invalidUploadResponse", "클라우드 추론 런타임 업로드 응답이 올바르지 않습니다."));
   try {
     for (let index = 0; index < upload.chunks; index += 1) {
       signal.throwIfAborted();
@@ -153,30 +189,30 @@ export async function uploadPersonalInferenceAsset(file: File, signal: AbortSign
 
 export async function listPersonalInferenceJobs(signal?: AbortSignal): Promise<PersonalInferenceJob[]> {
   const value = await json<{ jobs?: unknown[] }>("/jobs", { signal });
-  if (!Array.isArray(value.jobs) || value.jobs.length > 40) throw new Error("클라우드 추론 작업 목록을 확인하지 못했습니다.");
+  if (!Array.isArray(value.jobs) || value.jobs.length > 40) throw new PersonalInferenceError("job_list_unknown", aiErrorText("studio.aiError.personal.jobListUnknown", "클라우드 추론 작업 목록을 확인하지 못했습니다."));
   return value.jobs.map(validatePersonalInferenceJob);
 }
 export async function submitPersonalInferenceJob(input: PersonalInferenceRequest, key: string, signal: AbortSignal): Promise<PersonalInferenceJob> {
-  if (!/^[A-Za-z0-9_-]{16,128}$/u.test(key)) throw new Error("중복 방지 요청 키가 올바르지 않습니다.");
+  if (!/^[A-Za-z0-9_-]{16,128}$/u.test(key)) throw new PersonalInferenceError("invalid_idempotency_key", aiErrorText("studio.aiError.personal.invalidIdempotencyKey", "중복 방지 요청 키가 올바르지 않습니다."));
   return validatePersonalInferenceJob(await json("/jobs", { method: "POST", signal, headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(input) }));
 }
 export async function cancelPersonalInferenceJob(id: string): Promise<PersonalInferenceJob> {
-  if (!ID.test(id)) throw new Error("작업 ID가 올바르지 않습니다.");
+  if (!ID.test(id)) throw new PersonalInferenceError("invalid_job_id", aiErrorText("studio.aiError.personal.invalidJobId", "작업 ID가 올바르지 않습니다."));
   return validatePersonalInferenceJob(await json(`/jobs/${id}/cancel`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }));
 }
 export async function downloadPersonalInferenceArtifact(job: PersonalInferenceJob, artifact: PersonalInferenceArtifact, signal: AbortSignal, onProgress: (percent: number) => void): Promise<Blob> {
   validatePersonalInferenceJob(job);
-  if (job.state !== "succeeded" || !job.artifacts.some((entry) => entry.name === artifact.name && entry.sha256 === artifact.sha256)) throw new Error("검증되지 않은 결과 파일입니다.");
+  if (job.state !== "succeeded" || !job.artifacts.some((entry) => entry.name === artifact.name && entry.sha256 === artifact.sha256)) throw new PersonalInferenceError("unverified_artifact", aiErrorText("studio.aiError.personal.unverifiedArtifact", "검증되지 않은 결과 파일입니다."));
   const output = new Uint8Array(artifact.bytes);
   const chunks = Math.ceil(artifact.bytes / CHUNK);
   for (let index = 0; index < chunks; index += 1) {
     const response = await request(`/jobs/${job.id}/artifacts/${artifact.name}/chunks/${index}`, { signal }, CHUNK);
     const bytes = new Uint8Array(await response.arrayBuffer());
     const expected = Math.min(CHUNK, artifact.bytes - index * CHUNK);
-    if (bytes.length !== expected) throw new Error("결과 파일 조각이 잘렸습니다.");
+    if (bytes.length !== expected) throw new PersonalInferenceError("artifact_chunk_truncated", aiErrorText("studio.aiError.personal.artifactChunkTruncated", "결과 파일 조각이 잘렸습니다."));
     output.set(bytes, index * CHUNK);
     onProgress(Math.round(((index + 1) / chunks) * 100));
   }
-  if (await sha256(output.buffer) !== artifact.sha256) throw new Error("결과 파일 무결성 검사에 실패했습니다.");
+  if (await sha256(output.buffer) !== artifact.sha256) throw new PersonalInferenceError("integrity_mismatch", aiErrorText("studio.aiError.personal.integrityMismatch", "결과 파일 무결성 검사에 실패했습니다."));
   return new Blob([output], { type: artifact.mime });
 }

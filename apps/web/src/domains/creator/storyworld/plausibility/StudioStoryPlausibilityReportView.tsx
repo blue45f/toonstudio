@@ -6,6 +6,8 @@
  */
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import type { StoryworldProject, StoryworldQuestionId } from "../studio-storyworld-causality";
 import { StudioStoryPlausibilityDetail } from "./StudioStoryPlausibilityDetail";
@@ -43,6 +45,7 @@ function isNarrowScreen(): boolean {
 
 export function StudioStoryPlausibilityReportView(props: ReportViewProps) {
   const { project, check, dispositionView } = props;
+  const t = useT();
   const [filters, setFilters] = useState<PlausibilityListFilters>(DEFAULT_PLAUSIBILITY_LIST_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -53,11 +56,11 @@ export function StudioStoryPlausibilityReportView(props: ReportViewProps) {
     if (check.status === "error") {
       return (
         <div className="plausibility-loading" role="alert">
-          <h3>점검을 마치지 못했어요</h3>
+          <h3>{t("studio.storyworldStatus.report.checkFailed", "점검을 마치지 못했어요")}</h3>
           <p>{check.error}</p>
           <div>
             <button className="storyworld-button storyworld-button--primary" onClick={props.onRerun} type="button">
-              <RefreshCcw aria-hidden size={15} /> 다시 시도
+              <RefreshCcw aria-hidden size={15} /> {t("studio.storyworldStatus.report.retry", "다시 시도")}
             </button>
           </div>
         </div>
@@ -108,7 +111,7 @@ export function StudioStoryPlausibilityReportView(props: ReportViewProps) {
       {check.status === "error" ? (
         <div className="plausibility-banner plausibility-banner--error" role="alert">
           <span><AlertTriangle aria-hidden size={14} /> {check.error} 이전 결과를 보여 드려요.</span>
-          <button className="storyworld-button" onClick={props.onRerun} type="button">다시 시도</button>
+          <button className="storyworld-button" onClick={props.onRerun} type="button">{t("studio.storyworldStatus.report.retry", "다시 시도")}</button>
         </div>
       ) : null}
       {check.refreshing && check.status !== "error" ? (

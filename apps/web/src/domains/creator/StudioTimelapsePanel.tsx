@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { AlertTriangle, Loader2, Play, Share2, Square, Video, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -125,7 +126,7 @@ export function StudioTimelapsePanel({
   });
   const exporting = preparing || progress != null;
   const recordDisabledReason = !supported
-    ? "이 브라우저는 MediaRecorder/WebM 영상 녹화를 지원하지 않아요."
+    ? panelStatusText("studio.panelStatus.timelapse.unsupported", "이 브라우저는 MediaRecorder/WebM 영상 녹화를 지원하지 않아요.")
     : masterEditMode
       ? "마스터 편집을 종료하면 타임랩스를 만들 수 있어요."
       : !hasContent
@@ -157,7 +158,7 @@ export function StudioTimelapsePanel({
       return await handle.done;
     } catch (err) {
       if (!isTimelapseExportCancelled(err)) {
-        setError(err instanceof Error ? err.message : "타임랩스 영상을 만들지 못했어요.");
+        setError(err instanceof Error ? err.message : panelStatusText("studio.panelStatus.timelapse.exportFailed", "타임랩스 영상을 만들지 못했어요."));
       }
       return null;
     } finally {
@@ -204,10 +205,10 @@ export function StudioTimelapsePanel({
   const progressPct = Math.round((progress?.ratio ?? 0) * 100);
   const statusLabel =
     preparing || progress?.phase === "capture"
-      ? `그리기 과정을 캡처하는 중… (${progress?.captured ?? 0}/${progress?.total ?? steps.length}단계)`
+      ? panelStatusText("studio.panelStatus.timelapse.capturing", {"captured": progress?.captured ?? 0, "total": progress?.total ?? steps.length}, "그리기 과정을 캡처하는 중… ({captured}/{total}단계)")
       : progress?.phase === "finalize"
-        ? "영상 파일 생성 중…"
-        : "영상으로 녹화하는 중…";
+        ? panelStatusText("studio.panelStatus.timelapse.creatingFile", "영상 파일 생성 중…")
+        : panelStatusText("studio.panelStatus.timelapse.recording", "영상으로 녹화하는 중…");
 
   const modal = (
     <div
@@ -245,12 +246,12 @@ export function StudioTimelapsePanel({
           {masterEditMode && (
             <p className="mb-3 flex items-start gap-2 rounded-lg border border-line bg-card/70 px-2.5 py-2 text-xs text-fg-3">
               <AlertTriangle className="mt-0.5 shrink-0 text-accent" size={14} aria-hidden />
-              마스터 편집 중에는 타임랩스를 만들 수 없어요. 마스터 편집을 종료한 뒤 다시 시도해주세요.
+              {panelStatusText("studio.panelStatus.timelapse.masterEditBlocked", "마스터 편집 중에는 타임랩스를 만들 수 없어요. 마스터 편집을 종료한 뒤 다시 시도해주세요.")}
             </p>
           )}
           {!masterEditMode && !hasContent && (
             <p className="mb-3 rounded-lg border border-line bg-card/70 px-2.5 py-2 text-xs text-fg-3">
-              아직 그린 내용이 없어요. 먼저 그림을 그려보세요.
+              {panelStatusText("studio.panelStatus.timelapse.emptyContent", "아직 그린 내용이 없어요. 먼저 그림을 그려보세요.")}
             </p>
           )}
 
@@ -328,15 +329,14 @@ export function StudioTimelapsePanel({
                 />
               </div>
               <p className="mt-1.5 text-[0.68rem] text-fg-3">
-                녹화 중에는 캔버스를 편집할 수 없어요. 완료될 때까지 잠시만 기다려주세요.
+                {panelStatusText("studio.panelStatus.timelapse.recordingLocked", "녹화 중에는 캔버스를 편집할 수 없어요. 완료될 때까지 잠시만 기다려주세요.")}
               </p>
             </div>
           )}
 
           {!supported && (
             <p className="mt-3 text-xs text-bad">
-              이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. 크롬·엣지·파이어폭스에서
-              시도해주세요.
+              {panelStatusText("studio.panelStatus.timelapse.unsupportedLong", "이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. 크롬·엣지·파이어폭스에서 시도해주세요.")}
             </p>
           )}
           {error && <p className="mt-3 text-xs text-bad">{error}</p>}

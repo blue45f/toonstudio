@@ -8,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { findGame, PLAY_GAMES } from "./game-registry";
 import { freshSeed, koreaDay, promptFor, randomFrom, safeSeed } from "./lab/creative-core";
 import { PlayArtwork } from "./lab/PlayArtwork";
+import { playStatusText } from "./play-status-i18n";
 import { PlayGameBoundary } from "./lab/PlayGameBoundary";
 import { recordVisit, usePlayJournal } from "./lab/play-storage";
 import "./play-lab.css";
@@ -80,7 +81,7 @@ export function PlayPage() {
     </Container>;
   }
   return <Container className="play-page">
-    {activeId && <div className="play-warning" role="status">선택한 콘텐츠를 찾지 못했습니다. 아래에서 다른 창작 도구를 골라 주세요.</div>}
+    {activeId && <div className="play-warning" role="status">{playStatusText("play.status.page.contentNotFound", "선택한 콘텐츠를 찾지 못했습니다. 아래에서 다른 창작 도구를 골라 주세요.")}</div>}
     <section className="play-hero" aria-labelledby="play-title">
       <div className="play-hero-copy"><span className="play-eyebrow"><Sparkles size={15} /> TOONSTUDIO / CREATIVE PLAYGROUND</span>
         <h1 ref={headingRef} tabIndex={-1} id="play-title">놀다 보면,<br /><em>다음 컷</em>이 떠오른다.</h1>
@@ -105,10 +106,10 @@ export function PlayPage() {
         <button type="button" className="play-card-open" onClick={() => openGame(game.id)}><div className="play-card-art"><PlayArtwork kind={game.id} /><span className="play-card-index">{String(index + 1).padStart(2, "0")}</span>{game.localOnly && <span className="play-local-badge">LOCAL CREATIVE</span>}</div><div className="play-card-body"><div className="play-card-category"><span>{game.category}</span><span><Clock3 size={12} />{game.duration ?? "3–5분"}</span></div><h3>{game.label}<ArrowRight size={17} /></h3><p>{game.tagline}</p><span className="play-card-mode">{game.localOnly ? "서버 호출 없는 창작 · 결과물/기록 보관" : game.usesCamera ? "카메라·음성 선택 사용 · 버튼 지원" : "웹툰 카탈로그 기반 미니게임"}</span></div></button>
         <button type="button" className="play-card-favorite" aria-label={`${game.label} 즐겨찾기`} aria-pressed={journal.favorites.includes(game.id)} onClick={() => toggleFavorite(game.id)}><Heart size={17} fill={journal.favorites.includes(game.id) ? "currentColor" : "none"} /></button>
       </article></li>)}</ul>
-      {!filtered.length && <div className="play-empty"><Search size={28} /><h3>{tab === "favorites" ? "좋아하는 콘텐츠를 모아 보세요." : "검색한 콘텐츠가 없어요."}</h3><p>{tab === "favorites" ? "카드의 하트 버튼을 누르면 여기에 모입니다." : "다른 검색어나 분류로 새 놀이를 찾아 보세요."}</p><button type="button" className="play-button" onClick={() => { const next = new URLSearchParams(params); next.delete("tab"); next.delete("q"); next.delete("game"); setParams(next, { replace: true }); }}>전체 콘텐츠 보기</button></div>}
+      {!filtered.length && <div className="play-empty"><Search size={28} /><h3>{tab === "favorites" ? playStatusText("play.status.page.favoritesEmpty", "좋아하는 콘텐츠를 모아 보세요.") : playStatusText("play.status.page.searchEmpty", "검색한 콘텐츠가 없어요.")}</h3><p>{tab === "favorites" ? "카드의 하트 버튼을 누르면 여기에 모입니다." : "다른 검색어나 분류로 새 놀이를 찾아 보세요."}</p><button type="button" className="play-button" onClick={() => { const next = new URLSearchParams(params); next.delete("tab"); next.delete("q"); next.delete("game"); setParams(next, { replace: true }); }}>전체 콘텐츠 보기</button></div>}
     </section>
     <section className="play-next-step"><div><span className="play-eyebrow">FROM PLAY TO YOUR NEXT PANEL</span><h2>마음에 드는 낙서 하나,<br />다음 작품의 첫 컷으로.</h2><p>스케치는 PNG·SVG, 팔레트는 CSS, 콘티는 수정 가능한 파일로.<br />놀이의 결과를 작업 자료로 남기고 전문 스튜디오로 이어가세요.</p></div><div className="play-actions"><Link href="/studio" className="play-button primary large">드로잉 스튜디오 열기 <ArrowRight size={17} /></Link><Link href="/learn" className="play-text-link">배우며 이어가기 ↗</Link></div></section>
-    <footer className="play-footer"><div><p>새 창작 콘텐츠는 로딩 후 서버·AI API 호출 없이 실행됩니다. 첫 방문과 아직 열지 않은 도구의 로딩에는 인터넷이 필요합니다. 브라우저 데이터 삭제 시 로컬 초안과 기록도 사라지므로 결과 파일을 보관해 주세요.</p><p>기존 웹툰 게임은 공개 카탈로그 메타데이터를 사용합니다. 표지는 출처·성인 제외·비표시 정책을 따르며 일부 인기 지표는 추정값(≈)입니다. 카드 그림은 오리지널 기능 안내 일러스트입니다.</p></div><SharePageButton path="/play" text="ToonStudio 창작 놀이터 — 드로잉·색감·스토리 실험" label="놀이터 공유" /></footer>
+    <footer className="play-footer"><div><p>{playStatusText("play.status.page.footerLoadingNote", "새 창작 콘텐츠는 로딩 후 서버·AI API 호출 없이 실행됩니다. 첫 방문과 아직 열지 않은 도구의 로딩에는 인터넷이 필요합니다. 브라우저 데이터 삭제 시 로컬 초안과 기록도 사라지므로 결과 파일을 보관해 주세요.")}</p><p>기존 웹툰 게임은 공개 카탈로그 메타데이터를 사용합니다. 표지는 출처·성인 제외·비표시 정책을 따르며 일부 인기 지표는 추정값(≈)입니다. 카드 그림은 오리지널 기능 안내 일러스트입니다.</p></div><SharePageButton path="/play" text="ToonStudio 창작 놀이터 — 드로잉·색감·스토리 실험" label="놀이터 공유" /></footer>
   </Container>;
 }
 export default PlayPage;

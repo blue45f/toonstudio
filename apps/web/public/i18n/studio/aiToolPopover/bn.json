@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "টেক্সট AI প্রদানকারী",
   "studio.aiToolPopover.serverTextAiProviderAria": "সার্ভার টেক্সট এআই প্রদানকারী",
   "studio.aiToolPopover.serverProviderAuto": "স্বয়ংক্রিয় সুইচিং",
-  "studio.aiToolPopover.serverFallbackMessage": "ব্যালেন্স/প্যাকেজের সীমা ফুরিয়ে গেলে, আপনি অন্য প্রদানকারীর কাছে চলে যাবেন। ডবল চার্জিং প্রতিরোধ করার জন্য সাধারণ ত্রুটিগুলি স্বয়ংক্রিয়ভাবে পুনরায় পাঠানো হয় না।"
+  "studio.aiToolPopover.serverFallbackMessage": "ব্যালেন্স/প্যাকেজের সীমা ফুরিয়ে গেলে, আপনি অন্য প্রদানকারীর কাছে চলে যাবেন। ডবল চার্জিং প্রতিরোধ করার জন্য সাধারণ ত্রুটিগুলি স্বয়ংক্রিয়ভাবে পুনরায় পাঠানো হয় না।",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

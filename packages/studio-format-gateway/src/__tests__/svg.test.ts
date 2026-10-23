@@ -10,6 +10,22 @@ import type {
   StrokePathNodeIR,
 } from "@toonstudio/studio-project-model";
 
+describe("색 이름 해석", () => {
+  it.each(["constructor", "__proto__", "ConstRuctor"])(
+    "Object.prototype 의 속성 이름 %s 은 색 이름으로 풀지 않고 알 수 없는 색과 같이 다룬다",
+    (name) => {
+      const svg = (fill: string) => `<svg width="10" height="10"><rect width="5" height="5" fill="${fill}"/></svg>`;
+      expect(() => parseSvgToScene(svg(name))).not.toThrow();
+      const result = parseSvgToScene(svg(name));
+      const unknown = parseSvgToScene(svg("notacolorname"));
+      // 경고 문구에는 속성 값이 그대로 들어가므로 장면과 경고·미지원 목록의 개수를 견준다.
+      expect(result.scene).toEqual(unknown.scene);
+      expect(result.warnings).toHaveLength(unknown.warnings.length);
+      expect(result.unsupported).toHaveLength(unknown.unsupported.length);
+    },
+  );
+});
+
 function flatten(nodes: SceneNodeIR[]): SceneNodeIR[] {
   return nodes.flatMap((node) =>
     node.kind === "group" ? [node, ...flatten(node.children)] : [node],

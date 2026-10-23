@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
   AlertTriangle,
   Ban,
@@ -246,7 +247,7 @@ export function StudioAutoActionsPanel({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 id="auto-action-file-title" className="text-sm font-bold text-fg">
-                  {actionSet?.name ?? "Action Set을 불러오세요"}
+                  {actionSet?.name ?? panelStatusText("studio.panelStatus.autoActions.emptyHeading", "Action Set을 불러오세요")}
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-fg-3">
                   {actionSet
@@ -267,7 +268,7 @@ export function StudioAutoActionsPanel({
                     setFileError(null);
                     void file.text()
                       .then((json) => onImportJson(json, file.name))
-                      .catch(() => setFileError("Action Set 파일을 읽지 못했습니다."));
+                      .catch(() => setFileError(panelStatusText("studio.panelStatus.autoActions.fileReadFailed", "Action Set 파일을 읽지 못했습니다.")));
                   }}
                 />
                 {onStartMacroRecord && onStopMacroRecord ? (
@@ -380,7 +381,7 @@ export function StudioAutoActionsPanel({
                   </ol>
                 ) : (
                   <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">
-                    아직 기록된 단계가 없어요. 패널을 닫고 레이어·레터링을 조작한 뒤, 이 패널을 다시 열어 확인하세요.
+                    {panelStatusText("studio.panelStatus.autoActions.stepsEmpty", "아직 기록된 단계가 없어요. 패널을 닫고 레이어·레터링을 조작한 뒤, 이 패널을 다시 열어 확인하세요.")}
                   </p>
                 )}
               </div>

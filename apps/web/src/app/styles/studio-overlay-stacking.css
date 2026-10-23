@@ -14,6 +14,13 @@ html:has([data-studio-beta-notice-host="true"]) [data-studio-creative-starter="t
   display: none !important;
 }
 
+/* 오류 안내(상태 레일의 role="alert")는 닫기 전까지 가려지면 안 된다. 첫 게시 제안 카드는 메뉴바에 포털로 붙어 데스크톱에서
+ * 오른쪽 위에 떠 있어서 같은 자리의 오류 닫기(✕)를 덮고 클릭을 가로챘다. 오류가 떠 있는 동안에는 카드가 자리를 비키고,
+ * 오류를 닫으면 아직 닫지 않은 제안이 다시 보인다. 숨김은 CSS 전용이라 1회성 닫기 기억은 건드리지 않는다. */
+html:has([data-studio-status-error-dismiss]) [data-studio-first-publish-suggestion-anchor="true"] {
+  display: none !important;
+}
+
 /* Modal and full-screen navigation own the viewport while open. Decorative fixed controls must
  * leave the interaction layer instead of covering menu items or trapping pointer events. */
 html:has([role="dialog"][aria-modal="true"]) [data-site-ost="mounted"],

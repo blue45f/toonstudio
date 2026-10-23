@@ -334,22 +334,22 @@ export function packStudioGpuHslParams(input: {
     ? input.luminance
     : 0;
 
-  // nativeHSL verbatim.
+  // nativeHSL verbatim (konva 10.9 계수·색상 래핑).
   const v = 1;
   const s = Math.pow(2, saturationAttr);
-  const h = Math.abs(hueAttr + 360) % 360;
+  const h = ((hueAttr % 360) + 360) % 360;
   const l = luminanceAttr * 127;
   const vsu = v * s * Math.cos((h * Math.PI) / 180);
   const vsw = v * s * Math.sin((h * Math.PI) / 180);
-  const rr = 0.299 * v + 0.701 * vsu + 0.167 * vsw;
+  const rr = 0.299 * v + 0.701 * vsu + 0.168 * vsw;
   const rg = 0.587 * v - 0.587 * vsu + 0.33 * vsw;
   const rb = 0.114 * v - 0.114 * vsu - 0.497 * vsw;
   const gr = 0.299 * v - 0.299 * vsu - 0.328 * vsw;
   const gg = 0.587 * v + 0.413 * vsu + 0.035 * vsw;
-  const gb = 0.114 * v - 0.114 * vsu + 0.293 * vsw;
+  const gb = 0.114 * v - 0.114 * vsu + 0.292 * vsw;
   const br = 0.299 * v - 0.3 * vsu + 1.25 * vsw;
-  const bg = 0.587 * v - 0.586 * vsu - 1.05 * vsw;
-  const bb = 0.114 * v + 0.886 * vsu - 0.2 * vsw;
+  const bg = 0.587 * v - 0.588 * vsu - 1.05 * vsw;
+  const bb = 0.114 * v + 0.886 * vsu - 0.203 * vsw;
 
   const uniform = new ArrayBuffer(STUDIO_GPU_HSL_UNIFORM_BYTES);
   const view = new DataView(uniform);

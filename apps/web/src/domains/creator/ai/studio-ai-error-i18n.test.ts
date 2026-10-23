@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n";
 
 /**
- * AI Result 채널 에러 문구 i18n 이관 계약 (A4 후속 AI 이관 T1, 2026-10-22).
+ * AI Result 채널 에러 문구 i18n 이관 계약 (A4 후속 AI 이관 T1~T3, 2026-10-22).
+ * T2: fal Result 채널 + LoRA 잡 lastError 영속 코드화(키는 레코드에 저장되고
+ * 표시 시점에 resolveAiErrorText로 해석), T3: throw 클라이언트 2종
+ * (PersonalInferenceError·Studio3dGenerationRequestError의 code 필드).
  *
  * 배경: studio-ai-client를 비롯한 Result 채널 생산자(.ts)는 훅을 쓸 수 없어
  * 에러 문구가 한국어로 하드코딩돼 있었다. 표시 정본은 studio.aiError.*
@@ -54,7 +57,22 @@ const PRODUCER_FILES = [
   "./studio-ai-reference-images.ts",
   "./canon/studio-photo-character-wizard.ts",
   "../studio-server-ai-client.ts",
+  "./studio-lora-fal.ts",
+  "./studio-lora-training.ts",
+  "./personal-inference-client.ts",
+  "./studio-3d-generation-client.ts",
 ] as const;
+
+/** 영속 저장되는 코드 참조 — lastError에 키 자체를 저장하는 지점 (T2). */
+const STORED_KEY_PATTERN = /"(studio\.aiError\.[a-z]+\.[A-Za-z]+)"/g;
+
+function collectStoredKeys(): Array<{ key: string; file: string }> {
+  const stored: Array<{ key: string; file: string }> = [];
+  for (const match of readSource("./studio-lora-training.ts").matchAll(STORED_KEY_PATTERN)) {
+    stored.push({ key: match[1] ?? "", file: "./studio-lora-training.ts" });
+  }
+  return stored;
+}
 
 const CALL_PATTERN =
   /aiErrorText\("([^"]+)",\s*(?:\{[^}]*\},\s*)?"((?:[^"\\]|\\.)*)"\)/g;
@@ -69,10 +87,10 @@ function collectCalls(): Array<{ key: string; fallback: string; file: string }> 
   return calls;
 }
 
-describe("studio.aiError 사전 (T1 등록 모듈)", () => {
-  it("ko/en 키 집합이 일치하고 60키다", () => {
+describe("studio.aiError 사전 (T1~T3 등록 모듈)", () => {
+  it("ko/en 키 집합이 일치하고 118키다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(AI_ERROR_KEYS);
-    expect(AI_ERROR_KEYS).toHaveLength(60);
+    expect(AI_ERROR_KEYS).toHaveLength(118);
     expect(AI_ERROR_KEYS.every((key) => key.startsWith("studio.aiError."))).toBe(true);
   });
 
@@ -84,19 +102,34 @@ describe("studio.aiError 사전 (T1 등록 모듈)", () => {
     }
   });
 
-  it("네임스페이스 구간이 트랜치 파일과 대응한다 (client 39·reference 13·wizard 2·server 6)", () => {
+  it("네임스페이스 구간이 트랜치 파일과 대응한다 (client 39·reference 13·wizard 2·server 6·fal 22·personal 17·threed 19)", () => {
     const count = (prefix: string) => AI_ERROR_KEYS.filter((key) => key.startsWith(prefix)).length;
     expect(count("studio.aiError.client.")).toBe(39);
     expect(count("studio.aiError.reference.")).toBe(13);
     expect(count("studio.aiError.wizard.")).toBe(2);
     expect(count("studio.aiError.server.")).toBe(6);
+    expect(count("studio.aiError.fal.")).toBe(22);
+    expect(count("studio.aiError.personal.")).toBe(17);
+    expect(count("studio.aiError.threed.")).toBe(19);
   });
 });
 
-describe("studio.aiError 소비 계약 (T1 생산자 4파일)", () => {
-  it("등록된 전 키가 생산자에서 소비되고 미등록 참조가 없다", () => {
-    const used = new Set(collectCalls().map((call) => call.key));
+describe("studio.aiError 소비 계약 (T1~T3 생산자 8파일)", () => {
+  it("등록된 전 키가 생산자에서 소비되고 미등록 참조가 없다 (영속 저장 코드 포함)", () => {
+    const used = new Set([
+      ...collectCalls().map((call) => call.key),
+      ...collectStoredKeys().map((stored) => stored.key),
+    ]);
     expect([...used].sort()).toEqual(AI_ERROR_KEYS);
+  });
+
+  it("영속 저장 코드(lastError)는 전부 fal 구간의 등록 키고 6개다 (T2)", () => {
+    const stored = collectStoredKeys();
+    expect(stored).toHaveLength(6);
+    for (const entry of stored) {
+      expect(DICTS.ko[entry.key], entry.key).toBeTruthy();
+      expect(entry.key.startsWith("studio.aiError.fal.job")).toBe(true);
+    }
   });
 
   it("호출부 한국어 폴백이 ko 사전값과 글자 단위로 일치한다 (한국어 표시 회귀 0)", () => {
@@ -105,7 +138,7 @@ describe("studio.aiError 소비 계약 (T1 생산자 4파일)", () => {
     }
   });
 
-  it("생산자 4파일에 생산자 채널 하드코딩이 남아 있지 않다 (탐지기 producer 모드 0건)", () => {
+  it("생산자 8파일에 생산자 채널 하드코딩이 남아 있지 않다 (탐지기 producer 모드 0건)", () => {
     for (const file of PRODUCER_FILES) {
       const violations = scanHardcodedStatusStrings(readSource(file), {
         includeProducerChannels: true,
@@ -120,5 +153,24 @@ describe("studio.aiError 소비 계약 (T1 생산자 4파일)", () => {
     expect(client).toContain("error: error.message");
     expect(client).toContain("error: parsed.error");
     expect(client).toContain("error: networkErrorMessage(e)");
+  });
+
+  it("fal 제공자 원문은 frame의 {message} 파라미터로만 끼운다 (설계 §3.4-④, T1 frame 선례)", () => {
+    const fal = readSource("./studio-lora-fal.ts");
+    expect(fal).toContain('aiErrorText("studio.aiError.fal.requestRejected", { status, message:');
+    // 개인 런타임이 쓴 job.error 문자열은 코드화하지 않는다 (설계 §3.4-⑤).
+    const personal = readSource("./personal-inference-client.ts");
+    expect(personal).toContain("value.error.slice(0, 500)");
+  });
+
+  it("throw 클라이언트는 code 보유 에러 클래스로 던진다 (T3)", () => {
+    const personal = readSource("./personal-inference-client.ts");
+    expect(personal).toContain("export class PersonalInferenceError extends Error");
+    expect(personal).not.toContain("throw new Error(");
+    const threed = readSource("./studio-3d-generation-client.ts");
+    expect(threed).toContain("readonly code: Studio3dGenerationErrorCode");
+    expect(threed).not.toContain("throw new Error(");
+    expect(threed).not.toContain("throw new RangeError(");
+    expect(threed).not.toContain("throw new TypeError(");
   });
 });

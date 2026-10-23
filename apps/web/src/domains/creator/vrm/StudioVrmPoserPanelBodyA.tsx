@@ -1,4 +1,5 @@
 import { StudioVrmPaintMaterialControls } from "./StudioVrmPaintMaterialControls";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 /**
   type CustomPose,
   type ExpressionAction,
@@ -334,7 +335,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                   }
                   proportionUnavailableReason={
                     proportionRigStatus === "unavailable" || proportionRigStatus === "reload-required"
-                      ? proportionRigMessage || "리그 준비 상태를 확인할 수 없습니다."
+                      ? proportionRigMessage || frozenStatus4Text("studio.frozenStatus4.vrmA.rigStatusUnknown", "리그 준비 상태를 확인할 수 없습니다.")
                       : null
                   }
                   semanticFaceMorphProfile={semanticFaceMorphProfile}
@@ -389,7 +390,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                 status={texturePaintStatus}
                 restoreError={
                   texturePaintPersistenceStatus === "error"
-                    ? texturePaintPersistenceError || "저장된 표면 페인팅을 복원하지 못했습니다."
+                    ? texturePaintPersistenceError || frozenStatus4Text("studio.frozenStatus4.vrmA.paintRestoreFailed", "저장된 표면 페인팅을 복원하지 못했습니다.")
                     : null
                 }
                 strokeActive={texturePaintStrokeActive}
@@ -437,9 +438,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                     ))}
                   </div>
                 ) : (
-                  <p className="rounded-xl border border-dashed border-line bg-card/45 px-3 py-4 text-xs leading-relaxed text-fg-3">
-                    이 VRM에는 사용할 수 있는 표정 프리셋이 없습니다.
-                  </p>
+                  <p className="rounded-xl border border-dashed border-line bg-card/45 px-3 py-4 text-xs leading-relaxed text-fg-3">{frozenStatus4Text("studio.frozenStatus4.vrmA.emptyNoExpressions", "이 VRM에는 사용할 수 있는 표정 프리셋이 없습니다.")}</p>
                 )}
 
                 {/* 표정 조합 프리셋(studio-pose-presets) — 여러 blendshape를 섞은 만화식 표정을 원클릭 적용 */}
@@ -553,7 +552,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                   }
 
                   return (
-                    <p className="text-center py-2 text-[0.68rem] text-fg-3">이 카테고리에 해당하는 표정이 없습니다.</p>
+                    <p className="text-center py-2 text-[0.68rem] text-fg-3">{frozenStatus4Text("studio.frozenStatus4.vrmA.emptyNoCategoryExpressions", "이 카테고리에 해당하는 표정이 없습니다.")}</p>
                   );
                 })()}
 
@@ -662,11 +661,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                             onClick={() => {
                               cancelJointIkTransaction();
                               setIkHandleDragMode(mode.id);
-                              setJointHandleStatus(
-                                mode.id === "depth"
-                                  ? "깊이 이동 · 위로 끌면 멀리, 아래로 끌면 가까이 이동합니다."
-                                  : "화면 이동 · 현재 화면과 나란한 평면에서 움직입니다.",
-                              );
+                              setJointHandleStatus(mode.id === "depth" ? frozenStatus4Text("studio.frozenStatus4.vrmA.ikDepthMode", "깊이 이동 · 위로 끌면 멀리, 아래로 끌면 가까이 이동합니다.") : frozenStatus4Text("studio.frozenStatus4.vrmA.ikScreenMode", "화면 이동 · 현재 화면과 나란한 평면에서 움직입니다."));
                             }}
                             className={cx(
                               "min-h-11 min-w-11 flex-1 rounded-lg border px-2 text-[0.66rem] font-bold transition-colors disabled:opacity-45",
@@ -697,7 +692,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                             onClick={() => {
                               cancelJointIkTransaction();
                               setIkHandleAxisLock(axis.id);
-                              setJointHandleStatus(`관절 회전은 로컬 축, 손·발 IK는 장면 축 기준의 ${axis.description} 모드입니다.`);
+                              setJointHandleStatus(frozenStatus4Text("studio.frozenStatus4.vrmA.axisModeStatus", { mode: axis.description }, "관절 회전은 로컬 축, 손·발 IK는 장면 축 기준의 {mode} 모드입니다."));
                             }}
                             className={cx(
                               "min-h-11 min-w-11 flex-1 rounded-lg border px-2 text-[0.66rem] font-bold transition-colors disabled:opacity-45",
@@ -714,7 +709,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                   </div>
                   {webcamActive || idleAnimation ? (
                     <p className="mt-1.5 text-[0.65rem] text-warn" role="status">
-                      실시간 추적 또는 대기 애니메이션을 끄면 관절 핸들을 편집할 수 있습니다.
+                      {frozenStatus4Text("studio.frozenStatus4.vrmA.trackingBlocksHandles", "실시간 추적 또는 대기 애니메이션을 끄면 관절 핸들을 편집할 수 있습니다.")}
                     </p>
                   ) : null}
                   {jointHandleStatus ? (
@@ -770,14 +765,14 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                         bodyScale,
                       });
                     }
-                    setJointHandleStatus("저장된 root·골반·척추 이동을 초기화했습니다.");
+                    setJointHandleStatus(frozenStatus4Text("studio.frozenStatus4.vrmA.rootReset", "저장된 root·골반·척추 이동을 초기화했습니다."));
                   }}
                   onConstraintEnabledChange={(effector, enabled) => {
                     commitIkConstraintSettings(
                       ikConstraints.map((constraint: StudioVrmIkConstraint) => (
                         constraint.effector === effector ? { ...constraint, enabled } : constraint
                       )),
-                      enabled ? "고정점을 다시 활성화했습니다." : "고정점을 계산과 화면에서 제외했습니다.",
+                      enabled ? frozenStatus4Text("studio.frozenStatus4.vrmA.pinEnabled", "고정점을 다시 활성화했습니다.") : frozenStatus4Text("studio.frozenStatus4.vrmA.pinDisabled", "고정점을 계산과 화면에서 제외했습니다."),
                     );
                   }}
                   onConstraintLockedChange={(effector, locked) => {
@@ -785,14 +780,14 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                       ikConstraints.map((constraint: StudioVrmIkConstraint) => (
                         constraint.effector === effector ? { ...constraint, locked } : constraint
                       )),
-                      locked ? "다른 포즈 편집 중에도 고정점을 유지합니다." : "고정점 유지 잠금을 해제했습니다.",
+                      locked ? frozenStatus4Text("studio.frozenStatus4.vrmA.pinLockKept", "다른 포즈 편집 중에도 고정점을 유지합니다.") : frozenStatus4Text("studio.frozenStatus4.vrmA.pinLockReleased", "고정점 유지 잠금을 해제했습니다."),
                     );
                   }}
                   onConstraintRemove={(effector) => {
                     if (selectedIkPole === effector) setSelectedIkPole(null);
                     commitIkConstraintSettings(
                       removeStudioVrmIkConstraint(ikConstraints, effector),
-                      "손·발 고정점을 삭제했습니다.",
+                      frozenStatus4Text("studio.frozenStatus4.vrmA.pinRemoved", "손·발 고정점을 삭제했습니다."),
                     );
                   }}
                 />
@@ -867,10 +862,10 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                 {poseResultCount === 0 ? (
                   <p className="rounded-xl border border-dashed border-line/55 bg-card/20 py-4 text-center text-[0.68rem] italic text-fg-3">
                     {poseQ
-                      ? `“${poseQuery}” 검색 결과가 없습니다.`
+                      ? frozenStatus4Text("studio.frozenStatus4.vrmA.poseSearchEmpty", { query: poseQuery }, "“{query}” 검색 결과가 없습니다.")
                       : poseBucket === "recent"
-                        ? "최근에 쓴 포즈가 없습니다. 포즈를 선택하면 여기에 쌓입니다."
-                        : "이 분류에 맞는 포즈가 없습니다."}
+                        ? frozenStatus4Text("studio.frozenStatus4.vrmA.poseRecentEmpty", "최근에 쓴 포즈가 없습니다. 포즈를 선택하면 여기에 쌓입니다.")
+                        : frozenStatus4Text("studio.frozenStatus4.vrmA.poseCategoryEmpty", "이 분류에 맞는 포즈가 없습니다.")}
                   </p>
                 ) : null}
 
@@ -985,9 +980,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                   ) : null}
                   
                   {savedPoses.length === 0 ? (
-                    <p className="text-center py-4 text-[0.68rem] text-fg-3/60 italic bg-card/20 rounded-xl border border-dashed border-line/55">
-                      저장된 커스텀 포즈가 없습니다.
-                    </p>
+                    <p className="text-center py-4 text-[0.68rem] text-fg-3/60 italic bg-card/20 rounded-xl border border-dashed border-line/55">{frozenStatus4Text("studio.frozenStatus4.vrmA.customPosesEmpty", "저장된 커스텀 포즈가 없습니다.")}</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       {savedPoses.filter((pose: CustomPose) => poseMatches(pose)).map((pose: CustomPose) => (

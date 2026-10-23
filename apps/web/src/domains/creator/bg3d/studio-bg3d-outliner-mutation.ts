@@ -69,7 +69,13 @@ export interface StudioBg3dOutlinerMutationSuccess {
 
 export interface StudioBg3dOutlinerMutationFailure {
   readonly ok: false;
-  readonly reason: "entity-not-found" | "unchanged" | "remove-failed";
+  /** `invalid-input`·`limit-exceeded` 는 태그·컴포넌트·장면 정보 명령(studio-bg3d-organization-mutation)이 쓴다. */
+  readonly reason:
+    | "entity-not-found"
+    | "unchanged"
+    | "remove-failed"
+    | "invalid-input"
+    | "limit-exceeded";
 }
 export type StudioBg3dOutlinerMutationPlan =
   | StudioBg3dOutlinerMutationSuccess

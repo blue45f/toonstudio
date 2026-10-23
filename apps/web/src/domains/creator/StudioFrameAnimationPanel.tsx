@@ -46,6 +46,7 @@ import {
   type StudioAnimFrame,
 } from "./studio-frame-animation";
 import { PANEL_LABEL_ROW, StudioSliderRow, StudioToggleChip } from "./studio-panel-ui";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import { StudioToolHintTarget } from "./StudioToolHint";
 
 import type { ReactElement } from "react";
@@ -162,17 +163,17 @@ export function StudioFrameAnimationPanel({
   const highlightIndex = frameIndexOf(frames, highlightId);
 
   const atCap = frames.length >= MAX_ANIM_FRAMES;
-  const captureReason = captureDisabledReason ?? (atCap ? `프레임은 최대 ${MAX_ANIM_FRAMES}장까지 만들 수 있어요.` : null);
+  const captureReason = captureDisabledReason ?? (atCap ? frozenStatus4Text("studio.frozenStatus4.frame.frameCap", { max: MAX_ANIM_FRAMES }, "프레임은 최대 {max}장까지 만들 수 있어요.") : null);
   const playbackDisabledReason =
-    frames.length < 2 ? "재생하려면 프레임이 2장 이상 필요해요." : undefined;
-  const previousFrameDisabledReason = activeIndex === 0 ? "이미 첫 번째 프레임이에요." : undefined;
+    frames.length < 2 ? frozenStatus4Text("studio.frozenStatus4.frame.playNeedsFrames", "재생하려면 프레임이 2장 이상 필요해요.") : undefined;
+  const previousFrameDisabledReason = activeIndex === 0 ? frozenStatus4Text("studio.frozenStatus4.frame.firstFrame", "이미 첫 번째 프레임이에요.") : undefined;
   const duplicateFrameDisabledReason = atCap
-    ? `프레임은 최대 ${MAX_ANIM_FRAMES}장까지 만들 수 있어요.`
+    ? frozenStatus4Text("studio.frozenStatus4.frame.frameCap", { max: MAX_ANIM_FRAMES }, "프레임은 최대 {max}장까지 만들 수 있어요.")
     : undefined;
   const deleteFrameDisabledReason =
-    frames.length <= 1 ? "애니메이션을 유지하려면 프레임이 최소 1장 필요해요." : undefined;
+    frames.length <= 1 ? frozenStatus4Text("studio.frozenStatus4.frame.keepOneFrame", "애니메이션을 유지하려면 프레임이 최소 1장 필요해요.") : undefined;
   const nextFrameDisabledReason =
-    activeIndex === frames.length - 1 ? "이미 마지막 프레임이에요." : undefined;
+    activeIndex === frames.length - 1 ? frozenStatus4Text("studio.frozenStatus4.frame.lastFrame", "이미 마지막 프레임이에요.") : undefined;
 
   function deleteActiveFrame() {
     if (!activeFrame) return;
@@ -234,7 +235,7 @@ export function StudioFrameAnimationPanel({
         setPreparing(false);
         const result = await handle.done;
         downloadBlob(result.blob, frameAnimationExportFileName(title));
-        setDoneMsg("애니메이션 영상을 저장했어요.");
+        setDoneMsg(frozenStatus4Text("studio.frozenStatus4.frame.savedVideo", "애니메이션 영상을 저장했어요."));
       } else {
         const mediaFormat = format;
         const handle = startFrameAnimMediaExport({
@@ -251,11 +252,11 @@ export function StudioFrameAnimationPanel({
         setPreparing(false);
         const result = await handle.done;
         downloadBlob(result.blob, frameAnimMediaFileName(title, mediaFormat));
-        setDoneMsg(mediaFormat === "gif" ? "GIF 애니메이션을 저장했어요." : "APNG 애니메이션을 저장했어요.");
+        setDoneMsg(mediaFormat === "gif" ? frozenStatus4Text("studio.frozenStatus4.frame.savedGif", "GIF 애니메이션을 저장했어요.") : frozenStatus4Text("studio.frozenStatus4.frame.savedApng", "APNG 애니메이션을 저장했어요."));
       }
     } catch (err) {
       if (!isMotionExportCancelled(err)) {
-        setError(err instanceof Error ? err.message : "애니메이션을 내보내지 못했어요.");
+        setError(err instanceof Error ? err.message : frozenStatus4Text("studio.frozenStatus4.frame.exportFailed", "애니메이션을 내보내지 못했어요."));
       }
     } finally {
       handleRef.current = null;
@@ -270,16 +271,16 @@ export function StudioFrameAnimationPanel({
     mediaProgress == null
       ? null
       : mediaProgress.phase === "render"
-        ? "프레임 그리는 중…"
+        ? frozenStatus4Text("studio.frozenStatus4.frame.progressDrawing", "프레임 그리는 중…")
         : mediaProgress.phase === "quantize"
-          ? "색상 팔레트 계산 중…"
+          ? frozenStatus4Text("studio.frozenStatus4.frame.progressPalette", "색상 팔레트 계산 중…")
           : mediaProgress.phase === "assemble"
-            ? "APNG 조립 중…"
-            : "GIF 인코딩 중…";
+            ? frozenStatus4Text("studio.frozenStatus4.frame.progressAssemblingApng", "APNG 조립 중…")
+            : frozenStatus4Text("studio.frozenStatus4.frame.progressEncodingGif", "GIF 인코딩 중…");
   const statusLabel = preparing
-    ? "프레임 이미지 준비 중…"
+    ? frozenStatus4Text("studio.frozenStatus4.frame.progressPreparing", "프레임 이미지 준비 중…")
     : mediaStatusLabel ??
-      (progress?.phase === "finalize" ? "영상 파일 생성 중…" : "녹화 중…");
+      (progress?.phase === "finalize" ? frozenStatus4Text("studio.frozenStatus4.frame.progressFinalizing", "영상 파일 생성 중…") : frozenStatus4Text("studio.frozenStatus4.frame.progressRecording", "녹화 중…"));
 
   return (
     <section
@@ -666,7 +667,7 @@ export function StudioFrameAnimationPanel({
               {exportOpen &&
                 (frames.length < 2 ? (
                   <p className="border-t border-line px-2.5 py-2 text-[0.7rem] text-fg-3">
-                    프레임이 2장 이상일 때 애니메이션을 내보낼 수 있어요.
+                    {frozenStatus4Text("studio.frozenStatus4.frame.exportNeedsFrames", "프레임이 2장 이상일 때 애니메이션을 내보낼 수 있어요.")}
                   </p>
                 ) : (
                   <div className="flex flex-col gap-2.5 border-t border-line px-2.5 py-2.5">
@@ -794,14 +795,12 @@ export function StudioFrameAnimationPanel({
 
                     {format === "webm" && !webmSupported && (
                       <p className="text-xs text-bad">
-                        이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. GIF나 APNG 포맷을
-                        선택하면 계속 내보낼 수 있어요.
+                        {frozenStatus4Text("studio.frozenStatus4.frame.webmUnsupported", "이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. GIF나 APNG 포맷을 선택하면 계속 내보낼 수 있어요.")}
                       </p>
                     )}
                     {format !== "webm" && !mediaSupported && (
                       <p className="text-xs text-bad">
-                        이 브라우저는 캔버스 이미지 내보내기를 지원하지 않아요. 크롬·엣지·파이어폭스에서
-                        시도해주세요.
+                        {frozenStatus4Text("studio.frozenStatus4.frame.canvasExportUnsupported", "이 브라우저는 캔버스 이미지 내보내기를 지원하지 않아요. 크롬·엣지·파이어폭스에서 시도해주세요.")}
                       </p>
                     )}
                     {error && <p className="text-xs text-bad">{error}</p>}

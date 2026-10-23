@@ -15,7 +15,10 @@ import {
   INITIAL_COLOR_HISTORY,
 } from "./studio-color-history";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "../studio-brush-canvas-status-i18n";
 
 export interface StudioColorHistoryPanelProps {
   readonly activeColor: string;
@@ -36,6 +39,7 @@ export function StudioColorHistoryPanel({
   onClearHistory,
   className,
 }: StudioColorHistoryPanelProps) {
+  const t = useT();
   const [localHistory, setHistory] = useState<readonly string[]>(initialHistory);
   const history = controlledHistory ?? localHistory;
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
@@ -94,7 +98,7 @@ export function StudioColorHistoryPanel({
       <div className="mt-2 min-h-16">
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-4 text-slate-500 text-[11px] gap-1">
-            <span>기록된 색상이 없습니다.</span>
+            <span>{t("studio.brushCanvasStatus.color.historyEmpty", "기록된 색상이 없습니다.")}</span>
             <span className="text-[10px] text-slate-600">작업한 색상이 자동으로 저장됩니다.</span>
           </div>
         ) : (

@@ -2,6 +2,7 @@
  * Selection context strip. The same bottom lane is shared with drawing controls so selection
  * replaces the current tool context instead of creating another persistent row.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   ArrowDownToLine,
   ArrowUpToLine,
@@ -180,7 +181,7 @@ export function StudioSelectOptionsBar({
 
       {onTransform ? (
         <button type="button" onClick={onTransform} disabled={locked}
-          title={locked ? "잠긴 선택 항목은 변형할 수 없습니다" : "선택한 레이어 또는 픽셀 영역 변형"}
+          title={locked ? r3c07StatusText("studio.panelStatus.r3c07.selectOptions.lockedTransform", "잠긴 선택 항목은 변형할 수 없습니다") : "선택한 레이어 또는 픽셀 영역 변형"}
           className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 text-xs font-semibold text-fg-2 hover:bg-raised disabled:opacity-50 pointer-coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
           <Maximize2 size={15} aria-hidden />변형
         </button>

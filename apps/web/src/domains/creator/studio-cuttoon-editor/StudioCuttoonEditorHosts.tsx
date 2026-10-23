@@ -5,12 +5,14 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { ClaudeAssistDialogHostEntry } from "../ai/claude/ClaudeAssistDialogHostEntry";
 import { StudioAiProjectHandoffHost } from "../ai/StudioAiProjectHandoffHost";
 import { STUDIO_BRUSH_PACK_ACCEPT } from "../brush/studio-brush-pack-format";
 import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-helpers";
 import { StudioDestructiveConfirmHost } from "../StudioDestructiveConfirmHost";
 import { StudioVrmProjectArchiveAttestationHost } from "../vrm/StudioVrmProjectArchiveAttestationHost";
 import { StudioImportHandoffHost } from "./StudioImportHandoffHost";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
@@ -50,6 +52,8 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     {/* 파괴적 명령 승인 표면. body 로 포털되므로 위치는 자유롭지만, 스튜디오 셸 안에 두어
         스튜디오가 살아 있는 동안에만 seam 을 소유하게 한다. */}
     <StudioDestructiveConfirmHost />
+    {/* Claude 보조 대화상자. 열림 상태가 저장소에 있어 AI 허브(도구 팝오버)가 닫혀도 대화상자는 남는다. */}
+    <ClaudeAssistDialogHostEntry />
     <StudioVrmProjectArchiveAttestationHost />
     <StudioImportHandoffHost
       brushPackImporting={brushPackImporting}
@@ -81,8 +85,7 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
         className="mx-3 mt-2 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-danger/40 bg-danger-soft/20 px-3 py-2 text-xs text-danger"
       >
         <span className="min-w-0 flex-1 font-medium leading-relaxed">
-          이 기기에 복구 기록을 저장하지 못했습니다. 편집은 계속할 수 있지만, 탭을 닫기 전에
-          프로젝트를 저장하거나 완전한 사본을 받아 주세요.
+          {editorShellStatusText("studio.editorShellStatus.hosts.recoverySaveFailed", "이 기기에 복구 기록을 저장하지 못했습니다. 편집은 계속할 수 있지만, 탭을 닫기 전에 프로젝트를 저장하거나 완전한 사본을 받아 주세요.")}
         </span>
         <button
           type="button"

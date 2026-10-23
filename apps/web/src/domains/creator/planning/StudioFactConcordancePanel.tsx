@@ -11,6 +11,7 @@
  *   보여줄 뿐 이 표면에서 설정을 직접 고치는 경로는 두지 않는다.
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   FACT_CHECK_VERDICT_LABELS,
@@ -132,9 +133,7 @@ function EntryCard({
           ) : null}
         </div>
       ) : (
-        <p className="mt-2 text-xs text-slate-500">
-          게시된 회차 본문에서 찾지 못했어요.
-        </p>
+        <p className="mt-2 text-xs text-slate-500">{r3c04StatusText("studio.r3c04Status.planning.fact.notFoundInPublished", "게시된 회차 본문에서 찾지 못했어요.")}</p>
       )}
 
       <div className="mt-3 border-t border-slate-100 pt-3">
@@ -295,9 +294,7 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
       </header>
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-          이 조건에 맞는 색인 항목이 없어요.
-        </p>
+        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">{r3c04StatusText("studio.r3c04Status.planning.fact.emptyIndexFiltered", "이 조건에 맞는 색인 항목이 없어요.")}</p>
       ) : (
         <div className="space-y-3">
           {visible.map((entry) => (
@@ -320,7 +317,7 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
           설정은 조용히 바뀌지 않아요. 바뀐 항목·필드·전후 값·버전이 여기에 남아요.
         </p>
         {props.loreRevisions.length === 0 ? (
-          <p className="mt-2 text-xs text-slate-500">아직 설정 수정 이력이 없어요.</p>
+          <p className="mt-2 text-xs text-slate-500">{r3c04StatusText("studio.r3c04Status.planning.fact.emptyRevisions", "아직 설정 수정 이력이 없어요.")}</p>
         ) : (
           <ul className="mt-2 space-y-2">
             {props.loreRevisions.map((revision) => (
@@ -328,7 +325,7 @@ export function StudioFactConcordancePanel(props: StudioFactConcordancePanelProp
                 <strong>{revision.entryName}</strong> · {FIELD_LABEL[revision.field]} · v
                 {revision.beforeVersion} → v{revision.afterVersion} · {revision.at}
                 <br />
-                전: {revision.before || "(비어 있음)"} → 후: {revision.after}
+                전: {revision.before || r3c04StatusText("studio.r3c04Status.planning.fact.emptyValue", "(비어 있음)")} → 후: {revision.after}
                 {revision.reason ? <br /> : null}
                 {revision.reason ? `이유: ${revision.reason}` : null}
               </li>

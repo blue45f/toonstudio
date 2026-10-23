@@ -186,5 +186,7 @@
   "studio.settings.state.open": "열림",
   "studio.settings.tool.characterShaper": "캐릭터 만들기",
   "studio.settings.tool.speedline": "효과선",
-  "studio.settings.tool.screentone": "스크린톤"
+  "studio.settings.tool.screentone": "스크린톤",
+  "studio.settings.advancedTools.expand": "고급 도구 펼치기",
+  "studio.settings.advancedTools.collapse": "고급 도구 접기"
 }

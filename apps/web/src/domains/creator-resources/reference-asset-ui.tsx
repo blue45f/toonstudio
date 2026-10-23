@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from "rea
 import type { CreatorResource } from "@/shared/lib/creator-resources";
 
 import { toast } from "@/shared/lib/toast-store";
+import { resourceStatusText } from "./resource-status-i18n";
 
 interface ModalFocusOptions {
   dialogRef: RefObject<HTMLDivElement | null>;
@@ -77,7 +78,7 @@ export async function copyText(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast(successMessage, { tone: "success" });
   } catch {
-    toast("클립보드에 복사하지 못했습니다. 브라우저 권한을 확인하세요.", { tone: "error" });
+    toast(resourceStatusText("resources.status.referenceUi.copyFailed", "클립보드에 복사하지 못했습니다. 브라우저 권한을 확인하세요."), { tone: "error" });
   }
 }
 
@@ -106,7 +107,7 @@ export function AssetImage({
     return (
       <div className={`${className} grid place-items-center bg-raised text-fg-3`}>
         <Images size={28} aria-hidden="true" />
-        <span className="sr-only">미리보기를 불러오지 못했습니다.</span>
+        <span className="sr-only">{resourceStatusText("resources.status.referenceUi.previewFailed", "미리보기를 불러오지 못했습니다.")}</span>
       </div>
     );
   }

@@ -1,3 +1,5 @@
+import { communityStatusText } from "../community-status-i18n";
+import { r4CommunityStatusText } from "../r4-cat1-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { EyeOff, MessageCircle, Send, AlertTriangle, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -68,17 +70,17 @@ function ReviewRepliesContent({ reviewId }: { reviewId: string }) {
       const data = await safeParseJson<unknown>(res);
       if (controller.signal.aborted || !activeRef.current) return;
       if (!res.ok) {
-        setError(resolveApiError(data, `답글 목록을 불러오지 못했습니다. (${res.status})`));
+        setError(resolveApiError(data, communityStatusText("community.status.reviewReplies.loadFailedWithStatus", { status: res.status }, "답글 목록을 불러오지 못했습니다. ({status})")));
         return;
       }
       if (!Array.isArray(data)) {
-        setError("답글 목록 응답이 유효하지 않습니다. 다시 불러와 주세요.");
+        setError(communityStatusText("community.status.reviewReplies.listInvalid", "답글 목록 응답이 유효하지 않습니다. 다시 불러와 주세요."));
         return;
       }
       setReplies(ensureArray<ReviewReply>(data));
       setLoaded(true);
     } catch {
-      if (!controller.signal.aborted && activeRef.current) setError("답글을 불러오지 못했습니다.");
+      if (!controller.signal.aborted && activeRef.current) setError(communityStatusText("community.status.reviewReplies.loadFailed", "답글을 불러오지 못했습니다."));
     } finally {
       if (!controller.signal.aborted && activeRef.current) setLoading(false);
     }
@@ -106,11 +108,11 @@ function ReviewRepliesContent({ reviewId }: { reviewId: string }) {
       const data = await safeParseJson<unknown>(res);
       if (!activeRef.current) return;
       if (!res.ok) {
-        setError(resolveApiError(data, `답글을 저장하지 못했습니다. (${res.status}) 입력 내용은 유지됩니다.`));
+        setError(resolveApiError(data, communityStatusText("community.status.reviewReplies.saveFailedWithStatus", { status: res.status }, "답글을 저장하지 못했습니다. ({status}) 입력 내용은 유지됩니다.")));
         return;
       }
       if (!data || typeof data !== "object" || !("id" in data) || typeof data.id !== "string" || !("author" in data) || !data.author) {
-        setError("답글 응답 형식이 유효하지 않습니다.");
+        setError(communityStatusText("community.status.reviewReplies.responseInvalid", "답글 응답 형식이 유효하지 않습니다."));
         return;
       }
       setReplies((current) => insertReplyNode(current, parentId, data as ReviewReply));
@@ -118,7 +120,7 @@ function ReviewRepliesContent({ reviewId }: { reviewId: string }) {
       setLoaded(true);
       setNotice("답글을 등록했습니다.");
     } catch {
-      if (activeRef.current) setError("답글을 저장하지 못했습니다. 연결 상태를 확인한 뒤 다시 등록해 주세요. 입력 내용은 유지됩니다.");
+      if (activeRef.current) setError(communityStatusText("community.status.reviewReplies.saveFailed", "답글을 저장하지 못했습니다. 연결 상태를 확인한 뒤 다시 등록해 주세요. 입력 내용은 유지됩니다."));
     } finally {
       pendingRef.current.delete(key);
       if (activeRef.current) setPending((current) => ({ ...current, [key]: false }));
@@ -166,18 +168,18 @@ function ReviewRepliesContent({ reviewId }: { reviewId: string }) {
       const data = await safeParseJson<unknown>(res);
       if (!activeRef.current) return;
       if (!res.ok) {
-        setError(resolveApiError(data, "답글을 삭제하지 못했습니다."));
+        setError(resolveApiError(data, communityStatusText("community.status.reviewReplies.deleteFailed", "답글을 삭제하지 못했습니다.")));
         return;
       }
       const result = (data ?? {}) as { deleted?: boolean; soft?: boolean };
       if (!result.deleted) {
-        setError("답글을 삭제하지 못했습니다.");
+        setError(communityStatusText("community.status.reviewReplies.deleteFailed", "답글을 삭제하지 못했습니다."));
         return;
       }
       setReplies((current) => (result.soft ? maskNode(current, replyId) : removeNode(current, replyId)));
       setNotice("답글을 삭제했습니다.");
     } catch {
-      if (activeRef.current) setError("답글을 삭제하지 못했습니다.");
+      if (activeRef.current) setError(communityStatusText("community.status.reviewReplies.deleteFailed", "답글을 삭제하지 못했습니다."));
     } finally {
       pendingRef.current.delete(key);
       if (activeRef.current) setPending((current) => ({ ...current, [key]: false }));
@@ -203,9 +205,9 @@ function ReviewRepliesContent({ reviewId }: { reviewId: string }) {
         <div className="mt-3 flex flex-col gap-3">
           <button type="button" onClick={() => void load(true)} disabled={loading || Object.values(pending).some(Boolean)}
             className="min-h-11 self-start rounded-lg border border-line px-3 text-xs text-fg-2 disabled:opacity-50">
-            {loading ? "답글 불러오는 중" : "답글 새로고침"}
+            {loading ? communityStatusText("community.status.reviewReplies.loading", "답글 불러오는 중") : "답글 새로고침"}
           </button>
-          {loading && <div role="status" aria-label="답글 불러오는 중" className="skeleton h-10 w-full" />}
+          {loading && <div role="status" aria-label={communityStatusText("community.status.reviewReplies.loading", "답글 불러오는 중")} className="skeleton h-10 w-full" />}
           {error && (
             <p role="alert" className="rounded-lg border border-bad/40 bg-[oklch(0.66_0.2_25/0.12)] px-3 py-2 text-xs text-bad">
               {error}
@@ -432,7 +434,7 @@ function ReviewReplyItem({
             {collapsed ? "답글 펼치기" : "답글 접기"} ({children.length})
           </button>
           ) : null}
-        {!canReply ? <p className="mt-2 text-xs text-fg-3">이 단계에서는 더 이상 답글을 달 수 없습니다.</p> : null}
+        {!canReply ? <p className="mt-2 text-xs text-fg-3">{r4CommunityStatusText("r4cat1.community.reviewReplies.closed", "이 단계에서는 더 이상 답글을 달 수 없습니다.")}</p> : null}
 
       {isOpen && (
         <div className="mt-2">
@@ -476,7 +478,7 @@ function ReviewReplyItem({
                   className="inline-flex min-h-11 items-center gap-1 rounded-md bg-accent px-2 py-1 text-xs font-semibold text-on-accent disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   <Send size={12} />
-                  {pending[reply.id] ? "저장 중..." : "저장"}
+                  {pending[reply.id] ? communityStatusText("community.status.reviewReplies.saving", "저장 중...") : "저장"}
                 </button>
               </div>
             </div>

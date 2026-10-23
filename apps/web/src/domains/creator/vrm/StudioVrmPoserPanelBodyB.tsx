@@ -16,6 +16,7 @@ import {
   UserRound,
 } from "lucide-react";
 import * as THREE from "three";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 
 import {
   POSER_FINGER_BONES,
@@ -218,7 +219,7 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
 
                 {sharedPosesStatus === "error" ? (
                   <div className="rounded-xl border border-warn/35 bg-warn/10 px-3 py-3 text-center text-xs text-fg-2" role="status">
-                    <p>공유 포즈 서버에 연결하지 못했습니다. 로컬 포즈 편집은 계속 사용할 수 있습니다.</p>
+                    <p>{frozenStatus4Text("studio.frozenStatus4.vrmB.sharedServerFailed", "공유 포즈 서버에 연결하지 못했습니다. 로컬 포즈 편집은 계속 사용할 수 있습니다.")}</p>
                     <button
                       type="button"
                       className="mt-2 inline-flex items-center rounded-lg border border-line bg-card px-2 py-1 text-[0.68rem] font-bold text-fg hover:bg-raised"
@@ -229,11 +230,11 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
                   </div>
                 ) : sharedPosesStatus === "loading" && sharedPoses.length === 0 ? (
                   <div className="rounded-xl border border-line bg-card/60 px-3 py-4 text-center text-xs text-fg-3">
-                    공유된 포즈를 불러오는 중입니다...
+                    {frozenStatus4Text("studio.frozenStatus4.vrmB.sharedLoading", "공유된 포즈를 불러오는 중입니다...")}
                   </div>
                 ) : sharedPoses.length === 0 ? (
                   <p className="text-center py-4 text-[0.68rem] text-fg-3/60 italic bg-card/20 rounded-xl border border-dashed border-line/55">
-                    서버에 등록된 공유 포즈가 없습니다. 첫 포즈를 공유해 보세요!
+                    {frozenStatus4Text("studio.frozenStatus4.vrmB.sharedEmpty", "서버에 등록된 공유 포즈가 없습니다. 첫 포즈를 공유해 보세요!")}
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 lg:max-h-[220px] lg:overflow-y-auto lg:pr-1">
@@ -267,7 +268,7 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
                               다운로드 {asset.downloads}회
                             </span>
                               {sharedPoseSelectionAssetId === asset.id ? (
-                                <span className="mt-1 block text-[0.64rem] text-accent">적용 중…</span>
+                                <span className="mt-1 block text-[0.64rem] text-accent">{frozenStatus4Text("studio.frozenStatus4.vrmB.applyingPose", "적용 중…")}</span>
                               ) : null}
                           </button>
                           {asset.isOwner && (
@@ -306,7 +307,7 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
                     disabled={sharedPosesStatus === "loading"}
                     onClick={() => void loadMoreSharedPoses()}
                   >
-                    {sharedPosesStatus === "loading" ? "추가 항목 불러오는 중..." : "더 보기"}
+                    {sharedPosesStatus === "loading" ? frozenStatus4Text("studio.frozenStatus4.vrmB.busyLoadingMore", "추가 항목 불러오는 중...") : "더 보기"}
                   </button>
                 ) : null}
               </details>
@@ -364,9 +365,7 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="text-[0.7rem] font-bold text-fg">
-                          {wardrobeFitReport.status === "ready"
-                            ? wardrobeFitReport.autoAdjusted ? "자동 여유 적용됨" : "맞춤 양호"
-                            : wardrobeFitReport.status === "warning" ? "맞춤 확인 필요" : "체형 측정 대기 중"}
+                          {wardrobeFitReport.status === "ready" ? (wardrobeFitReport.autoAdjusted ? frozenStatus4Text("studio.frozenStatus4.vrmB.fitAutoAdjusted", "자동 여유 적용됨") : frozenStatus4Text("studio.frozenStatus4.vrmB.fitGood", "맞춤 양호")) : wardrobeFitReport.status === "warning" ? frozenStatus4Text("studio.frozenStatus4.vrmB.fitWarning", "맞춤 확인 필요") : frozenStatus4Text("studio.frozenStatus4.vrmB.fitWaiting", "체형 측정 대기 중")}
                         </p>
                         <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3">
                           {wardrobeFitReport.issues[0]?.message
@@ -432,16 +431,16 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
                                       : "bg-warn/12 text-warn",
                                 )}
                                 title={surfaceReceipt.mode === "xpbd-skirt-v1"
-                                  ? `신체 캡슐 충돌 · 정점 ${surfaceReceipt.vertexCount.toLocaleString("ko-KR")}개 · 자기 충돌은 아직 지원하지 않습니다.`
+                                  ? frozenStatus4Text("studio.frozenStatus4.vrmB.receiptCapsule", { vertices: surfaceReceipt.vertexCount.toLocaleString("ko-KR") }, "신체 캡슐 충돌 · 정점 {vertices}개 · 자기 충돌은 아직 지원하지 않습니다.")
                                   : surfaceReceipt.mode === "skinned-shell-v1"
-                                    ? `${surfaceReceipt.boneCount}개 관절 · 혼합 정점 ${surfaceReceipt.blendedVertexCount.toLocaleString("ko-KR")}개`
-                                    : "이 VRM의 골격 구조에서는 안정적인 기존 부착 방식으로 표시합니다."}
+                                    ? frozenStatus4Text("studio.frozenStatus4.vrmB.receiptSkinned", { bones: surfaceReceipt.boneCount, blended: surfaceReceipt.blendedVertexCount.toLocaleString("ko-KR") }, "{bones}개 관절 · 혼합 정점 {blended}개")
+                                    : frozenStatus4Text("studio.frozenStatus4.vrmB.receiptCompat", "이 VRM의 골격 구조에서는 안정적인 기존 부착 방식으로 표시합니다.")}
                               >
                                 {surfaceReceipt.mode === "xpbd-skirt-v1"
-                                  ? "천 물리 · 자기충돌 X"
+                                  ? frozenStatus4Text("studio.frozenStatus4.vrmB.modeCloth", "천 물리 · 자기충돌 X")
                                   : surfaceReceipt.mode === "skinned-shell-v1"
-                                    ? "관절 스키닝"
-                                    : "호환 장착"}
+                                    ? frozenStatus4Text("studio.frozenStatus4.vrmB.modeSkinning", "관절 스키닝")
+                                    : frozenStatus4Text("studio.frozenStatus4.vrmB.modeCompat", "호환 장착")}
                               </span>
                             ) : null}
                           </p>

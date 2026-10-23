@@ -8,6 +8,7 @@ import { CopyButton, DraftNotice, ExportDrawing, StudioBridge } from "../../lab/
 import { recordResult, usePlayDraft } from "../../lab/play-storage";
 import { SketchPad, StrokePaths } from "../../lab/SketchPad";
 import { BOARD_PRESETS, boardSvg, boardText, CAMERA_ANGLES, createBoard, movePanel, validBoard, type ComicPanel, type Storyboard } from "../../lab/storyboard-core";
+import { playStatusText } from "../../play-status-i18n";
 
 export default function FourPanel() {
   const { value: board, setValue, saved } = usePlayDraft<Storyboard>("storyboard", createBoard, validBoard);
@@ -39,10 +40,10 @@ export default function FourPanel() {
         try {
           if (file.size > 2000000) throw new Error("2MB 이하의 ToonStudio 콘티 JSON 파일을 선택해 주세요.");
           const parsed: unknown = JSON.parse(await file.text());
-          if (!validBoard(parsed)) throw new Error("지원하지 않는 콘티 파일입니다. 현재 작업은 변경하지 않았습니다.");
+          if (!validBoard(parsed)) throw new Error(playStatusText("play.status.fourPanel.unsupportedFile", "지원하지 않는 콘티 파일입니다. 현재 작업은 변경하지 않았습니다."));
           if (!window.confirm("현재 콘티를 파일의 내용으로 교체할까요? 현재 작업을 먼저 저장해 주세요.")) return;
           change(parsed); setActiveId(parsed.panels[0].id); setMessage("콘티를 복원했습니다.");
-        } catch (error) { setMessage(error instanceof Error ? error.message : "파일을 열지 못했습니다. 현재 작업은 유지됩니다."); }
+        } catch (error) { setMessage(error instanceof Error ? error.message : playStatusText("play.status.fourPanel.openFailed", "파일을 열지 못했습니다. 현재 작업은 유지됩니다.")); }
       }} /></label>
       <button className="play-button primary" type="button" disabled={!ready || completed} onClick={() => { setCompleted(true); setMessage(recordResult({ id: runId, game: "four-panel", label: board.title || "4컷 콘티" }) ? "네 컷 완성! 내 창작 기록에 남겼습니다." : "콘티를 완성했습니다. 기록 저장이 차단되어 있으니 파일로 보관해 주세요."); }}>4컷 완성</button>
       <SharePageButton path="/play?game=four-panel" text="4컷 콘티 — 머릿속 이야기를 네 개의 컷으로" />

@@ -14,6 +14,8 @@
  * - "오래된 미사용 정리"는 모델의 정리 후보(미사용+보관기간 경과)가 있을 때만
  *   나타나고, 후보 id 목록을 그대로 호스트에 넘긴다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 import { Box, FileText, Image as ImageIcon, Inbox, Sparkles, Trash2 } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
@@ -174,12 +176,11 @@ export function StudioArtifactIntakeTray(
 
       {tray.items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-white/15 px-3 py-6 text-center text-xs text-white/50">
-          아직 들어온 산출물이 없어요. 기획에서 초안을 쓰거나, 3D 캡처·이미지 생성을 하면
-          여기에 자동으로 쌓입니다.
+          {r4CreatorStatusText("r4cat1.creator.artifactTray.empty", "아직 들어온 산출물이 없어요. 기획에서 초안을 쓰거나, 3D 캡처·이미지 생성을 하면 여기에 자동으로 쌓입니다.")}
         </p>
       ) : visibleItems.length === 0 ? (
         <p className="rounded-lg border border-dashed border-white/15 px-3 py-6 text-center text-xs text-white/50">
-          조건에 맞는 산출물이 없어요. 필터를 바꾸거나 검색어를 지워 보세요.
+          {r3c07StatusText("studio.panelStatus.r3c07.artifactIntake.filterEmpty", "조건에 맞는 산출물이 없어요. 필터를 바꾸거나 검색어를 지워 보세요.")}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

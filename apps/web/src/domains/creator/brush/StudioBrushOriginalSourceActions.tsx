@@ -1,4 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import { downloadBlob } from "../export/studio-export";
 import { decodeStudioBrushOriginalSource, type StudioBrushOriginalSource } from "./studio-brush-original-source";
 import { formatNumber } from "@toonstudio/core/format";
@@ -17,6 +20,7 @@ export function StudioBrushOriginalSourceActions(props: OriginalSourceActionProp
 }
 
 function OriginalSourceDownload({ source, name, onError }: OriginalSourceActionProps) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const epoch = useRef(0);
   const inFlight = useRef(false);
@@ -37,7 +41,7 @@ function OriginalSourceDownload({ source, name, onError }: OriginalSourceActionP
         type: "application/octet-stream",
       }), original.fileName);
     } catch (error) {
-      if (epoch.current === token) onError(error instanceof Error ? error.message : "원본 파일을 내보내지 못했습니다.");
+      if (epoch.current === token) onError(error instanceof Error ? error.message : t("studio.brushCanvasStatus.brush.originalExportFailed", "원본 파일을 내보내지 못했습니다."));
     } finally {
       if (epoch.current === token) { inFlight.current = false; setBusy(false); }
     }
@@ -48,7 +52,7 @@ function OriginalSourceDownload({ source, name, onError }: OriginalSourceActionP
     <button type="button" disabled={busy} onClick={() => void exportOriginal()}
       aria-label={`${name} 원본 파일 내보내기`}
       className="min-h-11 rounded-lg border border-line px-3 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
-      {busy ? "원본 확인 중…" : "원본 파일 내보내기"}
+      {busy ? t("studio.brushCanvasStatus.brush.originalChecking", "원본 확인 중…") : "원본 파일 내보내기"}
     </button>
     {busy ? <button type="button" onClick={cancel} aria-label="원본 파일 내보내기 취소"
       title="이미 시작한 저장소 읽기는 끝날 수 있지만 파일을 내려받지 않습니다."

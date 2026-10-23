@@ -24,6 +24,8 @@ import { StudioViewToolsHud } from "../studio-view-tools-hud-loader";
 
 import { localizeText } from "./studio-canvas-viewport-primitives";
 
+import "../studio-brush-canvas-status-i18n";
+
 import type { Tool } from "../studio-editor-tool-model";
 import type { PageState } from "../studio-page-state";
 import type { NavigateFunction } from "react-router-dom";
@@ -288,23 +290,23 @@ export function renderStudioCanvasStickyBanners({
               {sourceHydrationPending
                 ? workHydrationFailed
                   ? workHydrationUnsupportedFormat
-                    ? "업로드형 작품은 별도 편집기가 필요해요"
+                    ? localizeText(t, "업로드형 작품은 별도 편집기가 필요해요", "studio.brushCanvasStatus.canvas.stickyUploadEditorNeeded")
                     : remixId
-                      ? "리믹스 원본을 열지 못했어요"
-                      : "원고를 열지 못했어요"
+                      ? localizeText(t, "리믹스 원본을 열지 못했어요", "studio.brushCanvasStatus.canvas.stickyRemixOpenFailed")
+                      : localizeText(t, "원고를 열지 못했어요", "studio.brushCanvasStatus.canvas.stickyWorkOpenFailed")
                   : remixId
-                    ? "리믹스 원본을 안전하게 불러오는 중"
-                    : "원고를 안전하게 불러오는 중"
-                : "공동 문서를 열지 못했어요"}
+                    ? localizeText(t, "리믹스 원본을 안전하게 불러오는 중", "studio.brushCanvasStatus.canvas.stickyRemixLoading")
+                    : localizeText(t, "원고를 안전하게 불러오는 중", "studio.brushCanvasStatus.canvas.stickyWorkLoading")
+                : localizeText(t, "공동 문서를 열지 못했어요", "studio.brushCanvasStatus.canvas.stickySharedOpenFailed")}
             </strong>
             <span className="mt-1 block text-xs leading-relaxed text-fg-2">
               {sourceHydrationPending
                 ? workHydrationFailed
                   ? workHydrationUnsupportedFormat
-                    ? "원본을 보호하기 위해 컷툰 편집을 잠갔습니다. 업로드 편집 화면으로 이동해 주세요."
-                    : "빈 캔버스로 덮어쓰지 않도록 잠금을 유지합니다. 다시 불러와 주세요."
-                  : "불러오기가 끝날 때까지 편집·저장·가져오기·내보내기를 잠급니다."
-                : "이전 계정이나 다른 작품의 캔버스는 표시·내보내지 않습니다."}
+                    ? localizeText(t, "원본을 보호하기 위해 컷툰 편집을 잠갔습니다. 업로드 편집 화면으로 이동해 주세요.", "studio.brushCanvasStatus.canvas.stickyLockedUploadDesc")
+                    : localizeText(t, "빈 캔버스로 덮어쓰지 않도록 잠금을 유지합니다. 다시 불러와 주세요.", "studio.brushCanvasStatus.canvas.stickyLockedKeptDesc")
+                  : localizeText(t, "불러오기가 끝날 때까지 편집·저장·가져오기·내보내기를 잠급니다.", "studio.brushCanvasStatus.canvas.stickyLockedLoadingDesc")
+                : localizeText(t, "이전 계정이나 다른 작품의 캔버스는 표시·내보내지 않습니다.", "studio.brushCanvasStatus.canvas.stickyOtherAccountDesc")}
             </span>
             {sourceHydrationPending && workHydrationFailed && workHydrationError ? (
               <span role="alert" className="mt-2 block text-xs leading-relaxed text-warn">
@@ -336,9 +338,9 @@ export function renderStudioCanvasStickyBanners({
                 >
                   {workHydrationUnsupportedFormat
                     ? workId
-                      ? "업로드 편집기로 이동"
-                      : "원본 작품으로 이동"
-                    : "다시 불러오기"}
+                      ? localizeText(t, "업로드 편집기로 이동", "studio.brushCanvasStatus.canvas.stickyGoUploadEditor")
+                      : localizeText(t, "원본 작품으로 이동", "studio.brushCanvasStatus.canvas.stickyGoOriginalWork")
+                    : localizeText(t, "다시 불러오기", "studio.brushCanvasStatus.canvas.stickyReload")}
                 </button>
                 {!workHydrationUnsupportedFormat && (
                   <button

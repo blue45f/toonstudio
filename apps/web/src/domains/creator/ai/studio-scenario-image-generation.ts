@@ -26,6 +26,7 @@ import {
   type StudioScenarioImageGenerationRequest,
 } from "./studio-scenario-candidate-workflow";
 import { captureStudioAiGeneratedAssetProvenance } from "./studio-ai-generated-asset-model";
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5-core";
 import {
   parseStudioAiRequestedSize,
   studioImageAiProviderContext,
@@ -165,29 +166,23 @@ export function createStudioScenarioImageGenerationExecutors(
       scenarioImageReferenceDocument.references.length > 0
       && (!assetsLoaded || assetsLoading)
     ) {
-      setScenarioError("AI 참조 에셋을 불러오는 중이에요. 잠시 뒤 다시 시도해 주세요.");
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.referenceAssetsLoading", "AI 참조 에셋을 불러오는 중이에요. 잠시 뒤 다시 시도해 주세요."));
       return;
     }
     if (
       scenarioImageReferenceDocument.references.length
       > STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages
     ) {
-      setScenarioError(
-        `AI 이미지 참조는 최대 ${STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages}개까지 사용할 수 있어요. 참조 팩에서 일부를 제거해 주세요.`
-      );
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.referenceLimitExceeded", { count: STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages }, "AI 이미지 참조는 최대 {count}개까지 사용할 수 있어요. 참조 팩에서 일부를 제거해 주세요."));
       return;
     }
     if (scenarioImageReferenceResolution.missing.length > 0) {
-      setScenarioError(
-        `연결된 AI 참조 에셋 ${scenarioImageReferenceResolution.missing.length}개를 찾을 수 없어요. 참조 팩에서 제거하거나 에셋을 다시 추가해 주세요.`
-      );
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.referenceAssetsMissing", { count: scenarioImageReferenceResolution.missing.length }, "연결된 AI 참조 에셋 {count}개를 찾을 수 없어요. 참조 팩에서 제거하거나 에셋을 다시 추가해 주세요."));
       return;
     }
     const generationPreflight = inspectStudioScenarioImageGeneration(snapshot.items, request);
     if (!generationPreflight.withinLimit) {
-      setScenarioError(
-        `한 번에 최대 ${STUDIO_SCENARIO_IMAGE_MAX_REQUESTS_PER_BATCH}개까지 생성할 수 있어요. 선택 컷 또는 후보 수를 줄여 나눠 생성해 주세요.`
-      );
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.batchLimitExceeded", { count: STUDIO_SCENARIO_IMAGE_MAX_REQUESTS_PER_BATCH }, "한 번에 최대 {count}개까지 생성할 수 있어요. 선택 컷 또는 후보 수를 줄여 나눠 생성해 주세요."));
       return;
     }
     const tasks = planStudioScenarioImageGeneration(snapshot.items, request);
@@ -356,22 +351,18 @@ export function createStudioScenarioImageGenerationExecutors(
       scenarioImageReferenceDocument.references.length > 0
       && (!assetsLoaded || assetsLoading)
     ) {
-      setScenarioError("AI 참조 에셋을 불러오는 중이에요. 잠시 뒤 다시 시도해 주세요.");
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.referenceAssetsLoading", "AI 참조 에셋을 불러오는 중이에요. 잠시 뒤 다시 시도해 주세요."));
       return;
     }
     if (
       scenarioImageReferenceDocument.references.length
       > STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages
     ) {
-      setScenarioError(
-        `AI 이미지 참조는 최대 ${STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages}개까지 사용할 수 있어요. 참조 팩에서 일부를 제거해 주세요.`
-      );
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.referenceLimitExceeded", { count: STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages }, "AI 이미지 참조는 최대 {count}개까지 사용할 수 있어요. 참조 팩에서 일부를 제거해 주세요."));
       return;
     }
     if (scenarioImageReferenceResolution.missing.length > 0) {
-      setScenarioError(
-        `연결된 AI 참조 에셋 ${scenarioImageReferenceResolution.missing.length}개를 찾을 수 없어요. 참조 팩에서 제거하거나 에셋을 다시 추가해 주세요.`
-      );
+      setScenarioError(aiErrorText("studio.aiError.scenarioImage.referenceAssetsMissing", { count: scenarioImageReferenceResolution.missing.length }, "연결된 AI 참조 에셋 {count}개를 찾을 수 없어요. 참조 팩에서 제거하거나 에셋을 다시 추가해 주세요."));
       return;
     }
     const referenceSignature = scenarioImageReferenceSignature(

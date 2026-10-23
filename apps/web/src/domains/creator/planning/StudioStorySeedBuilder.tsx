@@ -16,6 +16,7 @@
  * - 엣지: 키워드 5개 상한 안내, 미등록 장르는 폴백 키트 안내 문구.
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { GENRES } from "@/shared/lib/taxonomy";
 
@@ -122,7 +123,7 @@ export function StudioStorySeedBuilder({
       setPhase("ready");
     } catch {
       setErrorMessage(
-        "제안을 만들지 못했어요. 네트워크나 제공자 상태를 확인하거나, 기본 제안으로 만들어 보세요.",
+        r3c04StatusText("studio.r3c04Status.planning.storySeed.generateFailed", "제안을 만들지 못했어요. 네트워크나 제공자 상태를 확인하거나, 기본 제안으로 만들어 보세요."),
       );
       setPhase("error");
     }
@@ -154,7 +155,7 @@ export function StudioStorySeedBuilder({
           <StudioAiConnectionNotice
             kind="not-connected"
             className="mt-2"
-            detail="외부 AI 제공자는 연결 전입니다. 대신 기본 제안(로컬·결정적)이 지금 바로 동작합니다 — 같은 입력은 항상 같은 초안이고, 횟수 제한이 없습니다."
+            detail={r3c04StatusText("studio.r3c04Status.planning.storySeed.providerNotConnected", "외부 AI 제공자는 연결 전입니다. 대신 기본 제안(로컬·결정적)이 지금 바로 동작합니다 — 같은 입력은 항상 같은 초안이고, 횟수 제한이 없습니다.")}
           />
         )}
       </header>
@@ -355,7 +356,7 @@ export function StudioStorySeedBuilder({
               onClick={() => void runGenerate(provider)}
               className="min-h-9 rounded-full px-3 text-xs text-fg-3"
             >
-              다시 시도
+              {r3c04StatusText("studio.r3c04Status.planning.storySeed.retry", "다시 시도")}
             </button>
           </div>
         </div>

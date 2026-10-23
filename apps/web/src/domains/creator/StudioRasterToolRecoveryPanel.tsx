@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Circle,
   CheckCircle2,
@@ -150,7 +151,7 @@ export function StudioRasterToolRecoveryPanel({
             className="mt-0.5 block text-[0.68rem] leading-relaxed text-fg-3"
           >
             {busy
-              ? "편집용 래스터 복사본을 준비 중입니다. Esc를 누르면 준비를 취소할 수 있습니다."
+              ? r3c07StatusText("studio.panelStatus.r3c07.rasterToolRecovery.preparingCopy", "편집용 래스터 복사본을 준비 중입니다. Esc를 누르면 준비를 취소할 수 있습니다.")
               : "원본 레이어를 유지하면서 필요한 대상만 안전하게 준비합니다."}
           </span>
         </span>
@@ -359,7 +360,7 @@ export function StudioInspectorPixelSelectionLauncher({
   const policy = resolveStudioInspectorRasterToolPolicy(availability);
   const recovery = availability.entry.action;
   const statusDescription = busy && policy.selectable
-    ? "페이지 합성본을 준비 중입니다. 다른 선택 도구를 누르면 마지막에 고른 도구로 이어서 실행합니다."
+    ? r3c07StatusText("studio.panelStatus.r3c07.rasterToolRecovery.preparingComposite", "페이지 합성본을 준비 중입니다. 다른 선택 도구를 누르면 마지막에 고른 도구로 이어서 실행합니다.")
     : policy.description;
 
   return (
@@ -644,7 +645,7 @@ export function StudioInspectorFilterLauncher({
         >
           <option value="" disabled>
             {busy
-              ? "미리보기 준비 중…"
+              ? r3c07StatusText("studio.panelStatus.r3c07.rasterToolRecovery.preparingPreview", "미리보기 준비 중…")
               : preparesEffectCopy
                 ? "효과 선택 — 복사본은 자동으로 준비돼요"
                 : "필터 선택…"}
@@ -692,7 +693,7 @@ export function StudioInspectorFilterLauncher({
                 <ImagePlus className="size-3.5 shrink-0" aria-hidden />
               )}
               <span className="truncate">
-                {busy ? "효과용 이미지 복사본 준비 중…" : "효과용 이미지 복사본 먼저 만들기"}
+                {busy ? r3c07StatusText("studio.panelStatus.r3c07.rasterToolRecovery.preparingEffectCopy", "효과용 이미지 복사본 준비 중…") : "효과용 이미지 복사본 먼저 만들기"}
               </span>
             </span>
             <ChevronRight className="size-3.5 shrink-0" aria-hidden />

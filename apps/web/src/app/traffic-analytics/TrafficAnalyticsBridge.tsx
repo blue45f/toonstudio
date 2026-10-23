@@ -84,7 +84,9 @@ function navigationLoadTimeMs(): number | null {
     | PerformanceNavigationTiming
     | undefined;
   if (!entry) return null;
-  return Math.max(0, Math.round(entry.duration)) || null;
+  // 프리렌더 뒤 활성화된 문서는 activationStart 이전이 사용자가 기다리지 않은 시간이다.
+  const activationStart = (entry as PerformanceNavigationTiming & { readonly activationStart?: number }).activationStart ?? 0;
+  return Math.max(0, Math.round(entry.duration - activationStart)) || null;
 }
 
 function coarseScreenClass(): string {

@@ -7,10 +7,11 @@
  * 3. 지연 선언이 정적으로도 도달해 무효화된 모듈은 기준선 목록에 없는 것이 새로 생길 수 없다.
  * 4. 앱 셸(첫 진입점) 폐포 크기도 기준선의 +1%를 넘을 수 없다. Studio 모듈을 앱 셸이 정적으로 끌어오면
  *    합집합 크기는 그대로인데 모든 방문자의 첫 로드가 무거워지므로 따로 막는다.
+ * 5. 지연 고정 파일(정책의 PINNED_LAZY_FILES)은 진입 그래프에 정적으로 닿을 수 없다. 기준선 없이 항상 0 이다.
  * 줄이는 방향은 `--tighten` 으로만 기준선에 잠그고, 늘리는 방향은 `--update-baseline --reason` 으로만 수용한다.
  */
 import { compareText, isUnder, summarizeFolders } from "./studio-eager-graph.mjs";
-import { FORBIDDEN_DOMAINS, TOTAL_BYTES_TOLERANCE } from "./studio-eager-graph-policy.mjs";
+import { FORBIDDEN_DOMAINS, PINNED_LAZY_FILES, TOTAL_BYTES_TOLERANCE } from "./studio-eager-graph-policy.mjs";
 
 export const BASELINE_SCHEMA = "toonstudio.studio-eager-graph-baseline/1";
 export const BASELINE_NOTE = "scripts/check-studio-eager-graph.mjs 가 기록한 마지막 수용 측정값이다. 값은 손으로 고치지 말고 "
@@ -141,11 +142,11 @@ function folderGrowth(measurement, baseline) {
 /**
  * 측정값을 기준선과 비교한다.
  *
- * @param {{ measurement: ReturnType<typeof measureGraph>, baseline: object, graph: object, forbiddenDomains?: readonly {prefix: string}[], tolerance?: number }} input
+ * @param {{ measurement: ReturnType<typeof measureGraph>, baseline: object, graph: object, forbiddenDomains?: readonly {prefix: string}[], pinnedLazy?: readonly {file: string, reason: string}[], tolerance?: number }} input
  *   graph 는 새로 도달한 모듈의 크기(`modules`)·최단 경로(`shortestPath`, `pathIn`)·지연 무효화 목록을 제공한다.
  */
 export function evaluateRatchet({
-  measurement, baseline, graph, forbiddenDomains = FORBIDDEN_DOMAINS, tolerance = TOTAL_BYTES_TOLERANCE,
+  measurement, baseline, graph, forbiddenDomains = FORBIDDEN_DOMAINS, pinnedLazy = PINNED_LAZY_FILES, tolerance = TOTAL_BYTES_TOLERANCE,
 }) {
   const violations = [];
   const improvements = [];
@@ -238,6 +239,14 @@ export function evaluateRatchet({
     const currentSet = new Set(current.files);
     const removed = recorded.files.filter((file) => !currentSet.has(file));
     if (removed.length > 0) improvements.push(`금지 도메인 ${prefix}: 모듈 ${removed.length}개가 진입 그래프에서 빠졌습니다`);
+  }
+
+  const reachedPinned = pinnedLazy.filter(({ file }) => Object.hasOwn(measurement.modules, file));
+  if (reachedPinned.length > 0) {
+    violations.push({
+      kind: "pinned-lazy",
+      items: reachedPinned.map(({ file, reason }) => ({ ...describe(file), reason })).sort((left, right) => right.bytes - left.bytes || compareText(left.file, right.file)),
+    });
   }
 
   const knownLazy = new Set(baseline.lazyInvalidated.map((item) => item.file));

@@ -14,6 +14,7 @@ import {
 } from "../studio-pdf-contact-sheet";
 import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark";
 import { StudioContactSheetPanel } from "../StudioContactSheetPanel";
+import { frozenStatusText } from "../studio-frozen-status-i18n";
 
 import {
   loadStudioPsdExportModule,
@@ -438,7 +439,7 @@ export function StudioExportMenuPanel({
     rangeLabel: string;
   }> {
     if (!packagePreflight.canExport) {
-      throw new Error(packagePreflight.errors[0]?.message ?? "내보내기 설정을 확인하세요.");
+      throw new Error(packagePreflight.errors[0]?.message ?? frozenStatusText("studio.frozenStatus.export.checkSettings", "내보내기 설정을 확인하세요."));
     }
     const plan = planMultiPageExportCapture({
       pageIndices: packagePreflight.pageIndices,
@@ -452,7 +453,7 @@ export function StudioExportMenuPanel({
         || issue.code === "PAGE_COUNT_INVALID"
       );
       throw new Error(
-        rangeError?.message ?? "선택한 페이지 범위에 내보낼 페이지가 없습니다."
+        rangeError?.message ?? frozenStatusText("studio.frozenStatus.export.noPagesInSelectedRange", "선택한 페이지 범위에 내보낼 페이지가 없습니다.")
       );
     }
     const rangeLabel = formatStudioExportPageSelection(plan.indices);
@@ -480,7 +481,7 @@ export function StudioExportMenuPanel({
       openRasterBusy || archiveBusy !== null || contactBusy || isExporting
     ) return;
     setPublishHandoffBusy(true);
-    setPublishHandoffStatus({ tone: "info", text: "선택한 원고를 게시 화면용으로 준비하고 있어요..." });
+    setPublishHandoffStatus({ tone: "info", text: frozenStatusText("studio.frozenStatus.export.handoffPreparing", "선택한 원고를 게시 화면용으로 준비하고 있어요...") });
     try {
       const captured = await captureMultiPageExportCanvases();
       const handoff = await import("../studio-publish-handoff");
@@ -494,7 +495,7 @@ export function StudioExportMenuPanel({
       const href = handoff.studioPublishHandoffHref(record.id, record.sourceWorkId);
       setPublishHandoffStatus({
         tone: "good",
-        text: `${captured.pages.length}페이지를 게시 명령 센터로 전달합니다. (${captured.rangeLabel})`,
+        text: frozenStatusText("studio.frozenStatus.export.handoffReady", { count: captured.pages.length, range: captured.rangeLabel }, "{count}페이지를 게시 명령 센터로 전달합니다. ({range})"),
       });
       if (onNavigateToPublish) onNavigateToPublish(href);
       else window.location.assign(href);
@@ -502,9 +503,7 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setPublishHandoffStatus({
         tone: "warn",
-        text: error instanceof Error
-          ? error.message
-          : "게시 화면으로 보낼 원고를 준비하지 못했습니다.",
+        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.handoffFailed", "게시 화면으로 보낼 원고를 준비하지 못했습니다."),
       });
     } finally {
       if (mountedRef.current) setPublishHandoffBusy(false);
@@ -517,7 +516,7 @@ export function StudioExportMenuPanel({
         tone: "warn",
         text: packagePreflight.errors[0]?.message
           ?? packagePreflight.warnings[0]?.message
-          ?? "대사 TXT를 내보낼 수 없습니다.",
+          ?? frozenStatusText("studio.frozenStatus.export.dialogueTxtUnavailable", "대사 TXT를 내보낼 수 없습니다."),
       });
       return;
     }
@@ -526,7 +525,7 @@ export function StudioExportMenuPanel({
     setPackageStatus({
       tone: issueTone(packagePreflight.issues),
       text: [
-        `대사 TXT ${file.cueCount}개를 저장했어요. (${exportRangeLabel})`,
+        frozenStatusText("studio.frozenStatus.export.dialogueTxtSaved", { count: file.cueCount, range: exportRangeLabel }, "대사 TXT {count}개를 저장했어요. ({range})"),
         ...packagePreflight.warnings.map((issue) => issue.message),
       ].join(" "),
     });
@@ -538,7 +537,7 @@ export function StudioExportMenuPanel({
       presetBusy || isExporting || contactBusy || (archiveBusy !== null || vectorPdfBusy)
     ) return;
     setOpenRasterBusy(true);
-    setOpenRasterStatus({ tone: "info", text: `${openRasterFormat.toUpperCase()} 픽셀을 인코딩하는 중...` });
+    setOpenRasterStatus({ tone: "info", text: frozenStatusText("studio.frozenStatus.export.rasterEncoding", { format: openRasterFormat.toUpperCase() }, "{format} 픽셀을 인코딩하는 중...") });
     try {
       const result = await exportCurrentPageToRasterInterchange(openRasterFormat);
       if (!mountedRef.current) return;
@@ -549,7 +548,7 @@ export function StudioExportMenuPanel({
       setOpenRasterStatus({
         tone: result.lossy || result.warnings.length > 0 ? "warn" : "good",
         text: [
-          `${openRasterFormat.toUpperCase()} 파일을 저장했어요.`,
+          frozenStatusText("studio.frozenStatus.export.rasterSaved", { format: openRasterFormat.toUpperCase() }, "{format} 파일을 저장했어요."),
           ...result.warnings,
         ].join(" "),
       });
@@ -557,7 +556,7 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setOpenRasterStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : "공개 래스터 파일을 만들지 못했습니다.",
+        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.rasterFailed", "공개 래스터 파일을 만들지 못했습니다."),
       });
     } finally {
       if (mountedRef.current) setOpenRasterBusy(false);
@@ -574,8 +573,8 @@ export function StudioExportMenuPanel({
       tone: "info",
       text:
         kind === "cbz"
-          ? `CBZ로 묶는 중… (${exportRangeLabel})`
-          : "현재 페이지를 OpenRaster로 묶는 중…",
+          ? frozenStatusText("studio.frozenStatus.export.archiveCbzBusy", { range: exportRangeLabel }, "CBZ로 묶는 중… ({range})")
+          : frozenStatusText("studio.frozenStatus.export.archiveOraBusy", "현재 페이지를 OpenRaster로 묶는 중…"),
     });
     try {
       let canvases: HTMLCanvasElement[];
@@ -587,13 +586,13 @@ export function StudioExportMenuPanel({
       } else {
         canvases = await capturePagesForPreset("current");
       }
-      if (canvases.length === 0) throw new Error("내보낼 페이지를 캡처하지 못했습니다.");
+      if (canvases.length === 0) throw new Error(frozenStatusText("studio.frozenStatus.export.captureFailed", "내보낼 페이지를 캡처하지 못했습니다."));
       const pngPages: Blob[] = [];
       for (let index = 0; index < canvases.length; index += 1) {
         if (mountedRef.current) {
           setArchiveStatus({
             tone: "info",
-            text: `${index + 1}/${canvases.length}페이지를 무손실 PNG로 변환하는 중… (${rangeLabel})`,
+            text: frozenStatusText("studio.frozenStatus.export.archiveConverting", { current: index + 1, total: canvases.length, range: rangeLabel }, "{current}/{total}페이지를 무손실 PNG로 변환하는 중… ({range})"),
           });
         }
         pngPages.push(await canvasToBlob(canvases[index]!, "image/png"));
@@ -617,7 +616,7 @@ export function StudioExportMenuPanel({
         setArchiveStatus({
           tone: result.warnings.length > 0 ? "warn" : "good",
           text: [
-            `CBZ ${pngPages.length}페이지와 ComicInfo.xml을 저장했어요. (${rangeLabel})`,
+            frozenStatusText("studio.frozenStatus.export.cbzSaved", { count: pngPages.length, range: rangeLabel }, "CBZ {count}페이지와 ComicInfo.xml을 저장했어요. ({range})"),
             ...result.warnings.map((item) => item.message),
           ].join(" "),
         });
@@ -640,7 +639,7 @@ export function StudioExportMenuPanel({
         setArchiveStatus({
           tone: "warn",
           text: [
-            "OpenRaster를 저장했어요. 현재 메뉴 경로는 화면과 같은 합성 1레이어이며, 요소별 레이어 교환은 PSD를 사용하세요.",
+            frozenStatusText("studio.frozenStatus.export.oraSaved", "OpenRaster를 저장했어요. 현재 메뉴 경로는 화면과 같은 합성 1레이어이며, 요소별 레이어 교환은 PSD를 사용하세요."),
             ...result.warnings.map((item) => item.message),
           ].join(" "),
         });
@@ -649,7 +648,7 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setArchiveStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : "문서 교환 파일을 만들지 못했습니다.",
+        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.archiveFailed", "문서 교환 파일을 만들지 못했습니다."),
       });
     } finally {
       if (mountedRef.current) setArchiveBusy(null);
@@ -664,7 +663,7 @@ export function StudioExportMenuPanel({
     setArchiveBusy("inkml");
     setArchiveStatus({
       tone: "info",
-      text: "자유곡선 채널과 InkML 왕복 적합성을 검사하는 중…",
+      text: frozenStatusText("studio.frozenStatus.export.inkmlChecking", "자유곡선 채널과 InkML 왕복 적합성을 검사하는 중…"),
     });
     try {
       const result = await exportCurrentPageToInkMl();
@@ -676,9 +675,9 @@ export function StudioExportMenuPanel({
       setArchiveStatus({
         tone: result.skipped.length > 0 ? "warn" : "good",
         text: [
-          `InkML ${result.exportedStrokeIds.length}개 획을 검증해 저장했어요.`,
+          frozenStatusText("studio.frozenStatus.export.inkmlSaved", { count: result.exportedStrokeIds.length }, "InkML {count}개 획을 검증해 저장했어요."),
           result.skipped.length > 0
-            ? `숨김·지우개·도형 ${result.skipped.length}개는 의미 손실을 막기 위해 제외했어요.`
+            ? frozenStatusText("studio.frozenStatus.export.inkmlSkipped", { count: result.skipped.length }, "숨김·지우개·도형 {count}개는 의미 손실을 막기 위해 제외했어요.")
             : "",
         ].filter(Boolean).join(" "),
       });
@@ -686,7 +685,7 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setArchiveStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : "InkML 파일을 만들지 못했습니다.",
+        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.inkmlFailed", "InkML 파일을 만들지 못했습니다."),
       });
     } finally {
       if (mountedRef.current) setArchiveBusy(null);
@@ -701,7 +700,7 @@ export function StudioExportMenuPanel({
     setArchiveBusy("will");
     setArchiveStatus({
       tone: "info",
-      text: "보이는 자유곡선을 bounded WILL v1 Annex B Worker로 패키징하는 중…",
+      text: frozenStatusText("studio.frozenStatus.export.willPackaging", "보이는 자유곡선을 bounded WILL v1 Annex B Worker로 패키징하는 중…"),
     });
     try {
       const result = await exportCurrentPageToWillV1();
@@ -721,12 +720,12 @@ export function StudioExportMenuPanel({
             ? "warn"
             : "good",
         text: [
-          `WILL v1 ${result.exportedStrokeIds.length}개 획을 저장했어요.`,
+          frozenStatusText("studio.frozenStatus.export.willSaved", { count: result.exportedStrokeIds.length }, "WILL v1 {count}개 획을 저장했어요."),
           result.skipped.length > 0
-            ? `표현할 수 없는 ${result.skipped.length}개 요소는 제외했어요.`
+            ? frozenStatusText("studio.frozenStatus.export.willSkipped", { count: result.skipped.length }, "표현할 수 없는 {count}개 요소는 제외했어요.")
             : "",
           result.adaptations.length > 0 || quantized > 0
-            ? `bounded profile 변환 ${result.adaptations.length + quantized}건을 결과에 반영했어요.`
+            ? frozenStatusText("studio.frozenStatus.export.willAdapted", { count: result.adaptations.length + quantized }, "bounded profile 변환 {count}건을 결과에 반영했어요.")
             : "",
           result.disclaimer,
         ].filter(Boolean).join(" "),
@@ -735,7 +734,7 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setArchiveStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : "WILL v1 파일을 만들지 못했습니다.",
+        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.willFailed", "WILL v1 파일을 만들지 못했습니다."),
       });
     } finally {
       if (mountedRef.current) setArchiveBusy(null);
@@ -761,7 +760,7 @@ export function StudioExportMenuPanel({
     const pendingRange = exportRangeLabel;
     setPdfStatus({
       tone: "info",
-      text: pageCount > 1 ? `${pendingRange} 캡처 중…` : "페이지 캡처 중…",
+      text: pageCount > 1 ? frozenStatusText("studio.frozenStatus.export.capturingRange", { range: pendingRange }, "{range} 캡처 중…") : frozenStatusText("studio.frozenStatus.export.capturingPage", "페이지 캡처 중…"),
     });
     try {
       const captured = await captureMultiPageExportCanvases();
@@ -778,7 +777,7 @@ export function StudioExportMenuPanel({
         onProgress: (done, total) =>
           setPdfStatus({
             tone: "info",
-            text: `${done}/${total}페이지 PDF 변환 중… (${captured.rangeLabel})`,
+            text: frozenStatusText("studio.frozenStatus.export.pdfProgress", { done, total, range: captured.rangeLabel }, "{done}/{total}페이지 PDF 변환 중… ({range})"),
           }),
       });
       setPdfStatus({
@@ -786,18 +785,18 @@ export function StudioExportMenuPanel({
         text:
           `${pdfExportResultMessage(result)} (${captured.rangeLabel})` +
           (bookPrintRequest
-            ? ` 단행본 조판 적용: ${describeBookLayoutSpec(bookLayoutSpec)}.` +
+            ? frozenStatusText("studio.frozenStatus.export.pdfBookApplied", { spec: describeBookLayoutSpec(bookLayoutSpec) }, " 단행본 조판 적용: {spec}.") +
               (result.bookWarnings && result.bookWarnings.length > 0
-                ? ` 경고 ${result.bookWarnings.length}건: ${result.bookWarnings[0].message}`
+                ? frozenStatusText("studio.frozenStatus.export.pdfBookWarnings", { count: result.bookWarnings.length, message: result.bookWarnings[0]?.message ?? "" }, " 경고 {count}건: {message}")
                 : "")
             : pdfPrintOptions
-              ? ` 인쇄 스펙 적용: ${describePdfPrintSpec(pdfPrintSpec)}.`
+              ? frozenStatusText("studio.frozenStatus.export.pdfPrintApplied", { spec: describePdfPrintSpec(pdfPrintSpec) }, " 인쇄 스펙 적용: {spec}.")
               : ""),
       });
     } catch (err) {
       setPdfStatus({
         tone: "warn",
-        text: err instanceof Error ? err.message : "PDF 내보내기에 실패했어요.",
+        text: err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.pdfFailed", "PDF 내보내기에 실패했어요."),
       });
     } finally {
       setPdfBusy(false);
@@ -813,7 +812,7 @@ export function StudioExportMenuPanel({
     const pendingRange = exportRangeLabel;
     setContactStatus({
       tone: "info",
-      text: pageCount > 1 ? `${pendingRange} 캡처 중…` : "페이지 캡처 중…",
+      text: pageCount > 1 ? frozenStatusText("studio.frozenStatus.export.capturingRange", { range: pendingRange }, "{range} 캡처 중…") : frozenStatusText("studio.frozenStatus.export.capturingPage", "페이지 캡처 중…"),
     });
     try {
       const captured = await captureMultiPageExportCanvases();
@@ -832,7 +831,7 @@ export function StudioExportMenuPanel({
         onProgress: (done, total) =>
           setContactStatus({
             tone: "info",
-            text: `${done}/${total}장 합성 중… (${captured.rangeLabel})`,
+            text: frozenStatusText("studio.frozenStatus.export.contactProgress", { done, total, range: captured.rangeLabel }, "{done}/{total}장 합성 중… ({range})"),
           }),
       });
       if (!mountedRef.current) return;
@@ -842,7 +841,7 @@ export function StudioExportMenuPanel({
       });
     } catch (err) {
       if (!mountedRef.current) return;
-      setContactStatus({ tone: "warn", text: err instanceof Error ? err.message : "콘택트시트 내보내기에 실패했어요." });
+      setContactStatus({ tone: "warn", text: err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.contactFailed", "콘택트시트 내보내기에 실패했어요.") });
     } finally {
       if (mountedRef.current) setContactBusy(false);
     }
@@ -856,7 +855,7 @@ export function StudioExportMenuPanel({
       psdBusy || svgBusy || isExporting || contactBusy || (archiveBusy !== null || vectorPdfBusy)
     ) return;
     setVectorPdfBusy(true);
-    setVectorPdfStatus({ tone: "info", text: "PDF 1.7 벡터 선화 출고를 준비하는 중…" });
+    setVectorPdfStatus({ tone: "info", text: frozenStatusText("studio.frozenStatus.export.vectorPreparing", "PDF 1.7 벡터 선화 출고를 준비하는 중…") });
     try {
       const result = await exportCurrentPageToVectorPdf();
       if (!mountedRef.current) return;
@@ -868,13 +867,13 @@ export function StudioExportMenuPanel({
       );
       setVectorPdfStatus({
         tone: result.skippedStrokeCount > 0 || result.warnings.length > 1 ? "warn" : "good",
-        text: [`벡터 선화 ${result.vectorStrokeCount}개를 포함한 PDF를 저장했어요.`, ...result.warnings].join(" "),
+        text: [frozenStatusText("studio.frozenStatus.export.vectorSaved", { count: result.vectorStrokeCount }, "벡터 선화 {count}개를 포함한 PDF를 저장했어요."), ...result.warnings].join(" "),
       });
     } catch (error) {
       if (!mountedRef.current) return;
       setVectorPdfStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : "벡터 PDF를 만들지 못했습니다.",
+        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.vectorFailed", "벡터 PDF를 만들지 못했습니다."),
       });
     } finally {
       if (mountedRef.current) setVectorPdfBusy(false);
@@ -887,7 +886,7 @@ export function StudioExportMenuPanel({
       contactBusy || (archiveBusy !== null || vectorPdfBusy)
     ) return;
     setSvgBusy(true);
-    setSvgStatus({ tone: "info", text: "벡터 내보내기 엔진을 준비하는 중…" });
+    setSvgStatus({ tone: "info", text: frozenStatusText("studio.frozenStatus.export.svgEnginePreparing", "벡터 내보내기 엔진을 준비하는 중…") });
     try {
       const [result, { SVG_EXPORT_MIME, svgExportFileName, svgExportResultMessage }] =
         await Promise.all([exportCurrentPageToSvg(), loadStudioSvgExportModule()]);
@@ -895,7 +894,7 @@ export function StudioExportMenuPanel({
       if (result.skipped.length > 0) {
         setSvgStatus({
           tone: "warn",
-          text: `외관이 달라지는 요소가 있어 벡터 SVG 저장을 중단했어요. ${[...new Set(result.skipped.map((item) => item.label))].join(" ")} 현재 원고의 질감·클리핑·혼합 결과를 유지하려면 외관 보존 SVG를 선택해 주세요.`,
+          text: frozenStatusText("studio.frozenStatus.export.svgAborted", { labels: [...new Set(result.skipped.map((item) => item.label))].join(" ") }, "외관이 달라지는 요소가 있어 벡터 SVG 저장을 중단했어요. {labels} 현재 원고의 질감·클리핑·혼합 결과를 유지하려면 외관 보존 SVG를 선택해 주세요."),
         });
         return;
       }
@@ -903,7 +902,7 @@ export function StudioExportMenuPanel({
       setSvgStatus({ tone: result.skipped.length > 0 ? "warn" : "good", text: svgExportResultMessage(result) });
     } catch (err) {
       if (!mountedRef.current) return;
-      setSvgStatus({ tone: "warn", text: err instanceof Error ? err.message : "SVG 내보내기에 실패했어요." });
+      setSvgStatus({ tone: "warn", text: err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.svgFailed", "SVG 내보내기에 실패했어요.") });
     } finally {
       if (mountedRef.current) setSvgBusy(false);
     }
@@ -915,7 +914,7 @@ export function StudioExportMenuPanel({
       contactBusy || archiveBusy !== null || vectorPdfBusy
     ) return;
     setSvgBusy(true);
-    setSvgStatus({ tone: "info", text: "질감과 클리핑을 보존하는 SVG를 준비하는 중…" });
+    setSvgStatus({ tone: "info", text: frozenStatusText("studio.frozenStatus.export.appearancePreparing", "질감과 클리핑을 보존하는 SVG를 준비하는 중…") });
     try {
       const [{ exportStudioAppearanceSvg }, canvases] = await Promise.all([
         import("./studio-svg-export-appearance"),
@@ -923,7 +922,7 @@ export function StudioExportMenuPanel({
       ]);
       if (!mountedRef.current) return;
       const canvas = canvases[0];
-      if (!canvas || canvases.length !== 1) throw new Error("외관 보존 SVG용 현재 페이지 캡처를 만들지 못했어요.");
+      if (!canvas || canvases.length !== 1) throw new Error(frozenStatusText("studio.frozenStatus.export.appearanceCaptureFailed", "외관 보존 SVG용 현재 페이지 캡처를 만들지 못했어요."));
       const result = await exportStudioAppearanceSvg(canvas);
       if (!mountedRef.current) return;
       downloadBlob(
@@ -932,11 +931,11 @@ export function StudioExportMenuPanel({
       );
       setSvgStatus({
         tone: "good",
-        text: `외관 보존 SVG를 저장했어요(${result.pixelWidth}×${result.pixelHeight}px, 무손실 PNG 포함). 획과 글자는 벡터로 편집할 수 없어요.`,
+        text: frozenStatusText("studio.frozenStatus.export.appearanceSaved", { width: result.pixelWidth, height: result.pixelHeight }, "외관 보존 SVG를 저장했어요({width}×{height}px, 무손실 PNG 포함). 획과 글자는 벡터로 편집할 수 없어요."),
       });
     } catch (error) {
       if (!mountedRef.current) return;
-      setSvgStatus({ tone: "warn", text: error instanceof Error ? error.message : "외관 보존 SVG를 만들지 못했어요." });
+      setSvgStatus({ tone: "warn", text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.appearanceFailed", "외관 보존 SVG를 만들지 못했어요.") });
     } finally {
       if (mountedRef.current) setSvgBusy(false);
     }
@@ -950,7 +949,7 @@ export function StudioExportMenuPanel({
       contactBusy || (archiveBusy !== null || vectorPdfBusy)
     ) return;
     setPsdBusy(true);
-    setPsdStatus({ tone: "info", text: "레이어별로 캡처하는 중…" });
+    setPsdStatus({ tone: "info", text: frozenStatusText("studio.frozenStatus.export.psdCapturing", "레이어별로 캡처하는 중…") });
     try {
       const [result, { psdExportFileName, psdExportResultMessage }] = await Promise.all([
         exportCurrentPageToPsd(),
@@ -968,7 +967,7 @@ export function StudioExportMenuPanel({
       setPsdStatus({ tone: result.skipped.length > 0 ? "warn" : "good", text: psdExportResultMessage(result) });
     } catch (err) {
       if (!mountedRef.current) return;
-      setPsdStatus({ tone: "warn", text: err instanceof Error ? err.message : "PSD 내보내기에 실패했어요." });
+      setPsdStatus({ tone: "warn", text: err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.psdFailed", "PSD 내보내기에 실패했어요.") });
     } finally {
       if (mountedRef.current) setPsdBusy(false);
     }
@@ -982,16 +981,16 @@ export function StudioExportMenuPanel({
     const pendingRange = exportRangeLabel;
     setPresetStatus({
       tone: "info",
-      text: scope === "all" ? `${pendingRange} 캡처 중…` : "페이지 캡처 중…",
+      text: scope === "all" ? frozenStatusText("studio.frozenStatus.export.capturingRange", { range: pendingRange }, "{range} 캡처 중…") : frozenStatusText("studio.frozenStatus.export.capturingPage", "페이지 캡처 중…"),
     });
     try {
       let pages: HTMLCanvasElement[] = [];
       let rangeSuffix = "";
       let indices: readonly number[] | null = null;
       if (exportPresetSlicesFromDocument && scope === "all") {
-        if (!packagePreflight.canExport) throw new Error(packagePreflight.errors[0]?.message ?? "내보내기 설정을 확인하세요.");
+        if (!packagePreflight.canExport) throw new Error(packagePreflight.errors[0]?.message ?? frozenStatusText("studio.frozenStatus.export.checkSettings", "내보내기 설정을 확인하세요."));
         indices = packagePreflight.pageIndices;
-        if (indices.length === 0) throw new Error("선택한 범위에 내보낼 페이지가 없습니다.");
+        if (indices.length === 0) throw new Error(frozenStatusText("studio.frozenStatus.export.noPagesInRange", "선택한 범위에 내보낼 페이지가 없습니다."));
         rangeSuffix = ` (${formatStudioExportPageSelection(indices)})`;
       } else if (!exportPresetSlicesFromDocument && scope === "all") {
         const captured = await captureMultiPageExportCanvases();
@@ -1008,7 +1007,7 @@ export function StudioExportMenuPanel({
         onProgress: (done, total) =>
           setPresetStatus({
             tone: "info",
-            text: `${done}/${total}장 저장 중…${rangeSuffix}`,
+            text: frozenStatusText("studio.frozenStatus.export.presetProgress", { done, total, suffix: rangeSuffix }, "{done}/{total}장 저장 중…{suffix}"),
           }),
       };
       const result = exportPresetSlicesFromDocument
@@ -1019,10 +1018,7 @@ export function StudioExportMenuPanel({
         text: `${presetExportResultMessage(result, selectedPreset)}${rangeSuffix}`,
       });
     } catch (err) {
-      setPresetStatus({
-        tone: "warn",
-        text: err instanceof Error ? err.message : "규격 내보내기에 실패했어요.",
-      });
+      setPresetStatus({ tone: "warn", text: err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.presetFailed", "규격 내보내기에 실패했어요.") });
     } finally {
       setPresetBusy(false);
     }
@@ -1065,7 +1061,7 @@ export function StudioExportMenuPanel({
           ) : (
             <Send size={14} aria-hidden />
           )}
-          {publishHandoffBusy ? "게시 원고 준비 중..." : `선택 ${exportRangeCount}페이지 보내기`}
+          {publishHandoffBusy ? frozenStatusText("studio.frozenStatus.export.handoffBusyButton", "게시 원고 준비 중...") : `선택 ${exportRangeCount}페이지 보내기`}
         </button>
         {publishHandoffStatus ? (
           <p
@@ -1531,7 +1527,7 @@ export function StudioExportMenuPanel({
           "mt-2.5 flex items-center gap-1.5 text-xs",
           exportFormat === "jpg" ? "cursor-not-allowed text-fg-3 opacity-50" : "cursor-pointer text-fg-2"
         )}
-        title={exportFormat === "jpg" ? "JPG는 투명도를 지원하지 않아요" : "배경 없이 투명하게 내보내기"}
+        title={exportFormat === "jpg" ? frozenStatusText("studio.frozenStatus.export.jpgNoTransparency", "JPG는 투명도를 지원하지 않아요") : "배경 없이 투명하게 내보내기"}
       >
         <input
           type="checkbox"
@@ -1648,7 +1644,7 @@ export function StudioExportMenuPanel({
             title={`${exportRangeLabel}(${exportRangeCount}장)를 ComicInfo.xml 메타데이터와 함께 CBZ로 저장`}
           >
             <FileImage size={13} aria-hidden />
-            {archiveBusy === "cbz" ? "CBZ 생성 중" : `CBZ · ${exportRangeCount}P`}
+            {archiveBusy === "cbz" ? frozenStatusText("studio.frozenStatus.export.cbzBusyButton", "CBZ 생성 중") : `CBZ · ${exportRangeCount}P`}
           </button>
           <button
             type="button"
@@ -1661,7 +1657,7 @@ export function StudioExportMenuPanel({
             title="현재 페이지를 OpenRaster 합성 1레이어 파일로 저장"
           >
             <Layers size={13} aria-hidden />
-            {archiveBusy === "ora" ? "ORA 중" : "ORA"}
+            {archiveBusy === "ora" ? frozenStatusText("studio.frozenStatus.export.oraBusyButton", "ORA 중") : "ORA"}
           </button>
           {exportCurrentPageToInkMl && (
             <button
@@ -1675,7 +1671,7 @@ export function StudioExportMenuPanel({
               title="현재 페이지의 보이는 펜 자유곡선을 필압·기울기 채널이 있는 검증된 InkML로 저장"
             >
               <FileText size={13} aria-hidden />
-              {archiveBusy === "inkml" ? "검증 중" : "InkML"}
+              {archiveBusy === "inkml" ? frozenStatusText("studio.frozenStatus.export.inkmlBusyButton", "검증 중") : "InkML"}
             </button>
           )}
           {exportCurrentPageToWillV1 && (
@@ -1690,7 +1686,7 @@ export function StudioExportMenuPanel({
               title="현재 페이지의 보이는 펜 자유곡선을 ToonStudio bounded WILL v1 Annex B .will 파일로 저장"
             >
               <FileText size={13} aria-hidden />
-              {archiveBusy === "will" ? "WILL 생성 중" : "WILL v1"}
+              {archiveBusy === "will" ? frozenStatusText("studio.frozenStatus.export.willBusyButton", "WILL 생성 중") : "WILL v1"}
             </button>
           )}
         </div>

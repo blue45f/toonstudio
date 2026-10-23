@@ -38,6 +38,7 @@ import { propDefById } from "../vrm/studio-vrm-props";
 import { WARDROBE_FIT_MAX, WARDROBE_FIT_MIN, WARDROBE_SLOT_LABELS } from "../vrm/studio-vrm-wardrobe";
 
 import { CHARACTER_SEMANTIC_MORPH_LABELS } from "./character-shaper-capability";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { CHARACTER_HAIR_PALETTES, characterSlotMeta } from "./character-shaper-catalog";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
@@ -113,7 +114,6 @@ const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
   earSize: "귀 크기",
 };
 
-const UNSUPPORTED_MORPH_TEXT = "이 모델은 지원하지 않습니다";
 
 const SWATCH_TONE = "grid size-11 place-items-center rounded-lg border border-line hover:border-line-strong";
 
@@ -305,7 +305,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
           return (
             <div key={id} className="rounded-xl border border-dashed border-line bg-card/50 px-2.5 py-2">
               <p className="text-[0.72rem] font-bold text-fg-3">{CHARACTER_SEMANTIC_MORPH_LABELS[id]}</p>
-              <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3">{UNSUPPORTED_MORPH_TEXT}</p>
+              <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3">{frozenStatus3Text("studio.frozenStatus3.shaper.unsupportedModel", "이 모델은 지원하지 않습니다")}</p>
             </div>
           );
         }
@@ -336,7 +336,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
       .slice(0, 8);
     return (
       <Section title="눈동자 색" hint="텍스처를 유지한 채 홍채 메시만 물들입니다. 비우면 모델 원본 색으로 돌아갑니다.">
-        {binding.profile.irisTintable ? null : <Note tone="warn">이 모델에서는 홍채 메시를 찾지 못해 색을 바꿀 수 없습니다.</Note>}
+        {binding.profile.irisTintable ? null : <Note tone="warn">{frozenStatus3Text("studio.frozenStatus3.shaper.irisNotFoundNote", "이 모델에서는 홍채 메시를 찾지 못해 색을 바꿀 수 없습니다.")}</Note>}
         <CharacterColorControl
           label="눈동자 색"
           value={binding.recipe.colors.iris}
@@ -449,7 +449,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
             hint={
               originalHairCount > 0
                 ? `모델이 가진 헤어 메시 ${originalHairCount}개를 숨기고 절차형 헤어만 남깁니다.`
-                : "이 모델에는 감출 원본 헤어 메시가 없습니다."
+                : frozenStatus3Text("studio.frozenStatus3.shaper.noOriginalHairMesh", "이 모델에는 감출 원본 헤어 메시가 없습니다.")
             }
             checked={Boolean(replaceOriginal)}
             disabled={locked || originalHairCount === 0}
@@ -540,7 +540,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
       <>
         <Section title="입힌 옷" hint="셰이퍼가 입힌 옷의 색과 품을 조절합니다.">
           {equipped.length === 0 ? (
-            <Note>아직 이 슬롯에 입힌 옷이 없습니다. 왼쪽 카드에서 하나 골라 보세요.</Note>
+            <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoCostume", "아직 이 슬롯에 입힌 옷이 없습니다. 왼쪽 카드에서 하나 골라 보세요.")}</Note>
           ) : (
             equipped.map(({ wardrobeSlot, equip }) => (
               <div key={wardrobeSlot} className="space-y-2">
@@ -574,7 +574,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
         </Section>
         <Section title="모델 원본 의상" hint="모델이 원래 입고 있던 메시를 켜고 끄거나 색을 덮습니다.">
           {meshes.length === 0 ? (
-            <Note>이 모델에는 이 부위로 분류된 원본 의상 메시가 없습니다.</Note>
+            <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoOriginalCostume", "이 모델에는 이 부위로 분류된 원본 의상 메시가 없습니다.")}</Note>
           ) : (
             <>
               {presentCostumeSlots.map((costumeSlot) => (
@@ -639,7 +639,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     return (
       <Section title="장착한 액세서리" hint="여러 개를 함께 달 수 있습니다. 카드로 추가하고 여기서 다듬습니다.">
         {items.length === 0 ? (
-          <Note>아직 장착한 액세서리가 없습니다.</Note>
+          <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoAccessory", "아직 장착한 액세서리가 없습니다.")}</Note>
         ) : (
           items.map((item) => {
             const label = propDefById(item.propId)?.label ?? item.propId;
@@ -710,7 +710,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     return (
       <Section title="표정 세기" hint="지금 켜진 표정의 강도를 하나씩 조절합니다.">
         {shown.length === 0 ? (
-          <Note>이 모델에는 조절할 수 있는 표정이 없습니다.</Note>
+          <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyNoExpression", "이 모델에는 조절할 수 있는 표정이 없습니다.")}</Note>
         ) : (
           shown.map((action) => {
             const name = action.name as string;
@@ -925,7 +925,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     },
     {
       label: "눈동자 틴트",
-      value: profile.irisTintable ? "가능" : "홍채 메시를 찾지 못했습니다",
+      value: profile.irisTintable ? "가능" : frozenStatus3Text("studio.frozenStatus3.shaper.capabilityIrisNotFound", "홍채 메시를 찾지 못했습니다"),
       ok: profile.irisTintable,
     },
     {
@@ -935,13 +935,13 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
     },
     {
       label: "옷 치수",
-      value: profile.wardrobeMetricsReady ? "측정 완료" : "측정 중이거나 실패했습니다",
+      value: profile.wardrobeMetricsReady ? "측정 완료" : frozenStatus3Text("studio.frozenStatus3.shaper.capabilityMetricsFailed", "측정 중이거나 실패했습니다"),
       ok: profile.wardrobeMetricsReady,
     },
-    { label: "소품", value: profile.propsReady ? "부착 가능" : "본을 찾지 못했습니다", ok: profile.propsReady },
+    { label: "소품", value: profile.propsReady ? "부착 가능" : frozenStatus3Text("studio.frozenStatus3.shaper.capabilityBoneNotFound", "본을 찾지 못했습니다"), ok: profile.propsReady },
     {
       label: "표면 드로잉",
-      value: profile.surfacePaintReady ? "사용 가능" : "이 모델에서는 아직 사용할 수 없습니다",
+      value: profile.surfacePaintReady ? "사용 가능" : frozenStatus3Text("studio.frozenStatus3.shaper.capabilityNotYetAvailable", "이 모델에서는 아직 사용할 수 없습니다"),
       ok: profile.surfacePaintReady,
     },
   ];
@@ -1015,7 +1015,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
           renderSection()
         ) : (
           <div className="px-3 py-3">
-            <Note>모델을 불러오면 이 슬롯의 정밀 조절이 열립니다.</Note>
+            <Note>{frozenStatus3Text("studio.frozenStatus3.shaper.emptyModelNotLoaded", "모델을 불러오면 이 슬롯의 정밀 조절이 열립니다.")}</Note>
           </div>
         )}
 

@@ -189,7 +189,11 @@ def test_deleted_receipt_erases_private_payload_and_files(client, runtime):
 @pytest.mark.parametrize(('manifest', 'package', 'patched', 'vulnerable'), [
     ('requirements-models.txt', 'diffusers', '0.38.0', '0.37.0'),
     ('requirements-models.txt', 'safetensors', '0.8.0', '0.7.0'),
+    ('requirements-models.txt', 'transformers', '5.10.1', '5.9.0'),
+    ('requirements-models.txt', 'accelerate', '1.15.0', '1.14.0'),
     ('requirements-test.txt', 'pytest', '9.0.3', '9.0.2'),
+    ('requirements-core.txt', 'fastapi', '0.161.0', '0.128.2'),
+    ('requirements-core.txt', 'starlette', '1.3.1', '1.3.0'),
 ])
 def test_dependency_security_floor(manifest, package, patched, vulnerable):
     """Keep patched constraints without installing GPU packages or downloading models."""
@@ -204,3 +208,43 @@ def test_dependency_security_floor(manifest, package, patched, vulnerable):
     assert len(matches) == 1, f'{manifest} must declare {package} exactly once'
     assert patched in matches[0].specifier
     assert vulnerable not in matches[0].specifier
+
+
+def test_local_dino_tokenizer_works_with_transformers_5(tmp_path, monkeypatch):
+    """transformers 5.x 의 ViTModel 에는 encoder 속성이 없다. torch·transformers 가 있을 때만 돈다(CPU CI 프로파일에서는 건너뜀)."""
+    import sys
+    import types
+
+    torch = pytest.importorskip('torch')
+    transformers = pytest.importorskip('transformers')
+
+    class DINOSingleImageTokenizer(torch.nn.Module):
+        """업스트림 TripoSR 토크나이저의 최소 대역: cfg 를 받고 configure() 를 부른다."""
+
+        def __init__(self, cfg):
+            super().__init__()
+            self.cfg = cfg
+            self.configure()
+
+    stub = types.ModuleType('tsr.models.tokenizers.image')
+    stub.DINOSingleImageTokenizer = DINOSingleImageTokenizer
+    for name in ('tsr', 'tsr.models', 'tsr.models.tokenizers'):
+        monkeypatch.setitem(sys.modules, name, types.ModuleType(name))
+    monkeypatch.setitem(sys.modules, 'tsr.models.tokenizers.image', stub)
+    monkeypatch.syspath_prepend(str(Path(__file__).parent))
+
+    transformers.ViTConfig(hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+                           num_attention_heads=2, image_size=32, patch_size=16).save_pretrained(tmp_path / 'dino')
+    monkeypatch.setenv('CREATOR_MODEL_ROOT', str(tmp_path))
+    sys.modules.pop('local_dino', None)
+    try:
+        import local_dino
+
+        tokenizer = local_dino.LocalDINOImageTokenizer(types.SimpleNamespace(enable_gradient_checkpointing=True))
+        assert tokenizer.model.is_gradient_checkpointing
+        # TripoSR 는 구성 크기보다 큰 입력을 interpolate_pos_encoding=True 로 넣는다.
+        out = tokenizer.model(pixel_values=torch.randn(1, 3, 64, 64), interpolate_pos_encoding=True)
+        assert out.last_hidden_state.shape == (1, 17, 32)
+        assert out.pooler_output.shape == (1, 32)
+    finally:
+        sys.modules.pop('local_dino', None)

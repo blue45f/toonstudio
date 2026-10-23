@@ -1,7 +1,7 @@
 # 운영 환경변수와 자격 증명
 
 툰스튜디오 운영 자격 증명은 Git 저장소에 평문으로 저장하지 않는다. 정적 웹의 기본 권위는
-Cloudflare Static Assets, 동적 Core API의 기본 권위는 Render `toonstudio-core-api`다. 실제
+Cloudflare Static Assets, 동적 Core API의 기본 권위는 onpod `toonstudio-api`(서울, 2026-10-23 컷오버)다. Render `toonspectrum-core-api`는 같은 날 삭제했다. 인프라 현재 사실은 [인프라 지도](infrastructure-map.md)가 정본이고, 아래 Render 절은 퇴역 기록이다. 실제
 비밀값은 공급자의 encrypted environment, Render Secret File 또는 GitHub `production` Environment
 Secrets에 보관하고 저장소에는 변수명·검증 규칙·자동화 코드만 둔다. Vercel 런타임과 배포 코드는
 퇴역했으며 Cloudflare/Render 운영 경로에 포함하지 않는다.
@@ -22,7 +22,7 @@ Secrets에 보관하고 저장소에는 변수명·검증 규칙·자동화 코�
 
 ## Render Core API
 
-`render.yaml`의 `toonstudio-core-api`는 `API_RUNTIME_ROLE=full`인 기본 동적 권위다. 서비스는
+(퇴역 기록, 2026-10-23 삭제) `render.yaml`의 `toonspectrum-core-api`는 `API_RUNTIME_ROLE=full`인 동적 권위였다. 서비스는
 `autoDeployTrigger: off`를 유지하며 build/start에서 migration을 실행하지 않는다.
 
 필수값:
@@ -84,6 +84,22 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 1. `GET https://www.toonstudio.cloud/api/health/capabilities` 응답의 `edgeOriginAuth`가 `enforced`인지 봅니다.
 2. Render 원본 주소로 직접 `GET /api/auth/providers`를 보내 HTTP 403이 오는지 봅니다.
 
+### 클라이언트 IP 전달
+
+상태: migration (2026-10-22, 기본은 꺼짐). onpod 같은 PaaS ingress는 `X-Forwarded-For`·`X-Real-IP`·`CF-Connecting-IP`를 앞단 주소로
+덮어쓰고 소켓 피어 IP도 앱·호스트마다 달라 `AUTH_TRUSTED_PROXY_IPS`(정확한 IP 목록)를 유지할 수 없습니다. 임시 Worker 미리보기와 헤더
+에코 앱으로 실측한 결과 Worker 경유 요청의 표준 IP 헤더 네 개(`x-forwarded-for`의 첫 값, `x-real-ip`, `cf-connecting-ip`,
+`x-onpod-client-ip`)가 모두 Cloudflare 이그레스 주소(`2a06:98c0:3600::103`)였고, Worker가 보낸 커스텀 헤더 `x-toonstudio-client-ip`와
+`x-toonstudio-origin-secret`은 값 그대로 도착했습니다. 이 상태에서는 인증 속도 제한이 사용자별이 아니라 하나의 공유 신원으로 동작합니다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 게이트웨이 | Worker는 core로 보내는 요청에서 클라이언트가 보낸 `x-toonstudio-client-ip`를 항상 지우고, `CORE_ORIGIN_SECRET`이 있으며 접속자 IP(`cf-connecting-ip`)를 알 때만 그 값을 이 헤더에 싣습니다. public-read·대형 에셋·OG 경로에는 싣지 않습니다. |
+| API | `AUTH_EDGE_CLIENT_IP_ENABLED=true`이면 같은 요청이 `x-toonstudio-origin-secret`을 증명할 때만 이 헤더의 단일 IP를 신뢰합니다. 비밀 불일치·누락, IP가 아닌 값, 목록 값이면 기존 신뢰 경계(`AUTH_TRUSTED_PROXY_*` 또는 소켓 주소)로 되돌아갑니다. 증명된 전용 헤더가 있으면 프록시 체인보다 먼저 씁니다. |
+| 켜는 조건 | `CLOUDFLARE_EDGE_ORIGIN_SECRET`이 유효해야 합니다. 없거나 형식이 틀리면 API가 시작하지 못합니다(증명 수단 없이 헤더를 신뢰하지 않습니다). 꺼져 있으면(기본) 헤더가 있어도 무시합니다. |
+| 배포 순서 | 1) Worker 릴리스(헤더를 싣습니다. 이전 API는 무시합니다) → 2) API 이미지 릴리스 → 3) 대상 환경에 `AUTH_EDGE_CLIENT_IP_ENABLED=true`. 되돌릴 때는 3)만 끕니다. |
+| 확인 | 켠 뒤 서로 다른 두 네트워크에서 같은 속도 제한 경로를 호출해 한쪽의 제한이 다른 쪽으로 번지지 않는지 봅니다(API에 접속자 IP를 돌려주는 경로는 없습니다). 시험은 `apps/api/src/modules/auth/auth-client-ip.test.ts`와 `deploy/cloudflare-static/src/index.test.ts`가 맡습니다. |
+
 ### 상태 응답의 `edgeOriginAuth` 노출은 의도한 선택입니다
 
 `GET /api/health/capabilities`는 인증 없이 읽을 수 있고 `Cache-Control: no-store`로 답합니다. 응답의 `edgeOriginAuth`
@@ -102,6 +118,24 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 
 필드를 지우거나 인증 뒤로 옮기면 배포 후 점검이 관리자 인증이나 로그 열람에 의존하게 됩니다. 노출 정책 변경은 별도 결정입니다.
 
+## 단일 소유자 DB 옵트인
+
+상태: migration (2026-10-22, 기본은 `separated`). 공식 설계는 마이그레이터(스키마 소유자)와 런타임 로그인 역할을 분리하고,
+`/api/health/ready`는 마켓플레이스 표 여섯 개(`creator_marketplace_resource`·`…_library_item`·`…_package_moderation`·`…_publish_gate`·
+`…_report`·`…_report_gate`)에서 연결 역할(`current_user`)이 최소 권한이며 `WITH GRANT OPTION`이 없는지 검사합니다. 표 소유자는
+권한을 REVOKE해도 grant option을 항상 가져 이 검사를 통과할 수 없습니다(롤백 트랜잭션 실측). 별도 역할을 만들 수 없는 관리형 DB(예:
+onpod dev 티어는 소유자 역할 하나뿐이고 `CREATEROLE`이 없다)에서는 `/api/health/ready`가 항상 503이 되고 DB 기반 기능이 모두
+`unavailable`이 됩니다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 설정 | `DATABASE_RUNTIME_ROLE_MODE=separated`(기본, 비워도 같음) \| `single-owner`. 알 수 없는 값은 API가 시작하지 못합니다. |
+| `single-owner`의 효과 | `isSchemaReady()`가 위 여섯 ACL 비교(`ROLE_SEPARATION_ACL_FLAGS`)만 건너뜁니다. 나머지 플래그(트리거·인덱스·생성 열·`authRuntimeDmlReady` 등), 필수 관계 223개, 마이그레이션 마커는 그대로 요구합니다. |
+| 약해지는 보장 | 런타임 역할이 스키마 소유자라 최소 권한·grant option 부재를 DB가 보장하지 않습니다. 앱 코드 결함이 곧 스키마 변경 권한으로 이어질 수 있습니다. 소유자 연결에서는 `creator_career_confirmation_*`(`*_require_ready()`가 "런타임은 스키마를 소유·프로비저닝하지 않는다"로 거부)도 쓸 수 없습니다. |
+| 가시성 | 켜면 시작 때 한국어 경고(`[env] 보안 경고: DATABASE_RUNTIME_ROLE_MODE=single-owner …`)를 남깁니다. 공개 응답(`/api/health/capabilities`)에는 노출하지 않습니다. |
+| 쓸 수 있는 곳 | 공식 운영 전이거나 별도 로그인 역할을 만들 수 없는 평가 환경. 비소유 로그인 역할을 확보하면 이 설정을 지우고 `--runtime-database-role`로 ACL을 적용합니다. |
+| 시험 | `apps/api/src/modules/health/health-readiness.repository.test.ts`(기본 엄격 유지, 옵트인 시 여섯 개만 면제, 다른 플래그·관계·마커 누락은 여전히 거부), `health-readiness-role-separation.test.ts`(면제 판정 함수), `apps/api/src/config/database-role-mode.test.ts`. |
+
 ## Supabase 저장소 인증 형식
 
 신규 서버 전용 키는 `SUPABASE_OBJECT_STORAGE_SECRET_KEY`로 주입한다. 새 키는 JWT가 아니므로
@@ -116,12 +150,12 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 
 공급자 계약: <https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys>
 
-## Render 전환 검증
+## Core origin 전환 검증
 
-환경 주입과 수동 deploy가 완료된 뒤 Cloudflare origin을 바꾸기 전에 다음을 실행한다.
+환경 주입과 이미지 교체가 끝난 뒤 Cloudflare origin을 바꾸거나 다시 배포하기 전에 다음을 실행한다. 이름은 Render 시절 그대로지만 검증기는 공급자와 무관하게 `live`·`ready` 계약만 확인한다.
 
 ```bash
-RENDER_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com \
+RENDER_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai \
   pnpm run verify:render-core-origin
 ```
 
@@ -147,10 +181,10 @@ pnpm run verify:cloudflare-static
 pnpm run cloudflare:static:dry-run
 ```
 
-Render 검증 후에만 다음 origin으로 수동 배포한다.
+검증을 통과한 뒤에만 다음 origin으로 수동 배포한다. Worker 시크릿 `CORE_ORIGIN_SECRET`은 onpod 앱의 `CLOUDFLARE_EDGE_ORIGIN_SECRET`(로컬 `ONPOD_API_ENV_CLOUDFLARE_EDGE_ORIGIN_SECRET`)과 같은 값이어야 한다.
 
 ```bash
-export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com
+export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
 export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy

@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import type {
   ThorvgMountedSurface,
   ThorvgSurfaceReceipt,
@@ -45,7 +46,7 @@ function decisionLabel(
   thorvgReceipt: ThorvgSurfaceReceipt | null,
 ): string {
   if (thorvgReceipt) return `ThorVG ${thorvgReceipt.backend.toUpperCase()} SVG 미리보기`;
-  if (!decision) return "SVG 미리보기 준비 중";
+  if (!decision) return r3c07StatusText("studio.panelStatus.r3c07.svgPreview.preparing", "SVG 미리보기 준비 중");
   switch (decision.providerId) {
     case "vello-svg-native":
       return "Vello SVG 미리보기";

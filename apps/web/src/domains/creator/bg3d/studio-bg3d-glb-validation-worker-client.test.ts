@@ -113,14 +113,14 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 1,
-      result: { ok: false, code: "invalid-magic", message: "sanitized" },
+      result: { ok: false, code: "invalid-magic" },
     });
 
     await expect(pending).resolves.toEqual({
       execution: "worker",
       selectedExecutionBackend: "worker",
       attemptedExecutionBackends: ["worker"],
-      result: { ok: false, code: "invalid-magic", message: "sanitized" },
+      result: { ok: false, code: "invalid-magic" },
     });
     expect(source).toEqual(new Uint8Array([1, 2, 3, 4]));
     client.dispose();
@@ -149,7 +149,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 1,
-      result: { ok: false, code: "invalid-input", message: "late" },
+      result: { ok: false, code: "invalid-input" },
     });
 
     const recovered = client.validate(new Uint8Array([5, 6, 7, 8]), OPTIONS);
@@ -158,7 +158,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 2,
-      result: { ok: false, code: "invalid-magic", message: "recovered" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(recovered).resolves.toMatchObject({ execution: "worker" });
     expect(client.lifecycleMetrics).toMatchObject({
@@ -217,7 +217,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 3,
-      result: { ok: false, code: "invalid-magic", message: "recovered" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(recovered).resolves.toMatchObject({ execution: "worker" });
 
@@ -266,7 +266,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 3,
-      result: { ok: false, code: "invalid-magic", message: "recovered" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(recovered).resolves.toMatchObject({ execution: "worker" });
     expect(client.lifecycleMetrics).toMatchObject({
@@ -292,7 +292,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 1,
-      result: { ok: false, code: "not-a-validator-code", message: "corrupt" },
+      result: { ok: false, code: "not-a-validator-code" },
     });
     await expect(failed).rejects.toMatchObject({ code: "protocol" });
     expect(workers[0]?.terminated).toBe(true);
@@ -303,7 +303,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 2,
-      result: { ok: false, code: "invalid-magic", message: "recovered" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(recovered).resolves.toMatchObject({ execution: "worker" });
     client.dispose();
@@ -504,7 +504,7 @@ describe("StudioBg3dValidationWorkerClient", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 1,
-      result: { ok: false, code: "invalid-magic", message: "recovered" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(recovered).resolves.toMatchObject({ execution: "worker" });
   });
@@ -531,7 +531,7 @@ describe("StudioBg3dValidationWorkerPool", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 1,
-      result: { ok: false, code: "invalid-magic", message: "second" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(second).resolves.toMatchObject({ execution: "worker" });
 
@@ -542,14 +542,14 @@ describe("StudioBg3dValidationWorkerPool", () => {
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 2,
-      result: { ok: false, code: "invalid-magic", message: "third" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(third).resolves.toMatchObject({ execution: "worker" });
     workers[0]?.emitMessage({
       version: STUDIO_BG3D_GLB_VALIDATION_WORKER_PROTOCOL_VERSION,
       kind: "result",
       requestId: 1,
-      result: { ok: false, code: "invalid-magic", message: "first" },
+      result: { ok: false, code: "invalid-magic" },
     });
     await expect(first).resolves.toMatchObject({ execution: "worker" });
 

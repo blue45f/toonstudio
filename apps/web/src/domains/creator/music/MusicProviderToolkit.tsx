@@ -14,6 +14,7 @@ import {
   type MusicProviderCapability,
   type MusicProviderId,
 } from "./studio-music-provider-catalog";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import type { MusicBrief } from "@toonstudio/core/studio-music";
 
@@ -69,12 +70,12 @@ export function MusicProviderToolkit({
   const copyPrompt = async (providerName: string) => {
     try {
       if (!navigator.clipboard?.writeText) {
-        throw new Error("이 브라우저에서는 클립보드 복사를 사용할 수 없습니다.");
+        throw new Error(subStatusText("studio.subStatus.provider.clipboardUnavailable", "이 브라우저에서는 클립보드 복사를 사용할 수 없습니다."));
       }
       await navigator.clipboard.writeText(prompt);
-      onNotice(`${providerName}에 붙여 넣을 음악 프롬프트를 복사했습니다.`);
+      onNotice(subStatusText("studio.subStatus.provider.promptCopied", { provider: providerName }, "{provider}에 붙여 넣을 음악 프롬프트를 복사했습니다."));
     } catch (reason) {
-      onError(reason instanceof Error ? reason.message : "음악 프롬프트를 복사하지 못했습니다.");
+      onError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.provider.copyFailed", "음악 프롬프트를 복사하지 못했습니다."));
     }
   };
 
@@ -85,9 +86,9 @@ export function MusicProviderToolkit({
         `ai-music-handoff-${providerId}-${safeFilename(brief.title)}.json`,
         handoff,
       );
-      onNotice("외부 AI 음악 생성·권리 검수용 인계 JSON을 저장했습니다.");
+      onNotice(subStatusText("studio.subStatus.provider.handoffSaved", "외부 AI 음악 생성·권리 검수용 인계 JSON을 저장했습니다."));
     } catch (reason) {
-      onError(reason instanceof Error ? reason.message : "음악 인계 파일을 만들지 못했습니다.");
+      onError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.provider.handoffFailed", "음악 인계 파일을 만들지 못했습니다."));
     }
   };
   return (

@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 
 import { resolveStudioBrushBehaviorPresentation } from "./brush/studio-brush-behavior-ui";
@@ -134,7 +135,7 @@ export function StudioActiveBrushSummary({
       : needsProMetadata
         ? metadataFailed
           ? "세부 정보 지연"
-          : "정보 불러오는 중"
+          : r3c07StatusText("studio.panelStatus.r3c07.activeBrushSummary.infoLoading", "정보 불러오는 중")
         : studioBrushTipLabel(null));
   const behavior = resolveStudioBrushBehaviorPresentation(brushId);
   const calligraphy = catalogItem?.previewStyle === "calligraphy";

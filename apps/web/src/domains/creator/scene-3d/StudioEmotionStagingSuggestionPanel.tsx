@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-scene3d-status-i18n";
+
 import {
   POSE_SUGGESTION_REASON_LABELS,
   type PoseCatalogEntry,
@@ -38,6 +41,7 @@ export interface StudioEmotionStagingSuggestionPanelProps {
 export function StudioEmotionStagingSuggestionPanel(
   props: StudioEmotionStagingSuggestionPanelProps,
 ) {
+  const t = useT();
   const [text, setText] = useState(props.initialDialogue ?? "");
   const [appliedExpressionId, setAppliedExpressionId] = useState<string | null>(
     null,
@@ -143,8 +147,7 @@ export function StudioEmotionStagingSuggestionPanel(
             <p className="text-xs font-bold text-fg-3">포즈 제안</p>
             {result.poses.length === 0 ? (
               <p className="mt-1 text-sm text-fg-3">
-                조건(인원·성별)에 맞는 포즈가 없어요. 표정 제안은 그대로 쓸 수
-                있어요.
+                {t("studio.scene3dStatus.emotionStaging.noPoseMatch", "조건(인원·성별)에 맞는 포즈가 없어요. 표정 제안은 그대로 쓸 수 있어요.")}
               </p>
             ) : (
               <ul className="mt-1 flex flex-col gap-2">

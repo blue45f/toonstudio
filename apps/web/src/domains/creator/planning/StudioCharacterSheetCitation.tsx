@@ -9,6 +9,7 @@
  * 시트가 비어 있는 캐릭터만 있으면 "시트 쓰기" 유도 문구만 보여준다.
  */
 import type { StudioStoryBible } from "../studio-story-bible";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import {
   characterSheetCitations,
   type StudioStoryBibleNarrative,
@@ -34,7 +35,7 @@ export function StudioCharacterSheetCitation({
     <section aria-label="캐릭터 시트 인용">
       <h3>캐릭터 시트에서 가져왔어요</h3>
       {citable.length === 0 ? (
-        <p>아직 이 캐릭터의 시트가 비어 있어요. 캐릭터 시트에 말투와 대표 대사를 적어 두면 여기에 바로 보여요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.sheetCitation.empty", "아직 이 캐릭터의 시트가 비어 있어요. 캐릭터 시트에 말투와 대표 대사를 적어 두면 여기에 바로 보여요.")}</p>
       ) : (
         citable.map((citation) => (
           <article key={citation.characterId} aria-label={`${citation.characterName} 시트 인용`}>

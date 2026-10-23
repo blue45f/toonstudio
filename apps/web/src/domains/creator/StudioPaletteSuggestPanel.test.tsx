@@ -112,11 +112,11 @@ describe("StudioPaletteSuggestPanel mount-time render contract", () => {
   });
 
   it("does not render the saved message by default, and renders it when given", () => {
-    expect(renderPanel({ configured: true, suggestion: SUGGESTION, savedMessage: null })).not.toMatch(
-      /role="status"/
-    );
+    // 패널 제목 옆의 AI 연결 상태 배지(span)도 role="status" 라서, 저장 안내는 그것을 단 문단(p)으로만 가른다.
+    const savedMessageStatus = /<p [^>]*role="status"/;
+    expect(renderPanel({ configured: true, suggestion: SUGGESTION, savedMessage: null })).not.toMatch(savedMessageStatus);
     const html = renderPanel({ configured: true, suggestion: SUGGESTION, savedMessage: "저장했어요." });
     expect(html).toContain("저장했어요.");
-    expect(html).toMatch(/role="status"/);
+    expect(html).toMatch(savedMessageStatus);
   });
 });

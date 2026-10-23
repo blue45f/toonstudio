@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 /**
  * Studio Novel Convert Panel — 소설 텍스트 → 글콘티 초안 변환 화면.
  *
@@ -148,7 +149,7 @@ function NovelCutRow({ cut, index, count, speakerOptions, canMerge, onChange, dr
             title={
               canMerge
                 ? "다음 컷과 합치기"
-                : "종류가 다르거나 화자가 다른 대사는 합칠 수 없어요"
+                : panelStatusText("studio.panelStatus.novelConvert.cannotMerge", "종류가 다르거나 화자가 다른 대사는 합칠 수 없어요")
             }
             disabled={!canMerge}
             onClick={() => onChange(mergeNovelCutWithNext(draft, cut.id))}
@@ -159,7 +160,7 @@ function NovelCutRow({ cut, index, count, speakerOptions, canMerge, onChange, dr
             type="button"
             className={ICON_BUTTON_CLASS}
             aria-label={`컷 ${index + 1} 첫 문장 뒤에서 나누기`}
-            title={canSplitNovelCut(cut) ? "첫 문장 뒤에서 나누기" : "문장이 하나뿐이라 나눌 수 없어요"}
+            title={canSplitNovelCut(cut) ? "첫 문장 뒤에서 나누기" : panelStatusText("studio.panelStatus.novelConvert.cannotSplit", "문장이 하나뿐이라 나눌 수 없어요")}
             disabled={!canSplitNovelCut(cut)}
             onClick={() => onChange(splitNovelCutAtFirstSentence(draft, cut.id))}
           >
@@ -273,7 +274,7 @@ export function StudioNovelConvertPanel({
   const runConvert = (text: string) => {
     const result = parseNovelToScriptDraft(text);
     if (result.status === "empty") {
-      setError("변환할 소설 텍스트가 비어 있어요. 원고를 붙여넣거나 .txt 파일을 선택해 주세요.");
+      setError(panelStatusText("studio.panelStatus.novelConvert.emptySource", "변환할 소설 텍스트가 비어 있어요. 원고를 붙여넣거나 .txt 파일을 선택해 주세요."));
       setParseResult(null);
       setDraft(null);
       return;
@@ -303,7 +304,7 @@ export function StudioNovelConvertPanel({
         setError(null);
       })
       .catch(() => {
-        setError("파일을 읽지 못했어요. 텍스트(.txt) 파일인지 확인해 주세요.");
+        setError(panelStatusText("studio.panelStatus.novelConvert.fileReadFailed", "파일을 읽지 못했어요. 텍스트(.txt) 파일인지 확인해 주세요."));
       });
   };
 
@@ -562,7 +563,7 @@ export function StudioNovelConvertPanel({
               </ul>
               {scene.cuts.length === 0 ? (
                 <p className="mt-2 rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-3">
-                  이 장면에는 컷이 없어요. 작가실에 반영하면 빈 장면으로 들어갑니다.
+                  {panelStatusText("studio.panelStatus.novelConvert.sceneNoCuts", "이 장면에는 컷이 없어요. 작가실에 반영하면 빈 장면으로 들어갑니다.")}
                 </p>
               ) : null}
             </div>

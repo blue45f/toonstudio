@@ -1,0 +1,30 @@
+--- a/bootstrap-empty-production-database.mjs
++++ b/bootstrap-empty-production-database.mjs
+@@ -530,7 +530,7 @@
+   public.creator_draft_collaboration_room,
+   public.personal_cloud_connection
+ CASCADE;
+-DROP EXTENSION IF EXISTS pg_trgm;
++${process.env.ONPOD_SINGLE_ROLE === "1" ? "-- [onpod] DROP EXTENSION pg_trgm skipped: extension is owned by the platform role" : "DROP EXTENSION IF EXISTS pg_trgm;"}
+ `;
+ }
+ 
+@@ -1010,7 +1010,7 @@
+   });
+   const actualOutput = psql(
+     databaseUrl,
+-    "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' ORDER BY tablename;",
++    "SELECT t.tablename FROM pg_catalog.pg_tables AS t WHERE t.schemaname = 'public' AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_depend AS d WHERE d.classid = 'pg_catalog.pg_class'::regclass AND d.objid = pg_catalog.to_regclass(pg_catalog.format('%I.%I', t.schemaname, t.tablename))::oid AND d.deptype = 'e') ORDER BY t.tablename; -- [onpod] extension-owned tables excluded",
+     {
+       allowLoopback,
+       description: "Current Drizzle base schema verification",
+@@ -1326,6 +1326,9 @@
+   );
+ }
+ 
++// [ONPOD PATCH] internals re-exported for scripts/onpod-apply-schema.mjs
++export { assertBootstrapContractUnchanged, generateCurrentSchemaDdl, psql as bootstrapPsql, runDrizzleFreshProvision };
++
+ export function runEmptyProductionDatabaseBootstrap({
+   databaseUrl,
+   options,

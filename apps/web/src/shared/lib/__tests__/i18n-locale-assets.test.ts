@@ -37,15 +37,16 @@ const REFERENCE_LOCALE = "en";
  * 1,356개로 늘어나는 동안 — market·productionHub 같은 신규 네임스페이스는 ko/en 만 작성되고 나머지
  * 로케일은 영어 원문 폴백을 받는다(I18N_GUIDE §3) — 번역된 값은 그대로여서 ko·en 을 뺀 73개 로케일의
  * 비율이 0.40~0.44 로 내려가 모두 하한(0.5) 아래다. 이 상태를 숨기지 않고 목록으로 고정한다.
- * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고,
+ * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고(`ja`·`zh`·`de`·`fr`·
+ * `zh-hant`·`es`·`gu`·`hi`·`ml`·`mr` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에, `or`·`pa`·`ru` 는 2026-10-23 에 뺐다),
  * 새 로케일이나 ko·en 이 하한 아래로 내려가면 목록에 더하지 말고 원인을 고친다.
  */
 const BELOW_TRANSLATED_FLOOR: readonly string[] = [
-  "af", "am", "ar", "as", "az", "be", "bg", "bn", "bs", "ca", "cs", "da", "de", "el", "es",
-  "et", "eu", "fa", "fi", "fil", "fr", "gl", "gu", "he", "hi", "hr", "hu", "hy", "id", "is",
-  "it", "ja", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "ml", "mn", "mr", "ms",
-  "my", "ne", "nl", "no", "or", "pa", "pl", "pt", "ro", "ru", "si", "sk", "sl", "sq", "sr",
-  "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "zh", "zh-hant", "zu",
+  "af", "am", "ar", "as", "az", "be", "bg", "bn", "bs", "ca", "cs", "da", "el",
+  "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "id", "is",
+  "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
+  "my", "ne", "nl", "no", "pl", "pt", "ro", "si", "sk", "sl", "sq", "sr",
+  "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "zu",
 ];
 /** The app-shell key surface every published dictionary was authored against. */
 const BASELINE_APP_KEY_COUNT = 525;
@@ -181,15 +182,19 @@ describe("measured translation coverage", () => {
     const byCode = new Map(options.map((option) => [option.code, option]));
 
     // 옵션의 fullyTranslated 는 카탈로그 비율과 하한에서 그대로 나온다. 내장 쌍은 번역 언어이고,
-    // ja·af 는 번역 하한 동결 목록(BELOW_TRANSLATED_FLOOR)에 있어 번역 완료로 표시되지 않는다.
+    // af 는 번역 하한 동결 목록(BELOW_TRANSLATED_FLOOR)에 있어 번역 완료로 표시되지 않는다. ja 는 검수 번역 반영으로
+    // 하한을 넘어 목록에서 빠졌고 번역 완료로 표시된다.
     expect(byCode.get("ko")?.fullyTranslated).toBe(true);
     expect(byCode.get("en")?.fullyTranslated).toBe(true);
     for (const code of ["ja", "af"]) {
       expect(byCode.get(code)?.fullyTranslated).toBe(
         APP_I18N_LOCALE_TRANSLATED_RATIO[code] >= APP_I18N_TRANSLATED_LOCALE_THRESHOLD,
       );
-      expect(BELOW_TRANSLATED_FLOOR).toContain(code);
     }
+    expect(BELOW_TRANSLATED_FLOOR).toContain("af");
+    expect(BELOW_TRANSLATED_FLOOR).not.toContain("ja");
+    expect(byCode.get("af")?.fullyTranslated).toBe(false);
+    expect(byCode.get("ja")?.fullyTranslated).toBe(true);
     // es-419 has no asset of its own; it inherits the Spanish asset's measured coverage.
     expect(byCode.get("es-419")?.translatedRatio).toBe(
       APP_I18N_LOCALE_TRANSLATED_RATIO.es,

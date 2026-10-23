@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 // 연재 시리즈 상세 — 회차 목록(episodeNo 순) + 첫화부터/최신화 보기 + 소유자 관리.
 import {
@@ -167,7 +168,7 @@ export function CreateSeriesPage() {
       })
       .catch((err: unknown) => {
         if (!alive || controller.signal.aborted) return;
-        const message = err instanceof Error ? err.message : "시리즈를 불러오지 못했습니다.";
+        const message = err instanceof Error ? err.message : r3c07StatusText("studio.panelStatus.r3c07.createSeries.loadFailed", "시리즈를 불러오지 못했습니다.");
         if (/\(404\)/.test(message)) setNotFound(true);
         else setError(message);
         setSeries(null);
@@ -194,7 +195,7 @@ export function CreateSeriesPage() {
       await deleteSeries(series.id);
       navigate(SERIES_LIST_HREF, { replace: true });
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "시리즈를 삭제하지 못했습니다.");
+      setActionError(err instanceof Error ? err.message : r3c07StatusText("studio.panelStatus.r3c07.createSeries.deleteFailed", "시리즈를 삭제하지 못했습니다."));
       setDeleting(false);
     }
   }

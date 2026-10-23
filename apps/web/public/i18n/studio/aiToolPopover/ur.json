@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "AI فراہم کنندہ کو ٹیکسٹ کریں۔",
   "studio.aiToolPopover.serverTextAiProviderAria": "سرور ٹیکسٹ AI فراہم کنندہ",
   "studio.aiToolPopover.serverProviderAuto": "خود کار طریقے سے سوئچنگ",
-  "studio.aiToolPopover.serverFallbackMessage": "بیلنس/پیکیج کی حد ختم ہونے پر، آپ کسی دوسرے فراہم کنندہ پر جائیں گے۔ ڈبل چارجنگ کو روکنے کے لیے عام غلطیاں خود بخود نہیں بھیجی جاتی ہیں۔"
+  "studio.aiToolPopover.serverFallbackMessage": "بیلنس/پیکیج کی حد ختم ہونے پر، آپ کسی دوسرے فراہم کنندہ پر جائیں گے۔ ڈبل چارجنگ کو روکنے کے لیے عام غلطیاں خود بخود نہیں بھیجی جاتی ہیں۔",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

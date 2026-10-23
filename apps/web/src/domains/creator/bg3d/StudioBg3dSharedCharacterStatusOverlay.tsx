@@ -2,6 +2,9 @@ import type { StudioShared3dStageResolution } from "../studio-shared-3d-stage-do
 
 import { cx } from "@/shared/lib/cx";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 export interface StudioBg3dSharedCharacterStatusOverlayProps {
   totalCount: number;
   readyCount: number;
@@ -24,12 +27,13 @@ export function StudioBg3dSharedCharacterStatusOverlay({
   relationshipLabel,
   stageResolution,
 }: StudioBg3dSharedCharacterStatusOverlayProps) {
+  const t = useT();
   if (totalCount === 0) return null;
   const headline = relationshipLabel ?? (unavailableCount > 0
     ? `공유 캐릭터 ${readyCount}/${totalCount}명 · ${unavailableCount}명 확인 필요`
     : readyCount === totalCount
       ? `공유 캐릭터 ${totalCount}명 연결됨`
-      : `공유 캐릭터 ${readyCount}/${totalCount}명 불러오는 중`);
+      : t("studio.bg3dPanelStatus.sharedCharacterStatusOverlay.loadingHeadline", { ready: readyCount, total: totalCount }, "공유 캐릭터 {ready}/{total}명 불러오는 중"));
 
   return (
     <div

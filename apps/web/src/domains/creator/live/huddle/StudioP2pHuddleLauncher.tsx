@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { MessageCircle, Mic, MicOff, Video, MonitorUp, PhoneOff, Hand, VolumeX, X } from "lucide-react";
 import { formatI18nTemplate, translateCurrentStaticSourceText, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { useStudioLiveCollaboration } from "../studio-live-collaboration-context";
 import { StudioP2pCreativeHuddleController as StudioP2pHuddleController, type CreativeHuddleSnapshot as HuddleSnapshot } from "./studio-p2p-creative-huddle-controller";
 import { HUDDLE_MAX_REMOTE_PEERS, HUDDLE_REACTIONS, HUDDLE_TEXT_LIMIT } from "./studio-p2p-huddle-protocol";
@@ -196,7 +197,7 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
   function submit(event: FormEvent) {
     event.preventDefault();
     if (controller.current?.sendChat(draft)) { setDraft(""); setNotice(null); }
-    else setNotice("메시지를 보내지 못했습니다. 연결이 복구되면 다시 보낼 수 있습니다.");
+    else setNotice(creatorSub2StatusText("studio.creatorSub2.status.live.huddle.sendFailed", "메시지를 보내지 못했습니다. 연결이 복구되면 다시 보낼 수 있습니다."));
   }
   if (!live.canChat) return null;
   const mediaAvailable = Boolean(navigator.mediaDevices?.getUserMedia);

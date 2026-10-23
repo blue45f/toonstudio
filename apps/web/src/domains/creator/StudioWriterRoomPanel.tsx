@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeleteWriterRoomItemRequest } from "./studio-destructive-command-catalog";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import { SFX_CATEGORIES, SFX_LIBRARY } from "./studio-sfx-presets";
 import {
   admitStudioWriterRoomStage,
@@ -249,7 +250,7 @@ function CharacterPicker({
       </div>
       {characters.length === 0 && missingIds.length === 0 ? (
         <div className="mt-1.5 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-dashed border-line px-3 text-xs text-fg-3">
-          <span>캐릭터 바이블에 등장인물을 먼저 등록하세요.</span>
+          <span>{frozenStatus5Text("studio.frozenStatus5.writer.charactersEmptyGuide", "캐릭터 바이블에 등장인물을 먼저 등록하세요.")}</span>
           {onOpenCharacterBible && (
             <button
               type="button"
@@ -844,7 +845,7 @@ function ScenesEditor({
               selectedIds={scene.beatIds}
               options={beatOptions}
               onChange={(beatIds) => onChange(updateItem(items, scene.id, { beatIds }))}
-              emptyText="비트 단계에서 항목을 만들면 이 장면에 연결할 수 있어요."
+              emptyText={frozenStatus5Text("studio.frozenStatus5.writer.emptyBeatLink", "비트 단계에서 항목을 만들면 이 장면에 연결할 수 있어요.")}
             />
             <CharacterPicker
               id={`writer-room-scene-${scene.id}-characters`}
@@ -1387,17 +1388,15 @@ export function StudioWriterRoomPanel({
     try {
       const receipt = admitStudioWriterRoomStage(document, stage, content);
       if (receipt.kind === "rejected") {
-        setActionError(
-          receipt.reason === "byte-budget-exceeded"
-            ? "Writer Room 문서가 2,000,000바이트 저장 예산을 초과해 변경하지 않았어요."
-            : "Writer Room 변경을 안전하게 읽을 수 없어 기존 문서를 유지했어요."
-        );
+        setActionError(receipt.reason === "byte-budget-exceeded"
+          ? frozenStatus5Text("studio.frozenStatus5.writer.budgetExceeded", "Writer Room 문서가 2,000,000바이트 저장 예산을 초과해 변경하지 않았어요.")
+          : frozenStatus5Text("studio.frozenStatus5.writer.unreadable", "Writer Room 변경을 안전하게 읽을 수 없어 기존 문서를 유지했어요."));
         return;
       }
       onChange(receipt.document);
       setActionError(null);
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : "Writer Room 변경을 저장하지 못했어요.");
+      setActionError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.writer.saveFailed", "Writer Room 변경을 저장하지 못했어요."));
     }
   };
 
@@ -1428,7 +1427,7 @@ export function StudioWriterRoomPanel({
     try {
       await onRequestAi(activeStage);
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : "AI 제안을 받지 못했어요.");
+      setActionError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.writer.aiFailed", "AI 제안을 받지 못했어요."));
     } finally {
       setRequestingAi(false);
     }
@@ -1673,9 +1672,7 @@ export function StudioWriterRoomPanel({
                   );
                   setActionError(null);
                 } catch (cause) {
-                  setActionError(
-                    cause instanceof Error ? cause.message : "단계 완료 상태를 바꾸지 못했어요."
-                  );
+                  setActionError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.writer.stageToggleFailed", "단계 완료 상태를 바꾸지 못했어요."));
                 }
               }}
               className="size-4 accent-[var(--color-good)]"

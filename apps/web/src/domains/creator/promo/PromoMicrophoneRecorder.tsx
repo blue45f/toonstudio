@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 const MAX_RECORDING_MS = 180_000;
 const MAX_RECORDING_BYTES = 20_000_000;
@@ -77,7 +78,7 @@ export function PromoMicrophoneRecorder({
     stopTracks();
     setRecording(false);
     setElapsedMs(0);
-    setMessage("마이크 녹음을 취소했어요.");
+    setMessage(subStatusText("studio.subStatus.mic.cancelled", "마이크 녹음을 취소했어요."));
   };
 
   const start = async () => {
@@ -110,7 +111,7 @@ export function PromoMicrophoneRecorder({
         if (event.data.size > 0) chunksRef.current.push(event.data);
       };
       recorder.onerror = () => {
-        setMessage("마이크 녹음 중 오류가 발생했어요.");
+        setMessage(subStatusText("studio.subStatus.mic.recordError", "마이크 녹음 중 오류가 발생했어요."));
         stopTimer();
         stopTracks();
         setRecording(false);
@@ -126,17 +127,17 @@ export function PromoMicrophoneRecorder({
         setRecording(false);
         if (cancelled) return;
         if (blob.size === 0) {
-          setMessage("녹음된 음성이 비어 있어요. 마이크 권한과 입력 장치를 확인해 주세요.");
+          setMessage(subStatusText("studio.subStatus.mic.emptyRecording", "녹음된 음성이 비어 있어요. 마이크 권한과 입력 장치를 확인해 주세요."));
           return;
         }
         if (blob.size > MAX_RECORDING_BYTES) {
-          setMessage("녹음 파일이 20MB를 넘었어요. 더 짧게 녹음해 주세요.");
+          setMessage(subStatusText("studio.subStatus.mic.tooLarge", "녹음 파일이 20MB를 넘었어요. 더 짧게 녹음해 주세요."));
           return;
         }
         void Promise.resolve(onRecorded(blob)).then(
-          () => setMessage("마이크 녹음을 내레이션 트랙에 연결했어요."),
+          () => setMessage(subStatusText("studio.subStatus.mic.connected", "마이크 녹음을 내레이션 트랙에 연결했어요.")),
           (reason: unknown) => setMessage(
-            reason instanceof Error ? reason.message : "녹음 파일을 적용하지 못했어요.",
+            reason instanceof Error ? reason.message : subStatusText("studio.subStatus.mic.applyFailed", "녹음 파일을 적용하지 못했어요."),
           ),
         );
       };
@@ -153,10 +154,10 @@ export function PromoMicrophoneRecorder({
       setRecording(false);
       setMessage(
         reason instanceof DOMException && reason.name === "NotAllowedError"
-          ? "마이크 권한이 거부되었어요. 브라우저 사이트 설정에서 마이크를 허용해 주세요."
+          ? subStatusText("studio.subStatus.mic.permissionDenied", "마이크 권한이 거부되었어요. 브라우저 사이트 설정에서 마이크를 허용해 주세요.")
           : reason instanceof Error
             ? reason.message
-            : "마이크를 시작하지 못했어요.",
+            : subStatusText("studio.subStatus.mic.startFailed", "마이크를 시작하지 못했어요."),
       );
     }
   };
@@ -188,7 +189,7 @@ export function PromoMicrophoneRecorder({
       <p className="promo-muted">
         최대 3분까지 브라우저에서 녹음하며, 에코 제거·노이즈 억제·자동 게인을
         지원하는 환경에서는 함께 적용합니다. 녹음 원본은 서버로 전송하지 않습니다.
-        {!supported ? " 현재 브라우저는 마이크 녹음을 지원하지 않아요." : ""}
+        {!supported ? subStatusText("studio.subStatus.mic.unsupported", " 현재 브라우저는 마이크 녹음을 지원하지 않아요.") : ""}
       </p>
       {message ? <p className="promo-muted" role="status">{message}</p> : null}
     </section>

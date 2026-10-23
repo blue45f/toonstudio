@@ -1,3 +1,4 @@
+import { panelStatusText } from "./status-i18n/studio-panel-status-i18n-r3c06-core";
 import { Loader2 } from "lucide-react";
 import { Suspense, memo, useEffect, useMemo } from "react";
 
@@ -188,7 +189,7 @@ function PoserLoadingOverlay() {
     <div aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-[oklch(0.08_0.01_70/0.72)] p-4 text-fg backdrop-blur-sm">
       <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-3 text-sm font-semibold shadow-xl">
         <Loader2 className="animate-spin text-accent" size={16} aria-hidden />
-        <span>포저를 여는 중</span>
+        <span>{panelStatusText("studio.panelStatus.threeDPreviewStack.poserLoading", "포저를 여는 중")}</span>
       </div>
     </div>
   );
@@ -199,7 +200,7 @@ function MannequinLoadingOverlay() {
     <div aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-[oklch(0.08_0.01_70/0.72)] p-4 text-fg backdrop-blur-sm">
       <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-3 text-sm font-semibold shadow-xl">
         <Loader2 className="animate-spin text-accent" size={16} aria-hidden />
-        <span>3D 데생 인형을 여는 중</span>
+        <span>{panelStatusText("studio.panelStatus.threeDPreviewStack.mannequinLoading", "3D 데생 인형을 여는 중")}</span>
       </div>
     </div>
   );
@@ -210,7 +211,7 @@ function TimelapseLoadingOverlay() {
     <div aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-[oklch(0.08_0.01_70/0.72)] p-4 text-fg backdrop-blur-sm">
       <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-3 text-sm font-semibold shadow-xl">
         <Loader2 className="animate-spin text-accent" size={16} aria-hidden />
-        <span>타임랩스 도구를 여는 중</span>
+        <span>{panelStatusText("studio.panelStatus.threeDPreviewStack.timelapseLoading", "타임랩스 도구를 여는 중")}</span>
       </div>
     </div>
   );
@@ -221,7 +222,7 @@ function StoryboardGridLoadingOverlay() {
     <div aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-[oklch(0.08_0.01_70/0.72)] p-4 text-fg backdrop-blur-sm">
       <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-3 text-sm font-semibold shadow-xl">
         <Loader2 className="animate-spin text-accent" size={16} aria-hidden />
-        <span>스토리보드 그리드를 여는 중</span>
+        <span>{panelStatusText("studio.panelStatus.threeDPreviewStack.storyboardLoading", "스토리보드 그리드를 여는 중")}</span>
       </div>
     </div>
   );
@@ -232,7 +233,7 @@ function ScrollPreviewLoadingOverlay() {
     <div aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-[oklch(0.08_0.01_70/0.72)] p-4 text-fg backdrop-blur-sm">
       <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-3 text-sm font-semibold shadow-xl">
         <Loader2 className="animate-spin text-accent" size={16} aria-hidden />
-        <span>스크롤 미리보기를 여는 중</span>
+        <span>{panelStatusText("studio.panelStatus.threeDPreviewStack.scrollPreviewLoading", "스크롤 미리보기를 여는 중")}</span>
       </div>
     </div>
   );
@@ -243,7 +244,7 @@ function ScenarioAutoLayoutLoadingOverlay() {
     <div aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-[oklch(0.08_0.01_70/0.72)] p-4 text-fg backdrop-blur-sm">
       <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-3 text-sm font-semibold shadow-xl">
         <Loader2 className="animate-spin text-accent" size={16} aria-hidden />
-        <span>시나리오 자동 생성 도구를 여는 중</span>
+        <span>{panelStatusText("studio.panelStatus.threeDPreviewStack.scenarioLoading", "시나리오 자동 생성 도구를 여는 중")}</span>
       </div>
     </div>
   );

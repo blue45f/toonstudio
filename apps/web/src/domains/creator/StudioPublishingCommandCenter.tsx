@@ -33,6 +33,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
   confirmStudioDestructiveAction,
   recordStudioDestructiveOutcome,
@@ -615,9 +616,7 @@ export function StudioPublishingCommandCenter({
           return;
         }
         setHydrationStatus("error");
-        setHydrationError(
-          cause instanceof Error ? cause.message : "작품을 불러오지 못했습니다.",
-        );
+        setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.workLoadFailed", "작품을 불러오지 못했습니다."));
       });
     return () => controller.abort();
   }, [authUserId, hydrationAttempt, workId]);
@@ -675,9 +674,7 @@ export function StudioPublishingCommandCenter({
           currentScopeRef.current.workId !== workId
         ) return;
         if (!loaded) {
-          throw new Error(
-            "전달받은 원고를 찾지 못했습니다. 편집기에서 게시 화면으로 다시 보내 주세요.",
-          );
+          throw new Error(frozenStatus2Text("studio.frozenStatus2.pub.handoffNotFound", "전달받은 원고를 찾지 못했습니다. 편집기에서 게시 화면으로 다시 보내 주세요."));
         }
         const handoffPages = loaded.pages.map((page) => ({
           id: uid(),
@@ -710,11 +707,7 @@ export function StudioPublishingCommandCenter({
           !mountedRef.current ||
           currentScopeRef.current.workId !== workId
         ) return;
-        setHandoffError(
-          cause instanceof Error
-            ? cause.message
-            : "편집기에서 전달한 원고를 불러오지 못했습니다.",
-        );
+        setHandoffError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.handoffLoadFailed", "편집기에서 전달한 원고를 불러오지 못했습니다."));
       })
       .finally(() => {
         if (
@@ -797,11 +790,7 @@ export function StudioPublishingCommandCenter({
         ) {
           return;
         }
-        failClosed(
-          cause instanceof Error
-            ? cause.message
-            : "공동 문서 권한을 다시 확인하지 못했습니다. 작품을 다시 불러와 주세요.",
-        );
+        failClosed(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.permissionRecheckFailed", "공동 문서 권한을 다시 확인하지 못했습니다. 작품을 다시 불러와 주세요."));
       }
     };
     const onFocus = () => void revalidate();
@@ -890,15 +879,13 @@ export function StudioPublishingCommandCenter({
     event.target.value = "";
     if (mutationLocked || files.length === 0) return;
     if (pages.length + files.length > MAX_PAGES) {
-      setError(`이미지는 최대 ${MAX_PAGES}장까지 올릴 수 있어요.`);
+      setError(frozenStatus2Text("studio.frozenStatus2.pub.maxPages", { max: MAX_PAGES }, "이미지는 최대 {max}장까지 올릴 수 있어요."));
       return;
     }
     try {
       assertStudioUploadSourceBatch(files);
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "이미지 원본 크기를 확인하지 못했습니다.",
-      );
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.imageSizeCheckFailed", "이미지 원본 크기를 확인하지 못했습니다."));
       return;
     }
     setLoadingFiles(true);
@@ -951,7 +938,7 @@ export function StudioPublishingCommandCenter({
       }
     } catch (cause) {
       if (isFileScopeCurrent()) {
-        setError(cause instanceof Error ? cause.message : "이미지를 불러오지 못했습니다.");
+        setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.imageLoadFailed", "이미지를 불러오지 못했습니다."));
       }
     } finally {
       if (isFileScopeCurrent()) setLoadingFiles(false);
@@ -1036,12 +1023,12 @@ export function StudioPublishingCommandCenter({
   async function handleSave(intent: SaveIntent) {
     if (publishAbortRef.current || saving || recoveryBusy) return;
     if (intent === "publish" && !publisherConfirmed) {
-      setError("현재 로그인 계정과 공개 범위를 확인한 뒤 게시 확인란을 선택해 주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.pub.confirmAccountFirst", "현재 로그인 계정과 공개 범위를 확인한 뒤 게시 확인란을 선택해 주세요."));
       setStep("review");
       return;
     }
     if (intent === "publish" && !preflight.canPublish) {
-      setError("게시 사전검사의 오류를 해결한 뒤 다시 확인해 주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.pub.preflightFailed", "게시 사전검사의 오류를 해결한 뒤 다시 확인해 주세요."));
       setStep("distribution");
       return;
     }
@@ -1049,7 +1036,7 @@ export function StudioPublishingCommandCenter({
     try {
       publishScope = captureStudioUploadPublishScope(authUserId, workId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "로그인 후 저장할 수 있어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.loginToSave", "로그인 후 저장할 수 있어요."));
       return;
     }
     let baseRevision: number | undefined;
@@ -1061,22 +1048,22 @@ export function StudioPublishingCommandCenter({
         workRevision,
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "기존 작품을 다시 불러와 주세요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.reloadWork", "기존 작품을 다시 불러와 주세요."));
       return;
     }
     const sharedMetaSnapshot = sharedMeta;
     if (publishScope.workId) {
       if (!sharedMetaSnapshot || !canEditStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError("현재 역할은 공동 원고를 저장할 수 없습니다.");
+        setError(frozenStatus2Text("studio.frozenStatus2.pub.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
         return;
       }
       if (intent === "publish" && !canPublishStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError("공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다.");
+        setError(frozenStatus2Text("studio.frozenStatus2.pub.ownerOnlyVisibility", "공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다."));
         return;
       }
     }
     if (!title.trim() || pages.length === 0) {
-      setError(!title.trim() ? "작품 제목을 입력해 주세요." : "이미지를 1장 이상 추가해 주세요.");
+      setError(!title.trim() ? frozenStatus2Text("studio.frozenStatus2.pub.titleRequired", "작품 제목을 입력해 주세요.") : frozenStatus2Text("studio.frozenStatus2.pub.imagesRequired", "이미지를 1장 이상 추가해 주세요."));
       setStep("content");
       return;
     }
@@ -1092,7 +1079,7 @@ export function StudioPublishingCommandCenter({
       aspectRatio: "3:4",
     });
     if (!selectedCoverPage || !coverMetadata) {
-      setError("표지 페이지와 초점 위치를 다시 선택해 주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.pub.coverReselect", "표지 페이지와 초점 위치를 다시 선택해 주세요."));
       setStep("content");
       return;
     }
@@ -1160,9 +1147,7 @@ export function StudioPublishingCommandCenter({
         toolIds: origin.toolIds,
       });
     } catch (cause) {
-      setError(cause instanceof Error
-        ? cause.message
-        : "게시 원본의 무결성 정보를 만들지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.integrityFailed", "게시 원본의 무결성 정보를 만들지 못했습니다."));
       return;
     }
     if (!isStudioUploadPublishScopeCurrent(
@@ -1225,7 +1210,7 @@ export function StudioPublishingCommandCenter({
               baseRevision === undefined ||
               !sharedMetaSnapshot
             ) {
-              throw new Error("공동 문서 저장 범위를 확인하지 못했어요.");
+              throw new Error(frozenStatus2Text("studio.frozenStatus2.pub.sharedScopeCheckFailed", "공동 문서 저장 범위를 확인하지 못했어요."));
             }
             const fresh = await client.getMeta(publishScope.workId, signal);
             assertStudioUploadPublishScope(
@@ -1236,10 +1221,10 @@ export function StudioPublishingCommandCenter({
             );
             assertStudioUploadSharedMetaUnchanged(sharedMetaSnapshot, fresh);
             if (!canEditStudioUploadSharedDocument(fresh)) {
-              throw new Error("공동 문서 편집 권한이 변경되었습니다.");
+              throw new Error(frozenStatus2Text("studio.frozenStatus2.pub.permissionChanged", "공동 문서 편집 권한이 변경되었습니다."));
             }
             if (intent === "publish" && !canPublishStudioUploadSharedDocument(fresh)) {
-              throw new Error("공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다.");
+              throw new Error(frozenStatus2Text("studio.frozenStatus2.pub.ownerOnlyVisibility", "공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다."));
             }
             const patch = {
               baseRevision,
@@ -1266,7 +1251,7 @@ export function StudioPublishingCommandCenter({
             };
           }
           if (client.kind !== "create") {
-            throw new Error("새 작품 게시 클라이언트를 확인하지 못했어요.");
+            throw new Error(frozenStatus2Text("studio.frozenStatus2.pub.createClientCheckFailed", "새 작품 게시 클라이언트를 확인하지 못했어요."));
           }
           const payload = {
             ...editableContent,
@@ -1327,7 +1312,7 @@ export function StudioPublishingCommandCenter({
           return;
         }
         const revision = saved.revision ?? sharedMetaSnapshot.revision;
-        setSuccessMessage(`초안을 revision ${revision}로 안전하게 저장했습니다.`);
+        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 revision {revision}로 안전하게 저장했습니다."));
       } else {
         navigate(resultHref, { replace: true });
       }
@@ -1351,14 +1336,10 @@ export function StudioPublishingCommandCenter({
           setHydratedScope(null);
           setSharedMeta(null);
           setHydrationStatus("error");
-          setHydrationError(
-            cause instanceof Error
-              ? cause.message
-              : "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요.",
-          );
+          setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.sharedPermissionOrVersion", "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요."));
           setError(null);
         } else {
-          setError(cause instanceof Error ? cause.message : "저장에 실패했어요.");
+          setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.saveFailed", "저장에 실패했어요."));
         }
       }
     } finally {
@@ -1382,7 +1363,7 @@ export function StudioPublishingCommandCenter({
     try {
       recovery = await import("./studio-publish-recovery");
     } catch {
-      setRecoveryError("비공개 전환 기능을 불러오지 못했습니다. 다시 시도해 주세요.");
+      setRecoveryError(frozenStatus2Text("studio.frozenStatus2.pub.recoveryLoadFailed", "비공개 전환 기능을 불러오지 못했습니다. 다시 시도해 주세요."));
       return;
     }
     const request = recovery.studioPublishRecoveryRequest({
@@ -1409,9 +1390,7 @@ export function StudioPublishingCommandCenter({
       recordStudioDestructiveOutcome({
         request,
         outcome: "committed",
-        detail: publishResult === "scheduled"
-          ? "게시 예약을 취소하고 비공개 초안으로 전환했습니다."
-          : "공개 작품을 비공개 초안으로 전환했습니다.",
+        detail: publishResult === "scheduled" ? frozenStatus2Text("studio.frozenStatus2.pub.cancelScheduled", "게시 예약을 취소하고 비공개 초안으로 전환했습니다.") : frozenStatus2Text("studio.frozenStatus2.pub.recordMadePrivate", "공개 작품을 비공개 초안으로 전환했습니다."),
       });
       setDirective(result.directive);
       setBaseDoc(result.doc);
@@ -1420,11 +1399,7 @@ export function StudioPublishingCommandCenter({
       }
       setDirty(false);
       setPublisherConfirmed(false);
-      setSuccessMessage(
-        publishResult === "scheduled"
-          ? "게시 예약을 취소하고 비공개 초안으로 전환했습니다."
-          : "작품을 비공개 초안으로 전환했습니다.",
-      );
+      setSuccessMessage(publishResult === "scheduled" ? frozenStatus2Text("studio.frozenStatus2.pub.cancelScheduled", "게시 예약을 취소하고 비공개 초안으로 전환했습니다.") : frozenStatus2Text("studio.frozenStatus2.pub.successMadePrivate", "작품을 비공개 초안으로 전환했습니다."));
       navigate(buildStudioPublishResultHref(workId, "private"), { replace: true });
       setHydrationAttempt((attempt) => attempt + 1);
     } catch (cause) {
@@ -1433,9 +1408,7 @@ export function StudioPublishingCommandCenter({
         !mountedRef.current ||
         currentScopeRef.current.workId !== workId
       ) return;
-      const message = cause instanceof Error
-        ? cause.message
-        : "비공개 전환에 실패했습니다.";
+      const message = cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.makePrivateFailed", "비공개 전환에 실패했습니다.");
       recordStudioDestructiveOutcome({
         request,
         outcome: "failed",
@@ -1593,7 +1566,7 @@ export function StudioPublishingCommandCenter({
           aria-busy="true"
         >
           <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
-          편집기에서 전달한 원고를 확인하고 있어요…
+          {frozenStatus2Text("studio.frozenStatus2.pub.handoffChecking", "편집기에서 전달한 원고를 확인하고 있어요…")}
         </div>
       ) : null}
       {handoffError ? (
@@ -1601,7 +1574,7 @@ export function StudioPublishingCommandCenter({
           className="mb-4 rounded-xl border border-bad/40 bg-bad/10 px-3 py-3"
           role="alert"
         >
-          <p className="text-sm font-semibold text-fg">게시 원고를 불러오지 못했어요</p>
+          <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.handoffHeadingFailed", "게시 원고를 불러오지 못했어요")}</p>
           <p className="mt-1 text-sm leading-relaxed text-fg-2">{handoffError}</p>
           <Link
             href="/studio"
@@ -1626,13 +1599,8 @@ export function StudioPublishingCommandCenter({
             <Send size={16} aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <strong className="block text-sm text-fg">
-              편집기 원고 {handoffContext.pageCount}페이지를 받았습니다
-            </strong>
-            <span className="mt-0.5 block text-xs leading-relaxed text-fg-2">
-              제목과 페이지 순서를 유지했습니다. 서버 저장이 완료되면 로컬 인계본을 자동 정리하며,
-              저장하지 않아도 24시간 뒤 만료됩니다.
-            </span>
+            <strong className="block text-sm text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.handoffReceived", { count: handoffContext.pageCount }, "편집기 원고 {count}페이지를 받았습니다")}</strong>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-2">{frozenStatus2Text("studio.frozenStatus2.pub.handoffReceivedDetail", "제목과 페이지 순서를 유지했습니다. 서버 저장이 완료되면 로컬 인계본을 자동 정리하며, 저장하지 않아도 24시간 뒤 만료됩니다.")}</span>
           </span>
           {handoffContext.sourceWorkId ? (
             <span className="max-w-full truncate rounded-full border border-line bg-card/70 px-2.5 py-1 font-mono text-[0.65rem] text-fg-3">
@@ -1675,19 +1643,17 @@ export function StudioPublishingCommandCenter({
       {hydrating && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-line bg-card/60 px-3 py-2 text-sm text-fg-2" role="status" aria-busy="true">
           <Loader2 size={14} className="animate-spin motion-reduce:animate-none" />
-          기존 작품과 게시 정책을 불러오는 중…
+          {frozenStatus2Text("studio.frozenStatus2.pub.hydratingExisting", "기존 작품과 게시 정책을 불러오는 중…")}
         </div>
       )}
       {workId && hydrationStatus === "error" && (
         <div className="mb-4 rounded-xl border border-bad/40 bg-bad/10 px-3 py-3" role="alert">
-          <p className="text-sm font-semibold text-fg">게시 작업공간을 열지 못했어요</p>
+          <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.hydrationHeadingFailed", "게시 작업공간을 열지 못했어요")}</p>
           <p className="mt-1 text-sm leading-relaxed text-fg-2">
-            {hydrationError ?? "작품을 다시 불러와 주세요."}
+            {hydrationError ?? frozenStatus2Text("studio.frozenStatus2.pub.reloadFallback", "작품을 다시 불러와 주세요.")}
           </p>
           {dirty && (
-            <p className="mt-2 text-xs leading-relaxed text-warn">
-              화면의 미저장 변경은 보존되어 있습니다. 다시 불러오면 서버 원고로 교체됩니다.
-            </p>
+            <p className="mt-2 text-xs leading-relaxed text-warn">{frozenStatus2Text("studio.frozenStatus2.pub.unsavedPreserved", "화면의 미저장 변경은 보존되어 있습니다. 다시 불러오면 서버 원고로 교체됩니다.")}</p>
           )}
           <button
             type="button"
@@ -1722,7 +1688,7 @@ export function StudioPublishingCommandCenter({
         <span className="ml-auto" role="status">
           {saving ? (
             <span className="inline-flex items-center gap-1.5 text-fg-2">
-              <Loader2 size={13} className="animate-spin" /> 저장 중…
+              <Loader2 size={13} className="animate-spin" /> {frozenStatus2Text("studio.frozenStatus2.pub.savingBusy", "저장 중…")}
             </span>
           ) : dirty ? (
             <span className="inline-flex items-center gap-1.5 text-warn">
@@ -1987,7 +1953,7 @@ export function StudioPublishingCommandCenter({
             <div className="mt-4 rounded-2xl border border-line bg-canvas p-3 sm:p-5">
               <div className="mx-auto max-w-[720px] overflow-hidden rounded-xl bg-black/5">
                 {pages.length === 0 ? (
-                  <div className="grid min-h-80 place-items-center text-sm text-fg-3">표시할 원고가 없습니다.</div>
+                  <div className="grid min-h-80 place-items-center text-sm text-fg-3">{frozenStatus2Text("studio.frozenStatus2.pub.noPagesToShow", "표시할 원고가 없습니다.")}</div>
                 ) : directive.readingMode === "vertical" ? (
                   pages.map((page) => <img key={page.id} src={page.src} alt={`${title || "작품"} ${page.name}`} className="block h-auto w-full" />)
                 ) : (

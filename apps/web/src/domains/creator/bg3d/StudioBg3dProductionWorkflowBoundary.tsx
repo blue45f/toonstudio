@@ -1,5 +1,8 @@
 import { lazy, Suspense } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
 
 import type { StudioBg3dProductionWorkflowPanelProps } from "./StudioBg3dProductionWorkflowPanel";
@@ -22,11 +25,12 @@ function ProductionPanelLoading({ label }: { readonly label: string }) {
 
 /** Load cross-tool presets only when the connected director is actually mounted. */
 export function StudioBg3dProductionIntentPanel() {
+  const t = useT();
   const runtime = useStudioBg3dProSuiteRuntime();
   if (!runtime?.sceneSummary) return null;
 
   return (
-    <Suspense fallback={<ProductionPanelLoading label="제작 프리셋 불러오는 중…" />}>
+    <Suspense fallback={<ProductionPanelLoading label={t("studio.bg3dPanelStatus.productionWorkflow.presetsLoading", "제작 프리셋 불러오는 중…")} />}>
       <LazyProductionIntentPanel />
     </Suspense>
   );
@@ -34,11 +38,12 @@ export function StudioBg3dProductionIntentPanel() {
 
 /** Keep workflow presentation out of the editor activation graph without deferring export locks. */
 export function StudioBg3dProductionWorkflowPanel(props: StudioBg3dProductionWorkflowPanelProps) {
+  const t = useT();
   const runtime = useStudioBg3dProSuiteRuntime();
   if (!runtime?.sceneSummary) return null;
 
   return (
-    <Suspense fallback={<ProductionPanelLoading label="3D 제작 흐름 불러오는 중…" />}>
+    <Suspense fallback={<ProductionPanelLoading label={t("studio.bg3dPanelStatus.productionWorkflow.flowLoading", "3D 제작 흐름 불러오는 중…")} />}>
       <LazyProductionWorkflowPanel {...props} />
     </Suspense>
   );

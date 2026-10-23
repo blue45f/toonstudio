@@ -7,8 +7,15 @@
  * 대상 표면: vrm/StudioVrmPoseMaterialPanel·
  * vrm/StudioVrmAvatarReferenceRecommendationsPanel·
  * vrm/StudioVrmCharacterLibraryPanel.
+ * 3라운드(c03)에서 vrm 잔여 패널까지 같은 네임스페이스로 확장했다.
+ *
+ * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 1개와 해석 헬퍼는 `./status-i18n/studio-vrm-panel-status-i18n-core` 로 옮겼다.
+ * 이 모듈은 지연 표면 전용 키 51개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
 import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
+
+export { vrmPanelStatusText } from "./status-i18n/studio-vrm-panel-status-i18n-core";
 
 registerI18nLocaleEntries("ko", {
   "studio.vrmPanelStatus.poseMaterial.storageUnavailable": "이 브라우저에서는 로컬 포즈 소재 저장소를 사용할 수 없습니다.",
@@ -53,6 +60,15 @@ registerI18nLocaleEntries("ko", {
   "studio.vrmPanelStatus.characterLibrary.loadingCharacters": "저장된 캐릭터를 불러오는 중입니다.",
   "studio.vrmPanelStatus.characterLibrary.loadingMore": "다음 캐릭터를 불러오는 중…",
   "studio.vrmPanelStatus.characterLibrary.loadNextPage": "저장된 캐릭터 다음 페이지 불러오기",
+  "studio.vrmPanelStatus.broadcastPreview.restoreBackgroundFailed": "기존 3D 배경을 복원하지 못했습니다. 편집기를 닫았다가 다시 열어 주세요.",
+  "studio.vrmPanelStatus.poserBody.loadModelFirst": "모델을 먼저 불러오세요.",
+  "studio.vrmPanelStatus.poserBody.noCostumeSeparation": "이 모델은 의상 분리 정보가 없어요.",
+  "studio.vrmPanelStatus.poserBody.noMToonSupport": "이 모델은 MToon 재질이 아니라 재질 효과를 지원하지 않아요.",
+  "studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport": "‘확인하지 못함’이 포함되어 archive 내보내기를 진행할 수 없습니다.",
+  "studio.vrmPanelStatus.textureExport.exportFailed": "텍스처를 내보내지 못했습니다.",
+  "studio.vrmPanelStatus.textureExport.exporting": "텍스처 내보내는 중…",
+  "studio.vrmPanelStatus.texturePaint.restoreInterrupted": "원본 텍스처 복원이 중단됐습니다.",
+  "studio.vrmPanelStatus.texturePaint.retry": "다시 시도",
 });
 
 registerI18nLocaleEntries("en", {
@@ -98,4 +114,13 @@ registerI18nLocaleEntries("en", {
   "studio.vrmPanelStatus.characterLibrary.loadingCharacters": "Loading saved characters.",
   "studio.vrmPanelStatus.characterLibrary.loadingMore": "Loading more characters…",
   "studio.vrmPanelStatus.characterLibrary.loadNextPage": "Load the next page of saved characters",
+  "studio.vrmPanelStatus.broadcastPreview.restoreBackgroundFailed": "Could not restore the previous 3D background. Close the editor and open it again.",
+  "studio.vrmPanelStatus.poserBody.loadModelFirst": "Load a model first.",
+  "studio.vrmPanelStatus.poserBody.noCostumeSeparation": "This model has no costume separation information.",
+  "studio.vrmPanelStatus.poserBody.noMToonSupport": "This model does not use MToon materials, so material effects are not supported.",
+  "studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport": "An item is marked “not verified”, so the archive export cannot proceed.",
+  "studio.vrmPanelStatus.textureExport.exportFailed": "Could not export the texture.",
+  "studio.vrmPanelStatus.textureExport.exporting": "Exporting texture…",
+  "studio.vrmPanelStatus.texturePaint.restoreInterrupted": "Restoring the original texture was interrupted.",
+  "studio.vrmPanelStatus.texturePaint.retry": "Retry",
 });

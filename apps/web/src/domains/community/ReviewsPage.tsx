@@ -1,3 +1,4 @@
+import { communityStatusText } from "./community-status-i18n";
 import { MessageSquareQuote, PenLine, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -24,7 +25,7 @@ import { fetchApiResource, useApiResource } from "@/platform/use-api-resource";
 const REVIEWS_PAGE_SIZE = 30;
 const SKELETON_CARD_COUNT = 9;
 
-const REVIEWS_FETCH_ERROR = "리뷰 데이터를 불러오지 못했습니다.";
+const REVIEWS_FETCH_ERROR = communityStatusText("community.status.reviews.loadFailed", "리뷰 데이터를 불러오지 못했습니다.");
 
 /**
  * 첫 페이지 응답(`base`)에 이어 붙인 추가 페이지.

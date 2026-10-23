@@ -5,6 +5,7 @@
  * studio-gradient-engine의 순수 헬퍼로만 스펙을 만들어 onChange로 돌려주는
  * 상태 없는(fully-controlled) 프레젠테이션 컴포넌트. value=null이면 미적용 상태.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Plus, RotateCcw, X } from "lucide-react";
 
 
@@ -199,7 +200,7 @@ export function StudioGradientEnginePanel({
                     onClick={() => onChange(removeGradientStop(current, i))}
                     disabled={current.stops.length <= GRADIENT_STOPS_MIN}
                     aria-label={`색 단계 ${i + 1} 삭제`}
-                    title={current.stops.length <= GRADIENT_STOPS_MIN ? "색 단계는 최소 2개가 필요합니다." : "이 색 단계를 삭제합니다."}
+                    title={current.stops.length <= GRADIENT_STOPS_MIN ? r3c07StatusText("studio.panelStatus.r3c07.gradientEngine.stopsMinimum", "색 단계는 최소 2개가 필요합니다.") : "이 색 단계를 삭제합니다."}
                     className="rounded-md border border-line bg-card p-1 text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <X className="size-3" />

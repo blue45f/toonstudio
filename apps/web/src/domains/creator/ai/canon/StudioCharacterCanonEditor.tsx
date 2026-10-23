@@ -8,6 +8,8 @@ import { useRef, useState } from "react";
 import { ImagePlus, Link2, Shapes, Trash2, UserRound } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+import { aiStatusText } from "../studio-ai-status-i18n";
 import { cn } from "@/shared/lib/utils";
 
 import {
@@ -48,7 +50,7 @@ async function fileToCanonDataUrl(
   }
   const bitmap = await createImageBitmap(file).catch(() => null);
   if (!bitmap) {
-    return { ok: false, message: "이미지를 읽지 못했습니다. 다른 파일로 올려 주세요." };
+    return { ok: false, message: aiStatusText("studio.aiStatus.canon.imageReadFailed", "이미지를 읽지 못했습니다. 다른 파일로 올려 주세요.") };
   }
   const scale = Math.min(1, REFERENCE_IMAGE_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -57,7 +59,7 @@ async function fileToCanonDataUrl(
   const context = canvas.getContext("2d");
   if (!context) {
     bitmap.close();
-    return { ok: false, message: "이미지를 처리할 수 없습니다." };
+    return { ok: false, message: aiStatusText("studio.aiStatus.canon.imageProcessFailed", "이미지를 처리할 수 없습니다.") };
   }
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();

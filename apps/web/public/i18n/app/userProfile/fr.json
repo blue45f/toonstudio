@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Travaux créés",
   "userProfile.tabs.series": "Série",
   "userProfile.works.empty": "Cet utilisateur n'a pas encore d'œuvres publiques.",
+  "userProfile.works.error": "Impossible de charger les œuvres créées. Veuillez réessayer.",
   "userProfile.series.empty": "Cet utilisateur n'a pas encore de série.",
+  "userProfile.series.error": "Impossible de charger les séries. Veuillez réessayer.",
   "userProfile.fetchError": "Impossible de charger le profil.",
   "userProfile.authorFallback": "Utilisateur",
   "userProfile.metaTemplate": "Profil de {author} · Avis de {reviews} · Travaux de {works} · notation de {avg}  Spectrum de son.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Contenu du profil",
   "userProfile.refresh": "Réfrigération",
   "userProfile.emptyReviews": "Aucun avis n'a été publié par cet utilisateur.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "Laissez le premier avis sur un titre que vous adorez.",
+  "userProfile.emptyReviewsCta": "Parcourir les titres"
 }

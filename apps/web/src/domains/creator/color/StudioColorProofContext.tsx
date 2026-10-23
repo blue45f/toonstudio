@@ -1,4 +1,7 @@
 import { createContext, lazy, Suspense, useContext, useState, type ReactNode } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import type { PageState } from "../studio-page-state";
 import type { StudioColorProofDocument } from "./studio-color-proof-document";
 
@@ -14,10 +17,11 @@ export interface StudioColorProofHost {
 }
 /** Intent-only loading keeps the ICC parser, transform and binary encoder off the startup graph. */
 export function StudioColorProofProvider({ children, ...host }: StudioColorProofHost & { children: ReactNode }) {
+  const t = useT();
   const [opened, setOpened] = useState(false);
   return <Context value={() => setOpened(true)}>
     {children}
-    {opened ? <Suspense fallback={<div role="status" className="fixed bottom-4 right-4 z-[190] rounded bg-panel p-3 text-sm">ICC 도구를 여는 중… <button type="button" className="min-h-11 px-3" onClick={() => setOpened(false)}>취소</button></div>}>
+    {opened ? <Suspense fallback={<div role="status" className="fixed bottom-4 right-4 z-[190] rounded bg-panel p-3 text-sm">{t("studio.brushCanvasStatus.color.proofToolOpening", "ICC 도구를 여는 중…")} <button type="button" className="min-h-11 px-3" onClick={() => setOpened(false)}>취소</button></div>}>
       <ProofDialog key={host.page.id} host={host} onClose={() => setOpened(false)} />
     </Suspense> : null}
   </Context>;

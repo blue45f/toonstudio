@@ -12,6 +12,7 @@
  *   목록과 이유만 보여준다.
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import type { StudioStoryCharacter } from "../studio-story-bible";
 import {
@@ -140,7 +141,7 @@ function GraphList({
           {row.connectedLabels.length > 0 ? (
             <> — 이어진 항목: {row.connectedLabels.join(", ")}</>
           ) : (
-            <> — 아직 이어진 항목이 없어요</>
+            <>{r3c04StatusText("studio.r3c04Status.planning.loreGraph.noConnectedInline", " — 아직 이어진 항목이 없어요")}</>
           )}
         </li>
       ))}
@@ -190,10 +191,7 @@ export function StudioLoreGraph({ lore, characters }: StudioLoreGraphProps) {
         </p>
       ) : null}
       {graph.omission === "no-relations" ? (
-        <p role="note">
-          아직 설정 사이에 이어진 연결이 없어요. 항목을 고칠 때 “이어지는 설정”과
-          “이어지는 캐릭터”를 체크하면, 여기에 관계도가 그려져요.
-        </p>
+        <p role="note">{r3c04StatusText("studio.r3c04Status.planning.loreGraph.noRelations", "아직 설정 사이에 이어진 연결이 없어요. 항목을 고칠 때 “이어지는 설정”과 “이어지는 캐릭터”를 체크하면, 여기에 관계도가 그려져요.")}</p>
       ) : null}
 
       {graph.mode === "graph" ? (
@@ -205,7 +203,7 @@ export function StudioLoreGraph({ lore, characters }: StudioLoreGraphProps) {
           선택한 항목: <strong>{selectedRow.label}</strong> —{" "}
           {selectedRow.connectedLabels.length > 0
             ? `이어진 항목 ${selectedRow.connectedLabels.length}개: ${selectedRow.connectedLabels.join(", ")}`
-            : "이어진 항목이 없어요"}
+            : r3c04StatusText("studio.r3c04Status.planning.loreGraph.noConnectedSelected", "이어진 항목이 없어요")}
           {" "}
           <button type="button" onClick={() => setSelectedNodeId(null)}>
             전체 연결 보기

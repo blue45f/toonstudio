@@ -161,7 +161,7 @@ export function ProductionIntegrationsPanel({
       await action();
       setNotice(success);
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, t("productionHub.status.integrationActionFailed", "외부 연동 작업을 완료하지 못했습니다.")));
+      setError(await getApiErrorMessage(cause, t("productionHub.status.integrationActionFailed", "외부 연동 작업을 완료하지 못했어요. 연동 상태를 확인해 주세요.")));
     } finally {
       setBusy(null);
     }

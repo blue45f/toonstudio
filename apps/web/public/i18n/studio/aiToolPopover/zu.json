@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Thumela umbhalo ku-AI Provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Umhlinzeki Wombhalo Weseva",
   "studio.aiToolPopover.serverProviderAuto": "ukushintsha okuzenzakalelayo",
-  "studio.aiToolPopover.serverFallbackMessage": "Uma ibhalansi/umkhawulo wephakheji usuphelile, uzoshintshela komunye umhlinzeki. Amaphutha avamile awathunyelelwa kabusha ngokuzenzakalelayo ukuze avimbele ukushaja kabili."
+  "studio.aiToolPopover.serverFallbackMessage": "Uma ibhalansi/umkhawulo wephakheji usuphelile, uzoshintshela komunye umhlinzeki. Amaphutha avamile awathunyelelwa kabusha ngokuzenzakalelayo ukuze avimbele ukushaja kabili.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

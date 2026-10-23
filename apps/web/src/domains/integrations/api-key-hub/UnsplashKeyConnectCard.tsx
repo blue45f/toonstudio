@@ -11,6 +11,7 @@ import {
 
 import { maskApiKey, validateApiKeyFormat } from "./api-key-hub-model";
 import { StoredKeyRow } from "./MaskedKeyField";
+import { integrationsStatusText } from "../integrations-status-i18n";
 
 function browserSessionStorage(): Storage | null {
   try {
@@ -65,7 +66,7 @@ export function UnsplashKeyConnectCard() {
   function disconnect() {
     if (!saveStudioStockImageAccessKey(browserSessionStorage(), "")) {
       setPhase("error");
-      setMessage("저장된 키를 지우지 못했습니다. 브라우저 저장소 상태를 확인하고 다시 시도하세요.");
+      setMessage(integrationsStatusText("integrations.status.unsplash.removeFailed", "저장된 키를 지우지 못했습니다. 브라우저 저장소 상태를 확인하고 다시 시도하세요."));
       return;
     }
     setStoredKey("");
@@ -92,14 +93,14 @@ export function UnsplashKeyConnectCard() {
       setPhase("error");
       setMessage(
         result.code === "http_error"
-          ? "키가 유효하지 않거나 요청이 거부됐습니다. 키를 다시 확인하세요."
-          : `연결 테스트에 실패했습니다: ${result.error}`,
+          ? integrationsStatusText("integrations.status.unsplash.invalidKey", "키가 유효하지 않거나 요청이 거부됐습니다. 키를 다시 확인하세요.")
+          : integrationsStatusText("integrations.status.unsplash.testFailed", { error: result.error }, "연결 테스트에 실패했습니다: {error}"),
       );
       return;
     }
     if (!saveStudioStockImageAccessKey(browserSessionStorage(), candidate)) {
       setPhase("error");
-      setMessage("키는 유효하지만 이 탭에 저장하지 못했습니다. 시크릿 모드이거나 저장 공간이 부족할 수 있어요.");
+      setMessage(integrationsStatusText("integrations.status.unsplash.saveFailed", "키는 유효하지만 이 탭에 저장하지 못했습니다. 시크릿 모드이거나 저장 공간이 부족할 수 있어요."));
       return;
     }
     setStoredKey(candidate);

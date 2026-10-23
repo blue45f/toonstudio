@@ -4,6 +4,7 @@ import {
   STUDIO_WORKSPACE_LANDMARKS,
   cycleStudioWorkspaceLandmark,
   studioWorkspaceLandmarkLabel,
+  studioWorkspaceSkipLabel,
   type StudioWorkspaceLandmarkId,
 } from "./studio-workspace-landmarks";
 
@@ -133,14 +134,14 @@ export function StudioWorkspaceNavigator() {
         data-studio-workspace-navigator="true"
       >
         <div>
-          {STUDIO_WORKSPACE_LANDMARKS.map(({ id, label }) => (
+          {STUDIO_WORKSPACE_LANDMARKS.map(({ id }) => (
             <button
               key={id}
               type="button"
               data-studio-skip-link="true"
               onClick={() => focusLandmark(id)}
             >
-              {label}로 이동
+              {studioWorkspaceSkipLabel(id)}
             </button>
           ))}
         </div>

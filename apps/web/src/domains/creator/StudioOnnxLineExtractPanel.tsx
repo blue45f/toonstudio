@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Loader2, PencilLine, SlidersHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -86,7 +87,7 @@ export function StudioOnnxLineExtractPanel({
     } catch (cause) {
       if (!mountedRef.current) return;
       setError(
-        cause instanceof Error ? cause.message : "선 추출에 실패했어요.",
+        cause instanceof Error ? cause.message : r3c07StatusText("studio.panelStatus.r3c07.onnxLineExtract.extractFailed", "선 추출에 실패했어요."),
       );
     } finally {
       if (mountedRef.current) setBusy(false);

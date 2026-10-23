@@ -39,6 +39,9 @@ import {
 } from "./studio-story-editor";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 export type StudioStoryEditorSurfaceProps = {
   pages: readonly DialoguePageLike[];
@@ -84,6 +87,7 @@ export function StudioStoryEditorSurface({
   onMergeWithNext,
   onTransferElement,
 }: StudioStoryEditorSurfaceProps) {
+  const t = useT();
   /** 초안 편집 맵 — 저장 전에는 문서에 닿지 않는다. */
   const [edits, setEdits] = useState<Readonly<Record<string, string>>>({});
   const [lastResult, setLastResult] = useState<StoryEditorApplyResult | null>(null);
@@ -189,7 +193,7 @@ export function StudioStoryEditorSurface({
 
         {view.groups.length === 0 ? (
           <p className="py-6 text-center text-[0.68rem] text-fg-3">
-            아직 대사가 없어요. 캔버스에 말풍선을 놓으면 여기에 읽기 순서대로 모여요.
+            {t("studio.brushCanvasStatus.lettering.storyEditorNoDialogueYet", "아직 대사가 없어요. 캔버스에 말풍선을 놓으면 여기에 읽기 순서대로 모여요.")}
           </p>
         ) : (
           view.groups.map((group) => (

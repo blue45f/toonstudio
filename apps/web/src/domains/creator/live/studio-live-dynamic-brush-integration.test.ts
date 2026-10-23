@@ -43,7 +43,8 @@ describe("Studio live dynamic brush integration boundary", () => {
 
   it("seals exact material on the overlay until the committed-draw receipt", () => {
     const page = source("../StudioCuttoonEditorHost.tsx");
-    const finish = source("../studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish.ts");
+    // 포인터 종료 처리 본문은 -finish-handler.ts 로 옮겨졌다(-finish.ts 는 핸들러를 만들어 돌려준다).
+    const finish = source("../studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish-handler.ts");
     const seal = finish.indexOf("liveDynamicBrushOverlayRendererRef.current.end(finished)");
     const reject = finish.indexOf(
       'selectedOverlaySeal.result.status !== "settled"',

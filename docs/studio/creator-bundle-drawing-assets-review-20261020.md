@@ -3,6 +3,8 @@
 기준: 번들 페이지·기완료 카탈로그(`um-bundle-catalog`) 실측 + 레포 main 의 드로잉 표면 코드 실측.
 원칙(사용자 확정): 모델 원본 파일은 유저에게 나가지 않고, 렌더된 결과물만 나가는 구조.
 
+2026-10-22 정정: 아래 판정 표의 「가능」은 기술적 가능성이다. 렌더 이미지 전달은 팩별 권리 원장(`config/creator-bundle-pack-rights.json`)이 연 팩에서 파생한 완성 슬롯만 가능하며, 음식·주방·자연물·Slavica 팩은 모두 hold라 지금은 전달되지 않는다(`creator-bundle-theme-packs-20261021.md`의 「렌더 이미지 경로의 권리 연동」).
+
 ## 1. 기존 드로잉 에셋 표면 전수 (실측)
 
 ### 1-1. CC0 에셋 라이브러리 — 드로잉 소재의 정본 동선
@@ -90,7 +92,7 @@ CC0 매니페스트에 이미 `kind: "prop-image"`, category `rendered-prop`, st
 - CC0 팩과 달리 **다운로드용 index.html을 만들지 않는다.** CC0 팩 README의 "index.html에서 검색·다운로드" 패턴은 재배포 허용 라이선스 전용이다.
 
 ### 단계 3 — 등록·노출 (신규 delivery 모듈)
-- `studio-cc0-asset-delivery.ts`를 복제하지 말고, 라이선스 검증을 일반화한 신규 모듈(가칭 `studio-bundle-asset-delivery.ts`)이 bundle-renders-v1 매니페스트를 같은 검증 강도(sha256·바이트·치수·무결성)로 로드한다. 삽입 산출은 동일한 StudioAsset 레코드 형태(rights에 실제 라이선스 표기)라, 캔버스·레퍼런스 보드·소스 풀이 그대로 소비한다.
+- `studio-cc0-asset-delivery.ts`를 복제하지 말고, 라이선스 검증을 일반화한 신규 모듈(가칭 `studio-bundle-asset-delivery.ts`)이 bundle-renders-v1 매니페스트를 같은 검증 강도(sha256·바이트·치수·무결성)로 로드한다. 삽입 산출은 동일한 StudioAsset 레코드 형태(rights에 원장이 승인한 라이선스 표기 — 슬롯의 `rights` 블록)라, 캔버스·레퍼런스 보드·소스 풀이 그대로 소비한다.
 - 패널 노출은 통합 에셋 팝오버(`StudioAssetToolPopoverWorkspace` → `StudioUnifiedAssetToolPopoverContent`)에 소스 탭을 추가하는 형태가 기존 동선과 가장 잘 맞고, CC0 패널과 나란히 "번들 렌더 소품"으로 구분 표기한다(권리 표기 분리 유지).
 
 ### 단계 4 — 검수 게이트

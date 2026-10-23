@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import {
@@ -262,7 +263,7 @@ export function StudioRasterCrdtSurface({
           (operationId, index) => operationId !== visibleSourceSnapshot[index]?.operationId
         )
       ) {
-        throw new Error("픽셀 재생 결과가 현재 벡터 원본 순서와 일치하지 않습니다.");
+        throw new Error(panelStatusText("studio.panelStatus.rasterCrdt.orderMismatch", "픽셀 재생 결과가 현재 벡터 원본 순서와 일치하지 않습니다."));
       }
       // A viewport with no promoted ink needs no renderer handoff. Keeping every vector mounted is
       // both cheaper and safer than authorizing a complete but fully transparent tile frame.
@@ -271,7 +272,7 @@ export function StudioRasterCrdtSurface({
         const source = sourceById.get(operationId);
         const operation = log.operations.find((candidate) => candidate.operationId === operationId);
         if (!source || !operation) {
-          throw new Error("표시할 픽셀 작업의 벡터 원본을 확인할 수 없습니다.");
+          throw new Error(panelStatusText("studio.panelStatus.rasterCrdt.sourceUnverifiable", "표시할 픽셀 작업의 벡터 원본을 확인할 수 없습니다."));
         }
         const cached = semanticHashCacheRef.current.get(operationId);
         const actualSha256 = cached?.semanticParameters === source.semanticParameters
@@ -285,7 +286,7 @@ export function StudioRasterCrdtSurface({
           sha256: actualSha256,
         });
         if (actualSha256 !== operation.semanticParametersSha256) {
-          throw new Error("벡터 원본이 변경되어 안전한 픽셀 표시를 중단했습니다.");
+          throw new Error(panelStatusText("studio.panelStatus.rasterCrdt.sourceChangedStopped", "벡터 원본이 변경되어 안전한 픽셀 표시를 중단했습니다."));
         }
       }
       if (!active || controller.signal.aborted || generationRef.current !== generation) return;
@@ -313,7 +314,7 @@ export function StudioRasterCrdtSurface({
       callbacksRef.current.onError?.(
         cause instanceof Error
           ? cause.message
-          : "실시간 픽셀 캔버스를 재생하지 못했습니다."
+          : panelStatusText("studio.panelStatus.rasterCrdt.replayFailed", "실시간 픽셀 캔버스를 재생하지 못했습니다.")
       );
     });
 
@@ -378,7 +379,7 @@ export function StudioRasterCrdtSurface({
       onPresentationResult={(result) => {
         if (result.status === "ready" || result.status === "stale") return;
         callbacksRef.current.onError?.(
-          `실시간 픽셀 표시가 안전하게 중단되었습니다 (${result.reason}).`
+          panelStatusText("studio.panelStatus.rasterCrdt.presentationStopped", {"reason": result.reason}, "실시간 픽셀 표시가 안전하게 중단되었습니다 ({reason}).")
         );
       }}
     />

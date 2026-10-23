@@ -1,5 +1,8 @@
 import { StudioThreeDToggleIndicator } from "../StudioThreeDToggle";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import { StudioBg3dLtLineDetailControls } from "./StudioBg3dLtLineDetailControls";
 
 import {
@@ -102,6 +105,7 @@ export function StudioBg3dMagicLayerControl({
   busy,
   onToggle,
 }: StudioBg3dMagicLayerControlProps) {
+  const t = useT();
   const unavailable = unavailableReason !== null;
   const disabled = busy || (!enabled && unavailable);
   const visualState = busy
@@ -114,7 +118,7 @@ export function StudioBg3dMagicLayerControl({
         ? "unavailable"
         : "available";
   const status = busy
-    ? "3D 배경을 처리하는 동안에는 이 설정을 바꿀 수 없어요. 작업이 끝나면 다시 변경할 수 있습니다."
+    ? t("studio.bg3dPanelStatus.ltPanel.busySettingsLocked", "3D 배경을 처리하는 동안에는 이 설정을 바꿀 수 없어요. 작업이 끝나면 다시 변경할 수 있습니다.")
     : unavailableReason
       ? enabled
         ? `${unavailableReason} 이 옵션을 끄거나 선택을 바로잡아 주세요.`
@@ -254,6 +258,7 @@ export function StudioBg3dLtPanel({
     updateLtToneSettings,
     LT_TONE_PATTERN_LABELS,
   } = context;
+  const t = useT();
 
   return (
 <section hidden={hidden}>
@@ -325,8 +330,8 @@ export function StudioBg3dLtPanel({
                     </span>
                     <span className="flex items-center gap-1 text-[0.64rem] font-normal text-fg-3">
                       {ltUserPresetPayload.presets.length}/{STUDIO_BG3D_LT_PRESET_MAX_COUNT}
-                      {ltUserPresetLibraryStatus === "idle" ? " · SQLite 불러오는 중" : ""}
-                      {ltUserPresetLibraryStatus === "saving" ? " · SQLite 저장 중" : ""}
+                      {ltUserPresetLibraryStatus === "idle" ? t("studio.bg3dPanelStatus.ltPanel.sqliteLoadingSuffix", " · SQLite 불러오는 중") : ""}
+                      {ltUserPresetLibraryStatus === "saving" ? t("studio.bg3dPanelStatus.ltPanel.sqliteSavingSuffix", " · SQLite 저장 중") : ""}
                       {ltUserPresetLibraryStatus === "memory-only" ? " · 현재 탭 메모리 임시" : ""}
                       <ChevronDown className="transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" size={13} aria-hidden />
                     </span>
@@ -451,7 +456,7 @@ export function StudioBg3dLtPanel({
                     <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3" aria-live="polite">
                       {ltCaptureSizePreview
                         ? `${formatNumber(ltCaptureSizePreview.width)}×${formatNumber(ltCaptureSizePreview.height)} px${ltCaptureSizePreview.wasReduced ? " · 기기 안전 한도 적용" : ""}`
-                        : "현재 기기에서 안전한 출력 크기를 계산할 수 없습니다."}
+                        : t("studio.bg3dPanelStatus.ltPanel.safeOutputSizeUnavailable", "현재 기기에서 안전한 출력 크기를 계산할 수 없습니다.")}
                     </p>
                   </div>
                   <select

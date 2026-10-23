@@ -8,6 +8,7 @@ import type {
 } from "react";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
+import { resourceStatusText } from "./resource-status-i18n";
 import {
   addResearchNotebookEntry,
   isResearchNoteTextValid,
@@ -125,7 +126,7 @@ export function ResearchSynthesisBoard({
     setSelectedSourceIds((current) => {
       if (current.includes(sourceId)) return current;
       if (current.length >= RESEARCH_NOTE_SOURCE_LIMIT) {
-        setNotice(`노트 하나에 자료를 최대 ${RESEARCH_NOTE_SOURCE_LIMIT}개까지 연결할 수 있습니다.`);
+        setNotice(resourceStatusText("resources.status.researchBoard.sourceLimitReached", { limit: RESEARCH_NOTE_SOURCE_LIMIT }, "노트 하나에 자료를 최대 {limit}개까지 연결할 수 있습니다."));
         return current;
       }
       return [...current, sourceId];
@@ -142,9 +143,9 @@ export function ResearchSynthesisBoard({
       if (restoreMode === "replace" && !window.confirm("현재 관찰·질문·결정 노트를 모두 이 백업으로 대체할까요?")) return;
       setNotice(onRestore(raw, restoreMode)
         ? restoreMode === "replace" ? "판단 노트를 백업으로 대체했습니다." : "현재 판단 노트를 유지하고 백업을 합쳤습니다."
-        : "판단 노트 백업을 적용하지 못했습니다.");
+        : resourceStatusText("resources.status.researchBoard.backupApplyFailed", "판단 노트 백업을 적용하지 못했습니다."));
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : "판단 노트 백업을 읽지 못했습니다.");
+      setNotice(cause instanceof Error ? cause.message : resourceStatusText("resources.status.researchBoard.backupReadFailed", "판단 노트 백업을 읽지 못했습니다."));
     } finally {
       setRestoring(false);
     }
@@ -246,11 +247,11 @@ export function ResearchSynthesisBoard({
               />
               <span className="min-w-0"><span className="block truncate font-semibold">{resource.title}</span><span className="block truncate text-xs text-fg-2">{resource.creator || resource.credit}</span></span>
             </label>)}
-            {!sourceCandidates.length && <p className="rounded-xl border border-dashed border-line p-4 text-sm text-fg-2">검색과 일치하는 저장 자료가 없습니다.</p>}
+            {!sourceCandidates.length && <p className="rounded-xl border border-dashed border-line p-4 text-sm text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceSearchEmpty", "검색과 일치하는 저장 자료가 없습니다.")}</p>}
           </div>
-        </> : <p className="rounded-xl border border-dashed border-line p-4 text-sm leading-6 text-fg-2">먼저 시각 레퍼런스나 판본 자료를 저장하면 판단 노트에 출처를 연결할 수 있습니다.</p>}
+        </> : <p className="rounded-xl border border-dashed border-line p-4 text-sm leading-6 text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceEmptyGuide", "먼저 시각 레퍼런스나 판본 자료를 저장하면 판단 노트에 출처를 연결할 수 있습니다.")}</p>}
       </aside>
-      <p id="research-note-status" role="status" aria-live="polite" className="text-sm text-fg-2 xl:col-span-5">{error || notice || (!ready ? "판단 노트를 불러오는 중입니다." : writable ? "노트는 이 브라우저에만 저장되며 계정과 동기화되지 않습니다." : "이 환경에서는 저장할 수 없어 현재 탭에서만 유지됩니다.")}</p>
+      <p id="research-note-status" role="status" aria-live="polite" className="text-sm text-fg-2 xl:col-span-5">{error || notice || (!ready ? resourceStatusText("resources.status.researchBoard.notesLoading", "판단 노트를 불러오는 중입니다.") : writable ? "노트는 이 브라우저에만 저장되며 계정과 동기화되지 않습니다." : "이 환경에서는 저장할 수 없어 현재 탭에서만 유지됩니다.")}</p>
     </form>
 
     <div className="grid gap-4 xl:grid-cols-3" aria-label="판단 노트 보드">
