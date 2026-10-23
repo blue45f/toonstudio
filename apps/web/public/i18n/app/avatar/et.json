@@ -1,9 +1,9 @@
 {
   "avatar.error.invalidType": "Toetamata kujutise tüüp.",
-  "avatar.error.processFailed": "Ei saanud pildist tööd teha.",
-  "avatar.processing": "- Töötamine...",
+  "avatar.error.processFailed": "Pildi töötlemine ebaõnnestus. Proovige teise pildiga.",
+  "avatar.processing": "Töötlemine…",
   "avatar.select": "Muuda pilti",
-  "avatar.remove": "Võtke pilti välja",
-  "avatar.uploadHint": "Ainult JPG, PNG ja WEBP pildid on toetavad, siis lõigatud esivaate jaoks.",
-  "avatar.changeAria": "Muuda profiilikuva"
+  "avatar.remove": "Eemalda pilt",
+  "avatar.uploadHint": "Toetatud on ainult JPG-, PNG- ja WEBP-pildid, mis seejärel eelvaate jaoks kärbitakse.",
+  "avatar.changeAria": "Muuda profiilipilti"
 }

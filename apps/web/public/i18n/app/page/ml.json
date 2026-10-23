@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "പേജ് കണ്ടെത്തിയില്ല",
-  "page.notFound.message": "URL വീണ്ടും പരിശോധിക്കുകയോ ഹോം പേജിൽ നിന്ന് ശീർഷകങ്ങൾ പരിശോധിക്കുകയോ ചെയ്യുക.",
-  "page.notFound.home": "വീട്ടിലേക്കു മടങ്ങുക.",
   "page.events.board.community": "കമ്മ്യൂണിറ്റി ബോർഡ്",
   "page.events.board.official": "ഔദ്യോഗിക പരിപാടികൾ",
   "page.events.board.title": "പരിപാടികളുടെ പട്ടിക",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "ബീറ്റ ആനുകൂല്യങ്ങൾ കാണുക",
   "page.events.hero.secondary": "കമ്മ്യൂണിറ്റി പരിപാടി ബോർഡ്",
   "page.events.hero.title": "പരിപാടി ബോർഡ്",
+  "page.notFound.home": "വീട്ടിലേക്കു മടങ്ങുക.",
+  "page.notFound.message": "URL വീണ്ടും പരിശോധിക്കുകയോ ഹോം പേജിൽ നിന്ന് ശീർഷകങ്ങൾ പരിശോധിക്കുകയോ ചെയ്യുക.",
   "page.notFound.quip.1": "അല്ലേ? ഈ പാനൽ ഇതുവരെ വരച്ചിട്ടില്ല!",
   "page.notFound.quip.2": "മഷി ഉണങ്ങുന്നതിനു മുമ്പേ നിങ്ങൾ വഴിതെറ്റിപ്പോയി.",
   "page.notFound.quip.3": "അടുത്ത എപ്പിസോഡിൽ കാണാം… ഒരുപക്ഷേ!",
   "page.notFound.quip.4": "കലാകാരൻ ഇപ്പോൾ ഈ പേജ് വരയ്ക്കുകയാണ്.",
-  "page.notFound.tapHint": "സംഖ്യകളിൽ ഒന്ന് തട്ടുക"
+  "page.notFound.tapHint": "സംഖ്യകളിൽ ഒന്ന് തട്ടുക",
+  "page.notFound.title": "പേജ് കണ്ടെത്തിയില്ല"
 }

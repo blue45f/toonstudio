@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Gecreëerde werken",
   "userProfile.tabs.series": "Serie",
   "userProfile.works.empty": "Deze gebruiker heeft nog geen openbare werken.",
+  "userProfile.works.error": "Kan gemaakte werken niet laden. Probeer het opnieuw.",
   "userProfile.series.empty": "Deze gebruiker heeft nog geen serie.",
+  "userProfile.series.error": "Kan series niet laden. Probeer het opnieuw.",
   "userProfile.fetchError": "Profiel niet te laden.",
   "userProfile.authorFallback": "Gebruiker",
   "userProfile.metaTemplate": "{author} profiel · {reviews} beoordelingen · {works} werken · AVG rating {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profielinhoud",
   "userProfile.refresh": "Verfrissingen",
   "userProfile.emptyReviews": "Geen recensies gepubliceerd door deze gebruiker nog.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "Laat de eerste review achter bij een titel die je geweldig vindt.",
+  "userProfile.emptyReviewsCta": "Titels bekijken"
 }

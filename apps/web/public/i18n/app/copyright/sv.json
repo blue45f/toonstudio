@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Upphovsrätt och innehåll",
+  "copyright.title": "Upphovsrätt och innehållsmeddelande",
   "copyright.section1.title": "Innehållskällor och principer",
-  "copyright.section1.body": "ToonStudio är en index- och upptäcktsplattform som sammanfattar offentliga katalogmetadata (titlar, författare, genrer etc.) från webtoon/webnovel-plattformar.",
-  "copyright.section2.title": "Förpackningsbilder",
-  "copyright.section2.body": "Förstasbilder fungerar som identifierande miniatyr och referens originalplattformsomslag med källlänkar när det är möjligt.",
+  "copyright.section1.body": "ToonStudio är en index- och upptäcktsplattform som sammanfattar offentlig katalogmetadata (titlar, författare, genrer m.m.) från webtoon-/webbromanplattformar. Den lagrar eller vidaredistribuerar inte huvudinnehåll i kapitel; läsning sker uteslutande via officiella länkar.",
+  "copyright.section2.title": "Omslagsbilder",
+  "copyright.section2.body": "Omslagsbilder fungerar som identifierande miniatyrer och refererar till originalplattformens omslag med källänkar när det är möjligt. Visningen kan inaktiveras omedelbart på begäran av rättighetshavaren eller vid policyändringar.",
   "copyright.section3.title": "Metriker och öppenhet",
   "copyright.section4.title": "Upplysning om rättigheter",
-  "copyright.section5.title": "Upphovsrättsliga överträdelser",
+  "copyright.section5.title": "Meddelande om upphovsrättsintrång och nedtagning",
   "copyright.section5.body": "Om du tror att metadata eller omslag kränker dina rättigheter, skicka in en förfrågan med titel, URL och bevis på äganderätt.",
-  "copyright.leaveInquiry": "Inlämna en förfrågan"
+  "copyright.leaveInquiry": "Skicka förfrågan →"
 }

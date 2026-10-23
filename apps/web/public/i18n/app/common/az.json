@@ -1,16 +1,16 @@
 {
-  "common.loading": "Yükləmə",
-  "common.loading.short": "Yükləmə",
+  "common.loading": "Yüklənir",
+  "common.loading.short": "Yüklənir",
   "common.close": "Bağla",
   "common.open": "Aç",
   "common.search": "Axtar",
-  "common.retry": "Yenidən cəhd edin.",
-  "common.retry.short": "Yenidən cəhd edin.",
-  "common.backToTop": "Üstə qayıdın.",
-  "common.backToHome": "Evə gedin.",
-  "common.loading.search": "Axtarış...",
-  "common.notFoundWithQuery": "\" {query} \" üçün heç bir nəticə yoxdur.",
+  "common.retry": "Yenidən cəhd et",
+  "common.retry.short": "Yenidən cəhd et",
+  "common.backToTop": "Yuxarı qayıt",
+  "common.backToHome": "Ana səhifəyə keç",
+  "common.loading.search": "Axtarılır…",
+  "common.notFoundWithQuery": "'{query}' üçün nəticə yoxdur.",
   "common.openSearch": "Axtarışda tap →",
-  "common.loading.empty": "Heç bir məlumat qaytarılmadı.",
-  "common.retry.all": "Yenə cəhd edin və ya evə dönün."
+  "common.loading.empty": "Məlumat qaytarılmadı.",
+  "common.retry.all": "Yenidən cəhd edin və ya ana səhifəyə qayıdın."
 }

@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Tidak dapat memuat survei maklum balas.",
+  "feedback.loadError": "Tidak dapat memuatkan tinjauan maklum balas. Sila cuba lagi sebentar lagi.",
   "feedback.thankYou": "Terima kasih atas maklum balas berharga anda!",
-  "feedback.anonymousNote": "Jawapan anda disimpan secara ketat tanpa nama.",
-  "feedback.notAtAll": "Tidak sama sekali.",
-  "feedback.definitely": "Sudah pasti."
+  "feedback.anonymousNote": "Jawapan anda kekal tanpa nama sepenuhnya.",
+  "feedback.notAtAll": "Tidak sama sekali",
+  "feedback.definitely": "Sudah pasti"
 }

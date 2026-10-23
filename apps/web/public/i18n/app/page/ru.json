@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Страница не найдена",
-  "page.notFound.message": "Проверьте URL-адрес снова или просмотрите заголовки на домашней странице.",
-  "page.notFound.home": "Вернись домой.",
   "page.events.board.community": "Доска сообщества",
   "page.events.board.official": "Официальные события",
   "page.events.board.title": "Список событий",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Посмотреть преимущества беты",
   "page.events.hero.secondary": "Доска событий сообщества",
   "page.events.hero.title": "Доска событий",
+  "page.notFound.home": "Вернись домой.",
+  "page.notFound.message": "Проверьте URL-адрес снова или просмотрите заголовки на домашней странице.",
   "page.notFound.quip.1": "А? Эта панель ещё не нарисована!",
   "page.notFound.quip.2": "Вы заблудились ещё до того, как высохли чернила.",
   "page.notFound.quip.3": "До встречи в следующем эпизоде… наверное!",
   "page.notFound.quip.4": "Художник прямо сейчас рисует эту страницу.",
-  "page.notFound.tapHint": "Нажмите на цифры"
+  "page.notFound.tapHint": "Нажмите на цифры",
+  "page.notFound.title": "Страница не найдена"
 }

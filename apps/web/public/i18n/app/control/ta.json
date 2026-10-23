@@ -1,5 +1,7 @@
 {
   "control.language.label": "மொழி",
+  "control.language.group.translated": "அதிக அளவில் மொழிபெயர்க்கப்பட்ட மொழிபெயர்ப்புகள்",
+  "control.language.group.englishBase": "தானியங்கி மொழிபெயர்ப்பு · ஆங்கிலம் fallback",
   "control.sound.enable": "ஒலி விளைவுகளை இயக்குதல்",
   "control.sound.disable": "ஒலி விளைவுகளை முடக்கு",
   "control.theme.dark": "ஒளி பயன்முறையில் மாற்றவும்",
@@ -8,7 +10,5 @@
   "control.settings.close": "நெருக்கமான அமைப்புகள்",
   "control.cluster.settings": "ஒலி, கருப்பொருள், மொழி கட்டுப்பாடுகள்",
   "control.cluster.open": "திறந்த அமைப்புகள்",
-  "control.cluster.tooltip": "ஒலி, கருப்பொருள் மற்றும் மொழி அமைப்புகள்",
-  "control.language.group.translated": "அதிக அளவில் மொழிபெயர்க்கப்பட்ட மொழிபெயர்ப்புகள்",
-  "control.language.group.englishBase": "தானியங்கி மொழிபெயர்ப்பு · ஆங்கிலம் fallback"
+  "control.cluster.tooltip": "ஒலி, கருப்பொருள் மற்றும் மொழி அமைப்புகள்"
 }

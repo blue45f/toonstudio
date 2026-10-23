@@ -1,6 +1,6 @@
 {
   "app.name": "ToonStudio",
-  "app.brandBeta": "Beta service  data and features may change",
-  "app.loading": "Loading",
-  "app.skipToContent": "Skip to main content"
+  "app.brandBeta": "Бета үйлчилгээ — өгөгдөл болон боломжууд өөрчлөгдөж болно",
+  "app.loading": "Ачаалж байна",
+  "app.skipToContent": "Үндсэн агуулга руу очих"
 }

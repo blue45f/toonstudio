@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Reloading ultima versiune...",
-  "error.chunkRetryFailed": "Te rog verifică-ţi conexiunea şi încearcă din nou.",
-  "error.reloadButton": "Reload Pagina",
-  "error.goHome": "Du-te acasă.",
+  "error.reloading": "Se reîncarcă cea mai recentă versiune…",
+  "error.chunkRetryFailed": "S-a reîmprospătat o dată, dar problema persistă. Verificați conexiunea și încercați din nou.",
+  "error.reloadButton": "Reîncărcați pagina",
+  "error.goHome": "Accesați pagina principală",
   "error.retryDesc": "Te rog, încearcă din nou sau întoarce-te pe pagina de pornire."
 }

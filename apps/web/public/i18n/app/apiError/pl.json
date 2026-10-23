@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Wstąpienie do systemu jest wymagane.",
+  "apiError.loginRequired": "Wymagane jest logowanie.",
   "apiError.adminRequired": "Nie udało się zweryfikować uprawnień administratora.",
   "apiError.adminOnlyPage": "Ta strona jest ograniczona do administratorów.",
   "apiError.notFound": "Nie udało się znaleźć żądanej pozycji.",
-  "apiError.unsupportedType": "Niepodparty typ treści.",
+  "apiError.unsupportedType": "Nieobsługiwany typ treści.",
   "apiError.inactiveAccount": "Nieaktywne konta nie mogą korzystać z funkcji administratora.",
-  "apiError.settlementFailed": "Rozliczenie się nie udało."
+  "apiError.settlementFailed": "Przetwarzanie rozliczenia nie powiodło się. Spróbuj ponownie za chwilę."
 }

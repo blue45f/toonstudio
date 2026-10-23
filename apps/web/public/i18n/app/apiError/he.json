@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "הכניסה נדרשת.",
-  "apiError.adminRequired": "אי אפשרויות הניהול לא ניתן לאמת.",
+  "apiError.loginRequired": "נדרשת התחברות.",
+  "apiError.adminRequired": "לא ניתן היה לאמת הרשאות מנהל.",
   "apiError.adminOnlyPage": "עמוד זה מוגבל למנהלים.",
-  "apiError.notFound": "לא ניתן למצוא את המוצר המבוקש.",
-  "apiError.unsupportedType": "סוג תוכן לא תומך.",
+  "apiError.notFound": "הפריט המבוקש לא נמצא.",
+  "apiError.unsupportedType": "סוג תוכן לא נתמך.",
   "apiError.inactiveAccount": "חשבונות לא פעילים לא יכולים להשתמש בתכונות מנהל.",
-  "apiError.settlementFailed": "עיבוד הסדר נכשל."
+  "apiError.settlementFailed": "עיבוד ההסדר נכשל. נסו שוב בעוד רגע."
 }

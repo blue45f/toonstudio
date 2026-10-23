@@ -1,10 +1,10 @@
 {
   "ad.creativeFallbackAlt": "Sponsorizēts attēls",
-  "ad.slotAriaLabel": "Reklamēšanas vieta",
-  "ad.slotLabel": "Sponsori",
+  "ad.slotAriaLabel": "Reklāmas laukums",
+  "ad.slotLabel": "Sponsorēts",
   "ad.slotTitle": "Sponsorizēts saturs",
-  "ad.ctaDetails": "Izskatīt detalizācijas",
-  "ad.placeholderAriaLabel": "Reklamēšanas vieta",
-  "ad.placeholderText": "Nav pieejama sponsoru satura.",
-  "ad.tag": "Reklams"
+  "ad.ctaDetails": "Skatīt detaļas",
+  "ad.placeholderAriaLabel": "Reklāmas vietturis",
+  "ad.placeholderText": "Nav pieejams sponsorēts saturs.",
+  "ad.tag": "Reklāma"
 }

@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "അഡ്മിൻ കൺസോൾ",
   "auth.menu.profile": "എന്റെ പ്രൊഫൈല്",
   "auth.menu.settings": "ക്രമീകരണങ്ങൾ",
-  "auth.menu.signOut": "സൈൻ അപ്പ് ചെയ്യുക",
+  "auth.menu.signOut": "സൈൻ ഔട്ട് ചെയ്യുക",
   "auth.menu.fallbackName": "വായനക്കാരൻ",
   "auth.callback.message.working": "രജിസ്ട്രേഷൻ പൂർത്തിയാക്കുന്നു...",
   "auth.callback.error.badState": "അസാധുവായ സംസ്ഥാന പാരാമീറ്റർ.",

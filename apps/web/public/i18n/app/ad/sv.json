@@ -2,9 +2,9 @@
   "ad.creativeFallbackAlt": "Sponsrad bild",
   "ad.slotAriaLabel": "Reklamplats",
   "ad.slotLabel": "Sponsrad",
-  "ad.slotTitle": "Sponsrad innehåll",
+  "ad.slotTitle": "Sponsrat innehåll",
   "ad.ctaDetails": "Visa detaljer",
-  "ad.placeholderAriaLabel": "Annonceringsplatsinnehavare",
-  "ad.placeholderText": "Inga sponsrade innehåll.",
-  "ad.tag": "Anmälning"
+  "ad.placeholderAriaLabel": "Platshållare för annons",
+  "ad.placeholderText": "Inget sponsrat innehåll tillgängligt.",
+  "ad.tag": "Annons"
 }

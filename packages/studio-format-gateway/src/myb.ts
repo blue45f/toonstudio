@@ -64,8 +64,22 @@ function bytesToBase64(bytes: Uint8Array): string {
   return globalThis.btoa(binary);
 }
 
+/**
+ * A4 D4 조건부 묶음 7호 (R21): MybParseError에 구조화 코드를 신설했다.
+ * 동적 삽입 2곳(invalid-utf8의 UTF-8 디코더 원문·invalid-document의 zod 원문)은
+ * 코드와 무관하게 message에 그대로 남는다 — 표시 지점은 코드를 우선 해석하고
+ * 코드가 없는 경우에만 그 message를 detail로 쓴다.
+ */
+export type MybParseErrorCode =
+  | "invalid-utf8"
+  | "invalid-document"
+  | "unsupported-version";
+
 export class MybParseError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly code: MybParseErrorCode,
+  ) {
     super(message);
     this.name = "MybParseError";
   }
@@ -410,16 +424,17 @@ export function importMybBrush(
   try {
     parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   } catch (error) {
-    throw new MybParseError(`not valid UTF-8 JSON: ${(error as Error).message}`);
+    throw new MybParseError(`not valid UTF-8 JSON: ${(error as Error).message}`, "invalid-utf8");
   }
   const result = mybDocumentSchema.safeParse(parsed);
   if (!result.success) {
-    throw new MybParseError(`not a .myb v3 document: ${result.error.message}`);
+    throw new MybParseError(`not a .myb v3 document: ${result.error.message}`, "invalid-document");
   }
   const document = result.data;
   if (document.version !== 3) {
     throw new MybParseError(
       `unsupported .myb version ${document.version} (v3 only); refusing a lossy import`,
+      "unsupported-version",
     );
   }
 

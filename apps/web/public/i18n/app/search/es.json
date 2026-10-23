@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Despeje todo .",
   "search.explorer.recent.delete": "Eliminar la consulta reciente {query}",
   "search.explorer.recent.searchAgain": "Buscar de nuevo en palabras clave recientes",
+  "search.explorer.suggestions.popular": "Búsquedas populares",
+  "search.explorer.suggestions.genres": "Géneros recomendados",
+  "search.explorer.suggestions.searchFor": "Buscar {query}",
+  "search.explorer.suggestions.genreFilter": "Filtrar por el género {genre}",
+  "search.explorer.suggestions.loading": "Cargando búsquedas sugeridas",
+  "search.explorer.suggestions.error": "No se pudieron cargar las búsquedas sugeridas. Inténtalo de nuevo dentro de un momento.",
+  "search.explorer.suggestions.empty": "Ahora mismo no hay sugerencias. Prueba a escribir un título, autor o etiqueta.",
   "search.explorer.catalog.label": "Catálogo",
   "search.explorer.catalog.empty": "El catálogo está vacío.",
   "search.explorer.currentFilter": "Filtros de corriente",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "hace {count} min",
   "search.explorer.time.hoursAgo": "hace {count} h",
   "search.explorer.time.daysAgo": "hace {count} d",
-  "search.explorer.loadMore": "Cargar más",
-  "search.explorer.suggestions.popular": "Búsquedas populares",
-  "search.explorer.suggestions.genres": "Géneros recomendados",
-  "search.explorer.suggestions.searchFor": "Buscar {query}",
-  "search.explorer.suggestions.genreFilter": "Filtrar por el género {genre}",
-  "search.explorer.suggestions.loading": "Cargando búsquedas sugeridas",
-  "search.explorer.suggestions.error": "No se pudieron cargar las búsquedas sugeridas. Inténtalo de nuevo dentro de un momento.",
-  "search.explorer.suggestions.empty": "Ahora mismo no hay sugerencias. Prueba a escribir un título, autor o etiqueta."
+  "search.explorer.loadMore": "Cargar más"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "സൃഷ്ടിച്ച കൃതികൾ",
   "userProfile.tabs.series": "പരമ്പര",
   "userProfile.works.empty": "ഈ ഉപയോക്താവിന് പൊതു പ്രവൃത്തികളില്ല.",
+  "userProfile.works.error": "സൃഷ്ടിച്ച കൃതികൾ ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
   "userProfile.series.empty": "ഈ ഉപയോക്താവിന് ഇതുവരെ ഒരു പരമ്പരയുമില്ല.",
+  "userProfile.series.error": "പരമ്പരകൾ ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
   "userProfile.fetchError": "പ്രൊഫൈല് ലോഡ് ചെയ്യാൻ സാധിച്ചില്ല.",
   "userProfile.authorFallback": "ഉപയോക്താവ്",
   "userProfile.metaTemplate": "{author} പ്രൊഫൈൽ · {reviews} അവലോകനങ്ങൾ · {works} പ്രവൃത്തികൾ · {avg}  ടൺ സ്പെക്ട്രം",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "പ്രൊഫൈല് ഉള്ളടക്കം",
   "userProfile.refresh": "പുതുക്കൽ",
   "userProfile.emptyReviews": "ഈ ഉപയോക്താവ് ഇതുവരെ അവലോകനങ്ങൾ പ്രസിദ്ധീകരിച്ചിട്ടില്ല.",
-  "userProfile.works.error": "സൃഷ്ടിച്ച കൃതികൾ ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
-  "userProfile.series.error": "പരമ്പരകൾ ലോഡ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
   "userProfile.emptyReviewsHint": "നിങ്ങൾക്ക് ഇഷ്ടമുള്ള ഒരു ശീർഷകത്തിന് ആദ്യ അവലോകനം എഴുതൂ.",
   "userProfile.emptyReviewsCta": "ശീർഷകങ്ങൾ ബ്രൗസ് ചെയ്യുക"
 }

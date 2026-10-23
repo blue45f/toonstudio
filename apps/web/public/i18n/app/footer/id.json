@@ -30,6 +30,7 @@
   "footer.link.news": "Berita novel online",
   "footer.link.about": "Tentang ToonStudio",
   "footer.link.guide": "Kebijakan peringkat",
+  "footer.link.features": "Semua fitur sekilas",
   "footer.link.sitemap": "Peta situs",
   "footer.link.settings": "Pengaturan",
   "footer.link.support": "Dukungan",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Layanan hosting",
   "footer.business.serviceType": "Jenis platform",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Seluruh hak cipta dilindungi.",
-  "footer.logoTag": "Membuat Kisah Anda berikutnya",
-  "footer.link.features": "Semua fitur sekilas"
+  "footer.logoTag": "Membuat Kisah Anda berikutnya"
 }

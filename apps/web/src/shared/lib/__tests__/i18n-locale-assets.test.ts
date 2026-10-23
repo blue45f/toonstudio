@@ -38,16 +38,11 @@ const REFERENCE_LOCALE = "en";
  * 로케일은 영어 원문 폴백을 받는다(I18N_GUIDE §3) — 번역된 값은 그대로여서 ko·en 을 뺀 73개 로케일의
  * 비율이 0.40~0.44 로 내려가 모두 하한(0.5) 아래다. 이 상태를 숨기지 않고 목록으로 고정한다.
  * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고(`ja`·`zh`·`de`·`fr`·
- * `zh-hant`·`es`·`gu`·`hi`·`ml`·`mr` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에, `or`·`pa`·`ru`·`bg`·`bn`·`el`·`uk`·`id`·`vi`·`th`·`pt` 는 2026-10-23 에 뺐다),
+ * `zh-hant`·`es`·`gu`·`hi`·`ml`·`mr` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에, `or`·`pa`·`ru`·`bg`·`bn`·`el`·`uk`·`id`·`vi`·`th`·`pt`·`fil`·`ur`·`nl`·`gl`·`ar`·`fa`·`tr`·`ka`·`te`·`kn`·`ta`·`mk`·`it`·`ne`·`pl`·`sr`·`ms`·`zu`·`am`·`cs`·`uz`·`my`·`ro`·`sv`·`si`·`be`·`km`·`is`·`kk`·`ky`·`as`·`lt`·`hu`·`da`·`az`·`he`·`af`·`sw`·`hr`·`hy`·`sq`·`mn`·`sk`·`fi`·`no`·`et`·`ca`·`eu`·`lo`·`lv`·`bs`·`sl` 은 2026-10-23 에 뺐다),
+ * `sl` 을 마지막으로 동결 목록이 비었다 — 비내장 73개 로케일 전종이 하한을 넘은 상태다 (2026-10-23 고도화 43라운드, G7 종결).
  * 새 로케일이나 ko·en 이 하한 아래로 내려가면 목록에 더하지 말고 원인을 고친다.
  */
-const BELOW_TRANSLATED_FLOOR: readonly string[] = [
-  "af", "am", "ar", "as", "az", "be", "bs", "ca", "cs", "da",
-  "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "is",
-  "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
-  "my", "ne", "nl", "no", "pl", "ro", "si", "sk", "sl", "sq", "sr",
-  "sv", "sw", "ta", "te", "tr", "ur", "uz", "zu",
-];
+const BELOW_TRANSLATED_FLOOR: readonly string[] = [];
 /** The app-shell key surface every published dictionary was authored against. */
 const BASELINE_APP_KEY_COUNT = 525;
 /**
@@ -182,19 +177,22 @@ describe("measured translation coverage", () => {
     const byCode = new Map(options.map((option) => [option.code, option]));
 
     // 옵션의 fullyTranslated 는 카탈로그 비율과 하한에서 그대로 나온다. 내장 쌍은 번역 언어이고,
-    // af 는 번역 하한 동결 목록(BELOW_TRANSLATED_FLOOR)에 있어 번역 완료로 표시되지 않는다. ja 는 검수 번역 반영으로
-    // 하한을 넘어 목록에서 빠졌고 번역 완료로 표시된다.
+    // 동결 목록은 비어 있다 — ja·af·sl 을 포함한 비내장 전 로케일이 검수 번역 반영으로 하한을 넘어
+    // 번역 완료로 표시된다 (sl 이 마지막으로 2026-10-23 에 빠졌다).
     expect(byCode.get("ko")?.fullyTranslated).toBe(true);
     expect(byCode.get("en")?.fullyTranslated).toBe(true);
-    for (const code of ["ja", "af"]) {
+    for (const code of ["ja", "sl"]) {
       expect(byCode.get(code)?.fullyTranslated).toBe(
         APP_I18N_LOCALE_TRANSLATED_RATIO[code] >= APP_I18N_TRANSLATED_LOCALE_THRESHOLD,
       );
     }
-    expect(BELOW_TRANSLATED_FLOOR).toContain("af");
+    expect(BELOW_TRANSLATED_FLOOR).toEqual([]);
+    expect(BELOW_TRANSLATED_FLOOR).not.toContain("sl");
     expect(BELOW_TRANSLATED_FLOOR).not.toContain("ja");
-    expect(byCode.get("af")?.fullyTranslated).toBe(false);
+    expect(BELOW_TRANSLATED_FLOOR).not.toContain("af");
+    expect(byCode.get("sl")?.fullyTranslated).toBe(true);
     expect(byCode.get("ja")?.fullyTranslated).toBe(true);
+    expect(byCode.get("af")?.fullyTranslated).toBe(true);
     // es-419 has no asset of its own; it inherits the Spanish asset's measured coverage.
     expect(byCode.get("es-419")?.translatedRatio).toBe(
       APP_I18N_LOCALE_TRANSLATED_RATIO.es,

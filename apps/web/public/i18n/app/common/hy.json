@@ -1,16 +1,16 @@
 {
-  "common.loading": "Լեռնափոխադրում",
-  "common.loading.short": "Լեռնափոխադրում",
+  "common.loading": "Բեռնվում է",
+  "common.loading.short": "Բեռնվում է",
   "common.close": "Փակել",
   "common.open": "Բացել",
   "common.search": "Փնտրել",
   "common.retry": "Փորձեք նորից",
   "common.retry.short": "Փորձեք նորից",
   "common.backToTop": "Վերադարձ դեպի վերեւ",
-  "common.backToHome": "Գնացեք տուն:",
+  "common.backToHome": "Գնալ գլխավոր էջ",
   "common.loading.search": "Փնտրելով...",
-  "common.notFoundWithQuery": "\" {query} \" հետազոտության արդյունքներ չկան:",
-  "common.openSearch": "Գտեք այն որոնման միջոցով",
+  "common.notFoundWithQuery": "«{query}»-ի համար արդյունքներ չկան։",
+  "common.openSearch": "Գտեք այն Որոնման մեջ →",
   "common.loading.empty": "Ոչ մի տվյալ չի վերադարձվել:",
-  "common.retry.all": "Կրկին փորձեք կամ գնացեք տուն:"
+  "common.retry.all": "Կրկին փորձեք կամ վերադարձեք գլխավոր էջ։"
 }

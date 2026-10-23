@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "ប្រភេទរូបភាពដែលមិនគាំទ្រ",
-  "avatar.error.processFailed": "មិនអាចធ្វើរូបភាពបានទេ។",
-  "avatar.processing": "ការប្រតិបត្តិការ...",
-  "avatar.select": "ប្តូររូបភាព",
-  "avatar.remove": "លុបរូបភាព",
-  "avatar.uploadHint": "មានតែរូបភាព JPG, PNG, និង WEBP ប៉ុណ្ណោះដែលត្រូវបានគាំទ្រ, បន្ទាប់មកត្រូវបានកាត់សម្រាប់មើលមុន។",
-  "avatar.changeAria": "ប្តូរ រូបភាព ឯកសារ"
+  "avatar.error.invalidType": "ប្រភេទរូបភាពដែលមិនត្រូវបានគាំទ្រ។",
+  "avatar.error.processFailed": "មិនអាចដំណើរការរូបភាពបានទេ។ សូមព្យាយាមម្តងទៀតជាមួយរូបភាពផ្សេង។",
+  "avatar.processing": "កំពុងដំណើរការ…",
+  "avatar.select": "ផ្លាស់ប្តូររូបភាព",
+  "avatar.remove": "ដករូបភាពចេញ",
+  "avatar.uploadHint": "គាំទ្រតែរូបភាព JPG, PNG និង WEBP ប៉ុណ្ណោះ បន្ទាប់មកត្រូវបានកាត់សម្រាប់មើលជាមុន។",
+  "avatar.changeAria": "ផ្លាស់ប្តូររូបភាពប្រវត្តិរូប"
 }

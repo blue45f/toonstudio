@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Hukutimiza umri wa kuzaliwa.",
-  "ageGate.cancel": "Kufuta",
-  "ageGate.confirm": "Tumia"
+  "ageGate.deniedMessage": "Hukukidhi sharti la umri.",
+  "ageGate.cancel": "Ghairi",
+  "ageGate.confirm": "Thibitisha"
 }

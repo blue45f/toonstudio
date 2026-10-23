@@ -223,7 +223,7 @@ export function useStudioBg3dEditorState(props) {
     readonly totalShots: number;
     readonly mode: "durable" | "memory";
     readonly downloadRequested?: boolean;
-    readonly degradedReason?: string | null;
+    readonly degradedReason?: import("./studio-bg3d-shot-batch-recovery-error").StudioBg3dShotBatchRecoveryDegradedReason | null;
   } | null>(null);
   const isBatchRenderingShots = shotBatchProgress !== null;
   // 복합 오브젝트 프리셋 그리드 카테고리 필터. null=전체.

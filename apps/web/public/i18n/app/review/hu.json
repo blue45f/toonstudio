@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Készült",
-  "review.progress.binge": "A csörgés",
+  "review.progress.complete": "Elolvasva",
+  "review.progress.binge": "Darálás alatt",
   "review.progress.upcoming": "Tervezett",
-  "review.progress.abandoned": "Eldobta.",
-  "review.progress.unknown": "Elrejtett előrelépés",
-  "review.spoilerRevealLabel": "Mutasd meg a spoilert"
+  "review.progress.abandoned": "Abbahagyva",
+  "review.progress.unknown": "Az előrehaladás rejtett",
+  "review.spoilerRevealLabel": "Spoiler megjelenítése"
 }

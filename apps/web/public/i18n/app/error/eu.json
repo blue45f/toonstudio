@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Azken bertsioa berrikusi...",
-  "error.chunkRetryFailed": "Behin berritua, baina arazoa mantentzen da.",
-  "error.reloadButton": "Orrialdeak kargatzea",
-  "error.goHome": "Zoaz etxera.",
+  "error.reloading": "Azken bertsioa kargatzen…",
+  "error.chunkRetryFailed": "Behin freskatu da, baina arazoak bere horretan dirau. Egiaztatu konexioa eta saiatu berriro.",
+  "error.reloadButton": "Kargatu berriro orria",
+  "error.goHome": "Joan hasierara",
   "error.retryDesc": "Mesedez, saiatu berriro edo itzuli hasierako orrira."
 }

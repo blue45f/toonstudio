@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "口座名義",
   "revenue.payout.holderPlaceholder": "名義人の氏名",
   "revenue.payout.mockNote": "現在はモックリクエストです。実際の支払いはバックエンドの精算パイプラインで処理されます。",
+  "revenue.payout.notAvailableBody": "出金申請はまだ実際には受け付けていません。入力した口座情報は保存されません。申請が開始されたら、この画面からそのまま申請でき、申請履歴と進行状況も確認できます。",
+  "revenue.payout.notAvailableTitle": "出金申請はまだ準備中です",
   "revenue.payout.submit": "出金を申請する",
   "revenue.payout.title": "精算金の出金",
   "revenue.settlement.belowMinimum": "{min}以上から出金できます",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "アーリーアクセス",
   "revenue.source.market": "マーケット販売",
   "revenue.source.membership": "メンバーシップ",
-  "revenue.source.tips": "応援",
-  "revenue.payout.notAvailableBody": "出金申請はまだ実際には受け付けていません。入力した口座情報は保存されません。申請が開始されたら、この画面からそのまま申請でき、申請履歴と進行状況も確認できます。",
-  "revenue.payout.notAvailableTitle": "出金申請はまだ準備中です"
+  "revenue.source.tips": "応援"
 }

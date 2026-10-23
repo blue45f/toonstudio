@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Sisäänlasku vaaditaan.",
-  "apiError.adminRequired": "Hallintovelvollisuuksia ei voitu tarkistaa.",
+  "apiError.loginRequired": "Kirjautuminen vaaditaan.",
+  "apiError.adminRequired": "Ylläpito-oikeuksia ei voitu vahvistaa.",
   "apiError.adminOnlyPage": "Tämä sivu on vain hallinnoijoille.",
-  "apiError.notFound": "Pyynnön esittänyt esine ei löytynyt.",
-  "apiError.unsupportedType": "Tuettua sisältöä ei ole.",
-  "apiError.inactiveAccount": "Aktiiviset tiliet eivät voi käyttää hallinnoijan ominaisuuksia.",
-  "apiError.settlementFailed": "- Säätöprosessi epäonnistui."
+  "apiError.notFound": "Pyydettyä kohdetta ei löytynyt.",
+  "apiError.unsupportedType": "Sisältötyyppiä ei tueta.",
+  "apiError.inactiveAccount": "Ei-aktiiviset tilit eivät voi käyttää ylläpitäjän ominaisuuksia.",
+  "apiError.settlementFailed": "Selvityksen käsittely epäonnistui. Yritä hetken kuluttua uudelleen."
 }

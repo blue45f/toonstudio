@@ -1,5 +1,7 @@
 {
   "control.language.label": "ენის გამოყენება",
+  "control.language.group.translated": "მაღალი ფართობის თარგმნები",
+  "control.language.group.englishBase": "ავტომატური თარგმნა · ინგლისური fallback",
   "control.sound.enable": "ხმის ეფექტების შესაძლებლობა",
   "control.sound.disable": "გამორთეთ ხმოვანი ეფექტები",
   "control.theme.dark": "ღია სიახლეზე გადასვლა",
@@ -8,7 +10,5 @@
   "control.settings.close": "დახურული პარამეტრები",
   "control.cluster.settings": "ხმის, თემის, ენის კონტროლი",
   "control.cluster.open": "ღია პარამეტრები",
-  "control.cluster.tooltip": "ხმის, თემის და ენის პარამეტრები",
-  "control.language.group.translated": "მაღალი ფართობის თარგმნები",
-  "control.language.group.englishBase": "ავტომატური თარგმნა · ინგლისური fallback"
+  "control.cluster.tooltip": "ხმის, თემის და ენის პარამეტრები"
 }

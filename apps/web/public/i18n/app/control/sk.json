@@ -1,14 +1,14 @@
 {
   "control.language.label": "Jazyk",
-  "control.sound.enable": "Umožniť zvukové efekty",
-  "control.sound.disable": "Zvykať zvukové efekty",
-  "control.theme.dark": "Prejsť na svetelný režim",
-  "control.theme.light": "Prejsť na temný režim",
-  "control.settings.open": "Otvorené nastavenia",
-  "control.settings.close": "Záväzné nastavenia",
-  "control.cluster.settings": "Zvuk, téma, jazykové ovládanie",
-  "control.cluster.open": "Otvorené nastavenia",
-  "control.cluster.tooltip": "Zhlásenie, téma a jazykové nastavenia",
-  "control.language.group.translated": "Preložky s vysokým obsahom",
-  "control.language.group.englishBase": "Automatický preklad · anglický fallback"
+  "control.language.group.translated": "Preklady s vysokým pokrytím",
+  "control.language.group.englishBase": "Automatický preklad · anglický fallback",
+  "control.sound.enable": "Zapnúť zvukové efekty",
+  "control.sound.disable": "Vypnúť zvukové efekty",
+  "control.theme.dark": "Prepnúť na svetlý režim",
+  "control.theme.light": "Prepnúť na tmavý režim",
+  "control.settings.open": "Otvoriť nastavenia",
+  "control.settings.close": "Zavrieť nastavenia",
+  "control.cluster.settings": "Ovládanie zvuku, témy a jazyka",
+  "control.cluster.open": "Otvoriť nastavenia",
+  "control.cluster.tooltip": "Nastavenia zvuku, témy a jazyka"
 }

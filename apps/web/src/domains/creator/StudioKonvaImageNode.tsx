@@ -46,6 +46,7 @@ import {
 import { resizableNodeProps } from "./studio-node-props";
 import { computePanelAutoFitPatch } from "./studio-panel-autofit";
 import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
+import { resolveStudioImageFilterWorkerErrorFromCause } from "./status-i18n/studio-producer-error-i18n-filter-worker";
 import { sha256HexPortable } from "./studio-sha256";
 import { toKonvaSkewAttrs } from "./studio-skew";
 
@@ -336,11 +337,7 @@ interface KonvaFilterPresentationReadyState {
 }
 
 function isStudioFilterWorkerRequiredError(error: unknown): boolean {
-  const code = (
-    error !== null && typeof error === "object"
-      ? (error as { code?: unknown }).code
-      : undefined
-  );
+  const code = error !== null && typeof error === "object" ? (error as { code?: unknown }).code : undefined;
   return code === "STUDIO_ADVANCED_BLUR_WORKER_REQUIRED"
     || code === "STUDIO_PROFESSIONAL_FILTER_WORKER_REQUIRED"
     || code === "STUDIO_TONE_ARTIFACT_WORKER_REQUIRED";
@@ -1206,12 +1203,14 @@ export function StudioKonvaImageNode({
     trimWorkerResultCache(workerResultCacheRef.current, workerResultCacheLimit, filterKey);
 
     const markSelectedFilterUnavailable = (message: string, cause?: unknown): void => {
-      console.error(`[studio] selected image filter engine unavailable: ${message}`, cause);
+      const detail = resolveStudioImageFilterWorkerErrorFromCause(cause);
+      const displayMessage = detail ? `${message} ${detail}` : message;
+      console.error(`[studio] selected image filter engine unavailable: ${displayMessage}`, cause);
       setWorkerRequiredFailureKey(requestKey);
       if (!workerFailureNoticeRef.current) {
         const notice = { key: requestKey };
         workerFailureNoticeRef.current = notice;
-        toast(frozenStatus4Text("studio.frozenStatus4.konva.engineUnavailable", { message }, "선택한 이미지 필터 엔진을 사용할 수 없습니다. {message}"), { tone: "info", durationMs: 5_000 });
+        toast(frozenStatus4Text("studio.frozenStatus4.konva.engineUnavailable", { message: displayMessage }, "선택한 이미지 필터 엔진을 사용할 수 없습니다. {message}"), { tone: "info", durationMs: 5_000 });
         globalThis.setTimeout(() => {
           if (workerFailureNoticeRef.current === notice) workerFailureNoticeRef.current = null;
         }, 5_000);

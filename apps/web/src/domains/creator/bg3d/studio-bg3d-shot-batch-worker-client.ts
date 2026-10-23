@@ -9,6 +9,7 @@ import {
   type StudioBg3dShotBatchProgress,
 } from "./studio-bg3d-shot-batch";
 import { verifyStudioBg3dShotBatchArchiveBlob } from "./studio-bg3d-shot-batch-archive-verifier";
+import type { StudioBg3dShotBatchArchiveErrorCode } from "./studio-bg3d-shot-batch-archive-error";
 import {
   STUDIO_BG3D_SHOT_BATCH_WORKER_PROTOCOL_VERSION,
   isStudioBg3dShotBatchWorkerRequest,
@@ -58,7 +59,17 @@ export type StudioBg3dShotBatchWorkerErrorCode =
 
 /** Stable Worker failure discriminator for fail-closed batch export reporting. */
 export class StudioBg3dShotBatchWorkerError extends Error {
-  constructor(readonly code: StudioBg3dShotBatchWorkerErrorCode) {
+  /** Structured archive cause carried over protocol v5 (build-failed responses only). */
+  declare readonly causeCode?: StudioBg3dShotBatchArchiveErrorCode;
+  declare readonly causeParams?: Readonly<Record<string, string>>;
+
+  constructor(
+    readonly code: StudioBg3dShotBatchWorkerErrorCode,
+    cause?: {
+      readonly causeCode: StudioBg3dShotBatchArchiveErrorCode;
+      readonly causeParams?: Readonly<Record<string, string>>;
+    },
+  ) {
     super(`studio-bg3d-shot-batch-worker:${code}`);
     this.name = code === "aborted"
       ? "AbortError"
@@ -69,6 +80,10 @@ export class StudioBg3dShotBatchWorkerError extends Error {
           : code === "protocol" || code === "archive-invalid"
             ? "ProtocolError"
             : "WorkerError";
+    if (cause !== undefined) {
+      this.causeCode = cause.causeCode;
+      if (cause.causeParams !== undefined) this.causeParams = cause.causeParams;
+    }
   }
 }
 
@@ -257,7 +272,15 @@ export function buildStudioBg3dShotBatchArchiveInWorker(
         return;
       }
       if (response.kind === "error") {
-        fail(response.code === "protocol" ? "protocol" : "build-failed");
+        if (response.code === "protocol") fail("protocol");
+        else if (response.causeCode !== undefined) {
+          finish(null, new StudioBg3dShotBatchWorkerError("build-failed", {
+            causeCode: response.causeCode,
+            ...(response.causeParams !== undefined
+              ? { causeParams: response.causeParams }
+              : {}),
+          }));
+        } else fail("build-failed");
         return;
       }
       verifying = true;

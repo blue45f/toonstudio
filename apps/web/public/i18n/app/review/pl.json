@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "Wykonane",
-  "review.progress.binge": "Zbijanie",
+  "review.progress.binge": "Maraton",
   "review.progress.upcoming": "Planowane",
   "review.progress.abandoned": "Wyrzucono",
-  "review.progress.unknown": "/Progres ukryty",
+  "review.progress.unknown": "Postęp ukryty",
   "review.spoilerRevealLabel": "Pokaż spoiler"
 }

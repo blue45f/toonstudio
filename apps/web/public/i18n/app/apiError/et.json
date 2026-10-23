@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Sa pead sisse sisenema.",
+  "apiError.loginRequired": "Sisselogimine on nõutav.",
   "apiError.adminRequired": "Admin-luba ei saanud kontrollida.",
-  "apiError.adminOnlyPage": "See lehekülg on piiratud administratoriga.",
-  "apiError.notFound": "Taotlus ei leidnud.",
+  "apiError.adminOnlyPage": "See leht on piiratud administraatoritega.",
+  "apiError.notFound": "Taotletud üksust ei leitud.",
   "apiError.unsupportedType": "Toetamata sisu tüüp.",
-  "apiError.inactiveAccount": "Aktiivsetel kontodel ei ole võimalik kasutada administratori funktsioone.",
-  "apiError.settlementFailed": "Arvelduse töötlemine ebaõnnestunud."
+  "apiError.inactiveAccount": "Mitteaktiivsed kontod ei saa administraatori funktsioone kasutada.",
+  "apiError.settlementFailed": "Arvelduse töötlemine ebaõnnestus. Proovige hetke pärast uuesti."
 }

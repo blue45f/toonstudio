@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Aðgangur er nauðsynlegur.",
-  "apiError.adminRequired": "Leyfi stjórnarmannsins var ekki hægt að staðfesta.",
-  "apiError.adminOnlyPage": "Þessi síða er takmarkað við stjórnendur.",
-  "apiError.notFound": "Óskað var ekki fundið.",
-  "apiError.unsupportedType": "Óstuðluð efni.",
-  "apiError.inactiveAccount": "Óvirkar reikningar geta ekki notað stjórnarfunktiónir.",
-  "apiError.settlementFailed": "Uppgjör um greiðsluna mislögð."
+  "apiError.loginRequired": "Innskráning er nauðsynleg.",
+  "apiError.adminRequired": "Ekki var hægt að staðfesta réttindi stjórnanda.",
+  "apiError.adminOnlyPage": "Þessi síða er aðeins fyrir stjórnendur.",
+  "apiError.notFound": "Umbeðinn hlutur fannst ekki.",
+  "apiError.unsupportedType": "Efnisgerð ekki studd.",
+  "apiError.inactiveAccount": "Óvirkir reikningar geta ekki notað stjórnandaeiginleika.",
+  "apiError.settlementFailed": "Uppgjör mistókst. Vinsamlegast reyndu aftur eftir smástund."
 }

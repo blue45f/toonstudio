@@ -1,7 +1,7 @@
 {
   "error.reloading": "Herlaai die nuutste weergawe...",
-  "error.chunkRetryFailed": "Kyk asseblief na jou verbinding en probeer weer.",
+  "error.chunkRetryFailed": "Een keer verfris, maar die probleem duur voort. Gaan jou verbinding na en probeer weer.",
   "error.reloadButton": "Herlaai bladsy",
-  "error.goHome": "Gaan huis toe",
+  "error.goHome": "Gaan na die tuisblad",
   "error.retryDesc": "Probeer asseblief weer of gaan terug na die tuisblad."
 }

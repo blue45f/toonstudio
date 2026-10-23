@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Subscritores",
   "membership.creatorPage.statMonthly": "Recorrência mensal",
   "membership.creatorPage.statTiers": "Planos ativos",
+  "membership.creatorPage.statusActive": "{count} planos estão no ar no ecrã de adesão dos leitores",
   "membership.creatorPage.subtitle": "Crie planos de subscrição para fãs e acompanhe a receita mensal de subscrições.",
   "membership.creatorPage.tierList": "Planos de subscrição",
   "membership.creatorPage.tierMembers": "{count} subscritores",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "O valor que os fãs pagam todos os meses.",
   "membership.tierEditor.priceLabel": "Preço mensal (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Guardar",
-  "membership.creatorPage.statusActive": "{count} planos estão no ar no ecrã de adesão dos leitores"
+  "membership.tierEditor.save": "Guardar"
 }

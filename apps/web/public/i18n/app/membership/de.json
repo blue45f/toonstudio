@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Mitglieder",
   "membership.creatorPage.statMonthly": "Monatlich wiederkehrend",
   "membership.creatorPage.statTiers": "Aktive Stufen",
+  "membership.creatorPage.statusActive": "{count} Stufen sind auf dem Anmeldebildschirm für Leser live",
   "membership.creatorPage.subtitle": "Erstellen Sie Fan-Mitgliedschaftsstufen und verfolgen Sie die monatlichen Abonnementeinnahmen.",
   "membership.creatorPage.tierList": "Mitgliedschaftsstufen",
   "membership.creatorPage.tierMembers": "{count} Mitglieder",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Der Betrag, den Fans jeden Monat zahlen.",
   "membership.tierEditor.priceLabel": "Monatlicher Preis (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Speichern",
-  "membership.creatorPage.statusActive": "{count} Stufen sind auf dem Anmeldebildschirm für Leser live"
+  "membership.tierEditor.save": "Speichern"
 }

@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 const observations = vi.hoisted(() => ({ moduleLoaded: vi.fn() }));
 vi.mock("../../../../../../packages/studio-format-gateway/src/krita-bundle", () => {
   observations.moduleLoaded();
-  class KritaBundleError extends Error {}
+  // 실제 KritaBundleError 계약(code 필드)을 갖춘 목 — R21 causeCode 전파 단언용.
+  class KritaBundleError extends Error {
+    readonly code = "archive-invalid" as const;
+  }
   return {
     KritaBundleError,
     importKritaBundle: async () => { throw new KritaBundleError("Invalid fixture"); },
@@ -19,8 +22,8 @@ describe("Krita archive parser intent boundary", () => {
       name: "StudioBrushProgramImportError",
       format: "bundle",
       code: "bundleReadFailed",
-      params: { detail: " Invalid fixture" },
-      cause: expect.objectContaining({ message: "Invalid fixture" }),
+      params: { detail: " Invalid fixture", causeCode: "bundle:archive-invalid" },
+      cause: expect.objectContaining({ message: "Invalid fixture", code: "archive-invalid" }),
     });
     expect(observations.moduleLoaded).toHaveBeenCalledOnce();
   });

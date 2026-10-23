@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Nešlo mi načítať spätnú väzbu.",
-  "feedback.thankYou": "Ďakujem za vašu hodnotnú spätnú väzbu!",
+  "feedback.loadError": "Nepodarilo sa načítať prieskum spätnej väzby. Skúste to o chvíľu znova.",
+  "feedback.thankYou": "Ďakujeme za vašu cennú spätnú väzbu!",
   "feedback.anonymousNote": "Vaše odpovede sú anonymné.",
-  "feedback.notAtAll": "Nie vôbec.",
-  "feedback.definitely": "Určite ."
+  "feedback.notAtAll": "Vôbec nie",
+  "feedback.definitely": "Určite"
 }

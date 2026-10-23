@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Nisam mogao da učinim obaveštenja.",
-  "notify.empty": "Nema novih obaveštenja."
+  "notify.loadError": "Nije moguće učitati obavijesti. Pokušajte ponovo za trenutak.",
+  "notify.empty": "Nema novih obavijesti."
 }

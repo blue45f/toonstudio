@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Колдонулбаган сүрөт түрү.",
-  "avatar.error.processFailed": "Сүрөттү иштетүүдө ийгиликке жетпей калды.",
-  "avatar.processing": "Процесс...",
+  "avatar.error.invalidType": "Колдоого алынбаган сүрөт түрү.",
+  "avatar.error.processFailed": "Сүрөттү иштетүү мүмкүн болгон жок. Башка сүрөт менен кайра аракет кылыңыз.",
+  "avatar.processing": "Иштетилүүдө…",
   "avatar.select": "Сүрөттү өзгөртүү",
   "avatar.remove": "Сүрөттү алып салуу",
   "avatar.uploadHint": "JPG, PNG жана WEBP сүрөттөр гана колдоого алынат, андан кийин алдын ала көрүү үчүн кесилет.",
-  "avatar.changeAria": "Профиль сүрөттү өзгөртүү"
+  "avatar.changeAria": "Профиль сүрөтүн өзгөртүү"
 }

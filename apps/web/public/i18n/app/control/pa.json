@@ -1,5 +1,7 @@
 {
   "control.language.label": "ਭਾਸ਼ਾ",
+  "control.language.group.translated": "ਉੱਚ ਕਵਰੇਜ ਵਾਲੇ ਅਨੁਵਾਦ",
+  "control.language.group.englishBase": "ਆਟੋਮੈਟਿਕ ਅਨੁਵਾਦ · ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਫਾਲਬੈਕ",
   "control.sound.enable": "ਆਵਾਜ਼ ਪ੍ਰਭਾਵ ਨੂੰ ਸਮਰੱਥ ਬਣਾਓ",
   "control.sound.disable": "ਆਵਾਜ਼ ਪ੍ਰਭਾਵ ਨੂੰ ਅਯੋਗ ਕਰੋ",
   "control.theme.dark": "ਲਾਈਟ ਮੋਡ ਵਿੱਚ ਬਦਲੋ",
@@ -8,7 +10,5 @@
   "control.settings.close": "ਬੰਦ ਸੈਟਿੰਗਜ਼",
   "control.cluster.settings": "ਆਵਾਜ਼, ਥੀਮ, ਭਾਸ਼ਾ ਕੰਟਰੋਲ",
   "control.cluster.open": "ਖੁੱਲੀ ਸੈਟਿੰਗ",
-  "control.cluster.tooltip": "ਆਵਾਜ਼, ਥੀਮ ਅਤੇ ਭਾਸ਼ਾ ਸੈਟਿੰਗਜ਼",
-  "control.language.group.translated": "ਉੱਚ ਕਵਰੇਜ ਵਾਲੇ ਅਨੁਵਾਦ",
-  "control.language.group.englishBase": "ਆਟੋਮੈਟਿਕ ਅਨੁਵਾਦ · ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਫਾਲਬੈਕ"
+  "control.cluster.tooltip": "ਆਵਾਜ਼, ਥੀਮ ਅਤੇ ਭਾਸ਼ਾ ਸੈਟਿੰਗਜ਼"
 }

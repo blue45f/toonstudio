@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Stödlösa bildtyper.",
-  "avatar.error.processFailed": "- Jag har inte lyckats.",
-  "avatar.processing": "- Förvärv...",
+  "avatar.error.invalidType": "Bildtypen stöds inte.",
+  "avatar.error.processFailed": "Det gick inte att bearbeta bilden. Försök igen med en annan bild.",
+  "avatar.processing": "Bearbetar…",
   "avatar.select": "Ändra bild",
   "avatar.remove": "Ta bort bilden",
-  "avatar.uploadHint": "Endast JPG, PNG och WEBP-bilder stöds, sedan skärs för förhandsvisning.",
+  "avatar.uploadHint": "Endast JPG-, PNG- och WEBP-bilder stöds och beskärs sedan för förhandsgranskning.",
   "avatar.changeAria": "Ändra profilbild"
 }

@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Консоль администратора",
   "auth.menu.profile": "Мой профиль",
   "auth.menu.settings": "Настройки",
-  "auth.menu.signOut": "Выписывайтесь",
+  "auth.menu.signOut": "Выйти",
   "auth.menu.fallbackName": "Читатель",
   "auth.callback.message.working": "Окончательное подписание...",
   "auth.callback.error.badState": "Параметр недействительного состояния.",

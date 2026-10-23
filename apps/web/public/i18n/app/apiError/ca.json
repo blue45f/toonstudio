@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "És necessari entrar.",
-  "apiError.adminRequired": "No es van verificar els permisos d'admin.",
+  "apiError.loginRequired": "Cal iniciar sessió.",
+  "apiError.adminRequired": "No s'han pogut verificar els permisos d'administrador.",
   "apiError.adminOnlyPage": "Aquesta pàgina està restringida als administradors.",
-  "apiError.notFound": "L'article sol·licitat no es va trobar.",
-  "apiError.unsupportedType": "Tip de contingut no suportat.",
-  "apiError.inactiveAccount": "Els comptes inactius no poden utilitzar funcions d'administrator.",
-  "apiError.settlementFailed": "El procés de liquidació ha fallat."
+  "apiError.notFound": "No s'ha pogut trobar l'element sol·licitat.",
+  "apiError.unsupportedType": "Tipus de contingut no admès.",
+  "apiError.inactiveAccount": "Els comptes inactius no poden fer servir les funcions d'administrador.",
+  "apiError.settlementFailed": "El processament de la liquidació ha fallat. Torna-ho a provar d'aquí a una estona."
 }

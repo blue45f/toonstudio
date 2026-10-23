@@ -11,6 +11,6 @@
   "authors.works": "কাজ",
   "authors.views": "মতামত",
   "authors.pencafe": "স্রষ্টা ফ্যান ক্যাফে",
-  "authors.stats": "Top {shown} out of {total} লেখক",
+  "authors.stats": "মোট {total} জন লেখকের মধ্যে শীর্ষ {shown} জন",
   "authors.noName": "সৃষ্টিকর্তা"
 }

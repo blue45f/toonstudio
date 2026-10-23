@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "Üldine päring",
+  "contact.body": "Saatke üldised päringud teenuse kasutamise, kontode ja andmete kuvamise kohta.",
+  "contact.bizTitle": "Äri- ja partnerluspäringud",
+  "contact.bizBody": "Esitage äriettepanekud, sealhulgas reklaam, platvormiintegratsioonid ja sisupartnerlused.",
+  "contact.bugTitle": "Veateade",
+  "contact.bugBody": "Teatage vigadest, paigutusprobleemidest või andmete kuvamise anomaaliatest."
 }

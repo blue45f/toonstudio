@@ -1,9 +1,9 @@
 {
   "avatar.error.invalidType": "မထောက်ပံ့တဲ့ ပုံတူအမျိုးအစား။",
-  "avatar.error.processFailed": "ပုံတွေကို မလုပ်နိုင်ခဲ့ဘူး။",
+  "avatar.error.processFailed": "ပုံကို မဆောင်ရွက်နိုင်ခဲ့ပါ။ အခြားပုံဖြင့် ထပ်စမ်းကြည့်ပါ။",
   "avatar.processing": "စီမံကိန်း...",
-  "avatar.select": "ပုံပြင်ကို ပြောင်းလဲပါ",
+  "avatar.select": "ပုံ ပြောင်းရန်",
   "avatar.remove": "ပုံကို ဖယ်ရှားပါ",
   "avatar.uploadHint": "JPG, PNG, နှင့် WEBP ပုံများသာ ထောက်ခံထားပြီး ကြိုတင်ကြည့်ရှုရန် ဖြတ်တောက်ထားသည်။",
-  "avatar.changeAria": "Profile ပုံကို ပြောင်းလဲပါ"
+  "avatar.changeAria": "ပရိုဖိုင် ပုံ ပြောင်းရန်"
 }

@@ -1,17 +1,17 @@
 {
-  "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
+  "home.hero.eyebrow": "ເວັບຕູນ × ເວັບໂນເວລ",
   "home.hero.titleLine1": "ເລື່ອງທີ່ກະຈາຍກັນ",
   "home.hero.titleShimmer": "ດັດຊະນີດຽວ",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "ຊອກຫາໃນ Webtoon Naver, Series, ແລະ Kakao Webtoon, ຫຼັງຈາກນັ້ນໃຫ້ມີຄວາມຫຍຸ້ງຍາກໂດຍໄວໂດຍໃຊ້ສັນຍານໃນເວລາຈິງແລະຄວາມມັກຂອງຜູ້ອ່ານ.",
-  "home.hero.searchButton": "ຫົວຂໍ້ຄົ້ນຫາ, ຜູ້ສ້າງ, ແບັດ",
+  "home.hero.description": "ຄົ້ນຫາຂ້າມ Naver Webtoon, Series ແລະ Kakao Webtoon ແລ້ວຄັດກອງສິ່ງທີ່ຈະອ່ານໄດ້ຢ່າງວ່ອງໄວດ້ວຍສັນຍານແບບເຣຍລທາຍມ໌ ແລະ ຄວາມມັກຂອງຜູ້ອ່ານ.",
+  "home.hero.searchButton": "ຄົ້ນຫາຊື່ເລື່ອງ, ຜູ້ສ້າງ, ແທັກ",
   "home.hero.rankingButton": "ເບິ່ງການຈັດອັນດັບລວມ",
   "home.hero.studioLink": "ສະຕູດິໂອຜູ້ສ້າງ",
-  "home.hero.createLink": "ກະດານສ້າງ",
+  "home.hero.createLink": "ກະດານຜູ້ສ້າງ",
   "home.hero.stats.titles": "ຫົວຂໍ້",
   "home.hero.stats.platforms": "ເວທີການພິມ",
-  "home.hero.stats.genres": "ຊ່ອງແສງປະເພດ",
+  "home.hero.stats.genres": "ສະເປັກຕຣຳປະເພດ",
   "home.hero.stats.reviews": "ການທົບທວນຄືນຂອງຜູ້ອ່ານ",
-  "home.loadError": "ບໍ່ສາມາດໂຫຼດຂໍ້ມູນບ້ານໄດ້.",
+  "home.loadError": "ບໍ່ສາມາດໂຫຼດຂໍ້ມູນໜ້າຫຼັກໄດ້.",
   "home.creatorTitle": "ຈາກຄວາມຄິດຈົນເຖິງພາບທີທໍາອິດຂອງທ່ານ"
 }

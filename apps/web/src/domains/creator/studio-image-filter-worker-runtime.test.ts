@@ -177,7 +177,13 @@ describe("studio-image-filter.worker runtime", () => {
     expect(messages[1]).toMatchObject({
       type: "studio-image-filter/failure",
       version: 1,
-      error: { name: "RangeError" },
+      // 프로토콜 assert는 구조화 코드로 방출되고 워커가 code/params를 실어 보낸다 (R20).
+      error: {
+        name: "StudioImageFilterWorkerError",
+        message: "protocolBufferLengthMismatch",
+        code: "protocolBufferLengthMismatch",
+        params: { label: "이미지 필터 입력" },
+      },
     });
   });
 

@@ -23,7 +23,6 @@ import {
   normalizeStudioBrushEngineProgramSet,
   type StudioBrushEngineProgramSet,
 } from "./studio-brush-engine-program-set";
-import { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError } from "./studio-brush-library-export-contract";
 import { resolveStudioBrushRuntime } from "./studio-brush-runtime-contract";
 import {
   resolveStudioStampBrushKind,
@@ -1079,6 +1078,7 @@ export function brushMatchesSnapshot(
 
 // ── JSON 내보내기/가져오기(이 앱 전용 포맷 — 브러시 설정엔 GPL 같은 표준이 없다) ──────
 
+import { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError } from "./studio-brush-library-export-contract";
 export { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError, type StudioBrushLibraryErrorCode, type StudioBrushLibraryErrorVariant } from "./studio-brush-library-export-contract";
 /** StudioSavedBrush → JSON 텍스트(들여쓰기 2칸, 사람이 읽을 수 있게). */
 export function writeBrushJson(brush: StudioSavedBrush): string {

@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Nie udało mi się założyć ankiety.",
+  "feedback.loadError": "Nie udało się wczytać ankiety opinii. Spróbuj ponownie za chwilę.",
   "feedback.thankYou": "Dziękuję za cenne informacje!",
   "feedback.anonymousNote": "Twoje odpowiedzi są ściśle anonimowe.",
-  "feedback.notAtAll": "Nie , wcale nie .",
+  "feedback.notAtAll": "Wcale nie",
   "feedback.definitely": "Zdecydowanie."
 }

@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "አጠቃላይ ጥያቄ",
+  "contact.body": "ስለ አገልግሎት አጠቃቀም፣ መለያዎች እና የውሂብ ማሳያ አጠቃላይ ጥያቄዎችን ይላኩ።",
+  "contact.bizTitle": "የንግድ እና የሽርክና ጥያቄዎች",
+  "contact.bizBody": "ማስታወቂያ፣ የመድረክ ውህደቶች እና የይዘት ሽርክናዎችን ጨምሮ የንግድ ሀሳቦችን ያቅርቡ።",
+  "contact.bugTitle": "የሳንካ ሪፖርት",
+  "contact.bugBody": "ስህተቶችን፣ የአቀማመጥ ችግሮችን ወይም የውሂብ ማሳያ ያልተለመዱ ነገሮችን ሪፖርት ያድርጉ።"
 }

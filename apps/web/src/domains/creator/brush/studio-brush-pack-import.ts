@@ -1,4 +1,4 @@
-import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES, BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS, createStudioBrushOriginalSource, requireStudioBrushOriginalSource } from "./studio-brush-original-source";
+import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES, BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS, createStudioBrushOriginalSource, requireStudioBrushOriginalSource, type StudioBrushOriginalSource } from "./studio-brush-original-source";
 /**
  * Brush pack import router — one entry point for every brush file the studio
  * can actually turn into a drawable brush.
@@ -53,22 +53,12 @@ import {
   sanitizeBrushSnapshot,
   importBrushFromJson,
   type StudioBrushSnapshot,
+  type StudioSavedBrush,
 } from "./studio-brush-library";
 import {
   STUDIO_BRUSH_PROGRAM_MAX_BYTES,
   STUDIO_EXTERNAL_BRUSH_PACK_MAX_BYTES,
 } from "./studio-brush-pack-format";
-import {
-  StudioBrushPackPreserveOnlyError,
-  StudioBrushProgramImportError,
-  packWarning,
-  passthroughWarning,
-  withWarningPrefix,
-  type StudioBrushPackCommitResult,
-  type StudioBrushPackImportResult,
-  type StudioBrushPackRights,
-  type StudioBrushPackWarning,
-} from "./studio-brush-pack-import-types";
 // 집계자 예외 (A4 D4 R14): 이 파일의 생산자 방출은 전부 코드지만,
 // studioBrushPackImportNotes는 표시 문구를 조립하는 요약 함수라 이 경계에서만
 // 리졸버를 부른다 — animatic load/save의 문자열 집계 경계와 같은 예외다.
@@ -76,6 +66,7 @@ import { resolveStudioBrushPackWarning } from "../status-i18n/studio-producer-er
 
 
 import type {
+  BrushLibraryBatchWriteSummary,
   BrushLibraryRepositoryPort,
 } from "./studio-brush-library-repository";
 import type { StudioBrushPackFormat } from "./studio-brush-pack-format";
@@ -104,6 +95,14 @@ const MIN_STROKE_WIDTH = 1;
 const MAX_STROKE_WIDTH = 80;
 const MIN_OPACITY = 0.05;
 
+import {
+  StudioBrushPackPreserveOnlyError, StudioBrushProgramImportError,
+  packWarning, passthroughWarning, withWarningPrefix,
+  type StudioBrushPackCommitResult,
+  type StudioBrushPackImportResult,
+  type StudioBrushPackRights,
+  type StudioBrushPackWarning,
+} from "./studio-brush-pack-import-types";
 export {
   StudioBrushPackPreserveOnlyError,
   StudioBrushProgramImportError,
@@ -463,12 +462,14 @@ export async function importStudioCspToolBytes(
     parsed = await importCspToolFile(bytes, { kind, sqliteReader, signal });
   } catch (cause) {
     if (cause instanceof CspToolFileError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화하고, 하위 파서의 동적
-      // 문자열은 params.detail 패스스루, kind는 식별자 params로 싣는다.
+      // A4 D4 조건부 묶음 7호 (R21): 하위 파서 코드를 params.causeCode로
+      // 전파한다(파서 접두 포함). detail은 병행 유지 — 표시 지점 리졸버가
+      // causeCode를 gateway 구간 키로 해석해 detail을 대체하고, 해석할 수
+      // 없는 코드(csp:aborted 등 표시 제외)에서는 detail이 그대로 남는다.
       throw new StudioBrushProgramImportError(
         "cspReadFailed",
         kind,
-        { kind: kind.toUpperCase(), detail: ` ${cause.message}` },
+        { kind: kind.toUpperCase(), detail: ` ${cause.message}`, causeCode: `csp:${cause.code}` },
         { cause },
       );
     }
@@ -519,11 +520,11 @@ export async function importStudioKritaBundleBytes(
     parsed = await parseBundle(bytes, options);
   } catch (cause) {
     if (cause instanceof KritaBundleError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
+      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
       throw new StudioBrushProgramImportError(
         "bundleReadFailed",
         "bundle",
-        { detail: ` ${cause.message}` },
+        { detail: ` ${cause.message}`, causeCode: `bundle:${cause.code}` },
         { cause },
       );
     }
@@ -576,11 +577,12 @@ export function importStudioMybBytes(
     parsed = importMybBrush(bytes, presetId, presetDisplayName("", fileName));
   } catch (error) {
     if (error instanceof MybParseError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
+      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
+      // 단 동적 삽입분(UTF-8 디코더·zod 원문)은 생산자 message에 그대로 남는 잔존이다.
       throw new StudioBrushProgramImportError(
         "mybReadFailed",
         "myb",
-        { detail: ` ${error.message}` },
+        { detail: ` ${error.message}`, causeCode: `myb:${error.code}` },
         { cause: error },
       );
     }
@@ -621,11 +623,11 @@ export function importStudioKppBytes(
     parsed = parseKppPreset(bytes);
   } catch (error) {
     if (error instanceof KppParseError) {
-      // 부분 잔존 (A4 D4 R14): 정적 접두만 코드화, 동적 원인은 params.detail 패스스루.
+      // A4 D4 조건부 묶음 7호 (R21): causeCode 전파 (detail 병행 유지 — 위 csp 주석 참조).
       throw new StudioBrushProgramImportError(
         "kppReadFailed",
         "kpp",
-        { detail: ` ${error.message}` },
+        { detail: ` ${error.message}`, causeCode: `kpp:${error.code}` },
         { cause: error },
       );
     }

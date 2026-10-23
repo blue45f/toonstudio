@@ -171,6 +171,30 @@ describe("libmypaint .myb import draws", () => {
     const bytes = new TextEncoder().encode(JSON.stringify({ version: 2, settings: {} }));
     expect(() => importStudioMybBytes(bytes, "old.myb")).toThrow(StudioBrushProgramImportError);
   });
+
+  it("propagates the myb parser code as params.causeCode alongside the detail passthrough (R21)", () => {
+    const bytes = new TextEncoder().encode(JSON.stringify({ version: 2, settings: {} }));
+    let caught: unknown;
+    try { importStudioMybBytes(bytes, "old.myb"); } catch (error) { caught = error; }
+    expect(caught).toMatchObject({
+      name: "StudioBrushProgramImportError",
+      code: "mybReadFailed",
+      format: "myb",
+      params: { causeCode: "myb:unsupported-version" },
+      cause: expect.objectContaining({ name: "MybParseError", code: "unsupported-version" }),
+    });
+    expect((caught as StudioBrushProgramImportError).params?.detail).toContain("unsupported .myb version 2");
+  });
+
+  it("propagates invalid-utf8 for bytes that are not UTF-8 JSON (R21)", () => {
+    let caught: unknown;
+    try { importStudioMybBytes(new Uint8Array([0xff, 0xfe, 0xfd]), "bad.myb"); } catch (error) { caught = error; }
+    expect(caught).toMatchObject({
+      code: "mybReadFailed",
+      params: { causeCode: "myb:invalid-utf8" },
+      cause: expect.objectContaining({ name: "MybParseError", code: "invalid-utf8" }),
+    });
+  });
 });
 
 describe("Krita .kpp import draws", () => {
@@ -216,6 +240,19 @@ describe("Krita .kpp import draws", () => {
     expect(() => importStudioKppBytes(new Uint8Array([1, 2, 3, 4]), "broken.kpp")).toThrow(
       StudioBrushProgramImportError,
     );
+  });
+
+  it("propagates the kpp parser code as params.causeCode alongside the detail passthrough (R21)", () => {
+    let caught: unknown;
+    try { importStudioKppBytes(new Uint8Array([1, 2, 3, 4]), "broken.kpp"); } catch (error) { caught = error; }
+    expect(caught).toMatchObject({
+      name: "StudioBrushProgramImportError",
+      code: "kppReadFailed",
+      format: "kpp",
+      params: { causeCode: "kpp:not-png" },
+      cause: expect.objectContaining({ name: "KppParseError", code: "not-png" }),
+    });
+    expect((caught as StudioBrushProgramImportError).params?.detail).toContain("PNG signature");
   });
 });
 

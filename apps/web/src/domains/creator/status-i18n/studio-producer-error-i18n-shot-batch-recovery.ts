@@ -8,10 +8,10 @@
  * ko 값은 이관 전 생산자 원문과 글자 단위 동일하고, en은 신규 번역이다.
  * params는 전부 없다(전 문구 정적).
  *
- * degradedReason 4종은 예외다: 세션 객체에 문자열로 저장돼 요약 타입·호스트 상태·
- * 패널 3곳까지 넓게 소비되므로(타입 선언 5곳, 문자열 렌더 4곳), {code}로 바꾸는 대신
- * 생산 지점(acquire·degrade 경계)에서만 이 모듈로 해석해 문자열을 저장하는
- * 집계자 예외로 둔다 — 저장 문자열은 생산 시점 로케일로 고정된다.
+ * degradedReason 4종은 R12에 집계자 예외(생산 시점 해석·문자열 저장)였으나, R16 실측에서
+ * 전체 소비면 열거 가능(타입 선언 5곳·표시 4곳·전달 호스트 22곳)과 영속 경계 없음
+ * (영속 레코드 Job·Lease·Artifact·SQLite catalog 어디에도 이 필드가 없음)이 확인돼
+ * (a) 표시 시점 해석으로 전환했다 — 세션·요약은 {code, params} 객체를 싣고 표시 지점에서만 해석한다.
  */
 
 import {
@@ -22,7 +22,14 @@ import {
 } from "@/shared/lib/i18n";
 
 import type {
+  StudioBg3dShotBatchRecoveryDegradedReason,
+  StudioBg3dShotBatchRecoveryDegradedReasonCode,
   StudioBg3dShotBatchRecoveryErrorSubcode,
+} from "../bg3d/studio-bg3d-shot-batch-recovery-error";
+
+export type {
+  StudioBg3dShotBatchRecoveryDegradedReason,
+  StudioBg3dShotBatchRecoveryDegradedReasonCode,
 } from "../bg3d/studio-bg3d-shot-batch-recovery-error";
 
 
@@ -403,13 +410,7 @@ const RECOVERY_ERROR_KO: Readonly<Record<StudioBg3dShotBatchRecoveryErrorSubcode
   "corrupt.sqliteJobPlanMismatch": "컷 배치 SQLite Job이 현재 Plan과 다릅니다.",
 };
 
-/** degradedReason 저장 문자열의 사유 코드 (집계자 예외 — 생산 지점에서만 해석한다). */
-export type StudioBg3dShotBatchRecoveryDegradedReasonCode =
-  | "indexedDbUnavailable"
-  | "quotaExceeded"
-  | "indexedDbError"
-  | "webLocksUnavailable";
-
+/** degradedReason 사유 코드·구조화 타입의 정본은 bg3d/studio-bg3d-shot-batch-recovery-error.ts다 (위 re-export 참조). */
 const RECOVERY_DEGRADED_KEYS: Readonly<Record<StudioBg3dShotBatchRecoveryDegradedReasonCode, string>> = {
   indexedDbUnavailable: "studio.producerError.shotBatchRecovery.degraded.indexedDbUnavailable",
   quotaExceeded: "studio.producerError.shotBatchRecovery.degraded.quotaExceeded",
@@ -450,12 +451,12 @@ export function resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause: unknown)
 }
 
 /**
- * 집계자 예외 전용 해석 (샷 배치 복구 degradedReason): 세션의 degradedReason은
- * 문자열로 고정된 저장값이라, 생산 지점(acquire·degrade 경계)에서만 이 함수로 해석해
- * 저장한다. 표시 지점은 저장 문자열을 그대로 렌더한다.
+ * 표시 지점 전용 해석 (샷 배치 복구 degradedReason, A4 D4 R16 (a) 전환): 세션·요약의
+ * degradedReason은 {code, params} 구조화 사유이며, 표시 지점 4곳(export-run 경고 합성·
+ * ViewPanelContent·ProductionMultiPassExporterPanel·ProductionWorkflowPanel)에서만 이 함수로 해석한다.
  */
 export function resolveStudioBg3dShotBatchRecoveryDegradedReason(
-  code: StudioBg3dShotBatchRecoveryDegradedReasonCode,
+  reason: StudioBg3dShotBatchRecoveryDegradedReason,
 ): string {
-  return resolveProducerError(RECOVERY_DEGRADED_KEYS[code], RECOVERY_DEGRADED_KO[code]);
+  return resolveProducerError(RECOVERY_DEGRADED_KEYS[reason.code], RECOVERY_DEGRADED_KO[reason.code], reason.params);
 }

@@ -5,5 +5,5 @@
   "apiError.notFound": "Into efunwayo ayitholakalanga.",
   "apiError.unsupportedType": "Uhlobo lokuqukethwe olungasekelwa.",
   "apiError.inactiveAccount": "Ama-akhawunti angasebenzi awakwazi ukusebenzisa izici zomlawuli.",
-  "apiError.settlementFailed": "Ukucubungula ukuhlaziywa kwezimali kwehlulekile."
+  "apiError.settlementFailed": "Ukucubungula ukukhokha kwehlulekile. Sicela uzame futhi emva kwesikhashana."
 }

@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Ma ei suutnud tagasihoidliku uuringu laadida.",
-  "feedback.thankYou": "Tänan teie väärtusliku tagasisidet!",
+  "feedback.loadError": "Tagasiside küsitlust ei õnnestunud laadida. Proovige hetke pärast uuesti.",
+  "feedback.thankYou": "Täname teid väärtusliku tagasiside eest!",
   "feedback.anonymousNote": "Teie vastused on rangelt anonüümsed.",
-  "feedback.notAtAll": "Ei midagi.",
-  "feedback.definitely": "Kindlasti."
+  "feedback.notAtAll": "Üldse mitte",
+  "feedback.definitely": "Kindlasti"
 }

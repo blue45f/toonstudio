@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Kirish kerak.",
-  "apiError.adminRequired": "Administrator huquqlarini tekshirish mumkin emas.",
-  "apiError.adminOnlyPage": "Ushbu sahifa faqat boshqaruvchilar uchun.",
-  "apiError.notFound": "So'ragan mahsulot topilmadi.",
-  "apiError.unsupportedType": "Qo'llab-quvvatlanmagan tarkib turi.",
-  "apiError.inactiveAccount": "Faoliyatsiz hisobvaraqlarda boshqaruvchining xususiyatlaridan foydalanish mumkin emas.",
-  "apiError.settlementFailed": "Qarzlarni qayta ishlash muvaffaqiyatsiz tugadi."
+  "apiError.adminRequired": "Administrator ruxsatini tekshirib boʻlmadi.",
+  "apiError.adminOnlyPage": "Bu sahifa faqat administratorlar uchun.",
+  "apiError.notFound": "Soʻralgan element topilmadi.",
+  "apiError.unsupportedType": "Qoʻllab-quvvatlanmagan kontent turi.",
+  "apiError.inactiveAccount": "Faol boʻlmagan hisoblar administrator funksiyalaridan foydalana olmaydi.",
+  "apiError.settlementFailed": "Hisob-kitob amalga oshmadi. Iltimos, birozdan soʻng yana urinib koʻring."
 }

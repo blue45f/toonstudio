@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Kontoinhaber",
   "revenue.payout.holderPlaceholder": "Name des Inhabers",
   "revenue.payout.mockNote": "Dies ist vorerst eine Testanfrage. Echte Auszahlungen werden über die Abrechnungs-Pipeline im Backend verarbeitet.",
+  "revenue.payout.notAvailableBody": "Auszahlungsanfragen werden derzeit noch nicht tatsächlich entgegengenommen, und eingegebene Kontodaten werden nicht gespeichert. Sobald Anfragen möglich sind, können Sie sie direkt hier stellen und Verlauf und Status Ihrer Anfragen verfolgen.",
+  "revenue.payout.notAvailableTitle": "Auszahlungsanfragen sind noch nicht verfügbar",
   "revenue.payout.submit": "Auszahlung anfordern",
   "revenue.payout.title": "Auszahlung",
   "revenue.settlement.belowMinimum": "Verfügbar ab {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Vorabzugang",
   "revenue.source.market": "Marktverkäufe",
   "revenue.source.membership": "Mitgliedschaft",
-  "revenue.source.tips": "Trinkgelder",
-  "revenue.payout.notAvailableBody": "Auszahlungsanfragen werden derzeit noch nicht tatsächlich entgegengenommen, und eingegebene Kontodaten werden nicht gespeichert. Sobald Anfragen möglich sind, können Sie sie direkt hier stellen und Verlauf und Status Ihrer Anfragen verfolgen.",
-  "revenue.payout.notAvailableTitle": "Auszahlungsanfragen sind noch nicht verfügbar"
+  "revenue.source.tips": "Trinkgelder"
 }

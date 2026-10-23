@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Vstop je potreben.",
-  "apiError.adminRequired": "Dopust upravitelja ni mogoče preveriti.",
-  "apiError.adminOnlyPage": "Ta stran je omejena na upravitelje.",
-  "apiError.notFound": "Poželel izdelek ni bil mogoče najti.",
-  "apiError.unsupportedType": "Nepodporena vrsta vsebine.",
-  "apiError.inactiveAccount": "Neaktivni računi ne morejo uporabljati funkcij upravitelja.",
-  "apiError.settlementFailed": "Zdelovanje poravnave ni uspelo."
+  "apiError.loginRequired": "Potrebna je prijava.",
+  "apiError.adminRequired": "Dovoljenj skrbnika ni bilo mogoče preveriti.",
+  "apiError.adminOnlyPage": "Ta stran je omejena na skrbnike.",
+  "apiError.notFound": "Zahtevanega elementa ni bilo mogoče najti.",
+  "apiError.unsupportedType": "Nepodprta vrsta vsebine.",
+  "apiError.inactiveAccount": "Neaktivni računi ne morejo uporabljati funkcij skrbnika.",
+  "apiError.settlementFailed": "Obdelava poravnave ni uspela. Poskusite znova čez trenutek."
 }

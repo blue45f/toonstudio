@@ -7,10 +7,10 @@
   "common.retry": "Provo sërish",
   "common.retry.short": "Provo sërish",
   "common.backToTop": "Kthehu në krye",
-  "common.backToHome": "Get home",
+  "common.backToHome": "Shko në faqen kryesore",
   "common.loading.search": "Po kërkon…",
   "common.notFoundWithQuery": "Nuk ka rezultate për '{query}'.",
-  "common.openSearch": "Gjeni atë në Search →",
-  "common.loading.empty": "️️️️️️️️️️️️️️️️",
-  "common.retry.all": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️"
+  "common.openSearch": "Gjeni te Kërkimi →",
+  "common.loading.empty": "Nuk u kthyen të dhëna.",
+  "common.retry.all": "Provo sërish ose kthehu në faqen kryesore."
 }

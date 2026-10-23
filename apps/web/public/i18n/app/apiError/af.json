@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Inskrywing is nodig.",
+  "apiError.loginRequired": "Aanmelding word vereis.",
   "apiError.adminRequired": "Admin-toestemmings kon nie verifieer word nie.",
   "apiError.adminOnlyPage": "Hierdie bladsy is beperk tot administrateurs.",
   "apiError.notFound": "Die gevraagde item kon nie gevind word nie.",
-  "apiError.unsupportedType": "Ondersteun nie tipe inhoud.",
-  "apiError.inactiveAccount": "Aktiewe rekeninge kan nie bestuurder funksies gebruik nie.",
-  "apiError.settlementFailed": "Afwikkeling verwerking misluk."
+  "apiError.unsupportedType": "Inhoudstipe word nie ondersteun nie.",
+  "apiError.inactiveAccount": "Onaktiewe rekeninge kan nie administrateurfunksies gebruik nie.",
+  "apiError.settlementFailed": "Verrekeningsverwerking het misluk. Probeer asseblief oor ’n oomblik weer."
 }

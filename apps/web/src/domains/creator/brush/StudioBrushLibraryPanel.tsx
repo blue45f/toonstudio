@@ -1,4 +1,5 @@
 import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES } from "./studio-brush-original-source";
+import { r45BrushStatusText } from "./r45-cat1-status-i18n";
 import { StudioBrushOriginalSourceActions } from "./StudioBrushOriginalSourceActions";
 import { frozenStatusText } from "../studio-frozen-status-i18n";
 // 브러시 라이브러리 패널 — OPFS SQLite를 제품 권위로 사용하고 StudioPage가 소유한 배열은
@@ -8,8 +9,7 @@ import { frozenStatusText } from "../studio-frozen-status-i18n";
 // 내보낸다. MYB/KPP 는 그릴 수 있는 범위만 등록하고 나머지는 경고로 노출한다
 // (studio-brush-pack-import.ts).
 import {
-  Check,
-  ChevronDown,
+  Check, ChevronDown,
   Copy,
   Download,
   LoaderCircle,
@@ -1216,7 +1216,7 @@ export function StudioBrushLibraryPanel({
               className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60 lg:min-h-9"
             >
               {pageLoading ? <LoaderCircle size={13} className="animate-spin" aria-hidden /> : null}
-              {pageLoading ? frozenStatusText("studio.frozenStatus.brush.loadingMore", "불러오는 중…") : `더 불러오기 (${brushes.length}/${displayedTotal})`}
+              {pageLoading ? frozenStatusText("studio.frozenStatus.brush.loadingMore", "불러오는 중…") : r45BrushStatusText("r45cat1.brush.library.loadMore", { loaded: brushes.length, total: displayedTotal }, "더 불러오기 ({loaded}/{total})")}
             </button>
           ) : null}
         </>

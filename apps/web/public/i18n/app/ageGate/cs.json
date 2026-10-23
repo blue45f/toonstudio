@@ -1,17 +1,17 @@
 {
   "ageGate.title": "Kontrola obsahu pro dospělé",
-  "ageGate.description": "Vložte datum narození, abyste ověřili, že jste 19 let nebo starší.",
+  "ageGate.description": "Zadejte své datum narození a ověřte, že vám je 19 let nebo více.",
   "ageGate.birthDateLabel": "Datum narození",
   "ageGate.birthYearLabel": "Rok narození",
   "ageGate.birthYearPlaceholder": "Rok",
   "ageGate.birthMonthLabel": "Měsíc narození",
   "ageGate.birthMonthPlaceholder": "Měsíc",
-  "ageGate.birthDayLabel": "Dne narození",
+  "ageGate.birthDayLabel": "Den narození",
   "ageGate.birthDayPlaceholder": "Den",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Vy jste nesplnil věkové požadavky.",
+  "ageGate.deniedMessage": "Nesplnili jste věkový požadavek.",
   "ageGate.cancel": "Zrušit",
-  "ageGate.confirm": "Potvrzení"
+  "ageGate.confirm": "Potvrdit"
 }

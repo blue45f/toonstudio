@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "תמונה מבוססת",
-  "ad.slotAriaLabel": "חלל פרסום",
-  "ad.slotLabel": "תורם",
-  "ad.slotTitle": "תוכן ספונסרי",
+  "ad.creativeFallbackAlt": "תמונה ממומנת",
+  "ad.slotAriaLabel": "משבצת פרסום",
+  "ad.slotLabel": "ממומן",
+  "ad.slotTitle": "תוכן ממומן",
   "ad.ctaDetails": "צפו בפרטים",
-  "ad.placeholderAriaLabel": "מחזיקי מקומות פרסום",
-  "ad.placeholderText": "אין תוכן ספנסור זמין",
+  "ad.placeholderAriaLabel": "מציין מיקום למודעה",
+  "ad.placeholderText": "אין תוכן ממומן זמין.",
   "ad.tag": "פרסום"
 }

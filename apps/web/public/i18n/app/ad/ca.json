@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Imatge patrocinat",
-  "ad.slotAriaLabel": "Pla de publicitat",
-  "ad.slotLabel": "Sponsorat",
+  "ad.creativeFallbackAlt": "Imatge patrocinada",
+  "ad.slotAriaLabel": "Espai publicitari",
+  "ad.slotLabel": "Patrocinat",
   "ad.slotTitle": "Contingut patrocinat",
-  "ad.ctaDetails": "Visualizació de detalls",
-  "ad.placeholderAriaLabel": "Plaçador de publicitat",
+  "ad.ctaDetails": "Veure els detalls",
+  "ad.placeholderAriaLabel": "Marcador de posició d'anunci",
   "ad.placeholderText": "Cap contingut patrocinat disponible.",
   "ad.tag": "Anunci"
 }

@@ -3,7 +3,7 @@
   "auth.menu.adminPanel": "Consola de administración",
   "auth.menu.profile": "Mi perfil .",
   "auth.menu.settings": "Configuración",
-  "auth.menu.signOut": "Apúntate",
+  "auth.menu.signOut": "Cerrar sesión",
   "auth.menu.fallbackName": "Lector",
   "auth.callback.message.working": "Finalizando el inicio de sesión...",
   "auth.callback.error.badState": "Parámetro de estado inválido.",

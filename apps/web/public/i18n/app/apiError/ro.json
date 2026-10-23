@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Este necesar să te conectezi.",
   "apiError.adminRequired": "Permisiunile administratorului nu au putut fi verificate.",
-  "apiError.adminOnlyPage": "Această pagină este limitată administratorilor.",
-  "apiError.notFound": "Articolul solicitat nu a fost găsit.",
-  "apiError.unsupportedType": "Tip de conținut neînțeles.",
-  "apiError.inactiveAccount": "Conturile inactive nu pot utiliza caracteristicile administratorului.",
-  "apiError.settlementFailed": "Procesarea de decontare a eşuat."
+  "apiError.adminOnlyPage": "Această pagină este rezervată administratorilor.",
+  "apiError.notFound": "Elementul solicitat nu a putut fi găsit.",
+  "apiError.unsupportedType": "Tip de conținut neacceptat.",
+  "apiError.inactiveAccount": "Conturile inactive nu pot utiliza funcțiile de administrator.",
+  "apiError.settlementFailed": "Procesarea decontării a eșuat. Vă rugăm să încercați din nou peste câteva momente."
 }

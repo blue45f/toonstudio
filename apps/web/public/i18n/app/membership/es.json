@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Miembros",
   "membership.creatorPage.statMonthly": "Ingresos recurrentes mensuales",
   "membership.creatorPage.statTiers": "Niveles activos",
+  "membership.creatorPage.statusActive": "{count} niveles están publicados en la pantalla de registro de lectores",
   "membership.creatorPage.subtitle": "Crea niveles de membresía para fans y consulta los ingresos por suscripciones mensuales.",
   "membership.creatorPage.tierList": "Niveles de membresía",
   "membership.creatorPage.tierMembers": "{count} miembros",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "La cantidad que los fans pagan cada mes.",
   "membership.tierEditor.priceLabel": "Precio mensual (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Guardar",
-  "membership.creatorPage.statusActive": "{count} niveles están publicados en la pantalla de registro de lectores"
+  "membership.tierEditor.save": "Guardar"
 }

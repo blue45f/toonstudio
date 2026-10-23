@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "會員數",
   "membership.creatorPage.statMonthly": "每月訂閱總額",
   "membership.creatorPage.statTiers": "已啟用的層級",
+  "membership.creatorPage.statusActive": "{count} 個層級正在讀者加入頁面上公開",
   "membership.creatorPage.subtitle": "建立粉絲會員層級，並查看每月訂閱收益。",
   "membership.creatorPage.tierList": "會員層級列表",
   "membership.creatorPage.tierMembers": "{count} 名會員",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "粉絲每月支付的金額。",
   "membership.tierEditor.priceLabel": "每月價格（韓元）",
   "membership.tierEditor.pricePlaceholder": "{min} ~ {max}",
-  "membership.tierEditor.save": "儲存",
-  "membership.creatorPage.statusActive": "{count} 個層級正在讀者加入頁面上公開"
+  "membership.tierEditor.save": "儲存"
 }

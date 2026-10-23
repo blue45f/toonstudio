@@ -21,6 +21,7 @@ import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-co
 
 import { useT } from "@/shared/lib/i18n";
 import "../studio-bg3d-panel-status-i18n";
+import { resolveStudioBg3dShotBatchRecoveryDegradedReason } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { resolveStudioBg3dProductionBatchPreset } from "./studio-bg3d-production-multipass";
 import { resolveStudioBg3dProductionBatchPresetForLook } from "./studio-bg3d-production-pass-readiness";
 import {
@@ -455,7 +456,7 @@ export function StudioBg3dProductionWorkflowPanel({
               최근 복구 상태 · {batch.recoverySummary.completedShots}/{batch.recoverySummary.totalShots}컷 ·
               {batch.recoverySummary.mode === "durable" ? " 영구 복구" : " 메모리 복구"}
               {batch.recoverySummary.degradedReason
-                ? ` · ${batch.recoverySummary.degradedReason}`
+                ? ` · ${resolveStudioBg3dShotBatchRecoveryDegradedReason(batch.recoverySummary.degradedReason)}`
                 : ""}
             </p>
           ) : null}

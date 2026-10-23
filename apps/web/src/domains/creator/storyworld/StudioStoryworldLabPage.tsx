@@ -38,7 +38,7 @@ import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { resolveStoryworldIssue } from "../status-i18n/studio-producer-error-i18n-storyworld";
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
-import { IssueList, IssuesTab } from "./StudioStoryworldIssues";
+import { IssueList, IssuesTab, resolveStoryworldIssue } from "./StudioStoryworldIssues";
 import { AxisCards, EmptyState, Panel } from "./StudioStoryworldLabShared";
 import { scoreTone } from "./studio-storyworld-lab-display";
 import { StudioStoryworldSettings, type StoryworldSettingsFocus } from "./StudioStoryworldSettings";

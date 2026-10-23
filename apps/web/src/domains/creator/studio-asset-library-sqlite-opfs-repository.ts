@@ -41,14 +41,6 @@ import type {
 } from "./studio-asset-library";
 import type { StudioLocalDatabase } from "./studio-local-database";
 
-import {
-  StudioAssetLibraryCommitAggregateError,
-  StudioAssetLibraryRepositoryError,
-  type StudioAssetLibraryFieldLabelCode,
-  type StudioAssetLibraryOperationCode,
-  type StudioAssetLibraryRepositoryErrorSubcode,
-} from "./studio-asset-library-repository-error";
-
 export const STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE = "studio-asset-library-v12";
 export const STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY = "manifest-v1";
 export const STUDIO_ASSET_LIBRARY_CAS_OWNER = "studio-asset-library-v12";
@@ -80,6 +72,15 @@ const SOURCE_KINDS = new Set<StudioAssetRightsMetadata["sourceKind"]>([
 ]);
 const UTF8 = new TextEncoder();
 const BASE64_CHUNK_BYTES = 24_576;
+
+import {
+  StudioAssetLibraryCommitAggregateError,
+  StudioAssetLibraryRepositoryError,
+  type StudioAssetLibraryFieldLabelCode,
+  type StudioAssetLibraryOperationCode,
+  type StudioAssetLibraryRepositoryErrorCode,
+  type StudioAssetLibraryRepositoryErrorSubcode,
+} from "./studio-asset-library-repository-error";
 
 export {
   StudioAssetLibraryCommitAggregateError,

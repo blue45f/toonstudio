@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} ദിവസത്തെ പിന്തുണക്കാരുടെ നേരത്തെയുള്ള ആക്‌സസ്",
   "paywall.creatorPage.preview": "പ്രിവ്യൂ",
   "paywall.creatorPage.save": "നയം സംരക്ഷിക്കുക",
+  "paywall.creatorPage.statusDaysRange": "നേരത്തെയുള്ള ആക്‌സസ് {min}–{max} ദിവസങ്ങൾ",
+  "paywall.creatorPage.statusDaysSingle": "നേരത്തെയുള്ള ആക്‌സസ് {days} ദിവസങ്ങൾ",
+  "paywall.creatorPage.statusSummary": "{total} നയങ്ങൾ · {active} ഓൺ",
   "paywall.creatorPage.subtitle": "നേരത്തെയുള്ള ആക്‌സസ് സജ്ജമാക്കുക: പിന്തുണക്കാർ ആദ്യം, N ദിവസങ്ങൾക്ക് ശേഷം എല്ലാവർക്കും സൗജന്യം.",
   "paywall.creatorPage.title": "നേരത്തെയുള്ള ആക്‌സസ്",
   "paywall.creatorPage.titleIdLabel": "ശീർഷക ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "വായനക്കാരുടെ കാഴ്ച പ്രിവ്യൂ",
   "paywall.titleNotice.body": "ഈ ശീർഷകം പിന്തുണക്കാർക്ക് {days} ദിവസം നേരത്തെ റിലീസ് ചെയ്യുന്നു. കാത്തിരുന്നാൽ അത് സൗജന്യമാകും.",
   "paywall.titleNotice.label": "നേരത്തെയുള്ള ആക്‌സസ് അറിയിപ്പ്",
-  "paywall.titleNotice.title": "പിന്തുണക്കാരുടെ നേരത്തെയുള്ള ആക്‌സസ് പ്രാബല്യത്തിൽ",
-  "paywall.creatorPage.statusDaysRange": "നേരത്തെയുള്ള ആക്‌സസ് {min}–{max} ദിവസങ്ങൾ",
-  "paywall.creatorPage.statusDaysSingle": "നേരത്തെയുള്ള ആക്‌സസ് {days} ദിവസങ്ങൾ",
-  "paywall.creatorPage.statusSummary": "{total} നയങ്ങൾ · {active} ഓൺ"
+  "paywall.titleNotice.title": "പിന്തുണക്കാരുടെ നേരത്തെയുള്ള ആക്‌സസ് പ്രാബല്യത്തിൽ"
 }

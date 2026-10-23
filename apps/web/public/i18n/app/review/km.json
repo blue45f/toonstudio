@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "បញ្ចប់",
-  "review.progress.binge": "ការបែកបាក់",
-  "review.progress.upcoming": "ផែនការ",
-  "review.progress.abandoned": "បោះបង់ចោល",
-  "review.progress.unknown": "ការរីកចម្រើន លាក់ខ្លួន",
-  "review.spoilerRevealLabel": "បង្ហាញ spoiler"
+  "review.progress.complete": "បានបញ្ចប់",
+  "review.progress.binge": "កំពុងអានបន្តច្រើន",
+  "review.progress.upcoming": "បានគ្រោងទុក",
+  "review.progress.abandoned": "បានបោះបង់",
+  "review.progress.unknown": "វឌ្ឍនភាពត្រូវបានលាក់",
+  "review.spoilerRevealLabel": "បង្ហាញខ្លឹមសារលេចធ្លាយ"
 }

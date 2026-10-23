@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "Општо прашање",
+  "contact.body": "Испраќајте општи прашања за користењето на услугата, сметките и прикажувањето на податоците.",
+  "contact.bizTitle": "Деловни и партнерски прашања",
+  "contact.bizBody": "Поднесувајте деловни предлози, вклучувајќи рекламирање, интеграции на платформи и партнерства за содржини.",
+  "contact.bugTitle": "Пријава за грешка",
+  "contact.bugBody": "Пријавувајте грешки, проблеми со распоредот или аномалии во прикажувањето на податоците."
 }

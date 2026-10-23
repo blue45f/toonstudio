@@ -1,14 +1,14 @@
 {
   "control.language.label": "ພາສາ",
+  "control.language.group.translated": "ການແປທີ່ຄອບຄຸມສູງ",
+  "control.language.group.englishBase": "ການແປອັດຕະໂນມັດ · ໃຊ້ພາສາອັງກິດສຳຮອງ",
   "control.sound.enable": "ເປີດໃຫ້ມີຜົນກະທົບສຽງ",
   "control.sound.disable": "ປິດຜົນສຽງ",
-  "control.theme.dark": "ປ່ຽນໄປສູ່ຮູບແບບໄຟ",
+  "control.theme.dark": "ປ່ຽນໄປໂໝດສະຫວ່າງ",
   "control.theme.light": "ປ່ຽນໄປສູ່ໂຫມດມືດ",
-  "control.settings.open": "ການຕັ້ງຄ່າເປີດ",
-  "control.settings.close": "ການຕັ້ງຄ່າປິດ",
-  "control.cluster.settings": "ສຽງ, ຫົວຂໍ້, ການຄວບຄຸມພາສາ",
-  "control.cluster.open": "ການຕັ້ງຄ່າເປີດ",
-  "control.cluster.tooltip": "ສຽງ, ຫົວຂໍ້, ແລະ ການຕັ້ງຄ່າພາສາ",
-  "control.language.group.translated": "ການແປພາສາທີ່ມີການໂຄສະນາສູງ",
-  "control.language.group.englishBase": "ແປພາສາອັດຕະໂນມັດ · ພາສາອັງກິດ fallback"
+  "control.settings.open": "ເປີດການຕັ້ງຄ່າ",
+  "control.settings.close": "ປິດການຕັ້ງຄ່າ",
+  "control.cluster.settings": "ການຄວບຄຸມສຽງ, ໂໝດສີ ແລະ ພາສາ",
+  "control.cluster.open": "ເປີດການຕັ້ງຄ່າ",
+  "control.cluster.tooltip": "ການຕັ້ງຄ່າສຽງ, ໂໝດສີ ແລະ ພາສາ"
 }

@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Σελίδα δεν βρέθηκε",
-  "page.notFound.message": "Ελέγξτε ξανά το URL ή αναζητήστε τίτλους από την αρχική σελίδα.",
-  "page.notFound.home": "Γύρνα σπίτι.",
   "page.events.board.community": "Πίνακας κοινότητας",
   "page.events.board.official": "Επίσημες εκδηλώσεις",
   "page.events.board.title": "Λίστα εκδηλώσεων",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Δείτε τα οφέλη beta",
   "page.events.hero.secondary": "Πίνακας εκδηλώσεων κοινότητας",
   "page.events.hero.title": "Πίνακας εκδηλώσεων",
+  "page.notFound.home": "Γύρνα σπίτι.",
+  "page.notFound.message": "Ελέγξτε ξανά το URL ή αναζητήστε τίτλους από την αρχική σελίδα.",
   "page.notFound.quip.1": "Α; Αυτό το καρέ δεν έχει σχεδιαστεί ακόμη!",
   "page.notFound.quip.2": "Χαθήκατε πριν ακόμη στεγνώσει το μελάνι.",
   "page.notFound.quip.3": "Τα λέμε στο επόμενο επεισόδιο… πιθανώς!",
   "page.notFound.quip.4": "Ο καλλιτέχνης σχεδιάζει αυτή τη σελίδα αυτή τη στιγμή.",
-  "page.notFound.tapHint": "Πατήστε τους αριθμούς"
+  "page.notFound.tapHint": "Πατήστε τους αριθμούς",
+  "page.notFound.title": "Σελίδα δεν βρέθηκε"
 }

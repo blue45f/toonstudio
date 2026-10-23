@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Titular da conta",
   "revenue.payout.holderPlaceholder": "Nome do titular",
   "revenue.payout.mockNote": "Por agora, este é um pedido simulado. Os levantamentos reais são processados pelo pipeline de liquidação do backend.",
+  "revenue.payout.notAvailableBody": "Os pedidos de levantamento ainda não estão a ser realmente recebidos e quaisquer dados de conta que introduza não são guardados. Quando os pedidos abrirem, poderá candidatar-se aqui mesmo e acompanhar o histórico e o estado dos seus pedidos.",
+  "revenue.payout.notAvailableTitle": "Os pedidos de levantamento ainda não estão disponíveis",
   "revenue.payout.submit": "Pedir levantamento",
   "revenue.payout.title": "Levantamento",
   "revenue.settlement.belowMinimum": "Disponível a partir de {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Acesso antecipado",
   "revenue.source.market": "Vendas no mercado",
   "revenue.source.membership": "Subscrição",
-  "revenue.source.tips": "Donativos",
-  "revenue.payout.notAvailableBody": "Os pedidos de levantamento ainda não estão a ser realmente recebidos e quaisquer dados de conta que introduza não são guardados. Quando os pedidos abrirem, poderá candidatar-se aqui mesmo e acompanhar o histórico e o estado dos seus pedidos.",
-  "revenue.payout.notAvailableTitle": "Os pedidos de levantamento ainda não estão disponíveis"
+  "revenue.source.tips": "Donativos"
 }

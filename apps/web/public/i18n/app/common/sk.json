@@ -1,16 +1,16 @@
 {
-  "common.loading": "Náklad",
-  "common.loading.short": "Náklad",
+  "common.loading": "Načítava sa",
+  "common.loading.short": "Načítava sa",
   "common.close": "Zatvoriť",
   "common.open": "Otvoriť",
   "common.search": "Hľadať",
-  "common.retry": "Skúste znova",
-  "common.retry.short": "Skúste znova",
-  "common.backToTop": "Na vrchol.",
-  "common.backToHome": "Choď domov.",
-  "common.loading.search": "Hľadám...",
-  "common.notFoundWithQuery": "Žiadne výsledky pre \" {query} \".",
-  "common.openSearch": "Nájdite ho pri hľadaní →",
-  "common.loading.empty": "Žiadne údaje sa nevrátili.",
-  "common.retry.all": "Skúste to znova, alebo sa vráťte domov."
+  "common.retry": "Skúsiť znova",
+  "common.retry.short": "Skúsiť znova",
+  "common.backToTop": "Späť hore",
+  "common.backToHome": "Prejsť na domovskú stránku",
+  "common.loading.search": "Hľadám…",
+  "common.notFoundWithQuery": "Žiadne výsledky pre '{query}'.",
+  "common.openSearch": "Nájsť vo vyhľadávaní →",
+  "common.loading.empty": "Neboli vrátené žiadne údaje.",
+  "common.retry.all": "Skúste to znova alebo sa vráťte na domovskú stránku."
 }

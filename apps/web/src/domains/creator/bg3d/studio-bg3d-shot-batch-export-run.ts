@@ -69,8 +69,9 @@ import type { RefObject } from "react";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
 import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
-import { resolveStudioBg3dShotBatchRecoveryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
+import { resolveStudioBg3dShotBatchRecoveryDegradedReason, resolveStudioBg3dShotBatchRecoveryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
+import { resolveBg3dShotBatchArchiveErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-shot-batch-archive";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
 export interface StudioBg3dShotBatchProgress {
@@ -86,7 +87,7 @@ export interface StudioBg3dShotBatchRecoverySummary {
   readonly totalShots: number;
   readonly mode: "durable" | "memory";
   readonly downloadRequested?: boolean;
-  readonly degradedReason?: string | null;
+  readonly degradedReason?: StudioBg3dShotBatchRecoverySession["degradedReason"];
 }
 
 /**
@@ -975,9 +976,9 @@ export function createStudioBg3dShotBatchExportRunner(
       const recoveryWarning = recoveryTransitionFailed
         ? " 복구 상태 전이를 기록하지 못해 다음 실행에서 현재 컷을 다시 검증합니다."
         : recoverySession.degradedReason
-          ? ` ${recoverySession.degradedReason}`
+          ? ` ${resolveStudioBg3dShotBatchRecoveryDegradedReason(recoverySession.degradedReason)}`
           : "";
-      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause) ?? resolveBg3dShotBatchArchiveErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message.trim() : "");
       const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {

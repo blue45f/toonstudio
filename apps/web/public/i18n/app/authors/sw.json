@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "MTAJIRI WA MAANDIKO",
+  "authors.eyebrow": "ORODHA YA WAANDISHI",
   "authors.title": "Waandishi",
-  "authors.desc": "Wandikaji walioorodheshwa kwa idadi ya kazi. Bonyeza mwandishi ili uone majina yao, viwango, na mkahawa wa mashabiki katika mahali pamoja.",
-  "authors.search": "Jina la mwandishi wa utafutaji",
-  "authors.error": "Sikuweza kupakia orodha ya waandishi.",
-  "authors.empty": "hakuna mwandishi anayefanana.",
+  "authors.desc": "Waandishi wamepangwa kwa idadi ya kazi. Gusa mwandishi ili kuona kazi zake, ukadiriaji wake, na mkahawa wake wa mashabiki katika sehemu moja.",
+  "authors.search": "Tafuta jina la mwandishi",
+  "authors.error": "Imeshindwa kupakia orodha ya waandishi. Tafadhali jaribu tena baada ya muda mfupi.",
+  "authors.empty": " — hakuna mwandishi anayelingana.",
   "authors.allOf": "ya",
   "authors.topOf": "· juu",
   "authors.people": "",
-  "authors.works": "kazi",
-  "authors.views": "Maoni",
-  "authors.pencafe": "Muumba shabiki cafe",
-  "authors.stats": "Top {shown} kutoka {total} waandishi",
-  "authors.noName": "Muumba"
+  "authors.works": " kazi",
+  "authors.views": "Matazamo",
+  "authors.pencafe": "Mkahawa wa mashabiki wa mtayarishaji",
+  "authors.stats": "Waandishi bora {shown} kati ya {total}",
+  "authors.noName": "Mtayarishaji"
 }

@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Autoriõigused ja sisu",
-  "copyright.section1.title": "Sisaldusallikad ja põhimõtted",
-  "copyright.section1.body": "ToonStudio on indeks- ja avastuste platvorm, mis kokkuvõtab avalikku kataloogi metadata (titellid, autorid, žanrid jne) veebifilmide/veebielugu platvormidest.",
-  "copyright.section2.title": "Katuskujutused",
-  "copyright.section2.body": "Peakõne pildid on tunnistusminnaalid ja võrdlus originaalplatvormi peakõneid, kus on võimalik alliküsimused.",
+  "copyright.title": "Autoriõigused ja sisu teatis",
+  "copyright.section1.title": "Sisu allikad ja põhimõtted",
+  "copyright.section1.body": "ToonStudio on indeksi- ja avastusplatvorm, mis koondab veebikoomiksi/veebiromaani platvormide avaliku kataloogi metaandmeid (pealkirjad, autorid, žanrid jne). See ei majuta ega levita peatükkide põhisisu; lugemine suunatakse eranditult ametlike linkide kaudu.",
+  "copyright.section2.title": "Kaanepildid",
+  "copyright.section2.body": "Kaanepildid toimivad tuvastavate pisipiltidena ja viitavad võimaluse korral originaalplatvormi kaantele koos allikalinkidega. Kuvamise saab õiguste omaniku taotlusel või poliitika uuendamisel kohe keelata.",
   "copyright.section3.title": "Metrikad ja läbipaistvus",
   "copyright.section4.title": "Õiguste teatis",
-  "copyright.section5.title": "Autoriõiguse rikkumise teatis ja lõpetamine",
-  "copyright.section5.body": "Kui te arvate, et metaandmed või katused rikkuvad teie õigusi, esitage palun küsitlus pealkirjaga, URL-ga ja omandi tõestusega.",
-  "copyright.leaveInquiry": "Küsimus →"
+  "copyright.section5.title": "Autoriõiguse rikkumise teatis ja eemaldamine",
+  "copyright.section5.body": "Kui arvate, et metaandmed või kaaned rikuvad teie õigusi, esitage päring koos pealkirja, URL-i ja omandiõiguse tõendiga.",
+  "copyright.leaveInquiry": "Esita päring →"
 }

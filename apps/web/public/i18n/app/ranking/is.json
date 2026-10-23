@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Skoða einkunnargreiningu",
-  "ranking.metric.views": "Skoðanir",
-  "ranking.why": "Af hverju?",
-  "ranking.breakdownTitle": "Skorargreining",
+  "ranking.detailTitle": "Sjá sundurliðun stiga",
+  "ranking.metric.views": "Áhorf",
+  "ranking.why": "Af hverju",
+  "ranking.breakdownTitle": "Sundurliðun stiga",
   "ranking.totalScore": "Heildarstig",
-  "ranking.breakdownDescription": "Útreiknað með þyngd á axli og sérstöku normalisering."
+  "ranking.breakdownDescription": "Reiknað með vogum ása og sérstillingu fyrir hvern titil."
 }

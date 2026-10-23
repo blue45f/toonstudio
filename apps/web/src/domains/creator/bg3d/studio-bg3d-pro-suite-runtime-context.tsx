@@ -8,6 +8,7 @@ import type {
   StudioBg3dShot,
 } from "./studio-bg3d-scene-document";
 import type { StudioBg3dShotBatchPass } from "./studio-bg3d-shot-batch-pass-catalog";
+import type { StudioBg3dShotBatchRecoveryDegradedReason } from "./studio-bg3d-shot-batch-recovery-error";
 import type { StudioBg3dProfessionalRuntimeReadiness } from "./studio-bg3d-professional-runtime-readiness";
 
 export interface StudioBg3dProductionBatchProgress {
@@ -22,7 +23,7 @@ export interface StudioBg3dProductionBatchRecoverySummary {
   readonly totalShots: number;
   readonly mode: "durable" | "memory";
   readonly downloadRequested?: boolean;
-  readonly degradedReason?: string | null;
+  readonly degradedReason?: StudioBg3dShotBatchRecoveryDegradedReason | null;
 }
 
 /**

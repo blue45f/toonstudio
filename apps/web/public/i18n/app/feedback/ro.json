@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Nu am putut încărca sondajul de feedback.",
-  "feedback.thankYou": "Vă mulţumesc pentru feedback-ul vostru valoros!",
-  "feedback.anonymousNote": "Răspunsurile tale sunt păstrate strict anonim.",
-  "feedback.notAtAll": "Nu, nu, nu.",
-  "feedback.definitely": "Cu siguranţă."
+  "feedback.loadError": "Nu s-a putut încărca sondajul de feedback. Vă rugăm să încercați din nou peste câteva momente.",
+  "feedback.thankYou": "Vă mulțumim pentru feedbackul dumneavoastră valoros!",
+  "feedback.anonymousNote": "Răspunsurile dumneavoastră sunt păstrate strict anonime.",
+  "feedback.notAtAll": "Deloc",
+  "feedback.definitely": "Cu siguranță"
 }

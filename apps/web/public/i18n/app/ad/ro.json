@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Imagini sponsorizate",
-  "ad.slotAriaLabel": "Locul de publicitate",
-  "ad.slotLabel": "Sponsoriate",
+  "ad.creativeFallbackAlt": "Imagine sponsorizată",
+  "ad.slotAriaLabel": "Spațiu publicitar",
+  "ad.slotLabel": "Sponsorizat",
   "ad.slotTitle": "Conținut sponsorizat",
   "ad.ctaDetails": "Vezi detalii",
-  "ad.placeholderAriaLabel": "Locul de publicitate",
-  "ad.placeholderText": "Nu există conţinut sponsorat.",
+  "ad.placeholderAriaLabel": "Substituent pentru reclamă",
+  "ad.placeholderText": "Nu există conținut sponsorizat disponibil.",
   "ad.tag": "Anunț"
 }

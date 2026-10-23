@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Vedeți scorul de despartire",
-  "ranking.metric.views": "Vedeţi",
-  "ranking.why": "De ce ?",
-  "ranking.breakdownTitle": "Răspândirea scorului",
+  "ranking.detailTitle": "Vizualizați detalierea scorului",
+  "ranking.metric.views": "Vizualizări",
+  "ranking.why": "De ce",
+  "ranking.breakdownTitle": "Detalierea scorului",
   "ranking.totalScore": "Scorul total",
   "ranking.breakdownDescription": "Calculat cu greutăți ale axei și normalizare specifică titlului."
 }

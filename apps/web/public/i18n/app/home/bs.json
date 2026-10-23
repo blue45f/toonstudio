@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Širene priče,",
-  "home.hero.titleShimmer": "Jedini indeks",
+  "home.hero.titleLine1": "Rasute priče,",
+  "home.hero.titleShimmer": "Jedan indeks",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Pretražite Naver Webtoon, Seriju i Kakao Webtoon, a zatim brzo sužite šta ćete čitati koristeći signale u realnom vremenu i preferencije čitaoca.",
-  "home.hero.searchButton": "Nazivovi pretraživanja, stvaraoci, tagovi",
+  "home.hero.description": "Pretražite Naver Webtoon, Series i Kakao Webtoon, a zatim brzo suzite šta ćete čitati koristeći signale uživo i preferencije čitalaca.",
+  "home.hero.searchButton": "Pretraži naslove, kreatore, oznake",
   "home.hero.rankingButton": "Prikaži jedinstveno rangiranje",
   "home.hero.studioLink": "Studio kreatora",
-  "home.hero.createLink": "Članstvo",
+  "home.hero.createLink": "Tabla kreatora",
   "home.hero.stats.titles": "Naslovi",
   "home.hero.stats.platforms": "Platforme za objavljivanje",
   "home.hero.stats.genres": "Spektrum žanrova",
   "home.hero.stats.reviews": "Recenzije čitatelja",
-  "home.loadError": "Nisam mogao da učinim podatke o kući.",
+  "home.loadError": "Nije moguće učitati podatke početne stranice.",
   "home.creatorTitle": "Od ideje do prve scene"
 }

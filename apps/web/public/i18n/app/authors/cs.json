@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "PŘÍKAZÍ PŘÍKAZÍ",
-  "authors.title": "Psaní",
-  "authors.desc": "Psaní autorů podle počtu dílů: klikněte na autora a podívejte se na jejich názvy, hodnocení a fanouškovi na jednom místě.",
-  "authors.search": "Jméno autora vyhledávání",
-  "authors.error": "Neudělal jsem seznam autorů.",
+  "authors.eyebrow": "ADRESÁŘ AUTORŮ",
+  "authors.title": "Autoři",
+  "authors.desc": "Autoři seřazení podle počtu děl. Klepněte na autora a na jednom místě uvidíte jeho díla, hodnocení a fanouškovskou kavárnu.",
+  "authors.search": "Hledat jméno autora",
+  "authors.error": "Seznam autorů se nepodařilo načíst. Zkuste to prosím za chvíli znovu.",
   "authors.empty": "žádný odpovídající autor.",
   "authors.allOf": "z",
-  "authors.topOf": "· horní",
+  "authors.topOf": "· z nejlepších",
   "authors.people": "",
-  "authors.works": "díla",
-  "authors.views": "výhledy",
-  "authors.pencafe": "Stvořitelská fanoušková kavárna",
-  "authors.stats": "Top {shown} z autorů {total}",
-  "authors.noName": "Stvořitel"
+  "authors.works": " děl",
+  "authors.views": "zhlédnutí",
+  "authors.pencafe": "Fanouškovská kavárna tvůrce",
+  "authors.stats": "{shown} nejlepších z {total} autorů",
+  "authors.noName": "Tvůrce"
 }

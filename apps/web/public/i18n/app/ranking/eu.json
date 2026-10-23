@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Ikuspuntuen zatitzea",
-  "ranking.metric.views": "Ikuspegiak",
+  "ranking.detailTitle": "Ikusi puntuazioaren xehetasuna",
+  "ranking.metric.views": "Ikustaldiak",
   "ranking.why": "Zergatik?",
-  "ranking.breakdownTitle": "Puntuak banatu",
-  "ranking.totalScore": "Puntuaketa osoa",
-  "ranking.breakdownDescription": "Pisuak eta izenburuaren arabera normalizazioa erabiliz kalkulatua."
+  "ranking.breakdownTitle": "Puntuazioaren xehetasuna",
+  "ranking.totalScore": "Puntuazio osoa",
+  "ranking.breakdownDescription": "Ardatz-pisuak eta izenburu bakoitzeko normalizazioa erabiliz kalkulatuta."
 }

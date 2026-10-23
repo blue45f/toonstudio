@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "การเข้าถึงล่วงหน้าสำหรับผู้สนับสนุน {days} วัน",
   "paywall.creatorPage.preview": "ตัวอย่าง",
   "paywall.creatorPage.save": "บันทึกนโยบาย",
+  "paywall.creatorPage.statusDaysRange": "เข้าถึงล่วงหน้า {min}–{max} วัน",
+  "paywall.creatorPage.statusDaysSingle": "เข้าถึงล่วงหน้า {days} วัน",
+  "paywall.creatorPage.statusSummary": "นโยบาย {total} รายการ · เปิดอยู่ {active} รายการ",
   "paywall.creatorPage.subtitle": "ตั้งค่าการเข้าถึงล่วงหน้า: ผู้สนับสนุนอ่านก่อน และฟรีสำหรับทุกคนหลังจากผ่านไป N วัน",
   "paywall.creatorPage.title": "จัดการการเข้าถึงล่วงหน้า",
   "paywall.creatorPage.titleIdLabel": "ID เรื่อง",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "ตัวอย่างมุมมองผู้อ่าน",
   "paywall.titleNotice.body": "เรื่องนี้เผยแพร่ให้ผู้สนับสนุนก่อน {days} วัน จะฟรีหากคุณรอ",
   "paywall.titleNotice.label": "ประกาศการเข้าถึงล่วงหน้า",
-  "paywall.titleNotice.title": "การเข้าถึงล่วงหน้าสำหรับผู้สนับสนุนกำลังมีผล",
-  "paywall.creatorPage.statusDaysRange": "เข้าถึงล่วงหน้า {min}–{max} วัน",
-  "paywall.creatorPage.statusDaysSingle": "เข้าถึงล่วงหน้า {days} วัน",
-  "paywall.creatorPage.statusSummary": "นโยบาย {total} รายการ · เปิดอยู่ {active} รายการ"
+  "paywall.titleNotice.title": "การเข้าถึงล่วงหน้าสำหรับผู้สนับสนุนกำลังมีผล"
 }

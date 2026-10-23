@@ -1,17 +1,17 @@
 {
-  "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
+  "home.hero.eyebrow": "וובטון × רומן רשת",
   "home.hero.titleLine1": "סיפורים מפוזרים,",
   "home.hero.titleShimmer": "אינדיקס אחד",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "חפש ב-Naver Webtoon, Series, ו- Kakao Webtoon, ולאחר מכן לצמצם במהירות את מה לקרוא באמצעות אותות בזמן אמת ועדפות הקורא.",
-  "home.hero.searchButton": "כותרות חיפוש, יוצרים, תגי",
-  "home.hero.rankingButton": "צפו בהדרגה מאוחדת",
+  "home.hero.description": "חפשו ב-Naver Webtoon, ב-Series וב-Kakao Webtoon, וצמצמו במהירות את הבחירה בעזרת אותות בזמן אמת והעדפות קוראים.",
+  "home.hero.searchButton": "חיפוש יצירות, יוצרים, תגיות",
+  "home.hero.rankingButton": "צפייה בדירוג המאוחד",
   "home.hero.studioLink": "אולפן היוצר",
   "home.hero.createLink": "לוח יוצר",
   "home.hero.stats.titles": "כותרות",
   "home.hero.stats.platforms": "פלטפורמות פרסום",
-  "home.hero.stats.genres": "ספקטרום זנים",
+  "home.hero.stats.genres": "ספקטרום ז׳אנרים",
   "home.hero.stats.reviews": "ביקורות של הקוראים",
-  "home.loadError": "לא הצלחתי להעלות נתוני הבית.",
+  "home.loadError": "טעינת נתוני דף הבית נכשלה.",
   "home.creatorTitle": "מהרעיון לסצנה הראשונה שלך"
 }

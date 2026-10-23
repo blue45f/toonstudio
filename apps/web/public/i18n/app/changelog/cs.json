@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Nedokázal jsem nahrát aktualizace.",
-  "changelog.empty": "Zatím nejsou zveřejněny žádné aktualizační záznamy."
+  "changelog.loadError": "Aktualizace se nepodařilo načíst. Zkuste to prosím za chvíli znovu.",
+  "changelog.empty": "Zatím nebyly zveřejněny žádné záznamy o aktualizacích."
 }

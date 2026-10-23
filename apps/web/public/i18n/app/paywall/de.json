@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} Tage Vorabzugang für Unterstützer",
   "paywall.creatorPage.preview": "Vorschau",
   "paywall.creatorPage.save": "Richtlinie speichern",
+  "paywall.creatorPage.statusDaysRange": "Vorabzugang {min}–{max} Tage",
+  "paywall.creatorPage.statusDaysSingle": "Vorabzugang {days} Tage",
+  "paywall.creatorPage.statusSummary": "{total} Richtlinien · {active} aktiv",
   "paywall.creatorPage.subtitle": "Richten Sie den Vorabzugang ein: Unterstützer zuerst, nach N Tagen für alle kostenlos.",
   "paywall.creatorPage.title": "Vorabzugang",
   "paywall.creatorPage.titleIdLabel": "Titel-ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Vorschau der Leseransicht",
   "paywall.titleNotice.body": "Dieser Titel erscheint für Unterstützer {days} Tage früher. Wenn Sie warten, wird er kostenlos.",
   "paywall.titleNotice.label": "Hinweis zum Vorabzugang",
-  "paywall.titleNotice.title": "Vorabzugang für Unterstützer ist aktiv",
-  "paywall.creatorPage.statusDaysRange": "Vorabzugang {min}–{max} Tage",
-  "paywall.creatorPage.statusDaysSingle": "Vorabzugang {days} Tage",
-  "paywall.creatorPage.statusSummary": "{total} Richtlinien · {active} aktiv"
+  "paywall.titleNotice.title": "Vorabzugang für Unterstützer ist aktiv"
 }

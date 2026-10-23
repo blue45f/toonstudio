@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Создание произведений",
   "userProfile.tabs.series": "Серия",
   "userProfile.works.empty": "У этого пользователя пока нет публичных работ.",
+  "userProfile.works.error": "Не удалось загрузить созданные произведения. Попробуйте снова.",
   "userProfile.series.empty": "У этого пользователя пока нет серии.",
+  "userProfile.series.error": "Не удалось загрузить серии. Попробуйте снова.",
   "userProfile.fetchError": "Не удалось загрузить профиль.",
   "userProfile.authorFallback": "Пользователь",
   "userProfile.metaTemplate": "Профиль {author} · Отзывы {reviews} · Работы {works} · рейтинг {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Содержание профиля",
   "userProfile.refresh": "Одновременно",
   "userProfile.emptyReviews": "Никаких отзывов не опубликованного этим пользователем.",
-  "userProfile.works.error": "Не удалось загрузить созданные произведения. Попробуйте снова.",
-  "userProfile.series.error": "Не удалось загрузить серии. Попробуйте снова.",
   "userProfile.emptyReviewsHint": "Оставьте первый отзыв о произведении, которое вам нравится.",
   "userProfile.emptyReviewsCta": "Просмотреть произведения"
 }

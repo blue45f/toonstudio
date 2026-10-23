@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Страна не знайдена",
-  "page.notFound.message": "Знову перевіряйте URL або вивчайте заголовки з домашньої сторінки.",
-  "page.notFound.home": "Поверніться додому.",
   "page.events.board.community": "Дошка спільноти",
   "page.events.board.official": "Офіційні події",
   "page.events.board.title": "Список подій",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Переглянути переваги бети",
   "page.events.hero.secondary": "Дошка подій спільноти",
   "page.events.hero.title": "Дошка подій",
+  "page.notFound.home": "Поверніться додому.",
+  "page.notFound.message": "Знову перевіряйте URL або вивчайте заголовки з домашньої сторінки.",
   "page.notFound.quip.1": "Га? Цю панель ще не намальовано!",
   "page.notFound.quip.2": "Ви заблукали ще до того, як висохло чорнило.",
   "page.notFound.quip.3": "До зустрічі в наступному епізоді… напевно!",
   "page.notFound.quip.4": "Художник просто зараз малює цю сторінку.",
-  "page.notFound.tapHint": "Натисніть на цифри"
+  "page.notFound.tapHint": "Натисніть на цифри",
+  "page.notFound.title": "Страна не знайдена"
 }

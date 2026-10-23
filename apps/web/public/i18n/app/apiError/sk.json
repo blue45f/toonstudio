@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Je potrebné sa prihlásiť.",
-  "apiError.adminRequired": "Adminové povolenia nemohli byť overené.",
+  "apiError.adminRequired": "Oprávnenia správcu sa nepodarilo overiť.",
   "apiError.adminOnlyPage": "Táto stránka je obmedzená na správcov.",
-  "apiError.notFound": "Žiadaný predmet sa nenašiel.",
-  "apiError.unsupportedType": "Typ obsahu nepodporovaný.",
+  "apiError.notFound": "Požadovaná položka sa nenašla.",
+  "apiError.unsupportedType": "Nepodporovaný typ obsahu.",
   "apiError.inactiveAccount": "Neaktívne účty nemôžu používať funkcie správcu.",
-  "apiError.settlementFailed": "Zúčtovanie sa zlyhalo."
+  "apiError.settlementFailed": "Spracovanie vyúčtovania zlyhalo. Skúste to o chvíľu znova."
 }

@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "सदस्य",
   "membership.creatorPage.statMonthly": "मासिक आवर्ती",
   "membership.creatorPage.statTiers": "सक्रिय स्तर",
+  "membership.creatorPage.statusActive": "वाचक साइन-अप पडद्यावर {count} स्तर थेट आहेत",
   "membership.creatorPage.subtitle": "चाहते सदस्यत्व स्तर तयार करा आणि मासिक वर्गणी महसूलाचा मागोवा घ्या.",
   "membership.creatorPage.tierList": "सदस्यत्व स्तर",
   "membership.creatorPage.tierMembers": "{count} सदस्य",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "चाहते दर महिन्याला देत असलेली रक्कम.",
   "membership.tierEditor.priceLabel": "मासिक किंमत (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "जतन करा",
-  "membership.creatorPage.statusActive": "वाचक साइन-अप पडद्यावर {count} स्तर थेट आहेत"
+  "membership.tierEditor.save": "जतन करा"
 }

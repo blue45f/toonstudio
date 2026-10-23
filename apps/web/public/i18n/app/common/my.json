@@ -10,7 +10,7 @@
   "common.backToHome": "အိမ်ပြန်သွားပါ",
   "common.loading.search": "ရှာဖွေနေတာပါ။",
   "common.notFoundWithQuery": "' {query} ' အတွက် ရလဒ်မရှိပါ။",
-  "common.openSearch": "ရှာဖွေခြင်းတွင် ရှာဖွေပါ",
+  "common.openSearch": "ရှာဖွေမှုတွင် ရှာရန် →",
   "common.loading.empty": "ဒေတာ ပြန်မလာဘူး။",
   "common.retry.all": "ထပ်ကြိုးစားပါ ဒါမှမဟုတ် အိမ်ပြန်သွားပါ"
 }

@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Ранний доступ для сторонников на {days} дней",
   "paywall.creatorPage.preview": "Предпросмотр",
   "paywall.creatorPage.save": "Сохранить политику",
+  "paywall.creatorPage.statusDaysRange": "ранний доступ {min}–{max} дней",
+  "paywall.creatorPage.statusDaysSingle": "ранний доступ {days} дней",
+  "paywall.creatorPage.statusSummary": "{total} политик · {active} вкл.",
   "paywall.creatorPage.subtitle": "Настройте ранний доступ: сначала сторонники, бесплатно для всех через N дней.",
   "paywall.creatorPage.title": "Ранний доступ",
   "paywall.creatorPage.titleIdLabel": "ID произведения",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Предпросмотр вида читателя",
   "paywall.titleNotice.body": "Это произведение выходит для сторонников на {days} дней раньше. Если подождать, оно станет бесплатным.",
   "paywall.titleNotice.label": "Уведомление о раннем доступе",
-  "paywall.titleNotice.title": "Действует ранний доступ для сторонников",
-  "paywall.creatorPage.statusDaysRange": "ранний доступ {min}–{max} дней",
-  "paywall.creatorPage.statusDaysSingle": "ранний доступ {days} дней",
-  "paywall.creatorPage.statusSummary": "{total} политик · {active} вкл."
+  "paywall.titleNotice.title": "Действует ранний доступ для сторонников"
 }

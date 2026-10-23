@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Sponsret bilde",
+  "ad.creativeFallbackAlt": "Sponset bilde",
   "ad.slotAriaLabel": "Reklamer",
-  "ad.slotLabel": "Sponsorer",
-  "ad.slotTitle": "Sponsret innhold",
+  "ad.slotLabel": "Sponset",
+  "ad.slotTitle": "Sponset innhold",
   "ad.ctaDetails": "Se detaljer",
-  "ad.placeholderAriaLabel": "Reklamplaseholder",
+  "ad.placeholderAriaLabel": "Reklameplassholder",
   "ad.placeholderText": "Ingen sponsert innhold tilgjengelig.",
-  "ad.tag": "Ad"
+  "ad.tag": "Annonse"
 }

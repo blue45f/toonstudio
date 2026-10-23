@@ -26,6 +26,7 @@ import {
   type StudioFontFaceFactory,
   type StudioFontSetLike,
 } from "./studio-custom-fonts";
+import { resolveStudioCustomFontErrorFromCause } from "./status-i18n/studio-producer-error-i18n-custom-font";
 import { STUDIO_EASE, STUDIO_FOCUS_RING, StudioEmptyState, StudioSectionHeader } from "./studio-panel-ui";
 
 import type {
@@ -90,10 +91,19 @@ async function loadProductRepository(): Promise<StudioCustomFontRepository> {
   return module.getProductStudioCustomFontRepository();
 }
 
-function storageErrorCode(error: unknown): string | null {
-  return typeof error === "object" && error !== null && "code" in error
+function storageErrorDetail(error: unknown): { code: string | null; detail: string | null } {
+  const code = typeof error === "object" && error !== null && "code" in error
     ? String((error as { readonly code?: unknown }).code ?? "")
     : null;
+  // A안(설계 §4.3): 거친 코드 단위 문구는 유지하고, invalid/corrupt의 세부 사유만 해석해 병기한다.
+  const detail = code === "invalid" || code === "corrupt"
+    ? resolveStudioCustomFontErrorFromCause(error)
+    : null;
+  return { code, detail };
+}
+
+function withFailureDetail(base: string, detail: string | null): string {
+  return detail ? `${base} 원인: ${detail}` : base;
 }
 
 export function StudioCustomFontsPanel({
@@ -187,7 +197,7 @@ export function StudioCustomFontsPanel({
     }).catch((cause: unknown) => {
       if (!mountedRef.current || generation !== hydrationGenerationRef.current) return;
       repositoryRef.current = null;
-      const code = storageErrorCode(cause);
+      const { code, detail } = storageErrorDetail(cause);
       if (code === "unavailable" || code === "quota-exceeded") {
         setStorageState("memory-only");
         setNotice(
@@ -200,13 +210,14 @@ export function StudioCustomFontsPanel({
         return;
       }
       setStorageState("unavailable");
-      setError(
+      setError(withFailureDetail(
         tText(
           t,
           "사용자 글꼴 manifest 또는 OPFS blob의 무결성을 확인하지 못해 일부 항목을 표시하지 않았어요. 새로고침한 뒤 다시 시도해 주세요.",
           "studio.customFonts.hydrationIntegrityFailed",
         ),
-      );
+        detail,
+      ));
     });
     return () => controller.abort();
   }, [controlled, createFontFace, fontSet, loadRepository, repository, t]);
@@ -266,19 +277,20 @@ export function StudioCustomFontsPanel({
       }
     } catch (cause) {
       if (!mountedRef.current || generation !== hydrationGenerationRef.current) return;
-      if (storageErrorCode(cause) === "aborted") return;
+      const { code, detail } = storageErrorDetail(cause);
+      if (code === "aborted") return;
       setError(
-        storageErrorCode(cause) === "invalid-cursor"
+        code === "invalid-cursor"
           ? tText(
             t,
             "글꼴 저장소가 바뀌어 목록 cursor가 만료됐어요. 패널을 다시 열어 주세요.",
             "studio.customFonts.cursorExpired",
           )
-          : tText(
+          : withFailureDetail(tText(
             t,
             "사용자 글꼴 다음 page를 안전하게 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
             "studio.customFonts.nextPageReadFailed",
-          ),
+          ), detail),
       );
     } finally {
       if (mountedRef.current && generation === hydrationGenerationRef.current) {
@@ -418,7 +430,7 @@ export function StudioCustomFontsPanel({
           setProductTotalBytes(refreshed.totalBytes);
         } catch (cause) {
           if (!mountedRef.current || generation !== mutationGenerationRef.current) return;
-          const code = storageErrorCode(cause);
+          const { code, detail } = storageErrorDetail(cause);
           if (code === "unavailable" || code === "quota-exceeded") {
             // A paged durable library does not have every family resident, so synthesizing a
             // memory-only entry here could collide with an off-page CSS family. Preserve the
@@ -439,13 +451,14 @@ export function StudioCustomFontsPanel({
             return;
           }
           setStorageState("unavailable");
-          setError(
+          setError(withFailureDetail(
             tText(
               t,
               "사용자 글꼴 manifest 또는 OPFS blob이 손상되어 가져오기를 중단했어요. 일부 데이터로 덮어쓰지 않았어요. 파일을 확인해 다시 시도해 주세요.",
               "studio.customFonts.manifestCorruptImport",
             ),
-          );
+            detail,
+          ));
           return;
         }
       }
@@ -549,23 +562,26 @@ export function StudioCustomFontsPanel({
       }
     }).catch((cause: unknown) => {
       if (!mountedRef.current || generation !== mutationGenerationRef.current) return;
-      if (storageErrorCode(cause) !== "corrupt") {
-        setError(
+      const { code, detail } = storageErrorDetail(cause);
+      if (code !== "corrupt") {
+        setError(withFailureDetail(
           tText(
             t,
             "사용자 글꼴을 기기 저장소에서 삭제하지 못해 목록을 그대로 두었어요. 잠시 후 다시 시도해 주세요.",
             "studio.customFonts.deleteFailedKeepList",
           ),
-        );
+          detail,
+        ));
       } else {
         setStorageState("unavailable");
-        setError(
+        setError(withFailureDetail(
           tText(
             t,
             "사용자 글꼴 저장소 무결성 오류로 삭제를 중단했어요. 새로고침한 뒤 다시 시도해 주세요.",
             "studio.customFonts.deleteIntegrityFailed",
           ),
-        );
+          detail,
+        ));
       }
     }).finally(() => {
       if (!mountedRef.current || generation !== mutationGenerationRef.current) return;

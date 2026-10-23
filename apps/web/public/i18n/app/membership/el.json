@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Μέλη",
   "membership.creatorPage.statMonthly": "Σύνολο μηνιαίων συνδρομών",
   "membership.creatorPage.statTiers": "Ενεργές βαθμίδες",
+  "membership.creatorPage.statusActive": "{count} βαθμίδες είναι ζωντανές στην οθόνη εγγραφής αναγνωστών",
   "membership.creatorPage.subtitle": "Δημιουργήστε βαθμίδες συνδρομής για θαυμαστές και παρακολουθήστε τα έσοδα από μηνιαίες συνδρομές.",
   "membership.creatorPage.tierList": "Βαθμίδες συνδρομής μέλους",
   "membership.creatorPage.tierMembers": "{count} μέλη",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Το ποσό που πληρώνουν οι θαυμαστές κάθε μήνα.",
   "membership.tierEditor.priceLabel": "Μηνιαία τιμή (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Αποθήκευση",
-  "membership.creatorPage.statusActive": "{count} βαθμίδες είναι ζωντανές στην οθόνη εγγραφής αναγνωστών"
+  "membership.tierEditor.save": "Αποθήκευση"
 }

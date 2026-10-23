@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Höfundarréttir og efni",
-  "copyright.section1.title": "Efni og meginreglur",
-  "copyright.section1.body": "ToonStudio er vísitölur og uppgötvun pall sem samansafnir opinberar katalóg metadata (heiti, höfundar, kynir o.fl.) frá webtoon / webnovel vettvangum. Það hýsir ekki eða dreifir ekki helstu kafla efni; lesning er beint eingöngu í gegnum opinbera tengla.",
-  "copyright.section2.title": "Myndir á forsíðunni",
-  "copyright.section2.body": "Myndir á forsíðunni eru til að auðkenna lítilmyndir og vísa til upprunalegu forsíðunnar með kjarasamband þegar mögulegt er.",
-  "copyright.section3.title": "Tölur og gagnsæi",
-  "copyright.section4.title": "Upplýsing um réttindi",
-  "copyright.section5.title": "Upphavsréttabrot tilkynning og aftaka",
-  "copyright.section5.body": "Ef þú telur að metadata eða yfirlýsingar brjóti gegn réttindum þínum skaltu senda fyrirspurn með heiti, URL og eignarprófi.",
-  "copyright.leaveInquiry": "Sendaðu inn fyrirspurn"
+  "copyright.title": "Höfundarréttur og tilkynning um efni",
+  "copyright.section1.title": "Heimildir efnis og meginreglur",
+  "copyright.section1.body": "ToonStudio er yfirlits- og uppgötvunarvettvangur sem tekur saman opinber lýsigögn úr vörulistum (titla, höfunda, tegundir o.fl.) frá vettvöngum fyrir vefmyndasögur og vefskáldsögur. Það hýsir ekki né dreifir aðalefni kafla; lestur fer eingöngu fram í gegnum opinbera tengla.",
+  "copyright.section2.title": "Forsíðumyndir",
+  "copyright.section2.body": "Forsíðumyndir þjóna sem auðkennandi smámyndir og vísa til upprunalegra forsíða vettvanga með heimildartenglum þegar mögulegt er. Hægt er að slökkva á birtingu samstundis að beiðni réttthafa eða við uppfærslu stefnu.",
+  "copyright.section3.title": "Mæligögn og gagnsæi",
+  "copyright.section4.title": "Tilkynning um réttindi",
+  "copyright.section5.title": "Tilkynning um höfundarréttarbrot og niðurtaka",
+  "copyright.section5.body": "Ef þú telur að lýsigögn eða forsíður brjóti gegn réttindum þínum skaltu senda fyrirspurn með titli, vefslóð og sönnun um eignarhald.",
+  "copyright.leaveInquiry": "Senda fyrirspurn →"
 }

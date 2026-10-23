@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Vstup je nutné.",
-  "apiError.adminRequired": "Adminové oprávnění nebyly ověřeny.",
-  "apiError.adminOnlyPage": "Tato stránka je omezená na správce.",
-  "apiError.notFound": "Žádá položka nebyla nalezená.",
-  "apiError.unsupportedType": "Typ obsahu nepodporovaný.",
+  "apiError.loginRequired": "Je vyžadováno přihlášení",
+  "apiError.adminRequired": "Oprávnění správce se nepodařilo ověřit.",
+  "apiError.adminOnlyPage": "Tato stránka je vyhrazena správcům.",
+  "apiError.notFound": "Požadovaná položka nebyla nalezena.",
+  "apiError.unsupportedType": "Nepodporovaný typ obsahu.",
   "apiError.inactiveAccount": "Neaktivní účty nemohou používat funkce správce.",
-  "apiError.settlementFailed": "Rozpočet selhal."
+  "apiError.settlementFailed": "Zpracování vyúčtování se nezdařilo. Zkuste to prosím za chvíli znovu."
 }

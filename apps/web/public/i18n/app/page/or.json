@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "ପୃଷ୍ଠା ମିଳିଲା ନାହିଁ",
-  "page.notFound.message": "URL କୁ ପୁଣି ଥରେ ଯାଞ୍ଚ କରନ୍ତୁ କିମ୍ବା ହୋମ ପେଜରୁ ଶୀର୍ଷକଗୁଡ଼ିକୁ ଯାଞ୍ଚ କରନ୍ତୁ।",
-  "page.notFound.home": "ଘରକୁ ଯାଅ",
   "page.events.board.community": "ସମ୍ପ୍ରଦାୟ ବୋର୍ଡ",
   "page.events.board.official": "ସରକାରୀ ଇଭେଣ୍ଟ",
   "page.events.board.title": "ଇଭେଣ୍ଟ ତାଲିକା",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "ବିଟା ଲାଭ ଦେଖନ୍ତୁ",
   "page.events.hero.secondary": "ସମ୍ପ୍ରଦାୟ ଇଭେଣ୍ଟ ବୋର୍ଡ",
   "page.events.hero.title": "ଇଭେଣ୍ଟ ବୋର୍ଡ",
+  "page.notFound.home": "ଘରକୁ ଯାଅ",
+  "page.notFound.message": "URL କୁ ପୁଣି ଥରେ ଯାଞ୍ଚ କରନ୍ତୁ କିମ୍ବା ହୋମ ପେଜରୁ ଶୀର୍ଷକଗୁଡ଼ିକୁ ଯାଞ୍ଚ କରନ୍ତୁ।",
   "page.notFound.quip.1": "ଆରେ? ଏହି ପ୍ୟାନେଲ୍ ଏପର୍ଯ୍ୟନ୍ତ ଆଙ୍କାଯାଇନାହିଁ!",
   "page.notFound.quip.2": "କାଳି ଶୁଖିବା ପୂର୍ବରୁ ଆପଣ ଭୁଲିଗଲେ।",
   "page.notFound.quip.3": "ପରବର୍ତ୍ତୀ ଏପିସୋଡ୍‌ରେ ଦେଖାହେବ… ବୋଧହୁଏ!",
   "page.notFound.quip.4": "କଳାକାର ଏବେ ଏହି ପୃଷ୍ଠା ଆଙ୍କୁଛନ୍ତି।",
-  "page.notFound.tapHint": "ସଂଖ୍ୟାଗୁଡ଼ିକୁ ଟ୍ୟାପ୍ କରନ୍ତୁ"
+  "page.notFound.tapHint": "ସଂଖ୍ୟାଗୁଡ଼ିକୁ ଟ୍ୟାପ୍ କରନ୍ତୁ",
+  "page.notFound.title": "ପୃଷ୍ଠା ମିଳିଲା ନାହିଁ"
 }

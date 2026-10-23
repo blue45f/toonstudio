@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Ég hlaða nýjustu útgáfu...",
-  "error.chunkRetryFailed": "Ég hef endurnýjađ einu sinni en vandamálið heldur áfram.",
-  "error.reloadButton": "Endurhlaða síðuna",
-  "error.goHome": "Farðu heim.",
-  "error.retryDesc": "Vinsamlegast prófaðu aftur eða farið aftur á heimasíðuna."
+  "error.reloading": "Endurhleður nýjustu útgáfu…",
+  "error.chunkRetryFailed": "Endurnýjað einu sinni, en vandamálið er enn til staðar. Vinsamlegast athugaðu tenginguna þína og reyndu aftur.",
+  "error.reloadButton": "Endurhlaða síðu",
+  "error.goHome": "Fara heim",
+  "error.retryDesc": "Vinsamlegast reyndu aftur eða farðu aftur á heimasíðuna."
 }

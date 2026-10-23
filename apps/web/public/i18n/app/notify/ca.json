@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "No vaig poder carregar notificacions.",
+  "notify.loadError": "No s'han pogut carregar les notificacions. Torna-ho a provar d'aquí a una estona.",
   "notify.empty": "Cap nova notificació."
 }

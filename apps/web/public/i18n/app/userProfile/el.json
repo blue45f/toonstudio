@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Δημιουργημένα έργα",
   "userProfile.tabs.series": "Σειρά",
   "userProfile.works.empty": "Αυτός ο χρήστης δεν έχει δημόσιες εργασίες ακόμα.",
+  "userProfile.works.error": "Δεν ήταν δυνατή η φόρτωση των δημιουργημένων έργων. Δοκιμάστε ξανά.",
   "userProfile.series.empty": "Αυτός ο χρήστης δεν έχει σειρές ακόμα.",
+  "userProfile.series.error": "Δεν ήταν δυνατή η φόρτωση των σειρών. Δοκιμάστε ξανά.",
   "userProfile.fetchError": "Δεν μπορώ να φορτώσω το προφίλ.",
   "userProfile.authorFallback": "Χρήστης",
   "userProfile.metaTemplate": "Προφίλ {author} · Εξετάσεις {reviews} · Εργασιών {works} · Αξιολόγηση {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Περιεχόμενο προφίλ",
   "userProfile.refresh": "Αναζωογόνηση",
   "userProfile.emptyReviews": "Δεν έχουν δημοσιευθεί κριτικές από αυτόν τον χρήστη ακόμα.",
-  "userProfile.works.error": "Δεν ήταν δυνατή η φόρτωση των δημιουργημένων έργων. Δοκιμάστε ξανά.",
-  "userProfile.series.error": "Δεν ήταν δυνατή η φόρτωση των σειρών. Δοκιμάστε ξανά.",
   "userProfile.emptyReviewsHint": "Αφήστε την πρώτη κριτική σε έναν τίτλο που αγαπάτε.",
   "userProfile.emptyReviewsCta": "Περιήγηση τίτλων"
 }

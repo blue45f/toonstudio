@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Nešlo mi načítať aktualizácie.",
-  "changelog.empty": "Ešte žiadne aktualizované záznamy."
+  "changelog.loadError": "Nepodarilo sa načítať aktualizácie. Skúste to o chvíľu znova.",
+  "changelog.empty": "Zatiaľ neboli zverejnené žiadne záznamy o aktualizáciách."
 }

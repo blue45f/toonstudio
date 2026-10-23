@@ -23,6 +23,7 @@ import {
   validateStudioLinked3dReservedPageState,
   type StudioLinked3dRenderElementLike,
 } from "./studio-linked-3d-render-document";
+import { resolveStudioLinked3dError } from "./status-i18n/studio-producer-error-i18n-linked3d";
 import { normalizePageReviewState } from "./studio-page-review";
 import { parseStudioLayerComps } from "./layer/studio-layer-comps-document";
 import { studioPageToCrdtPage } from "./live/studio-crdt-page-payload";
@@ -211,7 +212,7 @@ function canonicalizeProjectBg3dScenes(project: StudioProjectFile): StudioProjec
       elements: elements as readonly StudioLinked3dRenderElementLike[],
     });
     if (!reservedState.ok) {
-      throw new Error(`페이지 연결형 3D reserved 상태가 Canvas 권위와 다릅니다: ${reservedState.message}`);
+      throw new Error(`페이지 연결형 3D reserved 상태가 Canvas 권위와 다릅니다: ${resolveStudioLinked3dError(reservedState)}`);
     }
     if (linked3dRender) {
       const validation = validateStudioLinked3dRenderDocumentAgainstPage({
@@ -220,7 +221,7 @@ function canonicalizeProjectBg3dScenes(project: StudioProjectFile): StudioProjec
         shared3dStage: shared3dStage ?? undefined,
       });
       if (!validation.ok) {
-        throw new Error(`페이지 연결형 3D 렌더 인덱스가 Canvas 권위와 다릅니다: ${validation.message}`);
+        throw new Error(`페이지 연결형 3D 렌더 인덱스가 Canvas 권위와 다릅니다: ${resolveStudioLinked3dError(validation)}`);
       }
     }
     const canonicalPage = {

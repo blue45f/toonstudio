@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Sponsoreer beeld",
-  "ad.slotAriaLabel": "Reklame slot",
+  "ad.creativeFallbackAlt": "Geborgde beeld",
+  "ad.slotAriaLabel": "Advertensiegleuf",
   "ad.slotLabel": "Gesponsoreer",
   "ad.slotTitle": "Gesponsoreerde inhoud",
   "ad.ctaDetails": "Sien besonderhede",
-  "ad.placeholderAriaLabel": "Advertensie plekhouer",
+  "ad.placeholderAriaLabel": "Advertensieplekhouer",
   "ad.placeholderText": "Geen gesponsorde inhoud beskikbaar nie.",
   "ad.tag": "Advertensie"
 }

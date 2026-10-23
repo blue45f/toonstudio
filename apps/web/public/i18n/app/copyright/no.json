@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Opphavsrett og innhold",
-  "copyright.section1.title": "Innholdkilder og prinsipper",
-  "copyright.section1.body": "ToonStudio er en indeks- og oppdagelsesplattform som oppsummerer offentlig katalog metadata (tittel, forfattere, genrer, etc.) fra webtoon/webnovel-plattformer.",
+  "copyright.title": "Merknad om opphavsrett og innhold",
+  "copyright.section1.title": "Innholdskilder og prinsipper",
+  "copyright.section1.body": "ToonStudio er en indeks- og oppdagelsesplattform som oppsummerer offentlig katalogmetadata (titler, forfattere, sjangre osv.) fra webtoon- og nettromanplattformer. Den hoster eller vidistribuerer ikke hovedinnholdet i kapitler; lesing skjer utelukkende via offisielle lenker.",
   "copyright.section2.title": "Coverbilder",
-  "copyright.section2.body": "Bildene på forsiden fungerer som identifikasjonsminiarker og referanse originalplatformsomslag med kildelink når det er mulig. Visninger kan umiddelbart deaktiveres på forespørsel fra rettighetshaveren eller ved oppdatering av politikken.",
+  "copyright.section2.body": "Omslagsbilder fungerer som identifiserende miniatyrbilder og refererer til originale plattformomslag med kildelenker når det er mulig. Visninger kan deaktiveres umiddelbart på forespørsel fra rettighetshaveren eller ved policyoppdateringer.",
   "copyright.section3.title": "Metrikker og åpenhet",
-  "copyright.section4.title": "Rettene",
+  "copyright.section4.title": "Merknad om rettigheter",
   "copyright.section5.title": "Opplysninger om overtredelse av opphavsrett og fjernelse",
-  "copyright.section5.body": "Hvis du mener metadata eller dekker krenker dine rettigheter, vennligst send en forespørsel med tittelen, URL og bevis på eierskap.",
-  "copyright.leaveInquiry": "• å sende inn en forespørsel"
+  "copyright.section5.body": "Hvis du mener at metadata eller omslag krenker rettighetene dine, send en henvendelse med tittel, URL og bevis på eierskap.",
+  "copyright.leaveInquiry": "Send inn henvendelse →"
 }

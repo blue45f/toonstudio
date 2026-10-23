@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Copyright & Content Avís",
+  "copyright.title": "Drets d'autor i avís de contingut",
   "copyright.section1.title": "Fonts de contingut i principis",
-  "copyright.section1.body": "ToonStudio és una plataforma d'índex i descoberta que resumeix metadades del catàleg públic (títols, autors, gèneres, etc.) de plataformes de webtoon/novels.",
+  "copyright.section1.body": "ToonStudio és una plataforma d'índex i descoberta que resumeix metadades públiques de catàlegs (títols, autors, gèneres, etc.) de plataformes de webtoon i novel·la web. No allotja ni redistribueix el contingut principal dels capítols; la lectura es dirigeix exclusivament a través d'enllaços oficials.",
   "copyright.section2.title": "Imatges de coberta",
-  "copyright.section2.body": "Les imatges de la portada serveixen com a identificador de miniatures i referències de portades originals de la plataforma amb enllaços de font sempre que sigui possible.",
-  "copyright.section3.title": "Metrics & Transparència",
+  "copyright.section2.body": "Les imatges de portada serveixen com a miniatures identificatives i fan referència a les portades originals de la plataforma amb enllaços a la font sempre que sigui possible. Les visualitzacions es poden desactivar immediatament a petició del titular dels drets o per actualitzacions de la política.",
+  "copyright.section3.title": "Mètriques i transparència",
   "copyright.section4.title": "Avís de drets",
   "copyright.section5.title": "Avís de infracció de drets d'autor i eliminació",
   "copyright.section5.body": "Si creus que les metadades o les cobertes infringeixen els teus drets, si us plau, presenta una consulta amb títol, URL i prova de propietat.",
-  "copyright.leaveInquiry": "Submitir la investigació →"
+  "copyright.leaveInquiry": "Envia una consulta →"
 }

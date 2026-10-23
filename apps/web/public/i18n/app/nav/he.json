@@ -1,9 +1,9 @@
 {
   "nav.home": "בית",
   "nav.ranking": "דירוג",
-  "nav.calendar": "לוח שנה",
+  "nav.calendar": "סדרות",
   "nav.recommend": "מומלצים",
-  "nav.explore": "חקר",
+  "nav.explore": "סיור",
   "nav.fortune": "הורוסקופ",
   "nav.play": "ארקייד",
   "nav.reviews": "ביקורות",
@@ -13,14 +13,14 @@
   "nav.create": "צור",
   "nav.shaper": "מעצב דמות",
   "nav.library": "ספריה",
-  "nav.login": "חישוב",
-  "nav.search": "Find webtoons",
-  "nav.searchOpen": "Open search (titles, authors, tags)",
+  "nav.login": "התחברות",
+  "nav.search": "חיפוש סיפורים, כלים ותפריטים",
+  "nav.searchOpen": "פתיחת החיפוש המאוחד לסיפורים, כלים ותפריטים",
   "nav.quickAccess": "גישה מהירה",
-  "nav.menu": "התפריט",
-  "nav.allMenu": "כל התפריט",
+  "nav.menu": "תפריט",
+  "nav.allMenu": "כל התפריטים",
   "nav.studio": "סטודיו",
   "nav.assets": "נכסים",
   "nav.creators": "יוצרים",
-  "nav.discover": "תגלה"
+  "nav.discover": "גילוי"
 }

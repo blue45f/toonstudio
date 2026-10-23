@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Sponsorizuotas vaizdas",
-  "ad.slotAriaLabel": "Reklaminis laukas",
-  "ad.slotLabel": "Parduotas",
-  "ad.slotTitle": "Sponsorizuotas turinys",
-  "ad.ctaDetails": "Žiūrėti detales",
-  "ad.placeholderAriaLabel": "Rinkos vietos turėtojas",
-  "ad.placeholderText": "Neegzistuoja sponsoruotas turinys.",
-  "ad.tag": "Pranešimas"
+  "ad.creativeFallbackAlt": "Remiamas vaizdas",
+  "ad.slotAriaLabel": "Reklamos vieta",
+  "ad.slotLabel": "Remiama",
+  "ad.slotTitle": "Remiamas turinys",
+  "ad.ctaDetails": "Žiūrėti išsamiau",
+  "ad.placeholderAriaLabel": "Reklamos vietos žymeklis",
+  "ad.placeholderText": "Remiamo turinio nėra.",
+  "ad.tag": "Reklama"
 }

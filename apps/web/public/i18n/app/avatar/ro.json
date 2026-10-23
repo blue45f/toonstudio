@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Tip de imagine neînțeles.",
-  "avatar.error.processFailed": "Nu am reuşit să procesăm imaginea.",
-  "avatar.processing": "Procesarea...",
-  "avatar.select": "Schimbarea imaginii",
-  "avatar.remove": "Îndepărtați imaginea",
-  "avatar.uploadHint": "Doar imaginile JPG, PNG și WEBP sunt susținute, apoi tăiate pentru previzualizare.",
+  "avatar.error.invalidType": "Tip de imagine neacceptat.",
+  "avatar.error.processFailed": "Nu s-a putut procesa imaginea. Încercați din nou cu o altă imagine.",
+  "avatar.processing": "Se procesează…",
+  "avatar.select": "Schimbați imaginea",
+  "avatar.remove": "Eliminați imaginea",
+  "avatar.uploadHint": "Sunt acceptate doar imaginile JPG, PNG și WEBP, care sunt apoi decupate pentru previzualizare.",
   "avatar.changeAria": "Schimbă imaginea profilului"
 }

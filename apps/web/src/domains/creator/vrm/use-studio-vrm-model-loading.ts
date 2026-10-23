@@ -7,6 +7,15 @@
 import { disposeStudioVrmAsset as disposeVrm, loadStudioVrmAsset as loadVrmAsset } from "./studio-vrm-asset-runtime";
 import { getErrorMessage, getVrmLoadErrorMessage } from "./studio-vrm-poser-helpers";
 import { resolveStudioVrmLibraryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-vrm-library";
+
+/**
+ * 집계자 예외 (A4 D4 R14): 범용 getErrorMessage 자체는 바꾸지 않고, 이 파일의
+ * 라이브러리 오류 표시 지점에서만 code/detailCode 보유 시 리졸버로 해석한다.
+ * 구조화 코드가 없는 원인은 기존 메시지 경로를 유지한다.
+ */
+function libraryErrorMessage(caughtError: unknown, fallback: string): string {
+  return resolveStudioVrmLibraryErrorFromCause(caughtError) ?? getErrorMessage(caughtError, fallback);
+}
 import {
   createUploadedVrmRecord,
   deleteStoredVrmModel,
@@ -26,15 +35,6 @@ import {
 
 import type { VRM } from "@pixiv/three-vrm";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
-
-/**
- * 집계자 예외 (A4 D4 R14): 범용 getErrorMessage 자체는 바꾸지 않고, 이 파일의
- * 라이브러리 오류 표시 지점에서만 code/detailCode 보유 시 리졸버로 해석한다.
- * 구조화 코드가 없는 원인은 기존 메시지 경로를 유지한다.
- */
-function libraryErrorMessage(caughtError: unknown, fallback: string): string {
-  return resolveStudioVrmLibraryErrorFromCause(caughtError) ?? getErrorMessage(caughtError, fallback);
-}
 
 /** `useRef` 결과를 그대로 받되 React 타입 버전에 묶이지 않는 구조적 별칭. */
 type MutableRef<T> = { current: T };

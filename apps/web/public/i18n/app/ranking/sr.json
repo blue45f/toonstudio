@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Подељење резултата",
-  "ranking.metric.views": "Видења",
+  "ranking.detailTitle": "Погледај расподелу резултата",
+  "ranking.metric.views": "Прегледи",
   "ranking.why": "Зашто?",
-  "ranking.breakdownTitle": "Подељење резултата",
-  "ranking.totalScore": "Укупна резултата",
-  "ranking.breakdownDescription": "Прорачуна се тежином осце и нормализацијом за специфичну титулу."
+  "ranking.breakdownTitle": "Расподела резултата",
+  "ranking.totalScore": "Укупан резултат",
+  "ranking.breakdownDescription": "Израчунато помоћу тежина оса и нормализације специфичне за дело."
 }

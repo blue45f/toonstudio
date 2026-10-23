@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Neatkarēju paziņojumus.",
-  "notify.empty": "Neviens jauns paziņojums."
+  "notify.loadError": "Neizdevās ielādēt paziņojumus. Lūdzu, pēc brīža mēģiniet vēlreiz.",
+  "notify.empty": "Nav jaunu paziņojumu."
 }

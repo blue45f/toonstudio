@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days}-दिन समर्थक अर्ली एक्सेस",
   "paywall.creatorPage.preview": "पूर्वावलोकन",
   "paywall.creatorPage.save": "नीति सहेजें",
+  "paywall.creatorPage.statusDaysRange": "अर्ली एक्सेस {min}–{max} दिन",
+  "paywall.creatorPage.statusDaysSingle": "अर्ली एक्सेस {days} दिन",
+  "paywall.creatorPage.statusSummary": "{total} नीतियां · {active} चालू",
   "paywall.creatorPage.subtitle": "अर्ली एक्सेस सेट करें: समर्थक पहले, N दिनों के बाद सभी के लिए मुफ़्त।",
   "paywall.creatorPage.title": "अर्ली एक्सेस",
   "paywall.creatorPage.titleIdLabel": "शीर्षक ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "पाठक दृश्य पूर्वावलोकन",
   "paywall.titleNotice.body": "यह शीर्षक समर्थकों के लिए {days} दिन पहले जारी होता है। प्रतीक्षा करने पर यह मुफ़्त हो जाता है।",
   "paywall.titleNotice.label": "अर्ली एक्सेस सूचना",
-  "paywall.titleNotice.title": "समर्थक अर्ली एक्सेस प्रभावी है",
-  "paywall.creatorPage.statusDaysRange": "अर्ली एक्सेस {min}–{max} दिन",
-  "paywall.creatorPage.statusDaysSingle": "अर्ली एक्सेस {days} दिन",
-  "paywall.creatorPage.statusSummary": "{total} नीतियां · {active} चालू"
+  "paywall.titleNotice.title": "समर्थक अर्ली एक्सेस प्रभावी है"
 }

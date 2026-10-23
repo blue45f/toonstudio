@@ -227,6 +227,24 @@ describe("myb v3 importer", () => {
       MybParseError,
     );
   });
+
+  it("emits structured codes for the three rejection kinds (R21)", () => {
+    const codeOf = (bytes: Uint8Array): string => {
+      try {
+        importMybBrush(bytes, "x", "x");
+      } catch (error) {
+        expect(error).toBeInstanceOf(MybParseError);
+        return (error as MybParseError).code;
+      }
+      throw new Error("expected importMybBrush to throw");
+    };
+    expect(codeOf(new Uint8Array([0xff, 0x00]))).toBe("invalid-utf8");
+    expect(codeOf(new TextEncoder().encode('{"version":3}'))).toBe("invalid-document");
+    const v2 = new TextEncoder().encode(
+      JSON.stringify({ ...mybDocument, version: 2 }),
+    );
+    expect(codeOf(v2)).toBe("unsupported-version");
+  });
 });
 
 /** Builds a synthetic big-endian ABR v2 file with one computed brush. */

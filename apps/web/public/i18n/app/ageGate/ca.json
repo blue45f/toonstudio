@@ -2,8 +2,8 @@
   "ageGate.title": "Control del contingut per a adults",
   "ageGate.description": "Introdueix la teva data de naixement per verificar que tens 19 anys o més.",
   "ageGate.birthDateLabel": "Data de naixement",
-  "ageGate.birthYearLabel": "Anterior",
-  "ageGate.birthYearPlaceholder": "L'any",
+  "ageGate.birthYearLabel": "Any de naixement",
+  "ageGate.birthYearPlaceholder": "Any",
   "ageGate.birthMonthLabel": "Mes de naixement",
   "ageGate.birthMonthPlaceholder": "Mes",
   "ageGate.birthDayLabel": "Dia de naixement",
@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "No va complir amb l'edat requerida.",
+  "ageGate.deniedMessage": "No compleixes el requisit d'edat.",
   "ageGate.cancel": "Cancel·lar",
-  "ageGate.confirm": "Confirmació"
+  "ageGate.confirm": "Confirma"
 }

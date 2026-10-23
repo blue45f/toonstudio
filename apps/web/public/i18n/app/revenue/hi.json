@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "खाताधारक",
   "revenue.payout.holderPlaceholder": "धारक का नाम",
   "revenue.payout.mockNote": "फिलहाल यह एक मॉक अनुरोध है। वास्तविक भुगतान बैकएंड निपटान पाइपलाइन द्वारा संसाधित किए जाते हैं।",
+  "revenue.payout.notAvailableBody": "भुगतान अनुरोध अभी वास्तव में प्राप्त नहीं किए जा रहे हैं, और आप जो भी खाता विवरण दर्ज करते हैं वह संग्रहीत नहीं किया जाता। जब अनुरोध खुलेंगे, तो आप यहीं से आवेदन कर सकेंगे और अपने अनुरोध इतिहास और स्थिति को ट्रैक कर सकेंगे।",
+  "revenue.payout.notAvailableTitle": "भुगतान अनुरोध अभी उपलब्ध नहीं हैं",
   "revenue.payout.submit": "भुगतान का अनुरोध करें",
   "revenue.payout.title": "भुगतान",
   "revenue.settlement.belowMinimum": "{min} से उपलब्ध",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "अर्ली एक्सेस",
   "revenue.source.market": "मार्केट बिक्री",
   "revenue.source.membership": "सदस्यता",
-  "revenue.source.tips": "टिप्स",
-  "revenue.payout.notAvailableBody": "भुगतान अनुरोध अभी वास्तव में प्राप्त नहीं किए जा रहे हैं, और आप जो भी खाता विवरण दर्ज करते हैं वह संग्रहीत नहीं किया जाता। जब अनुरोध खुलेंगे, तो आप यहीं से आवेदन कर सकेंगे और अपने अनुरोध इतिहास और स्थिति को ट्रैक कर सकेंगे।",
-  "revenue.payout.notAvailableTitle": "भुगतान अनुरोध अभी उपलब्ध नहीं हैं"
+  "revenue.source.tips": "टिप्स"
 }

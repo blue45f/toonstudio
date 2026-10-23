@@ -726,16 +726,19 @@ export function solveStudioVrmHeadBodyRatioForHeadUnits(
 /* 검증                                                                        */
 /* -------------------------------------------------------------------------- */
 
+export type StudioVrmProportionPlanIssueCode =
+  | "unknown-bone"
+  | "missing-bone"
+  | "non-finite"
+  | "non-positive-scale"
+  | "scaled-ancestor-of-translated-bone"
+  | "missing-required-bone";
+
 export type StudioVrmProportionPlanIssue = {
-  readonly code:
-    | "unknown-bone"
-    | "missing-bone"
-    | "non-finite"
-    | "non-positive-scale"
-    | "scaled-ancestor-of-translated-bone"
-    | "missing-required-bone";
+  readonly code: StudioVrmProportionPlanIssueCode;
   readonly boneName: string;
-  readonly message: string;
+  /** `scaled-ancestor-of-translated-bone` 전용: 균등 스케일이 걸린 조상 본. 표시 문구는 status-i18n 리졸버가 해석한다. */
+  readonly ancestorBoneName?: string;
 };
 
 /**
@@ -753,40 +756,24 @@ export function validateStudioVrmProportionPlan(
 
   for (const bone of STUDIO_VRM_REQUIRED_HUMANOID_BONES) {
     if (!byName.has(bone)) {
-      issues.push({
-        code: "missing-required-bone",
-        boneName: bone,
-        message: `VRM 필수 본 ${bone} 이(가) 스냅샷에 없습니다.`,
-      });
+      issues.push({ code: "missing-required-bone", boneName: bone });
     }
   }
 
   for (const op of plan) {
     if (!BONE_NAME_SET.has(op.boneName)) {
-      issues.push({
-        code: "unknown-bone",
-        boneName: String(op.boneName),
-        message: "휴머노이드 허용 목록 밖의 본입니다.",
-      });
+      issues.push({ code: "unknown-bone", boneName: String(op.boneName) });
       continue;
     }
     if (!byName.has(op.boneName)) {
-      issues.push({
-        code: "missing-bone",
-        boneName: op.boneName,
-        message: "스냅샷에 없는 본에 대한 연산입니다.",
-      });
+      issues.push({ code: "missing-bone", boneName: op.boneName });
     }
     if (!Number.isFinite(op.scale) || !isFiniteVec3(op.translateLocal)) {
-      issues.push({ code: "non-finite", boneName: op.boneName, message: "유한하지 않은 수치입니다." });
+      issues.push({ code: "non-finite", boneName: op.boneName });
       continue;
     }
     if (op.scale <= 0) {
-      issues.push({
-        code: "non-positive-scale",
-        boneName: op.boneName,
-        message: "스케일은 0보다 커야 합니다.",
-      });
+      issues.push({ code: "non-positive-scale", boneName: op.boneName });
     }
     if (op.scale !== 1) scaledBones.add(op.boneName);
   }
@@ -805,7 +792,7 @@ export function validateStudioVrmProportionPlan(
         issues.push({
           code: "scaled-ancestor-of-translated-bone",
           boneName: op.boneName,
-          message: `${cursor} 에 균등 스케일이 걸린 상태에서 ${op.boneName} 을(를) 이동합니다.`,
+          ancestorBoneName: cursor,
         });
         break;
       }

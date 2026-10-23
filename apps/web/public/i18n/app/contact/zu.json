@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "Umbuzo Ojwayelekile",
+  "contact.body": "Thumela imibuzo ejwayelekile ngokusebenzisa isevisi, ama-akhawunti, nokuboniswa kwedatha.",
+  "contact.bizTitle": "Imibuzo Yebhizinisi Nobambiswano",
+  "contact.bizBody": "Thumela iziphakamiso zebhizinisi ezihlanganisa ukukhangisa, ukuhlanganiswa kwamapulatifomu, nobambiswano lokuqukethwe.",
+  "contact.bugTitle": "Umbiko Wesiphazamiso",
+  "contact.bugBody": "Bika amaphutha, izinkinga zesakhiwo, noma okungajwayelekile ekubonisiweni kwedatha."
 }

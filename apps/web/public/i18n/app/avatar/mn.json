@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Type image non supported.",
-  "avatar.error.processFailed": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "avatar.processing": "Processing...",
-  "avatar.select": "Change image",
-  "avatar.remove": "Remove image",
-  "avatar.uploadHint": "Only JPG, PNG, and WEBP images are supported, then cut for preview.",
+  "avatar.error.invalidType": "Дэмжигдээгүй зургийн төрөл.",
+  "avatar.error.processFailed": "Зургийг боловсруулж чадсангүй. Өөр зургаар дахин оролдоно уу.",
+  "avatar.processing": "Боловсруулж байна…",
+  "avatar.select": "Зураг солих",
+  "avatar.remove": "Зураг устгах",
+  "avatar.uploadHint": "Зөвхөн JPG, PNG болон WEBP зургийг дэмжих бөгөөд урьдчилан харахын тулд тайрч авна.",
   "avatar.changeAria": "Профайл зургийг өөрчлөх"
 }

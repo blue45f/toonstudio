@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Өкүлдүк сүрөтү",
+  "ad.creativeFallbackAlt": "Демөөрчүлүк сүрөтү",
   "ad.slotAriaLabel": "Жарнамалык орундар",
-  "ad.slotLabel": "Өкүлчүлүк",
-  "ad.slotTitle": "Өкмөттүк мазмуну",
+  "ad.slotLabel": "Демөөрчүлүк",
+  "ad.slotTitle": "Демөөрчүлүк мазмуну",
   "ad.ctaDetails": "Толук маалыматтарды көрүү",
-  "ad.placeholderAriaLabel": "Жарнамалык орун ээси",
-  "ad.placeholderText": "Эч кандай демөөрчүлүк контент жок.",
+  "ad.placeholderAriaLabel": "Жарнама толтургучу",
+  "ad.placeholderText": "Демөөрчүлүк мазмун жок.",
   "ad.tag": "Жарнама"
 }

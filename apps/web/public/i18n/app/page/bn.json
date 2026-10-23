@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "পেজ পাওয়া যায়নি",
-  "page.notFound.message": "আবার URL চেক করুন অথবা হোম পেজ থেকে শিরোনাম অনুসন্ধান করুন।",
-  "page.notFound.home": "বাড়ি ফিরে যাও",
   "page.events.board.community": "কমিউনিটি বোর্ড",
   "page.events.board.official": "অফিসিয়াল ইভেন্ট",
   "page.events.board.title": "ইভেন্টের তালিকা",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "বিটা সুবিধা দেখুন",
   "page.events.hero.secondary": "কমিউনিটি ইভেন্ট বোর্ড",
   "page.events.hero.title": "ইভেন্ট বোর্ড",
+  "page.notFound.home": "বাড়ি ফিরে যাও",
+  "page.notFound.message": "আবার URL চেক করুন অথবা হোম পেজ থেকে শিরোনাম অনুসন্ধান করুন।",
   "page.notFound.quip.1": "আরে? এই প্যানেলটি এখনও আঁকা হয়নি!",
   "page.notFound.quip.2": "কালি শুকানোর আগেই আপনি পথ হারিয়ে ফেলেছেন।",
   "page.notFound.quip.3": "পরের পর্বে দেখা হবে… সম্ভবত!",
   "page.notFound.quip.4": "শিল্পী এখনই এই পেজটি আঁকছেন।",
-  "page.notFound.tapHint": "সংখ্যাগুলোতে টোকা দিন"
+  "page.notFound.tapHint": "সংখ্যাগুলোতে টোকা দিন",
+  "page.notFound.title": "পেজ পাওয়া যায়নি"
 }

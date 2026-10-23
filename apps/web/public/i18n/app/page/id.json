@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Halaman tidak ditemukan",
-  "page.notFound.message": "Periksa URL lagi atau menelusuri judul dari halaman utama.",
-  "page.notFound.home": "Kembali ke rumah.",
   "page.events.board.community": "Papan komunitas",
   "page.events.board.official": "Acara resmi",
   "page.events.board.title": "Daftar acara",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Lihat manfaat beta",
   "page.events.hero.secondary": "Papan acara komunitas",
   "page.events.hero.title": "Papan acara",
+  "page.notFound.home": "Kembali ke rumah.",
+  "page.notFound.message": "Periksa URL lagi atau menelusuri judul dari halaman utama.",
   "page.notFound.quip.1": "Hah? Panel ini belum digambar!",
   "page.notFound.quip.2": "Anda tersesat sebelum tintanya sempat kering.",
   "page.notFound.quip.3": "Sampai jumpa di episode berikutnya… mungkin!",
   "page.notFound.quip.4": "Sang seniman sedang menggambar halaman ini sekarang.",
-  "page.notFound.tapHint": "Ketuk angkanya"
+  "page.notFound.tapHint": "Ketuk angkanya",
+  "page.notFound.title": "Halaman tidak ditemukan"
 }

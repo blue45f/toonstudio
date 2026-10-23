@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "メンバー数",
   "membership.creatorPage.statMonthly": "月額定期収益",
   "membership.creatorPage.statTiers": "有効なティア",
+  "membership.creatorPage.statusActive": "読者の参加画面で {count} 件のティアを公開中です",
   "membership.creatorPage.subtitle": "ファン向けメンバーシップのティアを作成し、月額サブスクリプションの収益を確認しましょう。",
   "membership.creatorPage.tierList": "メンバーシップのティア一覧",
   "membership.creatorPage.tierMembers": "{count}人のメンバー",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "ファンが毎月支払う金額です。",
   "membership.tierEditor.priceLabel": "月額料金（ウォン）",
   "membership.tierEditor.pricePlaceholder": "{min}～{max}",
-  "membership.tierEditor.save": "保存",
-  "membership.creatorPage.statusActive": "読者の参加画面で {count} 件のティアを公開中です"
+  "membership.tierEditor.save": "保存"
 }

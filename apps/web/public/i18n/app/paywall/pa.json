@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days}-ਦਿਨ ਸਮਰਥਕ ਅਰਲੀ ਐਕਸੈੱਸ",
   "paywall.creatorPage.preview": "ਝਲਕ",
   "paywall.creatorPage.save": "ਨੀਤੀ ਸੰਭਾਲੋ",
+  "paywall.creatorPage.statusDaysRange": "ਅਰਲੀ ਐਕਸੈੱਸ {min}–{max} ਦਿਨ",
+  "paywall.creatorPage.statusDaysSingle": "ਅਰਲੀ ਐਕਸੈੱਸ {days} ਦਿਨ",
+  "paywall.creatorPage.statusSummary": "{total} ਨੀਤੀਆਂ · {active} ਚਾਲੂ",
   "paywall.creatorPage.subtitle": "ਅਰਲੀ ਐਕਸੈੱਸ ਸੈੱਟ ਕਰੋ: ਸਮਰਥਕ ਪਹਿਲਾਂ, N ਦਿਨਾਂ ਤੋਂ ਬਾਅਦ ਸਭ ਲਈ ਮੁਫ਼ਤ।",
   "paywall.creatorPage.title": "ਅਰਲੀ ਐਕਸੈੱਸ",
   "paywall.creatorPage.titleIdLabel": "ਸਿਰਲੇਖ ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "ਪਾਠਕ ਦ੍ਰਿਸ਼ ਝਲਕ",
   "paywall.titleNotice.body": "ਇਹ ਸਿਰਲੇਖ ਸਮਰਥਕਾਂ ਲਈ {days} ਦਿਨ ਪਹਿਲਾਂ ਜਾਰੀ ਹੁੰਦਾ ਹੈ। ਉਡੀਕ ਕਰਨ 'ਤੇ ਇਹ ਮੁਫ਼ਤ ਹੋ ਜਾਂਦਾ ਹੈ।",
   "paywall.titleNotice.label": "ਅਰਲੀ ਐਕਸੈੱਸ ਸੂਚਨਾ",
-  "paywall.titleNotice.title": "ਸਮਰਥਕ ਅਰਲੀ ਐਕਸੈੱਸ ਲਾਗੂ ਹੈ",
-  "paywall.creatorPage.statusDaysRange": "ਅਰਲੀ ਐਕਸੈੱਸ {min}–{max} ਦਿਨ",
-  "paywall.creatorPage.statusDaysSingle": "ਅਰਲੀ ਐਕਸੈੱਸ {days} ਦਿਨ",
-  "paywall.creatorPage.statusSummary": "{total} ਨੀਤੀਆਂ · {active} ਚਾਲੂ"
+  "paywall.titleNotice.title": "ਸਮਰਥਕ ਅਰਲੀ ਐਕਸੈੱਸ ਲਾਗੂ ਹੈ"
 }

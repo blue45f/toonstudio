@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Кіру қажет.",
   "apiError.adminRequired": "Админ рұқсаттарын тексеру мүмкін емес.",
-  "apiError.adminOnlyPage": "Бұл бетте әкімшілерге ғана арналған.",
-  "apiError.notFound": "Сұралған тауар табылмады.",
-  "apiError.unsupportedType": "Қолданбалмаған мазмұн түрі.",
+  "apiError.adminOnlyPage": "Бұл бет тек әкімшілерге арналған.",
+  "apiError.notFound": "Сұралған элемент табылмады.",
+  "apiError.unsupportedType": "Қолдау көрсетілмейтін мазмұн түрі.",
   "apiError.inactiveAccount": "Белсенсіз тіркелгілер әкімші функцияларын пайдалана алмайды.",
-  "apiError.settlementFailed": "Тiркелу процесi сәтсіздікке ұшырады."
+  "apiError.settlementFailed": "Есеп айырысуды өңдеу сәтсіз аяқталды. Сәлден кейін қайталап көріңіз."
 }

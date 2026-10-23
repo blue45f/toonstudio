@@ -1,14 +1,14 @@
 {
   "control.language.label": "Llengua",
-  "control.sound.enable": "Abilitar efectes sonors",
-  "control.sound.disable": "Desactivar els efectes sonors",
-  "control.theme.dark": "Passa al mode de llum",
-  "control.theme.light": "Passa al mode fosc",
-  "control.settings.open": "Configuracions obertes",
-  "control.settings.close": "Configuracions de tancament",
-  "control.cluster.settings": "Controls de son, tema, llenguatge",
-  "control.cluster.open": "Configuracions obertes",
-  "control.cluster.tooltip": "Configuracions de son, tema i llenguatge",
   "control.language.group.translated": "Traduccions d'alta cobertura",
-  "control.language.group.englishBase": "Traducció automàtica · Fallback anglès"
+  "control.language.group.englishBase": "Traducció automàtica · anglès com a alternativa",
+  "control.sound.enable": "Activa els efectes de so",
+  "control.sound.disable": "Desactivar els efectes sonors",
+  "control.theme.dark": "Canvia al mode clar",
+  "control.theme.light": "Canvia al mode fosc",
+  "control.settings.open": "Obre la configuració",
+  "control.settings.close": "Tanca la configuració",
+  "control.cluster.settings": "Controls de so, tema i idioma",
+  "control.cluster.open": "Obre la configuració",
+  "control.cluster.tooltip": "Configuració de so, tema i idioma"
 }

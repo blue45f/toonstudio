@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "ସବୁକିଛି ସଫା କରନ୍ତୁ",
   "search.explorer.recent.delete": "ନିକଟରେ କରାଯାଇଥିବା ସର୍ଚ୍ଚକୁ ହଟାଇବା {query}",
   "search.explorer.recent.searchAgain": "ନିକଟରେ ଥିବା କିୱାର୍ଡରୁ ପୁଣି ଥରେ ସନ୍ଧାନ କରନ୍ତୁ",
+  "search.explorer.suggestions.popular": "ଲୋକପ୍ରିୟ ସନ୍ଧାନ",
+  "search.explorer.suggestions.genres": "ପରାମର୍ଶିତ ଧାରା",
+  "search.explorer.suggestions.searchFor": "{query} ଖୋଜନ୍ତୁ",
+  "search.explorer.suggestions.genreFilter": "ଧାରା {genre} ଦ୍ୱାରା ସଂକୀର୍ଣ୍ଣ କରନ୍ତୁ",
+  "search.explorer.suggestions.loading": "ପରାମର୍ଶିତ ସନ୍ଧାନ ଲୋଡ୍ ହେଉଛି",
+  "search.explorer.suggestions.error": "ପରାମର୍ଶିତ ସନ୍ଧାନ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। କିଛି ସମୟ ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "search.explorer.suggestions.empty": "ଏବେ କୌଣସି ପରାମର୍ଶ ନାହିଁ। ଶୀର୍ଷକ, ଲେଖକ କିମ୍ବା ଟ୍ୟାଗ୍ ଟାଇପ୍ କରି ଦେଖନ୍ତୁ।",
   "search.explorer.catalog.label": "ତାଲିକା",
   "search.explorer.catalog.empty": "କ୍ୟାଟଲଗ ଖାଲି ଅଛି",
   "search.explorer.currentFilter": "ପ୍ରଚଳିତ ଫିଲ୍ଟର",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}m ପୂର୍ବରୁ |",
   "search.explorer.time.hoursAgo": "{count} ଘଣ୍ଟା ପୂର୍ବେ",
   "search.explorer.time.daysAgo": "{count} ଦିନ ତଳେ",
-  "search.explorer.loadMore": "ଅଧିକ ଭରଣ କରନ୍ତୁ",
-  "search.explorer.suggestions.popular": "ଲୋକପ୍ରିୟ ସନ୍ଧାନ",
-  "search.explorer.suggestions.genres": "ପରାମର୍ଶିତ ଧାରା",
-  "search.explorer.suggestions.searchFor": "{query} ଖୋଜନ୍ତୁ",
-  "search.explorer.suggestions.genreFilter": "ଧାରା {genre} ଦ୍ୱାରା ସଂକୀର୍ଣ୍ଣ କରନ୍ତୁ",
-  "search.explorer.suggestions.loading": "ପରାମର୍ଶିତ ସନ୍ଧାନ ଲୋଡ୍ ହେଉଛି",
-  "search.explorer.suggestions.error": "ପରାମର୍ଶିତ ସନ୍ଧାନ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। କିଛି ସମୟ ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
-  "search.explorer.suggestions.empty": "ଏବେ କୌଣସି ପରାମର୍ଶ ନାହିଁ। ଶୀର୍ଷକ, ଲେଖକ କିମ୍ବା ଟ୍ୟାଗ୍ ଟାଇପ୍ କରି ଦେଖନ୍ତୁ।"
+  "search.explorer.loadMore": "ଅଧିକ ଭରଣ କରନ୍ତୁ"
 }

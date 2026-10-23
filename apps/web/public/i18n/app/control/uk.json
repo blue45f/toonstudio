@@ -1,5 +1,7 @@
 {
   "control.language.label": "Мова",
+  "control.language.group.translated": "Переклади з високим покриттям",
+  "control.language.group.englishBase": "Автоматичний переклад · Англійська перехід",
   "control.sound.enable": "Отримати звукові ефекти",
   "control.sound.disable": "Виключити звукові ефекти",
   "control.theme.dark": "Перейти на світловий режим",
@@ -8,7 +10,5 @@
   "control.settings.close": "Затверджені налаштування",
   "control.cluster.settings": "Звук, тематика, мовний контроль",
   "control.cluster.open": "Відкриті налаштування",
-  "control.cluster.tooltip": "Звук, тематика та налаштування мови",
-  "control.language.group.translated": "Переклади з високим покриттям",
-  "control.language.group.englishBase": "Автоматичний переклад · Англійська перехід"
+  "control.cluster.tooltip": "Звук, тематика та налаштування мови"
 }

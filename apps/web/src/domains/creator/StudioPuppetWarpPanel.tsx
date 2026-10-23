@@ -11,7 +11,7 @@
  * 둘 다 이 패널 밖에서 일어난다 — 이 패널은 "이미 놓인 핀들의 목록 관리 + 실행" 만 담당한다
  * (StudioPerspectivePanel 이 소실점 드래그를 오버레이에 맡기는 것과 동일 역할 분담).
  */
-import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07"; import { r44CreatorStatusText } from "./r44-cat1-status-i18n";
 import { Check, RotateCcw, Trash2, Waypoints, X } from "lucide-react";
 import { useId } from "react";
 
@@ -60,7 +60,7 @@ export function StudioPuppetWarpPanel({
       ? `이미지를 클릭해 핀을 놓으세요(최대 ${MAX_PUPPET_PINS}개). 핀을 드래그하면 주변 메쉬가 함께 움직입니다.`
       : !canApply
         ? "핀을 원본 위치에서 움직여 변형을 만든 뒤 적용하세요."
-        : "변형을 적용할 준비가 됐습니다. 적용 전까지 원본 픽셀은 바뀌지 않습니다.";
+        : r44CreatorStatusText("r44cat1.creator.puppetWarp.readyStatus", "변형을 적용할 준비가 됐습니다. 적용 전까지 원본 픽셀은 바뀌지 않습니다.");
   return (
     <div className="mt-2.5 space-y-2 rounded-xl border border-line bg-card/45 p-2.5">
       <div className="flex items-center justify-between gap-2">

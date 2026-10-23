@@ -1,9 +1,9 @@
 {
-  "fortune.title": "Daily Webtoon Fortune · ToonStudio",
-  "fortune.subtitle": "Find the webtoon character that matches you and check today's fortune.",
-  "fortune.today": "Today's Fortune",
-  "fortune.zodiac": "Zodiac Fortune",
-  "fortune.saju": "Saju (Four Pillars)",
-  "fortune.compatibility": "Compatibility",
-  "fortune.tarot": "Today's Tarot"
+  "fortune.title": "Napi webtoon-horoszkóp · ToonStudio",
+  "fortune.subtitle": "Találd meg a hozzád illő webtoon-karaktert, és nézd meg a mai horoszkópodat.",
+  "fortune.today": "Mai horoszkóp",
+  "fortune.zodiac": "Csillagjegy-horoszkóp",
+  "fortune.saju": "Saju (Négy pillér)",
+  "fortune.compatibility": "Összeillőség",
+  "fortune.tarot": "Mai tarot"
 }

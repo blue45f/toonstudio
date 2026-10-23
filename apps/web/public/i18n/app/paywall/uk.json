@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Ранній доступ для прихильників на {days} днів",
   "paywall.creatorPage.preview": "Попередній перегляд",
   "paywall.creatorPage.save": "Зберегти політику",
+  "paywall.creatorPage.statusDaysRange": "ранній доступ {min}–{max} днів",
+  "paywall.creatorPage.statusDaysSingle": "ранній доступ {days} днів",
+  "paywall.creatorPage.statusSummary": "{total} політик · {active} увімк.",
   "paywall.creatorPage.subtitle": "Налаштуйте ранній доступ: спочатку прихильники, безкоштовно для всіх через N днів.",
   "paywall.creatorPage.title": "Ранній доступ",
   "paywall.creatorPage.titleIdLabel": "ID твору",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Попередній перегляд вигляду читача",
   "paywall.titleNotice.body": "Цей твір виходить для прихильників на {days} днів раніше. Якщо зачекати, він стане безкоштовним.",
   "paywall.titleNotice.label": "Сповіщення про ранній доступ",
-  "paywall.titleNotice.title": "Діє ранній доступ для прихильників",
-  "paywall.creatorPage.statusDaysRange": "ранній доступ {min}–{max} днів",
-  "paywall.creatorPage.statusDaysSingle": "ранній доступ {days} днів",
-  "paywall.creatorPage.statusSummary": "{total} політик · {active} увімк."
+  "paywall.titleNotice.title": "Діє ранній доступ для прихильників"
 }

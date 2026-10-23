@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Nešlo mi načítať oznámenie.",
-  "notify.empty": "Žiadne nové oznámenie."
+  "notify.loadError": "Nepodarilo sa načítať oznámenia. Skúste to o chvíľu znova.",
+  "notify.empty": "Žiadne nové oznámenia."
 }

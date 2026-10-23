@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "Аяқталған",
-  "review.progress.binge": "Бинг-ринг",
+  "review.progress.binge": "Бір деммен оқу",
   "review.progress.upcoming": "Жоспарланған",
-  "review.progress.abandoned": "Алып тасталды",
-  "review.progress.unknown": "Жасырланған даму",
+  "review.progress.abandoned": "Оқуды тоқтатқан",
+  "review.progress.unknown": "Барысы жасырылған",
   "review.spoilerRevealLabel": "Спойлер көрсетілсін"
 }

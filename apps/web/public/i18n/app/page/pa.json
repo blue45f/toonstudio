@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "ਸਫ਼ਾ ਨਹੀਂ ਮਿਲਿਆ",
-  "page.notFound.message": "URL ਨੂੰ ਦੁਬਾਰਾ ਚੈੱਕ ਕਰੋ ਜਾਂ ਹੋਮ ਪੇਜ ਤੋਂ ਸਿਰਲੇਖਾਂ ਦੀ ਪੜਚੋਲ ਕਰੋ।",
-  "page.notFound.home": "ਘਰ ਵਾਪਸ ਜਾਓ",
   "page.events.board.community": "ਕਮਿਊਨਿਟੀ ਬੋਰਡ",
   "page.events.board.official": "ਅਧਿਕਾਰਤ ਸਮਾਗਮ",
   "page.events.board.title": "ਸਮਾਗਮ ਸੂਚੀ",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "ਬੀਟਾ ਲਾਭ ਵੇਖੋ",
   "page.events.hero.secondary": "ਕਮਿਊਨਿਟੀ ਸਮਾਗਮ ਬੋਰਡ",
   "page.events.hero.title": "ਸਮਾਗਮ ਬੋਰਡ",
+  "page.notFound.home": "ਘਰ ਵਾਪਸ ਜਾਓ",
+  "page.notFound.message": "URL ਨੂੰ ਦੁਬਾਰਾ ਚੈੱਕ ਕਰੋ ਜਾਂ ਹੋਮ ਪੇਜ ਤੋਂ ਸਿਰਲੇਖਾਂ ਦੀ ਪੜਚੋਲ ਕਰੋ।",
   "page.notFound.quip.1": "ਅਰੇ? ਇਹ ਪੈਨਲ ਅਜੇ ਬਣਾਇਆ ਹੀ ਨਹੀਂ ਗਿਆ!",
   "page.notFound.quip.2": "ਸਿਆਹੀ ਸੁੱਕਣ ਤੋਂ ਪਹਿਲਾਂ ਹੀ ਤੁਸੀਂ ਭਟਕ ਗਏ।",
   "page.notFound.quip.3": "ਅਗਲੇ ਐਪੀਸੋਡ ਵਿੱਚ ਮਿਲਦੇ ਹਾਂ… ਸ਼ਾਇਦ!",
   "page.notFound.quip.4": "ਕਲਾਕਾਰ ਹੁਣੇ ਇਹ ਪੇਜ ਬਣਾ ਰਿਹਾ ਹੈ।",
-  "page.notFound.tapHint": "ਨੰਬਰਾਂ ਨੂੰ ਟੈਪ ਕਰੋ"
+  "page.notFound.tapHint": "ਨੰਬਰਾਂ ਨੂੰ ਟੈਪ ਕਰੋ",
+  "page.notFound.title": "ਸਫ਼ਾ ਨਹੀਂ ਮਿਲਿਆ"
 }

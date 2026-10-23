@@ -1,8 +1,8 @@
 {
   "review.progress.complete": "ສໍາ ເລັດແລ້ວ",
-  "review.progress.binge": "ການຮ້ອງໄຫ້",
+  "review.progress.binge": "ກຳລັງອ່ານຕໍ່ເນື່ອງ",
   "review.progress.upcoming": "ແຜນການ",
-  "review.progress.abandoned": "ຖືກຖິ້ມ",
+  "review.progress.abandoned": "ຢຸດກາງຄັນ",
   "review.progress.unknown": "ຄວາມກ້າວຫນ້າທີ່ເຊື່ອງໄວ້",
   "review.spoilerRevealLabel": "ສະແດງ spoiler"
 }

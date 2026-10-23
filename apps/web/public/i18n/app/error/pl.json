@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Przeładowanie najnowszej wersji...",
-  "error.chunkRetryFailed": "Znowu się odświeżyłem, ale problem trwa.",
-  "error.reloadButton": "Przeładowanie strony",
-  "error.goHome": "Idź do domu",
+  "error.reloading": "Ponowne wczytywanie najnowszej wersji…",
+  "error.chunkRetryFailed": "Odświeżono raz, ale problem nadal występuje. Sprawdź połączenie i spróbuj ponownie.",
+  "error.reloadButton": "Wczytaj stronę ponownie",
+  "error.goHome": "Przejdź na stronę główną",
   "error.retryDesc": "Proszę spróbować jeszcze raz lub wrócić na stronę główną."
 }

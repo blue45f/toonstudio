@@ -1,10 +1,10 @@
 {
   "ad.creativeFallbackAlt": "Zdjęcie sponsorowane",
-  "ad.slotAriaLabel": "Słupka reklamowa",
+  "ad.slotAriaLabel": "Miejsce reklamowe",
   "ad.slotLabel": "Sponsorowane",
   "ad.slotTitle": "Zawartość sponsorowana",
-  "ad.ctaDetails": "Widać szczegóły",
-  "ad.placeholderAriaLabel": "Wykrywacz ogłoszeń",
+  "ad.ctaDetails": "Zobacz szczegóły",
+  "ad.placeholderAriaLabel": "Miejsce zastępcze reklamy",
   "ad.placeholderText": "Nie ma dostępnych treści sponsorowanych.",
   "ad.tag": "Reklama"
 }

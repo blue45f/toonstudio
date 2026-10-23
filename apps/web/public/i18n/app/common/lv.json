@@ -1,16 +1,16 @@
 {
-  "common.loading": "Saldēšana",
-  "common.loading.short": "Saldēšana",
+  "common.loading": "Ielādē",
+  "common.loading.short": "Ielādē",
   "common.close": "Aizvērt",
   "common.open": "Atvērt",
   "common.search": "Meklēt",
-  "common.retry": "Izdzīvojiet vēlreiz",
-  "common.retry.short": "Izdzīvojiet vēlreiz",
+  "common.retry": "Mēģināt vēlreiz",
+  "common.retry.short": "Mēģināt vēlreiz",
   "common.backToTop": "Atpakaļ uz augšu",
-  "common.backToHome": "Ej mājās.",
-  "common.loading.search": "Izmeklēšana...",
-  "common.notFoundWithQuery": "Nav rezultātiem \" {query} \".",
-  "common.openSearch": "Ievērojot →",
-  "common.loading.empty": "Nav atgriezies dati.",
-  "common.retry.all": "Izdzīvoj vēlreiz vai atgriezies mājās."
+  "common.backToHome": "Uz sākumu",
+  "common.loading.search": "Meklē…",
+  "common.notFoundWithQuery": "Nav rezultātu vaicājumam '{query}'.",
+  "common.openSearch": "Atrast meklēšanā →",
+  "common.loading.empty": "Netika atgriezti dati.",
+  "common.retry.all": "Mēģiniet vēlreiz vai atgriezieties sākumā."
 }

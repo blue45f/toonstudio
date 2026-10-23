@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days}-दिवस समर्थक लवकर प्रवेश",
   "paywall.creatorPage.preview": "पूर्वावलोकन",
   "paywall.creatorPage.save": "धोरण जतन करा",
+  "paywall.creatorPage.statusDaysRange": "लवकर प्रवेश {min}–{max} दिवस",
+  "paywall.creatorPage.statusDaysSingle": "लवकर प्रवेश {days} दिवस",
+  "paywall.creatorPage.statusSummary": "{total} धोरणे · {active} सुरू",
   "paywall.creatorPage.subtitle": "लवकर प्रवेश सेट करा: प्रथम समर्थक, N दिवसांनंतर सर्वांसाठी मोफत.",
   "paywall.creatorPage.title": "लवकर प्रवेश",
   "paywall.creatorPage.titleIdLabel": "शीर्षक ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "वाचक दृश्य पूर्वावलोकन",
   "paywall.titleNotice.body": "हे शीर्षक समर्थकांसाठी {days} दिवस लवकर प्रकाशित होते. तुम्ही प्रतीक्षा केल्यास ते मोफत होते.",
   "paywall.titleNotice.label": "लवकर प्रवेश सूचना",
-  "paywall.titleNotice.title": "समर्थक लवकर प्रवेश लागू आहे",
-  "paywall.creatorPage.statusDaysRange": "लवकर प्रवेश {min}–{max} दिवस",
-  "paywall.creatorPage.statusDaysSingle": "लवकर प्रवेश {days} दिवस",
-  "paywall.creatorPage.statusSummary": "{total} धोरणे · {active} सुरू"
+  "paywall.titleNotice.title": "समर्थक लवकर प्रवेश लागू आहे"
 }

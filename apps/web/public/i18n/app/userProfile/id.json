@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Karya yang dibuat",
   "userProfile.tabs.series": "Serial",
   "userProfile.works.empty": "Pengguna ini belum memiliki karya publik.",
+  "userProfile.works.error": "Karya yang dibuat tidak dapat dimuat. Silakan coba lagi.",
   "userProfile.series.empty": "Pengguna ini belum memiliki seri.",
+  "userProfile.series.error": "Serial tidak dapat dimuat. Silakan coba lagi.",
   "userProfile.fetchError": "Tidak bisa memuat profil.",
   "userProfile.authorFallback": "Pengguna",
   "userProfile.metaTemplate": "{author} profil · {reviews} ulasan · {works} karya · rating avg {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Konten profil",
   "userProfile.refresh": "Pembaharuan",
   "userProfile.emptyReviews": "Belum ada ulasan yang diterbitkan oleh pengguna ini.",
-  "userProfile.works.error": "Karya yang dibuat tidak dapat dimuat. Silakan coba lagi.",
-  "userProfile.series.error": "Serial tidak dapat dimuat. Silakan coba lagi.",
   "userProfile.emptyReviewsHint": "Tinggalkan ulasan pertama pada karya yang Anda sukai.",
   "userProfile.emptyReviewsCta": "Jelajahi karya"
 }

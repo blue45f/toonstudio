@@ -28,8 +28,9 @@
   "footer.link.shaper": "Karakter Shaper",
   "footer.link.market": "Market ng mga Tagalikha",
   "footer.link.news": "Mga balita ng mga nobela sa Toon & web",
-  "footer.link.about": "About ToonStudio",
+  "footer.link.about": "Tungkol sa ToonStudio",
   "footer.link.guide": "Mga patakaran sa ranggo",
+  "footer.link.features": "Lahat ng feature sa isang tingin",
   "footer.link.sitemap": "Mapa ng site",
   "footer.link.settings": "Mga setting",
   "footer.link.support": "Suporta",
@@ -42,12 +43,11 @@
   "footer.business.representative": "Representante",
   "footer.business.privacyOfficer": "Ang opisyal sa privacy",
   "footer.business.registrationNumber": "Bilang ng pagpaparehistro ng negosyo",
-  "footer.business.address": "Address",
+  "footer.business.address": "Tirahan",
   "footer.business.email": "Email",
   "footer.business.phone": "Telepono",
   "footer.business.hosting": "Serbisyo sa pagho-host",
   "footer.business.serviceType": "Ang uri ng platform",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "I-create ang iyong susunod na kwento",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "I-create ang iyong susunod na kwento"
 }

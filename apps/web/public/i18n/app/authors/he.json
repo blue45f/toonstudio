@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "מובילה של המחבר",
+  "authors.eyebrow": "מדריך מחברים",
   "authors.title": "סופרים",
-  "authors.desc": "סופרים לפי מספר עבודות. לחץ על סופרת כדי לראות את הכותרות שלהם, דירוגים, וקפה מעריצים במקום אחד.",
-  "authors.search": "שם המחבר",
-  "authors.error": "לא הצלחתי להעלות את רשימת המחברים.",
-  "authors.empty": "אין מחבר מתאים.",
+  "authors.desc": "מחברים מדורגים לפי מספר יצירות. הקישו על מחבר כדי לראות את היצירות, הדירוגים וקפה המעריצים שלו במקום אחד.",
+  "authors.search": "חיפוש לפי שם מחבר",
+  "authors.error": "לא ניתן לטעון את רשימת המחברים. נסו שוב בעוד רגע.",
+  "authors.empty": " — אין מחבר מתאים.",
   "authors.allOf": "של",
   "authors.topOf": "· למעלה",
   "authors.people": "",
-  "authors.works": "עבודות",
+  "authors.works": " יצירות",
   "authors.views": "תצפיות",
-  "authors.pencafe": "קפה מעריצים יוצר",
-  "authors.stats": "מחברים של {shown} מתוך {total}",
-  "authors.noName": "יצרן"
+  "authors.pencafe": "קפה המעריצים של היוצר",
+  "authors.stats": "המובילים: {shown} מתוך {total} מחברים",
+  "authors.noName": "יוצר"
 }

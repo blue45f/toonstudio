@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "সমৰ্থিত হোৱা নাই।",
-  "avatar.error.processFailed": "ছবি প্ৰক্ৰিয়া কৰাত ব্যৰ্থ।",
-  "avatar.processing": "প্ৰক্ৰিয়া কৰা...",
+  "avatar.error.invalidType": "সমৰ্থিত নহোৱা ছবিৰ প্ৰকাৰ।",
+  "avatar.error.processFailed": "ছবি প্ৰক্ৰিয়া কৰিব পৰা নগ'ল। বেলেগ ছবিৰে পুনৰ চেষ্টা কৰক।",
+  "avatar.processing": "প্ৰক্ৰিয়া কৰা…",
   "avatar.select": "ছবি সলনি কৰক",
-  "avatar.remove": "ছবি আঁতৰাব",
-  "avatar.uploadHint": "কেৱল JPG, PNG, আৰু WEBP ছবি সমৰ্থন কৰা হয়, তাৰ পিছত প্ৰিভিউৰ বাবে ক্রপ কৰা হয়।",
+  "avatar.remove": "ছবি আঁতৰাওক",
+  "avatar.uploadHint": "কেৱল JPG, PNG আৰু WEBP ছবিহে সমৰ্থিত, তাৰ পিছত পূৰ্বদৰ্শনৰ বাবে ক্ৰপ কৰা হয়।",
   "avatar.changeAria": "প্ৰফাইল ছবি সলনি কৰক"
 }

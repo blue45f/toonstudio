@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Negaliu įkrauti atsiliepimų apklausos.",
+  "feedback.loadError": "Nepavyko įkelti atsiliepimų apklausos. Po akimirkos bandykite dar kartą.",
   "feedback.thankYou": "Ačiū už jūsų vertingą atsiliepimą!",
-  "feedback.anonymousNote": "Jūsų atsakymai laikomi anonimi.",
-  "feedback.notAtAll": "Nėra.",
-  "feedback.definitely": "Žinoma."
+  "feedback.anonymousNote": "Jūsų atsakymai yra griežtai anoniminiai.",
+  "feedback.notAtAll": "Visiškai ne",
+  "feedback.definitely": "Tikrai taip"
 }

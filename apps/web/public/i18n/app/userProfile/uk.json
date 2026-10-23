@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Створене твори",
   "userProfile.tabs.series": "Серія",
   "userProfile.works.empty": "У цього користувача ще немає публічних робіт.",
+  "userProfile.works.error": "Не вдалося завантажити створені твори. Спробуйте знову.",
   "userProfile.series.empty": "У цього користувача ще немає серій.",
+  "userProfile.series.error": "Не вдалося завантажити серії. Спробуйте знову.",
   "userProfile.fetchError": "Не можна завантажити профіль.",
   "userProfile.authorFallback": "Користувач",
   "userProfile.metaTemplate": "Профіль {author} · Рецензії {reviews} · Роби {works} · рейтинг {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Контент профілю",
   "userProfile.refresh": "Оновлення",
   "userProfile.emptyReviews": "До цього часу цього користувача не було опубліковано відгуків.",
-  "userProfile.works.error": "Не вдалося завантажити створені твори. Спробуйте знову.",
-  "userProfile.series.error": "Не вдалося завантажити серії. Спробуйте знову.",
   "userProfile.emptyReviewsHint": "Залиште перший відгук про твір, який вам подобається.",
   "userProfile.emptyReviewsCta": "Переглянути твори"
 }

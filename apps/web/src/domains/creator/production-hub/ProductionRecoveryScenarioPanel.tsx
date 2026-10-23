@@ -33,6 +33,7 @@ import {
   type ProductionRecoveryScenarioKind,
 } from "./production-risk-scenarios";
 
+import { r44CreatorHubStatusText } from "../r44-cat1-hub-status-i18n";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
@@ -293,8 +294,8 @@ export function ProductionRecoveryScenarioPanel({
           <div className="min-w-0">
             <p className="text-xs font-black text-fg">{undoConflictTaskIds.length > 0 ? `${lastApplied.title} 이후 추가 변경 감지` : `${lastApplied.title} 적용됨`}</p>
             <p className="mt-1 text-[0.6875rem] leading-5 text-fg-2">{undoConflictTaskIds.length > 0
-              ? `같은 업무 ${undoConflictTaskIds.length}개가 이후 변경되어 자동 되돌리기를 잠갔습니다. 최신 내용을 확인한 뒤 직접 조정해 주세요.`
-              : "원래 업무 상태를 보관했습니다. 이후 같은 업무가 바뀌면 덮어쓰지 않고 되돌리기를 중단합니다."}</p>
+              ? r44CreatorHubStatusText("r44cat1.hub.recovery.undoConflictBody", { count: undoConflictTaskIds.length }, "같은 업무 {count}개가 이후 변경되어 자동 되돌리기를 잠갔습니다. 최신 내용을 확인한 뒤 직접 조정해 주세요.")
+              : r44CreatorHubStatusText("r44cat1.hub.recovery.originalKeptBody", "원래 업무 상태를 보관했습니다. 이후 같은 업무가 바뀌면 덮어쓰지 않고 되돌리기를 중단합니다.")}</p>
           </div>
           <button
             type="button"

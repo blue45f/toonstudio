@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Сурамжылоону жүктөп алчу эмесмин.",
+  "feedback.loadError": "Пикир сурамжылоосун жүктөө мүмкүн болгон жок. Бир аздан кийин кайра аракет кылыңыз.",
   "feedback.thankYou": "Сиздин баа жеткис пикирлериңиз үчүн рахмат!",
   "feedback.anonymousNote": "Сиздин жоопторуңуз анонимдүү сакталат.",
-  "feedback.notAtAll": "Жок , такыр эмес",
-  "feedback.definitely": "Албетте , так ошондой ."
+  "feedback.notAtAll": "Такыр жок",
+  "feedback.definitely": "Албетте"
 }

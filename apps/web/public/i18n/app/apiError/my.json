@@ -5,5 +5,5 @@
   "apiError.notFound": "တောင်းဆိုထားသော ပစ္စည်းကို ရှာမတွေ့နိုင်ပါ။",
   "apiError.unsupportedType": "မထောက်ပံ့တဲ့ အကြောင်းအရာအမျိုးအစား။",
   "apiError.inactiveAccount": "မလုပ်ဆောင်တဲ့ အကောင့်တွေက Administrator Features ကို သုံးလို့မရဘူး။",
-  "apiError.settlementFailed": "ငွေပေးချေမှု လုပ်ငန်းစဉ် ကျရှုံးခဲ့တယ်။"
+  "apiError.settlementFailed": "ငွေရှင်းမှု ဆောင်ရွက်ခြင်း မအောင်မြင်ပါ။ ခဏအကြာတွင် ထပ်စမ်းကြည့်ပါ။"
 }

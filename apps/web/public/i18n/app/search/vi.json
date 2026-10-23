@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Tẩy sạch mọi thứ",
   "search.explorer.recent.delete": "Xóa truy vấn gần đây {query}",
   "search.explorer.recent.searchAgain": "Tìm kiếm lại từ khóa gần đây",
+  "search.explorer.suggestions.popular": "Tìm kiếm phổ biến",
+  "search.explorer.suggestions.genres": "Thể loại đề xuất",
+  "search.explorer.suggestions.searchFor": "Tìm kiếm {query}",
+  "search.explorer.suggestions.genreFilter": "Thu hẹp theo thể loại {genre}",
+  "search.explorer.suggestions.loading": "Đang tải tìm kiếm đề xuất",
+  "search.explorer.suggestions.error": "Không tải được tìm kiếm đề xuất. Vui lòng thử lại sau ít phút.",
+  "search.explorer.suggestions.empty": "Hiện chưa có đề xuất nào. Hãy thử nhập tên tác phẩm, tác giả hoặc thẻ.",
   "search.explorer.catalog.label": "Thống kê",
   "search.explorer.catalog.empty": "Thư mục trống",
   "search.explorer.currentFilter": "Bộ lọc hiện tại",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} phút trước",
   "search.explorer.time.hoursAgo": "{count} giờ trước",
   "search.explorer.time.daysAgo": "{count} ngày trước",
-  "search.explorer.loadMore": "Lắp thêm",
-  "search.explorer.suggestions.popular": "Tìm kiếm phổ biến",
-  "search.explorer.suggestions.genres": "Thể loại đề xuất",
-  "search.explorer.suggestions.searchFor": "Tìm kiếm {query}",
-  "search.explorer.suggestions.genreFilter": "Thu hẹp theo thể loại {genre}",
-  "search.explorer.suggestions.loading": "Đang tải tìm kiếm đề xuất",
-  "search.explorer.suggestions.error": "Không tải được tìm kiếm đề xuất. Vui lòng thử lại sau ít phút.",
-  "search.explorer.suggestions.empty": "Hiện chưa có đề xuất nào. Hãy thử nhập tên tác phẩm, tác giả hoặc thẻ."
+  "search.explorer.loadMore": "Lắp thêm"
 }
