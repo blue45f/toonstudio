@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import { fnv1a64 } from "../core/hash";
-import { renderPresetThumbnail } from "../raster/reference-renderer";
-import { zigzagStroke } from "../testing/synthetic-strokes";
+import {
+  clearSurfaceCaches,
+  MAX_PAPER_CACHE_ENTRIES,
+  MAX_TIP_CACHE_ENTRIES,
+  paperFor,
+  renderPresetThumbnail,
+  renderStroke,
+  Surface,
+  surfaceCacheStats,
+  tipChainFor,
+} from "../raster/reference-renderer";
+import { pressureTriangleStroke, zigzagStroke } from "../testing/synthetic-strokes";
 
 import { DEFAULT_PRESET_ID, hasPreset, PRESET_CATALOG, PRESET_IDS, presetById, presetsByFamily } from "./catalog";
 import { FAMILY_METRIC_KEYS, FAMILY_TARGETS, familyTargetsComplete, metricKeysForFamily } from "./families";
@@ -171,4 +181,74 @@ describe("매체 가족 품질 목표", () => {
     for (const family of BRUSH_FAMILIES) for (const m of FAMILY_TARGETS[family].metrics) used.add(m.key);
     for (const key of FAMILY_METRIC_KEYS) expect(used.has(key), key).toBe(true);
   });
+
+  it("31종 전체 프리셋 연속 장시간 세션(건식·습식·유화·블렌드·지우개 교차 + 획 취소 복원)이 유한 픽셀·premultiplied 불변식·결정성을 유지한다", () => {
+    const strokeA = zigzagStroke(THUMB, { durationMs: 280 });
+    const strokeB = pressureTriangleStroke(8, 8, THUMB - 8, THUMB - 8, { durationMs: 240 });
+    const runSoakSession = (): { hash: string; totalDabs: number } => {
+      const surface = new Surface(THUMB, THUMB);
+      let totalDabs = 0;
+      for (let i = 0; i < PRESET_CATALOG.length; i += 1) {
+        const preset = PRESET_CATALOG[i];
+        if (!preset) continue;
+        const samples = i % 2 === 0 ? strokeA : strokeB;
+        const color: [number, number, number, number] = [
+          ((i * 53) % 200) / 255,
+          ((i * 97 + 40) % 200) / 255,
+          ((i * 149 + 80) % 200) / 255,
+          1,
+        ];
+        // 매체 전환 도중 abortStroke가 이전 문서·습식 층을 완벽히 복원하는지 중간 검증
+        if (i % 6 === 3) {
+          const beforeLinear = surface.toLinear();
+          surface.beginStroke(preset, 100 + i);
+          const abortReceipt = surface.abortStroke();
+          expect(abortReceipt.aborted, `${preset.id} abort`).toBe(true);
+          expect(abortReceipt.restored, `${preset.id} restored`).toBe(true);
+          expect(Array.from(surface.toLinear())).toEqual(Array.from(beforeLinear));
+        }
+        const res = renderStroke(preset, samples, {
+          width: THUMB,
+          height: THUMB,
+          seed: i + 1,
+          color,
+          surface,
+        });
+        expect(res.dabs, `${preset.id} soak dabs`).toBeGreaterThan(0);
+        totalDabs += res.dabs;
+        // 선형 premultiplied 불변식(0 <= r,g,b <= a + 1e-4 <= 1.0001)과 NaN/Infinity 부재 검증
+        for (let p = 0; p < res.linear.length; p += 4) {
+          const r = res.linear[p] ?? 0;
+          const g = res.linear[p + 1] ?? 0;
+          const b = res.linear[p + 2] ?? 0;
+          const a = res.linear[p + 3] ?? 0;
+          expect(Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b) && Number.isFinite(a), `${preset.id} finite`).toBe(true);
+          expect(a >= -1e-5 && a <= 1 + 1e-4, `${preset.id} alpha range`).toBe(true);
+          expect(r <= a + 1e-4 && g <= a + 1e-4 && b <= a + 1e-4, `${preset.id} premultiplied`).toBe(true);
+        }
+      }
+      const finalImg = surface.toLabImage();
+      return { hash: imageHash(finalImg.data), totalDabs };
+    };
+    const first = runSoakSession();
+    const second = runSoakSession();
+    expect(first.totalDabs).toBeGreaterThan(PRESET_CATALOG.length * 5);
+    expect(second.hash).toBe(first.hash);
+  }, SLOW_RENDER_TIMEOUT_MS);
+
+  it("장시간 슬라이더 조작 시 팁·종이 프로세스 캐시가 LRU 상한(96/24)을 넘지 않고 결정성을 유지한다", () => {
+    clearSurfaceCaches();
+    expect(surfaceCacheStats().tipEntries).toBe(0);
+    expect(surfaceCacheStats().paperEntries).toBe(0);
+    for (let i = 0; i < MAX_TIP_CACHE_ENTRIES + 16; i += 1) {
+      tipChainFor("round", i + 1, { hardness: (i % 10) / 10, aspect: 1 });
+    }
+    for (let i = 0; i < MAX_PAPER_CACHE_ENTRIES + 8; i += 1) {
+      paperFor({ enabled: true, seed: i + 1, scale: 1, roughness: 0.4, absorbency: 0.5 });
+    }
+    const stats = surfaceCacheStats();
+    expect(stats.tipEntries).toBeLessThanOrEqual(MAX_TIP_CACHE_ENTRIES);
+    expect(stats.paperEntries).toBeLessThanOrEqual(MAX_PAPER_CACHE_ENTRIES);
+  }, SLOW_RENDER_TIMEOUT_MS);
 });
+

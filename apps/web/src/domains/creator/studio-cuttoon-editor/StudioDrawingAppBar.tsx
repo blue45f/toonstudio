@@ -316,7 +316,8 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           {/* 현재 색상 스와치 버튼 */}
           <button
             type="button"
-            className="size-6 shrink-0 rounded-full border-2 border-card shadow ring-1 ring-line transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            data-studio-color-swatch="true"
+            className="size-6 shrink-0 rounded-full border-2 border-card shadow ring-1 ring-line transition-transform [forced-color-adjust:none] hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             style={{ backgroundColor: typeof s.color === "string" ? s.color : "#000000" }}
             aria-label={`${tx("현재 색상")} ${String(s.color ?? "")}`}
             title={`${tx("컬러 휠 열기")} (${String(s.color ?? "#000000")})`}

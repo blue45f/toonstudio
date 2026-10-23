@@ -138,3 +138,16 @@ it("resolves a changed transport only when the next stroke starts", () => {
   f.send("pointerrawupdate", { clientX: 80 });
   expect(calls.strokes[1]!.points).toHaveLength(2);
 });
+it("preserves the existing bitmap when the canvas resizes between strokes in a long session", () => {
+  const f = fixture();
+  f.send("pointerdown");
+  f.send("pointerup", { clientX: 90, pressure: 0 });
+  const beforeResizeDraws = f.context.drawImage.mock.calls.length;
+  Object.defineProperty(f.canvas, "clientWidth", { value: 560, configurable: true });
+  f.send("pointerdown", { clientX: 120, clientY: 80 });
+  expect(f.canvas.width).toBe(560);
+  // Snapshot copy + restore drawImage + pre-stroke previousSurface snapshot
+  expect(f.context.drawImage.mock.calls.length).toBeGreaterThanOrEqual(beforeResizeDraws + 2);
+  f.send("pointerup", { clientX: 140, pressure: 0 });
+});
+

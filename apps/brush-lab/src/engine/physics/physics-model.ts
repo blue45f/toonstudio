@@ -139,6 +139,8 @@ export const DEFAULT_PHYSICS_SPEC: PhysicsSpec = {
 /** 고정 물리 틱(초). 240 Hz. */
 export const PHYSICS_DT_S = 1 / 240;
 export const PHYSICS_DT_MS = 1000 / 240;
+/** 장시간 정지·백그라운드 탭 복귀 시 단일 표본 dt 폭주를 막는 물리 틱 적분 상한(ms, 최대 240틱 = 모든 접촉 스프링·히스테리시스 정상 상태 도달 시간의 20배 이상). */
+export const MAX_PHYSICS_STEP_DT_MS = 1000;
 
 export interface PhysicsModelOptions {
   /** 팁 반경(px) = tip.sizePx / 2. */
@@ -217,7 +219,8 @@ export class PhysicsModel {
       this.reset(cur.pressure);
     }
     const prev = this.prev ?? cur;
-    this.accumulatorMs += Math.max(0, dtMs);
+    const safeDtMs = Number.isFinite(dtMs) ? Math.min(MAX_PHYSICS_STEP_DT_MS, Math.max(0, dtMs)) : 0;
+    this.accumulatorMs += safeDtMs;
     let ticks = Math.floor(this.accumulatorMs / PHYSICS_DT_MS);
     if (ticks === 0 && !this.last) ticks = 1;
     this.accumulatorMs = Math.max(0, this.accumulatorMs - ticks * PHYSICS_DT_MS);

@@ -45,8 +45,8 @@ html[data-studio-canvas-only="true"] body {
   --studio-chrome-h: 2.75rem;
   --studio-rail-w: 3rem;
   --studio-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --studio-chrome-glow: inset 0 1px 0 oklch(0.97 0.012 85 / 0.06);
-  --studio-chrome-edge: oklch(0.34 0.014 64 / 0.75);
+  --studio-chrome-glow: inset 0 1px 0 oklch(0.97 0.012 85 / 0.08);
+  --studio-chrome-edge: oklch(0.46 0.016 64 / 0.88);
   --studio-surface-0: oklch(0.155 0.008 70);
   --studio-surface-1: oklch(0.178 0.009 68);
   --studio-surface-2: oklch(0.205 0.01 66);
@@ -1105,10 +1105,68 @@ body[data-studio-app="true"] .route-stage::before,
 }
 
 @media (prefers-contrast: more) {
+  [data-studio-editor="true"] {
+    --studio-chrome-edge: oklch(0.78 0.02 70 / 0.96);
+    --studio-surface-0: oklch(0.11 0.006 70);
+    --studio-surface-1: oklch(0.14 0.008 68);
+    --studio-surface-2: oklch(0.18 0.01 66);
+    --studio-surface-3: oklch(0.24 0.012 64);
+  }
+
   [data-studio-tool-hint="true"] {
     backdrop-filter: none;
     border-width: 2px;
     box-shadow: 0 16px 36px oklch(0.02 0.01 70 / 0.82);
+  }
+
+  [data-studio-drawing-app-bar="true"],
+  [data-studio-draw-options="true"],
+  [data-studio-select-options="true"],
+  [data-studio-tool-rail="true"],
+  [data-studio-brush-tray="true"],
+  [data-studio-right-dock="true"],
+  .studio-opt-cluster {
+    border-color: var(--studio-chrome-edge) !important;
+  }
+
+  [data-studio-tool-rail-button][aria-pressed="true"],
+  .studio-rail-btn[aria-pressed="true"],
+  [data-studio-brush-card="true"][aria-pressed="true"] {
+    outline: 2px solid oklch(0.88 0.16 55) !important;
+    outline-offset: -1px;
+  }
+
+  [data-studio-editor="true"] input[type="range"] {
+    outline: 1px solid oklch(0.75 0.02 70 / 0.88);
+    outline-offset: 1px;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-studio-drawing-app-bar="true"],
+  [data-studio-draw-options="true"],
+  [data-studio-select-options="true"],
+  [data-studio-tool-rail="true"],
+  [data-studio-brush-tray="true"],
+  [data-studio-right-dock="true"],
+  .studio-opt-cluster {
+    border-color: CanvasText !important;
+    background: Canvas !important;
+    color: CanvasText !important;
+  }
+
+  [data-studio-tool-rail-button][aria-pressed="true"],
+  .studio-rail-btn[aria-pressed="true"],
+  [data-studio-brush-card="true"][aria-pressed="true"] {
+    background: Highlight !important;
+    color: HighlightText !important;
+    border-color: HighlightText !important;
+  }
+
+  [data-studio-color-swatch="true"],
+  [data-studio-pigment-swatch="true"],
+  [data-studio-editor="true"] input[type="color"] {
+    forced-color-adjust: none;
   }
 }
 

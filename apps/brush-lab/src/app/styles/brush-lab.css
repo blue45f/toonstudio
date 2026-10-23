@@ -5,13 +5,15 @@
   --lab-panel: #121a2b;
   --lab-raised: #1a2540;
   --lab-fg: #f3f5ff;
-  --lab-muted: #b9c4dc;
-  --lab-line: #33425f;
-  --lab-accent: #7c68ec;
+  --lab-muted: #c8d3ea;
+  --lab-line: #5f759e;
+  --lab-accent: #8f7eff;
+  --lab-accent-fill: #5138d4;
+  --lab-accent-text: #b4a8ff;
   --lab-focus: #76e4ff;
-  --lab-pass: #4cd98a;
-  --lab-fail: #ff7a7a;
-  --lab-warn: #ffcf6b;
+  --lab-pass: #5be398;
+  --lab-fail: #ff8a8a;
+  --lab-warn: #ffd678;
   --lab-paper: #ffffff;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--lab-fg);
@@ -67,7 +69,7 @@ code,
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--lab-accent);
+  color: var(--lab-accent-text);
 }
 
 .lab-status,
@@ -264,8 +266,10 @@ code,
 }
 
 .lab-button--primary {
-  background: var(--lab-accent);
+  background: var(--lab-accent-fill);
   border-color: var(--lab-accent);
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .lab-button-row {
@@ -453,12 +457,26 @@ code,
 
 @media (prefers-contrast: more) {
   :root {
-    --lab-line: #99aac9;
-    --lab-muted: #e0e7f6;
-    --lab-raised: #223052;
+    --lab-canvas: #050811;
+    --lab-panel: #0b1020;
+    --lab-raised: #141e38;
+    --lab-fg: #ffffff;
+    --lab-muted: #eef3ff;
+    --lab-line: #b8c8e8;
+    --lab-accent: #b4a8ff;
+    --lab-accent-fill: #3f27b8;
+    --lab-accent-text: #d6ceff;
+    --lab-focus: #9ef0ff;
+    --lab-pass: #74f2ab;
+    --lab-fail: #ff9e9e;
+    --lab-warn: #ffe08a;
   }
 
-  .lab-tab[aria-selected="true"] {
+  .lab-tab[aria-selected="true"],
+  .lab-button--primary,
+  .lab-draw-chip[aria-pressed="true"],
+  .lab-draw-brush[aria-pressed="true"],
+  .lab-workflow-step--active {
     border-width: 2px;
   }
 }
@@ -469,14 +487,18 @@ code,
   .lab-card,
   .lab-tab,
   .lab-button,
-  .lab-badge {
+  .lab-badge,
+  .lab-workflow-step {
     border-color: CanvasText;
     forced-color-adjust: auto;
   }
 
-  .lab-tab[aria-selected="true"] {
+  .lab-tab[aria-selected="true"],
+  .lab-button--primary,
+  .lab-workflow-step--active {
     background: Highlight;
     color: HighlightText;
+    border-color: HighlightText;
   }
 
   :focus-visible {
@@ -751,7 +773,9 @@ code,
 
 .lab-draw-chip[aria-pressed="true"] {
   border-color: var(--lab-accent);
-  background: var(--lab-accent);
+  background: var(--lab-accent-fill);
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .lab-draw-brush-list {
@@ -783,8 +807,9 @@ code,
 }
 
 .lab-draw-brush[aria-pressed="true"] {
-  border-color: var(--lab-accent);
-  box-shadow: inset 0 0 0 2px var(--lab-accent);
+  border-color: var(--lab-focus);
+  background: #223156;
+  box-shadow: inset 0 0 0 2px var(--lab-focus);
 }
 
 .lab-draw-thumb {
@@ -896,9 +921,14 @@ code,
 @media (forced-colors: active) {
   .lab-draw-stage,
   .lab-draw-brush,
-  .lab-draw-chip,
-  .lab-draw-swatch {
+  .lab-draw-chip {
     border-color: CanvasText;
+  }
+
+  .lab-draw-swatch,
+  .lab-field input[type="range"].lab-draw-track {
+    border-color: CanvasText;
+    forced-color-adjust: none;
   }
 
   .lab-draw-chip[aria-pressed="true"],

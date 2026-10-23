@@ -165,10 +165,11 @@ export class DabEmitter {
       }
       const p = this.prev;
       const segLen = Math.hypot(s.x - p.x, s.y - p.y);
-      // 시간 기반 dab: 경과 시간을 간격 단위의 가상 거리로 누적한다.
+      // 시간 기반 dab: 경과 시간을 간격 단위의 가상 거리로 누적하되, 표본당 MAX_TIME_DABS_PER_STEP을 넘지 않게 제한한다.
       if (rate > 0) {
         const dtMs = Math.max(0, s.tMs - p.sample.tMs);
-        this.distSinceLast += ((dtMs * rate) / 1000) * this.spacingFor(fp);
+        const stepTimeDabs = Math.min(MAX_TIME_DABS_PER_STEP, (dtMs * rate) / 1000);
+        this.distSinceLast += stepTimeDabs * this.spacingFor(fp);
       }
       if (segLen < 1e-6) {
         // 정지: 누적된 가상 거리만큼 같은 자리에 dab을 놓는다.

@@ -90,30 +90,71 @@ interface SurfaceCheckpoint {
   documentCopy: Float32Array | null;
 }
 
+/** 장시간 세션에서 팁 마스크·종이 결 슬라이더 조작 시 무한 메모리 증가를 막는 프로세스 LRU 캐시 상한. */
+export const MAX_TIP_CACHE_ENTRIES = 96;
+export const MAX_PAPER_CACHE_ENTRIES = 24;
+
 const tipCache = new Map<string, TipMask[]>();
 const paperCache = new Map<string, PaperField>();
+
+function lruGet<K, V>(cache: Map<K, V>, key: K): V | undefined {
+  const hit = cache.get(key);
+  if (hit !== undefined) {
+    cache.delete(key);
+    cache.set(key, hit);
+  }
+  return hit;
+}
+
+function lruSet<K, V>(cache: Map<K, V>, key: K, value: V, maxEntries: number): void {
+  if (cache.has(key)) cache.delete(key);
+  else if (cache.size >= maxEntries) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  cache.set(key, value);
+}
+
+export function surfaceCacheStats(): {
+  tipEntries: number;
+  paperEntries: number;
+  maxTipEntries: number;
+  maxPaperEntries: number;
+} {
+  return {
+    tipEntries: tipCache.size,
+    paperEntries: paperCache.size,
+    maxTipEntries: MAX_TIP_CACHE_ENTRIES,
+    maxPaperEntries: MAX_PAPER_CACHE_ENTRIES,
+  };
+}
+
+export function clearSurfaceCaches(): void {
+  tipCache.clear();
+  paperCache.clear();
+}
 
 function tipKey(kind: TipKind, seed: number, params: TipParams): string {
   return `${kind}|${seed}|${params.hardness}|${params.aspect}|${params.strands ?? ""}|${params.density ?? ""}|${params.angle ?? ""}|${params.frequency ?? ""}|${params.octaves ?? ""}`;
 }
 
-/** 팁 mip 체인(프로세스 캐시, 결정적). */
+/** 팁 mip 체인(프로세스 LRU 캐시, 결정적). */
 export function tipChainFor(kind: TipKind, seed: number, params: TipParams): TipMask[] {
   const key = tipKey(kind, seed, params);
-  const hit = tipCache.get(key);
+  const hit = lruGet(tipCache, key);
   if (hit) return hit;
   const chain = buildMipChain(generateTip(kind, TIP_MASK_SIZE, seed, params));
-  tipCache.set(key, chain);
+  lruSet(tipCache, key, chain, MAX_TIP_CACHE_ENTRIES);
   return chain;
 }
 
-/** 종이 필드(프로세스 캐시, 결정적). */
+/** 종이 필드(프로세스 LRU 캐시, 결정적). */
 export function paperFor(spec: PaperSpec): PaperField {
   const key = `${spec.seed}|${spec.roughness}|${spec.absorbency}`;
-  const hit = paperCache.get(key);
+  const hit = lruGet(paperCache, key);
   if (hit) return hit;
   const field = generatePaper(spec, PAPER_FIELD_SIZE);
-  paperCache.set(key, field);
+  lruSet(paperCache, key, field, MAX_PAPER_CACHE_ENTRIES);
   return field;
 }
 
