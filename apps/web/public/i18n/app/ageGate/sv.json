@@ -1,9 +1,9 @@
 {
   "ageGate.title": "Kontroll av vuxeninnehåll",
   "ageGate.description": "Ange ditt födelsedatum för att bekräfta att du är 19 år eller äldre.",
-  "ageGate.birthDateLabel": "Föddesdatum",
-  "ageGate.birthYearLabel": "Föddes år",
-  "ageGate.birthYearPlaceholder": "Året",
+  "ageGate.birthDateLabel": "Födelsedatum",
+  "ageGate.birthYearLabel": "Födelseår",
+  "ageGate.birthYearPlaceholder": "År",
   "ageGate.birthMonthLabel": "Födelsemånad",
   "ageGate.birthMonthPlaceholder": "Månad",
   "ageGate.birthDayLabel": "Födelsedag",
@@ -12,6 +12,6 @@
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Du uppfyller inte ålderskravet.",
-  "ageGate.cancel": "Avbokning",
-  "ageGate.confirm": "- Det är inte det."
+  "ageGate.cancel": "Avbryt",
+  "ageGate.confirm": "Bekräfta"
 }

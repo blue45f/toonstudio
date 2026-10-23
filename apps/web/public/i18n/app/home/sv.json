@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
   "home.hero.titleLine1": "Spridda historier,",
-  "home.hero.titleShimmer": "En enda index",
+  "home.hero.titleShimmer": "Ett enda index",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Sök genom Naver Webtoon, Series och Kakao Webtoon, och sedan snabbt begränsa vad du ska läsa med hjälp av realtidssignaler och läsare preferenser.",
+  "home.hero.description": "Sök bland Naver Webtoon, Series och Kakao Webtoon och begränsa sedan snabbt vad du ska läsa med hjälp av realtidssignaler och läsarpreferenser.",
   "home.hero.searchButton": "Söktitel, skapare, taggar",
   "home.hero.rankingButton": "Visa enhetlig rankning",
   "home.hero.studioLink": "Skaparstudio",
   "home.hero.createLink": "Skaparpanel",
-  "home.hero.stats.titles": "Titel",
+  "home.hero.stats.titles": "Titlar",
   "home.hero.stats.platforms": "Utgivande plattformar",
   "home.hero.stats.genres": "Genre spektrum",
-  "home.hero.stats.reviews": "Läsare recensioner",
-  "home.loadError": "- Jag kunde inte ladda hemdata.",
+  "home.hero.stats.reviews": "Läsarrecensioner",
+  "home.loadError": "Det gick inte att ladda data för startsidan.",
   "home.creatorTitle": "Från en idé till din första scen"
 }

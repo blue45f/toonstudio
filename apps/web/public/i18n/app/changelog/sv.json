@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "- Jag kunde inte ladda uppdateringar.",
+  "changelog.loadError": "Det gick inte att ladda uppdateringar. Försök igen om en stund.",
   "changelog.empty": "Inga uppdateringsloggar publicerade än."
 }

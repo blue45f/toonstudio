@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "- Jag kunde inte ladda feedback.",
-  "feedback.thankYou": "Tack för ert värdefulla feedback!",
-  "feedback.anonymousNote": "Dina svar är anonymt.",
-  "feedback.notAtAll": "- Inte alls.",
-  "feedback.definitely": "- Det är klart."
+  "feedback.loadError": "Det gick inte att ladda feedbackenkäten. Försök igen om en stund.",
+  "feedback.thankYou": "Tack för din värdefulla feedback!",
+  "feedback.anonymousNote": "Dina svar behandlas helt anonymt.",
+  "feedback.notAtAll": "Inte alls",
+  "feedback.definitely": "Definitivt"
 }
