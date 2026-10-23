@@ -32,6 +32,9 @@
  *
  * 16차 파도에서 자료실 보관 전용 1편을 더했다: 높은 책장이 있는
  * 도서관 무드.
+ *
+ * 17차 파도에서 자료실 보관 전용 3편을 더했다: 바다의 스튜디오,
+ * 안개의 히어로 무드(파노라마 세트의 일곱 번째), 정사각 꽃 스팅.
  */
 export interface BrandClip {
   readonly src: string;
@@ -277,5 +280,37 @@ export const BRAND_SQUARE_PRISM_CLIP: BrandClip = {
 export const BRAND_LIBRARY_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-15-library.mp4",
   width: 1344,
+  height: 768,
+};
+
+/**
+ * 바다의 스튜디오 — 파도가 닿는 바다 앞 작업실을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_OCEAN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-16-ocean.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 안개의 히어로 무드 — 안개 낀 창 너머의 스튜디오 파노라마를 그린 생성형
+ * AI 영상이다. 낮·노을·밤·비·눈·새벽 파노라마와 한 세트로, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_FOG_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-fog.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 꽃 스팅 — 꽃이 피어나는 모습을 담은 1:1 정사각 브랜드 스팅으로
+ * 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직 표면에 배선하지
+ * 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_BLOOM_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-bloom.mp4",
+  width: 768,
   height: 768,
 };

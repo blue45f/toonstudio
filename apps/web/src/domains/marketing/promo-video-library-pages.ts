@@ -1,12 +1,12 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 26편의 정본이다 (public/brand/page-clips/).
+ * 클립 29편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
- * 계절 변형 4편(봄·여름·가을·겨울)과 가을·겨울 정사각 변형 2편, 세로
- * 변형 11편을 함께 둔다.
+ * 계절 변형 4편(봄·여름·가을·겨울)과 계절 정사각 변형 4편, 투어 도입
+ * 정사각 변형 1편, 세로 변형 11편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -210,6 +210,32 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     },
   ),
   pageSquareItem(
+    "season-spring-square",
+    "season-spring-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 봄 스튜디오 정사각",
+      body: "벚꽃잎이 창가로 흩날리는 봄 작업실을 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Spring studio, square",
+      body: "A spring studio with cherry blossom petals drifting past the window, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageSquareItem(
+    "season-summer-square",
+    "season-summer-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 여름 스튜디오 정사각",
+      body: "여름 햇살이 가득 들어오는 작업실을 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Summer studio, square",
+      body: "A studio filled with summer sunlight, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageSquareItem(
     "season-autumn-square",
     "season-autumn-square.mp4",
     "0:14",
@@ -315,5 +341,12 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     "0:14",
     { title: "투어 도입 · 세로", body: "제품 투어의 도입 장면을 세로(9:16)로 다시 그린 변형입니다. 마무리 세로본의 짝으로 보관합니다." },
     { title: "Tour opening · Vertical", body: "The product tour's opening scene redrawn vertically (9:16), kept as the counterpart to the closing vertical." },
+  ),
+  pageSquareItem(
+    "tour-intro-square",
+    "tour-intro-square.mp4",
+    "0:14",
+    { title: "투어 도입 · 정사각", body: "제품 투어의 도입 장면을 정사각(1:1)으로 다시 그린 변형입니다. 세로본과 나란히 소셜 소재로 보관합니다." },
+    { title: "Tour opening · Square", body: "The product tour's opening scene redrawn as a square (1:1), kept alongside the vertical cut as social material." },
   ),
 ];
