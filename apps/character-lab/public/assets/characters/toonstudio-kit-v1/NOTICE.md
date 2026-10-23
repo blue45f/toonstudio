@@ -1,7 +1,7 @@
 # ToonStudio 캐릭터 키트 v1 — 출처와 라이선스 고지
 
 이 파일은 `tools/blender/character_kit`가 `kit.json`과 함께 만든 사람용 요약입니다. 기준은 `kit.json`의 `provenance`입니다.
-생성일 2026-10-23, 도구 `tools/blender/character_kit`, Blender(bpy) 5.2.2.
+생성일 2026-10-24, 도구 `tools/blender/character_kit`, Blender(bpy) 5.2.2.
 
 ## 원천 1 — Blender Foundation Human Base Meshes Bundle v1.4.1 (CC0 1.0)
 
@@ -21,8 +21,11 @@
 - 속옷·구강 내부(치아·잇몸·혀)·속눈썹·눈썹·캐치라이트의 지오메트리와 몸 쪽 텍스처(피부·눈·치아·혀·속옷·속눈썹·눈썹)는
   `tools/blender/character_kit`가 절차 생성했다. 이 항목들에는 외부 이미지·스캔·사진을 쓰지 않았다.
 - `build_irises`: 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight) — 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성.
-- `proc_accessories`: 소품 3종(accessory/choker, accessory/earrings, accessory/glasses) — 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성.
+- `proc_accessories`: 소품 6종(accessory/cap, accessory/choker, accessory/earrings, accessory/glasses, accessory/headphones, accessory/ribbon) — 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성.
 - `forge_hair`: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered) — 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님).
+- `forge_garments`: 하의 5종·상의 4종(bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, top/hoodie, top/sailor, top/shirt, top/tee) — 베이스 몸 표면에서 의상 셸을 절차 생성(Hyper3D 생성물 아님).
+- `forge_shoes`: 신발 4종(shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers) — 베이스 발 형상에서 신발을 절차 생성(Hyper3D 생성물 아님).
+- forge 원본 파츠 18종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음). 생성 기록·검사 수치는 각 포지의 build-report.json에 있다.
 
 ## 원천 3 — Hyper3D(Rodin Gen-2.5) 생성물의 파생 파츠 (license: hyper3d-rodin-output) — 2026-10-14 키트에서 제외
 
@@ -303,15 +306,16 @@
 
 ## 쓰지 않은 것
 
-- 상용 제품 에셋과 라이선스가 불명확한 에셋은 이 키트에 들어 있지 않다. 이 키트에 쓰인 라이선스 값은 `CC0-1.0`, `original`이다.
-  `hyper3d-rodin-output` 파생 파츠는 위 원천 3 기록의 경위로 제외해 현재 키트에는 없다.
+- Hyper3D(Rodin) 생성물, 상용 제품 에셋, 라이선스가 불명확한 에셋은 이 키트에 들어 있지 않다. 이 키트에 쓰인 라이선스 값은
+  `CC0-1.0`, `original`뿐이다(계약은 `hyper3d-rodin-output`도 허용하지만 이 키트에는 그 출처의 파츠가 없다).
+  `hyper3d-rodin-output` 파생 파츠의 제외 경위는 위 원천 3의 기록에 있다.
 
 ## 들어 있는 파일
 
 - 베이스: `bases/female.glb`, `bases/male.glb`
-- 파츠(현재 제공 15종, 변형 파일 30개): accessory/choker, accessory/earrings, accessory/glasses, hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight
+- 파츠(현재 제공 31종, 변형 파일 62개): accessory/cap, accessory/choker, accessory/earrings, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee
 - 제외한 Hyper3D 파생 변형 48개(출처 33종분 + 남성 리타깃 15종)의 GLB 파일은 저장소에 없다.
-- 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. 이 절은 생성기(`kit_provenance.notice_text`)가 `kit.json`에서 다시 센다.
+- 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. 이 절은 `forge_install.py`가 `kit.json`에서 다시 센다.
 
 ## 재현
 
@@ -321,6 +325,8 @@ pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>
 <venv>/bin/python -I tools/blender/character_kit/build_irises.py --base <female|male> ...
 <venv>/bin/python -I tools/blender/character_kit/build_parts.py --base <female|male> ...   # 절차 소품(proc_accessories)
 <venv>/bin/python -I tools/blender/character_kit/forge_build_hair.py --base <female|male> --base-model <base_model_<base>.npz> --out <포지 산출물>
+<venv>/bin/python -I tools/blender/character_kit/forge_build_garments.py ...
+<venv>/bin/python -I tools/blender/character_kit/forge_build_shoes.py build --base all --out <포지 산출물>
 <venv>/bin/python -I tools/blender/character_kit/build_kit_json.py --kit-dir <키트 폴더> --meta <base_meta_female.json> --extra-meta <base_meta_male.json> --contract <contract.json> --parts-json <레지스트리>
 pnpm exec tsx scripts/verify-character-kit.mjs --root <키트 폴더> --base all
 ```

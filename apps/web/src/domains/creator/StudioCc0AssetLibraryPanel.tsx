@@ -2,7 +2,7 @@ import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
-  createStudioCc0ImageRecord, filterStudioCc0Assets, loadStudioCc0Catalog,
+  createStudioCc0ImageRecord, createStudioCc0ModelPreviewImageRecord, filterStudioCc0Assets, loadStudioCc0Catalog,
   STUDIO_CC0_CATEGORY_LABELS, studioCc0AssetUrl,
   type StudioCc0Asset, type StudioCc0AssetKind,
 } from "./studio-cc0-asset-delivery";
@@ -99,7 +99,9 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
     insertController.current = controller;
     setInserting(asset.id); setNotice("");
     try {
-      const item = await createStudioCc0ImageRecord(asset, controller.signal);
+      const item = asset.kind === "model"
+        ? await createStudioCc0ModelPreviewImageRecord(asset, controller.signal)
+        : await createStudioCc0ImageRecord(asset, controller.signal);
       if (controller.signal.aborted || insertController.current !== controller) return;
       const added = onUseAsset(item);
       setNotice(added ? `${asset.name} 에셋을 삽입했습니다.` : panelStatusText("studio.panelStatus.cc0Library.insertCanvasUnavailable", "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요."));
@@ -120,12 +122,21 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
     if (asset.kind !== "model") {
       return <button className={`${CONTROL} mt-2 w-full`} type="button" disabled={inserting !== null} onClick={() => {void insert(asset);}}>{inserting === asset.id ? panelStatusText("studio.panelStatus.cc0Library.inserting", "검증·삽입 중…") : "캔버스에 삽입"}</button>;
     }
+    const previewInsertBtn = (
+      <button className={`${CONTROL} w-full`} type="button" data-cc0-insert-preview={asset.id} disabled={inserting !== null} onClick={() => {void insert(asset);}}>
+        {inserting === asset.id ? panelStatusText("studio.panelStatus.cc0Library.inserting", "검증·삽입 중…") : "2D 미리보기 삽입"}
+      </button>
+    );
     if (!asset.original) {
-      return <a className={`${CONTROL} mt-2 flex items-center justify-center`} href={studioCc0AssetUrl(asset.path)} download={`${asset.id}.glb`}>GLB 받기</a>;
+      return <div className="mt-2 space-y-1.5">
+        {previewInsertBtn}
+        <a className={`${CONTROL} flex items-center justify-center`} href={studioCc0AssetUrl(asset.path)} download={`${asset.id}.glb`}>GLB 받기</a>
+      </div>;
     }
     const original = asset.original;
     const originalTextureMiB = Math.ceil(original.estimatedDecodedImageBytes / (1024 * 1024));
     return <div className="mt-2 space-y-2">
+      {previewInsertBtn}
       <a className={`${CONTROL} flex items-center justify-center text-center`} href={studioCc0AssetUrl(asset.path)} download={`${asset.id}.glb`}>경량본 받기</a>
       <a className={`${CONTROL} flex items-center justify-center text-center`} href={studioCc0AssetUrl(original.path)} download={`${asset.id}-original.glb`}>고품질 원본 받기</a>
       <p className="text-[0.65rem] leading-relaxed text-fg-3">{original.visuallyEquivalentToDefault

@@ -34,12 +34,20 @@
     "characterLab.kit": {
       "metrics": {
         "parts": 32,
-        "female.accessory": 3,
+        "female.hair": 7,
+        "female.top": 4,
+        "female.bottom": 5,
+        "female.shoes": 4,
+        "female.accessory": 6,
         "female.irises": 5,
-        "female.provided": 8,
-        "male.accessory": 3,
+        "female.provided": 31,
+        "male.hair": 7,
+        "male.top": 4,
+        "male.bottom": 5,
+        "male.shoes": 4,
+        "male.accessory": 6,
         "male.irises": 5,
-        "male.provided": 8
+        "male.provided": 31
       }
     },
     "characterLab.artStyles": {
@@ -94,11 +102,11 @@
         "coreParams": 7,
         "headParams": 4,
         "anatomyParams": 12,
-        "posePresets": 64,
-        "twoFigurePoses": 7,
+        "posePresets": 70,
+        "twoFigurePoses": 10,
         "handOnlyPoses": 13,
         "handPresets": 50,
-        "duoCompositions": 7
+        "duoCompositions": 12
       }
     },
     "studio.vrm": {

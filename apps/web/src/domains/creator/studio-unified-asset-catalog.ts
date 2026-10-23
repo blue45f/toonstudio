@@ -415,7 +415,7 @@ function objectItem(
       "입체",
     ]),
     badges: Object.freeze(["3D", object.familyLabel]),
-    preview: { kind: "none" },
+    preview: object.thumbnailUrl ? { kind: "image", src: object.thumbnailUrl } : { kind: "none" },
     useMode: "open",
     useLabel: "3D 도구 열기",
     discoverability: "standard",

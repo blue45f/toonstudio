@@ -261,6 +261,59 @@ export async function createStudioCc0ImageRecord(asset: StudioCc0Asset, signal?:
       attributionText: `${asset.provider} — ${asset.sourceUrl}`, rightsConfirmed: true}};
 }
 
+/** 3D 모델(`kind === "model"`)의 검증된 렌더링 미리보기 PNG(`previews/*.png`)를 2D 캔버스 레이어용 StudioAsset으로 변환한다. */
+export async function createStudioCc0ModelPreviewImageRecord(asset: StudioCc0Asset, signal?: AbortSignal): Promise<StudioAsset> {
+  signal?.throwIfAborted();
+  if (asset.kind !== "model" || typeof asset.previewPath !== "string" || !asset.previewPath.endsWith(".png")) {
+    throw new TypeError("렌더링 미리보기가 있는 3D 에셋이 아닙니다.");
+  }
+  const bytes = await boundedBytes(studioCc0AssetUrl(asset.previewPath), MAX_IMAGE_BYTES, signal);
+  if (bytes.byteLength < 24) throw new Error("3D 미리보기 PNG 헤더가 올바르지 않습니다.");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (
+    view.getUint32(0, false) !== 0x89504e47
+    || view.getUint32(4, false) !== 0x0d0a1a0a
+    || view.getUint32(12, false) !== 0x49484452
+  ) {
+    throw new Error("3D 미리보기 PNG 시그니처가 올바르지 않습니다.");
+  }
+  const width = view.getUint32(16, false);
+  const height = view.getUint32(20, false);
+  if (width < 1 || height < 1 || width > 4096 || height > 4096) {
+    throw new Error("3D 미리보기 이미지 크기가 허용 범위를 벗어났습니다.");
+  }
+  const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), byte => byte.toString(16).padStart(2, "0")).join("");
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(new Blob([bytes], {type: "image/png"}));
+    try {
+      if (bitmap.width !== width || bitmap.height !== height) throw new Error("에셋 이미지 크기가 일치하지 않습니다.");
+    } finally { bitmap.close(); }
+  }
+  signal?.throwIfAborted();
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  return {
+    id: `cc0-preview:${asset.id}`,
+    name: `${asset.name} (3D 미리보기)`,
+    dataUrl: `data:image/png;base64,${btoa(binary)}`,
+    contentHash: `sha256:${hash}`,
+    width,
+    height,
+    createdAt: Date.UTC(2026, 8, 6),
+    kind: "imported",
+    rights: {
+      sourceKind: "imported",
+      sourceId: asset.id,
+      licenseId: "CC0-1.0",
+      licenseLabel: "CC0 1.0",
+      licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+      attributionRequired: false,
+      attributionText: `${asset.provider} — ${asset.sourceUrl}`,
+      rightsConfirmed: true,
+    },
+  };
+}
+
 /** The resulting file still requires the existing GLB structural/device admission pipeline. */
 export async function createStudioCc0ModelFile(asset: StudioCc0Asset, signal?: AbortSignal): Promise<File> {
   signal?.throwIfAborted();
