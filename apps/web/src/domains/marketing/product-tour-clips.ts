@@ -12,6 +12,11 @@
  * domains/marketing/public/workflow-stages.ts가 소유한다), serial은 투어
  * 페이지 '새로 더해진 기능' 카드(제작 관리 보드)의 배경, bg3d는
  * /about/studio 제작 흐름의 '2D·3D 제작' 단계 카드 배경이다.
+ *
+ * 전환 클립 3편의 세로 변형은 아직 표면에 배선하지 않아, 이 파일 끝에
+ * 홍보 영상 자료실의 투어 카테고리 항목 모양으로 함께 둔다
+ * (promo-video-library.ts의 LIBRARY_ONLY와 같은 값을 순환 import를 피해
+ * 여기에 따로 적는다 — promo-video-library-pages.ts와 같은 방식).
  */
 export interface ProductTourAmbientClip {
   readonly id: "intro" | "outro";
@@ -118,3 +123,76 @@ export const PRODUCT_TOUR_TRANSITION_BG3D_CLIP = {
   width: 1344,
   height: 768,
 } as const;
+
+/**
+ * 전환 클립 3편의 세로(9:16) 변형 — 가로본 전환을 세로로 다시 그린 생성형
+ * AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실의 투어
+ * 카테고리에만 수록하므로, 자료실 항목(PromoVideoItem) 모양으로 적는다.
+ */
+export interface ProductTourTransitionVerticalItem {
+  readonly id: string;
+  readonly categoryId: "tour";
+  readonly src: string;
+  readonly width: number;
+  readonly height: number;
+  readonly durationLabel: string;
+  readonly ko: { readonly title: string; readonly body: string };
+  readonly en: { readonly title: string; readonly body: string };
+  readonly usage: { readonly ko: string; readonly en: string };
+}
+
+const TRANSITION_VERTICAL_USAGE = { ko: "자료실 보관", en: "Library only" } as const;
+
+export const PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS: readonly ProductTourTransitionVerticalItem[] = [
+  {
+    id: "tour-transition-drawing-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-1-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 작화 세로",
+      body: "작화 전환 가로본을 세로(9:16)로 다시 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Drawing, vertical",
+      body: "The drawing transition clip redrawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-bg3d-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-2-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 3D 배경 세로",
+      body: "3D 배경 전환 가로본을 세로(9:16)로 다시 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · 3D backdrop, vertical",
+      body: "The 3D backdrop transition clip redrawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-serial-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-3-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 연재 세로",
+      body: "연재 전환 가로본을 세로(9:16)로 다시 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Serialisation, vertical",
+      body: "The serialisation transition clip redrawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+];

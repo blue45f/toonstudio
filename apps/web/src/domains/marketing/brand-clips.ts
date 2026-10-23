@@ -29,6 +29,9 @@
  *
  * 15차 파도에서 자료실 보관 전용 3편을 더했다: 별빛 아래의 스튜디오,
  * 새벽의 히어로 무드(파노라마 세트의 여섯 번째), 정사각 프리즘 스팅.
+ *
+ * 16차 파도에서 자료실 보관 전용 1편을 더했다: 높은 책장이 있는
+ * 도서관 무드.
  */
 export interface BrandClip {
   readonly src: string;
@@ -264,5 +267,15 @@ export const HOME_HERO_DAWN_CLIP: BrandClip = {
 export const BRAND_SQUARE_PRISM_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-square-prism.mp4",
   width: 768,
+  height: 768,
+};
+
+/**
+ * 도서관 무드 — 높은 책장과 사다리가 있는 도서관을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_LIBRARY_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-15-library.mp4",
+  width: 1344,
   height: 768,
 };

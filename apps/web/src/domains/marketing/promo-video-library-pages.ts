@@ -1,11 +1,12 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 24편의 정본이다 (public/brand/page-clips/).
+ * 클립 26편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
- * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 11편을 함께 둔다.
+ * 계절 변형 4편(봄·여름·가을·겨울)과 가을·겨울 정사각 변형 2편, 세로
+ * 변형 11편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -56,6 +57,29 @@ const pageVerticalItem = (
   en,
   usage: PAGE_VERTICAL_USAGE,
   ...(note ? { note } : {}),
+});
+
+const PAGE_SQUARE_USAGE = {
+  ko: "자료실 보관 · 소셜 피드용 정사각 소재",
+  en: "Library only · Square material for social feeds",
+} as const;
+
+const pageSquareItem = (
+  id: string,
+  file: string,
+  durationLabel: string,
+  ko: { readonly title: string; readonly body: string },
+  en: { readonly title: string; readonly body: string },
+): PromoVideoItem => ({
+  id: `page-${id}`,
+  categoryId: "pages",
+  src: `/brand/page-clips/${file}`,
+  width: 768,
+  height: 768,
+  durationLabel,
+  ko,
+  en,
+  usage: PAGE_SQUARE_USAGE,
 });
 
 export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
@@ -183,6 +207,32 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     {
       title: "Season · Winter studio",
       body: "Snow outside the window and warmth inside — a seasonal variant kept for swapping event and season banners.",
+    },
+  ),
+  pageSquareItem(
+    "season-autumn-square",
+    "season-autumn-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 가을 스튜디오 정사각",
+      body: "단풍잎이 창가에 쌓이는 가을 작업실을 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Autumn studio, square",
+      body: "An autumn studio with maple leaves gathering at the window, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
+    },
+  ),
+  pageSquareItem(
+    "season-winter-square",
+    "season-winter-square.mp4",
+    "0:14",
+    {
+      title: "계절 · 겨울 스튜디오 정사각",
+      body: "눈 덮인 창가와 김 오르는 머그를 정사각(1:1)으로 그린 계절 변형입니다. 소셜 피드에 바로 얹는 소재로 보관합니다.",
+    },
+    {
+      title: "Season · Winter studio, square",
+      body: "A snow-covered window and a steaming mug, drawn as a square (1:1) seasonal variant kept as ready-to-post social feed material.",
     },
   ),
   pageVerticalItem(
