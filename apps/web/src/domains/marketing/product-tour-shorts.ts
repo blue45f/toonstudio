@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 10편.
- * 열 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 12편.
+ * 열두 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~10편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~12편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -15,7 +15,9 @@ export interface ProductTourShort {
     | "assist-autocolor"
     | "finish-publish"
     | "brush-doodles"
-    | "panel-layers";
+    | "panel-layers"
+    | "storyboard-panels"
+    | "compare-review";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -173,6 +175,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Layer by layer",
       body: "Sketch, ink, color, then shade — layers stacking up until one panel is complete.",
+    },
+  },
+  {
+    id: "storyboard-panels",
+    src: "/brand/promo-shorts/shorts-11-storyboard.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "격자로 채우는 콘티",
+      body: "빈 칸으로 시작한 콘티 보드에 연필 패널이 한 칸씩 그려지며 이야기의 뼈대가 잡히는 과정을 담았습니다.",
+    },
+    en: {
+      title: "A storyboard, panel by panel",
+      body: "Pencil panels fill an empty storyboard grid one cell at a time until the story's skeleton stands.",
+    },
+  },
+  {
+    id: "compare-review",
+    src: "/brand/promo-shorts/shorts-12-compare.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "두 버전을 나란히 검수",
+      body: "같은 컷의 두 버전을 나란히 놓고 가운데 경계를 움직이며 달라진 곳을 확인하는 검수 장면을 담았습니다.",
+    },
+    en: {
+      title: "Two takes, side by side",
+      body: "Two versions of the same panel side by side, the divider sliding across to check what changed.",
     },
   },
 ];
