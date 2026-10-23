@@ -24,6 +24,7 @@ import type {
   StudioProjectRecord,
   StudioRevisionRecord,
 } from "../project-graph/studio-project-graph-contract";
+import { r44CreatorHubStatusText } from "../r44-cat1-hub-status-i18n";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
@@ -216,8 +217,7 @@ export function ProductionStudioRevisionBridgePanel({
 
       {!enabled ? (
         <div className="mt-4 rounded-xl border border-dashed border-line bg-panel/60 p-4 text-sm text-fg-2">
-          기능 미리보기에서는 실제 Studio 서버 정본을 변경하지 않습니다. 내 프로젝트에서 열면
-          원고 revision과 제작 작업을 연결할 수 있습니다.
+          {r44CreatorHubStatusText("r44cat1.hub.revisionBridge.previewNotice", "기능 미리보기에서는 실제 Studio 서버 정본을 변경하지 않습니다. 내 프로젝트에서 열면 원고 revision과 제작 작업을 연결할 수 있습니다.")}
         </div>
       ) : null}
 
