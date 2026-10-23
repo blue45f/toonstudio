@@ -82,7 +82,7 @@ class ApplyingWorker implements StudioImageFilterWorkerLike {
         imageData: received.request.imageData,
       };
       const returned = structuredClone(response, { transfer: studioImageFilterSuccessTransfers(response) });
-      this.onmessage?.({ data: returned } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      this.onmessage?.({ data: returned } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 
@@ -110,7 +110,7 @@ class HangingWorker implements StudioImageFilterWorkerLike {
       queueMicrotask(() => {
         this.onmessage?.({
           data: { type: "studio-image-filter/ready", version: 1 },
-        } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+        } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
       });
     }
   }
@@ -137,7 +137,7 @@ class FailingWorker extends HangingWorker {
           version: 1,
           error: { name: "RangeError", message: "boom" },
         },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 }
@@ -156,7 +156,7 @@ class CodedFailingWorker extends HangingWorker {
             params: { label: "이미지 필터 입력" },
           },
         },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 }
@@ -166,7 +166,7 @@ class MalformedFailureWorker extends HangingWorker {
     queueMicrotask(() => {
       this.onmessage?.({
         data: { type: "studio-image-filter/failure", version: 1 },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 }
@@ -191,7 +191,7 @@ class ImmediateApplyingWorker extends HangingWorker {
         version: 1,
         imageData: received.request.imageData,
       },
-    } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+    } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
   }
 }
 
@@ -204,7 +204,7 @@ class InvalidSuccessWorker extends HangingWorker {
           version: 1,
           imageData: { data: new Uint8ClampedArray(4), width: 2, height: 2 },
         },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 }
@@ -229,7 +229,7 @@ class ResidentApplyingWorker implements StudioImageFilterWorkerLike {
     queueMicrotask(() => {
       this.onmessage?.({
         data: { type: "studio-image-filter/ready", version: 1 },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 
@@ -254,7 +254,7 @@ class ResidentApplyingWorker implements StudioImageFilterWorkerLike {
             sourceId: received.sourceId,
             sourceGeneration: received.sourceGeneration,
           },
-        } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+        } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
       });
       return;
     }
@@ -278,7 +278,7 @@ class ResidentApplyingWorker implements StudioImageFilterWorkerLike {
             requestId: received.requestId,
             error: { name: "Error", message: "source mismatch" },
           },
-        } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+        } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
         return;
       }
       const imageData = {
@@ -299,7 +299,7 @@ class ResidentApplyingWorker implements StudioImageFilterWorkerLike {
       const returned = structuredClone(response, {
         transfer: studioImageFilterSourceSuccessTransfers(response),
       });
-      this.onmessage?.({ data: returned } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      this.onmessage?.({ data: returned } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 
@@ -318,7 +318,7 @@ class ManualResidentWorker implements StudioImageFilterWorkerLike {
     queueMicrotask(() => {
       this.onmessage?.({
         data: { type: "studio-image-filter/ready", version: 1 },
-      } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+      } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
     });
   }
 
@@ -334,7 +334,7 @@ class ManualResidentWorker implements StudioImageFilterWorkerLike {
         sourceId: message.sourceId,
         sourceGeneration: message.sourceGeneration,
       },
-    } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+    } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
   }
 
   emitSuccess(
@@ -353,7 +353,7 @@ class ManualResidentWorker implements StudioImageFilterWorkerLike {
         requestId: overrides.requestId ?? message.requestId,
         imageData: makeImageData(3, 2),
       },
-    } as MessageEvent<StudioImageFilterWorkerResponseMessage>);
+    } as unknown as MessageEvent<StudioImageFilterWorkerResponseMessage>);
   }
 
   terminate(): void {

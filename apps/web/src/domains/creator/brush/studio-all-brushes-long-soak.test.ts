@@ -576,7 +576,8 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
       tool: "pen",
       radius: 6,
       pigmentLoad: 0.7,
-      wetLoad: 0.5,
+      wetnessLoad: 0.5,
+      inkColor: { r: 20, g: 30, b: 40 },
       samples: [
         { x: 16, y: 16, pressure: 0.6 },
         { x: Number.NaN, y: 24, pressure: Number.NaN },
@@ -644,8 +645,8 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
     const dynamicDabs = planStudioDynamicBrushDabs({
       points: [15, 18, 40, 28, 70, 42],
       pressures: [0.5, Number.NaN, 0.85],
-      strokeColor: "#b91c1c",
-      opacity: 0.92,
+      baseWidth: 16,
+      baseOpacity: 0.92,
       settings: dynamicSettings,
       seed: 101,
     });
@@ -661,7 +662,7 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
       input: {
         points: [20, 24, 52, 36, 88, 48],
         pressures: [0.5, 0.8, 0.65],
-        opacity: 0.85,
+        baseWidth: 18,
         seed: 77,
       },
       carrierSeed: 77,
