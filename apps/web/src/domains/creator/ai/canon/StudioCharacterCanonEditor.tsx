@@ -21,22 +21,7 @@ import {
   type CharacterCanonSheet,
 } from "./studio-character-canon";
 import { toRenderableReferenceImageSrc } from "./reference-image-src";
-
-/**
- * 번들 샘플 아바타 썸네일 — domains/creator/vrm/vrm-library.ts의
- * BUNDLED_VRM_RIGHTS_BLOCKS와 같은 공개 에셋 경로. vrm-library 모듈은
- * sqlite/OPFS 저장소를 함께 끌어와서 무거우니 경로만 가져와 쓴다.
- */
-const BUNDLED_AVATARS: readonly { readonly id: string; readonly name: string; readonly thumbnail: string }[] = [
-  { id: "sample-vrm", name: "루미", thumbnail: "/assets/3d/characters/thumbnails/refined-v2/sample-vrm.png" },
-  { id: "avatar-a", name: "하린", thumbnail: "/assets/3d/characters/thumbnails/refined-v2/avatar-a.png" },
-  { id: "avatar-b", name: "세라", thumbnail: "/assets/3d/characters/thumbnails/refined-v2/avatar-b.png" },
-  { id: "avatar-c", name: "유나", thumbnail: "/assets/3d/characters/thumbnails/refined-v2/avatar-c.png" },
-  { id: "shion", name: "시온", thumbnail: "/assets/3d/characters/thumbnails/refined-v2/shion.png" },
-  { id: "vivi", name: "비비", thumbnail: "/assets/3d/characters/thumbnails/refined-v1/vivi.png" },
-  { id: "vita", name: "비타", thumbnail: "/assets/3d/characters/thumbnails/refined-v2/vita.png" },
-  { id: "rubin", name: "루빈", thumbnail: "/assets/3d/characters/thumbnails/refined-v1/rubin.png" },
-];
+import { BUNDLED_CANON_AVATARS } from "./bundled-canon-avatars";
 
 const REFERENCE_IMAGE_MAX_BYTES = 350_000;
 const REFERENCE_IMAGE_MAX_EDGE = 512;
@@ -237,7 +222,7 @@ export function StudioCharacterCanonEditor({
 
         {tab === "avatar" ? (
           <ul className="mt-2 grid grid-cols-4 gap-2" aria-label={bt("기본 아바타 목록", "Sample avatar list")}>
-            {BUNDLED_AVATARS.map((avatar) => {
+            {BUNDLED_CANON_AVATARS.map((avatar) => {
               const selected = referenceImage === avatar.thumbnail;
               return (
                 <li key={avatar.id}>

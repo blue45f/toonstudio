@@ -22,7 +22,7 @@ export function characterEditCategory(slot: CharacterSlotKind) {
 }
 
 export type CharacterLibraryCollection = "all" | "mine";
-const PORTRAIT_ORDER = ["sample-vrm", "avatar-a", "avatar-b", "avatar-c", "shion", "shino", "vita"];
+const PORTRAIT_ORDER = ["sample-vrm", "shion", "shino", "vita"];
 
 export function discoverCharacterLibrary(
   entries: readonly VrmLibraryEntry[],

@@ -8,6 +8,8 @@ import { aiErrorText } from "../studio-ai-error-i18n-t4t5";
 import { apiPost } from "@/shared/lib/store-api-post";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 
+import { isRemovedBlockedAvatarThumbnail } from "./bundled-canon-avatars";
+
 export const CHARACTER_CANON_STORAGE_KEY =
   "toonspectrum:studio-character-canon:v1";
 export const CHARACTER_CANON_DOCUMENT_VERSION = 1;
@@ -120,6 +122,15 @@ function isReferenceSource(value: unknown): value is CanonReferenceSource {
   );
 }
 
+/**
+ * 권리 판정으로 서빙을 내린 아바타 썸네일을 레퍼런스로 든 시트는 이미지 파일이 없어
+ * 깨진 이미지로 남는다. 이미지·출처·라벨을 함께 비워 레퍼런스 없는 시트로 되돌린다.
+ */
+function withoutRemovedBlockedReference(sheet: CharacterCanonSheet): CharacterCanonSheet {
+  if (sheet.referenceImage === null || !isRemovedBlockedAvatarThumbnail(sheet.referenceImage)) return sheet;
+  return { ...sheet, referenceImage: null, referenceSource: null, referenceLabel: null };
+}
+
 /** 폼 입력 검증 — 실패 사유를 사람이 읽을 수 있는 문장으로 돌려준다. */
 export function validateCanonSheetDraft(
   draft: CanonSheetDraft,
@@ -139,7 +150,7 @@ export function buildCharacterCanonSheet(
   options: { readonly id?: string; readonly now?: string } = {},
 ): CharacterCanonSheet {
   const now = options.now ?? new Date().toISOString();
-  return {
+  return withoutRemovedBlockedReference({
     id: options.id ?? createSecureRandomUuid(),
     name: normalizeText(draft.name, CANON_NAME_MAX),
     appearance: normalizeText(draft.appearance, CANON_APPEARANCE_MAX),
@@ -154,7 +165,7 @@ export function buildCharacterCanonSheet(
       : null,
     createdAt: now,
     updatedAt: now,
-  };
+  });
 }
 
 export function touchCharacterCanonSheet(
@@ -173,7 +184,7 @@ function normalizeSheet(value: unknown): CharacterCanonSheet | null {
   if (typeof value !== "object" || value === null) return null;
   const record = value as Record<string, unknown>;
   if (typeof record.id !== "string" || !record.id) return null;
-  return {
+  return withoutRemovedBlockedReference({
     id: record.id,
     name: normalizeText(String(record.name ?? ""), CANON_NAME_MAX),
     appearance: normalizeText(
@@ -202,7 +213,7 @@ function normalizeSheet(value: unknown): CharacterCanonSheet | null {
       typeof record.updatedAt === "string"
         ? record.updatedAt
         : new Date().toISOString(),
-  };
+  });
 }
 
 function normalizeUsage(value: unknown): CanonPanelUsage | null {
