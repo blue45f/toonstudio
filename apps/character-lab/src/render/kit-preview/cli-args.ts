@@ -48,7 +48,7 @@ export interface KitPreviewToonOverrides {
 export const KIT_PREVIEW_COLOR_KEYS = ["skin", "iris", "hair", "brow", "top", "bottom", "shoes", "accessory"] as const;
 export type KitPreviewColorKey = (typeof KIT_PREVIEW_COLOR_KEYS)[number];
 
-/** `--role`에 쓸 수 있는 파츠 역할(계약 `PART_ROLES`와 같은 어휘 — 키트용 `underwear` 포함, 순서도 같다) */
+/** `--role`에 쓸 수 있는 파츠 역할(계약 `PART_ROLES`와 같은 어휘 — 키트용 `underwear`, 레시피 v3 층·헤어 부속 포함, 순서도 같다) */
 export const KIT_PREVIEW_ROLE_NAMES = [
   "skin",
   "head",
@@ -66,6 +66,10 @@ export const KIT_PREVIEW_ROLE_NAMES = [
   "shoes",
   "accessory",
   "underwear",
+  "inner",
+  "outer",
+  "legwear",
+  "hair-accessory",
 ] as const;
 export type KitPreviewRoleName = (typeof KIT_PREVIEW_ROLE_NAMES)[number];
 

@@ -8,8 +8,8 @@ import { OPENPBR_COAT_IOR, OPENPBR_DIFFERENCES_KO, OPENPBR_SKIN_SSS_RADIUS_M, ma
 const ALBEDO = [0.4, 0.3, 0.2] as const;
 
 describe("openpbr-mapping", () => {
-  it("모든 프리셋 11종이 범위 안의 파라미터로 매핑된다", () => {
-    expect(MATERIAL_PRESET_IDS).toHaveLength(11);
+  it("모든 프리셋 12종(레시피 v3 cloth-knit 포함)이 범위 안의 파라미터로 매핑된다", () => {
+    expect(MATERIAL_PRESET_IDS).toHaveLength(12);
     for (const id of MATERIAL_PRESET_IDS) {
       const preset = MATERIAL_PRESETS[id];
       const out = mapPresetToOpenPbr(preset, hexToLinear(preset.defaultColor), { sssAvailable: true });
