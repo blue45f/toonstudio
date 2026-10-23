@@ -217,4 +217,12 @@ describe("StudioVirtualSpaceSpaceBookingPanel", () => {
     expect(screen.queryByTestId("guest-promotion")).toBeNull();
     expect(screen.queryByTestId("guest-promotion-result")).toBeNull();
   });
+
+  it("빠른 시간대 프리셋 버튼을 누르면 시작·종료 시각과 메모가 자동으로 채워진다", () => {
+    render(<StudioVirtualSpaceSpaceBookingPanel spaces={SPACES} nowMs={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: "🎨 1시간 원고 합평" }));
+    expect((screen.getByLabelText(/시작/) as HTMLInputElement).value).toBe("14:00");
+    expect((screen.getByLabelText(/종료/) as HTMLInputElement).value).toBe("15:00");
+    expect((screen.getByLabelText(/메모/) as HTMLInputElement).value).toContain("합평");
+  });
 });

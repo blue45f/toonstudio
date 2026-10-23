@@ -302,6 +302,38 @@ export function StudioVirtualSpaceSpaceBookingPanel({
 
       <fieldset>
         <legend>{bt("새 예약", "New booking")}</legend>
+        <div role="group" aria-label={bt("빠른 시간대 프리셋", "Quick duration presets")}>
+          <button
+            type="button"
+            onClick={() => {
+              setStartTime("10:00");
+              setEndTime("10:30");
+              setNote(bt("데일리 스탠드업 싱크", "Daily standup sync"));
+            }}
+          >
+            {bt("⚡ 30분 스탠드업", "⚡ 30m Standup")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStartTime("14:00");
+              setEndTime("15:00");
+              setNote(bt("에피소드 콘티·원고 합평", "Episode storyboard & manuscript review"));
+            }}
+          >
+            {bt("🎨 1시간 원고 합평", "🎨 1h Manuscript Review")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStartTime("16:00");
+              setEndTime("18:00");
+              setNote(bt("딥워크·더빙 집중 세션", "Deep-work & dubbing booth session"));
+            }}
+          >
+            {bt("🎙️ 2시간 집중 부스", "🎙️ 2h Focus Booth")}
+          </button>
+        </div>
         <label>{bt("스페이스", "Space")}
           <select value={spaceId} onChange={(event) => setSpaceId(event.target.value)}>
             {spaces.map((entry) => <option key={entry.id} value={entry.id}>{entry.name} ({bt("최대", "up to")} {entry.capacity}{bt("명", "")})</option>)}
