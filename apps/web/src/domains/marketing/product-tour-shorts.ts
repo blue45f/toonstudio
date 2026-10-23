@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 23편.
- * 스물세 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 25편.
+ * 스물다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~23편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~25편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -28,7 +28,9 @@ export interface ProductTourShort {
     | "serial-schedule"
     | "desk-tour"
     | "pastel-colors"
-    | "night-deadline";
+    | "night-deadline"
+    | "reader-phone"
+    | "handcam-work";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -381,6 +383,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Night work, deadline bound",
       body: "A quiet night under lamplight, polishing the last panels on the way to a deadline.",
+    },
+  },
+  {
+    id: "reader-phone",
+    src: "/brand/promo-shorts/shorts-25-reader.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "독자의 손에서 열리는 회차",
+      body: "스마트폰을 든 독자의 시점에서 새 회차가 열리고, 화면을 스크롤하며 읽어 내려가는 모습을 담았습니다.",
+    },
+    en: {
+      title: "A new episode, in the reader's hands",
+      body: "From a reader's point of view: a new episode opens on a phone and scrolls by as they read.",
+    },
+  },
+  {
+    id: "handcam-work",
+    src: "/brand/promo-shorts/shorts-26-handcam.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "손캠으로 본 작업대",
+      body: "작업자의 손과 펜이 오가는 모습을 위에서 내려다본 손캠 앵글로 담았습니다.",
+    },
+    en: {
+      title: "The desk, hands-on",
+      body: "A top-down hand-cam angle on the creator's hands and pen moving across the desk.",
     },
   },
 ];
