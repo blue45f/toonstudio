@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 25편.
- * 스물다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 27편.
+ * 스물일곱 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~25편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~27편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -30,7 +30,9 @@ export interface ProductTourShort {
     | "pastel-colors"
     | "night-deadline"
     | "reader-phone"
-    | "handcam-work";
+    | "handcam-work"
+    | "episode-alert"
+    | "library-shelves";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -413,6 +415,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "The desk, hands-on",
       body: "A top-down hand-cam angle on the creator's hands and pen moving across the desk.",
+    },
+  },
+  {
+    id: "episode-alert",
+    src: "/brand/promo-shorts/shorts-27-alert.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "새 회차, 알림이 울리면",
+      body: "연재 알림이 울리는 순간 새 회차가 도착하고, 독자들이 하나둘 모여드는 설렘을 담았습니다.",
+    },
+    en: {
+      title: "A new episode just dropped",
+      body: "The moment a serial alert rings, a new episode lands and readers start to gather.",
+    },
+  },
+  {
+    id: "library-shelves",
+    src: "/brand/promo-shorts/shorts-28-library.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "내 서재에 꽂아 두는 즐거움",
+      body: "마음에 드는 작품을 북마크해 서재에 차곡차곡 꽂아 두고, 언제든 다시 꺼내 읽는 모습을 담았습니다.",
+    },
+    en: {
+      title: "Shelved in my library",
+      body: "Bookmarking favorite works onto library shelves, ready to pull out and read again anytime.",
     },
   },
 ];
