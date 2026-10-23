@@ -71,8 +71,7 @@ import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/stu
 import { resolveStudioBg3dShotBatchRecoveryDegradedReason, resolveStudioBg3dShotBatchRecoveryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
 import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
-import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
-import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
+import { resolveBg3dShotBatchArchiveErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-shot-batch-archive";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
 export interface StudioBg3dShotBatchProgress {
@@ -980,7 +979,7 @@ export function createStudioBg3dShotBatchExportRunner(
         : recoverySession.degradedReason
           ? ` ${resolveStudioBg3dShotBatchRecoveryDegradedReason(recoverySession.degradedReason)}`
           : "";
-      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause) ?? resolveBg3dShotBatchArchiveErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message.trim() : "");
       const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {

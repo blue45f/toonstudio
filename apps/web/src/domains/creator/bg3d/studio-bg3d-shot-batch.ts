@@ -1,10 +1,10 @@
 import { isStudioBg3dShotBatchNumberInRange, isStudioBg3dShotBatchIntegerInRange, STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION } from "./studio-bg3d-shot-batch-limits";
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "./studio-bg3d-lt-render";
 import { StudioBg3dShotBatchPublicPlanError } from "./studio-bg3d-shot-batch-public-plan-error";
+import { StudioBg3dShotBatchArchiveError } from "./studio-bg3d-shot-batch-archive-error";
 import { isStudioBg3dTilePipelineId, STUDIO_BG3D_TILED_PNG_PROFILE } from "./studio-bg3d-tiled-batch-policy";
 import { buildStudioPackageArchiveBlob } from "../studio-package-archive";
 import { compareStudioValidationStrings } from "../studio-validation-string-order";
-
 import {
   verifyStudioBg3dLayeredPsdFile,
   verifyStudioBg3dOpaqueRgb8PngFile,
@@ -346,7 +346,7 @@ async function validatePng(
     image.png.size < 24 ||
     image.png.size > STUDIO_BG3D_SHOT_BATCH_MAX_IMAGE_BYTES
   ) {
-    throw new TypeError("컷 일괄 렌더 PNG 항목이 안전한 형식 또는 예산을 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("pngItemUnsafeFormatOrBudget", "type");
   }
   await verifyStudioBg3dRgba8PngFile(image.png, {
     expectedWidth: image.width,
@@ -370,7 +370,7 @@ async function validateLayeredPsd(
     artifact.psd.size < 26 ||
     artifact.psd.size > STUDIO_BG3D_SHOT_PSD_MAX_OUTPUT_BYTES
   ) {
-    throw new TypeError("컷 일괄 렌더 PSD artifact가 안전한 형식 또는 예산을 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("psdArtifactUnsafeFormatOrBudget", "type");
   }
   await verifyStudioBg3dLayeredPsdFile(artifact.psd, {
     expectedWidth: artifact.width,
@@ -420,7 +420,7 @@ function snapshotPublicRenderPlan(
     "artifactRequests",
     "shots",
   ])) {
-    throw new TypeError("공개 컷 렌더 계획에 알 수 없거나 누락된 필드가 있습니다.");
+    throw new StudioBg3dShotBatchArchiveError("publicPlanUnknownOrMissingFields", "type");
   }
   const plan = value as unknown as StudioBg3dShotBatchPublicRenderPlan;
   if (
@@ -501,7 +501,7 @@ function snapshotPublicRenderPlan(
     plan.shots.length < 1 ||
     plan.shots.length > STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS
   ) {
-    throw new TypeError("공개 컷 렌더 계획이 안전한 형식 또는 예산을 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("publicPlanUnsafeFormatOrBudget", "type");
   }
   const canonicalPasses = STUDIO_BG3D_SHOT_BATCH_PASSES.filter((pass) =>
     plan.passes.includes(pass));
@@ -509,7 +509,7 @@ function snapshotPublicRenderPlan(
     requireCanonicalOrder &&
     canonicalPasses.some((pass, index) => plan.passes[index] !== pass)
   ) {
-    throw new TypeError("공개 컷 렌더 계획의 pass 순서가 canonical 순서가 아닙니다.");
+    throw new StudioBg3dShotBatchArchiveError("publicPlanPassOrderNotCanonical", "type");
   }
 
   const shotIds = new Set<string>();
@@ -558,7 +558,7 @@ function snapshotPublicRenderPlan(
       !Array.isArray(shot.files) ||
       shot.files.length !== canonicalPasses.length
     ) {
-      throw new TypeError("공개 컷 렌더 계획의 frozen shot이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("publicPlanFrozenShotInvalid", "type");
     }
     const resolvedSize = resolveStudioBg3dLtCaptureSize({
       sourceWidth: plan.captureProfile.sourceWidth,
@@ -573,7 +573,7 @@ function snapshotPublicRenderPlan(
       shot.capture.height !== resolvedSize.height ||
       shot.capture.wasReduced !== resolvedSize.wasReduced
     ) {
-      throw new TypeError("공개 컷 렌더 계획의 frozen 해상도가 capture profile과 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("publicPlanFrozenResolutionMismatch", "type");
     }
     shotIds.add(shot.shotId);
     shotIndexes.add(shot.shotIndex);
@@ -590,7 +590,7 @@ function snapshotPublicRenderPlan(
         seenPasses.has(file.pass) ||
         file.path !== `shots/${ordinal}/${file.pass}.png`
       ) {
-        throw new TypeError("공개 컷 렌더 계획의 file contract가 올바르지 않습니다.");
+        throw new StudioBg3dShotBatchArchiveError("publicPlanFileContractInvalid", "type");
       }
       seenPasses.add(file.pass);
       return {
@@ -607,7 +607,7 @@ function snapshotPublicRenderPlan(
       (requireCanonicalOrder && canonicalPasses.some((pass, index) =>
         shot.files[index]?.pass !== pass))
     ) {
-      throw new TypeError("공개 컷 렌더 계획의 file 순서가 canonical 순서가 아닙니다.");
+      throw new StudioBg3dShotBatchArchiveError("publicPlanFileOrderNotCanonical", "type");
     }
     return {
       shotId: shot.shotId,
@@ -635,7 +635,7 @@ function snapshotPublicRenderPlan(
     (requireCanonicalOrder && plan.shots.some((shot) =>
       shot.capture.background.color !== shot.capture.background.color.toLowerCase()))
   ) {
-    throw new TypeError("공개 컷 렌더 계획의 shot 순서가 canonical 순서가 아닙니다.");
+    throw new StudioBg3dShotBatchArchiveError("publicPlanShotOrderNotCanonical", "type");
   }
 
   return freezePublicRenderPlan({
@@ -853,23 +853,23 @@ function validateManifestContext(
 ): StudioBg3dShotBatchManifestContext {
   if (value === undefined) return {};
   if (!isRecord(value)) {
-    throw new TypeError("컷 일괄 렌더 manifest 문맥이 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestContextInvalid", "type");
   }
   const candidate = value as Record<string, unknown>;
   const publicRenderPlan = candidate.publicRenderPlan === undefined
     ? undefined
     : snapshotPublicRenderPlan(candidate.publicRenderPlan, true);
   if (!hasOnlyKeys(value, publicRenderPlan ? PUBLIC_MANIFEST_KEYS : LEGACY_MANIFEST_KEYS)) {
-    throw new TypeError("컷 일괄 렌더 manifest 문맥에 알 수 없는 필드가 있습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestContextUnknownField", "type");
   }
   if (
     candidate.resumeKey !== undefined &&
     (typeof candidate.resumeKey !== "string" || !RESUME_KEY_PATTERN.test(candidate.resumeKey))
   ) {
-    throw new TypeError("컷 일괄 렌더 resume key가 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestResumeKeyInvalid", "type");
   }
   if (publicRenderPlan && candidate.resumeKey !== undefined) {
-    throw new TypeError("공개 컷 렌더 manifest에는 로컬 resume key를 포함할 수 없습니다.");
+    throw new StudioBg3dShotBatchArchiveError("publicManifestResumeKeyForbidden", "type");
   }
   if (
     (candidate.layeredPsdRequested !== undefined &&
@@ -877,7 +877,7 @@ function validateManifestContext(
     (candidate.contactSheetRequested !== undefined &&
       typeof candidate.contactSheetRequested !== "boolean")
   ) {
-    throw new TypeError("컷 일괄 렌더 선택 artifact 요청 문맥이 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestOptionalArtifactRequestContextInvalid", "type");
   }
   const rawShots = publicRenderPlan
     ? publicRenderPlan.shots.map((shot) => ({ id: shot.shotId, name: shot.shotName }))
@@ -887,7 +887,7 @@ function validateManifestContext(
     (candidate.shots !== undefined && rawShots.length < 1) ||
     rawShots.length > STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS
   ) {
-    throw new RangeError("컷 일괄 렌더 manifest 컷 목록이 안전 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestShotListOverLimit", "range");
   }
   const shotIds = new Set<string>();
   const shots = rawShots.map((rawShot): { readonly id: string; readonly name: string } => {
@@ -897,7 +897,7 @@ function validateManifestContext(
       typeof shot.id !== "string" || !ID_PATTERN.test(shot.id) ||
       typeof shot.name !== "string" || !validShotName(shot.name) || shotIds.has(shot.id)
     ) {
-      throw new TypeError("컷 일괄 렌더 manifest 컷 목록이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("manifestShotListInvalid", "type");
     }
     shotIds.add(shot.id);
     return { id: shot.id, name: shot.name };
@@ -908,20 +908,20 @@ function validateManifestContext(
     (candidate.requestedPasses !== undefined && rawRequested.length < 1) ||
     rawRequested.some((pass) => typeof pass !== "string" || !PASS_SET.has(pass))
   ) {
-    throw new TypeError("컷 일괄 렌더 요청 패스가 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestRequestedPassesInvalid", "type");
   }
   const requested = rawRequested as StudioBg3dShotBatchPass[];
   if (new Set(requested).size !== requested.length) {
-    throw new TypeError("컷 일괄 렌더 요청 패스가 중복되었습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestRequestedPassesDuplicated", "type");
   }
   let resolution: StudioBg3dShotBatchLegacyManifestContext["resolution"];
   if (candidate.resolution !== undefined) {
     if (!isRecord(candidate.resolution)) {
-      throw new TypeError("컷 일괄 렌더 해상도 문맥이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("manifestResolutionContextInvalid", "type");
     }
     if (candidate.resolution.mode === "per-shot-maximum") {
       if (!hasExactKeys(candidate.resolution, ["mode"])) {
-        throw new TypeError("컷 일괄 렌더 컷별 최대 해상도 문맥에 알 수 없는 필드가 있습니다.");
+        throw new StudioBg3dShotBatchArchiveError("manifestPerShotResolutionUnknownField", "type");
       }
       resolution = { mode: "per-shot-maximum" };
     } else if (
@@ -929,7 +929,7 @@ function validateManifestContext(
       !hasExactKeys(candidate.resolution, ["mode", "height"]) ||
       !isStudioBg3dShotBatchIntegerInRange(candidate.resolution.height, 256, MAX_DIMENSION)
     ) {
-      throw new TypeError("컷 일괄 렌더 최대 해상도 문맥이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("manifestMaximumResolutionContextInvalid", "type");
     } else {
       resolution = {
         mode: "maximum-height",
@@ -939,7 +939,7 @@ function validateManifestContext(
   }
   const rawSkipped = candidate.skippedArtifacts ?? [];
   if (!Array.isArray(rawSkipped) || rawSkipped.length > STUDIO_BG3D_SHOT_BATCH_MAX_ARTIFACTS) {
-    throw new RangeError("컷 일괄 렌더 생략 artifact가 안전 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestSkippedArtifactsOverLimit", "range");
   }
   const skippedKeys = new Set<string>();
   const skippedArtifacts = rawSkipped.map((rawArtifact): StudioBg3dShotBatchSkippedArtifact => {
@@ -951,11 +951,11 @@ function validateManifestContext(
       typeof artifact.pass !== "string" || !PASS_SET.has(artifact.pass) ||
       (artifact.reason !== "disabled" && artifact.reason !== "unavailable")
     ) {
-      throw new TypeError("컷 일괄 렌더 생략 artifact가 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("manifestSkippedArtifactInvalid", "type");
     }
     const key = `${artifact.shotId}:${artifact.pass}`;
     if (skippedKeys.has(key)) {
-      throw new TypeError("컷 일괄 렌더 생략 artifact가 중복되었습니다.");
+      throw new StudioBg3dShotBatchArchiveError("manifestSkippedArtifactDuplicated", "type");
     }
     skippedKeys.add(key);
     return {
@@ -967,7 +967,7 @@ function validateManifestContext(
   });
   const rawPsdFallbacks = candidate.psdFallbacks ?? [];
   if (!Array.isArray(rawPsdFallbacks) || rawPsdFallbacks.length > STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) {
-    throw new RangeError("컷 일괄 렌더 PSD fallback 목록이 안전 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestPsdFallbacksOverLimit", "range");
   }
   const fallbackIds = new Set<string>();
   const copiedPsdFallbacks = rawPsdFallbacks.map((rawFallback): StudioBg3dShotBatchPsdFallback => {
@@ -980,7 +980,7 @@ function validateManifestContext(
       !["budget", "unavailable", "worker-failed"].includes(fallback.reason) ||
       fallbackIds.has(fallback.shotId)
     ) {
-      throw new TypeError("컷 일괄 렌더 PSD fallback이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("manifestPsdFallbackInvalid", "type");
     }
     fallbackIds.add(fallback.shotId);
     return {
@@ -998,7 +998,7 @@ function validateManifestContext(
       )
     )
   ) {
-    throw new TypeError("컷 일괄 렌더 콘택트 시트 fallback이 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("manifestContactSheetFallbackInvalid", "type");
   }
   if (publicRenderPlan) {
     const shotOrder = new Map(publicRenderPlan.shots.map((shot) => [shot.shotId, shot.shotIndex]));
@@ -1055,7 +1055,7 @@ export async function buildStudioBg3dShotBatchArchive(
   options: StudioBg3dShotBatchBuildOptions = {},
 ): Promise<Blob> {
   if (!Array.isArray(inputImages) || inputImages.length < 1 || inputImages.length > STUDIO_BG3D_SHOT_BATCH_MAX_ARTIFACTS) {
-    throw new RangeError(`컷 일괄 렌더는 1~${STUDIO_BG3D_SHOT_BATCH_MAX_ARTIFACTS}개 artifact만 포함할 수 있습니다.`);
+    throw new StudioBg3dShotBatchArchiveError("artifactCountOutOfRange", "range", { maxArtifacts: String(STUDIO_BG3D_SHOT_BATCH_MAX_ARTIFACTS) });
   }
   const signal = options.signal;
   const onProgress = options.onProgress;
@@ -1064,7 +1064,7 @@ export async function buildStudioBg3dShotBatchArchive(
   // objects are immutable; all mutable wrappers and metadata are rebuilt explicitly.
   let images = inputImages.map((image): StudioBg3dShotBatchImage => {
     if (!isRecord(image)) {
-      throw new TypeError("컷 일괄 렌더 PNG 항목이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("pngItemInvalid", "type");
     }
     return {
       shotId: image.shotId,
@@ -1081,11 +1081,11 @@ export async function buildStudioBg3dShotBatchArchive(
   const manifestContext = validateManifestContext(options.manifest);
   const inputLayeredPsds = options.layeredPsds ?? [];
   if (!Array.isArray(inputLayeredPsds) || inputLayeredPsds.length > STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) {
-    throw new RangeError("컷 일괄 렌더 PSD 수가 안전 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("psdCountOverLimit", "range");
   }
   let layeredPsds = inputLayeredPsds.map((artifact): StudioBg3dShotBatchLayeredPsd => {
     if (!isRecord(artifact)) {
-      throw new TypeError("컷 일괄 렌더 PSD artifact가 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("psdArtifactInvalid", "type");
     }
     return {
       shotId: artifact.shotId,
@@ -1100,11 +1100,11 @@ export async function buildStudioBg3dShotBatchArchive(
     !Array.isArray(inputContactSheets) ||
     inputContactSheets.length > STUDIO_BG3D_SHOT_CONTACT_SHEET_MAX_SHOTS
   ) {
-    throw new RangeError("컷 일괄 렌더 콘택트 시트 수가 안전 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("contactSheetCountOverLimit", "range");
   }
   const contactSheets = inputContactSheets.map((artifact): StudioBg3dShotBatchContactSheet => {
     if (!isRecord(artifact) || !Array.isArray(artifact.shotIds)) {
-      throw new TypeError("컷 일괄 렌더 콘택트 시트 artifact가 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("contactSheetArtifactInvalid", "type");
     }
     return {
       sheetNumber: artifact.sheetNumber,
@@ -1120,7 +1120,7 @@ export async function buildStudioBg3dShotBatchArchive(
     publicRenderPlan &&
     !await verifyStudioBg3dShotBatchPublicRenderDigest(publicRenderPlan)
   ) {
-    throw new TypeError("공개 컷 렌더 계획의 render digest가 필드와 일치하지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("publicPlanRenderDigestMismatch", "type");
   }
   throwIfAborted(signal);
   if (publicRenderPlan) {
@@ -1169,14 +1169,14 @@ export async function buildStudioBg3dShotBatchArchive(
       requestedPassSet &&
       (image.pass === undefined || !requestedPassSet.has(image.pass))
     ) {
-      throw new TypeError("완료 PNG artifact가 manifest 요청 패스에 없습니다.");
+      throw new StudioBg3dShotBatchArchiveError("completedPngNotInRequestedPasses", "type");
     }
     const existingShot = shots.get(image.shotId);
     if (manifestShots && !existingShot) {
-      throw new TypeError("완료 artifact가 요청 컷 목록에 없습니다.");
+      throw new StudioBg3dShotBatchArchiveError("completedArtifactNotInRequestedShots", "type");
     }
     if (existingShot && existingShot.name !== image.shotName) {
-      throw new TypeError("같은 컷 ID의 이름이 artifact 사이에서 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("shotNameMismatchAcrossArtifacts", "type");
     }
     if (publicRenderPlan) {
       const publicShot = publicRenderPlan.shots.find((shot) => shot.shotId === image.shotId);
@@ -1189,18 +1189,18 @@ export async function buildStudioBg3dShotBatchArchive(
         image.requestedHeight !== publicShot.capture.requestedHeight ||
         image.wasReduced !== publicShot.capture.wasReduced
       ) {
-        throw new TypeError("완료 artifact가 공개 frozen 렌더 계획과 일치하지 않습니다.");
+        throw new StudioBg3dShotBatchArchiveError("completedArtifactMismatchPublicPlan", "type");
       }
     }
     if (!existingShot) {
       if (shots.size >= STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) {
-        throw new RangeError(`컷 일괄 렌더는 최대 ${STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS}개 컷만 포함할 수 있습니다.`);
+        throw new StudioBg3dShotBatchArchiveError("shotCountOverLimit", "range", { maxShots: String(STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) });
       }
       shots.set(image.shotId, { name: image.shotName, index: shots.size + 1 });
     }
     const key = `${image.shotId}:${artifactPass(image)}`;
     if (seenArtifactKeys.has(key)) {
-      throw new TypeError("컷 일괄 렌더에 중복 shot/pass artifact가 있습니다.");
+      throw new StudioBg3dShotBatchArchiveError("duplicateShotPassArtifact", "type");
     }
     seenArtifactKeys.add(key);
     const existingShape = shotRasterShape.get(image.shotId);
@@ -1212,7 +1212,7 @@ export async function buildStudioBg3dShotBatchArchive(
         existingShape.wasReduced !== image.wasReduced
       )
     ) {
-      throw new TypeError("같은 컷의 pass artifact 해상도 또는 축소 문맥이 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("sameShotPassShapeMismatch", "type");
     }
     if (!existingShape) {
       shotRasterShape.set(image.shotId, {
@@ -1231,11 +1231,11 @@ export async function buildStudioBg3dShotBatchArchive(
           image.requestedHeight !== manifestResolution.height)
       )
     ) {
-      throw new TypeError("컷 pass artifact의 요청 높이가 manifest 최대 해상도 문맥과 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("passRequestedHeightMismatchManifestResolution", "type");
     }
     totalImageBytes += image.png.size;
     if (totalImageBytes > STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES) {
-      throw new RangeError("컷 일괄 렌더 이미지 합계가 브라우저 메모리 예산을 벗어났습니다.");
+      throw new StudioBg3dShotBatchArchiveError("imageTotalBytesOverBudget", "range");
     }
   }
 
@@ -1245,28 +1245,28 @@ export async function buildStudioBg3dShotBatchArchive(
     await validateLayeredPsd(artifact, signal);
     const existingShot = shots.get(artifact.shotId);
     if (manifestShots && !existingShot) {
-      throw new TypeError("PSD artifact가 요청 컷 목록에 없습니다.");
+      throw new StudioBg3dShotBatchArchiveError("psdArtifactNotInRequestedShots", "type");
     }
     if (existingShot && existingShot.name !== artifact.shotName) {
-      throw new TypeError("같은 컷 ID의 이름이 PSD artifact와 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("shotNameMismatchAcrossPsdArtifacts", "type");
     }
     const rasterShape = shotRasterShape.get(artifact.shotId);
     if (rasterShape && (rasterShape.width !== artifact.width || rasterShape.height !== artifact.height)) {
-      throw new TypeError("같은 컷의 PSD와 PNG pass 해상도가 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("psdPngResolutionMismatch", "type");
     }
     if (!existingShot) {
       if (shots.size >= STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) {
-        throw new RangeError(`컷 일괄 렌더는 최대 ${STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS}개 컷만 포함할 수 있습니다.`);
+        throw new StudioBg3dShotBatchArchiveError("shotCountOverLimit", "range", { maxShots: String(STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) });
       }
       shots.set(artifact.shotId, { name: artifact.shotName, index: shots.size + 1 });
     }
     if (seenPsdShotIds.has(artifact.shotId)) {
-      throw new TypeError("컷 일괄 렌더에 중복 layered PSD가 있습니다.");
+      throw new StudioBg3dShotBatchArchiveError("duplicateLayeredPsd", "type");
     }
     seenPsdShotIds.add(artifact.shotId);
     totalImageBytes += artifact.psd.size;
     if (totalImageBytes > STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES) {
-      throw new RangeError("컷 일괄 렌더 artifact 합계가 브라우저 메모리 예산을 벗어났습니다.");
+      throw new StudioBg3dShotBatchArchiveError("artifactTotalBytesOverBudget", "range");
     }
   }
 
@@ -1287,7 +1287,7 @@ export async function buildStudioBg3dShotBatchArchive(
       !(artifact.png instanceof Blob) || artifact.png.type !== "image/png" ||
       artifact.png.size < 24 || artifact.png.size > STUDIO_BG3D_SHOT_CONTACT_SHEET_MAX_OUTPUT_BYTES
     ) {
-      throw new TypeError("컷 일괄 렌더 콘택트 시트 artifact가 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("contactSheetArtifactInvalid", "type");
     }
     await verifyStudioBg3dOpaqueRgb8PngFile(artifact.png, {
       expectedWidth: artifact.width,
@@ -1302,36 +1302,36 @@ export async function buildStudioBg3dShotBatchArchive(
       totalContactSheetBytes > STUDIO_BG3D_SHOT_CONTACT_SHEET_MAX_TOTAL_OUTPUT_BYTES ||
       totalImageBytes > STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES
     ) {
-      throw new RangeError("컷 일괄 렌더 콘택트 시트 합계가 브라우저 메모리 예산을 벗어났습니다.");
+      throw new StudioBg3dShotBatchArchiveError("contactSheetTotalBytesOverBudget", "range");
     }
   }
   if (contactSheets.length > 0 && contactShotIds.size !== shots.size) {
-    throw new TypeError("컷 일괄 렌더 콘택트 시트가 요청한 모든 컷을 포함하지 않습니다.");
+    throw new StudioBg3dShotBatchArchiveError("contactSheetMissingRequestedShots", "type");
   }
   if (contactSheets.length > 0 && manifestContext.contactSheetFallback !== undefined) {
-    throw new TypeError("완료 콘택트 시트와 fallback이 충돌합니다.");
+    throw new StudioBg3dShotBatchArchiveError("completedContactSheetConflictsFallback", "type");
   }
 
   const seenSkippedArtifactKeys = new Set<string>();
   for (const skipped of manifestContext.skippedArtifacts ?? []) {
     const existingShot = shots.get(skipped.shotId);
     if (manifestShots && !existingShot) {
-      throw new TypeError("생략 artifact가 요청 컷 목록에 없습니다.");
+      throw new StudioBg3dShotBatchArchiveError("skippedArtifactNotInRequestedShots", "type");
     }
     if (existingShot && existingShot.name !== skipped.shotName) {
-      throw new TypeError("같은 컷 ID의 이름이 생략 artifact와 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("shotNameMismatchAcrossSkippedArtifacts", "type");
     }
     if (!existingShot) {
       if (shots.size >= STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) {
-        throw new RangeError(`컷 일괄 렌더는 최대 ${STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS}개 컷만 포함할 수 있습니다.`);
+        throw new StudioBg3dShotBatchArchiveError("shotCountOverLimit", "range", { maxShots: String(STUDIO_BG3D_SHOT_BATCH_MAX_SHOTS) });
       }
       shots.set(skipped.shotId, { name: skipped.shotName, index: shots.size + 1 });
     }
     if (seenArtifactKeys.has(`${skipped.shotId}:${skipped.pass}`)) {
-      throw new TypeError("완료 artifact와 생략 artifact가 충돌합니다.");
+      throw new StudioBg3dShotBatchArchiveError("completedAndSkippedArtifactConflict", "type");
     }
     if (requestedPassSet && !requestedPassSet.has(skipped.pass)) {
-      throw new TypeError("생략 artifact가 manifest 요청 패스에 없습니다.");
+      throw new StudioBg3dShotBatchArchiveError("skippedArtifactNotInRequestedPasses", "type");
     }
     seenSkippedArtifactKeys.add(`${skipped.shotId}:${skipped.pass}`);
   }
@@ -1339,41 +1339,41 @@ export async function buildStudioBg3dShotBatchArchive(
   for (const fallback of manifestContext.psdFallbacks ?? []) {
     const existingShot = shots.get(fallback.shotId);
     if (!existingShot || existingShot.name !== fallback.shotName) {
-      throw new TypeError("PSD fallback이 요청 컷 목록과 일치하지 않습니다.");
+      throw new StudioBg3dShotBatchArchiveError("psdFallbackMismatchRequestedShots", "type");
     }
     if (seenPsdShotIds.has(fallback.shotId)) {
-      throw new TypeError("완료 PSD와 PSD fallback이 충돌합니다.");
+      throw new StudioBg3dShotBatchArchiveError("completedPsdConflictsFallback", "type");
     }
     seenPsdFallbackShotIds.add(fallback.shotId);
   }
   if (layeredPsdRequested === true) {
     for (const shot of manifestShots ?? []) {
       if (!seenPsdShotIds.has(shot.id) && !seenPsdFallbackShotIds.has(shot.id)) {
-        throw new TypeError("요청한 컷 PSD가 완료 또는 fallback으로 정확히 설명되지 않았습니다.");
+        throw new StudioBg3dShotBatchArchiveError("requestedShotPsdNotAccounted", "type");
       }
     }
   } else if (
     layeredPsdRequested === false &&
     (layeredPsds.length > 0 || (manifestContext.psdFallbacks?.length ?? 0) > 0)
   ) {
-    throw new TypeError("요청하지 않은 PSD artifact 또는 fallback이 포함되었습니다.");
+    throw new StudioBg3dShotBatchArchiveError("unrequestedPsdArtifactOrFallbackIncluded", "type");
   }
   if (contactSheetRequested === true) {
     if (contactSheets.length === 0 && manifestContext.contactSheetFallback === undefined) {
-      throw new TypeError("요청한 콘택트 시트가 완료 또는 fallback으로 설명되지 않았습니다.");
+      throw new StudioBg3dShotBatchArchiveError("requestedContactSheetNotAccounted", "type");
     }
   } else if (
     contactSheetRequested === false &&
     (contactSheets.length > 0 || manifestContext.contactSheetFallback !== undefined)
   ) {
-    throw new TypeError("요청하지 않은 콘택트 시트 artifact 또는 fallback이 포함되었습니다.");
+    throw new StudioBg3dShotBatchArchiveError("unrequestedContactSheetArtifactOrFallbackIncluded", "type");
   }
   if (requestedPassSet && manifestShots) {
     for (const shot of manifestShots) {
       for (const pass of requestedPassSet) {
         const key = `${shot.id}:${pass}`;
         if (!seenArtifactKeys.has(key) && !seenSkippedArtifactKeys.has(key)) {
-          throw new TypeError("요청한 shot/pass가 완료 또는 생략 artifact로 정확히 설명되지 않았습니다.");
+          throw new StudioBg3dShotBatchArchiveError("requestedShotPassNotAccounted", "type");
         }
       }
     }
@@ -1387,7 +1387,7 @@ export async function buildStudioBg3dShotBatchArchive(
     (manifestContext.contactSheetFallback === undefined ? 0 : 1) >
       STUDIO_BG3D_SHOT_BATCH_MAX_ARCHIVE_ARTIFACTS
   ) {
-    throw new RangeError("컷 일괄 렌더 artifact 합계가 안전 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchArchiveError("artifactTotalOverLimit", "range");
   }
 
   const legacyV1 = layeredPsds.length === 0 &&

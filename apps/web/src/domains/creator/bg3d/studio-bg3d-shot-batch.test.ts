@@ -13,6 +13,7 @@ import {
   STUDIO_BG3D_SHOT_BATCH_APP_IMPLEMENTATION_PROFILE_V1,
   STUDIO_BG3D_SHOT_BATCH_ARCHIVE_PROFILE_V1,
   STUDIO_BG3D_SHOT_BATCH_CONTACT_SHEET_PROFILE_V1,
+  STUDIO_BG3D_SHOT_BATCH_MAX_ARTIFACTS,
   STUDIO_BG3D_SHOT_BATCH_DEPTH_ENCODING_V1,
   buildStudioBg3dShotBatchArchive as buildStudioBg3dShotBatchArchiveWithBackend,
   createStudioBg3dShotBatchPublicRenderPlan,
@@ -505,7 +506,11 @@ describe("Studio BG3D shot batch archive", () => {
       plannedImage("shot-a", "첫 컷", "depth"),
       plannedImage("shot-b", "둘째 컷", "beauty"),
       plannedImage("shot-b", "둘째 컷", "depth"),
-    ], { manifest: { publicRenderPlan: forged } })).rejects.toThrow("render digest");
+    ], { manifest: { publicRenderPlan: forged } })).rejects.toMatchObject({
+      name: "StudioBg3dShotBatchArchiveError",
+      code: "publicPlanRenderDigestMismatch",
+      errorKind: "type",
+    });
   });
 
   it("pins public-only implementation and artifact profiles to manifest v3 semantics", async () => {
@@ -669,22 +674,22 @@ describe("Studio BG3D shot batch archive", () => {
   it("rejects duplicate ids, unsafe names, MIME mismatches, and forged PNG bytes", async () => {
     await expect(buildStudioBg3dShotBatchArchive([
       image("shot-a"), image("shot-a"),
-    ])).rejects.toThrow(/중복/iu);
+    ])).rejects.toMatchObject({ code: "duplicateShotPassArtifact", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },
       { ...image("shot-a"), pass: "beauty" },
-    ])).rejects.toThrow(/중복/iu);
+    ])).rejects.toMatchObject({ code: "duplicateShotPassArtifact", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       image("shot-a", "https://unsafe.invalid"),
-    ])).rejects.toThrow(/안전한 형식/iu);
+    ])).rejects.toMatchObject({ code: "pngItemUnsafeFormatOrBudget", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([{
       ...image("shot-a"),
       png: new Blob([pngHeader(320, 180)], { type: "image/jpeg" }),
-    }])).rejects.toThrow(/안전한 형식/iu);
+    }])).rejects.toMatchObject({ code: "pngItemUnsafeFormatOrBudget", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },
       { ...image("shot-a"), pass: "depth", width: 321 },
-    ])).rejects.toThrow(/해상도/iu);
+    ])).rejects.toMatchObject({ code: "sameShotPassShapeMismatch", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },
     ], {
@@ -692,7 +697,7 @@ describe("Studio BG3D shot batch archive", () => {
         shots: [{ id: "shot-a", name: "컷 1" }],
         requestedPasses: ["beauty", "depth"],
       },
-    })).rejects.toThrow(/완료 또는 생략/iu);
+    })).rejects.toMatchObject({ code: "requestedShotPassNotAccounted", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "depth" },
     ], {
@@ -700,7 +705,7 @@ describe("Studio BG3D shot batch archive", () => {
         shots: [{ id: "shot-a", name: "컷 1" }],
         requestedPasses: ["beauty"],
       },
-    })).rejects.toThrow(/요청 패스/iu);
+    })).rejects.toMatchObject({ code: "completedPngNotInRequestedPasses", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },
     ], {
@@ -711,7 +716,7 @@ describe("Studio BG3D shot batch archive", () => {
         height: 180,
         psd: new Blob([psdHeader(321, 180)], { type: "image/vnd.adobe.photoshop" }),
       }],
-    })).rejects.toThrow(/PSD와 PNG pass 해상도/iu);
+    })).rejects.toMatchObject({ code: "psdPngResolutionMismatch", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([{
       ...image("shot-a"),
       png: new Blob([new Uint8Array(24)], { type: "image/png" }),
@@ -722,7 +727,7 @@ describe("Studio BG3D shot batch archive", () => {
       manifest: {
         resumeKey: "unsafe",
       },
-    })).rejects.toThrow(/resume key/iu);
+    })).rejects.toMatchObject({ code: "manifestResumeKeyInvalid", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },
     ], {
@@ -739,7 +744,24 @@ describe("Studio BG3D shot batch archive", () => {
       pass: "beauty",
       requestedHeight: 1_080,
       wasReduced: false,
-    }])).rejects.toThrow(/안전한 형식/iu);
+    }])).rejects.toMatchObject({ code: "pngItemUnsafeFormatOrBudget", errorKind: "type" });
+  });
+
+  it("emits structured archive codes with errorKind and params (R19)", async () => {
+    await expect(buildStudioBg3dShotBatchArchive([])).rejects.toMatchObject({
+      name: "StudioBg3dShotBatchArchiveError",
+      code: "artifactCountOutOfRange",
+      errorKind: "range",
+      params: { maxArtifacts: String(STUDIO_BG3D_SHOT_BATCH_MAX_ARTIFACTS) },
+    });
+    await expect(buildStudioBg3dShotBatchArchive([])).rejects.toBeInstanceOf(TypeError);
+    const manyShots = Array.from({ length: 65 }, (_, index) => ({
+      id: `shot-${index}`,
+      name: `컷 ${index}`,
+    }));
+    await expect(buildStudioBg3dShotBatchArchive([image("shot-0", "컷 0")], {
+      manifest: { shots: manyShots },
+    })).rejects.toMatchObject({ code: "manifestShotListOverLimit", errorKind: "range" });
   });
 
   it("honors cancellation before allocating the archive", async () => {
