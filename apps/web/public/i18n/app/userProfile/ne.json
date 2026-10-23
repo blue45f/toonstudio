@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "सिर्जना गरिएको कार्यहरू",
   "userProfile.tabs.series": "श्रृंखला",
   "userProfile.works.empty": "यो प्रयोगकर्तासँग अहिलेसम्म कुनै सार्वजनिक काम छैन।",
+  "userProfile.works.error": "सिर्जना गरिएका कृतिहरू लोड गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।",
   "userProfile.series.empty": "यो प्रयोगकर्तासँग अझै कुनै श्रृंखला छैन।",
+  "userProfile.series.error": "शृङ्खला लोड गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।",
   "userProfile.fetchError": "प्रोफाइल लोड गर्न सकिएन।",
   "userProfile.authorFallback": "प्रयोगकर्ता",
   "userProfile.metaTemplate": "{author} प्रोफाइल · {reviews} समीक्षा · {works} कामहरू · avg रेटिंग {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "प्रोफाइल सामग्री",
   "userProfile.refresh": "ताजा",
   "userProfile.emptyReviews": "यस प्रयोगकर्ताले अहिलेसम्म कुनै समीक्षा प्रकाशित गरेका छैनन्।",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.emptyReviewsHint": "तपाईंलाई मन पर्ने कृतिमा पहिलो समीक्षा छोड्नुहोस्।",
+  "userProfile.emptyReviewsCta": "कृतिहरू हेर्नुहोस्"
 }
