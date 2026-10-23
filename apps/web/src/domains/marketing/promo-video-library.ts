@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 202편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 204편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,7 +8,7 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 47편: 투어 쇼츠 섹션의 46편은 product-tour-shorts.ts
+ * - 쇼츠 49편: 투어 쇼츠 섹션의 48편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
  * - 투어 도입·마무리·전환 14편: product-tour-clips.ts (전환 가로본 3편의 세로
@@ -96,11 +96,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 마흔여섯 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 마흔여덟 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Forty-six also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Forty-eight also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
