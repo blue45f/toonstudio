@@ -605,6 +605,42 @@ const NEUTRAL_LATENT: LatentPigment = Object.freeze({
   residual: tuple3(0, 0, 0),
 });
 
+const LATENT_CACHE_CAPACITY = 2048;
+const latentExactCache = new Map<string, LatentPigment>();
+let latentCacheHits = 0;
+let latentCacheMisses = 0;
+
+function makeExactRgbCacheKey(rgb: LatentPigmentRgb): string {
+  return `${rgb[0]},${rgb[1]},${rgb[2]}`;
+}
+
+export interface LatentPigmentCacheStats {
+  readonly size: number;
+  readonly capacity: number;
+  readonly hits: number;
+  readonly misses: number;
+  readonly hitRate: number;
+}
+
+/** 잠재 안료 역변환 캐시 통계를 반환한다(초기화 상태를 바꾸지 않는다). */
+export function getLatentPigmentCacheStats(): LatentPigmentCacheStats {
+  const total = latentCacheHits + latentCacheMisses;
+  return {
+    size: latentExactCache.size,
+    capacity: LATENT_CACHE_CAPACITY,
+    hits: latentCacheHits,
+    misses: latentCacheMisses,
+    hitRate: total > 0 ? latentCacheHits / total : 0,
+  };
+}
+
+/** 잠재 안료 역변환 캐시를 비운다. */
+export function clearLatentPigmentCache(): void {
+  latentExactCache.clear();
+  latentCacheHits = 0;
+  latentCacheMisses = 0;
+}
+
 /**
  * RGB(감마 인코딩 sRGB, 0~1)를 잠재 색으로 바꾼다. 같은 입력은 항상 같은 결과를 낸다.
  * NaN·무한대·범위 밖 값은 거부한다.
@@ -612,10 +648,17 @@ const NEUTRAL_LATENT: LatentPigment = Object.freeze({
 export function rgbToLatentPigment(rgb01: LatentPigmentRgb): LatentPigment {
   const rgb = readRgb(rgb01, "RGB");
   const model = getRuntime();
+  const key = makeExactRgbCacheKey(rgb);
+  const cached = latentExactCache.get(key);
+  if (cached !== undefined) {
+    latentCacheHits += 1;
+    return cached;
+  }
+  latentCacheMisses += 1;
   solveConcentrations(model, rgb);
   const { best, polynomial } = model.scratch;
   evaluatePolynomial(model, best, polynomial);
-  return Object.freeze({
+  const result: LatentPigment = Object.freeze({
     concentrations: Object.freeze([best[0], best[1], best[2], best[3]] as const),
     residual: tuple3(
       rgb[0] - clamp01(polynomial[0]),
@@ -623,6 +666,14 @@ export function rgbToLatentPigment(rgb01: LatentPigmentRgb): LatentPigment {
       rgb[2] - clamp01(polynomial[2]),
     ),
   });
+  if (latentExactCache.size >= LATENT_CACHE_CAPACITY) {
+    const oldestKey = latentExactCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      latentExactCache.delete(oldestKey);
+    }
+  }
+  latentExactCache.set(key, result);
+  return result;
 }
 
 /** 잠재 색을 RGB(감마 인코딩 sRGB, 0~1)로 바꾼다. `자른 다항식 색 + 잔차`를 0~1로 자른다. */
@@ -671,3 +722,70 @@ export function mixRgbPigments(entries: readonly WeightedRgbPigment[]): LatentPi
   })));
   return latentPigmentToRgb(mixed);
 }
+
+/**
+ * 채도 보존 잠재 안료 혼합(Chroma-preserving latent pigment mix).
+ * 단일 색(w=1)이나 동일 색 혼합에서는 입력 색을 무손실로 복원하며, 서로 다른 색의 중간 혼합에서
+ * 선형 잔차 상쇄로 인한 탁화를 억제해 Kubelka-Munk 3차 다항식 기저의 순색 투과창을 극대화한다.
+ */
+export function mixRgbPigmentsChromaPreserving(
+  entries: readonly WeightedRgbPigment[],
+  chromaRetention = 0.45,
+): LatentPigmentRgb {
+  const list: unknown = entries;
+  if (!Array.isArray(list)) throw new TypeError("entries는 배열이어야 합니다.");
+  const checked = list.map(readRgbEntry);
+  const weights = normalizeWeights(checked.map((entry) => entry.weight));
+  const retention = clamp01(Number.isFinite(chromaRetention) ? chromaRetention : 0.45);
+
+  const solved = checked.map(({ rgb }, index) => ({
+    rgb,
+    latent: weights[index] === 0 ? NEUTRAL_LATENT : rgbToLatentPigment(rgb),
+    weight: weights[index],
+  }));
+
+  const concentrations = [0, 0, 0, 0];
+  const linearResidual = [0, 0, 0];
+  let puritySumSq = 0;
+
+  for (const item of solved) {
+    if (item.weight === 0) continue;
+    puritySumSq += item.weight * item.weight;
+    for (let variable = 0; variable < VARIABLES; variable += 1) {
+      concentrations[variable] += item.weight * item.latent.concentrations[variable];
+    }
+    for (let channel = 0; channel < 3; channel += 1) {
+      linearResidual[channel] += item.weight * item.latent.residual[channel];
+    }
+  }
+
+  // 모든 유효 항목이 같은 색이면 감쇠 없이 100% 보존한다.
+  const firstActive = solved.find((item) => item.weight > 0);
+  const allSameColor =
+    firstActive !== undefined &&
+    solved.every(
+      (item) =>
+        item.weight === 0 ||
+        (item.rgb[0] === firstActive.rgb[0] &&
+          item.rgb[1] === firstActive.rgb[1] &&
+          item.rgb[2] === firstActive.rgb[2]),
+    );
+
+  // puritySumSq는 단일 색에서 1, 2색 균등 혼합에서 0.5.
+  const residualScale = allSameColor ? 1 : 1 - retention * (1 - puritySumSq);
+  const mixedLatent: LatentPigment = Object.freeze({
+    concentrations: Object.freeze([
+      concentrations[0],
+      concentrations[1],
+      concentrations[2],
+      concentrations[3],
+    ] as const),
+    residual: tuple3(
+      linearResidual[0] * residualScale,
+      linearResidual[1] * residualScale,
+      linearResidual[2] * residualScale,
+    ),
+  });
+  return latentPigmentToRgb(mixedLatent);
+}
+

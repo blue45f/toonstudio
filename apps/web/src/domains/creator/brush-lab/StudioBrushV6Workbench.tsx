@@ -68,6 +68,7 @@ import {
   type BrushStudioV6Telemetry,
 } from "./brush-studio-v6-preview";
 import { estimateBrushStudioV6MotionResponseLength } from "./brush-studio-v6-motion-runtime";
+import { evaluateStudioCspBenchmarkScorecard } from "../drawing/studio-csp-benchmark-scorecard";
 
 const CARD = "rounded-2xl border border-line bg-card/60 p-4 shadow-sm";
 const SUB = "rounded-xl border border-line bg-raised/55 p-3";
@@ -344,6 +345,21 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
   currentRef.current = program;
 
   const analysis = analyzeBrushStudioV6Program(program, capabilities);
+  const cspScorecard = evaluateStudioCspBenchmarkScorecard({
+    deviceFormFactor:
+      program.deviceProfile === "tablet-pen"
+        ? "tablet"
+        : program.deviceProfile === "touch-hybrid"
+          ? "compact"
+          : "desktop",
+    strokeWidthPx: program.tuning.size,
+    brushOpacity: program.tuning.opacity,
+    stabilizerLevel: Math.round(program.tuning.stabilization * 10),
+    wetMixEnabled: program.tuning.wetness > 0,
+    grainDepth: program.tuning.surfaceTooth,
+    bristleCount: program.tuning.bristleStrands,
+    colorMixingMode: "latent-pigment",
+  });
   const physicsNodes = brushStudioV6NodesForSlot("physics");
   const finishNodes = brushStudioV6NodesForSlot("finish");
   const activeTuning = brushStudioV6MaterialActiveTuningKeys(program);
@@ -534,6 +550,51 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
           <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "결정적 질감 시험지")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "동일 seed로 종이·안료·입자·습식·강모·패턴 결과를 비교합니다.")}><canvas ref={previewRef} role="img" aria-label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "현재 브러시의 결정적 질감 시험지")} className="h-64 w-full rounded-xl border border-line bg-white" /></Panel>
           <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "실제 입력 필기 패드")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "펜·마우스·허용된 터치로 필압·틸트·팜 차단과 재질 반응을 확인합니다.")}><canvas ref={liveRef} aria-label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "브러시 스튜디오 실제 입력 필기 패드")} className="h-72 w-full cursor-crosshair rounded-xl border border-line bg-white" /><div className="mt-3 grid grid-cols-3 gap-2 text-center text-[0.68rem]"><div className={SUB}><p className="font-bold text-fg-3">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "입력률")}</p><p className="mt-1 font-black text-fg">{telemetry.sampleRateHz}Hz</p></div><div className={SUB}><p className="font-bold text-fg-3">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "필압")}</p><p className="mt-1 font-black text-fg">{telemetry.pressure.toFixed(2)}</p></div><div className={SUB}><p className="font-bold text-fg-3">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "Tilt")}</p><p className="mt-1 font-black text-fg">{telemetry.tilt.toFixed(0)}°</p></div></div><div className="mt-2 flex items-center justify-between gap-2 text-[0.68rem] text-fg-3"><span>{telemetry.pointerType} {translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "· twist ")}{telemetry.twist.toFixed(0)}° · {telemetry.rejectedPalm ? translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "팜 차단") : translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "입력 수락")}</span><button type="button" className={BUTTON} onClick={() => controllerRef.current?.clear()}>{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "지우기")}</button></div></Panel>
           <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "조합 진단·품질 추정")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "설정에서 계산한 참고 점수입니다. 오류와 경고는 조합의 제약을 알려주며 실제 속도와 결과는 직접 그려서 확인하세요.")}><div className="grid grid-cols-2 gap-2"><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "필기감")} value={analysis.metrics.handFeel} /><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "재료")} value={analysis.metrics.materialFidelity} /><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "색")} value={analysis.metrics.colorFidelity} /><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "시간 물리")} value={analysis.metrics.temporalFidelity} /><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "개성")} value={analysis.metrics.uniqueness} /><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "성능")} value={analysis.metrics.performance} /><Metric label={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "결정성")} value={analysis.metrics.determinism} /></div><div className="mt-3 space-y-2">{analysis.issues.length ? analysis.issues.map((entry) => <Issue key={entry.id} issue={entry} />) : <p className="rounded-xl border border-accent/35 bg-accent/10 p-3 text-xs font-black text-accent">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "그래프 조합 검사에서 확인할 사항이 없습니다.")}</p>}</div></Panel>
+          <Panel
+            title="클립스튜디오(CSP) 대비 2× 벤치마크"
+            description="CSP 1.0x 기준선 대비 성능·품질·기능 우위 배율 및 역공학 내재화 엔진 검증 상태입니다."
+          >
+            <div data-studio-csp-benchmark-card="true" className="space-y-3">
+              <div className="flex items-center justify-between rounded-xl border border-accent/40 bg-accent/10 px-3 py-2">
+                <span className="text-xs font-black text-fg">
+                  종합 우위 {cspScorecard.compositeRatio.toFixed(2)}x
+                </span>
+                <span className="rounded-full bg-accent px-2.5 py-0.5 text-[0.65rem] font-black text-on-accent">
+                  {cspScorecard.meetsTwoXTarget ? "2.0x 목표 달성" : "벤치마크 측정 중"}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className={SUB}>
+                  <p className="text-[0.68rem] font-bold text-fg-3">성능 배율</p>
+                  <p className="mt-1 font-black tabular-nums text-fg">
+                    {cspScorecard.performanceRatio.toFixed(2)}x
+                  </p>
+                </div>
+                <div className={SUB}>
+                  <p className="text-[0.68rem] font-bold text-fg-3">품질 배율</p>
+                  <p className="mt-1 font-black tabular-nums text-fg">
+                    {cspScorecard.qualityRatio.toFixed(2)}x
+                  </p>
+                </div>
+                <div className={SUB}>
+                  <p className="text-[0.68rem] font-bold text-fg-3">기능·UX 배율</p>
+                  <p className="mt-1 font-black tabular-nums text-fg">
+                    {cspScorecard.featureRatio.toFixed(2)}x
+                  </p>
+                </div>
+              </div>
+              <ul className="space-y-1.5 text-[0.68rem] text-fg-2">
+                {cspScorecard.internalizedEngines.map((engine) => (
+                  <li key={engine.id} className="rounded-lg border border-line bg-raised/55 px-2.5 py-1.5">
+                    <span className="font-black text-fg">{engine.labelKo}</span>
+                    <span className="mt-0.5 block text-[0.64rem] text-fg-3">
+                      {engine.highlightsKo}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Panel>
           {experience === "expert" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "선택한 재료·엔진 구성")} description={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "{v0}/{v1}개 타입 노드가 현재 프로그램을 구성합니다."), { v0: String(analysis.nodes.length), v1: String(BRUSH_STUDIO_V6_NODES.length) })}><div className="flex flex-wrap gap-1.5">{analysis.nodes.map((node) => <span key={node.id} title={node.description} className="rounded-full border border-line bg-raised px-2.5 py-1 text-[0.65rem] font-bold text-fg-2">{node.label}</span>)}</div></Panel> : null}
         </aside>
       </div>

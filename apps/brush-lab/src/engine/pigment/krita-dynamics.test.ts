@@ -4,8 +4,12 @@ import golden from "../../../test-data/krita-golden.json" with { type: "json" };
 import { SumiError } from "../core/errors";
 
 import {
+  computeDabAirbrushRate,
+  computeTangentialAngle,
+  computeWetSmudgeMix,
   defaultDynamicsConfig,
   defaultDynamicsState,
+  evaluatePressureCurve,
   smoothColor,
   updateDynamics,
   validateDynamicsConfig,
@@ -196,4 +200,27 @@ describe("Krita 다이내믹 concept 수식", () => {
       }
     }
   });
+
+  it("evaluatePressureCurve: 단조 증가 및 S-커브/감마 응답을 보장한다", () => {
+    expect(evaluatePressureCurve(0, 1.5, 0.5)).toBe(0);
+    expect(evaluatePressureCurve(1, 1.5, 0.5)).toBe(1);
+    const pLow = evaluatePressureCurve(0.25, 1.6, 0.4);
+    const pMid = evaluatePressureCurve(0.5, 1.6, 0.4);
+    const pHigh = evaluatePressureCurve(0.75, 1.6, 0.4);
+    expect(pLow).toBeLessThan(pMid);
+    expect(pMid).toBeLessThan(pHigh);
+    expect(() => evaluatePressureCurve(NaN)).toThrow(SumiError);
+  });
+
+  it("computeDabAirbrushRate & computeTangentialAngle & computeWetSmudgeMix 동작을 검증한다", () => {
+    expect(computeDabAirbrushRate(60, 0.8, 300)).toBeGreaterThan(computeDabAirbrushRate(60, 0.2, 0));
+    const angle = computeTangentialAngle(10, 0, 0, 1, 0);
+    expect(angle).toBe(0);
+    const tiltedAngle = computeTangentialAngle(10, 0, 0, 1, 1);
+    expect(Math.abs(tiltedAngle - Math.PI / 2)).toBeLessThan(1e-5);
+
+    const mixed = computeWetSmudgeMix([0.05, 0.25, 0.85], [0.95, 0.85, 0.1], 0.5, 0.6, 0.8);
+    expect(mixed[1]).toBeGreaterThan(0.25);
+  });
 });
+

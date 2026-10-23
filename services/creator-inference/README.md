@@ -20,7 +20,8 @@ hardware provision, license 수락, 대용량 weight download를 자동화하지
 
 1. virtual environment를 만들고 공식 PyTorch selector로 CUDA에 맞는 PyTorch/torchvision을 설치한다.
    system `ffmpeg`와 security patch가 적용된 Blender를 설치하되 Blender를 직접 외부에 노출하지 않는다.
-2. `python -m pip install -r requirements-models.txt`를 실행한다. 실제 GPU 검증 뒤 승인된 runtime image에
+2. `python -m pip install -r requirements-models.txt`를 실행한다. Wan 프롬프트 정리에 쓰는 `ftfy`도 이
+   파일에 있다(diffusers가 필수 의존성으로 끌어오지 않는다). 실제 GPU 검증 뒤 승인된 runtime image에
    resolution을 고정한다.
 3. `VAST-AI-Research/TripoSR`과 `tatsy/torchmcubes`를 검토된 immutable commit으로 설치한다. upstream의
    오래된 전체 requirements를 이 환경에 덮어쓰지 않는다.
@@ -101,8 +102,10 @@ endpoint는 `no-store`이며 private content를 service worker cache에 넣지 �
 - `safetensors>=0.8,<1`
 - `transformers>=5.10.1,<6`, `huggingface-hub>=1.5,<2`: transformers 의 알려진 GHSA 16건 대응
   (2026-10-22 소유자 결정으로 5.x 로 올림). 5.x 로 만든 새 runtime image 는 `gpu-smoke.py` 로
-  세 엔진의 실제 추론을 검증한 뒤에만 승인한다. 자동 시험은 CPU 에서 호출 모양만 확인하며
-  TripoSR upstream 코드와의 호환은 확인하지 못했다.
+  세 엔진의 실제 추론을 검증한 뒤에만 승인한다. 자동 시험은 CPU 에서 호출 모양만 확인한다. 2026-10-23에는
+  TripoSR upstream `main`의 이미지 토크나이저(`local_dino.py` 포함)와 diffusers 0.38의 SDXL ControlNet
+  img2img·Wan I2V를 `engines.py`와 같은 호출 모양으로 공개 시험용 초소형 checkpoint에 돌려 통과했다.
+  운영 때 고정할 TripoSR commit은 다시 확인한다. 생성 품질·GPU memory·latency는 확인하지 못했다.
 - `fastapi==0.161.0`, `starlette>=1.3.1,<2`: starlette 0.50 의 GHSA 5건 대응. fastapi 0.128 은
   `starlette<0.51` 로 막아 취약한 버전에 머물게 한다.
 - CPU test profile `pytest==9.0.3`: GHSA-6w46-j5rx-g56g 대응
