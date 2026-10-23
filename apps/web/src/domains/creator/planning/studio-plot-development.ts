@@ -696,4 +696,68 @@ export function compileEpisodeArcToScript(arc: EpisodeStorylineArc): string {
   return arc.acts.map((act) => compileStorylinePackageToScript(act.package)).join("\n");
 }
 
+export interface StorylineCliffhangerDiagnostic {
+  readonly hookPowerScore: number;
+  readonly scrollRetentionScore: number;
+  readonly tensionContrastDelta: number;
+  readonly globalSerialReadiness: "excellent" | "solid" | "needs-hook-boost";
+  readonly plotDoctorNotes: readonly string[];
+}
+
+/**
+ * 4막(`기·승·전·결`) 스토리라인 아크의 텐션 상승 폭, 클라이맥스·클리프행어 강도,
+ * 독자 스크롤 이탈 방지 지표를 정밀 평가해 프로·지망생 작가를 위한 플롯 처방(`plotDoctorNotes`)을 반환한다.
+ */
+export function evaluateStorylineCliffhangerAndPacing(
+  arc: EpisodeStorylineArc,
+): StorylineCliffhangerDiagnostic {
+  const scores = arc.acts.map((a) => a.tensionScore);
+  const minTension = scores.length > 0 ? Math.min(...scores) : 70;
+  const maxTension = scores.length > 0 ? Math.max(...scores) : 90;
+  const tensionContrastDelta = Math.max(0, maxTension - minTension);
+
+  const lastAct = arc.acts[arc.acts.length - 1];
+  const hookBonus = /진실|정체|반전|검|눈빛|비밀|각성|충격|선언|시작/u.test(arc.nextEpisodeHook)
+    ? 8
+    : 3;
+  const hookPowerScore = Math.min(
+    100,
+    Math.round((lastAct?.tensionScore ?? 85) * 0.85 + hookBonus + Math.min(10, tensionContrastDelta * 0.4)),
+  );
+  const scrollRetentionScore = Math.min(
+    100,
+    Math.round(arc.averageTension * 0.75 + Math.min(25, tensionContrastDelta * 1.1)),
+  );
+
+  const plotDoctorNotes: string[] = [];
+  if (tensionContrastDelta < 15) {
+    plotDoctorNotes.push(
+      "기(도입)와 전(절정) 사이의 텐션 낙차가 작습니다. 2막(승)에서 일상적 호흡을 한 템포 낮추면 3막 절정의 폭발력이 2배 이상 살아납니다.",
+    );
+  } else {
+    plotDoctorNotes.push(
+      `기→전 텐션 상승 폭(${tensionContrastDelta}점)이 이상적인 K-웹툰 롤러코스터 곡선을 그리고 있습니다.`,
+    );
+  }
+  plotDoctorNotes.push(
+    `엔딩 클리프행어("${arc.nextEpisodeHook}") 직전에 180px 이상의 세로 여백(블랙/화이트 스크롤 공백)을 배치하면 다음 화 결제·열람 전환율이 높아집니다.`,
+  );
+
+  const globalSerialReadiness =
+    hookPowerScore >= 88
+      ? "excellent"
+      : hookPowerScore >= 75
+        ? "solid"
+        : "needs-hook-boost";
+
+  return Object.freeze({
+    hookPowerScore,
+    scrollRetentionScore,
+    tensionContrastDelta,
+    globalSerialReadiness,
+    plotDoctorNotes: Object.freeze(plotDoctorNotes),
+  });
+}
+
+
 

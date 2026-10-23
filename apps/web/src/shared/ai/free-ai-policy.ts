@@ -46,6 +46,7 @@ export interface FreeAiPreset {
 const PROVIDER_FREE_TIER_ENDPOINTS: Readonly<Record<string, string>> = Object.freeze({
   "api.groq.com": "/openai/v1",
   "generativelanguage.googleapis.com": "/v1beta/openai",
+  "models.github.ai": "/inference",
   "api.sambanova.ai": "/v1",
   "api.mistral.ai": "/v1",
   "api.z.ai": "/api/paas/v4",
@@ -359,3 +360,17 @@ export function connectionFromFreeAiPreset(
     costPolicy: preset.costPolicy,
   };
 }
+
+export function createGithubModelsFreeConnection(
+  apiKey: string,
+  textModel = "openai/gpt-4o-mini",
+): FreeAiConnectionLike {
+  return {
+    baseUrl: "https://models.github.ai/inference",
+    apiKey: apiKey.trim(),
+    textModel: textModel.trim() || "openai/gpt-4o-mini",
+    imageModel: "",
+    costPolicy: "provider-free-tier",
+  };
+}
+

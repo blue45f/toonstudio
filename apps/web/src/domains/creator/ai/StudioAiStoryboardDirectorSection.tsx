@@ -37,22 +37,11 @@ import {
   type StoryboardRoughSketchPresetId,
 } from "./studio-ai-storyboard-director";
 import { PANEL_CARD_CLASS, TEXT_FIELD_CLASS } from "./studio-ai-super-suite-options";
-import {
-  auditStoryboardStyleConsistency,
-  blendArtistStyleModels,
-  buildArtistStyleDnaProfile,
-  BUILTIN_ARTIST_STYLE_PRESETS,
-} from "./studio-artist-style-dna";
-import {
-  browserStudioLoraJobStorage,
-  listCompletedStudioStyleModels,
-  loadStudioLoraJobs,
-} from "./studio-lora-training";
-import {
-  analyzeFreehandRoughSketchStrokes,
-  ROUGH_SKETCH_STROKE_TEMPLATES,
-} from "./studio-rough-sketch-analyzer";
+import { auditStoryboardStyleConsistency, blendArtistStyleModels, buildArtistStyleDnaProfile, BUILTIN_ARTIST_STYLE_PRESETS } from "./studio-artist-style-dna";
+import { browserStudioLoraJobStorage, listCompletedStudioStyleModels, loadStudioLoraJobs } from "./studio-lora-training";
+import { analyzeFreehandRoughSketchStrokes, ROUGH_SKETCH_STROKE_TEMPLATES } from "./studio-rough-sketch-analyzer";
 import { StudioAiSuiteInputNeeded, StudioCopyTextButton } from "./StudioAiSuperSuiteControls";
+import { StudioWebtoonMasterPipelineCard } from "./StudioWebtoonMasterPipelineCard";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -560,6 +549,16 @@ export function StudioAiStoryboardDirectorSection({
           </button>
         </div>
       </div>
+
+      <StudioWebtoonMasterPipelineCard
+        scriptInput={scriptInput}
+        storyGenre={storyGenre}
+        coreConflict={coreConflict}
+        creatorLevel={creatorLevel}
+        targetLocale={targetLocale}
+        activeArtistStyle={activeArtistStyle}
+        onApplyScript={onScriptInputChange}
+      />
 
       {/* 4. 대본 / 지문 입력 */}
       <div className={PANEL_CARD_CLASS}>

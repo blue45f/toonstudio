@@ -125,3 +125,62 @@ export function parsePaletteSuggestResponse(
   const name = typeof obj.name === "string" ? obj.name.trim() : "";
   return { ok: true, data: { name, colors } };
 }
+
+/**
+ * BYOK API 연결이 없거나 즉시 추천이 필요할 때, 장르·분위기 문맥을 분석해
+ * 한국 웹툰 채색 표준(주조색·보조색·피부 명암·림라이트·포인트·말풍선 강조) 6색 팔레트를 결정적으로 생성한다.
+ */
+export function buildLocalWebtoonPaletteSuggestion(moodText: string): PaletteSuggestion {
+  const cleaned = moodText.replace(/\s+/gu, " ").trim();
+  if (/스릴러|느와르|어둡|차가운|공포|미스터리|밤|비/u.test(cleaned)) {
+    return {
+      name: `${cleaned.slice(0, 18) || "스릴러"} · 다크 느와르 6색`,
+      colors: [
+        { hex: "#0f172a", role: "주조색(심야 배경·딥 섀도)" },
+        { hex: "#1e293b", role: "보조색(차가운 도시 공간감)" },
+        { hex: "#64748b", role: "피부·명암 기준톤(창백한 셀 셰이딩)" },
+        { hex: "#38bdf8", role: "림라이트·하이라이트(네온 역광)" },
+        { hex: "#ef4444", role: "포인트색(위기·경고 시선 집중)" },
+        { hex: "#f8fafc", role: "말풍선·타이포 강조색(고대비 가독성)" },
+      ],
+    };
+  }
+  if (/로맨스|청춘|파스텔|봄|따뜻|설렘|학원/u.test(cleaned)) {
+    return {
+      name: `${cleaned.slice(0, 18) || "청춘 로맨스"} · 소프트 파스텔 6색`,
+      colors: [
+        { hex: "#fff1f2", role: "주조색(화사한 배경 공기감)" },
+        { hex: "#fecdd3", role: "보조색(감성 보케·여백 그라데이션)" },
+        { hex: "#f4a261", role: "피부·명암 기준톤(따뜻한 볼터치·그림자)" },
+        { hex: "#fde68a", role: "림라이트·하이라이트(햇살 역광)" },
+        { hex: "#fb7185", role: "포인트색(설렘·감정 클로즈업)" },
+        { hex: "#4c1d95", role: "말풍선·타이포 강조색(부드러운 선화·대사)" },
+      ],
+    };
+  }
+  if (/판타지|마법|회귀|던전|신비|우주|각성|액션/u.test(cleaned)) {
+    return {
+      name: `${cleaned.slice(0, 18) || "액션 판타지"} · 아케인 글로우 6색`,
+      colors: [
+        { hex: "#111827", role: "주조색(던전·전장 심도 배경)" },
+        { hex: "#312e81", role: "보조색(마력 공간 앰비언트)" },
+        { hex: "#9ca3af", role: "피부·명암 기준톤(고대비 입체 셰이딩)" },
+        { hex: "#22d3ee", role: "림라이트·하이라이트(오라·검기 발광)" },
+        { hex: "#f59e0b", role: "포인트색(각성·폭발 이펙트)" },
+        { hex: "#ffffff", role: "말풍선·타이포 강조색(임팩트 효과음)" },
+      ],
+    };
+  }
+  return {
+    name: `${cleaned.slice(0, 18) || "K-웹툰 표준"} · 시네마틱 밸런스 6색`,
+    colors: [
+      { hex: "#1f2937", role: "주조색(안정적 배경 톤)" },
+      { hex: "#4b5563", role: "보조색(중경 공간 분리)" },
+      { hex: "#d97706", role: "피부·명암 기준톤(자연광 셀 그림자)" },
+      { hex: "#93c5fd", role: "림라이트·하이라이트(실루엣 분리광)" },
+      { hex: "#ec4899", role: "포인트색(핵심 소품·시선 유도)" },
+      { hex: "#f9fafb", role: "말풍선·타이포 강조색(모바일 가독성 기준)" },
+    ],
+  };
+}
+

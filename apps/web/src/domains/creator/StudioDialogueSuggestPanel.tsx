@@ -14,11 +14,17 @@ import {
 // 캔버스 요소)에 개입해야 해서, 상태를 이 컴포넌트 내부로 가져오면 오히려 부모와 자식 둘 다 같은
 // 값을 따로 들고 동기화해야 하는 이중 소유가 생긴다.
 import { Loader2, MessageSquareQuote, Plus, Sparkles } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AnswerTuningControls } from "./ai/AnswerTuningControls";
 import type { AnswerTuning } from "./ai/answer-tuning";
-import { formatDialogueSuggestionLine, type DialogueSuggestionCandidate } from "./lettering/studio-dialogue-suggest";
+import {
+  analyzeWebtoonDialogueReadability,
+  buildGlobalLocalizedDialoguePreview,
+  formatDialogueSuggestionLine,
+  recommendLocalDialogueCandidates,
+  type DialogueSuggestionCandidate,
+} from "./lettering/studio-dialogue-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { StudioAiConnectionBadge } from "./ai/StudioAiConnectionBadge";
@@ -67,17 +73,19 @@ export function StudioDialogueSuggestPanel({
   /** canInsertToSelected일 때만 호출 가능 — 선택된 말풍선/텍스트 요소의 텍스트를 후보로 바로 교체. */
   onInsertToSelected: (candidate: DialogueSuggestionCandidate) => void;
 }) {
+  const [localCandidates, setLocalCandidates] = useState<readonly DialogueSuggestionCandidate[] | null>(null);
+  const effectiveCandidates = candidates ?? localCandidates;
   const canGenerate = configured && !busy && situationText.trim().length > 0;
-  // 팔레트 패널과 동일 — 결과·에러가 fold 아래에 생기지 않게 도착 시 nearest 스크롤.
+  // 팔레트 패널과 동일 — 결과·에러가 fold 아래에 생긴다. 도착 시 nearest 스크롤.
   const feedbackRef = useRef<HTMLDivElement | null>(null);
-  const hasFeedback = Boolean(candidates || error);
+  const hasFeedback = Boolean(effectiveCandidates || error);
   useEffect(() => {
     if (hasFeedback) feedbackRef.current?.scrollIntoView?.({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [hasFeedback]);
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <MessageSquareQuote size={14} />
         {translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "AI 대사/나레이션 제안")} <StudioAiConnectionBadge configured={configured} /></div>
 
@@ -117,16 +125,29 @@ export function StudioDialogueSuggestPanel({
           {translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "이 페이지에 이미 배치된 대사를 맥락으로 포함")}</label>
       )}
 
-      <button
-        type="button"
-        onClick={onGenerate}
-        disabled={!canGenerate}
-        title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
-        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Sparkles size={14} />}
-        {busy ? "구상하는 중…" : "대사 제안 받기"}
-      </button>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Sparkles size={14} />}
+          {busy ? "구상하는 중…" : "대사 제안 받기"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (busy || !situationText.trim()) return;
+            setLocalCandidates(recommendLocalDialogueCandidates(situationText));
+          }}
+          disabled={busy || !situationText.trim()}
+          className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          기본 대사·나레이션 즉시 제안
+        </button>
+      </div>
 
       <div ref={feedbackRef}>
         {error ? (
@@ -137,13 +158,26 @@ export function StudioDialogueSuggestPanel({
           />
         ) : null}
 
-        {candidates && candidates.length > 0 && (
+        {effectiveCandidates && effectiveCandidates.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            {candidates.map((candidate, i) => {
+            {effectiveCandidates.map((candidate, i) => {
               const line = formatDialogueSuggestionLine(candidate);
+              const readability = analyzeWebtoonDialogueReadability(candidate.text);
+              const globalPreview = buildGlobalLocalizedDialoguePreview(candidate.text);
+              const enPreview = globalPreview.find((entry) => entry.locale === "en");
               return (
                 <div key={`${i}-${line}`} className="flex flex-col gap-1 rounded-lg border border-line bg-card/70 p-2">
                   <p className="whitespace-pre-wrap text-[0.68rem] leading-relaxed text-fg-2">{line}</p>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[0.58rem] text-fg-3">
+                    <span className="rounded bg-panel px-1.5 py-0.5 font-medium">
+                      모바일 가독성 {readability.mobileReadabilityScore}점 · 권장 말풍선 {readability.recommendedBubbleCount}개
+                    </span>
+                    {enPreview ? (
+                      <span className="truncate text-fg-3" title={enPreview.localizedText}>
+                        EN: {enPreview.localizedText}
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
@@ -172,3 +206,4 @@ export function StudioDialogueSuggestPanel({
     </div>
   );
 }
+

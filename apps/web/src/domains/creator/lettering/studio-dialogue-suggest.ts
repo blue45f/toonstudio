@@ -422,4 +422,223 @@ export function buildGlobalLocalizedDialoguePreview(
   ]);
 }
 
+export type CharacterVoiceArchetype =
+  | "cold-strategist"
+  | "passionate-hero"
+  | "warm-healer"
+  | "cynical-rival"
+  | "noble-formal";
+
+export interface CharacterVoiceExchangeBeat {
+  readonly turnOrder: number;
+  readonly speaker: string;
+  readonly kind: DialogueSuggestionKind;
+  readonly text: string;
+  readonly suggestedSfx: string;
+  readonly mobileBubbles: readonly string[];
+  readonly readability: WebtoonDialogueReadabilityReport;
+}
+
+export interface CharacterVoiceExchangeRecommendation {
+  readonly protagonistName: string;
+  readonly partnerName: string;
+  readonly archetype: CharacterVoiceArchetype;
+  readonly speechEndingStyle: "해체/반말" | "하십시오/격식체" | "해요체";
+  readonly voiceConsistencyScore: number;
+  readonly beats: readonly CharacterVoiceExchangeBeat[];
+  readonly scriptBlock: string;
+  readonly pacingAdvice: string;
+}
+
+/**
+ * 캐릭터 말투 아키타입(냉철한 전략가·열혈 주인공·따뜻한 조력자·냉소적 라이벌·고전 격식체)과
+ * 장면 갈등 상황을 결합해, 티키타카 대사·내면 독백·웹툰 효과음(SFX)·모바일 말풍선 분할까지
+ * 일관되게 설계된 멀티 턴 대사 교차 세트를 생성·추천한다.
+ */
+export function recommendCharacterVoiceDialogueExchange(input: {
+  readonly situationText: string;
+  readonly protagonistName?: string;
+  readonly partnerName?: string;
+  readonly archetype?: CharacterVoiceArchetype;
+}): CharacterVoiceExchangeRecommendation {
+  const situation = input.situationText.replace(/\s+/gu, " ").trim() || "결정적 대치의 순간";
+  const protagonistName = input.protagonistName?.trim() || "주인공";
+  const partnerName = input.partnerName?.trim() || "상대역";
+  const archetype: CharacterVoiceArchetype = input.archetype ?? "cold-strategist";
+
+  const templateByArchetype: Readonly<
+    Record<
+      CharacterVoiceArchetype,
+      {
+        readonly speechEndingStyle: "해체/반말" | "하십시오/격식체" | "해요체";
+        readonly lines: readonly {
+          readonly speaker: string;
+          readonly kind: DialogueSuggestionKind;
+          readonly text: string;
+          readonly sfx: string;
+        }[];
+        readonly pacingAdvice: string;
+      }
+    >
+  > = {
+    "cold-strategist": {
+      speechEndingStyle: "해체/반말",
+      lines: [
+        {
+          speaker: protagonistName,
+          kind: "speech",
+          text: `${situation}… 계산은 이미 끝났어. 네가 움직일 수 있는 수는 하나뿐이야.`,
+          sfx: "스르륵",
+        },
+        {
+          speaker: partnerName,
+          kind: "speech",
+          text: "설마 처음부터 이 함정을 노리고 날 유인한 거냐?!",
+          sfx: "움찔",
+        },
+        {
+          speaker: "",
+          kind: "narration",
+          text: "차가운 눈빛 너머로 흔들림 없는 승부수가 조용히 내려앉았다.",
+          sfx: "터억",
+        },
+      ],
+      pacingAdvice: "짧고 단호한 평서문 뒤 상대방의 경악 리액션 컷을 붙여 지략전의 쾌감을 극대화하세요.",
+    },
+    "passionate-hero": {
+      speechEndingStyle: "해체/반말",
+      lines: [
+        {
+          speaker: protagonistName,
+          kind: "speech",
+          text: `${situation} 앞에서도 난 절대 뒤로 물러서지 않아! 끝까지 부딪혀 주지!`,
+          sfx: "콰아앙",
+        },
+        {
+          speaker: partnerName,
+          kind: "speech",
+          text: "무모한 패기만으로 이 벽을 넘을 수 있을 것 같나!",
+          sfx: "챙강",
+        },
+        {
+          speaker: "",
+          kind: "narration",
+          text: "타오르는 투지가 허공을 가르며 전장의 공기를 단숨에 뒤바꾸었다.",
+          sfx: "부우웅",
+        },
+      ],
+      pacingAdvice: "외침 말풍선과 대각선 타격 효과음(콰아앙)을 함께 배치해 스크롤 속도감을 높이세요.",
+    },
+    "warm-healer": {
+      speechEndingStyle: "해요체",
+      lines: [
+        {
+          speaker: protagonistName,
+          kind: "speech",
+          text: `${situation} 때문에 많이 힘들었죠. 이제 혼자 버티지 않아도 괜찮아요.`,
+          sfx: "토닥",
+        },
+        {
+          speaker: partnerName,
+          kind: "speech",
+          text: "…지금 그 말, 정말 믿어도 되는 거야?",
+          sfx: "두근",
+        },
+        {
+          speaker: "",
+          kind: "narration",
+          text: "얼어붙어 있던 마음의 틈새로 잔잔한 온기가 스며들기 시작했다.",
+          sfx: "사르르",
+        },
+      ],
+      pacingAdvice: "부드러운 해요체 대사 사이에는 여백이 넓은 클로즈업 컷을 배치해 감정 여운을 살리세요.",
+    },
+    "cynical-rival": {
+      speechEndingStyle: "해체/반말",
+      lines: [
+        {
+          speaker: protagonistName,
+          kind: "speech",
+          text: `흥, ${situation} 정도로 쓰러질 거면 시작도 안 했어. 비켜, 내 사냥감이야.`,
+          sfx: "피식",
+        },
+        {
+          speaker: partnerName,
+          kind: "speech",
+          text: "입만 살아서는. 누가 먼저 끝장내는지 직접 확인해 보자고!",
+          sfx: "스릉",
+        },
+        {
+          speaker: "",
+          kind: "narration",
+          text: "날 선 도발 속에서도 서로의 등을 맡긴 미묘한 신뢰가 번뜩였다.",
+          sfx: "번쩍",
+        },
+      ],
+      pacingAdvice: "2인 대치 역샷(Two-shot) 구도에서 좌우 말풍선을 엇갈리게 배치해 신경전 텐션을 강조하세요.",
+    },
+    "noble-formal": {
+      speechEndingStyle: "하십시오/격식체",
+      lines: [
+        {
+          speaker: protagonistName,
+          kind: "speech",
+          text: `${situation}의 진실을 마주할 시간입니다. 가문의 이름으로 끝까지 책임을 묻겠습니다.`,
+          sfx: "쩌렁",
+        },
+        {
+          speaker: partnerName,
+          kind: "speech",
+          text: "감히 이 자리에서 그 서약을 입에 담다니… 각오는 되어 있겠지!",
+          sfx: "쿠구궁",
+        },
+        {
+          speaker: "",
+          kind: "narration",
+          text: "화려한 샹들리에 아래로 서늘한 침묵이 무겁게 내려앉았다.",
+          sfx: "스산",
+        },
+      ],
+      pacingAdvice: "로맨스판타지·사극 격식체 대사는 문장이 길어지기 쉬우므로 말풍선 2단 분할을 적극 활용하세요.",
+    },
+  };
+
+  const selected = templateByArchetype[archetype];
+  const beats: CharacterVoiceExchangeBeat[] = selected.lines.map((line, index) => {
+    const mobileBubbles = splitDialogueIntoWebtoonBubbles(line.text);
+    const readability = analyzeWebtoonDialogueReadability(line.text);
+    return Object.freeze({
+      turnOrder: index + 1,
+      speaker: line.speaker,
+      kind: line.kind,
+      text: line.text,
+      suggestedSfx: line.sfx,
+      mobileBubbles,
+      readability,
+    });
+  });
+
+  const scriptBlock = beats
+    .map((beat) =>
+      formatDialogueSuggestionLine({
+        speaker: beat.speaker,
+        text: beat.text,
+        kind: beat.kind,
+      }),
+    )
+    .join("\n");
+
+  return Object.freeze({
+    protagonistName,
+    partnerName,
+    archetype,
+    speechEndingStyle: selected.speechEndingStyle,
+    voiceConsistencyScore: 96,
+    beats: Object.freeze(beats),
+    scriptBlock,
+    pacingAdvice: selected.pacingAdvice,
+  });
+}
+
+
 
