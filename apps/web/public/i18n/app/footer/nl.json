@@ -2,7 +2,7 @@
   "footer.explore": "Verken",
   "footer.community": "Gemeenschap",
   "footer.brand": "ToonStudio",
-  "footer.tagline": "From an idea to your first scene. A creative space for your story.",
+  "footer.tagline": "Van planning tot publicatie. Maak de hele webtoon op één plek.",
   "footer.section.browse": "Verken",
   "footer.section.community": "Gemeenschap",
   "footer.section.create": "Creëren",
@@ -28,7 +28,7 @@
   "footer.link.shaper": "Personeelsvorm",
   "footer.link.market": "Scheppermarkt",
   "footer.link.news": "Toon & web novels nieuws",
-  "footer.link.about": "About ToonStudio",
+  "footer.link.about": "Over ToonStudio",
   "footer.link.guide": "Rankingsbeleid",
   "footer.link.sitemap": "Sitemap",
   "footer.link.settings": "Instellingen",
@@ -36,8 +36,8 @@
   "footer.link.terms": "Voorwaarden van de dienstverlening",
   "footer.link.privacy": "Privacybeleid",
   "footer.link.copyright": "Autorrechtelijk en inhoudbeleid",
-  "footer.description.primary": "From an idea to your first scene. Explore drawing, comics and 3D scenes in your browser.",
-  "footer.description.secondary": "Create your own story and discover inspiration from other creators.",
+  "footer.description.primary": "Een alles-in-één webtoonstudio die scripts, storyboards, 2D, 3D, assets, bestanden, planningen, samenwerking, review en publicatie in één project verbindt.",
+  "footer.description.secondary": "Maak het werk, maak het samen af en publiceer het voor lezers.",
   "footer.business.company": "Bedrijf",
   "footer.business.representative": "Vertegenwoordiger",
   "footer.business.privacyOfficer": "Privacybeambte",
@@ -49,5 +49,5 @@
   "footer.business.serviceType": "Soort platform",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Alle rechten voorbehouden.",
   "footer.logoTag": "Maak je volgende verhaal",
-  "footer.link.features": "All features at a glance"
+  "footer.link.features": "Alle functies in één oogopslag"
 }
