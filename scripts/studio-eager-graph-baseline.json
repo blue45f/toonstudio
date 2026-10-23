@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1623,
-    "bytes": 20221542
+    "modules": 1639,
+    "bytes": 20438461
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
       "modules": 226,
-      "bytes": 1189016
+      "bytes": 1189023
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1436,
-      "bytes": 19372343
+      "modules": 1452,
+      "bytes": 19589262
     }
   },
   "forbiddenDomains": {
@@ -230,7 +230,7 @@
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 14,
-      "bytes": 458142,
+      "bytes": 457869,
       "files": [
         "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx",
         "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts",
@@ -382,8 +382,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 564,
-      "bytes": 8550772
+      "modules": 570,
+      "bytes": 8566778
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -407,7 +407,7 @@
     },
     "apps/web/src/domains/creator/brush": {
       "modules": 149,
-      "bytes": 2507100
+      "bytes": 2509589
     },
     "apps/web/src/domains/creator/brush-lab": {
       "modules": 29,
@@ -447,7 +447,7 @@
     },
     "apps/web/src/domains/creator/drawing": {
       "modules": 3,
-      "bytes": 54946
+      "bytes": 54400
     },
     "apps/web/src/domains/creator/ecosystem": {
       "modules": 1,
@@ -459,7 +459,7 @@
     },
     "apps/web/src/domains/creator/export": {
       "modules": 6,
-      "bytes": 58879
+      "bytes": 60084
     },
     "apps/web/src/domains/creator/filter": {
       "modules": 11,
@@ -527,7 +527,7 @@
     },
     "apps/web/src/domains/creator/render": {
       "modules": 58,
-      "bytes": 593711
+      "bytes": 594041
     },
     "apps/web/src/domains/creator/review-capture": {
       "modules": 7,
@@ -554,12 +554,12 @@
       "bytes": 31191
     },
     "apps/web/src/domains/creator/status-i18n": {
-      "modules": 15,
-      "bytes": 366259
+      "modules": 25,
+      "bytes": 558660
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
-      "bytes": 998202
+      "bytes": 999541
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -587,7 +587,7 @@
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 14,
-      "bytes": 458142
+      "bytes": 457869
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
@@ -615,7 +615,7 @@
     },
     "apps/web/src/shared/ai": {
       "modules": 11,
-      "bytes": 103289
+      "bytes": 106668
     },
     "apps/web/src/shared/ambient": {
       "modules": 12,
@@ -639,7 +639,7 @@
     },
     "apps/web/src/shared/lib": {
       "modules": 74,
-      "bytes": 275633
+      "bytes": 275640
     },
     "apps/web/src/shared/navigation": {
       "modules": 3,
@@ -675,7 +675,7 @@
     },
     "packages/studio-format-gateway": {
       "modules": 7,
-      "bytes": 79497
+      "bytes": 80079
     },
     "packages/studio-project-model": {
       "modules": 49,
@@ -1273,6 +1273,7 @@
     "apps/web/src/domains/creator/publish-package/rights.ts": 2,
     "apps/web/src/domains/creator/publishing/showcase-links.ts": 2,
     "apps/web/src/domains/creator/publishing/studio-episode-model.ts": 2,
+    "apps/web/src/domains/creator/r44-cat1-status-i18n.ts": 2,
     "apps/web/src/domains/creator/reader-preview/ReaderViewToggle.tsx": 2,
     "apps/web/src/domains/creator/reader-preview/reader-preview-i18n.ts": 2,
     "apps/web/src/domains/creator/render/StudioSkiaDocumentSurface.tsx": 2,
@@ -1373,12 +1374,22 @@
     "apps/web/src/domains/creator/status-i18n/studio-host-reason-i18n.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c06-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c07-core.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-asset-library.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-auto-actions.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-autosave.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-bg3d-lt.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-comments.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-filter-worker.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-glb.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-linked3d.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-crdt.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-raster.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-room.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-opfs-recovery.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-path-boolean.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-publish.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-shortcut.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-vector.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-vrm-panel-status-i18n-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-writer-room-error.ts": 2,
     "apps/web/src/domains/creator/studio-2d-source-size.ts": 2,
@@ -1407,6 +1418,7 @@
     "apps/web/src/domains/creator/studio-auto-color-image-mapping.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-busy-retry.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-document-leader.ts": 2,
+    "apps/web/src/domains/creator/studio-autosave-opfs-error.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-opfs-session.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-snapshot-fence.ts": 2,
     "apps/web/src/domains/creator/studio-autosave.ts": 2,
@@ -1631,6 +1643,7 @@
     "apps/web/src/domains/creator/studio-host-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-humanoid-bones.ts": 2,
     "apps/web/src/domains/creator/studio-id.ts": 2,
+    "apps/web/src/domains/creator/studio-image-filter-worker-error.ts": 2,
     "apps/web/src/domains/creator/studio-image-placement.ts": 2,
     "apps/web/src/domains/creator/studio-impasto-relief-shading-v1.ts": 2,
     "apps/web/src/domains/creator/studio-import-handoff.ts": 2,
@@ -1743,6 +1756,7 @@
     "apps/web/src/domains/creator/studio-opfs-asset-store.ts": 2,
     "apps/web/src/domains/creator/studio-opfs-compression.ts": 2,
     "apps/web/src/domains/creator/studio-opfs-filesystem.ts": 2,
+    "apps/web/src/domains/creator/studio-opfs-recovery-journal-error.ts": 2,
     "apps/web/src/domains/creator/studio-opfs-recovery-journal.ts": 2,
     "apps/web/src/domains/creator/studio-opfs-recovery-runtime.ts": 2,
     "apps/web/src/domains/creator/studio-oss-brush-kernels.ts": 2,
@@ -1811,6 +1825,7 @@
     "apps/web/src/domains/creator/studio-provider-authority-lifecycle.ts": 2,
     "apps/web/src/domains/creator/studio-publication-analytics-loader.ts": 2,
     "apps/web/src/domains/creator/studio-publish-compliance.ts": 2,
+    "apps/web/src/domains/creator/studio-publish-package-error.ts": 2,
     "apps/web/src/domains/creator/studio-publish-package.ts": 2,
     "apps/web/src/domains/creator/studio-publish-preflight.ts": 2,
     "apps/web/src/domains/creator/studio-puppet-warp.ts": 2,
@@ -1930,6 +1945,7 @@
     "apps/web/src/domains/creator/studio-vector-async-command-guard.ts": 2,
     "apps/web/src/domains/creator/studio-vector-erase-to-intersection-apply.ts": 2,
     "apps/web/src/domains/creator/studio-vector-erase-to-intersection.ts": 2,
+    "apps/web/src/domains/creator/studio-vector-fill-reference-error.ts": 2,
     "apps/web/src/domains/creator/studio-vector-fill-reference.ts": 2,
     "apps/web/src/domains/creator/studio-vector-reference-source-budget-receipt.ts": 2,
     "apps/web/src/domains/creator/studio-velocity-pressure-response.ts": 2,
@@ -2373,6 +2389,14 @@
         "총 정적 도달 원본 +17.7 KiB",
         "앱 셸 폐포 +0.0 KiB",
         "금지 도메인 apps/web/src/domains/creator/vrm +1개"
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "reason": "고도화 16~45라운드 통합 PR: A4 D4 리졸버 모듈군(linked3d·artifact·proportion·shot-batch-archive·custom-font·filter·gateway 등)과 G7 마감 배선의 정적 도달을 수용한다. 순정 main 측정 18.14MiB 대비 +1.35MiB는 전부 통합 라운드의 신규 모듈이며, 금지 도메인 도달 수는 기준선과 동일하다.",
+      "increases": [
+        "총 정적 도달 원본 +211.8 KiB",
+        "앱 셸 폐포 +0.0 KiB"
       ]
     }
   ]
