@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "WYJERYKA Autor",
+  "authors.eyebrow": "KATALOG AUTORÓW",
   "authors.title": "Autorzy",
-  "authors.desc": "Wpisz autora, aby zobaczyć jego tytuły, oceny i fan-kafe w jednym miejscu.",
-  "authors.search": "Imię autora wyszukiwania",
-  "authors.error": "Nie udało mi się założyć listy autorów.",
-  "authors.empty": "nie ma odpowiedniego autora.",
+  "authors.desc": "Autorzy uszeregowani według liczby dzieł. Stuknij autora, aby zobaczyć jego tytuły, oceny i kafejkę fanowską w jednym miejscu.",
+  "authors.search": "Szukaj nazwy autora",
+  "authors.error": "Nie udało się wczytać listy autorów. Spróbuj ponownie za chwilę.",
+  "authors.empty": " — brak pasującego autora.",
   "authors.allOf": "z",
-  "authors.topOf": "· górna",
+  "authors.topOf": "· w czołówce",
   "authors.people": "",
-  "authors.works": "prace",
+  "authors.works": " dzieła",
   "authors.views": "widoki",
-  "authors.pencafe": "/Kafetka fanów /",
-  "authors.stats": "Najwyższy autor {shown} z {total}",
-  "authors.noName": "Stwórca"
+  "authors.pencafe": "Kafejka fanowska twórcy",
+  "authors.stats": "Najlepsi autorzy: {shown} z {total}",
+  "authors.noName": "Twórca"
 }

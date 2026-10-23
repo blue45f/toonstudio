@@ -12,6 +12,6 @@
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Nie spełniłeś wymogu wieku.",
-  "ageGate.cancel": "Odwołanie",
-  "ageGate.confirm": "Potwierdzenie"
+  "ageGate.cancel": "Anuluj",
+  "ageGate.confirm": "Potwierdź"
 }

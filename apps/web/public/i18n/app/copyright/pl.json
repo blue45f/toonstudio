@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Prawo autorskie i treść",
+  "copyright.title": "Prawa autorskie i informacja o treściach",
   "copyright.section1.title": "Źródła i zasady treści",
-  "copyright.section1.body": "ToonStudio to platforma indeksów i odkryć, która podsumowuje metadany kataloga publicznego (tytuły, autorzy, gatunki itp.) z platform webtoonów / nowa internetowa.",
+  "copyright.section1.body": "ToonStudio to platforma indeksowania i odkrywania, która podsumowuje publiczne metadane katalogowe (tytuły, autorów, gatunki itp.) z platform webtoonów i powieści internetowych. Nie przechowuje ani nie redystrybuuje treści głównych rozdziałów; czytanie odbywa się wyłącznie przez oficjalne linki.",
   "copyright.section2.title": "Obrazy okładki",
-  "copyright.section2.body": "Obrazy okładki służą do identyfikacji miniatur, a odniesienie do oryginalnych okładek platform z linkami źródłowymi, gdy tylko to możliwe.",
-  "copyright.section3.title": "Metryka i przejrzystość",
+  "copyright.section2.body": "Okładki służą jako miniatury identyfikacyjne i w miarę możliwości odnoszą się do oryginalnych okładek platform wraz z linkami do źródeł. Wyświetlanie można natychmiast wyłączyć na żądanie posiadacza praw lub po zmianie zasad.",
+  "copyright.section3.title": "Wskaźniki i przejrzystość",
   "copyright.section4.title": "Powiadomienie o prawach",
-  "copyright.section5.title": "Powiadomienie o naruszaniu praw autorskich i usunięcie",
-  "copyright.section5.body": "Jeśli uważasz, że metadata lub okładki naruszają Twoje prawa, proszę złożyć zapytanie z tytułem, adresem URL i dowodem własności.",
-  "copyright.leaveInquiry": "Wniosek →"
+  "copyright.section5.title": "Powiadomienie o naruszeniu praw autorskich i usuwanie treści",
+  "copyright.section5.body": "Jeśli uważasz, że metadane lub okładki naruszają Twoje prawa, złóż zapytanie z tytułem, adresem URL i dowodem własności.",
+  "copyright.leaveInquiry": "Złóż zapytanie →"
 }

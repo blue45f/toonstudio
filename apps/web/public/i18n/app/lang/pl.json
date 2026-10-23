@@ -1,7 +1,7 @@
 {
-  "lang.ko": "Koreańska",
-  "lang.en": "W języku angielskim",
+  "lang.ko": "Koreański",
+  "lang.en": "Angielski",
   "lang.switch": "Język",
-  "lang.auto": "Samochód",
-  "lang.change": "Zmiana języka"
+  "lang.auto": "Automatyczny",
+  "lang.change": "Zmień język"
 }

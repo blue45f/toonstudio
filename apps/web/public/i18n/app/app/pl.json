@@ -1,6 +1,6 @@
 {
-  "app.name": "Studio Toon",
-  "app.brandBeta": "Usługa beta  dane i funkcje mogą ulec zmianie",
+  "app.name": "ToonStudio",
+  "app.brandBeta": "Usługa beta — dane i funkcje mogą ulec zmianie",
   "app.loading": "Ładowanie",
-  "app.skipToContent": "Skip to main content"
+  "app.skipToContent": "Przejdź do treści głównej"
 }

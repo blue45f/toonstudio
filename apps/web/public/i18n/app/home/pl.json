@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
   "home.hero.titleLine1": "Rozproszone historie,",
-  "home.hero.titleShimmer": "Jedynki indeks",
+  "home.hero.titleShimmer": "Jeden indeks",
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Wyszukaj Naver Webtoon, Series i Kakao Webtoon, a następnie szybko ogranicz, co czytać, używając sygnałów w czasie rzeczywistym i preferencji czytelnika.",
-  "home.hero.searchButton": "Tytuły wyszukiwania, twórcy, tagy",
-  "home.hero.rankingButton": "Wyświetlenie zjednoczonego rankingu",
+  "home.hero.searchButton": "Szukaj tytułów, twórców i tagów",
+  "home.hero.rankingButton": "Zobacz ujednolicony ranking",
   "home.hero.studioLink": "Studio twórcy",
-  "home.hero.createLink": "Płyta twórcza",
+  "home.hero.createLink": "Tablica twórców",
   "home.hero.stats.titles": "Tytuły",
-  "home.hero.stats.platforms": "Platforma publikacyjna",
+  "home.hero.stats.platforms": "Platformy publikacji",
   "home.hero.stats.genres": "Spektrum gatunków",
   "home.hero.stats.reviews": "Opinie czytelników",
-  "home.loadError": "Nie mogłem przesłać danych domowych.",
+  "home.loadError": "Nie udało się wczytać danych strony głównej.",
   "home.creatorTitle": "Od pomysłu do pierwszej sceny"
 }
