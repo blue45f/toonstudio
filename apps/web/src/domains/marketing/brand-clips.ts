@@ -35,6 +35,11 @@
  *
  * 17차 파도에서 자료실 보관 전용 3편을 더했다: 바다의 스튜디오,
  * 안개의 히어로 무드(파노라마 세트의 일곱 번째), 정사각 꽃 스팅.
+ *
+ * 18차 파도에서 자료실 보관 전용 4편을 더했다: 네온 빛 골목, 종이
+ * 모형 마을, 해 질 녘의 히어로 무드(파노라마 세트의 여덟 번째),
+ * 정사각 잉크 스팅. 이 파도부터 클립 길이가 14초로 고정되지 않아
+ * 편마다 다르다(8~11초 안팎) — 길이는 자료실 항목에 실측으로 적는다.
  */
 export interface BrandClip {
   readonly src: string;
@@ -311,6 +316,48 @@ export const HOME_HERO_FOG_CLIP: BrandClip = {
  */
 export const BRAND_SQUARE_BLOOM_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-square-bloom.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 네온 빛 골목 — 네온 빛이 골목에 번지는 밤 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_NEON_ALLEY_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-17-neonalley.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 종이 모형 마을 — 종이로 접어 만든 작은 마을 모형을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_PAPER_CRAFT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-18-papercraft.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 해 질 녘의 히어로 무드 — 해가 지는 빛이 드는 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개 파노라마와 한 세트로,
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_DUSK_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-dusk.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 잉크 스팅 — 물에 잉크 한 방울이 번지는 모습을 담은 1:1 정사각
+ * 브랜드 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_INKDROP_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-inkdrop.mp4",
   width: 768,
   height: 768,
 };

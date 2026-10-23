@@ -1,12 +1,12 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 29편의 정본이다 (public/brand/page-clips/).
+ * 클립 30편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
  * 계절 변형 4편(봄·여름·가을·겨울)과 계절 정사각 변형 4편, 투어 도입
- * 정사각 변형 1편, 세로 변형 11편을 함께 둔다.
+ * 정사각 변형 1편, 세로 변형 12편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -348,5 +348,12 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     "0:14",
     { title: "투어 도입 · 정사각", body: "제품 투어의 도입 장면을 정사각(1:1)으로 다시 그린 변형입니다. 세로본과 나란히 소셜 소재로 보관합니다." },
     { title: "Tour opening · Square", body: "The product tour's opening scene redrawn as a square (1:1), kept alongside the vertical cut as social material." },
+  ),
+  pageVerticalItem(
+    "studio-vertical",
+    "page-studio-vertical.mp4",
+    "0:10",
+    { title: "작업실 무드 · 세로", body: "작업실의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Studio mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of the studio." },
   ),
 ];

@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 155편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 163편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,27 +8,26 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 36편: 투어 쇼츠 섹션의 35편은 product-tour-shorts.ts
+ * - 쇼츠 38편: 투어 쇼츠 섹션의 37편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
- * - 투어 도입·마무리·전환 8편: product-tour-clips.ts (전환 가로본 3편의
- *   세로 변형 3편은 같은 파일이 자료실 항목 모양으로 함께 정본을 맡는다)
+ * - 투어 도입·마무리·전환 9편: product-tour-clips.ts (전환 가로본 3편의 세로
+ *   변형 3편과 마무리 배경의 세로 변형 1편은 같은 파일이 자료실 항목 모양으로 함께 정본을 맡는다)
  * - 챕터 배경 루프 18편: 가로본 9편은 product-tour-clips.ts + 챕터 이름은
  *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 세로 변형
  *   9편(가로 9챕터와 1:1)은 이 파일이 첫 레지스트리다
  *   (public/brand/promo-chapter-loops/).
- * - 브랜드 클립 28편: brand-clips.ts (배선 8편 + 자료실 보관 20편 —
- *   밤 버전·비 오는 날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·
- *   창가의 고양이·정사각 스팅·와이드 팬·비 히어로·눈 히어로·황금빛 노을·
- *   정사각 궤도 스팅·별빛·새벽 히어로·정사각 프리즘 스팅·도서관·바다·안개 히어로·정사각 꽃 스팅)
- * - 도구 클립 36편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
- *   카테고리 7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고
- *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
- *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
- *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 12편
- *   (TOOL_CLIPS_SQUARE, 가로본 12편과 1:1)
- * - 페이지 클립 29편: promo-video-library-pages.ts가 레지스트리다
- *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했고, 브랜드 보관 항목의 17차 파도분 3편도 promo-video-library-brand.ts로 분리했다.
+ * - 브랜드 클립 32편: brand-clips.ts (배선 8편 + 자료실 보관 24편 — 밤 버전·비 오는
+ *   날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·창가의 고양이·정사각 스팅·와이드
+ *   팬·비 히어로·눈 히어로·황금빛 노을·정사각 궤도 스팅·별빛·새벽 히어로·정사각 프리즘
+ *   스팅·도서관·바다·안개 히어로·정사각 꽃 스팅·네온 골목·종이 모형 마을·황혼 히어로·정사각 잉크 스팅)
+ * - 도구 클립 36편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약 카테고리
+ *   7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고 제작
+ *   과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계 매핑의 정본은
+ *   public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라 여기서는 그 값을 옮겨 적고
+ *   출처를 밝힌다), 정사각 변형 12편(TOOL_CLIPS_SQUARE, 가로본 12편과 1:1)
+ * - 페이지 클립 30편: promo-video-library-pages.ts가 레지스트리다
+ *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했고, 브랜드 보관 항목의 17·18차 파도분 7편도 promo-video-library-brand.ts로 분리했다.
  */
 import {
   BRAND_CAT_CLIP,
@@ -58,6 +57,7 @@ import {
 import {
   PRODUCT_TOUR_INTRO_CLIP,
   PRODUCT_TOUR_OUTRO_CLIP,
+  PRODUCT_TOUR_OUTRO_VERTICAL_ITEM,
   PRODUCT_TOUR_TRANSITION_BG3D_CLIP,
   PRODUCT_TOUR_TRANSITION_DRAWING_CLIP,
   PRODUCT_TOUR_TRANSITION_SERIAL_CLIP,
@@ -96,11 +96,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 서른다섯 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 서른일곱 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Thirty-five also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Thirty-seven also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
@@ -183,9 +183,8 @@ const SHORTS_USAGE = {
 } as const;
 
 /**
- * 펜촉·잉크 클로즈업 쇼츠(shorts-ink-closeup)의 품질 메모 — 제작 과정에서
- * 보고된 사항을 자료실 항목에만 정직하게 단다. 쇼츠 섹션에서는 메모 없이
- * 그대로 배선한다.
+ * 펜촉·잉크 클로즈업 쇼츠(shorts-ink-closeup)의 품질 메모 — 제작 과정에서 보고된
+ * 사항을 자료실 항목에만 정직하게 단다. 쇼츠 섹션에서는 메모 없이 그대로 배선한다.
  */
 const INK_CLOSEUP_NOTE = {
   ko: "품질 메모: 펜촉의 금속 장식 부분에 작은 각인 같은 형태가 보일 수 있습니다. 읽을 수 있는 글자는 아니어서 그대로 수록합니다.",
@@ -206,8 +205,8 @@ const shorts: readonly PromoVideoItem[] = [
     ...(short.id === "ink-closeup" ? { note: INK_CLOSEUP_NOTE } : {}),
   })),
   {
-    // 말풍선에 깨진 글자 형태가 섞인 품질 이슈가 있어 쇼츠 섹션에는 걸지
-    // 않고 자료실에만 보관한다 (홈 무드 v1의 결함 메모 방식과 동일).
+    // 말풍선에 깨진 글자 형태가 섞인 품질 이슈가 있어 쇼츠 섹션에는 걸지 않고
+    // 자료실에만 보관한다 (홈 무드 v1의 결함 메모 방식과 동일).
     id: "shorts-reactions",
     categoryId: "shorts",
     src: "/brand/promo-shorts/shorts-18-reactions.mp4",
@@ -308,8 +307,9 @@ const tour: readonly PromoVideoItem[] = [
     },
     usage: { ko: "제품 투어 페이지 · 새로 더해진 기능 카드 배경", en: "Product tour page · What's-new card backdrop" },
   },
-  // 전환 세로 변형 3편 — 항목 정본은 product-tour-clips.ts다.
+  // 전환 세로 변형 3편과 마무리 세로 변형 1편 — 항목 정본은 product-tour-clips.ts다.
   ...PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS,
+  PRODUCT_TOUR_OUTRO_VERTICAL_ITEM,
 ];
 
 const CHAPTER_LOOP_IDS: readonly ProductTourChapterLoopId[] = [

@@ -17,6 +17,7 @@
  * 홍보 영상 자료실의 투어 카테고리 항목 모양으로 함께 둔다
  * (promo-video-library.ts의 LIBRARY_ONLY와 같은 값을 순환 import를 피해
  * 여기에 따로 적는다 — promo-video-library-pages.ts와 같은 방식).
+ * 18차 파도에서 만든 마무리 배경의 세로 변형도 같은 모양으로 함께 둔다.
  */
 export interface ProductTourAmbientClip {
   readonly id: "intro" | "outro";
@@ -196,3 +197,30 @@ export const PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS: readonly ProductTourTransit
     usage: TRANSITION_VERTICAL_USAGE,
   },
 ];
+
+/**
+ * 마무리 배경의 세로(9:16) 변형 — 투어 아웃트로 가로본
+ * (PRODUCT_TOUR_OUTRO_CLIP)의 분위기를 세로로 다시 그린 생성형 AI
+ * 영상이다. 페이지 카테고리에 이미 있는 동명의 세로 클립
+ * (page-tour-outro-vertical, 0:14)과는 별개로 18차 파도에서 만든
+ * 클립이라 길이가 다르다. 아직 표면에 배선하지 않아 홍보 영상 자료실의
+ * 투어 카테고리에만 수록하므로, 전환 세로 변형과 같은 자료실 항목
+ * 모양으로 적는다.
+ */
+export const PRODUCT_TOUR_OUTRO_VERTICAL_ITEM: ProductTourTransitionVerticalItem = {
+  id: "tour-outro-vertical",
+  categoryId: "tour",
+  src: "/brand/product-tour/tour-outro-vertical.mp4",
+  width: 768,
+  height: 1344,
+  durationLabel: "0:07",
+  ko: {
+    title: "투어 마무리 · 세로 변형",
+    body: "투어 마무리 배경을 세로(9:16)로 다시 그린 변형입니다.",
+  },
+  en: {
+    title: "Tour closing · Vertical variant",
+    body: "The tour closing backdrop redrawn vertically (9:16).",
+  },
+  usage: TRANSITION_VERTICAL_USAGE,
+};
