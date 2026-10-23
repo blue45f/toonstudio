@@ -521,3 +521,46 @@ export const BRAND_SQUARE_LAVA_CLIP: BrandClip = {
   width: 768,
   height: 768,
 };
+
+/**
+ * 폭포 — 물줄기가 떨어지는 폭포의 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_WATERFALL_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-27-waterfall.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 대나무숲 — 바람에 흔들리는 대나무숲을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_BAMBOO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-28-bamboo.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 절벽 바다의 히어로 무드 — 절벽과 바다가 내려다보이는 스튜디오
+ * 파노라마를 그린 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개·
+ * 황혼·봄·항구·초원 파노라마와 한 세트로, 아직 표면에 배선하지 않아
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_CLIFF_SEA_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-cliffsea.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 수정 스팅 — 수정 결정이 빛나는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_GEODE_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-geode.mp4",
+  width: 768,
+  height: 768,
+};

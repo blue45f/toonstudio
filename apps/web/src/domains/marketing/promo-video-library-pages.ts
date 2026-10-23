@@ -1,12 +1,15 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 34편의 정본이다 (public/brand/page-clips/).
+ * 클립 36편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
  * 계절 변형 4편(봄·여름·가을·겨울)과 계절 정사각 변형 4편, 투어 도입
- * 정사각 변형 1편, 세로 변형 16편을 함께 둔다.
+ * 정사각 변형 1편, 세로 변형 18편을 함께 둔다. 세로 변형 중 나침반
+ * 클립(shorts-47-compass)은 원래 쇼츠로 만든 것인데 다이얼의 로마 숫자가
+ * 읽히는 품질 이슈가 있어, 쇼츠 섹션에 걸지 않고 품질 메모와 함께 여기에
+ * 보관한다(반응 쇼츠의 자료실 전용 보관과 같은 취지).
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -383,5 +386,23 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     "0:14",
     { title: "시장 무드 · 세로", body: "활기찬 시장의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
     { title: "Market mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a lively market." },
+  ),
+  pageVerticalItem(
+    "garden-vertical",
+    "page-garden-vertical.mp4",
+    "0:14",
+    { title: "정원 무드 · 세로", body: "정원의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Garden mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a garden." },
+  ),
+  pageVerticalItem(
+    "compass-vertical",
+    "page-compass-vertical.mp4",
+    "0:14",
+    { title: "나침반 무드 · 세로", body: "나침반이 놓인 책상의 공기를 전하는 표면에 깔기 위해 세로(9:16)로 만든 분위기 클립입니다." },
+    { title: "Compass mood · Vertical", body: "A mood clip drawn vertically (9:16) to sit behind a surface that carries the air of a desk with a compass resting on it." },
+    {
+      ko: "품질 메모: 나침반 다이얼의 로마 숫자가 또렷하게 읽힙니다. 원래 쇼츠(shorts-47-compass)로 만든 클립이지만, 읽히는 글자가 있는 소재는 쇼츠 섹션에 걸지 않는 원칙에 따라 자료실에만 보관합니다.",
+      en: "Quality note: the Roman numerals on the compass dial are clearly readable. The clip was made as a short (shorts-47-compass), but material with legible lettering stays out of the shorts section, so it is kept in the library only.",
+    },
   ),
 ];

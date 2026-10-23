@@ -127,8 +127,8 @@ export const PRODUCT_TOUR_TRANSITION_BG3D_CLIP = {
 
 /**
  * 전환 클립의 세로(9:16) 변형 — 가로본 전환 3편을 세로로 다시 그린
- * 생성형 AI 영상 3편과, 19~22차 파도에서 세로로 새로 그린 나뭇잎·꽃잎·
- * 연기·물방울 전환 4편이다. 아직 표면에 배선하지 않아 홍보 영상 자료실의 투어
+ * 생성형 AI 영상 3편과, 19~23차 파도에서 세로로 새로 그린 나뭇잎·꽃잎·
+ * 연기·물방울·물결 전환 5편이다. 아직 표면에 배선하지 않아 홍보 영상 자료실의 투어
  * 카테고리에만 수록하므로, 자료실 항목(PromoVideoItem) 모양으로 적는다.
  */
 export interface ProductTourTransitionVerticalItem {
@@ -262,6 +262,23 @@ export const PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS: readonly ProductTourTransit
     en: {
       title: "Transition · Bubbles, vertical",
       body: "A transition of bubbles spreading, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-ripple-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-8-ripple.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 물결 세로",
+      body: "물결이 번지는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Ripples, vertical",
+      body: "A transition of ripples spreading, drawn vertically (9:16).",
     },
     usage: TRANSITION_VERTICAL_USAGE,
   },
