@@ -27,6 +27,14 @@ const INTERNALIZED_ENGINE_BADGES = [
     title: "캘리그라피 리본 & 모서리 보존",
     detail: "급격한 방향 전환에서도 뭉개지지 않는 선화·리본 외곽선",
   },
+  {
+    title: "Rebelle 모세관 수채 확산·과립화",
+    detail: "종이 요철 저항, 중력 기울기 이류, 꽃양배추(Backrun) 테두리 집적",
+  },
+  {
+    title: "SAI S-레벨 · 견인줄(Pulled-String) 보정",
+    detail: "가상 견인줄 데드존으로 미세 손떨림 제거 및 직각·예각 코너 보존",
+  },
 ] as const;
 
 function editorHref(

@@ -159,10 +159,22 @@ export function TitleEpisodeSection({
   // 빈 상태에서도 외부 플랫폼 이름·링크를 노출하지 않는다.
   const { showAvailability } = useAppConfig();
   const [order, setOrder] = useState<EpisodeSortOrder>("latest");
+  const [episodeQuery, setEpisodeQuery] = useState("");
   const [progress] = useState(() => getReaderProgress(title.slug));
   const total = resolveTotalEpisodes(title, episodes);
   const sorted = episodes ? sortEpisodes(episodes, order) : undefined;
   const hasEpisodes = Boolean(sorted && sorted.length > 0);
+  const filteredEpisodes = sorted
+    ? episodeQuery.trim().length > 0
+      ? sorted.filter((ep) => {
+          const q = episodeQuery.trim().toLocaleLowerCase("ko-KR");
+          return (
+            String(ep.number).includes(q) ||
+            (ep.title ?? "").toLocaleLowerCase("ko-KR").includes(q)
+          );
+        })
+      : sorted
+    : undefined;
   const externalGuide = resolveExternalPlatformGuide(title.availability, {
     availabilityVisible: showAvailability,
   });
@@ -214,36 +226,58 @@ export function TitleEpisodeSection({
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="eyebrow text-accent">EPISODES</p>
-          <h2 id="title-episodes-heading" className="mt-1 flex items-baseline gap-2.5 text-xl font-bold tracking-tight text-fg sm:text-2xl">
+          <h2 id="title-episodes-heading" className="mt-1 flex flex-wrap items-baseline gap-2.5 text-xl font-bold tracking-tight text-fg sm:text-2xl">
             {bi("회차", "Episodes")}
             {total != null && (
               <span className="numeral text-base font-semibold text-fg-3">
                 {formatI18nTemplate(bi("총 {v0}화", "{v0} episodes"), { v0: formatCount(total) })}
               </span>
             )}
+            {hasEpisodes && sorted ? (
+              <span
+                data-testid="episodes-binge-estimate"
+                className="rounded-full border border-line bg-card px-2.5 py-0.5 text-xs font-semibold text-fg-2"
+              >
+                {formatI18nTemplate(
+                  bi("예상 정주행 약 {v0}분", "Est. binge ~{v0}m"),
+                  { v0: String(Math.max(3, sorted.length * 3)) },
+                )}
+              </span>
+            ) : null}
           </h2>
         </div>
         {sorted && sorted.length > 1 && (
-          <div className="flex rounded-full border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
-            {(
-              [
-                { value: "latest", label: bi("최신부터", "Newest first") },
-                { value: "oldest", label: bi("첫 화부터", "Oldest first") },
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={order === option.value}
-                onClick={() => setOrder(option.value)}
-                className={cn(
-                  "min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
-                  order === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={episodeQuery}
+              onChange={(event) => setEpisodeQuery(event.target.value)}
+              placeholder={bi("회차 번호·제목 검색", "Filter episode # or title")}
+              aria-label={bi("회차 번호 또는 제목 검색", "Search episode number or title")}
+              data-testid="episodes-search-input"
+              className="h-9 w-40 rounded-full border border-line bg-card px-3 text-xs text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-48"
+            />
+            <div className="flex rounded-full border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
+              {(
+                [
+                  { value: "latest", label: bi("최신부터", "Newest first") },
+                  { value: "oldest", label: bi("첫 화부터", "Oldest first") },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={order === option.value}
+                  onClick={() => setOrder(option.value)}
+                  className={cn(
+                    "min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
+                    order === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -263,9 +297,9 @@ export function TitleEpisodeSection({
         </div>
       )}
 
-      {hasEpisodes && sorted ? (
+      {hasEpisodes && filteredEpisodes ? (
         <ol className="flex flex-col gap-2.5">
-          {sorted.map((episode) => (
+          {filteredEpisodes.map((episode) => (
             <EpisodeRow
               key={episode.number}
               title={title}

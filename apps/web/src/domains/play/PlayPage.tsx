@@ -96,6 +96,39 @@ export function PlayPage() {
       <div className="play-journal"><span className="play-eyebrow"><Trophy size={14} /> MY CREATIVE LOG</span><div className="play-journal-counts"><div><strong>{todayResults.length}</strong><span>오늘 완료</span></div><div><strong>{journal.results.length}</strong><span>완료 기록 · 최근 100개</span></div><div><strong>{journal.favorites.filter((id) => findGame(id)).length}</strong><span>즐겨찾기</span></div></div><p>이 브라우저에만 보관되는 나의 기록</p></div>
     </section>
     {journal.recent.some((id) => findGame(id)) && <nav className="play-recent" aria-label="최근 즐긴 콘텐츠"><span>다시 이어서</span>{journal.recent.filter((id) => findGame(id)).slice(0, 4).map((id) => <button type="button" key={id} onClick={() => openGame(id)}>{findGame(id)!.label}<ArrowRight size={13} /></button>)}</nav>}
+    <section
+      aria-label="창작 워밍업 추천 코스"
+      data-testid="play-beginner-course"
+      className="my-5 rounded-2xl border border-line bg-card/65 p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span className="play-eyebrow">QUICK START COURSE · 처음 오셨나요?</span>
+          <h2 className="mt-0.5 text-sm font-bold text-fg">1분 창작 워밍업 3단계 추천 코스</h2>
+        </div>
+        <span className="text-xs text-fg-3">클릭하면 로그인 없이 즉시 시작됩니다</span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        {[
+          { id: "sketch-sprint", step: "STEP 1 · 손풀기", title: "60초 드로잉 스프린트", desc: "오늘의 제시어를 60초 안에 가볍게 스케치" },
+          { id: "quiz", step: "STEP 2 · 스토리 감각", title: "웹툰 세계관·장르 퀴즈", desc: "인기 작품의 클리셰와 연출 포인트를 퀴즈로 점검" },
+          { id: "rps", step: "STEP 3 · 캐릭터 교감", title: "3D 캐릭터 가위바위보", desc: "실시간 3D 캐릭터 표정·모션 반응과 함께 대결" },
+        ].map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => openGame(item.id, item.id === "sketch-sprint" ? today : undefined)}
+            className="flex flex-col items-start rounded-xl border border-line bg-panel p-3 text-left transition-colors hover:border-accent/50 hover:bg-raised"
+          >
+            <span className="text-[0.65rem] font-black text-accent">{item.step}</span>
+            <strong className="mt-1 flex items-center gap-1 text-xs font-bold text-fg">
+              {item.title} <ArrowRight size={13} aria-hidden />
+            </strong>
+            <span className="mt-1 text-[0.7rem] leading-relaxed text-fg-3">{item.desc}</span>
+          </button>
+        ))}
+      </div>
+    </section>
     <section id="play-library" className="play-library" aria-labelledby="play-library-heading">
       <header className="play-library-heading"><div><span className="play-eyebrow">PICK YOUR PLAY</span><h2 id="play-library-heading">지금, 어떤 걸 해 볼까요?</h2><p>창작 근육을 깨우는 작은 실험부터, 가볍게 즐기는 웹툰 게임까지.</p></div><button className="play-button" type="button" disabled={!filtered.length} onClick={() => openGame(filtered[Math.floor(randomFrom(freshSeed())() * filtered.length)].id)}><Shuffle size={16} />하나 골라 주세요</button></header>
       <div className="play-filter-row"><div className="play-filter-tabs" aria-label="콘텐츠 분류">{FILTERS.map(([id, label]) => <button className="play-chip" type="button" key={id} aria-pressed={tab === id} onClick={() => changeFilter("tab", id === "all" ? "" : id)}>{label}{id === "all" && <span>{PLAY_GAMES.length}</span>}</button>)}</div><label className="play-search"><Search size={16} /><span className="sr-only">놀이터 콘텐츠 검색</span><input type="search" value={query} maxLength={80} placeholder="드로잉, 콘티, 퀴즈 검색" onChange={(event) => changeFilter("q", event.target.value)} /></label></div>

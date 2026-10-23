@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,6 +29,7 @@ const BUILD_SH = path.join(KERNEL_DIR, "build.sh");
 const OPT_OUT_ENV = "SUMI_KERNEL_REPRO_OPTIONAL";
 const PINNED_RUST_TOOLCHAIN = "1.97.0";
 const INSTALL_HINT = "rustup toolchain install 1.97.0 --profile minimal --target wasm32-unknown-unknown && rustup default 1.97.0";
+const CARGO_BIN_DIR = path.join(homedir(), ".cargo", "bin");
 
 function resolvePinnedRustupToolchain(): string | undefined {
   if (process.env.RUSTUP_TOOLCHAIN) return process.env.RUSTUP_TOOLCHAIN;
@@ -40,8 +41,14 @@ function resolvePinnedRustupToolchain(): string | undefined {
 const RESOLVED_RUSTUP_TOOLCHAIN = resolvePinnedRustupToolchain();
 
 function buildEnvWithToolchain(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  const basePath = process.env.PATH ?? "";
+  const toolchainPath =
+    RESOLVED_RUSTUP_TOOLCHAIN && existsSync(CARGO_BIN_DIR)
+      ? `${CARGO_BIN_DIR}${path.delimiter}${basePath}`
+      : basePath;
   return {
     ...process.env,
+    PATH: toolchainPath,
     ...(RESOLVED_RUSTUP_TOOLCHAIN ? { RUSTUP_TOOLCHAIN: RESOLVED_RUSTUP_TOOLCHAIN } : {}),
     ...extra,
   };

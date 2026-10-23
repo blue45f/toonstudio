@@ -5,16 +5,20 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  FlipHorizontal2,
   ImagePlus,
   Lock,
   LockOpen,
+  Maximize2,
   MessageCircle,
   Pencil,
   Plus,
+  Redo2,
   Shapes,
   Sparkles,
   Trash2,
   Type as TypeIcon,
+  Undo2,
 } from "lucide-react";
 
 import {
@@ -45,6 +49,10 @@ export interface StudioCanvasContextMenuProps {
   onAddPage: () => void;
   onEnableQuickShape: () => void;
   onOpenQuickAccess?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onFlipHorizontal?: () => void;
+  onZoomReset?: () => void;
   onClose: () => void;
 }
 
@@ -73,9 +81,15 @@ export function StudioCanvasContextMenu({
   onAddPage,
   onEnableQuickShape,
   onOpenQuickAccess,
+  onUndo,
+  onRedo,
+  onFlipHorizontal,
+  onZoomReset,
   onClose,
 }: StudioCanvasContextMenuProps) {
   if (!open) return null;
+
+  const hasQuickStrip = Boolean(onUndo || onRedo || onFlipHorizontal || onZoomReset);
 
   return (
     // The click only prevents the global outside-click closer. All commands remain real buttons.
@@ -84,9 +98,62 @@ export function StudioCanvasContextMenu({
       // 터치 표준: 모든 항목이 최소 44px(min-h-11) 높이를 가진다 — 태블릿에서 요소 편집의 주 경로이기 때문이다.
       data-studio-canvas-context-menu="true"
       style={{ top: y, left: x }}
-      className="fixed z-50 min-w-[140px] rounded-lg border border-line bg-panel p-1 shadow-xl motion-safe:animate-fade-in"
+      className="fixed z-50 min-w-[180px] rounded-lg border border-line bg-panel p-1 shadow-xl motion-safe:animate-fade-in"
       onClick={(event) => event.stopPropagation()}
     >
+      {hasQuickStrip ? (
+        <div
+          role="group"
+          aria-label="빠른 캔버스 제어"
+          data-testid="canvas-context-quick-strip"
+          className="mb-1 flex items-center justify-between gap-1 rounded-md border border-line/70 bg-card/75 p-1"
+        >
+          {onUndo ? (
+            <button
+              type="button"
+              title="실행 취소 (⌘Z)"
+              aria-label="실행 취소 (⌘Z)"
+              onClick={() => runAndClose(onUndo, onClose)}
+              className="flex min-h-9 flex-1 items-center justify-center rounded px-2 py-1 text-xs font-semibold text-fg hover:bg-raised"
+            >
+              <Undo2 size={14} aria-hidden />
+            </button>
+          ) : null}
+          {onRedo ? (
+            <button
+              type="button"
+              title="다시 실행 (⇧⌘Z)"
+              aria-label="다시 실행 (⇧⌘Z)"
+              onClick={() => runAndClose(onRedo, onClose)}
+              className="flex min-h-9 flex-1 items-center justify-center rounded px-2 py-1 text-xs font-semibold text-fg hover:bg-raised"
+            >
+              <Redo2 size={14} aria-hidden />
+            </button>
+          ) : null}
+          {onFlipHorizontal ? (
+            <button
+              type="button"
+              title="좌우 반전 데생 점검"
+              aria-label="좌우 반전 데생 점검"
+              onClick={() => runAndClose(onFlipHorizontal, onClose)}
+              className="flex min-h-9 flex-1 items-center justify-center rounded px-2 py-1 text-xs font-semibold text-fg hover:bg-raised"
+            >
+              <FlipHorizontal2 size={14} aria-hidden />
+            </button>
+          ) : null}
+          {onZoomReset ? (
+            <button
+              type="button"
+              title="화면 맞춤 (100%)"
+              aria-label="화면 맞춤 (100%)"
+              onClick={() => runAndClose(onZoomReset, onClose)}
+              className="flex min-h-9 flex-1 items-center justify-center rounded px-2 py-1 text-xs font-semibold text-fg hover:bg-raised"
+            >
+              <Maximize2 size={14} aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {onOpenQuickAccess ? <button type="button" className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2.5 text-left text-sm text-fg hover:bg-raised"
         onClick={() => runAndClose(onOpenQuickAccess, onClose)}><Sparkles size={18} aria-hidden />커서 근처 빠른 실행</button> : null}
       {hasElement ? (

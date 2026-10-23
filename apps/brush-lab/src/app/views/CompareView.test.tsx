@@ -214,4 +214,23 @@ describe("CompareView", { timeout: 30_000 }, () => {
     await waitFor(() => expect(store.get().liveCapture).toBe(false));
     expect(store.get().errors.at(-1)).toMatchObject({ laneId: "wasm-cpu", code: "not-implemented" });
   });
+
+  it("상용 기준선 빠른 검증 시나리오 버튼과 리포트 탭 클린룸 6대 엔진 요약을 제공한다", () => {
+    const store = createLabStore({ tab: "compare", laneA: "cpu-reference", laneB: "canvas2d", canvasSize: 256 });
+    renderCompare(store);
+    const scenarios = screen.getByTestId("lab-compare-scenarios");
+    expect(scenarios).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "클립스튜디오 G펜 기준선" }));
+    expect(store.get().presetId).toBe("ink-g-pen");
+
+    fireEvent.click(screen.getByRole("button", { name: "리벨·크리타 수채 기준선" }));
+    expect(store.get().presetId).toBe("watercolor-wet");
+
+    fireEvent.click(screen.getByRole("tab", { name: "리포트" }));
+    const engineSummary = screen.getByTestId("lab-cleanroom-engine-summary");
+    expect(engineSummary.textContent).toContain("Rebelle 7 모세관 수채 확산");
+    expect(engineSummary.textContent).toContain("SAI / Lazy Nezumi 견인줄");
+  });
 });
+

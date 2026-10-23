@@ -221,15 +221,60 @@ export function CompareView() {
       );
   };
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) return;
+      if ((event.key === "r" || event.key === "R") && !running) {
+        event.preventDefault();
+        void runCompare({ registry, env, runner: ctx.runner, store, actions });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [running, registry, env, ctx.runner, store, actions]);
+
   const hashA = results.reportA?.pixelHash ?? (results.a ? pixelHashOf(results.a.image) : null);
   const hashB = results.reportB?.pixelHash ?? (results.b ? pixelHashOf(results.b.image) : null);
   const labelA = descA ? descA.label : laneA;
   const labelB = descB ? descB.label : laneB;
 
+  const benchmarkScenarios = [
+    { id: "ink-g-pen", label: "클립스튜디오 G펜 기준선" },
+    { id: "pencil-hb", label: "프로크리에이트 연필 기준선" },
+    { id: "watercolor-wet", label: "리벨·크리타 수채 기준선" },
+    { id: "sumi-ink-wet", label: "수묵 번짐 기준선" },
+  ] as const;
+
   return (
     <div className="lab-tabpanel">
       <section className="lab-panel">
         <h2>레인 · 입력</h2>
+        <div
+          className="lab-button-row"
+          role="group"
+          aria-label="상용 기준선 빠른 검증 시나리오"
+          data-testid="lab-compare-scenarios"
+        >
+          <span className="lab-muted">빠른 시나리오:</span>
+          {benchmarkScenarios.map((scenario) => {
+            const active = presetId === scenario.id;
+            return (
+              <button
+                key={scenario.id}
+                type="button"
+                className="lab-button"
+                aria-pressed={active}
+                disabled={running}
+                onClick={() => actions.setPreset(scenario.id)}
+              >
+                {scenario.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="lab-form-grid">
           <LaneSelector slot="a" />
           <LaneSelector slot="b" />
@@ -242,7 +287,7 @@ export function CompareView() {
       </section>
       <section className="lab-panel">
         <div className="lab-button-row">
-          <button type="button" className="lab-button lab-button--primary" disabled={running} onClick={onRun}>
+          <button type="button" className="lab-button lab-button--primary" disabled={running} onClick={onRun} title="단축키: R">
             {running ? "실행 중…" : "A/B 실행"}
           </button>
           <button type="button" className="lab-button" disabled={running} onClick={() => actions.clearResults()}>
@@ -261,6 +306,9 @@ export function CompareView() {
                 : results.a || results.b
                   ? "fixture 리플레이 결과"
                   : "대기"}
+          </span>
+          <span className="lab-muted" data-testid="lab-compare-shortcut-hint">
+            단축키: R 재실행
           </span>
         </div>
         <div className="lab-grid-3">

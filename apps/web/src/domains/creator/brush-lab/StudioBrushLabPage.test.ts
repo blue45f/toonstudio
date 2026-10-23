@@ -47,7 +47,11 @@ describe("StudioBrushLabPage 비-리믹스 상태 표시 (2026-10-08 소형 잔�
     );
     expect(catalogueSource).toContain("brush-catalogue-engine-summary");
     expect(catalogueSource).toContain("Kubelka-Munk 분광 안료 혼색");
+    expect(catalogueSource).toContain("Rebelle 모세관 수채 확산·과립화");
+    expect(catalogueSource).toContain("SAI S-레벨 · 견인줄(Pulled-String) 보정");
     expect(catalogueSource).toContain("브러시 용도별 빠른 필터");
     expect(catalogueSource).toContain("입문자 필수 추천");
+    expect(SOURCE).toContain("brush-lab-competitor-matching");
   });
 });
+
