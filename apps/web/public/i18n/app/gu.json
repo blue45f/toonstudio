@@ -322,7 +322,7 @@
   "auth.menu.adminPanel": "એડમિન કન્સોલ",
   "auth.menu.profile": "મારી પ્રોફાઇલ",
   "auth.menu.settings": "સેટિંગ્સ",
-  "auth.menu.signOut": "સાઇન અપ કરો",
+  "auth.menu.signOut": "સાઇન આઉટ કરો",
   "auth.menu.fallbackName": "વાચક",
   "auth.callback.message.working": "સાઇન-ઇન પૂર્ણ કરી રહ્યા છીએ.",
   "auth.callback.error.badState": "અમાન્ય રાજ્ય પરિમાણ.",

@@ -322,7 +322,7 @@
   "auth.menu.adminPanel": "Konsol admin",
   "auth.menu.profile": "Profilku",
   "auth.menu.settings": "Pengaturan",
-  "auth.menu.signOut": "Tanda tangan keluar",
+  "auth.menu.signOut": "Keluar",
   "auth.menu.fallbackName": "Pembaca",
   "auth.callback.message.working": "Menyelesaikan penandatanganan...",
   "auth.callback.error.badState": "Parameter keadaan tidak valid.",
