@@ -113,6 +113,9 @@ export interface StudioAtelierPulseSnapshot {
   readonly omniBadgeEn: string;
   readonly quantumBadgeKo: string;
   readonly quantumBadgeEn: string;
+  /** 게임형 점수 대신 HUD에 바로 표시할 실무 협업 상태 배지. */
+  readonly workStatusBadgeKo: string;
+  readonly workStatusBadgeEn: string;
   readonly headlineKo: string;
   readonly headlineEn: string;
   readonly sublineKo: string;
@@ -295,6 +298,8 @@ export function computeStudioAtelierPulse(
       omniBadgeEn: `Omni Ensemble ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
       quantumBadgeKo: `퀀텀 앙상블 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
       quantumBadgeEn: `Quantum Ensemble ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+      workStatusBadgeKo: nearbyPeerCount > 0 ? `근처 협업 ${nearbyPeerCount}명` : "원고 검수·회의",
+      workStatusBadgeEn: nearbyPeerCount > 0 ? `${nearbyPeerCount} nearby` : "Review & meeting",
       headlineKo: "크리에이티브 앙상블 동기화 중",
       headlineEn: "Creative ensemble in sync",
       sublineKo:
@@ -340,6 +345,8 @@ export function computeStudioAtelierPulse(
       omniBadgeEn: `Omni Forge ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
       quantumBadgeKo: `퀀텀 포지 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
       quantumBadgeEn: `Quantum Forge ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+      workStatusBadgeKo: `공동 작업 ${focusedPeerCount + 1}명`,
+      workStatusBadgeEn: `${focusedPeerCount + 1} working`,
       headlineKo: "스토리포지 창작 파동 최고조",
       headlineEn: "Story-Forge creative surge",
       sublineKo: `동료 ${focusedPeerCount + 1}명이 함께 몰입하며 마스터피스 원고를 빚어내고 있어요.`,
@@ -376,6 +383,8 @@ export function computeStudioAtelierPulse(
       omniBadgeEn: `Omni Flow ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
       quantumBadgeKo: `퀀텀 플로우 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
       quantumBadgeEn: `Quantum Flow ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+      workStatusBadgeKo: input.focusPhase === "break" ? "휴식·리프레시" : "집중 작업 중",
+      workStatusBadgeEn: input.focusPhase === "break" ? "Break" : "Deep work",
       headlineKo: "아틀리에 딥워크 몰입 기류",
       headlineEn: "Atelier deep-work flow",
       sublineKo:
@@ -423,6 +432,8 @@ export function computeStudioAtelierPulse(
     omniBadgeEn: `Omni Atelier ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
     quantumBadgeKo: `퀀텀 아틀리에 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
     quantumBadgeEn: `Quantum Atelier ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+    workStatusBadgeKo: sameZonePeerCount > 0 ? `구역 내 ${sameZonePeerCount}명` : "작업 대기",
+    workStatusBadgeEn: sameZonePeerCount > 0 ? `${sameZonePeerCount} in zone` : "Ready",
     headlineKo: "공감각 아틀리에 탐색 호흡",
     headlineEn: "Synesthetic atelier exploration",
     sublineKo:

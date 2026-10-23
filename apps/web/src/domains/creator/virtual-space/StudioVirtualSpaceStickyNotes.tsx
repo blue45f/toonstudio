@@ -454,6 +454,60 @@ export function StudioVirtualSpaceStickyNotes({
       </div>
     </header>
 
+    {canEdit ? (
+      <div
+        role="group"
+        aria-label={bt("실무 빠른 메모 템플릿", "Quick work note templates")}
+        className="studio-sticky-notes-work-templates"
+      >
+        <button
+          type="button"
+          className="studio-sticky-notes-filter-btn"
+          data-work-template="review"
+          onClick={() =>
+            onCreate({
+              x: 0.24,
+              y: 0.28,
+              text: bt("[검수 피드백] 확인 필요한 컷·대사 메모", "[Review] Panel/dialogue feedback"),
+              color: STUDIO_STICKY_NOTE_COLORS[0],
+            })
+          }
+        >
+          {bt("+ 검수 피드백", "+ Review feedback")}
+        </button>
+        <button
+          type="button"
+          className="studio-sticky-notes-filter-btn"
+          data-work-template="revision"
+          onClick={() =>
+            onCreate({
+              x: 0.48,
+              y: 0.28,
+              text: bt("[수정 요청] 보완 사항 및 담당자 지정", "[Revision] Action item & assignee"),
+              color: STUDIO_STICKY_NOTE_COLORS[1],
+            })
+          }
+        >
+          {bt("+ 수정 요청", "+ Revision request")}
+        </button>
+        <button
+          type="button"
+          className="studio-sticky-notes-filter-btn"
+          data-work-template="blocker"
+          onClick={() =>
+            onCreate({
+              x: 0.72,
+              y: 0.28,
+              text: bt("[블로커] 일정 지연·의존성 이슈 공유", "[Blocker] Schedule or dependency risk"),
+              color: STUDIO_STICKY_NOTE_COLORS[2],
+            })
+          }
+        >
+          {bt("+ 블로커 공유", "+ Blocker alert")}
+        </button>
+      </div>
+    ) : null}
+
     {!canEdit ? <div className="studio-sticky-notes-readonly" role="status">
       <Eye size={15} aria-hidden />
       <p>{bt(

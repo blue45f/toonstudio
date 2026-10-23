@@ -57,5 +57,9 @@ describe("가상 스튜디오 제작 동선", () => {
     expect(screen.queryByText(/in-progress/u)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "최우선 공정 바로 안내" }));
     expect(onGuide).toHaveBeenLastCalledWith("story");
+    fireEvent.click(screen.getByRole("button", { name: "차단·긴급" }));
+    expect(screen.queryByText("대본 이어쓰기")).toBeNull();
+    expect(screen.getByText("배경 자료")).toBeTruthy();
+    expect(screen.getByText("출고 준비")).toBeTruthy();
   });
 });
