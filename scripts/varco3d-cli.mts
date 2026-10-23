@@ -1,53 +1,91 @@
 #!/usr/bin/env tsx
 /**
- * VARCO 3D (https://3d.varco.ai) External API (v2/v1), Remote MCP, DCC Bridge CLI 도구.
+ * VARCO 3D (https://openapi.ai.nc.com & https://3d.varco.ai) CLI 도구.
+ * - NC AI OpenAPI Platform (image-to-3d, inference/result, auth-check)
+ * - VARCO 3D Studio External API (v2 generate, ai-rig, animate, tasks, download-glb, v1 mv)
+ * - Remote MCP (Antigravity, Claude Desktop App, Claude Code, OpenAI Codex) 및 Flow 카탈로그
+ * - 로컬 DCC Bridge 상태 조회 및 원클릭 임포트 (Blender, Unreal, Unity, 3ds Max, Maya)
  */
 
 import { spawnSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { basename, dirname, extname, resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const VARCO3D_DEFAULT_API_BASE = "https://3d.varco.ai/api/external-api";
-export const VARCO3D_DEFAULT_MCP_URL = "https://3d.varco.ai/api/mcp";
-export const VARCO3D_MCP_SETUP_DOC_URL = "https://3d.varco.ai/mcp/setup.md";
-export const VARCO3D_API_KEY_NAMES = ["VARCO_3D_API_KEY", "VARCO3D_API_KEY"] as const;
-export const VARCO3D_DCC_BRIDGES = {
-  blender: 5324,
-  unreal: 5325,
-  unity: 5326,
-  "3dsmax": 5327,
-  maya: 5328,
-} as const;
-export type DccBridgeName = keyof typeof VARCO3D_DCC_BRIDGES;
+import {
+  type DccBridgeName,
+  type Varco3dApiProvider,
+  VARCO3D_ANIMATION_CATALOG,
+  VARCO3D_API_KEY_NAMES,
+  VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE,
+  VARCO3D_DCC_BRIDGE_PLUGINS,
+  VARCO3D_DCC_BRIDGES,
+  VARCO3D_DEFAULT_API_BASE,
+  VARCO3D_DEFAULT_MCP_URL,
+  VARCO3D_DEFAULT_NC_OPENAPI_BASE,
+  VARCO3D_DEFAULT_STUDIO_API_BASE,
+  VARCO3D_FLOW_NODE_CATALOG,
+  VARCO3D_MCP_FLOW_TOOLS,
+  VARCO3D_MCP_SETUP_DOC_URL,
+} from "./lib/varco3d-catalog.mts";
+import {
+  encodeMultipartFormData,
+  inferImageMimeType,
+  inspectMcpSetup,
+  type LoadConfigOptions,
+  loadVarco3dConfig,
+  parseEnvFile,
+  probeDccBridges,
+  probeNcOpenApiAuth,
+  REPO_ROOT,
+  requireApiKey,
+  requestVarco3dJson,
+  validatePolygonCount,
+  type Varco3dResolvedConfig,
+  writeAntigravityMcpConfig,
+} from "./lib/varco3d-runtime.mts";
+
+export {
+  type DccBridgeName,
+  encodeMultipartFormData,
+  inferImageMimeType,
+  inspectMcpSetup,
+  type LoadConfigOptions,
+  loadVarco3dConfig,
+  parseEnvFile,
+  probeDccBridges,
+  probeNcOpenApiAuth,
+  REPO_ROOT,
+  requireApiKey,
+  requestVarco3dJson,
+   validatePolygonCount,
+  type Varco3dApiProvider,
+  type Varco3dResolvedConfig,
+  VARCO3D_ANIMATION_CATALOG,
+  VARCO3D_API_KEY_NAMES,
+  VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE,
+  VARCO3D_DCC_BRIDGE_PLUGINS,
+  VARCO3D_DCC_BRIDGES,
+  VARCO3D_DEFAULT_API_BASE,
+  VARCO3D_DEFAULT_MCP_URL,
+  VARCO3D_DEFAULT_NC_OPENAPI_BASE,
+  VARCO3D_DEFAULT_STUDIO_API_BASE,
+  VARCO3D_FLOW_NODE_CATALOG,
+  VARCO3D_MCP_FLOW_TOOLS,
+  VARCO3D_MCP_SETUP_DOC_URL,
+  writeAntigravityMcpConfig,
+};
+
 export const VARCO3D_TERMINAL_STATUSES = new Set([
   "COMPLETED",
+  "DONE",
+  "SUCCEEDED",
+  "SUCCESS",
   "FAILED",
   "CANCELLED",
   "CANCELED",
   "ERROR",
 ]);
-
-export interface Varco3dResolvedConfig {
-  readonly apiBase: string;
-  readonly mcpUrl: string;
-  readonly apiKey: string;
-  readonly apiKeyConfigured: boolean;
-  readonly apiKeySource: string;
-  readonly repoRoot: string;
-  readonly homeDir: string;
-}
-
-export interface LoadConfigOptions {
-  readonly explicitApiBase?: string;
-  readonly explicitMcpUrl?: string;
-  readonly env?: Readonly<Record<string, string | undefined>>;
-  readonly cwd?: string;
-  readonly repoRoot?: string;
-  readonly homeDir?: string;
-}
 
 export interface ParsedCliArgs {
   readonly command: string;
@@ -71,155 +109,6 @@ export interface RunCliResult {
   readonly output: Record<string, unknown>;
 }
 
-export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
-export function parseEnvFile(filePath: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  if (!existsSync(filePath)) return result;
-  for (const rawLine of readFileSync(filePath, "utf8").split(/\r?\n/u)) {
-    const trimmed = rawLine.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const line = trimmed.startsWith("export ") ? trimmed.slice(7).trim() : trimmed;
-    const eqIndex = line.indexOf("=");
-    if (eqIndex <= 0) continue;
-    const key = line.slice(0, eqIndex).trim();
-    const rawVal = line.slice(eqIndex + 1).trim();
-    result[key] =
-      rawVal.length >= 2 &&
-      ((rawVal.startsWith('"') && rawVal.endsWith('"')) ||
-        (rawVal.startsWith("'") && rawVal.endsWith("'")))
-        ? rawVal.slice(1, -1)
-        : rawVal;
-  }
-  return result;
-}
-
-export function loadVarco3dConfig(options: LoadConfigOptions = {}): Varco3dResolvedConfig {
-  const env = options.env ?? process.env;
-  const repoRoot = options.repoRoot ?? REPO_ROOT;
-  const cwd = options.cwd ?? process.cwd();
-  const homeDir = options.homeDir ?? homedir();
-  const apiBase = (
-    options.explicitApiBase ??
-    env.VARCO_3D_API_BASE ??
-    VARCO3D_DEFAULT_API_BASE
-  ).replace(/\/+$/u, "");
-  const mcpUrl = (
-    options.explicitMcpUrl ??
-    env.VARCO_3D_MCP_URL ??
-    VARCO3D_DEFAULT_MCP_URL
-  ).replace(/\/+$/u, "");
-
-  for (const keyName of VARCO3D_API_KEY_NAMES) {
-    const fromEnv = env[keyName]?.trim();
-    if (fromEnv) {
-      return {
-        apiBase,
-        mcpUrl,
-        apiKey: fromEnv,
-        apiKeyConfigured: true,
-        apiKeySource: `env:${keyName}`,
-        repoRoot,
-        homeDir,
-      };
-    }
-  }
-
-  const candidateFiles = new Set([
-    resolve(cwd, ".env.infrastructure.local"),
-    resolve(cwd, ".env.local"),
-    resolve(repoRoot, ".env.infrastructure.local"),
-    resolve(repoRoot, ".env.local"),
-    resolve(homeDir, ".config/varco3d/credentials.env"),
-    resolve(homeDir, ".toonspectrum/credentials.env"),
-  ]);
-
-  for (const filePath of candidateFiles) {
-    const parsed = parseEnvFile(filePath);
-    for (const keyName of VARCO3D_API_KEY_NAMES) {
-      const val = parsed[keyName]?.trim();
-      if (val) {
-        return {
-          apiBase,
-          mcpUrl,
-          apiKey: val,
-          apiKeyConfigured: true,
-          apiKeySource: `file:${basename(filePath)}:${keyName}`,
-          repoRoot,
-          homeDir,
-        };
-      }
-    }
-  }
-
-  return {
-    apiBase,
-    mcpUrl,
-    apiKey: "",
-    apiKeyConfigured: false,
-    apiKeySource: "missing",
-    repoRoot,
-    homeDir,
-  };
-}
-
-export function requireApiKey(config: Varco3dResolvedConfig): string {
-  if (!config.apiKeyConfigured || !config.apiKey) {
-    throw new Error(
-      "VARCO_3D_API_KEY가 설정되어 있지 않습니다. .env.infrastructure.local 또는 환경변수에 VARCO_3D_API_KEY를 등록한 뒤 다시 실행하세요.",
-    );
-  }
-  return config.apiKey;
-}
-
-export function inferImageMimeType(filePath: string): string {
-  const ext = extname(filePath).toLowerCase();
-  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
-  if (ext === ".webp") return "image/webp";
-  if (ext === ".png") return "image/png";
-  throw new Error(
-    `지원하지 않는 이미지 확장자입니다 (${ext || "없음"}). PNG, JPEG, WebP 파일만 사용할 수 있습니다.`,
-  );
-}
-
-export function encodeMultipartFormData(
-  fields: Readonly<Record<string, string>>,
-  files: Readonly<Record<string, string>>,
-  boundarySeed = randomUUID().replace(/-/gu, ""),
-): { readonly body: Buffer; readonly contentType: string; readonly boundary: string } {
-  const boundary = `----Varco3DFormBoundary${boundarySeed}`;
-  const chunks: Buffer[] = [];
-  for (const [name, value] of Object.entries(fields)) {
-    chunks.push(
-      Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
-        "utf8",
-      ),
-    );
-  }
-  for (const [fieldName, rawPath] of Object.entries(files)) {
-    const resolvedPath = resolve(rawPath);
-    if (!existsSync(resolvedPath)) {
-      throw new Error(`입력 이미지 파일을 찾을 수 없습니다: ${resolvedPath}`);
-    }
-    const mimeType = inferImageMimeType(resolvedPath);
-    chunks.push(
-      Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="${fieldName}"; filename="${basename(resolvedPath)}"\r\nContent-Type: ${mimeType}\r\n\r\n`,
-        "utf8",
-      ),
-      readFileSync(resolvedPath),
-      Buffer.from("\r\n", "utf8"),
-    );
-  }
-  chunks.push(Buffer.from(`--${boundary}--\r\n`, "utf8"));
-  return {
-    body: Buffer.concat(chunks),
-    contentType: `multipart/form-data; boundary=${boundary}`,
-    boundary,
-  };
-}
-
 export function parseCliArguments(argv: readonly string[]): ParsedCliArgs {
   const [command = "doctor", ...rest] = argv.filter((arg) => arg !== "--");
   const positionals: string[] = [];
@@ -230,6 +119,7 @@ export function parseCliArguments(argv: readonly string[]): ParsedCliArgs {
     "confirm",
     "dry-run",
     "use-alpha",
+    "no-texture",
     "in-place",
     "mv",
     "write",
@@ -270,135 +160,76 @@ export function parseCliArguments(argv: readonly string[]): ParsedCliArgs {
   return { command, positionals, flags, options };
 }
 
-export function validatePolygonCount(rawCount: string | undefined): number {
-  if (rawCount === undefined) return 500_000;
-  const parsed = Number.parseInt(rawCount, 10);
-  if (!Number.isFinite(parsed) || parsed < 1_000 || parsed > 1_000_000) {
-    throw new Error(
-      `polygonCount 값(${rawCount})이 유효하지 않습니다. 1000 이상 1000000 이하의 정수를 지정하세요.`,
-    );
+export function resolveProvider(parsed: ParsedCliArgs): Varco3dApiProvider {
+  const explicit = parsed.options.get("provider")?.trim();
+  if (explicit) {
+    if (explicit !== "nc-openapi" && explicit !== "studio") {
+      throw new Error(
+        `지원하지 않는 --provider 값입니다 (${explicit}). nc-openapi 또는 studio 중 하나를 지정하세요.`,
+      );
+    }
+    return explicit;
   }
-  return parsed;
+  if (
+    parsed.flags.has("mv") ||
+    parsed.flags.has("use-alpha") ||
+    parsed.options.has("api-base")
+  ) {
+    return "studio";
+  }
+  return "nc-openapi";
 }
 
-export function inspectMcpSetup(config: Varco3dResolvedConfig): Record<string, unknown> {
-  const antigravityConfigPath = resolve(config.homeDir, ".gemini/config/mcp_config.json");
-  let antigravityRegistered = false;
-  if (existsSync(antigravityConfigPath)) {
-    try {
-      const parsed = JSON.parse(readFileSync(antigravityConfigPath, "utf8")) as {
-        mcpServers?: Record<string, { url?: string }>;
+function buildCatalogOutput(parsed: ParsedCliArgs): Record<string, unknown> {
+  const section = parsed.options.get("section") ?? "all";
+  const creature = parsed.options.get("creature");
+  const category = parsed.options.get("category")?.toUpperCase();
+
+  if (section === "mcp-tools") {
+    return { mcpEndpoint: VARCO3D_DEFAULT_MCP_URL, tools: VARCO3D_MCP_FLOW_TOOLS };
+  }
+  if (section === "nodes") {
+    return { nodes: VARCO3D_FLOW_NODE_CATALOG };
+  }
+  if (section === "bridges") {
+    return { dccBridgePlugins: VARCO3D_DCC_BRIDGE_PLUGINS };
+  }
+  if (section === "claude-app") {
+    return { claudeDesktopAppConnector: VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE };
+  }
+  if (section === "animations") {
+    if (creature === "humanoid") {
+      const humanoidData = VARCO3D_ANIMATION_CATALOG.humanoid;
+      return {
+        creature: "humanoid",
+        categories:
+          category && category in humanoidData
+            ? { [category]: humanoidData[category as keyof typeof humanoidData] }
+            : humanoidData,
       };
-      antigravityRegistered = parsed.mcpServers?.["varco-3d"]?.url === config.mcpUrl;
-    } catch {
-      antigravityRegistered = false;
     }
+    if (creature === "quadruped") {
+      const quadData = VARCO3D_ANIMATION_CATALOG.quadruped.categories;
+      return {
+        creature: "quadruped",
+        speciesPrefixes: VARCO3D_ANIMATION_CATALOG.quadruped.speciesPrefixes,
+        categories:
+          category && category in quadData
+            ? { [category]: quadData[category as keyof typeof quadData] }
+            : quadData,
+      };
+    }
+    return { animations: VARCO3D_ANIMATION_CATALOG };
   }
-  const localCliBinaryPath = resolve(config.homeDir, ".local/bin/varco3d");
+
   return {
-    endpoint: config.mcpUrl,
-    setupDocUrl: VARCO3D_MCP_SETUP_DOC_URL,
-    antigravityConfigPath,
-    antigravityRegistered,
-    localCliBinaryPath,
-    localCliInstalled: existsSync(localCliBinaryPath),
-    commands: {
-      antigravity: "pnpm run varco3d -- mcp-setup --target antigravity --write",
-      claude: `claude mcp add --transport http varco-3d ${config.mcpUrl}`,
-      codex: `codex mcp add varco-3d --url ${config.mcpUrl} --oauth-resource ${config.mcpUrl} && codex mcp login varco-3d`,
-    },
+    mcpEndpoint: VARCO3D_DEFAULT_MCP_URL,
+    claudeDesktopAppConnector: VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE,
+    mcpFlowTools: VARCO3D_MCP_FLOW_TOOLS,
+    flowNodes: VARCO3D_FLOW_NODE_CATALOG,
+    animations: VARCO3D_ANIMATION_CATALOG,
+    dccBridgePlugins: VARCO3D_DCC_BRIDGE_PLUGINS,
   };
-}
-
-export function writeAntigravityMcpConfig(
-  config: Varco3dResolvedConfig,
-): Record<string, unknown> {
-  const targetPath = resolve(config.homeDir, ".gemini/config/mcp_config.json");
-  mkdirSync(dirname(targetPath), { recursive: true });
-  let rootObj: Record<string, unknown> = {};
-  if (existsSync(targetPath)) {
-    const raw = readFileSync(targetPath, "utf8").trim();
-    if (raw) {
-      const parsed = JSON.parse(raw) as unknown;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        rootObj = { ...(parsed as Record<string, unknown>) };
-      }
-    }
-  }
-  const existingServers =
-    rootObj.mcpServers &&
-    typeof rootObj.mcpServers === "object" &&
-    !Array.isArray(rootObj.mcpServers)
-      ? { ...(rootObj.mcpServers as Record<string, unknown>) }
-      : {};
-  existingServers["varco-3d"] = { url: config.mcpUrl };
-  rootObj.mcpServers = existingServers;
-  writeFileSync(targetPath, `${JSON.stringify(rootObj, null, 2)}\n`, "utf8");
-  return { updated: true, path: targetPath, url: config.mcpUrl };
-}
-
-export async function probeDccBridges(
-  fetchImpl: typeof fetch = fetch,
-  timeoutMs = 500,
-): Promise<Record<DccBridgeName, { port: number; connected: boolean; statusCode?: number }>> {
-  const entries = await Promise.all(
-    (Object.entries(VARCO3D_DCC_BRIDGES) as [DccBridgeName, number][]).map(
-      async ([name, port]) => {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-          const resp = await fetchImpl(`http://127.0.0.1:${port}/status`, {
-            method: "GET",
-            signal: controller.signal,
-          });
-          return [name, { port, connected: resp.status === 200, statusCode: resp.status }] as const;
-        } catch {
-          return [name, { port, connected: false }] as const;
-        } finally {
-          clearTimeout(timer);
-        }
-      },
-    ),
-  );
-  return Object.fromEntries(entries) as Record<
-    DccBridgeName,
-    { port: number; connected: boolean; statusCode?: number }
-  >;
-}
-
-export async function requestVarco3dJson(
-  url: string,
-  init: {
-    readonly method: "GET" | "POST";
-    readonly apiKey: string;
-    readonly headers?: Readonly<Record<string, string>>;
-    readonly body?: BodyInit;
-  },
-  fetchImpl: typeof fetch = fetch,
-): Promise<{ readonly statusCode: number; readonly payload: Record<string, unknown> }> {
-  const response = await fetchImpl(url, {
-    method: init.method,
-    headers: {
-      Accept: "application/json",
-      "x-api-key": init.apiKey,
-      ...(init.headers ?? {}),
-    },
-    body: init.body,
-  });
-  const text = await response.text();
-  let payload: Record<string, unknown> = {};
-  if (text.trim()) {
-    try {
-      const jsonVal = JSON.parse(text) as unknown;
-      payload =
-        jsonVal && typeof jsonVal === "object" && !Array.isArray(jsonVal)
-          ? (jsonVal as Record<string, unknown>)
-          : { data: jsonVal };
-    } catch {
-      payload = { error: text.trim() };
-    }
-  }
-  return { statusCode: response.status, payload };
 }
 
 async function submitJsonTask(
@@ -408,6 +239,7 @@ async function submitJsonTask(
   parsed: ParsedCliArgs,
   config: Varco3dResolvedConfig,
   fetchImpl: typeof fetch,
+  authHeaderName: "x-api-key" | "OPENAPI_KEY" = "x-api-key",
 ): Promise<RunCliResult> {
   if (!parsed.flags.has("confirm") || parsed.flags.has("dry-run")) {
     return {
@@ -416,6 +248,7 @@ async function submitJsonTask(
         dryRun: true,
         method: "POST",
         url,
+        authHeader: authHeaderName,
         body,
         apiKeyConfigured: config.apiKeyConfigured,
         note,
@@ -427,6 +260,7 @@ async function submitJsonTask(
     {
       method: "POST",
       apiKey: requireApiKey(config),
+      authHeaderName,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
@@ -443,6 +277,7 @@ async function submitMultipartTask(
   parsed: ParsedCliArgs,
   config: Varco3dResolvedConfig,
   fetchImpl: typeof fetch,
+  authHeaderName: "x-api-key" | "OPENAPI_KEY" = "x-api-key",
 ): Promise<RunCliResult> {
   if (!parsed.flags.has("confirm") || parsed.flags.has("dry-run")) {
     return {
@@ -451,6 +286,7 @@ async function submitMultipartTask(
         dryRun: true,
         method: "POST",
         url,
+        authHeader: authHeaderName,
         fields,
         ...dryRunMeta,
         apiKeyConfigured: config.apiKeyConfigured,
@@ -463,6 +299,7 @@ async function submitMultipartTask(
     {
       method: "POST",
       apiKey: requireApiKey(config),
+      authHeaderName,
       headers: { "Content-Type": multipart.contentType },
       body: new Uint8Array(multipart.body),
     },
@@ -483,6 +320,7 @@ export async function executeVarco3dCli(
     ((ms: number) => new Promise<void>((resolveSleep) => setTimeout(resolveSleep, ms)));
 
   const config = loadVarco3dConfig({
+    explicitNcOpenApiBase: parsed.options.get("nc-openapi-base"),
     explicitApiBase: parsed.options.get("api-base"),
     explicitMcpUrl: parsed.options.get("mcp-url"),
     env: deps.env,
@@ -499,15 +337,18 @@ export async function executeVarco3dCli(
         commands: [
           "doctor [--check]",
           "where",
+          "auth-check",
+          "catalog [--section all|mcp-tools|nodes|animations|bridges|claude-app] [--creature humanoid|quadruped] [--category <NAME>]",
           "bridge-status",
-          "mcp-setup [--target status|antigravity|claude|codex] [--write]",
-          "generate --image <path> [--use-alpha] [--polygon-count <1000..1000000>] [--confirm]",
+          "bridge-import --dcc <blender|unreal|unity|3dsmax|maya> --url <glbUrl> [--name <modelName>] [--confirm]",
+          "mcp-setup [--target status|antigravity|claude-app|claude|codex] [--write]",
+          "generate --image <path> [--provider nc-openapi|studio] [--face-type tri|quad] [--polygon-count <count>] [--no-texture] [--seed <int>] [--use-alpha] [--confirm]",
           "mv-generate --front <path> --back <path> [--left <path>] [--right <path>] [--confirm]",
           "ai-rig --source-task-id <uuid> [--confirm]",
           "animate --source-task-id <uuid> [--animation <preset>] [--in-place] [--confirm]",
-          "status <taskId> [--mv]",
-          "wait <taskId> [--mv] [--interval <ms>] [--timeout <ms>]",
-          "download-glb <taskId> [--output <path>]",
+          "status <taskId> [--provider nc-openapi|studio] [--mv]",
+          "wait <taskId> [--provider nc-openapi|studio] [--mv] [--interval <ms>] [--timeout <ms>]",
+          "download-glb <taskId> [--provider nc-openapi|studio] [--output <path>]",
         ],
       },
     };
@@ -518,14 +359,17 @@ export async function executeVarco3dCli(
       exitCode: 0,
       output: {
         tool: "varco3d",
-        provider: "NC AI VARCO 3D (https://3d.varco.ai)",
+        provider: "NC AI VARCO 3D (platform.nc-ai.com & 3d.varco.ai)",
         mode: parsed.flags.has("check") ? "check" : "inspect",
+        ncOpenApiBase: config.ncOpenApiBase,
         apiBase: config.apiBase,
         apiKeyConfigured: config.apiKeyConfigured,
         apiKeySource: config.apiKeySource,
         mcp: inspectMcpSetup(config),
         dccBridges: await probeDccBridges(fetchImpl),
         endpoints: {
+          ncOpenApiImageTo3d: `${config.ncOpenApiBase}/3d/varco/v1/image-to-3d`,
+          ncOpenApiResult: `${config.ncOpenApiBase}/inference/result/{requestId}`,
           v2Generate: `${config.apiBase}/v2/generate`,
           v2AiRig: `${config.apiBase}/v2/ai-rig`,
           v2Animate: `${config.apiBase}/v2/animate`,
@@ -539,13 +383,70 @@ export async function executeVarco3dCli(
     };
   }
 
+  if (parsed.command === "auth-check") {
+    return probeNcOpenApiAuth(config, fetchImpl);
+  }
+
+  if (parsed.command === "catalog" || parsed.command === "capabilities") {
+    return { exitCode: 0, output: buildCatalogOutput(parsed) };
+  }
+
   if (parsed.command === "bridge-status") {
     return { exitCode: 0, output: { dccBridges: await probeDccBridges(fetchImpl) } };
+  }
+
+  if (parsed.command === "bridge-import") {
+    const rawDcc = (parsed.options.get("dcc") ?? "").toLowerCase() as DccBridgeName;
+    if (!(rawDcc in VARCO3D_DCC_BRIDGES)) {
+      throw new Error(
+        `지원하지 않는 --dcc 값입니다 (${rawDcc || "없음"}). blender, unreal, unity, 3dsmax, maya 중 하나를 지정하세요.`,
+      );
+    }
+    const glbUrl = parsed.options.get("url")?.trim();
+    if (!glbUrl) {
+      throw new Error(
+        "--url <glbUrl> 옵션이 필요합니다. 예: pnpm run varco3d -- bridge-import --dcc blender --url https://.../model.glb",
+      );
+    }
+    const modelName = parsed.options.get("name")?.trim() || "varco3d_model";
+    const pluginMeta = VARCO3D_DCC_BRIDGE_PLUGINS[rawDcc];
+    const body = { url: glbUrl, name: modelName };
+    if (!parsed.flags.has("confirm") || parsed.flags.has("dry-run")) {
+      return {
+        exitCode: 0,
+        output: {
+          dryRun: true,
+          dcc: rawDcc,
+          port: pluginMeta.port,
+          method: "POST",
+          url: pluginMeta.importEndpoint,
+          body,
+          pluginDownloadUrl: pluginMeta.pluginDownloadUrl,
+          note: "실제 로컬 DCC 브리지로 모델을 전송하려면 --confirm 플래그를 추가하세요.",
+        },
+      };
+    }
+    const { statusCode, payload } = await requestVarco3dJson(
+      pluginMeta.importEndpoint,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      fetchImpl,
+    );
+    return {
+      exitCode: statusCode >= 200 && statusCode < 300 ? 0 : 1,
+      output: { dcc: rawDcc, port: pluginMeta.port, statusCode, ...payload },
+    };
   }
 
   if (parsed.command === "mcp-setup") {
     const target = parsed.options.get("target") ?? "status";
     const shouldWrite = parsed.flags.has("write") && !parsed.flags.has("check");
+    if (target === "claude-app") {
+      return { exitCode: 0, output: { claudeDesktopAppConnector: VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE } };
+    }
     if (target === "antigravity" && shouldWrite) {
       return { exitCode: 0, output: writeAntigravityMcpConfig(config) };
     }
@@ -579,21 +480,51 @@ export async function executeVarco3dCli(
       throw new Error(`입력 이미지 파일을 찾을 수 없습니다: ${resolvedImage}`);
     }
     inferImageMimeType(resolvedImage);
+    const provider = resolveProvider(parsed);
+    if (provider === "nc-openapi") {
+      const faceType = parsed.options.get("face-type") ?? "tri";
+      if (faceType !== "tri" && faceType !== "quad") {
+        throw new Error(`--face-type 값(${faceType})이 유효하지 않습니다. tri 또는 quad를 지정하세요.`);
+      }
+      const fields = {
+        target_face_type: faceType,
+        target_face_num: String(validatePolygonCount(parsed.options.get("polygon-count"), "nc-openapi")),
+        generate_texture: String(!parsed.flags.has("no-texture")),
+        seed: parsed.options.get("seed") ?? "-1",
+      };
+      return submitMultipartTask(
+        `${config.ncOpenApiBase}/3d/varco/v1/image-to-3d`,
+        fields,
+        { image: resolvedImage },
+        {
+          provider: "nc-openapi",
+          image: resolvedImage,
+          note: "유료 크레딧 보호를 위해 기본 동작은 dry-run입니다. 실제 생성 요청은 --confirm 플래그를 함께 전달하세요.",
+        },
+        parsed,
+        config,
+        fetchImpl,
+        "OPENAPI_KEY",
+      );
+    }
+
     const fields = {
       useAlpha: String(parsed.flags.has("use-alpha")),
-      polygonCount: String(validatePolygonCount(parsed.options.get("polygon-count"))),
+      polygonCount: String(validatePolygonCount(parsed.options.get("polygon-count"), "studio")),
     };
     return submitMultipartTask(
       `${config.apiBase}/v2/generate`,
       fields,
       { image: resolvedImage },
       {
+        provider: "studio",
         image: resolvedImage,
         note: "유료 크레딧 보호를 위해 기본 동작은 dry-run입니다. 실제 생성 요청은 --confirm 플래그를 함께 전달하세요.",
       },
       parsed,
       config,
       fetchImpl,
+      "x-api-key",
     );
   }
 
@@ -620,13 +551,14 @@ export async function executeVarco3dCli(
     }
     const fields = {
       useAlpha: String(parsed.flags.has("use-alpha")),
-      polygonCount: String(validatePolygonCount(parsed.options.get("polygon-count"))),
+      polygonCount: String(validatePolygonCount(parsed.options.get("polygon-count"), "studio")),
     };
     return submitMultipartTask(
       `${config.apiBase}/v1/mv/generate`,
       fields,
       files,
       {
+        provider: "studio",
         deprecated: true,
         files,
         note: "실제 멀티뷰 생성 요청을 전송하려면 --confirm 플래그를 추가하세요.",
@@ -634,6 +566,7 @@ export async function executeVarco3dCli(
       parsed,
       config,
       fetchImpl,
+      "x-api-key",
     );
   }
 
@@ -670,10 +603,15 @@ export async function executeVarco3dCli(
   if (parsed.command === "status") {
     const taskId = parsed.positionals[0] ?? parsed.options.get("task-id");
     if (!taskId) throw new Error("조회할 taskId를 지정하세요. 예: pnpm run varco3d -- status <taskId>");
-    const subpath = parsed.flags.has("mv") ? `/v1/mv/tasks/${taskId}` : `/v2/tasks/${taskId}`;
+    const provider = resolveProvider(parsed);
+    const url =
+      provider === "nc-openapi"
+        ? `${config.ncOpenApiBase}/inference/result/${taskId}`
+        : `${config.apiBase}${parsed.flags.has("mv") ? `/v1/mv/tasks/${taskId}` : `/v2/tasks/${taskId}`}`;
+    const authHeaderName = provider === "nc-openapi" ? "OPENAPI_KEY" : "x-api-key";
     const { statusCode, payload } = await requestVarco3dJson(
-      `${config.apiBase}${subpath}`,
-      { method: "GET", apiKey: requireApiKey(config) },
+      url,
+      { method: "GET", apiKey: requireApiKey(config), authHeaderName },
       fetchImpl,
     );
     return { exitCode: statusCode >= 200 && statusCode < 300 ? 0 : 1, output: { statusCode, ...payload } };
@@ -683,6 +621,7 @@ export async function executeVarco3dCli(
     const taskId = parsed.positionals[0] ?? parsed.options.get("task-id");
     if (!taskId) throw new Error("대기할 taskId를 지정하세요. 예: pnpm run varco3d -- wait <taskId>");
     const apiKey = requireApiKey(config);
+    const provider = resolveProvider(parsed);
     const intervalMs = Math.max(
       100,
       Number.parseInt(parsed.options.get("interval") ?? "5000", 10) || 5_000,
@@ -691,20 +630,29 @@ export async function executeVarco3dCli(
       intervalMs,
       Number.parseInt(parsed.options.get("timeout") ?? "600000", 10) || 600_000,
     );
-    const subpath = parsed.flags.has("mv") ? `/v1/mv/tasks/${taskId}` : `/v2/tasks/${taskId}`;
+    const url =
+      provider === "nc-openapi"
+        ? `${config.ncOpenApiBase}/inference/result/${taskId}`
+        : `${config.apiBase}${parsed.flags.has("mv") ? `/v1/mv/tasks/${taskId}` : `/v2/tasks/${taskId}`}`;
+    const authHeaderName = provider === "nc-openapi" ? "OPENAPI_KEY" : "x-api-key";
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       const { statusCode, payload } = await requestVarco3dJson(
-        `${config.apiBase}${subpath}`,
-        { method: "GET", apiKey },
+        url,
+        { method: "GET", apiKey, authHeaderName },
         fetchImpl,
       );
       const status = String(payload.status ?? "").toUpperCase();
       if (statusCode >= 400 || VARCO3D_TERMINAL_STATUSES.has(status)) {
-        return {
-          exitCode: statusCode >= 200 && statusCode < 300 && status === "COMPLETED" ? 0 : 1,
-          output: { statusCode, ...payload },
-        };
+        const isSuccess =
+          statusCode >= 200 &&
+          statusCode < 300 &&
+          (status === "COMPLETED" ||
+            status === "DONE" ||
+            status === "SUCCEEDED" ||
+            status === "SUCCESS" ||
+            typeof payload.model_url === "string");
+        return { exitCode: isSuccess ? 0 : 1, output: { statusCode, ...payload } };
       }
       if (Date.now() >= deadline) {
         throw new Error(`작업 완료 대기 시간이 초과되었습니다 (${timeoutMs}ms): ${taskId}`);
@@ -720,13 +668,24 @@ export async function executeVarco3dCli(
         "다운로드할 taskId를 지정하세요. 예: pnpm run varco3d -- download-glb <taskId> --output ./model.glb",
       );
     }
+    const provider = resolveProvider(parsed);
+    const url =
+      provider === "nc-openapi"
+        ? `${config.ncOpenApiBase}/inference/result/${taskId}`
+        : `${config.apiBase}/v2/tasks/${taskId}/download-glb`;
+    const authHeaderName = provider === "nc-openapi" ? "OPENAPI_KEY" : "x-api-key";
     const { statusCode, payload } = await requestVarco3dJson(
-      `${config.apiBase}/v2/tasks/${taskId}/download-glb`,
-      { method: "GET", apiKey: requireApiKey(config) },
+      url,
+      { method: "GET", apiKey: requireApiKey(config), authHeaderName },
       fetchImpl,
     );
     if (statusCode >= 400) return { exitCode: 1, output: { statusCode, ...payload } };
-    const glbUrl = typeof payload.glbUrl === "string" ? payload.glbUrl : "";
+    const glbUrl =
+      typeof payload.glbUrl === "string"
+        ? payload.glbUrl
+        : typeof payload.model_url === "string"
+          ? payload.model_url
+          : "";
     const outputOption = parsed.options.get("output");
     if (outputOption && glbUrl) {
       const targetFile = resolve(deps.cwd ?? process.cwd(), outputOption);
