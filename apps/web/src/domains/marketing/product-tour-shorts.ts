@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 8편.
- * 여덟 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 10편.
+ * 열 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~8편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~10편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -13,7 +13,9 @@ export interface ProductTourShort {
     | "plan-sketch"
     | "space-collab"
     | "assist-autocolor"
-    | "finish-publish";
+    | "finish-publish"
+    | "brush-doodles"
+    | "panel-layers";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -141,6 +143,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Publish, and it is a series",
       body: "The moment a finished episode is published, it lands in the series list on a reader's phone.",
+    },
+  },
+  {
+    id: "brush-doodles",
+    src: "/brand/promo-shorts/shorts-9-brush.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "살아나는 브러시 낙서",
+      body: "붓과 펜이 지나간 자리마다 낙서 캐릭터가 눈을 뜨고 뛰어오르는 모습을 담았습니다.",
+    },
+    en: {
+      title: "Brush strokes, alive",
+      body: "Wherever a brush or pen passes, a doodle character wakes up and hops off the page.",
+    },
+  },
+  {
+    id: "panel-layers",
+    src: "/brand/promo-shorts/shorts-10-layers.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "한 장이 쌓이는 순서",
+      body: "스케치 선 위에 잉크와 채색, 명암이 한 겹씩 쌓여 한 장의 컷이 완성되는 과정을 담았습니다.",
+    },
+    en: {
+      title: "Layer by layer",
+      body: "Sketch, ink, color, then shade — layers stacking up until one panel is complete.",
     },
   },
 ];
