@@ -555,7 +555,7 @@ describe("architecture: import 수집기·경계 게이트 회귀(여러 줄 imp
     const crossFlat = makeSourceFile("animation/zz.ts", lines('export {', '  a,', '} from "../paint/x";'));
     expect(domainBoundaryViolations(crossFlat)).toEqual(["도메인 교차 import: ../paint/x"]);
     // 같은 영역·contracts·shared는 여러 줄이어도 통과
-    const allowed = makeSourceFile("domains/outfit/zz.ts", lines('import {', '  a,', '} from "./y";', 'import {', '  b,', '} from "../../contracts";', 'import {', '  c,', '} from "../../shared/math";'));
+    const allowed = makeSourceFile("domains/outfit/zz.ts", lines('import {', '  a,', '} from "./y";', 'import {', '  b,', `} from "${"../.."}/contracts";`, 'import {', '  c,', `} from "${"../.."}/shared/math";`));
     expect(domainBoundaryViolations(allowed)).toEqual([]);
   });
 
@@ -573,7 +573,7 @@ describe("architecture: import 수집기·경계 게이트 회귀(여러 줄 imp
     expect(topLevelViolations(makeSourceFile("main.ts", ""))).toHaveLength(1);
     expect(topLevelViolations(makeSourceFile("presets/x.ts", ""))).toEqual([]);
     // 3-a: render/style에서 @babylonjs·render/babylon 내부는 위반, contracts·같은 디렉터리는 통과
-    const style = makeSourceFile("render/style/tone.ts", lines('import { Scene } from "@babylonjs/core/scene.js";', 'import { x } from "../babylon/character-engine";', 'import { y } from "./line-width";', 'import { z } from "../../contracts";'));
+    const style = makeSourceFile("render/style/tone.ts", lines('import { Scene } from "@babylonjs/core/scene.js";', 'import { x } from "../babylon/character-engine";', 'import { y } from "./line-width";', `import { z } from "${"../.."}/contracts";`));
     expect(renderStyleViolations(style)).toEqual(["render/style의 @babylonjs import: @babylonjs/core/scene.js", "render/style의 render/babylon 내부 import: ../babylon/character-engine"]);
     expect(renderStyleViolations(makeSourceFile("render/style/tone.ts", 'import { a } from "../babylon-character-engine";'))).toHaveLength(1);
     expect(renderStyleViolations(makeSourceFile("render/toon-reference.ts", 'import { Scene } from "@babylonjs/core/scene.js";'))).toEqual([]);

@@ -63,7 +63,7 @@ import {
   audioMimeType,
   normalizeMimeType,
   rasterMimeType,
-} from "./studio-project-archive-mime";
+} from "./save-first/studio-project-archive-mime";
 
 /**
  * Self-contained ToonStudio project archive.

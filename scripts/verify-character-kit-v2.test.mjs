@@ -289,7 +289,7 @@ async function buildKit(tweak = {}) {
 
   // 헤어: 2프리미티브(본체·끝 영역), 형태 length·volume, UV0 램프·UV1 흐름
   const shapes = tweak.shapes ?? {
-    "shape:length:+": (t, n) => [0, -0.003 * t, 0],
+    "shape:length:+": (t) => [0, -0.003 * t, 0],
     "shape:length:-": (t, n) => [0, 0.002 * t, 0].map((value, i) => value + 0 * n[i]),
     "shape:volume:+": (t, n) => n.map((value) => 0.003 * t * value),
     "shape:volume:-": (t, n) => n.map((value) => -0.001 * t * value),
