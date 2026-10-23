@@ -1,5 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { StudioCameraFollowModeController, studioAwayDozeMotion, studioBlinkScaleY, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitRockAngle, studioGaitShadowScale, studioGaitSquashScale, studioGaitSquashScaleY, studioIdleSwayOffsetX, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
+import {
+  StudioCameraFollowModeController,
+  studioAwayDozeMotion,
+  studioBlinkScaleY,
+  studioEffectiveGaitStride,
+  studioGaitBodyOffset,
+  studioGaitRockAngle,
+  studioGaitShadowAlpha,
+  studioGaitShadowScale,
+  studioGaitSquashScale,
+  studioGaitSquashScaleY,
+  studioIdleSwayOffsetX,
+  studioIdleUpperBodyBreathScale,
+  studioImageSpriteSubframeMotion,
+  studioPlayerLocomotionProfile,
+} from "./studio-virtual-space-locomotion-presentation";
 import { DEFAULT_STUDIO_MOTION_CONFIG, stepStudioVirtualSpaceMotion } from "./studio-virtual-space-motion";
 import { STUDIO_VIRTUAL_SPACE_WALK_SPEED } from "./studio-virtual-space-navigation";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
@@ -239,3 +254,50 @@ describe("자리 비움 졸기 모션", () => {
     expect(studioAwayDozeMotion(850, 0, true)).toEqual({ offsetY: 0, angleDegrees: 0 });
   });
 });
+
+describe("이미지 스프라이트 서브프레임 인비트위닝 및 접지 그림자 농도", () => {
+  it("접지 순간 그림자 알파가 가장 짙어지고 공중에서 옅어지며 정지 시 기본 알파를 유지한다", () => {
+    const stride = 108;
+    const planted = studioGaitShadowAlpha(27, stride, true, false, 0.28);
+    const airborne = studioGaitShadowAlpha(0, stride, true, false, 0.28);
+    expect(planted).toBeGreaterThan(0.28);
+    expect(airborne).toBeLessThan(0.28);
+    expect(studioGaitShadowAlpha(27, stride, false, false, 0.28)).toBe(0.28);
+    expect(studioGaitShadowAlpha(27, stride, true, true, 0.28)).toBe(0.28);
+  });
+
+  it("대기 상체 호흡은 부피를 보존하며 보행 중이거나 모션 감소 시 중립이다", () => {
+    const inhale = studioIdleUpperBodyBreathScale(950, 0, false, false, false);
+    expect(inhale.scaleY).toBeGreaterThan(1);
+    expect(inhale.scaleX).toBeLessThan(1);
+    expect(studioIdleUpperBodyBreathScale(950, 0, true, false, false)).toEqual({ scaleX: 1, scaleY: 1 });
+    expect(studioIdleUpperBodyBreathScale(950, 0, false, false, true)).toEqual({ scaleX: 1, scaleY: 1 });
+  });
+
+  it("서브프레임 인비트위닝은 프레임 경계에서 변위가 0이고 프레임 중앙에서 연속 아크와 교번 기울기를 만든다", () => {
+    const stride = 84;
+    // 프레임 0의 시작 경계 (distance = 0)
+    const boundary0 = studioImageSpriteSubframeMotion(0, stride, 4, true, false);
+    expect(boundary0.liftPx).toBeCloseTo(0, 4);
+    expect(boundary0.tiltDeg).toBeCloseTo(0, 4);
+    // 프레임 0의 정중앙 (distance = 84 / 8 = 10.5)
+    const mid0 = studioImageSpriteSubframeMotion(10.5, stride, 4, true, false);
+    expect(mid0.subframePhase).toBeCloseTo(0.5, 3);
+    expect(mid0.liftPx).toBeLessThan(0);
+    expect(mid0.tiltDeg).toBeGreaterThan(0);
+    expect(mid0.scaleY).toBeGreaterThan(1);
+    expect(mid0.scaleX).toBeLessThan(1);
+    // 프레임 1의 정중앙 (distance = 84 * 3 / 8 = 31.5) -> 기울기 부호 반전
+    const mid1 = studioImageSpriteSubframeMotion(31.5, stride, 4, true, false);
+    expect(mid1.tiltDeg).toBeLessThan(0);
+    // 정지 또는 모션 감소에서는 중립
+    expect(studioImageSpriteSubframeMotion(10.5, stride, 4, false, false)).toEqual({
+      subframePhase: 0,
+      liftPx: 0,
+      tiltDeg: 0,
+      scaleX: 1,
+      scaleY: 1,
+    });
+  });
+});
+

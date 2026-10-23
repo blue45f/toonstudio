@@ -180,3 +180,112 @@ export class StudioCameraFollowModeController {
     this.scale = scale;
   }
 }
+
+/**
+ * 보행 위상에 맞춘 접지 그림자 알파.
+ * 발이 땅을 딛는 순간(cos = -1) 그림자 농도가 깊어지고, 발이 떠오르는 순간(cos = 1) 옅어진다.
+ * 정지·벽·모션 감소에서는 기본 알파(`baseAlpha`)를 그대로 돌려준다.
+ */
+export function studioGaitShadowAlpha(
+  distance: number,
+  stride: number,
+  moving: boolean,
+  reducedMotion: boolean,
+  baseAlpha = 0.28,
+): number {
+  const safeBase = Number.isFinite(baseAlpha) ? Math.max(0, Math.min(1, baseAlpha)) : 0.28;
+  if (!moving || reducedMotion || !Number.isFinite(distance) || distance < 0 || !Number.isFinite(stride) || stride <= 0) {
+    return safeBase;
+  }
+  const phase = (distance / stride) * Math.PI * 4;
+  // cos(phase) === -1 일 때 두 발 접지(가장 짙음), +1 일 때 최고점(가장 옅음)
+  const modulation = -Math.cos(phase) * 0.045;
+  return Math.max(0.05, Math.min(0.95, Number((safeBase + modulation).toFixed(4))));
+}
+
+/**
+ * 대기(idle) 및 착석(sit) 상태에서 이미지 스프라이트가 석상처럼 멈춰 보이지 않도록
+ * 부피 보존 호흡 배율(들숨 시 세로 확장·가로 미세 수축)을 계산한다.
+ * 보행 중이거나 모션 감소일 때는 `{ scaleX: 1, scaleY: 1 }`을 반환한다.
+ */
+export function studioIdleUpperBodyBreathScale(
+  timeMs: number,
+  seed: number,
+  moving: boolean,
+  seated: boolean,
+  reducedMotion: boolean,
+): { readonly scaleX: number; readonly scaleY: number } {
+  if (moving || reducedMotion || !Number.isFinite(timeMs) || timeMs < 0) {
+    return { scaleX: 1, scaleY: 1 };
+  }
+  const safeSeed = Number.isFinite(seed) ? Math.max(0, Math.min(1, seed)) : 0;
+  const periodMs = seated ? 4_600 : 3_800;
+  const depthY = seated ? 0.0065 : 0.0095;
+  const wave = Math.sin(((timeMs / periodMs) + safeSeed) * Math.PI * 2);
+  return {
+    scaleX: Number((1 - wave * depthY * 0.42).toFixed(5)),
+    scaleY: Number((1 + wave * depthY).toFixed(5)),
+  };
+}
+
+export interface StudioImageSpriteSubframeMotion {
+  /** 프레임 내부 위상 (0~1). 프레임 전환 경계에서는 0 또는 1에 수렴. */
+  readonly subframePhase: number;
+  /** 프레임과 프레임 사이의 불연속 포즈 점프를 메우는 미세 수직 아크(px, 경계에서 0). */
+  readonly liftPx: number;
+  /** 좌우 발 교차에 맞춘 미세 상체 회전 인비트위닝(도, 경계에서 0). */
+  readonly tiltDeg: number;
+  /** 프레임 내부 탄성 부피 보존 가로 배율. */
+  readonly scaleX: number;
+  /** 프레임 내부 탄성 부피 보존 세로 배율. */
+  readonly scaleY: number;
+}
+
+/**
+ * 4프레임(또는 N프레임) PNG 이미지 스프라이트 전용 서브프레임(Sub-frame) 절차적 인비트위닝.
+ *
+ * 이미지 스프라이트는 프레임 수가 4장 내외로 적어 60~120Hz 화면에서 프레임이 바뀔 때
+ * 자세가 계단식으로 끊겨 보일 수 있다. 각 프레임의 고유 `originX/originY` 정합은 그대로 보존하면서,
+ * 프레임 내부 진행도 `u ∈ [0, 1)` 구간에서 경계값(`u=0, 1`)이 정확히 0인 사인 엔벨로프(`sin(πu)`)로
+ * 미세 리프트·상체 스윙·탄성 스케일을 보간해 60fps 이상의 부드러운 연속 동작감을 만든다.
+ */
+export function studioImageSpriteSubframeMotion(
+  distance: number,
+  stride: number,
+  frameCount = 4,
+  moving = true,
+  reducedMotion = false,
+): StudioImageSpriteSubframeMotion {
+  if (
+    !moving ||
+    reducedMotion ||
+    !Number.isFinite(distance) ||
+    distance < 0 ||
+    !Number.isFinite(stride) ||
+    stride <= 0 ||
+    !Number.isFinite(frameCount) ||
+    frameCount < 2
+  ) {
+    return { subframePhase: 0, liftPx: 0, tiltDeg: 0, scaleX: 1, scaleY: 1 };
+  }
+  const cycleProgress = ((distance % stride) + stride) % stride / stride;
+  const scaled = cycleProgress * frameCount;
+  const frameIndex = Math.floor(scaled);
+  const u = scaled - frameIndex;
+  // 프레임 교체 경계(u = 0, u = 1)에서 0이 되는 매끄러운 반파 엔벨로프
+  const envelope = Math.sin(u * Math.PI);
+  // 짝수/홀수 프레임(왼발/오른발 교차)에 따라 상체 미세 스윙 부호를 교번
+  const paritySign = frameIndex % 2 === 0 ? 1 : -1;
+  const liftPx = Number((-envelope * 0.95).toFixed(4));
+  const tiltDeg = Number((envelope * paritySign * 0.42).toFixed(4));
+  const scaleY = Number((1 + envelope * 0.0055).toFixed(5));
+  const scaleX = Number((1 - envelope * 0.0032).toFixed(5));
+  return {
+    subframePhase: Number(u.toFixed(4)),
+    liftPx,
+    tiltDeg,
+    scaleX,
+    scaleY,
+  };
+}
+

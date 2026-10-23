@@ -192,6 +192,8 @@ def test_deleted_receipt_erases_private_payload_and_files(client, runtime):
     ('requirements-models.txt', 'transformers', '5.10.1', '5.9.0'),
     ('requirements-models.txt', 'accelerate', '1.15.0', '1.14.0'),
     ('requirements-test.txt', 'pytest', '9.0.3', '9.0.2'),
+    ('requirements-core.txt', 'fastapi', '0.161.0', '0.128.2'),
+    ('requirements-core.txt', 'starlette', '1.3.1', '1.3.0'),
 ])
 def test_dependency_security_floor(manifest, package, patched, vulnerable):
     """Keep patched constraints without installing GPU packages or downloading models."""

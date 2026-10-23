@@ -15,6 +15,15 @@ import {
   resolveTranslationForDisplay,
 } from "@/shared/lib/i18n";
 
+import type {
+  StudioDialogueDetailCode,
+  StudioDialogueFdxLossDetail,
+  StudioDialogueInterchangeError,
+  StudioDialogueInterchangeWarning,
+  StudioDialogueLossCode,
+  StudioDialogueWarningCode,
+} from "../lettering/studio-dialogue-interchange";
+
 
 function resolveProducerError(
   key: string,
@@ -27,15 +36,6 @@ function resolveProducerError(
     Object.hasOwn(values, token) ? String(values[token]) : placeholder,
   );
 }
-
-import type {
-  StudioDialogueDetailCode,
-  StudioDialogueFdxLossDetail,
-  StudioDialogueInterchangeError,
-  StudioDialogueInterchangeWarning,
-  StudioDialogueLossCode,
-  StudioDialogueWarningCode,
-} from "../lettering/studio-dialogue-interchange";
 
 // === dialogue 구간 시작 ===
 registerI18nLocaleEntries("ko", {

@@ -11,6 +11,7 @@ import {
   LOCOMOTION_SHARP_TURN_RADIANS,
   LOCOMOTION_SQUASH_SCALE_MAX,
   LOCOMOTION_SQUASH_SCALE_MIN,
+  LOCOMOTION_STOP_SETTLE_DURATION_MS,
   locomotionDirectionalSquashStretch,
   locomotionSquashStretch,
   shortestAngleDelta,
@@ -19,6 +20,7 @@ import {
   stepFeelVelocity,
   stepFeelVelocityWithSkid,
   stepTurnAngleSmooth,
+  studioLocomotionStopSettle,
   turnSlowdownFactor,
 } from "./studio-virtual-space-locomotion-feel";
 
@@ -294,3 +296,38 @@ describe("각가속도 기반 회전 보간", () => {
     expect(stepTurnAngleSmooth(state, 2, 0, 150)).toBe(state);
   });
 });
+
+describe("정지 관성 세틀 (Stop-Settle Physics)", () => {
+  it("멈춘 직후 직전 속도에 비례해 무릎이 눌렸다가 감쇠 진동 후 원복한다", () => {
+    const fastSettle = studioLocomotionStopSettle(55, 210, 210, false);
+    const slowSettle = studioLocomotionStopSettle(55, 80, 210, false);
+    expect(fastSettle.offsetY).toBeGreaterThan(slowSettle.offsetY);
+    expect(fastSettle.scaleY).toBeLessThan(1);
+    expect(fastSettle.scaleX).toBeGreaterThan(1);
+    expect(fastSettle.leanDeg).toBeGreaterThan(0);
+
+    // 세틀 지속 시간이 지나면 완전히 중립으로 돌아온다
+    expect(studioLocomotionStopSettle(LOCOMOTION_STOP_SETTLE_DURATION_MS, 210, 210, false)).toEqual({
+      offsetY: 0,
+      scaleX: 1,
+      scaleY: 1,
+      leanDeg: 0,
+    });
+  });
+
+  it("아주 느린 정지나 reduced-motion에서는 세틀 변형이 없다", () => {
+    expect(studioLocomotionStopSettle(55, 10, 210, false)).toEqual({
+      offsetY: 0,
+      scaleX: 1,
+      scaleY: 1,
+      leanDeg: 0,
+    });
+    expect(studioLocomotionStopSettle(55, 210, 210, true)).toEqual({
+      offsetY: 0,
+      scaleX: 1,
+      scaleY: 1,
+      leanDeg: 0,
+    });
+  });
+});
+
