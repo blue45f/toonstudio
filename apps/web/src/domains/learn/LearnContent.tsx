@@ -18,7 +18,7 @@ import {
 import { LessonLab } from "./LessonLab";
 import { useLearningPractice } from "./use-learning-practice";
 import { useLearningProgress, type LearningStore } from "./use-learning-progress";
-import { learnStatusText } from "./learn-status-i18n";
+import { learnStatusText } from "./learn-status-i18n"; import { r44LearnStatusText } from "./r44-cat1-status-i18n";
 
 import "./learning.css";
 import "./learning-lesson.css";
@@ -405,7 +405,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
                     ? "스튜디오 실습까지 마쳤습니다. 아래 체크를 해제하면 실습 완료도 함께 풀립니다."
                     : missionStatus === "ready"
                       ? "체크리스트를 모두 채웠습니다. 스튜디오에서 실습을 마쳤으면 완료로 표시하세요."
-                      : "새 탭에서 열립니다. 기존 작업을 자동 변경하지 않습니다."}
+                      : r44LearnStatusText("r44cat1.learn.learnContent.missionIdleNote", "새 탭에서 열립니다. 기존 작업을 자동 변경하지 않습니다.")}
                 </p>
                 {practice.warning && <p className="learn-small" role="status">{practice.warning}</p>}
               </div>

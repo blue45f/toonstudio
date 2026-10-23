@@ -1,5 +1,5 @@
 import { Archive, CalendarClock, Flame, ShieldCheck, Snowflake } from "lucide-react";
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react"; import { r44LearnStatusText } from "./r44-cat1-status-i18n";
 
 import {
   STREAK_STORAGE_KEY,
@@ -79,7 +79,7 @@ export function StreakRecoveryPanel({ hasAccount = true }: { hasAccount?: boolea
       return;
     }
     setState(next);
-    setNotice(`${STREAK_TRACK_META[track].label} 휴재를 선언했어요. 그 기간은 기록이 끊기지 않습니다.`);
+    setNotice(r44LearnStatusText("r44cat1.learn.streakRecovery.hiatusDeclared", { track: STREAK_TRACK_META[track].label }, "{track} 휴재를 선언했어요. 그 기간은 기록이 끊기지 않습니다."));
   }
 
   function handleEndHiatus(track: StreakTrack, hiatusId: string) {
