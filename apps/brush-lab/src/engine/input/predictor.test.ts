@@ -4,11 +4,31 @@ import { predictCurvatureDampedSamples, predictSamples } from "./predictor";
 
 import type { ModeledSample } from "../core/types";
 
+/** 예측기가 읽는 x·y·tMs·pressure 만 의미 있고 나머지는 ModeledSample 계약을 채우는 중립값이다. */
+function sample(x: number, y: number, tMs: number, pressure: number): ModeledSample {
+  return {
+    x,
+    y,
+    tMs,
+    inputTMs: tMs,
+    pressure,
+    velocity: 0.5,
+    altitudeDeg: 90,
+    azimuthDeg: 0,
+    dirX: 1,
+    dirY: 0,
+    curvature: 0,
+    phase: "move",
+    source: "raw",
+    sourceIndex: 0,
+  };
+}
+
 describe("predictor & predictCurvatureDampedSamples", () => {
   const arcHistory: readonly ModeledSample[] = [
-    { x: 0, y: 0, tMs: 0, pressure: 0.6, source: "modeled" },
-    { x: 10, y: 2, tMs: 8, pressure: 0.65, source: "modeled" },
-    { x: 18, y: 8, tMs: 16, pressure: 0.7, source: "modeled" },
+    sample(0, 0, 0, 0.6),
+    sample(10, 2, 8, 0.65),
+    sample(18, 8, 16, 0.7),
   ];
 
   it("predictSamples linearly extrapolates from the last two samples", () => {
