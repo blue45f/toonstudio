@@ -1,5 +1,5 @@
 import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowLeft, ArrowRight, Boxes, Check, ClipboardCheck, Cpu, FileText, LayoutGrid, Network, Palette, PanelsTopLeft, Presentation, Save, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Boxes, Check, ClipboardCheck, Cpu, FileText, LayoutGrid, Network, Palette, PanelsTopLeft, Presentation, Save, Sparkles, type LucideIcon } from "lucide-react";
 
 import { AboutSectionNav } from "./AboutSectionNav";
 
@@ -23,6 +23,7 @@ import {
   WORKFLOW_HANDOFFS,
   WORKFLOW_STAGES,
   WORKFLOW_STAGE_ANCHORS,
+  workflowStageClip,
   type WorkflowStage,
   type WorkflowStageId,
 } from "@/domains/marketing/public/workflow-stages";
@@ -58,6 +59,7 @@ function WorkflowStagePanel({ stage, index, api }: {
   const bi = useBilingualLocalizer(SCOPE);
   const copy = bi(stage.ko, stage.en);
   const Icon = stage.icon;
+  const clip = workflowStageClip(stage.id);
   const previous = WORKFLOW_STAGES[index - 1];
   const next = WORKFLOW_STAGES[index + 1];
   const go = (target: WorkflowStage) => {
@@ -65,11 +67,35 @@ function WorkflowStagePanel({ stage, index, api }: {
     focusStageTitle(target.id);
   };
   return (
-    <article id={`workflow-stage-${index + 1}`} className={`grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-center lg:gap-10 ${INTRO_SCROLL_MARGIN}`}>
-      <div className="min-w-0 lg:order-2">
+    <article id={`workflow-stage-${index + 1}`} className={`grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-center lg:gap-10 ${INTRO_SCROLL_MARGIN} ${clip ? "relative isolate" : ""}`}>
+      {/* 단계 배경 클립: 단계 주제를 그린 생성형 AI 영상이라 실제 제품 화면이
+          아니다. 장식이라 본문 흐름에서 빼고, 움직임 최소화를 선호하면 숨기며,
+          성격은 아래 배지로 밝힌다(다른 장식 영상 표면과 같은 계약). */}
+      {clip ? (
+        <>
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+            tabIndex={-1}
+            src={clip.src}
+            width={clip.width}
+            height={clip.height}
+            className="absolute inset-0 -z-10 h-full w-full object-cover opacity-40 motion-reduce:hidden"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-gradient-to-br from-panel/85 via-panel/70 to-panel/45"
+          />
+        </>
+      ) : null}
+      <div className="relative min-w-0 lg:order-2">
         <WorkflowIllustration kind={stage.art} decorative sizes="(max-width: 1023px) calc(100vw - 32px), 24rem" />
       </div>
-      <div className="min-w-0">
+      <div className="relative min-w-0">
         <p className="flex items-center gap-2 text-sm font-bold text-accent">
           <Icon size={17} aria-hidden="true" />
           {bi(`단계 ${index + 1} / ${WORKFLOW_STAGES.length}`, `Stage ${index + 1} of ${WORKFLOW_STAGES.length}`)}
@@ -99,6 +125,12 @@ function WorkflowStagePanel({ stage, index, api }: {
             </button>
           ) : null}
         </div>
+        {clip ? (
+          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
+            <Sparkles size={13} aria-hidden="true" />
+            {bi("생성형 AI 배경 영상", "AI-generated backdrop")}
+          </span>
+        ) : null}
       </div>
     </article>
   );

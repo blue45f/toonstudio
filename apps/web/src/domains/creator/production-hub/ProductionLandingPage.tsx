@@ -30,6 +30,7 @@ import {
 import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
+import { ProductionLandingBackdropBadge, ProductionLandingBackdropMedia } from "./ProductionLandingBackdrop";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
@@ -513,7 +514,10 @@ export function ProductionLandingPage() {
         ];
       })} />
       <div className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
-        <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent-soft via-panel to-canvas p-6 sm:p-8 lg:p-10">
+        <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-6 sm:p-8 lg:p-10">
+          {/* 배경은 생성형 AI로 만든 개념 영상이다. 장식이라 본문 흐름에서 빼고,
+              움직임 최소화를 선호하면 숨긴다(다른 표면의 장식 영상 계약과 동일). */}
+          <ProductionLandingBackdropMedia />
           <span aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-accent/10 blur-3xl" />
           <span aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-10 size-96 rounded-full bg-cool/10 blur-3xl" />
           <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -547,6 +551,9 @@ export function ProductionLandingPage() {
                 <CloudOff className="size-3.5 shrink-0" aria-hidden="true" />
                 {bt("샘플은 로그인·서버 없이 이 브라우저에서만 동작하고, 사람·일정·원고는 모두 예시입니다.", "The sample runs only in this browser without signing in; all people, dates and pages are examples.")}
               </p>
+              <div className="mt-3">
+                <ProductionLandingBackdropBadge />
+              </div>
             </div>
             <div className="pb-6">
               <HeroPreview />

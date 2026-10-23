@@ -198,6 +198,35 @@ export const WORKFLOW_STAGE_ANCHORS: Readonly<Record<string, WorkflowStageId>> =
   WORKFLOW_STAGES.map((stage, index) => [`#workflow-stage-${index + 1}`, stage.id]),
 );
 
+export interface WorkflowStageClip {
+  readonly stageId: WorkflowStageId;
+  readonly src: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * 단계 패널의 배경 클립 — 단계 주제를 그린 생성형 AI 영상이라 실제 제품
+ * 화면이 아니다. 자산 인벤토리의 정본은 domains/marketing/tool-clips.ts와
+ * product-tour-clips.ts이고, 여기서는 단계와의 매핑만 소유한다.
+ * - world(캐릭터·세계): 캐릭터 셰이퍼 클립 — 캐릭터 기준을 세우는 단계라서다.
+ * - script(콘티·컷): 컷툰 클립 — 대본을 컷으로 나누는 단계라서다.
+ * - art(작화): 투어 전환용으로 만든 드로잉 클립을 재배선했다.
+ * - release(연재·운영): 게시·연재 클립 — 연재 캘린더와 회차 운영 단계라서다.
+ * plan·review·save 단계는 주제가 1:1로 맞는 클립이 없어 배경을 두지 않는다
+ * (plan의 스토리 클립과 review의 협업 클립은 /features 카테고리 헤더가 쓴다).
+ */
+export const WORKFLOW_STAGE_CLIPS: readonly WorkflowStageClip[] = [
+  { stageId: "world", src: "/brand/tool-clips/tool-shaper.mp4", width: 1344, height: 768 },
+  { stageId: "script", src: "/brand/tool-clips/tool-comic.mp4", width: 1344, height: 768 },
+  { stageId: "art", src: "/brand/product-tour/tour-transition-1-drawing.mp4", width: 1344, height: 768 },
+  { stageId: "release", src: "/brand/tool-clips/tool-publish.mp4", width: 1344, height: 768 },
+];
+
+export function workflowStageClip(stageId: string): WorkflowStageClip | undefined {
+  return WORKFLOW_STAGE_CLIPS.find((clip) => clip.stageId === stageId);
+}
+
 /** 역할이 나뉘어도 흐름이 이어지도록 각 역할이 다음 사람에게 넘기는 결과물. */
 export const WORKFLOW_HANDOFFS = [
   { id: "story", ko: { title: "스토리", detail: "대본·감정선·장면 목적" }, en: { title: "Story", detail: "Script, emotional arc and scene goal" } },

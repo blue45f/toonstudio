@@ -34,3 +34,41 @@
   outline-offset: -2px;
   box-shadow: none;
 }
+
+/* 제작 흐름 '2D·3D 제작' 단계 카드의 배경 클립 — 생성형 AI 영상을 카드 맨 뒤에
+   깔고 카드색 스크림으로 본문 가독성을 지킨다. 성격은 카드 안 배지로 밝히고,
+   움직임 최소화·고대비에서는 다른 장식 영상 표면과 같이 영상 자체를 숨긴다. */
+.studio-flow-card__media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.studio-flow-card__media video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.4;
+}
+
+.studio-flow-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg,
+    color-mix(in srgb, var(--cf-card) 82%, transparent),
+    color-mix(in srgb, var(--cf-card) 55%, transparent));
+}
+
+.studio-flow-card--clip > :not(.studio-flow-card__media) {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-flow-card__media { display: none; }
+}
+
+@media (prefers-contrast: more), (forced-colors: active) {
+  .studio-flow-card__media { display: none; }
+}
