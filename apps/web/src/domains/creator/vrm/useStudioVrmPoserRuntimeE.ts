@@ -57,9 +57,7 @@ import {
   captureStudioVrmRgba,
   encodeStudioVrmCapturePngDataUrl,
 } from "./studio-vrm-raster-capture";
-import {
-  createStudioVrmRigProfileSelection,
-} from "./studio-vrm-rig-profile";
+import { createStudioVrmRigProfileSelection } from "./studio-vrm-rig-profile";
 import {
   STUDIO_VRM_HUMANOID_BONES,
   STUDIO_VRM_MODEL_MAX_BYTES,
@@ -73,9 +71,7 @@ import {
   type StudioVrmSurfacePaintSettings,
   type StudioVrmIkConstraint,
 } from "./studio-vrm-scene-document";
-import {
-  serializeSceneProps,
-} from "./studio-vrm-scene-props";
+import { serializeSceneProps } from "./studio-vrm-scene-props";
 import {
   WARDROBE_SLOTS,
   WARDROBE_SLOT_LABELS,
@@ -106,6 +102,9 @@ import {
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { VrmLibraryEntry } from "./vrm-library";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import {
+  resolveStudioVrmTexturePaintArtifactErrorFromCause,
+} from "../status-i18n/studio-producer-error-i18n-vrm-paint-artifact";
 
 export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
   const {
@@ -820,7 +819,8 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
             captureGeneration === insertCaptureGenerationRef.current
             && captureRequest === captureRequestRef.current
           ) {
-            setError(getErrorMessage(caughtError, frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureAddFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
+            setError(resolveStudioVrmTexturePaintArtifactErrorFromCause(caughtError)
+              ?? getErrorMessage(caughtError, frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureAddFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
             setStatus(vrmRef.current ? "ready" : "error");
           }
         } finally {
