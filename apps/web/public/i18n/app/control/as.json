@@ -1,5 +1,7 @@
 {
   "control.language.label": "ভাষা",
+  "control.language.group.translated": "উচ্চ কভাৰেজ অনুবাদ",
+  "control.language.group.englishBase": "স্বয়ংক্ৰিয় অনুবাদ · ইংৰাজী fallback",
   "control.sound.enable": "শব্দৰ প্ৰভাৱ সক্ষম কৰক",
   "control.sound.disable": "শব্দ প্ৰতিক্ৰিয়া নিষ্ক্ৰিয় কৰক",
   "control.theme.dark": "লাইট মোডলৈ সঞ্চালন কৰক",
@@ -8,7 +10,5 @@
   "control.settings.close": "বন্ধ ছেটিংছ",
   "control.cluster.settings": "শব্দ, থিম, ভাষা নিয়ন্ত্ৰণ",
   "control.cluster.open": "খোলা ছেটিংছ",
-  "control.cluster.tooltip": "শব্দ, বিষয়বস্তু আৰু ভাষাৰ ছেটিং",
-  "control.language.group.translated": "উচ্চ কভাৰেজ অনুবাদ",
-  "control.language.group.englishBase": "স্বয়ংক্ৰিয় অনুবাদ · ইংৰাজী fallback"
+  "control.cluster.tooltip": "শব্দ, বিষয়বস্তু আৰু ভাষাৰ ছেটিং"
 }

@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "એકાઉન્ટ ધારક",
   "revenue.payout.holderPlaceholder": "ધારકનું નામ",
   "revenue.payout.mockNote": "હાલમાં આ એક મોક વિનંતી છે. વાસ્તવિક ચુકવણીઓ બેકએન્ડ સેટલમેન્ટ પાઇપલાઇન દ્વારા પ્રક્રિયા થાય છે.",
+  "revenue.payout.notAvailableBody": "ચુકવણી વિનંતીઓ હજુ ખરેખર લેવામાં આવતી નથી, અને તમે દાખલ કરો છો તે કોઈ એકાઉન્ટ વિગતો સંગ્રહિત થતી નથી. વિનંતીઓ ખુલશે ત્યારે તમે અહીંથી જ અરજી કરી શકશો અને તમારો વિનંતી ઇતિહાસ અને સ્થિતિ ટ્રેક કરી શકશો.",
+  "revenue.payout.notAvailableTitle": "ચુકવણી વિનંતીઓ હજુ ઉપલબ્ધ નથી",
   "revenue.payout.submit": "ચુકવણીની વિનંતી કરો",
   "revenue.payout.title": "ચુકવણી",
   "revenue.settlement.belowMinimum": "{min} થી ઉપાડ ઉપલબ્ધ",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "અર્લી એક્સેસ",
   "revenue.source.market": "માર્કેટ વેચાણ",
   "revenue.source.membership": "સભ્યપદ",
-  "revenue.source.tips": "ટિપ્સ",
-  "revenue.payout.notAvailableBody": "ચુકવણી વિનંતીઓ હજુ ખરેખર લેવામાં આવતી નથી, અને તમે દાખલ કરો છો તે કોઈ એકાઉન્ટ વિગતો સંગ્રહિત થતી નથી. વિનંતીઓ ખુલશે ત્યારે તમે અહીંથી જ અરજી કરી શકશો અને તમારો વિનંતી ઇતિહાસ અને સ્થિતિ ટ્રેક કરી શકશો.",
-  "revenue.payout.notAvailableTitle": "ચુકવણી વિનંતીઓ હજુ ઉપલબ્ધ નથી"
+  "revenue.source.tips": "ટિપ્સ"
 }

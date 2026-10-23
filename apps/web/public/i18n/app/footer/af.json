@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web roman nuus",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rangskikking beleid",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Sitemap",
   "footer.link.settings": "Instellings",
   "footer.link.support": "Ondersteuning",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hostingdiens",
   "footer.business.serviceType": "Platformtipe",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Alle regte voorbehou.",
-  "footer.logoTag": "Skep jou volgende storie",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Skep jou volgende storie"
 }

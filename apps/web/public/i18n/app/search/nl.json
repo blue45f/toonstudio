@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Maak alles leeg .",
   "search.explorer.recent.delete": "Verwijder het recente verzoek {query}",
   "search.explorer.recent.searchAgain": "Nogmaals zoeken naar recente zoekwoorden",
+  "search.explorer.suggestions.popular": "Populaire zoekopdrachten",
+  "search.explorer.suggestions.genres": "Aanbevolen genres",
+  "search.explorer.suggestions.searchFor": "Zoeken naar {query}",
+  "search.explorer.suggestions.genreFilter": "Verfijn op genre {genre}",
+  "search.explorer.suggestions.loading": "Voorgestelde zoekopdrachten laden",
+  "search.explorer.suggestions.error": "Voorgestelde zoekopdrachten konden niet worden geladen. Probeer het over een moment opnieuw.",
+  "search.explorer.suggestions.empty": "Nu geen suggesties. Typ zelf een titel, auteur of tag.",
   "search.explorer.catalog.label": "Catalogus",
   "search.explorer.catalog.empty": "De catalogus is leeg .",
   "search.explorer.currentFilter": "Huidige filters",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}m geleden",
   "search.explorer.time.hoursAgo": "{count} uur geleden",
   "search.explorer.time.daysAgo": "{count} dagen geleden",
-  "search.explorer.loadMore": "Meer laden",
-  "search.explorer.suggestions.popular": "Populaire zoekopdrachten",
-  "search.explorer.suggestions.genres": "Aanbevolen genres",
-  "search.explorer.suggestions.searchFor": "Zoeken naar {query}",
-  "search.explorer.suggestions.genreFilter": "Verfijn op genre {genre}",
-  "search.explorer.suggestions.loading": "Voorgestelde zoekopdrachten laden",
-  "search.explorer.suggestions.error": "Voorgestelde zoekopdrachten konden niet worden geladen. Probeer het over een moment opnieuw.",
-  "search.explorer.suggestions.empty": "Nu geen suggesties. Typ zelf een titel, auteur of tag."
+  "search.explorer.loadMore": "Meer laden"
 }

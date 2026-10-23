@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "I-clear ang lahat",
   "search.explorer.recent.delete": "I-delete ang kamakailang query {query}",
   "search.explorer.recent.searchAgain": "Maghanap muli mula sa mga kamakailang keyword",
+  "search.explorer.suggestions.popular": "Mga sikat na paghahanap",
+  "search.explorer.suggestions.genres": "Mga inirerekomendang genre",
+  "search.explorer.suggestions.searchFor": "Hanapin ang {query}",
+  "search.explorer.suggestions.genreFilter": "Paliitin ayon sa genre na {genre}",
+  "search.explorer.suggestions.loading": "Nilo-load ang mga iminumungkahing paghahanap",
+  "search.explorer.suggestions.error": "Hindi ma-load ang mga iminumungkahing paghahanap. Subukan muli pagkalipas ng ilang sandali.",
+  "search.explorer.suggestions.empty": "Walang mungkahi sa ngayon. Subukang mag-type ng pamagat, may-akda, o tag.",
   "search.explorer.catalog.label": "Katalog",
   "search.explorer.catalog.empty": "Ang katalogo ay walang laman",
   "search.explorer.currentFilter": "Mga filter ng kasalukuyang",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} minuto na ang nakalipas",
   "search.explorer.time.hoursAgo": "{count} oras na ang nakalipas",
   "search.explorer.time.daysAgo": "{count} araw na ang nakalipas",
-  "search.explorer.loadMore": "I-load ang higit pa",
-  "search.explorer.suggestions.popular": "Mga sikat na paghahanap",
-  "search.explorer.suggestions.genres": "Mga inirerekomendang genre",
-  "search.explorer.suggestions.searchFor": "Hanapin ang {query}",
-  "search.explorer.suggestions.genreFilter": "Paliitin ayon sa genre na {genre}",
-  "search.explorer.suggestions.loading": "Nilo-load ang mga iminumungkahing paghahanap",
-  "search.explorer.suggestions.error": "Hindi ma-load ang mga iminumungkahing paghahanap. Subukan muli pagkalipas ng ilang sandali.",
-  "search.explorer.suggestions.empty": "Walang mungkahi sa ngayon. Subukang mag-type ng pamagat, may-akda, o tag."
+  "search.explorer.loadMore": "I-load ang higit pa"
 }

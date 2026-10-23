@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web roman nyheter",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rangordning politikken",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Sitemap",
   "footer.link.settings": "Innstillinger",
   "footer.link.support": "Støtte",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hostingstjeneste",
   "footer.business.serviceType": "Plattformstype",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Alle rettigheter forbeholdt.",
-  "footer.logoTag": "Skriv din neste historie",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Skriv din neste historie"
 }

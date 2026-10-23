@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days}-ଦିନ ସମର୍ଥକ ଶୀଘ୍ର ପ୍ରବେଶ",
   "paywall.creatorPage.preview": "ପୂର୍ବାବଲୋକନ",
   "paywall.creatorPage.save": "ନୀତି ସଂରକ୍ଷଣ କରନ୍ତୁ",
+  "paywall.creatorPage.statusDaysRange": "ଶୀଘ୍ର ପ୍ରବେଶ {min}–{max} ଦିନ",
+  "paywall.creatorPage.statusDaysSingle": "ଶୀଘ୍ର ପ୍ରବେଶ {days} ଦିନ",
+  "paywall.creatorPage.statusSummary": "{total}ଟି ନୀତି · {active} ଚାଲୁ",
   "paywall.creatorPage.subtitle": "ଶୀଘ୍ର ପ୍ରବେଶ ସେଟ୍ କରନ୍ତୁ: ପ୍ରଥମେ ସମର୍ଥକ, N ଦିନ ପରେ ସମସ୍ତଙ୍କ ପାଇଁ ମାଗଣା।",
   "paywall.creatorPage.title": "ଶୀଘ୍ର ପ୍ରବେଶ",
   "paywall.creatorPage.titleIdLabel": "ଶୀର୍ଷକ ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "ପାଠକ ଦୃଶ୍ୟ ପୂର୍ବାବଲୋକନ",
   "paywall.titleNotice.body": "ଏହି ଶୀର୍ଷକ {days} ଦିନ ଶୀଘ୍ର ସମର୍ଥକଙ୍କ ପାଇଁ ପ୍ରକାଶ ପାଏ। ଆପଣ ଅପେକ୍ଷା କଲେ ଏହା ମାଗଣା ହୁଏ।",
   "paywall.titleNotice.label": "ଶୀଘ୍ର ପ୍ରବେଶ ବିଜ୍ଞପ୍ତି",
-  "paywall.titleNotice.title": "ସମର୍ଥକ ଶୀଘ୍ର ପ୍ରବେଶ କାର୍ଯ୍ୟକାରୀ",
-  "paywall.creatorPage.statusDaysRange": "ଶୀଘ୍ର ପ୍ରବେଶ {min}–{max} ଦିନ",
-  "paywall.creatorPage.statusDaysSingle": "ଶୀଘ୍ର ପ୍ରବେଶ {days} ଦିନ",
-  "paywall.creatorPage.statusSummary": "{total}ଟି ନୀତି · {active} ଚାଲୁ"
+  "paywall.titleNotice.title": "ସମର୍ଥକ ଶୀଘ୍ର ପ୍ରବେଶ କାର୍ଯ୍ୟକାରୀ"
 }

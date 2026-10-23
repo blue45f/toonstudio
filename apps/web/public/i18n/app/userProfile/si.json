@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "නිර්මාණය කරන ලද කෘති",
   "userProfile.tabs.series": "ශ් රේණිය",
   "userProfile.works.empty": "මේ පරිශීලකයාට තවම පොදු වැඩ නෑ.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "මේ පරිශීලකයාට තවම සීරීස් එකක් නෑ.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profile එක load කරන්න බැරි උනා.",
   "userProfile.authorFallback": "පරිශීලකයා",
   "userProfile.metaTemplate": "{author} පැතිකඩ · {reviews} සමාලෝචන · {works} වැඩ · සාමාන් ය ශ් රේණිගත කිරීම {avg}  ටොන් ස්පෙක්ට් රෝම.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "පැතිකඩ අන්තර්ගතය",
   "userProfile.refresh": "නවීකරණය",
   "userProfile.emptyReviews": "මේ පරිශීලකයා විසින් තවමත් ප් රකාශයට පත්කරන ලද සමාලෝචන නැහැ.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "સભ્યો",
   "membership.creatorPage.statMonthly": "માસિક આવર્તક",
   "membership.creatorPage.statTiers": "સક્રિય ટિયર",
+  "membership.creatorPage.statusActive": "વાચક સાઇન-અપ સ્ક્રીન પર {count} ટિયર લાઇવ છે",
   "membership.creatorPage.subtitle": "ચાહક મેમ્બરશિપ ટિયર બનાવો અને માસિક સબ્સ્ક્રિપ્શન આવક ટ્રૅક કરો.",
   "membership.creatorPage.tierList": "મેમ્બરશિપ ટિયર",
   "membership.creatorPage.tierMembers": "{count} સભ્યો",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "ચાહકો દર મહિને ચૂકવે છે તે રકમ.",
   "membership.tierEditor.priceLabel": "માસિક કિંમત (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "સાચવો",
-  "membership.creatorPage.statusActive": "વાચક સાઇન-અપ સ્ક્રીન પર {count} ટિયર લાઇવ છે"
+  "membership.tierEditor.save": "સાચવો"
 }

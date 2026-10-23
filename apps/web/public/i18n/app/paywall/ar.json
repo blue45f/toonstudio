@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "وصول مبكر للداعمين لمدة {days} يوم",
   "paywall.creatorPage.preview": "معاينة",
   "paywall.creatorPage.save": "حفظ السياسة",
+  "paywall.creatorPage.statusDaysRange": "وصول مبكر من {min} إلى {max} يوم",
+  "paywall.creatorPage.statusDaysSingle": "وصول مبكر لمدة {days} يوم",
+  "paywall.creatorPage.statusSummary": "{total} سياسة · {active} مفعّلة",
   "paywall.creatorPage.subtitle": "أعدّ الوصول المبكر: للداعمين أولًا، ومجاني للجميع بعد عدد من الأيام.",
   "paywall.creatorPage.title": "الوصول المبكر",
   "paywall.creatorPage.titleIdLabel": "معرّف العمل",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "معاينة عرض القارئ",
   "paywall.titleNotice.body": "يُتاح هذا العمل للداعمين قبل {days} يوم. ويصبح مجانيًا إذا انتظرت.",
   "paywall.titleNotice.label": "إشعار الوصول المبكر",
-  "paywall.titleNotice.title": "الوصول المبكر للداعمين قيد التشغيل",
-  "paywall.creatorPage.statusDaysRange": "وصول مبكر من {min} إلى {max} يوم",
-  "paywall.creatorPage.statusDaysSingle": "وصول مبكر لمدة {days} يوم",
-  "paywall.creatorPage.statusSummary": "{total} سياسة · {active} مفعّلة"
+  "paywall.titleNotice.title": "الوصول المبكر للداعمين قيد التشغيل"
 }

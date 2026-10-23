@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Rekeninghouder",
   "revenue.payout.holderPlaceholder": "Naam van houder",
   "revenue.payout.mockNote": "Dit is voorlopig een testverzoek. Echte uitbetalingen worden verwerkt door de afrekeningspijplijn in de backend.",
+  "revenue.payout.notAvailableBody": "Uitbetalingsverzoeken worden nog niet echt ontvangen en rekeninggegevens die je invoert, worden niet opgeslagen. Zodra verzoeken opengaan, kun je hier direct aanvragen en je verzoekgeschiedenis en -status volgen.",
+  "revenue.payout.notAvailableTitle": "Uitbetalingsverzoeken zijn nog niet beschikbaar",
   "revenue.payout.submit": "Uitbetaling aanvragen",
   "revenue.payout.title": "Uitbetaling",
   "revenue.settlement.belowMinimum": "Beschikbaar vanaf {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Vroege toegang",
   "revenue.source.market": "Marktverkopen",
   "revenue.source.membership": "Lidmaatschap",
-  "revenue.source.tips": "Fooien",
-  "revenue.payout.notAvailableBody": "Uitbetalingsverzoeken worden nog niet echt ontvangen en rekeninggegevens die je invoert, worden niet opgeslagen. Zodra verzoeken opengaan, kun je hier direct aanvragen en je verzoekgeschiedenis en -status volgen.",
-  "revenue.payout.notAvailableTitle": "Uitbetalingsverzoeken zijn nog niet beschikbaar"
+  "revenue.source.tips": "Fooien"
 }

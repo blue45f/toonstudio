@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Created works",
   "userProfile.tabs.series": "Series",
   "userProfile.works.empty": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "️️️️️️️️️️️️️️️",
   "userProfile.authorFallback": "Хэрэглэгч",
   "userProfile.metaTemplate": "{author} profile · {reviews} reviews · {works} works · avg rating {avg}  ToonStudio",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profil",
   "userProfile.refresh": "Refresh",
   "userProfile.emptyReviews": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

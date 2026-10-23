@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Vytvořené díla",
   "userProfile.tabs.series": "Série",
   "userProfile.works.empty": "Tento uživatel zatím nemá žádné veřejné práce.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Tento uživatel ještě nemá žádnou sérii.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profil není možné načítat.",
   "userProfile.authorFallback": "Uživatel",
   "userProfile.metaTemplate": "Profil {author} · {reviews} recenze · {works} práce · rating {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Obsah profilu",
   "userProfile.refresh": "Oživení",
   "userProfile.emptyReviews": "Žádné recenze zveřejněné tímto uživatelem.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

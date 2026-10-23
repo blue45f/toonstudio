@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Hindi natagpuan ang pahina",
-  "page.notFound.message": "Suriin muli ang URL o suriin ang mga pamagat mula sa home page.",
-  "page.notFound.home": "Pumunta ka sa bahay",
   "page.events.board.community": "Board ng komunidad",
   "page.events.board.official": "Mga opisyal na event",
   "page.events.board.title": "Listahan ng mga event",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Tingnan ang mga benepisyo ng beta",
   "page.events.hero.secondary": "Board ng mga event ng komunidad",
   "page.events.hero.title": "Board ng mga event",
+  "page.notFound.home": "Pumunta ka sa bahay",
+  "page.notFound.message": "Suriin muli ang URL o suriin ang mga pamagat mula sa home page.",
   "page.notFound.quip.1": "Ha? Hindi pa naiguguhit ang panel na ito!",
   "page.notFound.quip.2": "Naligaw ka bago pa man matuyo ang tinta.",
   "page.notFound.quip.3": "Kita-kits sa susunod na episode… siguro!",
   "page.notFound.quip.4": "Iginuguhit ng artist ang pahinang ito ngayon mismo.",
-  "page.notFound.tapHint": "Tapikin ang mga numero"
+  "page.notFound.tapHint": "Tapikin ang mga numero",
+  "page.notFound.title": "Hindi natagpuan ang pahina"
 }

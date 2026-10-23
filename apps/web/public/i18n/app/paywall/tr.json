@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} günlük destekçi erken erişimi",
   "paywall.creatorPage.preview": "Önizleme",
   "paywall.creatorPage.save": "Politikayı kaydet",
+  "paywall.creatorPage.statusDaysRange": "erken erişim {min}–{max} gün",
+  "paywall.creatorPage.statusDaysSingle": "erken erişim {days} gün",
+  "paywall.creatorPage.statusSummary": "{total} politika · {active} etkin",
   "paywall.creatorPage.subtitle": "Erken erişimi ayarlayın: önce destekçiler, N gün sonra herkes için ücretsiz.",
   "paywall.creatorPage.title": "Erken Erişim",
   "paywall.creatorPage.titleIdLabel": "Eser Kimliği",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Okuyucu görünümü önizlemesi",
   "paywall.titleNotice.body": "Bu eser, destekçilere {days} gün erken yayınlanır. Beklerseniz ücretsiz olur.",
   "paywall.titleNotice.label": "Erken erişim bildirimi",
-  "paywall.titleNotice.title": "Destekçi erken erişimi etkin",
-  "paywall.creatorPage.statusDaysRange": "erken erişim {min}–{max} gün",
-  "paywall.creatorPage.statusDaysSingle": "erken erişim {days} gün",
-  "paywall.creatorPage.statusSummary": "{total} politika · {active} etkin"
+  "paywall.titleNotice.title": "Destekçi erken erişimi etkin"
 }

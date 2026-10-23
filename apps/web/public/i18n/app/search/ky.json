@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Бардыгын тазалагыла",
   "search.explorer.recent.delete": "Жакындагы суроону өчүрүү {query}",
   "search.explorer.recent.searchAgain": "Жакындагы ачкыч сөздөрдөн кайрадан издөө",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Каталог",
   "search.explorer.catalog.empty": "Каталог бош",
   "search.explorer.currentFilter": "Учурдагы чыпкалар",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}m мурун",
   "search.explorer.time.hoursAgo": "{count}h мурун",
   "search.explorer.time.daysAgo": "{count}d мурун",
-  "search.explorer.loadMore": "Дагы жүктөп алуу",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Дагы жүктөп алуу"
 }

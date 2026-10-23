@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Izveidotie darbi",
   "userProfile.tabs.series": "Sērija",
   "userProfile.works.empty": "Šam lietotājam vēl nav publisku darbu.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Šam lietotājam vēl nav sērijas.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profils nav iespējams iekļūst.",
   "userProfile.authorFallback": "lietotājs",
   "userProfile.metaTemplate": "{author} profils · {reviews} atsauksmes · {works} darbi · avg novērtējums {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profilu saturs",
   "userProfile.refresh": "Izdzīvojums",
   "userProfile.emptyReviews": "Šis lietotājs vēl nav publicējis komentārus.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web roman haberleri",
   "footer.link.about": "ToonStudio Hakkında",
   "footer.link.guide": "Renkleme politikası",
+  "footer.link.features": "Tüm özelliklere tek bakışta",
   "footer.link.sitemap": "Site haritası",
   "footer.link.settings": "Ayarlar",
   "footer.link.support": "Destek",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Konutlama hizmeti",
   "footer.business.serviceType": "Platform tipi",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Tüm hakları saklıdır.",
-  "footer.logoTag": "Bir sonraki hikâyenizi anlatın .",
-  "footer.link.features": "Tüm özelliklere tek bakışta"
+  "footer.logoTag": "Bir sonraki hikâyenizi anlatın ."
 }

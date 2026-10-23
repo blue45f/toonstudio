@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "صاحب الحساب",
   "revenue.payout.holderPlaceholder": "اسم صاحب الحساب",
   "revenue.payout.mockNote": "هذا طلب وهمي في الوقت الحالي. تُعالج الدفعات الحقيقية بواسطة خط أنابيب التسوية في الخادم الخلفي.",
+  "revenue.payout.notAvailableBody": "لا تُستلم طلبات الدفع فعلياً بعد، وأي تفاصيل حساب تدخلها لا تُحفظ. عندما تُفتح الطلبات، ستتمكن من التقديم هنا مباشرة وتتبع سجل طلباتك وحالتها.",
+  "revenue.payout.notAvailableTitle": "طلبات الدفع غير متاحة بعد",
   "revenue.payout.submit": "طلب الدفع",
   "revenue.payout.title": "الدفع",
   "revenue.settlement.belowMinimum": "متاح من {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "الوصول المبكر",
   "revenue.source.market": "مبيعات السوق",
   "revenue.source.membership": "العضوية",
-  "revenue.source.tips": "الإكراميات",
-  "revenue.payout.notAvailableBody": "لا تُستلم طلبات الدفع فعلياً بعد، وأي تفاصيل حساب تدخلها لا تُحفظ. عندما تُفتح الطلبات، ستتمكن من التقديم هنا مباشرة وتتبع سجل طلباتك وحالتها.",
-  "revenue.payout.notAvailableTitle": "طلبات الدفع غير متاحة بعد"
+  "revenue.source.tips": "الإكراميات"
 }

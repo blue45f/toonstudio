@@ -30,6 +30,7 @@
   "footer.link.news": "أخبار روايات الـ Toon & web",
   "footer.link.about": "حول ToonStudio",
   "footer.link.guide": "سياسة التصنيف",
+  "footer.link.features": "جميع الميزات في لمحة واحدة",
   "footer.link.sitemap": "خريطة الموقع",
   "footer.link.settings": "الإعدادات",
   "footer.link.support": "الدعم",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "خدمة الاستضافة",
   "footer.business.serviceType": "نوع المنصة",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). جميع الحقوق محفوظة.",
-  "footer.logoTag": "إخلق قصتك التالية",
-  "footer.link.features": "جميع الميزات في لمحة واحدة"
+  "footer.logoTag": "إخلق قصتك التالية"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Yaratılmış eserler",
   "userProfile.tabs.series": "Seri",
   "userProfile.works.empty": "Bu kullanıcı henüz kamu eserleri yok.",
+  "userProfile.works.error": "Oluşturulan eserler yüklenemedi. Lütfen tekrar deneyin.",
   "userProfile.series.empty": "Bu kullanıcı henüz bir seriye sahip değil.",
+  "userProfile.series.error": "Seriler yüklenemedi. Lütfen tekrar deneyin.",
   "userProfile.fetchError": "Profili yükleyemiyorum.",
   "userProfile.authorFallback": "Kullanıcı",
   "userProfile.metaTemplate": "{author} profil · {reviews} yorumları · {works} çalışmaları · AVG derecelendirme {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profil içeriği",
   "userProfile.refresh": "Yenilenme",
   "userProfile.emptyReviews": "Bu kullanıcı tarafından henüz yayınlanan yorumlar yok.",
-  "userProfile.works.error": "Oluşturulan eserler yüklenemedi. Lütfen tekrar deneyin.",
-  "userProfile.series.error": "Seriler yüklenemedi. Lütfen tekrar deneyin.",
   "userProfile.emptyReviewsHint": "Sevdiğiniz bir esere ilk yorumu siz bırakın.",
   "userProfile.emptyReviewsCta": "Eserlere göz atın"
 }

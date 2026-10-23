@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Készített művek",
   "userProfile.tabs.series": "Sorozat",
   "userProfile.works.empty": "Ennek a felhasználónak még nincsenek közművei.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Ennek a felhasználónak még nincs sorozata.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Nem lehet profil feltölteni.",
   "userProfile.authorFallback": "Felhasználó",
   "userProfile.metaTemplate": "{author} profil · {reviews} értékelések · {works} munkák · avg minősítés {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profil tartalma",
   "userProfile.refresh": "Frissítés",
   "userProfile.emptyReviews": "A felhasználó még nem tett közzé véleményeket.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

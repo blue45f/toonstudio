@@ -1,5 +1,7 @@
 {
   "control.language.label": "ဘာသာစကား",
+  "control.language.group.translated": "အများသုံး ဘာသာပြန်များ",
+  "control.language.group.englishBase": "အလိုအလျောက် ဘာသာပြန် · အင်္ဂလိပ်စကား fallback",
   "control.sound.enable": "အသံအကျိုးဆက်တွေကို ခွင့်ပြုပေးပါ။",
   "control.sound.disable": "အသံအကျိုးဆက်တွေကို ပိတ်လိုက်ပါ",
   "control.theme.dark": "အလင်း mode ကိုပြောင်းပါ",
@@ -8,7 +10,5 @@
   "control.settings.close": "Close Settings ကို",
   "control.cluster.settings": "အသံ၊ အကြောင်းအရာ၊ ဘာသာစကား ထိန်းချုပ်မှု",
   "control.cluster.open": "ဖွင့်ထားသော settings",
-  "control.cluster.tooltip": "အသံ၊ အကြောင်းအရာနဲ့ ဘာသာစကားဆိုင်ရာ ပြင်ဆင်ချက်များ",
-  "control.language.group.translated": "အများသုံး ဘာသာပြန်များ",
-  "control.language.group.englishBase": "အလိုအလျောက် ဘာသာပြန် · အင်္ဂလိပ်စကား fallback"
+  "control.cluster.tooltip": "အသံ၊ အကြောင်းအရာနဲ့ ဘာသာစကားဆိုင်ရာ ပြင်ဆင်ချက်များ"
 }

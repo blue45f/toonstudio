@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Участники",
   "membership.creatorPage.statMonthly": "Ежемесячно повторяющиеся",
   "membership.creatorPage.statTiers": "Активные уровни",
+  "membership.creatorPage.statusActive": "{count} уровней опубликовано на экране регистрации читателей",
   "membership.creatorPage.subtitle": "Создавайте уровни членства для поклонников и отслеживайте доход от ежемесячных подписок.",
   "membership.creatorPage.tierList": "Уровни членства",
   "membership.creatorPage.tierMembers": "{count} участников",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Сумма, которую поклонники платят каждый месяц.",
   "membership.tierEditor.priceLabel": "Ежемесячная цена (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Сохранить",
-  "membership.creatorPage.statusActive": "{count} уровней опубликовано на экране регистрации читателей"
+  "membership.tierEditor.save": "Сохранить"
 }

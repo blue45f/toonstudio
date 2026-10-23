@@ -1,5 +1,7 @@
 {
   "control.language.label": "Language",
+  "control.language.group.translated": "High-coverage translations",
+  "control.language.group.englishBase": "Автомат орчуулга · Англи хэлний нөөц",
   "control.sound.enable": "Activate sound effects",
   "control.sound.disable": "Дууны эффектийг идэвхгүй болгох",
   "control.theme.dark": "Гэрэлт горим руу шилжинэ",
@@ -8,7 +10,5 @@
   "control.settings.close": "Close settings",
   "control.cluster.settings": "Дуу, сэдэв, хэлний хяналт",
   "control.cluster.open": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "control.cluster.tooltip": "Дуу, сэдэв, хэлний тохиргоо",
-  "control.language.group.translated": "High-coverage translations",
-  "control.language.group.englishBase": "Автомат орчуулга · Англи хэлний нөөц"
+  "control.cluster.tooltip": "Дуу, сэдэв, хэлний тохиргоо"
 }

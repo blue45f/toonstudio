@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Բաց թողեք ամեն ինչ:",
   "search.explorer.recent.delete": "Սեղմել վերջին հարցումը {query}",
   "search.explorer.recent.searchAgain": "Նորից որոնել վերջին հիմնաբառերից",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Կատալոգ",
   "search.explorer.catalog.empty": "Կատալոգը դատարկ է",
   "search.explorer.currentFilter": "Ներկայիս ֆիլտրեր",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} մ առաջ",
   "search.explorer.time.hoursAgo": "{count} ժամ առաջ",
   "search.explorer.time.daysAgo": "{count} օր առաջ",
-  "search.explorer.loadMore": "Բեռնել ավելին",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Բեռնել ավելին"
 }

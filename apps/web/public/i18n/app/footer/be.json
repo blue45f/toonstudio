@@ -30,6 +30,7 @@
   "footer.link.news": "Тун & вэб-раман навіны",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Палітыка рэйтынгу",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Карта сайта",
   "footer.link.settings": "Налады",
   "footer.link.support": "Падтрымка",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Паслуга хостынгу",
   "footer.business.serviceType": "Тып платформы",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Стварыце сваю наступную гісторыю",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Стварыце сваю наступную гісторыю"
 }

@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "എല്ലാം മായ്ക്കുക.",
   "search.explorer.recent.delete": "സമീപകാല അന്വേഷണം ഇല്ലാതാക്കുക {query}",
   "search.explorer.recent.searchAgain": "സമീപകാല കീവേഡുകളിൽ നിന്നും വീണ്ടും തിരയുക",
+  "search.explorer.suggestions.popular": "ജനപ്രിയ തിരയലുകൾ",
+  "search.explorer.suggestions.genres": "ശുപാർശ ചെയ്യുന്ന വിഭാഗങ്ങൾ",
+  "search.explorer.suggestions.searchFor": "{query} തിരയുക",
+  "search.explorer.suggestions.genreFilter": "{genre} വിഭാഗം ഉപയോഗിച്ച് ചുരുക്കുക",
+  "search.explorer.suggestions.loading": "നിർദ്ദേശിച്ച തിരയലുകൾ ലോഡ് ചെയ്യുന്നു",
+  "search.explorer.suggestions.error": "നിർദ്ദേശിച്ച തിരയലുകൾ ലോഡ് ചെയ്യാനായില്ല. അൽപ്പസമയത്തിനു ശേഷം വീണ്ടും ശ്രമിക്കുക.",
+  "search.explorer.suggestions.empty": "ഇപ്പോൾ നിർദ്ദേശങ്ങളില്ല. ഒരു ശീർഷകം, രചയിതാവ്, അല്ലെങ്കിൽ ടാഗ് ടൈപ്പ് ചെയ്ത് നോക്കുക.",
   "search.explorer.catalog.label": "കാറ്റലോഗ്",
   "search.explorer.catalog.empty": "കാറ്റലോഗ് ശൂന്യമാണ്",
   "search.explorer.currentFilter": "നിലവിലെ ഫിൽട്ടറുകൾ",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} വർഷം മുമ്പ്",
   "search.explorer.time.hoursAgo": "{count} മണിക്കൂർ മുമ്പ്",
   "search.explorer.time.daysAgo": "{count} d മുമ്പ്",
-  "search.explorer.loadMore": "കൂടുതല് ലോഡ് ചെയ്യുക",
-  "search.explorer.suggestions.popular": "ജനപ്രിയ തിരയലുകൾ",
-  "search.explorer.suggestions.genres": "ശുപാർശ ചെയ്യുന്ന വിഭാഗങ്ങൾ",
-  "search.explorer.suggestions.searchFor": "{query} തിരയുക",
-  "search.explorer.suggestions.genreFilter": "{genre} വിഭാഗം ഉപയോഗിച്ച് ചുരുക്കുക",
-  "search.explorer.suggestions.loading": "നിർദ്ദേശിച്ച തിരയലുകൾ ലോഡ് ചെയ്യുന്നു",
-  "search.explorer.suggestions.error": "നിർദ്ദേശിച്ച തിരയലുകൾ ലോഡ് ചെയ്യാനായില്ല. അൽപ്പസമയത്തിനു ശേഷം വീണ്ടും ശ്രമിക്കുക.",
-  "search.explorer.suggestions.empty": "ഇപ്പോൾ നിർദ്ദേശങ്ങളില്ല. ഒരു ശീർഷകം, രചയിതാവ്, അല്ലെങ്കിൽ ടാഗ് ടൈപ്പ് ചെയ്ത് നോക്കുക."
+  "search.explorer.loadMore": "കൂടുതല് ലോഡ് ചെയ്യുക"
 }

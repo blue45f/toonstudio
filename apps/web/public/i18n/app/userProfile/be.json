@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Створаныя творы",
   "userProfile.tabs.series": "Серыя",
   "userProfile.works.empty": "У гэтага карыстальніка пакуль няма публічных твораў.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "У гэтага карыстальніка яшчэ няма серыі.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Нельга загрузіць профіль.",
   "userProfile.authorFallback": "Карыстальнік",
   "userProfile.metaTemplate": "{author} профіль · {reviews} водгукі · {works} працы · агляд {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Змест профілю",
   "userProfile.refresh": "Адраджэнне",
   "userProfile.emptyReviews": "Ніякіх водгукаў не апублікавана гэтага карыстальніка пакуль.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

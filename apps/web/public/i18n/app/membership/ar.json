@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "الأعضاء",
   "membership.creatorPage.statMonthly": "الاشتراك الشهري المتكرر",
   "membership.creatorPage.statTiers": "الفئات المفعّلة",
+  "membership.creatorPage.statusActive": "{count} فئة منشورة في شاشة تسجيل القرّاء",
   "membership.creatorPage.subtitle": "أنشئ فئات عضوية للمعجبين وتابع إيرادات الاشتراك الشهري.",
   "membership.creatorPage.tierList": "فئات العضوية",
   "membership.creatorPage.tierMembers": "{count} عضو",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "المبلغ الذي يدفعه المعجبون كل شهر.",
   "membership.tierEditor.priceLabel": "السعر الشهري (بالوون الكوري)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "حفظ",
-  "membership.creatorPage.statusActive": "{count} فئة منشورة في شاشة تسجيل القرّاء"
+  "membership.tierEditor.save": "حفظ"
 }

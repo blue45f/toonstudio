@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Luotuja teoksia",
   "userProfile.tabs.series": "Serial",
   "userProfile.works.empty": "Tällä käyttäjillä ei ole vielä julkisia teoksia.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Tällä käyttäjillä ei ole vielä sarjaa.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profiili ei lataudu.",
   "userProfile.authorFallback": "Käyttäjä",
   "userProfile.metaTemplate": "{author} -profiili · {reviews} -tarkastukset · {works} -työjä · avokantava {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profiilin sisältö",
   "userProfile.refresh": "Uusius",
   "userProfile.emptyReviews": "Tätä käyttäjää ei ole vielä arvostellut.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

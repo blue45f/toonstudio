@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Bersihkan semuanya",
   "search.explorer.recent.delete": "Hapus query terbaru {query}",
   "search.explorer.recent.searchAgain": "Cari lagi dari kata kunci terbaru",
+  "search.explorer.suggestions.popular": "Pencarian populer",
+  "search.explorer.suggestions.genres": "Genre rekomendasi",
+  "search.explorer.suggestions.searchFor": "Cari {query}",
+  "search.explorer.suggestions.genreFilter": "Persempit berdasarkan genre {genre}",
+  "search.explorer.suggestions.loading": "Memuat pencarian yang disarankan",
+  "search.explorer.suggestions.error": "Tidak dapat memuat pencarian yang disarankan. Coba lagi sebentar lagi.",
+  "search.explorer.suggestions.empty": "Belum ada saran saat ini. Coba ketik judul, penulis, atau tag.",
   "search.explorer.catalog.label": "Katalog",
   "search.explorer.catalog.empty": "Katalognya kosong",
   "search.explorer.currentFilter": "Filter arus",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} menit yang lalu",
   "search.explorer.time.hoursAgo": "{count} jam yang lalu",
   "search.explorer.time.daysAgo": "{count} hari yang lalu",
-  "search.explorer.loadMore": "Bawa lebih banyak",
-  "search.explorer.suggestions.popular": "Pencarian populer",
-  "search.explorer.suggestions.genres": "Genre rekomendasi",
-  "search.explorer.suggestions.searchFor": "Cari {query}",
-  "search.explorer.suggestions.genreFilter": "Persempit berdasarkan genre {genre}",
-  "search.explorer.suggestions.loading": "Memuat pencarian yang disarankan",
-  "search.explorer.suggestions.error": "Tidak dapat memuat pencarian yang disarankan. Coba lagi sebentar lagi.",
-  "search.explorer.suggestions.empty": "Belum ada saran saat ini. Coba ketik judul, penulis, atau tag."
+  "search.explorer.loadMore": "Bawa lebih banyak"
 }

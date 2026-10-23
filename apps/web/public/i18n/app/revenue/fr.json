@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Titulaire du compte",
   "revenue.payout.holderPlaceholder": "Nom du titulaire",
   "revenue.payout.mockNote": "Ceci est pour l'instant une demande fictive. Les versements réels sont traités par le pipeline de règlement du backend.",
+  "revenue.payout.notAvailableBody": "Les demandes de versement ne sont pas encore réellement reçues, et les coordonnées bancaires que vous saisissez ne sont pas conservées. Lorsque les demandes ouvriront, vous pourrez postuler ici même et suivre l'historique et le statut de vos demandes.",
+  "revenue.payout.notAvailableTitle": "Les demandes de versement ne sont pas encore disponibles",
   "revenue.payout.submit": "Demander un versement",
   "revenue.payout.title": "Versement",
   "revenue.settlement.belowMinimum": "Disponible à partir de {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Accès anticipé",
   "revenue.source.market": "Ventes du marché",
   "revenue.source.membership": "Abonnement",
-  "revenue.source.tips": "Pourboires",
-  "revenue.payout.notAvailableBody": "Les demandes de versement ne sont pas encore réellement reçues, et les coordonnées bancaires que vous saisissez ne sont pas conservées. Lorsque les demandes ouvriront, vous pourrez postuler ici même et suivre l'historique et le statut de vos demandes.",
-  "revenue.payout.notAvailableTitle": "Les demandes de versement ne sont pas encore disponibles"
+  "revenue.source.tips": "Pourboires"
 }

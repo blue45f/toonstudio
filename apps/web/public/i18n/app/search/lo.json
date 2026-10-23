@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "ປົດອອກທຸກຢ່າງ",
   "search.explorer.recent.delete": "ລຶບ ຄໍາ ຖາມທີ່ຜ່ານມາ {query}",
   "search.explorer.recent.searchAgain": "ຊອກຫາຄືນໃຫມ່ຈາກຄໍາສັບທີ່ຜ່ານມາ",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "ບັນຊີລາຍຊື່",
   "search.explorer.catalog.empty": "ບັນຊີລາຍຊື່ແມ່ນເປົ່າ",
   "search.explorer.currentFilter": "ເຄື່ອງກັ່ນຕອງປະຈຸບັນ",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m ກ່ອນຫນ້ານີ້",
   "search.explorer.time.hoursAgo": "{count} h ago",
   "search.explorer.time.daysAgo": "{count} d ago",
-  "search.explorer.loadMore": "ອໍາ ນວຍການເພີ່ມເຕີມ",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "ອໍາ ນວຍການເພີ່ມເຕີມ"
 }

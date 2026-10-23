@@ -1,5 +1,7 @@
 {
   "control.language.label": "اللغة",
+  "control.language.group.translated": "ترجمات ذات تغطية عالية",
+  "control.language.group.englishBase": "ترجمة آلية · إنجليزية fallback",
   "control.sound.enable": "تمكين الآثار الصوتية",
   "control.sound.disable": "تعطيل الآثار الصوتية",
   "control.theme.dark": "انقل إلى وضع الضوء",
@@ -8,7 +10,5 @@
   "control.settings.close": "الإعدادات القريبة",
   "control.cluster.settings": "السيطرة على الصوت والموضوع واللغة",
   "control.cluster.open": "إعدادات مفتوحة",
-  "control.cluster.tooltip": "الإعدادات الصوتية والموضوعية واللغة",
-  "control.language.group.translated": "ترجمات ذات تغطية عالية",
-  "control.language.group.englishBase": "ترجمة آلية · إنجليزية fallback"
+  "control.cluster.tooltip": "الإعدادات الصوتية والموضوعية واللغة"
 }

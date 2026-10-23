@@ -30,6 +30,7 @@
   "footer.link.news": "Tin tức tiểu thuyết Toon & web",
   "footer.link.about": "Giới thiệu về ToonStudio",
   "footer.link.guide": "Chính sách xếp hạng",
+  "footer.link.features": "Tất cả tính năng trong nháy mắt",
   "footer.link.sitemap": "Bản đồ trang web",
   "footer.link.settings": "Cài đặt",
   "footer.link.support": "Hỗ trợ",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Dịch vụ lưu trữ",
   "footer.business.serviceType": "Loại nền tảng",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Bảo lưu mọi quyền.",
-  "footer.logoTag": "Tạo câu chuyện tiếp theo của bạn",
-  "footer.link.features": "Tất cả tính năng trong nháy mắt"
+  "footer.logoTag": "Tạo câu chuyện tiếp theo của bạn"
 }

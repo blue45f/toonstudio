@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Imisebenzi eyenziwe",
   "userProfile.tabs.series": "Izinhlobo",
   "userProfile.works.empty": "Lo msebenzisi akanayo imisebenzi yomphakathi okwamanje.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Lo msebenzisi akanayo uchungechunge okwamanje.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Ayikwazi ukulayisha iphrofayili.",
   "userProfile.authorFallback": "Umsebenzisi",
   "userProfile.metaTemplate": "Iphrofayili ye-{author} · Izibuyekezo ze-{reviews} · Imisebenzi ye-{works} · izinga le-avg le-{avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Okuqukethwe kwephrofayili",
   "userProfile.refresh": "Ukuvuselela",
   "userProfile.emptyReviews": "Asikaze sihlehliswe lesi sisebenzisi okwamanje.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

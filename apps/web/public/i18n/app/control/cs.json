@@ -1,5 +1,7 @@
 {
   "control.language.label": "Jüzyk",
+  "control.language.group.translated": "Překlady s vysokým obsahem",
+  "control.language.group.englishBase": "Automatický překlad · angličtina fallback",
   "control.sound.enable": "Umožní zvukové efekty",
   "control.sound.disable": "Vypnout zvukové efekty",
   "control.theme.dark": "Přepínám na režim světla",
@@ -8,7 +10,5 @@
   "control.settings.close": "Úplné nastavení",
   "control.cluster.settings": "Zvuk, téma, jazykové ovládání",
   "control.cluster.open": "Otevřené nastavení",
-  "control.cluster.tooltip": "Hlas, téma a jazykové nastavení",
-  "control.language.group.translated": "Překlady s vysokým obsahem",
-  "control.language.group.englishBase": "Automatický překlad · angličtina fallback"
+  "control.cluster.tooltip": "Hlas, téma a jazykové nastavení"
 }

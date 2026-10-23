@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "دارنده حساب",
   "revenue.payout.holderPlaceholder": "نام دارنده",
   "revenue.payout.mockNote": "این فعلاً یک درخواست آزمایشی است. پرداخت‌های واقعی توسط خط لوله تسویه پشتیبان پردازش می‌شوند.",
+  "revenue.payout.notAvailableBody": "درخواست‌های پرداخت هنوز واقعاً دریافت نمی‌شوند و هر جزئیات حسابی که وارد کنید ذخیره نمی‌شود. وقتی درخواست‌ها باز شوند، می‌توانید همین‌جا درخواست دهید و سابقه و وضعیت درخواست خود را پیگیری کنید.",
+  "revenue.payout.notAvailableTitle": "درخواست‌های پرداخت هنوز در دسترس نیستند",
   "revenue.payout.submit": "درخواست پرداخت",
   "revenue.payout.title": "پرداخت",
   "revenue.settlement.belowMinimum": "در دسترس از {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "دسترسی زودهنگام",
   "revenue.source.market": "فروش بازار",
   "revenue.source.membership": "عضویت",
-  "revenue.source.tips": "انعام‌ها",
-  "revenue.payout.notAvailableBody": "درخواست‌های پرداخت هنوز واقعاً دریافت نمی‌شوند و هر جزئیات حسابی که وارد کنید ذخیره نمی‌شود. وقتی درخواست‌ها باز شوند، می‌توانید همین‌جا درخواست دهید و سابقه و وضعیت درخواست خود را پیگیری کنید.",
-  "revenue.payout.notAvailableTitle": "درخواست‌های پرداخت هنوز در دسترس نیستند"
+  "revenue.source.tips": "انعام‌ها"
 }

@@ -1,5 +1,7 @@
 {
   "control.language.label": "Ngôn ngữ",
+  "control.language.group.translated": "Các bản dịch có sự bao phủ cao",
+  "control.language.group.englishBase": "Dịch tự động · tiếng Anh fallback",
   "control.sound.enable": "Khả năng hiệu ứng âm thanh",
   "control.sound.disable": "Thiết lập hiệu ứng âm thanh",
   "control.theme.dark": "Chuyển sang chế độ ánh sáng",
@@ -8,7 +10,5 @@
   "control.settings.close": "Thiết lập gần",
   "control.cluster.settings": "Âm thanh, chủ đề, kiểm soát ngôn ngữ",
   "control.cluster.open": "Mở cài đặt",
-  "control.cluster.tooltip": "Âm thanh, chủ đề và ngôn ngữ",
-  "control.language.group.translated": "Các bản dịch có sự bao phủ cao",
-  "control.language.group.englishBase": "Dịch tự động · tiếng Anh fallback"
+  "control.cluster.tooltip": "Âm thanh, chủ đề và ngôn ngữ"
 }

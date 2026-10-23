@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "ସଦସ୍ୟ",
   "membership.creatorPage.statMonthly": "ମାସିକ ପୁନରାବୃତ୍ତି",
   "membership.creatorPage.statTiers": "ସକ୍ରିୟ ସ୍ତର",
+  "membership.creatorPage.statusActive": "{count}ଟି ସ୍ତର ପାଠକ ସାଇନ୍-ଅପ୍ ସ୍କ୍ରିନରେ ଲାଇଭ୍ ଅଛି",
   "membership.creatorPage.subtitle": "ପ୍ରଶଂସକ ସଦସ୍ୟତା ସ୍ତର ତିଆରି କରନ୍ତୁ ଏବଂ ମାସିକ ସବସ୍କ୍ରିପସନ୍ ରାଜସ୍ୱ ଟ୍ରାକ୍ କରନ୍ତୁ।",
   "membership.creatorPage.tierList": "ସଦସ୍ୟତା ସ୍ତର",
   "membership.creatorPage.tierMembers": "{count} ଜଣ ସଦସ୍ୟ",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "ପ୍ରଶଂସକମାନେ ପ୍ରତି ମାସ ଦେଉଥିବା ପରିମାଣ।",
   "membership.tierEditor.priceLabel": "ମାସିକ ମୂଲ୍ୟ (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "ସଂରକ୍ଷଣ କରନ୍ତୁ",
-  "membership.creatorPage.statusActive": "{count}ଟି ସ୍ତର ପାଠକ ସାଇନ୍-ଅପ୍ ସ୍କ୍ରିନରେ ଲାଇଭ୍ ଅଛି"
+  "membership.tierEditor.save": "ସଂରକ୍ଷଣ କରନ୍ତୁ"
 }

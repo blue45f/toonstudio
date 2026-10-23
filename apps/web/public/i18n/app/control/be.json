@@ -1,5 +1,7 @@
 {
   "control.language.label": "Мова",
+  "control.language.group.translated": "Высокая колькасць перакладаў",
+  "control.language.group.englishBase": "Аўтаматычны пераклад · Англійскі fallback",
   "control.sound.enable": "Дазволіць гукавыя эфекты",
   "control.sound.disable": "Адключыць гукавыя эфекты",
   "control.theme.dark": "Перайсці ў светлы рэжым",
@@ -8,7 +10,5 @@
   "control.settings.close": "Замыкаючыя налады",
   "control.cluster.settings": "Гук, тэма, моўны кантроль",
   "control.cluster.open": "Адкрытыя налады",
-  "control.cluster.tooltip": "Гук, тэма і моўныя налады",
-  "control.language.group.translated": "Высокая колькасць перакладаў",
-  "control.language.group.englishBase": "Аўтаматычны пераклад · Англійскі fallback"
+  "control.cluster.tooltip": "Гук, тэма і моўныя налады"
 }

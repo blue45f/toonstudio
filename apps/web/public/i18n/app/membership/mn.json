@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Гишүүд",
   "membership.creatorPage.statMonthly": "Сар бүрийн тогтмол орлого",
   "membership.creatorPage.statTiers": "Идэвхтэй түвшин",
+  "membership.creatorPage.statusActive": "{count} tiers are live on the reader sign-up screen",
   "membership.creatorPage.subtitle": "Шүтэн бишрэгчдийн гишүүнчлэлийн түвшин үүсгэж, сарын захиалгын орлогыг хянаарай.",
   "membership.creatorPage.tierList": "Гишүүнчлэлийн түвшин",
   "membership.creatorPage.tierMembers": "{count} гишүүн",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Шүтэн бишрэгчид сар бүр төлөх дүн.",
   "membership.tierEditor.priceLabel": "Сарын үнэ (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Хадгалах",
-  "membership.creatorPage.statusActive": "{count} tiers are live on the reader sign-up screen"
+  "membership.tierEditor.save": "Хадгалах"
 }

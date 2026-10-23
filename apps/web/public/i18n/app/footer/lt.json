@@ -30,6 +30,7 @@
   "footer.link.news": "Naujienos \"Ton & Web\"",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rankingo politika",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Svetainės žemėlapis",
   "footer.link.settings": "Įprastiniai",
   "footer.link.support": "Parama",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Paslaugų priėmimo paslaugos",
   "footer.business.serviceType": "Platformo tipas",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Sukurkite kitą istoriją",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Sukurkite kitą istoriją"
 }

@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Bersihkan semua",
   "search.explorer.recent.delete": "Menghapuskan pertanyaan terkini {query}",
   "search.explorer.recent.searchAgain": "Cari lagi dari kata kunci terkini",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Katalog",
   "search.explorer.catalog.empty": "Katalog kosong",
   "search.explorer.currentFilter": "Penapis semasa",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m yang lalu",
   "search.explorer.time.hoursAgo": "{count} jam yang lalu",
   "search.explorer.time.daysAgo": "{count} d ago",
-  "search.explorer.loadMore": "Bawa lagi",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Bawa lagi"
 }

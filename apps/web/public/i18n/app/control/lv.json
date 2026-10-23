@@ -1,5 +1,7 @@
 {
   "control.language.label": "Raksts",
+  "control.language.group.translated": "Lielāko apjomā izmantotie tulkojumi",
+  "control.language.group.englishBase": "Automātiskais tulkojums · angļu valodā fallback",
   "control.sound.enable": "Lai nodrošinātu skaņas efektus",
   "control.sound.disable": "Izvairīt skaņas efektus",
   "control.theme.dark": "Paslēgts gaismas režīmā",
@@ -8,7 +10,5 @@
   "control.settings.close": "Slēpta iestatījumi",
   "control.cluster.settings": "Skaņas, tēma, valodas kontroles",
   "control.cluster.open": "Atvērtas iestatījumi",
-  "control.cluster.tooltip": "Skaņas, tēmas un valodas iestatījumi",
-  "control.language.group.translated": "Lielāko apjomā izmantotie tulkojumi",
-  "control.language.group.englishBase": "Automātiskais tulkojums · angļu valodā fallback"
+  "control.cluster.tooltip": "Skaņas, tēmas un valodas iestatījumi"
 }

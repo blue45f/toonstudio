@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Members",
   "membership.creatorPage.statMonthly": "Monthly recurring",
   "membership.creatorPage.statTiers": "Active tiers",
+  "membership.creatorPage.statusActive": "{count} tiers are live on the reader sign-up screen",
   "membership.creatorPage.subtitle": "Create fan membership tiers and track monthly subscription revenue.",
   "membership.creatorPage.tierList": "Membership tiers",
   "membership.creatorPage.tierMembers": "{count} members",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "The amount fans pay every month.",
   "membership.tierEditor.priceLabel": "Monthly price (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Save",
-  "membership.creatorPage.statusActive": "{count} tiers are live on the reader sign-up screen"
+  "membership.tierEditor.save": "Save"
 }

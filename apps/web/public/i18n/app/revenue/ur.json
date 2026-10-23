@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "کھاتہ دار",
   "revenue.payout.holderPlaceholder": "کھاتہ دار کا نام",
   "revenue.payout.mockNote": "یہ فی الحال ایک فرضی درخواست ہے۔ اصل ادائیگیاں بیک اینڈ تصفیہ پائپ لائن کے ذریعے پروسیس کی جاتی ہیں۔",
+  "revenue.payout.notAvailableBody": "ادائیگی کی درخواستیں ابھی اصل میں موصول نہیں ہو رہی ہیں، اور جو اکاؤنٹ تفصیلات آپ درج کرتے ہیں وہ محفوظ نہیں ہوتیں۔ جب درخواستیں کھلیں گی، تو آپ یہیں سے درخواست دے سکیں گے اور اپنی درخواست کی تاریخ اور حالت دیکھ سکیں گے۔",
+  "revenue.payout.notAvailableTitle": "ادائیگی کی درخواستیں ابھی دستیاب نہیں ہیں",
   "revenue.payout.submit": "ادائیگی کی درخواست کریں",
   "revenue.payout.title": "ادائیگی",
   "revenue.settlement.belowMinimum": "{min} سے دستیاب",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "جلد رسائی",
   "revenue.source.market": "مارکیٹ فروخت",
   "revenue.source.membership": "رکنیت",
-  "revenue.source.tips": "ٹپس",
-  "revenue.payout.notAvailableBody": "ادائیگی کی درخواستیں ابھی اصل میں موصول نہیں ہو رہی ہیں، اور جو اکاؤنٹ تفصیلات آپ درج کرتے ہیں وہ محفوظ نہیں ہوتیں۔ جب درخواستیں کھلیں گی، تو آپ یہیں سے درخواست دے سکیں گے اور اپنی درخواست کی تاریخ اور حالت دیکھ سکیں گے۔",
-  "revenue.payout.notAvailableTitle": "ادائیگی کی درخواستیں ابھی دستیاب نہیں ہیں"
+  "revenue.source.tips": "ٹپس"
 }

@@ -1,5 +1,7 @@
 {
   "control.language.label": "Tölur",
+  "control.language.group.translated": "Þýðingar með mikilli umfjöllun",
+  "control.language.group.englishBase": "Sjálfvirk þýðing · Íslenska fallback",
   "control.sound.enable": "Að leyfa hljóðvirkni",
   "control.sound.disable": "Slökktu á hljóðvirkni",
   "control.theme.dark": "Skipta yfir í ljósleiða",
@@ -8,7 +10,5 @@
   "control.settings.close": "Lögð upp",
   "control.cluster.settings": "Hljóð, þema, tungumálstýringar",
   "control.cluster.open": "Opið stillingar",
-  "control.cluster.tooltip": "Hljóð, þema og tungumál",
-  "control.language.group.translated": "Þýðingar með mikilli umfjöllun",
-  "control.language.group.englishBase": "Sjálfvirk þýðing · Íslenska fallback"
+  "control.cluster.tooltip": "Hljóð, þema og tungumál"
 }

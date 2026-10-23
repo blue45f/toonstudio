@@ -30,6 +30,7 @@
   "footer.link.news": "वेब उपन्यास समाचार",
   "footer.link.about": "ToonStudio के बारे में",
   "footer.link.guide": "रैंकिंग नीति",
+  "footer.link.features": "सभी सुविधाएं एक नज़र में",
   "footer.link.sitemap": "साइटमैप",
   "footer.link.settings": "सेटिंग्स",
   "footer.link.support": "सहायता",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "होस्टिंग सेवा",
   "footer.business.serviceType": "प्लेटफार्म का प्रकार",
   "footer.copyrightLine": "© {year} ToonStudio (बीटा) । सभी अधिकार सुरक्षित।",
-  "footer.logoTag": "अपनी अगली कहानी बनाएं",
-  "footer.link.features": "सभी सुविधाएं एक नज़र में"
+  "footer.logoTag": "अपनी अगली कहानी बनाएं"
 }

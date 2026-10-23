@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "اعضا",
   "membership.creatorPage.statMonthly": "تکرارشونده ماهانه",
   "membership.creatorPage.statTiers": "سطوح فعال",
+  "membership.creatorPage.statusActive": "{count} سطح در صفحه ثبت‌نام خواننده فعال است",
   "membership.creatorPage.subtitle": "سطوح عضویت طرفداران را بسازید و درآمد اشتراک ماهانه را پیگیری کنید.",
   "membership.creatorPage.tierList": "سطوح عضویت",
   "membership.creatorPage.tierMembers": "{count} عضو",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "مبلغی که طرفداران هر ماه می‌پردازند.",
   "membership.tierEditor.priceLabel": "قیمت ماهانه (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "ذخیره",
-  "membership.creatorPage.statusActive": "{count} سطح در صفحه ثبت‌نام خواننده فعال است"
+  "membership.tierEditor.save": "ذخیره"
 }

@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "صفحه یافت نشد",
-  "page.notFound.message": "دوباره URL را بررسی کنید یا عناوین را از صفحه اصلی جستجو کنید.",
-  "page.notFound.home": "برگرد خونه",
   "page.events.board.community": "تابلوی انجمن",
   "page.events.board.official": "رویدادهای رسمی",
   "page.events.board.title": "فهرست رویدادها",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "مشاهده مزایای بتا",
   "page.events.hero.secondary": "تابلوی رویدادهای انجمن",
   "page.events.hero.title": "تابلوی رویدادها",
+  "page.notFound.home": "برگرد خونه",
+  "page.notFound.message": "دوباره URL را بررسی کنید یا عناوین را از صفحه اصلی جستجو کنید.",
   "page.notFound.quip.1": "اوه؟ این قاب هنوز کشیده نشده است!",
   "page.notFound.quip.2": "پیش از آنکه جوهر خشک شود سرگردان شدید.",
   "page.notFound.quip.3": "در قسمت بعدی می‌بینمتان… احتمالاً!",
   "page.notFound.quip.4": "هنرمند همین حالا در حال کشیدن این صفحه است.",
-  "page.notFound.tapHint": "روی اعداد ضربه بزنید"
+  "page.notFound.tapHint": "روی اعداد ضربه بزنید",
+  "page.notFound.title": "صفحه یافت نشد"
 }

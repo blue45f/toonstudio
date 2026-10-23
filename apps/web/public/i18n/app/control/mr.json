@@ -1,5 +1,7 @@
 {
   "control.language.label": "भाषा",
+  "control.language.group.translated": "उच्च व्याप्तीचे अनुवाद",
+  "control.language.group.englishBase": "स्वयंचलित भाषांतर · इंग्रजी fallback",
   "control.sound.enable": "ध्वनी प्रभाव सक्षम करा",
   "control.sound.disable": "ध्वनी प्रभाव बंद करा",
   "control.theme.dark": "प्रकाश मोडवर स्विच करा",
@@ -8,7 +10,5 @@
   "control.settings.close": "बंद सेटिंग्स",
   "control.cluster.settings": "ध्वनी, थीम, भाषा नियंत्रणे",
   "control.cluster.open": "उघडा सेटिंग्ज",
-  "control.cluster.tooltip": "ध्वनी, थीम आणि भाषा सेटिंग्ज",
-  "control.language.group.translated": "उच्च व्याप्तीचे अनुवाद",
-  "control.language.group.englishBase": "स्वयंचलित भाषांतर · इंग्रजी fallback"
+  "control.cluster.tooltip": "ध्वनी, थीम आणि भाषा सेटिंग्ज"
 }

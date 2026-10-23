@@ -1,5 +1,7 @@
 {
   "control.language.label": "Jezik",
+  "control.language.group.translated": "Prevodov z visoko obsegom",
+  "control.language.group.englishBase": "Avtomatski prevod",
   "control.sound.enable": "omogočiti zvočne učinke",
   "control.sound.disable": "Izključite zvočne učinke",
   "control.theme.dark": "Premaknite na svetlobni način",
@@ -8,7 +10,5 @@
   "control.settings.close": "Zaprtje nastavitev",
   "control.cluster.settings": "Zvoki, tema, jezikovni nadzor",
   "control.cluster.open": "Odprte nastavitve",
-  "control.cluster.tooltip": "Zvok, tema in jezik",
-  "control.language.group.translated": "Prevodov z visoko obsegom",
-  "control.language.group.englishBase": "Avtomatski prevod"
+  "control.cluster.tooltip": "Zvok, tema in jezik"
 }

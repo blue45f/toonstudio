@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Све очистите.",
   "search.explorer.recent.delete": "Убришајте последње потраге {query}",
   "search.explorer.recent.searchAgain": "Пораду пребацивање из најновијих кључних речи",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Каталог",
   "search.explorer.catalog.empty": "Каталог је празан.",
   "search.explorer.currentFilter": "Текући филтри",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}м пре",
   "search.explorer.time.hoursAgo": "{count}х пре",
   "search.explorer.time.daysAgo": "{count}д пре",
-  "search.explorer.loadMore": "Погрузи још",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Погрузи још"
 }

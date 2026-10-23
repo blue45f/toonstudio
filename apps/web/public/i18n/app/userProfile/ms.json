@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Karya yang dibuat",
   "userProfile.tabs.series": "Siri",
   "userProfile.works.empty": "Pengguna ini belum mempunyai karya awam.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Pengguna ini belum mempunyai siri.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Tidak dapat memuat naik profil.",
   "userProfile.authorFallback": "Pengguna",
   "userProfile.metaTemplate": "Profil {author} · Ulasan {reviews} · {works} karya · rating AVG {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Kandungan profil",
   "userProfile.refresh": "Pembaharuan",
   "userProfile.emptyReviews": "Belum ada ulasan yang diterbitkan oleh pengguna ini.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

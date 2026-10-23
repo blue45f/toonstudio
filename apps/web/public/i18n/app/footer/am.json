@@ -30,6 +30,7 @@
   "footer.link.news": "ቶን እና ድር ልብ ወለድ ዜና",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "የደረጃ ፖሊሲ",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "የጣቢያ ካርታ",
   "footer.link.settings": "ቅንብሮች",
   "footer.link.support": "ድጋፍ",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "አስተናጋጅ አገልግሎት",
   "footer.business.serviceType": "የመድረክ አይነት",
   "footer.copyrightLine": "© {year} ToonStudio (ቤታ) ሁሉም መብቶች የተጠበቁ ናቸው።",
-  "footer.logoTag": "ቀጣዩን ታሪክህን ፍጠር",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "ቀጣዩን ታሪክህን ፍጠር"
 }

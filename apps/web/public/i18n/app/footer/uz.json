@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web novellalari yangiliklari",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rejistratsiya siyosati",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Sayt xaritasi",
   "footer.link.settings": "Oʻrnatish",
   "footer.link.support": "Qo'llab-quvvatlash",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Xosting xizmati",
   "footer.business.serviceType": "Platform turi",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Barcha huquqlar himoyalangan.",
-  "footer.logoTag": "Keyingi hikoyangizni yarating",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Keyingi hikoyangizni yarating"
 }

@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Mindenki tisztára.",
   "search.explorer.recent.delete": "Törölje meg a nemrég felkeresett kérdést {query}",
   "search.explorer.recent.searchAgain": "Újra keresse a legfrissebb kulcsszókat",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Katalógus",
   "search.explorer.catalog.empty": "A katalógus üres.",
   "search.explorer.currentFilter": "A jelenlegi szűrők",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m ezelőtt",
   "search.explorer.time.hoursAgo": "{count} órája",
   "search.explorer.time.daysAgo": "{count} napja",
-  "search.explorer.loadMore": "Töltsön még!",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Töltsön még!"
 }

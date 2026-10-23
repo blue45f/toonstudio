@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "ਖਾਤਾ ਧਾਰਕ",
   "revenue.payout.holderPlaceholder": "ਧਾਰਕ ਦਾ ਨਾਂ",
   "revenue.payout.mockNote": "ਫਿਲਹਾਲ ਇਹ ਇੱਕ ਮੌਕ ਬੇਨਤੀ ਹੈ। ਅਸਲ ਭੁਗਤਾਨ ਬੈਕਐਂਡ ਨਿਪਟਾਰਾ ਪਾਈਪਲਾਈਨ ਦੁਆਰਾ ਕੀਤੇ ਜਾਂਦੇ ਹਨ।",
+  "revenue.payout.notAvailableBody": "ਭੁਗਤਾਨ ਬੇਨਤੀਆਂ ਅਜੇ ਅਸਲ ਵਿੱਚ ਪ੍ਰਾਪਤ ਨਹੀਂ ਕੀਤੀਆਂ ਜਾ ਰਹੀਆਂ, ਅਤੇ ਤੁਸੀਂ ਜੋ ਵੀ ਖਾਤਾ ਵੇਰਵੇ ਦਰਜ ਕਰਦੇ ਹੋ ਉਹ ਸੰਭਾਲੇ ਨਹੀਂ ਜਾਂਦੇ। ਜਦੋਂ ਬੇਨਤੀਆਂ ਖੁੱਲ੍ਹਣਗੀਆਂ, ਤਾਂ ਤੁਸੀਂ ਇੱਥੋਂ ਹੀ ਅਰਜ਼ੀ ਦੇ ਸਕੋਗੇ ਅਤੇ ਆਪਣਾ ਬੇਨਤੀ ਇਤਿਹਾਸ ਅਤੇ ਸਥਿਤੀ ਟ੍ਰੈਕ ਕਰ ਸਕੋਗੇ।",
+  "revenue.payout.notAvailableTitle": "ਭੁਗਤਾਨ ਬੇਨਤੀਆਂ ਅਜੇ ਉਪਲਬਧ ਨਹੀਂ ਹਨ",
   "revenue.payout.submit": "ਭੁਗਤਾਨ ਦੀ ਬੇਨਤੀ ਕਰੋ",
   "revenue.payout.title": "ਭੁਗਤਾਨ",
   "revenue.settlement.belowMinimum": "{min} ਤੋਂ ਉਪਲਬਧ",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "ਅਰਲੀ ਐਕਸੈੱਸ",
   "revenue.source.market": "ਮਾਰਕੀਟ ਵਿਕਰੀ",
   "revenue.source.membership": "ਮੈਂਬਰਸ਼ਿਪ",
-  "revenue.source.tips": "ਟਿਪਾਂ",
-  "revenue.payout.notAvailableBody": "ਭੁਗਤਾਨ ਬੇਨਤੀਆਂ ਅਜੇ ਅਸਲ ਵਿੱਚ ਪ੍ਰਾਪਤ ਨਹੀਂ ਕੀਤੀਆਂ ਜਾ ਰਹੀਆਂ, ਅਤੇ ਤੁਸੀਂ ਜੋ ਵੀ ਖਾਤਾ ਵੇਰਵੇ ਦਰਜ ਕਰਦੇ ਹੋ ਉਹ ਸੰਭਾਲੇ ਨਹੀਂ ਜਾਂਦੇ। ਜਦੋਂ ਬੇਨਤੀਆਂ ਖੁੱਲ੍ਹਣਗੀਆਂ, ਤਾਂ ਤੁਸੀਂ ਇੱਥੋਂ ਹੀ ਅਰਜ਼ੀ ਦੇ ਸਕੋਗੇ ਅਤੇ ਆਪਣਾ ਬੇਨਤੀ ਇਤਿਹਾਸ ਅਤੇ ਸਥਿਤੀ ਟ੍ਰੈਕ ਕਰ ਸਕੋਗੇ।",
-  "revenue.payout.notAvailableTitle": "ਭੁਗਤਾਨ ਬੇਨਤੀਆਂ ਅਜੇ ਉਪਲਬਧ ਨਹੀਂ ਹਨ"
+  "revenue.source.tips": "ਟਿਪਾਂ"
 }

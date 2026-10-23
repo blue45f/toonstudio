@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "ارکان",
   "membership.creatorPage.statMonthly": "ماہانہ سبسکرپشن کل",
   "membership.creatorPage.statTiers": "فعال درجات",
+  "membership.creatorPage.statusActive": "{count} درجات قاری سائن اپ اسکرین پر لائیو ہیں",
   "membership.creatorPage.subtitle": "پرستار رکنیت کے درجات بنائیں اور ماہانہ سبسکرپشن آمدنی دیکھیں۔",
   "membership.creatorPage.tierList": "رکنیت کے درجات",
   "membership.creatorPage.tierMembers": "{count} ارکان",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "وہ رقم جو پرستار ہر مہینے ادا کرتے ہیں۔",
   "membership.tierEditor.priceLabel": "ماہانہ قیمت (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "محفوظ کریں",
-  "membership.creatorPage.statusActive": "{count} درجات قاری سائن اپ اسکرین پر لائیو ہیں"
+  "membership.tierEditor.save": "محفوظ کریں"
 }

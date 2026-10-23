@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "آثار ساخته شده",
   "userProfile.tabs.series": "سری",
   "userProfile.works.empty": "این کاربر هنوز آثار عمومی ندارد.",
+  "userProfile.works.error": "آثار ساخته‌شده بارگذاری نشدند. لطفاً دوباره تلاش کنید.",
   "userProfile.series.empty": "این کاربر هنوز سریال ندارد.",
+  "userProfile.series.error": "مجموعه‌ها بارگذاری نشدند. لطفاً دوباره تلاش کنید.",
   "userProfile.fetchError": "نميتونم پروفايل رو بارم",
   "userProfile.authorFallback": "کاربر",
   "userProfile.metaTemplate": "پروفایل {author} · بررسی {reviews} · آثار {works} · امتیازات AVG {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "محتوای پروفایل",
   "userProfile.refresh": "تازه کردن",
   "userProfile.emptyReviews": "هنوز هیچ بررسی ای از این کاربر منتشر نشده است.",
-  "userProfile.works.error": "آثار ساخته‌شده بارگذاری نشدند. لطفاً دوباره تلاش کنید.",
-  "userProfile.series.error": "مجموعه‌ها بارگذاری نشدند. لطفاً دوباره تلاش کنید.",
   "userProfile.emptyReviewsHint": "اولین بررسی را روی عنوانی که دوست دارید بگذارید.",
   "userProfile.emptyReviewsCta": "مرور عنوان‌ها"
 }

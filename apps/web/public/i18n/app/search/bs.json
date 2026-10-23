@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Sve očisti.",
   "search.explorer.recent.delete": "Izbrišite nedavni upit {query}",
   "search.explorer.recent.searchAgain": "Ponovo pretražite iz nedavnih ključnih reči",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Katalog",
   "search.explorer.catalog.empty": "Katalog je prazan.",
   "search.explorer.currentFilter": "Trenutni filteri",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}m prije",
   "search.explorer.time.hoursAgo": "{count}h prije",
   "search.explorer.time.daysAgo": "{count}d prije",
-  "search.explorer.loadMore": "Ugrađivanje",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Ugrađivanje"
 }

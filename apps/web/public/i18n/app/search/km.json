@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "លុបចោល ទាំងអស់",
   "search.explorer.recent.delete": "លុបបំបាត់ការស្រាវជ្រាវថ្មី {query}",
   "search.explorer.recent.searchAgain": "ស្វែងរកថ្មីពី keywords ថ្មីៗ",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Catalogue",
   "search.explorer.catalog.empty": "Catalogue គឺមានពណ៌ស",
   "search.explorer.currentFilter": "ការបង្ហាត់ current",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}m មុន",
   "search.explorer.time.hoursAgo": "{count} ម៉ោងមុន",
   "search.explorer.time.daysAgo": "{count} d ago",
-  "search.explorer.loadMore": "ដឹក បន្ថែម",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "ដឹក បន្ថែម"
 }

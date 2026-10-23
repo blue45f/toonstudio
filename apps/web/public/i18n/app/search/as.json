@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "সকলোবোৰ নিৰ্মল কৰক",
   "search.explorer.recent.delete": "শেহতীয়া অনুসন্ধানটো বিলোপ কৰক {query}",
   "search.explorer.recent.searchAgain": "শেহতীয়া মূলশব্দসমূহৰ পৰা পুনৰ অনুসন্ধান কৰক",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "কটালগ",
   "search.explorer.catalog.empty": "ক্যাটালগ খালী",
   "search.explorer.currentFilter": "বৰ্তমানৰ ফিল্টাৰসমূহ",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m পূৰ্বে",
   "search.explorer.time.hoursAgo": "{count} ঘন্টা পূৰ্বে",
   "search.explorer.time.daysAgo": "{count} দিন পূৰ্বে",
-  "search.explorer.loadMore": "অধিক লোড কৰক",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "অধিক লোড কৰক"
 }

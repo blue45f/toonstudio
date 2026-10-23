@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Створено дело",
   "userProfile.tabs.series": "Серија",
   "userProfile.works.empty": "Овај корисник још није имао јавне делове.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Овај корисник још није имао ни једну серију.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Не могу да загрутим профил.",
   "userProfile.authorFallback": "Корисник",
   "userProfile.metaTemplate": "{author} профил · {reviews} рецензије · {works} ради · просечна оцена {avg} — ТоонСпецтрум.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Профилски садржај",
   "userProfile.refresh": "Одразање",
   "userProfile.emptyReviews": "Још није објављен никакав преглед овог корисника.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

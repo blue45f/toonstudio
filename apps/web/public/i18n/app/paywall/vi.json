@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Truy cập sớm {days} ngày cho người ủng hộ",
   "paywall.creatorPage.preview": "Xem trước",
   "paywall.creatorPage.save": "Lưu chính sách",
+  "paywall.creatorPage.statusDaysRange": "truy cập sớm {min}–{max} ngày",
+  "paywall.creatorPage.statusDaysSingle": "truy cập sớm {days} ngày",
+  "paywall.creatorPage.statusSummary": "{total} chính sách · {active} đang bật",
   "paywall.creatorPage.subtitle": "Thiết lập truy cập sớm: người ủng hộ trước, miễn phí cho mọi người sau N ngày.",
   "paywall.creatorPage.title": "Quản lý truy cập sớm",
   "paywall.creatorPage.titleIdLabel": "ID tác phẩm",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Xem trước chế độ xem của người đọc",
   "paywall.titleNotice.body": "Tác phẩm này phát hành cho người ủng hộ sớm {days} ngày. Nó trở nên miễn phí nếu bạn chờ.",
   "paywall.titleNotice.label": "Thông báo truy cập sớm",
-  "paywall.titleNotice.title": "Truy cập sớm cho người ủng hộ đang có hiệu lực",
-  "paywall.creatorPage.statusDaysRange": "truy cập sớm {min}–{max} ngày",
-  "paywall.creatorPage.statusDaysSingle": "truy cập sớm {days} ngày",
-  "paywall.creatorPage.statusSummary": "{total} chính sách · {active} đang bật"
+  "paywall.titleNotice.title": "Truy cập sớm cho người ủng hộ đang có hiệu lực"
 }

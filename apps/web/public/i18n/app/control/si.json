@@ -1,5 +1,7 @@
 {
   "control.language.label": "භාෂාව",
+  "control.language.group.translated": "අධික පරිවර්තන",
+  "control.language.group.englishBase": "ස්වයංක් රීය පරිවර්තනය · ඉංග් රීසි වැටීම",
   "control.sound.enable": "ශබ්ද බලපෑම් සක් රීය කරන්න",
   "control.sound.disable": "ශබ්ද බලපෑම් අක් රිය කරන්න",
   "control.theme.dark": "ආලෝක ප් රකාරයට මාරු කරන්න",
@@ -8,7 +10,5 @@
   "control.settings.close": "සමීප සැකසුම්",
   "control.cluster.settings": "ශබ්දය, තේමාව, භාෂා පාලනය",
   "control.cluster.open": "විවෘත සැකසුම්",
-  "control.cluster.tooltip": "ශබ්ද, තේමාව සහ භාෂා සැකසුම්",
-  "control.language.group.translated": "අධික පරිවර්තන",
-  "control.language.group.englishBase": "ස්වයංක් රීය පරිවර්තනය · ඉංග් රීසි වැටීම"
+  "control.cluster.tooltip": "ශබ්ද, තේමාව සහ භාෂා සැකසුම්"
 }

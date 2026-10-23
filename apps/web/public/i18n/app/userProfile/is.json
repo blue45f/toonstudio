@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Gerðar verk",
   "userProfile.tabs.series": "Tölur",
   "userProfile.works.empty": "Þessi notandi hefur ekki opinber verk enn.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Þessi notandi hefur ekki séri enn.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Ekki hægt að hlaða prófíll.",
   "userProfile.authorFallback": "Notandi",
   "userProfile.metaTemplate": "{author} prófíl · {reviews} umsagnir · {works} vinnur · avg einkunn {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Upplýsingar í prófílinu",
   "userProfile.refresh": "Uppfært",
   "userProfile.emptyReviews": "Engar umsagnir hafa verið birtar af þessum notanda enn.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

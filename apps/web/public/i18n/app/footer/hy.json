@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web նորություններ",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Վարկանիշային քաղաքականություն",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Կայքի քարտեզ",
   "footer.link.settings": "Կարգավորումներ",
   "footer.link.support": "Աջակցություն",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Հյուրընկալող ծառայություն",
   "footer.business.serviceType": "Պլատֆորմի տեսակ",
   "footer.copyrightLine": "© {year} ToonStudio (Beta): Բոլոր իրավունքները պահպանված են:",
-  "footer.logoTag": "Ստեղծեք ձեր հաջորդ պատմությունը",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Ստեղծեք ձեր հաջորդ պատմությունը"
 }

@@ -30,6 +30,7 @@
   "footer.link.news": "Noviny pre webové a televízne divadlo",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Politika rebríčka",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Mapa lokality",
   "footer.link.settings": "Nastavenia",
   "footer.link.support": "Podpora",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hosťovanie",
   "footer.business.serviceType": "Typ platforiem",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Vytvorte si ďalší príbeh",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Vytvorte si ďalší príbeh"
 }

@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "תבררו את הכל.",
   "search.explorer.recent.delete": "למחוק בקשה האחרונה {query}",
   "search.explorer.recent.searchAgain": "חיפוש שוב מילות מפתח האחרונות",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "קטלוג",
   "search.explorer.catalog.empty": "קטלוג ריק.",
   "search.explorer.currentFilter": "פילטרים זמיניים",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count}m ago",
   "search.explorer.time.hoursAgo": "{count}h ago",
   "search.explorer.time.daysAgo": "{count} דה לפני כן",
-  "search.explorer.loadMore": "תשאירו עוד.",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "תשאירו עוד."
 }

@@ -30,6 +30,7 @@
   "footer.link.news": "Тоун & Веб новели вести",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Политика рангирања",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Мапа локације",
   "footer.link.settings": "Постављања",
   "footer.link.support": "Поддршка",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Хостинг услуга",
   "footer.business.serviceType": "Тип платформе",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Стварите своју следећу причу",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Стварите своју следећу причу"
 }

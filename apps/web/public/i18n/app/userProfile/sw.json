@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Kazi zilizoundwa",
   "userProfile.tabs.series": "Mfululizo",
   "userProfile.works.empty": "Mtumiaji huyu hana kazi za umma bado.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Mtumiaji huyu hana mfululizo bado.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Haiwezi kupakia profile.",
   "userProfile.authorFallback": "User",
   "userProfile.metaTemplate": "{author} profile · {reviews} maoni · {works} kazi · avg rating {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Maudhui ya wasifu",
   "userProfile.refresh": "Kufurahisha",
   "userProfile.emptyReviews": "Hakuna maoni yaliyochapishwa na mtumiaji huyu bado.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

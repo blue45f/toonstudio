@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Obra creada",
   "userProfile.tabs.series": "Serie",
   "userProfile.works.empty": "Aquest usuari encara no té obres públiques.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Aquest usuari encara no té sèries.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "No pot carregar el perfil.",
   "userProfile.authorFallback": "Usuari",
   "userProfile.metaTemplate": "{author} perfil · {reviews} revisions · {works} treballs · avg rating {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Contenut del perfil",
   "userProfile.refresh": "Refrescar",
   "userProfile.emptyReviews": "Encara no hi ha comentaris publicats per aquest usuari.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} 天支持者搶先體驗",
   "paywall.creatorPage.preview": "預覽",
   "paywall.creatorPage.save": "儲存政策",
+  "paywall.creatorPage.statusDaysRange": "搶先體驗 {min}–{max} 天",
+  "paywall.creatorPage.statusDaysSingle": "搶先體驗 {days} 天",
+  "paywall.creatorPage.statusSummary": "共 {total} 項政策 · 已開啟 {active} 項",
   "paywall.creatorPage.subtitle": "設定搶先體驗：先向支持者開放，N 天後對所有人免費。",
   "paywall.creatorPage.title": "搶先體驗管理",
   "paywall.creatorPage.titleIdLabel": "作品 ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "讀者檢視預覽",
   "paywall.titleNotice.body": "本作品向支持者提前 {days} 天開放。等待即可免費觀看。",
   "paywall.titleNotice.label": "搶先體驗通知",
-  "paywall.titleNotice.title": "支持者搶先體驗進行中",
-  "paywall.creatorPage.statusDaysRange": "搶先體驗 {min}–{max} 天",
-  "paywall.creatorPage.statusDaysSingle": "搶先體驗 {days} 天",
-  "paywall.creatorPage.statusSummary": "共 {total} 項政策 · 已開啟 {active} 項"
+  "paywall.titleNotice.title": "支持者搶先體驗進行中"
 }

@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Hesap sahibi",
   "revenue.payout.holderPlaceholder": "Hesap sahibi adı",
   "revenue.payout.mockNote": "Bu şimdilik sahte bir taleptir. Gerçek ödemeler, arka uç hesaplaşma hattı tarafından işlenir.",
+  "revenue.payout.notAvailableBody": "Ödeme talepleri henüz fiilen alınmıyor ve girdiğiniz hesap ayrıntıları saklanmıyor. Talepler açıldığında tam buradan başvurabilecek ve talep geçmişinizi ve durumunuzu takip edebileceksiniz.",
+  "revenue.payout.notAvailableTitle": "Ödeme talepleri henüz kullanılamıyor",
   "revenue.payout.submit": "Ödeme iste",
   "revenue.payout.title": "Ödeme",
   "revenue.settlement.belowMinimum": "{min} tutarından itibaren kullanılabilir",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Erken erişim",
   "revenue.source.market": "Pazar satışları",
   "revenue.source.membership": "Üyelik",
-  "revenue.source.tips": "Bahşişler",
-  "revenue.payout.notAvailableBody": "Ödeme talepleri henüz fiilen alınmıyor ve girdiğiniz hesap ayrıntıları saklanmıyor. Talepler açıldığında tam buradan başvurabilecek ve talep geçmişinizi ve durumunuzu takip edebileceksiniz.",
-  "revenue.payout.notAvailableTitle": "Ödeme talepleri henüz kullanılamıyor"
+  "revenue.source.tips": "Bahşişler"
 }

@@ -30,6 +30,7 @@
   "footer.link.news": "ටූන් & වෙබ් නවකතා පුවත්",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "ශ් රේණිගත කිරීමේ ප් රතිපත්තිය",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "අඩවි සිතියම",
   "footer.link.settings": "සැකසුම්",
   "footer.link.support": "සහය",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "සත්කාරක සේවාව",
   "footer.business.serviceType": "වේදිකාව වර්ගය",
   "footer.copyrightLine": "© {year} ToonStudio (බීටා) සියලුම හිමිකම් ඇවිරිණි.",
-  "footer.logoTag": "ඊළඟ කතාව ලියන්න",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "ඊළඟ කතාව ලියන්න"
 }

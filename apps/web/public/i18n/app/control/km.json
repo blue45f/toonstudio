@@ -1,5 +1,7 @@
 {
   "control.language.label": "ភាសា",
+  "control.language.group.translated": "ការបកប្រែ ដែលមាន ការបកស្រាយ ច្រើន",
+  "control.language.group.englishBase": "ការបកប្រែដោយចល័ត · English fallback",
   "control.sound.enable": "អនុញ្ញាតឱ្យមានប្រសិទ្ធភាពនៃសំឡេង",
   "control.sound.disable": "បិទ ផលិតផល សំឡេង",
   "control.theme.dark": "ប្តូរ ទៅលើ mode ពន្លឺ",
@@ -8,7 +10,5 @@
   "control.settings.close": "ការកំណត់ Close",
   "control.cluster.settings": "Sound, Theme, Language Controls",
   "control.cluster.open": "ការកំណត់បើក",
-  "control.cluster.tooltip": "ការកំណត់ សំឡេង, ប្រធានបទ និង ភាសា",
-  "control.language.group.translated": "ការបកប្រែ ដែលមាន ការបកស្រាយ ច្រើន",
-  "control.language.group.englishBase": "ការបកប្រែដោយចល័ត · English fallback"
+  "control.cluster.tooltip": "ការកំណត់ សំឡេង, ប្រធានបទ និង ភាសា"
 }

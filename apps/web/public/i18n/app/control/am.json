@@ -1,5 +1,7 @@
 {
   "control.language.label": "ቋንቋ",
+  "control.language.group.translated": "ከፍተኛ ሽፋን ያላቸው ትርጉሞች",
+  "control.language.group.englishBase": "አውቶማቲክ ትርጉም · እንግሊዝኛ fallback",
   "control.sound.enable": "የድምፅ ውጤቶችን ማስቻል",
   "control.sound.disable": "የድምፅ ውጤቶችን ማሰናከል",
   "control.theme.dark": "ወደ ብርሃን ሁነታ መቀየር",
@@ -8,7 +10,5 @@
   "control.settings.close": "የቅርብ ቅንብሮች",
   "control.cluster.settings": "የድምፅ፣ ጭብጥ፣ የቋንቋ መቆጣጠሪያዎች",
   "control.cluster.open": "ክፍት ቅንብሮች",
-  "control.cluster.tooltip": "የድምፅ፣ የርዕስ እና የቋንቋ ቅንብሮች",
-  "control.language.group.translated": "ከፍተኛ ሽፋን ያላቸው ትርጉሞች",
-  "control.language.group.englishBase": "አውቶማቲክ ትርጉም · እንግሊዝኛ fallback"
+  "control.cluster.tooltip": "የድምፅ፣ የርዕስ እና የቋንቋ ቅንብሮች"
 }

@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Ukurasa haukupatikana",
-  "page.notFound.message": "Angalia tena URL au utafute majina kutoka kwenye ukurasa wa kwanza.",
-  "page.notFound.home": "Rudi nyumbani",
   "page.events.board.community": "Community board",
   "page.events.board.official": "Official events",
   "page.events.board.title": "Event list",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "See beta benefits",
   "page.events.hero.secondary": "Community events board",
   "page.events.hero.title": "Events board",
+  "page.notFound.home": "Rudi nyumbani",
+  "page.notFound.message": "Angalia tena URL au utafute majina kutoka kwenye ukurasa wa kwanza.",
   "page.notFound.quip.1": "Huh? This panel hasn't been drawn yet!",
   "page.notFound.quip.2": "You wandered off before the ink even dried.",
   "page.notFound.quip.3": "See you in the next episode… probably!",
   "page.notFound.quip.4": "The artist is drawing this page right now.",
-  "page.notFound.tapHint": "Give the numbers a tap"
+  "page.notFound.tapHint": "Give the numbers a tap",
+  "page.notFound.title": "Ukurasa haukupatikana"
 }

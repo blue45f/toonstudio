@@ -30,6 +30,7 @@
   "footer.link.news": "Тоон & веб романдар жаңылыктары",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Рейтингдик саясат",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Сайттын картасы",
   "footer.link.settings": "Айныктар",
   "footer.link.support": "Колдоо",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Хостинг кызматы",
   "footer.business.serviceType": "Платформанын түрү",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Кийинки окуяны жаратыңыз",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Кийинки окуяны жаратыңыз"
 }

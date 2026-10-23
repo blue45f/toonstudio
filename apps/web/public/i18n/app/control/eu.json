@@ -1,5 +1,7 @@
 {
   "control.language.label": "Hizkuntza",
+  "control.language.group.translated": "Itzulpenak, hedapen handikoak",
+  "control.language.group.englishBase": "Itzulpen automatikoa · Ingelesez fallback",
   "control.sound.enable": "Soinu efektuak ahalbidetzen",
   "control.sound.disable": "Soinu efektuak desaktibatu",
   "control.theme.dark": "Argi modura pasatu.",
@@ -8,7 +10,5 @@
   "control.settings.close": "Jarri itxiak",
   "control.cluster.settings": "Soinu, gaia, hizkuntza kontrolak",
   "control.cluster.open": "Ireki jarduerak",
-  "control.cluster.tooltip": "Soinuaren, gaia eta hizkuntzaren konfigurazioa",
-  "control.language.group.translated": "Itzulpenak, hedapen handikoak",
-  "control.language.group.englishBase": "Itzulpen automatikoa · Ingelesez fallback"
+  "control.cluster.tooltip": "Soinuaren, gaia eta hizkuntzaren konfigurazioa"
 }

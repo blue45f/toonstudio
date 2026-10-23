@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Stvoreni radovi",
   "userProfile.tabs.series": "Serija",
   "userProfile.works.empty": "Ovaj korisnik još nema javne radove.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Ovaj korisnik još nema serije.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Ne mogu učitati profil.",
   "userProfile.authorFallback": "Korisnik",
   "userProfile.metaTemplate": "Profil {author} · recenzije {reviews} · {works} djelo · avg ocjena {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Sadržaj profila",
   "userProfile.refresh": "Održavanje",
   "userProfile.emptyReviews": "Ovaj korisnik još nije objavio recenzije.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

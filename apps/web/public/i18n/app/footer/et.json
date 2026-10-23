@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web-roman uudised",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rangistamise poliitika",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Kohalik kaart",
   "footer.link.settings": "Seadused",
   "footer.link.support": "Toetust",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hoogimisteenus",
   "footer.business.serviceType": "Platvormide tüüp",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Loe oma järgmine lugu",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Loe oma järgmine lugu"
 }

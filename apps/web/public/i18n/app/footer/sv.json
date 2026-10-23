@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & webb roman nyheter",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rankningspolicy",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Sitemap",
   "footer.link.settings": "Inställningar",
   "footer.link.support": "Stöd",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hållningstjänst",
   "footer.business.serviceType": "Plattformstypen",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Skapa din nästa historia",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Skapa din nästa historia"
 }

@@ -1,5 +1,7 @@
 {
   "control.language.label": "Lugha",
+  "control.language.group.translated": "Tafsiri zenye upatikanaji mkubwa",
+  "control.language.group.englishBase": "Tafsiri ya moja kwa moja · Kiingereza fallback",
   "control.sound.enable": "Kuwezesha athari za sauti",
   "control.sound.disable": "Kulemaza athari za sauti",
   "control.theme.dark": "Badilisha mode mwanga",
@@ -8,7 +10,5 @@
   "control.settings.close": "Mipangilio ya karibu",
   "control.cluster.settings": "Sauti, mandhari, udhibiti wa lugha",
   "control.cluster.open": "Mipangilio ya wazi",
-  "control.cluster.tooltip": "Mipangilio ya sauti, mandhari, na lugha",
-  "control.language.group.translated": "Tafsiri zenye upatikanaji mkubwa",
-  "control.language.group.englishBase": "Tafsiri ya moja kwa moja · Kiingereza fallback"
+  "control.cluster.tooltip": "Mipangilio ya sauti, mandhari, na lugha"
 }

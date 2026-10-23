@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Данс эзэмшигч",
   "revenue.payout.holderPlaceholder": "Эзэмшигчийн нэр",
   "revenue.payout.mockNote": "Одоогоор энэ нь туршилтын хүсэлт юм. Бодит төлбөрийг арын тооцооны системээр боловсруулна.",
+  "revenue.payout.notAvailableBody": "Payout requests aren't actually being received yet, and any account details you enter are not stored. When requests open, you'll be able to apply right here and track your request history and status.",
+  "revenue.payout.notAvailableTitle": "Payout requests aren't available yet",
   "revenue.payout.submit": "Төлбөр авах хүсэлт",
   "revenue.payout.title": "Төлбөр авах",
   "revenue.settlement.belowMinimum": "{min}-аас эхлэн боломжтой",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Эрт унших эрх",
   "revenue.source.market": "Зах зээлийн борлуулалт",
   "revenue.source.membership": "Гишүүнчлэл",
-  "revenue.source.tips": "Урамшуулал",
-  "revenue.payout.notAvailableBody": "Payout requests aren't actually being received yet, and any account details you enter are not stored. When requests open, you'll be able to apply right here and track your request history and status.",
-  "revenue.payout.notAvailableTitle": "Payout requests aren't available yet"
+  "revenue.source.tips": "Урамшуулал"
 }

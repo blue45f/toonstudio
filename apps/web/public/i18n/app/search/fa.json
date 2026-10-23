@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "همه رو پاک کن",
   "search.explorer.recent.delete": "حذف سوال اخیر {query}",
   "search.explorer.recent.searchAgain": "دوباره از کلمات کلیدی اخیر جستجو کنید",
+  "search.explorer.suggestions.popular": "جستجوهای محبوب",
+  "search.explorer.suggestions.genres": "ژانرهای پیشنهادی",
+  "search.explorer.suggestions.searchFor": "جستجو برای {query}",
+  "search.explorer.suggestions.genreFilter": "محدود کردن بر اساس ژانر {genre}",
+  "search.explorer.suggestions.loading": "در حال بارگذاری جستجوهای پیشنهادی",
+  "search.explorer.suggestions.error": "جستجوهای پیشنهادی بارگذاری نشدند. لطفاً لحظه‌ای دیگر دوباره تلاش کنید.",
+  "search.explorer.suggestions.empty": "فعلاً پیشنهادی نیست. عنوان، نویسنده یا برچسبی را تایپ کنید.",
   "search.explorer.catalog.label": "کتاگ",
   "search.explorer.catalog.empty": "کتالوگ خالی است",
   "search.explorer.currentFilter": "فیلترهای فعلی",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} سال پیش",
   "search.explorer.time.hoursAgo": "{count} ساعت پیش",
   "search.explorer.time.daysAgo": "{count} روز پیش",
-  "search.explorer.loadMore": "باردار شدن بیشتر",
-  "search.explorer.suggestions.popular": "جستجوهای محبوب",
-  "search.explorer.suggestions.genres": "ژانرهای پیشنهادی",
-  "search.explorer.suggestions.searchFor": "جستجو برای {query}",
-  "search.explorer.suggestions.genreFilter": "محدود کردن بر اساس ژانر {genre}",
-  "search.explorer.suggestions.loading": "در حال بارگذاری جستجوهای پیشنهادی",
-  "search.explorer.suggestions.error": "جستجوهای پیشنهادی بارگذاری نشدند. لطفاً لحظه‌ای دیگر دوباره تلاش کنید.",
-  "search.explorer.suggestions.empty": "فعلاً پیشنهادی نیست. عنوان، نویسنده یا برچسبی را تایپ کنید."
+  "search.explorer.loadMore": "باردار شدن بیشتر"
 }

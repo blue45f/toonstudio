@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Alles klar machen.",
   "search.explorer.recent.delete": "Löschen Sie die aktuelle Abfrage {query}",
   "search.explorer.recent.searchAgain": "Suchen Sie erneut nach aktuellen Keywords",
+  "search.explorer.suggestions.popular": "Beliebte Suchanfragen",
+  "search.explorer.suggestions.genres": "Empfohlene Genres",
+  "search.explorer.suggestions.searchFor": "Nach {query} suchen",
+  "search.explorer.suggestions.genreFilter": "Nach Genre {genre} eingrenzen",
+  "search.explorer.suggestions.loading": "Vorgeschlagene Suchanfragen werden geladen",
+  "search.explorer.suggestions.error": "Die vorgeschlagenen Suchanfragen konnten nicht geladen werden. Bitte versuchen Sie es in einem Moment erneut.",
+  "search.explorer.suggestions.empty": "Gerade keine Vorschläge. Geben Sie einen Titel, Autor oder ein Tag ein.",
   "search.explorer.catalog.label": "Katalog",
   "search.explorer.catalog.empty": "Der Katalog ist leer .",
   "search.explorer.currentFilter": "Stromfilter",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "Vor {count}m",
   "search.explorer.time.hoursAgo": "{count}h vor",
   "search.explorer.time.daysAgo": "Vor {count}d",
-  "search.explorer.loadMore": "Mehr zu laden",
-  "search.explorer.suggestions.popular": "Beliebte Suchanfragen",
-  "search.explorer.suggestions.genres": "Empfohlene Genres",
-  "search.explorer.suggestions.searchFor": "Nach {query} suchen",
-  "search.explorer.suggestions.genreFilter": "Nach Genre {genre} eingrenzen",
-  "search.explorer.suggestions.loading": "Vorgeschlagene Suchanfragen werden geladen",
-  "search.explorer.suggestions.error": "Die vorgeschlagenen Suchanfragen konnten nicht geladen werden. Bitte versuchen Sie es in einem Moment erneut.",
-  "search.explorer.suggestions.empty": "Gerade keine Vorschläge. Geben Sie einen Titel, Autor oder ein Tag ein."
+  "search.explorer.loadMore": "Mehr zu laden"
 }

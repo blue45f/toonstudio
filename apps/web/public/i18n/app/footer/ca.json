@@ -30,6 +30,7 @@
   "footer.link.news": "Notícies de novel·les de Toon & web",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Política de classificació",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Mapa del lloc",
   "footer.link.settings": "Configuracions",
   "footer.link.support": "Suport",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Servei d'hosting",
   "footer.business.serviceType": "Tip de plataforma",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Tots els drets reservats.",
-  "footer.logoTag": "Crea la teva pròxima història",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Crea la teva pròxima història"
 }

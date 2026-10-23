@@ -30,6 +30,7 @@
   "footer.link.news": "اخبار رمان های آنلاین",
   "footer.link.about": "درباره ToonStudio",
   "footer.link.guide": "سیاست رتبه بندی",
+  "footer.link.features": "همه ویژگی‌ها در یک نگاه",
   "footer.link.sitemap": "نقشه سایت",
   "footer.link.settings": "تنظیمات",
   "footer.link.support": "حمایت",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "سرویس میزبانی",
   "footer.business.serviceType": "نوع پلتفرم",
   "footer.copyrightLine": "© {year} ToonStudio (بتا). تمامی حقوق محفوظ است.",
-  "footer.logoTag": "داستان بعدی خود را بساز",
-  "footer.link.features": "همه ویژگی‌ها در یک نگاه"
+  "footer.logoTag": "داستان بعدی خود را بساز"
 }

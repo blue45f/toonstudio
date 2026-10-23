@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "ସୃଷ୍ଟି ହୋଇଥିବା କାର୍ଯ୍ୟ",
   "userProfile.tabs.series": "ସିରିଜ୍",
   "userProfile.works.empty": "ଏହି ବ୍ୟବହାରକାରୀଙ୍କ ପାଖରେ ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ସାର୍ବଜନୀନ କାର୍ଯ୍ୟ ନାହିଁ ।",
+  "userProfile.works.error": "ସୃଷ୍ଟି ହୋଇଥିବା କାର୍ଯ୍ୟ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
   "userProfile.series.empty": "ଏହି ବ୍ୟବହାରକାରୀଙ୍କର ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ସିରିଜ୍ ନାହିଁ ।",
+  "userProfile.series.error": "ସିରିଜ୍ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
   "userProfile.fetchError": "ପ୍ରୋଫାଇଲ ଲୋଡ କରିପାରୁନାହିଁ ।",
   "userProfile.authorFallback": "ବ୍ୟବହାରକାରୀ",
   "userProfile.metaTemplate": "{author} ପ୍ରୋଫାଇଲ · {reviews} ରିଭ୍ୟୁ · {works} ରଚନା · AVG ରେଟିଂ {avg}  ଟ୍ୟୁନ ସ୍ପେକ୍ଟ୍ରମ ।",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ପ୍ରୋଫାଇଲ ବିଷୟବସ୍ତୁ",
   "userProfile.refresh": "ସତେଜତା",
   "userProfile.emptyReviews": "ଏହି ବ୍ୟବହାରକାରୀଙ୍କ ଦ୍ୱାରା ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ସମୀକ୍ଷା ପ୍ରକାଶିତ ହୋଇନାହିଁ ।",
-  "userProfile.works.error": "ସୃଷ୍ଟି ହୋଇଥିବା କାର୍ଯ୍ୟ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
-  "userProfile.series.error": "ସିରିଜ୍ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
   "userProfile.emptyReviewsHint": "ଆପଣ ଭଲ ପାଉଥିବା ଏକ ଶୀର୍ଷକରେ ପ୍ରଥମ ସମୀକ୍ଷା ଛାଡ଼ନ୍ତୁ।",
   "userProfile.emptyReviewsCta": "ଶୀର୍ଷକ ବ୍ରାଉଜ୍ କରନ୍ତୁ"
 }

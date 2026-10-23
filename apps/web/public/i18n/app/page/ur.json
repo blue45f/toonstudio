@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "صفحہ نہیں ملا",
-  "page.notFound.message": "یو آر ایل کو دوبارہ چیک کریں یا ہوم پیج سے عنوانات تلاش کریں۔",
-  "page.notFound.home": "گھر واپس جاؤ",
   "page.events.board.community": "کمیونٹی بورڈ",
   "page.events.board.official": "سرکاری تقریبات",
   "page.events.board.title": "تقریبات کی فہرست",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "بیٹا فوائد دیکھیں",
   "page.events.hero.secondary": "کمیونٹی تقریبات بورڈ",
   "page.events.hero.title": "تقریبات بورڈ",
+  "page.notFound.home": "گھر واپس جاؤ",
+  "page.notFound.message": "یو آر ایل کو دوبارہ چیک کریں یا ہوم پیج سے عنوانات تلاش کریں۔",
   "page.notFound.quip.1": "ارے؟ یہ پینل ابھی بنایا ہی نہیں گیا!",
   "page.notFound.quip.2": "سیاہی خشک ہونے سے پہلے ہی آپ بھٹک گئے۔",
   "page.notFound.quip.3": "اگلی قسط میں ملتے ہیں… شاید!",
   "page.notFound.quip.4": "فنکار اس وقت یہی صفحہ بنا رہا ہے۔",
-  "page.notFound.tapHint": "اعداد کو تھپتھپائیں"
+  "page.notFound.tapHint": "اعداد کو تھپتھپائیں",
+  "page.notFound.title": "صفحہ نہیں ملا"
 }

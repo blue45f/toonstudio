@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Anggota",
   "membership.creatorPage.statMonthly": "Total langganan bulanan",
   "membership.creatorPage.statTiers": "Tingkat aktif",
+  "membership.creatorPage.statusActive": "{count} tingkat aktif di layar pendaftaran pembaca",
   "membership.creatorPage.subtitle": "Buat tingkat keanggotaan penggemar dan lacak pendapatan langganan bulanan.",
   "membership.creatorPage.tierList": "Tingkat keanggotaan",
   "membership.creatorPage.tierMembers": "{count} anggota",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Jumlah yang dibayar penggemar setiap bulan.",
   "membership.tierEditor.priceLabel": "Harga bulanan (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Simpan",
-  "membership.creatorPage.statusActive": "{count} tingkat aktif di layar pendaftaran pembaca"
+  "membership.tierEditor.save": "Simpan"
 }

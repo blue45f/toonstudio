@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "അംഗങ്ങൾ",
   "membership.creatorPage.statMonthly": "പ്രതിമാസ ആവർത്തനം",
   "membership.creatorPage.statTiers": "സജീവ ടയറുകൾ",
+  "membership.creatorPage.statusActive": "{count} ടയറുകൾ വായനക്കാരുടെ സൈൻ-അപ്പ് സ്‌ക്രീനിൽ ലൈവാണ്",
   "membership.creatorPage.subtitle": "ആരാധക മെമ്പർഷിപ്പ് ടയറുകൾ സൃഷ്ടിച്ച് പ്രതിമാസ സബ്‌സ്‌ക്രിപ്‌ഷൻ വരുമാനം ട്രാക്ക് ചെയ്യുക.",
   "membership.creatorPage.tierList": "മെമ്പർഷിപ്പ് ടയറുകൾ",
   "membership.creatorPage.tierMembers": "{count} അംഗങ്ങൾ",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "ആരാധകർ ഓരോ മാസവും നൽകുന്ന തുക.",
   "membership.tierEditor.priceLabel": "പ്രതിമാസ വില (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "സംരക്ഷിക്കുക",
-  "membership.creatorPage.statusActive": "{count} ടയറുകൾ വായനക്കാരുടെ സൈൻ-അപ്പ് സ്‌ക്രീനിൽ ലൈവാണ്"
+  "membership.tierEditor.save": "സംരക്ഷിക്കുക"
 }

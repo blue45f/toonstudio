@@ -1,5 +1,7 @@
 {
   "control.language.label": "ภาษา",
+  "control.language.group.translated": "รับแปลที่มีการแพร่ระดับสูง",
+  "control.language.group.englishBase": "รับแปลอัตโนมัติ · อังกฤษ fallback",
   "control.sound.enable": "อนุญาตให้มีประสิทธิภาพเสียง",
   "control.sound.disable": "ปิดประสิทธิภาพเสียง",
   "control.theme.dark": "เปลี่ยนไปสู่โหมดแสง",
@@ -8,7 +10,5 @@
   "control.settings.close": "การตั้งค่าปิด",
   "control.cluster.settings": "เสียง, ธีม, การควบคุมภาษา",
   "control.cluster.open": "เปิดการตั้งค่า",
-  "control.cluster.tooltip": "การ ปรับ ภาพ เสียง ธีม และ ภาษา",
-  "control.language.group.translated": "รับแปลที่มีการแพร่ระดับสูง",
-  "control.language.group.englishBase": "รับแปลอัตโนมัติ · อังกฤษ fallback"
+  "control.cluster.tooltip": "การ ปรับ ภาพ เสียง ธีม และ ภาษา"
 }

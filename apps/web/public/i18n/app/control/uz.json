@@ -1,5 +1,7 @@
 {
   "control.language.label": "Til",
+  "control.language.group.translated": "Yuqori qamrovli tarjimalar",
+  "control.language.group.englishBase": "Avtomatik tarjima · Ingliz tilidagi fallback",
   "control.sound.enable": "Tovush effektlarini qo'llash",
   "control.sound.disable": "Tovush effektlarini oʻchirib tashlash",
   "control.theme.dark": "Yorug'lik rejasiga o'tish",
@@ -8,7 +10,5 @@
   "control.settings.close": "Oʻchirish moslamalari",
   "control.cluster.settings": "Ovoz, mavzu, til nazoratlari",
   "control.cluster.open": "Ochiq moslamalar",
-  "control.cluster.tooltip": "Ovoz, mavzu va til sozlari",
-  "control.language.group.translated": "Yuqori qamrovli tarjimalar",
-  "control.language.group.englishBase": "Avtomatik tarjima · Ingliz tilidagi fallback"
+  "control.cluster.tooltip": "Ovoz, mavzu va til sozlari"
 }

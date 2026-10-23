@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Üyeler",
   "membership.creatorPage.statMonthly": "Aylık yinelenen",
   "membership.creatorPage.statTiers": "Etkin kademeler",
+  "membership.creatorPage.statusActive": "{count} kademe, okuyucu kayıt ekranında yayında",
   "membership.creatorPage.subtitle": "Hayran üyelik kademeleri oluşturun ve aylık abonelik gelirini takip edin.",
   "membership.creatorPage.tierList": "Üyelik kademeleri",
   "membership.creatorPage.tierMembers": "{count} üye",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Hayranların her ay ödediği tutar.",
   "membership.tierEditor.priceLabel": "Aylık fiyat (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Kaydet",
-  "membership.creatorPage.statusActive": "{count} kademe, okuyucu kayıt ekranında yayında"
+  "membership.tierEditor.save": "Kaydet"
 }

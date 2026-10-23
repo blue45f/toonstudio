@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Số thành viên",
   "membership.creatorPage.statMonthly": "Tổng phí đăng ký hằng tháng",
   "membership.creatorPage.statTiers": "Các gói đang hoạt động",
+  "membership.creatorPage.statusActive": "{count} gói đang công khai trên màn hình đăng ký của độc giả",
   "membership.creatorPage.subtitle": "Tạo các gói thành viên cho người hâm mộ và theo dõi doanh thu đăng ký hằng tháng.",
   "membership.creatorPage.tierList": "Các gói thành viên",
   "membership.creatorPage.tierMembers": "{count} thành viên",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Số tiền người hâm mộ trả mỗi tháng.",
   "membership.tierEditor.priceLabel": "Giá hằng tháng (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Lưu",
-  "membership.creatorPage.statusActive": "{count} gói đang công khai trên màn hình đăng ký của độc giả"
+  "membership.tierEditor.save": "Lưu"
 }

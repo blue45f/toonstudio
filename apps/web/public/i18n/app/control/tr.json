@@ -1,5 +1,7 @@
 {
   "control.language.label": "Dil",
+  "control.language.group.translated": "Yüksek kapsamlı tercüme",
+  "control.language.group.englishBase": "Otomatik çevirisi · İngilizce fallback",
   "control.sound.enable": "Ses efektlerini etkinleştir",
   "control.sound.disable": "Ses efektlerini devre dışı bırak",
   "control.theme.dark": "Işığı moduna geç",
@@ -8,7 +10,5 @@
   "control.settings.close": "Yakın ayarlar",
   "control.cluster.settings": "Ses, tema, dil kontrolü",
   "control.cluster.open": "Açık ayarlar",
-  "control.cluster.tooltip": "Ses, tema ve dil ayarları",
-  "control.language.group.translated": "Yüksek kapsamlı tercüme",
-  "control.language.group.englishBase": "Otomatik çevirisi · İngilizce fallback"
+  "control.cluster.tooltip": "Ses, tema ve dil ayarları"
 }

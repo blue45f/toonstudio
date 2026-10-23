@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Sayfa bulunamadı",
-  "page.notFound.message": "URL'yi tekrar kontrol edin veya baş sayfadan başlıkları araştırın.",
-  "page.notFound.home": "Eve dön .",
   "page.events.board.community": "Topluluk panosu",
   "page.events.board.official": "Resmi etkinlikler",
   "page.events.board.title": "Etkinlik listesi",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Beta avantajlarını görün",
   "page.events.hero.secondary": "Topluluk etkinlikleri panosu",
   "page.events.hero.title": "Etkinlikler panosu",
+  "page.notFound.home": "Eve dön .",
+  "page.notFound.message": "URL'yi tekrar kontrol edin veya baş sayfadan başlıkları araştırın.",
   "page.notFound.quip.1": "Ne? Bu panel henüz çizilmedi!",
   "page.notFound.quip.2": "Mürekkep kurumadan yoldan saptınız.",
   "page.notFound.quip.3": "Bir sonraki bölümde görüşürüz… muhtemelen!",
   "page.notFound.quip.4": "Sanatçı bu sayfayı şu anda çiziyor.",
-  "page.notFound.tapHint": "Sayılara bir dokunun"
+  "page.notFound.tapHint": "Sayılara bir dokunun",
+  "page.notFound.title": "Sayfa bulunamadı"
 }

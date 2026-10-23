@@ -1,5 +1,7 @@
 {
   "control.language.label": "ભાષા",
+  "control.language.group.translated": "ઉચ્ચ કવરેજ અનુવાદ",
+  "control.language.group.englishBase": "સ્વયંસંચાલિત અનુવાદ · અંગ્રેજી fallback",
   "control.sound.enable": "ધ્વનિ અસરોને સક્ષમ કરો",
   "control.sound.disable": "ધ્વનિ અસરોને અક્ષમ કરો",
   "control.theme.dark": "પ્રકાશ સ્થિતિ પર સ્વિચ કરો",
@@ -8,7 +10,5 @@
   "control.settings.close": "બંધ સેટિંગ્સ",
   "control.cluster.settings": "ધ્વનિ, થીમ, ભાષા નિયંત્રણ",
   "control.cluster.open": "ઓપન સેટિંગ્સ",
-  "control.cluster.tooltip": "ધ્વનિ, થીમ અને ભાષા સેટિંગ્સ",
-  "control.language.group.translated": "ઉચ્ચ કવરેજ અનુવાદ",
-  "control.language.group.englishBase": "સ્વયંસંચાલિત અનુવાદ · અંગ્રેજી fallback"
+  "control.cluster.tooltip": "ધ્વનિ, થીમ અને ભાષા સેટિંગ્સ"
 }

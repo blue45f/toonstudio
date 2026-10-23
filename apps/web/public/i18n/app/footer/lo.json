@@ -30,6 +30,7 @@
   "footer.link.news": "ຂ່າວເລື່ອງລາວ Toon & web",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "ນະໂຍບາຍຈັດອັນດັບ",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "ແຜນທີ່ສະຖານທີ່",
   "footer.link.settings": "ການຕັ້ງຄ່າ",
   "footer.link.support": "ການສະຫນັບສະຫນູນ",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "ການບໍລິການຈັດແຈງ",
   "footer.business.serviceType": "ປະເພດເວທີ",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "ສ້າງເລື່ອງຕໍ່ໄປຂອງທ່ານ",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "ສ້າງເລື່ອງຕໍ່ໄປຂອງທ່ານ"
 }

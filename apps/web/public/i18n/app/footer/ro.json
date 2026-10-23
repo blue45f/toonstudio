@@ -30,6 +30,7 @@
   "footer.link.news": "Nouaţi de la Toon & Web",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Politica de clasare",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Harta sitului",
   "footer.link.settings": "Setări",
   "footer.link.support": "Suport",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Serviciul de găzduire",
   "footer.business.serviceType": "Tip de platformă",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Toate drepturile rezervate.",
-  "footer.logoTag": "CREATE-VII următoarea poveste",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "CREATE-VII următoarea poveste"
 }

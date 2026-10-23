@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "יצירת יצירות",
   "userProfile.tabs.series": "סדרה",
   "userProfile.works.empty": "למשתמש הזה עדיין אין עבודות ציבוריות.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "למשתמש הזה עדיין אין סדרה.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "אי אפשר להעלות פרופיל.",
   "userProfile.authorFallback": "משתמש",
   "userProfile.metaTemplate": "פרופיל {author} · ביקורות {reviews} · עבודות {works} · דירוג AVG {avg}  טון ספקטרום.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "תוכן הפרופיל",
   "userProfile.refresh": "חידוש",
   "userProfile.emptyReviews": "עדיין אין ביקורות שפורסמו על ידי המשתמש הזה.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

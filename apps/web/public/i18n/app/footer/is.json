@@ -30,6 +30,7 @@
   "footer.link.news": "Tón & vef skáldsögu fréttir",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Stjórnmáli flokkunar",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Staðkort",
   "footer.link.settings": "Stillingar",
   "footer.link.support": "Stuðningur",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hýsingarþjónusta",
   "footer.business.serviceType": "Týpur pallsins",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Skildu næstu sögu þína",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Skildu næstu sögu þína"
 }

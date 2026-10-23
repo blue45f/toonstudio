@@ -5,8 +5,10 @@
   "route.admin": "管理控制台",
   "route.adminCommunity": "社区管理员",
   "route.adminMembers": "会员管理",
+  "route.anchorLab": "角色锚点实验室",
   "route.assetPoints": "Studio 积分钱包",
   "route.authors": "作者",
+  "route.branchingCuttoon": "分支分镜漫画实验",
   "route.business": "业务, IR & 赞助",
   "route.calendar": "出版日历",
   "route.characterChat": "角色聊天",
@@ -88,8 +90,6 @@
   "route.technologyReferences": "参考资料",
   "route.technologyStory": "创作故事",
   "route.technologyVideos": "视频",
-  "route.anchorLab": "角色锚点实验室",
   "route.terms": "服务条款",
-  "route.unknown": "页",
-  "route.branchingCuttoon": "分支分镜漫画实验"
+  "route.unknown": "页"
 }

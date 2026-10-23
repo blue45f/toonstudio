@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "पृष्ठ सापडले नाही",
-  "page.notFound.message": "URL पुन्हा तपासा किंवा मुख्य पानावरून शीर्षके शोधा.",
-  "page.notFound.home": "घरी जा.",
   "page.events.board.community": "समुदाय बोर्ड",
   "page.events.board.official": "अधिकृत इव्हेंट",
   "page.events.board.title": "इव्हेंट यादी",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "बीटा फायदे पहा",
   "page.events.hero.secondary": "समुदाय इव्हेंट बोर्ड",
   "page.events.hero.title": "इव्हेंट बोर्ड",
+  "page.notFound.home": "घरी जा.",
+  "page.notFound.message": "URL पुन्हा तपासा किंवा मुख्य पानावरून शीर्षके शोधा.",
   "page.notFound.quip.1": "अरे? हे पॅनेल अजून काढलेलेच नाही!",
   "page.notFound.quip.2": "शाई सुकायच्या आतच तुम्ही भरकटलात.",
   "page.notFound.quip.3": "पुढच्या एपिसोडमध्ये भेटू… कदाचित!",
   "page.notFound.quip.4": "कलाकार आत्ता हे पृष्ठ काढत आहे.",
-  "page.notFound.tapHint": "संख्यांवर टॅप करा"
+  "page.notFound.tapHint": "संख्यांवर टॅप करा",
+  "page.notFound.title": "पृष्ठ सापडले नाही"
 }

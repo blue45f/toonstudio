@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} dagen vroege toegang voor supporters",
   "paywall.creatorPage.preview": "Voorbeeld",
   "paywall.creatorPage.save": "Beleid opslaan",
+  "paywall.creatorPage.statusDaysRange": "vroege toegang {min}–{max} dagen",
+  "paywall.creatorPage.statusDaysSingle": "vroege toegang {days} dagen",
+  "paywall.creatorPage.statusSummary": "{total} beleidsregels · {active} aan",
   "paywall.creatorPage.subtitle": "Stel vroege toegang in: supporters eerst, na N dagen gratis voor iedereen.",
   "paywall.creatorPage.title": "Vroege toegang",
   "paywall.creatorPage.titleIdLabel": "Titel-id",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Voorbeeld van lezersweergave",
   "paywall.titleNotice.body": "Deze titel verschijnt {days} dagen eerder voor supporters. Hij wordt gratis als je wacht.",
   "paywall.titleNotice.label": "Melding vroege toegang",
-  "paywall.titleNotice.title": "Vroege toegang voor supporters is actief",
-  "paywall.creatorPage.statusDaysRange": "vroege toegang {min}–{max} dagen",
-  "paywall.creatorPage.statusDaysSingle": "vroege toegang {days} dagen",
-  "paywall.creatorPage.statusSummary": "{total} beleidsregels · {active} aan"
+  "paywall.titleNotice.title": "Vroege toegang voor supporters is actief"
 }

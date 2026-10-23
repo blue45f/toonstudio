@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "အားလုံး ရှင်းလင်းပါ။",
   "search.explorer.recent.delete": "မကြာသေးမီက မေးမြန်းချက်ကို ဖျက်ပစ်ပါ {query}",
   "search.explorer.recent.searchAgain": "မကြာသေးမီက သော့ချက်များမှ ထပ်မံရှာဖွေပါ",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "စာရင်းအင်း",
   "search.explorer.catalog.empty": "Catalogue က ပိတ်ထားတယ်။",
   "search.explorer.currentFilter": "လက်ရှိစစ်ဆေးမှု",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m ago",
   "search.explorer.time.hoursAgo": "{count} နာရီအကြာ",
   "search.explorer.time.daysAgo": "{count} d ago",
-  "search.explorer.loadMore": "ပိုများထည့်ပါ",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "ပိုများထည့်ပါ"
 }

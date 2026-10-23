@@ -1,5 +1,7 @@
 {
   "control.language.label": "Limba",
+  "control.language.group.translated": "Traduceri cu acoperire mare",
+  "control.language.group.englishBase": "Traducere automată · Engleză fallback",
   "control.sound.enable": "Permiteți efecte sonore",
   "control.sound.disable": "dezactivați efectele sonore",
   "control.theme.dark": "Treci la modul lumină",
@@ -8,7 +10,5 @@
   "control.settings.close": "Setări de închidere",
   "control.cluster.settings": "Sunet, temă, controluri lingvistice",
   "control.cluster.open": "Setări deschise",
-  "control.cluster.tooltip": "Setări de sunet, temă și limbaj",
-  "control.language.group.translated": "Traduceri cu acoperire mare",
-  "control.language.group.englishBase": "Traducere automată · Engleză fallback"
+  "control.cluster.tooltip": "Setări de sunet, temă și limbaj"
 }

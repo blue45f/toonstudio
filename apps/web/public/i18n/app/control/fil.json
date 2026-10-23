@@ -1,5 +1,7 @@
 {
   "control.language.label": "wika",
+  "control.language.group.translated": "Mga pagsasalin na may mataas na coverage",
+  "control.language.group.englishBase": "Automatikong pagsasalin · English fallback",
   "control.sound.enable": "Pinapayagan ang mga epekto ng tunog",
   "control.sound.disable": "I-deactivate ang mga sound effect",
   "control.theme.dark": "I-switch sa mode ng liwanag",
@@ -8,7 +10,5 @@
   "control.settings.close": "Mga setting na malapit",
   "control.cluster.settings": "Sound, tema, kontrol ng wika",
   "control.cluster.open": "Bukas na mga setting",
-  "control.cluster.tooltip": "Mga setting ng tunog, tema, at wika",
-  "control.language.group.translated": "Mga pagsasalin na may mataas na coverage",
-  "control.language.group.englishBase": "Automatikong pagsasalin · English fallback"
+  "control.cluster.tooltip": "Mga setting ng tunog, tema, at wika"
 }

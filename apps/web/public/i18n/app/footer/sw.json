@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & mtandao riwaya habari",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Sera ya cheo",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Ramani ya tovuti",
   "footer.link.settings": "Mipangilio",
   "footer.link.support": "Msaada",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Huduma ya kukaribisha",
   "footer.business.serviceType": "Aina ya jukwaa",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Haki zote zimehifadhiwa.",
-  "footer.logoTag": "Fanya Hadithi Yako Inayofuata",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Fanya Hadithi Yako Inayofuata"
 }

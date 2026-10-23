@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Барлығын тазалаңыз",
   "search.explorer.recent.delete": "Соңғы сұрауды өшіру {query}",
   "search.explorer.recent.searchAgain": "Соңғы кілті сөздерден қайта іздеу",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Каталог",
   "search.explorer.catalog.empty": "Каталог бос",
   "search.explorer.currentFilter": "Ағымдағы сүзгілер",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} м бұрын",
   "search.explorer.time.hoursAgo": "{count} сағат бұрын",
   "search.explorer.time.daysAgo": "{count} күн бұрын",
-  "search.explorer.loadMore": "Қосымша жүктеу",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Қосымша жүктеу"
 }

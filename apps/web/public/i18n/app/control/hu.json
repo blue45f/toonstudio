@@ -1,5 +1,7 @@
 {
   "control.language.label": "Nyelv",
+  "control.language.group.translated": "A nagy területtel rendelkező fordítások",
+  "control.language.group.englishBase": "Automatikus fordítás · angol fallback",
   "control.sound.enable": "A hanghatás lehetővé tétele",
   "control.sound.disable": "A hanghatások letiltása",
   "control.theme.dark": "Átállás a fénymódba",
@@ -8,7 +10,5 @@
   "control.settings.close": "Közel beállítások",
   "control.cluster.settings": "Hang, téma, nyelvi vezérlés",
   "control.cluster.open": "Nyitott beállítások",
-  "control.cluster.tooltip": "Hang, téma és nyelvi beállítások",
-  "control.language.group.translated": "A nagy területtel rendelkező fordítások",
-  "control.language.group.englishBase": "Automatikus fordítás · angol fallback"
+  "control.cluster.tooltip": "Hang, téma és nyelvi beállítások"
 }

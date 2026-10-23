@@ -1,5 +1,7 @@
 {
   "control.language.label": "Kalba",
+  "control.language.group.translated": "Aukštos apimties vertimas",
+  "control.language.group.englishBase": "Automatinis vertimas",
   "control.sound.enable": "Įgalinti garso efektus",
   "control.sound.disable": "Išjungti garso efektyvus",
   "control.theme.dark": "Į šviesos režimą pereikite",
@@ -8,7 +10,5 @@
   "control.settings.close": "Uždaros nustatymas",
   "control.cluster.settings": "Garsys, tema, kalbos valdymo įtaisys",
   "control.cluster.open": "Atviraus nustatymus",
-  "control.cluster.tooltip": "Garsčio, temos ir kalbos nustatymai",
-  "control.language.group.translated": "Aukštos apimties vertimas",
-  "control.language.group.englishBase": "Automatinis vertimas"
+  "control.cluster.tooltip": "Garsčio, temos ir kalbos nustatymai"
 }

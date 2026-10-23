@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "دسترسی زودهنگام {days} روزه حامیان",
   "paywall.creatorPage.preview": "پیش‌نمایش",
   "paywall.creatorPage.save": "ذخیره سیاست",
+  "paywall.creatorPage.statusDaysRange": "دسترسی زودهنگام {min}–{max} روز",
+  "paywall.creatorPage.statusDaysSingle": "دسترسی زودهنگام {days} روز",
+  "paywall.creatorPage.statusSummary": "{total} سیاست · {active} روشن",
   "paywall.creatorPage.subtitle": "دسترسی زودهنگام را تنظیم کنید: اول حامیان، پس از N روز رایگان برای همه.",
   "paywall.creatorPage.title": "دسترسی زودهنگام",
   "paywall.creatorPage.titleIdLabel": "شناسه عنوان",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "پیش‌نمایش نمای خواننده",
   "paywall.titleNotice.body": "این عنوان {days} روز زودتر برای حامیان منتشر می‌شود. اگر صبر کنید رایگان می‌شود.",
   "paywall.titleNotice.label": "اعلان دسترسی زودهنگام",
-  "paywall.titleNotice.title": "دسترسی زودهنگام حامیان در حال اجرا است",
-  "paywall.creatorPage.statusDaysRange": "دسترسی زودهنگام {min}–{max} روز",
-  "paywall.creatorPage.statusDaysSingle": "دسترسی زودهنگام {days} روز",
-  "paywall.creatorPage.statusSummary": "{total} سیاست · {active} روشن"
+  "paywall.titleNotice.title": "دسترسی زودهنگام حامیان در حال اجرا است"
 }

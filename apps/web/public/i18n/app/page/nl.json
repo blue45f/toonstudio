@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Pagina niet gevonden",
-  "page.notFound.message": "Controleer de URL opnieuw of zoek titels uit de startpagina.",
-  "page.notFound.home": "Terug naar home",
   "page.events.board.community": "Communitybord",
   "page.events.board.official": "Officiële evenementen",
   "page.events.board.title": "Evenementenlijst",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Bekijk bèta-voordelen",
   "page.events.hero.secondary": "Community-evenementenbord",
   "page.events.hero.title": "Evenementenbord",
+  "page.notFound.home": "Terug naar home",
+  "page.notFound.message": "Controleer de URL opnieuw of zoek titels uit de startpagina.",
   "page.notFound.quip.1": "Hè? Dit paneel is nog niet getekend!",
   "page.notFound.quip.2": "Je bent afgedwaald voordat de inkt zelfs maar droog was.",
   "page.notFound.quip.3": "Tot ziens in de volgende aflevering… waarschijnlijk!",
   "page.notFound.quip.4": "De artiest tekent deze pagina op dit moment.",
-  "page.notFound.tapHint": "Tik even op de cijfers"
+  "page.notFound.tapHint": "Tik even op de cijfers",
+  "page.notFound.title": "Pagina niet gevonden"
 }

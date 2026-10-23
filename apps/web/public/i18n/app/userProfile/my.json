@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "ဖန်တီးထားသော လက်ရာများ",
   "userProfile.tabs.series": "အတန်း",
   "userProfile.works.empty": "ဒီအသုံးပြုသူမှာ အများသုံးလက်ရာတွေ မရှိသေးဘူး။",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "ဒီအသုံးပြုသူမှာ အစဉ်တစ်ခုမှ မရှိသေးပါ။",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profile ကို load မလုပ်နိုင်ပါ။",
   "userProfile.authorFallback": "အသုံးပြုသူ",
   "userProfile.metaTemplate": "{author} profile · {reviews} reviews · {works} အလုပ်များ · AVG rating {avg}  ToonStudio",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ပရိုဖိုင်း အကြောင်းအရာ",
   "userProfile.refresh": "အားဖြည့်ခြင်း",
   "userProfile.emptyReviews": "ဒီ user က ထုတ်ပြန်တဲ့ သုံးသပ်ချက် မရှိသေးဘူး။",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

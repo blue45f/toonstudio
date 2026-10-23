@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "เจ้าของบัญชี",
   "revenue.payout.holderPlaceholder": "ชื่อเจ้าของบัญชี",
   "revenue.payout.mockNote": "ตอนนี้เป็นคำขอจำลอง การจ่ายเงินจริงดำเนินการโดยระบบชำระยอดฝั่งเซิร์ฟเวอร์",
+  "revenue.payout.notAvailableBody": "ขณะนี้ยังไม่เปิดรับคำขอถอนเงินจริง และรายละเอียดบัญชีที่คุณป้อนจะไม่ถูกจัดเก็บ เมื่อเปิดรับคำขอ คุณสามารถสมัครได้ที่นี่และติดตามประวัติและสถานะคำขอของคุณ",
+  "revenue.payout.notAvailableTitle": "ยังไม่พร้อมให้ขอถอนเงิน",
   "revenue.payout.submit": "ขอถอนเงิน",
   "revenue.payout.title": "ถอนเงินที่ชำระยอดแล้ว",
   "revenue.settlement.belowMinimum": "ถอนได้ตั้งแต่ {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "การเข้าถึงล่วงหน้า",
   "revenue.source.market": "ยอดขายในตลาด",
   "revenue.source.membership": "เมมเบอร์ชิป",
-  "revenue.source.tips": "ทิป",
-  "revenue.payout.notAvailableBody": "ขณะนี้ยังไม่เปิดรับคำขอถอนเงินจริง และรายละเอียดบัญชีที่คุณป้อนจะไม่ถูกจัดเก็บ เมื่อเปิดรับคำขอ คุณสามารถสมัครได้ที่นี่และติดตามประวัติและสถานะคำขอของคุณ",
-  "revenue.payout.notAvailableTitle": "ยังไม่พร้อมให้ขอถอนเงิน"
+  "revenue.source.tips": "ทิป"
 }

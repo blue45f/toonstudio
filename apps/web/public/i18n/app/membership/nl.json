@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Leden",
   "membership.creatorPage.statMonthly": "Maandelijks terugkerend",
   "membership.creatorPage.statTiers": "Actieve niveaus",
+  "membership.creatorPage.statusActive": "{count} niveaus staan live op het aanmeldscherm voor lezers",
   "membership.creatorPage.subtitle": "Maak lidmaatschapsniveaus voor fans en volg de maandelijkse abonnementsinkomsten.",
   "membership.creatorPage.tierList": "Lidmaatschapsniveaus",
   "membership.creatorPage.tierMembers": "{count} leden",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Het bedrag dat fans elke maand betalen.",
   "membership.tierEditor.priceLabel": "Maandprijs (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Opslaan",
-  "membership.creatorPage.statusActive": "{count} niveaus staan live op het aanmeldscherm voor lezers"
+  "membership.tierEditor.save": "Opslaan"
 }

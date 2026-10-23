@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "สมาชิก",
   "membership.creatorPage.statMonthly": "รายได้ประจำรายเดือน",
   "membership.creatorPage.statTiers": "ระดับที่ใช้งานอยู่",
+  "membership.creatorPage.statusActive": "ระดับ {count} ระดับเผยแพร่อยู่บนหน้าจอสมัครของผู้อ่าน",
   "membership.creatorPage.subtitle": "สร้างระดับสมาชิกสำหรับแฟน ๆ และติดตามรายได้จากการสมัครรายเดือน",
   "membership.creatorPage.tierList": "ระดับสมาชิก",
   "membership.creatorPage.tierMembers": "สมาชิก {count} คน",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "จำนวนเงินที่แฟน ๆ จ่ายทุกเดือน",
   "membership.tierEditor.priceLabel": "ราคารายเดือน (วอน)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "บันทึก",
-  "membership.creatorPage.statusActive": "ระดับ {count} ระดับเผยแพร่อยู่บนหน้าจอสมัครของผู้อ่าน"
+  "membership.tierEditor.save": "บันทึก"
 }

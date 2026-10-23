@@ -1,5 +1,7 @@
 {
   "control.language.label": "Språk",
+  "control.language.group.translated": "Översättningar med hög täckning",
+  "control.language.group.englishBase": "Automatisk översättning · Engelska fallback",
   "control.sound.enable": "Släpp ljudeffekter",
   "control.sound.disable": "Inaktiverar ljudeffekter",
   "control.theme.dark": "Öppna till ljusläge",
@@ -8,7 +10,5 @@
   "control.settings.close": "Stängda inställningar",
   "control.cluster.settings": "Ljud, tema, språkkontroll",
   "control.cluster.open": "Öppna inställningar",
-  "control.cluster.tooltip": "Ljud, tema och språk inställningar",
-  "control.language.group.translated": "Översättningar med hög täckning",
-  "control.language.group.englishBase": "Automatisk översättning · Engelska fallback"
+  "control.cluster.tooltip": "Ljud, tema och språk inställningar"
 }

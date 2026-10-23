@@ -1,5 +1,7 @@
 {
   "control.language.label": "Dillər",
+  "control.language.group.translated": "Yüksək məzmunlu tərcümələr",
+  "control.language.group.englishBase": "Avtomatik tərcümə · İngilis dili fallback",
   "control.sound.enable": "Səs effektlərini təmin etmək",
   "control.sound.disable": "Səs effektlərini söndürün",
   "control.theme.dark": "İşıq rejiminə keçin",
@@ -8,7 +10,5 @@
   "control.settings.close": "Qapalı parametrlər",
   "control.cluster.settings": "Səs, mövzu, dil nəzarəti",
   "control.cluster.open": "Açıq parametrlər",
-  "control.cluster.tooltip": "Səs, mövzu və dil parametrləri",
-  "control.language.group.translated": "Yüksək məzmunlu tərcümələr",
-  "control.language.group.englishBase": "Avtomatik tərcümə · İngilis dili fallback"
+  "control.cluster.tooltip": "Səs, mövzu və dil parametrləri"
 }

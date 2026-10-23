@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "ਸਿਰਜਿਆ ਕੰਮ",
   "userProfile.tabs.series": "ਸੀਰੀਜ਼",
   "userProfile.works.empty": "ਇਸ ਉਪਭੋਗਤਾ ਕੋਲ ਅਜੇ ਤੱਕ ਕੋਈ ਜਨਤਕ ਕੰਮ ਨਹੀਂ ਹੈ।",
+  "userProfile.works.error": "ਬਣਾਈਆਂ ਰਚਨਾਵਾਂ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀਆਂ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
   "userProfile.series.empty": "ਇਸ ਉਪਭੋਗਤਾ ਕੋਲ ਅਜੇ ਕੋਈ ਲੜੀ ਨਹੀਂ ਹੈ।",
+  "userProfile.series.error": "ਲੜੀ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
   "userProfile.fetchError": "ਪ੍ਰੋਫਾਈਲ ਲੋਡ ਨਹੀਂ ਕਰ ਸਕਿਆ.",
   "userProfile.authorFallback": "ਉਪਭੋਗਤਾ",
   "userProfile.metaTemplate": "{author} ਪ੍ਰੋਫਾਈਲ · {reviews} ਸਮੀਖਿਆਵਾਂ · {works} ਕੰਮ · avg ਰੇਟਿੰਗ {avg}  ਟੂਨਸਪੈਕਟ੍ਰਮ.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ਪ੍ਰੋਫਾਈਲ ਸਮੱਗਰੀ",
   "userProfile.refresh": "ਤਾਜ਼ਾ",
   "userProfile.emptyReviews": "ਇਸ ਉਪਭੋਗਤਾ ਵੱਲੋਂ ਅਜੇ ਕੋਈ ਸਮੀਖਿਆ ਪ੍ਰਕਾਸ਼ਿਤ ਨਹੀਂ ਕੀਤੀ ਗਈ।",
-  "userProfile.works.error": "ਬਣਾਈਆਂ ਰਚਨਾਵਾਂ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀਆਂ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
-  "userProfile.series.error": "ਲੜੀ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੀ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
   "userProfile.emptyReviewsHint": "ਆਪਣੇ ਮਨਪਸੰਦ ਸਿਰਲੇਖ 'ਤੇ ਪਹਿਲੀ ਸਮੀਖਿਆ ਛੱਡੋ।",
   "userProfile.emptyReviewsCta": "ਸਿਰਲੇਖ ਬ੍ਰਾਊਜ਼ ਕਰੋ"
 }

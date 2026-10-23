@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Выправіць усё",
   "search.explorer.recent.delete": "Знішчыць нядаўняе запыт {query}",
   "search.explorer.recent.searchAgain": "Зноў пошук з нядаўніх ключавых слоў",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Каталог",
   "search.explorer.catalog.empty": "Каталог пусты",
   "search.explorer.currentFilter": "Пераходныя фільтры",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} м таму",
   "search.explorer.time.hoursAgo": "{count} гадзіну таму",
   "search.explorer.time.daysAgo": "{count} г таму",
-  "search.explorer.loadMore": "Загрузіць больш",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Загрузіць больш"
 }

@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "أزيلوا كل شيء",
   "search.explorer.recent.delete": "إزالة الاستفسار الأخير {query}",
   "search.explorer.recent.searchAgain": "ابحث مرة أخرى من الكلمات الرئيسية الأخيرة",
+  "search.explorer.suggestions.popular": "عمليات البحث الشائعة",
+  "search.explorer.suggestions.genres": "الأنواع المقترحة",
+  "search.explorer.suggestions.searchFor": "البحث عن {query}",
+  "search.explorer.suggestions.genreFilter": "تضييق النتائج حسب النوع {genre}",
+  "search.explorer.suggestions.loading": "جارٍ تحميل عمليات البحث المقترحة",
+  "search.explorer.suggestions.error": "تعذّر تحميل عمليات البحث المقترحة. يُرجى المحاولة مرة أخرى بعد قليل.",
+  "search.explorer.suggestions.empty": "لا توجد اقتراحات في الوقت الحالي. جرّب كتابة عنوان أو مؤلف أو وسم.",
   "search.explorer.catalog.label": "الكتالوج",
   "search.explorer.catalog.empty": "الكتالوج فارغ",
   "search.explorer.currentFilter": "المرشحات الحالية",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "حُدّث قبل {count} دقيقة",
   "search.explorer.time.hoursAgo": "حُدّث قبل {count} ساعة",
   "search.explorer.time.daysAgo": "حُدّث قبل {count} يوم",
-  "search.explorer.loadMore": "تحميل المزيد",
-  "search.explorer.suggestions.popular": "عمليات البحث الشائعة",
-  "search.explorer.suggestions.genres": "الأنواع المقترحة",
-  "search.explorer.suggestions.searchFor": "البحث عن {query}",
-  "search.explorer.suggestions.genreFilter": "تضييق النتائج حسب النوع {genre}",
-  "search.explorer.suggestions.loading": "جارٍ تحميل عمليات البحث المقترحة",
-  "search.explorer.suggestions.error": "تعذّر تحميل عمليات البحث المقترحة. يُرجى المحاولة مرة أخرى بعد قليل.",
-  "search.explorer.suggestions.empty": "لا توجد اقتراحات في الوقت الحالي. جرّب كتابة عنوان أو مؤلف أو وسم."
+  "search.explorer.loadMore": "تحميل المزيد"
 }

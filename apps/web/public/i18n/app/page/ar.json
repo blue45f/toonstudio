@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "الصفحة غير موجودة",
-  "page.notFound.message": "تحقق من URL مرة أخرى أو استكشاف العناوين من الصفحة الرئيسية.",
-  "page.notFound.home": "عودي للمنزل",
   "page.events.board.community": "لوحة المجتمع",
   "page.events.board.official": "الفعاليات الرسمية",
   "page.events.board.title": "قائمة الفعاليات",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "عرض مزايا النسخة التجريبية",
   "page.events.hero.secondary": "لوحة فعاليات المجتمع",
   "page.events.hero.title": "لوحة الفعاليات",
+  "page.notFound.home": "عودي للمنزل",
+  "page.notFound.message": "تحقق من URL مرة أخرى أو استكشاف العناوين من الصفحة الرئيسية.",
   "page.notFound.quip.1": "أوه؟ لم تُرسم هذه اللوحة بعد!",
   "page.notFound.quip.2": "لقد ضللت الطريق قبل أن يجف الحبر حتى.",
   "page.notFound.quip.3": "نراك في الحلقة القادمة… على الأرجح!",
   "page.notFound.quip.4": "الفنان يرسم هذه الصفحة الآن.",
-  "page.notFound.tapHint": "انقر على الأرقام"
+  "page.notFound.tapHint": "انقر على الأرقام",
+  "page.notFound.title": "الصفحة غير موجودة"
 }

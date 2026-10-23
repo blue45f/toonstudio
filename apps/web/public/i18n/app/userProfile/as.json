@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "সৃষ্টি কৰা কাম",
   "userProfile.tabs.series": "ধাৰাবাহিক",
   "userProfile.works.empty": "এই ব্যৱহাৰকাৰীৰ এতিয়াও কোনো ৰাজহুৱা কাম নাই।",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "এই ব্যৱহাৰকৰ্তাৰ এতিয়াও কোনো ধাৰা নাই।",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "প্ৰফাইল লোড কৰিব নোৱাৰি।",
   "userProfile.authorFallback": "ব্যৱহাৰকাৰী",
   "userProfile.metaTemplate": "{author} প্ৰফাইল · {reviews} সমীক্ষা · {works} কাম · avg ৰেটিং {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "প্ৰফাইলৰ বিষয়বস্তু",
   "userProfile.refresh": "সতেজতা",
   "userProfile.emptyReviews": "এই ব্যৱহাৰকৰ্তাই এতিয়ালৈকে প্ৰকাশ কৰা নাই কোনো সমীক্ষা।",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

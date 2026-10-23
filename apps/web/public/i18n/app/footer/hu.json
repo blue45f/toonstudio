@@ -30,6 +30,7 @@
   "footer.link.news": "Tón & web novellák hírek",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "A rangsorolási politika",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "A térkép",
   "footer.link.settings": "Beállítások",
   "footer.link.support": "Támogatás",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Üzleti szolgáltatás",
   "footer.business.serviceType": "A platform típusa",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Készítsd meg a következő történetedet",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Készítsd meg a következő történetedet"
 }

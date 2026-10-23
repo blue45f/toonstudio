@@ -1,14 +1,14 @@
 {
   "control.language.label": "言語",
-  "control.theme.dark": "ライトモードに切り替える",
-  "control.settings.close": "設定を閉じる",
-  "control.settings.open": "設定を開く",
-  "control.theme.light": "ダークモードに切り替える",
-  "control.cluster.open": "設定を開く",
-  "control.sound.disable": "効果音を無効にする",
-  "control.sound.enable": "効果音を有効にする",
-  "control.cluster.tooltip": "サウンド、テーマ、言語の設定",
-  "control.cluster.settings": "サウンド、テーマ、言語コントロール",
   "control.language.group.translated": "広範囲の翻訳",
-  "control.language.group.englishBase": "自動翻訳 · 英語のフォールバック"
+  "control.language.group.englishBase": "自動翻訳 · 英語のフォールバック",
+  "control.sound.enable": "効果音を有効にする",
+  "control.sound.disable": "効果音を無効にする",
+  "control.theme.dark": "ライトモードに切り替える",
+  "control.theme.light": "ダークモードに切り替える",
+  "control.settings.open": "設定を開く",
+  "control.settings.close": "設定を閉じる",
+  "control.cluster.settings": "サウンド、テーマ、言語コントロール",
+  "control.cluster.open": "設定を開く",
+  "control.cluster.tooltip": "サウンド、テーマ、言語の設定"
 }

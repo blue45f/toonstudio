@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "開戶名",
   "revenue.payout.holderPlaceholder": "持有人姓名",
   "revenue.payout.mockNote": "目前這是模擬申請。實際付款由後端結算流程處理。",
+  "revenue.payout.notAvailableBody": "目前尚未真正受理提現申請，您輸入的帳號資訊不會被儲存。提現申請開放後，您可以在此直接申請，並檢視申請記錄和狀態。",
+  "revenue.payout.notAvailableTitle": "提現申請尚未開放",
   "revenue.payout.submit": "申請提現",
   "revenue.payout.title": "結算提現",
   "revenue.settlement.belowMinimum": "滿 {min} 起可提現",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "搶先體驗",
   "revenue.source.market": "市場銷售",
   "revenue.source.membership": "會員",
-  "revenue.source.tips": "打賞",
-  "revenue.payout.notAvailableBody": "目前尚未真正受理提現申請，您輸入的帳號資訊不會被儲存。提現申請開放後，您可以在此直接申請，並檢視申請記錄和狀態。",
-  "revenue.payout.notAvailableTitle": "提現申請尚未開放"
+  "revenue.source.tips": "打賞"
 }

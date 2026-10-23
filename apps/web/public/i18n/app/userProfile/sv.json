@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Skapat verk",
   "userProfile.tabs.series": "Serier",
   "userProfile.works.empty": "Den här användaren har inte några offentliga verk än.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Den här användaren har inte några serier än.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Kan inte ladda profil.",
   "userProfile.authorFallback": "Användare",
   "userProfile.metaTemplate": "{author} profil · {reviews} recensioner · {works} arbete · avg betyg {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profilinnehåll",
   "userProfile.refresh": "Uppfriskning",
   "userProfile.emptyReviews": "Ingen recension publicerad av denna användare ännu.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

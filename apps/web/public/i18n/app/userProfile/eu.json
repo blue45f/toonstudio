@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Sortutako lanak",
   "userProfile.tabs.series": "Saria",
   "userProfile.works.empty": "Erabiltzaile honek ez du oraindik lan publikorik.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Erabiltzaile honek ez du oraindik serie bat.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profila ez da kargatzen.",
   "userProfile.authorFallback": "Erabiltzailea",
   "userProfile.metaTemplate": "{author} profila · {reviews} errezenbuak · {works} lanak · {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profil-edukiak",
   "userProfile.refresh": "Berriz ere.",
   "userProfile.emptyReviews": "Erabiltzaile honek ez du oraindik iritzirik argitaratu.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

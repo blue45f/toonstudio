@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Mga miyembro",
   "membership.creatorPage.statMonthly": "Buwanang umuulit na kita",
   "membership.creatorPage.statTiers": "Mga aktibong tier",
+  "membership.creatorPage.statusActive": "{count} tier ang live sa screen ng pag-sign up ng mambabasa",
   "membership.creatorPage.subtitle": "Gumawa ng mga tier ng membership ng tagahanga at subaybayan ang kita mula sa buwanang subscription.",
   "membership.creatorPage.tierList": "Mga tier ng membership",
   "membership.creatorPage.tierMembers": "{count} miyembro",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Ang halagang binabayaran ng mga tagahanga bawat buwan.",
   "membership.tierEditor.priceLabel": "Buwanang presyo (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "I-save",
-  "membership.creatorPage.statusActive": "{count} tier ang live sa screen ng pag-sign up ng mambabasa"
+  "membership.tierEditor.save": "I-save"
 }

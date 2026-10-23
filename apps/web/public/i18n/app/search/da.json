@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Ryd det hele.",
   "search.explorer.recent.delete": "Slet nylig forespørgsel {query}",
   "search.explorer.recent.searchAgain": "Søg igen efter nylige søgeord",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Katalog",
   "search.explorer.catalog.empty": "Kataloget er tomt.",
   "search.explorer.currentFilter": "Følgefiltre",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m siden",
   "search.explorer.time.hoursAgo": "{count} time siden",
   "search.explorer.time.daysAgo": "{count} d siden",
-  "search.explorer.loadMore": "Lade mere",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Lade mere"
 }

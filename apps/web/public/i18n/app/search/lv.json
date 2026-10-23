@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Visus atdalīt.",
   "search.explorer.recent.delete": "Izdzēst pēdējā pieprasījumu {query}",
   "search.explorer.recent.searchAgain": "Atkārtojiet meklēšanu no nesen esošajiem vārtiem",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Katalogs",
   "search.explorer.catalog.empty": "Katalogs ir tuvs.",
   "search.explorer.currentFilter": "Jaundzimušo filtri",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} m pirms",
   "search.explorer.time.hoursAgo": "{count} stundu pirms",
   "search.explorer.time.daysAgo": "{count} d pirms",
-  "search.explorer.loadMore": "Uzpildīt vairāk",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Uzpildīt vairāk"
 }

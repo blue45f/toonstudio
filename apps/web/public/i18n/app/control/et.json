@@ -1,5 +1,7 @@
 {
   "control.language.label": "Keel",
+  "control.language.group.translated": "Suurte kaaludega tõlked",
+  "control.language.group.englishBase": "Automaatne tõlge · inglise keel fallback",
   "control.sound.enable": "Võimalda heliefektide tegemine",
   "control.sound.disable": "Kõneefektide lülitamine",
   "control.theme.dark": "Liigumine valguse liini",
@@ -8,7 +10,5 @@
   "control.settings.close": "Lähedased seadmed",
   "control.cluster.settings": "Kõne, teema, keelejuhtimine",
   "control.cluster.open": "Avatud seadmed",
-  "control.cluster.tooltip": "Kõne, teema ja keeleseadmed",
-  "control.language.group.translated": "Suurte kaaludega tõlked",
-  "control.language.group.englishBase": "Automaatne tõlge · inglise keel fallback"
+  "control.cluster.tooltip": "Kõne, teema ja keeleseadmed"
 }

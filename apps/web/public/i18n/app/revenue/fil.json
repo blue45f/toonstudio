@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "May-ari ng account",
   "revenue.payout.holderPlaceholder": "Pangalan ng may-ari",
   "revenue.payout.mockNote": "Kunwaring kahilingan lang ito sa ngayon. Ang tunay na payout ay pinoproseso ng settlement pipeline sa backend.",
+  "revenue.payout.notAvailableBody": "Hindi pa talaga tinatanggap ang mga kahilingan ng payout, at hindi iniimbak ang anumang detalye ng account na ilalagay mo. Kapag nagbukas ang mga kahilingan, makakapag-apply ka mismo dito at masusubaybayan mo ang kasaysayan at status ng kahilingan mo.",
+  "revenue.payout.notAvailableTitle": "Hindi pa available ang mga kahilingan ng payout",
   "revenue.payout.submit": "Humiling ng payout",
   "revenue.payout.title": "Pag-withdraw ng payout",
   "revenue.settlement.belowMinimum": "Available mula {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Maagang access",
   "revenue.source.market": "Benta sa market",
   "revenue.source.membership": "Membership",
-  "revenue.source.tips": "Mga tip",
-  "revenue.payout.notAvailableBody": "Hindi pa talaga tinatanggap ang mga kahilingan ng payout, at hindi iniimbak ang anumang detalye ng account na ilalagay mo. Kapag nagbukas ang mga kahilingan, makakapag-apply ka mismo dito at masusubaybayan mo ang kasaysayan at status ng kahilingan mo.",
-  "revenue.payout.notAvailableTitle": "Hindi pa available ang mga kahilingan ng payout"
+  "revenue.source.tips": "Mga tip"
 }

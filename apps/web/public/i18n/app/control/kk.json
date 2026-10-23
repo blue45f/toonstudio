@@ -1,5 +1,7 @@
 {
   "control.language.label": "Тіл",
+  "control.language.group.translated": "Көберек аудармалар",
+  "control.language.group.englishBase": "Автоматты аударма · ағылшынша аударма",
   "control.sound.enable": "Дыбыс әсерін рұқсат ету",
   "control.sound.disable": "Дыбыс эффекттерін өшіру",
   "control.theme.dark": "Жарық режиміне ауысу",
@@ -8,7 +10,5 @@
   "control.settings.close": "Жақын орнату",
   "control.cluster.settings": "Дыбыс, тақырып, тілдік басқару",
   "control.cluster.open": "Ашық параметрлер",
-  "control.cluster.tooltip": "Дыбыс, тақырып және тіл параметрлері",
-  "control.language.group.translated": "Көберек аудармалар",
-  "control.language.group.englishBase": "Автоматты аударма · ағылшынша аударма"
+  "control.cluster.tooltip": "Дыбыс, тақырып және тіл параметрлері"
 }

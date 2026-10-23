@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "ຜົນງານທີ່ສ້າງຂື້ນ",
   "userProfile.tabs.series": "ຊຸດ",
   "userProfile.works.empty": "ຜູ້ໃຊ້ນີ້ຍັງບໍ່ມີຜົນງານສາທາລະນະເທື່ອ.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "ຜູ້ໃຊ້ນີ້ຍັງບໍ່ມີຊຸດເທື່ອ.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "ບໍ່ສາມາດໂຫຼດໂປຣໄຟລ໌ໄດ້.",
   "userProfile.authorFallback": "ຜູ້ໃຊ້",
   "userProfile.metaTemplate": "{author} profile · {reviews} reviews · {works} ເຮັດວຽກ · rating avg {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ເນື້ອໃນໂປຣໄຟລ໌",
   "userProfile.refresh": "ການຟົດຟື້ນ",
   "userProfile.emptyReviews": "ບໍ່ມີການທົບທວນຄືນທີ່ຖືກເຜີຍແຜ່ໂດຍຜູ້ໃຊ້ນີ້ເທື່ອ.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

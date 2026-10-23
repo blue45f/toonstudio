@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Yaradılmış əsərlər",
   "userProfile.tabs.series": "Seriya",
   "userProfile.works.empty": "Bu istifadəçinin hələlik ictimai əsərləri yoxdur.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Bu istifadəçinin hələ də seriyası yoxdur.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profil yükləyə bilmədim.",
   "userProfile.authorFallback": "İstifadəçi",
   "userProfile.metaTemplate": "{author} profil · {reviews} baxışları · {works} işləri · AVG reytinq {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profil məzmunu",
   "userProfile.refresh": "Yeniləmə",
   "userProfile.emptyReviews": "Bu istifadəçi tərəfindən hələ heç bir rəy dərc edilməyib.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

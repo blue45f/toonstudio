@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Loodetud teos",
   "userProfile.tabs.series": "Süüri",
   "userProfile.works.empty": "Selle kasutajail pole veel avalikke tööid.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Sellele kasutajale pole veel rida.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profiili laadimine ei ole võimalik.",
   "userProfile.authorFallback": "Kasutaja",
   "userProfile.metaTemplate": "{author} profiil · {reviews} ülevaate · {works} tööd · avg hindamine {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profiili sisu",
   "userProfile.refresh": "Värskendamine",
   "userProfile.emptyReviews": "Selle kasutaja poolt veel avaldatud arvustusi pole.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

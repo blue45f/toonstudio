@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} دن کی حامی جلد رسائی",
   "paywall.creatorPage.preview": "پیش نظارہ",
   "paywall.creatorPage.save": "پالیسی محفوظ کریں",
+  "paywall.creatorPage.statusDaysRange": "جلد رسائی {min}–{max} دن",
+  "paywall.creatorPage.statusDaysSingle": "جلد رسائی {days} دن",
+  "paywall.creatorPage.statusSummary": "{total} پالیسیاں · {active} چالو",
   "paywall.creatorPage.subtitle": "جلد رسائی ترتیب دیں: پہلے حامیوں کے لیے، N دنوں کے بعد سب کے لیے مفت۔",
   "paywall.creatorPage.title": "جلد رسائی",
   "paywall.creatorPage.titleIdLabel": "عنوان ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "قاری منظر کا پیش نظارہ",
   "paywall.titleNotice.body": "یہ عنوان حامیوں کے لیے {days} دن پہلے جاری ہوتا ہے۔ انتظار کریں تو یہ مفت ہو جاتا ہے۔",
   "paywall.titleNotice.label": "جلد رسائی نوٹس",
-  "paywall.titleNotice.title": "حامی جلد رسائی نافذ ہے",
-  "paywall.creatorPage.statusDaysRange": "جلد رسائی {min}–{max} دن",
-  "paywall.creatorPage.statusDaysSingle": "جلد رسائی {days} دن",
-  "paywall.creatorPage.statusSummary": "{total} پالیسیاں · {active} چالو"
+  "paywall.titleNotice.title": "حامی جلد رسائی نافذ ہے"
 }

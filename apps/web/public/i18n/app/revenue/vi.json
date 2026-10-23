@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Chủ tài khoản",
   "revenue.payout.holderPlaceholder": "Tên chủ tài khoản",
   "revenue.payout.mockNote": "Hiện tại đây là yêu cầu mô phỏng. Việc chi trả thật được xử lý bởi quy trình quyết toán ở phía máy chủ.",
+  "revenue.payout.notAvailableBody": "Yêu cầu rút tiền thực tế chưa được tiếp nhận, và mọi thông tin tài khoản bạn nhập đều không được lưu. Khi chức năng yêu cầu mở ra, bạn sẽ có thể đăng ký ngay tại đây và theo dõi lịch sử cùng trạng thái yêu cầu của mình.",
+  "revenue.payout.notAvailableTitle": "Yêu cầu rút tiền chưa khả dụng",
   "revenue.payout.submit": "Yêu cầu rút tiền",
   "revenue.payout.title": "Rút tiền quyết toán",
   "revenue.settlement.belowMinimum": "Rút được từ {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Truy cập sớm",
   "revenue.source.market": "Bán hàng trên chợ",
   "revenue.source.membership": "Gói thành viên",
-  "revenue.source.tips": "Tiền ủng hộ",
-  "revenue.payout.notAvailableBody": "Yêu cầu rút tiền thực tế chưa được tiếp nhận, và mọi thông tin tài khoản bạn nhập đều không được lưu. Khi chức năng yêu cầu mở ra, bạn sẽ có thể đăng ký ngay tại đây và theo dõi lịch sử cùng trạng thái yêu cầu của mình.",
-  "revenue.payout.notAvailableTitle": "Yêu cầu rút tiền chưa khả dụng"
+  "revenue.source.tips": "Tiền ủng hộ"
 }

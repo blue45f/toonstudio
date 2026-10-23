@@ -30,6 +30,7 @@
   "footer.link.news": "Mga balita ng mga nobela sa Toon & web",
   "footer.link.about": "Tungkol sa ToonStudio",
   "footer.link.guide": "Mga patakaran sa ranggo",
+  "footer.link.features": "Lahat ng feature sa isang tingin",
   "footer.link.sitemap": "Mapa ng site",
   "footer.link.settings": "Mga setting",
   "footer.link.support": "Suporta",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Serbisyo sa pagho-host",
   "footer.business.serviceType": "Ang uri ng platform",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "I-create ang iyong susunod na kwento",
-  "footer.link.features": "Lahat ng feature sa isang tingin"
+  "footer.logoTag": "I-create ang iyong susunod na kwento"
 }

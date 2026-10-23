@@ -30,6 +30,7 @@
   "footer.link.news": "Albistegiak",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "sailkapen politika",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Mapa webgunea",
   "footer.link.settings": "Jarri",
   "footer.link.support": "Laguntza",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Geltoki zerbitzua",
   "footer.business.serviceType": "Plataformaren motakoa",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Zure hurrengo istorioa sortu",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Zure hurrengo istorioa sortu"
 }

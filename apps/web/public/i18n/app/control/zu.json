@@ -1,5 +1,7 @@
 {
   "control.language.label": "Ulimi",
+  "control.language.group.translated": "Ukuhumusha okunemisebenzi eminingi",
+  "control.language.group.englishBase": "Ukuhumusha okuzenzakalelayo · IsiNgisi fallback",
   "control.sound.enable": "Vumela imiphumela yomsindo",
   "control.sound.disable": "Vimbela imiphumela yomsindo",
   "control.theme.dark": "Shintsha kumodi yokukhanya",
@@ -8,7 +10,5 @@
   "control.settings.close": "Izilungiselelo zokuvala",
   "control.cluster.settings": "Umsindo, isihloko, ukulawula ulimi",
   "control.cluster.open": "Izilungiselelo ezivulekile",
-  "control.cluster.tooltip": "Izilungiselelo zomsindo, izingqikithi nolimi",
-  "control.language.group.translated": "Ukuhumusha okunemisebenzi eminingi",
-  "control.language.group.englishBase": "Ukuhumusha okuzenzakalelayo · IsiNgisi fallback"
+  "control.cluster.tooltip": "Izilungiselelo zomsindo, izingqikithi nolimi"
 }

@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} araw na maagang access ng tagasuporta",
   "paywall.creatorPage.preview": "I-preview",
   "paywall.creatorPage.save": "I-save ang patakaran",
+  "paywall.creatorPage.statusDaysRange": "maagang access {min}–{max} araw",
+  "paywall.creatorPage.statusDaysSingle": "maagang access {days} araw",
+  "paywall.creatorPage.statusSummary": "{total} patakaran · {active} naka-on",
   "paywall.creatorPage.subtitle": "Mag-set up ng maagang access: mauuna ang mga tagasuporta, libre para sa lahat pagkatapos ng N araw.",
   "paywall.creatorPage.title": "Pamamahala ng maagang access",
   "paywall.creatorPage.titleIdLabel": "ID ng pamagat",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Preview ng view ng mambabasa",
   "paywall.titleNotice.body": "Inilalabas ang pamagat na ito sa mga tagasuporta nang {days} araw na mas maaga. Magiging libre ito kung maghihintay ka.",
   "paywall.titleNotice.label": "Abiso ng maagang access",
-  "paywall.titleNotice.title": "May bisa ang maagang access ng tagasuporta",
-  "paywall.creatorPage.statusDaysRange": "maagang access {min}–{max} araw",
-  "paywall.creatorPage.statusDaysSingle": "maagang access {days} araw",
-  "paywall.creatorPage.statusSummary": "{total} patakaran · {active} naka-on"
+  "paywall.titleNotice.title": "May bisa ang maagang access ng tagasuporta"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Ijodiy asarlar",
   "userProfile.tabs.series": "Seriya",
   "userProfile.works.empty": "Ushbu foydalanuvchiga hali hech qanday ommaviy ish yo'q.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Ushbu foydalanuvchida hali seriya yo'q.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Profilni yuklab bo'lmadi.",
   "userProfile.authorFallback": "Foydalanuvchi",
   "userProfile.metaTemplate": "{author} profil · {reviews} sharhlari · {works} ishlari · avgust reytingi {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profil tarkibi",
   "userProfile.refresh": "Yangilashtirish",
   "userProfile.emptyReviews": "Ushbu foydalanuvchi tomonidan hali hech qanday sharhlar chop etilmagan.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "સર્જાયેલી કૃતિઓ",
   "userProfile.tabs.series": "શ્રેણી",
   "userProfile.works.empty": "આ વપરાશકર્તા પાસે હજુ સુધી કોઈ જાહેર કાર્યો નથી.",
+  "userProfile.works.error": "સર્જેલી કૃતિઓ લોડ થઈ શકી નહીં. કૃપા કરીને ફરી પ્રયાસ કરો.",
   "userProfile.series.empty": "આ વપરાશકર્તા પાસે હજુ સુધી કોઈ શ્રેણી નથી.",
+  "userProfile.series.error": "શ્રેણી લોડ થઈ શકી નહીં. કૃપા કરીને ફરી પ્રયાસ કરો.",
   "userProfile.fetchError": "પ્રોફાઇલ લોડ કરી શકાતું નથી.",
   "userProfile.authorFallback": "વપરાશકર્તા",
   "userProfile.metaTemplate": "{author} પ્રોફાઇલ · {reviews} સમીક્ષાઓ · {works} કામો · AVG રેટિંગ {avg}  ટનસ્પેક્ટ્રમ.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "પ્રોફાઇલ સામગ્રી",
   "userProfile.refresh": "તાજું કરવું",
   "userProfile.emptyReviews": "આ વપરાશકર્તા દ્વારા હજુ સુધી કોઈ સમીક્ષાઓ પ્રકાશિત નથી.",
-  "userProfile.works.error": "સર્જેલી કૃતિઓ લોડ થઈ શકી નહીં. કૃપા કરીને ફરી પ્રયાસ કરો.",
-  "userProfile.series.error": "શ્રેણી લોડ થઈ શકી નહીં. કૃપા કરીને ફરી પ્રયાસ કરો.",
   "userProfile.emptyReviewsHint": "તમને ગમતી કૃતિ પર પ્રથમ સમીક્ષા મૂકો.",
   "userProfile.emptyReviewsCta": "કૃતિઓ બ્રાઉઝ કરો"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Lucrări create",
   "userProfile.tabs.series": "Serial",
   "userProfile.works.empty": "Acest utilizator nu are încă opere publice.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Acest utilizator nu are încă nici o serie.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Nu pot încărca profilul.",
   "userProfile.authorFallback": "Utilizator",
   "userProfile.metaTemplate": "Profilul {author} · recenziile {reviews} · lucrările {works} · ratingul avg {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Conținutul profilului",
   "userProfile.refresh": "Refrenare",
   "userProfile.emptyReviews": "Niciun comentariu nu a fost publicat încă de acest utilizator.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

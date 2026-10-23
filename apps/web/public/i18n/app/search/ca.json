@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Despejar tot.",
   "search.explorer.recent.delete": "Eliminar la consulta recent {query}",
   "search.explorer.recent.searchAgain": "Buscar de nou de paraules clau recents",
+  "search.explorer.suggestions.popular": "Popular searches",
+  "search.explorer.suggestions.genres": "Recommended genres",
+  "search.explorer.suggestions.searchFor": "Search for {query}",
+  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
+  "search.explorer.suggestions.loading": "Loading suggested searches",
+  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
+  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag.",
   "search.explorer.catalog.label": "Catàleg",
   "search.explorer.catalog.empty": "El catàleg està buit.",
   "search.explorer.currentFilter": "Filtres d'actualitat",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "Fa {count}m",
   "search.explorer.time.hoursAgo": "{count} fa h",
   "search.explorer.time.daysAgo": "{count} fa un dia",
-  "search.explorer.loadMore": "Carrega més",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.loadMore": "Carrega més"
 }

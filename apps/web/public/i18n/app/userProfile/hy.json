@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Ստեղծված աշխատանքներ",
   "userProfile.tabs.series": "Սերիա",
   "userProfile.works.empty": "Այս օգտատերուն դեռեւս չունի հանրային աշխատանքներ:",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Այս օգտատերուն դեռեւս չունի շարքեր:",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Անհնար է բեռնել պրոֆիլը:",
   "userProfile.authorFallback": "Օգտագործող",
   "userProfile.metaTemplate": "{author} պրոֆիլ · {reviews} ակնարկներ · {works} աշխատանքներ · AVG գնահատական {avg}  ToonStudio",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Պրոֆիլի բովանդակություն",
   "userProfile.refresh": "Թարմացումներ",
   "userProfile.emptyReviews": "Այս օգտագործողի կողմից դեռեւս հրապարակված ակնարկներ չկան:",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

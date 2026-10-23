@@ -1,5 +1,7 @@
 {
   "control.language.label": "Bahasa",
+  "control.language.group.translated": "Terjemahan yang mempunyai liputan yang tinggi",
+  "control.language.group.englishBase": "Terjemahan automatik · Bahasa Inggeris fallback",
   "control.sound.enable": "Membolehkan kesan bunyi",
   "control.sound.disable": "Menyingkirkan kesan bunyi",
   "control.theme.dark": "Pindah ke mod cahaya",
@@ -8,7 +10,5 @@
   "control.settings.close": "Tetapan rapat",
   "control.cluster.settings": "Suara, tema, kawalan bahasa",
   "control.cluster.open": "Tetapan terbuka",
-  "control.cluster.tooltip": "Pengaturan bunyi, tema, dan bahasa",
-  "control.language.group.translated": "Terjemahan yang mempunyai liputan yang tinggi",
-  "control.language.group.englishBase": "Terjemahan automatik · Bahasa Inggeris fallback"
+  "control.cluster.tooltip": "Pengaturan bunyi, tema, dan bahasa"
 }

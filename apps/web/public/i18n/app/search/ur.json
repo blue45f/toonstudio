@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "سب صاف",
   "search.explorer.recent.delete": "حالیہ استفسار کو حذف کریں {query}",
   "search.explorer.recent.searchAgain": "حالیہ مطلوبہ الفاظ سے دوبارہ تلاش کریں",
+  "search.explorer.suggestions.popular": "مقبول تلاشیں",
+  "search.explorer.suggestions.genres": "تجویز کردہ اصناف",
+  "search.explorer.suggestions.searchFor": "{query} تلاش کریں",
+  "search.explorer.suggestions.genreFilter": "صنف {genre} کے ذریعے محدود کریں",
+  "search.explorer.suggestions.loading": "تجویز کردہ تلاشیں لوڈ ہو رہی ہیں",
+  "search.explorer.suggestions.error": "تجویز کردہ تلاشیں لوڈ نہیں کی جا سکیں۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+  "search.explorer.suggestions.empty": "فی الحال کوئی تجاویز نہیں۔ عنوان، مصنف یا ٹیگ لکھ کر دیکھیں۔",
   "search.explorer.catalog.label": "فہرست",
   "search.explorer.catalog.empty": "کیٹلاگ خالی ہے",
   "search.explorer.currentFilter": "موجودہ فلٹرز",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} منٹ پہلے",
   "search.explorer.time.hoursAgo": "{count} گھنٹے پہلے",
   "search.explorer.time.daysAgo": "{count} دن پہلے",
-  "search.explorer.loadMore": "مزید لوڈ کریں",
-  "search.explorer.suggestions.popular": "مقبول تلاشیں",
-  "search.explorer.suggestions.genres": "تجویز کردہ اصناف",
-  "search.explorer.suggestions.searchFor": "{query} تلاش کریں",
-  "search.explorer.suggestions.genreFilter": "صنف {genre} کے ذریعے محدود کریں",
-  "search.explorer.suggestions.loading": "تجویز کردہ تلاشیں لوڈ ہو رہی ہیں",
-  "search.explorer.suggestions.error": "تجویز کردہ تلاشیں لوڈ نہیں کی جا سکیں۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں۔",
-  "search.explorer.suggestions.empty": "فی الحال کوئی تجاویز نہیں۔ عنوان، مصنف یا ٹیگ لکھ کر دیکھیں۔"
+  "search.explorer.loadMore": "مزید لوڈ کریں"
 }

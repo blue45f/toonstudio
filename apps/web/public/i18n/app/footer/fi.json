@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web-kirjan uutiset",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Ranking-politiikka",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Sitemappi",
   "footer.link.settings": "Asetukset",
   "footer.link.support": "Tuen",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Huoltopalvelu",
   "footer.business.serviceType": "Alustan tyyppi",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Luota seuraava tarina",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Luota seuraava tarina"
 }

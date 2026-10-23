@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Sukurti kūriniai",
   "userProfile.tabs.series": "Serijos",
   "userProfile.works.empty": "Šis naudotojas dar neturi viešųjų darbų.",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "Šis naudotojas dar neturi serijos.",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "Negaliu įkrauti profilo.",
   "userProfile.authorFallback": "Naudotojas",
   "userProfile.metaTemplate": "{author} profilis · {reviews} apžvalgos · {works} darbai · avg reitingas {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Profilo turinys",
   "userProfile.refresh": "Atsinaujinimas",
   "userProfile.emptyReviews": "Nėra šio vartotojo dar paskelbtų atsiliepimų.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

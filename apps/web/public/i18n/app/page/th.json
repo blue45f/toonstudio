@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "หน้าไม่พบ",
-  "page.notFound.message": "ตรวจสอบ URL อีกครั้ง หรือค้นหาหัวข้อจากหน้าแรก",
-  "page.notFound.home": "ไปกลับบ้าน",
   "page.events.board.community": "กระดานชุมชน",
   "page.events.board.official": "กิจกรรมอย่างเป็นทางการ",
   "page.events.board.title": "รายการกิจกรรม",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "ดูสิทธิประโยชน์เบต้า",
   "page.events.hero.secondary": "กระดานกิจกรรมชุมชน",
   "page.events.hero.title": "กระดานกิจกรรม",
+  "page.notFound.home": "ไปกลับบ้าน",
+  "page.notFound.message": "ตรวจสอบ URL อีกครั้ง หรือค้นหาหัวข้อจากหน้าแรก",
   "page.notFound.quip.1": "อ้าว? ช่องภาพนี้ยังไม่ได้วาดเลย!",
   "page.notFound.quip.2": "คุณหลงทางก่อนที่หมึกจะแห้งเสียอีก",
   "page.notFound.quip.3": "เจอกันในตอนหน้านะ… น่าจะนะ!",
   "page.notFound.quip.4": "ศิลปินกำลังวาดหน้านี้อยู่ตอนนี้เลย",
-  "page.notFound.tapHint": "ลองแตะตัวเลขดูสิ"
+  "page.notFound.tapHint": "ลองแตะตัวเลขดูสิ",
+  "page.notFound.title": "หน้าไม่พบ"
 }

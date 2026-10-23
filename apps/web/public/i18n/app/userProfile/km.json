@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "ស្នាដៃ ដែល បង្កើត ឡើង",
   "userProfile.tabs.series": "ប្រភេទ",
   "userProfile.works.empty": "អ្នក ប្រើប្រាស់ នេះ មិនទាន់ មាន ស្នាដៃ សាធារណៈ នៅឡើយ ទេ ។",
+  "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "អ្នក ប្រើប្រាស់ នេះ មិនទាន់ មាន ប្រភេទ នៅឡើយ ទេ",
+  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.fetchError": "មិនអាចបញ្ចូលឯកសារពណ៌។",
   "userProfile.authorFallback": "អ្នកប្រើប្រាស់",
   "userProfile.metaTemplate": "{author} ប្រវត្តិ · {reviews} ការពិនិត្យ · {works} ធ្វើការ · AVG rating {avg}  ToonStudio",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "ផ្ទុក សារពត៌មាន",
   "userProfile.refresh": "ការបោសសំអាត",
   "userProfile.emptyReviews": "មិនទាន់មានការពិនិត្យដែលបានបង្ហោះដោយអ្នកប្រើប្រាស់នេះនៅឡើយទេ។",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
   "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
   "userProfile.emptyReviewsCta": "Browse titles"
 }

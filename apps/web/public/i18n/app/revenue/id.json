@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Pemegang rekening",
   "revenue.payout.holderPlaceholder": "Nama pemegang",
   "revenue.payout.mockNote": "Ini adalah permintaan simulasi untuk saat ini. Pembayaran nyata diproses oleh pipeline penyelesaian backend.",
+  "revenue.payout.notAvailableBody": "Permintaan pembayaran belum benar-benar diterima, dan detail rekening apa pun yang Anda masukkan tidak disimpan. Saat permintaan dibuka, Anda dapat mengajukan di sini dan melacak riwayat serta status permintaan Anda.",
+  "revenue.payout.notAvailableTitle": "Permintaan pembayaran belum tersedia",
   "revenue.payout.submit": "Minta pembayaran",
   "revenue.payout.title": "Pembayaran",
   "revenue.settlement.belowMinimum": "Tersedia mulai {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Akses awal",
   "revenue.source.market": "Penjualan pasar",
   "revenue.source.membership": "Keanggotaan",
-  "revenue.source.tips": "Dukungan",
-  "revenue.payout.notAvailableBody": "Permintaan pembayaran belum benar-benar diterima, dan detail rekening apa pun yang Anda masukkan tidak disimpan. Saat permintaan dibuka, Anda dapat mengajukan di sini dan melacak riwayat serta status permintaan Anda.",
-  "revenue.payout.notAvailableTitle": "Permintaan pembayaran belum tersedia"
+  "revenue.source.tips": "Dukungan"
 }

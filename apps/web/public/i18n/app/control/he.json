@@ -1,5 +1,7 @@
 {
   "control.language.label": "שפה",
+  "control.language.group.translated": "תרגומים בעלי כמות גבוהה",
+  "control.language.group.englishBase": "תרגום אוטומטי",
   "control.sound.enable": "אפשרת אפקטים קוליים",
   "control.sound.disable": "תבטל אפקטים קוליים",
   "control.theme.dark": "מחליפים למצב אור",
@@ -8,7 +10,5 @@
   "control.settings.close": "הגדרות סמוכות",
   "control.cluster.settings": "קול, נושא, שליטה בשפה",
   "control.cluster.open": "הגדרות פתוחות",
-  "control.cluster.tooltip": "הגדרות הצליל, הנושא והשפה",
-  "control.language.group.translated": "תרגומים בעלי כמות גבוהה",
-  "control.language.group.englishBase": "תרגום אוטומטי"
+  "control.cluster.tooltip": "הגדרות הצליל, הנושא והשפה"
 }

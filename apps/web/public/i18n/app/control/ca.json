@@ -1,5 +1,7 @@
 {
   "control.language.label": "Llengua",
+  "control.language.group.translated": "Traduccions d'alta cobertura",
+  "control.language.group.englishBase": "Traducció automàtica · Fallback anglès",
   "control.sound.enable": "Abilitar efectes sonors",
   "control.sound.disable": "Desactivar els efectes sonors",
   "control.theme.dark": "Passa al mode de llum",
@@ -8,7 +10,5 @@
   "control.settings.close": "Configuracions de tancament",
   "control.cluster.settings": "Controls de son, tema, llenguatge",
   "control.cluster.open": "Configuracions obertes",
-  "control.cluster.tooltip": "Configuracions de son, tema i llenguatge",
-  "control.language.group.translated": "Traduccions d'alta cobertura",
-  "control.language.group.englishBase": "Traducció automàtica · Fallback anglès"
+  "control.cluster.tooltip": "Configuracions de son, tema i llenguatge"
 }

@@ -30,6 +30,7 @@
   "footer.link.news": "Toon & web roman xəbərləri",
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "Rankinq siyasəti",
+  "footer.link.features": "All features at a glance",
   "footer.link.sitemap": "Saytın xəritəsi",
   "footer.link.settings": "Tərtibatlar",
   "footer.link.support": "Dəstək",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Hosting xidməti",
   "footer.business.serviceType": "Platformanın növü",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Bütün hüquqlar mühafizə olunur.",
-  "footer.logoTag": "Növbəti hekayənizi yaratın",
-  "footer.link.features": "All features at a glance"
+  "footer.logoTag": "Növbəti hekayənizi yaratın"
 }
