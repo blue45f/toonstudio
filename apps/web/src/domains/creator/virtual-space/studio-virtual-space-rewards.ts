@@ -9,6 +9,7 @@ import type {
 export const STUDIO_VIRTUAL_REWARD_IDS = [
   "navigator-badge", "review-sparkle", "producer-title", "team-emote", "explorer-frame", "decorator-pin",
   "storyboard-badge", "color-swatch", "expression-emote", "archivist-pin", "architect-frame", "team-banner",
+  "deep-work-pen", "wellness-lotus", "director-visor", "kpop-stage-wings",
 ] as const;
 export type StudioVirtualRewardId = typeof STUDIO_VIRTUAL_REWARD_IDS[number];
 
@@ -41,6 +42,10 @@ export const STUDIO_VIRTUAL_REWARDS: readonly StudioVirtualRewardDefinition[] = 
   { id: "archivist-pin", labelKo: "아키비스트 핀", labelEn: "Archivist pin", cosmetic: { accessoryKey: "glasses" } },
   { id: "architect-frame", labelKo: "아키텍트 프레임", labelEn: "Architect frame", cosmetic: { nameplateKey: "rose" } },
   { id: "team-banner", labelKo: "팀 배너 트레일", labelEn: "Team banner trail", cosmetic: { trailKey: "pixel" } },
+  { id: "deep-work-pen", labelKo: "딥워크 스타일러스", labelEn: "Deep-work stylus", cosmetic: { accessoryKey: "pen-wing", auraKey: "focus" } },
+  { id: "wellness-lotus", labelKo: "웰니스 요가 오라", labelEn: "Wellness yoga aura", cosmetic: { accessoryKey: "coffee-cup", trailKey: "petal" } },
+  { id: "director-visor", labelKo: "총괄 디렉터 바이저", labelEn: "Director visor", cosmetic: { accessoryKey: "vr-visor", nameplateKey: "amber" } },
+  { id: "kpop-stage-wings", labelKo: "스테이지 군무 윙즈", labelEn: "Stage dance wings", cosmetic: { accessoryKey: "angel-wings", auraKey: "sparkle", trailKey: "star" } },
 ]);
 
 const STORAGE_KEY = "toonspectrum:virtual-space-rewards:v1";

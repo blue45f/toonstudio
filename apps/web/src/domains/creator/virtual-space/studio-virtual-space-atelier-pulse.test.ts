@@ -59,14 +59,18 @@ describe("computeStudioAtelierPulse", () => {
     expect(pulse.synergyScore).toBe(200);
     expect(pulse.hyperScore).toBe(2000);
     expect(pulse.omniScore).toBe(4000);
+    expect(pulse.quantumScore).toBe(10000);
     expect(pulse.omniTier).toBe("apex-quantum");
     expect(pulse.comboMultiplier).toBe(10);
     expect(pulse.omniMultiplier).toBe(20);
+    expect(pulse.quantumMultiplier).toBe(50);
     expect(pulse.hyperBadgeKo).toBe("하이퍼 포지 2,000pt");
     expect(pulse.omniBadgeKo).toBe("옴니 포지 4,000pt (20x)");
+    expect(pulse.quantumBadgeKo).toBe("퀀텀 포지 10,000pt (50x)");
     expect(pulse.dimensions.deepWorkFlow).toBe(400);
     expect(pulse.dimensions.officePresence).toBeGreaterThanOrEqual(300);
     expect(pulse.dimensions.autonomousRhythm).toBeGreaterThanOrEqual(350);
+    expect(pulse.dimensions.creativeVelocity).toBeGreaterThanOrEqual(380);
     expect(pulse.recommendedZoneId).toBe("review");
     expect(pulse.recommendedRoutineKo).toContain("합평");
     expect(pulse.zoneResonance.sameZonePeerCount).toBe(2);
