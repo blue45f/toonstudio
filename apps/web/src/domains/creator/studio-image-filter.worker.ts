@@ -1,5 +1,9 @@
 import { applyImageFilters, buildImageFilters, registerStudioKonvaFilters, type KonvaLike } from "./render/studio-konva-filters";
 import {
+  isStudioImageFilterWorkerErrorCode,
+  studioImageFilterWorkerErrorParams,
+} from "./studio-image-filter-worker-error";
+import {
   STUDIO_IMAGE_FILTER_WORKER_PROTOCOL_VERSION,
   assertStudioImageFilterImageData,
   studioImageFilterSourceSuccessTransfers,
@@ -43,7 +47,22 @@ workerScope.postMessage({
 
 function serializeWorkerError(error: unknown): StudioImageFilterWorkerFailureMessage["error"] {
   if (error instanceof Error) {
-    return { name: error.name || "Error", message: error.message || "이미지 필터 Worker 실행에 실패했습니다." };
+    // R20 결정 2-A: 원인이 구조화 코드를 보유하면 code/params를 함께 실어 보내고,
+    // 코드가 없는 원인(필터 엔진 방출 등)은 현행 message 패스스루를 유지한다.
+    const { code, params } = error as { code?: unknown; params?: unknown };
+    const structured = isStudioImageFilterWorkerErrorCode(code)
+      ? {
+          code,
+          ...(studioImageFilterWorkerErrorParams(params) !== undefined
+            ? { params: studioImageFilterWorkerErrorParams(params) }
+            : {}),
+        }
+      : {};
+    return {
+      name: error.name || "Error",
+      message: error.message || "이미지 필터 Worker 실행에 실패했습니다.",
+      ...structured,
+    };
   }
   return { name: "Error", message: "이미지 필터 Worker 실행에 실패했습니다." };
 }

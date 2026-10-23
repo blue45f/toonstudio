@@ -1,3 +1,8 @@
+import {
+  StudioImageFilterWorkerError,
+  type StudioImageFilterWorkerErrorCode,
+} from "./studio-image-filter-worker-error";
+
 import type { ImageFilterFields } from "./render/studio-konva-filter-fields";
 import type { StudioImageDataLike } from "./studio-filters";
 
@@ -76,6 +81,9 @@ export interface StudioImageFilterWorkerSourceFailureMessage {
   error: {
     name: string;
     message: string;
+    /** 구조화 코드 운반 (R20 결정 2-A): 원인이 코드를 보유할 때만 싣는 선택 필드 — 없으면 수신측이 message 패스스루를 유지한다. */
+    code?: StudioImageFilterWorkerErrorCode;
+    params?: Readonly<Record<string, string>>;
   };
 }
 
@@ -90,6 +98,9 @@ export interface StudioImageFilterWorkerFailureMessage {
   error: {
     name: string;
     message: string;
+    /** 구조화 코드 운반 (R20 결정 2-A): 원인이 코드를 보유할 때만 싣는 선택 필드 — 없으면 수신측이 message 패스스루를 유지한다. */
+    code?: StudioImageFilterWorkerErrorCode;
+    params?: Readonly<Record<string, string>>;
   };
 }
 
@@ -110,10 +121,12 @@ export function assertStudioImageFilterImageData(
   value: unknown,
   label = "이미지 필터 입력",
 ): asserts value is StudioImageDataLike {
-  if (!isRecord(value)) throw new TypeError(`${label} 형식이 올바르지 않습니다.`);
+  if (!isRecord(value)) {
+    throw new StudioImageFilterWorkerError("protocolFormatInvalid", { params: { label } });
+  }
   const { data, width, height } = value;
   if (!(data instanceof Uint8ClampedArray)) {
-    throw new TypeError(`${label} 픽셀 버퍼는 Uint8ClampedArray여야 합니다.`);
+    throw new StudioImageFilterWorkerError("protocolPixelBufferType", { params: { label } });
   }
   if (
     typeof width !== "number"
@@ -123,14 +136,14 @@ export function assertStudioImageFilterImageData(
     || width <= 0
     || height <= 0
   ) {
-    throw new RangeError(`${label} 크기는 1 이상의 정수여야 합니다.`);
+    throw new StudioImageFilterWorkerError("protocolSizeNotPositiveInteger", { params: { label } });
   }
   const pixels = width * height;
   if (!Number.isSafeInteger(pixels) || pixels > STUDIO_IMAGE_FILTER_MAX_PIXELS) {
-    throw new RangeError(`${label} 크기가 안전 한도를 초과했습니다.`);
+    throw new StudioImageFilterWorkerError("protocolSizeOverLimit", { params: { label } });
   }
   if (data.byteLength !== pixels * 4) {
-    throw new RangeError(`${label} 픽셀 버퍼 길이가 가로·세로 크기와 일치하지 않습니다.`);
+    throw new StudioImageFilterWorkerError("protocolBufferLengthMismatch", { params: { label } });
   }
 }
 

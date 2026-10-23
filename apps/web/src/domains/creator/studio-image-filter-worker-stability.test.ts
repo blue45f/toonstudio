@@ -6,6 +6,7 @@ import {
   runStudioImageFilterWorker,
   type StudioImageFilterWorkerLike,
 } from "./studio-image-filter-worker-client";
+import { StudioImageFilterWorkerError } from "./studio-image-filter-worker-error";
 
 
 import type {
@@ -66,7 +67,7 @@ describe("image-filter Worker long-session recovery", () => {
     worker.ready();
     await vi.advanceTimersByTimeAsync(30_001);
     expect(result.state).toBe("rejected");
-    expect(result.error).toMatchObject({ message: expect.stringContaining("초과") });
+    expect(result.error).toMatchObject({ code: "computeTimeout", message: "computeTimeout", errorKind: "error" });
     expect(worker.terminated).toBe(1);
     expect(worker.onmessage).toBeNull();
     expect(worker.onerror).toBeNull();
@@ -82,6 +83,10 @@ describe("image-filter Worker long-session recovery", () => {
     worker.onmessageerror?.({ data: null } as MessageEvent<unknown>);
     await flush();
     expect(result.state).toBe("rejected");
+    expect(result.error).toMatchObject({
+      name: "StudioImageFilterWorkerUnavailableError",
+      code: "responseUnreadable",
+    });
     expect(worker.terminated).toBe(1);
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -93,7 +98,9 @@ describe("image-filter Worker long-session recovery", () => {
     worker.success(2, 3);
     await flush();
     expect(result.state).toBe("rejected");
-    expect(result.error).toBeInstanceOf(RangeError);
+    // 종류 구분은 RangeError 상속 대신 errorKind 필드로 보존한다 (R20 코드 전환).
+    expect(result.error).toBeInstanceOf(StudioImageFilterWorkerError);
+    expect(result.error).toMatchObject({ code: "resultSizeMismatch", errorKind: "range" });
   });
 
   it("turns malformed failure envelopes into a rejection rather than an uncaught handler exception", async () => {
@@ -103,6 +110,10 @@ describe("image-filter Worker long-session recovery", () => {
     expect(() => worker.emit({ type: "studio-image-filter/failure", version: 1 })).not.toThrow();
     await flush();
     expect(result.state).toBe("rejected");
+    expect(result.error).toMatchObject({
+      name: "StudioImageFilterWorkerUnavailableError",
+      code: "errorResponseMalformed",
+    });
     expect(worker.terminated).toBe(1);
   });
 
