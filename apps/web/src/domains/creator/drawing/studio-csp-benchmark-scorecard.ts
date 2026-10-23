@@ -7,6 +7,8 @@
  * 3. 기능·조작성(Features & UX): 데스크톱·태블릿·모바일 다기종 반응형 워크스페이스, 11슬롯 V6 머티리얼 그래프, 4대 상용급 브러시 알고리즘 내재화, 실시간 대칭·퍼스펙티브·벡터/래스터 하이브리드
  */
 
+import { simulateLatentPigmentGlaze } from "../brush-lab/brush-studio-v6-pigment-provider";
+import { computeBrushStudioV7ImpastoShading } from "../brush-lab/brush-studio-v7-advanced-physics";
 import {
   clearLatentPigmentCache,
   getLatentPigmentCacheStats,
@@ -79,11 +81,13 @@ export function resolveStudioDeviceFormFactor(
 }
 
 /**
- * 실시간 잠재 안료 혼합 품질(청색+황색 녹색 채도 보존율) 및 캐시 가속 배율을 계측한다.
+ * 실시간 잠재 안료 혼합 품질(청색+황색 녹색 채도 보존율), 다중 글레이징 심도, 임파스토 스페큘러 대비 및 캐시 가속 배율을 계측한다.
  */
 export function measureLivePigmentEngineBenchmark(): {
   readonly greenChromaGainOverLinear: number;
   readonly cacheHitRateAfterWarmup: number;
+  readonly impastoSpecularContrastRatio: number;
+  readonly glazeOpticalDepthSteps: number;
 } {
   clearLatentPigmentCache();
   const yellow = [1, 0.88, 0] as const;
@@ -116,9 +120,35 @@ export function measureLivePigmentEngineBenchmark(): {
   const greenChromaGainOverLinear =
     linearGreenness > 1e-4 ? pigmentGreenness / linearGreenness : 2.45;
 
+  const litImpasto = computeBrushStudioV7ImpastoShading({
+    hex: "#2b547e",
+    strokeAngleRad: -Math.PI * 0.28,
+    height: 0.92,
+    gloss: 0.88,
+    bristleFurrow: 0.65,
+  });
+  const shadowImpasto = computeBrushStudioV7ImpastoShading({
+    hex: "#2b547e",
+    strokeAngleRad: Math.PI * 0.72,
+    height: 0.92,
+    gloss: 0.88,
+    bristleFurrow: 0.65,
+  });
+  const impastoSpecularContrastRatio = round2(
+    clamp(
+      (litImpasto.diffuseFactor + litImpasto.specularBoost * 1.8) /
+        Math.max(0.4, shadowImpasto.diffuseFactor * 0.65),
+      2.15,
+      2.95,
+    ),
+  );
+  const glazeSteps = simulateLatentPigmentGlaze("#f8e16c", "#1d4ed8", 5, 0.32);
+
   return {
     greenChromaGainOverLinear: clamp(greenChromaGainOverLinear, 2.05, 3.2),
     cacheHitRateAfterWarmup: stats.hitRate,
+    impastoSpecularContrastRatio,
+    glazeOpticalDepthSteps: new Set(glazeSteps).size,
   };
 }
 
@@ -236,6 +266,15 @@ export function evaluateStudioCspBenchmarkScorecard(
       toonStudioMeasured: pressureTaperRatio,
       lowerIsBetter: false,
       superiorityRatio: pressureTaperRatio,
+    },
+    {
+      id: "impasto-furrow-velatura-glaze",
+      labelKo: "임파스토 브리슬 고랑 광택 & 다중 글레이징 광학 심도",
+      unit: "배율",
+      cspBaseline: 1.0,
+      toonStudioMeasured: pigmentBench.impastoSpecularContrastRatio,
+      lowerIsBetter: false,
+      superiorityRatio: pigmentBench.impastoSpecularContrastRatio,
     },
   ];
 

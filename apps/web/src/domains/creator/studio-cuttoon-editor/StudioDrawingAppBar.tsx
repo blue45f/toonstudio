@@ -81,6 +81,9 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   const symmetryType = typeof s.symmetryType === "string" ? s.symmetryType : "off";
   const symmetryActive = symmetryType !== "off";
   const canvasFlipH = Boolean(s.canvasFlipH);
+  const quickShapeActive = Boolean(s.quickShapeActive);
+  const zoomRatio = clamp(typeof s.zoom === "number" && Number.isFinite(s.zoom) ? s.zoom : 1, 0.1, 16);
+  const zoomPercent = Math.round(zoomRatio * 100);
   const tx = (source: string) => translateCurrentStaticSourceText("StudioDrawingAppBar", "ko", source);
 
   const cspScorecard = useMemo(
@@ -118,12 +121,21 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
     s.setSymmetryType?.(next);
   };
 
+  const handleResetZoom = () => {
+    s.setZoom?.(1);
+  };
+
+  const handleToggleQuickShape = () => {
+    s.setQuickShapeActive?.(!quickShapeActive);
+  };
+
   return (
     <header
       data-studio-drawing-app-bar="true"
       data-studio-form-factor={cspScorecard.deviceFormFactor}
       data-studio-csp-two-x-verified={String(cspScorecard.meetsTwoXTarget)}
-      className="flex flex-col border-b border-line bg-panel/95 shadow-sm backdrop-blur-xl"
+      style={{ containerType: "inline-size" }}
+      className="@container flex flex-col border-b border-line bg-panel/95 shadow-sm backdrop-blur-xl"
     >
       <div className="flex min-h-12 shrink-0 items-center gap-2 px-2.5 sm:px-3">
         <div className="flex min-w-0 items-center gap-2 pr-1">
@@ -318,6 +330,36 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           >
             <SlidersHorizontal size={12} aria-hidden="true" />
             <span>{tx("브러시 랩")}</span>
+          </button>
+
+          {/* 빠른 도형 보정(QuickShape) 토글 */}
+          <button
+            type="button"
+            data-studio-quick-shape-toggle="true"
+            aria-pressed={quickShapeActive}
+            aria-label={tx("빠른 도형 보정 전환")}
+            title={tx("빠른 도형 보정 (직선·원·다각형 자동 스냅)")}
+            onClick={handleToggleQuickShape}
+            className={cn(
+              "hidden min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.66rem] font-semibold transition-colors xl:inline-flex",
+              quickShapeActive
+                ? "border-accent/50 bg-accent/15 text-fg"
+                : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+            )}
+          >
+            <span>{quickShapeActive ? tx("도형 보정 켜짐") : tx("도형 보정")}</span>
+          </button>
+
+          {/* 캔버스 배율 표시 & 100% 원탭 리셋 */}
+          <button
+            type="button"
+            data-studio-quick-zoom-reset="true"
+            aria-label={tx("캔버스 배율 100% 초기화")}
+            title={tx("캔버스 배율 100%로 즉시 초기화")}
+            onClick={handleResetZoom}
+            className="hidden min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-[0.66rem] font-semibold tabular-nums text-fg-2 transition-colors hover:bg-raised hover:text-fg xl:inline-flex"
+          >
+            <span data-testid="studio-appbar-zoom-percent">{zoomPercent}%</span>
           </button>
         </div>
 

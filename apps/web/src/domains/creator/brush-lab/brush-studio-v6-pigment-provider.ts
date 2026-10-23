@@ -5,7 +5,13 @@ import {
   type ExternalPigmentProvider,
 } from "./pigment/external-pigments";
 
-import { latentPigmentToRgb, mixLatentPigments, mixRgbPigments, rgbToLatentPigment } from "./pigment/latent-pigment-mixer";
+import {
+  latentPigmentToRgb,
+  mixLatentPigments,
+  mixRgbPigments,
+  mixRgbPigmentsChromaPreserving,
+  rgbToLatentPigment,
+} from "./pigment/latent-pigment-mixer";
 
 import { mixStudioSpectralWgm } from "../studio-spectral-wgm-mix-v1";
 
@@ -195,4 +201,48 @@ export function mixBrushStudioV6PigmentColors(
   const provider = PROVIDER_BY_ID.get(providerId);
   if (!provider) throw new BrushStudioV6PigmentProviderUnavailableError(providerId);
   return mixWgm(parseColor(first), parseColor(second), ratio, providerId !== "rgb-linear-v1");
+}
+
+/**
+ * 상업용 배포(permissive-only)에서도 즉시 사용 가능한 자체 잠재 안료 채도 보존 혼색기.
+ * 노란색+파란색 등 보색 인접 안료 혼합 시 선형 RGB의 회색 탁색 현상을 방지한다.
+ */
+export function mixBrushStudioV6PigmentChromaPreserving(
+  first: string,
+  second: string,
+  weight: number,
+): string {
+  if (!Number.isFinite(weight)) throw new RangeError("Pigment weight must be finite");
+  const ratio = unit(weight);
+  const primary = parseColor(first);
+  const secondary = parseColor(second);
+  if (ratio === 0) return hexColor(primary);
+  if (ratio === 1) return hexColor(secondary);
+  return hexColor(
+    mixRgbPigmentsChromaPreserving([
+      { rgb: [primary.r, primary.g, primary.b], weight: 1 - ratio },
+      { rgb: [secondary.r, secondary.g, secondary.b], weight: ratio },
+    ]),
+  );
+}
+
+/**
+ * 다중 코팅(Velatura / Glazing) 광학 적층 시뮬레이터.
+ * 바탕색(baseHex) 위에 반투명 유약 안료(glazeHex)를 `coats`회 도포할 때의 단계별 발색을 반환한다.
+ */
+export function simulateLatentPigmentGlaze(
+  baseHex: string,
+  glazeHex: string,
+  coats: number,
+  coatOpacity = 0.28,
+): readonly string[] {
+  const safeCoats = Math.max(1, Math.min(16, Math.round(Number.isFinite(coats) ? coats : 1)));
+  const alpha = Math.max(0.02, Math.min(0.95, unit(coatOpacity)));
+  const steps: string[] = [hexColor(parseColor(baseHex))];
+  let current = steps[0]!;
+  for (let i = 1; i <= safeCoats; i += 1) {
+    current = mixBrushStudioV6PigmentChromaPreserving(current, glazeHex, alpha);
+    steps.push(current);
+  }
+  return Object.freeze(steps);
 }
