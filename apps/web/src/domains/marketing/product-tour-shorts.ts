@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 33편.
- * 서른세 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 35편.
+ * 서른다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~33편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~35편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -38,7 +38,9 @@ export interface ProductTourShort {
     | "sketch-walk"
     | "ink-closeup"
     | "eraser-closeup"
-    | "pencil-sharpen";
+    | "pencil-sharpen"
+    | "paint-palette"
+    | "fresh-note";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -541,6 +543,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "A colored pencil, sharpened to a point",
       body: "A colored pencil turning in the sharpener, its core coming to a point as wood shavings pile up — caught up close.",
+    },
+  },
+  {
+    id: "paint-palette",
+    src: "/brand/promo-shorts/shorts-35-palette.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "팔레트에서 개어지는 색",
+      body: "물감 팔레트 위에서 색이 개어지고 붓이 색을 머금는 순간을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "Colors mixing on the palette",
+      body: "Paint being mixed on a palette as the brush gathers the color — caught up close.",
+    },
+  },
+  {
+    id: "fresh-note",
+    src: "/brand/promo-shorts/shorts-36-freshnote.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "새 노트의 첫 장",
+      body: "새 노트를 펼쳐 첫 장에 첫 선이 그어지는 순간을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "The first page of a fresh notebook",
+      body: "A fresh notebook opening, the first line landing on its first page — caught up close.",
     },
   },
 ];
