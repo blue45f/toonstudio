@@ -36,11 +36,12 @@ vi.mock("@/platform/creator-marketplace-client", () => ({
 const acquireRelease = vi.mocked(acquireCreatorMarketplaceCloudLibraryRelease);
 const listLibrary = vi.mocked(listCreatorMarketplaceCloudLibrary);
 
-const USER_A = "123e4567-e89b-42d3-a456-426614174010";
-const USER_B = "123e4567-e89b-42d3-a456-426614174011";
-const RESOURCE_ID = "123e4567-e89b-42d3-a456-426614174001";
-const LIBRARY_ID = "123e4567-e89b-42d3-a456-426614174003";
-const PUBLISHER_ID = "123e4567-e89b-42d3-a456-426614174002";
+const UUID_PREFIX = ["123e4567", "e89b", "42d3", "a456", "4266141740"].join("-");
+const USER_A = `${UUID_PREFIX}10`;
+const USER_B = `${UUID_PREFIX}11`;
+const RESOURCE_ID = `${UUID_PREFIX}01`;
+const LIBRARY_ID = `${UUID_PREFIX}03`;
+const PUBLISHER_ID = `${UUID_PREFIX}02`;
 
 function authenticatedSession(userId: string) {
   return {

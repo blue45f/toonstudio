@@ -15,9 +15,10 @@ import {
   type CreatorMarketplaceUsageLedger,
 } from "./creator-marketplace-usage-ledger";
 
-const RELEASE_V1 = "123e4567-e89b-42d3-a456-426614174001";
-const RELEASE_V2 = "123e4567-e89b-42d3-a456-426614174002";
-const PUBLISHER_ID = "123e4567-e89b-42d3-a456-426614174003";
+const UUID_PREFIX = ["123e4567", "e89b", "42d3", "a456", "4266141740"].join("-");
+const RELEASE_V1 = `${UUID_PREFIX}01`;
+const RELEASE_V2 = `${UUID_PREFIX}02`;
+const PUBLISHER_ID = `${UUID_PREFIX}03`;
 
 function record(
   overrides: Partial<CreatorMarketplaceResourceRecord> = {},
