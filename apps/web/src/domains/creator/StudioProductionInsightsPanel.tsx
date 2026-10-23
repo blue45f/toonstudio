@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4"; import { r44CreatorStatusText } from "./r44-cat1-status-i18n";
 import {
   AlertTriangle,
   BarChart3,
@@ -648,7 +648,7 @@ export function StudioProductionInsightsPanel({
             ) : (
               <p className="mt-2.5 flex items-start gap-2 rounded-xl border border-good/30 bg-good/10 px-3 py-2.5 text-xs leading-relaxed text-good" role="status">
                 <CheckCircle2 size={14} className="mt-0.5 shrink-0" aria-hidden />
-                잘못된 항목이나 입력 한도 적용 없이 전달된 문서 구조 전체를 계산했습니다.
+                {r44CreatorStatusText("r44cat1.creator.productionInsights.cleanStatus", "잘못된 항목이나 입력 한도 적용 없이 전달된 문서 구조 전체를 계산했습니다.")}
               </p>
             )}
           </section>

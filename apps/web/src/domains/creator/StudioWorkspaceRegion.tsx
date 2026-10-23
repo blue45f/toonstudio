@@ -1,4 +1,4 @@
-import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core"; import { r44CreatorStatusText } from "./r44-cat1-status-i18n";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 
 import {
@@ -300,7 +300,7 @@ export function StudioWorkspaceRegion({
         onResizePreset={resizeToPreset}
         attach={attach} reset={reset} authority={authority} /> : <div role="group" className="absolute right-0 top-11 z-[70] rounded-lg border border-line bg-panel p-2 text-xs text-fg shadow-xl"
           onKeyDownCapture={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setMenuOpen(false); menuButtonRef.current?.focus(); } }}>
-          {menuFailed ? <>{r3c07StatusText("studio.panelStatus.r3c07.workspaceRegion.menuLoadFailed", "설정을 불러오지 못했어요.")} <button type="button" className={buttonClass} onClick={() => setMenuAttempt(value => value + 1)}>다시 시도</button></> : r3c07StatusText("studio.panelStatus.r3c07.workspaceRegion.menuOpening", "배치 설정 여는 중…")}
+          {menuFailed ? <>{r3c07StatusText("studio.panelStatus.r3c07.workspaceRegion.menuLoadFailed", "설정을 불러오지 못했어요.")} <button type="button" className={buttonClass} onClick={() => setMenuAttempt(value => value + 1)}>{r44CreatorStatusText("r44cat1.creator.workspaceRegion.retry", "다시 시도")}</button></> : r3c07StatusText("studio.panelStatus.r3c07.workspaceRegion.menuOpening", "배치 설정 여는 중…")}
         </div>)}
       <div hidden={folded} inert={folded} style={folded ? { display: "none" } : undefined}
         data-studio-floating-content={floating ? "true" : undefined}
