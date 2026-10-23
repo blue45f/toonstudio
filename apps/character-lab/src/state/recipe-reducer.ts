@@ -6,10 +6,12 @@
  * - 잘못된 입력(어휘 밖 키·형식 틀린 색·비정규 쿼터니언 등)은 무음으로 넘기지 않고
  *   `RecipeCommandError`(code + 한글 사유)를 던진다. store가 이를 failure 이벤트로 바꾼다.
  * - 값이 바뀌지 않는 명령(같은 값의 param/color)은 같은 참조를 돌려줘 store가 history 단계를 만들지 않게 한다.
+ * - 레시피 v3 커스터마이즈 명령(화풍·look·비례·채널·표면·형태·옷장·소품·헤어 색·룩 적용)은 `customize-reducer.ts`가 처리한다(2026-10-23 CORE-1).
  */
 import {
   PHYSICS_PROVIDER_LABELS_KO,
   RECIPE_COLOR_KEYS,
+  RECIPE_VERSION,
   SLOT_LABELS_KO,
   applyKitToonDefaults,
   bonesInScope,
@@ -30,6 +32,9 @@ import { normalizeHex } from "../shared/color";
 import { qNormalize } from "../shared/math";
 import { stableStringify } from "../shared/stable-json";
 
+import { describeCustomizeCommandKo, isCustomizeCommand, reduceCustomizeCommand } from "./customize-reducer";
+import { RecipeCommandError } from "./recipe-command-error";
+
 import type {
   BodyParamKey,
   CharacterRecipe,
@@ -48,16 +53,7 @@ import type {
   RecipeSource,
 } from "../contracts";
 
-/** reducer가 거부한 명령. `code`는 kebab-case, `message`는 사용자에게 보여줄 한글 사유다. */
-export class RecipeCommandError extends Error {
-  readonly code: string;
-
-  constructor(code: string, reasonKo: string) {
-    super(reasonKo);
-    this.name = "RecipeCommandError";
-    this.code = code;
-  }
-}
+export { RecipeCommandError } from "./recipe-command-error";
 
 export function isRecipeCommand(command: LabCommand): command is RecipeCommand {
   return command.type !== "history/undo" && command.type !== "history/redo" && command.type !== "paint/stroke";
@@ -185,6 +181,9 @@ function reduceHandPoseSet(recipe: CharacterRecipe, command: Extract<RecipeComma
  * 변경이 없으면 같은 참조를 돌려줄 수 있다.
  */
 export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, catalog: PresetCatalog): CharacterRecipe {
+  if (isCustomizeCommand(command)) {
+    return reduceCustomizeCommand(recipe, command, catalog, (current, slot, presetId) => reduceSlotApply(current, { type: "slot/apply", slot, presetId }, catalog));
+  }
   switch (command.type) {
     case "slot/apply":
       return reduceSlotApply(recipe, command, catalog);
@@ -230,7 +229,7 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
       return { ...recipe, source: parsed.data, shading };
     }
     case "recipe/load": {
-      // v1 레시피는 parseRecipe가 명시 마이그레이션(v1 → v2)으로 연다. 라벨은 describeCommandKo가 원래 버전을 보고 알린다.
+      // v1·v2 레시피는 parseRecipe가 명시 마이그레이션 사슬(v1 → v2 → v3)로 연다. 라벨은 describeCommandKo가 원래 버전을 보고 알린다.
       const parsed = parseRecipe(command.recipe);
       if (!parsed.ok) throw new RecipeCommandError(parsed.failure.code, parsed.failure.reasonKo);
       return parsed.recipe;
@@ -261,6 +260,7 @@ function describeSourceKo(source: RecipeSource): string {
 
 /** history 항목 라벨(한글). 카탈로그가 있으면 프리셋 한글 이름을 쓴다. */
 export function describeCommandKo(command: RecipeCommand, catalog?: PresetCatalog): string {
+  if (isCustomizeCommand(command)) return describeCustomizeCommandKo(command, catalog);
   switch (command.type) {
     case "slot/apply": {
       const label = command.presetId === null ? "없음" : (catalog?.get(command.presetId)?.labelKo ?? command.presetId);
@@ -285,9 +285,9 @@ export function describeCommandKo(command: RecipeCommand, catalog?: PresetCatalo
     case "source/set":
       return describeSourceKo(command.source);
     case "recipe/load": {
-      // 호출자가 v1 파일의 JSON을 그대로 넘기면 `parseRecipe`가 v2로 명시 변환한다(reducer가 같은 변환을 한다). 타입은 v2지만 런타임 값은 1일 수 있다.
+      // 호출자가 v1·v2 파일의 JSON을 그대로 넘기면 `parseRecipe`가 v3로 명시 변환한다(reducer가 같은 변환을 한다). 타입은 v3지만 런타임 값은 1·2일 수 있다.
       const version: unknown = command.recipe.version;
-      return version === 1 ? "레시피 불러오기(v1 → v2 변환)" : "레시피 불러오기";
+      return version === 1 || version === 2 ? `레시피 불러오기(v${version} → v${RECIPE_VERSION} 변환)` : "레시피 불러오기";
     }
     default: {
       const exhaustive: never = command;

@@ -307,10 +307,12 @@ describe("state/apply-plan", () => {
 
   describe("키트 소스와의 계약 정합(키트 계약 5절, D5, D11)", () => {
     it("역할 고정 partId(rolePartId)는 기본 레이아웃과 같고 속옷 역할이 끝(16)에 추가돼 기존 partId가 밀리지 않는다", () => {
+      // 2026-10-23 레시피 v3가 같은 규칙으로 inner·outer·legwear·hair-accessory(17~20)를 더 붙였다. 속옷은 여전히 16이다.
       expect(DEFAULT_PART_LAYOUT.map((entry) => entry.partId)).toEqual(PART_ROLES.map((role) => rolePartId(role)));
-      expect(PART_ROLES.at(-1)).toBe("underwear");
+      expect(PART_ROLES[15]).toBe("underwear");
+      expect(PART_ROLES.at(-1)).toBe("hair-accessory");
       expect(rolePartId("underwear")).toBe(16);
-      expect(DEFAULT_PART_LAYOUT).toHaveLength(16);
+      expect(DEFAULT_PART_LAYOUT).toHaveLength(20);
       expect(rolePartId("skin")).toBe(1);
       expect(rolePartId("accessory")).toBe(15);
     });
@@ -324,7 +326,7 @@ describe("state/apply-plan", () => {
       const roles = PART_ROLES.filter((role) => role !== "accessory");
       const layout = layoutFromPalette(allocatePartIdsByRole(roles.map((role) => ({ role }))));
       const plan = createApplyPlanner({ partLayout: layout })(createKitDefaultRecipe(), ALL_AVAILABLE_CAPABILITIES, CATALOG);
-      expect(plan.parts).toHaveLength(15);
+      expect(plan.parts).toHaveLength(PART_ROLES.length - 1);
       expect(plan.parts.map((p) => p.partId)).toEqual(roles.map((role) => rolePartId(role)));
       // 키트 기본값은 hair 미선택(null)이라 헤어 파츠는 숨김으로 계획된다(2026-10-14 기본 슬롯 정본).
       expect(plan.parts.find((p) => p.partId === rolePartId("hair"))?.visible).toBe(false);

@@ -8,6 +8,7 @@ import type { CharacterSource } from "./engine";
 import type { PartIdPalette } from "./mesh-data";
 import type { RasterPassId, RenderPassId } from "./passes";
 import type { PhysicsProviderId } from "./physics";
+import type { ShadingProfile } from "./shading";
 import type { PresetId } from "./slots";
 
 export const CAPTURE_PROFILE_ID = "character-lab-rgba8-straight-srgb-topdown-depth-f32-v1";
@@ -91,6 +92,12 @@ export interface ThumbnailRequest {
    * 없으면 현재 로드된 소스를 그린다.
    */
   readonly source?: CharacterSource;
+  /**
+   * 화풍 카드 미리보기용 셰이딩(레시피 v3, 2026-10-23 core 추가, 선택). 현재 캐릭터에 그 팩의 셰이딩을 입혀 그린다.
+   * `CharacterEngine.thumbnailShading === true`인 엔진에만 보낸다 — 그렇지 않은 엔진은 현재 셰이딩으로 그리므로 셸은 카드에 미지원 사유를 보인다.
+   * 엔진은 주 장면의 셰이딩을 바꾸지 않고 이 썸네일 한 장에만 쓴 뒤 되돌린다.
+   */
+  readonly shading?: ShadingProfile;
 }
 
 /** 썸네일 캐시 항목(LabState.thumbnails 값) */

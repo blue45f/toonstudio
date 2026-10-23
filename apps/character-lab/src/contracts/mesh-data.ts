@@ -2,9 +2,12 @@
  * 엔진 중립 메시·스켈레톤 데이터 계약.
  * humanoid/outfit이 생성하고 render가 Babylon 객체로 바인딩한다. TypedArray만 쓴다.
  */
+import { BASE_CHANNEL_KEYS, CHANNEL_FAMILY, REGION_CHANNEL_KEYS, isChannelKey } from "./color-channels";
 import { failVisible } from "./errors";
 
+import type { LookShadeGroup } from "./art-style";
 import type { HumanoidBoneName } from "./bones";
+import type { ChannelKey, RegionChannelKey } from "./color-channels";
 import type { LabFailure } from "./errors";
 import type { MorphTargetName } from "./morph-names";
 import type { Quat, Vec3 } from "./pose";
@@ -27,6 +30,12 @@ export const PART_ROLES = [
   "accessory",
   // 키트 v1에서 추가(2026-10-08). 기존 역할의 partId가 밀리지 않도록 반드시 끝에 둔다(rolePartId = 인덱스 + 1).
   "underwear",
+  // 레시피 v3에서 추가(2026-10-23 CORE-1). 같은 규칙으로 끝에만 붙인다: inner 17, outer 18, legwear 19, hair-accessory 20.
+  // 겹쳐 입기 층(inner·outer = top/* 프리셋, legwear = bottom/* 프리셋을 그 층에 입힌 것 — 로더가 역할을 층 이름으로 바꾼다)과 헤어 부속.
+  "inner",
+  "outer",
+  "legwear",
+  "hair-accessory",
 ] as const;
 
 export type PartRole = (typeof PART_ROLES)[number];
@@ -48,6 +57,10 @@ export const PART_ROLE_LABELS_KO: Readonly<Record<PartRole, string>> = {
   shoes: "신발",
   accessory: "액세서리",
   underwear: "속옷",
+  inner: "이너",
+  outer: "아우터",
+  legwear: "레그웨어",
+  "hair-accessory": "헤어 액세서리",
 };
 
 const PART_ROLE_SET: ReadonlySet<string> = new Set(PART_ROLES);
@@ -55,6 +68,58 @@ const PART_ROLE_SET: ReadonlySet<string> = new Set(PART_ROLES);
 export function isPartRole(value: string): value is PartRole {
   return PART_ROLE_SET.has(value);
 }
+
+/**
+ * 역할별로 메시가 쓸 수 있는 색 채널(첫 항목 = 기본 채널). 빈 배열이면 고정색 역할(레시피 색을 받지 않는다).
+ * 머리의 입술·볼 홍조는 메시 채널이 아니라 `regionChannels`(머리 UV 마스크)로 칠한다.
+ * inner 층의 포인트는 `inner-accent` 채널이 없으므로 상의 포인트(`top-accent`)를 같이 쓴다.
+ */
+export const PART_ROLE_CHANNELS: Readonly<Record<PartRole, readonly ChannelKey[]>> = {
+  skin: ["skin"],
+  head: ["skin"],
+  eyeball: ["sclera"],
+  iris: ["iris"],
+  pupil: ["iris"],
+  "eye-highlight": [],
+  brow: ["brow"],
+  lash: ["brow"],
+  teeth: [],
+  tongue: [],
+  hair: ["hair", "hair-tip", "hair-accent"],
+  top: ["top", "top-trim", "top-accent"],
+  bottom: ["bottom", "bottom-trim"],
+  shoes: ["shoes", "shoes-sole", "shoes-lace"],
+  accessory: ["accessory", "accessory-accent"],
+  underwear: [],
+  inner: ["inner", "inner-trim", "top-accent"],
+  outer: ["outer", "outer-trim", "outer-accent"],
+  legwear: ["legwear"],
+  "hair-accessory": ["hair-accessory", "hair-accessory-accent"],
+};
+
+/** 툰 그림자 틴트 그룹(`Look.shade`): v2 `toonShadeTint`(render/material-presets.ts)와 같은 분류 */
+export const PART_ROLE_SHADE_GROUP: Readonly<Record<PartRole, LookShadeGroup>> = {
+  skin: "skin",
+  head: "skin",
+  tongue: "skin",
+  hair: "hair",
+  brow: "hair",
+  lash: "hair",
+  eyeball: "other",
+  iris: "other",
+  pupil: "other",
+  "eye-highlight": "other",
+  teeth: "other",
+  top: "other",
+  bottom: "other",
+  shoes: "other",
+  accessory: "other",
+  underwear: "other",
+  inner: "other",
+  outer: "other",
+  legwear: "other",
+  "hair-accessory": "other",
+};
 
 export const MATERIAL_PRESET_IDS = [
   "skin-sss",
@@ -68,12 +133,14 @@ export const MATERIAL_PRESET_IDS = [
   "metal",
   "plastic",
   "unlit-highlight",
+  // 레시피 v3 표면 재질(2026-10-23): 니트·스타킹 계열. 끝에만 붙인다(materialId·순서 의존 코드 보호).
+  "cloth-knit",
 ] as const;
 
 export type MaterialPresetId = (typeof MATERIAL_PRESET_IDS)[number];
 
-/** 레시피 색 키(recipe.ts의 recipeColorsSchema와 동일 집합) */
-export const RECIPE_COLOR_KEYS = ["skin", "iris", "hair", "brow", "top", "bottom", "shoes", "accessory"] as const;
+/** 레시피 색 키(recipe.ts의 recipeColorsSchema와 동일 집합) = 기본 8채널(`BASE_CHANNEL_KEYS`) */
+export const RECIPE_COLOR_KEYS = BASE_CHANNEL_KEYS;
 export type RecipeColorKey = (typeof RECIPE_COLOR_KEYS)[number];
 
 export interface MorphDelta {
@@ -91,8 +158,19 @@ export interface MeshPartData {
   readonly partId: number;
   readonly materialId: number;
   readonly materialPreset: MaterialPresetId;
-  /** 레시피 색을 적용할 키(없으면 재질 프리셋 기본색) */
+  /**
+   * 레시피 색을 적용할 기본 키(없으면 재질 프리셋 기본색). v2 엔진은 이 키만 본다.
+   * `channel`이 있으면 이 값은 그 채널의 계열 기본 키(`CHANNEL_FAMILY[channel]`)와 같아야 한다(`validateMeshPartData`).
+   */
   readonly colorKey?: RecipeColorKey;
+  /**
+   * 정밀 색 채널(레시피 v3, 선택). v3 엔진은 플랜 `channels[channel]`로 칠하고, 채널을 모르는 엔진은 `colorKey`로 칠한다.
+   * 설계는 `colorKey`를 채널 키로 넓히라고 했지만, 그러면 v2 엔진이 `colors[채널]`을 찾지 못해 재질 기본색으로 무음 대체되므로
+   * 기본 키(`colorKey`)는 그대로 두고 채널을 별도 필드로 더했다(2026-10-23 CORE-1). 없으면 `colorKey`가 곧 채널이다.
+   */
+  readonly channel?: ChannelKey;
+  /** 머리 UV 마스크로 칠하는 영역 채널(입술·볼 홍조). 마스크는 키트 v2 베이스 `headRegionMask`가 준다. */
+  readonly regionChannels?: readonly RegionChannelKey[];
   readonly positions: Float32Array;
   readonly normals: Float32Array;
   readonly uvs: Float32Array;
@@ -165,6 +243,35 @@ export interface HumanoidModelData {
   readonly jointOffsets?: MorphJointOffsets;
 }
 
+const REGION_CHANNEL_SET: ReadonlySet<string> = new Set(REGION_CHANNEL_KEYS);
+
+/** 메시 채널 규칙(레시피 v3): 채널 어휘·역할 허용 채널·계열 기본 키 일치, 영역 채널은 머리(head)만·중복 없음 */
+function meshChannelIssue(part: Pick<MeshPartData, "role" | "colorKey" | "channel" | "regionChannels">): { code: string; reasonKo: string } | null {
+  if (part.channel !== undefined) {
+    if (!isChannelKey(part.channel)) return { code: "mesh-channel", reasonKo: `channel(${String(part.channel)})이 색 채널 어휘에 없습니다.` };
+    const allowed = PART_ROLE_CHANNELS[part.role];
+    if (!allowed.includes(part.channel)) {
+      return { code: "mesh-channel-role", reasonKo: `역할 ${part.role}은 채널 ${part.channel}을 쓸 수 없습니다(허용: ${allowed.join(", ") || "없음 — 고정색 역할"}).` };
+    }
+    const family = CHANNEL_FAMILY[part.channel];
+    if ((part.colorKey ?? null) !== family) {
+      return { code: "mesh-channel-family", reasonKo: `채널 ${part.channel}의 계열 기본 키는 ${family ?? "없음"}인데 colorKey는 ${part.colorKey ?? "없음"}입니다.` };
+    }
+  }
+  if (part.regionChannels !== undefined) {
+    if (part.role !== "head") return { code: "mesh-region-channel-role", reasonKo: `영역 채널(입술·볼 홍조)은 머리(head) 메시에만 둘 수 있습니다(역할 ${part.role}).` };
+    if (part.regionChannels.some((key) => !REGION_CHANNEL_SET.has(key)) || new Set(part.regionChannels).size !== part.regionChannels.length) {
+      return { code: "mesh-region-channel", reasonKo: `regionChannels는 ${REGION_CHANNEL_KEYS.join("·")} 중 중복 없이 골라야 합니다.` };
+    }
+  }
+  return null;
+}
+
+/** 메시가 칠해지는 채널: `channel`이 있으면 그것, 없으면 기본 키(`colorKey`), 둘 다 없으면 null(재질 기본색) */
+export function meshPartChannel(part: Pick<MeshPartData, "colorKey" | "channel">): ChannelKey | null {
+  return part.channel ?? part.colorKey ?? null;
+}
+
 function hasNaN(array: Float32Array): boolean {
   for (let i = 0; i < array.length; i += 1) {
     if (!Number.isFinite(array[i])) return true;
@@ -203,6 +310,8 @@ export function validateMeshPartData(part: MeshPartData, now?: number): LabFailu
   if (!Number.isInteger(part.materialId) || part.materialId < 0 || part.materialId > 255) {
     return fail("mesh-material-id", `materialId(${part.materialId})는 0..255 정수여야 합니다.`);
   }
+  const channelIssue = meshChannelIssue(part);
+  if (channelIssue) return fail(channelIssue.code, channelIssue.reasonKo);
   if (hasNaN(part.positions) || hasNaN(part.normals) || hasNaN(part.uvs)) {
     return fail("mesh-nan", "positions/normals/uvs에 NaN 또는 무한대가 있습니다.");
   }

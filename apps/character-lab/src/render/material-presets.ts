@@ -59,6 +59,8 @@ export const MATERIAL_PRESETS: Readonly<Record<MaterialPresetId, MaterialPresetP
   metal: { metallic: 1, roughness: 0.3, defaultColor: "#c8c8cc", backFaceCulling: true },
   plastic: { metallic: 0, roughness: 0.35, defaultColor: "#c94f6b", backFaceCulling: true, clearCoat: { intensity: 0.6, roughness: 0.1 } },
   "unlit-highlight": { metallic: 0, roughness: 1, defaultColor: "#ffffff", backFaceCulling: true, unlit: true, emissiveScale: 1 },
+  // 레시피 v3 표면 재질(2026-10-23 CORE-1): 니트·스타킹. 거친 면에 알베도 쪽 시인(보풀 결)을 넓게 준다.
+  "cloth-knit": { metallic: 0, roughness: 0.92, defaultColor: "#d9d2c6", backFaceCulling: false, sheen: { intensity: 0.5, roughness: 0.7, tintFromAlbedo: true } },
 });
 
 /** 역할별 기본 프리셋(제작 패키지에서 역할만 알 때) */
@@ -79,6 +81,10 @@ export const ROLE_DEFAULT_PRESET: Readonly<Record<PartRole, MaterialPresetId>> =
   shoes: "leather",
   accessory: "plastic",
   underwear: "cloth-cotton",
+  inner: "cloth-cotton",
+  outer: "cloth-cotton",
+  legwear: "cloth-knit",
+  "hair-accessory": "plastic",
 });
 
 /** 역할별 레시피 색 키(없으면 undefined = 프리셋 기본색) */
@@ -94,6 +100,11 @@ export const ROLE_COLOR_KEY: Readonly<Partial<Record<PartRole, RecipeColorKey>>>
   bottom: "bottom",
   shoes: "shoes",
   accessory: "accessory",
+  // 레시피 v3 역할은 채널의 계열 기본 키(CHANNEL_FAMILY)로 칠한다 — 채널을 모르는 엔진에서도 상의·하의·액세서리 색을 받는다.
+  inner: "top",
+  outer: "top",
+  legwear: "bottom",
+  "hair-accessory": "accessory",
 });
 
 export interface PartColorInput {
