@@ -390,12 +390,12 @@ export const CAMPUS_OBJECTS: readonly StudioCampusObject[] = Object.freeze([
   // 골랐고, 무겹침은 building-life 테스트가 고정한다. 점등·빛 웅덩이는 런타임이 시간대와 잇는다.
   O({ id: "lamp-avenue1-lobby-east", kind: "street-lamp", x: 576, y: 748, width: 46, height: 96, collider: foot(576, 748, 26, 12) }),
   O({ id: "lamp-avenue1-studio-west", kind: "street-lamp", x: 1088, y: 824, width: 46, height: 96, collider: foot(1088, 824, 26, 12) }),
-  O({ id: "lamp-avenue1-plaza-north", kind: "street-lamp", x: 1472, y: 748, width: 46, height: 96, collider: foot(1472, 748, 26, 12) }),
+  O({ id: "lamp-avenue1-plaza-north", kind: "street-lamp", x: 1640, y: 748, width: 46, height: 96, collider: foot(1640, 748, 26, 12) }),
   O({ id: "lamp-avenue1-cowork-west", kind: "street-lamp", x: 1856, y: 824, width: 46, height: 96, collider: foot(1856, 824, 26, 12) }),
   O({ id: "lamp-avenue1-cafe-west", kind: "street-lamp", x: 2240, y: 748, width: 46, height: 96, collider: foot(2240, 748, 26, 12) }),
   O({ id: "lamp-avenue2-talk-east", kind: "street-lamp", x: 576, y: 1360, width: 46, height: 96, collider: foot(576, 1360, 26, 12) }),
   O({ id: "lamp-avenue2-terrace-west", kind: "street-lamp", x: 1088, y: 1464, width: 46, height: 96, collider: foot(1088, 1464, 26, 12) }),
-  O({ id: "lamp-avenue2-plaza-south", kind: "street-lamp", x: 1472, y: 1360, width: 46, height: 96, collider: foot(1472, 1360, 26, 12) }),
+  O({ id: "lamp-avenue2-plaza-south", kind: "street-lamp", x: 1640, y: 1360, width: 46, height: 96, collider: foot(1640, 1360, 26, 12) }),
   O({ id: "lamp-avenue2-terrace-east", kind: "street-lamp", x: 1856, y: 1464, width: 46, height: 96, collider: foot(1856, 1464, 26, 12) }),
   O({ id: "lamp-avenue2-gallery-west", kind: "street-lamp", x: 2368, y: 1360, width: 46, height: 96, collider: foot(2368, 1360, 26, 12) }),
 ]);

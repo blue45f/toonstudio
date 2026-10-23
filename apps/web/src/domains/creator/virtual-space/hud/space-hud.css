@@ -16,7 +16,7 @@ body:has(.space-hud) [data-site-ost="mounted"] { display: none !important; }
 .space-hud {
   --space-gutter: 12px;
   --space-panel-width: 380px;
-  --space-top-left-width: 440px;
+  --space-top-left-width: 548px;
   --space-minimap-width: 248px;
   --space-dock-fallback: 88px;
   --space-safe-top: env(safe-area-inset-top, 0px);
@@ -268,7 +268,7 @@ body:has(.space-hud) [data-site-ost="mounted"] { display: none !important; }
   box-shadow: var(--space-shadow);
   backdrop-filter: blur(14px) saturate(1.2);
 }
-.space-location__text { display: grid; flex: 1 1 auto; min-width: 118px; }
+.space-location__text { display: grid; flex: 1 1 auto; min-width: 172px; }
 .space-location__space {
   overflow: hidden;
   color: var(--color-fg-3);
@@ -1701,6 +1701,12 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   color: var(--color-fg);
   font-size: 13px;
   line-height: 1.45;
+}
+html:has([data-service-degraded-banner="warming"]) .space-chat {
+  bottom: max(
+    calc(var(--immersive-dock-clearance, var(--space-dock-fallback)) + var(--space-safe-bottom) + 54px),
+    calc(var(--service-status-overlay-clearance, 0px) + 8px)
+  );
 }
 .space-chat--closed { pointer-events: none; }
 /* 휴대폰에서 리액션 줄이 열리면 같은 자리의 "말 걸기" 버튼이 줄의 첫 칸(손 흔들기)을 가린다. 줄이 열려 있는 동안만 숨긴다. */
