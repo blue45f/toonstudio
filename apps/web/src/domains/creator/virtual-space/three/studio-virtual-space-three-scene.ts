@@ -597,9 +597,7 @@ export function loadStudioThreeAssets(
 ): void {
   const glbLoader = new GLTFLoader();
 
-  // 1. 로컬 플레이어 및 NPC VRM 아바타 최우선 로드 (표준 PBR GLTFLoader + 공유 정점 버퍼 정규화)
-  const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
-  npcIds.forEach((actorId, index) => {
+  const loadActorVrm = (actorId: string, index: number) => {
     const vrmUrl = STUDIO_THREE_VRM_URLS[index % STUDIO_THREE_VRM_URLS.length];
     if (!vrmUrl) return;
     glbLoader.load(
@@ -659,10 +657,16 @@ export function loadStudioThreeAssets(
         // VRM 로드 전·실패 시 스타일라이즈드 3D 캐릭터 리그를 그대로 유지한다.
       },
     );
-  });
+  };
 
-  // 2. 10개 구역 풀 3D 건축 디오라마 로드
+  const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
+
+  // 1. 초기 진입 로비 아바타(self, concierge) + 10개 구역 풀 3D 건축 디오라마 최우선 로드
+  npcIds.slice(0, 2).forEach((actorId, index) => loadActorVrm(actorId, index));
   loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed);
+
+  // 2. 나머지 구역 NPC VRM 아바타 로드
+  npcIds.slice(2).forEach((actorId, offset) => loadActorVrm(actorId, offset + 2));
 
   // 3. 협업 워크스테이션 소품 로드
   const glbCache = new Map<string, Promise<THREE.Group>>();
