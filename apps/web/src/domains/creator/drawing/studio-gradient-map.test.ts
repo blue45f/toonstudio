@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_ALL_GRADIENT_MAP_PRESETS,
   STUDIO_GRADIENT_MAP_PRESETS,
+  STUDIO_WEBTOON_GRADIENT_MAP_PRESETS,
   applyGradientMapToRgba,
   buildGradientMapLut,
   buildLutFromHexStops,
   createCustomGradientModel,
+  evaluateGradientMapOklabChromaRetention,
   getGradientMapPreset,
   luminanceOf,
   rgbToHex,
@@ -187,3 +190,45 @@ describe("luminanceOf / rgbToHex / buildLutFromHexStops", () => {
     expect(lut[255 * 3]).toBe(255);
   });
 });
+
+describe("OKLab 지각 균일 보간·웹툰 프리셋·혼합률·Bayer 디더링", () => {
+  it("웹툰 전용 프리셋 3종을 포함한 전체 8종 프리셋이 유효하고 조회 가능하다", () => {
+    expect(STUDIO_WEBTOON_GRADIENT_MAP_PRESETS).toHaveLength(3);
+    expect(STUDIO_ALL_GRADIENT_MAP_PRESETS).toHaveLength(8);
+    for (const id of ["webtoon-dawn", "cel-anime-shadow", "noir-crimson"] as const) {
+      const preset = getGradientMapPreset(id);
+      expect(preset).toBeDefined();
+      expect(validateGradientStops(preset!.stops).ok).toBe(true);
+    }
+  });
+
+  it("보색 정지점 구간에서 OKLab 보간이 선형 sRGB 대비 중간톤 채도(Chroma)를 더 높게 보존한다", () => {
+    const stops = [
+      { position: 0, color: [255, 60, 20] as const },
+      { position: 1, color: [20, 180, 255] as const },
+    ];
+    const metrics = evaluateGradientMapOklabChromaRetention(stops);
+    expect(metrics.oklabMeanChroma).toBeGreaterThan(metrics.srgbMeanChroma);
+    expect(metrics.chromaGainRatio).toBeGreaterThan(1.02);
+  });
+
+  it("applyGradientMapToRgba: blendAmount 및 Bayer 4x4 디더링이 정상 동작한다", () => {
+    const stops = getGradientMapPreset("webtoon-dawn")!.stops;
+    const lut = buildGradientMapLut(stops, 256, { interpolationSpace: "oklab" });
+    const src = new Uint8ClampedArray([120, 120, 120, 255, 120, 120, 120, 255]);
+    const full = applyGradientMapToRgba(src, lut, { blendAmount: 1 });
+    const zero = applyGradientMapToRgba(src, lut, { blendAmount: 0 });
+    const half = applyGradientMapToRgba(src, lut, { blendAmount: 0.5 });
+    expect([zero[0], zero[1], zero[2]]).toEqual([120, 120, 120]);
+    expect(half[0]).toBe(Math.round(120 + (full[0]! - 120) * 0.5));
+
+    const dithered = applyGradientMapToRgba(src, lut, {
+      blendAmount: 1,
+      dither: true,
+      width: 2,
+    });
+    expect(dithered).toHaveLength(8);
+    expect(dithered[3]).toBe(255);
+  });
+});
+

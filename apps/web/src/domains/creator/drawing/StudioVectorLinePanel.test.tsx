@@ -96,4 +96,23 @@ describe("StudioVectorLinePanel", () => {
     expect(screen.getByText("조절할 구간을 선택합니다")).toBeTruthy();
     expect(screen.getByText("굵기를 어루만지듯 바꿉니다")).toBeTruthy();
   });
+
+  it("곡선 집기 및 교차점 정리 버튼이 동작하고 실행 취소와 호환된다", () => {
+    const { container } = render(<StudioVectorLinePanel />);
+    const before = outlinePathD(container);
+
+    fireEvent.click(screen.getByRole("button", { name: "곡선 집기" }));
+    const afterPinch = outlinePathD(container);
+    expect(afterPinch).not.toBe(before);
+    expect(screen.getByText("가우시안 곡선 집기 적용")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "교차점 정리" }));
+    const afterTrim = outlinePathD(container);
+    expect(afterTrim).not.toBe(afterPinch);
+    expect(screen.getByText("교차점 너머 삐침 선분 정리")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(outlinePathD(container)).toBe(afterPinch);
+  });
 });
+

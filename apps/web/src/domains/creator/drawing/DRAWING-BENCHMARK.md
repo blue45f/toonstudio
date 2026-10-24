@@ -157,3 +157,13 @@
 | **비정상 포인터 패킷(`NaN`/`Infinity`/음수 반경·타임스탬프 역전) 방어 및 `roundRect` 폴백** | `studio-inkwash-fluid.ts`, `studio-ink-wash.ts`, `studio-dry-media-kernel-tip.ts`, `studio-brush-stamp-engine.ts`, `brush-studio-v6-material-engine.ts` | `Math.min(max, Math.max(min, NaN))`가 `NaN`을 통과시켜 유체 버퍼·타임스탬프·색상 바이트를 오염시키던 경로에 `Number.isFinite` 가드를 추가하고, `renderBrushStudioV6MaterialMarks`의 `"capsule"` 마크 렌더 시 `typeof context.roundRect === "function"` 검사 및 `context.rect` 안전 폴백을 추가했다. |
 | **실제 서비스 500종 전 브러시 + 1,000+ 스트로크 장시간 소크 검증** | `apps/web/src/domains/creator/brush/studio-all-brushes-long-soak.test.ts` | (1) 500종 전 브러시 실제 포인터 시작 계획(`planStudioDrawPointerStart`) → SVG 익스포트(`exportPageToSvg`) → V6 캔버스 렌더(`renderStudioMaterialBrush`) 무결성 검증, (2) `1600×1200` 대형 캔버스 수묵(`inkwash-pen`·`inkwash-water-brush`) 근거리·중거리·원거리 연속 획 안료 침착·세척 및 리비전 불변성 검증, (3) 1,000+ 연속 스트로크·에포크 전환 시 모든 캐시 크기 상한 준수 검증, (4) `NaN`/`Infinity` 오염 입력 방어 검증을 통과했다. |
 
+## 13. Wave 8 CSP 벡터 레이어 시그니처 4대 도구·OKLab 그라데이션 맵·라이브 스탬프 오버레이 상한 고도화 (2026-10-24)
+
+클립스튜디오(CSP)의 대표 강점인 벡터 레이어 후처리 도구군과 웹툰 후보정용 그라데이션 맵, 장시간 라이브 스탬프 오버레이의 메모리·백그라운드 효율성을 추가 고도화했다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **CSP 벡터 레이어 시그니처 4대 편집 도구** | `apps/web/src/domains/creator/drawing/studio-vector-line-edit.ts`, `StudioVectorLinePanel.tsx` | (1) `pinchVectorLine`: 코사인 벨(`0.5 * (1 + cos(π * d / R))`) 감쇠 기반 벡터 선 집기 및 양 끝점 고정(`fixEndpoints: "none" \| "start" \| "end" \| "both"`), (2) `brushAdjustVectorLineWidth`: 브러시 반경 내 제어점 방사형 가중 선폭 수정(`scale` / `add`, `processWholeLine`), (3) `eraseVectorLineToIntersection`: 2D 선분 교차 파라메트릭 해(`segmentIntersectionParams`)로 지우개가 닿은 삐져나온 꼬리 또는 교차선 사이 구간만 정확히 절단하는 CSP 시그니처 **교차점까지 벡터 지우개**, (4) `connectVectorLines`: 인접한 두 열린 벡터 선의 끝점 스냅 및 선폭 보간 연결. `StudioVectorLinePanel.tsx`에 **곡선 집기**·**교차점 정리** 인터랙티브 데모 및 시맨틱 CSS 토큰(`var(--color-accent)`, `var(--color-cool)`) 적용 |
+| **OKLab 지각 균일 그라데이션 맵 LUT·웹툰 프리셋·Bayer $4 \times 4$ 디더링** | `apps/web/src/domains/creator/drawing/studio-gradient-map.ts` | 선형 sRGB 보간 시 보색 정지점 구간에서 발생하는 중간톤 회색 탁현상(Muddy Midtone Desaturation)을 방지하는 `interpolationSpace: "oklab"`(Björn Ottosson OKLab LMS 세제곱근 행렬 변환) 옵션 및 채도 보존율 계측(`evaluateGradientMapOklabChromaRetention`), 웹툰 특화 프리셋 3종(`webtoon-dawn`, `cel-anime-shadow`, `noir-crimson`), 원본 픽셀 혼합률(`blendAmount: 0..1`) 및 $4 \times 4$ Bayer 순서 디더링(`dither: true`) 내장 |
+| **라이브 스탬프 오버레이 FIFO 상한 & 백그라운드 리플레이 일시정지** | `apps/web/src/domains/creator/live/studio-live-stamp-overlay.ts` | 장시간 드로잉 시 확정 대기 획 배열(`STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES = 64`)과 단일 활성 획 좌표(`STUDIO_LIVE_STAMP_OVERLAY_MAX_ACTIVE_POINTS = 16_384`)에 FIFO 상한을 강제하고, `setBackgroundSkipped(true/false)`로 오프스크린/백그라운드 상태에서 불필요한 전체 캔버스 `replay()`를 보류한 뒤 가시화 시점에 1회만 재생하도록 최적화 |
+

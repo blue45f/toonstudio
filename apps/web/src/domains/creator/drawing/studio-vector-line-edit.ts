@@ -592,3 +592,196 @@ export function vectorLineOutlinePathData(
   }
   return ringsToSvgPathData([ring], precision);
 }
+
+/* ------------------------------------------------------------------ */
+/* 5. CSP 벡터 레이어 심화 편집: 곡선 집기·선폭 브러시·교차점 지우개·선 연결 */
+/* ------------------------------------------------------------------ */
+
+export type VectorLinePinchFixEndpoints = "none" | "start" | "end" | "both";
+
+export interface PinchVectorLineOptions {
+  readonly originX: number;
+  readonly originY: number;
+  readonly deltaX: number;
+  readonly deltaY: number;
+  readonly pinchRadiusPx?: number;
+  readonly fixEndpoints?: VectorLinePinchFixEndpoints;
+}
+
+/** CSP "벡터 선 집기(Pinch Vector Line)" — 기준점 주변의 제어점들을 코사인 벨 감쇠로 부드럽게 밀어 변형한다. */
+export function pinchVectorLine(
+  line: StudioEditableVectorLine,
+  options: PinchVectorLineOptions,
+): StudioEditableVectorLine {
+  const { originX, originY, deltaX, deltaY } = options;
+  if (
+    line.points.length < 2 || !Number.isFinite(originX) || !Number.isFinite(originY)
+    || !Number.isFinite(deltaX) || !Number.isFinite(deltaY)
+  ) return line;
+  const radius = Math.max(4, finiteNumber(options.pinchRadiusPx, 72));
+  const fixEndpoints = options.fixEndpoints ?? "none";
+  const lastIdx = line.points.length - 1;
+  let movedAny = false;
+  const points = line.points.map((pt, index) => {
+    if (!line.closed) {
+      if ((fixEndpoints === "start" || fixEndpoints === "both") && index === 0) return pt;
+      if ((fixEndpoints === "end" || fixEndpoints === "both") && index === lastIdx) return pt;
+    }
+    const dist = Math.hypot(pt.x - originX, pt.y - originY);
+    if (dist >= radius) return pt;
+    const weight = 0.5 * (1 + Math.cos(Math.PI * (dist / radius)));
+    if (weight <= 1e-6) return pt;
+    movedAny = true;
+    return { ...pt, x: pt.x + deltaX * weight, y: pt.y + deltaY * weight };
+  });
+  return movedAny ? { ...line, points } : line;
+}
+
+export interface BrushAdjustVectorLineWidthOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly radiusPx?: number;
+  readonly mode: "scale" | "add";
+  readonly amount: number;
+  readonly processWholeLine?: boolean;
+}
+
+/** CSP "선폭 수정 브러시(Correct Line Width)" — 브러시 반경 내 제어점(또는 전체 선)의 굵기를 방사형 가중치로 조절한다. */
+export function brushAdjustVectorLineWidth(
+  line: StudioEditableVectorLine,
+  options: BrushAdjustVectorLineWidthOptions,
+): StudioEditableVectorLine {
+  const { x, y, mode, amount } = options;
+  if (line.points.length === 0 || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(amount)) return line;
+  const radius = Math.max(2, finiteNumber(options.radiusPx, 48));
+  const whole = options.processWholeLine === true;
+  if (!whole && !line.points.some((pt) => Math.hypot(pt.x - x, pt.y - y) <= radius)) return line;
+  let changed = false;
+  const points = line.points.map((pt) => {
+    const dist = Math.hypot(pt.x - x, pt.y - y);
+    if (!whole && dist >= radius) return pt;
+    const w = whole ? 1 : 0.5 * (1 + Math.cos(Math.PI * (dist / radius)));
+    const nextWidth = mode === "scale"
+      ? clampWidth(pt.width * (1 + (Math.min(STUDIO_VECTOR_LINE_MAX_WIDTH_SCALE, Math.max(0.05, amount)) - 1) * w))
+      : clampWidth(pt.width + amount * w);
+    if (Math.abs(nextWidth - pt.width) > 1e-6) changed = true;
+    return { ...pt, width: nextWidth };
+  });
+  return changed ? { ...line, points } : line;
+}
+
+function segmentIntersectionParams(
+  ax: number, ay: number, bx: number, by: number, cx: number, cy: number, dx: number, dy: number,
+): { readonly t: number; readonly u: number } | null {
+  const rX = bx - ax, rY = by - ay, sX = dx - cx, sY = dy - cy;
+  const denom = rX * sY - rY * sX;
+  if (Math.abs(denom) < 1e-9) return null;
+  const qpX = cx - ax, qpY = cy - ay;
+  const t = (qpX * sY - qpY * sX) / denom;
+  const u = (qpX * rY - qpY * rX) / denom;
+  return (t >= -1e-6 && t <= 1 + 1e-6 && u >= -1e-6 && u <= 1 + 1e-6)
+    ? { t: clamp01(t), u: clamp01(u) }
+    : null;
+}
+
+function samplePointAtParam(line: StudioEditableVectorLine, param: number): StudioVectorLinePoint {
+  const maxSeg = Math.max(1, line.points.length - 1);
+  const clamped = Math.min(maxSeg, Math.max(0, param));
+  const seg = Math.min(maxSeg - 1, Math.floor(clamped));
+  const localT = clamped - seg;
+  const a = line.points[seg]!, b = line.points[seg + 1]!;
+  return {
+    x: a.x + (b.x - a.x) * localT,
+    y: a.y + (b.y - a.y) * localT,
+    width: clampWidth(a.width + (b.width - a.width) * localT),
+  };
+}
+
+function sliceLineByParamSpan(
+  line: StudioEditableVectorLine, startParam: number, endParam: number, idSuffix: string,
+): StudioEditableVectorLine | null {
+  if (endParam - startParam <= 1e-4 || line.points.length < 2) return null;
+  const pts: StudioVectorLinePoint[] = [samplePointAtParam(line, startParam)];
+  for (let i = Math.floor(startParam) + 1; i <= Math.ceil(endParam) - 1; i += 1) {
+    if (i > 0 && i < line.points.length) pts.push(line.points[i]!);
+  }
+  pts.push(samplePointAtParam(line, endParam));
+  return pts.length >= 2 ? { ...line, id: `${line.id}${idSuffix}`, points: pts, closed: false } : null;
+}
+
+/** CSP "벡터 교차점 지우개(Erase up to intersection)" — 교차하는 다른 벡터 선과의 가장 가까운 교차점까지만 잘라낸다. */
+export function eraseVectorLineToIntersection(
+  target: StudioEditableVectorLine,
+  cutters: readonly StudioEditableVectorLine[],
+  eraser: Readonly<{ x: number; y: number; radiusPx?: number }>,
+): readonly StudioEditableVectorLine[] {
+  if (target.points.length < 2 || !Number.isFinite(eraser.x) || !Number.isFinite(eraser.y)) return [target];
+  const radius = Math.max(2, finiteNumber(eraser.radiusPx, 24));
+  const segTotal = target.points.length - 1;
+  let bestParam = -1, bestDist = Number.POSITIVE_INFINITY;
+  for (let s = 0; s < segTotal; s += 1) {
+    const a = target.points[s]!, b = target.points[s + 1]!;
+    const hit = pointToSegmentT(eraser.x, eraser.y, a.x, a.y, b.x, b.y);
+    if (hit.distance < bestDist) { bestDist = hit.distance; bestParam = s + hit.t; }
+  }
+  if (bestDist > radius || bestParam < 0) return [target];
+  const cutParams: number[] = [0, segTotal];
+  for (let s = 0; s < segTotal; s += 1) {
+    const a = target.points[s]!, b = target.points[s + 1]!;
+    for (const cutter of cutters) {
+      const cSegs = cutter.closed ? cutter.points.length : Math.max(0, cutter.points.length - 1);
+      for (let cs = 0; cs < cSegs; cs += 1) {
+        if (cutter.id === target.id && Math.abs(cs - s) <= 1) continue;
+        const c = cutter.points[cs]!, d = cutter.points[(cs + 1) % cutter.points.length]!;
+        const ix = segmentIntersectionParams(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
+        if (ix) cutParams.push(s + ix.t);
+      }
+    }
+  }
+  cutParams.sort((x, y) => x - y);
+  const deduped: number[] = [];
+  for (const p of cutParams) {
+    if (deduped.length === 0 || p - deduped[deduped.length - 1]! > 1e-4) deduped.push(p);
+  }
+  if (deduped.length <= 2) return [];
+  let lower = 0, upper = segTotal;
+  for (let i = 0; i < deduped.length - 1; i += 1) {
+    const lo = deduped[i]!, hi = deduped[i + 1]!;
+    if (bestParam >= lo - 1e-5 && bestParam <= hi + 1e-5) { lower = lo; upper = hi; break; }
+  }
+  const survivors: StudioEditableVectorLine[] = [];
+  const head = sliceLineByParamSpan(target, 0, lower, "-head");
+  const tail = sliceLineByParamSpan(target, upper, segTotal, "-tail");
+  if (head) survivors.push(head);
+  if (tail) survivors.push(tail);
+  return survivors.length === 1 ? [{ ...survivors[0]!, id: target.id }] : survivors;
+}
+
+/** CSP "벡터 선 연결(Connect Vector Lines)" — 두 열린 벡터 선의 끝점이 `maxSnapDistancePx` 이내이면 하나로 잇는다. */
+export function connectVectorLines(
+  lineA: StudioEditableVectorLine,
+  lineB: StudioEditableVectorLine,
+  maxSnapDistancePx = 32,
+): StudioEditableVectorLine | null {
+  if (lineA.closed || lineB.closed || lineA.points.length < 2 || lineB.points.length < 2) return null;
+  const snapLimit = Math.max(0.5, finiteNumber(maxSnapDistancePx, 32));
+  const aStart = lineA.points[0]!, aEnd = lineA.points[lineA.points.length - 1]!;
+  const bStart = lineB.points[0]!, bEnd = lineB.points[lineB.points.length - 1]!;
+  const best = [
+    { dist: Math.hypot(aEnd.x - bStart.x, aEnd.y - bStart.y), revA: false, revB: false },
+    { dist: Math.hypot(aEnd.x - bEnd.x, aEnd.y - bEnd.y), revA: false, revB: true },
+    { dist: Math.hypot(aStart.x - bStart.x, aStart.y - bStart.y), revA: true, revB: false },
+    { dist: Math.hypot(aStart.x - bEnd.x, aStart.y - bEnd.y), revA: true, revB: true },
+  ].sort((x, y) => x.dist - y.dist)[0]!;
+  if (best.dist > snapLimit) return null;
+  const ptsA = best.revA ? [...lineA.points].reverse() : [...lineA.points];
+  const ptsB = best.revB ? [...lineB.points].reverse() : [...lineB.points];
+  const leftEnd = ptsA[ptsA.length - 1]!, rightStart = ptsB[0]!;
+  const seam: StudioVectorLinePoint = {
+    x: (leftEnd.x + rightStart.x) * 0.5,
+    y: (leftEnd.y + rightStart.y) * 0.5,
+    width: clampWidth((leftEnd.width + rightStart.width) * 0.5),
+  };
+  return { id: lineA.id, color: lineA.color, closed: false, points: [...ptsA.slice(0, -1), seam, ...ptsB.slice(1)] };
+}
+

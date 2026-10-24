@@ -22,7 +22,10 @@ export type StudioGradientMapPresetId =
   | "deep-sea"
   | "sepia"
   | "cyberpunk"
-  | "monochrome";
+  | "monochrome"
+  | "webtoon-dawn"
+  | "cel-anime-shadow"
+  | "noir-crimson";
 
 export interface StudioGradientMapPreset {
   readonly id: StudioGradientMapPresetId;
@@ -34,7 +37,7 @@ export interface StudioGradientMapPreset {
   readonly stops: ReadonlyArray<StudioGradientStop>;
 }
 
-/** 프리셋 5종. */
+/** 기본 프리셋 5종. */
 export const STUDIO_GRADIENT_MAP_PRESETS: ReadonlyArray<StudioGradientMapPreset> =
   Object.freeze([
     {
@@ -101,10 +104,57 @@ export const STUDIO_GRADIENT_MAP_PRESETS: ReadonlyArray<StudioGradientMapPreset>
     },
   ]);
 
+/** 웹툰·셀 애니메이션 특화 확장 프리셋 3종. */
+export const STUDIO_WEBTOON_GRADIENT_MAP_PRESETS: ReadonlyArray<StudioGradientMapPreset> =
+  Object.freeze([
+    {
+      id: "webtoon-dawn",
+      labelKo: "웹툰 새벽녘",
+      labelEn: "Webtoon Dawn",
+      descriptionKo: "자주빛 새벽 공기에서 살구빛 아침 햇살로 이어지는 감성 톤.",
+      descriptionEn: "Violet dawn air transitioning into warm apricot morning light.",
+      stops: [
+        { position: 0, color: [22, 18, 52] },
+        { position: 0.38, color: [88, 64, 136] },
+        { position: 0.72, color: [226, 142, 148] },
+        { position: 1, color: [255, 241, 218] },
+      ],
+    },
+    {
+      id: "cel-anime-shadow",
+      labelKo: "셀 애니 그림자",
+      labelEn: "Cel Anime Shadow",
+      descriptionKo: "쿨톤 코발트 암부와 맑은 아이보리 명부의 셀 채색 그레이딩.",
+      descriptionEn: "Cool cobalt shadows and crisp ivory highlights for cel shading.",
+      stops: [
+        { position: 0, color: [18, 24, 58] },
+        { position: 0.45, color: [76, 98, 164] },
+        { position: 0.78, color: [232, 198, 184] },
+        { position: 1, color: [255, 250, 242] },
+      ],
+    },
+    {
+      id: "noir-crimson",
+      labelKo: "느와르 크림슨",
+      labelEn: "Noir Crimson",
+      descriptionKo: "칠흑 같은 암부 위에 핏빛 중간톤과 창백한 하이라이트를 얹는 스릴러 톤.",
+      descriptionEn: "Pitch-black shadows with crimson midtones and pale highlights.",
+      stops: [
+        { position: 0, color: [8, 6, 12] },
+        { position: 0.42, color: [132, 18, 36] },
+        { position: 0.8, color: [218, 92, 78] },
+        { position: 1, color: [248, 236, 232] },
+      ],
+    },
+  ]);
+
+export const STUDIO_ALL_GRADIENT_MAP_PRESETS: ReadonlyArray<StudioGradientMapPreset> =
+  Object.freeze([...STUDIO_GRADIENT_MAP_PRESETS, ...STUDIO_WEBTOON_GRADIENT_MAP_PRESETS]);
+
 export function getGradientMapPreset(
   id: StudioGradientMapPresetId,
 ): StudioGradientMapPreset | undefined {
-  return STUDIO_GRADIENT_MAP_PRESETS.find((p) => p.id === id);
+  return STUDIO_ALL_GRADIENT_MAP_PRESETS.find((p) => p.id === id);
 }
 
 /* ------------------------------------------------------------------ */
@@ -193,40 +243,149 @@ export function createCustomGradientModel(
 }
 
 /* ------------------------------------------------------------------ */
-/* LUT 빌드 + 적용 (성능: 룩업테이블)                                      */
+/* LUT 빌드 + 적용 (성능: 룩업테이블 & 지각적 OKLab 색공간 보간)             */
 /* ------------------------------------------------------------------ */
 
 export const STUDIO_GRADIENT_MAP_LUT_SIZE = 256;
 
+export type StudioGradientInterpolationSpace = "srgb" | "oklab";
+
+export interface BuildGradientMapLutOptions {
+  readonly interpolationSpace?: StudioGradientInterpolationSpace;
+}
+
+function srgbByteToLinear(byte: number): number {
+  const u = Math.max(0, Math.min(255, byte)) / 255;
+  return u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4;
+}
+
+function linearToSrgbByte(linear: number): number {
+  const clamped = Math.max(0, Math.min(1, linear));
+  const u = clamped <= 0.0031308
+    ? 12.92 * clamped
+    : 1.055 * clamped ** (1 / 2.4) - 0.055;
+  return Math.max(0, Math.min(255, Math.round(u * 255)));
+}
+
+function rgbBytesToOklab(rgb: readonly [number, number, number]): readonly [number, number, number] {
+  const r = srgbByteToLinear(rgb[0]);
+  const g = srgbByteToLinear(rgb[1]);
+  const b = srgbByteToLinear(rgb[2]);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
+
+function oklabToRgbBytes(L: number, a: number, b: number): readonly [number, number, number] {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+  const rLin = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const gLin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bLin = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+  return [linearToSrgbByte(rLin), linearToSrgbByte(gLin), linearToSrgbByte(bLin)];
+}
+
 /**
  * 정지점 → RGB LUT 빌드. size*3 길이 Uint8Array (R,G,B 연속).
- * 정지점 사이 선형 보간.
+ * 기본은 sRGB 선형 보간이며, `options.interpolationSpace = "oklab"` 지정 시
+ * 지각적 균일 색공간(OKLab)에서 보간해 보색 구간의 회색 탁 현상을 방지한다.
  */
 export function buildGradientMapLut(
   stops: ReadonlyArray<StudioGradientStop>,
   size: number = STUDIO_GRADIENT_MAP_LUT_SIZE,
+  options: BuildGradientMapLutOptions = {},
 ): Uint8Array {
   const sorted = sortGradientStops(stops);
   const lut = new Uint8Array(Math.max(2, Math.floor(size)) * 3);
   const n = lut.length / 3;
+  const useOklab = options.interpolationSpace === "oklab";
   for (let i = 0; i < n; i += 1) {
     const t = n === 1 ? 0 : i / (n - 1);
-    let left = sorted[0];
-    let right = sorted[sorted.length - 1];
+    let left = sorted[0]!;
+    let right = sorted[sorted.length - 1]!;
     for (let s = 0; s < sorted.length - 1; s += 1) {
-      if (t >= sorted[s].position && t <= sorted[s + 1].position) {
-        left = sorted[s];
-        right = sorted[s + 1];
+      if (t >= sorted[s]!.position && t <= sorted[s + 1]!.position) {
+        left = sorted[s]!;
+        right = sorted[s + 1]!;
         break;
       }
     }
     const span = right.position - left.position;
     const f = span <= 0 ? 0 : (t - left.position) / span;
-    for (let c = 0; c < 3; c += 1) {
-      lut[i * 3 + c] = Math.round(left.color[c] + (right.color[c] - left.color[c]) * f);
+    if (useOklab) {
+      const labL = rgbBytesToOklab(left.color);
+      const labR = rgbBytesToOklab(right.color);
+      const L = labL[0] + (labR[0] - labL[0]) * f;
+      const cL = Math.hypot(labL[1], labL[2]);
+      const cR = Math.hypot(labR[1], labR[2]);
+      let a: number;
+      let b: number;
+      if (cL > 0.02 && cR > 0.02) {
+        const hL = Math.atan2(labL[2], labL[1]);
+        const hR = Math.atan2(labR[2], labR[1]);
+        let dh = hR - hL;
+        if (dh > Math.PI) dh -= Math.PI * 2;
+        else if (dh < -Math.PI) dh += Math.PI * 2;
+        const h = hL + dh * f;
+        const C = cL + (cR - cL) * f;
+        a = C * Math.cos(h);
+        b = C * Math.sin(h);
+      } else {
+        a = labL[1] + (labR[1] - labL[1]) * f;
+        b = labL[2] + (labR[2] - labL[2]) * f;
+      }
+      const rgb = oklabToRgbBytes(L, a, b);
+      lut[i * 3] = rgb[0];
+      lut[i * 3 + 1] = rgb[1];
+      lut[i * 3 + 2] = rgb[2];
+    } else {
+      for (let c = 0; c < 3; c += 1) {
+        lut[i * 3 + c] = Math.round(left.color[c]! + (right.color[c]! - left.color[c]!) * f);
+      }
     }
   }
   return lut;
+}
+
+/**
+ * OKLab 보간 LUT와 sRGB 보간 LUT의 중간톤 평균 채도(Chroma) 유지율을 비교 계측한다.
+ */
+export function evaluateGradientMapOklabChromaRetention(
+  stops: ReadonlyArray<StudioGradientStop>,
+): {
+  readonly srgbMeanChroma: number;
+  readonly oklabMeanChroma: number;
+  readonly retentionRatio: number;
+  readonly chromaGainRatio: number;
+} {
+  const srgbLut = buildGradientMapLut(stops, 64, { interpolationSpace: "srgb" });
+  const oklabLut = buildGradientMapLut(stops, 64, { interpolationSpace: "oklab" });
+  let srgbSum = 0;
+  let oklabSum = 0;
+  for (let i = 0; i < 64; i += 1) {
+    const labS = rgbBytesToOklab([srgbLut[i * 3]!, srgbLut[i * 3 + 1]!, srgbLut[i * 3 + 2]!]);
+    const labO = rgbBytesToOklab([oklabLut[i * 3]!, oklabLut[i * 3 + 1]!, oklabLut[i * 3 + 2]!]);
+    srgbSum += Math.hypot(labS[1], labS[2]);
+    oklabSum += Math.hypot(labO[1], labO[2]);
+  }
+  const srgbMeanChroma = srgbSum / 64;
+  const oklabMeanChroma = oklabSum / 64;
+  const ratio = srgbMeanChroma > 1e-6 ? oklabMeanChroma / srgbMeanChroma : 1;
+  return {
+    srgbMeanChroma,
+    oklabMeanChroma,
+    retentionRatio: ratio,
+    chromaGainRatio: ratio,
+  };
 }
 
 /** Rec.601 명도 → 0..1. */
@@ -234,9 +393,22 @@ export function luminanceOf(r: number, g: number, b: number): number {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 
+const BAYER_4X4 = [
+  -0.4375, 0.0625, -0.3125, 0.1875,
+  0.3125, -0.1875, 0.4375, -0.0625,
+  -0.25, 0.25, -0.375, 0.125,
+  0.5, 0.0, 0.375, -0.125,
+] as const;
+
 export interface ApplyGradientMapOptions {
   /** true면 알파를 유지한다 (기본 true). */
   readonly preserveAlpha?: boolean;
+  /** 원본 픽셀과의 혼합 비율 0..1 (기본 1 = 100% 그라데이션 맵 적용). */
+  readonly blendAmount?: number;
+  /** true면 8비트 계조 밴딩 억제를 위한 결정론적 Bayer 4×4 디더링을 적용한다. */
+  readonly dither?: boolean;
+  /** `dither = true` 일 때 2D 격자 인덱싱용 픽셀 너비. */
+  readonly width?: number;
 }
 
 /**
@@ -251,13 +423,32 @@ export function applyGradientMapToRgba(
   const out = new Uint8ClampedArray(rgba.length);
   const entries = Math.floor(lut.length / 3);
   const preserveAlpha = options.preserveAlpha ?? true;
+  const blend = options.blendAmount !== undefined && Number.isFinite(options.blendAmount)
+    ? Math.max(0, Math.min(1, options.blendAmount))
+    : 1;
+  const useDither = options.dither === true;
+  const rowWidth = options.width && options.width > 0 ? Math.floor(options.width) : 0;
+
   for (let i = 0; i + 3 < rgba.length + 1; i += 4) {
-    const lum = luminanceOf(rgba[i], rgba[i + 1], rgba[i + 2]);
-    const idx = Math.max(0, Math.min(entries - 1, Math.round(lum * (entries - 1))));
-    out[i] = lut[idx * 3];
-    out[i + 1] = lut[idx * 3 + 1];
-    out[i + 2] = lut[idx * 3 + 2];
-    out[i + 3] = preserveAlpha ? rgba[i + 3] : 255;
+    const r0 = rgba[i]!;
+    const g0 = rgba[i + 1]!;
+    const b0 = rgba[i + 2]!;
+    const lum = luminanceOf(r0, g0, b0);
+    let scaled = lum * (entries - 1);
+    if (useDither) {
+      const pixelIndex = i >> 2;
+      const x = rowWidth > 0 ? pixelIndex % rowWidth : pixelIndex;
+      const y = rowWidth > 0 ? Math.floor(pixelIndex / rowWidth) : 0;
+      scaled += BAYER_4X4[((y & 3) << 2) | (x & 3)]!;
+    }
+    const idx = Math.max(0, Math.min(entries - 1, Math.round(scaled)));
+    const mr = lut[idx * 3]!;
+    const mg = lut[idx * 3 + 1]!;
+    const mb = lut[idx * 3 + 2]!;
+    out[i] = blend >= 1 ? mr : Math.round(r0 + (mr - r0) * blend);
+    out[i + 1] = blend >= 1 ? mg : Math.round(g0 + (mg - g0) * blend);
+    out[i + 2] = blend >= 1 ? mb : Math.round(b0 + (mb - b0) * blend);
+    out[i + 3] = preserveAlpha ? rgba[i + 3]! : 255;
   }
   return out;
 }
@@ -267,16 +458,17 @@ export function applyGradientMapToRgba(
  */
 export function buildLutFromHexStops(
   stops: ReadonlyArray<{ readonly position: number; readonly hex: string }>,
+  options: BuildGradientMapLutOptions = {},
 ): Uint8Array {
   const parsed: StudioGradientStop[] = stops.map((s) => {
     const m = /^#?([0-9a-fA-F]{6})$/.exec(s.hex.trim());
-    const v = m ? parseInt(m[1], 16) : 0;
+    const v = m ? parseInt(m[1]!, 16) : 0;
     return {
       position: s.position,
       color: [(v >> 16) & 255, (v >> 8) & 255, v & 255] as const,
     };
   });
-  return buildGradientMapLut(parsed);
+  return buildGradientMapLut(parsed, STUDIO_GRADIENT_MAP_LUT_SIZE, options);
 }
 
 /** RGB → "#rrggbb". */
@@ -287,3 +479,4 @@ export function rgbToHex(r: number, g: number, b: number): string {
       .padStart(2, "0");
   return `#${c(r)}${c(g)}${c(b)}`;
 }
+
