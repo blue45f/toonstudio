@@ -254,4 +254,39 @@ describe("smudgeStroke", () => {
       expect(b).toBeLessThanOrEqual(Math.max(LEFT[2], RIGHT[2]) + 1);
     }
   });
+
+  it("supports hardness control in smudgeBrushWeight and smudgeStroke", () => {
+    expect(smudgeBrushWeight(5, 0, 10, 1)).toBe(1); // inside coreRatio = 0.8 * 10 = 8
+    expect(smudgeBrushWeight(5, 0, 10, 0)).toBeCloseTo(0.25, 5); // quadratic falloff from center
+  });
+
+  it("fingerPaintColor injects foreground pigment at stroke start and decays along the stroke", () => {
+    const WHITE: [number, number, number, number] = [255, 255, 255, 255];
+    const data = makeImageData(W, H, () => WHITE);
+    smudgeStroke(
+      data,
+      W,
+      H,
+      [
+        { x: 2, y: 5 },
+        { x: 17, y: 5 },
+      ],
+      3,
+      0.85,
+      {
+        fingerPaintColor: { r: 220, g: 20, b: 40 },
+        fingerPaintAmount: 0.9,
+        fingerPaintDecay: 0.35,
+      },
+    );
+
+    // Early along the stroke (x=4), red fingertip pigment is strongly deposited (green/blue lowered)
+    const early = pixelAt(data, W, 4, 5);
+    expect(early[1]).toBeLessThan(200);
+    expect(early[2]).toBeLessThan(200);
+
+    // Late along the stroke (x=16), fingertip pigment has decayed toward the white canvas
+    const late = pixelAt(data, W, 16, 5);
+    expect(late[1]).toBeGreaterThan(early[1]);
+  });
 });
