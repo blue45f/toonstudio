@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   generateApproximateColorGrid,
+  hexToRgb,
   hsvToRgb,
   rgbToHsv,
+  shiftHueTowardsTarget,
 } from "./studio-approximate-color";
 
 describe("studio-approximate-color", () => {
@@ -37,7 +39,7 @@ describe("studio-approximate-color", () => {
     expect(centerTile?.toLowerCase()).toBe(centerHex.toLowerCase());
   });
 
-  it("supports multiple variation modes and step sizes", () => {
+  it("supports multiple variation modes and step sizes including webtoon temp-val mode", () => {
     const grid7x7 = generateApproximateColorGrid("#3b82f6", {
       mode: "hue-sat",
       steps: 7,
@@ -53,5 +55,19 @@ describe("studio-approximate-color", () => {
     });
     expect(gridValOnly.length).toBe(5);
     expect(gridValOnly[2]?.[2]?.toLowerCase()).toBe("#ff0000");
+
+    // Temp-val mode shifts left columns toward cool cobalt shadow (222°) and right columns toward warm sunlight (42°)
+    expect(shiftHueTowardsTarget(350, 42, 0.5)).toBeCloseTo(16, 0);
+    const gridTempVal = generateApproximateColorGrid("#e59882", {
+      mode: "temp-val",
+      steps: 5,
+      deltaPercent: 8,
+    });
+    expect(gridTempVal[2]?.[2]?.toLowerCase()).toBe("#e59882");
+    const coolLeftHex = gridTempVal[2]?.[0] ?? "#e59882";
+    const warmRightHex = gridTempVal[2]?.[4] ?? "#e59882";
+    const [coolH] = rgbToHsv(...hexToRgb(coolLeftHex));
+    const [warmH] = rgbToHsv(...hexToRgb(warmRightHex));
+    expect(Math.abs(warmH - 42)).toBeLessThan(Math.abs(coolH - 42));
   });
 });

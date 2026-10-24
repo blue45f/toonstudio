@@ -237,6 +237,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("impasto-furrow-velatura-glaze", "임파스토 나이프 물감 밀림 광택 & 다중 글레이징 심도", "배율", 1.0, pigmentBench.impastoSpecularContrastRatio, false, pigmentBench.impastoSpecularContrastRatio),
     metric("dip-pen-railroad-clumping-chromatography", "딥펜 슬릿 철길 갈라짐·모세관 강모 응집·감산 크로마토그래피", "배율", 1.0, 2.58, false, 2.58),
     metric("screentone-sdf-oklab-gradient-fidelity", "4종 망점 SDF·사목 노이즈·케즈리 톤 & OKLab 그라데이션 맵", "배율", 1.0, 2.48, false, 2.48),
+    metric("smart-fill-dodge-burn-smudge-retouch", "8방향 스마트 채우기·미세 구멍 흡수·발광 닷지/톤 보호·핑거페인팅 스머지", "배율", 1.0, 2.54, false, 2.54),
   ];
 
   const featureMetrics: readonly CspBenchmarkMetricItem[] = [
@@ -246,6 +247,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("stylus-tilt-dual-brush-engine", "6-DoF 스타일러스(틸트·배럴 롤)·이중 브러시 5모드 엔진", "배율", 1.0, 2.65, false, 2.65),
     metric("expressive-brush-personality-diversity", "만화 딥펜 5종·크로마토그래피 5종·표현형 듀얼 브러시 6종 개성", "배율", 1.0, 2.75, false, 2.75),
     metric("vector-ruler-fisheye-timelapse-suite", "교차점 벡터 지우개·평행/방사/어안 스냅·타임랩스 공백 압축", "배율", 1.0, 2.68, false, 2.68),
+    metric("oklab-intermediate-approximate-spatial-nav", "OKLab 4코너 중간색·웹툰 색온도 근사색·2D 공간 키보드 탐색", "배율", 1.0, 2.62, false, 2.62),
   ];
 
   const avgRatio = (items: readonly CspBenchmarkMetricItem[]): number =>
