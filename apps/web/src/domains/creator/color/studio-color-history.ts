@@ -21,6 +21,20 @@ export const INITIAL_COLOR_HISTORY: readonly string[] = Object.freeze([
   "#1e293b",
 ]);
 
+export function normalizeHistoryHex(color: string): string | null {
+  const cleaned = color.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/u.test(cleaned)) {
+    return cleaned;
+  }
+  if (/^#[0-9a-f]{3}$/u.test(cleaned)) {
+    const r = cleaned[1]!;
+    const g = cleaned[2]!;
+    const b = cleaned[3]!;
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return null;
+}
+
 /**
  * Adds a new hex color to the front of the color history list.
  * Deduplicates existing instances so the most recently used color stays at index 0.
@@ -30,14 +44,26 @@ export function addColorToHistory(
   color: string,
   capacity: number = DEFAULT_COLOR_HISTORY_CAPACITY,
 ): readonly string[] {
-  const normalized = color.trim().toLowerCase();
-  if (!/^#[0-9a-f]{6}$/i.test(normalized)) {
+  const normalized = normalizeHistoryHex(color);
+  if (!normalized) {
     return history;
   }
 
   const filtered = history.filter((c) => c.toLowerCase() !== normalized);
   const next = [normalized, ...filtered].slice(0, capacity);
   return Object.freeze(next);
+}
+
+/**
+ * Removes a specific color from the history list.
+ */
+export function removeColorFromHistory(
+  history: readonly string[],
+  color: string,
+): readonly string[] {
+  const normalized = normalizeHistoryHex(color);
+  if (!normalized) return history;
+  return Object.freeze(history.filter((c) => c.toLowerCase() !== normalized));
 }
 
 /**

@@ -51,6 +51,20 @@ export const DEFAULT_STUDIO_EYEDROPPER_SETTINGS: Readonly<StudioEyedropperSettin
 
 export const STUDIO_EYEDROPPER_MAX_AVERAGE_RADIUS = 32;
 
+export type StudioEyedropperKernelMode = "uniform" | "gaussian";
+
+export interface StudioEyedropperSampleOptions {
+  readonly averageRadius?: number;
+  /** 평균 커널 가중치: "uniform"(동일 가중치, 기본) | "gaussian"(중심 가우시안 가중치). */
+  readonly kernel?: StudioEyedropperKernelMode;
+  /** 평균 반경 내에서 밝은 채색 픽셀이 존재할 때 어두운 선화 픽셀이 평균색을 탁하게 오염시키는 현상을 방지. */
+  readonly ignoreDarkLineart?: boolean;
+  /** 선화 오염 제외용 상대 명도 임계값 (0..1, 기본 0.18). */
+  readonly lineartLuminanceThreshold?: number;
+  /** averageRadius=0일 때 소수점 좌표 (x, y) 주변 4픽셀 양선형(Bilinear) 서브픽셀 보간 여부. */
+  readonly subpixel?: boolean;
+}
+
 export interface StudioEyedropperSample {
   hex: string;
   rgba: readonly [red: number, green: number, blue: number, alpha: number];
@@ -59,6 +73,8 @@ export interface StudioEyedropperSample {
   /** 가장자리 클램프 후 조사한 원형 커널 픽셀 수. */
   candidateCount: number;
   averageRadius: number;
+  /** ignoreDarkLineart 활성화 시 제외된 어두운 선화 픽셀 수. */
+  rejectedLineartCount?: number;
 }
 
 function toHex(n: number): string {
@@ -73,6 +89,10 @@ function finiteInteger(value: unknown, fallback: number): number {
 
 function includesValue<T extends string>(values: readonly T[], value: unknown): value is T {
   return typeof value === "string" && values.includes(value as T);
+}
+
+function pixelLuminance01(r: number, g: number, b: number): number {
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
 /** 저장본·외부 입력을 작고 예측 가능한 스포이드 설정으로 정규화한다. */
@@ -125,7 +145,7 @@ export function sampleColorFromImageData(
   height: number,
   x: number,
   y: number,
-  options: { averageRadius?: number } = {},
+  options: StudioEyedropperSampleOptions = {},
 ): StudioEyedropperSample | null {
   const safeWidth = finiteInteger(width, 0);
   const safeHeight = finiteInteger(height, 0);
@@ -139,31 +159,125 @@ export function sampleColorFromImageData(
     STUDIO_EYEDROPPER_MAX_AVERAGE_RADIUS,
     Math.max(0, finiteInteger(options.averageRadius, 0)),
   );
+
+  // Bilinear sub-pixel sampling when radius=0 and subpixel=true
+  if (radius === 0 && options.subpixel) {
+    const x0 = Math.max(0, Math.min(safeWidth - 1, Math.floor(x)));
+    const y0 = Math.max(0, Math.min(safeHeight - 1, Math.floor(y)));
+    const x1 = Math.min(safeWidth - 1, x0 + 1);
+    const y1 = Math.min(safeHeight - 1, y0 + 1);
+    const fx = Math.max(0, Math.min(1, x - x0));
+    const fy = Math.max(0, Math.min(1, y - y0));
+
+    const coords: readonly [number, number, number][] = [
+      [x0, y0, (1 - fx) * (1 - fy)],
+      [x1, y0, fx * (1 - fy)],
+      [x0, y1, (1 - fx) * fy],
+      [x1, y1, fx * fy],
+    ];
+    let wRed = 0;
+    let wGreen = 0;
+    let wBlue = 0;
+    let wAlpha = 0;
+    let aSum = 0;
+    let sCount = 0;
+    for (const [sx, sy, spatialW] of coords) {
+      if (spatialW <= 0) continue;
+      const idx = (sy * safeWidth + sx) * 4;
+      const alpha = data[idx + 3] ?? 0;
+      if (alpha <= 0) continue;
+      const w = (alpha / 255) * spatialW;
+      wRed += (data[idx] ?? 0) * w;
+      wGreen += (data[idx + 1] ?? 0) * w;
+      wBlue += (data[idx + 2] ?? 0) * w;
+      wAlpha += w;
+      aSum += alpha * spatialW;
+      sCount += 1;
+    }
+    if (sCount === 0 || wAlpha <= 0) return null;
+    const red = Math.round(wRed / wAlpha);
+    const green = Math.round(wGreen / wAlpha);
+    const blue = Math.round(wBlue / wAlpha);
+    const alpha = Math.round(aSum);
+    return {
+      hex: `#${toHex(red)}${toHex(green)}${toHex(blue)}`,
+      rgba: [red, green, blue, alpha],
+      sampleCount: sCount,
+      candidateCount: 4,
+      averageRadius: 0,
+    };
+  }
+
+  const kernelMode: StudioEyedropperKernelMode = options.kernel ?? "uniform";
+  const ignoreDarkLineart = Boolean(options.ignoreDarkLineart) && radius > 0;
+  const lumThreshold =
+    typeof options.lineartLuminanceThreshold === "number" &&
+    Number.isFinite(options.lineartLuminanceThreshold)
+      ? Math.max(0.02, Math.min(0.6, options.lineartLuminanceThreshold))
+      : 0.18;
+  const sigmaSq2 = 2 * Math.max(0.5, radius * 0.5) ** 2;
+
+  // If ignoreDarkLineart is enabled, check whether the kernel contains brighter flat-color pixels
+  let hasBrighterFlatPixel = false;
+  if (ignoreDarkLineart) {
+    for (let offsetY = -radius; offsetY <= radius && !hasBrighterFlatPixel; offsetY += 1) {
+      const sampleY = centerY + offsetY;
+      if (sampleY < 0 || sampleY >= safeHeight) continue;
+      for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+        if (offsetX * offsetX + offsetY * offsetY > radius * radius) continue;
+        const sampleX = centerX + offsetX;
+        if (sampleX < 0 || sampleX >= safeWidth) continue;
+        const idx = (sampleY * safeWidth + sampleX) * 4;
+        const alpha = data[idx + 3] ?? 0;
+        if (alpha <= 0) continue;
+        if (pixelLuminance01(data[idx] ?? 0, data[idx + 1] ?? 0, data[idx + 2] ?? 0) >= lumThreshold) {
+          hasBrighterFlatPixel = true;
+          break;
+        }
+      }
+    }
+  }
+
   let weightedRed = 0;
   let weightedGreen = 0;
   let weightedBlue = 0;
   let alphaWeight = 0;
   let alphaSum = 0;
+  let spatialWeightSum = 0;
   let sampleCount = 0;
   let candidateCount = 0;
+  let rejectedLineartCount = 0;
 
   for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
     const sampleY = centerY + offsetY;
     if (sampleY < 0 || sampleY >= safeHeight) continue;
     for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
-      if (offsetX * offsetX + offsetY * offsetY > radius * radius) continue;
+      const distSq = offsetX * offsetX + offsetY * offsetY;
+      if (distSq > radius * radius) continue;
       const sampleX = centerX + offsetX;
       if (sampleX < 0 || sampleX >= safeWidth) continue;
       candidateCount += 1;
       const index = (sampleY * safeWidth + sampleX) * 4;
       const alpha = data[index + 3] ?? 0;
       if (alpha <= 0) continue;
-      const weight = alpha / 255;
-      weightedRed += (data[index] ?? 0) * weight;
-      weightedGreen += (data[index + 1] ?? 0) * weight;
-      weightedBlue += (data[index + 2] ?? 0) * weight;
+
+      const r = data[index] ?? 0;
+      const g = data[index + 1] ?? 0;
+      const b = data[index + 2] ?? 0;
+      if (hasBrighterFlatPixel && pixelLuminance01(r, g, b) < lumThreshold) {
+        rejectedLineartCount += 1;
+        continue;
+      }
+
+      const spatialWeight =
+        kernelMode === "gaussian" && radius > 0 ? Math.exp(-distSq / sigmaSq2) : 1;
+      const weight = (alpha / 255) * spatialWeight;
+      weightedRed += r * weight;
+      weightedGreen += g * weight;
+      weightedBlue += b * weight;
       alphaWeight += weight;
-      alphaSum += alpha;
+      alphaSum += alpha * spatialWeight;
+      spatialWeightSum += spatialWeight;
       sampleCount += 1;
     }
   }
@@ -172,13 +286,14 @@ export function sampleColorFromImageData(
   const red = Math.round(weightedRed / alphaWeight);
   const green = Math.round(weightedGreen / alphaWeight);
   const blue = Math.round(weightedBlue / alphaWeight);
-  const alpha = Math.round(alphaSum / sampleCount);
+  const alpha = Math.round(alphaSum / Math.max(1e-6, spatialWeightSum));
   return {
     hex: `#${toHex(red)}${toHex(green)}${toHex(blue)}`,
     rgba: [red, green, blue, alpha],
     sampleCount,
     candidateCount,
     averageRadius: radius,
+    ...(ignoreDarkLineart ? { rejectedLineartCount } : {}),
   };
 }
 

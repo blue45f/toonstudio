@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SHADING_ASSIST_OPTIONS,
   buildStudioShadingAssistDraft,
+  computeOpaqueSilhouetteDistanceField,
   normalizeShadingAssistOptions,
   shadingAssistLightVector,
 } from "./studio-shading-assist";
@@ -120,5 +121,37 @@ describe("buildStudioShadingAssistDraft", () => {
     const draft = buildStudioShadingAssistDraft({ data: new Uint8ClampedArray(4), width: 0, height: 0 });
     expect(draft.status).toBe("refused");
     if (draft.status === "refused") expect(draft.reason).toBe("invalid-source");
+  });
+
+  it("실루엣 거리 기반 3D 구면 볼륨·림라이트·곱하기(multiply)/선형 번(linear-burn) 합성을 지원한다", () => {
+    const source = makeImage(8, 8, [220, 180, 150, 255]);
+    const dist = computeOpaqueSilhouetteDistanceField(source.data, 8, 8);
+    expect(dist[0]).toBe(1);
+    expect(dist[3 * 8 + 3]).toBeGreaterThan(2);
+
+    const normalDraft = buildStudioShadingAssistDraft(source, {
+      azimuthDeg: 270,
+      strength: 80,
+      blendMode: "normal",
+    });
+    const multiplyDraft = buildStudioShadingAssistDraft(source, {
+      azimuthDeg: 270,
+      strength: 80,
+      blendMode: "multiply",
+      shadingModel: "spherical-volume",
+      rimLightStrength: 75,
+      rimLightWidthPx: 2,
+    });
+    expect(normalDraft.status).toBe("created");
+    expect(multiplyDraft.status).toBe("created");
+    if (normalDraft.status !== "created" || multiplyDraft.status !== "created") return;
+
+    expect(multiplyDraft.rimLightPixelCount).toBeGreaterThan(0);
+    // 왼쪽 광원 쪽 외곽(x=0, y=3)은 림라이트로 원본(220)보다 밝아진다
+    expect(multiplyDraft.preview.data[(3 * 8 + 0) * 4]!).toBeGreaterThan(220);
+    // 오른쪽 그림자 쪽(x=7, y=3)은 multiply 블렌드로 normal 합성보다 더 깊고 진한 음영을 만든다
+    expect(multiplyDraft.preview.data[(3 * 8 + 7) * 4]!).toBeLessThan(
+      normalDraft.preview.data[(3 * 8 + 7) * 4]!,
+    );
   });
 });

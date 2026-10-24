@@ -4,6 +4,7 @@ import type { AdvancedFillImageDataLike, AdvancedFillRgba } from "./studio-advan
 import {
   applyStudioLassoFill,
   rasterizeStudioLassoFillMask,
+  simplifyLassoPolygonRdp,
   STUDIO_LASSO_FILL_DEFAULTS,
   type StudioLassoFillPoint,
 } from "./studio-lasso-fill";
@@ -347,5 +348,57 @@ describe("applyStudioLassoFill", () => {
       closeGapRadius: 0,
       areaAdjustment: 0,
     });
+  });
+
+  it("non-zero 와인딩 규칙·RDP 경로 단순화·다중 셀 시드 탐색(all-enclosed-cells)을 지원한다", () => {
+    // Co-linear jittered points along a square get simplified to 4 corners
+    const jittered: readonly StudioLassoFillPoint[] = [
+      { x: 1, y: 1 },
+      { x: 3, y: 1.05 },
+      { x: 5, y: 0.95 },
+      { x: 8, y: 1 },
+      { x: 8, y: 8 },
+      { x: 1, y: 8 },
+    ];
+    const simplified = simplifyLassoPolygonRdp(jittered, 0.5);
+    expect(simplified.length).toBe(4);
+
+    // Self-overlapping double-wound loop: even-odd cancels out the overlap, whereas non-zero keeps it filled
+    const doubleLoop: readonly StudioLassoFillPoint[] = [
+      { x: 1, y: 1 },
+      { x: 6, y: 1 },
+      { x: 6, y: 6 },
+      { x: 1, y: 6 },
+      { x: 1, y: 1 },
+      { x: 6, y: 1 },
+      { x: 6, y: 6 },
+      { x: 1, y: 6 },
+    ];
+    const evenOddMask = rasterizeStudioLassoFillMask(doubleLoop, 8, 8, { windingRule: "even-odd" });
+    const nonZeroMask = rasterizeStudioLassoFillMask(doubleLoop, 8, 8, { windingRule: "non-zero" });
+    expect(evenOddMask[3 * 8 + 3]).toBe(0);
+    expect(nonZeroMask[3 * 8 + 3]).toBe(1);
+
+    // Multi-cell lineart divided by a solid vertical wall at x=5
+    const twoCellRows = Array.from({ length: 10 }, () => ".....#......");
+    const reference = imageFromRows(twoCellRows, LINE_PALETTE);
+    const multiCellResult = applyStudioLassoFill({
+      target: solid(12, 10, CLEAR),
+      referenceImage: reference,
+      points: [
+        { x: 1, y: 1 },
+        { x: 10, y: 1 },
+        { x: 10, y: 8 },
+        { x: 1, y: 8 },
+      ],
+      fill: RED,
+      options: {
+        seedStrategy: "all-enclosed-cells",
+      },
+    });
+    expect(multiCellResult.diagnostics.status).toBe("applied");
+    expect(multiCellResult.lasso.cellSeedCount).toBe(2);
+    expect(rgbaAt(multiCellResult.imageData, 2, 4)).toEqual([...RED]);
+    expect(rgbaAt(multiCellResult.imageData, 8, 4)).toEqual([...RED]);
   });
 });

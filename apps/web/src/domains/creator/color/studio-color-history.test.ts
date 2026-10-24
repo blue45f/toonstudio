@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   addColorToHistory,
   clearColorHistory,
+  removeColorFromHistory,
 } from "./studio-color-history";
 
 describe("studio-color-history", () => {
@@ -24,10 +25,15 @@ describe("studio-color-history", () => {
     expect(list.length).toBe(10);
   });
 
-  it("ignores invalid color strings", () => {
+  it("ignores invalid color strings and expands 3-digit hex shorthand", () => {
     const list = ["#111111"];
     const same = addColorToHistory(list, "invalid-color");
     expect(same).toBe(list);
+
+    const expanded = addColorToHistory(list, "#f0a");
+    expect(expanded[0]).toBe("#ff00aa");
+    const removed = removeColorFromHistory(expanded, "#ff00aa");
+    expect(removed).toEqual(["#111111"]);
   });
 
   it("clears color history", () => {
