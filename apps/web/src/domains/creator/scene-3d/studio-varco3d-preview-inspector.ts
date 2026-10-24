@@ -742,3 +742,12 @@ export function buildStudioVarco3dDccBridgePayload(
     lightingRotationDeg: lightingRadToDialDeg(state.lightingRotationRad),
   });
 }
+
+export function createInitialVarco3dViewportHudState(
+  overrides?: Partial<StudioVarco3dViewportHudState>,
+): StudioVarco3dViewportHudState {
+  return createStudioVarco3dViewportHudState({
+    faceTopology: "quad",
+    ...overrides,
+  });
+}
