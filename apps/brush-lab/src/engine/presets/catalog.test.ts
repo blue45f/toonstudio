@@ -244,7 +244,17 @@ describe("매체 가족 품질 목표", () => {
       tipChainFor("round", i + 1, { hardness: (i % 10) / 10, aspect: 1 });
     }
     for (let i = 0; i < MAX_PAPER_CACHE_ENTRIES + 8; i += 1) {
-      paperFor({ enabled: true, seed: i + 1, scale: 1, roughness: 0.4, absorbency: 0.5 });
+      paperFor({
+        enabled: true,
+        seed: i + 1,
+        scale: 1,
+        rotationRad: 0,
+        roughness: 0.4,
+        absorbency: 0.5,
+        pressureInfluence: 0.3,
+        tooth: 0,
+        filter: "bilinear",
+      });
     }
     const stats = surfaceCacheStats();
     expect(stats.tipEntries).toBeLessThanOrEqual(MAX_TIP_CACHE_ENTRIES);

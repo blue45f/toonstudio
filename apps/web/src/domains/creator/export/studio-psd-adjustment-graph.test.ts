@@ -120,8 +120,8 @@ describe("PSD live adjustment graph capture", () => {
   it("fails before capture for unsupported graph versions and over-budget composite buffers", async () => {
     const capture = vi.spyOn(stage, "toCanvas");
     const unsupported = [{ ...graph[1]!, adjustmentLayer: { version: 2, scope: "composite-below" } }] as unknown as PsdExportEl[];
-    await expect(exportPagePsd(stage, unsupported, 16, 24, 1)).rejects.toThrow("지원하지 않는 보정 레이어");
-    await expect(exportPagePsd(stage, graph, 5000, 5000, 1)).rejects.toThrow("메모리 한도");
+    await expect(exportPagePsd(stage, unsupported, 16, 24, 1)).rejects.toThrow("unsupportedAdjustmentSettings");
+    await expect(exportPagePsd(stage, graph, 5000, 5000, 1)).rejects.toThrow("layerPixelsOverBudget");
     expect(capture).not.toHaveBeenCalled();
   });
 });
