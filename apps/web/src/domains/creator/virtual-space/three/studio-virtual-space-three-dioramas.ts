@@ -1,14 +1,19 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 import { STUDIO_THREE_SCALE, worldToThree } from "./studio-virtual-space-three-scene";
 
 export type StudioThreeLightingPreset = "day" | "studio" | "night";
+
+export interface StudioThreeLocalBoxFilter {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minY: number;
+  readonly maxY: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+}
 
 export interface StudioThreeZoneDioramaSpec {
   readonly roomId: string;
@@ -21,11 +26,12 @@ export interface StudioThreeZoneDioramaSpec {
   readonly elevationMeters: number;
   readonly rotationY?: number;
   readonly hiddenNodeSubstrings?: readonly string[];
+  readonly clearLocalBoxes?: readonly StudioThreeLocalBoxFilter[];
 }
 
 /**
  * 10개 캠퍼스 구역에 일대일 대응하는 풀 3D 건축 디오라마 에셋(`/assets/3d/environments/...`) 명세.
- * 모든 실내 구역은 북·서 L자 컷어웨이(남·동 개방) 구조로 맞춰 카메라 시야 가림을 원천 차단한다.
+ * 모든 실내 구역은 북·서 L자 컷어웨이(남·동 개방) 구조 및 중앙 동선 클리어런스로 맞춰 카메라 시야 가림을 원천 차단한다.
  */
 export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] = Object.freeze([
   {
@@ -37,6 +43,11 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 17.2,
     scaleY: 1.18,
     elevationMeters: -0.14,
+    hiddenNodeSubstrings: ["Bookshop_Shopfront_Glass"],
+    clearLocalBoxes: [
+      { minX: -4.1, maxX: 2.05, minY: 0.14, maxY: 4.0, minZ: -2.2, maxZ: 3.1 },
+      { minX: -4.3, maxX: 4.3, minY: 0.14, maxY: 4.0, minZ: 3.1, maxZ: 4.2 },
+    ],
   },
   {
     roomId: "personal-atelier",
@@ -47,7 +58,7 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 17.2,
     scaleY: 1.16,
     elevationMeters: -0.09,
-    hiddenNodeSubstrings: ["RightWall", "CeilingLight"],
+    hiddenNodeSubstrings: ["RightWall", "CeilingLight", "Sculpture_"],
   },
   {
     roomId: "story-lab",
@@ -68,7 +79,7 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 17.2,
     scaleY: 1.18,
     elevationMeters: -0.09,
-    hiddenNodeSubstrings: ["RightWall"],
+    hiddenNodeSubstrings: ["RightWall", "CafeTable_4_", "CafeChair_4_"],
   },
   {
     roomId: "team-meeting",
@@ -119,8 +130,9 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     y: 1624,
     targetWidthMeters: 15.8,
     targetDepthMeters: 11.0,
-    scaleY: 1.08,
+    scaleY: 0.96,
     elevationMeters: -0.1,
+    hiddenNodeSubstrings: ["Arch_", "Column_", "Vine_"],
   },
   {
     roomId: "review-gallery",
@@ -140,6 +152,41 @@ export const STUDIO_THREE_HDRI_URLS: Readonly<Record<StudioThreeLightingPreset, 
   studio: "/assets/3d/hdri/combination_room_1k.hdr",
   night: "/assets/3d/hdri/cobblestone_street_night_1k.hdr",
 });
+
+function filterMeshGeometryByLocalBoxes(
+  mesh: THREE.Mesh,
+  boxes: readonly StudioThreeLocalBoxFilter[],
+): void {
+  const combinedName = `${mesh.name} ${mesh.parent?.name ?? ""}`;
+  if (/Floor|Ivory plaster|Cube\.001|^Cube\b/i.test(combinedName)) return;
+  const geom = mesh.geometry;
+  const pos = geom.getAttribute("position");
+  if (!pos) return;
+  const inAnyBox = (idx: number): boolean => {
+    const x = pos.getX(idx);
+    const y = pos.getY(idx);
+    const z = pos.getZ(idx);
+    return boxes.some(
+      (b) => x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY && z >= b.minZ && z <= b.maxZ,
+    );
+  };
+  const indexAttr = geom.getIndex();
+  if (indexAttr) {
+    const kept: number[] = [];
+    for (let i = 0; i + 2 < indexAttr.count; i += 3) {
+      const a = indexAttr.getX(i);
+      const b = indexAttr.getX(i + 1);
+      const c = indexAttr.getX(i + 2);
+      if (inAnyBox(a) || inAnyBox(b) || inAnyBox(c)) continue;
+      kept.push(a, b, c);
+    }
+    if (kept.length !== indexAttr.count) {
+      const cloned = geom.clone();
+      cloned.setIndex(kept);
+      mesh.geometry = cloned;
+    }
+  }
+}
 
 /**
  * 10개 구역의 풀 3D 건축 디오라마 GLB를 로드하여 각 구역 좌표에 정밀 배치한다.
@@ -171,8 +218,12 @@ export function loadStudioThreeZoneDioramas(
           }
         }
 
+        const clearBoxes = spec.clearLocalBoxes ?? [];
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
+            if (clearBoxes.length > 0) {
+              filterMeshGeometryByLocalBoxes(child, clearBoxes);
+            }
             child.castShadow = true;
             child.receiveShadow = true;
             const materials = Array.isArray(child.material) ? child.material : [child.material];
@@ -289,7 +340,7 @@ export interface StudioThreeChromePostPipeline {
 }
 
 /**
- * Chrome 전용 고품질 MSAA 4x + HalfFloat + ACES Filmic + UnrealBloom 후처리 파이프라인을 구성한다.
+ * Chrome 전용 하드웨어 MSAA + ACES Filmic 톤매핑 + sRGB 색공간 단일 패스 렌더 파이프라인을 구성한다.
  */
 export function createStudioThreeChromePostPipeline(
   renderer: THREE.WebGLRenderer,
@@ -298,52 +349,21 @@ export function createStudioThreeChromePostPipeline(
   width: number,
   height: number,
 ): StudioThreeChromePostPipeline {
-  try {
-    const pixelRatio = renderer.getPixelRatio();
-    const rtWidth = Math.max(1, Math.floor(width * pixelRatio));
-    const rtHeight = Math.max(1, Math.floor(height * pixelRatio));
-    const renderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight, {
-      type: THREE.HalfFloatType,
-      samples: 4,
-    });
-    const composer = new EffectComposer(renderer, renderTarget);
-    const renderPass = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(width, height),
-      0.16,
-      0.42,
-      0.9,
-    );
-    const outputPass = new OutputPass();
-    composer.addPass(renderPass);
-    composer.addPass(bloomPass);
-    composer.addPass(outputPass);
-
-    return {
-      render: () => {
-        composer.render();
-      },
-      setSize: (w, h) => {
-        composer.setSize(w, h);
-      },
-      setBloomStrength: (strength) => {
-        bloomPass.strength = strength;
-      },
-      dispose: () => {
-        composer.dispose();
-        renderTarget.dispose();
-      },
-    };
-  } catch {
-    return {
-      render: () => {
-        renderer.render(scene, camera);
-      },
-      setSize: () => {},
-      setBloomStrength: () => {},
-      dispose: () => {},
-    };
-  }
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.setSize(width, height);
+  return {
+    render: () => {
+      renderer.render(scene, camera);
+    },
+    setSize: (w, h) => {
+      renderer.setSize(w, h);
+    },
+    setBloomStrength: (strength) => {
+      renderer.toneMappingExposure = strength > 0.2 ? 0.98 : 1.1;
+    },
+    dispose: () => {},
+  };
 }
 
 /** 디오라마 룸 경계 외곽의 깔끔한 플린스(Plinth) 치수 계산 보조. */

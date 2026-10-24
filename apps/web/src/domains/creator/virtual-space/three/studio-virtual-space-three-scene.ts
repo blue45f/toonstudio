@@ -1,4 +1,4 @@
-import { type VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import type { VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
@@ -55,6 +55,7 @@ export interface StudioThreePropSpec {
  */
 export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze([
   // LOBBY (skyport — independent_bookshop 디오라마 + 컨시어지·폰부스 워크스테이션)
+  { id: "lobby-concierge-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 344, heightMeters: 1.08, rotationY: 0 },
   { id: "lobby-concierge-tablet", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 344, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
   { id: "lobby-desk-mug", url: "/assets/3d/everyday_mug.glb", x: 416, y: 340, heightMeters: 0.22, elevationMeters: 0.86, rotationY: 0.4 },
   { id: "lobby-clock", url: "/assets/3d/grandfather_clock.glb", x: 196, y: 210, heightMeters: 2.15, rotationY: 0 },
@@ -130,15 +131,15 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
  * `@pixiv/three-vrm` `VRMLoaderPlugin`을 통해 VRM 0.0 및 VRM 1.0 정규화 휴머노이드 본과 스프링본 물리를 모두 지원한다.
  */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
-  "/vrm/Seed_san.vrm",
-  "/vrm/AliciaSolid.vrm",
   "/vrm/Victoria_Rubin.vrm",
+  "/vrm/AliciaSolid.vrm",
   "/vrm/Vita.vrm",
-  "/vrm/Sakurada_Fumiriya.vrm",
-  "/vrm/Vivi.vrm",
-  "/vrm/sample.vrm",
-  "/vrm/Darkness_Shibu.vrm",
   "/vrm/Sendagaya_Shino.vrm",
+  "/vrm/Vivi.vrm",
+  "/vrm/Sakurada_Fumiriya.vrm",
+  "/vrm/Robert.vrm",
+  "/vrm/Anna.vrm",
+  "/vrm/Erika.vrm",
 ]);
 
 const ZONE_FLOOR_COLORS: Readonly<Record<string, { readonly floor: number; readonly accent: number }>> = Object.freeze({
@@ -527,12 +528,12 @@ export function applyNaturalVrmPosture(
     vrmScene.traverse((child) => {
       const n = child.name;
       if (!n) return;
-      if (!leftUpperArm && /J_Bip_L_UpperArm|LeftArm$|upper_arm\.L/i.test(n)) leftUpperArm = child;
-      else if (!rightUpperArm && /J_Bip_R_UpperArm|RightArm$|upper_arm\.R/i.test(n)) rightUpperArm = child;
-      else if (!leftLowerArm && /J_Bip_L_LowerArm|LeftForeArm$|forearm\.L/i.test(n)) leftLowerArm = child;
-      else if (!rightLowerArm && /J_Bip_R_LowerArm|RightForeArm$|forearm\.R/i.test(n)) rightLowerArm = child;
-      else if (!leftUpperLeg && /J_Bip_L_UpperLeg|LeftUpLeg$|thigh\.L/i.test(n)) leftUpperLeg = child;
-      else if (!rightUpperLeg && /J_Bip_R_UpperLeg|RightUpLeg$|thigh\.R/i.test(n)) rightUpperLeg = child;
+      if (!leftUpperArm && /J_Bip_L_UpperArm|LeftArm$|upper_arm\.?L/i.test(n)) leftUpperArm = child;
+      else if (!rightUpperArm && /J_Bip_R_UpperArm|RightArm$|upper_arm\.?R/i.test(n)) rightUpperArm = child;
+      else if (!leftLowerArm && /J_Bip_L_LowerArm|LeftForeArm$|forearm\.?L/i.test(n)) leftLowerArm = child;
+      else if (!rightLowerArm && /J_Bip_R_LowerArm|RightForeArm$|forearm\.?R/i.test(n)) rightLowerArm = child;
+      else if (!leftUpperLeg && /J_Bip_L_UpperLeg|LeftUpLeg$|thigh\.?L/i.test(n)) leftUpperLeg = child;
+      else if (!rightUpperLeg && /J_Bip_R_UpperLeg|RightUpLeg$|thigh\.?R/i.test(n)) rightUpperLeg = child;
     });
   }
 
@@ -587,7 +588,7 @@ export function applyNaturalVrmPosture(
 }
 
 /**
- * 10개 구역 풀 3D 디오라마, 3D 협업 소품, 그리고 `@pixiv/three-vrm` 기반 9종 VRM 아바타를 로드한다.
+ * 10개 구역 풀 3D 디오라마, `@pixiv/three-vrm` 기반 9종 VRM 아바타, 그리고 3D 협업 소품을 로드한다.
  */
 export function loadStudioThreeAssets(
   scene: THREE.Scene,
@@ -595,13 +596,75 @@ export function loadStudioThreeAssets(
   isDisposed: () => boolean,
 ): void {
   const glbLoader = new GLTFLoader();
-  const vrmLoader = new GLTFLoader();
-  vrmLoader.register((parser) => new VRMLoaderPlugin(parser));
 
-  // 1. 10개 구역 풀 3D 건축 디오라마 로드
+  // 1. 로컬 플레이어 및 NPC VRM 아바타 최우선 로드 (표준 PBR GLTFLoader + 공유 정점 버퍼 정규화)
+  const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
+  npcIds.forEach((actorId, index) => {
+    const vrmUrl = STUDIO_THREE_VRM_URLS[index % STUDIO_THREE_VRM_URLS.length];
+    if (!vrmUrl) return;
+    glbLoader.load(
+      vrmUrl,
+      (gltf) => {
+        if (isDisposed()) return;
+        const vrmScene = gltf.scene;
+        if (!vrmScene) return;
+        const node = actorNodes.get(actorId);
+        if (!node || node.vrmLoaded) return;
+
+        // 보조 기계팔(robo_arm 등) 노드가 있는 샘플은 바운딩 박스 왜곡 방지를 위해 제거
+        const auxToRemove: THREE.Object3D[] = [];
+        vrmScene.traverse((child) => {
+          if (child.name && /robo_/i.test(child.name)) {
+            auxToRemove.push(child);
+          }
+        });
+        for (const aux of auxToRemove) {
+          aux.removeFromParent();
+        }
+
+        // VRM 0.0 에셋은 +Z 정면이므로 Math.PI 회전, VRM 1.0(VRMC_vrm) 에셋은 0 유지
+        const isVrm1 = Boolean(
+          (gltf as { parser?: { json?: { extensions?: { VRMC_vrm?: unknown } } } }).parser?.json?.extensions?.VRMC_vrm,
+        );
+        vrmScene.rotation.y = isVrm1 ? 0 : Math.PI;
+
+        vrmScene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = !/hair/i.test(child.name);
+            child.receiveShadow = true;
+            child.frustumCulled = false;
+          }
+        });
+
+        applyNaturalVrmPosture(node, vrmScene);
+        vrmScene.updateMatrixWorld(true);
+
+        const box = new THREE.Box3().setFromObject(vrmScene);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const targetHeight = 1.86;
+        const scale = targetHeight / Math.max(0.1, size.y);
+        vrmScene.scale.setScalar(scale);
+        vrmScene.updateMatrixWorld(true);
+
+        const scaledBox = new THREE.Box3().setFromObject(vrmScene);
+        vrmScene.position.set(0, -scaledBox.min.y, 0);
+
+        node.rigGroup.clear();
+        node.rigGroup.add(vrmScene);
+        node.vrmLoaded = true;
+      },
+      undefined,
+      () => {
+        // VRM 로드 전·실패 시 스타일라이즈드 3D 캐릭터 리그를 그대로 유지한다.
+      },
+    );
+  });
+
+  // 2. 10개 구역 풀 3D 건축 디오라마 로드
   loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed);
 
-  // 2. 협업 워크스테이션 소품 로드
+  // 3. 협업 워크스테이션 소품 로드
   const glbCache = new Map<string, Promise<THREE.Group>>();
   const loadNormalizedGlb = (url: string): Promise<THREE.Group> => {
     const cached = glbCache.get(url);
@@ -654,62 +717,4 @@ export function loadStudioThreeAssets(
         // GLB 로드 실패 시 조용히 무시하고 기본 건축 구성을 유지한다.
       });
   }
-
-  // 3. NPC 및 로컬 플레이어 VRM 모델 로드 (`@pixiv/three-vrm` VRMLoaderPlugin 정규화)
-  const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
-  npcIds.forEach((actorId, index) => {
-    const vrmUrl = STUDIO_THREE_VRM_URLS[index % STUDIO_THREE_VRM_URLS.length];
-    if (!vrmUrl) return;
-    vrmLoader.load(
-      vrmUrl,
-      (gltf) => {
-        if (isDisposed()) return;
-        const vrm = gltf.userData.vrm as VRM | undefined;
-        const vrmScene = vrm?.scene ?? gltf.scene;
-        if (!vrmScene) return;
-        const node = actorNodes.get(actorId);
-        if (!node || node.vrmLoaded) return;
-
-        if (vrm) {
-          VRMUtils.removeUnnecessaryVertices(vrmScene);
-          VRMUtils.rotateVRM0(vrm);
-          node.vrm = vrm;
-        } else {
-          vrmScene.rotation.y = Math.PI;
-        }
-
-        vrmScene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            child.frustumCulled = false;
-          }
-        });
-
-        applyNaturalVrmPosture(node, vrmScene, vrm);
-        vrmScene.updateMatrixWorld(true);
-
-        const box = new THREE.Box3().setFromObject(vrmScene);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const targetHeight = 1.86;
-        const scale = targetHeight / Math.max(0.1, size.y);
-        vrmScene.scale.setScalar(scale);
-        vrmScene.updateMatrixWorld(true);
-
-        const scaledBox = new THREE.Box3().setFromObject(vrmScene);
-        const center = new THREE.Vector3();
-        scaledBox.getCenter(center);
-        vrmScene.position.set(-center.x, -scaledBox.min.y, -center.z);
-
-        node.rigGroup.clear();
-        node.rigGroup.add(vrmScene);
-        node.vrmLoaded = true;
-      },
-      undefined,
-      () => {
-        // VRM 로드 전·실패 시 스타일라이즈드 3D 캐릭터 리그를 그대로 유지한다.
-      },
-    );
-  });
 }
