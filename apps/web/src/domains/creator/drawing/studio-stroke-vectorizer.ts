@@ -29,6 +29,8 @@ export interface StudioVectorizerPoint {
   readonly pressure?: number;
 }
 
+export type StudioVectorizerCurveMode = "polyline" | "cubic";
+
 export interface StudioStrokeVectorizerOptions {
   /** 기본 스트로크 굵기(px). perfect-freehand `size`. 기본 16. */
   readonly size?: number;
@@ -42,6 +44,12 @@ export interface StudioStrokeVectorizerOptions {
   readonly simulatePressure?: boolean;
   /** 시작/끝 캡 완성도. `easing`. 기본 선형. */
   readonly easing?: (t: number) => number;
+  /** 만화 펜촉 입필(시작) 날카로운 테이퍼 길이(px). 기본 0. */
+  readonly taperStart?: number;
+  /** 만화 펜촉 발필(끝) 날카로운 테이퍼 길이(px). 기본 0. */
+  readonly taperEnd?: number;
+  /** SVG 외곽선 출력 곡선 모드 ("polyline": M/L/Z, "cubic": Catmull-Rom 3차 베지어 M/C/Z). 기본 "polyline". */
+  readonly curveMode?: StudioVectorizerCurveMode;
   /** self-crossing 정리 on/off. 기본 true. */
   readonly cleanSelfIntersections?: boolean;
   /** 좌표 소수점 자릿수. 기본 2. */
@@ -114,7 +122,7 @@ function roundTo(n: number, precision: number): string {
   return String(Math.round(n * factor) / factor);
 }
 
-/** 링 → SVG path data (M...Z). */
+/** 링 → SVG path data (M...L...Z). */
 export function ringsToSvgPathData(
   rings: ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
   precision = 2,
@@ -127,6 +135,51 @@ export function ringsToSvgPathData(
     for (let i = 1; i < ring.length; i += 1) {
       const [x, y] = ring[i];
       parts.push(`L${roundTo(x, precision)} ${roundTo(y, precision)}`);
+    }
+    parts.push("Z");
+  }
+  return parts.join("");
+}
+
+/**
+ * 링 → 3차 베지어(Catmull-Rom → Cubic Bézier) SVG path data (`M...C...Z`).
+ * 800% 고배율 줌에서도 다각형 각짐(Facet) 없이 매끄러운 만화 펜선 외곽선을 제공한다.
+ */
+export function ringsToCubicBezierSvgPathData(
+  rings: ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
+  precision = 2,
+  tension = 0.5,
+): string {
+  const parts: string[] = [];
+  const k = Math.max(0.05, Math.min(1, Number.isFinite(tension) ? tension : 0.5)) / 3;
+  for (const rawRing of rings) {
+    if (rawRing.length === 0) continue;
+    // 마지막 점이 첫 점과 중복이면 닫힌 루프 계산을 위해 제거
+    const ring =
+      rawRing.length > 2 &&
+      rawRing[0]![0] === rawRing[rawRing.length - 1]![0] &&
+      rawRing[0]![1] === rawRing[rawRing.length - 1]![1]
+        ? rawRing.slice(0, -1)
+        : rawRing;
+    const n = ring.length;
+    if (n < 3) {
+      parts.push(ringsToSvgPathData([rawRing], precision));
+      continue;
+    }
+    const [sx, sy] = ring[0]!;
+    parts.push(`M${roundTo(sx, precision)} ${roundTo(sy, precision)}`);
+    for (let i = 0; i < n; i += 1) {
+      const p0 = ring[(i - 1 + n) % n]!;
+      const p1 = ring[i]!;
+      const p2 = ring[(i + 1) % n]!;
+      const p3 = ring[(i + 2) % n]!;
+      const cp1x = p1[0] + (p2[0] - p0[0]) * k;
+      const cp1y = p1[1] + (p2[1] - p0[1]) * k;
+      const cp2x = p2[0] - (p3[0] - p1[0]) * k;
+      const cp2y = p2[1] - (p3[1] - p1[1]) * k;
+      parts.push(
+        `C${roundTo(cp1x, precision)} ${roundTo(cp1y, precision)} ${roundTo(cp2x, precision)} ${roundTo(cp2y, precision)} ${roundTo(p2[0], precision)} ${roundTo(p2[1], precision)}`,
+      );
     }
     parts.push("Z");
   }
@@ -153,9 +206,21 @@ export function vectorizeFreehandStroke(
     pointCount: 0,
     cleaned: false,
   };
-  if (points.length < 2) return empty;
+  const validPoints = points
+    .filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+    .slice(0, maxPoints);
+  if (validPoints.length < 2) return empty;
 
-  const input = points.slice(0, maxPoints).map((p) => [
+  const taperStart =
+    options.taperStart !== undefined && Number.isFinite(options.taperStart)
+      ? Math.max(0, options.taperStart)
+      : 0;
+  const taperEnd =
+    options.taperEnd !== undefined && Number.isFinite(options.taperEnd)
+      ? Math.max(0, options.taperEnd)
+      : 0;
+
+  const input = validPoints.map((p) => [
     p.x,
     p.y,
     p.pressure === undefined ? 0.5 : clamp01(p.pressure),
@@ -171,6 +236,8 @@ export function vectorizeFreehandStroke(
     simulatePressure:
       options.simulatePressure ?? STUDIO_STROKE_VECTORIZER_DEFAULTS.simulatePressure,
     easing: options.easing,
+    ...(taperStart > 0 ? { start: { taper: taperStart, cap: false } } : {}),
+    ...(taperEnd > 0 ? { end: { taper: taperEnd, cap: false } } : {}),
     last: true,
   }) as Array<[number, number]>;
 
@@ -206,9 +273,13 @@ export function vectorizeFreehandStroke(
   }
 
   const pointCount = rings.reduce((acc, ring) => acc + ring.length, 0);
+  const pathData =
+    options.curveMode === "cubic"
+      ? ringsToCubicBezierSvgPathData(rings, precision)
+      : ringsToSvgPathData(rings, precision);
   return {
     rings,
-    pathData: ringsToSvgPathData(rings, precision),
+    pathData,
     pointCount,
     cleaned,
   };
@@ -234,3 +305,4 @@ export function vectorizePreviewSampleStroke(
   }
   return vectorizeFreehandStroke(points, options);
 }
+
