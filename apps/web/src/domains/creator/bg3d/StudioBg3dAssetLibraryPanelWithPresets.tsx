@@ -1,6 +1,7 @@
 import { useRef, useState, type ComponentProps } from "react";
 
 import { StudioBg3dAssetLibraryPanel as ExistingAssetLibraryPanel } from "./StudioBg3dAssetLibraryPanel";
+import { StudioBg3dAuthoredEnvironmentCyclesPanel } from "./StudioBg3dAuthoredEnvironmentCyclesPanel";
 import { StudioBg3dBundleThemePackPanel } from "./StudioBg3dBundleThemePackPanel";
 import { StudioBg3dEssentialPosePropPanel } from "./StudioBg3dEssentialPosePropPanel";
 import { StudioReferenceRebuildPresets } from "./StudioReferenceRebuildPresets";
@@ -50,6 +51,10 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
           rightsLoadState={props.rightsLoadState ?? rights.state}
         />
         <StudioBg3dBundleThemePackPanel
+          onAdd={props.onAdd}
+          disabled={panelDisabled}
+        />
+        <StudioBg3dAuthoredEnvironmentCyclesPanel
           onAdd={props.onAdd}
           disabled={panelDisabled}
         />

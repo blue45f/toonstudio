@@ -5,6 +5,7 @@ import {
   STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG,
   fetchStudioBg3dEssentialGlbAsFile,
   listStudioBg3dEssentialAssetsByCategory,
+  searchStudioBg3dEssentialAssets,
   type StudioBg3dEssentialAssetCategory,
   type StudioBg3dEssentialAssetEntry,
 } from "./studio-bg3d-essential-pose-prop-catalog";
@@ -18,6 +19,21 @@ export interface StudioBg3dEssentialPosePropPanelProps {
   readonly onBusyChange?: (busy: boolean) => void;
 }
 
+function categoryShortLabel(category: StudioBg3dEssentialAssetCategory): string {
+  switch (category) {
+    case "pose-3d":
+      return "3D 포즈";
+    case "essential-prop-3d":
+      return "건축 소품";
+    case "refined-v8-prop-3d":
+      return "V8 히어로";
+    case "original-scene-prop-3d":
+      return "배경·가구";
+    case "original-hand-wear-prop-3d":
+      return "일상·착용";
+  }
+}
+
 export function StudioBg3dEssentialPosePropPanel({
   disabled = false,
   defaultExpanded = false,
@@ -26,12 +42,13 @@ export function StudioBg3dEssentialPosePropPanel({
 }: StudioBg3dEssentialPosePropPanelProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [category, setCategory] = useState<StudioBg3dEssentialAssetCategory | null>(null);
+  const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [activeTurnaroundEntry, setActiveTurnaroundEntry] =
     useState<StudioBg3dEssentialAssetEntry | null>(null);
 
-  const visibleAssets = listStudioBg3dEssentialAssetsByCategory(category);
+  const visibleAssets = searchStudioBg3dEssentialAssets(category, query);
 
   const handleImport = async (entry: StudioBg3dEssentialAssetEntry) => {
     if (disabled || busyId !== null) return;
@@ -61,10 +78,10 @@ export function StudioBg3dEssentialPosePropPanel({
       <div className="flex items-center justify-between gap-2">
         <div>
           <h4 className="text-xs font-bold text-fg">
-            3D 인체 포즈 마네킹 · 필수 건축/히어로 소품 ({STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종)
+            3D 인체 포즈 마네킹 · 필수 건축/히어로/오리지널 소품 ({STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종)
           </h4>
           <p className="mt-0.5 text-[0.62rem] text-fg-3">
-            포즈 마네킹 8종(3면도 가이드 포함) · 필수 건축 소품 8종 · Refined V8 히어로 소품 11종 (CC0 1.0)
+            포즈 마네킹 8종(3면도 포함) · 필수 건축 8종 · V8 히어로 11종 · 오리지널 가구/배경/일상/착용 소품 68종 (CC0 1.0)
           </p>
         </div>
         <button
@@ -122,6 +139,22 @@ export function StudioBg3dEssentialPosePropPanel({
             })}
           </div>
 
+          <div className="flex items-center gap-2">
+            <input
+              type="search"
+              value={query}
+              disabled={disabled || busyId !== null}
+              aria-label="포즈·소품 이름 검색"
+              data-testid="bg3d-essential-search-input"
+              placeholder="칠판, 책상, 소파, 휠체어, 포장마차, 카타나, 카메라..."
+              onChange={(event) => setQuery(event.target.value)}
+              className="w-full rounded-lg border border-line bg-panel px-2.5 py-1 text-[0.64rem] text-fg placeholder:text-fg-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            />
+            <span className="shrink-0 text-[0.58rem] text-fg-3">
+              {visibleAssets.length}종 표시
+            </span>
+          </div>
+
           {activeTurnaroundEntry?.turnaround2dUrl ? (
             <div
               data-testid="bg3d-essential-turnaround-viewer"
@@ -161,21 +194,25 @@ export function StudioBg3dEssentialPosePropPanel({
                   className="flex flex-col justify-between gap-1.5 rounded-lg border border-line bg-panel p-2"
                 >
                   <div className="flex items-center gap-2">
-                    <img
-                      src={entry.previewUrl}
-                      alt={entry.labelKo}
-                      loading="lazy"
-                      className="size-10 shrink-0 rounded border border-line/60 bg-card object-contain"
-                    />
+                    {entry.previewUrl ? (
+                      <img
+                        src={entry.previewUrl}
+                        alt={entry.labelKo}
+                        loading="lazy"
+                        className="size-10 shrink-0 rounded border border-line/60 bg-card object-contain"
+                      />
+                    ) : (
+                      <div
+                        aria-hidden="true"
+                        className="grid size-10 shrink-0 place-items-center rounded border border-line/60 bg-card text-[0.55rem] font-bold text-accent"
+                      >
+                        GLB
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[0.64rem] font-bold text-fg">{entry.labelKo}</p>
                       <p className="truncate text-[0.55rem] text-fg-3">
-                        {entry.license} ·{" "}
-                        {entry.category === "pose-3d"
-                          ? "3D 포즈"
-                          : entry.category === "essential-prop-3d"
-                            ? "건축 소품"
-                            : "V8 히어로"}
+                        {entry.license} · {categoryShortLabel(entry.category)}
                       </p>
                     </div>
                   </div>
