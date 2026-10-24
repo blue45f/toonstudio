@@ -222,8 +222,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 55개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일, braces 한 줄은 저장소 포크로 대체). 설치할 때 pnpm이 자동으로 적용한다.",
-        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (55 overrides, mostly answering security advisories, some aligning tool versions, and one swapping braces for a repository fork). pnpm applies both automatically at install time.",
+        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 56개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일, braces 한 줄은 저장소 포크로 대체). 설치할 때 pnpm이 자동으로 적용한다.",
+        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (56 overrides, mostly answering security advisories, some aligning tool versions, and one swapping braces for a repository fork). pnpm applies both automatically at install time.",
       ),
       license: t("원본 라이선스를 따름", "Follows each original"),
       mode: t("설치 단계(pnpm)", "Install step (pnpm)"),

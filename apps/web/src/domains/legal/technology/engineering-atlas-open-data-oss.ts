@@ -551,8 +551,8 @@ try {
         "Using open source means bringing hundreds of other people's code packages into our service; if one is quietly changed or turns out vulnerable, our service is affected. This is called supply-chain risk, like not noticing that a restaurant's ingredient supplier changed. ToonStudio keeps several layers of defence.",
       ),
       t(
-        "① 버전 고정: 핵심 라이브러리는 정확한 버전(zod 4.6.7, three 0.186.1, vitest 4.1.12)으로 묶고, 전이 의존성은 pnpm overrides 55개로 고치며, CI 는 pnpm install --frozen-lockfile 로 잠금 파일과 어긋나면 멈춥니다. ② 설치 스크립트 차단: 설치 때 빌드 스크립트를 실행해도 되는 패키지는 6개뿐이고 sharp·onnxruntime-node 등은 명시적으로 거부합니다. ③ 감사: audit:security 는 보안 권고 예외를 허용하지 않고, 라이선스 감사와 번들 경계 검사가 이어집니다.",
-        "1 Version pinning: core libraries are tied to exact versions (zod 4.6.7, three 0.186.1, vitest 4.1.12), transitive ones are corrected by 55 pnpm overrides, and CI stops on pnpm install --frozen-lockfile when the lockfile disagrees. 2 Install-script blocking: only six packages may run build scripts at install time, and sharp, onnxruntime-node and others are explicitly denied. 3 Audits: audit:security allows no advisory exceptions, followed by the license audit and the bundle-boundary check.",
+        "① 버전 고정: 핵심 라이브러리는 정확한 버전(zod 4.6.7, three 0.186.1, vitest 4.1.12)으로 묶고, 전이 의존성은 pnpm overrides 56개로 고치며, CI 는 pnpm install --frozen-lockfile 로 잠금 파일과 어긋나면 멈춥니다. ② 설치 스크립트 차단: 설치 때 빌드 스크립트를 실행해도 되는 패키지는 6개뿐이고 sharp·onnxruntime-node 등은 명시적으로 거부합니다. ③ 감사: audit:security 는 보안 권고 예외를 허용하지 않고, 라이선스 감사와 번들 경계 검사가 이어집니다.",
+        "1 Version pinning: core libraries are tied to exact versions (zod 4.6.7, three 0.186.1, vitest 4.1.12), transitive ones are corrected by 56 pnpm overrides, and CI stops on pnpm install --frozen-lockfile when the lockfile disagrees. 2 Install-script blocking: only six packages may run build scripts at install time, and sharp, onnxruntime-node and others are explicitly denied. 3 Audits: audit:security allows no advisory exceptions, followed by the license audit and the bundle-boundary check.",
       ),
       t(
         "④ 실행 때는 출처와 해시를 고정합니다. 운영 CSP 가 외부 스크립트·WASM 실행을 막으므로 ONNX Runtime·MediaPipe 의 WASM 은 빌드 해시가 붙은 same-origin 자산으로 싣고, ONNX 모델 파일 6개(합계 119,438,571 바이트)는 저장소 안에 두고 길이와 SHA-256 을 확인한 뒤에야 세션을 만듭니다. 무거운 엔진은 동적 import 로만 불러오고, 정적 그래프에 돌아오면 번들 검사가 실패합니다.",
@@ -574,11 +574,11 @@ try {
       title: t("공급망 방어선", "Supply-chain lines of defence"),
       caption: t("설치 전·설치 때·배포 전·실행 때 네 겹으로 막고, 맨 아래 칸에 알려진 예외를 따로 적습니다.", "Four layers cover before install, at install, before release and at run time, with known exceptions listed in the last row."),
       alt: t(
-        "첫째 방어선은 정확한 버전 고정과 overrides 55개, 잠금 파일입니다. 둘째는 설치 때 실행되는 빌드 스크립트를 6개만 허용하는 것입니다. 셋째는 배포 전 보안·라이선스·번들 경계 감사입니다. 넷째는 실행 때 same-origin WASM과 ONNX 모델의 SHA-256 확인입니다. 마지막 칸은 MediaPipe 모델 런타임 다운로드 등 알려진 예외입니다.",
-        "The first line is exact version pins, 55 overrides and the lockfile. The second allows only six build scripts at install time. The third is the pre-release security, license and bundle-boundary audits. The fourth is same-origin WASM and SHA-256 checks of ONNX models at run time. The last row lists known exceptions such as the MediaPipe model downloaded at run time.",
+        "첫째 방어선은 정확한 버전 고정과 overrides 56개, 잠금 파일입니다. 둘째는 설치 때 실행되는 빌드 스크립트를 6개만 허용하는 것입니다. 셋째는 배포 전 보안·라이선스·번들 경계 감사입니다. 넷째는 실행 때 same-origin WASM과 ONNX 모델의 SHA-256 확인입니다. 마지막 칸은 MediaPipe 모델 런타임 다운로드 등 알려진 예외입니다.",
+        "The first line is exact version pins, 56 overrides and the lockfile. The second allows only six build scripts at install time. The third is the pre-release security, license and bundle-boundary audits. The fourth is same-origin WASM and SHA-256 checks of ONNX models at run time. The last row lists known exceptions such as the MediaPipe model downloaded at run time.",
       ),
       layers: [
-        { id: "pin", label: t("① 설치 전: 버전 고정", "1 Before install: pins"), sub: t("정확한 버전 · overrides 55개 · 잠금 파일 고정 설치", "Exact versions, 55 overrides, frozen-lockfile install"), tone: "server", chips: ["pnpm"] },
+        { id: "pin", label: t("① 설치 전: 버전 고정", "1 Before install: pins"), sub: t("정확한 버전 · overrides 56개 · 잠금 파일 고정 설치", "Exact versions, 56 overrides, frozen-lockfile install"), tone: "server", chips: ["pnpm"] },
         { id: "scripts", label: t("② 설치 때: 스크립트 차단", "2 At install: script blocking"), sub: t("빌드 스크립트 허용 6개 · 나머지는 명시적 거부", "Six allowed build scripts; the rest explicitly denied"), tone: "server" },
         { id: "audit", label: t("③ 배포 전: 감사", "3 Before release: audits"), sub: t("보안 권고 예외 금지 · 라이선스 감사 · 번들 경계", "No advisory exceptions, license audit, bundle boundary"), tone: "good" },
         { id: "runtime", label: t("④ 실행 때: 같은 출처·해시", "4 At run time: origin and hash"), sub: t("WASM 은 same-origin · ONNX 모델은 SHA-256 확인", "WASM same-origin; ONNX models checked by SHA-256"), tone: "local", chips: ["ONNX Runtime Web", "SRI"] },
@@ -589,7 +589,7 @@ try {
     usage: [
       {
         feature: t("설치·CI 정책", "Install and CI policy"),
-        role: t("pnpm overrides 55개, 빌드 스크립트 허용 6개와 명시 거부, 잠금 파일 고정 설치로 의존성을 고정합니다.", "Fixes dependencies with 55 pnpm overrides, six allowed build scripts with explicit denials, and frozen-lockfile installs."),
+        role: t("pnpm overrides 56개, 빌드 스크립트 허용 6개와 명시 거부, 잠금 파일 고정 설치로 의존성을 고정합니다.", "Fixes dependencies with 56 pnpm overrides, six allowed build scripts with explicit denials, and frozen-lockfile installs."),
         paths: ["pnpm-workspace.yaml", "pnpm-lock.yaml", ".github/workflows/architecture-boundaries.yml"],
       },
       {
@@ -630,8 +630,8 @@ overrides:
   ws: '>=8.21.0' #~ 전이 의존성의 취약 버전을 고쳐진 버전으로 수렴시킨다 ## converge vulnerable transitive versions to fixed ones
 `, "#"),
         explain: t(
-          "pnpm-workspace.yaml 의 발췌입니다. 실제 파일은 허용 6개(@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), 명시 거부 여러 개, overrides 55개를 담고 있습니다. 거부 목록은 pnpm 11 의 엄격한 설치 모드에서 설치가 실패하지 않게 하는 역할도 합니다.",
-          "An excerpt of pnpm-workspace.yaml. The real file holds six allowed packages (@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), several explicit denials and 55 overrides. The denials also keep installs from failing under pnpm 11's strict mode.",
+          "pnpm-workspace.yaml 의 발췌입니다. 실제 파일은 허용 6개(@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), 명시 거부 여러 개, overrides 56개를 담고 있습니다. 거부 목록은 pnpm 11 의 엄격한 설치 모드에서 설치가 실패하지 않게 하는 역할도 합니다.",
+          "An excerpt of pnpm-workspace.yaml. The real file holds six allowed packages (@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), several explicit denials and 56 overrides. The denials also keep installs from failing under pnpm 11's strict mode.",
         ),
         source: "pnpm-workspace.yaml",
       },
@@ -686,7 +686,7 @@ export async function loadVerifiedModel(url: string, expected: { bytes: number; 
           question: t("새 취약점이 나오면 어떻게 하나요?", "What happens when a new vulnerability appears?"),
           answer: t(
             "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 50개입니다.",
-            "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 55 of them today.",
+            "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 56 of them today.",
           ),
         },
         {
