@@ -12,6 +12,7 @@ import { useState } from "react";
 import {
   STUDIO_3D_PROP_CATEGORY_LABELS,
   STUDIO_BUNDLED_SCENE_PROP_CATALOG,
+  STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
   STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
   STUDIO_SCENE_PROP_LAYOUT_PRESETS,
@@ -30,11 +31,17 @@ import type { ReactElement } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
-type PropCatalogFilter = "refined-v8" | "polyhaven-pbr" | "all" | Studio3DPropCatalogCategory;
+type PropCatalogFilter =
+  | "refined-v8"
+  | "polyhaven-pbr"
+  | "kenney-blockout"
+  | "all"
+  | Studio3DPropCatalogCategory;
 
 const PROP_CATEGORY_FILTERS: readonly { readonly id: PropCatalogFilter; readonly label: string }[] = [
   { id: "refined-v8", label: "개선형 v8" },
   { id: "polyhaven-pbr", label: `Poly Haven PBR (${STUDIO_POLYHAVEN_PBR_PROP_CATALOG.length})` },
+  { id: "kenney-blockout", label: `Kenney 블록아웃 (${STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG.length})` },
   { id: "all", label: `전체 (${STUDIO_BUNDLED_SCENE_PROP_CATALOG.length})` },
   ...(Object.entries(STUDIO_3D_PROP_CATEGORY_LABELS) as [Studio3DPropCatalogCategory, string][]).map(
     ([id, label]) => ({ id, label }),
@@ -195,7 +202,7 @@ export function StudioMultiObjectPanel({
                 </span>
               )}
               <span className="w-full truncate text-center">
-                {prop.name.replace(" (v8)", "").replace(" (Poly Haven)", "")}
+                {prop.name.replace(" (v8)", "").replace(" (Poly Haven)", "").replace(" (Kenney)", "")}
               </span>
             </button>
           ))}

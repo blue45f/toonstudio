@@ -128,4 +128,27 @@ describe("CC0 original and optimized download controls", () => {
       rightsConfirmed: true,
     });
   });
+
+  it("places a CC0 3D model directly into the 3D scene when onPlaceModelIn3dScene is provided", async () => {
+    const asset = catalog.find(({ id }) => id === "polyhaven-plastic-monobloc-chair-01")!;
+    const onUseAsset = vi.fn(() => true);
+    const onPlaceModelIn3dScene = vi.fn(() => true);
+    await act(async () => {
+      root.render(createElement(StudioCc0AssetLibraryPanel, { onUseAsset, onPlaceModelIn3dScene }));
+    });
+    const placeButton = host.querySelector<HTMLButtonElement>(`[data-cc0-place-3d="${asset.id}"]`)!;
+    expect(placeButton).not.toBeNull();
+    expect(placeButton.textContent).toBe("3D 씬에 배치");
+    await act(async () => {
+      placeButton.click();
+    });
+    expect(onPlaceModelIn3dScene).toHaveBeenCalledTimes(1);
+    const [instance, passedAsset] = (onPlaceModelIn3dScene.mock.calls[0] as unknown as [Record<string, unknown>, Record<string, unknown>]);
+    expect(passedAsset.id).toBe(asset.id);
+    expect(instance).toMatchObject({
+      id: `cc0_3d_${asset.id}_1`,
+      modelUrl: studioCc0AssetUrl(asset.path),
+      visible: true,
+    });
+  });
 });

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_BUNDLED_SCENE_PROP_CATALOG,
+  STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
   STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
   STUDIO_REFINED_V8_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
@@ -12,6 +13,7 @@ import {
   StudioMultiObjectLayoutManager,
   findStudio3DPropCatalogEntry,
 } from "./studio-multi-object-layout";
+import { parseStudioCc0Catalog } from "./studio-cc0-asset-delivery";
 
 describe("StudioMultiObjectLayoutManager", () => {
   it("adds and duplicates 3D object instances", () => {
@@ -108,10 +110,11 @@ describe("StudioMultiObjectLayoutManager", () => {
     }
   });
 
-  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (225 items incl. all 141 Poly Haven 2K PBR models) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (12 presets) with real public GLBs and thumbnails", () => {
+  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (270 items incl. 141 Poly Haven 2K PBR + 45 Kenney Blockout) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (15 presets) with real public GLBs and thumbnails", () => {
     expect(STUDIO_POLYHAVEN_PBR_PROP_CATALOG).toHaveLength(141);
-    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(225);
-    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(12);
+    expect(STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG).toHaveLength(45);
+    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(270);
+    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(15);
 
     let thumbnailCount = 0;
     for (const entry of STUDIO_BUNDLED_SCENE_PROP_CATALOG) {
@@ -125,7 +128,7 @@ describe("StudioMultiObjectLayoutManager", () => {
         expect(thumbStat.size, entry.thumbnailUrl).toBeGreaterThan(256);
       }
     }
-    expect(thumbnailCount).toBe(168);
+    expect(thumbnailCount).toBe(213);
 
     const manager = new StudioMultiObjectLayoutManager();
     for (const preset of STUDIO_SCENE_PROP_LAYOUT_PRESETS) {
@@ -144,5 +147,23 @@ describe("StudioMultiObjectLayoutManager", () => {
     expect(moved?.position).toEqual([1.5, 0.5, -2.0]);
     expect(manager.updatePosition("missing_id", [0, 0, 0])).toBeNull();
     expect(manager.addCatalogProp("missing_prop")).toBeNull();
+  });
+
+  it("spawns any of the 1,139 CC0 3D models (141 Poly Haven + 998 Kenney) directly into the 3D scene via addCc0ModelAsset", () => {
+    const manifestPath = join(
+      process.cwd(),
+      "apps/web/public/assets/studio/cc0-20260906/manifest.json",
+    );
+    const catalog = parseStudioCc0Catalog(JSON.parse(readFileSync(manifestPath, "utf8")));
+    const models = catalog.filter((item) => item.kind === "model");
+    expect(models).toHaveLength(1139);
+
+    const manager = new StudioMultiObjectLayoutManager();
+    for (const asset of models) {
+      const instance = manager.addCc0ModelAsset(asset);
+      expect(instance.modelUrl).toBe(`/assets/studio/cc0-20260906/${asset.path}`);
+      expect(instance.visible).toBe(true);
+    }
+    expect(manager.getAllObjects()).toHaveLength(1139);
   });
 });

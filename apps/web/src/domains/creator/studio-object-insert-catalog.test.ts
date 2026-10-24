@@ -89,7 +89,7 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
     }
 
     const sceneProps = filterStudioObjectInsertItems({ kind: "bg3d-scene-prop", limit: 200 });
-    expect(sceneProps).toHaveLength(24);
+    expect(sceneProps).toHaveLength(36);
     for (const ceId of ["bench", "bookshelf", "chair", "desk", "doorway", "stairs", "streetlamp", "window-wall"]) {
       const entry = findStudioObjectInsertItem(`obj-furniture-ce_${ceId}`);
       expect(entry?.kind).toBe("bg3d-scene-prop");
@@ -100,6 +100,11 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
     expect(polyhavenFiltered).toHaveLength(12);
     expect(findStudioObjectInsertItem("obj-furniture-ph_gothicbed_01")?.assetUrl).toBe(
       "/assets/studio/cc0-20260906/assets/polyhaven-gothicbed-01/GothicBed_01.glb",
+    );
+    const kenneyFiltered = filterStudioObjectInsertItems({ query: "kenney", family: "scene-furniture" });
+    expect(kenneyFiltered).toHaveLength(12);
+    expect(findStudioObjectInsertItem("obj-furniture-kn_city_building_a")?.assetUrl).toBe(
+      "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-a.glb",
     );
   });
 

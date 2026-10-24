@@ -329,3 +329,50 @@ export async function createStudioCc0ModelFile(asset: StudioCc0Asset, signal?: A
   signal?.throwIfAborted();
   return new File([bytes], `${asset.id}.glb`, { type: "model/gltf-binary" });
 }
+
+export interface StudioCc0SceneObjectInstance {
+  readonly id: string;
+  readonly modelUrl: string;
+  readonly name: string;
+  readonly position: readonly [number, number, number];
+  readonly rotation: readonly [number, number, number];
+  readonly scale: readonly [number, number, number];
+  readonly visible: boolean;
+}
+
+const CC0_MODEL_CATEGORY_DEFAULT_POSITIONS: Readonly<Record<string, readonly [number, number, number]>> = Object.freeze({
+  furniture: [0, 0, -0.8],
+  architecture: [0, 0, -2.5],
+  food: [0, 0.78, -0.3],
+  nature: [-1.2, 0, -1.6],
+  "outdoor-prop": [0.8, 0, -1.2],
+  "pbr-detailed-prop": [0, 0, -0.8],
+});
+
+/**
+ * 1,139종 CC0 3D 모델(`Poly Haven` 141종 + `Kenney` 998종)을
+ * 3D 다중 오브젝트 씬 인스턴스(`Studio3DObjectInstance` 호환)로 즉시 변환한다.
+ */
+export function createStudioCc0SceneObjectInstance(
+  asset: StudioCc0Asset,
+  existingCount = 0,
+): StudioCc0SceneObjectInstance {
+  if (asset.kind !== "model" || !asset.path.endsWith(".glb")) {
+    throw new TypeError("3D 모델 에셋만 3D 씬 인스턴스로 배치할 수 있습니다.");
+  }
+  const modelUrl = studioCc0AssetUrl(asset.path);
+  const basePos = CC0_MODEL_CATEGORY_DEFAULT_POSITIONS[asset.category] ?? [0, 0, -1.0];
+  const safeCount = Math.max(0, Math.floor(existingCount));
+  const jitterX = ((safeCount % 5) - 2) * 0.35;
+  const x = Math.round((basePos[0] + jitterX) * 100) / 100;
+  return Object.freeze({
+    id: `cc0_3d_${asset.id}_${safeCount + 1}`,
+    modelUrl,
+    name: `${asset.name} (${asset.provider})`,
+    position: Object.freeze([x, basePos[1], basePos[2]] as const),
+    rotation: Object.freeze([0, 0, 0] as const),
+    scale: Object.freeze([1, 1, 1] as const),
+    visible: true,
+  });
+}
+

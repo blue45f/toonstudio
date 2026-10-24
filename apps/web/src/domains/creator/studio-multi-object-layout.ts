@@ -1,3 +1,8 @@
+import {
+  createStudioCc0SceneObjectInstance,
+  type StudioCc0Asset,
+} from "./studio-cc0-asset-delivery";
+
 /**
  * Studio 3D 다중 오브젝트(Multi-Object) 배치 & 룸 레이아웃 모듈.
  *
@@ -49,11 +54,13 @@ export interface Studio3DPropCatalogEntry {
   readonly modelUrl:
     | `/assets/3d/${string}.glb`
     | `/assets/studio/cc0-20260906/assets/polyhaven-${string}.glb`
+    | `/assets/studio/cc0-20260906/assets/kenney-${string}.glb`
     | `/creator-essentials/prop-${string}.glb`
     | `/creator-essentials/pose-${string}.glb`;
   readonly thumbnailUrl?:
     | `/assets/3d/refined-v8/thumbnails/${string}.png`
     | `/assets/studio/cc0-20260906/previews/polyhaven-${string}.png`
+    | `/assets/studio/cc0-20260906/previews/kenney-${string}.png`
     | `/creator-essentials/prop-${string}.preview.png`
     | `/creator-essentials/pose-${string}.preview.svg`;
   readonly defaultPosition: readonly [number, number, number];
@@ -249,10 +256,60 @@ export const STUDIO_POLYHAVEN_PBR_PROP_CATALOG: readonly Studio3DPropCatalogEntr
   { id: "ph_bench_vice_01", name: "공방 주철 벤치 바이스 (Poly Haven)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-bench-vice-01/bench_vice_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-bench-vice-01.png", defaultPosition: [-0.45, 0.78, -0.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
-/** 퍼블릭 번들(`/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/polyhaven-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (225종). */
+/** Kenney CC0 경량 블록아웃·모듈 건축·탈것·생존·자연물 카탈로그 (9개 팩 대표 45종 + 전용 썸네일). */
+export const STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  { id: "kn_city_commercial_building_a", name: "도심 상업 빌딩 A (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-a.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-city-commercial-building-a.png", defaultPosition: [-2.2, 0, -3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_city_commercial_building_b", name: "도심 상업 빌딩 B (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-b.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-city-commercial-building-b.png", defaultPosition: [0, 0, -3.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_city_commercial_building_c", name: "도심 상업 빌딩 C (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-c.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-city-commercial-building-c.png", defaultPosition: [2.2, 0, -3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_city_commercial_building_d", name: "도심 오피스 빌딩 D (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-d.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-city-commercial-building-d.png", defaultPosition: [-1.5, 0, -3.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_city_commercial_building_e", name: "도심 코너 상가 빌딩 E (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-e.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-city-commercial-building-e.png", defaultPosition: [1.5, 0, -3.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_suburban_building_type_a", name: "교외 단독주택 A (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-a.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-suburban-building-type-a.png", defaultPosition: [-2, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_suburban_building_type_b", name: "교외 단독주택 B (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-b.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-suburban-building-type-b.png", defaultPosition: [0, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_suburban_building_type_c", name: "교외 2층 주택 C (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-c.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-suburban-building-type-c.png", defaultPosition: [2, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_suburban_building_type_d", name: "교외 박공지붕 주택 D (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-d.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-suburban-building-type-d.png", defaultPosition: [-1.5, 0, -3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_suburban_building_type_e", name: "교외 차고형 주택 E (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-e.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-suburban-building-type-e.png", defaultPosition: [1.5, 0, -3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_roads_traffic_light", name: "교차로 신호등 기둥 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/traffic-light.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-roads-traffic-light.png", defaultPosition: [1.8, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_roads_light_curved", name: "곡선형 도로 가로등 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/light-curved.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-roads-light-curved.png", defaultPosition: [-1.8, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_roads_construction_barrier", name: "도로 공사 바리케이드 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/construction-barrier.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-roads-construction-barrier.png", defaultPosition: [0, 0, -0.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_roads_construction_cone", name: "안전 라바콘 표지 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/construction-cone.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-roads-construction-cone.png", defaultPosition: [0.8, 0, -0.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_roads_dumpster", name: "대형 철제 쓰레기 수거함 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/dumpster.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-roads-dumpster.png", defaultPosition: [-2, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_building_wall_window_square_detailed", name: "사각 창문 블록 벽체 (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-building/wall-window-square-detailed.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-building-wall-window-square-detailed.png", defaultPosition: [0, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_building_wall_doorway_round", name: "아치형 출입문 블록 벽체 (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-building/wall-doorway-round.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-building-wall-doorway-round.png", defaultPosition: [1.5, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_building_stairs_open", name: "오픈형 모듈 계단 (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-building/stairs-open.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-building-stairs-open.png", defaultPosition: [-1.6, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_building_column", name: "석조 원기둥 기둥 (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-building/column.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-building-column.png", defaultPosition: [-1.2, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_building_barricade_doorway_a", name: "출입구 방어 바리케이드 (Kenney)", category: "architecture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-building/barricade-doorway-a.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-building-barricade-doorway-a.png", defaultPosition: [0, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_furniture_bed_bunk", name: "기숙사 2층 침대 (Kenney)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-furniture/bed-bunk.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-furniture-bed-bunk.png", defaultPosition: [-1.4, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_furniture_kitchen_fridge_large", name: "양문형 대형 냉장고 (Kenney)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-furniture/kitchen-fridge-large.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-furniture-kitchen-fridge-large.png", defaultPosition: [1.6, 0, -2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_furniture_kitchen_coffee_machine", name: "에스프레소 커피머신 (Kenney)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-furniture/kitchen-coffee-machine.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-furniture-kitchen-coffee-machine.png", defaultPosition: [0.3, 0.78, -0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_furniture_laptop", name: "업무용 노트북 PC (Kenney)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-furniture/laptop.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-furniture-laptop.png", defaultPosition: [0, 0.78, -0.3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_furniture_lounge_design_sofa", name: "디자인 라운지 소파 (Kenney)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-furniture/lounge-design-sofa.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-furniture-lounge-design-sofa.png", defaultPosition: [0, 0, -1.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_food_cake_birthday", name: "생일 축하 케이크 (Kenney)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-food/cake-birthday.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-food-cake-birthday.png", defaultPosition: [0, 0.78, -0.3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_food_burger_cheese_double", name: "더블 치즈버거 (Kenney)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-food/burger-cheese-double.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-food-burger-cheese-double.png", defaultPosition: [-0.25, 0.78, -0.25], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_food_pizza", name: "이탈리안 피자 한 판 (Kenney)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-food/pizza.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-food-pizza.png", defaultPosition: [0.25, 0.78, -0.25], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_food_sushi_salmon", name: "연어 초밥 플레이트 (Kenney)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-food/sushi-salmon.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-food-sushi-salmon.png", defaultPosition: [-0.2, 0.78, -0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_food_sundae", name: "파르페 아이스크림 선데 (Kenney)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-food/sundae.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-food-sundae.png", defaultPosition: [0.2, 0.78, -0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_nature_bridge_stone", name: "아치형 개울 돌다리 (Kenney)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/bridge-stone.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-nature-bridge-stone.png", defaultPosition: [0, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_nature_campfire_stones", name: "돌담 야영 모닥불 (Kenney)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/campfire-stones.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-nature-campfire-stones.png", defaultPosition: [0, 0, -0.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_nature_canoe", name: "통나무 카누 보트 (Kenney)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/canoe.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-nature-canoe.png", defaultPosition: [-1.5, 0, -1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_nature_cactus_tall", name: "사막 대형 선인장 (Kenney)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/cactus-tall.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-nature-cactus-tall.png", defaultPosition: [1.6, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_nature_crop_pumpkin", name: "농장 호박 작물 (Kenney)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/crop-pumpkin.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-nature-crop-pumpkin.png", defaultPosition: [0.8, 0, -0.9], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_survival_tent_canvas", name: "야영 캔버스 텐트 (Kenney)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/tent-canvas.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-survival-tent-canvas.png", defaultPosition: [-1.6, 0, -2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_survival_workbench_anvil", name: "대장간 모루 작업대 (Kenney)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/workbench-anvil.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-survival-workbench-anvil.png", defaultPosition: [1.4, 0, -1.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_survival_chest", name: "생존 보급품 상자 (Kenney)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/chest.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-survival-chest.png", defaultPosition: [0.6, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_survival_signpost", name: "갈림길 나무 이정표 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/signpost.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-survival-signpost.png", defaultPosition: [-1.2, 0, -1], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_survival_bedroll", name: "야영 침낭 매트 (Kenney)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/bedroll.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-survival-bedroll.png", defaultPosition: [-0.4, 0, -1.1], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_watercraft_boat_house_a", name: "수상 하우스보트 A (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-house-a.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-house-a.png", defaultPosition: [-1.8, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_watercraft_boat_sail_a", name: "항구 돛단배 범선 A (Kenney)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-sail-a.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-sail-a.png", defaultPosition: [1.8, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_watercraft_boat_fishing_small", name: "소형 어선 보트 (Kenney)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-fishing-small.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-fishing-small.png", defaultPosition: [0, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_watercraft_boat_row_large", name: "대형 노젓기 목선 (Kenney)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-row-large.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-row-large.png", defaultPosition: [-1.2, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "kn_watercraft_boat_fan", name: "늪지대 에어보트 (Kenney)", category: "scifi", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-fan.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-fan.png", defaultPosition: [1.2, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+]);
+
+/** 퍼블릭 번들(`/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (270종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
   ...STUDIO_REFINED_V8_PROP_CATALOG,
   ...STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
+  ...STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
   { id: "prop_round_table", name: "원형 카페 테이블", category: "furniture", modelUrl: "/assets/3d/round_table.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_school_desk", name: "학교 책상", category: "furniture", modelUrl: "/assets/3d/school_desk.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_grandfather_clock", name: "진자 괘종시계", category: "furniture", modelUrl: "/assets/3d/grandfather_clock.glb", defaultPosition: [-2, 0, -2.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
@@ -466,6 +523,41 @@ export const STUDIO_SCENE_PROP_LAYOUT_PRESETS: readonly StudioRoomLayoutPreset[]
       { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-cardboard-box-01/cardboard_box_01.glb", name: "골판지 보관 상자", position: [1.2, 0, -1.4], rotation: [0, 0.2, 0], scale: [1, 1, 1], visible: true },
     ],
   },
+  {
+    id: "kenney_city_crossroad",
+    label: "Kenney 도심 상가·교차로 블록아웃 (상업 빌딩 A/B + 도로 가로등 + 교차로 신호등 + 공사 바리케이드 + 대형 수거함)",
+    objects: [
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-a.glb", name: "도심 상업 빌딩 A", position: [-2.0, 0, -3.0], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-city-commercial/building-b.glb", name: "도심 상업 빌딩 B", position: [2.0, 0, -3.0], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/light-curved.glb", name: "곡선형 도로 가로등", position: [-1.6, 0, -1.2], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/traffic-light.glb", name: "교차로 신호등", position: [1.6, 0, -1.2], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/construction-barrier.glb", name: "공사 바리케이드", position: [0, 0, -0.8], rotation: [0, 0.2, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-roads/dumpster.glb", name: "철제 쓰레기 수거함", position: [-2.4, 0, -1.8], rotation: [0, 0.3, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
+  {
+    id: "kenney_suburban_home",
+    label: "Kenney 교외 주택·정원 블록아웃 (단독주택 A/B + 개울 돌다리 + 호박 작물 + 이정표)",
+    objects: [
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-a.glb", name: "교외 단독주택 A", position: [-1.8, 0, -2.8], rotation: [0, 0.15, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-suburban/building-type-b.glb", name: "교외 단독주택 B", position: [1.8, 0, -2.8], rotation: [0, -0.15, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/bridge-stone.glb", name: "개울 돌다리", position: [0, 0, -1.2], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/crop-pumpkin.glb", name: "정원 호박 작물", position: [-1.0, 0, -0.9], rotation: [0, 0.25, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/signpost.glb", name: "정원 나무 이정표", position: [1.1, 0, -0.9], rotation: [0, -0.25, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
+  {
+    id: "kenney_harbor_survival_camp",
+    label: "Kenney 항구·생존 베이스캠프 블록아웃 (하우스보트 + 범선 + 캔버스 텐트 + 대장간 모루 + 돌담 모닥불 + 보급 상자)",
+    objects: [
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-house-a.glb", name: "수상 하우스보트", position: [-2.0, 0, -2.6], rotation: [0, 0.3, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-sail-a.glb", name: "항구 범선", position: [2.0, 0, -2.8], rotation: [0, -0.35, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/tent-canvas.glb", name: "야영 캔버스 텐트", position: [-1.4, 0, -1.4], rotation: [0, 0.2, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/workbench-anvil.glb", name: "대장간 모루 작업대", position: [1.3, 0, -1.4], rotation: [0, -0.2, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-nature/campfire-stones.glb", name: "돌담 야영 모닥불", position: [0, 0, -0.7], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/chest.glb", name: "생존 보급 상자", position: [0.6, 0, -1.1], rotation: [0, -0.3, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
 ]);
 
 const ALL_LAYOUT_PRESETS_BY_ID = new Map<string, StudioRoomLayoutPreset>(
@@ -481,11 +573,12 @@ export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalo
 }
 
 export function listStudio3DPropCatalogByCategory(
-  category: Studio3DPropCatalogCategory | "all" | "refined-v8" | "polyhaven-pbr" = "all",
+  category: Studio3DPropCatalogCategory | "all" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
 ): readonly Studio3DPropCatalogEntry[] {
   if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
   if (category === "refined-v8") return STUDIO_REFINED_V8_PROP_CATALOG;
   if (category === "polyhaven-pbr") return STUDIO_POLYHAVEN_PBR_PROP_CATALOG;
+  if (category === "kenney-blockout") return STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG;
   return STUDIO_BUNDLED_SCENE_PROP_CATALOG.filter((entry) => entry.category === category);
 }
 
@@ -497,6 +590,12 @@ export class StudioMultiObjectLayoutManager {
     const instance: Studio3DObjectInstance = { ...item, id };
     this.instances.set(id, instance);
     return instance;
+  }
+
+  public addCc0ModelAsset(asset: StudioCc0Asset): Studio3DObjectInstance {
+    const converted = createStudioCc0SceneObjectInstance(asset, this.instances.size);
+    this.instances.set(converted.id, converted);
+    return converted;
   }
 
   public addCatalogProp(propId: string): Studio3DObjectInstance | null {

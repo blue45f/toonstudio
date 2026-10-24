@@ -2,9 +2,9 @@ import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
-  createStudioCc0ImageRecord, createStudioCc0ModelPreviewImageRecord, filterStudioCc0Assets, loadStudioCc0Catalog,
+  createStudioCc0ImageRecord, createStudioCc0ModelPreviewImageRecord, createStudioCc0SceneObjectInstance, filterStudioCc0Assets, loadStudioCc0Catalog,
   STUDIO_CC0_CATEGORY_LABELS, studioCc0AssetUrl,
-  type StudioCc0Asset, type StudioCc0AssetKind,
+  type StudioCc0Asset, type StudioCc0AssetKind, type StudioCc0SceneObjectInstance,
 } from "./studio-cc0-asset-delivery";
 import {
   curateStudioCc0Selection, isStudioCc0AssemblyComponent, isStudioCc0EligibleForNewSelection,
@@ -31,7 +31,13 @@ function imageClass(asset: StudioCc0Asset): string {
   return asset.kind === "effect-mask" ? "bg-slate-600" : "bg-slate-200";
 }
 
-export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (asset: StudioAsset) => boolean}) {
+export function StudioCc0AssetLibraryPanel({
+  onUseAsset,
+  onPlaceModelIn3dScene,
+}: {
+  readonly onUseAsset: (asset: StudioAsset) => boolean;
+  readonly onPlaceModelIn3dScene?: (instance: StudioCc0SceneObjectInstance, asset: StudioCc0Asset) => boolean;
+}) {
   const searchId = useId();
   const previewTitleId = useId();
   const rootRef = useRef<HTMLDetailsElement>(null);
@@ -47,6 +53,7 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
   const [page, setPage] = useState(0);
   const [preview, setPreview] = useState<StudioCc0Asset | null>(null);
   const [inserting, setInserting] = useState<string | null>(null);
+  const [placed3dCount, setPlaced3dCount] = useState(0);
   const [notice, setNotice] = useState("");
   const insertController = useRef<AbortController | null>(null);
   const debouncedQuery = useDebouncedValue(query, 140);
@@ -118,6 +125,16 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
       }
     }
   }
+  function placeIn3dScene(asset: StudioCc0Asset): void {
+    if (!onPlaceModelIn3dScene || asset.kind !== "model") return;
+    const instance = createStudioCc0SceneObjectInstance(asset, placed3dCount);
+    const placed = onPlaceModelIn3dScene(instance, asset);
+    if (placed) {
+      setPlaced3dCount(count => count + 1);
+      setPreview(null);
+    }
+    setNotice(placed ? `${asset.name} 에셋을 삽입했습니다.` : panelStatusText("studio.panelStatus.cc0Library.insertCanvasUnavailable", "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요."));
+  }
   function renderUseButton(asset: StudioCc0Asset) {
     if (asset.kind !== "model") {
       return <button className={`${CONTROL} mt-2 w-full`} type="button" disabled={inserting !== null} onClick={() => {void insert(asset);}}>{inserting === asset.id ? panelStatusText("studio.panelStatus.cc0Library.inserting", "검증·삽입 중…") : "캔버스에 삽입"}</button>;
@@ -127,9 +144,15 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
         {inserting === asset.id ? panelStatusText("studio.panelStatus.cc0Library.inserting", "검증·삽입 중…") : "2D 미리보기 삽입"}
       </button>
     );
+    const place3dBtn = onPlaceModelIn3dScene ? (
+      <button className={`${CONTROL} w-full`} type="button" data-cc0-place-3d={asset.id} disabled={inserting !== null} onClick={() => placeIn3dScene(asset)}>
+        3D 씬에 배치
+      </button>
+    ) : null;
     if (!asset.original) {
       return <div className="mt-2 space-y-1.5">
         {previewInsertBtn}
+        {place3dBtn}
         <a className={`${CONTROL} flex items-center justify-center`} href={studioCc0AssetUrl(asset.path)} download={`${asset.id}.glb`}>GLB 받기</a>
       </div>;
     }
@@ -137,6 +160,7 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
     const originalTextureMiB = Math.ceil(original.estimatedDecodedImageBytes / (1024 * 1024));
     return <div className="mt-2 space-y-2">
       {previewInsertBtn}
+      {place3dBtn}
       <a className={`${CONTROL} flex items-center justify-center text-center`} href={studioCc0AssetUrl(asset.path)} download={`${asset.id}.glb`}>경량본 받기</a>
       <a className={`${CONTROL} flex items-center justify-center text-center`} href={studioCc0AssetUrl(original.path)} download={`${asset.id}-original.glb`}>고품질 원본 받기</a>
       <p className="text-[0.65rem] leading-relaxed text-fg-3">{original.visuallyEquivalentToDefault

@@ -113,6 +113,22 @@ const POLYHAVEN_SCENE_PROP_INDEX = Object.freeze([
   { id: "rock_moss_set_01", slug: "polyhaven-rock-moss-set-01", file: "rock_moss_set_01.glb", label: "황갈색 이끼 바위 세트 · Poly Haven", keywords: ["rock", "moss", "바위", "이끼", "자연", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 이끼 바위 세트 GLB." },
 ] as const);
 
+/** Curated Kenney CC0 blockout architecture, vehicles, and props (12 GLBs + rendered PNG previews). */
+const KENNEY_BLOCKOUT_SCENE_PROP_INDEX = Object.freeze([
+  { id: "city_building_a", assetId: "kenney-city-commercial-building-a", path: "assets/kenney-city-commercial/building-a.glb", label: "도심 상업 빌딩 A · Kenney", keywords: ["building", "city", "빌딩", "상가", "건축", "kenney", "blockout"], hint: "Kenney CC0 도심 상업 빌딩 블록아웃 GLB." },
+  { id: "suburban_house_a", assetId: "kenney-suburban-building-type-a", path: "assets/kenney-suburban/building-type-a.glb", label: "교외 단독주택 A · Kenney", keywords: ["house", "suburban", "주택", "교외", "건축", "kenney", "blockout"], hint: "Kenney CC0 교외 단독주택 블록아웃 GLB." },
+  { id: "roads_traffic_light", assetId: "kenney-roads-traffic-light", path: "assets/kenney-roads/traffic-light.glb", label: "교차로 신호등 · Kenney", keywords: ["traffic", "light", "신호등", "도로", "거리", "kenney", "blockout"], hint: "Kenney CC0 교차로 신호등 블록아웃 GLB." },
+  { id: "roads_dumpster", assetId: "kenney-roads-dumpster", path: "assets/kenney-roads/dumpster.glb", label: "대형 쓰레기 수거함 · Kenney", keywords: ["dumpster", "수거함", "골목", "거리", "kenney", "blockout"], hint: "Kenney CC0 대형 쓰레기 수거함 블록아웃 GLB." },
+  { id: "building_stairs_open", assetId: "kenney-building-stairs-open", path: "assets/kenney-building/stairs-open.glb", label: "오픈형 모듈 계단 · Kenney", keywords: ["stairs", "계단", "모듈", "건축", "kenney", "blockout"], hint: "Kenney CC0 오픈형 모듈 계단 블록아웃 GLB." },
+  { id: "furniture_bed_bunk", assetId: "kenney-furniture-bed-bunk", path: "assets/kenney-furniture/bed-bunk.glb", label: "기숙사 2층 침대 · Kenney", keywords: ["bunk", "bed", "침대", "기숙사", "가구", "kenney", "blockout"], hint: "Kenney CC0 2층 침대 블록아웃 GLB." },
+  { id: "furniture_fridge_large", assetId: "kenney-furniture-kitchen-fridge-large", path: "assets/kenney-furniture/kitchen-fridge-large.glb", label: "양문형 대형 냉장고 · Kenney", keywords: ["fridge", "냉장고", "주방", "가구", "kenney", "blockout"], hint: "Kenney CC0 대형 냉장고 블록아웃 GLB." },
+  { id: "food_cake_birthday", assetId: "kenney-food-cake-birthday", path: "assets/kenney-food/cake-birthday.glb", label: "생일 축하 케이크 · Kenney", keywords: ["cake", "birthday", "케이크", "디저트", "kenney", "blockout"], hint: "Kenney CC0 생일 케이크 블록아웃 GLB." },
+  { id: "nature_bridge_stone", assetId: "kenney-nature-bridge-stone", path: "assets/kenney-nature/bridge-stone.glb", label: "아치형 개울 돌다리 · Kenney", keywords: ["bridge", "stone", "돌다리", "다리", "자연", "kenney", "blockout"], hint: "Kenney CC0 아치형 돌다리 블록아웃 GLB." },
+  { id: "survival_tent_canvas", assetId: "kenney-survival-tent-canvas", path: "assets/kenney-survival/tent-canvas.glb", label: "야영 캔버스 텐트 · Kenney", keywords: ["tent", "camp", "텐트", "야영", "캠핑", "kenney", "blockout"], hint: "Kenney CC0 야영 캔버스 텐트 블록아웃 GLB." },
+  { id: "watercraft_boat_house_a", assetId: "kenney-watercraft-boat-house-a", path: "assets/kenney-watercraft/boat-house-a.glb", label: "수상 하우스보트 A · Kenney", keywords: ["boat", "houseboat", "보트", "선박", "항구", "kenney", "blockout"], hint: "Kenney CC0 수상 하우스보트 블록아웃 GLB." },
+  { id: "watercraft_boat_sail_a", assetId: "kenney-watercraft-boat-sail-a", path: "assets/kenney-watercraft/boat-sail-a.glb", label: "항구 돛단배 범선 A · Kenney", keywords: ["sail", "ship", "범선", "돛단배", "항구", "kenney", "blockout"], hint: "Kenney CC0 항구 범선 블록아웃 GLB." },
+] as const);
+
 /** Lightweight scene-template index (mirrors BG_SCENE_TEMPLATES labels; Three-free). */
 const SCENE_TEMPLATE_INDEX = Object.freeze([
   { id: "classroom", category: "interior", label: "교실", keywords: ["school", "학교", "칠판"], assetUrl: "/assets/3d/environments/refined-v6/classroom_art_studio.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/classroom_art_studio/beauty0001.png" },
@@ -339,6 +355,33 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
         defaultHeight: 360,
         assetUrl: `/assets/studio/cc0-20260906/assets/${item.slug}/${item.file}`,
         thumbnailUrl: `/assets/studio/cc0-20260906/previews/${item.slug}.png`,
+      }),
+    ),
+    ...KENNEY_BLOCKOUT_SCENE_PROP_INDEX.map((item) =>
+      Object.freeze({
+        id: `obj-furniture-kn_${item.id}`,
+        kind: "bg3d-scene-prop" as const,
+        sourceId: `kn_${item.id}`,
+        label: item.label,
+        family: "scene-furniture" as const,
+        familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],
+        keywords: Object.freeze([
+          item.id,
+          `kn_${item.id}`,
+          item.assetId,
+          item.label,
+          ...item.keywords,
+          "가구",
+          "소품",
+          "배경",
+          "3d",
+        ]),
+        hint: item.hint,
+        openTarget: "bg3d-editor" as const,
+        defaultWidth: 360,
+        defaultHeight: 360,
+        assetUrl: `/assets/studio/cc0-20260906/${item.path}`,
+        thumbnailUrl: `/assets/studio/cc0-20260906/previews/${item.assetId}.png`,
       }),
     ),
   ];
