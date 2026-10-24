@@ -49,18 +49,18 @@ describe("StudioMultiObjectPanel integration", () => {
     expect(snapped?.position[1]).toBe(0);
   });
 
-  it("filters 120 bundled 3D props across all 8 categories (incl. 36 Poly Haven 2K PBR) and loads mannequin + Poly Haven presets", () => {
-    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(120);
+  it("filters 225 bundled 3D props across all 8 categories (incl. all 141 Poly Haven 2K PBR) and loads mannequin + Poly Haven presets", () => {
+    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(225);
     expect(listStudio3DPropCatalogByCategory("refined-v8")).toHaveLength(11);
-    expect(listStudio3DPropCatalogByCategory("polyhaven-pbr")).toHaveLength(36);
+    expect(listStudio3DPropCatalogByCategory("polyhaven-pbr")).toHaveLength(141);
     for (const category of Object.keys(STUDIO_3D_PROP_CATEGORY_LABELS) as Studio3DPropCatalogCategory[]) {
       const items = listStudio3DPropCatalogByCategory(category);
       expect(items.length, category).toBeGreaterThan(0);
       expect(items.every((entry) => entry.category === category)).toBe(true);
     }
-    expect(listStudio3DPropCatalogByCategory("nature")).toHaveLength(8);
+    expect(listStudio3DPropCatalogByCategory("nature")).toHaveLength(14);
     expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(8);
-    expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(8);
+    expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(17);
 
     const manager = new StudioMultiObjectLayoutManager();
     const staged = manager.loadPreset("action_pose_staging");
@@ -70,5 +70,12 @@ describe("StudioMultiObjectPanel integration", () => {
     const cafeTerrace = manager.loadPreset("polyhaven_cafe_terrace");
     expect(cafeTerrace).toHaveLength(5);
     expect(cafeTerrace.every((obj) => obj.modelUrl.startsWith("/assets/studio/cc0-20260906/assets/polyhaven-"))).toBe(true);
+
+    const vintageLiving = manager.loadPreset("polyhaven_vintage_living");
+    expect(vintageLiving).toHaveLength(6);
+    const gothicBedroom = manager.loadPreset("polyhaven_gothic_bedroom");
+    expect(gothicBedroom).toHaveLength(5);
+    const workshopGarage = manager.loadPreset("polyhaven_workshop_garage");
+    expect(workshopGarage).toHaveLength(6);
   });
 });

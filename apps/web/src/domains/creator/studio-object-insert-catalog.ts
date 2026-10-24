@@ -85,6 +85,34 @@ const REFINED_V8_SCENE_FURNITURE_INDEX = Object.freeze([
   { id: "sofa", label: "라운지 소파 · 개선형", keywords: ["sofa", "소파", "거실", "라운지", "가구"], hint: "Blender PBR 개선형 라운지 소파 GLB." },
 ] as const);
 
+/** Creator Essentials modular 3D scene/architecture props (8 GLBs + rendered PNG previews). */
+const CREATOR_ESSENTIALS_SCENE_PROP_INDEX = Object.freeze([
+  { id: "bench", label: "모듈형 벤치 · Creator", keywords: ["bench", "벤치", "공원", "의자", "creator"], hint: "Creator Essentials 모듈형 3D 벤치 GLB." },
+  { id: "bookshelf", label: "모듈형 서재 책장 · Creator", keywords: ["bookshelf", "책장", "서재", "선반", "creator"], hint: "Creator Essentials 모듈형 3D 서재 책장 GLB." },
+  { id: "chair", label: "모듈형 의자 · Creator", keywords: ["chair", "의자", "모듈", "가구", "creator"], hint: "Creator Essentials 모듈형 3D 의자 GLB." },
+  { id: "desk", label: "모듈형 책상 · Creator", keywords: ["desk", "책상", "서재", "모듈", "creator"], hint: "Creator Essentials 모듈형 3D 책상 GLB." },
+  { id: "doorway", label: "모듈형 출입문 프레임 · Creator", keywords: ["doorway", "door", "문", "출입문", "건축", "creator"], hint: "Creator Essentials 모듈형 3D 출입문 프레임 GLB." },
+  { id: "stairs", label: "모듈형 실내 계단 · Creator", keywords: ["stairs", "계단", "실내", "건축", "creator"], hint: "Creator Essentials 모듈형 3D 계단 GLB." },
+  { id: "streetlamp", label: "모듈형 거리 가로등 · Creator", keywords: ["streetlamp", "가로등", "거리", "조명", "creator"], hint: "Creator Essentials 모듈형 3D 가로등 GLB." },
+  { id: "window-wall", label: "모듈형 창문 벽체 · Creator", keywords: ["window", "wall", "창문", "벽체", "건축", "creator"], hint: "Creator Essentials 모듈형 3D 창문 벽체 GLB." },
+] as const);
+
+/** Curated Poly Haven 2K PBR CC0 3D scene props (12 GLBs + rendered PNG previews). */
+const POLYHAVEN_SCENE_PROP_INDEX = Object.freeze([
+  { id: "coffee_table_round_01", slug: "polyhaven-coffee-table-round-01", file: "coffee_table_round_01.glb", label: "원형 커피 테이블 · Poly Haven", keywords: ["table", "커피", "테이블", "거실", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 원형 커피 테이블 GLB." },
+  { id: "rockingchair_01", slug: "polyhaven-rockingchair-01", file: "Rockingchair_01.glb", label: "원목 흔들의자 · Poly Haven", keywords: ["rocking", "chair", "흔들의자", "의자", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 원목 흔들의자 GLB." },
+  { id: "gothicbed_01", slug: "polyhaven-gothicbed-01", file: "GothicBed_01.glb", label: "고딕 장식 침대 · Poly Haven", keywords: ["bed", "gothic", "침대", "고딕", "침실", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 고딕 침대 GLB." },
+  { id: "chandelier_03", slug: "polyhaven-chandelier-03", file: "Chandelier_03.glb", label: "실내 장식 샹들리에 · Poly Haven", keywords: ["chandelier", "샹들리에", "조명", "천장등", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 실내 샹들리에 GLB." },
+  { id: "chinese_sofa", slug: "polyhaven-chinese-sofa", file: "chinese_sofa.glb", label: "중국풍 목제 소파 · Poly Haven", keywords: ["sofa", "소파", "동양", "응접실", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 중국풍 목제 소파 GLB." },
+  { id: "vintage_grandfather_clock_01", slug: "polyhaven-vintage-grandfather-clock-01", file: "vintage_grandfather_clock_01-alpha-restored-v1.glb", label: "빈티지 대형 괘종시계 · Poly Haven", keywords: ["clock", "괘종시계", "시계", "빈티지", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 빈티지 괘종시계 GLB." },
+  { id: "vintage_cabinet_01", slug: "polyhaven-vintage-cabinet-01", file: "vintage_cabinet_01.glb", label: "클래식 장식 수납장 · Poly Haven", keywords: ["cabinet", "수납장", "장식장", "서재", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 클래식 수납장 GLB." },
+  { id: "tea_set_01", slug: "polyhaven-tea-set-01", file: "tea_set_01.glb", label: "클래식 다기 세트 · Poly Haven", keywords: ["tea", "다기", "찻잔", "카페", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 클래식 다기 세트 GLB." },
+  { id: "treasure_chest", slug: "polyhaven-treasure-chest", file: "treasure_chest.glb", label: "금속 장식 보물상자 · Poly Haven", keywords: ["chest", "treasure", "보물상자", "판타지", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 보물상자 GLB." },
+  { id: "street_lamp_01", slug: "polyhaven-street-lamp-01", file: "street_lamp_01.glb", label: "클래식 가로등 · Poly Haven", keywords: ["street", "lamp", "가로등", "거리", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 클래식 가로등 GLB." },
+  { id: "potted_plant_02", slug: "polyhaven-potted-plant-02", file: "potted_plant_02.glb", label: "대형 실내 관엽 화분 · Poly Haven", keywords: ["plant", "화분", "식물", "인테리어", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 대형 관엽 화분 GLB." },
+  { id: "rock_moss_set_01", slug: "polyhaven-rock-moss-set-01", file: "rock_moss_set_01.glb", label: "황갈색 이끼 바위 세트 · Poly Haven", keywords: ["rock", "moss", "바위", "이끼", "자연", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 이끼 바위 세트 GLB." },
+] as const);
+
 /** Lightweight scene-template index (mirrors BG_SCENE_TEMPLATES labels; Three-free). */
 const SCENE_TEMPLATE_INDEX = Object.freeze([
   { id: "classroom", category: "interior", label: "교실", keywords: ["school", "학교", "칠판"], assetUrl: "/assets/3d/environments/refined-v6/classroom_art_studio.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/classroom_art_studio/beauty0001.png" },
@@ -233,32 +261,87 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
     });
   });
 
-  const sceneFurniture = REFINED_V8_SCENE_FURNITURE_INDEX.map((item) =>
-    Object.freeze({
-      id: `obj-furniture-${item.id}_v8`,
-      kind: "bg3d-scene-prop" as const,
-      sourceId: `${item.id}_v8`,
-      label: item.label,
-      family: "scene-furniture" as const,
-      familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],
-      keywords: Object.freeze([
-        item.id,
-        `${item.id}_v8`,
-        item.label,
-        ...item.keywords,
-        "가구",
-        "소품",
-        "배경",
-        "3d",
-      ]),
-      hint: item.hint,
-      openTarget: "bg3d-editor" as const,
-      defaultWidth: 360,
-      defaultHeight: 360,
-      assetUrl: `/assets/3d/refined-v8/${item.id}.glb`,
-      thumbnailUrl: `/assets/3d/refined-v8/thumbnails/${item.id}.png`,
-    }),
-  );
+  const sceneFurniture = [
+    ...REFINED_V8_SCENE_FURNITURE_INDEX.map((item) =>
+      Object.freeze({
+        id: `obj-furniture-${item.id}_v8`,
+        kind: "bg3d-scene-prop" as const,
+        sourceId: `${item.id}_v8`,
+        label: item.label,
+        family: "scene-furniture" as const,
+        familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],
+        keywords: Object.freeze([
+          item.id,
+          `${item.id}_v8`,
+          item.label,
+          ...item.keywords,
+          "가구",
+          "소품",
+          "배경",
+          "3d",
+        ]),
+        hint: item.hint,
+        openTarget: "bg3d-editor" as const,
+        defaultWidth: 360,
+        defaultHeight: 360,
+        assetUrl: `/assets/3d/refined-v8/${item.id}.glb`,
+        thumbnailUrl: `/assets/3d/refined-v8/thumbnails/${item.id}.png`,
+      }),
+    ),
+    ...CREATOR_ESSENTIALS_SCENE_PROP_INDEX.map((item) =>
+      Object.freeze({
+        id: `obj-furniture-ce_${item.id}`,
+        kind: "bg3d-scene-prop" as const,
+        sourceId: `ce_${item.id}`,
+        label: item.label,
+        family: "scene-furniture" as const,
+        familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],
+        keywords: Object.freeze([
+          item.id,
+          `ce_${item.id}`,
+          item.label,
+          ...item.keywords,
+          "가구",
+          "소품",
+          "배경",
+          "3d",
+        ]),
+        hint: item.hint,
+        openTarget: "bg3d-editor" as const,
+        defaultWidth: 360,
+        defaultHeight: 360,
+        assetUrl: `/creator-essentials/prop-${item.id}.glb`,
+        thumbnailUrl: `/creator-essentials/prop-${item.id}.preview.png`,
+      }),
+    ),
+    ...POLYHAVEN_SCENE_PROP_INDEX.map((item) =>
+      Object.freeze({
+        id: `obj-furniture-ph_${item.id}`,
+        kind: "bg3d-scene-prop" as const,
+        sourceId: `ph_${item.id}`,
+        label: item.label,
+        family: "scene-furniture" as const,
+        familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],
+        keywords: Object.freeze([
+          item.id,
+          `ph_${item.id}`,
+          item.slug,
+          item.label,
+          ...item.keywords,
+          "가구",
+          "소품",
+          "배경",
+          "3d",
+        ]),
+        hint: item.hint,
+        openTarget: "bg3d-editor" as const,
+        defaultWidth: 360,
+        defaultHeight: 360,
+        assetUrl: `/assets/studio/cc0-20260906/assets/${item.slug}/${item.file}`,
+        thumbnailUrl: `/assets/studio/cc0-20260906/previews/${item.slug}.png`,
+      }),
+    ),
+  ];
 
   return Object.freeze([...primitives, ...sceneFurniture, ...props, ...scenes]);
 }

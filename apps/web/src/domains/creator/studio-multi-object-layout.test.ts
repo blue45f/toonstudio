@@ -108,10 +108,10 @@ describe("StudioMultiObjectLayoutManager", () => {
     }
   });
 
-  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (120 items incl. 36 Poly Haven 2K PBR) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (9 presets) with real public GLBs and thumbnails", () => {
-    expect(STUDIO_POLYHAVEN_PBR_PROP_CATALOG).toHaveLength(36);
-    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(120);
-    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(9);
+  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (225 items incl. all 141 Poly Haven 2K PBR models) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (12 presets) with real public GLBs and thumbnails", () => {
+    expect(STUDIO_POLYHAVEN_PBR_PROP_CATALOG).toHaveLength(141);
+    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(225);
+    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(12);
 
     let thumbnailCount = 0;
     for (const entry of STUDIO_BUNDLED_SCENE_PROP_CATALOG) {
@@ -125,7 +125,7 @@ describe("StudioMultiObjectLayoutManager", () => {
         expect(thumbStat.size, entry.thumbnailUrl).toBeGreaterThan(256);
       }
     }
-    expect(thumbnailCount).toBe(63);
+    expect(thumbnailCount).toBe(168);
 
     const manager = new StudioMultiObjectLayoutManager();
     for (const preset of STUDIO_SCENE_PROP_LAYOUT_PRESETS) {
