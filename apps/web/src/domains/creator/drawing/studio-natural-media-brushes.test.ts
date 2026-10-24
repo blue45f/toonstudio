@@ -4,6 +4,8 @@ import {
   STUDIO_NATURAL_MEDIA_PRESETS,
   getNaturalMediaPreset,
   getNaturalMediaPresetsByCraft,
+  planNaturalMediaCrossHatch,
+  resolveNaturalMediaPhysicsProfile,
   validateHatchSettings,
   validateNaturalMediaSessionConfig,
   validateNaturalMediaStrokeStyle,
@@ -142,5 +144,46 @@ describe("validateHatchSettings", () => {
   it("범위 밖 각도는 false", () => {
     expect(validateHatchSettings(10, -1)).toBe(false);
     expect(validateHatchSettings(10, 181)).toBe(false);
+  });
+});
+
+describe("resolveNaturalMediaPhysicsProfile & planNaturalMediaCrossHatch (Wave 12)", () => {
+  it("11종 내추럴 미디어 프리셋별 물리 마찰·번짐·필압 감마가 매체 특성을 반영한다", () => {
+    const charcoal = resolveNaturalMediaPhysicsProfile("charcoal");
+    const rotring = resolveNaturalMediaPhysicsProfile("rotring");
+    const marker = resolveNaturalMediaPhysicsProfile("marker");
+
+    expect(charcoal.grainBite01).toBeGreaterThan(rotring.grainBite01 + 0.7);
+    expect(charcoal.smudgeSusceptibility01).toBeGreaterThan(rotring.smudgeSusceptibility01 + 0.7);
+    expect(marker.inkBleed01).toBeGreaterThan(charcoal.inkBleed01 + 0.5);
+    expect(rotring.pressureGamma).toBeGreaterThan(charcoal.pressureGamma);
+  });
+
+  it("planNaturalMediaCrossHatch가 명암 농도(toneValue01)에 따라 1~3중 교차 해칭 패스와 입·발필 필압 테이퍼를 생성한다", () => {
+    const bounds = { x: 20, y: 30, width: 120, height: 80 };
+    const light = planNaturalMediaCrossHatch(bounds, {
+      spacingPx: 12,
+      angleDeg: 35,
+      toneValue01: 0.25,
+      handJitter01: 0,
+    });
+    const deepShadow = planNaturalMediaCrossHatch(bounds, {
+      spacingPx: 10,
+      angleDeg: 35,
+      toneValue01: 0.82,
+      handJitter01: 0.1,
+    });
+
+    expect(light).toHaveLength(1);
+    expect(deepShadow).toHaveLength(3);
+    expect(deepShadow[0]!.lines.length).toBeGreaterThan(5);
+    for (const line of light[0]!.lines) {
+      expect(line.x0).toBeGreaterThanOrEqual(bounds.x - 0.1);
+      expect(line.x0).toBeLessThanOrEqual(bounds.x + bounds.width + 0.1);
+      expect(line.y0).toBeGreaterThanOrEqual(bounds.y - 0.1);
+      expect(line.y0).toBeLessThanOrEqual(bounds.y + bounds.height + 0.1);
+      expect(line.midPressure).toBeGreaterThan(line.entryPressure);
+      expect(line.midPressure).toBeGreaterThan(line.exitPressure);
+    }
   });
 });

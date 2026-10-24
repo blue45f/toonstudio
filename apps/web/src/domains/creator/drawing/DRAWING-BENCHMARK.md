@@ -196,3 +196,13 @@
 | **CSP 4종 망점 모양 SDF(`spotShape`)·사목 노이즈 톤(`buildSandNoiseScreentoneTile`)·케즈리 톤 깎기(`applyScreentoneScrapingDab`)** | `apps/web/src/domains/creator/drawing/studio-screentone.ts` | (1) `spotShape: "circle" \| "diamond" \| "square" \| "star"`: 원형(유클리드)·마름모(맨해튼 $L_1$)·정사각형(체비쇼프 $L_\infty$)·4각 별(아스트로이드 $\frac{3}{8}\pi R^2$) 면적 보정 부호 거리(SDF) 스무스스텝 안티에일리어싱, (2) `buildSandNoiseScreentoneTile`: 타일 경계에서 100% 심리스(Seamless)로 이어지는 결정론적 다중 주파수 주기 밸류 노이즈 기반 사목(Mezzotint) 톤 생성, (3) `applyScreentoneScrapingDab`: 만화 톤 나이프 깎기(`mode: "scrape"`) 및 그림자 톤 덧칠(`mode: "darken"`), 타일 경계 래핑(`wrapTile`) 지원 |
 | **타임랩스 유휴 공백(Dead-Air) 압축(`compressTimelapseIdleGaps`)·실행 취소 정리(`removeTimelapseStrokeById`)·타임라인 히트맵(`computeTimelapseActivityHeatmap`)** | `apps/web/src/domains/creator/drawing/studio-timelapse.ts` | (1) `compressTimelapseIdleGaps`: 스트로크 사이의 긴 고민/휴식 정지 구간을 `maxIdleGapMs` 이하로 압축하면서 각 스트로크 내부의 실제 필속($\Delta t$)은 100% 보존, (2) `removeTimelapseStrokeById`: 실행 취소(Undo)된 스트로크를 불변 세션 스냅샷에서 제거, (3) `computeTimelapseActivityHeatmap`: 스크러버 스파크라인 UI용 시간 구간별 정규화 활동 밀도(`0..1`) 및 누적 잉크 이동 거리(`totalInkTravelPx`) 산출 |
 
+## 17. Wave 12 수채 커피링 모세관 림·혼색 브러시 강모 결/종이 요철/용제 희석·내추럴 미디어 다중 크로스해칭 고도화 (2026-10-24)
+
+Rebelle 7 Pro·Clip Studio Paint EX 3.x·PaintStorm Studio·p5.brush의 수채화·혼색·내추럴 미디어 해칭 표현력을 순수 결정론적 커널로 내재화했다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **수채 커피링(Edge Darkening) 모세관 림·시종점 수분 고임(`wetPooling`)·광물 침전(`granulation`)** | `apps/web/src/domains/creator/brush/studio-watercolor-brush.ts` | (1) `evaluateWatercolorCapillaryRimProfile`: Curtis et al. 모세관 외곽 이동 모델 기반 중심부 세척(`interiorGain < 1`) + $r \approx 0.86$ 가우시안 모세관 림 피크(`rimPeakGain`) 및 5단계 방사형 그라디언트 정지점 생성, (2) `wetPooling`: 스트로크 시작·끝점 물방울 고임 반경 확장, (3) `granulation`: 종이 골(valley) 광물 안료 침전 변조 |
+| **혼색(Wet Mix) 브러시 진행 수직 강모 결(`bristleStreak`)·캔버스 평직 요철(`paperGrainDepth`)·용제 희석(`solventDilution`)** | `apps/web/src/domains/creator/brush/studio-wet-mix.ts` | (1) `evaluateWetMixBristleGrainWeight`: 스트로크 진행 접선에 수직인 법선 좌표 투영으로 다중 강모 갈퀴 결(`bristleStreak`)과 캔버스 평직 요철(`paperGrainDepth`)을 동시 변조, (2) `solventDilution`: 물·용제 블렌더 희석율로 불투명 경계를 반투명 글레이즈로 부드럽게 풀어주는 혼색 지원 |
+| **11종 내추럴 미디어 물리 프로파일(`resolveNaturalMediaPhysicsProfile`) & 다중 패스 크로스해칭 플래너(`planNaturalMediaCrossHatch`)** | `apps/web/src/domains/creator/drawing/studio-natural-media-brushes.ts` | (1) `resolveNaturalMediaPhysicsProfile`: 연필(2B/HB/2H)·색연필·크레용·파스텔·펜·로트링·목탄·마커·스프레이 11종의 종이 산 마찰(`grainBite01`)·스머지 민감도·알코올 번짐(`inkBleed01`)·필압 감마 정밀 보정, (2) `planNaturalMediaCrossHatch`: Liang-Barsky 직사각형 클리핑 및 명암 농도(`toneValue01`) 기반 1~3중 교차 해칭 패스·입발필 필압 테이퍼 생성 |
+

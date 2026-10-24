@@ -68,6 +68,12 @@ export type WetMixSettings = {
   initialLoad?: number;
   /** `spectral-wgm` 은 유화 경로의 감산 혼색. 기본 `lerp` 는 기존 혼색 브러시. */
   mixModel?: "lerp" | "spectral-wgm" | "ryb";
+  /** 0..1 진행 방향 수직 강모 결(Bristle Furrow Streak) 변조 강도. 기본 0. */
+  bristleStreak?: number;
+  /** 0..1 캔버스 종이 요철(Paper Tooth) 선택적 착색 깊이. 기본 0. */
+  paperGrainDepth?: number;
+  /** 0..1 수분·용제 희석(Solvent Dilution — 반투명 글레이즈 희석율). 기본 0. */
+  solventDilution?: number;
 };
 
 // 표시 px 기준 범위 — DODGE_BURN_RADIUS_RANGE 와 동일 관례(자연 해상도 환산은 호출자 몫).
@@ -75,7 +81,7 @@ export const WET_MIX_RADIUS_RANGE = { min: 6, max: 160, step: 1 } as const;
 export const WET_MIX_RADIUS_DEFAULT = 32;
 export const WET_MIX_HARDNESS_RANGE = { min: 0, max: 1, step: 0.05 } as const;
 export const WET_MIX_HARDNESS_DEFAULT = 0.5;
-// %(UI) — 코어엔 /100 한 0..1 로 넘긴다(SMUDGE_STRENGTH_RANGE 와 동일 관례).
+// %(UI) — 코어엔 /100 한 0..1 로 넘긴다(SMUDGE_STRENGTH_RANGE 와 동일 규례).
 export const WET_MIX_STRENGTH_RANGE = { min: 1, max: 100, step: 1 } as const;
 export const WET_MIX_STRENGTH_DEFAULT = 60;
 export const WET_MIX_WETNESS_RANGE = { min: 0, max: 100, step: 1 } as const;
@@ -103,6 +109,55 @@ function clampInt(v: number, min: number, max: number): number {
 function clampChannel(v: number): number {
   if (!Number.isFinite(v)) return 0;
   return v < 0 ? 0 : v > 255 ? 255 : v;
+}
+
+/**
+ * 진행 접선(tangentX, tangentY)에 수직인 강모 결(Bristle Streak) 및
+ * 캔버스 직조 요철(Paper Grain Depth) 가중치(0..1)를 결정론적으로 계산한다.
+ */
+export function evaluateWetMixBristleGrainWeight(
+  x: number,
+  y: number,
+  center: WetMixPixelPoint,
+  radiusPx: number,
+  options: {
+    readonly tangentX?: number;
+    readonly tangentY?: number;
+    readonly bristleStreak?: number;
+    readonly paperGrainDepth?: number;
+  } = {},
+): number {
+  const streak = clamp01(options.bristleStreak ?? 0);
+  const grain = clamp01(options.paperGrainDepth ?? 0);
+  if (streak <= 0 && grain <= 0) return 1;
+
+  let weight = 1;
+  if (streak > 0 && radiusPx > 0) {
+    const tx = Number.isFinite(options.tangentX) ? (options.tangentX ?? 1) : 1;
+    const ty = Number.isFinite(options.tangentY) ? (options.tangentY ?? 0) : 0;
+    const tLen = Math.hypot(tx, ty) || 1;
+    // 접선에 수직인 법선 벡터 (-ny, nx) 방향 횡단 좌표
+    const nx = -ty / tLen;
+    const ny = tx / tLen;
+    const crossCoord = (x - center.x) * nx + (y - center.y) * ny;
+    const normCross = crossCoord / Math.max(2, radiusPx);
+    const tineWave =
+      0.5 +
+      0.35 * Math.cos(normCross * Math.PI * 6) +
+      0.15 * Math.sin(normCross * Math.PI * 13 + 0.7);
+    weight *= 1 - streak * (1 - clamp01(tineWave));
+  }
+
+  if (grain > 0) {
+    // 캔버스 평직(Canvas Weave) 결정론적 높이장 (0..1)
+    const weave =
+      0.5 +
+      0.25 * Math.sin(x * 1.570796) * Math.cos(y * 1.570796) +
+      0.25 * Math.cos((x + y) * 1.11072);
+    weight *= 1 - grain * (1 - clamp01(weave));
+  }
+
+  return clamp01(weight);
 }
 
 /**
@@ -171,6 +226,12 @@ export function applyWetMixDab(
   radiusPx: number,
   hardness: number,
   strength: number,
+  modulation?: {
+    readonly tangentX?: number;
+    readonly tangentY?: number;
+    readonly bristleStreak?: number;
+    readonly paperGrainDepth?: number;
+  },
 ): void {
   const R = Number.isFinite(radiusPx) && radiusPx > 0 ? radiusPx : 0;
   const S = clamp01(strength);
@@ -180,6 +241,9 @@ export function applyWetMixDab(
   const depR = clampChannel(deposit.r);
   const depG = clampChannel(deposit.g);
   const depB = clampChannel(deposit.b);
+  const hasModulation =
+    modulation !== undefined &&
+    ((modulation.bristleStreak ?? 0) > 0 || (modulation.paperGrainDepth ?? 0) > 0);
 
   const minX = clampInt(Math.floor(center.x - R), 0, w - 1);
   const maxX = clampInt(Math.ceil(center.x + R), 0, w - 1);
@@ -195,7 +259,10 @@ export function applyWetMixDab(
       if (dx * dx + dy * dy > R * R) continue;
       const falloff = dodgeBurnBrushFalloff(Math.sqrt(dx * dx + dy * dy), R, hardness);
       if (falloff <= 0) continue;
-      const srcA = S * falloff;
+      const modWeight = hasModulation
+        ? evaluateWetMixBristleGrainWeight(x, y, center, R, modulation)
+        : 1;
+      const srcA = S * falloff * modWeight;
       if (srcA <= 0) continue;
       const idx = (y * w + x) * 4;
       const destA = data[idx + 3]! / 255;
@@ -289,6 +356,10 @@ export function wetMixStroke(
   let load = clamp01(settings.initialLoad ?? 1);
   const spectralMix = settings.mixModel === "spectral-wgm";
   const rybMix = settings.mixModel === "ryb";
+  const bristleStreak = clamp01(settings.bristleStreak ?? 0);
+  const paperGrainDepth = clamp01(settings.paperGrainDepth ?? 0);
+  const solventDilution = clamp01(settings.solventDilution ?? 0);
+  const dilutionScale = 1 - solventDilution * 0.65;
 
   const step = safeRadius * WET_MIX_STEP_RATIO;
   const resampled = resampleSmudgePath(points, step).slice(0, WET_MIX_MAX_DABS);
@@ -302,6 +373,10 @@ export function wetMixStroke(
 
   for (let dabIndex = 0; dabIndex < resampled.length; dabIndex += 1) {
     const p = resampled[dabIndex]!;
+    const prevP = dabIndex > 0 ? resampled[dabIndex - 1]! : p;
+    const nextP = dabIndex + 1 < resampled.length ? resampled[dabIndex + 1]! : p;
+    const tangentX = nextP.x - prevP.x || 1;
+    const tangentY = nextP.y - prevP.y;
     const feel = resolveStudioHandFeelMediaLoadV1({
       speed: resampledSpeeds[dabIndex] ?? 0,
       family: spectralMix ? "oil" : "wash",
@@ -354,7 +429,12 @@ export function wetMixStroke(
     applyWetMixDab(
       data, w, h, p,
       { r: depR, g: depG, b: depB },
-      safeRadius, hardness, strength * load * feel.coverageScale,
+      safeRadius,
+      hardness,
+      strength * load * feel.coverageScale * dilutionScale,
+      bristleStreak > 0 || paperGrainDepth > 0
+        ? { tangentX, tangentY, bristleStreak, paperGrainDepth }
+        : undefined,
     );
     if (depletion > 0 && load > 0) {
       load = Math.max(0, load * (1 - depletion));

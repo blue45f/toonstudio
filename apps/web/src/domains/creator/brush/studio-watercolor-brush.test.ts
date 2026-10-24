@@ -8,6 +8,7 @@ import {
   WATERCOLOR_BRUSH_SEED_RANGE,
   WATERCOLOR_BRUSH_SPACING_RANGE,
   WATERCOLOR_BRUSH_WIDTH_RANGE,
+  evaluateWatercolorCapillaryRimProfile,
   normalizeWatercolorBrushPlanSettings,
   planWatercolorBrush,
   planWatercolorBrushDabs,
@@ -322,5 +323,46 @@ describe("planWatercolorBrush — single point and convenience API", () => {
       maxDabs: 16,
     };
     expect(planWatercolorBrushDabs(input)).toEqual(planWatercolorBrush(input).dabs);
+  });
+});
+
+describe("planWatercolorBrush — coffee-ring edgeDarkening, wetPooling & granulation (Wave 12)", () => {
+  it("evaluateWatercolorCapillaryRimProfile이 중심부 세척(interiorGain < 1)과 외곽 모세관 림 피크(rimPeakGain > interiorGain)를 생성한다", () => {
+    const rim = evaluateWatercolorCapillaryRimProfile(0.86, {
+      edgeDarkening: 0.85,
+      granulation: 0.6,
+      paperTooth01: 0.2,
+    });
+    expect(rim.interiorGain).toBeLessThan(1.0);
+    expect(rim.rimPeakGain).toBeGreaterThan(rim.interiorGain + 0.6);
+    expect(rim.gradientStops).toHaveLength(5);
+    expect(rim.gradientStops[4]![1]).toBe(0);
+  });
+
+  it("edgeDarkening·wetPooling·granulation 활성화 시 시·종점 수분 고임과 림 다크닝·침전 메타데이터를 부여한다", () => {
+    const plain = planWatercolorBrush({
+      points: [0, 0, 50, 0, 100, 0],
+      pressures: [0.6, 0.6, 0.6],
+      baseWidth: 16,
+      seed: 33,
+      maxDabs: 20,
+    });
+    const expressive = planWatercolorBrush({
+      points: [0, 0, 50, 0, 100, 0],
+      pressures: [0.6, 0.6, 0.6],
+      baseWidth: 16,
+      seed: 33,
+      maxDabs: 20,
+      edgeDarkening: 0.8,
+      wetPooling: 0.75,
+      granulation: 0.65,
+    });
+
+    const plainCores = coreDabs(plain.dabs);
+    const expCores = coreDabs(expressive.dabs);
+    // 시·종점(index 0)에서 wetPooling으로 인해 반경이 확장됨
+    expect(expCores[0]!.radius).toBeGreaterThan(plainCores[0]!.radius);
+    expect(expCores[0]!.rimDarkening).toBeGreaterThan(0.5);
+    expect(expCores[0]!.granulationBias).toBeGreaterThan(0);
   });
 });
