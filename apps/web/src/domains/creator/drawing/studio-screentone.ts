@@ -285,18 +285,67 @@ export function evaluateScreentoneMoireSuppression(
   };
 }
 
+export type ScreentoneSpotShape = "circle" | "diamond" | "square" | "star";
+
 export interface BuildAntiAliasedScreentoneOptions {
   readonly size?: number;
   readonly zoomScale?: number;
   readonly gradientDirection?: "none" | "vertical" | "radial";
   /** 0..1 그라데이션·에칭 감쇠 강도 */
   readonly gradientStrength?: number;
+  /**
+   * CSP 망점 모양(Spot Shape):
+   * - "circle": 원형 도트 (기본)
+   * - "diamond": 마름모(맨해튼 L1) 망점
+   * - "square": 정사각형(체비쇼프 L∞) 망점
+   * - "star": 4각 별/반짝이(아스트로이드) 순정만화 망점
+   */
+  readonly spotShape?: ScreentoneSpotShape;
 }
 
 function smoothstepEdge(edge0: number, edge1: number, x: number): number {
   const span = Math.max(1e-5, edge1 - edge0);
   const t = Math.max(0, Math.min(1, (x - edge0) / span));
   return t * t * (3 - 2 * t);
+}
+
+function evaluateSpotShapeDistanceAndRadius(
+  spotShape: ScreentoneSpotShape,
+  ox: number,
+  oy: number,
+  spacing: number,
+  density: number,
+): { readonly dist: number; readonly radius: number } {
+  const ax = Math.abs(ox);
+  const ay = Math.abs(oy);
+  if (spotShape === "diamond") {
+    // 다이아몬드(|x| + |y| <= R_1) 면적 = 2 * R_1^2 = density * spacing^2
+    // 유클리드 스케일 정규화 거리: (|x| + |y|) / sqrt(2)
+    return {
+      dist: (ax + ay) * Math.SQRT1_2,
+      radius: spacing * Math.sqrt(density) * 0.5,
+    };
+  }
+  if (spotShape === "square") {
+    // 정사각형(max(|x|, |y|) <= R_inf) 면적 = (2 * R_inf)^2 = density * spacing^2
+    return {
+      dist: Math.max(ax, ay),
+      radius: spacing * 0.5 * Math.sqrt(density),
+    };
+  }
+  if (spotShape === "star") {
+    // 4각 아스트로이드(|x|^(2/3) + |y|^(2/3) <= R^(2/3)) 면적 = (3 * pi / 8) * R^2
+    const dist = Math.pow(Math.pow(ax, 2 / 3) + Math.pow(ay, 2 / 3), 1.5);
+    const astroidAreaFactor = (3 * Math.PI) / 8;
+    return {
+      dist,
+      radius: spacing * Math.sqrt(density / astroidAreaFactor),
+    };
+  }
+  return {
+    dist: Math.hypot(ax, ay),
+    radius: spacing * Math.sqrt(density / Math.PI),
+  };
 }
 
 /**
@@ -321,6 +370,7 @@ export function buildAntiAliasedScreentoneTile(
   const aaHalfWidth = Math.min(spacing * 0.35, moire.antiAliasBandWidthPx * 0.5);
   const gradDir = options.gradientDirection ?? "none";
   const gradStrength = Math.max(0, Math.min(1, options.gradientStrength ?? 0));
+  const spotShape: ScreentoneSpotShape = options.spotShape ?? "circle";
 
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
@@ -341,10 +391,15 @@ export function buildAntiAliasedScreentoneTile(
 
       let coverage: number;
       if (config.pattern === "dot") {
-        const radius = spacing * Math.sqrt(density / Math.PI);
         const gx = Math.round(rx / spacing) * spacing;
         const gy = Math.round(ry / spacing) * spacing;
-        const dist = Math.hypot(rx - gx, ry - gy);
+        const { dist, radius } = evaluateSpotShapeDistanceAndRadius(
+          spotShape,
+          rx - gx,
+          ry - gy,
+          spacing,
+          density,
+        );
         coverage = 1 - smoothstepEdge(radius - aaHalfWidth, radius + aaHalfWidth, dist);
       } else if (config.pattern === "line") {
         const halfWidth = (spacing * density) * 0.5;
@@ -364,5 +419,180 @@ export function buildAntiAliasedScreentoneTile(
     }
   }
   return tile;
+}
+
+/* ------------------------------------------------------------------ */
+/* CSP 사목(Sand/Mezzotint) 노이즈 스크린톤 & 케즈리(톤 깎기) 변조       */
+/* ------------------------------------------------------------------ */
+
+export interface BuildSandNoiseScreentoneOptions {
+  readonly size?: number;
+  /** 목표 농도 %, 10..80 (기본 35) */
+  readonly density?: number;
+  /** 입자 크기 배율, 1..8 (기본 2) */
+  readonly grainScale?: number;
+  /** 결정론적 시드 (기본 42) */
+  readonly seed?: number;
+  /** 경계 부드러움 0..1 (기본 0.2) */
+  readonly softness?: number;
+}
+
+function hash2dPeriodic(ix: number, iy: number, period: number, seed: number): number {
+  const px = ((ix % period) + period) % period;
+  const py = ((iy % period) + period) % period;
+  let h = (px * 374761393 + py * 668265263 + seed * 1442695041) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967295;
+}
+
+function samplePeriodicValueNoise(
+  x: number,
+  y: number,
+  scale: number,
+  period: number,
+  seed: number,
+): number {
+  const sx = x / scale;
+  const sy = y / scale;
+  const ix = Math.floor(sx);
+  const iy = Math.floor(sy);
+  const fx = sx - ix;
+  const fy = sy - iy;
+  const u = fx * fx * (3 - 2 * fx);
+  const v = fy * fy * (3 - 2 * fy);
+
+  const n00 = hash2dPeriodic(ix, iy, period, seed);
+  const n10 = hash2dPeriodic(ix + 1, iy, period, seed);
+  const n01 = hash2dPeriodic(ix, iy + 1, period, seed);
+  const n11 = hash2dPeriodic(ix + 1, iy + 1, period, seed);
+
+  const nx0 = n00 + (n10 - n00) * u;
+  const nx1 = n01 + (n11 - n01) * u;
+  return nx0 + (nx1 - nx0) * v;
+}
+
+/**
+ * 클립스튜디오(CSP) 사목(Sand/Mezzotint) 노이즈 톤 생성기.
+ * 격자 주기성 없이 타일 경계에서 100% 심리스(Seamless)로 이어지는 다중 주파수 입자 톤을 생성한다.
+ */
+export function buildSandNoiseScreentoneTile(
+  options: BuildSandNoiseScreentoneOptions = {},
+): Float32Array {
+  const size = Math.max(16, Math.min(512, Math.floor(options.size ?? 120)));
+  const densityRatio = Math.max(
+    STUDIO_SCREENTONE_LIMITS.minDensity / 100,
+    Math.min(STUDIO_SCREENTONE_LIMITS.maxDensity / 100, (options.density ?? 35) / 100),
+  );
+  const grainScale = Math.max(1, Math.min(8, Number.isFinite(options.grainScale) ? (options.grainScale ?? 2) : 2));
+  const seed = Math.floor(Number.isFinite(options.seed) ? (options.seed ?? 42) : 42);
+  const softness = Math.max(0.01, Math.min(0.45, Number.isFinite(options.softness) ? (options.softness ?? 0.2) : 0.2));
+
+  // 타일 주기 일치를 위해 정수 주기 계산
+  const coarsePeriod = Math.max(4, Math.round(size / grainScale));
+  const finePeriod = Math.max(8, coarsePeriod * 2);
+  const coarseStep = size / coarsePeriod;
+  const fineStep = size / finePeriod;
+
+  const tile = new Float32Array(size * size);
+  const hist = new Uint32Array(256);
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const coarse = samplePeriodicValueNoise(x, y, coarseStep, coarsePeriod, seed);
+      const fine = samplePeriodicValueNoise(x, y, fineStep, finePeriod, seed + 97);
+      const micro = hash2dPeriodic(x, y, size, seed + 251);
+      const combined = Math.max(0, Math.min(1, coarse * 0.55 + fine * 0.3 + micro * 0.15));
+      tile[y * size + x] = combined;
+      const bin = Math.min(255, Math.floor(combined * 256));
+      hist[bin] = (hist[bin] ?? 0) + 1;
+    }
+  }
+
+  // 다중 옥타브 합산 분포에서 목표 농도(densityRatio)와 정확히 일치하는 분위수(Quantile) 임계값 산출
+  const targetRank = Math.round((1 - densityRatio) * tile.length);
+  let accum = 0;
+  let threshold = 1 - densityRatio;
+  for (let b = 0; b < 256; b += 1) {
+    accum += hist[b]!;
+    if (accum >= targetRank) {
+      threshold = (b + 0.5) / 256;
+      break;
+    }
+  }
+
+  for (let i = 0; i < tile.length; i += 1) {
+    tile[i] = smoothstepEdge(
+      threshold - softness * 0.25,
+      threshold + softness * 0.25,
+      tile[i]!,
+    );
+  }
+  return tile;
+}
+
+export interface ScreentoneScrapingDab {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  /** 0..1 브러시 압력/강도 */
+  readonly strength: number;
+  /** "scrape": 케즈리(톤 깎기/하이라이트), "darken": 톤 덧칠(그림자 농도 강화) */
+  readonly mode?: "scrape" | "darken";
+  /** 0..1 브러시 경도 (기본 0.35) */
+  readonly hardness?: number;
+  /** 타일 경계 래핑 여부 (기본 false) */
+  readonly wrapTile?: boolean;
+}
+
+/**
+ * 만화 톤 깎기(케즈리 / Tone Scraping) 또는 톤 농도 덧칠 브러시 댑을 스크린톤 타일에 적용한다.
+ * 원본 타일은 변경하지 않고 변조된 새 Float32Array를 반환한다.
+ */
+export function applyScreentoneScrapingDab(
+  tile: Float32Array,
+  size: number,
+  dab: ScreentoneScrapingDab,
+): Float32Array {
+  const safeSize = Math.max(1, Math.floor(size));
+  const next = new Float32Array(tile);
+  if (
+    !Number.isFinite(dab.x) ||
+    !Number.isFinite(dab.y) ||
+    !Number.isFinite(dab.radius) ||
+    dab.radius <= 0
+  ) {
+    return next;
+  }
+  const strength = Math.max(0, Math.min(1, Number.isFinite(dab.strength) ? dab.strength : 0));
+  if (strength <= 0) return next;
+
+  const hardness = Math.max(0, Math.min(0.98, Number.isFinite(dab.hardness) ? (dab.hardness ?? 0.35) : 0.35));
+  const mode = dab.mode ?? "scrape";
+  const wrap = dab.wrapTile === true;
+  const radius = dab.radius;
+  const innerRadius = radius * hardness;
+
+  for (let y = 0; y < safeSize; y += 1) {
+    for (let x = 0; x < safeSize; x += 1) {
+      let dx = Math.abs(x - dab.x);
+      let dy = Math.abs(y - dab.y);
+      if (wrap) {
+        if (dx > safeSize * 0.5) dx = safeSize - dx;
+        if (dy > safeSize * 0.5) dy = safeSize - dy;
+      }
+      if (dx > radius || dy > radius) continue;
+      const dist = Math.hypot(dx, dy);
+      if (dist > radius) continue;
+
+      const falloff = 1 - smoothstepEdge(innerRadius, radius, dist);
+      const effect = falloff * strength;
+      const idx = y * safeSize + x;
+      const cur = next[idx] ?? 0;
+      const updated = mode === "darken" ? cur + (1 - cur) * effect : cur * (1 - effect);
+      next[idx] = Math.max(0, Math.min(1, updated));
+    }
+  }
+  return next;
 }
 

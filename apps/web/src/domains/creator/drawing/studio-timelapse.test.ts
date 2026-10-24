@@ -4,6 +4,8 @@ import {
   TIMELAPSE_DEFAULT_MAX_DURATION_MS,
   TIMELAPSE_PLAYBACK_RATES,
   advanceTimelapsePlayback,
+  compressTimelapseIdleGaps,
+  computeTimelapseActivityHeatmap,
   createTimelapseSession,
   decodeTimelapseStrokeDelta,
   encodeTimelapseStrokeDelta,
@@ -18,6 +20,7 @@ import {
   getVisibleStrokes,
   measureStrokeDeltaCompression,
   recordStroke,
+  removeTimelapseStrokeById,
   validateTimelapseStroke,
   type TimelapseStroke,
 } from "./studio-timelapse";
@@ -239,6 +242,52 @@ describe("encodeTimelapseStrokeDelta / decodeTimelapseStrokeDelta", () => {
     const metrics = measureStrokeDeltaCompression(stroke);
     expect(metrics.compressionRatio).toBeGreaterThanOrEqual(2.2);
     expect(metrics.maxCoordinateErrorPx).toBeLessThanOrEqual(0.015);
+  });
+});
+
+describe("compressTimelapseIdleGaps, removeTimelapseStrokeById & computeTimelapseActivityHeatmap (Wave 11)", () => {
+  it("유휴 공백(Dead-Air) 압축기가 스트로크 간 긴 정지 구간은 압축하고 각 스트로크 내부 필속은 보존한다", () => {
+    let s = createTimelapseSession();
+    // 첫 스트로크: 3,000ms 대기 후 400ms 동안 드로잉 (3000..3400ms)
+    s = recordStroke(s, makeStroke("s1", 3000, 5, 100));
+    // 두 번째 스트로크: 45,000ms 고민/휴식 후 600ms 동안 드로잉 (48400..49000ms)
+    s = recordStroke(s, makeStroke("s2", 48400, 7, 100));
+    s = endTimelapseSession(s, 60000);
+
+    const compressed = compressTimelapseIdleGaps(s, {
+      maxInitialDelayMs: 100,
+      maxIdleGapMs: 300,
+    });
+
+    // 첫 스트로크는 100ms에서 시작하고 400ms 길이 유지 (100..500ms)
+    expect(compressed.strokes[0]!.startedAtMs).toBe(100);
+    expect(compressed.strokes[0]!.endedAtMs).toBe(500);
+    // 두 번째 스트로크는 300ms 공백 뒤 800ms에서 시작하고 600ms 길이 유지 (800..1400ms)
+    expect(compressed.strokes[1]!.startedAtMs).toBe(800);
+    expect(compressed.strokes[1]!.endedAtMs).toBe(1400);
+    // 내부 샘플 간격(100ms) 보존 확인
+    expect(
+      compressed.strokes[1]!.samples[2]!.timeMs - compressed.strokes[1]!.samples[1]!.timeMs,
+    ).toBe(100);
+    // 종료 후 후행 공백도 300ms로 압축 (1400 + 300 = 1700ms)
+    expect(getTimelapseDurationMs(compressed)).toBe(1700);
+  });
+
+  it("removeTimelapseStrokeById로 실행 취소(Undo)된 스트로크를 제거하고 타임라인 활동 히트맵을 산출한다", () => {
+    let s = createTimelapseSession();
+    s = recordStroke(s, makeStroke("s1", 0, 6, 50));
+    s = recordStroke(s, makeStroke("s2-undo", 400, 4, 50));
+    s = recordStroke(s, makeStroke("s3", 800, 8, 50));
+
+    const pruned = removeTimelapseStrokeById(s, "s2-undo");
+    expect(pruned.strokes.map((st) => st.id)).toEqual(["s1", "s3"]);
+
+    const heatmap = computeTimelapseActivityHeatmap(pruned, 12);
+    expect(heatmap.buckets).toHaveLength(12);
+    expect(heatmap.peakSamplesPerBucket).toBeGreaterThan(0);
+    expect(heatmap.totalInkTravelPx).toBeGreaterThan(100);
+    expect(heatmap.activeRatio).toBeGreaterThan(0.15);
+    expect(Math.max(...heatmap.buckets)).toBe(1);
   });
 });
 

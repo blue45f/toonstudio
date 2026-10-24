@@ -59,11 +59,21 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
         ),
       ).toBe(true);
       expect(
+        scorecard.qualityMetrics.some(
+          (metric) => metric.id === "screentone-sdf-oklab-gradient-fidelity",
+        ),
+      ).toBe(true);
+      expect(
         scorecard.featureMetrics.some((metric) => metric.id === "stylus-tilt-dual-brush-engine"),
       ).toBe(true);
       expect(
         scorecard.featureMetrics.some(
           (metric) => metric.id === "expressive-brush-personality-diversity",
+        ),
+      ).toBe(true);
+      expect(
+        scorecard.featureMetrics.some(
+          (metric) => metric.id === "vector-ruler-fisheye-timelapse-suite",
         ),
       ).toBe(true);
     }

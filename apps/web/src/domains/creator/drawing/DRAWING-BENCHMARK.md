@@ -187,3 +187,12 @@
 | **5점 어안(Fisheye) 역왜곡-투영-재왜곡 곡선 스냅·지평선(`allowHorizonSnap`)·자유 각도 통과(`maxSnapAngleDeg`)** | `apps/web/src/domains/creator/drawing/studio-perspective-pen-snap.ts` | (1) `unwarpPerspectivePointFromFisheye`: 배럴 왜곡 $r' = r(1 - 0.45 k r^2)$를 뉴턴-랩슨 6회 반복으로 역산해 선형 투시 공간에서 소실점 직선에 투영한 뒤 다시 어안 곡선으로 왜곡함으로써 5점 어안 가이드 위에서도 이음새 없이 휘어지는 실시간 펜 스냅 구현, (2) `allowHorizonSnap`: 1점·2점 투시에서 지평선 평행 가로 보조선(`family: "horizon"`) 스냅 지원, (3) `maxSnapAngleDeg`: 모든 투시 광선과 허용 각도 이상 벌어진 스트로크를 `freehandPassthrough`로 통과시켜 배경 위 자유 드로잉 보장 |
 | **닫힌 루프 자동 봉합(`closeLoopThresholdPx`)·영길이 중복 제거(`sanitizeLineartPoints`)·다중 연결 말풍선 합성(`mergeBubbleChain`)** | `apps/web/src/domains/creator/drawing/studio-lineart-vectorizer.ts` | (1) `sanitizeLineartPoints`: `NaN`/`Infinity` 및 연속 중복 샘플(`minStepPx` 미만)을 사전 제거해 Catmull-Rom 접선 특이점 차단, (2) `closeLoopThresholdPx`: 시작·끝점이 임계 거리 이내인 말풍선·폐곡선을 스무딩 전에 `Z`로 닫아 이음새 꺾임 제거, (3) `mergeBubbleChain` & `booleanVectorPaths`: 2~$N$개 연결 말풍선과 꼬리 체인을 단일 Paper.js 세션에서 순차 합집합으로 합성하고 `subtract`/`intersect`/`exclude` 불리언 컷아웃 지원 |
 
+## 16. Wave 11 CSP 4종 망점 SDF·사목(Sand) 노이즈·케즈리(톤 깎기) & 타임랩스 유휴 공백 압축·활동 히트맵 고도화 (2026-10-24)
+
+클립스튜디오(CSP)의 만화 톤 공정(다중 망점 모양·사목 노이즈 톤·케즈리 톤 깎기)과 타임랩스 비디오 내보내기 품질(유휴 공백 압축·실행 취소 정리·스크러버 활동 히트맵)을 고도화했다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **CSP 4종 망점 모양 SDF(`spotShape`)·사목 노이즈 톤(`buildSandNoiseScreentoneTile`)·케즈리 톤 깎기(`applyScreentoneScrapingDab`)** | `apps/web/src/domains/creator/drawing/studio-screentone.ts` | (1) `spotShape: "circle" \| "diamond" \| "square" \| "star"`: 원형(유클리드)·마름모(맨해튼 $L_1$)·정사각형(체비쇼프 $L_\infty$)·4각 별(아스트로이드 $\frac{3}{8}\pi R^2$) 면적 보정 부호 거리(SDF) 스무스스텝 안티에일리어싱, (2) `buildSandNoiseScreentoneTile`: 타일 경계에서 100% 심리스(Seamless)로 이어지는 결정론적 다중 주파수 주기 밸류 노이즈 기반 사목(Mezzotint) 톤 생성, (3) `applyScreentoneScrapingDab`: 만화 톤 나이프 깎기(`mode: "scrape"`) 및 그림자 톤 덧칠(`mode: "darken"`), 타일 경계 래핑(`wrapTile`) 지원 |
+| **타임랩스 유휴 공백(Dead-Air) 압축(`compressTimelapseIdleGaps`)·실행 취소 정리(`removeTimelapseStrokeById`)·타임라인 히트맵(`computeTimelapseActivityHeatmap`)** | `apps/web/src/domains/creator/drawing/studio-timelapse.ts` | (1) `compressTimelapseIdleGaps`: 스트로크 사이의 긴 고민/휴식 정지 구간을 `maxIdleGapMs` 이하로 압축하면서 각 스트로크 내부의 실제 필속($\Delta t$)은 100% 보존, (2) `removeTimelapseStrokeById`: 실행 취소(Undo)된 스트로크를 불변 세션 스냅샷에서 제거, (3) `computeTimelapseActivityHeatmap`: 스크러버 스파크라인 UI용 시간 구간별 정규화 활동 밀도(`0..1`) 및 누적 잉크 이동 거리(`totalInkTravelPx`) 산출 |
+
