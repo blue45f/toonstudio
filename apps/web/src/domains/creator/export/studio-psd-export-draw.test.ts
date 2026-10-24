@@ -223,7 +223,7 @@ describe("PSD custom draw node capture", () => {
     const { element, capture } = addDraw("large-with-background");
     await expect(exportPagePsd(stage, [element], 4096, 4097, 1, {
       background: { color: "#ffffff" },
-    })).rejects.toThrow(/메모리/u);
+    })).rejects.toThrow("layerPixelsOverBudget");
     expect(capture).not.toHaveBeenCalled();
   });
 
@@ -236,7 +236,7 @@ describe("PSD custom draw node capture", () => {
     second.capture.mockReturnValue(source.canvas);
     await expect(exportPagePsd(stage, [first.element, second.element], 4096, 4096, 1, {
       includeBackground: false,
-    })).rejects.toThrow(/메모리/u);
+    })).rejects.toThrow("layerPixelsOverBudget");
     expect(first.capture).toHaveBeenCalledTimes(1);
     expect(second.capture).toHaveBeenCalledTimes(1);
     expect(source.getImageData).not.toHaveBeenCalled();

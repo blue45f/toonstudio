@@ -4414,14 +4414,14 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
 
     const left = Math.max(stageBox.x + 65, viewport.width * 0.33);
     const right = Math.min(stageBox.x + stageBox.width - 65, viewport.width * 0.70);
-    const top = Math.max(stageBox.y + 65, viewport.height * 0.16);
-    // 상단 상태 배너 높이와 무관하게 실제 캔버스와 화면의 교집합에서 같은 65px 여백을 둔다.
-    const bottom = Math.min(stageBox.y + stageBox.height, viewport.height) - 65;
+    const top = Math.max(stageBox.y + 24, viewport.height * 0.16);
+    // 상단 상태 배너·하단 상태 줄과 무관하게 실제 노출된 캔버스 영역 안에 도형 픽스처를 배치한다.
+    const bottom = Math.min(stageBox.y + stageBox.height - 65, viewport.height * 0.76);
     invariant(right - left >= 480, "visible canvas is too narrow for Smart Shape fixtures");
-    invariant(bottom - top >= 520, "visible canvas is too short for Smart Shape fixtures");
+    invariant(bottom - top >= 380, "visible canvas is too short for Smart Shape fixtures");
 
-    const triangleBox = { left: left + 20, top: top + 220, right: left + 320, bottom: top + 330 };
-    const polygonBox = { left: right - 130, top: top + 210, right: right - 20, bottom: top + 500 };
+    const triangleBox = { left: left + 20, top: top + 180, right: left + 320, bottom: top + 275 };
+    const polygonBox = { left: right - 130, top: top + 180, right: right - 20, bottom: top + 380 };
     const fixtures: Array<{
       expectedKind: SmartShapeExpectedKind;
       expectedPolygonSides?: number;
@@ -4432,25 +4432,25 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
     }> = [
       {
         expectedKind: "line",
-        box: { left: left + 20, top: top + 28, right: right - 20, bottom: top + 34 },
-        path: sampledLinePath({ x: left + 20, y: top + 30 }, { x: right - 20, y: top + 32 }),
+        box: { left: left + 20, top: top + 20, right: right - 20, bottom: top + 26 },
+        path: sampledLinePath({ x: left + 20, y: top + 22 }, { x: right - 20, y: top + 24 }),
         enforceExtent: false,
       },
       {
         expectedKind: "rect",
-        box: { left: left + 20, top: top + 70, right: left + 175, bottom: top + 165 },
+        box: { left: left + 20, top: top + 55, right: left + 175, bottom: top + 150 },
         path: sampledClosedPath([
-          { x: left + 20, y: top + 70 },
-          { x: left + 175, y: top + 70 },
-          { x: left + 175, y: top + 165 },
-          { x: left + 20, y: top + 165 },
+          { x: left + 20, y: top + 55 },
+          { x: left + 175, y: top + 55 },
+          { x: left + 175, y: top + 150 },
+          { x: left + 20, y: top + 150 },
         ]),
         enforceExtent: true,
       },
       {
         expectedKind: "ellipse",
-        box: { left: right - 195, top: top + 70, right: right - 20, bottom: top + 165 },
-        path: sampledEllipsePath({ left: right - 195, top: top + 70, right: right - 20, bottom: top + 165 }),
+        box: { left: right - 195, top: top + 55, right: right - 20, bottom: top + 150 },
+        path: sampledEllipsePath({ left: right - 195, top: top + 55, right: right - 20, bottom: top + 150 }),
         enforceExtent: true,
       },
       {
@@ -4465,12 +4465,12 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
       },
       {
         expectedKind: "rect",
-        box: { left: left + 20, top: top + 370, right: left + 175, bottom: top + 465 },
+        box: { left: left + 20, top: top + 295, right: left + 175, bottom: top + 380 },
         path: sampledClosedPath([
-          { x: left + 20, y: top + 370 },
-          { x: left + 175, y: top + 370 },
-          { x: left + 175, y: top + 465 },
-          { x: left + 20, y: top + 465 },
+          { x: left + 20, y: top + 295 },
+          { x: left + 175, y: top + 295 },
+          { x: left + 175, y: top + 380 },
+          { x: left + 20, y: top + 380 },
         ]),
         enforceExtent: true,
         penJitterHold: true,
