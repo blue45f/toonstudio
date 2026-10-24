@@ -37,6 +37,17 @@ export type DodgeBurnSettings = {
   range: DodgeBurnRange;
   /** sponge 모드 하위 동작 — dodge/burn 모드에선 무시된다. */
   sponge: DodgeBurnSpongeMode;
+  /**
+   * 톤 보호(Protect Tones) — 닷지로 명도를 높일 때 HSL 채도가 상대적으로 빠져 분필처럼 희뿌옇게
+   * 탈색되는 현상을 막기 위해 채도를 보상한다(무채색 s=0 은 그대로 보호). 기본 false.
+   */
+  protectTones?: boolean;
+  /**
+   * CSP 발광 닷지(Glow Dodge) / 앰비언트 번 색온도 시프트(0..1).
+   * 양수이면 유채색(s>0) 픽셀을 닷지할 때 따뜻한 황금빛(45°) 쪽으로, 번할 때 차가운 심연 청보라(235°)
+   * 쪽으로 색조를 미세하게 회전시키며 채도를 끌어올려 웹툰 하이라이트·역광 발광 효과를 낸다. 기본 0.
+   */
+  colorGlowShift?: number;
 };
 
 // 표시 px 기준 범위 — HEAL_CLONE_RADIUS_RANGE 와 동일 관례(자연 해상도 환산은 호출자 몫).
@@ -85,6 +96,9 @@ const DODGE_BURN_RANGE_CENTER: Record<DodgeBurnRange, number> = {
 };
 const DODGE_BURN_RANGE_SIGMA = 0.22;
 
+const GLOW_DODGE_WARM_HUE_DEG = 45;
+const AMBIENT_BURN_COOL_HUE_DEG = 235;
+
 function clamp01(v: number): number {
   if (!Number.isFinite(v)) return 0;
   return v < 0 ? 0 : v > 1 ? 1 : v;
@@ -92,6 +106,18 @@ function clamp01(v: number): number {
 
 function clampInt(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
+}
+
+/**
+ * 360도 색상환에서 최단 호(Shortest Arc)를 따라 hueDeg 를 targetHueDeg 쪽으로 t(0..1) 만큼 회전한다.
+ */
+export function shiftHueShortestArc(hueDeg: number, targetHueDeg: number, t: number): number {
+  const safeH = ((Number.isFinite(hueDeg) ? hueDeg : 0) % 360 + 360) % 360;
+  const safeTarget = ((Number.isFinite(targetHueDeg) ? targetHueDeg : 0) % 360 + 360) % 360;
+  const blend = clamp01(t);
+  if (blend <= 0) return safeH;
+  const delta = ((safeTarget - safeH + 540) % 360) - 180;
+  return (safeH + delta * blend + 360) % 360;
 }
 
 /**
@@ -122,7 +148,8 @@ export function dodgeBurnBrushFalloff(dist: number, radiusPx: number, hardness: 
  *   1) RGB→HSL(studio-selective-hsl 재사용).
  *   2) amount = (exposure/100) * DODGE_BURN_DAB_GAIN * 브러시 감쇠 * (닷지/번이면 톤 가중).
  *   3) 닷지: L을 1 쪽으로 amount 비율만큼 보간(l + (1-l)*amount) — 절대 오버슈트하지 않는다.
- *      번: L을 0 쪽으로(l - l*amount). 색조 h·채도 s는 그대로 → 색이 뒤틀리지 않는다.
+ *      번: L을 0 쪽으로(l - l*amount). 기본은 색조 h·채도 s 그대로, protectTones/colorGlowShift 설정 시
+ *      유채색의 분필화 방지 채도 보상 및 발광 색온도 시프트를 적용한다.
  *      스펀지: s ± amount(클램프 0..1). 무채색(s=0)은 건드리지 않는다 — h가 정의되지 않아
  *      채도를 올리면 존재하지 않던 빨강 색조가 발명되는 사고를 막는다(회색 보호,
  *      applySelectiveHsl 의 무채색 보호와 동일 정신).
@@ -145,6 +172,8 @@ export function applyDodgeBurnDab(
   const gain = Math.min(1, exposure / 100) * DODGE_BURN_DAB_GAIN;
   if (gain <= 0) return;
   const { mode, range, sponge, hardness } = settings;
+  const protectTones = Boolean(settings.protectTones);
+  const glowShift = clamp01(settings.colorGlowShift ?? 0);
 
   const minX = clampInt(Math.floor(center.x - R), 0, w - 1);
   const maxX = clampInt(Math.ceil(center.x + R), 0, w - 1);
@@ -164,6 +193,7 @@ export function applyDodgeBurnDab(
       if (data[idx + 3] === 0) continue; // 완전 투명 — 보이지 않는 색을 보정하지 않는다.
 
       const hsl = rgbToHsl(data[idx]!, data[idx + 1]!, data[idx + 2]!);
+      let nextH = hsl.h;
       let nextS = hsl.s;
       let nextL = hsl.l;
       if (mode === "sponge") {
@@ -175,9 +205,17 @@ export function applyDodgeBurnDab(
         const amount = gain * falloff * dodgeBurnTonalWeight(hsl.l, range);
         if (amount <= 0) continue;
         nextL = clamp01(mode === "dodge" ? hsl.l + (1 - hsl.l) * amount : hsl.l - hsl.l * amount);
-        if (nextL === hsl.l) continue;
+        if (hsl.s > 0 && (protectTones || glowShift > 0)) {
+          const chromaBoost = (protectTones ? 0.65 : 0) + glowShift * 0.85;
+          nextS = clamp01(hsl.s + (1 - hsl.s) * amount * Math.min(1.2, chromaBoost));
+          if (glowShift > 0) {
+            const targetHue = mode === "dodge" ? GLOW_DODGE_WARM_HUE_DEG : AMBIENT_BURN_COOL_HUE_DEG;
+            nextH = shiftHueShortestArc(hsl.h, targetHue, amount * glowShift * 0.75);
+          }
+        }
+        if (nextL === hsl.l && nextS === hsl.s && nextH === hsl.h) continue;
       }
-      const rgb = hslToRgb(hsl.h, nextS, nextL);
+      const rgb = hslToRgb(nextH, nextS, nextL);
       data[idx] = rgb.r;
       data[idx + 1] = rgb.g;
       data[idx + 2] = rgb.b;
