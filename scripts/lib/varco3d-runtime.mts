@@ -3,7 +3,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,21 +80,59 @@ function resolveMcpOAuthToken(
       mcpOAuthSource: "env:VARCO_3D_MCP_OAUTH_TOKEN",
     };
   }
+  const candidates: Array<{ token: string; source: string; expiresAt: number }> = [];
   const oauthPath = resolve(homeDir, ".config/varco3d/mcp-oauth.json");
   if (existsSync(oauthPath)) {
     try {
-      const parsed = JSON.parse(readFileSync(oauthPath, "utf8")) as { accessToken?: string };
+      const parsed = JSON.parse(readFileSync(oauthPath, "utf8")) as {
+        accessToken?: string;
+        expiresAt?: number;
+      };
       const token = parsed.accessToken?.trim();
       if (token) {
-        return {
-          mcpOAuthToken: token,
-          mcpOAuthConfigured: true,
-          mcpOAuthSource: "file:mcp-oauth.json",
-        };
+        candidates.push({
+          token,
+          source: "file:mcp-oauth.json",
+          expiresAt: typeof parsed.expiresAt === "number" ? parsed.expiresAt : 0,
+        });
       }
     } catch {
       // ignore malformed oauth file
     }
+  }
+  const mcpRemoteDir = resolve(homeDir, ".mcp-auth/mcp-remote-v1");
+  if (existsSync(mcpRemoteDir)) {
+    try {
+      for (const entryName of readdirSync(mcpRemoteDir)) {
+        if (!entryName.endsWith("_tokens.json")) continue;
+        const fullPath = resolve(mcpRemoteDir, entryName);
+        const parsed = JSON.parse(readFileSync(fullPath, "utf8")) as {
+          access_token?: string;
+          issuer?: string;
+          expires_at?: number;
+        };
+        if (parsed.issuer && !parsed.issuer.includes("varco.ai")) continue;
+        const token = parsed.access_token?.trim();
+        if (token) {
+          candidates.push({
+            token,
+            source: `file:.mcp-auth/mcp-remote-v1/${entryName}`,
+            expiresAt: typeof parsed.expires_at === "number" ? parsed.expires_at : 0,
+          });
+        }
+      }
+    } catch {
+      // ignore unreadable mcp-auth directory
+    }
+  }
+  if (candidates.length > 0) {
+    candidates.sort((a, b) => b.expiresAt - a.expiresAt);
+    const best = candidates[0]!;
+    return {
+      mcpOAuthToken: best.token,
+      mcpOAuthConfigured: true,
+      mcpOAuthSource: best.source,
+    };
   }
   return { mcpOAuthToken: "", mcpOAuthConfigured: false, mcpOAuthSource: "missing" };
 }

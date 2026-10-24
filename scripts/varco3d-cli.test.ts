@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -45,6 +45,17 @@ describe("varco3d-cli", () => {
       `# local infra\nVARCO_3D_API_KEY="${fakeSecret}"\n`,
       "utf8",
     );
+    const mcpRemoteDir = join(dir, ".mcp-auth/mcp-remote-v1");
+    mkdirSync(mcpRemoteDir, { recursive: true });
+    writeFileSync(
+      join(mcpRemoteDir, "4ea2eed254231d3a817f3a0dad7f4545_tokens.json"),
+      JSON.stringify({
+        access_token: "fresh_mcp_remote_token",
+        issuer: "https://3d.varco.ai",
+        expires_at: 1999999999999,
+      }),
+      "utf8",
+    );
 
     const cfg = loadVarco3dConfig({
       env: {},
@@ -54,6 +65,11 @@ describe("varco3d-cli", () => {
     });
     expect(cfg.apiKeyConfigured).toBe(true);
     expect(cfg.apiKeySource).toBe("file:.env.infrastructure.local:VARCO_3D_API_KEY");
+    expect(cfg.mcpOAuthConfigured).toBe(true);
+    expect(cfg.mcpOAuthToken).toBe("fresh_mcp_remote_token");
+    expect(cfg.mcpOAuthSource).toBe(
+      "file:.mcp-auth/mcp-remote-v1/4ea2eed254231d3a817f3a0dad7f4545_tokens.json",
+    );
 
     const fetchStub: typeof fetch = async () =>
       new Response(JSON.stringify({ status: "ok" }), { status: 200 });
