@@ -26,9 +26,26 @@ export type StabilizerMode = "off" | "smooth" | "string";
 
 export const STABILIZER_MODES = ["off", "smooth", "string"] as const;
 
+/**
+ * CSP "속도에 따른 보정 조절(Adjust by speed)" 모드:
+ * - "none": 기본 One-Euro / 고정 줄 길이
+ * - "lessAtFast": 빠른 획일수록 보정을 완화해 해칭·머리카락 날림선의 반응성을 높인다
+ * - "moreAtFast": 빠른 획일수록 보정을 강화해 긴 만화 컷선·배경 곡선의 손목 떨림을 억제한다
+ */
+export type StabilizerSpeedAdjustment = "none" | "lessAtFast" | "moreAtFast";
+
+export const STABILIZER_SPEED_ADJUSTMENTS = [
+  "none",
+  "lessAtFast",
+  "moreAtFast",
+] as const;
+
 /** 레벨 범위 (CSP 규격 0–100). */
 export const STABILIZER_LEVEL_MIN = 0;
 export const STABILIZER_LEVEL_MAX = 100;
+
+/** 장시간 탭 전환·포인터 정지 후 복귀 시 One-Euro dt 폭주 상한(초). */
+export const STABILIZER_MAX_STEP_DT_SEC = 0.1;
 
 export interface StabilizerSettings {
   /** 보정 모드. 기본 "smooth". */
@@ -40,6 +57,10 @@ export interface StabilizerSettings {
    * 입력 레이턴시를 속도 외삽으로 보상한다. 0이면 비활성. 권장 8–32ms.
    */
   readonly predictionMs: number;
+  /** CSP 속도에 따른 보정 조절 옵션(선택). */
+  readonly adjustBySpeed?: StabilizerSpeedAdjustment;
+  /** 스트로크 종료 시 남은 보정 지연 거리를 끝점까지 매끄럽게 따라잡을지 여부(선택). */
+  readonly catchUpOnEnd?: boolean;
 }
 
 /** ibisPaint 0–10 스케일을 CSP식 0–100으로 변환한다. 범위 밖은 클램핑. */
@@ -53,6 +74,8 @@ export interface StabilizerPreset {
   readonly level: number;
   readonly predictionMs: number;
   readonly label: string;
+  readonly adjustBySpeed?: StabilizerSpeedAdjustment;
+  readonly catchUpOnEnd?: boolean;
 }
 
 export const STABILIZER_PRESETS: Readonly<Record<string, StabilizerPreset>> =
@@ -80,7 +103,19 @@ export function normalizeStabilizerSettings(
   const predictionMs = Number.isFinite(rawPrediction)
     ? Math.min(120, Math.max(0, rawPrediction))
     : 0;
-  return { mode, level, predictionMs };
+  const base: StabilizerSettings = { mode, level, predictionMs };
+  const adjustBySpeed = STABILIZER_SPEED_ADJUSTMENTS.includes(
+    input?.adjustBySpeed as StabilizerSpeedAdjustment,
+  )
+    ? (input!.adjustBySpeed as StabilizerSpeedAdjustment)
+    : undefined;
+  const catchUpOnEnd =
+    typeof input?.catchUpOnEnd === "boolean" ? input.catchUpOnEnd : undefined;
+  return {
+    ...base,
+    ...(adjustBySpeed !== undefined ? { adjustBySpeed } : {}),
+    ...(catchUpOnEnd !== undefined ? { catchUpOnEnd } : {}),
+  };
 }
 
 /** 레벨 0–100 → One-Euro minCutoff(Hz). 강할수록 낮은 컷오프 = 더 부드러움. */
@@ -110,8 +145,9 @@ function createOneEuroState(x: number, t: number): OneEuroState {
 }
 
 /**
- * One-Euro 필터 1축 업데이트 (G. Casiez et al.).
- * 빠르게 움직일 때는 덜 걸러내고, 천천히 움직일 때는 강하게 스무딩한다.
+ * One-Euro 필터 1축 업데이트 (G. Casiez et al.) + CSP 속도 적응 보정.
+ * 빠르게 움직일 때는 덜 걸러내고(또는 moreAtFast 시 더 강하게 걸러내고),
+ * 장시간 포인터 정지 후 복귀 시에도 dt 상한(STABILIZER_MAX_STEP_DT_SEC)으로 안정성을 보장한다.
  */
 function oneEuroUpdate(
   state: OneEuroState,
@@ -119,13 +155,26 @@ function oneEuroUpdate(
   t: number,
   minCutoff: number,
   beta: number,
+  adjustBySpeed: StabilizerSpeedAdjustment = "none",
 ): number {
-  const dt = Math.max(1 / 240, (t - state.lastT) / 1000);
+  const rawDt = (t - state.lastT) / 1000;
+  const dt = Math.min(
+    STABILIZER_MAX_STEP_DT_SEC,
+    Math.max(1 / 240, Number.isFinite(rawDt) ? rawDt : 1 / 60),
+  );
   const dcutoff = 1.0;
   const dx = (x - state.xHat) / dt;
   const aD = 1 / (1 + 1 / (2 * Math.PI * dcutoff * dt));
   const dxHat = aD * dx + (1 - aD) * state.dxHat;
-  const cutoff = minCutoff + beta * Math.abs(dxHat);
+  const speed = Math.abs(dxHat);
+  let cutoff: number;
+  if (adjustBySpeed === "lessAtFast") {
+    cutoff = minCutoff + beta * 2.5 * speed;
+  } else if (adjustBySpeed === "moreAtFast") {
+    cutoff = Math.max(0.08, minCutoff / (1 + 0.0015 * speed));
+  } else {
+    cutoff = minCutoff + beta * speed;
+  }
   const a = 1 / (1 + 1 / (2 * Math.PI * cutoff * dt));
   const xHat = a * x + (1 - a) * state.xHat;
   state.xHat = xHat;
@@ -146,6 +195,8 @@ export class StrokeStabilizer {
   private anchorY = 0;
   private hasAnchor = false;
   private lastT = 0;
+  private lastRawX = 0;
+  private lastRawY = 0;
   private lastOutX = 0;
   private lastOutY = 0;
   private hasOut = false;
@@ -173,12 +224,29 @@ export class StrokeStabilizer {
   /**
    * 새 샘플을 보정해 반환한다.
    * - "off" 또는 level 0 → 입력 그대로 반환
-   * - "smooth" → One-Euro 적응형 스무딩 (+ 선택적 스트로크 예측)
+   * - "smooth" → One-Euro 적응형 스무딩 (+ 선택적 스트로크 예측·속도별 보정)
    * - "string" → 끈 방식 (앵커가 줄 길이 안에서 목표를 따라옴)
    */
   push(sample: StabilizerSample): { x: number; y: number } {
-    const { mode, level, predictionMs } = this.settings;
+    if (
+      !Number.isFinite(sample.x) ||
+      !Number.isFinite(sample.y) ||
+      !Number.isFinite(sample.t)
+    ) {
+      return this.hasOut
+        ? { x: this.lastOutX, y: this.lastOutY }
+        : { x: 0, y: 0 };
+    }
+    const { mode, level, predictionMs, adjustBySpeed = "none" } = this.settings;
+    const prevRawX = this.lastRawX;
+    const prevRawY = this.lastRawY;
+    const prevT = this.lastT;
+    const hadOut = this.hasOut;
+    this.lastRawX = sample.x;
+    this.lastRawY = sample.y;
+
     if (mode === "off" || level <= 0) {
+      this.lastT = sample.t;
       this.lastOutX = sample.x;
       this.lastOutY = sample.y;
       this.hasOut = true;
@@ -189,7 +257,19 @@ export class StrokeStabilizer {
     let outY: number;
 
     if (mode === "string") {
-      const leash = levelToLeashPx(level);
+      let leash = levelToLeashPx(level);
+      if (hadOut && adjustBySpeed !== "none") {
+        const dtSec = Math.min(
+          STABILIZER_MAX_STEP_DT_SEC,
+          Math.max(1 / 240, (sample.t - prevT) / 1000),
+        );
+        const rawSpeed = Math.hypot(sample.x - prevRawX, sample.y - prevRawY) / dtSec;
+        const speedFactor =
+          adjustBySpeed === "lessAtFast"
+            ? Math.max(0.35, 1 - rawSpeed / 2400)
+            : Math.min(1.5, 1 + rawSpeed / 2400);
+        leash *= speedFactor;
+      }
       if (!this.hasAnchor) {
         this.anchorX = sample.x;
         this.anchorY = sample.y;
@@ -214,14 +294,14 @@ export class StrokeStabilizer {
         outX = sample.x;
         outY = sample.y;
       } else {
-        outX = oneEuroUpdate(this.euroX, sample.x, sample.t, minCutoff, beta);
-        outY = oneEuroUpdate(this.euroY, sample.y, sample.t, minCutoff, beta);
+        outX = oneEuroUpdate(this.euroX, sample.x, sample.t, minCutoff, beta, adjustBySpeed);
+        outY = oneEuroUpdate(this.euroY, sample.y, sample.t, minCutoff, beta, adjustBySpeed);
       }
     }
 
     // 스트로크 예측: 속도 외삽으로 입력 레이턴시를 보상한다.
-    if (predictionMs > 0 && this.hasOut && mode === "smooth") {
-      const dt = Math.max(1, sample.t - this.lastT);
+    if (predictionMs > 0 && hadOut && mode === "smooth") {
+      const dt = Math.min(100, Math.max(1, sample.t - prevT));
       const vx = (outX - this.lastOutX) / dt;
       const vy = (outY - this.lastOutY) / dt;
       // 과도한 돌출 방지: 예측 거리를 줄 길이의 절반으로 제한
@@ -236,4 +316,42 @@ export class StrokeStabilizer {
     this.hasOut = true;
     return { x: outX, y: outY };
   }
+
+  /**
+   * Lazy Nezumi Pro / CSP 스타일 스트로크 종료 따라잡기(Catch-up Tail).
+   * 포인터를 뗄 때 보정 지연(끈 길이 또는 저역통과 필터 지연)으로 인해 마지막 펜 위치까지
+   * 미처 도달하지 못한 잔여 구간을 ease-out 보간 점열로 매끄럽게 마무리한다.
+   */
+  finishStroke(
+    target?: Readonly<{ x: number; y: number }>,
+    maxSteps = 6,
+  ): Array<{ x: number; y: number }> {
+    if (!this.hasOut || this.settings.mode === "off" || this.settings.level <= 0) {
+      return [];
+    }
+    const endX = target && Number.isFinite(target.x) ? target.x : this.lastRawX;
+    const endY = target && Number.isFinite(target.y) ? target.y : this.lastRawY;
+    const dx = endX - this.lastOutX;
+    const dy = endY - this.lastOutY;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 0.5) return [];
+    const steps = Math.max(1, Math.min(16, Math.floor(maxSteps), Math.ceil(dist / 4)));
+    const tail: Array<{ x: number; y: number }> = [];
+    const startX = this.lastOutX;
+    const startY = this.lastOutY;
+    for (let i = 1; i <= steps; i += 1) {
+      const u = i / steps;
+      const eased = 1 - (1 - u) * (1 - u);
+      tail.push({
+        x: startX + dx * eased,
+        y: startY + dy * eased,
+      });
+    }
+    this.lastOutX = endX;
+    this.lastOutY = endY;
+    this.anchorX = endX;
+    this.anchorY = endY;
+    return tail;
+  }
 }
+

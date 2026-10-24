@@ -148,4 +148,53 @@ describe("StrokeStabilizer", () => {
     const first = s.push({ x: 100, y: 100, t: 1000 });
     expect(first).toEqual({ x: 100, y: 100 });
   });
+
+  it("CSP adjustBySpeed: lessAtFast는 빠른 획에서 보정 지연을 줄이고 moreAtFast는 스무딩을 강화한다", () => {
+    const fastTremor: StabilizerSample[] = Array.from({ length: 40 }, (_, i) => ({
+      x: i * 24,
+      y: 4 * Math.sin((2 * Math.PI * i) / 5),
+      t: i * 8,
+    }));
+    const lessAtFast = new StrokeStabilizer({
+      mode: "smooth",
+      level: 75,
+      adjustBySpeed: "lessAtFast",
+    });
+    const moreAtFast = new StrokeStabilizer({
+      mode: "smooth",
+      level: 75,
+      adjustBySpeed: "moreAtFast",
+    });
+    const outLess = fastTremor.map((p) => lessAtFast.push(p));
+    const outMore = fastTremor.map((p) => moreAtFast.push(p));
+    // lessAtFast는 끝점 추적성이 더 높아 마지막 x에 더 가깝고, moreAtFast는 y 진동 RMS가 더 낮다
+    expect(outLess[outLess.length - 1]!.x).toBeGreaterThan(
+      outMore[outMore.length - 1]!.x,
+    );
+    expect(rmsDeviation(outMore.slice(10))).toBeLessThan(
+      rmsDeviation(outLess.slice(10)),
+    );
+  });
+
+  it("finishStroke: 끈 모드나 강한 보정 종료 시 남은 지연 거리를 목표 끝점까지 매끄럽게 따라잡는다", () => {
+    const s = new StrokeStabilizer({ mode: "string", level: 60 });
+    s.push({ x: 0, y: 0, t: 0 });
+    const mid = s.push({ x: 120, y: 0, t: 16 });
+    expect(mid.x).toBeLessThan(120);
+    const tail = s.finishStroke({ x: 120, y: 0 }, 6);
+    expect(tail.length).toBeGreaterThan(0);
+    expect(tail[tail.length - 1]!.x).toBeCloseTo(120, 5);
+    expect(s.finishStroke({ x: 120, y: 0 })).toHaveLength(0);
+  });
+
+  it("장시간 탭 정지(10분 dt 점프) 및 NaN/Infinity 오염 샘플에도 상태가 깨지지 않는다", () => {
+    const s = new StrokeStabilizer({ mode: "smooth", level: 80 });
+    s.push({ x: 10, y: 10, t: 0 });
+    const afterNaN = s.push({ x: Number.NaN, y: Number.POSITIVE_INFINITY, t: 16 });
+    expect(afterNaN).toEqual({ x: 10, y: 10 });
+    const afterLongPause = s.push({ x: 50, y: 30, t: 600_000 });
+    expect(Number.isFinite(afterLongPause.x)).toBe(true);
+    expect(Number.isFinite(afterLongPause.y)).toBe(true);
+  });
 });
+

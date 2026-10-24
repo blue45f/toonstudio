@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ringsToCubicBezierSvgPathData,
   ringsToSvgPathData,
   vectorizeFreehandStroke,
   vectorizePreviewSampleStroke,
@@ -103,6 +104,33 @@ describe("vectorizeFreehandStroke", () => {
     const result = vectorizeFreehandStroke(many, { maxPoints: 10 });
     expect(result.pointCount).toBeGreaterThan(0);
   });
+
+  it("curveMode='cubic' 지정 시 Catmull-Rom 3차 베지어(C) 외곽선을 생성하고 입필/발필 테이퍼 및 NaN 필터링을 지원한다", () => {
+    const noisy = [
+      { x: Number.NaN, y: 50, pressure: 0.5 },
+      ...straightLine(12),
+      { x: 150, y: Number.POSITIVE_INFINITY, pressure: 0.5 },
+    ];
+    const cubic = vectorizeFreehandStroke(noisy, {
+      size: 18,
+      taperStart: 24,
+      taperEnd: 24,
+      curveMode: "cubic",
+    });
+    expect(cubic.pointCount).toBeGreaterThan(0);
+    expect(cubic.pathData).toContain("C");
+    expect(cubic.pathData).not.toContain("NaN");
+    expect(
+      ringsToCubicBezierSvgPathData([
+        [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+          [0, 10],
+        ],
+      ]),
+    ).toContain("C");
+  });
 });
 
 describe("vectorizePreviewSampleStroke", () => {
@@ -113,3 +141,4 @@ describe("vectorizePreviewSampleStroke", () => {
     expect(result.pathData).toContain("Z");
   });
 });
+
