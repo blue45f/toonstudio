@@ -197,4 +197,29 @@ describe("StudioDrawingAppBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "모바일 브러시 크기 키우기" }));
     expect(session.setStrokeWidth).toHaveBeenCalledWith(14);
   });
+
+  it("마우스 휠 스크롤 및 상하 방향키로 브러시 크기·불투명도·보정을 즉시 미세 조절하고 만다라 대칭을 지원한다", () => {
+    const session = createMockSession({
+      strokeWidth: 16,
+      brushOpacity: 0.8,
+      stabilizer: 20,
+      symmetryType: "radial",
+    });
+    const { container } = renderAppBar(session);
+
+    fireEvent.keyDown(screen.getByTestId("drawing-appbar-size-cycle"), { key: "ArrowUp" });
+    expect(session.setStrokeWidth).toHaveBeenCalledWith(20);
+
+    fireEvent.keyDown(screen.getByTestId("drawing-appbar-opacity-cycle"), { key: "ArrowDown" });
+    expect(session.setBrushOpacity).toHaveBeenCalledWith(0.75);
+
+    const stabilizerGroup = container.querySelector('[data-studio-quick-stabilizer-control="true"]');
+    if (stabilizerGroup) {
+      fireEvent.wheel(stabilizerGroup, { deltaY: -100 });
+      expect(session.setStabilizer).toHaveBeenCalledWith(25);
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "대칭 그리기 모드 전환" }));
+    expect(session.changeStudioSymmetryType).toHaveBeenCalledWith("mandala");
+  });
 });

@@ -5,6 +5,7 @@ import {
   dodgeBurnBrushFalloff,
   dodgeBurnStroke,
   dodgeBurnTonalWeight,
+  shiftHueShortestArc,
   type DodgeBurnPixelPoint,
   type DodgeBurnSettings,
 } from "./studio-dodge-burn";
@@ -318,5 +319,54 @@ describe("dodgeBurnStroke", () => {
       expect(data[i]!).toBeGreaterThanOrEqual(0);
       expect(data[i]!).toBeLessThanOrEqual(255);
     }
+  });
+
+  it("shiftHueShortestArc interpolates along the shortest circular path across 0/360", () => {
+    expect(shiftHueShortestArc(350, 20, 0.5)).toBeCloseTo(5, 4);
+    expect(shiftHueShortestArc(20, 350, 0.5)).toBeCloseTo(5, 4);
+    expect(shiftHueShortestArc(100, 160, 0.5)).toBeCloseTo(130, 4);
+  });
+
+  it("protectTones boosts saturation on colored dodge/burn while protecting pure gray", () => {
+    const SKIN_CORAL: [number, number, number, number] = [210, 125, 105, 255];
+    const standard = dabOnFlat(SKIN_CORAL, settings({ mode: "dodge", protectTones: false }));
+    const protectedTone = dabOnFlat(SKIN_CORAL, settings({ mode: "dodge", protectTones: true }));
+
+    const sStd = rgbToHsl(standard.center[0], standard.center[1], standard.center[2]).s;
+    const sProt = rgbToHsl(protectedTone.center[0], protectedTone.center[1], protectedTone.center[2]).s;
+    expect(sProt).toBeGreaterThan(sStd);
+
+    // Pure gray must stay strictly neutral even with protectTones and colorGlowShift enabled
+    const GRAY: [number, number, number, number] = [128, 128, 128, 255];
+    const grayDab = dabOnFlat(
+      GRAY,
+      settings({ mode: "dodge", protectTones: true, colorGlowShift: 1 }),
+    );
+    expect(grayDab.center[0]).toBe(grayDab.center[1]);
+    expect(grayDab.center[1]).toBe(grayDab.center[2]);
+  });
+
+  it("colorGlowShift rotates dodge highlights toward warm golden light (45°) and burn shadows toward cool indigo (235°)", () => {
+    const CRIMSON: [number, number, number, number] = [200, 50, 60, 255]; // hue ~ 356°
+    const beforeH = rgbToHsl(CRIMSON[0], CRIMSON[1], CRIMSON[2]).h;
+
+    const glowDodge = dabOnFlat(
+      CRIMSON,
+      settings({ mode: "dodge", exposure: 100, colorGlowShift: 1 }),
+    );
+    const afterDodgeH = rgbToHsl(glowDodge.center[0], glowDodge.center[1], glowDodge.center[2]).h;
+    // Distance to 45° should decrease after glow dodge
+    const distTo45 = (h: number) => Math.abs(((45 - h + 540) % 360) - 180);
+    expect(distTo45(afterDodgeH)).toBeLessThan(distTo45(beforeH));
+
+    const TEAL: [number, number, number, number] = [40, 160, 150, 255]; // hue ~ 175°
+    const beforeTealH = rgbToHsl(TEAL[0], TEAL[1], TEAL[2]).h;
+    const coolBurn = dabOnFlat(
+      TEAL,
+      settings({ mode: "burn", exposure: 100, colorGlowShift: 1 }),
+    );
+    const afterBurnH = rgbToHsl(coolBurn.center[0], coolBurn.center[1], coolBurn.center[2]).h;
+    const distTo235 = (h: number) => Math.abs(((235 - h + 540) % 360) - 180);
+    expect(distTo235(afterBurnH)).toBeLessThan(distTo235(beforeTealH));
   });
 });

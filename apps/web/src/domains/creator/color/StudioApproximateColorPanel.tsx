@@ -8,7 +8,7 @@
  */
 
 import { SlidersHorizontal, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   generateApproximateColorGrid,
@@ -27,6 +27,7 @@ const MODES: readonly { readonly id: ApproximateColorMode; readonly label: strin
   { id: "sat-val", label: "채도·명도 (S×V)" },
   { id: "hue-val", label: "색조·명도 (H×V)" },
   { id: "hue-sat", label: "색조·채도 (H×S)" },
+  { id: "temp-val", label: "색온도·명도 (T×V)" },
   { id: "val-only", label: "명도 (V)" },
 ];
 
@@ -41,50 +42,121 @@ export function StudioApproximateColorPanel({
   const [steps, setSteps] = useState<5 | 7>(5);
   const [deltaPercent, setDeltaPercent] = useState<number>(6);
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
+  const centerIndex = Math.floor(steps / 2);
+  const [focusedCoords, setFocusedCoords] = useState<{ readonly row: number; readonly col: number }>({
+    row: centerIndex,
+    col: centerIndex,
+  });
+  const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   const grid = useMemo(
     () => generateApproximateColorGrid(activeColor, { mode, steps, deltaPercent }),
     [activeColor, mode, steps, deltaPercent],
   );
 
-  const centerIndex = Math.floor(steps / 2);
+  const safeFocusedRow = Math.min(focusedCoords.row, steps - 1);
+  const safeFocusedCol = Math.min(focusedCoords.col, steps - 1);
+
+  const focusCellAt = (nextRow: number, nextCol: number) => {
+    setFocusedCoords({ row: nextRow, col: nextCol });
+    const targetHex = grid[nextRow]?.[nextCol];
+    if (targetHex) {
+      setHoveredHex(targetHex);
+    }
+    const btn = cellRefs.current.get(`${nextRow}-${nextCol}`);
+    btn?.focus();
+  };
+
+  const handleCellKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    rowIndex: number,
+    colIndex: number,
+  ) => {
+    let nextRow = rowIndex;
+    let nextCol = colIndex;
+
+    switch (event.key) {
+      case "ArrowRight":
+        nextCol = colIndex + 1;
+        break;
+      case "ArrowLeft":
+        nextCol = colIndex - 1;
+        break;
+      case "ArrowDown":
+        nextRow = rowIndex + 1;
+        break;
+      case "ArrowUp":
+        nextRow = rowIndex - 1;
+        break;
+      case "Home":
+        nextCol = 0;
+        break;
+      case "End":
+        nextCol = steps - 1;
+        break;
+      default:
+        return;
+    }
+
+    if (
+      nextRow < 0 ||
+      nextRow >= steps ||
+      nextCol < 0 ||
+      nextCol >= steps ||
+      (nextRow === rowIndex && nextCol === colIndex)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    focusCellAt(nextRow, nextCol);
+  };
 
   return (
     <div
+      data-studio-approximate-color-panel="true"
+      data-approximate-mode={mode}
       className={cn(
-        "flex flex-col rounded-xl border border-line bg-panel/60 p-3 select-none text-slate-200 text-xs shadow-sm",
+        "flex flex-col rounded-xl border border-line bg-panel/90 p-3 select-none text-fg text-xs shadow-sm",
         className,
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 pb-2 border-b border-line/60">
         <div className="flex items-center gap-1.5 min-w-0">
-          <SlidersHorizontal size={14} className="text-emerald-400 shrink-0" aria-hidden />
-          <span className="font-semibold truncate">근사색 (Approximate Color)</span>
-          <span className="px-1 py-0.2 text-[10px] rounded font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+          <SlidersHorizontal size={14} className="text-good shrink-0" aria-hidden />
+          <span className="font-semibold truncate text-fg">근사색 (Approximate Color)</span>
+          <span className="px-1 py-0.2 text-[10px] rounded font-semibold bg-good/15 text-good border border-good/30 shrink-0">
             CSP
           </span>
         </div>
 
         {/* Steps Selector */}
         <div className="flex items-center gap-1 shrink-0">
-          {([5, 7] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSteps(s)}
-              className={cn(
-                "px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors",
-                steps === s
-                  ? "bg-emerald-600 text-white font-semibold"
-                  : "bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700",
-              )}
-              title={`${s}x${s} 그리드`}
-              aria-label={`${s}x${s} 그리드`}
-            >
-              {s}x{s}
-            </button>
-          ))}
+          {([5, 7] as const).map((s) => {
+            const nextCenter = Math.floor(s / 2);
+            return (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={steps === s}
+                onClick={() => {
+                  setSteps(s);
+                  setFocusedCoords({ row: nextCenter, col: nextCenter });
+                }}
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors border",
+                  steps === s
+                    ? "bg-good text-white border-good font-semibold"
+                    : "bg-card text-fg-2 border-line hover:text-fg hover:bg-raised",
+                )}
+                title={`${s}x${s} 그리드`}
+                aria-label={`${s}x${s} 그리드`}
+              >
+                {s}x{s}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -95,12 +167,13 @@ export function StudioApproximateColorPanel({
             <button
               key={m.id}
               type="button"
+              aria-pressed={mode === m.id}
               onClick={() => setMode(m.id)}
               className={cn(
                 "px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap transition-colors border",
                 mode === m.id
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-medium"
-                  : "bg-slate-800/80 hover:bg-slate-700 border-slate-700/60 text-slate-300",
+                  ? "bg-good/15 text-good border-good/40 font-semibold"
+                  : "bg-card hover:bg-raised border-line text-fg-2 hover:text-fg",
               )}
             >
               {m.label}
@@ -110,17 +183,18 @@ export function StudioApproximateColorPanel({
 
         {/* Delta Step Selector */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <span className="text-[10px] text-slate-500 mr-0.5">±</span>
+          <span className="text-[10px] text-fg-3 mr-0.5">±</span>
           {DELTAS.map((d) => (
             <button
               key={d}
               type="button"
+              aria-pressed={deltaPercent === d}
               onClick={() => setDeltaPercent(d)}
               className={cn(
                 "px-1 py-0.2 rounded text-[10px] font-mono transition-colors",
                 deltaPercent === d
-                  ? "bg-emerald-600 text-white font-medium"
-                  : "text-slate-400 hover:text-white",
+                  ? "bg-good text-white font-semibold"
+                  : "text-fg-2 hover:text-fg",
               )}
             >
               {d}%
@@ -129,9 +203,11 @@ export function StudioApproximateColorPanel({
         </div>
       </div>
 
-      {/* NxN Approximate Color Grid */}
+      {/* NxN Approximate Color Grid with Roving Tabindex Spatial Navigation */}
       <div
-        className="grid gap-0.5 p-1 rounded-lg bg-slate-950 border border-line/50"
+        data-studio-approximate-grid="true"
+        aria-label="근사색 2D 그리드 (방향키로 이동)"
+        className="grid gap-0.5 p-1 rounded-lg bg-card border border-line/70"
         style={{
           gridTemplateColumns: `repeat(${steps}, minmax(0, 1fr))`,
         }}
@@ -139,19 +215,39 @@ export function StudioApproximateColorPanel({
         {grid.map((row, rowIndex) =>
           row.map((cellHex, colIndex) => {
             const isCenter = rowIndex === centerIndex && colIndex === centerIndex;
+            const isFocusedCell = rowIndex === safeFocusedRow && colIndex === safeFocusedCol;
+            const cellKey = `${rowIndex}-${colIndex}`;
             return (
               <button
-                key={`${rowIndex}-${colIndex}`}
+                key={cellKey}
+                ref={(el) => {
+                  if (el) {
+                    cellRefs.current.set(cellKey, el);
+                  } else {
+                    cellRefs.current.delete(cellKey);
+                  }
+                }}
                 type="button"
-                onClick={() => onSelectColor(cellHex)}
+                tabIndex={isFocusedCell ? 0 : -1}
+                data-grid-row={rowIndex}
+                data-grid-col={colIndex}
+                onClick={() => {
+                  setFocusedCoords({ row: rowIndex, col: colIndex });
+                  onSelectColor(cellHex);
+                }}
+                onFocus={() => {
+                  setFocusedCoords({ row: rowIndex, col: colIndex });
+                  setHoveredHex(cellHex);
+                }}
+                onKeyDown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
                 onPointerEnter={() => setHoveredHex(cellHex)}
                 onPointerLeave={() => setHoveredHex(null)}
                 aria-label={`${cellHex} 색상 선택`}
                 title={`${cellHex}${isCenter ? " (현재 기준색)" : ""}`}
                 className={cn(
-                  "aspect-square rounded-sm transition-transform hover:scale-110 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+                  "aspect-square rounded-sm transition-transform hover:scale-110 relative [forced-color-adjust:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-good focus-visible:z-20",
                   isCenter
-                    ? "ring-2 ring-emerald-400 z-10 shadow-sm"
+                    ? "ring-2 ring-good z-10 shadow-sm"
                     : "hover:z-10",
                 )}
                 style={{ background: cellHex }}
@@ -166,13 +262,13 @@ export function StudioApproximateColorPanel({
       </div>
 
       {/* Hover Info Readout */}
-      <div className="flex items-center justify-between mt-2 pt-1 border-t border-line/40 text-[10px] text-slate-400 font-mono">
+      <div className="flex items-center justify-between mt-2 pt-1 border-t border-line/50 text-[10px] text-fg-2 font-mono">
         <div className="flex items-center gap-1">
-          <Sparkles size={11} className="text-emerald-400 shrink-0" aria-hidden />
+          <Sparkles size={11} className="text-good shrink-0" aria-hidden />
           <span>선택 색상: {hoveredHex ?? activeColor}</span>
         </div>
         <span
-          className="size-3 rounded border border-white/30"
+          className="size-3 rounded border border-line [forced-color-adjust:none]"
           style={{ background: hoveredHex ?? activeColor }}
         />
       </div>

@@ -76,13 +76,53 @@ export function resampleSmudgePath(points: readonly SmudgePixelPoint[], step: nu
   return out;
 }
 
+export interface SmudgeFingerPaintColor {
+  readonly r: number;
+  readonly g: number;
+  readonly b: number;
+  readonly a?: number;
+}
+
+export interface SmudgeStrokeOptions {
+  /**
+   * 브러시 경계 경도(0..1). 생략 시 기존 2차 감쇠(t^2)를 그대로 사용하며,
+   * 지정 시 중심 코어(radius * hardness * 0.8)는 가중치 1을 유지하고 외곽으로 부드럽게 감쇠한다.
+   */
+  readonly hardness?: number;
+  /**
+   * CSP / Procreate / Krita "손가락 끝 색 섞기(Finger Painting)" 초기 전경 안료 색.
+   * 지정되면 스트로크 시작 시점에 이 색이 손끝에 묻어 나와 기존 캔버스 픽셀과 함께 블렌딩된다.
+   */
+  readonly fingerPaintColor?: SmudgeFingerPaintColor;
+  /** 손가락 끝 초기 전경색 주입 강도(0..1). 기본 0(비활성). */
+  readonly fingerPaintAmount?: number;
+  /** 도장(dab) 1개당 손가락 끝 전경색 감쇠율(0..1). 기본 0.18(획이 진행될수록 순수 스머지로 자연 감쇠). */
+  readonly fingerPaintDecay?: number;
+}
+
+function clamp01(v: number): number {
+  if (!Number.isFinite(v)) return 0;
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+function clampByte(v: number): number {
+  if (!Number.isFinite(v)) return 0;
+  return v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+}
+
 /**
  * 브러시 중심에서 (dx,dy) 만큼 떨어진 픽셀의 블렌드 가중치(0..1) — 부드러운(2차) 원형 감쇠.
  * 하드 서클(스탬프)이 아니라 소프트 에지를 쓰는 이유: "손가락으로 문지른 듯" 이라는 목표에는
  * 경계가 뚝 끊기는 스탬프보다, 페더 선택·글로우 등 이 앱이 이미 쓰는 "부드러운 경계" 미학이
- * 더 어울린다. radiusPx 이상이면 0. 순수.
+ * 더 어울린다. hardness 가 주어지면 중심 코어 반경(r * hardness * 0.8)까지는 1을 유지한다.
+ * radiusPx 이상이면 0. 순수.
  */
-export function smudgeBrushWeight(dx: number, dy: number, radiusPx: number): number {
+export function smudgeBrushWeight(
+  dx: number,
+  dy: number,
+  radiusPx: number,
+  hardness?: number,
+): number {
   const r = Number.isFinite(radiusPx) && radiusPx > 0 ? radiusPx : 0;
   if (r <= 0) return 0;
   // Math.hypot 는 정확하지만 dab 내 픽셀마다 호출되는 이 루프에서는 측정 가능한 병목이다.
@@ -90,8 +130,15 @@ export function smudgeBrushWeight(dx: number, dy: number, radiusPx: number): num
   const dist2 = dx * dx + dy * dy;
   if (dist2 >= r * r) return 0;
   const dist = Math.sqrt(dist2);
-  const t = 1 - dist / r; // 0..1, 1=중심
-  return t * t;
+  if (hardness === undefined) {
+    const t = 1 - dist / r; // 0..1, 1=중심
+    return t * t;
+  }
+  const coreRatio = clamp01(hardness) * 0.8;
+  const normDist = dist / r;
+  if (normDist <= coreRatio) return 1;
+  const u = 1 - (normDist - coreRatio) / Math.max(1e-6, 1 - coreRatio);
+  return u * u;
 }
 
 /**
@@ -118,6 +165,7 @@ export function smudgeStroke(
   points: readonly SmudgePixelPoint[],
   radiusPx: number,
   strength: number,
+  options?: SmudgeStrokeOptions,
 ): Uint8ClampedArray {
   if (points.length < 2 || strength <= 0) return data;
   // sanitizePositive(studio-node-edit.ts) 와 동일한 정신 — 비양수/NaN 반경은 최소 1px 로.
@@ -129,6 +177,15 @@ export function smudgeStroke(
   // 여기서 다시 slice 하면 스트로크마다 최대 2000점 짜리 배열을 한 번 더 복사하는 셈이다.
   const resampled = resampleSmudgePath(points, step);
   if (resampled.length < 2) return data; // 리샘플 후 점이 하나뿐(정지 탭 등)이면 문지를 방향이 없다.
+
+  const hardness = options?.hardness;
+  const fingerColor = options?.fingerPaintColor;
+  const fingerAmount0 = fingerColor ? clamp01(options?.fingerPaintAmount ?? 0) : 0;
+  const fingerDecay = clamp01(options?.fingerPaintDecay ?? 0.18);
+  const fingerR = fingerColor ? clampByte(fingerColor.r) : 0;
+  const fingerG = fingerColor ? clampByte(fingerColor.g) : 0;
+  const fingerB = fingerColor ? clampByte(fingerColor.b) : 0;
+  const fingerA = fingerColor ? clampByte(fingerColor.a ?? 255) : 255;
 
   const rCeil = Math.ceil(safeRadius);
   // 긴 획에서 dab마다 수천 개의 임시 TypedArray를 만들면 Worker에서도 GC 정지가 누적된다.
@@ -157,6 +214,8 @@ export function smudgeStroke(
 
     const boxW = maxX - minX + 1;
     const boxH = maxY - minY + 1;
+    const stepFingerMix =
+      fingerAmount0 > 0 ? fingerAmount0 * Math.pow(1 - fingerDecay, i - 1) : 0;
 
     // 1) 이번 스텝이 읽을 소스 영역을 먼저 통째로 스냅샷(쓰기 전에!) — 스캔 방향 줄무늬 방지.
     for (let sy = 0; sy < boxH; sy++) {
@@ -167,10 +226,30 @@ export function smudgeStroke(
         const srcY = clampInt(Math.round(destY + offY), 0, h - 1);
         const srcIdx = (srcY * w + srcX) * 4;
         const outIdx = (sy * boxW + sx) * 4;
-        snapshot[outIdx] = data[srcIdx]!;
-        snapshot[outIdx + 1] = data[srcIdx + 1]!;
-        snapshot[outIdx + 2] = data[srcIdx + 2]!;
-        snapshot[outIdx + 3] = data[srcIdx + 3]!;
+        if (stepFingerMix <= 1e-5) {
+          snapshot[outIdx] = data[srcIdx]!;
+          snapshot[outIdx + 1] = data[srcIdx + 1]!;
+          snapshot[outIdx + 2] = data[srcIdx + 2]!;
+          snapshot[outIdx + 3] = data[srcIdx + 3]!;
+        } else {
+          const baseA = data[srcIdx + 3]! / 255;
+          const fgA = fingerA / 255;
+          const mixedA = baseA + (fgA - baseA) * stepFingerMix;
+          if (mixedA > SMUDGE_PREMULTIPLY_EPSILON) {
+            const inv = 1 / mixedA;
+            snapshot[outIdx] =
+              (data[srcIdx]! * baseA * (1 - stepFingerMix) + fingerR * fgA * stepFingerMix) * inv;
+            snapshot[outIdx + 1] =
+              (data[srcIdx + 1]! * baseA * (1 - stepFingerMix) + fingerG * fgA * stepFingerMix) * inv;
+            snapshot[outIdx + 2] =
+              (data[srcIdx + 2]! * baseA * (1 - stepFingerMix) + fingerB * fgA * stepFingerMix) * inv;
+          } else {
+            snapshot[outIdx] = 0;
+            snapshot[outIdx + 1] = 0;
+            snapshot[outIdx + 2] = 0;
+          }
+          snapshot[outIdx + 3] = lerpChannel(data[srcIdx + 3]!, fingerA, stepFingerMix);
+        }
       }
     }
 
@@ -179,7 +258,7 @@ export function smudgeStroke(
       const destY = minY + sy;
       for (let sx = 0; sx < boxW; sx++) {
         const destX = minX + sx;
-        const weight = smudgeBrushWeight(destX - curr.x, destY - curr.y, safeRadius);
+        const weight = smudgeBrushWeight(destX - curr.x, destY - curr.y, safeRadius, hardness);
         if (weight <= 0) continue;
         const amount = strength * weight;
         if (amount <= 0) continue;

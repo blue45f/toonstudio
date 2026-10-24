@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  computeColorRelativeLuminance,
   DEFAULT_INTERMEDIATE_CORNERS,
   generateIntermediateColorGrid,
   hexToRgb,
   interpolateBilinearColor,
+  oklabToSrgb,
   rgbToHex,
+  srgbToOklab,
   STUDIO_INTERMEDIATE_COLOR_PRESETS,
 } from "./studio-intermediate-color";
 
@@ -35,6 +38,29 @@ describe("studio-intermediate-color", () => {
     const midTop = interpolateBilinearColor(c00, c10, c01, c11, 0.5, 0);
     const [r] = hexToRgb(midTop);
     expect(r).toBeCloseTo(128, -1);
+  });
+
+  it("preserves exact corners and higher perceptual luminance in OKLab bilinear interpolation", () => {
+    const [L, a, bLab] = srgbToOklab(252, 213, 181);
+    const [rtR, rtG, rtB] = oklabToSrgb(L, a, bLab);
+    expect(rtR).toBeCloseTo(252, 0);
+    expect(rtG).toBeCloseTo(213, 0);
+    expect(rtB).toBeCloseTo(181, 0);
+
+    // Complementary Blue (#0044ff) and Yellow (#ffee00) midpoint in OKLab vs sRGB
+    const srgbMid = interpolateBilinearColor("#0044ff", "#ffee00", "#0044ff", "#ffee00", 0.5, 0, "srgb");
+    const oklabMid = interpolateBilinearColor("#0044ff", "#ffee00", "#0044ff", "#ffee00", 0.5, 0, "oklab");
+    expect(srgbMid).not.toBe(oklabMid);
+    // OKLab midpoint between bright yellow and cobalt blue avoids dark muddy sRGB dip
+    expect(computeColorRelativeLuminance(oklabMid)).toBeGreaterThan(
+      computeColorRelativeLuminance(srgbMid),
+    );
+
+    const gridOklab = generateIntermediateColorGrid(DEFAULT_INTERMEDIATE_CORNERS, 4, "oklab");
+    expect(gridOklab[0]?.[0]?.toLowerCase()).toBe(DEFAULT_INTERMEDIATE_CORNERS.c00.toLowerCase());
+    expect(gridOklab[0]?.[3]?.toLowerCase()).toBe(DEFAULT_INTERMEDIATE_CORNERS.c10.toLowerCase());
+    expect(gridOklab[3]?.[0]?.toLowerCase()).toBe(DEFAULT_INTERMEDIATE_CORNERS.c01.toLowerCase());
+    expect(gridOklab[3]?.[3]?.toLowerCase()).toBe(DEFAULT_INTERMEDIATE_CORNERS.c11.toLowerCase());
   });
 
   it("generates an NxN grid of intermediate colors", () => {

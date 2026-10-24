@@ -206,3 +206,22 @@ Rebelle 7 Pro·Clip Studio Paint EX 3.x·PaintStorm Studio·p5.brush의 수채�
 | **혼색(Wet Mix) 브러시 진행 수직 강모 결(`bristleStreak`)·캔버스 평직 요철(`paperGrainDepth`)·용제 희석(`solventDilution`)** | `apps/web/src/domains/creator/brush/studio-wet-mix.ts` | (1) `evaluateWetMixBristleGrainWeight`: 스트로크 진행 접선에 수직인 법선 좌표 투영으로 다중 강모 갈퀴 결(`bristleStreak`)과 캔버스 평직 요철(`paperGrainDepth`)을 동시 변조, (2) `solventDilution`: 물·용제 블렌더 희석율로 불투명 경계를 반투명 글레이즈로 부드럽게 풀어주는 혼색 지원 |
 | **11종 내추럴 미디어 물리 프로파일(`resolveNaturalMediaPhysicsProfile`) & 다중 패스 크로스해칭 플래너(`planNaturalMediaCrossHatch`)** | `apps/web/src/domains/creator/drawing/studio-natural-media-brushes.ts` | (1) `resolveNaturalMediaPhysicsProfile`: 연필(2B/HB/2H)·색연필·크레용·파스텔·펜·로트링·목탄·마커·스프레이 11종의 종이 산 마찰(`grainBite01`)·스머지 민감도·알코올 번짐(`inkBleed01`)·필압 감마 정밀 보정, (2) `planNaturalMediaCrossHatch`: Liang-Barsky 직사각형 클리핑 및 명암 농도(`toneValue01`) 기반 1~3중 교차 해칭 패스·입발필 필압 테이퍼 생성 |
 
+## 18. Wave 13 스마트 갭 채우기 8방향 밀폐·미세 구멍 흡수·발광 닷지/톤 보호·스머지 손가락 끝 색 섞기 고도화 (2026-10-25)
+
+클립스튜디오(CSP)·Procreate·Photoshop·Krita의 웹툰 밑색(Flat Fill) 공정 및 암실 리터칭·스머지 블렌딩 표현력을 순수 결정론적 커널로 추가 고도화했다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **8방향 대각선 갭 밀폐(`enableDiagonalGapSeal`)·고립 미세 구멍 자동 흡수(`fillIsolatedPinholesMaxArea`)·선화 장벽 보호 양방향 확장/축소(`dilateOrErodeSmartFillMask`)** | `apps/web/src/domains/creator/studio-smart-gap-fill.ts` | (1) `enableDiagonalGapSeal`: 가로·세로 직교 방향뿐 아니라 $45^\circ / 135^\circ$ 대각선 광선 탐색으로 사선 머리카락·턱선의 터진 틈새까지 밀폐, (2) `fillIsolatedPinholesMaxArea`: 채워진 영역 내부에 고립된 미세 미채색 잔여 점(Pinhole)을 연결 요소 탐색으로 자동 흡수(`absorbedPinholeCount`), (3) `dilateOrErodeSmartFillMask`: 양수 확장(`1..8px`)·음수 침식(`-8..-1px`) 및 `stopAtLineBarrier` 선화 중심 장벽 돌파 방지 |
+| **톤 보호(`protectTones`) 채도 보상 & CSP 발광 닷지·앰비언트 번 색온도 시프트(`colorGlowShift`·`shiftHueShortestArc`)** | `apps/web/src/domains/creator/studio-dodge-burn.ts` | (1) `protectTones`: 명도 보정 시 HSL 채도가 상대적으로 빠져 분필처럼 희뿌옇게 탈색되는 현상을 막는 유채색 채도 보상(무채색 $s=0$ 보호 유지), (2) `colorGlowShift` & `shiftHueShortestArc`: $360^\circ$ 색상환 최단 호 보간으로 닷지 시 따뜻한 황금빛($45^\circ$), 번 시 차가운 심연 청보라($235^\circ$)로 색조를 회전시켜 웹툰 역광·발광 하이라이트 재현 |
+| **스머지 손가락 끝 전경색 주입(`fingerPaintColor`·`fingerPaintAmount`·`fingerPaintDecay`) & 브러시 경도(`hardness`)** | `apps/web/src/domains/creator/studio-smudge.ts` | (1) `fingerPaintColor` / `fingerPaintAmount` / `fingerPaintDecay`: 스트로크 시작 시 손끝에 묻은 전경 안료를 프리멀티플라이드 알파 공간에서 주입하고 도장마다 지수 감쇠($(1 - \text{decay})^{i-1}$)시켜 자연스러운 핑거페인팅 꼬리 구현, (2) `hardness`: 중심 코어 반경(`r * hardness * 0.8`) 가중치 유지 및 2차 페더 감쇠 제어 |
+
+## 19. Wave 14 OKLab 4코너 중간색 보간·웹툰 색온도 근사색(`temp-val`)·2D 공간 키보드 탐색·앱바 휠/방향키 조작성 고도화 (2026-10-25)
+
+클립스튜디오(CSP)의 중간색 팔레트(Intermediate Color)·근사색 팔레트(Approximate Color) 및 드로잉 앱바의 색채 품질·시맨틱 고대비 테마 호환성·2D 공간 키보드 조작성을 고도화했다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **OKLab 지각 균일 4코너 양선형 보간(`srgbToOklab`·`oklabToSrgb`·`space: "oklab"`) & WCAG 상대 휘도(`computeColorRelativeLuminance`)** | `apps/web/src/domains/creator/color/studio-intermediate-color.ts` · `StudioIntermediateColorPanel.tsx` | (1) `srgbToOklab` / `oklabToSrgb`: Björn Ottosson OKLab 지각 균일 색공간에서 4코너 양선형 보간을 수행해 보색 코너(예: 노랑 하이라이트 ↔ 코발트 암부) 사이의 중간톤이 회색빛으로 탁해지지 않고 선명한 채도와 휘도를 유지, (2) `OKLab` / `sRGB` 1-클릭 전환 토글 및 실시간 WCAG 상대 명도(%) 표시 |
+| **웹툰 일광-그늘 색온도·명도 축(`mode: "temp-val"`) & 최단 호 색조 회전(`shiftHueTowardsTarget`)** | `apps/web/src/domains/creator/color/studio-approximate-color.ts` · `StudioApproximateColorPanel.tsx` | (1) `temp-val` (`색온도·명도 T×V`): 가로축 우측 이동 시 따뜻한 햇살($42^\circ$ 골든 앰버) 방향, 좌측 이동 시 차가운 하늘 반사광 그림자($222^\circ$ 코발트 인디고) 방향으로 최단 호 색조·채도를 회전시키고 세로축으로 명도(`V`)를 변화시켜 정적 HSV 축만 제공하는 CSP 근사색 팔레트 대비 웹툰 채색 속도를 단축, (2) 중앙 기준 타일(`offsetX = 0, offsetY = 0`) 원색 100% 보존 |
+| **2D 로빙 탭인덱스 공간 키보드 탐색(`spatial-navigation`)·시맨틱 테마 토큰·강제 대비 보호(`[forced-color-adjust:none]`) & 앱바 휠/상하키 미세 조절** | `StudioIntermediateColorPanel.tsx` · `StudioApproximateColorPanel.tsx` · `StudioDrawingAppBar.tsx` | (1) 2D 스와치 그리드에 단일 탭 정지점(`tabIndex={0}` / `-1`)과 `ArrowRight`/`ArrowLeft`/`ArrowDown`/`ArrowUp`/`Home`/`End` 공간 탐색을 적용하고 그리드 경계에서는 `preventDefault()`를 호출하지 않아 자연스러운 포커스 버블링 보장, (2) 다크 전용 하드코딩 슬레이트 클래스를 시맨틱 토큰(`text-fg`, `bg-card`, `border-line`) 및 `[forced-color-adjust:none]`으로 교체, (3) `StudioDrawingAppBar` 브러시 크기·불투명도·보정 알약 위에서 마우스 휠 스크롤 및 `ArrowUp`/`ArrowDown` 즉시 미세 조절과 만다라(`mandala`) 대칭 순환 지원 |

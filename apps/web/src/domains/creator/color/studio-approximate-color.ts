@@ -6,7 +6,7 @@
  * Hue (H), Saturation (S), and Value/Luminance (V) across 1D and 2D matrices.
  */
 
-export type ApproximateColorMode = "sat-val" | "hue-val" | "hue-sat" | "val-only";
+export type ApproximateColorMode = "sat-val" | "hue-val" | "hue-sat" | "val-only" | "temp-val";
 
 export interface ApproximateColorOptions {
   readonly mode: ApproximateColorMode;
@@ -110,6 +110,19 @@ export function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /**
+ * Shifts `baseHueDeg` along the shortest circular arc toward `targetHueDeg` by `blend01` in [0..1].
+ */
+export function shiftHueTowardsTarget(
+  baseHueDeg: number,
+  targetHueDeg: number,
+  blend01: number,
+): number {
+  const safeBlend = Math.max(0, Math.min(1, blend01));
+  const diff = ((((targetHueDeg - baseHueDeg) % 360) + 540) % 360) - 180;
+  return (((baseHueDeg + diff * safeBlend) % 360) + 360) % 360;
+}
+
+/**
  * Generates an NxN matrix of approximate colors around the center color.
  * The center tile at Math.floor(steps / 2) is guaranteed to equal the input color.
  */
@@ -135,6 +148,11 @@ export function generateApproximateColorGrid(
       // horizontal offset from center: -half .. +half
       const offsetX = col - half;
 
+      if (offsetX === 0 && offsetY === 0) {
+        currentRow.push(rgbToHex(r, g, b));
+        continue;
+      }
+
       let nextH = baseH;
       let nextS = baseS;
       let nextV = baseV;
@@ -154,6 +172,17 @@ export function generateApproximateColorGrid(
       } else if (options.mode === "val-only") {
         // Horizontal ladder of value/brightness
         nextV = Math.max(0, Math.min(1, baseV + offsetX * deltaFactor));
+      } else if (options.mode === "temp-val") {
+        // X = Color Temperature (+ right warm sunlight 42°, - left cool ambient shadow 222°)
+        // Y = Value (- down shadow, + up highlight)
+        const targetPoleHue = offsetX >= 0 ? 42 : 222;
+        const tempBlend = Math.min(0.85, Math.abs(offsetX) * deltaFactor * 1.4);
+        nextH = shiftHueTowardsTarget(baseH, targetPoleHue, tempBlend);
+        nextS = Math.max(
+          0,
+          Math.min(1, baseS + Math.abs(offsetX) * deltaFactor * (offsetX > 0 ? 0.35 : 0.25)),
+        );
+        nextV = Math.max(0, Math.min(1, baseV - offsetY * deltaFactor));
       }
 
       const [cellR, cellG, cellB] = hsvToRgb(nextH, nextS, nextV);

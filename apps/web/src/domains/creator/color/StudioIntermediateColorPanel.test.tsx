@@ -65,4 +65,38 @@ describe("StudioIntermediateColorPanel", () => {
       expect(cells.length).toBeGreaterThan(0);
     }
   });
+
+  it("toggles between OKLab and sRGB interpolation spaces and navigates 2D grid via arrow keys", () => {
+    const { container } = render(<StudioIntermediateColorPanel onSelectColor={vi.fn()} />);
+
+    const panel = container.querySelector('[data-studio-intermediate-color-panel="true"]');
+    expect(panel?.getAttribute("data-interpolation-space")).toBe("oklab");
+
+    fireEvent.click(screen.getByTestId("intermediate-space-srgb"));
+    expect(panel?.getAttribute("data-interpolation-space")).toBe("srgb");
+
+    const cell00 = container.querySelector(
+      '[data-grid-row="0"][data-grid-col="0"]',
+    ) as HTMLButtonElement | null;
+    const cell01 = container.querySelector(
+      '[data-grid-row="0"][data-grid-col="1"]',
+    ) as HTMLButtonElement | null;
+    const cell11 = container.querySelector(
+      '[data-grid-row="1"][data-grid-col="1"]',
+    ) as HTMLButtonElement | null;
+
+    expect(cell00?.tabIndex).toBe(0);
+    expect(cell01?.tabIndex).toBe(-1);
+
+    if (cell00 && cell01 && cell11) {
+      fireEvent.keyDown(cell00, { key: "ArrowRight" });
+      expect(document.activeElement).toBe(cell01);
+      expect(cell01.tabIndex).toBe(0);
+      expect(cell00.tabIndex).toBe(-1);
+
+      fireEvent.keyDown(cell01, { key: "ArrowDown" });
+      expect(document.activeElement).toBe(cell11);
+      expect(cell11.tabIndex).toBe(0);
+    }
+  });
 });

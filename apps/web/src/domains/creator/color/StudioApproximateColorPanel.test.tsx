@@ -59,4 +59,34 @@ describe("StudioApproximateColorPanel", () => {
       expect(onSelectColor).toHaveBeenCalledWith(expect.stringMatching(/^#[0-9a-f]{6}$/i));
     }
   });
+
+  it("supports 색온도·명도 (T×V) mode and 2D arrow-key roving tabindex navigation from the center tile", () => {
+    const { container } = render(
+      <StudioApproximateColorPanel
+        activeColor="#fcd5b5"
+        onSelectColor={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("색온도·명도 (T×V)"));
+    const panel = container.querySelector('[data-studio-approximate-color-panel="true"]');
+    expect(panel?.getAttribute("data-approximate-mode")).toBe("temp-val");
+
+    const centerCell = container.querySelector(
+      '[data-grid-row="2"][data-grid-col="2"]',
+    ) as HTMLButtonElement | null;
+    const warmCell = container.querySelector(
+      '[data-grid-row="2"][data-grid-col="3"]',
+    ) as HTMLButtonElement | null;
+
+    expect(centerCell?.tabIndex).toBe(0);
+    expect(warmCell?.tabIndex).toBe(-1);
+
+    if (centerCell && warmCell) {
+      fireEvent.keyDown(centerCell, { key: "ArrowRight" });
+      expect(document.activeElement).toBe(warmCell);
+      expect(warmCell.tabIndex).toBe(0);
+      expect(centerCell.tabIndex).toBe(-1);
+    }
+  });
 });
