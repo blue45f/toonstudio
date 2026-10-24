@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
-import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
+import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
   computeZonePlinthTransform,
+  findClickedWorldTarget,
+  formatParticipantOverlayBadge,
   resolveOverlayCollisions,
   STUDIO_THREE_HDRI_URLS,
   STUDIO_THREE_ZONE_DIORAMAS,
@@ -119,5 +121,65 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
     ]);
     expect(Math.abs(resolved[0]!.y - resolved[1]!.y)).toBeGreaterThan(20);
   });
+
+  it("참가자 협업 상태·말풍선·이모트·타이핑을 3D 오버레이 배지 정보로 정확히 포맷하고 바닥 클릭 타겟을 판별한다", () => {
+    const baseState = {
+      x: 1500,
+      y: 900,
+      zoneId: "lobby",
+      facing: "down" as const,
+      activity: "available" as const,
+      moving: false,
+      avatarIndex: 0,
+    };
+
+    expect(formatParticipantOverlayBadge(baseState, false, "3D 아바타", "3D Avatar")).toEqual({
+      sublabel: "3D 아바타",
+      accent: "#10b981",
+    });
+
+    expect(
+      formatParticipantOverlayBadge({ ...baseState, activity: "focused" }, false, "3D 아바타", "3D Avatar"),
+    ).toEqual({
+      sublabel: "🎯 집중 작업",
+      accent: "#a855f7",
+    });
+
+    expect(
+      formatParticipantOverlayBadge({ ...baseState, userStatus: "in-meeting" }, false, "3D 아바타", "3D Avatar"),
+    ).toEqual({
+      sublabel: "🔴 회의 중",
+      accent: "#ef4444",
+    });
+
+    expect(
+      formatParticipantOverlayBadge({ ...baseState, emote: "clap" }, false, "3D 아바타", "3D Avatar"),
+    ).toEqual({
+      sublabel: "👏 박수",
+      accent: "#10b981",
+    });
+
+    expect(
+      formatParticipantOverlayBadge({ ...baseState, bubble: "콘티 피드백 부탁해요!" }, false, "3D 아바타", "3D Avatar"),
+    ).toEqual({
+      sublabel: "💬 콘티 피드백 부탁해요!",
+      accent: "#10b981",
+    });
+
+    const firstWorkstation = CAMPUS_INTERACTIONS[0]!;
+    expect(findClickedWorldTarget(firstWorkstation.point, CAMPUS_INTERACTIONS, CAMPUS_NPCS)).toEqual({
+      kind: "workstation",
+      id: firstWorkstation.id,
+    });
+
+    const firstNpc = CAMPUS_NPCS[0]!;
+    expect(findClickedWorldTarget(firstNpc.point, [], CAMPUS_NPCS)).toEqual({
+      kind: "npc",
+      id: firstNpc.id,
+    });
+
+    expect(findClickedWorldTarget({ x: 10, y: 10 }, CAMPUS_INTERACTIONS, CAMPUS_NPCS)).toBeNull();
+  });
 });
+
 

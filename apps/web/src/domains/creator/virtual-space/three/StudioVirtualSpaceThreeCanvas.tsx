@@ -31,6 +31,8 @@ import {
   createStudioThreeChromePostPipeline,
   createStudioThreeHdriController,
   DUPLICATE_ARCADE_IDS,
+  findClickedWorldTarget,
+  formatParticipantOverlayBadge,
   getOverlayBadgeStyle,
   resolveOverlayCollisions,
   WORKSTATION_ACTION_BADGES,
@@ -80,6 +82,7 @@ export function StudioVirtualSpaceThreeCanvas({
   const applyLightingRef = useRef<((preset: StudioThreeLightingPreset) => void) | null>(null);
   const resetCameraRef = useRef<(() => void) | null>(null);
   const triggerOverlayTargetRef = useRef<((kind: "workstation" | "npc", targetId: string) => void) | null>(null);
+  const reloadActorVrmRef = useRef<((actorId: string, index: number) => void) | null>(null);
 
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
@@ -95,6 +98,10 @@ export function StudioVirtualSpaceThreeCanvas({
     setLightingPreset(nextPreset);
     applyLightingRef.current?.(nextPreset);
   }, [spaceTheme]);
+
+  useEffect(() => {
+    reloadActorVrmRef.current?.("self", snapshot.self.avatarIndex);
+  }, [snapshot.self.avatarIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -182,7 +189,8 @@ export function StudioVirtualSpaceThreeCanvas({
     destMarker.visible = false;
     scene.add(destMarker);
 
-    loadStudioThreeAssets(scene, actorNodes, () => disposed, snapshotRef.current.self.avatarIndex);
+    const reloadActorVrm = loadStudioThreeAssets(scene, actorNodes, () => disposed, snapshotRef.current.self.avatarIndex);
+    reloadActorVrmRef.current = reloadActorVrm;
 
     const keysDown = new Set<string>();
     let currentPoint: StudioVirtualSpacePoint = { ...spawnPoint };
@@ -268,10 +276,15 @@ export function StudioVirtualSpaceThreeCanvas({
       const hit = raycaster.intersectObject(floorMesh, false)[0];
       if (hit) {
         const clamped = clampStudioWorldPoint(manifest, threeToWorld({ x: hit.point.x, z: hit.point.z }));
-        pendingAutoInteract = null;
-        moveDestination = clamped;
-        destMarker.position.copy(worldToThree(clamped, 0.04));
-        destMarker.visible = true;
+        const clickedTarget = findClickedWorldTarget(clamped, studioWorldInteractions(manifest), CAMPUS_NPCS);
+        if (clickedTarget) {
+          triggerOverlayTargetRef.current?.(clickedTarget.kind, clickedTarget.id);
+        } else {
+          pendingAutoInteract = null;
+          moveDestination = clamped;
+          destMarker.position.copy(worldToThree(clamped, 0.04));
+          destMarker.visible = true;
+        }
       }
     };
     const handleContextMenu = (event: MouseEvent) => event.preventDefault();
@@ -418,20 +431,16 @@ export function StudioVirtualSpaceThreeCanvas({
         let peerNode = actorNodes.get(peerId);
         if (!peerNode) {
           peerNode = createStylized3DCharacterNode(peerId, 0x0ea5e9, false);
-          const p3 = worldToThree(peer.state, 0);
-          peerNode.group.position.copy(p3);
+          peerNode.group.position.copy(worldToThree(peer.state, 0));
           scene.add(peerNode.group);
           actorNodes.set(peerId, peerNode);
+          reloadActorVrm(peerId, peer.state.avatarIndex);
         }
         const target3 = worldToThree(peer.state, 0);
         const dx = target3.x - peerNode.group.position.x;
         const dz = target3.z - peerNode.group.position.z;
         peerNode.moving = Math.hypot(dx, dz) > 0.03;
-        if (peerNode.moving) {
-          peerNode.targetYaw = Math.atan2(dx, dz);
-        } else {
-          peerNode.targetYaw = facingToYawRadians(peer.state.facing);
-        }
+        peerNode.targetYaw = peerNode.moving ? Math.atan2(dx, dz) : facingToYawRadians(peer.state.facing);
         peerNode.group.position.lerp(target3, 0.2);
         peerNode.currentYaw = shortestAngleLerp(peerNode.currentYaw, peerNode.targetYaw, 0.2);
         peerNode.group.rotation.y = peerNode.currentYaw;
@@ -442,11 +451,9 @@ export function StudioVirtualSpaceThreeCanvas({
         const node = actorNodes.get(npc.id);
         if (!node) continue;
         const gapPx = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
-        if (gapPx < 240) {
-          node.targetYaw = Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y);
-        } else {
-          node.targetYaw = facingToYawRadians(npc.facing);
-        }
+        node.targetYaw = gapPx < 240
+          ? Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y)
+          : facingToYawRadians(npc.facing);
         node.currentYaw = shortestAngleLerp(node.currentYaw, node.targetYaw, 0.14);
         node.group.rotation.y = node.currentYaw;
       }
@@ -613,13 +620,15 @@ export function StudioVirtualSpaceThreeCanvas({
 
         const selfHead = projectPoint(new THREE.Vector3(selfNode.group.position.x, 2.04, selfNode.group.position.z));
         if (selfHead.visible) {
+          const selfBadge = formatParticipantOverlayBadge(snapshotRef.current.self, Boolean(isEn), "3D 아바타", "3D Avatar");
           projected.push({
             id: "self",
             label: selfNameRef.current || bt("나", "Me"),
-            sublabel: snapshotRef.current.self.bubble || bt("3D 아바타", "3D Avatar"),
+            sublabel: selfBadge.sublabel,
             kind: "self",
             x: selfHead.x,
             y: selfHead.y,
+            accent: selfBadge.accent,
           });
         }
 
@@ -628,14 +637,15 @@ export function StudioVirtualSpaceThreeCanvas({
           if (!peerNode) continue;
           const head = projectPoint(new THREE.Vector3(peerNode.group.position.x, 2.04, peerNode.group.position.z));
           if (head.visible) {
+            const peerBadge = formatParticipantOverlayBadge(peer.state, Boolean(isEn), "동료", "Peer");
             projected.push({
               id: `peer:${peer.participant.sessionId}`,
               label: peer.participant.displayName,
-              sublabel: peer.state.bubble || bt("동료", "Peer"),
+              sublabel: peerBadge.sublabel,
               kind: "peer",
               x: head.x,
               y: head.y,
-              accent: "#0ea5e9",
+              accent: peerBadge.accent,
             });
           }
         }
@@ -649,36 +659,16 @@ export function StudioVirtualSpaceThreeCanvas({
           const label = studioNpcLabel(def);
           const head = projectPoint(new THREE.Vector3(node.group.position.x, 2.12, node.group.position.z));
           if (head.visible) {
-            projected.push({
-              id: `npc:${npc.id}`,
-              targetId: npc.id,
-              label: isEn ? label.en : label.ko,
-              sublabel: isEn ? "Talk" : "대화",
-              kind: "npc",
-              x: head.x,
-              y: head.y,
-              active: dist <= STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS,
-            });
+            projected.push({ id: `npc:${npc.id}`, targetId: npc.id, label: isEn ? label.en : label.ko, sublabel: isEn ? "Talk" : "대화", kind: "npc", x: head.x, y: head.y, active: dist <= STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS });
           }
         }
 
         for (const interaction of allInteractions) {
-          if (DUPLICATE_ARCADE_IDS.has(interaction.id)) continue;
-          if (Math.hypot(interaction.point.x - currentPoint.x, interaction.point.y - currentPoint.y) > 520) continue;
+          if (DUPLICATE_ARCADE_IDS.has(interaction.id) || Math.hypot(interaction.point.x - currentPoint.x, interaction.point.y - currentPoint.y) > 520) continue;
           const stationPos = projectPoint(worldToThree(interaction.point, 0.92));
           if (stationPos.visible) {
             const meta = WORKSTATION_ACTION_BADGES[interaction.action] ?? { ko: "협업 도구", en: "Tool", color: "#6366f1" };
-            projected.push({
-              id: `workstation:${interaction.id}`,
-              targetId: interaction.id,
-              label: isEn ? interaction.labelEn : interaction.labelKo,
-              sublabel: isEn ? meta.en : meta.ko,
-              kind: "workstation",
-              x: stationPos.x,
-              y: stationPos.y,
-              accent: meta.color,
-              active: closestInteraction?.id === interaction.id,
-            });
+            projected.push({ id: `workstation:${interaction.id}`, targetId: interaction.id, label: isEn ? interaction.labelEn : interaction.labelKo, sublabel: isEn ? meta.en : meta.ko, kind: "workstation", x: stationPos.x, y: stationPos.y, accent: meta.color, active: closestInteraction?.id === interaction.id });
           }
         }
 
@@ -689,14 +679,7 @@ export function StudioVirtualSpaceThreeCanvas({
           const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walls.length > 0 ? 2.95 : 1.55));
           if (signPos.visible) {
             const roomDef = manifest.rooms?.find((room) => room.id === zone.roomId);
-            projected.push({
-              id: `zone:${zone.roomId}`,
-              label: zone.signEn,
-              sublabel: isEn ? (roomDef?.labelEn ?? zone.signEn) : (roomDef?.labelKo ?? zone.signEn),
-              kind: "zone",
-              x: signPos.x,
-              y: signPos.y,
-            });
+            projected.push({ id: `zone:${zone.roomId}`, label: zone.signEn, sublabel: isEn ? (roomDef?.labelEn ?? zone.signEn) : (roomDef?.labelKo ?? zone.signEn), kind: "zone", x: signPos.x, y: signPos.y });
           }
         }
 
@@ -711,6 +694,7 @@ export function StudioVirtualSpaceThreeCanvas({
       applyLightingRef.current = null;
       resetCameraRef.current = null;
       triggerOverlayTargetRef.current = null;
+      reloadActorVrmRef.current = null;
       window.cancelAnimationFrame(animFrameId);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -775,8 +759,8 @@ export function StudioVirtualSpaceThreeCanvas({
               onKeyDown={isInteractive && item.targetId ? (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!); } } : undefined}
               style={getOverlayBadgeStyle(item, isInteractive)}
             >
-              {item.kind === "self" ? (
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#38bdf8" }} />
+              {item.kind === "self" || item.kind === "peer" ? (
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: item.accent ?? "#38bdf8" }} />
               ) : item.kind === "npc" ? (
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#a78bfa" }} />
               ) : item.kind === "workstation" ? (
@@ -795,3 +779,4 @@ export function StudioVirtualSpaceThreeCanvas({
     </div>
   );
 }
+
