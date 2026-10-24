@@ -167,3 +167,13 @@
 | **OKLab 지각 균일 그라데이션 맵 LUT·웹툰 프리셋·Bayer $4 \times 4$ 디더링** | `apps/web/src/domains/creator/drawing/studio-gradient-map.ts` | 선형 sRGB 보간 시 보색 정지점 구간에서 발생하는 중간톤 회색 탁현상(Muddy Midtone Desaturation)을 방지하는 `interpolationSpace: "oklab"`(Björn Ottosson OKLab LMS 세제곱근 행렬 변환) 옵션 및 채도 보존율 계측(`evaluateGradientMapOklabChromaRetention`), 웹툰 특화 프리셋 3종(`webtoon-dawn`, `cel-anime-shadow`, `noir-crimson`), 원본 픽셀 혼합률(`blendAmount: 0..1`) 및 $4 \times 4$ Bayer 순서 디더링(`dither: true`) 내장 |
 | **라이브 스탬프 오버레이 FIFO 상한 & 백그라운드 리플레이 일시정지** | `apps/web/src/domains/creator/live/studio-live-stamp-overlay.ts` | 장시간 드로잉 시 확정 대기 획 배열(`STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES = 64`)과 단일 활성 획 좌표(`STUDIO_LIVE_STAMP_OVERLAY_MAX_ACTIVE_POINTS = 16_384`)에 FIFO 상한을 강제하고, `setBackgroundSkipped(true/false)`로 오프스크린/백그라운드 상태에서 불필요한 전체 캔버스 `replay()`를 보류한 뒤 가시화 시점에 1회만 재생하도록 최적화 |
 
+## 14. Wave 9 속도 적응형 손떨림 보정·이면군($D_n$) 대칭 자 & 3D 스타일러스 반사·3차 베지어 만화 벡터라이저 고도화 (2026-10-24)
+
+클립스튜디오(CSP)와 Lazy Nezumi Pro, Procreate, Krita의 핵심 드로잉 보조 도구(손떨림 보정·대칭 자·자유곡선 벡터라이저)를 수학적·물리적으로 한 단계 더 끌어올렸다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **CSP 속도 적응형 손떨림 보정(`adjustBySpeed`) & Lazy Nezumi 끝점 따라잡기(`finishStroke`)** | `apps/web/src/domains/creator/drawing/stroke-stabilizer.ts` | (1) `adjustBySpeed: "none" \| "lessAtFast" \| "moreAtFast"`: 빠른 해칭·머리카락 날림선에서 지연을 줄이는 `lessAtFast`와 긴 만화 컷선에서 손목 떨림을 강하게 억제하는 `moreAtFast` 양방향 속도 적응 보정, (2) `finishStroke(target, maxSteps)`: 포인터 업 시 끈(Leash)/저역통과 필터 지연으로 남은 거리를 2차 ease-out 곡선으로 매끄럽게 메우는 끝점 따라잡기, (3) `STABILIZER_MAX_STEP_DT_SEC = 0.1` 상한 및 `NaN`/`Infinity` 방어로 장시간 탭 전환 후 복귀 시에도 필터 발산 원천 차단 |
+| **CSP 선 대칭 만다라(`mirrorRadial` $D_n$ 이면군)·3D 스타일러스(`tiltX`/`tiltY`/`twistDeg`) 반사·가이드 선분** | `apps/web/src/domains/creator/drawing/studio-symmetry.ts` | (1) `mirrorRadial: true`: 방사형 모드에서 홀수 섹터를 스포크 축에 거울 반사해 순수 회전군($C_n$)뿐 아니라 만다라·만화경 이면군($D_n$) 대칭 지원, (2) `isStudioSymmetryTransformReflected`: 행렬식($ad - bc < 0$) 기반 카이랄성 반전 판별 및 `tiltX`/`tiltY`·배럴 롤 `twistDeg`의 정확한 거울 반사 변환, (3) `computeStudioSymmetryAxisSegments`: 모드별 오버레이 대칭축 직선 선분 생성 |
+| **만화 입필·발필 테이퍼(`taperStart`/`taperEnd`) & Catmull-Rom 3차 베지어(`curveMode: "cubic"`) 벡터라이저** | `apps/web/src/domains/creator/drawing/studio-stroke-vectorizer.ts` | (1) `ringsToCubicBezierSvgPathData` 및 `curveMode: "cubic"`: 800% 고배율 줌에서도 다각형 각짐(Facet)이 없는 3차 베지어(`M...C...Z`) 외곽선 생성, (2) `taperStart`/`taperEnd`: 만화 G펜 입필·발필 칼끝 테이퍼 지원, (3) 비유한(`NaN`/`Infinity`) 입력 샘플 사전 필터링으로 `polygon-clipping` 불리언 연산 안정성 확보 |
+

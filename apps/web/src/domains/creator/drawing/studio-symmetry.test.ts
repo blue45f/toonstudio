@@ -4,7 +4,9 @@ import {
   STUDIO_SYMMETRY_FOLDS_MAX,
   STUDIO_SYMMETRY_FOLDS_MIN,
   cloneStudioSymmetrySample,
+  computeStudioSymmetryAxisSegments,
   isStudioSymmetryMode,
+  isStudioSymmetryTransformReflected,
   normalizeStudioSymmetrySettings,
   studioSymmetryCloneCount,
   studioSymmetryTransform,
@@ -285,3 +287,51 @@ describe("cloneStudioSymmetrySample", () => {
     }
   });
 });
+
+describe("CSP 선 대칭 만다라(mirrorRadial D_n 이면군)·3D 스타일러스 틸트/배럴 롤 반사·가이드 선분", () => {
+  it("mirrorRadial=true 이면 방사형 홀수 섹터가 스포크 축에 거울 반사(det < 0)된다", () => {
+    const settings = normalizeStudioSymmetrySettings({
+      mode: "radial",
+      centerX: 0,
+      centerY: 0,
+      angleDeg: 0,
+      folds: 4,
+      mirrorRadial: true,
+    });
+    expect(isStudioSymmetryTransformReflected(settings, 0)).toBe(false);
+    expect(isStudioSymmetryTransformReflected(settings, 1)).toBe(true);
+    expect(isStudioSymmetryTransformReflected(settings, 2)).toBe(false);
+    expect(isStudioSymmetryTransformReflected(settings, 3)).toBe(true);
+  });
+
+  it("스타일러스 tiltX/tiltY 및 배럴 롤 twistDeg가 반사·회전 변환에 맞춰 정확히 변환된다", () => {
+    const vSettings = normalizeStudioSymmetrySettings({
+      mode: "vertical",
+      axisX: 100,
+      axisY: 100,
+      angleDeg: 0,
+    });
+    const stylusSample: SymmetryStrokeSample = {
+      ...SAMPLE,
+      tiltX: 30,
+      tiltY: -15,
+      twistDeg: 45,
+    };
+    const reflected = transformStudioSymmetrySample(vSettings, 1, stylusSample);
+    closeTo(reflected.tiltX!, -30);
+    closeTo(reflected.tiltY!, -15);
+    // 수직축 반사 시 45° 벡터 (cos45, sin45) -> (-cos45, sin45) = 135°
+    closeTo(reflected.twistDeg!, 135);
+  });
+
+  it("computeStudioSymmetryAxisSegments가 모드별 정확한 가이드 직선 선분 수를 반환한다", () => {
+    const base = normalizeStudioSymmetrySettings(undefined);
+    expect(computeStudioSymmetryAxisSegments({ ...base, mode: "off" })).toHaveLength(0);
+    expect(computeStudioSymmetryAxisSegments({ ...base, mode: "vertical" })).toHaveLength(1);
+    expect(computeStudioSymmetryAxisSegments({ ...base, mode: "quad" })).toHaveLength(2);
+    expect(
+      computeStudioSymmetryAxisSegments({ ...base, mode: "radial", folds: 8 }),
+    ).toHaveLength(8);
+  });
+});
+

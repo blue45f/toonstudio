@@ -30,6 +30,11 @@ export interface SymmetryStrokeSample {
   /** 스트로크 진행 방향 벡터. 정규화되지 않아도 된다. */
   readonly dx: number;
   readonly dy: number;
+  /** 선택적 스타일러스 기울기 벡터 (-90..90 deg 또는 정규화 성분). */
+  readonly tiltX?: number;
+  readonly tiltY?: number;
+  /** 선택적 스타일러스 배럴 롤 회전각 (0..360 deg). */
+  readonly twistDeg?: number;
 }
 
 /** 대칭 모드: 끄기 / 수직축 / 수평축 / 4방향(수직+수평) / 방사형 N-fold. */
@@ -48,7 +53,7 @@ export const STUDIO_SYMMETRY_MODES = [
   "radial",
 ] as const;
 
-/** 방사형 분할 수 범위 (Procreate/CSP 관례 2–12). */
+/** 방사형 분할 수 범위 (Procreate/CSP 관례 2–16). */
 export const STUDIO_SYMMETRY_FOLDS_MIN = 2;
 export const STUDIO_SYMMETRY_FOLDS_MAX = 12;
 
@@ -73,6 +78,11 @@ export interface StudioSymmetrySettings {
   readonly centerY: number;
   /** 방사형 분할 수 2–12. */
   readonly folds: number;
+  /**
+   * CSP 대칭 자 "선 대칭(Line symmetry)" / 만다라(Kaleidoscope D_n 이면군) 옵션:
+   * true이면 방사형 모드에서 홀수 번째 섹터를 스포크 축 기준으로 거울 반사한다.
+   */
+  readonly mirrorRadial?: boolean;
 }
 
 export function normalizeStudioSymmetrySettings(
@@ -84,7 +94,7 @@ export function normalizeStudioSymmetrySettings(
     return Number.isFinite(n) ? n : fallback;
   };
   const rawFolds = num(input?.folds, 6);
-  return {
+  const base: StudioSymmetrySettings = {
     mode,
     axisX: num(input?.axisX, 160),
     axisY: num(input?.axisY, 120),
@@ -96,6 +106,9 @@ export function normalizeStudioSymmetrySettings(
       Math.max(STUDIO_SYMMETRY_FOLDS_MIN, Math.round(rawFolds)),
     ),
   };
+  return typeof input?.mirrorRadial === "boolean"
+    ? { ...base, mirrorRadial: input.mirrorRadial }
+    : base;
 }
 
 /** 모드별 복제본 개수 (off=1: 원본만). */
@@ -115,8 +128,8 @@ export function studioSymmetryCloneCount(
   }
 }
 
-interface Affine2D {
-  /** 선형 부분 [a b; c d] — 방향벡터에 적용. */
+export interface Affine2D {
+  /** 선형 부분 [a b; c d] — 방향벡터·틸트에 적용. */
   readonly a: number;
   readonly b: number;
   readonly c: number;
@@ -204,7 +217,8 @@ function composeAffine(first: Affine2D, second: Affine2D): Affine2D {
 
 /**
  * cloneIndex번째 복제본에 적용할 아핀 변환.
- * quad는 [원본, 수직반사, 수평반사, 수직∘수평(=중심점 대칭)] 4개다.
+ * - quad는 [원본, 수직반사, 수평반사, 수직∘수평(=중심점 대칭)] 4개다.
+ * - radial에서 `mirrorRadial === true`이면 홀수 인덱스를 해당 스포크 대칭축에 반사(이면군 D_n)한다.
  */
 export function studioSymmetryTransform(
   settings: StudioSymmetrySettings,
@@ -227,19 +241,39 @@ export function studioSymmetryTransform(
       if (index === 2) return h;
       return composeAffine(v, h);
     }
-    case "radial":
+    case "radial": {
+      if (settings.mirrorRadial && index % 2 === 1) {
+        const baseRad = (settings.angleDeg * Math.PI) / 180;
+        const spokeAngle = baseRad + (index * Math.PI) / settings.folds;
+        return reflectionAcrossLine(
+          settings.centerX,
+          settings.centerY,
+          Math.cos(spokeAngle),
+          Math.sin(spokeAngle),
+        );
+      }
       return rotationAbout(
         settings.centerX,
         settings.centerY,
         (index * 2 * Math.PI) / settings.folds,
       );
+    }
   }
+}
+
+/** 해당 복제본 변환이 카이랄성(Chirality)을 뒤집는 거울 반사(det < 0)인지 판별한다. */
+export function isStudioSymmetryTransformReflected(
+  settings: StudioSymmetrySettings,
+  cloneIndex: number,
+): boolean {
+  const t = studioSymmetryTransform(settings, cloneIndex);
+  return t.a * t.d - t.b * t.c < 0;
 }
 
 /**
  * 스트로크 샘플 1개를 cloneIndex번째 복제본 좌표계로 변환한다.
- * 좌표에는 아핀 전체를, 방향벡터에는 선형 부분만 적용한다
- * (평행이동이 방향을 바꾸면 안 된다 — 방향성 브러시 정확도의 핵심).
+ * 좌표에는 아핀 전체를, 방향벡터 및 스타일러스 틸트/배럴 롤에는 선형 부분만 적용한다
+ * (평행이동이 방향을 바꾸면 안 된다 — 방향성 캘리그라피/납작붓 브러시 정확도의 핵심).
  */
 export function transformStudioSymmetrySample(
   settings: StudioSymmetrySettings,
@@ -247,12 +281,41 @@ export function transformStudioSymmetrySample(
   sample: SymmetryStrokeSample,
 ): SymmetryStrokeSample {
   const t = studioSymmetryTransform(settings, cloneIndex);
-  return {
+  const base: SymmetryStrokeSample = {
     x: t.a * sample.x + t.b * sample.y + t.tx,
     y: t.c * sample.x + t.d * sample.y + t.ty,
     pressure: sample.pressure,
     dx: t.a * sample.dx + t.b * sample.dy,
     dy: t.c * sample.dx + t.d * sample.dy,
+  };
+  const hasTilt =
+    sample.tiltX !== undefined &&
+    sample.tiltY !== undefined &&
+    Number.isFinite(sample.tiltX) &&
+    Number.isFinite(sample.tiltY);
+  const hasTwist =
+    sample.twistDeg !== undefined && Number.isFinite(sample.twistDeg);
+  if (!hasTilt && !hasTwist) return base;
+
+  let transformedTwist: number | undefined;
+  if (hasTwist) {
+    const rad = (sample.twistDeg! * Math.PI) / 180;
+    const ux = Math.cos(rad);
+    const uy = Math.sin(rad);
+    const vx = t.a * ux + t.b * uy;
+    const vy = t.c * ux + t.d * uy;
+    const deg = (Math.atan2(vy, vx) * 180) / Math.PI;
+    transformedTwist = ((deg % 360) + 360) % 360;
+  }
+  return {
+    ...base,
+    ...(hasTilt
+      ? {
+          tiltX: t.a * sample.tiltX! + t.b * sample.tiltY!,
+          tiltY: t.c * sample.tiltX! + t.d * sample.tiltY!,
+        }
+      : {}),
+    ...(transformedTwist !== undefined ? { twistDeg: transformedTwist } : {}),
   };
 }
 
@@ -271,3 +334,57 @@ export function cloneStudioSymmetrySample(
   }
   return clones;
 }
+
+export interface StudioSymmetryAxisSegment {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+}
+
+/**
+ * 캔버스 오버레이에 표시할 대칭 가이드 직선 선분 목록을 계산한다.
+ */
+export function computeStudioSymmetryAxisSegments(
+  settings: StudioSymmetrySettings,
+  radiusPx = 1024,
+): ReadonlyArray<StudioSymmetryAxisSegment> {
+  const r = Math.max(16, Number.isFinite(radiusPx) ? radiusPx : 1024);
+  const degRad = (settings.angleDeg * Math.PI) / 180;
+  const lineAt = (
+    cx: number,
+    cy: number,
+    theta: number,
+  ): StudioSymmetryAxisSegment => {
+    const ux = Math.cos(theta);
+    const uy = Math.sin(theta);
+    return {
+      x1: cx - ux * r,
+      y1: cy - uy * r,
+      x2: cx + ux * r,
+      y2: cy + uy * r,
+    };
+  };
+  switch (settings.mode) {
+    case "off":
+      return [];
+    case "vertical":
+      return [lineAt(settings.axisX, settings.axisY, Math.PI / 2 + degRad)];
+    case "horizontal":
+      return [lineAt(settings.axisX, settings.axisY, degRad)];
+    case "quad":
+      return [
+        lineAt(settings.axisX, settings.axisY, Math.PI / 2 + degRad),
+        lineAt(settings.axisX, settings.axisY, degRad),
+      ];
+    case "radial": {
+      const segments: StudioSymmetryAxisSegment[] = [];
+      for (let i = 0; i < settings.folds; i += 1) {
+        const theta = degRad + (i * Math.PI) / settings.folds;
+        segments.push(lineAt(settings.centerX, settings.centerY, theta));
+      }
+      return segments;
+    }
+  }
+}
+
