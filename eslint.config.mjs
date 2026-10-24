@@ -1,3 +1,4 @@
+import './scripts/eslint-react-compiler-zod-v3-compat.mjs'
 import { base, react, plugin, boundaries, defineConfig } from '@heejun/eslint-config'
 import { plugin as shadcn } from '@shadcn/lint'
 import js from '@eslint/js'
