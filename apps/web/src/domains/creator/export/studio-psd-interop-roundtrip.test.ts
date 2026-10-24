@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveStudioPsdSkipEntry } from "../status-i18n/studio-producer-error-i18n-psd-import";
 import { importPsdFile } from "../studio-psd-import";
 import { groupPsdExportLayers, psdExportFolderPath } from "./studio-psd-folder-structure";
 import { prepareStudioDocumentInterchangeCommit } from "../studio-document-interchange-commit";
@@ -36,7 +37,7 @@ describe("PSD 편집·외관·원본 교환 계약", () => {
 
   it("그룹 혼합·효과·마스크를 구체적으로 알리고 저장된 합성본을 별도로 제공한다", async () => {
     const result = await imported([{ name: "효과", blendMode: "multiply", opacity: 0.5, effects: {}, mask: {}, children: [leaf("색")] }], { canvas });
-    expect(result.skipped.join(" ")).toContain("multiply 격리 합성·그룹 불투명도·그룹 마스크·그룹 효과");
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("multiply 격리 합성·그룹 불투명도·그룹 마스크·그룹 효과");
     expect(result.compositeElement).toMatchObject({ name: "PSD 원본 합성본", width: 100, height: 100, src: "data:image/png;base64,AAAA" });
     expect(result.lossManifest?.decisions).toContainEqual(expect.objectContaining({ feature: "blend-mode", disposition: "dropped", count: 1 }));
   });

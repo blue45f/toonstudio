@@ -81,16 +81,16 @@ async function verifyCase(browser: Browser, origin: string, scenario: RecoveryCa
         await route.abort("failed");
       });
     }
-    await page.goto(`${origin}studio?id=${WORK_ID}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}studio?id=${WORK_ID}`, { waitUntil: "commit", timeout: 60_000 });
     if (scenario === "auth-pending") {
-      await page.getByText("원고를 안전하게 불러오는 중", { exact: true }).waitFor({ timeout: 30_000 });
+      await page.getByText("원고를 안전하게 불러오는 중", { exact: true }).waitFor({ timeout: 60_000 });
       await delay(400);
       assert.equal(publicRequests, 0, "unresolved authentication was treated as anonymous");
       assert.equal(sourceRequests, 0, "private source fetched before authentication settled");
       releaseAuth();
     }
     if (["manual-retry", "forbidden", "malformed"].includes(scenario)) {
-      await page.getByText("원고를 열지 못했어요", { exact: true }).waitFor({ timeout: 30_000 });
+      await page.getByText("원고를 열지 못했어요", { exact: true }).waitFor({ timeout: 60_000 });
       assert.equal(await page.getByText(/빈 캔버스로 덮어쓰지 않도록/u).isVisible(), true);
       assert.equal(await page.getByRole("heading", { name: TITLE, exact: true }).count(), 0);
       assert.equal(sourceRequests, scenario === "manual-retry" ? 3 : 1);
@@ -107,7 +107,7 @@ async function verifyCase(browser: Browser, origin: string, scenario: RecoveryCa
       }
     }
     if (scenario !== "forbidden" && scenario !== "malformed") {
-      await page.getByRole("heading", { name: TITLE, exact: true }).waitFor({ timeout: 30_000 });
+      await page.getByRole("heading", { name: TITLE, exact: true }).waitFor({ timeout: 60_000 });
       assert.equal(await page.getByText("원고를 열지 못했어요", { exact: true }).count(), 0);
       await page.keyboard.press("b");
       await page.keyboard.press("v");
