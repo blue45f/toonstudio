@@ -722,7 +722,7 @@ export function StudioVirtualSpaceThreeCanvas({
       <div ref={canvasMountRef} className="studio-vspace-three-canvas-mount" style={{ position: "absolute", inset: 0, zIndex: 1 }} />
       <div
         className="studio-vspace-three-lighting-hud"
-        style={{ position: "absolute", left: 16, bottom: 16, zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 8px", borderRadius: 999, background: "rgba(15, 23, 42, 0.84)", border: "1px solid rgba(148, 163, 184, 0.32)", backdropFilter: "blur(10px)" }}
+        style={{ position: "absolute", right: 76, bottom: 16, zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 8px", borderRadius: 999, background: "rgba(15, 23, 42, 0.84)", border: "1px solid rgba(148, 163, 184, 0.32)", backdropFilter: "blur(10px)" }}
       >
         {([
           { id: "day", ko: "자연광 HDRI", en: "Day HDRI" },

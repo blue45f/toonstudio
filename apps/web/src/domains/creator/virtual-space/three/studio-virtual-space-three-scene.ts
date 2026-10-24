@@ -59,8 +59,9 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "lobby-concierge-tablet", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 344, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
   { id: "lobby-desk-mug", url: "/assets/3d/everyday_mug.glb", x: 416, y: 340, heightMeters: 0.22, elevationMeters: 0.86, rotationY: 0.4 },
   { id: "lobby-clock", url: "/assets/3d/grandfather_clock.glb", x: 196, y: 210, heightMeters: 2.15, rotationY: 0 },
-  { id: "lobby-robot", url: "/assets/3d/refined-v8/robot_pet.glb", x: 540, y: 430, heightMeters: 0.88, rotationY: -0.4 },
-  { id: "lobby-phone-mic", url: "/assets/3d/atelier_microphone.glb", x: 660, y: 642, heightMeters: 1.32, rotationY: -0.3 },
+  { id: "lobby-sofa-west", url: "/assets/3d/refined-v8/sofa.glb", x: 238, y: 470, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
+  { id: "lobby-phone-table", url: "/assets/3d/round_table.glb", x: 660, y: 642, heightMeters: 0.78, rotationY: 0 },
+  { id: "lobby-phone-mic", url: "/assets/3d/atelier_microphone.glb", x: 660, y: 642, heightMeters: 0.34, elevationMeters: 0.78, rotationY: -0.3 },
   { id: "lobby-plant-east", url: "/assets/3d/potted_monstera.glb", x: 716, y: 240, heightMeters: 1.48, rotationY: -0.3 },
 
   // STUDIO (personal-atelier — classroom_art_studio 디오라마 + 드로잉·모니터·라이브 세트)
@@ -73,30 +74,34 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "studio-monitor-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1400, y: 572, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
   { id: "studio-light-west", url: "/assets/3d/paper_lantern.glb", x: 1130, y: 280, heightMeters: 1.45, rotationY: 0.2 },
   { id: "studio-light-east", url: "/assets/3d/paper_lantern.glb", x: 1302, y: 280, heightMeters: 1.45, rotationY: -0.2 },
-  { id: "studio-mic", url: "/assets/3d/atelier_microphone.glb", x: 1216, y: 292, heightMeters: 1.32, rotationY: 0 },
+  { id: "studio-mic-table", url: "/assets/3d/round_table.glb", x: 1216, y: 292, heightMeters: 0.78, rotationY: 0 },
+  { id: "studio-mic", url: "/assets/3d/atelier_microphone.glb", x: 1216, y: 292, heightMeters: 0.34, elevationMeters: 0.78, rotationY: 0 },
 
   // CO-WORK (story-lab — library_reading_room 디오라마 + 집중석·보드)
   { id: "cowork-board", url: "/assets/3d/refined-v8/blackboard.glb", x: 1984, y: 236, heightMeters: 1.9, rotationY: 0 },
+  { id: "cowork-chair-west", url: "/assets/3d/refined-v8/chair.glb", x: 1830, y: 486, heightMeters: 1.06, rotationY: Math.PI },
+  { id: "cowork-chair-east", url: "/assets/3d/refined-v8/chair.glb", x: 2138, y: 486, heightMeters: 1.06, rotationY: Math.PI },
   { id: "cowork-focus-west", url: "/assets/3d/school_desk.glb", x: 1740, y: 628, heightMeters: 1.08, rotationY: Math.PI },
   { id: "cowork-focus-east", url: "/assets/3d/school_desk.glb", x: 2228, y: 628, heightMeters: 1.08, rotationY: Math.PI },
   { id: "cowork-book-1", url: "/assets/3d/everyday_book.glb", x: 1740, y: 624, heightMeters: 0.2, elevationMeters: 0.82, rotationY: 0.2 },
   { id: "cowork-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 1740, y: 280, heightMeters: 0.72, rotationY: 0.3 },
 
-  // CAFE (creator-cafe — stylized_cafe_interior 디오라마 + 자판기·다기·마스코트)
+  // CAFE (creator-cafe — stylized_cafe_interior 디오라마 + 자판기·다기·라운지 테이블)
   { id: "cafe-tea-1", url: "/assets/3d/tea_set.glb", x: 2688, y: 318, heightMeters: 0.32, elevationMeters: 0.92, rotationY: 0.4 },
   { id: "cafe-boba-2", url: "/assets/3d/refined-v8/bubble_tea.glb", x: 2640, y: 318, heightMeters: 0.3, elevationMeters: 0.92, rotationY: -0.3 },
   { id: "cafe-vending", url: "/assets/3d/vending_machine.glb", x: 2470, y: 310, heightMeters: 1.95, rotationY: 0.2 },
-  { id: "cafe-cat-mascot", url: "/assets/3d/refined-v8/robot_pet.glb", x: 2890, y: 636, heightMeters: 0.82, rotationY: -0.5 },
+  { id: "cafe-lounge-table", url: "/assets/3d/round_table.glb", x: 2890, y: 636, heightMeters: 0.78, rotationY: 0 },
+  { id: "cafe-lounge-tea", url: "/assets/3d/tea_set.glb", x: 2890, y: 636, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.3 },
 
   // TALK (team-meeting — science_research_laboratory 디오라마 + 브리핑 보드룸 데스크·홀로그램)
   { id: "talk-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 980, heightMeters: 1.12, rotationY: 0 },
   { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 980, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
   { id: "talk-chair-w", url: "/assets/3d/refined-v8/chair.glb", x: 372, y: 980, heightMeters: 1.08, rotationY: Math.PI * 0.5 },
   { id: "talk-chair-e", url: "/assets/3d/refined-v8/chair.glb", x: 524, y: 980, heightMeters: 1.08, rotationY: -Math.PI * 0.5 },
-  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1246, heightMeters: 1.14, rotationY: Math.PI * 0.5 },
+  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1200, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
 
-  // PLAZA (creator-plaza — park_garden_pavilion 디오라마 + 소원 분수·가로등)
-  { id: "plaza-fountain-well", url: "/assets/3d/wishing_well.glb", x: 1472, y: 1210, heightMeters: 2.25, rotationY: 0 },
+  // PLAZA (creator-plaza — park_garden_pavilion 디오라마 + 중앙 분재·가로등)
+  { id: "plaza-center-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 1472, y: 1088, heightMeters: 1.48, elevationMeters: 0.22, rotationY: 0 },
   { id: "plaza-bench-west", url: "/assets/3d/neom_bench_prop.glb", x: 1150, y: 1290, heightMeters: 0.95, rotationY: 0 },
   { id: "plaza-bench-east", url: "/assets/3d/neom_bench_prop.glb", x: 1794, y: 1290, heightMeters: 0.95, rotationY: 0 },
   { id: "plaza-lamp-nw", url: "/assets/3d/street_lamp.glb", x: 1020, y: 860, heightMeters: 2.65, rotationY: 0 },
@@ -106,21 +111,23 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 
   // EVENT (event-stage — korean_school_rooftop 디오라마 + 라이브 스테이지 장비)
   { id: "event-hologram", url: "/assets/3d/hologram_tablet.glb", x: 2560, y: 1020, heightMeters: 1.55, elevationMeters: 0.32, rotationY: 0 },
-  { id: "event-mic", url: "/assets/3d/atelier_microphone.glb", x: 2480, y: 1056, heightMeters: 1.35, rotationY: 0.2 },
+  { id: "event-mic-table", url: "/assets/3d/round_table.glb", x: 2480, y: 1056, heightMeters: 0.78, rotationY: 0 },
+  { id: "event-mic", url: "/assets/3d/atelier_microphone.glb", x: 2480, y: 1056, heightMeters: 0.34, elevationMeters: 0.78, rotationY: 0.2 },
   { id: "event-lantern-w", url: "/assets/3d/paper_lantern.glb", x: 2320, y: 960, heightMeters: 1.5, rotationY: 0 },
   { id: "event-lantern-e", url: "/assets/3d/paper_lantern.glb", x: 2800, y: 960, heightMeters: 1.5, rotationY: 0 },
 
-  // GAME (arcade — compact_apartment_interior 컷어웨이 디오라마 + 아케이드 캐비닛 4대)
-  { id: "game-cabinet-1", url: "/assets/3d/arcade_game_cabinet.glb", x: 218, y: 1580, heightMeters: 1.82, rotationY: 0 },
-  { id: "game-cabinet-2", url: "/assets/3d/arcade_game_cabinet.glb", x: 306, y: 1580, heightMeters: 1.82, rotationY: 0 },
-  { id: "game-cabinet-3", url: "/assets/3d/arcade_game_cabinet.glb", x: 590, y: 1580, heightMeters: 1.82, rotationY: 0 },
-  { id: "game-cabinet-4", url: "/assets/3d/arcade_game_cabinet.glb", x: 678, y: 1580, heightMeters: 1.82, rotationY: 0 },
+  // GAME (arcade — compact_apartment_interior 컷어웨이 디오라마 + 아케이드 캐비닛 4대 정면 배치)
+  { id: "game-cabinet-1", url: "/assets/3d/arcade_game_cabinet.glb", x: 218, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
+  { id: "game-cabinet-2", url: "/assets/3d/arcade_game_cabinet.glb", x: 306, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
+  { id: "game-cabinet-3", url: "/assets/3d/arcade_game_cabinet.glb", x: 590, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
+  { id: "game-cabinet-4", url: "/assets/3d/arcade_game_cabinet.glb", x: 678, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
   { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 260, y: 1700, heightMeters: 1.2, rotationY: 0.3 },
 
-  // TERRACE (beach — fantasy_ruin_courtyard 디오라마 + 테라스 휴식 소품)
+  // TERRACE (beach — 테라스 라운지 소파·테이블·식물)
   { id: "terrace-bench-w", url: "/assets/3d/neom_bench_prop.glb", x: 1120, y: 1620, heightMeters: 0.95, rotationY: 0 },
   { id: "terrace-bench-e", url: "/assets/3d/neom_bench_prop.glb", x: 1820, y: 1620, heightMeters: 0.95, rotationY: 0 },
-  { id: "terrace-cat-mascot", url: "/assets/3d/refined-v8/robot_pet.glb", x: 1344, y: 1564, heightMeters: 0.82, rotationY: 0.4 },
+  { id: "terrace-lounge-table", url: "/assets/3d/round_table.glb", x: 1344, y: 1564, heightMeters: 0.78, rotationY: 0 },
+  { id: "terrace-lounge-tea", url: "/assets/3d/tea_set.glb", x: 1344, y: 1564, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.2 },
   { id: "terrace-monstera", url: "/assets/3d/potted_monstera.glb", x: 1620, y: 1580, heightMeters: 1.38, rotationY: -0.2 },
 
   // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 원고 전시 데스크·아카이브)
