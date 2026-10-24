@@ -36,7 +36,14 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 const QUICK_STROKE_WIDTHS = [2, 5, 12, 28, 64] as const;
 const QUICK_OPACITIES = [1, 0.75, 0.5, 0.25] as const;
 const QUICK_STABILIZER_LEVELS = [0, 3, 7, 12, 15] as const;
-const SYMMETRY_CYCLE_ORDER = ["off", "vertical", "horizontal", "quadrant", "radial"] as const;
+const SYMMETRY_CYCLE_ORDER = [
+  "off",
+  "vertical",
+  "horizontal",
+  "quadrant",
+  "radial",
+  "mandala",
+] as const;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -57,6 +64,8 @@ function resolveSymmetryShortLabel(symmetryType: unknown): string {
       return "4분할 대칭";
     case "radial":
       return "방사 대칭";
+    case "mandala":
+      return "만다라 대칭";
     default:
       return "대칭 끔";
   }
@@ -208,6 +217,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
             role="group"
             aria-label={tx("브러시 크기 빠른 조절")}
+            onWheel={(event) => {
+              if (event.deltaY === 0) return;
+              stepStrokeWidth(event.deltaY < 0 ? (strokeWidth < 10 ? 1 : 4) : strokeWidth <= 10 ? -1 : -4);
+            }}
           >
             <button
               type="button"
@@ -223,8 +236,17 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               data-testid="drawing-appbar-size-cycle"
               className="min-w-11 px-1 text-center transition-colors hover:text-fg"
               aria-label={`${tx("브러시 크기 빠른 전환, 현재")} ${currentWidth} px`}
-              title={tx("클릭하여 자주 쓰는 브러시 크기(2·5·12·28·64px) 전환 · 단축키 [ / ]")}
+              title={tx("클릭하여 자주 쓰는 브러시 크기(2·5·12·28·64px) 전환 · 휠/상하키 미세 조절 · 단축키 [ / ]")}
               onClick={() => s.setStrokeWidth?.(nextInCycle(QUICK_STROKE_WIDTHS, currentWidth))}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  stepStrokeWidth(strokeWidth < 10 ? 1 : 4);
+                } else if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  stepStrokeWidth(strokeWidth <= 10 ? -1 : -4);
+                }
+              }}
             >
               <span data-testid="studio-appbar-stroke-width">{strokeWidth} px</span>
             </button>
@@ -245,6 +267,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
             role="group"
             aria-label={tx("브러시 불투명도 빠른 조절")}
+            onWheel={(event) => {
+              if (event.deltaY === 0) return;
+              stepBrushOpacity(event.deltaY < 0 ? 0.05 : -0.05);
+            }}
           >
             <button
               type="button"
@@ -260,8 +286,17 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               data-testid="drawing-appbar-opacity-cycle"
               className="min-w-10 px-1 text-center transition-colors hover:text-fg"
               aria-label={`${tx("브러시 불투명도 빠른 전환, 현재")} ${percent(currentOpacity)}`}
-              title={tx("클릭하여 불투명도(100%·75%·50%·25%) 빠른 전환")}
+              title={tx("클릭하여 불투명도(100%·75%·50%·25%) 빠른 전환 · 휠/상하키 미세 조절")}
               onClick={() => s.setBrushOpacity?.(nextInCycle(QUICK_OPACITIES, currentOpacity))}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  stepBrushOpacity(0.05);
+                } else if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  stepBrushOpacity(-0.05);
+                }
+              }}
             >
               <span data-testid="studio-appbar-opacity">{percent(opacityRatio)}</span>
             </button>
@@ -282,6 +317,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
             role="group"
             aria-label={tx("손떨림 보정 빠른 조절")}
+            onWheel={(event) => {
+              if (event.deltaY === 0) return;
+              stepStabilizer(event.deltaY < 0 ? 5 : -5);
+            }}
           >
             <button
               type="button"
@@ -297,8 +336,17 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               data-testid="drawing-appbar-stabilizer-cycle"
               className="px-1 text-center transition-colors hover:text-fg"
               aria-label={`${tx("손떨림 보정 강도 빠른 전환, 현재")} Stabilizer ${stabilizer}`}
-              title={tx("클릭하여 손떨림 보정 단계(0·3·7·12·15) 빠른 전환")}
+              title={tx("클릭하여 손떨림 보정 단계(0·3·7·12·15) 빠른 전환 · 휠/상하키 미세 조절")}
               onClick={() => s.setStabilizer?.(nextInCycle(QUICK_STABILIZER_LEVELS, stabilizer))}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  stepStabilizer(5);
+                } else if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  stepStabilizer(-5);
+                }
+              }}
             >
               <span data-testid="studio-appbar-stabilizer">Stabilizer {stabilizer}</span>
             </button>
