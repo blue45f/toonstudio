@@ -23,8 +23,10 @@
  */
 
 import {
+  normalizePerspectiveFisheyeStrength,
   perspectiveVanishingPoints,
   projectPointToLine,
+  warpPerspectivePointForFisheye,
   type GuideLine,
   type GuidePoint,
   type PerspectiveGuide,
@@ -38,16 +40,37 @@ export interface PerspectivePenSnapConfig {
   readonly guide: PerspectiveGuide | null;
   /** 방향 확정 전 최소 이동(px, 캔버스 좌표). 기본 4. */
   readonly minLockDistancePx?: number;
+  /** 지평선(가로 기준선) 평행 방향 스냅 허용 여부. 1점·2점 투시 가로 보조선 드로잉용. 기본 false. */
+  readonly allowHorizonSnap?: boolean;
+  /**
+   * 소실점 광선과의 최대 허용 각도 오차(도, 1..90).
+   * 지정 시 초기 스트로크 진행 방향이 모든 후보 광선과 이 각도보다 크게 벌어지면
+   * 억지로 투시선에 붙이지 않고 자유 곡선(freehandPassthrough)으로 통과시킨다.
+   */
+  readonly maxSnapAngleDeg?: number;
+  /** 5점 어안(피쉬아이) 곡선 투시 스냅 강도(0..1). canvas와 함께 주면 왜곡 곡선 궤적으로 스냅한다. */
+  readonly fisheyeStrength?: number;
+  /** 어안 왜곡 중심·반경 계산용 캔버스 크기. */
+  readonly canvas?: { readonly width: number; readonly height: number };
 }
 
 export interface PerspectivePenSnapSession {
   readonly start: GuidePoint;
   readonly vanishingPoints: readonly GuidePoint[];
   readonly minLockDistancePx: number;
-  /** 확정된 소실점. null이면 아직 방향 미확정. */
+  /** 확정된 소실점(또는 horizon 가상 기준점). null이면 아직 방향 미확정. */
   readonly lockedVanishingPoint: GuidePoint | null;
-  /** 확정된 소실점의 패밀리(left/right/vertical). 미확정이면 null. */
+  /** 확정된 소실점의 패밀리(left/right/vertical/horizon). 미확정이면 null. */
   readonly lockedFamily: GuideLine["family"] | null;
+  /** 지평선 평행 단위 방향이 활성화된 경우 지평선 각도(라디안). */
+  readonly horizonAngleRad: number | null;
+  /** 최대 허용 각도(라디안). null이면 제한 없음. */
+  readonly maxSnapAngleRad: number | null;
+  /** 초기 각도가 maxSnapAngleDeg 밖이라 자유 드로잉으로 확정되었는지 여부. */
+  readonly freehandPassthrough?: boolean;
+  /** 어안 왜곡 강도(0..1) 및 캔버스. */
+  readonly fisheyeStrength?: number;
+  readonly canvas?: { readonly width: number; readonly height: number };
 }
 
 export interface PerspectivePenSnapResult {
@@ -63,6 +86,46 @@ const FAMILIES: readonly GuideLine["family"][] = [
   "right",
   "vertical",
 ] as const;
+
+/**
+ * `warpPerspectivePointForFisheye`의 역변환 ($r' = r(1 - 0.45 k r^2)$ 를 뉴턴-랩슨 6회로 역산).
+ * 어안 캔버스 위의 좌표를 선형 투시 공간 좌표로 되돌린다.
+ */
+export function unwarpPerspectivePointFromFisheye(
+  point: GuidePoint,
+  canvas: { readonly width: number; readonly height: number },
+  strength: number,
+): GuidePoint {
+  const k = normalizePerspectiveFisheyeStrength(strength, 0);
+  if (k <= 0) return { x: point.x, y: point.y };
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const maxR = Math.hypot(canvas.width, canvas.height) / 2 || 1;
+  const dx = point.x - cx;
+  const dy = point.y - cy;
+  const rPrime = Math.hypot(dx, dy) / maxR;
+  if (rPrime < 1e-12) return { x: cx, y: cy };
+
+  let r = rPrime;
+  for (let iter = 0; iter < 6; iter += 1) {
+    const f = r * (1 - 0.45 * k * r * r) - rPrime;
+    const df = Math.max(0.1, 1 - 1.35 * k * r * r);
+    r = Math.max(0, r - f / df);
+  }
+  const invScale = r / rPrime;
+  return { x: cx + dx * invScale, y: cy + dy * invScale };
+}
+
+function resolveHorizonAngleRad(guide: PerspectiveGuide): number {
+  if (guide.left && guide.right) {
+    const dx = guide.right.x - guide.left.x;
+    const dy = guide.right.y - guide.left.y;
+    if (Math.hypot(dx, dy) > 1e-9) {
+      return Math.atan2(dy, dx);
+    }
+  }
+  return Number.isFinite(guide.horizonAngle) ? guide.horizonAngle : 0;
+}
 
 /** 가이드가 스냅 가능한 상태인지(켜짐 + 스냅 켜짐 + 소실점 1개 이상). */
 export function isPerspectivePenSnapActive(
@@ -84,6 +147,21 @@ export function createPerspectivePenSnapSession(
 ): PerspectivePenSnapSession | null {
   if (!isPerspectivePenSnapActive(config) || !config.guide) return null;
   if (!Number.isFinite(start.x) || !Number.isFinite(start.y)) return null;
+  const rawMaxAngle = config.maxSnapAngleDeg;
+  const maxSnapAngleRad =
+    rawMaxAngle !== undefined && Number.isFinite(rawMaxAngle) && rawMaxAngle > 0
+      ? (Math.min(90, Math.max(1, rawMaxAngle)) * Math.PI) / 180
+      : null;
+  const fisheyeStrength =
+    config.fisheyeStrength !== undefined
+      ? normalizePerspectiveFisheyeStrength(config.fisheyeStrength, 0)
+      : 0;
+  const hasValidCanvas =
+    config.canvas !== undefined &&
+    Number.isFinite(config.canvas.width) &&
+    config.canvas.width > 0 &&
+    Number.isFinite(config.canvas.height) &&
+    config.canvas.height > 0;
   return {
     start,
     vanishingPoints: perspectiveVanishingPoints(config.guide),
@@ -95,6 +173,13 @@ export function createPerspectivePenSnapSession(
         : 4,
     lockedVanishingPoint: null,
     lockedFamily: null,
+    horizonAngleRad: config.allowHorizonSnap
+      ? resolveHorizonAngleRad(config.guide)
+      : null,
+    maxSnapAngleRad,
+    ...(fisheyeStrength > 0 && hasValidCanvas
+      ? { fisheyeStrength, canvas: config.canvas }
+      : {}),
   };
 }
 
@@ -116,6 +201,33 @@ function projectOntoVpLine(
     lockedVanishingPoint: vp,
     lockedFamily: family,
   };
+  if (
+    session.fisheyeStrength &&
+    session.fisheyeStrength > 0 &&
+    session.canvas
+  ) {
+    const linearStart = unwarpPerspectivePointFromFisheye(
+      session.start,
+      session.canvas,
+      session.fisheyeStrength,
+    );
+    const linearSample = unwarpPerspectivePointFromFisheye(
+      sample,
+      session.canvas,
+      session.fisheyeStrength,
+    );
+    const { projected: linearProjected } = projectPointToLine(linearSample, {
+      from: linearStart,
+      to: vp,
+      family,
+    });
+    const curvedPoint = warpPerspectivePointForFisheye(
+      linearProjected,
+      session.canvas,
+      session.fisheyeStrength,
+    );
+    return { session: locked, point: curvedPoint, snapped: true, family };
+  }
   const { projected } = projectPointToLine(sample, {
     from: session.start,
     to: vp,
@@ -141,6 +253,7 @@ export function snapPerspectivePenPoint(
   };
   if (!session) return identity;
   if (!Number.isFinite(sample.x) || !Number.isFinite(sample.y)) return identity;
+  if (session.freehandPassthrough) return identity;
 
   if (session.lockedVanishingPoint && session.lockedFamily) {
     return projectOntoVpLine(
@@ -157,37 +270,75 @@ export function snapPerspectivePenPoint(
   );
   if (moved < session.minLockDistancePx) return identity;
 
+  const linearStart =
+    session.fisheyeStrength && session.fisheyeStrength > 0 && session.canvas
+      ? unwarpPerspectivePointFromFisheye(
+          session.start,
+          session.canvas,
+          session.fisheyeStrength,
+        )
+      : session.start;
+  const linearSample =
+    session.fisheyeStrength && session.fisheyeStrength > 0 && session.canvas
+      ? unwarpPerspectivePointFromFisheye(
+          sample,
+          session.canvas,
+          session.fisheyeStrength,
+        )
+      : sample;
+
   const moveAngle = Math.atan2(
-    sample.y - session.start.y,
-    sample.x - session.start.x,
+    linearSample.y - linearStart.y,
+    linearSample.x - linearStart.x,
   );
-  let bestIndex = -1;
+  let bestTarget: GuidePoint | null = null;
+  let bestFamily: GuideLine["family"] | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
   for (let i = 0; i < session.vanishingPoints.length; i += 1) {
     const vp = session.vanishingPoints[i];
-    // 시작점과 겹치는 소실점은 방향이 정의되지 않는다.
-    if (Math.hypot(vp.x - session.start.x, vp.y - session.start.y) < 1e-9) {
+    if (Math.hypot(vp.x - linearStart.x, vp.y - linearStart.y) < 1e-9) {
       continue;
     }
     const rayAngle = Math.atan2(
-      session.start.y - vp.y,
-      session.start.x - vp.x,
+      linearStart.y - vp.y,
+      linearStart.x - vp.x,
     );
-    // 직선은 양방향: 반대 방향(π 차이)도 같은 직선으로 본다.
     const diff = Math.abs(wrapPi(rayAngle - moveAngle));
     const score = Math.min(diff, Math.PI - diff);
     if (score < bestScore) {
       bestScore = score;
-      bestIndex = i;
+      bestTarget = vp;
+      bestFamily = FAMILIES[i] ?? "left";
     }
   }
-  if (bestIndex < 0) return identity;
-  return projectOntoVpLine(
-    session,
-    session.vanishingPoints[bestIndex],
-    FAMILIES[bestIndex] ?? "left",
-    sample,
-  );
+
+  if (session.horizonAngleRad !== null && session.horizonAngleRad !== undefined) {
+    const hDiff = Math.abs(wrapPi(session.horizonAngleRad - moveAngle));
+    const hScore = Math.min(hDiff, Math.PI - hDiff);
+    if (hScore < bestScore) {
+      bestScore = hScore;
+      bestTarget = {
+        x: linearStart.x + Math.cos(session.horizonAngleRad) * 1000,
+        y: linearStart.y + Math.sin(session.horizonAngleRad) * 1000,
+      };
+      bestFamily = "horizon";
+    }
+  }
+
+  if (!bestTarget || !bestFamily) return identity;
+  if (
+    session.maxSnapAngleRad !== null &&
+    session.maxSnapAngleRad !== undefined &&
+    bestScore > session.maxSnapAngleRad
+  ) {
+    return {
+      session: { ...session, freehandPassthrough: true },
+      point: sample,
+      snapped: false,
+      family: null,
+    };
+  }
+  return projectOntoVpLine(session, bestTarget, bestFamily, sample);
 }
 
 /**
