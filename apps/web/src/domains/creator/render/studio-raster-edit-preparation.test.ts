@@ -294,7 +294,12 @@ describe("editable raster copy planning", () => {
     expect(planStudioEditableRasterCopy(context.input)).toMatchObject({
       ok: false,
       code: "document-locked",
-      reason: expect.stringMatching(recovery),
+      reason: {
+        code: "documentLocked",
+        params: {
+          message: expect.stringMatching(recovery),
+        },
+      },
     });
     expect(context.destinationElements).toHaveLength(1);
     expect(context.destinationElements[0]).toBe(context.input.elements[0]);
@@ -992,7 +997,7 @@ describe("Worker-fused editable raster preparation", () => {
       includeBackground: false,
       budgets: { maxPngBytes: 1 },
     }, async () => pngLimitedPrepared, async () =>
-      renderedPreparedVectorExport(pngLimitedPrepared))).rejects.toThrow(/허용치/u);
+      renderedPreparedVectorExport(pngLimitedPrepared))).rejects.toThrow("filterPngTooLarge");
   });
 
   it("preserves stale ownership checks after its single async preparation boundary", async () => {
@@ -1197,11 +1202,11 @@ describe("editable raster copy rendering", () => {
     await expect(renderStudioEditableRasterCopy(
       planned.plan,
       async () => ({ ...result, width: result.width + 1 }),
-    )).rejects.toThrow(/해상도/u);
+    )).rejects.toThrow("filterResolutionMismatch");
     await expect(renderStudioEditableRasterCopy(
       planned.plan,
       async () => ({ ...result, elementCount: result.elementCount + 1 }),
-    )).rejects.toThrow(/레이어 수/u);
+    )).rejects.toThrow("filterLayerCountMismatch");
   });
 
   it("rejects an injected renderer result that exceeds the plan PNG budget", async () => {
@@ -1222,7 +1227,7 @@ describe("editable raster copy rendering", () => {
         pngByteLength: 4 * 1024 * 1024 + 1,
         execution: "direct",
       }),
-    )).rejects.toThrow(/허용치/u);
+    )).rejects.toThrow("filterPngTooLarge");
   });
 
   it("detects stale source geometry after an async boundary", () => {

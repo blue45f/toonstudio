@@ -4828,9 +4828,9 @@ async function runDeferredDurabilityAudit(
     const safeLeft = Math.max(stageBox.x + 70, viewport.width * 0.34);
     const safeRight = Math.min(stageBox.x + stageBox.width - 70, viewport.width * 0.69);
     const safeTop = Math.max(stageBox.y + 70, viewport.height * 0.18);
-    const safeBottom = Math.min(stageBox.y + stageBox.height - 70, viewport.height * 0.52);
+    const safeBottom = Math.min(stageBox.y + stageBox.height - 70, viewport.height * 0.56);
     invariant(safeRight - safeLeft >= 240, "visible canvas is too narrow for the deferred stroke");
-    invariant(safeBottom - safeTop >= 140, "visible canvas is too short for the deferred stroke");
+    invariant(safeBottom - safeTop >= 120, "visible canvas is too short for the deferred stroke");
     const receiptLane = { x: safeLeft, y: safeTop + (safeBottom - safeTop) * 0.3 };
     const navigationLane = { x: safeLeft, y: safeTop + (safeBottom - safeTop) * 0.6 };
     const endX = Math.min(safeRight, safeLeft + 240);

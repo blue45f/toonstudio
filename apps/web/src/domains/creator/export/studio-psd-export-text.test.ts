@@ -122,7 +122,7 @@ describe("PSD editable text one-way export", () => {
   it("마스크 캡처 경계가 없으면 가려진 픽셀을 드러내지 않고 중단한다", async () => {
     const element: PsdExportEl = { id: "masked", type: "image", x: 0, y: 0, width: 2, height: 2, maskSrc: "data:image/png;base64,MASK" };
     const { stage } = fakeStage([{ id: "masked", documentRect: { x: 0, y: 0, width: 2, height: 2 } }]);
-    await expect(exportPagePsd(stage, [element], 2, 2, 1, { includeBackground: false })).rejects.toThrow("레이어 마스크의 캡처 경계");
+    await expect(exportPagePsd(stage, [element], 2, 2, 1, { includeBackground: false })).rejects.toThrow("maskCaptureBoundsMissing");
   });
   it("round-trips a supported horizontal TextEl descriptor on its existing raster layer", async () => {
     const image: PsdExportEl = {
