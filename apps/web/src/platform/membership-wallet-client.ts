@@ -122,6 +122,28 @@ export function getMembershipEntitlements(): Promise<{
   return api.get("/membership/entitlements");
 }
 
+export type MembershipSpendResult = {
+  spendEventId: string;
+  balance: WalletBalanceView;
+};
+
+/**
+ * spend 이후 잔액 갱신 흐름: 이 호출의 응답 balance로 즉시 갱신하고,
+ * 필요하면 getMembershipOverview()를 다시 불러 전체 지갑 상태를 동기화한다.
+ * 새 문자열이 필요 없어 i18n 카탈로그·builtins에는 손대지 않는다.
+ */
+export function spendMembershipCredits(
+  resourceId: string,
+  pointPrice: number,
+  requestId: string,
+): Promise<MembershipSpendResult> {
+  return api.post<MembershipSpendResult>("/membership/wallet/spend", {
+    resourceId,
+    pointPrice,
+    requestId,
+  });
+}
+
 export function claimMembershipActivity(
   activity: string,
   sourceRef: string,

@@ -46,6 +46,7 @@ import {
   resolveStudioAiQuotaLimits,
   STUDIO_AI_USAGE_STORE,
 } from "./studio-ai-usage";
+import { beginStudioAiCreditCharge, settleStudioAiCreditCharge, STUDIO_AI_CREDIT_WALLET, type StudioAiCreditCharge, type StudioAiCreditWallet } from "./studio-ai-credit-charge";
 
 import type {
   StudioAiAdmissionGate,
@@ -449,7 +450,8 @@ export class StudioAiService {
     private readonly admissionGate: StudioAiAdmissionGate,
     @Optional()
     @Inject(BackendCapabilityGatewayDispatcher)
-    private readonly capabilityDispatcher: BackendCapabilityGatewayDispatcher | null = null
+    private readonly capabilityDispatcher: BackendCapabilityGatewayDispatcher | null = null,
+    @Optional() @Inject(STUDIO_AI_CREDIT_WALLET) private readonly creditWallet: StudioAiCreditWallet | null = null
   ) {}
 
   status() {
@@ -529,13 +531,7 @@ export class StudioAiService {
     const leaseMs = providerTimeoutMs + STUDIO_AI_LEASE_GRACE_MS;
     let admission: Awaited<ReturnType<StudioAiAdmissionGate["acquire"]>>;
     try {
-      admission = await this.admissionGate.acquire({
-        userId,
-        identity,
-        requestLimit: STUDIO_AI_RATE_LIMIT_REQUESTS,
-        windowMs: STUDIO_AI_RATE_LIMIT_WINDOW_MS,
-        leaseMs,
-      });
+      admission = await this.admissionGate.acquire({ userId, identity, requestLimit: STUDIO_AI_RATE_LIMIT_REQUESTS, windowMs: STUDIO_AI_RATE_LIMIT_WINDOW_MS, leaseMs });
     } catch {
       throw admissionUnavailableException();
     }
@@ -565,11 +561,7 @@ export class StudioAiService {
       failure = error;
     } finally {
       try {
-        await this.admissionGate.release({
-          userId,
-          token: admission.lease.token,
-          fence: admission.lease.fence,
-        });
+        await this.admissionGate.release({ userId, token: admission.lease.token, fence: admission.lease.fence });
       } catch {
         // Do not hide an already-paid result or original provider failure: a retry could duplicate
         // billing. The exact hash/fence cannot clear a newer lease, and this lease expires in DB.
@@ -693,11 +685,7 @@ export class StudioAiService {
     });
     let reservation: Awaited<ReturnType<StudioAiUsageStore["reserve"]>>;
     try {
-      reservation = await this.usageStore.reserve({
-        userId,
-        reservedTokens,
-        limits: resolveStudioAiQuotaLimits(),
-      });
+      reservation = await this.usageStore.reserve({ userId, reservedTokens, limits: resolveStudioAiQuotaLimits() });
     } catch {
       await abandonBeforeSend();
       throw usageLedgerUnavailableException();
@@ -713,12 +701,7 @@ export class StudioAiService {
     // to recover, while a newer fence fails closed without sending the prompt.
     let renewedLease: StudioAiAdmissionLease | null = null;
     try {
-      renewedLease = await this.admissionGate.renew({
-        userId,
-        token: admissionLease.token,
-        fence: admissionLease.fence,
-        leaseMs,
-      });
+      renewedLease = await this.admissionGate.renew({ userId, token: admissionLease.token, fence: admissionLease.fence, leaseMs });
     } catch {
       // Normalize storage failures below after releasing the already-reserved token budget.
     }
@@ -747,6 +730,16 @@ export class StudioAiService {
       await abandonBeforeSend();
       if (ledgerFailed) throw usageLedgerUnavailableException();
       throw admissionUnavailableException();
+    }
+
+    // 운영자 부담 제공자가 후보에 있을 때만 크레딧을 예약한다. 무료 풀만이면
+    // 예약 없이 진행하고, 예약 실패(잔액·한도)는 AI 호출 전에 차단한다.
+    let creditCharge: StudioAiCreditCharge = { charged: false };
+    try {
+      creditCharge = await beginStudioAiCreditCharge(this.creditWallet, { userId, task: input.task, idempotencyKey, providers });
+    } catch (error) {
+      await abandonBeforeSend();
+      throw error;
     }
 
     const upstreamController = new AbortController();
@@ -1015,6 +1008,13 @@ export class StudioAiService {
         outcome: receiptOutcome,
         attemptCount: Math.max(0, attemptCount),
       });
+    }
+
+    // 최종 제공자·결과로 판정한다. 정산 실패는 성공 결과를 가리지 않는다.
+    try {
+      await settleStudioAiCreditCharge(this.creditWallet, creditCharge, { succeeded: outcomeStatus === "success", providerFreePool: ledgerProvider.freePool });
+    } catch {
+      console.error("[studio-ai] credit settlement failed", { provider: ledgerProvider.id });
     }
 
     const finishedAt = new Date(Math.max(Date.now(), startedAt.getTime()));

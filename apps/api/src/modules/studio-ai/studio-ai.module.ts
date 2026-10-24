@@ -17,10 +17,14 @@ import { StudioAiComicDirectorService } from "./studio-ai-comic-director.service
 import { studioAiIdempotencySchemaPreflightProvider } from "./studio-ai-idempotency-schema-preflight";
 import { STUDIO_AI_USAGE_STORE } from "./studio-ai-usage";
 import { PostgresStudioAiUsageStore } from "./studio-ai-usage.repository";
+import { MembershipWalletModule } from "../membership-wallet/membership-wallet.module";
+import { MembershipWalletService } from "../membership-wallet/membership-wallet.service";
+import { STUDIO_AI_CREDIT_WALLET } from "./studio-ai-credit-charge";
 import { StudioAiController } from "./studio-ai.controller";
 import { StudioAiService } from "./studio-ai.service";
 
 @Module({
+  imports: [MembershipWalletModule],
   controllers: [
     CreatorInferenceController,
     StudioAiController,
@@ -30,6 +34,10 @@ import { StudioAiService } from "./studio-ai.service";
   ],
   providers: [
     CreatorInferenceGateway,
+    {
+      provide: STUDIO_AI_CREDIT_WALLET,
+      useExisting: MembershipWalletService,
+    },
     studioAiAdmissionRepositoryProvider,
     studioAiAdmissionSchemaPreflightProvider,
     studioAiIdempotencySchemaPreflightProvider,
