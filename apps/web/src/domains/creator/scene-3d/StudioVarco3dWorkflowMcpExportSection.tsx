@@ -1,5 +1,15 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useMemo, useState, type CSSProperties, type ReactElement } from "react";
 
+import {
+  STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS,
+  STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES,
+  STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
+  composeVarco3dCharacterLabLoadout,
+  evaluateVarco3dDioramaScenePlacement,
+  resolveVarco3dTurnaroundViewUrl,
+  type StudioVarco3dTurnaroundAngle,
+} from "./studio-varco3d-character-lab-diorama-catalog";
 import {
   STUDIO_VARCO3D_ANIMATION_CATEGORIES,
   STUDIO_VARCO3D_WORKFLOW_NODE_CATALOG,
@@ -21,6 +31,18 @@ const UV_MODES: readonly StudioVarco3dUvPreviewMode[] = Object.freeze([
   "metallic",
 ]);
 
+const TURNAROUND_ANGLES: readonly StudioVarco3dTurnaroundAngle[] = Object.freeze([
+  "front",
+  "back",
+  "left",
+  "right",
+]);
+
+const DEFERRED_CATALOG_CONTAINER_STYLE: CSSProperties = {
+  contentVisibility: "auto",
+  containIntrinsicSize: "auto none auto 280px",
+};
+
 const SAMPLE_ANIMATION_KEYS = Object.freeze([
   { key: "webtoon_sword_combo_looping", labelKo: "휴머노이드 검술 루프" },
   { key: "dog_gallop_left_lead_looping", labelKo: "4족 보행(견공) 갤럽 루프" },
@@ -41,6 +63,21 @@ export function StudioVarco3dWorkflowMcpExportSection({
   const [uvMode, setUvMode] = useState<StudioVarco3dUvPreviewMode>("baseColor");
   const [selectedAnimKey, setSelectedAnimKey] = useState<string>(
     "webtoon_sword_combo_looping",
+  );
+  const [selectedArchetypeId, setSelectedArchetypeId] = useState<string>(
+    "char_rofan_villainess_empress",
+  );
+  const [selectedWigId, setSelectedWigId] = useState<string>("charlab_wig_rofan_hime_wave");
+  const [selectedOutfitId, setSelectedOutfitId] = useState<string>(
+    "charlab_outfit_rofan_crimson_gown",
+  );
+  const [selectedWeaponId, setSelectedWeaponId] = useState<string>(
+    "charlab_weapon_paladin_greatsword",
+  );
+  const [selectedTurnaroundAngle, setSelectedTurnaroundAngle] =
+    useState<StudioVarco3dTurnaroundAngle>("front");
+  const [selectedDioramaId, setSelectedDioramaId] = useState<string>(
+    "diorama_rofan_imperial_ballroom",
   );
 
   const connectionValidation = useMemo(
@@ -103,6 +140,44 @@ export function StudioVarco3dWorkflowMcpExportSection({
       [0, 1, 2, 3, 4]
         .map((attempt) => `${computeVarco3dMcpReconnectBackoffMs(attempt) / 1000}s`)
         .join(" → "),
+    [],
+  );
+
+  const characterLabLoadout = useMemo(
+    () =>
+      composeVarco3dCharacterLabLoadout({
+        archetypeId: selectedArchetypeId,
+        itemIds: [selectedWigId, selectedOutfitId, selectedWeaponId],
+      }),
+    [selectedArchetypeId, selectedWigId, selectedOutfitId, selectedWeaponId],
+  );
+
+  const turnaroundViewUrl = useMemo(
+    () =>
+      characterLabLoadout.primaryTurnaround
+        ? resolveVarco3dTurnaroundViewUrl(
+            characterLabLoadout.primaryTurnaround,
+            selectedTurnaroundAngle,
+          )
+        : "",
+    [characterLabLoadout.primaryTurnaround, selectedTurnaroundAngle],
+  );
+
+  const dioramaPlacementPlan = useMemo(
+    () =>
+      evaluateVarco3dDioramaScenePlacement({
+        dioramaId: selectedDioramaId,
+        propIds: ["prop_school_desk_chair", "prop_cafe_table_set", "prop_pojangmacha_cart"],
+      }),
+    [selectedDioramaId],
+  );
+
+  const wigOptions = useMemo(
+    () => STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.filter((item) => item.slot === "head-hair"),
+    [],
+  );
+  const outfitOptions = useMemo(
+    () => STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.filter((item) => item.slot === "outfit-set"),
     [],
   );
 
@@ -300,6 +375,157 @@ export function StudioVarco3dWorkflowMcpExportSection({
               패밀리: <strong>{classifiedAnim.clipFamily}</strong> · 루프:{" "}
               <strong>{classifiedAnim.isLooping ? "YES" : "NO"}</strong>
             </span>
+          </div>
+        </div>
+      </details>
+
+      <details
+        name={accordionGroupName}
+        data-testid="varco3d-details-character-lab-diorama"
+        style={DEFERRED_CATALOG_CONTAINER_STYLE}
+        className="rounded-lg border border-line/60 bg-card px-3 py-2"
+      >
+        <summary className="cursor-pointer font-semibold text-fg">
+          Character Labs 모듈형 파츠 코디네이터 ({STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.length}
+          종 · 4-View 턴어라운드) & 3D 배경 아이소메트릭 디오라마 (
+          {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종) · 한국 웹툰 소품 (
+          {STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.length}종)
+        </summary>
+        <div className="mt-2 grid grid-cols-1 gap-2.5 text-[0.72rem] text-fg-2 md:grid-cols-3">
+          <div className="flex flex-col gap-1">
+            <span className="font-medium text-fg">
+              Character Labs 베이스 아키타입 ({STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.length}종)
+              & 가발/의상 슬롯
+            </span>
+            <select
+              aria-label="Character Labs 베이스 아키타입"
+              data-testid="varco3d-charlab-archetype-select"
+              value={selectedArchetypeId}
+              onChange={(e) => setSelectedArchetypeId(e.target.value)}
+              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
+            >
+              {STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.map((arch) => (
+                <option key={arch.id} value={arch.id}>
+                  {arch.labelKo} ({arch.headTallRatio}등신)
+                </option>
+              ))}
+            </select>
+            <div className="flex flex-wrap gap-1">
+              {wigOptions.map((wig) => (
+                <button
+                  key={wig.id}
+                  type="button"
+                  data-testid={`varco3d-charlab-wig-${wig.id}`}
+                  aria-pressed={selectedWigId === wig.id}
+                  onClick={() => setSelectedWigId(wig.id)}
+                  className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${
+                    selectedWigId === wig.id
+                      ? "border-accent bg-accent-soft font-semibold text-fg"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {wig.labelKo}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {outfitOptions.slice(0, 4).map((outfit) => (
+                <button
+                  key={outfit.id}
+                  type="button"
+                  data-testid={`varco3d-charlab-outfit-${outfit.id}`}
+                  aria-pressed={selectedOutfitId === outfit.id}
+                  onClick={() => setSelectedOutfitId(outfit.id)}
+                  className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${
+                    selectedOutfitId === outfit.id
+                      ? "border-accent bg-accent-soft font-semibold text-fg"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {outfit.labelKo}
+                </button>
+              ))}
+            </div>
+            <span data-testid="varco3d-charlab-loadout-readout" className="text-[0.66rem] text-fg-3">
+              장착 파츠: <strong>{characterLabLoadout.equippedItems.length}개</strong> · 폴리곤 예산:{" "}
+              <strong>{characterLabLoadout.totalPolygonBudget.toLocaleString()} tris</strong> · 장르
+              시너지: <strong>{characterLabLoadout.genreSynergyScore}%</strong> · 본 바인딩:{" "}
+              <code>{characterLabLoadout.attachedBones.join(", ")}</code>
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="font-medium text-fg">
+              실시간 4-View 직교 턴어라운드 시트 (FOUR_VIEW_GENERATION)
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {TURNAROUND_ANGLES.map((angle) => (
+                <button
+                  key={angle}
+                  type="button"
+                  data-testid={`varco3d-turnaround-angle-${angle}`}
+                  aria-pressed={selectedTurnaroundAngle === angle}
+                  onClick={() => setSelectedTurnaroundAngle(angle)}
+                  className={`rounded border px-2 py-0.5 text-[0.66rem] uppercase ${
+                    selectedTurnaroundAngle === angle
+                      ? "border-accent bg-accent-soft font-semibold text-fg"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {angle}
+                </button>
+              ))}
+              <button
+                type="button"
+                data-testid="varco3d-charlab-weapon-murim"
+                onClick={() => setSelectedWeaponId("charlab_weapon_murim_jade_sword")}
+                className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.65rem] text-fg-2"
+              >
+                무림 장검 장착
+              </button>
+            </div>
+            <code
+              data-testid="varco3d-turnaround-view-url"
+              className="truncate text-[0.64rem] text-fg-3"
+            >
+              {turnaroundViewUrl}
+            </code>
+            <span className="text-[0.65rem] text-fg-3">
+              턴어라운드 태스크 ID:{" "}
+              <code>{characterLabLoadout.primaryTurnaround?.taskId ?? "none"}</code>
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="font-medium text-fg">
+              3D 배경 아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종) &
+              한국 웹툰 소품 배치
+            </span>
+            <select
+              aria-label="3D 배경 아이소메트릭 디오라마 선택"
+              data-testid="varco3d-diorama-select"
+              value={selectedDioramaId}
+              onChange={(e) => setSelectedDioramaId(e.target.value)}
+              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
+            >
+              {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.map((scene) => (
+                <option key={scene.id} value={scene.id}>
+                  {scene.labelKo} ({scene.ambientKelvin}K)
+                </option>
+              ))}
+            </select>
+            <span data-testid="varco3d-diorama-plan-readout" className="text-[0.66rem] text-fg-3">
+              FOV: <strong>{dioramaPlacementPlan.diorama.cameraFovDeg}°</strong> · 고도각:{" "}
+              <strong>{dioramaPlacementPlan.diorama.cameraElevationDeg}°</strong> · 방위각:{" "}
+              <strong>{dioramaPlacementPlan.diorama.cameraAzimuthDeg}°</strong> · 소품 면적:{" "}
+              <strong>{dioramaPlacementPlan.totalFootprintAreaSqMeters}㎡</strong>
+            </span>
+            <code
+              data-testid="varco3d-diorama-portal-url"
+              className="truncate text-[0.64rem] text-fg-3"
+            >
+              {dioramaPlacementPlan.varcoAssetPortalUrl}
+            </code>
           </div>
         </div>
       </details>

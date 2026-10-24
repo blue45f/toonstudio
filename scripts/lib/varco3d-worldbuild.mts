@@ -553,13 +553,15 @@ export async function runVarco3dWorldbuildBatch(
           mcpUploadedUrl = up.data.url;
         }
         if (mcpUploadedUrl && mcpActiveFlowId) {
+          const yCoord = 120 + idx * 280;
           const imgNode = await callVarco3dMcpTool(
             options.config,
             "create_node",
             {
               flowId: mcpActiveFlowId,
-              type: "ImageInput",
-              position: { x: 100, y: 120 + idx * 280 },
+              nodeType: "ImageInput",
+              x: 100,
+              y: yCoord,
               intrinsic: { value: [{ type: "image", url: mcpUploadedUrl }] },
             },
             fetchImpl,
@@ -569,8 +571,9 @@ export async function runVarco3dWorldbuildBatch(
             "create_node",
             {
               flowId: mcpActiveFlowId,
-              type: "Generate3D",
-              position: { x: 480, y: 120 + idx * 280 },
+              nodeType: "Generate3D",
+              x: 480,
+              y: yCoord,
             },
             fetchImpl,
           );
@@ -582,8 +585,10 @@ export async function runVarco3dWorldbuildBatch(
               "connect_edge",
               {
                 flowId: mcpActiveFlowId,
-                from: { nodeId: imgNodeId, portName: "out" },
-                to: { nodeId: genNodeId, portName: "image" },
+                fromNodeId: imgNodeId,
+                fromPort: "out",
+                toNodeId: genNodeId,
+                toPort: "image",
               },
               fetchImpl,
             );

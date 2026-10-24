@@ -159,5 +159,22 @@ describe("StudioVarco3dInspectorWorkbench", () => {
 
     fireEvent.click(screen.getByTestId("varco3d-motion-sample-dog_gallop_left_lead_looping"));
     expect(screen.getByTestId("varco3d-motion-family-readout").textContent).toContain("quadruped");
+
+    // Character Labs modular coordinator, 4-view turnaround sheet, and 3D background diorama
+    expect(screen.getByTestId("varco3d-charlab-loadout-readout").textContent).toContain("100%");
+    expect(screen.getByTestId("varco3d-turnaround-view-url").textContent).toContain(
+      "https://3d.varco.ai/api/objects/741a9a3f7fdef6f86c574d3f000b8d20.png",
+    );
+    fireEvent.click(screen.getByTestId("varco3d-turnaround-angle-back"));
+    expect(screen.getByTestId("varco3d-turnaround-view-url").textContent).toContain(
+      "https://3d.varco.ai/api/objects/dde18bc5536fb96025dbd6fa43ac068f.png",
+    );
+    fireEvent.change(screen.getByTestId("varco3d-diorama-select"), {
+      target: { value: "diorama_school_hallway" },
+    });
+    expect(screen.getByTestId("varco3d-diorama-portal-url").textContent).toBe(
+      "https://3d.varco.ai/myAssets/0c2f14f6-81a2-49a9-9f43-6582a10f9d12",
+    );
   });
 });
+
