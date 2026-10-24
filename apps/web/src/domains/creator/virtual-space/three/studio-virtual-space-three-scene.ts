@@ -88,10 +88,12 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "cafe-vending", url: "/assets/3d/vending_machine.glb", x: 2470, y: 310, heightMeters: 1.95, rotationY: 0.2 },
   { id: "cafe-cat-mascot", url: "/assets/3d/refined-v8/robot_pet.glb", x: 2890, y: 636, heightMeters: 0.82, rotationY: -0.5 },
 
-  // TALK (team-meeting — science_research_laboratory 디오라마 + 브리핑 장비)
-  { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 1148, heightMeters: 0.5, elevationMeters: 0.88, rotationY: 0 },
-  { id: "talk-fireplace", url: "/assets/3d/fireplace.glb", x: 210, y: 920, heightMeters: 1.75, rotationY: 0.3 },
-  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1256, heightMeters: 1.14, rotationY: Math.PI * 0.5 },
+  // TALK (team-meeting — science_research_laboratory 디오라마 + 브리핑 보드룸 데스크·홀로그램)
+  { id: "talk-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 980, heightMeters: 1.12, rotationY: 0 },
+  { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 980, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
+  { id: "talk-chair-w", url: "/assets/3d/refined-v8/chair.glb", x: 372, y: 980, heightMeters: 1.08, rotationY: Math.PI * 0.5 },
+  { id: "talk-chair-e", url: "/assets/3d/refined-v8/chair.glb", x: 524, y: 980, heightMeters: 1.08, rotationY: -Math.PI * 0.5 },
+  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1246, heightMeters: 1.14, rotationY: Math.PI * 0.5 },
 
   // PLAZA (creator-plaza — park_garden_pavilion 디오라마 + 소원 분수·가로등)
   { id: "plaza-fountain-well", url: "/assets/3d/wishing_well.glb", x: 1472, y: 1210, heightMeters: 2.25, rotationY: 0 },
@@ -119,16 +121,17 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "terrace-bench-w", url: "/assets/3d/neom_bench_prop.glb", x: 1120, y: 1620, heightMeters: 0.95, rotationY: 0 },
   { id: "terrace-bench-e", url: "/assets/3d/neom_bench_prop.glb", x: 1820, y: 1620, heightMeters: 0.95, rotationY: 0 },
   { id: "terrace-cat-mascot", url: "/assets/3d/refined-v8/robot_pet.glb", x: 1344, y: 1564, heightMeters: 0.82, rotationY: 0.4 },
-  { id: "terrace-campfire", url: "/assets/3d/campfire.glb", x: 1620, y: 1640, heightMeters: 0.65, rotationY: 0 },
+  { id: "terrace-monstera", url: "/assets/3d/potted_monstera.glb", x: 1620, y: 1580, heightMeters: 1.38, rotationY: -0.2 },
 
-  // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 전시 오브제)
-  { id: "gallery-orb", url: "/assets/3d/crystal_orb.glb", x: 2338, y: 1564, heightMeters: 1.18, rotationY: 0 },
-  { id: "gallery-grimoire", url: "/assets/3d/magic_grimoire.glb", x: 2560, y: 1618, heightMeters: 0.36, elevationMeters: 0.72, rotationY: 0.25 },
+  // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 원고 전시 데스크·아카이브)
+  { id: "gallery-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2560, y: 1554, heightMeters: 1.08, rotationY: 0 },
+  { id: "gallery-tablet", url: "/assets/3d/hologram_tablet.glb", x: 2560, y: 1554, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
+  { id: "gallery-book", url: "/assets/3d/everyday_book.glb", x: 2338, y: 1564, heightMeters: 0.24, elevationMeters: 0.88, rotationY: 0.25 },
 ]);
 
 /**
- * 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 고밀도 다중 재질(12~17 Materials) 스튜디오급 VRM 크리에이터 아바타.
- * `@pixiv/three-vrm` `VRMLoaderPlugin`을 통해 VRM 0.0 및 VRM 1.0 정규화 휴머노이드 본과 스프링본 물리를 모두 지원한다.
+ * 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 고밀도 다중 재질(12~17 Materials, 8~30 Textures) 스튜디오급 VRM 크리에이터 아바타.
+ * 모든 슬롯이 고해상도 텍스처가 베이크된 VRoid / Alicia VRM 0.0 휴머노이드 에셋으로 통일되어 있다.
  */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
   "/vrm/Victoria_Rubin.vrm",
@@ -137,9 +140,9 @@ export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
   "/vrm/Sendagaya_Shino.vrm",
   "/vrm/Vivi.vrm",
   "/vrm/Sakurada_Fumiriya.vrm",
-  "/vrm/Robert.vrm",
-  "/vrm/Anna.vrm",
-  "/vrm/Erika.vrm",
+  "/vrm/Sendagaya_Shibu.vrm",
+  "/vrm/Eugenia.vrm",
+  "/vrm/Darkness_Shibu.vrm",
 ]);
 
 const ZONE_FLOOR_COLORS: Readonly<Record<string, { readonly floor: number; readonly accent: number }>> = Object.freeze({
@@ -594,11 +597,13 @@ export function loadStudioThreeAssets(
   scene: THREE.Scene,
   actorNodes: ReadonlyMap<string, StudioThreeActorNode>,
   isDisposed: () => boolean,
+  selfAvatarIndex = 0,
 ): void {
   const glbLoader = new GLTFLoader();
 
   const loadActorVrm = (actorId: string, index: number) => {
-    const vrmUrl = STUDIO_THREE_VRM_URLS[index % STUDIO_THREE_VRM_URLS.length];
+    const safeIdx = Math.abs(Math.trunc(index)) % STUDIO_THREE_VRM_URLS.length;
+    const vrmUrl = STUDIO_THREE_VRM_URLS[safeIdx];
     if (!vrmUrl) return;
     glbLoader.load(
       vrmUrl,
@@ -662,7 +667,8 @@ export function loadStudioThreeAssets(
   const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
 
   // 1. 초기 진입 로비 아바타(self, concierge) + 10개 구역 풀 3D 건축 디오라마 최우선 로드
-  npcIds.slice(0, 2).forEach((actorId, index) => loadActorVrm(actorId, index));
+  loadActorVrm("self", selfAvatarIndex);
+  if (npcIds[1]) loadActorVrm(npcIds[1], 1);
   loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed);
 
   // 2. 나머지 구역 NPC VRM 아바타 로드

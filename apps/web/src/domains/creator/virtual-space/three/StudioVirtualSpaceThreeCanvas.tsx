@@ -182,7 +182,7 @@ export function StudioVirtualSpaceThreeCanvas({
     destMarker.visible = false;
     scene.add(destMarker);
 
-    loadStudioThreeAssets(scene, actorNodes, () => disposed);
+    loadStudioThreeAssets(scene, actorNodes, () => disposed, snapshotRef.current.self.avatarIndex);
 
     const keysDown = new Set<string>();
     let currentPoint: StudioVirtualSpacePoint = { ...spawnPoint };
@@ -616,11 +616,28 @@ export function StudioVirtualSpaceThreeCanvas({
           projected.push({
             id: "self",
             label: selfNameRef.current || bt("나", "Me"),
-            sublabel: bt("3D 아바타", "3D Avatar"),
+            sublabel: snapshotRef.current.self.bubble || bt("3D 아바타", "3D Avatar"),
             kind: "self",
             x: selfHead.x,
             y: selfHead.y,
           });
+        }
+
+        for (const peer of snapshotRef.current.peers) {
+          const peerNode = actorNodes.get(`peer:${peer.participant.sessionId}`);
+          if (!peerNode) continue;
+          const head = projectPoint(new THREE.Vector3(peerNode.group.position.x, 2.04, peerNode.group.position.z));
+          if (head.visible) {
+            projected.push({
+              id: `peer:${peer.participant.sessionId}`,
+              label: peer.participant.displayName,
+              sublabel: peer.state.bubble || bt("동료", "Peer"),
+              kind: "peer",
+              x: head.x,
+              y: head.y,
+              accent: "#0ea5e9",
+            });
+          }
         }
 
         for (const npc of CAMPUS_NPCS) {

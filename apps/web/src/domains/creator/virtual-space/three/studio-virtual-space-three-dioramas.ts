@@ -90,6 +90,10 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 15.2,
     scaleY: 1.16,
     elevationMeters: -0.14,
+    hiddenNodeSubstrings: ["Lab_BackBench"],
+    clearLocalBoxes: [
+      { minX: -4.8, maxX: 3.6, minY: 0.16, maxY: 3.6, minZ: -3.78, maxZ: 2.5 },
+    ],
   },
   {
     roomId: "creator-plaza",
@@ -110,7 +114,15 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 15.2,
     scaleY: 1.12,
     elevationMeters: -0.12,
-    hiddenNodeSubstrings: ["Fence_Right", "Parapet_Right"],
+    hiddenNodeSubstrings: [
+      "Fence_Right",
+      "Parapet_Right",
+      "ParapetRight",
+      "ParapetFront",
+      "HVAC",
+      "SolarPanel",
+      "WaterTank",
+    ],
   },
   {
     roomId: "arcade",
@@ -121,7 +133,15 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 9.6,
     scaleY: 1.18,
     elevationMeters: -0.09,
-    hiddenNodeSubstrings: ["RightWall", "Bed_"],
+    hiddenNodeSubstrings: [
+      "RightWall",
+      "Bed_",
+      "Kitchen_",
+      "Sofa_",
+      "CoffeeTable_",
+      "Dining",
+      "Media_",
+    ],
   },
   {
     roomId: "beach",
@@ -132,7 +152,15 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 11.0,
     scaleY: 0.96,
     elevationMeters: -0.1,
-    hiddenNodeSubstrings: ["Arch_", "Column_", "Vine_"],
+    hiddenNodeSubstrings: [
+      "Arch_",
+      "Column_",
+      "Vine_",
+      "Fountain_Pedestal",
+      "Fountain_RuneCrystal",
+      "Fountain_SatelliteCrystal",
+      "RubbleStone",
+    ],
   },
   {
     roomId: "review-gallery",
@@ -143,6 +171,16 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 9.6,
     scaleY: 1.16,
     elevationMeters: -0.14,
+    hiddenNodeSubstrings: [
+      "Fashion_fabric",
+      "Fashion fabric",
+      "Upholstery",
+      "Black_metal",
+      "Black metal",
+    ],
+    clearLocalBoxes: [
+      { minX: -4.4, maxX: 2.3, minY: 0.16, maxY: 2.4, minZ: -3.2, maxZ: -2.2 },
+    ],
   },
 ]);
 
