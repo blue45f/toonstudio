@@ -8,7 +8,7 @@ import {
   type ReactElement,
 } from "react";
 
-import type { ShaperBodySliderValues } from "./studio-mannequin-procedural-body";
+import type { ShaperBodySliderValues } from "./studio-shaper-model";
 import {
   SHAPER_WEBTOON_UNIVERSE_PROFILES,
   blendShaperWebtoonUniverseProfiles,
