@@ -29,11 +29,30 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(applied.headCount).toBeGreaterThan(6);
   });
 
-  it("switches to TextureEdit mode and updates PBR channels and brush hardness/strength", () => {
+  it("switches to TextureEdit mode and updates PBR channels, [ / ] ±1px brush size, bump sculpting, and MapAdjust green-Y flip", () => {
     render(<StudioVarco3dInspectorWorkbench />);
 
     fireEvent.click(screen.getByTestId("varco3d-studio-mode-TextureEdit"));
     expect(screen.getByTestId("varco3d-workbench-panel-texture-edit")).toBeTruthy();
+
+    // Test [ and ] keyboard shortcuts in TextureEdit mode (±1px from default 12px)
+    expect(screen.getByTestId("varco3d-pbr-brush-size-readout").textContent).toContain("12px");
+    fireEvent.keyDown(window, { key: "]" });
+    expect(screen.getByTestId("varco3d-pbr-brush-size-readout").textContent).toContain("13px");
+    fireEvent.keyDown(window, { key: "[" });
+    expect(screen.getByTestId("varco3d-pbr-brush-size-readout").textContent).toContain("12px");
+
+    // Bump sculpting raise / carve toggle
+    expect(screen.getByTestId("varco3d-bump-hex-readout").textContent).toContain("#bfbfbf");
+    fireEvent.click(screen.getByTestId("varco3d-bump-dir-carve"));
+    expect(screen.getByTestId("varco3d-bump-hex-readout").textContent).toContain("#404040");
+
+    // MapAdjust normal Green-Y flip
+    fireEvent.click(screen.getByTestId("varco3d-pbr-channel-normal"));
+    const beforeRgb = screen.getByTestId("varco3d-map-adjust-rgb").textContent;
+    fireEvent.click(screen.getByTestId("varco3d-map-adjust-invert-checkbox"));
+    const afterRgb = screen.getByTestId("varco3d-map-adjust-rgb").textContent;
+    expect(afterRgb).not.toBe(beforeRgb);
 
     fireEvent.click(screen.getByTestId("varco3d-pbr-channel-restore"));
     expect(screen.getByTestId("varco3d-active-pbr-channel").textContent).toBe("restore");
@@ -75,7 +94,7 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(screen.getByTestId("varco3d-bone-item-CustomBone_10")).toBeTruthy();
   });
 
-  it("switches across Part, Animation, and Comparer modes and updates IK/Multiview states", () => {
+  it("switches across Part, Animation, and Comparer modes and updates Remesh/AI Unwrap, DCC Bridge, and DAG pipeline accordions", () => {
     render(<StudioVarco3dInspectorWorkbench />);
 
     // Part mode
@@ -84,9 +103,10 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     fireEvent.click(screen.getByTestId("varco3d-part-toggle-faces"));
     expect(screen.getByTestId("varco3d-part-vertex-count").textContent).toBe("4개");
 
-    // Animation mode
+    // Animation mode (with findBestTrackingBone readout)
     fireEvent.click(screen.getByTestId("varco3d-studio-mode-Animation"));
     expect(screen.getByTestId("varco3d-workbench-panel-animation")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-best-tracking-bone").textContent).toBe("mixamorig:Hips");
     fireEvent.change(screen.getByTestId("varco3d-ik-target-y-slider"), {
       target: { value: "145" },
     });
@@ -99,5 +119,16 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(screen.getByTestId("varco3d-multiview-slot-left")).toBeTruthy();
     expect(screen.getByTestId("varco3d-multiview-slot-right")).toBeTruthy();
     expect(screen.getByTestId("varco3d-multiview-slot-back")).toBeTruthy();
+
+    // Pipeline accordion: Remesh (5K~100K), AI Unwrap (50K->20K), PivotToBottom, DCC Bridge (5324..5328), Slicers, DAG
+    fireEvent.click(screen.getByTestId("varco3d-remesh-preset-10000"));
+    expect(screen.getByTestId("varco3d-remesh-readout").textContent).toContain("10,000");
+    expect(screen.getByTestId("varco3d-unwrap-plan-readout").textContent).toContain("20,000");
+    expect(screen.getByTestId("varco3d-dcc-port-5324")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-dcc-port-5328")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-slicer-uri-readout").textContent).toContain(
+      "bambustudioopen://",
+    );
+    expect(screen.getByTestId("varco3d-dag-first-edge-path").textContent).toContain("M124,40 C");
   });
 });

@@ -1,47 +1,17 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-  type CSSProperties,
-  type ReactElement,
-} from "react";
+import { useCallback, useEffect, useId, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 
 import type { ShaperBodySliderValues } from "./studio-shaper-model";
+import { SHAPER_WEBTOON_UNIVERSE_PROFILES, blendShaperWebtoonUniverseProfiles, type ShaperWebtoonUniverseId } from "./studio-shaper-webtoon-customizer";
+import { STUDIO_VARCO3D_TURNTABLE_MULTIVIEW_METRICS, computeVarco3dTransparentCameraFit, evaluateVarco3dMultiViewFramePlan, solveVarco3dTwoBoneIk } from "./studio-varco3d-decal-ik-turntable-engine";
+import { STUDIO_VARCO3D_IDENTITY_MAP_ADJUSTMENT, STUDIO_VARCO3D_TEXTURE_BRUSH_DEFAULTS, evaluateVarco3dBumpSculptHeightScalar, evaluateVarco3dMapAdjustmentTexel, stepVarco3dPbrBrushSizeByKey } from "./studio-varco3d-map-adjust-bridge-dag-engine";
+import { createStudioVarco3dViewportHudState, type StudioVarco3dViewportHudState } from "./studio-varco3d-preview-inspector";
 import {
-  SHAPER_WEBTOON_UNIVERSE_PROFILES,
-  blendShaperWebtoonUniverseProfiles,
-  type ShaperWebtoonUniverseId,
-} from "./studio-shaper-webtoon-customizer";
-import {
-  STUDIO_VARCO3D_TURNTABLE_MULTIVIEW_METRICS,
-  computeVarco3dTransparentCameraFit,
-  evaluateVarco3dMultiViewFramePlan,
-  solveVarco3dTwoBoneIk,
-} from "./studio-varco3d-decal-ik-turntable-engine";
-import {
-  createStudioVarco3dViewportHudState,
-  type StudioVarco3dViewportHudState,
-} from "./studio-varco3d-preview-inspector";
-import {
-  STUDIO_VARCO3D_SKIN_WEIGHT_BRUSH_METRICS,
-  auditVarco3dMeshNormalsAndWinding,
-  auditVarco3dSkeletonDraft,
-  buildVarco3dWeightRampGradientCss,
-  computeVarco3dJfaStepSchedule,
-  evaluateVarco3dBrushStrokeInfluence,
-  evaluateVarco3dHeightToNormalWhiteout,
-  evaluateVarco3dRigCapabilities,
-  evaluateVarco3dVoxelGridPreviewState,
-  evaluateVarco3dWaveRevealState,
-  extractVarco3dSubmeshPart,
-  packVarco3dBinaryRigPayload,
-  sanitizeVarco3dDisplayBoneName,
-  stepVarco3dWeightBrushSizeByKey,
-  type StudioVarco3dDraftBoneNode,
-  type StudioVarco3dPbrPaintChannel,
-  type StudioVarco3dWeightBrushMode,
+  STUDIO_VARCO3D_SKIN_WEIGHT_BRUSH_METRICS, auditVarco3dMeshNormalsAndWinding, auditVarco3dSkeletonDraft,
+  buildVarco3dWeightRampGradientCss, computeVarco3dJfaStepSchedule, evaluateVarco3dBrushStrokeInfluence,
+  evaluateVarco3dHeightToNormalWhiteout, evaluateVarco3dRigCapabilities, evaluateVarco3dVoxelGridPreviewState,
+  evaluateVarco3dWaveRevealState, extractVarco3dSubmeshPart, packVarco3dBinaryRigPayload,
+  sanitizeVarco3dDisplayBoneName, stepVarco3dWeightBrushSizeByKey,
+  type StudioVarco3dDraftBoneNode, type StudioVarco3dPbrPaintChannel, type StudioVarco3dWeightBrushMode,
 } from "./studio-varco3d-weight-paint-pbr-engine";
 import { StudioVarco3dViewportHud } from "./StudioVarco3dViewportHud";
 import { StudioVarco3dWorkbenchSecondaryPanels } from "./StudioVarco3dWorkbenchSecondaryPanels";
@@ -134,9 +104,16 @@ export function StudioVarco3dInspectorWorkbench({
   const [shaderElapsedMs, setShaderElapsedMs] = useState<number>(1100);
 
   const [paintChannel, setPaintChannel] = useState<StudioVarco3dPbrPaintChannel>("baseColor");
+  const [pbrBrushSizePx, setPbrBrushSizePx] = useState<number>(
+    STUDIO_VARCO3D_TEXTURE_BRUSH_DEFAULTS.defaultSizePx,
+  );
   const [brushHardness, setBrushHardness] = useState<number>(0.75);
   const [brushStrength, setBrushStrength] = useState<number>(0.65);
   const [decalOpacity, setDecalOpacity] = useState<number>(0.9);
+  const [bumpDirection, setBumpDirection] = useState<"raise" | "carve">("raise");
+  const bumpDepth = 0.5;
+  const [mapAdjustBrightness, setMapAdjustBrightness] = useState<number>(0);
+  const [mapAdjustInvertGreenY, setMapAdjustInvertGreenY] = useState<boolean>(false);
 
   const [rigTool, setRigTool] = useState<StudioVarco3dRigToolMode>("weight");
   const [rigBones, setRigBones] = useState<readonly StudioVarco3dDraftBoneNode[]>(DEFAULT_RIG_BONES);
@@ -169,7 +146,7 @@ export function StudioVarco3dInspectorWorkbench({
   );
 
   useEffect(() => {
-    if (workbenchMode !== "Rigging") {
+    if (workbenchMode !== "Rigging" && workbenchMode !== "TextureEdit") {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
@@ -182,7 +159,11 @@ export function StudioVarco3dInspectorWorkbench({
       }
       if (event.key === "[" || event.key === "]") {
         event.preventDefault();
-        setWeightBrushSizePx((prev) => stepVarco3dWeightBrushSizeByKey(prev, event.key));
+        if (workbenchMode === "Rigging") {
+          setWeightBrushSizePx((prev) => stepVarco3dWeightBrushSizeByKey(prev, event.key));
+        } else {
+          setPbrBrushSizePx((prev) => stepVarco3dPbrBrushSizeByKey(prev, event.key));
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -235,6 +216,25 @@ export function StudioVarco3dInspectorWorkbench({
         texelY: 1 / 2048,
       }),
     [brushStrength],
+  );
+
+  const bumpSculptPreview = useMemo(
+    () => evaluateVarco3dBumpSculptHeightScalar(bumpDirection, bumpDepth),
+    [bumpDirection, bumpDepth],
+  );
+
+  const mapAdjustedTexelPreview = useMemo(
+    () =>
+      evaluateVarco3dMapAdjustmentTexel({
+        srcRgba: [0.5, 0.75, 1.0, 1.0],
+        adjustment: {
+          ...STUDIO_VARCO3D_IDENTITY_MAP_ADJUSTMENT,
+          brightness: mapAdjustBrightness,
+          invert: mapAdjustInvertGreenY,
+        },
+        channelGroup: paintChannel === "normal" ? "normal" : "baseColor",
+      }),
+    [mapAdjustBrightness, mapAdjustInvertGreenY, paintChannel],
   );
 
   const brushInfluencePreview = useMemo(
@@ -559,9 +559,17 @@ export function StudioVarco3dInspectorWorkbench({
           className="grid grid-cols-1 gap-3 rounded-xl border border-line/70 bg-panel/60 p-3 md:grid-cols-2"
         >
           <div className="flex flex-col gap-2">
-            <h3 className="text-xs font-semibold text-fg">
-              GPU 3D PBR 브러시 & JFA+1 UV 심 패딩
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold text-fg">
+                GPU 3D PBR 브러시 & JFA+1 UV 심 패딩
+              </h3>
+              <span
+                data-testid="varco3d-pbr-brush-size-readout"
+                className="rounded bg-card px-1.5 py-0.5 text-[0.68rem] font-semibold text-fg"
+              >
+                {pbrBrushSizePx}px ([ / ] ±1px)
+              </span>
+            </div>
             <div role="group" aria-label="PBR 페인트 채널 선택" className="flex flex-wrap gap-1">
               {PBR_PAINT_CHANNELS.map((channel) => (
                 <button
@@ -616,12 +624,37 @@ export function StudioVarco3dInspectorWorkbench({
                 onChange={(e) => setBrushStrength(Number(e.target.value) / 100)}
               />
             </label>
+
+            <div className="flex items-center justify-between gap-2 text-[0.7rem] text-fg-2">
+              <div className="flex items-center gap-1">
+                <span>범프 스컬프팅:</span>
+                {(["raise", "carve"] as const).map((dir) => (
+                  <button
+                    key={dir}
+                    type="button"
+                    data-testid={`varco3d-bump-dir-${dir}`}
+                    aria-pressed={bumpDirection === dir}
+                    onClick={() => setBumpDirection(dir)}
+                    className={`rounded border px-1.5 py-0.5 text-[0.66rem] ${
+                      bumpDirection === dir
+                        ? "border-accent bg-accent-soft font-semibold text-fg"
+                        : "border-line bg-card text-fg-2"
+                    }`}
+                  >
+                    {dir === "raise" ? "돌출 (Raise)" : "음각 (Carve)"}
+                  </button>
+                ))}
+              </div>
+              <code data-testid="varco3d-bump-hex-readout" className="text-[0.66rem] text-fg-3">
+                {bumpSculptPreview.swatchHex} ({bumpSculptPreview.heightScalar.toFixed(2)})
+              </code>
+            </div>
           </div>
 
           <div className="flex flex-col justify-between gap-2 rounded-lg border border-line/60 bg-card p-2.5 text-[0.72rem] text-fg-2">
             <div>
               <div className="font-semibold text-fg">
-                지오데식 ExpMap 데칼 & Whiteout 노멀 합성
+                지오데식 ExpMap 데칼 & Whiteout 노멀 / MapAdjust 셰이더
               </div>
               <p className="mt-1">
                 활성 채널: <strong data-testid="varco3d-active-pbr-channel">{paintChannel}</strong>{" "}
@@ -634,9 +667,38 @@ export function StudioVarco3dInspectorWorkbench({
                 <strong>{whiteoutPreview.blendedNormal.z.toFixed(3)}</strong>
               </p>
               <p>
-                2048px JFA+1 패딩 스텝 ({jfaSchedule.length}패스):{" "}
-                <code className="text-[0.66rem]">{jfaSchedule.slice(0, 5).join(" → ")} … 1</code>
+                MapAdjust 샘플 RGB:{" "}
+                <strong data-testid="varco3d-map-adjust-rgb">
+                  ({mapAdjustedTexelPreview[0].toFixed(2)}, {mapAdjustedTexelPreview[1].toFixed(2)}
+                  , {mapAdjustedTexelPreview[2].toFixed(2)})
+                </strong>{" "}
+                · JFA ({jfaSchedule.length}패스):{" "}
+                <code className="text-[0.65rem]">{jfaSchedule.slice(0, 4).join("→")}…1</code>
               </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 text-[0.7rem]">
+              <label className="flex items-center gap-1.5 text-fg-2">
+                <input
+                  type="checkbox"
+                  data-testid="varco3d-map-adjust-invert-checkbox"
+                  checked={mapAdjustInvertGreenY}
+                  onChange={(e) => setMapAdjustInvertGreenY(e.target.checked)}
+                />
+                <span>노멀 Green Y 반전 (DX↔GL) / 색상 반전</span>
+              </label>
+              <input
+                aria-label="맵 밝기 보정"
+                data-testid="varco3d-map-adjust-brightness-slider"
+                type="range"
+                min={-50}
+                max={50}
+                step={10}
+                value={mapAdjustBrightness}
+                style={createRangeTrackStyle(-50, 50)}
+                onChange={(e) => setMapAdjustBrightness(Number(e.target.value))}
+                className="w-24"
+              />
             </div>
 
             <label

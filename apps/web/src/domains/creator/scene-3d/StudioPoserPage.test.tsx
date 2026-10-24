@@ -94,11 +94,9 @@ describe("StudioPoserPage (/studio/poser)", () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     renderPage();
     const panel = screen.getByTestId("poser-panel");
-    // 독립 진입점은 캡처 뒤에도 포저를 닫지 않는 PNG 저장 모드로 연다.
     expect(panel.getAttribute("data-capture-target")).toBe("download");
     fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
     expect(click).toHaveBeenCalledTimes(1);
-    // 작품 라이브러리(/studio)로 이동하지 않고 포저가 그대로 열려 있다.
     expect(screen.queryByTestId("location")).toBeNull();
     expect(screen.getByTestId("poser-panel")).toBeTruthy();
     const toasts = useToastStore.getState().toasts;
@@ -106,6 +104,25 @@ describe("StudioPoserPage (/studio/poser)", () => {
     expect(toasts[0]).toMatchObject({ tone: "success" });
     expect(toasts[0]?.message).toContain("PNG를 저장했어요");
     click.mockRestore();
+    useToastStore.setState({ toasts: [] });
+  });
+
+  it("VARCO 3D 워크벤치 & 세계관 셰이퍼 토글로 도크를 열고 체형 비율 적용 토스트를 띄운다", () => {
+    useToastStore.setState({ toasts: [] });
+    renderPage();
+
+    const toggle = screen.getByTestId("studio-poser-varco3d-workbench-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByTestId("studio-poser-varco3d-workbench-dock")).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("studio-poser-varco3d-workbench-dock")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("varco3d-apply-shaper-to-mannequin"));
+    const toasts = useToastStore.getState().toasts;
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0]?.message).toContain("세계관 체형 비율 적용됨");
     useToastStore.setState({ toasts: [] });
   });
 });
