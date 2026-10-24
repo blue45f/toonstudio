@@ -33,6 +33,7 @@ import type {
   StudioVarco3dRigToolMode,
   StudioVarco3dWorkbenchMode,
 } from "./StudioVarco3dInspectorWorkbench";
+import { StudioVarco3dWorkflowMcpExportSection } from "./StudioVarco3dWorkflowMcpExportSection";
 
 const WEIGHT_BRUSH_MODES: ReadonlyArray<{
   readonly id: StudioVarco3dWeightBrushMode;
@@ -720,6 +721,8 @@ export function StudioVarco3dWorkbenchSecondaryPanels(
             </div>
           </div>
         </details>
+
+        <StudioVarco3dWorkflowMcpExportSection accordionGroupName={accordionGroupName} />
       </div>
     </div>
   );

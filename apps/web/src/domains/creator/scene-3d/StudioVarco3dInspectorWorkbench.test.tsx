@@ -130,5 +130,34 @@ describe("StudioVarco3dInspectorWorkbench", () => {
       "bambustudioopen://",
     );
     expect(screen.getByTestId("varco3d-dag-first-edge-path").textContent).toContain("M124,40 C");
+
+    // CustomWorkflow V2 connection validation (Rig -> Animate OK, Generate3D -> Animate blocked)
+    expect(screen.getByTestId("varco3d-wf-connection-readout").textContent).toContain("연결 가능");
+    fireEvent.click(screen.getByTestId("varco3d-wf-src-Generate3D"));
+    expect(screen.getByTestId("varco3d-wf-connection-readout").textContent).toContain(
+      "Animate requires a rigged 3D",
+    );
+
+    // Generate3D alpha preflight & MCP Bridge v2 backoff
+    expect(screen.getByTestId("varco3d-preflight-readout").textContent).toContain("통과");
+    fireEvent.click(screen.getByTestId("varco3d-preflight-has-transparency"));
+    expect(screen.getByTestId("varco3d-preflight-readout").textContent).toContain(
+      "error.transparentImageRequired",
+    );
+    expect(screen.getByTestId("varco3d-mcp-backoff-readout").textContent).toContain(
+      "2s → 4s → 8s → 16s → 30s",
+    );
+
+    // UV ORM channel navigation, AR Scene Viewer links, and motion family classifier
+    expect(screen.getByTestId("varco3d-uv-active-mode").textContent).toBe("baseColor");
+    fireEvent.click(screen.getByTestId("varco3d-uv-step-right"));
+    expect(screen.getByTestId("varco3d-uv-active-mode").textContent).toBe("normal");
+    expect(screen.getByTestId("varco3d-ar-usdz-url").textContent).toContain("/api/usdz?taskId=");
+    expect(screen.getByTestId("varco3d-ar-android-url").textContent).toContain(
+      "intent://arvr.google.com/scene-viewer/1.0",
+    );
+
+    fireEvent.click(screen.getByTestId("varco3d-motion-sample-dog_gallop_left_lead_looping"));
+    expect(screen.getByTestId("varco3d-motion-family-readout").textContent).toContain("quadruped");
   });
 });
