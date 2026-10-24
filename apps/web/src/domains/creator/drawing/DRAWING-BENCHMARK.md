@@ -177,3 +177,13 @@
 | **CSP 선 대칭 만다라(`mirrorRadial` $D_n$ 이면군)·3D 스타일러스(`tiltX`/`tiltY`/`twistDeg`) 반사·가이드 선분** | `apps/web/src/domains/creator/drawing/studio-symmetry.ts` | (1) `mirrorRadial: true`: 방사형 모드에서 홀수 섹터를 스포크 축에 거울 반사해 순수 회전군($C_n$)뿐 아니라 만다라·만화경 이면군($D_n$) 대칭 지원, (2) `isStudioSymmetryTransformReflected`: 행렬식($ad - bc < 0$) 기반 카이랄성 반전 판별 및 `tiltX`/`tiltY`·배럴 롤 `twistDeg`의 정확한 거울 반사 변환, (3) `computeStudioSymmetryAxisSegments`: 모드별 오버레이 대칭축 직선 선분 생성 |
 | **만화 입필·발필 테이퍼(`taperStart`/`taperEnd`) & Catmull-Rom 3차 베지어(`curveMode: "cubic"`) 벡터라이저** | `apps/web/src/domains/creator/drawing/studio-stroke-vectorizer.ts` | (1) `ringsToCubicBezierSvgPathData` 및 `curveMode: "cubic"`: 800% 고배율 줌에서도 다각형 각짐(Facet)이 없는 3차 베지어(`M...C...Z`) 외곽선 생성, (2) `taperStart`/`taperEnd`: 만화 G펜 입필·발필 칼끝 테이퍼 지원, (3) 비유한(`NaN`/`Infinity`) 입력 샘플 사전 필터링으로 `polygon-clipping` 불리언 연산 안정성 확보 |
 
+## 15. Wave 10 CSP 특수 자(평행선·방사 집중선)·5점 어안 곡선 투시 스냅·연결 말풍선 체인 벡터화 고도화 (2026-10-24)
+
+클립스튜디오(CSP)의 특수 자(평행선 자·방사 집중선 자), 어안(Fisheye) 투시 가이드 실시간 곡선 스냅, 그리고 웹툰 연재 공정의 연결 말풍선·닫힌 윤곽선 벡터화를 추가로 고도화했다.
+
+| 영역 | 고도화 모듈 | 핵심 알고리즘 및 검증 |
+|---|---|---|
+| **CSP 평행선 자(`parallelMode`·`parallelSpacingPx`) & 방사/집중선 자(`snapMode: "radial"`·`innerDeadZoneRadius`)** | `apps/web/src/domains/creator/drawing/studio-rulers.ts` | (1) `createStudioParallelLineRuler` 및 `parallelMode`: 캔버스 임의 위치에서 시작해도 자 각도와 평행한 직선에 세션을 잠그고, `parallelSpacingPx` 지정 시 수직 격자 간격으로 시작선을 양자화해 균일 해칭·배경 빗금 작화를 지원, (2) `createStudioRadialRuler` 및 `snapPointToRadialRuler`: 중심 여백 불감대(`innerDeadZoneRadius`) 침범 방지와 등각 스포크 양자화(`radialSpokeCount`)를 갖춘 만화 집중선·방사선 스냅, (3) `maxSnapDistancePx`: 자에서 일정 거리 밖의 자유 드로잉이 자석처럼 끌려가지 않도록 보호 |
+| **5점 어안(Fisheye) 역왜곡-투영-재왜곡 곡선 스냅·지평선(`allowHorizonSnap`)·자유 각도 통과(`maxSnapAngleDeg`)** | `apps/web/src/domains/creator/drawing/studio-perspective-pen-snap.ts` | (1) `unwarpPerspectivePointFromFisheye`: 배럴 왜곡 $r' = r(1 - 0.45 k r^2)$를 뉴턴-랩슨 6회 반복으로 역산해 선형 투시 공간에서 소실점 직선에 투영한 뒤 다시 어안 곡선으로 왜곡함으로써 5점 어안 가이드 위에서도 이음새 없이 휘어지는 실시간 펜 스냅 구현, (2) `allowHorizonSnap`: 1점·2점 투시에서 지평선 평행 가로 보조선(`family: "horizon"`) 스냅 지원, (3) `maxSnapAngleDeg`: 모든 투시 광선과 허용 각도 이상 벌어진 스트로크를 `freehandPassthrough`로 통과시켜 배경 위 자유 드로잉 보장 |
+| **닫힌 루프 자동 봉합(`closeLoopThresholdPx`)·영길이 중복 제거(`sanitizeLineartPoints`)·다중 연결 말풍선 합성(`mergeBubbleChain`)** | `apps/web/src/domains/creator/drawing/studio-lineart-vectorizer.ts` | (1) `sanitizeLineartPoints`: `NaN`/`Infinity` 및 연속 중복 샘플(`minStepPx` 미만)을 사전 제거해 Catmull-Rom 접선 특이점 차단, (2) `closeLoopThresholdPx`: 시작·끝점이 임계 거리 이내인 말풍선·폐곡선을 스무딩 전에 `Z`로 닫아 이음새 꺾임 제거, (3) `mergeBubbleChain` & `booleanVectorPaths`: 2~$N$개 연결 말풍선과 꼬리 체인을 단일 Paper.js 세션에서 순차 합집합으로 합성하고 `subtract`/`intersect`/`exclude` 불리언 컷아웃 지원 |
+
