@@ -30,6 +30,11 @@ interface SettledLiveStampStroke {
   readonly pressures: readonly number[];
 }
 
+/** Maximum settled strokes retained in FIFO before oldest strokes are auto-evicted. */
+export const STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES = 64;
+/** Maximum accepted point pairs retained on a single active live stamp stroke. */
+export const STUDIO_LIVE_STAMP_OVERLAY_MAX_ACTIVE_POINTS = 16_384;
+
 function liveStampSurfaceResolution(
   surface: StudioLiveInkSurface
 ): StudioNativeLiveSurfaceResolutionDecision {
@@ -72,12 +77,32 @@ export class StudioLiveStampOverlayRenderer {
   private walker: StudioStampWalkerState | null = null;
 
   private settled: SettledLiveStampStroke[] = [];
+  private backgroundSkipped = false;
+  private dirtyWhileSkipped = false;
 
   attach(canvas: HTMLCanvasElement | null): void {
     this.canvas = canvas;
     this.context = canvas ? acquireStudioLowLatencyCanvas2dContext(canvas) : null;
     this.applySurface();
-    if (this.active || this.settled.length > 0) this.replay();
+    if (this.active || this.settled.length > 0) this.requestReplay();
+  }
+
+  /**
+   * Pauses redundant full-surface replays while the overlay container is off-screen
+   * (`contentvisibilityautostatechange` `event.skipped === true`) and replays once when visible.
+   */
+  setBackgroundSkipped(skipped: boolean): void {
+    const next = Boolean(skipped);
+    if (this.backgroundSkipped === next) return;
+    this.backgroundSkipped = next;
+    if (!next && this.dirtyWhileSkipped) {
+      this.dirtyWhileSkipped = false;
+      this.replay();
+    }
+  }
+
+  get isBackgroundSkipped(): boolean {
+    return this.backgroundSkipped;
   }
 
   setSurface(surface: StudioLiveInkSurface | null): void {
@@ -92,7 +117,7 @@ export class StudioLiveStampOverlayRenderer {
       previous.flipX !== surface.flipX;
     if (!changed) return;
     this.applySurface();
-    if (this.active || this.settled.length > 0) this.replay();
+    if (this.active || this.settled.length > 0) this.requestReplay();
   }
 
   get isActive(): boolean {
@@ -133,7 +158,7 @@ export class StudioLiveStampOverlayRenderer {
     // orphan pixels if a replacement begin arrives after a cancelled/lost pointer session.
     if (this.active) {
       this.resetActiveState();
-      this.replay();
+      this.requestReplay();
     }
 
     const style = detachedStyle(inputStyle);
@@ -164,7 +189,10 @@ export class StudioLiveStampOverlayRenderer {
     const walker = this.walker;
     if (!this.active || !style || !walker || !this.context || !this.surface) return;
 
-    const total = Math.floor(points.length / 2);
+    const total = Math.min(
+      STUDIO_LIVE_STAMP_OVERLAY_MAX_ACTIVE_POINTS,
+      Math.floor(points.length / 2),
+    );
     if (total <= this.consumedSourcePoints) return;
     const context = this.prepared();
     if (!context) return;
@@ -188,14 +216,20 @@ export class StudioLiveStampOverlayRenderer {
 
   /** Moves the completed active stroke into the FIFO retained until the main-surface draw receipt. */
   end(): void {
+    let evicted = false;
     if (this.active && this.style && this.activePoints.length >= 2) {
       this.settled.push({
         style: this.style,
         points: this.activePoints,
         pressures: this.activePressures,
       });
+      if (this.settled.length > STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES) {
+        this.settled.splice(0, this.settled.length - STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES);
+        evicted = true;
+      }
     }
     this.resetActiveState();
+    if (evicted) this.requestReplay();
   }
 
   releaseSettledPrefix(count: number): number {
@@ -207,7 +241,7 @@ export class StudioLiveStampOverlayRenderer {
     const released = Math.min(requested, this.settled.length);
     if (released === 0) return 0;
     this.settled = this.settled.slice(released);
-    this.replay();
+    this.requestReplay();
     return released;
   }
 
@@ -219,14 +253,23 @@ export class StudioLiveStampOverlayRenderer {
   resetActive(): boolean {
     if (!this.active) return false;
     this.resetActiveState();
-    this.replay();
+    this.requestReplay();
     return true;
   }
 
   clear(): void {
     this.resetActiveState();
     this.settled = [];
+    this.dirtyWhileSkipped = false;
     this.clearRect();
+  }
+
+  private requestReplay(): void {
+    if (this.backgroundSkipped) {
+      this.dirtyWhileSkipped = true;
+      return;
+    }
+    this.replay();
   }
 
   private resetActiveState(): void {
@@ -265,7 +308,11 @@ export class StudioLiveStampOverlayRenderer {
   }
 
   /** Full replay is deliberately limited to viewport/surface/FIFO lifecycle changes. */
-  private replay(): void {
+  replay(): void {
+    if (this.backgroundSkipped) {
+      this.dirtyWhileSkipped = true;
+      return;
+    }
     this.clearRect();
     for (const stroke of this.settled) this.drawStroke(stroke);
     if (!this.active || !this.style || this.activePoints.length < 2) return;

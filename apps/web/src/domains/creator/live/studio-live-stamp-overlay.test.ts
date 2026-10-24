@@ -7,7 +7,10 @@ import {
   type StudioStampBrushStyle,
 } from "../brush/studio-brush-stamp-engine";
 
-import { StudioLiveStampOverlayRenderer } from "./studio-live-stamp-overlay";
+import {
+  STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES,
+  StudioLiveStampOverlayRenderer,
+} from "./studio-live-stamp-overlay";
 
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
 
@@ -451,4 +454,35 @@ describe("StudioLiveStampOverlayRenderer", () => {
     expect(renderer.settledStrokeCount).toBe(0);
     expect(recording.clearRect).toHaveBeenCalledTimes(1);
   });
+
+  it("caps settled strokes at STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES via FIFO eviction", () => {
+    const recording = recordingCanvas();
+    const renderer = new StudioLiveStampOverlayRenderer();
+    renderer.attach(recording.canvas);
+    renderer.setSurface(SURFACE);
+    const brushStyle = style("ink");
+    for (let i = 0; i < STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES + 8; i += 1) {
+      addSettledStroke(renderer, brushStyle, [4, 10, 12, 14], [0.4, 0.7]);
+    }
+    expect(renderer.settledStrokeCount).toBe(STUDIO_LIVE_STAMP_OVERLAY_MAX_SETTLED_STROKES);
+  });
+
+  it("defers full-canvas replay while background-skipped and replays once when visible again", () => {
+    const recording = recordingCanvas();
+    const renderer = new StudioLiveStampOverlayRenderer();
+    renderer.attach(recording.canvas);
+    renderer.setSurface(SURFACE);
+    addSettledStroke(renderer, style("pencil"), [6, 12, 18, 16], [0.5, 0.8]);
+
+    renderer.setBackgroundSkipped(true);
+    expect(renderer.isBackgroundSkipped).toBe(true);
+    const marksWhileHidden = recording.marks.length;
+    renderer.replay();
+    expect(recording.marks).toHaveLength(marksWhileHidden);
+
+    renderer.setBackgroundSkipped(false);
+    expect(renderer.isBackgroundSkipped).toBe(false);
+    expect(recording.marks.length).toBeGreaterThan(marksWhileHidden);
+  });
 });
+

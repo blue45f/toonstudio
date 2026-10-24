@@ -21,7 +21,9 @@ import {
   createVectorLineCommand,
   editableLineFromVectorizerPoints,
   emptyVectorLineHistory,
+  eraseVectorLineToIntersection,
   normalizeWidthRange,
+  pinchVectorLine,
   pushVectorLineCommand,
   redoVectorLine,
   scaleWidthInRange,
@@ -59,8 +61,8 @@ const COPY = {
   sub: defineBilingualText(
     "StudioVectorLinePanel",
     "sub",
-    "구간을 고르고 굵게·가늘게·테이퍼를 눌러보세요. 모든 편집은 되돌릴 수 있습니다.",
-    "Pick a range, then widen, narrow, or taper. Every edit is undoable.",
+    "구간을 고르고 굵게·가늘게·테이퍼·곡선 집기·교차점 정리를 눌러보세요. 모든 편집은 되돌릴 수 있습니다.",
+    "Pick a range, then widen, narrow, taper, pinch, or trim overhangs. Every edit is undoable.",
   ),
   demoAria: defineBilingualText(
     "StudioVectorLinePanel",
@@ -86,6 +88,13 @@ const COPY = {
   widen: defineBilingualText("StudioVectorLinePanel", "widen", "굵게", "Widen"),
   narrow: defineBilingualText("StudioVectorLinePanel", "narrow", "가늘게", "Narrow"),
   taper: defineBilingualText("StudioVectorLinePanel", "taper", "테이퍼", "Taper"),
+  pinch: defineBilingualText("StudioVectorLinePanel", "pinch", "곡선 집기", "Pinch curve"),
+  trimIntersection: defineBilingualText(
+    "StudioVectorLinePanel",
+    "trimIntersection",
+    "교차점 정리",
+    "Trim overhang",
+  ),
   undo: defineBilingualText("StudioVectorLinePanel", "undo", "실행 취소", "Undo"),
   redo: defineBilingualText("StudioVectorLinePanel", "redo", "다시 실행", "Redo"),
   statusIdle: defineBilingualText(
@@ -111,6 +120,18 @@ const COPY = {
     "cmdTaper",
     "구간 테이퍼 적용",
     "Tapered range",
+  ),
+  cmdPinch: defineBilingualText(
+    "StudioVectorLinePanel",
+    "cmdPinch",
+    "가우시안 곡선 집기 적용",
+    "Pinched vector curve",
+  ),
+  cmdTrimIntersection: defineBilingualText(
+    "StudioVectorLinePanel",
+    "cmdTrimIntersection",
+    "교차점 너머 삐침 선분 정리",
+    "Trimmed overhang at intersection",
   ),
   step1: defineBilingualText("StudioVectorLinePanel", "step1", "선을 그립니다", "Draw a line"),
   step2: defineBilingualText(
@@ -151,10 +172,22 @@ function buildDemoLine(): StudioEditableVectorLine {
     id: "demo-vector-line",
     size: 18,
     thinning: 0.6,
-    color: "#8b5cf6",
+    color: "var(--color-accent)",
   });
   if (!line) throw new Error(creatorRestStatusText("creatorRest.status.vectorLine.demoFailed", "데모 선 생성 실패"));
   return line;
+}
+
+function buildCrossingCutterLine(): StudioEditableVectorLine {
+  const cutter = editableLineFromVectorizerPoints(
+    [
+      { x: 256, y: 18, pressure: 0.5 },
+      { x: 248, y: 124, pressure: 0.5 },
+    ],
+    { id: "demo-cutter-line", size: 6, thinning: 0.2, color: "var(--color-fg-3)" },
+  );
+  if (!cutter) throw new Error(creatorRestStatusText("creatorRest.status.vectorLine.demoFailed", "교차선 생성 실패"));
+  return cutter;
 }
 
 /** 중심선 path data (M/L). */
@@ -208,6 +241,7 @@ export function StudioVectorLinePanel(): ReactElement {
   const reducedMotion = usePrefersReducedMotion();
 
   const [line, setLine] = useState<StudioEditableVectorLine>(buildDemoLine);
+  const cutterLine = useMemo(() => buildCrossingCutterLine(), []);
   const [history, setHistory] = useState<StudioVectorLineHistory>(emptyVectorLineHistory);
   const [rangePreset, setRangePreset] = useState<RangePresetId>("middle");
   const [lastCommand, setLastCommand] = useState<string | null>(null);
@@ -312,11 +346,18 @@ export function StudioVectorLinePanel(): ReactElement {
         >
           <defs>
             <linearGradient id="svl-line-grad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#8b5cf6" />
-              <stop offset="55%" stopColor="#d946ef" />
-              <stop offset="100%" stopColor="#22d3ee" />
+              <stop offset="0%" style={{ stopColor: "var(--color-accent)" }} />
+              <stop offset="100%" style={{ stopColor: "var(--color-cool)" }} />
             </linearGradient>
           </defs>
+          <path
+            d={centerlinePathData(cutterLine)}
+            fill="none"
+            stroke="var(--color-line)"
+            strokeWidth={2}
+            strokeDasharray="4 4"
+            opacity={0.75}
+          />
           <path d={outlineD} fill="url(#svl-line-grad)" opacity={0.9} />
           {/* 선택 구간 하이라이트 */}
           <path
@@ -416,6 +457,57 @@ export function StudioVectorLinePanel(): ReactElement {
           }}
         >
           {t(COPY.taper)}
+        </button>
+      </div>
+
+      {/* CSP 심화 벡터 편집: 곡선 집기 & 교차점 삐침 정리 */}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            applyEdit(COPY.cmdPinch, (target) => {
+              const midIndex = Math.floor((range.startIndex + range.endIndex) / 2);
+              const anchor = target.points[midIndex] ?? target.points[0]!;
+              return pinchVectorLine(target, {
+                originX: anchor.x,
+                originY: anchor.y,
+                deltaX: 0,
+                deltaY: -18,
+                pinchRadiusPx: 96,
+                fixEndpoints: "both",
+              });
+            })
+          }
+          className="rounded-2xl px-3 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
+          style={{
+            background: "var(--color-raised)",
+            color: "var(--color-fg)",
+            border: "1px solid var(--color-line)",
+          }}
+        >
+          {t(COPY.pinch)}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            applyEdit(COPY.cmdTrimIntersection, (target) => {
+              const tailPt = target.points[target.points.length - 1]!;
+              const trimmed = eraseVectorLineToIntersection(target, [cutterLine], {
+                x: tailPt.x,
+                y: tailPt.y,
+                radiusPx: 48,
+              });
+              return trimmed[0] ?? target;
+            })
+          }
+          className="rounded-2xl px-3 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
+          style={{
+            background: "var(--color-raised)",
+            color: "var(--color-fg)",
+            border: "1px solid var(--color-line)",
+          }}
+        >
+          {t(COPY.trimIntersection)}
         </button>
       </div>
 

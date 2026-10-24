@@ -2,16 +2,20 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_VECTOR_LINE_MIN_WIDTH_PX,
+  brushAdjustVectorLineWidth,
   clearVectorLineHistory,
+  connectVectorLines,
   createVectorLineCommand,
   deleteControlPoint,
   editableLineFromVectorizerPoints,
   emptyVectorLineHistory,
+  eraseVectorLineToIntersection,
   estimateWidthFromPressure,
   insertControlPoint,
   insertControlPointAt,
   moveControlPoint,
   normalizeWidthRange,
+  pinchVectorLine,
   pushVectorLineCommand,
   redoVectorLine,
   scaleWidthInRange,
@@ -351,3 +355,137 @@ describe("vectorLineOutlinePathData", () => {
     expect(thin).not.toContain("15");
   });
 });
+
+describe("CSP 벡터 레이어 심화 편집 (곡선 집기·선폭 브러시·교차점 지우개·선 연결)", () => {
+  it("pinchVectorLine: 코사인 벨 감쇠로 기준점 주변만 부드럽게 밀고 양 끝점을 고정할 수 있다", () => {
+    const line = editableLineFromVectorizerPoints(
+      Array.from({ length: 5 }, (_, i) => ({ x: i * 25, y: 50, pressure: 0.5 })),
+      { id: "pinch-target" },
+    )!;
+    const pinched = pinchVectorLine(line, {
+      originX: 50,
+      originY: 50,
+      deltaX: 0,
+      deltaY: -20,
+      pinchRadiusPx: 60,
+      fixEndpoints: "both",
+    });
+    expect(pinched.points[0]!.y).toBe(50);
+    expect(pinched.points[4]!.y).toBe(50);
+    expect(pinched.points[2]!.y).toBeCloseTo(30, 5);
+    expect(pinched.points[1]!.y).toBeLessThan(50);
+    expect(pinched.points[1]!.y).toBeGreaterThan(30);
+  });
+
+  it("brushAdjustVectorLineWidth: 브러시 반경 내 제어점만 방사형으로 굵기를 조절한다", () => {
+    const line = sampleLine([10, 10, 10, 10, 10, 10, 10, 10]);
+    const adjusted = brushAdjustVectorLineWidth(line, {
+      x: line.points[3]!.x,
+      y: line.points[3]!.y,
+      radiusPx: 25,
+      mode: "add",
+      amount: 6,
+    });
+    expect(adjusted.points[3]!.width).toBeCloseTo(16, 4);
+    expect(adjusted.points[0]!.width).toBe(10);
+    expect(adjusted.points[7]!.width).toBe(10);
+  });
+
+  it("eraseVectorLineToIntersection: 교차점 지우개가 삐져나온 꼬리 구간만 정확히 잘라낸다", () => {
+    const horizontal: StudioEditableVectorLine = {
+      id: "horiz",
+      color: "#111111",
+      closed: false,
+      points: [
+        { x: 0, y: 50, width: 8 },
+        { x: 50, y: 50, width: 8 },
+        { x: 100, y: 50, width: 8 },
+      ],
+    };
+    const verticalCutter: StudioEditableVectorLine = {
+      id: "vert",
+      color: "#111111",
+      closed: false,
+      points: [
+        { x: 60, y: 0, width: 8 },
+        { x: 60, y: 100, width: 8 },
+      ],
+    };
+    // 오른쪽 삐져나온 꼬리(x=85, y=50)를 지우개로 터치하면 x=60 교차점까지만 잘리고 왼쪽(0..60)만 남는다.
+    const trimmed = eraseVectorLineToIntersection(horizontal, [verticalCutter], {
+      x: 85,
+      y: 50,
+      radiusPx: 16,
+    });
+    expect(trimmed).toHaveLength(1);
+    const survivor = trimmed[0]!;
+    expect(survivor.points[0]!.x).toBeCloseTo(0, 4);
+    expect(survivor.points[survivor.points.length - 1]!.x).toBeCloseTo(60, 4);
+  });
+
+  it("eraseVectorLineToIntersection: 두 교차선 사이의 가운데 구간을 지우면 양쪽 두 선으로 분할된다", () => {
+    const horizontal: StudioEditableVectorLine = {
+      id: "horiz-mid",
+      color: "#111111",
+      closed: false,
+      points: [
+        { x: 0, y: 50, width: 8 },
+        { x: 100, y: 50, width: 8 },
+      ],
+    };
+    const cutterLeft: StudioEditableVectorLine = {
+      id: "cut-l",
+      color: "#111111",
+      closed: false,
+      points: [
+        { x: 30, y: 0, width: 8 },
+        { x: 30, y: 100, width: 8 },
+      ],
+    };
+    const cutterRight: StudioEditableVectorLine = {
+      id: "cut-r",
+      color: "#111111",
+      closed: false,
+      points: [
+        { x: 70, y: 0, width: 8 },
+        { x: 70, y: 100, width: 8 },
+      ],
+    };
+    const split = eraseVectorLineToIntersection(horizontal, [cutterLeft, cutterRight], {
+      x: 50,
+      y: 50,
+      radiusPx: 16,
+    });
+    expect(split).toHaveLength(2);
+    expect(split[0]!.points[split[0]!.points.length - 1]!.x).toBeCloseTo(30, 4);
+    expect(split[1]!.points[0]!.x).toBeCloseTo(70, 4);
+  });
+
+  it("connectVectorLines: 인접한 두 열린 벡터 선의 끝점을 스냅하여 하나의 선으로 연결한다", () => {
+    const lineA: StudioEditableVectorLine = {
+      id: "seg-a",
+      color: "#222222",
+      closed: false,
+      points: [
+        { x: 0, y: 0, width: 6 },
+        { x: 40, y: 0, width: 10 },
+      ],
+    };
+    const lineB: StudioEditableVectorLine = {
+      id: "seg-b",
+      color: "#222222",
+      closed: false,
+      points: [
+        { x: 44, y: 2, width: 14 },
+        { x: 90, y: 2, width: 8 },
+      ],
+    };
+    const connected = connectVectorLines(lineA, lineB, 10);
+    expect(connected).not.toBeNull();
+    expect(connected!.points).toHaveLength(3);
+    expect(connected!.points[1]!.x).toBeCloseTo(42, 4);
+    expect(connected!.points[1]!.width).toBeCloseTo(12, 4);
+    expect(connectVectorLines(lineA, lineB, 2)).toBeNull();
+  });
+});
+
