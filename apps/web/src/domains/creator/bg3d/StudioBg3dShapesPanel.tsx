@@ -5,10 +5,8 @@ import {
   STUDIO_BG3D_ICON_BUTTON as ICON_BUTTON,
   studioBg3dClassNames as cx,
 } from "./studio-bg3d-editor-ui";
-import {
-  type StudioBg3dPushPullAxis,
-  type StudioBg3dPushPullFace,
-} from "./studio-bg3d-push-pull";
+import { type StudioBg3dPushPullAxis, type StudioBg3dPushPullFace } from "./studio-bg3d-push-pull";
+import { StudioBg3dCc0SurfaceMaterialPicker } from "./StudioBg3dCc0SurfaceMaterialPicker";
 import { StudioBg3dProceduralStarterPanel } from "./StudioBg3dProceduralStarterPanel";
 import { StudioBg3dPushPullSection } from "./StudioBg3dShapesPanelPushPull";
 import { StudioBg3dTextExtruderPanel } from "./StudioBg3dTextExtruderPanel";
@@ -696,20 +694,9 @@ export function StudioBg3dShapesPanel({
                         }}
                       />
 
-                      <StudioBg3dPushPullSection
-                        primitive={selectedPrimitive}
-                        locked={selectedIsLocked}
-                        snapSettings={snapSettings}
-                        updateTransform={updateTransform}
-                        axis={pushPullAxis}
-                        face={pushPullFace}
-                        distance={pushPullDistance}
-                        feedback={pushPullFeedback}
-                        setAxis={setPushPullAxis}
-                        setFace={setPushPullFace}
-                        setDistance={setPushPullDistance}
-                        setFeedback={setPushPullFeedback}
-                      />
+                      <StudioBg3dPushPullSection primitive={selectedPrimitive} locked={selectedIsLocked} snapSettings={snapSettings} updateTransform={updateTransform}
+                        axis={pushPullAxis} face={pushPullFace} distance={pushPullDistance} feedback={pushPullFeedback}
+                        setAxis={setPushPullAxis} setFace={setPushPullFace} setDistance={setPushPullDistance} setFeedback={setPushPullFeedback} />
 
                       <label className="flex items-center gap-2 text-xs font-medium text-fg-2">
                         색상(셰이딩 미리보기 전용)
@@ -745,6 +732,11 @@ export function StudioBg3dShapesPanel({
                           </button>
                         </div>
                       </div>
+
+                      <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} onSelectMaterial={(entry) => {
+                        updateColor(selectedPrimitive.id, entry.tintHex);
+                        applySurfacePreset(selectedPrimitive.id, entry.surfacePresetId);
+                      }} />
                     </div>
                   ) : selectedCustomModel ? (
                     <div className="space-y-3">
@@ -1026,6 +1018,9 @@ export function StudioBg3dShapesPanel({
                             원본 재질과 텍스처는 보존한 채 이 배치에만 색·투명도·와이어 설정을 적용합니다.
                           </p>
                         )}
+                        <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} onSelectMaterial={(_entry, override) => {
+                          updateCustomModelMaterial(selectedCustomModel.id, override);
+                        }} />
                       </div>
 
                       <div className="space-y-2 rounded-xl border border-line bg-card/55 p-2.5">

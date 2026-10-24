@@ -5,14 +5,23 @@ import {
   type StylizedShaderKind,
   type StylizedShaderPreset,
 } from "../scene-3d/studio-3d-matcap-shader-system";
+import { StudioBg3dCc0SurfaceMaterialPicker } from "./StudioBg3dCc0SurfaceMaterialPicker";
+
+import type { StudioBg3dCc0SurfaceMaterialEntry } from "./studio-bg3d-cc0-surface-material-catalog";
+import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
 
 export interface StudioBg3dMatCapStudioPanelProps {
   readonly onApplyShader?: (preset: StylizedShaderPreset) => void;
+  readonly onApplyCc0SurfaceMaterial?: (
+    entry: StudioBg3dCc0SurfaceMaterialEntry,
+    override: StudioBg3dMaterialOverride,
+  ) => void;
   readonly disabled?: boolean;
 }
 
 export function StudioBg3dMatCapStudioPanel({
   onApplyShader,
+  onApplyCc0SurfaceMaterial,
   disabled = false,
 }: StudioBg3dMatCapStudioPanelProps) {
   const [activeCategory, setActiveCategory] = useState<"all" | "toon" | "clay" | "material" | "special">("all");
@@ -118,6 +127,13 @@ export function StudioBg3dMatCapStudioPanel({
           </div>
         </div>
       )}
+
+      <StudioBg3dCc0SurfaceMaterialPicker
+        disabled={disabled}
+        onSelectMaterial={(entry, override) => {
+          onApplyCc0SurfaceMaterial?.(entry, override);
+        }}
+      />
     </div>
   );
 }

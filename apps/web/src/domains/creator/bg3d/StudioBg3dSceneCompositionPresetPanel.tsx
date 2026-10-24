@@ -7,6 +7,14 @@ import {
   STUDIO_BG3D_CONTROL_BUTTON,
   studioBg3dClassNames as cx,
 } from "./studio-bg3d-editor-ui";
+import {
+  STUDIO_BG3D_CC0_BACKDROP_CATEGORIES,
+  STUDIO_BG3D_CC0_BACKDROP_PLATE_CATALOG,
+  getStudioBg3dScenePresetBackdropPlates,
+  listStudioBg3dCc0BackdropPlatesByCategory,
+  type StudioBg3dCc0BackdropCategory,
+  type StudioBg3dCc0BackdropPlateEntry,
+} from "./studio-bg3d-cc0-backdrop-plate-catalog";
 import { getStudioBg3dGenreScenePackBundleLink } from "./studio-bg3d-genre-scene-pack-links";
 import { getStudioBg3dHdriLightingPreset } from "./studio-bg3d-hdri-lighting-presets";
 import {
@@ -105,8 +113,12 @@ export function StudioBg3dSceneCompositionPresetPanel({
   const id = useId().replaceAll(":", "");
   const copy = useBilingual("bg3d-scene-composition-presets");
   const [genreId, setGenreId] = useState<StudioBg3dSceneGenreId | null>(null);
+  const [backdropOpen, setBackdropOpen] = useState(false);
+  const [backdropCategory, setBackdropCategory] = useState<StudioBg3dCc0BackdropCategory | null>(null);
+  const [selectedBackdropId, setSelectedBackdropId] = useState<string | null>(null);
   const activePreset = resolveStudioBg3dSceneCompositionPreset({ camera, lighting, exposure });
   const presets = listStudioBg3dSceneCompositionPresets(genreId);
+  const visibleBackdrops = listStudioBg3dCc0BackdropPlatesByCategory(backdropCategory);
 
   const apply = (preset: StudioBg3dSceneCompositionPreset) => {
     const result = applyStudioBg3dSceneCompositionPreset(
@@ -114,6 +126,20 @@ export function StudioBg3dSceneCompositionPresetPanel({
       preset.id,
     );
     if (result) onApplyScenePack(result);
+  };
+
+  const applyBackdropLighting = (plate: StudioBg3dCc0BackdropPlateEntry) => {
+    setSelectedBackdropId(plate.id);
+    const lightingPreset = getStudioBg3dHdriLightingPreset(plate.recommendedLightingPresetId);
+    if (!lightingPreset) return;
+    onApplyScenePack({
+      presetId: plate.id,
+      camera,
+      lighting: lightingPreset.lighting,
+      exposure: lightingPreset.exposure,
+      weatherPresetId: lightingPreset.weatherPresetId,
+      sunTimeHours: lightingPreset.sunTimeHours,
+    });
   };
 
   return (
@@ -175,6 +201,7 @@ export function StudioBg3dSceneCompositionPresetPanel({
           const selected = preset.id === activePreset?.id;
           const lightingPreset = getStudioBg3dHdriLightingPreset(preset.lightingPresetId);
           const bundleLink = getStudioBg3dGenreScenePackBundleLink(preset.id);
+          const backdropPlates = getStudioBg3dScenePresetBackdropPlates(preset.id);
           return (
             <button
               key={preset.id}
@@ -225,11 +252,120 @@ export function StudioBg3dSceneCompositionPresetPanel({
                     )}
                   </span>
                 ) : null}
+                {backdropPlates.length > 0 ? (
+                  <span
+                    data-testid={`bg3d-scene-pack-backdrop-${preset.id}`}
+                    title={backdropPlates.map((plate) => plate.labelKo).join(" · ")}
+                    className="w-fit rounded-full border border-line bg-card px-1.5 py-0.5 text-[0.5625rem] font-semibold text-fg-3"
+                  >
+                    {copy(
+                      `2K 배경 플레이트 ${backdropPlates.length}종`,
+                      `${backdropPlates.length} 2K backdrop plates`,
+                    )}
+                  </span>
+                ) : null}
               </span>
             </button>
           );
         })}
       </div>
+
+      {/* Collapsible 39 CC0 2K Backdrop Plate Browser */}
+      <div
+        data-testid="bg3d-cc0-backdrop-plate-picker"
+        className="mt-2.5 rounded-lg border border-line/80 bg-panel/75 p-2"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[0.625rem] font-bold text-fg-2">
+            {copy(
+              `Poly Haven 2K 환경 배경 플레이트 (${STUDIO_BG3D_CC0_BACKDROP_PLATE_CATALOG.length}종 · 8K HDRI 90° 투영)`,
+              `Poly Haven 2K backdrop plates (${STUDIO_BG3D_CC0_BACKDROP_PLATE_CATALOG.length} · 8K HDRI 90° projection)`,
+            )}
+          </span>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-expanded={backdropOpen}
+            data-testid="bg3d-cc0-backdrop-plate-toggle"
+            onClick={() => setBackdropOpen((prev) => !prev)}
+            className="rounded border border-line bg-card px-2 py-0.5 text-[0.58rem] font-semibold text-fg-2 hover:bg-raised"
+          >
+            {backdropOpen ? copy("접기", "Hide") : copy("플레이트 보기", "Browse plates")}
+          </button>
+        </div>
+
+        {backdropOpen ? (
+          <div className="mt-2 space-y-2 border-t border-line/60 pt-2">
+            <div className="flex flex-wrap gap-1" role="group" aria-label={copy("배경 플레이트 분류", "Backdrop plate category")}>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-pressed={backdropCategory === null}
+                onClick={() => setBackdropCategory(null)}
+                className={cx(
+                  "rounded-full border px-2 py-0.5 text-[0.58rem] font-semibold",
+                  backdropCategory === null
+                    ? "border-accent/60 bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-3",
+                )}
+              >
+                {copy(`전체 (${STUDIO_BG3D_CC0_BACKDROP_PLATE_CATALOG.length})`, `All (${STUDIO_BG3D_CC0_BACKDROP_PLATE_CATALOG.length})`)}
+              </button>
+              {STUDIO_BG3D_CC0_BACKDROP_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  disabled={disabled}
+                  aria-pressed={backdropCategory === cat.id}
+                  data-testid={`bg3d-cc0-backdrop-cat-${cat.id}`}
+                  onClick={() => setBackdropCategory(cat.id)}
+                  className={cx(
+                    "rounded-full border px-2 py-0.5 text-[0.58rem] font-semibold",
+                    backdropCategory === cat.id
+                      ? "border-accent/60 bg-accent-soft text-accent"
+                      : "border-line bg-card text-fg-3",
+                  )}
+                >
+                  {copy(cat.labelKo, cat.labelEn)}
+                </button>
+              ))}
+            </div>
+            <div className="grid max-h-48 grid-cols-2 gap-1.5 overflow-y-auto pr-1">
+              {visibleBackdrops.map((plate) => {
+                const isSelected = selectedBackdropId === plate.id;
+                return (
+                  <button
+                    key={plate.id}
+                    type="button"
+                    disabled={disabled}
+                    aria-pressed={isSelected}
+                    data-testid={`bg3d-cc0-backdrop-item-${plate.id}`}
+                    onClick={() => applyBackdropLighting(plate)}
+                    className={cx(
+                      "flex flex-col gap-1 rounded-md border p-1.5 text-left transition-colors",
+                      isSelected
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2 hover:bg-raised",
+                    )}
+                  >
+                    <img
+                      src={plate.previewUrl}
+                      alt={plate.labelKo}
+                      loading="lazy"
+                      className="h-12 w-full rounded object-cover"
+                    />
+                    <span className="truncate text-[0.6rem] font-bold">{plate.labelKo}</span>
+                    <span className="text-[0.54rem] text-fg-3">
+                      2048×1152 · FOV 90° · {plate.recommendedLightingPresetId}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
       <p className="mt-1.5 text-[0.625rem] leading-relaxed text-fg-3">
         {copy(
           "적용 후 카메라나 조명을 직접 바꾸면 '사용자 설정'으로 표시됩니다. 환경 이미지: Poly Haven (CC0)",
