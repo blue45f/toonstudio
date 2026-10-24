@@ -25,6 +25,16 @@ import {
   resolveStudioBg3dLightingStudioPreset,
 } from "./studio-bg3d-lighting-studio";
 import {
+  STUDIO_BG3D_ENVIRONMENT_INTENSITY_MAX,
+  STUDIO_BG3D_ENVIRONMENT_INTENSITY_MIN,
+  resolveStudioBg3dEnvironmentSettings,
+  type StudioBg3dEnvironmentSettings,
+} from "./studio-bg3d-hdri-environment";
+import {
+  STUDIO_BG3D_HDRI_ENVIRONMENT_ASSETS,
+  type StudioBg3dHdriEnvironmentAssetId,
+} from "./studio-bg3d-hdri-environment-assets";
+import {
   STUDIO_BG3D_HDRI_LIGHTING_PRESETS,
   getStudioBg3dHdriLightingPreset,
   resolveStudioBg3dHdriLightingPreset,
@@ -337,6 +347,25 @@ export function StudioBg3dLightingStudio({
   const copy = useBilingual("bg3d-lighting-studio-hdri");
   const activePreset = resolveStudioBg3dLightingStudioPreset(lighting, exposure);
   const activeHdriPreset = resolveStudioBg3dHdriLightingPreset(lighting, exposure);
+  const envSettings = resolveStudioBg3dEnvironmentSettings(lighting);
+
+  const updateEnvironment = (patch: Partial<StudioBg3dEnvironmentSettings>) => {
+    onUpdateLighting({
+      environment: {
+        ...envSettings,
+        ...patch,
+      },
+    });
+  };
+
+  const selectEnvironmentMap = (assetId: StudioBg3dHdriEnvironmentAssetId | null) => {
+    if (assetId === null) {
+      updateEnvironment({ source: "procedural", assetId: null });
+    } else {
+      updateEnvironment({ source: "hdri", assetId });
+    }
+    onCommitLightingHistory?.();
+  };
 
   const updateDirectionalLight = (
     channel: "key" | "fill",
@@ -412,6 +441,132 @@ export function StudioBg3dLightingStudio({
             onApplyPreset={applyHdriPreset}
           />
         </div>
+
+        <section
+          data-testid="bg3d-hdri-environment-controls"
+          aria-labelledby={`${panelId}-hdri-env-title`}
+          className="mb-3 border-t border-line/70 pt-3"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 id={`${panelId}-hdri-env-title`} className="text-xs font-bold text-fg">
+                {copy("HDRI 환경광(IBL) 맵 · 회전 · 세기", "HDRI IBL map · rotation · intensity")}
+              </h3>
+              <p className="mt-0.5 text-[0.625rem] leading-relaxed text-fg-3">
+                {copy(
+                  "절차 파노라마 대신 실제 Poly Haven CC0 등거리 HDRI(.hdr 1k/2k)를 선택해 PBR 반사·환경광과 배경 하늘을 제어합니다.",
+                  "Switch from procedural panorama to bundled Poly Haven CC0 equirectangular HDRIs (.hdr 1k/2k) for PBR reflections and sky.",
+                )}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-line bg-panel px-2 py-0.5 text-[0.5625rem] font-semibold text-fg-3">
+              Poly Haven CC0
+            </span>
+          </div>
+
+          <div
+            className="mt-2 grid min-w-0 grid-cols-2 gap-1.5"
+            role="group"
+            aria-labelledby={`${panelId}-hdri-env-title`}
+          >
+            <button
+              type="button"
+              aria-label={copy("절차 파노라마 환경광 선택", "Select procedural panorama IBL")}
+              aria-pressed={envSettings.source === "procedural"}
+              disabled={disabled}
+              data-testid="bg3d-hdri-map-procedural"
+              className={cx(
+                STUDIO_BG3D_CONTROL_BUTTON,
+                "min-w-0 flex-col items-stretch gap-0.5 border-line bg-panel px-2.5 py-2 text-left text-fg-2 hover:bg-raised hover:text-fg",
+                envSettings.source === "procedural" && "border-accent/60 bg-accent-soft text-accent",
+              )}
+              onClick={() => selectEnvironmentMap(null)}
+            >
+              <span className="flex items-center justify-between gap-1">
+                <span className="truncate text-xs font-bold">
+                  {copy("절차 파노라마 (기본)", "Procedural sky")}
+                </span>
+                {envSettings.source === "procedural" ? <Check size={12} className="shrink-0" aria-hidden /> : null}
+              </span>
+              <span className="truncate text-[0.625rem] text-fg-3">
+                {copy("하늘 프리셋 합성 환경광", "Synthesized sky gradient IBL")}
+              </span>
+            </button>
+            {STUDIO_BG3D_HDRI_ENVIRONMENT_ASSETS.map((asset) => {
+              const selected = envSettings.source === "hdri" && envSettings.assetId === asset.id;
+              return (
+                <button
+                  key={asset.id}
+                  type="button"
+                  aria-label={copy(
+                    `${asset.labelKo} HDRI 환경광 맵 선택`,
+                    `Select ${asset.labelEn} HDRI environment map`,
+                  )}
+                  aria-pressed={selected}
+                  title={copy(asset.descriptionKo, asset.descriptionEn)}
+                  disabled={disabled}
+                  data-testid={`bg3d-hdri-map-${asset.id}`}
+                  className={cx(
+                    STUDIO_BG3D_CONTROL_BUTTON,
+                    "min-w-0 flex-col items-stretch gap-0.5 border-line bg-panel px-2.5 py-2 text-left text-fg-2 hover:bg-raised hover:text-fg",
+                    selected && "border-accent/60 bg-accent-soft text-accent",
+                  )}
+                  onClick={() => selectEnvironmentMap(asset.id)}
+                >
+                  <span className="flex items-center justify-between gap-1">
+                    <span className="truncate text-xs font-bold">
+                      {copy(asset.labelKo, asset.labelEn)}
+                    </span>
+                    {selected ? <Check size={12} className="shrink-0" aria-hidden /> : null}
+                  </span>
+                  <span className="truncate text-[0.625rem] text-fg-3">
+                    {asset.polyHavenId} (1k/2k .hdr)
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <LtRangeControl
+            id={`${panelId}-hdri-env-intensity`}
+            label={copy("HDRI 환경광 세기", "HDRI IBL intensity")}
+            min={STUDIO_BG3D_ENVIRONMENT_INTENSITY_MIN}
+            max={STUDIO_BG3D_ENVIRONMENT_INTENSITY_MAX}
+            step={0.05}
+            value={clamp(
+              envSettings.intensity,
+              STUDIO_BG3D_ENVIRONMENT_INTENSITY_MIN,
+              STUDIO_BG3D_ENVIRONMENT_INTENSITY_MAX,
+              1,
+            )}
+            valueText={`${envSettings.intensity.toFixed(2)}×`}
+            disabled={disabled}
+            onChange={(intensity) => updateEnvironment({ intensity })}
+            onChangeEnd={onCommitLightingHistory}
+          />
+          <LtRangeControl
+            id={`${panelId}-hdri-env-rotation`}
+            label={copy("HDRI 수평 회전", "HDRI horizontal rotation")}
+            min={0}
+            max={360}
+            step={1}
+            value={roundStudioBg3dNumber(envSettings.rotationDegrees, 0)}
+            valueText={`${Math.round(envSettings.rotationDegrees)}°`}
+            disabled={disabled}
+            onChange={(rotationDegrees) => updateEnvironment({ rotationDegrees })}
+            onChangeEnd={onCommitLightingHistory}
+          />
+          <LtToggleRow
+            label={copy("HDRI 배경 하늘 표시", "Show HDRI as background sky")}
+            checked={envSettings.useAsBackground}
+            disabled={disabled}
+            onChange={(useAsBackground) => {
+              updateEnvironment({ useAsBackground });
+              onCommitLightingHistory?.();
+            }}
+          />
+        </section>
+
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-xs font-bold text-fg">스튜디오 라이트 프리셋</h3>

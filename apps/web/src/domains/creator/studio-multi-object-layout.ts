@@ -28,6 +28,7 @@ export type Studio3DPropCatalogCategory =
   | "fantasy"
   | "scifi"
   | "architecture"
+  | "nature"
   | "mannequin";
 
 export const STUDIO_3D_PROP_CATEGORY_LABELS: Readonly<Record<Studio3DPropCatalogCategory, string>> = Object.freeze({
@@ -37,6 +38,7 @@ export const STUDIO_3D_PROP_CATEGORY_LABELS: Readonly<Record<Studio3DPropCatalog
   fantasy: "판타지",
   scifi: "SF·사이버",
   architecture: "모듈 건축",
+  nature: "자연·식생",
   mannequin: "포즈 마네킹",
 });
 
@@ -46,10 +48,12 @@ export interface Studio3DPropCatalogEntry {
   readonly category: Studio3DPropCatalogCategory;
   readonly modelUrl:
     | `/assets/3d/${string}.glb`
+    | `/assets/studio/cc0-20260906/assets/polyhaven-${string}.glb`
     | `/creator-essentials/prop-${string}.glb`
     | `/creator-essentials/pose-${string}.glb`;
   readonly thumbnailUrl?:
     | `/assets/3d/refined-v8/thumbnails/${string}.png`
+    | `/assets/studio/cc0-20260906/previews/polyhaven-${string}.png`
     | `/creator-essentials/prop-${string}.preview.png`
     | `/creator-essentials/pose-${string}.preview.svg`;
   readonly defaultPosition: readonly [number, number, number];
@@ -92,12 +96,57 @@ export const STUDIO_REFINED_V8_PROP_CATALOG: readonly Studio3DPropCatalogEntry[]
   { id: "v8_bubble_tea", name: "버블티 컵 (v8)", category: "food", modelUrl: "/assets/3d/refined-v8/bubble_tea.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/bubble_tea.png", defaultPosition: [0.25, 0.75, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v8_ice_cream_cone", name: "아이스크림 콘 (v8)", category: "food", modelUrl: "/assets/3d/refined-v8/ice_cream_cone.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/ice_cream_cone.png", defaultPosition: [-0.25, 0.75, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v8_fox_mask", name: "여우 가면 (v8)", category: "fantasy", modelUrl: "/assets/3d/refined-v8/fox_mask.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/fox_mask.png", defaultPosition: [0, 1.2, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "v8_robot_pet", name: "SF 로봇 반려견 (v8)", category: "scifi", modelUrl: "/assets/3d/refined-v8/robot_pet.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/robot_pet.png", defaultPosition: [0.8, 0, 0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v8_robot_pet", name: "SF 로봇 반려견 (v8)", category: "scifi", modelUrl: "/assets/3d/refined-v8/robot_pet.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/robot_pet.png", defaultPosition: [0, 0, 0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
-/** 퍼블릭 번들(`/assets/3d/*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·마네킹 카탈로그 (84종). */
+/** Poly Haven CC0 2K PBR 고해상도 실사 소품·자연물 카탈로그 (36종 + 전용 썸네일). */
+export const STUDIO_POLYHAVEN_PBR_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  // 가구·인테리어 (17종)
+  { id: "ph_coffee_table_round", name: "거실 원형 커피 테이블 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-coffee-table-round-01/coffee_table_round_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-coffee-table-round-01.png", defaultPosition: [0, 0, -0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_side_table", name: "침실 원목 사이드 테이블 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-side-table-01/side_table_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-side-table-01.png", defaultPosition: [1.1, 0, -0.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_rocking_chair", name: "원목 흔들의자 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-rockingchair-01/Rockingchair_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-rockingchair-01.png", defaultPosition: [-1.3, 0, -0.5], defaultRotation: [0, 0.45, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_ottoman", name: "브라운 가죽 오토만 스툴 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-ottoman-01/Ottoman_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-ottoman-01.png", defaultPosition: [0.8, 0, 0.4], defaultRotation: [0, -0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_gothic_bed", name: "고딕 장식 침대 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-gothicbed-01/GothicBed_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-gothicbed-01.png", defaultPosition: [0, 0, -2.0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_classic_nightstand", name: "클래식 침대 옆 협탁 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-classicnightstand-01/ClassicNightstand_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-classicnightstand-01.png", defaultPosition: [-1.2, 0, -1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_chandelier", name: "실내 장식 샹들리에 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-chandelier-03/Chandelier_03.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-chandelier-03.png", defaultPosition: [0, 2.4, -1.0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_painted_wooden_chair", name: "화이트 페인트 원목 의자 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-painted-wooden-chair-01/painted_wooden_chair_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-painted-wooden-chair-01.png", defaultPosition: [-0.6, 0, 0.3], defaultRotation: [0, 0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_dining_chair", name: "브라운 가죽 다이닝 의자 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-dining-chair-02/dining_chair_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-dining-chair-02.png", defaultPosition: [0.6, 0, 0.3], defaultRotation: [0, -0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_wooden_picnic_table", name: "공원 피크닉 테이블 벤치 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-wooden-picnic-table/wooden_picnic_table.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-wooden-picnic-table.png", defaultPosition: [0, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_chinese_sofa", name: "중국풍 목제 소파 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-chinese-sofa/chinese_sofa.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-chinese-sofa.png", defaultPosition: [0, 0, -1.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_vintage_cabinet", name: "클래식 장식 수납장 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-vintage-cabinet-01/vintage_cabinet_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-vintage-cabinet-01.png", defaultPosition: [-1.8, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_desk_lamp_arm", name: "관절형 작업등 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-desk-lamp-arm-01/desk_lamp_arm_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-desk-lamp-arm-01.png", defaultPosition: [0.45, 0.78, -0.6], defaultRotation: [0, -0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_steel_frame_shelves", name: "철제 프레임 선반 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-steel-frame-shelves-01.png", defaultPosition: [1.6, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_modern_arm_chair", name: "모던 암체어 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-modern-arm-chair-01/modern_arm_chair_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-modern-arm-chair-01.png", defaultPosition: [-1.1, 0, -0.4], defaultRotation: [0, 0.35, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_wooden_table", name: "원목 다이닝 테이블 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-wooden-table-02/wooden_table_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-wooden-table-02.png", defaultPosition: [0, 0, -0.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_sofa_02", name: "패브릭 3인용 소파 (Poly Haven)", category: "furniture", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-sofa-02/sofa_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-sofa-02.png", defaultPosition: [0, 0, -1.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  // 음식·식기 (6종)
+  { id: "ph_croissant", name: "카페 크루아상 빵 (Poly Haven)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-croissant/croissant.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-croissant.png", defaultPosition: [0.15, 0.78, -0.25], defaultRotation: [0, -0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_pomegranate", name: "석류 과일 (Poly Haven)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-food-pomegranate-01/food_pomegranate_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-food-pomegranate-01.png", defaultPosition: [0, 0.78, -0.4], defaultRotation: [0, 0.15, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_lemon", name: "레몬 과일 (Poly Haven)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-lemon/lemon.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-lemon.png", defaultPosition: [0.28, 0.78, -0.35], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_carrot_cake", name: "카페 당근 케이크 (Poly Haven)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-carrot-cake/carrot_cake.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-carrot-cake.png", defaultPosition: [-0.2, 0.78, -0.3], defaultRotation: [0, 0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_jug", name: "도자기 저그 주전자 (Poly Haven)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-jug-01/jug_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-jug-01.png", defaultPosition: [0.35, 0.78, -0.25], defaultRotation: [0, 0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_tea_set", name: "클래식 다기 세트 (Poly Haven)", category: "food", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-tea-set-01/tea_set_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-tea-set-01.png", defaultPosition: [-0.3, 0.78, -0.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  // 거리·판타지 소품 (5종)
+  { id: "ph_cardboard_box", name: "택배 골판지 상자 (Poly Haven)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-cardboard-box-01/cardboard_box_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-cardboard-box-01.png", defaultPosition: [-1.4, 0, -1.0], defaultRotation: [0, 0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_treasure_chest", name: "금속 장식 보물상자 (Poly Haven)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-treasure-chest/treasure_chest.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-treasure-chest.png", defaultPosition: [0, 0, -1.5], defaultRotation: [0, 0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_fire_hydrant", name: "거리 소화전 (Poly Haven)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-fire-hydrant/fire_hydrant.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-fire-hydrant.png", defaultPosition: [1.9, 0, -0.8], defaultRotation: [0, -0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_street_lamp", name: "클래식 가로등 (Poly Haven)", category: "street", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-street-lamp-01/street_lamp_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-street-lamp-01.png", defaultPosition: [-1.9, 0, -1.1], defaultRotation: [0, 0.15, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_wine_barrel", name: "오크 와인 배럴 통 (Poly Haven)", category: "fantasy", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-wine-barrel-01/wine_barrel_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-wine-barrel-01.png", defaultPosition: [1.5, 0, -1.6], defaultRotation: [0, 0.2, 0], defaultScale: [1, 1, 1] },
+  // 자연·식생 (8종)
+  { id: "ph_rock_moss_01", name: "황갈색 이끼 바위 세트 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-rock-moss-set-01/rock_moss_set_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-rock-moss-set-01.png", defaultPosition: [-2.0, 0, -1.8], defaultRotation: [0, 0.35, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_rock_moss_02", name: "회색 이끼 바위 세트 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-rock-moss-set-02/rock_moss_set_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-rock-moss-set-02.png", defaultPosition: [2.2, 0, -2.4], defaultRotation: [0, -0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_fern", name: "양치식물 고사리 수풀 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-fern-02/fern_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-fern-02.png", defaultPosition: [-1.2, 0, -1.1], defaultRotation: [0, 0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_shrub_sorrel", name: "괭이밥 야생 수풀 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-shrub-sorrel-01/shrub_sorrel_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-shrub-sorrel-01.png", defaultPosition: [0.9, 0, -0.9], defaultRotation: [0, -0.15, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_dead_tree_trunk", name: "쓰러진 고목 줄기 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-dead-tree-trunk-02/dead_tree_trunk_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-dead-tree-trunk-02.png", defaultPosition: [-2.4, 0, -2.8], defaultRotation: [0, 0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_potted_plant_01", name: "테라코타 관엽 화분 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-potted-plant-01/potted_plant_01.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-potted-plant-01.png", defaultPosition: [-0.6, 0, -0.7], defaultRotation: [0, 0.5, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_potted_plant_02", name: "실내 대형 관엽 화분 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-potted-plant-02/potted_plant_02.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-potted-plant-02.png", defaultPosition: [1.6, 0, -1.8], defaultRotation: [0, -0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "ph_potted_plant_04", name: "모던 세라믹 화분 (Poly Haven)", category: "nature", modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-potted-plant-04/potted_plant_04.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/polyhaven-potted-plant-04.png", defaultPosition: [1.8, 0, -2.2], defaultRotation: [0, 0.1, 0], defaultScale: [1, 1, 1] },
+]);
+
+/** 퍼블릭 번들(`/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/polyhaven-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (120종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
   ...STUDIO_REFINED_V8_PROP_CATALOG,
+  ...STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
   { id: "prop_round_table", name: "원형 카페 테이블", category: "furniture", modelUrl: "/assets/3d/round_table.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_school_desk", name: "학교 책상", category: "furniture", modelUrl: "/assets/3d/school_desk.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_grandfather_clock", name: "진자 괘종시계", category: "furniture", modelUrl: "/assets/3d/grandfather_clock.glb", defaultPosition: [-2, 0, -2.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
@@ -254,6 +303,28 @@ export const STUDIO_SCENE_PROP_LAYOUT_PRESETS: readonly StudioRoomLayoutPreset[]
       { modelUrl: "/creator-essentials/pose-seated-3d.glb", name: "착석 마네킹", position: [1.4, 0, -1.5], rotation: [0, -0.25, 0], scale: [1, 1, 1], visible: true },
     ],
   },
+  {
+    id: "polyhaven_cafe_terrace",
+    label: "Poly Haven 2K PBR 카페 테라스 (원형 테이블 + 원목 의자 + 다기 세트 + 크루아상 + 관엽 화분)",
+    objects: [
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-coffee-table-round-01/coffee_table_round_01.glb", name: "원형 커피 테이블", position: [0, 0, -0.5], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-painted-wooden-chair-01/painted_wooden_chair_01.glb", name: "화이트 원목 의자", position: [-0.7, 0, 0.2], rotation: [0, 0.3, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-tea-set-01/tea_set_01.glb", name: "클래식 다기 세트", position: [-0.15, 0.52, -0.5], rotation: [0, 0.15, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-croissant/croissant.glb", name: "버터 크루아상", position: [0.15, 0.52, -0.45], rotation: [0, -0.25, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-potted-plant-02/potted_plant_02.glb", name: "대형 관엽 화분", position: [-1.6, 0, -1.7], rotation: [0, 0.2, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
+  {
+    id: "polyhaven_forest_camp",
+    label: "Poly Haven 2K PBR 숲속 야영지 (쓰러진 고목 + 이끼 바위 + 양치식물 + 야생 수풀 + 와인 배럴)",
+    objects: [
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-dead-tree-trunk-02/dead_tree_trunk_02.glb", name: "쓰러진 고목 줄기", position: [-2.4, 0, -2.8], rotation: [0, 0.3, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-rock-moss-set-01/rock_moss_set_01.glb", name: "황갈색 이끼 바위", position: [1.9, 0, -2.0], rotation: [0, -0.35, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-fern-02/fern_02.glb", name: "양치식물 수풀", position: [-1.1, 0, -1.2], rotation: [0, 0.2, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-shrub-sorrel-01/shrub_sorrel_01.glb", name: "괭이밥 야생 수풀", position: [0.4, 0, -0.8], rotation: [0, 0.5, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/assets/studio/cc0-20260906/assets/polyhaven-wine-barrel-01/wine_barrel_01.glb", name: "오크 와인 배럴 통", position: [1.1, 0, -1.1], rotation: [0, 0.15, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
 ]);
 
 const ALL_LAYOUT_PRESETS_BY_ID = new Map<string, StudioRoomLayoutPreset>(
@@ -269,10 +340,11 @@ export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalo
 }
 
 export function listStudio3DPropCatalogByCategory(
-  category: Studio3DPropCatalogCategory | "all" | "refined-v8" = "all",
+  category: Studio3DPropCatalogCategory | "all" | "refined-v8" | "polyhaven-pbr" = "all",
 ): readonly Studio3DPropCatalogEntry[] {
   if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
   if (category === "refined-v8") return STUDIO_REFINED_V8_PROP_CATALOG;
+  if (category === "polyhaven-pbr") return STUDIO_POLYHAVEN_PBR_PROP_CATALOG;
   return STUDIO_BUNDLED_SCENE_PROP_CATALOG.filter((entry) => entry.category === category);
 }
 

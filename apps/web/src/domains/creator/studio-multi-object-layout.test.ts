@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_BUNDLED_SCENE_PROP_CATALOG,
+  STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
   STUDIO_REFINED_V8_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
   STUDIO_SCENE_PROP_LAYOUT_PRESETS,
@@ -107,9 +108,10 @@ describe("StudioMultiObjectLayoutManager", () => {
     }
   });
 
-  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG and STUDIO_SCENE_PROP_LAYOUT_PRESETS with real public GLBs and thumbnails", () => {
-    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(84);
-    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(7);
+  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (120 items incl. 36 Poly Haven 2K PBR) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (9 presets) with real public GLBs and thumbnails", () => {
+    expect(STUDIO_POLYHAVEN_PBR_PROP_CATALOG).toHaveLength(36);
+    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(120);
+    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(9);
 
     let thumbnailCount = 0;
     for (const entry of STUDIO_BUNDLED_SCENE_PROP_CATALOG) {
@@ -123,7 +125,7 @@ describe("StudioMultiObjectLayoutManager", () => {
         expect(thumbStat.size, entry.thumbnailUrl).toBeGreaterThan(256);
       }
     }
-    expect(thumbnailCount).toBe(27);
+    expect(thumbnailCount).toBe(63);
 
     const manager = new StudioMultiObjectLayoutManager();
     for (const preset of STUDIO_SCENE_PROP_LAYOUT_PRESETS) {

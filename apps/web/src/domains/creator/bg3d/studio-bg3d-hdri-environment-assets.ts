@@ -3,8 +3,9 @@
  *
  * 기존 "HDRI 느낌" 조명 프리셋(studio-bg3d-hdri-lighting-presets.ts)이 데이터만으로
  * 흉내 내던 환경광을, 실제 등거리(equirectangular) HDRI 이미지 기반 조명(IBL)으로
- * 승격하기 위한 에셋 정본입니다. 파일 자체는 이 레포에 커밋하지 않고 릴리스 단계에서
- * `remoteUrl`로 내려받아 `apps/web/public/assets/3d/hdri/`에 배치합니다(PLAN.md 참조).
+ * 승격하기 위한 에셋 정본입니다. 1k·2k 해상도 `.hdr` 파일 6종은
+ * `apps/web/public/assets/3d/hdri/`에 배치되어 로컬 서빙되며, 원본 CDN URL(`remoteUrl`)과
+ * 바이트 크기·MD5 체크섬을 무결성 대조용으로 함께 보존합니다.
  *
  * 라이선스 메타데이터 필드 구성은 번들 환경 카탈로그
  * (studio-bg3d-environment-catalog.ts)의 선례(license/licenseUrl/attributionRequired)를

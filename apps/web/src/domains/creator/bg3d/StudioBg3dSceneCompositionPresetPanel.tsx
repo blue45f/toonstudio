@@ -7,6 +7,7 @@ import {
   STUDIO_BG3D_CONTROL_BUTTON,
   studioBg3dClassNames as cx,
 } from "./studio-bg3d-editor-ui";
+import { getStudioBg3dGenreScenePackBundleLink } from "./studio-bg3d-genre-scene-pack-links";
 import { getStudioBg3dHdriLightingPreset } from "./studio-bg3d-hdri-lighting-presets";
 import {
   STUDIO_BG3D_SCENE_GENRES,
@@ -173,6 +174,7 @@ export function StudioBg3dSceneCompositionPresetPanel({
         {presets.map((preset) => {
           const selected = preset.id === activePreset?.id;
           const lightingPreset = getStudioBg3dHdriLightingPreset(preset.lightingPresetId);
+          const bundleLink = getStudioBg3dGenreScenePackBundleLink(preset.id);
           return (
             <button
               key={preset.id}
@@ -202,14 +204,28 @@ export function StudioBg3dSceneCompositionPresetPanel({
               <span className="line-clamp-2 min-h-7 text-[0.625rem] leading-snug text-fg-3">
                 {copy(preset.descriptionKo, preset.descriptionEn)}
               </span>
-              {lightingPreset ? (
-                <span className="w-fit rounded-full border border-line bg-card px-1.5 py-0.5 text-[0.5625rem] font-semibold text-fg-3">
-                  {copy(
-                    `조명: ${lightingPreset.labelKo}`,
-                    `Lighting: ${lightingPreset.labelEn}`,
-                  )}
-                </span>
-              ) : null}
+              <span className="flex flex-wrap items-center gap-1">
+                {lightingPreset ? (
+                  <span className="w-fit rounded-full border border-line bg-card px-1.5 py-0.5 text-[0.5625rem] font-semibold text-fg-3">
+                    {copy(
+                      `조명: ${lightingPreset.labelKo}`,
+                      `Lighting: ${lightingPreset.labelEn}`,
+                    )}
+                  </span>
+                ) : null}
+                {bundleLink ? (
+                  <span
+                    data-testid={`bg3d-scene-pack-bundle-link-${preset.id}`}
+                    title={bundleLink.packs.map((pack) => pack.packTitle).join(" · ")}
+                    className="w-fit rounded-full border border-accent/35 bg-accent/10 px-1.5 py-0.5 text-[0.5625rem] font-semibold text-accent"
+                  >
+                    {copy(
+                      `번들 팩 ${bundleLink.packs.length}종 · 에셋 ${bundleLink.totalPlaceable}개`,
+                      `${bundleLink.packs.length} bundle packs · ${bundleLink.totalPlaceable} assets`,
+                    )}
+                  </span>
+                ) : null}
+              </span>
             </button>
           );
         })}

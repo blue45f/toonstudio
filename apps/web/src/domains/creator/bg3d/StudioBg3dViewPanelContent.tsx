@@ -2,13 +2,7 @@ import { useBilingual,
   formatI18nTemplate,
   translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import type { Scene3dInplaceToolsBridge } from "../scene3d/integration/scene3d-inplace-contract";
-import {
-  CheckCircle2,
-  Cpu,
-  Loader2,
-  RotateCcw,
-  TriangleAlert,
-} from "lucide-react";
+import { CheckCircle2, Cpu, Loader2, RotateCcw, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 import { StudioBg3dPsdOutputNotice } from "./StudioBg3dPsdOutputNotice";
 import { resolveStudioBg3dShotBatchRecoveryDegradedReason } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
@@ -32,16 +26,10 @@ import { StudioBg3dLensShiftControls } from "./StudioBg3dLensShiftControls";
 import { StudioBg3dLightingStudio } from "./StudioBg3dLightingStudio";
 import { StudioBg3dMultiAngleCapturePanel } from "./StudioBg3dMultiAngleCapturePanel";
 import { StudioBg3dProSuitePanel } from "./StudioBg3dProSuitePanel";
-
-import type {
-  StudioBg3dEnginePreference,
-  StudioBg3dEngineSelectionPlan,
-} from "./studio-bg3d-engine-selection";
+import { StudioBg3dSceneCompositionPresetPanel } from "./StudioBg3dSceneCompositionPresetPanel";
+import type { StudioBg3dEnginePreference, StudioBg3dEngineSelectionPlan } from "./studio-bg3d-engine-selection";
 import type { StudioBg3dInAppBrowserProfile } from "./studio-bg3d-inapp-browser";
-import type {
-  StudioBg3dPhysicsGravityPreset,
-  StudioBg3dPhysicsPhase,
-} from "./studio-bg3d-physics-ui";
+import type { StudioBg3dPhysicsGravityPreset, StudioBg3dPhysicsPhase } from "./studio-bg3d-physics-ui";
 import type {
   StudioBg3dBackgroundSettings,
   StudioBg3dCameraSettings,
@@ -1025,6 +1013,15 @@ export function StudioBg3dViewPanel({
                     </button>
                   ))}
                 </div>
+
+                <StudioBg3dSceneCompositionPresetPanel camera={sceneBaseDocument.camera} lighting={sceneBaseDocument.lighting} exposure={sceneBaseDocument.render.exposure} disabled={cameraControlsDisabled}
+                  onApplyScenePack={(result) => {
+                    updateCameraLens(() => result.camera);
+                    updateLightingSettings(result.lighting);
+                    updateRenderExposure(result.exposure);
+                    applySunRigConfig({ timeOfDayHours: result.sunTimeHours });
+                    finishLtDocumentGesture();
+                  }} />
 
                 {onCaptureMultiAngleBatch ? (
                   <StudioBg3dMultiAngleCapturePanel

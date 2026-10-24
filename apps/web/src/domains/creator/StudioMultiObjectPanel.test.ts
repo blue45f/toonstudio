@@ -49,14 +49,16 @@ describe("StudioMultiObjectPanel integration", () => {
     expect(snapped?.position[1]).toBe(0);
   });
 
-  it("filters 84 bundled 3D props across all 7 categories and loads action_pose_staging mannequin preset", () => {
-    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(84);
+  it("filters 120 bundled 3D props across all 8 categories (incl. 36 Poly Haven 2K PBR) and loads mannequin + Poly Haven presets", () => {
+    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(120);
     expect(listStudio3DPropCatalogByCategory("refined-v8")).toHaveLength(11);
+    expect(listStudio3DPropCatalogByCategory("polyhaven-pbr")).toHaveLength(36);
     for (const category of Object.keys(STUDIO_3D_PROP_CATEGORY_LABELS) as Studio3DPropCatalogCategory[]) {
       const items = listStudio3DPropCatalogByCategory(category);
       expect(items.length, category).toBeGreaterThan(0);
       expect(items.every((entry) => entry.category === category)).toBe(true);
     }
+    expect(listStudio3DPropCatalogByCategory("nature")).toHaveLength(8);
     expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(8);
     expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(8);
 
@@ -64,5 +66,9 @@ describe("StudioMultiObjectPanel integration", () => {
     const staged = manager.loadPreset("action_pose_staging");
     expect(staged).toHaveLength(5);
     expect(staged.some((obj) => obj.modelUrl.startsWith("/creator-essentials/pose-"))).toBe(true);
+
+    const cafeTerrace = manager.loadPreset("polyhaven_cafe_terrace");
+    expect(cafeTerrace).toHaveLength(5);
+    expect(cafeTerrace.every((obj) => obj.modelUrl.startsWith("/assets/studio/cc0-20260906/assets/polyhaven-"))).toBe(true);
   });
 });
