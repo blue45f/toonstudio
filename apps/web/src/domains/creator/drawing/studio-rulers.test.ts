@@ -7,12 +7,15 @@ import {
   createStudioConcentricRuler,
   createStudioCurveRuler,
   createStudioLineRuler,
+  createStudioParallelLineRuler,
   createStudioPerspectiveRuler,
+  createStudioRadialRuler,
   isStudioRulerKind,
   nearestPointOnBezier,
   normalizeStudioRulerColor,
   projectPointOnLine,
   snapPointToConcentricRuler,
+  snapPointToRadialRuler,
   snapStudioPerspectivePoint,
   snapStudioRulerPoint,
   type StudioConcentricRuler,
@@ -86,7 +89,6 @@ describe("projectPointOnLine", () => {
 
 describe("nearestPointOnBezier", () => {
   it("2차 베지어 위 최근접점을 찾는다", () => {
-    // 포물선 y = x^2/100 (제어점 (0,0),(50,0),(100,100))
     const result = nearestPointOnBezier(
       [
         { x: 0, y: 0 },
@@ -95,7 +97,6 @@ describe("nearestPointOnBezier", () => {
       ],
       { x: 50, y: 25 },
     );
-    // 곡선 위 점 (50, 25)에 가장 가까운 점은 정확히 (50, 25)다 (t=0.5)
     closeTo(result.point.x, 50);
     closeTo(result.point.y, 25);
     closeTo(result.t, 0.5);
@@ -112,7 +113,6 @@ describe("nearestPointOnBezier", () => {
       ],
       { x: 50, y: 50 },
     );
-    // S자 곡선의 중심 (50, 50)은 곡선 위 점이다 (t=0.5)
     closeTo(result.point.x, 50);
     closeTo(result.point.y, 50);
     expect(result.distance).toBeLessThan(EPS);
@@ -143,7 +143,6 @@ describe("snapPointToConcentricRuler", () => {
   });
 
   it("가장 가까운 고리에 스냅한다", () => {
-    // 고리: 30, 50, 70, 90. 반지름 44는 50에 가장 가깝다 (차이 6 < 14).
     const result = snapPointToConcentricRuler(ruler, { x: 44, y: 0 });
     expect(result.ringIndex).toBe(1);
     expect(result.radius).toBe(50);
@@ -175,11 +174,76 @@ describe("snapPointToConcentricRuler", () => {
       ellipseX: 2,
       ellipseY: 1,
     });
-    // 정규화 공간 반지름: (64/2, 0) → 32 → 고리 30
     const result = snapPointToConcentricRuler(ellipse, { x: 64, y: 0 });
     expect(result.ringIndex).toBe(0);
     closeTo(result.point.x, 60);
     closeTo(result.point.y, 0);
+  });
+});
+
+describe("snapPointToRadialRuler (방사선·집중선 특수 자)", () => {
+  it("중심 여백(innerDeadZoneRadius) 안쪽을 침범하지 않고 방사선에 투영한다", () => {
+    const radial = createStudioRadialRuler({
+      id: "rad-1",
+      centerX: 100,
+      centerY: 100,
+      innerDeadZoneRadius: 40,
+    });
+    const first = snapStudioRulerPoint(radial, { x: 200, y: 100 }, null);
+    expect(first.snapped).toBe(true);
+    expect(first.state?.kind).toBe("radial");
+    closeTo(first.point.x, 200);
+    closeTo(first.point.y, 100);
+
+    // 중심 가까이(x=110)로 끌어도 innerDeadZoneRadius(40) 경계인 x=140에서 멈춘다
+    const inside = snapStudioRulerPoint(radial, { x: 110, y: 125 }, first.state);
+    closeTo(inside.point.x, 140);
+    closeTo(inside.point.y, 100);
+  });
+
+  it("radialSpokeCount가 지정되면 등각 스포크 각도로 양자화한다", () => {
+    const spokeRuler = createStudioRadialRuler({
+      centerX: 0,
+      centerY: 0,
+      radialSpokeCount: 4, // 90도 간격 (0, 90, 180, -90)
+    });
+    // 약 11도 위치의 점 (100, 20) → 0도 스포크로 양자화
+    const res = snapPointToRadialRuler(spokeRuler, { x: 100, y: 20 });
+    closeTo(res.angleRad, 0);
+    closeTo(res.point.y, 0);
+    expect(res.point.x).toBeGreaterThan(100);
+  });
+});
+
+describe("createStudioParallelLineRuler (CSP 평행선 특수 자)", () => {
+  it("캔버스 어디서 시작하든 자 각도와 평행한 직선에 세션을 잠근다", () => {
+    const parallel = createStudioParallelLineRuler({
+      id: "par-1",
+      origin: { x: 0, y: 0 },
+      angleDeg: 0, // 수평 평행선
+    });
+    // y=75에서 시작하면 y=75 수평선에 잠긴다
+    const s1 = snapStudioRulerPoint(parallel, { x: 30, y: 75 }, null);
+    expect(s1.snapped).toBe(true);
+    expect(s1.state?.kind).toBe("parallel");
+    closeTo(s1.point.y, 75);
+
+    const s2 = snapStudioRulerPoint(parallel, { x: 140, y: 92 }, s1.state);
+    closeTo(s2.point.x, 140);
+    closeTo(s2.point.y, 75);
+  });
+
+  it("parallelSpacingPx가 있으면 수직 간격 격자에 맞춰 시작선을 양자화한다", () => {
+    const parallelGrid = createStudioParallelLineRuler({
+      id: "par-grid",
+      origin: { x: 0, y: 0 },
+      angleDeg: 0,
+      parallelSpacingPx: 20,
+    });
+    // y=27에서 시작 → 가장 가까운 20px 배수인 y=20 평행선에 스냅
+    const s1 = snapStudioRulerPoint(parallelGrid, { x: 15, y: 27 }, null);
+    closeTo(s1.point.x, 15);
+    closeTo(s1.point.y, 20);
   });
 });
 
@@ -201,7 +265,6 @@ describe("snapStudioPerspectivePoint", () => {
 
   it("진행 방향과 맞는 소실점의 가이드를 확정한다", () => {
     const session = beginStudioPerspectiveSnapSession(ruler, { x: 100, y: 100 });
-    // 소실점 (0,0) → 시작점 (100,100) 방향(45°)으로 진행
     const result = snapStudioPerspectivePoint(ruler, session, { x: 120, y: 118 });
     expect(result.session.guideVanishingPointIndex).toBe(0);
     expect(result.snapped).toBe(true);
@@ -211,7 +274,6 @@ describe("snapStudioPerspectivePoint", () => {
     const session = beginStudioPerspectiveSnapSession(ruler, { x: 100, y: 100 });
     const locked = snapStudioPerspectivePoint(ruler, session, { x: 120, y: 118 });
     const next = snapStudioPerspectivePoint(ruler, locked.session, { x: 150, y: 130 });
-    // 직선 y = x (소실점 (0,0), 시작점 (100,100)) 위의 점이어야 한다
     closeTo(next.point.y, next.point.x);
     expect(next.snapped).toBe(true);
   });
@@ -255,6 +317,21 @@ describe("snapStudioRulerPoint", () => {
     closeTo(result.point.y, 0);
   });
 
+  it("maxSnapDistancePx보다 먼 점은 자석 스냅을 건너뛰고 자유 드로잉을 유지한다", () => {
+    const ruler = createStudioLineRuler({
+      p0: { x: 0, y: 0 },
+      p1: { x: 100, y: 0 },
+      maxSnapDistancePx: 15,
+    });
+    const near = snapStudioRulerPoint(ruler, { x: 40, y: 10 });
+    expect(near.snapped).toBe(true);
+    closeTo(near.point.y, 0);
+
+    const far = snapStudioRulerPoint(ruler, { x: 40, y: 30 });
+    expect(far.snapped).toBe(false);
+    expect(far.point).toEqual({ x: 40, y: 30 });
+  });
+
   it("곡선 자에 스냅한다", () => {
     const ruler = createStudioCurveRuler({
       degree: 2,
@@ -290,7 +367,6 @@ describe("snapStudioRulerPoint", () => {
     expect(first.state?.kind).toBe("perspective");
     const second = snapStudioRulerPoint(ruler, { x: 130, y: 125 }, first.state);
     expect(second.snapped).toBe(true);
-    // 소실점 (0,0) → 시작점 (100,100) 직선(y=x) 위
     closeTo(second.point.y, second.point.x);
   });
 
@@ -305,7 +381,6 @@ describe("snapStudioRulerPoint", () => {
     }) as StudioPerspectiveRuler;
     const fromA = snapStudioRulerPoint(rulerA, { x: 100, y: 100 }, null);
     const onB = snapStudioRulerPoint(rulerB, { x: 100, y: 100 }, fromA.state);
-    // rulerId가 다르므로 새 세션을 연다
     expect(onB.state?.kind).toBe("perspective");
     if (onB.state?.kind === "perspective") {
       expect(onB.state.session.rulerId).toBe("p-b");

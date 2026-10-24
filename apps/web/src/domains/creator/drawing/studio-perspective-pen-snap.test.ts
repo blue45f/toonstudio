@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultPerspectiveGuide } from "./studio-perspective-guide";
+import {
+  createDefaultPerspectiveGuide,
+  warpPerspectivePointForFisheye,
+} from "./studio-perspective-guide";
 import {
   createPerspectivePenSnapSession,
   isPerspectivePenSnapActive,
   snapPerspectivePenPoint,
   snapStrokePointsToPerspectiveGuide,
+  unwarpPerspectivePointFromFisheye,
   type PerspectivePenSnapConfig,
 } from "./studio-perspective-pen-snap";
 
@@ -70,7 +74,6 @@ describe("snapPerspectivePenPoint", () => {
     const first = snapPerspectivePenPoint(session, { x: 200, y: 90 });
     const next = snapPerspectivePenPoint(first.session, { x: 260, y: 40 });
     expect(next.snapped).toBe(true);
-    // 직선 (160,60)-(512,120) 위: 방향 벡터와 수직인 성분이 0이어야 한다
     const dx = 512 - 160;
     const dy = 120 - 60;
     const cross =
@@ -84,10 +87,63 @@ describe("snapPerspectivePenPoint", () => {
       { enabled: true, guide: onePoint },
       { x: 60, y: 120 },
     );
-    // 중앙 VP(160,120)의 반대 방향(왼쪽)으로 이동해도 수평 직선에 붙는다
     const result = snapPerspectivePenPoint(session, { x: 20, y: 132 });
     expect(result.snapped).toBe(true);
     expect(result.point.y).toBeCloseTo(120);
+  });
+
+  it("allowHorizonSnap=true이면 지평선 평행 가로 이동 시 horizon 패밀리에 스냅한다", () => {
+    const onePoint = createDefaultPerspectiveGuide("one-point", CANVAS); // 중앙 VP (160, 120)
+    // 시작점 (160, 40)에서 수평 오른쪽(200, 41)으로 이동하면 중앙 VP 방향(수직)보다 수평 지평선이 가깝다
+    const session = createPerspectivePenSnapSession(
+      { enabled: true, guide: onePoint, allowHorizonSnap: true },
+      { x: 160, y: 40 },
+    );
+    const snapped = snapPerspectivePenPoint(session, { x: 200, y: 42 });
+    expect(snapped.snapped).toBe(true);
+    expect(snapped.family).toBe("horizon");
+    expect(snapped.point.y).toBeCloseTo(40, 3);
+  });
+
+  it("maxSnapAngleDeg 범위를 벗어난 자유 각도 드로잉은 freehandPassthrough로 통과시킨다", () => {
+    const onePoint = createDefaultPerspectiveGuide("one-point", CANVAS); // 중앙 VP (160, 120)
+    // 시작점 (160, 40) → VP 광선은 수직(90도). 수평(0도)으로 그으면 90도 차이 > maxSnapAngleDeg(20도)
+    const session = createPerspectivePenSnapSession(
+      { enabled: true, guide: onePoint, maxSnapAngleDeg: 20 },
+      { x: 160, y: 40 },
+    );
+    const first = snapPerspectivePenPoint(session, { x: 200, y: 40 });
+    expect(first.snapped).toBe(false);
+    expect(first.session?.freehandPassthrough).toBe(true);
+    expect(first.point).toEqual({ x: 200, y: 40 });
+
+    // 이후 샘플도 계속 스냅 없이 원본 좌표를 유지한다
+    const second = snapPerspectivePenPoint(first.session, { x: 230, y: 65 });
+    expect(second.snapped).toBe(false);
+    expect(second.point).toEqual({ x: 230, y: 65 });
+  });
+
+  it("5점 어안(fisheyeStrength > 0) 설정 시 역왜곡-투영-재왜곡으로 곡선 궤적에 스냅한다", () => {
+    const strength = 0.6;
+    const rawPt = { x: 250, y: 50 };
+    const warped = warpPerspectivePointForFisheye(rawPt, CANVAS, strength);
+    const unwarped = unwarpPerspectivePointFromFisheye(warped, CANVAS, strength);
+    expect(unwarped.x).toBeCloseTo(rawPt.x, 3);
+    expect(unwarped.y).toBeCloseTo(rawPt.y, 3);
+
+    const session = createPerspectivePenSnapSession(
+      {
+        enabled: true,
+        guide,
+        fisheyeStrength: strength,
+        canvas: CANVAS,
+      },
+      { x: 160, y: 40 },
+    );
+    const res = snapPerspectivePenPoint(session, { x: 220, y: 65 });
+    expect(res.snapped).toBe(true);
+    expect(Number.isFinite(res.point.x)).toBe(true);
+    expect(Number.isFinite(res.point.y)).toBe(true);
   });
 });
 

@@ -57,13 +57,25 @@ interface StudioRulerBase {
   readonly snapEnabled: boolean;
   /** 자별 색상 (CSS hex). */
   readonly color: string;
+  /**
+   * 최대 스냅 허용 거리(px). 0 또는 미지정이면 거리 제한 없이 항상 스냅한다.
+   * 양수이면 자로부터 이 거리보다 멀리 떨어진 점은 스냅하지 않고 자유 드로잉을 유지한다.
+   */
+  readonly maxSnapDistancePx?: number;
 }
 
-/** 직선 자: 두 점으로 정의된 직선에 스트로크를 투영한다. */
+/**
+ * 직선 / 평행선 자: 두 점으로 정의된 직선에 스트로크를 투영한다.
+ * - `parallelMode: true` (CSP 평행선 특수 자): 고정 직선 `p0..p1` 하나에만 붙는 대신
+ *   스트로크 시작점을 지나고 `p0→p1` 방향과 평행한 직선에 세션을 잠근다.
+ * - `parallelSpacingPx > 0`: 평행선 모드에서 수직 방향 간격(px) 격자에 맞춰 시작 오프셋을 양자화한다(균일 해칭·배경 빗금용).
+ */
 export interface StudioLineRuler extends StudioRulerBase {
   readonly kind: "line";
   readonly p0: RulerPoint;
   readonly p1: RulerPoint;
+  readonly parallelMode?: boolean;
+  readonly parallelSpacingPx?: number;
 }
 
 /** 곡선 자 (2차 베지어). */
@@ -87,10 +99,14 @@ export interface StudioCubicCurveRuler extends StudioRulerBase {
 
 export type StudioCurveRuler = StudioQuadraticCurveRuler | StudioCubicCurveRuler;
 
+/** 동심원·방사선 복합 자 스냅 모드. */
+export type StudioConcentricSnapMode = "rings" | "radial" | "both";
+
 /**
- * 동심원 자: 중심 + 기준 반지름 + 간격 + 개수.
- * 마법진·파문·렌즈 플레어 그리기에 유용하다.
- * ellipseX/ellipseY가 1이 아니면 타원 고리가 된다.
+ * 동심원 / 방사선(집중선) 자: 중심 + 기준 반지름 + 간격 + 개수.
+ * 마법진·파문·렌즈 플레어(`snapMode: "rings"`), 만화 집중선(`snapMode: "radial"`),
+ * 거미줄·극좌표 복합 자(`snapMode: "both"`) 그리기에 유용하다.
+ * ellipseX/ellipseY가 1이 아니면 타원 고리·타원 방사선이 된다.
  */
 export interface StudioConcentricRuler extends StudioRulerBase {
   readonly kind: "concentric";
@@ -106,6 +122,12 @@ export interface StudioConcentricRuler extends StudioRulerBase {
   readonly ellipseX: number;
   /** 타원 y축 비율 (1 = 원). */
   readonly ellipseY: number;
+  /** 스냅 모드: 동심 고리("rings", 기본), 방사/집중선("radial"), 초기 진행 방향 자동 잠금("both"). */
+  readonly snapMode?: StudioConcentricSnapMode;
+  /** 방사선 등분 수 (0 또는 미지정이면 임의 시작 각도 연속 집중선, 2 이상이면 등각 스포크 양자화). */
+  readonly radialSpokeCount?: number;
+  /** 집중선 중심 여백(내부 불감대 반지름, px). 지정 시 중심에서 이 반지름 안쪽으로는 선이 침범하지 않는다. */
+  readonly innerDeadZoneRadius?: number;
 }
 
 /**
@@ -184,10 +206,16 @@ function normalizeBase(
     visible?: unknown;
     snapEnabled?: unknown;
     color?: unknown;
+    maxSnapDistancePx?: unknown;
   } | null | undefined,
 ): StudioRulerBase {
   const rawId = typeof input?.id === "string" ? input.id.trim() : "";
   const rawName = typeof input?.name === "string" ? input.name.trim() : "";
+  const rawMaxDist = Number(input?.maxSnapDistancePx);
+  const maxSnapDistancePx =
+    Number.isFinite(rawMaxDist) && rawMaxDist > 0
+      ? Math.min(MAX_COORD, rawMaxDist)
+      : undefined;
   return {
     id:
       rawId.length > 0
@@ -200,6 +228,7 @@ function normalizeBase(
     visible: input?.visible !== false,
     snapEnabled: input?.snapEnabled !== false,
     color: normalizeStudioRulerColor(input?.color, kind),
+    ...(maxSnapDistancePx !== undefined ? { maxSnapDistancePx } : {}),
   };
 }
 
@@ -210,15 +239,54 @@ export function createStudioLineRuler(input?: {
   visible?: unknown;
   snapEnabled?: unknown;
   color?: unknown;
+  maxSnapDistancePx?: unknown;
   p0?: unknown;
   p1?: unknown;
+  parallelMode?: unknown;
+  parallelSpacingPx?: unknown;
 }): StudioLineRuler {
+  const rawSpacing = Number(input?.parallelSpacingPx);
+  const parallelSpacingPx =
+    Number.isFinite(rawSpacing) && rawSpacing > 0
+      ? Math.min(100_000, rawSpacing)
+      : undefined;
   return {
     ...normalizeBase("line", input),
     kind: "line",
     p0: input?.p0 !== undefined ? clampPoint(input.p0) : { x: 40, y: 120 },
     p1: input?.p1 !== undefined ? clampPoint(input.p1) : { x: 280, y: 120 },
+    ...(input?.parallelMode === true ? { parallelMode: true } : {}),
+    ...(parallelSpacingPx !== undefined ? { parallelSpacingPx } : {}),
   };
+}
+
+/** CSP 평행선 특수 자 전용 팩토리 (각도 기반 생성 지원). */
+export function createStudioParallelLineRuler(input?: {
+  id?: unknown;
+  name?: unknown;
+  visible?: unknown;
+  snapEnabled?: unknown;
+  color?: unknown;
+  maxSnapDistancePx?: unknown;
+  origin?: unknown;
+  angleDeg?: unknown;
+  parallelSpacingPx?: unknown;
+}): StudioLineRuler {
+  const origin =
+    input?.origin !== undefined ? clampPoint(input.origin) : { x: 160, y: 120 };
+  const rawAngle = Number(input?.angleDeg);
+  const angleRad = ((Number.isFinite(rawAngle) ? rawAngle : 0) * Math.PI) / 180;
+  const p1 = {
+    x: origin.x + Math.cos(angleRad) * 200,
+    y: origin.y + Math.sin(angleRad) * 200,
+  };
+  return createStudioLineRuler({
+    ...input,
+    name: input?.name ?? "평행선 자",
+    p0: origin,
+    p1,
+    parallelMode: true,
+  });
 }
 
 /** 곡선 자 팩토리. degree 3이면 p3이 필수다. */
@@ -228,6 +296,7 @@ export function createStudioCurveRuler(input?: {
   visible?: unknown;
   snapEnabled?: unknown;
   color?: unknown;
+  maxSnapDistancePx?: unknown;
   degree?: unknown;
   p0?: unknown;
   p1?: unknown;
@@ -247,13 +316,14 @@ export function createStudioCurveRuler(input?: {
   return { ...base, kind: "curve", degree, p0, p1, p2 };
 }
 
-/** 동심원 자 팩토리. */
+/** 동심원·방사선 자 팩토리. */
 export function createStudioConcentricRuler(input?: {
   id?: unknown;
   name?: unknown;
   visible?: unknown;
   snapEnabled?: unknown;
   color?: unknown;
+  maxSnapDistancePx?: unknown;
   centerX?: unknown;
   centerY?: unknown;
   baseRadius?: unknown;
@@ -261,11 +331,28 @@ export function createStudioConcentricRuler(input?: {
   ringCount?: unknown;
   ellipseX?: unknown;
   ellipseY?: unknown;
+  snapMode?: unknown;
+  radialSpokeCount?: unknown;
+  innerDeadZoneRadius?: unknown;
 }): StudioConcentricRuler {
   const rawSpacing = Number(input?.ringSpacing);
   const rawCount = Number(input?.ringCount);
   const rawEllipseX = Number(input?.ellipseX);
   const rawEllipseY = Number(input?.ellipseY);
+  const rawSpokes = Number(input?.radialSpokeCount);
+  const rawDeadZone = Number(input?.innerDeadZoneRadius);
+  const snapMode: StudioConcentricSnapMode =
+    input?.snapMode === "radial" || input?.snapMode === "both"
+      ? input.snapMode
+      : "rings";
+  const radialSpokeCount =
+    Number.isFinite(rawSpokes) && rawSpokes >= 2
+      ? Math.min(360, Math.round(rawSpokes))
+      : undefined;
+  const innerDeadZoneRadius =
+    Number.isFinite(rawDeadZone) && rawDeadZone > 0
+      ? Math.min(100_000, rawDeadZone)
+      : undefined;
   return {
     ...normalizeBase("concentric", input),
     kind: "concentric",
@@ -289,7 +376,32 @@ export function createStudioConcentricRuler(input?: {
       Number.isFinite(rawEllipseY) && rawEllipseY > 0
         ? Math.min(10, rawEllipseY)
         : 1,
+    ...(snapMode !== "rings" ? { snapMode } : {}),
+    ...(radialSpokeCount !== undefined ? { radialSpokeCount } : {}),
+    ...(innerDeadZoneRadius !== undefined ? { innerDeadZoneRadius } : {}),
   };
+}
+
+/** CSP 방사선(집중선) 특수 자 전용 팩토리. */
+export function createStudioRadialRuler(input?: {
+  id?: unknown;
+  name?: unknown;
+  visible?: unknown;
+  snapEnabled?: unknown;
+  color?: unknown;
+  maxSnapDistancePx?: unknown;
+  centerX?: unknown;
+  centerY?: unknown;
+  radialSpokeCount?: unknown;
+  innerDeadZoneRadius?: unknown;
+  ellipseX?: unknown;
+  ellipseY?: unknown;
+}): StudioConcentricRuler {
+  return createStudioConcentricRuler({
+    ...input,
+    name: input?.name ?? "방사선 자",
+    snapMode: "radial",
+  });
 }
 
 /** 퍼스펙티브 자 팩토리. 소실점이 1–3개가 아니면 null(무효 자). */
@@ -433,18 +545,12 @@ export interface StudioConcentricSnapResult {
   readonly radius: number;
 }
 
-/**
- * 동심원(타원) 자 스냅: 타원 정규화 공간에서 각도는 유지하고,
- * 반지름을 가장 가까운 고리에 맞춘다.
- */
+/** 동심원(타원) 자 스냅: 타원 정규화 공간에서 각도는 유지하고 반지름을 가장 가까운 고리에 맞춘다. */
 export function snapPointToConcentricRuler(
   ruler: StudioConcentricRuler,
   point: RulerPoint,
 ): StudioConcentricSnapResult {
-  const cx = ruler.centerX;
-  const cy = ruler.centerY;
-  const ex = ruler.ellipseX;
-  const ey = ruler.ellipseY;
+  const { centerX: cx, centerY: cy, ellipseX: ex, ellipseY: ey } = ruler;
   const dx = (point.x - cx) / ex;
   const dy = (point.y - cy) / ey;
   const dist = Math.hypot(dx, dy);
@@ -452,28 +558,50 @@ export function snapPointToConcentricRuler(
     return { point: { x: cx, y: cy }, ringIndex: 0, radius: ruler.baseRadius };
   }
   const rawIndex = Math.round((dist - ruler.baseRadius) / ruler.ringSpacing);
-  const ringIndex = Math.min(
-    ruler.ringCount - 1,
-    Math.max(0, rawIndex),
-  );
+  const ringIndex = Math.min(ruler.ringCount - 1, Math.max(0, rawIndex));
   const radius = ruler.baseRadius + ringIndex * ruler.ringSpacing;
   const angle = Math.atan2(dy, dx);
   return {
-    point: {
-      x: cx + Math.cos(angle) * radius * ex,
-      y: cy + Math.sin(angle) * radius * ey,
-    },
+    point: { x: cx + Math.cos(angle) * radius * ex, y: cy + Math.sin(angle) * radius * ey },
     ringIndex,
+    radius,
+  };
+}
+
+export interface StudioRadialSnapResult {
+  readonly point: RulerPoint;
+  readonly angleRad: number;
+  readonly radius: number;
+}
+
+/** 방사선(집중선) 자 스냅: 중심에서 뻗어 나가는 방사선 각도를 고정(또는 등분 스포크 양자화)하고 내부 불감대를 지킨다. */
+export function snapPointToRadialRuler(
+  ruler: StudioConcentricRuler,
+  point: RulerPoint,
+  lockedAngleRad?: number,
+): StudioRadialSnapResult {
+  const { centerX: cx, centerY: cy, ellipseX: ex, ellipseY: ey } = ruler;
+  const dx = (point.x - cx) / ex;
+  const dy = (point.y - cy) / ey;
+  const rawDist = Math.hypot(dx, dy);
+  let angleRad = lockedAngleRad ?? (rawDist < 1e-9 ? 0 : Math.atan2(dy, dx));
+  if (lockedAngleRad === undefined && ruler.radialSpokeCount && ruler.radialSpokeCount >= 2) {
+    const step = (2 * Math.PI) / ruler.radialSpokeCount;
+    angleRad = Math.round(angleRad / step) * step;
+  }
+  const ux = Math.cos(angleRad);
+  const uy = Math.sin(angleRad);
+  const projDist = lockedAngleRad !== undefined ? Math.max(0, dx * ux + dy * uy) : rawDist;
+  const radius = Math.max(ruler.innerDeadZoneRadius ?? 0, projDist);
+  return {
+    point: { x: cx + ux * radius * ex, y: cy + uy * radius * ey },
+    angleRad,
     radius,
   };
 }
 
 /* ---------------- 퍼스펙티브 자 (세션 기반) ---------------- */
 
-/**
- * 퍼스펙티브 스냅 세션. 스트로크 1개 = 세션 1개.
- * guideVanishingPointIndex가 -1이면 아직 가이드가 확정되지 않은 상태다.
- */
 export interface StudioPerspectiveSnapSession {
   readonly rulerId: string;
   readonly start: RulerPoint;
@@ -500,51 +628,32 @@ export interface StudioPerspectiveSnapResult {
   readonly snapped: boolean;
 }
 
-/**
- * 퍼스펙티브 자에 한 샘플을 스냅한다.
- * - 첫 샘플(start)과 겹치는 지점이면 가이드를 확정하지 않는다.
- * - 처음 움직인 방향과 가장 잘 맞는 소실점을 골라 가이드(소실점→start 직선)를 확정한다.
- * - 이후 샘플은 그 가이드 직선에 투영한다.
- */
 export function snapStudioPerspectivePoint(
   ruler: StudioPerspectiveRuler,
   session: StudioPerspectiveSnapSession,
   sample: RulerPoint,
 ): StudioPerspectiveSnapResult {
   const vps = ruler.vanishingPoints;
-  if (vps.length === 0) {
-    return { session, point: sample, snapped: false };
-  }
+  if (vps.length === 0) return { session, point: sample, snapped: false };
   if (session.guideVanishingPointIndex >= 0) {
     const vp = vps[session.guideVanishingPointIndex];
-    return {
-      session,
-      point: projectPointOnLine(sample, vp, session.start),
-      snapped: true,
-    };
+    return { session, point: projectPointOnLine(sample, vp, session.start), snapped: true };
   }
   const moved = Math.hypot(sample.x - session.start.x, sample.y - session.start.y);
-  if (moved < 1e-9) {
-    return { session, point: sample, snapped: false };
-  }
+  if (moved < 1e-9) return { session, point: sample, snapped: false };
   const moveAngle = Math.atan2(sample.y - session.start.y, sample.x - session.start.x);
   let bestIndex = 0;
   let bestScore = Number.POSITIVE_INFINITY;
   for (let i = 0; i < vps.length; i += 1) {
-    const rayAngle = Math.atan2(
-      session.start.y - vps[i].y,
-      session.start.x - vps[i].x,
-    );
-    const score = Math.abs(wrapPi(rayAngle - moveAngle));
+    const rayAngle = Math.atan2(session.start.y - vps[i].y, session.start.x - vps[i].x);
+    const diff = Math.abs(wrapPi(rayAngle - moveAngle));
+    const score = Math.min(diff, Math.PI - diff);
     if (score < bestScore) {
       bestScore = score;
       bestIndex = i;
     }
   }
-  const locked: StudioPerspectiveSnapSession = {
-    ...session,
-    guideVanishingPointIndex: bestIndex,
-  };
+  const locked: StudioPerspectiveSnapSession = { ...session, guideVanishingPointIndex: bestIndex };
   return {
     session: locked,
     point: projectPointOnLine(sample, vps[bestIndex], session.start),
@@ -556,24 +665,22 @@ export function snapStudioPerspectivePoint(
 
 export type StudioRulerSnapState =
   | { readonly kind: "perspective"; readonly session: StudioPerspectiveSnapSession }
+  | { readonly kind: "parallel"; readonly rulerId: string; readonly a0: RulerPoint; readonly a1: RulerPoint }
+  | { readonly kind: "radial"; readonly rulerId: string; readonly angleRad: number }
   | null;
 
 export interface StudioRulerSnapResult {
-  /** 다음 샘플에 그대로 넘길 상태 (퍼스펙티브 외에는 null). */
   readonly state: StudioRulerSnapState;
   readonly point: RulerPoint;
   readonly snapped: boolean;
 }
 
-/**
- * 자 종류에 관계없이 스트로크 샘플 1개를 스냅한다.
- *
- * - ruler.visible === false 이거나 ruler.snapEnabled === false → 스냅하지 않고
- *   입력 그대로 반환한다 (state도 버린다).
- * - 퍼스펙티브 자는 세션 기반: state가 null이면 sample을 스트로크 시작으로 보고
- *   새 세션을 연다. 같은 스트로크에서는 이전 호출이 반환한 state를 그대로 넘긴다.
- * - 나머지 종류는 상태가 필요 없어 state는 항상 null이다.
- */
+function withinMaxDistance(point: RulerPoint, snapped: RulerPoint, maxDist?: number): boolean {
+  if (maxDist === undefined || maxDist <= 0) return true;
+  return Math.hypot(snapped.x - point.x, snapped.y - point.y) <= maxDist;
+}
+
+/** 자 종류에 관계없이 스트로크 샘플 1개를 스냅한다. */
 export function snapStudioRulerPoint(
   ruler: StudioRuler,
   point: RulerPoint,
@@ -584,32 +691,60 @@ export function snapStudioRulerPoint(
   }
   switch (ruler.kind) {
     case "line": {
-      if (Math.hypot(ruler.p1.x - ruler.p0.x, ruler.p1.y - ruler.p0.y) < 1e-9) {
+      const dx = ruler.p1.x - ruler.p0.x;
+      const dy = ruler.p1.y - ruler.p0.y;
+      const len = Math.hypot(dx, dy);
+      if (len < 1e-9) return { state: null, point, snapped: false };
+      if (ruler.parallelMode) {
+        if (state?.kind === "parallel" && state.rulerId === ruler.id) {
+          return { state, point: projectPointOnLine(point, state.a0, state.a1), snapped: true };
+        }
+        const ux = dx / len;
+        const uy = dy / len;
+        const nx = -uy;
+        const ny = ux;
+        let anchor = point;
+        if (ruler.parallelSpacingPx && ruler.parallelSpacingPx > 0) {
+          const offset = (point.x - ruler.p0.x) * nx + (point.y - ruler.p0.y) * ny;
+          const qOffset = Math.round(offset / ruler.parallelSpacingPx) * ruler.parallelSpacingPx;
+          const baseProj = projectPointOnLine(point, ruler.p0, ruler.p1);
+          anchor = { x: baseProj.x + nx * qOffset, y: baseProj.y + ny * qOffset };
+        }
+        const a1 = { x: anchor.x + ux * 100, y: anchor.y + uy * 100 };
+        const nextState: StudioRulerSnapState = { kind: "parallel", rulerId: ruler.id, a0: anchor, a1 };
+        return { state: nextState, point: anchor, snapped: true };
+      }
+      const projected = projectPointOnLine(point, ruler.p0, ruler.p1);
+      if (!withinMaxDistance(point, projected, ruler.maxSnapDistancePx)) {
         return { state: null, point, snapped: false };
       }
-      return {
-        state: null,
-        point: projectPointOnLine(point, ruler.p0, ruler.p1),
-        snapped: true,
-      };
+      return { state: null, point: projected, snapped: true };
     }
     case "curve": {
       const controls =
-        ruler.degree === 3
-          ? [ruler.p0, ruler.p1, ruler.p2, ruler.p3]
-          : [ruler.p0, ruler.p1, ruler.p2];
-      return {
-        state: null,
-        point: nearestPointOnBezier(controls, point).point,
-        snapped: true,
-      };
+        ruler.degree === 3 ? [ruler.p0, ruler.p1, ruler.p2, ruler.p3] : [ruler.p0, ruler.p1, ruler.p2];
+      const snapped = nearestPointOnBezier(controls, point).point;
+      if (!withinMaxDistance(point, snapped, ruler.maxSnapDistancePx)) {
+        return { state: null, point, snapped: false };
+      }
+      return { state: null, point: snapped, snapped: true };
     }
     case "concentric": {
-      return {
-        state: null,
-        point: snapPointToConcentricRuler(ruler, point).point,
-        snapped: true,
-      };
+      if (ruler.snapMode === "radial") {
+        const lockedAngle =
+          state?.kind === "radial" && state.rulerId === ruler.id ? state.angleRad : undefined;
+        const res = snapPointToRadialRuler(ruler, point, lockedAngle);
+        return {
+          state: { kind: "radial", rulerId: ruler.id, angleRad: res.angleRad },
+          point: res.point,
+          snapped: true,
+        };
+      }
+      const snapped = snapPointToConcentricRuler(ruler, point).point;
+      if (!withinMaxDistance(point, snapped, ruler.maxSnapDistancePx)) {
+        return { state: null, point, snapped: false };
+      }
+      return { state: null, point: snapped, snapped: true };
     }
     case "perspective": {
       const session =
