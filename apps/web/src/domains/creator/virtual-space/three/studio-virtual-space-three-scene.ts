@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-import { CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
+import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 
 /** 2D 월드 좌표(3072×1984 px)를 3D 미터 단위로 변환하는 비율 (32px = 1m). */
@@ -54,8 +54,11 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   // LOBBY (skyport)
   { id: "lobby-desk-main", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 340, heightMeters: 1.15, rotationY: 0 },
   { id: "lobby-chair-main", url: "/assets/3d/refined-v8/chair.glb", x: 448, y: 292, heightMeters: 1.1, rotationY: 0 },
+  { id: "lobby-desk-mug", url: "/assets/3d/everyday_mug.glb", x: 416, y: 336, heightMeters: 0.22, elevationMeters: 0.82, rotationY: 0.4 },
+  { id: "lobby-desk-book", url: "/assets/3d/everyday_book.glb", x: 478, y: 338, heightMeters: 0.18, elevationMeters: 0.82, rotationY: -0.3 },
   { id: "lobby-sofa-west", url: "/assets/3d/refined-v8/sofa.glb", x: 256, y: 470, heightMeters: 1.15, rotationY: Math.PI * 0.5 },
   { id: "lobby-sofa-east", url: "/assets/3d/refined-v8/sofa.glb", x: 640, y: 470, heightMeters: 1.15, rotationY: -Math.PI * 0.5 },
+  { id: "lobby-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 350, y: 470, heightMeters: 0.65, rotationY: 0.2 },
   { id: "lobby-clock", url: "/assets/3d/grandfather_clock.glb", x: 220, y: 240, heightMeters: 2.1, rotationY: 0 },
   { id: "lobby-robot", url: "/assets/3d/refined-v8/robot_pet.glb", x: 540, y: 430, heightMeters: 0.85, rotationY: -0.4 },
   { id: "lobby-plant-west", url: "/assets/3d/potted_monstera.glb", x: 180, y: 260, heightMeters: 1.45, rotationY: 0.3 },
@@ -65,8 +68,13 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "studio-drawing-desk", url: "/assets/3d/refined-v8/desk.glb", x: 1000, y: 540, heightMeters: 1.15, rotationY: Math.PI },
   { id: "studio-drawing-chair", url: "/assets/3d/refined-v8/chair.glb", x: 1000, y: 590, heightMeters: 1.1, rotationY: Math.PI },
   { id: "studio-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1000, y: 536, heightMeters: 0.45, elevationMeters: 0.82, rotationY: 0 },
+  { id: "studio-desk-camera", url: "/assets/3d/atelier_camera.glb", x: 962, y: 538, heightMeters: 0.22, elevationMeters: 0.82, rotationY: 0.35 },
   { id: "studio-monitor-desk", url: "/assets/3d/refined-v8/desk.glb", x: 1380, y: 540, heightMeters: 1.15, rotationY: Math.PI },
   { id: "studio-monitor-chair", url: "/assets/3d/refined-v8/chair.glb", x: 1380, y: 590, heightMeters: 1.1, rotationY: Math.PI },
+  { id: "studio-monitor-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1380, y: 536, heightMeters: 0.48, elevationMeters: 0.82, rotationY: 0 },
+  { id: "studio-light-west", url: "/assets/3d/paper_lantern.glb", x: 1110, y: 290, heightMeters: 1.42, rotationY: 0.2 },
+  { id: "studio-light-east", url: "/assets/3d/paper_lantern.glb", x: 1322, y: 290, heightMeters: 1.42, rotationY: -0.2 },
+  { id: "studio-mic", url: "/assets/3d/atelier_microphone.glb", x: 1216, y: 320, heightMeters: 1.28, rotationY: 0 },
   { id: "studio-blackboard", url: "/assets/3d/refined-v8/blackboard.glb", x: 1216, y: 250, heightMeters: 1.85, rotationY: 0 },
   { id: "studio-plant", url: "/assets/3d/potted_monstera.glb", x: 960, y: 260, heightMeters: 1.45, rotationY: 0.5 },
 
@@ -74,17 +82,22 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "cowork-board", url: "/assets/3d/refined-v8/blackboard.glb", x: 1984, y: 246, heightMeters: 1.9, rotationY: 0 },
   { id: "cowork-desk-1", url: "/assets/3d/refined-v8/desk.glb", x: 1820, y: 430, heightMeters: 1.12, rotationY: 0 },
   { id: "cowork-chair-1", url: "/assets/3d/refined-v8/chair.glb", x: 1820, y: 478, heightMeters: 1.08, rotationY: Math.PI },
+  { id: "cowork-book-1", url: "/assets/3d/everyday_book.glb", x: 1820, y: 426, heightMeters: 0.2, elevationMeters: 0.8, rotationY: 0.2 },
   { id: "cowork-desk-2", url: "/assets/3d/refined-v8/desk.glb", x: 2140, y: 430, heightMeters: 1.12, rotationY: 0 },
   { id: "cowork-chair-2", url: "/assets/3d/refined-v8/chair.glb", x: 2140, y: 478, heightMeters: 1.08, rotationY: Math.PI },
+  { id: "cowork-mug-2", url: "/assets/3d/everyday_mug.glb", x: 2140, y: 426, heightMeters: 0.22, elevationMeters: 0.8, rotationY: -0.4 },
   { id: "cowork-focus-west", url: "/assets/3d/school_desk.glb", x: 1750, y: 590, heightMeters: 1.05, rotationY: Math.PI },
   { id: "cowork-focus-east", url: "/assets/3d/school_desk.glb", x: 2220, y: 590, heightMeters: 1.05, rotationY: Math.PI },
+  { id: "cowork-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 1740, y: 270, heightMeters: 0.72, rotationY: 0.3 },
   { id: "cowork-plant", url: "/assets/3d/potted_monstera.glb", x: 2260, y: 260, heightMeters: 1.45, rotationY: -0.4 },
 
   // CAFE (creator-cafe)
   { id: "cafe-counter-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2690, y: 290, heightMeters: 1.2, rotationY: 0 },
+  { id: "cafe-hanging-sign", url: "/assets/3d/refined-v8/hanging_sign.glb", x: 2690, y: 240, heightMeters: 0.85, elevationMeters: 1.65, rotationY: 0 },
   { id: "cafe-table-1", url: "/assets/3d/round_table.glb", x: 2540, y: 470, heightMeters: 0.95, rotationY: 0 },
   { id: "cafe-tea-1", url: "/assets/3d/tea_set.glb", x: 2540, y: 470, heightMeters: 0.32, elevationMeters: 0.78, rotationY: 0.4 },
   { id: "cafe-table-2", url: "/assets/3d/round_table.glb", x: 2820, y: 470, heightMeters: 0.95, rotationY: 0.8 },
+  { id: "cafe-boba-2", url: "/assets/3d/refined-v8/bubble_tea.glb", x: 2820, y: 470, heightMeters: 0.3, elevationMeters: 0.78, rotationY: -0.3 },
   { id: "cafe-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 2840, y: 600, heightMeters: 1.12, rotationY: -Math.PI * 0.5 },
   { id: "cafe-vending", url: "/assets/3d/vending_machine.glb", x: 2468, y: 280, heightMeters: 1.95, rotationY: 0.2 },
   { id: "cafe-plant", url: "/assets/3d/potted_monstera.glb", x: 2910, y: 280, heightMeters: 1.45, rotationY: -0.2 },
@@ -109,6 +122,7 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 
   // EVENT (event-stage)
   { id: "event-hologram", url: "/assets/3d/hologram_tablet.glb", x: 2560, y: 960, heightMeters: 1.6, elevationMeters: 0.3, rotationY: 0 },
+  { id: "event-mic", url: "/assets/3d/atelier_microphone.glb", x: 2480, y: 1010, heightMeters: 1.32, rotationY: 0.2 },
   { id: "event-chair-1", url: "/assets/3d/refined-v8/chair.glb", x: 2420, y: 1210, heightMeters: 1.05, rotationY: Math.PI },
   { id: "event-chair-2", url: "/assets/3d/refined-v8/chair.glb", x: 2560, y: 1210, heightMeters: 1.05, rotationY: Math.PI },
   { id: "event-chair-3", url: "/assets/3d/refined-v8/chair.glb", x: 2700, y: 1210, heightMeters: 1.05, rotationY: Math.PI },
@@ -116,14 +130,19 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "event-lantern-e", url: "/assets/3d/paper_lantern.glb", x: 2820, y: 940, heightMeters: 1.5, rotationY: 0 },
 
   // GAME (arcade)
-  { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 260, y: 1600, heightMeters: 1.35, rotationY: 0.3 },
-  { id: "game-drone-2", url: "/assets/3d/refined-v8/robot_pet.glb", x: 620, y: 1600, heightMeters: 1.1, rotationY: -0.3 },
+  { id: "game-cabinet-1", url: "/assets/3d/arcade_game_cabinet.glb", x: 218, y: 1580, heightMeters: 1.78, rotationY: 0 },
+  { id: "game-cabinet-2", url: "/assets/3d/arcade_game_cabinet.glb", x: 306, y: 1580, heightMeters: 1.78, rotationY: 0 },
+  { id: "game-cabinet-3", url: "/assets/3d/arcade_game_cabinet.glb", x: 590, y: 1580, heightMeters: 1.78, rotationY: 0 },
+  { id: "game-cabinet-4", url: "/assets/3d/arcade_game_cabinet.glb", x: 678, y: 1580, heightMeters: 1.78, rotationY: 0 },
+  { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 260, y: 1690, heightMeters: 1.25, rotationY: 0.3 },
+  { id: "game-drone-2", url: "/assets/3d/refined-v8/robot_pet.glb", x: 620, y: 1690, heightMeters: 1.05, rotationY: -0.3 },
   { id: "game-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 448, y: 1740, heightMeters: 1.12, rotationY: Math.PI },
 
   // TERRACE (beach)
   { id: "terrace-bench-w", url: "/assets/3d/neom_bench_prop.glb", x: 1120, y: 1620, heightMeters: 0.95, rotationY: 0 },
   { id: "terrace-bench-e", url: "/assets/3d/neom_bench_prop.glb", x: 1820, y: 1620, heightMeters: 0.95, rotationY: 0 },
   { id: "terrace-table", url: "/assets/3d/round_table.glb", x: 1472, y: 1610, heightMeters: 0.95, rotationY: 0 },
+  { id: "terrace-campfire", url: "/assets/3d/campfire.glb", x: 1620, y: 1640, heightMeters: 0.65, rotationY: 0 },
 
   // GALLERY (review-gallery)
   { id: "gallery-orb", url: "/assets/3d/crystal_orb.glb", x: 2560, y: 1620, heightMeters: 1.25, rotationY: 0 },
@@ -132,12 +151,14 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "gallery-bench", url: "/assets/3d/neom_bench_prop.glb", x: 2560, y: 1760, heightMeters: 0.95, rotationY: Math.PI },
 ]);
 
-/** NPC 및 플레이어용 VRM 0.0 정규화 아바타 에셋 매핑. */
+/** NPC 및 플레이어용 개별 구분된 VRM 0.0 크리에이터 아바타 에셋 매핑 (쌍둥이 중복 제거). */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
-  "/vrm/Sendagaya_Shibu.vrm",
-  "/vrm/Sendagaya_Shino.vrm",
+  "/vrm/AliciaSolid.vrm",
+  "/vrm/Victoria_Rubin.vrm",
   "/vrm/Vita.vrm",
+  "/vrm/Sakurada_Fumiriya.vrm",
   "/vrm/Vivi.vrm",
+  "/vrm/Robert.vrm",
   "/vrm/Anna.vrm",
   "/vrm/Erika.vrm",
   "/vrm/Olivia.vrm",
@@ -323,12 +344,33 @@ export function createStylized3DCharacterNode(
   };
 }
 
+export interface StudioThreeWorkstationRing {
+  readonly id: string;
+  readonly zoneId: string;
+  readonly point: StudioVirtualSpacePoint;
+  readonly radius: number;
+  readonly group: THREE.Group;
+  readonly outerRing: THREE.Mesh;
+}
+
+const ACTION_RING_COLORS: Readonly<Record<string, number>> = Object.freeze({
+  assistant: 0x3b82f6,
+  canvas: 0x8b5cf6,
+  story: 0x06b6d4,
+  live: 0x10b981,
+  review: 0xa855f7,
+  assets: 0xf59e0b,
+  community: 0xec4899,
+  comic: 0x38bdf8,
+});
+
 /**
- * 구역 바닥·유리 파티션·건축 조명·분수 등 3D 캠퍼스 아키텍처를 구성한다.
+ * 구역 바닥·유리 파티션·출입문 포털·협업 워크스테이션 링·분수 등 3D 캠퍼스 아키텍처를 구성한다.
  */
 export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
   readonly floorMesh: THREE.Mesh;
   readonly waterMeshes: readonly THREE.Mesh[];
+  readonly workstationRings: readonly StudioThreeWorkstationRing[];
 } {
   const campusW = 3072 * STUDIO_THREE_SCALE; // 96m
   const campusH = 1984 * STUDIO_THREE_SCALE; // 62m
@@ -357,7 +399,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
   floorMesh.name = "campus-walkable-floor";
   scene.add(floorMesh);
 
-  // 2. 10개 구역별 건축 바닥 슬래브, 인테리어 러그 및 유리·목재 파티션 벽
+  // 2. 10개 구역별 건축 바닥 슬래브, 인테리어 러그, 출입문 매트 및 유리·목재 파티션 벽
   for (const zone of CAMPUS_ZONES) {
     const palette = ZONE_FLOOR_COLORS[zone.roomId] ?? {
       floor: 0xf1f5f9,
@@ -432,7 +474,34 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     northStrip.position.set(cx, 0.065, zz + 0.08);
     scene.add(northStrip);
 
-    // 실내 구역은 북쪽 백월 + 좌우 파티션 월을 세워 입체적인 오피스 아키텍처를 표현한다
+    // 출입문(Doors) 바닥 웰컴 매트 & 액센트 문턱 바
+    for (const door of zone.doors) {
+      const doorStart = door.from * 64 * STUDIO_THREE_SCALE;
+      const doorEnd = (door.to + 1) * 64 * STUDIO_THREE_SCALE;
+      const doorCenter = (doorStart + doorEnd) / 2;
+      const doorSpan = doorEnd - doorStart;
+      const isHorizontal = door.side === "north" || door.side === "south";
+      const matGeo = new THREE.BoxGeometry(
+        isHorizontal ? doorSpan : 0.9,
+        0.024,
+        isHorizontal ? 0.9 : doorSpan,
+      );
+      const matMesh = new THREE.Mesh(
+        matGeo,
+        new THREE.MeshStandardMaterial({
+          color: palette.accent,
+          emissive: palette.accent,
+          emissiveIntensity: 0.18,
+          roughness: 0.45,
+        }),
+      );
+      const doorX = door.side === "west" ? zx + 0.25 : door.side === "east" ? zx + zw - 0.25 : doorCenter;
+      const doorZ = door.side === "north" ? zz + 0.25 : door.side === "south" ? zz + zh - 0.25 : doorCenter;
+      matMesh.position.set(doorX, 0.068, doorZ);
+      scene.add(matMesh);
+    }
+
+    // 실내 구역은 북쪽 백월 + 좌우 파티션 월 + 남쪽 낮은 건축 난간을 세워 입체적인 오피스 아키텍처를 표현한다
     if (zone.walls.length > 0) {
       const wallHeight = 2.65;
       const wallMat = new THREE.MeshStandardMaterial({
@@ -473,10 +542,69 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
         sideWall.position.set(sideX, (wallHeight * 0.65) / 2, cz - zh * 0.08);
         scene.add(sideWall);
       }
+
+      // 남쪽 낮은 건축 파티션 난간 (출입구 양옆으로 배치하여 시야를 가리지 않으면서 방 경계를 명확히 표시)
+      if (zone.walls.includes("south")) {
+        const southCurbH = 0.48;
+        const wingWidth = Math.max(1.8, (zw - 4.4) * 0.42);
+        const wingGeo = new THREE.BoxGeometry(wingWidth, southCurbH, 0.22);
+        const leftWing = new THREE.Mesh(wingGeo, wallMat);
+        leftWing.position.set(zx + wingWidth / 2 + 0.15, southCurbH / 2, zz + zh - 0.14);
+        leftWing.castShadow = true;
+        leftWing.receiveShadow = true;
+        const rightWing = new THREE.Mesh(wingGeo, wallMat);
+        rightWing.position.set(zx + zw - wingWidth / 2 - 0.15, southCurbH / 2, zz + zh - 0.14);
+        rightWing.castShadow = true;
+        rightWing.receiveShadow = true;
+        scene.add(leftWing, rightWing);
+      }
     }
   }
 
-  // 3. 남쪽 테라스 석호(Lagoon) 수면
+  // 3. 20개 협업 워크스테이션 바닥 인터랙션 링 (CAMPUS_INTERACTIONS)
+  const workstationRings: StudioThreeWorkstationRing[] = [];
+  for (const interaction of CAMPUS_INTERACTIONS) {
+    const color = ACTION_RING_COLORS[interaction.action] ?? 0x6366f1;
+    const group = new THREE.Group();
+    group.name = `workstation-${interaction.id}`;
+    const pos3 = worldToThree(interaction.point, 0.072);
+    group.position.copy(pos3);
+
+    const discGeo = new THREE.CircleGeometry(0.56, 28);
+    discGeo.rotateX(-Math.PI / 2);
+    const discMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.16,
+      side: THREE.DoubleSide,
+    });
+    const disc = new THREE.Mesh(discGeo, discMat);
+    group.add(disc);
+
+    const ringGeo = new THREE.RingGeometry(0.56, 0.72, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.68,
+      side: THREE.DoubleSide,
+    });
+    const outerRing = new THREE.Mesh(ringGeo, ringMat);
+    outerRing.position.y = 0.004;
+    group.add(outerRing);
+
+    scene.add(group);
+    workstationRings.push({
+      id: interaction.id,
+      zoneId: interaction.zoneId,
+      point: interaction.point,
+      radius: interaction.radius,
+      group,
+      outerRing,
+    });
+  }
+
+  // 4. 남쪽 테라스 석호(Lagoon) 수면
   const waterMeshes: THREE.Mesh[] = [];
   const waterMat = new THREE.MeshStandardMaterial({
     color: 0x38bdf8,
@@ -497,7 +625,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     waterMeshes.push(water);
   }
 
-  return { floorMesh, waterMeshes };
+  return { floorMesh, waterMeshes, workstationRings };
 }
 
 /**

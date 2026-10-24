@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
-import { CAMPUS_HEIGHT, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
+import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
   applyNaturalVrmPosture,
   buildStudioThreeCampusArchitecture,
@@ -35,7 +35,7 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
   });
 
   it("모든 3D GLB 가구·소품과 VRM 아바타 경로가 유효하고 캠퍼스 경계 안에 배치된다", () => {
-    expect(STUDIO_THREE_PROPS.length).toBeGreaterThanOrEqual(35);
+    expect(STUDIO_THREE_PROPS.length).toBeGreaterThanOrEqual(50);
     const ids = new Set(STUDIO_THREE_PROPS.map((prop) => prop.id));
     expect(ids.size).toBe(STUDIO_THREE_PROPS.length);
 
@@ -45,10 +45,11 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
       expect(prop.x).toBeLessThanOrEqual(CAMPUS_WIDTH);
       expect(prop.y).toBeGreaterThanOrEqual(0);
       expect(prop.y).toBeLessThanOrEqual(CAMPUS_HEIGHT);
-      expect(prop.heightMeters).toBeGreaterThan(0.2);
+      expect(prop.heightMeters).toBeGreaterThan(0.15);
     }
 
-    expect(STUDIO_THREE_VRM_URLS.length).toBeGreaterThanOrEqual(7);
+    expect(STUDIO_THREE_VRM_URLS.length).toBeGreaterThanOrEqual(9);
+    expect(new Set(STUDIO_THREE_VRM_URLS).size).toBe(STUDIO_THREE_VRM_URLS.length);
     for (const url of STUDIO_THREE_VRM_URLS) {
       expect(url).toMatch(/^\/vrm\/.+\.vrm$/u);
     }
@@ -56,10 +57,11 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
 
   it("3D 캠퍼스 아키텍처 빌더와 스타일라이즈드 3D 캐릭터 리그를 정상 생성한다", () => {
     const scene = new THREE.Scene();
-    const { floorMesh, waterMeshes } = buildStudioThreeCampusArchitecture(scene);
+    const { floorMesh, waterMeshes, workstationRings } = buildStudioThreeCampusArchitecture(scene);
     expect(floorMesh.name).toBe("campus-walkable-floor");
     expect(waterMeshes).toHaveLength(2);
-    expect(scene.children.length).toBeGreaterThan(15);
+    expect(workstationRings).toHaveLength(CAMPUS_INTERACTIONS.length);
+    expect(scene.children.length).toBeGreaterThan(35);
 
     const selfActor = createStylized3DCharacterNode("self", 0x4f46e5, true);
     expect(selfActor.group.name).toBe("actor-self");
