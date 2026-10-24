@@ -603,7 +603,7 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1 = Object.freeze([
 
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1 = Object.freeze(
   authoredV1Manifest.assets.map((asset) => defineEnvironment({
-    id: asset.id, name: asset.name, description: asset.description,
+    id: asset.id.replace(/-mcp-v1$/u, "-authored-v1"), name: asset.name, description: asset.description,
     theme: asset.theme as StudioBg3dEnvironmentTheme, tags: asset.tags,
     fileName: asset.fileName as `${string}.glb`,
     url: asset.url as `/assets/3d/environments/${string}.glb`,
@@ -696,6 +696,7 @@ const CYCLES_PASSES_BY_KEY = new Map<string, StudioBg3dEnvironmentCyclesPasses>(
 const AUTHORED_V1_BY_KEY = new Map(
   STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1.flatMap((asset) => [
     [asset.id, asset] as const,
+    [asset.id.replace(/-authored-v1$/u, "-mcp-v1"), asset] as const,
     [asset.fileName, asset] as const,
     [asset.fileName.replace(/\.glb$/u, ""), asset] as const,
     [asset.url, asset] as const,
@@ -704,14 +705,10 @@ const AUTHORED_V1_BY_KEY = new Map(
   ]),
 );
 
-const RESOLVABLE_ENVIRONMENT_ASSETS = [...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS];
+const RESOLVABLE_ENVIRONMENT_ASSETS = [...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS, ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...STUDIO_BG3D_ENVIRONMENT_ASSETS];
 const ENVIRONMENT_BY_ID = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.id, asset] as const));
-const ENVIRONMENT_BY_URL = new Map(
-  [...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...RESOLVABLE_ENVIRONMENT_ASSETS].map((asset) => [asset.url, asset] as const),
-);
-const ENVIRONMENT_BY_HASH = new Map(
-  [...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1, ...RESOLVABLE_ENVIRONMENT_ASSETS].map((asset) => [asset.sha256, asset] as const),
-);
+const ENVIRONMENT_BY_URL = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.url, asset] as const));
+const ENVIRONMENT_BY_HASH = new Map(RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.sha256, asset] as const));
 
 export function getStudioBg3dEnvironmentAsset(id: string): StudioBg3dEnvironmentAsset | null {
   return ENVIRONMENT_BY_ID.get(id) ?? null;

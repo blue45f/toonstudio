@@ -107,15 +107,23 @@ describe("StudioMultiObjectLayoutManager", () => {
     }
   });
 
-  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG and STUDIO_SCENE_PROP_LAYOUT_PRESETS with real public GLBs", () => {
-    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG.length).toBeGreaterThanOrEqual(40);
-    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(6);
+  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG and STUDIO_SCENE_PROP_LAYOUT_PRESETS with real public GLBs and thumbnails", () => {
+    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(84);
+    expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(7);
 
+    let thumbnailCount = 0;
     for (const entry of STUDIO_BUNDLED_SCENE_PROP_CATALOG) {
       const stat = statSync(join(process.cwd(), "apps/web/public", entry.modelUrl));
       expect(stat.isFile(), entry.modelUrl).toBe(true);
       expect(stat.size, entry.modelUrl).toBeGreaterThan(1024);
+      if (entry.thumbnailUrl) {
+        thumbnailCount += 1;
+        const thumbStat = statSync(join(process.cwd(), "apps/web/public", entry.thumbnailUrl));
+        expect(thumbStat.isFile(), entry.thumbnailUrl).toBe(true);
+        expect(thumbStat.size, entry.thumbnailUrl).toBeGreaterThan(256);
+      }
     }
+    expect(thumbnailCount).toBe(27);
 
     const manager = new StudioMultiObjectLayoutManager();
     for (const preset of STUDIO_SCENE_PROP_LAYOUT_PRESETS) {
@@ -130,6 +138,9 @@ describe("StudioMultiObjectLayoutManager", () => {
     const added = manager.addCatalogProp("v8_traffic_light");
     expect(added).not.toBeNull();
     expect(added!.modelUrl).toBe("/assets/3d/refined-v8/traffic_light.glb");
+    const moved = manager.updatePosition(added!.id, [1.5, 0.5, -2.0]);
+    expect(moved?.position).toEqual([1.5, 0.5, -2.0]);
+    expect(manager.updatePosition("missing_id", [0, 0, 0])).toBeNull();
     expect(manager.addCatalogProp("missing_prop")).toBeNull();
   });
 });

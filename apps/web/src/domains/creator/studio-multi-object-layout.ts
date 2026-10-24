@@ -27,14 +27,31 @@ export type Studio3DPropCatalogCategory =
   | "food"
   | "fantasy"
   | "scifi"
-  | "architecture";
+  | "architecture"
+  | "mannequin";
+
+export const STUDIO_3D_PROP_CATEGORY_LABELS: Readonly<Record<Studio3DPropCatalogCategory, string>> = Object.freeze({
+  furniture: "가구·일상",
+  street: "거리·배경",
+  food: "음식·식기",
+  fantasy: "판타지",
+  scifi: "SF·사이버",
+  architecture: "모듈 건축",
+  mannequin: "포즈 마네킹",
+});
 
 export interface Studio3DPropCatalogEntry {
   readonly id: string;
   readonly name: string;
   readonly category: Studio3DPropCatalogCategory;
-  readonly modelUrl: `/assets/3d/${string}.glb` | `/creator-essentials/prop-${string}.glb`;
-  readonly thumbnailUrl?: `/assets/3d/refined-v8/thumbnails/${string}.png`;
+  readonly modelUrl:
+    | `/assets/3d/${string}.glb`
+    | `/creator-essentials/prop-${string}.glb`
+    | `/creator-essentials/pose-${string}.glb`;
+  readonly thumbnailUrl?:
+    | `/assets/3d/refined-v8/thumbnails/${string}.png`
+    | `/creator-essentials/prop-${string}.preview.png`
+    | `/creator-essentials/pose-${string}.preview.svg`;
   readonly defaultPosition: readonly [number, number, number];
   readonly defaultRotation: readonly [number, number, number];
   readonly defaultScale: readonly [number, number, number];
@@ -78,7 +95,7 @@ export const STUDIO_REFINED_V8_PROP_CATALOG: readonly Studio3DPropCatalogEntry[]
   { id: "v8_robot_pet", name: "SF 로봇 반려견 (v8)", category: "scifi", modelUrl: "/assets/3d/refined-v8/robot_pet.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/robot_pet.png", defaultPosition: [0.8, 0, 0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
-/** 퍼블릭 번들(`/assets/3d/*.glb`, `/creator-essentials/prop-*.glb`) 배경·거점·인테리어·건축 소품 카탈로그. */
+/** 퍼블릭 번들(`/assets/3d/*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·마네킹 카탈로그 (84종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
   ...STUDIO_REFINED_V8_PROP_CATALOG,
   { id: "prop_round_table", name: "원형 카페 테이블", category: "furniture", modelUrl: "/assets/3d/round_table.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
@@ -90,17 +107,40 @@ export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntr
   { id: "prop_potted_monstera", name: "몬스테라 화분", category: "furniture", modelUrl: "/assets/3d/potted_monstera.glb", defaultPosition: [1.6, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_bonsai_tree", name: "소나무 분재", category: "furniture", modelUrl: "/assets/3d/bonsai_tree.glb", defaultPosition: [-1.2, 0.75, -1], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_wheelchair", name: "어댑티브 전동휠체어", category: "furniture", modelUrl: "/assets/3d/adaptive_power_wheelchair.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_everyday_book", name: "양장 도서", category: "furniture", modelUrl: "/assets/3d/everyday_book.glb", defaultPosition: [0.2, 0.76, 0.1], defaultRotation: [0, 0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_everyday_backpack", name: "학생 백팩", category: "furniture", modelUrl: "/assets/3d/everyday_backpack.glb", defaultPosition: [-0.5, 0, 0.5], defaultRotation: [0, 0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_shoulder_bag", name: "가죽 숄더백", category: "furniture", modelUrl: "/assets/3d/atelier_shoulder_bag.glb", defaultPosition: [0.4, 0.45, 0.5], defaultRotation: [0, -0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_medical_bag", name: "응급 의료 가방", category: "furniture", modelUrl: "/assets/3d/atelier_medical_bag.glb", defaultPosition: [0.6, 0, 0.3], defaultRotation: [0, -0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_medical_stethoscope", name: "의료 청진기", category: "furniture", modelUrl: "/assets/3d/medical_stethoscope.glb", defaultPosition: [-0.2, 0.76, 0.15], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_camera", name: "취재 카메라", category: "furniture", modelUrl: "/assets/3d/atelier_camera.glb", defaultPosition: [0.15, 0.78, 0.2], defaultRotation: [0, -0.35, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_microphone", name: "스튜디오 마이크", category: "furniture", modelUrl: "/assets/3d/atelier_microphone.glb", defaultPosition: [0, 0.85, 0.1], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_headphones", name: "스튜디오 헤드폰", category: "furniture", modelUrl: "/assets/3d/atelier_headphones.glb", defaultPosition: [-0.3, 0.78, 0.1], defaultRotation: [0, 0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_modern_smartphone", name: "모던 스마트폰", category: "furniture", modelUrl: "/assets/3d/modern_smartphone_prop.glb", defaultPosition: [0.28, 0.76, 0.22], defaultRotation: [0, -0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_everyday_glasses", name: "클래식 안경", category: "furniture", modelUrl: "/assets/3d/everyday_glasses.glb", defaultPosition: [-0.15, 0.76, 0.22], defaultRotation: [0, 0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_everyday_cap", name: "캐주얼 캡모자", category: "furniture", modelUrl: "/assets/3d/everyday_cap.glb", defaultPosition: [-0.35, 0.78, -0.1], defaultRotation: [0, 0.5, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_beret", name: "아틀리에 베레모", category: "furniture", modelUrl: "/assets/3d/atelier_beret.glb", defaultPosition: [0.35, 0.78, -0.1], defaultRotation: [0, -0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_beanie", name: "니트 비니", category: "furniture", modelUrl: "/assets/3d/atelier_beanie.glb", defaultPosition: [0.42, 0.78, -0.15], defaultRotation: [0, 0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_sunglasses", name: "틴트 선글라스", category: "furniture", modelUrl: "/assets/3d/atelier_sunglasses.glb", defaultPosition: [0.1, 0.76, 0.25], defaultRotation: [0, -0.15, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_atelier_ribbon", name: "실크 리본 장식", category: "furniture", modelUrl: "/assets/3d/atelier_ribbon.glb", defaultPosition: [-0.1, 0.76, 0.25], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_street_food_cart", name: "노점 포장마차 카트", category: "street", modelUrl: "/assets/3d/street_food_cart.glb", defaultPosition: [0, 0, -1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_street_lamp", name: "도시 네온 가로등", category: "street", modelUrl: "/assets/3d/street_lamp.glb", defaultPosition: [2.4, 0, -2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_vending_machine", name: "편의점 자판기", category: "street", modelUrl: "/assets/3d/vending_machine.glb", defaultPosition: [-2.2, 0, -2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_ramen_bowl", name: "라면 그릇", category: "food", modelUrl: "/assets/3d/ramen_bowl.glb", defaultPosition: [0, 0.75, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_tea_set", name: "다기 티 세트", category: "food", modelUrl: "/assets/3d/tea_set.glb", defaultPosition: [0.4, 0.75, 0.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_everyday_mug", name: "세라믹 머그컵", category: "food", modelUrl: "/assets/3d/everyday_mug.glb", defaultPosition: [-0.25, 0.76, 0.18], defaultRotation: [0, 0.4, 0], defaultScale: [1, 1, 1] },
   { id: "prop_paper_lantern", name: "종이 등롱", category: "street", modelUrl: "/assets/3d/paper_lantern.glb", defaultPosition: [0, 2.1, -1], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_royal_throne", name: "황실 왕좌", category: "fantasy", modelUrl: "/assets/3d/royal_throne.glb", defaultPosition: [0, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_magic_chest", name: "마법 보물상자", category: "fantasy", modelUrl: "/assets/3d/fantasy_magic_chest.glb", defaultPosition: [1.4, 0, -1.5], defaultRotation: [0, -0.4, 0], defaultScale: [1, 1, 1] },
   { id: "prop_wishing_well", name: "판타지 소원 우물", category: "fantasy", modelUrl: "/assets/3d/wishing_well.glb", defaultPosition: [-1.8, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_campfire", name: "캠핑 모닥불", category: "fantasy", modelUrl: "/assets/3d/campfire.glb", defaultPosition: [0, 0, 0.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_crystal_orb", name: "마법 수정구", category: "fantasy", modelUrl: "/assets/3d/crystal_orb.glb", defaultPosition: [0, 0.9, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_magic_staff", name: "발광 수정 지팡이", category: "fantasy", modelUrl: "/assets/3d/magic_staff_crystal.glb", defaultPosition: [0.8, 0.9, -0.6], defaultRotation: [0, 0, 0.15], defaultScale: [1, 1, 1] },
+  { id: "prop_magic_wand", name: "별·달 마법 요술봉", category: "fantasy", modelUrl: "/assets/3d/fantasy_magic_wand_staff.glb", defaultPosition: [-0.6, 0.85, -0.4], defaultRotation: [0, 0.2, -0.2], defaultScale: [1, 1, 1] },
+  { id: "prop_magic_grimoire", name: "고대 룬 마도서", category: "fantasy", modelUrl: "/assets/3d/magic_grimoire.glb", defaultPosition: [0.25, 0.82, -0.2], defaultRotation: [0.3, -0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_rune_shield", name: "고대 룬 방패", category: "fantasy", modelUrl: "/assets/3d/ancient_rune_shield.glb", defaultPosition: [-1.1, 0.9, -1.2], defaultRotation: [0, 0.35, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_medieval_greatsword", name: "중세 룬 대검", category: "fantasy", modelUrl: "/assets/3d/medieval_greatsword.glb", defaultPosition: [1.1, 0.9, -1.2], defaultRotation: [0, -0.35, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_medieval_shield", name: "중세 기사 방패", category: "fantasy", modelUrl: "/assets/3d/medieval_shield.glb", defaultPosition: [-1.4, 0.85, -1.5], defaultRotation: [0, 0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_wizard_hat", name: "펠트 마법사 모자", category: "fantasy", modelUrl: "/assets/3d/wizard_hat.glb", defaultPosition: [0, 1.05, -0.3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_arcade_cabinet", name: "아케이드 게임기", category: "scifi", modelUrl: "/assets/3d/arcade_game_cabinet.glb", defaultPosition: [-1.6, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_neon_bench", name: "카본 네온 벤치", category: "scifi", modelUrl: "/assets/3d/neom_bench_prop.glb", defaultPosition: [0, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "prop_scifi_drone", name: "SF 탐사 드론", category: "scifi", modelUrl: "/assets/3d/scifi_drone_bot.glb", defaultPosition: [1.2, 1.6, -0.8], defaultRotation: [0, -0.5, 0], defaultScale: [1, 1, 1] },
@@ -108,14 +148,29 @@ export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntr
   { id: "prop_cyber_hoverbike", name: "사이버 호버바이크", category: "scifi", modelUrl: "/assets/3d/cyberpunk_hoverbike.glb", defaultPosition: [-1.8, 0.2, 0.5], defaultRotation: [0, 0.6, 0], defaultScale: [1, 1, 1] },
   { id: "prop_cyber_motorcycle", name: "사이버펑크 바이크", category: "scifi", modelUrl: "/assets/3d/cyberpunk_motorcycle.glb", defaultPosition: [1.8, 0, 0.5], defaultRotation: [0, -0.6, 0], defaultScale: [1, 1, 1] },
   { id: "prop_steampunk_airship", name: "스팀펑크 비행선", category: "scifi", modelUrl: "/assets/3d/steampunk_airship.glb", defaultPosition: [0, 3.2, -4], defaultRotation: [0, 0.3, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_bench", name: "모듈형 벤치", category: "architecture", modelUrl: "/creator-essentials/prop-bench.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_bookshelf", name: "모듈형 책장", category: "architecture", modelUrl: "/creator-essentials/prop-bookshelf.glb", defaultPosition: [-2, 0, -2.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_chair", name: "모듈형 의자", category: "architecture", modelUrl: "/creator-essentials/prop-chair.glb", defaultPosition: [0, 0, 0.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_desk", name: "모듈형 책상", category: "architecture", modelUrl: "/creator-essentials/prop-desk.glb", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_doorway", name: "모듈형 출입문 프레임", category: "architecture", modelUrl: "/creator-essentials/prop-doorway.glb", defaultPosition: [2.5, 0, -2], defaultRotation: [0, -1.57, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_stairs", name: "모듈형 계단", category: "architecture", modelUrl: "/creator-essentials/prop-stairs.glb", defaultPosition: [-2.8, 0, -1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_streetlamp", name: "모듈형 가로등", category: "architecture", modelUrl: "/creator-essentials/prop-streetlamp.glb", defaultPosition: [2.2, 0, 1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
-  { id: "ce_window_wall", name: "모듈형 창문 벽체", category: "architecture", modelUrl: "/creator-essentials/prop-window-wall.glb", defaultPosition: [0, 0, -3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_cyber_katana", name: "사이버 카타나", category: "scifi", modelUrl: "/assets/3d/cyber_katana.glb", defaultPosition: [0.7, 0.95, -0.4], defaultRotation: [0, -0.3, 0.25], defaultScale: [1, 1, 1] },
+  { id: "prop_cyber_sniper", name: "사이버 저격 소총", category: "scifi", modelUrl: "/assets/3d/cyber_sniper_rifle.glb", defaultPosition: [-0.7, 0.95, -0.4], defaultRotation: [0, 0.3, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_scifi_laser_gun", name: "SF 레이저 건", category: "scifi", modelUrl: "/assets/3d/scifi_laser_gun.glb", defaultPosition: [0.4, 0.85, 0.1], defaultRotation: [0, -0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_holo_tablet", name: "홀로그램 태블릿", category: "scifi", modelUrl: "/assets/3d/hologram_tablet.glb", defaultPosition: [0, 0.85, 0.2], defaultRotation: [-0.3, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_cyber_visor", name: "사이버 헬멧 바이저", category: "scifi", modelUrl: "/assets/3d/cyber_helmet_visor.glb", defaultPosition: [-0.3, 0.9, 0.1], defaultRotation: [0, 0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_cyber_glasses", name: "사이버 고글 안경", category: "scifi", modelUrl: "/assets/3d/cyber_glasses.glb", defaultPosition: [0.3, 0.82, 0.15], defaultRotation: [0, -0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "prop_tactical_helmet", name: "SF 택티컬 헬멧", category: "scifi", modelUrl: "/assets/3d/tactical_helmet.glb", defaultPosition: [0, 0.95, -0.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_bench", name: "모듈형 벤치", category: "architecture", modelUrl: "/creator-essentials/prop-bench.glb", thumbnailUrl: "/creator-essentials/prop-bench.preview.png", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_bookshelf", name: "모듈형 책장", category: "architecture", modelUrl: "/creator-essentials/prop-bookshelf.glb", thumbnailUrl: "/creator-essentials/prop-bookshelf.preview.png", defaultPosition: [-2, 0, -2.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_chair", name: "모듈형 의자", category: "architecture", modelUrl: "/creator-essentials/prop-chair.glb", thumbnailUrl: "/creator-essentials/prop-chair.preview.png", defaultPosition: [0, 0, 0.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_desk", name: "모듈형 책상", category: "architecture", modelUrl: "/creator-essentials/prop-desk.glb", thumbnailUrl: "/creator-essentials/prop-desk.preview.png", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_doorway", name: "모듈형 출입문 프레임", category: "architecture", modelUrl: "/creator-essentials/prop-doorway.glb", thumbnailUrl: "/creator-essentials/prop-doorway.preview.png", defaultPosition: [2.5, 0, -2], defaultRotation: [0, -1.57, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_stairs", name: "모듈형 계단", category: "architecture", modelUrl: "/creator-essentials/prop-stairs.glb", thumbnailUrl: "/creator-essentials/prop-stairs.preview.png", defaultPosition: [-2.8, 0, -1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_streetlamp", name: "모듈형 가로등", category: "architecture", modelUrl: "/creator-essentials/prop-streetlamp.glb", thumbnailUrl: "/creator-essentials/prop-streetlamp.preview.png", defaultPosition: [2.2, 0, 1.5], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "ce_window_wall", name: "모듈형 창문 벽체", category: "architecture", modelUrl: "/creator-essentials/prop-window-wall.glb", thumbnailUrl: "/creator-essentials/prop-window-wall.preview.png", defaultPosition: [0, 0, -3], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_neutral_3d", name: "기본 서기 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-neutral-3d.glb", thumbnailUrl: "/creator-essentials/pose-neutral-3d.preview.svg", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_walking_3d", name: "보행 포즈 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-walking-3d.glb", thumbnailUrl: "/creator-essentials/pose-walking-3d.preview.svg", defaultPosition: [-0.8, 0, 0.4], defaultRotation: [0, 0.25, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_running_3d", name: "질주 액션 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-running-3d.glb", thumbnailUrl: "/creator-essentials/pose-running-3d.preview.svg", defaultPosition: [0.8, 0, 0.2], defaultRotation: [0, -0.35, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_seated_3d", name: "착석 포즈 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-seated-3d.glb", thumbnailUrl: "/creator-essentials/pose-seated-3d.preview.svg", defaultPosition: [0, 0, 0.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_reaching_3d", name: "손 뻗기 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-reaching-3d.glb", thumbnailUrl: "/creator-essentials/pose-reaching-3d.preview.svg", defaultPosition: [-0.6, 0, -0.2], defaultRotation: [0, 0.4, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_weight_shift_3d", name: "짝다리 체중이동 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-weight-shift-3d.glb", thumbnailUrl: "/creator-essentials/pose-weight-shift-3d.preview.svg", defaultPosition: [0.6, 0, -0.3], defaultRotation: [0, -0.2, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_crouching_3d", name: "웅크리기 잠입 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-crouching-3d.glb", thumbnailUrl: "/creator-essentials/pose-crouching-3d.preview.svg", defaultPosition: [-1.1, 0, -0.5], defaultRotation: [0, 0.5, 0], defaultScale: [1, 1, 1] },
+  { id: "pose_arm_extension_3d", name: "팔 뻗기 액션 마네킹", category: "mannequin", modelUrl: "/creator-essentials/pose-arm-extension-3d.glb", thumbnailUrl: "/creator-essentials/pose-arm-extension-3d.preview.svg", defaultPosition: [1.1, 0, -0.4], defaultRotation: [0, -0.45, 0], defaultScale: [1, 1, 1] },
 ]);
 
 /** 장르별 웹툰 다중 오브젝트 테마 씬 레이아웃 프리셋. */
@@ -188,6 +243,17 @@ export const STUDIO_SCENE_PROP_LAYOUT_PRESETS: readonly StudioRoomLayoutPreset[]
       { modelUrl: "/creator-essentials/prop-chair.glb", name: "서재 의자", position: [0, 0, -0.1], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
     ],
   },
+  {
+    id: "action_pose_staging",
+    label: "다인 포즈 구도 마네킹 (질주 + 손 뻗기 + 웅크리기 + 착석 + 벤치)",
+    objects: [
+      { modelUrl: "/creator-essentials/pose-running-3d.glb", name: "질주 액션 마네킹", position: [-1.2, 0, 0.4], rotation: [0, 0.45, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/creator-essentials/pose-arm-extension-3d.glb", name: "팔 뻗기 마네킹", position: [1.1, 0, 0.2], rotation: [0, -0.5, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/creator-essentials/pose-crouching-3d.glb", name: "웅크리기 마네킹", position: [-0.4, 0, -0.9], rotation: [0, 0.2, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/creator-essentials/prop-bench.glb", name: "배경 벤치", position: [1.4, 0, -1.6], rotation: [0, -0.25, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/creator-essentials/pose-seated-3d.glb", name: "착석 마네킹", position: [1.4, 0, -1.5], rotation: [0, -0.25, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
 ]);
 
 const ALL_LAYOUT_PRESETS_BY_ID = new Map<string, StudioRoomLayoutPreset>(
@@ -200,6 +266,14 @@ const PROP_CATALOG_BY_ID = new Map<string, Studio3DPropCatalogEntry>(
 
 export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalogEntry | null {
   return PROP_CATALOG_BY_ID.get(propId.trim()) ?? null;
+}
+
+export function listStudio3DPropCatalogByCategory(
+  category: Studio3DPropCatalogCategory | "all" | "refined-v8" = "all",
+): readonly Studio3DPropCatalogEntry[] {
+  if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
+  if (category === "refined-v8") return STUDIO_REFINED_V8_PROP_CATALOG;
+  return STUDIO_BUNDLED_SCENE_PROP_CATALOG.filter((entry) => entry.category === category);
 }
 
 export class StudioMultiObjectLayoutManager {
@@ -229,6 +303,14 @@ export class StudioMultiObjectLayoutManager {
       scale: entry.defaultScale,
       visible: true,
     });
+  }
+
+  public updatePosition(id: string, position: readonly [number, number, number]): Studio3DObjectInstance | null {
+    const existing = this.instances.get(id);
+    if (!existing) return null;
+    const updated: Studio3DObjectInstance = { ...existing, position };
+    this.instances.set(id, updated);
+    return updated;
   }
 
   public removeObject(id: string): boolean {

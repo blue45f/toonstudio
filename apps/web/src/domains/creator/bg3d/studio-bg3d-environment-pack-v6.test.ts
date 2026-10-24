@@ -122,8 +122,11 @@ describe("Studio revised environment delivery v6", () => {
     expect(STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS.every((asset) => asset.provenance.license === "CC0-1.0")).toBe(true);
 
     for (const authored of STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1) {
+      expect(authored.id).toMatch(/-authored-v1$/u);
       expect(isStudioBg3dEnvironmentAssetId(authored.id)).toBe(true);
+      expect(getStudioBg3dEnvironmentAsset(authored.id)).toBe(authored);
       expect(getStudioBg3dEnvironmentAssetByHash(authored.sha256)).toBe(authored);
+      expect(resolveStudioBg3dEnvironmentUrl(authored.id)).toBe(authored.url);
       expect(authored.provenance.license).toBe("CC0-1.0");
       expect(authored.provenance.generator).toBe("scripts/generate_self_authored_environment_pack_v1.py");
       expect(authored.url).toMatch(/^\/assets\/3d\/environments\/authored-v1\/[a-z0-9_]+\.glb$/u);
@@ -144,6 +147,7 @@ describe("Studio revised environment delivery v6", () => {
     for (const mcpAsset of STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1) {
       const counterpart = resolveStudioBg3dCc0CounterpartEnvironment(mcpAsset.id);
       expect(counterpart).not.toBeNull();
+      expect(counterpart!.id).toBe(mcpAsset.id.replace(/-mcp-v1$/u, "-authored-v1"));
       expect(counterpart!.fileName).toBe(mcpAsset.fileName);
       expect(counterpart!.provenance.license).toBe("CC0-1.0");
       expect(counterpart!.url).toBe(`/assets/3d/environments/authored-v1/${mcpAsset.fileName}`);

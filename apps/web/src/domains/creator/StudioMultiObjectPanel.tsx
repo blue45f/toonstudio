@@ -6,15 +6,18 @@
  */
 
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
-import { Copy, GripVertical, Layers, RotateCcw, Trash2 } from "lucide-react";
+import { Box, Copy, GripVertical, Layers, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import {
-  STUDIO_REFINED_V8_PROP_CATALOG,
+  STUDIO_3D_PROP_CATEGORY_LABELS,
+  STUDIO_BUNDLED_SCENE_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
   STUDIO_SCENE_PROP_LAYOUT_PRESETS,
   findStudio3DPropCatalogEntry,
+  listStudio3DPropCatalogByCategory,
   type Studio3DObjectInstance,
+  type Studio3DPropCatalogCategory,
 } from "./studio-multi-object-layout";
 import {
   StudioPanelChip,
@@ -25,6 +28,16 @@ import {
 import type { ReactElement } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+
+type PropCatalogFilter = "refined-v8" | "all" | Studio3DPropCatalogCategory;
+
+const PROP_CATEGORY_FILTERS: readonly { readonly id: PropCatalogFilter; readonly label: string }[] = [
+  { id: "refined-v8", label: "개선형 v8" },
+  { id: "all", label: `전체 (${STUDIO_BUNDLED_SCENE_PROP_CATALOG.length})` },
+  ...(Object.entries(STUDIO_3D_PROP_CATEGORY_LABELS) as [Studio3DPropCatalogCategory, string][]).map(
+    ([id, label]) => ({ id, label }),
+  ),
+];
 
 export interface StudioMultiObjectPanelProps {
   /** 현재 배치된 3D 오브젝트 인스턴스 목록. */
@@ -53,6 +66,8 @@ export function StudioMultiObjectPanel({
   onAddCatalogProp,
 }: StudioMultiObjectPanelProps): ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [catalogFilter, setCatalogFilter] = useState<PropCatalogFilter>("refined-v8");
+  const visibleCatalog = listStudio3DPropCatalogByCategory(catalogFilter);
 
   const handleAddProp = (propId: string) => {
     if (onAddCatalogProp) {
@@ -76,6 +91,21 @@ export function StudioMultiObjectPanel({
       visible: true,
     };
     onObjectsChange([...objects, instance]);
+  };
+
+  const handleAxisChange = (objectId: string, axisIndex: 0 | 1 | 2, nextValue: number) => {
+    onObjectsChange(
+      objects.map((item) => {
+        if (item.id !== objectId) return item;
+        const nextPosition: [number, number, number] = [
+          item.position[0],
+          item.position[1],
+          item.position[2],
+        ];
+        nextPosition[axisIndex] = Math.round(nextValue * 100) / 100;
+        return { ...item, position: nextPosition };
+      }),
+    );
   };
 
   return (
@@ -122,13 +152,24 @@ export function StudioMultiObjectPanel({
         </div>
       </div>
 
-      {/* 개선형 3D 소품 카탈로그 (refined-v8 썸네일) */}
-      <div className="space-y-1">
+      {/* 번들 3D 소품·마네킹 카탈로그 */}
+      <div className="space-y-1.5">
         <span className="text-xs font-semibold text-fg-2">
-          개선형 3D 소품 카탈로그 ({STUDIO_REFINED_V8_PROP_CATALOG.length})
+          3D 소품·마네킹 카탈로그 ({visibleCatalog.length})
         </span>
-        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="개선형 3D 소품 카탈로그">
-          {STUDIO_REFINED_V8_PROP_CATALOG.map((prop) => (
+        <div className="flex flex-wrap gap-1" role="group" aria-label="3D 소품 카테고리 필터">
+          {PROP_CATEGORY_FILTERS.map((filterItem) => (
+            <StudioPanelChip
+              key={filterItem.id}
+              active={catalogFilter === filterItem.id}
+              onClick={() => setCatalogFilter(filterItem.id)}
+            >
+              {filterItem.label}
+            </StudioPanelChip>
+          ))}
+        </div>
+        <div className="grid max-h-56 grid-cols-3 gap-1.5 overflow-y-auto pr-0.5" role="group" aria-label="개선형 3D 소품 카탈로그">
+          {visibleCatalog.map((prop) => (
             <button
               key={prop.id}
               type="button"
@@ -146,7 +187,11 @@ export function StudioMultiObjectPanel({
                   height={48}
                   className="h-10 w-10 rounded object-contain"
                 />
-              ) : null}
+              ) : (
+                <span className="grid h-10 w-10 place-items-center rounded bg-panel/70 text-fg-3">
+                  <Box size={16} aria-hidden />
+                </span>
+              )}
               <span className="w-full truncate text-center">{prop.name.replace(" (v8)", "")}</span>
             </button>
           ))}
@@ -240,7 +285,7 @@ export function StudioMultiObjectPanel({
               max={10}
               step={0.1}
               value={Math.round(obj.position[0] * 10) / 10}
-              onChange={() => {}}
+              onChange={(nextX) => handleAxisChange(obj.id, 0, nextX)}
               readout={obj.position[0].toFixed(1)}
             />
             <StudioSliderRow
@@ -249,7 +294,7 @@ export function StudioMultiObjectPanel({
               max={10}
               step={0.1}
               value={Math.round(obj.position[1] * 10) / 10}
-              onChange={() => {}}
+              onChange={(nextY) => handleAxisChange(obj.id, 1, nextY)}
               readout={obj.position[1].toFixed(1)}
             />
             <StudioSliderRow
@@ -258,7 +303,7 @@ export function StudioMultiObjectPanel({
               max={10}
               step={0.1}
               value={Math.round(obj.position[2] * 10) / 10}
-              onChange={() => {}}
+              onChange={(nextZ) => handleAxisChange(obj.id, 2, nextZ)}
               readout={obj.position[2].toFixed(1)}
             />
           </div>

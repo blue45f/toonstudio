@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_3D_PROP_CATEGORY_LABELS,
   STUDIO_ROOM_LAYOUT_PRESETS,
   StudioMultiObjectLayoutManager,
+  listStudio3DPropCatalogByCategory,
+  type Studio3DPropCatalogCategory,
 } from "./studio-multi-object-layout";
 
 describe("StudioMultiObjectPanel integration", () => {
@@ -44,5 +47,22 @@ describe("StudioMultiObjectPanel integration", () => {
     });
     const snapped = manager.snapToFloor(added.id);
     expect(snapped?.position[1]).toBe(0);
+  });
+
+  it("filters 84 bundled 3D props across all 7 categories and loads action_pose_staging mannequin preset", () => {
+    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(84);
+    expect(listStudio3DPropCatalogByCategory("refined-v8")).toHaveLength(11);
+    for (const category of Object.keys(STUDIO_3D_PROP_CATEGORY_LABELS) as Studio3DPropCatalogCategory[]) {
+      const items = listStudio3DPropCatalogByCategory(category);
+      expect(items.length, category).toBeGreaterThan(0);
+      expect(items.every((entry) => entry.category === category)).toBe(true);
+    }
+    expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(8);
+    expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(8);
+
+    const manager = new StudioMultiObjectLayoutManager();
+    const staged = manager.loadPreset("action_pose_staging");
+    expect(staged).toHaveLength(5);
+    expect(staged.some((obj) => obj.modelUrl.startsWith("/creator-essentials/pose-"))).toBe(true);
   });
 });
