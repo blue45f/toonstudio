@@ -30,6 +30,10 @@ export type WatercolorBrushDab = {
   radius: number;
   opacity: number;
   role: "core" | "diffuse";
+  /** 커피링(모세관 외곽 응집) 강도 0..1 (선택, edgeDarkening > 0일 때 포함). */
+  rimDarkening?: number;
+  /** 종이 골(valley) 안료 침전(Granulation) 변조 0..1 (선택, granulation > 0일 때 포함). */
+  granulationBias?: number;
 };
 
 /** 평면 포인트 입력과 수채 dab 플래너 제어값. */
@@ -48,6 +52,12 @@ export type WatercolorBrushPlanInput = {
   spacing?: number;
   /** false면 core만 계획한다. 기본값 true. */
   diffuse?: boolean;
+  /** 커피링(Edge Darkening / 모세관 외곽 안료 응집) 강도 0..1. 기본 0. */
+  edgeDarkening?: number;
+  /** 스트로크 시·종점 수분 고임(Wet Pooling / 백런 번짐) 강도 0..1. 기본 0. */
+  wetPooling?: number;
+  /** 광물성 안료 입자 침전(Granulation) 강도 0..1. 기본 0. */
+  granulation?: number;
 };
 
 /** 정규화된 플래너 제어값. `points`/`pressures`는 계획 시 별도로 정리한다. */
@@ -57,6 +67,9 @@ export type WatercolorBrushPlanSettings = {
   maxDabs: number;
   spacing: number;
   diffuse: boolean;
+  edgeDarkening?: number;
+  wetPooling?: number;
+  granulation?: number;
 };
 
 /** 메타데이터를 포함한 계획 결과. `dabs`는 스트로크 진행 순서로 이미 정렬돼 있다. */
@@ -202,7 +215,11 @@ export function normalizeWatercolorBrushPlanSettings(
     ? clamp(rawSpacing, WATERCOLOR_BRUSH_SPACING_RANGE.min, WATERCOLOR_BRUSH_SPACING_RANGE.max)
     : defaultSpacing;
 
-  return {
+  const edgeDarkening = clamp01(finiteNumber(source.edgeDarkening, 0));
+  const wetPooling = clamp01(finiteNumber(source.wetPooling, 0));
+  const granulation = clamp01(finiteNumber(source.granulation, 0));
+
+  const normalized: WatercolorBrushPlanSettings = {
     baseWidth,
     seed: Math.floor(
       clamp(finiteNumber(source.seed, DEFAULT_WATERCOLOR_BRUSH_SEED), WATERCOLOR_BRUSH_SEED_RANGE.min, WATERCOLOR_BRUSH_SEED_RANGE.max),
@@ -217,6 +234,10 @@ export function normalizeWatercolorBrushPlanSettings(
     diffuse: typeof source.diffuse === "boolean" ? source.diffuse : DEFAULT_WATERCOLOR_BRUSH_DIFFUSE,
     spacing,
   };
+  if (edgeDarkening > 0) normalized.edgeDarkening = edgeDarkening;
+  if (wetPooling > 0) normalized.wetPooling = wetPooling;
+  if (granulation > 0) normalized.granulation = granulation;
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
@@ -292,15 +313,34 @@ function createCoreDab(
   const radiusNoise = hash2(stationIndex, 11, settings.seed);
   const opacityNoise = hash2(stationIndex, 13, settings.seed);
   const baseRadius = settings.baseWidth * 0.5;
+  const edgeDarkening = settings.edgeDarkening ?? 0;
+  const granulation = settings.granulation ?? 0;
+  const wetPooling = settings.wetPooling ?? 0;
+
+  // 시·종점 수분 고임(wetPooling): 시작(progress=0)과 끝(progress=1)에서 물방울이 고여 반경이 약간 넓어짐
+  const endpointProximity = Math.pow(Math.abs(station.progress * 2 - 1), 3);
+  const poolingRadiusBoost = 1 + wetPooling * endpointProximity * 0.28;
+
   // p=0.5일 때 대체로 입력 width와 같은 직경, p가 높을수록 자연스럽게 두꺼워진다.
   const pressureScale = 0.58 + station.pressure * 0.84;
   const radius = clamp(
-    baseRadius * pressureScale * (0.93 + radiusNoise * 0.14) * radiusScale,
+    baseRadius * pressureScale * (0.93 + radiusNoise * 0.14) * radiusScale * poolingRadiusBoost,
     0.05,
-    settings.baseWidth * 1.1 * radiusScale,
+    settings.baseWidth * 1.1 * radiusScale * poolingRadiusBoost,
   );
-  const opacity = clamp(0.16 + station.pressure * 0.38 + (opacityNoise - 0.5) * 0.06, 0.08, 0.72);
-  return { x: station.x, y: station.y, radius, opacity, role: "core" };
+  // 커피링(edgeDarkening)이 켜지면 중심부 세척(interior wash)으로 코어 불투명도가 살짝 맑아지고 외곽 림에 안료가 모임
+  const interiorWashScale = 1 - edgeDarkening * 0.18;
+  const granNoise = hash2(stationIndex, 53, settings.seed);
+  const granMod = 1 + granulation * (granNoise - 0.5) * 0.24;
+  const opacity = clamp(
+    (0.16 + station.pressure * 0.38 + (opacityNoise - 0.5) * 0.06) * interiorWashScale * granMod,
+    0.08,
+    0.72,
+  );
+  const dab: WatercolorBrushDab = { x: station.x, y: station.y, radius, opacity, role: "core" };
+  if (edgeDarkening > 0) dab.rimDarkening = clamp01(edgeDarkening * (0.75 + station.pressure * 0.25));
+  if (granulation > 0) dab.granulationBias = clamp01(granulation * (0.4 + granNoise * 0.6));
+  return dab;
 }
 
 function createDiffuseDab(
@@ -312,18 +352,90 @@ function createDiffuseDab(
 ): WatercolorBrushDab {
   const angle = hash2(stationIndex, 31, settings.seed) * TAU;
   const distance = core.radius * (0.16 + hash2(stationIndex, 37, settings.seed) * 0.54);
+  const edgeDarkening = settings.edgeDarkening ?? 0;
+  const wetPooling = settings.wetPooling ?? 0;
+  const granulation = settings.granulation ?? 0;
+  const endpointProximity = Math.pow(Math.abs(station.progress * 2 - 1), 3);
+  const poolingScale = 1 + wetPooling * endpointProximity * 0.35;
+
   const radius = clamp(
-    core.radius * (1.2 + hash2(stationIndex, 41, settings.seed) * 0.48),
+    core.radius * (1.2 + hash2(stationIndex, 41, settings.seed) * 0.48) * poolingScale,
     0.05,
-    settings.baseWidth * 1.7 * radiusScale,
+    settings.baseWidth * 1.7 * radiusScale * poolingScale,
   );
-  const opacity = clamp(core.opacity * (0.17 + hash2(stationIndex, 43, settings.seed) * 0.17), 0.02, 0.3);
-  return {
+  const rimBoost = 1 + edgeDarkening * 0.45 + wetPooling * endpointProximity * 0.25;
+  const opacity = clamp(
+    core.opacity * (0.17 + hash2(stationIndex, 43, settings.seed) * 0.17) * rimBoost,
+    0.02,
+    0.38,
+  );
+  const dab: WatercolorBrushDab = {
     x: station.x + Math.cos(angle) * distance,
     y: station.y + Math.sin(angle) * distance,
     radius,
     opacity,
     role: "diffuse",
+  };
+  if (edgeDarkening > 0) dab.rimDarkening = clamp01(edgeDarkening * (0.85 + endpointProximity * 0.15));
+  if (granulation > 0) dab.granulationBias = clamp01(granulation * hash2(stationIndex, 59, settings.seed));
+  return dab;
+}
+
+export interface WatercolorCapillaryRimProfile {
+  /** 중심부(r=0) 상대 안료 밀도 (커피링 세척 시 < 1). */
+  readonly interiorGain: number;
+  /** 외곽 모세관 림(r≈0.86) 피크 상대 안료 밀도 (커피링 활성 시 > 1). */
+  readonly rimPeakGain: number;
+  /** 요청한 radialDistance01(0..1) 지점에서의 물리 안료 밀도 배율. */
+  readonly radialGainAtSample: number;
+  /** Canvas2D createRadialGradient 등에 바로 바인딩 가능한 [offset01, alphaGain] 5단계 정지점. */
+  readonly gradientStops: ReadonlyArray<readonly [number, number]>;
+}
+
+/**
+ * Curtis et al. (1997) / Rebelle 7 스타일 수채화 모세관 커피링(Coffee-Ring Edge Darkening) 및
+ * 광물성 안료 침전(Granulation) 반경 방향 밀도 프로파일을 계산한다.
+ */
+export function evaluateWatercolorCapillaryRimProfile(
+  radialDistance01: number,
+  options: {
+    readonly edgeDarkening?: number;
+    readonly granulation?: number;
+    readonly paperTooth01?: number;
+  } = {},
+): WatercolorCapillaryRimProfile {
+  const r = clamp01(finiteNumber(radialDistance01, 0));
+  const k = clamp01(finiteNumber(options.edgeDarkening, 0.5));
+  const gran = clamp01(finiteNumber(options.granulation, 0));
+  const tooth = clamp01(finiteNumber(options.paperTooth01, 0.5));
+
+  const evalAt = (t: number): number => {
+    const u = clamp01(t);
+    // 중심부 세척(Interior Wash) + r=0.86 부근 가우시안 모세관 림 피크 + 최외곽 페더 감쇠
+    const interiorWash = 1 - 0.34 * k * (1 - u * u);
+    const rimGaussian = 0.92 * k * Math.exp(-Math.pow((u - 0.86) / 0.12, 2));
+    const outerFeather = u <= 0.88 ? 1 : Math.max(0, 1 - Math.pow((u - 0.88) / 0.12, 1.6));
+    // 종이 골(1 - tooth)에 침전되는 광물 입자 가중
+    const granFactor = 1 + gran * (0.5 - tooth) * 0.35;
+    return Math.round(Math.max(0, (interiorWash + rimGaussian) * outerFeather * granFactor) * 1000) / 1000;
+  };
+
+  const interiorGain = evalAt(0);
+  const rimPeakGain = evalAt(0.86);
+  const radialGainAtSample = evalAt(r);
+  const stops: ReadonlyArray<readonly [number, number]> = Object.freeze([
+    [0, interiorGain] as const,
+    [0.55, evalAt(0.55)] as const,
+    [0.86, rimPeakGain] as const,
+    [0.95, evalAt(0.95)] as const,
+    [1, 0] as const,
+  ]);
+
+  return {
+    interiorGain,
+    rimPeakGain,
+    radialGainAtSample,
+    gradientStops: stops,
   };
 }
 

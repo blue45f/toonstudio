@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyWetMixDab,
+  evaluateWetMixBristleGrainWeight,
   sampleWetMixDabAverage,
   wetMixStroke,
   type WetMixSettings,
@@ -315,5 +316,67 @@ describe("applyWetMixDab", () => {
     applyWetMixDab(data, 8, 8, { x: 4, y: 4 }, { r: 0, g: 0, b: 0 }, 4, 1, 0);
     applyWetMixDab(data, 8, 8, { x: Number.NaN, y: 4 }, { r: 0, g: 0, b: 0 }, 4, 1, 1);
     expect(Array.from(data)).toEqual(Array.from(before));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wave 12 — 강모 결(bristleStreak), 종이 요철(paperGrainDepth), 용제 희석(solventDilution)
+// ---------------------------------------------------------------------------
+
+describe("wetMixStroke bristleStreak, paperGrainDepth & solventDilution (Wave 12)", () => {
+  it("modulates cross-tangent bristle furrows and canvas weave grain deterministically", () => {
+    const center = { x: 12, y: 12 };
+    const w0 = evaluateWetMixBristleGrainWeight(12, 12, center, 8);
+    expect(w0).toBe(1);
+
+    const weights: number[] = [];
+    for (let y = 6; y <= 18; y += 1) {
+      weights.push(
+        evaluateWetMixBristleGrainWeight(12, y, center, 8, {
+          tangentX: 1,
+          tangentY: 0,
+          bristleStreak: 0.85,
+          paperGrainDepth: 0.6,
+        }),
+      );
+    }
+    const minW = Math.min(...weights);
+    const maxW = Math.max(...weights);
+    expect(maxW - minW).toBeGreaterThan(0.25);
+  });
+
+  it("applies bristleStreak, paperGrainDepth, and solventDilution during wetMixStroke", () => {
+    const plain = makeImageData(24, 24, () => CLEAR);
+    const textured = makeImageData(24, 24, () => CLEAR);
+    wetMixStroke(
+      plain,
+      24,
+      24,
+      [{ x: 4, y: 12 }, { x: 20, y: 12 }],
+      settings({ radiusPx: 6, strength: 0.9, hardness: 0.8 }),
+    );
+    wetMixStroke(
+      textured,
+      24,
+      24,
+      [{ x: 4, y: 12 }, { x: 20, y: 12 }],
+      settings({
+        radiusPx: 6,
+        strength: 0.9,
+        hardness: 0.8,
+        bristleStreak: 0.8,
+        paperGrainDepth: 0.7,
+        solventDilution: 0.5,
+      }),
+    );
+
+    let plainAlphaSum = 0;
+    let texturedAlphaSum = 0;
+    for (let i = 3; i < plain.length; i += 4) {
+      plainAlphaSum += plain[i]!;
+      texturedAlphaSum += textured[i]!;
+    }
+    expect(texturedAlphaSum).toBeGreaterThan(0);
+    expect(texturedAlphaSum).toBeLessThan(plainAlphaSum * 0.85);
   });
 });
