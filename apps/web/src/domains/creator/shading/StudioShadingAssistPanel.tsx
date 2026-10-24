@@ -194,7 +194,7 @@ export function StudioShadingAssistPanel({
         <div className="flex flex-col gap-1">
           <div className="flex justify-between text-[11px]">
             <span className="text-fg-3">명암 강도</span>
-            <span className="font-semibold text-slate-200">{intensity}%</span>
+            <span className="font-semibold text-fg">{intensity}%</span>
           </div>
           <input
             type="range"
@@ -210,7 +210,7 @@ export function StudioShadingAssistPanel({
         <div className="flex flex-col gap-1">
           <div className="flex justify-between text-[11px]">
             <span className="text-fg-3">그림자 부드러움</span>
-            <span className="font-semibold text-slate-200">
+            <span className="font-semibold text-fg">
               {softness === 0 ? "선명" : `${softness}%`}
             </span>
           </div>
@@ -221,7 +221,7 @@ export function StudioShadingAssistPanel({
             value={softness}
             aria-label="그림자 부드러움"
             onChange={(e) => setSoftness(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+            className="w-full h-1.5 bg-raised rounded-lg appearance-none cursor-pointer accent-accent"
           />
         </div>
       </div>
@@ -239,18 +239,18 @@ export function StudioShadingAssistPanel({
         </label>
         <div className="flex items-center gap-1.5">
           <div
-            className="size-3.5 rounded-full border border-line/70 shadow-sm"
+            className="size-3.5 rounded-full border border-line shadow-sm [forced-color-adjust:none]"
             style={{ backgroundColor: computed.shadow1ColorHex }}
             title={`그림자 1단계: ${computed.shadow1ColorHex}`}
           />
           <div
-            className="size-3.5 rounded-full border border-white/20 shadow-sm"
+            className="size-3.5 rounded-full border border-line shadow-sm [forced-color-adjust:none]"
             style={{ backgroundColor: computed.shadow2ColorHex }}
             title={`그림자 2단계: ${computed.shadow2ColorHex}`}
           />
           {computed.rimLightColorHex && (
             <div
-              className="size-3.5 rounded-full border border-white/20 shadow-sm"
+              className="size-3.5 rounded-full border border-line shadow-sm [forced-color-adjust:none]"
               style={{ backgroundColor: computed.rimLightColorHex }}
               title={`림 라이트: ${computed.rimLightColorHex}`}
             />

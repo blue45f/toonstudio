@@ -30,6 +30,9 @@ import type { StudioImageDataLike } from "./studio-filters";
 // 옵션 타입·기본값·범위
 // ---------------------------------------------------------------------------
 
+export type ShadingAssistBlendMode = "normal" | "multiply" | "linear-burn";
+export type ShadingAssistModel = "linear" | "spherical-volume";
+
 export interface ShadingAssistOptions {
   /** 광원 방위각(도, 화면 공간: 0=위·90=오른쪽·180=아래·270=왼쪽). */
   readonly azimuthDeg: number;
@@ -43,6 +46,16 @@ export interface ShadingAssistOptions {
   readonly toneSteps: 0 | 2 | 3;
   /** 음영색 RGB(0..255 각 채널). 기본은 차가운 보라 — 웹툰 음영 관례. */
   readonly shadowColor: readonly [number, number, number];
+  /** 미리보기 합성 블렌드 모드 (기본 "normal", 웹툰 채색 시 "multiply" | "linear-burn" 지원). */
+  readonly blendMode?: ShadingAssistBlendMode;
+  /** 음영 투영 모델: "linear"(평면 투영) | "spherical-volume"(실루엣 거리 기반 3D 구면 볼륨). */
+  readonly shadingModel?: ShadingAssistModel;
+  /** 광원 방향 실루엣 가장자리 림라이트 강도 0..100 (기본 0). */
+  readonly rimLightStrength?: number;
+  /** 림라이트 두께(px, 1..24, 기본 3). */
+  readonly rimLightWidthPx?: number;
+  /** 림라이트 RGB 색상 (기본 따뜻한 아이보리 하이라이트 [255, 248, 220]). */
+  readonly rimLightColor?: readonly [number, number, number];
 }
 
 /** 기본값: 왼쪽 위 광원(315°), 중간 강도·경계, 2단 셀 음영. */
@@ -80,6 +93,8 @@ export type ShadingAssistDraft =
       readonly preview: StudioImageDataLike;
       readonly opaquePixelCount: number;
       readonly shadedPixelCount: number;
+      /** 림라이트가 적용된 실루엣 가장자리 픽셀 수. */
+      readonly rimLightPixelCount?: number;
       /** 불투명 픽셀 중 음영이 조금이라도 걸린 비율 0..1. */
       readonly coverageRatio: number;
       readonly options: ShadingAssistOptions;
@@ -116,7 +131,7 @@ export function normalizeShadingAssistOptions(
   const toneSteps: ShadingAssistOptions["toneSteps"] =
     toneStepsRaw === 2 || toneStepsRaw === 3 ? toneStepsRaw : 0;
   const color = partial.shadowColor ?? base.shadowColor;
-  return {
+  const normalized: ShadingAssistOptions = {
     azimuthDeg: azimuth,
     strength: clampNumber(partial.strength ?? base.strength, 0, 100, base.strength),
     coverage: clampNumber(partial.coverage ?? base.coverage, 0, 100, base.coverage),
@@ -128,6 +143,34 @@ export function normalizeShadingAssistOptions(
       normalizeChannel(color[2], base.shadowColor[2]),
     ],
   };
+
+  if (partial.blendMode === "normal" || partial.blendMode === "multiply" || partial.blendMode === "linear-burn") {
+    (normalized as { blendMode?: ShadingAssistBlendMode }).blendMode = partial.blendMode;
+  }
+  if (partial.shadingModel === "linear" || partial.shadingModel === "spherical-volume") {
+    (normalized as { shadingModel?: ShadingAssistModel }).shadingModel = partial.shadingModel;
+  }
+  if (partial.rimLightStrength !== undefined) {
+    (normalized as { rimLightStrength?: number }).rimLightStrength = clampNumber(
+      partial.rimLightStrength,
+      0,
+      100,
+      0,
+    );
+  }
+  if (partial.rimLightWidthPx !== undefined) {
+    (normalized as { rimLightWidthPx?: number }).rimLightWidthPx = Math.round(
+      clampNumber(partial.rimLightWidthPx, 1, 24, 3),
+    );
+  }
+  if (partial.rimLightColor !== undefined) {
+    (normalized as { rimLightColor?: readonly [number, number, number] }).rimLightColor = [
+      normalizeChannel(partial.rimLightColor[0], 255),
+      normalizeChannel(partial.rimLightColor[1], 248),
+      normalizeChannel(partial.rimLightColor[2], 220),
+    ];
+  }
+  return normalized;
 }
 
 /** 방위각(화면 공간) → 광원이 위치한 방향의 단위 벡터 [dx, dy] (y는 아래가 +). */
@@ -135,6 +178,68 @@ export function shadingAssistLightVector(azimuthDeg: number): readonly [number, 
   const rad = ((azimuthDeg % 360) * Math.PI) / 180;
   // 0°=위쪽(0,-1), 90°=오른쪽(1,0) — 시계 방향.
   return [Math.sin(rad), -Math.cos(rad)];
+}
+
+/**
+ * 불투명 실루엣 내부 픽셀마다 가장 가까운 투명 경계(또는 캔버스 외곽)까지의
+ * 맨해튼/챔퍼 근사 거리 필드(px, 1 이상)를 2-패스 O(N)으로 계산한다.
+ */
+export function computeOpaqueSilhouetteDistanceField(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+): Float32Array {
+  const dist = new Float32Array(width * height);
+  const inf = width + height + 1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const idx = y * width + x;
+      if (data[idx * 4 + 3]! <= 0) {
+        dist[idx] = 0;
+        continue;
+      }
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+        dist[idx] = 1;
+        continue;
+      }
+      const top = dist[(y - 1) * width + x]!;
+      const left = dist[y * width + (x - 1)]!;
+      const diag = dist[(y - 1) * width + (x - 1)]!;
+      dist[idx] = Math.min(inf, Math.min(top + 1, left + 1, diag + 1.4142));
+    }
+  }
+
+  for (let y = height - 1; y >= 0; y -= 1) {
+    for (let x = width - 1; x >= 0; x -= 1) {
+      const idx = y * width + x;
+      if (dist[idx]! === 0) continue;
+      let d = dist[idx]!;
+      if (y + 1 < height) d = Math.min(d, dist[(y + 1) * width + x]! + 1);
+      if (x + 1 < width) d = Math.min(d, dist[y * width + (x + 1)]! + 1);
+      if (x + 1 < width && y + 1 < height) {
+        d = Math.min(d, dist[(y + 1) * width + (x + 1)]! + 1.4142);
+      }
+      dist[idx] = d;
+    }
+  }
+
+  return dist;
+}
+
+function compositeShadowChannel(
+  srcChannel: number,
+  shadowChannel: number,
+  alpha01: number,
+  blendMode: ShadingAssistBlendMode,
+): number {
+  let target = shadowChannel;
+  if (blendMode === "multiply") {
+    target = (srcChannel * shadowChannel) / 255;
+  } else if (blendMode === "linear-burn") {
+    target = Math.max(0, srcChannel + shadowChannel - 255);
+  }
+  return Math.round(target * alpha01 + srcChannel * (1 - alpha01));
 }
 
 // ---------------------------------------------------------------------------
@@ -216,37 +321,86 @@ export function buildStudioShadingAssistDraft(
   const soft = 0.02 + (opts.softness / 100) * 0.96; // 전이 너비(t 단위)
   const strengthRatio = opts.strength / 100;
   const [sr, sg, sb] = opts.shadowColor;
+  const blendMode: ShadingAssistBlendMode = opts.blendMode ?? "normal";
+  const shadingModel: ShadingAssistModel = opts.shadingModel ?? "linear";
+  const rimStrength01 = (opts.rimLightStrength ?? 0) / 100;
+  const rimWidthPx = opts.rimLightWidthPx ?? 3;
+  const [rr, rg, rb] = opts.rimLightColor ?? [255, 248, 220];
+
+  const needSilhouetteField = shadingModel === "spherical-volume" || rimStrength01 > 0;
+  const silhouetteDist = needSilhouetteField
+    ? computeOpaqueSilhouetteDistanceField(data, width, height)
+    : null;
+  let maxSilhouetteDist = 1;
+  if (silhouetteDist) {
+    for (let i = 0; i < silhouetteDist.length; i += 1) {
+      if (silhouetteDist[i]! > maxSilhouetteDist) {
+        maxSilhouetteDist = silhouetteDist[i]!;
+      }
+    }
+  }
 
   const maskData = new Uint8ClampedArray(width * height * 4);
   const previewData = new Uint8ClampedArray(data); // 원본 복사 — 입력 불변 보장
   let shadedPixelCount = 0;
+  let rimLightPixelCount = 0;
 
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
-      const idx = (y * width + x) * 4;
+      const pixelIndex = y * width + x;
+      const idx = pixelIndex * 4;
       const alpha = data[idx + 3]!;
       if (alpha <= 0) continue;
       // t: 1=광원에 가장 가까움, 0=가장 멂. 단면(선) 영역은 0.5.
-      const t = pSpan > 0 ? ((x - cx) * lx + (y - cy) * ly - pMin) / pSpan : 0.5;
+      let t = pSpan > 0 ? ((x - cx) * lx + (y - cy) * ly - pMin) / pSpan : 0.5;
+
+      if (shadingModel === "spherical-volume" && silhouetteDist) {
+        const distNorm = Math.min(1, silhouetteDist[pixelIndex]! / Math.max(1, maxSilhouetteDist));
+        // 구면 볼륨 보정: 중심부는 볼록하게 빛을 더 받고 외곽 실루엣으로 갈수록 곡면 감쇠
+        const sphericalLift = Math.sqrt(Math.max(0, 1 - (1 - distNorm) * (1 - distNorm))) * 0.22;
+        t = Math.min(1, Math.max(0, t * 0.82 + sphericalLift));
+      }
+
       let factor = (boundary - t) / soft + 0.5;
       factor = Math.min(1, Math.max(0, factor));
       if (opts.toneSteps >= 2) {
         const levels = opts.toneSteps - 1;
         factor = Math.round(factor * levels) / levels;
       }
-      if (factor <= 0) continue;
-      shadedPixelCount += 1;
-      const maskAlpha = Math.round(factor * strengthRatio * alpha);
-      maskData[idx] = sr;
-      maskData[idx + 1] = sg;
-      maskData[idx + 2] = sb;
-      maskData[idx + 3] = maskAlpha;
-      // 미리보기: 마스크를 일반 알파 합성(호스트 레이어 합성과 동일 결과).
-      const a = maskAlpha / 255;
-      previewData[idx] = Math.round(sr * a + data[idx]! * (1 - a));
-      previewData[idx + 1] = Math.round(sg * a + data[idx + 1]! * (1 - a));
-      previewData[idx + 2] = Math.round(sb * a + data[idx + 2]! * (1 - a));
-      previewData[idx + 3] = alpha;
+
+      if (factor > 0) {
+        shadedPixelCount += 1;
+        const maskAlpha = Math.round(factor * strengthRatio * alpha);
+        maskData[idx] = sr;
+        maskData[idx + 1] = sg;
+        maskData[idx + 2] = sb;
+        maskData[idx + 3] = maskAlpha;
+        // 미리보기 합성 (normal / multiply / linear-burn 지원).
+        const a = maskAlpha / 255;
+        previewData[idx] = compositeShadowChannel(data[idx]!, sr, a, blendMode);
+        previewData[idx + 1] = compositeShadowChannel(data[idx + 1]!, sg, a, blendMode);
+        previewData[idx + 2] = compositeShadowChannel(data[idx + 2]!, sb, a, blendMode);
+        previewData[idx + 3] = alpha;
+      }
+
+      // 광원을 향한 실루엣 외곽 림라이트 합성
+      if (rimStrength01 > 0 && silhouetteDist) {
+        const d = silhouetteDist[pixelIndex]!;
+        if (d > 0 && d <= rimWidthPx && t >= 0.55) {
+          const rimFalloff = 1 - (d - 1) / Math.max(1, rimWidthPx);
+          const rimAlpha = Math.min(1, rimFalloff * rimStrength01 * ((t - 0.5) * 2));
+          if (rimAlpha > 0.01) {
+            rimLightPixelCount += 1;
+            previewData[idx] = Math.round(previewData[idx]! + (rr - previewData[idx]!) * rimAlpha);
+            previewData[idx + 1] = Math.round(
+              previewData[idx + 1]! + (rg - previewData[idx + 1]!) * rimAlpha,
+            );
+            previewData[idx + 2] = Math.round(
+              previewData[idx + 2]! + (rb - previewData[idx + 2]!) * rimAlpha,
+            );
+          }
+        }
+      }
     }
   }
 
@@ -256,6 +410,7 @@ export function buildStudioShadingAssistDraft(
     preview: { data: previewData, width, height },
     opaquePixelCount,
     shadedPixelCount,
+    ...(rimStrength01 > 0 ? { rimLightPixelCount } : {}),
     coverageRatio: shadedPixelCount / opaquePixelCount,
     options: opts,
   };
