@@ -735,7 +735,7 @@ export function StudioBg3dShapesPanel({
 
                       <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} onSelectMaterial={(entry) => {
                         updateColor(selectedPrimitive.id, entry.tintHex);
-                        applySurfacePreset(selectedPrimitive.id, entry.surfacePresetId);
+                        applySurfacePreset(selectedPrimitive.id, entry.id);
                       }} />
                     </div>
                   ) : selectedCustomModel ? (

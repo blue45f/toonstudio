@@ -5,15 +5,10 @@
 // docs/studio-bg3d-custom-model-upload.md).
 import * as THREE from "three";
 
+import { applyStudioBg3dCc0PbrMapsToStandardMaterial } from "./bg3d/studio-bg3d-cc0-pbr-texture-loader";
+import { applyBg3dFallbackMaterial, loadBg3dCustomModelFromBlob } from "./bg3d/studio-bg3d-custom-model-blob";
 import { loadStudioBg3dMeshoptDecoder } from "./bg3d/studio-bg3d-meshopt";
-import {
-  applyBg3dFallbackMaterial,
-  loadBg3dCustomModelFromBlob,
-} from "./bg3d/studio-bg3d-custom-model-blob";
-import {
-  computeStudioBg3dAutoFitScale,
-  STUDIO_BG3D_AUTO_FIT_TARGET_SIZE,
-} from "./bg3d/studio-bg3d-model-scale-contract";
+import { computeStudioBg3dAutoFitScale, STUDIO_BG3D_AUTO_FIT_TARGET_SIZE } from "./bg3d/studio-bg3d-model-scale-contract";
 
 import type { StudioBg3dGlbValidationSuccess } from "./bg3d/studio-bg3d-glb-validation";
 import type {
@@ -1045,6 +1040,7 @@ function applyMaterialOverrideToBinding(
   }
   if (typeof editable.wireframe === "boolean") editable.wireframe = override.wireframe;
   if (override.doubleSided) editable.side = THREE.DoubleSide;
+  applyStudioBg3dCc0PbrMapsToStandardMaterial(editable, override);
   editable.needsUpdate = true;
 }
 

@@ -123,6 +123,8 @@ export interface StudioBg3dMaterialOverride {
   readonly emissiveIntensity: number | null;
   readonly wireframe: boolean;
   readonly doubleSided: boolean;
+  /** Optional CC0 2K PBR surface material catalog ID for real-time multi-channel texture binding. */
+  readonly surfaceMaterialId?: string;
 }
 
 export const DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE: StudioBg3dMaterialOverride = Object.freeze({

@@ -17,28 +17,22 @@
 import { uid } from "../studio-id";
 
 import {
-  STUDIO_BG3D_ROOM_FURNITURE_KINDS,
-  STUDIO_BG3D_ROOM_FURNITURE_LABELS,
-  rotateStudioBg3dRoomYaw,
-  studioBg3dRoomFurnitureParts,
-  type StudioBg3dRoomFurnitureKind,
+  buildStudioBg3dCc0SurfaceMaterialOverride,
+  findStudioBg3dCc0SurfaceMaterial,
+  resolveStudioBg3dSurfaceMaterialRoomKit,
+} from "./studio-bg3d-cc0-surface-material-catalog";
+import {
+  STUDIO_BG3D_ROOM_FURNITURE_KINDS, STUDIO_BG3D_ROOM_FURNITURE_LABELS,
+  rotateStudioBg3dRoomYaw, studioBg3dRoomFurnitureParts, type StudioBg3dRoomFurnitureKind,
 } from "./studio-bg3d-room-furniture";
 import {
-  buildStudioBg3dRoomOpeningParts,
-  clampStudioBg3dRoomOpeningStyleFields,
-  studioBg3dRoomWallFrame,
-  type StudioBg3dOpeningHinge,
-  type StudioBg3dOpeningStyle,
-  type StudioBg3dRoomWallFrame,
+  buildStudioBg3dRoomOpeningParts, clampStudioBg3dRoomOpeningStyleFields, studioBg3dRoomWallFrame,
+  type StudioBg3dOpeningHinge, type StudioBg3dOpeningStyle, type StudioBg3dRoomWallFrame,
 } from "./studio-bg3d-room-openings";
 import {
-  buildStudioBg3dRoomCeilingParts,
-  buildStudioBg3dRoomTrimParts,
-  clampStudioBg3dRoomCeiling,
-  clampStudioBg3dRoomTrims,
-  evaluateStudioBg3dRoomCeilingCutaway,
-  type StudioBg3dRoomCeilingStyle,
-  type StudioBg3dRoomTrims,
+  buildStudioBg3dRoomCeilingParts, buildStudioBg3dRoomTrimParts, clampStudioBg3dRoomCeiling,
+  clampStudioBg3dRoomTrims, evaluateStudioBg3dRoomCeilingCutaway,
+  type StudioBg3dRoomCeilingStyle, type StudioBg3dRoomTrims,
 } from "./studio-bg3d-room-trims";
 
 import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
@@ -104,6 +98,10 @@ export interface StudioBg3dRoomSpec {
   readonly ceiling?: StudioBg3dRoomCeilingStyle;
   /** 선택 필드. 없으면 몰딩 없음. */
   readonly trims?: StudioBg3dRoomTrims;
+  /** 선택 필드. CC0 2K PBR 바닥 표면 재질 ID. */
+  readonly floorMaterialId?: string;
+  /** 선택 필드. CC0 2K PBR 벽 표면 재질 ID. */
+  readonly wallMaterialId?: string;
 }
 
 export interface StudioBg3dRoomPart {
@@ -163,12 +161,7 @@ export function clampStudioBg3dRoomSpec(raw: Partial<StudioBg3dRoomSpec> | null 
   const width = clampNumber(source.width, 6, limits.minWidth, limits.maxWidth);
   const depth = clampNumber(source.depth, 5, limits.minDepth, limits.maxDepth);
   const wallHeight = clampNumber(source.wallHeight, 2.6, limits.minWallHeight, limits.maxWallHeight);
-  const wallThickness = clampNumber(
-    source.wallThickness,
-    0.15,
-    limits.minWallThickness,
-    limits.maxWallThickness,
-  );
+  const wallThickness = clampNumber(source.wallThickness, 0.15, limits.minWallThickness, limits.maxWallThickness);
   const openings = (Array.isArray(source.openings) ? source.openings : [])
     .slice(0, limits.maxOpenings)
     .filter((opening): opening is StudioBg3dRoomOpening =>
@@ -183,12 +176,7 @@ export function clampStudioBg3dRoomSpec(raw: Partial<StudioBg3dRoomSpec> | null 
         ? 0
         : clampNumber(opening.sillHeight, 0.9, 0.1, Math.max(0.1, wallHeight - 0.4));
       const maxOpeningHeight = Math.max(0.2, wallHeight - sillHeight - limits.openingHeadMargin);
-      const height = clampNumber(
-        opening.height,
-        opening.type === "door" ? 2 : 1.1,
-        0.2,
-        maxOpeningHeight,
-      );
+      const height = clampNumber(opening.height, opening.type === "door" ? 2 : 1.1, 0.2, maxOpeningHeight);
       const halfSpan = wallLength / 2 - limits.openingEdgeMargin - openingWidth / 2;
       const centerOffset = clampNumber(opening.centerOffset, 0, -Math.max(0, halfSpan), Math.max(0, halfSpan));
       return {
@@ -211,21 +199,30 @@ export function clampStudioBg3dRoomSpec(raw: Partial<StudioBg3dRoomSpec> | null 
       z: clampNumber(item.z, 0, -depth / 2, depth / 2),
       yawDeg: clampNumber(item.yawDeg, 0, -360, 360),
     }));
-  // 천장·몰딩은 선택 필드라 값이 있을 때만 키를 만든다(없는 스펙의 clamp 결과는 예전과 같다).
+  // 천장·몰딩·표면 재질은 선택 필드라 값이 있을 때만 키를 만든다(없는 스펙의 clamp 결과는 예전과 같다).
   const ceiling = clampStudioBg3dRoomCeiling(source.ceiling);
   const trims = clampStudioBg3dRoomTrims(source.trims);
+  const floorMat = typeof source.floorMaterialId === "string" ? findStudioBg3dCc0SurfaceMaterial(source.floorMaterialId) : undefined;
+  const wallMat = typeof source.wallMaterialId === "string" ? findStudioBg3dCc0SurfaceMaterial(source.wallMaterialId) : undefined;
   return {
-    width,
-    depth,
-    wallHeight,
-    wallThickness,
+    width, depth, wallHeight, wallThickness,
     floorColor: clampColor(source.floorColor, "#d9c9a3"),
     wallColor: clampColor(source.wallColor, "#f2ead8"),
-    openings,
-    furniture,
+    openings, furniture,
     ...(ceiling === undefined ? {} : { ceiling }),
     ...(trims === undefined ? {} : { trims }),
+    ...(floorMat ? { floorMaterialId: floorMat.id } : {}),
+    ...(wallMat ? { wallMaterialId: wallMat.id } : {}),
   };
+}
+
+export function applyStudioBg3dRoomSurfaceKitToSpec(spec: StudioBg3dRoomSpec, kitId: string): StudioBg3dRoomSpec {
+  const resolved = resolveStudioBg3dSurfaceMaterialRoomKit(kitId);
+  if (!resolved) return spec;
+  return clampStudioBg3dRoomSpec({
+    ...spec, floorColor: resolved.floor.tintHex, wallColor: resolved.wall.tintHex,
+    floorMaterialId: resolved.floor.id, wallMaterialId: resolved.wall.id,
+  });
 }
 
 // ── 벽 세그먼트 레이아웃(불리언 컷 코어) ──────────────────────────────────────
@@ -365,6 +362,8 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
   const spec = clampStudioBg3dRoomSpec(rawSpec);
   const parts: StudioBg3dRoomPart[] = [];
   const floorThickness = STUDIO_BG3D_ROOM_LIMITS.floorThickness;
+  const floorOverride = spec.floorMaterialId ? buildStudioBg3dCc0SurfaceMaterialOverride(spec.floorMaterialId) : null;
+  const wallOverride = spec.wallMaterialId ? buildStudioBg3dCc0SurfaceMaterialOverride(spec.wallMaterialId) : null;
 
   parts.push({
     kind: "box",
@@ -373,6 +372,7 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
     rotation: [0, 0, 0],
     scale: [spec.width, floorThickness, spec.depth],
     color: spec.floorColor,
+    ...(floorOverride ? { materialOverride: floorOverride } : {}),
   });
 
   const frames = wallFrames(spec);
@@ -395,6 +395,7 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
           ? [segment.lengthU, segment.height, spec.wallThickness]
           : [spec.wallThickness, segment.height, segment.lengthU],
         color: spec.wallColor,
+        ...(wallOverride ? { materialOverride: wallOverride } : {}),
       });
     }
   }

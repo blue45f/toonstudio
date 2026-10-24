@@ -28,6 +28,7 @@ import {
   resolveStudioBg3dCameraUpVector,
 } from "./studio-bg3d-camera-orientation";
 import { registerStudioBg3dCaptureExcludedObject } from "./studio-bg3d-capture-exclusion";
+import { resolveStudioBg3dPrimitiveCc0PbrSpread } from "./studio-bg3d-cc0-pbr-texture-loader";
 import { CAMERA_PRESETS, DEFAULT_CAMERA_TARGET } from "./studio-bg3d-editor-derivations";
 import {
   advanceStudioBg3dFrameQuality,
@@ -477,6 +478,10 @@ function useStudioBg3dPrimitivePaintTexture(prim: BgPrimitive): THREE.CanvasText
 export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, selected, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, children }: BgPrimitiveMeshProps) {
   const { geometry, edges } = geometryPool.get(prim.kind);
   const paintTexture = useStudioBg3dPrimitivePaintTexture(prim);
+  const pbrSpread = useMemo(
+    () => resolveStudioBg3dPrimitiveCc0PbrSpread(prim.materialOverride, paintTexture),
+    [prim.materialOverride, paintTexture],
+  );
   const handlePaintPointer = onPaintPointer
     ? (phase: StudioBg3dPaintPointerPhase) => (event: ThreeEvent<PointerEvent>) => {
         event.stopPropagation();
@@ -521,7 +526,10 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
         ) : (
           <meshStandardMaterial
             color={paintTexture ? "#ffffff" : prim.color}
-            {...(paintTexture ? { map: paintTexture } : {})}
+            map={pbrSpread.map}
+            roughnessMap={pbrSpread.roughnessMap}
+            normalMap={pbrSpread.normalMap}
+            aoMap={pbrSpread.aoMap}
             polygonOffset
             polygonOffsetFactor={1}
             polygonOffsetUnits={1}

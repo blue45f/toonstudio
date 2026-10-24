@@ -1101,23 +1101,19 @@ function normalizeTransform(value: unknown): StudioBg3dTransform {
 
 function normalizeMaterialOverride(value: unknown): StudioBg3dMaterialOverride | null {
   if (!isRecord(value)) return null;
+  const surfaceMaterialId = hasOwn(value, "surfaceMaterialId") ? normalizedId(value.surfaceMaterialId) : null;
   return {
-    colorMode: normalizedEnum(
-      value.colorMode,
-      MATERIAL_COLOR_MODE_SET,
-      DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE.colorMode,
-    ),
+    colorMode: normalizedEnum(value.colorMode, MATERIAL_COLOR_MODE_SET, DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE.colorMode),
     color: normalizedColor(value.color, DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE.color),
     colorStrength: boundedNumber(value.colorStrength, 1, 0, 1),
     opacityMultiplier: boundedNumber(value.opacityMultiplier, 1, 0, 1),
     roughness: value.roughness === null ? null : boundedNumber(value.roughness, 0.8, 0, 1),
     metalness: value.metalness === null ? null : boundedNumber(value.metalness, 0, 0, 1),
     emissiveColor: normalizedColor(value.emissiveColor, "#000000"),
-    emissiveIntensity: value.emissiveIntensity === null
-      ? null
-      : boundedNumber(value.emissiveIntensity, 0, 0, 20),
+    emissiveIntensity: value.emissiveIntensity === null ? null : boundedNumber(value.emissiveIntensity, 0, 0, 20),
     wireframe: normalizedBoolean(value.wireframe, false),
     doubleSided: normalizedBoolean(value.doubleSided, false),
+    ...(surfaceMaterialId ? { surfaceMaterialId } : {}),
   };
 }
 

@@ -172,6 +172,8 @@ export interface StudioThreeActorNode {
   vrmRightUpperLeg?: THREE.Object3D;
   vrmLeftUpperArm?: THREE.Object3D;
   vrmRightUpperArm?: THREE.Object3D;
+  vrmLeftLowerArm?: THREE.Object3D;
+  vrmRightLowerArm?: THREE.Object3D;
   armDownZLeft?: number;
   armDownZRight?: number;
   targetX: number;
@@ -598,10 +600,10 @@ export function loadStudioThreeAssets(
   actorNodes: ReadonlyMap<string, StudioThreeActorNode>,
   isDisposed: () => boolean,
   selfAvatarIndex = 0,
-): void {
+): (actorId: string, index: number) => void {
   const glbLoader = new GLTFLoader();
 
-  const loadActorVrm = (actorId: string, index: number) => {
+  const loadActorVrm = (actorId: string, index: number, forceReplace = false) => {
     const safeIdx = Math.abs(Math.trunc(index)) % STUDIO_THREE_VRM_URLS.length;
     const vrmUrl = STUDIO_THREE_VRM_URLS[safeIdx];
     if (!vrmUrl) return;
@@ -612,7 +614,7 @@ export function loadStudioThreeAssets(
         const vrmScene = gltf.scene;
         if (!vrmScene) return;
         const node = actorNodes.get(actorId);
-        if (!node || node.vrmLoaded) return;
+        if (!node || (node.vrmLoaded && !forceReplace)) return;
 
         // 보조 기계팔(robo_arm 등) 노드가 있는 샘플은 바운딩 박스 왜곡 방지를 위해 제거
         const auxToRemove: THREE.Object3D[] = [];
@@ -639,6 +641,12 @@ export function loadStudioThreeAssets(
           }
         });
 
+        node.vrmLeftUpperArm = undefined;
+        node.vrmRightUpperArm = undefined;
+        node.vrmLeftLowerArm = undefined;
+        node.vrmRightLowerArm = undefined;
+        node.vrmLeftUpperLeg = undefined;
+        node.vrmRightUpperLeg = undefined;
         applyNaturalVrmPosture(node, vrmScene);
         vrmScene.updateMatrixWorld(true);
 
@@ -727,4 +735,7 @@ export function loadStudioThreeAssets(
         // GLB 로드 실패 시 조용히 무시하고 기본 건축 구성을 유지한다.
       });
   }
+
+  return (actorId: string, index: number) => loadActorVrm(actorId, index, true);
 }
+

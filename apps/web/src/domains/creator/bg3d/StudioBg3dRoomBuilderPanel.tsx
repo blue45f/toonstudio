@@ -17,6 +17,12 @@ import {
   summarizeStudioBg3dHiddenWalls,
   type StudioBg3dHiddenWallSummary,
 } from "./studio-bg3d-build-notice";
+import {
+  STUDIO_BG3D_CC0_SURFACE_MATERIAL_CATALOG,
+  STUDIO_BG3D_SURFACE_MATERIAL_ROOM_KITS,
+  findStudioBg3dCc0SurfaceMaterial,
+  resolveStudioBg3dSurfaceMaterialRoomKit,
+} from "./studio-bg3d-cc0-surface-material-catalog";
 import { StudioBg3dRoomFinishControls, StudioBg3dRoomOpeningStyleControls } from "./StudioBg3dRoomBuilderDetailControls";
 import { TemplateRangeControl, TemplateToggleRow } from "./StudioBg3dTemplateControls";
 import {
@@ -26,6 +32,7 @@ import {
   STUDIO_BG3D_ROOM_PRESETS,
   STUDIO_BG3D_ROOM_WALL_IDS,
   STUDIO_BG3D_ROOM_WALL_LABELS,
+  applyStudioBg3dRoomSurfaceKitToSpec,
   buildStudioBg3dRoomParts,
   type StudioBg3dRoomFurnitureKind,
   type StudioBg3dRoomOpening,
@@ -223,6 +230,118 @@ export function StudioBg3dRoomBuilderPanel({
               className="size-8 cursor-pointer rounded-md border border-line bg-transparent p-0.5"
             />
           </label>
+        </div>
+
+        {/* 6종 건축 표면 재질 키트 & 82종 CC0 2K PBR 바닥·벽 재질 선택 */}
+        <div
+          data-testid="bg3d-room-surface-kit-bar"
+          className="mt-2.5 space-y-2 border-t border-line/70 pt-2.5"
+        >
+          <p className="text-[0.62rem] font-semibold text-fg-3">
+            2K PBR 공간 표면 키트 (6종) · 바닥·벽 82종 재질
+          </p>
+          <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="방 표면 재질 키트">
+            {STUDIO_BG3D_SURFACE_MATERIAL_ROOM_KITS.map((kit) => {
+              const resolved = resolveStudioBg3dSurfaceMaterialRoomKit(kit.id);
+              if (!resolved) return null;
+              const isActive =
+                spec.floorMaterialId === resolved.floor.id &&
+                spec.wallMaterialId === resolved.wall.id;
+              return (
+                <button
+                  key={kit.id}
+                  type="button"
+                  disabled={disabled}
+                  aria-pressed={isActive}
+                  data-testid={`bg3d-room-surface-kit-${kit.id}`}
+                  title={kit.descriptionKo}
+                  onClick={() => onSpecChange(applyStudioBg3dRoomSurfaceKitToSpec(spec, kit.id))}
+                  className={cx(
+                    "flex items-center justify-between gap-1.5 rounded-lg border px-2 py-1 text-left text-[0.62rem] font-semibold transition-colors disabled:opacity-45",
+                    isActive
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
+                  )}
+                >
+                  <span className="truncate">{kit.labelKo}</span>
+                  <span className="flex shrink-0 items-center gap-0.5" aria-hidden>
+                    <span
+                      className="size-2.5 rounded-full border border-line/60"
+                      style={{ backgroundColor: resolved.floor.tintHex }}
+                    />
+                    <span
+                      className="size-2.5 rounded-full border border-line/60"
+                      style={{ backgroundColor: resolved.wall.tintHex }}
+                    />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="min-w-0 text-[0.62rem] font-semibold text-fg-3">
+              바닥 2K PBR 재질
+              <select
+                aria-label="방 바닥 2K PBR 재질"
+                data-testid="bg3d-room-floor-material-select"
+                className={SELECT_INPUT}
+                disabled={disabled}
+                value={spec.floorMaterialId ?? ""}
+                onChange={(event) => {
+                  const id = event.target.value;
+                  if (!id) {
+                    const { floorMaterialId: _removed, ...rest } = spec;
+                    onSpecChange(rest);
+                    return;
+                  }
+                  const mat = findStudioBg3dCc0SurfaceMaterial(id);
+                  onSpecChange({
+                    ...spec,
+                    floorMaterialId: id,
+                    ...(mat ? { floorColor: mat.tintHex } : {}),
+                  });
+                }}
+              >
+                <option value="">(단색 기본)</option>
+                {STUDIO_BG3D_CC0_SURFACE_MATERIAL_CATALOG.map((mat) => (
+                  <option key={mat.id} value={mat.id}>
+                    {mat.labelKo}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="min-w-0 text-[0.62rem] font-semibold text-fg-3">
+              벽면 2K PBR 재질
+              <select
+                aria-label="방 벽면 2K PBR 재질"
+                data-testid="bg3d-room-wall-material-select"
+                className={SELECT_INPUT}
+                disabled={disabled}
+                value={spec.wallMaterialId ?? ""}
+                onChange={(event) => {
+                  const id = event.target.value;
+                  if (!id) {
+                    const { wallMaterialId: _removed, ...rest } = spec;
+                    onSpecChange(rest);
+                    return;
+                  }
+                  const mat = findStudioBg3dCc0SurfaceMaterial(id);
+                  onSpecChange({
+                    ...spec,
+                    wallMaterialId: id,
+                    ...(mat ? { wallColor: mat.tintHex } : {}),
+                  });
+                }}
+              >
+                <option value="">(단색 기본)</option>
+                {STUDIO_BG3D_CC0_SURFACE_MATERIAL_CATALOG.map((mat) => (
+                  <option key={mat.id} value={mat.id}>
+                    {mat.labelKo}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
       </div>
 

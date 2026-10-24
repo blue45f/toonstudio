@@ -205,7 +205,7 @@ export function listStudioBg3dCc0SurfaceMaterialsByCategory(
   return STUDIO_BG3D_CC0_SURFACE_MATERIAL_CATALOG.filter((entry) => entry.category === category);
 }
 
-/** CC0 표면 재질을 커스텀 3D 모델의 인스턴스 재질 오버라이드(StudioBg3dMaterialOverride)로 변환한다. */
+/** CC0 표면 재질을 커스텀 3D 모델·프리미티브의 인스턴스 재질 오버라이드(StudioBg3dMaterialOverride)로 변환한다. */
 export function buildStudioBg3dCc0SurfaceMaterialOverride(
   id: string,
 ): StudioBg3dMaterialOverride | null {
@@ -218,7 +218,16 @@ export function buildStudioBg3dCc0SurfaceMaterialOverride(
     colorStrength: 0.42,
     roughness: entry.roughness,
     metalness: entry.metalness,
+    surfaceMaterialId: entry.id,
   });
+}
+
+/** StudioBg3dMaterialOverride에 기록된 surfaceMaterialId로부터 카탈로그 항목을 역참조한다. */
+export function resolveStudioBg3dCc0SurfaceMaterialFromOverride(
+  override: StudioBg3dMaterialOverride | null | undefined,
+): StudioBg3dCc0SurfaceMaterialEntry | null {
+  if (!override?.surfaceMaterialId) return null;
+  return MATERIAL_BY_ID.get(override.surfaceMaterialId) ?? null;
 }
 
 export interface StudioBg3dSurfaceMaterialRoomKit {

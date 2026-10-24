@@ -2,6 +2,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 
+import { studioEmoteDefinition } from "../studio-virtual-space-emotes";
+import type { StudioVirtualSpacePoint, StudioVirtualSpacePresenceState } from "../studio-virtual-space-model";
+import { userStatusBadge } from "../studio-virtual-space-user-status";
+import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { STUDIO_THREE_SCALE, worldToThree } from "./studio-virtual-space-three-scene";
 
 export type StudioThreeLightingPreset = "day" | "studio" | "night";
@@ -518,8 +522,8 @@ export function getOverlayBadgeStyle(
     border:
       item.kind === "zone"
         ? "1px solid rgba(56, 189, 248, 0.55)"
-        : item.kind === "self"
-          ? "1px solid rgba(129, 140, 248, 0.75)"
+        : item.kind === "self" || item.kind === "peer"
+          ? `1px solid ${item.accent ?? "rgba(129, 140, 248, 0.75)"}`
           : item.kind === "workstation"
             ? `1px solid ${item.active ? "#38bdf8" : item.accent ?? "rgba(148, 163, 184, 0.45)"}`
             : item.active
@@ -536,3 +540,81 @@ export function getOverlayBadgeStyle(
     backdropFilter: "blur(8px)",
   };
 }
+
+/** 참가자(본인·동료)의 상태·이모트·말풍선·집중모드를 3D 배지용 텍스트와 강조 색상으로 변환한다. */
+export function formatParticipantOverlayBadge(
+  state: StudioVirtualSpacePresenceState,
+  isEn: boolean,
+  fallbackKo: string,
+  fallbackEn: string,
+): { readonly sublabel: string; readonly accent: string } {
+  const accent =
+    state.userStatus === "in-meeting" || state.userStatus === "presenting"
+      ? "#ef4444"
+      : state.userStatus === "focusing" || state.activity === "focused"
+        ? "#a855f7"
+        : state.userStatus === "away" || state.userStatus === "break" || state.activity === "away"
+          ? "#f59e0b"
+          : state.activity === "reviewing"
+            ? "#06b6d4"
+            : "#10b981";
+
+  const trimmedBubble = state.bubble?.trim();
+  if (trimmedBubble) {
+    return { sublabel: `💬 ${trimmedBubble}`, accent };
+  }
+  if (state.typing) {
+    return { sublabel: isEn ? "💬 Typing..." : "💬 입력 중...", accent };
+  }
+  if (state.emote) {
+    const emoteDef = studioEmoteDefinition(state.emote);
+    if (emoteDef) {
+      return { sublabel: `${emoteDef.icon} ${isEn ? emoteDef.labelEn : emoteDef.labelKo}`, accent };
+    }
+  }
+  if (state.userStatus) {
+    const badge = userStatusBadge(state.userStatus);
+    return { sublabel: `${badge.emoji} ${isEn ? badge.en : badge.ko}`, accent };
+  }
+  if (state.activity === "focused") {
+    return { sublabel: isEn ? "🎯 Focusing" : "🎯 집중 작업", accent };
+  }
+  if (state.activity === "reviewing") {
+    return { sublabel: isEn ? "🔍 Reviewing" : "🔍 원고 검수 중", accent };
+  }
+  if (state.activity === "away") {
+    return { sublabel: isEn ? "🟡 Away" : "🟡 자리 비움", accent };
+  }
+  return { sublabel: isEn ? fallbackEn : fallbackKo, accent };
+}
+
+/** 3D 바닥 클릭 지점이 워크스테이션 또는 NPC 반경 내인지 판별하여 자동 상호작용 대상을 반환한다. */
+export function findClickedWorldTarget(
+  point: StudioVirtualSpacePoint,
+  interactions: StudioVirtualSpaceWorldManifest["interactions"],
+  npcs: readonly { readonly id: string; readonly point: StudioVirtualSpacePoint }[],
+): { readonly kind: "workstation" | "npc"; readonly id: string } | null {
+  let closestWorkstation: { id: string; dist: number } | null = null;
+  for (const item of interactions) {
+    if (DUPLICATE_ARCADE_IDS.has(item.id)) continue;
+    const dist = Math.hypot(item.point.x - point.x, item.point.y - point.y);
+    if (dist <= Math.max(item.radius, 64) && (!closestWorkstation || dist < closestWorkstation.dist)) {
+      closestWorkstation = { id: item.id, dist };
+    }
+  }
+  if (closestWorkstation) {
+    return { kind: "workstation", id: closestWorkstation.id };
+  }
+  let closestNpc: { id: string; dist: number } | null = null;
+  for (const npc of npcs) {
+    const dist = Math.hypot(npc.point.x - point.x, npc.point.y - point.y);
+    if (dist <= 68 && (!closestNpc || dist < closestNpc.dist)) {
+      closestNpc = { id: npc.id, dist };
+    }
+  }
+  if (closestNpc) {
+    return { kind: "npc", id: closestNpc.id };
+  }
+  return null;
+}
+

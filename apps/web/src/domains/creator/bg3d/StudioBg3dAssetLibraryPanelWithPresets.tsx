@@ -2,6 +2,7 @@ import { useRef, useState, type ComponentProps } from "react";
 
 import { StudioBg3dAssetLibraryPanel as ExistingAssetLibraryPanel } from "./StudioBg3dAssetLibraryPanel";
 import { StudioBg3dBundleThemePackPanel } from "./StudioBg3dBundleThemePackPanel";
+import { StudioBg3dEssentialPosePropPanel } from "./StudioBg3dEssentialPosePropPanel";
 import { StudioReferenceRebuildPresets } from "./StudioReferenceRebuildPresets";
 import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
 import { useStudioBg3dAssetRights } from "./useStudioBg3dAssetRights";
@@ -38,6 +39,8 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
+  const panelDisabled = props.isUploading || props.isRestoringScene || props.deletingModelId !== null;
+
   return (
     <div ref={scopeRef}>
       <fieldset disabled={isBuilding} className="m-0 min-w-0 border-0 p-0">
@@ -48,11 +51,16 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
         />
         <StudioBg3dBundleThemePackPanel
           onAdd={props.onAdd}
-          disabled={props.isUploading || props.isRestoringScene || props.deletingModelId !== null}
+          disabled={panelDisabled}
         />
       </fieldset>
+      <StudioBg3dEssentialPosePropPanel
+        disabled={panelDisabled}
+        onFile={handOffFile}
+        onBusyChange={setIsBuilding}
+      />
       <StudioReferenceRebuildPresets
-        disabled={props.isUploading || props.isRestoringScene || props.deletingModelId !== null}
+        disabled={panelDisabled}
         onFile={handOffFile}
         onBusyChange={setIsBuilding}
       />

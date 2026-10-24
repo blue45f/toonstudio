@@ -2,6 +2,7 @@
 // three.js/DOM 의존 없음. 렌더러는 resolve 결과를 R3F 소품으로 옮기고, 문서 저장은
 // buildStudioBg3dSurfacePresetOverride가 만든 완전한 오버라이드 객체 하나로 끝난다.
 
+import { buildStudioBg3dCc0SurfaceMaterialOverride } from "./studio-bg3d-cc0-surface-material-catalog";
 import { DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE } from "./studio-bg3d-scene-document";
 
 import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
@@ -81,11 +82,13 @@ export function isStudioBg3dSurfacePresetId(id: string): boolean {
   return SURFACE_PRESET_IDS.has(id);
 }
 
-/** 프리셋 id → 기본 오버라이드 위에 패치를 얹은 완전한(canonical) 오버라이드. 모르는 id는 null. */
+/** 프리셋 id 또는 CC0 2K 표면 재질 id → 기본 오버라이드 위에 패치를 얹은 완전한(canonical) 오버라이드. 모르는 id는 null. */
 export function buildStudioBg3dSurfacePresetOverride(id: string): StudioBg3dMaterialOverride | null {
   const preset = STUDIO_BG3D_SURFACE_PRESETS.find((candidate) => candidate.id === id);
-  if (!preset) return null;
-  return Object.freeze({ ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE, ...preset.patch });
+  if (preset) {
+    return Object.freeze({ ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE, ...preset.patch });
+  }
+  return buildStudioBg3dCc0SurfaceMaterialOverride(id);
 }
 
 export interface StudioBg3dSurfaceMaterialProps {
