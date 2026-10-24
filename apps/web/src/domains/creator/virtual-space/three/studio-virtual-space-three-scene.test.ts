@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 
 import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
+  computeZonePlinthTransform,
+  resolveOverlayCollisions,
+  STUDIO_THREE_HDRI_URLS,
+  STUDIO_THREE_ZONE_DIORAMAS,
+} from "./studio-virtual-space-three-dioramas";
+import {
   applyNaturalVrmPosture,
   buildStudioThreeCampusArchitecture,
   createStylized3DCharacterNode,
@@ -14,7 +20,7 @@ import {
   worldToThree,
 } from "./studio-virtual-space-three-scene";
 
-describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
+describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검증", () => {
   it("2D 캠퍼스 좌표와 3D 미터 좌표 간 왕복 변환이 정확하다", () => {
     for (const zone of CAMPUS_ZONES) {
       const threePos = worldToThree(zone.spawn, 1.5);
@@ -34,8 +40,27 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
     expect(Math.abs(wrapped)).toBeGreaterThan(Math.PI - 0.15);
   });
 
-  it("모든 3D GLB 가구·소품과 VRM 아바타 경로가 유효하고 캠퍼스 경계 안에 배치된다", () => {
-    expect(STUDIO_THREE_PROPS.length).toBeGreaterThanOrEqual(50);
+  it("10개 캠퍼스 구역 전부에 풀 3D 건축 디오라마 에셋과 3종 HDRI 환경맵이 매핑된다", () => {
+    expect(STUDIO_THREE_ZONE_DIORAMAS).toHaveLength(CAMPUS_ZONES.length);
+    const mappedRooms = new Set(STUDIO_THREE_ZONE_DIORAMAS.map((d) => d.roomId));
+    for (const zone of CAMPUS_ZONES) {
+      expect(mappedRooms.has(zone.roomId)).toBe(true);
+      const plinth = computeZonePlinthTransform(zone.tiles);
+      expect(plinth.zw).toBeGreaterThan(8);
+      expect(plinth.zh).toBeGreaterThan(8);
+    }
+    for (const spec of STUDIO_THREE_ZONE_DIORAMAS) {
+      expect(spec.url).toMatch(/^\/assets\/3d\/environments\/.+\.glb$/u);
+      expect(spec.targetWidthMeters).toBeGreaterThan(10);
+      expect(spec.targetDepthMeters).toBeGreaterThan(8);
+    }
+    expect(STUDIO_THREE_HDRI_URLS.day).toMatch(/\.hdr$/u);
+    expect(STUDIO_THREE_HDRI_URLS.studio).toMatch(/\.hdr$/u);
+    expect(STUDIO_THREE_HDRI_URLS.night).toMatch(/\.hdr$/u);
+  });
+
+  it("모든 3D GLB 협업 워크스테이션 소품과 9종 VRM 아바타 경로가 유효하다", () => {
+    expect(STUDIO_THREE_PROPS.length).toBeGreaterThanOrEqual(40);
     const ids = new Set(STUDIO_THREE_PROPS.map((prop) => prop.id));
     expect(ids.size).toBe(STUDIO_THREE_PROPS.length);
 
@@ -48,7 +73,7 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
       expect(prop.heightMeters).toBeGreaterThan(0.15);
     }
 
-    expect(STUDIO_THREE_VRM_URLS.length).toBeGreaterThanOrEqual(9);
+    expect(STUDIO_THREE_VRM_URLS).toHaveLength(9);
     expect(new Set(STUDIO_THREE_VRM_URLS).size).toBe(STUDIO_THREE_VRM_URLS.length);
     for (const url of STUDIO_THREE_VRM_URLS) {
       expect(url).toMatch(/^\/vrm\/.+\.vrm$/u);
@@ -68,7 +93,7 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
     expect(selfActor.rigGroup.children.length).toBeGreaterThanOrEqual(8);
   });
 
-  it("VRM T-포즈 상완·전완 본을 자연스러운 서기 자세로 회전시키고 보행 본을 바인딩한다", () => {
+  it("VRM T-포즈 상완·전완 본을 월드 Y 계측 기반으로 자연스러운 차렷 자세로 보정한다", () => {
     const selfActor = createStylized3DCharacterNode("self", 0x4f46e5, true);
     const mockVrm = new THREE.Group();
     const leftArm = new THREE.Object3D();
@@ -80,10 +105,19 @@ describe("3D 가상 스튜디오 씬 아키텍처 및 좌표 변환", () => {
     mockVrm.add(leftArm, rightArm, leftLeg);
 
     applyNaturalVrmPosture(selfActor, mockVrm);
-    expect(leftArm.rotation.z).toBeCloseTo(1.18);
-    expect(rightArm.rotation.z).toBeCloseTo(-1.18);
+    expect(leftArm.rotation.z).toBeCloseTo(1.16);
+    expect(rightArm.rotation.z).toBeCloseTo(-1.16);
+    expect(selfActor.armDownZLeft).toBeCloseTo(1.16);
+    expect(selfActor.armDownZRight).toBeCloseTo(-1.16);
     expect(selfActor.vrmLeftUpperArm).toBe(leftArm);
     expect(selfActor.vrmRightUpperArm).toBe(rightArm);
     expect(selfActor.vrmLeftUpperLeg).toBe(leftLeg);
+
+    const resolved = resolveOverlayCollisions([
+      { id: "a", label: "A", kind: "workstation", x: 100, y: 100 },
+      { id: "b", label: "B", kind: "npc", x: 102, y: 104 },
+    ]);
+    expect(Math.abs(resolved[0]!.y - resolved[1]!.y)).toBeGreaterThan(20);
   });
 });
+

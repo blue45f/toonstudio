@@ -27,6 +27,17 @@ import {
   studioWorldSpawn,
 } from "../studio-virtual-space-world-manifest";
 import {
+  applyStudioLightingPresetToScene,
+  createStudioThreeChromePostPipeline,
+  createStudioThreeHdriController,
+  DUPLICATE_ARCADE_IDS,
+  getOverlayBadgeStyle,
+  resolveOverlayCollisions,
+  WORKSTATION_ACTION_BADGES,
+  type ProjectedOverlayItem,
+  type StudioThreeLightingPreset,
+} from "./studio-virtual-space-three-dioramas";
+import {
   buildStudioThreeCampusArchitecture,
   createStylized3DCharacterNode,
   facingToYawRadians,
@@ -37,39 +48,10 @@ import {
   type StudioThreeActorNode,
 } from "./studio-virtual-space-three-scene";
 
-interface ProjectedOverlayItem {
-  readonly id: string;
-  readonly targetId?: string;
-  readonly label: string;
-  readonly sublabel?: string;
-  readonly kind: "self" | "peer" | "npc" | "zone" | "workstation";
-  readonly x: number;
-  readonly y: number;
-  readonly accent?: string;
-  readonly active?: boolean;
-}
-
 const NPC_COLORS = [0x6366f1, 0xec4899, 0x06b6d4, 0xf59e0b, 0x10b981, 0x8b5cf6, 0x3b82f6, 0x14b8a6] as const;
 
-const WORKSTATION_ACTION_BADGES: Readonly<Record<string, { readonly ko: string; readonly en: string; readonly color: string }>> = Object.freeze({
-  assistant: { ko: "AI 도우미", en: "AI Assistant", color: "#3b82f6" },
-  canvas: { ko: "원고 캔버스", en: "Canvas", color: "#8b5cf6" },
-  story: { ko: "스토리·콘티", en: "Story", color: "#06b6d4" },
-  live: { ko: "라이브 협업", en: "Live", color: "#10b981" },
-  review: { ko: "피드백 리뷰", en: "Review", color: "#a855f7" },
-  assets: { ko: "에셋 아카이브", en: "Assets", color: "#f59e0b" },
-  community: { ko: "라운지", en: "Lounge", color: "#ec4899" },
-  comic: { ko: "플레이", en: "Arcade", color: "#38bdf8" },
-});
-
-const DUPLICATE_ARCADE_IDS = new Set([
-  "campus-arcade-cabinet-2",
-  "campus-arcade-cabinet-3",
-  "campus-arcade-cabinet-4",
-]);
-
 /**
- * Three.js + GLB/VRM 기반 3D 가상 스튜디오 스테이지 렌더러.
+ * Three.js + GLB 디오라마 + @pixiv/three-vrm + HDRI IBL + MSAA 후처리 기반 3D 가상 스튜디오 렌더러.
  * 기존 StudioVirtualSpaceEngineBridge 및 2D 월드 좌표계(3072×1984)와 1:1 호환된다.
  */
 export function StudioVirtualSpaceThreeCanvas({
@@ -92,6 +74,11 @@ export function StudioVirtualSpaceThreeCanvas({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
   const [overlays, setOverlays] = useState<readonly ProjectedOverlayItem[]>([]);
+  const defaultPreset: StudioThreeLightingPreset =
+    spaceTheme === "neon-night" ? "night" : spaceTheme === "celestial-observatory" ? "studio" : "day";
+  const [lightingPreset, setLightingPreset] = useState<StudioThreeLightingPreset>(defaultPreset);
+  const applyLightingRef = useRef<((preset: StudioThreeLightingPreset) => void) | null>(null);
+  const resetCameraRef = useRef<(() => void) | null>(null);
   const triggerOverlayTargetRef = useRef<((kind: "workstation" | "npc", targetId: string) => void) | null>(null);
 
   const snapshotRef = useRef(snapshot);
@@ -103,6 +90,13 @@ export function StudioVirtualSpaceThreeCanvas({
   callbacksRef.current = callbacks;
 
   useEffect(() => {
+    const nextPreset: StudioThreeLightingPreset =
+      spaceTheme === "neon-night" ? "night" : spaceTheme === "celestial-observatory" ? "studio" : "day";
+    setLightingPreset(nextPreset);
+    applyLightingRef.current?.(nextPreset);
+  }, [spaceTheme]);
+
+  useEffect(() => {
     const container = containerRef.current;
     const canvasMount = canvasMountRef.current;
     if (!container || !canvasMount) return undefined;
@@ -111,37 +105,42 @@ export function StudioVirtualSpaceThreeCanvas({
     callbacksRef.current.onEngineStatusChange?.("loading");
 
     const scene = new THREE.Scene();
-    const bgHex = spaceTheme === "celestial-observatory" ? 0x0f172a : spaceTheme === "neon-night" ? 0x111827 : 0xe2e8f0;
-    scene.background = new THREE.Color(bgHex);
-    scene.fog = new THREE.FogExp2(bgHex, 0.011);
-
     const width = Math.max(320, container.clientWidth || window.innerWidth);
     const height = Math.max(240, container.clientHeight || window.innerHeight);
 
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.5, 220);
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.5, 220);
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.1;
 
     renderer.domElement.tabIndex = 0;
     canvasMount.innerHTML = "";
     canvasMount.appendChild(renderer.domElement);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.98);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 1.04);
     hemiLight.position.set(0, 40, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.38);
+    const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.42);
     dirLight.position.set(36, 48, 28);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(2048, 2048);
     Object.assign(dirLight.shadow.camera, { near: 4, far: 140, left: -48, right: 48, top: 48, bottom: -48 });
     dirLight.shadow.bias = -0.0005;
     scene.add(dirLight);
+
+    const hdriController = createStudioThreeHdriController(renderer, scene, () => disposed);
+    const postPipeline = createStudioThreeChromePostPipeline(renderer, scene, camera, width, height);
+    const syncLighting = (preset: StudioThreeLightingPreset) => {
+      applyStudioLightingPresetToScene(preset, scene, renderer, hemiLight, dirLight, postPipeline);
+      hdriController.applyPreset(preset);
+    };
+    applyLightingRef.current = syncLighting;
+    syncLighting(defaultPreset);
 
     const { floorMesh, waterMeshes, workstationRings } = buildStudioThreeCampusArchitecture(scene);
 
@@ -158,8 +157,8 @@ export function StudioVirtualSpaceThreeCanvas({
     scene.add(selfNode.group);
     actorNodes.set("self", selfNode);
 
-    camera.position.set(selfPos3.x, 9.2, selfPos3.z + 11.4);
-    camera.lookAt(selfPos3.x, 0.95, selfPos3.z - 0.8);
+    camera.position.set(selfPos3.x, 10.8, selfPos3.z + 12.8);
+    camera.lookAt(selfPos3.x, 1.05, selfPos3.z - 0.9);
 
     const npcDefinitions = manifest.npcs ?? [];
     CAMPUS_NPCS.forEach((npc, index) => {
@@ -193,6 +192,9 @@ export function StudioVirtualSpaceThreeCanvas({
     let targetCameraYaw = 0;
     let currentCameraYaw = 0;
     const zoneTracker = new StudioZoneChangeTracker(manifest);
+    resetCameraRef.current = () => {
+      targetCameraYaw = 0;
+    };
 
     bridge.setFocusHandler(() => renderer.domElement.focus({ preventScroll: true }));
 
@@ -291,6 +293,7 @@ export function StudioVirtualSpaceThreeCanvas({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      postPipeline.setSize(w, h);
     };
     window.addEventListener("resize", handleResize);
 
@@ -312,9 +315,9 @@ export function StudioVirtualSpaceThreeCanvas({
       selfNode.group.position.copy(p3);
       const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
       camera.position.set(
-        p3.x + Math.sin(currentCameraYaw) * (11.4 / zoomFactor),
-        9.2 / zoomFactor,
-        p3.z + Math.cos(currentCameraYaw) * (11.4 / zoomFactor),
+        p3.x + Math.sin(currentCameraYaw) * (12.8 / zoomFactor),
+        10.8 / zoomFactor,
+        p3.z + Math.cos(currentCameraYaw) * (12.8 / zoomFactor),
       );
     };
 
@@ -448,9 +451,11 @@ export function StudioVirtualSpaceThreeCanvas({
         node.group.rotation.y = node.currentYaw;
       }
 
-      // 모든 캐릭터 팔다리 스윙 & 호흡 애니메이션 (VRM 본 및 폴백 메쉬 모두 지원)
+      // 모든 캐릭터 팔다리 스윙 & 호흡 애니메이션 (@pixiv/three-vrm 정규화 본 및 폴백 메쉬)
       const walkPhase = now * 0.011;
       for (const node of actorNodes.values()) {
+        const baseLeftZ = node.armDownZLeft ?? 1.16;
+        const baseRightZ = node.armDownZRight ?? -1.16;
         if (node.moving) {
           const swing = Math.sin(walkPhase) * 0.42;
           node.leftLeg.rotation.x = swing;
@@ -459,8 +464,14 @@ export function StudioVirtualSpaceThreeCanvas({
           node.rightArm.rotation.x = swing * 0.65;
           if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = swing * 0.65;
           if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = -swing * 0.65;
-          if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.x = 0.06 - swing * 0.45;
-          if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.x = 0.06 + swing * 0.45;
+          if (node.vrmLeftUpperArm) {
+            node.vrmLeftUpperArm.rotation.z = baseLeftZ;
+            node.vrmLeftUpperArm.rotation.x = 0.06 - swing * 0.45;
+          }
+          if (node.vrmRightUpperArm) {
+            node.vrmRightUpperArm.rotation.z = baseRightZ;
+            node.vrmRightUpperArm.rotation.x = 0.06 + swing * 0.45;
+          }
           node.rigGroup.position.y = Math.abs(Math.cos(walkPhase)) * 0.045;
         } else {
           node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, 0, 0.2);
@@ -469,10 +480,17 @@ export function StudioVirtualSpaceThreeCanvas({
           node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, 0, 0.2);
           if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, 0, 0.2);
           if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, 0, 0.2);
-          if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.06, 0.2);
-          if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.06, 0.2);
+          if (node.vrmLeftUpperArm) {
+            node.vrmLeftUpperArm.rotation.z = baseLeftZ + Math.sin(now * 0.0022) * 0.02;
+            node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.06, 0.2);
+          }
+          if (node.vrmRightUpperArm) {
+            node.vrmRightUpperArm.rotation.z = baseRightZ - Math.sin(now * 0.0022) * 0.02;
+            node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.06, 0.2);
+          }
           node.rigGroup.position.y = Math.sin(now * 0.003) * 0.015;
         }
+        node.vrm?.update(dt);
       }
 
       waterMeshes.forEach((water, idx) => {
@@ -481,8 +499,8 @@ export function StudioVirtualSpaceThreeCanvas({
 
       // 카메라 추종 (유저 줌 및 오빗 각도 반영)
       const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
-      const camDist = 11.4 / zoomFactor;
-      const camHeight = 9.2 / zoomFactor;
+      const camDist = 12.8 / zoomFactor;
+      const camHeight = 10.8 / zoomFactor;
       camera.position.lerp(
         new THREE.Vector3(
           selfNode.group.position.x + Math.sin(currentCameraYaw) * camDist,
@@ -493,7 +511,7 @@ export function StudioVirtualSpaceThreeCanvas({
       );
       camera.lookAt(
         selfNode.group.position.x - Math.sin(currentCameraYaw) * 0.8,
-        0.95,
+        1.05,
         selfNode.group.position.z - Math.cos(currentCameraYaw) * 0.8,
       );
 
@@ -576,7 +594,7 @@ export function StudioVirtualSpaceThreeCanvas({
         });
       }
 
-      renderer.render(scene, camera);
+      postPipeline.render();
 
       if (now - lastOverlaySync >= 90) {
         lastOverlaySync = now;
@@ -665,22 +683,7 @@ export function StudioVirtualSpaceThreeCanvas({
           }
         }
 
-        for (let pass = 0; pass < 3; pass += 1) {
-          for (let i = 0; i < projected.length; i += 1) {
-            for (let j = i + 1; j < projected.length; j += 1) {
-              const a = projected[i]!;
-              const b = projected[j]!;
-              if (Math.abs(a.x - b.x) < 148 && Math.abs(a.y - b.y) < 32) {
-                const overlap = 32 - Math.abs(a.y - b.y);
-                const [upperIdx, lowerIdx] = a.y <= b.y ? [i, j] : [j, i];
-                projected[upperIdx] = { ...projected[upperIdx]!, y: projected[upperIdx]!.y - overlap * 0.65 };
-                projected[lowerIdx] = { ...projected[lowerIdx]!, y: projected[lowerIdx]!.y + overlap * 0.35 };
-              }
-            }
-          }
-        }
-
-        setOverlays(projected);
+        setOverlays(resolveOverlayCollisions(projected));
       }
     };
 
@@ -688,6 +691,8 @@ export function StudioVirtualSpaceThreeCanvas({
 
     return () => {
       disposed = true;
+      applyLightingRef.current = null;
+      resetCameraRef.current = null;
       triggerOverlayTargetRef.current = null;
       window.cancelAnimationFrame(animFrameId);
       window.removeEventListener("keydown", handleKeyDown);
@@ -699,9 +704,11 @@ export function StudioVirtualSpaceThreeCanvas({
       renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
       renderer.domElement.removeEventListener("wheel", handleWheel);
       bridge.setFocusHandler(null);
+      postPipeline.dispose();
+      hdriController.dispose();
       renderer.dispose();
     };
-  }, [bridge, manifest, spaceTheme, bt]);
+  }, [bridge, manifest, spaceTheme, bt, defaultPreset]);
 
   return (
     <div
@@ -712,6 +719,32 @@ export function StudioVirtualSpaceThreeCanvas({
       style={{ position: "relative", width: "100%", height: "100%", outline: "none" }}
     >
       <div ref={canvasMountRef} className="studio-vspace-three-canvas-mount" style={{ position: "absolute", inset: 0, zIndex: 1 }} />
+      <div
+        className="studio-vspace-three-lighting-hud"
+        style={{ position: "absolute", left: 16, bottom: 16, zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 8px", borderRadius: 999, background: "rgba(15, 23, 42, 0.84)", border: "1px solid rgba(148, 163, 184, 0.32)", backdropFilter: "blur(10px)" }}
+      >
+        {([
+          { id: "day", ko: "자연광 HDRI", en: "Day HDRI" },
+          { id: "studio", ko: "스튜디오", en: "Studio" },
+          { id: "night", ko: "나이트", en: "Night" },
+        ] as const).map((opt) => (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => { setLightingPreset(opt.id); applyLightingRef.current?.(opt.id); }}
+            style={{ border: "none", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: lightingPreset === opt.id ? "#0f172a" : "#e2e8f0", background: lightingPreset === opt.id ? "#38bdf8" : "transparent" }}
+          >
+            {bt(opt.ko, opt.en)}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => resetCameraRef.current?.()}
+          style={{ border: "1px solid rgba(148, 163, 184, 0.35)", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: "#bae6fd", background: "rgba(30, 41, 59, 0.72)" }}
+        >
+          {bt("시점 리셋 [C]", "Reset View [C]")}
+        </button>
+      </div>
       <div className="studio-vspace-three-overlays" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 2 }}>
         {overlays.map((item) => {
           const isInteractive = (item.kind === "workstation" || item.kind === "npc") && Boolean(item.targetId);
@@ -721,55 +754,9 @@ export function StudioVirtualSpaceThreeCanvas({
               data-overlay-kind={item.kind}
               role={isInteractive ? "button" : undefined}
               tabIndex={isInteractive ? 0 : undefined}
-              onClick={
-                isInteractive && item.targetId
-                  ? (event) => {
-                      event.stopPropagation();
-                      triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!);
-                    }
-                  : undefined
-              }
-              onKeyDown={
-                isInteractive && item.targetId
-                  ? (event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!);
-                      }
-                    }
-                  : undefined
-              }
-              style={{
-                position: "absolute",
-                left: `${item.x}px`,
-                top: `${item.y}px`,
-                transform: "translate(-50%, -100%)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: item.kind === "zone" || item.kind === "workstation" ? "4px 10px" : "3px 9px",
-                borderRadius: item.kind === "zone" ? "10px" : "999px",
-                pointerEvents: isInteractive ? "auto" : "none",
-                cursor: isInteractive ? "pointer" : "default",
-                background: item.kind === "self" || (item.kind === "workstation" && item.active) ? "rgba(30, 27, 75, 0.92)" : "rgba(15, 23, 42, 0.84)",
-                border: item.kind === "zone"
-                  ? "1px solid rgba(56, 189, 248, 0.55)"
-                  : item.kind === "self"
-                    ? "1px solid rgba(129, 140, 248, 0.75)"
-                    : item.kind === "workstation"
-                      ? `1px solid ${item.active ? "#38bdf8" : item.accent ?? "rgba(148, 163, 184, 0.45)"}`
-                      : item.active
-                        ? "1px solid rgba(167, 139, 250, 0.85)"
-                        : "1px solid rgba(148, 163, 184, 0.35)",
-                color: "#f8fafc",
-                fontSize: item.kind === "zone" ? "11.5px" : "11px",
-                fontWeight: 800,
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-                boxShadow: item.active ? "0 0 0 2px rgba(56, 189, 248, 0.28), 0 8px 20px rgba(15, 23, 42, 0.38)" : "0 6px 18px rgba(15, 23, 42, 0.32)",
-                backdropFilter: "blur(8px)",
-              }}
+              onClick={isInteractive && item.targetId ? (event) => { event.stopPropagation(); triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!); } : undefined}
+              onKeyDown={isInteractive && item.targetId ? (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!); } } : undefined}
+              style={getOverlayBadgeStyle(item, isInteractive)}
             >
               {item.kind === "self" ? (
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#38bdf8" }} />
