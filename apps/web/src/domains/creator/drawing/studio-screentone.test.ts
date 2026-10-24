@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_SCREENTONE_LIMITS,
   STUDIO_SCREENTONE_PRESETS,
+  applyScreentoneScrapingDab,
   buildAntiAliasedScreentoneTile,
+  buildSandNoiseScreentoneTile,
   buildScreentoneTile,
   evaluateScreentoneMoireSuppression,
   hexToRgb,
@@ -160,6 +162,86 @@ describe("evaluateScreentoneMoireSuppression / buildAntiAliasedScreentoneTile", 
     expect(fractionalSamples).toBeGreaterThan(50);
     // 수직 그라데이션(상단 에칭 감쇠 → 하단 진함)
     expect(bottomHalfSum).toBeGreaterThan(topHalfSum * 1.25);
+  });
+
+  it("CSP 다중 망점 모양(circle / diamond / square / star) SDF가 면적 보정된 커버리지와 고유 기하 분포를 생성한다", () => {
+    const cfg: ScreentoneConfig = { pattern: "dot", density: 35, lines: 12, angleDeg: 0 };
+    const circle = buildAntiAliasedScreentoneTile(cfg, { size: 120, spotShape: "circle" });
+    const diamond = buildAntiAliasedScreentoneTile(cfg, { size: 120, spotShape: "diamond" });
+    const square = buildAntiAliasedScreentoneTile(cfg, { size: 120, spotShape: "square" });
+    const star = buildAntiAliasedScreentoneTile(cfg, { size: 120, spotShape: "star" });
+
+    for (const tile of [circle, diamond, square, star]) {
+      const cov = measureScreentoneCoverage(tile);
+      expect(cov).toBeGreaterThan(0.24);
+      expect(cov).toBeLessThan(0.46);
+    }
+
+    // 서로 다른 망점 기하 형태는 픽셀 분포가 구별되어야 함
+    let diffCircleStar = 0;
+    let diffDiamondSquare = 0;
+    for (let i = 0; i < circle.length; i += 1) {
+      diffCircleStar += Math.abs(circle[i]! - star[i]!);
+      diffDiamondSquare += Math.abs(diamond[i]! - square[i]!);
+    }
+    expect(diffCircleStar / circle.length).toBeGreaterThan(0.02);
+    expect(diffDiamondSquare / circle.length).toBeGreaterThan(0.02);
+  });
+});
+
+describe("buildSandNoiseScreentoneTile & applyScreentoneScrapingDab (Wave 11)", () => {
+  it("CSP 사목(Sand/Mezzotint) 노이즈 스크린톤이 결정론적이며 농도 단조성을 만족한다", () => {
+    const sandLow = buildSandNoiseScreentoneTile({ size: 96, density: 20, grainScale: 2, seed: 77 });
+    const sandLowRepeat = buildSandNoiseScreentoneTile({ size: 96, density: 20, grainScale: 2, seed: 77 });
+    const sandHigh = buildSandNoiseScreentoneTile({ size: 96, density: 65, grainScale: 2, seed: 77 });
+
+    expect(sandLow).toEqual(sandLowRepeat);
+    const covLow = measureScreentoneCoverage(sandLow);
+    const covHigh = measureScreentoneCoverage(sandHigh);
+    expect(covLow).toBeGreaterThan(0.08);
+    expect(covHigh).toBeGreaterThan(covLow + 0.25);
+  });
+
+  it("케즈리(톤 깎기: scrape)와 톤 덧칠(darken) 브러시 댑이 반경 내 농도를 부드럽게 변조하고 타일 래핑을 지원한다", () => {
+    const base = buildAntiAliasedScreentoneTile(
+      { pattern: "dot", density: 50, lines: 16, angleDeg: 45 },
+      { size: 80 },
+    );
+    const baseCov = measureScreentoneCoverage(base);
+
+    const scraped = applyScreentoneScrapingDab(base, 80, {
+      x: 40,
+      y: 40,
+      radius: 26,
+      strength: 0.85,
+      mode: "scrape",
+      hardness: 0.4,
+    });
+    const darkened = applyScreentoneScrapingDab(base, 80, {
+      x: 40,
+      y: 40,
+      radius: 26,
+      strength: 0.85,
+      mode: "darken",
+      hardness: 0.4,
+    });
+
+    expect(measureScreentoneCoverage(scraped)).toBeLessThan(baseCov - 0.05);
+    expect(measureScreentoneCoverage(darkened)).toBeGreaterThan(baseCov + 0.05);
+    // 중심부는 강하게 깎임
+    expect(scraped[40 * 80 + 40]!).toBeLessThan(base[40 * 80 + 40]! * 0.25 + 1e-4);
+
+    // 모서리 래핑(wrapTile: true) 시 반대편 모서리도 함께 깎임
+    const uniform = new Float32Array(64 * 64).fill(0.8);
+    const wrapped = applyScreentoneScrapingDab(uniform, 64, {
+      x: 1,
+      y: 1,
+      radius: 10,
+      strength: 0.9,
+      mode: "scrape",
+      wrapTile: true,
+    });
+    expect(wrapped[63 * 64 + 63]!).toBeLessThan(0.35);
   });
 });
 

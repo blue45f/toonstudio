@@ -474,3 +474,160 @@ export function measureStrokeDeltaCompression(stroke: TimelapseStroke): {
   };
 }
 
+/* ------------------------------------------------------------------ */
+/* 유휴 공백(Dead-Air) 압축 · 실행 취소(Undo) 정리 · 타임라인 히트맵    */
+/* ------------------------------------------------------------------ */
+
+export interface CompressTimelapseIdleGapsOptions {
+  /** 스트로크 사이 최대 허용 공백(ms). 기본 400ms. */
+  readonly maxIdleGapMs?: number;
+  /** 첫 스트로크 시작 전 최대 허용 대기(ms). 기본 150ms. */
+  readonly maxInitialDelayMs?: number;
+}
+
+/**
+ * 실행 취소(Undo)된 스트로크를 세션 스냅샷에서 불변 방식으로 제거한다.
+ */
+export function removeTimelapseStrokeById(
+  session: TimelapseSession,
+  strokeId: string,
+): TimelapseSession {
+  if (!strokeId) return session;
+  const filtered = session.strokes.filter((s) => s.id !== strokeId);
+  if (filtered.length === session.strokes.length) return session;
+  return {
+    ...session,
+    strokes: Object.freeze(filtered),
+  };
+}
+
+/**
+ * CSP / Procreate 타임랩스 스타일 유휴 공백(Dead-Air) 자동 압축기.
+ * 작화 중 고민·확대·축소로 발생한 긴 정지 구간을 `maxIdleGapMs` 이하로 압축하면서,
+ * 각 스트로크 내부의 실제 필속(샘플 간 Δt)은 100% 원본 그대로 보존한다.
+ */
+export function compressTimelapseIdleGaps(
+  session: TimelapseSession,
+  options: CompressTimelapseIdleGapsOptions = {},
+): TimelapseSession {
+  if (session.strokes.length === 0) return session;
+  const maxIdleGapMs = Math.max(
+    0,
+    Number.isFinite(options.maxIdleGapMs) ? (options.maxIdleGapMs ?? 400) : 400,
+  );
+  const maxInitialDelayMs = Math.max(
+    0,
+    Number.isFinite(options.maxInitialDelayMs) ? (options.maxInitialDelayMs ?? 150) : 150,
+  );
+
+  let accumulatedShiftMs = 0;
+  let prevRawEndMs = 0;
+  const compressedStrokes: TimelapseStroke[] = [];
+
+  for (let i = 0; i < session.strokes.length; i += 1) {
+    const stroke = session.strokes[i]!;
+    if (i === 0) {
+      if (stroke.startedAtMs > maxInitialDelayMs) {
+        accumulatedShiftMs += stroke.startedAtMs - maxInitialDelayMs;
+      }
+    } else {
+      const rawGapMs = stroke.startedAtMs - prevRawEndMs;
+      if (rawGapMs > maxIdleGapMs) {
+        accumulatedShiftMs += rawGapMs - maxIdleGapMs;
+      }
+    }
+
+    prevRawEndMs = Math.max(prevRawEndMs, stroke.endedAtMs);
+    const shift = accumulatedShiftMs;
+    const nextStartedAtMs = Math.max(0, stroke.startedAtMs - shift);
+    const nextEndedAtMs = Math.max(nextStartedAtMs, stroke.endedAtMs - shift);
+    const nextSamples: TimelapseStrokeSample[] = stroke.samples.map((s) => ({
+      ...s,
+      timeMs: Math.max(nextStartedAtMs, s.timeMs - shift),
+    }));
+
+    compressedStrokes.push({
+      ...stroke,
+      startedAtMs: nextStartedAtMs,
+      endedAtMs: nextEndedAtMs,
+      samples: Object.freeze(nextSamples),
+    });
+  }
+
+  const lastCompressedEnd =
+    compressedStrokes[compressedStrokes.length - 1]?.endedAtMs ?? 0;
+  let nextSessionEndedAtMs: number | null = null;
+  if (session.endedAtMs !== null) {
+    const rawTrailingGap = Math.max(0, session.endedAtMs - prevRawEndMs);
+    const clampedTrailingGap = Math.min(rawTrailingGap, maxIdleGapMs);
+    nextSessionEndedAtMs = Math.min(
+      session.maxDurationMs,
+      lastCompressedEnd + clampedTrailingGap,
+    );
+  }
+
+  return {
+    ...session,
+    strokes: Object.freeze(compressedStrokes),
+    endedAtMs: nextSessionEndedAtMs,
+  };
+}
+
+export interface TimelapseActivityHeatmap {
+  /** 타임라인 구간별 정규화 밀도 (0..1). */
+  readonly buckets: ReadonlyArray<number>;
+  /** 가장 활발한 구간의 샘플 수. */
+  readonly peakSamplesPerBucket: number;
+  /** 전체 누적 필획 이동 거리(px). */
+  readonly totalInkTravelPx: number;
+  /** 비어 있지 않은 활성 버킷 비율 (0..1). */
+  readonly activeRatio: number;
+}
+
+/**
+ * 타임랩스 스크러버(Scrubber) 스파크라인 UI를 위한 시간 구간별 드로잉 밀도 히트맵과
+ * 누적 잉크 이동 거리(px)를 계산한다.
+ */
+export function computeTimelapseActivityHeatmap(
+  session: TimelapseSession,
+  bucketCount = 24,
+): TimelapseActivityHeatmap {
+  const safeCount = Math.max(4, Math.min(128, Math.floor(bucketCount)));
+  const rawCounts = new Array<number>(safeCount).fill(0);
+  const durationMs = Math.max(1, getTimelapseDurationMs(session));
+  let totalInkTravelPx = 0;
+
+  for (const stroke of session.strokes) {
+    for (let i = 0; i < stroke.samples.length; i += 1) {
+      const sample = stroke.samples[i]!;
+      const ratio = Math.max(0, Math.min(0.999999, sample.timeMs / durationMs));
+      const bucketIdx = Math.floor(ratio * safeCount);
+      rawCounts[bucketIdx] = (rawCounts[bucketIdx] ?? 0) + 1;
+
+      if (i > 0) {
+        const prev = stroke.samples[i - 1]!;
+        const d = Math.hypot(sample.x - prev.x, sample.y - prev.y);
+        if (Number.isFinite(d)) totalInkTravelPx += d;
+      }
+    }
+  }
+
+  let peak = 0;
+  let activeBuckets = 0;
+  for (const c of rawCounts) {
+    if (c > peak) peak = c;
+    if (c > 0) activeBuckets += 1;
+  }
+
+  const buckets = rawCounts.map((c) =>
+    peak > 0 ? Math.round((c / peak) * 1000) / 1000 : 0,
+  );
+
+  return {
+    buckets: Object.freeze(buckets),
+    peakSamplesPerBucket: peak,
+    totalInkTravelPx: Math.round(totalInkTravelPx * 100) / 100,
+    activeRatio: Math.round((activeBuckets / safeCount) * 1000) / 1000,
+  };
+}
+
