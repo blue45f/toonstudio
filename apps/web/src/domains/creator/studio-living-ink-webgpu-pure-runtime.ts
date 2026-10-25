@@ -41,6 +41,12 @@ import {
   type StudioLivingInkOperation,
   type StudioLivingInkSelectionMask,
 } from "./studio-living-ink-field";
+import {
+  acquireStudioGpuDevice,
+  onStudioGpuDeviceLost,
+  type StudioGpuDeviceLease,
+  type StudioGpuFabricOptions,
+} from "./render/studio-gpu-fabric";
 import { validateStudioLivingInkExecutionConfig } from "./studio-living-ink-webgl2-runtime";
 import {
   listStudioLivingInkWgslPassSources,
@@ -227,6 +233,9 @@ export class StudioLivingInkWebGpuPureRuntime {
   private uniforms!: GPUBuffer;
   private splatUniforms!: GPUBuffer;
   private readonly splatScratch = new Float32Array(SPLAT_UNIFORM_FLOATS);
+  private readonly deviceLease: StudioGpuDeviceLease | null;
+  private readonly unsubscribeDeviceLoss: (() => void) | null;
+  private deviceLost = false;
   private revision = 0;
   private passCount = 0;
   private disposed = false;
@@ -245,9 +254,18 @@ export class StudioLivingInkWebGpuPureRuntime {
     config: StudioLivingInkExecutionConfig,
     canvas: OffscreenCanvas,
     presentation: OffscreenCanvasRenderingContext2D,
+    deviceLease: StudioGpuDeviceLease | null = null,
   ) {
     this.device = device;
     this.webGpuDevice = device;
+    this.deviceLease = deviceLease;
+    this.unsubscribeDeviceLoss = deviceLease
+      ? onStudioGpuDeviceLost((event) => {
+          if (event.epoch === deviceLease.epoch) {
+            this.deviceLost = true;
+          }
+        })
+      : null;
     this.config = Object.freeze({ ...config });
     this.canvas = canvas;
     this.presentation = presentation;
@@ -277,24 +295,23 @@ export class StudioLivingInkWebGpuPureRuntime {
     });
   }
 
+  get lost(): boolean {
+    return this.deviceLost || (this.deviceLease?.lost ?? false);
+  }
+
   static async tryCreate(
     config: StudioLivingInkExecutionConfig,
+    fabricOptions?: StudioGpuFabricOptions,
   ): Promise<StudioLivingInkWebGpuPureRuntime | null> {
     try {
       validateStudioLivingInkExecutionConfig(config);
     } catch {
       return null;
     }
-    const gpu = (globalThis.navigator as Navigator | undefined)?.gpu;
-    if (!gpu || typeof OffscreenCanvas !== "function") return null;
-    let device: GPUDevice;
-    try {
-      const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
-      if (!adapter) return null;
-      device = await adapter.requestDevice();
-    } catch {
-      return null;
-    }
+    if (typeof OffscreenCanvas !== "function") return null;
+    const lease = await acquireStudioGpuDevice(fabricOptions);
+    if (!lease || lease.lost) return null;
+    const device = lease.device;
 
     const canvas = new OffscreenCanvas(config.displayWidth, config.displayHeight);
     /*
@@ -305,9 +322,18 @@ export class StudioLivingInkWebGpuPureRuntime {
      */
     // Alpha stays on: the resolve writes wash coverage there so an untouched page is transparent.
     const presentation = canvas.getContext("2d", { alpha: true });
-    if (!presentation) return null;
+    if (!presentation) {
+      lease.release();
+      return null;
+    }
 
-    const runtime = new StudioLivingInkWebGpuPureRuntime(device, config, canvas, presentation);
+    const runtime = new StudioLivingInkWebGpuPureRuntime(
+      device,
+      config,
+      canvas,
+      presentation,
+      lease,
+    );
     try {
       runtime.allocateBuffers();
       runtime.compilePipelines();
@@ -1295,6 +1321,7 @@ export class StudioLivingInkWebGpuPureRuntime {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.unsubscribeDeviceLoss?.();
     for (const buffer of [
       this.mobile,
       this.mobileScratch,
@@ -1318,10 +1345,14 @@ export class StudioLivingInkWebGpuPureRuntime {
         /* ignore */
       }
     }
-    try {
-      this.device.destroy();
-    } catch {
-      /* ignore */
+    if (this.deviceLease) {
+      this.deviceLease.release();
+    } else {
+      try {
+        this.device.destroy();
+      } catch {
+        /* ignore */
+      }
     }
   }
 }

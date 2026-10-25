@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  activeStudioGpuDeviceLeaseCount,
+  disposeStudioGpuFabric,
+} from "./render/studio-gpu-fabric";
 import { canonicalStudioLivingInkDisplayRgba8 } from "./studio-living-ink-execution-protocol";
 import {
   StudioLivingInkWebGpuPureRuntime,
@@ -181,7 +185,10 @@ async function applyStroke(
 }
 
 describe("studio-living-ink-webgpu-pure-runtime", () => {
-  afterEach(() => { restoreGlobals(); });
+  afterEach(() => {
+    disposeStudioGpuFabric();
+    restoreGlobals();
+  });
 
   it("exposes tryCreate and depends on the pure WGSL pass library", () => {
     expect(typeof StudioLivingInkWebGpuPureRuntime.tryCreate).toBe("function");
@@ -198,6 +205,23 @@ describe("studio-living-ink-webgpu-pure-runtime", () => {
     });
     // Node vitest has no navigator.gpu → pure runtime unavailable
     expect(result).toBeNull();
+  });
+
+  it("acquires a shared StudioGpuFabric lease on tryCreate and releases it on dispose", async () => {
+    installFakeWebGpu([0.2, 0.4, 0.6, 1]);
+    expect(activeStudioGpuDeviceLeaseCount()).toBe(0);
+    const first = await StudioLivingInkWebGpuPureRuntime.tryCreate(CONFIG);
+    const second = await StudioLivingInkWebGpuPureRuntime.tryCreate(CONFIG);
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(first!.webGpuDevice).toBe(second!.webGpuDevice);
+    expect(first!.lost).toBe(false);
+    expect(activeStudioGpuDeviceLeaseCount()).toBe(2);
+
+    first!.dispose();
+    expect(activeStudioGpuDeviceLeaseCount()).toBe(1);
+    second!.dispose();
+    expect(activeStudioGpuDeviceLeaseCount()).toBe(0);
   });
 
   describe("blank-frame detection", () => {

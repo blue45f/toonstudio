@@ -185,21 +185,20 @@ export const STUDIO_RENDERER_ROLE_LEDGER: readonly RendererRoleEntry[] =
     Object.freeze({
       id: "libmypaint-wasm",
       displayName: "libmypaint WASM",
-      role: "reference" as const,
+      role: "provider" as const,
       authorities: Object.freeze([]),
       evidence: Object.freeze([
         "packages/studio-brush-platform/src/libmypaint/index.ts",
         "packages/studio-brush-platform/src/__tests__/libmypaint-parity.test.ts",
+        "apps/web/src/domains/creator/brush/studio-native-brush-probe.worker.ts",
       ]),
       moduleSpecifiers: Object.freeze([]),
       productSymbols: Object.freeze(["loadLibMypaint"]),
       candidateId: "E11",
       note:
-        "Hokusai 자연매체 dab 수학의 parity/golden 기준이며 Hokusai 의 제품 폴백은 "
-        + "아니다. 다만 `apps/web/src/` 에서 `loadLibMypaint` 는 선택 획 네이티브 엔진 "
-        + "변환 워커(studio-native-brush-probe.worker.ts)가 호출하며, 사용자가 인스펙터에서 "
-        + "고르는 엔진(기본 선택)으로 쓰인다. reference 역할이 이 사용을 반영하는지는 "
-        + "재검토 대상이다.",
+        "Hokusai 자연매체 dab 수학의 parity/golden 기준이자 선택 획 네이티브 엔진 변환 워커 "
+        + "(studio-native-brush-probe.worker.ts)에서 명시 선택 시 실행되는 게이트형 provider다. "
+        + "Hokusai 의 자동 폴백으로 호출되지 않는다.",
     }),
     Object.freeze({
       id: "canvaskit",
@@ -223,20 +222,20 @@ export const STUDIO_RENDERER_ROLE_LEDGER: readonly RendererRoleEntry[] =
     Object.freeze({
       id: "vello-cpu",
       displayName: "Vello CPU",
-      role: "reference" as const,
+      role: "provider" as const,
       authorities: Object.freeze([]),
       evidence: Object.freeze([
         "packages/studio-engine-vello",
         "crates/studio-engine-vello",
         "docs/engines/vello-baseline.md",
+        "apps/web/src/domains/creator/studio-svg-vello-product-router.ts",
       ]),
       moduleSpecifiers: Object.freeze([]),
       candidateId: "E04",
       note:
-        "결정적 벡터 기준. cross-renderer diff, golden image, 명시 선택 CPU "
-        + "reference 로 쓰이며, SVG 미리보기(studio-svg-vello-product-router)에서는 "
-        + "vello_cpu 가 실제 픽셀도 그린다. ADR-0018 §13 에 따라 GPU 실패 뒤 자동으로 "
-        + "호출되지 않는다.",
+        "결정적 벡터 기준이자 SVG 미리보기(studio-svg-vello-product-router.ts)의 명시 선택 "
+        + "렌더 경로를 담당하는 provider다. cross-renderer diff 및 golden image 비교 기준도 "
+        + "함께 제공하며, ADR-0018 §13 에 따라 GPU 실패 뒤 자동으로 호출되지 않는다.",
     }),
     Object.freeze({
       id: "vello-classic-gpu",

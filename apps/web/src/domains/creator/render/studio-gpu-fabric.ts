@@ -128,6 +128,7 @@ interface FabricState {
   readonly device: GPUDevice;
   readonly epoch: number;
   readonly capabilities: StudioGpuFabricCapabilities;
+  readonly defaultGpuSource: GPU | null;
   lost: boolean;
   /** 명시적 dispose 로 종료됨 — 이후 device.lost 해소는 loss 통지를 내지 않는다. */
   disposedByFabric: boolean;
@@ -153,6 +154,7 @@ function notifyLoss(event: StudioGpuDeviceLossEvent): void {
 async function createFabricState(
   gpu: GPU | null,
   generation: number,
+  defaultGpuSource: GPU | null = null,
 ): Promise<FabricState | null> {
   if (!supportsStudioGpuFabric(gpu)) return null;
   try {
@@ -173,23 +175,27 @@ async function createFabricState(
       device,
       epoch: epochCounter,
       capabilities: probeCapabilities(device, epochCounter),
+      defaultGpuSource,
       lost: false,
       disposedByFabric: false,
       activeLeases: 0,
     };
-    void device.lost.then((info) => {
-      state.lost = true;
-      if (fabricState === state) {
-        fabricState = null;
-        fabricAcquisition = null;
-      }
-      if (!state.disposedByFabric) {
-        notifyLoss({
-          epoch: state.epoch,
-          reason: typeof info?.reason === "string" ? info.reason : "unknown",
-        });
-      }
-    });
+    const lostPromise = (device as { readonly lost?: Promise<GPUDeviceLostInfo> }).lost;
+    if (lostPromise && typeof lostPromise.then === "function") {
+      void lostPromise.then((info) => {
+        state.lost = true;
+        if (fabricState === state) {
+          fabricState = null;
+          fabricAcquisition = null;
+        }
+        if (!state.disposedByFabric) {
+          notifyLoss({
+            epoch: state.epoch,
+            reason: typeof info?.reason === "string" ? info.reason : "unknown",
+          });
+        }
+      });
+    }
     return state;
   } catch {
     return null;
@@ -224,11 +230,21 @@ function mintLease(state: FabricState): StudioGpuDeviceLease {
 export async function acquireStudioGpuDevice(
   options?: StudioGpuFabricOptions,
 ): Promise<StudioGpuDeviceLease | null> {
+  const hasExplicitGpu = Boolean(options && "gpu" in options);
+  const currentDefaultGpu = hasExplicitGpu ? null : defaultGpu();
+  if (
+    !hasExplicitGpu
+    && fabricState
+    && fabricState.defaultGpuSource !== null
+    && fabricState.defaultGpuSource !== currentDefaultGpu
+  ) {
+    disposeStudioGpuFabric();
+  }
   if (fabricState && !fabricState.lost) return mintLease(fabricState);
   if (!fabricAcquisition) {
     const generation = fabricGeneration;
-    const gpu = options && "gpu" in options ? options.gpu ?? null : defaultGpu();
-    fabricAcquisition = createFabricState(gpu, generation).then((state) => {
+    const gpu = hasExplicitGpu ? options!.gpu ?? null : currentDefaultGpu;
+    fabricAcquisition = createFabricState(gpu, generation, currentDefaultGpu).then((state) => {
       if (generation !== fabricGeneration) {
         if (state) safeDestroyDevice(state.device);
         return null;
