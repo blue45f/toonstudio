@@ -321,6 +321,7 @@ export const CREDIT_FEATURE_KEYS = [
   "ai.storyboard.generate",
   "ai.voice.generate",
   "ai.video.generate",
+  "ai.3d.generate",
   "render.server",
 ] as const;
 export type CreditFeatureKey = (typeof CREDIT_FEATURE_KEYS)[number];
@@ -362,6 +363,7 @@ export const CREDIT_COST_POLICIES = Object.freeze({
   ),
   "ai.voice.generate": credit("ai.voice.generate", "Voice generation", 12, 4, 240),
   "ai.video.generate": credit("ai.video.generate", "Video generation", 80, 30, 500),
+  "ai.3d.generate": credit("ai.3d.generate", "3D generation", 20, 10, 200),
   "render.server": credit("render.server", "Server render", 5, 1, 200),
 } satisfies Record<CreditFeatureKey, CreditCostPolicy>);
 

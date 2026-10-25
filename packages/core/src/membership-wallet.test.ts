@@ -65,6 +65,7 @@ describe("membership wallet policy", () => {
 
   it("keeps future credit cost estimates bounded", () => {
     expect(estimateCreditCost("ai.image.generate")).toBe(8);
+    expect(estimateCreditCost("ai.3d.generate")).toBe(20);
     expect(estimateCreditCost("ai.video.generate", 20)).toBe(500);
     expect(estimateCreditCost("ai.text.generate", 0)).toBe(1);
   });
