@@ -168,6 +168,7 @@ export function SpatialCampusFrame({ binding, route, children }: {
     <CampusPaletteContext.Provider value={!protectedRoute && districtId === "observatory" ? savePalette : null}>
       <CampusObjectPublisherContext.Provider value={sceneObjectsAllowed ? publishObjects : null}>
         <WorkspaceTaskFrame route={route}
+          owner={owner}
           campusMode={ownsRoom ? mode : undefined}
           campusControls={ownsRoom && !readerFocus ? <CampusControls /> : undefined}
           campusScene={scene}>

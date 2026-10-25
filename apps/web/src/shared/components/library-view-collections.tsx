@@ -13,7 +13,7 @@ import { MAX_COLLECTION_NAME_LENGTH } from "@/shared/lib/collection-contract";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
 import { toast } from "@/shared/lib/toast-store";
-import { encodePublicCollectionSnapshot, publicCollectionSlug } from "@/domains/engagement/public-list-share";
+import { encodePublicCollectionSnapshot, publicCollectionSlug } from "@/shared/lib/public-list-share";
 import Link from "@/shared/navigation/router-link";
 
 

@@ -6,7 +6,7 @@ import {
   WifiOff,
 } from "lucide-react";
 
-import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
+import { requestAuthModalOpen } from "@/shared/lib/auth-modal-intent";
 import { cn } from "@/shared/lib/utils";
 
 import { aiSharedStatusText } from "./ai-status-i18n";

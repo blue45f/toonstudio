@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { appRoutes } from "../../../app/routes/route-manifest";
-import { SITEMAP_DIRECTORY_ENTRIES } from "../../../domains/legal/site-directory-data";
 import {
-  mutateReferenceNotes, parseReferenceBackup, parseReferenceNotes, previewReferenceImport,
+  mutateReferenceNotes,
+  parseReferenceBackup,
+  parseReferenceNotes,
+  previewReferenceImport,
   REFERENCE_STORAGE_KEY,
-} from "../../../domains/catalog/references/reference-storage";
+  SITEMAP_DIRECTORY_ENTRIES,
+  type ReferenceMutation,
+  type ReferenceNote,
+} from "../../../app/routes/kmas-reference-test-bindings";
 import { normalizeReferenceItem } from "../kmas-reference";
-
-import type { ReferenceMutation, ReferenceNote } from "../../../domains/catalog/references/reference-storage";
 
 const item = normalizeReferenceItem({ mastrId: "merge-fixture", title: "검증용 자료" })!;
 const note: ReferenceNote = { item, note: "원본 메모", savedAt: "2026-09-06T00:00:00.000Z" };

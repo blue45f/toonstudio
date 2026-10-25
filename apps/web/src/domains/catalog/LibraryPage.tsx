@@ -1,6 +1,8 @@
 import { ChevronRight, Library } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
+import { LibraryDiaryTab } from "@/domains/engagement/public/LibraryDiaryTab";
+import { useEngagement } from "@/domains/engagement/public/engagement-store";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { LibraryView } from "@/shared/components/library-view";
@@ -33,6 +35,7 @@ export function LibraryPage() {
   const [searchParams] = useSearchParams();
   const tab = TABS.find((entry) => entry === searchParams.get("tab")) ?? "shelf";
   const loggedIn = useApp((s) => Boolean(s.userId));
+  const diaryEntries = useEngagement((state) => state.diaryEntries);
   const currentStep = tab === "taste" ? 1 : 0;
 
   return (
@@ -82,7 +85,11 @@ export function LibraryPage() {
           ))}
         </ol>
       </SitePageHeader>
-      <LibraryView initialTab={tab} />
+      <LibraryView
+        initialTab={tab}
+        diaryEntries={diaryEntries}
+        renderDiaryTab={(titlesById) => <LibraryDiaryTab titlesById={titlesById} />}
+      />
     </Container>
   );
 }

@@ -641,7 +641,7 @@
     "apps/web/src/shared/ambient/ambient-renderer.ts": 886,
     "apps/web/src/shared/components/command-palette.tsx": 1156,
     "apps/web/src/shared/components/search-explorer.tsx": 1061,
-    "apps/web/src/shared/components/site-header.tsx": 914,
+    "apps/web/src/shared/components/site-header.tsx": 911,
     "apps/web/src/shared/lib/creator-marketplace-authoring-workshop.ts": 824,
     "apps/web/src/shared/lib/natural-browser-speech.ts": 1032,
     "deploy/cloudflare-realtime/src/protocol.ts": 1152,

@@ -42,7 +42,6 @@ import {
   RECOMMENDATION_FEEDBACK_EVENT,
 } from "@/shared/lib/recommendation-feedback";
 import { useApp, useHydrated, useSavedTitleIds } from "@/shared/lib/store";
-import { useEngagement } from "@/domains/engagement/engagement-store";
 import { GENRES } from "@/shared/lib/taxonomy";
 import {
   applyTitleFilters,
@@ -58,8 +57,13 @@ const DIVERSITY_OPTIONS = ["focused", "balanced", "wide"] as const;
 
 export function RecommendView({
   initialGenres = [],
+  tastePreferences = null,
 }: {
   initialGenres?: string[];
+  tastePreferences?: {
+    readonly avoidTags: readonly string[];
+    readonly contentIntensity: "gentle" | "balanced" | "unrestricted";
+  } | null;
 }) {
   useBilingualI18nRevision();
   const hydrated = useHydrated();
@@ -67,7 +71,6 @@ export function RecommendView({
   const reads = useApp((s) => s.reads);
   const setRating = useApp((s) => s.setRating);
   const setRead = useApp((s) => s.setRead);
-  const tastePreferences = useEngagement((state) => state.tastePreferences);
 
   const savedIds = useSavedTitleIds();
   const [searchParams, setSearchParams] = useSearchParams();

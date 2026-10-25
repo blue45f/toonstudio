@@ -11,7 +11,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { useEngagement } from "@/domains/engagement/engagement-store";
+import { useEngagement } from "@/domains/engagement/public/engagement-store";
 
 const SCOPE = "domains.catalog.RecommendPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
@@ -41,7 +41,7 @@ export function RecommendPage() {
       />
 
       <DiscoveryWorkspaceNav current="recommend" className="mb-8" />
-      <RecommendView initialGenres={initialGenres} />
+      <RecommendView initialGenres={initialGenres} tastePreferences={savedTaste} />
     </Container>
   );
 }

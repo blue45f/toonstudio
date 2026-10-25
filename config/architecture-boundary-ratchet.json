@@ -11,8 +11,8 @@
   "packagesToApps": 0,
   "adminSharedToDomain": 0,
   "adminCrossDomainDeepImport": 0,
-  "webSharedToDomain": 20,
-  "webCrossDomainDeepImport": 64,
+  "webSharedToDomain": 0,
+  "webCrossDomainDeepImport": 63,
   "contractsToApps": 0,
   "contractsForbiddenImport": 0,
   "crossAppTestOutsideIntegration": 0

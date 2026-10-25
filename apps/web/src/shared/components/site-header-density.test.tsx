@@ -25,7 +25,10 @@ function HeaderWithAppearance({ pathname = "/" }: { pathname?: string }) {
   return (
     <MemoryRouter initialEntries={[pathname]}>
       <SiteExperienceContext.Provider value={{ mode, setMode }}>
-        <SiteHeader />
+        <SiteHeader
+          authMenuSlot={<button type="button">계정</button>}
+          notificationsSlot={<button type="button">알림</button>}
+        />
       </SiteExperienceContext.Provider>
     </MemoryRouter>
   );

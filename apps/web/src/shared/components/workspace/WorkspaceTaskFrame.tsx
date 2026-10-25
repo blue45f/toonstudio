@@ -3,7 +3,6 @@ import { workflowVisualForPath } from "../site-experience/workflow-route-art";
 import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
 import { OpenSearchButton } from "@/shared/components/open-search-button";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -17,8 +16,9 @@ import "./workspace-task-frame.css";
 import "@/shared/components/workspace/workspace-visual-v3.css";
 
 /** Stable child ancestry keeps AppRouter and editor lifetime independent of chrome changes. */
-export function WorkspaceTaskFrame({ route, children, campusMode, campusControls, campusScene }: {
+export function WorkspaceTaskFrame({ route, owner = "local", children, campusMode, campusControls, campusScene }: {
   readonly route: WorkspaceTaskRoute | null;
+  readonly owner?: string;
   readonly children: ReactNode;
   readonly campusMode?: "scene" | "task" | "focus";
   readonly campusControls?: ReactNode;
@@ -26,9 +26,8 @@ export function WorkspaceTaskFrame({ route, children, campusMode, campusControls
 }) {
   const bt = useBilingual("WorkspaceTaskFrame");
   const { pathname, search } = useLocation();
-  const session = useSession();
   const content = useRef<HTMLDivElement>(null);
-  useWorkspaceScrollRestoration(content, route !== null, session.data?.user.id ?? "local");
+  useWorkspaceScrollRestoration(content, route !== null, owner);
   const context = workspaceNavigationContext(pathname, search);
   const homeHref = workspaceNavigationHref("/home", context);
   const focused = route?.chrome === "focused";

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type ComponentType } from "react";
 import { safeAuthProfileImageSrc } from "./auth-menu-profile-image";
 import { AuthMenuTrigger } from "./auth-menu-trigger";
 
-import { subscribeAuthModalRequests } from "@/domains/auth/public/session/auth-modal-intent";
+import { subscribeAuthModalRequests } from "@/shared/lib/auth-modal-intent";
 import { useT } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";

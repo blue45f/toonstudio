@@ -10,12 +10,19 @@ import { ensureSerifWebFontForRoute } from "./serif-webfont";
 import { StudioRouterDocumentNavigationBoundary } from "./StudioRouterDocumentNavigationBoundary";
 import { installStudioDocumentNavigationBridge } from "./studio-document-navigation";
 
+import { AuthMenuShell } from "@/domains/auth/components/auth-menu-shell";
 import { isStudioRoutePathname } from "@/domains/creator/studio-workspace-route";
 import { AppearanceBridge } from "@/shared/components/appearance/AppearanceBridge";
 import { SiteHeader } from "@/shared/components/site-header";
 import { isPublicCreativeRoute } from "@/shared/components/site-public-routes";
 import { useI18n } from "@/shared/lib/i18n";
 import { useUi } from "@/shared/lib/ui-store";
+
+const EngagementHeaderNotifications = lazy(() =>
+  import("@/domains/engagement/EngagementHeaderNotifications").then((module) => ({
+    default: module.EngagementHeaderNotifications,
+  })),
+);
 
 // Optional public-page settings must not join the Studio startup bundle.
 const FloatingControls = lazy(() =>
@@ -271,7 +278,18 @@ function AppRuntime() {
         </Suspense>
       ) : null}
       <AppShell
-        header={isolatedChrome ? null : <SiteHeader />}
+        header={
+          isolatedChrome ? null : (
+            <SiteHeader
+              authMenuSlot={<AuthMenuShell />}
+              notificationsSlot={
+                <Suspense fallback={null}>
+                  <EngagementHeaderNotifications />
+                </Suspense>
+              }
+            />
+          )
+        }
         footer={isolatedChrome ? null : <DeferredFooter immediate={publicExperience} />}
         publicExperience={publicExperience}
         floatingControls={isolatedChrome ? null : <WebFloatingControls />}

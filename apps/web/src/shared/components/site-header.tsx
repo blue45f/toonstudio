@@ -22,9 +22,8 @@ import {
   useId,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
-
-import { AuthMenuShell } from "../../domains/auth/components/auth-menu-shell";
 
 import {
   SITE_NAVIGATION_GROUPS,
@@ -65,12 +64,6 @@ const MobileHeaderNavigation = lazy(() =>
   import("./site-header-mobile-nav").then((mod) => ({
     default: mod.MobileHeaderNavigation,
   }))
-);
-
-const EngagementHeaderNotifications = lazy(() =>
-  import("@/domains/engagement/EngagementHeaderNotifications").then((module) => ({
-    default: module.EngagementHeaderNotifications,
-  })),
 );
 
 const STUDIO_ASSET_PREFIXES = [
@@ -687,7 +680,13 @@ function HeaderPrimaryNavigationEntry({
 }
 
 /** Render the responsive site header for the active Studio or Spectrum context. */
-export function SiteHeader() {
+export function SiteHeader({
+  authMenuSlot,
+  notificationsSlot,
+}: {
+  readonly authMenuSlot?: ReactNode;
+  readonly notificationsSlot?: ReactNode;
+} = {}) {
   useBilingualI18nRevision();
   const isActive = useDestinationActive();
   const pathname = usePathname();
@@ -859,11 +858,9 @@ export function SiteHeader() {
             {/* 화면 분위기 전환은 홈 머리글과 설정 화면에만 둔다(하위 페이지 머리글을 가볍게). */}
             {isHomePage && <PublicSiteAppearanceToggle locale={locale} className="site-header__appearance" />}
 
-            <Suspense fallback={null}>
-              <EngagementHeaderNotifications />
-            </Suspense>
+            {notificationsSlot}
 
-            <AuthMenuShell />
+            {authMenuSlot}
 
             <button
               ref={triggerRef}

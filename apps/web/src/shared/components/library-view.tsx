@@ -1,11 +1,9 @@
 import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { Sparkles, BookHeart, Star, Compass, BellRing, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { CollectionsTab } from "./library-view-collections";
-import { LibraryDiaryTab } from "@/domains/engagement/LibraryDiaryTab";
-import { useEngagement } from "@/domains/engagement/engagement-store";
 import {
   RATED_SORTS,
   DAY_FROM_GETDAY,
@@ -35,7 +33,15 @@ import { WEEK_DAYS } from "@/shared/lib/taxonomy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
-export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
+export function LibraryView({
+  initialTab = "shelf",
+  diaryEntries = [],
+  renderDiaryTab,
+}: {
+  initialTab?: Tab;
+  diaryEntries?: readonly { readonly titleId: string }[];
+  renderDiaryTab?: (titlesById: Readonly<Record<string, Title>>) => ReactNode;
+}) {
   const hydrated = useHydrated();
   const reads = useApp((s) => s.reads);
   const ratings = useApp((s) => s.ratings);
@@ -48,7 +54,6 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
   const adultVerified = useApp((s) => s.adultVerified);
   const setAdultVerified = useApp((s) => s.setAdultVerified);
   const resetAll = useApp((s) => s.resetAll);
-  const diaryEntries = useEngagement((state) => state.diaryEntries);
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [readTab, setReadTab] = useState<ReadState>("want");
@@ -280,7 +285,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
 
 
       {/* 감상 일기 */}
-      {tab === "diary" && <LibraryDiaryTab titlesById={titlesById} />}
+      {tab === "diary" && renderDiaryTab?.(titlesById)}
 
       {/* 취향 분석 */}
       {tab === "taste" && (
