@@ -38,6 +38,7 @@ import {
   type ProductionRiskSignal,
 } from "./production-risk-intelligence";
 import { ProductionBatchScheduleSuite } from "./ProductionBatchScheduleSuite";
+import { ProductionPmsBlueprintSuite } from "./ProductionPmsBlueprintSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -406,6 +407,7 @@ export function ProductionScheduleWorkspace({
 
       <div className="p-4 pt-0">
         <ProductionBatchScheduleSuite />
+        <ProductionPmsBlueprintSuite />
       </div>
     </section>
   );
