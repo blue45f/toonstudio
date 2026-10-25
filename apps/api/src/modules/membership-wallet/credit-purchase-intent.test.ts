@@ -23,6 +23,10 @@ import {
   requestCreditPurchase,
   type CreditPurchaseWallet,
 } from "./credit-purchase-intent";
+import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
+
+/** 기존 성공 경로용 마스터 ON 스토어 (토글 테스트는 별도 인스턴스 사용). */
+const GATE_ON = new InMemoryPaidOperationsSettingStore(true);
 
 function stubWallet(
   overrides: Partial<CreditPurchaseWallet> = {},
@@ -65,7 +69,7 @@ describe("크레딧 팩 카탈로그", () => {
 });
 
 describe("크레딧 구매 의도", () => {
-  it("게이트 OFF에서는 구매가 거부되고 지갑을 호출하지 않는다", async () => {
+  it("레거시 게이트 OFF(마스터 ON)에서는 구매가 거부되고 지갑을 호출하지 않는다", async () => {
     const wallet = stubWallet();
     await expect(
       requestCreditPurchase(
@@ -73,6 +77,7 @@ describe("크레딧 구매 의도", () => {
         "user-1",
         { packId: "credit-pack-500", requestId: "req-buy-1" },
         false,
+        GATE_ON,
       ),
     ).rejects.toMatchObject({
       code: "credit_purchase_disabled",
@@ -92,6 +97,7 @@ describe("크레딧 구매 의도", () => {
         paymentConfirmationId: "pg-confirm-1",
       },
       true,
+      GATE_ON,
     );
     expect(result).toEqual({
       purchaseIntentId: "credit-purchase:req-buy-2",
@@ -116,6 +122,7 @@ describe("크레딧 구매 의도", () => {
         "user-1",
         { packId: "credit-pack-100", requestId: "req-buy-3" },
         true,
+        GATE_ON,
       ),
     ).rejects.toMatchObject({
       code: "credit_purchase_payment_unconfirmed",
@@ -151,5 +158,87 @@ describe("크레딧 구매 의도", () => {
       ),
     ).rejects.toBeInstanceOf(CreditPurchaseError);
     expect(wallet.calls.grant).toBe(0);
+  });
+});
+
+describe("크레딧 구매 마스터 게이트", () => {
+  it("마스터 OFF + 레거시 on(우회 시도)에서는 구매가 거부되고 지갑을 호출하지 않는다", async () => {
+    const wallet = stubWallet();
+    const gateOff = new InMemoryPaidOperationsSettingStore(false);
+    await expect(
+      requestCreditPurchase(
+        wallet,
+        "user-1",
+        { packId: "credit-pack-500", requestId: "req-buy-gate-off" },
+        true,
+        gateOff,
+      ),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(wallet.calls.grant).toBe(0);
+  });
+
+  it("마스터 OFF면 결제 확인 식별자가 있어도 거부된다", async () => {
+    const wallet = stubWallet();
+    const gateOff = new InMemoryPaidOperationsSettingStore(false);
+    await expect(
+      requestCreditPurchase(
+        wallet,
+        "user-1",
+        {
+          packId: "credit-pack-500",
+          requestId: "req-buy-gate-off-2",
+          paymentConfirmationId: "pg-confirm-9",
+        },
+        true,
+        gateOff,
+      ),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(wallet.calls.grant).toBe(0);
+  });
+
+  it("스토어 미주입(기본 OFF) + 레거시 on에서도 거부된다", async () => {
+    const wallet = stubWallet();
+    await expect(
+      requestCreditPurchase(
+        wallet,
+        "user-1",
+        { packId: "credit-pack-500", requestId: "req-buy-gate-off-3" },
+        true,
+      ),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(wallet.calls.grant).toBe(0);
+  });
+
+  it("토글 ON→OFF→ON 변경이 호출마다 즉시 반영된다 (캐시 없음)", async () => {
+    const wallet = stubWallet();
+    const store = new InMemoryPaidOperationsSettingStore(false);
+    const body = {
+      packId: "credit-pack-100",
+      requestId: "req-buy-gate-toggle",
+      paymentConfirmationId: "pg-confirm-toggle",
+    };
+    await expect(requestCreditPurchase(wallet, "user-1", body, true, store))
+      .rejects.toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
+    await store.setPaidOperationsEnabled(true);
+    const result = await requestCreditPurchase(
+      wallet,
+      "user-1",
+      body,
+      true,
+      store,
+    );
+    expect(result.granted).toBe(true);
+    await store.setPaidOperationsEnabled(false);
+    await expect(requestCreditPurchase(wallet, "user-1", body, true, store))
+      .rejects.toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
   });
 });

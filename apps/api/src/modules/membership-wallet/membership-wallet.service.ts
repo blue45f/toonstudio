@@ -88,7 +88,7 @@ function asInt(value: string | number): number {
   return parsed;
 }
 
-function requireUserId(userId: string | undefined): string {
+export function requireUserId(userId: string | undefined): string {
   const normalized = userId?.trim();
   if (!normalized) throw new ForbiddenException("로그인이 필요해요.");
   return normalized;

@@ -28,6 +28,10 @@ import {
   type Studio3dCreditCharge,
   type Studio3dCreditWallet,
 } from "./studio-3d-credit-charge";
+import {
+  PAID_OPERATIONS_SETTING_STORE,
+  type PaidOperationsSettingStore,
+} from "../membership-wallet/paid-operations-gate";
 import { createHyper3dRodinProvider } from "./studio-hyper3d-rodin-provider";
 import { STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION } from "./studio-3d-generation-provider";
 import {
@@ -210,6 +214,7 @@ export class Studio3dGenerationService {
 
   constructor(
     @Optional() @Inject(STUDIO_3D_CREDIT_WALLET) private readonly creditWallet: Studio3dCreditWallet | null = null,
+    @Optional() @Inject(PAID_OPERATIONS_SETTING_STORE) private readonly paidOperationsStore: PaidOperationsSettingStore | null = null,
   ) {
     const databaseUrl = process.env.DATABASE_URL?.trim();
     if (databaseUrl) {
@@ -384,7 +389,7 @@ export class Studio3dGenerationService {
         mode: input.mode,
         providerApiKey,
         operatorFunded: operatorAiFundingEnabled(),
-      });
+      }, this.paidOperationsStore ?? undefined);
     } catch (error) {
       try {
         await this.#ledger.transition({
