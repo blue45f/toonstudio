@@ -38,6 +38,7 @@ import {
   type ProductionRiskSignal,
 } from "./production-risk-intelligence";
 import { ProductionBatchScheduleSuite } from "./ProductionBatchScheduleSuite";
+import { ProductionNotionKnowledgeCalendarSuite } from "./ProductionNotionKnowledgeCalendarSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -404,8 +405,9 @@ export function ProductionScheduleWorkspace({
         </div>
       )}
 
-      <div className="p-4 pt-0">
+      <div className="p-4 pt-0 space-y-5">
         <ProductionBatchScheduleSuite />
+        <ProductionNotionKnowledgeCalendarSuite />
       </div>
     </section>
   );

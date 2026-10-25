@@ -44,6 +44,7 @@ import {
   type ProductionManuscriptSnapshot,
 } from "./production-manuscript-snapshots";
 import { ProductionSnapshotLifecycleSuite } from "./ProductionSnapshotLifecycleSuite";
+import { ProductionShotGridVersionLineageSuite } from "./ProductionShotGridVersionLineageSuite";
 import { useManuscriptVersionShareSync } from "./production-manuscript-version-share-sync";
 import {
   productionManuscriptRevisionLabel,
@@ -563,8 +564,9 @@ export function ProductionManuscriptSnapshotPanel({
       </div> : null}
     </dialog>
 
-    <div className="mt-5">
+    <div className="mt-5 space-y-5">
       <ProductionSnapshotLifecycleSuite />
+      <ProductionShotGridVersionLineageSuite />
     </div>
   </section>;
 }
