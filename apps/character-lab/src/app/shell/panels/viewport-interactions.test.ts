@@ -6,7 +6,17 @@ import { HUMANOID_BONE_NAMES } from "../../../contracts";
 import { projectToPixel } from "../../../render/viewport-math";
 import { qRotateVec3, v3Add, v3Length, v3Sub } from "../../../shared/math";
 
-import { computeJointDrag, handlesKey, hudRows, isFingerBone, jointLabelKo, resolveDragPivot, visibleHandles } from "./viewport-interactions";
+import {
+  computeJointDrag,
+  handlesKey,
+  hudRows,
+  isFingerBone,
+  jointLabelKo,
+  resolveDragPivot,
+  resolveShaperPresetClickModifiers,
+  resolveShaperViewportKeyShortcut,
+  visibleHandles,
+} from "./viewport-interactions";
 
 import type { HumanoidBoneName, HudSample, JointDragHandle, Pose, Quat, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -177,5 +187,45 @@ describe("hudRows", () => {
     expect(rows.get("backend")).toBe("webgpu");
     expect(hudRows({ ...sample, gpuFrameMs: 3.21 }).find((row) => row.key === "gpu")?.value).toBe("3.2 ms");
     expect(hudRows({ ...sample, frameMs: Number.NaN }).find((row) => row.key === "frame")?.value).toBe("—");
+  });
+});
+
+describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHeadPart)", () => {
+  it("resolveShaperPresetClickModifiers: 파츠 및 포즈 프리셋의 Shift/Alt/Ctrl 수식키 정책을 결정한다", () => {
+    const partShiftAlt = resolveShaperPresetClickModifiers({ shift: true, alt: true }, "part");
+    expect(partShiftAlt.keepExistingLines).toBe(true);
+    expect(partShiftAlt.skipPresetLines).toBe(true);
+
+    const poseMods = resolveShaperPresetClickModifiers({ shift: true, alt: true, ctrl: true }, "pose");
+    expect(poseMods.keepCameraOnPose).toBe(true);
+    expect(poseMods.mirrorPose).toBe(true);
+    expect(poseMods.cameraOnlySkipBones).toBe(true);
+  });
+
+  it("resolveShaperViewportKeyShortcut: F/L/B/T 뷰, F12/F10/F5, Shift/Alt/일반 방향키를 해독한다", () => {
+    expect(resolveShaperViewportKeyShortcut("f")).toEqual({
+      kind: "camera-view",
+      view: "front",
+      pivotYAnglesDeg: [0, 0, 0],
+      pivotXAnglesDeg: [0, 0, 0],
+    });
+    expect(resolveShaperViewportKeyShortcut("l")).toEqual({
+      kind: "camera-view",
+      view: "left",
+      pivotYAnglesDeg: [0, 90, 0],
+      pivotXAnglesDeg: [0, 0, 0],
+    });
+    expect(resolveShaperViewportKeyShortcut("F12")).toEqual({ kind: "front-light" });
+    expect(resolveShaperViewportKeyShortcut("F10")).toEqual({ kind: "toggle-eyeball-cam-lock" });
+    expect(resolveShaperViewportKeyShortcut("F5")).toEqual({ kind: "reset-camera" });
+
+    const eyeUp = resolveShaperViewportKeyShortcut("ArrowUp", { shift: true }, 0.1);
+    expect(eyeUp).toEqual({ kind: "rotate-eyeballs", deltaEulerDeg: [-10, 0, 0] });
+
+    const shadeRight = resolveShaperViewportKeyShortcut("ArrowRight", { alt: true }, 0.25);
+    expect(shadeRight).toEqual({ kind: "adjust-shade-line", deltaShadePos: 0.25 });
+
+    const lightLeft = resolveShaperViewportKeyShortcut("ArrowLeft", {}, 0.1);
+    expect(lightLeft).toEqual({ kind: "rotate-scene-light", deltaEulerDeg: [0, 10, 0] });
   });
 });

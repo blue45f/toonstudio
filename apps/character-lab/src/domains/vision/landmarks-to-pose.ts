@@ -231,3 +231,102 @@ export function controllableBones(scope: LandmarkApplyScope): readonly HumanoidB
   const inScope = new Set<HumanoidBoneName>(bonesInScope(scope));
   return HUMANOID_BONE_NAMES.filter((bone) => inScope.has(bone) && (bone === "hips" || bone === "head" || POSE_SEGMENTS[bone] !== undefined));
 }
+
+/**
+ * SHAPER BoneAIManager::ApplyJSON(0x060000c7)의 관절별 불확실도(uncertainty) 최대 허용 임계값(< 0.03).
+ */
+export const SHAPER_AI_POSE_UNCERTAINTY_MAX = 0.03;
+
+/**
+ * SHAPER BoneAIManager::ApplyJSON(0x060000c7)에서 3D AI 포즈를 유효하다고 판정하는 최소 관절 수(>= 16).
+ */
+export const SHAPER_AI_POSE_MIN_VALID_JOINTS = 16;
+
+export interface ShaperAiPoseConfidenceCheck {
+  readonly accepted: boolean;
+  readonly validJointNames: readonly string[];
+  readonly rejectedJointNames: readonly string[];
+}
+
+/**
+ * SHAPER BoneAIManager::ApplyJSON(0x060000c7) 불확실도 필터:
+ * 각 관절의 uncertainty < 0.03인 유효 관절만 추리고, 유효 관절 수가 16개 이상일 때만 포즈 적용을 승인한다.
+ */
+export function evaluateShaperAiPoseConfidence(
+  jointUncertainties: Readonly<Record<string, number>>,
+  maxUncertainty = SHAPER_AI_POSE_UNCERTAINTY_MAX,
+  minValidJoints = SHAPER_AI_POSE_MIN_VALID_JOINTS,
+): ShaperAiPoseConfidenceCheck {
+  const validJointNames: string[] = [];
+  const rejectedJointNames: string[] = [];
+  for (const [name, u] of Object.entries(jointUncertainties)) {
+    if (Number.isFinite(u) && u < maxUncertainty) {
+      validJointNames.push(name);
+    } else {
+      rejectedJointNames.push(name);
+    }
+  }
+  return {
+    accepted: validJointNames.length >= minValidJoints,
+    validJointNames,
+    rejectedJointNames,
+  };
+}
+
+export type ShaperQuadrantLimbKind =
+  | "upperArmL"
+  | "upperArmR"
+  | "lowerArmL"
+  | "lowerArmR"
+  | "upperLegL"
+  | "upperLegR"
+  | "lowerLegL"
+  | "lowerLegR"
+  | "spine";
+
+/**
+ * SHAPER BoneAIManager::ApplyJSON(0x060000c7)의 사분면 90° 축 보정 오일러 오프셋(도):
+ * AI 추론 좌표계의 사지 축을 캐릭터 로컬 본 축에 정렬한다.
+ */
+export function applyShaperQuadrantAxisFix(eulerDeg: Vec3, limbKind: ShaperQuadrantLimbKind): Vec3 {
+  const [x, y, z] = eulerDeg;
+  switch (limbKind) {
+    case "upperArmL":
+    case "lowerArmL":
+      return [x, y, z - 90];
+    case "upperArmR":
+    case "lowerArmR":
+      return [x, y, z + 90];
+    case "upperLegL":
+    case "lowerLegL":
+      return [x + 90, y, z + 180];
+    case "upperLegR":
+    case "lowerLegR":
+      return [x + 90, y, z - 180];
+    case "spine":
+      return [x, y, z];
+  }
+}
+
+/**
+ * SHAPER BoneAIManager::ApplyHandJSON(0x060000c8):
+ * 웹캠/AI 손가락 포즈(엄지·검지·중지·약지·소지)를 적용할 때 기존 손목 루트(leftHand / rightHand) 회전은 보존한다.
+ */
+export function retargetShaperHandPosePreservingWrist(options: {
+  readonly currentPose: Pose;
+  readonly incomingHandPose: Pose;
+  readonly handSide: "left" | "right";
+}): Pose {
+  const { currentPose, incomingHandPose, handSide } = options;
+  const wristBone: HumanoidBoneName = handSide === "left" ? "leftHand" : "rightHand";
+  const merged: Partial<Record<HumanoidBoneName, Quat>> = {
+    ...currentPose,
+    ...incomingHandPose,
+  };
+  if (currentPose[wristBone] !== undefined) {
+    merged[wristBone] = currentPose[wristBone];
+  } else {
+    delete merged[wristBone];
+  }
+  return merged;
+}

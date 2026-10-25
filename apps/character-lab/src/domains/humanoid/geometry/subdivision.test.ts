@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import { NO_REGION, QuadMeshBuilder, quadMeshEdgeStats, type QuadMesh } from "./quad-mesh";
-import { buildSubdivisionPlan, catmullClark, expandWelded, liftAttribute, liftRegions, predictVertexCount, subdividedToTriMesh } from "./subdivision";
+import {
+  adaptPartSeamOffsets,
+  buildSubdivisionPlan,
+  catmullClark,
+  computeSeamCentroids3Zone,
+  expandWelded,
+  findCoincidentVertexGroups,
+  liftAttribute,
+  liftRegions,
+  lockCoincidentSeamVertices,
+  matchNeckSeamVertices,
+  predictVertexCount,
+  subdividedToTriMesh,
+  weldNeckSeamPositionsAndNormals,
+} from "./subdivision";
 import { triMeshIsWatertight } from "./tri-mesh";
 
 import type { Vec3 } from "../../../shared/math";
@@ -164,5 +178,126 @@ describe("Catmull-Clark(열린 패치 경계 규칙)", () => {
     let onBottom = 0;
     for (let v = 0; v < sub.positions.length / 3; v += 1) if (Math.abs(sub.positions[v * 3 + 1]) < 1e-9) onBottom += 1;
     expect(onBottom).toBe(9);
+  });
+});
+
+describe("SHAPER 준-샤프(Semi-Sharp) 세분화 및 파츠/목 심(Seam) 정합", () => {
+  const cube = cubeCage();
+
+  it("정점 샤프니스 p=0일 때 표준 Catmull-Clark과 일치하고, p=1일 때 모서리와 간선 중점이 원래 위치에 고정된다", () => {
+    const zeroSharpness = new Float32Array(8).fill(0);
+    const subZero = catmullClark(cube, 1, { vertexSharpness: zeroSharpness });
+    const subStd = catmullClark(cube, 1);
+    expect(Array.from(subZero.positions)).toEqual(Array.from(subStd.positions));
+
+    const fullSharpness = new Float32Array(8).fill(1);
+    const subSharp = catmullClark(cube, 1, { vertexSharpness: fullSharpness, cornerRule: "shaper" });
+    // p=1이면 모서리 (1,1,1)이 수축하지 않고 (1,1,1)에 그대로 남고, 간선점도 선형 중점 (1,1,0)에 위치한다.
+    expect(hasVertex(subSharp.positions, [1, 1, 1])).toBe(true);
+    expect(hasVertex(subSharp.positions, [1, 1, 0])).toBe(true);
+  });
+
+  it("SHAPER cornerRule='shaper'에서 p=0.8 능선 정점은 표준 스무딩보다 날카로운 위치를 유지한다", () => {
+    const ridgeSharpness = new Float32Array(8).fill(0.8);
+    const subRidge = catmullClark(cube, 1, { vertexSharpness: ridgeSharpness, cornerRule: "shaper" });
+    const subSmooth = catmullClark(cube, 1, { vertexSharpness: new Float32Array(8).fill(0), cornerRule: "shaper" });
+    expect(Math.abs(subRidge.positions[0])).toBeGreaterThan(Math.abs(subSmooth.positions[0]));
+  });
+
+  it("동일 초기 위치 심(Seam) 정점 그룹을 찾아 세분 후 위치와 법선을 일치시킨다", () => {
+    const initial = new Float32Array([
+      -0.5, 0.2, 0.1,
+      -0.50001, 0.2, 0.1,
+      0.5, 0.2, 0.1,
+    ]);
+    const groups = findCoincidentVertexGroups(initial, 1e-3);
+    expect(groups.length).toBe(1);
+    expect(Array.from(groups[0])).toEqual([0, 1]);
+
+    const deformed = new Float32Array([
+      -0.48, 0.22, 0.12,
+      -0.52, 0.18, 0.08,
+      0.5, 0.2, 0.1,
+    ]);
+    const normals = new Float32Array([
+      0, 1, 0,
+      1, 0, 0,
+      0, 0, 1,
+    ]);
+    lockCoincidentSeamVertices(deformed, normals, groups);
+    expect(deformed[0]).toBeCloseTo(-0.5, 5);
+    expect(deformed[3]).toBeCloseTo(-0.5, 5);
+    expect(deformed[1]).toBeCloseTo(0.2, 5);
+    expect(deformed[4]).toBeCloseTo(0.2, 5);
+    expect(normals[0]).toBeCloseTo(Math.SQRT1_2, 5);
+    expect(normals[3]).toBeCloseTo(Math.SQRT1_2, 5);
+  });
+
+  it("3-구간 Seam 무게중심(seamPosC/L/R) 차이로 파츠 정점과 안구 피벗을 자동 보정한다", () => {
+    const sourceSeamVerts = new Float32Array([
+      -1.0, 0.0, 0.0,
+      0.0, 0.0, 0.0,
+      1.0, 0.0, 0.0,
+    ]);
+    const targetSeamVerts = new Float32Array([
+      -1.2, 0.1, 0.05,
+      0.0, 0.1, 0.05,
+      1.2, 0.1, 0.05,
+    ]);
+    const sourceSeams = computeSeamCentroids3Zone(sourceSeamVerts, [0, 1, 2]);
+    const targetSeams = computeSeamCentroids3Zone(targetSeamVerts, [0, 1, 2]);
+    expect(sourceSeams.seamPosC).toEqual([0, 0, 0]);
+    expect(sourceSeams.seamPosL).toEqual([-0.5, 0, 0]);
+    expect(sourceSeams.seamPosR).toEqual([0.5, 0, 0]);
+
+    const adapted = adaptPartSeamOffsets({
+      partPositions: sourceSeamVerts,
+      sourceSeams,
+      targetSeams,
+      mirrorType: "bilateral",
+      eyeballPivotL: [-0.3, 1.5, 0.2],
+      eyeballPivotR: [0.3, 1.5, 0.2],
+    });
+    expect(adapted.deltaL[0]).toBeCloseTo(-0.1, 5);
+    expect(adapted.deltaR[0]).toBeCloseTo(0.1, 5);
+    // 좌측 정점(x < 0)은 +deltaL 이동
+    expect(adapted.adaptedPositions[0]).toBeCloseTo(-1.1, 5);
+    // 우측 정점(x >= 0)은 +deltaR 이동
+    expect(adapted.adaptedPositions[6]).toBeCloseTo(1.1, 5);
+    // 안구 피벗 보정: (-delta.x, +delta.y, +delta.z)
+    expect(adapted.adaptedEyeballPivotL?.[0]).toBeCloseTo(-0.3 - (-0.1), 5);
+    expect(adapted.adaptedEyeballPivotR?.[0]).toBeCloseTo(0.3 - 0.1, 5);
+  });
+
+  it("두상-목 절단면 정점을 매칭하고 스키닝된 목 위치와 두상 법선을 용접한다", () => {
+    const headPositions = new Float32Array([
+      -0.2, 1.4, -0.1,
+      0.2, 1.4, -0.1,
+    ]);
+    const neckPositions = new Float32Array([
+      -0.2001, 1.395, -0.1,
+      0.2001, 1.395, -0.1,
+    ]);
+    const headNormals = new Float32Array([
+      0, 0.6, 0.8,
+      0, 0.6, 0.8,
+    ]);
+    const neckNormals = new Float32Array([
+      0, 0, 1,
+      0, 0, 1,
+    ]);
+    const pairs = matchNeckSeamVertices(headPositions, [0, 1], neckPositions, [0, 1], 1e-2);
+    expect(pairs.length).toBe(2);
+    weldNeckSeamPositionsAndNormals({
+      headPositions,
+      headNormals,
+      neckPositions,
+      neckNormals,
+      pairs,
+      normalBlendWeight: 1.0,
+    });
+    expect(headPositions[1]).toBeCloseTo(1.395, 5);
+    expect(neckNormals[1]).toBeCloseTo(0.6, 5);
+    expect(neckNormals[2]).toBeCloseTo(0.8, 5);
   });
 });

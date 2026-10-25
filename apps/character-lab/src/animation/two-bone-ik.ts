@@ -14,10 +14,12 @@
 import {
   clamp,
   degToRad,
+  lerp,
   qFromAxisAngle,
   qMultiply,
   qNormalize,
   qRotateVec3,
+  qSlerp,
   quatFromTo,
   v3Add,
   v3AnyPerpendicular,
@@ -190,5 +192,110 @@ export function solveTwoBoneIk(input: TwoBoneIkInput): TwoBoneIkResult {
     midPosition,
     endPosition,
     midBendDeg: (bend * 180) / Math.PI,
+  };
+}
+
+/**
+ * 오일러 각(도)을 [-180°, 180°] 범위로 정규화한다 (SHAPER TwistBone::LateUpdate 0x060002a5).
+ */
+export function normalizeSignedAngleDeg(angleDeg: number): number {
+  let a = ((angleDeg + 180) % 360 + 360) % 360 - 180;
+  if (a === -180 && angleDeg > 0) a = 180;
+  return a;
+}
+
+export interface ShaperTwistBoneStep {
+  readonly weight: number;
+  /** 로컬 X축 전용 비틀림 오일러 각: (theta_x, 0, 0) */
+  readonly localEulerDeg: Vec3;
+  readonly localRotation: Quat;
+}
+
+/**
+ * SHAPER TwistBone::LateUpdate(0x060002a5)의 로컬 X축 전용 Swing-Twist 분리 보간:
+ * - 시작점(startEulerDeg)과 끝점(endEulerDeg)의 오일러 각을 [-180°, 180°]로 정규화한 뒤
+ * - 보조 트위스트 본의 로컬 회전을 오직 로컬 X축 비틀림 성분 (theta_x(t_i), 0, 0)만 남기도록 분배한다.
+ */
+export function solveShaperTwistBoneChain(options: {
+  readonly startEulerDeg: Vec3;
+  readonly endEulerDeg: Vec3;
+  readonly weights: readonly number[];
+}): readonly ShaperTwistBoneStep[] {
+  const { startEulerDeg, endEulerDeg, weights } = options;
+  const startX = normalizeSignedAngleDeg(startEulerDeg[0]);
+  const endX = normalizeSignedAngleDeg(endEulerDeg[0]);
+  return weights.map((rawWeight) => {
+    const w = clamp(rawWeight, 0, 1);
+    const thetaX = lerp(startX, endX, w);
+    const localEulerDeg: Vec3 = [thetaX, 0, 0];
+    const localRotation = qFromAxisAngle([1, 0, 0], degToRad(thetaX));
+    return { weight: w, localEulerDeg, localRotation };
+  });
+}
+
+/**
+ * SHAPER OrientationConstraint::Update(0x06000276):
+ * 어깨(ShoulderCorrect_L/R) 및 고관절(UpLegCorrect_L/R) 보조 본에 target0과 target1의 50% 회전(Slerp 0.5)을 부여한다.
+ */
+export function solveShaperOrientationConstraint(target0: Quat, target1: Quat, weight = 0.5): Quat {
+  return qNormalize(qSlerp(qNormalize(target0), qNormalize(target1), clamp(weight, 0, 1)));
+}
+
+export interface GroundedBodyHeightInput {
+  readonly ankleLeftY: number;
+  readonly ankleRightY: number;
+  readonly defaultAnkleY: number;
+  readonly rootPosition: Vec3;
+  readonly pelvisIkTargetY: number;
+  readonly headBoneY: number;
+  readonly headOffsetY?: number;
+  readonly headMeshMaxLocalY: number;
+}
+
+export interface GroundedBodyHeightResult {
+  readonly lowestAnkleY: number;
+  readonly groundDeltaY: number;
+  readonly groundedRootPosition: Vec3;
+  readonly groundedPelvisIkTargetY: number;
+  readonly bodyHeightM: number;
+  readonly bodyHeightCm: number;
+  readonly labelKo: string;
+}
+
+/**
+ * SHAPER BoneManager::SetBodyHeight(0x06000105):
+ * - 좌·우 발목 중 더 낮은 월드 Y좌표 y_min = min(y_ankleL, y_ankleR)를 찾아 루트 본과 골반 IK 타깃을 지면(defaultAnkleY)에 접지시킨다.
+ * - 접지된 머리 본 높이 + 머리 오프셋 + 두상 최상단 정점 높이를 합산해 실시간 캐릭터 신장(cm)을 산출한다.
+ */
+export function computeGroundedBodyHeight(input: GroundedBodyHeightInput): GroundedBodyHeightResult {
+  const {
+    ankleLeftY,
+    ankleRightY,
+    defaultAnkleY,
+    rootPosition,
+    pelvisIkTargetY,
+    headBoneY,
+    headOffsetY = 0,
+    headMeshMaxLocalY,
+  } = input;
+  const lowestAnkleY = Math.min(ankleLeftY, ankleRightY);
+  const groundDeltaY = lowestAnkleY - defaultAnkleY;
+  const groundedRootPosition: Vec3 = [
+    rootPosition[0],
+    rootPosition[1] - groundDeltaY,
+    rootPosition[2],
+  ];
+  const groundedPelvisIkTargetY = pelvisIkTargetY - groundDeltaY;
+  const groundedHeadY = headBoneY - groundDeltaY;
+  const bodyHeightM = Math.max(0, groundedHeadY + headOffsetY + headMeshMaxLocalY);
+  const bodyHeightCm = Math.round(bodyHeightM * 100);
+  return {
+    lowestAnkleY,
+    groundDeltaY,
+    groundedRootPosition,
+    groundedPelvisIkTargetY,
+    bodyHeightM,
+    bodyHeightCm,
+    labelKo: `신장 : ${bodyHeightCm} cm`,
   };
 }

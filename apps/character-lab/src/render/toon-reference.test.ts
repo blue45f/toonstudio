@@ -1,7 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import { TOON_FRAGMENT_GLSL, TOON_FRAGMENT_WGSL } from "./shader-sources";
-import { TOON_BAND_EPSILON, TOON_FACE_DARK_SHADE, TOON_FACE_LIT_SHADE, TOON_FRESNEL_POWER, TOON_MAX_BOUNDARIES, TOON_RIM_EDGE0, TOON_RIM_EDGE1, evaluateToon, normalizeToonLighting, smoothstep, step, toonAlbedo, toonSdfCoordinate, toonShading } from "./toon-reference";
+import {
+  TOON_BAND_EPSILON,
+  TOON_FACE_DARK_SHADE,
+  TOON_FACE_LIT_SHADE,
+  TOON_FRESNEL_POWER,
+  TOON_MAX_BOUNDARIES,
+  TOON_RIM_EDGE0,
+  TOON_RIM_EDGE1,
+  computeCubicMatCapRamp,
+  computeEyeballHighlightTransform,
+  evaluateCubicMatCapBand,
+  evaluateToon,
+  normalizeToonLighting,
+  smoothstep,
+  step,
+  toonAlbedo,
+  toonSdfCoordinate,
+  toonShading,
+} from "./toon-reference";
 
 import type { ToonFragmentInput, ToonParams } from "./toon-reference";
 
@@ -138,6 +156,47 @@ describe("toon-reference", () => {
       const light = [Number.NaN, 0.5, 0.5] as const;
       const ambient = [0.1, 0.1, 0.1] as const;
       expect(normalizeToonLighting(light, ambient).ambient).toBe(ambient);
+    });
+  });
+
+  describe("SHAPER 3차(Cubic) MatCap 음영·반사광 램프 및 4-모드 안구 하이라이트", () => {
+    it("computeCubicMatCapRamp: width = (5 - 5w)^3 = 125*(1-w)^3, offset = -(width - 1)/2 + p*width", () => {
+      const sharp = computeCubicMatCapRamp(0.5, 0.0);
+      expect(sharp.scaleU).toBeCloseTo(125, 6);
+      expect(sharp.offsetU).toBeCloseTo(0.5, 6);
+
+      const mid = computeCubicMatCapRamp(0.5, 0.8);
+      // w=0.8 -> (5 - 4)^3 = 1, offset = 0 + 0.5 = 0.5
+      expect(mid.scaleU).toBeCloseTo(1, 6);
+      expect(mid.offsetU).toBeCloseTo(0.5, 6);
+
+      expect(evaluateCubicMatCapBand(0.6, 0.5, 0.0)).toBeCloseTo(1, 6);
+      expect(evaluateCubicMatCapBand(-0.6, 0.5, 0.0)).toBeCloseTo(0, 6);
+    });
+
+    it("computeEyeballHighlightTransform: 4-모드(fix/cam/light/world) 회전과 F10 카메라 시선 고정(fixEyeballCam)을 계산한다", () => {
+      const lightMode = computeEyeballHighlightTransform({
+        mode: "light",
+        eyeballEulerDeg: [5, -10, 0],
+        cameraLookEulerDeg: [0, 180, 0],
+        lightEulerDeg: [20, 30, 0],
+        offsetPos: [10, -5],
+        fixEyeballCam: false,
+      });
+      expect(lightMode.resolvedEyeballEulerDeg).toEqual([5, -10, 0]);
+      // light: base = [20, 30+180, 0] = [20, 210, 0], highlight = [20 + (-5), 210 - 10 + 180, 0] = [15, 380, 0]
+      expect(lightMode.highlightEulerDeg).toEqual([15, 380, 0]);
+
+      const fixLocked = computeEyeballHighlightTransform({
+        mode: "fix",
+        eyeballEulerDeg: [5, -10, 0],
+        cameraLookEulerDeg: [2, 175, 0],
+        lightEulerDeg: [0, 0, 0],
+        offsetPos: [0, 0],
+        fixEyeballCam: true,
+      });
+      expect(fixLocked.resolvedEyeballEulerDeg).toEqual([2, 175, 0]);
+      expect(fixLocked.highlightEulerDeg).toEqual([2, 355, 0]);
     });
   });
 });

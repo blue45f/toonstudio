@@ -281,3 +281,260 @@ export function hairStrands(style: HairStyleId, scalp: ScalpSurface, seed: numbe
   for (const zone of spec.zones) out.push(...zoneStrands(scalp, zone, random));
   return out;
 }
+
+/** SHAPER CreateHairBaseMesh(0x060001cf): 다이아몬드 단면 양옆 능선(k=0, 2)의 준-샤프 Catmull-Clark 강도 */
+export const SHAPER_HAIR_RIDGE_SHARPNESS = 0.8;
+/** SHAPER PhysicsStart(0x060001b1): 스텝당 중력 타깃 위치 보간 계수 */
+export const SHAPER_HAIR_PHYSICS_LERP = 0.2;
+
+export interface ShaperHairControlPoint {
+  readonly position: Vec3;
+  /** 단면 가로·세로 스케일 (widthX, depthZ) */
+  readonly scale?: readonly [number, number];
+  /** 단면 회전각(라디안, 진행 방향 축 기준 twist) */
+  readonly twistRad?: number;
+}
+
+/**
+ * SHAPER HairData::SetVerticesPosFromControlPoints(0x060001c2) 선형-외삽 하이브리드 스플라인 보간:
+ * - L(t) = (1 - t) * P_{j+1} + t * P_{j+2}
+ * - T_start = 0.5 * (P_{j+2} - P_j), T_end = 0.5 * (P_{j+3} - P_{j+1})
+ * - E(t) = (1 - t) * (P_{j+1} + t * T_start) + t * (P_{j+2} - (1 - t) * T_end)
+ * - C(t) = 0.5 * L(t) + 0.5 * E(t)
+ */
+export function evaluateShaperHairSplinePoint(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): Vec3 {
+  const ct = Math.min(1, Math.max(0, t));
+  const oneMinusT = 1 - ct;
+  const lx = oneMinusT * p1[0] + ct * p2[0];
+  const ly = oneMinusT * p1[1] + ct * p2[1];
+  const lz = oneMinusT * p1[2] + ct * p2[2];
+
+  const tsx = 0.5 * (p2[0] - p0[0]);
+  const tsy = 0.5 * (p2[1] - p0[1]);
+  const tsz = 0.5 * (p2[2] - p0[2]);
+
+  const tex = 0.5 * (p3[0] - p1[0]);
+  const tey = 0.5 * (p3[1] - p1[1]);
+  const tez = 0.5 * (p3[2] - p1[2]);
+
+  const ex = oneMinusT * (p1[0] + ct * tsx) + ct * (p2[0] - oneMinusT * tex);
+  const ey = oneMinusT * (p1[1] + ct * tsy) + ct * (p2[1] - oneMinusT * tey);
+  const ez = oneMinusT * (p1[2] + ct * tsz) + ct * (p2[2] - oneMinusT * tez);
+
+  return [0.5 * lx + 0.5 * ex, 0.5 * ly + 0.5 * ey, 0.5 * lz + 0.5 * ez];
+}
+
+export interface SampledHairRing {
+  readonly center: Vec3;
+  readonly scale: readonly [number, number];
+  readonly twistRad: number;
+}
+
+/**
+ * 제어점 체인(M >= 2)의 양 끝을 복제해 구간당 stepsPerSegment 분할로 하이브리드 카디널 스플라인 단면 링들을 샘플링한다.
+ */
+export function sampleShaperHairSpline(
+  controlPoints: readonly ShaperHairControlPoint[],
+  stepsPerSegment = 4,
+): readonly SampledHairRing[] {
+  if (controlPoints.length === 0) return [];
+  if (controlPoints.length === 1) {
+    const cp = controlPoints[0];
+    return [
+      {
+        center: cp.position,
+        scale: cp.scale ?? [1, 1],
+        twistRad: cp.twistRad ?? 0,
+      },
+    ];
+  }
+  const steps = Math.max(1, Math.floor(stepsPerSegment));
+  const m = controlPoints.length;
+  const rings: SampledHairRing[] = [];
+  for (let j = 0; j < m - 1; j += 1) {
+    const cp0 = controlPoints[Math.max(0, j - 1)];
+    const cp1 = controlPoints[j];
+    const cp2 = controlPoints[j + 1];
+    const cp3 = controlPoints[Math.min(m - 1, j + 2)];
+    const s1 = cp1.scale ?? [1, 1];
+    const s2 = cp2.scale ?? [1, 1];
+    const tw1 = cp1.twistRad ?? 0;
+    const tw2 = cp2.twistRad ?? 0;
+
+    for (let k = 0; k < steps; k += 1) {
+      const t = k / steps;
+      rings.push({
+        center: evaluateShaperHairSplinePoint(cp0.position, cp1.position, cp2.position, cp3.position, t),
+        scale: [s1[0] + (s2[0] - s1[0]) * t, s1[1] + (s2[1] - s1[1]) * t],
+        twistRad: tw1 + (tw2 - tw1) * t,
+      });
+    }
+  }
+  const last = controlPoints[m - 1];
+  rings.push({
+    center: last.position,
+    scale: last.scale ?? [1, 1],
+    twistRad: last.twistRad ?? 0,
+  });
+  return rings;
+}
+
+export interface ShaperHairStrandTubeMesh {
+  /** 정점 위치(ringCount * 4 * 3 floats) */
+  readonly positions: Float32Array;
+  /** 쿼드 면 인덱스((ringCount - 1) * 4 * 4 uint32s) */
+  readonly quadFaces: Uint32Array;
+  /** 정점별 Catmull-Clark 샤프니스(ringCount * 4 floats: 양옆 능선 k=0,2는 0.8, 양 끝은 1.0) */
+  readonly vertexSharpness: Float32Array;
+  /** 각 링에 적용된 sin((ring / totalRings) * π) 테이퍼 배율 */
+  readonly ringTaperFactors: Float32Array;
+}
+
+/**
+ * SHAPER CreateHairBaseMesh(0x060001cf) 방식의 다이아몬드 4각 단면 헤어 튜브 및 능선 샤프니스 생성:
+ * - 길이 방향 단면 폭을 sin((ring / (totalRings - 1)) * π)로 테이퍼링
+ * - sharp == true일 때 다이아몬드 양옆 능선 정점(k=0, k=2)에 power=0.8, 모근/모발 끝에 power=1.0 부여
+ */
+export function buildShaperHairStrandTube(options: {
+  readonly controlPoints: readonly ShaperHairControlPoint[];
+  readonly stepsPerSegment?: number;
+  readonly baseWidth?: number;
+  readonly baseDepth?: number;
+  readonly sharp?: boolean;
+}): ShaperHairStrandTubeMesh {
+  const {
+    controlPoints,
+    stepsPerSegment = 4,
+    baseWidth = 0.04,
+    baseDepth = 0.02,
+    sharp = true,
+  } = options;
+  const rings = sampleShaperHairSpline(controlPoints, stepsPerSegment);
+  const ringCount = rings.length;
+  if (ringCount < 2) {
+    return {
+      positions: new Float32Array(0),
+      quadFaces: new Uint32Array(0),
+      vertexSharpness: new Float32Array(0),
+      ringTaperFactors: new Float32Array(0),
+    };
+  }
+
+  const positions = new Float32Array(ringCount * 4 * 3);
+  const vertexSharpness = new Float32Array(ringCount * 4);
+  const ringTaperFactors = new Float32Array(ringCount);
+  const quadFaces = new Uint32Array((ringCount - 1) * 4 * 4);
+
+  // 다이아몬드 4개 꼭짓점 로컬 오프셋: k=0(-X 능선), k=1(+Z 앞), k=2(+X 능선), k=3(-Z 뒤)
+  const diamondLocal: readonly (readonly [number, number])[] = [
+    [-1, 0],
+    [0, 1],
+    [1, 0],
+    [0, -1],
+  ];
+
+  for (let r = 0; r < ringCount; r += 1) {
+    const ring = rings[r];
+    const taper = Math.sin((r / (ringCount - 1)) * Math.PI);
+    ringTaperFactors[r] = taper;
+
+    const prevCenter = rings[Math.max(0, r - 1)].center;
+    const nextCenter = rings[Math.min(ringCount - 1, r + 1)].center;
+    const tangent = v3Normalize(v3Sub(nextCenter, prevCenter));
+    const upHint: Vec3 = Math.abs(tangent[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    const sideBase = v3Normalize(v3Cross(upHint, tangent));
+    const depthBase = v3Normalize(v3Cross(tangent, sideBase));
+
+    const cosTw = Math.cos(ring.twistRad);
+    const sinTw = Math.sin(ring.twistRad);
+    const axisX = v3Add(v3Scale(sideBase, cosTw), v3Scale(depthBase, sinTw));
+    const axisZ = v3Sub(v3Scale(depthBase, cosTw), v3Scale(sideBase, sinTw));
+
+    const rx = 0.5 * baseWidth * ring.scale[0] * taper;
+    const rz = 0.5 * baseDepth * ring.scale[1] * taper;
+    const isEndpoint = r === 0 || r === ringCount - 1;
+
+    for (let k = 0; k < 4; k += 1) {
+      const [lx, lz] = diamondLocal[k];
+      const offset = v3Add(v3Scale(axisX, lx * rx), v3Scale(axisZ, lz * rz));
+      const vPos = v3Add(ring.center, offset);
+      const vIdx = r * 4 + k;
+      positions[vIdx * 3] = vPos[0];
+      positions[vIdx * 3 + 1] = vPos[1];
+      positions[vIdx * 3 + 2] = vPos[2];
+
+      if (sharp) {
+        if (isEndpoint) {
+          vertexSharpness[vIdx] = 1.0;
+        } else if (k === 0 || k === 2) {
+          vertexSharpness[vIdx] = SHAPER_HAIR_RIDGE_SHARPNESS;
+        } else {
+          vertexSharpness[vIdx] = 0.0;
+        }
+      } else {
+        vertexSharpness[vIdx] = 0.0;
+      }
+    }
+  }
+
+  for (let r = 0; r < ringCount - 1; r += 1) {
+    const r0 = r * 4;
+    const r1 = (r + 1) * 4;
+    for (let k = 0; k < 4; k += 1) {
+      const nextK = (k + 1) % 4;
+      const base = (r * 4 + k) * 4;
+      quadFaces[base] = r0 + k;
+      quadFaces[base + 1] = r0 + nextK;
+      quadFaces[base + 2] = r1 + nextK;
+      quadFaces[base + 3] = r1 + k;
+    }
+  }
+
+  return { positions, quadFaces, vertexSharpness, ringTaperFactors };
+}
+
+/**
+ * SHAPER HairData::PhysicsStart(0x060001b1) 준-정적(Quasi-Static) 제어점 중력·두상 구체 충돌 스텝:
+ * - 모근(index 0)은 고정하고, 나머지 제어점을 중력 방향으로 0.2 비율씩 보간 이동한 뒤,
+ * - 두상 구체 콜라이더 반경(0.5 * diameter = radius) 안으로 침투한 제어점을 표면 밖으로 밀어내고 세그먼트 길이를 유지한다.
+ */
+export function simulateShaperHairPhysicsStep(options: {
+  readonly points: readonly Vec3[];
+  readonly gravityStep: Vec3;
+  readonly headCollider: { readonly center: Vec3; readonly radius: number };
+  readonly lerpFactor?: number;
+}): readonly Vec3[] {
+  const { points, gravityStep, headCollider, lerpFactor = SHAPER_HAIR_PHYSICS_LERP } = options;
+  if (points.length <= 1) return [...points];
+  const alpha = Math.min(1, Math.max(0, lerpFactor));
+  const out: Vec3[] = [points[0]];
+
+  for (let i = 1; i < points.length; i += 1) {
+    const prevRest = points[i - 1];
+    const curRest = points[i];
+    const segLen = Math.max(1e-6, v3Length(v3Sub(curRest, prevRest)));
+
+    const target = v3Add(curRest, gravityStep);
+    let moved: Vec3 = [
+      curRest[0] + (target[0] - curRest[0]) * alpha,
+      curRest[1] + (target[1] - curRest[1]) * alpha,
+      curRest[2] + (target[2] - curRest[2]) * alpha,
+    ];
+
+    // 세그먼트 길이 구속
+    const fromPrev = v3Sub(moved, out[i - 1]);
+    const dirFromPrev: Vec3 = v3Length(fromPrev) > 1e-8 ? v3Normalize(fromPrev) : [0, -1, 0];
+    moved = v3Add(out[i - 1], v3Scale(dirFromPrev, segLen));
+
+    // 두상 구체 콜라이더(dist < radius) 밀어내기
+    const fromHead = v3Sub(moved, headCollider.center);
+    const distHead = v3Length(fromHead);
+    if (distHead < headCollider.radius) {
+      const pushDir: Vec3 = distHead > 1e-8 ? v3Normalize(fromHead) : [0, 1, 0];
+      moved = v3Add(headCollider.center, v3Scale(pushDir, headCollider.radius));
+    }
+
+    out.push(moved);
+  }
+  return out;
+}

@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { PROJECTION_MAX_SIZE_M, PROJECTION_MIN_SIZE_M, hasProjectionPaint, metersPerTexel, overlayHasPaint, premultipliedPixel, projectionSizeM, readProjectionPaint, unpremultiplyPixel } from "./projection-paint";
+import {
+  PROJECTION_MAX_SIZE_M,
+  PROJECTION_MIN_SIZE_M,
+  SHAPER_STROKE_UPDATE_BUDGET_MS,
+  hasProjectionPaint,
+  metersPerTexel,
+  overlayHasPaint,
+  premultipliedPixel,
+  projectionSizeM,
+  readProjectionPaint,
+  runFrameBudgetedStrokeUpdates,
+  unpremultiplyPixel,
+} from "./projection-paint";
 
 import type { ProjectionPaintPort } from "./projection-paint";
 
@@ -56,5 +68,37 @@ describe("projection-paint 순수 수학", () => {
     const port = { begin: () => true } as unknown as ProjectionPaintPort;
     expect(readProjectionPaint({ projectionPaint: () => port })).toBe(port);
     expect(readProjectionPaint({ projectionPaint: () => null })).toBeNull();
+  });
+
+  it("8.0ms 프레임 예산 스케줄러(UpdateLines): 예산을 초과하면 중단하고 다음 프레임에서 이어서 처리한다", () => {
+    expect(SHAPER_STROKE_UPDATE_BUDGET_MS).toBe(8.0);
+    let clock = 0;
+    const updated: number[] = [];
+    const firstFrame = runFrameBudgetedStrokeUpdates({
+      totalStrokes: 5,
+      startIndex: 0,
+      nowMs: () => clock,
+      updateStroke: (idx) => {
+        updated.push(idx);
+        clock += 3.0; // 3ms씩 소요 -> 3번째(9ms >= 8ms) 후 중단
+      },
+    });
+    expect(firstFrame.updatedCount).toBe(3);
+    expect(firstFrame.nextIndex).toBe(3);
+    expect(firstFrame.completed).toBe(false);
+
+    const secondFrame = runFrameBudgetedStrokeUpdates({
+      totalStrokes: 5,
+      startIndex: firstFrame.nextIndex,
+      nowMs: () => clock,
+      updateStroke: (idx) => {
+        updated.push(idx);
+        clock += 3.0;
+      },
+    });
+    expect(secondFrame.updatedCount).toBe(2);
+    expect(secondFrame.nextIndex).toBe(0);
+    expect(secondFrame.completed).toBe(true);
+    expect(updated).toEqual([0, 1, 2, 3, 4]);
   });
 });

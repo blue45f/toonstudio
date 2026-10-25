@@ -282,3 +282,31 @@ export function countLinePixels(mask: Uint8ClampedArray): number {
   for (let p = 0; p < mask.length; p += 1) if ((mask[p] ?? 0) > 0) count += 1;
   return count;
 }
+
+/**
+ * SHAPER ExportManager::ExportPSD(0x0600018a)의 OutLine 패스 휘도-알파(Luminance-to-Alpha) 변환 공식:
+ * - 흰 배경 위에 렌더링된 외곽선 패스에서 불투명 픽셀(c.a >= 255, 정규화 1.0)에 대해
+ *   Color(0, 0, 0, 1 - c.r) = RGBA(lineColor, 255 - R)로 변환해 배경 흰색 번짐(halo)이 전혀 없는 순수 투명 선화를 추출한다.
+ */
+export function extractOutlinePassLuminanceToAlpha(
+  outlinePass: CapturedRaster,
+  lineColor: readonly [number, number, number] = [0, 0, 0],
+): CapturedRaster {
+  const { width, height } = outlinePass;
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  for (let p = 0; p < width * height; p += 1) {
+    const i = p * 4;
+    const a = outlinePass.rgba[i + 3] ?? 0;
+    if (a >= 255) {
+      const r = outlinePass.rgba[i] ?? 255;
+      const lineAlpha = Math.min(255, Math.max(0, 255 - r));
+      if (lineAlpha > 0) {
+        rgba[i] = lineColor[0];
+        rgba[i + 1] = lineColor[1];
+        rgba[i + 2] = lineColor[2];
+        rgba[i + 3] = lineAlpha;
+      }
+    }
+  }
+  return { width, height, rgba };
+}

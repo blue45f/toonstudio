@@ -129,3 +129,63 @@ export function premultipliedPixel(color: readonly [number, number, number], mas
   const alpha = Math.min(1, Math.max(0, mask * strength));
   return [Math.round(color[0] * alpha), Math.round(color[1] * alpha), Math.round(color[2] * alpha), Math.round(alpha * 255)];
 }
+
+/**
+ * SHAPER LineData::UpdateLines(0x06000221)의 프레임당 스트로크 재투영 시간 예산(8.0 ms).
+ */
+export const SHAPER_STROKE_UPDATE_BUDGET_MS = 8.0;
+
+export interface FrameBudgetedStrokeUpdateResult {
+  readonly updatedCount: number;
+  readonly nextIndex: number;
+  readonly elapsedMs: number;
+  readonly completed: boolean;
+}
+
+/**
+ * SHAPER LineData::UpdateLines(0x06000221)와 동일한 점진적 프레임 예산 스케줄러:
+ * - startIndex부터 각 스트로크의 updateStroke(index)를 실행하며 소요 시간을 누적한다.
+ * - 누적 시간이 budgetMs(기본 8.0 ms) 이상이면 즉시 루프를 멈추고 다음 프레임의 재개 위치(nextIndex)를 반환한다.
+ */
+export function runFrameBudgetedStrokeUpdates(options: {
+  readonly totalStrokes: number;
+  readonly startIndex: number;
+  readonly updateStroke: (strokeIndex: number) => void;
+  readonly nowMs?: () => number;
+  readonly budgetMs?: number;
+}): FrameBudgetedStrokeUpdateResult {
+  const {
+    totalStrokes,
+    startIndex,
+    updateStroke,
+    nowMs = () => performance.now(),
+    budgetMs = SHAPER_STROKE_UPDATE_BUDGET_MS,
+  } = options;
+  if (totalStrokes <= 0 || startIndex >= totalStrokes) {
+    return { updatedCount: 0, nextIndex: 0, elapsedMs: 0, completed: true };
+  }
+  const safeStart = Math.max(0, startIndex);
+  let elapsedMs = 0;
+  let updatedCount = 0;
+  for (let i = safeStart; i < totalStrokes; i += 1) {
+    const t0 = nowMs();
+    updateStroke(i);
+    const dt = Math.max(0, nowMs() - t0);
+    elapsedMs += dt;
+    updatedCount += 1;
+    if (elapsedMs >= budgetMs && i + 1 < totalStrokes) {
+      return {
+        updatedCount,
+        nextIndex: i + 1,
+        elapsedMs,
+        completed: false,
+      };
+    }
+  }
+  return {
+    updatedCount,
+    nextIndex: 0,
+    elapsedMs,
+    completed: true,
+  };
+}

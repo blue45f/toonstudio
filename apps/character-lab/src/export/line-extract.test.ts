@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { circleRaster, depthStepFixture, fillRaster, idPassRaster, rectRaster } from "../testing/raster-fixtures";
 
-import { DEFAULT_LINE_ART_OPTIONS, countLinePixels, extractLineArt, extractLineArtChannels, lineArtToRaster, sobelMagnitude } from "./line-extract";
+import {
+  DEFAULT_LINE_ART_OPTIONS,
+  countLinePixels,
+  extractLineArt,
+  extractLineArtChannels,
+  extractOutlinePassLuminanceToAlpha,
+  lineArtToRaster,
+  sobelMagnitude,
+} from "./line-extract";
 
 import type { CapturedDepth } from "../contracts";
 
@@ -116,5 +124,17 @@ describe("extractLineArt", () => {
     expect(() => extractLineArt({ lit, depth: flatDepth(2, 2, 0), width: 4, height: 4 })).toThrow(/depth/u);
     expect(() => extractLineArt({ lit, width: 5, height: 4 })).toThrow(/크기/u);
     expect(DEFAULT_LINE_ART_OPTIONS.lineWidthPx).toBe(1);
+  });
+
+  it("SHAPER ExportPSD 휘도-알파(Luminance-to-Alpha) 변환: c.a>=255 픽셀에서 Color(0, 0, 0, 255 - R)로 순수 선화를 추출한다", () => {
+    const pass = fillRaster(3, 1, (x) => {
+      if (x === 0) return [255, 255, 255, 255]; // 흰 배경 -> 알파 0
+      if (x === 1) return [55, 55, 55, 255]; // 안티앨리어싱 회색 선 -> 알파 200
+      return [0, 0, 0, 0]; // 투명 배경 -> 알파 0
+    });
+    const out = extractOutlinePassLuminanceToAlpha(pass, [10, 20, 30]);
+    expect(Array.from(out.rgba.subarray(0, 4))).toEqual([0, 0, 0, 0]);
+    expect(Array.from(out.rgba.subarray(4, 8))).toEqual([10, 20, 30, 200]);
+    expect(Array.from(out.rgba.subarray(8, 12))).toEqual([0, 0, 0, 0]);
   });
 });

@@ -4,7 +4,19 @@ import { HUMANOID_BONE_NAMES, PHYSICS_BUDGET, SLOT_PRESET_IDS, paramMorphName, v
 import { fnv1a64HexBytes } from "../../shared/hash";
 
 import { scalpSurfaceFixture } from "./fixtures";
-import { HEAD_BONE_INDEX, OUTFIT_AUX_BONE_INDEX_BASE, assumedHeadPivot, buildHair, hairStrands } from "./hair-builder";
+import {
+  HEAD_BONE_INDEX,
+  OUTFIT_AUX_BONE_INDEX_BASE,
+  SHAPER_HAIR_PHYSICS_LERP,
+  SHAPER_HAIR_RIDGE_SHARPNESS,
+  assumedHeadPivot,
+  buildHair,
+  buildShaperHairStrandTube,
+  evaluateShaperHairSplinePoint,
+  hairStrands,
+  sampleShaperHairSpline,
+  simulateShaperHairPhysicsStep,
+} from "./hair-builder";
 import { HAIR_STYLE_SPECS, hairChainBudget } from "./hair-styles";
 
 import type { HairStyleId, OutfitBuildContext, OutfitBuildResult } from "../../contracts";
@@ -143,5 +155,77 @@ describe("outfit/hair-builder", () => {
     const right = strands.slice(4).map((s) => s.points[0][0]);
     expect(Math.min(...left)).toBeGreaterThan(0);
     expect(Math.max(...right)).toBeLessThan(0);
+  });
+
+  describe("SHAPER 텐션 카디널 스플라인 헤어 튜브 및 반-샤프 능선(HairData)", () => {
+    it("선형-외삽 하이브리드 스플라인 C(t) = 0.5*L(t) + 0.5*E(t)는 양 끝점을 통과하고 곡률을 반영한다", () => {
+      const p0 = [0, 0, 0] as const;
+      const p1 = [1, 1, 0] as const;
+      const p2 = [2, 1, 0] as const;
+      const p3 = [3, 0, 0] as const;
+      expect(evaluateShaperHairSplinePoint(p0, p1, p2, p3, 0)).toEqual([1, 1, 0]);
+      expect(evaluateShaperHairSplinePoint(p0, p1, p2, p3, 1)).toEqual([2, 1, 0]);
+      const mid = evaluateShaperHairSplinePoint(p0, p1, p2, p3, 0.5);
+      // L(0.5) = [1.5, 1.0, 0], E(0.5) = [1.5, 1.25, 0] -> C(0.5) = [1.5, 1.125, 0]
+      expect(mid[0]).toBeCloseTo(1.5, 6);
+      expect(mid[1]).toBeCloseTo(1.125, 6);
+
+      const sampled = sampleShaperHairSpline(
+        [{ position: p0 }, { position: p1 }, { position: p2 }],
+        4,
+      );
+      expect(sampled.length).toBe(9);
+      expect(sampled[0].center).toEqual(p0);
+      expect(sampled[4].center).toEqual(p1);
+      expect(sampled[8].center).toEqual(p2);
+    });
+
+    it("사인 곡선 테이퍼링과 다이아몬드 양옆 능선(k=0,2) power=0.8 및 모근/끝점 power=1.0을 부여한다", () => {
+      expect(SHAPER_HAIR_RIDGE_SHARPNESS).toBeCloseTo(0.8, 6);
+      const tube = buildShaperHairStrandTube({
+        controlPoints: [
+          { position: [0, 1.6, 0] },
+          { position: [0, 1.4, 0.05] },
+          { position: [0, 1.2, 0.02] },
+        ],
+        stepsPerSegment: 2,
+        sharp: true,
+      });
+      // ringCount = 5 (0..4)
+      expect(tube.ringTaperFactors.length).toBe(5);
+      expect(tube.ringTaperFactors[0]).toBeCloseTo(0, 6);
+      expect(tube.ringTaperFactors[2]).toBeCloseTo(1, 6);
+      expect(tube.ringTaperFactors[4]).toBeCloseTo(0, 6);
+
+      // 모근(r=0)과 끝점(r=4)은 모두 1.0
+      for (let k = 0; k < 4; k += 1) {
+        expect(tube.vertexSharpness[k]).toBe(1.0);
+        expect(tube.vertexSharpness[4 * 4 + k]).toBe(1.0);
+      }
+      // 중간 링(r=2): k=0, 2는 0.8(능선), k=1, 3은 0.0
+      expect(tube.vertexSharpness[2 * 4 + 0]).toBeCloseTo(0.8, 6);
+      expect(tube.vertexSharpness[2 * 4 + 1]).toBe(0.0);
+      expect(tube.vertexSharpness[2 * 4 + 2]).toBeCloseTo(0.8, 6);
+      expect(tube.vertexSharpness[2 * 4 + 3]).toBe(0.0);
+    });
+
+    it("준-정적 물리 스텝(PhysicsStart): 0.2 보간 및 두상 구체 콜라이더 반경 밖 밀어내기를 수행한다", () => {
+      expect(SHAPER_HAIR_PHYSICS_LERP).toBeCloseTo(0.2, 6);
+      const stepped = simulateShaperHairPhysicsStep({
+        points: [
+          [0, 1.6, 0.12],
+          [0, 1.5, 0.05], // 두상 중심 [0, 1.5, 0] 반경 0.1 안으로 침투
+        ],
+        gravityStep: [0, -0.05, 0],
+        headCollider: { center: [0, 1.5, 0], radius: 0.1 },
+      });
+      expect(stepped[0]).toEqual([0, 1.6, 0.12]);
+      const distFromHead = Math.hypot(
+        stepped[1][0] - 0,
+        stepped[1][1] - 1.5,
+        stepped[1][2] - 0,
+      );
+      expect(distFromHead).toBeGreaterThanOrEqual(0.1 - 1e-6);
+    });
   });
 });
