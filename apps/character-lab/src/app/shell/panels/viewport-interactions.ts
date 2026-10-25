@@ -441,3 +441,231 @@ export function resolveShaperGizmoCastPlaneEuler(
   if (axis === "y") return [0, cameraEulerDeg[1], 0];
   return [0, 0, cameraEulerDeg[2]];
 }
+
+export interface ShaperPartThumbnailFramingInput {
+  readonly tabIndex: number;
+  readonly headRootPosition?: Vec3;
+  readonly partCenterOffset?: Vec3;
+  readonly partMinPos?: Vec3;
+  readonly partMaxPos?: Vec3;
+  readonly controlBoneRootPosition?: Vec3;
+  readonly boundsCenter?: Vec3;
+  readonly boundsSize?: Vec3;
+  readonly handTargetPosition?: Vec3;
+  readonly includePoseCam?: boolean;
+  readonly activeCameraPivotPosition?: Vec3;
+  readonly activeCameraPivotYawDeg?: number;
+  readonly activeCameraPivotPitchDeg?: number;
+  readonly activeCameraFovDeg?: number;
+  readonly activeCameraDistance?: number;
+}
+
+export interface ShaperPartThumbnailCameraFrame {
+  readonly pivotPosition: Vec3;
+  readonly pivotYawDeg: number;
+  readonly pivotPitchDeg: number;
+  readonly fovDeg: number;
+  readonly distance: number;
+}
+
+/**
+ * SHAPER HeadPartsManager::CreatePartThumTex (0x060001f4) 역공학 내재화:
+ * 파츠 카테고리 탭(`0..13`)별로 썸네일 캡처 카메라의 피벗 중심점, Yaw(`25°`), Pitch(`0°`), FOV(`20°`) 및
+ * 바운딩 크기에 비례하는 카메라 거리를 자동 계산한다.
+ */
+export function computeShaperPartThumbnailCameraFrame(
+  input: ShaperPartThumbnailFramingInput,
+): ShaperPartThumbnailCameraFrame {
+  const {
+    tabIndex,
+    headRootPosition = [0, 1.5, 0],
+    partCenterOffset = [0, 0, 0],
+    partMinPos = [-0.5, -0.5, -0.5],
+    partMaxPos = [0.5, 0.5, 0.5],
+    controlBoneRootPosition = [0, 0.9, 0],
+    boundsCenter = [0, 1.0, 0],
+    boundsSize = [1, 1, 1],
+    handTargetPosition = [-0.4, 1.0, 0],
+    includePoseCam = false,
+    activeCameraPivotPosition = [0, 1.0, 0],
+    activeCameraPivotYawDeg = 0,
+    activeCameraPivotPitchDeg = 0,
+    activeCameraFovDeg = 30,
+    activeCameraDistance = 120,
+  } = input;
+
+  if (tabIndex === 12 && includePoseCam) {
+    return {
+      pivotPosition: [...activeCameraPivotPosition] as Vec3,
+      pivotYawDeg: activeCameraPivotYawDeg,
+      pivotPitchDeg: activeCameraPivotPitchDeg,
+      fovDeg: activeCameraFovDeg,
+      distance: activeCameraDistance,
+    };
+  }
+
+  const pivotYawDeg = 25;
+  const pivotPitchDeg = 0;
+  const fovDeg = 20;
+
+  if (tabIndex >= 0 && tabIndex < 6) {
+    const pivotPosition: Vec3 = [
+      headRootPosition[0] + partCenterOffset[0],
+      headRootPosition[1] + partCenterOffset[1],
+      headRootPosition[2] + partCenterOffset[2],
+    ];
+    const spanX = partMaxPos[0] - partMinPos[0];
+    const spanY = partMaxPos[1] - partMinPos[1];
+    const span = Math.max(spanX, spanY) * 3;
+    return {
+      pivotPosition,
+      pivotYawDeg,
+      pivotPitchDeg,
+      fovDeg,
+      distance: 5 + span,
+    };
+  }
+
+  if (tabIndex === 6) {
+    return {
+      pivotPosition: [...headRootPosition] as Vec3,
+      pivotYawDeg,
+      pivotPitchDeg,
+      fovDeg,
+      distance: 75,
+    };
+  }
+
+  if (tabIndex === 7 || tabIndex === 12) {
+    return {
+      pivotPosition: [...controlBoneRootPosition] as Vec3,
+      pivotYawDeg,
+      pivotPitchDeg,
+      fovDeg,
+      distance: 600,
+    };
+  }
+
+  if (tabIndex >= 8 && tabIndex <= 10) {
+    const maxExtent = Math.max(boundsSize[0], boundsSize[1], boundsSize[2]);
+    return {
+      pivotPosition: [...boundsCenter] as Vec3,
+      pivotYawDeg,
+      pivotPitchDeg,
+      fovDeg,
+      distance: maxExtent * 3,
+    };
+  }
+
+  if (tabIndex === 11) {
+    const maxExtent = Math.max(boundsSize[0], boundsSize[1], boundsSize[2]);
+    return {
+      pivotPosition: [...boundsCenter] as Vec3,
+      pivotYawDeg,
+      pivotPitchDeg,
+      fovDeg,
+      distance: maxExtent * 4,
+    };
+  }
+
+  return {
+    pivotPosition: [...handTargetPosition] as Vec3,
+    pivotYawDeg,
+    pivotPitchDeg,
+    fovDeg,
+    distance: 70,
+  };
+}
+
+export type ShaperHistoryType =
+  | "selectControlPoints"
+  | "selectHairControlPoints"
+  | "selectPoseControlPoints"
+  | "selectBodyControlPoints"
+  | "selectCostumeTransform"
+  | "createLine"
+  | "removeLine"
+  | "createHair"
+  | "removeHair"
+  | "changeInputField"
+  | "changeDropdown"
+  | "changeToggle"
+  | "changeColor"
+  | "changePart";
+
+export const SHAPER_HISTORY_TYPE_ORDER: readonly ShaperHistoryType[] = [
+  "selectControlPoints",
+  "selectHairControlPoints",
+  "selectPoseControlPoints",
+  "selectBodyControlPoints",
+  "selectCostumeTransform",
+  "createLine",
+  "removeLine",
+  "createHair",
+  "removeHair",
+  "changeInputField",
+  "changeDropdown",
+  "changeToggle",
+  "changeColor",
+  "changePart",
+];
+
+export interface ShaperHistoryEntry<TPayload = unknown> {
+  readonly type: ShaperHistoryType;
+  readonly payload: TPayload;
+}
+
+export interface ShaperHistoryStack<TPayload = unknown> {
+  readonly entries: readonly ShaperHistoryEntry<TPayload>[];
+  readonly curPos: number;
+}
+
+export interface ShaperHistoryStepResult<TPayload = unknown> {
+  readonly stack: ShaperHistoryStack<TPayload>;
+  readonly appliedEntry: ShaperHistoryEntry<TPayload> | null;
+}
+
+/**
+ * SHAPER HistoryManager::AddHistory (0x06000206) 역공학 내재화:
+ * `curPos < entries.length - 1`인 상태에서 새 히스토리가 기록되면
+ * `RemoveRange(curPos + 1, count - 1 - curPos)`로 Redo 꼬리를 잘라낸 뒤 새 항목을 추가하고 `curPos`를 갱신한다.
+ */
+export function pushShaperHistoryEntry<TPayload>(
+  stack: ShaperHistoryStack<TPayload>,
+  entry: ShaperHistoryEntry<TPayload>,
+): ShaperHistoryStack<TPayload> {
+  const truncated =
+    stack.curPos < stack.entries.length - 1
+      ? stack.entries.slice(0, Math.max(0, stack.curPos + 1))
+      : [...stack.entries];
+  truncated.push(entry);
+  return {
+    entries: truncated,
+    curPos: truncated.length - 1,
+  };
+}
+
+/**
+ * SHAPER HistoryManager::MoveHistoryPos (0x06000208) 역공학 내재화:
+ * `delta`(`-1` Undo, `+1` Redo)만큼 히스토리 커서를 이동하고, 유효 범위(`[0, entries.length - 1]`)로 클램프한 뒤
+ * 실제로 커서가 이동했을 때만 복원 대상 히스토리 엔트리를 반환한다.
+ */
+export function stepShaperHistoryCursor<TPayload>(
+  stack: ShaperHistoryStack<TPayload>,
+  delta: -1 | 1,
+): ShaperHistoryStepResult<TPayload> {
+  if (stack.entries.length === 0) {
+    return { stack, appliedEntry: null };
+  }
+  const nextPos = Math.max(0, Math.min(stack.entries.length - 1, stack.curPos + delta));
+  if (nextPos === stack.curPos) {
+    return { stack, appliedEntry: null };
+  }
+  return {
+    stack: {
+      entries: stack.entries,
+      curPos: nextPos,
+    },
+    appliedEntry: stack.entries[nextPos] ?? null,
+  };
+}

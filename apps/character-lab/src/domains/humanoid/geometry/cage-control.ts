@@ -430,3 +430,154 @@ export function selectControlPointsInScreenRect(options: {
   }
   return selected;
 }
+
+export interface ShaperQuadObjData {
+  readonly name: string;
+  readonly vertices: Float32Array;
+  readonly normals: Float32Array;
+  readonly uvs: Float32Array;
+  readonly quadIndices: Uint32Array;
+  readonly triangleIndices: Uint32Array;
+}
+
+export interface ShaperControlEdgeTransform {
+  readonly position: Vec3;
+  readonly forwardDirection: Vec3;
+  readonly edgeLength: number;
+  readonly thickness: number;
+  readonly localScale: Vec3;
+}
+
+function resolveObjIndex(rawToken: string, count: number): number {
+  const parsed = Number.parseInt(rawToken, 10);
+  if (!Number.isFinite(parsed) || parsed === 0) return -1;
+  return parsed < 0 ? count - -parsed : parsed - 1;
+}
+
+/**
+ * SHAPER SimpleQuadOBJ.SimpleQuadOBJLoader::Load (0x060005aa) 역공학 내재화:
+ * Catmull-Clark 서브디비전을 위해 4각형 면(`quadIndices`, 4N)을 보존하면서 동시에
+ * 렌더러 호환용 삼각형 분할 인덱스(`(0, 1, 2)` 및 `(3, 0, 2)`, 6N)와 정점별 최초 UV를 추출한다.
+ * 음수 상대 인덱스(`idx < 0 ? count - (-idx) : idx - 1`)를 지원한다.
+ */
+export function parseShaperQuadObj(objSource: string): ShaperQuadObjData {
+  let name = "Unnamed";
+  const rawPositions: number[] = [];
+  const rawNormals: number[] = [];
+  const rawUvs: number[] = [];
+  const quadIndices: number[] = [];
+  const triangleIndices: number[] = [];
+  const vertexUvMap = new Map<number, readonly [number, number]>();
+
+  const lines = objSource.split(/\r?\n/);
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.length === 0 || line.startsWith("#")) continue;
+    const tokens = line.split(/\s+/);
+    const head = tokens[0];
+
+    if ((head === "o" || head === "g") && tokens.length >= 2) {
+      name = tokens[1];
+    } else if (head === "v" && tokens.length >= 4) {
+      rawPositions.push(
+        Number.parseFloat(tokens[1]),
+        Number.parseFloat(tokens[2]),
+        Number.parseFloat(tokens[3]),
+      );
+    } else if (head === "vn" && tokens.length >= 4) {
+      rawNormals.push(
+        Number.parseFloat(tokens[1]),
+        Number.parseFloat(tokens[2]),
+        Number.parseFloat(tokens[3]),
+      );
+    } else if (head === "vt" && tokens.length >= 3) {
+      rawUvs.push(Number.parseFloat(tokens[1]), Number.parseFloat(tokens[2]));
+    } else if (head === "f" && tokens.length >= 4) {
+      const vertexCount = rawPositions.length / 3;
+      const uvCount = rawUvs.length / 2;
+      const faceVertIndices: number[] = [];
+
+      for (let i = 1; i < tokens.length; i += 1) {
+        const subTokens = tokens[i].split("/");
+        const vIdx = resolveObjIndex(subTokens[0] ?? "", vertexCount);
+        if (vIdx < 0 || vIdx >= vertexCount) continue;
+        faceVertIndices.push(vIdx);
+
+        if (subTokens.length > 1 && subTokens[1] !== "" && !vertexUvMap.has(vIdx)) {
+          const uvIdx = resolveObjIndex(subTokens[1], uvCount);
+          if (uvIdx >= 0 && uvIdx < uvCount) {
+            vertexUvMap.set(vIdx, [rawUvs[uvIdx * 2], rawUvs[uvIdx * 2 + 1]]);
+          }
+        }
+      }
+
+      if (faceVertIndices.length === 4) {
+        const [v0, v1, v2, v3] = faceVertIndices;
+        quadIndices.push(v0, v1, v2, v3);
+        triangleIndices.push(v0, v1, v2, v3, v0, v2);
+      } else if (faceVertIndices.length === 3) {
+        const [v0, v1, v2] = faceVertIndices;
+        triangleIndices.push(v0, v1, v2);
+      }
+    }
+  }
+
+  const totalVertices = rawPositions.length / 3;
+  const uvs = new Float32Array(totalVertices * 2);
+  for (let v = 0; v < totalVertices; v += 1) {
+    const uv = vertexUvMap.get(v);
+    if (uv !== undefined) {
+      uvs[v * 2] = uv[0];
+      uvs[v * 2 + 1] = uv[1];
+    }
+  }
+
+  return {
+    name,
+    vertices: new Float32Array(rawPositions),
+    normals: new Float32Array(rawNormals),
+    uvs,
+    quadIndices: new Uint32Array(quadIndices),
+    triangleIndices: new Uint32Array(triangleIndices),
+  };
+}
+
+/**
+ * SHAPER ControlEdge::AlignEdge (0x0600013d) 및 SetSize (0x0600013e) 역공학 내재화:
+ * 케이지 에지 기즈모의 중점 위치, 정렬 방향, 에지 길이, 그리고 카메라 거리·FOV에 비례하는
+ * 화면 고정 두께(`0.0005 * dist * (fov / 30)`) 스케일을 계산한다.
+ */
+export function computeShaperControlEdgeTransform(options: {
+  readonly startPoint: Vec3;
+  readonly endPoint: Vec3;
+  readonly cameraPosition: Vec3;
+  readonly fovDeg?: number;
+}): ShaperControlEdgeTransform {
+  const { startPoint, endPoint, cameraPosition, fovDeg = 30 } = options;
+  const position: Vec3 = [
+    (startPoint[0] + endPoint[0]) * 0.5,
+    (startPoint[1] + endPoint[1]) * 0.5,
+    (startPoint[2] + endPoint[2]) * 0.5,
+  ];
+  const dx = endPoint[0] - startPoint[0];
+  const dy = endPoint[1] - startPoint[1];
+  const dz = endPoint[2] - startPoint[2];
+  const edgeLength = Math.hypot(dx, dy, dz);
+  const forwardDirection: Vec3 =
+    edgeLength > 1e-8 ? [dx / edgeLength, dy / edgeLength, dz / edgeLength] : [0, 0, 1];
+
+  const camDist = Math.hypot(
+    position[0] - cameraPosition[0],
+    position[1] - cameraPosition[1],
+    position[2] - cameraPosition[2],
+  );
+  const thickness = camDist * 0.0005 * (fovDeg / 30);
+
+  return {
+    position,
+    forwardDirection,
+    edgeLength,
+    thickness,
+    localScale: [thickness, thickness, edgeLength],
+  };
+}

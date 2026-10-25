@@ -6,16 +6,20 @@ import { qRotateVec3, v3Add, v3Cross, v3Distance, v3Dot, v3Normalize, v3Sub } fr
 import {
   IK_REACH_TOLERANCE,
   computeGroundedBodyHeight,
+  computeShaperBoneControlPointCollider,
   computeShaperDetachedBoneVolumes,
   computeShaperMuscleFatBlendShapeWeights,
   mirrorShaperPose,
   normalizeSignedAngleDeg,
   pairShaperSymmetryBones,
+  resolveShaperCostumeMaterialSlotIndex,
   rotationBetweenFrames,
+  scaleShaperAccessoryVertices,
   solveShaperOrientationConstraint,
   solveShaperTwistBoneChain,
   solveTwoBoneIk,
   syncShaperCostumeBones,
+  syncShaperIkTargetsOnToggle,
 } from "./two-bone-ik";
 
 import type { Vec3 } from "../contracts/pose";
@@ -291,5 +295,55 @@ describe("SHAPER TwistBone, OrientationConstraint 및 자동 지면 접지/신�
     const syncedCostume = syncShaperCostumeBones(["BoneLThigh", "BoneHead"], skinStates);
     expect(syncedCostume.length).toBe(2);
     expect(syncedCostume[0].skinLocalScale[0]).toBeCloseTo(1.2, 6);
+  });
+
+  it("본 기즈모 콜라이더(FK 박스 vs IK 큐브), FK->IK 전환 타깃 스냅, 액세서리 정점 스케일 및 Skin 슬롯 스킵을 수행한다", () => {
+    const fkCollider = computeShaperBoneControlPointCollider({
+      position: [0, 1, 0],
+      cameraPosition: [0, 1, 10],
+      fovDeg: 30,
+      isIk: false,
+      boneLength: 0.4,
+    });
+    // thickness = 10 * 0.0025 * 1 = 0.025
+    expect(fkCollider.thickness).toBeCloseTo(0.025, 6);
+    expect(fkCollider.colliderSize).toEqual([0.4, 0.025, 0.025]);
+    expect(fkCollider.colliderCenter).toEqual([-0.2, 0, 0]);
+
+    const ikCollider = computeShaperBoneControlPointCollider({
+      position: [0, 1, 0],
+      cameraPosition: [0, 1, 10],
+      fovDeg: 30,
+      isIk: true,
+    });
+    expect(ikCollider.colliderSize).toEqual([0.05, 0.05, 0.05]);
+    expect(ikCollider.colliderCenter).toEqual([0, 0, 0]);
+
+    const ikSynced = syncShaperIkTargetsOnToggle({
+      enableIk: true,
+      armEndBoneTransforms: [
+        { position: [-0.5, 1.2, 0.1], eulerDeg: [10, 20, 30] },
+        { position: [0.5, 1.2, 0.1], eulerDeg: [10, -20, -30] },
+      ],
+      legPlatformGuideTransforms: [
+        { position: [-0.15, 0.08, 0.02], eulerDeg: [0, 5, 0] },
+        { position: [0.15, 0.08, 0.02], eulerDeg: [0, -5, 0] },
+      ],
+      pelvisTargetTransform: { position: [0, 0.95, 0], eulerDeg: [0, 0, 0] },
+      currentIkTargets: [],
+    });
+    expect(ikSynced.ikEnabled).toBe(true);
+    expect(ikSynced.syncedIkTargets).toHaveLength(5);
+    expect(ikSynced.syncedIkTargets[0].position).toEqual([-0.5, 1.2, 0.1]);
+    expect(ikSynced.syncedIkTargets[2].position).toEqual([-0.15, 0.08, 0.02]);
+
+    const scaledAcc = scaleShaperAccessoryVertices(
+      new Float32Array([1, 2, 3, -1, -2, -3]),
+      [2, 0.5, 3],
+    );
+    expect(Array.from(scaledAcc)).toEqual([2, 1, 9, -2, -1, -9]);
+
+    expect(resolveShaperCostumeMaterialSlotIndex(["Skin", "Jacket", "Trim"], 0)).toBe(1);
+    expect(resolveShaperCostumeMaterialSlotIndex(["Jacket", "Trim"], 0)).toBe(0);
   });
 });

@@ -7,18 +7,22 @@ import { projectToPixel } from "../../../render/viewport-math";
 import { qRotateVec3, v3Add, v3Length, v3Sub } from "../../../shared/math";
 
 import {
+  SHAPER_HISTORY_TYPE_ORDER,
   clampShaperGizmoDelta,
   classifyShaperTrackpadTwoFingerGesture,
   computeJointDrag,
+  computeShaperPartThumbnailCameraFrame,
   handlesKey,
   hudRows,
   isFingerBone,
   jointLabelKo,
+  pushShaperHistoryEntry,
   resolveDragPivot,
   resolveShaperCameraInputAction,
   resolveShaperGizmoCastPlaneEuler,
   resolveShaperPresetClickModifiers,
   resolveShaperViewportKeyShortcut,
+  stepShaperHistoryCursor,
   visibleHandles,
 } from "./viewport-interactions";
 
@@ -276,5 +280,47 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
     expect(resolveShaperGizmoCastPlaneEuler("x", [15, 30, 45])).toEqual([15, 0, 0]);
     expect(resolveShaperGizmoCastPlaneEuler("y", [15, 30, 45])).toEqual([0, 30, 0]);
     expect(resolveShaperGizmoCastPlaneEuler("z", [15, 30, 45])).toEqual([0, 0, 45]);
+  });
+
+  it("CreatePartThumTex 탭별 썸네일 카메라 자동 프레이밍 및 HistoryManager 14-타입 Undo/Redo 꼬리 절단을 수행한다", () => {
+    const headFrame = computeShaperPartThumbnailCameraFrame({
+      tabIndex: 2,
+      headRootPosition: [0, 1.5, 0],
+      partCenterOffset: [0, 0.1, 0.05],
+      partMinPos: [-2, -1, -1],
+      partMaxPos: [2, 1, 1],
+    });
+    expect(headFrame.pivotPosition).toEqual([0, 1.6, 0.05]);
+    expect(headFrame.pivotYawDeg).toBe(25);
+    expect(headFrame.fovDeg).toBe(20);
+    // span = max(4, 2) * 3 = 12 -> distance = 5 + 12 = 17
+    expect(headFrame.distance).toBeCloseTo(17, 5);
+
+    expect(computeShaperPartThumbnailCameraFrame({ tabIndex: 6 }).distance).toBe(75);
+    expect(computeShaperPartThumbnailCameraFrame({ tabIndex: 7 }).distance).toBe(600);
+    expect(
+      computeShaperPartThumbnailCameraFrame({ tabIndex: 9, boundsSize: [2, 5, 3] }).distance,
+    ).toBe(15);
+    expect(
+      computeShaperPartThumbnailCameraFrame({ tabIndex: 11, boundsSize: [2, 5, 3] }).distance,
+    ).toBe(20);
+    expect(computeShaperPartThumbnailCameraFrame({ tabIndex: 13 }).distance).toBe(70);
+
+    expect(SHAPER_HISTORY_TYPE_ORDER).toHaveLength(14);
+    let stack = { entries: [] as const, curPos: -1 };
+    stack = pushShaperHistoryEntry(stack, { type: "selectControlPoints", payload: 1 });
+    stack = pushShaperHistoryEntry(stack, { type: "createLine", payload: 2 });
+    stack = pushShaperHistoryEntry(stack, { type: "createHair", payload: 3 });
+    expect(stack.curPos).toBe(2);
+
+    const undoStep = stepShaperHistoryCursor(stack, -1);
+    expect(undoStep.stack.curPos).toBe(1);
+    expect(undoStep.appliedEntry?.payload).toBe(2);
+
+    // Undo 상태에서 새 항목 추가 시 Redo 꼬리(createHair)가 잘려나감
+    const branched = pushShaperHistoryEntry(undoStep.stack, { type: "changeColor", payload: 4 });
+    expect(branched.entries).toHaveLength(3);
+    expect(branched.curPos).toBe(2);
+    expect(branched.entries[2]?.type).toBe("changeColor");
   });
 });

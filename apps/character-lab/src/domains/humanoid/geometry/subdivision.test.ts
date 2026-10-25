@@ -7,6 +7,7 @@ import {
   buildSubdivisionPlan,
   catmullClark,
   computeSeamCentroids3Zone,
+  computeShaperControlEdgeTransform,
   computeShaperVertexKeyHash,
   expandWelded,
   findAdjacentBodyPartSeamPairs,
@@ -17,6 +18,7 @@ import {
   liftRegions,
   lockCoincidentSeamVertices,
   matchNeckSeamVertices,
+  parseShaperQuadObj,
   predictVertexCount,
   recalculateCreaseNormals,
   selectControlPointsInScreenRect,
@@ -411,5 +413,42 @@ describe("SHAPER 준-샤프(Semi-Sharp) 세분화 및 파츠/목 심(Seam) 정�
     });
     expect(partANorm[1]).toBeCloseTo(Math.SQRT1_2, 5);
     expect(partBNorm[2]).toBeCloseTo(Math.SQRT1_2, 5);
+  });
+
+  it("SimpleQuadOBJLoader::Load: 4각형 면 보존(quadIndices 4N), 삼각분할(6N), 음수 상대 인덱스 및 최초 UV 매핑을 수행한다", () => {
+    const objText = [
+      "o HeadCage01",
+      "v -1 0 0",
+      "v 1 0 0",
+      "v 1 1 0",
+      "v -1 1 0",
+      "vt 0.1 0.2",
+      "vt 0.9 0.2",
+      "vt 0.9 0.8",
+      "vt 0.1 0.8",
+      "vn 0 0 1",
+      "f 1/1/1 2/2/1 3/3/1 -1/-1/1",
+    ].join("\n");
+
+    const loaded = parseShaperQuadObj(objText);
+    expect(loaded.name).toBe("HeadCage01");
+    expect(Array.from(loaded.quadIndices)).toEqual([0, 1, 2, 3]);
+    expect(Array.from(loaded.triangleIndices)).toEqual([0, 1, 2, 3, 0, 2]);
+    expect(loaded.uvs[0]).toBeCloseTo(0.1, 5);
+    expect(loaded.uvs[1]).toBeCloseTo(0.2, 5);
+    expect(loaded.uvs[6]).toBeCloseTo(0.1, 5);
+    expect(loaded.uvs[7]).toBeCloseTo(0.8, 5);
+
+    const edgeGizmo = computeShaperControlEdgeTransform({
+      startPoint: [-1, 0, 0],
+      endPoint: [1, 0, 0],
+      cameraPosition: [0, 0, 10],
+      fovDeg: 60,
+    });
+    expect(edgeGizmo.position).toEqual([0, 0, 0]);
+    expect(edgeGizmo.edgeLength).toBeCloseTo(2, 5);
+    // thickness = 10 * 0.0005 * (60 / 30) = 0.01
+    expect(edgeGizmo.thickness).toBeCloseTo(0.01, 6);
+    expect(edgeGizmo.localScale).toEqual([0.01, 0.01, 2]);
   });
 });

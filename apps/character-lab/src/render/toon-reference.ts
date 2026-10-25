@@ -223,3 +223,84 @@ export function computeEyeballHighlightTransform(
 
   return { resolvedEyeballEulerDeg, highlightEulerDeg };
 }
+
+export interface ShaperEyeballTransformState {
+  readonly position: Vec3;
+  readonly eulerDeg: Vec3;
+  readonly localScale: Vec3;
+}
+
+export interface ApplyShaperSymmetricEyeballTransformOptions {
+  readonly selectEyeball: 0 | 1 | 2;
+  readonly symmetryControl: boolean;
+  readonly leftEyeball: ShaperEyeballTransformState;
+  readonly rightEyeball: ShaperEyeballTransformState;
+  readonly nextTransform: Partial<ShaperEyeballTransformState>;
+}
+
+export interface SymmetricEyeballTransformResult {
+  readonly leftEyeball: ShaperEyeballTransformState;
+  readonly rightEyeball: ShaperEyeballTransformState;
+}
+
+/**
+ * SHAPER EyeballData::SetPos (0x06000194), Rotate (0x06000195), Scale (0x06000196) 역공학 내재화:
+ * 좌(`selectEyeball === 1`) 또는 우(`selectEyeball === 2`) 안구를 편집할 때 `symmetryControl === true`이면:
+ * - 위치는 X축 부호를 반전(`[-x, y, z]`)해 반대쪽 안구에 미러링
+ * - 회전은 Y축(Yaw) 부호를 반전(`[x, -y, z]`)해 반대쪽 안구에 미러링
+ * - 스케일은 동일하게(`[sx, sy, sz]`) 반대쪽 안구에 복사한다.
+ */
+export function applyShaperSymmetricEyeballTransform(
+  options: ApplyShaperSymmetricEyeballTransformOptions,
+): SymmetricEyeballTransformResult {
+  const { selectEyeball, symmetryControl, nextTransform } = options;
+  let left: ShaperEyeballTransformState = {
+    position: [...options.leftEyeball.position] as Vec3,
+    eulerDeg: [...options.leftEyeball.eulerDeg] as Vec3,
+    localScale: [...options.leftEyeball.localScale] as Vec3,
+  };
+  let right: ShaperEyeballTransformState = {
+    position: [...options.rightEyeball.position] as Vec3,
+    eulerDeg: [...options.rightEyeball.eulerDeg] as Vec3,
+    localScale: [...options.rightEyeball.localScale] as Vec3,
+  };
+
+  if (selectEyeball === 1) {
+    const pos = nextTransform.position ?? left.position;
+    const rot = nextTransform.eulerDeg ?? left.eulerDeg;
+    const scl = nextTransform.localScale ?? left.localScale;
+    left = {
+      position: [...pos] as Vec3,
+      eulerDeg: [...rot] as Vec3,
+      localScale: [...scl] as Vec3,
+    };
+    if (symmetryControl) {
+      right = {
+        position: nextTransform.position !== undefined ? [-pos[0], pos[1], pos[2]] : right.position,
+        eulerDeg: nextTransform.eulerDeg !== undefined ? [rot[0], -rot[1], rot[2]] : right.eulerDeg,
+        localScale: nextTransform.localScale !== undefined ? ([...scl] as Vec3) : right.localScale,
+      };
+    }
+  } else if (selectEyeball === 2) {
+    const pos = nextTransform.position ?? right.position;
+    const rot = nextTransform.eulerDeg ?? right.eulerDeg;
+    const scl = nextTransform.localScale ?? right.localScale;
+    right = {
+      position: [...pos] as Vec3,
+      eulerDeg: [...rot] as Vec3,
+      localScale: [...scl] as Vec3,
+    };
+    if (symmetryControl) {
+      left = {
+        position: nextTransform.position !== undefined ? [-pos[0], pos[1], pos[2]] : left.position,
+        eulerDeg: nextTransform.eulerDeg !== undefined ? [rot[0], -rot[1], rot[2]] : left.eulerDeg,
+        localScale: nextTransform.localScale !== undefined ? ([...scl] as Vec3) : left.localScale,
+      };
+    }
+  }
+
+  return {
+    leftEyeball: left,
+    rightEyeball: right,
+  };
+}
