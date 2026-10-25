@@ -139,10 +139,10 @@ export function StudioBg3dCutStripPanel({
             ? [
                 {
                   nodeId: "scene-lighting",
-                  nodeName: "조명 프리셋",
+                  nodeName: "조명 환경색",
                   category: "lighting" as const,
-                  key: "lightingPresetId",
-                  value: linked.sceneMeta.lightingPresetId ?? "default",
+                  key: "ambientColor",
+                  value: linked.sceneMeta.lighting.ambientColor,
                 },
               ]
             : []),

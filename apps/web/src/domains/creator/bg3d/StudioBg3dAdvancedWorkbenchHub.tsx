@@ -102,24 +102,22 @@ const INITIAL_PLACE_SET_STATE: StudioBg3dPlaceSetState = Object.freeze({
   camera: {
     position: [0, 1.65, 5.2],
     target: [0, 1.2, 0],
-    fov: 42,
-    near: 0.1,
-    far: 200,
+    fovDegrees: 42,
   },
   lighting: {
-    presetId: "classroom-afternoon",
     ambientIntensity: 0.65,
     ambientColor: "#fff8eb",
-    shadowEnabled: true,
     key: {
       intensity: 1.15,
       color: "#fff1d6",
       direction: [0.45, 0.78, 0.42],
+      castsShadow: true,
     },
     fill: {
       intensity: 0.4,
       color: "#cfe2ff",
       direction: [-0.5, 0.4, -0.3],
+      castsShadow: false,
     },
   },
   environmentAssetId: "school-corridor-01",
@@ -179,7 +177,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
         ...INITIAL_PLACE_SET_STATE,
         camera: {
           ...INITIAL_PLACE_SET_STATE.camera,
-          fov: 38,
+          fovDegrees: 38,
         },
       },
       {
@@ -239,14 +237,14 @@ export function StudioBg3dAdvancedWorkbenchHub({
   const handlePublishPlaceSet = () => {
     const latest = placeSet.versions[placeSet.versions.length - 1];
     if (!latest) return;
-    const nextFov = latest.state.camera.fov === 38 ? 35 : 38;
+    const nextFov = latest.state.camera.fovDegrees === 38 ? 35 : 38;
     const published = publishStudioBg3dPlaceSetVersion(
       placeSet,
       {
         ...latest.state,
         camera: {
           ...latest.state.camera,
-          fov: nextFov,
+          fovDegrees: nextFov,
         },
       },
       {
@@ -424,7 +422,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
           <StudioBg3dClonerPanel
             disabled={disabled}
             onApplyCloner={(res) =>
-              setLastActionSummary(`클로너 생성: ${res.type} (${res.totalInstances}개)`)
+              setLastActionSummary(`클로너 생성: ${res.clonerType} (${res.totalInstances}개)`)
             }
           />
         ) : null}
