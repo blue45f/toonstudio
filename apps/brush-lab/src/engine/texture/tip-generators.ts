@@ -213,3 +213,61 @@ export function maskMean(mask: TipMask): number {
   for (let i = 0; i < mask.data.length; i += 1) sum += mask.data[i] ?? 0;
   return sum / mask.data.length;
 }
+
+/**
+ * Magma Studio 시그니처 Vine Charcoal(버드나무 목탄) 비대칭 에지 팁 마스크 생성기.
+ *
+ * 한쪽 가장자리(u < 0)는 칼날처럼 선명한 고경도(`sharpEdgeHardness`)를 유지하고,
+ * 반대쪽 가장자리(u >= 0)는 기울기(`tilt01`)에 비례해 안개처럼 부드럽게 풀리는(`softEdgeHardness`)
+ * 비대칭 단면을 생성한다.
+ */
+export function generateAsymmetricVineTip(
+  size: number,
+  seed: number,
+  options: {
+    readonly sharpEdgeHardness?: number;
+    readonly softEdgeHardness?: number;
+    readonly tilt01?: number;
+    readonly aspect?: number;
+    readonly grainStrength01?: number;
+  } = {},
+): TipMask {
+  if (!Number.isInteger(size) || size < 1) {
+    throw new RangeError(`generateAsymmetricVineTip: size must be a positive integer, got ${size}`);
+  }
+  const sharpH = clamp01(options.sharpEdgeHardness ?? 0.94);
+  const baseSoftH = clamp01(options.softEdgeHardness ?? 0.18);
+  const tilt = clamp01(options.tilt01 ?? 0.5);
+  const effectiveSoftH = clamp01(baseSoftH * (1 - 0.5 * tilt));
+  const aspect = Math.max(0.1, options.aspect ?? 0.65);
+  const grainStrength = clamp01(options.grainStrength01 ?? 0.35);
+  const s = salted(seed, 11);
+
+  return fill(size, (u, v) => {
+    const d = Math.sqrt(u * u + (v / aspect) * (v / aspect));
+    if (d >= 1) return 0;
+    // u < 0(좌측)에서 u > 0(우측)으로 갈수록 경도가 sharpH -> effectiveSoftH로 연속 전이
+    const sideMix = clamp01((u + 1) * 0.5);
+    const localHardness = sharpH + (effectiveSoftH - sharpH) * sideMix;
+    const base = discFalloff(d, localHardness, size);
+    const grain = fbm2D((u + 1) * 5, (v + 1) * 5, 3, s);
+    const grainMod = 1 - grainStrength * (1 - grain) * (0.4 + 0.6 * sideMix);
+    return clamp01(base * grainMod);
+  });
+}
+
+/**
+ * Magma Studio `pixelation: true` 대응 이진(Binary) 픽셀 아트 전용 팁 마스크.
+ *
+ * 안티에일리어싱 페더를 완전히 배제하고 반경 내부 픽셀은 정확히 `1.0`, 외부는 `0.0`으로 양자화한다.
+ */
+export function generateCrispPixelTip(size: number): TipMask {
+  if (!Number.isInteger(size) || size < 1) {
+    throw new RangeError(`generateCrispPixelTip: size must be a positive integer, got ${size}`);
+  }
+  return fill(size, (u, v) => {
+    const dSq = u * u + v * v;
+    return dSq <= 1.0001 ? 1 : 0;
+  });
+}
+
