@@ -6,11 +6,16 @@ import { qRotateVec3, v3Add, v3Cross, v3Distance, v3Dot, v3Normalize, v3Sub } fr
 import {
   IK_REACH_TOLERANCE,
   computeGroundedBodyHeight,
+  computeShaperDetachedBoneVolumes,
+  computeShaperMuscleFatBlendShapeWeights,
+  mirrorShaperPose,
   normalizeSignedAngleDeg,
+  pairShaperSymmetryBones,
   rotationBetweenFrames,
   solveShaperOrientationConstraint,
   solveShaperTwistBoneChain,
   solveTwoBoneIk,
+  syncShaperCostumeBones,
 } from "./two-bone-ik";
 
 import type { Vec3 } from "../contracts/pose";
@@ -197,5 +202,94 @@ describe("SHAPER TwistBone, OrientationConstraint 및 자동 지면 접지/신�
     // 접지 후 머리 높이: (1.52 - (-0.03)) + 0.02 + 0.18 = 1.75 m -> 175 cm
     expect(res.bodyHeightCm).toBe(175);
     expect(res.labelKo).toBe("신장 : 175 cm");
+  });
+
+  it("pairShaperSymmetryBones 및 mirrorShaperPose: Alt-클릭 포즈 미러링(FK sysmmetryM / IK sysmmetryMIK + 180° Y 오프셋)을 수행한다", () => {
+    const pairs = pairShaperSymmetryBones(["RigLArmIK", "RigRArmIK", "BoneLUpperArm", "BoneRUpperArm", "BoneSpine"]);
+    expect(pairs.get("RigLArmIK")).toBe("RigRArmIK");
+    expect(pairs.get("BoneLUpperArm")).toBe("BoneRUpperArm");
+    expect(pairs.has("BoneSpine")).toBe(false);
+
+    const mirrored = mirrorShaperPose(
+      [
+        {
+          boneName: "RigLArmIK",
+          isIK: true,
+          localPosition: [-0.35, 1.2, 0.15],
+          localEulerDeg: [10, 30, -25],
+        },
+        {
+          boneName: "BoneLUpperArm",
+          isIK: false,
+          localPosition: [-0.15, 1.4, 0],
+          localEulerDeg: [15, -40, 20],
+        },
+      ],
+      pairs,
+    );
+    expect(mirrored[0].boneName).toBe("RigRArmIK");
+    expect(mirrored[0].localPosition).toEqual([0.35, 1.2, 0.15]);
+    // IK Euler: [-10, normalize(-30 + 180) = 150, -25]
+    expect(mirrored[0].localEulerDeg).toEqual([-10, 150, -25]);
+
+    expect(mirrored[1].boneName).toBe("BoneRUpperArm");
+    // FK Euler: [-15, 40, 20]
+    expect(mirrored[1].localEulerDeg).toEqual([-15, 40, 20]);
+  });
+
+  it("평탄 스킨 본 볼륨 스케일(SplitSkinBones/SetBoneScale), 근육·체지방 블렌드쉐입(100 vs 90), 의상 본 동기화를 수행한다", () => {
+    const skinStates = computeShaperDetachedBoneVolumes({
+      bones: [
+        {
+          boneName: "BoneHead",
+          isHeadBone: true,
+          worldPosition: [0, 1.5, 0],
+          worldRotation: [0, 0, 0, 1],
+          scale: [1.3, 1.1, 1.2],
+        },
+        {
+          boneName: "BoneLThigh",
+          worldPosition: [-0.1, 0.9, 0],
+          worldRotation: [0, 0, 0, 1],
+          scale: [1.0, 1.0, 1.0],
+          pivotScaleDelta: [2.0, 1.0, 2.0], // +0.2, +0.1, +0.2
+          childOrgLocalPositions: { BoneLCalf: [0, -0.4, 0] },
+        },
+        {
+          boneName: "BoneRThigh",
+          worldPosition: [0.1, 0.9, 0],
+          worldRotation: [0, 0, 0, 1],
+          scale: [1.0, 1.0, 1.0],
+        },
+      ],
+      bodyBoneSymmetry: true,
+    });
+    // 머리 본은 스킨 X 스케일을 1로 잠금
+    expect(skinStates[0].skinLocalScale).toEqual([1, 1.1, 1.2]);
+    // 좌측 허벅지 피벗 드래그 -> 우측 대칭 허벅지까지 [1.2, 1.1, 1.2] 동기화, 자식 정강이 위치 비례 스케일
+    expect(skinStates[1].skinLocalScale[0]).toBeCloseTo(1.2, 6);
+    expect(skinStates[1].scaledChildLocalPositions.BoneLCalf[1]).toBeCloseTo(-0.44, 6);
+    expect(skinStates[2].skinLocalScale[0]).toBeCloseTo(1.2, 6);
+
+    const clothWeights = computeShaperMuscleFatBlendShapeWeights({
+      muscleSlider: 0.5,
+      fatSlider: 0.25,
+      costumeType: 1,
+    });
+    expect(clothWeights.bodyMuscleWeight).toBeCloseTo(50, 6);
+    expect(clothWeights.costumeMuscleWeight).toBeCloseTo(45, 6);
+    expect(clothWeights.costumeFatWeight).toBeCloseTo(22.5, 6);
+
+    const shoeWeights = computeShaperMuscleFatBlendShapeWeights({
+      muscleSlider: 0.5,
+      fatSlider: 0.25,
+      costumeType: 3,
+    });
+    expect(shoeWeights.costumeMuscleWeight).toBe(0);
+    expect(shoeWeights.costumeFatWeight).toBe(0);
+
+    const syncedCostume = syncShaperCostumeBones(["BoneLThigh", "BoneHead"], skinStates);
+    expect(syncedCostume.length).toBe(2);
+    expect(syncedCostume[0].skinLocalScale[0]).toBeCloseTo(1.2, 6);
   });
 });

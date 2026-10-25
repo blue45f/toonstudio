@@ -14,6 +14,8 @@ import {
   parseShaperStylePreset,
   recipeFileName,
   serializeRecipe,
+  serializeShaperPartPreset,
+  serializeShaperStylePreset,
   shaperPresetToCharacterRecipe,
 } from "./recipe-file";
 
@@ -103,5 +105,63 @@ describe("recipe-file", () => {
     // 변환된 레시피가 직렬화·파싱 왕복 검증을 통과한다
     const roundtrip = parseRecipeFile(serializeRecipe(converted));
     expect(roundtrip.ok).toBe(true);
+  });
+
+  it("HeadPartsManager::CreatePreset 전체 토큰(v*, p*, h*, hp*, hb*, hbv*, l*, lp*, eblt*, acc*, cC*RRGGBB) 직렬화·역직렬화 왕복을 수행한다", () => {
+    const fullPresetText = [
+      "1.0",
+      [
+        "mt*0",
+        "mid*2",
+        "name*custom_head",
+        "v*-0.2/1.5/0.1",
+        "p*0.75",
+        "h*1/0/0.1/0.9/2/2/0/1/2/0.3/0.4/10/20/0/1/1",
+        "hp*0/1.6/0/90/0/0/1/1/1",
+        "hb*3",
+        "hbv*0/1/2/0.8/0.5/-0.088/-0.94",
+        "l*5/0.1/0.9/1/0.02/1/2/1/0/0",
+        "lt*0",
+        "lp*2/2/0/1/2/0.25/0.5/0.015/0/0/1",
+        "lpt*0",
+        "ebtid*4",
+        "eblt*-0.3/1.5/0.2/0/0/0/1/1/1",
+        "ebrt*0.3/1.5/0.2/0/0/0/1/1/1",
+        "sposC*0/1.4/0",
+        "bN*RigLArmIK",
+        "bP*-0.35/1.2/0.15",
+        "bA*10/30/-25",
+        "bS*1/1/1",
+        "cC*FF8800",
+        "oR*0.5",
+        "acc*BoneHead/0/0.15/0/0/0/0/1/1/1",
+      ].join(","),
+    ].join("\n");
+
+    const parsed = parseShaperPartPreset(fullPresetText);
+    expect(parsed.controlVertices).toEqual([[-0.2, 1.5, 0.1]]);
+    expect(parsed.controlPowers).toEqual([0.75]);
+    expect(parsed.hairs?.[0]?.triangleVertexIds).toEqual([0, 1, 2]);
+    expect(parsed.hairControlTransforms?.[0]?.position).toEqual([0, 1.6, 0]);
+    expect(parsed.hairBaseMeshId).toBe(3);
+    expect(parsed.hairBaseZones?.[0]?.offsetTy).toBeCloseTo(-0.94, 5);
+    expect(parsed.lines?.[0]?.colorHex).toBe("#ff0000");
+    expect(parsed.linePoints?.[0]?.thickness).toBeCloseTo(0.015, 5);
+    expect(parsed.eyeballLeftTransform?.position).toEqual([-0.3, 1.5, 0.2]);
+    expect(parsed.colorsHex).toEqual(["#ff8800"]);
+    expect(parsed.accessories?.[0]?.parentName).toBe("BoneHead");
+
+    const serialized = serializeShaperPartPreset(parsed);
+    const reparsed = parseShaperPartPreset(serialized);
+    expect(reparsed).toEqual(parsed);
+
+    const styleSerialized = serializeShaperStylePreset({
+      version: "1.0",
+      hairColorHex: "#336699",
+      outlinePressure: true,
+    });
+    const styleReparsed = parseShaperStylePreset(styleSerialized);
+    expect(styleReparsed.hairColorHex).toBe("#336699");
+    expect(styleReparsed.outlinePressure).toBe(true);
   });
 });

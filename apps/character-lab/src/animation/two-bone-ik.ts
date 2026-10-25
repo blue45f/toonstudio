@@ -299,3 +299,24 @@ export function computeGroundedBodyHeight(input: GroundedBodyHeightInput): Groun
     labelKo: `신장 : ${bodyHeightCm} cm`,
   };
 }
+
+export {
+  SHAPER_BODY_BLENDSHAPE_SCALE,
+  SHAPER_COSTUME_BLENDSHAPE_SCALE,
+  SHAPER_FK_SYMMETRY_MULTIPLIER,
+  SHAPER_IK_MIRROR_YAW_OFFSET_DEG,
+  SHAPER_IK_SYMMETRY_MULTIPLIER,
+  SHAPER_PIVOT_BONE_SCALE_STEP,
+  computeShaperDetachedBoneVolumes,
+  computeShaperMuscleFatBlendShapeWeights,
+  mirrorShaperPose,
+  pairShaperSymmetryBones,
+  syncShaperCostumeBones,
+} from "./shaper-rig";
+export type {
+  ShaperBonePoseEntry,
+  ShaperControlBoneInput,
+  ShaperCostumeSlotType,
+  ShaperDetachedSkinBoneState,
+  ShaperMuscleFatBlendShapeWeights,
+} from "./shaper-rig";

@@ -7,12 +7,16 @@ import { projectToPixel } from "../../../render/viewport-math";
 import { qRotateVec3, v3Add, v3Length, v3Sub } from "../../../shared/math";
 
 import {
+  clampShaperGizmoDelta,
+  classifyShaperTrackpadTwoFingerGesture,
   computeJointDrag,
   handlesKey,
   hudRows,
   isFingerBone,
   jointLabelKo,
   resolveDragPivot,
+  resolveShaperCameraInputAction,
+  resolveShaperGizmoCastPlaneEuler,
   resolveShaperPresetClickModifiers,
   resolveShaperViewportKeyShortcut,
   visibleHandles,
@@ -227,5 +231,50 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
 
     const lightLeft = resolveShaperViewportKeyShortcut("ArrowLeft", {}, 0.1);
     expect(lightLeft).toEqual({ kind: "rotate-scene-light", deltaEulerDeg: [0, 10, 0] });
+  });
+
+  it("3-스타일 카메라 입력(unity/blender/max), 2-손가락 트랙패드 제스처 판별, 기즈모 레이캐스트 평면/클램프를 수행한다", () => {
+    expect(resolveShaperCameraInputAction({ style: "unity", button: 2 })).toBe("pan");
+    expect(resolveShaperCameraInputAction({ style: "unity", button: 0, modifiers: { alt: true } })).toBe("orbit");
+    expect(resolveShaperCameraInputAction({ style: "unity", button: 1, modifiers: { alt: true } })).toBe("zoom");
+
+    expect(resolveShaperCameraInputAction({ style: "blender", button: 2 })).toBe("orbit");
+    expect(resolveShaperCameraInputAction({ style: "blender", button: 2, modifiers: { shift: true } })).toBe("pan");
+    expect(resolveShaperCameraInputAction({ style: "blender", button: 2, modifiers: { ctrl: true } })).toBe("zoom");
+
+    expect(resolveShaperCameraInputAction({ style: "max", button: 2 })).toBe("pan");
+    expect(resolveShaperCameraInputAction({ style: "max", button: 2, modifiers: { alt: true } })).toBe("orbit");
+    expect(resolveShaperCameraInputAction({ style: "max", button: 2, modifiers: { ctrl: true, alt: true } })).toBe("zoom");
+
+    // 2-손가락 평행 이동 -> orbit 모드 선택
+    const orbitGesture = classifyShaperTrackpadTwoFingerGesture({
+      prevTouch0: [100, 100],
+      prevTouch1: [200, 100],
+      curTouch0: [120, 110],
+      curTouch1: [220, 110],
+      camPivotZ: -4,
+    });
+    expect(orbitGesture.gestureMode).toBe("orbit");
+    expect(orbitGesture.orbitInputDelta).toEqual([5, 2.5]);
+
+    // 2-손가락 핀치 줌 -> zoom 모드 선택 및 직교 크기 계산
+    const zoomGesture = classifyShaperTrackpadTwoFingerGesture({
+      prevTouch0: [100, 100],
+      prevTouch1: [200, 100],
+      curTouch0: [80, 100],
+      curTouch1: [220, 100],
+      camPivotZ: -4,
+    });
+    expect(zoomGesture.gestureMode).toBe("zoom");
+    expect(zoomGesture.zoomDelta).toBeCloseTo(-40, 5);
+    expect(zoomGesture.nextCamPivotZ).toBeCloseTo(-14, 5);
+    // orthographicSize = 15 - (60 - (-14)) * 0.25 = 15 - 18.5 = -3.5
+    expect(zoomGesture.orthographicSize).toBeCloseTo(-3.5, 5);
+
+    expect(clampShaperGizmoDelta(12.5, 5)).toBe(5);
+    expect(clampShaperGizmoDelta(-12.5, 5)).toBe(-5);
+    expect(resolveShaperGizmoCastPlaneEuler("x", [15, 30, 45])).toEqual([15, 0, 0]);
+    expect(resolveShaperGizmoCastPlaneEuler("y", [15, 30, 45])).toEqual([0, 30, 0]);
+    expect(resolveShaperGizmoCastPlaneEuler("z", [15, 30, 45])).toEqual([0, 0, 45]);
   });
 });

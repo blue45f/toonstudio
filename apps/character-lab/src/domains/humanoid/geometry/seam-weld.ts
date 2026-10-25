@@ -354,3 +354,81 @@ export function weldNeckSeamPositionsAndNormals(options: {
     }
   }
 }
+
+export interface BodyPartSeamVertexPair {
+  readonly partAVertexIndex: number;
+  readonly partBVertexIndex: number;
+  readonly distance: number;
+}
+
+/**
+ * SHAPER BodyPartsManager::FindSeamVertices (0x060000ac) 역공학 내재화:
+ * 인접 바디 파츠(`nearBodyParts`) 간 월드/로컬 정점 거리 `Vector3.Distance(vA, vB) < 0.1f`인
+ * 경계 정점 쌍을 탐색한다.
+ */
+export function findAdjacentBodyPartSeamPairs(
+  partAPositions: Float32Array,
+  partBPositions: Float32Array,
+  distanceThreshold = 0.1,
+): readonly BodyPartSeamVertexPair[] {
+  const countA = Math.floor(partAPositions.length / 3);
+  const countB = Math.floor(partBPositions.length / 3);
+  const threshold = Math.max(0, distanceThreshold);
+  const pairs: BodyPartSeamVertexPair[] = [];
+
+  for (let i = 0; i < countA; i += 1) {
+    const ax = partAPositions[i * 3];
+    const ay = partAPositions[i * 3 + 1];
+    const az = partAPositions[i * 3 + 2];
+    for (let j = 0; j < countB; j += 1) {
+      const bx = partBPositions[j * 3];
+      const by = partBPositions[j * 3 + 1];
+      const bz = partBPositions[j * 3 + 2];
+      const dist = Math.hypot(ax - bx, ay - by, az - bz);
+      if (dist < threshold) {
+        pairs.push({
+          partAVertexIndex: i,
+          partBVertexIndex: j,
+          distance: dist,
+        });
+      }
+    }
+  }
+
+  return pairs;
+}
+
+/**
+ * SHAPER BodyPartsManager::WeldPartVertices (0x060000ae) 역공학 내재화:
+ * 베이크된 인접 바디 파츠 메시의 경계 정점 쌍 법선을 산술 평균 `(nA + nB) * 0.5`으로 일치시킨다.
+ */
+export function weldAdjacentBodyPartNormals(options: {
+  readonly partANormals: Float32Array;
+  readonly partBNormals: Float32Array;
+  readonly pairs: readonly BodyPartSeamVertexPair[];
+  readonly normalize?: boolean;
+}): void {
+  const { partANormals, partBNormals, pairs, normalize = true } = options;
+  for (const { partAVertexIndex, partBVertexIndex } of pairs) {
+    const aBase = partAVertexIndex * 3;
+    const bBase = partBVertexIndex * 3;
+    let avgX = (partANormals[aBase] + partBNormals[bBase]) * 0.5;
+    let avgY = (partANormals[aBase + 1] + partBNormals[bBase + 1]) * 0.5;
+    let avgZ = (partANormals[aBase + 2] + partBNormals[bBase + 2]) * 0.5;
+    if (normalize) {
+      const len = Math.hypot(avgX, avgY, avgZ);
+      if (len > 1e-8) {
+        avgX /= len;
+        avgY /= len;
+        avgZ /= len;
+      }
+    }
+    partANormals[aBase] = avgX;
+    partANormals[aBase + 1] = avgY;
+    partANormals[aBase + 2] = avgZ;
+    partBNormals[bBase] = avgX;
+    partBNormals[bBase + 1] = avgY;
+    partBNormals[bBase + 2] = avgZ;
+  }
+}
+
