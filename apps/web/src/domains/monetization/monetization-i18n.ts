@@ -19,6 +19,9 @@ import {
   registerI18nLocaleEntries,
 } from "@/shared/lib/i18n";
 import { monetizationI18nBuiltins } from "./monetization-i18n-builtins";
+// 확산 장치(growth) 사전도 같은 진입점에서 등록한다. growth 키를 렌더하는
+// 모듈은 monetization 네임스페이스 로딩만으로 사전을 얻는다.
+import "./growth/growth-i18n";
 
 registerI18nLocaleEntries("ko", monetizationI18nBuiltins.ko);
 registerI18nEnglishSourceEntries(monetizationI18nBuiltins.en);
