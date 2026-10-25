@@ -278,6 +278,21 @@ const WORK_DECISION_TEMPLATES: readonly StudioPollWorkTemplate[] = [
       "Async written comments instead",
     ],
   },
+  {
+    key: "ox-quiz",
+    labelKo: "OX 빠른 체크",
+    labelEn: "OX quick check",
+    questionKo: "이번 에피소드 연출안·콘티 확정안에 동의하시나요? (OX)",
+    questionEn: "Do you approve this episode's storyboard & direction? (OX)",
+    optionsKo: [
+      "⭕ O — 찬성 · 바로 진행해요",
+      "❌ X — 보류 · 추가 논의가 필요해요",
+    ],
+    optionsEn: [
+      "⭕ O — Approve & proceed",
+      "❌ X — Hold & discuss further",
+    ],
+  },
 ];
 
 function WizardQuestionStep({

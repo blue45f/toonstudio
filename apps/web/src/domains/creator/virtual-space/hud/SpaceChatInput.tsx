@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import { formatStudioBubbleText, type StudioChatBubbleKind } from "../studio-virtual-space-chat";
 import { STUDIO_PRESENCE_BUBBLE_MAX_LENGTH } from "../studio-virtual-space-presence";
 import { spaceShortcutIgnored } from "./use-space-shortcuts";
 
@@ -15,8 +16,7 @@ import { spaceShortcutIgnored } from "./use-space-shortcuts";
  * - 열린 상태: 입력이 있으면 타이핑 신호를 올리고, Enter 전송 / Esc 취소 /
  *   포커스를 잃으면 전송 없이 닫는다. 입력 요소에 포커스가 있으므로
  *   캔버스 이동 키와 HUD 단축키는 기존 가드(입력 타깃 무시)로 충돌하지 않는다.
- * - 채널은 전체 채널이 실제로 없으므로 "근처" 하나로 고정한다 —
- *   없는 채널을 있는 척하지 않는다.
+ * - 말풍선(💬 말하기)과 생각풍선(💭 생각, WorkAdventure ENABLE_SAY 대응)을 전환할 수 있다.
  */
 export const SpaceChatInput = memo(function SpaceChatInput({ blocked, touch, onTypingChange, onSend, onClosed }: {
   /** 대화·패널 등 다른 표면이 열려 있는 동안에는 열지 않는다. */
@@ -31,6 +31,7 @@ export const SpaceChatInput = memo(function SpaceChatInput({ blocked, touch, onT
   const bt = useBilingual("SpaceChatInput");
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  const [bubbleKind, setBubbleKind] = useState<StudioChatBubbleKind>("say");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const composingRef = useRef(false);
   const blockedRef = useRef(blocked);
@@ -39,13 +40,14 @@ export const SpaceChatInput = memo(function SpaceChatInput({ blocked, touch, onT
   openRef.current = open;
 
   const close = useCallback((send: boolean) => {
-    const text = value.trim();
+    const formatted = formatStudioBubbleText(value, bubbleKind);
     setOpen(false);
     setValue("");
+    setBubbleKind("say");
     onTypingChange(false);
-    if (send && text) onSend(text.slice(0, STUDIO_PRESENCE_BUBBLE_MAX_LENGTH));
+    if (send && formatted) onSend(formatted.slice(0, STUDIO_PRESENCE_BUBBLE_MAX_LENGTH));
     onClosed();
-  }, [onClosed, onSend, onTypingChange, value]);
+  }, [bubbleKind, onClosed, onSend, onTypingChange, value]);
 
   // 다른 표면이 열리면 작성 중이어도 전송 없이 닫는다.
   useEffect(() => {
@@ -82,13 +84,21 @@ export const SpaceChatInput = memo(function SpaceChatInput({ blocked, touch, onT
     </button>;
   }
 
-  return <form className="space-chat-input" data-space-interactive="true"
+  return <form className="space-chat-input" data-space-interactive="true" data-bubble-kind={bubbleKind}
     onSubmit={(event) => { event.preventDefault(); if (!composingRef.current) close(true); }}
     onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) close(false); }}>
-    <span className="space-chat-input__channel" aria-hidden>{bt("근처", "Nearby")}</span>
+    <button type="button" className="space-chat-input__channel"
+      aria-pressed={bubbleKind === "thought"}
+      aria-label={bubbleKind === "thought" ? bt("생각풍선 모드 (눌러서 일반 말풍선으로)", "Thought bubble mode (press for speech bubble)") : bt("말풍선 모드 (눌러서 생각풍선으로)", "Speech bubble mode (press for thought bubble)")}
+      onClick={() => {
+        setBubbleKind((current) => (current === "say" ? "thought" : "say"));
+        inputRef.current?.focus();
+      }}>
+      {bubbleKind === "thought" ? bt("💭 생각", "💭 Thought") : bt("근처", "Nearby")}
+    </button>
     <input ref={inputRef} type="text" value={value} maxLength={STUDIO_PRESENCE_BUBBLE_MAX_LENGTH}
       aria-label={bt("근처 사람들에게 보낼 말", "Message for people nearby")}
-      placeholder={bt("근처 사람들에게 말하기…", "Message people nearby…")}
+      placeholder={bubbleKind === "thought" ? bt("머리 위 생각풍선 띄우기…", "Show a thought bubble…") : bt("근처 사람들에게 말하기…", "Message people nearby…")}
       autoComplete="off" enterKeyHint="send"
       onCompositionStart={() => { composingRef.current = true; }}
       onCompositionEnd={() => { composingRef.current = false; }}

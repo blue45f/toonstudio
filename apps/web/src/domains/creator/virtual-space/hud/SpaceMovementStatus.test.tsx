@@ -94,4 +94,25 @@ describe("이동·시점 상태 칩 묶음", () => {
     expect(onStopWhisper).toHaveBeenCalledOnce();
     expect(onResetProximityRange).toHaveBeenCalledOnce();
   });
+
+  it("oVice 상태 긴급도(주의·긴급)가 설정되면 하단 상태 칩을 보여 주고 해제할 수 있다", () => {
+    const cameraPan = new StudioCameraPanStore();
+    const onResetStatusUrgency = vi.fn();
+    render(
+      <SpaceMovementStatus
+        followingName={null}
+        sharedActivity={null}
+        config={DEFAULT_STUDIO_FOLLOW_CONFIG}
+        cameraPan={cameraPan}
+        statusUrgency="urgent"
+        onStopFollowing={vi.fn()}
+        onStopLeading={vi.fn()}
+        onResetStatusUrgency={onResetStatusUrgency}
+        onConfig={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/긴급 · 마감 집중 상태예요/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "해제" }));
+    expect(onResetStatusUrgency).toHaveBeenCalledOnce();
+  });
 });

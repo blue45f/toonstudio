@@ -50,12 +50,29 @@ function rectContains(rect: StudioWorldRect, point: StudioVirtualSpacePoint): bo
   return point.x >= rect.x && point.x <= rect.x + rect.width && point.y >= rect.y && point.y <= rect.y + rect.height;
 }
 
-/** 이 지점이 들어 있는 프라이빗 음향 구역 id(없으면 null). */
+/**
+ * 이 지점이 들어 있는 프라이빗 음향 구역 id(없으면 null).
+ * 구역에 `areaGroupId`(ZEP Private Area ID 연동 규칙)가 지정되어 있으면 그 그룹 id를 돌려주어
+ * 떨어진 두 프라이빗 구역도 같은 그룹으로 묶을 수 있게 한다.
+ */
 export function spacePrivateZoneAt(
-  zones: readonly (StudioWorldRect & { readonly id: string; readonly policy?: string })[] | undefined,
+  zones: readonly (StudioWorldRect & { readonly id: string; readonly policy?: string; readonly areaGroupId?: string })[] | undefined,
   point: StudioVirtualSpacePoint,
 ): string | null {
-  return zones?.find((zone) => zone.policy === "private" && rectContains(zone, point))?.id ?? null;
+  const matched = zones?.find((zone) => zone.policy === "private" && rectContains(zone, point));
+  if (!matched) return null;
+  const groupId = matched.areaGroupId?.trim();
+  return groupId ? groupId : matched.id;
+}
+
+/**
+ * ZEP의 다중 위치 연결 프라이빗 구역(`area:*` 접두사 또는 명시된 연동 그룹 id)인지 판정한다.
+ * 연동 프라이빗 그룹에 속한 구역끼리는 맵 거리가 멀어도 같은 비공개 그룹(gain=1)으로 연결된다.
+ */
+export function isLinkedSpaceAreaGroupId(zoneId: string | null | undefined, linkedAreaGroupIds?: readonly string[]): boolean {
+  if (!zoneId) return false;
+  if (zoneId.startsWith("area:")) return true;
+  return Boolean(linkedAreaGroupIds?.includes(zoneId));
 }
 
 export interface SpaceProximityMediaPeer {
@@ -147,17 +164,23 @@ export interface SpaceProximityMediaScopeInput {
    * 지정되면 주변 다른 사람은 제외하고 해당 팀원 1명만 이탈 반경 안에서 최대 볼륨(gain=1)으로 연결한다.
    */
   readonly whisperPeerId?: string | null;
+  /**
+   * ZEP Private Area ID 연동 그룹 id 목록.
+   * `area:*` 접두사이거나 이 목록에 포함된 프라이빗 구역끼리는 맵 거리가 멀어도 같은 비공개 그룹(gain=1)으로 연결된다.
+   */
+  readonly linkedAreaGroupIds?: readonly string[];
 }
 
 /**
  * 연결 대상을 거리·게인과 함께 고른다(가까운 순, 최대 3명).
  * - 나와 같은 프라이빗 구역끼리만(둘 다 바깥이면 바깥끼리) 연결한다.
+ * - ZEP 연동 프라이빗 구역(`area:*` 또는 `linkedAreaGroupIds`)은 거리에 관계없이 같은 구역 그룹끼리 gain=1로 연결한다.
  * - 자리 비움인 팀원·차단한 팀원·고스트 모드(G) 팀원은 빼고, 내가 집중·자리 비움·고스트 모드면 아무도 연결하지 않는다.
  * - whisperPeerId(1:1 귓속말)가 있으면 그 팀원만 이탈 반경 안에서 게인 1로 독점 연결한다.
  * - 이미 연결된 팀원은 LEAVE 반경까지 유지해 경계에서 깜빡이지 않게 한다.
  */
 export function spaceProximityMediaScopePeers(input: SpaceProximityMediaScopeInput): readonly SpaceProximityMediaScopePeer[] {
-  const { self, peers, previous = new Set<string>(), blockedIds = [], whisperPeerId = null } = input;
+  const { self, peers, previous = new Set<string>(), blockedIds = [], whisperPeerId = null, linkedAreaGroupIds } = input;
   const range = input.range ?? "standard";
   const rangeRadii = spaceProximityRangeRadii(range);
   if (!rangeRadii) return [];
@@ -167,25 +190,26 @@ export function spaceProximityMediaScopePeers(input: SpaceProximityMediaScopeInp
   if (self.activity === "focused" || self.activity === "away" || self.ghost) return [];
   const blocked = new Set(blockedIds);
   const inPrivateZone = self.privateZoneId !== null;
+  const linkedAreaGroup = isLinkedSpaceAreaGroupId(self.privateZoneId, linkedAreaGroupIds);
   if (whisperPeerId) {
     const target = peers.find(
       (peer) => peer.id === whisperPeerId && !peer.ghost && !blocked.has(peer.id) && peer.activity !== "away" && peer.privateZoneId === self.privateZoneId,
     );
     if (!target) return [];
     const distance = Math.hypot(target.point.x - self.point.x, target.point.y - self.point.y);
-    if (!Number.isFinite(distance) || distance > leaveRadius) return [];
+    if (!Number.isFinite(distance) || (!linkedAreaGroup && distance > leaveRadius)) return [];
     return [{ id: target.id, distance, gain: 1 }];
   }
   return peers
     .filter((peer) => !peer.ghost && !blocked.has(peer.id) && peer.activity !== "away" && peer.privateZoneId === self.privateZoneId)
     .map((peer) => ({ id: peer.id, distance: Math.hypot(peer.point.x - self.point.x, peer.point.y - self.point.y) }))
-    .filter(({ id, distance }) => Number.isFinite(distance) && (distance <= radius || (previous.has(id) && distance <= leaveRadius)))
+    .filter(({ id, distance }) => Number.isFinite(distance) && (linkedAreaGroup || distance <= radius || (previous.has(id) && distance <= leaveRadius)))
     .sort((left, right) => left.distance - right.distance || left.id.localeCompare(right.id))
     .slice(0, Math.max(0, limit))
     .map(({ id, distance }) => ({
       id,
       distance,
-      gain: spaceProximityMediaGain(distance, { range, inPrivateZone }),
+      gain: linkedAreaGroup ? 1 : spaceProximityMediaGain(distance, { range, inPrivateZone }),
     }));
 }
 

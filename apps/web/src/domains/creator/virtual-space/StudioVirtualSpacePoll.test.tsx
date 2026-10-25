@@ -139,4 +139,13 @@ describe("StudioVirtualSpacePoll", () => {
       }),
     );
   });
+
+  it("ZEP OX 빠른 체크 템플릿으로 찬반 OX 투표를 즉시 구성한다", () => {
+    const onCreate = vi.fn();
+    render(<StudioVirtualSpacePoll poll={null} {...baseProps} onCreate={onCreate} />);
+    fireEvent.click(screen.getByRole("button", { name: "OX 빠른 체크" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect((screen.getByLabelText("선택지 1") as HTMLInputElement).value).toBe("⭕ O — 찬성 · 바로 진행해요");
+    expect((screen.getByLabelText("선택지 2") as HTMLInputElement).value).toBe("❌ X — 보류 · 추가 논의가 필요해요");
+  });
 });

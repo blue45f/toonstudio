@@ -97,16 +97,55 @@ function isDeepWorkEntry(entry: StudioUserListEntry): boolean {
   return entry.activity === "focused";
 }
 
+export interface StudioUserZoneSummary {
+  readonly zoneId: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly count: number;
+}
+
+/**
+ * 구역별 인원 분포를 집계한다(Topia 실시간 공간 분포·인게이지먼트 요약 대응).
+ * 인원이 많은 구역 순, 동률이면 한글 구역명 순으로 정렬한다.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- 구역 분포 집계 순수 함수는 공개 테스트 계약이라 함께 export한다
+export function summarizeUserZoneDistribution(
+  entries: readonly StudioUserListEntry[],
+): readonly StudioUserZoneSummary[] {
+  const map = new Map<string, { labelKo: string; labelEn: string; count: number }>();
+  for (const entry of entries) {
+    if (!entry.zoneId || !entry.zoneLabelKo) continue;
+    const prev = map.get(entry.zoneId);
+    if (prev) {
+      prev.count += 1;
+    } else {
+      map.set(entry.zoneId, {
+        labelKo: entry.zoneLabelKo,
+        labelEn: entry.zoneLabelEn || entry.zoneLabelKo,
+        count: 1,
+      });
+    }
+  }
+  return Object.freeze(
+    [...map.entries()]
+      .map(([zoneId, value]) => Object.freeze({ zoneId, ...value }))
+      .sort((a, b) => b.count - a.count || a.labelKo.localeCompare(b.labelKo, "ko")),
+  );
+}
+
 /** 실시간 유저 리스트: 아바타 id/이름/현재 구역/상태를 보여준다. */
 export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }: StudioVirtualSpaceUserListProps) {
   const bt = useBilingual("StudioVirtualSpaceUserList");
   const allEntries = buildUserListEntries(users, zones, selfId);
+  const zoneSummaries = summarizeUserZoneDistribution(allEntries);
   const [statusFilter, setStatusFilter] = useState<StudioUserListFilter>("all");
+  const [zoneFilter, setZoneFilter] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
   const collaborativeCount = allEntries.filter(isCollaborativeEntry).length;
   const deepWorkCount = allEntries.filter(isDeepWorkEntry).length;
   const entries = allEntries.filter((entry) => {
+    if (zoneFilter && entry.zoneId !== zoneFilter) return false;
     if (statusFilter === "collaborative") return isCollaborativeEntry(entry);
     if (statusFilter === "deep-work") return isDeepWorkEntry(entry);
     return true;
@@ -194,6 +233,32 @@ export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }:
               ))}
             </div>
           </div>
+          {zoneSummaries.length > 0 ? (
+            <div
+              role="group"
+              aria-label={bt("구역별 활동 분포", "Active zone distribution")}
+              className="mt-1.5 flex flex-wrap gap-1"
+            >
+              {zoneSummaries.map((zone) => {
+                const selected = zoneFilter === zone.zoneId;
+                return (
+                  <button
+                    key={zone.zoneId}
+                    type="button"
+                    aria-pressed={selected}
+                    data-zone-filter={zone.zoneId}
+                    onClick={() => {
+                      setZoneFilter(selected ? null : zone.zoneId);
+                      setActiveIndex(0);
+                    }}
+                    className="rounded-full border border-line px-2 py-0.5 text-[11px]"
+                  >
+                    {bt(`${zone.labelKo} · ${zone.count}명`, `${zone.labelEn} · ${zone.count}`)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- WAI-ARIA roving tabindex 패턴: 방향키 핸들러는 목록 컨테이너에 두고 각 항목은 li 시맨틱을 유지한다 */}
           <ul
             onKeyDown={handleKeyDown}

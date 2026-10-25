@@ -110,4 +110,14 @@ describe("SpaceChatInput", () => {
     fireEvent.click(screen.getByRole("button", { name: "채팅 열기" }));
     expect(screen.getByLabelText("근처 사람들에게 보낼 말")).toBeTruthy();
   });
+
+  it("WorkAdventure 생각풍선(💭 생각) 모드로 전환하면 생각풍선 접두사를 붙여 전송한다", () => {
+    const props = renderChat();
+    const input = openWithEnter();
+    fireEvent.click(screen.getByRole("button", { name: "말풍선 모드 (눌러서 생각풍선으로)" }));
+    expect(screen.getByRole("button", { name: "생각풍선 모드 (눌러서 일반 말풍선으로)" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.change(input, { target: { value: "콘티 구상 중" } });
+    fireEvent.submit(input.closest("form")!);
+    expect(props.onSend).toHaveBeenCalledWith("💭 콘티 구상 중");
+  });
 });

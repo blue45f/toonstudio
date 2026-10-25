@@ -87,4 +87,28 @@ describe("SpaceChatPanel", () => {
     const input = screen.getByRole("textbox", { name: "채팅 입력" }) as HTMLInputElement;
     expect(input.maxLength).toBe(140);
   });
+
+  it("oVice 메시지 고정(Pin)·@here/@all 멘션 칩·채팅 내역 CSV 내보내기를 지원한다", () => {
+    const onExportCsv = vi.fn();
+    const { props } = renderPanel({ messages, open: true, onExportCsv });
+
+    fireEvent.click(screen.getByRole("button", { name: "민준 메시지 고정" }));
+    const pinnedRegion = screen.getByRole("region", { name: "고정된 메시지" });
+    expect(pinnedRegion.textContent).toContain("안녕하세요!");
+    fireEvent.click(screen.getByRole("button", { name: "고정 메시지 해제" }));
+    expect(screen.queryByRole("region", { name: "고정된 메시지" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "@all 전체 멘션 넣기" }));
+    const input = screen.getByRole("textbox", { name: "채팅 입력" }) as HTMLInputElement;
+    expect(input.value).toBe("@all ");
+    expect(screen.getByRole("button", { name: "전체" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "채팅 내역 CSV 내보내기" }));
+    expect(onExportCsv).toHaveBeenCalledOnce();
+    const csv = onExportCsv.mock.calls[0]?.[0] as string;
+    expect(csv).toContain("id,at,displayName,scope,text");
+    expect(csv).toContain('"민준"');
+    expect(csv).toContain('"안녕하세요!"');
+    expect(props.onTyping).toHaveBeenCalled();
+  });
 });
