@@ -8,6 +8,7 @@ import {
   RefreshCw,
   RotateCcw,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
@@ -19,6 +20,8 @@ import {
   type StudioRevisionCompareLocation,
 } from "./studio-revision-compare-location";
 import { StudioRevisionCompareView } from "./StudioRevisionCompareView";
+import { StudioCollabWorkbench } from "./studio-collab/StudioCollabWorkbench";
+import type { CompareVersion } from "./studio-collab/studio-side-by-side-compare";
 
 import type { StudioProjectFile } from "./studio-project-file";
 import type { StudioRevisionChange } from "./studio-revision-diff";
@@ -111,8 +114,8 @@ export function StudioCheckpointPanel({
     getCurrentProjectGeneration &&
     serverCurrentRevision
   );
-  const [activeTab, setActiveTab] = useState<"local" | "server">("local");
-  const visibleTab = serverAvailable ? activeTab : "local";
+  const [activeTab, setActiveTab] = useState<"local" | "server" | "collab">("local");
+  const visibleTab = activeTab === "collab" ? "collab" : serverAvailable ? activeTab : "local";
   const [selectedServerRevision, setSelectedServerRevision] = useState<StudioServerRevisionSummary | null>(null);
   const [serverComparison, setServerComparison] = useState<StudioServerRevisionComparison | null>(null);
   const [comparisonProject, setComparisonProject] = useState<StudioProjectFile | null>(null);
@@ -131,6 +134,7 @@ export function StudioCheckpointPanel({
   const openerRef = useRef<HTMLElement | null>(null);
   const localTabRef = useRef<HTMLButtonElement | null>(null);
   const serverTabRef = useRef<HTMLButtonElement | null>(null);
+  const collabTabRef = useRef<HTMLButtonElement | null>(null);
   const tabListId = useId();
   const dialogTitleId = useId();
   const dialogDescriptionId = useId();
@@ -161,7 +165,7 @@ export function StudioCheckpointPanel({
     setShowServerRestoreError(false);
   }
 
-  function activateTab(tab: "local" | "server") {
+  function activateTab(tab: "local" | "server" | "collab") {
     if (interactionLocked) return;
     if (tab === "server" && !serverAvailable) return;
     if (tab === visibleTab) return;
@@ -171,17 +175,30 @@ export function StudioCheckpointPanel({
   }
 
   function handleTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
-    if (!serverAvailable) return;
-    let target: "local" | "server" | null = null;
-    if (event.key === "Home") target = "local";
-    if (event.key === "End") target = "server";
+    const tabs: Array<"local" | "server" | "collab"> = [
+      "local",
+      ...(serverAvailable ? ["server" as const] : []),
+      "collab",
+    ];
+    const refs: Record<"local" | "server" | "collab", React.RefObject<HTMLButtonElement | null>> = {
+      local: localTabRef,
+      server: serverTabRef,
+      collab: collabTabRef,
+    };
+    const currentIndex = tabs.indexOf(visibleTab);
+    let target: "local" | "server" | "collab" | null = null;
+    if (event.key === "Home") target = tabs[0] ?? null;
+    if (event.key === "End") target = tabs[tabs.length - 1] ?? null;
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      target = visibleTab === "local" ? "server" : "local";
+      if (currentIndex >= 0) {
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        target = tabs[(currentIndex + step + tabs.length) % tabs.length] ?? null;
+      }
     }
     if (!target) return;
     event.preventDefault();
     activateTab(target);
-    (target === "local" ? localTabRef : serverTabRef).current?.focus();
+    refs[target].current?.focus();
   }
 
   useEffect(() => {
@@ -398,6 +415,31 @@ export function StudioCheckpointPanel({
     comparisonProject ? projectPageLabels(comparisonProject) : {}
   );
 
+  // 협업 워크벤치 비교 쌍: 서버 revision과 로컬 체크포인트를 버전 카드로 묶는다.
+  // 미리보기 이미지가 없는 버전은 정보 카드로 비교하며, 이미지가 생기면 같은
+  // 슬롯에 그대로 표시된다. (DB·API 추가 없이 패널이 이미 가진 데이터만 사용)
+  const collabVersions: readonly CompareVersion[] = [
+    ...serverRevisions.map((revision) => ({
+      id: `server-r${revision.revision}`,
+      label: `서버 r${revision.revision}`,
+      note: revision.restoredFromRevision !== null ? `r${revision.restoredFromRevision}에서 복원된 기록` : "서버 저장 기록",
+    })),
+    ...checkpoints.map((checkpoint) => ({
+      id: `local-${checkpoint.id}`,
+      label: checkpoint.name,
+      note: "이 기기에 저장된 기록",
+    })),
+  ];
+  const collabPlaceholder: CompareVersion = {
+    id: "collab-empty",
+    label: "비교할 버전이 없습니다",
+    note: "저장 기록을 하나 이상 만들면 두 버전을 나란히 비교할 수 있습니다.",
+  };
+  const collabPair = {
+    left: collabVersions[0] ?? collabPlaceholder,
+    right: collabVersions[1] ?? collabPlaceholder,
+  };
+
   const modal = (
     <div
       data-studio-checkpoint-overlay=""
@@ -436,7 +478,7 @@ export function StudioCheckpointPanel({
           id={tabListId}
           role="tablist"
           aria-label="버전 저장 위치"
-          className="grid shrink-0 grid-cols-2 gap-1 border-b border-line bg-card/25 p-2"
+          className="grid shrink-0 grid-cols-3 gap-1 border-b border-line bg-card/25 p-2"
         >
           <button
             ref={localTabRef}
@@ -471,6 +513,22 @@ export function StudioCheckpointPanel({
           >
             <Cloud size={15} aria-hidden /> 계정의 저장 기록 {serverRevisions.length}
           </button>
+          <button
+            ref={collabTabRef}
+            type="button"
+            role="tab"
+            aria-selected={visibleTab === "collab"}
+            aria-controls={`${tabListId}-collab-panel`}
+            tabIndex={visibleTab === "collab" ? 0 : -1}
+            disabled={interactionLocked}
+            onKeyDown={handleTabKeyDown}
+            onClick={() => activateTab("collab")}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold transition-colors ${
+              visibleTab === "collab" ? "bg-panel text-fg shadow-sm" : "text-fg-3 hover:bg-raised"
+            }`}
+          >
+            <Users size={15} aria-hidden /> 협업 워크벤치
+          </button>
         </div>
 
         {comparisonVisible && selectedServerRevision ? (
@@ -503,6 +561,15 @@ export function StudioCheckpointPanel({
                 onClose();
               } : undefined}
             />
+          </div>
+        ) : visibleTab === "collab" ? (
+          <div
+            id={`${tabListId}-collab-panel`}
+            role="tabpanel"
+            aria-label="협업 워크벤치"
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <StudioCollabWorkbench comparePair={collabPair} availableVersions={collabVersions} />
           </div>
         ) : (
         <div
