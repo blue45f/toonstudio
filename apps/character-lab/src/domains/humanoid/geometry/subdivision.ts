@@ -500,9 +500,11 @@ export type {
 } from "./seam-weld";
 export {
   applySymmetricControlPointEdit,
+  computeShaperControlEdgeTransform,
   computeShaperVertexKeyHash,
   findMirrorControlPointPairs,
   interpolateCageMorphTransition,
+  parseShaperQuadObj,
   recalculateCreaseNormals,
   selectControlPointsInScreenRect,
 } from "./cage-control";
@@ -511,8 +513,10 @@ export type {
   CageMorphTransitionFrame,
   CageMorphTransitionInput,
   ScreenProjectedControlPoint,
+  ShaperControlEdgeTransform,
   ShaperControlPointMirrorDescriptor,
   ShaperMirrorSide,
+  ShaperQuadObjData,
   SymmetricControlPointPositionEdit,
   SymmetricControlPointPowerEdit,
 } from "./cage-control";

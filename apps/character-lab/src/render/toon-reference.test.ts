@@ -9,6 +9,7 @@ import {
   TOON_MAX_BOUNDARIES,
   TOON_RIM_EDGE0,
   TOON_RIM_EDGE1,
+  applyShaperSymmetricEyeballTransform,
   computeCubicMatCapRamp,
   computeEyeballHighlightTransform,
   evaluateCubicMatCapBand,
@@ -197,6 +198,32 @@ describe("toon-reference", () => {
       });
       expect(fixLocked.resolvedEyeballEulerDeg).toEqual([2, 175, 0]);
       expect(fixLocked.highlightEulerDeg).toEqual([2, 355, 0]);
+    });
+
+    it("applyShaperSymmetricEyeballTransform: 안구 대칭 편집 시 위치 X 반전, 회전 Y(Yaw) 반전, 스케일 동일 복사를 수행한다", () => {
+      const synced = applyShaperSymmetricEyeballTransform({
+        selectEyeball: 1,
+        symmetryControl: true,
+        leftEyeball: {
+          position: [-0.3, 1.5, 0.2],
+          eulerDeg: [0, 0, 0],
+          localScale: [1, 1, 1],
+        },
+        rightEyeball: {
+          position: [0.3, 1.5, 0.2],
+          eulerDeg: [0, 0, 0],
+          localScale: [1, 1, 1],
+        },
+        nextTransform: {
+          position: [-0.34, 1.52, 0.22],
+          eulerDeg: [5, -12, 3],
+          localScale: [1.1, 1.15, 1.0],
+        },
+      });
+      expect(synced.leftEyeball.position).toEqual([-0.34, 1.52, 0.22]);
+      expect(synced.rightEyeball.position).toEqual([0.34, 1.52, 0.22]);
+      expect(synced.rightEyeball.eulerDeg).toEqual([5, 12, 3]);
+      expect(synced.rightEyeball.localScale).toEqual([1.1, 1.15, 1.0]);
     });
   });
 });

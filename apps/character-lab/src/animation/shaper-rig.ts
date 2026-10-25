@@ -255,3 +255,146 @@ export function syncShaperCostumeBones(
   }
   return synced;
 }
+
+export interface ShaperBoneControlPointCollider {
+  readonly thickness: number;
+  readonly colliderSize: Vec3;
+  readonly colliderCenter: Vec3;
+}
+
+export interface ShaperIkTargetTransform {
+  readonly position: Vec3;
+  readonly eulerDeg: Vec3;
+}
+
+export interface SyncShaperIkTargetsInput {
+  readonly enableIk: boolean;
+  readonly armEndBoneTransforms: readonly [ShaperIkTargetTransform, ShaperIkTargetTransform];
+  readonly legPlatformGuideTransforms: readonly [ShaperIkTargetTransform, ShaperIkTargetTransform];
+  readonly pelvisTargetTransform: ShaperIkTargetTransform;
+  readonly currentIkTargets: readonly ShaperIkTargetTransform[];
+}
+
+export interface SyncShaperIkTargetsResult {
+  readonly ikEnabled: boolean;
+  readonly syncedIkTargets: readonly ShaperIkTargetTransform[];
+}
+
+/**
+ * SHAPER BoneControlPoint::SetSize (0x060000e3) 역공학 내재화:
+ * 본 제어점과 카메라 거리 및 FOV에 비례해 기즈모 두께 `thickness = 0.0025 * dist * (fov / 30)`를 계산하고,
+ * FK 본(`isIk === false`)은 길이 방향 박스 콜라이더 `(boneLength, thickness, thickness)` 및 중심 `(-0.5 * boneLength, 0, 0)`,
+ * IK 타깃(`isIk === true`)은 정육면체 콜라이더 `(2 * thickness, 2 * thickness, 2 * thickness)`를 반환한다.
+ */
+export function computeShaperBoneControlPointCollider(options: {
+  readonly position: Vec3;
+  readonly cameraPosition: Vec3;
+  readonly fovDeg?: number;
+  readonly isIk: boolean;
+  readonly boneLength?: number;
+}): ShaperBoneControlPointCollider {
+  const { position, cameraPosition, fovDeg = 30, isIk, boneLength = 0.2 } = options;
+  const dist = Math.hypot(
+    position[0] - cameraPosition[0],
+    position[1] - cameraPosition[1],
+    position[2] - cameraPosition[2],
+  );
+  const thickness = dist * 0.0025 * (fovDeg / 30);
+
+  if (isIk) {
+    const cubeSide = thickness * 2;
+    return {
+      thickness,
+      colliderSize: [cubeSide, cubeSide, cubeSide],
+      colliderCenter: [0, 0, 0],
+    };
+  }
+
+  return {
+    thickness,
+    colliderSize: [boneLength, thickness, thickness],
+    colliderCenter: [-boneLength * 0.5, 0, 0],
+  };
+}
+
+/**
+ * SHAPER BoneManager::SetAllIKs (0x06000109) 및 SaveIKTransform (0x0600010a) 역공학 내재화:
+ * FK에서 IK를 활성화할 때 팔 체인(`0, 1`)의 IK 타깃을 솔버 끝 본(`bones[last]`)의 위치·회전에 스냅하고,
+ * 다리 체인(`2, 3`)의 IK 타깃을 발판 가이드(`legPlatformPosGuides[0, 1]`)에 스냅하여 FK ↔ IK 전환 시 포즈 점프를 방지한다.
+ */
+export function syncShaperIkTargetsOnToggle(
+  input: SyncShaperIkTargetsInput,
+): SyncShaperIkTargetsResult {
+  if (!input.enableIk) {
+    return {
+      ikEnabled: false,
+      syncedIkTargets: input.currentIkTargets.map((target) => ({
+        position: [...target.position] as Vec3,
+        eulerDeg: [...target.eulerDeg] as Vec3,
+      })),
+    };
+  }
+
+  const syncedIkTargets: ShaperIkTargetTransform[] = [
+    {
+      position: [...input.armEndBoneTransforms[0].position] as Vec3,
+      eulerDeg: [...input.armEndBoneTransforms[0].eulerDeg] as Vec3,
+    },
+    {
+      position: [...input.armEndBoneTransforms[1].position] as Vec3,
+      eulerDeg: [...input.armEndBoneTransforms[1].eulerDeg] as Vec3,
+    },
+    {
+      position: [...input.legPlatformGuideTransforms[0].position] as Vec3,
+      eulerDeg: [...input.legPlatformGuideTransforms[0].eulerDeg] as Vec3,
+    },
+    {
+      position: [...input.legPlatformGuideTransforms[1].position] as Vec3,
+      eulerDeg: [...input.legPlatformGuideTransforms[1].eulerDeg] as Vec3,
+    },
+    {
+      position: [...input.pelvisTargetTransform.position] as Vec3,
+      eulerDeg: [...input.pelvisTargetTransform.eulerDeg] as Vec3,
+    },
+  ];
+
+  return {
+    ikEnabled: true,
+    syncedIkTargets,
+  };
+}
+
+/**
+ * SHAPER CostumeManager::SetMeshScale (0x0600016a) 역공학 내재화:
+ * 액세서리 메쉬의 원본 정점 배열(`originalVertices`)에 로컬 비균등 스케일(`accScale`)을 직접 곱해 변형된 정점 버퍼를 생성한다.
+ */
+export function scaleShaperAccessoryVertices(
+  originalVertices: Float32Array,
+  accScale: Vec3,
+): Float32Array {
+  const scaled = new Float32Array(originalVertices.length);
+  const vertexCount = Math.floor(originalVertices.length / 3);
+  for (let i = 0; i < vertexCount; i += 1) {
+    const base = i * 3;
+    scaled[base] = originalVertices[base] * accScale[0];
+    scaled[base + 1] = originalVertices[base + 1] * accScale[1];
+    scaled[base + 2] = originalVertices[base + 2] * accScale[2];
+  }
+  return scaled;
+}
+
+/**
+ * SHAPER CostumeManager::SetCostumeOutlineRatio (0x06000161) 역공학 내재화:
+ * 의상 렌더러의 머티리얼 슬롯 중 이름이 `"Skin"`인 슬롯을 만나면 인덱스를 `+1` 건너뛰어
+ * 실제 의상 머티리얼 슬롯에 외곽선 비율이나 색상이 적용되도록 보정한다.
+ */
+export function resolveShaperCostumeMaterialSlotIndex(
+  materialNames: readonly string[],
+  requestedSlotIndex: number,
+): number {
+  let slotIndex = Math.max(0, requestedSlotIndex);
+  if (slotIndex < materialNames.length && materialNames[slotIndex] === "Skin") {
+    slotIndex += 1;
+  }
+  return Math.min(slotIndex, Math.max(0, materialNames.length - 1));
+}
