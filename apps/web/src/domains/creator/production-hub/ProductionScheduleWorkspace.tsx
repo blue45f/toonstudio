@@ -37,6 +37,7 @@ import {
   deriveProductionRiskIntelligence,
   type ProductionRiskSignal,
 } from "./production-risk-intelligence";
+import { ProductionBatchScheduleSuite } from "./ProductionBatchScheduleSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -402,6 +403,10 @@ export function ProductionScheduleWorkspace({
           {workload.length === 0 ? <div className="col-span-full rounded-2xl border border-dashed border-line p-10 text-center"><Clock3 className="mx-auto size-8 text-fg-3" /><p className="mt-3 text-sm font-bold text-fg">{t("productionHub.schedule.emptyWorkload", "표시할 워크로드가 없습니다")}</p><p className="mt-1 text-xs text-fg-2">담당자를 지정한 작업이 생기면 역할별 용량이 표시됩니다.</p></div> : null}
         </div>
       )}
+
+      <div className="p-4 pt-0">
+        <ProductionBatchScheduleSuite />
+      </div>
     </section>
   );
 }

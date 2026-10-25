@@ -18,6 +18,7 @@ import type {
 } from "./production-version-activity";
 import type { VersionSharePermission } from "./one-click-version-share-model";
 import { useProductionVersionActivity } from "./use-production-version-activity";
+import { ProductionMonitoringSuite } from "./ProductionMonitoringSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -293,6 +294,8 @@ export function ProductionActivityWorkspace({
           </div>
         </>
       )}
+
+      <ProductionMonitoringSuite />
     </section>
   );
 }
