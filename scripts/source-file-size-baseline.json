@@ -219,10 +219,9 @@
     "apps/web/src/domains/creator/export/studio-svg-export-freehand-media.ts": 811,
     "apps/web/src/domains/creator/export/studio-svg-export.ts": 956,
     "apps/web/src/domains/creator/filter/StudioFilterDialog.tsx": 1663,
-    "apps/web/src/domains/creator/filter/studio-filter-catalog.ts": 997,
+    "apps/web/src/domains/creator/filter/studio-filter-catalog.ts": 990,
     "apps/web/src/domains/creator/filter/studio-filter-library-sqlite-repository.ts": 890,
-    "apps/web/src/domains/creator/filter/studio-filter-pack.ts": 1361,
-    "apps/web/src/domains/creator/filter/studio-filter-union-wave.ts": 807,
+    "apps/web/src/domains/creator/filter/studio-filter-pack.ts": 1211,
     "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccModifierInspector.tsx": 990,
     "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccPanel.tsx": 1135,
     "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccViewportCore.tsx": 1960,
@@ -352,7 +351,7 @@
     "apps/web/src/domains/creator/storyworld/StudioStoryworldLabPage.tsx": 856,
     "apps/web/src/domains/creator/storyworld/studio-storyworld-causality.ts": 1696,
     "apps/web/src/domains/creator/studio-adjustment-layer-runtime.ts": 1459,
-    "apps/web/src/domains/creator/studio-adjustment-stack.ts": 1274,
+    "apps/web/src/domains/creator/studio-adjustment-stack.ts": 1261,
     "apps/web/src/domains/creator/studio-advanced-blur-filter-kernels.ts": 1119,
     "apps/web/src/domains/creator/studio-advanced-color-filter-kernels.ts": 1380,
     "apps/web/src/domains/creator/studio-advanced-fill.ts": 1057,
@@ -405,7 +404,7 @@
     "apps/web/src/domains/creator/studio-dynamic-dual-tip-webgpu-runtime.ts": 1411,
     "apps/web/src/domains/creator/studio-editable-half-edge-mesh.ts": 2166,
     "apps/web/src/domains/creator/studio-editing-brush-kernels.ts": 994,
-    "apps/web/src/domains/creator/studio-effects-workspace.ts": 965,
+    "apps/web/src/domains/creator/studio-effects-workspace.ts": 959,
     "apps/web/src/domains/creator/studio-external-conformance-attestation.ts": 961,
     "apps/web/src/domains/creator/studio-feature-rollout.ts": 1024,
     "apps/web/src/domains/creator/studio-feature-tutorials.ts": 920,
@@ -548,6 +547,7 @@
     "apps/web/src/domains/creator/studio-zip-reader.ts": 906,
     "apps/web/src/domains/creator/studio/components/runtime/studio-companion-reference-capture-runtime.ts": 889,
     "apps/web/src/domains/creator/studio/components/runtime/studio-companion-reference-source-runtime.ts": 991,
+    "apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx": 1375,
     "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePage.tsx": 2118,
     "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx": 2917,
     "apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx": 810,
@@ -668,7 +668,7 @@
     "packages/studio-engine-registry/src/tournament.ts": 1805,
     "packages/studio-engine-registry/src/wgsl-variants.ts": 1041,
     "packages/studio-format-gateway/src/bounded-zip.ts": 909,
-    "packages/studio-format-gateway/src/csp-sut.ts": 847,
+    "packages/studio-format-gateway/src/csp-sut.ts": 818,
     "packages/studio-format-gateway/src/kpp.ts": 828,
     "packages/studio-format-gateway/src/openraster.ts": 1252,
     "packages/studio-format-gateway/src/svg.ts": 1769,
@@ -814,6 +814,13 @@
       "reason": "고도화 3라운드 합본 시점의 증가분 재등록 1개 파일: studio-psd-export.ts 1,621→1,673줄 (+52) — B4 조정 레이어 마스크 네이티브 내보내기 역변환 신규 기능 배선분으로, 부모 승인을 받아 상향 재등록한다. 후속 분해 과제로 줄여 --tighten 으로 되돌린다",
       "files": [
         "apps/web/src/domains/creator/export/studio-psd-export.ts"
+      ]
+    },
+    {
+      "date": "2026-10-25",
+      "reason": "가상 오피스 엔터프라이즈 스위트 및 AI 에이전트·회의 메모리 모델 추가",
+      "files": [
+        "apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx"
       ]
     }
   ]

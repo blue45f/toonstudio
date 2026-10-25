@@ -1,0 +1,318 @@
+{
+  "schemaVersion": "toonstudio.rea.virtual-office-benchmark/1.0",
+  "capturedOn": "2026-10-26",
+  "methodology": "REA MCP (capture_browser_scenario, export_web_scripts, analyze_javascript_application, inspect_analysis_view) + Clean-Room Domain Internalization",
+  "totalPlatformsAnalyzed": 13,
+  "networkBoundaryExcluded": [
+    {
+      "platform": "Butter",
+      "url": "https://www.butter.us/",
+      "status": "ERR_CONNECTION_TIMED_OUT",
+      "note": "헤드리스 브라우저 캡처 시 네트워크 타임아웃이 발생하여 정적/런타임 번들 수집 대상에서 제외하고 Unknown 경계로 기록함."
+    }
+  ],
+  "platforms": [
+    {
+      "id": "gather",
+      "name": "Gather Town / Gather 2.0",
+      "targetUrl": "https://app.gather.town/app",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_5664ce8efda35be40f19bd7da3a9ac4606f10db593b60d797b629b60367fb046",
+        "exportWebScripts": "ev_583ab26b07860a03ef5eddb26c4057abbd67f86455264c436bd37a8fc090bc05",
+        "analyzeJavascriptApplication": "ev_a1b67f4c92ee203ca704d0a449bf35488da65dfeb57c9ba2011899935723c10d",
+        "parentBundle": "ev_c276d2ac2803a3a5e78c8c0a8daaf8f67cc4243aa97c2f534c18fd79c6d42dc0"
+      },
+      "astMetrics": {
+        "jsFileCount": 58,
+        "astNodeCount": 675717,
+        "findingCount": 14915
+      },
+      "observedCapabilities": [
+        "Whisper/Bubble 근접 대화 및 Private Zone 방음 경계",
+        "Spotlight 발표자 우선 송출 및 손들기 큐",
+        "x 키 통합 오브젝트 상호작용 및 아바타 Follow 모드",
+        "Locate 참가자 경로 가이드선 및 47-mask 왕 타일 오토타일링"
+      ]
+    },
+    {
+      "id": "workadventure",
+      "name": "WorkAdventure",
+      "targetUrl": "https://play.workadventu.re/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_c3af106320fa7c687e38d525baed890113042e3e7595ced2d6d25d5f964ddd39",
+        "exportWebScripts": "ev_60335919ec149272a8c990bf93fb354dd8c7a264a7d609833d0ada303198a50b",
+        "analyzeJavascriptApplication": "ev_e0e0a90737c9dc905bad7b580f6b9481e567ca176e85a429e1fd8a9a0e9c0f8b",
+        "parentBundle": "ev_d354e29a8cfa732b8e8f5bda848771761a29060d5caefc842c87c5baa83558fc"
+      },
+      "astMetrics": {
+        "jsFileCount": 19,
+        "astNodeCount": 67062,
+        "findingCount": 858
+      },
+      "observedCapabilities": [
+        "최대 4인 근접 버블 자동 형성 및 LiveKit SFU 에스컬레이션",
+        "Silent Zone / Meeting Room 타일 속성 트리거",
+        "WA.room / WA.player / WA.ui iframe postMessage 맵 스크립팅 API"
+      ]
+    },
+    {
+      "id": "zep",
+      "name": "ZEP",
+      "targetUrl": "https://zep.us/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_de7bb01772d80f66f1cad6ee33567edf2bb68db2a74befc305b04a5024ef8ae6",
+        "capturePlayScenario": "ev_78cf78d8566556870da9af6254f8a190dd19195c0c5aa2f66aca5dd1008d2326",
+        "exportWebScripts": "ev_4a8e2649a82eb6bb886b1d3d6c802f0e889f0c854d5384040e2f1c0b7b4878",
+        "analyzeJavascriptApplication": "ev_d0a45faef74963481a0868a90ec40b114897e2a97211cb2dfd7a9bb540c60f02",
+        "parentBundle": "ev_eb218b98bc918855bf2a8bd307fb61acf2199a12217b737cabb330b317adb52d"
+      },
+      "astMetrics": {
+        "jsFileCount": 11,
+        "astNodeCount": 65312,
+        "moduleCount": 32,
+        "findingCount": 293
+      },
+      "observedCapabilities": [
+        "미니앱 스토어 및 스페이스 클론(Space Clone)",
+        "호스트 관제 명령(전원 소환 Summon All, 일괄 음소거 Mute All, 이동 잠금 Freeze Movement)",
+        "발표 순서 추첨 룰렛(Roulette) 및 출석 체크"
+      ]
+    },
+    {
+      "id": "ovice",
+      "name": "oVice",
+      "targetUrl": "https://www.ovice.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_9329459c97ee1c176b108859148e5fa961128ed77f5803c159154c77a34a6925",
+        "captureLoginScenario": "ev_f32b324db30502141f756a3c783978c5e46f8af2cf029ee16c1ee8ab7c59d59b",
+        "exportWebScripts": "ev_83d0e485577f2159e927843426c1c5eb6eea3d85830b56fb57c98ca595086e06",
+        "analyzeJavascriptApplication": "ev_5817729b10d4fa7dd919e02753d2726b8769bd62e6c56a40a7d6b2ae80454767",
+        "parentBundle": "ev_0ebb9070959cf8e57c6f3f2eccb860eade809178bd9b721f3c06491dace10918"
+      },
+      "astMetrics": {
+        "jsFileCount": 12,
+        "astNodeCount": 53163,
+        "findingCount": 450
+      },
+      "observedCapabilities": [
+        "아바타 시선 방향 기반 지향성 음성 콘(Directional Voice Cone) 및 후방 감쇠",
+        "방음 룸 잠금(Lockable Room), 노크(Knock), 어깨 톡(Shoulder Tap)",
+        "메가폰(Megaphone) 층 전체 방송 및 다층 빌딩 디렉터리"
+      ]
+    },
+    {
+      "id": "topia",
+      "name": "Topia",
+      "targetUrl": "https://topia.io/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_6de2875ffb88dd44589a88907500a608528bbf19b2f7889493e581323c82c1b9",
+        "exportWebScripts": "ev_3a5b20ef39bfa635b68bdbc33a79cebf4f925a5c320ab368611c17bbd1435677"
+      },
+      "astMetrics": {
+        "jsFileCount": 8,
+        "astNodeCount": 12480,
+        "findingCount": 64
+      },
+      "observedCapabilities": [
+        "공간 오디오 거리·방향 물리 감쇠 및 공간 미디어 오브젝트 배치"
+      ]
+    },
+    {
+      "id": "kumospace",
+      "name": "Kumospace",
+      "targetUrl": "https://www.kumospace.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_114afc71baf189ff105081892a6c401d064974bd4fafc99bc0f5a9827756dd49",
+        "exportWebScripts": "ev_497feddeaaf46e7cd583c4c9ebcac541e4ecf21297f6bd3d02c3de3e17304dd9",
+        "analyzeJavascriptApplication": "ev_f7cfcc9da19c4bcd3cdf4581d8fc34691ead224e0471d3a55c5afdfb9294c0bc",
+        "inspectAnalysisView": "ev_f133b778748f197c8ae4a031f1c346b218db02683f0a68bc6acc268d2d376876",
+        "parentBundle": "ev_d1545617d71610389ef24584eef45fe3e52438370e63b473a95947c3c3a2638f"
+      },
+      "rootSha256": "f7938d1aa12bb437f5079424414e9ef27e84c29d0ac5d46550126b46b9d29d13",
+      "astMetrics": {
+        "jsFileCount": 15,
+        "totalBytes": 88094,
+        "astNodeCount": 18350,
+        "moduleCount": 4,
+        "findingCount": 46
+      },
+      "observedCapabilities": [
+        "다층 빌딩 엘리베이터 이동 및 Room Chat / Floor Chat / Space Broadcast 3단계 스코프 분리",
+        "발표자 다중 화면 동시 공유 및 공간 음향 게인",
+        "엔터프라이즈 공간 분석(재실·회의·집중 지표)"
+      ]
+    },
+    {
+      "id": "sowork",
+      "name": "SoWork",
+      "targetUrl": "https://www.sowork.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_514c3cb16052f520c1656a2a19214c4b7ef8154d43ba3db94977d6cfab87d1fa",
+        "exportWebScripts": "ev_02efac0816afe61b1eabeb70bf9e7e4b20396cc6032d9bb991936c7452e3b85b",
+        "analyzeJavascriptApplication": "ev_abf7e241c7b7394b19955060f8cf6fe56bd1fbc16b09eb121ffb89538a11d946",
+        "inspectAnalysisView": "ev_c562360b7e824a79e9b4ed8cc98a18cd180f8330a23b25d3f4c0c16d759e7432",
+        "parentBundle": "ev_a52dbc3a5c5f2224f5ef5c890a2e2fa4a25c588a4e8bda9ee091b5739732ca2b"
+      },
+      "rootSha256": "9e6a0a11ca66f684566bcfe1803300a89be9b0119ba231cac4694c1641b0f4dd",
+      "astMetrics": {
+        "jsFileCount": 20,
+        "totalBytes": 343641,
+        "astNodeCount": 83302,
+        "findingCount": 731
+      },
+      "observedCapabilities": [
+        "6대 제품 기둥(01 Office, 02 Memory, 03 Messaging, 04 Insights, 05 MCP/API, 06 Agents)",
+        "Sophia AI Meeting Bot 자동 녹취·요약·액션아이템 추출 및 시맨틱 검색(Memory)",
+        "MCP/API 브리지를 통한 실시간 오피스 컨텍스트 쿼리(누가 어디서 무엇을 하는지)",
+        "AI 에이전트가 실제 책상에 상주하며 24/7 업무를 처리하는 Agent Desks",
+        "Deep Focus vs Meeting Hours 주간 워크 인사이트"
+      ]
+    },
+    {
+      "id": "roam",
+      "name": "Roam (ro.am)",
+      "targetUrl": "https://ro.am/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_6b337a7796d9f67e39f262693932ca503da90b2598df65daa14aebe7ab16f487",
+        "exportWebScripts": "ev_d0a5f03e66937b0a3201c26758a67b331422eb44edd6189219a99b6e09b3a08d",
+        "analyzeJavascriptApplication": "ev_2ebb7726bf3fe3edf3834c838739fc577fcf04d7488fb59e7e293dbe78485201",
+        "inspectAnalysisView": "ev_d16ec568394ba10477addff21a324d39166dbda13876773720a9c2f469a223e1",
+        "parentBundle": "ev_96cf415c61630884d469ec8a84115596b36a1874524c08697eaf888dcc6746a6"
+      },
+      "rootSha256": "a47f83899223ddc145f406842cd5af8ae3233f41dae68312366d9ab71fad138f",
+      "astMetrics": {
+        "jsFileCount": 8,
+        "totalBytes": 211678,
+        "astNodeCount": 58196,
+        "moduleCount": 30,
+        "findingCount": 178
+      },
+      "observedCapabilities": [
+        "Cloud HQ 다층 빌딩 조감도 및 잠긴 방 Knock-to-Enter 입장 승인 흐름",
+        "Aikido 비동기 데스크 비디오/음성 메시지 드롭(부재·집중 중인 동료 책상에 남기기)",
+        "Magic Minutes AI 회의록 자동 요약 및 Theater 발표장"
+      ]
+    },
+    {
+      "id": "spatialchat",
+      "name": "SpatialChat",
+      "targetUrl": "https://spatial.chat/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_6e984816b7719b53c4e56a32e149dc2ca35a5a1938a2527889d63bfbd3527577",
+        "exportWebScripts": "ev_42c32b3b295439a1a524792cc1891e1a9111ed0d6955b3bcf8ad595812da9110",
+        "analyzeJavascriptApplication": "ev_97ddfac28d25cf96cd94399ee886d8b4b263839f028b914abf8e7f8a68779186",
+        "inspectAnalysisView": "ev_2947842afb2ad2fda553beae3fe9aa49f8c5023779ed10a05f8ce26b761d1aed",
+        "parentBundle": "ev_f16941f353b106cd01166571a030dfba3106aa4c1c5ee5b285affe1fef49e488"
+      },
+      "rootSha256": "04cc0fd1e2a61d5d481b5bf5872ef7306794a1507170e61c64165c91dab33543",
+      "astMetrics": {
+        "jsFileCount": 39,
+        "totalBytes": 363928,
+        "astNodeCount": 106351,
+        "moduleCount": 221,
+        "findingCount": 575
+      },
+      "observedCapabilities": [
+        "공간 캔버스 위 다중 이미지·비디오·레퍼런스 시트 핀 고정(Pin/Lock Media)",
+        "Stage Room 대 Breakout Room 전환 및 동시 다중 화면 공유"
+      ]
+    },
+    {
+      "id": "teamflow",
+      "name": "Teamflow",
+      "targetUrl": "https://www.teamflowhq.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_c06e65e140c37363302b801261cc1e2adce9b213a283b17a0c41d73675454e27",
+        "exportWebScripts": "ev_69fc4158d89a49d52cee184b19a9ffb3becc2ee2ff9cb759c5dc076ecf48f7e9",
+        "analyzeJavascriptApplication": "ev_7e75688d019b6f943fd93d2486bb8a3abedcd5d151bbd7f19d59b7f8036413fe",
+        "inspectAnalysisView": "ev_839f1e82f1b8f30cf76dd69c33827f7cba6f1899eb7fc220c9c4b8c828854d61",
+        "parentBundle": "ev_b4534932eaa1a8c63299f566226cff964d2a30d5d209106002f0df52853b608f"
+      },
+      "rootSha256": "a383fb4f6e3514dd8f9d56f7cb226d7f92fb35c48257c95bc36e636c7496f108",
+      "astMetrics": {
+        "jsFileCount": 6,
+        "totalBytes": 161788,
+        "astNodeCount": 50421,
+        "moduleCount": 30,
+        "findingCount": 109
+      },
+      "observedCapabilities": [
+        "전원 퇴실 후에도 회의실 테이블 위에 문서·화이트보드·타이머가 그대로 남아 있는 Persistent Room Table State",
+        "회의실 안팎의 근접 오디오 격리 경계"
+      ]
+    },
+    {
+      "id": "tandem",
+      "name": "Tandem",
+      "targetUrl": "https://tandem.chat/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_5f3558559354770186012f646e47373b73224af8a4c19c447e8c70826332ca24",
+        "exportWebScripts": "ev_54e6b4dd54012e26e24fdb22143a0ce3f7557e4e3a4687dfe121d3e554639480",
+        "analyzeJavascriptApplication": "ev_d8735b270d51fe11ec0402fbebbeab604b6a02fd51d197558d081dc86e9c79a5",
+        "inspectAnalysisView": "ev_c8bf361ff1b71e98e8a68782646d4c8575cff21238301c1abab7f38e4c3a0a23",
+        "parentBundle": "ev_a123db515f2daa490415285e0570eaf03907677812511996906293c6d53a2c63"
+      },
+      "rootSha256": "78c57d6d4464073600d003e637185212bfc4861895e567ac820d2e6c4a46d585",
+      "astMetrics": {
+        "jsFileCount": 12,
+        "totalBytes": 326805,
+        "astNodeCount": 56789,
+        "moduleCount": 30,
+        "findingCount": 170
+      },
+      "observedCapabilities": [
+        "실시간 작업 앱 컨텍스트 공유(Figma, VS Code, Notion 등 활성 창/문서 제목 노출 및 프라이버시 마스킹)",
+        "원클릭 Talk / Quick Huddle 및 멀티 커서 화면 협동"
+      ]
+    },
+    {
+      "id": "spot-virtual",
+      "name": "Spot Virtual",
+      "targetUrl": "https://www.spotvirtual.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_4ca17baabfd9693bf7773f0f8b7e26f3d613716aed59b8221cf11513745be4e1",
+        "exportWebScripts": "ev_668b1e4007afd650143bf65e94d8d356e122045e4f64144b137807f6c9310bf8",
+        "analyzeJavascriptApplication": "ev_5eb0d1a0f8e46a3003c53274d366a4eabda2768c4a87f7f58a07ea7b3bf21029",
+        "inspectAnalysisView": "ev_2fb0ef47ae2eee1b6007a4760d6034dec08741a6d1d905b5324451f41d7f6e0b",
+        "parentBundle": "ev_1a3e50452e7986f6059a429f458172353197e8db79200ea6be1809a81b7f4b7d"
+      },
+      "rootSha256": "ac3f2ec105d0a01220e32854c0a423d5e277cede74f62c1f1155935423450d7c",
+      "astMetrics": {
+        "jsFileCount": 15,
+        "totalBytes": 296844,
+        "astNodeCount": 72782,
+        "moduleCount": 134,
+        "findingCount": 427
+      },
+      "observedCapabilities": [
+        "라우트 `/ai-agents`, `/docs/openclaw`, `/docs/api`: 가상 오피스 내 AI 에이전트 전용 데스크 및 OpenClaw/API 브리지",
+        "3D/2.5D 하이브리드 공간 이동 및 최대 4개 화면 동시 공유"
+      ]
+    },
+    {
+      "id": "cosmos-video",
+      "name": "Cosmos Video",
+      "targetUrl": "https://www.cosmos.video/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_8ca6827515b79ab11841c9caf5d261a529dede9394e98fec2996f6cd6b154d73",
+        "exportWebScripts": "ev_9f232eeb80de3ed7d85c80ecd2303573b9e486bcc59875f692b521b3fcbac5a3",
+        "analyzeJavascriptApplication": "ev_56072ce99ceaff3e6362fdbabdbdbcbded769f011971d013fa6b18e77b58d0d2",
+        "inspectAnalysisView": "ev_608fa5b5f7e104f626a347870dbe4853f1a3002df2e8509694cf797217b4be55",
+        "parentBundle": "ev_103455b7d55e4cefd8f91f1925308e97034780ef25b8feb753cc1c1dac45bd5b"
+      },
+      "rootSha256": "c52af716d5c6c9ef730905745abd38886d542a565177c8622fdced7da84349b0",
+      "astMetrics": {
+        "jsFileCount": 27,
+        "totalBytes": 367470,
+        "astNodeCount": 96420,
+        "moduleCount": 164,
+        "findingCount": 629
+      },
+      "observedCapabilities": [
+        "라우트 `/product/features/call-recording--ai-cosmos-replay`: 회의 녹화 및 AI Cosmos Replay 요약·하이라이트",
+        "라우트 `/product/features/true-statuses`: 실제 작업 중인 앱/회차 상태를 자동 반영하는 True Statuses",
+        "라우트 `/solutions/remote-vfx-game-studio`: 원격 VFX·게임·크리에이티브 스튜디오 특화 고해상도 다중 화면 공유 및 레이저 포인터"
+      ]
+    }
+  ]
+}
