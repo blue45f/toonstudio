@@ -31,6 +31,21 @@
  *  서비스에 추가되는 대로 `acquire()` 배선을 연결하는 것이 후속 과제이다
  *  (IMPLEMENTATION_P2.md 참조).
  *
+ * P3 재판정 (2026-10-25, 서비스 레벨 호출 가능성 실측):
+ *  `adminApplyBenefit`은 서비스 레벨 메서드라 컨트롤러 전용은 아니지만,
+ *  첫 줄에서 `requireAdmin` → `isAdminUser(adminId)`를 거친다.
+ *  `isAdminUser`는 DB users 행의 role이 admin/operator인 실제 활성
+ *  사용자일 때만 참이다. 따라서 시스템 정산 액터
+ *  (`system:marketplace-settlement`)로는 이 메서드를 호출할 수 없다 —
+ *  users 행이 없는 액터는 False(안전 폴백 포함)로 거부된다.
+ *  실제 관리자 사용자의 신원을 자동 정산에 빌려 쓰는 것은 감사 원장
+ *  귀속을 왜곡하므로 채택하지 않는다. 결론: P3에서도 라이브 획득
+ *  연결을 하지 않고 seam + 스텁 검증 상태를 유지한다. 연결 조건은
+ *  지갑 서비스에 시스템 정산용 공개 적립 경로가 추가되는 것이다.
+ *  단, 그 추가는 `membership-wallet.service.ts` 1,884줄 기준선과
+ *  충돌하므로 래칫 기준선 조정과 함께 별도 제품 결정이 필요하다.
+ *  (IMPLEMENTATION_P3.md 참조.)
+ *
  * 부분 정산: 판매자 적립이 구매자 확정 이후에 실패하면 구매자 환불용
  * 공개 메서드가 없어 자동 복구가 불가능하다. 이 경우
  * `marketplace_seller_credit_failed` 오류에 확정된 구매자 결제 식별자를
