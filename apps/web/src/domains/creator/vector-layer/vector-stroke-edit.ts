@@ -313,3 +313,134 @@ export function eraseVectorStrokes(
   }
   return { kept, removed };
 }
+
+/* ------------------------------------------------------------------ */
+/* 4. 선 폭 프로파일 스무딩 및 제어점 단순화 (CSP 선 수정 도구)            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 앵커별 선 굵기(widths)에 3점 이항 라플라시안 스무딩(0.25, 0.5, 0.25)을 적용해
+ * 스타일러스 필압 노이즈로 인한 급격한 굵기 변동을 매끄럽게 정돈한다.
+ */
+export function smoothVectorStrokeWidths(
+  stroke: VectorStroke,
+  passes = 2
+): VectorStroke {
+  const safePasses = Math.max(0, Math.min(16, Math.floor(finiteNumber(passes, 2))));
+  if (safePasses === 0 || stroke.widths.length < 3) {
+    return { ...stroke, widths: [...stroke.widths] };
+  }
+  let current = stroke.widths.map((w) =>
+    Math.max(VECTOR_STROKE_MIN_WIDTH_PX, finiteNumber(w, 1))
+  );
+  for (let pass = 0; pass < safePasses; pass += 1) {
+    const next = [...current];
+    for (let i = 1; i < current.length - 1; i += 1) {
+      const smoothed =
+        0.25 * current[i - 1]! + 0.5 * current[i]! + 0.25 * current[i + 1]!;
+      next[i] = Math.max(VECTOR_STROKE_MIN_WIDTH_PX, smoothed);
+    }
+    current = next;
+  }
+  return {
+    ...stroke,
+    widths: current,
+  };
+}
+
+function rdpAnchorIndices(
+  points: readonly VectorPoint2D[],
+  epsilon: number
+): number[] {
+  if (points.length <= 2) {
+    return points.map((_, i) => i);
+  }
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+
+  const stack: Array<readonly [number, number]> = [[0, points.length - 1]];
+  while (stack.length > 0) {
+    const [startIdx, endIdx] = stack.pop()!;
+    if (endIdx - startIdx <= 1) continue;
+    const a = points[startIdx]!;
+    const b = points[endIdx]!;
+    let maxDist = -1;
+    let splitIdx = -1;
+    for (let i = startIdx + 1; i < endIdx; i += 1) {
+      const d = pointToSegmentDistance(points[i]!, a, b);
+      if (d > maxDist) {
+        maxDist = d;
+        splitIdx = i;
+      }
+    }
+    if (maxDist > epsilon && splitIdx !== -1) {
+      keep[splitIdx] = 1;
+      stack.push([startIdx, splitIdx], [splitIdx, endIdx]);
+    }
+  }
+
+  const indices: number[] = [];
+  for (let i = 0; i < points.length; i += 1) {
+    if (keep[i] === 1) indices.push(i);
+  }
+  return indices;
+}
+
+/**
+ * 클립스튜디오 '벡터선 단순화(Simplify Vector Line)' 도구와 동일하게
+ * Ramer–Douglas–Peucker 알고리즘으로 불필요한 중간 앵커를 제거하고
+ * Catmull-Rom 3차 베지어 곡선을 재구성한다.
+ */
+export function simplifyVectorStrokeAnchors(
+  stroke: VectorStroke,
+  epsilonPx = 1.5
+): VectorStroke {
+  const safeEps = Math.max(0, finiteNumber(epsilonPx, 1.5));
+  if (stroke.segments.length <= 1 || safeEps <= 0) {
+    return stroke;
+  }
+
+  const anchors: VectorPoint2D[] = [];
+  stroke.segments.forEach((seg, idx) => {
+    if (idx === 0) anchors.push(seg.p0);
+    anchors.push(seg.p3);
+  });
+
+  const keptIndices = rdpAnchorIndices(anchors, safeEps);
+  if (keptIndices.length >= anchors.length) {
+    return stroke;
+  }
+
+  const keptAnchors = keptIndices.map((idx) => anchors[idx]!);
+  const keptWidths = keptIndices.map((idx) =>
+    Math.max(VECTOR_STROKE_MIN_WIDTH_PX, finiteNumber(stroke.widths[idx], 1))
+  );
+
+  const newSegments = [];
+  for (let i = 0; i < keptAnchors.length - 1; i += 1) {
+    const pPrev = keptAnchors[Math.max(0, i - 1)]!;
+    const pCurr = keptAnchors[i]!;
+    const pNext = keptAnchors[i + 1]!;
+    const pAfter = keptAnchors[Math.min(keptAnchors.length - 1, i + 2)]!;
+    newSegments.push({
+      p0: { x: pCurr.x, y: pCurr.y },
+      p1: {
+        x: pCurr.x + (pNext.x - pPrev.x) / 6,
+        y: pCurr.y + (pNext.y - pPrev.y) / 6,
+      },
+      p2: {
+        x: pNext.x - (pAfter.x - pCurr.x) / 6,
+        y: pNext.y - (pAfter.y - pCurr.y) / 6,
+      },
+      p3: { x: pNext.x, y: pNext.y },
+    });
+  }
+
+  return {
+    ...stroke,
+    segments: newSegments,
+    widths: keptWidths,
+  };
+}
+

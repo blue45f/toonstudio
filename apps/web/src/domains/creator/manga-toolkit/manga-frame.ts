@@ -159,3 +159,111 @@ export function mangaRectArea(rect: MangaRect): number {
 export function splitCellsArea(cells: readonly MangaRect[]): number {
   return cells.reduce((sum, cell) => sum + mangaRectArea(cell), 0);
 }
+
+/** 사선(대각선) 컷 분할을 지원하는 다각형 만화 프레임. */
+export interface MangaPolygonFrame {
+  readonly id: string;
+  readonly vertices: readonly { readonly x: number; readonly y: number }[];
+  readonly borderWidth: number;
+  readonly gutter: number;
+}
+
+function clipPolygonHalfPlane(
+  polygon: readonly { readonly x: number; readonly y: number }[],
+  evalSignedDist: (pt: { readonly x: number; readonly y: number }) => number,
+): { readonly x: number; readonly y: number }[] {
+  if (polygon.length === 0) return [];
+  const out: { readonly x: number; readonly y: number }[] = [];
+  for (let i = 0; i < polygon.length; i += 1) {
+    const curr = polygon[i]!;
+    const prev = polygon[(i + polygon.length - 1) % polygon.length]!;
+    const dCurr = evalSignedDist(curr);
+    const dPrev = evalSignedDist(prev);
+    const currInside = dCurr <= 1e-6;
+    const prevInside = dPrev <= 1e-6;
+
+    if (currInside !== prevInside) {
+      const denom = dPrev - dCurr;
+      const t = Math.abs(denom) > 1e-9 ? dPrev / denom : 0.5;
+      out.push({
+        x: prev.x + (curr.x - prev.x) * t,
+        y: prev.y + (curr.y - prev.y) * t,
+      });
+    }
+    if (currInside) {
+      out.push(curr);
+    }
+  }
+  return out;
+}
+
+/**
+ * 사각 만화 프레임 영역을 지정한 각도(`angleDeg`, -75°~75°)의 사선(대각선)으로 2분할한다.
+ * 절단선 수직 방향으로 `gutter`(px) 간격을 정확히 확보하며 Sutherland–Hodgman 반평면 클리핑으로
+ * 상단/하단 다각형 프레임 쌍을 반환한다.
+ */
+export function splitFrameDiagonal(
+  rect: MangaRect,
+  angleDeg: number,
+  gutter: number,
+  options?: {
+    readonly offsetRatio?: number;
+    readonly borderWidth?: number;
+    readonly topId?: string;
+    readonly bottomId?: string;
+  },
+): readonly [MangaPolygonFrame, MangaPolygonFrame] {
+  const safeAngle = Math.max(-75, Math.min(75, Number.isFinite(angleDeg) ? angleDeg : 0));
+  const safeGutter = Math.max(0, Number.isFinite(gutter) ? gutter : 0);
+  const ratio = Math.max(0.15, Math.min(0.85, options?.offsetRatio ?? 0.5));
+  const borderWidth = Math.max(0, options?.borderWidth ?? 2);
+
+  const basePoly = [
+    { x: rect.x, y: rect.y },
+    { x: rect.x + rect.w, y: rect.y },
+    { x: rect.x + rect.w, y: rect.y + rect.h },
+    { x: rect.x, y: rect.y + rect.h },
+  ];
+
+  const px = rect.x + rect.w * 0.5;
+  const py = rect.y + rect.h * ratio;
+  const rad = (safeAngle * Math.PI) / 180;
+  // Normal pointing downward (+Y when angleDeg === 0)
+  const nx = -Math.sin(rad);
+  const ny = Math.cos(rad);
+  const halfGutter = safeGutter / 2;
+
+  const topVertices = clipPolygonHalfPlane(
+    basePoly,
+    (pt) => (pt.x - px) * nx + (pt.y - py) * ny + halfGutter,
+  );
+  const bottomVertices = clipPolygonHalfPlane(
+    basePoly,
+    (pt) => -((pt.x - px) * nx + (pt.y - py) * ny) + halfGutter,
+  );
+
+  return [
+    {
+      id: options?.topId ?? "diag-top",
+      vertices: topVertices,
+      borderWidth,
+      gutter: safeGutter,
+    },
+    {
+      id: options?.bottomId ?? "diag-bottom",
+      vertices: bottomVertices,
+      borderWidth,
+      gutter: safeGutter,
+    },
+  ];
+}
+
+/** 다각형 만화 프레임을 SVG path(d) 문자열로 변환한다. */
+export function polygonFrameToSvgPath(frame: MangaPolygonFrame): string {
+  if (frame.vertices.length === 0) return "";
+  const cmds = frame.vertices.map(
+    (v, i) => `${i === 0 ? "M" : "L"} ${Math.round(v.x * 100) / 100} ${Math.round(v.y * 100) / 100}`,
+  );
+  return `${cmds.join(" ")} Z`;
+}
+

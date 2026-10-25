@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   DEFAULT_EFFECT_STROKE,
@@ -33,7 +33,7 @@ import {
 } from "../studio-panel-ui";
 import { MANGA_TOOLKIT_LABELS as L } from "./manga-toolkit-labels";
 
-import type { ReactElement } from "react";
+import type { KeyboardEvent, ReactElement } from "react";
 
 type ToolkitTab = "frame" | "balloon" | "effect";
 type EffectKind = "concentration" | "speed" | "flash";
@@ -174,7 +174,7 @@ function FrameTab(): ReactElement {
         viewBox={`0 0 ${PREVIEW_WIDTH} ${PREVIEW_HEIGHT}`}
         role="img"
         aria-label={L.tabs.frame}
-        className="mt-2 w-full rounded border border-line bg-canvas"
+        className="mt-2 w-full rounded border border-line bg-canvas text-fg"
       >
         {frames.map((frame) => (
           <rect
@@ -184,14 +184,22 @@ function FrameTab(): ReactElement {
             width={frame.rect.w}
             height={frame.rect.h}
             fill="none"
-            stroke={selectedId === frame.id ? "#38bdf8" : "#111111"}
+            stroke="currentColor"
+            className={selectedId === frame.id ? "text-accent" : "text-fg"}
             strokeWidth={frame.borderWidth}
+            strokeDasharray={selectedId === frame.id ? "4 2" : undefined}
             onClick={() => setSelectedId(frame.id)}
             style={{ cursor: "pointer" }}
           />
         ))}
         {frames.length === 0 && (
-          <text x={PREVIEW_WIDTH / 2} y={PREVIEW_HEIGHT / 2} textAnchor="middle" fill="#94a3b8">
+          <text
+            x={PREVIEW_WIDTH / 2}
+            y={PREVIEW_HEIGHT / 2}
+            textAnchor="middle"
+            fill="currentColor"
+            className="text-fg-3"
+          >
             {L.common.emptyPreview}
           </text>
         )}
@@ -247,7 +255,7 @@ function BalloonTab(): ReactElement {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={L.balloon.textPlaceholder}
-          className="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-sm text-fg"
+          className="mt-1 w-full rounded border border-line bg-card px-2 py-1 text-sm text-fg"
         />
       </label>
       <StudioSliderRow
@@ -283,7 +291,7 @@ function BalloonTab(): ReactElement {
         viewBox={`0 0 ${PREVIEW_WIDTH} ${PREVIEW_HEIGHT}`}
         role="img"
         aria-label={L.balloon.preview}
-        className="mt-2 w-full rounded border border-line bg-canvas"
+        className="mt-2 w-full rounded border border-line bg-canvas [forced-color-adjust:none]"
       >
         {tailPath && (
           <path
@@ -346,7 +354,7 @@ function EffectTab(): ReactElement {
       return (
         <path
           d={effectLinesToSvgPath(lines)}
-          stroke="#111111"
+          stroke="currentColor"
           strokeWidth={stroke.width}
           strokeLinecap="round"
           opacity={stroke.opacity}
@@ -366,7 +374,7 @@ function EffectTab(): ReactElement {
       return (
         <path
           d={effectLinesToSvgPath(lines)}
-          stroke="#111111"
+          stroke="currentColor"
           strokeWidth={stroke.width}
           strokeLinecap="round"
           opacity={stroke.opacity}
@@ -387,7 +395,7 @@ function EffectTab(): ReactElement {
       <path
         d={d}
         fill="none"
-        stroke="#111111"
+        stroke="currentColor"
         strokeWidth={stroke.width}
         strokeLinejoin="round"
         opacity={stroke.opacity}
@@ -519,7 +527,7 @@ function EffectTab(): ReactElement {
         viewBox={`0 0 ${PREVIEW_WIDTH} ${PREVIEW_HEIGHT}`}
         role="img"
         aria-label={L.effect.preview}
-        className="mt-2 w-full rounded border border-line bg-canvas"
+        className="mt-2 w-full rounded border border-line bg-canvas text-fg"
       >
         {svgContent}
       </svg>
@@ -529,25 +537,63 @@ function EffectTab(): ReactElement {
 
 export function MangaToolkitPanel(): ReactElement {
   const [tab, setTab] = useState<ToolkitTab>("frame");
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number): void => {
+    let nextIndex: number;
+    switch (event.key) {
+      case "ArrowRight":
+        nextIndex = (index + 1) % TABS.length;
+        break;
+      case "ArrowLeft":
+        nextIndex = (index - 1 + TABS.length) % TABS.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = TABS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const targetTab = TABS[nextIndex];
+    if (!targetTab) return;
+    setTab(targetTab.id);
+    tabRefs.current[nextIndex]?.focus();
+  };
+
   return (
     <section aria-label={L.panelTitle} className="p-3">
       <h2 className="text-sm font-semibold text-fg">{L.panelTitle}</h2>
       <p className="mb-2 mt-1 text-xs text-fg-3">{L.pageModeNotice}</p>
       <div className="mb-3 flex gap-1.5" role="tablist" aria-label={L.panelTitle}>
-        {TABS.map((t) => (
+        {TABS.map((t, index) => (
           <button
             key={t.id}
+            ref={(el) => {
+              tabRefs.current[index] = el;
+            }}
+            id={`manga-toolkit-tab-${t.id}`}
             type="button"
             role="tab"
+            tabIndex={tab === t.id ? 0 : -1}
             aria-selected={tab === t.id}
+            aria-controls={`manga-toolkit-panel-${t.id}`}
             className={studioSegmentChipClass(tab === t.id)}
             onClick={() => setTab(t.id)}
+            onKeyDown={(event) => handleTabKeyDown(event, index)}
           >
             {t.label}
           </button>
         ))}
       </div>
-      <div role="tabpanel">
+      <div
+        id={`manga-toolkit-panel-${tab}`}
+        role="tabpanel"
+        aria-labelledby={`manga-toolkit-tab-${tab}`}
+      >
         {tab === "frame" && <FrameTab />}
         {tab === "balloon" && <BalloonTab />}
         {tab === "effect" && <EffectTab />}
@@ -555,3 +601,4 @@ export function MangaToolkitPanel(): ReactElement {
     </section>
   );
 }
+

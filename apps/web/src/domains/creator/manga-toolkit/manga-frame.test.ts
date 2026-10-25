@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   deleteFrame,
   mergeFrames,
+  polygonFrameToSvgPath,
   setFramesBorderWidth,
   setFramesGutter,
   splitCellsArea,
   splitFrame,
+  splitFrameDiagonal,
   splitFrameToFrames,
   mangaRectArea,
   type MangaFrame,
@@ -123,3 +125,21 @@ describe("mergeFrames", () => {
     expect(mergeFrames(makeFrames(), ["zzz"])).toBeNull();
   });
 });
+
+describe("splitFrameDiagonal & polygonFrameToSvgPath", () => {
+  it("사선 각도와 수직 gutter 간격을 반영해 상단/하단 다각형 프레임을 생성한다", () => {
+    const [top, bottom] = splitFrameDiagonal({ x: 0, y: 0, w: 200, h: 100 }, 15, 10);
+    expect(top.vertices).toHaveLength(4);
+    expect(bottom.vertices).toHaveLength(4);
+    expect(polygonFrameToSvgPath(top)).toMatch(/^M .* Z$/);
+    expect(polygonFrameToSvgPath(bottom)).toMatch(/^M .* Z$/);
+
+    // 0도 수평 분할 시 상단 하변 y=45, 하단 상변 y=55 (gutter=10)
+    const [hTop, hBottom] = splitFrameDiagonal({ x: 0, y: 0, w: 200, h: 100 }, 0, 10);
+    const maxTopY = Math.max(...hTop.vertices.map((v) => v.y));
+    const minBottomY = Math.min(...hBottom.vertices.map((v) => v.y));
+    expect(maxTopY).toBeCloseTo(45, 5);
+    expect(minBottomY).toBeCloseTo(55, 5);
+  });
+});
+

@@ -234,3 +234,113 @@ export function effectLinesToSvgPath(lines: readonly EffectLineSegment[]): strin
     )
     .join(" ");
 }
+
+/**
+ * 효과선 테이퍼(필압 끝빠짐) 방향 모드.
+ * - "inward": 시작점(x1,y1, 집중선 내측 반경)이 뾰족하고 끝점(x2,y2, 외곽)이 굵은 웨지
+ * - "outward": 시작점(x1,y1)이 굵고 끝점(x2,y2)이 뾰족한 웨지
+ * - "both": 양 끝점이 모두 뾰족하고 중앙부가 굵은 양방향 스피드선 스핀들 웨지
+ */
+export type EffectLineTaperMode = "inward" | "outward" | "both";
+
+export interface TaperedEffectLineOptions {
+  /** 가장 굵은 구간의 선 폭 (px). */
+  readonly startWidth: number;
+  /** 뾰족한 끝점의 선 폭 (px, 기본값 0). */
+  readonly endWidth?: number;
+  /** 테이퍼 방향 모드 (기본값 "inward"). */
+  readonly taperMode?: EffectLineTaperMode;
+}
+
+function roundCoord(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * 선분 목록을 클립스튜디오 만화 효과선 스타일의 테이퍼 웨지(채움 다각형) 정점 배열로 변환한다.
+ */
+export function createTaperedEffectLinePolygons(
+  lines: readonly EffectLineSegment[],
+  options: TaperedEffectLineOptions,
+): { x: number; y: number }[][] {
+  const maxHalf = Math.max(0.25, options.startWidth / 2);
+  const minHalf = Math.max(0, Math.min(maxHalf, (options.endWidth ?? 0) / 2));
+  const mode: EffectLineTaperMode = options.taperMode ?? "inward";
+
+  const polygons: { x: number; y: number }[][] = [];
+  for (const line of lines) {
+    const dx = line.x2 - line.x1;
+    const dy = line.y2 - line.y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-4) continue;
+    const nx = -dy / len;
+    const ny = dx / len;
+
+    if (mode === "both") {
+      const mx = (line.x1 + line.x2) / 2;
+      const my = (line.y1 + line.y2) / 2;
+      if (minHalf <= 1e-4) {
+        polygons.push([
+          { x: line.x1, y: line.y1 },
+          { x: mx + nx * maxHalf, y: my + ny * maxHalf },
+          { x: line.x2, y: line.y2 },
+          { x: mx - nx * maxHalf, y: my - ny * maxHalf },
+        ]);
+      } else {
+        polygons.push([
+          { x: line.x1 + nx * minHalf, y: line.y1 + ny * minHalf },
+          { x: mx + nx * maxHalf, y: my + ny * maxHalf },
+          { x: line.x2 + nx * minHalf, y: line.y2 + ny * minHalf },
+          { x: line.x2 - nx * minHalf, y: line.y2 - ny * minHalf },
+          { x: mx - nx * maxHalf, y: my - ny * maxHalf },
+          { x: line.x1 - nx * minHalf, y: line.y1 - ny * minHalf },
+        ]);
+      }
+      continue;
+    }
+
+    const r1 = mode === "inward" ? minHalf : maxHalf;
+    const r2 = mode === "inward" ? maxHalf : minHalf;
+
+    if (r1 <= 1e-4) {
+      polygons.push([
+        { x: line.x1, y: line.y1 },
+        { x: line.x2 + nx * r2, y: line.y2 + ny * r2 },
+        { x: line.x2 - nx * r2, y: line.y2 - ny * r2 },
+      ]);
+    } else if (r2 <= 1e-4) {
+      polygons.push([
+        { x: line.x1 + nx * r1, y: line.y1 + ny * r1 },
+        { x: line.x2, y: line.y2 },
+        { x: line.x1 - nx * r1, y: line.y1 - ny * r1 },
+      ]);
+    } else {
+      polygons.push([
+        { x: line.x1 + nx * r1, y: line.y1 + ny * r1 },
+        { x: line.x2 + nx * r2, y: line.y2 + ny * r2 },
+        { x: line.x2 - nx * r2, y: line.y2 - ny * r2 },
+        { x: line.x1 - nx * r1, y: line.y1 - ny * r1 },
+      ]);
+    }
+  }
+  return polygons;
+}
+
+/**
+ * 선분 목록을 끝빠짐(Taper)이 적용된 채움형 SVG path(d) 문자열로 변환한다.
+ */
+export function taperedEffectLinesToSvgPath(
+  lines: readonly EffectLineSegment[],
+  options: TaperedEffectLineOptions,
+): string {
+  const polygons = createTaperedEffectLinePolygons(lines, options);
+  return polygons
+    .map((poly) => {
+      const commands = poly.map(
+        (pt, idx) => `${idx === 0 ? "M" : "L"} ${roundCoord(pt.x)} ${roundCoord(pt.y)}`,
+      );
+      return `${commands.join(" ")} Z`;
+    })
+    .join(" ");
+}
+

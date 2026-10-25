@@ -131,4 +131,19 @@ describe("VectorStrokeEditor", () => {
       screen.getByText("스트로크가 없습니다. 먼저 벡터 레이어에 선을 그리세요.")
     ).toBeTruthy();
   });
+
+  it("스트로크 목록과 브러시 모양 버튼에서 화살표 키 Roving Tabindex 탐색이 동작한다", () => {
+    const { handlers } = renderEditor("s1");
+    const strokeButtons = screen.getAllByRole("button", { name: /획 \d/ });
+    expect(strokeButtons[0]?.getAttribute("tabindex")).toBe("0");
+    expect(strokeButtons[1]?.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(strokeButtons[0]!, { key: "ArrowDown" });
+    expect(handlers.onSelectStroke).toHaveBeenCalledWith("s2");
+
+    const roundBtn = screen.getByRole("button", { name: "둥근 펜" });
+    fireEvent.keyDown(roundBtn, { key: "ArrowRight" });
+    expect(handlers.onReplaceBrushShape).toHaveBeenCalledWith("s1", "flat");
+  });
 });
+
