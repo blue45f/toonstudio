@@ -150,6 +150,33 @@ export function reconnectTail(balloon: SpeechBalloon): SpeechBalloon {
   };
 }
 
+/**
+ * 꼬리의 베지어 제어점을 `start -> tip` 축의 수직 법선 방향으로 `normalOffsetPx`만큼 휘어
+ * 곡선형 말풍선 꼬리를 만든다. 원본 말풍선을 변경하지 않는다.
+ */
+export function bendTail(balloon: SpeechBalloon, normalOffsetPx: number): SpeechBalloon {
+  const tail = balloon.tail;
+  if (!tail) return balloon;
+  const safeOffset = Number.isFinite(normalOffsetPx) ? normalOffsetPx : 0;
+  const midX = (tail.start.x + tail.tip.x) / 2;
+  const midY = (tail.start.y + tail.tip.y) / 2;
+  const dx = tail.tip.x - tail.start.x;
+  const dy = tail.tip.y - tail.start.y;
+  const len = Math.hypot(dx, dy);
+  const nx = len > 1e-4 ? -dy / len : 0;
+  const ny = len > 1e-4 ? dx / len : 1;
+  return {
+    ...balloon,
+    tail: {
+      ...tail,
+      control: {
+        x: midX + nx * safeOffset,
+        y: midY + ny * safeOffset,
+      },
+    },
+  };
+}
+
 /** 꼬리 베지어 시작점의 접선 방향 (드래그 핸들/화살표용). */
 export function balloonTailStartDirection(balloon: SpeechBalloon): BalloonPoint | null {
   const tail = balloon.tail;
@@ -270,7 +297,7 @@ export function balloonInnerSvgPath(balloon: SpeechBalloon): string | null {
 /**
  * 꼬리 SVG path를 생성한다 (렌더용).
  * - 일반: 시작점 주변 두 점과 끝점을 잇는 채운 삼각형(곡선) 꼬리.
- * - thought: 꼬리를 따라 작아지는 구름 원 3개.
+ * - thought: 2차 베지어 곡선을 따라 작아지는 구름 원 3개.
  * 꼬리가 없으면 null.
  */
 export function balloonTailSvgPath(balloon: SpeechBalloon): string | null {
@@ -278,13 +305,14 @@ export function balloonTailSvgPath(balloon: SpeechBalloon): string | null {
   if (!tail) return null;
 
   if (balloon.preset === "thought") {
-    // 꼬리를 따라 작아지는 구름 3개
+    // 2차 베지어 곡선을 따라 작아지는 구름 3개
     const circles: string[] = [];
     const sizes = [7, 5, 3.5];
     for (let i = 0; i < sizes.length; i += 1) {
       const t = (i + 1) / (sizes.length + 1);
-      const x = tail.start.x + (tail.tip.x - tail.start.x) * t;
-      const y = tail.start.y + (tail.tip.y - tail.start.y) * t;
+      const mt = 1 - t;
+      const x = mt * mt * tail.start.x + 2 * mt * t * tail.control.x + t * t * tail.tip.x;
+      const y = mt * mt * tail.start.y + 2 * mt * t * tail.control.y + t * t * tail.tip.y;
       const r = sizes[i]!;
       circles.push(
         `M ${num(x - r)} ${num(y)} ` +

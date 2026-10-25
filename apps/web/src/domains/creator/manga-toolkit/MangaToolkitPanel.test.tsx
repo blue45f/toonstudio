@@ -65,4 +65,25 @@ describe("MangaToolkitPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: L.effect.flash }));
     expect(screen.getByRole("img", { name: L.effect.preview }).querySelector("path")).toBeTruthy();
   });
+
+  it("탭 목록에서 화살표 키(ArrowRight/ArrowLeft/Home/End)로 Roving Tabindex 전환이 동작한다", () => {
+    render(<MangaToolkitPanel />);
+    const frameTab = screen.getByRole("tab", { name: L.tabs.frame });
+    const balloonTab = screen.getByRole("tab", { name: L.tabs.balloon });
+    const effectTab = screen.getByRole("tab", { name: L.tabs.effect });
+
+    expect(frameTab.getAttribute("tabindex")).toBe("0");
+    expect(balloonTab.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(frameTab, { key: "ArrowRight" });
+    expect(balloonTab.getAttribute("aria-selected")).toBe("true");
+    expect(balloonTab.getAttribute("tabindex")).toBe("0");
+
+    fireEvent.keyDown(balloonTab, { key: "End" });
+    expect(effectTab.getAttribute("aria-selected")).toBe("true");
+
+    fireEvent.keyDown(effectTab, { key: "Home" });
+    expect(frameTab.getAttribute("aria-selected")).toBe("true");
+  });
 });
+

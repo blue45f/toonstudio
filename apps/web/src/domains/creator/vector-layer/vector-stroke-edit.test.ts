@@ -8,6 +8,8 @@ import {
   replaceVectorBrushShape,
   scaleVectorStrokeWidths,
   segmentsIntersect,
+  simplifyVectorStrokeAnchors,
+  smoothVectorStrokeWidths,
   vectorEraserHitsStroke,
 } from "./vector-stroke-edit";
 
@@ -271,3 +273,35 @@ describe("vectorEraserHitsStroke", () => {
     ).toBe(false);
   });
 });
+
+describe("smoothVectorStrokeWidths & simplifyVectorStrokeAnchors", () => {
+  it("smoothVectorStrokeWidths가 급격한 필압 스파이크를 라플라시안 스무딩으로 완화한다", () => {
+    const stroke = {
+      ...horizontalStroke("spike", 4),
+      widths: [4, 20, 4],
+    };
+    const smoothed = smoothVectorStrokeWidths(stroke, 2);
+    expect(smoothed.widths[0]).toBe(4);
+    expect(smoothed.widths[2]).toBe(4);
+    expect(smoothed.widths[1]!).toBeLessThan(20);
+    expect(smoothed.widths[1]!).toBeGreaterThan(4);
+  });
+
+  it("simplifyVectorStrokeAnchors가 일직선 상의 불필요한 중간 앵커를 제거하고 베지어 세그먼트를 재구성한다", () => {
+    const dense = pointsToVectorStroke(
+      [
+        { x: 0, y: 0, pressure: 1 },
+        { x: 25, y: 0.2, pressure: 1 },
+        { x: 50, y: -0.1, pressure: 1 },
+        { x: 75, y: 0.1, pressure: 1 },
+        { x: 100, y: 0, pressure: 1 },
+      ],
+      { baseWidth: 6, id: "dense" }
+    )!;
+    expect(dense.segments.length).toBeGreaterThanOrEqual(4);
+    const simplified = simplifyVectorStrokeAnchors(dense, 1.5);
+    expect(simplified.segments).toHaveLength(1);
+    expect(simplified.widths).toHaveLength(2);
+  });
+});
+

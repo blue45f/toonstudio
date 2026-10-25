@@ -5,11 +5,13 @@ import {
   createFlashPolygon,
   createSeededRandom,
   createSpeedLines,
+  createTaperedEffectLinePolygons,
   DEFAULT_EFFECT_STROKE,
   effectLineLength,
   effectLinesToSvgPath,
   isAngleExcluded,
   normalizeDegrees,
+  taperedEffectLinesToSvgPath,
   type ConcentrationLineOptions,
 } from "./effect-lines";
 
@@ -209,7 +211,7 @@ describe("createFlashPolygon", () => {
   });
 });
 
-describe("effectLinesToSvgPath", () => {
+describe("effectLinesToSvgPath & taperedEffectLinesToSvgPath", () => {
   it("선분 목록을 M/L path로 변환한다", () => {
     const d = effectLinesToSvgPath([
       { x1: 0, y1: 0, x2: 10, y2: 0 },
@@ -221,4 +223,35 @@ describe("effectLinesToSvgPath", () => {
   it("빈 목록은 빈 문자열이다", () => {
     expect(effectLinesToSvgPath([])).toBe("");
   });
+
+  it("끝빠짐(Taper) 웨지 다각형과 채움형 SVG path를 생성한다", () => {
+    const lines = [{ x1: 0, y1: 0, x2: 100, y2: 0 }];
+    const inward = createTaperedEffectLinePolygons(lines, {
+      startWidth: 4,
+      endWidth: 0,
+      taperMode: "inward",
+    });
+    expect(inward).toHaveLength(1);
+    expect(inward[0]).toEqual([
+      { x: 0, y: 0 },
+      { x: 100, y: 2 },
+      { x: 100, y: -2 },
+    ]);
+
+    const both = createTaperedEffectLinePolygons(lines, {
+      startWidth: 6,
+      endWidth: 0,
+      taperMode: "both",
+    });
+    expect(both[0]).toEqual([
+      { x: 0, y: 0 },
+      { x: 50, y: 3 },
+      { x: 100, y: 0 },
+      { x: 50, y: -3 },
+    ]);
+
+    const svgPath = taperedEffectLinesToSvgPath(lines, { startWidth: 4 });
+    expect(svgPath).toBe("M 0 0 L 100 2 L 100 -2 Z");
+  });
 });
+

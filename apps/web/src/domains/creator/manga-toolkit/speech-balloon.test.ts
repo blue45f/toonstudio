@@ -8,6 +8,7 @@ import {
   balloonIsDashed,
   balloonRectConnectionPoint,
   balloonTailSvgPath,
+  bendTail,
   createBalloon,
   moveTailTip,
   reconnectTail,
@@ -83,13 +84,20 @@ describe("moveTailTip", () => {
   });
 });
 
-describe("reconnectTail", () => {
+describe("reconnectTail & bendTail", () => {
   it("tip 기준으로 꼬리 시작점을 본문 외곽에 다시 연결한다", () => {
     const balloon = makeBalloon();
     const moved = moveTailTip(balloon, { x: -100, y: 50 }); // 왼쪽
     const reconnected = reconnectTail(moved);
     expect(reconnected.tail!.start.x).toBeCloseTo(0, 3);
     expect(reconnected.tail!.start.y).toBeCloseTo(50, 3);
+  });
+
+  it("bendTail이 베지어 제어점을 수직 법선 방향으로 휘어 곡선 꼬리를 만든다", () => {
+    const balloon = reconnectTail(moveTailTip(makeBalloon("normal"), { x: 100, y: 200 }));
+    const beforeControl = { ...balloon.tail!.control };
+    const bent = bendTail(balloon, 24);
+    expect(Math.hypot(bent.tail!.control.x - beforeControl.x, bent.tail!.control.y - beforeControl.y)).toBeCloseTo(24, 3);
   });
 });
 
@@ -132,3 +140,4 @@ describe("SVG path 생성", () => {
     expect(balloonIsDashed(makeBalloon("shout"))).toBe(false);
   });
 });
+
