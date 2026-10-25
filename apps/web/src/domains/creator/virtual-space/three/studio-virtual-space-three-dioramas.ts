@@ -142,7 +142,6 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 15.2,
     scaleY: 1.22,
     elevationMeters: -0.14,
-    hiddenNodeSubstrings: ["RefinedSurface_Walnut"],
   },
   {
     roomId: "event-stage",
@@ -219,6 +218,7 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
       "Upholstery",
       "Black_metal",
       "Black metal",
+      "Limestone",
     ],
     clearLocalBoxes: [
       { minX: -6.0, maxX: 3.5, minY: 0.16, maxY: 3.2, minZ: -3.2, maxZ: 3.8 },

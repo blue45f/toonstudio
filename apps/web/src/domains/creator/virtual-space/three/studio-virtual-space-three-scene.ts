@@ -65,13 +65,13 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "lobby-plant-east", url: "/assets/3d/potted_monstera.glb", x: 716, y: 240, heightMeters: 1.48, rotationY: -0.3 },
 
   // STUDIO (personal-atelier — classroom_art_studio 디오라마 + 드로잉·모니터·라이브 세트)
-  { id: "studio-drawing-desk", url: "/assets/3d/refined-v8/desk.glb", x: 1000, y: 556, heightMeters: 1.15, rotationY: Math.PI },
-  { id: "studio-drawing-chair", url: "/assets/3d/refined-v8/chair.glb", x: 1000, y: 604, heightMeters: 1.1, rotationY: Math.PI },
-  { id: "studio-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1000, y: 552, heightMeters: 0.46, elevationMeters: 0.84, rotationY: 0 },
+  { id: "studio-drawing-desk", url: "/assets/3d/refined-v8/desk.glb", x: 1000, y: 556, heightMeters: 1.15, rotationY: 0 },
+  { id: "studio-drawing-chair", url: "/assets/3d/refined-v8/chair.glb", x: 1000, y: 512, heightMeters: 1.1, rotationY: 0 },
+  { id: "studio-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1000, y: 556, heightMeters: 0.46, elevationMeters: 0.84, rotationY: 0 },
   { id: "studio-desk-camera", url: "/assets/3d/atelier_camera.glb", x: 962, y: 554, heightMeters: 0.22, elevationMeters: 0.84, rotationY: 0.35 },
-  { id: "studio-monitor-desk", url: "/assets/3d/refined-v8/desk.glb", x: 1400, y: 576, heightMeters: 1.15, rotationY: Math.PI },
-  { id: "studio-monitor-chair", url: "/assets/3d/refined-v8/chair.glb", x: 1400, y: 624, heightMeters: 1.1, rotationY: Math.PI },
-  { id: "studio-monitor-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1400, y: 572, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
+  { id: "studio-monitor-desk", url: "/assets/3d/refined-v8/desk.glb", x: 1400, y: 576, heightMeters: 1.15, rotationY: 0 },
+  { id: "studio-monitor-chair", url: "/assets/3d/refined-v8/chair.glb", x: 1400, y: 532, heightMeters: 1.1, rotationY: 0 },
+  { id: "studio-monitor-tablet", url: "/assets/3d/hologram_tablet.glb", x: 1400, y: 576, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
   { id: "studio-light-west", url: "/assets/3d/paper_lantern.glb", x: 1130, y: 280, heightMeters: 1.45, rotationY: 0.2 },
   { id: "studio-light-east", url: "/assets/3d/paper_lantern.glb", x: 1302, y: 280, heightMeters: 1.45, rotationY: -0.2 },
   { id: "studio-mic-table", url: "/assets/3d/round_table.glb", x: 1216, y: 292, heightMeters: 0.78, rotationY: 0 },
@@ -79,8 +79,8 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 
   // CO-WORK (story-lab — library_reading_room 디오라마 + 집중석·보드)
   { id: "cowork-board", url: "/assets/3d/refined-v8/blackboard.glb", x: 1984, y: 236, heightMeters: 1.9, rotationY: 0 },
-  { id: "cowork-chair-west", url: "/assets/3d/refined-v8/chair.glb", x: 1830, y: 486, heightMeters: 1.06, rotationY: Math.PI },
-  { id: "cowork-chair-east", url: "/assets/3d/refined-v8/chair.glb", x: 2138, y: 486, heightMeters: 1.06, rotationY: Math.PI },
+  { id: "cowork-chair-west", url: "/assets/3d/refined-v8/chair.glb", x: 1756, y: 416, heightMeters: 1.06, rotationY: Math.PI * 0.5 },
+  { id: "cowork-chair-east", url: "/assets/3d/refined-v8/chair.glb", x: 2212, y: 416, heightMeters: 1.06, rotationY: -Math.PI * 0.5 },
   { id: "cowork-focus-west", url: "/assets/3d/school_desk.glb", x: 1740, y: 628, heightMeters: 1.08, rotationY: Math.PI },
   { id: "cowork-focus-east", url: "/assets/3d/school_desk.glb", x: 2228, y: 628, heightMeters: 1.08, rotationY: Math.PI },
   { id: "cowork-book-1", url: "/assets/3d/everyday_book.glb", x: 1740, y: 624, heightMeters: 0.2, elevationMeters: 0.82, rotationY: 0.2 },
@@ -94,14 +94,16 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "cafe-lounge-tea", url: "/assets/3d/tea_set.glb", x: 2890, y: 636, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.3 },
 
   // TALK (team-meeting — science_research_laboratory 디오라마 + 브리핑 보드룸 데스크·홀로그램)
-  { id: "talk-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 996, heightMeters: 1.12, rotationY: 0 },
-  { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 996, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
-  { id: "talk-chair-w", url: "/assets/3d/refined-v8/chair.glb", x: 372, y: 996, heightMeters: 1.08, rotationY: Math.PI * 0.5 },
-  { id: "talk-chair-e", url: "/assets/3d/refined-v8/chair.glb", x: 524, y: 996, heightMeters: 1.08, rotationY: -Math.PI * 0.5 },
-  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1080, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
+  { id: "talk-desk", url: "/assets/3d/refined-v8/desk.glb", x: 612, y: 944, heightMeters: 1.12, rotationY: 0 },
+  { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 612, y: 944, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
+  { id: "talk-chair-w", url: "/assets/3d/refined-v8/chair.glb", x: 540, y: 944, heightMeters: 1.08, rotationY: Math.PI * 0.5 },
+  { id: "talk-chair-e", url: "/assets/3d/refined-v8/chair.glb", x: 684, y: 944, heightMeters: 1.08, rotationY: -Math.PI * 0.5 },
+  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 264, y: 944, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
 
-  // PLAZA (creator-plaza — park_garden_pavilion 디오라마 + 중앙 분재·가로등)
-  { id: "plaza-center-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 1472, y: 1088, heightMeters: 1.48, elevationMeters: 0.22, rotationY: 0 },
+  // PLAZA (creator-plaza — park_garden_pavilion 디오라마 + 파빌리온 다기·화단 수목·가로등)
+  { id: "plaza-pavilion-tea", url: "/assets/3d/tea_set.glb", x: 1388, y: 1036, heightMeters: 0.34, elevationMeters: 1.08, rotationY: 0.2 },
+  { id: "plaza-planter-tree-w", url: "/assets/3d/bonsai_tree.glb", x: 1068, y: 968, heightMeters: 1.48, elevationMeters: 0.18, rotationY: 0.3 },
+  { id: "plaza-planter-tree-e", url: "/assets/3d/bonsai_tree.glb", x: 1836, y: 968, heightMeters: 1.48, elevationMeters: 0.18, rotationY: -0.4 },
   { id: "plaza-bench-west", url: "/assets/3d/neom_bench_prop.glb", x: 1150, y: 1290, heightMeters: 0.95, rotationY: 0 },
   { id: "plaza-bench-east", url: "/assets/3d/neom_bench_prop.glb", x: 1794, y: 1290, heightMeters: 0.95, rotationY: 0 },
   { id: "plaza-lamp-nw", url: "/assets/3d/street_lamp.glb", x: 1020, y: 860, heightMeters: 2.65, rotationY: 0 },
@@ -130,10 +132,14 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "terrace-lounge-tea", url: "/assets/3d/tea_set.glb", x: 1344, y: 1564, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.2 },
   { id: "terrace-monstera", url: "/assets/3d/potted_monstera.glb", x: 1620, y: 1580, heightMeters: 1.38, rotationY: -0.2 },
 
-  // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 원고 전시 데스크·아카이브)
-  { id: "gallery-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2338, y: 1546, heightMeters: 1.08, rotationY: 0 },
-  { id: "gallery-tablet", url: "/assets/3d/hologram_tablet.glb", x: 2338, y: 1546, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
-  { id: "gallery-book", url: "/assets/3d/everyday_book.glb", x: 2296, y: 1546, heightMeters: 0.24, elevationMeters: 0.84, rotationY: 0.25 },
+  // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 원고 전시 데스크·큐레이션 라운지)
+  { id: "gallery-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2338, y: 1584, heightMeters: 1.08, rotationY: 0 },
+  { id: "gallery-chair", url: "/assets/3d/refined-v8/chair.glb", x: 2338, y: 1540, heightMeters: 1.06, rotationY: 0 },
+  { id: "gallery-tablet", url: "/assets/3d/hologram_tablet.glb", x: 2338, y: 1584, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
+  { id: "gallery-book", url: "/assets/3d/everyday_book.glb", x: 2296, y: 1584, heightMeters: 0.24, elevationMeters: 0.84, rotationY: 0.25 },
+  { id: "gallery-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 2784, y: 1584, heightMeters: 1.1, rotationY: -Math.PI * 0.5 },
+  { id: "gallery-table", url: "/assets/3d/round_table.glb", x: 2684, y: 1584, heightMeters: 0.78, rotationY: 0 },
+  { id: "gallery-tea", url: "/assets/3d/tea_set.glb", x: 2684, y: 1584, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.3 },
 ]);
 
 /**
