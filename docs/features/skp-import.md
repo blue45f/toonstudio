@@ -149,6 +149,19 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 
 **한계:** 이름은 보고서가 목록당 16개까지만 저장한다. 이름 기록은 .skp를 가져온 기기의 메타데이터 저장소에만 있어 다른 기기에서는 "이름 기록이 없어요"로 보인다. 컴포넌트 참조 자동 연결은 가져와 배치하는 순간에만 하고, 라이브러리에서 나중에 놓은 소재는 자동으로 묶이지 않는다. 이름은 파일 안의 믿을 수 없는 글자라 화면에는 글자로만 그리고, 문서에 옮길 때는 태그·메모 규칙(주소·자격 증명 모양·제어 문자 거절)을 다시 통과해야 한다.
 
+### SketchUp 마스터 스튜디오 워크벤치 및 전체 장면 복원기 (2026-10-26)
+
+기본 에셋 라이브러리 가져오기(`skpImport` 보고서 v1)의 안정 계약을 변경하지 않고, 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`의 `sketchup-studio` 탭)와 전용 모듈을 통해 SketchUp의 고급 모델링·복원·내보내기 기능을 별도 제공한다(상세 REA 역공학 근거: [`docs/studio-rea-competitor-benchmark-2026-10-26.md`](../studio-rea-competitor-benchmark-2026-10-26.md)).
+
+| 모듈 | 주요 제공 기능 |
+| --- | --- |
+| `studio-bg3d-skp-full-scene-restorer.ts` | `SkpModel.pages`(`eye`/`target`/`up`/`fov`/`parallel`/`orthoHeight`/`hiddenLayers`) → `StudioBg3dShot` 카메라 샷 복원, `SkpModel.layers`(RGB 색상·`hidden` 가시성) 복원, `buildInstancedScene` 16원소 행렬 TRS 분해 및 Dynamic Components(`dynamic_attributes`)·`IFC2x3` 속성 사전·내장 썸네일(`extractThumbnail`) 추출 |
+| `studio-bg3d-sketchup-direct-modeling.ts` | Push/Pull 면 돌출 및 반대편 공면 벽체 창문·문 개구부 자동 관통(Coplanar Hole Cutting), 마이터 제한 다각형 오프셋(`Offset`), 3D 경로 스윕(`Follow Me`), VCB `*N`/`Nx`/`/N` 선형·원형 배열 복제, N각형/Bulge($\tan(\theta/4)$) 원호 생성 |
+| `studio-bg3d-sketchup-guides-sections-dimensions.ts` | 줄자(`ConstructionLine` `±1e30` 무한 센티넬 클리핑 및 유한 가이드, `ConstructionPoint`), 각도기(`rise:run` 물매·각도 파서), 3D 치수선(`Dimension` 보조선·`<>` 동적 치수 치환), 3D 지시선 텍스트(`TextEntity`), 단면 평면(`SectionPlane` 메쉬 삼각형 절단선 및 단면 채움 Poché 면적) |
+| `studio-bg3d-sketchup-styles-uv-engine.ts` | `.skp` `D307` 엣지 플래그(`0x01` hidden, `0x08` soft, `0x10` smooth) 디코딩, 6대 면 스타일(`wireframe`, `hidden-line`, `shaded`, `shaded-with-textures`, `monochrome`, `xray`) 및 엣지 모디파이어, 4-Pin 사영 호모그래피(`uvTransform` 3×3 행렬·`uvProjected`·`faceUvBasis`) UV 매핑 |
+| `studio-bg3d-sketchup-shadow-and-exporter.ts` | 위도·경도·Solar North·날짜·시각·Light/Dark 슬라이더 기반 태양 고도·방위각 계산기(`ShadowInfo`) 및 OpenSKP `SkpBuilder.toBytes()` 네이티브 `.skp` v17 빌더 + `.dxf`·`.ifc`·`.obj`/`.mtl`·`.stl`·`.ply`·`instanced-glb` 다중 CAD 익스포터 |
+| `StudioBg3dSketchUpWorkbenchPanel.tsx` | 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`) 내 SketchUp 마스터 스튜디오 통합 UI 패널 |
+
 ## 권리·출처·법적 고지
 
 - `.skp`는 다른 3D 형식과 같은 **이용 권리 관문**을 쓴다. 권리 기록은 라이브러리 레코드의 `rights`로 저장되고, 이후 `createStudioGeneric3dRightsFromAttachment`가 같은 방식으로 생성형 3D 증거를 만든다. 새 관문은 없다. 권리가 `확인 전`이면 상업 이용이 보류된다.
