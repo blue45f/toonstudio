@@ -8,6 +8,14 @@ import { Loader2, Wand2 } from "lucide-react";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import { STUDIO_AI_COLORIZE_PRESETS } from "./studio-ai-assist-ux";
+import {
+  compileColorizeHintPrompt,
+  STUDIO_AI_COLORIZE_HINT_GROUPS,
+} from "./studio-ai-colorize-hints";
+import {
+  applyColorizePalettePrompt,
+  STUDIO_AI_COLORIZE_PALETTES,
+} from "./studio-ai-colorize-palettes";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
@@ -64,6 +72,57 @@ export function StudioAiColorizePanel({
             {preset.label}
           </button>
         ))}
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-[0.62rem] font-semibold text-fg-2">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "색 힌트 — 고르면 채색 지시에 덧붙어요")}</p>
+        {STUDIO_AI_COLORIZE_HINT_GROUPS.map((group) => (
+          <div key={group.id} className="flex flex-wrap items-center gap-1">
+            <span className="w-10 shrink-0 text-[0.62rem] font-semibold text-fg-3">
+              {translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", group.label)}
+            </span>
+            {group.options.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                disabled={!configured || busy}
+                onClick={() => onPromptChange(compileColorizeHintPrompt(prompt, { [group.id]: option.id }))}
+                className={cn(
+                  "rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg-3",
+                  STUDIO_FOCUS_RING,
+                  "hover:border-accent/40 hover:text-fg disabled:opacity-50"
+                )}
+              >
+                {translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", option.label)}
+              </button>
+            ))}
+          </div>
+        ))}
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="w-10 shrink-0 text-[0.62rem] font-semibold text-fg-3">
+            {translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "팔레트")}
+          </span>
+          {STUDIO_AI_COLORIZE_PALETTES.map((palette) => (
+            <button
+              key={palette.id}
+              type="button"
+              disabled={!configured || busy}
+              onClick={() => onPromptChange(applyColorizePalettePrompt(prompt, palette.id))}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg-3",
+                STUDIO_FOCUS_RING,
+                "hover:border-accent/40 hover:text-fg disabled:opacity-50"
+              )}
+            >
+              <span className="flex" aria-hidden>
+                {palette.swatches.map((swatch) => (
+                  <span key={swatch} className="size-2 rounded-full border border-line" style={{ backgroundColor: swatch }} />
+                ))}
+              </span>
+              {translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", palette.label)}
+            </button>
+          ))}
+        </div>
       </div>
 
       <input
