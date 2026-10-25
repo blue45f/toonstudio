@@ -106,3 +106,131 @@ export const SPACE_STATUS_EXPIRY_OPTIONS: readonly SpaceStatusExpiryOption[] = [
   { minutes: 30, labelKo: "30분 뒤 해제", labelEn: "Clear in 30m" },
   { minutes: 60, labelKo: "1시간 뒤 해제", labelEn: "Clear in 1h" },
 ];
+
+/**
+ * 상태 말풍선 긴급도 배지(oVice Set Customize Status · speechBubble.options 대응).
+ * 일반(normal)·주의(warning)·긴급(urgent) 3단계를 지원한다.
+ */
+export type SpaceStatusUrgency = "normal" | "warning" | "urgent";
+
+export interface SpaceStatusUrgencyOption {
+  readonly id: SpaceStatusUrgency;
+  readonly badge: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+export const SPACE_STATUS_URGENCY_OPTIONS: readonly SpaceStatusUrgencyOption[] = [
+  { id: "normal", badge: "", labelKo: "일반", labelEn: "Normal" },
+  { id: "warning", badge: "⚠️", labelKo: "주의", labelEn: "Warning" },
+  { id: "urgent", badge: "🚨", labelKo: "긴급 · 마감", labelEn: "Urgent" },
+];
+
+export const SPACE_STATUS_URGENCY_STORAGE_KEY = "toonspectrum:virtual-space-status-urgency:v1";
+
+export function spaceStatusUrgencyOptionById(id: SpaceStatusUrgency): SpaceStatusUrgencyOption {
+  return SPACE_STATUS_URGENCY_OPTIONS.find((item) => item.id === id) ?? SPACE_STATUS_URGENCY_OPTIONS[0]!;
+}
+
+export function readSpaceStatusUrgency(): SpaceStatusUrgency {
+  try {
+    const raw = globalThis.localStorage?.getItem(SPACE_STATUS_URGENCY_STORAGE_KEY);
+    return raw === "warning" || raw === "urgent" ? raw : "normal";
+  } catch {
+    return "normal";
+  }
+}
+
+export function writeSpaceStatusUrgency(urgency: SpaceStatusUrgency): void {
+  try {
+    globalThis.localStorage?.setItem(SPACE_STATUS_URGENCY_STORAGE_KEY, urgency);
+  } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
+}
+
+/**
+ * 동행 펫(WorkAdventure LocalUserStore.companion / api/companion/list 대응).
+ */
+export type SpaceCompanionId = "none" | "cat" | "dog" | "owl" | "fox" | "robot";
+
+export interface SpaceCompanionOption {
+  readonly id: SpaceCompanionId;
+  readonly emoji: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+export const SPACE_COMPANION_OPTIONS: readonly SpaceCompanionOption[] = [
+  { id: "none", emoji: "", labelKo: "동행 없음", labelEn: "No companion" },
+  { id: "cat", emoji: "🐱", labelKo: "치즈냥", labelEn: "Cheese Cat" },
+  { id: "dog", emoji: "🐶", labelKo: "시바견", labelEn: "Shiba Dog" },
+  { id: "owl", emoji: "🦉", labelKo: "야근 부엉이", labelEn: "Night Owl" },
+  { id: "fox", emoji: "🦊", labelKo: "스토리 여우", labelEn: "Story Fox" },
+  { id: "robot", emoji: "🤖", labelKo: "어시스턴트 봇", labelEn: "Assistant Bot" },
+];
+
+export const SPACE_COMPANION_STORAGE_KEY = "toonspectrum:virtual-space-companion:v1";
+
+export function spaceCompanionOptionById(id: SpaceCompanionId): SpaceCompanionOption {
+  return SPACE_COMPANION_OPTIONS.find((item) => item.id === id) ?? SPACE_COMPANION_OPTIONS[0]!;
+}
+
+export function readSpaceCompanionId(): SpaceCompanionId {
+  try {
+    const raw = globalThis.localStorage?.getItem(SPACE_COMPANION_STORAGE_KEY);
+    return SPACE_COMPANION_OPTIONS.some((item) => item.id === raw) ? (raw as SpaceCompanionId) : "none";
+  } catch {
+    return "none";
+  }
+}
+
+export function writeSpaceCompanionId(id: SpaceCompanionId): void {
+  try {
+    globalThis.localStorage?.setItem(SPACE_COMPANION_STORAGE_KEY, id);
+  } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
+}
+
+/**
+ * 근접 버블 진입 효과음 및 따라가기 요청 자동 거절(WorkAdventure LocalUserStore.bubbleSound / ignoreFollowRequests 대응).
+ */
+export type SpaceBubbleSoundMode = "ding" | "wobble" | "off";
+
+export interface SpaceBubbleSoundOption {
+  readonly id: SpaceBubbleSoundMode;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+export const SPACE_BUBBLE_SOUND_OPTIONS: readonly SpaceBubbleSoundOption[] = [
+  { id: "ding", labelKo: "맑은 벨 (Ding)", labelEn: "Ding chime" },
+  { id: "wobble", labelKo: "물방울 (Wobble)", labelEn: "Wobble sound" },
+  { id: "off", labelKo: "효과음 끄기", labelEn: "Sound off" },
+];
+
+export interface SpaceProximityPreferences {
+  readonly ignoreFollowRequests: boolean;
+  readonly bubbleSound: SpaceBubbleSoundMode;
+}
+
+export const SPACE_PROXIMITY_PREFS_STORAGE_KEY = "toonspectrum:virtual-space-proximity-prefs:v1";
+
+export function readSpaceProximityPreferences(): SpaceProximityPreferences {
+  try {
+    const raw = globalThis.localStorage?.getItem(SPACE_PROXIMITY_PREFS_STORAGE_KEY);
+    if (!raw) return { ignoreFollowRequests: false, bubbleSound: "ding" };
+    const parsed = JSON.parse(raw) as Partial<SpaceProximityPreferences> | null;
+    const bubbleSound: SpaceBubbleSoundMode =
+      parsed?.bubbleSound === "wobble" || parsed?.bubbleSound === "off" ? parsed.bubbleSound : "ding";
+    return {
+      ignoreFollowRequests: Boolean(parsed?.ignoreFollowRequests),
+      bubbleSound,
+    };
+  } catch {
+    return { ignoreFollowRequests: false, bubbleSound: "ding" };
+  }
+}
+
+export function writeSpaceProximityPreferences(next: SpaceProximityPreferences): void {
+  try {
+    globalThis.localStorage?.setItem(SPACE_PROXIMITY_PREFS_STORAGE_KEY, JSON.stringify(next));
+  } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
+}

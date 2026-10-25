@@ -4,6 +4,7 @@ import {
   addReferenceAttachment,
   removeReferenceAttachment,
   STUDIO_AI_REFERENCE_ATTACHMENT_CAP,
+  type StudioAiReferenceAttachment,
 } from "./studio-ai-reference-attachments";
 
 describe("studio-ai-reference-attachments", () => {
@@ -29,7 +30,7 @@ describe("studio-ai-reference-attachments", () => {
     expect(
       addReferenceAttachment([], { kind: "image", label: "사진", ref: "https://example.com/a.png" }),
     ).toEqual({ ok: false, reason: "invalid_image_ref" });
-    let attachments: readonly { id: string; kind: "text"; label: string; ref: string }[] = [];
+    let attachments: readonly StudioAiReferenceAttachment[] = [];
     for (let index = 0; index < STUDIO_AI_REFERENCE_ATTACHMENT_CAP; index += 1) {
       const result = addReferenceAttachment(attachments, {
         kind: "text",

@@ -201,4 +201,67 @@ describe("같이 작업하기 요청 흐름", () => {
     fireEvent.click(within(group).getByRole("radio", { name: "30분 뒤 해제" }));
     expect(onStatusExpiry).toHaveBeenCalledExactlyOnceWith(30);
   });
+
+  it("상태 메뉴에서 oVice 긴급도 배지·WorkAdventure 동행 펫·근접 버블 효과음·따라가기 거절을 설정할 수 있다", () => {
+    const onStatusUrgency = vi.fn();
+    const onCompanionChange = vi.fn();
+    const onProximityPreferences = vi.fn();
+    render(
+      <SpaceStatusMenu
+        status="available"
+        onStatus={vi.fn()}
+        onEditCharacter={vi.fn()}
+        onStatusUrgency={onStatusUrgency}
+        onCompanionChange={onCompanionChange}
+        onProximityPreferences={onProximityPreferences}
+      />,
+    );
+    const urgencyGroup = screen.getByRole("radiogroup", { name: "상태 긴급도" });
+    fireEvent.click(within(urgencyGroup).getByRole("radio", { name: /긴급 · 마감/u }));
+    expect(onStatusUrgency).toHaveBeenCalledExactlyOnceWith("urgent");
+
+    const companionGroup = screen.getByRole("radiogroup", { name: "동행 펫" });
+    fireEvent.click(within(companionGroup).getByRole("radio", { name: /치즈냥/u }));
+    expect(onCompanionChange).toHaveBeenCalledExactlyOnceWith("cat");
+
+    const soundGroup = screen.getByRole("radiogroup", { name: "근접 버블 효과음" });
+    fireEvent.click(within(soundGroup).getByRole("radio", { name: /물방울/u }));
+    expect(onProximityPreferences).toHaveBeenCalledWith(expect.objectContaining({ bubbleSound: "wobble" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "따라가기 요청 자동 거절" }));
+    expect(onProximityPreferences).toHaveBeenLastCalledWith(expect.objectContaining({ ignoreFollowRequests: true }));
+  });
+
+  it("따라가기 요청 자동 거절(ignoreFollowRequests)이 켜지면 follow·lead 토스트는 숨기고 대화 요청만 표시한다", () => {
+    render(
+      <SpaceRequestToast
+        requests={[
+          {
+            id: "req-follow",
+            peer: { sessionId: "bob", displayName: "Bob", role: "editor" },
+            action: "follow",
+            direction: "incoming",
+            status: "offered",
+            createdAt: Date.now(),
+            expiresAt: Date.now() + 60_000,
+          },
+          {
+            id: "req-talk",
+            peer: { sessionId: "cleo", displayName: "Cleo", role: "editor" },
+            action: "talk",
+            direction: "incoming",
+            status: "offered",
+            createdAt: Date.now(),
+            expiresAt: Date.now() + 60_000,
+          },
+        ]}
+        ignoreFollowRequests
+        acceptDisabledReason={null}
+        onRespond={vi.fn()}
+        onOpenPeople={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Bob")).toBeNull();
+    expect(screen.getByText("Cleo")).toBeTruthy();
+  });
 });

@@ -84,4 +84,14 @@ describe("화면 크기(줌) 버튼", () => {
     act(() => { store.setAvailable(true); });
     expect(screen.getByRole("group", { name: "화면 크기" })).toBeTruthy();
   });
+
+  it("oVice 빠른 배율 프리셋(60%·100%·130%)으로 즉시 배율을 전환한다", () => {
+    const store = new StudioUserZoomStore(memory());
+    render(<SpaceZoomControls store={store} />);
+    fireEvent.click(screen.getByRole("button", { name: "배율 130%로 바로 이동" }));
+    expect(store.get()).toBe(1.3);
+    expect(screen.getByRole("button", { name: "배율 130%로 바로 이동" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "배율 60%로 바로 이동" }));
+    expect(store.get()).toBe(0.6);
+  });
 });

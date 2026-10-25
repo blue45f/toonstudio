@@ -10,6 +10,8 @@ export const STUDIO_USER_ZOOM_STORAGE_KEY = "toonspectrum:virtual-space-user-zoo
 
 /** 키보드·메뉴가 오가는 배율 단계(1이 자동 줌 그대로). */
 export const STUDIO_USER_ZOOM_STEPS: readonly number[] = Object.freeze([0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2]);
+/** oVice scaleDropdown(zoomTo50 / zoomTo100 / zoomTo130) 대응 원클릭 배율 프리셋. */
+export const STUDIO_USER_ZOOM_QUICK_PRESETS: readonly number[] = Object.freeze([0.6, 1, 1.3]);
 export const STUDIO_USER_ZOOM_DEFAULT = 1;
 export const STUDIO_USER_ZOOM_MIN = STUDIO_USER_ZOOM_STEPS[0] ?? 0.6;
 export const STUDIO_USER_ZOOM_MAX = STUDIO_USER_ZOOM_STEPS[STUDIO_USER_ZOOM_STEPS.length - 1] ?? 2;

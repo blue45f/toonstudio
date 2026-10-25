@@ -175,4 +175,16 @@ describe("StudioVirtualSpaceUserList", () => {
     expect(focusRows).toHaveLength(1);
     expect(focusRows[0]?.getAttribute("data-user-id")).toBe("u2");
   });
+
+  it("Topia 구역별 활동 분포 칩을 집계하고 구역 클릭으로 해당 구역 작업자만 필터링한다", () => {
+    render(<StudioVirtualSpaceUserList users={users} zones={zones} selfId="self" />);
+    const zoneChip = screen.getByRole("button", { name: "드로잉 아틀리에 · 2명" });
+    expect(zoneChip.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(zoneChip);
+    expect(zoneChip.getAttribute("aria-pressed")).toBe("true");
+    const rows = document.querySelectorAll("ul.studio-vspace-user-list li");
+    expect(rows).toHaveLength(2);
+    fireEvent.click(zoneChip);
+    expect(document.querySelectorAll("ul.studio-vspace-user-list li")).toHaveLength(4);
+  });
 });

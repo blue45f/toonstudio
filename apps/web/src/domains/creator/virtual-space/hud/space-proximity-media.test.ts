@@ -156,6 +156,26 @@ describe("spaceProximityMediaScopePeers", () => {
     expect(nextSpaceProximityRangeMode("quiet")).toBe("standard");
     expect(nextSpaceProximityRangeMode("off")).toBe("standard");
   });
+
+  it("ZEP 연동 프라이빗 구역(areaGroupId / area:* 접두사)은 맵 거리가 멀어도 같은 그룹끼리 게인 1로 연결된다", () => {
+    const zones = [
+      { id: "pod-west", x: 0, y: 0, width: 80, height: 80, policy: "private", areaGroupId: "area:writers-linked" },
+      { id: "pod-east", x: 600, y: 600, width: 80, height: 80, policy: "private", areaGroupId: "area:writers-linked" },
+    ];
+    const westZone = spacePrivateZoneAt(zones, { x: 20, y: 20 });
+    const eastZone = spacePrivateZoneAt(zones, { x: 620, y: 620 });
+    expect(westZone).toBe("area:writers-linked");
+    expect(eastZone).toBe("area:writers-linked");
+    const scoped = spaceProximityMediaScopePeers({
+      self: { point: { x: 20, y: 20 }, activity: "available", privateZoneId: westZone },
+      peers: [
+        peer("linked-peer", 620, { point: { x: 620, y: 620 }, privateZoneId: eastZone }),
+        peer("other-room", 30, { privateZoneId: "room-other" }),
+      ],
+    });
+    expect(scoped).toHaveLength(1);
+    expect(scoped[0]).toMatchObject({ id: "linked-peer", gain: 1 });
+  });
 });
 
 describe("createSpaceChannelPort", () => {

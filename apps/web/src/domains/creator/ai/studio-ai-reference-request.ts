@@ -25,10 +25,14 @@ export type StudioAiReferenceRequestResult =
   | { readonly ok: true; readonly request: StudioAiReferenceColorizeRequest }
   | { readonly ok: false; readonly reason: "empty_prompt" };
 
+export type StudioAiReferenceAttachmentInput =
+  | StudioAiReferenceAttachment
+  | { readonly id: string; readonly dataUrl: string };
+
 /** 프롬프트와 첨부를 요청 페이로드로 묶는다. 호출은 호출부가 맡는다. */
 export function buildReferenceColorizeRequest(input: {
   readonly prompt: string;
-  readonly attachments: readonly StudioAiReferenceAttachment[];
+  readonly attachments: readonly StudioAiReferenceAttachmentInput[];
 }): StudioAiReferenceRequestResult {
   const prompt = input.prompt.trim();
   if (!prompt) return { ok: false, reason: "empty_prompt" };
@@ -39,11 +43,12 @@ export function buildReferenceColorizeRequest(input: {
       warnings.push("첨부 상한(6장)을 넘어 나머지는 제외했다");
       break;
     }
-    if (!attachment.dataUrl.startsWith("data:image/")) {
+    const dataUrl = "dataUrl" in attachment ? attachment.dataUrl : attachment.ref;
+    if (!dataUrl.startsWith("data:image/")) {
       warnings.push(`이미지가 아닌 첨부(${attachment.id})를 제외했다`);
       continue;
     }
-    references.push({ id: attachment.id, dataUrl: attachment.dataUrl });
+    references.push({ id: attachment.id, dataUrl });
   }
   return {
     ok: true,

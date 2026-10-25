@@ -4,6 +4,9 @@ import type { StudioLiveParticipant } from "../live/studio-live-collaboration-pr
 import type { StudioConversationScope, StudioConversationSnapshot } from "./studio-virtual-space-conversation";
 
 const button = "min-h-11 rounded-lg border border-line px-3 text-xs disabled:opacity-50";
+const BREAKOUT_TIMER_OPTIONS = [null, 5, 10, 15] as const;
+export type StudioBreakoutTimerMinutes = (typeof BREAKOUT_TIMER_OPTIONS)[number];
+
 export function StudioVirtualSpaceConversationPanel({ self, snapshot, currentConversation, onPropose, onRespond, onLeave, onSetLocked }: {
   readonly self: StudioLiveParticipant | undefined;
   readonly snapshot: StudioConversationSnapshot;
@@ -21,6 +24,8 @@ export function StudioVirtualSpaceConversationPanel({ self, snapshot, currentCon
   const isActiveInitiator = Boolean(activeRecord && self && activeRecord.initiatorId === self.sessionId);
   const [selected, setSelected] = useState<readonly string[]>([]);
   const [notice, setNotice] = useState(false);
+  const [shuffleStep, setShuffleStep] = useState(0);
+  const [timerMinutes, setTimerMinutes] = useState<StudioBreakoutTimerMinutes>(null);
   const activeRoster = active?.memberIds.filter((id) => id !== self?.sessionId).join(",") ?? "";
   useEffect(() => { setSelected(activeRoster ? activeRoster.split(",") : []); setNotice(false); }, [active?.id, activeRoster]);
   const name = (id: string) => id === self?.sessionId ? bt("나", "You") : snapshot.readyPeers.find((peer) => peer.sessionId === id)?.displayName ?? id;
@@ -28,12 +33,24 @@ export function StudioVirtualSpaceConversationPanel({ self, snapshot, currentCon
   const canPropose = snapshot.available && !activeLocked && members.length >= 2 && members.length <= 4
     && selected.every((id) => snapshot.readyPeers.some((peer) => peer.sessionId === id));
   const pending = snapshot.records.filter((record) => record.status === "offered" || record.status === "waiting");
+  const assignBreakoutGroup = () => {
+    const pool = snapshot.readyPeers.map((peer) => peer.sessionId);
+    if (!pool.length) return;
+    const count = Math.min(3, pool.length);
+    const picked: string[] = [];
+    for (let index = 0; index < count; index += 1) {
+      const candidate = pool[(shuffleStep + index) % pool.length];
+      if (candidate && !picked.includes(candidate)) picked.push(candidate);
+    }
+    setSelected(picked);
+    setShuffleStep((current) => current + 1);
+  };
   return <section className="vs2-panel studio-vspace-bubble-panel" aria-label={bt("소규모 Bubble 대화", "Conversation bubble")} data-space-interactive="true" data-bubble-active={active ? "true" : undefined}>
     <h2 className="font-bold">{bt("소규모 Bubble 대화", "Conversation bubble")}</h2>
     <p className="mt-2 text-xs text-fg-2">{bt("나를 포함해 최대 4명. 모든 사람이 전체 명단에 동의해야 열리고, 공간 범위를 벗어나면 종료돼요. 마이크와 카메라는 직접 켜야 해요.", "Up to four people including you. Everyone must accept the full roster, and the bubble closes when its spatial scope ends. Turn on microphone and camera yourself.")}</p>
     {!snapshot.available ? <p className="mt-2 text-xs text-fg-2" role="status">{bt("이 창에서 같은 프로젝트의 팀 연결을 확인한 뒤 제안할 수 있어요.", "Keep this window active and connect to the same project before proposing a conversation.")}</p> : null}
     {active ? <div className="mt-3 rounded-xl border border-line p-3 text-xs">
-      <p>{bt("현재 Bubble", "Current bubble")} · {active.memberIds.map(name).join(", ")}</p>
+      <p>{bt("현재 Bubble", "Current bubble")} · {active.memberIds.map(name).join(", ")}{timerMinutes ? ` · ⏱️ ${timerMinutes}${bt("분 타이머", "m timer")}` : ""}</p>
       {activeLocked ? <p className="mt-2 font-semibold" data-bubble-locked="true">{bt("🔒 잠긴 대화 — 멤버는 새 제안을 받지 않아요", "🔒 Locked conversation — members won't receive new proposals")}</p> : null}
       <div className="mt-2 flex flex-wrap gap-2">
         <button type="button" className={button} onClick={() => onLeave(active.id)}>{bt("대화 나가기", "Leave conversation")}</button>
@@ -45,6 +62,20 @@ export function StudioVirtualSpaceConversationPanel({ self, snapshot, currentCon
     </div> : null}
     <fieldset className="mt-3 space-y-1" disabled={!snapshot.available}>
       <legend className="text-xs font-semibold">{bt("제안할 명단 선택", "Choose the proposed roster")}</legend>
+      {snapshot.readyPeers.length > 0 ? <div className="flex flex-wrap items-center gap-1.5 py-1" role="group" aria-label={bt("소회의실 빠른 배정·타이머", "Breakout quick assign & timer")}>
+        <button type="button" className="rounded-lg border border-line px-2.5 py-1 text-[11px] font-medium disabled:opacity-50"
+          disabled={!snapshot.available || activeLocked}
+          aria-label={bt("무작위 소회의실 배정", "Random breakout assignment")}
+          onClick={assignBreakoutGroup}>
+          {bt("🎲 무작위 배정·섞기", "🎲 Random / Shuffle")}
+        </button>
+        {BREAKOUT_TIMER_OPTIONS.map((minutes) => <button key={String(minutes)} type="button"
+          className="rounded-lg border border-line px-2 py-1 text-[11px] disabled:opacity-50"
+          aria-pressed={timerMinutes === minutes}
+          onClick={() => setTimerMinutes(minutes)}>
+          {minutes === null ? bt("타이머 없음", "No timer") : bt(`${minutes}분`, `${minutes}m`)}
+        </button>)}
+      </div> : null}
       {snapshot.readyPeers.map((peer) => <label key={peer.sessionId} className="flex min-h-11 items-center gap-2 text-xs">
         <input type="checkbox" checked={selected.includes(peer.sessionId)} disabled={selected.length >= 3 && !selected.includes(peer.sessionId)}
           onChange={(event) => { const checked = event.currentTarget.checked; setSelected((previous) => checked ? [...previous, peer.sessionId] : previous.filter((id) => id !== peer.sessionId)); }} />

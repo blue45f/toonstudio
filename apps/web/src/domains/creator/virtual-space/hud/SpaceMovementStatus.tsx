@@ -6,17 +6,18 @@ import type { StudioVirtualSpaceSocialRequest } from "../studio-virtual-space-so
 import { isStudioSocialWalkTogether, studioSocialRequestFollowsPeer } from "../studio-virtual-space-social-walk";
 import { SpaceCameraChip } from "./SpaceCameraChip";
 import { SpaceFollowStatus } from "./SpaceFollowStatus";
+import { spaceStatusUrgencyOptionById, type SpaceStatusUrgency } from "./space-dock-model";
 import type { SpaceProximityRangeMode } from "./space-proximity-media";
 
 /**
- * 이동·시점·음향 상태 칩 묶음: 함께 걷기(내가 따라가는 중·누가 나를 따라오는 중), 카메라 둘러보기,
- * 1:1 귓속말(Whisper), 조용히 모드(Quiet Mode)를 한곳에 모아 페이지는 한 요소만 둔다.
+ * 이동·시점·음향·긴급도 상태 칩 묶음: 함께 걷기(내가 따라가는 중·누가 나를 따라오는 중), 카메라 둘러보기,
+ * 1:1 귓속말(Whisper), 조용히 모드(Quiet Mode), 상태 긴급도 배지(oVice speechBubble.options 대응)를 한곳에 모아 페이지는 한 요소만 둔다.
  * 나를 따라오는 사람은 합의를 보고 정한다: 따라가기 요청을 받아 준 쪽, 따라오라고 요청한 쪽이 이끄는 쪽이다.
  */
 export function SpaceMovementStatus({
   followingName, sharedActivity, socialRequests, config, cameraPan,
-  whisperPeerName = null, proximityRange = "standard",
-  onStopFollowing, onStopLeading, onStopWhisper, onResetProximityRange, onConfig, onRecentered,
+  whisperPeerName = null, proximityRange = "standard", statusUrgency = "normal",
+  onStopFollowing, onStopLeading, onStopWhisper, onResetProximityRange, onResetStatusUrgency, onConfig, onRecentered,
 }: {
   /** 내가 따라가는 사람. 없으면 null. */
   readonly followingName: string | null;
@@ -30,10 +31,13 @@ export function SpaceMovementStatus({
   readonly whisperPeerName?: string | null;
   /** 근접 음성 범위 모드(standard가 아니면 상태 칩을 보여 준다). */
   readonly proximityRange?: SpaceProximityRangeMode;
+  /** 상태 긴급도(oVice speechBubble.options 대응, normal이 아니면 상태 칩을 보여 준다). */
+  readonly statusUrgency?: SpaceStatusUrgency;
   readonly onStopFollowing: () => void;
   readonly onStopLeading: () => void;
   readonly onStopWhisper?: () => void;
   readonly onResetProximityRange?: () => void;
+  readonly onResetStatusUrgency?: () => void;
   readonly onConfig: (patch: Partial<StudioFollowConfig>) => void;
   /** 마우스·터치로 '내 위치로'를 눌렀을 때(키보드 초점을 월드로 돌리는 데 쓴다). */
   readonly onRecentered?: () => void;
@@ -54,6 +58,7 @@ export function SpaceMovementStatus({
     }
   }
   const followedByName = followerNames[0] ?? null;
+  const urgencyOption = spaceStatusUrgencyOptionById(statusUrgency);
   return <>
     <SpaceFollowStatus followingName={followingName} followedByName={followedByName} followedByNames={followerNames} config={config}
       onStopFollowing={onStopFollowing} onStopLeading={onStopLeading} onConfig={onConfig} />
@@ -67,6 +72,12 @@ export function SpaceMovementStatus({
         ? bt("조용히 모드 · 바로 옆 사람만 들려요 (U)", "Quiet mode · only people right next to you (U)")
         : bt("근접 음성 끔 · 주변 소리를 듣지 않아요", "Proximity audio off · nearby voices muted")}</p>
       {onResetProximityRange ? <button type="button" className="space-pill-button" onClick={onResetProximityRange}>{bt("기본으로", "Standard")}</button> : null}
+    </div> : null}
+    {urgencyOption.id !== "normal" ? <div className="space-status-chip" data-space-interactive="true" data-urgency={urgencyOption.id}>
+      <p role="status">{urgencyOption.id === "urgent"
+        ? bt(`${urgencyOption.badge} 긴급 · 마감 집중 상태예요`, `${urgencyOption.badge} Urgent status active`)
+        : bt(`${urgencyOption.badge} 주의 · 급한 용무만 요청해 주세요`, `${urgencyOption.badge} Warning status · urgent matters only`)}</p>
+      {onResetStatusUrgency ? <button type="button" className="space-pill-button" onClick={onResetStatusUrgency}>{bt("해제", "Clear")}</button> : null}
     </div> : null}
   </>;
 }

@@ -96,3 +96,40 @@ export function studioChatBubbleAlive(bubble: StudioVirtualSpaceChatBubble, now:
 export function studioChatTypingAlive(typing: StudioVirtualSpaceChatTyping, now: number): boolean {
   return typing.expiresAt > now;
 }
+
+/**
+ * 머리 위 말풍선 종류(WorkAdventure ENABLE_SAY · Speech Bubble vs Thought Bubble 대응).
+ * - say: 일반 말풍선
+ * - thought: 생각풍선(💭 접두사로 기존 패킷 규약을 바꾸지 않고 구름 생각을 표현)
+ */
+export type StudioChatBubbleKind = "say" | "thought";
+
+export function formatStudioBubbleText(text: string, kind: StudioChatBubbleKind = "say"): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  if (kind === "thought") {
+    return trimmed.startsWith("💭") ? trimmed : `💭 ${trimmed}`;
+  }
+  return trimmed;
+}
+
+function escapeCsvCell(raw: string): string {
+  const safeFormula = /^[=+\-@]/u.test(raw) ? `'${raw}` : raw;
+  return `"${safeFormula.replace(/"/gu, '""')}"`;
+}
+
+/**
+ * 채팅 기록을 CSV 문자열로 변환한다(oVice Export Chat History as CSV 대응).
+ * 스프레드시트 수식 주입(`=`, `+`, `-`, `@`)을 방어하고 큰따옴표를 RFC 4180 규격으로 이스케이프한다.
+ */
+export function formatStudioChatCsv(messages: readonly StudioVirtualSpaceChatMessage[]): string {
+  const header = "id,at,displayName,scope,text";
+  const rows = messages.map((msg) => [
+    escapeCsvCell(msg.id),
+    escapeCsvCell(new Date(msg.at).toISOString()),
+    escapeCsvCell(msg.displayName),
+    escapeCsvCell(msg.scope),
+    escapeCsvCell(msg.text),
+  ].join(","));
+  return [header, ...rows].join("\n");
+}

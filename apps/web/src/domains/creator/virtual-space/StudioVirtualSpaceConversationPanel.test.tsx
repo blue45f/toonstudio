@@ -67,4 +67,15 @@ describe("group conversation full-roster consent UI", () => {
     expect(screen.queryByRole("button", { name: "잠금 풀기" })).toBeNull();
     expect(screen.queryByRole("button", { name: "대화 잠그기" })).toBeNull();
   });
+
+  it("supports oVice breakout random/shuffle assignment and timer presets", () => {
+    const onPropose = vi.fn(() => "new-conversation");
+    render(<StudioVirtualSpaceConversationPanel self={self} snapshot={idle} onPropose={onPropose} onRespond={vi.fn()} onLeave={vi.fn()} onSetLocked={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "무작위 소회의실 배정" }));
+    expect(screen.getByText("제안 명단 · 나, B, C, D")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "무작위 소회의실 배정" }));
+    expect(screen.getByText("제안 명단 · 나, C, D, E")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "10분" }));
+    expect(screen.getByRole("button", { name: "10분" }).getAttribute("aria-pressed")).toBe("true");
+  });
 });
