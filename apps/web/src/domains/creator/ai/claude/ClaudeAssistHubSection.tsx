@@ -12,6 +12,10 @@ import { useId } from "react";
 import { claudeModelInfo } from "@/shared/ai/claude/claude-models";
 import { ClaudeBudgetMeter } from "@/shared/ai/claude/ClaudeBudgetMeter";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
+import {
+  hasDefaultEnvClaudeKey,
+  hydrateDefaultEnvClaudeConnection,
+} from "@/shared/ai/user-ai-store";
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
@@ -31,6 +35,7 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
   const rawId = useId().replace(/:/gu, "");
   const route = useClaudeRoute();
   const modelLabel = route ? claudeModelInfo(route.model)?.label ?? route.model : "";
+  const canHydrateEnvKey = !route && hasDefaultEnvClaudeKey();
 
   return (
     <section
@@ -59,7 +64,7 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
       {route ? (
         <>
           <div className="grid gap-2 sm:grid-cols-2">
-            {CLAUDE_ASSIST_FEATURES.map(({ id, Icon, titleKey, descriptionKey, requirementKey }) => (
+            {CLAUDE_ASSIST_FEATURES.map(({ id, Icon, titleKey, descriptionKey, requirementKey, workflowBadgeKo }) => (
               <button
                 key={id}
                 type="button"
@@ -79,7 +84,17 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
                 <span className="min-w-0 flex-1">
                   <strong className="block text-xs font-black leading-snug text-fg">{t(titleKey)}</strong>
                   <span className="mt-0.5 block text-[0.62rem] leading-relaxed text-fg-3">{t(descriptionKey)}</span>
-                  <span className="mt-1.5 inline-flex rounded-full border border-line px-1.5 py-px text-[0.58rem] font-semibold text-fg-2">{t(requirementKey)}</span>
+                  <span className="mt-1.5 flex flex-wrap items-center gap-1">
+                    <span className="inline-flex rounded-full border border-line px-1.5 py-px text-[0.58rem] font-semibold text-fg-2">{t(requirementKey)}</span>
+                    {workflowBadgeKo ? (
+                      <span
+                        data-claude-workflow-badge={id}
+                        className="inline-flex rounded-full border border-accent/30 bg-accent/10 px-1.5 py-px text-[0.56rem] font-semibold text-accent"
+                      >
+                        {workflowBadgeKo}
+                      </span>
+                    ) : null}
+                  </span>
                 </span>
               </button>
             ))}
@@ -101,6 +116,23 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
       ) : (
         <div className="space-y-2 px-1">
           <p className="text-[0.65rem] leading-relaxed text-fg-2">{t("claudeAssist.hub.connectPrompt")}</p>
+          {canHydrateEnvKey ? (
+            <button
+              type="button"
+              data-testid="hub-activate-default-claude-key-btn"
+              onClick={() => {
+                hydrateDefaultEnvClaudeConnection();
+              }}
+              className={cn(
+                "flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-good/40 bg-good/10 px-3 py-2 text-xs font-bold text-good hover:bg-good/15",
+                STUDIO_EASE,
+                STUDIO_FOCUS_RING,
+              )}
+            >
+              <span>기본 환경 Claude 키 즉시 활성화 (BYOK 불필요)</span>
+              <Sparkles size={14} aria-hidden />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onOpenSettings}

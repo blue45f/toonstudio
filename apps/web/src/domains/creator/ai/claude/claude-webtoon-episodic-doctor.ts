@@ -1,0 +1,454 @@
+/**
+ * claude-webtoon-episodic-doctor.ts
+ *
+ * Phase 2 차세대 웹툰 에피소드 프로덕션 AI 보조 엔진 4종:
+ * 1. 독자 스크롤 체류·이탈 구간 & 베스트 댓글·별점 예측 시뮬레이터 (네이버웹툰·카카오페이지·쿠아이칸 데이터 벤치마크)
+ * 2. 캐릭터 말투·성격 캐붕(OOC) 레이더 & 3종 서브텍스트 대사 윤색기 (오노마AI 페뷸레이터·캐릭터 캐논 벤치마크)
+ * 3. 컷별 3D 배경·소품 에셋 배치 & 카메라 렌즈/심도(DoF)/안개 디렉터 (리얼드로우·클립스튜디오 3D 소재 벤치마크)
+ * 4. 웹툰 BGM · 폴리 효과음 · 오디오툰(보이스 드라마) 큐시트 디렉터 (네이버웹툰 BGM·오디오툰 파이프라인 벤치마크)
+ */
+import {
+  CLAUDE_DEFAULT_MODEL_ID,
+  claudeModelInfo,
+  claudeModelSupportsEffort,
+  estimateClaudeCostUsd,
+} from "@/shared/ai/claude/claude-models";
+import { resolveClaudeRequestModel } from "@/shared/ai/claude/claude-protocol";
+import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-route";
+import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
+import { claudeParse } from "@/shared/ai/claude/claude-transport";
+import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
+import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
+
+import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
+import {
+  buildDeterministicBg3dLightingAssetReport,
+  buildDeterministicBgmAudioToonReport,
+  buildDeterministicCharacterOocRadarReport,
+  buildDeterministicReaderRetentionReport,
+  ClaudeBg3dLightingAssetSchema,
+  ClaudeBgmAudioToonSchema,
+  ClaudeCharacterOocRadarSchema,
+  ClaudeReaderRetentionSchema,
+  type ClaudeBg3dLightingAssetView,
+  type ClaudeBgmAudioToonView,
+  type ClaudeCharacterOocRadarView,
+  type ClaudeReaderRetentionView,
+  type WebtoonEpisodicDoctorMode,
+  type WebtoonEpisodicDoctorView,
+} from "./claude-webtoon-episodic-schemas";
+import {
+  clampInt,
+  type RunWebtoonProductionAssistOptions,
+  type WebtoonProductionAssistInput,
+} from "./claude-webtoon-production-schemas";
+
+import type Anthropic from "@anthropic-ai/sdk";
+
+export * from "./claude-webtoon-episodic-schemas";
+
+const MAX_OUTPUT_TOKENS = 4_000;
+
+function resolveOrHydrateClaudeRoute(
+  explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
+): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
+  if (explicit) return explicit;
+  const current = resolveClaudeRoute();
+  if (current) return current;
+  hydrateDefaultEnvClaudeConnection();
+  return resolveClaudeRoute();
+}
+
+function buildEpisodicContextPrompt(
+  input: WebtoonProductionAssistInput,
+  directiveKo: string,
+): string {
+  const genre = cleanSingleLineText(input.genre ?? "판타지", 40) || "판타지";
+  const conflict =
+    cleanSingleLineText(input.coreConflict ?? "봉인된 기억의 각성과 세계의 균열", 160) ||
+    "봉인된 기억의 각성과 세계의 균열";
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  const artistLabel = cleanSingleLineText(input.artistLabel ?? "K-웹툰 마스터 화풍", 60);
+  const scriptSnippet = cleanSingleLineText(input.scriptText ?? "", 600);
+
+  return [
+    `장르: ${genre}`,
+    `핵심 갈등: ${conflict}`,
+    `주요 인물: ${protagonist}, ${partner} (관계성: ${input.relationshipDynamic ?? "fated-rivals"})`,
+    `작가 화풍: ${artistLabel}`,
+    `타깃 로케일: ${input.targetLocale ?? "ko"}`,
+    ...(scriptSnippet ? [`현재 대본 초안: ${scriptSnippet}`] : []),
+    "",
+    directiveKo,
+  ].join("\n");
+}
+
+function clampStarRating(value: number): number {
+  if (!Number.isFinite(value)) return 9.92;
+  return Math.round(Math.min(10, Math.max(7.5, value)) * 100) / 100;
+}
+
+export async function runClaudeReaderRetentionSimulator(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeReaderRetentionView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) return buildDeterministicReaderRetentionReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const requestedModel = resolveClaudeRequestModel(
+    options.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 네이버웹툰·카카오페이지·쿠아이칸 독자 스크롤 빅데이터를 분석하는 웹툰 에피소드 독자 체류·이탈 시뮬레이터입니다. 컷별 예상 체류 시간(초), 스크롤 이탈 위험도(%), 이탈 원인 및 잔존율 개선 지문, 예상 베스트 댓글 3선과 목표 별점을 JSON으로 예측하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 에피소드의 컷별 독자 체류 시간(초)·이탈 위험도(%) 곡선(최대 4컷)과 예상 베스트 댓글 3선, 예상 별점을 JSON으로 시뮬레이션해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeReaderRetentionSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeReaderRetentionSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "reader-retention-simulator",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      predictedEpisodeStarRating: clampStarRating(parsed.predictedEpisodeStarRating),
+      completionRatePct: clampInt(parsed.completionRatePct, 50, 100, 94),
+      scrollVelocitySummaryKo: cleanSingleLineText(parsed.scrollVelocitySummaryKo, 200),
+      cutRetentionCurve: Object.freeze(
+        (parsed.cutRetentionCurve ?? []).slice(0, 4).map((item, idx) =>
+          Object.freeze({
+            cutNumber: clampInt(item.cutNumber, 1, 50, idx + 1),
+            dwellTimeSeconds:
+              Math.round(Math.min(15, Math.max(0.8, Number(item.dwellTimeSeconds) || 3.2)) * 10) /
+              10,
+            dropOffRiskPct: clampInt(item.dropOffRiskPct, 1, 80, 8),
+            dropOffReasonKo: cleanSingleLineText(item.dropOffReasonKo, 180),
+            retentionBoostFixKo: cleanSingleLineText(item.retentionBoostFixKo, 180),
+            readyRetentionDirectionLine: cleanSingleLineText(item.readyRetentionDirectionLine, 180),
+          }),
+        ),
+      ),
+      predictedTopComments: Object.freeze(
+        (parsed.predictedTopComments ?? []).slice(0, 4).map((c) =>
+          Object.freeze({
+            personaLabelKo: cleanSingleLineText(c.personaLabelKo, 40) || "독자",
+            commentTextKo: cleanSingleLineText(c.commentTextKo, 180),
+            predictedLikes: clampInt(c.predictedLikes, 10, 99999, 1200),
+            sentimentTone: c.sentimentTone,
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicReaderRetentionReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeCharacterOocRadar(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeCharacterOocRadarView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) return buildDeterministicCharacterOocRadarReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const requestedModel = resolveClaudeRequestModel(
+    options.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 오노마AI 페뷸레이터·캐릭터 캐논 기준 웹툰 대사 캐붕(OOC: Out of Character) 감수 및 서브텍스트 윤색 디렉터입니다. 인물별 어조/어미 일관성 점수(0~100), 캐붕 위험도, 숨겨진 욕망(Subtext), 그리고 3가지 대안 대사(캐논 정통형·고긴장 서브텍스트형·모바일 42자 압축형)를 JSON으로 제안하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 대본의 주요 대사(최대 4개 비트)에 대해 캐릭터 말투 일관성(OOC 여부)을 진단하고 3종 윤색 대안을 JSON으로 작성해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeCharacterOocRadarSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeCharacterOocRadarSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "character-ooc-radar",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      voiceConsistencyScore: clampInt(parsed.voiceConsistencyScore, 0, 100, 94),
+      relationshipTensionSummaryKo: cleanSingleLineText(parsed.relationshipTensionSummaryKo, 200),
+      dialogueAudits: Object.freeze(
+        (parsed.dialogueAudits ?? []).slice(0, 4).map((d, idx) =>
+          Object.freeze({
+            cutNumber: clampInt(d.cutNumber, 1, 50, idx + 1),
+            speakerName: cleanSingleLineText(d.speakerName, 40) || "주인공",
+            originalLine: cleanSingleLineText(d.originalLine, 140),
+            oocRiskLevel: d.oocRiskLevel,
+            speechRegisterKo: cleanSingleLineText(d.speechRegisterKo, 80),
+            oocDiagnosisKo: cleanSingleLineText(d.oocDiagnosisKo, 160),
+            subtextHiddenDesireKo: cleanSingleLineText(d.subtextHiddenDesireKo, 160),
+            canonicalLine: cleanSingleLineText(d.canonicalLine, 120),
+            highTensionSubtextLine: cleanSingleLineText(d.highTensionSubtextLine, 120),
+            conciseMobileLine: cleanSingleLineText(d.conciseMobileLine, 60),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicCharacterOocRadarReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeBg3dLightingAssetDirector(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeBg3dLightingAssetView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) return buildDeterministicBg3dLightingAssetReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const requestedModel = resolveClaudeRequestModel(
+    options.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 리얼드로우(RealDraw)·클립스튜디오 EX·스케치업 3D 배경 에셋 디렉터입니다. 컷별 3D 공간 카테고리, 카메라 초점거리(mm), 카메라 높이(cm), 틸트 각도(°), 피사계 심도(DoF 블러 %), 안개 농도(%), 전경/중경 소품 배치와 그림자 방향을 JSON으로 설계하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 장면의 컷별 3D 배경·소품 배치 및 카메라 렌즈/DoF/안개 파라미터(최대 4컷)를 JSON으로 추천해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeBg3dLightingAssetSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeBg3dLightingAssetSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "bg3d-lighting-asset-director",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      spatialSceneSummaryKo: cleanSingleLineText(parsed.spatialSceneSummaryKo, 200),
+      recommendedAssetPackKo: cleanSingleLineText(parsed.recommendedAssetPackKo, 160),
+      cut3dSpecs: Object.freeze(
+        (parsed.cut3dSpecs ?? []).slice(0, 4).map((c, idx) =>
+          Object.freeze({
+            cutNumber: clampInt(c.cutNumber, 1, 50, idx + 1),
+            spaceCategory: c.spaceCategory,
+            cameraLensMm: clampInt(c.cameraLensMm, 14, 200, 35),
+            cameraHeightCm: clampInt(c.cameraHeightCm, 10, 500, 140),
+            cameraTiltDeg: clampInt(c.cameraTiltDeg, -60, 60, 0),
+            dofBlurStrengthPct: clampInt(c.dofBlurStrengthPct, 0, 100, 35),
+            fogDensityPct: clampInt(c.fogDensityPct, 0, 100, 25),
+            keyPropPlacementsKo: cleanSingleLineText(c.keyPropPlacementsKo, 160),
+            shadowCastDirectionKo: cleanSingleLineText(c.shadowCastDirectionKo, 140),
+            ready3dStageLine: cleanSingleLineText(c.ready3dStageLine, 180),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicBg3dLightingAssetReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeBgmAudioToonCuesheet(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeBgmAudioToonView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) return buildDeterministicBgmAudioToonReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const requestedModel = resolveClaudeRequestModel(
+    options.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 네이버웹툰 BGM 및 글로벌 오디오툰(Audio-Toon · 보이스 드라마) 사운드 큐시트 디렉터입니다. 에피소드 메인 테마·권장 BPM·조성(Key)과 컷별 스크롤 진입 트리거, BGM 편곡, 폴리(Foley) 환경음, 성우 호흡·포즈(ms) 디렉션을 JSON으로 작성하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 장면의 스크롤 연동 BGM·폴리 효과음·성우 연기 큐시트(최대 4컷)를 JSON으로 설계해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeBgmAudioToonSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeBgmAudioToonSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "bgm-audiotoon-cuesheet",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      episodeSoundtrackThemeKo: cleanSingleLineText(parsed.episodeSoundtrackThemeKo, 180),
+      recommendedBpm: clampInt(parsed.recommendedBpm, 45, 200, 96),
+      musicalKeySignature: cleanSingleLineText(parsed.musicalKeySignature, 40) || "D Minor",
+      audioCues: Object.freeze(
+        (parsed.audioCues ?? []).slice(0, 4).map((c, idx) =>
+          Object.freeze({
+            cutNumber: clampInt(c.cutNumber, 1, 50, idx + 1),
+            scrollTriggerTiming: c.scrollTriggerTiming,
+            bgmTrackStyleKo: cleanSingleLineText(c.bgmTrackStyleKo, 140),
+            foleyAmbienceKo: cleanSingleLineText(c.foleyAmbienceKo, 140),
+            voiceActingDirectionKo: cleanSingleLineText(c.voiceActingDirectionKo, 160),
+            breathAndPauseMs: clampInt(c.breathAndPauseMs, 50, 3000, 250),
+            readyAudioCueLine: cleanSingleLineText(c.readyAudioCueLine, 180),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicBgmAudioToonReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeWebtoonEpisodicDoctor(
+  mode: WebtoonEpisodicDoctorMode,
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<WebtoonEpisodicDoctorView> {
+  switch (mode) {
+    case "reader-retention-simulator":
+      return runClaudeReaderRetentionSimulator(input, options);
+    case "character-ooc-radar":
+      return runClaudeCharacterOocRadar(input, options);
+    case "bg3d-lighting-asset-director":
+      return runClaudeBg3dLightingAssetDirector(input, options);
+    case "bgm-audiotoon-cuesheet":
+      return runClaudeBgmAudioToonCuesheet(input, options);
+  }
+}

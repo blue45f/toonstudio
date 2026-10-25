@@ -454,7 +454,11 @@ export function buildStorySeedAiPrompt(input: StorySeedInput): {
     ...(input.protagonist?.trim() ? [`주인공: ${input.protagonist.trim()}`] : []),
     ...(input.stage?.trim() ? [`무대: ${input.stage.trim()}`] : []),
     ...(refs.length > 0
-      ? [`인용 설정: ${refs.map((r) => `${r.name}(${r.kind})`).join(", ")}`]
+      ? [
+          `인용 설정: ${refs
+            .map((r) => `${r.name}(${r.kind}${r.detail?.trim() ? `: ${r.detail.trim()}` : ""})`)
+            .join(", ")}`,
+        ]
       : []),
   ].join("\n");
   return { system, user };
@@ -543,38 +547,76 @@ export function createAiStorySeedProvider(
     async generate(input: StorySeedInput): Promise<StorySeedDraft | null> {
       const localFallback = buildLocalStorySeed(input);
       if (!localFallback) return null;
-      const baseUrl = endpoint?.baseUrl?.trim() || "https://models.github.ai/inference";
       const apiKey = endpoint?.apiKey?.trim() || "";
       if (!apiKey) {
         return Object.freeze({ ...localFallback, source: "ai" as const });
       }
-      const path = endpoint?.chatCompletionsPath?.trim() || "/chat/completions";
-      const url = `${baseUrl.replace(/\/+$/u, "")}/${path.replace(/^\/+/u, "")}`;
+      const isAnthropic =
+        Boolean(endpoint?.baseUrl?.includes("anthropic.com")) || apiKey.startsWith("sk-ant-");
+      const baseUrl =
+        endpoint?.baseUrl?.trim() ||
+        (isAnthropic ? "https://api.anthropic.com" : "https://models.github.ai/inference");
+      const path =
+        endpoint?.chatCompletionsPath?.trim() ||
+        (isAnthropic ? "/v1/messages" : "/chat/completions");
+      const url = isAnthropic
+        ? `${baseUrl.replace(/\/+$/u, "")}/v1/messages`
+        : `${baseUrl.replace(/\/+$/u, "")}/${path.replace(/^\/+/u, "")}`;
       const prompt = buildStorySeedAiPrompt(input);
       try {
-        const res = await fetchImpl(url, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: endpoint?.textModel?.trim() || "openai/gpt-4o-mini",
-            messages: [
-              { role: "system", content: prompt.system },
-              { role: "user", content: prompt.user },
-            ],
-            temperature: 0.7,
-            max_tokens: 900,
-          }),
-        });
+        const res = await fetchImpl(
+          url,
+          isAnthropic
+            ? {
+                method: "POST",
+                headers: {
+                  "x-api-key": apiKey,
+                  "anthropic-version": "2023-06-01",
+                  "anthropic-dangerous-direct-browser-access": "true",
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model:
+                    endpoint?.textModel?.trim().startsWith("claude-")
+                      ? endpoint.textModel.trim()
+                      : "claude-haiku-5-5",
+                  system: prompt.system,
+                  messages: [{ role: "user", content: prompt.user }],
+                  max_tokens: 2048,
+                  output_config: { effort: "low" },
+                }),
+              }
+            : {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${apiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: endpoint?.textModel?.trim() || "openai/gpt-4o-mini",
+                  messages: [
+                    { role: "system", content: prompt.system },
+                    { role: "user", content: prompt.user },
+                  ],
+                  temperature: 0.7,
+                  max_tokens: 900,
+                }),
+              },
+        );
         if (!res.ok) {
           return Object.freeze({ ...localFallback, source: "ai" as const });
         }
         const payload = (await res.json()) as {
           choices?: Array<{ message?: { content?: string } }>;
+          content?: Array<{ type?: string; text?: string }>;
         };
-        const content = payload.choices?.[0]?.message?.content ?? "";
+        const content =
+          payload.choices?.[0]?.message?.content ??
+          payload.content
+            ?.filter((b) => b?.type === "text" && typeof b.text === "string")
+            .map((b) => b.text)
+            .join("") ??
+          "";
         return parseStorySeedAiResponse(content, input)
           ?? Object.freeze({ ...localFallback, source: "ai" as const });
       } catch {

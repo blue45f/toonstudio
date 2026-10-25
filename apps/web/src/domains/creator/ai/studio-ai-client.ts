@@ -79,7 +79,7 @@ import { isStudioAiConfigured, type StudioAiSettings } from "./studio-ai-setting
 import { aiErrorText } from "./studio-ai-error-i18n";
 
 import {
-  extractFirstB64Json,
+  buildStudioJsonPostTarget, extractFirstB64Json,
   extractFirstChatContent,
   extractGeneratedModel,
   extractTextAiProvenance,
@@ -291,12 +291,11 @@ async function postJson(
   body: unknown,
   signal?: AbortSignal
 ): Promise<StudioAiResult<unknown>> {
+  const req = buildStudioJsonPostTarget(url, apiKey, body);
   let res: Response;
   try {
-    res = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    res = await fetch(req.url, {
+      method: "POST", headers: req.headers, body: JSON.stringify(req.body),
       ...(signal === undefined ? {} : { signal }),
     });
   } catch (e) {

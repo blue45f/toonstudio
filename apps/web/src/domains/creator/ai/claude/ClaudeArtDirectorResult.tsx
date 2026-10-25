@@ -16,6 +16,7 @@ import {
   type ArtDirectorSeverity,
 } from "./claude-art-director";
 import type { ArtDirectorRunResult } from "./claude-art-director-run";
+import { mapArtDirectorIssuesToProductionLayers } from "./claude-webtoon-storyboard-assist";
 import { ClaudeCopyStatus } from "./ClaudeCopyStatus";
 import { useCopyFeedback } from "./use-copy-feedback";
 
@@ -116,6 +117,8 @@ export function ClaudeArtDirectorResult({ result, highlight, onHighlight }: Clau
   const { review } = result;
   const clipboard = useCopyFeedback<"review">();
   const copied = clipboard.copied === "review";
+  const layerActions = mapArtDirectorIssuesToProductionLayers(review);
+  const layerActionByIssueId = new Map(layerActions.map((item) => [item.issueId, item]));
 
   const toggle = (next: ArtDirectorHighlight) => {
     onHighlight(sameHighlight(highlight, next) ? null : next);
@@ -221,6 +224,14 @@ export function ClaudeArtDirectorResult({ result, highlight, onHighlight }: Clau
                       <span className={cn("rounded-full border px-2 py-0.5", SEVERITY_TONE[issue.severity])}>{t(SEVERITY_KEY[issue.severity])}</span>
                       <span className="rounded-full border border-line px-2 py-0.5 text-fg-2">{t(CATEGORY_KEY[issue.category])}</span>
                       <span className="rounded-full border border-line px-2 py-0.5 text-fg-3">{t(CONFIDENCE_KEY[issue.confidence])}</span>
+                      {layerActionByIssueId.get(issue.id) ? (
+                        <span
+                          data-art-director-layer-badge={layerActionByIssueId.get(issue.id)?.targetLayerId}
+                          className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 text-accent"
+                        >
+                          {layerActionByIssueId.get(issue.id)?.targetLayerLabelKo}
+                        </span>
+                      ) : null}
                     </div>
                     {issue.detail ? <p className="mt-2 text-sm text-fg">{issue.detail}</p> : null}
                     {issue.fix ? (
@@ -236,6 +247,27 @@ export function ClaudeArtDirectorResult({ result, highlight, onHighlight }: Clau
           </>
         )}
       </div>
+
+      {layerActions.length > 0 ? (
+        <div
+          data-art-director-layer-summary="true"
+          className="space-y-1.5 rounded-xl border border-accent/25 bg-accent/5 p-3"
+        >
+          <h4 className="text-xs font-bold text-accent">
+            리얼드로우 4레이어 프로덕션 공정별 수정 매핑
+          </h4>
+          <ul className="space-y-1 text-xs text-fg-2">
+            {layerActions.map((action) => (
+              <li key={action.issueId} className="flex flex-wrap items-baseline gap-1.5">
+                <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-bold text-accent">
+                  {action.targetLayerLabelKo}
+                </span>
+                <span className="text-fg">{action.actionSummaryKo}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {review.nextActions.length > 0 ? (
         <div>

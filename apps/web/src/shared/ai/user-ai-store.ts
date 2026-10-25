@@ -363,14 +363,18 @@ function readDefaultEnvUserAiToken(): string {
   return "";
 }
 
+export function hasDefaultEnvClaudeKey(explicitToken?: string): boolean {
+  return Boolean((explicitToken ?? readDefaultEnvClaudeToken()).trim());
+}
+
 /**
  * Opt-in helper to hydrate an Anthropic Claude connection (`https://api.anthropic.com`,
- * `claude-haiku-5-5` or custom model, `user-funded-byok`) from environment variables
+ * `claude-opus-5-5` or custom model, `user-funded-byok`) from environment variables
  * (`VITE_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` / `CLAUDE_API_KEY`) when no Claude route is active.
  */
 export function hydrateDefaultEnvClaudeConnection(
   explicitToken?: string,
-  textModel = "claude-haiku-5-5",
+  textModel = "claude-opus-5-5",
 ): boolean {
   const existingClaude = snapshot.configuration.connections.some((conn) =>
     isAnthropicBaseUrl(conn.baseUrl),
@@ -418,8 +422,8 @@ export function hydrateDefaultEnvClaudeConnection(
 
 /**
  * Opt-in helper to hydrate the in-memory UserAiConfiguration from the default environment
- * GitHub Models token (`models.github.ai/inference`, `openai/gpt-4o-mini`, `provider-free-tier`)
- * and/or Anthropic Claude token (`api.anthropic.com`, `claude-haiku-5-5`, `user-funded-byok`)
+ * Anthropic Claude token (`api.anthropic.com`, `claude-haiku-5-5`, `user-funded-byok`)
+ * and/or GitHub Models token (`models.github.ai/inference`, `openai/gpt-4o-mini`, `provider-free-tier`)
  * when no connections are configured yet.
  */
 export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boolean {
@@ -430,12 +434,27 @@ export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boole
   if (rawExplicit.startsWith("sk-ant-")) {
     return hydrateDefaultEnvClaudeConnection(rawExplicit);
   }
-  const githubToken = (rawExplicit || readDefaultEnvUserAiToken()).trim();
   const claudeToken = rawExplicit ? "" : readDefaultEnvClaudeToken();
-  if (!githubToken && !claudeToken) {
+  const githubToken = (rawExplicit || readDefaultEnvUserAiToken()).trim();
+  if (!claudeToken && !githubToken) {
     return false;
   }
   const connections: UserAiConnection[] = [];
+  if (claudeToken) {
+    connections.push({
+      ...EMPTY_AI_CONNECTION,
+      id: "env-anthropic-claude",
+      label: "Claude (Anthropic) 로컬 환경변수 연결",
+      baseUrl: "https://api.anthropic.com",
+      apiKey: claudeToken,
+      textModel: "claude-opus-5-5",
+      imageModel: "",
+      costPolicy: "user-funded-byok",
+      priority: 10,
+      apiKeys: undefined,
+      models: undefined,
+    });
+  }
   if (githubToken) {
     connections.push({
       ...EMPTY_AI_CONNECTION,
@@ -446,22 +465,7 @@ export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boole
       textModel: "openai/gpt-4o-mini",
       imageModel: "",
       costPolicy: "provider-free-tier",
-      priority: 10,
-      apiKeys: undefined,
-      models: undefined,
-    });
-  }
-  if (claudeToken) {
-    connections.push({
-      ...EMPTY_AI_CONNECTION,
-      id: "env-anthropic-claude",
-      label: "Claude (Anthropic) 로컬 환경변수 연결",
-      baseUrl: "https://api.anthropic.com",
-      apiKey: claudeToken,
-      textModel: "claude-haiku-5-5",
-      imageModel: "",
-      costPolicy: "user-funded-byok",
-      priority: 20,
+      priority: claudeToken ? 20 : 10,
       apiKeys: undefined,
       models: undefined,
     });
@@ -487,6 +491,30 @@ export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boole
     false,
   );
   return true;
+}
+
+function isAutomatedTestRuntime(): boolean {
+  try {
+    const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+    if (proc?.env?.VITEST || proc?.env?.NODE_ENV === "test") return true;
+  } catch {
+    // 무시
+  }
+  try {
+    const metaEnv = (import.meta as { env?: Record<string, unknown> }).env;
+    if (metaEnv?.MODE === "test" || metaEnv?.VITEST) return true;
+  } catch {
+    // 무시
+  }
+  return false;
+}
+
+if (!isAutomatedTestRuntime()) {
+  try {
+    hydrateDefaultEnvUserAiConnection();
+  } catch {
+    // 초기화 시 환경변수 하이드레이션 실패는 무시하고 수동 설정 경로를 유지한다.
+  }
 }
 
 if (typeof globalThis.addEventListener === "function") {

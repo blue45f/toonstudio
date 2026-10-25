@@ -19,6 +19,7 @@ import {
   type LocalizeResultView,
 } from "./claude-localize";
 import { ClaudeCopyStatus } from "./ClaudeCopyStatus";
+import { evaluateLocalizeWebtoonBubbleHealth } from "./claude-webtoon-storyboard-assist";
 import { useCopyFeedback } from "./use-copy-feedback";
 
 export interface ClaudeLocalizeResultProps {
@@ -60,6 +61,24 @@ export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, la
   const over = rows.filter((row) => row.over).length;
   const termChecks = rows.filter((row) => row.misses.length > 0).length;
   const missing = rows.filter((row) => !row.text).length;
+  const bubbleHealth = evaluateLocalizeWebtoonBubbleHealth({
+    lines: rows.map((row) => ({
+      ...row.line,
+      translation: row.text,
+      shorter: null,
+    })),
+  });
+  const shorterAvailableRows = rows.filter(
+    (row) => Boolean(row.line.shorter && row.line.shorter !== row.text),
+  );
+
+  const applyAllShorter = () => {
+    for (const row of shorterAvailableRows) {
+      if (row.line.shorter) {
+        onEdit(row.line.index, row.line.shorter);
+      }
+    }
+  };
 
   const copy = (kind: CopyKind) => {
     const exportLines = rows.map((row) => ({ index: row.line.index, source: row.line.source, translation: row.text }));
@@ -96,6 +115,35 @@ export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, la
       <p className="text-sm text-fg-2" data-claude-localize-summary="true">
         {t("claudeAssist.localize.summary", { count: rows.length - missing, over, terms: termChecks, missing })}
       </p>
+
+      <div
+        data-claude-localize-bubble-health="true"
+        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/5 px-3 py-2 text-xs"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-bold text-accent">
+            모바일 말풍선 가독성 적합도 {bubbleHealth.readinessScore}%
+          </span>
+          <span className="text-fg-2">
+            42자 이내 안전 줄: {bubbleHealth.mobileSafeLineCount}/{bubbleHealth.totalLines}줄
+          </span>
+          {bubbleHealth.mobileOverflowLineIndices.length > 0 ? (
+            <span className="font-semibold text-warn">
+              (초과 줄 #{bubbleHealth.mobileOverflowLineIndices.join(", #")})
+            </span>
+          ) : null}
+        </div>
+        {shorterAvailableRows.length > 0 ? (
+          <button
+            type="button"
+            data-claude-localize-apply-all-shorter="true"
+            className={cn(CLAUDE_QUIET_BUTTON, "min-h-9 px-2.5 text-xs font-bold text-accent")}
+            onClick={applyAllShorter}
+          >
+            더 짧은 대안 {shorterAvailableRows.length}줄 일괄 적용
+          </button>
+        ) : null}
+      </div>
 
       {view.warnings.length > 0 ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-fg-2">
