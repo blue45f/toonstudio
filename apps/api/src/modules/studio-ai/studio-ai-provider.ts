@@ -1,4 +1,5 @@
 import type { StudioAiProviderPreference } from "./studio-ai.dto";
+import { STUDIO_AI_ANTHROPIC_API_URL } from "./studio-ai-anthropic-translate";
 
 export const STUDIO_AI_FREE_PROVIDER_IDS = [
   "gemini",
@@ -13,9 +14,15 @@ export const STUDIO_AI_FREE_PROVIDER_IDS = [
 ] as const;
 export const STUDIO_AI_MAX_PROVIDER_ATTEMPTS = STUDIO_AI_FREE_PROVIDER_IDS.length;
 const STUDIO_AI_LEGACY_TEST_PROVIDER_IDS = ["deepseek"] as const;
+/**
+ * 운영자 부담 유료 제공자. 무료 풀(auto) 순서에는 들어가지 않으며,
+ * 명시적 제공자 선택으로만 후보가 된다. 차감·게이트는 기존 경로를 탄다.
+ */
+const STUDIO_AI_PAID_PROVIDER_IDS = ["anthropic"] as const;
 export const STUDIO_AI_PROVIDER_IDS = [
   ...STUDIO_AI_FREE_PROVIDER_IDS,
   ...STUDIO_AI_LEGACY_TEST_PROVIDER_IDS,
+  ...STUDIO_AI_PAID_PROVIDER_IDS,
 ] as const;
 
 export type StudioAiProviderId = (typeof STUDIO_AI_PROVIDER_IDS)[number];
@@ -417,6 +424,21 @@ function legacyTestProviderConfig(
 }
 
 function providerConfig(id: StudioAiProviderId, env: EnvLike): StudioAiProviderConfig {
+  if (id === "anthropic") {
+    // 서버 측 설정 경로로만 키를 읽는다. 클라이언트에서 키를 넘기는 경로는 없다.
+    // 게이트(paidOperationsEnabled) OFF면 크레딧 예약 단계에서 403으로 차단되므로,
+    // 키 존재만으로 호출이 열리지 않는다.
+    const apiKey = env.STUDIO_AI_ANTHROPIC_API_KEY?.trim() ?? "";
+    return {
+      id,
+      label: "Anthropic Claude",
+      configured: apiKey.length > 0,
+      endpoint: STUDIO_AI_ANTHROPIC_API_URL,
+      apiKey,
+      model: boundedText(env.STUDIO_AI_ANTHROPIC_MODEL, "claude-haiku-5-5", 200),
+      freePool: false,
+    };
+  }
   if (id === "zai") {
     return studioAiFreePoolEnabled(env)
       ? freeProviderConfig(id, env)
@@ -529,7 +551,9 @@ export function resolveStudioAiTimeoutMs(
   };
   const providerTimeout = studioAiFreePoolEnabled(env) && firstProvider
     ? freeTimeouts[firstProvider as StudioAiFreeProviderId]
-    : firstProvider === "zai"
+    : firstProvider === "anthropic"
+      ? env.STUDIO_AI_ANTHROPIC_TIMEOUT_MS
+      : firstProvider === "zai"
       ? env.ZAI_TIMEOUT_MS
       : firstProvider === "openrouter"
         ? env.OPENROUTER_TIMEOUT_MS

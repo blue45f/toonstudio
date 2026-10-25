@@ -28,7 +28,7 @@ import {
 import {
   applyByokPresetToWizard,
   STUDIO_AI_BYOK_PROVIDER_PRESETS,
-} from "../../domains/creator/ai/studio-ai-byok-wizard-adapter";
+} from "./studio-ai-byok-wizard-adapter";
 import { AiCapabilityStatusBoard } from "./AiCapabilityStatusBoard";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
 import { SERVER_PROVIDER_LABELS } from "./unified-ai-provider-labels";

@@ -34,6 +34,7 @@ export const StudioAiProviderPreferenceSchema = z.enum([
   "openrouter",
   "siliconflow",
   "deepseek",
+  "anthropic",
 ]);
 
 export const StudioAiChatSchema = z
