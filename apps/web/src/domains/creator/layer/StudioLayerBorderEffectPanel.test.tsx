@@ -92,4 +92,51 @@ describe("StudioLayerBorderEffectPanel", () => {
       expect((radio as HTMLButtonElement).disabled).toBe(true);
     }
   });
+
+  it("supports WAI-ARIA roving tabindex and ArrowRight/End keyboard navigation on border type radios", () => {
+    const onChange = vi.fn();
+    render(<StudioLayerBorderEffectPanel value={ACTIVE} onChange={onChange} />);
+
+    const outerRadio = screen.getByRole("radio", { name: "바깥" });
+    const innerRadio = screen.getByRole("radio", { name: "안쪽" });
+    const centerRadio = screen.getByRole("radio", { name: "중앙" });
+
+    expect(outerRadio.getAttribute("tabindex")).toBe("0");
+    expect(innerRadio.getAttribute("tabindex")).toBe("-1");
+    expect(centerRadio.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(outerRadio, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenLastCalledWith({ ...ACTIVE, type: "inner" });
+
+    fireEvent.keyDown(outerRadio, { key: "End" });
+    expect(onChange).toHaveBeenLastCalledWith({ ...ACTIVE, type: "center" });
+  });
+
+  it("toggles CSP Watercolor Edge (수채 경계) and adjusts darkness slider", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<StudioLayerBorderEffectPanel value={ACTIVE} onChange={onChange} />);
+
+    const wcCheckbox = screen.getByRole("checkbox", { name: "수채 경계" });
+    fireEvent.click(wcCheckbox);
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...ACTIVE,
+      watercolorEdge: true,
+      watercolorDarkness: 45,
+    });
+
+    rerender(
+      <StudioLayerBorderEffectPanel
+        value={{ ...ACTIVE, watercolorEdge: true, watercolorDarkness: 45 }}
+        onChange={onChange}
+      />,
+    );
+    const darknessSlider = screen.getByLabelText("수채 경계 어두운 정도");
+    fireEvent.change(darknessSlider, { target: { value: "75" } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...ACTIVE,
+      watercolorEdge: true,
+      watercolorDarkness: 75,
+    });
+  });
 });
+

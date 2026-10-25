@@ -180,5 +180,52 @@ describe('StudioLayerBorderEffect — normalize/identity/cachePad', () => {
     expect(studioLayerBorderEffectCachePad({ enabled: true, thickness: 2, type: 'inner' })).toBe(0);
     expect(studioLayerBorderEffectCachePad({ enabled: false, thickness: 2, type: 'outer' })).toBe(0);
   });
+
+  it('normalizes and renders CSP Watercolor Edge (수채 경계) with capillary rim darkening and cosine feathering', () => {
+    const normalized = normalizeStudioLayerBorderEffect({
+      enabled: true,
+      thickness: 3,
+      watercolorEdge: true,
+      watercolorDarkness: 150,
+    });
+    expect(normalized.watercolorEdge).toBe(true);
+    expect(normalized.watercolorDarkness).toBe(100);
+
+    const data = new Uint8ClampedArray(6 * 6 * 4);
+    for (let y = 1; y <= 4; y++) {
+      for (let x = 1; x <= 4; x++) {
+        const idx = (y * 6 + x) * 4;
+        data[idx] = 200;
+        data[idx + 1] = 180;
+        data[idx + 2] = 160;
+        data[idx + 3] = 255;
+      }
+    }
+    const img = new ImageData(new Uint8ClampedArray(data), 6, 6);
+    const hardRes = applyStudioLayerBorderEffect(img, {
+      enabled: true,
+      thickness: 2,
+      color: '#201008',
+      type: 'inner',
+      watercolorEdge: false,
+    });
+    const watercolorRes = applyStudioLayerBorderEffect(
+      new ImageData(new Uint8ClampedArray(data), 6, 6),
+      {
+        enabled: true,
+        thickness: 2,
+        color: '#201008',
+        type: 'inner',
+        watercolorEdge: true,
+        watercolorDarkness: 60,
+      },
+    );
+
+    const rimIdx = (1 * 6 + 1) * 4;
+    // Watercolor edge darkens the original warm base color softly rather than replacing it with flat #201008
+    expect(watercolorRes.data[rimIdx]).toBeLessThan(200);
+    expect(watercolorRes.data[rimIdx]).toBeGreaterThan(hardRes.data[rimIdx]!);
+  });
 });
+
 

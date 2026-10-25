@@ -464,8 +464,57 @@ describe("halftoneKonvaFilter", () => {
     applyHalftone(imgLine2, normalizeHalftone({ dotSize: 6, angle: 15, mode: "mono", strength: 100, pattern: "line" }));
     expect(Array.from(imgLine2.data)).toEqual(Array.from(imgLine.data));
   });
+
+  it("star 패턴과 invert(반전) 옵션을 지원하며 Konva 필터 attrs도 이를 전달한다", () => {
+    const mk = () => makeSolid(24, 24, [100, 100, 100, 255]);
+    const imgCircle = mk();
+    const imgStar = mk();
+    const imgStarInverted = mk();
+
+    applyHalftone(
+      imgCircle,
+      normalizeHalftone({ dotSize: 6, angle: 15, mode: "mono", strength: 100, pattern: "circle" }),
+    );
+    applyHalftone(
+      imgStar,
+      normalizeHalftone({ dotSize: 6, angle: 15, mode: "mono", strength: 100, pattern: "star" }),
+    );
+    applyHalftone(
+      imgStarInverted,
+      normalizeHalftone({
+        dotSize: 6,
+        angle: 15,
+        mode: "mono",
+        strength: 100,
+        pattern: "star",
+        invert: true,
+      }),
+    );
+
+    expect(Array.from(imgStar.data)).not.toEqual(Array.from(imgCircle.data));
+    expect(Array.from(imgStarInverted.data)).not.toEqual(Array.from(imgStar.data));
+    // 반전 픽셀 합이 255 (R 채널 기준)
+    expect(imgStar.data[0]! + imgStarInverted.data[0]!).toBeCloseTo(255, 0);
+
+    const imgKonva = mk();
+    halftoneKonvaFilter.call(
+      {
+        attrs: {
+          htDot: 6,
+          htAngle: 15,
+          htMode: "mono",
+          htStrength: 100,
+          htPattern: "star",
+          htInvert: true,
+        },
+      },
+      imgKonva,
+    );
+    expect(Array.from(imgKonva.data)).toEqual(Array.from(imgStarInverted.data));
+  });
 });
 
 // 미사용 import 방지용 타입 참조.
 const _typecheck: Halftone = DEFAULT_HALFTONE;
 void _typecheck;
+

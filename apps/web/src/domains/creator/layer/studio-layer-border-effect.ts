@@ -8,12 +8,23 @@ export interface StudioLayerBorderEffectSettings {
   antiAliased?: boolean;
   /** CSP v5.1: Respect semi-transparent pixels on soft/watercolor brush edges */
   respectTransparency?: boolean;
+  /** CSP 수채 경계(水彩境界 / Watercolor Edge): 경계를 따라 부드럽게 번지며 어두워지는 수채 모세관 테두리 */
+  watercolorEdge?: boolean;
+  /** 수채 경계 어두운 정도 (0..100, 기본값 45) */
+  watercolorDarkness?: number;
 }
 
 /** UI slider bounds — the render path clamps to the same range so 광고와 실제가 같다. */
 export const STUDIO_LAYER_BORDER_EFFECT_THICKNESS_RANGE = Object.freeze({
   min: 1,
   max: 32,
+});
+
+/** 수채 경계 어두운 정도(Darkness) 슬라이더 범위 (0..100%). */
+export const STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE = Object.freeze({
+  min: 0,
+  max: 100,
+  default: 45,
 });
 
 /** CSP 경계 효과 기본값 — 꺼진 상태로 시작하고, 켜면 검정 3px 바깥 테두리부터. */
@@ -69,6 +80,17 @@ export function normalizeStudioLayerBorderEffect(
   const type = BORDER_EFFECT_TYPES.includes(value?.type as StudioLayerBorderEffectType)
     ? (value?.type as StudioLayerBorderEffectType)
     : DEFAULT_STUDIO_LAYER_BORDER_EFFECT.type;
+  const watercolorEdge = value?.watercolorEdge === true;
+  const rawDarkness = value?.watercolorDarkness;
+  const watercolorDarkness =
+    typeof rawDarkness === "number" && Number.isFinite(rawDarkness)
+      ? Math.min(
+          STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.max,
+          Math.max(STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.min, Math.round(rawDarkness)),
+        )
+      : watercolorEdge
+        ? STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.default
+        : undefined;
   return {
     enabled: value?.enabled === true,
     thickness,
@@ -76,6 +98,8 @@ export function normalizeStudioLayerBorderEffect(
     type,
     antiAliased: value?.antiAliased !== false,
     respectTransparency: value?.respectTransparency !== false,
+    ...(watercolorEdge ? { watercolorEdge: true } : {}),
+    ...(watercolorDarkness !== undefined ? { watercolorDarkness } : {}),
   };
 }
 
@@ -236,22 +260,35 @@ function renderStudioLayerBorderEffect(
 
   const t = settings.thickness;
   const tSq = t * t;
+  const isWatercolor = settings.watercolorEdge === true;
+  const darknessNorm =
+    Math.min(
+      STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.max,
+      Math.max(
+        STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.min,
+        settings.watercolorDarkness ?? STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.default,
+      ),
+    ) / 100;
 
   for (let i = 0; i < width * height; i++) {
     const dSq = grid[i];
     if (dSq <= tSq) {
       const origA = data[i * 4 + 3];
       const isInside = origA > (respectTransparency ? 127 : THRESHOLD);
+      const d = Math.sqrt(dSq);
 
       let strokeAlpha = 255;
-      if (settings.antiAliased) {
-        const d = Math.sqrt(dSq);
+      if (isWatercolor) {
+        // CSP 수채 경계(水彩境界): 코사인 모세관 감쇠 프로필 (경계 d=0에서 최대, d=t에서 0으로 페더)
+        const falloff = 0.5 * (1 + Math.cos((Math.min(d, t) / Math.max(1, t)) * Math.PI));
+        strokeAlpha = Math.round(255 * falloff * (0.3 + 0.7 * darknessNorm));
+      } else if (settings.antiAliased) {
         if (d > t - 1) {
           strokeAlpha = Math.max(0, Math.min(255, Math.round((t - d) * 255)));
         }
       }
 
-      strokeAlpha = (strokeAlpha * parsedColor.a) / 255;
+      strokeAlpha = Math.round((strokeAlpha * parsedColor.a) / 255);
 
       if (strokeAlpha > 0) {
         let drawStroke = false;
@@ -280,9 +317,18 @@ function renderStudioLayerBorderEffect(
             const outNormA = strokeNormA + origNormA * (1 - strokeNormA);
 
             if (outNormA > 0) {
-              outData[idx] = (parsedColor.r * strokeNormA + data[idx] * origNormA * (1 - strokeNormA)) / outNormA;
-              outData[idx + 1] = (parsedColor.g * strokeNormA + data[idx + 1] * origNormA * (1 - strokeNormA)) / outNormA;
-              outData[idx + 2] = (parsedColor.b * strokeNormA + data[idx + 2] * origNormA * (1 - strokeNormA)) / outNormA;
+              const targetR = isWatercolor
+                ? Math.round(data[idx] * (1 - darknessNorm * 0.65) + parsedColor.r * (darknessNorm * 0.35))
+                : parsedColor.r;
+              const targetG = isWatercolor
+                ? Math.round(data[idx + 1] * (1 - darknessNorm * 0.65) + parsedColor.g * (darknessNorm * 0.35))
+                : parsedColor.g;
+              const targetB = isWatercolor
+                ? Math.round(data[idx + 2] * (1 - darknessNorm * 0.65) + parsedColor.b * (darknessNorm * 0.35))
+                : parsedColor.b;
+              outData[idx] = (targetR * strokeNormA + data[idx] * origNormA * (1 - strokeNormA)) / outNormA;
+              outData[idx + 1] = (targetG * strokeNormA + data[idx + 1] * origNormA * (1 - strokeNormA)) / outNormA;
+              outData[idx + 2] = (targetB * strokeNormA + data[idx + 2] * origNormA * (1 - strokeNormA)) / outNormA;
               outData[idx + 3] = Math.round(outNormA * 255);
             }
           }

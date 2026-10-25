@@ -3,10 +3,11 @@
  *
  * Clip Studio Paint Layer Properties: Tone (레이어 속성: 톤 / 스크린톤).
  * Converts the selected layer into high-fidelity manga screentones with configurable
- * line screen frequency (선수), dot pattern shapes (원/선/마름모/격자), angle, and density.
+ * line screen frequency (선수), dot pattern shapes (원/선/마름모/격자/별모양), angle, density, and invert.
  */
 
 import { Grid, Sparkles } from "lucide-react";
+import { useRef } from "react";
 
 import {
   DEFAULT_HALFTONE,
@@ -25,7 +26,7 @@ const LABEL_ROW = "flex items-center justify-between gap-2 text-xs text-fg-2";
 const RANGE_CLASS = "w-24 accent-accent cursor-pointer";
 const READOUT_CLASS = "w-8 text-right text-[10px] tabular-nums text-fg-3";
 const CHIP_CLASS =
-  "rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-50";
+  "rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50";
 
 const PATTERN_OPTIONS: ReadonlyArray<{
   id: HalftonePattern;
@@ -36,6 +37,15 @@ const PATTERN_OPTIONS: ReadonlyArray<{
   { id: "line", label: "선형 (Line)", tip: "만화/신문 단방향 하프톤 라인" },
   { id: "diamond", label: "마름모 (Diamond)", tip: "다이아몬드 능형 망점" },
   { id: "cross", label: "격자 (Cross)", tip: "십자 크로스 해치 망점" },
+  { id: "star", label: "별모양 (Star)", tip: "CSP 아스트로이드 4각 별 망점" },
+];
+
+const MODE_OPTIONS: ReadonlyArray<{
+  id: Halftone["mode"];
+  label: string;
+}> = [
+  { id: "mono", label: "모노크롬 (흑백)" },
+  { id: "cmyk", label: "컬러 (CMYK)" },
 ];
 
 const FREQUENCY_PRESETS: ReadonlyArray<{
@@ -60,6 +70,8 @@ export function StudioLayerTonePanel({
 }) {
   const current = normalizeHalftone(value);
   const isEnabled = !isIdentityHalftone(current);
+  const patternRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const modeRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const patch = (partial: Partial<Halftone>): void => {
     const effectiveStrength =
@@ -88,14 +100,60 @@ export function StudioLayerTonePanel({
     }
   };
 
+  const handlePatternKeyDown = (
+    index: number,
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ): void => {
+    if (disabled) return;
+    const count = PATTERN_OPTIONS.length;
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % count;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + count) % count;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = count - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      patch({ pattern: PATTERN_OPTIONS[nextIndex]!.id });
+      patternRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  const handleModeKeyDown = (
+    index: number,
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ): void => {
+    if (disabled) return;
+    const count = MODE_OPTIONS.length;
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % count;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + count) % count;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = count - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      patch({ mode: MODE_OPTIONS[nextIndex]!.id });
+      modeRefs.current[nextIndex]?.focus();
+    }
+  };
+
   return (
     <div className="rounded-xl border border-line bg-panel/40 p-3 space-y-2 select-none text-xs">
       {/* Header & Toggle */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Grid size={14} className="text-amber-400 shrink-0" aria-hidden />
+          <Grid size={14} className="text-accent shrink-0" aria-hidden />
           <span className="font-semibold text-fg truncate">스크린톤 (Tone)</span>
-          <span className="px-1 py-0.2 text-[10px] rounded font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+          <span className="px-1 py-0.2 text-[10px] rounded font-medium bg-accent/15 text-accent border border-accent/40 shrink-0">
             CSP
           </span>
         </div>
@@ -108,7 +166,7 @@ export function StudioLayerTonePanel({
           className={cn(
             "rounded-md border px-2 py-0.5 text-[0.66rem] font-medium transition-colors",
             isEnabled
-              ? "border-amber-500/50 bg-amber-500/15 text-amber-300"
+              ? "border-accent bg-accent/15 text-accent"
               : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg",
             disabled && "cursor-not-allowed opacity-50",
           )}
@@ -121,7 +179,7 @@ export function StudioLayerTonePanel({
         <div className="space-y-2 pt-1 border-t border-line/40">
           {/* Quick Frequency Presets */}
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            <Sparkles size={11} className="text-amber-400 shrink-0" aria-hidden />
+            <Sparkles size={11} className="text-accent shrink-0" aria-hidden />
             {FREQUENCY_PRESETS.map((preset) => {
               const active = current.dotSize === preset.dotSize;
               return (
@@ -131,9 +189,10 @@ export function StudioLayerTonePanel({
                   onClick={() => patch({ dotSize: preset.dotSize })}
                   disabled={disabled}
                   title={preset.tip}
+                  aria-pressed={active}
                   className={cn(
                     CHIP_CLASS,
-                    active && "border-amber-500 bg-amber-500/20 text-amber-200 font-medium",
+                    active && "border-accent bg-accent/15 text-fg font-medium",
                   )}
                 >
                   {preset.label}
@@ -145,20 +204,31 @@ export function StudioLayerTonePanel({
           {/* Dot Pattern Shape */}
           <div className="space-y-1">
             <p className="text-[11px] text-fg-3">망점 형태 (Dot Pattern)</p>
-            <div className="grid grid-cols-4 gap-1">
-              {PATTERN_OPTIONS.map((opt) => {
+            <div
+              className="grid grid-cols-5 gap-1"
+              role="radiogroup"
+              aria-label="망점 형태"
+            >
+              {PATTERN_OPTIONS.map((opt, index) => {
                 const active = (current.pattern ?? "circle") === opt.id;
                 return (
                   <button
                     key={opt.id}
+                    ref={(el) => {
+                      patternRefs.current[index] = el;
+                    }}
                     type="button"
+                    role="radio"
+                    aria-checked={active}
+                    tabIndex={active ? 0 : -1}
                     onClick={() => patch({ pattern: opt.id })}
+                    onKeyDown={(e) => handlePatternKeyDown(index, e)}
                     disabled={disabled}
                     title={opt.tip}
                     className={cn(
-                      "rounded border px-1 py-1 text-[10px] text-center transition-colors truncate",
+                      "rounded border px-1 py-1 text-[10px] text-center transition-colors truncate focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
                       active
-                        ? "border-amber-500 bg-amber-500/20 text-amber-200 font-medium"
+                        ? "border-accent bg-accent/15 text-fg font-medium"
                         : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg",
                     )}
                   >
@@ -235,35 +305,57 @@ export function StudioLayerTonePanel({
             </div>
           </div>
 
-          {/* Mode Switch (Mono / CMYK) */}
+          {/* Mode Switch (Mono / CMYK) & Invert Toggle */}
           <div className="flex items-center justify-between pt-1 text-[11px]">
             <span className="text-fg-3">표현 방식</span>
             <div className="flex items-center gap-1">
+              <div
+                className="flex items-center gap-1"
+                role="radiogroup"
+                aria-label="톤 표현 방식"
+              >
+                {MODE_OPTIONS.map((modeOpt, index) => {
+                  const active = current.mode === modeOpt.id;
+                  return (
+                    <button
+                      key={modeOpt.id}
+                      ref={(el) => {
+                        modeRefs.current[index] = el;
+                      }}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      tabIndex={active ? 0 : -1}
+                      onClick={() => patch({ mode: modeOpt.id })}
+                      onKeyDown={(e) => handleModeKeyDown(index, e)}
+                      disabled={disabled}
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[10px] transition-colors border focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
+                        active
+                          ? "bg-accent/15 text-fg border-accent font-medium"
+                          : "bg-card text-fg-3 border-line hover:bg-raised",
+                      )}
+                    >
+                      {modeOpt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               <button
                 type="button"
-                onClick={() => patch({ mode: "mono" })}
+                aria-label="망점 반전"
+                aria-pressed={current.invert === true}
                 disabled={disabled}
+                onClick={() => patch({ invert: current.invert === true ? undefined : true })}
                 className={cn(
-                  "px-2 py-0.5 rounded text-[10px] transition-colors border",
-                  current.mode === "mono"
-                    ? "bg-amber-500/20 text-amber-200 border-amber-500/40 font-medium"
+                  "px-2 py-0.5 rounded text-[10px] transition-colors border focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
+                  current.invert === true
+                    ? "bg-accent/15 text-fg border-accent font-medium"
                     : "bg-card text-fg-3 border-line hover:bg-raised",
                 )}
               >
-                모노크롬 (흑백)
-              </button>
-              <button
-                type="button"
-                onClick={() => patch({ mode: "cmyk" })}
-                disabled={disabled}
-                className={cn(
-                  "px-2 py-0.5 rounded text-[10px] transition-colors border",
-                  current.mode === "cmyk"
-                    ? "bg-amber-500/20 text-amber-200 border-amber-500/40 font-medium"
-                    : "bg-card text-fg-3 border-line hover:bg-raised",
-                )}
-              >
-                컬러 (CMYK)
+                반전
               </button>
             </div>
           </div>
@@ -272,3 +364,4 @@ export function StudioLayerTonePanel({
     </div>
   );
 }
+
