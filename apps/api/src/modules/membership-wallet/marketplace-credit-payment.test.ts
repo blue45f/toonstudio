@@ -17,6 +17,10 @@ import {
   settleMarketplaceCreditPayment,
   type MarketplaceCreditWallet,
 } from "./marketplace-credit-payment";
+import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
+
+/** 기존 성공 경로용 마스터 ON 스토어 (토글 테스트는 별도 인스턴스 사용). */
+const GATE_ON = new InMemoryPaidOperationsSettingStore(true);
 
 function stubWallet(overrides: Partial<MarketplaceCreditWallet> = {}) {
   const calls = { reserve: 0, capture: 0, release: 0, grant: 0 };
@@ -95,7 +99,7 @@ describe("marketplace-credit-payment 가격·분리", () => {
 describe("marketplace-credit-payment 정산", () => {
   it("성공 시 구매자 확정 + 판매자 적립 + 분리 영수증을 반환한다", async () => {
     const { wallet, calls, grantedAmounts } = stubWallet();
-    const receipt = await settleMarketplaceCreditPayment(wallet, BASE);
+    const receipt = await settleMarketplaceCreditPayment(wallet, BASE, GATE_ON);
     expect(receipt).toEqual({
       buyerPaymentId: "res-market-1",
       buyerId: "buyer-1",
@@ -132,7 +136,7 @@ describe("marketplace-credit-payment 정산", () => {
       }),
     });
     await expect(
-      settleMarketplaceCreditPayment(wallet, BASE),
+      settleMarketplaceCreditPayment(wallet, BASE, GATE_ON),
     ).rejects.toMatchObject({
       code: "marketplace_request_reused_after_release",
     });
@@ -148,7 +152,7 @@ describe("marketplace-credit-payment 정산", () => {
       }),
     });
     await expect(
-      settleMarketplaceCreditPayment(wallet, BASE),
+      settleMarketplaceCreditPayment(wallet, BASE, GATE_ON),
     ).rejects.toMatchObject({
       code: "marketplace_settlement_ambiguous",
     });
@@ -165,7 +169,7 @@ describe("marketplace-credit-payment 정산", () => {
       }),
     });
     await expect(
-      settleMarketplaceCreditPayment(wallet, BASE),
+      settleMarketplaceCreditPayment(wallet, BASE, GATE_ON),
     ).rejects.toMatchObject({ code: "marketplace_settlement_failed" });
     expect(calls.grant).toBe(0);
   });
@@ -176,7 +180,7 @@ describe("marketplace-credit-payment 정산", () => {
     });
     let caught: unknown;
     try {
-      await settleMarketplaceCreditPayment(wallet, BASE);
+      await settleMarketplaceCreditPayment(wallet, BASE, GATE_ON);
     } catch (error) {
       caught = error;
     }
@@ -186,5 +190,43 @@ describe("marketplace-credit-payment 정산", () => {
       details: { buyerCaptured: true, sellerGranted: false },
     });
     expect(calls.capture).toBe(1);
+  });
+});
+
+describe("marketplace-credit-payment 유료 운영 게이트", () => {
+  it("스토어 미주입(기본 OFF)에서는 정산이 거부되고 지갑을 호출하지 않는다", async () => {
+    const { wallet, calls } = stubWallet();
+    await expect(
+      settleMarketplaceCreditPayment(wallet, BASE),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(calls).toEqual({ reserve: 0, capture: 0, release: 0, grant: 0 });
+  });
+
+  it("마스터 OFF 스토어에서는 정산이 거부되고 지갑을 호출하지 않는다", async () => {
+    const { wallet, calls } = stubWallet();
+    const gateOff = new InMemoryPaidOperationsSettingStore(false);
+    await expect(
+      settleMarketplaceCreditPayment(wallet, BASE, gateOff),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(calls.reserve).toBe(0);
+  });
+
+  it("토글 ON→OFF→ON 변경이 호출마다 즉시 반영된다 (캐시 없음)", async () => {
+    const { wallet } = stubWallet();
+    const store = new InMemoryPaidOperationsSettingStore(false);
+    await expect(settleMarketplaceCreditPayment(wallet, BASE, store)).rejects
+      .toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
+    await store.setPaidOperationsEnabled(true);
+    const receipt = await settleMarketplaceCreditPayment(wallet, BASE, store);
+    expect(receipt.buyerPaymentId).toBe("res-market-1");
+    await store.setPaidOperationsEnabled(false);
+    await expect(settleMarketplaceCreditPayment(wallet, BASE, store)).rejects
+      .toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
   });
 });

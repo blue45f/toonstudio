@@ -25,6 +25,11 @@
  * 에서는 지갑이 제공되므로, null 경로는 테스트용 폴백이다.
  */
 import type { CreditFeatureKey } from "../membership-wallet/credit-pricing";
+import {
+  PAID_OPERATIONS_DISABLED,
+  resolvePaidOperationsEnabled,
+  type PaidOperationsSettingStore,
+} from "../membership-wallet/paid-operations-gate";
 
 export const STUDIO_3D_CREDIT_WALLET = Symbol("STUDIO_3D_CREDIT_WALLET");
 
@@ -49,6 +54,25 @@ export interface Studio3dCreditCharge {
   feature?: CreditFeatureKey;
 }
 
+export class Studio3dCreditError extends Error {
+  readonly code: string;
+  readonly status: number;
+  readonly details?: Record<string, unknown>;
+
+  constructor(
+    code: string,
+    status: number,
+    message: string,
+    details?: Record<string, unknown>,
+  ) {
+    super(message);
+    this.name = "Studio3dCreditError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
+  }
+}
+
 /** 운영자 부담 경로일 때만 차감한다. BYOK(사용자 키 있음)는 제외. */
 export function shouldChargeStudio3dCredits(input: {
   providerApiKey?: string;
@@ -70,6 +94,7 @@ export async function beginStudio3dCreditCharge(
     providerApiKey?: string;
     operatorFunded: boolean;
   },
+  paidOperations?: PaidOperationsSettingStore,
 ): Promise<Studio3dCreditCharge> {
   if (
     !wallet
@@ -78,7 +103,20 @@ export async function beginStudio3dCreditCharge(
       operatorFunded: input.operatorFunded,
     })
   ) {
+    // BYOK·지갑 미주입 경로는 무료/비차감 경로이므로 게이트를 검사하지 않는다.
     return { charged: false };
+  }
+  // 유료 실행 게이트: 운영자 부담 차감 경로에서, 예약 전에 검사한다.
+  // 스토어 미주입·미설정 시 false이므로 기본 OFF에서 예약하지 않는다.
+  // 호출부(Studio3dGenerationService.create)는 이 오류를 받아 잡을
+  // 실패로 전이하고 제공자를 호출하지 않는다.
+  if (!(await resolvePaidOperationsEnabled(paidOperations))) {
+    throw new Studio3dCreditError(
+      PAID_OPERATIONS_DISABLED,
+      403,
+      "유료 운영이 비활성화되어 있어 서버 3D 생성 크레딧 차감을 실행할 수 없습니다.",
+      { feature: STUDIO_3D_CREDIT_FEATURE },
+    );
   }
   const reservation = await wallet.reserveStudioCredits({
     userId: input.userId,

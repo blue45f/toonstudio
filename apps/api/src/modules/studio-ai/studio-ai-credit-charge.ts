@@ -26,6 +26,14 @@
  * 에서는 지갑이 항상 제공되므로, null 경로는 테스트용 폴백이다.
  */
 import type { CreditFeatureKey } from "../membership-wallet/credit-pricing";
+import {
+  PAID_OPERATIONS_DISABLED,
+  resolvePaidOperationsEnabled,
+  type PaidOperationsSettingStore,
+} from "../membership-wallet/paid-operations-gate";
+
+/** 어드민 유료 운영 스토어 토큰·타입 재노출 (호출부에서 게이트 스토어 주입 시 사용). */
+export { PAID_OPERATIONS_SETTING_STORE, type PaidOperationsSettingStore };
 
 export const STUDIO_AI_CREDIT_WALLET = Symbol("STUDIO_AI_CREDIT_WALLET");
 
@@ -80,6 +88,26 @@ export function studioAiCreditIdempotencyKey(
   return `${STUDIO_AI_CREDIT_IDEMPOTENCY_PREFIX}${studioAiIdempotencyKey}`;
 }
 
+/** 서버 AI 크레딧 차감 오류 — 코드·HTTP 상태를 함께 담는다 (3D 차감과 동일 패턴). */
+export class StudioAiCreditError extends Error {
+  readonly code: string;
+  readonly status: number;
+  readonly details?: Record<string, unknown>;
+
+  constructor(
+    code: string,
+    status: number,
+    message: string,
+    details?: Record<string, unknown>,
+  ) {
+    super(message);
+    this.name = "StudioAiCreditError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
+  }
+}
+
 export async function beginStudioAiCreditCharge(
   wallet: StudioAiCreditWallet | null | undefined,
   input: {
@@ -88,9 +116,22 @@ export async function beginStudioAiCreditCharge(
     idempotencyKey: string;
     providers: readonly StudioAiCreditProviderLike[];
   },
+  paidOperations?: PaidOperationsSettingStore,
 ): Promise<StudioAiCreditCharge> {
   if (!wallet || !shouldChargeStudioAiCredits(input.providers)) {
     return { charged: false };
+  }
+  // 유료 실행 게이트: 운영자 부담 차감 경로에서, 예약 전에 검사한다.
+  // 스토어 미주입·미설정 시 false이므로 기본 OFF에서 예약하지 않는다.
+  // 무료 풀만인 경로는 위에서 이미 { charged: false }로 빠져나갔으므로
+  // 게이트 검사를 받지 않는다.
+  if (!(await resolvePaidOperationsEnabled(paidOperations))) {
+    throw new StudioAiCreditError(
+      PAID_OPERATIONS_DISABLED,
+      403,
+      "유료 운영이 비활성화되어 있어 서버 AI 크레딧 차감을 실행할 수 없습니다.",
+      { feature: studioAiCreditFeatureForTask(input.task) },
+    );
   }
   const feature = studioAiCreditFeatureForTask(input.task);
   const reservation = await wallet.reserveStudioCredits({

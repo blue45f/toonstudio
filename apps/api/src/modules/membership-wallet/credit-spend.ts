@@ -28,6 +28,11 @@ import {
   isCreditFeatureKey,
   type CreditFeatureKey,
 } from "./credit-pricing";
+import {
+  PAID_OPERATIONS_DISABLED,
+  resolvePaidOperationsEnabled,
+  type PaidOperationsSettingStore,
+} from "./paid-operations-gate";
 
 export const CREDIT_SPEND_FEATURE_UNITS = 1;
 
@@ -138,6 +143,7 @@ export async function spendStudioCredits(
   wallet: CreditSpendWallet,
   userIdValue: string | undefined,
   body: CreditSpendInput,
+  paidOperations?: PaidOperationsSettingStore,
 ): Promise<CreditSpendResult> {
   const userId = userIdValue?.trim();
   if (!userId) {
@@ -162,6 +168,17 @@ export async function spendStudioCredits(
       "spend_invalid_input",
       400,
       "지출 요청 식별자가 필요합니다.",
+    );
+  }
+
+  // 유료 실행 게이트: 입력 검증 뒤, 첫 지갑 호출(단가 조회) 전에 검사한다.
+  // 스토어 미주입·미설정 시 false이므로 기본 OFF에서 지갑을 호출하지 않는다.
+  if (!(await resolvePaidOperationsEnabled(paidOperations))) {
+    throw new CreditSpendError(
+      PAID_OPERATIONS_DISABLED,
+      403,
+      "유료 운영이 비활성화되어 있어 크레딧 지출을 실행할 수 없습니다.",
+      { resourceId },
     );
   }
 

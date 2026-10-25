@@ -46,7 +46,7 @@ import {
   resolveStudioAiQuotaLimits,
   STUDIO_AI_USAGE_STORE,
 } from "./studio-ai-usage";
-import { beginStudioAiCreditCharge, settleStudioAiCreditCharge, STUDIO_AI_CREDIT_WALLET, type StudioAiCreditCharge, type StudioAiCreditWallet } from "./studio-ai-credit-charge";
+import { beginStudioAiCreditCharge, settleStudioAiCreditCharge, STUDIO_AI_CREDIT_WALLET, PAID_OPERATIONS_SETTING_STORE, type StudioAiCreditCharge, type StudioAiCreditWallet, type PaidOperationsSettingStore } from "./studio-ai-credit-charge";
 
 import type {
   StudioAiAdmissionGate,
@@ -448,10 +448,9 @@ export class StudioAiService {
     private readonly usageStore: StudioAiUsageStore,
     @Inject(STUDIO_AI_ADMISSION_GATE)
     private readonly admissionGate: StudioAiAdmissionGate,
-    @Optional()
-    @Inject(BackendCapabilityGatewayDispatcher)
-    private readonly capabilityDispatcher: BackendCapabilityGatewayDispatcher | null = null,
-    @Optional() @Inject(STUDIO_AI_CREDIT_WALLET) private readonly creditWallet: StudioAiCreditWallet | null = null
+    @Optional() @Inject(BackendCapabilityGatewayDispatcher) private readonly capabilityDispatcher: BackendCapabilityGatewayDispatcher | null = null,
+    @Optional() @Inject(STUDIO_AI_CREDIT_WALLET) private readonly creditWallet: StudioAiCreditWallet | null = null,
+    @Optional() @Inject(PAID_OPERATIONS_SETTING_STORE) private readonly paidOperationsStore: PaidOperationsSettingStore | null = null
   ) {}
 
   status() {
@@ -736,7 +735,7 @@ export class StudioAiService {
     // 예약 없이 진행하고, 예약 실패(잔액·한도)는 AI 호출 전에 차단한다.
     let creditCharge: StudioAiCreditCharge = { charged: false };
     try {
-      creditCharge = await beginStudioAiCreditCharge(this.creditWallet, { userId, task: input.task, idempotencyKey, providers });
+      creditCharge = await beginStudioAiCreditCharge(this.creditWallet, { userId, task: input.task, idempotencyKey, providers }, this.paidOperationsStore ?? undefined);
     } catch (error) {
       await abandonBeforeSend();
       throw error;

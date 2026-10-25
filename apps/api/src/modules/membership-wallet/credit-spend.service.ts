@@ -10,6 +10,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Optional,
 } from "@nestjs/common";
 
 import {
@@ -19,12 +20,19 @@ import {
   type CreditSpendResult,
 } from "./credit-spend";
 import { MembershipWalletService } from "./membership-wallet.service";
+import {
+  PAID_OPERATIONS_SETTING_STORE,
+  type PaidOperationsSettingStore,
+} from "./paid-operations-gate";
 
 @Injectable()
 export class CreditSpendService {
   constructor(
     @Inject(MembershipWalletService)
     private readonly wallet: MembershipWalletService,
+    @Optional()
+    @Inject(PAID_OPERATIONS_SETTING_STORE)
+    private readonly paidOperations?: PaidOperationsSettingStore,
   ) {}
 
   async spend(
@@ -32,7 +40,14 @@ export class CreditSpendService {
     body: CreditSpendInput,
   ): Promise<CreditSpendResult> {
     try {
-      return await spendStudioCredits(this.wallet, userId, body);
+      // 게이트는 spendStudioCredits 내부에서 현재 설정값으로 검사한다
+      // (스토어 미주입 시 미설정=false로 거부 — fail-closed).
+      return await spendStudioCredits(
+        this.wallet,
+        userId,
+        body,
+        this.paidOperations,
+      );
     } catch (error) {
       if (error instanceof CreditSpendError) {
         const payload = { code: error.code, message: error.message };
