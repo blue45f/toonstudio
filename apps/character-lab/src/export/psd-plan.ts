@@ -70,6 +70,12 @@ export interface PsdPlanOptions {
   readonly includeIdMasks: boolean;
   readonly includeReferencePasses: boolean;
   readonly lineArt?: Partial<LineArtOptions>;
+  /**
+   * SHAPER ExportManager::createHairLayer(0x0600018a) 호환 옵션:
+   * true이고 part-id 패스에 헤어(hair / hair-accessory) 픽셀이 있으면
+   * "헤어 분리" 그룹(헤어 밑색 normal, 헤어 음영 multiply, 헤어 주선 normal)을 추가 생성한다.
+   */
+  readonly splitHairLayers?: boolean;
 }
 
 export type PlanPsdResult = { readonly ok: true; readonly plan: PsdPlan } | { readonly ok: false; readonly failure: LabFailure };
@@ -86,6 +92,10 @@ export const PSD_LAYER_NAMES = Object.freeze({
   highlight: "하이라이트",
   paint: "페인트",
   line: "주선",
+  hairGroup: "헤어 분리",
+  hairFlat: "헤어 밑색",
+  hairShade: "헤어 음영",
+  hairLine: "헤어 주선",
 });
 
 function raster(name: string, blendMode: PsdBlendMode, data: CapturedRaster, hidden = false, opacity = 1): PsdRasterLayerPlan {
@@ -206,6 +216,34 @@ function hasPaint(layer: PaintLayer): boolean {
   return false;
 }
 
+function collectHairPartIds(palette: CaptureResult["partIdPalette"]): ReadonlySet<number> {
+  const hairIds = new Set<number>();
+  for (const [key, entry] of Object.entries(palette)) {
+    const id = Number(key);
+    if (Number.isInteger(id) && id > 0 && (entry.role === "hair" || entry.role === "hair-accessory")) {
+      hairIds.add(id);
+    }
+  }
+  return hairIds;
+}
+
+function filterRasterByPartIdSet(source: CapturedRaster, partIds: Uint16Array, allowedIds: ReadonlySet<number>): { readonly raster: CapturedRaster; readonly pixelCount: number } {
+  const rgba = new Uint8ClampedArray(source.rgba.length);
+  let pixelCount = 0;
+  for (let p = 0; p < partIds.length; p += 1) {
+    if (!allowedIds.has(partIds[p] ?? 0)) continue;
+    const i = p * 4;
+    const a = source.rgba[i + 3] ?? 0;
+    if (a === 0) continue;
+    rgba[i] = source.rgba[i] ?? 0;
+    rgba[i + 1] = source.rgba[i + 1] ?? 0;
+    rgba[i + 2] = source.rgba[i + 2] ?? 0;
+    rgba[i + 3] = a;
+    pixelCount += 1;
+  }
+  return { raster: { width: source.width, height: source.height, rgba }, pixelCount };
+}
+
 export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly PaintLayer[], options: PsdPlanOptions, now?: number): PlanPsdResult {
   const { width, height } = capture;
   if (width > PSD_MAX_DIMENSION || height > PSD_MAX_DIMENSION) {
@@ -275,7 +313,30 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
   const lineMask = extractLineArt(lineInput, options.lineArt ?? {});
   let lineArtPixels = 0;
   for (let p = 0; p < lineMask.length; p += 1) if ((lineMask[p] ?? 0) > 0) lineArtPixels += 1;
-  layers.push(raster(PSD_LAYER_NAMES.line, "normal", lineArtToRaster(lineMask, width, height)));
+  const fullLineRaster = lineArtToRaster(lineMask, width, height);
+  layers.push(raster(PSD_LAYER_NAMES.line, "normal", fullLineRaster));
+
+  if (options.splitHairLayers) {
+    if (!partIds) {
+      skippedKo.push("헤어 분리: part-id 패스가 없습니다.");
+    } else {
+      const hairIds = collectHairPartIds(capture.partIdPalette);
+      const hairFlat = filterRasterByPartIdSet(flat, partIds, hairIds);
+      if (hairFlat.pixelCount === 0) {
+        skippedKo.push("헤어 분리: 헤어 부위 픽셀이 없습니다.");
+      } else {
+        const hairShade = filterRasterByPartIdSet(tones.shade, partIds, hairIds);
+        const hairLine = filterRasterByPartIdSet(fullLineRaster, partIds, hairIds);
+        layers.push(
+          group(PSD_LAYER_NAMES.hairGroup, false, [
+            raster(PSD_LAYER_NAMES.hairFlat, "normal", hairFlat.raster),
+            raster(PSD_LAYER_NAMES.hairShade, "multiply", hairShade.raster),
+            raster(PSD_LAYER_NAMES.hairLine, "normal", hairLine.raster),
+          ]),
+        );
+      }
+    }
+  }
 
   const names: string[] = [];
   let layerCount = 0;

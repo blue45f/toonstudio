@@ -33,6 +33,21 @@ export interface SubdivisionPlan {
   /** 최종 레벨의 쿼드 면(위치 인덱스) */
   readonly faces: Uint32Array;
   readonly uvFaces: Uint32Array;
+  /** 각 레벨을 거친 후의 정점별 샤프니스(power ∈ [0, 1]) */
+  readonly vertexSharpness?: Float32Array;
+  /** 열린 경계(목 절단면 등)에서 생성·추적된 세분 정점 인덱스 */
+  readonly boundaryVertexIndices?: Uint32Array;
+}
+
+export interface SubdivisionOptions {
+  /** 케이지 정점별 날카로움(power ∈ [0, 1], 길이 = cageVertexCount) */
+  readonly vertexSharpness?: ArrayLike<number>;
+  /**
+   * 정점 스무딩 규칙:
+   * - "catmull-clark": p=0에서 표준 Catmull-Clark과 100% 일치하며 p→1일수록 원래 정점으로 고정
+   * - "shaper": SHAPER SetVerticesSmoothPosition 공식 V' = (0.5 + 0.5p)V + (0.5 - 0.5p)S̄
+   */
+  readonly cornerRule?: "catmull-clark" | "shaper";
 }
 
 export interface SubdividedMesh {
@@ -46,12 +61,25 @@ export interface SubdividedMesh {
 
 const EDGE_KEY_BASE = 0x200000;
 
+function clamp01(value: number): number {
+  if (value <= 0) return 0;
+  if (value >= 1) return 1;
+  return value;
+}
+
 interface LevelTopology {
   readonly stencil: SparseStencil;
   readonly faces: Uint32Array;
+  readonly nextSharpness?: Float32Array;
+  readonly boundaryVertexIndices: Uint32Array;
 }
 
-function buildLevelTopology(vertexCount: number, faces: Uint32Array): LevelTopology {
+function buildLevelTopology(
+  vertexCount: number,
+  faces: Uint32Array,
+  vertexSharpness?: ArrayLike<number>,
+  cornerRule: "catmull-clark" | "shaper" = "catmull-clark",
+): LevelTopology {
   const faceCount = faces.length / 4;
   const edgeIndex = new Map<number, number>();
   const edgeA: number[] = [];
@@ -89,25 +117,45 @@ function buildLevelTopology(vertexCount: number, faces: Uint32Array): LevelTopol
   const rowCount = vertexCount + edgeCount + faceCount;
   const rows: Map<number, number>[] = new Array<Map<number, number>>(rowCount);
   const accumulate = (row: Map<number, number>, col: number, w: number): void => {
+    if (w === 0) return;
     row.set(col, (row.get(col) ?? 0) + w);
   };
+  const hasSharpness = vertexSharpness !== undefined;
+  const nextSharpness = hasSharpness ? new Float32Array(rowCount) : undefined;
+  const boundaryVertexSet = new Set<number>();
+
   // 면점
   for (let f = 0; f < faceCount; f += 1) {
     const row = new Map<number, number>();
     for (let i = 0; i < 4; i += 1) accumulate(row, faces[f * 4 + i], 0.25);
     rows[vertexCount + edgeCount + f] = row;
+    if (nextSharpness !== undefined) {
+      nextSharpness[vertexCount + edgeCount + f] = 0;
+    }
   }
-  // 간선점
+  // 간선점 (SHAPER CreateQuadEdgeSubVertice: w_e = 0.5 + 0.5 * p_e, E = w_e * M + (1 - w_e) * F_avg)
   for (let e = 0; e < edgeCount; e += 1) {
     const row = new Map<number, number>();
+    const pa = hasSharpness ? clamp01(vertexSharpness[edgeA[e]] ?? 0) : 0;
+    const pb = hasSharpness ? clamp01(vertexSharpness[edgeB[e]] ?? 0) : 0;
+    const pe = 0.5 * (pa + pb);
+    if (nextSharpness !== undefined) {
+      nextSharpness[vertexCount + e] = pe;
+    }
     if (edgeFace1[e] === -1) {
       accumulate(row, edgeA[e], 0.5);
       accumulate(row, edgeB[e], 0.5);
+      boundaryVertexSet.add(edgeA[e]);
+      boundaryVertexSet.add(edgeB[e]);
+      boundaryVertexSet.add(vertexCount + e);
     } else {
-      accumulate(row, edgeA[e], 0.25);
-      accumulate(row, edgeB[e], 0.25);
+      const we = 0.5 + 0.5 * pe;
+      const midpointWeight = 0.5 * we;
+      const faceAvgCornerWeight = 0.125 * (1 - we);
+      accumulate(row, edgeA[e], midpointWeight);
+      accumulate(row, edgeB[e], midpointWeight);
       for (const f of [edgeFace0[e], edgeFace1[e]]) {
-        for (let i = 0; i < 4; i += 1) accumulate(row, faces[f * 4 + i], 1 / 16);
+        for (let i = 0; i < 4; i += 1) accumulate(row, faces[f * 4 + i], faceAvgCornerWeight);
       }
     }
     rows[vertexCount + e] = row;
@@ -117,6 +165,10 @@ function buildLevelTopology(vertexCount: number, faces: Uint32Array): LevelTopol
     const row = new Map<number, number>();
     const edges = vertexEdges[v];
     const n = edges.length;
+    const pv = hasSharpness ? clamp01(vertexSharpness[v] ?? 0) : 0;
+    if (nextSharpness !== undefined) {
+      nextSharpness[v] = pv;
+    }
     if (n === 0) {
       // 면에 쓰이지 않는 정점은 그대로 둔다(빌더 compact 후에는 없다).
       accumulate(row, v, 1);
@@ -125,25 +177,56 @@ function buildLevelTopology(vertexCount: number, faces: Uint32Array): LevelTopol
     }
     const boundaryEdges = edges.filter((e) => edgeFace1[e] === -1);
     if (boundaryEdges.length > 0) {
-      if (vertexFaces[v].length <= 1 || boundaryEdges.length !== 2) {
-        // 모서리(섬 꼭짓점)는 고정한다.
+      if (vertexFaces[v].length <= 1 || boundaryEdges.length !== 2 || pv >= 1) {
+        // 모서리(섬 꼭짓점) 또는 완전 샤프 정점은 고정한다.
         accumulate(row, v, 1);
       } else {
-        accumulate(row, v, 0.75);
-        for (const e of boundaryEdges) accumulate(row, edgeA[e] === v ? edgeB[e] : edgeA[e], 0.125);
+        const selfWeight = 0.75 + 0.25 * pv;
+        const neighborWeight = 0.125 * (1 - pv);
+        accumulate(row, v, selfWeight);
+        for (const e of boundaryEdges) accumulate(row, edgeA[e] === v ? edgeB[e] : edgeA[e], neighborWeight);
       }
       rows[v] = row;
       continue;
     }
+    if (cornerRule === "shaper") {
+      // SHAPER SetVerticesSmoothPosition 공식: V_new = (0.5 + 0.5 * p_v) * V_orig + (0.5 - 0.5 * p_v) * S_bar
+      // 여기서 S_bar는 정점 v 주변 세분 정점들(인접 간선점 E_e 및 인접 면점 F_f)의 산술 평균
+      const selfWeight = 0.5 + 0.5 * pv;
+      const ringWeight = 0.5 - 0.5 * pv;
+      accumulate(row, v, selfWeight);
+      if (ringWeight > 0) {
+        const fList = vertexFaces[v];
+        const neighborCount = edges.length + fList.length;
+        const invNeighbor = ringWeight / neighborCount;
+        for (const e of edges) {
+          const edgeRow = rows[vertexCount + e];
+          for (const [col, w] of edgeRow.entries()) {
+            accumulate(row, col, invNeighbor * w);
+          }
+        }
+        for (const f of fList) {
+          const faceRow = rows[vertexCount + edgeCount + f];
+          for (const [col, w] of faceRow.entries()) {
+            accumulate(row, col, invNeighbor * w);
+          }
+        }
+      }
+      rows[v] = row;
+      continue;
+    }
+    const smoothScale = 1 - pv;
     const inv = 1 / n;
     const inv2 = inv * inv;
-    accumulate(row, v, (n - 3) * inv);
-    for (const f of vertexFaces[v]) {
-      for (let i = 0; i < 4; i += 1) accumulate(row, faces[f * 4 + i], 0.25 * inv2);
-    }
-    for (const e of edges) {
-      accumulate(row, edgeA[e], inv2);
-      accumulate(row, edgeB[e], inv2);
+    accumulate(row, v, pv + smoothScale * ((n - 3) * inv));
+    if (smoothScale > 0) {
+      for (const f of vertexFaces[v]) {
+        for (let i = 0; i < 4; i += 1) accumulate(row, faces[f * 4 + i], smoothScale * 0.25 * inv2);
+      }
+      for (const e of edges) {
+        accumulate(row, edgeA[e], smoothScale * inv2);
+        accumulate(row, edgeB[e], smoothScale * inv2);
+      }
     }
     rows[v] = row;
   }
@@ -179,7 +262,13 @@ function buildLevelTopology(vertexCount: number, faces: Uint32Array): LevelTopol
       newFaces[base + 3] = ePrev;
     }
   }
-  return { stencil: { rowCount, colCount: vertexCount, rowPtr, cols, weights }, faces: newFaces };
+  const sortedBoundary = Uint32Array.from([...boundaryVertexSet].sort((a, b) => a - b));
+  return {
+    stencil: { rowCount, colCount: vertexCount, rowPtr, cols, weights },
+    faces: newFaces,
+    nextSharpness,
+    boundaryVertexIndices: sortedBoundary,
+  };
 }
 
 export function applyStencil(stencil: SparseStencil, input: ArrayLike<number>, components: number): Float32Array {
@@ -237,19 +326,28 @@ export function liftRegions(plan: SubdivisionPlan, regions: Uint8Array, regionCo
   return out;
 }
 
-export function buildSubdivisionPlan(mesh: QuadMesh, levels: 0 | 1 | 2): SubdivisionPlan {
+export function buildSubdivisionPlan(mesh: QuadMesh, levels: 0 | 1 | 2, options?: SubdivisionOptions): SubdivisionPlan {
   const levelPlans: LevelPlan[] = [];
   let vertexCount = mesh.positions.length / 3;
   let uvCount = mesh.uvs.length / 2;
   let faces = mesh.faces;
   let uvFaces = mesh.uvFaces;
+  let currentSharpness: Float32Array | undefined =
+    options?.vertexSharpness !== undefined
+      ? Float32Array.from({ length: vertexCount }, (_, i) => clamp01(options.vertexSharpness?.[i] ?? 0))
+      : undefined;
+  let boundaryVertexIndices: Uint32Array | undefined;
+  const cornerRule = options?.cornerRule ?? "catmull-clark";
+
   for (let l = 0; l < levels; l += 1) {
-    const position = buildLevelTopology(vertexCount, faces);
+    const position = buildLevelTopology(vertexCount, faces, currentSharpness, cornerRule);
     const uv = buildLevelTopology(uvCount, uvFaces);
     vertexCount = position.stencil.rowCount;
     uvCount = uv.stencil.rowCount;
     faces = position.faces;
     uvFaces = uv.faces;
+    currentSharpness = position.nextSharpness;
+    boundaryVertexIndices = position.boundaryVertexIndices;
     levelPlans.push({ position: position.stencil, uv: uv.stencil, faces, uvFaces });
   }
   return {
@@ -260,6 +358,8 @@ export function buildSubdivisionPlan(mesh: QuadMesh, levels: 0 | 1 | 2): Subdivi
     uvCount,
     faces,
     uvFaces,
+    ...(currentSharpness !== undefined ? { vertexSharpness: currentSharpness } : {}),
+    ...(boundaryVertexIndices !== undefined ? { boundaryVertexIndices } : {}),
   };
 }
 
@@ -289,9 +389,9 @@ export function predictVertexCount(mesh: Pick<QuadMesh, "positions" | "faces">, 
 
 export const REGION_LIFT_COUNT = 16;
 
-/** 스펙 공개 API: 케이지를 levels회 세분한다(위치·UV·영역). */
-export function catmullClark(mesh: QuadMesh, levels: 0 | 1 | 2): SubdividedMesh {
-  const plan = buildSubdivisionPlan(mesh, levels);
+/** 스펙 공개 API: 케이지를 levels회 세분한다(위치·UV·영역·정점 샤프니스). */
+export function catmullClark(mesh: QuadMesh, levels: 0 | 1 | 2, options?: SubdivisionOptions): SubdividedMesh {
+  const plan = buildSubdivisionPlan(mesh, levels, options);
   return {
     positions: liftAttribute(plan, mesh.positions, 3),
     uvs: liftUvs(plan, mesh.uvs),
@@ -380,3 +480,18 @@ export function expandWelded(values: Float32Array, vertexSource: Uint32Array, co
   }
   return out;
 }
+
+export {
+  adaptPartSeamOffsets,
+  computeSeamCentroids3Zone,
+  findCoincidentVertexGroups,
+  lockCoincidentSeamVertices,
+  matchNeckSeamVertices,
+  weldNeckSeamPositionsAndNormals,
+} from "./seam-weld";
+export type {
+  NeckSeamVertexPair,
+  PartSeamAdaptationOptions,
+  PartSeamAdaptationResult,
+  SeamCentroids3Zone,
+} from "./seam-weld";

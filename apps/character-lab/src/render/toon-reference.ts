@@ -129,3 +129,97 @@ export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): r
   }
   return out;
 }
+
+export interface CubicMatCapRampTransform {
+  /** 텍스처 가로 스케일: width = (5 - 5w)^3 = 125 * (1 - w)^3 */
+  readonly scaleU: number;
+  /** 텍스처 가로 오프셋: offset = -(width - 1) / 2 + pos * width */
+  readonly offsetU: number;
+}
+
+/**
+ * SHAPER MaterialData::ApplyShadeLine(0x06000236)의 3차(Cubic) MatCap 음영·반사광 램프 변환 공식:
+ * - width = (5 - 5 * w)^3 = 125 * (1 - w)^3
+ * - offset = -(width - 1) / 2 + p * width
+ * w -> 0(셀 음영)일수록 width -> 125로 급증해 칼 같은 경계를 만들고, w -> 1일수록 부드러운 그라데이션이 된다.
+ */
+export function computeCubicMatCapRamp(pos: number, widthSlider: number): CubicMatCapRampTransform {
+  const clampedW = Math.min(1, Math.max(0, widthSlider));
+  const clampedP = Math.min(1, Math.max(0, pos));
+  const base = 5 - 5 * clampedW;
+  const scaleU = base * base * base;
+  const offsetU = -(scaleU - 1) * 0.5 + clampedP * scaleU;
+  return { scaleU, offsetU };
+}
+
+/**
+ * 3차(Cubic) MatCap 램프 변환을 적용해 입력 음영값(0..1)에서 램프 밴드 값(0..1)을 평가한다.
+ */
+export function evaluateCubicMatCapBand(shading: number, pos: number, widthSlider: number): number {
+  const { scaleU, offsetU } = computeCubicMatCapRamp(pos, widthSlider);
+  return smoothstep(0, 1, shading * scaleU + offsetU);
+}
+
+export type EyeballHighlightMode = "fix" | "cam" | "light" | "world";
+
+export interface EyeballHighlightTransformInput {
+  readonly mode: EyeballHighlightMode;
+  readonly eyeballEulerDeg: Vec3;
+  readonly cameraLookEulerDeg: Vec3;
+  readonly lightEulerDeg: Vec3;
+  /** 사용자 하이라이트 오프셋 (pos.x, pos.y) */
+  readonly offsetPos: readonly [number, number];
+  /** F10 카메라 시선 고정(fixEyeballCam) 활성화 여부 */
+  readonly fixEyeballCam?: boolean;
+}
+
+export interface EyeballHighlightTransformOutput {
+  readonly resolvedEyeballEulerDeg: Vec3;
+  readonly highlightEulerDeg: Vec3;
+}
+
+/**
+ * SHAPER EyeballData::SetHighlightTransform(0x0600018e) & Update(0x06000193):
+ * - F10(fixEyeballCam) 활성화 시 안구 회전을 카메라 시선 방향(cameraLookEulerDeg)으로 고정한다.
+ * - 4가지 기준 방향(fix / cam / light / world)에 사용자 오프셋 Rotate(pos.y, -pos.x + 180, 0)를 적용한다.
+ */
+export function computeEyeballHighlightTransform(
+  input: EyeballHighlightTransformInput,
+): EyeballHighlightTransformOutput {
+  const {
+    mode,
+    eyeballEulerDeg,
+    cameraLookEulerDeg,
+    lightEulerDeg,
+    offsetPos,
+    fixEyeballCam = false,
+  } = input;
+
+  const resolvedEyeballEulerDeg: Vec3 = fixEyeballCam
+    ? [cameraLookEulerDeg[0], cameraLookEulerDeg[1], cameraLookEulerDeg[2]]
+    : [eyeballEulerDeg[0], eyeballEulerDeg[1], eyeballEulerDeg[2]];
+
+  let baseEuler: Vec3;
+  switch (mode) {
+    case "fix":
+      baseEuler = resolvedEyeballEulerDeg;
+      break;
+    case "cam":
+      baseEuler = [cameraLookEulerDeg[0], cameraLookEulerDeg[1], cameraLookEulerDeg[2]];
+      break;
+    case "light":
+      baseEuler = [lightEulerDeg[0], lightEulerDeg[1] + 180, lightEulerDeg[2]];
+      break;
+    case "world":
+      baseEuler = [0, 0, 0];
+      break;
+  }
+
+  const highlightEulerDeg: Vec3 = [
+    baseEuler[0] + offsetPos[1],
+    baseEuler[1] - offsetPos[0] + 180,
+    baseEuler[2],
+  ];
+
+  return { resolvedEyeballEulerDeg, highlightEulerDeg };
+}

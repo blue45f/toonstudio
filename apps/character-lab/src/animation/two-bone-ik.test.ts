@@ -3,7 +3,15 @@ import { describe, expect, it } from "vitest";
 import { isUnitQuat } from "../contracts/pose";
 import { qRotateVec3, v3Add, v3Cross, v3Distance, v3Dot, v3Normalize, v3Sub } from "../shared/math";
 
-import { IK_REACH_TOLERANCE, rotationBetweenFrames, solveTwoBoneIk } from "./two-bone-ik";
+import {
+  IK_REACH_TOLERANCE,
+  computeGroundedBodyHeight,
+  normalizeSignedAngleDeg,
+  rotationBetweenFrames,
+  solveShaperOrientationConstraint,
+  solveShaperTwistBoneChain,
+  solveTwoBoneIk,
+} from "./two-bone-ik";
 
 import type { Vec3 } from "../contracts/pose";
 
@@ -142,5 +150,52 @@ describe("rotationBetweenFrames", () => {
   it("법선이 퇴화하면 방향만 정렬한다", () => {
     const q = rotationBetweenFrames([1, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 0]);
     expect(v3Distance(qRotateVec3(q, [1, 0, 0]), [0, 0, 1])).toBeLessThanOrEqual(1e-6);
+  });
+});
+
+describe("SHAPER TwistBone, OrientationConstraint 및 자동 지면 접지/신장 산출", () => {
+  it("normalizeSignedAngleDeg 및 solveShaperTwistBoneChain: [-180°, 180°] 정규화 후 로컬 X축 비틀림만 분배한다", () => {
+    expect(normalizeSignedAngleDeg(270)).toBeCloseTo(-90, 6);
+    expect(normalizeSignedAngleDeg(-270)).toBeCloseTo(90, 6);
+
+    const chain = solveShaperTwistBoneChain({
+      startEulerDeg: [0, 45, 30],
+      endEulerDeg: [300, -20, 15], // 300° -> -60°
+      weights: [1 / 3, 2 / 3],
+    });
+    expect(chain).toHaveLength(2);
+    expect(chain[0].localEulerDeg).toEqual([-20, 0, 0]);
+    expect(chain[1].localEulerDeg).toEqual([-40, 0, 0]);
+    expect(isUnitQuat(chain[0].localRotation)).toBe(true);
+  });
+
+  it("solveShaperOrientationConstraint: 두 회전의 50% Slerp 보조 본 회전을 계산한다", () => {
+    const q0 = [0, 0, 0, 1] as const;
+    const q90 = [0, Math.SQRT1_2, 0, Math.SQRT1_2] as const; // Y축 90°
+    const half = solveShaperOrientationConstraint(q0, q90, 0.5);
+    expect(isUnitQuat(half)).toBe(true);
+    const rotated = qRotateVec3(half, [0, 0, 1]);
+    expect(rotated[0]).toBeCloseTo(Math.SQRT1_2, 5);
+    expect(rotated[2]).toBeCloseTo(Math.SQRT1_2, 5);
+  });
+
+  it("computeGroundedBodyHeight: 최저 발목을 지면에 접지시키고 캐릭터 신장(cm)을 계산한다", () => {
+    const res = computeGroundedBodyHeight({
+      ankleLeftY: 0.15,
+      ankleRightY: 0.05,
+      defaultAnkleY: 0.08,
+      rootPosition: [0, 0.95, 0],
+      pelvisIkTargetY: 0.95,
+      headBoneY: 1.52,
+      headOffsetY: 0.02,
+      headMeshMaxLocalY: 0.18,
+    });
+    expect(res.lowestAnkleY).toBeCloseTo(0.05, 6);
+    expect(res.groundDeltaY).toBeCloseTo(-0.03, 6);
+    expect(res.groundedRootPosition[1]).toBeCloseTo(0.98, 6);
+    expect(res.groundedPelvisIkTargetY).toBeCloseTo(0.98, 6);
+    // 접지 후 머리 높이: (1.52 - (-0.03)) + 0.02 + 0.18 = 1.75 m -> 175 cm
+    expect(res.bodyHeightCm).toBe(175);
+    expect(res.labelKo).toBe("신장 : 175 cm");
   });
 });

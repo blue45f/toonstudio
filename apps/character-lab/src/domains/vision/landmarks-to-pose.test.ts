@@ -4,7 +4,16 @@ import { IDENTITY_QUAT, POSE_LANDMARK_NAMES, bonesInScope } from "../../contract
 import { degToRad, qRotateVec3, qRotationAngle, radToDeg } from "../../shared/math";
 
 import { armsDownBody, leftArmForwardBody, tPoseBody, toImageLandmarks, toWorldLandmarks } from "./landmark-fixtures";
-import { controllableBones, landmarksToPose, quatFromBasis } from "./landmarks-to-pose";
+import {
+  SHAPER_AI_POSE_MIN_VALID_JOINTS,
+  SHAPER_AI_POSE_UNCERTAINTY_MAX,
+  applyShaperQuadrantAxisFix,
+  controllableBones,
+  evaluateShaperAiPoseConfidence,
+  landmarksToPose,
+  quatFromBasis,
+  retargetShaperHandPosePreservingWrist,
+} from "./landmarks-to-pose";
 
 import type { HumanoidBoneName, PoseLandmark } from "../../contracts";
 
@@ -157,5 +166,43 @@ describe("vision/landmarks-to-pose", () => {
     expect(rotated[2]).toBeCloseTo(-1, 9);
     expect(() => landmarksToPose([] as PoseLandmark[], { scope: "full" })).toThrow(/33개/u);
     expect(POSE_LANDMARK_NAMES.length).toBe(33);
+  });
+
+  describe("SHAPER AI 3D 포즈 불확실도 필터(< 0.03, >= 16관절) 및 손목 보존 리타기팅", () => {
+    it("uncertainty < 0.03인 관절이 16개 이상일 때만 포즈 적용을 승인한다", () => {
+      expect(SHAPER_AI_POSE_UNCERTAINTY_MAX).toBe(0.03);
+      expect(SHAPER_AI_POSE_MIN_VALID_JOINTS).toBe(16);
+
+      const goodMap: Record<string, number> = {};
+      for (let i = 0; i < 16; i += 1) goodMap[`joint_${i}`] = 0.015;
+      goodMap.noisy_joint = 0.045;
+
+      const accepted = evaluateShaperAiPoseConfidence(goodMap);
+      expect(accepted.accepted).toBe(true);
+      expect(accepted.validJointNames).toHaveLength(16);
+      expect(accepted.rejectedJointNames).toEqual(["noisy_joint"]);
+
+      const rejected = evaluateShaperAiPoseConfidence({ a: 0.01, b: 0.02 });
+      expect(rejected.accepted).toBe(false);
+    });
+
+    it("사분면 90° 축 보정(applyShaperQuadrantAxisFix) 및 손 포즈 손목 보존(retargetShaperHandPosePreservingWrist)을 수행한다", () => {
+      expect(applyShaperQuadrantAxisFix([10, 20, 30], "upperArmL")).toEqual([10, 20, -60]);
+      expect(applyShaperQuadrantAxisFix([10, 20, 30], "upperArmR")).toEqual([10, 20, 120]);
+      expect(applyShaperQuadrantAxisFix([0, 0, 0], "upperLegL")).toEqual([90, 0, 180]);
+
+      const wristQuat = [0, 0.5, 0, 0.8660254] as const;
+      const fingerQuat = [0.2, 0, 0, 0.9797959] as const;
+      const merged = retargetShaperHandPosePreservingWrist({
+        currentPose: { leftHand: wristQuat },
+        incomingHandPose: {
+          leftHand: [1, 0, 0, 0],
+          leftIndexProximal: fingerQuat,
+        },
+        handSide: "left",
+      });
+      expect(merged.leftHand).toEqual(wristQuat);
+      expect(merged.leftIndexProximal).toEqual(fingerQuat);
+    });
   });
 });

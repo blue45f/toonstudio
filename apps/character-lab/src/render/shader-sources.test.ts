@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ANISOTROPIC_OUTLINE_VERTEX_SNIPPET_GLSL,
+  ANISOTROPIC_OUTLINE_VERTEX_SNIPPET_WGSL,
   CHARACTER_SHADER_ATTRIBUTES,
   CHARACTER_SHADER_BASE_UNIFORMS,
   CHARACTER_SHADER_SOURCES,
   CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE,
   CHARACTER_SHADER_VERTEX_COLOR_DEFINE,
   CHARACTER_VERTEX_INCLUDES,
+  CUBIC_MATCAP_RAMP_SNIPPET_GLSL,
+  CUBIC_MATCAP_RAMP_SNIPPET_WGSL,
   DEPTH_UNIFORMS,
   FLAT_SAMPLERS,
   FLAT_UNIFORMS,
@@ -153,6 +157,18 @@ describe("shader-sources", () => {
     for (const key of ["normal", "id", "depth"] as const) {
       expect(CHARACTER_SHADER_SOURCES[key].glsl).not.toContain("discard");
       expect(CHARACTER_SHADER_SOURCES[key].wgsl).not.toContain("discard");
+    }
+  });
+
+  it("SHAPER 3차 MatCap 램프(5.0 - 5.0 * w)^3 및 비등방성 외곽선(1.5, 0.3) GLSL·WGSL 보조 스니펫이 동일한 수식을 담는다", () => {
+    for (const snippet of [CUBIC_MATCAP_RAMP_SNIPPET_GLSL, CUBIC_MATCAP_RAMP_SNIPPET_WGSL]) {
+      expect(snippet).toContain("5.0 - 5.0 * w");
+      expect(snippet).toContain("base * base * base");
+      expect(snippet).toContain("-(scaleU - 1.0) * 0.5 + p * scaleU");
+    }
+    for (const snippet of [ANISOTROPIC_OUTLINE_VERTEX_SNIPPET_GLSL, ANISOTROPIC_OUTLINE_VERTEX_SNIPPET_WGSL]) {
+      expect(snippet).toContain("1.5, 0.3");
+      expect(snippet).toContain("step(0.5, outlinePressure)");
     }
   });
 });

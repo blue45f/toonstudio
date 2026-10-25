@@ -422,3 +422,38 @@ export function listShaderIncludes(source: string): string[] {
 
 /** 두 언어가 같은 include 집합·순서를 쓰는지(의미 동치의 1차 조건) */
 export const CHARACTER_VERTEX_INCLUDES: readonly string[] = listShaderIncludes(CHARACTER_VERTEX_GLSL);
+
+/**
+ * SHAPER MaterialData::ApplyShadeLine(0x06000236) 3차(Cubic) MatCap 램프 GLSL/WGSL 보조 함수 스니펫:
+ * width = (5.0 - 5.0 * w)^3, offset = -(width - 1.0) * 0.5 + pos * width
+ */
+export const CUBIC_MATCAP_RAMP_SNIPPET_GLSL = `float computeCubicMatCapRamp(float shading, float pos, float widthSlider) {
+  float w = clamp(widthSlider, 0.0, 1.0);
+  float p = clamp(pos, 0.0, 1.0);
+  float base = 5.0 - 5.0 * w;
+  float scaleU = base * base * base;
+  float offsetU = -(scaleU - 1.0) * 0.5 + p * scaleU;
+  return smoothstep(0.0, 1.0, shading * scaleU + offsetU);
+}`;
+
+export const CUBIC_MATCAP_RAMP_SNIPPET_WGSL = `fn computeCubicMatCapRamp(shading: f32, pos: f32, widthSlider: f32) -> f32 {
+  let w: f32 = clamp(widthSlider, 0.0, 1.0);
+  let p: f32 = clamp(pos, 0.0, 1.0);
+  let base: f32 = 5.0 - 5.0 * w;
+  let scaleU: f32 = base * base * base;
+  let offsetU: f32 = -(scaleU - 1.0) * 0.5 + p * scaleU;
+  return smoothstep(0.0, 1.0, shading * scaleU + offsetU);
+}`;
+
+/**
+ * SHAPER MaterialData::SetValuesFromUI(0x06000235) 비등방성 펜선 외곽선(_Outline_W=1.5, _Outline_H=0.3) GLSL/WGSL 보조 스니펫.
+ */
+export const ANISOTROPIC_OUTLINE_VERTEX_SNIPPET_GLSL = `vec2 computeAnisotropicOutlineOffset(vec2 normalViewXY, float outlineBold, float outlinePressure) {
+  vec2 aspect = mix(vec2(1.0, 1.0), vec2(1.5, 0.3), step(0.5, outlinePressure));
+  return normalViewXY * outlineBold * aspect;
+}`;
+
+export const ANISOTROPIC_OUTLINE_VERTEX_SNIPPET_WGSL = `fn computeAnisotropicOutlineOffset(normalViewXY: vec2f, outlineBold: f32, outlinePressure: f32) -> vec2f {
+  let aspect: vec2f = mix(vec2f(1.0, 1.0), vec2f(1.5, 0.3), step(0.5, outlinePressure));
+  return normalViewXY * outlineBold * aspect;
+}`;

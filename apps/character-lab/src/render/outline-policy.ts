@@ -40,3 +40,52 @@ export function hullOutlineAllowed(kind: OutlineRigKind, role: PartRole): boolea
 export function hullOutlineWidthScale(kind: OutlineRigKind, role: PartRole): number {
   return kind === "kit" && role === "skin" ? KIT_SKIN_OUTLINE_WIDTH_SCALE : 1;
 }
+
+export interface OutlinePressureAspect {
+  /** 가로 법선 방향 외곽선 배율 (_Outline_W) */
+  readonly widthScale: number;
+  /** 세로 법선 방향 외곽선 배율 (_Outline_H) */
+  readonly heightScale: number;
+}
+
+/** SHAPER MaterialData::SetValuesFromUI(0x06000235): 필압 외곽선 ON 시 5:1 비등방성 배율(_Outline_W=1.5, _Outline_H=0.3) */
+export const SHAPER_OUTLINE_PRESSURE_ON_ASPECT: OutlinePressureAspect = Object.freeze({
+  widthScale: 1.5,
+  heightScale: 0.3,
+});
+
+/** SHAPER MaterialData::SetValuesFromUI(0x06000235): 필압 외곽선 OFF 시 등방성 배율(_Outline_W=1.0, _Outline_H=1.0) */
+export const SHAPER_OUTLINE_PRESSURE_OFF_ASPECT: OutlinePressureAspect = Object.freeze({
+  widthScale: 1.0,
+  heightScale: 1.0,
+});
+
+/**
+ * SHAPER outlinePressure 토글에 따른 비등방성 만화 펜선 외곽선 가로·세로 배율을 반환한다.
+ */
+export function resolveOutlinePressureAspect(outlinePressure: boolean): OutlinePressureAspect {
+  return outlinePressure ? SHAPER_OUTLINE_PRESSURE_ON_ASPECT : SHAPER_OUTLINE_PRESSURE_OFF_ASPECT;
+}
+
+/**
+ * 뷰 공간 법선(nx, ny)과 기본 두께(sliderValue * outlineRatio), 필압 토글 여부로부터
+ * 비등방성 외곽선 오프셋 벡터를 계산한다.
+ */
+export function computeAnisotropicOutlineOffset(
+  normalViewXY: readonly [number, number],
+  baseBold: number,
+  outlinePressure: boolean,
+): readonly [number, number] {
+  const aspect = resolveOutlinePressureAspect(outlinePressure);
+  return [
+    normalViewXY[0] * baseBold * aspect.widthScale,
+    normalViewXY[1] * baseBold * aspect.heightScale,
+  ];
+}
+
+/**
+ * SHAPER disableHairInline(hID) 토글: 머리카락 내부 겹침 윤곽선(inline) 억제 여부.
+ */
+export function shouldSuppressHairInline(role: PartRole, disableHairInline: boolean): boolean {
+  return disableHairInline && (role === "hair" || role === "hair-accessory");
+}

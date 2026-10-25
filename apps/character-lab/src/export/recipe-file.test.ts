@@ -4,7 +4,18 @@ import { createDefaultRecipe, recipeDigest } from "../contracts";
 import { bytesEqual } from "../shared/typed-array";
 import { defaultRecipeFixture } from "../testing/recipe-fixtures";
 
-import { MAX_RECIPE_FILE_BYTES, RECIPE_FILE_SUFFIX, embedPaintLayers, extractPaintLayers, parseRecipeFile, recipeFileName, serializeRecipe } from "./recipe-file";
+import {
+  MAX_RECIPE_FILE_BYTES,
+  RECIPE_FILE_SUFFIX,
+  embedPaintLayers,
+  extractPaintLayers,
+  parseRecipeFile,
+  parseShaperPartPreset,
+  parseShaperStylePreset,
+  recipeFileName,
+  serializeRecipe,
+  shaperPresetToCharacterRecipe,
+} from "./recipe-file";
 
 import type { PaintLayer } from "../contracts";
 
@@ -56,5 +67,41 @@ describe("recipe-file", () => {
     const broken = await extractPaintLayers({ ...recipe, paint: { layers: [{ part: "top", width: 2, height: 2, pngBase64: "AAAA" }] } });
     expect(broken.layers).toHaveLength(0);
     expect(broken.failures[0]?.code).toBe("paint-layer-png");
+  });
+
+  it("SHAPER .preset 텍스트 DSL(LoadStyle / CreateHeadPartFromPreset)을 파싱해 CharacterRecipe v3로 변환한다", () => {
+    const styleDsl = [
+      "1.0",
+      "hC*0.2/0.1/0.05,sC*0.95/0.8/0.7,ssT*2,ssC*0.7/0.5/0.5,ssL*0.45,ssW*0.2,olC*0.1/0.05/0.05,olT*1.2,olP*1,hID*1,lAX*25,lAY*-35",
+    ].join("\n");
+    const style = parseShaperStylePreset(styleDsl);
+    expect(style.version).toBe("1.0");
+    expect(style.hairColorHex).toBe("#331a0d");
+    expect(style.skinColorHex).toBe("#f2ccb3");
+    expect(style.shadePos).toBeCloseTo(0.45, 5);
+    expect(style.outlinePressure).toBe(true);
+    expect(style.disableHairInline).toBe(true);
+    expect(style.lightAngleX).toBeCloseTo(25, 5);
+
+    const partDsl = [
+      "1.0",
+      "mt*7,mid*1,name*hero_body,sex*1,muscle*0.8,fat*0.3,camP*0/1.5/-3/2,camR*5/180/0,camFov*30,cC*0.1/0.2/0.4,oR*0.75",
+    ].join("\n");
+    const part = parseShaperPartPreset(partDsl);
+    expect(part.partType).toBe(7);
+    expect(part.name).toBe("hero_body");
+    expect(part.muscle).toBeCloseTo(0.8, 5);
+    expect(part.camFov).toBeCloseTo(30, 5);
+    expect(part.colorsHex).toEqual(["#1a3366"]);
+
+    const converted = shaperPresetToCharacterRecipe({ style, part });
+    expect(converted.version).toBe(3);
+    expect(converted.colors.skin).toBe("#f2ccb3");
+    expect(converted.colors.hair).toBe("#331a0d");
+    expect(converted.colors.top).toBe("#1a3366");
+    expect(converted.body.shoulderWidth).toBeCloseTo(0.6, 5);
+    // 변환된 레시피가 직렬화·파싱 왕복 검증을 통과한다
+    const roundtrip = parseRecipeFile(serializeRecipe(converted));
+    expect(roundtrip.ok).toBe(true);
   });
 });

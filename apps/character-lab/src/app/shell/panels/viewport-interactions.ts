@@ -163,3 +163,146 @@ export function hudRows(sample: HudSample): readonly HudRow[] {
     { key: "shading", label: "셰이딩", value: sample.shadingMode === "toon" ? "툰" : "PBR" },
   ];
 }
+
+// ---------------------------------------------------------------- SHAPER 단축키·프리셋 수식키
+
+export interface ShaperModifierKeys {
+  readonly shift?: boolean;
+  readonly alt?: boolean;
+  readonly ctrl?: boolean;
+}
+
+export type ShaperPresetCategory = "part" | "pose";
+
+export interface ShaperPresetClickPolicy {
+  /** 파츠/의상 프리셋 적용 시 기존에 그려둔 3D 펜선을 삭제하지 않고 유지할지 (Shift+클릭) */
+  readonly keepExistingLines: boolean;
+  /** 파츠 프리셋에 내장된 펜선(linePresets) 로드를 건너뛸지 (Alt+클릭) */
+  readonly skipPresetLines: boolean;
+  /** 포즈 프리셋 적용 시 카메라 위치/화각(FOV) 변경을 건너뛰고 현재 카메라를 유지할지 (Shift+클릭) */
+  readonly keepCameraOnPose: boolean;
+  /** 포즈 프리셋을 좌/우 대칭(symmetryControlPoint)으로 반전 적용할지 (Alt+클릭) */
+  readonly mirrorPose: boolean;
+  /** 포즈 프리셋에서 본 회전은 건너뛰고 카메라만 적용할지 (Ctrl+클릭) */
+  readonly cameraOnlySkipBones: boolean;
+}
+
+/**
+ * SHAPER HeadPartsManager::ApplyHeadPart(0x060001f3)의 프리셋 클릭 수식키(Shift/Alt/Ctrl) 정책:
+ * - 파츠(part): Shift=기존 펜선 유지, Alt=프리셋 펜선 제외
+ * - 포즈(pose): Shift=카메라 유지(포즈만 적용), Alt=좌우 대칭 포즈 반전, Ctrl=카메라만 적용(본 스킵)
+ */
+export function resolveShaperPresetClickModifiers(
+  modifiers: ShaperModifierKeys,
+  category: ShaperPresetCategory,
+): ShaperPresetClickPolicy {
+  const shift = Boolean(modifiers.shift);
+  const alt = Boolean(modifiers.alt);
+  const ctrl = Boolean(modifiers.ctrl);
+  if (category === "pose") {
+    return {
+      keepExistingLines: true,
+      skipPresetLines: false,
+      keepCameraOnPose: shift,
+      mirrorPose: alt,
+      cameraOnlySkipBones: ctrl,
+    };
+  }
+  return {
+    keepExistingLines: shift,
+    skipPresetLines: alt,
+    keepCameraOnPose: false,
+    mirrorPose: false,
+    cameraOnlySkipBones: false,
+  };
+}
+
+export type ShaperViewportShortcutAction =
+  | {
+      readonly kind: "camera-view";
+      readonly view: "front" | "left" | "bottom" | "top";
+      readonly pivotYAnglesDeg: Vec3;
+      readonly pivotXAnglesDeg: Vec3;
+    }
+  | { readonly kind: "gizmo-mode"; readonly mode: 0 | 1 | 2 | 3 }
+  | { readonly kind: "toggle-grid" }
+  | { readonly kind: "front-light" }
+  | { readonly kind: "toggle-eyeball-cam-lock" }
+  | { readonly kind: "reset-camera" }
+  | { readonly kind: "rotate-eyeballs"; readonly deltaEulerDeg: Vec3 }
+  | { readonly kind: "adjust-shade-line"; readonly deltaShadePos: number }
+  | { readonly kind: "rotate-scene-light"; readonly deltaEulerDeg: Vec3 };
+
+/**
+ * SHAPER UIManager::LateUpdate(0x06000338) 및 EyeballData::Update(0x06000193)의 뷰포트 단축키 해독기:
+ * - F / L / B / T: 정면 / 좌측면 / 하단 / 상단 직교 카메라 뷰 정렬
+ * - Q / W / E / R: 기즈모 모드 0..3 전환, G: 그리드 토글
+ * - F12: 조명 정면 정렬(SetFrontLight), F10: 안구 카메라 시선 고정(fixEyeballCam), F5: 카메라 리셋
+ * - Shift + 방향키: 안구(eyeballL/R) 100 deg/s 회전
+ * - Alt + 좌/우 방향키: 툰 음영 경계선(shadeLineSlider) 1.0/s 조절
+ * - 일반 방향키: 씬 조명(sceneLightAngles) 100 deg/s 회전
+ */
+export function resolveShaperViewportKeyShortcut(
+  key: string,
+  modifiers: ShaperModifierKeys = {},
+  deltaTimeSec = 1 / 60,
+): ShaperViewportShortcutAction | null {
+  const shift = Boolean(modifiers.shift);
+  const alt = Boolean(modifiers.alt);
+  const dt = Math.max(0, deltaTimeSec);
+  const angularStep = 100 * dt;
+
+  switch (key) {
+    case "f":
+    case "F":
+      return { kind: "camera-view", view: "front", pivotYAnglesDeg: [0, 0, 0], pivotXAnglesDeg: [0, 0, 0] };
+    case "l":
+    case "L":
+      return { kind: "camera-view", view: "left", pivotYAnglesDeg: [0, 90, 0], pivotXAnglesDeg: [0, 0, 0] };
+    case "b":
+    case "B":
+      return { kind: "camera-view", view: "bottom", pivotYAnglesDeg: [0, 0, 0], pivotXAnglesDeg: [90, 0, 0] };
+    case "t":
+    case "T":
+      return { kind: "camera-view", view: "top", pivotYAnglesDeg: [0, 0, 0], pivotXAnglesDeg: [-90, 0, 0] };
+    case "q":
+    case "Q":
+      return { kind: "gizmo-mode", mode: 0 };
+    case "w":
+    case "W":
+      return { kind: "gizmo-mode", mode: 1 };
+    case "e":
+    case "E":
+      return { kind: "gizmo-mode", mode: 2 };
+    case "r":
+    case "R":
+      return { kind: "gizmo-mode", mode: 3 };
+    case "g":
+    case "G":
+      return { kind: "toggle-grid" };
+    case "F12":
+      return { kind: "front-light" };
+    case "F10":
+      return { kind: "toggle-eyeball-cam-lock" };
+    case "F5":
+      return { kind: "reset-camera" };
+    case "ArrowUp":
+      if (shift) return { kind: "rotate-eyeballs", deltaEulerDeg: [-angularStep, 0, 0] };
+      if (!alt) return { kind: "rotate-scene-light", deltaEulerDeg: [angularStep, 0, 0] };
+      return null;
+    case "ArrowDown":
+      if (shift) return { kind: "rotate-eyeballs", deltaEulerDeg: [angularStep, 0, 0] };
+      if (!alt) return { kind: "rotate-scene-light", deltaEulerDeg: [-angularStep, 0, 0] };
+      return null;
+    case "ArrowLeft":
+      if (shift) return { kind: "rotate-eyeballs", deltaEulerDeg: [0, angularStep, 0] };
+      if (alt) return { kind: "adjust-shade-line", deltaShadePos: -dt };
+      return { kind: "rotate-scene-light", deltaEulerDeg: [0, angularStep, 0] };
+    case "ArrowRight":
+      if (shift) return { kind: "rotate-eyeballs", deltaEulerDeg: [0, -angularStep, 0] };
+      if (alt) return { kind: "adjust-shade-line", deltaShadePos: dt };
+      return { kind: "rotate-scene-light", deltaEulerDeg: [0, -angularStep, 0] };
+    default:
+      return null;
+  }
+}

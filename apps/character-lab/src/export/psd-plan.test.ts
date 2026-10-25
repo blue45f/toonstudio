@@ -199,4 +199,29 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     const masks = buildIdMaskLayers(new Uint16Array([1, 1, 0, 0]), 2, 2, allocatePartIdsByRole([{ role: "skin" }, { role: "underwear" }]));
     expect(masks.map((m) => m.name)).toEqual(["피부"]);
   });
+
+  it("splitHairLayers=true(SHAPER createHairLayer): 헤어 부위 픽셀을 헤어 밑색·헤어 음영·헤어 주선 그룹으로 분리한다", () => {
+    const palette = allocatePartIdsByRole([{ role: "skin" }, { role: "hair" }]);
+    const idPass = idPassRaster(8, 8, (x) => (x < 4 ? rolePartId("skin") : rolePartId("hair")));
+    const capture = captureResultFixture({
+      width: 8,
+      height: 8,
+      partIdPalette: palette,
+      passes: {
+        flat: solidRaster(8, 8, [200, 150, 120, 255]),
+        lit: solidRaster(8, 8, [140, 100, 80, 255]),
+        "part-id": idPass,
+      },
+    });
+    const res = planCharacterPsd(capture, [], {
+      includeIdMasks: false,
+      includeReferencePasses: false,
+      splitHairLayers: true,
+    });
+    if (!res.ok) throw new Error(res.failure.reasonKo);
+    expect(res.plan.receipt.names).toContain("헤어 분리");
+    expect(res.plan.receipt.names).toContain("헤어 분리/헤어 밑색");
+    expect(res.plan.receipt.names).toContain("헤어 분리/헤어 음영");
+    expect(res.plan.receipt.names).toContain("헤어 분리/헤어 주선");
+  });
 });

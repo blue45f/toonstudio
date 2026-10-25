@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { PART_ROLES } from "../contracts";
 
-import { KIT_OUTLINE_EXEMPT_ROLES, KIT_SKIN_OUTLINE_WIDTH_SCALE, hullOutlineAllowed, hullOutlineWidthScale } from "./outline-policy";
+import {
+  KIT_OUTLINE_EXEMPT_ROLES,
+  KIT_SKIN_OUTLINE_WIDTH_SCALE,
+  SHAPER_OUTLINE_PRESSURE_OFF_ASPECT,
+  SHAPER_OUTLINE_PRESSURE_ON_ASPECT,
+  computeAnisotropicOutlineOffset,
+  hullOutlineAllowed,
+  hullOutlineWidthScale,
+  resolveOutlinePressureAspect,
+  shouldSuppressHairInline,
+} from "./outline-policy";
 
 import type { PartRole } from "../contracts";
 
@@ -37,5 +47,16 @@ describe("hull 외곽선 정책(A-5·A-9)", () => {
     expect(hullOutlineWidthScale("kit", "skin")).toBe(0.5);
     for (const role of PART_ROLES) if (role !== "skin") expect(hullOutlineWidthScale("kit", role), role).toBe(1);
     for (const kind of ["procedural", "package"] as const) for (const role of PART_ROLES) expect(hullOutlineWidthScale(kind, role), `${kind}/${role}`).toBe(1);
+  });
+
+  it("SHAPER 비등방성 펜선 외곽선 필압(outlinePressure: W=1.5, H=0.3) 및 헤어 인라인 억제(disableHairInline) 정책을 계산한다", () => {
+    expect(resolveOutlinePressureAspect(true)).toEqual(SHAPER_OUTLINE_PRESSURE_ON_ASPECT);
+    expect(resolveOutlinePressureAspect(false)).toEqual(SHAPER_OUTLINE_PRESSURE_OFF_ASPECT);
+    const offsetOn = computeAnisotropicOutlineOffset([1, 1], 2.0, true);
+    expect(offsetOn[0]).toBeCloseTo(3.0, 6);
+    expect(offsetOn[1]).toBeCloseTo(0.6, 6);
+    expect(shouldSuppressHairInline("hair", true)).toBe(true);
+    expect(shouldSuppressHairInline("hair", false)).toBe(false);
+    expect(shouldSuppressHairInline("skin", true)).toBe(false);
   });
 });
