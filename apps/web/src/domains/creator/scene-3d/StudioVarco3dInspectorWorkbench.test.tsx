@@ -175,6 +175,30 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(screen.getByTestId("varco3d-diorama-portal-url").textContent).toBe(
       "https://3d.varco.ai/myAssets/0c2f14f6-81a2-49a9-9f43-6582a10f9d12",
     );
+
+    // CharacterCanonicalPartDescriptor bridge, 12-view PBR ring, 598-motion retargeting & point policy
+    expect(screen.getByTestId("varco3d-canonical-part-readout").textContent).toContain(
+      "skinned-transplant",
+    );
+    fireEvent.click(screen.getByTestId("varco3d-12view-family-mvOrm"));
+    fireEvent.click(screen.getByTestId("varco3d-12view-angle-back2"));
+    expect(screen.getByTestId("varco3d-12view-stage-readout").textContent).toContain(
+      "pipeline:orm-multiview-generator",
+    );
+    expect(screen.getByTestId("varco3d-12view-stage-readout").textContent).toContain("#8");
+
+    fireEvent.change(screen.getByTestId("varco3d-retargeted-motion-select"), {
+      target: { value: "559118f7-f8eb-483f-a266-ca4bf170872f" },
+    });
+    fireEvent.change(screen.getByTestId("varco3d-point-policy-select"), {
+      target: { value: "task:GENERATE_TEXTURED_MESH" },
+    });
+    expect(screen.getByTestId("varco3d-retargeted-policy-readout").textContent).toContain(
+      "sprint",
+    );
+    expect(screen.getByTestId("varco3d-retargeted-policy-readout").textContent).toContain(
+      "INSUFFICIENT_POINT",
+    );
   });
 });
 

@@ -4,6 +4,7 @@ import {
   STUDIO_VARCO3D_ACTIVE_FLOW_ID,
   STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS,
   STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_VARCO3D_RETARGETED_MOTION_TASKS,
   STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES,
   STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
   composeVarco3dCharacterLabLoadout,
@@ -12,22 +13,28 @@ import {
 } from "./studio-varco3d-character-lab-diorama-catalog";
 
 describe("studio-varco3d-character-lab-diorama-catalog", () => {
-  it("registers 20 Character Labs modular items, 23 character archetypes, 22 dioramas, and 21 props", () => {
+  it("registers all 140 Flow assets: 20 modular items, 77 character archetypes (66 AI-rigged), 22 dioramas, 21 props, and 7 retargeted motion tasks", () => {
     expect(STUDIO_VARCO3D_ACTIVE_FLOW_ID).toBe("70a90b59-8678-4d35-a5f1-4d1ea39195a7");
     expect(STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS).toHaveLength(20);
-    expect(STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES).toHaveLength(23);
+    expect(STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES).toHaveLength(77);
     expect(STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES).toHaveLength(22);
     expect(STUDIO_VARCO3D_WEBTOON_PROP_ASSETS).toHaveLength(21);
+    expect(
+      STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.length +
+        STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.length +
+        STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length +
+        STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.length,
+    ).toBe(140);
 
     const riggedCount = STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.filter(
       (entry) => entry.rigTaskId !== null,
     ).length;
-    expect(riggedCount).toBe(12);
-    expect(
-      STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.some(
-        (entry) => entry.meshTaskId === "cd1e75d3-5efa-4f46-afb6-59920e080fb7",
-      ),
-    ).toBe(true);
+    expect(riggedCount).toBe(66);
+    const councilPresident = STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.find(
+      (entry) => entry.meshTaskId === "cd1e75d3-5efa-4f46-afb6-59920e080fb7",
+    );
+    expect(councilPresident?.rigTaskId).toBe("58923776-91f0-4b60-a985-835d204f9a24");
+    expect(STUDIO_VARCO3D_RETARGETED_MOTION_TASKS).toHaveLength(7);
   });
 
   it("composes a Character Labs loadout with slot deduplication, bone attachments, and genre synergy", () => {
