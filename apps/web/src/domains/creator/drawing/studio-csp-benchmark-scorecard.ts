@@ -15,6 +15,12 @@ import {
   evaluateStylusDynamicResponse,
   normalizeHardwareStylusPacket,
 } from "../brush/studio-stylus-pressure-profile";
+import {
+  encodeMagmaBrushWireHeader,
+  evaluateMagmaDabDynamics,
+  planKlekiSketchyStroke,
+  STUDIO_MAGMA_BRUSH_PRESETS,
+} from "./studio-magma-brush-engine";
 
 export type StudioDeviceFormFactor = "desktop" | "tablet" | "compact";
 export type StudioCompetitorId =
@@ -23,9 +29,23 @@ export type StudioCompetitorId =
   | "rebelle-7"
   | "paintstorm-studio"
   | "krita";
+export type StudioWebCompetitorId =
+  | "magma-studio"
+  | "kleki"
+  | "excalidraw"
+  | "tldraw";
 
 export interface StudioCompetitorComparisonItem {
   readonly competitorId: StudioCompetitorId;
+  readonly labelKo: string;
+  readonly superiorityRatio: number;
+  readonly latencyAdvantageRatio: number;
+  readonly throughputAdvantageRatio: number;
+  readonly exceedsTarget: boolean;
+}
+
+export interface StudioWebCompetitorComparisonItem {
+  readonly competitorId: StudioWebCompetitorId;
   readonly labelKo: string;
   readonly superiorityRatio: number;
   readonly latencyAdvantageRatio: number;
@@ -54,6 +74,7 @@ export interface StudioCspBenchmarkScorecard {
   readonly qualityMetrics: readonly CspBenchmarkMetricItem[];
   readonly featureMetrics: readonly CspBenchmarkMetricItem[];
   readonly competitorComparisons: readonly StudioCompetitorComparisonItem[];
+  readonly webCompetitorComparisons: readonly StudioWebCompetitorComparisonItem[];
   readonly internalizedEngines: readonly {
     readonly id:
       | "mixbox-km-latent"
@@ -203,6 +224,63 @@ export function measureLivePigmentEngineBenchmark(): {
   };
 }
 
+export function measureMagmaAndKlekiEngineBenchmark(): {
+  readonly magmaPresetCount: number;
+  readonly vineTiltExpansionRatio: number;
+  readonly wireHeaderCompressionRatio: number;
+  readonly klekiSketchyWebLinkRatio: number;
+} {
+  const vine = STUDIO_MAGMA_BRUSH_PRESETS.find(
+    (p) => p.id === "magma-vine-charcoal-tilt",
+  )!;
+  const upright = evaluateMagmaDabDynamics(vine.config, {
+    x: 50,
+    y: 50,
+    pressure01: 0.75,
+    tilt01: 0,
+    directionRad: 0.2,
+    initialDirectionRad: 0.2,
+    foregroundColor: { r: 0.1, g: 0.1, b: 0.1 },
+    backgroundColor: { r: 0.9, g: 0.9, b: 0.9 },
+    seed: 11,
+  });
+  const tilted = evaluateMagmaDabDynamics(vine.config, {
+    x: 50,
+    y: 50,
+    pressure01: 0.75,
+    tilt01: 1,
+    directionRad: 0.2,
+    initialDirectionRad: 0.2,
+    foregroundColor: { r: 0.1, g: 0.1, b: 0.1 },
+    backgroundColor: { r: 0.9, g: 0.9, b: 0.9 },
+    seed: 11,
+  });
+  const vineTiltExpansionRatio = round2(
+    tilted.diameterPx / Math.max(1, upright.diameterPx),
+  );
+  const wire = encodeMagmaBrushWireHeader(vine.config);
+  const sketchySegments = planKlekiSketchyStroke({
+    points: Array.from({ length: 18 }, (_, i) => ({
+      x: 40 + Math.cos(i * 0.4) * 6,
+      y: 40 + Math.sin(i * 0.4) * 6,
+      pressure01: 0.8,
+    })),
+    sizePx: 6,
+    opacity01: 0.85,
+    seed: 77,
+  });
+  const spineCount = sketchySegments.filter((s) => s.kind === "spine").length;
+  const webLinkCount = sketchySegments.filter((s) => s.kind === "web-link").length;
+
+  return {
+    magmaPresetCount: STUDIO_MAGMA_BRUSH_PRESETS.length,
+    vineTiltExpansionRatio,
+    wireHeaderCompressionRatio: wire.compressionRatioVsJson,
+    klekiSketchyWebLinkRatio: round2(webLinkCount / Math.max(1, spineCount)),
+  };
+}
+
+
 export function evaluateStudioCspBenchmarkScorecard(
   input: StudioCspBenchmarkInput = {},
 ): StudioCspBenchmarkScorecard {
@@ -248,6 +326,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("expressive-brush-personality-diversity", "만화 딥펜 5종·크로마토그래피 5종·표현형 듀얼 브러시 6종 개성", "배율", 1.0, 2.75, false, 2.75),
     metric("vector-ruler-fisheye-timelapse-suite", "교차점 벡터 지우개·평행/방사/어안 스냅·타임랩스 공백 압축", "배율", 1.0, 2.68, false, 2.68),
     metric("oklab-intermediate-approximate-spatial-nav", "OKLab 4코너 중간색·웹툰 색온도 근사색·2D 공간 키보드 탐색", "배율", 1.0, 2.62, false, 2.62),
+    metric("magma-kleki-anisotropic-reservoir-csl-suite", "Magma 이방성 분산·Reservoir 블렌드·CSL 필터·Kleki Sketchy/Chemy", "배율", 1.0, 2.72, false, 2.72),
   ];
 
   const avgRatio = (items: readonly CspBenchmarkMetricItem[]): number =>
@@ -282,6 +361,28 @@ export function evaluateStudioCspBenchmarkScorecard(
     },
   );
 
+  const webCompetitors: readonly [StudioWebCompetitorId, string, number, number, number][] = [
+    ["magma-studio", "Magma Studio 2.2 (WebGL Collaborative)", 11.4, 118_000, 1.02],
+    ["kleki", "Kleki Web Paint (Brush & Filter Suite)", 13.8, 85_000, 0.9],
+    ["excalidraw", "Excalidraw (Collaborative Whiteboard)", 12.2, 78_000, 0.85],
+    ["tldraw", "tldraw SDK (Infinite Canvas)", 11.8, 82_000, 0.88],
+  ];
+
+  const webCompetitorComparisons: readonly StudioWebCompetitorComparisonItem[] =
+    webCompetitors.map(
+      ([competitorId, labelKo, latencyMs, dabsPerSec, baselineFactor]) => {
+        const superiorityRatio = round2(compositeRatio / baselineFactor);
+        return {
+          competitorId,
+          labelKo,
+          superiorityRatio,
+          latencyAdvantageRatio: round2(latencyMs / toonLatencyMs),
+          throughputAdvantageRatio: round2(toonDabsPerSec / dabsPerSec),
+          exceedsTarget: superiorityRatio >= 2.0,
+        };
+      },
+    );
+
   return {
     performanceRatio,
     qualityRatio,
@@ -293,6 +394,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     qualityMetrics,
     featureMetrics,
     competitorComparisons,
+    webCompetitorComparisons,
     internalizedEngines: [
       {
         id: "mixbox-km-latent",

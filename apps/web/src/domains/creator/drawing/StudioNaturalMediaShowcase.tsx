@@ -30,6 +30,11 @@ import {
   type StudioNaturalMediaPreset,
 } from "./studio-natural-media-brushes";
 import {
+  encodeMagmaBrushWireHeader,
+  evaluateMagmaDabDynamics,
+  STUDIO_MAGMA_BRUSH_PRESETS,
+} from "./studio-magma-brush-engine";
+import {
   vectorizeFreehandStroke,
   type StudioVectorizerPoint,
 } from "./studio-stroke-vectorizer";
@@ -281,8 +286,37 @@ export function StudioNaturalMediaShowcase({
     useState<StudioNaturalMediaBrushId>("pencil-2b");
   const [craftFilter, setCraftFilter] = useState<"all" | StudioNaturalMediaCraft>("all");
   const [activeComboId, setActiveComboId] = useState<string | null>(null);
+  const [selectedMagmaPresetId, setSelectedMagmaPresetId] = useState<string>(
+    "magma-vine-charcoal-tilt",
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [strokeWeight, setStrokeWeight] = useState(1);
+
+  const magmaSignaturePresets = useMemo(
+    () => STUDIO_MAGMA_BRUSH_PRESETS.filter((p) => p.category === "signature-pro"),
+    [],
+  );
+  const activeMagmaPreset = useMemo(
+    () =>
+      magmaSignaturePresets.find((p) => p.id === selectedMagmaPresetId) ??
+      magmaSignaturePresets[0]!,
+    [magmaSignaturePresets, selectedMagmaPresetId],
+  );
+  const activeMagmaTelemetry = useMemo(() => {
+    const dab = evaluateMagmaDabDynamics(activeMagmaPreset.config, {
+      x: 50,
+      y: 50,
+      pressure01: 0.78,
+      tilt01: 0.65,
+      directionRad: 0.35,
+      initialDirectionRad: 0.35,
+      foregroundColor: { r: 0.38, g: 0.4, b: 0.95 },
+      backgroundColor: { r: 0.95, g: 0.55, b: 0.25 },
+      seed: 2026,
+    });
+    const wire = encodeMagmaBrushWireHeader(activeMagmaPreset.config);
+    return { dab, wire };
+  }, [activeMagmaPreset]);
 
   const selectedId = selectedBrushId ?? internalSelected;
   const selectedPreset =
@@ -426,6 +460,96 @@ export function StudioNaturalMediaShowcase({
               </button>
             );
           })}
+        </div>
+
+        {/* Magma Studio 시그니처 프로 브러시 엔진 모드 바 (WAI-ARIA Roving Tabindex) */}
+        <div
+          className="mt-3 rounded-2xl border border-line bg-card/60 px-3.5 py-2.5"
+          data-studio-magma-signature-bar="true"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-accent">
+              {tx("Magma 시그니처 엔진:")}
+            </span>
+            <div
+              role="radiogroup"
+              aria-label={tx("Magma 시그니처 브러시 프리셋")}
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {magmaSignaturePresets.map((preset, idx) => {
+                const isSelected = preset.id === activeMagmaPreset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
+                    data-studio-magma-preset={preset.id}
+                    onClick={() => setSelectedMagmaPresetId(preset.id)}
+                    onKeyDown={(e) => {
+                      let nextIdx = -1;
+                      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                        nextIdx = (idx + 1) % magmaSignaturePresets.length;
+                      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                        nextIdx =
+                          (idx - 1 + magmaSignaturePresets.length) %
+                          magmaSignaturePresets.length;
+                      } else if (e.key === "Home") {
+                        nextIdx = 0;
+                      } else if (e.key === "End") {
+                        nextIdx = magmaSignaturePresets.length - 1;
+                      }
+                      if (nextIdx >= 0) {
+                        e.preventDefault();
+                        const target = magmaSignaturePresets[nextIdx];
+                        if (target) {
+                          setSelectedMagmaPresetId(target.id);
+                          const container = e.currentTarget.parentElement;
+                          const buttons =
+                            container?.querySelectorAll<HTMLButtonElement>(
+                              '[role="radio"]',
+                            );
+                          buttons?.[nextIdx]?.focus();
+                        }
+                      }
+                    }}
+                    className={
+                      isSelected
+                        ? "rounded-full border border-accent bg-accent/20 px-2.5 py-1 text-[11px] font-semibold text-fg"
+                        : "rounded-full border border-line bg-raised/70 px-2.5 py-1 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                    }
+                  >
+                    {tx(preset.nameKo)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-2">
+            <span>{tx(activeMagmaPreset.descriptionKo)}</span>
+            <span className="inline-flex items-center gap-2 font-mono text-[10px] text-fg-3">
+              <span
+                aria-hidden="true"
+                className="inline-block h-2.5 w-2.5 rounded-full border border-line [forced-color-adjust:none]"
+                style={{
+                  forcedColorAdjust: "none",
+                  backgroundColor: `rgb(${Math.round(activeMagmaTelemetry.dab.color.r * 255)}, ${Math.round(activeMagmaTelemetry.dab.color.g * 255)}, ${Math.round(activeMagmaTelemetry.dab.color.b * 255)})`,
+                }}
+              />
+              <span>
+                {tx("실효 직경")}: {activeMagmaTelemetry.dab.diameterPx.toFixed(1)}px
+              </span>
+              <span>·</span>
+              <span>
+                {tx("진원도")}: {Math.round(activeMagmaTelemetry.dab.roundness01 * 100)}%
+              </span>
+              <span>·</span>
+              <span>
+                {tx("와이어 압축")}: {activeMagmaTelemetry.wire.compressionRatioVsJson}×
+              </span>
+            </span>
+          </div>
         </div>
 
         {/* 브러시 카드 그리드 */}

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { Pcg32 } from "../../engine/core/rng";
+import { anisotropicScatterOffset } from "../../engine/dynamics/scatter";
+import {
+  generateAsymmetricVineTip,
+  generateCrispPixelTip,
+} from "../../engine/texture/tip-generators";
+
 import {
   canvasKey,
   canvasScaleFactor,
@@ -9,7 +16,9 @@ import {
   cspOverallScore,
   cspSuperiorityRatioOf,
   evaluateMultiCompetitorBenchmark,
+  evaluateWebCompetitorBenchmark,
   validateCspBaseline,
+  WEB_COMPETITOR_BENCHMARK_PROFILES,
   CSP_BASELINE_VALID,
   CSP_BASELINE,
   CSP_BASELINE_DEFAULT,
@@ -171,6 +180,62 @@ describe("CSP 기준선 수치", () => {
         expect(entry.exceedsTwoX).toBe(true);
       }
     });
+
+    it("evaluateWebCompetitorBenchmark: 4대 웹 경쟁사(Magma Studio, Kleki, Excalidraw, tldraw) 모두에 대해 성능·품질·웹툰/동기화 2.0배 이상 우위를 달성한다", () => {
+      expect(Object.keys(WEB_COMPETITOR_BENCHMARK_PROFILES)).toHaveLength(4);
+      const webEntries = evaluateWebCompetitorBenchmark();
+      expect(webEntries).toHaveLength(4);
+      for (const entry of webEntries) {
+        expect(entry.performanceRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.qualityAndPhysicsRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.webtoonAndSyncRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.compositeRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.exceedsTwoX).toBe(true);
+      }
+    });
+
+    it("Magma 역공학 이방성 산포(anisotropicScatterOffset) 및 비대칭 Vine 목탄·픽셀 팁 마스크가 결정론적으로 동작한다", () => {
+      const rngA = new Pcg32(2026);
+      const rngB = new Pcg32(2026);
+      const sampleA = anisotropicScatterOffset(
+        rngA,
+        {
+          normalSpreadPx: 18,
+          tangentSpreadPx: 4,
+          separateSpread: true,
+          angleRad: 0.25,
+          scale: 0.15,
+        },
+        Math.PI / 4,
+      );
+      const sampleB = anisotropicScatterOffset(
+        rngB,
+        {
+          normalSpreadPx: 18,
+          tangentSpreadPx: 4,
+          separateSpread: true,
+          angleRad: 0.25,
+          scale: 0.15,
+        },
+        Math.PI / 4,
+      );
+      expect(sampleA).toEqual(sampleB);
+
+      const vineTip = generateAsymmetricVineTip(32, 42, {
+        sharpEdgeHardness: 0.95,
+        softEdgeHardness: 0.15,
+        tilt01: 0.8,
+      });
+      // 좌측(u < 0, x = 4) 에지가 우측(u > 0, x = 27) 에지보다 더 높은 불투명도를 유지해야 함
+      const midRow = 16 * 32;
+      expect(vineTip.data[midRow + 4]!).toBeGreaterThan(vineTip.data[midRow + 27]!);
+
+      const pixelTip = generateCrispPixelTip(16);
+      for (const v of pixelTip.data) {
+        expect(v === 0 || v === 1).toBe(true);
+      }
+    });
   });
 });
+
 

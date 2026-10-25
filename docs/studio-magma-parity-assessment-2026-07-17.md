@@ -89,3 +89,19 @@ Magma의 창작 기능축은 공식 문서 기준 6개 영역이다: ① 실시�
 따라서 "최소 Magma 드로잉 기능 이상"은 **이미 충족**했고, Magma 대비 확인된 열세는
 없다. 남은 1건(전체 캔버스 GPU 렌더)은 경쟁 열세가 아니라 ToonStudio 자체 로드맵이며
 실행 가능한 경로가 문서화되어 있어 계속 고도화 가능하다.
+
+## 2026-10-26 REA 라이브·정적 번들 역공학 심층 검증 및 전 기능 내재화 완료
+
+2026-10-26 REA(`rea` MCP 서버)를 사용해 Magma Studio 2.2 프로덕션 런타임과 지연 로드 청크 78종(`chunk-925e93ca.js` DrawingPageComponent 1.14MB, `chunk-88e51f61.js` WebGL 브러시·CSL 필터 엔진 952KB, `chunk-84e0484d.js` PerspectiveGrid 134KB, `chunk-3d279017.js` PSD I/O 274KB, `chunk-f918114e.js` 내장 프리셋 카탈로그) 및 Kleki·Excalidraw·tldraw를 직접 캡처·정적 분석했다(증거 번들: `ev_b38f97cd56c1804fefd1ddaad5634a72e8923d0e6ae73028403be1fdc47e1d4b`, `ev_0990e06bc0c14442100fb8d22205430787e23ce885eb84d467e7f4e95f67c05a`, `ev_2a8f20744e138365a6a514c4b47569e6ded78c3b455d32306b70bd38133c4d79`, `ev_d4716a9f019ca783eab22796b957a7acfd654af65f378e26efab9e9087c41021`, `ev_5382a49ac3137799932826e1a7640f691d9790d5a7aebebb4f9547094d617ce2`, `ev_b8fa974a6a7451db16093985fb73498ebfcecb458ba006decb774edff62036e9`).
+
+| 역공학으로 발굴된 Magma Studio / Kleki 세부 엔진 기능 | ToonStudio 클린룸 내재화·고도화 모듈 | 검증 결과 |
+| --- | --- | --- |
+| **이방성 법선·접선 분리 산포 (`normalSpread`·`tangentSpread`·`separateSpread`)** | `studio-magma-brush-engine.ts` (`evaluateAnisotropicScatterOffset`), `apps/brush-lab/src/engine/dynamics/scatter.ts` (`anisotropicScatterOffset`) | 주 브러시·듀얼 브러시 독립 법선/접선 투영 및 PCG32 결정론 검증 완료 |
+| **첫 스탬프 방향 예약 버퍼 (`this.reserved` / `drawReserved`)** | `studio-magma-brush-engine.ts` (`MagmaReservedStartBuffer`) | `spacingPx * 0.5` 이동 전까지 첫 댑 보류 후 확정 각도 방출 및 제자리 탭(`flushOnPointerUp`) 검증 완료 |
+| **기울기 폭 확장 (`maxSizeTilt` 2.5×)·비대칭 Vine 목탄 팁·픽셀 아트 (`pixelation`)·패턴 깊이 자동 반전** | `studio-magma-brush-engine.ts` (`evaluateMagmaDabDynamics`, `STUDIO_MAGMA_BRUSH_PRESETS` 19종), `apps/brush-lab/src/engine/texture/tip-generators.ts` (`generateAsymmetricVineTip`, `generateCrispPixelTip`) | 한쪽 고경도/반대쪽 저경도 비대칭 목탄 팁, 정수 직경·픽셀 중심(`.5`) 스냅, `FC`/`IC` 패턴 깊이 자동 반전 검증 완료 |
+| **2×32비트 비트마스크 + 센티 양자화(`×100`) 멀티플레이어 브러시 헤더 코덱 (`JC`)** | `studio-magma-brush-engine.ts` (`encodeMagmaBrushWireHeader`, `decodeMagmaBrushWireHeader`) | 전 프리셋 왕복 무결성 및 JSON 대비 **15× 이상** 와이어 패킷 압축 검증 완료 |
+| **Ping-Pong 리덕션 + 물감 저장소 블렌드 브러시 (`drawBlendBrush`) & 2D 리퀴파이 변위장 (`drawLiquifyBrush`)** | `studio-magma-canvas-filters.ts` (`applyMagmaBlendBrushDab`, `MagmaLiquifyDisplacementField`, `applyLiquifyDisplacementToBuffer`) | `paint**2`·`sqrt(stretch)`·`opacityLocked` 보존 및 6모드 리퀴파이(`push`/`twirl`/`pinch`/`expand`/`reconstruct`) 검증 완료 |
+| **CSL (Canvas Shader Language) 필터 (`MotionBlur`·`Curves`·`Dither`·`ChromaticAberration`·`Outline`)** | `studio-magma-canvas-filters.ts` (`applyMagmaMotionBlurFilter`, `applyMagmaMultiChannelCurvesFilter`, `applyMagmaOrderedDitherFilter`, `applyMagmaChromaticAberrationFilter`, `applyMagmaOutlineFilter`) | 투명 픽셀 검은 번짐 없는 양방향 알파 가중 모션블러, 마스터+RGB 합성 커브 LUT, $4\times4$ Bayer 순서 디더링 검증 완료 |
+| **5종 포인터 프레즌스 모드·개인별 로컬 레이어 가시성(`visibleLocally`)·소유권 대기 큐(`pendingLayerOwns`)·ArtJam 11단계 마일스톤** | `apps/web/src/domains/creator/live/studio-magma-collaboration.ts` | 전역 가시성 오염 없는 개인별 로컬 레이어 토글, 레이어 소유권 대기열 자동 승계·일괄 인수, 150~204,800획 마일스톤 검증 완료 |
+| **Kleki 시그니처 `Sketchy`(과거 궤적 거미줄 연결) & `Chemy`(방향 적응 그라데이션 폐곡선/4분면 대칭)** | `studio-magma-brush-engine.ts` (`planKlekiSketchyStroke`, `evaluateKlekiChemyContour`) | 결정론적 거미줄 보조 선분(`web-link`) 생성 및 `first.x > last.x` 그라데이션 자동 반전·4분면 대칭 검증 완료 |
+

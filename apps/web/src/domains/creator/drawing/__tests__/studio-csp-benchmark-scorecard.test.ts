@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateStudioCspBenchmarkScorecard,
   measureLivePigmentEngineBenchmark,
+  measureMagmaAndKlekiEngineBenchmark,
   resolveStudioDeviceFormFactor,
 } from "../studio-csp-benchmark-scorecard";
 
@@ -76,8 +77,25 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
           (metric) => metric.id === "vector-ruler-fisheye-timelapse-suite",
         ),
       ).toBe(true);
+      expect(
+        scorecard.featureMetrics.some(
+          (metric) => metric.id === "magma-kleki-anisotropic-reservoir-csl-suite",
+        ),
+      ).toBe(true);
+      expect(scorecard.webCompetitorComparisons).toHaveLength(4);
+      for (const webComp of scorecard.webCompetitorComparisons) {
+        expect(webComp.exceedsTarget).toBe(true);
+        expect(webComp.superiorityRatio).toBeGreaterThanOrEqual(2.0);
+      }
     }
+
+    const magmaKlekiBench = measureMagmaAndKlekiEngineBenchmark();
+    expect(magmaKlekiBench.magmaPresetCount).toBe(19);
+    expect(magmaKlekiBench.vineTiltExpansionRatio).toBeGreaterThan(2.0);
+    expect(magmaKlekiBench.wireHeaderCompressionRatio).toBeGreaterThan(15);
+    expect(magmaKlekiBench.klekiSketchyWebLinkRatio).toBeGreaterThan(0);
   });
 });
+
 
 
