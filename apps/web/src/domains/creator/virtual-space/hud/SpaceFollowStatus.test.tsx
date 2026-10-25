@@ -66,4 +66,12 @@ describe("함께 걷기 상태 칩", () => {
     fireEvent.click(screen.getByRole("button", { name: "Bob 따라가는 중" }));
     expect(actions.onStopFollowing).toHaveBeenCalledOnce();
   });
+
+  it("여러 명이 나를 따라오면 '외 N명이 따라오는 중'으로 묶어 보여 준다", () => {
+    const actions = handlers();
+    render(<SpaceFollowStatus followingName={null} followedByName="Cleo" followedByNames={["Cleo", "Dara", "Eli"]} config={DEFAULT_STUDIO_FOLLOW_CONFIG} {...actions} />);
+    const chip = screen.getByRole("button", { name: "Cleo 님 외 2명이 따라오는 중" });
+    fireEvent.click(chip);
+    expect(actions.onStopLeading).toHaveBeenCalledOnce();
+  });
 });

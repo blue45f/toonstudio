@@ -133,6 +133,26 @@ describe("useSpaceShortcuts", () => {
     expect(ignored.defaultPrevented).toBe(false);
   });
 
+  it("U와 Ctrl·⌘+U는 조용히 모드를 켜고 끄며(한글 자판 ㅕ도), 입력 요소 안에서는 무시한다", () => {
+    const onToggleQuietMode = vi.fn<() => void>();
+    renderHook(() => useSpaceShortcuts({ ...handlers(), onToggleQuietMode }));
+    const plainU = new KeyboardEvent("keydown", { key: "u", code: "KeyU", bubbles: true, cancelable: true });
+    window.dispatchEvent(plainU);
+    expect(plainU.defaultPrevented).toBe(true);
+    const ctrlU = new KeyboardEvent("keydown", { key: "u", code: "KeyU", ctrlKey: true, bubbles: true, cancelable: true });
+    window.dispatchEvent(ctrlU);
+    expect(ctrlU.defaultPrevented).toBe(true);
+    fireEvent.keyDown(window, { key: "ㅕ", code: "KeyU", metaKey: true });
+    const input = document.createElement("input");
+    document.body.append(input);
+    try {
+      fireEvent.keyDown(input, { key: "u", code: "KeyU", ctrlKey: true });
+    } finally {
+      input.remove();
+    }
+    expect(onToggleQuietMode).toHaveBeenCalledTimes(3);
+  });
+
   it("+·=는 확대, -·_는 축소, 0은 원래 크기이고 이벤트의 기본 동작을 막는다", () => {
     const onZoom = vi.fn<(action: "in" | "out" | "reset") => void>();
     renderHook(() => useSpaceShortcuts({ ...handlers(), onZoom }));

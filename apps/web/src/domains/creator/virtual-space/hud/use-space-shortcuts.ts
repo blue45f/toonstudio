@@ -26,15 +26,20 @@ export interface SpaceShortcutHandlers {
   readonly onLocate?: () => void;
   /** K: 구역·팀원·명령 빠른 찾기 팔레트 열기. */
   readonly onSearch?: () => void;
+  /** U 또는 Ctrl·⌘+U: 조용히 모드(바로 옆 사람만 듣기) 켜고 끄기(게더타운 Quiet Mode 대응). */
+  readonly onToggleQuietMode?: () => void;
 }
 
 const TEXT_ENTRY_SELECTOR = 'input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]';
 
+function isTextEntryTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest(TEXT_ENTRY_SELECTOR));
+}
+
 /** 입력 요소·IME 조합·보조키 조합은 HUD 단축키로 해석하지 않는다. */
 export function spaceShortcutIgnored(event: Pick<KeyboardEvent, "isComposing" | "ctrlKey" | "metaKey" | "altKey" | "target" | "defaultPrevented">): boolean {
   if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return true;
-  const target = event.target;
-  return target instanceof Element && Boolean(target.closest(TEXT_ENTRY_SELECTOR));
+  return isTextEntryTarget(event.target);
 }
 
 /**
@@ -60,6 +65,21 @@ export function useSpaceShortcuts(handlers: SpaceShortcutHandlers, enabled = tru
         if (latest.current.onEscape()) event.preventDefault();
         return;
       }
+      const key = shortcutKey(event);
+      if (
+        !event.repeat
+        && !event.defaultPrevented
+        && !event.isComposing
+        && !event.altKey
+        && (event.ctrlKey || event.metaKey)
+        && key === "u"
+        && latest.current.onToggleQuietMode
+        && !isTextEntryTarget(event.target)
+      ) {
+        event.preventDefault();
+        latest.current.onToggleQuietMode();
+        return;
+      }
       if (event.repeat || spaceShortcutIgnored(event)) return;
       if (event.key === "Enter" && latest.current.onChat) {
         const target = event.target;
@@ -68,7 +88,6 @@ export function useSpaceShortcuts(handlers: SpaceShortcutHandlers, enabled = tru
         latest.current.onChat();
         return;
       }
-      const key = shortcutKey(event);
       const emoteId = studioEmoteIdForKey((latest.current.emoteKeymap ?? studioEmoteKeymapStore).getSnapshot(), key);
       if (emoteId) {
         event.preventDefault();
@@ -82,6 +101,7 @@ export function useSpaceShortcuts(handlers: SpaceShortcutHandlers, enabled = tru
       else if (key === "h" && latest.current.onDesk) { event.preventDefault(); latest.current.onDesk(); }
       else if (key === "l" && latest.current.onLocate) { event.preventDefault(); latest.current.onLocate(); }
       else if (key === "k" && latest.current.onSearch) { event.preventDefault(); latest.current.onSearch(); }
+      else if (key === "u" && latest.current.onToggleQuietMode) { event.preventDefault(); latest.current.onToggleQuietMode(); }
       else if (event.key === "?") { event.preventDefault(); latest.current.onHelp(); }
     };
     window.addEventListener("keydown", onKeyDown);

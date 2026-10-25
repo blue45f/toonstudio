@@ -4,6 +4,9 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SpaceCoworkSheet, type SpaceCoworkPeer } from "./SpaceCoworkSheet";
+import { SpaceProximityStrip } from "./SpaceProximityStrip";
+import { SpaceRequestToast } from "./SpaceRequestToast";
+import { SpaceStatusMenu } from "./SpaceStatusMenu";
 import { SpaceZoneWorkbar } from "./SpaceZoneWorkbar";
 import { spaceAutoMeetingDecision } from "./use-space-auto-meeting";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./space-zone-workflow";
@@ -130,5 +133,72 @@ describe("같이 작업하기 요청 흐름", () => {
     expect(lead.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(lead);
     expect(far.onRequest).not.toHaveBeenCalled();
+  });
+
+  it("근처 스트립에서 1:1 귓속말 버튼을 누르면 귓속말을 켜고 끌 수 있다", () => {
+    const onWhisper = vi.fn();
+    render(
+      <SpaceProximityStrip
+        people={[{ id: "bob", name: "Bob", activity: "available", avatarIndex: 0, inConversation: false }]}
+        npcs={[]}
+        artStyle="webtoon"
+        socialDisabled={null}
+        followingPeerId={null}
+        whisperPeerId="bob"
+        onWave={vi.fn()}
+        onTalk={vi.fn()}
+        onFollow={vi.fn()}
+        onWhisper={onWhisper}
+        onNpcTalk={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("1:1 귓속말 중")).toBeTruthy();
+    const button = screen.getByRole("button", { name: "Bob에게 1:1 귓속말" });
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(button);
+    expect(onWhisper).toHaveBeenCalledExactlyOnceWith("bob");
+  });
+
+  it("손 흔들기 인사를 받으면 토스트에서 바로 인사 돌려주기·다가가기를 실행할 수 있다", () => {
+    const onWaveBack = vi.fn();
+    const onApproach = vi.fn();
+    render(
+      <SpaceRequestToast
+        requests={[]}
+        greetings={[
+          {
+            id: "greet-1",
+            peer: { sessionId: "bob", displayName: "Bob", role: "editor" },
+            direction: "incoming",
+            status: "received",
+            createdAt: Date.now(),
+          },
+        ]}
+        acceptDisabledReason={null}
+        onRespond={vi.fn()}
+        onOpenPeople={vi.fn()}
+        onWaveBack={onWaveBack}
+        onApproach={onApproach}
+      />,
+    );
+    expect(screen.getByText(/님이 손을 흔들었어요/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Bob님에게 인사 돌려주기" }));
+    expect(onWaveBack).toHaveBeenCalledExactlyOnceWith("bob");
+  });
+
+  it("대화 가능 이외의 상태에서는 자동 해제 시간(바꿀 때까지·30분·1시간)을 고를 수 있다", () => {
+    const onStatusExpiry = vi.fn();
+    render(
+      <SpaceStatusMenu
+        status="focused"
+        onStatus={vi.fn()}
+        onEditCharacter={vi.fn()}
+        statusExpiryMinutes={null}
+        onStatusExpiry={onStatusExpiry}
+      />,
+    );
+    const group = screen.getByRole("radiogroup", { name: "상태 자동 해제" });
+    fireEvent.click(within(group).getByRole("radio", { name: "30분 뒤 해제" }));
+    expect(onStatusExpiry).toHaveBeenCalledExactlyOnceWith(30);
   });
 });

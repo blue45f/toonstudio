@@ -237,9 +237,9 @@ import {
   writeStudioVirtualSpacePositionRecords,
 } from "./studio-virtual-space-page-helpers";
 import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
-import { SPACE_PROXIMITY_MEDIA_RADIUS, spacePrivateZoneAt, spaceProximityMediaScopePeers, type SpaceProximityRangeMode } from "./hud/space-proximity-media";
+import { SPACE_PROXIMITY_MEDIA_RADIUS } from "./hud/space-proximity-media";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
-import { useSpaceProximityMedia } from "./hud/use-space-proximity-media";
+import { useSpaceProximityMedia, useSpaceProximityScope } from "./hud/use-space-proximity-media";
 import { useSpaceWorkProject } from "./hud/use-space-work-project";
 import { useSpaceRolePreset } from "./use-space-role-preset";
 import { useStudioSpaceLighting } from "./use-studio-space-lighting";
@@ -399,8 +399,6 @@ export function VirtualSpaceExperience({
     setTourProgress((current) => current[key] ? current : { ...current, [key]: true });
   }, []);
   const [zone, setZone] = useState<StudioVirtualSpaceZoneChange | null>(null);
-  // 근접 음성 범위(기본/좁게/끄기). 상태 메뉴에서 고르고, 세션 동안만 유지한다.
-  const [proximityRange, setProximityRange] = useState<SpaceProximityRangeMode>("standard");
   const [nearbyNpcs, setNearbyNpcs] = useState<readonly StudioVirtualSpaceNearbyNpc[]>([]);
   const [stuck, setStuck] = useState(false);
   const [engineStatus, setEngineStatus] = useState<StudioVirtualSpaceEngineStatus>("loading");
@@ -1335,6 +1333,16 @@ export function VirtualSpaceExperience({
     setPanel((current) => current === next ? null : next);
   }, []);
   const toggleMap = useCallback(() => { setDockPopover(null); setMapOpen((current) => !current); }, []);
+  const {
+    proximityRange, setProximityRange, toggleQuietMode,
+    whisperPeerId, setWhisperPeerId, whisperPeerName, toggleWhisper,
+    statusExpiryMinutes, setStatusExpiryMinutes,
+    scopeIds: proximityScopeIds, scopeNames: proximityScopeNames,
+  } = useSpaceProximityScope({
+    selfPoint: snapshot.self, activity, userStatus: snapshot.self.userStatus ?? null, ghostMode, peers: snapshot.peers,
+    acousticZones: worldManifest.acousticZones, blockedIds: socialSnapshot.blockedPeerIds,
+    fallbackPeerLabel: bt("팀원", "Teammate"), onExpireStatus: setPresenceStatus,
+  });
   useSpaceShortcuts({
     onEmote: emote,
     onToggleMap: toggleMap,
@@ -1344,7 +1352,9 @@ export function VirtualSpaceExperience({
     onSearch: () => { setDockPopover(null); setSearchOpen(true); },
     onEscape: closeTopLayer,
     onZoom: userZoom.available ? (action) => engineBridge.userZoom.apply(action) : undefined,
-    onDesk: () => { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); }, onLocate: () => engineBridge.cameraPan.recenter(),
+    onDesk: () => { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); },
+    onLocate: () => engineBridge.cameraPan.recenter(),
+    onToggleQuietMode: toggleQuietMode,
   }, worldReady && !searchOpen);
   const exitSpace = useCallback(() => {
     writeStudioVirtualSpaceSessionPoint(positionScope, selfRef.current);
@@ -1373,21 +1383,6 @@ export function VirtualSpaceExperience({
   }, [bt, mediaAvailable, notify]);
 
   // ── 가까이 가면 영상: 한 번 켜면 근처 팀원(같은 프라이빗 구역끼리)과 자동으로 연결·해제한다 ──
-  const proximityPrevious = useRef<ReadonlySet<string>>(new Set());
-  const acousticZones = worldManifest.acousticZones;
-  const proximityPeers = spaceProximityMediaScopePeers({
-    self: { point: snapshot.self, activity, privateZoneId: spacePrivateZoneAt(acousticZones, snapshot.self) },
-    peers: snapshot.peers.map((peer) => ({ id: peer.participant.sessionId, point: peer.state, activity: peer.state.activity,
-      privateZoneId: spacePrivateZoneAt(acousticZones, peer.state) })),
-    previous: proximityPrevious.current,
-    blockedIds: socialSnapshot.blockedPeerIds,
-    range: proximityRange,
-  });
-  const proximityGainById = new Map(proximityPeers.map((peer) => [peer.id, peer.gain] as const));
-  const proximityKey = proximityPeers.map((peer) => peer.id).join("\u0000");
-  // id 목록은 키 문자열에서 그대로 파생한다. 미디어 훅이 내용 비교로 재적용을 막아 새 배열이어도 안전하다.
-  const proximityScopeIds = proximityKey ? proximityKey.split("\u0000") : [];
-  useEffect(() => { proximityPrevious.current = new Set(proximityKey ? proximityKey.split("\u0000") : []); }, [proximityKey]);
   const proximityAvailable = mediaAvailable && signedIn && worldReady && !authoringMode && snapshot.direct
     && connectivity.serverAvailable && Boolean(live.room?.direct);
   const proximity = useSpaceProximityMedia({ participant: live.room?.participant, port: live.room?.direct,
@@ -1454,9 +1449,6 @@ export function VirtualSpaceExperience({
     notify(bt("근접 영상을 켜면 근처 팀원과 화면을 공유할 수 있어요.", "Turn on proximity video to share your screen with teammates nearby."), "info");
     setMediaConsentOpen(true);
   };
-  const proximityScopeNames = proximityScopeIds.map((id) => ({ id,
-    name: snapshot.peers.find((peer) => peer.participant.sessionId === id)?.participant.displayName ?? bt("팀원", "Teammate"),
-    gain: proximityGainById.get(id) }));
 
 
   const zoneRoomId = zone?.roomId ?? currentRoom?.id ?? null;
@@ -1880,6 +1872,7 @@ export function VirtualSpaceExperience({
     ? <SpaceDock self={selfDock} media={dockMedia} panel={panel} mapOpen={mapOpen}
       peopleBadge={peopleBadge} popover={dockPopover} moreItems={moreItems} workLauncher={workLauncher} panelId={SIDE_PANEL_ID}
       dockRef={desktopDockRef} proximityRange={proximityRange} onProximityRange={setProximityRange}
+      statusExpiryMinutes={statusExpiryMinutes} onStatusExpiry={setStatusExpiryMinutes}
       onPopover={setDockPopover} onStatus={setPresenceStatus} onEditCharacter={() => setPanel("build")} onEmote={emote}
       onTogglePanel={togglePanel} onToggleMap={toggleMap} onExit={exitSpace} />
     : <SpaceMobileDock popover={dockPopover} peopleBadge={peopleBadge} peopleOpen={panel === "people"} mapOpen={mapOpen}
@@ -1962,13 +1955,15 @@ export function VirtualSpaceExperience({
           {worldRuleGate.element}
           <SpaceTownBanner personal={personal} spotlightActive={Boolean(spotlightEventId)} onStopSpotlight={stopSpotlight} onViewTown={() => setPanel("town")} />
           {spaceHudShowsEventBanner({ desktop, coachOpen: coach !== null }) ? <SpaceEventBanner banner={spaceUi.banner} onDismiss={spaceUi.dismissBanner} /> : null}
-          {!personal ? <SpaceRequestToast requests={incomingRequests} acceptDisabledReason={socialFocused ? bt("집중·자리 비움 중에는 수락할 수 없어요", "You can't accept while focusing or away") : null}
-            onRespond={respondToRequest} onOpenPeople={() => setPanel("people")} /> : null}
+          {!personal ? <SpaceRequestToast requests={incomingRequests} greetings={socialSnapshot.greetings}
+            acceptDisabledReason={socialFocused ? bt("집중·자리 비움 중에는 수락할 수 없어요", "You can't accept while focusing or away") : null}
+            onRespond={respondToRequest} onOpenPeople={() => setPanel("people")} onWaveBack={waveTo} onApproach={approachOfficePeer} /> : null}
           <SpaceProximityVideo phase={proximity.phase} snapshot={proximity.snapshot} busy={proximity.busy} scopeNames={proximityScopeNames}
             selfName={localName} waitingReason={proximityWaitingReason}
             onToggleCamera={proximity.toggleCamera} onToggleMic={toggleMicByUser} onToggleScreen={proximity.toggleScreen} onStop={proximity.stop} />
           {worldReady ? <SpaceProximityStrip people={nearbyPeopleCards} npcs={nearbyNpcCards} artStyle={artStyle}
-            socialDisabled={socialDisabledReason} followingPeerId={followingPeerId} onCowork={(id) => openCowork(id)}
+            socialDisabled={socialDisabledReason} followingPeerId={followingPeerId} whisperPeerId={whisperPeerId}
+            onCowork={(id) => openCowork(id)} onWhisper={toggleWhisper}
             onWave={waveTo} onTalk={(id) => requestActivity(id, "talk")}
             onFollow={(id) => { if (followingPeerId === id) cancelFollowing(); else startFollowingPeer(id); }}
             onNpcTalk={(id) => { const npc = nearbyNpcs.find((item) => item.id === id); if (npc?.interaction) handleEngineNpcInteract(npc.interaction, npc.npc); }} /> : null}
@@ -1995,8 +1990,12 @@ export function VirtualSpaceExperience({
                   : bt(`${guideTarget.labelKo}까지 안내 중`, `Guiding you to ${guideTarget.labelEn}`)}</p>
               <button type="button" className="space-pill-button" onClick={() => setGuideTarget(null)}>{bt("안내 종료", "End guide")}</button>
             </div> : null}
-            <SpaceMovementStatus followingName={followingPeer?.participant.displayName ?? null} sharedActivity={sharedActivity} config={followConfig} cameraPan={engineBridge.cameraPan}
-              onStopFollowing={cancelFollowing} onStopLeading={finishSharedActivity} onConfig={updateFollowConfig} onRecentered={() => engineBridge.focusWorld()} />
+            <SpaceMovementStatus followingName={followingPeer?.participant.displayName ?? null} sharedActivity={sharedActivity}
+              socialRequests={socialSnapshot.requests} config={followConfig} cameraPan={engineBridge.cameraPan}
+              whisperPeerName={whisperPeerName} proximityRange={personal ? "standard" : proximityRange}
+              onStopFollowing={cancelFollowing} onStopLeading={finishSharedActivity}
+              onStopWhisper={() => setWhisperPeerId(null)} onResetProximityRange={() => setProximityRange("standard")}
+              onConfig={updateFollowConfig} onRecentered={() => engineBridge.focusWorld()} />
             {stuck ? <button type="button" className="space-status-chip space-status-chip--warn" data-space-interactive="true" onClick={() => engineBridge.requestUnstuck()}>
               <LifeBuoy size={16} aria-hidden />{bt("끼었나요? 제자리로 이동", "Stuck? Move to a safe spot")}
             </button> : null}
