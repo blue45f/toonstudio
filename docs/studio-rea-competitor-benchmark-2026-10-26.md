@@ -32,6 +32,8 @@
 | **Muse v9.0** (`com.meta.endo`) | 앱 번들 (`/Applications/Muse.app`) | `8958f759ebbe8ba62881ac0ab2891d42143a67a2216a3f76d40cbf12637048fb` | `ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14` | **353 entries**, `com.meta.prototypes.endo.attachment-reference` UTI |
 | **Blender** | 앱 번들 (`/Applications/Blender.app`) | `2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9` | `ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819` | 3D NPR/그리스펜슬·카메라·멀티패스 합성 비교 기준선 |
 | **Clip Studio Paint** | 지원 디렉터리 (`/Library/Application Support/CELSYS/CLIPStudio`) | `b3b5ccce892de714bf4b078aadbc7fdd435618f1416ac682d6e4dbf83201b1cf` | `ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c` | 웹툰 소재·PSD 레이어 호환성 비교 기준선 |
+| **Procreate 5.3 (Valkyrie / Silica Engine)** | 공식 웹·핸드북 앱 번들 (`procreate.com/ipad`, `help.procreate.com/procreate/handbook`) | `b306c5432da2e08e1d5f7b55944db163f2576323e190ecfc09b7fc18174a8a1e` | AST: `ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`<br>iPad 캡처: `ev_caf7a7d6599efecf5d582b6a858c46ab9f42d14f3b4a7e1ef6cc8145f400f89f`<br>Handbook 캡처: `ev_4e840923fe036f4cb48c8f95cc09dfdbc27266e01207dc73f0f1e1c8824b3a15` | **1,542,947B**, **381,683 AST nodes**, **1,479 findings** (18대 브러시 세트·12카테고리 Brush Studio·Pencil Filters·슈퍼파워 명세) |
+| **Procreate 5.3 (`SilicaBrush` / `SilicaDocument` / `.swatches`)** | 네이티브 아카이브 (`Brush.archive`, `Document.archive`, `Swatches.json`) | `af8e212759063fd168a70510c1cfbcb3482a8e7d29f6a02ac768f49da681d377` (`Brush.archive`)<br>`dbf751cf356cb99dad3b035f88f24eab61459445cad7dda258bf9dcad01958de` (`Document.archive`)<br>`a5ad1fda6895b147d4d9ab95a651ca3d74af4338d99bb0461f8301e84d056153` (`.swatches`) | `Brush.archive`: `ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`<br>`Document.archive`: `ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900`<br>`.swatches`: `ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea` | `NSKeyedArchiver` 바이너리 plist `SilicaBrush`(92 entries), `SilicaDocument`(256×256 타일 그리드), `Swatches.json`(30슬롯 HSV) |
 
 ---
 
@@ -126,7 +128,27 @@
 
 ---
 
-## 4. ToonStudio 신규 구현 모듈 10종 정밀 매핑
+### 3.5 Procreate 5.3 (`Valkyrie` / `SilicaBrush` / `SilicaDocument` / `.swatches`)
+
+#### A. Observed Facts (관측 사실)
+- **웹 애플리케이션 및 공식 핸드북 번들 역공학**:
+  - `https://procreate.com/ipad` 라이브 캡처(`SHA-256: ba8480bbc26d2dbfadf3287bcee0e4329833a2eed16249d47047d1831703cb6e`, `evidence_id: ev_caf7a7d6599efecf5d582b6a858c46ab9f42d14f3b4a7e1ef6cc8145f400f89f`, 스크립트 추출 `ev_7ca5f2a0ffc0d43f0d115bbbbb51d9585ca1391df247f9282c21f1f2a3b06f7b`) 및 `https://help.procreate.com/procreate/handbook/introduction` 라이브 캡처(`SHA-256: f568edb6bbd18f081cd7c439007e3268c5737226bb848807c2defe6155819d2f`, `evidence_id: ev_4e840923fe036f4cb48c8f95cc09dfdbc27266e01207dc73f0f1e1c8824b3a15`, 스크립트 추출 `ev_af0a9ac4a571dacc8add436b2a48d7fa161d09c8ef56694ec1882d2a8fd7eba1`).
+  - 통합 JS 번들(`procreate-ipad-entry.js` + `procreate-ipad-features.js` + `procreate-handbook-app.js`, 총 **1,542,947B**, `SHA-256: b306c5432da2e08e1d5f7b55944db163f2576323e190ecfc09b7fc18174a8a1e`, `evidence_id: ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`)에서 **381,683개 AST 노드**와 **1,479개 정적 발견 항목** 관측.
+- **네이티브 `NSKeyedArchiver` 바이너리 plist 및 아카이브 구조**:
+  - `Brush.archive` (`SilicaBrush`, `SHA-256: af8e212759063fd168a70510c1cfbcb3482a8e7d29f6a02ac768f49da681d377`, `evidence_id: ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`, `.brush` 패키지 `ev_a22371fb13e34c0c2ee15a6558a0598c4040694e1cfbc92347cf81cb121cb920`): 92개 아카이브 오브젝트 및 12대 카테고리 브러시 키(`plotSpacing`, `plotJitter`, `fallOff`, `streamlineAmount`, `stabilizationAmount`, `motionFilteringAmount`, `motionFilteringExpression`, `taperStartLength`, `taperEndLength`, `taperSize`, `taperTouchSize`, `grainMoving`, `grainDepth`, `wetMixDilution`, `wetMixCharge`, `wetMixAttack`, `wetMixPull`, `dualBrushBlendMode`, `metallicScale`, `roughnessScale`) 관측.
+  - `Document.archive` (`SilicaDocument`, `SHA-256: dbf751cf356cb99dad3b035f88f24eab61459445cad7dda258bf9dcad01958de`, `evidence_id: ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900`, `.procreate` 패키지 `ev_e25192bd0d4ecdee80847611488deb83e33a395f40d5d691fd82f28e2ed7caf6`): `tileSize: 256`, `size: "{2048, 2048}"`, `orientation`, `strokeCount`, `videoEnabled` 및 `256×256` `.chunk` 타일 아카이브 구조 관측.
+  - `Swatches.json` (`.swatches`, `SHA-256: a5ad1fda6895b147d4d9ab95a651ca3d74af4338d99bb0461f8301e84d056153`, `evidence_id: ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea`): `name` 및 30슬롯 `hue`/`saturation`/`brightness`/`alpha`/`colorSpace` JSON 배열 구조 관측.
+
+#### B. Inferences (설계 의도 및 알고리즘 구조 추론)
+- **오디오 DSP 영감 영위상(Zero-Phase) `Motion Filtering`**: 기존 `StreamLine`과 `Stabilization`은 이동평균 지연으로 인해 획 끝점이 펜촉을 뒤따라오는 끈 지연(lag)이 발생한다. 반면 `motionFilteringAmount` + `motionFilteringExpression`은 전후방 영위상 중심선 대비 횡방향(법선) 고주파 손떨림만 대역 감쇠시켜 **끝점 지연 없이 손떨림 극값만 제거**하는 구조다.
+- **`Pencil Filters` 비파괴 공간 마스크**: 15종 조정 필터를 레이어 전체에 즉시 굽는 대신 브러시 댑으로 공간 알파 마스크(`0..1`)를 칠하거나 지우면서 필터 파라미터를 실시간 재조정할 수 있도록 분리한 구조다.
+
+#### C. Unknowns (미확정 영역)
+- iPadOS 전용 Metal 셰이더 바이너리(Valkyrie GPU 파이프라인)의 하드웨어 레지스터 스케줄링 세부 사항은 정적 웹·아카이브 번들 분석 범위 밖이다.
+
+---
+
+## 4. ToonStudio 신규 구현 모듈 14종 정밀 매핑
 
 위 REA 정적 역공학 증거를 바탕으로 ToonStudio 창작 스튜디오(`apps/web/src/domains/creator/`)에 클린룸 자체 구현으로 통합된 10개 핵심 모듈과 근거 `evidence_id`의 매핑은 다음과 같다.
 
@@ -142,6 +164,10 @@
 | 8 | `apps/web/src/domains/creator/ai/studio-ai-shaper-bone-preset-engine.ts` | **SHAPER v1.05**<br>`ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541`<br>`ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328` | 캐릭터 설정 텍스트·장르·연령·등신대 입력으로부터 본 스케일 벡터와 얼굴/체형 블렌드셰이프 프리셋을 결정론적으로 추천·블렌딩하는 엔진 |
 | 9 | `apps/web/src/domains/creator/canvas/studio-handwriting-baseline-beautifier.ts` | **Goodnotes v7.1.28**<br>`ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81` | 손글씨 대사·효과음(SFX) 스트로크 묶음에서 기준선(`BaselineEstimation`) 기울기·행간을 추정하고, 필압·개성을 유지한 채 줄 맞춤·자간·곡률을 정돈(`HandwritingBeautificationCore` 대응)하는 미화 엔진 |
 | 10 | `apps/web/src/domains/creator/canvas/studio-spatial-reference-lasso-board.ts` | **Muse v9.0**<br>`ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14` | 무한 공간 보드에서 자유 올가미(Polygon Lasso) 폐곡선 판정(Point-in-Polygon / AABB 교차)으로 첨부 레퍼런스 카드(`attachment-reference`)와 스케치 스트로크를 클러스터링·정렬·컷 인계하는 보드 엔진 |
+| 11 | `apps/brush-lab/src/engine/ink/procreate-streamline.ts` | **Procreate 5.3**<br>`ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a` | Procreate 3단계 보정(`StreamLine` + `Stabilization` + 오디오 DSP 영감 영위상 `Motion Filtering`), 펜/터치 독립 이중 테이퍼(`evaluateProcreateDualTaperEnvelope`), `QuickShape` + `Edit Shape` 정형 변환 엔진 |
+| 12 | `apps/web/src/domains/creator/drawing/studio-procreate-brush-studio.ts` | **Procreate 5.3**<br>`ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`<br>`ev_a22371fb13e34c0c2ee15a6558a0598c4040694e1cfbc92347cf81cb121cb920`<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a` | Procreate 12대 카테고리 `SilicaBrush` 엔진(Stroke Path, Stabilization, Taper, Shape, Grain, Rendering 6모드, Wet Mix, Color Dynamics, Dynamics, Apple Pencil Hover/Barrel Roll, Properties/Reset Point, 3D Materials) 및 18개 브러시 세트·25종 시그니처 프리셋 |
+| 13 | `apps/web/src/domains/creator/drawing/studio-procreate-adjustments-engine.ts` | **Procreate 5.3**<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`<br>`ev_af0a9ac4a571dacc8add436b2a48d7fa161d09c8ef56694ec1882d2a8fd7eba1` | `ProcreatePencilFilterSession` 비파괴 브러시 마스크 세션 및 `Perspective Blur`, `Bloom`, `Glitch`(4모드), `Chromatic Aberration`(`Transverse`/`Displace`), `Noise`(`Clouds`/`Ridges`/`Turbulence`), `Liquify`(`Crystals`/`Edge`/`Adjust`), `Clone` 도장 엔진 |
+| 14 | `apps/web/src/domains/creator/drawing/studio-procreate-superpowers.ts` | **Procreate 5.3**<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`<br>`ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900`<br>`ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea` | Color Harmony 5모드, ColorDrop(Threshold + Reference Layer + Continue Filling), 접근성 Color Naming, QuickMenu 6슬롯 플릭, Drawing/Animation/Page Assist, 3D Lighting Studio, Single-Touch 제스처, `.swatches`/`.brush`/`.procreate` 네이티브 코덱 |
 
 ---
 

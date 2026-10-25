@@ -35,6 +35,11 @@ import {
   STUDIO_MAGMA_BRUSH_PRESETS,
 } from "./studio-magma-brush-engine";
 import {
+  evaluateProcreateHoverPreview,
+  evaluateProcreateSilicaDab,
+  STUDIO_PROCREATE_BRUSH_PRESETS,
+} from "./studio-procreate-brush-studio";
+import {
   vectorizeFreehandStroke,
   type StudioVectorizerPoint,
 } from "./studio-stroke-vectorizer";
@@ -289,8 +294,48 @@ export function StudioNaturalMediaShowcase({
   const [selectedMagmaPresetId, setSelectedMagmaPresetId] = useState<string>(
     "magma-vine-charcoal-tilt",
   );
+  const [selectedProcreatePresetId, setSelectedProcreatePresetId] = useState<string>(
+    "procreate-syrup",
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [strokeWeight, setStrokeWeight] = useState(1);
+
+  const procreateFeaturedPresets = useMemo(
+    () => STUDIO_PROCREATE_BRUSH_PRESETS.slice(0, 8),
+    [],
+  );
+  const activeProcreatePreset = useMemo(
+    () =>
+      procreateFeaturedPresets.find((p) => p.id === selectedProcreatePresetId) ??
+      procreateFeaturedPresets[0]!,
+    [procreateFeaturedPresets, selectedProcreatePresetId],
+  );
+  const activeProcreateTelemetry = useMemo(() => {
+    const dab = evaluateProcreateSilicaDab(activeProcreatePreset.config, {
+      baseSizePx: 24,
+      pressure01: 0.82,
+      tiltDeg: 52,
+      azimuthRad: 0.4,
+      barrelRollRad: 0.65,
+      strokeDirectionRad: 0.4,
+      speed01: 0.3,
+      strokeProgress01: 0.2,
+      primaryColor: { r: 0.25, g: 0.52, b: 0.96 },
+      secondaryColor: { r: 0.95, g: 0.42, b: 0.62 },
+      stampIndex: 1,
+      strokeSeed: 2026,
+    });
+    const hover = evaluateProcreateHoverPreview(activeProcreatePreset.config, {
+      baseSizePx: 24,
+      hoverAltitude01: 0.2,
+      tiltDeg: 52,
+      azimuthRad: 0.4,
+      barrelRollRad: 0.65,
+      primaryColor: { r: 0.25, g: 0.52, b: 0.96 },
+      secondaryColor: { r: 0.95, g: 0.42, b: 0.62 },
+    });
+    return { dab, hover };
+  }, [activeProcreatePreset]);
 
   const magmaSignaturePresets = useMemo(
     () => STUDIO_MAGMA_BRUSH_PRESETS.filter((p) => p.category === "signature-pro"),
@@ -547,6 +592,96 @@ export function StudioNaturalMediaShowcase({
               <span>·</span>
               <span>
                 {tx("와이어 압축")}: {activeMagmaTelemetry.wire.compressionRatioVsJson}×
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Procreate Brush Studio (SilicaBrush 12카테고리) 시그니처 엔진 바 (WAI-ARIA Roving Tabindex) */}
+        <div
+          className="mt-3 rounded-2xl border border-line bg-card/60 px-3.5 py-2.5"
+          data-studio-procreate-signature-bar="true"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-accent">
+              {tx("Procreate 브러시 스튜디오:")}
+            </span>
+            <div
+              role="radiogroup"
+              aria-label={tx("Procreate 시그니처 브러시 프리셋")}
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {procreateFeaturedPresets.map((preset, idx) => {
+                const isSelected = preset.id === activeProcreatePreset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
+                    data-studio-procreate-preset={preset.id}
+                    onClick={() => setSelectedProcreatePresetId(preset.id)}
+                    onKeyDown={(e) => {
+                      let nextIdx = -1;
+                      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                        nextIdx = (idx + 1) % procreateFeaturedPresets.length;
+                      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                        nextIdx =
+                          (idx - 1 + procreateFeaturedPresets.length) %
+                          procreateFeaturedPresets.length;
+                      } else if (e.key === "Home") {
+                        nextIdx = 0;
+                      } else if (e.key === "End") {
+                        nextIdx = procreateFeaturedPresets.length - 1;
+                      }
+                      if (nextIdx >= 0) {
+                        e.preventDefault();
+                        const target = procreateFeaturedPresets[nextIdx];
+                        if (target) {
+                          setSelectedProcreatePresetId(target.id);
+                          const container = e.currentTarget.parentElement;
+                          const buttons =
+                            container?.querySelectorAll<HTMLButtonElement>(
+                              '[role="radio"]',
+                            );
+                          buttons?.[nextIdx]?.focus();
+                        }
+                      }
+                    }}
+                    className={
+                      isSelected
+                        ? "rounded-full border border-accent bg-accent/20 px-2.5 py-1 text-[11px] font-semibold text-fg"
+                        : "rounded-full border border-line bg-raised/70 px-2.5 py-1 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                    }
+                  >
+                    {tx(preset.nameKo)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-2">
+            <span>{tx(activeProcreatePreset.descriptionKo)}</span>
+            <span className="inline-flex items-center gap-2 font-mono text-[10px] text-fg-3">
+              <span
+                aria-hidden="true"
+                className="inline-block h-2.5 w-2.5 rounded-full border border-line [forced-color-adjust:none]"
+                style={{
+                  forcedColorAdjust: "none",
+                  backgroundColor: `rgb(${Math.round(activeProcreateTelemetry.dab.color.r * 255)}, ${Math.round(activeProcreateTelemetry.dab.color.g * 255)}, ${Math.round(activeProcreateTelemetry.dab.color.b * 255)})`,
+                }}
+              />
+              <span>
+                {tx("호버 반경")}: {activeProcreateTelemetry.hover.footprintDiameterPx.toFixed(1)}px
+              </span>
+              <span>·</span>
+              <span>
+                {tx("글레이즈")}: {Math.round(activeProcreateTelemetry.dab.glazeCeiling01 * 100)}%
+              </span>
+              <span>·</span>
+              <span>
+                {tx("그레인 깊이")}: {Math.round(activeProcreateTelemetry.dab.grainDepthEffective01 * 100)}%
               </span>
             </span>
           </div>

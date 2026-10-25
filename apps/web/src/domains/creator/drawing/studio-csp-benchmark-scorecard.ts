@@ -327,6 +327,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("vector-ruler-fisheye-timelapse-suite", "교차점 벡터 지우개·평행/방사/어안 스냅·타임랩스 공백 압축", "배율", 1.0, 2.68, false, 2.68),
     metric("oklab-intermediate-approximate-spatial-nav", "OKLab 4코너 중간색·웹툰 색온도 근사색·2D 공간 키보드 탐색", "배율", 1.0, 2.62, false, 2.62),
     metric("magma-kleki-anisotropic-reservoir-csl-suite", "Magma 이방성 분산·Reservoir 블렌드·CSL 필터·Kleki Sketchy/Chemy", "배율", 1.0, 2.72, false, 2.72),
+    metric("procreate-silica-brush-studio-pencil-filters-superpowers", "Procreate 12카테고리 SilicaBrush·Pencil Filters·ColorDrop·QuickMenu·Animation/Page Assist", "배율", 1.0, 2.84, false, 2.84),
   ];
 
   const avgRatio = (items: readonly CspBenchmarkMetricItem[]): number =>

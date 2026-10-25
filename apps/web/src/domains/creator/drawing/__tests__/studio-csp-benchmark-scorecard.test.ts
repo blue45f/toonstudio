@@ -6,6 +6,7 @@ import {
   measureMagmaAndKlekiEngineBenchmark,
   resolveStudioDeviceFormFactor,
 } from "../studio-csp-benchmark-scorecard";
+import { measureProcreateSilicaEngineBenchmark } from "../studio-procreate-silica-codecs";
 
 describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 검증)", () => {
   it("뷰포트 폭과 포인터 특성에 따라 데스크톱·태블릿·모바일(compact) 폼팩터를 판별한다", () => {
@@ -94,6 +95,12 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(magmaKlekiBench.vineTiltExpansionRatio).toBeGreaterThan(2.0);
     expect(magmaKlekiBench.wireHeaderCompressionRatio).toBeGreaterThan(15);
     expect(magmaKlekiBench.klekiSketchyWebLinkRatio).toBeGreaterThan(0);
+
+    const procreateBench = measureProcreateSilicaEngineBenchmark();
+    expect(procreateBench.procreateBrushSetCount).toBe(18);
+    expect(procreateBench.procreatePresetCount).toBeGreaterThanOrEqual(24);
+    expect(procreateBench.vineCharcoalTiltExpansionRatio).toBeGreaterThan(1.8);
+    expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
   });
 });
 
