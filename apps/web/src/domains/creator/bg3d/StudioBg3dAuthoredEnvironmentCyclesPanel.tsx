@@ -1,6 +1,13 @@
 import { useState } from "react";
 
 import {
+  applyStudioBg3dCyclesLayerOverrides,
+  buildStudioBg3dCyclesMultiPassPsd,
+  type StudioBg3dCyclesLayerOverrideMap,
+  type StudioBg3dCyclesPassBufferMap,
+  type StudioBg3dCyclesPassKey,
+} from "./studio-bg3d-cycles-multipass-compositor";
+import {
   STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
@@ -52,6 +59,28 @@ function formatKilobytes(bytes: number): string {
   return `${Math.round(bytes / 1024).toLocaleString("ko-KR")}KB`;
 }
 
+function buildFallbackCyclesPassBuffers(
+  width: number,
+  height: number,
+): StudioBg3dCyclesPassBufferMap {
+  const createSolid = (r: number, g: number, b: number, a = 255): Uint8ClampedArray => {
+    const buf = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < buf.length; i += 4) {
+      buf[i] = r;
+      buf[i + 1] = g;
+      buf[i + 2] = b;
+      buf[i + 3] = a;
+    }
+    return buf;
+  };
+  return {
+    beauty: createSolid(218, 210, 198, 255),
+    ao: createSolid(196, 196, 196, 255),
+    normal: createSolid(128, 128, 255, 255),
+    depth: createSolid(180, 190, 205, 255),
+  };
+}
+
 export function StudioBg3dAuthoredEnvironmentCyclesPanel({
   disabled = false,
   defaultExpanded = false,
@@ -64,6 +93,8 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
     STUDIO_BG3D_ENVIRONMENT_ASSETS_V6[0]?.id ?? "ts-bg3d-compact_apartment_interior-v6",
   );
   const [activePass, setActivePass] = useState<CyclesPassKey>("beauty");
+  const [layerOverrides, setLayerOverrides] = useState<StudioBg3dCyclesLayerOverrideMap>({});
+  const [psdReceiptText, setPsdReceiptText] = useState<string | null>(null);
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
 
   const visibleAuthoredAssets = STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1.filter(
@@ -77,11 +108,52 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
   const selectedCyclesPasses = selectedV6Asset
     ? getStudioBg3dEnvironmentCyclesPasses(selectedV6Asset.id)
     : null;
-  const compositorPlan = selectedV6Asset
+  const baseCompositorPlan = selectedV6Asset
     ? buildStudioBg3dCyclesCompositorLayerPlan(selectedV6Asset.id)
+    : null;
+  const compositorPlan = baseCompositorPlan
+    ? applyStudioBg3dCyclesLayerOverrides(baseCompositorPlan, layerOverrides)
     : null;
   const activeLayerDescriptor =
     compositorPlan?.find((layer) => layer.pass === activePass) ?? compositorPlan?.[0] ?? null;
+
+  const handleTogglePassVisible = (pass: StudioBg3dCyclesPassKey, currentVisible: boolean) => {
+    setLayerOverrides((prev) => ({
+      ...prev,
+      [pass]: {
+        ...prev[pass],
+        visible: !currentVisible,
+      },
+    }));
+  };
+
+  const handleChangePassOpacity = (pass: StudioBg3dCyclesPassKey, nextOpacityPercent: number) => {
+    const clamped = Math.min(100, Math.max(0, nextOpacityPercent)) / 100;
+    setLayerOverrides((prev) => ({
+      ...prev,
+      [pass]: {
+        ...prev[pass],
+        opacity: clamped,
+      },
+    }));
+  };
+
+  const handleExportCyclesPsd = () => {
+    if (disabled || !selectedV6Asset || !compositorPlan) return;
+    const exportWidth = 64;
+    const exportHeight = 48;
+    const result = buildStudioBg3dCyclesMultiPassPsd({
+      environmentId: selectedV6Asset.id,
+      title: `${selectedV6Asset.name} Cycles 4-Pass`,
+      width: exportWidth,
+      height: exportHeight,
+      layers: compositorPlan,
+      buffers: buildFallbackCyclesPassBuffers(exportWidth, exportHeight),
+    });
+    setPsdReceiptText(
+      `PSD 생성 완료: ${result.fileName} (${result.layerNames.length}레이어 · 활성 ${result.visiblePassCount}패스 · ${formatKilobytes(result.byteLength)})`,
+    );
+  };
 
   const handleAddEnvironment = (environmentId: string) => {
     if (disabled) return;
@@ -243,26 +315,40 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
                 >
                   V6 Cycles 멀티패스 대상 환경 (12종)
                 </label>
-                {selectedV6Asset ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {selectedV6Asset ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      data-testid="bg3d-cycles-v6-add-scene"
+                      onClick={() => handleAddEnvironment(selectedV6Asset.id)}
+                      className="rounded border border-accent/50 bg-accent-soft px-2.5 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/20 disabled:opacity-45"
+                    >
+                      {lastAddedId === selectedV6Asset.id
+                        ? "V6 3D 환경 배치됨"
+                        : `${selectedV6Asset.name} 3D 장면에 배치`}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     disabled={disabled}
-                    data-testid="bg3d-cycles-v6-add-scene"
-                    onClick={() => handleAddEnvironment(selectedV6Asset.id)}
-                    className="rounded border border-accent/50 bg-accent-soft px-2.5 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/20 disabled:opacity-45"
+                    data-testid="bg3d-cycles-export-psd"
+                    onClick={handleExportCyclesPsd}
+                    className="rounded border border-line bg-panel px-2.5 py-1 text-[0.6rem] font-bold text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:opacity-45"
                   >
-                    {lastAddedId === selectedV6Asset.id
-                      ? "V6 3D 환경 배치됨"
-                      : `${selectedV6Asset.name} 3D 장면에 배치`}
+                    Cycles 4레이어 PSD 저장
                   </button>
-                ) : null}
+                </div>
               </div>
 
               <select
                 id="bg3d-cycles-v6-select"
                 data-testid="bg3d-cycles-v6-select"
                 value={selectedV6Asset?.id ?? ""}
-                onChange={(event) => setSelectedV6Id(event.target.value)}
+                onChange={(event) => {
+                  setSelectedV6Id(event.target.value);
+                  setPsdReceiptText(null);
+                }}
                 className="w-full rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs text-fg"
               >
                 {STUDIO_BG3D_ENVIRONMENT_ASSETS_V6.map((asset) => (
@@ -271,6 +357,15 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
                   </option>
                 ))}
               </select>
+
+              {psdReceiptText ? (
+                <p
+                  data-testid="bg3d-cycles-psd-receipt"
+                  className="rounded border border-accent/40 bg-accent-soft/60 px-2.5 py-1 text-[0.58rem] font-semibold text-accent"
+                >
+                  {psdReceiptText}
+                </p>
+              ) : null}
 
               {selectedCyclesPasses && compositorPlan && activeLayerDescriptor ? (
                 <div className="space-y-2 rounded-lg border border-line bg-panel p-2.5">
@@ -305,10 +400,57 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
                         <span className="block truncate">{PASS_LABELS_KO[layer.pass]}</span>
                         <span className="block text-[0.52rem] text-fg-3">
                           {layer.blendMode} · {Math.round(layer.opacity * 100)}% ·{" "}
-                          {selectedCyclesPasses.colorDepth[layer.pass]}bit
+                          {layer.visible ? "표시" : "숨김"} · {selectedCyclesPasses.colorDepth[layer.pass]}bit
                         </span>
                       </button>
                     ))}
+                  </div>
+
+                  {/* Active Pass Layer Mixer Controls */}
+                  <div
+                    data-testid="bg3d-cycles-active-layer-controls"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded border border-line/60 bg-card px-2 py-1.5 text-[0.58rem]"
+                  >
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={activeLayerDescriptor.visible}
+                      data-testid={`bg3d-cycles-toggle-visible-${activeLayerDescriptor.pass}`}
+                      onClick={() =>
+                        handleTogglePassVisible(
+                          activeLayerDescriptor.pass,
+                          activeLayerDescriptor.visible,
+                        )
+                      }
+                      className={cx(
+                        "rounded border px-2 py-0.5 font-semibold transition-colors",
+                        activeLayerDescriptor.visible
+                          ? "border-accent/50 bg-accent-soft text-accent"
+                          : "border-line bg-panel text-fg-3",
+                      )}
+                    >
+                      {activeLayerDescriptor.visible ? "레이어 표시 켜짐" : "레이어 표시 숨김"}
+                    </button>
+                    <label className="flex items-center gap-2 text-fg-2">
+                      <span>불투명도 ({Math.round(activeLayerDescriptor.opacity * 100)}%)</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        disabled={disabled}
+                        aria-label={`${activeLayerDescriptor.label} 불투명도`}
+                        data-testid={`bg3d-cycles-opacity-${activeLayerDescriptor.pass}`}
+                        value={Math.round(activeLayerDescriptor.opacity * 100)}
+                        onChange={(event) =>
+                          handleChangePassOpacity(
+                            activeLayerDescriptor.pass,
+                            Number(event.target.value),
+                          )
+                        }
+                        className="w-24 accent-accent"
+                      />
+                    </label>
                   </div>
 
                   {/* Active Pass Preview Image */}

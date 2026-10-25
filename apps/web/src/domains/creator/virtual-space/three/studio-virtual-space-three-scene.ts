@@ -94,11 +94,11 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "cafe-lounge-tea", url: "/assets/3d/tea_set.glb", x: 2890, y: 636, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.3 },
 
   // TALK (team-meeting — science_research_laboratory 디오라마 + 브리핑 보드룸 데스크·홀로그램)
-  { id: "talk-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 980, heightMeters: 1.12, rotationY: 0 },
-  { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 980, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
-  { id: "talk-chair-w", url: "/assets/3d/refined-v8/chair.glb", x: 372, y: 980, heightMeters: 1.08, rotationY: Math.PI * 0.5 },
-  { id: "talk-chair-e", url: "/assets/3d/refined-v8/chair.glb", x: 524, y: 980, heightMeters: 1.08, rotationY: -Math.PI * 0.5 },
-  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1200, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
+  { id: "talk-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 996, heightMeters: 1.12, rotationY: 0 },
+  { id: "talk-holo", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 996, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
+  { id: "talk-chair-w", url: "/assets/3d/refined-v8/chair.glb", x: 372, y: 996, heightMeters: 1.08, rotationY: Math.PI * 0.5 },
+  { id: "talk-chair-e", url: "/assets/3d/refined-v8/chair.glb", x: 524, y: 996, heightMeters: 1.08, rotationY: -Math.PI * 0.5 },
+  { id: "talk-sofa", url: "/assets/3d/refined-v8/sofa.glb", x: 248, y: 1080, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
 
   // PLAZA (creator-plaza — park_garden_pavilion 디오라마 + 중앙 분재·가로등)
   { id: "plaza-center-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 1472, y: 1088, heightMeters: 1.48, elevationMeters: 0.22, rotationY: 0 },
@@ -131,9 +131,9 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "terrace-monstera", url: "/assets/3d/potted_monstera.glb", x: 1620, y: 1580, heightMeters: 1.38, rotationY: -0.2 },
 
   // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 원고 전시 데스크·아카이브)
-  { id: "gallery-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2560, y: 1554, heightMeters: 1.08, rotationY: 0 },
-  { id: "gallery-tablet", url: "/assets/3d/hologram_tablet.glb", x: 2560, y: 1554, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
-  { id: "gallery-book", url: "/assets/3d/everyday_book.glb", x: 2338, y: 1564, heightMeters: 0.24, elevationMeters: 0.88, rotationY: 0.25 },
+  { id: "gallery-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2338, y: 1546, heightMeters: 1.08, rotationY: 0 },
+  { id: "gallery-tablet", url: "/assets/3d/hologram_tablet.glb", x: 2338, y: 1546, heightMeters: 0.48, elevationMeters: 0.84, rotationY: 0 },
+  { id: "gallery-book", url: "/assets/3d/everyday_book.glb", x: 2296, y: 1546, heightMeters: 0.24, elevationMeters: 0.84, rotationY: 0.25 },
 ]);
 
 /**
@@ -141,15 +141,15 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
  * 모든 슬롯이 고해상도 텍스처가 베이크된 VRoid / Alicia VRM 0.0 휴머노이드 에셋으로 통일되어 있다.
  */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
-  "/vrm/Victoria_Rubin.vrm",
-  "/vrm/AliciaSolid.vrm",
-  "/vrm/Vita.vrm",
   "/vrm/Sendagaya_Shino.vrm",
-  "/vrm/Vivi.vrm",
+  "/vrm/Vita.vrm",
   "/vrm/Sakurada_Fumiriya.vrm",
-  "/vrm/Sendagaya_Shibu.vrm",
   "/vrm/Eugenia.vrm",
+  "/vrm/Vivi.vrm",
   "/vrm/Darkness_Shibu.vrm",
+  "/vrm/Sendagaya_Shibu.vrm",
+  "/vrm/AliciaSolid.vrm",
+  "/vrm/Victoria_Rubin.vrm",
 ]);
 
 const ZONE_FLOOR_COLORS: Readonly<Record<string, { readonly floor: number; readonly accent: number }>> = Object.freeze({
@@ -642,9 +642,28 @@ export function loadStudioThreeAssets(
 
         vrmScene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            child.castShadow = !/hair/i.test(child.name);
-            child.receiveShadow = true;
+            child.castShadow = !/hair|face|eye/i.test(child.name);
+            child.receiveShadow = false;
             child.frustumCulled = false;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            for (const mat of mats) {
+              if (mat instanceof THREE.MeshBasicMaterial) {
+                if (mat.map) {
+                  mat.map.colorSpace = THREE.SRGBColorSpace;
+                  mat.color.setRGB(0.84, 0.84, 0.88);
+                }
+                mat.needsUpdate = true;
+              } else if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+                mat.envMapIntensity = 0.22;
+                mat.roughness = Math.max(0.85, mat.roughness);
+                mat.metalness = 0;
+                if (mat.map) {
+                  mat.map.colorSpace = THREE.SRGBColorSpace;
+                  mat.color.setRGB(0.82, 0.82, 0.84);
+                }
+                mat.needsUpdate = true;
+              }
+            }
           }
         });
 

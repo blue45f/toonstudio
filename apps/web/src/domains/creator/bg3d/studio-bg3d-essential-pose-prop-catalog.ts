@@ -317,6 +317,22 @@ export function searchStudioBg3dEssentialAssets(
   );
 }
 
+/**
+ * 오리지널 `/assets/3d/<slug>.glb` 소품에 대응하는 V8 고품질 히어로 리파인판
+ * (`/assets/3d/refined-v8/<slug>.glb`, 11종)이 존재하면 반환한다.
+ */
+export function resolveStudioBg3dRefinedV8PropCounterpart(
+  entryOrId: StudioBg3dEssentialAssetEntry | string,
+): StudioBg3dEssentialAssetEntry | null {
+  const entry = typeof entryOrId === "string" ? findStudioBg3dEssentialAsset(entryOrId) : entryOrId;
+  if (!entry) return null;
+  if (entry.category === "refined-v8-prop-3d") return null;
+  const match = /^\/assets\/3d\/([a-z0-9_]+)\.glb$/iu.exec(entry.glbUrl);
+  if (!match?.[1]) return null;
+  const normalizedSlug = match[1].replaceAll("_", "-");
+  return ESSENTIAL_BY_ID.get(`refined-v8-${normalizedSlug}`) ?? null;
+}
+
 const GLB_MAGIC = 0x46546c67; // "glTF"
 const GLB_MAX_BYTES = 16 * 1024 * 1024;
 

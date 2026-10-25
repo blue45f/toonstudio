@@ -31,6 +31,18 @@ import {
   type StudioBg3dWebtoonBackgroundEntry,
   type StudioBg3dWebtoonBackgroundId,
 } from "./studio-bg3d-webtoon-background-templates";
+import {
+  STUDIO_BG3D_MOOD_IDS,
+  STUDIO_BG3D_MOOD_PALETTES,
+  STUDIO_BG3D_WEBTOON_UNIVERSES,
+  blendStudioBg3dWorldShaperSliders,
+  buildStudioBg3dWebtoonWorldSpec,
+  getStudioBg3dWebtoonUniverse,
+  instantiateStudioBg3dWebtoonWorld,
+  type StudioBg3dMoodId,
+  type StudioBg3dWebtoonUniverseId,
+  type StudioBg3dWorldBuildResult,
+} from "./studio-bg3d-webtoon-world-shaper";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -65,6 +77,26 @@ const ENTRY_ICON: Record<StudioBg3dWebtoonBackgroundId, typeof Building2> = {
 
 const STREET_SWATCH = "#4a4a50";
 
+const COMPACT_WORLD_SLIDERS = Object.freeze({
+  widthScale: 0.85,
+  depthScale: 0.85,
+  ceilingScale: 0.95,
+  windowDensity: 0.5,
+  furnitureDensity: 0.5,
+  aisleRatio: 0.4,
+  propScale: 0.85,
+});
+
+const EXPANDED_WORLD_SLIDERS = Object.freeze({
+  widthScale: 1.35,
+  depthScale: 1.35,
+  ceilingScale: 1.25,
+  windowDensity: 1,
+  furnitureDensity: 1,
+  aisleRatio: 0.25,
+  propScale: 1.25,
+});
+
 function swatchColor(entry: StudioBg3dWebtoonBackgroundEntry): string {
   return entry.kind === "room" ? entry.spec.floorColor : STREET_SWATCH;
 }
@@ -89,6 +121,27 @@ export function StudioBg3dWebtoonBackgroundPicker({
   onFocusBuilt,
 }: StudioBg3dWebtoonBackgroundPickerProps) {
   const [notice, setNotice] = useState<PickerNotice | null>(null);
+  const [shaperOpen, setShaperOpen] = useState(false);
+  const [universeId, setUniverseId] = useState<StudioBg3dWebtoonUniverseId>("school-romance");
+  const [moodId, setMoodId] = useState<StudioBg3dMoodId>("daylight");
+  const [blendPercent, setBlendPercent] = useState(50);
+
+  const selectedUniverse = getStudioBg3dWebtoonUniverse(universeId);
+  const blendedSliders =
+    blendPercent === 50
+      ? selectedUniverse.defaultSliders
+      : blendPercent < 50
+        ? blendStudioBg3dWorldShaperSliders(
+            COMPACT_WORLD_SLIDERS,
+            selectedUniverse.defaultSliders,
+            blendPercent / 50,
+          )
+        : blendStudioBg3dWorldShaperSliders(
+            selectedUniverse.defaultSliders,
+            EXPANDED_WORLD_SLIDERS,
+            (blendPercent - 50) / 50,
+          );
+  const previewWorldSpec = buildStudioBg3dWebtoonWorldSpec(universeId, blendedSliders, moodId);
 
   const build = (id: StudioBg3dWebtoonBackgroundId) => {
     const built: { current: StudioBg3dWebtoonBackgroundBuild | null } = { current: null };
@@ -108,6 +161,37 @@ export function StudioBg3dWebtoonBackgroundPicker({
             hiddenWalls: summarizeStudioBg3dHiddenWalls(result.primitives),
             wallsRestored: false,
             anchorX: result.anchorX,
+          }
+        : { kind: "failed" },
+    );
+  };
+
+  const buildWorldUniverse = () => {
+    const built: { current: StudioBg3dWorldBuildResult | null; anchorX: number } = {
+      current: null,
+      anchorX: 0,
+    };
+    const accepted = onBuild((existingCount) => {
+      const world = instantiateStudioBg3dWebtoonWorld({
+        universeId,
+        sliders: blendedSliders,
+        moodId,
+        existingCount,
+      });
+      built.current = world;
+      built.anchorX = existingCount > 0 ? existingCount * (world.roomSpec.width / 6) : 0;
+      return world.primitives;
+    });
+    const result = built.current;
+    setNotice(
+      accepted && result
+        ? {
+            kind: "built",
+            label: selectedUniverse.labelKo,
+            objectCount: result.primitives.length,
+            hiddenWalls: summarizeStudioBg3dHiddenWalls(result.primitives),
+            wallsRestored: false,
+            anchorX: built.anchorX,
           }
         : { kind: "failed" },
     );
@@ -162,6 +246,109 @@ export function StudioBg3dWebtoonBackgroundPicker({
             </button>
           );
         })}
+      </div>
+
+      {/* 3D Shaper 8-Universe Customizer */}
+      <div
+        data-testid="bg3d-world-shaper-box"
+        className="mt-2.5 rounded-xl border border-line bg-card/70 p-2.5"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[0.66rem] font-bold text-fg">
+            3D 세이퍼 웹툰 세계관 ({STUDIO_BG3D_WEBTOON_UNIVERSES.length}종 · VARCO 히어로 소품)
+          </span>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-expanded={shaperOpen}
+            data-testid="bg3d-world-shaper-toggle"
+            onClick={() => setShaperOpen((prev) => !prev)}
+            className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.6rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg disabled:opacity-45"
+          >
+            {shaperOpen ? "세계관 접기" : "세계관 8종 열기"}
+          </button>
+        </div>
+
+        {shaperOpen ? (
+          <div
+            data-testid="bg3d-world-shaper-section"
+            className="mt-2 space-y-2 border-t border-line/60 pt-2"
+          >
+            <div className="grid grid-cols-2 gap-1.5">
+              <label className="text-[0.6rem] font-semibold text-fg-3">
+                웹툰 세계관 (8종)
+                <select
+                  aria-label="웹툰 세계관 선택"
+                  data-testid="bg3d-world-shaper-universe-select"
+                  disabled={disabled}
+                  value={universeId}
+                  onChange={(event) => {
+                    const nextId = event.target.value as StudioBg3dWebtoonUniverseId;
+                    const nextUni = getStudioBg3dWebtoonUniverse(nextId);
+                    setUniverseId(nextId);
+                    setMoodId(nextUni.defaultMood);
+                  }}
+                  className="mt-0.5 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
+                >
+                  {STUDIO_BG3D_WEBTOON_UNIVERSES.map((uni) => (
+                    <option key={uni.id} value={uni.id}>
+                      [{uni.genreTagKo}] {uni.labelKo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-[0.6rem] font-semibold text-fg-3">
+                시간대·무드 팔레트 (6종)
+                <select
+                  aria-label="무드 팔레트 선택"
+                  data-testid="bg3d-world-shaper-mood-select"
+                  disabled={disabled}
+                  value={moodId}
+                  onChange={(event) => setMoodId(event.target.value as StudioBg3dMoodId)}
+                  className="mt-0.5 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
+                >
+                  {STUDIO_BG3D_MOOD_IDS.map((mId) => (
+                    <option key={mId} value={mId}>
+                      {STUDIO_BG3D_MOOD_PALETTES[mId].labelKo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label className="block text-[0.6rem] font-semibold text-fg-3">
+              공간 규모·밀도 보간 ({blendPercent}%) · {previewWorldSpec.width}m × {previewWorldSpec.depth}m × 층고 {previewWorldSpec.wallHeight}m
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                disabled={disabled}
+                aria-label="공간 규모 및 밀도 보간"
+                data-testid="bg3d-world-shaper-blend-range"
+                value={blendPercent}
+                onChange={(event) => setBlendPercent(Number(event.target.value))}
+                className="mt-1 w-full accent-accent"
+              />
+            </label>
+
+            <div className="flex items-center justify-between gap-2 text-[0.58rem] text-fg-3">
+              <span className="truncate">
+                히어로 슬롯: <strong className="text-fg">{selectedUniverse.varcoPropSlot.labelKo}</strong>
+              </span>
+              <button
+                type="button"
+                disabled={disabled}
+                data-testid="bg3d-world-shaper-build-btn"
+                onClick={buildWorldUniverse}
+                className="shrink-0 rounded border border-accent/60 bg-accent-soft px-2.5 py-1 text-[0.6rem] font-bold text-accent hover:bg-accent/20 disabled:opacity-45"
+              >
+                선택 세계관 장면에 배치
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-2.5 rounded-xl border border-line bg-card/70 px-3">

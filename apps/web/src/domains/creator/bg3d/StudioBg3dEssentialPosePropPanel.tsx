@@ -5,6 +5,7 @@ import {
   STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG,
   fetchStudioBg3dEssentialGlbAsFile,
   listStudioBg3dEssentialAssetsByCategory,
+  resolveStudioBg3dRefinedV8PropCounterpart,
   searchStudioBg3dEssentialAssets,
   type StudioBg3dEssentialAssetCategory,
   type StudioBg3dEssentialAssetEntry,
@@ -187,6 +188,7 @@ export function StudioBg3dEssentialPosePropPanel({
           >
             {visibleAssets.map((entry) => {
               const isBusy = busyId === entry.id;
+              const refinedCounterpart = resolveStudioBg3dRefinedV8PropCounterpart(entry);
               return (
                 <div
                   key={entry.id}
@@ -226,6 +228,18 @@ export function StudioBg3dEssentialPosePropPanel({
                     >
                       {isBusy ? "전달 중..." : "3D 장면에 가져오기"}
                     </button>
+                    {refinedCounterpart ? (
+                      <button
+                        type="button"
+                        disabled={disabled || busyId !== null}
+                        data-testid={`bg3d-essential-upgrade-v8-${entry.id}`}
+                        title={`${refinedCounterpart.labelKo} 고품질 히어로 모델로 가져오기`}
+                        onClick={() => void handleImport(refinedCounterpart)}
+                        className="rounded border border-accent/40 bg-card px-1.5 py-1 text-[0.58rem] font-semibold text-accent hover:bg-accent-soft disabled:opacity-45"
+                      >
+                        V8 고품질본
+                      </button>
+                    ) : null}
                     {entry.turnaround2dUrl ? (
                       <button
                         type="button"

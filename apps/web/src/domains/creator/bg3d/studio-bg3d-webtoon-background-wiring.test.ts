@@ -125,22 +125,24 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
   });
 
   it("활성화 번들에 남는 룸 빌더·가구·개구부·몰딩 모듈은 렌더러·무거운 의존을 끌어오지 않는다", () => {
-    // 개구부·몰딩(2026-10-23)은 룸 빌더가 정적으로 가져와 같은 청크에 들어간다 — 서로만 가져오는 순수 계산 모듈이다.
+    // 개구부·몰딩(2026-10-23) 및 CC0 표면 재질 카탈로그는 룸 빌더가 정적으로 가져와 같은 청크에 들어간다 — 서로만 가져오는 순수 계산 모듈이다.
     for (const file of [
       "studio-bg3d-room-builder.ts",
       "studio-bg3d-room-furniture.ts",
       "studio-bg3d-room-openings.ts",
       "studio-bg3d-room-trims.ts",
+      "studio-bg3d-cc0-surface-material-catalog.ts",
     ]) {
       const edges = moduleEdges(file);
       expect(edges.dynamicEdges, file).toEqual([]);
       for (const edge of edges.staticEdges) {
         expect(edge, `${file} -> ${edge}`).toMatch(
-          /^(\.\/studio-bg3d-room-furniture|\.\/studio-bg3d-room-openings|\.\/studio-bg3d-room-trims|\.\.\/studio-id)$/u,
+          /^(\.\/studio-bg3d-room-furniture|\.\/studio-bg3d-room-openings|\.\/studio-bg3d-room-trims|\.\/studio-bg3d-cc0-surface-material-catalog|\.\.\/studio-id)$/u,
         );
       }
     }
     expect(moduleEdges("studio-bg3d-room-openings.ts").staticEdges).toEqual([]);
+    expect(moduleEdges("studio-bg3d-cc0-surface-material-catalog.ts").staticEdges).toEqual([]);
   });
 
   it("선택기와 카탈로그·거리 생성기·안내는 three 나 렌더러를 가져오지 않는다", () => {

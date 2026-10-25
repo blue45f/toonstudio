@@ -122,7 +122,13 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
     targetDepthMeters: 15.2,
     scaleY: 1.16,
     elevationMeters: -0.14,
-    hiddenNodeSubstrings: ["Lab_BackBench"],
+    hiddenNodeSubstrings: [
+      "Lab_BackBench",
+      "RefinedSurface_Sage",
+      "RefinedSurface_Steel",
+      "RefinedSurface_Porcelain",
+      "RefinedSurface_Glass",
+    ],
     clearLocalBoxes: [
       { minX: -4.8, maxX: 3.6, minY: 0.16, maxY: 3.6, minZ: -3.78, maxZ: 2.5 },
     ],
@@ -155,6 +161,10 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
       "HVAC",
       "SolarPanel",
       "WaterTank",
+      "Stairwell_",
+      "RoofSafetyZone",
+      "SchoolName_",
+      "RoofCourt_",
     ],
   },
   {
@@ -211,7 +221,7 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
       "Black metal",
     ],
     clearLocalBoxes: [
-      { minX: -4.4, maxX: 2.3, minY: 0.16, maxY: 2.4, minZ: -3.2, maxZ: -2.2 },
+      { minX: -6.0, maxX: 3.5, minY: 0.16, maxY: 3.2, minZ: -3.2, maxZ: 3.8 },
     ],
   },
 ]);
@@ -228,7 +238,7 @@ function filterMeshGeometryByLocalBoxes(
   boxes: readonly StudioThreeLocalBoxFilter[],
 ): void {
   const combinedName = `${mesh.name} ${mesh.parent?.name ?? ""}`;
-  if (/Floor|Ivory plaster|Cube\.001|^Cube\b/i.test(combinedName)) return;
+  if (/Floor|Ivory plaster|Garden leaf|Garden_leaf|Garden grass|Garden_grass|Garden soil|Garden_soil|Limestone|Cube\.001|^Cube\b/i.test(combinedName)) return;
   const geom = mesh.geometry;
   const pos = geom.getAttribute("position");
   if (!pos) return;
@@ -250,9 +260,12 @@ function filterMeshGeometryByLocalBoxes(
       if (inAnyBox(a) || inAnyBox(b) || inAnyBox(c)) continue;
       kept.push(a, b, c);
     }
-    if (kept.length !== indexAttr.count) {
+    if (kept.length === 0) {
+      mesh.visible = false;
+    } else if (kept.length !== indexAttr.count) {
       const cloned = geom.clone();
       cloned.setIndex(kept);
+      cloned.computeBoundingSphere();
       mesh.geometry = cloned;
     }
   }
@@ -360,7 +373,7 @@ export function createStudioThreeHdriController(
   const applyEnvTexture = (tex: THREE.Texture, preset: StudioThreeLightingPreset) => {
     if (isDisposed() || activePreset !== preset) return;
     scene.environment = tex;
-    scene.environmentIntensity = preset === "day" ? 0.88 : preset === "studio" ? 0.95 : 0.62;
+    scene.environmentIntensity = preset === "day" ? 0.56 : preset === "studio" ? 0.64 : 0.42;
   };
 
   const applyPreset = (preset: StudioThreeLightingPreset) => {
@@ -430,7 +443,7 @@ export function createStudioThreeChromePostPipeline(
       renderer.setSize(w, h);
     },
     setBloomStrength: (strength) => {
-      renderer.toneMappingExposure = strength > 0.2 ? 0.98 : 1.1;
+      renderer.toneMappingExposure = strength > 0.2 ? 0.9 : 0.96;
     },
     dispose: () => {},
   };
@@ -500,10 +513,10 @@ export function applyStudioLightingPresetToScene(
   scene.fog = new THREE.FogExp2(bgHex, preset === "night" ? 0.012 : 0.0085);
   hemiLight.color.setHex(preset === "night" ? 0x93c5fd : 0xffffff);
   hemiLight.groundColor.setHex(preset === "night" ? 0x1e1b4b : 0x94a3b8);
-  hemiLight.intensity = preset === "night" ? 0.68 : preset === "studio" ? 0.92 : 1.04;
+  hemiLight.intensity = preset === "night" ? 0.56 : preset === "studio" ? 0.74 : 0.8;
   dirLight.color.setHex(preset === "night" ? 0xc4b5fd : preset === "studio" ? 0xf8fafc : 0xfffbeb);
-  dirLight.intensity = preset === "night" ? 0.88 : preset === "studio" ? 1.24 : 1.42;
-  renderer.toneMappingExposure = preset === "night" ? 0.96 : preset === "studio" ? 1.06 : 1.1;
+  dirLight.intensity = preset === "night" ? 0.76 : preset === "studio" ? 0.98 : 1.08;
+  renderer.toneMappingExposure = preset === "night" ? 0.9 : preset === "studio" ? 0.95 : 0.96;
   postPipeline.setBloomStrength(preset === "night" ? 0.28 : 0.16);
 }
 

@@ -15,7 +15,11 @@ import {
   type StudioBg3dCc0BackdropCategory,
   type StudioBg3dCc0BackdropPlateEntry,
 } from "./studio-bg3d-cc0-backdrop-plate-catalog";
-import { getStudioBg3dGenreScenePackBundleLink } from "./studio-bg3d-genre-scene-pack-links";
+import {
+  getStudioBg3dGenreScenePackBundleLink,
+  listStudioBg3dGenreScenePackBundleLinks,
+  validateStudioBg3dGenreScenePackBundleLinks,
+} from "./studio-bg3d-genre-scene-pack-links";
 import { getStudioBg3dHdriLightingPreset } from "./studio-bg3d-hdri-lighting-presets";
 import {
   STUDIO_BG3D_SCENE_GENRES,
@@ -119,6 +123,12 @@ export function StudioBg3dSceneCompositionPresetPanel({
   const activePreset = resolveStudioBg3dSceneCompositionPreset({ camera, lighting, exposure });
   const presets = listStudioBg3dSceneCompositionPresets(genreId);
   const visibleBackdrops = listStudioBg3dCc0BackdropPlatesByCategory(backdropCategory);
+  const genreBundleLinks = listStudioBg3dGenreScenePackBundleLinks(genreId);
+  const genreBundleLinkErrors = validateStudioBg3dGenreScenePackBundleLinks();
+  const genreTotalPlaceable = genreBundleLinks.reduce(
+    (sum, link) => sum + link.totalPlaceable,
+    0,
+  );
 
   const apply = (preset: StudioBg3dSceneCompositionPreset) => {
     const result = applyStudioBg3dSceneCompositionPreset(
@@ -161,8 +171,19 @@ export function StudioBg3dSceneCompositionPresetPanel({
             )}
           </p>
         </div>
-        <span className="shrink-0 rounded-full border border-line bg-panel px-2 py-1 text-[0.5625rem] font-semibold text-fg-3">
-          {copy("카메라+조명", "Camera + light")}
+        <span
+          data-testid="bg3d-scene-pack-genre-bundle-summary"
+          title={
+            genreBundleLinkErrors.length === 0
+              ? `번들 정합성 검증 완료 · 씬팩 ${genreBundleLinks.length}종 연동`
+              : genreBundleLinkErrors.join(", ")
+          }
+          className="shrink-0 rounded-full border border-line bg-panel px-2 py-1 text-[0.5625rem] font-semibold text-fg-3"
+        >
+          {copy(
+            `카메라+조명 · 번들 ${genreTotalPlaceable.toLocaleString("ko-KR")}종`,
+            `Camera + light · ${genreTotalPlaceable.toLocaleString("en-US")} bundle assets`,
+          )}
         </span>
       </div>
 

@@ -8,6 +8,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioBg3dAuthoredEnvironmentCyclesPanel } from "./StudioBg3dAuthoredEnvironmentCyclesPanel";
 import { StudioBg3dEssentialPosePropPanel } from "./StudioBg3dEssentialPosePropPanel";
 import { StudioBg3dRoomBuilderPanel } from "./StudioBg3dRoomBuilderPanel";
+import { StudioBg3dWebtoonBackgroundPicker } from "./StudioBg3dWebtoonBackgroundPicker";
+import {
+  applyStudioBg3dCyclesLayerOverrides,
+  buildStudioBg3dCyclesMultiPassPsd,
+  compositeStudioBg3dCyclesLayers,
+} from "./studio-bg3d-cycles-multipass-compositor";
 import {
   STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS,
   STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
@@ -20,6 +26,7 @@ import {
   fetchStudioBg3dEssentialGlbAsFile,
   findStudioBg3dEssentialAsset,
   listStudioBg3dEssentialAssetsByCategory,
+  resolveStudioBg3dRefinedV8PropCounterpart,
   searchStudioBg3dEssentialAssets,
 } from "./studio-bg3d-essential-pose-prop-catalog";
 import { clampStudioBg3dRoomSpec } from "./studio-bg3d-room-builder";
@@ -182,8 +189,107 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
       "Depth Mist Guide",
     );
 
+    // Toggle depth pass visibility and adjust opacity, then export 4-layer PSD
+    fireEvent.click(screen.getByTestId("bg3d-cycles-toggle-visible-depth"));
+    fireEvent.change(screen.getByTestId("bg3d-cycles-opacity-depth"), {
+      target: { value: "65" },
+    });
+    fireEvent.click(screen.getByTestId("bg3d-cycles-export-psd"));
+    expect(screen.getByTestId("bg3d-cycles-psd-receipt").textContent).toContain(
+      "PSD 생성 완료: ts-bg3d-compact_apartment_interior-v6-cycles-4pass.psd (4레이어",
+    );
+
     fireEvent.click(screen.getByTestId("bg3d-cycles-v6-add-scene"));
     expect(onAdd).toHaveBeenCalledWith("ts-bg3d-compact_apartment_interior-v6");
+  });
+
+  it("resolves all 11 V8 refined hero prop counterparts and composites 4-pass Cycles PSD buffers accurately", () => {
+    const matchingOriginals = STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.filter(
+      (entry) => resolveStudioBg3dRefinedV8PropCounterpart(entry) !== null,
+    );
+    expect(matchingOriginals).toHaveLength(11);
+    expect(resolveStudioBg3dRefinedV8PropCounterpart("original-3d-blackboard")?.id).toBe(
+      "refined-v8-blackboard",
+    );
+    expect(resolveStudioBg3dRefinedV8PropCounterpart("refined-v8-blackboard")).toBeNull();
+
+    const basePlan = buildStudioBg3dCyclesCompositorLayerPlan(
+      "ts-bg3d-compact_apartment_interior-v6",
+    )!;
+    const overridden = applyStudioBg3dCyclesLayerOverrides(basePlan, {
+      depth: { visible: true, opacity: 0.5 },
+    });
+    expect(overridden.find((l) => l.pass === "depth")?.visible).toBe(true);
+    expect(overridden.find((l) => l.pass === "depth")?.opacity).toBe(0.5);
+
+    const w = 4;
+    const h = 4;
+    const fill = (r: number, g: number, b: number) => {
+      const arr = new Uint8ClampedArray(w * h * 4);
+      for (let i = 0; i < arr.length; i += 4) {
+        arr[i] = r;
+        arr[i + 1] = g;
+        arr[i + 2] = b;
+        arr[i + 3] = 255;
+      }
+      return arr;
+    };
+    const buffers = {
+      beauty: fill(200, 180, 160),
+      ao: fill(128, 128, 128),
+      normal: fill(128, 128, 255),
+      depth: fill(220, 220, 240),
+    };
+    const composite = compositeStudioBg3dCyclesLayers(w, h, overridden, buffers);
+    expect(composite).toHaveLength(w * h * 4);
+    expect(composite[3]).toBe(255);
+
+    const psdResult = buildStudioBg3dCyclesMultiPassPsd({
+      environmentId: "ts-bg3d-compact_apartment_interior-v6",
+      title: "Compact Apartment Cycles",
+      width: w,
+      height: h,
+      layers: overridden,
+      buffers,
+    });
+    expect(psdResult.layerNames).toHaveLength(4);
+    expect(psdResult.visiblePassCount).toBe(3);
+    expect(psdResult.byteLength).toBeGreaterThan(64);
+  });
+
+  it("renders 3D Shaper 8-Universe Customizer in StudioBg3dWebtoonBackgroundPicker and builds world with VARCO hero props", () => {
+    const committed: unknown[] = [];
+    const onBuild = vi.fn((buildParts: (existingCount: number, view: { position: readonly [number, number, number]; target: readonly [number, number, number] }) => unknown[]) => {
+      const parts = buildParts(0, { position: [0, 2, 10], target: [0, 1, 0] });
+      committed.push(parts);
+      return true;
+    });
+
+    render(
+      <StudioBg3dWebtoonBackgroundPicker
+        autoCutaway={false}
+        onAutoCutawayChange={vi.fn()}
+        onBuild={onBuild}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("bg3d-world-shaper-toggle"));
+    expect(screen.getByTestId("bg3d-world-shaper-section")).toBeTruthy();
+
+    fireEvent.change(screen.getByTestId("bg3d-world-shaper-universe-select"), {
+      target: { value: "romance-fantasy-palace" },
+    });
+    fireEvent.change(screen.getByTestId("bg3d-world-shaper-mood-select"), {
+      target: { value: "sunset-romance" },
+    });
+    fireEvent.change(screen.getByTestId("bg3d-world-shaper-blend-range"), {
+      target: { value: "75" },
+    });
+
+    fireEvent.click(screen.getByTestId("bg3d-world-shaper-build-btn"));
+    expect(onBuild).toHaveBeenCalledTimes(1);
+    expect(committed).toHaveLength(1);
+    expect((committed[0] as unknown[]).length).toBeGreaterThan(20);
   });
 
   it("renders 6 Architectural Room Surface Kits and 82 CC0 2K PBR floor/wall selectors in StudioBg3dRoomBuilderPanel", () => {

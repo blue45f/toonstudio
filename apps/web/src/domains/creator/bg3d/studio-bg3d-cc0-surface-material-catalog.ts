@@ -2,9 +2,7 @@
 // surface-texture 82종(Poly Haven 80 + ambientCG 2) 및 320개 2K PBR 맵(rough/nor_gl/ao/disp)을
 // BG3D 도형·커스텀 GLB 재질 오버라이드 및 룸 빌더 표면 세트로 연결하는 순수 모듈.
 
-import { DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE } from "./studio-bg3d-scene-document";
-
-import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
+import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document-types";
 
 export type StudioBg3dCc0SurfaceMaterialCategory =
   | "wood"
@@ -212,12 +210,15 @@ export function buildStudioBg3dCc0SurfaceMaterialOverride(
   const entry = MATERIAL_BY_ID.get(id);
   if (!entry) return null;
   return Object.freeze({
-    ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
     colorMode: "multiply",
     color: entry.tintHex,
     colorStrength: 0.42,
     roughness: entry.roughness,
     metalness: entry.metalness,
+    opacity: 1,
+    wireframe: false,
+    emissiveColor: "#000000",
+    emissiveIntensity: 0,
     surfaceMaterialId: entry.id,
   });
 }
