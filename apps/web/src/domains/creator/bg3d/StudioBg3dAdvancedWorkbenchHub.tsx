@@ -98,7 +98,7 @@ const INITIAL_CUTS: readonly StoryboardCut[] = Object.freeze([
   },
 ]);
 
-const INITIAL_PLACE_SET_STATE: StudioBg3dPlaceSetState = Object.freeze({
+const INITIAL_PLACE_SET_STATE: StudioBg3dPlaceSetState = {
   camera: {
     position: [0, 1.65, 5.2],
     target: [0, 1.2, 0],
@@ -135,7 +135,7 @@ const INITIAL_PLACE_SET_STATE: StudioBg3dPlaceSetState = Object.freeze({
       visible: true,
     },
   ],
-});
+};
 
 const SAMPLE_PLACE_SET_USAGES: readonly StudioBg3dPlaceSetUsageRef[] = Object.freeze([
   {
