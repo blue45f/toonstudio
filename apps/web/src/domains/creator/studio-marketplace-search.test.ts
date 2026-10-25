@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG,
   searchStudioMarketplace,
   type StudioMarketplaceSearchItem,
   type StudioMarketplaceSearchQuery,
@@ -127,5 +128,17 @@ describe("Studio marketplace search", () => {
       minimumPriceMinor: 20000,
       maximumPriceMinor: 10000,
     })).toThrow("filters are invalid");
+  });
+
+  it("searches the internalized webtoon 3D SketchUp marketplace catalog (판타지 황실, 현대 고등학교 교실, 주인공 자취방, 조선시대 저막)", () => {
+    expect(STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG.length).toBe(4);
+    for (const queryText of ["판타지 황실", "현대 고등학교 교실", "주인공 자취방", "조선시대 저막"]) {
+      const res = searchStudioMarketplace(STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG, {
+        ...BASE_QUERY,
+        text: queryText,
+      });
+      expect(res.total).toBe(4);
+      expect(res.hits[0]?.item.tags).toContain(queryText);
+    }
   });
 });
