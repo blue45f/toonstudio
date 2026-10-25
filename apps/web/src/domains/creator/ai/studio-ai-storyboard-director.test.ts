@@ -258,11 +258,20 @@ describe("StudioAiStoryboardDirector", () => {
 
     const effectiveFallback = loadEffectiveStudioAiSettings(null, null, {});
     expect(effectiveFallback.source).toBe("unconfigured");
+
+    const anthropicResolved = resolveStudioDefaultEnvAiSettings({
+      ANTHROPIC_API_KEY: "test_anthropic_default_token",
+    });
+    expect(anthropicResolved.baseUrl).toBe("https://api.anthropic.com");
+    expect(anthropicResolved.textModel).toBe("claude-opus-5-5");
+    expect(anthropicResolved.apiKey).toBe("test_anthropic_default_token");
+
+    const effectiveAnthropic = loadEffectiveStudioAiSettings(null, null, {
+      VITE_STUDIO_DEFAULT_ANTHROPIC_KEY: "test_vite_anthropic_default_token",
+    });
+    expect(effectiveAnthropic.source).toBe("env-default");
+    expect(effectiveAnthropic.settings.baseUrl).toBe("https://api.anthropic.com");
+    expect(effectiveAnthropic.settings.textModel).toBe("claude-opus-5-5");
   });
 });
-
-
-
-
-
 

@@ -8,7 +8,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { useReasonText } from "./use-command-reason-text";
 
-import type { CommandStepResult } from "./claude-command-plan";
+import { formatCommandPlanCheatSheet, type CommandStepResult } from "./claude-command-plan";
 import type { CommandPlanRunResult } from "./claude-command-plan-run";
 
 const STATUS_KEY: Readonly<Record<CommandStepResult["status"], string>> = {
@@ -56,6 +56,7 @@ export function ClaudeCommandPlanResult({ outcome, stale, selected, onToggle, on
   const t = useT();
   const { plan } = outcome;
   const labelOf = (commandId: string) => plan.steps.find((step) => step.commandId === commandId)?.label ?? commandId;
+  const cheatSheet = formatCommandPlanCheatSheet(plan.steps, shortcuts);
 
   return (
     <section aria-label={t("claudeAssist.plan.intent")} className="space-y-3 rounded-2xl border border-line p-3" data-claude-plan-result="true">
@@ -100,6 +101,14 @@ export function ClaudeCommandPlanResult({ outcome, stale, selected, onToggle, on
             {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <Play size={16} aria-hidden />}
             {t("claudeAssist.plan.runSelected")}
           </button>
+          {cheatSheet ? (
+            <p
+              data-claude-plan-shortcut-summary="true"
+              className="mt-2 rounded-lg border border-accent/25 bg-accent/5 px-2.5 py-1.5 text-xs text-fg-2"
+            >
+              <strong className="text-accent">단축키 매크로 동선:</strong> {cheatSheet}
+            </p>
+          ) : null}
         </div>
       ) : (
         <p className="text-sm text-fg-2">{t("claudeAssist.plan.stepsNone")}</p>

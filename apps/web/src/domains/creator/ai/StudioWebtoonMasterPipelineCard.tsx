@@ -40,6 +40,7 @@ import {
   type CharacterRelationshipDynamicId,
   type GenvasPosePresetId,
 } from "./studio-webtoon-storyboard-pipeline";
+import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -626,6 +627,18 @@ export function StudioWebtoonMasterPipelineCard({
           {activeClaudeAssist.globalLocalizationNotes[0] ?? "번역 팽창률 여유 확보"}
         </p>
       </div>
+
+      <StudioWebtoonProductionAssistPanel
+        scriptInput={scriptInput}
+        storyGenre={storyGenre}
+        coreConflict={coreConflict}
+        relationshipDynamic={relationshipDynamic}
+        posePresetId={posePresetId}
+        targetLocale={targetLocale}
+        artistLabel={activeArtistStyle?.artistLabel}
+        triggerWord={activeArtistStyle?.triggerWord}
+        onApplyScript={onApplyScript}
+      />
     </section>
   );
 }

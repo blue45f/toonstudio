@@ -5,10 +5,14 @@
 //  3) 3D 셰이퍼 — character-lab/SHAPER 계열의 캐릭터 제작 화면으로 연결하고,
 //     스냅샷 URL을 붙여넣을 수 있다(앱 경계가 달라 직접 import하지 않는다).
 import { useRef, useState } from "react";
-import { ImagePlus, Link2, Shapes, Trash2, UserRound } from "lucide-react";
+import { ImagePlus, Link2, Shapes, Sparkles, Trash2, UserRound } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import {
+  runClaudeCharacterCanonArchitect,
+  type CharacterCanonArchitectView,
+} from "../claude/claude-creator-domain-assist";
 import { aiStatusText } from "../studio-ai-status-i18n";
 import { cn } from "@/shared/lib/utils";
 
@@ -82,8 +86,34 @@ export function StudioCharacterCanonEditor({
   const [errors, setErrors] = useState<readonly string[]>([]);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const [aiCanonInsight, setAiCanonInsight] = useState<CharacterCanonArchitectView | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const renderableReferenceImageSrc = toRenderableReferenceImageSrc(referenceImage, document.baseURI);
+
+  const handleRunClaudeCanonArchitect = async () => {
+    if (aiDrafting || busy) return;
+    setAiDrafting(true);
+    try {
+      const existingTags = tagsText
+        .split(/[,，\n]/u)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const view = await runClaudeCharacterCanonArchitect({
+        name: name.trim() || "유진",
+        roughNotes: [appearance.trim(), outfit.trim()].filter(Boolean).join(" / "),
+        existingTags,
+      });
+      setAppearance(view.appearanceKo);
+      setOutfit(view.outfitKo);
+      if (view.traitTags.length > 0) {
+        setTagsText(view.traitTags.join(", "));
+      }
+      setAiCanonInsight(view);
+    } finally {
+      setAiDrafting(false);
+    }
+  };
 
   const pickReference = (image: string | null, source: CanonReferenceSource | null, label: string | null) => {
     setReferenceImage(image);
@@ -126,6 +156,41 @@ export function StudioCharacterCanonEditor({
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/25 bg-accent/5 px-3 py-2">
+        <span className="text-xs font-semibold text-fg-2">
+          {bt(
+            "젠버스(Genvas) 벤치마크: 캐릭터 이름이나 짧은 키워드만 적어도 Claude AI가 컷 간 일관성 유지용 외모·의상·시드 태그를 설계합니다.",
+            "Genvas benchmark: Enter a character name or brief keywords and let Claude AI draft consistent appearance, outfit, and seed lock tags.",
+          )}
+        </span>
+        <button
+          type="button"
+          data-testid="canon-claude-auto-architect-btn"
+          disabled={Boolean(busy) || aiDrafting}
+          onClick={() => void handleRunClaudeCanonArchitect()}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90 disabled:opacity-60"
+        >
+          <Sparkles size={13} aria-hidden />
+          {aiDrafting
+            ? bt("Claude 캐논 설계 중...", "Drafting with Claude...")
+            : bt("Claude AI로 외모·의상·태그 자동 완성", "Auto-fill Canon with Claude AI")}
+        </button>
+      </div>
+      {aiCanonInsight ? (
+        <div
+          data-testid="canon-claude-insight-box"
+          className="space-y-1 rounded-lg border border-line bg-raised/50 px-3 py-2 text-[0.7rem] text-fg-2"
+        >
+          <p>
+            <strong className="text-accent">영문 시드 락 토큰:</strong>{" "}
+            {aiCanonInsight.englishPromptLockTokens}
+          </p>
+          <p>
+            <strong className="text-fg">말투·보이스 가이드:</strong>{" "}
+            {aiCanonInsight.speechStyleSummaryKo}
+          </p>
+        </div>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-xs font-semibold text-fg-2">
           {bt("캐릭터 이름", "Character name")}

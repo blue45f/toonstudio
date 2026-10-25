@@ -16,7 +16,13 @@ import { useId, useMemo, useState } from "react";
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
-import { getUserAiSnapshot, setUserAiConfiguration, useUserAi } from "../user-ai-store";
+import {
+  getUserAiSnapshot,
+  hasDefaultEnvClaudeKey,
+  hydrateDefaultEnvClaudeConnection,
+  setUserAiConfiguration,
+  useUserAi,
+} from "../user-ai-store";
 import {
   EMPTY_AI_CONNECTION,
   userAiRoutingSettings,
@@ -360,10 +366,28 @@ export function ClaudeConnectionCard() {
             <input id={consentId} type="checkbox" className="mt-1" checked={consent} onChange={(event) => setConsent(event.target.checked)} disabled={busy} />
             <span>{t("claudeAssist.card.consent")}</span>
           </label>
-          <button type="submit" className={CLAUDE_PRIMARY_BUTTON} disabled={busy}>
-            {busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : null}
-            {busy ? t("claudeAssist.card.checking") : t("claudeAssist.card.connect")}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className={CLAUDE_PRIMARY_BUTTON} disabled={busy}>
+              {busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : null}
+              {busy ? t("claudeAssist.card.checking") : t("claudeAssist.card.connect")}
+            </button>
+            {hasDefaultEnvClaudeKey() ? (
+              <button
+                type="button"
+                data-testid="activate-default-claude-key-btn"
+                className={CLAUDE_BUTTON}
+                disabled={busy}
+                onClick={() => {
+                  if (hydrateDefaultEnvClaudeConnection(undefined, model)) {
+                    setStatus({ tone: "ok", text: "환경 기본 Claude 키로 즉시 연결했습니다." });
+                  }
+                }}
+              >
+                <Sparkles size={16} aria-hidden />
+                기본 환경 Claude 키로 즉시 연결
+              </button>
+            ) : null}
+          </div>
         </form>
       )}
 

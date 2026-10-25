@@ -122,15 +122,29 @@ export function isStudioAiConfigured(settings: StudioAiSettings): boolean {
   return settings.baseUrl.trim().length > 0 && settings.apiKey.trim().length > 0;
 }
 
+export const ANTHROPIC_API_BASE_URL = "https://api.anthropic.com";
+export const ANTHROPIC_DEFAULT_TEXT_MODEL = "claude-opus-5-5";
 export const GITHUB_MODELS_INFERENCE_BASE_URL = "https://models.github.ai/inference";
 export const GITHUB_MODELS_DEFAULT_TEXT_MODEL = "openai/gpt-4o-mini";
 
-const DEFAULT_ENV_TOKEN_KEYS = [
+const DEFAULT_ANTHROPIC_ENV_TOKEN_KEYS = [
+  "VITE_STUDIO_DEFAULT_ANTHROPIC_KEY",
+  "VITE_ANTHROPIC_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "CLAUDE_API_KEY",
+] as const;
+
+const DEFAULT_GITHUB_ENV_TOKEN_KEYS = [
   "VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY",
   "STUDIO_AI_FREE_GITHUB_MODELS_API_KEY",
   "GITHUB_MODELS_API_KEY",
   "GITHUB_PERSONAL_ACCESS_TOKEN",
   "GITHUB_TOKEN",
+] as const;
+
+const DEFAULT_ENV_TOKEN_KEYS = [
+  ...DEFAULT_ANTHROPIC_ENV_TOKEN_KEYS,
+  ...DEFAULT_GITHUB_ENV_TOKEN_KEYS,
 ] as const;
 
 function readRuntimeEnvMap(
@@ -159,7 +173,7 @@ function readRuntimeEnvMap(
 
 /**
  * 로컬/환경변수(.env.infrastructure.local, .env.local 등)에 기본 세팅된
- * GitHub Models / Personal Access Token을 읽는다. 키 원문은 외부 로그로 출력하지 않는다.
+ * Anthropic Claude API 키 또는 GitHub Models 토큰을 읽는다. 키 원문은 외부 로그로 출력하지 않는다.
  */
 export function readStudioDefaultEnvToken(
   envOverride?: Readonly<Record<string, string | undefined>>,
@@ -174,7 +188,7 @@ export function readStudioDefaultEnvToken(
 
 /**
  * BYOK 수동 입력이 없어도 환경변수 기본 토큰이 세팅되어 있으면
- * GitHub Models OpenAI 호환 엔드포인트로 즉시 동작하는 기본 설정을 만든다.
+ * Anthropic Claude Messages API(우선) 또는 GitHub Models 엔드포인트로 즉시 동작하는 기본 설정을 만든다.
  */
 export function resolveStudioDefaultEnvAiSettings(
   envOverride?: Readonly<Record<string, string | undefined>>,
@@ -182,6 +196,29 @@ export function resolveStudioDefaultEnvAiSettings(
   const env = readRuntimeEnvMap(envOverride);
   const token = readStudioDefaultEnvToken(env);
   if (!token) return { ...STUDIO_AI_DEFAULT_SETTINGS };
+
+  const hasAnthropicKey =
+    token.startsWith("sk-ant-") ||
+    DEFAULT_ANTHROPIC_ENV_TOKEN_KEYS.some((key) => Boolean(env[key]?.trim()));
+
+  if (hasAnthropicKey) {
+    const customBaseUrl = env["VITE_STUDIO_DEFAULT_AI_BASE_URL"]?.trim();
+    const customModel = env["VITE_STUDIO_DEFAULT_AI_TEXT_MODEL"]?.trim();
+    const resolvedBaseUrl =
+      customBaseUrl && customBaseUrl.toLowerCase().includes("anthropic")
+        ? customBaseUrl
+        : ANTHROPIC_API_BASE_URL;
+    return {
+      ...STUDIO_AI_DEFAULT_SETTINGS,
+      baseUrl: resolvedBaseUrl,
+      apiKey: token,
+      textModel: customModel && customModel.startsWith("claude-")
+        ? customModel
+        : ANTHROPIC_DEFAULT_TEXT_MODEL,
+      chatCompletionsPath: "/v1/messages",
+    };
+  }
+
   const baseUrl = env["VITE_STUDIO_DEFAULT_AI_BASE_URL"]?.trim() || GITHUB_MODELS_INFERENCE_BASE_URL;
   const textModel = env["VITE_STUDIO_DEFAULT_AI_TEXT_MODEL"]?.trim() || GITHUB_MODELS_DEFAULT_TEXT_MODEL;
   return {
@@ -200,7 +237,7 @@ export interface StudioEffectiveAiSettingsResolution {
 }
 
 /**
- * 현재 탭의 BYOK 세션 설정을 우선 확인하고, 비어 있으면 환경변수 기본 토큰(GitHub Models 등)으로
+ * 현재 탭의 BYOK 세션 설정을 우선 확인하고, 비어 있으면 환경변수 기본 토큰(Anthropic Claude 또는 GitHub Models)으로
  * 자동 폴백해 BYOK 수동 등록 없이도 기본 동작하도록 한다.
  */
 export function loadEffectiveStudioAiSettings(

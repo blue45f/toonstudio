@@ -8,14 +8,21 @@ import { useClaudeUsageText } from "@/shared/ai/claude/use-claude-usage-text";
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
-import { ALT_TEXT_LIMITS, altTextLength, altTextPanelsToPlain, altTextToHtmlAttribute } from "./claude-alt-text";
+import {
+  ALT_TEXT_LIMITS,
+  altTextLength,
+  altTextPanelsToPlain,
+  altTextToAudioWebtoonScript,
+  altTextToHtmlAttribute,
+  estimateAltTextTtsDurationSec,
+} from "./claude-alt-text";
 
 import { ClaudeCopyStatus } from "./ClaudeCopyStatus";
 import { useCopyFeedback } from "./use-copy-feedback";
 
 import type { AltTextRunResult } from "./claude-alt-text-run";
 
-type CopyKind = "short" | "attribute" | "long" | "panels";
+type CopyKind = "short" | "attribute" | "long" | "panels" | "audiotoon";
 
 export interface ClaudeAltTextResultProps {
   readonly run: AltTextRunResult;
@@ -54,6 +61,8 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
   const { view } = run;
   const count = altTextLength(short);
   const over = count > ALT_TEXT_LIMITS.shortRecommended;
+  const ttsDurationSec = estimateAltTextTtsDurationSec(view, { short, long });
+  const audioToonScript = altTextToAudioWebtoonScript(view, { short, long });
 
   const copy = (kind: CopyKind) => {
     const value = kind === "short"
@@ -62,7 +71,9 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
         ? altTextToHtmlAttribute(short)
         : kind === "long"
           ? long
-          : altTextPanelsToPlain(view.panels);
+          : kind === "panels"
+            ? altTextPanelsToPlain(view.panels)
+            : audioToonScript;
     clipboard.copy(kind, value);
   };
 
@@ -145,6 +156,36 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
           <ul className="mt-1 list-disc space-y-0.5 pl-4">{view.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
         </div>
       ) : null}
+
+      <div
+        data-claude-alt-audiotoon-box="true"
+        className="space-y-2 rounded-xl border border-accent/25 bg-accent/5 p-3 text-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-accent">
+              오디오 웹툰(Audio-Toon) & 화면해설 큐시트
+            </span>
+            <span className="rounded-full bg-accent/15 px-2 py-0.5 font-semibold text-accent">
+              예상 성우/TTS 낭독 {ttsDurationSec}초 · {view.panels.length}컷 트랙
+            </span>
+          </div>
+          {canCopy ? (
+            <button
+              type="button"
+              data-claude-alt-copy-audiotoon="true"
+              className={cn(CLAUDE_BUTTON, "min-h-9 px-2.5 text-xs")}
+              onClick={() => copy("audiotoon")}
+            >
+              {copied === "audiotoon" ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+              {copied === "audiotoon" ? t("claudeAssist.art.copied") : "오디오 웹툰 큐시트 복사"}
+            </button>
+          ) : null}
+        </div>
+        <pre className="max-h-36 overflow-y-auto whitespace-pre-wrap rounded-lg border border-line/60 bg-card/80 p-2 font-mono text-[0.68rem] text-fg-2">
+          {audioToonScript}
+        </pre>
+      </div>
 
       <ClaudeCopyStatus copied={copied !== null} failed={clipboard.failed} />
 

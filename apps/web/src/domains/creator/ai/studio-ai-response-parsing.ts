@@ -67,11 +67,101 @@ export function extractGeneratedModel(json: unknown, fallback: string): string {
 
 export function extractFirstChatContent(json: unknown): string | null {
   if (!json || typeof json !== "object") return null;
-  const choices = (json as Record<string, unknown>).choices;
-  if (!Array.isArray(choices) || choices.length === 0) return null;
-  const message = (choices[0] as Record<string, unknown> | undefined)?.message as Record<string, unknown> | undefined;
-  const content = message?.content;
-  return typeof content === "string" && content.trim().length > 0 ? content.trim() : null;
+  const record = json as Record<string, unknown>;
+  const choices = record.choices;
+  if (Array.isArray(choices) && choices.length > 0) {
+    const message = (choices[0] as Record<string, unknown> | undefined)?.message as Record<string, unknown> | undefined;
+    const content = message?.content;
+    if (typeof content === "string" && content.trim().length > 0) return content.trim();
+  }
+  const anthropicContent = record.content;
+  if (Array.isArray(anthropicContent) && anthropicContent.length > 0) {
+    const combined = anthropicContent
+      .map((block) => {
+        if (!block || typeof block !== "object") return "";
+        const b = block as Record<string, unknown>;
+        return b.type === "text" && typeof b.text === "string" ? b.text : "";
+      })
+      .join("")
+      .trim();
+    if (combined.length > 0) return combined;
+  }
+  return null;
+}
+
+export function isAnthropicStudioUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.hostname === "api.anthropic.com" || parsed.hostname.endsWith(".anthropic.com");
+  } catch {
+    return url.includes("api.anthropic.com");
+  }
+}
+
+export function buildStudioJsonPostTarget(
+  url: string,
+  apiKey: string,
+  body: unknown,
+): { url: string; headers: Record<string, string>; body: unknown } {
+  if (!isAnthropicStudioUrl(url)) {
+    return {
+      url,
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body,
+    };
+  }
+  let targetUrl: string;
+  try {
+    const parsed = new URL(url.trim());
+    parsed.pathname = "/v1/messages";
+    targetUrl = parsed.toString();
+  } catch {
+    targetUrl = "https://api.anthropic.com/v1/messages";
+  }
+  const raw = body && typeof body === "object" && !Array.isArray(body)
+    ? (body as Record<string, unknown>)
+    : {};
+  const rawModel = typeof raw.model === "string" && raw.model.trim().startsWith("claude-")
+    ? raw.model.trim()
+    : "claude-haiku-5-5";
+  const rawMessages = Array.isArray(raw.messages) ? raw.messages : [];
+  const systemParts: string[] = [];
+  const userMessages: Array<{ role: "user" | "assistant"; content: string }> = [];
+  for (const m of rawMessages) {
+    if (!m || typeof m !== "object") continue;
+    const msg = m as Record<string, unknown>;
+    const content = typeof msg.content === "string" ? msg.content : "";
+    if (!content) continue;
+    if (msg.role === "system") {
+      systemParts.push(content);
+    } else {
+      userMessages.push({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content,
+      });
+    }
+  }
+  const requestedMaxTokens =
+    typeof raw.max_tokens === "number" && raw.max_tokens > 0 ? Math.round(raw.max_tokens) : 1024;
+  const anthropicBody: Record<string, unknown> = {
+    model: rawModel,
+    max_tokens: Math.max(2048, requestedMaxTokens + 2048),
+    messages: userMessages.length > 0 ? userMessages : [{ role: "user", content: "ping" }],
+    ...(systemParts.length > 0 ? { system: systemParts.join("\n\n") } : {}),
+    ...(rawModel.includes("-5-") || rawModel.includes("-4-6") || rawModel.includes("-4-7")
+      ? { output_config: { effort: "low" } }
+      : {}),
+  };
+  return {
+    url: targetUrl,
+    headers: {
+      "x-api-key": apiKey.trim(),
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      "Content-Type": "application/json",
+    },
+    body: anthropicBody,
+  };
 }
 
 export function textProviderFromSettings(settings: StudioAiSettings): string {
@@ -99,11 +189,19 @@ export function extractTextAiProvenance(
   const usageRecord = record.usage && typeof record.usage === "object" && !Array.isArray(record.usage)
     ? record.usage as Record<string, unknown>
     : {};
-  const promptTokens = optionalTokenCount(usageRecord.promptTokens ?? usageRecord.prompt_tokens);
-  const completionTokens = optionalTokenCount(
-    usageRecord.completionTokens ?? usageRecord.completion_tokens
+  const promptTokens = optionalTokenCount(
+    usageRecord.promptTokens ?? usageRecord.prompt_tokens ?? usageRecord.input_tokens,
   );
-  const totalTokens = optionalTokenCount(usageRecord.totalTokens ?? usageRecord.total_tokens);
+  const completionTokens = optionalTokenCount(
+    usageRecord.completionTokens ?? usageRecord.completion_tokens ?? usageRecord.output_tokens,
+  );
+  const totalTokens = optionalTokenCount(
+    usageRecord.totalTokens ??
+      usageRecord.total_tokens ??
+      (promptTokens !== undefined && completionTokens !== undefined
+        ? promptTokens + completionTokens
+        : undefined),
+  );
   const usage = promptTokens !== undefined || completionTokens !== undefined || totalTokens !== undefined
     ? {
         ...(promptTokens !== undefined ? { promptTokens } : {}),
@@ -115,7 +213,9 @@ export function extractTextAiProvenance(
   const rawModel = typeof record.model === "string" ? record.model.trim().slice(0, 200) : "";
   const rawRequestId = typeof record.requestId === "string"
     ? record.requestId.trim().slice(0, 240)
-    : "";
+    : typeof record.id === "string"
+      ? record.id.trim().slice(0, 240)
+      : "";
   const provider = rawProvider || (
     transport.mode === "server"
       ? transport.provider && transport.provider !== "auto"

@@ -18,6 +18,8 @@ export interface ClaudeAssistFeature {
   readonly descriptionKey: string;
   /** 무엇이 필요한지 짧게 알리는 칩(예: "이미지 필요"). */
   readonly requirementKey: string;
+  /** 웹툰 실무 공정 배지 (예: "Cut Doctor · 4레이어 검수"). */
+  readonly workflowBadgeKo?: string;
   readonly Dialog: LazyExoticComponent<ComponentType<ClaudeAssistDialogProps>>;
 }
 
@@ -33,6 +35,7 @@ export const CLAUDE_ASSIST_FEATURES: readonly ClaudeAssistFeature[] = Object.fre
     titleKey: "claudeAssist.art.title",
     descriptionKey: "claudeAssist.hub.artDescription",
     requirementKey: "claudeAssist.hub.artRequirement",
+    workflowBadgeKo: "Cut Doctor · 4레이어 검수",
     Dialog: ArtDirectorDialog,
   },
   {
@@ -41,6 +44,7 @@ export const CLAUDE_ASSIST_FEATURES: readonly ClaudeAssistFeature[] = Object.fre
     titleKey: "claudeAssist.plan.title",
     descriptionKey: "claudeAssist.hub.planDescription",
     requirementKey: "claudeAssist.hub.planRequirement",
+    workflowBadgeKo: "스튜디오 매크로 · 단축키 코칭",
     Dialog: CommandPlanDialog,
   },
   {
@@ -49,6 +53,7 @@ export const CLAUDE_ASSIST_FEATURES: readonly ClaudeAssistFeature[] = Object.fre
     titleKey: "claudeAssist.localize.title",
     descriptionKey: "claudeAssist.hub.localizeDescription",
     requirementKey: "claudeAssist.hub.localizeRequirement",
+    workflowBadgeKo: "10개국 식자 · 42자 모바일 폭",
     Dialog: LocalizeDialog,
   },
   {
@@ -57,6 +62,7 @@ export const CLAUDE_ASSIST_FEATURES: readonly ClaudeAssistFeature[] = Object.fre
     titleKey: "claudeAssist.altText.title",
     descriptionKey: "claudeAssist.hub.altTextDescription",
     requirementKey: "claudeAssist.hub.altTextRequirement",
+    workflowBadgeKo: "WCAG · 오디오 웹툰 대본",
     Dialog: AltTextDialog,
   },
 ]);

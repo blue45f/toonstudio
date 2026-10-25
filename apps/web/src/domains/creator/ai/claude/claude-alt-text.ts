@@ -231,3 +231,52 @@ export function altTextPanelsToPlain(panels: readonly AltTextPanel[]): string {
     .map((panel) => [`${panel.step}. ${panel.description}`, ...panel.text.map((line) => `   "${line}"`)].join("\n"))
     .join("\n");
 }
+
+/**
+ * 대체 텍스트·상세 설명·컷별 대사를 바탕으로 TTS/성우 낭독 예상 시간(초)을 산출한다.
+ * 한국어/글로벌 웹툰 오디오 해설 평균 속도(초당 약 4.5글자 + 컷 전환 호흡 0.8초)를 적용한다.
+ */
+export function estimateAltTextTtsDurationSec(
+  view: Pick<AltTextView, "short" | "long" | "panels">,
+  overrides?: { readonly short?: string; readonly long?: string },
+): number {
+  const shortText = overrides?.short ?? view.short;
+  const longText = overrides?.long ?? view.long;
+  const panelTextChars = view.panels.reduce(
+    (sum, p) =>
+      sum + altTextLength(p.description) + p.text.reduce((s, line) => s + altTextLength(line), 0),
+    0,
+  );
+  const totalChars = altTextLength(shortText) + altTextLength(longText) + panelTextChars;
+  const pauseSec = Math.max(1, view.panels.length) * 0.8;
+  return Math.max(2, Math.round(totalChars / 4.5 + pauseSec));
+}
+
+/**
+ * 시각장애인 화면해설 및 글로벌 오디오 웹툰(Audio-Toon · 보이스 드라마) 제작용 큐시트 대본으로 직렬화한다.
+ */
+export function altTextToAudioWebtoonScript(
+  view: Pick<AltTextView, "short" | "long" | "panels">,
+  overrides?: { readonly short?: string; readonly long?: string },
+): string {
+  const shortText = (overrides?.short ?? view.short).trim();
+  const longText = (overrides?.long ?? view.long).trim();
+  const estSeconds = estimateAltTextTtsDurationSec(view, overrides);
+  const lines: string[] = [
+    `# [오디오 웹툰 & 화면해설 큐시트] (예상 낭독 ${estSeconds}초)`,
+    `[오프닝 한 줄 요약] ${shortText}`,
+  ];
+  if (longText) {
+    lines.push(`[장면 내레이션] ${longText}`);
+  }
+  if (view.panels.length > 0) {
+    lines.push("", "## 컷별 성우·해설 트랙");
+    for (const panel of view.panels) {
+      lines.push(`[Cut ${panel.step} 화면해설] ${panel.description}`);
+      for (const tLine of panel.text) {
+        lines.push(`  [대사/SFX 트랙] "${tLine}"`);
+      }
+    }
+  }
+  return lines.join("\n");
+}

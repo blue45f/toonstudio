@@ -283,3 +283,20 @@ export async function executeCommandPlanSteps(
   }
   return results;
 }
+
+/**
+ * 제안된 명령 단계 목록과 단축키 맵을 결합해 웹툰 작가가 외우거나 메모해 둘 수 있는
+ * 한 줄 단축키 매크로 치트시트로 포맷한다.
+ */
+export function formatCommandPlanCheatSheet(
+  steps: readonly PlannedCommandStep[],
+  shortcuts: ReadonlyMap<string, string>,
+): string {
+  if (steps.length === 0) return "";
+  return steps
+    .map((step, idx) => {
+      const key = shortcuts.get(step.commandId);
+      return `${idx + 1}. ${step.label}${key ? ` (${key})` : ""}`;
+    })
+    .join(" → ");
+}

@@ -56,6 +56,7 @@ import {
   buildFabulatorNarrativeChain,
   buildGenvasCharacterPoseLock,
   decomposeCutIntoProductionLayers,
+  evaluateWebtoonAiCompetitorParity,
   GENVAS_POSE_PRESETS,
   WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
   type CharacterRelationshipDynamicId,
@@ -64,12 +65,16 @@ import {
   type GenvasPosePresetId,
   type RealDrawCutDecomposition,
   type WebtoonAiBenchmarkEntry,
+  type WebtoonAiBenchmarkServiceId,
+  type WebtoonCompetitorDimensionScore,
+  type WebtoonCompetitorParityReport,
 } from "./studio-webtoon-industry-benchmarks";
 
 export {
   buildFabulatorNarrativeChain,
   buildGenvasCharacterPoseLock,
   decomposeCutIntoProductionLayers,
+  evaluateWebtoonAiCompetitorParity,
   GENVAS_POSE_PRESETS,
   WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
   type CharacterRelationshipDynamicId,
@@ -78,6 +83,9 @@ export {
   type GenvasPosePresetId,
   type RealDrawCutDecomposition,
   type WebtoonAiBenchmarkEntry,
+  type WebtoonAiBenchmarkServiceId,
+  type WebtoonCompetitorDimensionScore,
+  type WebtoonCompetitorParityReport,
 };
 
 export interface WebtoonStoryboardMasterInput {

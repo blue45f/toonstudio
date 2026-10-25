@@ -12,6 +12,7 @@ import {
   buildGenvasCharacterPoseLock,
   buildGlobalKWebtoonExportBundle,
   decomposeCutIntoProductionLayers,
+  evaluateWebtoonAiCompetitorParity,
   renderStoryboardCutWireframeDataUrl,
   runWebtoonStoryboardMasterPipeline,
   WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
@@ -233,5 +234,29 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     expect(firstCutLayers.layers).toHaveLength(4);
     expect([18, 28, 50, 85]).toContain(firstCutLayers.lensFocalLengthMm);
     expect(output.enrichedCuts[0]!.productionLayers.layers).toHaveLength(4);
+
+    expect(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX).toHaveLength(13);
+    expect(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX.map((m) => m.serviceId)).toEqual([
+      "genvas",
+      "fabulator-tootoon",
+      "realdraw",
+      "clip-studio-naver",
+      "tooning-plus",
+      "dashtoon-studio",
+      "llamagen-comic",
+      "kuaikan-webtoon-global",
+      "cream-aid",
+      "komiko-ai",
+      "anifusion",
+      "skyreels-mootion",
+      "katalist-ai",
+    ]);
+    const parity = evaluateWebtoonAiCompetitorParity({
+      hasArtistStyle: true,
+      claudeLiveConnected: true,
+    });
+    expect(parity.benchmarkedServiceCount).toBe(13);
+    expect(parity.overallParityScore).toBeGreaterThanOrEqual(90);
+    expect(parity.dimensions).toHaveLength(6);
   });
 });
