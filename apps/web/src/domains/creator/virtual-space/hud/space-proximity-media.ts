@@ -63,6 +63,8 @@ export interface SpaceProximityMediaPeer {
   readonly point: StudioVirtualSpacePoint;
   readonly activity: StudioVirtualSpaceActivity;
   readonly privateZoneId: string | null;
+  /** 고스트 모드(G)로 이동 중이면 지나가며 근접 통화가 켜지지 않게 제외한다(Gather Player.ghost 대응). */
+  readonly ghost?: boolean;
 }
 
 /**
@@ -70,6 +72,14 @@ export interface SpaceProximityMediaPeer {
  * - standard: 기본 반경. quiet: 바로 옆 사람만(상태 점이 빨간색으로 바뀐다). off: 근접 연결 자체를 하지 않는다.
  */
 export type SpaceProximityRangeMode = "standard" | "quiet" | "off";
+
+/**
+ * 조용히 모드 단축키(U / Ctrl·⌘+U) 토글 규칙(Gather QuietMode 토글 대응).
+ * 기본("standard")이면 "quiet"(바로 옆만)으로 좁히고, "quiet" 또는 "off" 상태면 "standard"로 되돌린다.
+ */
+export function nextSpaceProximityRangeMode(current: SpaceProximityRangeMode): SpaceProximityRangeMode {
+  return current === "standard" ? "quiet" : "standard";
+}
 
 export interface SpaceProximityRangeRadii {
   /** 새로 연결하는 거리(px). */
@@ -117,7 +127,13 @@ export interface SpaceProximityMediaScopePeer {
 }
 
 export interface SpaceProximityMediaScopeInput {
-  readonly self: { readonly point: StudioVirtualSpacePoint; readonly activity: StudioVirtualSpaceActivity; readonly privateZoneId: string | null };
+  readonly self: {
+    readonly point: StudioVirtualSpacePoint;
+    readonly activity: StudioVirtualSpaceActivity;
+    readonly privateZoneId: string | null;
+    /** 내가 고스트 모드(G)면 지나가는 동안 누구와도 근접 음성을 연결하지 않는다(Gather Player.ghost 대응). */
+    readonly ghost?: boolean;
+  };
   readonly peers: readonly SpaceProximityMediaPeer[];
   readonly previous?: ReadonlySet<string>;
   readonly blockedIds?: readonly string[];
@@ -126,27 +142,42 @@ export interface SpaceProximityMediaScopeInput {
   readonly limit?: number;
   /** 범위 모드. 반경을 직접 주지 않으면 모드의 반경을 쓰고, off면 아무도 연결하지 않는다. */
   readonly range?: SpaceProximityRangeMode;
+  /**
+   * 1:1 귓속말 대상 팀원 id(Gather EnterWhisper / LeaveWhisper 대응).
+   * 지정되면 주변 다른 사람은 제외하고 해당 팀원 1명만 이탈 반경 안에서 최대 볼륨(gain=1)으로 연결한다.
+   */
+  readonly whisperPeerId?: string | null;
 }
 
 /**
  * 연결 대상을 거리·게인과 함께 고른다(가까운 순, 최대 3명).
  * - 나와 같은 프라이빗 구역끼리만(둘 다 바깥이면 바깥끼리) 연결한다.
- * - 자리 비움인 팀원과 차단한 팀원은 빼고, 내가 집중·자리 비움이면 아무도 연결하지 않는다.
+ * - 자리 비움인 팀원·차단한 팀원·고스트 모드(G) 팀원은 빼고, 내가 집중·자리 비움·고스트 모드면 아무도 연결하지 않는다.
+ * - whisperPeerId(1:1 귓속말)가 있으면 그 팀원만 이탈 반경 안에서 게인 1로 독점 연결한다.
  * - 이미 연결된 팀원은 LEAVE 반경까지 유지해 경계에서 깜빡이지 않게 한다.
  */
 export function spaceProximityMediaScopePeers(input: SpaceProximityMediaScopeInput): readonly SpaceProximityMediaScopePeer[] {
-  const { self, peers, previous = new Set<string>(), blockedIds = [] } = input;
+  const { self, peers, previous = new Set<string>(), blockedIds = [], whisperPeerId = null } = input;
   const range = input.range ?? "standard";
   const rangeRadii = spaceProximityRangeRadii(range);
   if (!rangeRadii) return [];
   const radius = input.radius ?? rangeRadii.radius;
   const leaveRadius = input.leaveRadius ?? rangeRadii.leaveRadius;
   const limit = input.limit ?? SPACE_PROXIMITY_MEDIA_LIMIT;
-  if (self.activity === "focused" || self.activity === "away") return [];
+  if (self.activity === "focused" || self.activity === "away" || self.ghost) return [];
   const blocked = new Set(blockedIds);
   const inPrivateZone = self.privateZoneId !== null;
+  if (whisperPeerId) {
+    const target = peers.find(
+      (peer) => peer.id === whisperPeerId && !peer.ghost && !blocked.has(peer.id) && peer.activity !== "away" && peer.privateZoneId === self.privateZoneId,
+    );
+    if (!target) return [];
+    const distance = Math.hypot(target.point.x - self.point.x, target.point.y - self.point.y);
+    if (!Number.isFinite(distance) || distance > leaveRadius) return [];
+    return [{ id: target.id, distance, gain: 1 }];
+  }
   return peers
-    .filter((peer) => !blocked.has(peer.id) && peer.activity !== "away" && peer.privateZoneId === self.privateZoneId)
+    .filter((peer) => !peer.ghost && !blocked.has(peer.id) && peer.activity !== "away" && peer.privateZoneId === self.privateZoneId)
     .map((peer) => ({ id: peer.id, distance: Math.hypot(peer.point.x - self.point.x, peer.point.y - self.point.y) }))
     .filter(({ id, distance }) => Number.isFinite(distance) && (distance <= radius || (previous.has(id) && distance <= leaveRadius)))
     .sort((left, right) => left.distance - right.distance || left.id.localeCompare(right.id))

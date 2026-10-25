@@ -3,7 +3,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { StudioLiveParticipant } from "../../live/studio-live-collaboration-protocol";
 import type { StudioLiveDirectPort } from "../../live/studio-live-direct-port";
 import { StudioP2pHuddleController, type HuddleSnapshot } from "../../live/huddle/studio-p2p-huddle-controller";
-import { createSpaceChannelPort, sameSpaceProximityScope } from "./space-proximity-media";
+import type { StudioVirtualSpaceActivity, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
+import type { StudioUserStatus } from "../studio-virtual-space-user-status";
+import type { StudioWorldRect } from "../studio-virtual-space-world-manifest";
+import { spaceStatusOption, spaceStatusOptionById, type SpaceStatusExpiryMinutes, type SpaceStatusOption } from "./space-dock-model";
+import {
+  createSpaceChannelPort,
+  nextSpaceProximityRangeMode,
+  sameSpaceProximityScope,
+  spacePrivateZoneAt,
+  spaceProximityMediaScopePeers,
+  type SpaceProximityRangeMode,
+} from "./space-proximity-media";
 
 export type SpaceProximityMediaPhase =
   /** 사용자가 아직 켜지 않음(동의 전). */
@@ -109,4 +120,113 @@ export function useSpaceProximityMedia({ participant, port, available, scopeIds 
   const toggleScreen = useCallback(() => run((controller) => controller.setVideo(controller.snapshot().sharing ? null : "screen")), [run]);
   const phase: SpaceProximityMediaPhase = !enabled ? "off" : ready && snapshot ? "live" : "waiting";
   return { phase, enabled, snapshot, busy, viewer, start, stop, toggleCamera, toggleMic, toggleScreen };
+}
+
+export interface SpaceProximityScopePeerSample {
+  readonly participant: { readonly sessionId: string; readonly displayName: string };
+  readonly state: StudioVirtualSpacePoint & { readonly activity: StudioVirtualSpaceActivity };
+}
+
+export interface SpaceProximityScopeHookInput {
+  readonly selfPoint: StudioVirtualSpacePoint;
+  readonly activity: StudioVirtualSpaceActivity;
+  readonly userStatus?: StudioUserStatus | null;
+  readonly ghostMode: boolean;
+  readonly peers: readonly SpaceProximityScopePeerSample[];
+  readonly acousticZones: readonly (StudioWorldRect & { readonly id: string; readonly policy?: string })[] | undefined;
+  readonly blockedIds: readonly string[];
+  readonly fallbackPeerLabel: string;
+  readonly onExpireStatus?: (next: SpaceStatusOption) => void;
+  readonly onNotify?: (kind: "quiet-on" | "quiet-off" | "whisper-start" | "whisper-end", peerName?: string) => void;
+}
+
+/**
+ * 근접 음성 범위(기본/조용히/끄기)·1:1 귓속말(Whisper)·고스트 모드 제외·상태 자동 해제를 합쳐
+ * 현재 연결 대상(scopeIds·scopeNames)을 계산하는 상태 훅.
+ */
+export function useSpaceProximityScope({
+  selfPoint, activity, userStatus = null, ghostMode, peers, acousticZones, blockedIds, fallbackPeerLabel, onExpireStatus, onNotify,
+}: SpaceProximityScopeHookInput) {
+  const [proximityRange, setProximityRange] = useState<SpaceProximityRangeMode>("standard");
+  const [whisperPeerId, setWhisperPeerId] = useState<string | null>(null);
+  const [statusExpiryMinutes, setStatusExpiryMinutes] = useState<SpaceStatusExpiryMinutes>(null);
+  const previousRef = useRef<ReadonlySet<string>>(new Set());
+  const currentStatusId = spaceStatusOption(activity, userStatus).id;
+
+  useEffect(() => {
+    if (currentStatusId === "available" || statusExpiryMinutes === null || !onExpireStatus) return undefined;
+    const timer = globalThis.setTimeout(() => {
+      setStatusExpiryMinutes(null);
+      onExpireStatus(spaceStatusOptionById("available"));
+    }, statusExpiryMinutes * 60_000);
+    return () => globalThis.clearTimeout(timer);
+  }, [currentStatusId, onExpireStatus, statusExpiryMinutes]);
+
+  const proximityPeers = spaceProximityMediaScopePeers({
+    self: { point: selfPoint, activity, privateZoneId: spacePrivateZoneAt(acousticZones, selfPoint), ghost: ghostMode },
+    peers: peers.map((peer) => ({
+      id: peer.participant.sessionId,
+      point: peer.state,
+      activity: peer.state.activity,
+      privateZoneId: spacePrivateZoneAt(acousticZones, peer.state),
+    })),
+    previous: previousRef.current,
+    blockedIds,
+    range: proximityRange,
+    whisperPeerId,
+  });
+
+  const gainById = new Map(proximityPeers.map((peer) => [peer.id, peer.gain] as const));
+  const proximityKey = proximityPeers.map((peer) => peer.id).join("\u0000");
+  const scopeIds = proximityKey ? proximityKey.split("\u0000") : [];
+
+  useEffect(() => {
+    previousRef.current = new Set(proximityKey ? proximityKey.split("\u0000") : []);
+  }, [proximityKey]);
+
+  const whisperPeer = whisperPeerId ? peers.find((peer) => peer.participant.sessionId === whisperPeerId) ?? null : null;
+  useEffect(() => {
+    if (!whisperPeerId) return;
+    if (ghostMode || proximityRange === "off" || !proximityPeers.some((peer) => peer.id === whisperPeerId)) {
+      setWhisperPeerId(null);
+    }
+  }, [ghostMode, proximityPeers, proximityRange, whisperPeerId]);
+
+  const toggleQuietMode = useCallback(() => {
+    const next = nextSpaceProximityRangeMode(proximityRange);
+    setProximityRange(next);
+    onNotify?.(next === "quiet" ? "quiet-on" : "quiet-off");
+  }, [onNotify, proximityRange]);
+
+  const toggleWhisper = useCallback((peerId: string) => {
+    if (whisperPeerId === peerId) {
+      setWhisperPeerId(null);
+      onNotify?.("whisper-end");
+      return;
+    }
+    const target = peers.find((item) => item.participant.sessionId === peerId);
+    if (!target) return;
+    setWhisperPeerId(peerId);
+    onNotify?.("whisper-start", target.participant.displayName);
+  }, [onNotify, peers, whisperPeerId]);
+
+  const scopeNames = scopeIds.map((id) => ({
+    id,
+    name: peers.find((peer) => peer.participant.sessionId === id)?.participant.displayName ?? fallbackPeerLabel,
+    gain: gainById.get(id),
+  }));
+
+  return {
+    proximityRange,
+    setProximityRange,
+    toggleQuietMode,
+    whisperPeerId,
+    setWhisperPeerId,
+    whisperPeerName: whisperPeer?.participant.displayName ?? null,
+    toggleWhisper,
+    statusExpiryMinutes,
+    setStatusExpiryMinutes,
+    scopeIds,
+    scopeNames,
+  };
 }

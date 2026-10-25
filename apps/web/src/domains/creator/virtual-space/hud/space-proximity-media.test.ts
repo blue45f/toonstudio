@@ -4,6 +4,7 @@ import type { StudioLiveParticipant } from "../../live/studio-live-collaboration
 import type { StudioLiveDirectPort } from "../../live/studio-live-direct-port";
 import {
   createSpaceChannelPort,
+  nextSpaceProximityRangeMode,
   sameSpaceProximityScope,
   SPACE_PROXIMITY_MEDIA_CHANNEL,
   SPACE_PROXIMITY_MEDIA_LEAVE_RADIUS,
@@ -133,6 +134,27 @@ describe("spaceProximityMediaScopePeers", () => {
       peers: [peer("inside", 150, { privateZoneId: "room-1" })],
     });
     expect(scoped).toEqual([{ id: "inside", distance: 150, gain: 1 }]);
+  });
+
+  it("내가 고스트 모드(G)이거나 상대가 고스트 모드면 지나가며 근접 통화가 연결되지 않는다", () => {
+    const peers = [peer("normal", 40), peer("ghost-peer", 30, { ghost: true })];
+    expect(spaceProximityMediaScope({ self: { ...self, ghost: true }, peers })).toEqual([]);
+    expect(spaceProximityMediaScope({ self, peers })).toEqual(["normal"]);
+  });
+
+  it("1:1 귓속말(whisperPeerId) 중이면 주변 다른 사람은 빼고 대상 팀원 1명만 게인 1로 독점 연결한다", () => {
+    const peers = [peer("alice", 30), peer("bob", 180)];
+    const whispered = spaceProximityMediaScopePeers({ self, peers, whisperPeerId: "bob" });
+    expect(whispered).toEqual([{ id: "bob", distance: 180, gain: 1 }]);
+    // 이탈 반경(216px) 밖으로 멀어지거나 차단·자리 비움·고스트면 귓속말 연결도 해제된다.
+    expect(spaceProximityMediaScopePeers({ self, peers: [peer("bob", 240)], whisperPeerId: "bob" })).toEqual([]);
+    expect(spaceProximityMediaScopePeers({ self, peers: [peer("bob", 40, { ghost: true })], whisperPeerId: "bob" })).toEqual([]);
+  });
+
+  it("조용히 모드 토글(nextSpaceProximityRangeMode)은 기본과 좁게(quiet) 사이를 오간다", () => {
+    expect(nextSpaceProximityRangeMode("standard")).toBe("quiet");
+    expect(nextSpaceProximityRangeMode("quiet")).toBe("standard");
+    expect(nextSpaceProximityRangeMode("off")).toBe("standard");
   });
 });
 

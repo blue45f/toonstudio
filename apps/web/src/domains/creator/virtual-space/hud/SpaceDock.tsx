@@ -28,7 +28,13 @@ import { SpaceEmotePicker } from "./SpaceEmotePicker";
 import { SpaceMenuList } from "./SpaceMenuList";
 import { SpacePopover } from "./SpacePopover";
 import { SpaceStatusMenu } from "./SpaceStatusMenu";
-import { spaceStatusOption, type SpaceDockMenuItem, type SpaceDockPopover, type SpaceStatusOption } from "./space-dock-model";
+import {
+  spaceStatusOption,
+  type SpaceDockMenuItem,
+  type SpaceDockPopover,
+  type SpaceStatusExpiryMinutes,
+  type SpaceStatusOption,
+} from "./space-dock-model";
 import type { SpaceProximityRangeMode } from "./space-proximity-media";
 
 export interface SpaceDockSelf {
@@ -93,7 +99,7 @@ function DockButton({ icon: Icon, label, shortcut, pressed, expanded, controls, 
  */
 export const SpaceDock = memo(function SpaceDock({
   self, media, panel, mapOpen, peopleBadge, popover, moreItems, workLauncher, panelId, dockRef,
-  proximityRange = "standard", onProximityRange,
+  proximityRange = "standard", onProximityRange, statusExpiryMinutes = null, onStatusExpiry,
   onPopover, onStatus, onEditCharacter, onEmote, onTogglePanel, onToggleMap, onExit,
 }: {
   readonly self: SpaceDockSelf;
@@ -109,6 +115,9 @@ export const SpaceDock = memo(function SpaceDock({
   /** 근접 음성 범위. 좁게·끄기면 내 상태 점이 빨간색으로 바뀐다. */
   readonly proximityRange?: SpaceProximityRangeMode;
   readonly onProximityRange?: (mode: SpaceProximityRangeMode) => void;
+  /** 상태 자동 해제 시간(분, Gather SetStatusV2 대응). */
+  readonly statusExpiryMinutes?: SpaceStatusExpiryMinutes;
+  readonly onStatusExpiry?: (minutes: SpaceStatusExpiryMinutes) => void;
   readonly onPopover: (next: SpaceDockPopover | null) => void;
   readonly onStatus: (status: SpaceStatusOption) => void;
   readonly onEditCharacter: () => void;
@@ -144,6 +153,7 @@ export const SpaceDock = memo(function SpaceDock({
         <SpaceStatusMenu status={status.id} onStatus={(next, close) => { onStatus(next); if (close) onPopover(null); }}
           proximityRange={proximityRange}
           onProximityRange={onProximityRange ? (option, close) => { onProximityRange(option.id); if (close) onPopover(null); } : undefined}
+          statusExpiryMinutes={statusExpiryMinutes} onStatusExpiry={onStatusExpiry}
           onEditCharacter={() => { onPopover(null); onEditCharacter(); }} />
       </SpacePopover>
     </div>

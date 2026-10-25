@@ -20,6 +20,7 @@ const SHORTCUTS = [
   { keys: ["오른쪽 끌기", "Space+끌기"], ko: "시점을 끌어서 둘러보기 (터치는 두 손가락)", en: "Drag to look around (two fingers on touch)" },
   { keys: ["Space+방향키"], ko: "누르는 동안 시점을 그쪽으로 옮기기 (아바타는 걷지 않아요)", en: "Hold to look that way (your avatar stays put)" },
   { keys: ["+", "-", "0"], ko: "화면 확대·축소·원래 크기 (마우스 휠도 가능)", en: "Zoom in · out · reset (mouse wheel works too)" },
+  { keys: ["U", "Ctrl+U"], ko: "조용히 모드 켜고 끄기 (바로 옆 사람만 듣기)", en: "Toggle quiet mode (only hear people right next to you)" },
   { keys: ["G"], ko: "고스트 모드 켜고 끄기 (벽·사람 통과)", en: "Toggle ghost mode (pass through walls and people)" },
   { keys: ["Ctrl", "K"], ko: "방·사람 찾기", en: "Find rooms and people" },
   { keys: ["Esc"], ko: "이동 멈추기 · 맨 위 창 닫기", en: "Stop walking · close the top window" },

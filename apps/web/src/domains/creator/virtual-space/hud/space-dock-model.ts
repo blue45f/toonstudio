@@ -88,3 +88,21 @@ export const SPACE_PROXIMITY_RANGE_OPTIONS: readonly SpaceProximityRangeOption[]
 export function spaceProximityRangeOption(mode: SpaceProximityRangeMode): SpaceProximityRangeOption {
   return SPACE_PROXIMITY_RANGE_OPTIONS.find((option) => option.id === mode) ?? SPACE_PROXIMITY_RANGE_OPTIONS[0]!;
 }
+
+/**
+ * 상태 자동 해제 시간(분, Gather SetStatusV2.statusExpiresAt 대응).
+ * null이면 직접 바꿀 때까지 유지하고, 30·60이면 지정 시간 뒤 '대화 가능(available)'으로 자동 복귀한다.
+ */
+export type SpaceStatusExpiryMinutes = null | 30 | 60;
+
+export interface SpaceStatusExpiryOption {
+  readonly minutes: SpaceStatusExpiryMinutes;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+export const SPACE_STATUS_EXPIRY_OPTIONS: readonly SpaceStatusExpiryOption[] = [
+  { minutes: null, labelKo: "바꿀 때까지", labelEn: "Until changed" },
+  { minutes: 30, labelKo: "30분 뒤 해제", labelEn: "Clear in 30m" },
+  { minutes: 60, labelKo: "1시간 뒤 해제", labelEn: "Clear in 1h" },
+];

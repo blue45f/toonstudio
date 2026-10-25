@@ -1,4 +1,4 @@
-import { Footprints, Hand, Handshake, MessageCircle } from "lucide-react";
+import { Ear, Footprints, Hand, Handshake, MessageCircle } from "lucide-react";
 import { memo } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -42,7 +42,7 @@ const NPC_PREFIX = /^NPC\s*·\s*/u;
  * NPC 카드는 'NPC' 배지와 다른 테두리를 쓰고, 온라인 인원 수에는 넣지 않는다.
  */
 export const SpaceProximityStrip = memo(function SpaceProximityStrip({
-  people, npcs, artStyle, socialDisabled, followingPeerId, onWave, onTalk, onFollow, onNpcTalk, onCowork,
+  people, npcs, artStyle, socialDisabled, followingPeerId, whisperPeerId = null, onWave, onTalk, onFollow, onWhisper, onNpcTalk, onCowork,
 }: {
   readonly people: readonly SpaceNearbyPerson[];
   readonly npcs: readonly SpaceNearbyNpcCard[];
@@ -50,9 +50,13 @@ export const SpaceProximityStrip = memo(function SpaceProximityStrip({
   /** 요청을 보낼 수 없는 이유(집중 모드·연결 없음 등). 있으면 사람 카드 버튼을 비활성으로 둔다. */
   readonly socialDisabled: string | null;
   readonly followingPeerId: string | null;
+  /** 1:1 귓속말 중인 팀원 id(Gather EnterWhisper / LeaveWhisper 대응). */
+  readonly whisperPeerId?: string | null;
   readonly onWave: (id: string) => void;
   readonly onTalk: (id: string) => void;
   readonly onFollow: (id: string) => void;
+  /** 주면 사람 카드에 '1:1 귓속말' 토글 버튼을 둔다. */
+  readonly onWhisper?: (id: string) => void;
   readonly onNpcTalk: (id: string) => void;
   /** 주면 사람 카드에 '같이 작업하기' 버튼을 둔다(무엇을 함께 할지 고르는 요청 흐름). */
   readonly onCowork?: (id: string) => void;
@@ -66,14 +70,17 @@ export const SpaceProximityStrip = memo(function SpaceProximityStrip({
       const status = spaceStatusOption(person.activity, person.userStatus);
       const busy = person.activity === "focused" || person.activity === "away";
       const reason = socialDisabled ?? (busy ? bt("상대가 집중 중이거나 자리를 비웠어요", "They are focusing or away") : null);
-      // 따라가기는 다른 행동과 같은 비활성 규칙을 따르되, 이미 따라가는 중이면 취소는 허용한다.
+      // 따라가기·귓속말은 다른 행동과 같은 비활성 규칙을 따르되, 이미 켜져 있으면 취소는 허용한다.
       const followReason = followingPeerId === person.id ? null : reason;
-      return <article key={person.id} className="space-proximity__card" data-kind="person" data-in-conversation={person.inConversation || undefined}>
+      const whispering = whisperPeerId === person.id;
+      const whisperReason = whispering ? null : reason;
+      return <article key={person.id} className="space-proximity__card" data-kind="person"
+        data-in-conversation={person.inConversation || whispering || undefined} data-whispering={whispering || undefined}>
         <SpaceAvatar identity={person.id} activity={person.activity} avatarIndex={person.avatarIndex} appearance={person.appearance} size="md" />
         <div className="space-proximity__text">
           <strong>{person.name}</strong>
           <small><span className="space-status-dot" data-activity={person.activity} data-status={status.id} aria-hidden />
-            {person.inConversation ? bt("대화 중", "In conversation") : bt(status.labelKo, status.labelEn)}</small>
+            {whispering ? bt("1:1 귓속말 중", "Whispering 1:1") : person.inConversation ? bt("대화 중", "In conversation") : bt(status.labelKo, status.labelEn)}</small>
         </div>
         <div className="space-proximity__actions">
           <button type="button" className="space-icon-button" aria-label={bt(`${person.name}에게 손 흔들기`, `Wave to ${person.name}`)}
@@ -84,6 +91,12 @@ export const SpaceProximityStrip = memo(function SpaceProximityStrip({
             aria-disabled={reason ? true : undefined} title={reason ?? undefined} onClick={() => { if (!reason) onTalk(person.id); }}>
             <MessageCircle size={17} aria-hidden />
           </button>
+          {onWhisper ? <button type="button" className="space-icon-button" data-whisper aria-pressed={whispering}
+            aria-label={bt(`${person.name}에게 1:1 귓속말`, `Whisper with ${person.name}`)}
+            aria-disabled={whisperReason ? true : undefined} title={whisperReason ?? undefined}
+            onClick={() => { if (!whisperReason) onWhisper(person.id); }}>
+            <Ear size={17} aria-hidden />
+          </button> : null}
           <button type="button" className="space-icon-button" aria-pressed={followingPeerId === person.id}
             aria-label={bt(`${person.name} 따라가기`, `Follow ${person.name}`)}
             aria-disabled={followReason ? true : undefined} title={followReason ?? undefined}
