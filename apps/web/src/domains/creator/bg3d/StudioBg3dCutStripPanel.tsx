@@ -10,6 +10,7 @@ import {
   storyboardSceneMetaBadgeKo,
   type SceneLinkedStoryboardCut,
 } from "./studio-bg3d-storyboard-cut-link";
+import { Studio3DContinuityChecker } from "../scene-3d/studio-3d-continuity-checker";
 import {
   CUT_ASPECT_RATIO_UI,
   Studio3DStoryboardCutStrip,
@@ -111,6 +112,45 @@ export function StudioBg3dCutStripPanel({
     }
     return map;
   }, [cuts, strip]);
+
+  const continuityReport = useMemo(() => {
+    const checker = new Studio3DContinuityChecker();
+    for (const cut of cuts) {
+      const linked = asSceneLinkedStoryboardCut(cut);
+      checker.registerSnapshot({
+        shotId: cut.id,
+        shotName: cut.title,
+        properties: [
+          {
+            nodeId: "camera",
+            nodeName: "카메라",
+            category: "lighting",
+            key: "fovDeg",
+            value: cut.cameraFovDeg,
+          },
+          {
+            nodeId: "cast",
+            nodeName: "등장 캐릭터",
+            category: "costume",
+            key: "characterIds",
+            value: [...cut.characterIds],
+          },
+          ...(linked
+            ? [
+                {
+                  nodeId: "scene-lighting",
+                  nodeName: "조명 프리셋",
+                  category: "lighting" as const,
+                  key: "lightingPresetId",
+                  value: linked.sceneMeta.lightingPresetId ?? "default",
+                },
+              ]
+            : []),
+        ],
+      });
+    }
+    return checker.generateReport(cuts.map((c) => c.id));
+  }, [cuts]);
 
   const totalHeight = strip.evaluateTotalStripHeight();
 
@@ -348,6 +388,23 @@ export function StudioBg3dCutStripPanel({
           </dd>
         </div>
       </dl>
+
+      {cuts.length >= 2 ? (
+        <div
+          data-testid="bg3d-cut-strip-continuity"
+          className="rounded-lg border border-line bg-card/60 px-2.5 py-1.5 text-[0.625rem] text-fg-3"
+        >
+          연속 컷 일관성 점검 ({continuityReport.totalShots}컷):{" "}
+          {continuityReport.totalIssues === 0 ? (
+            <strong className="text-good">연속성 이상 없음</strong>
+          ) : (
+            <strong className="text-warn">
+              불일치 {continuityReport.totalIssues}건 (경고 {continuityReport.warnings} / 정보{" "}
+              {continuityReport.infos})
+            </strong>
+          )}
+        </div>
+      ) : null}
 
       <button
         type="button"

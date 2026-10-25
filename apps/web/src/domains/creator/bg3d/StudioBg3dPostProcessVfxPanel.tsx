@@ -1,5 +1,5 @@
 import { Aperture, Sparkles, Sun, Palette } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import {
   COLOR_GRADING_PRESETS,
@@ -7,20 +7,56 @@ import {
   type PostProcessVfxPipelineConfig,
   type ColorGradingPresetId,
 } from "../scene-3d/studio-3d-postprocess-vfx-pipeline";
+import {
+  Studio3DWebtoonFilterEngine,
+  WEBTOON_FILTER_PRESETS,
+  type WebtoonFilterConfig,
+  type WebtoonFilterId,
+} from "../scene-3d/studio-3d-webtoon-filters";
 
 export interface StudioBg3dPostProcessVfxPanelProps {
   readonly onApplyPostProcessConfig?: (config: PostProcessVfxPipelineConfig) => void;
+  readonly onApplyWebtoonFilter?: (preset: WebtoonFilterConfig, cssFilter: string) => void;
 }
 
 export function StudioBg3dPostProcessVfxPanel({
   onApplyPostProcessConfig,
+  onApplyWebtoonFilter,
 }: StudioBg3dPostProcessVfxPanelProps): React.JSX.Element {
   const [config, setConfig] = useState<PostProcessVfxPipelineConfig>(DEFAULT_POSTPROCESS_CONFIG);
+  const filterEngine = useMemo(() => new Studio3DWebtoonFilterEngine(), []);
+  const [selectedWebtoonFilterId, setSelectedWebtoonFilterId] =
+    useState<WebtoonFilterId>("modern-crisp-cel");
+
+  const activeWebtoonFilter = useMemo(
+    () => filterEngine.getPreset(selectedWebtoonFilterId),
+    [filterEngine, selectedWebtoonFilterId],
+  );
+  const activeCssFilter = useMemo(
+    () => filterEngine.generateCssFilterString(activeWebtoonFilter),
+    [filterEngine, activeWebtoonFilter],
+  );
+  const sampleCelRamp = useMemo(
+    () =>
+      filterEngine.evaluateCelRamp(
+        0.62,
+        activeWebtoonFilter.celSteps,
+        activeWebtoonFilter.shadowThreshold,
+      ),
+    [filterEngine, activeWebtoonFilter],
+  );
 
   const handleLutSelect = (lutId: ColorGradingPresetId) => {
     const next = { ...config, colorGrading: lutId };
     setConfig(next);
     onApplyPostProcessConfig?.(next);
+  };
+
+  const handleWebtoonFilterSelect = (filterId: WebtoonFilterId) => {
+    setSelectedWebtoonFilterId(filterId);
+    const preset = filterEngine.getPreset(filterId);
+    const css = filterEngine.generateCssFilterString(preset);
+    onApplyWebtoonFilter?.(preset, css);
   };
 
   const handleToggleDof = () => {
@@ -70,6 +106,44 @@ export function StudioBg3dPostProcessVfxPanel({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Real-time Webtoon Cel & Ink Filter Presets (7 presets) */}
+      <div
+        className="flex flex-col gap-1.5 rounded-lg border border-line bg-card p-2.5"
+        data-testid="bg3d-webtoon-filter-section"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[0.7rem] font-bold text-fg">
+            실시간 웹툰 셀·잉크 필터 (7종)
+          </span>
+          <span className="font-mono text-[0.64rem] text-accent">
+            {activeWebtoonFilter.celSteps}단 셀 · 램프 {sampleCelRamp}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {WEBTOON_FILTER_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              data-testid={`bg3d-webtoon-filter-${preset.id}`}
+              onClick={() => handleWebtoonFilterSelect(preset.id)}
+              className={`rounded border px-2 py-1 text-left text-[0.66rem] transition-all ${
+                selectedWebtoonFilterId === preset.id
+                  ? "border-accent bg-accent/10 font-bold text-accent"
+                  : "border-line bg-raised/50 text-fg-2 hover:text-fg"
+              }`}
+            >
+              {preset.name.split(" (")[0]}
+            </button>
+          ))}
+        </div>
+        <p className="text-[0.62rem] text-fg-3">
+          펜선 {activeWebtoonFilter.lineThicknessPx}px · CSS 필터:{" "}
+          <code data-testid="bg3d-webtoon-filter-css" className="font-mono text-fg-2">
+            {activeCssFilter}
+          </code>
+        </p>
       </div>
 
       {/* Depth of Field (DoF Bokeh) Section */}

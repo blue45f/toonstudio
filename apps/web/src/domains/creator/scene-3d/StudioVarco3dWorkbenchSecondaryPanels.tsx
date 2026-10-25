@@ -5,6 +5,12 @@ import type {
   evaluateVarco3dMultiViewFramePlan,
 } from "./studio-varco3d-decal-ik-turntable-engine";
 import {
+  STUDIO_VARCO3D_BONE_VISUALIZER_METRICS,
+  computeVarco3dUvSeamLineIndices,
+  computeVarco3dWireframeLineIndices,
+  evaluateVarco3dEnvironmentMatcapTint,
+} from "./studio-varco3d-geometry-rig-engine";
+import {
   STUDIO_VARCO3D_DCC_BRIDGE_PORTS,
   STUDIO_VARCO3D_REMESH_UNWRAP_METRICS,
   STUDIO_VARCO3D_SLICER_SPECS,
@@ -60,6 +66,19 @@ const MULTIVIEW_SAMPLE_FILES = Object.freeze([
 ]);
 
 const OCTAHEDRAL_BONE_METRICS = buildVarco3dUnitOctahedralBoneGeometry(1);
+const SAMPLE_UV_SEAM_INDICES = computeVarco3dUvSeamLineIndices(
+  [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
+  [0, 0, 1, 0, 0, 1, 0.2, 0.2, 1, 1, 0.2, 0.9],
+);
+const SAMPLE_QUAD_WIREFRAME_INDICES = computeVarco3dWireframeLineIndices({
+  vertexCount: 6,
+  faceTopology: "quad",
+});
+const SAMPLE_ENV_MATCAP_TINT = evaluateVarco3dEnvironmentMatcapTint(
+  [0.82, 0.78, 0.75],
+  [0.95, 0.88, 0.76],
+  0.85,
+);
 
 const DEFAULT_TRACKING_CANDIDATES = Object.freeze([
   { boneName: "mixamorig:Hips", hierarchyDepth: 1, values: [0, 1, 0, 0, 1, 1.4, 0, 1, 2.8] },
@@ -636,6 +655,15 @@ export function StudioVarco3dWorkbenchSecondaryPanels(
                 바닥 원점 정렬 기본값: {pivotToBottom ? "ON (true)" : "OFF (false)"}
               </span>
             </div>
+          </div>
+          <div
+            data-testid="varco3d-geometry-rig-telemetry"
+            className="mt-2 border-t border-line/50 pt-1.5 text-[0.66rem] text-fg-3"
+          >
+            UV 심 선분: {SAMPLE_UV_SEAM_INDICES.length / 2}개 · 쿼드 와이어프레임 인덱스:{" "}
+            {SAMPLE_QUAD_WIREFRAME_INDICES.length} · 환경 Matcap 색조: (
+            {SAMPLE_ENV_MATCAP_TINT.join(", ")}) · 리그 채도 감쇠:{" "}
+            {Math.round((1 - STUDIO_VARCO3D_BONE_VISUALIZER_METRICS.rigDimSaturationMix) * 100)}%
           </div>
         </details>
 

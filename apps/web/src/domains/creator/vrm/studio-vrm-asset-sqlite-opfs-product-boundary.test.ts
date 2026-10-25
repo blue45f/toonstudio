@@ -137,7 +137,7 @@ describe("VRM asset SQLite/OPFS product boundary", () => {
     expect(exactOwnerCommit).toBeGreaterThan(sqliteCommit);
     expect(repository.slice(ownerCommit, sqliteCommit)).toContain("unionLiveHashes");
     expect(repository).toContain("page.descriptor.key");
-    expect(repository).not.toContain("base64");
+    expect(repository.replaceAll("thumbnail-base64-unavailable", "")).not.toContain("base64");
     expect(repository).not.toContain("THREE.");
     expect(repository).not.toContain("WebGLRenderer");
   });

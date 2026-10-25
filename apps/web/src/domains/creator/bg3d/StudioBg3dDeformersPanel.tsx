@@ -1,6 +1,11 @@
 import { Move3d, Sparkles } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
+import {
+  planCsgBooleanOperation,
+  type CsgBooleanOperation,
+  type CsgBooleanPlanResult,
+} from "../scene-3d/studio-3d-csg-boolean-engine";
 import type {
   DeformerKind,
   MeshDeformerConfig,
@@ -8,14 +13,51 @@ import type {
 
 export interface StudioBg3dDeformersPanelProps {
   readonly onApplyDeformer?: (config: MeshDeformerConfig) => void;
+  readonly onApplyCsgBooleanPlan?: (plan: CsgBooleanPlanResult) => void;
 }
+
+const CSG_OPERATIONS: readonly {
+  readonly id: CsgBooleanOperation;
+  readonly labelKo: string;
+}[] = Object.freeze([
+  { id: "union", labelKo: "합집합 (Union)" },
+  { id: "difference", labelKo: "차집합 커팅 (Cut)" },
+  { id: "intersection", labelKo: "교집합 (Intersect)" },
+  { id: "smooth-clay-blend", labelKo: "소프트 클레이 블렌드" },
+]);
 
 export function StudioBg3dDeformersPanel({
   onApplyDeformer,
+  onApplyCsgBooleanPlan,
 }: StudioBg3dDeformersPanelProps): React.JSX.Element {
   const [kind, setKind] = useState<DeformerKind>("bend");
   const [strength, setStrength] = useState<number>(45);
   const [axis, setAxis] = useState<"x" | "y" | "z">("y");
+  const [csgOperation, setCsgOperation] = useState<CsgBooleanOperation>("smooth-clay-blend");
+  const [clayBlendRadius, setClayBlendRadius] = useState<number>(0.35);
+
+  const csgPlan = useMemo(
+    () =>
+      planCsgBooleanOperation({
+        operation: csgOperation,
+        target: {
+          id: "target-mesh",
+          type: "box",
+          position: [0, 0.8, 0],
+          rotation: [0, 0, 0],
+          scale: [2, 1.6, 2],
+        },
+        cutter: {
+          id: "cutter-primitive",
+          type: "sphere",
+          position: [0.4, 1.1, 0.3],
+          rotation: [0, 0, 0],
+          scale: [1.2, 1.2, 1.2],
+        },
+        smoothBlendRadius: csgOperation === "smooth-clay-blend" ? clayBlendRadius : 0,
+      }),
+    [csgOperation, clayBlendRadius],
+  );
 
   const handleKindSelect = (selectedKind: DeformerKind) => {
     setKind(selectedKind);
@@ -134,6 +176,75 @@ export function StudioBg3dDeformersPanel({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* CSG Boolean & Smooth Clay Blend Section */}
+      <div
+        className="flex flex-col gap-2 rounded-lg border border-line bg-card p-2.5"
+        data-testid="bg3d-csg-boolean-section"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[0.7rem] font-bold text-fg">CSG 불리언 & 클레이 블렌드 연산</span>
+          <span
+            data-testid="bg3d-csg-plan-readout"
+            className="font-mono text-[0.64rem] text-accent"
+          >
+            {csgPlan.estimatedTriangles}삼각형 · {csgPlan.estimatedVertices}정점 ·{" "}
+            {csgPlan.isManifold ? "매니폴드" : "비매니폴드"}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {CSG_OPERATIONS.map((op) => (
+            <button
+              key={op.id}
+              type="button"
+              data-testid={`bg3d-csg-op-${op.id}`}
+              onClick={() => {
+                setCsgOperation(op.id);
+                const nextPlan = planCsgBooleanOperation({
+                  operation: op.id,
+                  target: {
+                    id: "target-mesh",
+                    type: "box",
+                    position: [0, 0.8, 0],
+                    rotation: [0, 0, 0],
+                    scale: [2, 1.6, 2],
+                  },
+                  cutter: {
+                    id: "cutter-primitive",
+                    type: "sphere",
+                    position: [0.4, 1.1, 0.3],
+                    rotation: [0, 0, 0],
+                    scale: [1.2, 1.2, 1.2],
+                  },
+                  smoothBlendRadius: op.id === "smooth-clay-blend" ? clayBlendRadius : 0,
+                });
+                onApplyCsgBooleanPlan?.(nextPlan);
+              }}
+              className={`rounded border px-2 py-1 text-left text-[0.66rem] transition-all ${
+                csgOperation === op.id
+                  ? "border-accent bg-accent/10 font-bold text-accent"
+                  : "border-line bg-raised/50 text-fg-2 hover:text-fg"
+              }`}
+            >
+              {op.labelKo}
+            </button>
+          ))}
+        </div>
+        {csgOperation === "smooth-clay-blend" ? (
+          <div className="flex items-center justify-between text-[0.65rem] text-fg-3">
+            <span>클레이 블렌드 반경: {clayBlendRadius.toFixed(2)}m</span>
+            <input
+              type="range"
+              min="0.05"
+              max="1.0"
+              step="0.05"
+              value={clayBlendRadius}
+              onChange={(e) => setClayBlendRadius(parseFloat(e.target.value))}
+              className="h-1.5 w-24 cursor-pointer accent-accent"
+            />
+          </div>
+        ) : null}
       </div>
 
       <button

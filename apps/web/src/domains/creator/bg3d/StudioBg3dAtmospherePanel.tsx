@@ -1,11 +1,16 @@
 import { Check, CloudRain, Sun, Sparkles } from "lucide-react";
-import { useEffect, useState, useId } from "react";
+import { useEffect, useState, useId, useMemo } from "react";
 
 import {
   Studio3DAtmosphereEngine,
   type Studio3DAtmospherePreset,
   type WeatherPresetId,
 } from "../scene-3d/studio-3d-atmosphere-weather";
+import {
+  DEFAULT_HEIGHT_FOG_PARAMS,
+  computeCameraFollowingLightDirection,
+  computeExponentialHeightFogFactor,
+} from "../scene-3d/studio-3d-feature-pack-2026";
 
 export interface StudioBg3dAtmospherePanelProps {
   readonly currentPresetId?: WeatherPresetId;
@@ -36,6 +41,30 @@ export function StudioBg3dAtmospherePanel({
 
   const presets = Studio3DAtmosphereEngine.getAllPresets();
   const activePreset = Studio3DAtmosphereEngine.getPreset(selectedId);
+
+  const heightFogFactor = useMemo(
+    () =>
+      computeExponentialHeightFogFactor(
+        [0, 1.2, -12],
+        [0, 1.6, 5],
+        {
+          ...DEFAULT_HEIGHT_FOG_PARAMS,
+          colorHex: activePreset.fog.colorHex,
+          density: Math.max(0.02, activePreset.fog.density * 2.5),
+        },
+      ),
+    [activePreset.fog.colorHex, activePreset.fog.density],
+  );
+
+  const cameraLightDir = useMemo(
+    () =>
+      computeCameraFollowingLightDirection(
+        [0, 1.6, 5],
+        [0, 1.4, 0],
+        { azimuthDeg: azimuth - 45, elevationDeg: Math.max(10, elevation) },
+      ),
+    [azimuth, elevation],
+  );
 
   const handleSelectPreset = (presetId: WeatherPresetId) => {
     setSelectedId(presetId);
@@ -104,7 +133,7 @@ export function StudioBg3dAtmospherePanel({
                     {p.precipitation.kind !== "none" ? (
                       <CloudRain className="h-3.5 w-3.5 shrink-0 text-accent" />
                     ) : (
-                      <Sun className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                      <Sun className="h-3.5 w-3.5 shrink-0 text-warn" />
                     )}
                     <span className="truncate">{p.name}</span>
                   </span>
@@ -157,6 +186,17 @@ export function StudioBg3dAtmospherePanel({
             </span>
           </div>
         )}
+
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 border-t border-line/50 pt-1.5 text-[0.64rem] text-fg-3"
+          data-testid="bg3d-atmosphere-height-fog-readout"
+        >
+          <span>높이 기반 안개 감쇠율: {(heightFogFactor * 100).toFixed(1)}%</span>
+          <span className="font-mono">
+            카메라 추적광: ({cameraLightDir[0].toFixed(2)}, {cameraLightDir[1].toFixed(2)},{" "}
+            {cameraLightDir[2].toFixed(2)})
+          </span>
+        </div>
       </div>
 
       {/* Sun/Moon Position Dial Sliders */}
