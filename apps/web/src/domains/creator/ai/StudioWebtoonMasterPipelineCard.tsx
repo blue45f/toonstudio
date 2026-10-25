@@ -40,8 +40,9 @@ import {
   type CharacterRelationshipDynamicId,
   type GenvasPosePresetId,
 } from "./studio-webtoon-storyboard-pipeline";
-import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
+import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
 import { StudioTooningPlusSuitePanel } from "./StudioTooningPlusSuitePanel";
+import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -643,6 +644,13 @@ export function StudioWebtoonMasterPipelineCard({
 
       {/* 투닝 플러스 (Tooning Plus: TG·TD·ED·MG·DV·TB·CM) 전 제품군 통합 워크스페이스 */}
       <StudioTooningPlusSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
+
+      {/* 4대 카테고리 12대 AI 웹툰·인스타툰 보조 어플 REA 역공학 내재화 통합 워크벤치 */}
+      <StudioAiWebtoonEcosystemWorkbenchPanel
+        scriptInput={scriptInput}
+        storyGenre={storyGenre}
+        onApplyScript={onApplyScript}
+      />
     </section>
   );
 }
