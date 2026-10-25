@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-26",
+  "title": "Adobe Photoshop (Photoshop on the Web v2026.21.0.0 & Adobe Binary Format Engine) REA 역공학 증거 번들",
+  "targets": [
+    {
+      "target_id": "adobe-photoshop-web-2026-21-0-0",
+      "name": "Adobe Photoshop on the Web",
+      "url": "https://photoshop.adobe.com/",
+      "release_version": "2026.21.0.0",
+      "build_sha": "b0d20acb1bc01166f2d89379c0bb899204f6f9ff",
+      "evidence_ids": [
+        "ev_3268cb6c719c0e5402006ebd7d9938ee08860e9a4a6a13e1e3775a8fee763be8",
+        "ev_6b29d1e1d54c69c8b15da0be918dc2c752bb561240e75d76fe7815ebf959d3bd",
+        "ev_ff8af3693732ff12745cb3f95e0dbe43a99d1f5df1adbea25bdc62a81f3525d5",
+        "ev_919699d957c7968f3ed9f6b73f64b12bab8ccb4ae0598675b3f1e1f2395ff82a",
+        "ev_502b394046ace9b337ec7ce8eaa53144e39942978e28fae834c513f06af34040",
+        "ev_0fb6b10eccb962217a3bc3ff81417f7676422fa68a1e356b4b72b34f4007a9fa",
+        "ev_b7fa3a4c99257a2e1590e38056a0a1e751e0c9eb22c259d41e63c1adfdd65d1d",
+        "ev_b13e529664f4df24e94b0247bdd1e8f19c044b2f1ce8703d520eb1e90b525a18",
+        "ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a",
+        "ev_effe0ee2754b2ce89afba22c9e65666598e2f08453a64f66a716f9c75cd969c4",
+        "ev_22fe4bb97fc6cc13f65ac8165ba8237ddf5db41320e2a4fbd0e57c9d4567d30e"
+      ],
+      "sha256_digests": {
+        "document_html": "ea7082ebeff0a78c2380c033398e2bbd523024a3e1504595c391c4eea7ee62e1",
+        "capture_5mb_bundle": "356bea781687fb6c2bdb3600e421f93e20f3e520311d04726cdcb854f7fd17d8",
+        "static_js_51_files_root": "929f0c7d1092dd5262c3a31ac234a018b4c350da7d33002ad2153947eccacd1e",
+        "large_chunks_4_files_root": "bd84802a9c9a9f476626a0830baf61aa8ae511b41c6650834609a607b3d67506",
+        "extra_chunks_2_files_root": "8956eb6e29933669d88f35cd168c36441ac0098ecafc647371e47ac51f82b5f1"
+      }
+    },
+    {
+      "target_id": "adobe-photoshop-binary-format-engine",
+      "name": "Adobe Photoshop PSD/PSB/ABR/ASE/CSH/ActionDescriptor/LayerEffects/TextEngine Reference",
+      "path": "node_modules/ag-psd/dist",
+      "evidence_ids": [
+        "ev_d310f9f07eadffde37ee8ad798384d58908843d9307d4c2dfe320c5152772c9a",
+        "ev_1389c786e149edcb794d7345acc24456164a5b89c20bc5cac89540e43f7f60ff",
+        "ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66"
+      ],
+      "sha256_digests": {
+        "ag_psd_dist_root": "040b0bec82441e907261f645d31b8ae3fbc797452e420edfa12a5cb369c22ab0"
+      }
+    }
+  ],
+  "observed_facts": [
+    {
+      "id": "OF-PS-01",
+      "subsystem": "WebFilterPresets & Super-Presets",
+      "evidence_id": "ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a",
+      "source_chunk": "WebFilterPresets.chunk.C-Wm1ZUu.js",
+      "summary": "24개 절차적 웹 필터 카테고리(analogPhotography, glitch, grain, halftone, bokeh, motionBlur, lensDistortion, retro90s, loFi, risograph, duotone, thermal, crtMonitor, nightVision, photocopy, chromaticAberration, vignette, vhs, filmNoir, oilPaint, watercolor, charcoalSketch,lightLeak, linearRepeater, prism, sparkles, tileGrid, radialWaves)와 파라미터 배열 [default, min, max, step] 및 다중 필터 체이닝 Super-Presets를 정의하며, psweb_procedural_filters_enable_advanced 플래그로 고급 6종 카테고리를 제어한다."
+    },
+    {
+      "id": "OF-PS-02",
+      "subsystem": "Quick Actions & Adjustment Presets V2",
+      "evidence_id": "ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a",
+      "secondary_evidence_id": "ev_22fe4bb97fc6cc13f65ac8165ba8237ddf5db41320e2a4fbd0e57c9d4567d30e",
+      "source_chunk": "index.chunk.DxDAUNGD.js, adjustmentPresetsV2.chunk.Oj-cp__5.js",
+      "summary": "Quick Actions는 lighting, bg, cinematic, subject 4대 카테고리와 13개 액션으로 구성되며, canExecuteQuickAction 결정 트리가 locked_background, adjustment_layer, empty_pixel_layer, hidden_layer, group_exceeds_max_layers 조건을 검사한다. 각 액션은 appliedActionSetId로 태그된 비파괴 레이어/마스크/스마트필터를 생성하고 revert시 해당 태그 단위로 원자적 롤백을 수행한다. adjustmentPresetsV2는 Landscape, Portrait, BlackAndWhite, Cinematic, Vintage, Duotone, ColorGrading 7개 그룹 31개 조정 프리셋을 정의한다."
+    },
+    {
+      "id": "OF-PS-03",
+      "subsystem": "ActionDescriptor BatchPlay & Blend Mode IntentHandler",
+      "evidence_id": "ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a",
+      "secondary_evidence_id": "ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66",
+      "source_chunk": "AppHomePage.chunk.C3FbMFNP.js, ag-psd/dist/descriptor.js",
+      "summary": "IntentHandler.Kt 매핑 테이블이 25종 포토샵 블렌드 모드(normal, dissolve, darken, multiply, colorBurn, linearBurn, darkerColor, lighten, screen, colorDodge, linearDodge, lighterColor, overlay, softLight, hardLight, vividLight, linearLight, pinLight, hardMix, difference, exclusion, subtract, divide, hue, saturation, color, luminosity)를 8BIM 4문자 코드 및 NGE 씬 그래프와 연결하며, BatchPlay ActionDescriptor(paint, erase, spotHeal, cloneStamp, makeFillLayer, makeAdjustmentLayer, setLayerProperties, convertToSmartObject, applySmartFilter)로 명령을 직렬화한다."
+    },
+    {
+      "id": "OF-PS-04",
+      "subsystem": "Layer Styles (lfx2/lrFX), Clipping Thumbnails & Rasterize Warning",
+      "evidence_id": "ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66",
+      "secondary_evidence_id": "ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a",
+      "source_chunk": "ag-psd/dist/effectsHelpers.js, index.chunk.DxDAUNGD.js",
+      "summary": "10종 포토샵 레이어 스타일(DrSh, IrSh, OrGl, IrGl, ebbl, SoFi, GrFl, patternFill, FrFX, ChFX)이 lfx2/lrFX 디스크립터에 저장되며 useGlobalAngle이 켜진 효과들은 문서의 globalLightAngle과 동기화된다. 또한 레이어 패널 썸네일은 layerPaletteClipThumbsToDocumentBounds와 layerPaletteClipThumbsToLayerBounds를 전환하고, text/shape/smartObject 레이어에 픽셀 도구 적용 시 RasterizeWarningModal 가드를 트리거한다."
+    },
+    {
+      "id": "OF-PS-05",
+      "subsystem": "Face-Aware Liquify, Harmonize, Select Details & Sensei SPL",
+      "evidence_id": "ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a",
+      "secondary_evidence_id": "ev_22fe4bb97fc6cc13f65ac8165ba8237ddf5db41320e2a4fbd0e57c9d4567d30e",
+      "source_chunk": "Localization.chunk.DRYaYpi8.js, SenseiService.chunk.CxTFqGqz.js",
+      "summary": "Face-Aware Liquify는 5종 ML 모델 매니페스트(face_detection, face_landmarks, face_semantics, skin_segmentation, depth_estimation)와 16개 얼굴 파라메트릭 슬라이더를 사용하며, Harmonize(신경망 명암·색온도·채도 매칭), Object-Based Select Details 12종 신체/의복 부위 마스크(hair, eyebrows, eyes, pupils, nose, lips, teeth, facialSkin, neck,ears, upperClothes, lowerClothes, headwear, eyewear, accessories), Sensei SPL 8비트 상태 플래그(SENSEI_GEN_STATUS_FLAGS)가 확인되었다."
+    },
+    {
+      "id": "OF-PS-06",
+      "subsystem": "ASE (Adobe Swatch Exchange) & CSH (Adobe Custom Shapes) Binary Format",
+      "evidence_id": "ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66",
+      "source_chunk": "ag-psd/dist/ase.js, ag-psd/dist/csh.js",
+      "summary": "ASE 포맷은 시그니처 ASEF(0x41534546), 버전 1.0, 블록 타입 0xc001(group start), 0xc002(group end), 0x0001(color entry: UTF-16BE null-terminated string + RGB/CMYK/LAB/Gray 4문자 컬러 모델 + Float32 채널 + colorType 0/1/2)을 사용한다. CSH 포맷은 시그니처 cush(0x63757368), 버전 2, 26바이트 고정 길이 베지어 매듭 레코드(closedSubpathLength 0, closedSubpathBezierKnotLinked 1, closedSubpathBezierKnotUnlinked 2, openSubpathLength 3, openSubpathBezierKnotLinked 4, openSubpathBezierKnotUnlinked 5, pathFillRule 6, clipboardRecord 7, initialFillRule 8)와 8.24 고정소수점 좌표를 사용한다."
+    }
+  ],
+  "inferences": [
+    {
+      "id": "INF-PS-01",
+      "summary": "Photoshop on the Web의 Wasm 코어(ps-wasm)가 수행하는 절차적 필터·하모나이즈·얼굴 유동화 메쉬 워프 연산은 결정론적 CPU/Canvas RGBA 커널 및 역방향 쌍선형 보간(Inverse Bilinear Mesh Warp)으로 클린룸 재구현하여 브라우저 외부 서버 의존성 없이 ToonStudio에 즉시 내재화할 수 있다."
+    },
+    {
+      "id": "INF-PS-02",
+      "summary": "ActionDescriptor BatchPlay 명령 집합과 Layer Effects(lfx2/lrFX) 구조는 ToonStudio의 기존 PSD 게이트웨이(@toonstudio/studio-format-gateway) 및 Creator 레이어 스타일 파이프라인(LayerStylePatch)과 1:1 손실 없는 변환 브리지를 형성할 수 있다."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "UNK-PS-01",
+      "summary": "Adobe Firefly/Sensei 클라우드 백엔드가 서버 측에서 수행하는 확산 모델(Diffusion) 가중치와 독점 프롬프트 리라이팅 파라미터는 클라이언트 번들에 포함되지 않으므로, ToonStudio에서는 Sensei SPL 프로토콜 호환 상태 플래그 디코더·스타일 프롬프트 합성기와 로컬 결정론적 픽셀 하모나이즈/마스크 엔진으로 대체한다."
+    }
+  ]
+}

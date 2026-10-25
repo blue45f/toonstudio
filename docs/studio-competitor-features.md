@@ -49,7 +49,7 @@
   브러시. PRO(일러스트)/EX(다중 페이지·장편 연재) 버전 구분.
 - **MediBang Paint** — 무료 입문용. 컷 분할·톤 기능 등 기본 도구 무료 제공.
 - **Procreate** — 아이패드 드로잉 필수 앱. 웹툰 전용 툴은 부족하나 브러시 성능·UI가 뛰어남.
-- **Adobe Photoshop** — 범용 이미지 편집의 사실상 표준(레이어·마스크·블렌드·액션 등).
+- **Adobe Photoshop (`Photoshop on the Web` v2026.21.0.0 & 바이너리 포맷 엔진)** — 범용 이미지 편집의 사실상 표준(레이어·마스크·블렌드·액션·스마트 필터·레이어 스타일·유동화 등). 2026-10-26 REA 역공학 파이프라인으로 `https://photoshop.adobe.com/`(`2026.21.0.0`, 빌드 `b0d20acb1bc01166f2d89379c0bb899204f6f9ff`, 캡처 `ev_3268cb6c719c0e5402006ebd7d9938ee08860e9a4a6a13e1e3775a8fee763be8`·`ev_6b29d1e1d54c69c8b15da0be918dc2c752bb561240e75d76fe7815ebf959d3bd`·`ev_ff8af3693732ff12745cb3f95e0dbe43a99d1f5df1adbea25bdc62a81f3525d5`, 정적 번들 분석 `ev_b7fa3a4c99257a2e1590e38056a0a1e751e0c9eb22c259d41e63c1adfdd65d1d`·`ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a`·`ev_22fe4bb97fc6cc13f65ac8165ba8237ddf5db41320e2a4fbd0e57c9d4567d30e`) 및 포토샵 바이너리 포맷 코어(`ev_d310f9f07eadffde37ee8ad798384d58908843d9307d4c2dfe320c5152772c9a`·`ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66`)를 전수 분석하여 클린룸 내재화했다(상세 설계서: [`docs/design/photoshop-rea-full-analysis-20261026.md`](design/photoshop-rea-full-analysis-20261026.md), 증거 번들: [`docs/evidence/rea-photoshop-benchmark-20261026.json`](evidence/rea-photoshop-benchmark-20261026.json)).
 - **Krita** — 오픈소스 페인팅(대칭자·원근 가이드 등 만화가용 보조 도구가 풍부).
 - **ibisPaint** — 모바일 드로잉(브러시/재질 라이브러리 UX).
 - **Storyboarder** — 콘티/스토리보드 전용(샷 타입·카메라 앵글 태깅).
@@ -80,6 +80,18 @@
 
 모든 배치는 `src/domains/creator/studio-*.ts`(순수 로직) + `Studio*Panel.tsx`(프레젠테이션) 조합으로
 구현되고, `StudioPage.tsx`에 통합됐다. 세션 내 배치 순서:
+
+### 2026-10-26 Adobe Photoshop (`Photoshop on the Web` v2026.21.0.0 & 바이너리 포맷 엔진) REA 역공학 전 기능 내재화
+
+`reverse-engineer-anything`(REA) 라이브 브라우저 캡처(`ev_3268cb6c719c0e5402006ebd7d9938ee08860e9a4a6a13e1e3775a8fee763be8`, `ev_6b29d1e1d54c69c8b15da0be918dc2c752bb561240e75d76fe7815ebf959d3bd`, `ev_ff8af3693732ff12745cb3f95e0dbe43a99d1f5df1adbea25bdc62a81f3525d5`) 및 정적 번들·포맷 AST 분석(`ev_b7fa3a4c99257a2e1590e38056a0a1e751e0c9eb22c259d41e63c1adfdd65d1d`, `ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a`, `ev_22fe4bb97fc6cc13f65ac8165ba8237ddf5db41320e2a4fbd0e57c9d4567d30e`, `ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66`)을 통해 도출한 어도비 포토샵 6대 핵심 서브시스템을 클린룸 자체 구현으로 내재화했다(설계서: [`docs/design/photoshop-rea-full-analysis-20261026.md`](design/photoshop-rea-full-analysis-20261026.md), 증거 번들: [`docs/evidence/rea-photoshop-benchmark-20261026.json`](evidence/rea-photoshop-benchmark-20261026.json)).
+
+- **Adobe `.ase`(색상 견본집) & `.csh`(커스텀 벡터 셰이프) 바이너리 코덱 (`packages/studio-format-gateway/src/ase-csh.ts`)**: `ASEF`(버전 1.0, `0xc001`/`0xc002`/`0x0001` 블록, UTF-16BE 문자열, `RGB `/`CMYK`/`LAB `/`Gray` Float32 채널)와 `cush`(버전 2, 26바이트 고정 길이 베지어 매듭 레코드, 8.24 고정소수점 좌표) 양방향 직렬화·역직렬화 및 SVG `<path d="...">` 변환기.
+- **절차적 웹 필터 프리셋 24종 & Super-Presets (`apps/web/src/domains/creator/filter/studio-photoshop-web-filter-presets.ts`)**: `WebFilterPresets.chunk.C-Wm1ZUu.js`(`ev_973faac206a14eecb13f02df2d8d99e11806c47c95fabcdf52c9d57736b02b0a`)의 24개 절차적 필터 카테고리, `psweb_procedural_filters_enable_advanced` 고급 필터 6종(`lightLeak`, `linearRepeater`, `prism`, `sparkles`, `tileGrid`, `radialWaves`) 게이팅, 다단계 체이닝 `Super-Presets`, 결정론적 RGBA 픽셀 커널(`applyPhotoshopWebFilterPresetToRgba`).
+- **Quick Actions 4대 카테고리(13종) & Adjustment Presets V2(31종) (`apps/web/src/domains/creator/filter/studio-photoshop-quick-actions.ts`)**: `index.chunk.DxDAUNGD.js` 및 `adjustmentPresetsV2.chunk.Oj-cp__5.js`(`ev_22fe4bb97fc6cc13f65ac8165ba8237ddf5db41320e2a4fbd0e57c9d4567d30e`) 기반 실행 가능 판별 결정 트리(`evaluatePhotoshopQuickActionEnablement`), `appliedActionSetId` 태그 기반 비파괴 실행·원자적 롤백(`executePhotoshopQuickAction`/`revertPhotoshopQuickAction`), 7개 그룹 31종 조정 프리셋 V2 RGBA 커널.
+- **ActionDescriptor BatchPlay 엔진 & 25종 블렌드 모드 (`apps/web/src/domains/creator/filter/studio-photoshop-action-descriptor.ts`)**: `AppHomePage.chunk.C3FbMFNP.js`의 `IntentHandler.Kt` 및 `descriptor.js`에서 관측된 25종 포토샵 블렌드 모드와 8BIM 4문자 코드 양방향 매핑, 픽셀 합성기(`blendPhotoshopPixelsRgba`), BatchPlay ActionDescriptor 빌더·인터프리터(`executePhotoshopActionDescriptors`), NGE 씬 그래프 임포터(`importPhotoshopNgeScene`).
+- **레이어 스타일 10종 (`lfx2`/`lrFX`), Global Light 동기화 및 썸네일/래스터화 가드 (`apps/web/src/domains/creator/layer/studio-photoshop-layer-styles.ts`)**: `effectsHelpers.js`(`ev_baf7e9b90ef7d44256e3d11a8711223f9089249aaa818f98933df3bbe98bdd66`)의 10종 레이어 스타일(`DrSh`, `IrSh`, `OrGl`, `IrGl`, `ebbl`, `SoFi`, `GrFl`, `patternFill`, `FrFX`, `ChFX`) 인코더·디코더, `useGlobalAngle` 전역 조명 동기화, `LayerStylePatch` 브리지, `layerPaletteClipThumbsToDocumentBounds`/`layerPaletteClipThumbsToLayerBounds` 뷰포트 계산기 및 `RasterizeWarningModal` 가드.
+- **얼굴 인식 유동화(Face-Aware Liquify), 하모나이즈(Harmonize), 세부 선택(Select Details) 12부위 & Sensei SPL (`apps/web/src/domains/creator/filter/studio-photoshop-liquify-harmonize.ts`)**: `Localization.chunk.DRYaYpi8.js` 및 `SenseiService.chunk.CxTFqGqz.js` 기반 5종 얼굴 분석 모델 매니페스트, 16-파라미터 얼굴 유동화 역방향 쌍선형 워프(`applyPhotoshopFaceAwareLiquifyToRgba`), 배경-전경 조명·색온도·채도 하모나이즈(`applyPhotoshopHarmonizeLayer`), 인물 12부위 세그멘테이션 마스크(`buildPhotoshopSelectDetailsMask`), Sensei SPL 8비트 상태 플래그 디코더(`decodeSenseiGenStatusFlags`).
+- **포토샵 기능 스위트 통합 패널 (`apps/web/src/domains/creator/filter/StudioPhotoshopFeatureSuitePanel.tsx`)**: 5개 탭(`웹 필터 & 슈퍼프리셋`, `퀵 액션 & 조정 V2`, `레이어 스타일 & 클리핑`, `유동화 & 하모나이즈`, `BatchPlay & 블렌드 모드`)을 제공하는 접근성 준수 React UI 패널.
 
 ### 2026-10-26 REA 경쟁사 바이너리 역공학 벤치마크 (SHAPER v1.05 · Goodnotes v7.1.28 · Muse v9.0) 전 기능 통합
 
