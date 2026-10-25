@@ -14,6 +14,7 @@ import { hiringClient } from "./hiring-client";
 import { ResumeEditor } from "./ResumeEditor";
 import { emptyResume } from "./hiring-form-values";
 import { ResumePreview } from "./ResumePreview";
+import { WebtoonAssistantOutsourcingSuite } from "./WebtoonAssistantOutsourcingSuite";
 import "./hiring.css";
 
 import type { HiringResume, HiringResumeInput, HiringResumeVersion } from "../../../../../../packages/contracts/src/creator-hiring";
@@ -28,7 +29,7 @@ import { useApp } from "@/shared/lib/store";
 
 const SCOPE = "domains.collaboration.hiring.HiringWorkspacePage";
 
-const PANEL_KEYS = ["resumes", "availability", "career", "invitations", "offers", "rooms", "teams", "activity"] as const;
+const PANEL_KEYS = ["resumes", "availability", "career", "invitations", "offers", "rooms", "teams", "activity", "outsourcing"] as const;
 type WorkspacePanel = (typeof PANEL_KEYS)[number];
 
 const PANEL_KO: Record<WorkspacePanel, string> = {
@@ -40,6 +41,7 @@ const PANEL_KO: Record<WorkspacePanel, string> = {
   rooms: "면접·회의",
   teams: "팀·그룹",
   activity: "활동 기록",
+  outsourcing: "파트별 외주·계약 규격",
 };
 const PANEL_EN: Record<WorkspacePanel, string> = {
   resumes: "Resumes",
@@ -50,10 +52,11 @@ const PANEL_EN: Record<WorkspacePanel, string> = {
   rooms: "Interviews · meetings",
   teams: "Teams",
   activity: "Activity",
+  outsourcing: "Part outsourcing · contracts",
 };
 const PANEL_GROUPS: readonly { readonly label: [string, string]; readonly panels: readonly WorkspacePanel[] }[] = [
   { label: ["내 프로필", "My profile"], panels: ["resumes", "availability", "career"] },
-  { label: ["채용 파이프라인", "Hiring pipeline"], panels: ["invitations", "offers", "rooms"] },
+  { label: ["채용 파이프라인", "Hiring pipeline"], panels: ["invitations", "offers", "rooms", "outsourcing"] },
   { label: ["운영", "Operations"], panels: ["teams", "activity"] },
 ] as const;
 
@@ -104,6 +107,7 @@ function WorkspaceContent({ actor }: { actor: string }) {
     {panel === "rooms" && <CreatorMeetingPanel actor={actor} />}
     {panel === "career" && <CreatorCareerPanel onResumeCreated={() => navigate("resumes")} />}
     {panel === "activity" && <CreatorActivityPanel />}
+    {panel === "outsourcing" && <WebtoonAssistantOutsourcingSuite />}
   </div>;
 }
 

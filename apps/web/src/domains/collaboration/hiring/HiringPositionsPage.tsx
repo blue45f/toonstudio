@@ -6,6 +6,7 @@ import { CollabField, CollabNotice, collabButton, collabInput, collabPrimary } f
 import { compensationLabels, optionsOf } from "./hiring-form-values";
 import { HiringTermsView } from "./HiringSlotEditor";
 import { parseHiringPositionPage } from "./hiring-position-response";
+import { WebtoonAssistantOutsourcingSuite } from "./WebtoonAssistantOutsourcingSuite";
 
 import type { HiringPositionPage } from "../../../../../../packages/contracts/src/creator-hiring";
 
@@ -173,5 +174,6 @@ export function HiringPositionsPage() {
       <div className="mt-5 flex flex-wrap gap-3"><Link href="/collaborate/new" className={collabPrimary}><Plus size={17} aria-hidden="true" />{bt("모집 글 올리기", "Post a gig")}</Link></div>
     </header>
     <HiringPublicPositions />
+    <WebtoonAssistantOutsourcingSuite />
   </Container>;
 }
