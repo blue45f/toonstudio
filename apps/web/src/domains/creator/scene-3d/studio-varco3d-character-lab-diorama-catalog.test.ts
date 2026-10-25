@@ -34,7 +34,7 @@ describe("studio-varco3d-character-lab-diorama-catalog", () => {
       (entry) => entry.meshTaskId === "cd1e75d3-5efa-4f46-afb6-59920e080fb7",
     );
     expect(councilPresident?.rigTaskId).toBe("58923776-91f0-4b60-a985-835d204f9a24");
-    expect(STUDIO_VARCO3D_RETARGETED_MOTION_TASKS).toHaveLength(7);
+    expect(STUDIO_VARCO3D_RETARGETED_MOTION_TASKS).toHaveLength(18);
   });
 
   it("composes a Character Labs loadout with slot deduplication, bone attachments, and genre synergy", () => {
@@ -83,12 +83,12 @@ describe("studio-varco3d-character-lab-diorama-catalog", () => {
       propIds: ["prop_school_desk_chair", "prop_school_steel_lockers"],
     });
 
-    expect(plan.diorama.meshTaskId).toBe("0c2f14f6-81a2-49a9-9f43-6582a10f9d12");
+    expect(plan.diorama.meshTaskId).toBe("0c2f14f6-5dc3-4fba-9d2c-691cb6b779e0");
     expect(plan.props).toHaveLength(2);
     expect(plan.totalFootprintAreaSqMeters).toBe(1.16);
     expect(plan.recommendedShadowBias).toBe(-0.0006);
     expect(plan.varcoAssetPortalUrl).toBe(
-      "https://3d.varco.ai/myAssets/0c2f14f6-81a2-49a9-9f43-6582a10f9d12",
+      "https://3d.varco.ai/myAssets/0c2f14f6-5dc3-4fba-9d2c-691cb6b779e0",
     );
   });
 });

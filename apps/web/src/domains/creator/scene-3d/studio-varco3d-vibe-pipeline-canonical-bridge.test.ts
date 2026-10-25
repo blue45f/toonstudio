@@ -4,7 +4,9 @@ import { STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS } from "./studio-varco3d-cha
 import {
   STUDIO_VARCO3D_12VIEW_CAMERA_RING,
   STUDIO_VARCO3D_ANIMATION_LIBRARY_SUMMARY,
+  STUDIO_VARCO3D_COUNCIL_PRESIDENT_12VIEW_RECONSTRUCTION,
   STUDIO_VARCO3D_POINT_POLICIES,
+  STUDIO_VARCO3D_ZERO_POINT_OPTIMIZATION_TASKS,
   buildVarco3dCanonicalPartDescriptor,
   evaluateVarco3dPointPolicyReservation,
   inspectVarco3d12ViewReconstructionBundle,
@@ -42,8 +44,11 @@ describe("studio-varco3d-vibe-pipeline-canonical-bridge", () => {
     expect(wingsDesc.binding.targetBone).toBe("upperChest");
   });
 
-  it("inspects 12-view PBR reconstruction rings across mvImages, mvAlbedo, and mvOrm", () => {
+  it("inspects 12-view PBR reconstruction rings across mvImages, mvAlbedo, and mvOrm and registers 11 0-point optimization tasks", () => {
     expect(STUDIO_VARCO3D_12VIEW_CAMERA_RING).toHaveLength(12);
+    expect(STUDIO_VARCO3D_COUNCIL_PRESIDENT_12VIEW_RECONSTRUCTION.vertexCount).toBe(362127);
+    expect(STUDIO_VARCO3D_COUNCIL_PRESIDENT_12VIEW_RECONSTRUCTION.faceCount).toBe(500000);
+    expect(STUDIO_VARCO3D_ZERO_POINT_OPTIMIZATION_TASKS).toHaveLength(11);
 
     const albedoFront = inspectVarco3d12ViewReconstructionBundle({
       angle: "front",
@@ -53,7 +58,7 @@ describe("studio-varco3d-vibe-pipeline-canonical-bridge", () => {
     expect(albedoFront.isSecondaryElevationRing).toBe(false);
     expect(albedoFront.pipelineStageKey).toBe("pipeline:diffuse-to-albedo");
     expect(albedoFront.objectUrl).toBe(
-      "https://3d.varco.ai/api/objects/a3f904c1d8824e719c11482055913b00.png",
+      "https://3d.varco.ai/api/objects/93d20cf76ca77df43c8731c08fbad216.png",
     );
 
     const ormBack2 = inspectVarco3d12ViewReconstructionBundle({
@@ -63,6 +68,9 @@ describe("studio-varco3d-vibe-pipeline-canonical-bridge", () => {
     expect(ormBack2.ringIndex).toBe(8);
     expect(ormBack2.isSecondaryElevationRing).toBe(true);
     expect(ormBack2.pipelineStageKey).toBe("pipeline:orm-multiview-generator");
+    expect(ormBack2.objectUrl).toBe(
+      "https://3d.varco.ai/api/objects/16d3dd0060e94ae707563d47e52032df.png",
+    );
   });
 
   it("evaluates point policies across task:*, instant:VIBE_WORLD_*, and 16 pipeline:* stages with 30-worker queue limits", () => {

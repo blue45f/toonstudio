@@ -173,7 +173,7 @@ describe("StudioVarco3dInspectorWorkbench", () => {
       target: { value: "diorama_school_hallway" },
     });
     expect(screen.getByTestId("varco3d-diorama-portal-url").textContent).toBe(
-      "https://3d.varco.ai/myAssets/0c2f14f6-81a2-49a9-9f43-6582a10f9d12",
+      "https://3d.varco.ai/myAssets/0c2f14f6-5dc3-4fba-9d2c-691cb6b779e0",
     );
 
     // CharacterCanonicalPartDescriptor bridge, 12-view PBR ring, 598-motion retargeting & point policy
