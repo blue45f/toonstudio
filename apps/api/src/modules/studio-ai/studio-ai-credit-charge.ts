@@ -28,6 +28,7 @@
 import type { CreditFeatureKey } from "../membership-wallet/credit-pricing";
 import {
   PAID_OPERATIONS_DISABLED,
+  PAID_OPERATIONS_SETTING_STORE,
   resolvePaidOperationsEnabled,
   type PaidOperationsSettingStore,
 } from "../membership-wallet/paid-operations-gate";

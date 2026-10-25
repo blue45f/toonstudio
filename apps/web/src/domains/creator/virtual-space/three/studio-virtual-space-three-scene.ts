@@ -128,9 +128,9 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "game-cabinet-2", url: "/assets/3d/arcade_game_cabinet.glb", x: 306, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
   { id: "game-cabinet-3", url: "/assets/3d/arcade_game_cabinet.glb", x: 590, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
   { id: "game-cabinet-4", url: "/assets/3d/arcade_game_cabinet.glb", x: 678, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
-  { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 448, y: 1516, heightMeters: 1.12, rotationY: 0.2 },
-  { id: "game-lounge-table", url: "/assets/3d/round_table.glb", x: 448, y: 1712, heightMeters: 0.78, rotationY: 0 },
-  { id: "game-lounge-boba", url: "/assets/3d/refined-v8/bubble_tea.glb", x: 448, y: 1712, heightMeters: 0.28, elevationMeters: 0.78, rotationY: 0.3 },
+  { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 372, y: 1548, heightMeters: 1.12, rotationY: 0.2 },
+  { id: "game-lounge-table", url: "/assets/3d/round_table.glb", x: 528, y: 1624, heightMeters: 0.78, rotationY: 0 },
+  { id: "game-lounge-boba", url: "/assets/3d/refined-v8/bubble_tea.glb", x: 528, y: 1624, heightMeters: 0.28, elevationMeters: 0.78, rotationY: 0.3 },
 
   // TERRACE (beach — 테라스 라운지 소파·테이블·식물)
   { id: "terrace-bench-w", url: "/assets/3d/neom_bench_prop.glb", x: 1210, y: 1496, heightMeters: 0.95, rotationY: 0.32 },
@@ -637,16 +637,13 @@ export function loadStudioThreeAssets(
         const node = actorNodes.get(actorId);
         if (!node || (node.vrmLoaded && !forceReplace)) return;
 
-        // 보조 기계팔(robo_arm 등) 노드가 있는 샘플은 바운딩 박스 왜곡 방지를 위해 제거
-        const auxToRemove: THREE.Object3D[] = [];
+        // 보조 기계팔(robo_arm 등) 노드가 있는 샘플은 스키닝·바운딩 왜곡 방지를 위해 스케일 축소 및 숨김 처리
         vrmScene.traverse((child) => {
           if (child.name && /robo_/i.test(child.name)) {
-            auxToRemove.push(child);
+            child.visible = false;
+            child.scale.setScalar(0);
           }
         });
-        for (const aux of auxToRemove) {
-          aux.removeFromParent();
-        }
 
         // VRM 0.0 에셋은 +Z 정면이므로 Math.PI 회전, VRM 1.0(VRMC_vrm) 에셋은 0 유지
         const isVrm1 = Boolean(

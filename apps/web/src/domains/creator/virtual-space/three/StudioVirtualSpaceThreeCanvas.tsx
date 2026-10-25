@@ -446,11 +446,13 @@ export function StudioVirtualSpaceThreeCanvas({
         peerNode.group.rotation.y = peerNode.currentYaw;
       }
 
-      // NPC 시선 및 절차적 호흡/걸음 모션 업데이트
+      // NPC 시선 및 절차적 호흡/걸음 모션 업데이트 (원거리 구역 외곽 NPC 스키닝 컬링 포함)
       for (const npc of CAMPUS_NPCS) {
         const node = actorNodes.get(npc.id);
         if (!node) continue;
         const gapPx = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
+        node.group.visible = gapPx <= 920;
+        if (!node.group.visible) continue;
         node.targetYaw = gapPx < 240
           ? Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y)
           : facingToYawRadians(npc.facing);
@@ -461,6 +463,7 @@ export function StudioVirtualSpaceThreeCanvas({
       // 모든 캐릭터 팔다리 스윙 & 호흡 애니메이션 (@pixiv/three-vrm 정규화 본 및 폴백 메쉬)
       const walkPhase = now * 0.011;
       for (const node of actorNodes.values()) {
+        if (!node.group.visible) continue;
         const baseLeftZ = node.armDownZLeft ?? 1.16;
         const baseRightZ = node.armDownZRight ?? -1.16;
         if (node.moving) {
