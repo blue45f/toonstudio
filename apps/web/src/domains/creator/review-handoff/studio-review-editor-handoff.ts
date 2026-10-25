@@ -25,7 +25,7 @@ export interface StudioReviewEditorDependencies {
   getContext(): StudioReviewEditorContext;
   readAuthority(request: StudioReviewEditorRequest, signal: AbortSignal): Promise<StudioReviewEditorAuthority>;
   readSaved(workId: string, signal: AbortSignal): Promise<StudioSharedDocument>;
-  projectRuntime(saved: StudioSharedDocument): StudioReviewCaptureProjection;
+  projectRuntime(saved: StudioSharedDocument): StudioReviewCaptureProjection | Promise<StudioReviewCaptureProjection>;
   digest(doc: Record<string, unknown>): Promise<string>;
   select(target: StudioEditorCommentTarget, current: () => boolean): boolean;
   now(): number;
@@ -110,7 +110,7 @@ export class StudioReviewEditorHandoff {
       if (authority.anchor.artifactId !== request.subject.artifactId || authority.anchor.revisionId !== request.subject.revisionId) {
         throw new StudioReviewEditorError("source-changed");
       }
-      const target = targetFor(authority), runtime = this.deps.projectRuntime(saved);
+      const target = targetFor(authority), runtime = await this.deps.projectRuntime(saved);
       const savedJson = canonicalJson(saved.document), runtimeJson = canonicalJson(runtime);
       const [savedDigest, runtimeDigest] = await Promise.all([
         this.deps.digest(saved.document.doc), this.deps.digest(runtime.doc),
@@ -138,7 +138,7 @@ export class StudioReviewEditorHandoff {
       // The renewed read proves both ACL and identical source. Large-document hashing may
       // outlive the first read lease; only the fresh lease can authorize the final selection.
       if (this.deps.now() >= finalAuthority.expiresAt) throw new StudioReviewEditorError("access-denied");
-      if (canonicalJson(this.deps.projectRuntime(finalSaved)) !== runtimeJson) throw new StudioReviewEditorError("unsaved");
+      if (canonicalJson(await this.deps.projectRuntime(finalSaved)) !== runtimeJson) throw new StudioReviewEditorError("unsaved");
       assert();
       if (!this.deps.select(target, () => current(false))) throw new StudioReviewEditorError("navigation-rejected");
       if (!current(false)) throw new StudioReviewEditorError("context-changed");
