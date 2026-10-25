@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PALM_REJECTION_WINDOW_MS,
   TAP_MAX_DURATION_MS,
   TAP_MAX_MOVE_PX,
   SCRUB_INTERVAL_MS,
@@ -9,9 +10,12 @@ import {
   describeGestureAction,
   describeScrubFeedback,
   defaultTouchGestureSettings,
+  filterPalmRejectedSamples,
   gestureForTap,
   nextScrubTick,
   normalizeTouchGestureSettings,
+  resolveTouchSequenceGesture,
+  shouldRejectPalmTouch,
   stopScrub,
   type TouchSample,
   type TouchSequence,
@@ -48,6 +52,7 @@ describe("상수", () => {
     expect(TAP_MAX_MOVE_PX).toBe(10);
     expect(TAP_MAX_DURATION_MS).toBe(300);
     expect(SCRUB_INTERVAL_MS).toBe(150);
+    expect(PALM_REJECTION_WINDOW_MS).toBe(250);
   });
 });
 
@@ -264,12 +269,16 @@ describe("액션 설명", () => {
   it("한국어 기본 설명을 반환한다", () => {
     expect(describeGestureAction("undo")).toBe("실행 취소");
     expect(describeGestureAction("redo")).toBe("다시 실행");
+    expect(describeGestureAction("quick-menu")).toBe("퀵 메뉴");
+    expect(describeGestureAction("toggle-focus-mode")).toBe("집중 모드 전환");
     expect(describeGestureAction("none")).toBe("제스처 없음");
   });
 
   it("영어 설명을 반환한다", () => {
     expect(describeGestureAction("undo", "en")).toBe("Undo");
     expect(describeGestureAction("redo", "en")).toBe("Redo");
+    expect(describeGestureAction("quick-menu", "en")).toBe("Quick Menu");
+    expect(describeGestureAction("toggle-focus-mode", "en")).toBe("Toggle Focus Mode");
     expect(describeGestureAction("none", "en")).toBe("No gesture");
   });
 
@@ -282,5 +291,46 @@ describe("액션 설명", () => {
 
   it("0 이하 단계 수는 1단계로 보정한다", () => {
     expect(describeScrubFeedback("undo", 0)).toBe("1단계 실행 취소");
+  });
+});
+
+describe("팜 리젝션 및 확장 제스처 (shouldRejectPalmTouch / resolveTouchSequenceGesture)", () => {
+  it("스타일러스(pen) 활성 시간창(250ms) 안의 touch 샘플만 손바닥 접촉으로 거부한다", () => {
+    expect(shouldRejectPalmTouch(sample(1, 10, 10, 500, "touch"), 400)).toBe(true);
+    expect(shouldRejectPalmTouch(sample(1, 10, 10, 800, "touch"), 400)).toBe(false);
+    expect(shouldRejectPalmTouch(sample(1, 10, 10, 500, "pen"), 400)).toBe(false);
+  });
+
+  it("filterPalmRejectedSamples는 시퀀스 내 pen 입력과 겹치는 touch 샘플을 걸러낸다", () => {
+    const mixed = [
+      sample(1, 100, 100, 100, "pen"),
+      sample(2, 200, 200, 180, "touch"),
+      sample(3, 220, 220, 600, "touch"),
+    ];
+    const filtered = filterPalmRejectedSamples(mixed);
+    expect(filtered).toHaveLength(2);
+    expect(filtered.map((s) => s.pointerId)).toEqual([1, 3]);
+  });
+
+  it("resolveTouchSequenceGesture는 4손가락 탭을 toggle-focus-mode로, 3손가락 홀드를 quick-menu로 판정한다", () => {
+    const fourFingerTap = sequence(4, [
+      sample(1, 10, 10, 0),
+      sample(2, 30, 10, 0),
+      sample(3, 50, 10, 0),
+      sample(4, 70, 10, 0),
+      sample(1, 12, 11, 120),
+    ]);
+    const settings = normalizeTouchGestureSettings({ quickMenuGesture: true });
+    expect(resolveTouchSequenceGesture(fourFingerTap, settings)).toBe("toggle-focus-mode");
+
+    const threeFingerHold = sequence(3, [
+      sample(1, 10, 10, 0),
+      sample(2, 30, 10, 0),
+      sample(3, 50, 10, 0),
+      sample(1, 10, 10, 420),
+    ]);
+    expect(resolveTouchSequenceGesture(threeFingerHold, settings)).toBe("quick-menu");
+    // 팜 리젝션 시간창 내에서는 2손가락 탭 오작동을 차단한다.
+    expect(resolveTouchSequenceGesture(stationaryTwoFinger(120), settings, 50)).toBe("none");
   });
 });

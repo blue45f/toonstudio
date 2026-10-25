@@ -368,6 +368,47 @@ describe("renderScreentone", () => {
     expect(d[2]).toBe(0);
     expect(d[3]).toBe(255);
   });
+
+  it("invert(톤 반전)를 켜면 패턴 커버리지가 반전되어 평균 불투명도가 (255 - 기존)에 수렴한다", () => {
+    const normal = renderToPixels(
+      normalizeScreentoneLayer({ density: 25, kind: "sand", seed: 42 }),
+      32,
+      32
+    );
+    const inverted = renderToPixels(
+      normalizeScreentoneLayer({ density: 25, kind: "sand", seed: 42, invert: true }),
+      32,
+      32
+    );
+    expect(avgAlpha(normal) + avgAlpha(inverted)).toBeCloseTo(255, 1);
+    expect(avgAlpha(inverted)).toBeGreaterThan(avgAlpha(normal));
+  });
+
+  it("applyToneToSelection에서 featherPx를 지정하면 경계 마스크가 0..1 사이 중간값으로 부드러워진다", () => {
+    const sharp = applyToneToSelection({
+      kind: "rect",
+      x: 4,
+      y: 4,
+      width: 8,
+      height: 8,
+      canvasWidth: 16,
+      canvasHeight: 16,
+    });
+    const feathered = applyToneToSelection({
+      kind: "rect",
+      x: 4,
+      y: 4,
+      width: 8,
+      height: 8,
+      canvasWidth: 16,
+      canvasHeight: 16,
+      featherPx: 2,
+    });
+    // 사각형 바로 바깥 경계 픽셀(3, 8)은 sharp에서는 0이지만 feathered에서는 0보다 크고 1보다 작다.
+    expect(sharp.mask[8 * 16 + 3]).toBe(0);
+    expect(feathered.mask[8 * 16 + 3]).toBeGreaterThan(0);
+    expect(feathered.mask[8 * 16 + 3]).toBeLessThan(1);
+  });
 });
 
 // ---------------------------------------------------------------------------

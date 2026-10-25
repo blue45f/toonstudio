@@ -15,6 +15,7 @@ import {
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   type ReactElement,
   type ReactNode,
@@ -178,6 +179,32 @@ function OptionRadioGroup<T extends string>({
   readonly onChange: (value: T) => void;
   readonly columns?: 2 | 3 | 4;
 }): ReactElement {
+  const radioRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const handleRadioKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ): void => {
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % options.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + options.length) % options.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = options.length - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      const target = options[nextIndex];
+      if (target) {
+        onChange(target.value);
+        radioRefs.current[nextIndex]?.focus();
+      }
+    }
+  };
+
   return (
     <div
       role="radiogroup"
@@ -189,18 +216,23 @@ function OptionRadioGroup<T extends string>({
         columns === 4 && "grid-cols-4",
       )}
     >
-      {options.map((option) => {
+      {options.map((option, index) => {
         const OptionIcon = option.icon;
         const selected = option.value === value;
         return (
           <button
             key={option.value}
+            ref={(el) => {
+              radioRefs.current[index] = el;
+            }}
             type="button"
             role="radio"
+            tabIndex={selected ? 0 : -1}
             aria-checked={selected}
             aria-label={option.label}
             title={option.hint ?? option.label}
             onClick={() => onChange(option.value)}
+            onKeyDown={(event) => handleRadioKeyDown(event, index)}
             className={cn(
               "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 py-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
               selected

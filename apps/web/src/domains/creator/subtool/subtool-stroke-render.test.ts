@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { createDefaultSubToolParams, normalizeSubToolParams } from "./subtool-params";
-import { renderSubToolStrokePreview } from "./subtool-stroke-render";
+import {
+  computeSubToolPressureEnvelope,
+  renderSubToolStrokePreview,
+} from "./subtool-stroke-render";
 
 /** canvas 2D 컨텍스트를 흉내 내는 fake. 모든 호출을 문자열 로그로 기록한다. */
 function createFakeContext(): {
@@ -87,5 +90,13 @@ describe("renderSubToolStrokePreview", () => {
     );
     const ellipseCalls = fake.calls.filter((call) => call.startsWith("ellipse(")).length;
     expect(ellipseCalls).toBeLessThanOrEqual(800);
+  });
+
+  it("computeSubToolPressureEnvelope는 획 진입·종료 구간을 부드럽게 감쇠하고 중앙에서 최대 필압(1)을 유지한다", () => {
+    expect(computeSubToolPressureEnvelope(0)).toBeCloseTo(0.18, 4);
+    expect(computeSubToolPressureEnvelope(0.5)).toBeCloseTo(1, 4);
+    expect(computeSubToolPressureEnvelope(1)).toBeCloseTo(0.18, 4);
+    expect(computeSubToolPressureEnvelope(0.07)).toBeGreaterThan(0.18);
+    expect(computeSubToolPressureEnvelope(0.07)).toBeLessThan(1);
   });
 });

@@ -159,6 +159,50 @@ describe("convertStudioLtImage 선화", () => {
     );
     expect(all).toBe(64);
   });
+
+  it("edgeThinning(NMS 세선화)을 켜면 굵기 1에서 엣지 이중 능선이 억제되어 선 픽셀 수가 줄어든다", () => {
+    const stepImage = makeImageData(16, 16, (x) =>
+      x < 8 ? [0, 0, 0, 255] : [255, 255, 255, 255],
+    );
+    const unthinned = countLinePixels(
+      convertStudioLtImage(stepImage, {
+        ...DEFAULT_OPTIONS,
+        lineThickness: 1,
+        lineThreshold: 0.05,
+        edgeThinning: false,
+      }).lineLayer,
+    );
+    const thinned = countLinePixels(
+      convertStudioLtImage(stepImage, {
+        ...DEFAULT_OPTIONS,
+        lineThickness: 1,
+        lineThreshold: 0.05,
+        edgeThinning: true,
+      }).lineLayer,
+    );
+    expect(thinned).toBeGreaterThan(0);
+    expect(thinned).toBeLessThan(unthinned);
+  });
+
+  it("extractBlackFill(먹베타 추출)을 켜면 어두운 암부 영역이 선화 레이어에 단색 검정으로 채워진다", () => {
+    const darkPatch = makeImageData(8, 8, (x) =>
+      x < 4 ? [10, 10, 10, 255] : [240, 240, 240, 255],
+    );
+    const withoutFill = convertStudioLtImage(darkPatch, {
+      ...DEFAULT_OPTIONS,
+      lineThreshold: 0.9,
+      extractBlackFill: false,
+    }).lineLayer;
+    const withFill = convertStudioLtImage(darkPatch, {
+      ...DEFAULT_OPTIONS,
+      lineThreshold: 0.9,
+      extractBlackFill: true,
+      blackFillThreshold: 0.15,
+    }).lineLayer;
+    // 경계에서 먼 좌측 암부 내부 픽셀(0,4)은 먹베타 추출 시에만 불투명 검정이 된다.
+    expect(withoutFill.data[(4 * 8 + 0) * 4 + 3]).toBe(0);
+    expect(withFill.data[(4 * 8 + 0) * 4 + 3]).toBe(255);
+  });
 });
 
 describe("convertStudioLtImage 톤", () => {

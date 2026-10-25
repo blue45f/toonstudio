@@ -133,4 +133,46 @@ describe("ScreentoneLayerPanel", () => {
     expect(screen.getByLabelText("선 수 조절")).toHaveProperty("disabled", true);
     expect(screen.getByRole("button", { name: "톤 On" })).toHaveProperty("disabled", true);
   });
+
+  it("톤 반전 버튼을 클릭하면 invert가 토글된다", () => {
+    const onChange = vi.fn();
+    render(
+      <ScreentoneLayerPanel
+        value={normalizeScreentoneLayer({ density: 40 })}
+        onChange={onChange}
+      />
+    );
+
+    const invertBtn = screen.getByRole("button", { name: "톤 반전" });
+    expect(invertBtn.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(invertBtn);
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ invert: true }));
+  });
+
+  it("망점 종류와 그라데이션 버튼 그룹에서 화살표·Home·End 로빙 탭인덱스 이동이 동작한다", () => {
+    const onChange = vi.fn();
+    render(
+      <ScreentoneLayerPanel
+        value={normalizeScreentoneLayer({ density: 40, kind: "dot" })}
+        onChange={onChange}
+      />
+    );
+
+    const dotBtn = screen.getByRole("button", { name: "도트" });
+    const lineBtn = screen.getByRole("button", { name: "사선" });
+    expect(dotBtn.getAttribute("tabindex")).toBe("0");
+    expect(lineBtn.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(dotBtn, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ kind: "line" }));
+
+    fireEvent.keyDown(dotBtn, { key: "End" });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ kind: "cross" }));
+
+    const noneGradBtn = screen.getByRole("button", { name: "없음" });
+    fireEvent.keyDown(noneGradBtn, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ gradient: expect.objectContaining({ kind: "linear" }) })
+    );
+  });
 });

@@ -40,12 +40,63 @@ export const TAP_MAX_MOVE_PX = 10;
 export const TAP_MAX_DURATION_MS = 300;
 /** 탭 후 홀드 유지 시 연속 undo/redo 가 발생하는 간격 (ms, Procreate식 스크럽). */
 export const SCRUB_INTERVAL_MS = 150;
+/** 스타일러스(pen) 입력 직후 손바닥 터치를 무시하는 팜 리젝션 보호 시간창 (ms). */
+export const PALM_REJECTION_WINDOW_MS = 250;
 
 /** 터치 시퀀스 판정 결과. "tap"일 때만 gestureForTap 으로 액션을 매핑한다. */
 export type TouchSequenceKind = "tap" | "pan" | "hold";
 
 /** 탭 제스처가 유발하는 액션. "none" 은 제스처가 실행취소/다시실행과 무관함을 뜻한다. */
 export type TapGestureAction = "undo" | "redo" | "none";
+
+/**
+ * 확장 멀티터치 제스처 액션 (CSP / Procreate 벤치마크):
+ * - "undo" / "redo": 2/3손가락 탭
+ * - "quick-menu": 3손가락 홀드 (quickMenuGesture 활성화 시)
+ * - "toggle-focus-mode": 4손가락 탭 (캔버스 집중 모드 / UI 숨기기 토글)
+ * - "none": 동작 없음
+ */
+export type ExtendedGestureAction =
+  | TapGestureAction
+  | "quick-menu"
+  | "toggle-focus-mode";
+
+/**
+ * 스타일러스(pen)가 활성 상태이거나 방금 떨어진 직후(`windowMs` 이내)에 들어온
+ * 손바닥 터치(`pointerType === "touch"`) 샘플인지 판정한다.
+ */
+export function shouldRejectPalmTouch(
+  sample: TouchSample,
+  lastPenTimestampMs: number | null | undefined,
+  windowMs: number = PALM_REJECTION_WINDOW_MS,
+): boolean {
+  if (sample.pointerType !== "touch") return false;
+  if (typeof lastPenTimestampMs !== "number" || !Number.isFinite(lastPenTimestampMs)) {
+    return false;
+  }
+  const safeWindow = Number.isFinite(windowMs) ? Math.max(0, windowMs) : PALM_REJECTION_WINDOW_MS;
+  return Math.abs(sample.t - lastPenTimestampMs) <= safeWindow;
+}
+
+/**
+ * 샘플 배열에서 스타일러스(pen) 입력과 시간창(`windowMs`)이 겹치는 손바닥 터치(`touch`) 샘플을 걸러낸다.
+ */
+export function filterPalmRejectedSamples(
+  samples: readonly TouchSample[],
+  lastPenTimestampMs?: number | null,
+  windowMs: number = PALM_REJECTION_WINDOW_MS,
+): TouchSample[] {
+  let latestPenT: number | null =
+    typeof lastPenTimestampMs === "number" && Number.isFinite(lastPenTimestampMs)
+      ? lastPenTimestampMs
+      : null;
+  for (const s of samples) {
+    if (s.pointerType === "pen" && (latestPenT === null || s.t > latestPenT)) {
+      latestPenT = s.t;
+    }
+  }
+  return samples.filter((s) => !shouldRejectPalmTouch(s, latestPenT, windowMs));
+}
 
 /**
  * 시퀀스를 "tap" | "pan" | "hold" 로 판별한다.
@@ -91,8 +142,10 @@ export interface TouchGestureSettings {
   enabled: boolean;
   /** 두/세 손가락 탭 실행취소·다시실행 제스처 사용 여부. 접근성 대체 버튼은 항상 유지된다. */
   undoRedoGestures: boolean;
-  /** 퀵 메뉴 제스처(예약 필드). 생략 시 비활성 취급. */
+  /** 퀵 메뉴 제스처(3손가락 홀드). 생략 시 비활성 취급. */
   quickMenuGesture?: boolean;
+  /** 4손가락 탭 집중 모드(UI 숨김 토글) 제스처. 명시적으로 false가 아니면 활성 취급. */
+  fourFingerTapFocusMode?: boolean;
   /** true 면 애니메이션/진동 같은 부가 효과 없이 토스트 텍스트만 표시한다 (reduced-motion). */
   reduceMotionToastOnly: boolean;
 }
@@ -110,7 +163,7 @@ export function defaultTouchGestureSettings(): TouchGestureSettings {
  * 부분 설정(예: 로컬 스토리지 역직렬화 결과)을 정규화한다.
  * - null/undefined/비객체 → 기본값
  * - boolean 이 아닌 값 → 해당 키의 기본값으로 대체
- * - quickMenuGesture 는 boolean 으로 명시된 경우에만 유지하고, 아니면 생략한다.
+ * - quickMenuGesture / fourFingerTapFocusMode 는 boolean 으로 명시된 경우에만 유지하고, 아니면 생략한다.
  */
 export function normalizeTouchGestureSettings(
   input: Partial<TouchGestureSettings> | null | undefined,
@@ -129,7 +182,45 @@ export function normalizeTouchGestureSettings(
   if (typeof input.quickMenuGesture === "boolean") {
     normalized.quickMenuGesture = input.quickMenuGesture;
   }
+  if (typeof input.fourFingerTapFocusMode === "boolean") {
+    normalized.fourFingerTapFocusMode = input.fourFingerTapFocusMode;
+  }
   return normalized;
+}
+
+/**
+ * 팜 리젝션과 사용자 설정을 모두 반영해 터치 시퀀스의 최종 제스처 액션을 판정한다.
+ * - 스타일러스(pen) 활성 시간창과 겹쳐 손바닥 터치가 제거되면 오작동 방지를 위해 "none" 반환
+ * - 2/3손가락 탭 → "undo" / "redo" (undoRedoGestures 켜짐 시)
+ * - 4손가락 탭 → "toggle-focus-mode" (fourFingerTapFocusMode !== false 시)
+ * - 3손가락 홀드 → "quick-menu" (quickMenuGesture === true 시)
+ */
+export function resolveTouchSequenceGesture(
+  seq: TouchSequence,
+  settings: TouchGestureSettings,
+  lastPenTimestampMs?: number | null,
+): ExtendedGestureAction {
+  if (!settings.enabled || seq.samples.length === 0) {
+    return "none";
+  }
+  const filteredSamples = filterPalmRejectedSamples(seq.samples, lastPenTimestampMs);
+  if (filteredSamples.length !== seq.samples.length) {
+    return "none";
+  }
+  const kind = classifyTap({ ...seq, samples: filteredSamples });
+  if (kind === "tap") {
+    if (seq.fingerCount === 4 && settings.fourFingerTapFocusMode !== false) {
+      return "toggle-focus-mode";
+    }
+    if (settings.undoRedoGestures) {
+      return gestureForTap(seq.fingerCount);
+    }
+    return "none";
+  }
+  if (kind === "hold" && seq.fingerCount === 3 && settings.quickMenuGesture === true) {
+    return "quick-menu";
+  }
+  return "none";
 }
 
 /**
@@ -187,14 +278,20 @@ export type GestureLocale = "ko" | "en";
  * 제스처 액션의 사람 읽기용 설명. 토스트/설정 화면/접근성 라벨에 사용한다.
  * - "undo" → "실행 취소" / "Undo"
  * - "redo" → "다시 실행" / "Redo"
+ * - "quick-menu" → "퀵 메뉴" / "Quick Menu"
+ * - "toggle-focus-mode" → "집중 모드 전환" / "Toggle Focus Mode"
  * - "none" → "제스처 없음" / "No gesture"
  */
 export function describeGestureAction(
-  action: TapGestureAction,
+  action: ExtendedGestureAction,
   locale: GestureLocale = "ko",
 ): string {
   if (action === "undo") return locale === "ko" ? "실행 취소" : "Undo";
   if (action === "redo") return locale === "ko" ? "다시 실행" : "Redo";
+  if (action === "quick-menu") return locale === "ko" ? "퀵 메뉴" : "Quick Menu";
+  if (action === "toggle-focus-mode") {
+    return locale === "ko" ? "집중 모드 전환" : "Toggle Focus Mode";
+  }
   return locale === "ko" ? "제스처 없음" : "No gesture";
 }
 

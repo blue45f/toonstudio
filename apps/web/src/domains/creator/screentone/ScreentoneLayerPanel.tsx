@@ -41,13 +41,13 @@ const GRADIENT_OPTIONS: ReadonlyArray<{ id: ScreentoneGradientKind; label: strin
 ];
 
 const LABEL_ROW = "flex items-center justify-between gap-2 text-xs text-fg-2";
-const RANGE_CLASS = "w-24 accent-sky-500 cursor-pointer";
+const RANGE_CLASS = "w-24 accent-accent cursor-pointer";
 const READOUT_CLASS = "w-10 text-right text-[10px] tabular-nums text-fg-3";
 const SECTION_LABEL = "text-[11px] text-fg-3";
 
 const KIND_BUTTON_BASE =
-  "rounded border px-1 py-1 text-[10px] text-center transition-colors truncate";
-const KIND_BUTTON_ACTIVE = "border-sky-500 bg-sky-500/20 text-sky-200 font-medium";
+  "rounded border px-1 py-1 text-[10px] text-center transition-colors truncate focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+const KIND_BUTTON_ACTIVE = "border-accent bg-accent/15 text-accent font-medium";
 const KIND_BUTTON_IDLE = "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg";
 
 const PREVIEW_WIDTH = 240;
@@ -65,6 +65,8 @@ export function ScreentoneLayerPanel({
   const current = normalizeScreentoneLayer(value);
   const isEnabled = !isIdentityScreentoneLayer(current);
   const previewRef = useRef<HTMLCanvasElement | null>(null);
+  const kindButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const gradientButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // 미리보기 — 파라미터가 바뀔 때마다 다시 그린다.
   // jsdom 등 canvas 미지원 환경에서는 getContext가 null을 돌려주므로 가드한다.
@@ -99,6 +101,7 @@ export function ScreentoneLayerPanel({
         lines: current.lines,
         angle: current.angle,
         seed: current.seed,
+        invert: current.invert,
         density: 40,
       });
     }
@@ -108,6 +111,54 @@ export function ScreentoneLayerPanel({
     patch({ seed: Math.floor(Math.random() * 10000) });
   };
 
+  const handleKindKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number
+  ): void => {
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % KIND_OPTIONS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + KIND_OPTIONS.length) % KIND_OPTIONS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = KIND_OPTIONS.length - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      const target = KIND_OPTIONS[nextIndex];
+      if (target) {
+        patch({ kind: target.id });
+        kindButtonRefs.current[nextIndex]?.focus();
+      }
+    }
+  };
+
+  const handleGradientKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number
+  ): void => {
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % GRADIENT_OPTIONS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + GRADIENT_OPTIONS.length) % GRADIENT_OPTIONS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = GRADIENT_OPTIONS.length - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      const target = GRADIENT_OPTIONS[nextIndex];
+      if (target) {
+        patchGradient({ kind: target.id });
+        gradientButtonRefs.current[nextIndex]?.focus();
+      }
+    }
+  };
+
   const gradientOn = current.gradient.kind !== "none";
 
   return (
@@ -115,27 +166,47 @@ export function ScreentoneLayerPanel({
       {/* 헤더 & 토글 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Layers size={14} className="text-sky-400 shrink-0" aria-hidden />
+          <Layers size={14} className="text-accent shrink-0" aria-hidden />
           <span className="font-semibold text-fg truncate">스크린톤 레이어</span>
-          <span className="px-1 py-0.2 text-[10px] rounded font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0">
+          <span className="px-1 py-0.2 text-[10px] rounded font-medium bg-accent/15 text-accent border border-accent/30 shrink-0">
             CSP
           </span>
         </div>
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={disabled}
-          aria-pressed={isEnabled}
-          className={cn(
-            "rounded-md border px-2 py-0.5 text-[0.66rem] font-medium transition-colors",
-            isEnabled
-              ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
-              : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg",
-            disabled && "cursor-not-allowed opacity-50"
+        <div className="flex items-center gap-1">
+          {isEnabled && (
+            <button
+              type="button"
+              onClick={() => patch({ invert: current.invert !== true })}
+              disabled={disabled}
+              aria-pressed={current.invert === true}
+              title="망점과 여백의 잉크 커버리지를 뒤집습니다 (백발 톤)"
+              className={cn(
+                "rounded-md border px-2 py-0.5 text-[0.66rem] font-medium transition-colors",
+                current.invert === true
+                  ? "border-accent/50 bg-accent/15 text-accent"
+                  : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg",
+                disabled && "cursor-not-allowed opacity-50"
+              )}
+            >
+              톤 반전
+            </button>
           )}
-        >
-          {isEnabled ? "톤 On" : "톤 Off"}
-        </button>
+          <button
+            type="button"
+            onClick={handleToggle}
+            disabled={disabled}
+            aria-pressed={isEnabled}
+            className={cn(
+              "rounded-md border px-2 py-0.5 text-[0.66rem] font-medium transition-colors",
+              isEnabled
+                ? "border-accent/50 bg-accent/15 text-accent"
+                : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg",
+              disabled && "cursor-not-allowed opacity-50"
+            )}
+          >
+            {isEnabled ? "톤 On" : "톤 Off"}
+          </button>
+        </div>
       </div>
 
       {isEnabled && (
@@ -147,7 +218,7 @@ export function ScreentoneLayerPanel({
               ref={previewRef}
               width={PREVIEW_WIDTH}
               height={PREVIEW_HEIGHT}
-              className="h-24 w-full rounded-md border border-line bg-white"
+              className="h-24 w-full rounded-md border border-line bg-card [forced-color-adjust:none]"
               aria-label="스크린톤 미리보기"
             />
           </div>
@@ -155,14 +226,19 @@ export function ScreentoneLayerPanel({
           {/* 망점 종류 */}
           <div className="space-y-1">
             <p className={SECTION_LABEL}>망점 종류</p>
-            <div className="grid grid-cols-4 gap-1">
-              {KIND_OPTIONS.map((opt) => {
+            <div className="grid grid-cols-4 gap-1" role="group" aria-label="망점 종류">
+              {KIND_OPTIONS.map((opt, index) => {
                 const active = current.kind === opt.id;
                 return (
                   <button
                     key={opt.id}
+                    ref={(el) => {
+                      kindButtonRefs.current[index] = el;
+                    }}
                     type="button"
+                    tabIndex={active ? 0 : -1}
                     onClick={() => patch({ kind: opt.id })}
+                    onKeyDown={(event) => handleKindKeyDown(event, index)}
                     disabled={disabled}
                     title={opt.tip}
                     aria-pressed={active}
@@ -259,14 +335,19 @@ export function ScreentoneLayerPanel({
           {/* 그라데이션 */}
           <div className="space-y-1 pt-1 border-t border-line/40">
             <p className={SECTION_LABEL}>그라데이션 톤</p>
-            <div className="grid grid-cols-3 gap-1">
-              {GRADIENT_OPTIONS.map((opt) => {
+            <div className="grid grid-cols-3 gap-1" role="group" aria-label="그라데이션 톤">
+              {GRADIENT_OPTIONS.map((opt, index) => {
                 const active = current.gradient.kind === opt.id;
                 return (
                   <button
                     key={opt.id}
+                    ref={(el) => {
+                      gradientButtonRefs.current[index] = el;
+                    }}
                     type="button"
+                    tabIndex={active ? 0 : -1}
                     onClick={() => patchGradient({ kind: opt.id })}
+                    onKeyDown={(event) => handleGradientKeyDown(event, index)}
                     disabled={disabled}
                     title={opt.tip}
                     aria-pressed={active}

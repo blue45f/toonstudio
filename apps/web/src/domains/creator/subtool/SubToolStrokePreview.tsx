@@ -46,7 +46,7 @@ export function SubToolStrokePreview({
         data-testid="subtool-stroke-preview"
         role="img"
         aria-label={`서브툴 미리보기 획 (팁 ${Math.round(params.tip.size)}px, 혼합 ${blendLabel})`}
-        className="h-[7.5rem] w-full rounded-lg border border-line bg-card"
+        className="h-[7.5rem] w-full rounded-lg border border-line bg-card [forced-color-adjust:none]"
         style={{ width: "100%", height: "7.5rem" }}
       />
       <figcaption className="mt-1 text-[0.62rem] text-fg-3">

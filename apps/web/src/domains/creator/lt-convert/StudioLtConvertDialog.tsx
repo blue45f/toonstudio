@@ -23,6 +23,7 @@ import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import {
   convertStudioLtImage,
+  STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE,
   STUDIO_LT_CONVERT_DEFAULT_OPTIONS,
   STUDIO_LT_CONVERT_LINE_THICKNESS_RANGE,
   STUDIO_LT_CONVERT_LINE_THRESHOLD_RANGE,
@@ -130,6 +131,7 @@ export function StudioLtConvertDialog({
   const dialogRef = useRef<HTMLElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tabButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const portalRootRef = useRef<HTMLElement | null>(
     typeof document === "undefined" ? null : document.body,
   );
@@ -146,6 +148,15 @@ export function StudioLtConvertDialog({
   const [screentone, setScreentone] = useState<boolean>(
     STUDIO_LT_CONVERT_DEFAULT_OPTIONS.screentone,
   );
+  const [edgeThinning, setEdgeThinning] = useState<boolean>(
+    STUDIO_LT_CONVERT_DEFAULT_OPTIONS.edgeThinning,
+  );
+  const [extractBlackFill, setExtractBlackFill] = useState<boolean>(
+    STUDIO_LT_CONVERT_DEFAULT_OPTIONS.extractBlackFill,
+  );
+  const [blackFillThresholdPercent, setBlackFillThresholdPercent] = useState<number>(
+    Math.round(STUDIO_LT_CONVERT_DEFAULT_OPTIONS.blackFillThreshold * 100),
+  );
   const [tab, setTab] = useState<PreviewTab>("line");
   const [vectorStatus, setVectorStatus] = useState<string | null>(null);
 
@@ -155,8 +166,19 @@ export function StudioLtConvertDialog({
       lineThickness,
       lineThreshold: lineThresholdPercent / 100,
       screentone,
+      edgeThinning,
+      extractBlackFill,
+      blackFillThreshold: blackFillThresholdPercent / 100,
     }),
-    [toneDensity, lineThickness, lineThresholdPercent, screentone],
+    [
+      toneDensity,
+      lineThickness,
+      lineThresholdPercent,
+      screentone,
+      edgeThinning,
+      extractBlackFill,
+      blackFillThresholdPercent,
+    ],
   );
 
   const outcome = useMemo(() => {
@@ -253,6 +275,30 @@ export function StudioLtConvertDialog({
     tone: t("studio.ltConvert.tabTone", "톤"),
   };
 
+  const handleTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ): void => {
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % PREVIEW_TABS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + PREVIEW_TABS.length) % PREVIEW_TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = PREVIEW_TABS.length - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      const targetTab = PREVIEW_TABS[nextIndex];
+      if (targetTab) {
+        setTab(targetTab);
+        tabButtonRefs.current[nextIndex]?.focus();
+      }
+    }
+  };
+
   const content = (
     <div className="fixed inset-0 z-[140] flex items-stretch justify-center pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] sm:items-center sm:p-4">
       <button
@@ -261,7 +307,7 @@ export function StudioLtConvertDialog({
         aria-hidden="true"
         data-studio-modal-backdrop="true"
         onClick={onCancel}
-        className="absolute inset-0 cursor-default bg-[oklch(0.08_0.01_70/0.86)] backdrop-blur-sm"
+        className="absolute inset-0 cursor-default bg-panel/85 backdrop-blur-sm"
       />
       <section
         ref={dialogRef}
@@ -306,12 +352,17 @@ export function StudioLtConvertDialog({
               aria-label={t("studio.ltConvert.preview", "미리보기")}
               className="mb-2 flex flex-wrap items-center gap-1.5"
             >
-              {PREVIEW_TABS.map((previewTab) => (
+              {PREVIEW_TABS.map((previewTab, index) => (
                 <button
                   key={previewTab}
+                  ref={(el) => {
+                    tabButtonRefs.current[index] = el;
+                  }}
                   type="button"
+                  tabIndex={tab === previewTab ? 0 : -1}
                   aria-pressed={tab === previewTab}
                   onClick={() => setTab(previewTab)}
+                  onKeyDown={(event) => handleTabKeyDown(event, index)}
                   className={cn(
                     "rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 motion-reduce:transition-none",
                     STUDIO_FOCUS_RING,
@@ -330,7 +381,7 @@ export function StudioLtConvertDialog({
               </span>
             </div>
 
-            <div className="grid min-h-48 place-items-center overflow-hidden rounded-xl border border-line/70 bg-[oklch(0.96_0.005_90)] p-2 dark:bg-[oklch(0.22_0.01_70)]">
+            <div className="grid min-h-48 place-items-center overflow-hidden rounded-xl border border-line/70 bg-card p-2">
               {source.status === "capturing" ? (
                 <p className="text-xs text-fg-3">
                   {t("studio.ltConvert.capturing", "소스를 불러오는 중…")}
@@ -356,7 +407,7 @@ export function StudioLtConvertDialog({
               ) : (
                 <canvas
                   ref={previewCanvasRef}
-                  className="max-h-[46dvh] max-w-full rounded-md object-contain [image-rendering:auto]"
+                  className="max-h-[46dvh] max-w-full rounded-md object-contain [forced-color-adjust:none] [image-rendering:auto]"
                   aria-label={t("studio.ltConvert.previewCanvas", "LT 변환 미리보기")}
                   role="img"
                 />
@@ -426,6 +477,39 @@ export function StudioLtConvertDialog({
               />
               {t("studio.ltConvert.screentone", "도트 스크린톤")}
             </label>
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
+              <input
+                type="checkbox"
+                checked={edgeThinning}
+                disabled={slidersDisabled}
+                onChange={(event) => setEdgeThinning(event.currentTarget.checked)}
+                className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
+              />
+              {t("studio.ltConvert.edgeThinning", "선 세선화 (NMS)")}
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
+              <input
+                type="checkbox"
+                checked={extractBlackFill}
+                disabled={slidersDisabled}
+                onChange={(event) => setExtractBlackFill(event.currentTarget.checked)}
+                className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
+              />
+              {t("studio.ltConvert.extractBlackFill", "먹베타 추출")}
+            </label>
+            {extractBlackFill ? (
+              <SliderRow
+                id={`${id}-black-fill-threshold`}
+                label={t("studio.ltConvert.blackFillThreshold", "먹베타 임계값")}
+                display={`${blackFillThresholdPercent}%`}
+                min={STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE.min * 100}
+                max={STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE.max * 100}
+                step={1}
+                value={blackFillThresholdPercent}
+                disabled={slidersDisabled}
+                onChange={setBlackFillThresholdPercent}
+              />
+            ) : null}
             {outcome.error ? (
               <p role="alert" className="text-xs text-fg-2">
                 {outcome.error}
