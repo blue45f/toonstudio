@@ -41,3 +41,9 @@ export {
 } from "./studio-3d-geometry-authority-manifest";
 export * from "./studio-3d-editable-mesh";
 export * from "./studio-3d-attachment-solver";
+export * from "../bg3d/studio-bg3d-skp-full-scene-restorer";
+export * from "../bg3d/studio-bg3d-sketchup-direct-modeling";
+export * from "../bg3d/studio-bg3d-sketchup-guides-sections-dimensions";
+export * from "../bg3d/studio-bg3d-sketchup-styles-uv-engine";
+export * from "../bg3d/studio-bg3d-sketchup-shadow-and-exporter";
+

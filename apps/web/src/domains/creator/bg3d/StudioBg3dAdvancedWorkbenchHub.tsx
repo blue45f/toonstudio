@@ -23,6 +23,7 @@ import {
 } from "./StudioBg3dPlaceSetPackagePanel";
 import { StudioBg3dPostProcessVfxPanel } from "./StudioBg3dPostProcessVfxPanel";
 import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
+import { StudioBg3dSketchUpWorkbenchPanel } from "./StudioBg3dSketchUpWorkbenchPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import { StudioBg3dSpatialWebtoonPanel } from "./StudioBg3dSpatialWebtoonPanel";
 import { StudioBg3dVrmHybridDccPanel } from "./StudioBg3dVrmHybridDccPanel";
@@ -51,6 +52,7 @@ export type StudioBg3dWorkbenchTabId =
   | "place-set-package"
   | "postprocess-vfx"
   | "shaper-tooning"
+  | "sketchup-studio"
   | "spatial-fx"
   | "spatial-webtoon"
   | "virtual-space-collab"
@@ -75,6 +77,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "cloner", labelKo: "절차적 클로너", groupKo: "캐릭터·DCC" },
   { id: "deformers", labelKo: "디포머·CSG 불리언", groupKo: "캐릭터·DCC" },
   { id: "dynamic-components", labelKo: "다이나믹 컴포넌트", groupKo: "캐릭터·DCC" },
+  { id: "sketchup-studio", labelKo: "스케치업 마스터 스튜디오", groupKo: "캐릭터·DCC" },
   { id: "dcc-pipeline", labelKo: "DCC·도시·렌즈·품질", groupKo: "캐릭터·DCC" },
   { id: "vrm-hybrid-dcc", labelKo: "VRM·아바타·하이브리드 DCC", groupKo: "캐릭터·DCC" },
   { id: "place-set-package", labelKo: "장소 세트 정본", groupKo: "세트·XR" },
@@ -451,6 +454,25 @@ export function StudioBg3dAdvancedWorkbenchHub({
           <StudioBg3dDynamicComponentsPanel
             onApplyComponentTransform={(state) =>
               setLastActionSummary(`다이나믹 컴포넌트: ${state.kind} (${Math.round(state.value * 100)}%)`)
+            }
+          />
+        ) : null}
+
+        {activeTab === "sketchup-studio" ? (
+          <StudioBg3dSketchUpWorkbenchPanel
+            disabled={disabled}
+            onApplyStyle={(style) => setLastActionSummary(`SketchUp 스타일: ${style.labelKo}`)}
+            onApplyShadowSolar={(az, alt, k) =>
+              setLastActionSummary(`SketchUp 태양광: 방위 ${az.toFixed(1)}° / 고도 ${alt.toFixed(1)}° (${k}K)`)
+            }
+            onExecuteArray={(token, list) =>
+              setLastActionSummary(`SketchUp VCB 배열 (${token}): ${list.length}개 배치`)
+            }
+            onRestoreSkpScenes={(shotCount, tagCount) =>
+              setLastActionSummary(`SKP 장면 ${shotCount}개 · 태그 ${tagCount}개 복원`)
+            }
+            onExportCadFormat={(fmt, bytes) =>
+              setLastActionSummary(`SketchUp 내보내기 (${fmt.toUpperCase()}): ${bytes}B`)
             }
           />
         ) : null}
