@@ -17,3 +17,4 @@ export { NowCard, type NowCardData, type NowCardProps, type NowCardTone } from "
 export { AdvancedSection, type AdvancedSectionProps } from "./AdvancedSection";
 export { SectionContainer, type SectionContainerProps } from "./SectionContainer";
 export { HeroBlock, type HeroBlockProps } from "./HeroBlock";
+export { FlowProgress, type FlowProgressNextAction, type FlowProgressProps, type FlowProgressStep, type FlowProgressStepState } from "./FlowProgress";

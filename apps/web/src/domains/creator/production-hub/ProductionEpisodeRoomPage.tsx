@@ -6,7 +6,7 @@ import {
   type ReviewDecision,
   type ReviewLane,
 } from "@toonstudio/core/production";
-import { ArrowLeft, Check, Layers3, PenLine, Sparkles } from "lucide-react";
+import { ArrowLeft, Layers3, PenLine, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
@@ -59,22 +59,12 @@ import { ProductionAvatar, ProductionEmptyState, ProductionPill, ProductionSecti
 import { usePreferredRoleLens } from "./use-preferred-role-lens";
 import { useProductionProjectSession } from "./use-production-project-session";
 
+import { FlowProgress } from "@/shared/components/layout/FlowProgress";
+import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
-
-function TimelineStep({ label, active, done }: { readonly label: string; readonly active: boolean; readonly done: boolean }) {
-  return (
-    <li className="min-w-28 flex-1" aria-current={active ? "step" : undefined}>
-      <div className={cn("h-1.5 rounded-full", done ? "bg-good" : active ? "bg-accent" : "bg-line")} />
-      <p className={cn("mt-2 flex items-center gap-1 text-[0.6875rem] font-semibold", active ? "text-accent" : done ? "text-good" : "text-fg-3")}>
-        {done ? <Check className="size-3" aria-hidden="true" /> : null}
-        {label}
-      </p>
-    </li>
-  );
-}
 
 function RoomState({ children, kind }: { readonly children: ReactNode; readonly kind: "pending" | "error" | "blocked" }) {
   return (
@@ -251,14 +241,24 @@ export function ProductionEpisodeRoomPage() {
   const openChanges = aggregate.changeRequests.filter((request) =>
     request.episodeId === episode.episodeId && !["completed", "cancelled", "rejected"].includes(request.status));
 
-  const pipeline = [
-    { label: bt("스토리 확정", "Story locked"), done: episode.storyLockApproved, active: episode.state.startsWith("story") },
-    { label: bt("인계", "Handoff"), done: Boolean(episode.activeHandoffId), active: episode.state === "art-clarification" },
-    { label: bt("콘티", "Storyboard"), done: episode.thumbnailLockApproved, active: episode.state.includes("thumbnail") },
-    { label: bt("최종 원고", "Final art"), done: Boolean(episode.visualRevisionRef) && episode.thumbnailLockApproved, active: episode.state === "final-art-production" },
-    { label: bt("최종 검수", "Final proof"), done: episode.jointProofApproved, active: episode.state === "joint-proof" },
-    { label: bt("공개 준비", "Ready"), done: episode.state === "published", active: episode.state === "publish-ready" },
+  // 회차 진행 단계 — 전시용 타임라인이 아니라 각 단계의 작업 화면으로 가는
+  // 링크 + 첫 미완료 단계의 다음 행동이다. 단계별 목적지는 제작 표면의
+  // 정본 경로(productionSurfacePath)로만 만들고, 공개 준비는 회차 단계 정본
+  // (EPISODE_STAGES의 publish)과 같은 게시 센터 경로로 간다.
+  const flowSteps = [
+    { label: bt("스토리 확정", "Story locked"), done: episode.storyLockApproved, active: episode.state.startsWith("story"), href: productionSurfacePath(aggregate.projectId, "planning") },
+    { label: bt("인계", "Handoff"), done: Boolean(episode.activeHandoffId), active: episode.state === "art-clarification", href: productionSurfacePath(aggregate.projectId, "handoff") },
+    { label: bt("콘티", "Storyboard"), done: episode.thumbnailLockApproved, active: episode.state.includes("thumbnail"), href: productionSurfacePath(aggregate.projectId, "production", `boardEpisode=${encodeURIComponent(episode.episodeId)}`) },
+    { label: bt("최종 원고", "Final art"), done: Boolean(episode.visualRevisionRef) && episode.thumbnailLockApproved, active: episode.state === "final-art-production", href: productionSurfacePath(aggregate.projectId, "manuscripts", `episode=${encodeURIComponent(episode.episodeId)}`) },
+    { label: bt("최종 검수", "Final proof"), done: episode.jointProofApproved, active: episode.state === "joint-proof", href: productionSurfacePath(aggregate.projectId, "review") },
+    { label: bt("공개 준비", "Ready"), done: episode.state === "published", active: episode.state === "publish-ready", href: "/studio/publish" },
   ];
+  const flowProgressSteps = flowSteps.map((step) => ({
+    label: step.label,
+    state: step.done ? ("done" as const) : step.active ? ("active" as const) : ("todo" as const),
+    href: step.href,
+  }));
+  const nextFlowStep = flowSteps.find((step) => !step.done) ?? null;
 
   const canAnswer = (thread: ClarificationThread) => project.access.edit && (project.isDemo
     ? roleLens === "story"
@@ -285,7 +285,7 @@ export function ProductionEpisodeRoomPage() {
     <div data-creator-workflow="production-episode" data-route-ready="production-episode" className="min-h-dvh bg-canvas text-fg">
       <ProductionProjectHeader aggregate={aggregate} access={project.access} roleLens={roleLens} onRoleLensChange={setRoleLens} saveState={project.saveState} isDemo={project.isDemo} />
       <div className="border-b border-line bg-card px-4 py-4 sm:px-6">
-        <div className="mx-auto max-w-[100rem]">
+        <div className={cn("mx-auto", LAYOUT_TOKENS.width.app)}>
           {project.isDemo ? <ProductionSampleJourneyGuide location="episode-room" /> : null}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
@@ -309,13 +309,18 @@ export function ProductionEpisodeRoomPage() {
               </Link>
             </div>
           </div>
-          <ol className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label={bt("회차 진행 단계", "Episode stages")}>
-            {pipeline.map((step) => <TimelineStep key={step.label} {...step} />)}
-          </ol>
+          <FlowProgress
+            ariaLabel={bt("회차 진행 단계", "Episode stages")}
+            steps={flowProgressSteps}
+            nextAction={nextFlowStep ? { label: nextFlowStep.label, href: nextFlowStep.href } : null}
+            nextPrefix={bt("다음 행동", "Next step")}
+            allDoneLabel={bt("모든 단계가 끝났습니다", "All stages are complete")}
+            className="mt-4"
+          />
         </div>
       </div>
 
-      <div className="mx-auto max-w-[100rem] space-y-4 p-4 sm:p-6">
+      <div className={cn("mx-auto space-y-4 p-4 sm:p-6", LAYOUT_TOKENS.width.app)}>
         {project.notice ? (
           <div className={cn("rounded-xl border px-3 py-2 text-xs", project.saveState === "error" ? "border-bad/30 bg-bad/10 text-fg" : "border-good/30 bg-good/10 text-fg")} role="status">
             {project.notice}
