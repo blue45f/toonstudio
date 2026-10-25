@@ -608,8 +608,9 @@ const SFX_RECIPES: Record<SfxName, (ctx: AudioContext, master: GainNode, now: nu
  * 효과음을 재생해요. SFX 비활성·mute·미지원·비브라우저면 graceful no-op.
  * 첫 제스처에서 suspended 면 언락(반환 무시 — 다음 호출부터 들려요).
  * @param name 'tick' | 'pop' | 'success' | 'error'
+ * @param volume 호출별 볼륨(0~1, 기본 1) — 마스터 볼륨에 곱해진다.
  */
-export const playSfx = (name: SfxName): void => {
+export const playSfx = (name: SfxName, volume = 1): void => {
   if (!state.sfxEnabled || muted) return;
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -617,7 +618,14 @@ export const playSfx = (name: SfxName): void => {
   try {
     const master = ensureSfxBus(ctx);
     const now = Math.max(audioNow(), ctx.currentTime) + 0.001;
-    (SFX_RECIPES[name] ?? SFX_RECIPES.tick)(ctx, master, now);
+    if (volume >= 1) {
+      (SFX_RECIPES[name] ?? SFX_RECIPES.tick)(ctx, master, now);
+    } else {
+      const scaled = ctx.createGain();
+      scaled.gain.setValueAtTime(clamp01(volume), ctx.currentTime);
+      scaled.connect(master);
+      (SFX_RECIPES[name] ?? SFX_RECIPES.tick)(ctx, scaled, now);
+    }
   } catch {
     // 합성 실패는 조용히 무시 — UI 흐름을 막지 않아요.
   }

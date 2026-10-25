@@ -39,11 +39,11 @@ export function buildReferenceColorizeRequest(input: {
       warnings.push("첨부 상한(6장)을 넘어 나머지는 제외했다");
       break;
     }
-    if (!attachment.dataUrl.startsWith("data:image/")) {
+    if (!attachment.ref.startsWith("data:image/")) {
       warnings.push(`이미지가 아닌 첨부(${attachment.id})를 제외했다`);
       continue;
     }
-    references.push({ id: attachment.id, dataUrl: attachment.dataUrl });
+    references.push({ id: attachment.id, dataUrl: attachment.ref });
   }
   return {
     ok: true,

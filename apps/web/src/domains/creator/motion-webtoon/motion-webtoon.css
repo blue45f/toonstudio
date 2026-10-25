@@ -365,6 +365,7 @@
 .mw-field input[type="url"],
 .mw-field input[type="number"],
 .mw-field select,
+.mw-field textarea,
 .mw-charrow input,
 .mw-charrow select,
 .mw-dlgrow input,
@@ -375,6 +376,28 @@
   color: var(--color-fg);
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
+}
+
+/* 스튜디오 컷 가져오기 패널에서만 쓰던 클래스 — 기존 패턴과 같은 값으로 채운다. */
+.mw-panel-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.mw-panel-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-fg-3);
+}
+
+.mw-field-error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-warn);
 }
 
 .mw-fieldrow {

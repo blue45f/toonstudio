@@ -25,6 +25,10 @@ import {
   freeAiConnectionPolicyIssue,
   type FreeAiPreset,
 } from "./free-ai-policy";
+import {
+  applyByokPresetToWizard,
+  STUDIO_AI_BYOK_PROVIDER_PRESETS,
+} from "./studio-ai-byok-wizard-adapter";
 import { AiCapabilityStatusBoard } from "./AiCapabilityStatusBoard";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
 import { SERVER_PROVIDER_LABELS } from "./unified-ai-provider-labels";
@@ -351,6 +355,22 @@ export function UnifiedAiSettings() {
     setWizardStep("credentials");
   };
 
+  // BYOK 프리셋 적용 — applyByokPreset 결과를 위저드 주소·모델 필드로 옮긴다.
+  // 키와 연결 배열은 건드리지 않으며, 실제 저장은 기존 saveWizardConnection이 맡는다.
+  const selectByokPreset = (presetId: string) => {
+    const applied = applyByokPresetToWizard(presetId, {
+      baseUrl: wizardBaseUrl,
+      model: wizardModel,
+    });
+    if (!applied.found) {
+      setWizardError("알 수 없는 BYOK 프리셋이에요.");
+      return;
+    }
+    setWizardBaseUrl(applied.wizardBaseUrl);
+    setWizardModel(applied.wizardModel);
+    setWizardError("");
+  };
+
   const saveWizardConnection = async () => {
     if (wizardBusy || !selectedPresetId) return;
     const startingRevision = getUserAiSnapshot().revision;
@@ -598,6 +618,8 @@ export function UnifiedAiSettings() {
                 onClose={closeWizard}
                 onSearchChange={setProviderSearch}
                 onSelectPreset={selectPreset}
+                onApplyByokPreset={selectByokPreset}
+                byokPresets={STUDIO_AI_BYOK_PROVIDER_PRESETS}
                 onBack={() => {
                   setWizardStep("choose");
                   setWizardError("");
@@ -922,6 +944,12 @@ interface ConnectionWizardProps {
   readonly onClose: () => void;
   readonly onSearchChange: (value: string) => void;
   readonly onSelectPreset: (preset: FreeAiPreset) => void;
+  readonly onApplyByokPreset: (presetId: string) => void;
+  readonly byokPresets: readonly {
+    readonly id: string;
+    readonly label: string;
+    readonly note: string;
+  }[];
   readonly onBack: () => void;
   readonly onLabelChange: (value: string) => void;
   readonly onBaseUrlChange: (value: string) => void;
@@ -992,6 +1020,27 @@ function ConnectionWizard(props: ConnectionWizardProps) {
                   </a>
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-card/60 p-4">
+            <p className="text-sm font-semibold">BYOK 프리셋</p>
+            <p className="mt-1 text-xs leading-5 text-fg-3">
+              OpenAI 호환 주소를 위저드 주소에 채워요. 키는 건드리지 않고,
+              모델명은 그대로 유지돼요.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {props.byokPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className="rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg hover:border-accent"
+                  title={preset.note}
+                  onClick={() => props.onApplyByokPreset(preset.id)}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -31,6 +31,10 @@ import {
   studioAiUserIdempotencyKeyHash,
 } from "./studio-ai-idempotency";
 import {
+  buildAnthropicMessagesRequest,
+  parseAnthropicMessagesResponse,
+} from "./studio-ai-anthropic-translate";
+import {
   classifyStudioAiProviderFailure,
   resolveStudioAiProviderCandidates,
   resolveStudioAiProviders,
@@ -81,6 +85,7 @@ type ProviderPayload = {
   id?: unknown;
   request_id?: unknown;
   choices?: Array<{ finish_reason?: unknown; message?: { content?: unknown } }>;
+  stop_reason?: unknown;
   model?: unknown;
   usage?: {
     prompt_tokens?: unknown;
@@ -240,7 +245,8 @@ function isStudioAiProviderId(value: string | undefined): value is StudioAiProvi
     || value === "cloudflare"
     || value === "openrouter"
     || value === "siliconflow"
-    || value === "deepseek";
+    || value === "deepseek"
+    || value === "anthropic";
 }
 
 const TASK_SPECS = {
@@ -803,20 +809,25 @@ export class StudioAiService {
         // From this exact point onward, any non-definitive outcome may already have been billed.
         receiptOutcome = "ambiguous";
 
+        // Anthropic은 Messages API 형태라 분산 게이트웨이가 해당 페이로드를
+        // 이해하는지 미확인이다. 확인 전까지는 직접 fetch 경로만 사용한다.
+        const isAnthropicProvider = provider.id === "anthropic";
         const tenantId = toGatewayTenantId(admissionReceipt.userKeyHash);
         let distributedResult: StudioAiCompletionResult | null | undefined;
         try {
-          distributedResult = await this.completeViaCapabilityBoundary(
-            input,
-            provider,
-            reservedTokens,
-            spec,
-            anonymousUserId,
-            idempotencyKey,
-            tenantId,
-            providerTimeoutMs,
-            clientSignal
-          );
+          distributedResult = isAnthropicProvider
+            ? null
+            : await this.completeViaCapabilityBoundary(
+              input,
+              provider,
+              reservedTokens,
+              spec,
+              anonymousUserId,
+              idempotencyKey,
+              tenantId,
+              providerTimeoutMs,
+              clientSignal
+            );
         } catch (error) {
           outcomeStatus = error instanceof HttpException
             ? error.getStatus() === CLIENT_CLOSED_REQUEST_STATUS
@@ -842,28 +853,53 @@ export class StudioAiService {
           break;
         }
 
+        // Messages API는 OpenAI 형태 본문을 받지 않으므로 어댑터로 변환한다.
+        // system은 별도 필드로, temperature·response_format·thinking·user_id 같은
+        // OpenAI 전용 필드는 보내지 않는다. JSON 응답 형식 태스크는 프롬프트
+        // 지시에 의존한다 (Messages API에 response_format 대응이 없다).
+        const anthropicRequest = isAnthropicProvider
+          ? buildAnthropicMessagesRequest({
+              model: provider.model,
+              system: `${CREATOR_SCOPE}\n\n작업별 지시:\n${input.system}`,
+              messages: [{ role: "user", content: input.user }],
+              maxTokens: spec.maxTokens,
+            })
+          : null;
+        if (isAnthropicProvider && !anthropicRequest) {
+          outcomeStatus = "provider_error";
+          throw new BadGatewayException("AI 요청 형식을 만들지 못했어요.");
+        }
+
         let response: Response;
         try {
           response = await fetch(provider.endpoint, {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${provider.apiKey}`,
-              "Content-Type": "application/json",
-              ...(provider.id === "zai" ? { "Accept-Language": "en-US,en" } : {}),
-            },
-            body: JSON.stringify({
-              model: provider.model,
-              messages: [
-                { role: "system", content: `${CREATOR_SCOPE}\n\n작업별 지시:\n${input.system}` },
-                { role: "user", content: input.user },
-              ],
-              ...(!provider.freePool ? { thinking: { type: "disabled" } } : {}),
-              temperature: spec.temperature,
-              max_tokens: spec.maxTokens,
-              stream: false,
-              ...(spec.responseFormat === "json" ? { response_format: { type: "json_object" } } : {}),
-              ...(provider.id === "deepseek" && anonymousUserId ? { user_id: anonymousUserId } : {}),
-            }),
+            headers: isAnthropicProvider
+              ? {
+                  "x-api-key": provider.apiKey,
+                  "anthropic-version": "2023-06-01",
+                  "Content-Type": "application/json",
+                }
+              : {
+                  Authorization: `Bearer ${provider.apiKey}`,
+                  "Content-Type": "application/json",
+                  ...(provider.id === "zai" ? { "Accept-Language": "en-US,en" } : {}),
+                },
+            body: JSON.stringify(isAnthropicProvider
+              ? anthropicRequest
+              : {
+                  model: provider.model,
+                  messages: [
+                    { role: "system", content: `${CREATOR_SCOPE}\n\n작업별 지시:\n${input.system}` },
+                    { role: "user", content: input.user },
+                  ],
+                  ...(!provider.freePool ? { thinking: { type: "disabled" } } : {}),
+                  temperature: spec.temperature,
+                  max_tokens: spec.maxTokens,
+                  stream: false,
+                  ...(spec.responseFormat === "json" ? { response_format: { type: "json_object" } } : {}),
+                  ...(provider.id === "deepseek" && anonymousUserId ? { user_id: anonymousUserId } : {}),
+                }),
             signal: upstreamController.signal,
           });
         } catch {
@@ -919,35 +955,62 @@ export class StudioAiService {
           outcomeStatus = "provider_error";
           throw new BadGatewayException("AI 응답 형식을 해석하지 못했어요.");
         }
-        usage = {
-          promptTokens: recordedTokenCount(payload.usage?.prompt_tokens),
-          completionTokens: recordedTokenCount(payload.usage?.completion_tokens),
-          totalTokens: recordedTokenCount(payload.usage?.total_tokens),
-        };
         throwIfCancelled();
 
-        const choice = payload.choices?.[0];
-        if (choice?.finish_reason === "content_filter") {
-          outcomeStatus = "content_filtered";
-          throw new HttpException("AI 안전 정책으로 이 요청을 처리할 수 없어요.", HttpStatus.UNPROCESSABLE_ENTITY);
-        }
-        if (choice?.finish_reason === "insufficient_system_resource") {
-          outcomeStatus = "provider_error";
-          const providerError = new ServiceUnavailableException(
-            "AI 제공자가 일시적으로 혼잡해요. 잠시 후 다시 시도해 주세요."
-          );
-          throw providerError;
-        }
-        if (choice?.finish_reason && choice.finish_reason !== "stop") {
-          outcomeStatus = "provider_error";
-          throw new BadGatewayException(
-            "AI 응답이 완성되기 전에 중단됐어요. 입력을 줄여 다시 시도해 주세요."
-          );
-        }
-        const content = choice?.message?.content;
-        if (typeof content !== "string" || content.trim().length === 0) {
-          outcomeStatus = "provider_error";
-          throw new BadGatewayException("AI 응답이 비어 있어요. 다시 시도해 주세요.");
+        let content: string;
+        if (isAnthropicProvider) {
+          const anthropicParsed = parseAnthropicMessagesResponse(payload);
+          if (!anthropicParsed.ok) {
+            outcomeStatus = "provider_error";
+            throw new BadGatewayException("AI 응답 형식을 해석하지 못했어요.");
+          }
+          const stopReason = typeof payload.stop_reason === "string" ? payload.stop_reason : undefined;
+          if (stopReason && stopReason !== "end_turn") {
+            outcomeStatus = "provider_error";
+            throw new BadGatewayException(
+              "AI 응답이 완성되기 전에 중단됐어요. 입력을 줄여 다시 시도해 주세요."
+            );
+          }
+          if (!anthropicParsed.text.trim()) {
+            outcomeStatus = "provider_error";
+            throw new BadGatewayException("AI 응답이 비어 있어요. 다시 시도해 주세요.");
+          }
+          usage = {
+            promptTokens: recordedTokenCount(anthropicParsed.inputTokens),
+            completionTokens: recordedTokenCount(anthropicParsed.outputTokens),
+            totalTokens: recordedTokenCount(anthropicParsed.inputTokens + anthropicParsed.outputTokens),
+          };
+          content = anthropicParsed.text;
+        } else {
+          usage = {
+            promptTokens: recordedTokenCount(payload.usage?.prompt_tokens),
+            completionTokens: recordedTokenCount(payload.usage?.completion_tokens),
+            totalTokens: recordedTokenCount(payload.usage?.total_tokens),
+          };
+          const choice = payload.choices?.[0];
+          if (choice?.finish_reason === "content_filter") {
+            outcomeStatus = "content_filtered";
+            throw new HttpException("AI 안전 정책으로 이 요청을 처리할 수 없어요.", HttpStatus.UNPROCESSABLE_ENTITY);
+          }
+          if (choice?.finish_reason === "insufficient_system_resource") {
+            outcomeStatus = "provider_error";
+            const providerError = new ServiceUnavailableException(
+              "AI 제공자가 일시적으로 혼잡해요. 잠시 후 다시 시도해 주세요."
+            );
+            throw providerError;
+          }
+          if (choice?.finish_reason && choice.finish_reason !== "stop") {
+            outcomeStatus = "provider_error";
+            throw new BadGatewayException(
+              "AI 응답이 완성되기 전에 중단됐어요. 입력을 줄여 다시 시도해 주세요."
+            );
+          }
+          const openAiContent = choice?.message?.content;
+          if (typeof openAiContent !== "string" || openAiContent.trim().length === 0) {
+            outcomeStatus = "provider_error";
+            throw new BadGatewayException("AI 응답이 비어 있어요. 다시 시도해 주세요.");
+          }
+          content = openAiContent;
         }
 
         outcomeStatus = "success";

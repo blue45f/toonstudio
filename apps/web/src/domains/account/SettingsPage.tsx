@@ -26,6 +26,7 @@ import { AccountDataPortabilityPanel } from "./AccountDataPortabilityPanel";
 import { detectBrowserRegionSettings, planRegionSettingsSync, readLocalRegionSettings, writeLocalRegionSettings } from "./region-settings-client";
 
 import { AppearanceSettings } from "@/shared/components/appearance/AppearanceSettings";
+import { StudioInteractionSfxSettingsSection } from "@/domains/account/StudioInteractionSfxSettingsSection";
 import { PageIntro } from "@/shared/components/page-intro";
 import { AdvancedSection } from "@/shared/components/layout/AdvancedSection";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
@@ -687,6 +688,8 @@ export function SettingsPage() {
           </h2>
           <AppearanceSettings />
         </section>
+
+        <StudioInteractionSfxSettingsSection />
 
         {/* 표시 설정 */}
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.display")}>

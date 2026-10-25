@@ -29,4 +29,17 @@ describe("studio-ai-storyboard-llm", () => {
     expect(parsed).toHaveLength(1);
     expect(parseStoryboardPlan("아님")).toBeNull();
   });
+
+  it("코드 펜스로 감싼 JSON도 파싱한다", () => {
+    const parsed = parseStoryboardPlan(
+      "```json\n" +
+        JSON.stringify({
+          cuts: [
+            { id: "cut-1", summary: "재회", camera: "클로즈업", dialogues: ["안녕"] },
+          ],
+        }) +
+        "\n```",
+    );
+    expect(parsed).toHaveLength(1);
+  });
 });
