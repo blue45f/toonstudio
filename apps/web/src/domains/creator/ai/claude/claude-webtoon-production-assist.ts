@@ -23,6 +23,7 @@ import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
 import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
+import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import {
   buildDeterministicActingSfxReport,
@@ -95,8 +96,11 @@ export async function runClaudeScrollEyePathDoctor(
     if (options.fallbackOnError !== false) return buildDeterministicScrollEyePathReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("production:scroll-rhythm-doctor", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -179,8 +183,11 @@ export async function runClaudeColorScriptDirector(
     if (options.fallbackOnError !== false) return buildDeterministicColorScriptReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("production:color-mood-script", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -271,8 +278,11 @@ export async function runClaudeContinuityForeshadowAuditor(
     }
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("production:continuity-foreshadow", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -362,8 +372,11 @@ export async function runClaudeActingSfxChoreographer(
     if (options.fallbackOnError !== false) return buildDeterministicActingSfxReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("production:sfx-typo-director", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {

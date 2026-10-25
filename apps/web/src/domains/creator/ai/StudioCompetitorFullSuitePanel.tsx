@@ -36,6 +36,7 @@ import {
   type WebtoonStyleTransferPresetId,
 } from "./claude/claude-competitor-full-suite";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
+import { StudioPhase6EcosystemSuitePanel } from "./StudioPhase6EcosystemSuitePanel";
 
 export type CompetitorSuiteTabId =
   | "aid-lineart-splitter"
@@ -492,6 +493,11 @@ export function StudioCompetitorFullSuitePanel({
           </div>
         </div>
       ) : null}
+
+      <StudioPhase6EcosystemSuitePanel
+        assistInput={assistInput}
+        onAppendDirectionLine={onAppendDirectionLine}
+      />
     </div>
   );
 }

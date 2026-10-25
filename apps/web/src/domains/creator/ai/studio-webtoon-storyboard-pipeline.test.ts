@@ -235,7 +235,7 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     expect([18, 28, 50, 85]).toContain(firstCutLayers.lensFocalLengthMm);
     expect(output.enrichedCuts[0]!.productionLayers.layers).toHaveLength(4);
 
-    expect(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX).toHaveLength(13);
+    expect(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX).toHaveLength(20);
     expect(WEBTOON_AI_SERVICE_BENCHMARK_MATRIX.map((m) => m.serviceId)).toEqual([
       "genvas",
       "fabulator-tootoon",
@@ -250,12 +250,19 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
       "anifusion",
       "skyreels-mootion",
       "katalist-ai",
+      "novelai-v45-director",
+      "mangaflow-diffsensei",
+      "glimnavi-wisehub",
+      "snaptoon-acon3d",
+      "culturetoon-mining5000",
+      "tooncrafter-anidoc",
+      "krita-diffusion-comistitch",
     ]);
     const parity = evaluateWebtoonAiCompetitorParity({
       hasArtistStyle: true,
       claudeLiveConnected: true,
     });
-    expect(parity.benchmarkedServiceCount).toBe(13);
+    expect(parity.benchmarkedServiceCount).toBe(20);
     expect(parity.overallParityScore).toBeGreaterThanOrEqual(90);
     expect(parity.dimensions).toHaveLength(6);
   });

@@ -20,6 +20,7 @@ import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
 import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
+import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import {
   buildDeterministicBg3dLightingAssetReport,
@@ -98,8 +99,11 @@ export async function runClaudeReaderRetentionSimulator(
     if (options.fallbackOnError !== false) return buildDeterministicReaderRetentionReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:retention-simulator", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -192,8 +196,11 @@ export async function runClaudeCharacterOocRadar(
     if (options.fallbackOnError !== false) return buildDeterministicCharacterOocRadarReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:ooc-voice-doctor", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -277,8 +284,11 @@ export async function runClaudeBg3dLightingAssetDirector(
     if (options.fallbackOnError !== false) return buildDeterministicBg3dLightingAssetReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:3d-asset-placement", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -362,8 +372,11 @@ export async function runClaudeBgmAudioToonCuesheet(
     if (options.fallbackOnError !== false) return buildDeterministicBgmAudioToonReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:audio-cuesheet-director", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
