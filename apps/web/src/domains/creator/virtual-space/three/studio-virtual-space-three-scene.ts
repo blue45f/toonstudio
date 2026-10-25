@@ -656,7 +656,7 @@ export function loadStudioThreeAssets(
 
         vrmScene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            child.castShadow = !/hair|face|eye/i.test(child.name);
+            child.castShadow = false;
             child.receiveShadow = false;
             child.frustumCulled = false;
             const mats = Array.isArray(child.material) ? child.material : [child.material];

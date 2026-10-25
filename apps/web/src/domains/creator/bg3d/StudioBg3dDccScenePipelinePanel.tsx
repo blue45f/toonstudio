@@ -81,7 +81,7 @@ const HAND_GRIP_TYPES: readonly { readonly id: HandGripArchetype; readonly label
   { id: "sword-power-grip", labelKo: "도검 파워 그립" },
   { id: "gun-pistol-trigger", labelKo: "권총 방아쇠 그립" },
   { id: "phone-pinch-hold", labelKo: "스마트폰 핀치 홀드" },
-  { id: "coffee-mug-handle", labelKo: "머그컵 손잡이 홀드" },
+  { id: "cup-wrap-grasp", labelKo: "머그컵 손잡이 홀드" },
 ];
 
 const LENS_PRESET_IDS = Object.keys(CAMERA_LENS_PRESET_UI) as CameraLensPreset[];
@@ -123,7 +123,7 @@ export function StudioBg3dDccScenePipelinePanel({
   );
 
   const cityscapeStats = useMemo(() => {
-    const city = new Studio3DProceduralCityscape({ theme: cityTheme, blockLengthMeters: 60 });
+    const city = new Studio3DProceduralCityscape({ theme: cityTheme });
     const mesh = city.generateMesh();
     return {
       buildingCount: mesh.buildingCount,
@@ -152,7 +152,7 @@ export function StudioBg3dDccScenePipelinePanel({
     const gripSolver = new Studio3DPropHandGripSolver();
     const gripResult = gripSolver.solveHandGrip(gripType, 0.02, 1.0);
 
-    const mixer = new Studio3DCharacterSceneMixer();
+    const mixer = new Studio3DCharacterSceneMixer("scene-dcc-1");
     mixer.addCharacter("hero-1", "주인공", [0, 0, 0]);
     const mixSummary = mixer.generateMixSummary();
 
@@ -258,7 +258,7 @@ export function StudioBg3dDccScenePipelinePanel({
     return {
       sunAltitudeDeg: atmo.sunAltitudeDeg,
       diffuseIntensity: Math.round(shade.diffuseIntensity * 100),
-      editableFaces: meshStats.faceCount,
+      editableFaces: meshStats.faces,
       toon3dVersion: CURRENT_TOON3D_FORMAT_VERSION,
       pkgValid: pkgIssues.length === 0,
       ltCenterWidthPx: widthField ? Math.round(widthField[0]! * 100) / 100 : 2,
@@ -291,7 +291,7 @@ export function StudioBg3dDccScenePipelinePanel({
             실사 렌더 프리셋 (HDRI · 2K PBR · LT 선화 통합)
           </span>
           <span className="text-[11px] text-fg-2">
-            {resolvedRealistic?.hdri.labelKo} · {resolvedRealistic?.pbrMaterial.nameKo}
+            {resolvedRealistic?.hdri.labelKo} · {resolvedRealistic?.pbrMaterial.labelKo}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
