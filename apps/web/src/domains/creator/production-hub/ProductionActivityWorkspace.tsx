@@ -19,6 +19,7 @@ import type {
 import type { VersionSharePermission } from "./one-click-version-share-model";
 import { useProductionVersionActivity } from "./use-production-version-activity";
 import { ProductionMonitoringSuite } from "./ProductionMonitoringSuite";
+import { ProductionJiraAgileWorkflowSuite } from "./ProductionJiraAgileWorkflowSuite";
 import { ProductionStudioErpBottleneckSuite } from "./ProductionStudioErpBottleneckSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -298,6 +299,7 @@ export function ProductionActivityWorkspace({
 
       <ProductionMonitoringSuite />
       <ProductionStudioErpBottleneckSuite />
+      <ProductionJiraAgileWorkflowSuite />
     </section>
   );
 }
