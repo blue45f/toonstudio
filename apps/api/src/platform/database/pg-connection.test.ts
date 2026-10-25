@@ -236,3 +236,30 @@ describe("assertSeedTargetAllowed", () => {
     expect(assertSeedTargetAllowed(url, { [REMOTE_SEED_OVERRIDE_ENV]: "1" }).allowed).toBe(true);
   });
 });
+
+describe("drizzle schema manifest completeness", () => {
+  it("registers every *.schema.ts file in schema/index.ts or apps/api/drizzle.config.ts", async () => {
+    const fs = await import("node:fs");
+    const dbDir = new URL(".", import.meta.url);
+    const schemaDir = new URL("./schema/", import.meta.url);
+    const schemaIndexSource = fs.readFileSync(new URL("./schema/index.ts", import.meta.url), "utf8");
+    const drizzleConfigSource = fs.readFileSync(new URL("../../../drizzle.config.ts", import.meta.url), "utf8");
+
+    const nestedSchemas = fs
+      .readdirSync(schemaDir)
+      .filter((name) => name.endsWith(".schema.ts"))
+      .sort();
+    for (const file of nestedSchemas) {
+      const moduleSpecifier = `./${file.replace(/\.ts$/u, "")}`;
+      expect(schemaIndexSource).toContain(`export * from "${moduleSpecifier}";`);
+    }
+
+    const topLevelSchemas = fs
+      .readdirSync(dbDir)
+      .filter((name) => name.endsWith(".schema.ts"))
+      .sort();
+    for (const file of topLevelSchemas) {
+      expect(drizzleConfigSource).toContain(`./apps/api/src/platform/database/${file}`);
+    }
+  });
+});
