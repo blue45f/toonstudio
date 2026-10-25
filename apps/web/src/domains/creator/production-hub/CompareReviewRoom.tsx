@@ -8,6 +8,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { StudioCommentActor, StudioCommentsDocument } from "../studio-comments";
 import { CompareReviewViewer } from "./CompareReviewViewer";
 import { CompareSourcePoolStrip, type ComparePoolStatus } from "./CompareSourcePoolStrip";
+import { ProductionViewerControlsBar } from "./ProductionViewerControlsBar";
 import {
   addComparePoolItem,
   addComparePoolItems,
@@ -352,6 +353,8 @@ export function CompareReviewRoom({
         onApplyPreset={handleApplyPreset}
         presetStatus={presetStatus}
       />
+
+      <ProductionViewerControlsBar initialMode="compare" />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { ProductionCrewCoverage } from "./ProductionRoleWorkspace";
 import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { assignmentStatusLabel, projectAccessRoleLabel, roleTypeLabel, type BilingualLabel } from "./production-labels";
 import { ProductionAvatar, ProductionPill, ProductionSectionCard } from "./production-ui";
+import { ProductionWorkspaceGovernanceSuite } from "./ProductionWorkspaceGovernanceSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -111,6 +112,7 @@ export function ProductionTeamSurface({
       </div>
       <ProductionCrewCoverage aggregate={aggregate} />
       <ProductionIntegrationsPanel aggregate={aggregate} />
+      <ProductionWorkspaceGovernanceSuite />
     </div>
   );
 }

@@ -21,6 +21,18 @@ import {
   type ProductionAiAssistPlan,
 } from "./production-manuscript-competitive-model";
 import type { ProductionManuscriptProcess } from "./production-manuscript-model";
+import {
+  buildShadingDownloadManifest,
+  computeMultiplyShadedColor,
+  recommendShadingResolution,
+  SHADING_LIGHT_DIRECTIONS,
+  type ShadingAmount,
+  type ShadingDownloadPackaging,
+  type ShadingDownloadScope,
+  type ShadingEdgeStyle,
+  type ShadingLightDirection,
+  type ShadingRegionCandidate,
+} from "./production-shading-assistant-model";
 
 const lightingLabels = {
   soft: "부드러운 확산광",
@@ -71,6 +83,85 @@ export function ProductionFocusedAiWorkflow({
     output: "new-layer",
   });
   const [notice, setNotice] = useState("");
+  const [lightDirection, setLightDirection] = useState<ShadingLightDirection>("top-left");
+  const [edgeStyle, setEdgeStyle] = useState<ShadingEdgeStyle>("hard");
+  const [shadowAmount, setShadowAmount] = useState<ShadingAmount>("normal");
+  const [cropWidthPx, setCropWidthPx] = useState<number>(1680);
+  const [cropHeightPx, setCropHeightPx] = useState<number>(1920);
+  const [shadowHex, setShadowHex] = useState<string>("#5c5470");
+  const [opacityPercent, setOpacityPercent] = useState<number>(72);
+  const [downloadScope, setDownloadScope] = useState<ShadingDownloadScope>("all");
+  const [downloadPackaging, setDownloadPackaging] = useState<ShadingDownloadPackaging>("merged");
+  const [regions, setRegions] = useState<readonly ShadingRegionCandidate[]>([
+    {
+      id: "reg-cut12-hero",
+      pageNumber: 1,
+      label: "12컷 주인공 상반신",
+      widthPx: 1680,
+      heightPx: 1920,
+      lightDirection: "top-left",
+      edgeStyle: "hard",
+      shadowAmount: "normal",
+      resolution: "2K",
+      shadowHex: "#5c5470",
+      opacityPercent: 72,
+      visible: true,
+    },
+    {
+      id: "reg-cut14-cape",
+      pageNumber: 1,
+      label: "14컷 망토 역광 실루엣",
+      widthPx: 2400,
+      heightPx: 2800,
+      lightDirection: "backlight",
+      edgeStyle: "soft",
+      shadowAmount: "backlight",
+      resolution: "4K",
+      shadowHex: "#3b4268",
+      opacityPercent: 80,
+      visible: true,
+    },
+    {
+      id: "reg-cut21-corridor",
+      pageNumber: 2,
+      label: "21컷 성벽 복도 측면광",
+      widthPx: 1440,
+      heightPx: 1600,
+      lightDirection: "right",
+      edgeStyle: "hard",
+      shadowAmount: "narrow",
+      resolution: "2K",
+      shadowHex: "#4e5266",
+      opacityPercent: 65,
+      visible: true,
+    },
+  ]);
+
+  const resolutionRecommendation = useMemo(
+    () => recommendShadingResolution(cropWidthPx, cropHeightPx),
+    [cropWidthPx, cropHeightPx],
+  );
+  const multiplyPreview = useMemo(
+    () =>
+      computeMultiplyShadedColor({
+        baseRgb: { r: 244, g: 222, b: 205 },
+        shadowHex,
+        maskStrength: 0.78,
+        opacityPercent,
+      }),
+    [shadowHex, opacityPercent],
+  );
+  const downloadManifest = useMemo(
+    () =>
+      buildShadingDownloadManifest({
+        regions,
+        scope: downloadScope,
+        packaging: downloadPackaging,
+        targetPageNumber: 1,
+        targetRegionId: "reg-cut12-hero",
+      }),
+    [regions, downloadScope, downloadPackaging],
+  );
   const disclosures = useMemo(() => productionAiAssistDisclosure(plan), [plan]);
   const prompt = process ? planPrompt(plan, process) : "";
 
@@ -142,6 +233,185 @@ export function ProductionFocusedAiWorkflow({
         <div className="flex items-center gap-2"><ExternalLink className="size-4 text-accent" aria-hidden="true" /><h3 className="font-black text-fg">실행 전 공개 사항</h3></div>
         <ul className="mt-3 space-y-2">{disclosures.map((item) => <li key={item} className="flex items-start gap-2 text-xs leading-5 text-fg-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-good" aria-hidden="true" />{item}</li>)}</ul>
       </article>
+    </div>
+
+    <div className="mt-4 rounded-2xl border border-line bg-panel p-4" data-testid="shading-assistant-detail-panel">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-black text-fg">
+          AI 음영 어시스턴트 세부 파라미터 (11종 광원 · 엣지 스타일 · 음영 양 · 2K/4K 토큰 추정 · Multiply 블렌딩)
+        </h3>
+        <span
+          data-testid="shading-resolution-recommendation-badge"
+          className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-bold text-accent"
+        >
+          추천 해상도: {resolutionRecommendation.resolution} (예상 {resolutionRecommendation.estimatedTokens}토큰)
+        </span>
+      </div>
+
+      {/* 11종 광원 위치 선택기 */}
+      <div className="mt-3">
+        <p className="text-xs font-bold text-fg-2">광원 방향 (8방위 + 정면 / 역광 / 최적 자동)</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {SHADING_LIGHT_DIRECTIONS.map((dir) => (
+            <button
+              key={dir.id}
+              type="button"
+              data-testid={`shading-light-dir-${dir.id}`}
+              aria-pressed={lightDirection === dir.id}
+              onClick={() => setLightDirection(dir.id)}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${
+                lightDirection === dir.id
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-card text-fg-2"
+              }`}
+            >
+              {dir.badge} {dir.labelKo}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="text-xs font-bold text-fg-2">
+          음영 엣지 스타일
+          <select
+            aria-label="음영 엣지 스타일"
+            data-testid="shading-edge-style-select"
+            value={edgeStyle}
+            onChange={(e) => setEdgeStyle(e.target.value as ShadingEdgeStyle)}
+            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+          >
+            <option value="hard">하드 엣지 (셀 채색 스타일)</option>
+            <option value="soft">소프트 엣지 (브러시 채색 스타일)</option>
+          </select>
+        </label>
+
+        <label className="text-xs font-bold text-fg-2">
+          음영 양 (Shadow Amount)
+          <select
+            aria-label="음영 양"
+            data-testid="shading-amount-select"
+            value={shadowAmount}
+            onChange={(e) => setShadowAmount(e.target.value as ShadingAmount)}
+            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+          >
+            <option value="backlight">역광 (넓고 깊은 음영)</option>
+            <option value="normal">보통 (표준 인물·배경 음영)</option>
+            <option value="narrow">좁음 (외곽선 포인트 음영)</option>
+          </select>
+        </label>
+
+        <label className="text-xs font-bold text-fg-2">
+          크롭 영역 가로(px)
+          <input
+            type="number"
+            aria-label="크롭 영역 가로 픽셀"
+            data-testid="shading-crop-width-input"
+            min={256}
+            max={4096}
+            value={cropWidthPx}
+            onChange={(e) => setCropWidthPx(Number(e.target.value) || 1024)}
+            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+          />
+        </label>
+
+        <label className="text-xs font-bold text-fg-2">
+          크롭 영역 세로(px)
+          <input
+            type="number"
+            aria-label="크롭 영역 세로 픽셀"
+            data-testid="shading-crop-height-input"
+            min={256}
+            max={4096}
+            value={cropHeightPx}
+            onChange={(e) => setCropHeightPx(Number(e.target.value) || 1024)}
+            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+          />
+        </label>
+      </div>
+
+      {/* 실시간 RGB/Hex 곱하기(Multiply) 블렌딩 미리보기 & 투명 PNG 다운로드 패키징 */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-card p-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="inline-flex items-center gap-1.5 font-bold text-fg-2">
+            음영 색상(Hex):
+            <input
+              type="text"
+              aria-label="음영 Hex 색상"
+              data-testid="shading-hex-input"
+              value={shadowHex}
+              onChange={(e) => setShadowHex(e.target.value)}
+              className="w-24 rounded border border-line bg-panel px-2 py-1 text-xs text-fg"
+            />
+          </label>
+          <label className="inline-flex items-center gap-1.5 font-bold text-fg-2">
+            불투명도({opacityPercent}%):
+            <input
+              type="range"
+              aria-label="음영 불투명도"
+              min={10}
+              max={100}
+              value={opacityPercent}
+              onChange={(e) => setOpacityPercent(Number(e.target.value))}
+            />
+          </label>
+          <span data-testid="shading-multiply-preview-readout" className="font-bold text-fg">
+            Multiply 합성 결과: <code>{multiplyPreview.hex}</code> (RGB {multiplyPreview.r}, {multiplyPreview.g}, {multiplyPreview.b})
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label="음영 다운로드 범위"
+            data-testid="shading-download-scope-select"
+            value={downloadScope}
+            onChange={(e) => setDownloadScope(e.target.value as ShadingDownloadScope)}
+            className="rounded border border-line bg-panel px-2 py-1 text-xs"
+          >
+            <option value="all">전체 다운로드</option>
+            <option value="page">페이지별 다운로드</option>
+            <option value="region">선택 영역만 다운로드</option>
+          </select>
+
+          <select
+            aria-label="음영 다운로드 패키징 방식"
+            data-testid="shading-download-packaging-select"
+            value={downloadPackaging}
+            onChange={(e) => setDownloadPackaging(e.target.value as ShadingDownloadPackaging)}
+            className="rounded border border-line bg-panel px-2 py-1 text-xs"
+          >
+            <option value="merged">합쳐진 결과물 (페이지당 1장 병합 PNG)</option>
+            <option value="separated">분리된 결과물 (영역별 개별 투명 PNG)</option>
+          </select>
+
+          <span data-testid="shading-download-manifest-count" className="text-fg-2">
+            출력 파일: <strong>{downloadManifest.length}개</strong> ({downloadManifest.map((f) => f.fileName).join(", ")})
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex flex-wrap gap-2">
+        {regions.map((region) => (
+          <label
+            key={region.id}
+            data-testid={`shading-region-item-${region.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs text-fg-2"
+          >
+            <input
+              type="checkbox"
+              checked={region.visible}
+              onChange={(e) =>
+                setRegions((prev) =>
+                  prev.map((item) => (item.id === region.id ? { ...item, visible: e.target.checked } : item)),
+                )
+              }
+            />
+            <span>
+              {region.pageNumber}P · {region.label} ({region.resolution})
+            </span>
+          </label>
+        ))}
+      </div>
     </div>
 
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
