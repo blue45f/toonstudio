@@ -27,12 +27,11 @@ import {
 } from "react";
 
 
-import { getAdminAdvancedCopy } from "./admin-advanced-copy";
-import { loadAdminI18nLocale } from "./admin-i18n-loader";
 import {
   buildMemberCsv,
   buildMemberQuery,
   canManageAdminMembers,
+  getAdminAdvancedCopy,
   getPageCount,
   interpolateCount,
   toggleMemberSelection,
@@ -40,22 +39,21 @@ import {
   type MemberRole,
   type MemberSort,
   type MemberStatus,
-} from "./admin-members-model";
+} from "./admin-console-model";
+import { loadAdminI18nLocale } from "./admin-i18n-loader";
 import {
-  adminFetch,
+  adminButtonClass, adminFetch,
   downloadAdminFile,
   formatNum,
   formatWon,
 } from "./components/admin-client";
 import { AdminGateFallback } from "./components/admin-gate";
 import { useAdminGate } from "./components/admin-gate-state";
-import { adminButtonClass } from "./components/admin-ui-utils";
-import { AdminDialog } from "./components/AdminDialog";
 import { AdminToastProvider } from "./components/AdminToast";
 import { useAdminToast } from "./components/use-admin-toast";
 
 import { ReadRequestScope } from "@/platform/read-request-scope";
-import { AdminEmptyState } from "./components/admin-ui";
+import { AdminDialog, AdminEmptyState } from "./components/admin-ui";
 import { Container } from "@/shared/components/section";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

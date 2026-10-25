@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { WebVitalsDashboardPage } from "./WebVitalsDashboardPage";
-import type { WebVitalsReport } from "./web-vitals-types";
+import type { WebVitalsReport } from "../admin-console-model";
 
 const api = vi.hoisted(() => ({
   state: {

@@ -1,5 +1,5 @@
 // 연재 시리즈/챌린지/팔로우 공통 타입·순수 헬퍼 — 단위 테스트 대상 순수 로직.
-import { cleanTags, clampText, MAX_DESCRIPTION, normalizeMultiline } from "./shared";
+import { cleanTags, clampText, MAX_DESCRIPTION, normalizeMultiline } from "../../modules/creator/shared";
 
 export type CreatorSeriesStatus = "ongoing" | "hiatus" | "completed";
 export type CreatorSeriesSort = "recent" | "likes" | "views";

@@ -16,8 +16,6 @@ vi.mock("./admin-client", async (original) => ({
 }));
 vi.mock("./AdminMembershipPolicy", () => ({
   AdminMembershipPolicy: () => <div data-testid="membership-policy" />,
-}));
-vi.mock("./AdminMembershipOperations", () => ({
   AdminMembershipOperations: () => <div data-testid="membership-operations" />,
 }));
 vi.mock("@/shared/lib/i18n", () => ({

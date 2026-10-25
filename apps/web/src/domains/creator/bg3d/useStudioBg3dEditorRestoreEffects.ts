@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -11,7 +10,7 @@ import {
   resetStudioBg3dCommandHistory,
 } from "./studio-bg3d-history-command-adapter";
 
-export function useStudioBg3dEditorRestoreEffects(h) {
+export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -323,7 +322,7 @@ export function useStudioBg3dEditorRestoreEffects(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     setGenericModelClassifications, setGenericModelSourceFormats, setRefTick, setSceneRecoveryError,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const commandHistoryRefs = {
     historyRef,
@@ -332,7 +331,7 @@ export function useStudioBg3dEditorRestoreEffects(h) {
   };
 
   // 이 effect 가 어떤 입력으로 이미 복원을 돌렸는지. renderer 아이덴티티는 일부러 넣지 않는다.
-  const restoredSourceRef = useRef(null);
+  const restoredSourceRef = useRef<{ session: any; initialScene: any; initialDataUrl: any } | null>(null);
 
   // Mark restoration busy before the newly created/replaced renderer can expose editable UI.
   useLayoutEffect(() => {
@@ -408,7 +407,7 @@ export function useStudioBg3dEditorRestoreEffects(h) {
               // 그 모델만 캐시에서 빠지고 나머지 장면은 그대로 유지된다.
             }
           }
-          if (isRebuildCurrent()) setRefTick((tick) => tick + 1);
+          if (isRebuildCurrent()) setRefTick((tick: number) => tick + 1);
         } finally {
           if (isRebuildCurrent()) setIsRestoringScene(false);
         }
@@ -570,7 +569,7 @@ export function useStudioBg3dEditorRestoreEffects(h) {
         ) {
           setSceneRecoveryError("일부 3D 모델의 원본 또는 무결성을 확인하지 못했습니다. 기존 PNG를 보존하기 위해 업데이트를 막았습니다.");
         }
-        setRefTick((n) => n + 1);
+        setRefTick((n: number) => n + 1);
         setIsRestoringScene(false);
         return;
       }
@@ -598,7 +597,7 @@ export function useStudioBg3dEditorRestoreEffects(h) {
       if (nextModels.length > 0) {
         const quality = resolveDeviceQuality(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, viewportHostRef.current);
         let recoveryFailed = false;
-        const uniqueStorageIds = [...new Set(nextModels.map((model) => model.modelId))];
+        const uniqueStorageIds = [...new Set<string>(nextModels.map((model: any) => model.modelId))];
         for (const storageId of uniqueStorageIds) {
           if (!isCurrent()) return;
           try {
@@ -633,7 +632,7 @@ export function useStudioBg3dEditorRestoreEffects(h) {
         }
       }
       if (!isCurrent()) return;
-      setRefTick((n) => n + 1);
+      setRefTick((n: number) => n + 1);
       setIsRestoringScene(false);
     })().finally(() => {
       if (sceneRestoreAbortRef.current === restoreController) {

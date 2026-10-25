@@ -61,7 +61,7 @@ export function MyMembershipCard({ subscription, onChanged }: MyMembershipCardPr
           </span>
           <div>
             <p className="text-sm font-bold text-fg">{tier?.name ?? t("membership.my.unknownTier")}</p>
-            <p className="text-xs tabular-nums text-muted">
+            <p className="text-xs tabular-nums text-fg-3">
               {t("membership.my.price", { amount: formatMembershipKrw(subscription.monthlyPriceKrw) })}
             </p>
           </div>
@@ -69,14 +69,14 @@ export function MyMembershipCard({ subscription, onChanged }: MyMembershipCardPr
         <span
           className={cn(
             "rounded-full px-2.5 py-1 text-xs font-semibold",
-            active ? "bg-good/15 text-good" : "bg-fg/10 text-muted",
+            active ? "bg-good/15 text-good" : "bg-fg/10 text-fg-3",
           )}
         >
           {active ? t("membership.my.statusActive") : t("membership.my.statusEnded")}
         </span>
       </div>
 
-      <p className="mt-3 text-xs text-muted">
+      <p className="mt-3 text-xs text-fg-3">
         {subscription.status === "cancelled"
           ? t("membership.my.untilDate", { date: formatDate(subscription.currentPeriodEnd, getLang()) })
           : t("membership.my.nextBilling", { date: formatDate(subscription.currentPeriodEnd, getLang()) })}
@@ -86,7 +86,7 @@ export function MyMembershipCard({ subscription, onChanged }: MyMembershipCardPr
         <div className="mt-3">
           {confirming ? (
             <div className="flex flex-wrap items-center gap-2">
-              <p className="w-full text-xs text-muted">{t("membership.my.cancelConfirm")}</p>
+              <p className="w-full text-xs text-fg-3">{t("membership.my.cancelConfirm")}</p>
               <button
                 type="button"
                 onClick={handleCancel}
@@ -106,7 +106,7 @@ export function MyMembershipCard({ subscription, onChanged }: MyMembershipCardPr
             <button
               type="button"
               onClick={handleCancel}
-              className={cn(buttonClass({ variant: "outline", size: "sm" }), "text-muted")}
+              className={cn(buttonClass({ variant: "outline", size: "sm" }), "text-fg-3")}
             >
               {t("membership.my.cancel")}
             </button>

@@ -11,13 +11,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { AdminMe } from "../components/admin-client";
 import { AdminHeaderStats } from "../components/AdminHeaderStats";
 import { AdminQuickPalette } from "../components/AdminQuickPalette";
-import { AdminRouteIcon } from "../router/admin-route-icons";
+import { AdminRouteIcon } from "../components/admin-ui";
 import {
   ADMIN_NAVIGATION_GROUPS,
   ADMIN_ROUTE_BY_ID,
+  getAdminShellCopy,
   resolveAdminRoute,
 } from "../router/admin-route-manifest";
-import { getAdminShellCopy } from "./admin-shell-copy";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

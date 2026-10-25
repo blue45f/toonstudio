@@ -13,7 +13,7 @@ const outbox = read("./studio-draft-save-outbox.ts");
 
 describe("draft save center product boundary", () => {
   it("mounts one real save center in the editor render tree", () => {
-    expect(view).toContain('lazy(() => import("../StudioDraftSaveCenter")');
+    expect(view).toMatch(/lazy\(\(\) => import\("\.\.\/StudioDraftSaveCenter"\)/u);
     expect(view).toContain("default: module.StudioDraftSaveCenter");
     expect(read("../../app/service-worker/studio-service-worker-drawing-plan.ts")).toContain('"StudioDraftSaveCenter"');
     expect(view.match(/<StudioDraftSaveCenter\b/gu)).toHaveLength(1);

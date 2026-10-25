@@ -26,6 +26,10 @@ const shellCssSource = readFileSync(
   join(process.cwd(), "apps/web/src/domains/admin/shell/admin-visual-v2.css"),
   "utf8",
 );
+const communitySource = readFileSync(
+  new URL("./AdminCommunityPage.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("admin shell review regressions", () => {
   it("retains authentication and public-site actions outside the authorized shell", () => {
@@ -79,5 +83,18 @@ describe("admin shell review regressions", () => {
       );
       expect(source, file).not.toMatch(/(?:rose|emerald|amber|cyan)-\d{3}/);
     }
+  });
+
+  it("mounts the dedicated Creator Market board inside the existing admin gate", () => {
+    expect(communitySource).toContain(
+      'import { CreatorMarketplaceModerationBoard } from "./components/CreatorMarketplaceModerationBoard";',
+    );
+    const adminGate = communitySource.indexOf('gate.kind === "admin"');
+    const creatorMarketBoard = communitySource.indexOf("<CreatorMarketplaceModerationBoard />");
+    const legacyAssetBoard = communitySource.indexOf("<AssetModerationBoard />");
+
+    expect(adminGate).toBeGreaterThan(-1);
+    expect(creatorMarketBoard).toBeGreaterThan(adminGate);
+    expect(legacyAssetBoard).toBeGreaterThan(creatorMarketBoard);
   });
 });

@@ -381,7 +381,7 @@ export function NewsletterComposePage() {
             {notice && (
               <p
                 role={notice.kind === "error" ? "alert" : "status"}
-                className={`mt-4 text-sm ${notice.kind === "error" ? "text-red-500" : "text-accent"}`}
+                className={`mt-4 text-sm ${notice.kind === "error" ? "text-bad" : "text-accent"}`}
               >
                 {notice.text}
               </p>

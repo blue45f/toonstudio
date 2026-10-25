@@ -12,8 +12,8 @@ import { creatorFollows, creatorSeries, creatorWorks, db, users } from "../../pl
 import { withDatabaseCapability } from "../../platform/http/service-availability";
 
 import { validateFollowPair } from "./community-contract";
-import { requireCreatorCommunitySchema } from "./community-schema";
-import { excludeTestUserId, isTestUserId, safeDate } from "./shared";
+import { requireCreatorCommunitySchema } from "../../modules/creator/community-schema";
+import { excludeTestUserId, isTestUserId, safeDate } from "../../modules/creator/shared";
 
 export interface CreatorFollowStats {
   followers: number;

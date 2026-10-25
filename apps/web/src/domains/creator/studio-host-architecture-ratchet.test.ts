@@ -15,6 +15,8 @@ import { describe, expect, it } from "vitest";
  * records the integrated first-save destination flow that landed before its first main CI run. The
  * 2026-09-26 ceiling records the drawing, PSD recovery and illustration insertion stability work
  * merged in #2117; future changes must move ownership out or lower this exact ceiling again.
+ * 2026-10-26 기준 StudioCuttoonEditorHost.tsx 실측치(29,465줄, split("\\n").length 29,466)에 맞춰
+ * HOST_MAX_LINES 상한을 29,712에서 29,466으로 조인다.
  */
 const CREATOR_DIR = fileURLToPath(new URL("./", import.meta.url));
 const SRC_DIR = path.resolve(CREATOR_DIR, "../..");
@@ -35,7 +37,7 @@ const SESSION_FILES = {
   ),
 } as const;
 
-const HOST_MAX_LINES = 29712;
+const HOST_MAX_LINES = 29466;
 const LIVE_SURFACE_START_MAX_LINES = 561;
 const LIVE_SURFACE_START_FILE = path.join(
   CREATOR_DIR,
@@ -46,8 +48,8 @@ const STUDIO_RUNTIME_MODULE_MAX_LINES = 300;
 const APP_ROUTE_GROUP_MAX_LINES = 120;
 const RAIL_REACT_SETTER_PROPS_MAX = 0;
 const SESSION_BAG_ANY_BASELINE: Readonly<Record<keyof typeof SESSION_FILES, number>> = {
-  "StudioCuttoonEditorViewSessionCore.ts": 552,
-  "StudioCuttoonEditorViewSessionRest.ts": 552,
+  "StudioCuttoonEditorViewSessionCore.ts": 0,
+  "StudioCuttoonEditorViewSessionRest.ts": 0,
 };
 const CREATOR_BROWSER_API_BASELINE: Readonly<Record<string, number>> = {
   "navigator.gpu": 1,

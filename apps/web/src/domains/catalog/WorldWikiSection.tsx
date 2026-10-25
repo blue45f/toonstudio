@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import type {
   StudioPublicWiki,
   StudioPublicWikiEntry,
-} from "@/domains/creator/studio-world-wiki";
+} from "@/domains/creator/public/world-wiki";
 
 /**
  * 작품 상세의 공식 설정 위키(공개 뷰) — 독자가 보는 표면.

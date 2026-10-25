@@ -89,7 +89,7 @@ function NoticeArticle({
           {kindLabel}
         </span>
         {notice.scope.kind === "work" && (
-          <span className="inline-flex items-center rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-medium text-fg-3">
+          <span className="inline-flex items-center rounded-full bg-panel px-2 py-0.5 text-[11px] font-medium text-fg-3">
             {notice.scope.workTitle}
           </span>
         )}

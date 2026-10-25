@@ -11,7 +11,7 @@ import { useState } from "react";
 import { api, apiPath } from "@/platform/api";
 import { useT } from "@/shared/lib/i18n";
 
-import "../collaboration/collaboration-account-status-i18n";
+import "../collaboration/public/collaboration-account-status-i18n";
 import { formatNumber } from "@toonstudio/core/format";
 
 type MergeProfilePreview = {

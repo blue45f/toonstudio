@@ -12,7 +12,7 @@ const traffic = vi.hoisted(() => Promise.withResolvers<void>());
 vi.mock("@/shared/lib/i18n", () => ({ useI18n: () => "ko", useT: () => (key: string) => key }));
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: () => ({ data: null, status: "unauthenticated" }) }));
 vi.mock("../admin-i18n-loader", () => ({ loadAdminI18nLocale: vi.fn(async () => {}) }));
-vi.mock("@/domains/auth/components/auth-menu-shell", () => ({ AuthMenuShell: () => <button type="button">Sign in</button> }));
+vi.mock("@/domains/auth/public/auth-menu-shell", () => ({ AuthMenuShell: () => <button type="button">Sign in</button> }));
 vi.mock("../shell/AdminShell", () => ({ AdminShell: ({ children, userId }: { children: ReactNode; userId: string }) => <section aria-label="Authorized admin shell" data-user-id={userId}>{children}</section> }));
 vi.mock("../components/AdminToast", () => ({ AdminToastProvider: ({ children }: { children: ReactNode }) => children }));
 vi.mock("../components/AdminDashboard", () => ({ AdminDashboard: ({ uid, onNavigate }: { uid: string; onNavigate: (tab: string) => void }) => <button type="button" onClick={() => onNavigate("campaigns")}>overview:{uid}</button> }));

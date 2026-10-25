@@ -12,7 +12,7 @@
   "adminSharedToDomain": 0,
   "adminCrossDomainDeepImport": 0,
   "webSharedToDomain": 0,
-  "webCrossDomainDeepImport": 63,
+  "webCrossDomainDeepImport": 0,
   "contractsToApps": 0,
   "contractsForbiddenImport": 0,
   "crossAppTestOutsideIntegration": 0

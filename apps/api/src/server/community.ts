@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 
 import { validateAttachmentImages } from "@toonstudio/contracts/image-attach";
-import { escapeLikePattern } from "./sql-like";
+import { escapeLikePattern } from "../modules/community/sql-like";
 import {
   communityCafeMembers,
   communityCafes,
@@ -27,7 +27,7 @@ import type {
 } from "@toonstudio/contracts/types";
 import type { SQL } from "drizzle-orm";
 
-import { createSchemaReadinessCheck } from "./schema-readiness";
+import { createSchemaReadinessCheck } from "../modules/health/schema-readiness";
 
 export interface ValidatedFanPostInput {
   scope: FanCafeScope;

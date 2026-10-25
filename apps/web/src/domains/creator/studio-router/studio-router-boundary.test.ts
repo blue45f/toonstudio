@@ -58,8 +58,8 @@ const dccWorkbenchRouteSource =
 
 describe("Studio router bundle boundaries", () => {
   it("loads editor and publish surfaces through independent route modules", () => {
-    expect(publishRouteSource).toContain('import("../../StudioPublishingCommandCenter")');
-    expect(editorRouteSource).toContain('import("../../studio-legacy-editor-adapter")');
+    expect(publishRouteSource).toMatch(/import\("\.\.\/\.\.\/StudioPublishingCommandCenter"\)/u);
+    expect(editorRouteSource).toMatch(/import\("\.\.\/\.\.\/studio-legacy-editor-adapter"\)/u);
     expect(routerSource).not.toContain("StudioPublishingCommandCenter");
     expect(routerSource).not.toContain("studio-legacy-editor-adapter");
     expect(routerSource).not.toMatch(/from\s+["']\.\.\/StudioPage["']/u);

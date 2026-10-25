@@ -29,3 +29,6 @@ export {
   resolveStudioMarketplaceAssetPreview,
   type StudioMarketplaceAssetPreview,
 } from "../studio-marketplace-preview";
+export {
+  STUDIO_MARKETPLACE_CC0_ASSETS,
+} from "../studio-marketplace-cc0-catalog.generated";

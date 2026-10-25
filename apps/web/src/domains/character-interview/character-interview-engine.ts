@@ -16,11 +16,11 @@
 import type {
   CharacterChatEngine,
   CharacterChatEngineResult,
-} from "../character-chat/character-chat-engine";
+} from "../character-chat/public/character-chat-engine";
 import type {
   CharacterChatMessage,
   CharacterChatProfile,
-} from "../character-chat/character-chat-types";
+} from "../character-chat/public/character-chat-types";
 
 import type { CharacterInterviewMessage } from "./character-interview";
 

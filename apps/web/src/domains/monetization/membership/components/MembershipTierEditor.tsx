@@ -88,7 +88,7 @@ export function MembershipTierEditor({
             value={name}
             onChange={(event) => setName(event.target.value.slice(0, TIER_NAME_MAX_LENGTH))}
             placeholder={t("membership.tierEditor.namePlaceholder")}
-            className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -106,9 +106,9 @@ export function MembershipTierEditor({
               min: formatMembershipKrw(TIER_PRICE_MIN_KRW),
               max: formatMembershipKrw(TIER_PRICE_MAX_KRW),
             })}
-            className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm tabular-nums text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm tabular-nums text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
           />
-          <p className="mt-1 text-xs text-muted">{t("membership.tierEditor.priceHint")}</p>
+          <p className="mt-1 text-xs text-fg-3">{t("membership.tierEditor.priceHint")}</p>
         </div>
 
         <div>
@@ -121,7 +121,7 @@ export function MembershipTierEditor({
             onChange={(event) => setDescription(event.target.value.slice(0, TIER_DESCRIPTION_MAX_LENGTH))}
             rows={2}
             placeholder={t("membership.tierEditor.descriptionPlaceholder")}
-            className="mt-1 w-full resize-none rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+            className="mt-1 w-full resize-none rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -149,7 +149,7 @@ export function MembershipTierEditor({
                   <span className="block text-sm font-semibold text-fg">
                     {t(`membership.perk.${perk}`)}
                   </span>
-                  <span className="mt-0.5 block text-xs text-muted">
+                  <span className="mt-0.5 block text-xs text-fg-3">
                     {t(`membership.perk.${perk}Description`)}
                   </span>
                 </button>

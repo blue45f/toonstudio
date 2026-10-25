@@ -61,13 +61,13 @@ export function CollaborationConflictPanel({
     <div
       role="alert"
       aria-labelledby="collab-conflict-title"
-      className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5"
+      className="rounded-2xl border border-warn/40 bg-warning-soft p-5"
     >
       <h2
         id="collab-conflict-title"
         className="flex items-center gap-2 text-base font-bold text-fg"
       >
-        <AlertTriangle size={18} className="shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <AlertTriangle size={18} className="shrink-0 text-warn" aria-hidden="true" />
         {copy.title()}
       </h2>
       <p className="mt-3 text-sm leading-7 text-fg-2">{copy.body()}</p>

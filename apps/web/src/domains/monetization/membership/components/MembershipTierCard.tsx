@@ -53,10 +53,10 @@ export function MembershipTierCard({
         <span className="text-3xl font-bold tracking-tight tabular-nums text-fg">
           {formatMembershipKrw(tier.monthlyPriceKrw)}
         </span>
-        <span className="text-sm text-muted">{t("membership.tierCard.perMonth")}</span>
+        <span className="text-sm text-fg-3">{t("membership.tierCard.perMonth")}</span>
       </p>
       {tier.description ? (
-        <p className="mt-2 text-sm leading-relaxed text-muted">{tier.description}</p>
+        <p className="mt-2 text-sm leading-relaxed text-fg-3">{tier.description}</p>
       ) : null}
       <ul className="mt-3 space-y-1.5">
         {perks.map((perk) => (
@@ -64,7 +64,7 @@ export function MembershipTierCard({
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
             <span>
               <strong className="font-semibold">{t(`membership.perk.${perk}`)}</strong>
-              <span className="text-muted"> — {t(`membership.perk.${perk}Description`)}</span>
+              <span className="text-fg-3"> — {t(`membership.perk.${perk}Description`)}</span>
             </span>
           </li>
         ))}

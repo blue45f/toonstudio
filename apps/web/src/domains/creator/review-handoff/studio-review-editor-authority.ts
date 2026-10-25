@@ -1,7 +1,7 @@
 import { studioReviewPageMappingSchema } from "@toonstudio/studio-project-model";
 
-import { verifyStudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-invitation";
-import { getStudioVirtualSpaceReviewPreview } from "../virtual-space/studio-virtual-space-review-preview";
+import type { verifyStudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-invitation";
+import type { getStudioVirtualSpaceReviewPreview } from "../virtual-space/studio-virtual-space-review-preview";
 
 import { StudioReviewEditorError, type StudioReviewEditorAuthority, type StudioReviewEditorRequest } from "./studio-review-editor-handoff";
 
@@ -11,7 +11,11 @@ export interface StudioReviewEditorReader {
   now(): number;
 }
 const SERVER: StudioReviewEditorReader = {
-  verify: verifyStudioVirtualSpaceReviewSubject, previews: getStudioVirtualSpaceReviewPreview, now: Date.now,
+  verify: async (subject, mode) =>
+    (await import("../virtual-space/studio-virtual-space-review-invitation")).verifyStudioVirtualSpaceReviewSubject(subject, mode),
+  previews: async (subject, cursor) =>
+    (await import("../virtual-space/studio-virtual-space-review-preview")).getStudioVirtualSpaceReviewPreview(subject, cursor),
+  now: Date.now,
 };
 
 /** Read only the requested saved comment and server-derived mapping. Discard all signed URLs. */

@@ -15,13 +15,13 @@ vi.mock("./StudioFrontDoorPages", () => ({
 vi.mock("./StudioSeriesKitPanel", () => ({
   StudioSeriesKitPanel: ({ projectId }: { projectId: string }) => <div>series kit for {projectId}</div>,
 }));
-vi.mock("@/domains/market/pages/MarketBrowsePage", () => ({
+vi.mock("@/domains/market/public/market-browse-page", () => ({
   MarketBrowsePage: () => <div>market browse content</div>,
 }));
-vi.mock("@/domains/market/pages/MarketCloudLibraryPage", () => ({
+vi.mock("@/domains/market/public/market-cloud-library-page", () => ({
   MarketLibraryPage: ({ embedded }: { embedded?: boolean }) => <div data-embedded={embedded}>cloud library content</div>,
 }));
-vi.mock("@/domains/market/pages/MarketOwnedResourcesPage", () => ({
+vi.mock("@/domains/market/public/market-owned-resources-page", () => ({
   MarketManagePage: () => <div>seller center content</div>,
 }));
 

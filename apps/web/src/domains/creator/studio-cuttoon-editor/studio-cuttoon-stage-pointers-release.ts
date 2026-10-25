@@ -1,6 +1,5 @@
 /* Extracted stage pointer handlers from StudioCuttoonEditor.
  * Closures keep the original editor typing envelope via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -231,7 +230,7 @@ import type Konva from "konva";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 
-import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
+import type { StudioCuttoonStagePointersHost, StudioHokusaiPinnedLiveStroke, StudioLivingInkPinnedStroke } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
 
 export function bindStudioCuttoonStagePointersRelease(
@@ -296,10 +295,10 @@ export function bindStudioCuttoonStagePointersRelease(
     pages,
     sealCausalPostCorrectionState,
   } = h;
-  const appendDrawingCrdtSampleSuffix = (...args) => api.appendDrawingCrdtSampleSuffix(...args);
-  const appendFixedRateStrokeSamples = (...args) => api.appendFixedRateStrokeSamples(...args);
-  const consumeFreehandPointerBatch = (...args) => api.consumeFreehandPointerBatch(...args);
-  const updateActiveShapeEndpoint = (...args) => api.updateActiveShapeEndpoint(...args);
+  const appendDrawingCrdtSampleSuffix: StudioCuttoonStagePointersApi["appendDrawingCrdtSampleSuffix"] = (...args) => api.appendDrawingCrdtSampleSuffix(...args);
+  const appendFixedRateStrokeSamples: StudioCuttoonStagePointersApi["appendFixedRateStrokeSamples"] = (...args) => api.appendFixedRateStrokeSamples(...args);
+  const consumeFreehandPointerBatch: StudioCuttoonStagePointersApi["consumeFreehandPointerBatch"] = (...args) => api.consumeFreehandPointerBatch(...args);
+  const updateActiveShapeEndpoint: StudioCuttoonStagePointersApi["updateActiveShapeEndpoint"] = (...args) => api.updateActiveShapeEndpoint(...args);
   function releaseEndpointPointerSample(
     pointerEvent: PointerEvent,
     current: DrawEl,
@@ -330,8 +329,8 @@ export function bindStudioCuttoonStagePointersRelease(
     const history = pagesHistoryRef.current;
     const index = Math.max(0, Math.min(pagesHiRef.current, Math.max(0, history.length - 1)));
     return [...(
-      history[index]?.find((page) => page.id === pageId)?.elements
-      ?? pages.find((page) => page.id === pageId)?.elements
+      history[index]?.find((page: PageState) => page.id === pageId)?.elements
+      ?? pages.find((page: PageState) => page.id === pageId)?.elements
       ?? []
     )];
   }
@@ -434,15 +433,13 @@ export function bindStudioCuttoonStagePointersRelease(
         || !config
         || livingInkStrokeRef.current !== state
       ) throw new Error("Living Ink 최종 표면이 캔버스 좌표계와 일치하지 않습니다.");
-      work = await livingInkCoordinatorRef.current.finishStroke(
-        state.strokeId,
-        state.route.routeKey,
-      );
+      const finishedWork: StudioLivingInkFinishedWork = await livingInkCoordinatorRef.current.finishStroke(state.strokeId, state.route.routeKey);
+      work = finishedWork;
       const presentation = await surface.renderer.presentCanonical(
-        work.frame,
+        finishedWork.frame,
         state.route.routeKey,
         surface.binding.projection,
-        (receipt) => onStudioLivingInkOverlayPresented(state, receipt),
+        (receipt: unknown) => onStudioLivingInkOverlayPresented(state, receipt),
       );
       if (!studioLivingInkCoverageIntersectsStroke({
         coverage: presentation.alphaCoverage,
@@ -465,8 +462,8 @@ export function bindStudioCuttoonStagePointersRelease(
         documentWidth: CANVAS_W,
         documentHeight: canvasH,
         config,
-        journal: work.journal,
-        finalExecutionReceipt: work.frame.receipt,
+        journal: finishedWork.journal,
+        finalExecutionReceipt: finishedWork.frame.receipt,
       });
       const baseElements = withStudioHokusaiSource(
         studioPageElementsFromHistory(state.pageId),
@@ -739,18 +736,19 @@ export function bindStudioCuttoonStagePointersRelease(
         }
         drawingRef.current = sealCausalPostCorrectionState(drawingRef.current);
       }
-      authoritativeLiveStroke = drawingRef.current;
+      const liveStroke = drawingRef.current as DrawEl;
+      authoritativeLiveStroke = liveStroke;
       // release/coalesced sample과 stabilizer endpoint를 live surface에 동기적으로 반영한다.
       // clearDraftPreview가 예약 rAF를 취소하기 전에 이 호출이 반드시 완료되어야 한다.
-      flushDirectLiveDraftNow(authoritativeLiveStroke);
+      flushDirectLiveDraftNow(liveStroke);
       if (gpuLiveInkPinnedRef.current) {
         // Keep canonical/input geometry local while the exact terminal GPU request is pending.
         // Cancelling the scheduled suffix also prevents its post-paint timer from racing the
         // receipt watchdog; StudioPage publishes the completed CRDT record only after acceptance.
-        drawingCrdtPublisherRef.current.cancel(authoritativeLiveStroke.id);
+        drawingCrdtPublisherRef.current.cancel(liveStroke.id);
         selectedGpuFinalCrdtFlushDeferred = true;
       } else {
-        drawingCrdtPublisherRef.current.flush(authoritativeLiveStroke.id);
+        drawingCrdtPublisherRef.current.flush(liveStroke.id);
       }
     }
     // Shapes do not append freehand suffixes, but their deferred begin must still precede the

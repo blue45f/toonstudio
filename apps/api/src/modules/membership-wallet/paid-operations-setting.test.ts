@@ -13,13 +13,14 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { PAID_OPERATIONS_DISABLED } from "./paid-operations-gate";
-
+import {
+  InMemoryPaidOperationsSettingStore,
+  PAID_OPERATIONS_DISABLED,
+} from "./paid-operations-gate";
 import {
   createMemoryPaidOperationsSettingStore,
   type PaidOperationsSettingStore,
 } from "./paid-operations-setting";
-import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
 
 /** 스펙 오류 코드(게이트 정본). 실효 게이트가 전 유료 경로에 동일하게 쓴다. */
 class PaidOperationsDisabledError extends Error {

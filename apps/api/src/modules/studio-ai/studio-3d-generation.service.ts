@@ -381,7 +381,7 @@ export class Studio3dGenerationService {
     // 운영자 부담 경로에만 크레딧을 예약한다 (studio-ai와 동일 패턴).
     // 예약 실패(잔액·일 한도)는 제공자 호출 전에 차단하고, 잡을 실패로
     // 전이해 대기 상태로 남기지 않는다. BYOK·지갑 미주입은 건너뛴다.
-    let creditCharge: Studio3dCreditCharge = { charged: false };
+    let creditCharge: Studio3dCreditCharge;
     try {
       creditCharge = await beginStudio3dCreditCharge(this.creditWallet, {
         userId,

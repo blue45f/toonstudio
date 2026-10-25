@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 
-import type { StudioDccRouteAccess } from "../hybrid-dcc/studio-dcc-route-access";
+import type { StudioDccRouteAccess } from "./studio-dcc-workbench-navigation";
 
 /**
  * DCC 워크벤치 표면을 문서 레이아웃 아래의 자식 라우트로 세우는 컴포넌트.

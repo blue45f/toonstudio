@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1608,
-    "bytes": 20020810
+    "modules": 1593,
+    "bytes": 19883127
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
       "modules": 226,
-      "bytes": 1189023
+      "bytes": 1179535
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1421,
-      "bytes": 19171611
+      "modules": 1403,
+      "bytes": 19017199
     }
   },
   "forbiddenDomains": {
@@ -105,24 +105,17 @@
       "files": []
     },
     "apps/web/src/domains/creator/hybrid-dcc": {
-      "modules": 7,
-      "bytes": 47632,
+      "modules": 2,
+      "bytes": 37839,
       "files": [
-        "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccHeading.tsx",
-        "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccRouteGate.tsx",
-        "apps/web/src/domains/creator/hybrid-dcc/studio-dcc-route-access.ts",
-        "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-latest-task-queue.ts",
-        "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-persistence-auth-gate.ts",
         "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-persistence.ts",
         "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-pressure-profile.ts"
       ]
     },
     "apps/web/src/domains/creator/lift3d": {
-      "modules": 1,
-      "bytes": 9918,
-      "files": [
-        "apps/web/src/domains/creator/lift3d/studio-lift3d-contract.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/motion-webtoon": {
       "modules": 0,
@@ -175,20 +168,16 @@
       "files": []
     },
     "apps/web/src/domains/creator/scene-3d": {
-      "modules": 4,
-      "bytes": 66425,
+      "modules": 1,
+      "bytes": 6716,
       "files": [
-        "apps/web/src/domains/creator/scene-3d/StudioReferenceOverlay.tsx",
-        "apps/web/src/domains/creator/scene-3d/studio-3d-advanced-poses-library.ts",
-        "apps/web/src/domains/creator/scene-3d/studio-3d-ai-reference-application.ts",
         "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts"
       ]
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 4,
-      "bytes": 73932,
+      "modules": 3,
+      "bytes": 52618,
       "files": [
-        "apps/web/src/domains/creator/scene3d/studio-scene3d-command-core.ts",
         "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts",
         "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts",
         "apps/web/src/domains/creator/scene3d/studio-scene3d-shot-versions.ts"
@@ -220,13 +209,9 @@
       "files": []
     },
     "apps/web/src/domains/creator/virtual-space": {
-      "modules": 3,
-      "bytes": 17648,
-      "files": [
-        "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-invitation.ts",
-        "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-preview.ts",
-        "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-subject.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 14,
@@ -318,7 +303,7 @@
     },
     "apps/web/src/domains/auth": {
       "modules": 16,
-      "bytes": 66580
+      "bytes": 65524
     },
     "apps/web/src/domains/character-chat": {
       "modules": 1,
@@ -358,7 +343,7 @@
     },
     "apps/web/src/domains/creator/canvas": {
       "modules": 60,
-      "bytes": 656424
+      "bytes": 656401
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 2,
@@ -417,8 +402,8 @@
       "bytes": 7475
     },
     "apps/web/src/domains/creator/hybrid-dcc": {
-      "modules": 7,
-      "bytes": 47632
+      "modules": 2,
+      "bytes": 37839
     },
     "apps/web/src/domains/creator/layer": {
       "modules": 34,
@@ -427,10 +412,6 @@
     "apps/web/src/domains/creator/lettering": {
       "modules": 18,
       "bytes": 269450
-    },
-    "apps/web/src/domains/creator/lift3d": {
-      "modules": 1,
-      "bytes": 9918
     },
     "apps/web/src/domains/creator/live": {
       "modules": 50,
@@ -451,10 +432,6 @@
     "apps/web/src/domains/creator/page": {
       "modules": 2,
       "bytes": 8859
-    },
-    "apps/web/src/domains/creator/project-graph": {
-      "modules": 2,
-      "bytes": 22827
     },
     "apps/web/src/domains/creator/publish-package": {
       "modules": 2,
@@ -485,12 +462,12 @@
       "bytes": 47906
     },
     "apps/web/src/domains/creator/scene-3d": {
-      "modules": 4,
-      "bytes": 66425
+      "modules": 1,
+      "bytes": 6716
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 4,
-      "bytes": 73932
+      "modules": 3,
+      "bytes": 52618
     },
     "apps/web/src/domains/creator/selection": {
       "modules": 7,
@@ -523,10 +500,6 @@
     "apps/web/src/domains/creator/vector": {
       "modules": 2,
       "bytes": 10773
-    },
-    "apps/web/src/domains/creator/virtual-space": {
-      "modules": 3,
-      "bytes": 17648
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 14,
@@ -570,7 +543,7 @@
     },
     "apps/web/src/shared/components": {
       "modules": 50,
-      "bytes": 210862
+      "bytes": 210559
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
@@ -617,8 +590,8 @@
       "bytes": 4848
     },
     "packages/studio-format-gateway": {
-      "modules": 7,
-      "bytes": 80079
+      "modules": 6,
+      "bytes": 74031
     },
     "packages/studio-project-model": {
       "modules": 49,
@@ -696,7 +669,6 @@
     "apps/web/src/domains/auth/components/auth-menu-trigger.tsx": 1,
     "apps/web/src/domains/auth/components/auth-rest-status-i18n-core.ts": 1,
     "apps/web/src/domains/auth/components/guest-migration-bridge.tsx": 1,
-    "apps/web/src/domains/auth/components/schedule-idle.ts": 2,
     "apps/web/src/domains/auth/components/session-provider.tsx": 1,
     "apps/web/src/domains/auth/public/session/auth-modal-intent.ts": 1,
     "apps/web/src/domains/auth/public/session/auth-session-state.ts": 3,
@@ -1085,11 +1057,6 @@
     "apps/web/src/domains/creator/filter/studio-retouch-mask-tools-controller.ts": 2,
     "apps/web/src/domains/creator/generic-3d-model/studio-generic-3d-source-formats.ts": 2,
     "apps/web/src/domains/creator/history/studio-page-sidecars-controller.ts": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccHeading.tsx": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccRouteGate.tsx": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/studio-dcc-route-access.ts": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-latest-task-queue.ts": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-persistence-auth-gate.ts": 2,
     "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-persistence.ts": 2,
     "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-pressure-profile.ts": 2,
     "apps/web/src/domains/creator/layer/createStudioLayerCompHandlers.ts": 2,
@@ -1144,7 +1111,6 @@
     "apps/web/src/domains/creator/lettering/studio-dialogue-translate.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-text-path.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-translation-card-prompt.ts": 2,
-    "apps/web/src/domains/creator/lift3d/studio-lift3d-contract.ts": 1,
     "apps/web/src/domains/creator/live/StudioLiveCollaborationProvider.tsx": 2,
     "apps/web/src/domains/creator/live/StudioLiveCollaborationQuickControls.tsx": 2,
     "apps/web/src/domains/creator/live/createStudioLiveResourceLeaseController.ts": 2,
@@ -1204,8 +1170,6 @@
     "apps/web/src/domains/creator/offline/studio-offline-runtime-path.ts": 1,
     "apps/web/src/domains/creator/page/studio-page-management-controller.ts": 2,
     "apps/web/src/domains/creator/page/studio-page-sequence-default.ts": 2,
-    "apps/web/src/domains/creator/project-graph/studio-project-graph-client.ts": 2,
-    "apps/web/src/domains/creator/project-graph/studio-project-graph-contract.ts": 2,
     "apps/web/src/domains/creator/publish-package/primitives.ts": 2,
     "apps/web/src/domains/creator/publish-package/rights.ts": 2,
     "apps/web/src/domains/creator/publishing/showcase-links.ts": 2,
@@ -1287,11 +1251,7 @@
     "apps/web/src/domains/creator/save-first/studio-save-first-menu.ts": 2,
     "apps/web/src/domains/creator/save-first/studio-save-profile.ts": 2,
     "apps/web/src/domains/creator/save-first/studio-submission-store.ts": 2,
-    "apps/web/src/domains/creator/scene-3d/StudioReferenceOverlay.tsx": 2,
-    "apps/web/src/domains/creator/scene-3d/studio-3d-advanced-poses-library.ts": 2,
-    "apps/web/src/domains/creator/scene-3d/studio-3d-ai-reference-application.ts": 2,
     "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts": 2,
-    "apps/web/src/domains/creator/scene3d/studio-scene3d-command-core.ts": 2,
     "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts": 2,
     "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts": 2,
     "apps/web/src/domains/creator/scene3d/studio-scene3d-shot-versions.ts": 2,
@@ -1734,7 +1694,7 @@
     "apps/web/src/domains/creator/studio-primary-canvas-tool-transition.ts": 2,
     "apps/web/src/domains/creator/studio-pro-draw-preferences-sqlite.ts": 2,
     "apps/web/src/domains/creator/studio-pro-draw-prefs.ts": 2,
-    "apps/web/src/domains/creator/studio-product-ia.ts": 3,
+    "apps/web/src/domains/creator/studio-product-ia.ts": 1,
     "apps/web/src/domains/creator/studio-production-insights.ts": 2,
     "apps/web/src/domains/creator/studio-production-projection.ts": 2,
     "apps/web/src/domains/creator/studio-production/studio-production-scope.ts": 1,
@@ -1780,7 +1740,7 @@
     "apps/web/src/domains/creator/studio-review-pdf-profile.ts": 2,
     "apps/web/src/domains/creator/studio-revision-document-extensions.ts": 2,
     "apps/web/src/domains/creator/studio-rough-shape.ts": 2,
-    "apps/web/src/domains/creator/studio-route-registry.ts": 3,
+    "apps/web/src/domains/creator/studio-route-registry.ts": 1,
     "apps/web/src/domains/creator/studio-router/StudioDccWorkbenchRoute.tsx": 2,
     "apps/web/src/domains/creator/studio-router/studio-dcc-workbench-navigation.ts": 2,
     "apps/web/src/domains/creator/studio-router/studio-document-layout-context.ts": 2,
@@ -1926,9 +1886,6 @@
     "apps/web/src/domains/creator/useStudioSmartShapeEditing.tsx": 2,
     "apps/web/src/domains/creator/vector/studio-node-bubble-edit-controller.ts": 2,
     "apps/web/src/domains/creator/vector/studio-node-edit-pointer-session.ts": 2,
-    "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-invitation.ts": 2,
-    "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-preview.ts": 2,
-    "apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-subject.ts": 2,
     "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": 2,
@@ -2098,7 +2055,7 @@
     "apps/web/src/shared/lib/theme-scene-assets.ts": 1,
     "apps/web/src/shared/lib/theme.ts": 1,
     "apps/web/src/shared/lib/toast-store.ts": 3,
-    "apps/web/src/shared/lib/trim-trailing-slashes.ts": 3,
+    "apps/web/src/shared/lib/trim-trailing-slashes.ts": 1,
     "apps/web/src/shared/lib/ui-store.ts": 1,
     "apps/web/src/shared/lib/utils.ts": 3,
     "apps/web/src/shared/lib/workflow-trust.ts": 1,
@@ -2180,7 +2137,6 @@
     "packages/studio-engine-skia/src/document-contract.ts": 2,
     "packages/studio-format-gateway/src/abr-preview.ts": 2,
     "packages/studio-format-gateway/src/abr.ts": 2,
-    "packages/studio-format-gateway/src/compatibility-report.ts": 2,
     "packages/studio-format-gateway/src/kpp.ts": 2,
     "packages/studio-format-gateway/src/myb.ts": 2,
     "packages/studio-format-gateway/src/nul-text.ts": 2,

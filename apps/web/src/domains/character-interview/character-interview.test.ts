@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { StudioStoryBible } from "../creator/studio-story-bible";
+import type { StudioStoryBible } from "../creator/public/story-bible";
 import type {
   StudioStoryBibleNarrative,
   StudioStoryCharacterProfile,
-} from "../creator/planning/studio-character-profile";
+} from "../creator/public/story-character-profile";
 
 import {
   buildCharacterInterviewCanon,

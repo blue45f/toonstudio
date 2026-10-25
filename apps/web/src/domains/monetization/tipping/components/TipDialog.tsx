@@ -141,12 +141,12 @@ export function TipDialog({
               <Dialog.Title className="text-lg font-bold text-fg">
                 {t("tipping.dialog.title")}
               </Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted">
+              <Dialog.Description className="mt-1 text-sm text-fg-3">
                 {t("tipping.dialog.episode", { episode: episodeLabel })}
               </Dialog.Description>
             </div>
             <Dialog.Close
-              className="rounded-lg p-1 text-muted transition hover:bg-fg/5 hover:text-fg"
+              className="rounded-lg p-1 text-fg-3 transition hover:bg-fg/5 hover:text-fg"
               aria-label={t("tipping.dialog.close")}
             >
               <X className="h-5 w-5" aria-hidden />
@@ -157,7 +157,7 @@ export function TipDialog({
             <div className="mt-6 flex flex-col items-center gap-3 py-4 text-center">
               <CheckCircle2 className="h-12 w-12 text-good" aria-hidden />
               <p className="text-base font-semibold text-fg">{t("tipping.dialog.successTitle")}</p>
-              <p className="text-sm text-muted">
+              <p className="text-sm text-fg-3">
                 {t("tipping.dialog.successBody", { amount: formatTipKrw(amountKrw) })}
               </p>
               <button
@@ -188,7 +188,7 @@ export function TipDialog({
                           "rounded-xl border px-2 py-2.5 text-sm font-semibold tabular-nums transition",
                           selected
                             ? "border-accent bg-accent/10 text-fg"
-                            : "border-line text-muted hover:border-fg/30 hover:text-fg",
+                            : "border-line text-fg-3 hover:border-fg/30 hover:text-fg",
                         )}
                       >
                         {formatTipKrw(tier)}
@@ -196,7 +196,7 @@ export function TipDialog({
                     );
                   })}
                 </div>
-                <label htmlFor={amountInputId} className="mt-3 block text-xs text-muted">
+                <label htmlFor={amountInputId} className="mt-3 block text-xs text-fg-3">
                   {t("tipping.dialog.customAmountLabel", {
                     min: formatTipKrw(TIP_AMOUNT_MIN_KRW),
                     max: formatTipKrw(TIP_AMOUNT_MAX_KRW),
@@ -209,7 +209,7 @@ export function TipDialog({
                   value={customAmount}
                   onChange={(event) => handleCustomAmountChange(event.target.value)}
                   placeholder={t("tipping.dialog.customAmountPlaceholder")}
-                  className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm tabular-nums text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm tabular-nums text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
                 />
               </fieldset>
 
@@ -223,9 +223,9 @@ export function TipDialog({
                   onChange={(event) => setMessage(event.target.value.slice(0, TIP_MESSAGE_MAX_LENGTH))}
                   rows={2}
                   placeholder={t("tipping.dialog.messagePlaceholder")}
-                  className="mt-2 w-full resize-none rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+                  className="mt-2 w-full resize-none rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
                 />
-                <p className="mt-1 text-right text-xs tabular-nums text-muted">
+                <p className="mt-1 text-right text-xs tabular-nums text-fg-3">
                   {message.length}/{TIP_MESSAGE_MAX_LENGTH}
                 </p>
               </div>
@@ -237,7 +237,7 @@ export function TipDialog({
               )}
 
               {!authenticated && ready && (
-                <p className="rounded-xl border border-line bg-fg/5 px-3 py-2 text-xs text-muted">
+                <p className="rounded-xl border border-line bg-fg/5 px-3 py-2 text-xs text-fg-3">
                   {t("tipping.dialog.loginNotice")}
                 </p>
               )}

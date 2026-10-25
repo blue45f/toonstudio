@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { CREATOR_ASSET_FALLBACK_PREVIEW_DATA_URL } from "../../server/creator-asset-image";
+import { CREATOR_ASSET_FALLBACK_PREVIEW_DATA_URL } from "./creator-asset-image";
 
 import type * as DatabaseRuntime from "../../platform/database";
 import type * as CreatorRuntime from "../../server/creator";

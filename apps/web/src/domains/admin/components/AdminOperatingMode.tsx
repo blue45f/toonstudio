@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { OperationPolicyAdminView, OperationPolicyDraft, OperationPolicyPreview, OperatingMode } from "@toonstudio/contracts/operation-policy";
 import { api, getApiErrorMessage } from "@/platform/api";
 import { useT } from "@/shared/lib/i18n";
+import { adminButtonClass } from "./admin-client";
 import { AdminSpinner } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 const endpoint = "/admin/production/operation-policy";
 const MODE_KEYS = { free: "admin.operatingMode.modeFree", paid: "admin.operatingMode.modePaid" };

@@ -4,7 +4,7 @@ import {
   decodeCreatorWorkDataImage,
   type CreatorWorkMediaPayload,
   type CreatorWorkMediaTarget,
-} from "../../server/creator-work-media";
+} from "./creator-work-media";
 
 export const CREATOR_PUBLICATION_MEDIA_MAX_MUTATION_BYTES = 96 * 1024 * 1024;
 export const CREATOR_PUBLICATION_MEDIA_SIGNED_READ_SECONDS = 120;

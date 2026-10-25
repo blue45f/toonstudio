@@ -106,13 +106,13 @@ export function MembershipJoinDialog({
               </span>
               <div>
                 <Dialog.Title className="text-lg font-bold text-fg">{tier.name}</Dialog.Title>
-                <Dialog.Description className="text-sm text-muted">
+                <Dialog.Description className="text-sm text-fg-3">
                   {t("membership.join.creator", { name: creatorName })}
                 </Dialog.Description>
               </div>
             </div>
             <Dialog.Close
-              className="rounded-lg p-1 text-muted transition hover:bg-fg/5 hover:text-fg"
+              className="rounded-lg p-1 text-fg-3 transition hover:bg-fg/5 hover:text-fg"
               aria-label={t("membership.join.close")}
             >
               <X className="h-5 w-5" aria-hidden />
@@ -123,7 +123,7 @@ export function MembershipJoinDialog({
             <div className="mt-6 flex flex-col items-center gap-3 py-4 text-center">
               <CheckCircle2 className="h-12 w-12 text-good" aria-hidden />
               <p className="text-base font-semibold text-fg">{t("membership.join.successTitle")}</p>
-              <p className="text-sm text-muted">{t("membership.join.successBody", { name: tier.name })}</p>
+              <p className="text-sm text-fg-3">{t("membership.join.successBody", { name: tier.name })}</p>
               <button
                 type="button"
                 onClick={onClose}
@@ -135,7 +135,7 @@ export function MembershipJoinDialog({
           ) : (
             <div className="mt-5 space-y-4">
               {tier.description && (
-                <p className="text-sm text-muted">{tier.description}</p>
+                <p className="text-sm text-fg-3">{tier.description}</p>
               )}
               <ul className="space-y-1.5">
                 {tier.perks.map((perk) => (
@@ -143,17 +143,17 @@ export function MembershipJoinDialog({
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-good" aria-hidden />
                     <span>
                       <strong className="font-semibold">{t(`membership.perk.${perk}`)}</strong>
-                      <span className="text-muted"> — {t(`membership.perk.${perk}Description`)}</span>
+                      <span className="text-fg-3"> — {t(`membership.perk.${perk}Description`)}</span>
                     </span>
                   </li>
                 ))}
               </ul>
               <div className="rounded-xl border border-line bg-fg/5 px-4 py-3">
-                <p className="text-sm text-muted">{t("membership.join.priceLabel")}</p>
+                <p className="text-sm text-fg-3">{t("membership.join.priceLabel")}</p>
                 <p className="text-xl font-bold tabular-nums text-fg">
                   {t("membership.join.price", { amount: formatMembershipKrw(tier.monthlyPriceKrw) })}
                 </p>
-                <p className="mt-0.5 text-xs text-muted">{t("membership.join.recurringNote")}</p>
+                <p className="mt-0.5 text-xs text-fg-3">{t("membership.join.recurringNote")}</p>
               </div>
 
               {phase === "error" && errorMessage && (
@@ -163,7 +163,7 @@ export function MembershipJoinDialog({
               )}
 
               {!authenticated && ready && (
-                <p className="rounded-xl border border-line bg-fg/5 px-3 py-2 text-xs text-muted">
+                <p className="rounded-xl border border-line bg-fg/5 px-3 py-2 text-xs text-fg-3">
                   {t("membership.join.loginNotice")}
                 </p>
               )}

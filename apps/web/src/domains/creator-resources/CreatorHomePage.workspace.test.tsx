@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { CreatorHomePage } from "./CreatorHomePage";
 
-vi.mock("../marketing/CreatorHomeExperience", () => ({
+vi.mock("../marketing/public/creator-home-experience", () => ({
   CreatorHomeExperience: () => <h1>Public creator main</h1>,
 }));
 

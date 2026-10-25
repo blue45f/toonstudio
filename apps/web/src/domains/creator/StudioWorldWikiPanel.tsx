@@ -2,7 +2,7 @@ import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Eye, EyeOff, Globe, Lock, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { WorldWikiSection } from "../catalog/WorldWikiSection";
+import { WorldWikiSection } from "../catalog/public/world-wiki-section";
 import {
   buildPublicWiki,
   isWikiEntryPublic,

@@ -14,8 +14,8 @@ vi.mock("../../server/oauth", async (importOriginal) => ({
   handleGoogleIdToken,
 }));
 
-vi.mock("../../server/auth-one-time-token", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../server/auth-one-time-token")>()),
+vi.mock("./auth-one-time-token", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./auth-one-time-token")>()),
   consumeAuthOneTimeToken,
 }));
 

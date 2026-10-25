@@ -30,9 +30,9 @@ export function EpisodeTipRanking({
   if (ranking.length === 0) {
     return (
       <div className={cn("rounded-2xl border border-line p-6 text-center", className)}>
-        <Trophy className="mx-auto h-8 w-8 text-muted/50" aria-hidden />
+        <Trophy className="mx-auto h-8 w-8 text-fg-3/50" aria-hidden />
         <p className="mt-2 text-sm font-semibold text-fg">{t("tipping.ranking.emptyTitle")}</p>
-        <p className="mt-1 text-xs text-muted">{t("tipping.ranking.emptyBody")}</p>
+        <p className="mt-1 text-xs text-fg-3">{t("tipping.ranking.emptyBody")}</p>
       </div>
     );
   }
@@ -55,7 +55,7 @@ export function EpisodeTipRanking({
             <span
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
-                entry.rank <= 3 ? "bg-accent/15 text-accent" : "bg-fg/5 text-muted",
+                entry.rank <= 3 ? "bg-accent/15 text-accent" : "bg-fg/5 text-fg-3",
               )}
               aria-label={t("tipping.ranking.rank", { rank: entry.rank })}
             >
@@ -65,7 +65,7 @@ export function EpisodeTipRanking({
               <p className="truncate text-sm font-semibold text-fg">
                 {episodeNames?.[entry.episodeId] ?? entry.episodeId}
               </p>
-              <p className="text-xs tabular-nums text-muted">
+              <p className="text-xs tabular-nums text-fg-3">
                 {t("tipping.ranking.stats", {
                   count: entry.tipCount,
                   supporters: entry.supporterCount,

@@ -13,10 +13,10 @@ import type {
 } from "@toonstudio/core/commerce";
 
 import {
+  adminButtonClass,
   adminFetch,
   type AdminApiError,
 } from "./admin-client";
-import { adminButtonClass } from "./admin-ui-utils";
 import { AdminCard, AdminSpinner } from "./admin-ui";
 
 import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";

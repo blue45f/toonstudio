@@ -63,7 +63,7 @@ export function SettlementCard({
       <dl className="mt-4 space-y-2 text-sm">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between">
-            <dt className="text-muted">{row.label}</dt>
+            <dt className="text-fg-3">{row.label}</dt>
             <dd className={cn("tabular-nums", row.tone === "minus" && "text-bad")}>
               {row.value}
             </dd>
@@ -77,7 +77,7 @@ export function SettlementCard({
         </div>
       </dl>
 
-      <p className="mt-3 text-xs leading-relaxed text-muted">
+      <p className="mt-3 text-xs leading-relaxed text-fg-3">
         {t("revenue.settlement.policyNote", {
           min: formatKrw(SETTLEMENT_MIN_PAYOUT_KRW),
           rate: breakdown.creatorEffectiveTakeRatePercent,

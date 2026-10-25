@@ -34,7 +34,7 @@ import {
   users,
 } from "../../platform/database";
 import { toPublicCreatorDoc } from "../creator-doc-visibility";
-import { jsonStringLikePattern } from "../sql-like";
+import { jsonStringLikePattern } from "../../modules/community/sql-like";
 import { assertCreatorDraftCollaborationStatusMutationAllowed } from "../creator-provisional-work-status";
 import {
   CREATOR_WORK_REVISION_MAX,
@@ -44,15 +44,15 @@ import {
   parseCreatorWorkRevision,
 } from "../creator-work-revisions";
 
-import { assertJoinableChallenge } from "./challenges";
+import { assertJoinableChallenge } from "../../modules/creator/challenges";
 import { parseSeriesStatus } from "./community-contract";
 import {
   ensureCreatorCommunitySchemaForCapability,
   requireCreatorCommunitySchema,
-} from "./community-schema";
-import { insertCreatorWorkRelease } from "./community-publishing";
-import { deleteOwnedStudioGraphForWork } from "./works-studio-graph-deletion";
-import { getOwnedSeriesOrThrow, nextEpisodeNoOf, touchSeries } from "./series";
+} from "../../modules/creator/community-schema";
+import { insertCreatorWorkRelease } from "../../modules/creator/community-publishing";
+import { deleteOwnedStudioGraphForWork } from "../../modules/creator/works-studio-graph-deletion";
+import { getOwnedSeriesOrThrow, nextEpisodeNoOf, touchSeries } from "../../modules/creator/series";
 import {
   authorOf,
   cleanPages,
@@ -68,7 +68,7 @@ import {
   parseTagValue,
   safeDate,
   type CreatorCommunityTransaction,
-} from "./shared";
+} from "../../modules/creator/shared";
 import {
   parseCreatorSort,
   parseFormat,
@@ -80,7 +80,7 @@ import {
   type CreatorWorkMutationResult,
   type CreatorWorkSort,
   type CreatorWorkSummary,
-} from "./works-contract";
+} from "../../modules/creator/works-contract";
 
 import type { SQL } from "drizzle-orm";
 

@@ -13,10 +13,62 @@ import {
   type StudioHybridDccWorkspacePersistence,
 } from "../studio-page-editor-types";
 
-import { createStudioHybridDccLatestTaskQueue } from "./studio-hybrid-dcc-latest-task-queue";
-import { resolveStudioHybridDccPersistenceAuthGate } from "./studio-hybrid-dcc-persistence-auth-gate";
-
 import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
+
+interface StudioHybridDccLatestTask {
+  readonly run: () => Promise<void>;
+  readonly onError?: (cause: unknown) => void;
+}
+
+interface StudioHybridDccScopeTaskState {
+  running: boolean;
+  pending: StudioHybridDccLatestTask | null;
+}
+
+function createStudioHybridDccLatestTaskQueue() {
+  const states = new Map<string, StudioHybridDccScopeTaskState>();
+  const start = (scope: string, state: StudioHybridDccScopeTaskState, task: StudioHybridDccLatestTask) => {
+    state.running = true;
+    void Promise.resolve()
+      .then(task.run)
+      .catch((cause: unknown) => {
+        try {
+          task.onError?.(cause);
+        } catch {
+          // UI reporting must never stall the durable queue.
+        }
+      })
+      .finally(() => {
+        const next = state.pending;
+        state.pending = null;
+        if (next) {
+          start(scope, state, next);
+          return;
+        }
+        state.running = false;
+        if (states.get(scope) === state) states.delete(scope);
+      });
+  };
+  return {
+    enqueue(scope: string, task: StudioHybridDccLatestTask) {
+      if (scope.length === 0) throw new Error("Hybrid DCC task scope must not be empty.");
+      const state = states.get(scope) ?? { running: false, pending: null };
+      if (!states.has(scope)) states.set(scope, state);
+      if (state.running) {
+        state.pending = task;
+        return;
+      }
+      start(scope, state, task);
+    },
+  };
+}
+
+const RECOVERY_READY_GATE = Object.freeze({ status: "checking", shouldAttemptRecovery: true } as const);
+const SESSION_ONLY_GATE = Object.freeze({ status: "session-only", shouldAttemptRecovery: false } as const);
+
+function resolveStudioHybridDccPersistenceAuthGate(authReady: boolean) {
+  return authReady ? RECOVERY_READY_GATE : SESSION_ONLY_GATE;
+}
 
 export interface StudioHybridDccPersistenceReceiptEvidence {
   readonly sequence: number;

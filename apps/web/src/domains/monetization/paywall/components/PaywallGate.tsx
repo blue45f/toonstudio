@@ -55,7 +55,7 @@ export function PaywallGate({
         <Lock className="h-6 w-6 text-accent" aria-hidden />
       </span>
       <h3 className="text-base font-bold text-fg">{t("paywall.gate.lockedTitle")}</h3>
-      <p className="max-w-sm text-sm text-muted">{t("paywall.gate.lockedBody")}</p>
+      <p className="max-w-sm text-sm text-fg-3">{t("paywall.gate.lockedBody")}</p>
       {access.daysUntilFree !== null && (
         <p className="rounded-full bg-fg/5 px-3 py-1 text-sm font-semibold tabular-nums text-fg">
           {t("paywall.gate.freeIn", { days: access.daysUntilFree })}
@@ -68,7 +68,7 @@ export function PaywallGate({
         <Crown className="h-4 w-4" aria-hidden />
         {t("paywall.gate.becomeSupporter")}
       </Link>
-      <p className="text-xs text-muted">{t("paywall.gate.supporterNote")}</p>
+      <p className="text-xs text-fg-3">{t("paywall.gate.supporterNote")}</p>
     </div>
   );
 }

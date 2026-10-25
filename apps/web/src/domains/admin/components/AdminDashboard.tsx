@@ -12,19 +12,19 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { getAdminAdvancedCopy } from "../admin-advanced-copy";
 import {
   countActiveCriticalAnnouncements,
+  getAdminAdvancedCopy,
   type AdminTabKey,
 } from "../admin-console-model";
 
 import {
+  adminButtonClass,
   adminFetch,
   formatNum,
   formatWon,
 } from "./admin-client";
 import { AdminNotice, AdminSpinner, Stat, StatGroup } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

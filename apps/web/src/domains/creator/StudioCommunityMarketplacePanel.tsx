@@ -119,7 +119,7 @@ import { filterStarterMarketplaceResources } from "@/shared/lib/creator-marketpl
 import { cx } from "@/shared/lib/cx";
 import { useT } from "@/shared/lib/i18n";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
-import { CreatorMarketplaceReportAction } from "@/domains/market/components/CreatorMarketplaceReportAction";
+import { CreatorMarketplaceReportAction } from "@/domains/market/public/creator-marketplace-report-action";
 import {
   deleteCreatorMarketplaceResource,
   getCreatorMarketplaceResource,

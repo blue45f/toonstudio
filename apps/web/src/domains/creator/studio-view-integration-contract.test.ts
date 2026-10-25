@@ -107,14 +107,14 @@ describe("StudioPage view integration contract", () => {
   });
 
   it("loads the optional view HUD only after a zoom or rotate intent", () => {
-    expect(stickyBannersSource).toContain(
-      'import { StudioViewToolsHud } from "../studio-view-tools-hud-loader";',
+    expect(stickyBannersSource).toMatch(
+      /import \{ StudioViewToolsHud \} from "\.\.\/studio-view-tools-hud-loader";/u,
     );
-    expect(stickyBannersSource).not.toContain(
-      'import { StudioViewToolsHud } from "../StudioViewToolsHud";',
+    expect(stickyBannersSource).not.toMatch(
+      /import \{ StudioViewToolsHud \} from "\.\.\/StudioViewToolsHud";/u,
     );
-    expect(viewportSource).not.toContain(
-      'import { StudioViewToolsHud } from "../StudioViewToolsHud";',
+    expect(viewportSource).not.toMatch(
+      /import \{ StudioViewToolsHud \} from "\.\.\/StudioViewToolsHud";/u,
     );
     expect(viewHudLoaderSource).toContain('import("./StudioViewToolsHud")');
     expect(stickyBannersSource).toMatch(

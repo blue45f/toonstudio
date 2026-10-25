@@ -1,6 +1,6 @@
 import { FolderKanban } from "lucide-react";
 
-import { ProductIntentStart } from "@/domains/creator-resources/ProductIntentStart";
+import { ProductIntentStart } from "@/domains/creator-resources/public/product-intent-start";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { useI18n } from "@/shared/lib/i18n";

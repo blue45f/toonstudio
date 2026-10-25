@@ -8,7 +8,7 @@ import { Bookmark, Eye, Heart, Layers, MapPin, MessageSquareText, PenLine, Star 
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
-import type { StudioPublicWiki } from "@/domains/creator/studio-world-wiki";
+import type { StudioPublicWiki } from "@/domains/creator/public/world-wiki";
 
 import { TitleDetailBreadcrumb } from "./TitleDetailBreadcrumb";
 import { TitleDetailHero } from "./TitleDetailHero";
@@ -27,8 +27,8 @@ import { AvailabilityRouter } from "@/shared/components/availability";
 import { CollectionAdd } from "@/shared/components/collection-add";
 import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
 import { PriceCompare } from "@/shared/components/price-compare";
-import { AvailabilityHistoryPanel } from "@/domains/engagement/AvailabilityHistoryPanel";
-import { PersonalContentPreferenceNotice } from "@/domains/engagement/PersonalContentPreferenceNotice";
+import { AvailabilityHistoryPanel } from "@/domains/engagement/public/availability-history-panel";
+import { PersonalContentPreferenceNotice } from "@/domains/engagement/public/personal-content-preference-notice";
 import { ReadStateSelector } from "@/shared/components/read-state";
 import { ReviewCard, ReviewForm } from "@/domains/community/public/reviews";
 import { ScoreBreakdown } from "@/shared/components/score-breakdown";

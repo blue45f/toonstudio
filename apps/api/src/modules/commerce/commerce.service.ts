@@ -32,7 +32,7 @@ import { isAdminUser } from "../../server/app-config";
 import {
   getCommerceConfig,
   setCommerceConfig,
-} from "../../server/commerce-config";
+} from "./commerce-config";
 import { logAuditAction } from "../admin/admin-types";
 import {
   cancelSupporterTossPayment,

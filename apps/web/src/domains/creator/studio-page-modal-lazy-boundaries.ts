@@ -50,6 +50,12 @@ export const LazyStudioHybridDccDialog = lazy(() =>
   }))
 );
 
+export const LazyStudioHybridDccRouteGate = lazy(() =>
+  import("./hybrid-dcc/StudioHybridDccRouteGate").then(({ StudioHybridDccRouteGate }) => ({
+    default: StudioHybridDccRouteGate,
+  }))
+);
+
 export const LazyStudioQuickAccessSurface = lazy(() =>
   import("./StudioQuickAccessSurface").then(({ StudioQuickAccessSurface }) => ({
     default: StudioQuickAccessSurface,

@@ -1,14 +1,14 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { BgCustomModelInstance, BgPrimitive, StudioBg3dLayerListItem, StudioToolHintSpec } from "./studio-bg3d-editor-runtime-bindings";
 import { resolveStudioBg3dFocusSelection } from "./studio-bg3d-camera-selection";
 import { isStudioBg3dTagHidden, projectStudioBg3dTagVisibility, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
 
-export function bindStudioBg3dEditorLayoutViewModel(h) {
+export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
     TransformControls, View, Canvas, useThree,
@@ -108,7 +108,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     StudioBg3dCaptureAdapter, StudioBg3dCaptureRequest, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress,
     StudioBg3dModelThumbnailCaptureController, StudioBg3dModelThumbnailThreeCaptureHandle, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dShotBatchPass,
     StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBackground3DInsertResult,
-    StudioToolHintSpec, StudioWebXrMode, StudioWebXrSessionController, StudioWebXrSessionState,
+    StudioWebXrMode, StudioWebXrSessionController, StudioWebXrSessionState,
     StudioWebXrSupportSnapshot, open, initialDataUrl, initialScene,
     seedSceneTemplateId, seedPrimitiveKind, onSeedObjectInsertConsumed, sharedSceneSession,
     sharedStageResolution, sharedStageSessionScopeKey, sharedCharactersLinkedToOtherBackgroundCount, operation,
@@ -242,7 +242,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     canPlaceSelectedModelRecipe, centerGroundSelectionDisabledReason, groundSelectionDisabledReason, magicLayerEffectivelyVisibleIds, sharedStageUpdateBlockedReason, transformSpace,
     captureBackgroundSnapshot, immersiveStagePlan, placementPreviewAsset, sceneRecoveryError,
     webXrController, webXrSessionState, engineRuntime,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const snapSettingsSummary = studioBg3dSnapSettingsSummary(snapSettings);
   const quadViewHint: StudioToolHintSpec = isQuadView
@@ -290,8 +290,8 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
   // 숨긴 태그는 오브젝트 visible 과 따로 렌더에서만 빠진다(저장되는 visible 값은 그대로).
   const hiddenTagSet = readStudioBg3dHiddenTagSet(sceneBaseDocument);
   const layerListItems: StudioBg3dLayerListItem[] = [
-    ...primitives.map((prim, index) => {
-      const kindCountBefore = primitives.slice(0, index).filter((p) => p.kind === prim.kind).length;
+    ...primitives.map((prim: BgPrimitive, index: number) => {
+      const kindCountBefore = primitives.slice(0, index).filter((p: BgPrimitive) => p.kind === prim.kind).length;
       return {
         id: prim.id,
         label: prim.name || `${PRIMITIVE_DEFS[prim.kind].label} ${kindCountBefore + 1}`,
@@ -302,9 +302,9 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
         tags: prim.tags,
       };
     }),
-    ...customModels.map((inst, index) => {
-      const kindCountBefore = customModels.slice(0, index).filter((m) => m.modelId === inst.modelId).length;
-      const modelName = modelLibrary.find((entry) => entry.id === inst.modelId)?.name ?? "3D 모델";
+    ...customModels.map((inst: BgCustomModelInstance, index: number) => {
+      const kindCountBefore = customModels.slice(0, index).filter((m: BgCustomModelInstance) => m.modelId === inst.modelId).length;
+      const modelName = modelLibrary.find((entry: any) => entry.id === inst.modelId)?.name ?? "3D 모델";
       return {
         id: inst.id,
         label: inst.name || `${modelName} ${kindCountBefore + 1}`,
@@ -333,12 +333,12 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
               ? `표면 붙이기는 한 번에 최대 ${STUDIO_BG3D_SURFACE_SNAP_MAX_MULTI_INPUTS}개까지 지원합니다.`
               : selectedEntities.length === 0
                 ? "표면에 붙일 객체를 선택해 주세요."
-                : selectedEntities.every((entity) => isBgObjectTransformBlocked(entity))
+                : selectedEntities.every((entity: any) => isBgObjectTransformBlocked(entity))
                   ? "선택한 객체의 잠금을 먼저 해제해 주세요."
-                  : selectedEntities.every((entity) => !effectivelyVisibleLayerIds.has(entity.id))
+                  : selectedEntities.every((entity: any) => !effectivelyVisibleLayerIds.has(entity.id))
                     ? "숨겨진 객체는 표면에 붙일 수 없습니다."
-                    : selectedEntities.every((entity) => {
-                        const custom = customModels.find((model) => model.id === entity.id);
+                    : selectedEntities.every((entity: any) => {
+                        const custom = customModels.find((model: BgCustomModelInstance) => model.id === entity.id);
                         if (custom && !readyCloneIds.has(custom.id)) return true;
                         return !primitiveObjectsRef.current.has(entity.id);
                       })
@@ -375,8 +375,8 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
       `한 번에 최대 ${STUDIO_BG3D_PHYSICS_MAX_DYNAMIC_BODIES}개 오브젝트를 시뮬레이션할 수 있습니다.`;
   } else {
     for (const id of selectedIds) {
-      const entity = primitives.find((primitive) => primitive.id === id) ??
-        customModels.find((model) => model.id === id);
+      const entity = primitives.find((primitive: BgPrimitive) => primitive.id === id) ??
+        customModels.find((model: BgCustomModelInstance) => model.id === id);
       if (!entity || !isBgObjectVisible(entity) || isStudioBg3dTagHidden(entity, hiddenTagSet)) {
         physicsSelectionUnavailableReason = "숨긴 오브젝트는 물리 미리보기에 사용할 수 없습니다.";
         break;
@@ -393,7 +393,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
         physicsSelectionUnavailableReason = "자식이 있는 그룹은 아직 동적 충돌체로 바꿀 수 없습니다.";
         break;
       }
-      const model = customModels.find((candidate) => candidate.id === id);
+      const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
       const cacheEntry = model ? modelRootCacheRef.current.get(model.modelId) : undefined;
       if (
         model && (
@@ -409,7 +409,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     }
   }
   if (!physicsSelectionUnavailableReason) {
-    const unsupportedVisibleModel = customModels.find((model) => {
+    const unsupportedVisibleModel = customModels.find((model: BgCustomModelInstance) => {
       if (!effectivelyVisibleLayerIds.has(model.id)) return false;
       const cacheEntry = modelRootCacheRef.current.get(model.modelId);
       return model.animation !== undefined || model.pose !== undefined || model.morph !== undefined ||
@@ -434,7 +434,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
   const appliedLtPresetId = appliedLtPreset?.id ?? "custom";
   const appliedMoodRig = resolveStudioBg3dAppliedMoodRig(sceneBaseDocument);
   const managedLtUserPreset = ltManagedUserPresetId
-    ? ltUserPresetPayload.presets.find((preset) => preset.id === ltManagedUserPresetId) ?? null
+    ? ltUserPresetPayload.presets.find((preset: any) => preset.id === ltManagedUserPresetId) ?? null
     : null;
   const ltExportAspectRatio = sceneBaseDocument.output.exportAspectRatio ?? null;
   // 세이프 프레임 오버레이와 라벨은 실제 캡처와 같은 식(같은 순수 함수)을 쓴다. 자동일 때만
@@ -467,7 +467,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     ltCaptureAspectPresets,
   );
   const ltCaptureAspectLabel = ltCaptureAspectPresets.find(
-    (preset) => preset.id === ltCaptureAspectPresetId,
+    (preset: any) => preset.id === ltCaptureAspectPresetId,
   )?.label ?? `${(ltExportAspectRatio ?? 1).toFixed(2)} : 1`;
   const placementActive =
     placementSession.phase === "preview" && placementPreviewAsset !== null;
@@ -486,7 +486,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
   const bg3dFrameLoop = immersiveSceneActive
     ? "always"
     : resolveStudioBg3dFrameLoop({
-        modelAnimationPlaying: customModels.some((model) => model.animation?.playing === true),
+        modelAnimationPlaying: customModels.some((model: BgCustomModelInstance) => model.animation?.playing === true),
         physicsPlaying: physicsPhase === "running",
         transforming: isTransforming,
         capturing: isCapturing,
@@ -518,8 +518,8 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
     120,
     Math.ceil(Math.max(fogNear + STUDIO_BG3D_FOG_MIN_GAP, fogFar) / 10) * 10,
   );
-  const renderPrimitives = projectStudioBg3dTagVisibility(primitives, hiddenTagSet);
-  const renderCustomModels = projectStudioBg3dTagVisibility(customModels, hiddenTagSet);
+  const renderPrimitives = projectStudioBg3dTagVisibility<BgPrimitive>(primitives, hiddenTagSet);
+  const renderCustomModels = projectStudioBg3dTagVisibility<BgCustomModelInstance>(customModels, hiddenTagSet);
   const primitiveById = new Map(renderPrimitives.map((primitive) => [primitive.id, primitive] as const));
   const customModelById = new Map(renderCustomModels.map((model) => [model.id, model] as const));
   const sharedCharacterGroundSurfaceRevision =
@@ -538,7 +538,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
       model.materialOverride !== undefined || model.modelTexturePaint !== undefined || model.animation !== undefined || model.pose !== undefined ||
       model.morph !== undefined || model.constraints !== undefined ||
       cacheEntry.metrics.skins > 0 || cacheEntry.metrics.morphTargets > 0 || cacheEntry.metrics.lights > 0 ||
-      model.scale.some((component) => component <= 0)
+      model.scale.some((component: number) => component <= 0)
     ) continue;
     const candidates = batchCandidatesByModelId.get(model.modelId) ?? [];
     candidates.push(model);
@@ -547,7 +547,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
   const staticModelBatches: {
     readonly key: string;
     readonly modelId: string;
-    readonly sourceRoot: THREE.Object3D;
+    readonly sourceRoot: R.THREE.Object3D;
     readonly instances: readonly BgCustomModelInstance[];
   }[] = [];
   const batchedNodeIds = new Set<string>();

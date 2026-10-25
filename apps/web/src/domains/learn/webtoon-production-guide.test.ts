@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isStudioProjectView } from "../creator/studio-project-views";
+import { isStudioProjectView } from "../creator/public/studio-project-views";
 
 import {
   WEBTOON_PRODUCTION_STAGE_SUPPORT,

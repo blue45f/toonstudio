@@ -6,13 +6,13 @@ import { createPortal } from "react-dom";
 import {
   ADMIN_NAVIGATION_GROUPS,
   ADMIN_ROUTE_BY_ID,
+  getAdminShellCopy,
 } from "../router/admin-route-manifest";
-import { AdminRouteIcon } from "../router/admin-route-icons";
-import { getAdminShellCopy } from "../shell/admin-shell-copy";
 import {
   adminFetchText,
   downloadAdminFile,
 } from "./admin-client";
+import { AdminRouteIcon } from "./admin-ui";
 import { useAdminToast } from "./use-admin-toast";
 
 import { useI18n, useT } from "@/shared/lib/i18n";

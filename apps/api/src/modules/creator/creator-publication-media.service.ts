@@ -13,7 +13,7 @@ import {
 import type {
   CreatorWorkMediaPayload,
   CreatorWorkMediaTarget,
-} from "../../server/creator-work-media";
+} from "./creator-work-media";
 import {
   CREATOR_PUBLICATION_MEDIA_SIGNED_READ_SECONDS,
   applyCreatorPublicationMediaPaths,

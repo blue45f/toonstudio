@@ -35,7 +35,7 @@ export function FortuneExperienceArt({ experience, compact = false }: ArtProps) 
       <radialGradient id={`${uid}-glow`} cx="70%" cy="20%" r="85%">
         <stop stopColor={accent} stopOpacity=".45" />
         <stop offset=".58" stopColor={night} stopOpacity=".92" />
-        <stop offset="1" stopColor="#0b0b13" />
+        <stop offset="1" stopColor="var(--color-reader-panel)" />
       </radialGradient>
       <linearGradient id={`${uid}-line`} x1="0" x2="1">
         <stop stopColor={accent} stopOpacity=".15" />
@@ -63,11 +63,11 @@ export function FortuneExperienceArt({ experience, compact = false }: ArtProps) 
       <circle cx="86" cy="64" r="28" stroke={accent} strokeWidth="1.6" opacity=".75" />
       <circle cx="154" cy="64" r="28" stroke={gold} strokeWidth="1.6" opacity=".75" />
       <path d="M108 48c16 10 9 22 25 31 9 5 18 1 25-7" stroke={gold} strokeWidth="2" opacity=".72" />
-      <circle cx="120" cy="64" r="5" fill="#fff4dc" opacity=".92" />
+      <circle cx="120" cy="64" r="5" fill="var(--color-bg)" opacity=".92" />
     </g>}
     {experience.group === "카드·상징" && <g className="fo-art-motif fo-art-motif-cards">
-      <rect x="68" y="28" width="52" height="72" rx="7" fill="#171322" stroke={accent} transform="rotate(-9 94 64)" />
-      <rect x="120" y="24" width="52" height="74" rx="7" fill="#20172f" stroke={gold} transform="rotate(8 146 61)" />
+      <rect x="68" y="28" width="52" height="72" rx="7" fill="var(--color-reader-panel)" stroke={accent} transform="rotate(-9 94 64)" />
+      <rect x="120" y="24" width="52" height="74" rx="7" fill="var(--color-fg)" stroke={gold} transform="rotate(8 146 61)" />
       <circle cx="121" cy="61" r="12" fill="none" stroke={accent} opacity=".8" />
       <path d="M121 41v40M101 61h40" stroke={accent} opacity=".55" />
     </g>}
@@ -77,8 +77,8 @@ export function FortuneExperienceArt({ experience, compact = false }: ArtProps) 
       {[64, 102, 141, 181].map((x, index) => <circle key={x} cx={x} cy={34 + index * 13} r="7" fill={index % 2 ? gold : accent} stroke="none" opacity=".75" />)}
     </g>}
     <g className="fo-art-seal">
-      <circle cx="120" cy="64" r="18" fill="#0d0b15" opacity=".72" stroke={gold} strokeOpacity=".55" />
-      <text x="120" y="70" textAnchor="middle" fill="#fff4dd" fontSize="20" fontFamily="Georgia, serif">{experience.glyph}</text>
+      <circle cx="120" cy="64" r="18" fill="var(--color-reader-panel)" opacity=".72" stroke={gold} strokeOpacity=".55" />
+      <text x="120" y="70" textAnchor="middle" fill="var(--color-bg)" fontSize="20" fontFamily="Georgia, serif">{experience.glyph}</text>
     </g>
   </svg>;
 }

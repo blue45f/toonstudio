@@ -60,7 +60,7 @@ import {
   updateGovernedCafeMemberRole,
   validateCommunityCafeCreateInput,
   validateCommunityCafeUpdateInput,
-} from "../../server/community-governance";
+} from "./community-governance";
 import { getReviewsData } from "../../server/reviews";
 import {
   MEMBERSHIP_REWARD_SERVICE,

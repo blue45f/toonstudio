@@ -265,7 +265,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
               title: "손 내기",
               desc: (
                 <>
-                  <span className="text-emerald-500">손동작</span>(웹캠)·<span className="text-amber-500">음성 구호</span> 따라 내거나,
+                  <span className="text-good">손동작</span>(웹캠)·<span className="text-warn">음성 구호</span> 따라 내거나,
                   카메라를 끄면 <b className="text-fg">가위·바위·보 버튼</b>으로 골라요.
                 </>
               ),
@@ -284,7 +284,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
               title: "묵찌빠",
               desc: (
                 <>
-                  탭을 <b className="text-fg">묵찌빠</b>로 바꾸면 먼저 <span className="text-amber-500">선(先)</span>을 잡고,
+                  탭을 <b className="text-fg">묵찌빠</b>로 바꾸면 먼저 <span className="text-warn">선(先)</span>을 잡고,
                   같은 손이 나오는 순간 선을 쥔 쪽이 이겨요.
                 </>
               ),
@@ -294,7 +294,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
               title: "승부",
               desc: (
                 <>
-                  이기면 <span className="text-emerald-500">내 점수</span>, 지면 <span className="text-rose-500">봇 점수</span>가 올라가요.
+                  이기면 <span className="text-good">내 점수</span>, 지면 <span className="text-bad">봇 점수</span>가 올라가요.
                   먼저 <b className="text-fg">{TARGET}점</b>이면 최종 승리!
                 </>
               ),
@@ -327,13 +327,13 @@ export function RpsGame({ onExit }: PlayGameProps) {
 
       {/* 점수판 */}
       <div className="flex items-center justify-between rounded-xl border border-line bg-card/50 px-4 py-2 text-sm">
-        <span className="font-semibold text-emerald-500">
+        <span className="font-semibold text-good">
           나 {score.win}
-          {mode === "muk" && initiative === "player" && <span className="ml-1 text-[0.7rem] text-amber-500">●선</span>}
+          {mode === "muk" && initiative === "player" && <span className="ml-1 text-[0.7rem] text-warn">●선</span>}
         </span>
         <span className="text-fg-3">선승 {TARGET}{mode === "rps" ? ` · ${score.draw}무` : ""}</span>
-        <span className="font-semibold text-rose-500">
-          {mode === "muk" && initiative === "ai" && <span className="mr-1 text-[0.7rem] text-amber-500">선●</span>}
+        <span className="font-semibold text-bad">
+          {mode === "muk" && initiative === "ai" && <span className="mr-1 text-[0.7rem] text-warn">선●</span>}
           {score.lose} 봇
         </span>
       </div>
@@ -341,7 +341,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
       {/* 대결 무대 */}
       <div className="grid grid-cols-2 gap-3">
         {/* 플레이어 */}
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-3">
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-good/40 bg-good/5 p-3">
           {camera ? (
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-black/40">
               <video ref={videoRef} playsInline muted className="h-full w-full -scale-x-100 object-cover" />
@@ -359,7 +359,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
               )}
             </div>
           ) : (
-            <div className="grid aspect-[4/3] w-full place-items-center rounded-xl bg-emerald-500/10 text-5xl">
+            <div className="grid aspect-[4/3] w-full place-items-center rounded-xl bg-good/10 text-5xl">
               {phase === "result" && player ? HAND_EMOJI[player] : "🙂"}
             </div>
           )}
@@ -367,8 +367,8 @@ export function RpsGame({ onExit }: PlayGameProps) {
         </div>
 
         {/* 봇 — 3D VRM 캐릭터 상대(폴백: 이모지) */}
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-rose-500/40 bg-rose-500/5 p-3">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-gradient-to-b from-rose-500/15 to-violet-500/10">
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-bad/40 bg-bad/5 p-3">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-gradient-to-b from-bad/15 to-cool/10">
             {use3d ? (
               <>
                 <Suspense fallback={null}>
@@ -412,8 +412,8 @@ export function RpsGame({ onExit }: PlayGameProps) {
           <span
             className={cn(
               "text-xl font-extrabold",
-              outcome === "win" && "text-emerald-500",
-              outcome === "lose" && "text-rose-500",
+              outcome === "win" && "text-good",
+              outcome === "lose" && "text-bad",
               outcome === "draw" && "text-fg-2",
             )}
           >
@@ -421,7 +421,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
           </span>
         )}
         {phase === "result" && !outcome && message && (
-          <span className="text-lg font-bold text-amber-500">
+          <span className="text-lg font-bold text-warn">
             {message} {player && ai && `(${HAND_LABEL[player]} vs ${HAND_LABEL[ai]})`}
           </span>
         )}
@@ -430,7 +430,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
             {winner === "player" ? "🏆 최종 승리!" : "💀 최종 패배"}
           </h2>
         )}
-        {phase === "idle" && message && <span className="text-sm text-rose-500">{message}</span>}
+        {phase === "idle" && message && <span className="text-sm text-bad">{message}</span>}
         {phase === "idle" && !message && camera && status === "ready" && <span className="text-sm text-fg-3">손을 준비하세요…</span>}
       </div>
 

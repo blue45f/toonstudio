@@ -5,9 +5,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { adminFetch, type AdminApiError } from "./admin-client";
+import { adminButtonClass, adminFetch, type AdminApiError } from "./admin-client";
 import { AdminEmptyState, AdminSpinner } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";

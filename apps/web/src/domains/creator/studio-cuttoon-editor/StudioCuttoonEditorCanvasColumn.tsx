@@ -1,6 +1,5 @@
 /* Extracted render tree from StudioCuttoonEditor.
  * Session props are an `any` bag matching the original editor closure. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -16,12 +15,7 @@ import { StudioScrollViewportSubscriber } from "../StudioScrollViewportSubscribe
 import { StudioDrawingPracticeBar } from "../StudioDrawingPracticeBar";
 import { StudioLessonMissionBarSlot } from "./StudioLessonMissionBarSlot";
 import { StudioPixelSelectionHud } from "../StudioPixelSelectionHud";
-import {
-  SELECTION_EXPAND_DEFAULT,
-  expandContractSelection,
-  setSelectionFeather,
-  toggleSelectionInvert,
-} from "../studio-selection-tools";
+import { SELECTION_EXPAND_DEFAULT, expandContractSelection, setSelectionFeather, toggleSelectionInvert, type PixelSelection } from "../studio-selection-tools";
 import { cn } from "@/shared/lib/utils";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -404,7 +398,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
                     canvasHeight={canvasH}
                     guides={canvasGuides}
                     onAddGuide={(axis, pos) => {
-                      setCanvasGuides((g) => ({
+                      setCanvasGuides((g: { horizontal: number[]; vertical: number[] }) => ({
                         ...g,
                         [axis === "h" ? "horizontal" : "vertical"]: [
                           ...g[axis === "h" ? "horizontal" : "vertical"],
@@ -418,6 +412,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
             </Suspense>
           ) : null}
           <StudioCanvasViewport
+          canvasSelectionResizeCancelSignal={s.canvasSelectionResizeCancelSignal}
           liveDynamicBrushOverlayRenderer={liveDynamicBrushOverlayRenderer}
           liveWetInkOverlayRenderer={liveWetInkOverlayRenderer}
           inkMeshLivePreviewRuntime={inkMeshLivePreviewRuntime}
@@ -492,7 +487,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           effScale={effScale}
           elementById={elementById}
           elements={studioBrushR8GrainRenderElements}
-          studioLiveGesturePreviewAuthoritativeElementIds={elements.map((element) => element.id)}
+          studioLiveGesturePreviewAuthoritativeElementIds={elements.map((element: { id: string }) => element.id)}
           studioFilterPageComposite={
             studioFilterSession?.target === "page-composite" &&
             studioFilterSession.pageId === activePage.id &&
@@ -799,13 +794,13 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           onOperationChange={s.setPixelCombine}
           onExpand={() => {
             s.commitPixelSelectionState(
-              (selection) => expandContractSelection(selection, SELECTION_EXPAND_DEFAULT),
+              (selection: PixelSelection | null) => expandContractSelection(selection, SELECTION_EXPAND_DEFAULT),
               "transform",
             );
           }}
           onContract={() => {
             s.commitPixelSelectionState(
-              (selection) => expandContractSelection(selection, -SELECTION_EXPAND_DEFAULT),
+              (selection: PixelSelection | null) => expandContractSelection(selection, -SELECTION_EXPAND_DEFAULT),
               "transform",
             );
           }}
@@ -813,7 +808,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
             void import("../studio-selection-refinement")
               .then(({ smoothPixelSelection }) => {
                 s.commitPixelSelectionState(
-                  (selection) => smoothPixelSelection(selection, { passes: 2, strength: 0.26 }),
+                  (selection: PixelSelection | null) => smoothPixelSelection(selection, { passes: 2, strength: 0.26 }),
                   "transform",
                 );
               })
@@ -821,19 +816,19 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           }}
           onFeatherChange={(featherPx) => {
             s.commitPixelSelectionState(
-              (selection) => selection ? setSelectionFeather(selection, featherPx) : selection,
+              (selection: PixelSelection | null) => selection ? setSelectionFeather(selection, featherPx) : selection,
               "feather",
               "hud-feather",
             );
           }}
           onInvert={() => {
             s.commitPixelSelectionState(
-              (selection) => selection ? toggleSelectionInvert(selection) : selection,
+              (selection: PixelSelection | null) => selection ? toggleSelectionInvert(selection) : selection,
               "invert",
             );
           }}
           onClear={() => {
-            s.clearPolyLassoDraft();
+            s.clearPolyLassoDraft?.();
             s.commitPixelSelectionState(null, "clear");
           }}
         />

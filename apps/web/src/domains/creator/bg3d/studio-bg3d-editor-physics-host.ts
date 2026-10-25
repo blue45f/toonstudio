@@ -1,12 +1,17 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type {
+  BgCustomModelInstance,
+  BgPanelTab,
+  StudioBg3dPhysicsPhase,
+  StudioBg3dPhysicsSession,
+} from "./studio-bg3d-editor-runtime-bindings";
 
-export function attachStudioBg3dEditorPhysicsHost(h) {
+export function attachStudioBg3dEditorPhysicsHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -313,7 +318,7 @@ export function attachStudioBg3dEditorPhysicsHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     physicsGravityPreset,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const transitionPhysicsPhase = (next: StudioBg3dPhysicsPhase) => {
     physicsPhaseRef.current = next;
@@ -339,7 +344,7 @@ export function attachStudioBg3dEditorPhysicsHost(h) {
     physicsLastUiUpdateRef.current = timestamp;
     setPhysicsCurrentSeconds(currentSeconds);
     setPhysicsProgress(durationSeconds > 0 ? currentSeconds / durationSeconds : 0);
-    setPhysicsPreviewRevision((revision) => revision + 1);
+    setPhysicsPreviewRevision((revision: number) => revision + 1);
   };
   h.updatePhysicsProgress = updatePhysicsProgress;
   const restorePhysicsInitialPose = (session = physicsSessionRef.current) => {
@@ -361,7 +366,7 @@ export function attachStudioBg3dEditorPhysicsHost(h) {
     physicsLastFrameTimestampRef.current = 0;
     setPhysicsCurrentSeconds(0);
     setPhysicsProgress(0);
-    setPhysicsPreviewRevision((revision) => revision + 1);
+    setPhysicsPreviewRevision((revision: number) => revision + 1);
     if (!options.keepError) setPhysicsError(null);
     transitionPhysicsPhase(options.keepError ? "error" : "idle");
   };
@@ -499,8 +504,8 @@ export function attachStudioBg3dEditorPhysicsHost(h) {
       return;
     }
     const localWorld = createStudioBg3dPhysicsWorld(adapted.document, selectedIds);
-    const modelLocalBoundsByNodeId = new Map(
-      sourceCustomModels.flatMap((model) => {
+    const modelLocalBoundsByNodeId = new Map<string, NonNullable<ReturnType<typeof measureStudioBg3dPhysicsModelLocalBounds>>>(
+      sourceCustomModels.flatMap((model: BgCustomModelInstance) => {
         const cachedRoot = modelRootCacheRef.current.get(model.modelId)?.root;
         const bounds = cachedRoot
           ? measureStudioBg3dPhysicsModelLocalBounds(cachedRoot)
@@ -550,7 +555,7 @@ export function attachStudioBg3dEditorPhysicsHost(h) {
         world: physicsJob.world,
         initialPoses: physicsJob.initialPoses,
         durationSeconds: physicsDurationSeconds,
-        gravity: STUDIO_BG3D_PHYSICS_GRAVITY[physicsGravityPreset],
+        gravity: STUDIO_BG3D_PHYSICS_GRAVITY[physicsGravityPreset as keyof typeof STUDIO_BG3D_PHYSICS_GRAVITY],
         ground: physicsGroundEnabled
           ? { y: 0, friction: 0.75, restitution: 0.08 }
           : null,
@@ -659,7 +664,7 @@ export function attachStudioBg3dEditorPhysicsHost(h) {
     setPhysicsCurrentSeconds(0);
     setPhysicsProgress(0);
     setPhysicsError(null);
-    setPhysicsPreviewRevision((revision) => revision + 1);
+    setPhysicsPreviewRevision((revision: number) => revision + 1);
     transitionPhysicsPhase("idle");
   };
   h.bakePhysicsPreview = bakePhysicsPreview;

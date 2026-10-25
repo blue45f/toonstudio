@@ -13,7 +13,7 @@ import {
   samePrivateObjectContent,
   type PrivateObjectReference,
 } from "../../platform/adapters/private-object-storage/private-object-storage.contract";
-import type { CreatorWorkMediaTarget } from "../../server/creator-work-media";
+import type { CreatorWorkMediaTarget } from "./creator-work-media";
 import {
   creatorPublicationMediaPageIndex,
   creatorPublicationMediaSlot,

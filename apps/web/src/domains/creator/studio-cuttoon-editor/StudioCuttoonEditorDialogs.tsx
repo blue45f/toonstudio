@@ -6,13 +6,13 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { Undo2 } from "lucide-react";
 import { Suspense } from "react";
-import { StudioHybridDccRouteGate } from "../hybrid-dcc/StudioHybridDccRouteGate";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "../studio-chrome-ui";
 import { STUDIO_INTERCHANGE_IMPORT_PLACEMENT_CHOICES, STUDIO_WILL_V1_IMPORT_PLACEMENT_CHOICES } from "../studio-page-editor-runtime-contracts";
 import {
   LazyStudioAnimaticTimelineDialog,
   LazyStudioAssetRightsAuditDialog,
   LazyStudioHybridDccDialog,
+  LazyStudioHybridDccRouteGate,
   LazyStudioInterchangeLossPreviewDialog,
   LazyStudioProductionBibleWorkspace,
   LazyStudioQuickAccessSurface,
@@ -223,16 +223,18 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
     ) : null}
 
   {hybridDccRouteRequested && !hybridDccOpen ? (
-    <StudioHybridDccRouteGate
-      detail={hybridDccRouteAccess === "pending"
-        ? editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckingDetail", "권한·원고·협업 경계를 확인한 뒤 같은 작품의 3D 작업을 엽니다. 기다리는 동안 캔버스와 로컬 3D 원본은 변경되지 않습니다.")
-        : editorShellStatusText("studio.editorShellStatus.dialogs.dccGateDeniedDetail", "이 작품의 3D 원본을 편집할 수 없어 안전하게 캔버스로 돌아갑니다.")}
-      label={hybridDccRouteAccess === "pending"
-        ? editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckingLabel", "3D 작업 권한을 확인하는 중입니다.")
-        : editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckFailedLabel", "3D 편집 권한을 확인하지 못했습니다.")}
-      onClose={() => setHybridDccOpen(false)}
-      returnFocus={hybridDccReturnFocusRef.current}
-    />
+    <Suspense fallback={null}>
+      <LazyStudioHybridDccRouteGate
+        detail={hybridDccRouteAccess === "pending"
+          ? editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckingDetail", "권한·원고·협업 경계를 확인한 뒤 같은 작품의 3D 작업을 엽니다. 기다리는 동안 캔버스와 로컬 3D 원본은 변경되지 않습니다.")
+          : editorShellStatusText("studio.editorShellStatus.dialogs.dccGateDeniedDetail", "이 작품의 3D 원본을 편집할 수 없어 안전하게 캔버스로 돌아갑니다.")}
+        label={hybridDccRouteAccess === "pending"
+          ? editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckingLabel", "3D 작업 권한을 확인하는 중입니다.")
+          : editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckFailedLabel", "3D 편집 권한을 확인하지 못했습니다.")}
+        onClose={() => setHybridDccOpen(false)}
+        returnFocus={hybridDccReturnFocusRef.current}
+      />
+    </Suspense>
   ) : null}
   {hybridDccOpen ? (
     <StudioSurfaceErrorBoundary
@@ -247,12 +249,14 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
     >
       <Suspense
         fallback={(
-          <StudioHybridDccRouteGate
-            detail={editorShellStatusText("studio.editorShellStatus.dialogs.dccModuleLoadingDetail", "편집 권한과 로컬 복구 범위는 확인됐습니다. 무거운 3D 편집 모듈만 불러오는 중입니다.")}
-            label={editorShellStatusText("studio.editorShellStatus.dialogs.dccModuleLoadingLabel", "전문 3D 제작 도구를 여는 중입니다.")}
-            onClose={() => setHybridDccOpen(false)}
-            returnFocus={hybridDccReturnFocusRef.current}
-          />
+          <Suspense fallback={null}>
+            <LazyStudioHybridDccRouteGate
+              detail={editorShellStatusText("studio.editorShellStatus.dialogs.dccModuleLoadingDetail", "편집 권한과 로컬 복구 범위는 확인됐습니다. 무거운 3D 편집 모듈만 불러오는 중입니다.")}
+              label={editorShellStatusText("studio.editorShellStatus.dialogs.dccModuleLoadingLabel", "전문 3D 제작 도구를 여는 중입니다.")}
+              onClose={() => setHybridDccOpen(false)}
+              returnFocus={hybridDccReturnFocusRef.current}
+            />
+          </Suspense>
         )}
       >
         <LazyStudioHybridDccDialog
@@ -262,14 +266,14 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
           onClose={() => setHybridDccOpen(false)}
           initialWorkspace={scopedHybridDccWorkspace}
           onWorkbenchModeChange={setHybridDccWorkbenchMode}
-          persistenceReceipt={hybridDccPersistenceReceipt}
+          persistenceReceipt={hybridDccPersistenceReceipt ?? undefined}
           persistenceStatus={hybridDccPersistenceStatus}
           presentation="workspace"
           returnFocus={hybridDccReturnFocusRef.current}
           workbenchMode={studioRoute.dccMode ?? "model"}
           workspaceDocumentId={hybridDccWorkspaceDocumentId}
           onWorkspaceChange={(workspace) => {
-            setHybridDccWorkspaceState((current: { scope: string; workspace: unknown } | null) => (
+            setHybridDccWorkspaceState((current) => (
               current?.scope === hybridDccWorkspaceScope && current?.workspace === workspace
                 ? current
                 : {

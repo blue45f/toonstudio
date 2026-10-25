@@ -21,18 +21,18 @@ function MoonPhasesIllustration() {
     <svg viewBox="0 0 220 64" className="h-16 w-auto" role="img" aria-label="차오르는 달의 위상">
       <defs>
         <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.15" />
+          <stop offset="0%" stopColor="var(--color-warn)" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.15" />
         </radialGradient>
       </defs>
       {phases.map((p, i) => (
         <g key={i} transform={`translate(${28 + i * 41}, 32)`}>
           <circle r="20" fill="url(#moonGlow)" opacity="0.25" />
-          <circle r="13" fill="#1e1b2e" stroke="#fbbf24" strokeOpacity="0.5" strokeWidth="1" />
-          <ellipse cx={13 * (1 - p) * 0.9} cy="0" rx={13 * (1 - p)} ry="13" fill="#fbbf24" opacity={0.35 + p * 0.65} />
+          <circle r="13" fill="var(--color-fg)" stroke="var(--color-warn)" strokeOpacity="0.5" strokeWidth="1" />
+          <ellipse cx={13 * (1 - p) * 0.9} cy="0" rx={13 * (1 - p)} ry="13" fill="var(--color-warn)" opacity={0.35 + p * 0.65} />
           {i === 4 && (
             <g>
-              <circle r="17" fill="none" stroke="#fbbf24" strokeWidth="1" strokeDasharray="3 4" opacity="0.7">
+              <circle r="17" fill="none" stroke="var(--color-warn)" strokeWidth="1" strokeDasharray="3 4" opacity="0.7">
                 <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="12s" repeatCount="indefinite" />
               </circle>
             </g>
@@ -53,12 +53,12 @@ function YearWheelIllustration() {
     <svg viewBox="0 0 120 64" className="h-16 w-auto" role="img" aria-label="12개월이 도는 한 해의 바퀴">
       <defs>
         <radialGradient id="sunCore" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fde68a" />
-          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="var(--color-raised)" />
+          <stop offset="100%" stopColor="var(--color-warn)" stopOpacity="0.2" />
         </radialGradient>
       </defs>
       <circle cx={cx} cy={cy} r="11" fill="url(#sunCore)" />
-      <circle cx={cx} cy={cy} r="14" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2 3" opacity="0.6">
+      <circle cx={cx} cy={cy} r="14" fill="none" stroke="var(--color-warn)" strokeWidth="1" strokeDasharray="2 3" opacity="0.6">
         <animateTransform attributeName="transform" type="rotate" from="0 60 32" to="360 60 32" dur="20s" repeatCount="indefinite" />
       </circle>
       {months.map((m) => {

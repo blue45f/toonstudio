@@ -4,7 +4,7 @@ import { ConflictException, ForbiddenException, HttpException, NotFoundException
 
 import { collaborationDeadline } from "../../../../../packages/core/src/collaboration";
 import { dbPool } from "../../platform/database";
-import { escapeLikePattern } from "../../server/sql-like";
+import { escapeLikePattern } from "../community/sql-like";
 
 import type {
   ApplicationStatus, CollaborationApplication, CollaborationApplicationInput, CollaborationInput,

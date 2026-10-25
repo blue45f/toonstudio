@@ -7,11 +7,11 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  adminButtonClass,
   adminFetch,
   type AdminApiError,
 } from "./admin-client";
 import { AdminCard, AdminEmptyState, AdminSpinner, AdminTableWrap, StatusBadge } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";

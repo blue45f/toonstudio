@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { studioMarketplaceCc0EntrySourceMatches } from "./studio-marketplace-cc0-provenance";
 import { projectCreatorMarketplaceRecordToAssets, projectCreatorMarketplaceRecordToStudioPack } from "./studio-community-marketplace";
 import { MARKET_CC0_MANIFESTS } from "../../../../../scripts/seed/market-cc0-manifests.mjs";
-import { recipePreviewData } from "@/domains/market/models/market-preview";
+import { recipePreviewData } from "@/domains/market/public/market-preview";
 import { CreatorMarketplaceResourceRecordSchema, canonicalizeCreatorMarketplaceJson, creatorMarketplaceJsonByteSize } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";

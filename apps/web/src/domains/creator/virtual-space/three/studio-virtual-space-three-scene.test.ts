@@ -1,8 +1,14 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
+import { parseStudioVrmLicenseMetadata } from "../../vrm/studio-vrm-license-metadata";
 import {
+  BUNDLED_VRM_RIGHTS_BLOCKS,
   isBundledVrmUrlRightsBlocked,
+  SAMPLE_VRM_ENTRIES,
   SAMPLE_VRMS,
 } from "../../vrm/vrm-library";
 import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
@@ -19,12 +25,24 @@ import {
   buildStudioThreeCampusArchitecture,
   createStylized3DCharacterNode,
   facingToYawRadians,
+  isVerifiedStudioThreeVrmUrl,
+  resolveStudioThreeVrmUrl,
   shortestAngleLerp,
   STUDIO_THREE_PROPS,
   STUDIO_THREE_VRM_URLS,
   threeToWorld,
   worldToThree,
 } from "./studio-virtual-space-three-scene";
+
+const WEB_ROOT = resolve(import.meta.dirname, "../../../../..");
+const PUBLIC_ROOT = resolve(WEB_ROOT, "public");
+const LICENSES_MD_PATH = resolve(PUBLIC_ROOT, "vrm/LICENSES.md");
+
+function readGlbJson(filePath: string): unknown {
+  const bytes = readFileSync(filePath);
+  const jsonLength = bytes.readUInt32LE(12);
+  return JSON.parse(bytes.subarray(20, 20 + jsonLength).toString("utf8"));
+}
 
 describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검증", () => {
   it("2D 캠퍼스 좌표와 3D 미터 좌표 간 왕복 변환이 정확하다", () => {
@@ -82,14 +100,65 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
     expect(STUDIO_THREE_VRM_URLS).toHaveLength(9);
     expect(new Set(STUDIO_THREE_VRM_URLS).size).toBe(STUDIO_THREE_VRM_URLS.length);
     const sampleByUrl = new Map(SAMPLE_VRMS.map((sample) => [sample.url, sample] as const));
+    const activeIds = new Set(SAMPLE_VRM_ENTRIES.map((entry) => entry.id));
+    const licensesMarkdown = readFileSync(LICENSES_MD_PATH, "utf8");
+
     for (const url of STUDIO_THREE_VRM_URLS) {
       expect(url).toMatch(/^\/vrm\/.+\.vrm$/u);
       expect(isBundledVrmUrlRightsBlocked(url)).toBe(false);
+      expect(isVerifiedStudioThreeVrmUrl(url)).toBe(true);
       const catalogEntry = sampleByUrl.get(url);
       expect(catalogEntry).toBeDefined();
+      expect(activeIds.has(catalogEntry!.id)).toBe(true);
       expect(catalogEntry?.licenseNotice).toBeUndefined();
       expect(catalogEntry?.limitations ?? []).not.toContain("heavy-payload");
+
+      const fileName = url.replace(/^\/vrm\//u, "");
+      const licenseLines = licensesMarkdown
+        .split(/\r?\n/u)
+        .filter((line) => line.includes(`\`${fileName}\``));
+      expect(licenseLines.length).toBeGreaterThan(0);
+      expect(licenseLines.some((line) => line.includes("CC0"))).toBe(true);
+      expect(licenseLines.every((line) => !line.includes("제외"))).toBe(true);
+      expect(licenseLines.every((line) => !line.includes("조건부"))).toBe(true);
+      expect(licenseLines.every((line) => !line.includes("고지 조건"))).toBe(true);
+
+      const diskPath = resolve(PUBLIC_ROOT, url.slice(1));
+      expect(existsSync(diskPath)).toBe(true);
+      const parsed = parseStudioVrmLicenseMetadata(readGlbJson(diskPath));
+      expect(parsed.ok).toBe(true);
+      if (parsed.ok) {
+        expect(parsed.receipt.licenseIdentifier).toBe("CC0");
+        expect(parsed.receipt.avatarPermission).toBe("everyone");
+        expect(parsed.receipt.commercial).toBe("allow");
+        expect(parsed.receipt.redistribution).toBe("allow");
+        expect(parsed.receipt.modification).toBe("allow-modification-redistribution");
+        expect(parsed.receipt.credit).toBe("unnecessary");
+      }
     }
+
+    for (const blocked of BUNDLED_VRM_RIGHTS_BLOCKS) {
+      expect(isVerifiedStudioThreeVrmUrl(blocked.url)).toBe(false);
+      expect(STUDIO_THREE_VRM_URLS).not.toContain(blocked.url);
+    }
+    for (const nonCc0Url of [
+      "/vrm/Vita.vrm",
+      "/vrm/Vivi.vrm",
+      "/vrm/Victoria_Rubin.vrm",
+      "/vrm/sample.vrm",
+      "/vrm/Seed_san.vrm",
+      "/vrm/AliciaSolid.vrm",
+      "/vrm/Sakurada_Fumiriya.vrm",
+      "https://evil.example/avatar.vrm",
+    ]) {
+      expect(isVerifiedStudioThreeVrmUrl(nonCc0Url)).toBe(false);
+      expect(STUDIO_THREE_VRM_URLS).not.toContain(nonCc0Url);
+    }
+
+    expect(resolveStudioThreeVrmUrl(0)).toBe(STUDIO_THREE_VRM_URLS[0]);
+    expect(resolveStudioThreeVrmUrl(9)).toBe(STUDIO_THREE_VRM_URLS[0]);
+    expect(resolveStudioThreeVrmUrl(-1)).toBe(STUDIO_THREE_VRM_URLS[8]);
+    expect(resolveStudioThreeVrmUrl(Number.NaN)).toBe(STUDIO_THREE_VRM_URLS[0]);
   });
 
   it("3D 캠퍼스 아키텍처 빌더와 스타일라이즈드 3D 캐릭터 리그를 정상 생성한다", () => {

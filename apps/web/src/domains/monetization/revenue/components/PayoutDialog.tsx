@@ -56,7 +56,7 @@ export function PayoutDialog({ open, netKrw, onClose }: PayoutDialogProps) {
           <div className="flex items-start justify-between">
             <div>
               <Dialog.Title className="text-lg font-bold text-fg">{t("revenue.payout.title")}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted">
+              <Dialog.Description className="mt-1 text-sm text-fg-3">
                 {t("revenue.payout.amount", { amount: formatKrw(netKrw) })}
               </Dialog.Description>
             </div>
@@ -65,7 +65,7 @@ export function PayoutDialog({ open, netKrw, onClose }: PayoutDialogProps) {
                 type="button"
                 onClick={onClose}
                 aria-label={t("revenue.payout.close")}
-                className="rounded-lg p-1.5 text-muted hover:bg-fg/10 hover:text-fg"
+                className="rounded-lg p-1.5 text-fg-3 hover:bg-fg/10 hover:text-fg"
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>
@@ -81,7 +81,7 @@ export function PayoutDialog({ open, netKrw, onClose }: PayoutDialogProps) {
                 <Info className="h-4 w-4 shrink-0 text-accent" aria-hidden />
                 {t("revenue.payout.notAvailableTitle")}
               </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-sm leading-relaxed text-fg-3">
                 {t("revenue.payout.notAvailableBody")}
               </p>
             </div>

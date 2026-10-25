@@ -1,5 +1,5 @@
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
-import { CreatorHomePage } from "@/domains/creator-resources/CreatorHomePage";
+import { CreatorHomePage } from "@/domains/creator-resources/public/creator-home-page";
 import { RouteSilhouetteSkeleton } from "@/shared/components/route-silhouette";
 
 /**

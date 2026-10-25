@@ -1,6 +1,5 @@
 /* Extracted render tree from StudioCuttoonEditor.
  * Session props are an `any` bag matching the original editor closure. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -138,7 +137,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
     perspectiveRulerActive,
     pixelForceCircle,
     pixelSel,
-    pixelTool,
+    pixelTool: pixelTool === "quick-select" ? null : pixelTool,
     quickShapeActive,
     railMoreOpen,
     referencePanelOpen,
@@ -163,7 +162,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
     setMenu,
     setPerspectiveRulerActive,
     setPixelForceCircle,
-    setPixelTool,
+    setPixelTool: setPixelTool as import("../editor-client/studio-left-tool-rail-client").StudioLeftToolRailClientInput["setPixelTool"],
     setQuickShapeActive,
     setRailMoreOpen,
     setReferencePanelOpen,
@@ -345,7 +344,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
               onSelect={s.applyStudioBrushCatalogSelection}
               onSelectionLifecycle={s.studioBrushCatalogHandlers.selectionLifecycle}
               onToggleFavorite={s.studioBrushCatalogHandlers.toggleFavorite}
-              onCollapse={s.studioOptionsBarsHandlers.toggleBrushDock}
+              onCollapse={() => s.studioOptionsBarsHandlers.toggleBrushDock?.()}
               onOpenBrushStudio={s.studioOptionsBarsHandlers.openBrushStudio}
               expanded={s.brushCatalogSession?.placement === "desktop-dock"}
               onExpandCatalog={(trigger) => s.studioBrushCatalogHandlers.toggle("desktop-dock", trigger)}

@@ -2,9 +2,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AdminPaidOperationsToggle } from "./AdminPaidOperationsToggle";
+import { AdminPaidOperationsToggle } from "./AdminMembershipPolicy";
 import "../admin-i18n-loader";
-import "./paid-operations-i18n";
 
 const api = vi.hoisted(
   () =>

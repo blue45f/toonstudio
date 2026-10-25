@@ -4,7 +4,7 @@ import { PROMOTION_KINDS, PROMOTION_STAGES, PROMOTION_GENRES, promotionCursor, p
 import { db, promotionBookmarks, promotionPosts, promotionReports, users } from "../../platform/database";
 import { userFacingException } from "../creator/user-facing-error";
 import { isOfficialUser } from "../../server/feedback";
-import { escapeLikePattern } from "../../server/sql-like";
+import { escapeLikePattern } from "../community/sql-like";
 import type { PromotionPost } from "../../../../../packages/core/src/promotion";
 import {
   addPromotionComment,

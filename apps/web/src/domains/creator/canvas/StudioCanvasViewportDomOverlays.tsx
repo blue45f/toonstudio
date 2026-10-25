@@ -14,11 +14,11 @@ import {
   StudioLiveRetainedMediaOverlayHost,
   StudioLiveStampOverlayHost,
   StudioLiveWetInkOverlayHost,
+  StudioReferenceOverlay,
   StudioWebGpuCanvas,
 } from "../studio-page-lazy-ui";
 import { StudioInkMeshLivePreviewHost } from "../StudioInkMeshLivePreviewHost";
 import { StudioPixiSceneOverlayHost } from "../StudioPixiSceneOverlayHost";
-import { StudioReferenceOverlay } from "../scene-3d/StudioReferenceOverlay";
 
 import type { StudioCanvasViewportLiveSurfaces } from "./studio-canvas-viewport-live-surfaces";
 import type { StudioLiveTransformDraftStore } from "../studio-live-transform-draft-store";
@@ -256,7 +256,7 @@ export function StudioCanvasViewportDomOverlays({
               aria-live="assertive"
               aria-atomic="true"
               data-studio-vello-unavailable="true"
-              className="absolute inset-x-4 top-4 z-[30] rounded-md border border-red-400/50 bg-red-950/90 px-4 py-3 text-sm font-medium text-red-50 shadow-lg"
+              className="absolute inset-x-4 top-4 z-[30] rounded-md border border-bad/50 bg-panel/95 px-4 py-3 text-sm font-medium text-bad shadow-lg"
             >
               <strong className="block">{t("studio.brushCanvasStatus.canvas.gpuPrepareFailed", "GPU 문서 표시를 준비하지 못했습니다.")}</strong>
               {velloHubAuthority.visibleCanvasCount === 1
@@ -353,7 +353,7 @@ export function StudioCanvasViewportDomOverlays({
           {/* 플로팅 3D 레퍼런스 오버레이(B-5) — 옵트인일 때만 최상위 레이어(z-40)에
               마운트. 레이어는 pointer-events-none, 패널만 pointer-events-auto라
               패널 바깥의 캔버스 드로잉과 간섭하지 않는다. */}
-          {referenceOverlayEnabled ? <StudioReferenceOverlay /> : null}
+          {referenceOverlayEnabled ? <Suspense fallback={null}><StudioReferenceOverlay /></Suspense> : null}
     </>
   );
 }

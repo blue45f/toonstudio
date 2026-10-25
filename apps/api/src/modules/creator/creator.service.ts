@@ -89,7 +89,7 @@ import {
   projectCreatorWorkDetailMedia,
   projectCreatorWorkSummaryMedia,
   type CreatorWorkMediaTarget,
-} from "../../server/creator-work-media";
+} from "./creator-work-media";
 
 import {
   CreatorCollaborationCrdtSequenceConflictError,

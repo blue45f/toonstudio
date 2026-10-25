@@ -11,7 +11,9 @@ afterEach(() => {
 });
 
 function createMockSession(
-  overrides: Partial<StudioCuttoonEditorViewSession> = {},
+  overrides: Partial<Omit<StudioCuttoonEditorViewSession, "symmetryType">> & {
+    symmetryType?: StudioCuttoonEditorViewSession["symmetryType"] | "off";
+  } = {},
 ): StudioCuttoonEditorViewSession {
   return {
     name: "에피소드 12화 원고",

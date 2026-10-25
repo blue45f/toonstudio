@@ -18,7 +18,7 @@ import {
 } from "../../platform/database";
 import { creatorMarketplaceLibraryItems } from "../../platform/database/creator-marketplace-library.schema";
 import { creatorMarketplaceResources } from "../../platform/database/creator-marketplace-resource.schema";
-import { getCommerceConfig } from "../../server/commerce-config";
+import { getCommerceConfig } from "./commerce-config";
 
 export interface MarketplaceCommerceProduct {
   resourceId: string;

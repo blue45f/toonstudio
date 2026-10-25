@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { CreatorHomeExperience } from "../marketing/CreatorHomeExperience";
-import { creatorSectionFromHash } from "../marketing/creator-home-navigation";
+import { CreatorHomeExperience } from "../marketing/public/creator-home-experience";
+import { creatorSectionFromHash } from "../marketing/public/creator-home-navigation";
 
 /** Public front door. Historical introduction anchors keep their documented destination. */
 export function CreatorHomePage() {

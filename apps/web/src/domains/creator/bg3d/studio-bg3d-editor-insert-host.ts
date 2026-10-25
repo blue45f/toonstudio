@@ -1,15 +1,15 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { StudioBackground3DInsertResult, StudioBg3dLtRenderSettings, StudioBg3dMagicBabylonBackend, StudioBg3dMagicSelectionSnapshot, StudioBg3dSceneDocument } from "./studio-bg3d-editor-runtime-bindings";
 import { bakeStudioBg3dTagVisibilityIntoDocument } from "./studio-bg3d-hierarchy";
 import { resolveStudioBg3dInsertQualityPlan } from "./studio-bg3d-insert-quality-policy";
 import { studioBg3dLineNeedsDepth } from "./studio-bg3d-line-output-rules";
 
-export function attachStudioBg3dEditorInsertHost(h) {
+export function attachStudioBg3dEditorInsertHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -69,7 +69,7 @@ export function attachStudioBg3dEditorInsertHost(h) {
     STUDIO_BG3D_LT_PRESET_MAX_COUNT, STUDIO_BG3D_LT_PRESET_MAX_DESCRIPTION_LENGTH,
     STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH, applyStudioBg3dLtPreset,
     STUDIO_BG3D_LT_RENDER_MAX_PIXELS, renderStudioBg3dLtLayersInWorker,
-    buildStudioBg3dMagicFilterMask,
+    StudioBg3dLtRenderWorkerError, buildStudioBg3dMagicFilterMask,
     encodeStudioBg3dMagicMaskPngDataUrl, captureStudioBg3dMagicObjectIds,
     STUDIO_BG3D_MAGIC_OBJECT_ID_RUNTIME_CAPABILITIES, resolveStudioBg3dMagicSelection,
     STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES, classifyStudioBg3dMeasurementInference,
@@ -156,7 +156,7 @@ export function attachStudioBg3dEditorInsertHost(h) {
     StudioBg3dModelThumbnailCaptureController, StudioBg3dModelThumbnailThreeCaptureHandle,
     StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dShotBatchPass,
     StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession,
-    StudioBg3dShotBatchRecoveryStore, StudioBackground3DInsertResult, StudioToolHintSpec,
+    StudioBg3dShotBatchRecoveryStore, StudioToolHintSpec,
     StudioWebXrMode, StudioWebXrSessionController, StudioWebXrSessionState,
     StudioWebXrSupportSnapshot, open, initialDataUrl, initialScene, seedSceneTemplateId,
     seedPrimitiveKind, onSeedObjectInsertConsumed, sharedSceneSession, sharedStageResolution,
@@ -320,7 +320,7 @@ export function attachStudioBg3dEditorInsertHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     setCaptureBackgroundSnapshot, sharedStageUpdateBlockedReason,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   async function handleInsert() {
     if (
@@ -560,7 +560,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
       }
       if (
         magicSelectionSnapshot &&
-        !rendered.layers.some((layer) => layer.role === "color" || layer.role === "tone")
+        !rendered.layers.some((layer: any) => layer.role === "color" || layer.role === "tone")
       ) {
         setError("매직 마스크를 붙일 컬러 또는 톤 베이스 레이어가 만들어지지 않았어요. 베이스 출력을 켜고 다시 시도해 주세요.");
         return;
@@ -599,7 +599,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
           jobId: `magic-${insertSceneEpoch}-${ltMagicCaptureGenerationRef.current}`,
           backends: magicBackends,
           createCanvas: () => document.createElement("canvas"),
-          createRuntime: ({ backend, canvas, capabilities, settings }) => {
+          createRuntime: ({ backend, canvas, capabilities, settings }: any) => {
             if (!(canvas instanceof HTMLCanvasElement)) {
               throw new Error("Magic Layer canvas owner is unavailable.");
             }
@@ -653,7 +653,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         captureFrameCameraSettings,
         rendered.width,
         rendered.height,
-      ).map((point) => ({
+      ).map((point: any) => ({
         axis: point.axis,
         x: point.x / rendered.width,
         y: point.y / rendered.height,

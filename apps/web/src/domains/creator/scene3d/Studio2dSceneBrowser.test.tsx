@@ -1,0 +1,204 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { filterStudio2dScenes, getStudio2dAssetMetadata, studio2dDisplayName } from "../studio-2d-asset-quality";
+import { BG_SCENES, groupBgScenes } from "../studio-bg-scenes";
+import { BG_SCENES_EXTRA } from "../studio-bg-scenes-extra";
+import { Studio2dSceneBrowser } from "../Studio2dSceneBrowser";
+
+import type { Studio2dScene } from "../studio-2d-asset-quality";
+
+const groups = groupBgScenes([...BG_SCENES, ...BG_SCENES_EXTRA]);
+const PAGE_SIZE = 48;
+const allScenes = filterStudio2dScenes(groups, {});
+const recommendedScenes = filterStudio2dScenes(groups, { quality: "recommended" });
+const romanceRecommendedScenes = filterStudio2dScenes(groups, {
+  quality: "recommended",
+  genre: "로맨스",
+});
+const previewScene = BG_SCENES.find((scene) => scene.id === "webtoon-bedroom")!;
+const title = studio2dDisplayName(previewScene);
+const romanceTitle = studio2dDisplayName(romanceRecommendedScenes[0]!);
+
+function Harness({ onPick = vi.fn(), disabled = false, initialGenre = "all" }: {
+  onPick?: (scene: Studio2dScene) => void;
+  disabled?: boolean;
+  initialGenre?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [genre, setGenre] = useState(initialGenre);
+  return <Studio2dSceneBrowser groups={groups} query={query} onQueryChange={setQuery} genre={genre} onGenreChange={setGenre}
+    loading={false} error={null} disabled={disabled} onPick={onPick} />;
+}
+
+function loadImage(image: HTMLElement, scene = previewScene, overrideWidth?: number) {
+  const metadata = getStudio2dAssetMetadata(scene)!;
+  Object.defineProperty(image, "naturalWidth", { configurable: true, value: overrideWidth ?? metadata.width });
+  Object.defineProperty(image, "naturalHeight", { configurable: true, value: metadata.height });
+  fireEvent.load(image);
+}
+
+beforeEach(() => {
+  vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue({ length: 1, item: () => null,
+    [Symbol.iterator]: function* iterator() { yield {} as DOMRect; } } as DOMRectList);
+});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+describe("2D scene browser", () => {
+  it("pages the complete production catalog without counting any scene twice", () => {
+    // 페이지 넘김 경로가 실제로 실행되는 카탈로그 크기인지 먼저 확인한다.
+    expect(allScenes.length).toBeGreaterThan(PAGE_SIZE);
+    render(<Harness />);
+    expect(screen.getByRole("status").textContent).toBe(`${allScenes.length}개 장면`);
+    // 카탈로그가 PAGE_SIZE 배수를 넘어 늘어나도 끝 페이지까지 넘겨 전체를 확인한다.
+    for (let shown = PAGE_SIZE; shown < allScenes.length; shown += PAGE_SIZE) {
+      expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(shown);
+      fireEvent.click(screen.getByRole("button", { name: `장면 더 보기 (${allScenes.length - shown}개 남음)` }));
+    }
+    const ids = [...document.querySelectorAll("[data-studio-2d-asset]")].map((node) => node.getAttribute("data-studio-2d-asset"));
+    expect(ids).toHaveLength(allScenes.length);
+    expect(new Set(ids).size).toBe(allScenes.length);
+    expect(screen.queryByRole("button", { name: /장면 더 보기/u })).toBeNull();
+  });
+  it("returns to the first results when filters or search change after scrolling", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: `장면 더 보기 (${allScenes.length - PAGE_SIZE}개 남음)` }));
+    const grid = document.querySelector<HTMLElement>("[data-studio-2d-grid]")!;
+    grid.scrollTop = 800;
+    fireEvent.change(screen.getByLabelText("소재 구분"), { target: { value: "recommended" } });
+    expect(grid.scrollTop).toBe(0);
+    expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(Math.min(PAGE_SIZE, recommendedScenes.length));
+    fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
+    expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(Math.min(PAGE_SIZE, allScenes.length));
+    expect(screen.getByRole("button", { name: `장면 더 보기 (${allScenes.length - PAGE_SIZE}개 남음)` })).toBeTruthy();
+  });
+  it("finds metadata tags and independent genre/recommendation filters", () => {
+    render(<Harness />);
+    fireEvent.change(screen.getByLabelText("배경 이름·장소·분위기 검색"), { target: { value: "실내 태블릿" } });
+    expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
+    fireEvent.change(screen.getByLabelText("소재 구분"), { target: { value: "recommended" } });
+    expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(Math.min(PAGE_SIZE, recommendedScenes.length));
+    fireEvent.change(screen.getByLabelText("장르"), { target: { value: "로맨스" } });
+    expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(romanceRecommendedScenes.length);
+    expect(screen.getByText(romanceTitle)).toBeTruthy();
+  });
+  it("recovers obsolete recommendation genre state without emptying the catalog", () => {
+    render(<Harness initialGenre="추천" />);
+    expect((screen.getByLabelText("장르") as HTMLSelectElement).value).toBe("all");
+    expect(document.querySelectorAll("[data-studio-2d-asset]").length).toBeGreaterThan(0);
+  });
+  it("does not silently relax incompatible filters and provides a reset", () => {
+    // 데이터가 늘면 우연히 결과가 생기는 조합 대신, 검수 원본 크기가 없는 벡터라 비율을
+    // 확정할 수 없어 구조적으로 결과가 없는 조합을 쓴다. 어느 한 조건만 빼도 결과가 생기므로
+    // 어떤 조건을 몰래 완화하든 빈 상태가 사라져 드러난다.
+    const incompatible = { quality: "vector", orientation: "square" } as const;
+    expect(filterStudio2dScenes(groups, { quality: incompatible.quality }).length).toBeGreaterThan(0);
+    expect(filterStudio2dScenes(groups, { orientation: incompatible.orientation }).length).toBeGreaterThan(0);
+    expect(filterStudio2dScenes(groups, incompatible)).toEqual([]);
+    render(<Harness />);
+    fireEvent.change(screen.getByLabelText("소재 구분"), { target: { value: incompatible.quality } });
+    fireEvent.change(screen.getByLabelText("원본 비율"), { target: { value: incompatible.orientation } });
+    expect(screen.getByText(/조건에 맞는 배경이 없습니다/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
+    expect(document.querySelectorAll("[data-studio-2d-asset]").length).toBeGreaterThan(0);
+  });
+  it("teaches loading, error, and empty states with visual context", () => {
+    const props = {
+      groups, query: "", onQueryChange: vi.fn(), genre: "all", onGenreChange: vi.fn(), disabled: false, onPick: vi.fn(),
+    };
+    const { rerender } = render(<Studio2dSceneBrowser {...props} loading error={null} />);
+    expect(document.querySelector('[data-studio-surface-state="loading"] img')?.getAttribute("src")).toBe(
+      "/brand/theme-scenes/starlight-studio.svg",
+    );
+
+    rerender(<Studio2dSceneBrowser {...props} loading={false} error="네트워크 연결을 확인해 주세요." />);
+    expect(screen.getByRole("alert").textContent).toContain("배경 목록을 불러오지 못했어요");
+    expect(document.querySelector('[data-studio-surface-state="error"] img')?.getAttribute("src")).toBe(
+      "/brand/theme-scenes/graphite-studio.svg",
+    );
+
+    rerender(<Studio2dSceneBrowser {...props} groups={[]} loading={false} error={null} />);
+    expect(screen.getByText("조건에 맞는 배경이 없습니다.")).toBeTruthy();
+    expect(document.querySelector('[data-studio-surface-state="empty"] img')?.getAttribute("src")).toBe(
+      "/brand/theme-scenes/ink-studio.svg",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "모든 장면 보기" }));
+    expect(props.onQueryChange).toHaveBeenCalledWith("");
+    expect(props.onGenreChange).toHaveBeenCalledWith("all");
+  });
+
+  it("blocks insertion until browser image decoding succeeds and passes the exact original scene", () => {
+    const onPick = vi.fn(); render(<Harness onPick={onPick} />);
+    const insert = screen.getByRole("button", { name: `${title} 삽입` });
+    expect(insert.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(insert); expect(onPick).not.toHaveBeenCalled();
+    loadImage(screen.getByAltText(title));
+    fireEvent.click(insert); expect(onPick).toHaveBeenCalledExactlyOnceWith(previewScene);
+  });
+  it("keeps insertion disabled in master/busy mode even after decoding", () => {
+    const onPick = vi.fn(); render(<Harness disabled onPick={onPick} />);
+    loadImage(screen.getByAltText(title));
+    fireEvent.click(screen.getByRole("button", { name: `${title} 삽입` }));
+    expect(onPick).not.toHaveBeenCalled();
+  });
+  it("retries an image error without inserting a broken original", () => {
+    render(<Harness />);
+    const card = screen.getByAltText(title).closest("article")!;
+    fireEvent.error(within(card).getByAltText(title));
+    expect(within(card).queryByRole("button", { name: `${title} 삽입` })).toBeNull();
+    fireEvent.click(within(card).getByRole("button", { name: "이미지 다시 불러오기" }));
+    expect(within(card).getByRole("button", { name: `${title} 삽입` }).hasAttribute("disabled")).toBe(true);
+    loadImage(within(card).getByAltText(title));
+    expect(within(card).getByRole("button", { name: `${title} 삽입` }).hasAttribute("disabled")).toBe(false);
+  });
+  it("opens a separately labelled modal without inserting, supports pixel view and Escape", () => {
+    const onPick = vi.fn(); render(<Harness onPick={onPick} />);
+    const launcher = screen.getByRole("button", { name: `${title} 확대 미리보기` });
+    launcher.focus(); fireEvent.click(launcher);
+    const dialog = screen.getByRole("dialog", { name: title });
+    expect(onPick).not.toHaveBeenCalled();
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    const image = within(dialog).getByAltText(title);
+    loadImage(image);
+    fireEvent.click(within(dialog).getByRole("button", { name: "원본 픽셀 보기" }));
+    expect(image.style.width).toBe(`${getStudio2dAssetMetadata(previewScene)!.width}px`);
+    expect(within(dialog).getByText(/Studio 생성 소재/u)).toBeTruthy();
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(launcher);
+  });
+  it("blocks metadata/dimension mismatch inside the modal", () => {
+    const onPick = vi.fn(); render(<Harness onPick={onPick} />);
+    fireEvent.click(screen.getByRole("button", { name: `${title} 확대 미리보기` }));
+    const dialog = screen.getByRole("dialog", { name: title });
+    loadImage(within(dialog).getByAltText(title), previewScene, 200);
+    expect(within(dialog).getByRole("alert").textContent).toContain("재검수 전 삽입할 수 없습니다");
+    expect(within(dialog).getByRole("alert").querySelector("img")?.getAttribute("src")).toBe(
+      "/brand/theme-scenes/contrast-studio.svg",
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "이 배경 삽입" }));
+    expect(onPick).not.toHaveBeenCalled();
+  });
+  it("inserts only after full preview decoding and closes the modal", () => {
+    const onPick = vi.fn(); render(<Harness onPick={onPick} />);
+    fireEvent.click(screen.getByRole("button", { name: `${title} 확대 미리보기` }));
+    const dialog = screen.getByRole("dialog", { name: title });
+    const insert = within(dialog).getByRole("button", { name: "이 배경 삽입" });
+    expect(insert.hasAttribute("disabled")).toBe(true);
+    loadImage(within(dialog).getByAltText(title));
+    fireEvent.click(insert);
+    expect(onPick).toHaveBeenCalledExactlyOnceWith(previewScene);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+  it("preserves source aspect ratios and lazy-loads grid images", () => {
+    render(<Harness />);
+    const image = screen.getByAltText(title);
+    expect(image.getAttribute("loading")).toBe("lazy");
+    expect(image.getAttribute("decoding")).toBe("async");
+    expect(image.className).toContain("object-contain");
+    expect(screen.queryByText("소형 컷용 · 확대 주의")).toBeNull();
+  });
+});

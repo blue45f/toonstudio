@@ -1,6 +1,5 @@
 /* Extracted stage pointer handlers from StudioCuttoonEditor.
  * Closures keep the original editor typing envelope via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -340,8 +339,12 @@ export function bindStudioCuttoonStagePointersUp(
     groups,
     selected,
   } = h;
-  const finishDrawingPointer = (...args) => api.finishDrawingPointer(...args);
-  const updateBrushCursor = (...args) => api.updateBrushCursor(...args);
+  const finishDrawingPointer: StudioCuttoonStagePointersApi["finishDrawingPointer"] = (
+    ...args
+  ) => api.finishDrawingPointer(...args);
+  const updateBrushCursor: StudioCuttoonStagePointersApi["updateBrushCursor"] = (
+    ...args
+  ) => api.updateBrushCursor(...args);
   function onStageUp(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
     const pointerEvent = e.evt as PointerEvent;
     // Flush freehand auto-color scribble samples collected during the drag.
@@ -499,7 +502,7 @@ export function bindStudioCuttoonStagePointersUp(
       panelSplitDragRef.current = null;
       flushPanelSplitPreview();
       const line = panelSplitLastLineRef.current;
-      const frame = elements.find((el) => el.id === session.targetFrameId);
+      const frame = elements.find((el: El) => el.id === session.targetFrameId);
       if (
         line &&
         frame &&
@@ -513,7 +516,7 @@ export function bindStudioCuttoonStagePointersUp(
           // 사각형일 때도 undefined 로 명시)가 원본 frame 의 남은 points 를 확실히 지운다.
           const shapeA = { ...frame, ...plan.shapeA, id: uid() };
           const shapeB = { ...frame, ...plan.shapeB, id: uid() };
-          commit([...elements.filter((e) => e.id !== frame.id), shapeA, shapeB]);
+          commit([...elements.filter((e: El) => e.id !== frame.id), shapeA, shapeB]);
           setSelectedId(shapeA.id);
         } else {
           setPanelSplitHint(
@@ -645,7 +648,7 @@ export function bindStudioCuttoonStagePointersUp(
           qm.mask,
           qm.maskW,
           qm.maskH,
-          session.points.map((p) => ({ x: p.x * qm.maskW, y: p.y * qm.maskH })),
+          session.points.map((p: { x: number; y: number }) => ({ x: p.x * qm.maskW, y: p.y * qm.maskH })),
           {
             radius: Math.max(1, quickMaskRadius * qm.featherScale),
             hardness: quickMaskHardness,
@@ -695,7 +698,7 @@ export function bindStudioCuttoonStagePointersUp(
       marqueeStartRef.current = null;
       clearMarqueePreview();
       if (rect && rect.w > 3 && rect.h > 3) {
-        const hitIds = selectIdsByMarquee(
+        const hitIds = selectIdsByMarquee<El>(
           elements,
           (el) => elBounds(el),
           rect,

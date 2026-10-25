@@ -59,9 +59,9 @@ export function MyMembershipsPage() {
   if (!authenticated) {
     return (
       <Container className="py-16 text-center">
-        <Crown className="mx-auto h-10 w-10 text-muted/50" aria-hidden />
+        <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
         <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.myPage.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
           {t("membership.myPage.loginRequired")}
         </p>
         <button
@@ -82,7 +82,7 @@ export function MyMembershipsPage() {
           <Crown className="h-6 w-6 text-accent" aria-hidden />
           {t("membership.myPage.title")}
         </h1>
-        <p className="mt-1 text-sm text-muted">{t("membership.myPage.subtitle")}</p>
+        <p className="mt-1 text-sm text-fg-3">{t("membership.myPage.subtitle")}</p>
       </header>
 
       {subscriptions.length === 0 ? (

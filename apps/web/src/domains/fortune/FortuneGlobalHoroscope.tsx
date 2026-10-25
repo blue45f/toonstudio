@@ -52,7 +52,7 @@ export function FortuneGlobalHoroscope({ signId, signKo }: FortuneGlobalHoroscop
   if (status !== "ready" || !horoscope || !gist) return null;
 
   const sentimentColor =
-    gist.sentiment === "positive" ? "text-emerald-400" : gist.sentiment === "caution" ? "text-amber-400" : "text-sky-300";
+    gist.sentiment === "positive" ? "text-good" : gist.sentiment === "caution" ? "text-warn" : "text-cool";
 
   return (
     <div className="rounded-xl border border-line/45 bg-card/20 p-4">

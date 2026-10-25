@@ -307,8 +307,8 @@ export function ComicLibraryPage() {
         "Save global and domestic book search results to a personal bookshelf and track volumes, reading, lending, and limited editions. With an ISBN-13 you can look up holdings via the national library data service.",
       )}
     >
-      {notice ? <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm">{notice}</p> : null}
-      {error ? <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm">{error}</p> : null}
+      {notice ? <p role="status" className="rounded-xl border border-good/30 bg-good/10 p-4 text-sm">{notice}</p> : null}
+      {error ? <p role="alert" className="rounded-xl border border-bad/30 bg-bad/10 p-4 text-sm">{error}</p> : null}
 
       <section id="comic-search" className="rounded-2xl border border-line bg-panel p-5">
         <div className="flex items-center gap-2">

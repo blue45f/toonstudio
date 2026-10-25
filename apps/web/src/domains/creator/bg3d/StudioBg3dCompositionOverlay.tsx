@@ -70,7 +70,7 @@ export function StudioBg3dCompositionOverlay({
             <line x1={frameX} y1={frameY + frameHeight * 0.12} x2={frameX + frameWidth} y2={frameY + frameHeight * 0.12} stroke="currentColor" className="text-accent/30" strokeDasharray="4,4" strokeWidth="1" />
             <line x1={frameX} y1={frameY + frameHeight * 0.88} x2={frameX + frameWidth} y2={frameY + frameHeight * 0.88} stroke="currentColor" className="text-accent/30" strokeDasharray="4,4" strokeWidth="1" />
             {/* Dimmed outer region */}
-            <path d={`M 0 0 H 1000 V 1000 H 0 Z M ${frameX} ${frameY} V ${frameY + frameHeight} H ${frameX + frameWidth} V ${frameY} Z`} fill="black" fillRule="evenodd" opacity="0.22" />
+            <path d={`M 0 0 H 1000 V 1000 H 0 Z M ${frameX} ${frameY} V ${frameY + frameHeight} H ${frameX + frameWidth} V ${frameY} Z`} fill="var(--color-reader-canvas)" fillRule="evenodd" opacity="0.22" />
             {/* Vertical midline */}
             <line x1="500" y1={frameY} x2="500" y2={frameY + frameHeight} stroke="currentColor" className="text-accent/35" strokeDasharray="3,3" strokeWidth="0.8" />
           </g>

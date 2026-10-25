@@ -43,15 +43,15 @@ const workspaceSource = readFileSync(
 describe("Studio production command center boundary", () => {
   it("mounts the production hub through an independent lazy route and stable seam", () => {
     expect(routerSource).toContain('from "./routes/StudioProductionRoute"');
-    expect(productionRouteSource).toContain('import("../../studio-production/StudioProductionHubPage")');
+    expect(productionRouteSource).toMatch(/import\("\.\.\/\.\.\/studio-production\/StudioProductionHubPage"\)/u);
     expect(productionRouteSource).toContain("lazyRetry(");
     expect(productionRouteSource).toContain("<Suspense");
     expect(productionRouteSource).toContain("<StudioProductionHubPage");
-    expect(productionRouteSource).not.toContain('from "../../studio-production/StudioProductionHubPage"');
+    expect(productionRouteSource).not.toMatch(/from "\.\.\/\.\.\/studio-production\/StudioProductionHubPage"/u);
     expect(routerSource).toContain('case "production"');
     expect(routerSource).toContain("<StudioProductionRoute");
-    expect(routerSource).not.toContain(
-      'from "../studio-production/StudioProductionHubPage"',
+    expect(routerSource).not.toMatch(
+      /from "\.\.\/studio-production\/StudioProductionHubPage"/u,
     );
     expect(hubEntrySource).toContain('from "./StudioProductionHubPageV2"');
     expect(hubEntrySource).not.toContain("useState(");

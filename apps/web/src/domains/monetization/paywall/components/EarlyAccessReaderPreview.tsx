@@ -114,14 +114,14 @@ export function EarlyAccessReaderPreview({
         <Eye className="h-5 w-5 text-accent" aria-hidden />
         {t("paywall.preview.title")}
       </h2>
-      <p className="mt-1 text-xs leading-relaxed text-muted">{t("paywall.preview.subtitle")}</p>
+      <p className="mt-1 text-xs leading-relaxed text-fg-3">{t("paywall.preview.subtitle")}</p>
       <p className="mt-3 text-sm font-semibold text-fg">{policy.titleName}</p>
 
       <div className="mt-3">
         <TitleEarlyAccessNotice titleId={policy.titleId} />
       </div>
       {!policy.enabled && (
-        <p className="mt-3 rounded-xl border border-line bg-bg px-3 py-2 text-xs text-muted">
+        <p className="mt-3 rounded-xl border border-line bg-bg px-3 py-2 text-xs text-fg-3">
           {t("paywall.preview.disabledNote")}
         </p>
       )}
@@ -146,17 +146,17 @@ export function EarlyAccessReaderPreview({
                 <p className="text-sm font-semibold text-fg">
                   {t(scenario.labelKey, scenario.labelValues)}
                 </p>
-                <p className="text-xs tabular-nums text-muted">
+                <p className="text-xs tabular-nums text-fg-3">
                   {formatDate(scenario.publishedAt, lang)}
                 </p>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 <span className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted">{t("paywall.preview.regularReader")}</span>
+                  <span className="text-xs text-fg-3">{t("paywall.preview.regularReader")}</span>
                   <AccessChip access={regular} audience="regular" />
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted">{t("paywall.preview.supporter")}</span>
+                  <span className="text-xs text-fg-3">{t("paywall.preview.supporter")}</span>
                   <AccessChip access={supporter} audience="supporter" />
                 </span>
               </div>

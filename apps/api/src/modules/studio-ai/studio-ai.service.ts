@@ -733,7 +733,7 @@ export class StudioAiService {
 
     // 운영자 부담 제공자가 후보에 있을 때만 크레딧을 예약한다. 무료 풀만이면
     // 예약 없이 진행하고, 예약 실패(잔액·한도)는 AI 호출 전에 차단한다.
-    let creditCharge: StudioAiCreditCharge = { charged: false };
+    let creditCharge: StudioAiCreditCharge;
     try {
       creditCharge = await beginStudioAiCreditCharge(this.creditWallet, { userId, task: input.task, idempotencyKey, providers }, this.paidOperationsStore ?? undefined);
     } catch (error) {

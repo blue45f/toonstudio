@@ -1,17 +1,17 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { Bg3dTemplateLibraryEntry, Bg3dVerifiedStoredRecord, BgCustomModelInstance, BgPrimitive, ModelRootCacheEntry, StudioBg3dModalSession, StudioBg3dPlacementPointerTarget, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dSceneDocument, StudioGeneric3dSourceFormat } from "./studio-bg3d-editor-runtime-bindings";
 import {
   allocateStudioBg3dTemplateInstanceNodeIds,
   orderStudioBg3dHierarchySelectionRootsFirst,
 } from "./studio-bg3d-template-instance";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
-export function attachStudioBg3dEditorPlacementHost(h) {
+export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -320,7 +320,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     genericModelClassifications, genericModelSourceFormats, placementPreviewAsset, setGenericModelSourceFormats, setPlacementPreviewAsset, setRefTick,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   async function ensureModelRootCached(
     modelId: string,
@@ -375,7 +375,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     }, record, attachment)) {
       return null;
     }
-    setGenericModelSourceFormats((previous) =>
+    setGenericModelSourceFormats((previous: ReadonlyMap<string, StudioGeneric3dSourceFormat>) =>
       previous.get(modelId) === sourceFormat
         ? previous
         : mergeStudioGeneric3dWorkflowMaps(previous, new Map([[modelId, sourceFormat]])),
@@ -461,7 +461,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     const position = new THREE.Vector3(...plan.placement.worldPosition)
       .addScaledVector(new THREE.Vector3(...plan.placement.worldNormal), 0.01)
       .sub(insertionOffset);
-    if (!position.toArray().every((component) => (
+    if (!position.toArray().every((component: number) => (
       Number.isFinite(component) && Math.abs(component) <= 10_000
     ))) {
       cancelCustomModelPlacement();
@@ -497,7 +497,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     commitImmediateHistoryTransition(runtime.primitives, nextCustomModels, runtime.document);
     replaceCanonicalDocumentState({ customModels: nextCustomModels });
     setSelectedIds(new Set([next.id]));
-    setRefTick((revision) => revision + 1);
+    setRefTick((revision: number) => revision + 1);
     publishPlacementSession(committed.state);
     setPlacementPreviewAsset(null);
     setSurfaceSnapStatus({
@@ -520,7 +520,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     try {
       await studioBg3dModalOperationCoordinator.runSceneMutation(
         session,
-        async (lease) => {
+        async (lease: any) => {
           lease.throwIfRevoked();
           const record = await ensureModelRootCached(
             modelId,
@@ -538,7 +538,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
             throw new Error("model-bounds-unavailable");
           }
           const size = bounds.getSize(new THREE.Vector3()).toArray();
-          if (size.some((component) => component <= 0 || component > 10_000)) {
+          if (size.some((component: number) => component <= 0 || component > 10_000)) {
             throw new Error("model-bounds-unavailable");
           }
           return {
@@ -555,7 +555,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
             } satisfies StudioBg3dPlacementPreviewAsset,
           };
         },
-        ({ record, asset }) => {
+        ({ record, asset }: { record: Bg3dVerifiedStoredRecord; asset: StudioBg3dPlacementPreviewAsset }) => {
           if (surfaceSnapArmedRef.current) cancelSurfaceSnap();
           placementTokenSequenceRef.current += 1;
           const initialTarget = viewportApiRef.current?.readView().target ?? [0, 0, 0];
@@ -578,7 +578,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
             message: `${asset.name} 모델을 원하는 위치로 옮긴 뒤 클릭해 배치하세요. Shift를 누르면 X/Z축으로 고정됩니다.`,
           });
           setSelectedIds(new Set());
-          setRefTick((revision) => revision + 1);
+          setRefTick((revision: number) => revision + 1);
         },
       );
     } catch (modelFailure) {
@@ -603,7 +603,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     let committed = false;
     const cleanupUncommittedTemplateCache = () => {
       const liveStorageIds = new Set(
-        physicsRuntimeSourceRef.current.customModels.map((model) => model.modelId),
+        physicsRuntimeSourceRef.current.customModels.map((model: BgCustomModelInstance) => model.modelId),
       );
       for (const [storageId, ownedEntry] of templateOwnedCacheEntries) {
         // A later queued operation may already have committed this exact cache entry into the live
@@ -621,7 +621,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
     try {
       await studioBg3dModalOperationCoordinator.runSceneMutation(
         session,
-        async (lease) => {
+        async (lease: any) => {
           lease.throwIfRevoked();
           if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) {
             throw new Error("physics-transient");
@@ -635,9 +635,9 @@ export function attachStudioBg3dEditorPlacementHost(h) {
           if (live.primitives.length + live.customModels.length + entry.document.nodes.length > nodeLimit) {
             throw new Error("template-node-budget");
           }
-          const occupiedNodeIds = new Set([
-            ...live.primitives.map((primitive) => primitive.id),
-            ...live.customModels.map((model) => model.id),
+          const occupiedNodeIds = new Set<string>([
+            ...live.primitives.map((primitive: BgPrimitive) => primitive.id),
+            ...live.customModels.map((model: BgCustomModelInstance) => model.id),
           ]);
           const templateInstanceAllocation = allocateStudioBg3dTemplateInstanceNodeIds({
             sourceKind: "user",
@@ -656,8 +656,8 @@ export function attachStudioBg3dEditorPlacementHost(h) {
           );
           if (!instantiated) throw new Error("template-instantiation");
 
-          const nextAttachmentByStorageId = new Map(attachmentByStorageModelIdRef.current);
-          const nextStorageIdByAttachment = new Map(storageModelIdByAttachmentIdRef.current);
+          const nextAttachmentByStorageId = new Map<string, R.StudioBg3dModelAttachment>(attachmentByStorageModelIdRef.current);
+          const nextStorageIdByAttachment = new Map<string, string>(storageModelIdByAttachmentIdRef.current);
           const countedHashes = new Set<string>();
           for (const model of live.customModels) {
             const attachment = attachmentByStorageModelIdRef.current.get(model.modelId);
@@ -697,7 +697,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
               pending: modelLoadPendingRef.current,
               isActive: () => isModalAssetSessionCurrent(session) && lease.isCurrent(),
               signal: lease.signal,
-              onCacheEntryCreated: (storageId, cacheEntry) => {
+              onCacheEntryCreated: (storageId: string, cacheEntry: ModelRootCacheEntry) => {
                 templateOwnedCacheEntries.set(storageId, cacheEntry);
               },
             });
@@ -718,7 +718,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
             storageModelIdByAttachmentId: nextStorageIdByAttachment,
           });
           const expectedPrimitives = instantiated.document.nodes.filter(
-            (node) => node.kind === "primitive",
+            (node: StudioBg3dSceneDocument["nodes"][number]) => node.kind === "primitive",
           ).length;
           const expectedCustomModels = instantiated.document.nodes.length - expectedPrimitives;
           if (
@@ -740,7 +740,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
             nodeLimit,
           };
         },
-        (prepared) => {
+        (prepared: any) => {
           if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) {
             throw new Error("physics-transient");
           }
@@ -751,19 +751,19 @@ export function attachStudioBg3dEditorPlacementHost(h) {
           ) {
             throw new Error("template-node-budget");
           }
-          const occupiedIds = new Set([
-            ...current.primitives.map((primitive) => primitive.id),
-            ...current.customModels.map((model) => model.id),
+          const occupiedIds = new Set<string>([
+            ...current.primitives.map((primitive: BgPrimitive) => primitive.id),
+            ...current.customModels.map((model: BgCustomModelInstance) => model.id),
           ]);
           const insertedIds = [
-            ...prepared.primitives.map((primitive) => primitive.id),
-            ...prepared.customModels.map((model) => model.id),
+            ...prepared.primitives.map((primitive: BgPrimitive) => primitive.id),
+            ...prepared.customModels.map((model: BgCustomModelInstance) => model.id),
           ];
-          if (insertedIds.some((id) => occupiedIds.has(id))) {
+          if (insertedIds.some((id: string) => occupiedIds.has(id))) {
             throw new Error("template-node-collision");
           }
 
-          const preparedAttachments = prepared.customModels.map((model) => {
+          const preparedAttachments = prepared.customModels.map((model: BgCustomModelInstance) => {
             const attachment = prepared.nextAttachmentByStorageId.get(model.modelId);
             if (!attachment) throw new Error("template-attachment-binding");
             return attachment;
@@ -796,7 +796,7 @@ export function attachStudioBg3dEditorPlacementHost(h) {
               orderStudioBg3dHierarchySelectionRootsFirst(insertedEntities),
             ));
           }
-          setRefTick((tick) => tick + 1);
+          setRefTick((tick: number) => tick + 1);
           setError(null);
           committed = true;
         },

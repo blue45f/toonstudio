@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -5,12 +7,43 @@ import {
   loadAdminI18nLocale,
 } from "./admin-i18n-loader";
 
+import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 import { resolveI18nValue, useI18n } from "@/shared/lib/i18n";
 import { ADMIN_I18N_NAMESPACES } from "@/shared/lib/i18n-asset-manifest";
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+const HANGUL = /[가-힣]/;
+
+function readSource(relativePath: string): string {
+  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+}
+
+function parseRegisterModule(source: string): Record<"ko" | "en", Record<string, string>> {
+  const blocks: Record<string, Record<string, string>> = {};
+  const pattern = /registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g;
+  for (const match of source.matchAll(pattern)) {
+    const entries: Record<string, string> = {};
+    for (const entry of (match[2] ?? "").matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/g)) {
+      entries[entry[1] ?? ""] = (entry[2] ?? "").replace(/\\"/g, '"');
+    }
+    blocks[match[1] ?? ""] = entries;
+  }
+  return blocks as Record<"ko" | "en", Record<string, string>>;
+}
+
+const MODULE_FILE = "admin-i18n-loader.ts";
+const PREFIX = "adminRest.status.";
+const CONSUMERS = [
+  "components/AdminIntegrations.tsx",
+  "traffic/WebVitalsDashboardPage.tsx",
+] as const;
+const MIGRATED_FILES = CONSUMERS;
+
+const blocks = parseRegisterModule(readSource(MODULE_FILE));
+const ALL_KEYS = Object.keys(blocks.ko).sort();
 
 describe("admin lazy i18n loader", () => {
   it("keeps en-US and ko-KR on the embedded base-root dictionaries", async () => {
@@ -99,7 +132,6 @@ describe("admin lazy i18n loader", () => {
   });
 
   it("권한 없음 게이트 문구에 내부 구성 힌트를 노출하지 않는다", () => {
-    // O-B20-1: 권한 없는 사용자에게 ADMIN_EMAILS·users.role 같은 내부 권한 구성 힌트가 보이면 안 된다.
     const body = resolveI18nValue("ko-KR", "admin.gate.forbiddenBody");
     expect(body).toBe(
       "이 계정에는 관리자 권한이 없습니다. 권한이 필요하면 운영자에게 문의하세요.",
@@ -111,5 +143,44 @@ describe("admin lazy i18n loader", () => {
     expect(adminI18nAssetUrl("zh-hant", "/preview")).toBe(
       "/preview/i18n/admin/dashboard/zh-hant.json",
     );
+  });
+});
+
+describe("admin rest status i18n r3c14", () => {
+  it("등록 모듈의 ko/en 키가 패리티를 이루고 en에 한글이 없다", () => {
+    expect(Object.keys(blocks.en).sort()).toEqual(ALL_KEYS);
+    for (const key of ALL_KEYS) {
+      expect(blocks.ko[key], `ko missing ${key}`).toBeTruthy();
+      expect(blocks.en[key], `en missing ${key}`).toBeTruthy();
+      expect(HANGUL.test(blocks.en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
+    }
+  });
+
+  it("플레이스홀더가 ko/en에서 정확히 일치한다", () => {
+    for (const key of ALL_KEYS) {
+      const koPh = [...(blocks.ko[key] ?? "").matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((m) => m[1]).sort();
+      const enPh = [...(blocks.en[key] ?? "").matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((m) => m[1]).sort();
+      expect(enPh, `placeholder mismatch: ${key}`).toEqual(koPh);
+    }
+  });
+
+  it("전 키가 소비 파일에서 참조되고 미등록 참조가 없다", () => {
+    const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
+    for (const key of ALL_KEYS) {
+      expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
+    }
+    const referenced = new Set(
+      [...consumerSource.matchAll(new RegExp(`"(${PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[A-Za-z0-9.]+)"`, "g"))].map((m) => m[1] ?? ""),
+    );
+    for (const key of referenced) {
+      expect(ALL_KEYS.includes(key), `dangling key reference: ${key}`).toBe(true);
+    }
+  });
+
+  it("이관 파일에 탐지기 위반이 없다", () => {
+    for (const file of MIGRATED_FILES) {
+      const violations = scanHardcodedStatusStrings(readSource(file));
+      expect(violations, `${file}: ${JSON.stringify(violations)}`).toEqual([]);
+    }
   });
 });

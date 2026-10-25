@@ -216,7 +216,6 @@ import { useStudioTemplateLayout } from "./template/studio-template-layout-contr
 import { useStudioSelectionTransform } from "./selection/studio-selection-transform-controller";
 import { useStudioQuickComic } from "./comipo/studio-quick-comic-controller";
 import { StudioCuttoonEditorView } from "./studio-cuttoon-editor/StudioCuttoonEditorView";
-import { applyStudioBg3dAiMethodReference } from "./scene-3d/studio-3d-ai-reference-application";
 import { applyStudioBg3dInsertResult, applyStudioVrmInsertResult } from "./scene-3d/studio-3d-insert-controller";
 import {
   planStudioActiveStrokeUnmountRecovery,
@@ -419,7 +418,6 @@ import { StudioCrdtLiveStrokePublisher } from "./live/studio-crdt-live-stroke-pu
 import { STUDIO_CRDT_ORIGIN_LOCAL } from "./live/studio-crdt-protocol";
 import { creatorWorkSnapshotToStudioProject } from "./studio-creator-work-project";
 import { initialCropRect, isCropRectNoop, planCropApply } from "./studio-crop";
-import { resolveStudioDccRouteAccess } from "./hybrid-dcc/studio-dcc-route-access";
 import {
   STUDIO_DEFERRED_STROKE_POSTPROCESS_TIMEOUT_MS,
   replaceStudioPendingStrokePostprocess,
@@ -1095,7 +1093,7 @@ import {
   type StudioRasterRetouchNormalizedPoint,
 } from "./studio-retouch-raster-gesture";
 import { useStudioDocumentLayout } from "./studio-router/studio-document-layout-context";
-import { useStudioDccWorkbenchNavigation } from "./studio-router/studio-dcc-workbench-navigation";
+import { resolveStudioDccRouteAccess, useStudioDccWorkbenchNavigation } from "./studio-router/studio-dcc-workbench-navigation";
 import { StudioDccWorkbenchRoute } from "./studio-router/StudioDccWorkbenchRoute";
 import { announceStudioGpuDeviceLoss } from "./studio-safe-mode-runtime";
 import { layoutScenarioPanels, scenarioGenerationPreferences, scenarioGenerationPreferencesFromHandoff, type ScenarioPreviewItem } from "./studio-scenario-layout";
@@ -1462,7 +1460,7 @@ import type { StudioWebGpuCanvasHandle } from "./StudioWebGpuCanvas";
 import type { CreatorAssetReportReason } from "@/shared/lib/creator-asset-contract";
 import type { GeneratedAssetQuality, GeneratedAssetSize, SharedAssetCatalogItem, WorkDetail, WorkRevisionSummary } from "@/platform/creator-client";
 import type Konva from "konva";
-import { scheduleIdle } from "@/domains/auth/components/schedule-idle";
+import { scheduleIdle } from "@/domains/auth/public/schedule-idle";
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 import { useResizable } from "@/shared/hooks/use-resizable";
 import { loadChunkWithReloadRecovery } from "@/shared/lib/chunk-load-recovery";
@@ -27323,6 +27321,7 @@ function clearSelectionForEdit() {
           await deleteStudioAssetMutation(saved.id).catch(() => undefined);
           return false;
         }
+        const { applyStudioBg3dAiMethodReference } = await import("./scene-3d/studio-3d-ai-reference-application");
         const application = applyStudioBg3dAiMethodReference(
           scenarioImageReferenceDocument,
           saved,

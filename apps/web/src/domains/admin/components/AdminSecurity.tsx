@@ -1,9 +1,8 @@
 import { ShieldCheck, Plus, Trash2, Key, AlertOctagon } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
-import { adminFetch, formatDate } from "./admin-client";
+import { adminButtonClass, adminFetch, formatDate } from "./admin-client";
 import { AdminEmptyState, AdminSpinner } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { useT } from "@/shared/lib/i18n";
 

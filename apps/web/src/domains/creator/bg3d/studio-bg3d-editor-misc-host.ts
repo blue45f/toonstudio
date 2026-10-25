@@ -1,12 +1,12 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { StudioBg3dBabylonDiagnosticBackend, StudioBg3dRuntimeAdapter, StudioWebXrMode } from "./studio-bg3d-editor-runtime-bindings";
 
-export function attachStudioBg3dEditorMiscHost(h) {
+export function attachStudioBg3dEditorMiscHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -154,7 +154,7 @@ export function attachStudioBg3dEditorMiscHost(h) {
     StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dShotBatchPass,
     StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession,
     StudioBg3dShotBatchRecoveryStore, StudioBackground3DInsertResult, StudioToolHintSpec,
-    StudioWebXrMode, StudioWebXrSessionController, StudioWebXrSessionState,
+    StudioWebXrSessionController, StudioWebXrSessionState,
     StudioWebXrSupportSnapshot, open, initialDataUrl, initialScene, seedSceneTemplateId,
     seedPrimitiveKind, onSeedObjectInsertConsumed, sharedSceneSession, sharedStageResolution,
     sharedStageSessionScopeKey, sharedCharactersLinkedToOtherBackgroundCount, operation,
@@ -315,7 +315,7 @@ export function attachStudioBg3dEditorMiscHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     setBabylonDiagnosticState, setImmersiveStagePlan,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const runBabylonDiagnostic = async (
     backend: StudioBg3dBabylonDiagnosticBackend,
@@ -472,7 +472,7 @@ export function attachStudioBg3dEditorMiscHost(h) {
   const selectSceneEntity = (id: string, isMulti: boolean) => {
     if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) return;
     setSelectedSharedCharacterElementId(null);
-    setSelectedIds((previous) => {
+    setSelectedIds((previous: ReadonlySet<string>) => {
       if (!isMulti) return new Set([id]);
       const next = new Set(previous);
       if (next.has(id)) next.delete(id);
@@ -485,7 +485,7 @@ export function attachStudioBg3dEditorMiscHost(h) {
     ids: readonly string[],
     status: "pending" | "ready" | "failed",
   ) => {
-    setReadyCloneIds((previous) => {
+    setReadyCloneIds((previous: ReadonlySet<string>) => {
       const next = new Set(previous);
       for (const id of ids) {
         if (status === "ready") next.add(id);
@@ -493,7 +493,7 @@ export function attachStudioBg3dEditorMiscHost(h) {
       }
       return next;
     });
-    setFailedCloneIds((previous) => {
+    setFailedCloneIds((previous: ReadonlySet<string>) => {
       const next = new Set(previous);
       for (const id of ids) {
         if (status === "failed") next.add(id);

@@ -2,13 +2,13 @@ import { Download, DollarSign, Gauge, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  adminButtonClass,
   adminFetch,
   formatNum,
   type AdminApiError,
   type AdminBenchmarkResult,
 } from "./admin-client";
 import { AdminNotice, AdminSpinner } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { Switch } from "@/shared/components/ui/switch";
 import { useT } from "@/shared/lib/i18n";

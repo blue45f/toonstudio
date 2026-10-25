@@ -357,12 +357,12 @@ export function CollaborationHubPage() {
       ) : null}
 
       {notice ? (
-        <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm">
+        <p role="status" className="rounded-xl border border-good/30 bg-good/10 p-4 text-sm">
           {notice}
         </p>
       ) : null}
       {error ? (
-        <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm">
+        <p role="alert" className="rounded-xl border border-bad/30 bg-bad/10 p-4 text-sm">
           {error}
         </p>
       ) : null}
@@ -724,7 +724,7 @@ function ProposalList({
                     {bt("검토 시작", "Start review")}
                   </button>
                 ) : null}
-                <button className={`${BUTTON} border-emerald-500/50`} disabled={busy === item.id} onClick={() => void onStatus(item.id, "accepted")}>
+                <button className={`${BUTTON} border-good/50`} disabled={busy === item.id} onClick={() => void onStatus(item.id, "accepted")}>
                   <CheckCircle2 size={15} className="mr-1" aria-hidden="true" />{bt("수락", "Accept")}
                 </button>
                 <button className={BUTTON} disabled={busy === item.id} onClick={() => void onStatus(item.id, "declined")}>

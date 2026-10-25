@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -34,7 +33,7 @@ import { collectStudioBg3dSkpSources } from "./studio-bg3d-skp-sidecar";
 
 import type { StudioBg3dOutlinerMutationAction } from "./studio-bg3d-outliner-mutation";
 
-export function useStudioBg3dEditor(props) {
+export function useStudioBg3dEditor(props: Record<string, any>) {
   const {
     createStudioBg3dHistorySnapshot,
     createStudioBg3dModelImportActions,
@@ -96,10 +95,10 @@ export function useStudioBg3dEditor(props) {
     isSessionCurrent: h.isModalAssetSessionCurrent,
     isBlocked: () => h.captureInFlightRef.current || h.sceneRestoreAbortRef.current !== null || h.modelImportAbortRef.current !== null || h.destructiveMutationGuardRef.current.blocksClose || isStudioBg3dPhysicsTransientPhase(h.physicsPhaseRef.current) || h.placementSessionRef.current.phase === "preview",
     replace: h.replaceCanonicalDocumentState, commitHistory: h.commitImmediateHistoryTransition,
-    notify: () => h.setRefTick((value) => value + 1),
+    notify: () => h.setRefTick((value: number) => value + 1),
   });
   // SketchUp식 추론: 줄자 세션·장면 색인·기즈모 이동 스냅을 서비스 하나로 묶는다.
-  const inference = useStudioBg3dInferenceHost(h);
+  const inference = useStudioBg3dInferenceHost(h as unknown as Parameters<typeof useStudioBg3dInferenceHost>[0]);
   h.inferenceService = inference.service;
   h.inferenceDrag = inference.drag;
   h.inferencePointerToolActive = inference.pointerToolActive;
@@ -134,7 +133,7 @@ export function useStudioBg3dEditor(props) {
   };
 
   // 계획을 기존 실행 취소·다시 실행 경로로 커밋한다. 아웃라이너 명령과 태그·컴포넌트·장면 정보 명령이 같은 꼬리를 쓴다.
-  const commitOutlinerPlan = (live, plan) => {
+  const commitOutlinerPlan = (live: any, plan: any) => {
     const before = createStudioBg3dHistorySnapshot(live);
     h.commitImmediateHistoryTransition(
       plan.snapshot.primitives,
@@ -152,7 +151,7 @@ export function useStudioBg3dEditor(props) {
       customModels: plan.snapshot.customModels,
       document: plan.snapshot.document,
     });
-    h.setSelectedIds((current) =>
+    h.setSelectedIds((current: Set<string>) =>
       applyStudioBg3dOutlinerSelectionEffect(current, plan.selection));
     h.setError(null);
   };
@@ -176,7 +175,7 @@ export function useStudioBg3dEditor(props) {
   // 태그·컴포넌트·장면 정보: 캡처·복원·물리 중에는 시작하지 않고(`busy`), 그 밖에는 계획이 정한 결과를 화면에 돌려준다.
   const organizationBusy = () =>
     h.isCapturing || h.isBatchRenderingShots || h.isRestoringScene || h.physicsInteractionLocked;
-  const applyOrganizationMutation = (action) => {
+  const applyOrganizationMutation: Parameters<typeof createStudioBg3dOrganizationController>[0]["apply"] = (action) => {
     if (organizationBusy()) return { ok: false, reason: "busy" };
     const live = h.physicsRuntimeSourceRef.current;
     const plan = planStudioBg3dOrganizationMutation({
@@ -195,11 +194,11 @@ export function useStudioBg3dEditor(props) {
     filteredItems: h.filteredLayerItems,
     hierarchy: h.sceneHierarchy,
     selectedIds: h.selectedIds,
-    primitiveColors: new Map(h.primitives.map((primitive) => [primitive.id, primitive.color])),
+    primitiveColors: new Map(h.primitives.map((primitive: any) => [primitive.id, primitive.color])),
     onQueryChange: h.setLayerQuery,
-    onSelect: (id, mode) => {
+    onSelect: (id: string, mode: "replace" | "toggle") => {
       h.setSelectedSharedCharacterElementId?.(null);
-      h.setSelectedIds((current) => {
+      h.setSelectedIds((current: Set<string>) => {
         if (mode === "replace") return new Set([id]);
         const next = new Set(current);
         if (next.has(id)) next.delete(id);
@@ -207,20 +206,20 @@ export function useStudioBg3dEditor(props) {
         return next;
       });
     },
-    onRename: (item) => {
+    onRename: (item: any) => {
       const name = window.prompt("새 이름을 입력하세요", item.label);
       if (name === null) return;
       applyOutlinerMutation({ type: "rename", item, name });
     },
-    onToggleVisibility: (item) =>
+    onToggleVisibility: (item: any) =>
       applyOutlinerMutation({ type: "toggle-visibility", item }),
-    onToggleLock: (item) =>
+    onToggleLock: (item: any) =>
       applyOutlinerMutation({ type: "toggle-lock", item }),
-    onDuplicate: (item) => {
+    onDuplicate: (item: any) => {
       if (!h.canAdmitSceneNodes(1)) return;
       applyOutlinerMutation({ type: "duplicate", item });
     },
-    onRemove: (item) => applyOutlinerMutation({ type: "remove", item }),
+    onRemove: (item: any) => applyOutlinerMutation({ type: "remove", item }),
     organization: createStudioBg3dOrganizationController({
       view: buildStudioBg3dOrganizationView({
         entities: [...h.primitives, ...h.customModels],
@@ -231,7 +230,7 @@ export function useStudioBg3dEditor(props) {
         attachmentByStorageModelId: h.attachmentByStorageModelIdRef.current,
       }),
       apply: applyOrganizationMutation,
-      selectEntities: (ids) => {
+      selectEntities: (ids: readonly string[]) => {
         h.setSelectedSharedCharacterElementId?.(null);
         h.setSelectedIds(new Set(ids));
       },

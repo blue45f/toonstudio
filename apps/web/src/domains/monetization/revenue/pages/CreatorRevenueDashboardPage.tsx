@@ -135,9 +135,9 @@ export function CreatorRevenueDashboardPage() {
   if (!authenticated || !summary) {
     return (
       <Container className="py-16 text-center">
-        <ChartColumn className="mx-auto h-10 w-10 text-muted/50" aria-hidden />
+        <ChartColumn className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
         <h1 className="mt-3 text-xl font-bold text-fg">{t("revenue.dashboard.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
           {t("revenue.dashboard.loginRequired")}
         </p>
         <button
@@ -169,7 +169,7 @@ export function CreatorRevenueDashboardPage() {
             <ChartColumn className="h-6 w-6 text-accent" aria-hidden />
             {t("revenue.dashboard.title")}
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted">{t("revenue.dashboard.subtitle")}</p>
+          <p className="mt-1 max-w-2xl text-sm text-fg-3">{t("revenue.dashboard.subtitle")}</p>
         </div>
         <div className="flex gap-1 rounded-xl border border-line p-1" role="group" aria-label={t("revenue.dashboard.periodLabel")}>
           {(["month", "3m", "6m"] as const).map((key) => (
@@ -180,7 +180,7 @@ export function CreatorRevenueDashboardPage() {
               aria-pressed={periodKey === key}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
-                periodKey === key ? "bg-accent/15 text-accent" : "text-muted hover:text-fg",
+                periodKey === key ? "bg-accent/15 text-accent" : "text-fg-3 hover:text-fg",
               )}
             >
               {t(`revenue.dashboard.period.${key}`)}
@@ -192,7 +192,7 @@ export function CreatorRevenueDashboardPage() {
       {!getPayoutAvailability().submissionEnabled ? (
         <p
           role="status"
-          className="mt-4 flex items-start gap-2 rounded-2xl border border-line bg-panel/50 px-4 py-3 text-sm text-muted"
+          className="mt-4 flex items-start gap-2 rounded-2xl border border-line bg-panel/50 px-4 py-3 text-sm text-fg-3"
         >
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
           <span>{t(SETTLEMENT_NOT_CONNECTED_NOTICE)}</span>
@@ -212,8 +212,8 @@ export function CreatorRevenueDashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-line bg-panel/50 p-5 sm:col-span-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-sm font-semibold text-muted">{t("revenue.dashboard.totalRevenue")}</h2>
-              <p className="text-xs text-muted">
+              <h2 className="text-sm font-semibold text-fg-3">{t("revenue.dashboard.totalRevenue")}</h2>
+              <p className="text-xs text-fg-3">
                 {t(`revenue.dashboard.period.${periodKey}`)}
                 {" · "}
                 {t("revenue.dashboard.entryCount", { count: summary.entryCount })}
@@ -242,7 +242,7 @@ export function CreatorRevenueDashboardPage() {
 
           {sortedSources.map((bucket) => (
             <div key={bucket.sourceId} className="rounded-2xl border border-line bg-panel/50 p-5">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-muted">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-fg-3">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: revenueSourceColor(bucket.sourceId) }}
@@ -268,7 +268,7 @@ export function CreatorRevenueDashboardPage() {
                   }}
                 />
               </div>
-              <p className="mt-1.5 text-xs tabular-nums text-muted">
+              <p className="mt-1.5 text-xs tabular-nums text-fg-3">
                 {sharePercent(bucket.amount, summary.totalAmount)}%
                 {" · "}
                 {t("revenue.dashboard.entryCount", { count: bucket.count })}
@@ -316,7 +316,7 @@ export function CreatorRevenueDashboardPage() {
                         />
                         {t(sourceLabelKey(bucket.sourceId))}
                       </span>
-                      <span className="tabular-nums text-muted">
+                      <span className="tabular-nums text-fg-3">
                         {formatKrw(bucket.amount)}
                         {" · "}
                         {t("revenue.dashboard.entryCount", { count: bucket.count })}

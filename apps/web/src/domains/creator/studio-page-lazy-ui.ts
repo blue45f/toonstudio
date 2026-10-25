@@ -542,18 +542,16 @@ const StudioBrushStudio = lazyRetry(
   "StudioBrushStudio"
 );
 const StudioProceduralArtisticBrushController = lazyRetry(
-  () =>
-    import("./StudioProceduralArtisticBrushController").then((mod) => ({
-      default: mod.StudioProceduralArtisticBrushController,
-    })),
+  () => import("./StudioProceduralArtisticBrushController").then((mod) => ({ default: mod.StudioProceduralArtisticBrushController })),
   "StudioProceduralArtisticBrushController"
 );
 const StudioHokusaiNaturalMediaInspectorSection = lazyRetry(
-  () =>
-    import("./StudioHokusaiNaturalMediaInspectorSection").then((mod) => ({
-      default: mod.StudioHokusaiNaturalMediaInspectorSection,
-    })),
+  () => import("./StudioHokusaiNaturalMediaInspectorSection").then((mod) => ({ default: mod.StudioHokusaiNaturalMediaInspectorSection })),
   "StudioHokusaiNaturalMediaInspectorSection"
+);
+const StudioReferenceOverlay = lazyRetry(
+  () => import("./scene-3d/StudioReferenceOverlay").then((mod) => ({ default: mod.StudioReferenceOverlay })),
+  "StudioReferenceOverlay"
 );
 const QuickStartPanel = lazyRetry(
   () =>
@@ -924,7 +922,7 @@ export {
   StudioRasterAssetGrid,
   StudioRasterCrdtSurface,
   StudioRulersPanel,
-  StudioReferencePanel,
+  StudioReferenceOverlay, StudioReferencePanel,
   StudioRemoteCursorOverlay,
   StudioPointCommentComposer,
   StudioCommentThreadPopover,

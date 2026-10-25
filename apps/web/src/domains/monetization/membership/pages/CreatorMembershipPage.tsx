@@ -76,9 +76,9 @@ export function CreatorMembershipPage() {
   if (!authenticated) {
     return (
       <Container className="py-16 text-center">
-        <Crown className="mx-auto h-10 w-10 text-muted/50" aria-hidden />
+        <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
         <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.creatorPage.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
           {t("membership.creatorPage.loginRequired")}
         </p>
         <button
@@ -100,7 +100,7 @@ export function CreatorMembershipPage() {
             <Crown className="h-6 w-6 text-accent" aria-hidden />
             {t("membership.creatorPage.title")}
           </h1>
-          <p className="mt-1 text-sm text-muted">{t("membership.creatorPage.subtitle")}</p>
+          <p className="mt-1 text-sm text-fg-3">{t("membership.creatorPage.subtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <a href="/creator/revenue" className={buttonClass({ variant: "ghost" })}>
@@ -132,17 +132,17 @@ export function CreatorMembershipPage() {
       {tiers.length > 0 && (
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-line p-4">
-            <p className="text-xs text-muted">{t("membership.creatorPage.statTiers")}</p>
+            <p className="text-xs text-fg-3">{t("membership.creatorPage.statTiers")}</p>
             <p className="mt-1 text-2xl font-bold tabular-nums text-fg">{tiers.length}</p>
           </div>
           <div className="rounded-2xl border border-line p-4">
-            <p className="text-xs text-muted">{t("membership.creatorPage.statMembers")}</p>
+            <p className="text-xs text-fg-3">{t("membership.creatorPage.statMembers")}</p>
             <p className="mt-1 text-2xl font-bold tabular-nums text-fg">
               {tiers.reduce((sum, tier) => sum + tier.memberCount, 0)}
             </p>
           </div>
           <div className="rounded-2xl border border-line p-4">
-            <p className="text-xs text-muted">{t("membership.creatorPage.statMonthly")}</p>
+            <p className="text-xs text-fg-3">{t("membership.creatorPage.statMonthly")}</p>
             <p className="mt-1 text-2xl font-bold tabular-nums text-fg">
               {formatMembershipKrw(sumMonthlyRecurring(tiers))}
             </p>
@@ -164,9 +164,9 @@ export function CreatorMembershipPage() {
       <section aria-label={t("membership.creatorPage.tierList")} className="mt-6">
         {tiers.length === 0 && !showEditor ? (
           <div className="rounded-2xl border border-dashed border-line p-10 text-center">
-            <Users className="mx-auto h-8 w-8 text-muted/50" aria-hidden />
+            <Users className="mx-auto h-8 w-8 text-fg-3/50" aria-hidden />
             <p className="mt-2 text-sm font-semibold text-fg">{t("membership.creatorPage.emptyTitle")}</p>
-            <p className="mx-auto mt-1 max-w-md text-xs text-muted">
+            <p className="mx-auto mt-1 max-w-md text-xs text-fg-3">
               {t("membership.creatorPage.emptyBody")}
             </p>
             <button
@@ -190,7 +190,7 @@ export function CreatorMembershipPage() {
                   highlighted={isEditing}
                   footer={
                     <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-                      <span className="flex items-center gap-1 text-xs tabular-nums text-muted">
+                      <span className="flex items-center gap-1 text-xs tabular-nums text-fg-3">
                         <Users className="h-3.5 w-3.5" aria-hidden />
                         {t("membership.creatorPage.tierMembers", { count: tier.memberCount })}
                       </span>
@@ -223,7 +223,7 @@ export function CreatorMembershipPage() {
             <Eye className="h-5 w-5 text-accent" aria-hidden />
             {t("membership.creatorPage.previewTitle")}
           </h2>
-          <p className="mt-1 text-sm text-muted">{t("membership.creatorPage.previewBody")}</p>
+          <p className="mt-1 text-sm text-fg-3">{t("membership.creatorPage.previewBody")}</p>
           {tiers.some((tier) => tier.isActive) ? (
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {tiers
@@ -233,7 +233,7 @@ export function CreatorMembershipPage() {
                 ))}
             </div>
           ) : (
-            <p className="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">
+            <p className="mt-4 rounded-2xl border border-dashed border-line p-6 text-center text-sm text-fg-3">
               {t("membership.creatorPage.previewEmpty")}
             </p>
           )}

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildMarketCc0ReleaseManifests } from "../../../../../../scripts/seed/market-cc0-release-manifests";
 import { MarketCc0AssetPreview } from "./MarketCc0AssetPreview";
-import { STUDIO_MARKETPLACE_CC0_ASSETS } from "@/domains/creator/studio-marketplace-cc0-catalog.generated";
+import { STUDIO_MARKETPLACE_CC0_ASSETS } from "@/domains/creator/public/marketplace-asset-access";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 

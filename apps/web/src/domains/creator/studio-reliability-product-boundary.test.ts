@@ -126,8 +126,8 @@ describe("Studio reliability product boundary", () => {
   });
 
   it("mounts the reliability notices inside the existing canvas status rail", () => {
-    expect(statusRail).toContain(
-      'import { StudioReliabilityStatusRail } from "../StudioReliabilityStatusRail"',
+    expect(statusRail).toMatch(
+      /import \{ StudioReliabilityStatusRail \} from "\.\.\/StudioReliabilityStatusRail"/u,
     );
     expect(statusRail).toContain("<StudioReliabilityStatusRail />");
     const railIndex = statusRail.indexOf("<StudioReliabilityStatusRail />");

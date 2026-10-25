@@ -2,7 +2,7 @@ import {
   allTitles,
   getTitle,
 } from "../../../../../packages/core/src/catalog/catalog-store";
-import { loadTitleEpisodeEntries } from "../../server/title-episodes";
+import { loadTitleEpisodeEntries } from "../catalog/title-episodes";
 
 import type {
   CreatorAnalyticsSeriesCatalog,
