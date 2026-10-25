@@ -62,7 +62,7 @@ export function findDecorationCreditItem(
   if (typeof itemId !== "string") return null;
   const trimmed = itemId.trim();
   if (!trimmed) return null;
-  return DECORATION_CATALOG.find((item) => item.id === trimmed) ?? null;
+  return DECORATION_CREDIT_CATALOG.find((item) => item.id === trimmed) ?? null;
 }
 
 export function isDecorationCreditItemId(itemId: unknown): boolean {
