@@ -15,6 +15,7 @@ describe("studio-ai-storyboard-llm", () => {
     });
     expect(prompt).toContain("컷 수: 4장");
     expect(prompt).toContain("수채화");
+    expect(prompt).toContain("40자 이내");
   });
 
   it("컷 계획 결과를 검증한다", () => {

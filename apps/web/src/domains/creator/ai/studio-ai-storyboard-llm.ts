@@ -27,6 +27,7 @@ export function buildStoryboardPlanPrompt(input: {
   return [
     "다음 전제를 웹툰 콘티 컷 계획으로 만들어 JSON으로만 답하라.",
     "형식: {\"cuts\": [{\"id\": \"cut-1\", \"summary\": \"요약\", \"camera\": \"카메라 지시\", \"dialogues\": [\"대사\"]}]}",
+    "요약과 카메라 지시는 각각 40자 이내로 간결하게 쓴다(출력 토큰 절단 방지).",
     `컷 수: ${count}장`,
     `전제: ${input.premise.trim().slice(0, MAX_PREMISE_CHARS)}`,
     `등장인물: ${input.characters.join(", ") || "없음"}`,
