@@ -173,4 +173,30 @@ describe("SubToolDetailPanel 상호작용", () => {
     const preview = screen.getByTestId("subtool-stroke-preview");
     expect(preview.getAttribute("aria-label")).toContain("팁 24px");
   });
+
+  it("팁 모양 라디오 그룹에서 화살표·Home·End 키로 로빙 탭인덱스 선택이 동작한다", () => {
+    const { onSubToolChange } = renderPanel();
+    const roundRadio = screen.getByRole("radio", { name: "원형" });
+    const flatRadio = screen.getByRole("radio", { name: "납작" });
+    expect(roundRadio.getAttribute("tabindex")).toBe("0");
+    expect(flatRadio.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(roundRadio, { key: "ArrowRight" });
+    expect(onSubToolChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          tip: expect.objectContaining({ shape: "flat" }),
+        }),
+      }),
+    );
+
+    fireEvent.keyDown(roundRadio, { key: "End" });
+    expect(onSubToolChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          tip: expect.objectContaining({ shape: "neon" }),
+        }),
+      }),
+    );
+  });
 });

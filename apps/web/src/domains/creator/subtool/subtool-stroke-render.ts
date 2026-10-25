@@ -199,6 +199,29 @@ function strokePoint(
 }
 
 /**
+ * 서브툴 미리보기 획의 진행률(0..1)에 따른 스타일러스 필압 엔벨로프(0.18..1)를 계산한다.
+ * 진입부(taperIn)와 끝빠짐(taperOut) 구간에서 Hermite smoothstep 곡선으로 자연스럽게 가늘어진다.
+ */
+export function computeSubToolPressureEnvelope(
+  progress: number,
+  taperIn = 0.15,
+  taperOut = 0.18,
+): number {
+  const p = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0.5;
+  const safeIn = Math.min(0.45, Math.max(0.01, taperIn));
+  const safeOut = Math.min(0.45, Math.max(0.01, taperOut));
+  let factor = 1;
+  if (p < safeIn) {
+    const t = p / safeIn;
+    factor = t * t * (3 - 2 * t);
+  } else if (p > 1 - safeOut) {
+    const t = (1 - p) / safeOut;
+    factor = t * t * (3 - 2 * t);
+  }
+  return Math.max(0.18, Math.min(1, 0.18 + 0.82 * factor));
+}
+
+/**
  * 미리보기 렌더의 순수 진입점. canvas가 없는 환경에서는 조용히 종료한다.
  * 테스트에서 렌더 결정성을 검증할 수 있도록 export한다.
  */
@@ -230,7 +253,7 @@ export function renderSubToolStrokePreview(
 
   // 획 경로를 따라 도장 배치
   const stepBase = Math.max(1, size * (params.spacing.percent / 100));
-  const dabPositions: Array<{ x: number; y: number }> = [];
+  const dabPositions: Array<{ x: number; y: number; progress: number }> = [];
   let progress = 0;
   let nextAt = 0;
   let traveled = 0;
@@ -245,7 +268,7 @@ export function renderSubToolStrokePreview(
     if (traveled >= nextAt) {
       const jitteredStep =
         stepBase * (1 + (rng() * 2 - 1) * params.spacing.jitter);
-      dabPositions.push({ x: current.x, y: current.y });
+      dabPositions.push({ x: current.x, y: current.y, progress });
       nextAt = traveled + Math.max(1, jitteredStep);
     }
   }
@@ -255,9 +278,16 @@ export function renderSubToolStrokePreview(
   ctx.globalAlpha = params.blending.opacity;
   for (const position of dabPositions) {
     const { color, alpha } = jitteredColor(rng, params);
+    const pressureScale = computeSubToolPressureEnvelope(position.progress);
     drawDab(
       ctx,
-      { x: position.x, y: position.y, diameter: size, color, alpha },
+      {
+        x: position.x,
+        y: position.y,
+        diameter: Math.max(1, size * pressureScale),
+        color,
+        alpha,
+      },
       params.tip.shape,
       angleRad,
       params.tip.roundness,

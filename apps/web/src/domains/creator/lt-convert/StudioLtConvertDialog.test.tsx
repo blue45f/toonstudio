@@ -153,4 +153,44 @@ describe("StudioLtConvertDialog", () => {
     );
     expect(container.firstChild).toBeNull();
   });
+
+  it("미리보기 탭에서 좌우 화살표와 Home/End 키로 로빙 탭인덱스 전환이 동작한다", () => {
+    renderDialog();
+    const originalTab = screen.getByRole("button", { name: "원본" });
+    const lineTab = screen.getByRole("button", { name: "선화" });
+    const toneTab = screen.getByRole("button", { name: "톤" });
+
+    expect(lineTab.getAttribute("tabindex")).toBe("0");
+    expect(originalTab.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(lineTab, { key: "ArrowRight" });
+    expect(toneTab.getAttribute("aria-pressed")).toBe("true");
+    expect(toneTab.getAttribute("tabindex")).toBe("0");
+
+    fireEvent.keyDown(toneTab, { key: "Home" });
+    expect(originalTab.getAttribute("aria-pressed")).toBe("true");
+    expect(originalTab.getAttribute("tabindex")).toBe("0");
+
+    fireEvent.keyDown(originalTab, { key: "End" });
+    expect(toneTab.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("선 세선화(NMS)와 먹베타 추출 체크박스 및 먹베타 임계값 슬라이더가 동작한다", () => {
+    renderDialog();
+    const nmsCheckbox = screen.getByLabelText("선 세선화 (NMS)") as HTMLInputElement;
+    const blackFillCheckbox = screen.getByLabelText("먹베타 추출") as HTMLInputElement;
+    expect(nmsCheckbox.checked).toBe(false);
+    expect(blackFillCheckbox.checked).toBe(false);
+    expect(screen.queryByLabelText("먹베타 임계값")).toBeNull();
+
+    fireEvent.click(nmsCheckbox);
+    expect(nmsCheckbox.checked).toBe(true);
+
+    fireEvent.click(blackFillCheckbox);
+    expect(blackFillCheckbox.checked).toBe(true);
+    const thresholdSlider = screen.getByLabelText("먹베타 임계값");
+    expect(thresholdSlider).toBeTruthy();
+    fireEvent.change(thresholdSlider, { target: { value: "30" } });
+    expect(screen.getByText("30%")).toBeTruthy();
+  });
 });

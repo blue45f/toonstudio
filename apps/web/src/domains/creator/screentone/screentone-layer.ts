@@ -44,6 +44,7 @@ export type ScreentoneGradient = {
  *   angle    망점 회전각 0..180 (도).
  *   seed     모래망점(sand)용 결정적 시드 — 같은 시드는 항상 같은 노이즈.
  *   gradient 그라데이션 톤 설정.
+ *   invert   톤 반전(백발 망점) 여부 — true일 때만 포함되며 잉크/여백 커버리지를 뒤집는다.
  */
 export type ScreentoneLayer = {
   kind: ScreentoneToneKind;
@@ -52,6 +53,7 @@ export type ScreentoneLayer = {
   angle: number;
   seed: number;
   gradient: ScreentoneGradient;
+  invert?: boolean;
 };
 
 /** 기본 톤 — 30선 도트, 농도 40%, 45°, 그라데이션 없음. */
@@ -97,7 +99,7 @@ export function normalizeScreentoneLayer(p?: Partial<ScreentoneLayer> | null): S
   const gkind = SCREENTONE_GRADIENT_KINDS.includes(gsrc.kind as ScreentoneGradientKind)
     ? (gsrc.kind as ScreentoneGradientKind)
     : DEFAULT_SCREENTONE_LAYER.gradient.kind;
-  return {
+  const normalized: ScreentoneLayer = {
     kind,
     lines: clampNumber(src.lines, SCREENTONE_LINES_RANGE.min, SCREENTONE_LINES_RANGE.max, DEFAULT_SCREENTONE_LAYER.lines),
     density: clampNumber(
@@ -130,6 +132,10 @@ export function normalizeScreentoneLayer(p?: Partial<ScreentoneLayer> | null): S
       ),
     },
   };
+  if (src.invert === true) {
+    normalized.invert = true;
+  }
+  return normalized;
 }
 
 /** 톤이 아무것도 그리지 않는 항등 설정인지 — 균일 농도 0이고 그라데이션도 0이면 true. */
@@ -153,6 +159,8 @@ export type ScreentoneSelectionRect = {
   height: number;
   canvasWidth: number;
   canvasHeight: number;
+  /** 경계 페더 반경(px, 기본 0). 양수면 선택 마스크 경계를 부드럽게 흐린다. */
+  featherPx?: number;
 };
 
 /** 마스크 선택 — 길이 width*height, 값 0..1(범위 밖은 클램프). */
@@ -161,6 +169,8 @@ export type ScreentoneSelectionMask = {
   mask: ArrayLike<number>;
   width: number;
   height: number;
+  /** 추가 경계 페더 반경(px, 기본 0). */
+  featherPx?: number;
 };
 
 export type ScreentoneSelection = ScreentoneSelectionRect | ScreentoneSelectionMask;
@@ -179,11 +189,53 @@ function clamp01(v: number): number {
 }
 
 /**
+ * 선택 마스크(0..1)에 분리형 박스 블러 기반 페더(경계 흐림)를 적용한다.
+ * `radiusPx <= 0`이면 입력 마스크의 사본을 그대로 돌려준다.
+ */
+export function featherScreentoneMask(
+  mask: Float32Array,
+  width: number,
+  height: number,
+  radiusPx: number
+): Float32Array {
+  const r = Number.isFinite(radiusPx) ? Math.min(32, Math.max(0, Math.round(radiusPx))) : 0;
+  if (r <= 0 || width <= 0 || height <= 0) {
+    return new Float32Array(mask);
+  }
+  const horiz = new Float32Array(width * height);
+  const out = new Float32Array(width * height);
+  const kernelSize = 2 * r + 1;
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    for (let x = 0; x < width; x++) {
+      let sum = 0;
+      for (let dx = -r; dx <= r; dx++) {
+        const nx = Math.min(width - 1, Math.max(0, x + dx));
+        sum += mask[row + nx] ?? 0;
+      }
+      horiz[row + x] = sum / kernelSize;
+    }
+  }
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let sum = 0;
+      for (let dy = -r; dy <= r; dy++) {
+        const ny = Math.min(height - 1, Math.max(0, y + dy));
+        sum += horiz[ny * width + x] ?? 0;
+      }
+      out[y * width + x] = clamp01(sum / kernelSize);
+    }
+  }
+  return out;
+}
+
+/**
  * 선택 영역에 스크린톤 레이어를 붙인다 — 순수 함수(DOM/canvas 의존 없음).
  *
  *  - rect: 캔버스 크기로 래스터화. 픽셀 중심이 사각형 안에 들면 1, 밖이면 0.
  *    사각형이 캔버스를 벗어나면 경계에서 잘린다.
  *  - mask: 값을 0..1로 클램프해 그대로 쓴다(부분 선택/페더 지원).
+ *  - featherPx가 양수이면 래스터화된 마스크에 분리형 페더 블러를 적용한다.
  *
  * 크기가 유효하지 않거나(0 이하) 마스크 길이가 맞지 않으면 RangeError.
  */
@@ -192,6 +244,10 @@ export function applyToneToSelection(
   params?: Partial<ScreentoneLayer> | null
 ): ScreentoneToneInstance {
   const layer = normalizeScreentoneLayer(params);
+  const featherRadius =
+    typeof selection.featherPx === "number" && Number.isFinite(selection.featherPx) && selection.featherPx > 0
+      ? selection.featherPx
+      : 0;
 
   if (selection.kind === "mask") {
     const width = Math.floor(selection.width);
@@ -202,11 +258,12 @@ export function applyToneToSelection(
     if (selection.mask.length !== width * height) {
       throw new RangeError("선택 마스크 길이가 너비×높이와 다릅니다.");
     }
-    const mask = new Float32Array(width * height);
-    for (let i = 0; i < mask.length; i++) {
+    const rawMask = new Float32Array(width * height);
+    for (let i = 0; i < rawMask.length; i++) {
       const v: number = selection.mask[i] as number;
-      mask[i] = clamp01(typeof v === "number" && Number.isFinite(v) ? v : 0);
+      rawMask[i] = clamp01(typeof v === "number" && Number.isFinite(v) ? v : 0);
     }
+    const mask = featherRadius > 0 ? featherScreentoneMask(rawMask, width, height, featherRadius) : rawMask;
     return { layer, mask, width, height };
   }
 
@@ -216,7 +273,7 @@ export function applyToneToSelection(
   if (!(canvasWidth > 0) || !(canvasHeight > 0)) {
     throw new RangeError("선택 영역 캔버스 크기가 올바르지 않습니다.");
   }
-  const mask = new Float32Array(canvasWidth * canvasHeight);
+  const rawMask = new Float32Array(canvasWidth * canvasHeight);
   const x0 = selection.x;
   const y0 = selection.y;
   const x1 = selection.x + selection.width;
@@ -226,10 +283,12 @@ export function applyToneToSelection(
       const cx = px + 0.5;
       const cy = py + 0.5;
       if (cx >= x0 && cx < x1 && cy >= y0 && cy < y1) {
-        mask[py * canvasWidth + px] = 1;
+        rawMask[py * canvasWidth + px] = 1;
       }
     }
   }
+  const mask =
+    featherRadius > 0 ? featherScreentoneMask(rawMask, canvasWidth, canvasHeight, featherRadius) : rawMask;
   return { layer, mask, width: canvasWidth, height: canvasHeight };
 }
 

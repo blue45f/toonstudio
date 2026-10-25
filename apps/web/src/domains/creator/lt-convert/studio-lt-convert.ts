@@ -39,11 +39,20 @@ export const STUDIO_LT_CONVERT_LINE_THRESHOLD_RANGE = Object.freeze({
   max: 1,
 } as const);
 
+/** 먹베타(암부 단색 채움) 임계값(0~0.5) 허용 범위. */
+export const STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE = Object.freeze({
+  min: 0,
+  max: 0.5,
+} as const);
+
 export const STUDIO_LT_CONVERT_DEFAULT_OPTIONS = Object.freeze({
   toneDensity: 4,
   lineThickness: 2,
   lineThreshold: 0.25,
   screentone: false,
+  edgeThinning: false,
+  extractBlackFill: false,
+  blackFillThreshold: 0.15,
 } as const);
 
 export type StudioLtConvertErrorCode = "invalid-input" | "budget-exceeded";
@@ -68,6 +77,12 @@ export interface StudioLtConvertOptions {
   readonly lineThreshold: number;
   /** 도트 스크린톤 패턴 사용 여부 (기본값 false). */
   readonly screentone?: boolean;
+  /** Canny 스타일 그래디언트 비최대 억제(NMS) 세선화 사용 여부 (기본값 false). */
+  readonly edgeThinning?: boolean;
+  /** 어두운 암부를 선화 레이어에 먹베타(검은 단색)로 추출할지 여부 (기본값 false). */
+  readonly extractBlackFill?: boolean;
+  /** 먹베타 추출 휘도 임계값 (0~0.5, 기본값 0.15). */
+  readonly blackFillThreshold?: number;
 }
 
 export interface NormalizedStudioLtConvertOptions {
@@ -75,6 +90,9 @@ export interface NormalizedStudioLtConvertOptions {
   readonly lineThickness: number;
   readonly lineThreshold: number;
   readonly screentone: boolean;
+  readonly edgeThinning: boolean;
+  readonly extractBlackFill: boolean;
+  readonly blackFillThreshold: number;
 }
 
 export interface StudioLtConvertResult {
@@ -144,6 +162,14 @@ export function normalizeStudioLtConvertOptions(
       STUDIO_LT_CONVERT_DEFAULT_OPTIONS.lineThreshold,
     ),
     screentone: options.screentone === true,
+    edgeThinning: options.edgeThinning === true,
+    extractBlackFill: options.extractBlackFill === true,
+    blackFillThreshold: clampFinite(
+      options.blackFillThreshold ?? STUDIO_LT_CONVERT_DEFAULT_OPTIONS.blackFillThreshold,
+      STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE.min,
+      STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE.max,
+      STUDIO_LT_CONVERT_DEFAULT_OPTIONS.blackFillThreshold,
+    ),
   };
 }
 
@@ -241,7 +267,19 @@ function gaussianBlur3x3(
 }
 
 /**
- * Sobel 그래디언트 크기(0~1 정규화) → 임계값 → 정사각 팽창으로 선 마스크 생성.
+ * Sobel 그래디언트 방향(라디안)을 4개 주축(0°: 0, 45°: 1, 90°: 2, 135°: 3)으로 양자화한다.
+ */
+function quantizeGradientSector(gx: number, gy: number): 0 | 1 | 2 | 3 {
+  let angleDeg = (Math.atan2(gy, gx) * 180) / Math.PI;
+  if (angleDeg < 0) angleDeg += 180;
+  if (angleDeg < 22.5 || angleDeg >= 157.5) return 0;
+  if (angleDeg < 67.5) return 1;
+  if (angleDeg < 112.5) return 2;
+  return 3;
+}
+
+/**
+ * Sobel 그래디언트 크기(0~1 정규화) → (선택적 NMS 세선화) → 임계값 → 정사각 팽창으로 선 마스크 생성.
  * 정규화 분모는 Sobel 커널의 이론적 최대값(4·√2·255)이다.
  */
 function buildLineMask(
@@ -250,8 +288,11 @@ function buildLineMask(
   height: number,
   threshold: number,
   thickness: number,
+  edgeThinning = false,
 ): Uint8Array {
   const sobelMax = 4 * Math.SQRT2 * 255;
+  const magnitudes = edgeThinning ? new Float32Array(blurred.length) : null;
+  const sectors = edgeThinning ? new Uint8Array(blurred.length) : null;
   const edge = new Uint8Array(blurred.length);
   for (let y = 0; y < height; y += 1) {
     const up = Math.max(0, y - 1) * width;
@@ -275,7 +316,50 @@ function buildLineMask(
         + 2 * (blurred[down + x] ?? 0)
         + (blurred[down + right] ?? 0);
       const magnitude = Math.hypot(gx, gy) / sobelMax;
-      edge[row + x] = magnitude >= threshold ? 1 : 0;
+      if (magnitudes && sectors) {
+        magnitudes[row + x] = magnitude;
+        sectors[row + x] = quantizeGradientSector(gx, gy);
+      } else {
+        edge[row + x] = magnitude >= threshold ? 1 : 0;
+      }
+    }
+  }
+
+  if (magnitudes && sectors) {
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const mag = magnitudes[row + x] ?? 0;
+        if (mag < threshold) continue;
+        const sector = sectors[row + x] ?? 0;
+        let n1: number;
+        let n2: number;
+        if (sector === 0) {
+          n1 = x > 0 ? (magnitudes[row + x - 1] ?? 0) : 0;
+          n2 = x < width - 1 ? (magnitudes[row + x + 1] ?? 0) : 0;
+        } else if (sector === 1) {
+          n1 = x > 0 && y > 0 ? (magnitudes[(y - 1) * width + (x - 1)] ?? 0) : 0;
+          n2 =
+            x < width - 1 && y < height - 1
+              ? (magnitudes[(y + 1) * width + (x + 1)] ?? 0)
+              : 0;
+        } else if (sector === 2) {
+          n1 = y > 0 ? (magnitudes[(y - 1) * width + x] ?? 0) : 0;
+          n2 = y < height - 1 ? (magnitudes[(y + 1) * width + x] ?? 0) : 0;
+        } else {
+          n1 =
+            x < width - 1 && y > 0
+              ? (magnitudes[(y - 1) * width + (x + 1)] ?? 0)
+              : 0;
+          n2 =
+            x > 0 && y < height - 1
+              ? (magnitudes[(y + 1) * width + (x - 1)] ?? 0)
+              : 0;
+        }
+        if (mag >= n1 && mag >= n2) {
+          edge[row + x] = 1;
+        }
+      }
     }
   }
   const radius = Math.floor(thickness / 2);
@@ -338,11 +422,15 @@ export function convertStudioLtImage(
     height,
     normalized.lineThreshold,
     normalized.lineThickness,
+    normalized.edgeThinning,
   );
 
+  const blackFillLumaMax = normalized.blackFillThreshold * 255;
   const lineData = new Uint8ClampedArray(pixels * 4);
   for (let index = 0; index < pixels; index += 1) {
-    if (lineMask[index] === 1) {
+    const isBlackFill =
+      normalized.extractBlackFill && (luminance[index] ?? 255) <= blackFillLumaMax;
+    if (lineMask[index] === 1 || isBlackFill) {
       lineData[index * 4 + 3] = 255;
     }
   }

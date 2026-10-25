@@ -178,11 +178,15 @@ export function renderScreentone(
 
   const img = ctx.createImageData(w, h);
   const data = img.data;
+  const isInverted = params.invert === true;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const d = screentoneDensityAt(params, x, y, w, h);
       let cov = patternCoverage(params.kind, x, y, cell, cos, sin, d, seed);
+      if (isInverted && d > 0) {
+        cov = 1 - cov;
+      }
       if (mask != null) {
         const mv: number = mask[i] as number;
         cov *= clamp01(typeof mv === "number" && Number.isFinite(mv) ? mv : 0);
