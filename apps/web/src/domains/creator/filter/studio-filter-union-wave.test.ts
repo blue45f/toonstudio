@@ -68,9 +68,9 @@ function defaultEffect(kind: StudioFilterUnionWaveKind) {
 }
 
 describe("studio filter union wave", () => {
-  it("adds seventeen real engines with schema-driven defaults and active non-destructive patches", () => {
-    expect(STUDIO_FILTER_UNION_WAVE_KINDS).toHaveLength(17);
-    expect(new Set(STUDIO_FILTER_UNION_WAVE_KINDS).size).toBe(17);
+  it("adds twenty-six real engines with schema-driven defaults and active non-destructive patches", () => {
+    expect(STUDIO_FILTER_UNION_WAVE_KINDS).toHaveLength(26);
+    expect(new Set(STUDIO_FILTER_UNION_WAVE_KINDS).size).toBe(26);
     for (const kind of STUDIO_FILTER_UNION_WAVE_KINDS) {
       const definition = STUDIO_FILTER_PACK_DEFS[kind];
       expect(definition.kind).toBe(kind);
@@ -148,6 +148,8 @@ describe("studio filter union wave", () => {
       "perlin-texture",
       "pointillize",
       "stained-glass",
+      "pencil-art",
+      "film-camera-style",
     ] as const) {
       const base = defaultEffect(kind)!;
       const first = cloneImage(patternedImage());

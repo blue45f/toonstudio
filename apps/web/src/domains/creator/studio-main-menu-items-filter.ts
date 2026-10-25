@@ -120,6 +120,15 @@ const STUDIO_FILTER_PACK_MENU_ICONS: Readonly<Record<StudioFilterPackKind, Lucid
   "normal-map": Mountain,
   "god-rays": Sunrise,
   "polar-coordinates": Compass,
+  "flow-based-abstraction": Paintbrush,
+  "pencil-art": Frame,
+  smoothing: Droplets,
+  "sharp-strong": Sparkles,
+  "sphere-warp": Aperture,
+  "zigzag-warp": Waves,
+  "panorama-warp": Compass,
+  "line-width-correct": ScanLine,
+  "film-camera-style": Film,
 };
 
 /** Core rows keep their bespoke drafts and ⌘⇧n chords; the shared grouping decides where they sit. */

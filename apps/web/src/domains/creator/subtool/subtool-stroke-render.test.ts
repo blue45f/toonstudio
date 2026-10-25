@@ -99,4 +99,27 @@ describe("renderSubToolStrokePreview", () => {
     expect(computeSubToolPressureEnvelope(0.07)).toBeGreaterThan(0.18);
     expect(computeSubToolPressureEnvelope(0.07)).toBeLessThan(1);
   });
+
+  it("CSP 수채 경계(waterEdge)와 지각적 물감 혼합(colorMixing)이 켜지면 추가 렌더 패스를 실행한다", () => {
+    const baseFake = createFakeContext();
+    const cspFake = createFakeContext();
+    renderSubToolStrokePreview(baseFake.ctx, 560, 120, createDefaultSubToolParams());
+    renderSubToolStrokePreview(
+      cspFake.ctx,
+      560,
+      120,
+      normalizeSubToolParams({
+        waterEdge: { enabled: true, radius: 4, darkness: 0.6, vividness: 0.5 },
+        colorMixing: {
+          enabled: true,
+          mode: "perceptual-lms",
+          paintLoad: 0.5,
+          paintDensity: 0.8,
+          colorStretch: 0.6,
+        },
+        correction: { stabilization: 40, taperIn: 25, taperOut: 30, sharpCorners: true },
+      }),
+    );
+    expect(cspFake.calls.length).toBeGreaterThan(baseFake.calls.length);
+  });
 });

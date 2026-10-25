@@ -97,6 +97,15 @@ const STUDIO_ADJUSTMENT_UNION_WAVE_DEFAULT_PARAMS: Readonly<
   "normal-map": { amount: 100, scale: 1, detail: 110, seed: 1_337, centerX: 50, centerY: 50, angle: 0 },
   "god-rays": { amount: 68, scale: 7, detail: 152, seed: 1_337, centerX: 28, centerY: 20, angle: 0 },
   "polar-coordinates": { amount: 100, scale: 24, detail: 50, seed: 1_337, centerX: 50, centerY: 50, angle: 0, mode: "rectangular-to-polar", interpolation: "bilinear" },
+  "flow-based-abstraction": { amount: 84, scale: 6, detail: 142, seed: 1_337, centerX: 50, centerY: 50, angle: 0 },
+  "pencil-art": { amount: 86, scale: 5, detail: 156, seed: 1_337, centerX: 50, centerY: 50, angle: 35 },
+  smoothing: { amount: 76, scale: 2, detail: 118, seed: 1_337, centerX: 50, centerY: 50, angle: 0 },
+  "sharp-strong": { amount: 74, scale: 2, detail: 140, seed: 1_337, centerX: 50, centerY: 50, angle: 0 },
+  "sphere-warp": { amount: 58, scale: 85, detail: 50, seed: 1_337, centerX: 50, centerY: 50, angle: 0, interpolation: "bilinear" },
+  "zigzag-warp": { amount: 48, scale: 18, detail: 56, seed: 1_337, centerX: 50, centerY: 50, angle: 0, interpolation: "bilinear" },
+  "panorama-warp": { amount: 54, scale: 92, detail: 50, seed: 1_337, centerX: 50, centerY: 50, angle: 0, interpolation: "bilinear" },
+  "line-width-correct": { amount: 68, scale: 2, detail: 64, seed: 1_337, centerX: 50, centerY: 50, angle: 0 },
+  "film-camera-style": { amount: 76, scale: 64, detail: 118, seed: 1_975, centerX: 50, centerY: 50, angle: 0 },
 });
 
 /** Every recognized engine is discoverable; legacy stacks and the add catalog cannot drift. */
@@ -136,23 +145,9 @@ export function studioAdjustmentDefaultParams(
     case "lens-blur":
       return { radius: 4, sampleCount: 21, apertureBlades: 6, apertureRotationRadians: 0 };
     case "field-iris-blur":
-      return {
-        focusCenterX: 0.5,
-        focusCenterY: 0.5,
-        focusRadius: 0.16,
-        feather: 0.24,
-        maximumBlurRadius: 7,
-        sampleCount: 21,
-        apertureBlades: 8,
-      };
+      return { focusCenterX: 0.5, focusCenterY: 0.5, focusRadius: 0.16, feather: 0.24, maximumBlurRadius: 7, sampleCount: 21, apertureBlades: 8 };
     case "tilt-shift-blur":
-      return {
-        axisRadians: 0,
-        focusWidth: 0.2,
-        feather: 0.22,
-        maximumBlurRadius: 7,
-        sampleCount: 19,
-      };
+      return { axisRadians: 0, focusWidth: 0.2, feather: 0.22, maximumBlurRadius: 7, sampleCount: 19 };
     case "selective-gaussian-blur":
       return { radius: 3, spatialSigma: 2, edgeThreshold: 20, edgeSoftness: 0.35 };
     case "tileable-blur":
@@ -176,7 +171,6 @@ export function studioAdjustmentDefaultParams(
     case "noise":
       return { amount: 15, seed: 1_337 };
     case "invert":
-      return {};
     case "grayscale":
     case "sepia":
     case "line-extraction":
@@ -186,14 +180,7 @@ export function studioAdjustmentDefaultParams(
     case "screentone-removal":
       return { radius: 2, strength: 0.88, inkLumaThreshold: 72 };
     case "jpeg-artifact-reduction":
-      return {
-        deblockStrength: 0.72,
-        deringStrength: 0.45,
-        boundaryThreshold: 6,
-        protectedEdgeThreshold: 88,
-        ringingThreshold: 18,
-        inkLumaThreshold: 64,
-      };
+      return { deblockStrength: 0.72, deringStrength: 0.45, boundaryThreshold: 6, protectedEdgeThreshold: 88, ringingThreshold: 18, inkLumaThreshold: 64 };
     case "edge-aware-denoise":
       return { radius: 1, strength: 0.78, rangeThreshold: 72 };
     case "dust-scratches":

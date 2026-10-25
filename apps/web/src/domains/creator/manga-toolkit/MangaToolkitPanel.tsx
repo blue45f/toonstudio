@@ -1,12 +1,18 @@
 import { useMemo, useRef, useState } from "react";
 
 import {
+  CSP_CONCENTRATION_LINE_PRESETS,
+  CSP_FLASH_PRESETS,
+  CSP_SPEED_LINE_PRESETS,
   DEFAULT_EFFECT_STROKE,
   DEFAULT_FLASH_OPTIONS,
   createConcentrationLines,
   createFlashPolygon,
   createSpeedLines,
   effectLinesToSvgPath,
+  type CspConcentrationLinePreset,
+  type CspFlashPreset,
+  type CspSpeedLinePreset,
   type EffectStrokeParams,
 } from "./effect-lines";
 import {
@@ -329,6 +335,7 @@ function BalloonTab(): ReactElement {
 
 function EffectTab(): ReactElement {
   const [kind, setKind] = useState<EffectKind>("concentration");
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [stroke, setStroke] = useState<EffectStrokeParams>({ ...DEFAULT_EFFECT_STROKE });
   const [innerRadius, setInnerRadius] = useState(24);
   const [angleJitter, setAngleJitter] = useState(4);
@@ -337,6 +344,46 @@ function EffectTab(): ReactElement {
   const [spikes, setSpikes] = useState(DEFAULT_FLASH_OPTIONS.spikes);
 
   const patch = (p: Partial<EffectStrokeParams>): void => setStroke((s) => ({ ...s, ...p }));
+
+  const applyConcentrationPreset = (preset: CspConcentrationLinePreset): void => {
+    setActivePresetId(preset.id);
+    setStroke((prev) => ({
+      ...prev,
+      count: preset.count,
+      length: preset.length,
+      width: preset.width,
+      lengthJitter: preset.lengthJitter,
+      opacity: preset.opacity,
+    }));
+    setInnerRadius(preset.innerRadius);
+    setAngleJitter(preset.angleJitter);
+  };
+
+  const applySpeedPreset = (preset: CspSpeedLinePreset): void => {
+    setActivePresetId(preset.id);
+    setStroke((prev) => ({
+      ...prev,
+      count: preset.count,
+      length: preset.length,
+      width: preset.width,
+      lengthJitter: preset.lengthJitter,
+      opacity: preset.opacity,
+    }));
+    setDirection(preset.direction);
+    setSpacing(preset.spacing);
+  };
+
+  const applyFlashPreset = (preset: CspFlashPreset): void => {
+    setActivePresetId(preset.id);
+    setStroke((prev) => ({
+      ...prev,
+      length: preset.outerRadius,
+      width: preset.width,
+      opacity: preset.opacity,
+    }));
+    setInnerRadius(preset.innerRadius);
+    setSpikes(preset.spikes);
+  };
 
   const svgContent = useMemo(() => {
     const cx = PREVIEW_WIDTH / 2;
@@ -412,11 +459,52 @@ function EffectTab(): ReactElement {
             key={k.id}
             type="button"
             className={studioSegmentChipClass(kind === k.id)}
-            onClick={() => setKind(k.id)}
+            onClick={() => {
+              setKind(k.id);
+              setActivePresetId(null);
+            }}
           >
             {k.label}
           </button>
         ))}
+      </div>
+      <div className="mb-2 flex flex-wrap gap-1" aria-label="CSP 효과선 프리셋">
+        {kind === "concentration" &&
+          CSP_CONCENTRATION_LINE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={studioSegmentChipClass(activePresetId === preset.id)}
+              onClick={() => applyConcentrationPreset(preset)}
+              title={preset.description}
+            >
+              {preset.name}
+            </button>
+          ))}
+        {kind === "speed" &&
+          CSP_SPEED_LINE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={studioSegmentChipClass(activePresetId === preset.id)}
+              onClick={() => applySpeedPreset(preset)}
+              title={preset.description}
+            >
+              {preset.name}
+            </button>
+          ))}
+        {kind === "flash" &&
+          CSP_FLASH_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={studioSegmentChipClass(activePresetId === preset.id)}
+              onClick={() => applyFlashPreset(preset)}
+              title={preset.description}
+            >
+              {preset.name}
+            </button>
+          ))}
       </div>
       <StudioSliderRow
         label={L.effect.count}

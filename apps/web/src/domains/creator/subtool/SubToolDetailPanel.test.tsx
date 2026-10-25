@@ -31,6 +31,9 @@ describe("SubToolDetailPanel 렌더", () => {
     expect(screen.getByTestId("subtool-section-dual-brush")).toBeTruthy();
     expect(screen.getByTestId("subtool-section-color-jitter")).toBeTruthy();
     expect(screen.getByTestId("subtool-section-blending")).toBeTruthy();
+    expect(screen.getByTestId("subtool-section-water-edge")).toBeTruthy();
+    expect(screen.getByTestId("subtool-section-color-mixing")).toBeTruthy();
+    expect(screen.getByTestId("subtool-section-correction")).toBeTruthy();
 
     for (const title of [
       "팁 모양",
@@ -39,6 +42,9 @@ describe("SubToolDetailPanel 렌더", () => {
       "듀얼 브러시",
       "색상 지터",
       "혼합 모드",
+      "수채 경계",
+      "물감 혼합",
+      "손떨림 보정 · 시작과 끝",
     ]) {
       expect(screen.getByText(title)).toBeTruthy();
     }
@@ -195,6 +201,38 @@ describe("SubToolDetailPanel 상호작용", () => {
       expect.objectContaining({
         params: expect.objectContaining({
           tip: expect.objectContaining({ shape: "neon" }),
+        }),
+      }),
+    );
+  });
+
+  it("CSP 수채 경계·물감 혼합·손떨림 보정 스위치 및 슬라이더가 상태를 갱신한다", () => {
+    const { onSubToolChange } = renderPanel();
+    fireEvent.click(screen.getByTestId("subtool-water-edge-enabled"));
+    expect(onSubToolChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          waterEdge: expect.objectContaining({ enabled: true }),
+        }),
+      }),
+    );
+
+    fireEvent.click(screen.getByTestId("subtool-color-mixing-enabled"));
+    expect(onSubToolChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          colorMixing: expect.objectContaining({ enabled: true }),
+        }),
+      }),
+    );
+
+    fireEvent.change(screen.getByTestId("subtool-correction-stabilization"), {
+      target: { value: "65" },
+    });
+    expect(onSubToolChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          correction: expect.objectContaining({ stabilization: 65 }),
         }),
       }),
     );

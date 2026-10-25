@@ -429,11 +429,11 @@ class ApplyingWorker implements StudioImageFilterWorkerLike {
 }
 
 describe("studio filter catalog output quality", () => {
-  it("enumerates one 77-engine source-of-truth with no duplicate or unsupported entries", () => {
+  it("enumerates one 86-engine source-of-truth with no duplicate or unsupported entries", () => {
     const catalogIds = STUDIO_FILTER_CATALOG.map((entry) => entry.engine);
     const executableIds = [...STUDIO_ADJUSTMENT_ENGINE_IDS];
-    expect(catalogIds).toHaveLength(77);
-    expect(new Set(catalogIds).size).toBe(77);
+    expect(catalogIds).toHaveLength(86);
+    expect(new Set(catalogIds).size).toBe(86);
     expect([...catalogIds].sort()).toEqual([...executableIds].sort());
 
     const monotonicIds = Object.keys(MONOTONIC_ADJUSTMENT_PARAMS);

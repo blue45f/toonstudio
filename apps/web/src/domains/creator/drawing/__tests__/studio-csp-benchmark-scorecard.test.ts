@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY,
   evaluateStudioCspBenchmarkScorecard,
   measureLivePigmentEngineBenchmark,
   measureMagmaAndKlekiEngineBenchmark,
@@ -94,6 +95,21 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(magmaKlekiBench.vineTiltExpansionRatio).toBeGreaterThan(2.0);
     expect(magmaKlekiBench.wireHeaderCompressionRatio).toBeGreaterThan(15);
     expect(magmaKlekiBench.klekiSketchyWebLinkRatio).toBeGreaterThan(0);
+  });
+
+  it("REA로 역공학 검증된 Clip Studio Paint 5.1.5 아키텍처 기준선 요약을 제공한다", () => {
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.appVersion).toBe("5.1.5");
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.editImageToolNodeCount).toBe(255);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.editImageToolVariantColumnCount).toBe(507);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.filterPluginBundles).toContain(
+      "FlowBasedAbstraction.bundle",
+    );
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.filterPluginBundles).toContain(
+      "PencilArtFilter.bundle",
+    );
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.filterPluginBundles).toContain(
+      "TPPChromaticAberration.bundle",
+    );
   });
 });
 

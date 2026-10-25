@@ -273,12 +273,57 @@ export function renderSubToolStrokePreview(
     }
   }
 
+  // 수채 경계 패스 (CSP BrushUseWaterEdge: 외곽 안료 응집 림)
+  if (params.waterEdge?.enabled && params.waterEdge.radius > 0) {
+    const rimRadius = params.waterEdge.radius;
+    const rimDarkness = params.waterEdge.darkness;
+    const rimVividness = params.waterEdge.vividness;
+    const [baseH, baseS, baseL] = rgbToHsl(PREVIEW_INK[0], PREVIEW_INK[1], PREVIEW_INK[2]);
+    const [rimR, rimG, rimB] = hslToRgb(
+      baseH,
+      Math.min(1, baseS + rimVividness * 0.45),
+      Math.max(0.08, baseL * (1 - rimDarkness * 0.65)),
+    );
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = Math.min(1, params.blending.opacity * (0.28 + rimDarkness * 0.52));
+    for (const position of dabPositions) {
+      const taperInRatio = (params.correction?.taperIn ?? 15) / 100;
+      const taperOutRatio = (params.correction?.taperOut ?? 18) / 100;
+      const pressureScale = computeSubToolPressureEnvelope(
+        position.progress,
+        taperInRatio,
+        taperOutRatio,
+      );
+      drawDab(
+        ctx,
+        {
+          x: position.x,
+          y: position.y,
+          diameter: Math.max(2, size * pressureScale + rimRadius * 2),
+          color: `rgb(${rimR},${rimG},${rimB})`,
+          alpha: 0.42,
+        },
+        params.tip.shape,
+        angleRad,
+        params.tip.roundness,
+        rng,
+      );
+    }
+    ctx.globalAlpha = 1;
+  }
+
   // 메인 획
   ctx.globalCompositeOperation = mapBlendMode(params.blending.mode);
   ctx.globalAlpha = params.blending.opacity;
+  const taperInRatio = (params.correction?.taperIn ?? 15) / 100;
+  const taperOutRatio = (params.correction?.taperOut ?? 18) / 100;
   for (const position of dabPositions) {
     const { color, alpha } = jitteredColor(rng, params);
-    const pressureScale = computeSubToolPressureEnvelope(position.progress);
+    const pressureScale = computeSubToolPressureEnvelope(
+      position.progress,
+      taperInRatio,
+      taperOutRatio,
+    );
     drawDab(
       ctx,
       {
@@ -295,6 +340,41 @@ export function renderSubToolStrokePreview(
     );
   }
   ctx.globalAlpha = 1;
+
+  // 물감 혼합 패스 (CSP BrushUseWaterColor / BrushColorMixingMode: 지각적 LMS vs 표준 RGB 혼색)
+  if (params.colorMixing?.enabled) {
+    const isPerceptual = params.colorMixing.mode === "perceptual-lms";
+    const mixColor = isPerceptual ? "rgb(16,185,129)" : "rgb(96,130,145)";
+    const mixOpacity = Math.min(
+      0.85,
+      params.colorMixing.paintDensity * 0.55 + params.colorMixing.colorStretch * 0.25,
+    );
+    ctx.globalCompositeOperation = isPerceptual ? "overlay" : "source-over";
+    for (const position of dabPositions) {
+      const pressureScale = computeSubToolPressureEnvelope(
+        position.progress,
+        taperInRatio,
+        taperOutRatio,
+      );
+      const stretchFactor =
+        (1 - params.colorMixing.paintLoad) * (1 - position.progress * params.colorMixing.colorStretch);
+      drawDab(
+        ctx,
+        {
+          x: position.x,
+          y: position.y,
+          diameter: Math.max(1, size * pressureScale * 0.88),
+          color: mixColor,
+          alpha: Math.max(0.08, mixOpacity * (0.45 + stretchFactor * 0.55)),
+        },
+        params.tip.shape,
+        angleRad,
+        params.tip.roundness,
+        rng,
+      );
+    }
+    ctx.globalAlpha = 1;
+  }
 
   // 질감 오버레이 패스
   if (params.texture.strength > 0) {

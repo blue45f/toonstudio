@@ -6,15 +6,7 @@ import { STUDIO_FILTER_ALL_LABELS } from "./studio-filter-pack-registry";
 import type { StudioFilterKind } from "./studio-filter-menu";
 
 export type StudioFilterCatalogGroup =
-  | "blur"
-  | "tone"
-  | "color"
-  | "detail"
-  | "repair"
-  | "stylize"
-  | "light"
-  | "transform"
-  | "texture";
+  | "blur" | "tone" | "color" | "detail" | "repair" | "stylize" | "light" | "transform" | "texture";
 
 export type StudioFilterCatalogEntry = {
   engine: string;
@@ -638,18 +630,19 @@ export const STUDIO_FILTER_CATALOG: readonly StudioFilterCatalogEntry[] = [
     group: "light",
     keywords: ["볼류메트릭 광선", "god rays", "volumetric", "light shafts", "볼류메트릭", "광선", "빛줄기", "역광"],
   },
+  { engine: "flow-based-abstraction", title: "일러스트풍 (ETF 추상화)", description: "에지 탄젠트 흐름(ETF) 양방향 평활화와 계조 양자화, 흐름선 합성을 결합해 사진을 일러스트 배경으로 변환합니다.", group: "stylize", keywords: ["flow based abstraction", "etf", "artistic", "일러스트풍", "배경 추상화", "애니메이션 배경"] },
+  { engine: "pencil-art", title: "연필화 (해칭 스케치)", description: "다중 방향 윤곽선 검출과 중앙값 벡터 해칭 펜 스트로크를 결합해 연필 소묘 질감을 생성합니다.", group: "stylize", keywords: ["pencil art", "hatching", "graphite", "연필화", "해칭", "소묘", "연필 드로잉"] },
+  { engine: "smoothing", title: "스무딩 (계단 완만화)", description: "픽셀 계단 현상이 발생한 대각선·직각 모서리를 서브픽셀 보간으로 부드럽게 완만화합니다.", group: "repair", keywords: ["smoothing", "anti-aliasing", "jaggies", "스무딩", "계단 현상", "안티에일리어싱"] },
+  { engine: "sharp-strong", title: "더욱 선명하게", description: "직교 및 대각선 8방향 고이득 이웃 커널을 적용해 미세 디테일과 선 경계를 강하게 또렷하게 만듭니다.", group: "detail", keywords: ["sharpen more", "sharp strong", "더욱 선명하게", "강한 샤픈", "선명화 강화"] },
+  { engine: "sphere-warp", title: "구면화", description: "3차원 구체 굴절 투영을 적용해 중심부를 입체 구면 렌즈처럼 볼록하거나 오목하게 변형합니다.", group: "transform", keywords: ["spherize", "sphere warp", "구면화", "구체 왜곡", "볼록 구체"] },
+  { engine: "zigzag-warp", title: "지그재그 물결", description: "중심에서 뻗어 나가는 동심원 삼각파 능선으로 수면 파문이나 충격파 굴곡을 만듭니다.", group: "transform", keywords: ["zigzag", "ridge wave", "지그재그", "지그재그 물결", "동심 파문"] },
+  { engine: "panorama-warp", title: "파노라마 왜곡", description: "원통형 광각 파노라마 투영으로 수평 시야를 넓히고 주변부 공간감을 구부립니다.", group: "transform", keywords: ["panorama distortion", "cylindrical", "파노라마 왜곡", "광각 투영", "원통 왜곡"] },
+  { engine: "line-width-correct", title: "선폭 수정", description: "선화의 어두운 획 두께를 지정한 반경만큼 굵게 확장하거나 가늘게 수축해 인쇄·연출 굵기를 맞춥니다.", group: "repair", keywords: ["adjust line width", "line width", "선폭 수정", "선 굵게", "선 가늘게", "선 두께 조절"] },
+  { engine: "film-camera-style", title: "필름 카메라", description: "아날로그 필름 특유의 앰버 하이라이트·시안 암부 크로스오버와 바랜 매트 블랙, 은염 입자를 입힙니다.", group: "color", keywords: ["film camera", "analog crossover", "필름 카메라", "아날로그 필름", "토이 카메라"] },
 ] as const;
 
 export const STUDIO_FILTER_GROUP_ORDER: readonly StudioFilterCatalogGroup[] = [
-  "tone",
-  "color",
-  "blur",
-  "detail",
-  "repair",
-  "light",
-  "stylize",
-  "texture",
-  "transform",
+  "tone", "color", "blur", "detail", "repair", "light", "stylize", "texture", "transform",
 ];
 
 export function studioFilterCatalogEntry(engine: string): StudioFilterCatalogEntry | null {
@@ -658,24 +651,15 @@ export function studioFilterCatalogEntry(engine: string): StudioFilterCatalogEnt
 
 export function studioFilterGroupLabel(group: StudioFilterCatalogGroup): string {
   switch (group) {
-    case "blur":
-      return "흐림·초점";
-    case "tone":
-      return "밝기·명암";
-    case "color":
-      return "색상 보정";
-    case "detail":
-      return "선명도";
-    case "repair":
-      return "선화·복원";
-    case "stylize":
-      return "그림체·스타일";
-    case "light":
-      return "빛·렌즈";
-    case "transform":
-      return "변형·왜곡";
-    case "texture":
-      return "질감·노이즈";
+    case "blur": return "흐림·초점";
+    case "tone": return "밝기·명암";
+    case "color": return "색상 보정";
+    case "detail": return "선명도";
+    case "repair": return "선화·복원";
+    case "stylize": return "그림체·스타일";
+    case "light": return "빛·렌즈";
+    case "transform": return "변형·왜곡";
+    case "texture": return "질감·노이즈";
   }
 }
 
@@ -797,6 +781,15 @@ const STUDIO_FILTER_DIALOG_CATALOG_SOURCES: readonly StudioFilterDialogCatalogSo
   { kind: "normal-map", engine: "normal-map", preview: "normal" },
   { kind: "god-rays", engine: "god-rays", preview: "rays" },
   { kind: "polar-coordinates", engine: "polar-coordinates", preview: "transform" },
+  { kind: "flow-based-abstraction", engine: "flow-based-abstraction", preview: "paint" },
+  { kind: "pencil-art", engine: "pencil-art", preview: "edges" },
+  { kind: "smoothing", engine: "smoothing", preview: "soft-blur" },
+  { kind: "sharp-strong", engine: "sharp-strong", preview: "relief" },
+  { kind: "sphere-warp", engine: "sphere-warp", preview: "warp" },
+  { kind: "zigzag-warp", engine: "zigzag-warp", preview: "radial" },
+  { kind: "panorama-warp", engine: "panorama-warp", preview: "transform" },
+  { kind: "line-width-correct", engine: "line-width-correct", preview: "threshold" },
+  { kind: "film-camera-style", engine: "film-camera-style", preview: "duotone" },
 ];
 
 /**

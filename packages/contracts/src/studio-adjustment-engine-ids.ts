@@ -17,6 +17,15 @@ const UNION_WAVE_ENGINE_IDS = [
   "normal-map",
   "god-rays",
   "polar-coordinates",
+  "flow-based-abstraction",
+  "pencil-art",
+  "smoothing",
+  "sharp-strong",
+  "sphere-warp",
+  "zigzag-warp",
+  "panorama-warp",
+  "line-width-correct",
+  "film-camera-style",
 ] as const;
 
 export const STUDIO_ADJUSTMENT_ENGINE_IDS = [

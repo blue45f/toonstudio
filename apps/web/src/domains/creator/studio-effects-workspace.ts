@@ -709,27 +709,12 @@ const GEOMETRY_ENGINES = new Set<StudioAdjustmentEngineId>([
 ]);
 
 const MONO_OR_THRESHOLD_ENGINES = new Set<StudioAdjustmentEngineId>([
-  "grayscale",
-  "ink-threshold",
-  "line-extraction",
-  "photocopy",
-  "ordered-dither",
+  "grayscale", "ink-threshold", "line-extraction", "photocopy", "ordered-dither",
 ]);
 
 const BASE_COST_POINTS: Readonly<Record<StudioAdjustmentEngineId, number>> = Object.freeze({
-  "brightness-contrast": 1,
-  "shadow-highlight": 2,
-  levels: 1,
-  curves: 1,
-  "hue-saturation": 1,
-  "color-balance": 1,
-  "channel-mixer": 1,
-  "gradient-map": 1,
-  invert: 1,
-  grayscale: 1,
-  sepia: 1,
-  posterize: 1,
-  exposure: 1,
+  "brightness-contrast": 1, "shadow-highlight": 2, levels: 1, curves: 1, "hue-saturation": 1, "color-balance": 1,
+  "channel-mixer": 1, "gradient-map": 1, invert: 1, grayscale: 1, sepia: 1, posterize: 1, exposure: 1,
   blur: 2,
   sharpen: 2,
   "smart-sharpen": 3,
@@ -794,6 +779,15 @@ const BASE_COST_POINTS: Readonly<Record<StudioAdjustmentEngineId, number>> = Obj
   "normal-map": 5,
   "god-rays": 8,
   "polar-coordinates": 6,
+  "flow-based-abstraction": 7,
+  "pencil-art": 6,
+  smoothing: 4,
+  "sharp-strong": 4,
+  "sphere-warp": 5,
+  "zigzag-warp": 5,
+  "panorama-warp": 5,
+  "line-width-correct": 5,
+  "film-camera-style": 4,
 });
 
 function numericParam(

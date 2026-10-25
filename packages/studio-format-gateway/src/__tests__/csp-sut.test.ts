@@ -262,6 +262,99 @@ describe("SUT/SUTG preserve-first importer", () => {
     ).rejects.toMatchObject({ code: "aborted" } satisfies Partial<CspToolFileError>);
   });
 
+  it("imports CSP Node + Variant split schema with 0..100 integer scales and effector columns", async () => {
+    const bytes = buildAuthoredSutFixture();
+    const pressureBlob = buildPressureGraph([0.1, 0.35, 0.7, 1]);
+    const flowBlob = buildPressureGraph([0.2, 0.5, 0.85, 1]);
+    const result = await importCspToolFile(bytes, {
+      kind: "sut",
+      sqliteReader: async () => ({
+        sqliteVersion: "3.45.0",
+        tables: [
+          {
+            name: "Node",
+            columns: ["NodeName", "NodeOutputProcess", "NodeVariantId", "NodeInitVariantId"],
+            rows: [
+              {
+                NodeName: "둥근펜",
+                NodeOutputProcess: "direct-draw",
+                NodeVariantId: 101,
+                NodeInitVariantId: 102,
+              },
+            ],
+          },
+          {
+            name: "Variant",
+            columns: [
+              "VariantId",
+              "BrushSize",
+              "BrushHardness",
+              "BrushInterval",
+              "Opacity",
+              "BrushRevision",
+              "BrushSizeEffector",
+              "BrushFlowEffector",
+              "BrushRotation",
+              "BrushUseWaterColor",
+              "BrushColorMixingMode",
+              "BrushLMSLinearity",
+              "BrushUseWaterEdge",
+              "UseDualBrush",
+              "TextureDensity",
+            ],
+            rows: [
+              {
+                VariantId: 101,
+                BrushSize: 50,
+                BrushHardness: 80,
+                BrushInterval: 15,
+                Opacity: 90,
+                BrushRevision: 60,
+                BrushSizeEffector: pressureBlob,
+                BrushFlowEffector: flowBlob,
+                BrushRotation: 25,
+                BrushUseWaterColor: 1,
+                BrushColorMixingMode: 2,
+                BrushLMSLinearity: 75,
+                BrushUseWaterEdge: 1,
+                UseDualBrush: 1,
+                TextureDensity: 40,
+              },
+              {
+                VariantId: 102,
+                BrushSize: 50,
+                BrushHardness: 80,
+                BrushInterval: 15,
+                Opacity: 100,
+                BrushRevision: 0,
+                BrushSizeEffector: pressureBlob,
+                BrushFlowEffector: flowBlob,
+                BrushRotation: 0,
+                BrushUseWaterColor: 0,
+                BrushColorMixingMode: 0,
+                BrushLMSLinearity: 0,
+                BrushUseWaterEdge: 0,
+                UseDualBrush: 0,
+                TextureDensity: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(result.supportLevel).toBe("structured-partial");
+    expect(result.programs).toHaveLength(1);
+    expect(result.programs[0]).toMatchObject({
+      name: "둥근펜",
+      stabilizer: { strength: 0.6 },
+      tip: { hardness: 0.8, spacingPct: 15, angleJitterDeg: 25 },
+    });
+    expect(result.programs[0]?.sizeDynamics).toHaveLength(2);
+    expect(result.programs[0]?.flowDynamics).toHaveLength(2);
+    expect(result.unsupported.filter((issue) => issue.code === "sut-column-unmapped")).toEqual([]);
+  });
+
   it("preserves every deterministic SQLite byte mutation or reports a bounded read failure", async () => {
     const valid = buildAuthoredSutFixture({ group: true });
     for (const offset of mutationOffsets(valid.byteLength, 48)) {

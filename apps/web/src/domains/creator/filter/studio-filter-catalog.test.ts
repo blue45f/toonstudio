@@ -65,6 +65,15 @@ describe("studio filter catalog", () => {
     expect(searchStudioFilterCatalog("paper removal").map((entry) => entry.engine))
       .toEqual(["color-to-alpha"]);
     expect(searchStudioFilterCatalog("노멀 맵").map((entry) => entry.engine)).toEqual(["normal-map"]);
+    expect(searchStudioFilterCatalog("일러스트풍 etf").map((entry) => entry.engine)).toEqual(["flow-based-abstraction"]);
+    expect(searchStudioFilterCatalog("연필화 해칭").map((entry) => entry.engine)).toEqual(["pencil-art"]);
+    expect(searchStudioFilterCatalog("계단 완만화").map((entry) => entry.engine)).toEqual(["smoothing"]);
+    expect(searchStudioFilterCatalog("더욱 선명하게").map((entry) => entry.engine)).toEqual(["sharp-strong"]);
+    expect(searchStudioFilterCatalog("구면화").map((entry) => entry.engine)).toEqual(["sphere-warp"]);
+    expect(searchStudioFilterCatalog("지그재그 물결").map((entry) => entry.engine)).toEqual(["zigzag-warp"]);
+    expect(searchStudioFilterCatalog("원통형 파노라마 왜곡").map((entry) => entry.engine)).toEqual(["panorama-warp"]);
+    expect(searchStudioFilterCatalog("선폭 수정").map((entry) => entry.engine)).toEqual(["line-width-correct"]);
+    expect(searchStudioFilterCatalog("필름 카메라").map((entry) => entry.engine)).toEqual(["film-camera-style"]);
   });
 
   it("honors an allowed-engine boundary without changing catalog order", () => {
