@@ -1,5 +1,6 @@
 import type { StudioNativeBrushDocumentPrepare } from "./brush/studio-native-brush-document-commit";
 import type { StudioAiSettings } from "./ai/studio-ai-client";
+import type { StudioAiColorizeWiring } from "./ai/studio-ai-colorize-wiring";
 import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
 import type {
   StudioBrushDefaultRestoreDirection,
@@ -247,6 +248,7 @@ export interface StudioInspectorAsideProps {
   aiColorizeBusy: boolean;
   aiColorizeError: string | null;
   aiColorizePrompt: string;
+  aiColorizeExtras: StudioAiColorizeWiring;
   aiSettings: StudioAiSettings;
   bg: string;
   bgGrad: string[] | null;

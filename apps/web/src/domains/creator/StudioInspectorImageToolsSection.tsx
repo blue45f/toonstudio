@@ -61,6 +61,7 @@ import {
 } from "./studio-selection-tools";
 import { StudioBgRemoveButton } from "./StudioBgRemoveButton";
 import { StudioRasterVectorizeButton } from "./StudioRasterVectorizeButton";
+import { StudioAiColorizeExtras } from "./ai/StudioAiColorizeExtras";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import { StudioMagicWandPanel } from "./StudioMagicWandPanel";
 import { StudioSelectionWorkbenchPanel } from "./StudioSelectionWorkbenchPanel";
@@ -99,6 +100,7 @@ export function StudioInspectorSelectedImageTools({
     advancedFillVisibleRasterCount,
     aiColorizeBusy,
     aiColorizeError,
+    aiColorizeExtras,
     aiColorizePrompt,
     aiSettings,
     applyContentAwareFill,
@@ -343,6 +345,15 @@ export function StudioInspectorSelectedImageTools({
                                 busy={aiColorizeBusy}
                                 error={aiColorizeError}
                                 onColorize={onColorizeSelected}
+                              />
+                              <StudioAiColorizeExtras
+                                wiring={aiColorizeExtras}
+                                prompt={aiColorizePrompt}
+                                onPromptChange={setAiColorizePrompt}
+                                configured={isStudioAiConfigured(aiSettings)}
+                                busy={aiColorizeBusy}
+                                selectedId={selected.id}
+                                selectedSrc={selected.src}
                               />
                               <StudioOnnxColorizePanel
                                 src={selected.src}

@@ -60,6 +60,8 @@ import {
   StepPreviewIllustration,
 } from "./motion-webtoon-illustrations";
 import { useMotionWebtoonCountUp } from "./useMotionWebtoonCountUp";
+import { adaptStudioCutInputs } from "./motion-webtoon-studio-cut-adapter";
+import { mapStudioCutsToMotionEpisode } from "./motion-webtoon-studio-map";
 import { sampleCutImageUri } from "./motion-webtoon-sample-art";
 import "./motion-webtoon.css";
 
@@ -134,6 +136,52 @@ export function MotionWebtoonEditor(props: MotionWebtoonEditorProps): JSX.Elemen
   const [sampleBackup, setSampleBackup] = useState<MotionEpisode | null>(null);
   const [bgmEnabled, setBgmEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  // 스튜디오 컷 가져오기 (JSON 붙여넣기) — 스튜디오 컷 목록 화면에서 직접
+  // 넘어오는 경로는 아직 없으므로, 컷 배열 JSON을 붙여넣어 변환한다.
+  const [studioImportJson, setStudioImportJson] = useState("");
+  const [studioImportTitle, setStudioImportTitle] = useState("");
+  const [studioImportError, setStudioImportError] = useState<string | null>(null);
+  const [studioImportNotice, setStudioImportNotice] = useState<string | null>(null);
+  const importStudioCuts = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(studioImportJson);
+    } catch {
+      setStudioImportError("JSON 형식이 올바르지 않아요.");
+      setStudioImportNotice(null);
+      return;
+    }
+    if (!Array.isArray(parsed)) {
+      setStudioImportError("컷 배열(JSON array)을 붙여넣어 주세요.");
+      setStudioImportNotice(null);
+      return;
+    }
+    const adapted = adaptStudioCutInputs(parsed);
+    if (!adapted.ok) {
+      setStudioImportError(adapted.reason);
+      setStudioImportNotice(null);
+      return;
+    }
+    const mapped = mapStudioCutsToMotionEpisode({
+      episodeId: createMotionId("episode"),
+      titleKo: studioImportTitle.trim() || "스튜디오에서 가져온 회차",
+      cuts: adapted.cuts,
+    });
+    if (!mapped.ok) {
+      setStudioImportError(
+        mapped.reason === "empty_cuts"
+          ? "가져올 컷이 없어요."
+          : "이미지 주소가 없는 컷이 있어 전체 가져오기를 중단했어요.",
+      );
+      setStudioImportNotice(null);
+      return;
+    }
+    if (episode.cuts.length > 0) setSampleBackup(episode);
+    update(mapped.episode);
+    setSelectedCutId(mapped.episode.cuts[0]?.id ?? null);
+    setStudioImportError(null);
+    setStudioImportNotice(`${mapped.episode.cuts.length}개 컷을 모션 회차로 가져왔어요.`);
+  };
 
   const update = (next: MotionEpisode) => {
     setEpisode(next);
@@ -324,6 +372,31 @@ export function MotionWebtoonEditor(props: MotionWebtoonEditorProps): JSX.Elemen
           </ul>
         </div>
       )}
+
+      {studioImportNotice && (
+        <p className="mw-ai-notice" role="status">{studioImportNotice}</p>
+      )}
+
+      <details className="mw-panel" aria-label="스튜디오 컷 가져오기">
+        <summary className="mw-panel-title">스튜디오 컷 가져오기</summary>
+        <p className="mw-panel-desc">
+          스튜디오 컷 목록을 JSON 배열([{`{"id, imageUrl, altKo, dialogues: [{text}]}`}] 형태)로
+          붙여넣으면 모션 회차로 변환해요. 이미지 주소가 없는 컷이 있으면 전체
+          가져오기가 중단돼요.
+        </p>
+        <label className="mw-field">
+          <span>회차 제목</span>
+          <input value={studioImportTitle} onChange={(event) => setStudioImportTitle(event.target.value)} placeholder="스튜디오에서 가져온 회차" />
+        </label>
+        <label className="mw-field">
+          <span>스튜디오 컷 JSON</span>
+          <textarea value={studioImportJson} onChange={(event) => setStudioImportJson(event.target.value)} placeholder='[{"imageUrl": "https://…", "altKo": "컷 1", "dialogues": [{"text": "대사"}]}]' rows={5} />
+        </label>
+        {studioImportError ? <p className="mw-field-error" role="alert">{studioImportError}</p> : null}
+        <button type="button" className="mw-btn mw-btn-primary" onClick={importStudioCuts} disabled={!studioImportJson.trim()}>
+          컷 가져오기
+        </button>
+      </details>
 
       <div className="mw-editor-grid">
         <div className="mw-editor-left">

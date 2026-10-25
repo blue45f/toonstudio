@@ -55,6 +55,32 @@ import {
   type StudioAiRecentPromptsState,
 } from "./ai/studio-ai-assist-ux";
 import {
+  addColorizeCandidate,
+  createColorizeCandidateSession,
+  selectColorizeCandidate,
+} from "./ai/studio-ai-colorize-candidates";
+import { resolveColorizeCandidateApply } from "./ai/studio-ai-candidate-apply";
+import {
+  createContextNote,
+  mergeContextNote,
+} from "./ai/studio-ai-context-note";
+import {
+  loadContextNote,
+  saveContextNote,
+} from "./ai/studio-ai-context-note-storage";
+import { composeColorizeContextPrompt } from "./ai/studio-ai-context-prompt";
+import type { StudioAiColorizeWiring } from "./ai/studio-ai-colorize-wiring";
+import {
+  addReferenceAttachment,
+  removeReferenceAttachment,
+  type StudioAiReferenceAttachment,
+} from "./ai/studio-ai-reference-attachments";
+import { buildReferenceColorizeRequest } from "./ai/studio-ai-reference-request";
+import {
+  createInteractionSfxPlayer,
+  type StudioInteractionSfxPlayer,
+} from "./studio-interaction-sfx-play";
+import {
   colorizeLineArt,
   DEFAULT_STUDIO_AI_IMAGE_SIZE,
   generateBackgroundImage,
@@ -1679,6 +1705,11 @@ export function StudioCuttoonEditor({
     );
     return expanded.length > 0 ? expanded : [elementId];
   }
+  // 인터랙션 효과음 재생기 (캔버스·호스트 전용 — DOM 클릭은 useClickSfx가 맡는다).
+  const interactionSfxPlayerRef = useRef<StudioInteractionSfxPlayer | null>(null);
+  if (interactionSfxPlayerRef.current === null) {
+    interactionSfxPlayerRef.current = createInteractionSfxPlayer();
+  }
   function nodeInteractionBegin(elementId: string): boolean {
     // Konva registers a draggable child's pending drag before the Stage pointerdown bubbles to
     // onStageDown.  Returning from the Stage handler therefore journals the pixel/retouch gesture
@@ -1704,15 +1735,19 @@ export function StudioCuttoonEditor({
           ? "잠긴 멤버가 포함된 그룹이에요. 그룹 잠금을 해제한 뒤 전체를 이동하세요."
           : "잠긴 요소예요. 잠금을 해제한 뒤 이동하세요."
       );
+      interactionSfxPlayerRef.current?.play("drop-invalid");
       return false;
     }
-    return beginLiveResourceEdit(unitIds);
+    const begun = beginLiveResourceEdit(unitIds);
+    if (begun) interactionSfxPlayerRef.current?.play("drag-start");
+    return begun;
   }
   function endCanvasNodeInteraction() {
     // 자식 onDragEnd가 Stage onDragEnd보다 먼저 버블된다. 그룹 preview가 살아 있는 동안에는
     // 전체 선택 lease를 유지하고, Stage가 원자 commit을 마친 뒤 한 번만 해제한다.
     if (groupDragRef.current) return;
     endLiveResourceEdit();
+    interactionSfxPlayerRef.current?.play("drop");
   }
   function isCanvasGroupDragActive(elementId: string): boolean {
     return groupDragRef.current?.selectedIds.includes(elementId) === true;
@@ -15451,6 +15486,29 @@ const puppetWarpArmed =
   const [aiColorizePrompt, setAiColorizePrompt] = useState("파스텔톤 웹툰 셀 채색, 부드러운 그림자와 하이라이트");
   const [aiColorizeBusy, setAiColorizeBusy] = useState(false);
   const [aiColorizeError, setAiColorizeError] = useState<string | null>(null);
+  // 채색 후보·맥락 노트·참조 첨부 배선 상태. 후보는 모으는 동안 patchEl을
+  // 하지 않고, 확정 시에만 단일 채색과 같은 적용 경로로 src를 교체한다.
+  const [aiColorizeCandidateSession, setAiColorizeCandidateSession] = useState(() =>
+    createColorizeCandidateSession(),
+  );
+  const [aiColorizeCandidateTargetId, setAiColorizeCandidateTargetId] = useState<string | null>(null);
+  const aiColorizeCandidateProvenanceRef = useRef(
+    new Map<string, ReturnType<typeof captureStudioAiGeneratedAssetProvenance>>(),
+  );
+  const [aiContextNote, setAiContextNote] = useState(() => {
+    try {
+      if (typeof globalThis.localStorage !== "undefined") {
+        return loadContextNote(globalThis.localStorage, workId ?? "local");
+      }
+    } catch {
+      // 저장소 접근 실패는 빈 노트로 폴백한다.
+    }
+    return createContextNote(workId ?? "local");
+  });
+  const [aiReferenceAttachments, setAiReferenceAttachments] = useState<
+    readonly StudioAiReferenceAttachment[]
+  >([]);
+  const [aiReferenceWarnings, setAiReferenceWarnings] = useState<readonly string[]>([]);
   // 캐릭터 일관성 생성(젠툰 벤치마크) — "기준 캐릭터"는 별도 상태로 들고 있지 않는다. 캔버스에서
   // 선택된 요소(selected)가 이미지 타입인지를 그 순간의 파생값으로만 판단한다(다른 요소를 선택하면
   // 자동으로 최신 기준 캐릭터로 바뀜 — 별도 "고정" 상태가 stale해질 여지를 원천 차단).
@@ -18966,14 +19024,155 @@ const puppetWarpArmed =
     }
     setAiColorizeBusy(false);
   }
+  // 채색 후보 모으기 — 단일 채색과 같은 호출·추적 경로를 쓰되, 결과를
+  // patchEl로 바로 덮지 않고 후보 세션에 쌓는다. 과금은 호출 1회분이다.
+  async function executeAiColorizeCandidate(elId: string, srcAtRequestTime: string, prompt: string) {
+    if (collaborationAccessRef.current.locked) return;
+    const mutationTicket = captureStudioMutationTicket();
+    setAiColorizeBusy(true);
+    setAiColorizeError(null);
+    const provider = studioImageAiProviderContext(aiSettings);
+    const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "edited");
+    const operationId = beginTrackedStudioAiOperation("colorize", {
+      kind: "image",
+      task: "colorize",
+      provider: provider.provider,
+      model: provider.model,
+      transport: provider.transport,
+      promptVersion: 1,
+      prompt,
+      target: { pageId: activePage.id, elementId: elId },
+      references: [{ assetId: elId }],
+    });
+    const result = await colorizeLineArt(aiSettings, srcAtRequestTime, prompt);
+    if (!canApplyStudioMutation(mutationTicket)) {
+      if (editorMountedRef.current) setAiColorizeBusy(false);
+      return;
+    }
+    settleTrackedStudioAiOperation(operationId, result);
+    if (!result.ok) {
+      setAiColorizeError(result.error);
+      setAiColorizeBusy(false);
+      return;
+    }
+    const candidateId = `candidate-${Date.now()}-${aiColorizeCandidateSession.candidates.length}`;
+    const added = addColorizeCandidate(aiColorizeCandidateSession, {
+      id: candidateId,
+      dataUrl: result.data.dataUrl,
+      prompt,
+      createdAt: Date.now(),
+    });
+    if (!added.ok) {
+      setAiColorizeError("채색 후보 상한(3장)에 닿았어요. 후보를 비운 뒤 다시 모아 주세요.");
+      setAiColorizeBusy(false);
+      return;
+    }
+    aiColorizeCandidateProvenanceRef.current.set(candidateId, requestProvenance);
+    setAiColorizeCandidateSession(added.session);
+    setAiColorizeCandidateTargetId(elId);
+    setAiColorizeBusy(false);
+  }
   function onColorizeSelected() {
     if (!selected || selected.type !== "image" || aiColorizeBusy || !isStudioAiConfigured(aiSettings)) return;
-    const prompt = aiColorizePrompt.trim();
-    if (!prompt) return;
+    const basePrompt = aiColorizePrompt.trim();
+    if (!basePrompt) return;
+    const prompt = composeColorizeContextPrompt({ basePrompt, note: aiContextNote });
+    const referenceResult = buildReferenceColorizeRequest({ prompt, attachments: aiReferenceAttachments });
+    setAiReferenceWarnings(referenceResult.ok ? referenceResult.request.warnings : []);
     const elId = selected.id;
     const srcAtRequestTime = selected.src;
     runWithAiNotice(() => void executeAiColorize(elId, srcAtRequestTime, prompt));
   }
+  function onCollectColorizeCandidate() {
+    if (!selected || selected.type !== "image" || aiColorizeBusy || !isStudioAiConfigured(aiSettings)) return;
+    const basePrompt = aiColorizePrompt.trim();
+    if (!basePrompt) return;
+    const prompt = composeColorizeContextPrompt({ basePrompt, note: aiContextNote });
+    const referenceResult = buildReferenceColorizeRequest({ prompt, attachments: aiReferenceAttachments });
+    setAiReferenceWarnings(referenceResult.ok ? referenceResult.request.warnings : []);
+    const elId = selected.id;
+    const srcAtRequestTime = selected.src;
+    runWithAiNotice(() => void executeAiColorizeCandidate(elId, srcAtRequestTime, prompt));
+  }
+  function onSelectColorizeCandidate(candidateId: string) {
+    const result = selectColorizeCandidate(aiColorizeCandidateSession, candidateId);
+    if (result.ok) setAiColorizeCandidateSession(result.session);
+  }
+  function onApplyColorizeCandidate() {
+    const targetId = aiColorizeCandidateTargetId;
+    if (!targetId) return;
+    const resolved = resolveColorizeCandidateApply(aiColorizeCandidateSession);
+    if (!resolved.ok) {
+      setAiColorizeError("적용할 후보를 먼저 선택해 주세요.");
+      return;
+    }
+    const target = elementById.get(targetId);
+    if (!target || target.type !== "image") {
+      setAiColorizeError("채색 후보를 적용할 원본 이미지 레이어를 찾지 못했어요.");
+      return;
+    }
+    const provenance = aiColorizeCandidateProvenanceRef.current.get(resolved.plan.candidateId);
+    const applied = provenance
+      ? patchEl(targetId, { src: resolved.plan.dataUrl, aiProvenance: provenance })
+      : patchEl(targetId, { src: resolved.plan.dataUrl });
+    if (!applied) {
+      setAiColorizeError("채색 후보는 생성됐지만 이미지 레이어에 적용하지 못했어요.");
+    }
+  }
+  function onClearColorizeCandidates() {
+    setAiColorizeCandidateSession(createColorizeCandidateSession());
+    setAiColorizeCandidateTargetId(null);
+  }
+  function onContextNoteChange(
+    patch: Partial<
+      Pick<
+        typeof aiContextNote,
+        "characterRules" | "palette" | "backgroundRules" | "prohibitions"
+      >
+    >,
+  ) {
+    const next = mergeContextNote(aiContextNote, patch);
+    setAiContextNote(next);
+    try {
+      if (typeof globalThis.localStorage !== "undefined") {
+        saveContextNote(globalThis.localStorage, next);
+      }
+    } catch {
+      // 저장 실패는 편집 자체를 막지 않는다.
+    }
+  }
+  function onAddReferenceAttachment(input: {
+    readonly kind: "image" | "text";
+    readonly label: string;
+    readonly ref: string;
+  }): string | null {
+    const result = addReferenceAttachment(aiReferenceAttachments, input);
+    if (!result.ok) {
+      if (result.reason === "cap_reached") return "참조 첨부는 최대 6개까지예요.";
+      if (result.reason === "empty_label") return "참조 이름을 입력해 주세요.";
+      if (result.reason === "empty_ref") return "참조 내용을 입력해 주세요.";
+      return "이미지 참조는 data:image/ 형식이어야 해요.";
+    }
+    setAiReferenceAttachments(result.attachments);
+    return null;
+  }
+  function onRemoveReferenceAttachment(attachmentId: string) {
+    setAiReferenceAttachments(removeReferenceAttachment(aiReferenceAttachments, attachmentId));
+  }
+  const aiColorizeExtras: StudioAiColorizeWiring = {
+    candidateSession: aiColorizeCandidateSession,
+    candidateTargetId: aiColorizeCandidateTargetId,
+    onCollectCandidate: onCollectColorizeCandidate,
+    onSelectCandidate: onSelectColorizeCandidate,
+    onApplyCandidate: onApplyColorizeCandidate,
+    onClearCandidates: onClearColorizeCandidates,
+    contextNote: aiContextNote,
+    onContextNoteChange,
+    referenceAttachments: aiReferenceAttachments,
+    referenceWarnings: aiReferenceWarnings,
+    onAddReferenceAttachment,
+    onRemoveReferenceAttachment,
+  };
 
   // AI 캐릭터 일관성 생성 실행(젠툰 벤치마크) — reference id/src/size를 호출 시점에 함께 캡처해
   // 넘긴다(await 도중 선택이 바뀌어도 엉뚱한 참고 이미지를 쓰지 않는다 — executeAiColorize와 동일
@@ -28281,6 +28480,7 @@ function clearSelectionForEdit() {
       aiColorizeBusy={aiColorizeBusy}
       aiColorizeError={aiColorizeError}
       aiColorizePrompt={aiColorizePrompt}
+      aiColorizeExtras={aiColorizeExtras}
       aiCompositionDraft={aiCompositionDraft}
       aiDialogueSuggestBusy={aiDialogueSuggestBusy}
       aiDialogueSuggestCandidates={aiDialogueSuggestCandidates}

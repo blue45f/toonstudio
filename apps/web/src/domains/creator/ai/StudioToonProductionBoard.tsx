@@ -16,6 +16,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { StudioScenarioCandidateDesk } from "../StudioScenarioCandidateDesk";
+import { StudioAiRhythmDashboard } from "./StudioAiRhythmDashboard";
+import type { StudioAiScheduleRow } from "./studio-ai-rhythm-mapping";
 import {
   approveScenarioImageCandidate,
   scenarioCandidateReviewStatus,
@@ -35,6 +37,8 @@ export interface StudioToonProductionBoardProps {
   readonly items: readonly ScenarioPreviewItem[];
   readonly referenceSignature: string;
   readonly disabled?: boolean;
+  /** 연재 일정 행 (미확정 공급처 — 주입되기 전까지 대시보드는 안내만 보여준다). */
+  readonly rhythmRows?: readonly StudioAiScheduleRow[];
   readonly onChangeScene: (index: number, patch: Partial<ScenarioPreviewItem>) => void;
   readonly onReplaceScenes: (scenes: readonly ScenarioPreviewItem[]) => void;
   readonly onGenerate: (request: StudioScenarioImageGenerationRequest) => void;
@@ -71,6 +75,7 @@ export function StudioToonProductionBoard({
   items,
   referenceSignature,
   disabled = false,
+  rhythmRows = [],
   onChangeScene,
   onReplaceScenes,
   onGenerate,
@@ -405,6 +410,15 @@ export function StudioToonProductionBoard({
         onSelectCandidate={selectCandidate}
         onApproveCandidate={approveCandidate}
       />
+
+      <details>
+        <summary className="cursor-pointer text-xs font-semibold text-fg-2">
+          연재 리듬 대시보드 (일정 데이터 연결 전)
+        </summary>
+        <div className="mt-2">
+          <StudioAiRhythmDashboard rows={rhythmRows} />
+        </div>
+      </details>
     </div>
   );
 }

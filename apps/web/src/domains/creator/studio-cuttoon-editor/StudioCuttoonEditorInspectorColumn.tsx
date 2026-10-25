@@ -42,6 +42,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     aiColorizeBusy,
     aiColorizeError,
     aiColorizePrompt,
+    aiColorizeExtras,
     aiSettings,
     applyExtendedBlendMergeDown,
     applyPaperVectorRefinement,
@@ -491,6 +492,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           aiColorizeBusy={aiColorizeBusy}
           aiColorizeError={aiColorizeError}
           aiColorizePrompt={aiColorizePrompt}
+          aiColorizeExtras={aiColorizeExtras}
           aiSettings={aiSettings}
           bg={bg}
           bgGrad={bgGrad}

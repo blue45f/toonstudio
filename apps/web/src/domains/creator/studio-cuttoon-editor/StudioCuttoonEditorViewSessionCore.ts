@@ -43,6 +43,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   aiColorizeBusy: any;
   aiColorizeError: string | null;
   aiColorizePrompt: any;
+  aiColorizeExtras: any;
   aiCompositionDraft: any;
   aiDialogueSuggestBusy: any;
   aiDialogueSuggestCandidates: any;

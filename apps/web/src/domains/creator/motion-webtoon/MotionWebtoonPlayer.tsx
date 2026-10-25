@@ -16,6 +16,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { stripEmotionMarkup } from "@/shared/voice/voice-emotion-markup";
 
 import "./motion-webtoon.css";
+import { buildCutSfxCues } from "./motion-webtoon-sfx-auto";
+import { playMotionSfxCues } from "./motion-webtoon-sfx-player";
 import { PlayerSplashIllustration } from "./motion-webtoon-illustrations";
 import {
   CAMERA_MOVE_LABELS,
@@ -70,6 +72,27 @@ export function MotionWebtoonPlayer(props: MotionWebtoonPlayerProps): JSX.Elemen
       setTransitionNonce((n) => n + 1);
     }
   }, [cutIndex]);
+
+  // 컷 진입 효과음 (스팅어 계열) — 재생 중일 때만, 컷당 1회.
+  // 컷에 sfxCues가 있으면 그것을 쓰고, 없으면 대사·분위기 규칙으로 자동 배치한다.
+  const lastSfxCutRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (state === "idle") {
+      lastSfxCutRef.current = null;
+      return;
+    }
+    if (state !== "playing" || !cut) return;
+    if (lastSfxCutRef.current === cut.id) return;
+    lastSfxCutRef.current = cut.id;
+    const cues =
+      cut.sfxCues && cut.sfxCues.length > 0
+        ? cut.sfxCues
+        : buildCutSfxCues({
+            dialogues: cut.dialogues.map((dialogue) => dialogue.text),
+            moodHint: cut.bgm.sceneMood,
+          });
+    playMotionSfxCues(cues);
+  }, [state, cut]);
 
   const [shareNotice, setShareNotice] = useState(false);
   const shareTimerRef = useRef<number | null>(null);
