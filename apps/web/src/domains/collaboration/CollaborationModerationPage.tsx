@@ -1,7 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CollabLogin, CollabNotice, collabButton } from "./collaboration-ui";
-import { useAdminGate } from "../admin/components/admin-gate-state";
+import { useAdminGate } from "../admin/public/admin-client";
 import type { CollaborationReport } from "../../../../../packages/core/src/collaboration";
 import Link from "@/shared/navigation/router-link";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";

@@ -1,4 +1,4 @@
-import { adminRestStatusText } from "../admin-rest-status-i18n";
+import { adminRestStatusText } from "../admin-i18n-loader";
 import { PlugZap, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 

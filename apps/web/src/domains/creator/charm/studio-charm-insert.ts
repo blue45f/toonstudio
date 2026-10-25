@@ -39,8 +39,8 @@ export interface StudioCharmSelectionBounds {
   /** 같은 컷에 연달아 붙이는 횟수를 세는 키에 쓴다. 없으면 위치로 대신한다. */
   readonly id?: string;
   readonly type: string;
-  readonly x: number;
-  readonly y: number;
+  readonly x?: number;
+  readonly y?: number;
   /** 스티커처럼 크기를 들지 않는 요소는 폭·높이가 없다(텍스트는 폭만 있다). 크기를 알 수 없으면 선택 위치로 쓰지 않는다. */
   readonly width?: number;
   readonly height?: number;
@@ -136,7 +136,9 @@ function finiteBounds(bounds: StudioCharmSelectionBounds | null): StudioInsertBo
   if (!bounds) return null;
   const { x, y, width, height } = bounds;
   if (
-    !Number.isFinite(x)
+    x === undefined
+    || y === undefined
+    || !Number.isFinite(x)
     || !Number.isFinite(y)
     || width === undefined
     || height === undefined

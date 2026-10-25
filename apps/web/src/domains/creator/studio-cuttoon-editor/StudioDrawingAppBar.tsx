@@ -149,7 +149,9 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   };
 
   const handleCycleSymmetry = () => {
-    const next = resolveNextSymmetryType(symmetryType);
+    const next = resolveNextSymmetryType(symmetryType) as Parameters<
+      StudioCuttoonEditorViewSession["changeStudioSymmetryType"]
+    >[0];
     if (typeof s.changeStudioSymmetryType === "function") {
       s.changeStudioSymmetryType(next);
       return;
@@ -189,7 +191,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
                 CSP {cspScorecard.compositeRatio}×
               </span>
             </div>
-            <span className="block max-w-48 truncate text-[0.65rem] text-fg-3">{s.name || "Untitled"}</span>
+            <span className="block max-w-48 truncate text-[0.65rem] text-fg-3">{typeof s.name === "string" && s.name ? s.name : "Untitled"}</span>
           </div>
         </div>
 

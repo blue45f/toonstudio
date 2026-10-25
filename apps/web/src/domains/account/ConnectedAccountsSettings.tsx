@@ -12,7 +12,7 @@ import {
 import { persistSession } from "@/domains/auth/public/session/auth-session-store";
 import { translateNow, useT } from "@/shared/lib/i18n";
 
-import "../collaboration/collaboration-account-status-i18n";
+import "../collaboration/public/collaboration-account-status-i18n";
 import { api, apiPath } from "@/platform/api";
 
 type ProviderId = "google" | "apple" | "kakao" | "naver" | "github";

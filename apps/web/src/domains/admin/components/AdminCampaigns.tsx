@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
+  adminButtonClass,
   adminFetch,
   centsToWon,
   formatNum,
@@ -20,7 +21,6 @@ import {
   Field,
   adminInputClass,
 } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { useT } from "@/shared/lib/i18n";
 

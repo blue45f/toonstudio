@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -12,7 +11,7 @@ import { useEffect as useReactEffect, useMemo, useState as useReactState } from 
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
 
-export function StudioBg3dEditorSidebarExtras({ h }) {
+export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -324,7 +323,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     ltUserPresetLibraryStatus, physicsGravityPreset, setPhysicsGravityPreset,
     LazyStudioBg3dAssetLibraryPanel, babylonDiagnosticState, engineRuntime, engineFrameTimeMs, genericModelClassifications, genericModelControlMode, layerListItems, measurementDocument, measurementDraft, measurementInference, measurementLockedLengthMeters, modelLibraryStatus, setMeasurementDocument, webXrController, webXrSessionState, webXrSupport,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
   /* eslint-disable react-hooks/preserve-manual-memoization -- This extracted editor intentionally reads
    * the per-render mutable host bag. The memo dependency list is the explicit invalidation contract. */
   const professionalReadinessInput = useMemo(() => {
@@ -333,10 +332,10 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
     const viewportAspectRatio = viewportWidth > 0 && viewportHeight > 0
       ? viewportWidth / viewportHeight
       : sceneBaseDocument.output.exportAspectRatio;
-    const groundingReceipts = new Map(sharedCharacters.flatMap((character) => {
+    const groundingReceipts = new Map<string, any>(sharedCharacters.flatMap((character: any) => {
       const receipt = sharedCharacterGroundings[character.runtimeKey]
         ?? sharedCharacterGroundings[character.modelRuntimeKey];
-      return receipt ? [[character.elementId, receipt]] : [];
+      return receipt ? [[character.elementId, receipt] as const] : [];
     }));
     const runtimeFailure = engineRuntime.deviceLostMessage
       ? {
@@ -394,7 +393,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
     viewportBoxSize?.width,
   ]);
   /* eslint-enable react-hooks/preserve-manual-memoization */
-  const [professionalRuntimeReadiness, setProfessionalRuntimeReadiness] = useReactState();
+  const [professionalRuntimeReadiness, setProfessionalRuntimeReadiness] = useReactState<any>();
   useReactEffect(() => {
     if (!open || viewEditorSection !== "prosuite") {
       setProfessionalRuntimeReadiness(undefined);
@@ -469,7 +468,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                       onSelectMutation={selectSharedStageMutation}
                       onSetMutation={setSharedStageMutationKind}
                       onSetMaterialization={setSharedStageMaterializationKind}
-                      onSelectCharacter={(elementId) => {
+                      onSelectCharacter={(elementId: string) => {
                         setSelectedSharedCharacterElementId(elementId);
                         setSelectedIds(new Set());
                       }}
@@ -492,7 +491,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
               <StudioBg3dViewPanel
                 hidden={hideOnTab("view")}
                 babylonDiagnosticState={babylonDiagnosticState}
-                onRunBabylonDiagnostic={(backend) => void runBabylonDiagnostic(backend)}
+                onRunBabylonDiagnostic={(backend: "webgl2" | "webgpu") => void runBabylonDiagnostic(backend)}
                 enginePlan={engineRuntime.plan}
                 enginePreference={engineRuntime.preference}
                 engineInAppBrowser={engineRuntime.inApp}
@@ -513,7 +512,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                   ? { onUseCurrentFrameAsAiReference: () => void handleUseAsAiMethodReference() }
                   : {})}
                 context={{
-                  VIEW_EDITOR_SECTIONS,
+                  VIEW_EDITOR_SECTIONS: VIEW_EDITOR_SECTIONS as unknown as import("./StudioBg3dViewPanelContent").StudioBg3dViewPanelProps["context"]["VIEW_EDITOR_SECTIONS"],
                   viewEditorSection,
                   setViewEditorSection,
                   StudioBg3dPhysicsPanel,
@@ -673,7 +672,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                   magicLayerUnavailableReason,
                   magicLayerSelectionName: magicLayerSelectedPrimitive?.name
                     ?? (magicLayerSelectedPrimitive
-                      ? PRIMITIVE_DEFS[magicLayerSelectedPrimitive.kind].label
+                      ? PRIMITIVE_DEFS[magicLayerSelectedPrimitive.kind as R.BgPrimitiveKind].label
                       : null),
                   magicLayerBusy: isCapturing,
                   appliedLtPresetId,

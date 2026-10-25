@@ -1,6 +1,5 @@
 /* Extracted stage pointer handlers from StudioCuttoonEditor.
  * Closures keep the original editor typing envelope via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -264,8 +263,12 @@ export function bindStudioCuttoonStagePointersDrag(
     elements,
     groups,
   } = h;
-  const liveCanvasElementRect = (...args) => api.liveCanvasElementRect(...args);
-  const restoreGroupDragPreview = (...args) => api.restoreGroupDragPreview(...args);
+  const liveCanvasElementRect: StudioCuttoonStagePointersApi["liveCanvasElementRect"] = (
+    ...args
+  ) => api.liveCanvasElementRect(...args);
+  const restoreGroupDragPreview: StudioCuttoonStagePointersApi["restoreGroupDragPreview"] = (
+    ...args
+  ) => api.restoreGroupDragPreview(...args);
   function onStageDragMove(e: Konva.KonvaEventObject<DragEvent>) {
     const node = e.target;
     const stage = node.getStage();
@@ -285,7 +288,7 @@ export function bindStudioCuttoonStagePointersDrag(
       draggedId !== null &&
       candidateGroupIds.length > 1 &&
       candidateGroupIds.includes(draggedId) &&
-      candidateGroupIds.every((id) => {
+      candidateGroupIds.every((id: string) => {
         const element = elementById.get(id);
         return Boolean(element && !isEffectivelyLocked(element, groups));
       });
@@ -369,14 +372,14 @@ export function bindStudioCuttoonStagePointersDrag(
         return node.getClientRect({ relativeTo: layer });
       }
       const rects = selectedIds
-        .map((id) => elementById.get(id))
-        .filter((candidate): candidate is El => Boolean(candidate))
-        .map((candidate) => liveCanvasElementRect(candidate));
+        .map((id: string) => elementById.get(id))
+        .filter((candidate: El | undefined): candidate is El => Boolean(candidate))
+        .map((candidate: El) => liveCanvasElementRect(candidate));
       if (rects.length === 0) return node.getClientRect({ relativeTo: layer });
-      const left = Math.min(...rects.map((rect) => rect.x));
-      const top = Math.min(...rects.map((rect) => rect.y));
-      const right = Math.max(...rects.map((rect) => rect.x + rect.width));
-      const bottom = Math.max(...rects.map((rect) => rect.y + rect.height));
+      const left = Math.min(...rects.map((rect: { x: number; y: number; width: number; height: number }) => rect.x));
+      const top = Math.min(...rects.map((rect: { x: number; y: number; width: number; height: number }) => rect.y));
+      const right = Math.max(...rects.map((rect: { x: number; y: number; width: number; height: number }) => rect.x + rect.width));
+      const bottom = Math.max(...rects.map((rect: { x: number; y: number; width: number; height: number }) => rect.y + rect.height));
       return { x: left, y: top, width: right - left, height: bottom - top };
     };
     const liveMovingSelectionIds = new Set(
@@ -639,7 +642,7 @@ export function bindStudioCuttoonStagePointersDrag(
         committed = changed && commit(next);
         if (committed) {
           const drawIds = g.selectedIds.filter(
-            (id) => elementById.get(id)?.type === "draw"
+            (id: string) => elementById.get(id)?.type === "draw"
           );
           if (drawIds.length > 0) {
             pendingCommittedGroupDrawResetRef.current = {

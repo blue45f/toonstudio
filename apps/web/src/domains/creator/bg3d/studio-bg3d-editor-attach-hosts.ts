@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -19,10 +18,10 @@ import { attachStudioBg3dEditorPhysicsHost } from "./studio-bg3d-editor-physics-
 import { attachStudioBg3dEditorMiscHost } from "./studio-bg3d-editor-misc-host";
 import { attachStudioBg3dEditorRecipeHost } from "./studio-bg3d-editor-recipe-host";
 
-export function attachStudioBg3dEditorHosts(h) {
+export function attachStudioBg3dEditorHosts(h: Record<string, any>) {
   attachStudioBg3dEditorSessionHost(h);
   attachStudioBg3dEditorSceneOpsHost(h);
-  attachStudioBg3dEditorTemplateSwitchHost(h);
+  attachStudioBg3dEditorTemplateSwitchHost(h as unknown as Parameters<typeof attachStudioBg3dEditorTemplateSwitchHost>[0]);
   attachStudioBg3dEditorTransformHost(h);
   attachStudioBg3dEditorPlacementHost(h);
   attachStudioBg3dEditorLtHost(h);
@@ -34,5 +33,5 @@ export function attachStudioBg3dEditorHosts(h) {
   attachStudioBg3dEditorPhysicsHost(h);
   attachStudioBg3dEditorMiscHost(h);
   // 배치 호스트가 만든 ensureModelRootCached 를 호출 시점에 읽으므로 그 뒤에 붙인다.
-  attachStudioBg3dEditorRecipeHost(h);
+  attachStudioBg3dEditorRecipeHost(h as unknown as Parameters<typeof attachStudioBg3dEditorRecipeHost>[0]);
 }

@@ -1,17 +1,15 @@
-/* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
+/* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
-
+import type { Bg3dModelLibraryEntry, Bg3dTemplateLibraryEntry, BgCompositeCategory, BgPanelTab, BgSceneTemplateCategory, BgViewportApi, CaptureState, LtEditorSection, LtUserPresetLibraryStatus, LtUserPresetNotice, ModelRootCacheEntry, ModelThumbnailGpuLease, StudioBg3dBabylonDiagnosticState, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress, StudioBg3dLtPresetPayload, StudioBg3dMeasurementDocument, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dModalSession, StudioBg3dModelAttachment, StudioBg3dModelThumbnailCaptureController, StudioBg3dPhysicsGravityPreset, StudioBg3dPhysicsPhase, StudioBg3dPhysicsSession, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dPhysicsTransformSample, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dRigBakeReader, StudioBg3dRigSelectionState, StudioBg3dRoomSpec, StudioBg3dSectionPlaneState, StudioBg3dSharedCharacterCaptureAuthorityInput, StudioBg3dShotBatchPass, StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBg3dSnapSettings, StudioBg3dSunRigConfig, StudioBg3dWorldMeasurement, StudioGeneric3dClassification, StudioGeneric3dControlMode, StudioGeneric3dSourceFormat, StudioWebXrSessionController, StudioWebXrSessionState, StudioWebXrSupportSnapshot, TransformModeId, TransformSpace, ViewEditorSection } from "./studio-bg3d-editor-runtime-bindings";
 import type { StudioBg3dHistoryCommandTimeline } from "./studio-bg3d-history-command-adapter";
-
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import { useStudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
 
-export function useStudioBg3dEditorState(props) {
+export function useStudioBg3dEditorState(props: Record<string, any>) {
   const hostRef = R.useRef<Record<string, any> | null>(null);
   if (hostRef.current == null) hostRef.current = {};
   const h = hostRef.current;
@@ -75,7 +73,7 @@ export function useStudioBg3dEditorState(props) {
   const sharedCharacterCaptureAuthorityDraft = {
     includeCharactersInCapture: includeSharedCharactersInCapture,
     readinessPhase: sharedCharacterCaptureReadiness.phase,
-    expectedCharacters: sharedCharacters.map((character) => ({
+    expectedCharacters: sharedCharacters.map((character: any) => ({
       elementId: character.elementId,
       runtimeKey: character.runtimeKey,
       modelRuntimeKey: character.modelRuntimeKey,
@@ -84,14 +82,14 @@ export function useStudioBg3dEditorState(props) {
     })),
     capturableElementIds: sharedCharacterCaptureReadiness.capturableElementIds,
     previewOnlyElementIds: sharedCharacterCaptureReadiness.previewOnlyElementIds,
-    pendingElementIds: sharedCharacters.flatMap((character) =>
+    pendingElementIds: sharedCharacters.flatMap((character: any) =>
       sharedCharacterStatuses[character.runtimeKey] === "ready"
         ? []
         : sharedCharacterStatuses[character.runtimeKey] === "unavailable"
           ? []
           : [character.elementId],
     ),
-    unavailableElementIds: sharedCharacters.flatMap((character) =>
+    unavailableElementIds: sharedCharacters.flatMap((character: any) =>
       sharedCharacterStatuses[character.runtimeKey] === "unavailable"
         ? [character.elementId]
         : [],
@@ -141,7 +139,7 @@ export function useStudioBg3dEditorState(props) {
   const [webXrBridgeGeneration, setWebXrBridgeGeneration] = useState(0);
   const [webXrCanvasGeneration, setWebXrCanvasGeneration] = useState(0);
   const [immersiveStagePlan, setImmersiveStagePlan] =
-    useState<StudioBg3dImmersiveStageSuccess | null>(null);
+    useState<Extract<StudioBg3dImmersiveStagePlan, { ok: true }> | null>(null);
   const webXrSessionStateRef = useRef<StudioWebXrSessionState>({ status: "idle" });
   const webXrControllerRef = useRef<StudioWebXrSessionController | null>(null);
   const webXrRestoreCameraRef = useRef<StudioBg3dCameraSettings | null>(null);
@@ -321,7 +319,7 @@ export function useStudioBg3dEditorState(props) {
     else modelRigBakeReadersRef.current.delete(id);
   }, []);
   const finishModelAnimation = useCallback((id: string, timeSeconds: number) => {
-    setCustomModels((current) => current.map((model) => {
+    setCustomModels((current: any[]) => current.map((model: any) => {
       if (model.id !== id || !model.animation?.playing) return model;
       return {
         ...model,
@@ -374,13 +372,13 @@ export function useStudioBg3dEditorState(props) {
   const [viewportBoxSize, setViewportBoxSize] = useState<{ width: number; height: number } | null>(
     null,
   );
-  const primitiveObjectsRef = useRef<Map<string, THREE.Group>>(new Map());
+  const primitiveObjectsRef = useRef<Map<string, R.THREE.Group>>(new Map());
   const surfaceSnapArmedRef = useRef(false);
   const dragInitialSelectedTransformsRef = useRef<Map<string, {
-    worldMatrix: THREE.Matrix4;
+    worldMatrix: R.THREE.Matrix4;
   }>>(new Map());
   const dragInitialFirstTransformRef = useRef<{
-    worldMatrix: THREE.Matrix4;
+    worldMatrix: R.THREE.Matrix4;
   } | null>(null);
   const [, setRefTick] = useState(0);
   const panelScrollRef = useRef<HTMLDivElement>(null);

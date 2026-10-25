@@ -4,9 +4,9 @@ import { eq } from "drizzle-orm";
 
 import { appSettings, db, users } from "../platform/database";
 
-import { isPersistedAdminRole } from "./admin-roles";
+import { isPersistedAdminRole } from "../modules/auth/admin-roles";
 import { getSessionUserCached } from "./session";
-import { createSchemaReadinessCheck } from "./schema-readiness";
+import { createSchemaReadinessCheck } from "../modules/health/schema-readiness";
 import {
   ensureUserLifecycleSchema,
   normalizeUserAccountStatus,

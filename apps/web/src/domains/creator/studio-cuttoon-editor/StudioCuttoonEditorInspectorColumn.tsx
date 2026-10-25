@@ -748,7 +748,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           setColorRangePickActive={setColorRangePickActive}
           setColorRangePreviewEnabled={setColorRangePreviewEnabled}
           setColorRangeSamples={setColorRangeSamples}
-          setPixelTool={setPixelTool}
+          setPixelTool={setPixelTool as import("../StudioInspectorAsideTypes").StudioInspectorAsideProps["setPixelTool"]}
           setPoserInitialDataUrl={setPoserInitialDataUrl}
           setPoserInitialElementId={setPoserInitialElementId}
           setPoserVrmOpen={setPoserVrmOpen}

@@ -1,12 +1,12 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { BgCustomModelInstance, BgPrimitive, ResolveStudioBg3dSurfaceSnapInput, StudioBg3dMeasurementInferenceReference, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dWorldMeasurement, ThreeEvent } from "./studio-bg3d-editor-runtime-bindings";
 
-export function attachStudioBg3dEditorMeasureHost(h) {
+export function attachStudioBg3dEditorMeasureHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -313,7 +313,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     measurementDocument, measurementDraft, measurementLockedLengthMeters, measurementStartWorld, setMeasurementDraft, setMeasurementInference, setMeasurementLockedLengthMeters, setMeasurementStartWorld,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   function cancelMeasurement(message = "줄자를 켠 뒤 첫 번째 점을 선택하세요."): void {
     measurementActiveRef.current = false;
@@ -579,7 +579,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
 
     const plan = planStudioBg3dMultiSurfaceSnap(snapInputs);
     if (!plan.ok) {
-      const firstReason = plan.results?.find((result) => !result.ok && "reason" in result);
+      const firstReason = plan.results?.find((result: any) => !result.ok && "reason" in result);
       const reason = firstReason && !firstReason.ok ? firstReason.reason : plan.reason;
       setSurfaceSnapStatus({
         tone: "error",
@@ -623,7 +623,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
       return true;
     }
 
-    const nextPrimitives = primitives.map((primitive) => {
+    const nextPrimitives = primitives.map((primitive: BgPrimitive) => {
       const nextPosition = positionById.get(primitive.id);
       if (!nextPosition) return primitive;
       const nextRotation = rotationById.get(primitive.id);
@@ -633,7 +633,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
         ...(nextRotation ? { rotation: nextRotation } : {}),
       };
     });
-    const nextCustomModels = customModels.map((model) => {
+    const nextCustomModels = customModels.map((model: BgCustomModelInstance) => {
       const nextPosition = positionById.get(model.id);
       if (!nextPosition) return model;
       const nextRotation = rotationById.get(model.id);

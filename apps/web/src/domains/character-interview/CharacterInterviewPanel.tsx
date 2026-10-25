@@ -19,8 +19,8 @@ import { restStatusText } from "../../shared/rest-status-i18n";
 import { BookOpen, Save, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import type { StudioStoryBibleNarrative } from "../creator/planning/studio-character-profile";
-import type { StudioStoryBible } from "../creator/studio-story-bible";
+import type { StudioStoryBibleNarrative } from "../creator/public/story-character-profile";
+import type { StudioStoryBible } from "../creator/public/story-bible";
 
 import {
   buildCharacterInterviewCanon,

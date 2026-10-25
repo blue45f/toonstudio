@@ -1,12 +1,16 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type {
+  BgCustomModelInstance,
+  BgPrimitive,
+  StudioBg3dConstraintLayer,
+} from "./studio-bg3d-editor-runtime-bindings";
 
-export function bindStudioBg3dEditorSelectionViewModel(h) {
+export function bindStudioBg3dEditorSelectionViewModel(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
     TransformControls, View, Canvas, useThree,
@@ -240,12 +244,12 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
     lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     genericModelClassifications, genericModelSelectedProxyId, genericModelSourceFormats, poseJointSelection,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
 
-  const firstSelectedId = Array.from(selectedIds)[0];
-  const selectedPrimitive = firstSelectedId ? (primitives.find((p) => p.id === firstSelectedId) ?? null) : null;
-  const selectedCustomModel = firstSelectedId ? (customModels.find((m) => m.id === firstSelectedId) ?? null) : null;
+  const firstSelectedId = Array.from(selectedIds)[0] as string | undefined;
+  const selectedPrimitive = firstSelectedId ? (primitives.find((p: BgPrimitive) => p.id === firstSelectedId) ?? null) : null;
+  const selectedCustomModel = firstSelectedId ? (customModels.find((m: BgCustomModelInstance) => m.id === firstSelectedId) ?? null) : null;
   const selectedEntity = selectedPrimitive ?? selectedCustomModel;
   const selectedModelCacheEntry = selectedCustomModel
     ? modelRootCacheRef.current.get(selectedCustomModel.modelId) ?? null
@@ -283,7 +287,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
   const selectedGenericModelProxies = selectedGenericModelManifest
     ? createStudioGeneric3dPoseProxies({
         manifest: selectedGenericModelManifest,
-        nodes: selectedModelJoints.map((joint) => ({
+        nodes: selectedModelJoints.map((joint: any) => ({
           key: joint.key,
           name: joint.name,
           parentKey: joint.parentKey,
@@ -292,12 +296,12 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
       })
     : [];
   const effectiveGenericModelProxyId = selectedGenericModelProxies.some(
-    (proxy) => proxy.id === genericModelSelectedProxyId,
+    (proxy: any) => proxy.id === genericModelSelectedProxyId,
   )
     ? genericModelSelectedProxyId
     : selectedGenericModelProxies[0]?.id ?? null;
 
-  const selectedJointByKey = new Map(selectedModelJoints.map((joint) => [joint.key, joint] as const));
+  const selectedJointByKey = new Map<string, any>(selectedModelJoints.map((joint: any) => [joint.key, joint] as const));
   const selectedPoseRigSelection = selectedCustomModel
     ? resolveStudioBg3dRigSelection({
         modelId: selectedCustomModel.id,
@@ -308,7 +312,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
   const selectedPoseJointKey = selectedPoseRigSelection?.key ?? "";
   const selectedPoseCanonicalKey = selectedPoseRigSelection?.canonicalKey ?? "";
   const selectedPoseJoint = selectedCustomModel?.pose?.joints.find(
-    (joint) => (
+    (joint: any) => (
       selectedJointByKey.get(joint.jointKey)?.canonicalKey ?? joint.jointKey
     ) === selectedPoseCanonicalKey,
   );
@@ -359,7 +363,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
   const selectedAimSuppressedByIk = selectedIkProtectedJointKeys.has(
     selectedJointByKey.get(selectedPoseJointKey)?.canonicalKey ?? selectedPoseJointKey,
   );
-  const selectedIkEndCandidates = selectedModelJoints.filter((end) => {
+  const selectedIkEndCandidates = selectedModelJoints.filter((end: any) => {
     const middle = end.parentKey ? selectedJointByKey.get(end.parentKey) : undefined;
     const upper = middle?.parentKey ? selectedJointByKey.get(middle.parentKey) : undefined;
     const upperLength = middle && upper
@@ -383,14 +387,14 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
     );
   });
   const savedIkEndJointKey = selectedTwoBoneIkConstraints.find((constraint) =>
-    selectedIkEndCandidates.some((joint) => joint.key === constraint.endJointKey)
+    selectedIkEndCandidates.some((joint: any) => joint.key === constraint.endJointKey)
   )?.endJointKey;
   const requestedIkEndJointKey = ikEndJointSelection &&
     ikEndJointSelection.modelId === selectedCustomModel?.id
     ? ikEndJointSelection.jointKey
     : "";
   const selectedIkEndJointKey = selectedIkEndCandidates.some(
-    (joint) => joint.key === requestedIkEndJointKey,
+    (joint: any) => joint.key === requestedIkEndJointKey,
   )
     ? requestedIkEndJointKey
     : (savedIkEndJointKey ?? selectedIkEndCandidates[0]?.key ?? "");
@@ -445,7 +449,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
     endJointKey: selectedIkEndJoint.key,
   });
   const selectedIkDefaultTarget: [number, number, number] = selectedIkEndJoint
-    ? [...selectedIkEndJoint.restPosition]
+    ? [...selectedIkEndJoint.restPosition] as [number, number, number]
     : [0, 1, 0];
   const selectedIkDefaultPole: [number, number, number] =
     selectedIkUpperJoint && selectedIkMiddleJoint && selectedIkEndJoint
@@ -464,11 +468,11 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
     ? morphTargetSelection.key
     : null;
   const selectedMorphTargetKey = selectedMorphTargetCandidateKey !== null &&
-    selectedModelMorphTargets.some((target) => target.key === selectedMorphTargetCandidateKey)
+    selectedModelMorphTargets.some((target: any) => target.key === selectedMorphTargetCandidateKey)
     ? selectedMorphTargetCandidateKey
     : (selectedModelMorphTargets[0]?.key ?? "");
   const selectedMorphOverride = selectedCustomModel?.morph?.targets.find(
-    (target) => target.targetKey === selectedMorphTargetKey,
+    (target: any) => target.targetKey === selectedMorphTargetKey,
   );
   const selectedAnimationClip = selectedCustomModel?.animation
     ? (selectedModelAnimations[selectedCustomModel.animation.clipIndex] ?? selectedModelAnimations[0])
@@ -479,9 +483,9 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
   );
 
   const selectedIsLocked = isBgObjectTransformBlocked(selectedEntity);
-  const selectedEntities = Array.from(selectedIds).reduce<Array<BgPrimitive | BgCustomModelInstance>>(
+  const selectedEntities = (Array.from(selectedIds) as string[]).reduce<Array<BgPrimitive | BgCustomModelInstance>>(
     (entities, id) => {
-      const entity = primitives.find((primitive) => primitive.id === id) ?? customModels.find((model) => model.id === id);
+      const entity = primitives.find((primitive: BgPrimitive) => primitive.id === id) ?? customModels.find((model: BgCustomModelInstance) => model.id === id);
       if (entity) entities.push(entity);
       return entities;
     },
@@ -490,7 +494,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h) {
   const canGroundSelection = selectedEntities.some((entity) => !isBgObjectTransformBlocked(entity));
   const selectedPlaceableModels = selectedEntities.filter(
     (entity): entity is BgCustomModelInstance =>
-      customModels.some((model) => model.id === entity.id),
+      customModels.some((model: BgCustomModelInstance) => model.id === entity.id),
   );
   // Placement recipe is custom-model only; multi is allowed when every selection is a model and at
   // least one is unlocked (locked siblings are skipped inside the command).

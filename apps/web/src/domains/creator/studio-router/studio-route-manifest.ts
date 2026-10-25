@@ -1,4 +1,3 @@
-import { STUDIO_LIFT3D_SUBJECTS } from "../lift3d/studio-lift3d-contract";
 import {
   resolveStudioProductionScope,
   studioProductionLifecycleKey,
@@ -15,6 +14,14 @@ import {
   type StudioWorkspaceRoute,
   type StudioWorkspaceRouteErrorCode,
 } from "../studio-workspace-route";
+
+import type { StudioLift3dSubject } from "../lift3d/studio-lift3d-contract";
+
+const STUDIO_LIFT3D_SUBJECTS = [
+  "character",
+  "prop",
+  "background",
+] as const satisfies readonly StudioLift3dSubject[];
 
 export const STUDIO_COMPANION_SURFACES = [
   "workspace",

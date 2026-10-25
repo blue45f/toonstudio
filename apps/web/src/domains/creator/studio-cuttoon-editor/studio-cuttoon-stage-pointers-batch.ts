@@ -1,6 +1,5 @@
 /* Extracted stage pointer handlers from StudioCuttoonEditor.
  * Closures keep the original editor typing envelope via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -285,8 +284,12 @@ export function bindStudioCuttoonStagePointersBatch(
     replacePredictedInkTail,
     scheduleDraft,
   } = h;
-  const appendFreehandStrokePoint = (...args) => api.appendFreehandStrokePoint(...args);
-  const publishAuthoritativeFreehandSuffix = (...args) => api.publishAuthoritativeFreehandSuffix(...args);
+  const appendFreehandStrokePoint: StudioCuttoonStagePointersApi["appendFreehandStrokePoint"] = (
+    ...args
+  ) => api.appendFreehandStrokePoint(...args);
+  const publishAuthoritativeFreehandSuffix: StudioCuttoonStagePointersApi["publishAuthoritativeFreehandSuffix"] = (
+    startSample
+  ) => api.publishAuthoritativeFreehandSuffix(startSample);
   function appendDrawingCrdtSampleSuffix(drawing: DrawEl, startSample: number): void {
     const crdtDocument = studioCrdtDocumentRef.current;
     if (!crdtDocument || !drawingCrdtStrokeActiveRef.current) return;
@@ -436,7 +439,7 @@ export function bindStudioCuttoonStagePointersBatch(
       const authoritativeDrawing = batch.authoritative.length > 0
         ? publishAuthoritativeFreehandSuffix(crdtSampleStart)
         : drawingRef.current;
-      if (authoritativeDrawing && h.pendingStrokeAdmissionRef?.current?.has(authoritativeDrawing.id)) return;
+      if (authoritativeDrawing && h.pendingStrokeAdmissionRef?.current?.has(authoritativeDrawing.id)) return false;
       const authoritativePointCount = Math.floor((authoritativeDrawing?.points.length ?? 0) / 2);
       const rawPreviewState = rawPenInkPreviewStateRef.current;
       const canonicalPredictionTail = predictedInkTailStateRef.current;

@@ -4,6 +4,24 @@ interface AdminRequestOptions {
   readonly body?: unknown;
 }
 
+export class AdminApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "AdminApiError";
+  }
+}
+
+export function buildAdminHeaders(init?: RequestInit): Headers {
+  const headers = new Headers(init?.headers);
+  if (typeof init?.body === "string" && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  return headers;
+}
+
 export async function requestAdminJson<T>(path: string, options: AdminRequestOptions = {}): Promise<T> {
   const hasBody = options.body !== undefined;
   const response = await fetch(path, {
@@ -31,3 +49,20 @@ export async function requestAdminJson<T>(path: string, options: AdminRequestOpt
   }
   return payload as T;
 }
+
+export const centsToWon = (cents: number): number =>
+  Math.round((Number(cents) || 0) / 100);
+
+export const wonToCents = (won: number): number =>
+  Math.round((Number(won) || 0) * 100);
+
+export const formatWon = (cents: number, locale = "ko-KR"): string =>
+  `₩${centsToWon(cents).toLocaleString(locale)}`;
+
+export const formatNum = (n: number, locale = "ko-KR"): string =>
+  (Number(n) || 0).toLocaleString(locale);
+
+export const formatDate = (
+  value: string | null | undefined,
+  locale = "ko-KR",
+): string => (value ? new Date(value).toLocaleDateString(locale) : "—");

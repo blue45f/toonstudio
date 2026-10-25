@@ -4,8 +4,7 @@ import { canonicalJson, deriveStudioReviewPageMapping, validateStudioReviewSpati
 import type { StudioEditorCommentTarget } from "../studio-comment-editor-selection";
 import type { StudioReviewCaptureContext, StudioReviewCaptureProjection } from "../review-capture/studio-review-capture-bridge";
 import type { StudioSharedDocument } from "../studio-shared-document-client";
-import { parseStudioVirtualSpaceReviewSubject,
-  type StudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-subject";
+import type { StudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-subject";
 
 export interface StudioReviewEditorRequest { readonly subject: StudioVirtualSpaceReviewSubject; readonly commentId: string }
 export interface StudioReviewEditorAuthority { readonly anchor: ReviewAnchor; readonly mapping: StudioReviewMappedPage; readonly expiresAt: number }
@@ -31,9 +30,30 @@ export interface StudioReviewEditorDependencies {
   now(): number;
 }
 
+const SUBJECT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u;
+const SHA256_HEX = /^[0-9a-f]{64}$/u;
+const SUBJECT_KEYS = new Set(["schemaVersion", "workId", "projectId", "reviewId", "artifactId", "revisionId", "rootGraphHash"]);
+
+export function parseReviewEditorSubject(value: unknown): StudioVirtualSpaceReviewSubject | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (Object.keys(record).some((key) => !SUBJECT_KEYS.has(key))) return null;
+  if (record.schemaVersion !== undefined && record.schemaVersion !== 1) return null;
+  const { workId, projectId, reviewId, artifactId, revisionId, rootGraphHash } = record;
+  if (
+    typeof workId !== "string" || !SUBJECT_ID.test(workId) ||
+    typeof projectId !== "string" || !SUBJECT_ID.test(projectId) ||
+    typeof reviewId !== "string" || !SUBJECT_ID.test(reviewId) ||
+    typeof artifactId !== "string" || !SUBJECT_ID.test(artifactId) ||
+    typeof revisionId !== "string" || !SUBJECT_ID.test(revisionId) ||
+    typeof rootGraphHash !== "string" || !SHA256_HEX.test(rootGraphHash)
+  ) return null;
+  return Object.freeze({ schemaVersion: 1, workId, projectId, reviewId, artifactId, revisionId, rootGraphHash });
+}
+
 export function parseStudioReviewEditorRequest(value: StudioReviewEditorRequest): StudioReviewEditorRequest | null {
-  const subject = parseStudioVirtualSpaceReviewSubject(value.subject);
-  return subject && typeof value.commentId === "string" && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u.test(value.commentId)
+  const subject = parseReviewEditorSubject(value.subject);
+  return subject && typeof value.commentId === "string" && SUBJECT_ID.test(value.commentId)
     ? Object.freeze({ subject, commentId: value.commentId }) : null;
 }
 

@@ -11,8 +11,57 @@ import {
 
 import { useStudioDocumentLayout } from "./studio-document-layout-context";
 
-import type { StudioDccRouteAccess } from "../hybrid-dcc/studio-dcc-route-access";
 import type { Dispatch, SetStateAction } from "react";
+
+export type StudioDccRouteAccess = "allowed" | "denied" | "pending";
+
+export interface StudioDccRouteAccessInput {
+  readonly collaborationOperationSyncPending: boolean;
+  readonly documentReloadRequired: boolean;
+  readonly expectsSharedDocument: boolean;
+  readonly liveRoom: boolean;
+  readonly liveRoomEditAuthorityReady: boolean;
+  readonly remixId: string | null;
+  readonly sharedDocumentAccess: "comment" | "edit" | "view" | null;
+  readonly sharedDocumentCanView: boolean;
+  readonly sharedDocumentStatus: "active" | null;
+  readonly studioAuthReady: boolean;
+  readonly studioAuthUserId: string | null;
+  readonly workHydrated: boolean;
+  readonly workHydrationFailed: boolean;
+  readonly workHydrationUnsupportedFormat: boolean;
+  readonly workId: string | null;
+}
+
+export function resolveStudioDccRouteAccess({
+  collaborationOperationSyncPending,
+  documentReloadRequired,
+  expectsSharedDocument,
+  liveRoom,
+  liveRoomEditAuthorityReady,
+  remixId,
+  sharedDocumentAccess,
+  sharedDocumentCanView,
+  sharedDocumentStatus,
+  studioAuthReady,
+  studioAuthUserId,
+  workHydrated,
+  workHydrationFailed,
+  workHydrationUnsupportedFormat,
+  workId,
+}: StudioDccRouteAccessInput): StudioDccRouteAccess {
+  if (documentReloadRequired || workHydrationFailed || workHydrationUnsupportedFormat) return "denied";
+  if (workId === null && remixId === null && !liveRoom && !expectsSharedDocument) return "allowed";
+  if (!studioAuthReady || !workHydrated) return "pending";
+  if (workId === null && liveRoom) return liveRoomEditAuthorityReady ? "allowed" : "pending";
+  if (workId === null && remixId !== null) return "allowed";
+  if (workId !== null && studioAuthUserId === null) return "denied";
+  if (!expectsSharedDocument) return "denied";
+  if (sharedDocumentStatus === null || sharedDocumentAccess === null) return "pending";
+  if (!sharedDocumentCanView || sharedDocumentAccess !== "edit") return "denied";
+  if (collaborationOperationSyncPending) return "pending";
+  return "allowed";
+}
 
 /**
  * DCC 워크벤치 표면의 내비게이션 절반 — 열기/닫기/모드 전환.

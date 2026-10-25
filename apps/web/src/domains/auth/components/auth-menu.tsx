@@ -28,7 +28,7 @@ import Link from "@/shared/navigation/router-link";
 import {
   adminFetch,
   type AdminMe,
-} from "@/domains/admin/components/admin-client";
+} from "@/domains/admin/public/admin-client";
 import { messagingClient } from "@/platform/messaging-client";
 
 // Mouse, keyboard and touch share the same 44px account-menu interaction contract.

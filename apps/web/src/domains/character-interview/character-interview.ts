@@ -28,13 +28,13 @@
  *  - 입력 객체는 변형하지 않는다.
  */
 
-import type { CharacterChatProfile } from "../character-chat/character-chat-types";
-import type {
-  StudioStoryBibleNarrative,
-  StudioStoryCharacterProfile,
-} from "../creator/planning/studio-character-profile";
-import { characterSheetView } from "../creator/planning/studio-character-profile";
-import type { StudioStoryBible } from "../creator/studio-story-bible";
+import type { CharacterChatProfile } from "../character-chat/public/character-chat-types";
+import {
+  characterSheetView,
+  type StudioStoryBibleNarrative,
+  type StudioStoryCharacterProfile,
+} from "../creator/public/story-character-profile";
+import type { StudioStoryBible } from "../creator/public/story-bible";
 
 // ── 대화 메시지 ─────────────────────────────────────────────────────────
 

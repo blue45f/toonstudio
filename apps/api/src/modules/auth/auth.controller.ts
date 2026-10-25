@@ -28,7 +28,7 @@ import {
   issueAccountMergeToken,
   normalizeAccountMergeProfilePreference,
   previewAccountMerge,
-} from "../../server/account-merge";
+} from "./account-merge";
 import {
   hashPassword,
   isPasswordVerificationInputBounded,
@@ -46,7 +46,7 @@ import {
   UPSTASH_COORDINATION_PORT,
   type UpstashCoordinationPort,
 } from "../../platform/adapters/upstash-coordination/upstash-coordination.port";
-import { normalizePersistedAuthRole } from "../../server/admin-roles";
+import { normalizePersistedAuthRole } from "./admin-roles";
 import {
   AuthEmailConfigurationError,
   AuthEmailDeliveryError,
@@ -58,7 +58,7 @@ import {
   consumeAuthOneTimeToken,
   issueAuthOneTimeToken,
   revokeAuthOneTimeTokens,
-} from "../../server/auth-one-time-token";
+} from "./auth-one-time-token";
 import {
   oauthLinkSessionCookieName,
   oauthPkceVerifierCookieName,

@@ -16,7 +16,7 @@ export function FortuneSceneArt({ theme = "violet", closeup = false, fill = fals
   return <svg className="fo-scene-art" viewBox={closeup ? "60 25 360 300" : "0 0 480 360"} preserveAspectRatio={fill ? "xMidYMid slice" : undefined} style={fill ? { height: "100%" } : undefined} aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id={`${uid}-sky`}><stop stopColor={light} stopOpacity=".35" /><stop offset="1" stopColor={night} /></radialGradient>
-      <linearGradient id={`${uid}-paper`} x2="0" y2="1"><stop stopColor="#fff1d8" /><stop offset="1" stopColor="#d8bfaa" /></linearGradient>
+      <linearGradient id={`${uid}-paper`} x2="0" y2="1"><stop stopColor="var(--color-bg)" /><stop offset="1" stopColor="var(--color-line)" /></linearGradient>
       <pattern id={`${uid}-dots`} width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill={light} opacity=".18" /></pattern>
     </defs>
     <rect width="480" height="360" fill={night} />
@@ -32,21 +32,21 @@ export function FortuneSceneArt({ theme = "violet", closeup = false, fill = fals
       <circle cx="166" cy="94" r="3" /><circle cx="333" cy="166" r="2" /><circle cx="134" cy="179" r="2" />
       {[[68,48],[385,53],[188,35],[346,222],[54,186],[226,107],[412,192]].map(([x,y]) => <path key={`${x}-${y}`} d={`M${x} ${y-7}q0 7 7 7-7 0-7 7 0-7-7-7 7 0 7-7Z`} />)}
     </g>
-    <g stroke="#141326" strokeWidth="3" strokeLinejoin="round">
-      <path d="M12 301q216-55 456 0l-16 59H24Z" fill="#211c35" />
+    <g stroke="var(--color-reader-panel)" strokeWidth="3" strokeLinejoin="round">
+      <path d="M12 301q216-55 456 0l-16 59H24Z" fill="var(--color-fg)" />
       <path d="M16 301q208-48 448 0" fill="none" stroke={light} strokeWidth="2" />
-      <ellipse cx="247" cy="298" rx="139" ry="21" fill="#0e1020" stroke="none" opacity=".45" />
-      <path d="M180 274q-10-17 0-32-12-19 6-29l-2-43 33 23q20-7 40 0l32-25-1 46q15 11 10 31 9 21-8 34Z" fill="#d4c8e9" />
-      <path d="m189 180 18 17-17 5Zm91 0-17 17 15 5Z" fill="#a58cbe" stroke="none" />
+      <ellipse cx="247" cy="298" rx="139" ry="21" fill="var(--color-reader-panel)" stroke="none" opacity=".45" />
+      <path d="M180 274q-10-17 0-32-12-19 6-29l-2-43 33 23q20-7 40 0l32-25-1 46q15 11 10 31 9 21-8 34Z" fill="var(--color-raised)" />
+      <path d="m189 180 18 17-17 5Zm91 0-17 17 15 5Z" fill="var(--color-line)" stroke="none" />
       <path d="M204 222q8-10 15 0m32 0q8-10 15 0" fill="none" />
       <path d="m233 232 5 4 5-4m-5 4v5m0-1q-9 8-15 0m15 0q9 8 15 0" fill="none" strokeWidth="2" />
       <path d="m211 236-20-2m20 8-22 3m74-11 20-2m-20 10 22 4" fill="none" strokeWidth="1.5" />
       <path d="m179 257 60 15 60-16-8 25-53 7-50-7Z" fill={light} />
-      <circle cx="240" cy="275" r="8" fill={gold} /><path d="m240 268 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#6b506c" stroke="none" />
+      <circle cx="240" cy="275" r="8" fill={gold} /><path d="m240 268 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="var(--color-fg-3)" stroke="none" />
       <path d="M151 281q47-14 89 10 49-25 91-11l-14 53q-34-13-77 1-40-13-78 0Z" fill={`url(#${uid}-paper)`} />
-      <path d="m240 292 0 41m-78-43q36-6 66 8m-63 1q32-6 61 7m-58 3q31-5 57 6m29-17q30-13 64-9m-64 17q29-12 62-9m-61 18q28-11 58-8" fill="none" stroke="#78658a" strokeWidth="1.5" />
+      <path d="m240 292 0 41m-78-43q36-6 66 8m-63 1q32-6 61 7m-58 3q31-5 57 6m29-17q30-13 64-9m-64 17q29-12 62-9m-61 18q28-11 58-8" fill="none" stroke="var(--color-line-strong)" strokeWidth="1.5" />
       <path d="M99 304h31l-3-25h-24Z" fill={light} /><path d="m114 280 16-74q24 11 7 35-7 10-15 17m-7 17 27-54" fill={gold} strokeWidth="2" />
-      <path d="m355 265 31 3-9 35-31-3Z" fill="#6f5988" /><path d="m362 276 13 1-2 14-13-1Z" fill="none" stroke={gold} strokeWidth="1.5" />
+      <path d="m355 265 31 3-9 35-31-3Z" fill="var(--color-line-strong)" /><path d="m362 276 13 1-2 14-13-1Z" fill="none" stroke={gold} strokeWidth="1.5" />
     </g>
     <g fill={gold} opacity=".7"><circle cx="218" cy="161" r="2" /><circle cx="314" cy="199" r="2" /><circle cx="174" cy="155" r="1.5" /></g>
   </svg>;

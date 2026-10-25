@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -16,7 +15,7 @@ import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
 
-export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro = () => {} }) {
+export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro = () => {} }: { h: Record<string, any>; experienceMode?: "simple" | "pro"; onOpenPro?: () => void }) {
   const t = useT();
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
@@ -335,13 +334,13 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     canPlaceSelectedModelRecipe, centerGroundSelectionDisabledReason, layerListItems, selectedAimConstraints, selectedIkDefaultPole, selectedIkDefaultTarget, selectedTwoBoneIkConstraints, setPoseJointSelection,
     sceneRecoveryError, sharedStageUpdateBlockedReason,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
   const simpleMode = experienceMode === "simple";
   // "자동 단면"(카메라 쪽 벽 숨김) 설정 — 문서에 저장하지 않는 입력 편의다. 원클릭 웹툰 배경은 기본 켜짐(켜면 숨긴 벽을
   // 안내하고 한 번에 되돌리는 버튼을 준다), 방 만들기는 기본 꺼짐(예전 "방 추가"와 같은 동작)이라 따로 둔다.
   const [webtoonAutoCutaway, setWebtoonAutoCutaway] = useState(true);
   const [roomPanelAutoCutaway, setRoomPanelAutoCutaway] = useState(false);
-  const simplePanelCopy = {
+  const simplePanelCopy: Record<string, { label: string; hint: string }> = {
     shapes: { label: "소품", hint: "가구·물건·기본 도형을 장면에 배치" },
     templates: { label: "배경", hint: "교실·거리·카페 같은 장소를 빠르게 구성" },
     layers: { label: "장면", hint: "현재 장면의 인물·배경·소품을 관리" },
@@ -350,7 +349,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     models: { label: "인물", hint: "캐릭터·포즈·3D 에셋을 장면에 배치" },
   };
   const panelTabs = simpleMode
-    ? BG_PANEL_TABS.map((tab) => ({ ...tab, ...simplePanelCopy[tab.id] }))
+    ? BG_PANEL_TABS.map((tab: any) => ({ ...tab, ...simplePanelCopy[tab.id] }))
     : BG_PANEL_TABS;
   const activeSceneGoal: StudioBg3dSceneGoal | null = activePanelTab === "templates"
     ? "background"
@@ -398,7 +397,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               inert={physicsInteractionLocked || immersiveSceneActive}
               className="grid shrink-0 grid-cols-6 gap-1 border-b border-line bg-panel/95 px-2 py-2 backdrop-blur sm:px-3"
             >
-              {panelTabs.map((tab) => {
+              {panelTabs.map((tab: any) => {
                 const TabIcon = tab.icon;
                 const isActive = activePanelTab === tab.id;
                 return (
@@ -413,7 +412,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                     tabIndex={isActive ? 0 : -1}
                     title={tab.hint}
                     onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
-                      const idx = BG_PANEL_TABS.findIndex((t) => t.id === activePanelTab);
+                      const idx = BG_PANEL_TABS.findIndex((t: any) => t.id === activePanelTab);
                       let next: number;
                       if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % BG_PANEL_TABS.length;
                       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + BG_PANEL_TABS.length) % BG_PANEL_TABS.length;
@@ -451,7 +450,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               {open ? (
                 <StudioBg3dShapesPanel
                   hidden={hideOnTab("shapes")}
-                  disabled={!isStudioBg3dSceneEditReady(h)}
+                  disabled={!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])}
                   context={{
                   Boxes,
                   ADD_BUTTONS,
@@ -626,10 +625,10 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                       }
                       applyDisabled={isRestoringScene || isUploadingModel}
                       onSave={() => void handleSaveSceneAsTemplate()}
-                      onApply={(entry) => void applyUserTemplate(entry)}
-                      onDelete={(id) => void handleDeleteTemplate(id)}
+                      onApply={(entry: any) => void applyUserTemplate(entry)}
+                      onDelete={(id: string) => void handleDeleteTemplate(id)}
                       onRetry={() => {
-                        setTemplateLibraryLoadRevision((revision) => revision + 1);
+                        setTemplateLibraryLoadRevision((revision: number) => revision + 1);
                       }}
                     />
                   </Suspense>

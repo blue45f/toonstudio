@@ -8,16 +8,16 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import { isAdminUser } from "../../server/app-config";
+import { logAuditAction } from "../admin/admin-types";
+import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
+import { PaidOperationsAdminService } from "./paid-operations-admin.service";
+
 vi.mock("../../platform/database", () => ({ dbPool: { query: vi.fn() } }));
 vi.mock("../../server/app-config", () => ({
   isAdminUser: vi.fn(async () => true),
 }));
 vi.mock("../admin/admin-types", () => ({ logAuditAction: vi.fn() }));
-
-import { isAdminUser } from "../../server/app-config";
-import { logAuditAction } from "../admin/admin-types";
-import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
-import { PaidOperationsAdminService } from "./paid-operations-admin.service";
 
 const adminIsAdmin = vi.mocked(isAdminUser);
 const audit = vi.mocked(logAuditAction);

@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -28,7 +27,7 @@ const StudioBg3dTurntableMotion = lazyRetry(
   "StudioBg3dTurntableMotion",
 );
 
-export function StudioBg3dEditorViewport({ h, simplified = false }) {
+export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<string, any>; simplified?: boolean }) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -340,7 +339,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     canPlaceSelectedModelRecipe, centerGroundSelectionDisabledReason, groundSelectionDisabledReason, measurementDraft, measurementStartWorld, placementPreviewAsset, setTransformSpaceOverride, setWebXrSupport, transformSpace,
-  } = { ...R, ...h, CaptureBridge };
+  } = { ...R, ...h, CaptureBridge } as typeof R & Record<string, any>;
   const [compositionGuideMode, setCompositionGuideMode] = useState<StudioBg3dCompositionGuideMode>("none");
   const [turntableRunning, setTurntableRunning] = useState(false);
   const [turntableSpeedRpm, setTurntableSpeedRpm] = useState(2);
@@ -424,10 +423,10 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                   eventSource={viewportHostRef as unknown as React.RefObject<HTMLElement>}
                   camera={{
                     fov: sceneBaseDocument.camera.fovDegrees,
-                    position: [...sceneBaseDocument.camera.position],
+                    position: [...sceneBaseDocument.camera.position] as [number, number, number],
                     near: mainCameraNearClip,
                     far: 200,
-                    up: [...mainCameraUp],
+                    up: [...mainCameraUp] as [number, number, number],
                   }}
                   className={cx(
                     "h-full w-full",
@@ -443,7 +442,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                     engineRuntime.glFactory
                       ?? { antialias: sceneBaseDocument.render.antialias, alpha: true }
                   }
-                  onCreated={({ gl }) => {
+                  onCreated={({ gl }: { gl: any }) => {
                     modelRendererRef.current = gl;
                     setModelRenderer(gl);
                     // Routes by the renderer's own brand flag so the WebGPU renderer receives the
@@ -451,7 +450,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                     applyStudioBg3dThreeRenderSettings(gl, sceneBaseDocument.render);
                     gl.setClearColor(getSkyPreset(renderedSkyPresetId).clearColor, 1);
                   }}
-                  onPointerMissed={(event) => {
+                  onPointerMissed={(event: MouseEvent) => {
                     if (immersiveSceneActive) return;
                     if (isStudioBg3dViewportControlTarget(event.target)) return;
                     if (placementActive) return;
@@ -634,7 +633,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                   )}
                 >
                   <div className="col-span-3 grid grid-cols-3 gap-1 rounded-lg border border-line/70 bg-panel/80 p-1 shadow-sm backdrop-blur sm:flex sm:flex-col">
-                    {TRANSFORM_MODES.map((m) => {
+                    {TRANSFORM_MODES.map((m: any) => {
                       const ModeIcon = m.icon;
                       const isActive = transformMode === m.id;
                       return (
@@ -704,7 +703,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                           "border-accent/60 bg-accent text-on-accent hover:bg-accent/90 hover:text-on-accent",
                       )}
                       onClick={() =>
-                        setTransformSpaceOverride((current) => {
+                        setTransformSpaceOverride((current: any) => {
                           const effective =
                             current ?? (transformMode === "rotate" ? "local" : "world");
                           return effective === "local" ? "world" : "local";
@@ -728,7 +727,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                         if (measurementActiveRef.current) {
                           cancelMeasurement("4분할 뷰로 전환해 줄자 측정을 취소했습니다.");
                         }
-                        setIsQuadView((prev) => !prev);
+                        setIsQuadView((prev: boolean) => !prev);
                       }}
                     >
                       <LayoutTemplate size={16} aria-hidden />
@@ -779,7 +778,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                         snapSettings.enabled && "border-accent/60 bg-accent text-on-accent hover:bg-accent/90 hover:text-on-accent"
                       )}
                       onClick={() =>
-                        setSnapSettings((prev) =>
+                        setSnapSettings((prev: any) =>
                           normalizeStudioBg3dSnapSettings({ ...prev, enabled: !prev.enabled })
                         )
                       }
@@ -921,7 +920,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                         surfaceSnapAlignNormal &&
                           "border-accent/60 bg-accent text-on-accent hover:bg-accent/90 hover:text-on-accent",
                       )}
-                      onClick={() => setSurfaceSnapAlignNormal((prev) => !prev)}
+                      onClick={() => setSurfaceSnapAlignNormal((prev: boolean) => !prev)}
                     >
                       법선 정렬
                     </button>
@@ -988,7 +987,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                       aria-label={lineArtPreview ? "선화 미리보기 끄기" : "선화 미리보기 켜기"}
                       aria-pressed={lineArtPreview}
                       className={cx(VIEWPORT_BTN, lineArtPreview && "border-accent/60 bg-accent text-on-accent hover:bg-accent/90 hover:text-on-accent")}
-                      onClick={() => setLineArtPreview((v) => !v)}
+                      onClick={() => setLineArtPreview((v: boolean) => !v)}
                     >
                       <Boxes size={16} aria-hidden />
                     </button>
@@ -1149,7 +1148,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                 {!immersiveSceneActive && h.inferenceService ? (
                   <StudioBg3dInferenceHud
                     service={h.inferenceService}
-                    onPickPoint={(point) => h.pickInferencePoint?.(point)}
+                    onPickPoint={(point: any) => h.pickInferencePoint?.(point)}
                   />
                 ) : null}
 

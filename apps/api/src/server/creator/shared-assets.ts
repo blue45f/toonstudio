@@ -19,7 +19,7 @@ import {
   inspectCreatorAssetPayload,
   inspectCreatorAssetPreviewDataUrl,
   resolveCreatorAssetPreviewForResponse,
-} from "../creator-asset-image";
+} from "../../modules/creator/creator-asset-image";
 
 import {
   authorOf,
@@ -29,9 +29,9 @@ import {
   postgresErrorCode,
   QA_USER_ID_PREFIX,
   safeDate,
-} from "./shared";
+} from "../../modules/creator/shared";
 
-import type { CreatorAuthor } from "./works-contract";
+import type { CreatorAuthor } from "../../modules/creator/works-contract";
 import type {
   CreatorAssetCatalogSort,
   CreatorAssetLicenseId,

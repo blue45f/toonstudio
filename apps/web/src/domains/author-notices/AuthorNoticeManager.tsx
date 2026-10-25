@@ -168,7 +168,7 @@ export function AuthorNoticeManager({
   };
 
   const inputClass =
-    "w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-4 focus:border-accent focus:ring-2 focus:ring-accent/25";
+    "w-full rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-3 focus:border-accent focus:ring-2 focus:ring-accent/25";
 
   return (
     <section aria-label={t("작가 공지 관리", "Manage author notices")} className={className}>
@@ -241,7 +241,7 @@ export function AuthorNoticeManager({
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-2"
               >
                 <Plus size={14} aria-hidden />
                 {editingId
@@ -252,7 +252,7 @@ export function AuthorNoticeManager({
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-fg-2 transition hover:bg-panel-2"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-fg-2 transition hover:bg-panel"
                 >
                   {t("수정 취소", "Cancel editing")}
                 </button>
@@ -294,14 +294,14 @@ export function AuthorNoticeManager({
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                         item.status === "published"
                           ? "bg-success/12 text-success"
-                          : "bg-panel-2 text-fg-3"
+                          : "bg-panel text-fg-3"
                       }`}
                     >
                       {item.status === "published"
                         ? t("게시 중", "Published")
                         : t("초안", "Draft")}
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-medium text-fg-2">
+                    <span className="inline-flex items-center rounded-full bg-panel px-2 py-0.5 text-[11px] font-medium text-fg-2">
                       {kindLabel(item.kind)}
                     </span>
                     <span className="text-xs text-fg-3">
@@ -330,7 +330,7 @@ export function AuthorNoticeManager({
                       <button
                         type="button"
                         onClick={() => handleEdit(item)}
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-fg-2 transition hover:bg-panel-2"
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-fg-2 transition hover:bg-panel"
                       >
                         <Pencil size={12} aria-hidden />
                         {t("수정", "Edit")}

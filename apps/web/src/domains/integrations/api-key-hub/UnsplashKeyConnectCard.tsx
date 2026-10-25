@@ -7,7 +7,7 @@ import {
   saveStudioStockImageAccessKey,
   searchStockPhotos,
   STUDIO_STOCK_IMAGE_DEVELOPER_SIGNUP_URL,
-} from "@/domains/creator/studio-stock-image-client";
+} from "@/domains/creator/public/studio-stock-image-key";
 
 import { maskApiKey, validateApiKeyFormat } from "./api-key-hub-model";
 import { StoredKeyRow } from "./MaskedKeyField";

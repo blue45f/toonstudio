@@ -1,10 +1,10 @@
-/* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
+/* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { BgCustomModelInstance, BgPrimitive, StudioBg3dAnimationPlayback, StudioBg3dCameraSettings, StudioBg3dConstraintLayer, StudioBg3dMaterialOverride, StudioBg3dMorphLayer, StudioBg3dPoseLayer } from "./studio-bg3d-editor-runtime-bindings";
 import { ensureStudio3dGradeHistory, pushStudio3dGradeCommand } from "./studio-bg3d-grade-history-bridge";
 import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-production";
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
@@ -12,7 +12,7 @@ import { readStudioBg3dSelectionBounds } from "./studio-bg3d-camera-selection";
 import { hasStudioBg3dSelectedAncestor } from "./studio-bg3d-template-instance";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
-export function attachStudioBg3dEditorTransformHost(h) {
+export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -317,10 +317,10 @@ export function attachStudioBg3dEditorTransformHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     setRefTick,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const applyMultiSelectDelta = (snap: boolean) => {
-    if (!isStudioBg3dSceneEditReady(h)) return;
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return;
     const firstObj = primitiveObjectsRef.current.get(firstSelectedId!);
     const initialFirst = dragInitialFirstTransformRef.current;
     if (!firstObj || !initialFirst) return;
@@ -329,8 +329,8 @@ export function attachStudioBg3dEditorTransformHost(h) {
       hasStudioBg3dSelectedAncestor(
         item,
         selectedIds,
-        (id) => primitiveById.get(id) ?? customModelById.get(id),
-        (ancestor) => !isBgObjectTransformBlocked(ancestor),
+        (id: string) => primitiveById.get(id) ?? customModelById.get(id),
+        (ancestor: BgPrimitive | BgCustomModelInstance) => !isBgObjectTransformBlocked(ancestor),
       );
 
     const patchTransform = (item: BgPrimitive | BgCustomModelInstance, isFirst: boolean) => {
@@ -377,7 +377,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
       return next;
     };
 
-    setPrimitives((prev) => prev.map((p) => {
+    setPrimitives((prev: BgPrimitive[]) => prev.map((p: BgPrimitive) => {
       if (
         !selectedIds.has(p.id) ||
         isBgObjectTransformBlocked(p) ||
@@ -386,7 +386,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
       return patchTransform(p, p.id === firstSelectedId) as BgPrimitive;
     }));
 
-    setCustomModels((prev) => prev.map((m) => {
+    setCustomModels((prev: BgCustomModelInstance[]) => prev.map((m: BgCustomModelInstance) => {
       if (
         !selectedIds.has(m.id) ||
         isBgObjectTransformBlocked(m) ||
@@ -401,10 +401,10 @@ export function attachStudioBg3dEditorTransformHost(h) {
     patch: Partial<Pick<BgPrimitive, "position" | "rotation" | "scale">>,
     options: { readonly snap?: boolean } = {}
   ) => {
-    if (!isStudioBg3dSceneEditReady(h)) return;
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return;
     const shouldSnap = options.snap !== false;
-    setPrimitives((prev) =>
-      prev.map((p) => {
+    setPrimitives((prev: BgPrimitive[]) =>
+      prev.map((p: BgPrimitive) => {
         if (p.id !== id) return p;
         if (isBgObjectTransformBlocked(p)) return p;
         const next = { ...p, ...patch };
@@ -429,10 +429,10 @@ export function attachStudioBg3dEditorTransformHost(h) {
     patch: Partial<Pick<BgCustomModelInstance, "position" | "rotation" | "scale">>,
     options: { readonly snap?: boolean } = {}
   ) {
-    if (!isStudioBg3dSceneEditReady(h)) return;
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return;
     const shouldSnap = options.snap !== false;
-    setCustomModels((prev) =>
-      prev.map((m) => {
+    setCustomModels((prev: BgCustomModelInstance[]) =>
+      prev.map((m: BgCustomModelInstance) => {
         if (m.id !== id) return m;
         if (isBgObjectTransformBlocked(m)) return m;
         const next = { ...m, ...patch };
@@ -456,7 +456,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     id: string,
     update: StudioBg3dMaterialOverride | null | ((current: StudioBg3dMaterialOverride) => StudioBg3dMaterialOverride),
   ) {
-    setCustomModels((prev) => prev.map((model) => {
+    setCustomModels((prev: BgCustomModelInstance[]) => prev.map((model: BgCustomModelInstance) => {
       if (model.id !== id) return model;
       if (update === null) return { ...model, materialOverride: undefined };
       const current = model.materialOverride ?? DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE;
@@ -469,7 +469,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     id: string,
     update: StudioBg3dAnimationPlayback | null | ((current: StudioBg3dAnimationPlayback) => StudioBg3dAnimationPlayback),
   ) {
-    setCustomModels((prev) => prev.map((model) => {
+    setCustomModels((prev: BgCustomModelInstance[]) => prev.map((model: BgCustomModelInstance) => {
       if (model.id !== id) return model;
       if (update === null) return { ...model, animation: undefined };
       const stored = model.animation ?? DEFAULT_STUDIO_BG3D_ANIMATION_PLAYBACK;
@@ -484,7 +484,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     id: string,
     update: StudioBg3dPoseLayer | null | ((current: StudioBg3dPoseLayer) => StudioBg3dPoseLayer),
   ) {
-    setCustomModels((prev) => prev.map((model) => {
+    setCustomModels((prev: BgCustomModelInstance[]) => prev.map((model: BgCustomModelInstance) => {
       if (model.id !== id) return model;
       if (update === null) return { ...model, pose: undefined };
       const current = model.pose ?? DEFAULT_STUDIO_BG3D_POSE_LAYER;
@@ -506,7 +506,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     id: string,
     update: StudioBg3dMorphLayer | null | ((current: StudioBg3dMorphLayer) => StudioBg3dMorphLayer),
   ) {
-    setCustomModels((prev) => prev.map((model) => {
+    setCustomModels((prev: BgCustomModelInstance[]) => prev.map((model: BgCustomModelInstance) => {
       if (model.id !== id) return model;
       if (update === null) return { ...model, morph: undefined };
       const current = model.morph ?? DEFAULT_STUDIO_BG3D_MORPH_LAYER;
@@ -525,7 +525,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     id: string,
     update: StudioBg3dConstraintLayer | null | ((current: StudioBg3dConstraintLayer) => StudioBg3dConstraintLayer),
   ) {
-    setCustomModels((previous) => previous.map((model) => {
+    setCustomModels((previous: BgCustomModelInstance[]) => previous.map((model: BgCustomModelInstance) => {
       if (model.id !== id) return model;
       if (update === null) return { ...model, constraints: undefined };
       const current: StudioBg3dConstraintLayer = model.constraints
@@ -555,7 +555,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
   h.updateCustomModelConstraints = updateCustomModelConstraints;
   function reparentSceneEntity(id: string, nextParentId: string | null): void {
     const entities = [...primitives, ...customModels];
-    const entity = entities.find((candidate) => candidate.id === id);
+    const entity = entities.find((candidate: BgPrimitive | BgCustomModelInstance) => candidate.id === id);
     if (
       !entity ||
       isBgObjectTransformBlocked(entity) ||
@@ -576,8 +576,8 @@ export function attachStudioBg3dEditorTransformHost(h) {
         ...preserved,
       };
     };
-    setPrimitives((current) => current.map(apply) as BgPrimitive[]);
-    setCustomModels((current) => current.map(apply) as BgCustomModelInstance[]);
+    setPrimitives((current: BgPrimitive[]) => current.map(apply) as BgPrimitive[]);
+    setCustomModels((current: BgCustomModelInstance[]) => current.map(apply) as BgCustomModelInstance[]);
   }
   h.reparentSceneEntity = reparentSceneEntity;
   function bakeCustomModelRigConstraints(id: string): void {
@@ -585,11 +585,11 @@ export function attachStudioBg3dEditorTransformHost(h) {
       captureInFlightRef.current || isCapturing || isRestoringScene ||
       isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)
     ) return;
-    const model = customModels.find((candidate) => candidate.id === id);
+    const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
     const hasEffectiveConstraint = Boolean(
       model?.constraints?.enabled && (
-        model.constraints.aims.some((aim) => aim.weight > 0) ||
-        model.constraints.twoBoneIks.some((ik) => ik.weight > 0)
+        model.constraints.aims.some((aim: { weight: number }) => aim.weight > 0) ||
+        model.constraints.twoBoneIks.some((ik: { weight: number }) => ik.weight > 0)
       )
     );
     if (!model || !hasEffectiveConstraint) {
@@ -606,7 +606,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
       setError(frozenStatus6Text("studio.frozenStatus6.transform.frameNormalizeFailed", "현재 표시 프레임을 정적 포즈로 정규화하지 못했습니다."));
       return;
     }
-    const beforeCustomModels = customModels.map((candidate) => {
+    const beforeCustomModels = customModels.map((candidate: BgCustomModelInstance) => {
       if (!candidate.animation) return candidate;
       const animation = candidate.id === id
         ? transition.beforeAnimation
@@ -616,7 +616,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
           );
       return animation ? { ...candidate, animation } : candidate;
     });
-    const nextCustomModels = beforeCustomModels.map((candidate) => candidate.id === id
+    const nextCustomModels = beforeCustomModels.map((candidate: BgCustomModelInstance) => candidate.id === id
       ? { ...candidate, ...transition.patch }
       : candidate
     );
@@ -635,12 +635,12 @@ export function attachStudioBg3dEditorTransformHost(h) {
   }
   h.bakeCustomModelRigConstraints = bakeCustomModelRigConstraints;
   const updateColor = (id: string, color: string) => {
-    setPrimitives((prev) => prev.map((p) => (p.id === id ? { ...p, color } : p)));
+    setPrimitives((prev: BgPrimitive[]) => prev.map((p: BgPrimitive) => (p.id === id ? { ...p, color } : p)));
   };
   h.updateColor = updateColor;
   const applySurfacePreset = (id: string, presetId: string | null) => {
-    setPrimitives((prev) =>
-      prev.map((p) =>
+    setPrimitives((prev: BgPrimitive[]) =>
+      prev.map((p: BgPrimitive) =>
         p.id === id
           ? {
               ...p,
@@ -653,8 +653,8 @@ export function attachStudioBg3dEditorTransformHost(h) {
   };
   h.applySurfacePreset = applySurfacePreset;
   function togglePrimitiveFlag(id: string, flag: "visible" | "locked") {
-    setPrimitives((prev) =>
-      prev.map((p) => {
+    setPrimitives((prev: BgPrimitive[]) =>
+      prev.map((p: BgPrimitive) => {
         if (p.id !== id) return p;
         if (flag === "visible") return { ...p, visible: !isBgObjectVisible(p) };
         return { ...p, locked: !isBgObjectLocked(p) };
@@ -663,8 +663,8 @@ export function attachStudioBg3dEditorTransformHost(h) {
   }
   h.togglePrimitiveFlag = togglePrimitiveFlag;
   function toggleCustomModelFlag(id: string, flag: "visible" | "locked") {
-    setCustomModels((prev) =>
-      prev.map((m) => {
+    setCustomModels((prev: BgCustomModelInstance[]) =>
+      prev.map((m: BgCustomModelInstance) => {
         if (m.id !== id) return m;
         if (flag === "visible") return { ...m, visible: !isBgObjectVisible(m) };
         return { ...m, locked: !isBgObjectLocked(m) };
@@ -673,7 +673,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
   }
   h.toggleCustomModelFlag = toggleCustomModelFlag;
   function renameBgObject(id: string, kind: "primitive" | "model") {
-    const item = kind === "primitive" ? primitives.find(p => p.id === id) : customModels.find(m => m.id === id);
+    const item = kind === "primitive" ? primitives.find((p: BgPrimitive) => p.id === id) : customModels.find((m: BgCustomModelInstance) => m.id === id);
     if (!item) return;
     const currentName = item.name || (kind === "primitive" ? PRIMITIVE_DEFS[(item as BgPrimitive).kind].label : "3D 모델");
     const newName = window.prompt("새 이름을 입력하세요", currentName);
@@ -681,9 +681,9 @@ export function attachStudioBg3dEditorTransformHost(h) {
     const trimmed = newName.trim();
     
     if (kind === "primitive") {
-      setPrimitives((prev) => prev.map(p => p.id === id ? { ...p, name: trimmed || undefined } : p));
+      setPrimitives((prev: BgPrimitive[]) => prev.map((p: BgPrimitive) => p.id === id ? { ...p, name: trimmed || undefined } : p));
     } else {
-      setCustomModels((prev) => prev.map(m => m.id === id ? { ...m, name: trimmed || undefined } : m));
+      setCustomModels((prev: BgCustomModelInstance[]) => prev.map((m: BgCustomModelInstance) => m.id === id ? { ...m, name: trimmed || undefined } : m));
     }
   }
   h.renameBgObject = renameBgObject;
@@ -706,19 +706,19 @@ export function attachStudioBg3dEditorTransformHost(h) {
             nextLocalPosition.y,
             nextLocalPosition.z,
           ];
-          const primitive = primitives.find((candidate) => candidate.id === id);
+          const primitive = primitives.find((candidate: BgPrimitive) => candidate.id === id);
           if (primitive && !isBgObjectTransformBlocked(primitive)) {
             updateTransform(id, { position }, { snap: false });
             continue;
           }
-          const model = customModels.find((candidate) => candidate.id === id);
+          const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
           if (model && !isBgObjectTransformBlocked(model)) {
             updateCustomModelTransform(id, { position }, { snap: false });
             continue;
           }
         }
       }
-      const prim = primitives.find((p) => p.id === id);
+      const prim = primitives.find((p: BgPrimitive) => p.id === id);
       if (prim) {
         if (isBgObjectTransformBlocked(prim)) continue;
         if (prim.parentId) continue;
@@ -726,7 +726,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
         updateTransform(prim.id, { position });
         continue;
       }
-      const model = customModels.find((m) => m.id === id);
+      const model = customModels.find((m: BgCustomModelInstance) => m.id === id);
       if (!model || isBgObjectTransformBlocked(model)) continue;
       if (model.parentId) continue;
       const root = modelRootCacheRef.current.get(model.modelId)?.root;
@@ -753,7 +753,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     // Multi-select: independent per-model auto-fit → ground recipes, one history step (surface snap style).
     const models: BgCustomModelInstance[] = [];
     for (const id of selectedIds) {
-      const model = customModels.find((candidate) => candidate.id === id);
+      const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
       if (!model) {
         setError(frozenStatus6Text("studio.frozenStatus6.transform.customModelOnly", "배치 정리는 커스텀 모델에만 사용할 수 있습니다."));
         return;
@@ -808,7 +808,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
       return;
     }
 
-    const nextCustomModels = customModels.map((model) => {
+    const nextCustomModels = customModels.map((model: BgCustomModelInstance) => {
       const next = transformById.get(model.id);
       if (!next) return model;
       return {
@@ -837,8 +837,8 @@ export function attachStudioBg3dEditorTransformHost(h) {
 
     const id = selectedIds.values().next().value;
     if (typeof id !== "string") return;
-    const primitive = primitives.find((candidate) => candidate.id === id);
-    const model = customModels.find((candidate) => candidate.id === id);
+    const primitive = primitives.find((candidate: BgPrimitive) => candidate.id === id);
+    const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
     const entity = primitive ?? model;
     if (!entity || isBgObjectTransformBlocked(entity)) return;
 
@@ -856,19 +856,19 @@ export function attachStudioBg3dEditorTransformHost(h) {
 
     const currentPosition = entity.position;
     if (currentPosition.every(
-      (value, index) => Math.abs(value - nextLocalPosition[index]) <= 1e-6
+      (value: number, index: number) => Math.abs(value - nextLocalPosition[index]) <= 1e-6
     )) {
       setError(null);
       return;
     }
 
     const nextPrimitives = primitive
-      ? primitives.map((candidate) => candidate.id === id
+      ? primitives.map((candidate: BgPrimitive) => candidate.id === id
         ? { ...candidate, position: nextLocalPosition }
         : candidate)
       : primitives;
     const nextCustomModels = model
-      ? customModels.map((candidate) => candidate.id === id
+      ? customModels.map((candidate: BgCustomModelInstance) => candidate.id === id
         ? { ...candidate, position: nextLocalPosition }
         : candidate)
       : customModels;
@@ -981,7 +981,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
       setError(h.focusSelectionDisabledReason ?? frozenStatus6Text("studio.frozenStatus6.transform.fitAfterCapture", "3D 장면 캡처가 끝난 뒤 화면 맞춤을 사용해 주세요."));
       return;
     }
-    const bounds = readStudioBg3dSelectionBounds(h.focusSelectionIds, (id) => (
+    const bounds = readStudioBg3dSelectionBounds(h.focusSelectionIds, (id: string) => (
       readStudioBg3dObjectWorldBounds(primitiveObjectsRef.current.get(id), { visibleOnly: true })
     ));
     const framing = viewportApiRef.current?.readFramingState() ?? null;
@@ -1006,12 +1006,12 @@ export function attachStudioBg3dEditorTransformHost(h) {
     }
   }
   h.focusSelectedEntity = focusSelectedEntity;
-  const registerPrimitiveRef = useCallback((id: string, obj: THREE.Group | null) => {
+  const registerPrimitiveRef = useCallback((id: string, obj: R.THREE.Group | null) => {
     const current = primitiveObjectsRef.current.get(id) ?? null;
     if (current === obj) return;
     if (obj) primitiveObjectsRef.current.set(id, obj);
     else primitiveObjectsRef.current.delete(id);
-    setRefTick((n) => n + 1);
+    setRefTick((n: number) => n + 1);
   }, [primitiveObjectsRef, setRefTick]);
   h.registerPrimitiveRef = registerPrimitiveRef;
 }

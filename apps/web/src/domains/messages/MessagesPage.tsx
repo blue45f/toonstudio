@@ -617,7 +617,7 @@ export function MessagesPage() {
               )}
 
               {selectedThread.incomingRequest && (
-                <section className="border-b border-line bg-warn-soft/60 px-4 py-4 sm:px-6">
+                <section className="border-b border-line bg-warning-soft/60 px-4 py-4 sm:px-6">
                   <p className="text-sm font-semibold">{selectedThread.otherUser.name} 님의 메시지 요청입니다.</p>
                   <p className="mt-1 text-xs text-fg-2">수락한 뒤에만 서로 추가 메시지를 보낼 수 있습니다.</p>
                   <div className="mt-3 flex gap-2">

@@ -24,7 +24,7 @@ import {
   projectCreatorWorkListWithReleases,
   promoteDueCreatorCommunityPublications,
   resolvePublishedCreatorWorkIdBySlug,
-} from "./community-publishing";
+} from "../../modules/creator/community-publishing";
 import {
   rethrowIfDatabaseCapabilityUnavailable,
   withDatabaseCapability,
@@ -40,20 +40,20 @@ import {
   listChallenges as rawListChallenges,
   type CreatorChallengeDetail,
   type CreatorChallengeSummary,
-} from "./challenges";
-import { requireCreatorCommunitySchema } from "./community-schema";
+} from "../../modules/creator/challenges";
+import { requireCreatorCommunitySchema } from "../../modules/creator/community-schema";
 import {
   getSeries as rawGetSeries,
   listSeries as rawListSeries,
   touchSeries,
   type CreatorSeriesDetail,
   type CreatorSeriesSummary,
-} from "./series";
+} from "../../modules/creator/series";
 import {
   addComment as rawAddComment,
   listComments as rawListComments,
   toggleLike as rawToggleLike,
-} from "./work-social";
+} from "../../modules/creator/work-social";
 import {
   parseStatus,
   type CreatorEpisodeRef,
@@ -63,7 +63,7 @@ import {
   type CreatorWorkSort,
   type CreatorWorkStatus,
   type CreatorWorkSummary,
-} from "./works-contract";
+} from "../../modules/creator/works-contract";
 import {
   bumpViews as rawBumpViews,
   createWork as rawCreateWork,

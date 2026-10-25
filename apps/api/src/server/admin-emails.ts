@@ -1,4 +1,4 @@
-import { normalizePersistedAuthRole } from "./admin-roles";
+import { normalizePersistedAuthRole } from "../modules/auth/admin-roles";
 
 /**
  * @deprecated Email-based privilege grants were removed. Kept temporarily so

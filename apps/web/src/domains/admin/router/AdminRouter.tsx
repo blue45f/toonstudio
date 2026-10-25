@@ -11,15 +11,15 @@ import {
 } from "../components/admin-gate-state";
 import { AdminToastProvider } from "../components/AdminToast";
 import { AdminShell } from "../shell/AdminShell";
-import { getAdminShellCopy } from "../shell/admin-shell-copy";
 import {
   adminPathFromLegacyTab,
+  getAdminShellCopy,
   resolveAdminRedirectHref,
   resolveAdminRoute,
   type AdminRouteId,
 } from "./admin-route-manifest";
 
-import { AuthMenuShell } from "@/domains/auth/components/auth-menu-shell";
+import { AuthMenuShell } from "@/domains/auth/public/auth-menu-shell";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";

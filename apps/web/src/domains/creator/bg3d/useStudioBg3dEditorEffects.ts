@@ -1,12 +1,11 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 
-export function useStudioBg3dEditorEffects(h) {
+export function useStudioBg3dEditorEffects(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
     TransformControls, View, Canvas, useThree,
@@ -254,7 +253,7 @@ export function useStudioBg3dEditorEffects(h) {
     selectedIdsRef, undoRef, redoRef, deleteSelectedRef, addPrimitiveRef, addSceneTemplateRef,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     modelThumbnailCaptureControllerRef, setCaptureBackgroundSnapshot, setImmersiveStagePlan, setLtUserPresetLibraryStatus, setMeasurementDraft, setMeasurementInference, setMeasurementStartWorld, setModelLibraryStatus, setPlacementPreviewAsset, setWebXrController, setWebXrRendererLifetimeRetained, setWebXrSessionState, setWebXrSupport, sharedCharacterCaptureAuthorityRef, webXrRendererLifetimeRetained,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   selectedIdsRef.current = selectedIds;
   undoRef.current = doUndo;
@@ -287,7 +286,7 @@ export function useStudioBg3dEditorEffects(h) {
       sharedCharacterCaptureAuthorityPayloadKey;
     sharedCharacterCaptureAuthorityRef.current = {
       revision: sharedCharacterCaptureAuthorityRevisionRef.current,
-      ...readSharedCharacterCaptureAuthorityDraft(),
+      ...(readSharedCharacterCaptureAuthorityDraft() as Record<string, any>),
     };
   }, [
     sharedCharacterCaptureAuthorityPayloadKey,
@@ -487,7 +486,7 @@ export function useStudioBg3dEditorEffects(h) {
     activeKey: open ? "studio-bg3d" : null,
     dialogRef: modalDialogRef,
     onDismiss: requestModalDismiss,
-    resolveInitialFocus: (dialog) =>
+    resolveInitialFocus: (dialog: HTMLElement) =>
       dialog.querySelector<HTMLElement>("[data-bg3d-initial-focus='true']"),
     resolveReturnFocus: () => resolveStudioBg3dReturnFocus(modalDialogRef.current),
     rootRef: modalRootRef,
@@ -541,7 +540,7 @@ export function useStudioBg3dEditorEffects(h) {
     setLtUserPresetLibraryStatus("idle");
     setLtUserPresetNotice(null);
 
-    void ltUserPresetRepository.load().then((payload) => {
+    void ltUserPresetRepository.load().then((payload: any) => {
       if (
         !active ||
         ltUserPresetHydrationGenerationRef.current !== hydrationGeneration ||
@@ -583,7 +582,7 @@ export function useStudioBg3dEditorEffects(h) {
         }
         return listBg3dModelLibraryEntries();
       })
-      .then((entries) => {
+      .then((entries: any) => {
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
           setModelLibrary(entries);
           setModelLibraryStatus("ready");
@@ -605,7 +604,7 @@ export function useStudioBg3dEditorEffects(h) {
     setTemplateLibraryStatus("loading");
     setTemplateLibraryNotice(null);
     loadBg3dTemplates()
-      .then((result) => {
+      .then((result: any) => {
         if (!active) return;
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
           setTemplateLibrary([...result.entries]);
@@ -740,7 +739,7 @@ export function useStudioBg3dEditorEffects(h) {
   useEffect(() => {
     if (!open || ltManagedUserPresetId || !appliedLtPreset) return;
     const exactUserPreset = ltUserPresetPayload.presets.find(
-      (preset) => preset.id === appliedLtPreset.id
+      (preset: any) => preset.id === appliedLtPreset.id
     );
     if (!exactUserPreset) return;
     setLtManagedUserPresetId(exactUserPreset.id);

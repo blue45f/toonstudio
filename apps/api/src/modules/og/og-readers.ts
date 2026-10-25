@@ -2,10 +2,10 @@ import { getAuthorData } from "../../../../../packages/core/src/catalog/author";
 import {
   getCreatorPublicProfile,
 } from "../../server/creator/follows";
-import { getSeries } from "../../server/creator/series";
+import { getSeries } from "../creator/series";
 import { getWork } from "../../server/creator/works";
 import { getFanPost } from "../../server/community";
-import { getGovernedCafeBySlug } from "../../server/community-governance";
+import { getGovernedCafeBySlug } from "../community/community-governance";
 import { CollaborationService } from "../collaboration/collaboration.service";
 import { PromotionService } from "../promotion/promotion.service";
 

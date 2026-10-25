@@ -43,10 +43,10 @@ describe("F5 배선: 마감 리스크 예보", () => {
 describe("F5 배선: 예약 발행 패널군", () => {
   it("게시 명령 센터 라우트가 시리즈 예약 섹션을 지연 로드로 마운트한다", () => {
     const route = source(PUBLISH_ROUTE);
-    expect(route).toContain('import("../../publish/PublishScheduleSeriesSection")');
+    expect(route).toMatch(/import\("\.\.\/\.\.\/publish\/PublishScheduleSeriesSection"\)/u);
     expect(route).toContain("<PublishScheduleSeriesSection seriesId={seriesId} />");
     // 기존 게시 명령 센터 지연 로드 경계는 그대로 유지한다.
-    expect(route).toContain('import("../../StudioPublishingCommandCenter")');
+    expect(route).toMatch(/import\("\.\.\/\.\.\/StudioPublishingCommandCenter"\)/u);
   });
 
   it("예약 섹션이 패널군과 시리즈 어댑터, localStorage 고지를 소비한다", () => {

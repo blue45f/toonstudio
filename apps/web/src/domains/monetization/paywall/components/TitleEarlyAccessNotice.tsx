@@ -45,7 +45,7 @@ export function TitleEarlyAccessNotice({ titleId }: TitleEarlyAccessNoticeProps)
         <Zap className="h-4 w-4 shrink-0 text-accent" aria-hidden />
         <p className="text-sm font-semibold text-fg">{t("paywall.titleNotice.title")}</p>
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
+      <p className="mt-1 text-xs leading-relaxed text-fg-3">
         {t("paywall.titleNotice.body", { days: policy.earlyAccessDays })}
       </p>
     </div>

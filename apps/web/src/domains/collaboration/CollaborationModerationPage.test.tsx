@@ -7,7 +7,7 @@ import { CollaborationModerationPage } from "./CollaborationModerationPage";
 import {
   AdminGateOverrideProvider,
   type AdminGateState,
-} from "../admin/components/admin-gate-state";
+} from "../admin/public/admin-client";
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
   useSession: () => ({ data: null, status: "unauthenticated" }),

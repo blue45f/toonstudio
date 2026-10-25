@@ -15,9 +15,9 @@ import {
 } from "./creator.dto";
 import { toPublicCreatorDoc } from "../../server/creator-doc-visibility";
 
-import { projectCreatorWorkWithRelease } from "../../server/creator/community-publishing";
+import { projectCreatorWorkWithRelease } from "./community-publishing";
 
-import type { CreatorWorkSummary } from "../../server/creator/works-contract";
+import type { CreatorWorkSummary } from "./works-contract";
 
 // community-publishing 은 DB 모듈을 import 한다. 이 파일은 순수 투영 함수만 쓰므로 스키마만 살리고 연결은 비운다.
 vi.mock("../../platform/database", async () => ({

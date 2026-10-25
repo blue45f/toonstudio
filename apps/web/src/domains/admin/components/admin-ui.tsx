@@ -1,12 +1,70 @@
-import { Inbox, RotateCcw, ShieldCheck } from "lucide-react";
-import type { ReactNode } from "react";
+import {
+  Activity,
+  BadgeDollarSign,
+  CreditCard,
+  Flag,
+  Gauge,
+  HandCoins,
+  History,
+  Inbox,
+  LayoutDashboard,
+  Megaphone,
+  MessagesSquare,
+  Receipt,
+  RefreshCw,
+  RotateCcw,
+  ShieldCheck,
+  Ticket,
+  UsersRound,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 
+import type { AdminRouteIconId } from "../router/admin-route-manifest";
 import "../shell/admin-visual-v2.css";
 
-import { adminButtonClass } from "./admin-ui-utils";
-
+import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+
+import { adminButtonClass } from "./admin-client";
+
+const ADMIN_ROUTE_ICONS: Record<AdminRouteIconId, LucideIcon> = {
+  activity: Activity,
+  announcement: Megaphone,
+  audit: History,
+  community: MessagesSquare,
+  funding: HandCoins,
+  members: UsersRound,
+  operations: Gauge,
+  overview: LayoutDashboard,
+  plans: CreditCard,
+  promotions: Ticket,
+  reports: Flag,
+  revenue: BadgeDollarSign,
+  security: ShieldCheck,
+};
+
+export function AdminRouteIcon({
+  icon,
+  className,
+  size = 16,
+}: {
+  icon: AdminRouteIconId;
+  className?: string;
+  size?: number;
+}) {
+  const Icon = ADMIN_ROUTE_ICONS[icon] ?? Receipt;
+  return <Icon aria-hidden className={className} size={size} />;
+}
 
 export const adminInputClass =
   "h-10 w-full rounded-lg border border-line bg-canvas px-3 text-sm outline-none focus:border-accent/60";
@@ -182,5 +240,239 @@ export function StatusBadge({ status, label }: { status: string; label?: string 
     <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[0.7rem] font-semibold", tone)}>
       {label ?? status}
     </span>
+  );
+}
+
+interface LiveAutoRefreshProps {
+  onRefresh: () => void;
+  loading?: boolean;
+}
+
+export function LiveAutoRefresh({ onRefresh, loading = false }: LiveAutoRefreshProps) {
+  const [intervalSec, setIntervalSec] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number>(0);
+  const t = useT();
+
+  useEffect(() => {
+    if (intervalSec <= 0) {
+      setCountdown(0);
+      return;
+    }
+
+    setCountdown(intervalSec);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          onRefresh();
+          return intervalSec;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [intervalSec, onRefresh]);
+
+  return (
+    <div className="inline-flex items-center gap-2 bg-card/60 border border-line p-1.5 rounded-xl backdrop-blur-xl text-xs">
+      <button
+        onClick={onRefresh}
+        disabled={loading}
+        title={t("admin.refresh.now")}
+        className="p-1.5 text-fg-3 hover:text-fg hover:bg-raised rounded-lg transition-colors flex items-center gap-1 font-medium"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-accent" : ""}`} />
+        <span>{t("admin.refresh.now")}</span>
+      </button>
+
+      <span className="w-px h-4 bg-raised" />
+
+      <div className="flex items-center gap-1">
+        <span className="text-fg-3 font-medium pl-1">{t("admin.refresh.auto")}</span>
+        {([0, 5, 15, 30] as const).map((sec) => (
+          <button
+            key={sec}
+            onClick={() => setIntervalSec(sec)}
+            className={`px-2 py-0.5 rounded-md font-semibold transition-all ${
+              intervalSec === sec
+                ? "bg-accent text-fg shadow-sm"
+                : "text-fg-3 hover:text-fg-2 hover:bg-raised"
+            }`}
+          >
+            {sec === 0 ? "Off" : t("admin.refresh.seconds").replace("{sec}", String(sec))}
+          </button>
+        ))}
+      </div>
+
+      {intervalSec > 0 && (
+        <span className="text-[10px] font-mono text-accent bg-accent/10 border border-accent/40 px-1.5 py-0.5 rounded-md">
+          {countdown}s
+        </span>
+      )}
+    </div>
+  );
+}
+
+interface AdminDialogProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  children?: ReactNode;
+  footer?: ReactNode;
+  size?: "sm" | "md" | "lg" | "xl";
+  busy?: boolean;
+  closeLabel?: string;
+}
+
+const DIALOG_SIZE_CLASS: Record<NonNullable<AdminDialogProps["size"]>, string> = {
+  sm: "max-w-md",
+  md: "max-w-xl",
+  lg: "max-w-3xl",
+  xl: "max-w-5xl",
+};
+
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+export function AdminDialog({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  size = "md",
+  busy = false,
+  closeLabel,
+}: AdminDialogProps) {
+  const t = useT();
+  const resolvedCloseLabel = closeLabel ?? t("admin.ui.close");
+  const titleId = useId();
+  const descriptionId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return;
+
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const panel = panelRef.current;
+    const firstFocusable = panel?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    (firstFocusable ?? panel)?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (!busy) {
+          event.preventDefault();
+          onClose();
+        }
+        return;
+      }
+
+      if (event.key !== "Tab" || !panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ).filter((element) => !element.hasAttribute("disabled"));
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [busy, onClose, open]);
+
+  if (!open) return null;
+
+  const handleBackdropMouseDown = (event: MouseEvent<HTMLDivElement>) => {
+    if (!busy && event.currentTarget === event.target) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-canvas/80 p-4 backdrop-blur-sm"
+      role="presentation"
+      onMouseDown={handleBackdropMouseDown}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
+        aria-busy={busy || undefined}
+        tabIndex={-1}
+        className={cn(
+          "my-auto w-full overflow-hidden rounded-2xl border border-line bg-card shadow-2xl outline-none",
+          DIALOG_SIZE_CLASS[size],
+        )}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+          <div className="min-w-0">
+            <h2 id={titleId} className="text-lg font-semibold text-fg">
+              {title}
+            </h2>
+            {description ? (
+              <p
+                id={descriptionId}
+                className="mt-1 text-sm leading-relaxed text-fg-3"
+              >
+                {description}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            aria-label={resolvedCloseLabel}
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-fg-3/40 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <X size={17} />
+          </button>
+        </div>
+
+        {children ? (
+          <div className="max-h-[min(70vh,760px)] overflow-y-auto px-5 py-5">
+            {children}
+          </div>
+        ) : null}
+
+        {footer ? (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line bg-panel/50 px-5 py-4">
+            {footer}
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

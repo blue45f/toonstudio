@@ -266,7 +266,7 @@ export function QuizGame({ onExit }: PlayGameProps) {
     const perfect = score === ROUND_COUNT;
     return (
       <div className="flex flex-col items-center gap-4 py-6 text-center">
-        <Trophy className={cn("h-12 w-12", perfect ? "text-amber-400" : "text-accent")} />
+        <Trophy className={cn("h-12 w-12", perfect ? "text-warn" : "text-accent")} />
         <div>
           <h2 ref={doneHeadingRef} tabIndex={-1} className="text-lg font-bold text-fg outline-none">
             {score} / {ROUND_COUNT} 정답
@@ -339,9 +339,9 @@ export function QuizGame({ onExit }: PlayGameProps) {
                 desc: (
                   <>
                     <b className="text-fg">4개 보기</b> 중 하나를 누르면 바로 채점돼요. 정답은{" "}
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">초록</span>
+                    <span className="font-semibold text-good">초록</span>
                     , 틀린 선택은{" "}
-                    <span className="font-semibold text-rose-600 dark:text-rose-400">빨강</span>으로
+                    <span className="font-semibold text-bad">빨강</span>으로
                     표시돼요.
                   </>
                 ),
@@ -423,14 +423,14 @@ export function QuizGame({ onExit }: PlayGameProps) {
               className={cn(
                 "flex min-h-[2.75rem] items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition",
                 !answered && "border-line bg-card hover:border-accent/70 hover:bg-accent-soft",
-                answered && isAnswer && "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-                answered && isPicked && !isAnswer && "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+                answered && isAnswer && "border-good bg-good/10 text-good",
+                answered && isPicked && !isAnswer && "border-bad bg-bad/10 text-bad",
                 answered && !isAnswer && !isPicked && "border-line opacity-55",
               )}
             >
               <span className="truncate text-fg">{c.title}</span>
-              {answered && isAnswer && <Check className="h-4 w-4 shrink-0 text-emerald-500" />}
-              {answered && isPicked && !isAnswer && <X className="h-4 w-4 shrink-0 text-rose-500" />}
+              {answered && isAnswer && <Check className="h-4 w-4 shrink-0 text-good" />}
+              {answered && isPicked && !isAnswer && <X className="h-4 w-4 shrink-0 text-bad" />}
             </button>
           );
         })}
@@ -440,9 +440,9 @@ export function QuizGame({ onExit }: PlayGameProps) {
       <p className="min-h-[1.25rem] text-center text-sm" aria-live="polite">
         {answered ? (
           wasCorrect ? (
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">정답입니다! 🎉</span>
+            <span className="font-semibold text-good">정답입니다! 🎉</span>
           ) : (
-            <span className="font-semibold text-rose-600 dark:text-rose-400">
+            <span className="font-semibold text-bad">
               아쉬워요. 정답은 「{answer?.title}」
             </span>
           )

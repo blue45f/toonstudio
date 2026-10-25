@@ -1,5 +1,4 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -18,7 +17,7 @@ import {
   resolveStudioBg3dEnvironmentSettings,
 } from "./studio-bg3d-hdri-environment";
 
-export function bindStudioBg3dEditorSceneGraph(h) {
+export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
     TransformControls, View, Canvas, useThree,
@@ -262,7 +261,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
     quadViewHint, snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     immersiveStagePlan, measurementDocument, measurementDraft, measurementStartWorld, placementPreviewAsset, transformSpace,
-  } = { ...R, ...h, CaptureBridge };
+  } = { ...R, ...h, CaptureBridge } as typeof R & Record<string, any>;
   const renderSceneEntity = (id: string): React.ReactNode => {
     if (batchedNodeIds.has(id)) return null;
     const children = (sceneHierarchy.childrenByParent.get(id) ?? []).map(renderSceneEntity);
@@ -333,7 +332,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
       groundingResults={sharedCharacterGroundings}
       surfaceRevision={sharedCharacterGroundSurfaceRevision}
       selectedElementId={effectiveSelectedSharedCharacterElementId}
-      onSelect={(elementId) => {
+      onSelect={(elementId: string) => {
         setSelectedSharedCharacterElementId(elementId);
         setSelectedIds(new Set());
         setActivePanelTab("layers");
@@ -428,7 +427,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
       {!immersiveSceneActive && placementSession.phase === "preview" && placementPreviewAsset ? (
         <BgPlacementPreview asset={placementPreviewAsset} preview={placementSession} />
       ) : null}
-      {staticModelBatches.map((batch) => (
+      {staticModelBatches.map((batch: any) => (
         <BgCustomModelInstanceBatch
           key={`${batch.modelId}:${batch.key}`}
           batchKey={batch.key}
@@ -441,7 +440,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
           }
           onCloneStatus={updateModelCloneStatuses}
           onUnavailable={() => {
-            setUnbatchableModelIds((current) => new Set(current).add(batch.modelId));
+            setUnbatchableModelIds((current: Set<string>) => new Set(current).add(batch.modelId));
           }}
         />
       ))}
@@ -491,7 +490,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
               if (!snapSettings.enabled || dragEnd?.lastSnapped) return;
               applyMultiSelectDelta(true);
             }}
-            onObjectChange={(event) => {
+            onObjectChange={(event: any) => {
               if (transformMode === "translate") h.inferenceDrag?.update(event?.target?.axis ?? null);
               applyMultiSelectDelta(false);
             }}
@@ -500,7 +499,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
       ) : null}
     </Fragment>
   );
-  const applyLensShift = (c: THREE.PerspectiveCamera | THREE.OrthographicCamera) => {
+  const applyLensShift = (c: R.THREE.PerspectiveCamera | R.THREE.OrthographicCamera) => {
     c.near = mainCameraNearClip;
     c.up.set(mainCameraUp[0], mainCameraUp[1], mainCameraUp[2]);
     applyStudioBg3dLensShiftToThreeCamera(c, sceneBaseDocument.camera.lensShift);
@@ -509,7 +508,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
   const mainCameraNode = isMainOrtho ? (
     <OrthographicCamera
       makeDefault
-      position={[...sceneBaseDocument.camera.position]}
+      position={[...sceneBaseDocument.camera.position] as [number, number, number]}
       zoom={sceneBaseDocument.camera.zoom ?? 1}
       near={mainCameraNearClip}
       far={mainCameraFarClip}
@@ -519,7 +518,7 @@ export function bindStudioBg3dEditorSceneGraph(h) {
     <PerspectiveCamera
       makeDefault
       fov={sceneBaseDocument.camera.fovDegrees}
-      position={[...sceneBaseDocument.camera.position]}
+      position={[...sceneBaseDocument.camera.position] as [number, number, number]}
       zoom={sceneBaseDocument.camera.zoom ?? 1}
       near={mainCameraNearClip}
       far={mainCameraFarClip}
@@ -529,8 +528,8 @@ export function bindStudioBg3dEditorSceneGraph(h) {
   const immersiveCameraNode = immersiveStagePlan ? (
     <group
       key={`studio-bg3d-xr-camera-${immersiveStagePlan.mode}`}
-      position={[...immersiveStagePlan.cameraRigTransform.position]}
-      quaternion={[...immersiveStagePlan.cameraRigTransform.quaternion]}
+      position={[...immersiveStagePlan.cameraRigTransform.position] as [number, number, number]}
+      quaternion={[...immersiveStagePlan.cameraRigTransform.quaternion] as [number, number, number, number]}
       scale={immersiveStagePlan.cameraRigTransform.uniformScale}
     >
       <PerspectiveCamera
@@ -544,16 +543,16 @@ export function bindStudioBg3dEditorSceneGraph(h) {
   ) : null;
   const mainScenePresentationNode = (
     <group
-      position={immersiveStagePlan
+      position={(immersiveStagePlan
         ? [...immersiveStagePlan.stageRootTransform.position]
-        : [0, 0, 0]}
-      quaternion={immersiveStagePlan
+        : [0, 0, 0]) as [number, number, number]}
+      quaternion={(immersiveStagePlan
         ? [...immersiveStagePlan.stageRootTransform.quaternion]
-        : [0, 0, 0, 1]}
+        : [0, 0, 0, 1]) as [number, number, number, number]}
       scale={immersiveStagePlan?.stageRootTransform.uniformScale ?? 1}
     >
       <group
-        position={immersiveStagePlan ? [...immersiveStagePlan.contentOffset] : [0, 0, 0]}
+        position={(immersiveStagePlan ? [...immersiveStagePlan.contentOffset] : [0, 0, 0]) as [number, number, number]}
         userData={{ [STUDIO_BG3D_PHYSICS_PROJECTION_ROOT_USER_DATA_KEY]: true }}
       >
         {sceneContent}

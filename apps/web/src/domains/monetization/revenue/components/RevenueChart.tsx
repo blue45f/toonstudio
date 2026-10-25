@@ -47,7 +47,7 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
 
   if (data.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted">{t("revenue.chart.empty")}</p>
+      <p className="py-8 text-center text-sm text-fg-3">{t("revenue.chart.empty")}</p>
     );
   }
 
@@ -87,7 +87,7 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
               x={bar.x + BAR_WIDTH / 2}
               y={CHART_HEIGHT + 16}
               textAnchor="middle"
-              className="fill-muted text-[11px]"
+              className="fill-fg-3 text-[11px]"
             >
               {bar.label}월
             </text>

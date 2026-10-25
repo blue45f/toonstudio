@@ -9,7 +9,7 @@ function source(file: string): string {
 describe("Studio ABR import bundle boundary", () => {
   it("loads the ABR client only after file intent instead of adding ag-psd to the brush panel", () => {
     const panel = source("./brush/StudioBrushLibraryPanel.tsx");
-    expect(panel).toContain('await import("../studio-abr-import-client")');
+    expect(panel).toMatch(/await import\("\.\.\/studio-abr-import-client"\)/u);
     expect(panel).toContain('executionBackend: "worker"');
     expect(panel).not.toMatch(/from\s+["']\.\.?\/studio-abr-import-client["']/u);
     expect(panel).not.toContain('from "ag-psd"');

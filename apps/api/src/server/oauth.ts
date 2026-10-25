@@ -15,7 +15,7 @@ import { OAuth2Client } from "google-auth-library";
 
 import { accounts, db, dbClient, users } from "../platform/database";
 
-import { normalizePersistedAuthRole } from "./admin-roles";
+import { normalizePersistedAuthRole } from "../modules/auth/admin-roles";
 import { ensureUserLifecycleSchema, getUserAuthBlock, normalizeSessionVersion } from "./user-lifecycle";
 
 // ── 소셜 로그인(Google·Apple·Kakao·Naver·GitHub) ──

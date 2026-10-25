@@ -9,7 +9,7 @@ import {
   listProductionProjects,
   type ProductionProjectSummary,
 } from "@/domains/creator/public/production-projects";
-import { SummaryBufferShield } from "@/domains/creator/production-hub/SerializationBufferShield";
+import { SummaryBufferShield } from "@/domains/creator/public/serialization-buffer-shield";
 import { integrationsStatusText } from "./integrations-status-i18n";
 
 /**

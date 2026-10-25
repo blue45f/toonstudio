@@ -1,19 +1,27 @@
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getAdminRevenueCopy } from "./admin-revenue-copy";
 import { AdminCommercePayments } from "./AdminCommercePayments";
 import {
+  adminButtonClass,
   adminFetch,
   formatNum,
   formatWon,
+  getAdminRevenueCopy,
   type AdminApiError,
   type RevenueEvent,
   type RevenueResponse,
   type RevenueStatus,
 } from "./admin-client";
-import { AdminEmptyState, AdminNotice, AdminSpinner, AdminTableWrap, Stat, StatGroup, StatusBadge } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
+import {
+  AdminEmptyState,
+  AdminNotice,
+  AdminSpinner,
+  AdminTableWrap,
+  Stat,
+  StatGroup,
+  StatusBadge,
+} from "./admin-ui";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

@@ -12,7 +12,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AuthMenuShell } from "@/domains/auth/components/auth-menu-shell";
+import { AuthMenuShell } from "@/domains/auth/public/auth-menu-shell";
 
 import { CutsFeedPage } from "./CutsFeedPage";
 

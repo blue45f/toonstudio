@@ -1,7 +1,7 @@
 # 모듈형 모노레포 목표
 
 - 상태: **마이그레이션 목표**
-- 최종 갱신: **2026-09-26**
+- 최종 갱신: **2026-10-26**
 
 이 문서는 현재 상태와 목표 상태를 구분한다. 목표 항목을 이미 완료된 사실로 표현하지 않는다.
 
@@ -100,11 +100,12 @@ Web/API가 같은 구현을 실제로 소비하는 경우에만 별도 focused p
 
 - `config/architecture-boundary-ratchet.json`
 - `config/architecture-source-ratchet.json`
+- `scripts/source-file-size-baseline.json`
 
-2026-09-27 기준 API -> Web 직접 소스 참조는 0이다. 남은 주요 부채는 Web `shared -> domains` 25,
-Web cross-domain deep import 53, Creator 최상위 직접 파일 3,436, Web Admin 파일 69이다.
+2026-10-26 기준 API -> Web 직접 소스 참조(`apiToWeb`), Web `shared -> domains` 역참조(`webSharedToDomain`), Web 도메인 간 deep import(`webCrossDomainDeepImport`), 소스 파일 선두 `// @ts-nocheck` 지시문(`tsNoCheck`)은 모두 0건을 달성해 0으로 고정했다. 남은 주요 부채 상한은
+Creator 최상위 직접 파일 2,504, Web Admin 파일 57, API `server` 파일 28, API `platform/http` 파일 13, API `platform/adapters` 파일 78, API `platform/database` 파일 165, `packages/core` 파일 139, `lint:strict` 경고 예산(`lintStrictMaxWarnings`) 2,189이다.
 온보딩과 Studio 번역 로더는 Creator가 소유하고, 공용 읽기 요청 수명주기는 Web platform이 소유한다.
-Admin 화면을 독립 앱으로 이전하는 작업과 나머지 Creator capability 정리는 마이그레이션 중이다. Admin과 package의 신규 교차 앱
+Admin 화면을 독립 앱으로 이전하는 작업과 나머지 Creator capability 정리는 마이그레이션 중이다. Web·Admin의 `shared -> domains` 역참조, 도메인 간 deep import, `// @ts-nocheck`, Admin과 package의 신규 교차 앱
 결합은 0으로 고정한다.
 
 ## Studio 예외

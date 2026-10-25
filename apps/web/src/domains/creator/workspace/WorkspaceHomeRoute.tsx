@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { SectionArt } from "@/shared/components/section-art";
 
-import { GuestEntryButton } from "@/domains/auth/components/guest-entry-button";
+import { GuestEntryButton } from "@/domains/auth/public/guest-entry-button";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useGuestSession } from "@/domains/auth/public/session/guest-session";

@@ -44,7 +44,7 @@ function CategoryBars({ scores, tx }: { scores: TodayCategoryScores; tx: Tx }) {
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line/40" aria-hidden="true">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400"
+                className="h-full rounded-full bg-gradient-to-r from-cool via-accent to-warn"
                 style={{ width: `${v}%` }}
               />
             </div>
@@ -71,9 +71,9 @@ function PeriodErrorState({ tx, onRetry }: { tx: Tx; onRetry?: () => void }) {
     <div role="alert" className="mx-auto max-w-sm space-y-4 rounded-2xl border border-line bg-card/30 p-6 text-center">
       {/* 흐린 달 일러스트 */}
       <svg viewBox="0 0 80 80" className="mx-auto h-16 w-16 opacity-60" role="img" aria-label={tx("구름에 가린 달")}>
-        <circle cx="40" cy="40" r="22" fill="#fbbf24" opacity="0.25" />
-        <path d="M18 52 Q40 30 62 52 Q50 44 40 48 Q30 44 18 52" fill="#64748b" opacity="0.7" />
-        <path d="M22 58 Q40 40 58 58" fill="none" stroke="#64748b" strokeWidth="4" strokeLinecap="round" opacity="0.5" />
+        <circle cx="40" cy="40" r="22" fill="var(--color-warn)" opacity="0.25" />
+        <path d="M18 52 Q40 30 62 52 Q50 44 40 48 Q30 44 18 52" fill="var(--color-line-strong)" opacity="0.7" />
+        <path d="M22 58 Q40 40 58 58" fill="none" stroke="var(--color-line-strong)" strokeWidth="4" strokeLinecap="round" opacity="0.5" />
       </svg>
       <div className="space-y-1">
         <p className="text-sm font-bold text-fg">{tx("운세를 계산하지 못했어요")}</p>
@@ -135,13 +135,13 @@ function YearlyResultView({ result, characterId, tx, locale }: { result: YearlyF
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-            <p className="text-[11px] font-bold text-emerald-400">🌟 {tx("최고의 달")}</p>
+          <div className="rounded-xl border border-good/30 bg-good/5 p-3">
+            <p className="text-[11px] font-bold text-good">🌟 {tx("최고의 달")}</p>
             <p className="mt-1 text-lg font-extrabold text-fg">{y.bestMonth}{tx("월")}</p>
             <p className="text-[11px] text-fg-3">{best?.pillar}{tx("월")} · {best?.score}{tx("점")}</p>
           </div>
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-            <p className="text-[11px] font-bold text-amber-400">⚠️ {tx("주의할 달")}</p>
+          <div className="rounded-xl border border-warn/30 bg-warn/5 p-3">
+            <p className="text-[11px] font-bold text-warn">⚠️ {tx("주의할 달")}</p>
             <p className="mt-1 text-lg font-extrabold text-fg">{y.cautionMonth}{tx("월")}</p>
             <p className="text-[11px] text-fg-3">{caution?.pillar}{tx("월")} · {caution?.score}{tx("점")}</p>
           </div>
@@ -156,7 +156,7 @@ function YearlyResultView({ result, characterId, tx, locale }: { result: YearlyF
               return (
                 <div key={mm.month} className="flex flex-1 flex-col items-center gap-1" title={`${mm.month}${tx("월")} ${mm.score}${tx("점")}`}>
                   <div
-                    className={`w-full rounded-t ${hot ? "bg-emerald-400" : cold ? "bg-amber-400" : "bg-violet-400/70"}`}
+                    className={`w-full rounded-t ${hot ? "bg-good" : cold ? "bg-warn" : "bg-cool/70"}`}
                     style={{ height: h }}
                   />
                   <span className="text-[9px] text-fg-3">{mm.month}</span>

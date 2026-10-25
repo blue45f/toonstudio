@@ -106,13 +106,13 @@ export function StudioBg3dPlaceSetPackagePanel({
             현재 정본 v{latest.version} — 세트를 열면 이 상태로 시작합니다
           </span>
         ) : (
-          <span className="text-xs text-muted">{t("studio.bg3dPanelStatus.placeSetPackage.noCanonical", "아직 등록된 정본이 없습니다")}</span>
+          <span className="text-xs text-fg-3">{t("studio.bg3dPanelStatus.placeSetPackage.noCanonical", "아직 등록된 정본이 없습니다")}</span>
         )}
         {onPublishCurrent ? (
           <button
             type="button"
             onClick={onPublishCurrent}
-            className="inline-flex min-h-7 items-center gap-1 rounded-full border border-line px-2 text-[0.62rem] font-semibold transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-7 items-center gap-1 rounded-full border border-line px-2 text-[0.62rem] font-semibold transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <History size={11} aria-hidden />
             현재 상태를 새 정본으로 발행
@@ -126,7 +126,7 @@ export function StudioBg3dPlaceSetPackagePanel({
           버전 이력
         </h3>
         {versionsDescending.length === 0 ? (
-          <p className="text-xs text-muted">{t("studio.bg3dPanelStatus.placeSetPackage.noVersions", "버전이 없습니다.")}</p>
+          <p className="text-xs text-fg-3">{t("studio.bg3dPanelStatus.placeSetPackage.noVersions", "버전이 없습니다.")}</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {versionsDescending.map((entry) => (
@@ -135,8 +135,8 @@ export function StudioBg3dPlaceSetPackagePanel({
                 className="flex flex-wrap items-center gap-2 rounded-md border border-line px-2 py-1 text-xs"
               >
                 <span className="font-semibold">v{entry.version}</span>
-                <span className="text-muted">{entry.createdAt}</span>
-                <span className="inline-flex items-center gap-1 text-muted">
+                <span className="text-fg-3">{entry.createdAt}</span>
+                <span className="inline-flex items-center gap-1 text-fg-3">
                   <Package size={11} aria-hidden />
                   소품 {entry.state.props.length}개
                 </span>
@@ -159,7 +159,7 @@ export function StudioBg3dPlaceSetPackagePanel({
           ) : null}
         </h3>
         {notices.length === 0 ? (
-          <p className="text-xs text-muted">
+          <p className="text-xs text-fg-3">
             {t("studio.bg3dPanelStatus.placeSetPackage.noStaleUsage", "옛 정본을 쓰는 회차·컷이 없습니다. 모든 사용처가 현재 정본과 같습니다.")}
           </p>
         ) : (
@@ -182,16 +182,16 @@ export function StudioBg3dPlaceSetPackagePanel({
                         {notice.usage.episodeLabel}
                         {notice.usage.shotLabel ? ` · ${notice.usage.shotLabel}` : ""}
                       </button>
-                      <span className="text-muted">
+                      <span className="text-fg-3">
                         v{notice.fromVersion} → v{notice.toVersion}
                       </span>
                       {isAcknowledged ? (
-                        <span className="text-muted">확인됨</span>
+                        <span className="text-fg-3">확인됨</span>
                       ) : (
                         <button
                           type="button"
                           onClick={() => onAcknowledge(notice.id)}
-                          className="inline-flex min-h-7 items-center gap-1 rounded-full border border-line px-2 text-[0.62rem] font-semibold transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          className="inline-flex min-h-7 items-center gap-1 rounded-full border border-line px-2 text-[0.62rem] font-semibold transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                           <Check size={11} aria-hidden />
                           확인
@@ -200,7 +200,7 @@ export function StudioBg3dPlaceSetPackagePanel({
                     </div>
                     <span>{notice.message}</span>
                     {notice.changes.length > 0 ? (
-                      <ul className="flex flex-col gap-0.5 text-muted">
+                      <ul className="flex flex-col gap-0.5 text-fg-3">
                         {notice.changes.map((change) => (
                           <li
                             key={`${change.kind}:${change.nodeId ?? ""}:${change.label}`}
@@ -220,7 +220,7 @@ export function StudioBg3dPlaceSetPackagePanel({
               <button
                 type="button"
                 onClick={onAcknowledgeAll}
-                className="mt-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-line px-2 text-[0.62rem] font-semibold transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="mt-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-line px-2 text-[0.62rem] font-semibold transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <CheckCheck size={11} aria-hidden />
                 전부 확인

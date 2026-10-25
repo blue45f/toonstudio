@@ -1,4 +1,4 @@
-import { adminRestStatusText } from "../admin-rest-status-i18n";
+import { adminRestStatusText } from "../admin-i18n-loader";
 import { AlertTriangle, Gauge, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
@@ -11,12 +11,10 @@ import {
   formatWebVitalValue,
   webVitalRatingLabel,
   webVitalRatingTone,
-} from "./web-vitals-format";
-import type {
-  WebVitalsAlert,
-  WebVitalsPathSummary,
-  WebVitalsReport,
-} from "./web-vitals-types";
+  type WebVitalsAlert,
+  type WebVitalsPathSummary,
+  type WebVitalsReport,
+} from "../admin-console-model";
 
 const RANGE_OPTIONS = [7, 30, 90] as const;
 

@@ -36,7 +36,7 @@ export function RevenueSpectrumBar({
       </div>
       <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
         {segments.map((bucket) => (
-          <li key={bucket.sourceId} className="flex items-center gap-1.5 text-xs text-muted">
+          <li key={bucket.sourceId} className="flex items-center gap-1.5 text-xs text-fg-3">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: revenueSourceColor(bucket.sourceId) }}

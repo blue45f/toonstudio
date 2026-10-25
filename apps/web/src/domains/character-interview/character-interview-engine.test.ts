@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CharacterChatEngine } from "../character-chat/character-chat-engine";
-import type { CharacterChatProfile } from "../character-chat/character-chat-types";
+import type { CharacterChatEngine } from "../character-chat/public/character-chat-engine";
+import type { CharacterChatProfile } from "../character-chat/public/character-chat-types";
 
 import type { CharacterInterviewMessage } from "./character-interview";
 import {

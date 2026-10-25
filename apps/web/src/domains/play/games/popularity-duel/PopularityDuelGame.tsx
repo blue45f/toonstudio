@@ -163,7 +163,7 @@ export function PopularityDuelGame({ onExit }: PlayGameProps) {
         <span className="rounded-full bg-accent-soft px-3 py-1 font-bold text-accent">점수 {score}</span>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 text-fg-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-warn" />
             <span className="tabular-nums">최고 {best}</span>
           </span>
           <GameHelp

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { db, users } from "../../platform/database";
-import { normalizePersistedAuthRole } from "../../server/admin-roles";
+import { normalizePersistedAuthRole } from "./admin-roles";
 import {
   ensureUserLifecycleSchema,
   getUserAuthBlock,

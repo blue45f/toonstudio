@@ -28,7 +28,7 @@ export function PeriodDeltaBadge({
   const delta = computeRevenueDelta(current, previous);
   if (delta.percent === null) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
+      <span className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-fg-3">
         {noPreviousLabel}
       </span>
     );
@@ -43,7 +43,7 @@ export function PeriodDeltaBadge({
         "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
         delta.direction === "up" && "bg-good/10 text-good",
         delta.direction === "down" && "bg-bad/10 text-bad",
-        delta.direction === "flat" && "bg-fg/5 text-muted",
+        delta.direction === "flat" && "bg-fg/5 text-fg-3",
       )}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />

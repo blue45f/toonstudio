@@ -87,7 +87,7 @@ export function UsageQuotaBadge({
         aria-valuemax={view.limit ?? undefined}
         aria-valuenow={view.used}
         aria-label={copy.ariaLabel}
-        className="h-1.5 overflow-hidden rounded-full bg-panel-2"
+        className="h-1.5 overflow-hidden rounded-full bg-panel"
       >
         <div className={cn("h-full rounded-full", barTone)} style={{ width: `${percent ?? 0}%` }} />
       </div>

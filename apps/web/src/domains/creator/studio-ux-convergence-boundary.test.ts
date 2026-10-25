@@ -12,7 +12,7 @@ describe("Studio UX convergence boundary", () => {
     const view = source(
       "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorView.tsx",
     );
-    expect(view).toContain('import { StudioWorkspaceNavigator } from "../StudioWorkspaceNavigator";');
+    expect(view).toMatch(/import \{ StudioWorkspaceNavigator \} from "\.\.\/StudioWorkspaceNavigator";/u);
     expect(view.match(/<StudioWorkspaceNavigator\s*\/>/gu)).toHaveLength(1);
     expect(view).toContain('id="studio-app-shell"');
     expect(view).toContain("data-studio-ui-density={uiDensityMode}");

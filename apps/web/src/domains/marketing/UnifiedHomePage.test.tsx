@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionContext, type SessionContextValue } from "@/domains/auth/public/session/auth-session-store";
 import { UnifiedHomePage } from "./UnifiedHomePage";
 
-vi.mock("@/domains/creator-resources/CreatorHomePage", () => ({
+vi.mock("@/domains/creator-resources/public/creator-home-page", () => ({
   CreatorHomePage: () => <div>사이트 홈</div>,
 }));
 

@@ -5,12 +5,12 @@ export {
   type GeneratedCreatorAsset,
   type ImageAssetQuality,
   type ImageAssetSize,
-} from "./creator/asset-generation";
+} from "../modules/creator/asset-generation";
 export {
   ensureDefaultChallenges,
   type CreatorChallengeDetail,
   type CreatorChallengeSummary,
-} from "./creator/challenges";
+} from "../modules/creator/challenges";
 export {
   challengeStateOf,
   nextEpisodeNumber,
@@ -27,7 +27,7 @@ export {
   type SeedChallengeDef,
   type ValidatedSeriesInput,
 } from "./creator/community-contract";
-export { ensureCreatorCommunitySchema } from "./creator/community-schema";
+export { ensureCreatorCommunitySchema } from "../modules/creator/community-schema";
 export {
   createCreatorWorkRelease,
   listCreatorExternalPublications,
@@ -39,7 +39,7 @@ export {
   type CreatorExternalPublicationPlatform,
   type CreatorExternalPublicationStatus,
   type CreatorWorkReportReason,
-} from "./creator/community-publishing";
+} from "../modules/creator/community-publishing";
 export {
   getCreatorPublicProfile,
   getFollowStats,
@@ -62,7 +62,7 @@ export {
   updateComment,
   updateWork,
 } from "./creator/publication-api";
-export { listSeries } from "./creator/publication-list-series";
+export { listSeries } from "../modules/creator/publication-list-series";
 export {
   CreatorPublicationValidationError,
   bumpViews,
@@ -79,7 +79,7 @@ export {
   updateSeries,
   type CreatorSeriesDetail,
   type CreatorSeriesSummary,
-} from "./creator/series";
+} from "../modules/creator/series";
 export {
   bumpAssetDownloads,
   deleteSharedAsset,
@@ -102,7 +102,7 @@ export {
   getWorkRevisionComparison,
   listWorkRevisions,
   restoreWorkRevision,
-} from "./creator/work-revision-service";
+} from "../modules/creator/work-revision-service";
 export {
   parseCreatorSort,
   type CreatorAuthor,
@@ -118,4 +118,4 @@ export {
   type CreatorWorkSort,
   type CreatorWorkStatus,
   type CreatorWorkSummary,
-} from "./creator/works-contract";
+} from "../modules/creator/works-contract";

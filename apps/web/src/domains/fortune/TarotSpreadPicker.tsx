@@ -21,7 +21,7 @@ function MiniCard({ x, y, w = 10, h = 15, highlight = false }: { x: number; y: n
       rx="1.5"
       fill={highlight ? "#f59e0b" : "#2a2440"}
       fillOpacity={highlight ? 0.9 : 1}
-      stroke="#a78bfa"
+      stroke="var(--color-cool)"
       strokeOpacity={highlight ? 1 : 0.45}
       strokeWidth="0.8"
     />
@@ -34,7 +34,7 @@ function SpreadDiagram({ spread }: { spread: TarotSpreadId }) {
     return (
       <svg viewBox="0 0 40 40" className="h-10 w-10" aria-hidden="true">
         <MiniCard x={15} y={10} w={10} h={16} highlight />
-        <circle cx={20} cy={18} r={3} fill="none" stroke="#fbbf24" strokeWidth="0.8" opacity="0.8" />
+        <circle cx={20} cy={18} r={3} fill="none" stroke="var(--color-warn)" strokeWidth="0.8" opacity="0.8" />
       </svg>
     );
   }

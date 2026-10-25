@@ -28,8 +28,8 @@ describe("Studio content-aware fill bundle boundary", () => {
     expect(layerLiftCompositorSource).not.toMatch(
       /import\s+\{[^}]*contentAwareFillPixels[^}]*\}\s+from\s+["']\.\/studio-content-aware-fill["']/u,
     );
-    expect(layerLiftCompositorSource).toContain(
-      'await import("../studio-content-aware-fill")',
+    expect(layerLiftCompositorSource).toMatch(
+      /await import\("\.\.\/studio-content-aware-fill"\)/u,
     );
   });
 

@@ -12,4 +12,5 @@ export type StudioCuttoonEditorViewSession =
   StudioCuttoonEditorViewSessionRest & {
     toggleCanvasFlipX?: () => void;
     zoomReset?: () => void;
+    clearPolyLassoDraft?: () => void;
   };

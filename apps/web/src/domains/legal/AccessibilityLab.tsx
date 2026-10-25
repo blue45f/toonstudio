@@ -139,9 +139,9 @@ export function AccessibilityLab() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-3xl border border-amber-500/25 bg-amber-500/5 p-5 sm:p-7" aria-labelledby="accessibility-limitations-title">
+      <section className="mt-8 rounded-3xl border border-warn/25 bg-warn/5 p-5 sm:p-7" aria-labelledby="accessibility-limitations-title">
         <div className="flex items-start gap-3">
-          <AlertTriangle size={20} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" />
+          <AlertTriangle size={20} className="mt-0.5 shrink-0 text-warn" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <h2 id="accessibility-limitations-title" className="font-display text-lg font-bold text-fg">{copy.limitationsTitle}</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-3">

@@ -2,6 +2,8 @@ import type { VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+import { isStudioVrmProductionModelUrl } from "../../vrm/studio-vrm-model-quality";
+import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../vrm/vrm-library";
 import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { loadStudioThreeZoneDioramas } from "./studio-virtual-space-three-dioramas";
@@ -150,21 +152,38 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "gallery-tea", url: "/assets/3d/tea_set.glb", x: 2684, y: 1584, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.3 },
 ]);
 
-/**
- * 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 CC0 검증 스튜디오급 VRM 크리에이터 아바타.
- * 별도 라이선스 고지 의무(`licenseNotice`)나 대용량(`heavy-payload`) 제약이 없는 고밀도 CC0 휴머노이드 에셋만 사용한다.
- */
-export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
-  "/vrm/Sendagaya_Shino.vrm",
-  "/vrm/Vita.vrm",
-  "/vrm/Sendagaya_Shibu.vrm",
-  "/vrm/sample.vrm",
-  "/vrm/Vivi.vrm",
-  "/vrm/Seed_san.vrm",
-  "/vrm/Anna.vrm",
-  "/vrm/Cyberpal.vrm",
-  "/vrm/Victoria_Rubin.vrm",
+const BUNDLED_VRM_RIGHTS_BLOCKED_URLS = new Set<string>(BUNDLED_VRM_RIGHTS_BLOCKS.map((e) => e.url));
+const ACTIVE_SAMPLE_VRM_IDS = new Set<string>(SAMPLE_VRM_ENTRIES.map((e) => e.id));
+const SAMPLE_VRM_BY_URL = new Map(SAMPLE_VRMS.map((e) => [e.url, e] as const));
+/** `public/vrm/LICENSES.md` 상 CC0가 아닌 조건부·고지 조건부 또는 제외 대상 VRM. */
+const NON_CC0_BUNDLED_VRM_URLS = new Set<string>([
+  "/vrm/AliciaSolid.vrm", "/vrm/Avatar_Orion.vrm", "/vrm/Darkness_Shibu.vrm", "/vrm/Seed_san.vrm",
+  "/vrm/Victoria_Rubin.vrm", "/vrm/Vita.vrm", "/vrm/Vivi.vrm", "/vrm/cryptovoxels.vrm", "/vrm/sample.vrm",
 ]);
+
+export function isVerifiedStudioThreeVrmUrl(value: unknown): value is string {
+  if (!isStudioVrmProductionModelUrl(value) || !value.startsWith("/vrm/")) return false;
+  if (BUNDLED_VRM_RIGHTS_BLOCKED_URLS.has(value) || NON_CC0_BUNDLED_VRM_URLS.has(value)) return false;
+  const sample = SAMPLE_VRM_BY_URL.get(value);
+  return Boolean(sample && ACTIVE_SAMPLE_VRM_IDS.has(sample.id) && !sample.licenseNotice && !sample.limitations?.includes("heavy-payload"));
+}
+
+/** 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 CC0 검증 스튜디오급 VRM 크리에이터 아바타. */
+export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze(
+  [
+    "/vrm/Sendagaya_Shino.vrm", "/vrm/Sendagaya_Shibu.vrm", "/vrm/Kate.vrm", "/vrm/Jennifer.vrm",
+    "/vrm/Erika.vrm", "/vrm/Olivia.vrm", "/vrm/Jimmy.vrm", "/vrm/Anna.vrm", "/vrm/Cyberpal.vrm",
+  ].map((url) => {
+    if (!isVerifiedStudioThreeVrmUrl(url)) throw new Error(`3D 가상 스튜디오 VRM 아바타 권리/품질 게이트 실패: ${url}`);
+    return url;
+  }),
+);
+
+export function resolveStudioThreeVrmUrl(index: number): string {
+  const count = STUDIO_THREE_VRM_URLS.length;
+  const normalized = Number.isFinite(index) ? Math.trunc(index) : 0;
+  return STUDIO_THREE_VRM_URLS[((normalized % count) + count) % count] ?? STUDIO_THREE_VRM_URLS[0]!;
+}
 
 const ZONE_FLOOR_COLORS: Readonly<Record<string, { readonly floor: number; readonly accent: number }>> = Object.freeze({
   skyport: { floor: 0xf4ece1, accent: 0x3b82f6 },
@@ -625,9 +644,8 @@ export function loadStudioThreeAssets(
   const glbLoader = new GLTFLoader();
 
   const loadActorVrm = (actorId: string, index: number, forceReplace = false) => {
-    const safeIdx = Math.abs(Math.trunc(index)) % STUDIO_THREE_VRM_URLS.length;
-    const vrmUrl = STUDIO_THREE_VRM_URLS[safeIdx];
-    if (!vrmUrl) return;
+    const vrmUrl = resolveStudioThreeVrmUrl(index);
+    if (!isVerifiedStudioThreeVrmUrl(vrmUrl)) return;
     glbLoader.load(
       vrmUrl,
       (gltf) => {

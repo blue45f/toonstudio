@@ -1,8 +1,8 @@
 {
-  "lintStrictMaxWarnings": 2421,
-  "creatorRootFiles": 3725,
-  "webAdminFiles": 85,
-  "apiServerFiles": 68,
+  "lintStrictMaxWarnings": 2189,
+  "creatorRootFiles": 2504,
+  "webAdminFiles": 57,
+  "apiServerFiles": 28,
   "apiHttpFiles": 13,
   "apiAdapterFiles": 78,
   "apiDatabaseFiles": 165,

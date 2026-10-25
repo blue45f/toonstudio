@@ -1,11 +1,10 @@
-
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { BgCustomModelInstance, BgPrimitive, BgPrimitiveKind, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dProceduralInsertionPlan, StudioBg3dRoomSpec, StudioBg3dSceneDocument, StudioBg3dSceneRemovalSuccess } from "./studio-bg3d-editor-runtime-bindings";
 import {
   commitGradeRoutedHistoryTransition,
   ensureStudio3dGradeHistory,
@@ -31,7 +30,7 @@ import { readStudioBg3dTemplateStaticModelWorldBounds } from "./studio-bg3d-temp
 import { formatNumber } from "@toonstudio/core/format";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
-export function attachStudioBg3dEditorSceneOpsHost(h) {
+export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
     TransformControls, View, Canvas, useThree,
@@ -270,7 +269,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     renderedBackgroundSettings, sharedCharacterGroundSurfaceRevision, staticModelBatches, mainCameraFarClip,
     mainCameraMaxOrbitDistance, quadViewHint, snapToggleHint, lineArtPreviewHint,
     surfaceSnapHint,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const generateId = () => "template-" + Math.random().toString(36).substring(2, 15);
 
@@ -408,7 +407,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   }
   h.commitImmediateHistoryTransition = commitImmediateHistoryTransition;
   const applyCommandHistoryStep = (direction: "undo" | "redo"): void => {
-    if (!isStudioBg3dSceneEditReady(h)) return;
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return;
     if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) return;
     const grade = ensureStudio3dGradeHistory(gradeHistoryRef.current, sceneBaseDocument);
     const unified = stepUnifiedStudio3dHistory(commandHistoryRefs, grade, direction);
@@ -436,7 +435,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   const doRedo = () => applyCommandHistoryStep("redo");
   h.doRedo = doRedo;
   const canAdmitSceneNodes = (additionalNodeCount: number): boolean => {
-    if (!isStudioBg3dSceneEditReady(h)) return false;
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return false;
     const live = physicsRuntimeSourceRef.current;
     const nodeLimit = Math.min(
       STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES,
@@ -457,7 +456,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     const live = physicsRuntimeSourceRef.current;
     const next = createPrimitive(kind, live.primitives.length);
     const nextPrimitives = [...live.primitives, next];
-    const position = next.position ?? next.transform?.position ?? [0, 0, 0];
+    const position = next.position ?? [0, 0, 0];
     const grade = ensureStudio3dGradeHistory(gradeHistoryRef.current, live.document ?? sceneBaseDocument);
     const command = {
       id: "place-prop" as const,
@@ -496,7 +495,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   h.addPrimitive = addPrimitive;
   // 합성·방·웹툰 배경처럼 "한 번에 여러 도형을 만들어 붙이는" 추가의 공통 경로: 노드 수 한도를 확인한 뒤 한 번의 상태
   // 교체로 커밋하고 첫 도형을 선택한다. buildParts(기존 도형 수, 현재 카메라 뷰) → BgPrimitive[]; 더한 목록(실패면 false)을 돌려준다.
-  const addGeneratedParts = (buildParts) => {
+  const addGeneratedParts = (buildParts: (count: number, view: StudioBg3dCameraSettings) => BgPrimitive[]) => {
     const live = physicsRuntimeSourceRef.current;
     const parts = buildParts(live.primitives.length, viewportApiRef.current?.readView() ?? sceneBaseDocument.camera);
     if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return false;
@@ -506,10 +505,10 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   };
   h.addGeneratedParts = addGeneratedParts;
   // "숨긴 벽 되돌리기": 자동 단면이 숨긴 조각(id 목록)만 한 번의 상태 교체로 다시 보이게 한다.
-  h.showSceneParts = (ids) => replaceCanonicalDocumentState({ primitives: physicsRuntimeSourceRef.current.primitives.map((p) => (ids.includes(p.id) && p.visible === false ? { ...p, visible: true } : p)) });
+  h.showSceneParts = (ids: readonly string[]) => replaceCanonicalDocumentState({ primitives: physicsRuntimeSourceRef.current.primitives.map((p: BgPrimitive) => (ids.includes(p.id) && p.visible === false ? { ...p, visible: true } : p)) });
   h.addComposite = (presetId: string) => {
-    const preset = COMPOSITE_PRESETS.find((p) => p.id === presetId);
-    if (preset) addGeneratedParts((count) => instantiateCompositePreset(preset, count));
+    const preset = COMPOSITE_PRESETS.find((p: any) => p.id === presetId);
+    if (preset) addGeneratedParts((count: number) => instantiateCompositePreset(preset, count));
   };
   const addProceduralStarterAsset = (
     assetId: string,
@@ -521,7 +520,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     const currentUsage = calculateStudioBg3dProceduralSceneUsage(
       live.primitives,
       live.customModels,
-      (modelId) => modelRootCacheRef.current.get(modelId)?.metrics ?? null,
+      (modelId: string) => modelRootCacheRef.current.get(modelId)?.metrics ?? null,
     );
     if (!currentUsage) return { ok: false, reason: "invalid-budget" };
 
@@ -534,8 +533,8 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     const plan = planStudioBg3dProceduralStarterInsertion({
       assetId,
       occupiedNodeIds: [
-        ...live.primitives.map((primitive) => primitive.id),
-        ...live.customModels.map((model) => model.id),
+        ...live.primitives.map((primitive: BgPrimitive) => primitive.id),
+        ...live.customModels.map((model: BgCustomModelInstance) => model.id),
       ],
       currentUsage,
       limits,
@@ -556,7 +555,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   };
   h.addProceduralStarterAsset = addProceduralStarterAsset;
   const addSceneTemplate = (templateId: string) => {
-    const template = BG_SCENE_TEMPLATES.find((t) => t.id === templateId);
+    const template = BG_SCENE_TEMPLATES.find((t: any) => t.id === templateId);
     if (!template) return false;
     const live = physicsRuntimeSourceRef.current;
     const rawParts = instantiateSceneTemplate(template, live.primitives.length);
@@ -566,9 +565,9 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       sourceId: template.id,
       insertionOffset: live.primitives.length,
       nodeCount: rawParts.length,
-      occupiedNodeIds: new Set([
-        ...live.primitives.map((primitive) => primitive.id),
-        ...live.customModels.map((model) => model.id),
+      occupiedNodeIds: new Set<string>([
+        ...live.primitives.map((primitive: BgPrimitive) => primitive.id),
+        ...live.customModels.map((model: BgCustomModelInstance) => model.id),
       ]),
       createSeed: () => generateId(),
     });
@@ -576,7 +575,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.bundleIdFailed", "템플릿을 한 묶음으로 추적할 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다."));
       return false;
     }
-    const parts = rawParts.map((part, index) => ({
+    const parts = rawParts.map((part: BgPrimitive, index: number) => ({
       ...part,
       id: allocation.nodeIds[index],
     }));
@@ -587,7 +586,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     return true;
   };
   h.addSceneTemplate = addSceneTemplate;
-  const addRoomBuild = ({ autoCutaway = false } = {}) => addGeneratedParts((count, view) =>
+  const addRoomBuild = ({ autoCutaway = false } = {}) => addGeneratedParts((count: number, view: StudioBg3dCameraSettings) =>
     R.planStudioBg3dRoomBuild(roomBuilderSpec, count, undefined, { autoCutawayCamera: autoCutaway ? view : null }).primitives);
   h.addRoomBuild = addRoomBuild;
   const applyRoomBuilderPreset = (presetId: string) => {
@@ -624,7 +623,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   };
   h.commitSceneEntityRemoval = commitSceneEntityRemoval;
   const removeSceneEntities = (ids: ReadonlySet<string>): boolean => {
-    if (!isStudioBg3dSceneEditReady(h)) return false;
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return false;
     if (ids.size === 0) return false;
     const live = physicsRuntimeSourceRef.current;
     const plan = planStudioBg3dSceneEntityRemoval({
@@ -681,25 +680,25 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     deleteSelected();
   }
   h.deleteSelectedEntity = deleteSelectedEntity;
-  const resolveTemplateInstanceSource = (instance) => instance.sourceKind === "catalog"
+  const resolveTemplateInstanceSource = (instance: any): any => instance.sourceKind === "catalog"
     ? resolveStudioBg3dTemplateSourceByKey(instance.sourceKey, BG_SCENE_TEMPLATES)
     : resolveStudioBg3dTemplateSourceByKey(instance.sourceKey, templateLibrary);
-  const templateSourceNodeCount = (instance, source) => instance.sourceKind === "catalog"
-    ? source.placements.reduce((count, placement) => count + (placement.type === "primitive"
+  const templateSourceNodeCount = (instance: any, source: any) => instance.sourceKind === "catalog"
+    ? source.placements.reduce((count: number, placement: any) => count + (placement.type === "primitive"
       ? 1
-      : COMPOSITE_PRESETS.find((preset) => preset.id === placement.presetId)?.parts.length ?? 0), 0)
+      : COMPOSITE_PRESETS.find((preset: any) => preset.id === placement.presetId)?.parts.length ?? 0), 0)
     : source.document.nodes.length;
-  const templateInstanceMatchesCompleteSource = (instance, source) =>
+  const templateInstanceMatchesCompleteSource = (instance: any, source: any) =>
     templateSourceNodeCount(instance, source) === instance.nodes.length &&
-    instance.nodes.every((node, ordinal) => node.ordinal === ordinal);
+    instance.nodes.every((node: any, ordinal: number) => node.ordinal === ordinal);
   const duplicateSelectedImpl = (linked: boolean) => {
     if (selectedIds.size === 0) return;
     const live = physicsRuntimeSourceRef.current;
-    const occupiedNodeIds = new Set([
-      ...live.primitives.map((primitive) => primitive.id),
-      ...live.customModels.map((model) => model.id),
+    const occupiedNodeIds = new Set<string>([
+      ...live.primitives.map((primitive: BgPrimitive) => primitive.id),
+      ...live.customModels.map((model: BgCustomModelInstance) => model.id),
     ]);
-    const taggedCloneIdBySourceId = new Map();
+    const taggedCloneIdBySourceId = new Map<string, string>();
     for (const instance of collectStudioBg3dTemplateInstances(
       live.primitives,
       live.customModels,
@@ -708,7 +707,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       if (
         !source ||
         !templateInstanceMatchesCompleteSource(instance, source) ||
-        !instance.nodes.every((node) => selectedIds.has(node.id))
+        !instance.nodes.every((node: any) => selectedIds.has(node.id))
       ) continue;
       const allocation = allocateStudioBg3dTemplateInstanceNodeIds({
         sourceKind: instance.sourceKind,
@@ -727,7 +726,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
         setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.cloneBundleIdFailed", "템플릿 복제 묶음의 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다."));
         return;
       }
-      instance.nodes.forEach((node, ordinal) => {
+      instance.nodes.forEach((node: any, ordinal: number) => {
         const cloneId = allocation.nodeIds[ordinal];
         if (cloneId) {
           taggedCloneIdBySourceId.set(node.id, cloneId);
@@ -736,11 +735,11 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       });
     }
 
-    const primitivePairs = [];
-    const modelPairs = [];
+    const primitivePairs: Array<{ source: BgPrimitive; clone: BgPrimitive }> = [];
+    const modelPairs: Array<{ source: BgCustomModelInstance; clone: BgCustomModelInstance }> = [];
 
     for (const id of selectedIds) {
-      const p = live.primitives.find(x => x.id === id);
+      const p = live.primitives.find((x: BgPrimitive) => x.id === id);
       if (p) {
         const clone = duplicatePrimitive(p);
         primitivePairs.push({ source: p, clone: {
@@ -750,7 +749,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
           linkedSourceId: linked ? (resolveLinkedCloneRootId(p) ?? undefined) : undefined,
         } });
       } else {
-        const m = live.customModels.find(x => x.id === id);
+        const m = live.customModels.find((x: BgCustomModelInstance) => x.id === id);
         if (m) {
           const clone = duplicateBgCustomModelInstance(m);
           modelPairs.push({ source: m, clone: {
@@ -763,11 +762,11 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     }
 
     if (!canAdmitSceneNodes(primitivePairs.length + modelPairs.length)) return;
-    const cloneIdBySourceId = new Map([
-      ...primitivePairs.map(({ source, clone }) => [source.id, clone.id]),
-      ...modelPairs.map(({ source, clone }) => [source.id, clone.id]),
+    const cloneIdBySourceId = new Map<string, string>([
+      ...primitivePairs.map(({ source, clone }): [string, string] => [source.id, clone.id]),
+      ...modelPairs.map(({ source, clone }): [string, string] => [source.id, clone.id]),
     ]);
-    const preserveSelectedHierarchy = ({ source, clone }) => ({
+    const preserveSelectedHierarchy = <T extends BgPrimitive | BgCustomModelInstance>({ source, clone }: { source: T; clone: T }): T => ({
       ...clone,
       ...resolveStudioBg3dDuplicateHierarchyPatch({ source, clone, cloneIdBySourceId }),
     });
@@ -794,7 +793,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
 
   const templateInstances = collectStudioBg3dTemplateInstances(primitives, customModels);
   const templateInstanceById = new Map(
-    templateInstances.map((instance) => [instance.id, instance]),
+    templateInstances.map((instance: any) => [instance.id, instance]),
   );
   const templateOrganizationBlockedReason = isCapturing || isBatchRenderingShots
     ? "3D 장면을 캡처하는 중에는 템플릿을 정리할 수 없습니다."
@@ -804,9 +803,9 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
         ? "배치·물리·변형 작업을 마친 뒤 템플릿을 정리해 주세요."
         : null;
 
-  const templateInstanceSummaries = templateInstances.map((instance, index) => {
+  const templateInstanceSummaries = templateInstances.map((instance: any, index: number) => {
     const source = resolveTemplateInstanceSource(instance);
-    const lockedNodeCount = instance.nodes.filter((node) => node.locked).length;
+    const lockedNodeCount = instance.nodes.filter((node: any) => node.locked).length;
     const completeNodeSet = source !== null &&
       templateInstanceMatchesCompleteSource(instance, source);
     return {
@@ -816,16 +815,16 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       nodeCount: instance.nodes.length,
       lockedNodeCount,
       selected: instance.nodes.length > 0 &&
-        instance.nodes.every((node) => selectedIds.has(node.id)),
+        instance.nodes.every((node: any) => selectedIds.has(node.id)),
       resetAvailable: completeNodeSet &&
         !instance.hasDuplicateOrdinals && lockedNodeCount === 0,
       sourceAvailable: source !== null,
     };
   });
 
-  const selectTemplateInstances = (instances) => {
+  const selectTemplateInstances = (instances: readonly any[]) => {
     if (instances.length === 0) return;
-    setSelectedIds(new Set(instances.flatMap((instance) =>
+    setSelectedIds(new Set(instances.flatMap((instance: any) =>
       orderStudioBg3dHierarchySelectionRootsFirst(instance.nodes)
     )));
     setError(null);
@@ -836,10 +835,10 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   };
   const selectAllTemplateInstances = () => selectTemplateInstances(templateInstances);
 
-  const runTemplateOrganizerCommand = (command, instanceId?: string) => {
+  const runTemplateOrganizerCommand = (command: any, instanceId?: string) => {
     if (h.templateOrganizerActionPending) return;
     const targetInstanceIds = command.endsWith("-all")
-      ? templateInstances.map((instance) => instance.id)
+      ? templateInstances.map((instance: any) => instance.id)
       : instanceId && templateInstanceById.has(instanceId)
         ? [instanceId]
         : [];
@@ -850,7 +849,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       command,
       targetInstanceIds: Object.freeze([...targetInstanceIds]),
       membershipInstanceIds: Object.freeze(
-        templateInstances.map((instance) => instance.id).sort(),
+        templateInstances.map((instance: any) => instance.id).sort(),
       ),
       session,
       sceneEpoch: ltInsertSceneEpochRef.current,
@@ -896,7 +895,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     // the document transform still gives the organizer a deterministic world AABB, so grounding
     // and arrange-all do not depend on selection temporarily disabling batching.
     const model = physicsRuntimeSourceRef.current.customModels.find(
-      (candidate) => candidate.id === nodeId,
+      (candidate: BgCustomModelInstance) => candidate.id === nodeId,
     );
     if (!model) return null;
     return readStudioBg3dTemplateStaticModelWorldBounds(

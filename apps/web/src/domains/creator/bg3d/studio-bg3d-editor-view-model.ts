@@ -1,12 +1,12 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { BgCustomModelInstance, BgPrimitive, StudioBg3dCaptureBackgroundSnapshot, StudioBg3dDeviceSignals } from "./studio-bg3d-editor-runtime-bindings";
 
-export function bindStudioBg3dEditorViewModel(h) {
+export function bindStudioBg3dEditorViewModel(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
     TransformControls, View, Canvas, useThree,
@@ -250,12 +250,12 @@ export function bindStudioBg3dEditorViewModel(h) {
     lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     sceneRecoveryError, transformSpaceOverride,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
   const isBatchRenderingShots = shotBatchProgress !== null;
   const savedShots = sceneBaseDocument.shots ?? [];
   const shotBatchSelectedIds = savedShots
-    .filter(({ id }) => !shotBatchExcludedIds.has(id))
-    .map(({ id }) => id);
+    .filter(({ id }: { id: string }) => !shotBatchExcludedIds.has(id))
+    .map(({ id }: { id: string }) => id);
   const selectedShotBatchPasses = STUDIO_BG3D_SHOT_BATCH_PASSES.filter((pass) =>
     shotBatchPasses.has(pass),
   );
@@ -294,9 +294,9 @@ export function bindStudioBg3dEditorViewModel(h) {
       vrmCharacters: sharedCharacters.length > 0,
     },
   });
-  const hasCloneFailure = customModels.some((model) => failedCloneIds.has(model.id));
+  const hasCloneFailure = customModels.some((model: BgCustomModelInstance) => failedCloneIds.has(model.id));
   const hasPendingClone = customModels.some(
-    (model) => !readyCloneIds.has(model.id) && !failedCloneIds.has(model.id)
+    (model: BgCustomModelInstance) => !readyCloneIds.has(model.id) && !failedCloneIds.has(model.id)
   );
   const hasPendingSharedCharacter = includeSharedCharactersInCapture
     && sharedCharacterCaptureReadiness.phase === "loading";
@@ -331,7 +331,7 @@ export function bindStudioBg3dEditorViewModel(h) {
   const magicLayerEffectivelyVisibleIds =
     collectStudioBg3dEffectivelyVisibleEntityIds([...primitives, ...customModels]);
   const magicLayerSelectedPrimitive = selectedIds.size === 1
-    ? primitives.find((primitive) => selectedIds.has(primitive.id)) ?? null
+    ? primitives.find((primitive: BgPrimitive) => selectedIds.has(primitive.id)) ?? null
     : null;
   const magicLayerLensShift = sceneBaseDocument.camera.lensShift;
   const magicLayerUnavailableReason = operation === "update"

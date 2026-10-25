@@ -23,13 +23,13 @@ import {
   toggleCommentLike as togglePublicationCommentLike,
   toggleLike as togglePublicationLike,
   updateComment as updatePublicationComment,
-} from "./work-social";
+} from "../../modules/creator/work-social";
 import {
   parseStatus,
   type CreatorWorkDetail,
   type CreatorWorkInput,
   type CreatorWorkMutationResult,
-} from "./works-contract";
+} from "../../modules/creator/works-contract";
 
 interface CreatorPublicationPolicyRow {
   id: string;

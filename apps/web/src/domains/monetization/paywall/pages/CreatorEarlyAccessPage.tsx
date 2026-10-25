@@ -98,9 +98,9 @@ export function CreatorEarlyAccessPage() {
   if (!authenticated) {
     return (
       <Container className="py-16 text-center">
-        <CalendarClock className="mx-auto h-10 w-10 text-muted/50" aria-hidden />
+        <CalendarClock className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
         <h1 className="mt-3 text-xl font-bold text-fg">{t("paywall.creatorPage.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
           {t("paywall.creatorPage.loginRequired")}
         </p>
         <button
@@ -124,7 +124,7 @@ export function CreatorEarlyAccessPage() {
           <CalendarClock className="h-6 w-6 text-accent" aria-hidden />
           {t("paywall.creatorPage.title")}
         </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted">{t("paywall.creatorPage.subtitle")}</p>
+        <p className="mt-1 max-w-2xl text-sm text-fg-3">{t("paywall.creatorPage.subtitle")}</p>
         {policies.length > 0 && (
           <p role="status" className="mt-3 inline-flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
             <Zap className="h-4 w-4 text-accent" aria-hidden />
@@ -158,7 +158,7 @@ export function CreatorEarlyAccessPage() {
               value={titleName}
               onChange={(event) => setTitleName(event.target.value)}
               placeholder={t("paywall.creatorPage.titleNamePlaceholder")}
-              className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
             />
           </div>
           <div>
@@ -171,7 +171,7 @@ export function CreatorEarlyAccessPage() {
               value={titleId}
               onChange={(event) => setTitleId(event.target.value)}
               placeholder={t("paywall.creatorPage.titleIdPlaceholder")}
-              className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-muted/60 focus:border-accent focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg placeholder:text-fg-3/60 focus:border-accent focus:outline-none"
             />
           </div>
           <div>
@@ -186,7 +186,7 @@ export function CreatorEarlyAccessPage() {
               onChange={(event) => setDays(event.target.value)}
               className="mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm tabular-nums text-fg focus:border-accent focus:outline-none"
             />
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-1 text-xs text-fg-3">
               {t("paywall.creatorPage.daysHint", { min: EARLY_ACCESS_DAYS_MIN, max: EARLY_ACCESS_DAYS_MAX })}
             </p>
           </div>
@@ -211,16 +211,16 @@ export function CreatorEarlyAccessPage() {
       <section aria-label={t("paywall.creatorPage.listTitle")} className="space-y-3">
         {policies.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-line p-10 text-center">
-            <Zap className="mx-auto h-8 w-8 text-muted/50" aria-hidden />
+            <Zap className="mx-auto h-8 w-8 text-fg-3/50" aria-hidden />
             <p className="mt-2 text-sm font-semibold text-fg">{t("paywall.creatorPage.emptyTitle")}</p>
-            <p className="mx-auto mt-1 max-w-md text-xs text-muted">{t("paywall.creatorPage.emptyBody")}</p>
+            <p className="mx-auto mt-1 max-w-md text-xs text-fg-3">{t("paywall.creatorPage.emptyBody")}</p>
           </div>
         ) : (
           policies.map((policy) => (
             <article key={policy.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line p-4">
               <div>
                 <h3 className="text-sm font-bold text-fg">{policy.titleName}</h3>
-                <p className="text-xs tabular-nums text-muted">
+                <p className="text-xs tabular-nums text-fg-3">
                   {t("paywall.creatorPage.policySummary", { days: policy.earlyAccessDays })}
                   {" · "}
                   {policy.enabled ? t("paywall.creatorPage.enabled") : t("paywall.creatorPage.disabled")}

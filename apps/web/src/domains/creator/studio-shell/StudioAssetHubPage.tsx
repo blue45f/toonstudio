@@ -3,9 +3,9 @@ import { lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
-import { MarketBrowsePage } from "@/domains/market/pages/MarketBrowsePage";
-import { MarketLibraryPage } from "@/domains/market/pages/MarketCloudLibraryPage";
-import { MarketManagePage } from "@/domains/market/pages/MarketOwnedResourcesPage";
+import { MarketBrowsePage } from "@/domains/market/public/market-browse-page";
+import { MarketLibraryPage } from "@/domains/market/public/market-cloud-library-page";
+import { MarketManagePage } from "@/domains/market/public/market-owned-resources-page";
 import { Container } from "@/shared/components/section";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";

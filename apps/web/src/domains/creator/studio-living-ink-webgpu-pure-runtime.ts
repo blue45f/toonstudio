@@ -12,54 +12,42 @@
  */
 
 import {
-  canonicalStudioLivingInkDisplayRgba8,
-  STUDIO_LIVING_INK_EXECUTION_ENGINE_VERSION,
-  STUDIO_LIVING_INK_EXECUTION_LIMITS,
-  STUDIO_LIVING_INK_EXECUTION_PROTOCOL_VERSION,
-  studioLivingInkCoarseVelocityGrid,
-  studioLivingInkDryWindowSeconds,
-  studioLivingInkFluidPlan,
-  type StudioLivingInkCoarseVelocityScale,
-  type StudioLivingInkExecutionApplied,
-  type StudioLivingInkExecutionApplyOptions,
-  type StudioLivingInkExecutionApplyResult,
-  type StudioLivingInkExecutionCapabilities,
-  type StudioLivingInkExecutionConfig,
-  type StudioLivingInkExecutionFrame,
-  type StudioLivingInkExecutionReceipt,
+  canonicalStudioLivingInkDisplayRgba8, STUDIO_LIVING_INK_EXECUTION_ENGINE_VERSION,
+  STUDIO_LIVING_INK_EXECUTION_LIMITS, STUDIO_LIVING_INK_EXECUTION_PROTOCOL_VERSION,
+  studioLivingInkCoarseVelocityGrid, studioLivingInkDryWindowSeconds, studioLivingInkFluidPlan,
+  type StudioLivingInkCoarseVelocityScale, type StudioLivingInkExecutionApplied,
+  type StudioLivingInkExecutionApplyOptions, type StudioLivingInkExecutionApplyResult,
+  type StudioLivingInkExecutionCapabilities, type StudioLivingInkExecutionConfig,
+  type StudioLivingInkExecutionFrame, type StudioLivingInkExecutionReceipt,
 } from "./studio-living-ink-execution-protocol";
 import {
-  studioLivingInkChromaBleedMultipliers,
-  studioLivingInkDepositionPathLength,
-  studioLivingInkMeanMarkRadius,
-  studioLivingInkPigmentCoatFactor,
-  studioLivingInkPigmentDiffusionRates,
-  studioLivingInkPigmentOpticalDensity,
-  STUDIO_LIVING_INK_PIGMENT_COAT,
-  STUDIO_LIVING_INK_WHITE_GOUACHE_LOAD_GAIN,
-  type StudioLivingInkBounds,
-  type StudioLivingInkOperation,
-  type StudioLivingInkSelectionMask,
+  studioLivingInkChromaBleedMultipliers, studioLivingInkDepositionPathLength,
+  studioLivingInkMeanMarkRadius, studioLivingInkPigmentCoatFactor,
+  studioLivingInkPigmentDiffusionRates, studioLivingInkPigmentOpticalDensity,
+  STUDIO_LIVING_INK_PIGMENT_COAT, STUDIO_LIVING_INK_WHITE_GOUACHE_LOAD_GAIN,
+  type StudioLivingInkBounds, type StudioLivingInkOperation, type StudioLivingInkSelectionMask,
 } from "./studio-living-ink-field";
 import {
-  acquireStudioGpuDevice,
-  onStudioGpuDeviceLost,
-  type StudioGpuDeviceLease,
-  type StudioGpuFabricOptions,
+  acquireStudioGpuDevice, onStudioGpuDeviceLost,
+  type StudioGpuDeviceLease, type StudioGpuDeviceLossEvent, type StudioGpuFabricOptions,
 } from "./render/studio-gpu-fabric";
 import { validateStudioLivingInkExecutionConfig } from "./studio-living-ink-webgl2-runtime";
 import {
-  listStudioLivingInkWgslPassSources,
-  STUDIO_LIVING_INK_WGSL_SHADER_REVISION,
-  STUDIO_LIVING_INK_WGSL_UNIFORM_WORDS,
-  studioLivingInkWgslDisplayModeCode,
-  studioLivingInkWgslPassGrid,
-  writeStudioLivingInkFieldUniforms,
-  type StudioLivingInkWgslPassId,
+  listStudioLivingInkWgslPassSources, STUDIO_LIVING_INK_WGSL_SHADER_REVISION,
+  STUDIO_LIVING_INK_WGSL_UNIFORM_WORDS, studioLivingInkWgslDisplayModeCode,
+  studioLivingInkWgslPassGrid, writeStudioLivingInkFieldUniforms, type StudioLivingInkWgslPassId,
 } from "./studio-living-ink-wgsl-shaders";
 import { sha256HexPortable } from "./studio-sha256";
-
 import type { StudioLivingInkDisplayMode } from "./studio-living-ink-gpu-protocol";
+
+export interface StudioLivingInkWebGpuPureRuntimeOptions extends StudioGpuFabricOptions {
+  readonly lease?: StudioGpuDeviceLease | null;
+  readonly device?: GPUDevice | null;
+  readonly acquireDevice?: (options?: StudioGpuFabricOptions) => Promise<StudioGpuDeviceLease | null>;
+  readonly subscribeDeviceLoss?: (listener: (event: StudioGpuDeviceLossEvent) => void) => () => void;
+  readonly onDeviceLost?: (event: StudioGpuDeviceLossEvent) => void;
+  readonly releaseInjectedLeaseOnDispose?: boolean;
+}
 
 /** Splat uniform buffer: two vec2 endpoints, four scalars, two vec4 amounts, two flags + padding. */
 const SPLAT_UNIFORM_FLOATS = 20;
@@ -234,8 +222,13 @@ export class StudioLivingInkWebGpuPureRuntime {
   private splatUniforms!: GPUBuffer;
   private readonly splatScratch = new Float32Array(SPLAT_UNIFORM_FLOATS);
   private readonly deviceLease: StudioGpuDeviceLease | null;
-  private readonly unsubscribeDeviceLoss: (() => void) | null;
+  private readonly deviceEpoch: number;
+  private readonly ownsLease: boolean;
+  private readonly ownsDevice: boolean;
+  private readonly onDeviceLostCallback: ((event: StudioGpuDeviceLossEvent) => void) | null;
+  private unsubscribeDeviceLoss: (() => void) | null;
   private deviceLost = false;
+  private deviceLossReason: string | null = null;
   private revision = 0;
   private passCount = 0;
   private disposed = false;
@@ -255,38 +248,48 @@ export class StudioLivingInkWebGpuPureRuntime {
     canvas: OffscreenCanvas,
     presentation: OffscreenCanvasRenderingContext2D,
     deviceLease: StudioGpuDeviceLease | null = null,
+    options?: {
+      readonly ownsLease?: boolean;
+      readonly ownsDevice?: boolean;
+      readonly subscribeDeviceLoss?: (listener: (event: StudioGpuDeviceLossEvent) => void) => () => void;
+      readonly onDeviceLost?: (event: StudioGpuDeviceLossEvent) => void;
+    },
   ) {
     this.device = device;
     this.webGpuDevice = device;
     this.deviceLease = deviceLease;
+    this.deviceEpoch = deviceLease?.epoch ?? 0;
+    this.ownsLease = options?.ownsLease ?? Boolean(deviceLease);
+    this.ownsDevice = options?.ownsDevice ?? (deviceLease === null);
+    this.onDeviceLostCallback = options?.onDeviceLost ?? null;
+    const subscribeLoss = options?.subscribeDeviceLoss ?? onStudioGpuDeviceLost;
     this.unsubscribeDeviceLoss = deviceLease
-      ? onStudioGpuDeviceLost((event) => {
-          if (event.epoch === deviceLease.epoch) {
-            this.deviceLost = true;
-          }
+      ? subscribeLoss((event) => {
+          if (event.epoch === deviceLease.epoch) this.markDeviceLost(event.reason, event.epoch);
         })
       : null;
+    const lostPromise = (device as { readonly lost?: Promise<GPUDeviceLostInfo> }).lost;
+    if (lostPromise && typeof lostPromise.then === "function") {
+      void lostPromise.then(
+        (info) => {
+          if (this.disposed) return;
+          const reason = (typeof info?.reason === "string" && info.reason) || (typeof info?.message === "string" && info.message) || "unknown";
+          this.markDeviceLost(reason, this.deviceEpoch);
+        },
+        () => { if (!this.disposed) this.markDeviceLost("unknown", this.deviceEpoch); },
+      );
+    }
     this.config = Object.freeze({ ...config });
     this.canvas = canvas;
     this.presentation = presentation;
-    const coarse = studioLivingInkCoarseVelocityGrid(
-      config.fieldWidth,
-      config.fieldHeight,
-      config.coarseBase,
-    );
+    const coarse = studioLivingInkCoarseVelocityGrid(config.fieldWidth, config.fieldHeight, config.coarseBase);
     this.coarseWidth = coarse.width;
     this.coarseHeight = coarse.height;
     this.coarseVelocityScale = coarse.scale;
     this.capabilities = Object.freeze({
       backend: "webgpu-offscreen-half-float",
-      worker: true,
-      offscreenCanvas: true,
-      webgl2: false,
-      webgpu: true,
-      halfFloatRenderable: true,
-      rgba16Float: true,
-      rg16Float: true,
-      r16Float: true,
+      worker: true, offscreenCanvas: true, webgl2: false, webgpu: true,
+      halfFloatRenderable: true, rgba16Float: true, rg16Float: true, r16Float: true,
       maximumTextureSize: Math.max(config.fieldWidth, config.fieldHeight, 8192),
       pressureIterations: Object.freeze({
         interactive: STUDIO_LIVING_INK_EXECUTION_LIMITS.interactivePressureIterations,
@@ -295,23 +298,51 @@ export class StudioLivingInkWebGpuPureRuntime {
     });
   }
 
-  get lost(): boolean {
-    return this.deviceLost || (this.deviceLease?.lost ?? false);
+  private markDeviceLost(reason = "unknown", epoch = this.deviceEpoch): void {
+    if (this.deviceLost) return;
+    this.deviceLost = true;
+    this.deviceLossReason = reason;
+    if (!this.disposed && this.onDeviceLostCallback) {
+      try { this.onDeviceLostCallback(Object.freeze({ epoch, reason })); } catch { /* ignore */ }
+    }
   }
+
+  get lost(): boolean { return this.deviceLost || (this.deviceLease?.lost ?? false); }
+  get lossReason(): string | null { return this.deviceLossReason ?? (this.deviceLease?.lost ? "lease-lost" : null); }
+  get epoch(): number { return this.deviceEpoch; }
+  get lease(): StudioGpuDeviceLease | null { return this.deviceLease; }
 
   static async tryCreate(
     config: StudioLivingInkExecutionConfig,
-    fabricOptions?: StudioGpuFabricOptions,
+    runtimeOptions?: StudioLivingInkWebGpuPureRuntimeOptions,
   ): Promise<StudioLivingInkWebGpuPureRuntime | null> {
-    try {
-      validateStudioLivingInkExecutionConfig(config);
-    } catch {
-      return null;
-    }
+    try { validateStudioLivingInkExecutionConfig(config); } catch { return null; }
     if (typeof OffscreenCanvas !== "function") return null;
-    const lease = await acquireStudioGpuDevice(fabricOptions);
-    if (!lease || lease.lost) return null;
-    const device = lease.device;
+
+    let lease: StudioGpuDeviceLease | null;
+    let device: GPUDevice;
+    let ownsLease: boolean;
+    const ownsDevice = false;
+
+    if (runtimeOptions && "lease" in runtimeOptions && runtimeOptions.lease !== undefined) {
+      const injectedLease = runtimeOptions.lease;
+      if (!injectedLease || injectedLease.lost || injectedLease.released) return null;
+      lease = injectedLease;
+      device = injectedLease.device;
+      ownsLease = runtimeOptions.releaseInjectedLeaseOnDispose ?? true;
+    } else if (runtimeOptions && "device" in runtimeOptions && runtimeOptions.device !== undefined) {
+      if (!runtimeOptions.device) return null;
+      lease = null;
+      device = runtimeOptions.device;
+      ownsLease = false;
+    } else {
+      const acquire = runtimeOptions?.acquireDevice ?? acquireStudioGpuDevice;
+      const acquiredLease = await acquire(runtimeOptions);
+      if (!acquiredLease || acquiredLease.lost || acquiredLease.released) return null;
+      lease = acquiredLease;
+      device = acquiredLease.device;
+      ownsLease = true;
+    }
 
     const canvas = new OffscreenCanvas(config.displayWidth, config.displayHeight);
     /*
@@ -323,17 +354,15 @@ export class StudioLivingInkWebGpuPureRuntime {
     // Alpha stays on: the resolve writes wash coverage there so an untouched page is transparent.
     const presentation = canvas.getContext("2d", { alpha: true });
     if (!presentation) {
-      lease.release();
+      if (lease && ownsLease) lease.release();
       return null;
     }
 
-    const runtime = new StudioLivingInkWebGpuPureRuntime(
-      device,
-      config,
-      canvas,
-      presentation,
-      lease,
-    );
+    const runtime = new StudioLivingInkWebGpuPureRuntime(device, config, canvas, presentation, lease, {
+      ownsLease, ownsDevice,
+      subscribeDeviceLoss: runtimeOptions?.subscribeDeviceLoss,
+      onDeviceLost: runtimeOptions?.onDeviceLost,
+    });
     try {
       runtime.allocateBuffers();
       runtime.compilePipelines();
@@ -345,25 +374,14 @@ export class StudioLivingInkWebGpuPureRuntime {
     }
   }
 
-  private cellCount(): number {
-    return this.config.fieldWidth * this.config.fieldHeight;
-  }
-
-  private coarseCellCount(): number {
-    return this.coarseWidth * this.coarseHeight;
-  }
-
-  private displayCellCount(): number {
-    return this.config.displayWidth * this.config.displayHeight;
-  }
+  private cellCount(): number { return this.config.fieldWidth * this.config.fieldHeight; }
+  private coarseCellCount(): number { return this.coarseWidth * this.coarseHeight; }
+  private displayCellCount(): number { return this.config.displayWidth * this.config.displayHeight; }
 
   private allocateBuffers(): void {
     const bytes = this.cellCount() * 16;
     const coarseBytes = this.coarseCellCount() * 16;
-    const usage =
-      GPUBufferUsage.STORAGE
-      | GPUBufferUsage.COPY_SRC
-      | GPUBufferUsage.COPY_DST;
+    const usage = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST;
     this.mobile = this.device.createBuffer({ size: bytes, usage });
     this.mobileScratch = this.device.createBuffer({ size: bytes, usage });
     this.fixed = this.device.createBuffer({ size: bytes, usage });
@@ -400,11 +418,9 @@ export class StudioLivingInkWebGpuPureRuntime {
   private compilePipelines(): void {
     for (const pass of listStudioLivingInkWgslPassSources()) {
       const module = this.device.createShaderModule({ code: pass.source });
-      const pipeline = this.device.createComputePipeline({
-        layout: "auto",
-        compute: { module, entryPoint: pass.entryPoint },
-      });
-      this.pipelines.set(pass.id, pipeline);
+      this.pipelines.set(pass.id, this.device.createComputePipeline({
+        layout: "auto", compute: { module, entryPoint: pass.entryPoint },
+      }));
     }
   }
 
@@ -514,44 +530,25 @@ export class StudioLivingInkWebGpuPureRuntime {
 
   private assertActive(): void {
     if (this.disposed) throw new Error("Living Ink pure WGSL runtime disposed.");
+    if (this.lost) throw new Error(`Living Ink pure WGSL runtime GPU context is lost (${this.lossReason ?? "unknown"}).`);
   }
 
   private simulationBounds(): StudioLivingInkBounds {
-    return this.dirty ?? Object.freeze({
-      x: 0,
-      y: 0,
-      width: this.config.fieldWidth,
-      height: this.config.fieldHeight,
-    });
+    return this.dirty ?? Object.freeze({ x: 0, y: 0, width: this.config.fieldWidth, height: this.config.fieldHeight });
   }
 
   private markDirty(bounds: StudioLivingInkBounds): void {
-    this.dirty = unionBounds(
-      this.dirty,
-      bounds,
-      this.config.fieldWidth,
-      this.config.fieldHeight,
-    );
+    this.dirty = unionBounds(this.dirty, bounds, this.config.fieldWidth, this.config.fieldHeight);
   }
 
   private operationBounds(operation: StudioLivingInkOperation): StudioLivingInkBounds {
     if (operation.kind === "clear" || operation.kind === "fix" || operation.kind === "advance") {
-      return Object.freeze({
-        x: 0,
-        y: 0,
-        width: this.config.fieldWidth,
-        height: this.config.fieldHeight,
-      });
+      return Object.freeze({ x: 0, y: 0, width: this.config.fieldWidth, height: this.config.fieldHeight });
     }
     let result: StudioLivingInkBounds | null = operation.selection?.bounds ?? null;
     for (const mark of operation.marks) {
       const r = Math.max(1, mark.radius);
-      result = unionBounds(
-        result,
-        { x: mark.x - r, y: mark.y - r, width: r * 2, height: r * 2 },
-        this.config.fieldWidth,
-        this.config.fieldHeight,
-      );
+      result = unionBounds(result, { x: mark.x - r, y: mark.y - r, width: r * 2, height: r * 2 }, this.config.fieldWidth, this.config.fieldHeight);
     }
     return result ?? Object.freeze({ x: 0, y: 0, width: 1, height: 1 });
   }
@@ -578,18 +575,15 @@ export class StudioLivingInkWebGpuPureRuntime {
   private splat(target: GPUBuffer, splat: CapsuleSplat): void {
     this.writeSplatUniforms(splat);
     this.dispatch("splat", [
-      { binding: 0, resource: { buffer: this.uniforms } },
-      { binding: 1, resource: { buffer: target } },
-      { binding: 2, resource: { buffer: this.splatUniforms } },
-      { binding: 3, resource: { buffer: this.selection } },
+      { binding: 0, resource: { buffer: this.uniforms } }, { binding: 1, resource: { buffer: target } },
+      { binding: 2, resource: { buffer: this.splatUniforms } }, { binding: 3, resource: { buffer: this.selection } },
     ]);
   }
 
   private splatVelocity(splat: CapsuleSplat): void {
     this.writeSplatUniforms(splat);
     this.dispatch("splat-velocity", [
-      { binding: 0, resource: { buffer: this.uniforms } },
-      { binding: 1, resource: { buffer: this.velocity } },
+      { binding: 0, resource: { buffer: this.uniforms } }, { binding: 1, resource: { buffer: this.velocity } },
       { binding: 2, resource: { buffer: this.splatUniforms } },
     ]);
   }
@@ -862,81 +856,51 @@ export class StudioLivingInkWebGpuPureRuntime {
    * One fixed tick of the Stable Fluids loop, in the order the fluid requires:
    * advect → confine vorticity → project (divergence, Jacobi, gradient) → water → pigment.
    */
-  private step(
-    fixing: boolean,
-    pressureIterations: number,
-    velocitySettling = false,
-  ): void {
+  private step(fixing: boolean, pressureIterations: number, velocitySettling = false): void {
     // Settle rate, from the certified runtime: `1 - exp(-dt * 5)` per fixation tick — an
     // exponential approach over the fix window, not a flat fraction.
     const dt = STUDIO_LIVING_INK_EXECUTION_LIMITS.fixedTimeStepSeconds;
-    this.writeUniforms({
-      fixTransfer: fixing ? 1 - Math.exp(-dt * 5) : 0,
-      fixing,
-      velocitySettling,
-    });
+    this.writeUniforms({ fixTransfer: fixing ? 1 - Math.exp(-dt * 5) : 0, fixing, velocitySettling });
     const uniforms = { binding: 0, resource: { buffer: this.uniforms } } as const;
 
     this.dispatch("advect-velocity", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.velocity } },
-      { binding: 2, resource: { buffer: this.velocityScratch } },
-      { binding: 3, resource: { buffer: this.wet } },
+      uniforms, { binding: 1, resource: { buffer: this.velocity } },
+      { binding: 2, resource: { buffer: this.velocityScratch } }, { binding: 3, resource: { buffer: this.wet } },
     ]);
     this.swapVelocity();
 
-    this.dispatch("curl", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.velocity } },
-      { binding: 2, resource: { buffer: this.curl } },
-    ]);
+    this.dispatch("curl", [uniforms, { binding: 1, resource: { buffer: this.velocity } }, { binding: 2, resource: { buffer: this.curl } }]);
     this.dispatch("vorticity", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.velocity } },
-      { binding: 2, resource: { buffer: this.curl } },
-      { binding: 3, resource: { buffer: this.velocityScratch } },
+      uniforms, { binding: 1, resource: { buffer: this.velocity } },
+      { binding: 2, resource: { buffer: this.curl } }, { binding: 3, resource: { buffer: this.velocityScratch } },
     ]);
     this.swapVelocity();
 
-    this.dispatch("divergence", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.velocity } },
-      { binding: 2, resource: { buffer: this.pressureA } },
-    ]);
+    this.dispatch("divergence", [uniforms, { binding: 1, resource: { buffer: this.velocity } }, { binding: 2, resource: { buffer: this.pressureA } }]);
     let solved = this.pressureA;
     for (let iteration = 0; iteration < pressureIterations; iteration += 1) {
       const src = iteration % 2 === 0 ? this.pressureA : this.pressureB;
       const dst = iteration % 2 === 0 ? this.pressureB : this.pressureA;
-      this.dispatch("jacobi", [
-        uniforms,
-        { binding: 1, resource: { buffer: src } },
-        { binding: 2, resource: { buffer: dst } },
-      ]);
+      this.dispatch("jacobi", [uniforms, { binding: 1, resource: { buffer: src } }, { binding: 2, resource: { buffer: dst } }]);
       solved = dst;
     }
     this.dispatch("gradient", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.velocity } },
-      { binding: 2, resource: { buffer: solved } },
-      { binding: 3, resource: { buffer: this.velocityScratch } },
+      uniforms, { binding: 1, resource: { buffer: this.velocity } },
+      { binding: 2, resource: { buffer: solved } }, { binding: 3, resource: { buffer: this.velocityScratch } },
     ]);
     this.swapVelocity();
 
     this.dispatch("wet", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.wet } },
-      { binding: 2, resource: { buffer: this.wetScratch } },
-      { binding: 3, resource: { buffer: this.velocity } },
+      uniforms, { binding: 1, resource: { buffer: this.wet } },
+      { binding: 2, resource: { buffer: this.wetScratch } }, { binding: 3, resource: { buffer: this.velocity } },
     ]);
     const spareWet = this.wet;
     this.wet = this.wetScratch;
     this.wetScratch = spareWet;
 
     this.dispatch("pigment", [
-      uniforms,
-      { binding: 1, resource: { buffer: this.mobile } },
-      { binding: 2, resource: { buffer: this.mobileScratch } },
-      { binding: 3, resource: { buffer: this.wet } },
+      uniforms, { binding: 1, resource: { buffer: this.mobile } },
+      { binding: 2, resource: { buffer: this.mobileScratch } }, { binding: 3, resource: { buffer: this.wet } },
       { binding: 4, resource: { buffer: this.velocity } },
     ]);
     const spareMobile = this.mobile;
@@ -945,10 +909,8 @@ export class StudioLivingInkWebGpuPureRuntime {
 
     if (fixing) {
       this.dispatch("fix", [
-        uniforms,
-        { binding: 1, resource: { buffer: this.mobile } },
-        { binding: 2, resource: { buffer: this.fixed } },
-        { binding: 3, resource: { buffer: this.selection } },
+        uniforms, { binding: 1, resource: { buffer: this.mobile } },
+        { binding: 2, resource: { buffer: this.fixed } }, { binding: 3, resource: { buffer: this.selection } },
       ]);
     }
   }
@@ -1018,10 +980,12 @@ export class StudioLivingInkWebGpuPureRuntime {
     }
     const velocitySettling = operation.kind === "advance" && quality === "settle";
     for (let tick = 0; tick < ticks; tick += 1) {
+      this.assertActive();
       if (isCancelled()) throw new DOMException("Living Ink request cancelled.", "AbortError");
       this.step(operation.kind === "fix", pressureIterations, velocitySettling);
       if ((tick + 1) % 6 === 0) await yieldControl();
     }
+    this.assertActive();
 
     this.revision += 1;
     const dirtyBounds = this.simulationBounds();
@@ -1230,6 +1194,7 @@ export class StudioLivingInkWebGpuPureRuntime {
 
   /** Resolved display pixels in natural top-left ImageData/storage-buffer row order. */
   private async readDisplayRgba8(): Promise<Uint8Array> {
+    this.assertActive();
     // Map requires MAP_READ-only buffer; copy display → staging
     const bytes = this.displayCellCount() * 16;
     const staging = this.device.createBuffer({
@@ -1239,10 +1204,15 @@ export class StudioLivingInkWebGpuPureRuntime {
     const encoder = this.device.createCommandEncoder();
     encoder.copyBufferToBuffer(this.display, 0, staging, 0, bytes);
     this.device.queue.submit([encoder.finish()]);
-    await staging.mapAsync(GPUMapMode.READ);
-    const f32 = new Float32Array(staging.getMappedRange().slice(0));
-    staging.unmap();
-    staging.destroy();
+    let f32: Float32Array;
+    try {
+      await staging.mapAsync(GPUMapMode.READ);
+      this.assertActive();
+      f32 = new Float32Array(staging.getMappedRange().slice(0));
+      staging.unmap();
+    } finally {
+      try { staging.destroy(); } catch { /* ignore */ }
+    }
     const out = new Uint8Array(this.displayCellCount() * 4);
     // The resolve already ran on the display grid, so this is a straight 1:1 quantisation.
     for (let index = 0; index < out.length; index += 4) {
@@ -1304,6 +1274,7 @@ export class StudioLivingInkWebGpuPureRuntime {
     if (this.disposed) return;
     this.disposed = true;
     this.unsubscribeDeviceLoss?.();
+    this.unsubscribeDeviceLoss = null;
     for (const buffer of [
       this.mobile, this.mobileScratch, this.fixed, this.wet, this.wetScratch,
       this.strokeDeposit, this.selection, this.velocity, this.velocityScratch,
@@ -1312,8 +1283,10 @@ export class StudioLivingInkWebGpuPureRuntime {
       try { buffer?.destroy(); } catch { /* ignore */ }
     }
     if (this.deviceLease) {
-      this.deviceLease.release();
-    } else {
+      if (this.ownsLease) {
+        this.deviceLease.release();
+      }
+    } else if (this.ownsDevice) {
       try { this.device.destroy(); } catch { /* ignore */ }
     }
   }

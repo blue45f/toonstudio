@@ -89,7 +89,7 @@ export function SketchPad({ strokes, onChange, guide, label = "드로잉 캔버�
       onPointerMove={(event) => { if (active.current?.pointer === event.pointerId) append(position(event)); }}
       onPointerUp={(event) => { if (active.current?.pointer !== event.pointerId) return; append(position(event)); finish(); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
       onPointerCancel={cancel} onLostPointerCapture={() => { if (active.current && active.current.pointer !== -1) cancel(); }}>
-      <defs><pattern id={gridId} width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="#b1a89a" strokeWidth="1" /></pattern></defs>
+      <defs><pattern id={gridId} width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="var(--color-line)" strokeWidth="1" /></pattern></defs>
       <rect width="960" height="600" fill={PAPER} />
       {grid && <rect width="960" height="600" fill={`url(#${gridId})`} opacity=".4" />}
       {guide}

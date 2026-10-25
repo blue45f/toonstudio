@@ -46,7 +46,7 @@ export function ThreadListItem({
         <span className="flex items-center gap-2">
           <strong className="truncate text-sm text-fg">{thread.otherUser.name}</strong>
           {thread.state === "pending" && (
-            <span className="shrink-0 rounded-full bg-warn-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-warn">
+            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-warn">
               {thread.incomingRequest ? "요청" : "수락 대기"}
             </span>
           )}

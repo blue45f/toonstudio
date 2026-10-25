@@ -10,7 +10,7 @@ import {
 } from "../../../../packages/core/src/catalog/catalog-store";
 import { isDatabaseAvailabilityError } from "../platform/http/database-availability";
 import { db, reviewLikes, reviews, users } from "../platform/database";
-import { loadTitleEpisodeEntries, withTitleEpisodes } from "./title-episodes";
+import { loadTitleEpisodeEntries, withTitleEpisodes } from "../modules/catalog/title-episodes";
 
 import type { SeedReview, Title } from "@toonstudio/contracts/types";
 

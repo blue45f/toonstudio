@@ -4,9 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { AdminMembershipPolicy } from "./AdminMembershipPolicy";
-import { AdminMembershipOperations } from "./AdminMembershipOperations";
 import {
+  AdminMembershipOperations,
+  AdminMembershipPolicy,
+} from "./AdminMembershipPolicy";
+import {
+  adminButtonClass,
   adminFetch,
   centsToWon,
   formatNum,
@@ -22,7 +25,6 @@ import {
   Field,
   adminInputClass,
 } from "./admin-ui";
-import { adminButtonClass } from "./admin-ui-utils";
 
 import { useT } from "@/shared/lib/i18n";
 

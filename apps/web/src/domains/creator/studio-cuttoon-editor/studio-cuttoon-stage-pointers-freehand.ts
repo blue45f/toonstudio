@@ -1,6 +1,5 @@
 /* Extracted stage pointer handlers from StudioCuttoonEditor.
  * Closures keep the original editor typing envelope via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -292,9 +291,9 @@ export function bindStudioCuttoonStagePointersFreehand(
     scheduleLiveDrawPressure,
     vanishingPoints,
   } = h;
-  const appendFixedRateStrokeSamples = (...args) => api.appendFixedRateStrokeSamples(...args);
-  const applyStrokeObjectSnapToPoint = (...args) => api.applyStrokeObjectSnapToPoint(...args);
-  const snapPointToAdvancedRuler = (...args) => api.snapPointToAdvancedRuler(...args);
+  const appendFixedRateStrokeSamples: StudioCuttoonStagePointersApi["appendFixedRateStrokeSamples"] = (...args) => api.appendFixedRateStrokeSamples(...args);
+  const applyStrokeObjectSnapToPoint: StudioCuttoonStagePointersApi["applyStrokeObjectSnapToPoint"] = (x, y, options) => api.applyStrokeObjectSnapToPoint(x, y, options);
+  const snapPointToAdvancedRuler: StudioCuttoonStagePointersApi["snapPointToAdvancedRuler"] = (...args) => api.snapPointToAdvancedRuler(...args);
   function appendFreehandStrokePoint(
     pos: { x: number; y: number },
     pointerSample: PointerEvent,

@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { COLLABORATION_MODES, COLLABORATION_PAY, COLLABORATION_ROLES, COLLABORATION_STATUS } from "../../../../../packages/core/src/collaboration";
 
 import { CollaborationCard, CollaborationSafety, CollabLogin, CollabNotice, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
-import { collaborationRoleBilingualLabel } from "../creator/production-hub/production-labels";
+import { collaborationRoleBilingualLabel } from "../creator/public/production-labels";
 
 import type { CollaborationList } from "../../../../../packages/core/src/collaboration";
 

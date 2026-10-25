@@ -1,7 +1,7 @@
 # ToonStudio 아키텍처
 
 - 상태: **현재 구조 + 진행 중인 마이그레이션**
-- 최종 갱신: **2026-10-08**
+- 최종 갱신: **2026-10-26**
 - 적용 범위: 저장소 구조, 애플리케이션 경계, 공유 패키지, 테스트·도구·문서 소유권
 
 ## 1. 권위 순서
@@ -260,28 +260,33 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 
 ## 9. 현재 마이그레이션 부채
 
-수치는 2026-10-08에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
+수치는 2026-10-26에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`·`scripts/source-file-size-baseline.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`·`node scripts/check-source-file-size.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
 
 | 항목 | 현재 상한 |
 | --- | ---: |
 | API -> Web 직접 소스 참조 | 0 |
-| Web `shared -> domains` | 25 |
-| Web cross-domain deep import | 58 (실측 48) |
-| Creator domain 최상위 직접 파일 | 3,484 |
-| Web에 남은 Admin 파일 | 74 |
-| API `server` 파일 | 67 |
+| Web `shared -> domains` | 0 |
+| 소스 파일 `// @ts-nocheck` | 0 |
+| Web cross-domain deep import | 0 |
+| Creator domain 최상위 직접 파일 | 2,504 |
+| Web에 남은 Admin 파일 | 57 |
+| API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 150 |
-| `packages/core` 파일 | 131 |
+| API `platform/database` 파일 | 165 |
+| `packages/core` 파일 | 139 |
+| `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
 다음 항목은 0으로 고정한다.
 
 - Web -> Admin/API
 - Admin -> Web/API
 - packages -> apps
+- Web `shared -> domains` (0건 달성 완료)
+- Web cross-domain deep import (0건 달성 완료)
 - Admin `shared -> domains`
 - Admin cross-domain deep import
+- 소스 파일 선두 `// @ts-nocheck` 지시문 (0건 달성 완료)
 - 교차 앱 테스트의 앱·패키지 소스 내부 배치
 - 제거한 루트 mobile/tool/config 경로의 재등장
 

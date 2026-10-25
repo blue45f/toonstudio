@@ -1,10 +1,10 @@
 /* Extracted from StudioBackground3D. Closures keep original identifiers via an `any` host bag. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import type { BgPanelTab, StudioBg3dBackgroundSettings, StudioBg3dLightingSettings, StudioBg3dLineOutputSettings, StudioBg3dLtUserPresetMutationResult, StudioBg3dLtUserPresetMutationSuccess, StudioBg3dSceneDocument, StudioBg3dSunRigConfig, StudioBg3dToneOutputSettings } from "./studio-bg3d-editor-runtime-bindings";
 import {
   beginStudio3dGradeDocumentGesture,
   classifyStudio3dLightingGestureCommandId,
@@ -17,7 +17,7 @@ import {
 } from "./studio-bg3d-grade-plates";
 import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-production";
 
-export function attachStudioBg3dEditorLtHost(h) {
+export function attachStudioBg3dEditorLtHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -323,7 +323,7 @@ export function attachStudioBg3dEditorLtHost(h) {
     snapToggleHint, lineArtPreviewHint, surfaceSnapHint,
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     setLtUserPresetLibraryStatus,
-  } = { ...R, ...h };
+  } = { ...R, ...h } as typeof R & Record<string, any>;
 
   const handlePanelTabChange = (tab: BgPanelTab) => {
     if (tab === "models") setModelsPanelActivated(true);
@@ -352,7 +352,7 @@ export function attachStudioBg3dEditorLtHost(h) {
     setLtUserPresetPayload(result.payload);
     setLtUserPresetLibraryStatus("saving");
     setLtUserPresetNotice({ tone: "info", message: "SQLite/OPFS에 프리셋을 저장하는 중입니다." });
-    void ltUserPresetRepository.save(result.payload).then((persisted) => {
+    void ltUserPresetRepository.save(result.payload).then((persisted: any) => {
       if (
         !componentActiveRef.current ||
         ltUserPresetMutationGenerationRef.current !== generation
@@ -411,7 +411,7 @@ export function attachStudioBg3dEditorLtHost(h) {
   function updateManagedLtUserPreset() {
     if (
       !ltManagedUserPresetId ||
-      !ltUserPresetPayload.presets.some((preset) => preset.id === ltManagedUserPresetId)
+      !ltUserPresetPayload.presets.some((preset: any) => preset.id === ltManagedUserPresetId)
     ) {
       setLtUserPresetNotice({ tone: "error", message: "업데이트할 사용자 프리셋을 먼저 선택해 주세요." });
       return;
@@ -456,7 +456,7 @@ export function attachStudioBg3dEditorLtHost(h) {
       return;
     }
     const deletingName = ltUserPresetPayload.presets.find(
-      (preset) => preset.id === ltManagedUserPresetId
+      (preset: any) => preset.id === ltManagedUserPresetId
     )?.name;
     const result = deleteStudioBg3dLtUserPreset(
       ltUserPresetPayload,
@@ -481,8 +481,8 @@ export function attachStudioBg3dEditorLtHost(h) {
       setError("LT 프리셋을 장면 원본에 안전하게 적용하지 못했습니다.");
       return;
     }
-    const userPreset = ltUserPresetPayload.presets.find((preset) => preset.id === presetId);
-    const builtInPreset = STUDIO_BG3D_LT_BUILT_IN_PRESETS.find((preset) => preset.id === presetId);
+    const userPreset = ltUserPresetPayload.presets.find((preset: any) => preset.id === presetId);
+    const builtInPreset = STUDIO_BG3D_LT_BUILT_IN_PRESETS.find((preset: any) => preset.id === presetId);
     setSceneBaseDocument(applied);
     setLineArtPreview(applied.output.line.enabled);
     setLtPreferredPresetId(presetId);
@@ -502,7 +502,7 @@ export function attachStudioBg3dEditorLtHost(h) {
   }
   h.applyLtPreset = applyLtPreset;
   function updateLtLineSettings(patch: Partial<StudioBg3dLineOutputSettings>) {
-    setSceneBaseDocument((current) => {
+    setSceneBaseDocument((current: StudioBg3dSceneDocument) => {
       const candidate: StudioBg3dSceneDocument = {
         ...current,
         output: {
@@ -516,7 +516,7 @@ export function attachStudioBg3dEditorLtHost(h) {
   }
   h.updateLtLineSettings = updateLtLineSettings;
   function updateLtToneSettings(patch: Partial<StudioBg3dToneOutputSettings>) {
-    setSceneBaseDocument((current) => {
+    setSceneBaseDocument((current: StudioBg3dSceneDocument) => {
       const candidate: StudioBg3dSceneDocument = {
         ...current,
         output: {
@@ -530,7 +530,7 @@ export function attachStudioBg3dEditorLtHost(h) {
   }
   h.updateLtToneSettings = updateLtToneSettings;
   function updateLtExportHeight(exportHeight: number) {
-    setSceneBaseDocument((current) => {
+    setSceneBaseDocument((current: StudioBg3dSceneDocument) => {
       const candidate: StudioBg3dSceneDocument = {
         ...current,
         output: { ...current.output, exportHeight },
@@ -541,7 +541,7 @@ export function attachStudioBg3dEditorLtHost(h) {
   }
   h.updateLtExportHeight = updateLtExportHeight;
   function updateLtExportAspectRatio(exportAspectRatio: number | null) {
-    setSceneBaseDocument((current) => {
+    setSceneBaseDocument((current: StudioBg3dSceneDocument) => {
       const normalized = normalizeStudioBg3dCaptureAspectRatio(exportAspectRatio);
       const { exportAspectRatio: _removed, ...output } = current.output;
       const candidate: StudioBg3dSceneDocument = {
@@ -566,7 +566,7 @@ export function attachStudioBg3dEditorLtHost(h) {
     historyIndexRef,
     historyCommandTimelineRef,
   };
-  function scheduleStudio3dPlateCapture(scene) {
+  function scheduleStudio3dPlateCapture(scene: StudioBg3dSceneDocument) {
     void captureStudio3dPlatesFromAdapter(
       scene,
       48,
@@ -660,7 +660,7 @@ export function attachStudioBg3dEditorLtHost(h) {
   h.updateLightingSettings = updateLightingSettings;
   function updateRenderExposure(exposure: number) {
     if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) return;
-    setSceneBaseDocument((current) => {
+    setSceneBaseDocument((current: StudioBg3dSceneDocument) => {
       const candidate: StudioBg3dSceneDocument = {
         ...current,
         render: { ...current.render, exposure },
@@ -686,7 +686,7 @@ export function attachStudioBg3dEditorLtHost(h) {
     if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) return;
     const nextConfig: StudioBg3dSunRigConfig = { ...sunRigConfig, ...patch };
     setSunRigConfig(nextConfig);
-    setSceneBaseDocument((currentDocument) =>
+    setSceneBaseDocument((currentDocument: StudioBg3dSceneDocument) =>
       applyStudioBg3dSunRig(currentDocument, nextConfig) ?? currentDocument);
     setError(null);
   }

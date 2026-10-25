@@ -14,7 +14,7 @@ export function MotionPanelFrame({ svgRef, preset, progress, caption, cast, imag
     <defs><clipPath id={`${id}-frame`}><rect x="14" y="14" width="932" height="572" rx="12" /></clipPath></defs>
     <rect width="960" height="600" fill={paper} />
     <g clipPath={`url(#${id}-frame)`}>
-      <rect x="14" y="14" width="932" height="572" fill="oklch(.30 .018 68)" />
+      <rect x="14" y="14" width="932" height="572" fill="var(--color-fg)" />
       <g transform={cameraTransform(preset, progress)} data-motion-art="true">
         {image ? <image href={image} width="960" height="600" preserveAspectRatio="xMidYMid slice" /> : <PlayArtwork kind="hero" />}
       </g>

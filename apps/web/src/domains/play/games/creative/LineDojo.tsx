@@ -22,7 +22,7 @@ export default function LineDojo() {
       setValue({ guide: index, strokes: [] }); setScore(null); setMessage(""); setRunId(freshSeed());
     }}>{String(index + 1).padStart(2, "0")} {item.name}</button>)}</div>
     <label className="play-check"><input type="checkbox" checked={showGuide} onChange={(event) => setShowGuide(event.target.checked)} />가이드 표시</label>
-    <SketchPad key={value.guide} label="선 긋기 연습 캔버스" strokes={value.strokes} onChange={(strokes) => { setValue({ ...value, strokes }); setScore(null); setRunId(freshSeed()); }} guide={showGuide ? <path d={pointPath(guide.points)} fill="none" stroke="#aa9f90" strokeWidth="7" strokeDasharray="12 10" strokeLinecap="round" /> : undefined} />
+    <SketchPad key={value.guide} label="선 긋기 연습 캔버스" strokes={value.strokes} onChange={(strokes) => { setValue({ ...value, strokes }); setScore(null); setRunId(freshSeed()); }} guide={showGuide ? <path d={pointPath(guide.points)} fill="none" stroke="var(--color-line)" strokeWidth="7" strokeDasharray="12 10" strokeLinecap="round" /> : undefined} />
     <div className="play-tip"><strong>{guide.name}</strong><p>{guide.tip}</p></div>
     <div className="play-result-actions"><button type="button" className="play-button primary" disabled={!value.strokes.some((s) => !s.erase) || score !== null} onClick={() => {
       if (value.strokes.some((s) => s.erase)) { setMessage("정확한 비교를 위해 지우개 선은 실행 취소로 제거하거나 캔버스를 비운 뒤 다시 그려 주세요."); return; }

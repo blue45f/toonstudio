@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   isStudioStockImageConfigured,
   loadStudioStockImageAccessKey,
-} from "@/domains/creator/studio-stock-image-client";
+} from "@/domains/creator/public/studio-stock-image-key";
 import {
   browserStudioFalSessionStorage,
   isStudioFalConfigured,
