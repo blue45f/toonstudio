@@ -126,6 +126,17 @@ export interface MotionCut {
   readonly transitionIn: CutTransition;
   readonly bgm: CutBgmCue;
   readonly dialogues: readonly DialogueLine[];
+  /**
+   * 효과음 큐(선택 사항). 기존 컷에는 없어도 되며, 자동 배치 모듈
+   * (motion-webtoon-sfx-auto.ts)이나 LLM 배치 계획이 채운다.
+   */
+  readonly sfxCues?: readonly MotionSfxCue[];
+}
+
+/** 모션 웹툰 컷 효과음 큐. 종류는 호출부가 기존 스팅어 프리셋으로 연결한다. */
+export interface MotionSfxCue {
+  readonly kind: string;
+  readonly atSeconds: number;
 }
 
 /** 모션 웹툰 회차. */
