@@ -6,6 +6,8 @@ export * from "./svg";
 export * from "./kpp";
 export * from "./krita-bundle";
 export * from "./csp-sut";
+export * from "./csp-cls";
+export * from "./csp-pep-3dp";
 export * from "./openraster";
 
 export * from "./compatibility-report";
