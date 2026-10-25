@@ -8,7 +8,7 @@ import { PencafePage } from "./PencafePage";
 
 const mocks = vi.hoisted(() => ({ crashFeed: false }));
 
-vi.mock("@/shared/components/fan-cafe-panel", () => ({
+vi.mock("./components/fan-cafe-panel", () => ({
   FanCafePanel: () => {
     if (mocks.crashFeed) throw new Error("feed crashed");
     return <div data-testid="fan-cafe-panel" />;

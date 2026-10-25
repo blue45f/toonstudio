@@ -5,7 +5,7 @@ import {
   CURATED_LEARNING_RESOURCES,
   PRODUCTION_STEP_LABELS,
   RESOURCE_FORMAT_LABELS,
-} from "../../learn/learning-resources";
+} from "@/domains/learn/public/learning-resources";
 import { cn } from "@/shared/lib/utils";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../studio-panel-ui";

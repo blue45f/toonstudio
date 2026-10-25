@@ -2,7 +2,7 @@ import { ArrowRight, Camera, CalendarDays, MapPin, Shield, Sparkles, UsersRound 
 import { Link } from "react-router-dom";
 
 import { CreatorEcosystemLayout } from "./CreatorEcosystemLayout";
-import { FanCafePanel } from "@/domains/community/components/fan-cafe-panel";
+import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 const SCOPE = "domains.creator-ecosystem.FandomCosplayPage";

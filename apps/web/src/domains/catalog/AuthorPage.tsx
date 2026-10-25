@@ -8,7 +8,7 @@ import { useParams } from "react-router-dom";
 
 import type { Title } from "@/shared/lib/types";
 
-import { FanCafePanel } from "@/shared/components/fan-cafe-panel";
+import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
 import { NewsletterSubscribeButton } from "@/domains/newsletter/public/newsletter-subscribe-button";
 import { AuthorNoticeSection } from "@/domains/author-notices/public/author-notices";
 import { Container } from "@/shared/components/section";

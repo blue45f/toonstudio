@@ -39,7 +39,7 @@ vi.mock("@/shared/seo/use-document-title", () => ({
   useMetaDescription: () => undefined,
   usePageSocialMeta: () => undefined,
 }));
-vi.mock("@/shared/components/fan-cafe-panel", () => ({
+vi.mock("./components/fan-cafe-panel", () => ({
   FanCafePanel: () => <div data-testid="fan-cafe-panel" />,
 }));
 vi.mock("@/shared/components/share-page-button", () => ({

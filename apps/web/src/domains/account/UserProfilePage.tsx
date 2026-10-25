@@ -10,7 +10,7 @@ import type { SeedReview, Title } from "@/shared/lib/types";
 
 import Link from "@/shared/navigation/router-link";
 
-import { ReviewCard } from "@/shared/components/review-card";
+import { ReviewCard } from "@/domains/community/public/reviews";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { CoverImage } from "@/shared/components/cover-image";
 import { Container } from "@/shared/components/section";
@@ -362,7 +362,7 @@ export function UserProfilePage() {
               />
             </div>
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-b from-ledger/30 via-ledger/55 to-ledger" />
+          <div className="absolute inset-0 bg-gradient-to-b from-canvas/30 via-canvas/55 to-canvas" />
         </div>
         <Container size="wide" className="relative py-8 sm:py-12 lg:py-16">
           <p className="eyebrow text-accent">{t("userProfile.eyebrow")}</p>

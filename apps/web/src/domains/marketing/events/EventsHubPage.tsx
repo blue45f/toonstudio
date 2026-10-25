@@ -2,7 +2,7 @@ import { ArrowRight, CalendarDays, Gift, Megaphone, MessagesSquare, ShieldCheck,
 
 import Link from "@/shared/navigation/router-link";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
-import { FanCafePanel } from "@/domains/community/components/fan-cafe-panel";
+import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import {

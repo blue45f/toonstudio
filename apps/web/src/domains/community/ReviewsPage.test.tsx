@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/platform/use-api-resource", () => mocks);
-vi.mock("@/shared/components/review-card", () => ({
+vi.mock("./components/review-card", () => ({
   ReviewCard: ({ review }: { readonly review: ReviewFeedItem }) => (
     <article data-testid="review-card" data-review-id={review.id} />
   ),

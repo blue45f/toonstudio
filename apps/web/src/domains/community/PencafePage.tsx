@@ -2,7 +2,7 @@ import { Component, lazy, Suspense, useState, type ReactNode } from "react";
 import { PenLine } from "lucide-react";
 import { useParams } from "react-router-dom";
 
-import { FanCafePanel } from "@/shared/components/fan-cafe-panel";
+import { FanCafePanel } from "./components/fan-cafe-panel";
 import { Container } from "@/shared/components/section";
 import { compactPublicShareDescription } from "@/shared/lib/public-share-policy";
 import {

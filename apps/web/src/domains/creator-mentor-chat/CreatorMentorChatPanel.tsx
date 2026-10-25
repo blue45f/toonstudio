@@ -13,7 +13,7 @@
 
 import { useMemo, useRef, useState } from "react";
 
-import { AnswerTuningControls } from "../creator/ai/AnswerTuningControls";
+import { AnswerTuningControls } from "@/domains/creator/public/answer-tuning";
 import type { MentorEngine, MentorEngineResult } from "./creator-mentor-engine";
 import { MENTOR_PERSONAS } from "./creator-mentor-personas";
 import {
@@ -104,7 +104,7 @@ export function CreatorMentorChatPanel(props: CreatorMentorChatPanelProps) {
             className={
               entry.id === personaId
                 ? "min-h-11 rounded-2xl border border-accent bg-accent/10 px-4 text-left"
-                : "min-h-11 rounded-2xl border border-line bg-panel px-4 text-left hover:bg-panel-2"
+                : "min-h-11 rounded-2xl border border-line bg-panel px-4 text-left hover:bg-raised"
             }
           >
             <span className="block text-sm font-bold text-fg">{entry.name}</span>
@@ -130,7 +130,7 @@ export function CreatorMentorChatPanel(props: CreatorMentorChatPanelProps) {
                   type="button"
                   onClick={() => void send(chip)}
                   disabled={sending}
-                  className="min-h-9 rounded-full border border-line bg-panel-2 px-3 text-xs font-semibold text-fg-2 hover:text-fg"
+                  className="min-h-9 rounded-full border border-line bg-raised px-3 text-xs font-semibold text-fg-2 hover:text-fg"
                 >
                   {chip}
                 </button>
@@ -145,7 +145,7 @@ export function CreatorMentorChatPanel(props: CreatorMentorChatPanelProps) {
                 className={
                   message.role === "creator"
                     ? "self-end rounded-2xl bg-accent/10 px-4 py-2 text-sm text-fg"
-                    : "self-start rounded-2xl bg-panel-2 px-4 py-2 text-sm leading-relaxed text-fg"
+                    : "self-start rounded-2xl bg-raised px-4 py-2 text-sm leading-relaxed text-fg"
                 }
               >
                 {message.text}
@@ -169,7 +169,7 @@ export function CreatorMentorChatPanel(props: CreatorMentorChatPanelProps) {
 
       {/* 미설정 안내 — 가짜 답변 대신 준비된 안내와 키 등록 동선 */}
       {notConfigured ? (
-        <div className="rounded-2xl border border-line bg-panel-2 p-4" role="note">
+        <div className="rounded-2xl border border-line bg-raised p-4" role="note">
           <p className="text-sm font-bold text-fg">
             AI 키를 등록하면 {persona.name}와 대화를 시작할 수 있어요.
           </p>
@@ -193,7 +193,7 @@ export function CreatorMentorChatPanel(props: CreatorMentorChatPanelProps) {
 
       {/* 에러 — 원인 + 다음 행동 */}
       {sendState.kind === "error" && !notConfigured ? (
-        <p className="rounded-2xl border border-line bg-panel-2 px-4 py-3 text-sm text-fg-2" role="alert">
+        <p className="rounded-2xl border border-line bg-raised px-4 py-3 text-sm text-fg-2" role="alert">
           {sendState.message}
         </p>
       ) : null}

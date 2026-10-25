@@ -17,7 +17,7 @@ import {
   type AnswerDifficulty,
   type AnswerLength,
   type AnswerTuning,
-} from "../creator/ai/answer-tuning";
+} from "@/domains/creator/public/answer-tuning";
 
 /** 멘토 페르소나 식별자. */
 export type MentorPersonaId =

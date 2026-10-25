@@ -24,7 +24,7 @@ import {
 } from "@/shared/lib/types";
 import type { CommunityCafe } from "@/shared/lib/types";
 
-import { FanCafePanel } from "@/shared/components/fan-cafe-panel";
+import { FanCafePanel } from "./components/fan-cafe-panel";
 import { Container } from "@/shared/components/section";
 import { MotionIllustration } from "@/shared/motion-assets";
 import { CAFE_KIND_ILLUSTRATIONS } from "./community-cafe-labels";

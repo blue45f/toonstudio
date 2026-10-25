@@ -1,8 +1,10 @@
 {
-  "lintStrictMaxWarnings": 2421,
   "creatorRootFiles": 3708,
   "webAdminFiles": 81,
   "apiServerFiles": 68,
+  "apiHttpFiles": 13,
+  "apiAdapterFiles": 78,
+  "apiDatabaseFiles": 165,
   "packagesCoreFiles": 139,
   "desktopSyncAgentFiles": 0,
   "trackedQaFiles": 0,
@@ -23,8 +25,5 @@
   "rootAutomationFiles": 0,
   "rootMarketplaceBenchmarkFiles": 0,
   "rootViteConfigFiles": 0,
-  "rootDrizzleConfigFiles": 0,
-  "apiHttpFiles": 13,
-  "apiAdapterFiles": 78,
-  "apiDatabaseFiles": 167
+  "rootDrizzleConfigFiles": 0
 }

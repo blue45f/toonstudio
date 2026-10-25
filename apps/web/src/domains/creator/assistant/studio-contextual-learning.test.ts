@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { describe, it } from "vitest";
 
-import { CURATED_LEARNING_RESOURCES } from "../../learn/learning-resources";
+import { CURATED_LEARNING_RESOURCES } from "@/domains/learn/public/learning-resources";
 import {
   recommendStudioLearningResources,
   resolveStudioLearningFocus,

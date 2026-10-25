@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { CommunityPage, CommunityScopePage } from "./CommunityPage";
 
-vi.mock("@/shared/components/fan-cafe-panel", () => ({
+vi.mock("./components/fan-cafe-panel", () => ({
   FanCafePanel: (props: { targetLabel?: string }) => (
     <div data-testid="fan-cafe-panel">{props.targetLabel}</div>
   ),

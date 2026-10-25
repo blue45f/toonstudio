@@ -1,4 +1,4 @@
-import type { LearningResource, ProductionStep } from "../../learn/learning-resources";
+import type { LearningResource, ProductionStep } from "@/domains/learn/public/learning-resources";
 import type { WebtoonProductionStage } from "./webtoon-focus-timer";
 
 export type StudioAssistantLearningTool =

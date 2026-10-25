@@ -40,7 +40,7 @@ vi.mock("@/shared/seo/use-document-title", () => ({
   usePageSocialMeta: vi.fn(),
 }));
 
-vi.mock("@/shared/components/review-card", () => ({ ReviewCard: () => null }));
+vi.mock("@/domains/community/public/reviews", () => ({ ReviewCard: () => null }));
 vi.mock("@/shared/components/share-page-button", () => ({ SharePageButton: () => null }));
 vi.mock("@/shared/components/section", () => ({
   Container: ({ children }: { children: ReactNode }) => <div>{children}</div>,

@@ -13,7 +13,7 @@ import type { ReviewFeedItem, ReviewsResponse } from "@/shared/lib/types";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
-import { ReviewCard } from "@/shared/components/review-card";
+import { ReviewCard } from "./components/review-card";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";

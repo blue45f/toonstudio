@@ -10,7 +10,7 @@ vi.mock("@/shared/lib/i18n-bilingual-copy", () => ({
   useBilingual: () => (ko: string) => ko,
 }));
 
-vi.mock("@/domains/community/components/fan-cafe-panel", () => ({
+vi.mock("@/domains/community/public/fan-cafe-panel", () => ({
   FanCafePanel: () => <div data-testid="fan-cafe-panel" />,
 }));
 

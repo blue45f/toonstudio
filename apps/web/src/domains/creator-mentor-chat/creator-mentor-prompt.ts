@@ -12,7 +12,7 @@ import {
   ANSWER_LENGTH_DIRECTIVES,
   ANSWER_TUNING_LABELS,
   buildAnswerTuningDirectives,
-} from "../creator/ai/answer-tuning";
+} from "@/domains/creator/public/answer-tuning";
 import type {
   MentorAnswerControls,
   MentorChatMessage,

@@ -23,7 +23,7 @@ import type { FanCafeScopeFilter } from "@/shared/lib/types";
 
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { FanCafePanel } from "@/shared/components/fan-cafe-panel";
+import { FanCafePanel } from "./components/fan-cafe-panel";
 import {
   workflowIllustrationSource,
   workflowIllustrationSources,

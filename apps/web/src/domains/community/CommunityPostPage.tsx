@@ -8,8 +8,8 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import type { FanCafePost } from "@/shared/lib/types";
 
-import { FanPostImages, FanPostReplySection } from "@/shared/components/fan-cafe-panel";
-import { KIND_LABEL } from "@/shared/components/fan-cafe-utils";
+import { FanPostImages, FanPostReplySection } from "./components/fan-cafe-panel";
+import { KIND_LABEL } from "./components/fan-cafe-utils";
 import { PostLikeButton } from "./components/post-like-button";
 import { PostReportForm } from "./components/post-report-form";
 import { Container } from "@/shared/components/section";

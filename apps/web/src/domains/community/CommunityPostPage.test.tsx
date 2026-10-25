@@ -41,7 +41,7 @@ vi.mock("@/platform/api", () => ({
   api: { delete: vi.fn() },
 }));
 
-vi.mock("@/shared/components/fan-cafe-panel", () => ({
+vi.mock("./components/fan-cafe-panel", () => ({
   FanPostImages: () => null,
   FanPostReplySection: () => <div data-testid="reply-section" />,
 }));
