@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "1.0.0",
+  "capturedOn": "2026-10-26",
+  "targetDomain": "Webtoon Small Studio / 1-Person Creator + Assistant General Management & Database Tools (Notion & Google Workspace)",
+  "evidenceLedger": [
+    {
+      "evidenceId": "ev_674df22c6921a2fde31d38435f65407096d1dfc59e2a66a27c6cc9e0c93428ac",
+      "tool": "rea:capture_browser_scenario",
+      "targetUrl": "https://www.notion.so/login",
+      "finalUrl": "https://app.notion.com/login",
+      "clientVersion": "23.13.20261025.1736",
+      "scenarioSha256": "a05d94fcf5a67c9e6ce0898c5693c55293dcfef42ba498dce7309c04ba566955",
+      "htmlSha256": "7a7470900f6677880b32d8c32c5f31225b2050f7b0d365f4c86da269f8a01880",
+      "retainedNetworkEvents": 830,
+      "summary": "Notion 웹 애플리케이션 런타임 진입점 및 830개 네트워크 청크 매니페스트 캡처"
+    },
+    {
+      "evidenceId": "ev_a4564f01a1714deb939b8e1ead11b22e4b960355e48af715f9e66fa087bb1ed0",
+      "tool": "rea:capture_browser_scenario",
+      "targetUrl": "https://www.notion.so/login",
+      "summary": "Notion 전체 스크립트 예산(full-budget, 10.53MB+) 런타임 시나리오 캡처"
+    },
+    {
+      "evidenceId": "ev_08b8ea24f910e5888d9cb67b45c00b8132992036a3a48a5cb2feda35630be4dd",
+      "tool": "rea:export_web_scripts",
+      "captureSha256": "c8f3a023f0e26d7af9927edc164f9bfcf4761479ee89f4357a016984ba44bc65",
+      "summary": "Notion 클라이언트 스크립트 번들 추출 및 매니페스트 생성"
+    },
+    {
+      "evidenceId": "ev_0771429aa13ba1e422db4deef0e87f4e3a071f50e87f4e3a071f50e5228a2ff65f53bc25066b4a",
+      "parentEvidenceId": "ev_ef9fece547ed9fad965cc29e1f0cddf18999096f273f01e3e328456273b5e2b2",
+      "tool": "rea:analyze_javascript_application",
+      "rootSha256": "715fe37622e9c0e4ea27a6f6abf281736b5411cc252fd66b52810114a4ec0a4c",
+      "fileCount": 5,
+      "totalBytes": 63405,
+      "astNodeCount": 21426,
+      "findingCount": 597,
+      "moduleCount": 191,
+      "summary": "Notion 부트스트랩 및 엔트리 청크 AST 정적 분석"
+    },
+    {
+      "evidenceId": "ev_a6a2d4aba21dbfd286465527cc4ac72e01db957fa9c249375b610de3aef938df",
+      "parentEvidenceId": "ev_6722571e7e85be3397fc0b8d583e7de4cb00f34fab4f21dee5b1498cf2804954",
+      "tool": "rea:analyze_javascript_application",
+      "rootSha256": "eeaf6b041ff93ead617f926ee314b0cc394ca4d0d7e85ae8b559cd4ecfd41e3c",
+      "fileCount": 2,
+      "totalBytes": 740593,
+      "astNodeCount": 174175,
+      "findingCount": 3187,
+      "moduleCount": 142,
+      "bundles": [
+        {
+          "file": "RecordModel-b75d072993769b60.js",
+          "sha256": "358d77727d45b0e7aaccf83233d0a2706716f08202ef349da77182da553b14dd",
+          "bytes": 450891
+        },
+        {
+          "file": "RecordStore-2d8aa62bac747f6d.js",
+          "sha256": "8ec489f2b6de4999cf8a2ceeb0ab11399869078e7a066f1630e49d01ed7f5727",
+          "bytes": 289702
+        },
+        {
+          "file": "UISpacePermissionGroupToken-e2c98736acc18de7.js",
+          "sha256": "f03bab53dd90582af67596778848161785452174728f1d5ffc77f2bad8421fbb",
+          "bytes": 3718386
+        }
+      ],
+      "summary": "Notion 코어 데이터베이스·레코드 스토어(CollectionView, PropertiesStore, AssociationRelationStore, WikiBlock, Timeline/Gallery View, Rollup/Formula) AST 정밀 분석"
+    },
+    {
+      "evidenceId": "ev_0d54aa02530378da943ef2a52b44f250c10a302a1d1562a4cbd92d584d1bf699",
+      "tool": "rea:inspect_analysis_view",
+      "parentEvidenceId": "ev_6722571e7e85be3397fc0b8d583e7de4cb00f34fab4f21dee5b1498cf2804954",
+      "summary": "Notion RecordModel / RecordStore 142개 모듈 페이지 프로젝션"
+    },
+    {
+      "evidenceId": "ev_c8da9620ea35f52260b80dec5cb3f8f1f13b0cfaff9f6f4bcb266e6dc20b0b5d",
+      "tool": "rea:inspect_analysis_view",
+      "parentEvidenceId": "ev_6722571e7e85be3397fc0b8d583e7de4cb00f34fab4f21dee5b1498cf2804954",
+      "summary": "Notion CollectionViewsStore, PropertyValueStore, QueryStore, AssociationRelationStore 모듈 상세 검사"
+    },
+    {
+      "evidenceId": "ev_f308afe88aa69ed3a37727436a2f476f603c16e3f482d451ef16c410a70d037b",
+      "tool": "rea:inspect_analysis_view",
+      "parentEvidenceId": "ev_6722571e7e85be3397fc0b8d583e7de4cb00f34fab4f21dee5b1498cf2804954",
+      "summary": "Notion Block/Page/CollectionRecord/WikiBlock 심볼 및 릴레이션 그래프 검사"
+    },
+    {
+      "evidenceId": "ev_8afb274c1900cbede7493e03a665af35daa06b1820566d8f320ada7ba3e5972d",
+      "tool": "rea:capture_browser_scenario",
+      "targetUrl": "https://workspace.google.com/intl/ko/products/sheets/",
+      "scenarioSha256": "0ae4e6dcf5b2e646c2b6156ac93719f7981cbfd5405f2154d2b6ed7792d26b07",
+      "retainedNetworkEvents": 617,
+      "summary": "Google Workspace Sheets 런타임 시나리오 및 617개 네트워크 이벤트 캡처"
+    },
+    {
+      "evidenceId": "ev_9231e6f3e9716af3809adeadf917d459f497b6c575fdbb75c096d385833fc6a3",
+      "tool": "rea:export_web_scripts",
+      "manifestSha256": "f6632fb2e50f071802a61ade25c01e14f11a588c12ebfbed53fb5fc6a4396328",
+      "summary": "Google Workspace Sheets 59개 스크립트 파일 추출"
+    },
+    {
+      "evidenceId": "ev_33b259bba45d9eef6e4676cd76422ce74bb077ee65ebffe2ba605323fa99386d",
+      "parentEvidenceId": "ev_fc43ffb4875ba2b4d81f1b17b61c0ca78a9b141dbfd2a2fa97526def7fb85e64",
+      "tool": "rea:analyze_javascript_application",
+      "rootSha256": "578f0069f704b2290cad503900976a3823db179bed2077661d98e2c1ff0b672f",
+      "fileCount": 59,
+      "totalBytes": 282464,
+      "astNodeCount": 50031,
+      "findingCount": 634,
+      "summary": "Google Workspace Sheets 스크립트 트리 AST 정적 분석"
+    },
+    {
+      "evidenceId": "ev_4836b46c114e6f543e9ec032b308b6554bf7a0189ba555c69868787ff73e7767",
+      "tool": "rea:capture_browser_scenario",
+      "targetUrl": "https://workspace.google.com/intl/ko/products/drive/",
+      "scenarioSha256": "a16b7be029b85d6e6f7b8bc4aa0ec08f136400e994ebb83c10152d4263429734",
+      "retainedNetworkEvents": 572,
+      "summary": "Google Workspace Drive 런타임 시나리오 및 572개 네트워크 이벤트 캡처"
+    },
+    {
+      "evidenceId": "ev_8ce72cc3f0545b2a80c6d0e8bb6c2d4f3e5ac077c634e16641d16b17b3ce3f1b",
+      "tool": "rea:export_web_scripts",
+      "summary": "Google Workspace Drive 61개 스크립트 파일 추출"
+    },
+    {
+      "evidenceId": "ev_0560c4ddb37293e05f5e8effaa0547b733fd526191a80a0c66ed31a32249b7e9",
+      "parentEvidenceId": "ev_699db392c9e6a30ef503705fe1e3612a90ce8000dbc43b965fa2e2384267ec1d",
+      "tool": "rea:analyze_javascript_application",
+      "rootSha256": "70d53d65563881eda702779f47471acefa18579fea4a710907581aa98bc67967",
+      "fileCount": 61,
+      "totalBytes": 305534,
+      "astNodeCount": 57067,
+      "findingCount": 669,
+      "summary": "Google Workspace Drive 스크립트 트리 AST 정적 분석"
+    }
+  ],
+  "observedFacts": [
+    {
+      "domain": "Notion Multi-View Content Calendar & Assistant Settlement Rollup",
+      "evidenceIds": [
+        "ev_a6a2d4aba21dbfd286465527cc4ac72e01db957fa9c249375b610de3aef938df",
+        "ev_c8da9620ea35f52260b80dec5cb3f8f1f13b0cfaff9f6f4bcb266e6dc20b0b5d"
+      ],
+      "symbols": [
+        "CollectionView",
+        "CollectionViewsStore",
+        "PropertiesStore",
+        "PropertyValueStore",
+        "QueryStore",
+        "PageSortStore",
+        "set_timeline_by",
+        "timeline_toggle_show_table",
+        "timeline_arrows_by",
+        "toggle_timeline_separate_dates",
+        "update_dependency_date_shift_mode",
+        "update_dependency_date_shift_avoid_weekends",
+        "set_cover_format",
+        "set_cover_size_format",
+        "set_cover_aspect_format",
+        "toggle_card_layout_mode",
+        "set_rollup_set_filter",
+        "formula_edit"
+      ]
+    },
+    {
+      "domain": "Notion Lorebook / Story Bible / Character Relations & Synced Blocks",
+      "evidenceIds": [
+        "ev_a6a2d4aba21dbfd286465527cc4ac72e01db957fa9c249375b610de3aef938df",
+        "ev_f308afe88aa69ed3a37727436a2f476f603c16e3f482d451ef16c410a70d037b"
+      ],
+      "symbols": [
+        "WikiBlock",
+        "AssociationRelationStore",
+        "getRecord1Pointer",
+        "getRecord2Pointer",
+        "association_relation_symmetric_self_relation_mirroring",
+        "relation_toggle_inverse_on",
+        "edge_relations",
+        "MentionedBlock",
+        "callout",
+        "toggle",
+        "transclusion_container",
+        "transclusion_reference",
+        "CrdtDataStore"
+      ]
+    },
+    {
+      "domain": "Google Workspace Spreadsheet Deadline Checklist & Drive Continuous Folder Sync",
+      "evidenceIds": [
+        "ev_8afb274c1900cbede7493e03a665af35daa06b1820566d8f320ada7ba3e5972d",
+        "ev_33b259bba45d9eef6e4676cd76422ce74bb077ee65ebffe2ba605323fa99386d",
+        "ev_4836b46c114e6f543e9ec032b308b6554bf7a0189ba555c69868787ff73e7767",
+        "ev_0560c4ddb37293e05f5e8effaa0547b733fd526191a80a0c66ed31a32249b7e9"
+      ],
+      "capabilities": [
+        "Episode x Process boolean checkbox grid with COUNTIF/SUMIF completion and assistant settlement formulas",
+        "Conditional formatting rules for overdue, due-soon (D-2), and completed cells/rows",
+        "Per-assignee and status Filter Views + CSV/TSV clipboard & file export",
+        "Automated episode/process shared manuscript folder tree provisioning with continuous sync states (SYNCED, UPLOADING, OFFLINE_QUEUED, CONFLICT) and 1-click cell-to-folder deep links"
+      ]
+    }
+  ]
+}

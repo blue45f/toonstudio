@@ -43,7 +43,10 @@ import { CollabThreadDeepLinkCard } from "./CollabThreadDeepLinkCard";
 import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import { ProductionDeadlineRiskForecast } from "./ProductionDeadlineRiskForecast";
 import { ProductionJiraConfluenceWorkflowSuite } from "./ProductionJiraConfluenceWorkflowSuite";
+import { ProductionNotionContentCalendarSuite } from "./ProductionNotionContentCalendarSuite";
+import { ProductionNotionLorebookWikiSuite } from "./ProductionNotionLorebookWikiSuite";
 import { ProductionStageDeadlinePlan } from "./ProductionStageDeadlinePlan";
+import { ProductionWorkspaceSheetDriveSuite } from "./ProductionWorkspaceSheetDriveSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -554,6 +557,9 @@ export function ProductionEpisodeOperationsWorkspace({
       </details>
 
       <ProductionJiraConfluenceWorkflowSuite />
+      <ProductionNotionContentCalendarSuite />
+      <ProductionNotionLorebookWikiSuite />
+      <ProductionWorkspaceSheetDriveSuite />
     </div>
   );
 }
