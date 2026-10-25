@@ -1,5 +1,5 @@
 import { CalendarCheck, ClipboardList, Landmark, ListPlus, type LucideIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
@@ -22,6 +22,12 @@ import { CURATED_LEARNING_RESOURCES } from "./learning-resources";
 import { getLessonState } from "./learning-paths";
 import { learnStatusText } from "./learn-status-i18n";
 import { useLearningProgress } from "./use-learning-progress";
+
+const LazyKaistoryLearningPlatformSection = lazy(() =>
+  import("./KaistoryLearningPlatformSection").then((m) => ({
+    default: m.KaistoryLearningPlatformSection,
+  })),
+);
 
 type ClassroomTab = "curriculum" | "assignments" | "roadmap";
 const CLASSROOM_TABS: readonly ClassroomTab[] = ["curriculum", "assignments", "roadmap"];
@@ -480,6 +486,10 @@ export function LearningClassroomPage() {
           </MotionReveal>
         </SiteTabPanel>
       </section>
+
+      <Suspense fallback={null}>
+        <LazyKaistoryLearningPlatformSection />
+      </Suspense>
 
       <section className="learn-banner">
         <div><p className="learn-eyebrow">RESOURCE HUB</p><h2>수업에 넣을 자료가 더 필요하신가요?</h2><p>자체 실습 강좌와 공식 외부 교육 자료를 직군·제작 단계별로 찾아보세요. 장면 근거가 필요하면 리서치 데스크가 이어집니다.</p></div>
