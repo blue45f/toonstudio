@@ -35,6 +35,8 @@
 | **SketchUp 3D Warehouse** (`https://3dwarehouse.sketchup.com/`) | 3D 에셋 카탈로그 웹 시나리오 캡처 및 번들 스크립트 | 시나리오: `3b3b02fdddd8cba5ed76a929c6415ddfba7d34d344ff33c579fcb18331e0babd`<br>매니페스트: `96680f84dc4957b4732116d35190dd7b78a9cb87866db0fc6d84fd46efa17743`<br>JS 번들: `5085d2fabdedb8c65fda7b90df4f7548289ff4f230a4f61675cf5c580e39285c` | 캡처: `ev_779709fd7cf7ee2b8f705e92874a2530f1b3c50f70179bf85cb997234ea3d731`<br>스크립트: `ev_6a073f33c017e2950eaac77c8759d1eb1f5adcc098352f5ff0f340d0a7f938fc`<br>JS 분석: `ev_39ef5b3ec2a1a0e33b9b59f522d37d8eea5c90d3c06ead85284f397e618396a7` / `ev_aaf096b1e5b182d542b7604ecc3fb0c5d78eeda75f7c3eb136da96502f59618d` | **5 parsed JS files**, **15,869 AST nodes**, **95 findings**, 3D 에셋 카탈로그·메타데이터 구조 |
 | **Blender** | 앱 번들 (`/Applications/Blender.app`) | `2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9` | `ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819` | 3D NPR/그리스펜슬·카메라·멀티패스 합성 비교 기준선 |
 | **Clip Studio Paint** | 지원 디렉터리 (`/Library/Application Support/CELSYS/CLIPStudio`) | `b3b5ccce892de714bf4b078aadbc7fdd435618f1416ac682d6e4dbf83201b1cf` | `ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c` | 웹툰 소재·PSD 레이어 호환성 비교 기준선 |
+| **Procreate 5.3 (Valkyrie / Silica Engine)** | 공식 웹·핸드북 앱 번들 (`procreate.com/ipad`, `help.procreate.com/procreate/handbook`) | `b306c5432da2e08e1d5f7b55944db163f2576323e190ecfc09b7fc18174a8a1e` | AST: `ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`<br>iPad 캡처: `ev_caf7a7d6599efecf5d582b6a858c46ab9f42d14f3b4a7e1ef6cc8145f400f89f`<br>Handbook 캡처: `ev_4e840923fe036f4cb48c8f95cc09dfdbc27266e01207dc73f0f1e1c8824b3a15` | **1,542,947B**, **381,683 AST nodes**, **1,479 findings** (18대 브러시 세트·12카테고리 Brush Studio·Pencil Filters·슈퍼파워 명세) |
+| **Procreate 5.3 (`SilicaBrush` / `SilicaDocument` / `.swatches`)** | 네이티브 아카이브 (`Brush.archive`, `Document.archive`, `Swatches.json`) | `af8e212759063fd168a70510c1cfbcb3482a8e7d29f6a02ac768f49da681d377` (`Brush.archive`)<br>`dbf751cf356cb99dad3b035f88f24eab61459445cad7dda258bf9dcad01958de` (`Document.archive`)<br>`a5ad1fda6895b147d4d9ab95a651ca3d74af4338d99bb0461f8301e84d056153` (`.swatches`) | `Brush.archive`: `ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`<br>`Document.archive`: `ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900`<br>`.swatches`: `ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea` | `NSKeyedArchiver` 바이너리 plist `SilicaBrush`(92 entries), `SilicaDocument`(256×256 타일 그리드), `Swatches.json`(30슬롯 HSV) |
 
 ---
 
@@ -134,7 +136,7 @@
 #### A. Observed Facts (관측 사실)
 - **OpenSKP `1.3.0` `.skp` VFF/CArchive 바이너리 엔진 정적 분석**:
   - 패키지 경로: `node_modules/.pnpm/openskp@1.3.0/node_modules/openskp` (`SHA-256: 513f2eeaa30e1b5b0543b036125459340921a0dded17b281c523c6095e479c10`, 부모 `evidence_id: ev_4bcff28953cf3f65fa0e78f7684bb1679839e674fec42c04aa1cd9115e976b6c`, 요약 뷰: `ev_963c8508f0ea01c5400588a48cdf508b99c0f5f642a9591f64bfdeea92d8742f`, 모듈 뷰: `ev_3bd2e3e1c727118d6de6129dda13bfbe634ca7451dc39080e3176ba375c6a59f`).
-  - 번들 엔트리: `dist/index.js` (`SHA-256: 3b4a418e320920083aefa7551a924954b336e5addd0182971c7c66aeab575c2d`, `evidence_id: ev_a1d0b81b0db0d09672067f12696131418b183628537ddf7d542d8a0211be3a` / `ev_a1d0b81b0db0d09672067f12696131418b183628537ddf7d542d4b8a0211be3a`) — **165,303개 AST 노드**, **252개 내부 심볼**, **67개 export 심볼** 관측.
+  - 번들 엔트리: `dist/index.js` (`SHA-256: 3b4a418e320920083aefa7551a924954b336e5addd0182971c7c66aeab575c2d`, `evidence_id: ev_a1d0b81b0db0d09672067f12696131418b183628537ddf7d542d4b8a0211be3a`) — **165,303개 AST 노드**, **252개 내부 심볼**, **67개 export 심볼** 관측.
   - 관측된 핵심 바이너리 TLV 태그 및 파서/빌더 구조:
     - **Scene(`Page`) & Camera TLV**: `CA3A`(`camera` eye/target/up/fov/parallel/orthoHeight), `A37A`(`hiddenLayers`), `_parse_pages`를 통해 SketchUp Z-up 인치 좌표계(`eye`, `target`, `up`) 및 투영 모드(`parallel` 평행 투영, `orthoHeight`, `fov`), 씬별 숨김 레이어 목록 복원.
     - **Tag(`Layer`) TLV**: `8E3C` 레이어 레코드에서 `name`, `color: { r, g, b }`, `hidden` 가시성 상태 파싱 및 `SkpBuilder.addLayer(name, { color, hidden })` 직렬화.
@@ -148,7 +150,7 @@
   - `export_web_scripts`: `evidence_id: ev_fe055e1d7cc22132e6d1ebae3e7a9317b5e8034d8e1a47c90ca435e39a5263a3` (매니페스트 `SHA-256: 0a051227f3437d95e912346df69e288830a87cf95c4761c754b0733458b84e53`).
   - `analyze_javascript_application`: 부모 `evidence_id: ev_4abf8ca26ecdb0337e239039d980a0fa3048481430a9d19dccbf07a4e48922ca`, 요약 뷰 `ev_a297449a22a2155a03b6fb4f59d7e744a20fd193eaa1392d89ee410d9906839f` (루트 아티팩트 `SHA-256: b52af02d32fb1c214aafe5fabb4cf469a41b58cc86bcd60e75567d2ce8673b66`, **6개 JS 파일**, **30,965개 AST 노드**, **211개 findings**). 비인증 진입 시 Trimble Identity OAuth 게이트 및 부트스트랩 셸이 먼저 로드됨을 확인.
 - **SketchUp 3D Warehouse (`https://3dwarehouse.sketchup.com/`) 웹 캡처 및 번들 분석**:
-  - `capture_browser_scenario`: `evidence_id: ev_779709fd7cf7ee2b8f705e92874a2530f1b3c50f1b3c50f70179bf85cb997234ea3d731` / `ev_779709fd7cf7ee2b8f705e92874a2530f1b3c50f70179bf85cb997234ea3d731` (시나리오 `SHA-256: 3b3b02fdddd8cba5ed76a929c6415ddfba7d34d344ff33c579fcb18331e0babd`).
+  - `capture_browser_scenario`: `evidence_id: ev_779709fd7cf7ee2b8f705e92874a2530f1b3c50f70179bf85cb997234ea3d731` (시나리오 `SHA-256: 3b3b02fdddd8cba5ed76a929c6415ddfba7d34d344ff33c579fcb18331e0babd`).
   - `export_web_scripts`: `evidence_id: ev_6a073f33c017e2950eaac77c8759d1eb1f5adcc098352f5ff0f340d0a7f938fc` (매니페스트 `SHA-256: 96680f84dc4957b4732116d35190dd7b78a9cb87866db0fc6d84fd46efa17743`).
   - `analyze_javascript_application`: 부모 `evidence_id: ev_39ef5b3ec2a1a0e33b9b59f522d37d8eea5c90d3c06ead85284f397e618396a7`, 요약 뷰 `ev_aaf096b1e5b182d542b7604ecc3fb0c5d78eeda75f7c3eb136da96502f59618d` (루트 아티팩트 `SHA-256: 5085d2fabdedb8c65fda7b90df4f7548289ff4f230a4f61675cf5c580e39285c`, **5개 JS 파일**, **15,869개 AST 노드**, **95개 findings**).
 
@@ -163,9 +165,29 @@
 
 ---
 
-## 4. ToonStudio 신규 구현 모듈 16종 정밀 매핑
+### 3.6 Procreate 5.3 (`Valkyrie` / `SilicaBrush` / `SilicaDocument` / `.swatches`)
 
-위 REA 정적·웹 역공학 증거를 바탕으로 ToonStudio 창작 스튜디오(`apps/web/src/domains/creator/`)에 클린룸 자체 구현으로 통합된 16개 핵심 모듈(기존 10종 + SketchUp 전 기능 내재화 6종)과 근거 `evidence_id`의 매핑은 다음과 같다.
+#### A. Observed Facts (관측 사실)
+- **웹 애플리케이션 및 공식 핸드북 번들 역공학**:
+  - `https://procreate.com/ipad` 라이브 캡처(`SHA-256: ba8480bbc26d2dbfadf3287bcee0e4329833a2eed16249d47047d1831703cb6e`, `evidence_id: ev_caf7a7d6599efecf5d582b6a858c46ab9f42d14f3b4a7e1ef6cc8145f400f89f`, 스크립트 추출 `ev_7ca5f2a0ffc0d43f0d115bbbbb51d9585ca1391df247f9282c21f1f2a3b06f7b`) 및 `https://help.procreate.com/procreate/handbook/introduction` 라이브 캡처(`SHA-256: f568edb6bbd18f081cd7c439007e3268c5737226bb848807c2defe6155819d2f`, `evidence_id: ev_4e840923fe036f4cb48c8f95cc09dfdbc27266e01207dc73f0f1e1c8824b3a15`, 스크립트 추출 `ev_af0a9ac4a571dacc8add436b2a48d7fa161d09c8ef56694ec1882d2a8fd7eba1`).
+  - 통합 JS 번들(`procreate-ipad-entry.js` + `procreate-ipad-features.js` + `procreate-handbook-app.js`, 총 **1,542,947B**, `SHA-256: b306c5432da2e08e1d5f7b55944db163f2576323e190ecfc09b7fc18174a8a1e`, `evidence_id: ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`)에서 **381,683개 AST 노드**와 **1,479개 정적 발견 항목** 관측.
+- **네이티브 `NSKeyedArchiver` 바이너리 plist 및 아카이브 구조**:
+  - `Brush.archive` (`SilicaBrush`, `SHA-256: af8e212759063fd168a70510c1cfbcb3482a8e7d29f6a02ac768f49da681d377`, `evidence_id: ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`, `.brush` 패키지 `ev_a22371fb13e34c0c2ee15a6558a0598c4040694e1cfbc92347cf81cb121cb920`): 92개 아카이브 오브젝트 및 12대 카테고리 브러시 키(`plotSpacing`, `plotJitter`, `fallOff`, `streamlineAmount`, `stabilizationAmount`, `motionFilteringAmount`, `motionFilteringExpression`, `taperStartLength`, `taperEndLength`, `taperSize`, `taperTouchSize`, `grainMoving`, `grainDepth`, `wetMixDilution`, `wetMixCharge`, `wetMixAttack`, `wetMixPull`, `dualBrushBlendMode`, `metallicScale`, `roughnessScale`) 관측.
+  - `Document.archive` (`SilicaDocument`, `SHA-256: dbf751cf356cb99dad3b035f88f24eab61459445cad7dda258bf9dcad01958de`, `evidence_id: ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900`, `.procreate` 패키지 `ev_e25192bd0d4ecdee80847611488deb83e33a395f40d5d691fd82f28e2ed7caf6`): `tileSize: 256`, `size: "{2048, 2048}"`, `orientation`, `strokeCount`, `videoEnabled` 및 `256×256` `.chunk` 타일 아카이브 구조 관측.
+  - `Swatches.json` (`.swatches`, `SHA-256: a5ad1fda6895b147d4d9ab95a651ca3d74af4338d99bb0461f8301e84d056153`, `evidence_id: ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea`): `name` 및 30슬롯 `hue`/`saturation`/`brightness`/`alpha`/`colorSpace` JSON 배열 구조 관측.
+
+#### B. Inferences (설계 의도 및 알고리즘 구조 추론)
+- **오디오 DSP 영감 영위상(Zero-Phase) `Motion Filtering`**: 기존 `StreamLine`과 `Stabilization`은 이동평균 지연으로 인해 획 끝점이 펜촉을 뒤따라오는 끈 지연(lag)이 발생한다. 반면 `motionFilteringAmount` + `motionFilteringExpression`은 전후방 영위상 중심선 대비 횡방향(법선) 고주파 손떨림만 대역 감쇠시켜 **끝점 지연 없이 손떨림 극값만 제거**하는 구조다.
+- **`Pencil Filters` 비파괴 공간 마스크**: 15종 조정 필터를 레이어 전체에 즉시 굽는 대신 브러시 댑으로 공간 알파 마스크(`0..1`)를 칠하거나 지우면서 필터 파라미터를 실시간 재조정할 수 있도록 분리한 구조다.
+
+#### C. Unknowns (미확정 영역)
+- iPadOS 전용 Metal 셰이더 바이너리(Valkyrie GPU 파이프라인)의 하드웨어 레지스터 스케줄링 세부 사항은 정적 웹·아카이브 번들 분석 범위 밖이다.
+
+---
+
+## 4. ToonStudio 신규 구현 모듈 20종 정밀 매핑
+
+위 REA 정적·웹 역공학 증거를 바탕으로 ToonStudio 창작 스튜디오(`apps/web/src/domains/creator/`, `apps/brush-lab/`)에 클린룸 자체 구현으로 통합된 20개 핵심 모듈(기존 10종 + SketchUp 6종 + Procreate 4종)과 근거 `evidence_id`의 매핑은 다음과 같다.
 
 | 순번 | ToonStudio 구현 모듈 경로 | 벤치마크 원천 및 REA `evidence_id` | 핵심 구현 기능 및 기술 사양 |
 | ---: | --- | --- | --- |
@@ -185,6 +207,10 @@
 | 14 | `apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-styles-uv-engine.ts` | **SketchUp (`openskp@1.3.0`)**<br>`ev_a1d0b81b0db0d09672067f12696131418b183628537ddf7d542d4b8a0211be3a` | `.skp` `D307` 엣지 플래그(`0x01` hidden, `0x08` soft, `0x10` smooth) 디코더, SketchUp 6대 면 스타일(`wireframe`, `hidden-line`, `shaded`, `shaded-with-textures`, `monochrome` 앞/뒷면 법선 검수, `xray`) 및 엣지 모디파이어(프로필·깊이 큐·연장선·끝점·지터·뒷면 점선), 4-Pin 사영 호모그래피(`uvTransform` 3×3 행렬·`uvProjected`·`faceUvBasis`) UV 매핑 엔진 |
 | 15 | `apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-shadow-and-exporter.ts` | **SketchUp (`openskp@1.3.0` · 3D Warehouse)**<br>`ev_a1d0b81b0db0d09672067f12696131418b183628537ddf7d542d4b8a0211be3a`<br>`ev_39ef5b3ec2a1a0e33b9b59f522d37d8eea5c90d3c06ead85284f397e618396a7` | 위도·경도·Solar North·날짜·시각·Light/Dark 슬라이더 기반 태양 고도·방위각 계산기(`ShadowInfo`) 및 OpenSKP `SkpBuilder.toBytes()` 기반 브라우저 네이티브 `.skp` v17 바이너리 빌더 + 다중 CAD(`.skp`, `.dxf`, `.ifc`, `.obj`/`.mtl`, `.stl`, `.ply`, `instanced-glb`) 익스포터 |
 | 16 | `apps/web/src/domains/creator/bg3d/StudioBg3dSketchUpWorkbenchPanel.tsx` | **SketchUp (`openskp@1.3.0` · SketchUp for Web · 3D Warehouse)**<br>`ev_4bcff28953cf3f65fa0e78f7684bb1679839e674fec42c04aa1cd9115e976b6c`<br>`ev_752234ac45258e8b72f1ee5ab0f07944e41e5f6d0f7ec476c01bd9834906bb34`<br>`ev_779709fd7cf7ee2b8f705e92874a2530f1b3c50f70179bf85cb997234ea3d731` | 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`) 내 **SketchUp 마스터 스튜디오** 통합 UI 패널 (상호 배타 `<details name="sketchup-workbench-accordion">`, IME 조합 안전 VCB Enter 핸들러 내장) |
+| 17 | `apps/brush-lab/src/engine/ink/procreate-streamline.ts` | **Procreate 5.3**<br>`ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a` | Procreate 3단계 보정(`StreamLine` + `Stabilization` + 오디오 DSP 영감 영위상 `Motion Filtering`), 펜/터치 독립 이중 테이퍼(`evaluateProcreateDualTaperEnvelope`), `QuickShape` + `Edit Shape` 정형 변환 엔진 |
+| 18 | `apps/web/src/domains/creator/drawing/studio-procreate-brush-studio.ts` | **Procreate 5.3**<br>`ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf`<br>`ev_a22371fb13e34c0c2ee15a6558a0598c4040694e1cfbc92347cf81cb121cb920`<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a` | Procreate 12대 카테고리 `SilicaBrush` 엔진(Stroke Path, Stabilization, Taper, Shape, Grain, Rendering 6모드, Wet Mix, Color Dynamics, Dynamics, Apple Pencil Hover/Barrel Roll, Properties/Reset Point, 3D Materials) 및 18개 브러시 세트·25종 시그니처 프리셋 |
+| 19 | `apps/web/src/domains/creator/drawing/studio-procreate-adjustments-engine.ts` | **Procreate 5.3**<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`<br>`ev_af0a9ac4a571dacc8add436b2a48d7fa161d09c8ef56694ec1882d2a8fd7eba1` | `ProcreatePencilFilterSession` 비파괴 브러시 마스크 세션 및 `Perspective Blur`, `Bloom`, `Glitch`(4모드), `Chromatic Aberration`(`Transverse`/`Displace`), `Noise`(`Clouds`/`Ridges`/`Turbulence`), `Liquify`(`Crystals`/`Edge`/`Adjust`), `Clone` 도장 엔진 |
+| 20 | `apps/web/src/domains/creator/drawing/studio-procreate-superpowers.ts` | **Procreate 5.3**<br>`ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a`<br>`ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900`<br>`ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea` | Color Harmony 5모드, ColorDrop(Threshold + Reference Layer + Continue Filling), 접근성 Color Naming, QuickMenu 6슬롯 플릭, Drawing/Animation/Page Assist, 3D Lighting Studio, Single-Touch 제스처, `.swatches`/`.brush`/`.procreate` 네이티브 코덱 |
 
 ---
 

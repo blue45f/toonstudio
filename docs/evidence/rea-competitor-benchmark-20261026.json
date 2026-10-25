@@ -239,6 +239,72 @@
       "unknowns": [
         "app.sketchup.com/app의 Trimble OAuth 인증 이후에만 스트리밍되는 비공개 WebAssembly CAD 커널 내부 심볼 및 3dwarehouse.sketchup.com의 서버 측 검색 랭킹/봇 방어 임계값은 비인증 캡처 경계 밖이므로 미확정(unknown)으로 남김."
       ]
+    },
+    {
+      "id": "procreate-valkyrie-silica-engine",
+      "name": "Procreate (Valkyrie / Silica Engine & Official Web/Handbook Bundles)",
+      "version": "5.3.x (SilicaBrush / SilicaDocument / Swatches)",
+      "bundleIdentifier": "au.com.savageinteractive.procreate",
+      "artifacts": [
+        {
+          "role": "official-ipad-web-capture-and-scripts",
+          "path": "https://procreate.com/ipad",
+          "sha256": "ba8480bbc26d2dbfadf3287bcee0e4329833a2eed16249d47047d1831703cb6e",
+          "evidence_id": "ev_caf7a7d6599efecf5d582b6a858c46ab9f42d14f3b4a7e1ef6cc8145f400f89f",
+          "scripts_export_evidence_id": "ev_7ca5f2a0ffc0d43f0d115bbbbb51d9585ca1391df247f9282c21f1f2a3b06f7b"
+        },
+        {
+          "role": "official-handbook-web-capture-and-scripts",
+          "path": "https://help.procreate.com/procreate/handbook/introduction",
+          "sha256": "f568edb6bbd18f081cd7c439007e3268c5737226bb848807c2defe6155819d2f",
+          "evidence_id": "ev_4e840923fe036f4cb48c8f95cc09dfdbc27266e01207dc73f0f1e1c8824b3a15",
+          "scripts_export_evidence_id": "ev_af0a9ac4a571dacc8add436b2a48d7fa161d09c8ef56694ec1882d2a8fd7eba1"
+        },
+        {
+          "role": "javascript-application-ast-bundle",
+          "path": "procreate-ipad-entry.js + procreate-ipad-features.js + procreate-handbook-app.js",
+          "sha256": "b306c5432da2e08e1d5f7b55944db163f2576323e190ecfc09b7fc18174a8a1e",
+          "evidence_id": "ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a",
+          "summary": {
+            "bytes": 1542947,
+            "astNodes": 381683,
+            "findings": 1479
+          }
+        },
+        {
+          "role": "silica-brush-keyed-archive",
+          "path": "Brush.archive (Procreate_Brush.brush)",
+          "sha256": "af8e212759063fd168a70510c1cfbcb3482a8e7d29f6a02ac768f49da681d377",
+          "evidence_id": "ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf",
+          "archive_evidence_id": "ev_a22371fb13e34c0c2ee15a6558a0598c4040694e1cfbc92347cf81cb121cb920"
+        },
+        {
+          "role": "silica-document-keyed-archive",
+          "path": "Document.archive (Procreate_Document.procreate)",
+          "sha256": "dbf751cf356cb99dad3b035f88f24eab61459445cad7dda258bf9dcad01958de",
+          "evidence_id": "ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900",
+          "archive_evidence_id": "ev_e25192bd0d4ecdee80847611488deb83e33a395f40d5d691fd82f28e2ed7caf6"
+        },
+        {
+          "role": "swatches-palette-archive",
+          "path": "Swatches.json (Procreate_Harmony.swatches)",
+          "sha256": "a5ad1fda6895b147d4d9ab95a651ca3d74af4338d99bb0461f8301e84d056153",
+          "evidence_id": "ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea"
+        }
+      ],
+      "observedFacts": [
+        "procreate.com/ipad 및 help.procreate.com/procreate/handbook 번들(총 1,542,947B, 381,683 AST nodes, 1,479 findings, ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a)에서 18개 기본 브러시 세트, 12개 Brush Studio 카테고리, 15개 Adjustments(Layer 및 Pencil Filters 모드), Color Harmony 5모드, ColorDrop(Continue Filling + Reference Layer), QuickMenu 6슬롯, Drawing Guides(2D Grid/Isometric/Perspective/Symmetry), Animation Assist, Page Assist, 3D Model Painting Lighting Studio, 접근성(Motion Filtering, Single Touch Gestures, Color Naming) 명세가 관측됨.",
+        "Brush.archive(NSKeyedArchiver SilicaBrush, ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf)에서 92개 아카이브 엔트리와 streamlineAmount, stabilizationAmount, motionFilteringAmount, motionFilteringExpression, taperSize/taperTouchSize, grainMoving/grainDepth, wetMixDilution/wetMixCharge/wetMixAttack/wetMixPull, dualBrushBlendMode, metallicScale, roughnessScale 키가 관측됨.",
+        "Document.archive(NSKeyedArchiver SilicaDocument, ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900)에서 tileSize=256 기반 256x256 .chunk 타일 구조와 size 문자열('{2048, 2048}'), orientation, strokeCount, videoEnabled 필드가 관측됨.",
+        "Swatches.json(ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea)에서 30슬롯 hue/saturation/brightness/alpha/colorSpace 배열 스키마가 관측됨."
+      ],
+      "inferences": [
+        "Procreate의 Motion Filtering은 기존 StreamLine/Stabilization의 문자열 견인 지연(endpoint lag)을 피하기 위해 진행 방향에 수직인 횡방향 고주파 손떨림만 영위상(Zero-Phase) 대역 필터로 억제하고 expression 파라미터로 의도적 굴곡을 보존하는 구조임.",
+        "Pencil Filters는 모든 이미지 조정 필터를 레이어 전체에 즉시 굽는 대신 브러시 필압·기울기로 공간 알파 마스크에 칠하고 지우면서 실시간으로 필터 파라미터를 재조정하는 비파괴 합성 파이프라인임."
+      ],
+      "unknowns": [
+        "iPadOS 전용 Metal 셰이더 바이너리(Valkyrie GPU 파이프라인)의 하드웨어 레지스터 스케줄링 세부 사항은 정적 웹·아카이브 번들 분석 범위 밖임."
+      ]
     }
   ],
   "toonStudioImplementations": [
@@ -380,6 +446,44 @@
         "ev_779709fd7cf7ee2b8f705e92874a2530f1b3c50f70179bf85cb997234ea3d731"
       ],
       "capability": "3D 전문가 워크벤치 허브 내 SketchUp 마스터 스튜디오 통합 UI 패널"
+    },
+    {
+      "modulePath": "apps/brush-lab/src/engine/ink/procreate-streamline.ts",
+      "competitorSource": "Procreate 5.3 (Valkyrie / SilicaBrush)",
+      "evidenceIds": [
+        "ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf",
+        "ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a"
+      ],
+      "capability": "Procreate 3단계 보정(StreamLine + Stabilization + 영위상 Motion Filtering), 이중 테이퍼(Pressure/Touch Taper), QuickShape + Edit Shape 정형 변환 엔진"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/drawing/studio-procreate-brush-studio.ts",
+      "competitorSource": "Procreate 5.3 (Valkyrie / SilicaBrush)",
+      "evidenceIds": [
+        "ev_64a6768d4a708ba542ac20e920973ef0542a12a5e00d6bc36894ddd738781faf",
+        "ev_a22371fb13e34c0c2ee15a6558a0598c4040694e1cfbc92347cf81cb121cb920",
+        "ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a"
+      ],
+      "capability": "Procreate 12대 카테고리 SilicaBrush 엔진(Stroke Path, Stabilization, Taper, Shape, Grain, Rendering 6모드, Wet Mix, Color Dynamics, Dynamics, Apple Pencil Hover/Barrel Roll, Properties/Reset Point, 3D Materials) 및 18개 브러시 세트·25종 시그니처 프리셋"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/drawing/studio-procreate-adjustments-engine.ts",
+      "competitorSource": "Procreate 5.3 (Adjustments & Pencil Filters)",
+      "evidenceIds": [
+        "ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a",
+        "ev_af0a9ac4a571dacc8add436b2a48d7fa161d09c8ef56694ec1882d2a8fd7eba1"
+      ],
+      "capability": "Procreate Pencil Filters 비파괴 브러시 마스크 세션 및 Perspective Blur, Bloom, Glitch(4모드), Chromatic Aberration(Transverse/Displace), Noise(Clouds/Ridges/Turbulence), Liquify(Crystals/Edge/Adjust), Clone 도장 엔진"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/drawing/studio-procreate-superpowers.ts",
+      "competitorSource": "Procreate 5.3 (Superpowers & Silica Codecs)",
+      "evidenceIds": [
+        "ev_22482a99a70629842037dbdb72528f372d0c9ce1aad19bfdb38d710af886704a",
+        "ev_67d9a14b0bb61a2edd810867504ea87267594aa1345eff4aa7256f4e5c615900",
+        "ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea"
+      ],
+      "capability": "Color Harmony 5모드, ColorDrop(Threshold + Reference Layer + Continue Filling), 접근성 Color Naming, QuickMenu 6슬롯 플릭, Drawing/Animation/Page Assist, 3D Lighting Studio, Single-Touch 제스처, .swatches/.brush/.procreate 네이티브 코덱"
     }
   ]
 }

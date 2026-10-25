@@ -55,6 +55,33 @@ const CONVERT_TABLE: Readonly<Record<string, ConvertEntry>> = Object.freeze({
     steps: [{ action: "Procreate에서 PSD로 내보내기", modulePath: "없음 (툴 내보내기 기능)" }],
     bridge: "Procreate 내보내기(PSD)로 경유한 뒤 psd->toonstudio 경로 사용",
   },
+  "procreate->toonstudio": {
+    steps: [
+      {
+        action: "SilicaDocument(Document.archive 256×256 타일 그리드) 메타데이터 해석",
+        modulePath: "drawing/studio-procreate-superpowers.ts",
+      },
+    ],
+    bridge: "",
+  },
+  "swatches->palette": {
+    steps: [
+      {
+        action: "Procreate .swatches(Swatches.json 30슬롯 HSV) 파싱 및 정규화",
+        modulePath: "drawing/studio-procreate-superpowers.ts",
+      },
+    ],
+    bridge: "",
+  },
+  "brush->brush": {
+    steps: [
+      {
+        action: "Procreate .brush(SilicaBrush Brush.archive 12카테고리) 디스크립터 변환",
+        modulePath: "drawing/studio-procreate-superpowers.ts",
+      },
+    ],
+    bridge: "",
+  },
   "blend->glb": {
     steps: [{ action: "Blender에서 GLB로 내보내기", modulePath: "scripts/setup-toonstudio-blender-pipeline.mts" }],
     bridge: "Blender 내보내기(GLB)로 경유한 뒤 GLB 정규화 경로 사용",
