@@ -476,30 +476,12 @@ export class StudioLivingInkWebGpuPureRuntime {
     this.writeUniforms();
     this.lastInkMark = null;
     for (const buffer of [
-      this.mobile,
-      this.mobileScratch,
-      this.fixed,
-      this.wet,
-      this.wetScratch,
-      this.strokeDeposit,
-      this.selection,
+      this.mobile, this.mobileScratch, this.fixed, this.wet, this.wetScratch, this.strokeDeposit, this.selection,
     ]) {
-      this.dispatch("clear", [
-        { binding: 0, resource: { buffer: this.uniforms } },
-        { binding: 1, resource: { buffer } },
-      ]);
+      this.dispatch("clear", [{ binding: 0, resource: { buffer: this.uniforms } }, { binding: 1, resource: { buffer } }]);
     }
-    for (const buffer of [
-      this.velocity,
-      this.velocityScratch,
-      this.curl,
-      this.pressureA,
-      this.pressureB,
-    ]) {
-      this.dispatch("clear-coarse", [
-        { binding: 0, resource: { buffer: this.uniforms } },
-        { binding: 1, resource: { buffer } },
-      ]);
+    for (const buffer of [this.velocity, this.velocityScratch, this.curl, this.pressureA, this.pressureB]) {
+      this.dispatch("clear-coarse", [{ binding: 0, resource: { buffer: this.uniforms } }, { binding: 1, resource: { buffer } }]);
     }
   }
 
@@ -1323,36 +1305,16 @@ export class StudioLivingInkWebGpuPureRuntime {
     this.disposed = true;
     this.unsubscribeDeviceLoss?.();
     for (const buffer of [
-      this.mobile,
-      this.mobileScratch,
-      this.fixed,
-      this.wet,
-      this.wetScratch,
-      this.strokeDeposit,
-      this.selection,
-      this.velocity,
-      this.velocityScratch,
-      this.curl,
-      this.pressureA,
-      this.pressureB,
-      this.display,
-      this.uniforms,
-      this.splatUniforms,
+      this.mobile, this.mobileScratch, this.fixed, this.wet, this.wetScratch,
+      this.strokeDeposit, this.selection, this.velocity, this.velocityScratch,
+      this.curl, this.pressureA, this.pressureB, this.display, this.uniforms, this.splatUniforms,
     ]) {
-      try {
-        buffer?.destroy();
-      } catch {
-        /* ignore */
-      }
+      try { buffer?.destroy(); } catch { /* ignore */ }
     }
     if (this.deviceLease) {
       this.deviceLease.release();
     } else {
-      try {
-        this.device.destroy();
-      } catch {
-        /* ignore */
-      }
+      try { this.device.destroy(); } catch { /* ignore */ }
     }
   }
 }

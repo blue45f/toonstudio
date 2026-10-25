@@ -1,6 +1,5 @@
 /* Extracted render tree from StudioCuttoonEditor.
  * Session props are an `any` bag matching the original editor closure. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -185,6 +184,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
               studioFilterApplyBusyRef.current = true;
               setStudioFilterApplying(true);
               const applySessionId = studioFilterSession.id;
+              let resolveRasterError: ((cause: unknown) => string | null) | undefined;
               try {
                 if (
                   applySessionId !== studioFilterSessionIdRef.current ||
@@ -197,6 +197,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                 }
                 const rasterRuntime = await import("../render/studio-raster-edit-preparation");
                 const { resolveStudioRasterEditReason, resolveStudioRasterEditErrorFromCause } = await import("../status-i18n/studio-producer-error-i18n-exports-raster");
+                resolveRasterError = resolveStudioRasterEditErrorFromCause;
                 if (applySessionId !== studioFilterSessionIdRef.current) return;
                 const currentContext = currentStudioFilterPageRasterContext(
                   studioFilterSession.plan.name,
@@ -240,7 +241,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
               } catch (filterApplyError) {
                 setError(
                   filterApplyError instanceof Error
-                    ? (resolveStudioRasterEditErrorFromCause(filterApplyError) ?? filterApplyError.message)
+                    ? (resolveRasterError?.(filterApplyError) ?? filterApplyError.message)
                     : editorShellStatusText("studio.editorShellStatus.session.filterLayerApplyFailed", "페이지 필터 레이어를 적용하지 못했습니다.")
                 );
               } finally {

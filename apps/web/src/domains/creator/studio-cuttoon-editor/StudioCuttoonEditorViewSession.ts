@@ -8,4 +8,8 @@ export type { StudioCuttoonEditorViewSessionCore } from "./StudioCuttoonEditorVi
 export type { StudioCuttoonEditorViewSessionRest } from "./StudioCuttoonEditorViewSessionRest";
 
 export type StudioCuttoonEditorViewSession =
-  StudioCuttoonEditorViewSessionCore & StudioCuttoonEditorViewSessionRest;
+  StudioCuttoonEditorViewSessionCore &
+  StudioCuttoonEditorViewSessionRest & {
+    toggleCanvasFlipX?: () => void;
+    zoomReset?: () => void;
+  };

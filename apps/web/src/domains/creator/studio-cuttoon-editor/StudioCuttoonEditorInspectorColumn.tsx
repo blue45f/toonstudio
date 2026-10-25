@@ -1,6 +1,5 @@
 /* Extracted render tree from StudioCuttoonEditor.
  * Session props are an `any` bag matching the original editor closure. */
-// @ts-nocheck
 "use no memo";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -623,7 +622,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           pixelBusy={pixelBusy}
           pixelCombine={pixelCombine}
           pixelMagneticLasso={pixelMagneticLasso}
-          onTogglePixelMagneticLasso={() => setPixelMagneticLasso((v) => !v)}
+          onTogglePixelMagneticLasso={() => setPixelMagneticLasso((v: boolean) => !v)}
           pixelForceCircle={pixelForceCircle}
           pixelSel={pixelSel}
           pixelSelectionCanRedo={canRedoPixelSelectionHistory(
@@ -809,7 +808,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           extendedBlendOpacity={extendedBlendOpacity}
           extendedBlendUnavailableReason={(() => {
             if (selected?.type !== "image") return "이미지 요소를 선택하세요.";
-            const index = elements.findIndex((element) => element.id === selected.id);
+            const index = elements.findIndex((element: El) => element.id === selected.id);
             const below = index > 0 ? elements[index - 1] : undefined;
             if (below?.type !== "image") return "바로 아래에 이미지 레이어가 있어야 합니다.";
             return null;
@@ -820,7 +819,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           pathBooleanBusy={pathBooleanBusy}
           pathBooleanUnavailableReason={resolveStudioPathBooleanReasonCode(
             studioPathBooleanUnavailableReason(
-              marqueeIds.map((id) => elementById.get(id)).filter((el): el is El => Boolean(el)),
+              marqueeIds.map((id: string) => elementById.get(id)).filter((el: El | undefined): el is El => Boolean(el)),
             ),
           )}
           applyPathBooleanCombine={(op) => void applyPathBooleanCombine(op)}
