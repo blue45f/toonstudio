@@ -306,3 +306,138 @@ export function resolveShaperViewportKeyShortcut(
       return null;
   }
 }
+
+export type ShaperCameraInputStyle = "unity" | "blender" | "max";
+export type ShaperMouseButton = 0 | 1 | 2;
+export type ShaperCameraNavigationAction = "pan" | "orbit" | "zoom";
+
+/**
+ * SHAPER SettingManager::inputStyle (0=unity, 1=blender, 2=max) 및
+ * UIManager::LateUpdate (0x06000338) 3-스타일 카메라 마우스 조작 상태머신 역공학 내재화:
+ * - `unity`: MMB = pan, Alt+LMB = orbit, Alt+RMB = zoom
+ * - `blender`: MMB = orbit, Shift+MMB = pan, Ctrl+MMB = zoom
+ * - `max`: MMB = pan, Alt+MMB = orbit, Ctrl+Alt+MMB = zoom
+ */
+export function resolveShaperCameraInputAction(options: {
+  readonly style: ShaperCameraInputStyle;
+  readonly button: ShaperMouseButton;
+  readonly modifiers?: ShaperModifierKeys;
+}): ShaperCameraNavigationAction | null {
+  const { style, button, modifiers = {} } = options;
+  const shift = Boolean(modifiers.shift);
+  const alt = Boolean(modifiers.alt);
+  const ctrl = Boolean(modifiers.ctrl);
+
+  if (style === "unity") {
+    if (button === 2 && !shift && !alt && !ctrl) return "pan";
+    if (button === 0 && alt) return "orbit";
+    if (button === 1 && alt) return "zoom";
+    return null;
+  }
+
+  if (style === "blender") {
+    if (button !== 2) return null;
+    if (shift) return "pan";
+    if (ctrl) return "zoom";
+    return "orbit";
+  }
+
+  // style === "max"
+  if (button !== 2) return null;
+  if (ctrl && alt) return "zoom";
+  if (alt) return "orbit";
+  return "pan";
+}
+
+export interface ShaperTrackpadTwoFingerState {
+  readonly gestureMode: "orbit" | "zoom";
+  readonly moveDelta: readonly [number, number];
+  readonly zoomDelta: number;
+  readonly orbitInputDelta: readonly [number, number];
+  readonly zoomInputDelta: number;
+  readonly nextCamPivotZ: number;
+  readonly orthographicSize: number;
+}
+
+/**
+ * SHAPER UITrackpad::Update (0x06000597) 2-손가락 트랙패드/터치 제스처 판별기 역공학 내재화:
+ * - 두 손가락 중점 변위 `moveDelta = prevMid - curMid`와 손가락 간 거리 변화 `zoomDelta = prevDist - curDist`를 계산한다.
+ * - 잠금 전 초기 프레임에서 `(|moveDelta.x| + |moveDelta.y|) * 0.5 > |zoomDelta|`이면 `"orbit"`, 아니면 `"zoom"` 모드로 잠근다.
+ * - 회전 시 `-0.25 * moveDelta`를 적용하고, 줌 시 `+0.25 * zoomDelta`를 적용하며 `camPivotZ <= 2` 클램프 및
+ *   직교 투영 크기 `orthographicSize = 15 - (60 - z) * 0.25`를 갱신한다.
+ */
+export function classifyShaperTrackpadTwoFingerGesture(options: {
+  readonly prevTouch0: readonly [number, number];
+  readonly prevTouch1: readonly [number, number];
+  readonly curTouch0: readonly [number, number];
+  readonly curTouch1: readonly [number, number];
+  readonly camPivotZ?: number;
+  readonly lockedMode?: "orbit" | "zoom";
+}): ShaperTrackpadTwoFingerState {
+  const {
+    prevTouch0,
+    prevTouch1,
+    curTouch0,
+    curTouch1,
+    camPivotZ = -3,
+    lockedMode,
+  } = options;
+
+  const prevMidX = (prevTouch0[0] + prevTouch1[0]) * 0.5;
+  const prevMidY = (prevTouch0[1] + prevTouch1[1]) * 0.5;
+  const curMidX = (curTouch0[0] + curTouch1[0]) * 0.5;
+  const curMidY = (curTouch0[1] + curTouch1[1]) * 0.5;
+
+  const moveDeltaX = prevMidX - curMidX;
+  const moveDeltaY = prevMidY - curMidY;
+
+  const prevDist = Math.hypot(prevTouch0[0] - prevTouch1[0], prevTouch0[1] - prevTouch1[1]);
+  const curDist = Math.hypot(curTouch0[0] - curTouch1[0], curTouch0[1] - curTouch1[1]);
+  const zoomDelta = prevDist - curDist;
+
+  const gestureMode: "orbit" | "zoom" =
+    lockedMode ??
+    ((Math.abs(moveDeltaX) + Math.abs(moveDeltaY)) * 0.5 > Math.abs(zoomDelta)
+      ? "orbit"
+      : "zoom");
+
+  const orbitInputDelta: readonly [number, number] =
+    gestureMode === "orbit" ? [moveDeltaX * -0.25, moveDeltaY * -0.25] : [0, 0];
+  const zoomInputDelta = gestureMode === "zoom" ? zoomDelta * 0.25 : 0;
+  const nextCamPivotZ = Math.min(2, camPivotZ + zoomInputDelta);
+  const orthographicSize = 15 - (60 - nextCamPivotZ) * 0.25;
+
+  return {
+    gestureMode,
+    moveDelta: [moveDeltaX, moveDeltaY],
+    zoomDelta,
+    orbitInputDelta,
+    zoomInputDelta,
+    nextCamPivotZ,
+    orthographicSize,
+  };
+}
+
+/**
+ * SHAPER PivotManager::FixMaxValue (0x06000285) 역공학 내재화:
+ * 기즈모 레이캐스트 델타 폭주를 방지하기 위해 값을 `[-maxAbs, +maxAbs]` 범위로 클램프한다.
+ */
+export function clampShaperGizmoDelta(value: number, maxAbs: number): number {
+  const limit = Math.abs(maxAbs);
+  if (value > limit) return limit;
+  if (value < -limit) return -limit;
+  return value;
+}
+
+/**
+ * SHAPER PivotManager::AlignMouseCastPlanes (0x06000280) 역공학 내재화:
+ * 기즈모 드래그 축(`x` | `y` | `z`)에 따라 마우스 레이캐스트 평면이 카메라를 바라보도록 월드 오일러 각도를 정렬한다.
+ */
+export function resolveShaperGizmoCastPlaneEuler(
+  axis: "x" | "y" | "z",
+  cameraEulerDeg: Vec3,
+): Vec3 {
+  if (axis === "x") return [cameraEulerDeg[0], 0, 0];
+  if (axis === "y") return [0, cameraEulerDeg[1], 0];
+  return [0, 0, cameraEulerDeg[2]];
+}

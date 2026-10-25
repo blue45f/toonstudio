@@ -7,13 +7,19 @@ import { scalpSurfaceFixture } from "./fixtures";
 import {
   HEAD_BONE_INDEX,
   OUTFIT_AUX_BONE_INDEX_BASE,
+  SHAPER_HAIR_BASE_ZONE_CALIBRATIONS,
+  SHAPER_HAIR_JOINT_SPEC,
   SHAPER_HAIR_PHYSICS_LERP,
   SHAPER_HAIR_RIDGE_SHARPNESS,
+  alignShaperHairControlRotations,
   assumedHeadPivot,
   buildHair,
+  buildPlantedHairControlChain,
   buildShaperHairStrandTube,
+  computeShaperHairBaseUvTransform,
   evaluateShaperHairSplinePoint,
   hairStrands,
+  reanchorPlantedHairRoot,
   sampleShaperHairSpline,
   simulateShaperHairPhysicsStep,
 } from "./hair-builder";
@@ -226,6 +232,57 @@ describe("outfit/hair-builder", () => {
         stepped[1][2] - 0,
       );
       expect(distFromHead).toBeGreaterThanOrEqual(0.1 - 1e-6);
+    });
+
+    it("HairBaseData 4-구간 두피(Scalp) UV 변환(_Tex0_ST.._Tex3_ST)을 SHAPER 수식 그대로 계산한다", () => {
+      expect(SHAPER_HAIR_BASE_ZONE_CALIBRATIONS[0].yOrg).toBeCloseTo(-0.36, 6);
+      const uv0 = computeShaperHairBaseUvTransform({
+        zone: 0,
+        xUi: 1.0,
+        yUi: 2.0,
+        widthUi: 0.8,
+        heightUi: 0.5,
+      });
+      // w = 2 - 0.8 = 1.2, h = 2 - 0.5 = 1.5
+      // tx0 = 0 + 1 * 0.01 = 0.01 -> tx = 1.2 * 0.01 + 0.5 * (1 - 1.2) = 0.012 - 0.1 = -0.088
+      // ty0 = -0.36 + 2 * (-0.05) = -0.46 -> ty = 1.5 * (-0.46) + 0.5 * (1 - 1.5) = -0.69 - 0.25 = -0.94
+      expect(uv0.uniformName).toBe("_Tex0_ST");
+      expect(uv0.scaleW).toBeCloseTo(1.2, 6);
+      expect(uv0.scaleH).toBeCloseTo(1.5, 6);
+      expect(uv0.offsetTx).toBeCloseTo(-0.088, 6);
+      expect(uv0.offsetTy).toBeCloseTo(-0.94, 6);
+    });
+
+    it("인터랙티브 헤어 심기(CreateHair), 회전 스무딩(AlignHairRotation), 모근 재앵커링(AlignHairsByPartMesh)을 수행한다", () => {
+      const chain = buildPlantedHairControlChain({
+        rootPosition: [0, 1.6, 0],
+        hairLength: 0.7,
+        hairStep: 3,
+        hairBendDeg: 40,
+      });
+      // step=3 -> 총 제어점 5개 (0..4), 첫 세그먼트 0.1, 나머지 segLen = (0.7 - 0.1)/3 = 0.2
+      expect(chain.nodes.length).toBe(5);
+      expect(chain.firstSegmentOffset).toBeCloseTo(0.1, 6);
+      expect(chain.segmentLength).toBeCloseTo(0.2, 6);
+      expect(chain.bendStepDeg).toBeCloseTo(10, 6);
+      expect(chain.nodes[0].jointSpec).toBeNull();
+      expect(chain.nodes[1].jointSpec).toEqual(SHAPER_HAIR_JOINT_SPEC);
+
+      const aligned = alignShaperHairControlRotations(chain.nodes);
+      expect(aligned.length).toBe(5);
+
+      const reanchored = reanchorPlantedHairRoot({
+        triangleVertices: [
+          [0, 1.7, 0],
+          [1, 1.7, 0],
+          [0, 1.7, 1],
+        ],
+        v0d: 0.25,
+        v1d: 0.25,
+        nodes: aligned,
+      });
+      expect(reanchored.rootPosition).toEqual([0.25, 1.7, 0.25]);
+      expect(reanchored.nodes[0].position).toEqual([0.25, 1.7, 0.25]);
     });
   });
 });

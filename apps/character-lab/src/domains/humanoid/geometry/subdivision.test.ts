@@ -3,17 +3,25 @@ import { describe, expect, it } from "vitest";
 import { NO_REGION, QuadMeshBuilder, quadMeshEdgeStats, type QuadMesh } from "./quad-mesh";
 import {
   adaptPartSeamOffsets,
+  applySymmetricControlPointEdit,
   buildSubdivisionPlan,
   catmullClark,
   computeSeamCentroids3Zone,
+  computeShaperVertexKeyHash,
   expandWelded,
+  findAdjacentBodyPartSeamPairs,
   findCoincidentVertexGroups,
+  findMirrorControlPointPairs,
+  interpolateCageMorphTransition,
   liftAttribute,
   liftRegions,
   lockCoincidentSeamVertices,
   matchNeckSeamVertices,
   predictVertexCount,
+  recalculateCreaseNormals,
+  selectControlPointsInScreenRect,
   subdividedToTriMesh,
+  weldAdjacentBodyPartNormals,
   weldNeckSeamPositionsAndNormals,
 } from "./subdivision";
 import { triMeshIsWatertight } from "./tri-mesh";
@@ -299,5 +307,109 @@ describe("SHAPER 준-샤프(Semi-Sharp) 세분화 및 파츠/목 심(Seam) 정�
     expect(headPositions[1]).toBeCloseTo(1.395, 5);
     expect(neckNormals[1]).toBeCloseTo(0.6, 5);
     expect(neckNormals[2]).toBeCloseTo(0.8, 5);
+  });
+
+  it("NormalSolver::RecalculateNormals: Crease Angle 임계값에 따라 하드엣지 분리와 스무딩을 전환한다", () => {
+    // 90도로 꺾인 두 삼각형(정점 0,1과 3,4가 동일 위치에 분할된 UV seam)
+    const positions = new Float32Array([
+      // Tri 0: XY 평면 (법선 +Z)
+      0, 0, 0,
+      1, 0, 0,
+      0, 1, 0,
+      // Tri 1: XZ 평면 (법선 -Y 혹은 +Y 방향)
+      0, 0, 0,
+      0, 0, 1,
+      1, 0, 0,
+    ]);
+    const indices = new Uint32Array([0, 1, 2, 3, 4, 5]);
+    // 10^-5 격자 FNV-1a 해시 동일성 확인
+    expect(computeShaperVertexKeyHash(0, 0, 0)).toBe(computeShaperVertexKeyHash(0.000001, 0, 0));
+
+    // Crease Angle 45도: 90도 꺾임은 스무딩되지 않고 각 면 법선 유지
+    const hardNormals = recalculateCreaseNormals(positions, indices, 45);
+    expect(Math.abs(hardNormals[2])).toBeCloseTo(1, 5);
+    expect(Math.abs(hardNormals[1])).toBeCloseTo(0, 5);
+
+    // Crease Angle 120도: 90도 꺾임도 함께 누적 스무딩되어 대각선(1/sqrt(2)) 법선 형성
+    const smoothNormals = recalculateCreaseNormals(positions, indices, 120);
+    expect(Math.abs(smoothNormals[1])).toBeCloseTo(Math.SQRT1_2, 4);
+    expect(Math.abs(smoothNormals[2])).toBeCloseTo(Math.SQRT1_2, 4);
+  });
+
+  it("MeshData 대칭 제어점 매칭 및 비선택 대칭짝 자동 미러링(위치·샤프니스 power)을 수행한다", () => {
+    const positions = new Float32Array([
+      -0.5, 1.0, 0.2, // 0: left
+      0.0, 1.0, 0.2,  // 1: center
+      0.5, 1.0, 0.2,  // 2: right (0의 대칭짝)
+      -0.5, 1.0, 0.2, // 3: 0과 동일 위치 중복 정점
+    ]);
+    const powers = new Float32Array([0, 0, 0, 0]);
+    const descriptors = findMirrorControlPointPairs(positions);
+    expect(descriptors[0]?.mirrorSide).toBe("left");
+    expect(descriptors[0]?.mirrorIndex).toBe(2);
+    expect(descriptors[0]?.samePositionIndices).toEqual([0, 3]);
+    expect(descriptors[1]?.mirrorSide).toBe("center");
+
+    // 좌측 정점(0)만 선택하여 이동 및 power 조절 -> 우측 대칭짝(2)과 동일 위치 정점(3)에 자동 반영
+    applySymmetricControlPointEdit({
+      positions,
+      powers,
+      descriptors,
+      selectedIndices: new Set([0]),
+      positionEdits: [{ index: 0, position: [-0.65, 1.15, 0.25] }],
+      powerEdits: [{ index: 0, power: 0.8 }],
+      symmetryEnabled: true,
+    });
+
+    expect(positions[0]).toBeCloseTo(-0.65, 5);
+    expect(positions[9]).toBeCloseTo(-0.65, 5); // 중복 정점 3 동기화
+    expect(positions[6]).toBeCloseTo(0.65, 5);  // 우측 대칭짝 X 부호 반전
+    expect(positions[7]).toBeCloseTo(1.15, 5);
+    expect(powers[0]).toBeCloseTo(0.8, 5);
+    expect(powers[2]).toBeCloseTo(0.8, 5);
+    expect(powers[3]).toBeCloseTo(0.8, 5);
+  });
+
+  it("파츠 교체 모핑(0.2초 선형 보간), 사각형 드래그 선택, 인접 바디 파츠 경계 법선 용접을 수행한다", () => {
+    const frame = interpolateCageMorphTransition({
+      startPositions: new Float32Array([0, 0, 0]),
+      endPositions: new Float32Array([1, 2, 3]),
+      startPowers: new Float32Array([0.2]),
+      endPowers: new Float32Array([0.8]),
+      startEyeballPivotLeft: [-0.3, 1.5, 0.1],
+      endEyeballPivotLeft: [-0.35, 1.55, 0.15],
+      elapsedSec: 0.1,
+      durationSec: 0.2,
+    });
+    expect(frame.alpha).toBeCloseTo(0.5, 5);
+    expect(frame.completed).toBe(false);
+    expect(frame.positions[1]).toBeCloseTo(1.0, 5);
+    expect(frame.powers[0]).toBeCloseTo(0.5, 5);
+    expect(frame.eyeballPivotLeft[0]).toBeCloseTo(-0.325, 5);
+
+    const selected = selectControlPointsInScreenRect({
+      points: [
+        { index: 0, screenX: 50, screenY: 50 },
+        { index: 1, screenX: 150, screenY: 150 },
+      ],
+      startScreenPos: [100, 100],
+      endScreenPos: [10, 10],
+    });
+    expect(Array.from(selected)).toEqual([0]);
+
+    const partAPos = new Float32Array([0, 1, 0, 2, 2, 2]);
+    const partBPos = new Float32Array([0.02, 1.01, 0, -2, -2, -2]);
+    const partANorm = new Float32Array([0, 1, 0, 0, 1, 0]);
+    const partBNorm = new Float32Array([0, 0, 1, 0, 0, 1]);
+    const seamPairs = findAdjacentBodyPartSeamPairs(partAPos, partBPos, 0.1);
+    expect(seamPairs.length).toBe(1);
+    weldAdjacentBodyPartNormals({
+      partANormals: partANorm,
+      partBNormals: partBNorm,
+      pairs: seamPairs,
+      normalize: true,
+    });
+    expect(partANorm[1]).toBeCloseTo(Math.SQRT1_2, 5);
+    expect(partBNorm[2]).toBeCloseTo(Math.SQRT1_2, 5);
   });
 });

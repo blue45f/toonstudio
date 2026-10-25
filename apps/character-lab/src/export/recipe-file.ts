@@ -6,8 +6,24 @@ import { createDefaultRecipe, failVisible, parseRecipe, recipeDigest } from "../
 import { stableStringify } from "../shared/stable-json";
 
 import { decodePaintLayerRecord, encodePaintLayerRecord } from "./paint-layer-record";
+import {
+  hexToUnitRgb,
+  parseShaperPartPreset,
+  rgbFloatStringsToHex,
+  serializeShaperPartPreset,
+  tokenizeShaperPresetLines,
+} from "./shaper-preset";
 
-import type { CharacterRecipe, LabFailure, PaintLayer, ParseRecipeResult, Vec3 } from "../contracts";
+import type {
+  ShaperPartPresetData,
+  ShaperPresetAccessoryRecord,
+  ShaperPresetHairBaseZoneRecord,
+  ShaperPresetHairStrandRecord,
+  ShaperPresetLinePointRecord,
+  ShaperPresetLineRecord,
+  ShaperPresetTransformRecord,
+} from "./shaper-preset";
+import type { CharacterRecipe, LabFailure, PaintLayer, ParseRecipeResult } from "../contracts";
 
 export const RECIPE_FILE_SUFFIX = ".character.json";
 export const RECIPE_MIME = "application/json";
@@ -21,13 +37,24 @@ export function serializeRecipe(recipe: CharacterRecipe): string {
 
 export function parseRecipeFile(text: string, now?: number): ParseRecipeResult {
   if (text.length > MAX_RECIPE_FILE_BYTES) {
-    return { ok: false, failure: failVisible("recipe-file-too-large", `레시피 파일이 상한(${MAX_RECIPE_FILE_BYTES} B)을 넘습니다.`, undefined, now) };
+    return {
+      ok: false,
+      failure: failVisible(
+        "recipe-file-too-large",
+        `레시피 파일이 상한(${MAX_RECIPE_FILE_BYTES} B)을 넘습니다.`,
+        undefined,
+        now,
+      ),
+    };
   }
   let json: unknown;
   try {
     json = JSON.parse(text);
   } catch (error) {
-    return { ok: false, failure: failVisible("recipe-json-syntax", "레시피 파일이 올바른 JSON이 아닙니다.", error, now) };
+    return {
+      ok: false,
+      failure: failVisible("recipe-json-syntax", "레시피 파일이 올바른 JSON이 아닙니다.", error, now),
+    };
   }
   return parseRecipe(json, now);
 }
@@ -44,7 +71,10 @@ export function recipeFileName(recipe: CharacterRecipe, date: Date = new Date())
 }
 
 /** 레시피에 페인트 레이어를 PNG base64로 넣는다(빈 레이어는 제외). */
-export async function embedPaintLayers(recipe: CharacterRecipe, layers: readonly PaintLayer[]): Promise<CharacterRecipe> {
+export async function embedPaintLayers(
+  recipe: CharacterRecipe,
+  layers: readonly PaintLayer[],
+): Promise<CharacterRecipe> {
   const records = [];
   for (const layer of layers) {
     if (layer.rgba.every((b) => b === 0)) continue;
@@ -59,7 +89,10 @@ export interface ExtractedPaintLayers {
 }
 
 /** 레시피의 페인트 레코드를 디코드한다. 깨진 레코드는 건너뛰고 사유를 모은다. */
-export async function extractPaintLayers(recipe: CharacterRecipe, now?: number): Promise<ExtractedPaintLayers> {
+export async function extractPaintLayers(
+  recipe: CharacterRecipe,
+  now?: number,
+): Promise<ExtractedPaintLayers> {
   const layers: PaintLayer[] = [];
   const failures: LabFailure[] = [];
   for (const record of recipe.paint.layers) {
@@ -89,78 +122,6 @@ export interface ShaperStylePresetData {
   readonly shadowType?: number;
   readonly lightAngleX?: number;
   readonly lightAngleY?: number;
-}
-
-export interface ShaperPartPresetData {
-  readonly version: string;
-  readonly partType?: number;
-  readonly baseMeshId?: number;
-  readonly name?: string;
-  readonly sex?: number;
-  readonly muscle?: number;
-  readonly fat?: number;
-  readonly camPos?: readonly [number, number, number, number];
-  readonly camAngles?: Vec3;
-  readonly camFov?: number;
-  readonly eyeballHighlightType?: number;
-  readonly eyeballHighlightPos?: readonly [number, number];
-  readonly eyeballHighlightAlpha?: number;
-  readonly seamPosC?: Vec3;
-  readonly seamPosL?: Vec3;
-  readonly seamPosR?: Vec3;
-  readonly boneNames: readonly string[];
-  readonly bonePositions: readonly Vec3[];
-  readonly boneAngles: readonly Vec3[];
-  readonly boneScales: readonly Vec3[];
-  readonly colorsHex: readonly string[];
-  readonly outlineRatios: readonly number[];
-}
-
-function rgbFloatStringsToHex(parts: readonly string[]): string | undefined {
-  if (parts.length < 3) return undefined;
-  const r = Number.parseFloat(parts[0] ?? "0");
-  const g = Number.parseFloat(parts[1] ?? "0");
-  const b = Number.parseFloat(parts[2] ?? "0");
-  if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) return undefined;
-  const toByte = (v: number): string =>
-    Math.min(255, Math.max(0, Math.round(v * 255)))
-      .toString(16)
-      .padStart(2, "0");
-  return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
-}
-
-function parseVec3Slash(raw: string): Vec3 | undefined {
-  const parts = raw.split("/");
-  if (parts.length < 3) return undefined;
-  const x = Number.parseFloat(parts[0] ?? "0");
-  const y = Number.parseFloat(parts[1] ?? "0");
-  const z = Number.parseFloat(parts[2] ?? "0");
-  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return undefined;
-  return [x, y, z];
-}
-
-function tokenizeShaperPresetLines(text: string): {
-  readonly version: string;
-  readonly pairs: readonly (readonly [string, string])[];
-} {
-  const lines = text
-    .replace(/\r\n/gu, "\n")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  const version = lines[0] ?? "1.0";
-  const pairs: (readonly [string, string])[] = [];
-  for (let i = 1; i < lines.length; i += 1) {
-    const tokens = lines[i]?.split(",") ?? [];
-    for (const token of tokens) {
-      const starIdx = token.indexOf("*");
-      if (starIdx <= 0) continue;
-      const key = token.slice(0, starIdx).trim();
-      const val = token.slice(starIdx + 1).trim();
-      pairs.push([key, val]);
-    }
-  }
-  return { version, pairs };
 }
 
 /**
@@ -261,150 +222,36 @@ export function parseShaperStylePreset(text: string): ShaperStylePresetData {
 }
 
 /**
- * SHAPER HeadPartsManager::CreateHeadPartFromPreset(0x060001e5) 텍스트 DSL 파서:
- * 독점 3D 메시 에셋(.obj/.fbx)을 복제하지 않고 체형·카메라·본·경계 오프셋·색상 팔레트만 클린룸으로 추출한다.
+ * SHAPER HeadPartsManager::SaveStyle (0x060001fa) 텍스트 DSL 직렬화기
  */
-export function parseShaperPartPreset(text: string): ShaperPartPresetData {
-  const { version, pairs } = tokenizeShaperPresetLines(text);
-  const boneNames: string[] = [];
-  const bonePositions: Vec3[] = [];
-  const boneAngles: Vec3[] = [];
-  const boneScales: Vec3[] = [];
-  const colorsHex: string[] = [];
-  const outlineRatios: number[] = [];
-
-  const out: {
-    version: string;
-    partType?: number;
-    baseMeshId?: number;
-    name?: string;
-    sex?: number;
-    muscle?: number;
-    fat?: number;
-    camPos?: readonly [number, number, number, number];
-    camAngles?: Vec3;
-    camFov?: number;
-    eyeballHighlightType?: number;
-    eyeballHighlightPos?: readonly [number, number];
-    eyeballHighlightAlpha?: number;
-    seamPosC?: Vec3;
-    seamPosL?: Vec3;
-    seamPosR?: Vec3;
-  } = { version };
-
-  for (const [key, val] of pairs) {
-    switch (key) {
-      case "mt":
-        out.partType = Number.parseInt(val, 10);
-        break;
-      case "mid":
-        out.baseMeshId = Number.parseInt(val, 10);
-        break;
-      case "name":
-        out.name = val;
-        break;
-      case "sex":
-        out.sex = Number.parseInt(val, 10);
-        break;
-      case "muscle":
-        out.muscle = Number.parseFloat(val);
-        break;
-      case "fat":
-        out.fat = Number.parseFloat(val);
-        break;
-      case "camP": {
-        const parts = val.split("/").map((s) => Number.parseFloat(s));
-        if (parts.length >= 4 && parts.every(Number.isFinite)) {
-          out.camPos = [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0, parts[3] ?? 0];
-        }
-        break;
-      }
-      case "camR": {
-        const v = parseVec3Slash(val);
-        if (v) out.camAngles = v;
-        break;
-      }
-      case "camFov":
-        out.camFov = Number.parseFloat(val);
-        break;
-      case "ebht":
-        out.eyeballHighlightType = Number.parseInt(val, 10);
-        break;
-      case "ebhp": {
-        const parts = val.split("/").map((s) => Number.parseFloat(s));
-        if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
-          out.eyeballHighlightPos = [parts[0] ?? 0, parts[1] ?? 0];
-        }
-        break;
-      }
-      case "ebha":
-        out.eyeballHighlightAlpha = Number.parseFloat(val);
-        break;
-      case "sposC": {
-        const v = parseVec3Slash(val);
-        if (v) out.seamPosC = v;
-        break;
-      }
-      case "sposL": {
-        const v = parseVec3Slash(val);
-        if (v) out.seamPosL = v;
-        break;
-      }
-      case "sposR": {
-        const v = parseVec3Slash(val);
-        if (v) out.seamPosR = v;
-        break;
-      }
-      case "bN":
-        boneNames.push(val);
-        break;
-      case "bP": {
-        const v = parseVec3Slash(val);
-        if (v) bonePositions.push(v);
-        break;
-      }
-      case "bA": {
-        const v = parseVec3Slash(val);
-        if (v) boneAngles.push(v);
-        break;
-      }
-      case "bS": {
-        const v = parseVec3Slash(val);
-        if (v) boneScales.push(v);
-        break;
-      }
-      case "cC": {
-        const hex = rgbFloatStringsToHex(val.split("/"));
-        if (hex !== undefined) colorsHex.push(hex);
-        break;
-      }
-      case "oR": {
-        const r = Number.parseFloat(val);
-        if (Number.isFinite(r)) outlineRatios.push(r);
-        break;
-      }
-      default:
-        break;
+export function serializeShaperStylePreset(data: ShaperStylePresetData): string {
+  const tokens: string[] = [];
+  const pushColor = (key: string, hex: string | undefined): void => {
+    if (hex === undefined) return;
+    const rgb = hexToUnitRgb(hex);
+    if (rgb !== undefined) {
+      tokens.push(`${key}*${rgb[0]}/${rgb[1]}/${rgb[2]}`);
     }
-  }
-
-  return {
-    ...out,
-    boneNames,
-    bonePositions,
-    boneAngles,
-    boneScales,
-    colorsHex,
-    outlineRatios,
   };
-}
+  pushColor("hC", data.hairColorHex);
+  pushColor("sC", data.skinColorHex);
+  if (data.shadeTexId !== undefined) tokens.push(`ssT*${data.shadeTexId}`);
+  pushColor("ssC", data.shadeColorHex);
+  if (data.shadePos !== undefined) tokens.push(`ssL*${data.shadePos}`);
+  if (data.shadeWidth !== undefined) tokens.push(`ssW*${data.shadeWidth}`);
+  if (data.reflectiveLightTexId !== undefined) tokens.push(`rsT*${data.reflectiveLightTexId}`);
+  pushColor("rsC", data.reflectiveLightColorHex);
+  if (data.reflectiveLightPos !== undefined) tokens.push(`rsL*${data.reflectiveLightPos}`);
+  if (data.reflectiveLightWidth !== undefined) tokens.push(`rsW*${data.reflectiveLightWidth}`);
+  pushColor("olC", data.outlineColorHex);
+  if (data.outlineThickness !== undefined) tokens.push(`olT*${data.outlineThickness}`);
+  if (data.outlinePressure !== undefined) tokens.push(`olP*${data.outlinePressure ? 1 : 0}`);
+  if (data.disableHairInline !== undefined) tokens.push(`hID*${data.disableHairInline ? 1 : 0}`);
+  if (data.shadowType !== undefined) tokens.push(`shT*${data.shadowType}`);
+  if (data.lightAngleX !== undefined) tokens.push(`lAX*${data.lightAngleX}`);
+  if (data.lightAngleY !== undefined) tokens.push(`lAY*${data.lightAngleY}`);
 
-function hexToUnitRgb(hex: string): readonly [number, number, number] | undefined {
-  if (!/^#[0-9a-fA-F]{6}$/u.test(hex)) return undefined;
-  const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
-  const g = Number.parseInt(hex.slice(3, 5), 16) / 255;
-  const b = Number.parseInt(hex.slice(5, 7), 16) / 255;
-  return [r, g, b];
+  return `${data.version || "1.0"}\n${tokens.join(",")}`;
 }
 
 /**
@@ -474,3 +321,14 @@ export function shaperPresetToCharacterRecipe(options: {
     },
   };
 }
+
+export { parseShaperPartPreset, serializeShaperPartPreset };
+export type {
+  ShaperPartPresetData,
+  ShaperPresetAccessoryRecord,
+  ShaperPresetHairBaseZoneRecord,
+  ShaperPresetHairStrandRecord,
+  ShaperPresetLinePointRecord,
+  ShaperPresetLineRecord,
+  ShaperPresetTransformRecord,
+};

@@ -538,3 +538,22 @@ export function simulateShaperHairPhysicsStep(options: {
   }
   return out;
 }
+
+export {
+  SHAPER_HAIR_BASE_ZONE_CALIBRATIONS,
+  SHAPER_HAIR_JOINT_SPEC,
+  alignShaperHairControlRotations,
+  buildPlantedHairControlChain,
+  computeShaperHairBaseUvTransform,
+  reanchorPlantedHairRoot,
+} from "./shaper-hair";
+export type {
+  BuildPlantedHairControlChainOptions,
+  PlantedHairControlChainResult,
+  PlantedHairControlNode,
+  ShaperConfigurableJointSpec,
+  ShaperHairBaseZoneCalibration,
+  ShaperHairBaseZoneIndex,
+  ShaperHairBaseZoneUiInput,
+  ShaperHairBaseZoneUvTransform,
+} from "./shaper-hair";

@@ -484,14 +484,35 @@ export function expandWelded(values: Float32Array, vertexSource: Uint32Array, co
 export {
   adaptPartSeamOffsets,
   computeSeamCentroids3Zone,
+  findAdjacentBodyPartSeamPairs,
   findCoincidentVertexGroups,
   lockCoincidentSeamVertices,
   matchNeckSeamVertices,
+  weldAdjacentBodyPartNormals,
   weldNeckSeamPositionsAndNormals,
 } from "./seam-weld";
 export type {
+  BodyPartSeamVertexPair,
   NeckSeamVertexPair,
   PartSeamAdaptationOptions,
   PartSeamAdaptationResult,
   SeamCentroids3Zone,
 } from "./seam-weld";
+export {
+  applySymmetricControlPointEdit,
+  computeShaperVertexKeyHash,
+  findMirrorControlPointPairs,
+  interpolateCageMorphTransition,
+  recalculateCreaseNormals,
+  selectControlPointsInScreenRect,
+} from "./cage-control";
+export type {
+  ApplySymmetricControlPointEditOptions,
+  CageMorphTransitionFrame,
+  CageMorphTransitionInput,
+  ScreenProjectedControlPoint,
+  ShaperControlPointMirrorDescriptor,
+  ShaperMirrorSide,
+  SymmetricControlPointPositionEdit,
+  SymmetricControlPointPowerEdit,
+} from "./cage-control";
