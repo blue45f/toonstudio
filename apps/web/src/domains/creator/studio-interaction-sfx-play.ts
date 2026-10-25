@@ -36,7 +36,7 @@ function prefersReducedMotion(): boolean {
 
 /** 저장된 카테고리 설정을 읽는다 (없거나 손상 시 기본값). */
 export function readInteractionSfxCategorySettings(): StudioInteractionSfxCategorySettings {
-  let stored: string | null = null;
+  let stored: string | null;
   try {
     stored =
       typeof globalThis.localStorage !== "undefined"

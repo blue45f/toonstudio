@@ -22,7 +22,7 @@ import {
   serializeInteractionSfxSettings,
   STUDIO_INTERACTION_SFX_CATEGORY_KEY,
   type StudioInteractionSfxCategorySettings,
-} from "@/domains/creator/studio-interaction-sfx-settings";
+} from "@/domains/creator/public/studio-interaction-sfx-settings";
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -36,7 +36,7 @@ function prefersReducedMotion(): boolean {
 }
 
 function readCategorySettings(): StudioInteractionSfxCategorySettings {
-  let stored: string | null = null;
+  let stored: string | null;
   try {
     stored =
       typeof globalThis.localStorage !== "undefined"

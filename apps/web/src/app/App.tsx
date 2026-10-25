@@ -1,7 +1,6 @@
 import { apiFetch } from "@/platform/api";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, useLocation } from "react-router-dom";
-import { useAudioState, useClickSfx } from "@toonstudio/core/fx";
 
 import { ErrorBoundary } from "../app/errors/error-boundary";
 
@@ -247,10 +246,6 @@ function SerifWebFontBridge() {
 
 function AppRuntime() {
   const { pathname } = useLocation();
-  // 전역 클릭 효과음 — 앱 루트에서 1회만 장착한다. DOM 클릭은 이 위임이 맡고,
-  // 캔버스·호스트 전용 효과음은 별도 재생 계층이 맡아 중복되지 않는다.
-  const audioState = useAudioState();
-  useClickSfx({ enabled: audioState.sfxEnabled && !audioState.muted });
   // Legacy bilingual bridges register translation sources during render. Subscribe at the app
   // runtime boundary so completed machine-translation batches refresh every route, not only useT().
   useI18n((state) => state.translationBundleRevision);

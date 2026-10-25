@@ -9,6 +9,7 @@ import {
   suspendBgmForContext,
   useAmbientBgm,
   useAudioState,
+  useClickSfx,
 } from "@toonstudio/core/fx";
 import {
   ChevronDown,
@@ -136,6 +137,7 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
     setVolume: setBgmVolume,
   } = useAmbientBgm();
   const audio = useAudioState();
+  useClickSfx({ enabled: audio.sfxEnabled && !audio.muted });
   // 휴대폰에서 지난 방문의 펼친 패널을 되살리면 첫 화면 본문을 덮으므로 넓은 화면에서만 복원한다.
   const [expanded, setExpanded] = useState(() => initial.expanded && !narrowViewport());
   const asideRef = useRef<HTMLElement>(null);

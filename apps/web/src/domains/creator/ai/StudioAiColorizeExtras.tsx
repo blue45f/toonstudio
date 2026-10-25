@@ -97,7 +97,7 @@ export function StudioAiColorizeExtras({
       result.added ? "프롬프트를 라이브러리에 저장했어요." : "이미 있는 프롬프트라 사용 시각만 갱신했어요.",
     );
   };
-  const useLibraryEntry = (entry: StudioAiPromptLibraryEntry) => {
+  const selectLibraryEntry = (entry: StudioAiPromptLibraryEntry) => {
     onPromptChange(entry.text);
     persistLibrary(touchPromptLibraryEntry(library, entry.id));
   };
@@ -211,7 +211,6 @@ export function StudioAiColorizeExtras({
                     onChange={() => wiring.onSelectCandidate(candidate.id)}
                     disabled={busy}
                   />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={candidate.dataUrl} alt="채색 후보" className="size-10 shrink-0 rounded object-cover" />
                   <span className="min-w-0 flex-1 truncate text-[0.62rem] text-fg-2">
                     {candidate.prompt || "채색 후보"}
@@ -287,7 +286,7 @@ export function StudioAiColorizeExtras({
           <ul className="space-y-1">
             {listPromptLibraryEntries(library).slice(0, 10).map((entry) => (
               <li key={entry.id} className="flex items-center gap-1.5">
-                <button type="button" className="min-w-0 flex-1 truncate rounded-lg border border-line bg-card px-2 py-1.5 text-left text-[0.62rem] text-fg-2 hover:border-accent/40" onClick={() => useLibraryEntry(entry)} title={entry.text}>
+                <button type="button" className="min-w-0 flex-1 truncate rounded-lg border border-line bg-card px-2 py-1.5 text-left text-[0.62rem] text-fg-2 hover:border-accent/40" onClick={() => selectLibraryEntry(entry)} title={entry.text}>
                   {entry.text}
                 </button>
                 <button type="button" className="shrink-0 rounded-lg border border-line px-2 py-1.5 text-[0.62rem] text-fg-3 hover:text-fg" aria-label="라이브러리에서 삭제" onClick={() => persistLibrary(removePromptLibraryEntry(library, entry.id))}>
