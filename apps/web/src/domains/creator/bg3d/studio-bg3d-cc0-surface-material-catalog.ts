@@ -213,12 +213,13 @@ export function buildStudioBg3dCc0SurfaceMaterialOverride(
     colorMode: "multiply",
     color: entry.tintHex,
     colorStrength: 0.42,
+    opacityMultiplier: 1,
     roughness: entry.roughness,
     metalness: entry.metalness,
-    opacity: 1,
-    wireframe: false,
     emissiveColor: "#000000",
-    emissiveIntensity: 0,
+    emissiveIntensity: null,
+    wireframe: false,
+    doubleSided: false,
     surfaceMaterialId: entry.id,
   });
 }
