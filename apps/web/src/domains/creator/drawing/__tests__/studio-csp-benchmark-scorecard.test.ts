@@ -108,6 +108,15 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.appVersion).toBe("5.1.5");
     expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.editImageToolNodeCount).toBe(255);
     expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.editImageToolVariantColumnCount).toBe(507);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.brushShapePresetCount).toBe(14);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.mixPaletteToolCount).toBe(3);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.mixColorSetSwatchCount).toBe(13);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.modifyKeyRuleCount).toBe(84);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.toneDotShapeCount).toBe(22);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.rulerEngineCount).toBe(7);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.dessinDollV2BoneCount).toBe(56);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.handSetupCornerPoseCount).toBe(6);
+    expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.tgCxsPlugInExportedSymbolCount).toBe(7765);
     expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.filterPluginBundles).toContain(
       "FlowBasedAbstraction.bundle",
     );
