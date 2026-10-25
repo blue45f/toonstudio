@@ -12,6 +12,7 @@ import {
 
 import { AdminMutationGuard } from "../admin/admin-mutation.guard";
 
+import { applyMembershipEagerTopUp } from "./membership-eager-topup";
 import { sanitizeActivityClaimMetadata } from "./membership-activity-metadata";
 import { MembershipWalletService } from "./membership-wallet.service";
 
@@ -107,12 +108,12 @@ export class MembershipWalletController {
   @Post("admin/membership/users/:userId/memberships")
   @UseGuards(AdminMutationGuard)
   @Header("Cache-Control", "no-store, max-age=0")
-  adminApplyMembership(
+  async adminApplyMembership(
     @Headers("x-user-id") adminId: string | undefined,
     @Param("userId") targetUserId: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.service.adminApplyMembership({
+    const result = await this.service.adminApplyMembership({
       adminId,
       targetUserId,
       planId: body.planId,
@@ -120,6 +121,15 @@ export class MembershipWalletController {
       requestKey: body.requestKey,
       reason: body.reason,
     });
+    // 등급 변경 즉시 지급(eager): 부여 직후 공개 overview를 호출해 새 등급의
+    // 월 포함량 차분을 그 자리에서 지급한다 (cycleKey 차분이라 멱등).
+    // 지급 실패가 부여 성공을 가리지 않는다 — lazy 경로가 뒤에서 메운다.
+    const creditTopUp = await applyMembershipEagerTopUp(this.service, {
+      userId: targetUserId,
+      applied: result.applied,
+      requestedPlanId: body.planId,
+    });
+    return { ...result, creditTopUp };
   }
   @Post("admin/membership/users/:userId/memberships/:membershipId/revoke")
   @UseGuards(AdminMutationGuard)

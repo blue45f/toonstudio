@@ -1,7 +1,7 @@
 import { operatorAiFundingEnabled } from "../../config/user-funded-ai-policy";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Inject, Injectable, Optional, ServiceUnavailableException } from "@nestjs/common";
 
 import {
   InMemoryStudio3dGenerationJobStore,
@@ -21,6 +21,13 @@ import {
   type Studio3dGenerationArtifactStore,
   type Studio3dGenerationStoredArtifact,
 } from "./studio-3d-generation-postgres-store";
+import {
+  STUDIO_3D_CREDIT_WALLET,
+  beginStudio3dCreditCharge,
+  settleStudio3dCreditCharge,
+  type Studio3dCreditCharge,
+  type Studio3dCreditWallet,
+} from "./studio-3d-credit-charge";
 import { createHyper3dRodinProvider } from "./studio-hyper3d-rodin-provider";
 import { STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION } from "./studio-3d-generation-provider";
 import {
@@ -201,7 +208,9 @@ export class Studio3dGenerationService {
   readonly #ledger: Studio3dGenerationJobLedger;
   #varcoFetch: Varco3dFetch | undefined;
 
-  constructor() {
+  constructor(
+    @Optional() @Inject(STUDIO_3D_CREDIT_WALLET) private readonly creditWallet: Studio3dCreditWallet | null = null,
+  ) {
     const databaseUrl = process.env.DATABASE_URL?.trim();
     if (databaseUrl) {
       const store = new PostgresStudio3dGenerationStore(databaseUrl);
@@ -364,6 +373,31 @@ export class Studio3dGenerationService {
       estimatedCredits: input.estimatedCredits ?? 1,
     });
     if (created.duplicate) return created.record;
+    // 운영자 부담 경로에만 크레딧을 예약한다 (studio-ai와 동일 패턴).
+    // 예약 실패(잔액·일 한도)는 제공자 호출 전에 차단하고, 잡을 실패로
+    // 전이해 대기 상태로 남기지 않는다. BYOK·지갑 미주입은 건너뛴다.
+    let creditCharge: Studio3dCreditCharge = { charged: false };
+    try {
+      creditCharge = await beginStudio3dCreditCharge(this.creditWallet, {
+        userId,
+        requestId,
+        mode: input.mode,
+        providerApiKey,
+        operatorFunded: operatorAiFundingEnabled(),
+      });
+    } catch (error) {
+      try {
+        await this.#ledger.transition({
+          jobId: created.record.id,
+          expectedGeneration: created.record.generation,
+          state: "failed",
+          terminalReason: error instanceof Error ? error.message.slice(0, 240) : "3d-credit-charge-failed",
+        });
+      } catch {
+        // 차감 실패 원인을 보존한다. 잡 전이 실패가 원인을 가리지 않는다.
+      }
+      throw error;
+    }
     let record = await this.#ledger.transition({
       jobId: created.record.id,
       expectedGeneration: created.record.generation,
@@ -387,12 +421,24 @@ export class Studio3dGenerationService {
         requestId: providerIdentityString(submission, ["requestid", "request_id"]),
       });
       await this.#identityStore.put(record.id, sealIdentity(identity), record.updatedAtMs);
+      // 제출 성공 시점에 예약을 확정한다. 정산 실패는 제출된 잡을
+      // 무르지 않으므로 로그만 남긴다 (studio-ai 정산 실패 처리와 동일).
+      try {
+        await settleStudio3dCreditCharge(this.creditWallet, creditCharge, { submitted: true });
+      } catch {
+        console.error("[studio-3d] credit settlement failed", { jobId: record.id });
+      }
       return this.#ledger.transition({
         jobId: record.id,
         expectedGeneration: record.generation,
         state: "generating-geometry",
       });
     } catch (error) {
+      try {
+        await settleStudio3dCreditCharge(this.creditWallet, creditCharge, { submitted: false });
+      } catch {
+        // 해제 실패가 제공자 오류를 가리지 않는다. 예약은 TTL(10분)로 만료된다.
+      }
       try {
         await this.#ledger.transition({
           jobId: record.id,
