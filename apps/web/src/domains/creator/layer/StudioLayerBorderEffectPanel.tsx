@@ -8,10 +8,13 @@
  * `el.borderEffect` 레시피만 편집한다(핫패스 무접점 — 프레임당 React 렌더 없음).
  */
 
+import { useRef } from "react";
+
 import {
   DEFAULT_STUDIO_LAYER_BORDER_EFFECT,
   normalizeStudioLayerBorderEffect,
   STUDIO_LAYER_BORDER_EFFECT_THICKNESS_RANGE,
+  STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE,
   type StudioLayerBorderEffectSettings,
   type StudioLayerBorderEffectType,
 } from "./studio-layer-border-effect";
@@ -22,7 +25,7 @@ const LABEL_ROW = "flex items-center justify-between gap-2 text-xs text-fg-2";
 const RANGE_CLASS = "w-24 accent-accent cursor-pointer";
 const READOUT_CLASS = "w-8 text-right text-[10px] tabular-nums text-fg-3";
 const TYPE_CHIP_CLASS =
-  "rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-50";
+  "rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50";
 
 const BORDER_TYPE_OPTIONS: ReadonlyArray<{
   id: StudioLayerBorderEffectType;
@@ -51,6 +54,7 @@ export function StudioLayerBorderEffectPanel({
   onChange: (next: StudioLayerBorderEffectSettings) => void;
 }): React.ReactElement {
   const current = normalizeStudioLayerBorderEffect(value);
+  const radioRefs = useRef<Array<HTMLButtonElement | null>>([]);
   // 저장돼 있던 유효 굵기가 없으면 켤 때 기본 굵기부터 시작한다(0px 테두리는 항등이라 무의미).
   const effectiveThickness =
     current.thickness > 0 ? current.thickness : DEFAULT_STUDIO_LAYER_BORDER_EFFECT.thickness;
@@ -61,6 +65,27 @@ export function StudioLayerBorderEffectPanel({
     );
   };
   const controlsDisabled = disabled || !current.enabled;
+
+  const handleTypeKeyDown = (index: number, event: React.KeyboardEvent<HTMLButtonElement>): void => {
+    if (controlsDisabled) return;
+    const count = BORDER_TYPE_OPTIONS.length;
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % count;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + count) % count;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = count - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      const targetOption = BORDER_TYPE_OPTIONS[nextIndex]!;
+      patch({ type: targetOption.id });
+      radioRefs.current[nextIndex]?.focus();
+    }
+  };
 
   return (
     <section
@@ -87,23 +112,31 @@ export function StudioLayerBorderEffectPanel({
       </div>
 
       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="경계 효과 종류">
-        {BORDER_TYPE_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            role="radio"
-            aria-checked={current.type === option.id}
-            title={option.tip}
-            disabled={controlsDisabled}
-            onClick={() => patch({ type: option.id })}
-            className={cn(
-              TYPE_CHIP_CLASS,
-              current.type === option.id && "border-accent bg-raised text-fg",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+        {BORDER_TYPE_OPTIONS.map((option, index) => {
+          const isChecked = current.type === option.id;
+          return (
+            <button
+              key={option.id}
+              ref={(el) => {
+                radioRefs.current[index] = el;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={isChecked}
+              tabIndex={isChecked ? 0 : -1}
+              title={option.tip}
+              disabled={controlsDisabled}
+              onClick={() => patch({ type: option.id })}
+              onKeyDown={(e) => handleTypeKeyDown(index, e)}
+              className={cn(
+                TYPE_CHIP_CLASS,
+                isChecked && "border-accent bg-raised text-fg",
+              )}
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
 
       <label className={LABEL_ROW}>
@@ -136,17 +169,66 @@ export function StudioLayerBorderEffectPanel({
         />
       </div>
 
-      <label className="flex cursor-pointer items-center gap-1.5 text-xs text-fg-2">
-        <input
-          type="checkbox"
-          aria-label="경계 부드럽게"
-          className="accent-accent"
-          checked={current.antiAliased !== false}
-          disabled={controlsDisabled}
-          onChange={(e) => patch({ antiAliased: e.target.checked })}
-        />
-        가장자리 부드럽게
-      </label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-fg-2">
+          <input
+            type="checkbox"
+            aria-label="경계 부드럽게"
+            className="accent-accent"
+            checked={current.antiAliased !== false}
+            disabled={controlsDisabled}
+            onChange={(e) => patch({ antiAliased: e.target.checked })}
+          />
+          가장자리 부드럽게
+        </label>
+
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-fg-2">
+          <input
+            type="checkbox"
+            aria-label="수채 경계"
+            className="accent-accent"
+            checked={current.watercolorEdge === true}
+            disabled={controlsDisabled}
+            onChange={(e) =>
+              patch({
+                watercolorEdge: e.target.checked ? true : undefined,
+                watercolorDarkness: e.target.checked
+                  ? (current.watercolorDarkness ??
+                    STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.default)
+                  : undefined,
+              })
+            }
+          />
+          수채 경계
+        </label>
+      </div>
+
+      {current.watercolorEdge === true && (
+        <label className={LABEL_ROW}>
+          <span>어두운 정도</span>
+          <span className="flex items-center gap-1.5">
+            <input
+              type="range"
+              aria-label="수채 경계 어두운 정도"
+              min={STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.min}
+              max={STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.max}
+              step={1}
+              value={
+                current.watercolorDarkness ??
+                STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.default
+              }
+              disabled={controlsDisabled}
+              onChange={(e) => patch({ watercolorDarkness: Number(e.target.value) })}
+              className={RANGE_CLASS}
+            />
+            <span className={READOUT_CLASS}>
+              {current.watercolorDarkness ??
+                STUDIO_LAYER_BORDER_EFFECT_WATERCOLOR_DARKNESS_RANGE.default}
+              %
+            </span>
+          </span>
+        </label>
+      )}
     </section>
   );
 }

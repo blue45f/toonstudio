@@ -10,7 +10,7 @@
  *   reduced-motion 대응.
  */
 import { creatorRestStatusText } from "../creator-rest-status-i18n";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { useT } from "@/shared/lib/i18n";
 import {
@@ -18,6 +18,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import {
+  brushAdjustVectorLineWidth,
   createVectorLineCommand,
   editableLineFromVectorizerPoints,
   emptyVectorLineHistory,
@@ -95,6 +96,12 @@ const COPY = {
     "교차점 정리",
     "Trim overhang",
   ),
+  brushWidth: defineBilingualText(
+    "StudioVectorLinePanel",
+    "brushWidth",
+    "균일 폭 보정",
+    "Fix width brush",
+  ),
   undo: defineBilingualText("StudioVectorLinePanel", "undo", "실행 취소", "Undo"),
   redo: defineBilingualText("StudioVectorLinePanel", "redo", "다시 실행", "Redo"),
   statusIdle: defineBilingualText(
@@ -132,6 +139,12 @@ const COPY = {
     "cmdTrimIntersection",
     "교차점 너머 삐침 선분 정리",
     "Trimmed overhang at intersection",
+  ),
+  cmdBrushWidth: defineBilingualText(
+    "StudioVectorLinePanel",
+    "cmdBrushWidth",
+    "브러시 반경 일정 폭 수렴 보정",
+    "Applied fixed-width brush convergence",
   ),
   step1: defineBilingualText("StudioVectorLinePanel", "step1", "선을 그립니다", "Draw a line"),
   step2: defineBilingualText(
@@ -245,6 +258,7 @@ export function StudioVectorLinePanel(): ReactElement {
   const [history, setHistory] = useState<StudioVectorLineHistory>(emptyVectorLineHistory);
   const [rangePreset, setRangePreset] = useState<RangePresetId>("middle");
   const [lastCommand, setLastCommand] = useState<string | null>(null);
+  const rangeRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const range = useMemo(
     () => presetRange(line.points.length, rangePreset),
@@ -294,6 +308,52 @@ export function StudioVectorLinePanel(): ReactElement {
     { id: "middle", labelKey: COPY.rangeMiddle },
     { id: "end", labelKey: COPY.rangeEnd },
   ];
+
+  const handleRangeKeyDown = (
+    index: number,
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ): void => {
+    const count = rangeOptions.length;
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % count;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + count) % count;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = count - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      setRangePreset(rangeOptions[nextIndex]!.id);
+      rangeRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  useEffect(() => {
+    const onWindowKeyDown = (event: KeyboardEvent): void => {
+      if (!(event.metaKey || event.ctrlKey)) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        const result = undoVectorLine(history);
+        if (!result) return;
+        setHistory(result.history);
+        setLine(result.stroke);
+        setLastCommand(t(COPY.undo));
+      } else if ((key === "z" && event.shiftKey) || key === "y") {
+        event.preventDefault();
+        const result = redoVectorLine(history);
+        if (!result) return;
+        setHistory(result.history);
+        setLine(result.stroke);
+        setLastCommand(t(COPY.redo));
+      }
+    };
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => window.removeEventListener("keydown", onWindowKeyDown);
+  }, [history, t]);
 
   return (
     <section
@@ -388,13 +448,18 @@ export function StudioVectorLinePanel(): ReactElement {
         <span className="text-xs font-semibold" style={{ color: "var(--color-fg-3)" }}>
           {t(COPY.rangeLabel)}
         </span>
-        {rangeOptions.map((option) => {
+        {rangeOptions.map((option, index) => {
           const active = option.id === rangePreset;
           return (
             <button
               key={option.id}
+              ref={(el) => {
+                rangeRefs.current[index] = el;
+              }}
               type="button"
+              tabIndex={active ? 0 : -1}
               onClick={() => setRangePreset(option.id)}
+              onKeyDown={(e) => handleRangeKeyDown(index, e)}
               aria-pressed={active}
               className="rounded-full px-3.5 py-1.5 text-xs font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2"
               style={
@@ -460,8 +525,8 @@ export function StudioVectorLinePanel(): ReactElement {
         </button>
       </div>
 
-      {/* CSP 심화 벡터 편집: 곡선 집기 & 교차점 삐침 정리 */}
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      {/* CSP 심화 벡터 편집: 곡선 집기 & 교차점 삐침 정리 & 일정 폭 브러시 보정 */}
+      <div className="mt-2 grid grid-cols-3 gap-2">
         <button
           type="button"
           onClick={() =>
@@ -478,7 +543,7 @@ export function StudioVectorLinePanel(): ReactElement {
               });
             })
           }
-          className="rounded-2xl px-3 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="rounded-2xl px-2 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
           style={{
             background: "var(--color-raised)",
             color: "var(--color-fg)",
@@ -500,7 +565,7 @@ export function StudioVectorLinePanel(): ReactElement {
               return trimmed[0] ?? target;
             })
           }
-          className="rounded-2xl px-3 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="rounded-2xl px-2 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
           style={{
             background: "var(--color-raised)",
             color: "var(--color-fg)",
@@ -508,6 +573,30 @@ export function StudioVectorLinePanel(): ReactElement {
           }}
         >
           {t(COPY.trimIntersection)}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            applyEdit(COPY.cmdBrushWidth, (target) => {
+              const midIndex = Math.floor((range.startIndex + range.endIndex) / 2);
+              const anchor = target.points[midIndex] ?? target.points[0]!;
+              return brushAdjustVectorLineWidth(target, {
+                x: anchor.x,
+                y: anchor.y,
+                radiusPx: 88,
+                mode: "add",
+                amount: 4,
+              });
+            })
+          }
+          className="rounded-2xl px-2 py-2 text-xs font-bold transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2"
+          style={{
+            background: "var(--color-raised)",
+            color: "var(--color-fg)",
+            border: "1px solid var(--color-line)",
+          }}
+        >
+          {t(COPY.brushWidth)}
         </button>
       </div>
 
