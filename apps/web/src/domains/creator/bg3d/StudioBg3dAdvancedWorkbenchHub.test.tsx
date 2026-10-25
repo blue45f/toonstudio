@@ -23,6 +23,8 @@ const ALL_WORKBENCH_TAB_IDS: readonly StudioBg3dWorkbenchTabId[] = [
   "shaper-tooning",
   "spatial-fx",
   "spatial-webtoon",
+  "virtual-space-collab",
+  "vrm-hybrid-dcc",
 ];
 
 describe("StudioBg3dAdvancedWorkbenchHub", () => {
@@ -30,14 +32,14 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     cleanup();
   });
 
-  it("15종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {
+  it("17종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {
     render(<StudioBg3dAdvancedWorkbenchHub />);
 
     expect(screen.getByTestId("bg3d-advanced-workbench-hub")).toBeTruthy();
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain(
       "glTF 2.0 / GLB): A",
     );
-    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(15);
+    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(17);
 
     // 기본 탭: atmosphere (높이 안개 감쇠율 & 카메라 추적광 확인)
     expect(screen.getByTestId("bg3d-atmosphere-height-fog-readout").textContent).toContain(
@@ -112,6 +114,25 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     fireEvent.click(screen.getByTestId("bg3d-grip-type-gun-pistol-trigger"));
     expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
       "소품 그립: gun-pistol-trigger",
+    );
+
+    // vrm-hybrid-dcc 탭 전환 및 캐릭터 적용·VRM 소켓 그립·외부 3D 인테이크 검증
+    fireEvent.click(screen.getByTestId("bg3d-workbench-tab-vrm-hybrid-dcc"));
+    expect(screen.getByTestId("bg3d-vrm-hybrid-dcc-panel")).toBeTruthy();
+    expect(screen.getByTestId("bg3d-hybrid-dcc-summary").textContent).toContain(
+      "DCC 커널 Ready",
+    );
+    fireEvent.click(screen.getByTestId("bg3d-char-purpose-ai-control"));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "캐릭터 적용: ai-control",
+    );
+    fireEvent.click(screen.getByTestId("bg3d-vrm-grip-preset-two-hand-grip"));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "VRM 소켓 그립: two-hand-grip",
+    );
+    fireEvent.click(screen.getByTestId("bg3d-external-intake-character"));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "외부 인테이크: 캐릭터 (90K)",
     );
 
     // 나머지 탭들도 모두 클릭하여 크래시 없이 마운트되는지 전수 확인

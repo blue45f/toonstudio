@@ -6,6 +6,7 @@ import {
   type CutAspectRatio,
   type StoryboardCut,
 } from "../scene-3d/studio-3d-dcc-suite";
+import { StudioVirtualSpaceCollaborationHub } from "../virtual-space/StudioVirtualSpaceCollaborationHub";
 import { StudioBg3dAtmospherePanel } from "./StudioBg3dAtmospherePanel";
 import { StudioBg3dCharacterAnimatorPanel } from "./StudioBg3dCharacterAnimatorPanel";
 import { StudioBg3dClonerPanel } from "./StudioBg3dClonerPanel";
@@ -24,6 +25,7 @@ import { StudioBg3dPostProcessVfxPanel } from "./StudioBg3dPostProcessVfxPanel";
 import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import { StudioBg3dSpatialWebtoonPanel } from "./StudioBg3dSpatialWebtoonPanel";
+import { StudioBg3dVrmHybridDccPanel } from "./StudioBg3dVrmHybridDccPanel";
 import {
   acknowledgeAllStudioBg3dPlaceSetImpacts,
   acknowledgeStudioBg3dPlaceSetImpact,
@@ -50,7 +52,9 @@ export type StudioBg3dWorkbenchTabId =
   | "postprocess-vfx"
   | "shaper-tooning"
   | "spatial-fx"
-  | "spatial-webtoon";
+  | "spatial-webtoon"
+  | "virtual-space-collab"
+  | "vrm-hybrid-dcc";
 
 interface WorkbenchTabMeta {
   readonly id: StudioBg3dWorkbenchTabId;
@@ -72,8 +76,10 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "deformers", labelKo: "디포머·CSG 불리언", groupKo: "캐릭터·DCC" },
   { id: "dynamic-components", labelKo: "다이나믹 컴포넌트", groupKo: "캐릭터·DCC" },
   { id: "dcc-pipeline", labelKo: "DCC·도시·렌즈·품질", groupKo: "캐릭터·DCC" },
+  { id: "vrm-hybrid-dcc", labelKo: "VRM·아바타·하이브리드 DCC", groupKo: "캐릭터·DCC" },
   { id: "place-set-package", labelKo: "장소 세트 정본", groupKo: "세트·XR" },
   { id: "spatial-webtoon", labelKo: "AR·VR 공간 웹툰", groupKo: "세트·XR" },
+  { id: "virtual-space-collab", labelKo: "가상 공간 협업·소셜·미니앱", groupKo: "세트·XR" },
 ]);
 
 const INITIAL_CUTS: readonly StoryboardCut[] = Object.freeze([
@@ -496,6 +502,25 @@ export function StudioBg3dAdvancedWorkbenchHub({
               setLastActionSummary(`소품 그립: ${grip} (${indexAngleDeg}°)`)
             }
           />
+        ) : null}
+
+        {activeTab === "vrm-hybrid-dcc" ? (
+          <StudioBg3dVrmHybridDccPanel
+            disabled={disabled}
+            onSelectApplyPurpose={(purpose, passCount) =>
+              setLastActionSummary(`캐릭터 적용: ${purpose} (${passCount}패스)`)
+            }
+            onSelectAttachmentPreset={(presetId) =>
+              setLastActionSummary(`VRM 소켓 그립: ${presetId}`)
+            }
+            onPlanExternalIntake={(prompt, maxTriangles) =>
+              setLastActionSummary(`외부 인테이크: ${prompt} (${maxTriangles}삼각형)`)
+            }
+          />
+        ) : null}
+
+        {activeTab === "virtual-space-collab" ? (
+          <StudioVirtualSpaceCollaborationHub />
         ) : null}
       </div>
     </section>
