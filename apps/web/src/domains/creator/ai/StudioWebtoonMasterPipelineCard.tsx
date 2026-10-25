@@ -40,6 +40,7 @@ import {
   type CharacterRelationshipDynamicId,
   type GenvasPosePresetId,
 } from "./studio-webtoon-storyboard-pipeline";
+import { StudioTooningPlusSuitePanel } from "./StudioTooningPlusSuitePanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -626,6 +627,9 @@ export function StudioWebtoonMasterPipelineCard({
           {activeClaudeAssist.globalLocalizationNotes[0] ?? "번역 팽창률 여유 확보"}
         </p>
       </div>
+
+      {/* 투닝 플러스 (Tooning Plus: TG·TD·ED·MG·DV·TB·CM) 전 제품군 통합 워크스페이스 */}
+      <StudioTooningPlusSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
     </section>
   );
 }

@@ -11,6 +11,7 @@ import {
 import { StudioAiEmotionBubbleMatcher } from "../ai/studio-ai-emotion-bubble-matcher";
 
 import { StudioBubbleLibraryPanel } from "./StudioBubbleLibraryPanel";
+import { StudioTooningEditorBubbleCharacterPanel } from "./StudioTooningEditorBubbleCharacterPanel";
 import {
   BUBBLE_LIBRARY_PREFERENCES_STORAGE_KEY,
   EMPTY_BUBBLE_LIBRARY_PREFERENCES,
@@ -393,6 +394,8 @@ export function StudioBubbleToolPopoverBody({
           "studio.bubble.placementHelp.cancelHint",
         )}
       </p>
+
+      <StudioTooningEditorBubbleCharacterPanel onInsertBubble={insertBubble} />
 
       <StudioBubbleLibraryPanel
         preferences={preferences}

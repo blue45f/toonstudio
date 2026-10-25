@@ -5,6 +5,8 @@ import type { CharacterArchetype } from "../scene-3d/studio-3d-shaper-toon-maker
 import type { CutAspectRatio } from "../scene-3d/studio-3d-storyboard-cut-strip";
 import type { TooningEmotionPreset, EmoteSfxKind } from "../scene-3d/studio-3d-tooning-emotion-fx";
 
+import { StudioTooning3DStudioInspectorPanel } from "./StudioTooning3DStudioInspectorPanel";
+
 export interface StudioBg3dShaperTooningStudioPanelProps {
   readonly onExportPsd?: () => void;
   readonly disabled?: boolean;
@@ -290,6 +292,9 @@ export function StudioBg3dShaperTooningStudioPanel({
           </div>
         </div>
       )}
+
+      {/* Tooning 3D Studio (TD) Complete 5-Tab Inspector, 23 Camera Presets & 3D Asset Store */}
+      <StudioTooning3DStudioInspectorPanel disabled={disabled} />
     </div>
   );
 }
