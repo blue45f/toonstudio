@@ -4,7 +4,9 @@ import { PostgresAdapter } from "@socket.io/postgres-adapter";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES,
   NestHealthRuntimeReadiness,
+  evaluateContainerMemoryPressure,
   isPostgresBackedStudioLiveNamespace,
 } from "./health-runtime-readiness";
 
@@ -135,5 +137,50 @@ describe("Studio live runtime readiness", () => {
 
     expect(uninitialized.isStudioLivePostgresNamespaceReady()).toBe(false);
     expect(missing.isStudioLivePostgresNamespaceReady()).toBe(false);
+  });
+
+  it("classifies 512MB container memory utilization into normal, elevated, and critical bands", () => {
+    const normal = evaluateContainerMemoryPressure({
+      rss: 256 * 1024 * 1024,
+      heapUsed: 180 * 1024 * 1024,
+    });
+    expect(normal).toEqual({
+      level: "normal",
+      rssBytes: 256 * 1024 * 1024,
+      heapUsedBytes: 180 * 1024 * 1024,
+      limitBytes: DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES,
+      utilizationRatio: 0.5,
+      shedHeavyBackgroundWork: false,
+    });
+
+    const elevated = evaluateContainerMemoryPressure({
+      rss: 384 * 1024 * 1024,
+      heapUsed: 320 * 1024 * 1024,
+    });
+    expect(elevated.level).toBe("elevated");
+    expect(elevated.utilizationRatio).toBeCloseTo(0.75, 5);
+    expect(elevated.shedHeavyBackgroundWork).toBe(true);
+
+    const critical = evaluateContainerMemoryPressure({
+      rss: 460 * 1024 * 1024,
+      heapUsed: 440 * 1024 * 1024,
+    });
+    expect(critical.level).toBe("critical");
+    expect(critical.shedHeavyBackgroundWork).toBe(true);
+  });
+
+  it("clamps invalid byte counts and exposes memory pressure on NestHealthRuntimeReadiness", () => {
+    const sanitized = evaluateContainerMemoryPressure(
+      { rss: Number.NaN, heapUsed: -100 },
+      0,
+    );
+    expect(sanitized.level).toBe("normal");
+    expect(sanitized.limitBytes).toBe(1);
+    expect(sanitized.utilizationRatio).toBe(0);
+
+    const readiness = new NestHealthRuntimeReadiness({ get: vi.fn() } as never);
+    const liveSnapshot = readiness.getContainerMemoryPressure();
+    expect(liveSnapshot.limitBytes).toBe(DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES);
+    expect(liveSnapshot.rssBytes).toBeGreaterThan(0);
   });
 });

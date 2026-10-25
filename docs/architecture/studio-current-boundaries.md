@@ -1,7 +1,7 @@
 # Studio 현재 아키텍처 경계
 
 - 상태: **현재 + 마이그레이션**
-- 최종 갱신: **2026-09-26**
+- 최종 갱신: **2026-10-25**
 - 범위: `/studio` route, 문서·입력·렌더링·저장·협업·오프라인 권위
 
 ## 1. 권위 원장
@@ -49,7 +49,10 @@ apps/web/index.html
 | 3D 전문 capture pass | Babylon.js |
 
 Provider, reference, lab 엔진은 이 권위를 자동으로 넘겨받지 않는다. 실패 뒤 다른 엔진을 몰래 재실행하는
-자동 폴백을 허용하지 않으며, 기능별 admission과 명시적 사용자 선택을 따른다.
+자동 폴백을 허용하지 않으며, 기능별 admission과 명시적 사용자 선택을 따른다. Living Ink WebGPU 등
+보조 WebGPU 시뮬레이션 런타임은 독립 디바이스를 중복 생성하는 대신 `studio-gpu-fabric.ts`의 공유
+WebGPU 패브릭 리스(`acquireStudioSharedWebGpuLease`)를 우선 임대하고 `device.lost` 시 단일 복구
+사이클로 동기화한다.
 
 ## 4. 문서·명령·history
 
@@ -134,13 +137,16 @@ config/http-response-headers.json
 
 상세 동작은 `docs/creator-runtime/README.md`와 `docs/studio-service-worker.md`를 따른다.
 
-## 10. 현재 마이그레이션 항목
+## 10. 현재 마이그레이션 항목 및 래칫 기준선
 
-- Creator domain 최상위 직접 파일 축소
-- API -> Web 직접 계약 참조 제거
+- Creator domain 최상위 직접 파일 축소 (`creatorRootFiles: 3708`)
+- 도메인 경계 래칫 하향 유지 (`webSharedToDomain: 20`, `webCrossDomainDeepImport: 64`)
+- 캔버스 초기 정적 그래프 지연 무효화 억제 (`lazyInvalidated: 6`, 정적 모듈 `1,611`개)
+- 소스 파일 `@ts-nocheck` 단계적 제거 (`tsNoCheckFiles: 35`, 컷툰 에디터 15종 제거 완료)
+- API -> Web 직접 계약 참조 제거 (`apiToWebContract: 0`)
 - legacy browser storage adapter의 명시적 경계 수렴
 - WebGPU 브러시 provider의 검증된 범위 확대
-- Admin 기능의 `apps/admin-web` 이전
+- Admin 기능의 `apps/admin-web` 이전 (`webAdminFiles: 81`)
 - 대형 정적 에셋의 manifest/object storage 전환
 
 목표 엔진이나 새 provider가 존재한다는 이유만으로 현재 primary 권위를 바꾸지 않는다.

@@ -9,8 +9,63 @@ import type { StudioLivePostgresListenerStatusProvider } from "../../realtime/st
 
 export const HEALTH_RUNTIME_READINESS = Symbol("HEALTH_RUNTIME_READINESS");
 
+export const DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES = 512 * 1024 * 1024;
+export const ELEVATED_MEMORY_UTILIZATION_RATIO = 0.7;
+export const CRITICAL_MEMORY_UTILIZATION_RATIO = 0.85;
+
+export type ContainerMemoryPressureLevel = "normal" | "elevated" | "critical";
+
+export interface ContainerMemoryPressureSnapshot {
+  readonly level: ContainerMemoryPressureLevel;
+  readonly rssBytes: number;
+  readonly heapUsedBytes: number;
+  readonly limitBytes: number;
+  readonly utilizationRatio: number;
+  readonly shedHeavyBackgroundWork: boolean;
+}
+
 export interface HealthRuntimeReadiness {
   isStudioLivePostgresNamespaceReady(): boolean;
+  getContainerMemoryPressure?(
+    limitBytes?: number,
+  ): ContainerMemoryPressureSnapshot;
+}
+
+function sanitizeByteCount(value: number | undefined, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return fallback;
+  }
+  return Math.floor(value);
+}
+
+export function evaluateContainerMemoryPressure(
+  usage?: Pick<NodeJS.MemoryUsage, "rss" | "heapUsed"> | null,
+  limitBytes: number = DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES,
+): ContainerMemoryPressureSnapshot {
+  const resolvedUsage = usage ?? process.memoryUsage();
+  const rssBytes = sanitizeByteCount(resolvedUsage.rss, 0);
+  const heapUsedBytes = sanitizeByteCount(resolvedUsage.heapUsed, 0);
+  const safeLimitBytes = Math.max(
+    1,
+    sanitizeByteCount(limitBytes, DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES),
+  );
+  const effectiveUsedBytes = Math.max(rssBytes, heapUsedBytes);
+  const utilizationRatio = Math.min(1, effectiveUsedBytes / safeLimitBytes);
+  const level: ContainerMemoryPressureLevel =
+    utilizationRatio >= CRITICAL_MEMORY_UTILIZATION_RATIO
+      ? "critical"
+      : utilizationRatio >= ELEVATED_MEMORY_UTILIZATION_RATIO
+        ? "elevated"
+        : "normal";
+
+  return {
+    level,
+    rssBytes,
+    heapUsedBytes,
+    limitBytes: safeLimitBytes,
+    utilizationRatio,
+    shedHeavyBackgroundWork: level !== "normal",
+  };
 }
 
 interface StudioLiveNamespaceLike {
@@ -66,5 +121,11 @@ export class NestHealthRuntimeReadiness implements HealthRuntimeReadiness {
     } catch {
       return false;
     }
+  }
+
+  getContainerMemoryPressure(
+    limitBytes: number = DEFAULT_CONTAINER_MEMORY_LIMIT_BYTES,
+  ): ContainerMemoryPressureSnapshot {
+    return evaluateContainerMemoryPressure(process.memoryUsage(), limitBytes);
   }
 }
