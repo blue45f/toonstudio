@@ -38,6 +38,7 @@ import {
   studioSegmentChipClass,
 } from "../studio-panel-ui";
 import { MANGA_TOOLKIT_LABELS as L } from "./manga-toolkit-labels";
+import { StudioBlankComicProDrawingSubPanel } from "./StudioBlankComicProDrawingSubPanel";
 
 import type { KeyboardEvent, ReactElement } from "react";
 
@@ -686,6 +687,7 @@ export function MangaToolkitPanel(): ReactElement {
         {tab === "balloon" && <BalloonTab />}
         {tab === "effect" && <EffectTab />}
       </div>
+      <StudioBlankComicProDrawingSubPanel />
     </section>
   );
 }

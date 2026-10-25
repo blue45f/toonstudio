@@ -156,6 +156,7 @@ describe("Studio 3D Dynamic Interactive Components & Webtoon SKP Marketplace Arc
     expect(WEBTOON_SKP_MARKETPLACE_PLATFORMS.map((p) => p.id)).toEqual([
       "tumblbug",
       "acon3d",
+      "dontdraw",
       "pixel",
       "internal-bundle",
     ]);

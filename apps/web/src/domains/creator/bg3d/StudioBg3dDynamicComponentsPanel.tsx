@@ -12,6 +12,9 @@ import {
 import React, { useMemo, useState } from "react";
 
 import {
+  DONTDRAW_360_PANORAMA_DOME_PRESETS,
+  DONTDRAW_ASSET_FORMAT_BADGES,
+  DONTDRAW_STORE_TAXONOMY,
   DYNAMIC_COMPONENT_PRESETS,
   WEBTOON_ARCHETYPE_SCENE_PACKS,
   WEBTOON_SKP_MARKETPLACE_PLATFORMS,
@@ -23,6 +26,8 @@ import {
   instantiateArchetypeDynamicComponents,
   setDynamicComponentValue,
   stepDynamicComponentOnClick,
+  validateDontDrawAssetFormatBundle,
+  type DontDrawTopCategoryId,
   type DynamicComponentKind,
   type DynamicComponentState,
   type WebtoonArchetypeCutDirectionPreset,
@@ -53,6 +58,21 @@ export function StudioBg3dDynamicComponentsPanel({
   const [selectedPlatform, setSelectedPlatform] = useState<"all" | WebtoonSkpMarketplacePlatformId>("all");
   const [selectedArchetypeId, setSelectedArchetypeId] = useState<WebtoonArchetypeScenePackId>(
     "fantasy-imperial-palace",
+  );
+  const [selectedDontDrawCategoryId, setSelectedDontDrawCategoryId] =
+    useState<DontDrawTopCategoryId>("bg-modern");
+  const [selectedPanoramaId, setSelectedPanoramaId] = useState<string>(
+    DONTDRAW_360_PANORAMA_DOME_PRESETS[0]!.id,
+  );
+  const activeDontDrawCategory = useMemo(
+    () =>
+      DONTDRAW_STORE_TAXONOMY.find((cat) => cat.id === selectedDontDrawCategoryId) ??
+      DONTDRAW_STORE_TAXONOMY[0]!,
+    [selectedDontDrawCategoryId],
+  );
+  const activeBundleValidation = useMemo(
+    () => validateDontDrawAssetFormatBundle(["skp", "cs3o", "cs3c", "clip", "laf", "pdf"]),
+    [],
   );
   const [archetypeComponents, setArchetypeComponents] = useState<readonly DynamicComponentState[]>(() =>
     instantiateArchetypeDynamicComponents("fantasy-imperial-palace"),
@@ -171,7 +191,7 @@ export function StudioBg3dDynamicComponentsPanel({
             <Store className="size-3.5 text-accent" />
             <span>기성 웹툰 스케치업(.skp) 배경 아키타입</span>
           </div>
-          <span className="text-[0.62rem] text-fg-3">텀블벅 · 에이콘3D · 픽셀 호환</span>
+          <span className="text-[0.62rem] text-fg-3">돈드로우 · 에이콘3D · 텀블벅 · 픽셀 호환</span>
         </div>
 
         {/* 플랫폼 필터 */}
@@ -187,7 +207,7 @@ export function StudioBg3dDynamicComponentsPanel({
           >
             전체 마켓
           </button>
-          {WEBTOON_SKP_MARKETPLACE_PLATFORMS.slice(0, 3).map((platform) => (
+          {WEBTOON_SKP_MARKETPLACE_PLATFORMS.slice(0, 4).map((platform) => (
             <button
               key={platform.id}
               type="button"
@@ -399,6 +419,74 @@ export function StudioBg3dDynamicComponentsPanel({
         <Sparkles className="size-3.5" />
         <span>3D 장면에 인터랙션 상태 적용</span>
       </button>
+
+      {/* 돈드로우(DontDraw) · 에이콘3D · 텀블벅 다중 포맷 번들 & 360도 파노라마 스카이돔 카탈로그 */}
+      <div
+        data-testid="dontdraw-store-taxonomy-card"
+        className="flex flex-col gap-2 rounded-lg border border-line bg-card p-2.5"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[0.7rem] font-bold text-fg">
+            돈드로우(DontDraw) 3D 배경·소품·360° 파노라마 분류
+          </span>
+          <span className="font-mono text-[0.58rem] text-accent">
+            {activeBundleValidation.recommendedImportRoute}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {DONTDRAW_STORE_TAXONOMY.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedDontDrawCategoryId(cat.id)}
+              className={`rounded px-1.5 py-0.5 text-[0.62rem] transition-all ${
+                selectedDontDrawCategoryId === cat.id
+                  ? "bg-accent font-bold text-on-accent"
+                  : "border border-line bg-raised text-fg-2 hover:text-fg"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {activeDontDrawCategory.subCategories.map((sub) => (
+            <span
+              key={sub.id}
+              className="rounded border border-line bg-raised/50 px-1.5 py-0.5 text-[0.6rem] text-fg-2"
+            >
+              {sub.label} ({sub.recommendedFovDeg}°)
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1 border-t border-line pt-1.5">
+          <span className="text-[0.58rem] font-semibold text-fg-3">호환 포맷 배지:</span>
+          {DONTDRAW_ASSET_FORMAT_BADGES.map((badge) => (
+            <span
+              key={badge.id}
+              title={badge.label}
+              className="rounded bg-raised px-1 py-0.5 font-mono text-[0.56rem] uppercase text-fg-2"
+            >
+              {badge.id}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center justify-between border-t border-line pt-1.5 text-[0.6rem]">
+          <span className="font-semibold text-fg-2">360° 파노라마 스카이돔:</span>
+          <select
+            aria-label="360도 파노라마 스카이돔 선택"
+            value={selectedPanoramaId}
+            onChange={(e) => setSelectedPanoramaId(e.target.value)}
+            className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.6rem] text-fg"
+          >
+            {DONTDRAW_360_PANORAMA_DOME_PRESETS.map((pano) => (
+              <option key={pano.id} value={pano.id}>
+                {pano.title} ({pano.resolutionPx[0]}×{pano.resolutionPx[1]})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }

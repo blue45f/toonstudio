@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "benchmarkDate": "2026-10-26",
+  "title": "ToonStudio REA AI 만화·인스타툰 제작 4대 사이트, 전문 드로잉/편집 3대 프로그램, 웹툰 3D 배경 스토어 3대 플랫폼, 캔바 만화 메이커 종합 역공학 증거 번들",
+  "methodology": {
+    "tool": "reverse-engineer-anything (REA MCP)",
+    "analysisScope": "browser-scenario-capture, web-script-export, javascript-ast-semantic-analysis, and macos-native-app-bundle-plist-inspection",
+    "epistemicSeparation": [
+      "observedFacts",
+      "inferences",
+      "unknowns"
+    ]
+  },
+  "targets": [
+    {
+      "id": "gentoon-ai-instatoon-webtoon-platform",
+      "name": "젠툰 (GenToon) AI 인스타툰·4컷 만화·웹툰·숏폼 릴스·굿즈 제작 플랫폼",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture",
+          "path": "https://www.gentoon.ai/",
+          "sha256": "a10c77c96418c45cc42e9539e1edc156ded3298102319d3b6e9e690973c53ca6",
+          "evidence_id": "ev_ba66bd0ff65327ea155bb3e83cd741bb4831054e8c4b10d584f987dcd8fdedf1",
+          "initial_capture_evidence_id": "ev_8448a8209db34ea37786f361a57d51b7ce5f2da2da48dad31c6dd79f3075844b"
+        },
+        {
+          "role": "exported-web-scripts-and-static-ast-analysis",
+          "path": "scratch/web-scripts-full/gentoon",
+          "sha256": "a10c77c96418c45cc42e9539e1edc156ded3298102319d3b6e9e690973c53ca6",
+          "export_evidence_id": "ev_871aa77f4adf3748ee495789a0fe86128815048f173ef2ebffd99dd22005c54a",
+          "analysis_evidence_id": "ev_1b16e6528701a664a3451c0f4b3b8cc0859c2f0a6fccb1d79808b0c6f2662166",
+          "summary_view_evidence_id": "ev_7abd2720a7057df1cb1372e89999ee9c5d3e3d1519694d7c6afca7cad06e9195",
+          "summary": {
+            "relevantFiles": 33,
+            "parsedJsFiles": 33,
+            "totalTextBytes": 1066705,
+            "visitedAstNodes": 316813,
+            "findings": 2539,
+            "callFlowRelations": 7479,
+            "dataFlowRelations": 14568
+          }
+        }
+      ],
+      "observedFacts": [
+        "GenToon(https://www.gentoon.ai/) 정적·런타임 REA 분석(ev_7abd2720a7057df1cb1372e89999ee9c5d3e3d1519694d7c6afca7cad06e9195, 루트 SHA-256 a10c77c96418c45cc42e9539e1edc156ded3298102319d3b6e9e690973c53ca6)에서 33개 JS 번들(1,066,705 bytes, 316,813 AST nodes, 2,539 findings)이 확인됨.",
+        "Webpack 모듈 88698 및 50342에서 9종 AI 모델 카탈로그와 크레딧·단가가 확인됨: gemini-3.1-flash-image-preview(13cr, $0.045, standard), gemini-3-pro-image-preview(25cr, $0.134, pro), gemini-3.5-flash(1cr, $0.003, text), gemini-3-flash-preview(1cr, $0.001, text), gpt-image-2.5-sunburst-medium(25cr, $0.05, pro), gpt-image-2.5-sunburst-low(13cr, $0.04, standard), gpt-image-2.5-sunburst-high(25cr, $0.10, pro), gpt-image-2-medium(25cr, $0.10, pro, 'GPT 2:3 · 웹툰'), gpt-image-2-low(13cr, $0.04, standard, 'GPT 2:3 · 인스타툰').",
+        "구독 티어별 크레딧 한도(FREE: 150, LITE: 1000, STARTER: 2000, PRO: 5000, PREMIUM: 27000, ADMIN: 9999999)와 액션별 차감 규칙(캐릭터 생성 100cr, 스토리 생성 1cr·최대 30컷, 릴스 내보내기 4컷 블록당 20cr·4~12컷)이 확인됨.",
+        "모듈 65576에서 1080×1920 30fps 숏폼 릴스 합성기 공식이 확인됨: 대사 글자 수 기반 컷 재생시간 sec = clamp(1.2 + Math.max(0, chars)/6.5 + 0.4*(clamp(cuts,1,4)-1), 1.6, 9.0), 꼬리 0.5초 포함 최대 40.0초(컷 합계 39.5초 초과 시 비례 축소 p = 39.5 / total), 순환 켄번즈 줌(1.06 / 1.0 / 1.04), 5종 CSS 필터(none, mono, sepia, vivid, dim), 3종 트랜지션(none, fade, slide, 0.28s).",
+        "모듈 71184에서 6분할 스티커 시트(sheet: [{x:0.08,y:0.04,w:0.84,h:0.46}, {x:0.05,y:0.53,w:0.42,h:0.24}, {x:0.53,y:0.53,w:0.42,h:0.24}, {x:0.06,y:0.8,w:0.26,h:0.16}, {x:0.37,y:0.8,w:0.26,h:0.16}, {x:0.68,y:0.8,w:0.26,h:0.16}]), 양면 머그컵(mug_twin), 단품 전면(scale 0.85) 레이아웃 및 DPI 선명도 판정기(ratio >= 0.8 -> sharp, >= 0.5 -> ok, else soft)가 확인됨."
+      ],
+      "inferences": [
+        "GenToon의 핵심 경쟁력은 단순 4컷 이미지 생성에 그치지 않고, 생성된 4~12컷 만화를 대사 길이 기반 타이밍으로 즉시 1080×1920 30fps 인스타 릴스/쇼츠 영상으로 변환하고 6분할 스티커 시트·머그컵 굿즈 인쇄 규격까지 원스톱으로 연결하는 크리에이터 수익화 파이프라인에 있음."
+      ],
+      "unknowns": [
+        "서버 사이드 이미지 생성 워커의 내부 프롬프트 리라이팅 시스템 프롬프트 전문은 클라이언트 번들에 포함되지 않음."
+      ]
+    },
+    {
+      "id": "mangotoon-click-drag-webtoon-builder",
+      "name": "망고툰 (Mangotoon) 클릭·드래그 캐릭터·말풍선·템플릿 웹툰 제작 툴",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture-and-subroutes",
+          "path": "https://toon.mangoboard.net/",
+          "sha256": "47878d95b9b226b3456f01af4313484110c3ee8ebd41b10510a78adc8f886c7f",
+          "evidence_id": "ev_527073ef7d5785233fe9bad4eb26add494d0367fa9035c91c8e41fa9a584403a",
+          "design_library_evidence_id": "ev_df6bb64b3a2b03098e17ba81ac71d608118c4292268e20540e218712c464d893",
+          "editor_route_evidence_id": "ev_274f98125230f5f99f1c777162f44d5a28e66d4000b5d22dadecdb6f9ed97cd4",
+          "analysis_evidence_id": "ev_193dc5e4b572d3f7a8dbe05d06f00f99f794ff7358974a29c33cf41190253595",
+          "summary_view_evidence_id": "ev_50a74315bd20ceab9a71239725e1f15c2985664d06adc38ea46613baa56e9a33"
+        }
+      ],
+      "observedFacts": [
+        "망고툰(https://toon.mangoboard.net/) 정적·서브라우트 분석(ev_50a74315bd20ceab9a71239725e1f15c2985664d06adc38ea46613baa56e9a33, library.js 55,149 bytes)에서 7개 에셋 탭과 Masonry 폭이 확인됨: page(302px, 밈·짤/레이아웃/카드형/만화형/웹툰형), title(272px, 제목/디자인텍스트/효과음/텍스티콘), cut(272px), background(324px), character(420px, 여/남/동물 배지 및 표정 headCount × 동작 bodyCount), horizontal(330px, 16:9 애니메이션·AI 보이스 배지), vertical(270px, 9:16 애니메이션).",
+        "library.js의 createContentData 함수에서 maxEdge=400 종횡비 리사이즈, props SVG의 interactWithCharacter 플래그, picture 객체의 7파라미터 필터(brightness, exposure, contrast, saturation, definition, vignette, hue), 3색 블렌드(opacity 0.3), 9방향 외곽 블러(blurEdge: {directions: [9 booleans], range: 50}) 스키마가 확인됨."
+      ],
+      "inferences": [
+        "비전공자·교육·홍보 담당자가 그림 실력 없이 고품질 웹툰을 완성할 수 있는 핵심은 캐릭터별 수십 종의 표정(headCount)과 포즈(bodyCount) 조합 매트릭스 및 캐릭터 손과 결합되는 소품(interactWithCharacter) 시스템임."
+      ],
+      "unknowns": [
+        "로그인 세션 전용 /edit?idx=0 내부 캔버스 저장 API의 서버 DB 테이블 구조는 비인증 리다이렉트(/index.html)로 인해 클라이언트 스키마(storage_newContent) 수준까지만 관측됨."
+      ]
+    },
+    {
+      "id": "llamagen-ai-webtoon-generator",
+      "name": "라마젠 (LlamaGen AI) 세로 스크롤 한국형 웹툰 에피소드·콘티·캐릭터 연속성 생성기",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture-and-static-ast-analysis",
+          "path": "https://llamagen.ai/ko/features/ai-webtoon-generator",
+          "sha256": "d71bd6ccd35d71bb4cd0e8f5adcc7503fa6adfe44f65330377a09de3386b5e02",
+          "evidence_id": "ev_61bf5933bc005a7141978cca08bb046cf62a79c91e0fc52b37a1d846521ea3c4",
+          "export_evidence_id": "ev_1ec98a18c5fcd6db02e829d06721191283f54b0c8b2bdaf0668c60f4ca4cff1c",
+          "analysis_evidence_id": "ev_ba68647e0c8ad4a425e65880cc0600623369a0a915f3cd40c14d006256995fb0",
+          "summary_view_evidence_id": "ev_31c6c173f4c810eb6d2411407d7990c2593083b47457cedd6eb4a669a20c7f95",
+          "summary": {
+            "relevantFiles": 57,
+            "parsedJsFiles": 57,
+            "totalTextBytes": 1141286,
+            "visitedAstNodes": 303034,
+            "findings": 2372
+          }
+        }
+      ],
+      "observedFacts": [
+        "LlamaGen AI(ev_31c6c173f4c810eb6d2411407d7990c2593083b47457cedd6eb4a669a20c7f95, 루트 SHA-256 d71bd6ccd35d71bb4cd0e8f5adcc7503fa6adfe44f65330377a09de3386b5e02)의 57개 Next.js 청크(303,034 AST nodes) 분석 결과, chunk 25338에서 황금비 상수 1.618을 이용한 세로 스트립·그리드 레이아웃 생성기(Smart Comic Grid, Smart Wide-Panel Strip, threePanel, fourPanel)가 확인됨.",
+        "chunk 20920 및 93340에서 ComicV2 Prisma 엔티티(ComicV2GenerationEvent, ComicV2GenerationCheckpoint, ComicV2RequestDecision, ComicV2ArtworkPresentation, CharacterAsset) 및 에피소드 연속성 상태(comicRoles, comicLocations, storyboardDirectoryPosition, redrawList)가 확인됨."
+      ],
+      "inferences": [
+        "황금비(1.618) 기반 패널 높이와 캐릭터(comicRoles)·배경(comicLocations) 시퀀스 고정 체크포인트를 결합하면 모바일 세로 스크롤 가독성과 다중 컷 캐릭터 일관성을 동시에 달성할 수 있음."
+      ],
+      "unknowns": [
+        "LlamaGen 백엔드 추론 큐의 GPU 클러스터 스케줄러 파라미터는 클라이언트 번들에 노출되지 않음."
+      ]
+    },
+    {
+      "id": "clip-studio-paint-v5-1-5-and-web",
+      "name": "클립스튜디오 페인트 (Clip Studio Paint v5.1.5 Desktop App & Web)",
+      "version": "5.1.5",
+      "artifacts": [
+        {
+          "role": "macos-native-application-bundle-plist",
+          "path": "/Applications/CLIP STUDIO 1.5/App/CLIP STUDIO PAINT.app",
+          "evidence_id": "ev_a17ead8ed3475ba765556bf231b0b05197320b98fafa2e3b36baf55318692b16"
+        },
+        {
+          "role": "web-capture-and-static-ast-analysis",
+          "path": "https://www.clipstudio.net/kr/comics-manga/",
+          "sha256": "ddc2e3e8d20461111c37f4b0de038994601ad376dc17f58257b23a07fe89e36a",
+          "capture_evidence_id": "ev_0a5bfacff51b180d75c230b59d1439a5e4c263131adcf8d6302506b142c16de7",
+          "analysis_evidence_id": "ev_f5f71edadd7240ad6d766ae48b50daa11b86cba158beb8e399d50234c2e0ded3",
+          "summary_view_evidence_id": "ev_6bcb35a4ed91dae8e4c599f83d1aacc131cdde7280a4e8b8082abc0d3d6ff6cc"
+        }
+      ],
+      "observedFacts": [
+        "로컬 macOS 번들(/Applications/CLIP STUDIO 1.5/App/CLIP STUDIO PAINT.app, v5.1.5) REA inspect_plist(ev_a17ead8ed3475ba765556bf231b0b05197320b98fafa2e3b36baf55318692b16)에서 .clip, .lip, .cmc(다중 페이지 관리), .csnf(네임·콘티), .cs3c(3D 캐릭터), .cs3o(3D 오브젝트), .cs3s(3D 스테이지), .pep(포즈), .c2fr/.c2fc(캐릭터 코디네이트), .sut/.sutg(보조 도구), .laf(오토액션), .cls(컬러 세트), .xdts(익스포저시트) 등 40여 종의 문서·소재 확장자가 확인됨.",
+        "공식 웹툰·만화 기능 페이지(ev_0a5bfacff51b180d75c230b59d1439a5e4c263131adcf8d6302506b142c16de7)에서 스마트폰 표시 영역(View Area) 비율 확인, 세로 웹툰 캔버스 자동 분할 내보내기(Sliced Export), 레이어 원클릭 망점 스크린톤(Halftone) 변환, 스토리 에디터 대사 일괄 편집, 3D 제본 프리뷰가 확인됨."
+      ],
+      "inferences": [
+        "정식 연재 웹툰 작가 워크플로와 호환되려면 .clip/.cmc/.cs3o/.cs3c/.sut/.laf 포맷 메타데이터 인식과 함께 스마트폰 화면비 프리뷰 및 세로 슬라이스 분할 계산기를 스튜디오 만화 툴킷에 기본 탑재해야 함."
+      ],
+      "unknowns": [
+        "Celsys 독점 바이너리 컨테이너(.clip 내부 SQLite+청크 압축 블록)의 비공개 암호화 스트림은 정적 plist/웹 분석 범위 밖임."
+      ]
+    },
+    {
+      "id": "medibang-paint-and-blankcomic-and-canva",
+      "name": "메디방 페인트(MediBang Paint / Paletta) · BlankComic · 캔바(Canva) 만화 메이커",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "blankcomic-capture-and-ast-analysis",
+          "path": "https://blankcomic.com/ko",
+          "sha256": "b9cf9bce55adb7f700bdd029dc8596ba9defc9d99a9e7f64269e51717b568a8b",
+          "capture_evidence_id": "ev_b8d56892d3587ff0e4960bfde94f4574d077238e582c821307a23ad1ab401039",
+          "editor_capture_evidence_id": "ev_92c34ab863e1edc7dc11264f45d0e00d97c33da87a94d9b65f95803708cbaea4",
+          "summary_view_evidence_id": "ev_3ec33f998f149d30c43627474ddc2b0f911a5721db412443d7efd952b05b2a8f"
+        },
+        {
+          "role": "medibang-capture-and-ast-analysis",
+          "path": "https://medibangpaint.com/ko/",
+          "sha256": "e677e7c5d74be82992b0f44483bfadddd74191ae615fe419a4a408ef8b73e604",
+          "capture_evidence_id": "ev_5dd7a1541fcae721613e7574980948a6e1657c409b9c6cc2d12bca12d4a9195d",
+          "summary_view_evidence_id": "ev_1fc3d4a13b1911569b4dfb62b316fc1dec6364e50f60f7892001946f4eb949ca"
+        },
+        {
+          "role": "canva-comic-strips-capture-and-ast-analysis",
+          "path": "https://www.canva.com/ko_kr/create/comic-strips/",
+          "sha256": "c8ecb6c27e7dc3c2a411432794d60ebf1ec5e445337f6777fdc1e03af7d037a7",
+          "capture_evidence_id": "ev_920aba703fa7614547380dc1050b37758a367d53fe2177621ae80fee12d7e0f4",
+          "summary_view_evidence_id": "ev_eb4a93a1ce2082e739e9f50d2b11248322c847544500179f8ed28f071a16e1c8"
+        }
+      ],
+      "observedFacts": [
+        "BlankComic(ev_b8d56892d3587ff0e4960bfde94f4574d077238e582c821307a23ad1ab401039) 분석에서 30종 패널 템플릿, 12종 다각형·곡선 패널 도형, 6종 말풍선(말하기·생각·외침·속삭임·내레이션·캡션), 6종 페이지 규격(US Comic, A4, Manga, Square, Webtoon, Custom) 및 인쇄 여백/재단선/안전 영역 가이드, 5종 내보내기(PNG, JPG, PDF, SVG, .blank)가 확인됨.",
+        "MediBang Paint(ev_5dd7a1541fcae721613e7574980948a6e1657c409b9c6cc2d12bca12d4a9195d) 분석에서 1,000종 이상 클라우드 브러시·스크린톤, 팀 프로젝트 페이지별 공동 작업 및 버전 관리, 스캔 이미지 선화 추출, iPad 전용 메디방 프로(Paletta) 멀티터치 제스처 단축키가 확인됨.",
+        "Canva 만화 메이커(ev_920aba703fa7614547380dc1050b37758a367d53fe2177621ae80fee12d7e0f4)는 헤드리스 캡처 시 Cloudflare Turnstile 챌린지(HTTP 403)가 동작함이 관측됨."
+      ],
+      "inferences": [
+        "BlankComic의 무가입 즉시 실행형 30종 템플릿·12종 도형·인쇄 가이드·.blank 코덱과 MediBang의 클라우드 팀 페이지 잠금·제스처, Canva의 4컷 템플릿·한글 타이포그래피 페어링을 ToonStudio 만화 툴킷에 통합하면 입문자부터 출판 만화가까지 단일 패널에서 작업할 수 있음."
+      ],
+      "unknowns": [
+        "Canva 내부 인증 세션 전용 디자인 그래프 API는 Cloudflare Turnstile 보호 뒤에 위치하여 공개 캡처에서 제외됨."
+      ]
+    },
+    {
+      "id": "dontdraw-3d-webtoon-background-store",
+      "name": "돈드로우 (DontDraw) 웹툰 전용 3D 배경·소품·360도 파노라마 라이선스 스토어",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture-and-static-ast-analysis",
+          "path": "https://www.dontdraw.com/",
+          "sha256": "0495abe7f4baa6d4f9a18b50302df1e605f72e43dff5fb8c58b399eac5691f5e",
+          "capture_evidence_id": "ev_4d76ddc32c5f1ca5607359ca2709b6b494cf22fe54edc0f0db16eb7bd085aca8",
+          "analysis_evidence_id": "ev_4ce247015bfce4974dfd6bfacb40ba5dd510571015a4d532954ed883485c1382",
+          "summary_view_evidence_id": "ev_8dc39f905d683f4d7df6c3d9ede00202816e2dfb78a01ff98315b0a6da97c95c",
+          "summary": {
+            "relevantFiles": 8,
+            "parsedJsFiles": 8,
+            "visitedAstNodes": 34619,
+            "findings": 615
+          }
+        }
+      ],
+      "observedFacts": [
+        "돈드로우(https://www.dontdraw.com/, ev_4d76ddc32c5f1ca5607359ca2709b6b494cf22fe54edc0f0db16eb7bd085aca8, 루트 SHA-256 0495abe7f4baa6d4f9a18b50302df1e605f72e43dff5fb8c58b399eac5691f5e)에서 웹툰 3D 배경 2계층 분류 체계가 확인됨: 3D 배경 > 현대(cate_no 10002: 도시/마을/거리 10012, 주거 내/외부 10013, 회사/공장/방송 10014, 교육/공공/관공서 10015, 식당/카페 10016, 상가/문화 10017, 숙박/여행 10018, 자연/공원 10019, 기타 10020), 판타지(cate_no 10003: 도시/마을/거리 10021, 주거/저택/황실 10022, 교육/공공/사무 10023, 상가/문화/연회 10024, 자연/정원/온실 10025, 던전/지하/기타 10026), 동/서양(10004), 패키지(10005), 3D 소품/소재(10006: 탈것 10008, 무기 10009, 의상/장신구 10010, 음식/식기/주방 10011), 360도 파노라마(10035).",
+        "상품 카드마다 제공되는 11종 다중 포맷 배지(skp, cs3o, cs3c, clip, laf, db, blend, fbx, obj, mtl, pdf)가 확인됨."
+      ],
+      "inferences": [
+        "돈드로우·에이콘3D·텀블벅 3대 스토어의 분류 체계와 11종 다중 포맷 배지(.skp, .cs3o, .cs3c, .clip, .laf, .blend, .fbx, .obj), 그리고 360도 파노라마 스카이돔을 ToonStudio 3D 배경 워크벤치에 통합하면 작가가 보유한 어떤 스토어 소재도 대본 지문과 즉시 매칭·검증·반입할 수 있음."
+      ],
+      "unknowns": [
+        "결제 완료 후 발급되는 개별 유료 상품 S3 서명 다운로드 URL은 비인증 상태에서 생성되지 않음."
+      ]
+    }
+  ],
+  "internalizedModules": [
+    {
+      "capability": "AI Webtoon & Instatoon 4-Platform Suite (GenToon · Mangotoon · LlamaGen AI · Tooning)",
+      "sourcePath": "apps/web/src/domains/creator/ai/ai-webtoon-platform-suite.ts",
+      "uiPath": "apps/web/src/domains/creator/ai/StudioAiWebtoonPlatformSuitePanel.tsx",
+      "testPath": "apps/web/src/domains/creator/ai/ai-webtoon-platform-suite.test.tsx"
+    },
+    {
+      "capability": "Pro Drawing & Layout Suite (BlankComic · Clip Studio Paint v5.1.5 · MediBang/Paletta · Canva Comic Maker)",
+      "sourcePath": "apps/web/src/domains/creator/manga-toolkit/blankcomic-canva-medibang-suite.ts",
+      "uiPath": "apps/web/src/domains/creator/manga-toolkit/StudioBlankComicProDrawingSubPanel.tsx",
+      "testPath": "apps/web/src/domains/creator/manga-toolkit/blankcomic-canva-medibang-suite.test.tsx"
+    },
+    {
+      "capability": "DontDraw · ACON3D · Tumblbug 3D Background Store Taxonomy, Multi-Format Validator & 360° Panorama Dome Matcher",
+      "sourcePath": "apps/web/src/domains/creator/scene-3d/studio-3d-dontdraw-store-taxonomy.ts",
+      "uiPath": "apps/web/src/domains/creator/bg3d/StudioBg3dDynamicComponentsPanel.tsx",
+      "testPath": "apps/web/src/domains/creator/scene-3d/studio-3d-dontdraw-store-taxonomy.test.tsx"
+    }
+  ]
+}

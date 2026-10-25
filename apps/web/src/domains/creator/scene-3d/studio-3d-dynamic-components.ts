@@ -7,14 +7,42 @@
  */
 
 import {
+  DONTDRAW_360_PANORAMA_DOME_PRESETS,
+  DONTDRAW_ASSET_FORMAT_BADGES,
+  DONTDRAW_STORE_TAXONOMY,
+  matchDontDrawStoreCategoryByScript,
+  validateDontDrawAssetFormatBundle,
+  type DontDrawAssetBundleValidationResult,
+  type DontDrawAssetFormatBadgeId,
+  type DontDrawAssetFormatSpec,
+  type DontDrawPanorama360DomePreset,
+  type DontDrawSubCategorySpec,
+  type DontDrawTaxonomyMatchResult,
+  type DontDrawTopCategoryId,
+  type DontDrawTopCategorySpec,
+} from "./studio-3d-dontdraw-store-taxonomy";
+import {
   WEBTOON_ARCHETYPE_SCENE_PACKS,
   WEBTOON_SKP_MARKETPLACE_PLATFORMS,
   type WebtoonArchetypeComponentTemplate,
 } from "./studio-3d-webtoon-archetype-packs";
 
 export {
+  DONTDRAW_360_PANORAMA_DOME_PRESETS,
+  DONTDRAW_ASSET_FORMAT_BADGES,
+  DONTDRAW_STORE_TAXONOMY,
   WEBTOON_ARCHETYPE_SCENE_PACKS,
   WEBTOON_SKP_MARKETPLACE_PLATFORMS,
+  matchDontDrawStoreCategoryByScript,
+  validateDontDrawAssetFormatBundle,
+  type DontDrawAssetBundleValidationResult,
+  type DontDrawAssetFormatBadgeId,
+  type DontDrawAssetFormatSpec,
+  type DontDrawPanorama360DomePreset,
+  type DontDrawSubCategorySpec,
+  type DontDrawTaxonomyMatchResult,
+  type DontDrawTopCategoryId,
+  type DontDrawTopCategorySpec,
   type WebtoonArchetypeComponentTemplate,
 };
 
@@ -37,6 +65,7 @@ export type DynamicComponentKind =
 export type WebtoonSkpMarketplacePlatformId =
   | "tumblbug"
   | "acon3d"
+  | "dontdraw"
   | "pixel"
   | "internal-bundle";
 
