@@ -8,6 +8,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { StudioCommentActor, StudioCommentsDocument } from "../studio-comments";
 import { CompareReviewViewer } from "./CompareReviewViewer";
 import { CompareSourcePoolStrip, type ComparePoolStatus } from "./CompareSourcePoolStrip";
+import { ProductionShotGridVersionLineageSuite } from "./ProductionShotGridVersionLineageSuite";
 import { ProductionViewerControlsBar } from "./ProductionViewerControlsBar";
 import { ProductionWebtoonNowPmsSuite } from "./ProductionWebtoonNowPmsSuite";
 import {
@@ -357,6 +358,7 @@ export function CompareReviewRoom({
 
       <ProductionViewerControlsBar initialMode="compare" />
       <ProductionWebtoonNowPmsSuite />
+      <ProductionShotGridVersionLineageSuite />
     </div>
   );
 }
