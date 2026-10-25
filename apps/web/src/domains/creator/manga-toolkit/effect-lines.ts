@@ -344,3 +344,216 @@ export function taperedEffectLinesToSvgPath(
     .join(" ");
 }
 
+/**
+ * 클립스튜디오 페인트 5.1.5 `EditImageTool.todb` `Node` rows 72–87 기반 만화 효과선 프리셋.
+ */
+export interface CspConcentrationLinePreset {
+  readonly id:
+    | "sparse-concentration"
+    | "dense-concentration"
+    | "crowded-concentration"
+    | "brightness-burst"
+    | "burst-jagged";
+  readonly name: string;
+  readonly description: string;
+  readonly count: number;
+  readonly length: number;
+  readonly width: number;
+  readonly lengthJitter: number;
+  readonly opacity: number;
+  readonly innerRadius: number;
+  readonly angleJitter: number;
+}
+
+export interface CspSpeedLinePreset {
+  readonly id: "sparse-stream" | "dense-stream" | "gloom" | "rain";
+  readonly name: string;
+  readonly description: string;
+  readonly count: number;
+  readonly length: number;
+  readonly width: number;
+  readonly lengthJitter: number;
+  readonly opacity: number;
+  readonly direction: number;
+  readonly spacing: number;
+  readonly positionJitter: number;
+}
+
+export interface CspFlashPreset {
+  readonly id: "sea-urchin" | "fireworks" | "dark-sea-urchin" | "double-flash";
+  readonly name: string;
+  readonly description: string;
+  readonly spikes: number;
+  readonly innerRadius: number;
+  readonly outerRadius: number;
+  readonly spikeJitter: number;
+  readonly width: number;
+  readonly opacity: number;
+}
+
+export const CSP_CONCENTRATION_LINE_PRESETS: readonly CspConcentrationLinePreset[] = [
+  {
+    id: "sparse-concentration",
+    name: "성긴 집중선",
+    description: "넓은 간격으로 시선을 자연스럽게 모으는 집중선 (CSP Node #77)",
+    count: 18,
+    length: 130,
+    width: 1.5,
+    lengthJitter: 0.25,
+    opacity: 1,
+    innerRadius: 36,
+    angleJitter: 3,
+  },
+  {
+    id: "dense-concentration",
+    name: "진한 집중선",
+    description: "강한 임팩트와 긴장감을 연출하는 고밀도 집중선 (CSP Node #78)",
+    count: 42,
+    length: 145,
+    width: 2.5,
+    lengthJitter: 0.3,
+    opacity: 1,
+    innerRadius: 24,
+    angleJitter: 2,
+  },
+  {
+    id: "crowded-concentration",
+    name: "빽빽한 집중선",
+    description: "빈틈없이 몰아치는 클라이맥스용 초고밀도 집중선 (CSP Node #79)",
+    count: 64,
+    length: 155,
+    width: 3.0,
+    lengthJitter: 0.35,
+    opacity: 1,
+    innerRadius: 18,
+    angleJitter: 1.5,
+  },
+  {
+    id: "brightness-burst",
+    name: "양기",
+    description: "밝고 경쾌한 기운이 퍼져 나가는 방사 효과선 (CSP Node #80)",
+    count: 32,
+    length: 120,
+    width: 2.0,
+    lengthJitter: 0.45,
+    opacity: 0.85,
+    innerRadius: 28,
+    angleJitter: 6,
+  },
+  {
+    id: "burst-jagged",
+    name: "파열",
+    description: "폭발·충격 순간의 불규칙 파열 집중선 (CSP Node #81)",
+    count: 48,
+    length: 160,
+    width: 3.5,
+    lengthJitter: 0.55,
+    opacity: 1,
+    innerRadius: 14,
+    angleJitter: 8,
+  },
+] as const;
+
+export const CSP_SPEED_LINE_PRESETS: readonly CspSpeedLinePreset[] = [
+  {
+    id: "sparse-stream",
+    name: "성긴 유선",
+    description: "가벼운 이동감과 배경 흐름을 표현하는 성긴 유선 (CSP Node #73)",
+    count: 14,
+    length: 160,
+    width: 1.5,
+    lengthJitter: 0.2,
+    opacity: 1,
+    direction: 0,
+    spacing: 18,
+    positionJitter: 3,
+  },
+  {
+    id: "dense-stream",
+    name: "진한 유선",
+    description: "빠른 질주와 강한 속도감을 표현하는 고밀도 유선 (CSP Node #74)",
+    count: 32,
+    length: 180,
+    width: 2.5,
+    lengthJitter: 0.25,
+    opacity: 1,
+    direction: 0,
+    spacing: 9,
+    positionJitter: 2,
+  },
+  {
+    id: "gloom",
+    name: "음산한 기운",
+    description: "위에서 아래로 무겁게 내려앉는 수직 분위기선 (CSP Node #75)",
+    count: 28,
+    length: 140,
+    width: 2.0,
+    lengthJitter: 0.35,
+    opacity: 0.9,
+    direction: 90,
+    spacing: 10,
+    positionJitter: 4,
+  },
+  {
+    id: "rain",
+    name: "비",
+    description: "사선 방향으로 불규칙하게 쏟아지는 빗줄기 유선 (CSP Node #76)",
+    count: 36,
+    length: 95,
+    width: 1.2,
+    lengthJitter: 0.4,
+    opacity: 0.75,
+    direction: 105,
+    spacing: 8,
+    positionJitter: 6,
+  },
+] as const;
+
+export const CSP_FLASH_PRESETS: readonly CspFlashPreset[] = [
+  {
+    id: "sea-urchin",
+    name: "성게 플래시",
+    description: "촘촘한 바늘 모양으로 퍼지는 만화 성게 플래시 (CSP Node #84)",
+    spikes: 20,
+    innerRadius: 26,
+    outerRadius: 115,
+    spikeJitter: 0.15,
+    width: 1.8,
+    opacity: 1,
+  },
+  {
+    id: "fireworks",
+    name: "폭죽",
+    description: "길이 변화가 큰 방사형 폭죽 섬광 (CSP Node #85)",
+    spikes: 16,
+    innerRadius: 18,
+    outerRadius: 130,
+    spikeJitter: 0.32,
+    width: 2.2,
+    opacity: 0.95,
+  },
+  {
+    id: "dark-sea-urchin",
+    name: "검은 바탕 성게 플래시",
+    description: "강한 대비의 굵은 외곽 성게 플래시 (CSP Node #86)",
+    spikes: 24,
+    innerRadius: 22,
+    outerRadius: 125,
+    spikeJitter: 0.18,
+    width: 3.0,
+    opacity: 1,
+  },
+  {
+    id: "double-flash",
+    name: "더블 플래시",
+    description: "넓은 내측 여백을 가진 이중 링 스타일 섬광 (CSP Node #87)",
+    spikes: 18,
+    innerRadius: 32,
+    outerRadius: 120,
+    spikeJitter: 0.22,
+    width: 2.0,
+    opacity: 1,
+  },
+] as const;
+
+

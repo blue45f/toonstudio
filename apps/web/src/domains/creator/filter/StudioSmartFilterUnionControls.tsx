@@ -27,6 +27,9 @@ const GEOMETRY_ENGINE_SET: ReadonlySet<StudioFilterUnionWaveKind> = new Set([
   "pinch-bloat",
   "lens-distortion",
   "polar-coordinates",
+  "sphere-warp",
+  "zigzag-warp",
+  "panorama-warp",
 ]);
 
 const AMOUNT = {
@@ -133,6 +136,60 @@ const UNION_NUMERIC_CONTROLS: Readonly<
     CENTER_Y,
   ],
   "polar-coordinates": [AMOUNT, CENTER_X, CENTER_Y],
+  "flow-based-abstraction": [
+    AMOUNT,
+    { key: "scale", label: "색 계조 단계", min: 2, max: 16, step: 1, fallback: 6 },
+    { key: "detail", label: "윤곽선 농도", min: 0, max: 255, step: 1, fallback: 142 },
+  ],
+  "pencil-art": [
+    AMOUNT,
+    { key: "scale", label: "해칭 간격", min: 1, max: 16, step: 1, fallback: 5, suffix: "px" },
+    { key: "detail", label: "윤곽선 강도", min: 0, max: 255, step: 1, fallback: 156 },
+    { key: "angle", label: "해칭 각도", min: -180, max: 180, step: 1, fallback: 35, suffix: "°" },
+    SEED,
+  ],
+  smoothing: [
+    AMOUNT,
+    { key: "scale", label: "탐색 반경", min: 1, max: 4, step: 1, fallback: 2, suffix: "px" },
+    { key: "detail", label: "모서리 감도", min: 1, max: 255, step: 1, fallback: 118 },
+  ],
+  "sharp-strong": [
+    AMOUNT,
+    { key: "scale", label: "커널 반경", min: 1, max: 4, step: 1, fallback: 2, suffix: "px" },
+    { key: "detail", label: "대각선 강조", min: 0, max: 255, step: 1, fallback: 140 },
+  ],
+  "sphere-warp": [
+    SIGNED_AMOUNT,
+    { key: "scale", label: "구면 반경", min: 20, max: 150, step: 1, fallback: 85, suffix: "%" },
+    CENTER_X,
+    CENTER_Y,
+  ],
+  "zigzag-warp": [
+    SIGNED_AMOUNT,
+    { key: "scale", label: "파장 간격", min: 4, max: 120, step: 1, fallback: 18, suffix: "px" },
+    { key: "detail", label: "능선 밀도", min: 16, max: 255, step: 1, fallback: 56 },
+    CENTER_X,
+    CENTER_Y,
+    { key: "angle", label: "위상", min: -180, max: 180, step: 1, fallback: 0, suffix: "°" },
+  ],
+  "panorama-warp": [
+    SIGNED_AMOUNT,
+    { key: "scale", label: "수평 시야 배율", min: 40, max: 160, step: 1, fallback: 92, suffix: "%" },
+    CENTER_X,
+    CENTER_Y,
+    { key: "angle", label: "기울기", min: -180, max: 180, step: 1, fallback: 0, suffix: "°" },
+  ],
+  "line-width-correct": [
+    AMOUNT,
+    { key: "scale", label: "선폭 반경", min: 1, max: 5, step: 1, fallback: 2, suffix: "px" },
+    { key: "detail", label: "굵게 / 가늘게", min: 0, max: 255, step: 1, fallback: 64 },
+  ],
+  "film-camera-style": [
+    AMOUNT,
+    { key: "scale", label: "색온도 크로스", min: 10, max: 150, step: 1, fallback: 64, suffix: "%" },
+    { key: "detail", label: "바랜 암부", min: 0, max: 255, step: 1, fallback: 118 },
+    SEED,
+  ],
 });
 
 function isStudioSmartFilterUnionEngine(

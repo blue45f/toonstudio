@@ -383,7 +383,7 @@ describe("studio adjustment stack", () => {
       "diffuse-glow",
       ...STUDIO_FILTER_UNION_WAVE_KINDS,
     ]));
-    expect(STUDIO_ADJUSTMENT_ENGINE_IDS).toHaveLength(77);
+    expect(STUDIO_ADJUSTMENT_ENGINE_IDS).toHaveLength(86);
   });
 
   it("labels every engine with the shared catalogue title so a stack chip matches its add-list row", () => {

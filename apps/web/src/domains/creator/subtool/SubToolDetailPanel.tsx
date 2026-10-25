@@ -27,11 +27,14 @@ import { cn } from "@/shared/lib/utils";
 import {
   SUBTOOL_BLEND_MODE_LABELS,
   SUBTOOL_BLEND_MODES,
+  SUBTOOL_COLOR_MIXING_MODE_LABELS,
+  SUBTOOL_COLOR_MIXING_MODES,
   SUBTOOL_TEXTURE_MODE_LABELS,
   SUBTOOL_TEXTURE_MODES,
   SUBTOOL_TIP_SHAPE_LABELS,
   SUBTOOL_TIP_SHAPES,
   type SubToolBlendMode,
+  type SubToolColorMixingMode,
   type SubToolTextureMode,
   type SubToolTipShape,
 } from "./subtool-params";
@@ -61,6 +64,9 @@ const SECTION_TITLES = {
   dualBrush: { title: "듀얼 브러시", description: "두 번째 팁을 함께 찍는 이중 브러시" },
   colorJitter: { title: "색상 지터", description: "도장마다 바뀌는 색조 · 채도 · 명도 · 불투명도" },
   blending: { title: "혼합 모드", description: "캔버스와 섞이는 방식과 전체 불투명도" },
+  waterEdge: { title: "수채 경계", description: "클립스튜디오 수채화 가장자리 안료 응집 림" },
+  colorMixing: { title: "물감 혼합", description: "지각적 LMS 혼색 · 물감량 · 물감 농도 · 색 늘리기" },
+  correction: { title: "손떨림 보정 · 시작과 끝", description: "손떨림 보정 · 시작/끝 테이퍼 · 모서리 뾰족하게" },
 } as const;
 
 const TIP_SHAPE_ICONS: Readonly<Record<SubToolTipShape, LucideIcon>> = {
@@ -293,6 +299,13 @@ export function SubToolDetailPanel({
     params.colorJitter.opacity > 0;
   const jitterBadge = jitterActive ? "활성" : "꺼짐";
   const blendingBadge = `${SUBTOOL_BLEND_MODE_LABELS[params.blending.mode]} · ${Math.round(params.blending.opacity * 100)}%`;
+  const waterEdgeBadge = params.waterEdge.enabled
+    ? `${Math.round(params.waterEdge.radius)}px`
+    : "꺼짐";
+  const colorMixingBadge = params.colorMixing.enabled
+    ? SUBTOOL_COLOR_MIXING_MODE_LABELS[params.colorMixing.mode]
+    : "꺼짐";
+  const correctionBadge = `보정 ${Math.round(params.correction.stabilization)}`;
 
   return (
     <section
@@ -623,6 +636,88 @@ export function SubToolDetailPanel({
             patchParams({ blending: { ...params.blending, opacity } })
           }
         />
+      </ParamSection>
+
+      <ParamSection
+        icon={Cloud}
+        title={SECTION_TITLES.waterEdge.title}
+        description={SECTION_TITLES.waterEdge.description}
+        badge={waterEdgeBadge}
+        testId="subtool-section-water-edge"
+      >
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-card/55 px-2.5 py-2">
+          <span className="text-[0.68rem] font-semibold text-fg-2">수채 경계 사용</span>
+          <Switch
+            checked={params.waterEdge.enabled}
+            onCheckedChange={(enabled) => patchParams({ waterEdge: { ...params.waterEdge, enabled } })}
+            aria-label="수채 경계 사용"
+            data-testid="subtool-water-edge-enabled"
+          />
+        </div>
+        <div
+          className={cn("grid gap-1.5 sm:grid-cols-3", !params.waterEdge.enabled && "pointer-events-none opacity-50")}
+          aria-disabled={!params.waterEdge.enabled}
+        >
+          <ParamSlider label="수채 경계 폭" value={params.waterEdge.radius} min={0} max={20} step={0.5} display={`${params.waterEdge.radius.toFixed(1)}px`} testId="subtool-water-edge-radius" onChange={(radius) => patchParams({ waterEdge: { ...params.waterEdge, radius } })} />
+          <ParamSlider label="명도 영향" value={params.waterEdge.darkness} min={0} max={1} step={0.01} display={`${Math.round(params.waterEdge.darkness * 100)}%`} testId="subtool-water-edge-darkness" onChange={(darkness) => patchParams({ waterEdge: { ...params.waterEdge, darkness } })} />
+          <ParamSlider label="채도 영향" value={params.waterEdge.vividness} min={0} max={1} step={0.01} display={`${Math.round(params.waterEdge.vividness * 100)}%`} testId="subtool-water-edge-vividness" onChange={(vividness) => patchParams({ waterEdge: { ...params.waterEdge, vividness } })} />
+        </div>
+      </ParamSection>
+
+      <ParamSection
+        icon={Palette}
+        title={SECTION_TITLES.colorMixing.title}
+        description={SECTION_TITLES.colorMixing.description}
+        badge={colorMixingBadge}
+        testId="subtool-section-color-mixing"
+      >
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-card/55 px-2.5 py-2">
+          <span className="text-[0.68rem] font-semibold text-fg-2">바탕색 혼합 사용</span>
+          <Switch
+            checked={params.colorMixing.enabled}
+            onCheckedChange={(enabled) => patchParams({ colorMixing: { ...params.colorMixing, enabled } })}
+            aria-label="바탕색 혼합 사용"
+            data-testid="subtool-color-mixing-enabled"
+          />
+        </div>
+        <OptionRadioGroup<SubToolColorMixingMode>
+          ariaLabel="물감 혼색 모드"
+          value={params.colorMixing.mode}
+          onChange={(mode) => patchParams({ colorMixing: { ...params.colorMixing, mode } })}
+          columns={2}
+          options={SUBTOOL_COLOR_MIXING_MODES.map((mode) => ({ value: mode, label: SUBTOOL_COLOR_MIXING_MODE_LABELS[mode] }))}
+        />
+        <div
+          className={cn("grid gap-1.5 sm:grid-cols-3", !params.colorMixing.enabled && "pointer-events-none opacity-50")}
+          aria-disabled={!params.colorMixing.enabled}
+        >
+          <ParamSlider label="물감량" value={params.colorMixing.paintLoad} min={0} max={1} step={0.01} display={`${Math.round(params.colorMixing.paintLoad * 100)}%`} testId="subtool-color-mixing-load" onChange={(paintLoad) => patchParams({ colorMixing: { ...params.colorMixing, paintLoad } })} />
+          <ParamSlider label="물감 농도" value={params.colorMixing.paintDensity} min={0} max={1} step={0.01} display={`${Math.round(params.colorMixing.paintDensity * 100)}%`} testId="subtool-color-mixing-density" onChange={(paintDensity) => patchParams({ colorMixing: { ...params.colorMixing, paintDensity } })} />
+          <ParamSlider label="색 늘리기" value={params.colorMixing.colorStretch} min={0} max={1} step={0.01} display={`${Math.round(params.colorMixing.colorStretch * 100)}%`} testId="subtool-color-mixing-stretch" onChange={(colorStretch) => patchParams({ colorMixing: { ...params.colorMixing, colorStretch } })} />
+        </div>
+      </ParamSection>
+
+      <ParamSection
+        icon={Zap}
+        title={SECTION_TITLES.correction.title}
+        description={SECTION_TITLES.correction.description}
+        badge={correctionBadge}
+        testId="subtool-section-correction"
+      >
+        <div className="grid gap-1.5 sm:grid-cols-3">
+          <ParamSlider label="손떨림 보정" value={params.correction.stabilization} min={0} max={100} step={1} display={`${Math.round(params.correction.stabilization)}`} testId="subtool-correction-stabilization" onChange={(stabilization) => patchParams({ correction: { ...params.correction, stabilization } })} />
+          <ParamSlider label="시작 테이퍼" value={params.correction.taperIn} min={0} max={100} step={1} display={`${Math.round(params.correction.taperIn)}%`} testId="subtool-correction-taper-in" onChange={(taperIn) => patchParams({ correction: { ...params.correction, taperIn } })} />
+          <ParamSlider label="끝빠짐 테이퍼" value={params.correction.taperOut} min={0} max={100} step={1} display={`${Math.round(params.correction.taperOut)}%`} testId="subtool-correction-taper-out" onChange={(taperOut) => patchParams({ correction: { ...params.correction, taperOut } })} />
+        </div>
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-card/55 px-2.5 py-2">
+          <span className="text-[0.68rem] font-semibold text-fg-2">모서리 뾰족하게 (Sharp Corners)</span>
+          <Switch
+            checked={params.correction.sharpCorners}
+            onCheckedChange={(sharpCorners) => patchParams({ correction: { ...params.correction, sharpCorners } })}
+            aria-label="모서리 뾰족하게"
+            data-testid="subtool-correction-sharp-corners"
+          />
+        </div>
       </ParamSection>
     </section>
   );

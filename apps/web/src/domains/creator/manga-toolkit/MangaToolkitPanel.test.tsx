@@ -59,10 +59,17 @@ describe("MangaToolkitPanel", () => {
     render(<MangaToolkitPanel />);
     fireEvent.click(screen.getByRole("tab", { name: L.tabs.effect }));
     expect(screen.getByRole("slider", { name: new RegExp(L.effect.count) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "성긴 집중선" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "빽빽한 집중선" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "빽빽한 집중선" }));
     fireEvent.click(screen.getByRole("button", { name: L.effect.speed }));
+    expect(screen.getByRole("button", { name: "성긴 유선" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "음산한 기운" })).toBeTruthy();
     const preview = screen.getByRole("img", { name: L.effect.preview });
     expect(preview.querySelector("path")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: L.effect.flash }));
+    expect(screen.getByRole("button", { name: "성게 플래시" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "더블 플래시" })).toBeTruthy();
     expect(screen.getByRole("img", { name: L.effect.preview }).querySelector("path")).toBeTruthy();
   });
 

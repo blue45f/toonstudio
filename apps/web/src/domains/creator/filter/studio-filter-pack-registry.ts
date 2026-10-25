@@ -36,6 +36,15 @@ export const STUDIO_FILTER_UNION_WAVE_KINDS = [
   "normal-map",
   "god-rays",
   "polar-coordinates",
+  "flow-based-abstraction",
+  "pencil-art",
+  "smoothing",
+  "sharp-strong",
+  "sphere-warp",
+  "zigzag-warp",
+  "panorama-warp",
+  "line-width-correct",
+  "film-camera-style",
 ] as const;
 
 export type StudioFilterUnionWaveKind = (typeof STUDIO_FILTER_UNION_WAVE_KINDS)[number];
@@ -124,6 +133,15 @@ export const STUDIO_FILTER_PACK_LABELS: Readonly<Record<StudioFilterPackKind, st
   "normal-map": "노멀 맵 변환",
   "god-rays": "빛줄기",
   "polar-coordinates": "극좌표 변환",
+  "flow-based-abstraction": "일러스트풍 (ETF 추상화)",
+  "pencil-art": "연필화 (해칭 스케치)",
+  smoothing: "스무딩 (계단 완만화)",
+  "sharp-strong": "더욱 선명하게",
+  "sphere-warp": "구면화",
+  "zigzag-warp": "지그재그 물결",
+  "panorama-warp": "파노라마 왜곡",
+  "line-width-correct": "선폭 수정",
+  "film-camera-style": "필름 카메라",
 };
 
 /** The five hand-rolled filters that predate the pack; each still owns a bespoke draft shape. */

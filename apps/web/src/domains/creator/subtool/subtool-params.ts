@@ -66,6 +66,16 @@ export const SUBTOOL_BLEND_MODE_LABELS: Readonly<
   "soft-light": "소프트 라이트",
 });
 
+export const SUBTOOL_COLOR_MIXING_MODES = ["rgb", "perceptual-lms"] as const;
+export type SubToolColorMixingMode = (typeof SUBTOOL_COLOR_MIXING_MODES)[number];
+
+export const SUBTOOL_COLOR_MIXING_MODE_LABELS: Readonly<
+  Record<SubToolColorMixingMode, string>
+> = Object.freeze({
+  rgb: "표준 RGB 혼합",
+  "perceptual-lms": "지각적 LMS 혼합",
+});
+
 /** 1. 팁 모양 */
 export interface SubToolTipParams {
   readonly shape: SubToolTipShape;
@@ -123,6 +133,41 @@ export interface SubToolBlendingParams {
   readonly opacity: number;
 }
 
+/** 7. 수채 경계 (CSP Variant: BrushUseWaterEdge / BrushWaterEdgeRadius / BrushWaterEdgeStrength / BrushWaterEdgeVividness) */
+export interface SubToolWaterEdgeParams {
+  readonly enabled: boolean;
+  /** 수채 경계 폭(px). 범위 0–20. */
+  readonly radius: number;
+  /** 명도 어두움 강도. 범위 0–1. */
+  readonly darkness: number;
+  /** 채도 선명도 강도. 범위 0–1. */
+  readonly vividness: number;
+}
+
+/** 8. 물감 혼합 (CSP Variant: BrushUseWaterColor / BrushColorMixingMode / BrushMixColor / BrushMixAlpha / BrushMixColorExtension) */
+export interface SubToolColorMixingParams {
+  readonly enabled: boolean;
+  readonly mode: SubToolColorMixingMode;
+  /** 물감량 (BrushMixColor). 범위 0–1. */
+  readonly paintLoad: number;
+  /** 물감 농도 (BrushMixAlpha). 범위 0–1. */
+  readonly paintDensity: number;
+  /** 색 늘리기 (BrushMixColorExtension). 범위 0–1. */
+  readonly colorStretch: number;
+}
+
+/** 9. 손떨림 보정 · 시작과 끝 (CSP Variant: BrushRevision / BrushInLength / BrushOutLength / BrushRevisionBezier) */
+export interface SubToolCorrectionParams {
+  /** 손떨림 보정 강도 (BrushRevision). 범위 0–100. */
+  readonly stabilization: number;
+  /** 시작 농도·크기 테이퍼 비율 (BrushInLength %). 범위 0–100. */
+  readonly taperIn: number;
+  /** 끝빠짐 테이퍼 비율 (BrushOutLength %). 범위 0–100. */
+  readonly taperOut: number;
+  /** 모서리 뾰족하게 보정 (BrushRevisionBezier). */
+  readonly sharpCorners: boolean;
+}
+
 export interface SubToolParams {
   readonly tip: SubToolTipParams;
   readonly spacing: SubToolSpacingParams;
@@ -130,6 +175,9 @@ export interface SubToolParams {
   readonly dualBrush: SubToolDualBrushParams;
   readonly colorJitter: SubToolColorJitterParams;
   readonly blending: SubToolBlendingParams;
+  readonly waterEdge: SubToolWaterEdgeParams;
+  readonly colorMixing: SubToolColorMixingParams;
+  readonly correction: SubToolCorrectionParams;
 }
 
 const SUBTOOL_TIP_SIZE_MIN = 1;
@@ -199,6 +247,25 @@ export function createDefaultSubToolParams(): SubToolParams {
     },
     colorJitter: { hue: 0, saturation: 0, value: 0, opacity: 0 },
     blending: { mode: "normal", opacity: 1 },
+    waterEdge: {
+      enabled: false,
+      radius: 2,
+      darkness: 0.35,
+      vividness: 0.25,
+    },
+    colorMixing: {
+      enabled: false,
+      mode: "perceptual-lms",
+      paintLoad: 0.7,
+      paintDensity: 0.75,
+      colorStretch: 0.45,
+    },
+    correction: {
+      stabilization: 0,
+      taperIn: 15,
+      taperOut: 18,
+      sharpCorners: false,
+    },
   };
 }
 
@@ -298,6 +365,40 @@ function normalizeBlendingParams(value: unknown): SubToolBlendingParams {
   };
 }
 
+function normalizeWaterEdgeParams(value: unknown): SubToolWaterEdgeParams {
+  const source = isRecord(value) ? value : {};
+  const defaults = createDefaultSubToolParams().waterEdge;
+  return {
+    enabled: toBoolean(source.enabled, defaults.enabled),
+    radius: clampNumber(source.radius, 0, 20, defaults.radius),
+    darkness: clampNumber(source.darkness, 0, 1, defaults.darkness),
+    vividness: clampNumber(source.vividness, 0, 1, defaults.vividness),
+  };
+}
+
+function normalizeColorMixingParams(value: unknown): SubToolColorMixingParams {
+  const source = isRecord(value) ? value : {};
+  const defaults = createDefaultSubToolParams().colorMixing;
+  return {
+    enabled: toBoolean(source.enabled, defaults.enabled),
+    mode: pickEnum(source.mode, SUBTOOL_COLOR_MIXING_MODES, defaults.mode),
+    paintLoad: clampNumber(source.paintLoad, 0, 1, defaults.paintLoad),
+    paintDensity: clampNumber(source.paintDensity, 0, 1, defaults.paintDensity),
+    colorStretch: clampNumber(source.colorStretch, 0, 1, defaults.colorStretch),
+  };
+}
+
+function normalizeCorrectionParams(value: unknown): SubToolCorrectionParams {
+  const source = isRecord(value) ? value : {};
+  const defaults = createDefaultSubToolParams().correction;
+  return {
+    stabilization: clampNumber(source.stabilization, 0, 100, defaults.stabilization),
+    taperIn: clampNumber(source.taperIn, 0, 100, defaults.taperIn),
+    taperOut: clampNumber(source.taperOut, 0, 100, defaults.taperOut),
+    sharpCorners: toBoolean(source.sharpCorners, defaults.sharpCorners),
+  };
+}
+
 /**
  * 알 수 없는 입력을 받아 완전하고 범위 안의 SubToolParams로 정규화한다.
  * - 누락/잘못된 숫자는 기본값으로, 범위를 벗어난 숫자는 경계값으로 클램핑
@@ -313,6 +414,9 @@ export function normalizeSubToolParams(input: unknown): SubToolParams {
     dualBrush: normalizeDualBrushParams(source.dualBrush),
     colorJitter: normalizeColorJitterParams(source.colorJitter),
     blending: normalizeBlendingParams(source.blending),
+    waterEdge: normalizeWaterEdgeParams(source.waterEdge),
+    colorMixing: normalizeColorMixingParams(source.colorMixing),
+    correction: normalizeCorrectionParams(source.correction),
   };
 }
 

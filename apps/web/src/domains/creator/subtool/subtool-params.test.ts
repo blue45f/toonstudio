@@ -15,6 +15,25 @@ describe("createDefaultSubToolParams", () => {
     expect(params.dualBrush.enabled).toBe(false);
     expect(params.colorJitter).toEqual({ hue: 0, saturation: 0, value: 0, opacity: 0 });
     expect(params.blending).toEqual({ mode: "normal", opacity: 1 });
+    expect(params.waterEdge).toEqual({
+      enabled: false,
+      radius: 2,
+      darkness: 0.35,
+      vividness: 0.25,
+    });
+    expect(params.colorMixing).toEqual({
+      enabled: false,
+      mode: "perceptual-lms",
+      paintLoad: 0.7,
+      paintDensity: 0.75,
+      colorStretch: 0.45,
+    });
+    expect(params.correction).toEqual({
+      stabilization: 0,
+      taperIn: 15,
+      taperOut: 18,
+      sharpCorners: false,
+    });
   });
 });
 
@@ -110,6 +129,44 @@ describe("normalizeSubToolParams", () => {
     expect(merged.tip.shape).toBe("flat");
     expect(merged.spacing.percent).toBe(80);
     expect(merged.spacing.jitter).toBe(0);
+  });
+
+  it("CSP 수채 경계·물감 혼합·손떨림 보정 파라미터를 범위 안으로 정규화한다", () => {
+    const clamped = normalizeSubToolParams({
+      waterEdge: { enabled: true, radius: 99, darkness: -1, vividness: 4 },
+      colorMixing: {
+        enabled: true,
+        mode: "unknown-mode",
+        paintLoad: 2,
+        paintDensity: -0.5,
+        colorStretch: 0.8,
+      },
+      correction: {
+        stabilization: 150,
+        taperIn: -10,
+        taperOut: 250,
+        sharpCorners: true,
+      },
+    });
+    expect(clamped.waterEdge).toEqual({
+      enabled: true,
+      radius: 20,
+      darkness: 0,
+      vividness: 1,
+    });
+    expect(clamped.colorMixing).toEqual({
+      enabled: true,
+      mode: "perceptual-lms",
+      paintLoad: 1,
+      paintDensity: 0,
+      colorStretch: 0.8,
+    });
+    expect(clamped.correction).toEqual({
+      stabilization: 100,
+      taperIn: 0,
+      taperOut: 100,
+      sharpCorners: true,
+    });
   });
 });
 

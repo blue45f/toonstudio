@@ -8,6 +8,14 @@ import {
   safeScalar,
 } from "./csp-sut-pressure-graph";
 import {
+  buildNodeVariantLookup,
+  cellByField,
+  normalizeUnitOrPercentScalar,
+  numericCell,
+  semanticField,
+  stringCell,
+} from "./csp-sut-variant-schema";
+import {
   bytesToBase64,
   fnv1a64Hex,
   stableTextId,
@@ -305,65 +313,6 @@ function validateSqliteHeader(
   return true;
 }
 
-function normalizedColumn(name: string): string {
-  return name.normalize("NFKC").toLowerCase().replace(/[_\s.-]+/gu, "");
-}
-
-const FIELD_ALIASES = Object.freeze({
-  name: new Set(["name", "toolname", "subtoolname", "pwname"]),
-  outputProcess: new Set(["outputprocess", "processtype"]),
-  brushSize: new Set(["brushsize", "brushdiameter", "diameter"]),
-  hardness: new Set(["hardness", "brushhardness"]),
-  spacing: new Set(["spacing", "brushspacing", "interval"]),
-  opacity: new Set(["opacity", "brushopacity"]),
-  stabilization: new Set(["stabilization", "stabilizer", "correction"]),
-  pressureGraph: new Set(["pressuregraph", "sizepressuregraph"]),
-  opacityPressureGraph: new Set(["opacitypressuregraph", "flowpressuregraph"]),
-  author: new Set(["author", "creator"]),
-  license: new Set(["license", "licence"]),
-  website: new Set(["website", "url"]),
-  email: new Set(["email"]),
-  fileData: new Set(["filedata"]),
-});
-
-type SemanticField = keyof typeof FIELD_ALIASES;
-
-function semanticField(column: string): SemanticField | null {
-  const normalized = normalizedColumn(column);
-  for (const [field, aliases] of Object.entries(FIELD_ALIASES) as Array<
-    [SemanticField, ReadonlySet<string>]
-  >) {
-    if (aliases.has(normalized)) return field;
-  }
-  return null;
-}
-
-function cellByField(
-  row: Readonly<Record<string, CspSqliteValue>>,
-  field: SemanticField,
-): { column: string; value: CspSqliteValue } | null {
-  for (const [column, value] of Object.entries(row)) {
-    if (semanticField(column) === field) return { column, value };
-  }
-  return null;
-}
-
-function numericCell(
-  row: Readonly<Record<string, CspSqliteValue>>,
-  field: SemanticField,
-): number | null {
-  const value = cellByField(row, field)?.value;
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function stringCell(
-  row: Readonly<Record<string, CspSqliteValue>>,
-  field: SemanticField,
-): string | null {
-  const value = cellByField(row, field)?.value;
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
-}
-
 const PNG_CRC_TABLE = (() => {
   const table = new Uint32Array(256);
   for (let index = 0; index < 256; index += 1) {
@@ -523,7 +472,24 @@ function programForRow(
   rowIndex: number,
   unsupported: FormatIssue[],
   warnings: FormatIssue[],
+  nodeLookup?: ReturnType<typeof buildNodeVariantLookup>,
 ): BrushProgramIR | null {
+  const variantId = numericCell(row, "variantId");
+  if (
+    variantId !== null &&
+    nodeLookup &&
+    nodeLookup.byActiveVariantId.size > 0 &&
+    !nodeLookup.byActiveVariantId.has(variantId)
+  ) {
+    return null;
+  }
+  const linkedNode =
+    variantId !== null && nodeLookup
+      ? (nodeLookup.byActiveVariantId.get(variantId) ??
+        nodeLookup.byFallbackVariantId.get(variantId) ??
+        null)
+      : null;
+
   const pressureCell = cellByField(row, "pressureGraph");
   const opacityPressureCell = cellByField(row, "opacityPressureGraph");
   const brushSize = numericCell(row, "brushSize");
@@ -531,6 +497,7 @@ function programForRow(
   const spacing = numericCell(row, "spacing");
   const opacity = numericCell(row, "opacity");
   const stabilization = numericCell(row, "stabilization");
+  const angleJitter = numericCell(row, "angleJitter");
   const hasBrushField =
     pressureCell !== null ||
     opacityPressureCell !== null ||
@@ -541,7 +508,7 @@ function programForRow(
   if (!hasBrushField) return null;
 
   const path = `${table.name}[${rowIndex}]`;
-  const outputProcess = stringCell(row, "outputProcess");
+  const outputProcess = stringCell(row, "outputProcess") ?? linkedNode?.outputProcess ?? null;
   if (
     outputProcess !== null &&
     !["direct-draw", "direct draw", "brush"].includes(outputProcess.toLowerCase())
@@ -615,14 +582,14 @@ function programForRow(
   };
   parseGraphCell(pressureCell, sizeDynamics, "sut-pressure-graph-unsupported");
   parseGraphCell(opacityPressureCell, flowDynamics, "sut-opacity-pressure-graph-unsupported");
-  const validOpacity = safeScalar(opacity, 0, 1);
+  const validOpacity = normalizeUnitOrPercentScalar(opacity);
   if (validOpacity !== null) flowDynamics.push(constantMapping(validOpacity));
   else if (opacity !== null) {
     unsupported.push(
       formatIssue(
         "semantic",
         "sut-opacity-scale-unverified",
-        `opacity ${opacity} is outside the verified normalized [0,1] scale`,
+        `opacity ${opacity} is outside the verified normalized [0,1] or integer [0,100] scale`,
         path,
       ),
     );
@@ -630,13 +597,14 @@ function programForRow(
 
   const identityBytes = new TextEncoder().encode(`${fnv1a64Hex(bytes)}\0${table.name}\0${rowIndex}`);
   const id = stableTextId(`csp-${kind}`, identityBytes);
-  const name = stringCell(row, "name") ?? `${kind.toUpperCase()} ${table.name} ${rowIndex + 1}`;
-  if (stringCell(row, "name") === null) {
+  const rawName = stringCell(row, "name") ?? linkedNode?.name ?? null;
+  const name = rawName ?? `${kind.toUpperCase()} ${table.name} ${rowIndex + 1}`;
+  if (rawName === null) {
     warnings.push(
       formatIssue("semantic", "sut-name-missing", `fallback name ${name} assigned`, path),
     );
   }
-  const validHardness = safeScalar(hardness, 0, 1);
+  const validHardness = normalizeUnitOrPercentScalar(hardness);
   const validSpacing = safeScalar(spacing, 1, 1_000);
   if (hardness !== null && validHardness === null) {
     unsupported.push(
@@ -648,7 +616,7 @@ function programForRow(
       formatIssue("semantic", "sut-spacing-scale-unverified", `spacing ${spacing} rejected`, path),
     );
   }
-  const validStabilization = safeScalar(stabilization, 0, 1);
+  const validStabilization = normalizeUnitOrPercentScalar(stabilization);
   if (stabilization !== null && validStabilization === null) {
     unsupported.push(
       formatIssue(
@@ -659,6 +627,7 @@ function programForRow(
       ),
     );
   }
+  const validAngleJitter = safeScalar(angleJitter, 0, 360) ?? 0;
   return brushProgramIRSchema.parse({
     id,
     name,
@@ -673,7 +642,7 @@ function programForRow(
       kind: "round",
       hardness: validHardness ?? 1,
       spacingPct: validSpacing ?? 10,
-      angleJitterDeg: 0,
+      angleJitterDeg: validAngleJitter,
     },
     output: { target: "raster-tiles", bake: "flatten" },
     providerPreference: ["hokusai-natural-media"],
@@ -762,6 +731,7 @@ export async function importCspToolFile(
 
   const programs: BrushProgramIR[] = [];
   const assets: CspEmbeddedAsset[] = [];
+  const nodeLookup = buildNodeVariantLookup(snapshot.tables);
   for (const table of snapshot.tables) {
     for (const column of table.columns) {
       if (semanticField(column) === null) {
@@ -805,6 +775,7 @@ export async function importCspToolFile(
         rowIndex,
         unsupported,
         warnings,
+        nodeLookup,
       );
       if (program !== null) programs.push(program);
     }

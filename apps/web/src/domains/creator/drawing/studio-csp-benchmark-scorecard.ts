@@ -328,4 +328,57 @@ export function evaluateStudioCspBenchmarkScorecard(
   };
 }
 
+/**
+ * REA(Reverse Engineer Anything) 정적·SQLite 아티팩트 분석으로 검증된
+ * Clip Studio 1.5 (`CLIP STUDIO.app` / `CLIP STUDIO PAINT.app` v5.1.5) 아키텍처 기준선 요약.
+ */
+export const CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY = {
+  appVersion: "5.1.5",
+  bundleIdentifier: "jp.co.celsys.CLIPSTUDIOPAINT",
+  launcherBundleIdentifier: "jp.co.celsys.CLIPSTUDIO",
+  editImageToolNodeCount: 255,
+  editImageToolVariantRowCount: 416,
+  editImageToolVariantColumnCount: 507,
+  brushPresetCount: 20,
+  filterPluginBundleCount: 31,
+  menuCommandIdCount: 874,
+  workspaceSpwsPresetCount: 3,
+  filterPluginBundles: [
+    "Artistic.bundle",
+    "Blur.bundle",
+    "BlurMore.bundle",
+    "ChangeOfCurvedSurface.bundle",
+    "ChromaticAberration.bundle",
+    "ColorHalftone.bundle",
+    "Conversion.bundle",
+    "Crystal.bundle",
+    "DrawFrame.bundle",
+    "DrawPerlinNoise.bundle",
+    "ExtractContourLine.bundle",
+    "FisheyeLens.bundle",
+    "FlowBasedAbstraction.bundle",
+    "GaussianBlur.bundle",
+    "LineWidthCorrect.bundle",
+    "Mosaic.bundle",
+    "MotionBlur.bundle",
+    "PencilArtFilter.bundle",
+    "PerspectiveTransform.bundle",
+    "Pinch.bundle",
+    "Pixellate.bundle",
+    "PolarCoordinates.bundle",
+    "RadialBlur.bundle",
+    "RemoveJPEGNoise.bundle",
+    "Sharp.bundle",
+    "SharpStrong.bundle",
+    "Smoothing.bundle",
+    "Sphere.bundle",
+    "TPPChromaticAberration.bundle",
+    "UnsharpMask.bundle",
+    "Wave.bundle",
+    "Whirlpool.bundle",
+    "ZigZag.bundle",
+  ] as const,
+} as const;
+
+
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CSP_CONCENTRATION_LINE_PRESETS,
+  CSP_FLASH_PRESETS,
+  CSP_SPEED_LINE_PRESETS,
   createConcentrationLines,
   createFlashPolygon,
   createSeededRandom,
@@ -252,6 +255,28 @@ describe("effectLinesToSvgPath & taperedEffectLinesToSvgPath", () => {
 
     const svgPath = taperedEffectLinesToSvgPath(lines, { startWidth: 4 });
     expect(svgPath).toBe("M 0 0 L 100 2 L 100 -2 Z");
+  });
+
+  it("클립스튜디오 5.1.5 EditImageTool.todb 효과선 서브툴 프리셋 13종이 완비되어 있다", () => {
+    expect(CSP_CONCENTRATION_LINE_PRESETS.map((p) => p.name)).toEqual([
+      "성긴 집중선",
+      "진한 집중선",
+      "빽빽한 집중선",
+      "양기",
+      "파열",
+    ]);
+    expect(CSP_SPEED_LINE_PRESETS.map((p) => p.name)).toEqual([
+      "성긴 유선",
+      "진한 유선",
+      "음산한 기운",
+      "비",
+    ]);
+    expect(CSP_FLASH_PRESETS.map((p) => p.name)).toEqual([
+      "성게 플래시",
+      "폭죽",
+      "검은 바탕 성게 플래시",
+      "더블 플래시",
+    ]);
   });
 });
 

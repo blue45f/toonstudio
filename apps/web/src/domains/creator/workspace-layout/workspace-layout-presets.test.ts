@@ -5,8 +5,14 @@ import {
   validateWorkspaceLayout,
 } from "./workspace-layout-model";
 import {
+  CSP_WORKSPACE_PRESET_CATEGORY_ID,
+  CSP_WORKSPACE_PRESET_COMIC_ID,
+  CSP_WORKSPACE_PRESET_IDS,
+  CSP_WORKSPACE_PRESET_ILLUSTRATION_ID,
   DEFAULT_WORKSPACE_PRESET_ID,
+  findCspWorkspaceLayoutPreset,
   findWorkspaceLayoutPreset,
+  getCspWorkspaceLayoutPresets,
   getWorkspaceLayoutPresets,
   getWorkspacePresetDescription,
   isWorkspaceLayoutPresetId,
@@ -77,5 +83,20 @@ describe("workspace-layout-presets", () => {
     // 만화용은 3D 플로팅 포함
     expect(manga.slots["floating"].panelIds).toContain("3d");
     expect(manga.slots["right-inspector"].panelIds).toContain("timeline");
+  });
+
+  it("CSP 5.1.5 presetMac_1~3.spws 대응 프리셋(일러스트·코믹·카테고리별)이 모두 유효하다", () => {
+    expect(CSP_WORKSPACE_PRESET_IDS).toEqual([
+      CSP_WORKSPACE_PRESET_ILLUSTRATION_ID,
+      CSP_WORKSPACE_PRESET_COMIC_ID,
+      CSP_WORKSPACE_PRESET_CATEGORY_ID,
+    ]);
+    const cspPresets = getCspWorkspaceLayoutPresets();
+    expect(cspPresets.map((p) => p.name)).toEqual(["일러스트", "코믹", "카테고리별"]);
+    for (const preset of cspPresets) {
+      expect(validateWorkspaceLayout(preset, WORKSPACE_PANEL_REGISTRY)).toEqual([]);
+      expect(getWorkspacePresetDescription(preset.id).length).toBeGreaterThan(0);
+    }
+    expect(findCspWorkspaceLayoutPreset(CSP_WORKSPACE_PRESET_COMIC_ID)?.name).toBe("코믹");
   });
 });

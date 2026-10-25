@@ -9,6 +9,17 @@
 
 // The kind list itself lives in the engine-free registry so the top menu can name these
 // filters without loading these warp kernels. This module stays their public home.
+import {
+  applyFilmCameraStyle,
+  applyFlowBasedAbstraction,
+  applyLineWidthCorrect,
+  applyPencilArt,
+  applySharpStrong,
+  applySmoothing,
+  computeCspInverseWarpCoordinates,
+  luminanceAt,
+  sobel,
+} from "./studio-filter-csp-plugins";
 import { STUDIO_FILTER_UNION_WAVE_KINDS } from "./studio-filter-pack-registry";
 
 import type { StudioFilterUnionWaveKind } from "./studio-filter-pack-registry";
@@ -70,6 +81,15 @@ const WORK_UNITS_BY_KIND: Readonly<Record<StudioFilterUnionWaveKind, number>> = 
   "normal-map": 9,
   "god-rays": 10,
   "polar-coordinates": 2,
+  "flow-based-abstraction": 12,
+  "pencil-art": 10,
+  smoothing: 9,
+  "sharp-strong": 9,
+  "sphere-warp": 3,
+  "zigzag-warp": 3,
+  "panorama-warp": 3,
+  "line-width-correct": 9,
+  "film-camera-style": 4,
 };
 
 type FilterThis = { attrs?: Record<string, unknown> };
@@ -106,59 +126,21 @@ export function normalizeStudioFilterUnionWave(
   value: unknown,
 ): StudioFilterUnionWave | null {
   const source = record(value);
-  if (
-    !source ||
-    typeof source.kind !== "string" ||
-    !KIND_SET.has(source.kind) ||
-    !finite(source.amount)
-  ) {
+  if (!source || typeof source.kind !== "string" || !KIND_SET.has(source.kind) || !finite(source.amount)) {
     return null;
   }
-  for (const key of [
-    "scale",
-    "detail",
-    "seed",
-    "centerX",
-    "centerY",
-    "angle",
-  ] as const) {
+  for (const key of ["scale", "detail", "seed", "centerX", "centerY", "angle"] as const) {
     if (source[key] !== undefined && !finite(source[key])) return null;
   }
   return {
     kind: source.kind as StudioFilterUnionWaveKind,
     amount: clamp(source.amount, -100, 100),
-    scale: clamp(
-      finite(source.scale) ? source.scale : DEFAULT_SPATIAL.scale,
-      1,
-      200,
-    ),
-    detail: clamp(
-      finite(source.detail) ? source.detail : DEFAULT_SPATIAL.detail,
-      0,
-      255,
-    ),
-    seed: Math.round(
-      clamp(
-        finite(source.seed) ? source.seed : DEFAULT_SPATIAL.seed,
-        0,
-        9_999,
-      ),
-    ),
-    centerX: clamp(
-      finite(source.centerX) ? source.centerX : DEFAULT_SPATIAL.centerX,
-      0,
-      100,
-    ),
-    centerY: clamp(
-      finite(source.centerY) ? source.centerY : DEFAULT_SPATIAL.centerY,
-      0,
-      100,
-    ),
-    angle: clamp(
-      finite(source.angle) ? source.angle : DEFAULT_SPATIAL.angle,
-      -180,
-      180,
-    ),
+    scale: clamp(finite(source.scale) ? source.scale : DEFAULT_SPATIAL.scale, 1, 200),
+    detail: clamp(finite(source.detail) ? source.detail : DEFAULT_SPATIAL.detail, 0, 255),
+    seed: Math.round(clamp(finite(source.seed) ? source.seed : DEFAULT_SPATIAL.seed, 0, 9_999)),
+    centerX: clamp(finite(source.centerX) ? source.centerX : DEFAULT_SPATIAL.centerX, 0, 100),
+    centerY: clamp(finite(source.centerY) ? source.centerY : DEFAULT_SPATIAL.centerY, 0, 100),
+    angle: clamp(finite(source.angle) ? source.angle : DEFAULT_SPATIAL.angle, -180, 180),
     mode: source.mode === "polar-to-rectangular" ? "polar-to-rectangular" : "rectangular-to-polar",
     interpolation: source.interpolation === "nearest" ? "nearest" : "bilinear",
   };
@@ -359,6 +341,17 @@ function applyInverseWarp(
           }
           sourceX = x + (targetX - x) * strength;
           sourceY = y + (targetY - y) * strength;
+          break;
+        }
+        case "sphere-warp":
+        case "zigzag-warp":
+        case "panorama-warp": {
+          const coords = computeCspInverseWarpCoordinates({
+            effect, x, y, dx, dy, nx, ny, radius, centerX, centerY, halfWidth, halfHeight, minDimension, phase, strength, wavelength,
+          });
+          if (!coords) return;
+          sourceX = coords.sourceX;
+          sourceY = coords.sourceY;
           break;
         }
         default:
@@ -574,45 +567,6 @@ function applyStainedGlass(
   }
 }
 
-function luminanceAt(
-  source: Uint8ClampedArray,
-  width: number,
-  height: number,
-  x: number,
-  y: number,
-): number {
-  const safeX = clamp(Math.round(x), 0, width - 1);
-  const safeY = clamp(Math.round(y), 0, height - 1);
-  const offset = (safeY * width + safeX) * 4;
-  return luminance(
-    source[offset]!,
-    source[offset + 1]!,
-    source[offset + 2]!,
-  );
-}
-
-function sobel(
-  source: Uint8ClampedArray,
-  width: number,
-  height: number,
-  x: number,
-  y: number,
-  step = 1,
-): { gx: number; gy: number } {
-  const topLeft = luminanceAt(source, width, height, x - step, y - step);
-  const top = luminanceAt(source, width, height, x, y - step);
-  const topRight = luminanceAt(source, width, height, x + step, y - step);
-  const left = luminanceAt(source, width, height, x - step, y);
-  const right = luminanceAt(source, width, height, x + step, y);
-  const bottomLeft = luminanceAt(source, width, height, x - step, y + step);
-  const bottom = luminanceAt(source, width, height, x, y + step);
-  const bottomRight = luminanceAt(source, width, height, x + step, y + step);
-  return {
-    gx: -topLeft + topRight - left * 2 + right * 2 - bottomLeft + bottomRight,
-    gy: -topLeft - top * 2 - topRight + bottomLeft + bottom * 2 + bottomRight,
-  };
-}
-
 function applyPosterEdges(
   image: StudioImageDataLike,
   effect: StudioFilterUnionWave,
@@ -630,11 +584,9 @@ function applyPosterEdges(
       const gradient = sobel(source, width, height, x, y);
       const edge = Math.min(1, Math.sqrt(gradient.gx ** 2 + gradient.gy ** 2) / threshold);
       for (let channel = 0; channel < 3; channel += 1) {
-        const quantized =
-          Math.round(source[offset + channel]! / quantizeStep) * quantizeStep;
+        const quantized = Math.round(source[offset + channel]! / quantizeStep) * quantizeStep;
         const target = quantized * (1 - edge * 0.9);
-        data[offset + channel] =
-          source[offset + channel]! * (1 - strength) + target * strength;
+        data[offset + channel] = source[offset + channel]! * (1 - strength) + target * strength;
       }
     }
   }
@@ -654,14 +606,13 @@ function applyPhotocopy(
     for (let x = 0; x < width; x += 1) {
       const offset = (y * width + x) * 4;
       const center = luminanceAt(source, width, height, x, y);
-      const localMean =
-        (
-          center +
-          luminanceAt(source, width, height, x - radius, y) +
-          luminanceAt(source, width, height, x + radius, y) +
-          luminanceAt(source, width, height, x, y - radius) +
-          luminanceAt(source, width, height, x, y + radius)
-        ) / 5;
+      const localMean = (
+        center +
+        luminanceAt(source, width, height, x - radius, y) +
+        luminanceAt(source, width, height, x + radius, y) +
+        luminanceAt(source, width, height, x, y - radius) +
+        luminanceAt(source, width, height, x, y + radius)
+      ) / 5;
       const localInk = center - localMean < -8 ? 0 : center < threshold ? 24 : 255;
       const target = center * (1 - strength) + localInk * strength;
       data[offset] = target;
@@ -694,8 +645,7 @@ function applyNormalMap(
       nz *= inverseLength;
       const target = [(nx * 0.5 + 0.5) * 255, (ny * 0.5 + 0.5) * 255, nz * 255];
       for (let channel = 0; channel < 3; channel += 1) {
-        data[offset + channel] =
-          source[offset + channel]! * (1 - strength) + target[channel]! * strength;
+        data[offset + channel] = source[offset + channel]! * (1 - strength) + target[channel]! * strength;
       }
     }
   }
@@ -720,10 +670,7 @@ function applyGodRays(
         const t = sample / samples;
         const sampleX = x + (lightX - x) * t;
         const sampleY = y + (lightY - y) * t;
-        bloom += Math.max(
-          0,
-          luminanceAt(source, width, height, sampleX, sampleY) - threshold,
-        );
+        bloom += Math.max(0, luminanceAt(source, width, height, sampleX, sampleY) - threshold);
       }
       bloom = bloom / samples * strength * 0.9;
       const offset = (y * width + x) * 4;
@@ -754,6 +701,9 @@ export function applyStudioFilterUnionWave(
     case "pinch-bloat":
     case "lens-distortion":
     case "polar-coordinates":
+    case "sphere-warp":
+    case "zigzag-warp":
+    case "panorama-warp":
       applyInverseWarp(image, effect);
       break;
     case "film-grain-pro":
@@ -779,6 +729,24 @@ export function applyStudioFilterUnionWave(
       break;
     case "god-rays":
       applyGodRays(image, effect);
+      break;
+    case "flow-based-abstraction":
+      applyFlowBasedAbstraction(image, effect);
+      break;
+    case "pencil-art":
+      applyPencilArt(image, effect);
+      break;
+    case "smoothing":
+      applySmoothing(image, effect);
+      break;
+    case "sharp-strong":
+      applySharpStrong(image, effect);
+      break;
+    case "line-width-correct":
+      applyLineWidthCorrect(image, effect);
+      break;
+    case "film-camera-style":
+      applyFilmCameraStyle(image, effect);
       break;
   }
   return true;
