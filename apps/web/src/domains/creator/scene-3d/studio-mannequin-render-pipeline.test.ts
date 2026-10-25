@@ -67,13 +67,22 @@ describe("studio-mannequin-render-pipeline", () => {
   });
 
   it("관절 가이드는 요청한 관절의 가동범위 아크를 만든다", () => {
-    const frame = resolveStudioMannequinRenderFrame({
+    const restFrame = resolveStudioMannequinRenderFrame({
       pose: createStudioMannequinRestPose(),
       guideJointId: "leftLowerArm",
     });
-    expect(frame.jointGuide?.jointId).toBe("leftLowerArm");
-    expect(frame.jointGuide?.points.length).toBe(25);
-    expect(frame.jointGuide?.limitState).toBe("within");
+    expect(restFrame.jointGuide?.jointId).toBe("leftLowerArm");
+    expect(restFrame.jointGuide?.points.length).toBe(25);
+    expect(restFrame.jointGuide?.limitState).toBe("near-limit");
+
+    const flexedFrame = resolveStudioMannequinRenderFrame({
+      pose: {
+        joints: { leftLowerArm: [-0.8, 0, 0] },
+        pelvisOffset: [0, 0, 0],
+      },
+      guideJointId: "leftLowerArm",
+    });
+    expect(flexedFrame.jointGuide?.limitState).toBe("within");
   });
 
   it("윤곽 off면 어떤 재질에서도 윤곽이 보이지 않는다", () => {

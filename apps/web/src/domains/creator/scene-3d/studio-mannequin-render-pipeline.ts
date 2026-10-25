@@ -160,7 +160,7 @@ export function resolveStudioMannequinRenderFrame(
     }),
   });
   const guideRotation: StudioMannequinVec3 | null = input.guideJointId
-    ? (grounded.pose.joints[input.guideJointId] ?? null)
+    ? (grounded.pose.joints[input.guideJointId] ?? [0, 0, 0])
     : null;
   const jointGuide = input.guideJointId
     ? buildStudioMannequinJointRangeArc({
