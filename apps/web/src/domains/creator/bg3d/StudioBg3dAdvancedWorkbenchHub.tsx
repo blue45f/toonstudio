@@ -8,6 +8,7 @@ import {
 } from "../scene-3d/studio-3d-dcc-suite";
 import { StudioVirtualSpaceCollaborationHub } from "../virtual-space/StudioVirtualSpaceCollaborationHub";
 import { StudioBg3dAtmospherePanel } from "./StudioBg3dAtmospherePanel";
+import { StudioBg3dBlenderFantasyWebtoonPanel } from "./StudioBg3dBlenderFantasyWebtoonPanel";
 import { StudioBg3dCharacterAnimatorPanel } from "./StudioBg3dCharacterAnimatorPanel";
 import { StudioBg3dClonerPanel } from "./StudioBg3dClonerPanel";
 import { StudioBg3dCutStripPanel } from "./StudioBg3dCutStripPanel";
@@ -40,6 +41,7 @@ import {
 
 export type StudioBg3dWorkbenchTabId =
   | "atmosphere"
+  | "blender-fantasy-webtoon"
   | "character-animator"
   | "cloner"
   | "cut-strip"
@@ -70,6 +72,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "postprocess-vfx", labelKo: "렌즈·셀 필터", groupKo: "환경·VFX" },
   { id: "halftone-screentone", labelKo: "스크린톤·망점", groupKo: "셰이더·재질" },
   { id: "matcap-studio", labelKo: "MatCap·MToon", groupKo: "셰이더·재질" },
+  { id: "blender-fantasy-webtoon", labelKo: "블렌더 판타지·NPR·군단", groupKo: "셰이더·재질" },
   { id: "spatial-fx", labelKo: "입체 효과음·말풍선", groupKo: "웹툰 연출" },
   { id: "cut-strip", labelKo: "컷 스트립·연속성", groupKo: "웹툰 연출" },
   { id: "shaper-tooning", labelKo: "셰이퍼·투닝 스튜디오", groupKo: "웹툰 연출" },
@@ -378,6 +381,30 @@ export function StudioBg3dAdvancedWorkbenchHub({
             onApplyMtoonPreset={(preset) => setLastActionSummary(`MToon LT: ${preset.label}`)}
             onApplyCc0SurfaceMaterial={(entry) =>
               setLastActionSummary(`CC0 표면 재질: ${entry.labelKo}`)
+            }
+          />
+        ) : null}
+
+        {activeTab === "blender-fantasy-webtoon" ? (
+          <StudioBg3dBlenderFantasyWebtoonPanel
+            disabled={disabled}
+            onApplyLightingRig={(rig, grade) =>
+              setLastActionSummary(`블렌더 광원: ${rig.nameKo} (${grade})`)
+            }
+            onApplyNprShader={(preset, hex) =>
+              setLastActionSummary(`블렌더 NPR: ${preset.nameKo} (${hex})`)
+            }
+            onApplyFreestyleInk={(preset, count) =>
+              setLastActionSummary(`Freestyle 선화: ${preset.nameKo} (${count}선분)`)
+            }
+            onApplyWeaponRig={(preset, blades) =>
+              setLastActionSummary(`판타지 무기: ${preset.nameKo} (${blades}자루)`)
+            }
+            onApplyMonsterIk={(preset, pose) =>
+              setLastActionSummary(`몬스터 iTaSC IK: ${preset.nameKo} (${pose})`)
+            }
+            onSimulateCrowd={(preset, agents) =>
+              setLastActionSummary(`군단 Boid: ${preset.nameKo} (${agents}기)`)
             }
           />
         ) : null}

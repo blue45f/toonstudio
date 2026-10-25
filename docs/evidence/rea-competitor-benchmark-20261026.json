@@ -145,15 +145,69 @@
       ]
     },
     {
-      "id": "blender-and-clip-studio-paint",
-      "name": "Blender & Clip Studio Paint",
-      "version": "Installed Desktop Reference Bundles",
+      "id": "blender-v5-2-0-and-clip-studio-paint",
+      "name": "Blender 5.2.0 & Clip Studio Paint",
+      "version": "Blender 5.2.0 (2026-07-14, Stichting Blender Foundation) · CLIPStudio",
+      "bundleIdentifier": "org.blenderfoundation.blender",
       "artifacts": [
         {
           "role": "dcc-reference-bundle",
           "path": "/Applications/Blender.app",
           "sha256": "2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9",
-          "evidence_id": "ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819"
+          "evidence_id": "ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819",
+          "summary_view_evidence_id": "ev_4c2d4e77493307c8a302c8b86ba44b025a1ce8a9bdc64a10acc2654f30921d4b",
+          "info_plist_evidence_id": "ev_90ad53d5730faf55b2b1b09b0f2363cb11e49bca01da7e2c67a6ef5fb8f0dfa9",
+          "summary": {
+            "entries": 5723,
+            "files": 5722,
+            "minimumSystemVersion": "11.2"
+          }
+        },
+        {
+          "role": "main-macho-executable",
+          "path": "/Applications/Blender.app/Contents/MacOS/Blender",
+          "sha256": "60ba7a9b6743f7acf101274361fa76409e382ae07cd2007ce07dea30f6b129f2",
+          "evidence_id": "ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821",
+          "signature_evidence_id": "ev_30f04b877b57826a11dace08112d89a9b6a9ff145ec36c0ce1cb22aab629bb6f",
+          "dylib_graph_evidence_id": "ev_630b89fce50bd6b26cd55a042132d873c52919bf733e6407129a2bb01d891a7d",
+          "summary": {
+            "architecture": "arm64",
+            "uuid": "D21E58E8-ED7E-3433-8EE5-25314917910B",
+            "sizeBytes": 183237520,
+            "segments": 6,
+            "loadCommands": 63,
+            "dependencies": 45,
+            "imports": 3007,
+            "exports": 132634,
+            "resolvedInternalMachoImages": 31
+          }
+        },
+        {
+          "role": "compiled-asset-catalog",
+          "path": "/Applications/Blender.app/Contents/Resources/Assets.car",
+          "sha256": "3aab6eb5b37ffbc5f968e68b81481a883b12021c1f0d1a6e114c7e88cc0d5f34",
+          "evidence_id": "ev_6b2e8b764fccc626171e8dbd1f1884bedaee87f04c51fdf7bf8d841c65bca03b",
+          "summary": {
+            "records": 23,
+            "namedAssets": ["blender_liquid_glass"]
+          }
+        },
+        {
+          "role": "python-313-bytecode-subsystems",
+          "path": "/Applications/Blender.app/Contents/Resources/5.2/scripts/startup/bl_ui/__pycache__",
+          "sha256": "d6f65f90c91fd17b39b41459990ca6a663823eed9c87905f827cf1ca628e3136",
+          "evidence_id": "ev_9ad5e9663a6392cf3143eeacf82341ee73dd5ff7816c1ee091c812cfa214d6ed",
+          "additional_evidence_ids": [
+            "ev_f6d6a3ef579ee21ada682b9ed72a2d261c79c1fc12af79bc7779775fffaeb569",
+            "ev_f1fcd4d9626d767dc5600c0a6eaa90e29da78a283d375339176d7d6179de0bcd",
+            "ev_a54fc5a37a5d729da7281f8a0d240805d3286087b1e5b277fe6094c31eefd479",
+            "ev_0cf6e7b41209ad3bc6d2111003363029ec28d24bae35312e96b34e0ac1315446",
+            "ev_463f657bbba506b7446e5595494fad1fd73f1c83afb18673689fdbe072c556ba",
+            "ev_b6e4c388edcf8ff8d869fefd94ae7bfee267fc0414836fede2a794e08706b88d",
+            "ev_0f2ffe615bf5d8bdfc4c7e62247ce684d623951460eef8b15384f1a9166cf346",
+            "ev_ffa69da4e6dd950b9aa075ca0fe45589fd44b633ed8e42ea359be9c9c0b6d727",
+            "ev_cad8255285108f935bf842ae925c09a04981ed89dc0b45e42d623b22d1e5db96"
+          ]
         },
         {
           "role": "webtoon-authoring-suite-support",
@@ -163,12 +217,19 @@
         }
       ],
       "observedFacts": [
-        "Blender.app 및 CLIPStudio 애플리케이션 지원 디렉터리 아티팩트 해시와 정적 구조가 교차 대조 기준선으로 확보됨."
+        "/Applications/Blender.app/Contents/MacOS/Blender(arm64, 183,237,520 bytes, SHA-256 60ba7a9b6743f7acf101274361fa76409e382ae07cd2007ce07dea30f6b129f2, UUID D21E58E8-ED7E-3433-8EE5-25314917910B)에서 6개 세그먼트, 63개 Load Command, 45개 dylib 의존성, 3,007개 import, 132,634개 export 심볼이 정적으로 관측됨.",
+        "번들 내부 dylib 그래프(ev_630b89fce50bd6b26cd55a042132d873c52919bf733e6407129a2bb01d891a7d)에서 libMaterialXGenShader.dylib, libMaterialXCore.dylib, liboslexec.dylib, libOpenColorIO.dylib, libOpenImageDenoise.dylib, libembree4.dylib, libopenvdb.dylib, libosdGPU.dylib, libusd_ms.dylib 등 31개 내부 Mach-O 이미지와 252개 로드 에지가 확인됨.",
+        "광원·EEVEE 서브시스템(ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821, ev_f1fcd4d9626d767dc5600c0a6eaa90e29da78a283d375339176d7d6179de0bcd, ev_a54fc5a37a5d729da7281f8a0d240805d3286087b1e5b277fe6094c31eefd479)에서 RNA_SceneEEVEE, RNA_RaytraceEEVEE, SceneEEVEE_use_fast_gi, EEVEE_lightbake_job_create, ccl::IESLightNode, Point/Sun/Spot/Area 광원, 흑체 색온도(use_temperature, temperature, Tint), LightProbe(VOLUME/SPHERE/PLANE, surfel_density, validity_threshold)가 관측됨.",
+        "만화 채색 셰이더 및 Freestyle/LineArt 서브시스템(ev_9ad5e9663a6392cf3143eeacf82341ee73dd5ff7816c1ee091c812cfa214d6ed, ev_463f657bbba506b7446e5595494fad1fd73f1c83afb18673689fdbe072c556ba, ev_b6e4c388edcf8ff8d869fefd94ae7bfee267fc0414836fede2a794e08706b88d)에서 ccl::ToonBsdfNode(RNA_ShaderNodeBsdfToon), ShaderNodeShaderToRGB, ShaderNodeValToRGB, ShaderNodeAmbientOcclusion, ShaderNodeBevel, ShaderNodeFresnel, ShaderNodeLayerWeight, Freestyle::Controller::ComputeViewMap, FEdgeSharp, FEdgeSmooth, ProcessSilhouetteEdge, ProcessSuggestiveContourFace, CalligraphicShader, BackboneStretcherShader, SpatialNoiseShader, IncreasingThicknessShader, RNA_ObjectLineArt/RNA_MaterialLineArt가 관측됨.",
+        "판타지 무기·몬스터·대규모 군중 서브시스템(ev_cad8255285108f935bf842ae925c09a04981ed89dc0b45e42d623b22d1e5db96, ev_0cf6e7b41209ad3bc6d2111003363029ec28d24bae35312e96b34e0ac1315446, ev_ffa69da4e6dd950b9aa075ca0fe45589fd44b633ed8e42ea359be9c9c0b6d727)에서 오브젝트/본 제약(bChildOfConstraint, bTrackToConstraint, bFollowPathConstraint, bActionConstraint), 다관절 로봇/크리처 역기구학 솔버(iTaSC::Armature::updateJacobian, IK_SolverSetPoleVectorConstraint, KDL::RotLimitConstraint), GeometryNodes 인스턴싱(blender::bke::InstanceReference, GeometryNodesLazyFunctionLogger) 및 군중 AI(boid_brain, RNA_BoidRuleGoal, RNA_BoidRuleAvoid, RNA_BoidRuleFight, RNA_BoidState)가 관측됨."
       ],
       "inferences": [
+        "블렌더가 판타지 웹툰 스튜디오에서 스케치업을 대체하는 핵심 기술 요인은 (1) EEVEE 실시간 광원·IES 배광·흑체 색온도·볼륨 라이트 프로브를 통한 드라마틱한 역광/마법광 연출, (2) ShaderToRGB→ColorRamp 및 Freestyle/LineArt를 통한 비실사(NPR) 만화 채색·펜선 자동화, (3) ChildOf/FollowPath/TrackTo 제약과 이미션/굴절 노드를 결합한 화려한 판타지 무기·어검진 제어, (4) iTaSC/KDL 야코비안 다관절 IK를 통한 비인간형 몬스터(드래곤 날개·다족류·촉수) 리깅, (5) GeometryNodes InstanceReference와 BoidBrain 상태머신을 결합한 대규모 전투 군단·몬스터 웨이브 시뮬레이션에 있음.",
         "SHAPER의 멀티패스 PSD 구조 및 3D 카메라/윤곽선 제어는 Clip Studio Paint의 웹툰 원고 레이어 규격 및 Blender 3D NPR 렌더 패스 워크플로우와 상호 운용되도록 설계됨."
       ],
-      "unknowns": []
+      "unknowns": [
+        "macOS Metal GPU 드라이버 상에서 EEVEE Raytrace 컴퓨트 셰이더 파이프라인의 하드웨어별 런타임 셰이더 캐시 바이너리와 사용자 커스텀 .blend 파일 내부 스크립트 실행 흔적은 정적 앱 번들 검사 범위 밖이므로 미확정(unknown)으로 남김."
+      ]
     },
     {
       "id": "sketchup-openskp-web-3dwarehouse",
@@ -484,6 +545,49 @@
         "ev_a285e5cabb466cf2c7c65837aa3f85494c4a74e8abe5b128d6058b93e06856ea"
       ],
       "capability": "Color Harmony 5모드, ColorDrop(Threshold + Reference Layer + Continue Filling), 접근성 Color Naming, QuickMenu 6슬롯 플릭, Drawing/Animation/Page Assist, 3D Lighting Studio, Single-Touch 제스처, .swatches/.brush/.procreate 네이티브 코덱"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/scene-3d/studio-3d-blender-eevee-lighting-rig.ts",
+      "competitorSource": "Blender 5.2.0",
+      "evidenceIds": [
+        "ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821",
+        "ev_f1fcd4d9626d767dc5600c0a6eaa90e29da78a283d375339176d7d6179de0bcd",
+        "ev_a54fc5a37a5d729da7281f8a0d240805d3286087b1e5b277fe6094c31eefd479"
+      ],
+      "capability": "EEVEE Next 4대 광원(Point/Sun/Spot/Area)·플랑크 흑체 색온도(Kelvin/Tint)·IES 배광 프로파일·LightProbe 볼륨 조도 및 판타지 웹툰 5종 조명 리그 엔진"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/scene-3d/studio-3d-blender-npr-shader-freestyle.ts",
+      "competitorSource": "Blender 5.2.0",
+      "evidenceIds": [
+        "ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821",
+        "ev_9ad5e9663a6392cf3143eeacf82341ee73dd5ff7816c1ee091c812cfa214d6ed",
+        "ev_463f657bbba506b7446e5595494fad1fd73f1c83afb18673689fdbe072c556ba",
+        "ev_b6e4c388edcf8ff8d869fefd94ae7bfee267fc0414836fede2a794e08706b88d"
+      ],
+      "capability": "ShaderNodeTree(BsdfToon + ShaderToRGB + ValToRGB 멀티스톱 컬러램프 + AO + Bevel + Fresnel/LayerWeight) 및 Freestyle ViewMap(Calligraphic/BackboneStretcher/SpatialNoise)·LineArt 차폐 선화 엔진"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/scene-3d/studio-3d-blender-fantasy-weapon-monster-crowd.ts",
+      "competitorSource": "Blender 5.2.0",
+      "evidenceIds": [
+        "ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821",
+        "ev_cad8255285108f935bf842ae925c09a04981ed89dc0b45e42d623b22d1e5db96",
+        "ev_0cf6e7b41209ad3bc6d2111003363029ec28d24bae35312e96b34e0ac1315446",
+        "ev_ffa69da4e6dd950b9aa075ca0fe45589fd44b633ed8e42ea359be9c9c0b6d727"
+      ],
+      "capability": "판타지 무기 포지 & ChildOf/FollowPath/TrackTo/ActionConstraint 어검진 리깅, 몬스터 다관절 iTaSC/KDL 야코비안 IK, GeometryNodes InstanceReference & BoidBrain 대규모 군단 시뮬레이터"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/bg3d/StudioBg3dBlenderFantasyWebtoonPanel.tsx",
+      "competitorSource": "Blender 5.2.0",
+      "evidenceIds": [
+        "ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821",
+        "ev_9ad5e9663a6392cf3143eeacf82341ee73dd5ff7816c1ee091c812cfa214d6ed",
+        "ev_463f657bbba506b7446e5595494fad1fd73f1c83afb18673689fdbe072c556ba",
+        "ev_0cf6e7b41209ad3bc6d2111003363029ec28d24bae35312e96b34e0ac1315446"
+      ],
+      "capability": "3D 웹툰·DCC 스페셜리스트 워크벤치 통합 블렌더 판타지·NPR·무기·몬스터·군단 인터랙티브 컨트롤 패널"
     }
   ]
 }

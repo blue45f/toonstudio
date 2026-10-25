@@ -9,6 +9,7 @@ import {
 
 const ALL_WORKBENCH_TAB_IDS: readonly StudioBg3dWorkbenchTabId[] = [
   "atmosphere",
+  "blender-fantasy-webtoon",
   "character-animator",
   "cloner",
   "cut-strip",
@@ -61,6 +62,28 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     fireEvent.click(screen.getByTestId("bg3d-mtoon-preset-bold-ink"));
     expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
       "MToon LT: 굵은 잉크",
+    );
+
+    // blender-fantasy-webtoon 탭 전환 및 EEVEE 광원·NPR·무기·몬스터·군단 검증
+    fireEvent.click(screen.getByTestId("bg3d-workbench-tab-blender-fantasy-webtoon"));
+    expect(screen.getByTestId("bg3d-blender-fantasy-webtoon-panel")).toBeTruthy();
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-light-rig-holy-sword-awakening-halo"),
+    );
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "블렌더 광원:",
+    );
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-weapon-imperial-holy-greatsword"),
+    );
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "판타지 무기:",
+    );
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-crowd-royal-paladin-phalanx-march"),
+    );
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "군단 Boid:",
     );
 
     // spatial-fx 탭 전환 및 3D 집중선 세그먼트 / 3D 빌보드 말풍선 & 이모트 검증
