@@ -14,7 +14,7 @@ import type { StudioImageDataLike } from "./studio-filters";
 // 파라미터 타입·기본값·범위
 // ---------------------------------------------------------------------------
 
-export type HalftonePattern = "circle" | "line" | "diamond" | "cross";
+export type HalftonePattern = "circle" | "line" | "diamond" | "cross" | "star";
 
 /**
  * 컬러 하프톤 설정.
@@ -22,7 +22,8 @@ export type HalftonePattern = "circle" | "line" | "diamond" | "cross";
  *   angle    0..90  기준 회전각(도) — 채널별 기본각에 더해지는 오프셋.
  *   mode     cmyk(컬러 4채널 망점)·mono(휘도 단일 흑색 망점).
  *   strength 0..100 원본과의 블렌드 비율(0=항등, 100=완전 망점화).
- *   pattern  망점 형태 — circle(원형)·line(선형)·diamond(마름모)·cross(십자격자).
+ *   pattern  망점 형태 — circle(원형)·line(선형)·diamond(마름모)·cross(십자격자)·star(별모양).
+ *   invert   망점 반전 — true이면 잉크 커버리지를 반전해 어두운 바탕 위 밝은 망점으로 표현.
  */
 export type Halftone = {
   dotSize: number;
@@ -30,6 +31,7 @@ export type Halftone = {
   mode: "cmyk" | "mono";
   strength: number;
   pattern?: HalftonePattern;
+  invert?: boolean;
 };
 
 /** 항등(망점화 없음) — strength 0이라 픽셀을 건드리지 않는다. */
@@ -46,7 +48,7 @@ export const HALFTONE_STRENGTH_RANGE = { min: 0, max: 100, step: 1 } as const;
 
 // 유효 모드 및 패턴 집합(외부 입력 검증용).
 const HALFTONE_MODES: readonly Halftone["mode"][] = ["cmyk", "mono"];
-const HALFTONE_PATTERNS: readonly HalftonePattern[] = ["circle", "line", "diamond", "cross"];
+const HALFTONE_PATTERNS: readonly HalftonePattern[] = ["circle", "line", "diamond", "cross", "star"];
 
 // CMYK 채널별 스크린 기본 회전각(도). 전통 인쇄 각도(C15 M75 Y0 K45)에 angle 오프셋을 더한다.
 const CHANNEL_BASE_ANGLES = { c: 15, m: 75, y: 0, k: 45 } as const;
@@ -81,6 +83,7 @@ export function normalizeHalftone(h?: Partial<Halftone> | null): Halftone {
     src.pattern && HALFTONE_PATTERNS.includes(src.pattern as HalftonePattern)
       ? (src.pattern as HalftonePattern)
       : undefined;
+  const invert = src.invert === true ? true : undefined;
   return {
     dotSize: clampTo(src.dotSize, HALFTONE_DOT_RANGE.min, HALFTONE_DOT_RANGE.max, DEFAULT_HALFTONE.dotSize),
     angle: clampTo(src.angle, HALFTONE_ANGLE_RANGE.min, HALFTONE_ANGLE_RANGE.max, DEFAULT_HALFTONE.angle),
@@ -92,6 +95,7 @@ export function normalizeHalftone(h?: Partial<Halftone> | null): Halftone {
       DEFAULT_HALFTONE.strength
     ),
     ...(pattern !== undefined ? { pattern } : {}),
+    ...(invert ? { invert: true } : {}),
   };
 }
 
@@ -215,6 +219,13 @@ function screenChannel(
             const distU = Math.abs(ddu);
             const distV = Math.abs(ddv);
             covVal = Math.max(halfArm - distU + 0.5, halfArm - distV + 0.5);
+          } else if (pattern === "star") {
+            // CSP 별모양(Star) 아스트로이드 4각 별 SDF
+            const rStar = Math.sqrt(c) * cell * 0.78;
+            const ax = Math.abs(ddu);
+            const ay = Math.abs(ddv);
+            const dist = Math.max(ax + ay * 1.45, ay + ax * 1.45) * 0.58;
+            covVal = rStar - dist + 0.5;
           } else {
             // "circle" (기본)
             const r = Math.sqrt(c) * rMax; // 면적 비례 반지름
@@ -258,6 +269,7 @@ export function applyHalftone(img: StudioImageDataLike, h: Halftone): void {
   const blend = Math.min(1, Math.max(0, h.strength / 100));
   const n = width * height;
   const pattern = h.pattern ?? "circle";
+  const invert = h.invert === true;
 
   if (h.mode === "mono") {
     // 잉크 커버리지 = 어두울수록 1(검정), 밝을수록 0(흰).
@@ -270,7 +282,8 @@ export function applyHalftone(img: StudioImageDataLike, h: Halftone): void {
     const ink = screenChannel(cov, width, height, h.dotSize, MONO_BASE_ANGLE + h.angle, pattern);
     for (let i = 0; i < n; i++) {
       const j = i * 4;
-      const v = 255 * (1 - ink[i]!); // 점=검정, 바탕=흰, 가장자리는 AA 중간톤
+      const effectiveInk = invert ? 1 - ink[i]! : ink[i]!;
+      const v = 255 * (1 - effectiveInk); // 점=검정(반전 시 흰색), 바탕=흰(반전 시 검정)
       data[j] = data[j]! + (v - data[j]!) * blend;
       data[j + 1] = data[j + 1]! + (v - data[j + 1]!) * blend;
       data[j + 2] = data[j + 2]! + (v - data[j + 2]!) * blend;
@@ -312,10 +325,14 @@ export function applyHalftone(img: StudioImageDataLike, h: Halftone): void {
   // 흰 바탕에서 점이 찍힌 잉크를 승법으로 빼서 재구성(AA 커버리지 그대로 승법 — 부드러운 점 경계).
   for (let i = 0; i < n; i++) {
     const j = i * 4;
-    const kk = 1 - inkK[i]!; // K 잉크 커버리지만큼 어둡게(경계는 부분 잉크)
-    let rr = (1 - inkC[i]!) * kk;
-    let gg = (1 - inkM[i]!) * kk;
-    let bb = (1 - inkY[i]!) * kk;
+    const effK = invert ? 1 - inkK[i]! : inkK[i]!;
+    const effC = invert ? 1 - inkC[i]! : inkC[i]!;
+    const effM = invert ? 1 - inkM[i]! : inkM[i]!;
+    const effY = invert ? 1 - inkY[i]! : inkY[i]!;
+    const kk = 1 - effK; // K 잉크 커버리지만큼 어둡게(경계는 부분 잉크)
+    let rr = (1 - effC) * kk;
+    let gg = (1 - effM) * kk;
+    let bb = (1 - effY) * kk;
     rr *= 255;
     gg *= 255;
     bb *= 255;
@@ -385,11 +402,18 @@ export function halftoneKonvaFilter(
   const attrs = this.attrs;
   if (!attrs) return;
   const mode = attrs.htMode === "cmyk" || attrs.htMode === "mono" ? attrs.htMode : undefined;
+  const pattern =
+    typeof attrs.htPattern === "string" &&
+    HALFTONE_PATTERNS.includes(attrs.htPattern as HalftonePattern)
+      ? (attrs.htPattern as HalftonePattern)
+      : undefined;
   const h = normalizeHalftone({
     dotSize: attrNumber(attrs.htDot),
     angle: attrNumber(attrs.htAngle),
     mode,
     strength: attrNumber(attrs.htStrength),
+    pattern,
+    invert: attrs.htInvert === true,
   });
   if (isIdentityHalftone(h)) return;
   applyHalftone(imageData, h);

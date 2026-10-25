@@ -8,7 +8,7 @@
  * - ko/en (defineBilingualText), 라이트/다크 (테마 CSS 변수), 390px,
  *   reduced-motion 대응 (모션 끄면 최종 보정 상태만 표시).
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { useT } from "@/shared/lib/i18n";
 import {
@@ -57,6 +57,26 @@ const COPY = {
     "퀵쉐이프 동작 데모: 삐뚤빼뚤한 타원이 홀드 후 반듯한 타원으로 보정됩니다",
     "QuickShape demo: a wobbly ellipse is corrected to a clean ellipse after holding",
   ),
+  shapeGroupAria: defineBilingualText(
+    "StudioQuickShapeGuide",
+    "shapeGroupAria",
+    "데모 도형 선택",
+    "Select demo shape",
+  ),
+  shapeEllipse: defineBilingualText("StudioQuickShapeGuide", "shapeEllipse", "타원", "Ellipse"),
+  shapeRectangle: defineBilingualText(
+    "StudioQuickShapeGuide",
+    "shapeRectangle",
+    "사각형",
+    "Rectangle",
+  ),
+  shapeTriangle: defineBilingualText(
+    "StudioQuickShapeGuide",
+    "shapeTriangle",
+    "삼각형",
+    "Triangle",
+  ),
+  shapeLine: defineBilingualText("StudioQuickShapeGuide", "shapeLine", "직선", "Line"),
   perfectToggle: defineBilingualText(
     "StudioQuickShapeGuide",
     "perfectToggle",
@@ -118,6 +138,8 @@ const COPY = {
 /* 데모 스트로크 (결정적 시드)                                           */
 /* ------------------------------------------------------------------ */
 
+type DemoShapePresetId = "ellipse" | "rectangle" | "triangle" | "line";
+
 function wobblyEllipsePoints(): QuickShapePoint[] {
   let seed = 987654321;
   const rand = (): number => {
@@ -137,6 +159,70 @@ function wobblyEllipsePoints(): QuickShapePoint[] {
   return points;
 }
 
+function wobblyPolygonPoints(vertices: ReadonlyArray<QuickShapePoint>): QuickShapePoint[] {
+  let seed = 135792468;
+  const rand = (): number => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647 - 0.5;
+  };
+  const points: QuickShapePoint[] = [];
+  const stepsPerEdge = 12;
+  for (let e = 0; e < vertices.length; e += 1) {
+    const a = vertices[e]!;
+    const b = vertices[(e + 1) % vertices.length]!;
+    for (let s = 0; s < stepsPerEdge; s += 1) {
+      const t = s / stepsPerEdge;
+      points.push({
+        x: a.x + (b.x - a.x) * t + rand() * 2.2,
+        y: a.y + (b.y - a.y) * t + rand() * 2.2,
+      });
+    }
+  }
+  points.push({ ...vertices[0]! });
+  return points;
+}
+
+function wobblyLinePoints(): QuickShapePoint[] {
+  let seed = 246813579;
+  const rand = (): number => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647 - 0.5;
+  };
+  const points: QuickShapePoint[] = [];
+  const n = 24;
+  for (let i = 0; i <= n; i += 1) {
+    const t = i / n;
+    points.push({
+      x: 42 + t * 236,
+      y: 120 - t * 70 + rand() * 2.4,
+    });
+  }
+  return points;
+}
+
+function buildDemoShapePoints(shape: DemoShapePresetId): QuickShapePoint[] {
+  switch (shape) {
+    case "rectangle":
+      return wobblyPolygonPoints([
+        { x: 68, y: 36 },
+        { x: 252, y: 36 },
+        { x: 252, y: 134 },
+        { x: 68, y: 134 },
+      ]);
+    case "triangle":
+      return wobblyPolygonPoints([
+        { x: 160, y: 28 },
+        { x: 248, y: 138 },
+        { x: 72, y: 138 },
+      ]);
+    case "line":
+      return wobblyLinePoints();
+    case "ellipse":
+    default:
+      return wobblyEllipsePoints();
+  }
+}
+
 function polylinePathData(points: ReadonlyArray<QuickShapePoint>): string {
   return points
     .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
@@ -150,10 +236,42 @@ function polylinePathData(points: ReadonlyArray<QuickShapePoint>): string {
 export function StudioQuickShapeGuide(): ReactElement {
   useBilingualI18nRevision();
   const t = useT();
+  const [demoShape, setDemoShape] = useState<DemoShapePresetId>("ellipse");
   const [perfect, setPerfect] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
+  const shapeRadioRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const wobblyPoints = useMemo(() => wobblyEllipsePoints(), []);
+  const shapeOptions: ReadonlyArray<{ id: DemoShapePresetId; labelKey: string }> = [
+    { id: "ellipse", labelKey: COPY.shapeEllipse },
+    { id: "rectangle", labelKey: COPY.shapeRectangle },
+    { id: "triangle", labelKey: COPY.shapeTriangle },
+    { id: "line", labelKey: COPY.shapeLine },
+  ];
+
+  const handleShapeKeyDown = (
+    index: number,
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ): void => {
+    const count = shapeOptions.length;
+    let nextIndex = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % count;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + count) % count;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = count - 1;
+    }
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      setDemoShape(shapeOptions[nextIndex]!.id);
+      setReplayKey((k) => k + 1);
+      shapeRadioRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  const wobblyPoints = useMemo(() => buildDemoShapePoints(demoShape), [demoShape]);
   const wobblyD = useMemo(() => polylinePathData(wobblyPoints), [wobblyPoints]);
   const classified = useMemo(() => classifyQuickShape(wobblyPoints), [wobblyPoints]);
   const displayed = useMemo(
@@ -227,9 +345,52 @@ export function StudioQuickShapeGuide(): ReactElement {
         {t(COPY.sub)}
       </p>
 
+      {/* 데모 도형 선택 (Roving Tabindex) */}
+      <div
+        className="mt-3 grid grid-cols-4 gap-1.5"
+        role="radiogroup"
+        aria-label={t(COPY.shapeGroupAria)}
+      >
+        {shapeOptions.map((option, index) => {
+          const active = option.id === demoShape;
+          return (
+            <button
+              key={option.id}
+              ref={(el) => {
+                shapeRadioRefs.current[index] = el;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              tabIndex={active ? 0 : -1}
+              onClick={() => {
+                setDemoShape(option.id);
+                setReplayKey((k) => k + 1);
+              }}
+              onKeyDown={(e) => handleShapeKeyDown(index, e)}
+              className="rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={
+                active
+                  ? {
+                      background: "var(--color-accent)",
+                      color: "var(--color-on-accent)",
+                    }
+                  : {
+                      background: "var(--color-raised)",
+                      color: "var(--color-fg-2)",
+                      border: "1px solid var(--color-line)",
+                    }
+              }
+            >
+              {t(option.labelKey)}
+            </button>
+          );
+        })}
+      </div>
+
       {/* 애니메이션 데모 */}
       <div
-        className="mt-4 overflow-hidden rounded-2xl border"
+        className="mt-3 overflow-hidden rounded-2xl border"
         style={{ borderColor: "var(--color-line)", background: "var(--color-canvas)" }}
       >
         <svg
@@ -320,8 +481,11 @@ export function StudioQuickShapeGuide(): ReactElement {
           style={{ background: perfect ? "var(--color-accent)" : "var(--color-line)" }}
         >
           <span
-            className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all"
-            style={{ left: perfect ? "1.375rem" : "0.125rem" }}
+            className="absolute top-0.5 h-5 w-5 rounded-full shadow transition-all"
+            style={{
+              left: perfect ? "1.375rem" : "0.125rem",
+              background: "var(--color-on-accent)",
+            }}
           />
         </span>
       </button>
@@ -353,3 +517,4 @@ export function StudioQuickShapeGuide(): ReactElement {
 }
 
 export default StudioQuickShapeGuide;
+

@@ -114,5 +114,33 @@ describe("StudioVectorLinePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
     expect(outlinePathD(container)).toBe(afterPinch);
   });
+
+  it("편집 구간 버튼의 Roving Tabindex 키보드 이동, 균일 폭 보정, Ctrl+Z/Ctrl+Shift+Z 단축키를 지원한다", () => {
+    const { container } = render(<StudioVectorLinePanel />);
+    const middleBtn = screen.getByRole("button", { name: "중간" });
+    const allBtn = screen.getByRole("button", { name: "전체" });
+    const endBtn = screen.getByRole("button", { name: "뒤" });
+
+    expect(middleBtn.getAttribute("tabindex")).toBe("0");
+    expect(allBtn.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(middleBtn, { key: "End" });
+    expect(endBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(endBtn.getAttribute("tabindex")).toBe("0");
+
+    const beforeBrush = outlinePathD(container);
+    fireEvent.click(screen.getByRole("button", { name: "균일 폭 보정" }));
+    const afterBrush = outlinePathD(container);
+    expect(afterBrush).not.toBe(beforeBrush);
+    expect(screen.getByText("브러시 반경 일정 폭 수렴 보정")).toBeTruthy();
+
+    const section = screen.getByRole("region", { name: "벡터 선 다듬기" });
+    fireEvent.keyDown(section, { key: "z", ctrlKey: true });
+    expect(outlinePathD(container)).toBe(beforeBrush);
+
+    fireEvent.keyDown(section, { key: "z", ctrlKey: true, shiftKey: true });
+    expect(outlinePathD(container)).toBe(afterBrush);
+  });
 });
+
 
