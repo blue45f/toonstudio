@@ -9,6 +9,7 @@ import {
 
 const ALL_WORKBENCH_TAB_IDS: readonly StudioBg3dWorkbenchTabId[] = [
   "atmosphere",
+  "blender-fantasy-webtoon",
   "character-animator",
   "cloner",
   "cut-strip",
@@ -32,14 +33,14 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     cleanup();
   });
 
-  it("17종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {
+  it("18종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {
     render(<StudioBg3dAdvancedWorkbenchHub />);
 
     expect(screen.getByTestId("bg3d-advanced-workbench-hub")).toBeTruthy();
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain(
       "glTF 2.0 / GLB): A",
     );
-    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(17);
+    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(18);
 
     // 기본 탭: atmosphere (높이 안개 감쇠율 & 카메라 추적광 확인)
     expect(screen.getByTestId("bg3d-atmosphere-height-fog-readout").textContent).toContain(
@@ -60,6 +61,28 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     fireEvent.click(screen.getByTestId("bg3d-mtoon-preset-bold-ink"));
     expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
       "MToon LT: 굵은 잉크",
+    );
+
+    // blender-fantasy-webtoon 탭 전환 및 EEVEE 광원·NPR·무기·몬스터·군단 검증
+    fireEvent.click(screen.getByTestId("bg3d-workbench-tab-blender-fantasy-webtoon"));
+    expect(screen.getByTestId("bg3d-blender-fantasy-webtoon-panel")).toBeTruthy();
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-light-rig-holy-sword-awakening-halo"),
+    );
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "블렌더 광원:",
+    );
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-weapon-imperial-holy-greatsword"),
+    );
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "판타지 무기:",
+    );
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-crowd-royal-paladin-phalanx-march"),
+    );
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "군단 Boid:",
     );
 
     // spatial-fx 탭 전환 및 3D 집중선 세그먼트 / 3D 빌보드 말풍선 & 이모트 검증

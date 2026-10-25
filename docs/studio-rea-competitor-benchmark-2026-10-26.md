@@ -30,7 +30,10 @@
 | **SHAPER v1.05** | 로컬 프리셋·모델 라이브러리 (`/Users/hjunkim/Library/Application Support/com.StudioHORANG.SHAPER`) | `00430c2903c90b949b41dfc3c4408d1744ac40d8f8bbf2ecf2ed40dcc2e65ef1` | `ev_49b3f622771d933b42b42b3b6b21e4fed2de067fc93e65f6dcce8a7b7b9b32f7` | **353 entries** (체형·얼굴·헤어·포즈·통합 프리셋 및 에셋) |
 | **Goodnotes v7.1.28** (`com.goodnotesapp.x`) | 앱 번들 (`/Applications/Goodnotes.app`) | `7edabaf7283dd1f78f7337c439ba7178937469d61b03d9a279b7743e05756a45` | `ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81` | **5,017 entries**, 8개 핵심 필기·동기화·추론 프레임워크 내장 |
 | **Muse v9.0** (`com.meta.endo`) | 앱 번들 (`/Applications/Muse.app`) | `8958f759ebbe8ba62881ac0ab2891d42143a67a2216a3f76d40cbf12637048fb` | `ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14` | **353 entries**, `com.meta.prototypes.endo.attachment-reference` UTI |
-| **Blender** | 앱 번들 (`/Applications/Blender.app`) | `2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9` | `ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819` | 3D NPR/그리스펜슬·카메라·멀티패스 합성 비교 기준선 |
+| **Blender 5.2.0** (`org.blenderfoundation.blender`, `2026-07-14`) | 앱 번들 (`/Applications/Blender.app`) | `2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9` | 번들: `ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819`<br>인벤토리: `ev_4c2d4e77493307c8a302c8b86ba44b025a1ce8a9bdc64a10acc2654f30921d4b`<br>`Info.plist`: `ev_90ad53d5730faf55b2b1b09b0f2363cb11e49bca01da7e2c67a6ef5fb8f0dfa9` | **5,723 entries** (`5,722 files`), `.blend` UTI, 최소 OS `11.2` |
+| **Blender 5.2.0** | 메인 Mach-O 실행 파일 (`/Applications/Blender.app/Contents/MacOS/Blender`) | `60ba7a9b6743f7acf101274361fa76409e382ae07cd2007ce07dea30f6b129f2` | Mach-O: `ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821`<br>서명: `ev_30f04b877b57826a11dace08112d89a9b6a9ff145ec36c0ce1cb22aab629bb6f`<br>Dylib 그래프: `ev_630b89fce50bd6b26cd55a042132d873c52919bf733e6407129a2bb01d891a7d` | `arm64`, 183.2MB, **6 segments**, **63 load commands**, **45 dependencies**, **3,007 imports**, **132,634 exports**, 내부 Mach-O **31 images** (`252 edges`) |
+| **Blender 5.2.0** | 컴파일 에셋 카탈로그 (`/Applications/Blender.app/Contents/Resources/Assets.car`) | `3aab6eb5b37ffbc5f968e68b81481a883b12021c1f0d1a6e114c7e88cc0d5f34` | `ev_6b2e8b764fccc626171e8dbd1f1884bedaee87f04c51fdf7bf8d841c65bca03b` | **23 records** (`blender_liquid_glass` 등) |
+| **Blender 5.2.0** | CPython 3.13 바이트코드 서브시스템 (`Contents/Resources/5.2/scripts/startup/bl_ui/__pycache__/*.pyc`) | `d6f65f90c91fd17b39b41459990ca6a663823eed9c87905f827cf1ca628e3136` 외 9종 | 셰이더: `ev_9ad5e966...`<br>광원: `ev_f1fcd4d9...`<br>프로브: `ev_a54fc5a3...`<br>지오메트리 노드: `ev_0cf6e7b4...`<br>Freestyle: `ev_463f657b...`<br>그리스펜슬: `ev_b6e4c388...`<br>파티클/Boids: `ev_ffa69da4...`<br>제약: `ev_cad82552...` | EEVEE 광원·프로브, `ShaderToRGB`·`ToonBsdf`, `Freestyle`/`LineArt`, `GeometryNodes`, `BoidBrain`, `ChildOf`/`TrackTo`/`FollowPath` 제약 바이트코드 구조 |
 | **Clip Studio Paint** | 지원 디렉터리 (`/Library/Application Support/CELSYS/CLIPStudio`) | `b3b5ccce892de714bf4b078aadbc7fdd435618f1416ac682d6e4dbf83201b1cf` | `ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c` | 웹툰 소재·PSD 레이어 호환성 비교 기준선 |
 
 ---
@@ -115,20 +118,45 @@
 
 ---
 
-### 3.4 Blender & Clip Studio Paint 교차 기준선
+### 3.4 Blender 5.2.0 (`org.blenderfoundation.blender`) 판타지 웹툰 5대 서브시스템 심층 역공학 및 Clip Studio Paint 교차 기준선
 
 #### A. Observed Facts (관측 사실)
-- **Blender (`/Applications/Blender.app`)**: `SHA-256: 2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9`, `evidence_id: ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819`.
+- **번들·실행 바이너리·서명·동적 라이브러리 그래프**:
+  - `/Applications/Blender.app` (`SHA-256: 2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9`, `evidence_id: ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819`, 디렉터리 인벤토리 요약: `ev_4c2d4e77493307c8a302c8b86ba44b025a1ce8a9bdc64a10acc2654f30921d4b` — 총 **5,723 entries / 5,722 files**, `Info.plist`: `ev_90ad53d5730faf55b2b1b09b0f2363cb11e49bca01da7e2c67a6ef5fb8f0dfa9` — 버전 `5.2.0 2026-07-14`, 최소 macOS `11.2`).
+  - `/Applications/Blender.app/Contents/MacOS/Blender` (`SHA-256: 60ba7a9b6743f7acf101274361fa76409e382ae07cd2007ce07dea30f6b129f2`, `UUID: D21E58E8-ED7E-3433-8EE5-25314917910B`, `183,237,520 bytes`, `arm64`, `evidence_id: ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821`): **6개 세그먼트**, **63개 Load Command**, **45개 dylib 의존성**, **3,007개 import 심볼**, **132,634개 export 심볼** 관측.
+  - 코드 서명 (`ev_30f04b877b57826a11dace08112d89a9b6a9ff145ec36c0ce1cb22aab629bb6f`): `Developer ID Application: Stichting Blender Foundation (68UA947AUU)`, CDHash `fb5999f05356076fd7d4278d159eb7ec4f850f00`.
+  - 번들 내장 Dylib 의존성 그래프 (`ev_630b89fce50bd6b26cd55a042132d873c52919bf733e6407129a2bb01d891a7d`): **31개 내부 Mach-O 이미지**와 **252개 로드 에지** 확인(`libMaterialXGenShader.dylib`, `libMaterialXCore.dylib`, `liboslexec.dylib`, `libOpenColorIO.dylib`, `libOpenImageDenoise.dylib`, `libembree4.dylib`, `libopenvdb.dylib`, `libosdGPU.dylib`, `libusd_ms.dylib` 등).
+- **판타지 웹툰 5대 핵심 영역별 네이티브 심볼 및 CPython 3.13 `.pyc` 바이트코드 관측**:
+  1. **빛(광원) 표현 — EEVEE Next & Cycles 조명·라이트 프로브 (`ev_fd18384d...`, `ev_f1fcd4d9...`, `ev_a54fc5a3...`)**:
+     - 네이티브 심볼: `RNA_SceneEEVEE`, `RNA_RaytraceEEVEE`, `SceneEEVEE_use_fast_gi`, `SceneEEVEE_use_shadows`, `EEVEE_lightbake_job_create`, `ccl::IESLightNode` (`mapping_axis_enum`, `mapping_projection_enum`), `ccl::PointLight::get_radius_socket`.
+     - 바이트코드(`properties_data_light.cpython-313.pyc`, `properties_data_lightprobe.cpython-313.pyc`): 4대 광원(`POINT`, `SUN`, `SPOT`, `AREA` — `RECTANGLE`/`DISK`), 흑체 색온도(`use_temperature`, `temperature`, `Tint`), 소프트 그림자 반경(`shadow_soft_size`), 노출(`exposure`), 기여도(`diffuse_factor`, `specular_factor`, `volume_factor`), 라이트 프로브(`VOLUME`, `SPHERE`, `PLANE`, `influence_distance`, `falloff`, `intensity`, `surfel_density`, `validity_threshold`).
+  2. **만화 채색 셰이더 & Freestyle / LineArt 선화 (`ev_fd18384d...`, `ev_9ad5e966...`, `ev_463f657b...`, `ev_b6e4c388...`)**:
+     - 네이티브 셰이더 심볼: `ccl::ToonBsdfNode` (`RNA_ShaderNodeBsdfToon`, `component_enum` Diffuse/Glossy), `RNA_ShaderNodeShaderToRGB`, `RNA_ShaderNodeValToRGB`, `RNA_ShaderNodeAmbientOcclusion`, `RNA_ShaderNodeBevel`, `RNA_ShaderNodeFresnel`, `RNA_ShaderNodeLayerWeight`, `RNA_ShaderNodeVertexColor`.
+     - 네이티브 Freestyle / LineArt 심볼: `Freestyle::Controller::ComputeViewMap`, `ComputeSteerableViewMap`, `Freestyle::FEdgeXDetector::ProcessSilhouetteEdge`, `ProcessSuggestiveContourFace`, `Freestyle::FEdgeSharp`, `Freestyle::FEdgeSmooth`, `LineStyleThicknessModifier_CreaseAngle`, `CalligraphicShader`, `BackboneStretcherShader`, `SpatialNoiseShader`, `IncreasingThicknessShader`, `RNA_ObjectLineArt`, `RNA_MaterialLineArt` (`mat_occlusion`).
+  3. **판타지 웹툰의 화려한 무기 (`ev_cad82552...`, `ev_0f2ffe61...`)**:
+     - `properties_constraint.cpython-313.pyc` (`207 code objects`): `bChildOfConstraint`, `bTrackToConstraint`, `bFollowPathConstraint`, `bActionConstraint`, `bTransLikeConstraint` 및 모디파이어(`ARRAY`, `CURVE`, `SOLIDIFY`, `BEVEL`, `WIREFRAME`).
+  4. **판타지 웹툰의 거대 몬스터·크리처 (`ev_fd18384d...`)**:
+     - 네이티브 다관절 로봇/크리처 역기구학 솔버 `iTaSC::Armature` (`updateJacobian`, `updateKinematics`, `addLimitConstraint`, `addEndEffector`), `KDL::ChainJntToJacSolver`, `KDL::RotLimitConstraint`, `IK_SolverSetPoleVectorConstraint` 및 Bullet 강체 관절(`btHingeConstraint`, `btFixedConstraint`).
+  5. **대규모 군중·군단 (`ev_0cf6e7b4...`, `ev_ffa69da4...`)**:
+     - `node_add_menu_geometry.cpython-313.pyc` (`115 code objects`) 및 `blender::bke::InstanceReference`, `GeometryNodesLazyFunctionLogger`, `properties_particle.cpython-313.pyc` (`157 code objects`) 내 `boid_brain`, `RNA_BoidRuleGoal`, `RNA_BoidRuleAvoid`, `RNA_BoidRuleFight`, `RNA_BoidRuleFollowLeader`, `RNA_BoidState`, `PARTICLE_PT_physics_boids_movement`, `PARTICLE_PT_physics_boids_battle`.
 - **Clip Studio Paint (`/Library/Application Support/CELSYS/CLIPStudio`)**: `SHA-256: b3b5ccce892de714bf4b078aadbc7fdd435618f1416ac682d6e4dbf83201b1cf`, `evidence_id: ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c`.
 
 #### B. Inferences (설계 의도 및 알고리즘 구조 추론)
-- SHAPER의 멀티패스 PSD 출력과 3D 표면 펜선 구조는 Blender의 Grease Pencil surface projection / NPR Render Passes와 Clip Studio Paint의 웹툰 선화·채색 분리 레이어 관행을 단일 웹툰 캐릭터 특화 파이프라인으로 압축한 형태다.
+- **판타지 웹툰 스튜디오가 스케치업 대신 블렌더를 도입하는 5대 기술적 필연성**:
+  1. **광원 및 볼륨 연출**: 스케치업의 단순 태양/그림자 온오프와 달리, 블렌더 EEVEE는 플랑크 흑체 복사 색온도(Kelvin)와 IES 배광 프로파일, Fast GI 볼륨 라이트 프로브를 결합해 던전 보스전 역광·성검 각성 후광·마법진 하부 발광을 실시간에 가까운 속도로 계산한다.
+  2. **ShaderToRGB 기반 만화 채색과 Freestyle 펜선**: 물리 기반 BSDF 결과를 `ShaderNodeShaderToRGB`로 즉시 스칼라화한 뒤 `ShaderNodeValToRGB`(CONSTANT/EASE 컬러램프)와 `AmbientOcclusion`·`Bevel`·`Fresnel`을 합성함으로써, 갑주 금속 광택과 보석 굴절을 웹툰 작화풍 계조로 변환한다. 동시에 `Freestyle` 뷰맵 에지 검출기(`Silhouette`, `CreaseAngle`, `SuggestiveContour`)와 스트로크 셰이더(`CalligraphicShader`, `BackboneStretcherShader`, `SpatialNoiseShader`)가 만화가의 G펜·붓펜 터치를 재현한다.
+  3. **어검술·판타지 무기의 제약 기반 제어**: `ChildOf`(오른손/왼손/등집 소켓 전환), `FollowPath`(배후 12자루 부유 검진 궤도), `TrackTo`(표적 일제 조준), `ActionConstraint`(진명 각성 단계별 검신 확장·룬 발광) 조합으로 복잡한 키프레임 수작업 없이 화려한 무기 연출이 가능하다.
+  4. **비인간형 몬스터의 iTaSC 다관절 IK**: 인간형 2족 보행을 넘어 드래곤(4족+양날개+꼬리), 아라크네(8다리 다족류), 크라켄(다중 촉수)의 끝단 위치와 무릎/날개 폴벡터, 관절 회전 한계를 `iTaSC` 감쇠 최소제곱(Damped Least Squares) 야코비안으로 동시에 풀어낸다.
+  5. **GeometryNodes 인스턴싱 + BoidBrain 대규모 군단**: 수백~수천 기의 기사단 방진과 몬스터 웨이브를 `bke::InstanceReference` 공유 지오메트리와 `boid_brain` 상태머신(`GOAL`, `AVOID`, `FIGHT`, `FOLLOW_LEADER`)으로 처리해 메모리 폭발 없이 대규모 공성전을 연출한다.
+
+#### C. Unknowns (미확정 영역)
+- macOS Metal 드라이버 상에서 런타임에 동적 컴파일되는 EEVEE Raytrace GPU 파이프라인 캐시 바이너리 및 외부 서드파티 Python 애드온의 네트워크 동작은 정적 번들 분석 범위 밖이므로 미확정(Unknown)으로 남긴다.
 
 ---
 
-## 4. ToonStudio 신규 구현 모듈 10종 정밀 매핑
+## 4. ToonStudio 신규 구현 모듈 14종 정밀 매핑
 
-위 REA 정적 역공학 증거를 바탕으로 ToonStudio 창작 스튜디오(`apps/web/src/domains/creator/`)에 클린룸 자체 구현으로 통합된 10개 핵심 모듈과 근거 `evidence_id`의 매핑은 다음과 같다.
+위 REA 정적 역공학 증거를 바탕으로 ToonStudio 창작 스튜디오(`apps/web/src/domains/creator/`)에 클린룸 자체 구현으로 통합된 14개 핵심 모듈과 근거 `evidence_id`의 매핑은 다음과 같다.
 
 | 순번 | ToonStudio 구현 모듈 경로 | 벤치마크 원천 및 REA `evidence_id` | 핵심 구현 기능 및 기술 사양 |
 | ---: | --- | --- | --- |
@@ -142,6 +170,10 @@
 | 8 | `apps/web/src/domains/creator/ai/studio-ai-shaper-bone-preset-engine.ts` | **SHAPER v1.05**<br>`ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541`<br>`ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328` | 캐릭터 설정 텍스트·장르·연령·등신대 입력으로부터 본 스케일 벡터와 얼굴/체형 블렌드셰이프 프리셋을 결정론적으로 추천·블렌딩하는 엔진 |
 | 9 | `apps/web/src/domains/creator/canvas/studio-handwriting-baseline-beautifier.ts` | **Goodnotes v7.1.28**<br>`ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81` | 손글씨 대사·효과음(SFX) 스트로크 묶음에서 기준선(`BaselineEstimation`) 기울기·행간을 추정하고, 필압·개성을 유지한 채 줄 맞춤·자간·곡률을 정돈(`HandwritingBeautificationCore` 대응)하는 미화 엔진 |
 | 10 | `apps/web/src/domains/creator/canvas/studio-spatial-reference-lasso-board.ts` | **Muse v9.0**<br>`ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14` | 무한 공간 보드에서 자유 올가미(Polygon Lasso) 폐곡선 판정(Point-in-Polygon / AABB 교차)으로 첨부 레퍼런스 카드(`attachment-reference`)와 스케치 스트로크를 클러스터링·정렬·컷 인계하는 보드 엔진 |
+| 11 | `apps/web/src/domains/creator/scene-3d/studio-3d-blender-eevee-lighting-rig.ts` | **Blender 5.2.0**<br>`ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821`<br>`ev_f1fcd4d9626d767dc5600c0a6eaa90e29da78a283d375339176d7d6179de0bcd`<br>`ev_a54fc5a37a5d729da7281f8a0d240805d3286087b1e5b277fe6094c31eefd479` | EEVEE 4대 광원(`POINT`/`SUN`/`SPOT`/`AREA`), 플랑크 흑체 색온도(`1000K~12000K` + Tint), `IESLightNode` 배광 프로파일 6종, `LightProbe` 볼륨 조도·Fast GI 바운스 및 판타지 웹툰 5종 조명 리그 프리셋 엔진 |
+| 12 | `apps/web/src/domains/creator/scene-3d/studio-3d-blender-npr-shader-freestyle.ts` | **Blender 5.2.0**<br>`ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821`<br>`ev_9ad5e9663a6392cf3143eeacf82341ee73dd5ff7816c1ee091c812cfa214d6ed`<br>`ev_463f657bbba506b7446e5595494fad1fd73f1c83afb18673689fdbe072c556ba`<br>`ev_b6e4c388edcf8ff8d869fefd94ae7bfee267fc0414836fede2a794e08706b88d` | `ShaderNodeBsdfToon` + `ShaderNodeShaderToRGB` + `ShaderNodeValToRGB`(멀티스톱 컬러램프) + `AmbientOcclusion`/`Bevel`/`Fresnel`/`LayerWeight` NPR 채색 트리 및 `Freestyle` 뷰맵(`Calligraphic`/`BackboneStretcher`/`SpatialNoise`)·`LineArt` 차폐 선화 엔진 |
+| 13 | `apps/web/src/domains/creator/scene-3d/studio-3d-blender-fantasy-weapon-monster-crowd.ts` | **Blender 5.2.0**<br>`ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821`<br>`ev_cad8255285108f935bf842ae925c09a04981ed89dc0b45e42d623b22d1e5db96`<br>`ev_0cf6e7b41209ad3bc6d2111003363029ec28d24bae35312e96b34e0ac1315446`<br>`ev_ffa69da4e6dd950b9aa075ca0fe45589fd44b633ed8e42ea359be9c9c0b6d727` | 판타지 무기 포지 & `ChildOf`/`FollowPath`/`TrackTo`/`ActionConstraint` 12궁 어검진 솔버, 몬스터 다관절 `iTaSC`/`KDL` 야코비안 IK & 관절각 제한, `GeometryNodes` `InstanceReference` LOD & `BoidBrain` 대규모 군단 시뮬레이터 |
+| 14 | `apps/web/src/domains/creator/bg3d/StudioBg3dBlenderFantasyWebtoonPanel.tsx` | **Blender 5.2.0**<br>`ev_fd18384d554a9f3b4468d3a4f857d63b125d2a883e1ba046b5a891f6da972821`<br>`ev_9ad5e9663a6392cf3143eeacf82341ee73dd5ff7816c1ee091c812cfa214d6ed` | `StudioBg3dAdvancedWorkbenchHub` 내 `blender-fantasy-webtoon` 탭으로 배선된 블렌더 판타지 광원·NPR 셰이더·Freestyle 선화·무기·몬스터·대규모 군단 통합 워크벤치 UI |
 
 ---
 
