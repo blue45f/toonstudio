@@ -58,7 +58,7 @@ export function buildLocalSketchToLineartLayerSplit(
   input: WebtoonProductionAssistInput = {},
 ): ClaudeSketchToLineartReport {
   const base = runWebtoonStoryboardMasterPipeline(input);
-  const styleLabel = input.artistLabel ?? base.resolvedArtistStyle.label;
+  const styleLabel = input.artistLabel ?? base.resolvedArtistStyle.artistLabel;
   const cuts = base.directingResult.cuts.slice(0, 4);
   const cutSpecs = cuts.map((cut) => {
     const isClose = cut.shotScale === "close-up" || cut.shotScale === "extreme-close-up";
@@ -326,7 +326,7 @@ export function buildLocalScreenplayBeatAndLoraLock(
         : idx % 2 === 1
           ? ("diagonal-split-action" as const)
           : ("inset-reaction-overlay" as const),
-    actionBeatSummaryKo: `비트 #${cut.cutNumber}: ${cut.visualBeat || "핵심 서사 액션 비트"}`,
+    actionBeatSummaryKo: `비트 #${cut.cutNumber}: ${cut.summary || "핵심 서사 액션 비트"}`,
     castAngleLockSpecKo: `${input.protagonistName ?? "서진"} 시드(${trigger}) · 연속 컷 카메라 축 편차 ±15° 이내 잠금`,
     modelRouterTarget:
       idx % 2 === 0

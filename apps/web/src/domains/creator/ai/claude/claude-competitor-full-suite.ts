@@ -189,7 +189,7 @@ export async function runClaudeSketchToLineartLayerSplitter(
       source: "claude-live",
       modelUsed: actualModel,
       usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage),
+      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
     };
   } catch (err) {
     return {
@@ -294,7 +294,7 @@ export async function runClaudeStyleTransferAndRelightingDirector(
       source: "claude-live",
       modelUsed: actualModel,
       usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage),
+      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
     };
   } catch (err) {
     return {
@@ -393,7 +393,7 @@ export async function runClaudeSakugaMotionAndFacialMatrixDirector(
       source: "claude-live",
       modelUsed: actualModel,
       usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage),
+      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
     };
   } catch (err) {
     return {
@@ -494,7 +494,7 @@ export async function runClaude3dHandHeadPoseAndLtRigDirector(
       source: "claude-live",
       modelUsed: actualModel,
       usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage),
+      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
     };
   } catch (err) {
     return {
@@ -594,7 +594,7 @@ export async function runClaudeScreenplayBeatAndLoraLockBridge(
       source: "claude-live",
       modelUsed: actualModel,
       usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage),
+      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
     };
   } catch (err) {
     return {

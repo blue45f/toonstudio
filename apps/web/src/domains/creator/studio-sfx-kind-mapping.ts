@@ -21,7 +21,7 @@ export type StudioSfxStingerPresetId =
   | "fanfare";
 
 export interface StudioSfxCue {
-  readonly kind: StudioMotionSfxKind;
+  readonly kind: StudioMotionSfxKind | string;
   readonly atSeconds: number;
 }
 
