@@ -62,6 +62,12 @@ const StudioSubmissionPackagePanel = lazy(async () => {
   return { default: module.StudioSubmissionPackagePanel };
 });
 
+// KAISTORY 만화 제작·다국어 검수·학습카드 워크벤치 (conti · design · editor · story 통합 표면).
+const StudioKaistoryProductionWorkbench = lazy(async () => {
+  const module = await import("../kaistory/StudioKaistoryProductionWorkbench");
+  return { default: module.StudioKaistoryProductionWorkbench };
+});
+
 function SubmissionPackageFallback() {
   const bt = useBilingual("studioProjectIntegrated.submissionFallback");
   return (
@@ -141,10 +147,15 @@ function SectionWorkflow({
         <StudioProjectDocumentsPanel projectId={projectId} locale={locale} />
       ) : null}
       {section === "production" && (view === "pipeline" || view === "renders") ? (
-        <StudioProductionToolchainPanel
-          projectId={projectId}
-          view={view}
-        />
+        <>
+          <StudioProductionToolchainPanel
+            projectId={projectId}
+            view={view}
+          />
+          <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+            <StudioKaistoryProductionWorkbench projectId={projectId} />
+          </Suspense>
+        </>
       ) : null}
       {section === "story" && view === "localization" ? (
         <StudioLocalizationPanel projectId={projectId} locale={locale} />
