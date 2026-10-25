@@ -41,6 +41,7 @@ import {
   type GenvasPosePresetId,
 } from "./studio-webtoon-storyboard-pipeline";
 import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
+import { StudioGgumtoonSuitePanel } from "./StudioGgumtoonSuitePanel";
 import { StudioTooningPlusSuitePanel } from "./StudioTooningPlusSuitePanel";
 import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
 
@@ -651,6 +652,9 @@ export function StudioWebtoonMasterPipelineCard({
         storyGenre={storyGenre}
         onApplyScript={onApplyScript}
       />
+
+      {/* 꿈툰 (Ggumtoon: 스타일·캐릭터·장면·부분수정·여백컷·웹소설·뷰어·지갑·정산) 통합 스튜디오 */}
+      <StudioGgumtoonSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
     </section>
   );
 }

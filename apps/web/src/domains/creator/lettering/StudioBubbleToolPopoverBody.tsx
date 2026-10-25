@@ -11,6 +11,7 @@ import {
 import { StudioAiEmotionBubbleMatcher } from "../ai/studio-ai-emotion-bubble-matcher";
 
 import { StudioBubbleLibraryPanel } from "./StudioBubbleLibraryPanel";
+import { StudioGgumtoonBubbleEditorPanel } from "./StudioGgumtoonBubbleEditorPanel";
 import { StudioTooningEditorBubbleCharacterPanel } from "./StudioTooningEditorBubbleCharacterPanel";
 import {
   BUBBLE_LIBRARY_PREFERENCES_STORAGE_KEY,
@@ -396,6 +397,8 @@ export function StudioBubbleToolPopoverBody({
       </p>
 
       <StudioTooningEditorBubbleCharacterPanel onInsertBubble={insertBubble} />
+
+      <StudioGgumtoonBubbleEditorPanel onInsertBubble={insertBubble} />
 
       <StudioBubbleLibraryPanel
         preferences={preferences}
