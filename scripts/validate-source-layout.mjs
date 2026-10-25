@@ -90,7 +90,10 @@ function main() {
   const budgets = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
   const { counts, failures } = validateSourceLayout({ files, budgets });
   if (process.argv.includes("--write-baseline")) {
-    fs.writeFileSync(CONFIG_PATH, `${JSON.stringify(counts, null, 2)}\n`);
+    const next = Number.isInteger(budgets.lintStrictMaxWarnings)
+      ? { lintStrictMaxWarnings: budgets.lintStrictMaxWarnings, ...counts }
+      : counts;
+    fs.writeFileSync(CONFIG_PATH, `${JSON.stringify(next, null, 2)}\n`);
     console.log(`source layout baseline written to ${path.relative(ROOT, CONFIG_PATH)}`);
     return;
   }
