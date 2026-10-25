@@ -99,7 +99,6 @@ import {
   encodeStudioMannequinShareHash,
   exportStudioMannequinStateToJSON,
   importStudioMannequinStateFromJSON,
-  mirrorStudioMannequinPose,
   normalizeStudioMannequinPose,
   type StudioMannequinPersistentPartner,
   type StudioMannequinPersistentState,
@@ -130,6 +129,7 @@ import { buildStudioMannequinCompositionSnapshot } from "./studio-mannequin-comp
 import type { StudioMannequinLightingRig } from "./studio-mannequin-lighting";
 import { StudioMannequinFootGroundingToggle } from "./StudioMannequinFootGroundingToggle";
 import { useStudioMannequinFootGrounding } from "./use-studio-mannequin-foot-grounding";
+import { resolveStudioMannequinRenderFrame } from "./studio-mannequin-render-pipeline";
 import {
   disposeStudioMannequinPoseLandmarker,
   getStudioMannequinWebcamErrorMessage,
@@ -1832,7 +1832,7 @@ export function StudioMannequinPoserPanel({
                     onApplyPreset={applyPosePreset}
                     onApplyWebtoonPreset={applyWebtoonPosePreset}
                     applyDisabled={capturing}
-                    onMirror={() => commitPoseWithHistory(mirrorStudioMannequinPose(poseRef.current))}
+                    onMirror={() => commitPoseWithHistory(resolveStudioMannequinRenderFrame({ params, pose: poseRef.current, mirror: true, ground: true }).pose)}
                     onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose())}
                   />
                   <StudioMannequinDuoPartnerCard duo={duo} />
