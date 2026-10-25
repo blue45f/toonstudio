@@ -39,5 +39,13 @@ describe("StudioCompetitorFullSuitePanel", () => {
 
     fireEvent.click(screen.getByTestId("competitor-suite-tab-katalist-anifusion-lora"));
     expect(screen.getByTestId("suite-panel-katalist-anifusion-lora")).toBeTruthy();
+
+    // Phase 6 20대 웹툰 AI 생태계 확장 워크벤치 6개 탭 확인
+    expect(screen.getByTestId("studio-phase6-ecosystem-suite-panel")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("phase6-ecosystem-tab-mangaflow-identity-audit"));
+    fireEvent.click(screen.getByTestId("phase6-ecosystem-tab-glimnavi-color-hint"));
+    fireEvent.click(screen.getByTestId("phase6-ecosystem-tab-snaptoon-acon3d-shader"));
+    fireEvent.click(screen.getByTestId("phase6-ecosystem-tab-culturetoon-osmu-adaptation"));
+    fireEvent.click(screen.getByTestId("phase6-ecosystem-tab-tooncrafter-krita-stitch"));
   });
 });

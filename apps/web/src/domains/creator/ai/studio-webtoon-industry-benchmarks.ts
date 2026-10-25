@@ -389,7 +389,14 @@ export type WebtoonAiBenchmarkServiceId =
   | "komiko-ai"
   | "anifusion"
   | "skyreels-mootion"
-  | "katalist-ai";
+  | "katalist-ai"
+  | "novelai-v45-director"
+  | "mangaflow-diffsensei"
+  | "glimnavi-wisehub"
+  | "snaptoon-acon3d"
+  | "culturetoon-mining5000"
+  | "tooncrafter-anidoc"
+  | "krita-diffusion-comistitch";
 
 export interface WebtoonAiBenchmarkEntry {
   readonly serviceId: WebtoonAiBenchmarkServiceId;
@@ -503,6 +510,69 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo: "시나리오 씬/액션 비트 자동 분해 및 연속 프레임 간 캐스트 포즈·카메라 앵글 일관성 잠금",
     toonStudioIntegrationKo:
       "runClaudeScreenplayBeatAndLoraLockBridge: 원고 텍스트 원자 단위 액션 비트 분해 + 컷 간 카메라 축·포즈 시드 잠금",
+  },
+  {
+    serviceId: "novelai-v45-director",
+    serviceNameKo: "노벨AI V4.5 / V5 (NovelAI Multi-Character & Vibe Transfer)",
+    categoryKo: "다중 캐릭터 좌표 분리 · 바이브 전이",
+    coreStrengthKo:
+      "다중 인물 X/Y 공간 좌표 분리 프롬프팅(외모·의상 섞임 방지), 다중 레퍼런스 Vibe Transfer(정보 추출량·강도 슬라이더), Lorebook 설정 주입",
+    toonStudioIntegrationKo:
+      "runClaudeNovelAiMultiCharVibeDirector: 인물별 X/Y 바운딩 좌표·상호작용 태그 분리 + Vibe Transfer 가중치 + Lorebook 트리거 결합",
+  },
+  {
+    serviceId: "mangaflow-diffsensei",
+    serviceNameKo: "망가플로우 & 디프센세이 (MangaFlow Studio & DiffSensei)",
+    categoryKo: "Grounding DINO · ArcFace 동일성 검증",
+    coreStrengthKo:
+      "Grounding DINO + ArcFace/MagFace 임베딩 기반 다중 컷 얼굴·체형 동일성 감사, MLLM Identity Adapter 보정 및 말풍선 꼬리 벡터 자동 라우팅",
+    toonStudioIntegrationKo:
+      "runClaudeMangaFlowIdentityVerificationDirector: 컷별 바운딩 박스·ArcFace 코사인 유사도 산출 + Identity Adapter 가중치 + 말풍선 꼬리 앵커",
+  },
+  {
+    serviceId: "glimnavi-wisehub",
+    serviceNameKo: "그림나비 (Glimnavi · 와이즈허브 휴먼인더루프 채색)",
+    categoryKo: "브러시 컬러 힌트 · 4단계 분업",
+    coreStrengthKo:
+      "한국형 웹툰 기획→콘티→선화→브러시 색상 힌트(Color Hint Stroke) 기반 AI 자동 밑색·명암·하이라이트 레이어 분리 휴먼인더루프 워크플로",
+    toonStudioIntegrationKo:
+      "runClaudeGlimnaviColorHintStrokeDirector: 부위별 컬러 힌트 스트로크 좌표·HEX 지정 + 선화 틈새 닫기(Close Gap) + 밑색/셀명암/림라이트 분리",
+  },
+  {
+    serviceId: "snaptoon-acon3d",
+    serviceNameKo: "스냅툰 & 에이콘3D (Snaptoon & ACON3D Toon Shader)",
+    categoryKo: "3D 배경 툰셰이더 · 시간대/발광 프리셋",
+    coreStrengthKo:
+      "스케치업/블렌더 3D 웹툰 배경 툰셰이더 렌더링, 시간대별 태양광·창문 발광(Window Glow)·블룸·안개 프리셋 및 저장된 카메라 뷰 매칭",
+    toonStudioIntegrationKo:
+      "runClaudeSnaptoon3dEnvironmentShaderDirector: 시간대·날씨 프리셋 + 창문 발광/블룸/안개 농도 + ACON3D 공간 카메라 북마크 동기화",
+  },
+  {
+    serviceId: "culturetoon-mining5000",
+    serviceNameKo: "더컬쳐툰 & 마이닝5000 (The Culture Toon & Mining5000)",
+    categoryKo: "웹소설 세로 각색 · 2차 IP 확장 진단",
+    coreStrengthKo:
+      "웹소설·인터뷰·실화 원작의 한국형 세로 스크롤 웹툰 자동 각색, 서사 아키타입(회빙환/영웅서사) 매핑 및 2차 IP(애니·드라마·숏폼) 확장성 진단",
+    toonStudioIntegrationKo:
+      "runClaudeNovelAdaptationAndIpExpansionDirector: 산문 문단→웹툰 컷/대사 압축비 진단 + Storyflow 서사 아키타입 + OSMU 2차 IP 확장성 스코어카드",
+  },
+  {
+    serviceId: "tooncrafter-anidoc",
+    serviceNameKo: "툰크래프터 & 애니독 (ToonCrafter & AniDoc In-between)",
+    categoryKo: "키프레임 인비트윈 · 연속 채색 전파",
+    coreStrengthKo:
+      "시작·끝 키프레임 간 비선형 웹툰/애니메이션 중간 동화(In-between) 프레임 보간 및 단일 캐릭터 시트 기반 연속 선화 컬러링 일괄 전파",
+    toonStudioIntegrationKo:
+      "runClaudeToonCrafterInbetweenAndStitchDirector: 키프레임 간 인비트윈 보간 궤적·오클루전 마스크 + AniDoc Dense Correspondence 채색 전파",
+  },
+  {
+    serviceId: "krita-diffusion-comistitch",
+    serviceNameKo: "크리타 AI 디퓨전 & 코미스티치 (Krita AI Diffusion & Comistitch)",
+    categoryKo: "리저널 아웃페인팅 · 출판 세로 스티칭",
+    coreStrengthKo:
+      "영역별(Regional) 인페인팅/아웃페인팅으로 세로 스크롤 무한 캔버스 배경 확장, ControlNet 멀티 스택 보정 및 상업 출판용 무손실 세로 스티칭/슬라이싱",
+    toonStudioIntegrationKo:
+      "runClaudeToonCrafterInbetweenAndStitchDirector: 세로 스크롤 상하단 아웃페인팅 + ControlNet 스택 + 말풍선 비절단 안전 슬라이스(Safe Split Y) 산출",
   },
 ]);
 

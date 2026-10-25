@@ -45,6 +45,7 @@ import {
   type CompetitorEngineExecutionMeta,
   type WebtoonStyleTransferPresetId,
 } from "./claude-competitor-full-suite-schemas";
+import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import {
   clampInt,
@@ -112,8 +113,11 @@ export async function runClaudeSketchToLineartLayerSplitter(
       fallbackReason: "활성 Claude 경로가 없어 로컬 AiD 4레이어 분리 엔진을 사용했습니다.",
     };
   }
+  const taskRoute = resolveCreatorTaskModelRoute("competitor:beluga-clipstudio-production", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -222,8 +226,11 @@ export async function runClaudeStyleTransferAndRelightingDirector(
       fallbackReason: "활성 Claude 경로가 없어 로컬 Komiko/LlamaGen 리라이팅 엔진을 사용했습니다.",
     };
   }
+  const taskRoute = resolveCreatorTaskModelRoute("competitor:llamagen-manga-ai", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -324,8 +331,11 @@ export async function runClaudeSakugaMotionAndFacialMatrixDirector(
       fallbackReason: "활성 Claude 경로가 없어 로컬 SkyReels/Mootion 모션웹툰 엔진을 사용했습니다.",
     };
   }
+  const taskRoute = resolveCreatorTaskModelRoute("competitor:llamagen-manga-ai", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -423,8 +433,11 @@ export async function runClaude3dHandHeadPoseAndLtRigDirector(
       fallbackReason: "활성 Claude 경로가 없어 로컬 CSP 5.0 3D 핸드·헤드 리그 엔진을 사용했습니다.",
     };
   }
+  const taskRoute = resolveCreatorTaskModelRoute("competitor:beluga-clipstudio-production", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -524,8 +537,11 @@ export async function runClaudeScreenplayBeatAndLoraLockBridge(
       fallbackReason: "활성 Claude 경로가 없어 로컬 Katalist/Anifusion 브리지 엔진을 사용했습니다.",
     };
   }
+  const taskRoute = resolveCreatorTaskModelRoute("competitor:onoma-kakaopage-ip", {
+    model: options.model as never,
+  });
   const requestedModel = resolveClaudeRequestModel(
-    options.model,
+    options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
