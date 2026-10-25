@@ -1439,7 +1439,9 @@ import type { StudioQuickAccessCommandAvailability } from "./studio-quick-access
 import { useStudioQuickAccessPersonalKitBridge } from "./use-studio-quick-access-personal-kit";
 import type { StudioReleaseSchedule } from "./studio-release-schedule";
 import type { SceneTemplate } from "./studio-scene-templates";
-import type { SfxPreset } from "./studio-sfx-presets";
+import { SFX_CATEGORIES, SFX_LIBRARY, createSfxTextConfig, type SfxPreset } from "./studio-sfx-presets";
+import { coverFitInFrame, estimateBubbleHeight } from "./studio-fit";
+import { clearStudioRasterEditSurfaces } from "./render/studio-raster-edit-surface-cache";
 import type { StudioSharedDocument } from "./studio-shared-document-client";
 import type { StudioStockPhoto } from "./studio-stock-image-client";
 import type { StudioTeamCommentMutationPlan } from "./studio-team-comment-mutation-plan";
@@ -9862,11 +9864,11 @@ export function StudioCuttoonEditor({
   // so multi-megapixel canvases cannot outlive the route.
   useEffect(() => {
     return () => {
-      void import( "./render/studio-raster-edit-surface-cache").then((mod) => {
-        mod.clearStudioRasterEditSurfaces();
-      }).catch(() => {
+      try {
+        clearStudioRasterEditSurfaces();
+      } catch {
         // Cleanup runs during unmount; a torn-down environment must not throw.
-      });
+      }
       try {
         liveDynamicBrushOverlayRendererRef.current?.clear?.();
         liveRetainedMediaOverlayRendererRef.current?.clear?.();
@@ -15092,10 +15094,10 @@ const puppetWarpArmed =
       logLabel: "Failed to load studio SFX presets:",
       errorMessage: t("studio.hostStatus.sfxPresetsLoadFailed", "효과음 프리셋을 불러오지 못했습니다."),
       load: () =>
-        import("./studio-sfx-presets").then((mod) => () => {
+        Promise.resolve(() => {
           setSfxPacks({
-            categories: mod.SFX_CATEGORIES,
-            presets: mod.SFX_LIBRARY,
+            categories: SFX_CATEGORIES,
+            presets: SFX_LIBRARY,
           });
         }),
     },
@@ -18766,7 +18768,6 @@ const puppetWarpArmed =
     setMenu(null);
     const mutationTicket = captureStudioMutationTicket();
     const [cx, cy] = spawnCenter({ width: 220, height: 100, margin: 8 });
-    const { createSfxTextConfig } = await import("./studio-sfx-presets");
     if (!canApplyStudioMutation(mutationTicket)) return;
     addEl({ id: uid(), type: "text", ...createSfxTextConfig(preset, cx - 110, cy - 50) });
   }
@@ -19590,7 +19591,6 @@ const puppetWarpArmed =
     const target = frame
       ? { x: frame.x, y: frame.y, width: frame.width, height: frame.height }
       : { x: 0, y: 0, width: CANVAS_W, height: canvasH };
-    const { coverFitInFrame } = await import("./studio-fit");
     if (!canApplyStudioMutation(mutationTicket)) return;
     patchEl(selected.id, coverFitInFrame({ width: selected.width, height: selected.height }, target));
   }
@@ -19598,7 +19598,6 @@ const puppetWarpArmed =
   async function fitBubbleToText() {
     if (!selected || selected.type !== "bubble" || isEffectivelyLocked(selected, groups)) return;
     const mutationTicket = captureStudioMutationTicket();
-    const { estimateBubbleHeight } = await import("./studio-fit");
     if (!canApplyStudioMutation(mutationTicket)) return;
     // 행간·글꼴 두께·자간은 실제 렌더가 쓰는 값을 그대로 넘긴다 — 예전에는 여기만 1.2를 쓰고
     // fontStyle/자간을 빼서, 이 버튼이 오히려 상자를 줄여 대사를 더 잘라먹었다(감사 측정).

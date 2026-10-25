@@ -1,7 +1,6 @@
 import { getAuthSessionRevision, getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
 
 import { studioReviewCaptureHostContext, type StudioReviewCaptureHostBindings } from "../review-capture/studio-review-capture-host-context";
-import { projectStudioReviewCaptureSource } from "../review-capture/studio-review-capture-projection";
 import type { StudioEditorCommentTarget } from "../studio-comment-editor-selection";
 
 import type { StudioReviewEditorDependencies } from "./studio-review-editor-handoff";
@@ -24,7 +23,11 @@ export function studioReviewEditorHostBindings(
         pageId: navigation.getCurrentPageId(), available: context.available && bindings.studioAuthUserId !== null
           && getAuthUserId() === bindings.studioAuthUserId && !navigation.hasActivePointer() };
     },
-    projectRuntime: (saved) => projectStudioReviewCaptureSource(bindings.getSnapshot(), saved, bindings.canvasWidth, bindings.isDurableMask),
+    projectRuntime: async (saved) => {
+      const snapshot = bindings.getSnapshot();
+      const { projectStudioReviewCaptureSource } = await import("../review-capture/studio-review-capture-projection");
+      return projectStudioReviewCaptureSource(snapshot, saved, bindings.canvasWidth, bindings.isDurableMask);
+    },
     select: (target, current) => navigation.select(target, current),
   };
 }

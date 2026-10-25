@@ -9,8 +9,8 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1611,
-    "bytes": 20030104
+    "modules": 1608,
+    "bytes": 20020810
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
@@ -18,8 +18,8 @@
       "bytes": 1189023
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1424,
-      "bytes": 19180905
+      "modules": 1421,
+      "bytes": 19171611
     }
   },
   "forbiddenDomains": {
@@ -294,32 +294,7 @@
       "files": []
     }
   },
-  "lazyInvalidated": [
-    {
-      "file": "apps/web/src/domains/creator/render/studio-raster-edit-surface-cache.ts",
-      "staticImporter": "apps/web/src/domains/creator/StudioKonvaImageNode.tsx"
-    },
-    {
-      "file": "apps/web/src/domains/creator/review-capture/studio-review-capture-projection.ts",
-      "staticImporter": "apps/web/src/domains/creator/review-handoff/studio-review-editor-host.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-fit.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-panel-autofit.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-save-payload.ts",
-      "staticImporter": "apps/web/src/domains/creator/review-capture/studio-review-capture-projection.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-sfx-presets.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-writer-room-canvas-projection.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-writer-room.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-page-autosave-runtime.ts"
-    }
-  ],
+  "lazyInvalidated": [],
   "folders": {
     "apps/web/src/app": {
       "modules": 9,
@@ -350,8 +325,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 561,
-      "bytes": 8347224
+      "modules": 559,
+      "bytes": 8339307
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -498,8 +473,8 @@
       "bytes": 586387
     },
     "apps/web/src/domains/creator/review-capture": {
-      "modules": 7,
-      "bytes": 27456
+      "modules": 6,
+      "bytes": 25535
     },
     "apps/web/src/domains/creator/review-handoff": {
       "modules": 5,
@@ -1299,7 +1274,6 @@
     "apps/web/src/domains/creator/review-capture/studio-review-capture-bridge.ts": 2,
     "apps/web/src/domains/creator/review-capture/studio-review-capture-host-context.ts": 2,
     "apps/web/src/domains/creator/review-capture/studio-review-capture-navigation.ts": 2,
-    "apps/web/src/domains/creator/review-capture/studio-review-capture-projection.ts": 2,
     "apps/web/src/domains/creator/review-capture/useStudioReviewCapture.ts": 2,
     "apps/web/src/domains/creator/review-capture/useStudioReviewCaptureHost.tsx": 2,
     "apps/web/src/domains/creator/review-handoff/StudioReviewEditorHandoffMount.tsx": 2,
@@ -1626,7 +1600,6 @@
     "apps/web/src/domains/creator/studio-linked-3d-pass-transaction.ts": 2,
     "apps/web/src/domains/creator/studio-linked-3d-raster-edit-policy.ts": 2,
     "apps/web/src/domains/creator/studio-linked-3d-render-document.ts": 2,
-    "apps/web/src/domains/creator/studio-linked-3d-save-projection.ts": 2,
     "apps/web/src/domains/creator/studio-liquify-contract.ts": 2,
     "apps/web/src/domains/creator/studio-liquify-live-preview.ts": 2,
     "apps/web/src/domains/creator/studio-liquify-pointer.ts": 2,
@@ -1814,7 +1787,6 @@
     "apps/web/src/domains/creator/studio-router/studio-document-runtime-context.ts": 2,
     "apps/web/src/domains/creator/studio-router/studio-route-manifest.ts": 1,
     "apps/web/src/domains/creator/studio-safe-mode-runtime.ts": 2,
-    "apps/web/src/domains/creator/studio-save-payload.ts": 2,
     "apps/web/src/domains/creator/studio-save-sync-signals.ts": 2,
     "apps/web/src/domains/creator/studio-saved-selections.ts": 2,
     "apps/web/src/domains/creator/studio-scenario-layout.ts": 2,

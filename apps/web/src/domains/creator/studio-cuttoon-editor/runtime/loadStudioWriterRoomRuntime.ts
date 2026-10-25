@@ -1,3 +1,9 @@
+import {
+  createEmptyStudioWriterRoomDocument,
+  normalizeStudioWriterRoomDocument,
+  replaceStudioWriterRoomStage,
+} from "../../studio-writer-room";
+
 type StudioWriterRoomRuntime = Pick<
   typeof import("../../studio-writer-room"),
   "createEmptyStudioWriterRoomDocument" | "normalizeStudioWriterRoomDocument" | "replaceStudioWriterRoomStage"
@@ -15,6 +21,8 @@ export function createStudioWriterRoomRuntimeLoader(load: () => Promise<StudioWr
   };
 }
 
-export const loadStudioWriterRoomRuntime = createStudioWriterRoomRuntimeLoader(
-  () => import("../../studio-writer-room"),
-);
+export const loadStudioWriterRoomRuntime = createStudioWriterRoomRuntimeLoader(async () => ({
+  createEmptyStudioWriterRoomDocument,
+  normalizeStudioWriterRoomDocument,
+  replaceStudioWriterRoomStage,
+}));
