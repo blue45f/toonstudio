@@ -27,7 +27,7 @@
 import {
   isCreditFeatureKey,
   type CreditFeatureKey,
-} from "../../../../../packages/core/src/membership-wallet";
+} from "./credit-pricing";
 
 export const CREDIT_SPEND_FEATURE_UNITS = 1;
 

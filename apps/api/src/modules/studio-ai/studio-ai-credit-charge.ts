@@ -25,7 +25,7 @@
  * 건너뛴다. 운영 배선(StudioAiModule이 MembershipWalletModule을 import)
  * 에서는 지갑이 항상 제공되므로, null 경로는 테스트용 폴백이다.
  */
-import type { CreditFeatureKey } from "../../../../../packages/core/src/membership-wallet";
+import type { CreditFeatureKey } from "../membership-wallet/credit-pricing";
 
 export const STUDIO_AI_CREDIT_WALLET = Symbol("STUDIO_AI_CREDIT_WALLET");
 
