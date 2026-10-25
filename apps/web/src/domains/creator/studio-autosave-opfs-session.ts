@@ -32,6 +32,7 @@ import type {
   StudioAutosaveSqliteReadResult,
 } from "./studio-autosave-sqlite-store";
 import {
+  studioAutosaveDocumentBusy,
   StudioAutosaveDocumentBusyError,
   StudioAutosaveDurabilityError,
   StudioAutosaveOpfsError,
@@ -112,49 +113,12 @@ export type StudioAutosaveReconciliation = Readonly<{
 }>;
 
 export {
+  studioAutosaveDocumentBusy,
   StudioAutosaveDocumentBusyError,
   StudioAutosaveDurabilityError,
   StudioAutosaveOpfsError,
   type StudioAutosaveOpfsErrorCode,
 } from "./studio-autosave-opfs-error";
-
-/**
- * True when a failure means "a different tab or window is the document's writer". Duck-typed on the
- * journal error code so the check survives module/chunk boundaries and a lane that owns the journal
- * re-exporting its error class.
- */
-const DOCUMENT_BUSY_CODES = new Set(["LEASE_BUSY", "LEASE_LOST", "lock-unavailable"]);
-
-function isFollowerAuthorityGap(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  return (
-    error.message.includes("SQLite autosave authority is unavailable")
-    || error.message.includes("OPFS autosave authority is unavailable")
-  );
-}
-
-export function studioAutosaveDocumentBusy(error: unknown): boolean {
-  if (error instanceof StudioAutosaveDocumentBusyError) return true;
-  if (typeof error !== "object" || error === null) return false;
-  if (error instanceof AggregateError && error.errors.length > 0) {
-    const anyBusy = error.errors.some((item) => studioAutosaveDocumentBusy(item));
-    const allExpected = error.errors.every(
-      (item) => studioAutosaveDocumentBusy(item) || isFollowerAuthorityGap(item),
-    );
-    return anyBusy && allExpected;
-  }
-  const code = (error as { readonly code?: unknown }).code;
-  if (typeof code === "string" && DOCUMENT_BUSY_CODES.has(code)) return true;
-  const message = error instanceof Error ? error.message : "";
-  if (
-    message.includes("already owned by another page")
-    || message.includes("DedicatedWorker ownership lock failed")
-  ) {
-    return true;
-  }
-  const cause = (error as { readonly cause?: unknown }).cause;
-  return cause !== undefined && cause !== error && studioAutosaveDocumentBusy(cause);
-}
 
 export interface StudioAutosaveOpfsJournalPort {
   scan(options?: { readonly signal?: AbortSignal }): Promise<StudioOpfsRecoveryScan>;

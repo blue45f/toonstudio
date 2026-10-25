@@ -12,14 +12,6 @@ import { closedStudioLayerLiftUiState } from "../studio-page-shell-runtime";
 import { resolveStudioWorkAssetReadableImageSource } from "../studio-work-asset-render-projection";
 
 import { inspectStudioLayerLiftAvailability } from "./studio-layer-lift-availability";
-import {
-  applyStudioLayerLiftCorrectionWorkflow,
-} from "./studio-layer-lift-correction-workflow";
-import { createStudioLayerLiftReviewPreviewResource } from "./studio-layer-lift-review-preview";
-import {
-  analyzeStudioLayerLiftWorkflow,
-  finalizeStudioLayerLiftWorkflow,
-} from "./studio-layer-lift-workflow";
 
 import type {
   StudioEditorMutationState,
@@ -309,6 +301,7 @@ export function createStudioLayerLiftSession(
       preview: null,
     });
 
+    const { analyzeStudioLayerLiftWorkflow } = await import("./studio-layer-lift-workflow");
     const result = await analyzeStudioLayerLiftWorkflow({
       registry,
       mutationTicket: captureStudioMutationTicket(),
@@ -356,6 +349,9 @@ export function createStudioLayerLiftSession(
     }));
     let previewResource: StudioLayerLiftReviewPreviewResource;
     try {
+      const { createStudioLayerLiftReviewPreviewResource } = await import(
+        "./studio-layer-lift-review-preview"
+      );
       previewResource = await createStudioLayerLiftReviewPreviewResource(
         result.session,
         { signal: controller.signal },
@@ -453,6 +449,9 @@ export function createStudioLayerLiftSession(
       error: null,
     }));
 
+    const { applyStudioLayerLiftCorrectionWorkflow } = await import(
+      "./studio-layer-lift-correction-workflow"
+    );
     const corrected = await applyStudioLayerLiftCorrectionWorkflow({
       session: current.session,
       stroke,
@@ -500,6 +499,9 @@ export function createStudioLayerLiftSession(
 
     let previewResource: StudioLayerLiftReviewPreviewResource;
     try {
+      const { createStudioLayerLiftReviewPreviewResource } = await import(
+        "./studio-layer-lift-review-preview"
+      );
       previewResource = await createStudioLayerLiftReviewPreviewResource(
         corrected.session,
         { signal: controller.signal },
@@ -567,6 +569,7 @@ export function createStudioLayerLiftSession(
       error: null,
     }));
 
+    const { finalizeStudioLayerLiftWorkflow } = await import("./studio-layer-lift-workflow");
     const finalized = await finalizeStudioLayerLiftWorkflow({
       registry,
       session: current.session,

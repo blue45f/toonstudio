@@ -1,4 +1,6 @@
-import { isStudioOpfsContentHash, type StudioOpfsAssetStore, type StudioOpfsContentHash } from "../studio-opfs-asset-store";
+import { isStudioOpfsContentHash, type StudioOpfsContentHash } from "../studio-upload-image-safety";
+
+import type { StudioOpfsAssetStore } from "../studio-opfs-asset-store";
 
 export const STUDIO_PSD_SOURCE_MIME = "image/vnd.adobe.photoshop";
 export const STUDIO_PSD_SOURCE_MAX_BYTES = 128 * 1024 * 1024;

@@ -31,6 +31,9 @@
       "@toonstudio/studio-engine-skia": [
         "./apps/web/src/shared/types/vendor/studio-engine-skia-shim.d.ts"
       ],
+      "@toonstudio/studio-engine-skia/document-contract": [
+        "./packages/studio-engine-skia/src/document-contract.ts"
+      ],
       "mixbox": [
         "./apps/web/src/shared/types/vendor/mixbox.d.ts"
       ],

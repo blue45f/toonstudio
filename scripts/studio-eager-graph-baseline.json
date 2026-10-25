@@ -9,8 +9,8 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1639,
-    "bytes": 20438461
+    "modules": 1611,
+    "bytes": 20030104
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
@@ -18,8 +18,8 @@
       "bytes": 1189023
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1452,
-      "bytes": 19589262
+      "modules": 1424,
+      "bytes": 19180905
     }
   },
   "forbiddenDomains": {
@@ -296,14 +296,6 @@
   },
   "lazyInvalidated": [
     {
-      "file": "apps/web/src/domains/creator/canvas/studio-canvas-image-io.ts",
-      "staticImporter": "apps/web/src/domains/creator/layer/studio-layer-lift-source-snapshot.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/render/studio-raster-asset-client.ts",
-      "staticImporter": "apps/web/src/domains/creator/filter/studio-filter-mask-surface-hydrator.ts"
-    },
-    {
       "file": "apps/web/src/domains/creator/render/studio-raster-edit-surface-cache.ts",
       "staticImporter": "apps/web/src/domains/creator/StudioKonvaImageNode.tsx"
     },
@@ -312,28 +304,8 @@
       "staticImporter": "apps/web/src/domains/creator/review-handoff/studio-review-editor-host.ts"
     },
     {
-      "file": "apps/web/src/domains/creator/studio-asset-library.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-drawing-practice-runtime.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-autosave-opfs-session.ts",
-      "staticImporter": "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-bounded-asset-response.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-work-asset-client.ts"
-    },
-    {
       "file": "apps/web/src/domains/creator/studio-fit.ts",
       "staticImporter": "apps/web/src/domains/creator/studio-panel-autofit.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-opfs-filesystem.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-autosave-opfs-session.ts"
-    },
-    {
-      "file": "apps/web/src/domains/creator/studio-opfs-recovery-journal.ts",
-      "staticImporter": "apps/web/src/domains/creator/studio-autosave-opfs-session.ts"
     },
     {
       "file": "apps/web/src/domains/creator/studio-save-payload.ts",
@@ -346,10 +318,6 @@
     {
       "file": "apps/web/src/domains/creator/studio-writer-room.ts",
       "staticImporter": "apps/web/src/domains/creator/studio-page-autosave-runtime.ts"
-    },
-    {
-      "file": "packages/studio-engine-skia/src/index.ts",
-      "staticImporter": "apps/web/src/domains/creator/canvas/studio-canvas-viewport-live-surfaces.ts"
     }
   ],
   "folders": {
@@ -382,8 +350,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 570,
-      "bytes": 8566778
+      "modules": 561,
+      "bytes": 8347224
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -414,8 +382,8 @@
       "bytes": 273399
     },
     "apps/web/src/domains/creator/canvas": {
-      "modules": 61,
-      "bytes": 672516
+      "modules": 60,
+      "bytes": 656424
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 2,
@@ -478,8 +446,8 @@
       "bytes": 47632
     },
     "apps/web/src/domains/creator/layer": {
-      "modules": 39,
-      "bytes": 581918
+      "modules": 34,
+      "bytes": 488779
     },
     "apps/web/src/domains/creator/lettering": {
       "modules": 18,
@@ -526,8 +494,8 @@
       "bytes": 6466
     },
     "apps/web/src/domains/creator/render": {
-      "modules": 58,
-      "bytes": 594041
+      "modules": 57,
+      "bytes": 586387
     },
     "apps/web/src/domains/creator/review-capture": {
       "modules": 7,
@@ -638,8 +606,8 @@
       "bytes": 109483
     },
     "apps/web/src/shared/lib": {
-      "modules": 74,
-      "bytes": 275640
+      "modules": 73,
+      "bytes": 275572
     },
     "apps/web/src/shared/navigation": {
       "modules": 3,
@@ -650,8 +618,8 @@
       "bytes": 9170
     },
     "packages/contracts": {
-      "modules": 22,
-      "bytes": 265819
+      "modules": 21,
+      "bytes": 261361
     },
     "packages/core": {
       "modules": 6,
@@ -670,8 +638,8 @@
       "bytes": 315490
     },
     "packages/studio-engine-skia": {
-      "modules": 11,
-      "bytes": 96585
+      "modules": 1,
+      "bytes": 4848
     },
     "packages/studio-format-gateway": {
       "modules": 7,
@@ -1070,7 +1038,6 @@
     "apps/web/src/domains/creator/canvas/studio-canvas-drop-import.ts": 2,
     "apps/web/src/domains/creator/canvas/studio-canvas-element-selection.ts": 2,
     "apps/web/src/domains/creator/canvas/studio-canvas-gesture-arbitration.ts": 2,
-    "apps/web/src/domains/creator/canvas/studio-canvas-image-io.ts": 2,
     "apps/web/src/domains/creator/canvas/studio-canvas-shared-runtime.ts": 2,
     "apps/web/src/domains/creator/canvas/studio-canvas-size.ts": 2,
     "apps/web/src/domains/creator/canvas/studio-canvas-start-dock-preference.ts": 2,
@@ -1165,8 +1132,6 @@
     "apps/web/src/domains/creator/layer/studio-layer-lift-composition-receipt.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-compositor.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-contract.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-correction-workflow.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-correction.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-local-provider-diagnostics.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-local-provider.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-mask.ts": 2,
@@ -1174,10 +1139,7 @@
     "apps/web/src/domains/creator/layer/studio-layer-lift-onnx-inference.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-operation-context.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-plan.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-review-preview.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-session.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-source-snapshot.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-workflow.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-mask.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-merge.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-navigator.ts": 2,
@@ -1303,7 +1265,6 @@
     "apps/web/src/domains/creator/render/studio-pixi-scene-host-admission.ts": 2,
     "apps/web/src/domains/creator/render/studio-pixi-scene-provider.ts": 2,
     "apps/web/src/domains/creator/render/studio-radial-line-geometry.ts": 2,
-    "apps/web/src/domains/creator/render/studio-raster-asset-client.ts": 2,
     "apps/web/src/domains/creator/render/studio-raster-asset-elements.ts": 2,
     "apps/web/src/domains/creator/render/studio-raster-asset-integrity.ts": 2,
     "apps/web/src/domains/creator/render/studio-raster-assets.ts": 2,
@@ -1410,7 +1371,6 @@
     "apps/web/src/domains/creator/studio-api-payload-safety.ts": 2,
     "apps/web/src/domains/creator/studio-app-settings.ts": 2,
     "apps/web/src/domains/creator/studio-asset-favorites.ts": 2,
-    "apps/web/src/domains/creator/studio-asset-library.ts": 2,
     "apps/web/src/domains/creator/studio-asset-transfer.ts": 2,
     "apps/web/src/domains/creator/studio-assets.ts": 2,
     "apps/web/src/domains/creator/studio-auto-actions-controller.ts": 2,
@@ -1419,7 +1379,6 @@
     "apps/web/src/domains/creator/studio-autosave-busy-retry.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-document-leader.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-opfs-error.ts": 2,
-    "apps/web/src/domains/creator/studio-autosave-opfs-session.ts": 2,
     "apps/web/src/domains/creator/studio-autosave-snapshot-fence.ts": 2,
     "apps/web/src/domains/creator/studio-autosave.ts": 2,
     "apps/web/src/domains/creator/studio-background-3d-loader.ts": 2,
@@ -1620,7 +1579,6 @@
     "apps/web/src/domains/creator/studio-fx-brush.ts": 2,
     "apps/web/src/domains/creator/studio-generic-3d-model-mode.ts": 2,
     "apps/web/src/domains/creator/studio-generic-3d-workflow-metadata.ts": 2,
-    "apps/web/src/domains/creator/studio-gif-element.ts": 2,
     "apps/web/src/domains/creator/studio-google-fonts.ts": 2,
     "apps/web/src/domains/creator/studio-gradient-engine.ts": 2,
     "apps/web/src/domains/creator/studio-gradients.ts": 2,
@@ -1753,12 +1711,6 @@
     "apps/web/src/domains/creator/studio-offscreen-raster-worker-client.ts": 2,
     "apps/web/src/domains/creator/studio-offscreen-raster-worker-protocol.ts": 2,
     "apps/web/src/domains/creator/studio-oncanvas-command-surfaces.ts": 2,
-    "apps/web/src/domains/creator/studio-opfs-asset-store.ts": 2,
-    "apps/web/src/domains/creator/studio-opfs-compression.ts": 2,
-    "apps/web/src/domains/creator/studio-opfs-filesystem.ts": 2,
-    "apps/web/src/domains/creator/studio-opfs-recovery-journal-error.ts": 2,
-    "apps/web/src/domains/creator/studio-opfs-recovery-journal.ts": 2,
-    "apps/web/src/domains/creator/studio-opfs-recovery-runtime.ts": 2,
     "apps/web/src/domains/creator/studio-oss-brush-kernels.ts": 2,
     "apps/web/src/domains/creator/studio-outline-stroke-contract.ts": 2,
     "apps/web/src/domains/creator/studio-page-advanced-fill.ts": 2,
@@ -2168,7 +2120,6 @@
     "apps/web/src/shared/lib/studio-live-jam-scope.ts": 2,
     "apps/web/src/shared/lib/studio-live-lock-resource.ts": 2,
     "apps/web/src/shared/lib/studio-raster-asset-admission.ts": 2,
-    "apps/web/src/shared/lib/studio-raster-asset-contract.ts": 2,
     "apps/web/src/shared/lib/studio-work-asset-contract.ts": 2,
     "apps/web/src/shared/lib/text.ts": 1,
     "apps/web/src/shared/lib/theme-presets.ts": 1,
@@ -2204,7 +2155,6 @@
     "packages/contracts/src/studio-live-jam-scope.ts": 2,
     "packages/contracts/src/studio-live-lock-resource.ts": 2,
     "packages/contracts/src/studio-raster-asset-admission.ts": 2,
-    "packages/contracts/src/studio-raster-asset-contract.ts": 2,
     "packages/contracts/src/studio-smart-filter-stack-contract.ts": 2,
     "packages/contracts/src/studio-work-asset-contract.ts": 2,
     "packages/core/src/business.ts": 1,
@@ -2255,17 +2205,7 @@
     "packages/studio-engine-registry/src/wgsl-sandbox.ts": 2,
     "packages/studio-engine-registry/src/wgsl-variants.ts": 2,
     "packages/studio-engine-registry/src/workload-fingerprint.ts": 2,
-    "packages/studio-engine-skia/src/descriptor.ts": 2,
     "packages/studio-engine-skia/src/document-contract.ts": 2,
-    "packages/studio-engine-skia/src/document-fonts.ts": 2,
-    "packages/studio-engine-skia/src/document-image-source.ts": 2,
-    "packages/studio-engine-skia/src/document-images.ts": 2,
-    "packages/studio-engine-skia/src/document-panel.ts": 2,
-    "packages/studio-engine-skia/src/document-renderer.ts": 2,
-    "packages/studio-engine-skia/src/gpu-island.ts": 2,
-    "packages/studio-engine-skia/src/graphite-probe.ts": 2,
-    "packages/studio-engine-skia/src/index.ts": 2,
-    "packages/studio-engine-skia/src/render.ts": 2,
     "packages/studio-format-gateway/src/abr-preview.ts": 2,
     "packages/studio-format-gateway/src/abr.ts": 2,
     "packages/studio-format-gateway/src/compatibility-report.ts": 2,

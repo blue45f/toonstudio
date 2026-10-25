@@ -44,22 +44,18 @@ import {
   StudioOpfsError,
   type StudioOpfsFileSystem,
 } from "./studio-opfs-filesystem";
+import {
+  canonicalizeStudioOpfsContentHash,
+  type StudioOpfsContentHash,
+} from "./studio-upload-image-safety";
 
 // ── 모델 ────────────────────────────────────────────────────────────────
 
-export type StudioOpfsContentHash = `sha256:${string}`;
-
-const CONTENT_HASH_RE = /^sha256:([0-9a-f]{64})$/u;
-
-export function isStudioOpfsContentHash(value: unknown): value is StudioOpfsContentHash {
-  return typeof value === "string" && CONTENT_HASH_RE.test(value);
-}
-
-export function canonicalizeStudioOpfsContentHash(value: unknown): StudioOpfsContentHash | null {
-  if (typeof value !== "string") return null;
-  const match = CONTENT_HASH_RE.exec(value.trim().toLowerCase());
-  return match ? (`sha256:${match[1]}` as StudioOpfsContentHash) : null;
-}
+export {
+  canonicalizeStudioOpfsContentHash,
+  isStudioOpfsContentHash,
+  type StudioOpfsContentHash,
+} from "./studio-upload-image-safety";
 
 export interface StudioOpfsAssetEntry {
   hash: StudioOpfsContentHash;

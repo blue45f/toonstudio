@@ -5,6 +5,31 @@ export const STUDIO_UPLOAD_MAX_SOURCE_BATCH_BYTES = 48 * 1024 * 1024;
 export const STUDIO_UPLOAD_DESKTOP_MAX_DECODED_PIXELS = 16_777_216;
 export const STUDIO_UPLOAD_MOBILE_MAX_DECODED_PIXELS = 8_388_608;
 
+const SHA256_HEX_LENGTH = 64;
+const SHA256_CONTENT_HASH_PATTERN = /^sha256:([0-9a-f]{64})$/i;
+const LOWERCASE_SHA256_CONTENT_HASH_PATTERN = /^sha256:([0-9a-f]{64})$/u;
+
+export type StudioAssetContentHash = `sha256:${string}`;
+export type StudioOpfsContentHash = StudioAssetContentHash;
+
+export function isStudioOpfsContentHash(value: unknown): value is StudioOpfsContentHash {
+  return typeof value === "string" && LOWERCASE_SHA256_CONTENT_HASH_PATTERN.test(value);
+}
+
+export function canonicalizeStudioOpfsContentHash(value: unknown): StudioOpfsContentHash | null {
+  if (typeof value !== "string") return null;
+  const match = LOWERCASE_SHA256_CONTENT_HASH_PATTERN.exec(value.trim().toLowerCase());
+  return match ? (`sha256:${match[1]}` as StudioOpfsContentHash) : null;
+}
+
+/** `sha256:` 접두어를 포함한 64자리 SHA-256 식별자만 소문자로 정규화한다. */
+export function canonicalizeStudioAssetContentHash(value: unknown): StudioAssetContentHash | null {
+  if (typeof value !== "string") return null;
+  const match = SHA256_CONTENT_HASH_PATTERN.exec(value.trim());
+  if (!match || match[1].length !== SHA256_HEX_LENGTH) return null;
+  return `sha256:${match[1].toLowerCase()}`;
+}
+
 const SUPPORTED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export type StudioUploadImageFormat = "jpeg" | "png" | "webp";

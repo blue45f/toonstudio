@@ -2,9 +2,17 @@
 // V12 제품 기본 권위는 SQLite manifest + OPFS SHA-256 CAS이며, 아래 IndexedDB 구현은
 // 사용자가 명시적으로 선택하는 legacy import/test seam에서만 열린다.
 
-import { STUDIO_ASSET_DATA_URL_MAX_CHARS } from "./studio-upload-image-safety";
+import {
+  canonicalizeStudioAssetContentHash,
+  STUDIO_ASSET_DATA_URL_MAX_CHARS,
+  type StudioAssetContentHash,
+} from "./studio-upload-image-safety";
 
-export { STUDIO_ASSET_DATA_URL_MAX_CHARS } from "./studio-upload-image-safety";
+export {
+  canonicalizeStudioAssetContentHash,
+  STUDIO_ASSET_DATA_URL_MAX_CHARS,
+  type StudioAssetContentHash,
+} from "./studio-upload-image-safety";
 
 const DB_NAME = "toonstudio-studio-asset-library";
 export const STUDIO_ASSET_LIBRARY_DB_VERSION = 2;
@@ -15,11 +23,6 @@ export const STUDIO_ASSET_CONTENT_IDENTITY_MAX_CANDIDATES_PER_HASH = 8;
 export const STUDIO_ASSET_CONTENT_IDENTITY_MAX_RETURN_CANDIDATES = 64;
 export const STUDIO_ASSET_CONTENT_IDENTITY_MAX_RETURN_DATA_URL_CHARS = 64 * 1024 * 1024;
 export const STUDIO_ASSET_CONTENT_IDENTITY_MAX_RETURN_DATA_URL_BYTES = 64 * 1024 * 1024;
-
-const SHA256_HEX_LENGTH = 64;
-const SHA256_CONTENT_HASH_PATTERN = /^sha256:([0-9a-f]{64})$/i;
-
-export type StudioAssetContentHash = `sha256:${string}`;
 
 export interface StudioAssetRightsMetadata {
   readonly sourceKind: "local-upload" | "ai-generated" | "3d-generated" | "imported" | "unknown";
@@ -121,14 +124,6 @@ export function createAssetRecord(
     ...(input.kind ? { kind: input.kind } : {}),
     ...(input.rights ? { rights: input.rights } : {}),
   };
-}
-
-/** `sha256:` 접두어를 포함한 64자리 SHA-256 식별자만 소문자로 정규화한다. */
-export function canonicalizeStudioAssetContentHash(value: unknown): StudioAssetContentHash | null {
-  if (typeof value !== "string") return null;
-  const match = SHA256_CONTENT_HASH_PATTERN.exec(value.trim());
-  if (!match || match[1].length !== SHA256_HEX_LENGTH) return null;
-  return `sha256:${match[1].toLowerCase()}`;
 }
 
 function decodePercentEncodedPayload(payload: string): Uint8Array<ArrayBuffer> {

@@ -3,7 +3,7 @@ import { computeBubbleAnchorTail, resolveAnchorTargetPoint, type AnchorTargetBou
 import { hasCustomBubbleShape } from "./lettering/studio-bubble-custom-shape";
 import { resolveStudioLiveInkRollout, studioLiveInkRolloutInputFromGlobals } from "./live/studio-live-ink-rollout";
 import { CANVAS_W } from "./studio-assets";
-import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-session";
+import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-error";
 import { elBounds } from "./studio-element-geometry";
 import { uid } from "./studio-id";
 import { createStudioPagesHistoryCommandJournalClient } from "./studio-pages-history-command-journal-client";

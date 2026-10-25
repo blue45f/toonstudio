@@ -19,10 +19,9 @@
  * OPFS 저널이 생기지 않는다.
  */
 
-import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-session";
+import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-error";
 import { resolveStudioAutosaveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-autosave";
 import { resolveStudioOpfsRecoveryJournalErrorFromCause } from "./status-i18n/studio-producer-error-i18n-opfs-recovery";
-import { createStudioOpfsRecoveryRuntime } from "./studio-opfs-recovery-runtime";
 import {
   clearStudioReliabilityChannel,
   enterStudioSafeMode,
@@ -109,9 +108,14 @@ let detachPageHide: (() => void) | null = null;
 
 /** 기본 팩토리 — 브라우저 능력을 프로브해 OPFS 저널 런타임을 만든다. */
 async function defaultCreateRuntime(): Promise<StudioOpfsRecoveryRuntime | null> {
-  const [{ selectStudioOpfsFileSystem }, journalModule] = await Promise.all([
+  const [
+    { selectStudioOpfsFileSystem },
+    journalModule,
+    { createStudioOpfsRecoveryRuntime },
+  ] = await Promise.all([
     import("./studio-opfs-filesystem"),
     import("./studio-opfs-recovery-journal"),
+    import("./studio-opfs-recovery-runtime"),
   ]);
   const scope = globalThis as {
     navigator?: {

@@ -4,7 +4,6 @@ import {
   type StudioRasterReplayRuntimeErrorCode,
   type StudioRasterReplayRuntimeResult,
 } from "../live/studio-crdt-raster-replay-runtime";
-import { downloadStudioRasterAsset } from "../render/studio-raster-asset-client";
 import {
   resolveStudioRasterReplayError,
   studioRasterReplayErrorInfoFromCause,
@@ -338,9 +337,10 @@ export class StudioFilterMaskSurfaceHydrator {
 
   constructor(dependencies: StudioFilterMaskSurfaceHydratorDependencies = {}) {
     this.replay = dependencies.replay ?? replayStudioRasterCrdtPixels;
-    this.download = dependencies.download ?? (async (reference, signal) => (
-      await downloadStudioRasterAsset(this.requireWorkId(), reference, signal)
-    ).bytes);
+    this.download = dependencies.download ?? (async (reference, signal) => {
+      const { downloadStudioRasterAsset } = await import("../render/studio-raster-asset-client");
+      return (await downloadStudioRasterAsset(this.requireWorkId(), reference, signal)).bytes;
+    });
     this.materializePng = dependencies.materializePng ?? materializeStudioFilterMaskReplayPng;
     this.createObjectUrl = dependencies.createObjectUrl ?? ((blob) => URL.createObjectURL(blob));
     this.revokeObjectUrl = dependencies.revokeObjectUrl ?? ((url) => URL.revokeObjectURL(url));

@@ -1,6 +1,7 @@
 import { registerStudioRasterCapturePreparation } from "./render/studio-raster-presentation-cache";
-import { canonicalizeStudioAssetContentHash, type StudioAsset } from "./studio-asset-library";
+import { canonicalizeStudioAssetContentHash } from "./studio-upload-image-safety";
 
+import type { StudioAsset } from "./studio-asset-library";
 import type { StudioDrawingPracticeDocument } from "./studio-drawing-practice-document";
 import type Konva from "konva";
 

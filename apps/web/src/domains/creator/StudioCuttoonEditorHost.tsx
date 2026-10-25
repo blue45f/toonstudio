@@ -281,7 +281,7 @@ import {
 } from "./studio-autosave";
 import { createStudioAutosaveBusyRetry } from "./studio-autosave-busy-retry";
 import { studioAutosaveLeadershipAllowsLocalEdit } from "./studio-autosave-document-leader";
-import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-session";
+import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-error";
 import { createStudioSaveSyncSignalStore } from "./studio-save-sync-signals";
 import { useStudioSaveSyncSignalWiring } from "./studio-cuttoon-editor/runtime/useStudioSaveSyncSignalWiring";
 import { StudioFormalSaveDialogMount as StudioFormalSaveDialog } from "./save-first/StudioFormalSaveDialogMount";
