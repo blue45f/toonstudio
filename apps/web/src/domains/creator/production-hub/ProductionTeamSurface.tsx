@@ -9,6 +9,7 @@ import { ProductionCrewCoverage } from "./ProductionRoleWorkspace";
 import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { assignmentStatusLabel, projectAccessRoleLabel, roleTypeLabel, type BilingualLabel } from "./production-labels";
 import { ProductionAvatar, ProductionPill, ProductionSectionCard } from "./production-ui";
+import { ProductionAssetLicenseDistributionSuite } from "./ProductionAssetLicenseDistributionSuite";
 import { ProductionJiraConfluenceWorkflowSuite } from "./ProductionJiraConfluenceWorkflowSuite";
 import { ProductionWorkspaceGovernanceSuite } from "./ProductionWorkspaceGovernanceSuite";
 
@@ -115,6 +116,7 @@ export function ProductionTeamSurface({
       <ProductionIntegrationsPanel aggregate={aggregate} />
       <ProductionWorkspaceGovernanceSuite />
       <ProductionJiraConfluenceWorkflowSuite />
+      <ProductionAssetLicenseDistributionSuite />
     </div>
   );
 }
