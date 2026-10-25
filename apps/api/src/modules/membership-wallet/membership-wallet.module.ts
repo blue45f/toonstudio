@@ -4,7 +4,11 @@ import { AdminMutationGuard } from "../admin/admin-mutation.guard";
 
 import { CreditSpendController } from "./credit-spend.controller";
 import { CreditSpendService } from "./credit-spend.service";
+import { MarketplaceCreditPaymentController } from "./marketplace-credit-payment.controller";
+import { MarketplaceCreditPaymentService } from "./marketplace-credit-payment.service";
 import { MembershipWalletController } from "./membership-wallet.controller";
+import { StudioDecorationCreditPurchaseController } from "./studio-decoration-credit-purchase.controller";
+import { StudioDecorationCreditPurchaseService } from "./studio-decoration-credit-purchase.service";
 import {
   InMemoryPaidOperationsSettingStore,
   PAID_OPERATIONS_SETTING_STORE,
@@ -14,10 +18,17 @@ import { PaidOperationsAdminService } from "./paid-operations-admin.service";
 import { MEMBERSHIP_REWARD_SERVICE } from "./membership-wallet.tokens";
 
 @Module({
-  controllers: [MembershipWalletController, CreditSpendController],
+  controllers: [
+    MembershipWalletController,
+    CreditSpendController,
+    MarketplaceCreditPaymentController,
+    StudioDecorationCreditPurchaseController,
+  ],
   providers: [
     MembershipWalletService,
     CreditSpendService,
+    MarketplaceCreditPaymentService,
+    StudioDecorationCreditPurchaseService,
     PaidOperationsAdminService,
     {
       provide: MEMBERSHIP_REWARD_SERVICE,
@@ -35,6 +46,8 @@ import { MEMBERSHIP_REWARD_SERVICE } from "./membership-wallet.tokens";
   ],
   exports: [
     MembershipWalletService,
+    MarketplaceCreditPaymentService,
+    StudioDecorationCreditPurchaseService,
     PaidOperationsAdminService,
     MEMBERSHIP_REWARD_SERVICE,
     PAID_OPERATIONS_SETTING_STORE,

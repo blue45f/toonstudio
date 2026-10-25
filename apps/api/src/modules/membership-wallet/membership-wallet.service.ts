@@ -614,7 +614,7 @@ export class MembershipWalletService {
     };
   }
 
-  private async grantAsset(input: {
+  async grantAsset(input: {
     userId: string;
     asset: WalletAsset;
     amount: number;
