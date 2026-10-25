@@ -42,6 +42,7 @@ import {
 import { CollabThreadDeepLinkCard } from "./CollabThreadDeepLinkCard";
 import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import { ProductionDeadlineRiskForecast } from "./ProductionDeadlineRiskForecast";
+import { ProductionJiraConfluenceWorkflowSuite } from "./ProductionJiraConfluenceWorkflowSuite";
 import { ProductionStageDeadlinePlan } from "./ProductionStageDeadlinePlan";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -551,6 +552,8 @@ export function ProductionEpisodeOperationsWorkspace({
           ))}
         </div>
       </details>
+
+      <ProductionJiraConfluenceWorkflowSuite />
     </div>
   );
 }
