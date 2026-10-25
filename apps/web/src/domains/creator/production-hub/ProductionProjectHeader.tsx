@@ -18,6 +18,7 @@ import {
 } from "./use-preferred-process-lens";
 import { parseRoleLens } from "./use-preferred-role-lens";
 
+import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -144,7 +145,7 @@ export function ProductionProjectHeader({
   const [processLens, setProcessLens] = usePreferredProcessLens(aggregate.projectId);
   return (
     <header className="creator-workflow-topbar border-b border-line bg-panel px-4 py-3 sm:px-6">
-      <div className="mx-auto flex max-w-[100rem] flex-wrap items-center justify-between gap-3">
+      <div className={`mx-auto flex ${LAYOUT_TOKENS.width.app} flex-wrap items-center justify-between gap-3`}>
         <div className="flex min-w-0 items-start gap-3">
           <ProductionProjectCoverTile aggregate={aggregate} />
           <div className="min-w-0">
@@ -211,7 +212,7 @@ export function ProductionProjectHeader({
           )}
         </div>
       </div>
-      <div className="mx-auto mt-3 max-w-[100rem] border-t border-line pt-3">
+      <div className={`mx-auto mt-3 ${LAYOUT_TOKENS.width.app} border-t border-line pt-3`}>
         <ProductionProjectStatusStrip aggregate={aggregate} />
       </div>
     </header>

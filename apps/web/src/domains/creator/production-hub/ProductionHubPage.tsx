@@ -35,6 +35,7 @@ import type { ProductionProjectSurface } from "./production-project-surfaces";
 import { usePreferredRoleLens } from "./use-preferred-role-lens";
 import { useProductionProjectSession } from "./use-production-project-session";
 
+import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { SitePageArt } from "@/domains/legal/public/site-page-art";
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
@@ -241,7 +242,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   return (
     <div data-creator-workflow="production-project" data-route-ready="production-project" className="min-h-dvh bg-canvas text-fg">
       <ProductionProjectHeader aggregate={aggregate} access={project.access} roleLens={roleLens} onRoleLensChange={setRoleLens} saveState={project.saveState} isDemo={project.isDemo} />
-      <div className="mx-auto grid max-w-[100rem] lg:grid-cols-[13.5rem_minmax(0,1fr)]">
+      <div className={cn("mx-auto grid lg:grid-cols-[13.5rem_minmax(0,1fr)]", LAYOUT_TOKENS.width.app)}>
         <ProductionProjectNav projectId={aggregate.projectId} surface={surface} />
         <div className="min-w-0 p-4 sm:p-6">
           {!project.isDemo ? <ProductionSessionStatus revision={aggregate.revision} refreshing={project.refreshing} saving={project.saveState === "saving"} onRefresh={project.refresh} /> : null}
