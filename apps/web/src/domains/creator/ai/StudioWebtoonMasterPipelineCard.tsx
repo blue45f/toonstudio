@@ -42,6 +42,7 @@ import {
 } from "./studio-webtoon-storyboard-pipeline";
 import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
 import { StudioTooningPlusSuitePanel } from "./StudioTooningPlusSuitePanel";
+import { StudioGgumtoonSuitePanel } from "./StudioGgumtoonSuitePanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -643,6 +644,9 @@ export function StudioWebtoonMasterPipelineCard({
 
       {/* 투닝 플러스 (Tooning Plus: TG·TD·ED·MG·DV·TB·CM) 전 제품군 통합 워크스페이스 */}
       <StudioTooningPlusSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
+
+      {/* 꿈툰 (Ggumtoon: 스타일·캐릭터·장면·부분수정·여백컷·웹소설·뷰어·지갑·정산) 통합 스튜디오 */}
+      <StudioGgumtoonSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
     </section>
   );
 }
