@@ -54,14 +54,16 @@ export interface StudioThreePropSpec {
  * 협업 워크스테이션(`CAMPUS_INTERACTIONS`) 포인트별 핵심 3D 장비·소품 배치도.
  */
 export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze([
-  // LOBBY (skyport — independent_bookshop 디오라마 + 컨시어지·폰부스 워크스테이션)
+  // LOBBY (skyport — independent_bookshop 디오라마 + 컨시어지·좌우 라운지·폰부스 워크스테이션)
   { id: "lobby-concierge-desk", url: "/assets/3d/refined-v8/desk.glb", x: 448, y: 344, heightMeters: 1.08, rotationY: 0 },
+  { id: "lobby-concierge-chair", url: "/assets/3d/refined-v8/chair.glb", x: 448, y: 300, heightMeters: 1.06, rotationY: 0 },
   { id: "lobby-concierge-tablet", url: "/assets/3d/hologram_tablet.glb", x: 448, y: 344, heightMeters: 0.48, elevationMeters: 0.86, rotationY: 0 },
   { id: "lobby-desk-mug", url: "/assets/3d/everyday_mug.glb", x: 416, y: 340, heightMeters: 0.22, elevationMeters: 0.86, rotationY: 0.4 },
   { id: "lobby-clock", url: "/assets/3d/grandfather_clock.glb", x: 196, y: 210, heightMeters: 2.15, rotationY: 0 },
-  { id: "lobby-sofa-west", url: "/assets/3d/refined-v8/sofa.glb", x: 238, y: 470, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
-  { id: "lobby-phone-table", url: "/assets/3d/round_table.glb", x: 660, y: 642, heightMeters: 0.78, rotationY: 0 },
-  { id: "lobby-phone-mic", url: "/assets/3d/atelier_microphone.glb", x: 660, y: 642, heightMeters: 0.34, elevationMeters: 0.78, rotationY: -0.3 },
+  { id: "lobby-sofa-west", url: "/assets/3d/refined-v8/sofa.glb", x: 238, y: 448, heightMeters: 1.12, rotationY: Math.PI * 0.5 },
+  { id: "lobby-sofa-east", url: "/assets/3d/refined-v8/sofa.glb", x: 658, y: 448, heightMeters: 1.12, rotationY: -Math.PI * 0.5 },
+  { id: "lobby-phone-table", url: "/assets/3d/round_table.glb", x: 626, y: 572, heightMeters: 0.78, rotationY: 0 },
+  { id: "lobby-phone-mic", url: "/assets/3d/atelier_microphone.glb", x: 626, y: 572, heightMeters: 0.34, elevationMeters: 0.78, rotationY: -0.3 },
   { id: "lobby-plant-east", url: "/assets/3d/potted_monstera.glb", x: 716, y: 240, heightMeters: 1.48, rotationY: -0.3 },
 
   // STUDIO (personal-atelier — classroom_art_studio 디오라마 + 드로잉·모니터·라이브 세트)
@@ -79,11 +81,12 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 
   // CO-WORK (story-lab — library_reading_room 디오라마 + 집중석·보드)
   { id: "cowork-board", url: "/assets/3d/refined-v8/blackboard.glb", x: 1984, y: 236, heightMeters: 1.9, rotationY: 0 },
-  { id: "cowork-chair-west", url: "/assets/3d/refined-v8/chair.glb", x: 1756, y: 416, heightMeters: 1.06, rotationY: Math.PI * 0.5 },
+  { id: "cowork-chair-west", url: "/assets/3d/refined-v8/chair.glb", x: 1708, y: 416, heightMeters: 1.06, rotationY: Math.PI * 0.5 },
   { id: "cowork-chair-east", url: "/assets/3d/refined-v8/chair.glb", x: 2212, y: 416, heightMeters: 1.06, rotationY: -Math.PI * 0.5 },
   { id: "cowork-focus-west", url: "/assets/3d/school_desk.glb", x: 1740, y: 628, heightMeters: 1.08, rotationY: Math.PI },
   { id: "cowork-focus-east", url: "/assets/3d/school_desk.glb", x: 2228, y: 628, heightMeters: 1.08, rotationY: Math.PI },
   { id: "cowork-book-1", url: "/assets/3d/everyday_book.glb", x: 1740, y: 624, heightMeters: 0.2, elevationMeters: 0.82, rotationY: 0.2 },
+  { id: "cowork-focus-tablet", url: "/assets/3d/hologram_tablet.glb", x: 2228, y: 624, heightMeters: 0.42, elevationMeters: 0.82, rotationY: 0 },
   { id: "cowork-bonsai", url: "/assets/3d/bonsai_tree.glb", x: 1740, y: 280, heightMeters: 0.72, rotationY: 0.3 },
 
   // CAFE (creator-cafe — stylized_cafe_interior 디오라마 + 자판기·다기·라운지 테이블)
@@ -112,9 +115,11 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "plaza-lamp-se", url: "/assets/3d/street_lamp.glb", x: 1924, y: 1320, heightMeters: 2.65, rotationY: 0 },
 
   // EVENT (event-stage — korean_school_rooftop 디오라마 + 라이브 스테이지 장비)
-  { id: "event-hologram", url: "/assets/3d/hologram_tablet.glb", x: 2560, y: 1020, heightMeters: 1.55, elevationMeters: 0.32, rotationY: 0 },
-  { id: "event-mic-table", url: "/assets/3d/round_table.glb", x: 2480, y: 1056, heightMeters: 0.78, rotationY: 0 },
-  { id: "event-mic", url: "/assets/3d/atelier_microphone.glb", x: 2480, y: 1056, heightMeters: 0.34, elevationMeters: 0.78, rotationY: 0.2 },
+  { id: "event-hologram", url: "/assets/3d/hologram_tablet.glb", x: 2560, y: 972, heightMeters: 1.55, elevationMeters: 0.38, rotationY: 0 },
+  { id: "event-mic-table", url: "/assets/3d/round_table.glb", x: 2456, y: 1056, heightMeters: 0.78, rotationY: 0 },
+  { id: "event-mic", url: "/assets/3d/atelier_microphone.glb", x: 2456, y: 1056, heightMeters: 0.34, elevationMeters: 0.78, rotationY: 0.2 },
+  { id: "event-camera-table", url: "/assets/3d/round_table.glb", x: 2664, y: 1056, heightMeters: 0.78, rotationY: 0 },
+  { id: "event-stage-camera", url: "/assets/3d/atelier_camera.glb", x: 2664, y: 1056, heightMeters: 0.28, elevationMeters: 0.78, rotationY: -0.25 },
   { id: "event-lantern-w", url: "/assets/3d/paper_lantern.glb", x: 2320, y: 960, heightMeters: 1.5, rotationY: 0 },
   { id: "event-lantern-e", url: "/assets/3d/paper_lantern.glb", x: 2800, y: 960, heightMeters: 1.5, rotationY: 0 },
 
@@ -123,14 +128,17 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "game-cabinet-2", url: "/assets/3d/arcade_game_cabinet.glb", x: 306, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
   { id: "game-cabinet-3", url: "/assets/3d/arcade_game_cabinet.glb", x: 590, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
   { id: "game-cabinet-4", url: "/assets/3d/arcade_game_cabinet.glb", x: 678, y: 1612, heightMeters: 1.82, rotationY: Math.PI },
-  { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 260, y: 1700, heightMeters: 1.2, rotationY: 0.3 },
+  { id: "game-drone-1", url: "/assets/3d/scifi_drone_bot.glb", x: 448, y: 1516, heightMeters: 1.12, rotationY: 0.2 },
+  { id: "game-lounge-table", url: "/assets/3d/round_table.glb", x: 448, y: 1712, heightMeters: 0.78, rotationY: 0 },
+  { id: "game-lounge-boba", url: "/assets/3d/refined-v8/bubble_tea.glb", x: 448, y: 1712, heightMeters: 0.28, elevationMeters: 0.78, rotationY: 0.3 },
 
   // TERRACE (beach — 테라스 라운지 소파·테이블·식물)
-  { id: "terrace-bench-w", url: "/assets/3d/neom_bench_prop.glb", x: 1120, y: 1620, heightMeters: 0.95, rotationY: 0 },
-  { id: "terrace-bench-e", url: "/assets/3d/neom_bench_prop.glb", x: 1820, y: 1620, heightMeters: 0.95, rotationY: 0 },
+  { id: "terrace-bench-w", url: "/assets/3d/neom_bench_prop.glb", x: 1210, y: 1496, heightMeters: 0.95, rotationY: 0.32 },
+  { id: "terrace-bench-e", url: "/assets/3d/neom_bench_prop.glb", x: 1734, y: 1496, heightMeters: 0.95, rotationY: -0.32 },
   { id: "terrace-lounge-table", url: "/assets/3d/round_table.glb", x: 1344, y: 1564, heightMeters: 0.78, rotationY: 0 },
   { id: "terrace-lounge-tea", url: "/assets/3d/tea_set.glb", x: 1344, y: 1564, heightMeters: 0.26, elevationMeters: 0.78, rotationY: 0.2 },
-  { id: "terrace-monstera", url: "/assets/3d/potted_monstera.glb", x: 1620, y: 1580, heightMeters: 1.38, rotationY: -0.2 },
+  { id: "terrace-monstera", url: "/assets/3d/potted_monstera.glb", x: 1596, y: 1564, heightMeters: 1.38, rotationY: -0.2 },
+  { id: "terrace-sofa-e", url: "/assets/3d/refined-v8/sofa.glb", x: 1684, y: 1612, heightMeters: 1.08, rotationY: -Math.PI * 0.45 },
 
   // GALLERY (review-gallery — fashion_boutique ATELIER 07 디오라마 + 원고 전시 데스크·큐레이션 라운지)
   { id: "gallery-desk", url: "/assets/3d/refined-v8/desk.glb", x: 2338, y: 1584, heightMeters: 1.08, rotationY: 0 },
@@ -144,17 +152,17 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 
 /**
  * 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 CC0 검증 스튜디오급 VRM 크리에이터 아바타.
- * 별도 라이선스 고지 의무(`licenseNotice`)나 대용량(`heavy-payload`) 제약이 없는 순수 CC0 휴머노이드 에셋만 사용한다.
+ * 별도 라이선스 고지 의무(`licenseNotice`)나 대용량(`heavy-payload`) 제약이 없는 고밀도 CC0 휴머노이드 에셋만 사용한다.
  */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
   "/vrm/Sendagaya_Shino.vrm",
   "/vrm/Vita.vrm",
-  "/vrm/Kate.vrm",
-  "/vrm/Eugenia.vrm",
-  "/vrm/Vivi.vrm",
-  "/vrm/Jennifer.vrm",
   "/vrm/Sendagaya_Shibu.vrm",
-  "/vrm/Olivia.vrm",
+  "/vrm/sample.vrm",
+  "/vrm/Vivi.vrm",
+  "/vrm/Seed_san.vrm",
+  "/vrm/Anna.vrm",
+  "/vrm/Cyberpal.vrm",
   "/vrm/Victoria_Rubin.vrm",
 ]);
 
@@ -545,7 +553,7 @@ export function applyNaturalVrmPosture(
   if (!leftUpperArm || !rightUpperArm) {
     vrmScene.traverse((child) => {
       const n = child.name;
-      if (!n) return;
+      if (!n || /robo_|twist/i.test(n)) return;
       if (!leftUpperArm && /J_Bip_L_UpperArm|LeftArm$|upper_arm\.?L/i.test(n)) leftUpperArm = child;
       else if (!rightUpperArm && /J_Bip_R_UpperArm|RightArm$|upper_arm\.?R/i.test(n)) rightUpperArm = child;
       else if (!leftLowerArm && /J_Bip_L_LowerArm|LeftForeArm$|forearm\.?L/i.test(n)) leftLowerArm = child;

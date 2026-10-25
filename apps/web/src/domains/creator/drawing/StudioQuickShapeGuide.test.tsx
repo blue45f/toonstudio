@@ -78,4 +78,26 @@ describe("StudioQuickShapeGuide", () => {
       screen.getByText("애매하면 원본을 그대로 둡니다. 직선은 15° 단위로 스냅됩니다."),
     ).toBeTruthy();
   });
+
+  it("4종 도형 프리셋(타원/사각형/삼각형/직선) 선택과 WAI-ARIA Roving Tabindex 키보드 이동을 지원한다", () => {
+    const { container } = render(<StudioQuickShapeGuide />);
+    const ellipseRadio = screen.getByRole("radio", { name: "타원" });
+    const rectRadio = screen.getByRole("radio", { name: "사각형" });
+    const lineRadio = screen.getByRole("radio", { name: "직선" });
+
+    expect(ellipseRadio.getAttribute("tabindex")).toBe("0");
+    expect(rectRadio.getAttribute("tabindex")).toBe("-1");
+
+    const cleanBefore = container.querySelector(".qsg-clean")?.getAttribute("d");
+    fireEvent.keyDown(ellipseRadio, { key: "ArrowRight" });
+    expect(rectRadio.getAttribute("aria-checked")).toBe("true");
+    expect(rectRadio.getAttribute("tabindex")).toBe("0");
+    const cleanRect = container.querySelector(".qsg-clean")?.getAttribute("d");
+    expect(cleanRect).not.toBe(cleanBefore);
+
+    fireEvent.keyDown(rectRadio, { key: "End" });
+    expect(lineRadio.getAttribute("aria-checked")).toBe("true");
+    expect(lineRadio.getAttribute("tabindex")).toBe("0");
+  });
 });
+

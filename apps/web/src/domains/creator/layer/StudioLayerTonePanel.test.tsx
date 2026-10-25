@@ -77,4 +77,50 @@ describe("StudioLayerTonePanel", () => {
       }),
     );
   });
+
+  it("supports WAI-ARIA roving tabindex on pattern/mode radiogroups and toggles invert", () => {
+    const onChange = vi.fn();
+    render(
+      <StudioLayerTonePanel
+        value={{
+          strength: 80,
+          dotSize: 4,
+          angle: 45,
+          mode: "mono",
+          pattern: "circle",
+        }}
+        onChange={onChange}
+      />,
+    );
+
+    const circleRadio = screen.getByRole("radio", { name: "원형" });
+    const starRadio = screen.getByRole("radio", { name: "별모양" });
+    expect(circleRadio.getAttribute("tabindex")).toBe("0");
+    expect(starRadio.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(circleRadio, { key: "End" });
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        pattern: "star",
+      }),
+    );
+
+    const monoRadio = screen.getByRole("radio", { name: "모노크롬 (흑백)" });
+    fireEvent.keyDown(monoRadio, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        mode: "cmyk",
+      }),
+    );
+
+    const invertBtn = screen.getByRole("button", { name: "망점 반전" });
+    expect(invertBtn.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(invertBtn);
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        invert: true,
+      }),
+    );
+  });
 });
+
