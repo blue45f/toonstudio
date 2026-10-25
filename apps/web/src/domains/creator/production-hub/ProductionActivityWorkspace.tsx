@@ -19,6 +19,7 @@ import type {
 import type { VersionSharePermission } from "./one-click-version-share-model";
 import { useProductionVersionActivity } from "./use-production-version-activity";
 import { ProductionMonitoringSuite } from "./ProductionMonitoringSuite";
+import { ProductionStudioErpBottleneckSuite } from "./ProductionStudioErpBottleneckSuite";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -296,6 +297,7 @@ export function ProductionActivityWorkspace({
       )}
 
       <ProductionMonitoringSuite />
+      <ProductionStudioErpBottleneckSuite />
     </section>
   );
 }

@@ -9,6 +9,7 @@ import type { StudioCommentActor, StudioCommentsDocument } from "../studio-comme
 import { CompareReviewViewer } from "./CompareReviewViewer";
 import { CompareSourcePoolStrip, type ComparePoolStatus } from "./CompareSourcePoolStrip";
 import { ProductionViewerControlsBar } from "./ProductionViewerControlsBar";
+import { ProductionWebtoonNowPmsSuite } from "./ProductionWebtoonNowPmsSuite";
 import {
   addComparePoolItem,
   addComparePoolItems,
@@ -355,6 +356,7 @@ export function CompareReviewRoom({
       />
 
       <ProductionViewerControlsBar initialMode="compare" />
+      <ProductionWebtoonNowPmsSuite />
     </div>
   );
 }
