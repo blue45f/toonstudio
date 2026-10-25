@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "benchmarkDate": "2026-10-26",
+  "title": "ToonStudio REA 기성 웹툰 3D 스케치업(.skp) 소재 시장(텀블벅 · 에이콘3D · 픽셀) 및 동적 구성 요소(Dynamic Components) 정적·런타임 분석 증거 번들",
+  "methodology": {
+    "tool": "reverse-engineer-anything (REA MCP)",
+    "analysisScope": "javascript-artifact-static-reconstruction-and-browser-scenario-capture",
+    "epistemicSeparation": [
+      "observedFacts",
+      "inferences",
+      "unknowns"
+    ]
+  },
+  "targets": [
+    {
+      "id": "openskp-v1-3-0-dynamic-components",
+      "name": "OpenSKP SketchUp (.skp) Parser & Dynamic Attributes Runtime",
+      "version": "1.3.0",
+      "artifacts": [
+        {
+          "role": "npm-package-root",
+          "path": "/Users/hjunkim/WebstormProjects/toonstudio/node_modules/.pnpm/openskp@1.3.0/node_modules/openskp",
+          "sha256": "513f2eeaa30e1b5b0543b036125459340921a0dded17b281c523c6095e479c10",
+          "evidence_id": "ev_0f24f2f8e5746952ee7c4c873e83a2333f45b14f0e9ad3b8f74d5a859909fe93",
+          "summary_view_evidence_id": "ev_e2d072adff7b5653114dc1671e934cfa0df9bfc646499ed8ec34b1d4e0440fc8",
+          "modules_page_evidence_id": "ev_e44f751250dc81161f58637e4574e4c6f7863c27ac2ca729ebb652be460f0e00",
+          "summary": {
+            "relevantFiles": 5,
+            "parsedJsFiles": 4,
+            "totalTextBytes": 1047986,
+            "visitedAstNodes": 149279,
+            "findings": 395,
+            "callFlowRelations": 3975,
+            "dataFlowRelations": 21826,
+            "closureRelations": 2825
+          }
+        },
+        {
+          "role": "bundled-js-entrypoint",
+          "path": "dist/index.js",
+          "sha256": "3b4a418e320920083aefa7551a924954b336e5addd0182971c7c66aeab575c2d",
+          "evidence_id": "ev_bd9df5f3a66982c01544f727a3deefa2c16a412e54c5a4646cb9efce55b7e388"
+        }
+      ],
+      "observedFacts": [
+        "OpenSKP 1.3.0(루트 SHA-256 513f2eeaa30e1b5b0543b036125459340921a0dded17b281c523c6095e479c10, dist/index.js SHA-256 3b4a418e320920083aefa7551a924954b336e5addd0182971c7c66aeab575c2d) 정적 분석(ev_0f24f2f8e5746952ee7c4c873e83a2333f45b14f0e9ad3b8f74d5a859909fe93) 결과 149,279개 AST 노드, 3,975개 호출 관계, 21,826개 데이터 흐름 관계가 관측됨.",
+        "dist/index.js 2652~2671행에서 DYNAMIC_ATTRIBUTES_DICT_NAME = 'dynamic_attributes' 상수를 기준으로 레거시 SKP(v3~v2020) CDictionary의 dynamic_attributes 엔트리를 extractLegacyDynamicProperties(attrs)로 추출해 Instance.properties에 저장함이 확인됨.",
+        "dist/index.js 2033~2046행 및 2073~2099행에서 SketchUp 2021+ VFF 포맷의 D007 청크를 extractDynamicProperties(d007, options)와 extractAttributeDictionaries(d007, options)로 파싱하여 InstanceNode.properties 및 InstancedNode.properties에 dynamic_attributes(onclick, rotx/roty/rotz, x/y/z, lenx/leny/lenz, _name 등)를 키-값 문자열 맵으로 주입함이 확인됨.",
+        "dist/index.js 13270~13271행에서 SKP 쓰기 시에도 inst.properties가 존재할 경우 attributeDictName: 'dynamic_attributes'로 직렬화하여 왕복 보존함이 확인됨."
+      ],
+      "inferences": [
+        "기존 ToonStudio SKP 가져오기 파이프라인(studio-bg3d-skp-model-summary.ts, studio-bg3d-skp-sidecar.ts)은 컴포넌트·태그·장면의 평면 이름 목록만 추출하고 InstanceNode.properties의 dynamic_attributes를 소비하지 않았으나, OpenSKP가 이미 파싱해 둔 properties 맵과 한국어/영어 컴포넌트·레이어 명명 규칙을 결합하면 eval 없이도 SketchUp OnClick(ANIMATE, ANIMATESLOW, ANIMATEFAST, ANIMATECUSTOM, SET) 동적 구성 요소를 브라우저 3D 씬에서 즉시 구동할 수 있음."
+      ],
+      "unknowns": [
+        "OpenSKP 정적 그래프 분석에서 semantic node retention 상한(max_semantic_nodes_per_file=20000)으로 인해 31,708개 semantic graph unknown이 남아 있으며, SketchUp Ruby 확장 플러그인(비표준 사용자 정의 스크립트 사전)이 런타임에 동적 평가하는 루비 수식은 정적 파일 바이트만으로 실행 결과를 단정할 수 없음."
+      ]
+    },
+    {
+      "id": "acon3d-marketplace-web-surface",
+      "name": "ACON3D (에이콘3D) 웹툰 3D 스케치업 소재 스토어",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture",
+          "path": "https://www.acon3d.com/ko",
+          "sha256": "844c018e0154127048d1e1a371408feb6a40e3e00b10edafe20fc7b50b432783",
+          "evidence_id": "ev_b852ff1361da15c0a051f7c94facc8d8e81aedcbcad7cce7353cb50d3b3faa8f",
+          "summary": {
+            "networkEvents": 70,
+            "redirectChain": "https://www.acon3d.com/ko (307) -> https://www.acon3d.com/ko/toon (403 Cloudflare Turnstile challenge)",
+            "challengeResponseSha256": "a286dcda637b1f5d0431ab232d5ccc0d9b1c6a6cb612672266605c3027d970f9",
+            "speculationResponseSha256": "4d958f26d792adc0b7c79e26bb5264ff3ae27f6f32c1f67cbdcbe8b765b7f9fb"
+          }
+        }
+      ],
+      "observedFacts": [
+        "REA capture_browser_scenario(ev_b852ff1361da15c0a051f7c94facc8d8e81aedcbcad7cce7353cb50d3b3faa8f) 실행 시 https://www.acon3d.com/ko 가 307 Temporary Redirect로 웹툰 전용 스토어 경로인 https://www.acon3d.com/ko/toon 으로 리다이렉트됨이 관측됨.",
+        "헤드리스 Chromium 접근 시 Cloudflare Managed Challenge(Turnstile, HTTP 403, 응답 본문 SHA-256 a286dcda637b1f5d0431ab232d5ccc0d9b1c6a6cb612672266605c3027d970f9) 및 /cdn-cgi/challenge-platform 스크립트가 작동하여 총 70개의 네트워크 이벤트가 기록됨."
+      ],
+      "inferences": [
+        "에이콘3D는 기본 한국어 진입점(/ko)을 웹툰 특화 카테고리(/ko/toon)로 직결할 만큼 웹툰 배경 스케치업(.skp) 세트가 핵심 도메인이며, 봇/자동 스크래핑 차단이 엄격하므로 ToonStudio는 비인가 크롤링 대신 구매자 로컬 반입(scripts/import-acon-assets.mjs, SKP 직접 가져오기)과 내재화된 아키타입 장면 팩 카탈로그로 연동하는 것이 법적·기술적으로 타당함."
+      ],
+      "unknowns": [
+        "Cloudflare Turnstile 챌린지 뒤편의 로그인 사용자 전용 구매 다운로드 API 페이로드 스키마는 본 비인증 헤드리스 캡처에서 관측되지 않음."
+      ]
+    },
+    {
+      "id": "tumblbug-and-pixel-webtoon-skp-ecosystem",
+      "name": "텀블벅 (Tumblbug) 및 픽셀 (Pixel) 웹툰 3D 스케치업 소재 생태계",
+      "version": "live-web-2026-10-26",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture",
+          "path": "https://tumblbug.com/",
+          "sha256": "a3993c008f031c0da3d2df965bf351ef255bdc214dce06831c05c27e7438ccb0",
+          "evidence_id": "ev_114e14c6182079be767bbed019f37e815d32ae28ea51bec0d53577b2787d807d",
+          "summary": {
+            "networkEvents": 4,
+            "httpStatus": 403,
+            "wafHeader": "CloudFront",
+            "responseBodySha256": "81f571ea4c2429bc5b2f78d46d8ab53ea55a7c444fe9c558c999bbbd0d9537b9"
+          }
+        }
+      ],
+      "observedFacts": [
+        "REA capture_browser_scenario(ev_114e14c6182079be767bbed019f37e815d32ae28ea51bec0d53577b2787d807d) 실행 시 https://tumblbug.com/ 은 AWS CloudFront WAF 정책에 의해 헤드리스 브라우저 요청에 HTTP 403(응답 본문 SHA-256 81f571ea4c2429bc5b2f78d46d8ab53ea55a7c444fe9c558c999bbbd0d9537b9)을 반환함.",
+        "https://pixel.sc/ 에 대한 REA capture_browser_scenario 호출 시 net::ERR_NAME_NOT_RESOLVED 가 관측되어 현재 pixel.sc 도메인의 공개 DNS 레코드가 해제된 상태임이 확인됨."
+      ],
+      "inferences": [
+        "텀블벅 펀딩 리워드나 과거 픽셀(Pixel)·에이콘3D에서 배포된 기성 웹툰 3D 스케치업(.skp) 파일들은 외부 플랫폼의 웹 세션 상태나 도메인 존속 여부와 무관하게 작가의 로컬 보관함에서 반입되므로, ToonStudio 내부에 4대 핵심 아키타입('판타지 황실', '현대 고등학교 교실', '주인공 자취방', '조선시대 저막')과 SKP 사이드카/동적 구성 요소 복원 엔진을 내재화하면 기존에 구매한 모든 .skp 자산을 영구적으로 재사용하고 실시간 연출 조작을 수행할 수 있음."
+      ],
+      "unknowns": [
+        "픽셀(pixel.sc) 구 서버의 백엔드 API 명세는 도메인 DNS 해제로 인해 라이브 네트워크 캡처가 불가능하며 로컬 보관된 .skp 자산 구조만을 기준으로 호환성을 유지함."
+      ]
+    }
+  ],
+  "internalizedModules": [
+    {
+      "capability": "SketchUp Dynamic Components (OnClick ANIMATE/SET) Parser & 14-Preset Interactive Transform Engine",
+      "sourcePath": "apps/web/src/domains/creator/scene-3d/studio-3d-dynamic-components.ts",
+      "testPath": "apps/web/src/domains/creator/scene-3d/studio-3d-dynamic-components.test.ts"
+    },
+    {
+      "capability": "Webtoon 3D SKP Marketplace Platforms (Tumblbug, ACON3D, Pixel) & 4 Canonical Background Archetype Scene Packs (판타지 황실, 현대 고등학교 교실, 주인공 자취방, 조선시대 저막)",
+      "sourcePath": "apps/web/src/domains/creator/scene-3d/studio-3d-webtoon-archetype-packs.ts",
+      "testPath": "apps/web/src/domains/creator/scene-3d/studio-3d-dynamic-components.test.ts"
+    },
+    {
+      "capability": "OpenSKP SceneHierarchy Dynamic Attributes Extractor & SKP Sidecar Archetype/Component Inference Bridge",
+      "sourcePath": "apps/web/src/domains/creator/bg3d/studio-bg3d-skp-dynamic-attributes.ts",
+      "testPath": "apps/web/src/domains/creator/bg3d/studio-bg3d-skp-dynamic-attributes.test.ts"
+    },
+    {
+      "capability": "Interactive Dynamic Components & Webtoon SKP Archetype Cut Direction Workbench UI Panel",
+      "sourcePath": "apps/web/src/domains/creator/bg3d/StudioBg3dDynamicComponentsPanel.tsx",
+      "testPath": "apps/web/src/domains/creator/bg3d/StudioBg3dDynamicComponentsPanel.test.tsx"
+    },
+    {
+      "capability": "Internalized Webtoon 3D SketchUp Marketplace Search Catalog",
+      "sourcePath": "apps/web/src/domains/creator/studio-marketplace-search.ts",
+      "testPath": "apps/web/src/domains/creator/studio-marketplace-search.test.ts"
+    }
+  ]
+}

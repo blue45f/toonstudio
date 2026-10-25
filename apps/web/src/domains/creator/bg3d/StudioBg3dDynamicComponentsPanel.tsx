@@ -1,25 +1,74 @@
-import { DoorOpen, ToggleLeft, ToggleRight, Sparkles, Sliders } from "lucide-react";
-import React, { useState } from "react";
+import {
+  DoorOpen,
+  ToggleLeft,
+  ToggleRight,
+  Sparkles,
+  Sliders,
+  Store,
+  Clapperboard,
+  MousePointerClick,
+  RotateCcw,
+} from "lucide-react";
+import React, { useMemo, useState } from "react";
 
 import {
   DYNAMIC_COMPONENT_PRESETS,
+  WEBTOON_ARCHETYPE_SCENE_PACKS,
+  WEBTOON_SKP_MARKETPLACE_PLATFORMS,
+  applyArchetypeCutDirectionPreset,
+  batchSetDynamicComponentsValue,
   createDynamicComponent,
-  setDynamicComponentValue,
   evaluateDynamicComponentTransform,
+  getWebtoonArchetypeScenePack,
+  instantiateArchetypeDynamicComponents,
+  setDynamicComponentValue,
+  stepDynamicComponentOnClick,
   type DynamicComponentKind,
   type DynamicComponentState,
+  type WebtoonArchetypeCutDirectionPreset,
+  type WebtoonArchetypeScenePackId,
+  type WebtoonSkpMarketplacePlatformId,
 } from "../scene-3d/studio-3d-dynamic-components";
 
 export interface StudioBg3dDynamicComponentsPanelProps {
   readonly onApplyComponentTransform?: (state: DynamicComponentState) => void;
+  readonly onApplyBatchComponentTransforms?: (
+    states: readonly DynamicComponentState[],
+    context: {
+      readonly archetypeId: WebtoonArchetypeScenePackId;
+      readonly preset?: WebtoonArchetypeCutDirectionPreset;
+    },
+  ) => void;
 }
 
 export function StudioBg3dDynamicComponentsPanel({
   onApplyComponentTransform,
+  onApplyBatchComponentTransforms,
 }: StudioBg3dDynamicComponentsPanelProps): React.JSX.Element {
   const [selectedKind, setSelectedKind] = useState<DynamicComponentKind>("door-single-swing");
   const [componentState, setComponentState] = useState<DynamicComponentState>(() =>
     createDynamicComponent("comp-1", "door-single-swing", false),
+  );
+
+  const [selectedPlatform, setSelectedPlatform] = useState<"all" | WebtoonSkpMarketplacePlatformId>("all");
+  const [selectedArchetypeId, setSelectedArchetypeId] = useState<WebtoonArchetypeScenePackId>(
+    "fantasy-imperial-palace",
+  );
+  const [archetypeComponents, setArchetypeComponents] = useState<readonly DynamicComponentState[]>(() =>
+    instantiateArchetypeDynamicComponents("fantasy-imperial-palace"),
+  );
+  const [activeCutPresetId, setActiveCutPresetId] = useState<string | null>(null);
+
+  const filteredArchetypePacks = useMemo(() => {
+    if (selectedPlatform === "all") return WEBTOON_ARCHETYPE_SCENE_PACKS;
+    return WEBTOON_ARCHETYPE_SCENE_PACKS.filter((pack) =>
+      pack.platforms.includes(selectedPlatform),
+    );
+  }, [selectedPlatform]);
+
+  const activeArchetypePack = useMemo(
+    () => getWebtoonArchetypeScenePack(selectedArchetypeId),
+    [selectedArchetypeId],
   );
 
   const handleKindSelect = (kind: DynamicComponentKind) => {
@@ -41,6 +90,66 @@ export function StudioBg3dDynamicComponentsPanel({
     onApplyComponentTransform?.(next);
   };
 
+  const handleSelectArchetype = (packId: WebtoonArchetypeScenePackId) => {
+    setSelectedArchetypeId(packId);
+    setActiveCutPresetId(null);
+    const nextComponents = instantiateArchetypeDynamicComponents(packId);
+    setArchetypeComponents(nextComponents);
+    if (nextComponents[0]) {
+      setSelectedKind(nextComponents[0].kind);
+      setComponentState(nextComponents[0]);
+    }
+    onApplyBatchComponentTransforms?.(nextComponents, { archetypeId: packId });
+  };
+
+  const handleApplyCutDirectionPreset = (preset: WebtoonArchetypeCutDirectionPreset) => {
+    setActiveCutPresetId(preset.id);
+    const nextStates = applyArchetypeCutDirectionPreset(
+      archetypeComponents,
+      selectedArchetypeId,
+      preset.id,
+    );
+    setArchetypeComponents(nextStates);
+    if (nextStates[0]) {
+      setSelectedKind(nextStates[0].kind);
+      setComponentState(nextStates[0]);
+      onApplyComponentTransform?.(nextStates[0]);
+    }
+    onApplyBatchComponentTransforms?.(nextStates, {
+      archetypeId: selectedArchetypeId,
+      preset,
+    });
+  };
+
+  const handleStepArchetypeComponent = (targetId: string) => {
+    setActiveCutPresetId(null);
+    let updatedItem: DynamicComponentState | null = null;
+    const nextStates = archetypeComponents.map((item) => {
+      if (item.id !== targetId) return item;
+      const stepped = stepDynamicComponentOnClick(item);
+      updatedItem = stepped;
+      return stepped;
+    });
+    setArchetypeComponents(nextStates);
+    if (updatedItem) {
+      setSelectedKind((updatedItem as DynamicComponentState).kind);
+      setComponentState(updatedItem);
+      onApplyComponentTransform?.(updatedItem);
+    }
+    onApplyBatchComponentTransforms?.(nextStates, { archetypeId: selectedArchetypeId });
+  };
+
+  const handleBatchSetAll = (targetValue: number) => {
+    setActiveCutPresetId(null);
+    const nextStates = batchSetDynamicComponentsValue(archetypeComponents, targetValue);
+    setArchetypeComponents(nextStates);
+    if (nextStates[0]) {
+      setComponentState(nextStates[0]);
+      onApplyComponentTransform?.(nextStates[0]);
+    }
+    onApplyBatchComponentTransforms?.(nextStates, { archetypeId: selectedArchetypeId });
+  };
+
   const currentTransform = evaluateDynamicComponentTransform(componentState);
 
   return (
@@ -55,7 +164,159 @@ export function StudioBg3dDynamicComponentsPanel({
         </span>
       </div>
 
-      {/* Preset List */}
+      {/* 기성 웹툰 3D 스케치업 소재 마켓 아키타입 섹션 */}
+      <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 font-bold text-fg">
+            <Store className="size-3.5 text-accent" />
+            <span>기성 웹툰 스케치업(.skp) 배경 아키타입</span>
+          </div>
+          <span className="text-[0.62rem] text-fg-3">텀블벅 · 에이콘3D · 픽셀 호환</span>
+        </div>
+
+        {/* 플랫폼 필터 */}
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => setSelectedPlatform("all")}
+            className={`rounded px-2 py-0.5 text-[0.65rem] transition-all ${
+              selectedPlatform === "all"
+                ? "bg-accent font-bold text-on-accent"
+                : "border border-line bg-raised text-fg-2 hover:text-fg"
+            }`}
+          >
+            전체 마켓
+          </button>
+          {WEBTOON_SKP_MARKETPLACE_PLATFORMS.slice(0, 3).map((platform) => (
+            <button
+              key={platform.id}
+              type="button"
+              onClick={() => setSelectedPlatform(platform.id)}
+              className={`rounded px-2 py-0.5 text-[0.65rem] transition-all ${
+                selectedPlatform === platform.id
+                  ? "bg-accent font-bold text-on-accent"
+                  : "border border-line bg-raised text-fg-2 hover:text-fg"
+              }`}
+            >
+              {platform.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 4대 웹툰 배경 아키타입 카드 */}
+        <div className="grid grid-cols-2 gap-1.5">
+          {filteredArchetypePacks.map((pack) => {
+            const isSelected = selectedArchetypeId === pack.id;
+            return (
+              <button
+                key={pack.id}
+                type="button"
+                onClick={() => handleSelectArchetype(pack.id)}
+                className={`flex flex-col items-start rounded-lg border p-2 text-left transition-all ${
+                  isSelected
+                    ? "border-accent bg-accent/10 font-bold text-accent shadow-sm"
+                    : "border-line bg-raised/50 text-fg-2 hover:bg-raised hover:text-fg"
+                }`}
+              >
+                <span className="text-[0.74rem] leading-tight">{pack.title}</span>
+                <span className="mt-0.5 line-clamp-1 text-[0.6rem] font-normal text-fg-3">
+                  {pack.genre} · 동적요소 {pack.components.length}종
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 선택된 아키타입의 컷 연출 프리셋 */}
+        <div className="flex flex-col gap-1.5 border-t border-line pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-[0.68rem] font-semibold text-fg-2">
+              <Clapperboard className="size-3.5 text-accent" />
+              <span>{activeArchetypePack.title} 컷 연출 프리셋</span>
+            </div>
+            <span className="font-mono text-[0.6rem] text-fg-3">
+              권장 FOV {activeArchetypePack.recommendedCameraFovDeg}°
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            {activeArchetypePack.cutDirectionPresets.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleApplyCutDirectionPreset(preset)}
+                className={`flex flex-col items-start rounded border px-2 py-1.5 text-left transition-all ${
+                  activeCutPresetId === preset.id
+                    ? "border-accent bg-accent/15 text-accent font-semibold"
+                    : "border-line bg-raised/40 text-fg-2 hover:bg-raised hover:text-fg"
+                }`}
+              >
+                <span className="text-[0.7rem]">{preset.label}</span>
+                <span className="text-[0.6rem] font-normal text-fg-3">{preset.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 아키타입 내 동적 구성 요소 OnClick 실시간 조작 목록 */}
+        <div className="flex flex-col gap-1.5 border-t border-line pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.68rem] font-semibold text-fg-2">
+              장면 내 동적 구성 요소 (SketchUp OnClick)
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => handleBatchSetAll(1.0)}
+                className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.6rem] text-fg-2 hover:text-fg"
+              >
+                전체 개방
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBatchSetAll(0.0)}
+                className="flex items-center gap-0.5 rounded border border-line bg-raised px-1.5 py-0.5 text-[0.6rem] text-fg-2 hover:text-fg"
+              >
+                <RotateCcw className="size-2.5" />
+                <span>전체 닫기</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            {archetypeComponents.map((comp) => {
+              const evalRes = evaluateDynamicComponentTransform(comp);
+              return (
+                <div
+                  key={comp.id}
+                  className="flex items-center justify-between rounded border border-line bg-raised/30 px-2 py-1"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[0.68rem] font-medium text-fg">{comp.label}</span>
+                    <span className="font-mono text-[0.58rem] text-fg-3">
+                      {comp.skpOnClickFormula} · {evalRes.stateLabel}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleStepArchetypeComponent(comp.id)}
+                    aria-label={`${comp.label} OnClick 조작`}
+                    className={`flex items-center gap-1 rounded px-2 py-1 text-[0.64rem] font-bold transition-all ${
+                      comp.isOpen
+                        ? "bg-accent text-on-accent"
+                        : "border border-line bg-card text-fg-2 hover:text-fg"
+                    }`}
+                  >
+                    <MousePointerClick className="size-3" />
+                    <span>OnClick</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 개별 컴포넌트 프리셋 목록 */}
       <div className="grid grid-cols-2 gap-1.5">
         {DYNAMIC_COMPONENT_PRESETS.map((preset) => (
           <button
@@ -71,7 +332,11 @@ export function StudioBg3dDynamicComponentsPanel({
             <span className="text-[0.72rem] leading-tight">{preset.label}</span>
             <span className="mt-0.5 text-[0.62rem] text-fg-3">
               최대 범위: {preset.defaultMaxRange}
-              {preset.kind.includes("door") || preset.kind.includes("chest") || preset.kind.includes("book") || preset.kind.includes("wheel") ? "°" : "m"}
+              {preset.interactionType === "revolve"
+                ? "°"
+                : preset.interactionType === "slide"
+                  ? "m"
+                  : ""}
             </span>
           </button>
         ))}

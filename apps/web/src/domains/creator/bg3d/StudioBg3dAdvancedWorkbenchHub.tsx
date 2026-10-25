@@ -452,6 +452,13 @@ export function StudioBg3dAdvancedWorkbenchHub({
             onApplyComponentTransform={(state) =>
               setLastActionSummary(`다이나믹 컴포넌트: ${state.kind} (${Math.round(state.value * 100)}%)`)
             }
+            onApplyBatchComponentTransforms={(states, context) =>
+              setLastActionSummary(
+                context.preset
+                  ? `컷 연출 프리셋 적용: ${context.preset.label} (${states.length}개 요소)`
+                  : `아키타입 동적 구성 요소 동기화: ${context.archetypeId} (${states.length}개 요소)`,
+              )
+            }
           />
         ) : null}
 
