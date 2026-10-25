@@ -41,6 +41,7 @@ import {
   type GenvasPosePresetId,
 } from "./studio-webtoon-storyboard-pipeline";
 import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
+import { StudioTooningPlusSuitePanel } from "./StudioTooningPlusSuitePanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -639,6 +640,9 @@ export function StudioWebtoonMasterPipelineCard({
         triggerWord={activeArtistStyle?.triggerWord}
         onApplyScript={onApplyScript}
       />
+
+      {/* 투닝 플러스 (Tooning Plus: TG·TD·ED·MG·DV·TB·CM) 전 제품군 통합 워크스페이스 */}
+      <StudioTooningPlusSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
     </section>
   );
 }
