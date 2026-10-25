@@ -10,6 +10,7 @@ import { StudioBg3dAtmospherePanel } from "./StudioBg3dAtmospherePanel";
 import { StudioBg3dCharacterAnimatorPanel } from "./StudioBg3dCharacterAnimatorPanel";
 import { StudioBg3dClonerPanel } from "./StudioBg3dClonerPanel";
 import { StudioBg3dCutStripPanel } from "./StudioBg3dCutStripPanel";
+import { StudioBg3dDccScenePipelinePanel } from "./StudioBg3dDccScenePipelinePanel";
 import { StudioBg3dDeformersPanel } from "./StudioBg3dDeformersPanel";
 import { StudioBg3dDynamicComponentsPanel } from "./StudioBg3dDynamicComponentsPanel";
 import { StudioBg3dHalftoneScreentonePanel } from "./StudioBg3dHalftoneScreentonePanel";
@@ -39,6 +40,7 @@ export type StudioBg3dWorkbenchTabId =
   | "character-animator"
   | "cloner"
   | "cut-strip"
+  | "dcc-pipeline"
   | "deformers"
   | "dynamic-components"
   | "halftone-screentone"
@@ -69,6 +71,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "cloner", labelKo: "절차적 클로너", groupKo: "캐릭터·DCC" },
   { id: "deformers", labelKo: "디포머·CSG 불리언", groupKo: "캐릭터·DCC" },
   { id: "dynamic-components", labelKo: "다이나믹 컴포넌트", groupKo: "캐릭터·DCC" },
+  { id: "dcc-pipeline", labelKo: "DCC·도시·렌즈·품질", groupKo: "캐릭터·DCC" },
   { id: "place-set-package", labelKo: "장소 세트 정본", groupKo: "세트·XR" },
   { id: "spatial-webtoon", labelKo: "AR·VR 공간 웹툰", groupKo: "세트·XR" },
 ]);
@@ -474,6 +477,24 @@ export function StudioBg3dAdvancedWorkbenchHub({
           <StudioBg3dSpatialWebtoonPanel
             disabled={disabled}
             onModeChange={(mode) => setLastActionSummary(`공간 웹툰 모드: ${mode.toUpperCase()}`)}
+          />
+        ) : null}
+
+        {activeTab === "dcc-pipeline" ? (
+          <StudioBg3dDccScenePipelinePanel
+            disabled={disabled}
+            onApplyRealisticPreset={(presetId) =>
+              setLastActionSummary(`실사 프리셋: ${presetId}`)
+            }
+            onGenerateCityscape={(theme, buildingCount) =>
+              setLastActionSummary(`절차적 도시: ${theme} (${buildingCount}동)`)
+            }
+            onApplyLensPreset={(preset, focalLengthMm) =>
+              setLastActionSummary(`원근 렌즈: ${preset} (${focalLengthMm}mm)`)
+            }
+            onApplyGripPose={(grip, indexAngleDeg) =>
+              setLastActionSummary(`소품 그립: ${grip} (${indexAngleDeg}°)`)
+            }
           />
         ) : null}
       </div>

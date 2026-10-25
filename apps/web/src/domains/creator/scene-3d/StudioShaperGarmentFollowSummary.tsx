@@ -1,10 +1,7 @@
 import { Info } from "lucide-react";
 
-import {
-  type ShaperAppearanceState,
-  type ShaperBodySliderValues,
-  shaperBodySlidersToMannequinParams,
-} from "./studio-body-morphs";
+import { shaperBodySlidersToMannequinParams } from "./studio-body-morphs";
+import type { ShaperAppearanceState, ShaperBodySliderValues } from "./studio-shaper-model";
 import { resolveStudioShaperGarmentFollow } from "./studio-shaper-pose-pipeline";
 
 type StudioShaperGarmentFollowSummaryProps = {

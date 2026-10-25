@@ -57,7 +57,10 @@ describe("studio-mannequin-render-pipeline", () => {
   it("미러를 두 번 하면 원래 포즈로 돌아온다", () => {
     const deg = (value: number): number => (value * Math.PI) / 180;
     const pose = {
-      joints: { leftUpperArm: [deg(-4), 0, deg(8)], spine: [deg(2), 0, 0] },
+      joints: {
+        leftUpperArm: [deg(-4), 0, deg(8)] as const,
+        spine: [deg(2), 0, 0] as const,
+      },
       pelvisOffset: [0, 0, 0] as const,
     };
     const once = resolveStudioMannequinRenderFrame({ pose, mirror: true });

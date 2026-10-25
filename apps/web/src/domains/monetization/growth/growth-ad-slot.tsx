@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- 광고 슬롯 허용·금지 면 상수와 순수 가시성·배치 검증 헬퍼는 슬롯 컴포넌트와 같은 공개 계약이다 */
 /**
  * growth-ad-slot.tsx — 광고 슬롯 프레임워크 (5단계, 2026-10-25).
  *

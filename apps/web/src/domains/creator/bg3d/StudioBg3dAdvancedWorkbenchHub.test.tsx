@@ -12,6 +12,7 @@ const ALL_WORKBENCH_TAB_IDS: readonly StudioBg3dWorkbenchTabId[] = [
   "character-animator",
   "cloner",
   "cut-strip",
+  "dcc-pipeline",
   "deformers",
   "dynamic-components",
   "halftone-screentone",
@@ -29,14 +30,14 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     cleanup();
   });
 
-  it("14종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {
+  it("15종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {
     render(<StudioBg3dAdvancedWorkbenchHub />);
 
     expect(screen.getByTestId("bg3d-advanced-workbench-hub")).toBeTruthy();
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain(
       "glTF 2.0 / GLB): A",
     );
-    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(14);
+    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(15);
 
     // 기본 탭: atmosphere (높이 안개 감쇠율 & 카메라 추적광 확인)
     expect(screen.getByTestId("bg3d-atmosphere-height-fog-readout").textContent).toContain(
@@ -92,6 +93,25 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     fireEvent.click(screen.getByTestId("bg3d-csg-op-union"));
     expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
       "CSG 연산: union",
+    );
+
+    // dcc-pipeline 탭 전환 및 실사 프리셋·절차적 도시·그립 솔버·품질 코퍼스 검증
+    fireEvent.click(screen.getByTestId("bg3d-workbench-tab-dcc-pipeline"));
+    expect(screen.getByTestId("bg3d-dcc-scene-pipeline-panel")).toBeTruthy();
+    expect(screen.getByTestId("bg3d-pipeline-quality-summary").textContent).toContain(
+      "Toon3D v2.0.0",
+    );
+    fireEvent.click(screen.getByTestId("bg3d-realistic-preset-twilight-real"));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "실사 프리셋: twilight-real",
+    );
+    fireEvent.click(screen.getByTestId("bg3d-cityscape-theme-school-street"));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "절차적 도시: school-street",
+    );
+    fireEvent.click(screen.getByTestId("bg3d-grip-type-gun-pistol-trigger"));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
+      "소품 그립: gun-pistol-trigger",
     );
 
     // 나머지 탭들도 모두 클릭하여 크래시 없이 마운트되는지 전수 확인

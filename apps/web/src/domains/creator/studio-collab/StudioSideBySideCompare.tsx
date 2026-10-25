@@ -57,7 +57,6 @@ function Pane({
           style={{ transform: `translate(${viewport.offsetX}%, ${viewport.offsetY}%) scale(${viewport.scale})`, transformOrigin: "center" }}
         >
           {version.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={version.imageUrl} alt={version.label} className="h-full w-full object-contain" draggable={false} />
           ) : (
             <div className="grid h-full w-full place-items-center px-4 text-center">
@@ -193,7 +192,7 @@ export function StudioSideBySideCompare({ initialPair, availableVersions = [], i
               <input value={reply} onChange={(event) => setReply(event.target.value.slice(0, 500))} maxLength={500}
                 placeholder="이 지적 부위에 대한 의견을 남겨요" className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent" />
             </label>
-            <button type="submit" disabled={!reply.trim()} className="mt-auto inline-flex min-h-11 shrink-0 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-hover disabled:opacity-45">
+            <button type="submit" disabled={!reply.trim()} className="mt-auto inline-flex min-h-11 shrink-0 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent/90 disabled:opacity-45">
               답글 달기
             </button>
           </form>

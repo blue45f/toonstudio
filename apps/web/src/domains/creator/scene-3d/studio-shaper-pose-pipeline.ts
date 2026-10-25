@@ -18,7 +18,6 @@
 import {
   computeStudioMannequinJointFrames,
   studioMannequinMat3Apply,
-  type StudioMannequinJointFrame,
   type StudioMannequinMat3,
 } from "./studio-mannequin-forward-kinematics";
 import {
@@ -105,14 +104,6 @@ function isFiniteVec3(value: unknown): value is StudioMannequinVec3 {
 /** 직교 회전 행렬의 전치 = 역행렬. */
 function transposeMat3(m: StudioMannequinMat3): StudioMannequinMat3 {
   return [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]];
-}
-
-/** 월드 점을 부모 관절 프레임으로 변환한다. */
-function toParentFrame(
-  world: StudioMannequinVec3,
-  parent: StudioMannequinJointFrame,
-): StudioMannequinVec3 {
-  return studioMannequinMat3Apply(transposeMat3(parent.rotation), sub(world, parent.position));
 }
 
 /**
@@ -270,7 +261,10 @@ function regionRadius(spec: StudioMannequinSpec, region: StudioShaperGarmentBody
       const scale = primitive.scale ?? [1, 1, 1];
       return primitive.radius * Math.max(scale[0], scale[1], scale[2]);
     }
-    return Math.max(primitive.radius, primitive.endRadius ?? primitive.radius);
+    if (primitive.kind === "capsule") {
+      return Math.max(primitive.radius, primitive.endRadius ?? primitive.radius);
+    }
+    return null;
   };
   switch (region) {
     case "chest": return first("chest", "sphere");
