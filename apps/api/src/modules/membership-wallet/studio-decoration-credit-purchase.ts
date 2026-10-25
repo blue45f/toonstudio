@@ -26,6 +26,11 @@
  *    무료 아이템을 결제 경로로 보내 과금하는 일을 막기 위함이며,
  *    호출부는 이 경우 기존 무료 배치 경로로 돌려보낸다.
  */
+import {
+  PAID_OPERATIONS_DISABLED,
+  resolvePaidOperationsEnabled,
+  type PaidOperationsSettingStore,
+} from "./paid-operations-gate";
 import { decorationCreditPrice } from "./studio-decoration-credit-catalog";
 
 export type DecorationCreditReservationStatus =
@@ -98,6 +103,7 @@ export async function purchaseDecorationCredits(
   wallet: DecorationCreditWallet,
   userIdValue: string | undefined,
   body: DecorationCreditPurchaseInput,
+  paidOperations?: PaidOperationsSettingStore,
 ): Promise<DecorationCreditPurchaseResult> {
   const userId = userIdValue?.trim();
   if (!userId) {
@@ -131,6 +137,17 @@ export async function purchaseDecorationCredits(
       "decoration_free_item",
       400,
       "이 아이템은 유료 카탈로그 상품이 아닙니다. 무료 배치 경로를 이용하세요.",
+      { itemId },
+    );
+  }
+  // 유료 실행 게이트: 카탈로그 가격 확인 뒤, 첫 지갑 호출(예약) 전에
+  // 검사한다. 카탈로그 외 무료 아이템은 게이트와 무관하게 기존
+  // decoration_free_item으로 거부되어 무료 배치 경로로 돌아간다.
+  if (!(await resolvePaidOperationsEnabled(paidOperations))) {
+    throw new DecorationCreditError(
+      PAID_OPERATIONS_DISABLED,
+      403,
+      "유료 운영이 비활성화되어 있어 꾸미기 아이템 결제를 실행할 수 없습니다.",
       { itemId },
     );
   }

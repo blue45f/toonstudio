@@ -60,6 +60,11 @@ import {
   marketplaceSellerCredits,
   type CreditFeatureKey,
 } from "./credit-pricing";
+import {
+  PAID_OPERATIONS_DISABLED,
+  resolvePaidOperationsEnabled,
+  type PaidOperationsSettingStore,
+} from "./paid-operations-gate";
 
 export const MARKETPLACE_CREDIT_FEATURE = "market.purchase" as const;
 export const MARKETPLACE_CREDIT_IDEMPOTENCY_PREFIX = "marketplace-credit:";
@@ -178,6 +183,7 @@ export function marketplaceCreditIdempotencyKey(requestId: string): string {
 export async function settleMarketplaceCreditPayment(
   wallet: MarketplaceCreditWallet,
   body: MarketplaceCreditPaymentInput,
+  paidOperations?: PaidOperationsSettingStore,
 ): Promise<MarketplaceCreditReceipt> {
   const buyerId = boundedText(body?.buyerId, 160);
   const sellerId = boundedText(body?.sellerId, 160);
@@ -200,6 +206,15 @@ export async function settleMarketplaceCreditPayment(
   }
   const priceCredits = positiveInteger(body?.priceCredits, "마켓 가격");
   const sellerCredits = marketplaceSellerCredits(priceCredits);
+  // 유료 실행 게이트: 입력 검증 뒤, 첫 지갑 호출(예약) 전에 검사한다.
+  if (!(await resolvePaidOperationsEnabled(paidOperations))) {
+    throw new MarketplaceCreditError(
+      PAID_OPERATIONS_DISABLED,
+      403,
+      "유료 운영이 비활성화되어 있어 마켓 크레딧 결제를 실행할 수 없습니다.",
+      { releaseId },
+    );
+  }
   const platformFeeCredits = marketplaceFeeCredits(priceCredits);
 
   const reservation = await wallet.reserveStudioCredits({

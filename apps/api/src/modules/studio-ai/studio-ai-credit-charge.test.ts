@@ -15,6 +15,7 @@ import {
   studioAiCreditIdempotencyKey,
   type StudioAiCreditWallet,
 } from "./studio-ai-credit-charge";
+import { InMemoryPaidOperationsSettingStore } from "../membership-wallet/paid-operations-gate";
 
 function stubWallet() {
   const calls = { reserve: 0, capture: 0, release: 0 };
@@ -71,7 +72,7 @@ describe("begin/settleStudioAiCreditCharge", () => {
       task: "composition",
       idempotencyKey: "studio-ai-operation-0000000000000001",
       providers: [{ freePool: false }],
-    });
+    }, new InMemoryPaidOperationsSettingStore(true));
     expect(charge).toEqual({
       charged: true,
       reservationId: "credit-reservation-1",
@@ -98,7 +99,7 @@ describe("begin/settleStudioAiCreditCharge", () => {
       task: "composition",
       idempotencyKey: "studio-ai-operation-0000000000000001",
       providers: [{ freePool: false }],
-    });
+    }, new InMemoryPaidOperationsSettingStore(true));
     await settleStudioAiCreditCharge(wallet, charge, {
       succeeded: false,
       providerFreePool: false,
@@ -114,7 +115,7 @@ describe("begin/settleStudioAiCreditCharge", () => {
       task: "translation",
       idempotencyKey: "studio-ai-operation-0000000000000001",
       providers: [{ freePool: true }, { freePool: false }],
-    });
+    }, new InMemoryPaidOperationsSettingStore(true));
     expect(charge.feature).toBe("ai.translation");
     await settleStudioAiCreditCharge(wallet, charge, {
       succeeded: true,
@@ -156,5 +157,57 @@ describe("begin/settleStudioAiCreditCharge", () => {
         providerFreePool: false,
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it("유료 운영 OFF면 운영자 부담 예약을 PAID_OPERATIONS_DISABLED로 거부하고 지갑을 호출하지 않는다", async () => {
+    const { wallet, calls } = stubWallet();
+    const input = {
+      userId: "user-1",
+      task: "composition",
+      idempotencyKey: "studio-ai-operation-0000000000000001",
+      providers: [{ freePool: false }],
+    };
+    await expect(beginStudioAiCreditCharge(wallet, input)).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    await expect(
+      beginStudioAiCreditCharge(wallet, input, new InMemoryPaidOperationsSettingStore(false)),
+    ).rejects.toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
+    expect(calls.reserve).toBe(0);
+  });
+
+  it("무료 풀만이면 스토어 OFF에서도 게이트를 거치지 않고 통과한다", async () => {
+    const { wallet, calls } = stubWallet();
+    const charge = await beginStudioAiCreditCharge(wallet, {
+      userId: "user-1",
+      task: "composition",
+      idempotencyKey: "studio-ai-operation-0000000000000001",
+      providers: [{ freePool: true }],
+    }, new InMemoryPaidOperationsSettingStore(false));
+    expect(charge).toEqual({ charged: false });
+    expect(calls.reserve).toBe(0);
+  });
+
+  it("스토어 토글 ON→OFF→ON이 호출마다 즉시 반영된다", async () => {
+    const { wallet, calls } = stubWallet();
+    const store = new InMemoryPaidOperationsSettingStore(false);
+    const input = {
+      userId: "user-1",
+      task: "composition",
+      idempotencyKey: "studio-ai-operation-0000000000000001",
+      providers: [{ freePool: false }],
+    };
+    await expect(beginStudioAiCreditCharge(wallet, input, store)).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+    });
+    await store.setPaidOperationsEnabled(true);
+    const charge = await beginStudioAiCreditCharge(wallet, input, store);
+    expect(charge.charged).toBe(true);
+    await store.setPaidOperationsEnabled(false);
+    await expect(beginStudioAiCreditCharge(wallet, input, store)).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+    });
+    expect(calls.reserve).toBe(1);
   });
 });

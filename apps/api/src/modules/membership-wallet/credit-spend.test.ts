@@ -13,6 +13,10 @@ import {
   spendStudioCredits,
   type CreditSpendWallet,
 } from "./credit-spend";
+import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
+
+/** 기존 성공 경로용 마스터 ON 스토어 (토글 테스트는 별도 인스턴스 사용). */
+const GATE_ON = new InMemoryPaidOperationsSettingStore(true);
 
 const BALANCE = {
   available: 490,
@@ -64,7 +68,7 @@ describe("spendStudioCredits", () => {
       resourceId: "ai.text.generate",
       pointPrice: 1,
       requestId: "req-1",
-    });
+    }, GATE_ON);
     expect(result.spendEventId).toBe("reservation-1");
     expect(result.balance).toEqual(BALANCE);
     expect(calls).toEqual({ reserve: 1, capture: 1, estimate: 1, overview: 1 });
@@ -86,7 +90,7 @@ describe("spendStudioCredits", () => {
       resourceId: "ai.text.generate",
       pointPrice: 1,
       requestId: "req-1",
-    });
+    }, GATE_ON);
     expect(result.spendEventId).toBe("reservation-1");
     expect(calls.capture).toBe(0);
   });
@@ -105,7 +109,7 @@ describe("spendStudioCredits", () => {
         resourceId: "ai.text.generate",
         pointPrice: 1,
         requestId: "req-1",
-      }),
+      }, GATE_ON),
     ).rejects.toMatchObject({ code: "spend_request_reused_after_release" });
     expect(wallet.captureCreditReservation).not.toHaveBeenCalled();
   });
@@ -124,7 +128,7 @@ describe("spendStudioCredits", () => {
         resourceId: "ai.text.generate",
         pointPrice: 1,
         requestId: "req-1",
-      }),
+      }, GATE_ON),
     ).rejects.toMatchObject({ code: "spend_request_reused_after_release" });
   });
 
@@ -135,7 +139,7 @@ describe("spendStudioCredits", () => {
         resourceId: "ai.text.generate",
         pointPrice: 999,
         requestId: "req-1",
-      }),
+      }, GATE_ON),
     ).rejects.toMatchObject({ code: "spend_price_mismatch" });
     expect(calls.reserve).toBe(0);
   });
@@ -147,7 +151,7 @@ describe("spendStudioCredits", () => {
         resourceId: "market-resource-123",
         pointPrice: 10,
         requestId: "req-1",
-      }),
+      }, GATE_ON),
     ).rejects.toMatchObject({ code: "spend_resource_not_priced" });
     expect(calls.reserve).toBe(0);
   });
@@ -167,7 +171,7 @@ describe("spendStudioCredits", () => {
         resourceId: "ai.text.generate",
         pointPrice: 1,
         requestId: "req-1",
-      }),
+      }, GATE_ON),
     ).rejects.toBe(failure);
     expect(calls.capture).toBe(0);
   });
@@ -186,7 +190,7 @@ describe("spendStudioCredits", () => {
         resourceId: "ai.text.generate",
         pointPrice: 1,
         requestId: "req-1",
-      }),
+      }, GATE_ON),
     ).rejects.toBe(failure);
     expect(calls.capture).toBe(0);
     expect(wallet.getOverview).not.toHaveBeenCalled();
@@ -201,5 +205,61 @@ describe("spendStudioCredits", () => {
     }).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(CreditSpendError);
     expect((error as CreditSpendError).status).toBe(403);
+  });
+});
+
+describe("spend 유료 운영 게이트", () => {
+  it("스토어 미주입(기본 OFF)에서는 지출이 거부되고 지갑을 호출하지 않는다", async () => {
+    const { wallet, calls } = stubWallet();
+    const error = await spendStudioCredits(wallet, "user-1", {
+      resourceId: "ai.text.generate",
+      pointPrice: 1,
+      requestId: "req-gate-off",
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(CreditSpendError);
+    expect(error).toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(calls).toEqual({ reserve: 0, capture: 0, estimate: 0, overview: 0 });
+  });
+
+  it("마스터 OFF 스토어에서는 지출이 거부되고 지갑을 호출하지 않는다", async () => {
+    const { wallet, calls } = stubWallet();
+    const gateOff = new InMemoryPaidOperationsSettingStore(false);
+    await expect(
+      spendStudioCredits(
+        wallet,
+        "user-1",
+        {
+          resourceId: "ai.text.generate",
+          pointPrice: 1,
+          requestId: "req-gate-off-2",
+        },
+        gateOff,
+      ),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(calls.reserve).toBe(0);
+  });
+
+  it("토글 ON→OFF→ON 변경이 호출마다 즉시 반영된다 (캐시 없음)", async () => {
+    const { wallet } = stubWallet();
+    const store = new InMemoryPaidOperationsSettingStore(false);
+    const body = {
+      resourceId: "ai.text.generate",
+      pointPrice: 1,
+      requestId: "req-gate-toggle",
+    };
+    await expect(spendStudioCredits(wallet, "user-1", body, store)).rejects
+      .toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
+    await store.setPaidOperationsEnabled(true);
+    const result = await spendStudioCredits(wallet, "user-1", body, store);
+    expect(result.spendEventId).toBe("reservation-1");
+    await store.setPaidOperationsEnabled(false);
+    await expect(spendStudioCredits(wallet, "user-1", body, store)).rejects
+      .toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
   });
 });

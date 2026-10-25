@@ -20,6 +20,10 @@ import {
   type DecorationCreditReservation,
   type DecorationCreditWallet,
 } from "./studio-decoration-credit-purchase";
+import { InMemoryPaidOperationsSettingStore } from "./paid-operations-gate";
+
+/** 기존 성공 경로용 마스터 ON 스토어 (토글 테스트는 별도 인스턴스 사용). */
+const GATE_ON = new InMemoryPaidOperationsSettingStore(true);
 
 function stubWallet(
   overrides: Partial<DecorationCreditWallet> = {},
@@ -79,7 +83,7 @@ describe("꾸미기 유료 아이템 결제", () => {
     const result = await purchaseDecorationCredits(wallet, "user-1", {
       itemId: "decoration.sample.potted-plant",
       requestId: "req-decor-1",
-    });
+    }, GATE_ON);
     expect(result).toEqual({
       purchaseId: "res-decor-1",
       itemId: "decoration.sample.potted-plant",
@@ -120,7 +124,7 @@ describe("꾸미기 유료 아이템 결제", () => {
     const result = await purchaseDecorationCredits(wallet, "user-1", {
       itemId: "decoration.sample.neon-sign",
       requestId: "req-decor-2",
-    });
+    }, GATE_ON);
     expect(result.priceCredits).toBe(120);
     expect(wallet.calls.capture).toBe(0);
   });
@@ -138,7 +142,7 @@ describe("꾸미기 유료 아이템 결제", () => {
       purchaseDecorationCredits(wallet, "user-1", {
         itemId: "decoration.sample.floor-rug",
         requestId: "req-decor-3",
-      }),
+      }, GATE_ON),
     ).rejects.toMatchObject({
       code: "decoration_request_reused_after_release",
       status: 409,
@@ -158,7 +162,7 @@ describe("꾸미기 유료 아이템 결제", () => {
       purchaseDecorationCredits(wallet, "user-1", {
         itemId: "decoration.sample.potted-plant",
         requestId: "req-decor-4",
-      }),
+      }, GATE_ON),
     ).rejects.toMatchObject({
       code: "decoration_settlement_failed",
       status: 409,
@@ -174,5 +178,75 @@ describe("꾸미기 유료 아이템 결제", () => {
       }),
     ).rejects.toBeInstanceOf(DecorationCreditError);
     expect(wallet.calls.reserve).toBe(0);
+  });
+});
+
+describe("꾸미기 결제 유료 운영 게이트", () => {
+  it("스토어 미주입(기본 OFF)에서는 결제가 거부되고 지갑을 호출하지 않는다", async () => {
+    const wallet = stubWallet();
+    await expect(
+      purchaseDecorationCredits(wallet, "user-1", {
+        itemId: "decoration.sample.potted-plant",
+        requestId: "req-decor-gate-off",
+      }),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(wallet.calls).toEqual({ reserve: 0, capture: 0 });
+  });
+
+  it("마스터 OFF 스토어에서는 결제가 거부되고 지갑을 호출하지 않는다", async () => {
+    const wallet = stubWallet();
+    const gateOff = new InMemoryPaidOperationsSettingStore(false);
+    await expect(
+      purchaseDecorationCredits(
+        wallet,
+        "user-1",
+        {
+          itemId: "decoration.sample.potted-plant",
+          requestId: "req-decor-gate-off-2",
+        },
+        gateOff,
+      ),
+    ).rejects.toMatchObject({
+      code: "PAID_OPERATIONS_DISABLED",
+      status: 403,
+    });
+    expect(wallet.calls.reserve).toBe(0);
+  });
+
+  it("게이트 OFF라도 카탈로그 외 무료 아이템은 기존 무료 경로 신호로 거부된다", async () => {
+    const wallet = stubWallet();
+    const gateOff = new InMemoryPaidOperationsSettingStore(false);
+    await expect(
+      purchaseDecorationCredits(
+        wallet,
+        "user-1",
+        {
+          itemId: "decoration.free-chair",
+          requestId: "req-decor-gate-free",
+        },
+        gateOff,
+      ),
+    ).rejects.toMatchObject({ code: "decoration_free_item", status: 400 });
+    expect(wallet.calls).toEqual({ reserve: 0, capture: 0 });
+  });
+
+  it("토글 ON→OFF→ON 변경이 호출마다 즉시 반영된다 (캐시 없음)", async () => {
+    const wallet = stubWallet();
+    const store = new InMemoryPaidOperationsSettingStore(false);
+    const body = {
+      itemId: "decoration.sample.potted-plant",
+      requestId: "req-decor-gate-toggle",
+    };
+    await expect(purchaseDecorationCredits(wallet, "user-1", body, store))
+      .rejects.toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
+    await store.setPaidOperationsEnabled(true);
+    const result = await purchaseDecorationCredits(wallet, "user-1", body, store);
+    expect(result.charged).toBe(true);
+    await store.setPaidOperationsEnabled(false);
+    await expect(purchaseDecorationCredits(wallet, "user-1", body, store))
+      .rejects.toMatchObject({ code: "PAID_OPERATIONS_DISABLED" });
   });
 });

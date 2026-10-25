@@ -18,6 +18,10 @@
  *    `MEMBERSHIP_ECONOMY_POLICY.creditPurchasesEnabled`(core, false)이며,
  *    실서비스 래퍼는 반드시 이 값을 그대로 전달해야 한다. 테스트에서만
  *    게이트 on 경로를 스텁 검증한다.
+ *  - 2026-10-25 마스터 스위치 추가: 위 레거시 게이트 위에
+ *    `paidOperationsEnabled`(기본 false, 어드민 전용 변경)가 있다.
+ *    실효 게이트는 마스터 AND 레거시 값이다. 마스터 OFF면 결제 확인
+ *    식별자 유무와 무관하게 `PAID_OPERATIONS_DISABLED`(403)로 거부한다.
  *  - 게이트 on 경로도 결제를 대신하지 않는다. 지갑 적립은 PG 결제
  *    확인 이후에만 호출되도록 `paymentConfirmationId`를 필수로 요구한다.
  *    확인 식별자 없이 적립을 호출하면 무결제 지급이 되므로 거부한다.
@@ -32,10 +36,32 @@ import {
   isCreditPackPriceConsistent,
   type CreditPack,
 } from "./credit-pack-catalog";
+import {
+  PAID_OPERATIONS_DISABLED,
+  resolvePaidOperationsEnabled,
+  type PaidOperationsSettingStore,
+} from "./paid-operations-gate";
 
-/** 현행 정책 게이트값 (core 원천, 이 단계에서 변경하지 않는다). */
+/**
+ * 현행 정책 게이트값 (core 원천, 이 단계에서 변경하지 않는다).
+ * 레거시 정책 입력일 뿐 단독 실효 게이트가 아니다. 실효 게이트는
+ * 마스터 스위치 AND 이 값이며, 마스터 OFF면 이 값이 무엇이든 거부된다.
+ */
 export const CREDIT_PURCHASES_ENABLED: boolean =
   MEMBERSHIP_ECONOMY_POLICY.creditPurchasesEnabled;
+
+/**
+ * 크레딧 구매 실효 게이트 = 마스터 스위치 AND 경로별 정책값.
+ * 마스터 OFF면 레거시 플래그와 무관하게 false이다.
+ */
+export async function resolveCreditPurchaseGate(
+  paidOperations: PaidOperationsSettingStore | undefined,
+  purchasesEnabled: boolean = CREDIT_PURCHASES_ENABLED,
+): Promise<boolean> {
+  return (
+    (await resolvePaidOperationsEnabled(paidOperations)) && purchasesEnabled
+  );
+}
 
 /** 구매 크레딧 만료: 없음 (기존 코드 상수, 보상 90일과 차등). */
 export const PURCHASED_CREDIT_EXPIRY: null = null;
@@ -99,12 +125,15 @@ export function creditPurchaseRequestKey(requestId: string): string {
 /**
  * 구매 의도를 처리한다. `purchasesEnabled`는 실서비스에서 반드시
  * 현행 정책값(`CREDIT_PURCHASES_ENABLED`)을 전달한다.
+ * 실효 게이트는 마스터 스위치 AND `purchasesEnabled`이며, 마스터 OFF면
+ * 결제 확인 식별자 유무와 무관하게 `PAID_OPERATIONS_DISABLED`로 거부한다.
  */
 export async function requestCreditPurchase(
   wallet: CreditPurchaseWallet,
   userIdValue: string | undefined,
   body: CreditPurchaseIntentInput,
   purchasesEnabled: boolean,
+  paidOperations?: PaidOperationsSettingStore,
 ): Promise<CreditPurchaseIntentResult> {
   const userId = userIdValue?.trim();
   if (!userId) {
@@ -141,7 +170,18 @@ export async function requestCreditPurchase(
     );
   }
 
-  // 게이트 OFF: 지갑·PG를 일절 호출하지 않고 거부한다.
+  // 마스터 게이트 OFF: 레거시 플래그·결제 확인 식별자 유무와 무관하게
+  // 지갑·PG를 일절 호출하지 않고 거부한다 (기존 게이트 판정 지점).
+  if (!(await resolvePaidOperationsEnabled(paidOperations))) {
+    throw new CreditPurchaseError(
+      PAID_OPERATIONS_DISABLED,
+      403,
+      "유료 운영이 비활성화되어 있어 크레딧 구매를 실행할 수 없습니다.",
+      { packId },
+    );
+  }
+
+  // 레거시 게이트 OFF: 지갑·PG를 일절 호출하지 않고 거부한다.
   if (!purchasesEnabled) {
     throw new CreditPurchaseError(
       "credit_purchase_disabled",

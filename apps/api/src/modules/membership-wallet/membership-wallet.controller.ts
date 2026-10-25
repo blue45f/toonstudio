@@ -15,6 +15,7 @@ import { AdminMutationGuard } from "../admin/admin-mutation.guard";
 import { applyMembershipEagerTopUp } from "./membership-eager-topup";
 import { sanitizeActivityClaimMetadata } from "./membership-activity-metadata";
 import { MembershipWalletService } from "./membership-wallet.service";
+import { PaidOperationsAdminService } from "./paid-operations-admin.service";
 
 type ActivityClaimBody = {
   activity?: unknown;
@@ -24,7 +25,10 @@ type ActivityClaimBody = {
 
 @Controller()
 export class MembershipWalletController {
-  constructor(@Inject(MembershipWalletService) private readonly service: MembershipWalletService) {}
+  constructor(
+    @Inject(MembershipWalletService) private readonly service: MembershipWalletService,
+    @Inject(PaidOperationsAdminService) private readonly paidOperationsAdmin: PaidOperationsAdminService,
+  ) {}
 
   @Get("membership/catalog")
   @Header("Cache-Control", "no-store, max-age=0")
@@ -77,6 +81,25 @@ export class MembershipWalletController {
       key,
       value: body?.value,
       active: body?.active,
+    });
+  }
+
+  @Get("admin/membership/paid-operations")
+  @Header("Cache-Control", "no-store, max-age=0")
+  adminGetPaidOperations(@Headers("x-user-id") adminId: string | undefined) {
+    return this.paidOperationsAdmin.adminGetPaidOperations(adminId);
+  }
+
+  @Post("admin/membership/paid-operations")
+  @UseGuards(AdminMutationGuard)
+  @Header("Cache-Control", "no-store, max-age=0")
+  adminSetPaidOperations(
+    @Headers("x-user-id") adminId: string | undefined,
+    @Body() body: { enabled?: unknown },
+  ) {
+    return this.paidOperationsAdmin.adminSetPaidOperations({
+      adminId,
+      enabled: body?.enabled,
     });
   }
 

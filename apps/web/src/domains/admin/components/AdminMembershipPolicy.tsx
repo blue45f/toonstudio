@@ -2,6 +2,7 @@ import { RefreshCw, Search, ShieldCheck, SlidersHorizontal } from "lucide-react"
 import { useCallback, useEffect, useState } from "react";
 
 import { adminFetch, type AdminApiError } from "./admin-client";
+import { AdminPaidOperationsToggle } from "./AdminPaidOperationsToggle";
 import { AdminNotice, AdminSpinner, adminInputClass } from "./admin-ui";
 import { adminButtonClass } from "./admin-ui-utils";
 import { formatNumber } from "@toonstudio/core/format";
@@ -292,6 +293,17 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
           </article>
         </div>
       ) : null}
+
+      {/*
+        유료 운영 마스터 스위치: 레거시 플래그(위 economy 카드의
+        creditPurchasesEnabled, 읽기 전용)와 같은 화면에 둔다. 마스터 OFF면
+        레거시 값이 무엇이든 유료가 거부되는 단일 진실 공급원 구조를
+        어드민이 한 화면에서 확인할 수 있다. 토글은 자체 fetch로 동작해
+        정책 로드 실패와 무관하게 렌더된다.
+      */}
+      <div className="mt-5">
+        <AdminPaidOperationsToggle uid={uid} />
+      </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         <article className="rounded-2xl border border-line bg-panel/55 p-4">
