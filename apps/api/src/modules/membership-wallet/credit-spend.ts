@@ -119,12 +119,18 @@ function positiveInteger(value: unknown, label: string): number {
   return parsed;
 }
 
-/** P1에서 지출 가능한 대상은 기존 단가 키뿐이다. 그 외는 가격 미정으로 거부한다. */
+/**
+ * P1에서 지출 가능한 대상은 고정 단가 키뿐이다. 그 외는 가격 미정으로 거부한다.
+ * P2 추가: 가변 가격 키 `market.purchase`는 spend API에서 제외한다.
+ * 마켓 가격은 상품마다 달라 spend의 1단위 고정 가격 규칙으로 표현할 수 없고,
+ * 전용 정산 모듈(marketplace-credit-payment.ts)에서만 처리한다.
+ */
 export function resolveCreditSpendFeature(
   resourceId: unknown,
 ): CreditFeatureKey | null {
   const resource = boundedText(resourceId, 200);
   if (!resource || !isCreditFeatureKey(resource)) return null;
+  if (resource === "market.purchase") return null;
   return resource;
 }
 

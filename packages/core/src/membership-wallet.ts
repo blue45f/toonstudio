@@ -322,6 +322,7 @@ export const CREDIT_FEATURE_KEYS = [
   "ai.voice.generate",
   "ai.video.generate",
   "ai.3d.generate",
+  "market.purchase",
   "render.server",
 ] as const;
 export type CreditFeatureKey = (typeof CREDIT_FEATURE_KEYS)[number];
@@ -364,6 +365,11 @@ export const CREDIT_COST_POLICIES = Object.freeze({
   "ai.voice.generate": credit("ai.voice.generate", "Voice generation", 12, 4, 240),
   "ai.video.generate": credit("ai.video.generate", "Video generation", 80, 30, 500),
   "ai.3d.generate": credit("ai.3d.generate", "3D generation", 20, 10, 200),
+  // 가변 가격 키: 단위 1 = 1크레딧이다. 마켓 크레딧 결제에서만 쓰며,
+  // units에 가격(크레딧)을 넣어 가변 금액을 예약한다. 고정 단가 기능용
+  // spend API에서는 제외한다 (credit-spend.ts의 resolve 규칙 참조).
+  // 상한 1,000,000은 상거래 KRW 상한 10,000,000원 × 환산율(10원)이다.
+  "market.purchase": credit("market.purchase", "Marketplace purchase", 1, 1, 1_000_000),
   "render.server": credit("render.server", "Server render", 5, 1, 200),
 } satisfies Record<CreditFeatureKey, CreditCostPolicy>);
 

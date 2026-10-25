@@ -52,6 +52,8 @@ describe("resolveCreditSpendFeature", () => {
     expect(resolveCreditSpendFeature("ai.translation")).toBe("ai.translation");
     expect(resolveCreditSpendFeature("market-resource-123")).toBeNull();
     expect(resolveCreditSpendFeature("")).toBeNull();
+    // 가변 가격 키는 spend API에서 제외하고 전용 정산 모듈에서만 처리한다.
+    expect(resolveCreditSpendFeature("market.purchase")).toBeNull();
   });
 });
 
