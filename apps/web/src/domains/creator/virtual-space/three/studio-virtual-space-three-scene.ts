@@ -143,18 +143,18 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 ]);
 
 /**
- * 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 고밀도 다중 재질(12~17 Materials, 8~30 Textures) 스튜디오급 VRM 크리에이터 아바타.
- * 모든 슬롯이 고해상도 텍스처가 베이크된 VRoid / Alicia VRM 0.0 휴머노이드 에셋으로 통일되어 있다.
+ * 플레이어(`self`)와 8명의 캠퍼스 NPC에 할당된 CC0 검증 스튜디오급 VRM 크리에이터 아바타.
+ * 별도 라이선스 고지 의무(`licenseNotice`)나 대용량(`heavy-payload`) 제약이 없는 순수 CC0 휴머노이드 에셋만 사용한다.
  */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
   "/vrm/Sendagaya_Shino.vrm",
   "/vrm/Vita.vrm",
-  "/vrm/Sakurada_Fumiriya.vrm",
+  "/vrm/Kate.vrm",
   "/vrm/Eugenia.vrm",
   "/vrm/Vivi.vrm",
-  "/vrm/Darkness_Shibu.vrm",
+  "/vrm/Jennifer.vrm",
   "/vrm/Sendagaya_Shibu.vrm",
-  "/vrm/AliciaSolid.vrm",
+  "/vrm/Olivia.vrm",
   "/vrm/Victoria_Rubin.vrm",
 ]);
 

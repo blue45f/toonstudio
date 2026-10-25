@@ -243,6 +243,10 @@ const BUNDLED_VRM_RIGHTS_BLOCK_BY_ID = new Map(
   BUNDLED_VRM_RIGHTS_BLOCKS.map((record) => [record.id, record] as const),
 );
 
+const BUNDLED_VRM_RIGHTS_BLOCK_BY_URL = new Map(
+  BUNDLED_VRM_RIGHTS_BLOCKS.map((record) => [record.url, record] as const),
+);
+
 export function bundledVrmRightsBlockById(
   id: string,
 ): BundledVrmRightsBlock | undefined {
@@ -251,6 +255,16 @@ export function bundledVrmRightsBlockById(
 
 export function isBundledVrmRightsBlocked(id: string): boolean {
   return BUNDLED_VRM_RIGHTS_BLOCK_BY_ID.has(id);
+}
+
+export function bundledVrmRightsBlockByUrl(
+  url: string,
+): BundledVrmRightsBlock | undefined {
+  return BUNDLED_VRM_RIGHTS_BLOCK_BY_URL.get(url.trim());
+}
+
+export function isBundledVrmUrlRightsBlocked(url: string): boolean {
+  return BUNDLED_VRM_RIGHTS_BLOCK_BY_URL.has(url.trim());
 }
 
 // 전체 번들 VRM 레지스트리. 모든 엔트리는 public/vrm/ 아래 실파일과 1:1 대응한다.

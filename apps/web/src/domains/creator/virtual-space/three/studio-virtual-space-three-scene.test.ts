@@ -1,6 +1,10 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
+import {
+  isBundledVrmUrlRightsBlocked,
+  SAMPLE_VRMS,
+} from "../../vrm/vrm-library";
 import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
   computeZonePlinthTransform,
@@ -61,7 +65,7 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
     expect(STUDIO_THREE_HDRI_URLS.night).toMatch(/\.hdr$/u);
   });
 
-  it("모든 3D GLB 협업 워크스테이션 소품과 9종 VRM 아바타 경로가 유효하다", () => {
+  it("모든 3D GLB 협업 워크스테이션 소품과 9종 VRM 아바타 경로가 유효하고 권리 차단·고지 의무 제약을 위반하지 않는다", () => {
     expect(STUDIO_THREE_PROPS.length).toBeGreaterThanOrEqual(40);
     const ids = new Set(STUDIO_THREE_PROPS.map((prop) => prop.id));
     expect(ids.size).toBe(STUDIO_THREE_PROPS.length);
@@ -77,8 +81,14 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
 
     expect(STUDIO_THREE_VRM_URLS).toHaveLength(9);
     expect(new Set(STUDIO_THREE_VRM_URLS).size).toBe(STUDIO_THREE_VRM_URLS.length);
+    const sampleByUrl = new Map(SAMPLE_VRMS.map((sample) => [sample.url, sample] as const));
     for (const url of STUDIO_THREE_VRM_URLS) {
       expect(url).toMatch(/^\/vrm\/.+\.vrm$/u);
+      expect(isBundledVrmUrlRightsBlocked(url)).toBe(false);
+      const catalogEntry = sampleByUrl.get(url);
+      expect(catalogEntry).toBeDefined();
+      expect(catalogEntry?.licenseNotice).toBeUndefined();
+      expect(catalogEntry?.limitations ?? []).not.toContain("heavy-payload");
     }
   });
 
