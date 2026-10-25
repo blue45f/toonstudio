@@ -32,6 +32,7 @@ import {
   type StudioTemplateCategory,
 } from "../studio-template-catalog";
 import { planStudioTemplateApplication } from "../studio-template-system";
+import { StudioDesignPlatformWorkbench } from "../design-platform/StudioDesignPlatformWorkbench";
 import { StudioTemplateVisualPreview } from "./StudioTemplateVisualPreview";
 import "./studio-illustrated-project-surfaces.css";
 
@@ -601,6 +602,10 @@ export function StudioTemplatesPage() {
               onToggleFavorite={() => toggleFavorite(selected.id)}
             />
           ) : null}
+        </div>
+
+        <div className="mt-8">
+          <StudioDesignPlatformWorkbench />
         </div>
       </Container>
     </div>
