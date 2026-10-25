@@ -36,6 +36,15 @@ export function buildDirectionPlanPrompt(
   ].join("\n");
 }
 
+/** 모델이 JSON을 코드 펜스로 감싸는 경우를 대비해 펜스를 제거한다. */
+function stripJsonFences(text: string): string {
+  let trimmed = text.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  trimmed = trimmed.replace(/^```[a-zA-Z]*\n?/, "");
+  if (trimmed.endsWith("```")) trimmed = trimmed.slice(0, -3).trim();
+  return trimmed;
+}
+
 /** 연출 설계 결과를 검증한다. 형식이 아니면 null이다. */
 export function parseDirectionPlan(
   text: string,
@@ -60,7 +69,7 @@ export function parseDirectionPlan(
   ]);
   const moods = new Set(["daily", "tension", "romance", "battle"]);
   try {
-    const parsed: unknown = JSON.parse(text.trim());
+    const parsed: unknown = JSON.parse(stripJsonFences(text));
     if (typeof parsed !== "object" || parsed === null) return null;
     const record = parsed as Record<string, unknown>;
     if (!Array.isArray(record["plans"])) return null;

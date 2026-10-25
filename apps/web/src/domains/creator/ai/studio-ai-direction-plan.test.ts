@@ -45,4 +45,23 @@ describe("studio-ai-direction-plan", () => {
       ),
     ).toBeNull();
   });
+
+  it("코드 펜스로 감싼 JSON도 파싱한다", () => {
+    const parsed = parseDirectionPlan(
+      "```json\n" +
+        JSON.stringify({
+          plans: [
+            {
+              cutId: "cut-1",
+              cameraMove: "zoom-in",
+              transition: "fade",
+              bgmMood: "romance",
+              sfxCues: ["soft"],
+            },
+          ],
+        }) +
+        "\n```",
+    );
+    expect(parsed).toHaveLength(1);
+  });
 });

@@ -21,4 +21,15 @@ describe("studio-ai-review-llm", () => {
     expect(parsed).toHaveLength(1);
     expect(parseReviewInterpretation("그냥 문장")).toBeNull();
   });
+
+  it("코드 펜스로 감싼 JSON도 파싱한다", () => {
+    const parsed = parseReviewInterpretation(
+      "```json\n" +
+        JSON.stringify({
+          items: [{ targetCut: "cut-3", area: "배경", task: "채도 낮추기" }],
+        }) +
+        "\n```",
+    );
+    expect(parsed).toHaveLength(1);
+  });
 });

@@ -23,4 +23,12 @@ describe("studio-ai-dialogue-suggest", () => {
     ).toEqual(["안녕", "오랜만이야"]);
     expect(parseDialogueSuggestions("아님")).toBeNull();
   });
+
+  it("코드 펜스로 감싼 JSON도 파싱한다", () => {
+    expect(
+      parseDialogueSuggestions(
+        "```json\n" + JSON.stringify({ lines: ["안녕", "오랜만이야"] }) + "\n```",
+      ),
+    ).toEqual(["안녕", "오랜만이야"]);
+  });
 });

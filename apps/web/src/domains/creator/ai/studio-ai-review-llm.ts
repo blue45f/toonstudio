@@ -24,12 +24,21 @@ export function buildReviewInterpretPrompt(comment: string): string {
   ].join("\n");
 }
 
+/** 모델이 JSON을 코드 펜스로 감싸는 경우를 대비해 펜스를 제거한다. */
+function stripJsonFences(text: string): string {
+  let trimmed = text.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  trimmed = trimmed.replace(/^```[a-zA-Z]*\n?/, "");
+  if (trimmed.endsWith("```")) trimmed = trimmed.slice(0, -3).trim();
+  return trimmed;
+}
+
 /** 해석 결과를 검증한다. 형식이 아니면 null이다(호출부는 규칙 변환으로 폴백). */
 export function parseReviewInterpretation(
   text: string,
 ): readonly StudioAiReviewInterpretedItem[] | null {
   try {
-    const parsed: unknown = JSON.parse(text.trim());
+    const parsed: unknown = JSON.parse(stripJsonFences(text));
     if (typeof parsed !== "object" || parsed === null) return null;
     const record = parsed as Record<string, unknown>;
     if (!Array.isArray(record["items"])) return null;

@@ -29,4 +29,15 @@ describe("studio-ai-bgm-plan", () => {
       ),
     ).toBeNull();
   });
+
+  it("코드 펜스로 감싼 JSON도 파싱한다", () => {
+    const parsed = parseBgmPlacement(
+      "```json\n" +
+        JSON.stringify({
+          placements: [{ cutId: "cut-1", bgmMood: "daily", sfxCues: ["soft"] }],
+        }) +
+        "\n```",
+    );
+    expect(parsed).toHaveLength(1);
+  });
 });
