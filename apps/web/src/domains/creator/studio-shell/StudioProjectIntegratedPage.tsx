@@ -68,6 +68,12 @@ const StudioKaistoryProductionWorkbench = lazy(async () => {
   return { default: module.StudioKaistoryProductionWorkbench };
 });
 
+// 캔바·미리캔버스·망고보드·키틀 등 8대 디자인 플랫폼 역공학 내재화 워크벤치.
+const StudioDesignPlatformWorkbench = lazy(async () => {
+  const module = await import("../design-platform/StudioDesignPlatformWorkbench");
+  return { default: module.StudioDesignPlatformWorkbench };
+});
+
 function SubmissionPackageFallback() {
   const bt = useBilingual("studioProjectIntegrated.submissionFallback");
   return (
@@ -154,6 +160,9 @@ function SectionWorkflow({
           />
           <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
             <StudioKaistoryProductionWorkbench projectId={projectId} />
+          </Suspense>
+          <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+            <StudioDesignPlatformWorkbench projectId={projectId} />
           </Suspense>
         </>
       ) : null}

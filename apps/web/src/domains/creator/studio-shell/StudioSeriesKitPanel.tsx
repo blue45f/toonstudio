@@ -10,6 +10,8 @@ import {
   ensureStudioSeriesKit,
   saveNextStudioSeriesKitVersion,
 } from "../studio-series-kit-store";
+import { StudioDesignPlatformWorkbench } from "../design-platform/StudioDesignPlatformWorkbench";
+import type { DesignPlatformStyleShufflePack } from "../design-platform/design-platform-brand-bulk-engine";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -129,6 +131,38 @@ export function StudioSeriesKitPanel({
   const restore = () => {
     setKit(cloneKit(saved));
     setMessage(bt("마지막 저장 상태로 되돌렸습니다.", "Restored the last saved version."));
+  };
+
+  const applyDesignPlatformStylePack = (pack: DesignPlatformStyleShufflePack) => {
+    const paletteValues = [
+      pack.palette.primaryText,
+      pack.palette.secondaryText,
+      pack.palette.accentPrimary,
+      pack.palette.canvasBg,
+      pack.palette.surfaceBg,
+    ];
+    setKit((current) => ({
+      ...current,
+      colors: current.colors.map((color, index) => ({
+        ...color,
+        value: paletteValues[index % paletteValues.length] ?? color.value,
+      })),
+      textStyles: current.textStyles.map((style, index) => ({
+        ...style,
+        fontId:
+          index === 0
+            ? pack.typography.displayFont
+            : index === 1
+              ? pack.typography.bodyFont
+              : pack.typography.sfxFont,
+      })),
+    }));
+    setMessage(
+      bt(
+        `스타일 팩 ‘${pack.label}’ 색상·서체 페어링을 Series Kit에 반영했습니다.`,
+        `Applied style pack '${pack.label}' to Series Kit.`,
+      ),
+    );
   };
 
   return (
@@ -291,6 +325,14 @@ export function StudioSeriesKitPanel({
             {issues.map((issue) => <li key={`${issue.code}:${issue.affectedIds.join(":")}`}>• {issue.message}</li>)}
           </ul>
         ) : null}
+      </div>
+
+      <div className="mt-6">
+        <StudioDesignPlatformWorkbench
+          projectId={projectId}
+          compact
+          onApplyStylePackToSeriesKit={applyDesignPlatformStylePack}
+        />
       </div>
     </section>
   );
