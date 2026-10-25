@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 1,
+  "benchmarkDate": "2026-10-26",
+  "title": "ToonStudio REA 경쟁사 바이너리 역공학 정적 분석 증거 번들 (SHAPER v1.05 · Goodnotes v7.1.28 · Muse v9.0 · Blender · Clip Studio Paint)",
+  "methodology": {
+    "tool": "reverse-engineer-anything (REA MCP)",
+    "analysisScope": "static-artifact-and-managed-assembly-inspection",
+    "epistemicSeparation": [
+      "observedFacts",
+      "inferences",
+      "unknowns"
+    ]
+  },
+  "targets": [
+    {
+      "id": "naver-webtoon-studio-horang-shaper",
+      "name": "NAVER WEBTOON / Studio HORANG SHAPER",
+      "version": "1.05 (Build 9, Unity 6000.0.45f1)",
+      "bundleIdentifier": "com.StudioHORANG.SHAPER",
+      "artifacts": [
+        {
+          "role": "launcher-app-bundle",
+          "path": "/Applications/ShaperLauncher.app",
+          "sha256": "aabc7468b19fbb45670160c591c58061513ceaeec3696034d13af8862c276946",
+          "evidence_id": "ev_547d712461a692d7c287dfde9ceca36c6ce939f1cb7631a77f148d5d5460b54e",
+          "info_plist_evidence_id": "ev_f193e72a2d53737aa83790307fcfaab28bdd61eaecb50c2bc8192e7d963ae396"
+        },
+        {
+          "role": "installer-archive",
+          "path": "/Users/hjunkim/Downloads/ShaperInstaller.zip",
+          "sha256": "51eeebe357a2abee41b7489326b6ea0eb983cc0edb7ea00f99a72a78d5cfbd7a",
+          "evidence_id": "ev_cfad1062768ae741e7fd9bfa358d41a9526f684737ef557d627ac3ce93f33231"
+        },
+        {
+          "role": "core-managed-assembly",
+          "path": "Assembly-CSharp.dll",
+          "sha256": "cfb9e2ad3aee04fe6a7beaf7e27d9ec69abc1bfd54e5adfd0fbfd4144e3c189d",
+          "mvid": "e8c33afa-b619-4099-8781-1550b5efef1f",
+          "evidence_id": "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+          "summary": {
+            "types": 263,
+            "fields": 2049,
+            "methods": 1770,
+            "userStrings": 1225
+          }
+        },
+        {
+          "role": "ik-managed-assembly",
+          "path": "Assembly-CSharp-firstpass.dll",
+          "sha256": "727a6709d24a4b6e430f8e84625a8ba29dd9a8c10295a478f3f467dd364f0f2f",
+          "mvid": "1c4a69b8-dea1-422e-a237-95b73a63a1eb",
+          "evidence_id": "ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328",
+          "summary": {
+            "types": 325,
+            "subsystem": "RootMotion FinalIK"
+          }
+        },
+        {
+          "role": "local-preset-and-model-library",
+          "path": "/Users/hjunkim/Library/Application Support/com.StudioHORANG.SHAPER",
+          "sha256": "00430c2903c90b949b41dfc3c4408d1744ac40d8f8bbf2ecf2ed40dcc2e65ef1",
+          "evidence_id": "ev_49b3f622771d933b42b42b3b6b21e4fed2de067fc93e65f6dcce8a7b7b9b32f7",
+          "summary": {
+            "entries": 353
+          }
+        }
+      ],
+      "observedFacts": [
+        "Assembly-CSharp.dll(MVID e8c33afa-b619-4099-8781-1550b5efef1f)에서 263개 타입, 2,049개 필드, 1,770개 메서드, 1,225개 유저 스트링이 정적으로 관측됨.",
+        "Assembly-CSharp-firstpass.dll(MVID 1c4a69b8-dea1-422e-a237-95b73a63a1eb)에서 RootMotion FinalIK 계열 325개 타입이 분리 컴파일되어 있음이 확인됨.",
+        "로컬 Application Support 디렉터리에 353개 엔트리의 프리셋(shape_preset, hair_preset, total_preset, pose_preset, face_preset)·모델 라이브러리가 저장됨.",
+        "블렌드셰이프·본 스케일/오프셋 모디파이어 적용, 3D 두피 레이캐스트 기반 헤어 심기(Hair Planting), 삼각형 무게중심(Barycentric) 좌표계 기반 3D 표면 펜선 드로잉, 안구-안와 경계 심 마스크(Eyeball Seam Mask), 툰 셰이더·윤곽선·FOV/직교 보간 카메라 컨트롤러, 멀티패스(Line/BaseColor/Shade/Specular/Rim/Depth/Mask) PSD 합성 출력, 텍스트·태그 기반 본/체형 프리셋 추천 루틴이 어셈블리 심볼 및 유저 스트링에서 확인됨."
+      ],
+      "inferences": [
+        "웹툰 작가의 작화 공정에 맞춰 3D 캐릭터의 체형·이목구비·헤어를 조합한 뒤, 3D 표면 위 무게중심 좌표 펜선과 안구 심 마스킹으로 위화감 없는 선화를 얻고 멀티패스 PSD로 직행하는 파이프라인으로 설계됨.",
+        "FinalIK(325 types)를 firstpass 어셈블리로 분리해 캐릭터 리깅·포징 솔버와 UI/프리셋 도메인 로직 간 재컴파일 결합도를 낮춘 구조임."
+      ],
+      "unknowns": [
+        "외부 비공개 AI 서버 엔드포인트의 런타임 추론 모델 가중치 및 서버 측 프롬프트 템플릿은 정적 바이너리에 포함되지 않으며, 네트워크 캡처 및 서버 실행 관찰 없이는 미확정(unknown)으로 남김."
+      ]
+    },
+    {
+      "id": "goodnotes-v7-1-28",
+      "name": "Goodnotes",
+      "version": "7.1.28",
+      "bundleIdentifier": "com.goodnotesapp.x",
+      "artifacts": [
+        {
+          "role": "macos-app-bundle",
+          "path": "/Applications/Goodnotes.app",
+          "sha256": "7edabaf7283dd1f78f7337c439ba7178937469d61b03d9a279b7743e05756a45",
+          "evidence_id": "ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81",
+          "summary": {
+            "entries": 5017,
+            "frameworks": [
+              "BaselineEstimation",
+              "HandwritingBeautificationCore",
+              "HandwritingCommon",
+              "HandwritingSynthesis",
+              "BeamSearchLibrary",
+              "GNSVG2PDF",
+              "gnyjsFFI",
+              "OnnxRuntimeBindings"
+            ]
+          }
+        }
+      ],
+      "observedFacts": [
+        "/Applications/Goodnotes.app 번들 내 5,017개 엔트리와 BaselineEstimation, HandwritingBeautificationCore, HandwritingCommon, HandwritingSynthesis, BeamSearchLibrary, GNSVG2PDF, gnyjsFFI, OnnxRuntimeBindings 내부 프레임워크가 관측됨."
+      ],
+      "inferences": [
+        "손글씨 스트로크의 기준선(Baseline) 추정과 자모/단어 간격·기울기 보정(HandwritingBeautificationCore), ONNX 런타임 및 빔 서치(BeamSearchLibrary) 기반 필기 인식·합성, Yjs FFI(gnyjsFFI) 기반 CRDT 동기화, SVG-to-PDF 벡터 출력(GNSVG2PDF)을 네이티브 프레임워크 단위로 모듈화함."
+      ],
+      "unknowns": [
+        "Goodnotes 클라우드 동기화 백엔드 프로토콜의 비공개 인증 토큰 교환 세부 규격 및 암호화된 온디바이스 모델 내부 하이퍼파라미터는 정적 번들 인벤토리 범위 밖임."
+      ]
+    },
+    {
+      "id": "muse-v9-0",
+      "name": "Muse",
+      "version": "9.0",
+      "bundleIdentifier": "com.meta.endo",
+      "artifacts": [
+        {
+          "role": "macos-app-bundle",
+          "path": "/Applications/Muse.app",
+          "sha256": "8958f759ebbe8ba62881ac0ab2891d42143a67a2216a3f76d40cbf12637048fb",
+          "evidence_id": "ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14",
+          "summary": {
+            "entries": 353,
+            "utis": [
+              "com.meta.prototypes.endo.attachment-reference"
+            ]
+          }
+        }
+      ],
+      "observedFacts": [
+        "/Applications/Muse.app 번들(com.meta.endo)에서 353개 엔트리 및 com.meta.prototypes.endo.attachment-reference UTI 선언이 관측됨."
+      ],
+      "inferences": [
+        "무한 공간 보드 위에서 자유 올가미(Lasso)로 잉크 스트로크와 첨부 레퍼런스 카드(attachment-reference)를 함께 묶어 클러스터 단위로 재배치·비교·참조하는 공간형 아이디어 보드 워크플로우를 제공함."
+      ],
+      "unknowns": [
+        "Muse 원격 협업 릴레이 서버의 내부 스케줄링 정책은 정적 번들 분석 대상에 포함되지 않음."
+      ]
+    },
+    {
+      "id": "blender-and-clip-studio-paint",
+      "name": "Blender & Clip Studio Paint",
+      "version": "Installed Desktop Reference Bundles",
+      "artifacts": [
+        {
+          "role": "dcc-reference-bundle",
+          "path": "/Applications/Blender.app",
+          "sha256": "2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9",
+          "evidence_id": "ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819"
+        },
+        {
+          "role": "webtoon-authoring-suite-support",
+          "path": "/Library/Application Support/CELSYS/CLIPStudio",
+          "sha256": "b3b5ccce892de714bf4b078aadbc7fdd435618f1416ac682d6e4dbf83201b1cf",
+          "evidence_id": "ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c"
+        }
+      ],
+      "observedFacts": [
+        "Blender.app 및 CLIPStudio 애플리케이션 지원 디렉터리 아티팩트 해시와 정적 구조가 교차 대조 기준선으로 확보됨."
+      ],
+      "inferences": [
+        "SHAPER의 멀티패스 PSD 구조 및 3D 카메라/윤곽선 제어는 Clip Studio Paint의 웹툰 원고 레이어 규격 및 Blender 3D NPR 렌더 패스 워크플로우와 상호 운용되도록 설계됨."
+      ],
+      "unknowns": []
+    }
+  ],
+  "toonStudioImplementations": [
+    {
+      "modulePath": "apps/web/src/domains/creator/character-shaper/character-shaper-native-preset-codec.ts",
+      "competitorSource": "SHAPER v1.05",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+        "ev_49b3f622771d933b42b42b3b6b21e4fed2de067fc93e65f6dcce8a7b7b9b32f7"
+      ],
+      "capability": "SHAPER 네이티브 프리셋(shape_preset, hair_preset, total_preset, pose_preset, face_preset) 직렬화·역직렬화 및 스키마 검증 코덱"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/character-shaper/character-shaper-modifier-apply.ts",
+      "competitorSource": "SHAPER v1.05",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+        "ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328"
+      ],
+      "capability": "블렌드셰이프 가중치 및 본 스케일·오프셋·대칭 모디파이어 합성 파이프라인"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/character-platform/groom/character-shaper-hair-planting.ts",
+      "competitorSource": "SHAPER v1.05",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+        "ev_49b3f622771d933b42b42b3b6b21e4fed2de067fc93e65f6dcce8a7b7b9b32f7"
+      ],
+      "capability": "두피 메쉬 표면 법선·히트 포인트 기반 헤어 스트랜드 심기(Hair Planting) 및 카툰 헤어 카드 제어"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/character-platform/surface-ink/character-shaper-barycentric-pen-line.ts",
+      "competitorSource": "SHAPER v1.05",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541"
+      ],
+      "capability": "삼각형 인덱스·무게중심 좌표(Barycentric Coordinates) 앵커링 기반 3D 메쉬 표면 펜선 드로잉 및 변형 추종"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/character-platform/render/character-shaper-eyeball-seam-mask.ts",
+      "competitorSource": "SHAPER v1.05",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541"
+      ],
+      "capability": "안구-안와 교차 경계 심(Seam) 마스킹, 홍채/하이라이트 클리핑 및 시선 각도별 외곽선 아티팩트 억제"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/vrm/studio-vrm-shaper-shader-camera-controller.ts",
+      "competitorSource": "SHAPER v1.05 · Blender",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+        "ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819"
+      ],
+      "capability": "웹툰 셀 셰이딩 램프·림라이트·거리 보정 윤곽선 및 원근/직교 혼합 카메라 연출 컨트롤러"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/export/studio-shaper-multipass-psd-compositor.ts",
+      "competitorSource": "SHAPER v1.05 · Clip Studio Paint",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+        "ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c"
+      ],
+      "capability": "선화·밑색·음영·하이라이트·림라이트·깊이·부위별 선택 마스크 분리형 멀티패스 PSD 합성기"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/ai/studio-ai-shaper-bone-preset-engine.ts",
+      "competitorSource": "SHAPER v1.05",
+      "evidenceIds": [
+        "ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541",
+        "ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328"
+      ],
+      "capability": "캐릭터 설정·연령·체형 프롬프트 기반 결정론적 본 스케일 및 블렌드셰이프 프리셋 합성 엔진"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/canvas/studio-handwriting-baseline-beautifier.ts",
+      "competitorSource": "Goodnotes v7.1.28",
+      "evidenceIds": [
+        "ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81"
+      ],
+      "capability": "손글씨 대사·효과음 스트로크의 기준선(Baseline) 추정 및 필기 정렬·곡률 미화(Beautification) 엔진"
+    },
+    {
+      "modulePath": "apps/web/src/domains/creator/canvas/studio-spatial-reference-lasso-board.ts",
+      "competitorSource": "Muse v9.0",
+      "evidenceIds": [
+        "ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14"
+      ],
+      "capability": "자유 올가미(Lasso) 기반 레퍼런스 첨부 카드·스케치 스트로크 공간 클러스터링 및 비교 보드"
+    }
+  ]
+}

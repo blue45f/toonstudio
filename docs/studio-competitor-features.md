@@ -55,7 +55,11 @@
 - **Storyboarder** — 콘티/스토리보드 전용(샷 타입·카메라 앵글 태깅).
 - **미리캔버스 / Canva** — 디자인 템플릿 툴(매직 리사이즈, 대량 생성/데이터 병합).
 
-### 웹툰 3D 배경 및 콘티 보조
+### 웹툰 3D 캐릭터·배경 조형 및 공간 아이디어 보드 (2026-10-26 REA 바이너리 역공학 대상 포함)
+- **NAVER WEBTOON / Studio HORANG `SHAPER` v1.05 (Build 9, Unity 6000.0.45f1)** — 네이버웹툰/스튜디오호랑의 웹툰 전용 3D 캐릭터 조형·포징·선화 추출 툴. REA 정적 분석으로 `/Applications/ShaperLauncher.app`(`SHA-256: aabc7468b19fbb45670160c591c58061513ceaeec3696034d13af8862c276946`, `ev_547d712461a692d7c287dfde9ceca36c6ce939f1cb7631a77f148d5d5460b54e`, `Info.plist`: `ev_f193e72a2d53737aa83790307fcfaab28bdd61eaecb50c2bc8192e7d963ae396`), `/Users/hjunkim/Downloads/ShaperInstaller.zip`(`SHA-256: 51eeebe357a2abee41b7489326b6ea0eb983cc0edb7ea00f99a72a78d5cfbd7a`, `ev_cfad1062768ae741e7fd9bfa358d41a9526f684737ef557d627ac3ce93f33231`), `Assembly-CSharp.dll`(`SHA-256: cfb9e2ad3aee04fe6a7beaf7e27d9ec69abc1bfd54e5adfd0fbfd4144e3c189d`, `MVID: e8c33afa-b619-4099-8781-1550b5efef1f`, `ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541` — 263 types, 2,049 fields, 1,770 methods, 1,225 user strings), `Assembly-CSharp-firstpass.dll`(`SHA-256: 727a6709d24a4b6e430f8e84625a8ba29dd9a8c10295a478f3f467dd364f0f2f`, `MVID: 1c4a69b8-dea1-422e-a237-95b73a63a1eb`, `ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328` — RootMotion FinalIK 325 types), 로컬 프리셋 라이브러리 `/Users/hjunkim/Library/Application Support/com.StudioHORANG.SHAPER`(`SHA-256: 00430c2903c90b949b41dfc3c4408d1744ac40d8f8bbf2ecf2ed40dcc2e65ef1`, `ev_49b3f622771d933b42b42b3b6b21e4fed2de067fc93e65f6dcce8a7b7b9b32f7`, 353 entries)를 전수 검증했다.
+- **Goodnotes v7.1.28 (`com.goodnotesapp.x`)** — 디지털 필기·벡터 잉크 표준 앱. `/Applications/Goodnotes.app`(`SHA-256: 7edabaf7283dd1f78f7337c439ba7178937469d61b03d9a279b7743e05756a45`, `ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81`, 5,017 entries) 내장 프레임워크(`BaselineEstimation`, `HandwritingBeautificationCore`, `HandwritingCommon`, `HandwritingSynthesis`, `BeamSearchLibrary`, `GNSVG2PDF`, `gnyjsFFI`, `OnnxRuntimeBindings`)의 손글씨 기준선 추정·필기 미화 파이프라인을 벤치마킹했다.
+- **Muse v9.0 (`com.meta.endo`)** — 공간형 아이디어·레퍼런스 보드 앱. `/Applications/Muse.app`(`SHA-256: 8958f759ebbe8ba62881ac0ab2891d42143a67a2216a3f76d40cbf12637048fb`, `ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14`, 353 entries, `com.meta.prototypes.endo.attachment-reference`)의 자유 올가미(Lasso) 기반 레퍼런스 카드·잉크 클러스터링 구조를 벤치마킹했다.
+- **Blender (`/Applications/Blender.app`) & Clip Studio Paint (`/Library/Application Support/CELSYS/CLIPStudio`)** — Blender(`SHA-256: 2953cb9ce0fe00a6a013c72367b56234add9b93611daf6172ec0ab030b5cc4a9`, `ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819`) 및 Clip Studio(`SHA-256: b3b5ccce892de714bf4b078aadbc7fdd435618f1416ac682d6e4dbf83201b1cf`, `ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c`) 아티팩트를 3D NPR 카메라·멀티패스 PSD 합성의 교차 기준선으로 대조했다.
 - **에이블러 (Ablur)** — 국산. 웹툰 배경으로 흔히 쓰이는 3D 스케치업(SketchUp) 파일을 가볍게 불러와
   선을 따고 연출하도록 돕는다.
 
@@ -76,6 +80,21 @@
 
 모든 배치는 `src/domains/creator/studio-*.ts`(순수 로직) + `Studio*Panel.tsx`(프레젠테이션) 조합으로
 구현되고, `StudioPage.tsx`에 통합됐다. 세션 내 배치 순서:
+
+### 2026-10-26 REA 경쟁사 바이너리 역공학 벤치마크 (SHAPER v1.05 · Goodnotes v7.1.28 · Muse v9.0) 전 기능 통합
+
+`reverse-engineer-anything`(REA) 정적 역공학 파이프라인으로 추출·검증한 경쟁사 아티팩트 증거(상세 분석 보고서: [`docs/studio-rea-competitor-benchmark-2026-10-26.md`](studio-rea-competitor-benchmark-2026-10-26.md), 정적 분석 증거 번들: [`docs/evidence/rea-competitor-benchmark-20261026.json`](evidence/rea-competitor-benchmark-20261026.json))를 바탕으로, 웹툰 3D 캐릭터 조형·표면 작화·멀티패스 PSD·손글씨 기준선 미화·공간 레퍼런스 보드 10대 핵심 모듈을 클린룸 자체 구현으로 전수 통합했다.
+
+- **SHAPER 네이티브 5종 프리셋 코덱 (`apps/web/src/domains/creator/character-shaper/character-shaper-native-preset-codec.ts`)**: `Assembly-CSharp.dll`(`ev_e827f1b21d6d3ffeb98e413b528fa6f4369bc578553586a66210e5acfadbf541`) 및 로컬 라이브러리(`ev_49b3f622771d933b42b42b3b6b21e4fed2de067fc93e65f6dcce8a7b7b9b32f7`, 353 entries)에서 관측된 `shape_preset`, `hair_preset`, `total_preset`, `pose_preset`, `face_preset` 구조를 수용하는 결정론적 직렬화·역직렬화 및 스키마 검증 코덱.
+- **체형·이목구비 블렌드셰이프 및 본 모디파이어 합성기 (`apps/web/src/domains/creator/character-shaper/character-shaper-modifier-apply.ts`)**: 블렌드셰이프 가중치 보간, 본 로컬 스케일/오프셋/회전 합성, 좌우 대칭(L/R 미러링), 부모-자식 본 비균등 스케일 왜곡 역보정(Scale Compensation) 및 FinalIK(`ev_05afbfd2088fad00b621358cf76ebe291e4dfb25b9109e32530fa5e4cf7c4328`) 호환 이펙터 핀 고정을 수행한다.
+- **3D 두피 레이캐스트 기반 헤어 심기 엔진 (`apps/web/src/domains/creator/character-platform/groom/character-shaper-hair-planting.ts`)**: 두피(Scalp) 메쉬 표면 히트 포인트와 법선(Normal)을 따라 헤어 스트랜드/카드를 심고 가르마·볼륨·중력·컬·끝단 테이퍼 제어점을 생성·편집한다.
+- **무게중심 좌표(Barycentric) 3D 표면 펜선 엔진 (`apps/web/src/domains/creator/character-platform/surface-ink/character-shaper-barycentric-pen-line.ts`)**: 스트로크 포인트를 메쉬 삼각형 인덱스(`triangleIndex`)와 무게중심 좌표(`u, v, w`) 및 법선 오프셋으로 저장하여, 포즈나 표정 블렌드셰이프가 변형되어도 3D 캐릭터 표면에 그린 펜선이 들뜨거나 어긋나지 않고 정점 변형을 추종한다.
+- **안구-안와 교차 경계 심 마스크 (`apps/web/src/domains/creator/character-platform/render/character-shaper-eyeball-seam-mask.ts`)**: 반측면·측면 시선 각도에서 구형 안구가 눈꺼풀 밖으로 돌출되거나 외곽선이 이중으로 겹치는 NPR 아티팩트를 안구-안와 경계 심(Seam) 마스킹과 홍채 클리핑으로 제거한다.
+- **VRM/SHAPER 툰 셰이더 및 원근-직교 카메라 컨트롤러 (`apps/web/src/domains/creator/vrm/studio-vrm-shaper-shader-camera-controller.ts`)**: 셀 셰이딩 다단 램프, 림라이트, 카메라 거리 보정 윤곽선 두께 제어 및 원근(Perspective)↔직교(Orthographic) 연속 보간·돌리 줌 연출을 제공한다(`ev_55cbde6a15c7f2ce78ea73adf6cbf4082156856b4d3427700d81c610b2201819` 교차 대조).
+- **멀티패스 분리형 PSD 합성 익스포터 (`apps/web/src/domains/creator/export/studio-shaper-multipass-psd-compositor.ts`)**: `Line`(선화), `BaseColor`(밑색), `Shade`(음영), `Specular`(하이라이트), `RimLight`(역광), `Depth`(깊이), `PartMask`(부위별 선택 마스크) 패스를 Clip Studio Paint(`ev_30f45051a6f11ff0152d794701d8736f37b6f6088876afd7d2a8051d806f4e4c`) 호환 PSD 레이어 트리로 합성한다.
+- **AI/아키타입 기반 본·체형 프리셋 엔진 (`apps/web/src/domains/creator/ai/studio-ai-shaper-bone-preset-engine.ts`)**: 캐릭터 설정 프롬프트·연령대·등신대·체격 태그로부터 본 스케일 벡터와 블렌드셰이프 프리셋을 결정론적으로 생성·블렌딩한다.
+- **손글씨 기준선 추정 및 필기 미화 엔진 (`apps/web/src/domains/creator/canvas/studio-handwriting-baseline-beautifier.ts`)**: Goodnotes v7.1.28(`ev_ef24d6b378cefd65bbb87b216ae5eeaaef44e8060c26dcb00f1b776f71562a81`)의 `BaselineEstimation` 및 `HandwritingBeautificationCore` 아키텍처에 대응하여, 손글씨 대사·효과음 스트로크의 기준선 기울기·행간을 추정하고 작가 필압을 보존한 채 줄 맞춤과 자간·곡률을 정돈한다.
+- **공간 레퍼런스 올가미(Lasso) 클러스터 보드 (`apps/web/src/domains/creator/canvas/studio-spatial-reference-lasso-board.ts`)**: Muse v9.0(`ev_122f930c82d3a1cd656b8aae3735288c991df6759b7d49089208c0a9dffcee14`, `com.meta.prototypes.endo.attachment-reference`)에 대응하여, 자유 올가미 폐곡선으로 레퍼런스 카드와 스케치 스트로크를 즉시 하나의 공간 클러스터로 묶어 비교·정렬·컷 인계한다.
 
 ### 2026-07-13 모바일 전용 집중 드로잉 셸 (현재 작업 트리 통합 완료)
 
