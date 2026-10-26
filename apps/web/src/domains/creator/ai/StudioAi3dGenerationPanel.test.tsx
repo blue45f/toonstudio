@@ -99,4 +99,35 @@ describe("StudioAi3dGenerationPanel", () => {
         .toMatch(/취소됨/u);
     });
   });
+
+  it("allows selecting VARCO 3D provider and forwards provider: varco-3d in options", async () => {
+    const varcoJob: Studio3dGenerationJob = {
+      ...job,
+      id: "job-varco-1",
+      request: {
+        ...job.request,
+        provider: "varco-3d",
+        model: "VARCO-3D-v1.0",
+      },
+    };
+    const fetchMock = vi.fn<typeof fetch>((input) =>
+      Promise.resolve(String(input).endsWith("/jobs") ? response(varcoJob) : response([])),
+    );
+    const client = new Studio3dGenerationHttpClient({ userId: "user-1", fetchImpl: fetchMock });
+    render(<StudioAi3dGenerationPanel client={client} />);
+
+    fireEvent.change(screen.getByTestId("studio-ai-3d-provider-select"), {
+      target: { value: "varco-3d" },
+    });
+    fireEvent.change(screen.getByLabelText("생성 설명"), {
+      target: { value: "무협 매화검 3D 소품" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "3D 생성 시작" }));
+
+    await waitFor(() => {
+      const createCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+      expect(createCall).toBeDefined();
+      expect(String(createCall?.[1]?.body)).toContain('"provider":"varco-3d"');
+    });
+  });
 });

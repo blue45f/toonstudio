@@ -1,6 +1,7 @@
 import { aiErrorText } from "./studio-ai-error-i18n";
 
 export type Studio3dGenerationMode = "text-to-3d" | "image-to-3d" | "multiview-to-3d" | "texture-only";
+export type Studio3dGenerationProviderId = "hyper3d-rodin" | "varco-3d";
 export type Studio3dGenerationJobState = "queued" | "uploading" | "generating-geometry" | "generating-texture" | "downloading" | "validating" | "importing" | "ready" | "failed" | "cancelled" | "expired";
 export interface Studio3dGenerationArtifactRevision {
   readonly id: string;

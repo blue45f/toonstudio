@@ -22,10 +22,12 @@ import { computeShaperMuscleFatBlendShapeWeights } from "../../../animation/two-
 import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
+import { WEBTOON_UNIVERSE_SHAPER_PRESETS, composeWebtoonUniverseRecipe, resolveCharacterLabVarco3dPreviewSettings } from "../../../presets";
 import { useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
 import type { BodyParamKey, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
+import type { WebtoonUniverseShaperId } from "../../../presets";
 
 export type ParamGroup = "body" | "face";
 
@@ -237,10 +239,22 @@ function useKitBaseHeight(): number | null {
 export function ParamPanel() {
   const { recipe, capabilities } = useLabState();
   const dispatch = useDispatch();
+  const [selectedUniverseId, setSelectedUniverseId] = useState<WebtoonUniverseShaperId>("school-romance");
 
   const setParam = (group: ParamGroup, key: BodyParamKey | FaceParamKey, value: number, options: { readonly coalesceKey?: string } = {}): void => {
     dispatch({ type: "param/set", group, key, value: clampParam(value), ...(options.coalesceKey !== undefined ? { coalesceKey: options.coalesceKey } : {}) });
   };
+
+  const applyWebtoonUniversePreset = (presetId: WebtoonUniverseShaperId): void => {
+    setSelectedUniverseId(presetId);
+    const composed = composeWebtoonUniverseRecipe(presetId, recipe);
+    if (composed.ok) {
+      dispatch({ type: "recipe/load", recipe: composed.recipe });
+    }
+  };
+
+  const activeUniversePreset = WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => item.id === selectedUniverseId) ?? WEBTOON_UNIVERSE_SHAPER_PRESETS[0]!;
+  const activeVarcoPreview = resolveCharacterLabVarco3dPreviewSettings(activeUniversePreset.id);
 
   const bodyValue = (key: BodyParamKey): number => recipe.body[key] ?? 0;
   const faceValue = (key: FaceParamKey): number => recipe.face[key] ?? 0;
@@ -319,6 +333,32 @@ export function ParamPanel() {
             {preset.labelKo}
           </button>
         ))}
+      </div>
+
+      <div
+        className="cl-param-group"
+        role="group"
+        aria-label="VARCO 3D 웹툰 세계관 셰이퍼 프리셋"
+        data-testid="param-varco3d-universe-presets"
+      >
+        <h3 className="cl-param-subtitle">VARCO 3D 웹툰 세계관 셰이퍼 프리셋 ({WEBTOON_UNIVERSE_SHAPER_PRESETS.length})</h3>
+        <div className="cl-param-presets">
+          {WEBTOON_UNIVERSE_SHAPER_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="cl-button cl-button-small"
+              aria-pressed={selectedUniverseId === preset.id && recipe.style.packId === preset.artStyleId}
+              data-testid={`param-varco3d-preset-${preset.id}`}
+              onClick={() => applyWebtoonUniversePreset(preset.id)}
+            >
+              {preset.labelKo} ({preset.genreKo})
+            </button>
+          ))}
+        </div>
+        <p className="cl-param-hint" data-testid="param-varco3d-binding-summary">
+          선택 세계관 소품 바인딩: {activeUniversePreset.varcoBinding.labelKo} ({activeUniversePreset.varcoBinding.glbArtifactName} · 본 앵커 {activeUniversePreset.varcoBinding.anchor}) · HDRI {activeVarcoPreview.environmentId} ({activeVarcoPreview.lightingRotationDeg}°)
+        </p>
       </div>
 
       <div className="cl-param-actions">

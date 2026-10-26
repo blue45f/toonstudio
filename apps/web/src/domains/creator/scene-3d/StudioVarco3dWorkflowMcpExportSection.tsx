@@ -1,26 +1,8 @@
-import { useMemo, useState, type CSSProperties, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 
-import {
-  STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS,
-  STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
-  STUDIO_VARCO3D_RETARGETED_MOTION_TASKS,
-  STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES,
-  STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
-  composeVarco3dCharacterLabLoadout,
-  evaluateVarco3dDioramaScenePlacement,
-  resolveVarco3dTurnaroundViewUrl,
-  type StudioVarco3dTurnaroundAngle,
-} from "./studio-varco3d-character-lab-diorama-catalog";
-import {
-  STUDIO_VARCO3D_12VIEW_CAMERA_RING,
-  STUDIO_VARCO3D_ANIMATION_LIBRARY_SUMMARY,
-  STUDIO_VARCO3D_POINT_POLICIES,
-  buildVarco3dCanonicalPartDescriptor,
-  evaluateVarco3dPointPolicyReservation,
-  inspectVarco3d12ViewReconstructionBundle,
-  type StudioVarco3d12ViewAngle,
-  type StudioVarco3d12ViewMapFamily,
-} from "./studio-varco3d-vibe-pipeline-canonical-bridge";
+import type { ShaperBodySliderValues } from "./studio-shaper-model";
+import type { StudioVarco3dMannequinPosePresetId } from "./studio-varco3d-character-lab-diorama-catalog";
+import { StudioVarco3dCatalogExecutionPanel } from "./StudioVarco3dCatalogExecutionPanel";
 import {
   STUDIO_VARCO3D_ANIMATION_CATEGORIES,
   STUDIO_VARCO3D_WORKFLOW_NODE_CATALOG,
@@ -42,24 +24,6 @@ const UV_MODES: readonly StudioVarco3dUvPreviewMode[] = Object.freeze([
   "metallic",
 ]);
 
-const TURNAROUND_ANGLES: readonly StudioVarco3dTurnaroundAngle[] = Object.freeze([
-  "front",
-  "back",
-  "left",
-  "right",
-]);
-
-const MV12_FAMILIES: readonly StudioVarco3d12ViewMapFamily[] = Object.freeze([
-  "mvImages",
-  "mvAlbedo",
-  "mvOrm",
-]);
-
-const DEFERRED_CATALOG_CONTAINER_STYLE: CSSProperties = {
-  contentVisibility: "auto",
-  containIntrinsicSize: "auto none auto 280px",
-};
-
 const SAMPLE_ANIMATION_KEYS = Object.freeze([
   { key: "webtoon_sword_combo_looping", labelKo: "휴머노이드 검술 루프" },
   { key: "dog_gallop_left_lead_looping", labelKo: "4족 보행(견공) 갤럽 루프" },
@@ -68,10 +32,19 @@ const SAMPLE_ANIMATION_KEYS = Object.freeze([
 
 export interface StudioVarco3dWorkflowMcpExportSectionProps {
   readonly accordionGroupName: string;
+  readonly onApplyMannequinBodySliders?: (
+    sliders: ShaperBodySliderValues,
+    options?: {
+      readonly posePresetId?: StudioVarco3dMannequinPosePresetId;
+      readonly archetypeLabelKo?: string;
+      readonly motionLabelKo?: string;
+    },
+  ) => void;
 }
 
 export function StudioVarco3dWorkflowMcpExportSection({
   accordionGroupName,
+  onApplyMannequinBodySliders,
 }: StudioVarco3dWorkflowMcpExportSectionProps): ReactElement {
   const [sourceNodeType, setSourceNodeType] = useState<"Generate3D" | "Rig">("Rig");
   const [targetNodeType, setTargetNodeType] = useState<"Animate" | "Remesh">("Animate");
@@ -81,29 +54,6 @@ export function StudioVarco3dWorkflowMcpExportSection({
   const [selectedAnimKey, setSelectedAnimKey] = useState<string>(
     "webtoon_sword_combo_looping",
   );
-  const [selectedArchetypeId, setSelectedArchetypeId] = useState<string>(
-    "char_rofan_villainess_empress",
-  );
-  const [selectedWigId, setSelectedWigId] = useState<string>("charlab_wig_rofan_hime_wave");
-  const [selectedOutfitId, setSelectedOutfitId] = useState<string>(
-    "charlab_outfit_rofan_crimson_gown",
-  );
-  const [selectedWeaponId, setSelectedWeaponId] = useState<string>(
-    "charlab_weapon_paladin_greatsword",
-  );
-  const [selectedTurnaroundAngle, setSelectedTurnaroundAngle] =
-    useState<StudioVarco3dTurnaroundAngle>("front");
-  const [selectedDioramaId, setSelectedDioramaId] = useState<string>(
-    "diorama_rofan_imperial_ballroom",
-  );
-  const [selected12ViewFamily, setSelected12ViewFamily] =
-    useState<StudioVarco3d12ViewMapFamily>("mvAlbedo");
-  const [selected12ViewAngle, setSelected12ViewAngle] =
-    useState<StudioVarco3d12ViewAngle>("front");
-  const [selectedMotionTaskId, setSelectedMotionTaskId] = useState<string>(
-    "cf5cbba3-4987-49b7-a1d1-079ccfcb09b8",
-  );
-  const [selectedPolicyKey, setSelectedPolicyKey] = useState<string>("task:AI_RIG");
 
   const connectionValidation = useMemo(
     () =>
@@ -166,79 +116,6 @@ export function StudioVarco3dWorkflowMcpExportSection({
         .map((attempt) => `${computeVarco3dMcpReconnectBackoffMs(attempt) / 1000}s`)
         .join(" → "),
     [],
-  );
-
-  const characterLabLoadout = useMemo(
-    () =>
-      composeVarco3dCharacterLabLoadout({
-        archetypeId: selectedArchetypeId,
-        itemIds: [selectedWigId, selectedOutfitId, selectedWeaponId],
-      }),
-    [selectedArchetypeId, selectedWigId, selectedOutfitId, selectedWeaponId],
-  );
-
-  const turnaroundViewUrl = useMemo(
-    () =>
-      characterLabLoadout.primaryTurnaround
-        ? resolveVarco3dTurnaroundViewUrl(
-            characterLabLoadout.primaryTurnaround,
-            selectedTurnaroundAngle,
-          )
-        : "",
-    [characterLabLoadout.primaryTurnaround, selectedTurnaroundAngle],
-  );
-
-  const dioramaPlacementPlan = useMemo(
-    () =>
-      evaluateVarco3dDioramaScenePlacement({
-        dioramaId: selectedDioramaId,
-        propIds: ["prop_school_desk_chair", "prop_cafe_table_set", "prop_pojangmacha_cart"],
-      }),
-    [selectedDioramaId],
-  );
-
-  const wigOptions = useMemo(
-    () => STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.filter((item) => item.slot === "head-hair"),
-    [],
-  );
-  const outfitOptions = useMemo(
-    () => STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.filter((item) => item.slot === "outfit-set"),
-    [],
-  );
-
-  const canonicalWigDescriptor = useMemo(() => {
-    const activeWig =
-      STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.find((item) => item.id === selectedWigId) ??
-      STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS[0]!;
-    return buildVarco3dCanonicalPartDescriptor(activeWig);
-  }, [selectedWigId]);
-
-  const mv12Inspection = useMemo(
-    () =>
-      inspectVarco3d12ViewReconstructionBundle({
-        angle: selected12ViewAngle,
-        mapFamily: selected12ViewFamily,
-      }),
-    [selected12ViewAngle, selected12ViewFamily],
-  );
-
-  const selectedMotionTask = useMemo(
-    () =>
-      STUDIO_VARCO3D_RETARGETED_MOTION_TASKS.find(
-        (entry) => entry.animTaskId === selectedMotionTaskId,
-      ) ?? STUDIO_VARCO3D_RETARGETED_MOTION_TASKS[0]!,
-    [selectedMotionTaskId],
-  );
-
-  const pointReservationEval = useMemo(
-    () =>
-      evaluateVarco3dPointPolicyReservation({
-        targetKey: selectedPolicyKey,
-        quantity: 6,
-        remainingPoints: 0,
-        runningStudioTaskCount: 12,
-      }),
-    [selectedPolicyKey],
   );
 
   return (
@@ -439,281 +316,10 @@ export function StudioVarco3dWorkflowMcpExportSection({
         </div>
       </details>
 
-      <details
-        name={accordionGroupName}
-        data-testid="varco3d-details-character-lab-diorama"
-        style={DEFERRED_CATALOG_CONTAINER_STYLE}
-        className="rounded-lg border border-line/60 bg-card px-3 py-2"
-      >
-        <summary className="cursor-pointer font-semibold text-fg">
-          Character Labs 모듈형 파츠 코디네이터 ({STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.length}
-          종 · 4-View 턴어라운드) & 3D 배경 아이소메트릭 디오라마 (
-          {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종) · 한국 웹툰 소품 (
-          {STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.length}종)
-        </summary>
-        <div className="mt-2 grid grid-cols-1 gap-2.5 text-[0.72rem] text-fg-2 md:grid-cols-3">
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-fg">
-              Character Labs 베이스 아키타입 ({STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.length}종)
-              & 가발/의상 슬롯
-            </span>
-            <select
-              aria-label="Character Labs 베이스 아키타입"
-              data-testid="varco3d-charlab-archetype-select"
-              value={selectedArchetypeId}
-              onChange={(e) => setSelectedArchetypeId(e.target.value)}
-              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
-            >
-              {STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.map((arch) => (
-                <option key={arch.id} value={arch.id}>
-                  {arch.labelKo} ({arch.headTallRatio}등신)
-                </option>
-              ))}
-            </select>
-            <div className="flex flex-wrap gap-1">
-              {wigOptions.map((wig) => (
-                <button
-                  key={wig.id}
-                  type="button"
-                  data-testid={`varco3d-charlab-wig-${wig.id}`}
-                  aria-pressed={selectedWigId === wig.id}
-                  onClick={() => setSelectedWigId(wig.id)}
-                  className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${
-                    selectedWigId === wig.id
-                      ? "border-accent bg-accent-soft font-semibold text-fg"
-                      : "border-line bg-panel text-fg-2"
-                  }`}
-                >
-                  {wig.labelKo}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {outfitOptions.slice(0, 4).map((outfit) => (
-                <button
-                  key={outfit.id}
-                  type="button"
-                  data-testid={`varco3d-charlab-outfit-${outfit.id}`}
-                  aria-pressed={selectedOutfitId === outfit.id}
-                  onClick={() => setSelectedOutfitId(outfit.id)}
-                  className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${
-                    selectedOutfitId === outfit.id
-                      ? "border-accent bg-accent-soft font-semibold text-fg"
-                      : "border-line bg-panel text-fg-2"
-                  }`}
-                >
-                  {outfit.labelKo}
-                </button>
-              ))}
-            </div>
-            <span data-testid="varco3d-charlab-loadout-readout" className="text-[0.66rem] text-fg-3">
-              장착 파츠: <strong>{characterLabLoadout.equippedItems.length}개</strong> · 폴리곤 예산:{" "}
-              <strong>{characterLabLoadout.totalPolygonBudget.toLocaleString()} tris</strong> · 장르
-              시너지: <strong>{characterLabLoadout.genreSynergyScore}%</strong> · 본 바인딩:{" "}
-              <code>{characterLabLoadout.attachedBones.join(", ")}</code>
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-fg">
-              실시간 4-View 직교 턴어라운드 시트 (FOUR_VIEW_GENERATION)
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {TURNAROUND_ANGLES.map((angle) => (
-                <button
-                  key={angle}
-                  type="button"
-                  data-testid={`varco3d-turnaround-angle-${angle}`}
-                  aria-pressed={selectedTurnaroundAngle === angle}
-                  onClick={() => setSelectedTurnaroundAngle(angle)}
-                  className={`rounded border px-2 py-0.5 text-[0.66rem] uppercase ${
-                    selectedTurnaroundAngle === angle
-                      ? "border-accent bg-accent-soft font-semibold text-fg"
-                      : "border-line bg-panel text-fg-2"
-                  }`}
-                >
-                  {angle}
-                </button>
-              ))}
-              <button
-                type="button"
-                data-testid="varco3d-charlab-weapon-murim"
-                onClick={() => setSelectedWeaponId("charlab_weapon_murim_jade_sword")}
-                className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.65rem] text-fg-2"
-              >
-                무림 장검 장착
-              </button>
-            </div>
-            <code
-              data-testid="varco3d-turnaround-view-url"
-              className="truncate text-[0.64rem] text-fg-3"
-            >
-              {turnaroundViewUrl}
-            </code>
-            <span className="text-[0.65rem] text-fg-3">
-              턴어라운드 태스크 ID:{" "}
-              <code>{characterLabLoadout.primaryTurnaround?.taskId ?? "none"}</code>
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-fg">
-              3D 배경 아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종) &
-              한국 웹툰 소품 배치
-            </span>
-            <select
-              aria-label="3D 배경 아이소메트릭 디오라마 선택"
-              data-testid="varco3d-diorama-select"
-              value={selectedDioramaId}
-              onChange={(e) => setSelectedDioramaId(e.target.value)}
-              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
-            >
-              {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.map((scene) => (
-                <option key={scene.id} value={scene.id}>
-                  {scene.labelKo} ({scene.ambientKelvin}K)
-                </option>
-              ))}
-            </select>
-            <span data-testid="varco3d-diorama-plan-readout" className="text-[0.66rem] text-fg-3">
-              FOV: <strong>{dioramaPlacementPlan.diorama.cameraFovDeg}°</strong> · 고도각:{" "}
-              <strong>{dioramaPlacementPlan.diorama.cameraElevationDeg}°</strong> · 방위각:{" "}
-              <strong>{dioramaPlacementPlan.diorama.cameraAzimuthDeg}°</strong> · 소품 면적:{" "}
-              <strong>{dioramaPlacementPlan.totalFootprintAreaSqMeters}㎡</strong>
-            </span>
-            <code
-              data-testid="varco3d-diorama-portal-url"
-              className="truncate text-[0.64rem] text-fg-3"
-            >
-              {dioramaPlacementPlan.varcoAssetPortalUrl}
-            </code>
-          </div>
-        </div>
-      </details>
-
-      <details
-        name={accordionGroupName}
-        data-testid="varco3d-details-vibe-pipeline-canonical"
-        style={DEFERRED_CATALOG_CONTAINER_STYLE}
-        className="rounded-lg border border-line/60 bg-card px-3 py-2"
-      >
-        <summary className="cursor-pointer font-semibold text-fg">
-          CharacterCanonicalPart 브리지 & 12-View PBR 재구성 링 (mvImages/mvAlbedo/mvOrm) &{" "}
-          {STUDIO_VARCO3D_ANIMATION_LIBRARY_SUMMARY.totalClips}-모션 리타겟팅 (mixamo52) &{" "}
-          {STUDIO_VARCO3D_POINT_POLICIES.length}종 포인트/큐 정책
-        </summary>
-        <div className="mt-2 grid grid-cols-1 gap-2.5 text-[0.72rem] text-fg-2 md:grid-cols-3">
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-fg">
-              CharacterCanonicalPartDescriptor 브리지 (skinned-transplant / socket)
-            </span>
-            <span
-              data-testid="varco3d-canonical-part-readout"
-              className="text-[0.66rem] text-fg-3"
-            >
-              슬롯: <strong>{canonicalWigDescriptor.slot}</strong> · 바인딩:{" "}
-              <strong>{canonicalWigDescriptor.binding.kind}</strong> · 타겟본:{" "}
-              <code>{canonicalWigDescriptor.binding.targetBone}</code> · LOD:{" "}
-              <strong>{canonicalWigDescriptor.lods.length}단계</strong>
-            </span>
-            <code
-              data-testid="varco3d-canonical-part-sha256"
-              className="truncate text-[0.63rem] text-fg-3"
-            >
-              sha256:{canonicalWigDescriptor.source.sha256}
-            </code>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-fg">
-              12-View PBR 재구성 링 ({STUDIO_VARCO3D_12VIEW_CAMERA_RING.length}방향 · cd1e75d3)
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {MV12_FAMILIES.map((family) => (
-                <button
-                  key={family}
-                  type="button"
-                  data-testid={`varco3d-12view-family-${family}`}
-                  aria-pressed={selected12ViewFamily === family}
-                  onClick={() => setSelected12ViewFamily(family)}
-                  className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${
-                    selected12ViewFamily === family
-                      ? "border-accent bg-accent-soft font-semibold text-fg"
-                      : "border-line bg-panel text-fg-2"
-                  }`}
-                >
-                  {family}
-                </button>
-              ))}
-              {(["front", "right", "back2", "top2"] as const).map((ang) => (
-                <button
-                  key={ang}
-                  type="button"
-                  data-testid={`varco3d-12view-angle-${ang}`}
-                  aria-pressed={selected12ViewAngle === ang}
-                  onClick={() => setSelected12ViewAngle(ang)}
-                  className={`rounded border px-1.5 py-0.5 text-[0.65rem] ${
-                    selected12ViewAngle === ang
-                      ? "border-accent bg-accent-soft font-semibold text-fg"
-                      : "border-line bg-panel text-fg-2"
-                  }`}
-                >
-                  {ang}
-                </button>
-              ))}
-            </div>
-            <span data-testid="varco3d-12view-stage-readout" className="text-[0.65rem] text-fg-3">
-              스테이지: <code>{mv12Inspection.pipelineStageKey}</code> · 링 인덱스:{" "}
-              <strong>#{mv12Inspection.ringIndex}</strong>
-            </span>
-            <code
-              data-testid="varco3d-12view-url-readout"
-              className="truncate text-[0.63rem] text-fg-3"
-            >
-              {mv12Inspection.objectUrl}
-            </code>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-fg">
-              실서버 ANIMATE 리타겟팅 ({STUDIO_VARCO3D_RETARGETED_MOTION_TASKS.length}종) & 포인트 정책
-            </span>
-            <select
-              aria-label="실서버 ANIMATE 리타겟팅 태스크 선택"
-              data-testid="varco3d-retargeted-motion-select"
-              value={selectedMotionTaskId}
-              onChange={(e) => setSelectedMotionTaskId(e.target.value)}
-              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
-            >
-              {STUDIO_VARCO3D_RETARGETED_MOTION_TASKS.map((task) => (
-                <option key={task.animTaskId} value={task.animTaskId}>
-                  {task.labelKo} ({task.animTaskId.slice(0, 8)})
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="VARCO 3D 포인트 정책 선택"
-              data-testid="varco3d-point-policy-select"
-              value={selectedPolicyKey}
-              onChange={(e) => setSelectedPolicyKey(e.target.value)}
-              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
-            >
-              {STUDIO_VARCO3D_POINT_POLICIES.map((pol) => (
-                <option key={pol.targetKey} value={pol.targetKey}>
-                  {pol.targetKey} ({pol.labelKo})
-                </option>
-              ))}
-            </select>
-            <span
-              data-testid="varco3d-retargeted-policy-readout"
-              className="text-[0.65rem] text-fg-3"
-            >
-              모션FBX: <code>{selectedMotionTask.animationFbx}</code> · 정책 상태:{" "}
-              <strong>{pointReservationEval.errorCode}</strong> · 가용 워커:{" "}
-              <strong>{pointReservationEval.availableParallelSlots}/30</strong>
-            </span>
-          </div>
-        </div>
-      </details>
+      <StudioVarco3dCatalogExecutionPanel
+        accordionGroupName={accordionGroupName}
+        onApplyMannequinBodySliders={onApplyMannequinBodySliders}
+      />
     </>
   );
 }

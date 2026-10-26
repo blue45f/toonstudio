@@ -283,4 +283,22 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     expect(onBuild).not.toHaveBeenCalled();
     expect(onAutoCutawayChange).not.toHaveBeenCalled();
   });
+
+  it("VARCO 3D 아이소메트릭 디오라마(22종)와 한국 웹툰 소품(21종)을 선택해 3D 장면에 배치한다", () => {
+    const { committed } = renderPicker({ autoCutaway: false });
+    fireEvent.click(screen.getByTestId("bg3d-world-shaper-toggle"));
+    const dioramaSelect = screen.getByTestId("bg3d-varco3d-diorama-select") as HTMLSelectElement;
+    expect(dioramaSelect.options).toHaveLength(22);
+
+    fireEvent.change(dioramaSelect, { target: { value: "diorama_rofan_imperial_ballroom" } });
+    fireEvent.click(screen.getByTestId("bg3d-varco3d-prop-prop_hanok_main_gate"));
+    fireEvent.click(screen.getByTestId("bg3d-varco3d-diorama-build-btn"));
+
+    expect(committed).toHaveLength(1);
+    const varcoProps = committed[0]!.filter((item) => item.tags?.includes("varco3d-prop"));
+    expect(varcoProps).toHaveLength(3);
+    expect(screen.getByRole("status").textContent).toContain(
+      "로판 황궁 대연회장 샹들리에 디오라마 (+소품 3종) 추가 완료",
+    );
+  });
 });

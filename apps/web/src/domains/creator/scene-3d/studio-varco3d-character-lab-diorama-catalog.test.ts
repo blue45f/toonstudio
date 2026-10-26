@@ -3,12 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_VARCO3D_ACTIVE_FLOW_ID,
   STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS,
+  STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS,
   STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
   STUDIO_VARCO3D_RETARGETED_MOTION_TASKS,
   STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES,
   STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
   composeVarco3dCharacterLabLoadout,
   evaluateVarco3dDioramaScenePlacement,
+  findVarco3dTurnaroundForReferenceImage,
+  mapVarco3dDioramaToBg3dTemplateId,
+  resolveVarco3dArchetypeMannequinApplication,
   resolveVarco3dTurnaroundViewUrl,
 } from "./studio-varco3d-character-lab-diorama-catalog";
 
@@ -90,5 +94,43 @@ describe("studio-varco3d-character-lab-diorama-catalog", () => {
     expect(plan.varcoAssetPortalUrl).toBe(
       "https://3d.varco.ai/myAssets/0c2f14f6-5dc3-4fba-9d2c-691cb6b779e0",
     );
+  });
+
+  it("registers all 40 completed 4-view Multi-View Turnaround sheets (160 PNG views) and verifies 32-char hashes for all 20 modular items", () => {
+    expect(STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS).toHaveLength(40);
+    for (const sheet of STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS) {
+      expect(sheet.frontPath).toMatch(/^\/api\/objects\/[0-9a-f]{32}\.png$/u);
+      expect(sheet.backPath).toMatch(/^\/api\/objects\/[0-9a-f]{32}\.png$/u);
+      expect(sheet.leftPath).toMatch(/^\/api\/objects\/[0-9a-f]{32}\.png$/u);
+      expect(sheet.rightPath).toMatch(/^\/api\/objects\/[0-9a-f]{32}\.png$/u);
+    }
+    for (const item of STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS) {
+      expect(item.referenceImagePath).toMatch(/^\/api\/objects\/[0-9a-f]{32}\.png$/u);
+      expect(item.multiviewTurnaround.frontPath).toMatch(/^\/api\/objects\/[0-9a-f]{32}\.png$/u);
+    }
+    const matched = findVarco3dTurnaroundForReferenceImage(
+      "/api/objects/7af8249b7dcc90c35afe5d82e9b55bd0.png",
+    );
+    expect(matched?.taskId).toBe("f18a1134-2161-40a1-a1d4-d1a080cb8d53");
+  });
+
+  it("maps VARCO 3D dioramas to bg3d template IDs and resolves mannequin body/pose presets from archetypes", () => {
+    expect(mapVarco3dDioramaToBg3dTemplateId("diorama_rofan_imperial_ballroom")).toBe(
+      "rofan-palace-ballroom",
+    );
+    expect(mapVarco3dDioramaToBg3dTemplateId("diorama_school_hallway")).toBe(
+      "school-classroom-sunset",
+    );
+    expect(mapVarco3dDioramaToBg3dTemplateId("diorama_murim_sect_courtyard")).toBe(
+      "murim-bamboo-pavilion",
+    );
+
+    const applied = resolveVarco3dArchetypeMannequinApplication({
+      archetypeId: "char_inkwash_wandering_swordsman_rigged",
+      animTaskId: "559118f7-f8eb-483f-a266-ca4bf170872f",
+    });
+    expect(applied.archetype.id).toBe("char_inkwash_wandering_swordsman_rigged");
+    expect(applied.posePresetId).toBe("running");
+    expect(applied.mannequinSliders.heightCm).toBeGreaterThan(165);
   });
 });

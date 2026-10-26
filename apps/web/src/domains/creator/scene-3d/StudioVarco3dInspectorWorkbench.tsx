@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useState, type CSSProperties, type ReactElement } from "react";
 
 import type { ShaperBodySliderValues } from "./studio-shaper-model";
+import type { StudioVarco3dMannequinPosePresetId } from "./studio-varco3d-character-lab-diorama-catalog";
 import { SHAPER_WEBTOON_UNIVERSE_PROFILES, blendShaperWebtoonUniverseProfiles, type ShaperWebtoonUniverseId } from "./studio-shaper-webtoon-customizer";
 import { STUDIO_VARCO3D_TURNTABLE_MULTIVIEW_METRICS, computeVarco3dTransparentCameraFit, evaluateVarco3dMultiViewFramePlan, solveVarco3dTwoBoneIk } from "./studio-varco3d-decal-ik-turntable-engine";
 import { STUDIO_VARCO3D_IDENTITY_MAP_ADJUSTMENT, STUDIO_VARCO3D_TEXTURE_BRUSH_DEFAULTS, evaluateVarco3dBumpSculptHeightScalar, evaluateVarco3dMapAdjustmentTexel, stepVarco3dPbrBrushSizeByKey } from "./studio-varco3d-map-adjust-bridge-dag-engine";
@@ -42,7 +43,14 @@ export interface StudioVarco3dInspectorWorkbenchProps {
   readonly initialHudState?: Partial<StudioVarco3dViewportHudState>;
   readonly initialWorkbenchMode?: StudioVarco3dWorkbenchMode;
   readonly initialUniverseId?: ShaperWebtoonUniverseId;
-  readonly onApplyMannequinBodySliders?: (sliders: ShaperBodySliderValues) => void;
+  readonly onApplyMannequinBodySliders?: (
+    sliders: ShaperBodySliderValues,
+    options?: {
+      readonly posePresetId?: StudioVarco3dMannequinPosePresetId;
+      readonly archetypeLabelKo?: string;
+      readonly motionLabelKo?: string;
+    },
+  ) => void;
   readonly onHudStateChange?: (state: StudioVarco3dViewportHudState) => void;
   readonly className?: string;
 }
@@ -764,6 +772,7 @@ export function StudioVarco3dInspectorWorkbench({
         comparerSplitPercent={comparerSplitPercent}
         onComparerSplitPercentChange={setComparerSplitPercent}
         multiViewPlan={multiViewPlan}
+        onApplyMannequinBodySliders={onApplyMannequinBodySliders}
       />
     </section>
   );

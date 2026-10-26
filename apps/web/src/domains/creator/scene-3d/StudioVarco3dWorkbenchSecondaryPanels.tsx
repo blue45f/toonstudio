@@ -39,7 +39,10 @@ import type {
   StudioVarco3dRigToolMode,
   StudioVarco3dWorkbenchMode,
 } from "./StudioVarco3dInspectorWorkbench";
-import { StudioVarco3dWorkflowMcpExportSection } from "./StudioVarco3dWorkflowMcpExportSection";
+import {
+  StudioVarco3dWorkflowMcpExportSection,
+  type StudioVarco3dWorkflowMcpExportSectionProps,
+} from "./StudioVarco3dWorkflowMcpExportSection";
 
 const WEIGHT_BRUSH_MODES: ReadonlyArray<{
   readonly id: StudioVarco3dWeightBrushMode;
@@ -147,6 +150,7 @@ export interface StudioVarco3dWorkbenchSecondaryPanelsProps {
   readonly comparerSplitPercent: number;
   readonly onComparerSplitPercentChange: (percent: number) => void;
   readonly multiViewPlan: ReturnType<typeof evaluateVarco3dMultiViewFramePlan>;
+  readonly onApplyMannequinBodySliders?: StudioVarco3dWorkflowMcpExportSectionProps["onApplyMannequinBodySliders"];
 }
 
 export function StudioVarco3dWorkbenchSecondaryPanels(
@@ -750,7 +754,10 @@ export function StudioVarco3dWorkbenchSecondaryPanels(
           </div>
         </details>
 
-        <StudioVarco3dWorkflowMcpExportSection accordionGroupName={accordionGroupName} />
+        <StudioVarco3dWorkflowMcpExportSection
+          accordionGroupName={accordionGroupName}
+          onApplyMannequinBodySliders={props.onApplyMannequinBodySliders}
+        />
       </div>
     </div>
   );
