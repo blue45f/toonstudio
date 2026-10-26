@@ -18,10 +18,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 01 · 작품 발견 허브", en: "STAGE 01 · DISCOVERY HUB" },
     atelierModelLabel: "NanoBanana Pro · Key-Art Curator",
     title: { ko: "큐레이션 스포트라이트 아트리움", en: "Curated Spotlight Atrium" },
-    subtitle: {
-      ko: "오늘의 주목작부터 장르·랭킹·요일 연재까지 한눈에 교차 탐색하고, 영감을 즉시 창작 스튜디오로 연결합니다.",
-      en: "Cross-navigate featured spotlights, genres, rankings, and weekly serials, then bridge inspiration straight into Studio.",
-    },
+    subtitle: { ko: "오늘의 주목작부터 장르·랭킹·요일 연재까지 한눈에 교차 탐색하고, 영감을 즉시 창작 스튜디오로 연결합니다.", en: "Cross-navigate featured spotlights, genres, rankings, and weekly serials, then bridge inspiration straight into Studio." },
     quickChips: [
       { ko: "에디터 픽 큐레이션", en: "Editor's Pick Curation" },
       { ko: "요일·장르 직관 탐색", en: "Day & Genre Discovery" },
@@ -68,10 +65,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 01 · 장르 스펙트럼 탐색", en: "STAGE 01 · GENRE SPECTRUM" },
     atelierModelLabel: "NanoBanana 2 · Genre Prism Engine",
     title: { ko: "장르 스펙트럼 프리즘 랩", en: "Genre Spectrum Prism Lab" },
-    subtitle: {
-      ko: "로맨스 판타지·액션·스릴러·일상까지 색채 스펙트럼과 정렬 필터로 취향 작품을 정밀하게 분광합니다.",
-      en: "Filter Romance Fantasy, Action, Thriller, and Slice-of-Life through chromatic spectrum tags and precision sorting.",
-    },
+    subtitle: { ko: "로맨스 판타지·액션·스릴러·일상까지 색채 스펙트럼과 정렬 필터로 취향 작품을 정밀하게 분광합니다.", en: "Filter Romance Fantasy, Action, Thriller, and Slice-of-Life through chromatic spectrum tags and precision sorting." },
     quickChips: [
       { ko: "장르·키워드 즉시 교차", en: "Instant Genre Cross-Filter" },
       { ko: "완결·연재 상태 분리", en: "Serial vs Completed Split" },
@@ -118,10 +112,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 01 · 실시간 차트 & 연재 리듬", en: "STAGE 01 · LIVE CHARTS & CALENDAR" },
     atelierModelLabel: "NanoBanana Pro · Pulse Analytics",
     title: { ko: "실시간 랭킹 & 연재 천문 시계탑", en: "Constellation Ranking & Serialization Clockwork" },
-    subtitle: {
-      ko: "시간대별 급상승 랭킹 포디움과 월~일 요일별 연재 주기를 천문 시계처럼 정교하게 추적합니다.",
-      en: "Track hourly rising podiums and Monday-to-Sunday serialization cycles with astronomical precision.",
-    },
+    subtitle: { ko: "시간대별 급상승 랭킹 포디움과 월~일 요일별 연재 주기를 천문 시계처럼 정교하게 추적합니다.", en: "Track hourly rising podiums and Monday-to-Sunday serialization cycles with astronomical precision." },
     quickChips: [
       { ko: "TOP 3 골든 포디움", en: "TOP 3 Golden Podium" },
       { ko: "일간·주간·월간 급상승", en: "Daily · Weekly · Monthly Velocity" },
@@ -168,10 +159,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 04 · 개인 서재 & 아카이브", en: "STAGE 04 · PERSONAL LIBRARY" },
     atelierModelLabel: "NanoBanana 2 · Archive Curator",
     title: { ko: "트와일라잇 서재 & 컬렉션 아카이브", en: "Twilight Personal Library Archive" },
-    subtitle: {
-      ko: "최근 읽은 회차 이어보기, 선호작 알림, 소장 에피소드와 영감 레퍼런스 보드를 아늑한 서재에서 관리합니다.",
-      en: "Resume recent episodes, manage favorite alerts, and organize owned series and reference boards in one archive.",
-    },
+    subtitle: { ko: "최근 읽은 회차 이어보기, 선호작 알림, 소장 에피소드와 영감 레퍼런스 보드를 아늑한 서재에서 관리합니다.", en: "Resume recent episodes, manage favorite alerts, and organize owned series and reference boards in one archive." },
     quickChips: [
       { ko: "1클릭 회차 이어보기", en: "1-Click Episode Resume" },
       { ko: "선호작 신간 알림", en: "New Episode Alerts" },
@@ -218,10 +206,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 02 · 원고 제작 & 브러시 스튜디오", en: "STAGE 02 · MANUSCRIPT & BRUSH STUDIO" },
     atelierModelLabel: "NanoBanana Pro · Cel-Brush Engine",
     title: { ko: "원고 캔버스 & 셀셰이딩 브러시 데스크", en: "Manuscript Canvas & Cel-Shaded Brush Desk" },
-    subtitle: {
-      ko: "웹툰 세로 스크롤 콘티부터 선화·밑색·말풍선 식자·나노바나나 AI 보조까지 창작의 모든 출발점을 통합합니다.",
-      en: "Unify vertical-scroll storyboards, lineart, flatting, speech-bubble lettering, and NanoBanana AI assist.",
-    },
+    subtitle: { ko: "웹툰 세로 스크롤 콘티부터 선화·밑색·말풍선 식자·나노바나나 AI 보조까지 창작의 모든 출발점을 통합합니다.", en: "Unify vertical-scroll storyboards, lineart, flatting, speech-bubble lettering, and NanoBanana AI assist." },
     quickChips: [
       { ko: "간편 모드 즉시 드로잉", en: "Simple Mode Instant Draw" },
       { ko: "NanoBanana 러프·채색 보조", en: "NanoBanana Rough & Color Assist" },
@@ -268,10 +253,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 02 · 스토리 랩 & 노벨코믹스 기획", en: "STAGE 02 · STORY LAB & NOVELCOMICS" },
     atelierModelLabel: "NanoBanana Pro · Narrative Beat Director",
     title: { ko: "스토리 랩 & 홀로그램 콘티 테이블", en: "Story Lab & Holographic Storyboard Table" },
-    subtitle: {
-      ko: "로그라인·캐릭터 관계도·세계관 바이블부터 웹소설 원문의 에피소드 콘티 변환까지 서사 설계를 시각화합니다.",
-      en: "Visualize loglines, character relationship webs, world bibles, and web-novel-to-episode storyboard beats.",
-    },
+    subtitle: { ko: "로그라인·캐릭터 관계도·세계관 바이블부터 웹소설 원문의 에피소드 콘티 변환까지 서사 설계를 시각화합니다.", en: "Visualize loglines, character relationship webs, world bibles, and web-novel-to-episode storyboard beats." },
     quickChips: [
       { ko: "기승전결 비트 시트", en: "Narrative Beat Sheet" },
       { ko: "캐릭터 아크 & 관계도", en: "Character Arc & Web" },
@@ -318,10 +300,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 02 · 3D 배경 & VRM 공간 스테이지", en: "STAGE 02 · 3D STAGE & VRM VIEWPORT" },
     atelierModelLabel: "NanoBanana Pro · 3D Paintover Engine",
     title: { ko: "3D 배경 & VRM 캐릭터 공간 연출 스테이지", en: "Spatial 3D Background & VRM Character Stage" },
-    subtitle: {
-      ko: "까다로운 투시 배경 블록과 VRM 마네킹 포즈·카메라 화각을 3D 뷰포트에서 잡고 웹툰 선화·채색 컷으로 추출합니다.",
-      en: "Stage complex perspective architecture, VRM character poses, and camera lenses in 3D, then extract webtoon panels.",
-    },
+    subtitle: { ko: "까다로운 투시 배경 블록과 VRM 마네킹 포즈·카메라 화각을 3D 뷰포트에서 잡고 웹툰 선화·채색 컷으로 추출합니다.", en: "Stage complex perspective architecture, VRM character poses, and camera lenses in 3D, then extract webtoon panels." },
     quickChips: [
       { ko: "VRM 캐릭터 포즈·다중 카메라", en: "VRM Posing & Multi-Camera" },
       { ko: "건축 블록 투시 가이드", en: "Architectural Perspective Guide" },
@@ -368,10 +347,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 03 · 에피소드 공정 & 품질 검수", en: "STAGE 03 · PRODUCTION & QA CONTROL" },
     atelierModelLabel: "NanoBanana Pro · QA Diff Inspector",
     title: { ko: "에피소드 프로덕션 & 품질 검수 컨트롤 룸", en: "Episode Production & Quality Review Suite" },
-    subtitle: {
-      ko: "회차별 공정 칸반(콘티·선화·채색·식자)부터 전후 컷 비교 검수·연재 송출 체크리스트까지 마감 안정성을 책임집니다.",
-      en: "Command episode kanban lanes, side-by-side panel diff inspection, and launch readiness checklists.",
-    },
+    subtitle: { ko: "회차별 공정 칸반(콘티·선화·채색·식자)부터 전후 컷 비교 검수·연재 송출 체크리스트까지 마감 안정성을 책임집니다.", en: "Command episode kanban lanes, side-by-side panel diff inspection, and launch readiness checklists." },
     quickChips: [
       { ko: "회차별 공정 병목 감지", en: "Episode Bottleneck Detection" },
       { ko: "선화·채색 루페 비교 검수", en: "Lineart & Color Loupe Diff" },
@@ -418,10 +394,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 03 · 창작 에셋 마켓 & 핏 랩", en: "STAGE 03 · ASSET MARKET & FIT LAB" },
     atelierModelLabel: "NanoBanana 2 · Material & Asset Fit",
     title: { ko: "창작 에셋 마켓 & 핏 랩 쇼케이스", en: "Creator Asset Market & Fit Lab Vitrine" },
-    subtitle: {
-      ko: "웹툰 전용 브러시·3D 배경 키트·스크린톤·말풍선 프리셋을 내 원고 화풍에 미리 합성해보고 도입합니다.",
-      en: "Preview webtoon brushes, 3D background kits, screentones, and bubble presets against your art style before buying.",
-    },
+    subtitle: { ko: "웹툰 전용 브러시·3D 배경 키트·스크린톤·말풍선 프리셋을 내 원고 화풍에 미리 합성해보고 도입합니다.", en: "Preview webtoon brushes, 3D background kits, screentones, and bubble presets against your art style before buying." },
     quickChips: [
       { ko: "에셋 핏 랩 사전 합성", en: "Asset Fit Lab Live Preview" },
       { ko: "상업 연재 라이선스 검증", en: "Commercial License Verified" },
@@ -468,10 +441,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 02 · 크리에이터 아카데미 & 트레이스", en: "STAGE 02 · CREATOR ACADEMY & TRACE" },
     atelierModelLabel: "NanoBanana 2 · Interactive Tutor",
     title: { ko: "크리에이터 아카데미 & 트레이스 실습실", en: "Creator Academy & Trace Practice Studio" },
-    subtitle: {
-      ko: "인체 드로잉·컷 연출·클리셰 사전부터 캔버스 위에서 직접 따라 그리는 트레이스 실습까지 실전 감각을 키웁니다.",
-      en: "Master figure drawing, panel staging, and trope encyclopedias with hands-on interactive trace layers.",
-    },
+    subtitle: { ko: "인체 드로잉·컷 연출·클리셰 사전부터 캔버스 위에서 직접 따라 그리는 트레이스 실습까지 실전 감각을 키웁니다.", en: "Master figure drawing, panel staging, and trope encyclopedias with hands-on interactive trace layers." },
     quickChips: [
       { ko: "단계별 트레이스 가이드", en: "Step-by-Step Trace Guides" },
       { ko: "웹툰 연출·클리셰 사전", en: "Staging & Trope Encyclopedia" },
@@ -518,10 +488,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 03 · 커뮤니티 라운지 & 리그", en: "STAGE 03 · COMMUNITY & PROMOTION LEAGUE" },
     atelierModelLabel: "NanoBanana 2 · Fan & Creator Pulse",
     title: { ko: "커뮤니티 라운지 & 프로모션 리그 광장", en: "Community Lounge & Promotion League Plaza" },
-    subtitle: {
-      ko: "창작자 작업 일지·피드백 라운지·독자 팬카페와 주간 프로모션 리그 응원이 살아 숨 쉬는 축제 광장입니다.",
-      en: "A vibrant festival plaza uniting creator WIP logs, critique lounges, fan cafes, and weekly league cheering.",
-    },
+    subtitle: { ko: "창작자 작업 일지·피드백 라운지·독자 팬카페와 주간 프로모션 리그 응원이 살아 숨 쉬는 축제 광장입니다.", en: "A vibrant festival plaza uniting creator WIP logs, critique lounges, fan cafes, and weekly league cheering." },
     quickChips: [
       { ko: "창작자 WIP 피드백 교환", en: "Creator WIP Critique" },
       { ko: "작품별 공식 팬카페", en: "Official Series Fan Cafes" },
@@ -568,10 +535,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 03 · 프리미어 쇼케이스 & 협업", en: "STAGE 03 · PREMIERE SHOWCASE & COLLAB" },
     atelierModelLabel: "NanoBanana Pro · Premiere Pitch Deck",
     title: { ko: "작품 프리미어 쇼케이스 & 협업 라운드테이블", en: "Premiere Showcase & Collaboration Roundtable" },
-    subtitle: {
-      ko: "완성된 프로젝트의 키비주얼·홍보 릴스를 무대 조명으로 선보이고 글·선화·채색·배경 파트너를 매칭합니다.",
-      en: "Spotlight finished key visuals and promo reels on stage while matching story, lineart, color, and 3D partners.",
-    },
+    subtitle: { ko: "완성된 프로젝트의 키비주얼·홍보 릴스를 무대 조명으로 선보이고 글·선화·채색·배경 파트너를 매칭합니다.", en: "Spotlight finished key visuals and promo reels on stage while matching story, lineart, color, and 3D partners." },
     quickChips: [
       { ko: "키비주얼 & 홍보 쇼릴", en: "Key Visual & Promo Showreel" },
       { ko: "글·작화·배경 팀 빌딩", en: "Story · Art · 3D Team Matching" },
@@ -618,10 +582,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "ALL-IN-ONE · 창작-연재 통합 브리지", en: "ALL-IN-ONE · CREATION-TO-SERIAL BRIDGE" },
     atelierModelLabel: "NanoBanana Pro · Unified Atelier OS",
     title: { ko: "올인원 창작-연재 골든 브리지", en: "All-in-One Creation-to-Serial Golden Bridge" },
-    subtitle: {
-      ko: "아이디어 스케치북에서 3D 공간 연출·원고 캔버스·연재 송출 타워까지 끊김 없이 이어지는 통합 웹툰 제작교입니다.",
-      en: "A seamless golden bridge linking idea sketchbooks, 3D staging, manuscript canvas, and global serialization.",
-    },
+    subtitle: { ko: "아이디어 스케치북에서 3D 공간 연출·원고 캔버스·연재 송출 타워까지 끊김 없이 이어지는 통합 웹툰 제작교입니다.", en: "A seamless golden bridge linking idea sketchbooks, 3D staging, manuscript canvas, and global serialization." },
     quickChips: [
       { ko: "기획 → 작화 → 검수 → 연재 통합", en: "Plan → Draw → QA → Publish" },
       { ko: "독자 탐색 & 작가 작업실 연동", en: "Reader Hub & Creator Studio Sync" },
@@ -668,10 +629,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "STAGE 04 · 내 공간 & AI 키 볼트", en: "STAGE 04 · MY SPACE & AI KEY VAULT" },
     atelierModelLabel: "NanoBanana Pro · BYOK Vault Controller",
     title: { ko: "내 공간 커맨드 데스크 & AI 키 볼트", en: "My Space Command Desk & AI Key Vault" },
-    subtitle: {
-      ko: "내 프로필·서재·창작 프로젝트 현황과 브라우저 암호화 기반 BYOK AI 키 볼트를 한 데스크에서 안전하게 제어합니다.",
-      en: "Control your profile, library, project milestones, and browser-encrypted BYOK AI key vault from one command desk.",
-    },
+    subtitle: { ko: "내 프로필·서재·창작 프로젝트 현황과 브라우저 암호화 기반 BYOK AI 키 볼트를 한 데스크에서 안전하게 제어합니다.", en: "Control your profile, library, project milestones, and browser-encrypted BYOK AI key vault from one command desk." },
     quickChips: [
       { ko: "BYOK AI 키 암호화 볼트", en: "Encrypted BYOK AI Key Vault" },
       { ko: "내 작업·서재 통합 대시보드", en: "Unified Work & Library Desk" },
@@ -718,10 +676,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "PLAY · 데일리 운세 & 컷플레이 아케이드", en: "PLAY · DAILY FORTUNE & CUT-PLAY ARCADE" },
     atelierModelLabel: "NanoBanana 2 · Tarot & Cut-Play",
     title: { ko: "스타라이트 웹툰 타로 & 컷플레이 아케이드", en: "Starlight Webtoon Tarot & Cut-Play Arcade" },
-    subtitle: {
-      ko: "오늘의 창작·독서 타로 운세부터 명장면 대사 채우기·컷 연출 퀴즈까지 가볍게 즐기는 영감 놀이터입니다.",
-      en: "An enchanting playground featuring daily webtoon tarot fortunes, dialogue remix challenges, and panel quizzes.",
-    },
+    subtitle: { ko: "오늘의 창작·독서 타로 운세부터 명장면 대사 채우기·컷 연출 퀴즈까지 가볍게 즐기는 영감 놀이터입니다.", en: "An enchanting playground featuring daily webtoon tarot fortunes, dialogue remix challenges, and panel quizzes." },
     quickChips: [
       { ko: "오늘의 웹툰 타로 카드", en: "Daily Webtoon Tarot Card" },
       { ko: "컷플레이 대사 리믹스", en: "Cut-Play Dialogue Remix" },
@@ -768,10 +723,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     stageBadge: { ko: "TRUST · 요금제·보안·접근성 약속", en: "TRUST · PRICING, SECURITY & ACCESSIBILITY" },
     atelierModelLabel: "NanoBanana Pro · Transparent Governance",
     title: { ko: "플랜·보안·접근성 크리스탈 성소", en: "Pricing, Security & Accessibility Sanctuary" },
-    subtitle: {
-      ko: "투명한 크리에이터 요금제와 저작권 보호 원칙, 모든 사용자를 위한 고대비·키보드 접근성 기준을 명료하게 제시합니다.",
-      en: "Clear creator pricing tiers, IP protection guarantees, and high-contrast keyboard accessibility standards.",
-    },
+    subtitle: { ko: "투명한 크리에이터 요금제와 저작권 보호 원칙, 모든 사용자를 위한 고대비·키보드 접근성 기준을 명료하게 제시합니다.", en: "Clear creator pricing tiers, IP protection guarantees, and high-contrast keyboard accessibility standards." },
     quickChips: [
       { ko: "창작자 원고 저작권 100% 보장", en: "100% Creator IP Ownership" },
       { ko: "무료 플랜 + BYOK 확장 지원", en: "Free Tier + BYOK Scaling" },
