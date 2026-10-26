@@ -341,7 +341,24 @@ export function ParamPanel() {
         aria-label="VARCO 3D 웹툰 세계관 셰이퍼 프리셋"
         data-testid="param-varco3d-universe-presets"
       >
-        <h3 className="cl-param-subtitle">VARCO 3D 웹툰 세계관 셰이퍼 프리셋 ({WEBTOON_UNIVERSE_SHAPER_PRESETS.length})</h3>
+        <h3 className="cl-param-subtitle">
+          VARCO 3D 웹툰 세계관 셰이퍼 프리셋 ({WEBTOON_UNIVERSE_SHAPER_PRESETS.length}){" "}
+          <span
+            style={{
+              display: "inline-block",
+              marginLeft: 6,
+              padding: "2px 6px",
+              borderRadius: 4,
+              backgroundColor: "rgba(84, 231, 250, 0.1)",
+              color: "#54e7fa",
+              fontSize: 9,
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            PBR · GLB
+          </span>
+        </h3>
         <div className="cl-param-presets">
           {WEBTOON_UNIVERSE_SHAPER_PRESETS.map((preset) => (
             <button
