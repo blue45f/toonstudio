@@ -51,7 +51,7 @@ jobs:
             exit 78
           fi
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         if: steps.receipt.outputs.skip != 'true'
         with:
           version: 11.4.0
