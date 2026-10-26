@@ -4,11 +4,15 @@ import {
   buildDeterministicBg3dLightingAssetReport,
   buildDeterministicBgmAudioToonReport,
   buildDeterministicCharacterOocRadarReport,
+  buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
+  buildDeterministicVisualContinuityLinterReport,
   runClaudeBg3dLightingAssetDirector,
   runClaudeBgmAudioToonCuesheet,
   runClaudeCharacterOocRadar,
+  runClaudeMultiEpisodeCanonVault,
   runClaudeReaderRetentionSimulator,
+  runClaudeVisualContinuityLinter,
   runClaudeWebtoonEpisodicDoctor,
 } from "./claude-webtoon-episodic-doctor";
 
@@ -50,6 +54,16 @@ describe("claude-webtoon-episodic-doctor", () => {
     expect(bgm.mode).toBe("bgm-audiotoon-cuesheet");
     expect(bgm.recommendedBpm).toBeGreaterThanOrEqual(45);
     expect(bgm.audioCues.length).toBeGreaterThan(0);
+
+    const linter = buildDeterministicVisualContinuityLinterReport(sampleInput);
+    expect(linter.mode).toBe("episodic-visual-continuity-linter");
+    expect(linter.zeroAnimationErrorGuarantee).toBe(true);
+    expect(linter.cutContinuityChecks.length).toBeGreaterThan(0);
+
+    const canonVault = buildDeterministicMultiEpisodeCanonVaultReport(sampleInput);
+    expect(canonVault.mode).toBe("multi-episode-canon-memory-vault");
+    expect(canonVault.canonVaultIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(canonVault.canonEntries.length).toBeGreaterThan(0);
   });
 
   it("Claude 구조화 출력(claudeParse) 성공 시 claude-live 결과를 정규화해 반환한다", async () => {
@@ -120,6 +134,18 @@ describe("claude-webtoon-episodic-doctor", () => {
     const r4 = await runClaudeWebtoonEpisodicDoctor("bgm-audiotoon-cuesheet", sampleInput);
     expect(r4.mode).toBe("bgm-audiotoon-cuesheet");
 
+    const r5 = await runClaudeWebtoonEpisodicDoctor(
+      "episodic-visual-continuity-linter",
+      sampleInput,
+    );
+    expect(r5.mode).toBe("episodic-visual-continuity-linter");
+
+    const r6 = await runClaudeWebtoonEpisodicDoctor(
+      "multi-episode-canon-memory-vault",
+      sampleInput,
+    );
+    expect(r6.mode).toBe("multi-episode-canon-memory-vault");
+
     // 개별 실행 함수도 폴백 확인
     const oocFallback = await runClaudeCharacterOocRadar(sampleInput);
     expect(oocFallback.source).toBe("deterministic-fallback");
@@ -127,6 +153,10 @@ describe("claude-webtoon-episodic-doctor", () => {
     expect(bg3dFallback.source).toBe("deterministic-fallback");
     const bgmFallback = await runClaudeBgmAudioToonCuesheet(sampleInput);
     expect(bgmFallback.source).toBe("deterministic-fallback");
+    const linterFallback = await runClaudeVisualContinuityLinter(sampleInput);
+    expect(linterFallback.source).toBe("deterministic-fallback");
+    const canonFallback = await runClaudeMultiEpisodeCanonVault(sampleInput);
+    expect(canonFallback.source).toBe("deterministic-fallback");
 
     parseSpy.mockRestore();
   });

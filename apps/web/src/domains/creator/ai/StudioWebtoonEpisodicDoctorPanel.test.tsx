@@ -52,5 +52,19 @@ describe("StudioWebtoonEpisodicDoctorPanel", () => {
     const applyAudioButtons = screen.getAllByText("오디오툰 큐시트 지문 삽입");
     fireEvent.click(applyAudioButtons[0]!);
     expect(onAppendDirectionLine).toHaveBeenCalledTimes(4);
+
+    // 탭 5: 컷간 작붕(흉터·검집·부상) 린터
+    fireEvent.click(screen.getByTestId("episodic-doctor-tab-episodic-visual-continuity-linter"));
+    expect(screen.getByTestId("episodic-panel-episodic-visual-continuity-linter")).toBeTruthy();
+    const applyLinterButtons = screen.getAllByText("작붕 방지 가드 지문 삽입");
+    fireEvent.click(applyLinterButtons[0]!);
+    expect(onAppendDirectionLine).toHaveBeenCalledTimes(5);
+
+    // 탭 6: 장편 연재(1~100화) 캐논 볼트
+    fireEvent.click(screen.getByTestId("episodic-doctor-tab-multi-episode-canon-memory-vault"));
+    expect(screen.getByTestId("episodic-panel-multi-episode-canon-memory-vault")).toBeTruthy();
+    const applyCanonButtons = screen.getAllByText("장편 캐논 볼트 지문 삽입");
+    fireEvent.click(applyCanonButtons[0]!);
+    expect(onAppendDirectionLine).toHaveBeenCalledTimes(6);
   });
 });

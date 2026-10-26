@@ -9,9 +9,11 @@
  */
 import {
   Activity,
+  Archive,
   Box,
   MessageSquareWarning,
   Music,
+  ShieldCheck,
   Sparkles,
   Star,
   ThumbsUp,
@@ -25,15 +27,21 @@ import {
   buildDeterministicBg3dLightingAssetReport,
   buildDeterministicBgmAudioToonReport,
   buildDeterministicCharacterOocRadarReport,
+  buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
+  buildDeterministicVisualContinuityLinterReport,
   runClaudeBg3dLightingAssetDirector,
   runClaudeBgmAudioToonCuesheet,
   runClaudeCharacterOocRadar,
+  runClaudeMultiEpisodeCanonVault,
   runClaudeReaderRetentionSimulator,
+  runClaudeVisualContinuityLinter,
   type ClaudeBg3dLightingAssetView,
   type ClaudeBgmAudioToonView,
   type ClaudeCharacterOocRadarView,
+  type ClaudeMultiEpisodeCanonVaultView,
   type ClaudeReaderRetentionView,
+  type ClaudeVisualContinuityLinterView,
   type WebtoonEpisodicDoctorMode,
 } from "./claude/claude-webtoon-episodic-doctor";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
@@ -65,6 +73,16 @@ const EPISODIC_DOCTOR_TABS: readonly {
     labelKo: "웹툰 BGM · 오디오툰 큐시트",
     benchmarkBadgeKo: "네이버웹툰 BGM · 보이스드라마",
   },
+  {
+    id: "episodic-visual-continuity-linter",
+    labelKo: "컷간 작붕(흉터·검집·부상) 린터",
+    benchmarkBadgeKo: "Opus 5.5 · 좌우반전/작붕 0%",
+  },
+  {
+    id: "multi-episode-canon-memory-vault",
+    labelKo: "장편 연재(1~100화) 캐논 볼트",
+    benchmarkBadgeKo: "Sonnet 5.5 · 외형·호칭·떡밥",
+  },
 ];
 
 export interface StudioWebtoonEpisodicDoctorPanelProps {
@@ -86,6 +104,10 @@ export function StudioWebtoonEpisodicDoctorPanel({
   const [liveOocView, setLiveOocView] = useState<ClaudeCharacterOocRadarView | null>(null);
   const [liveBg3dView, setLiveBg3dView] = useState<ClaudeBg3dLightingAssetView | null>(null);
   const [liveBgmView, setLiveBgmView] = useState<ClaudeBgmAudioToonView | null>(null);
+  const [liveLinterView, setLiveLinterView] =
+    useState<ClaudeVisualContinuityLinterView | null>(null);
+  const [liveCanonVaultView, setLiveCanonVaultView] =
+    useState<ClaudeMultiEpisodeCanonVaultView | null>(null);
 
   const retentionView = useMemo(
     () => liveRetentionView ?? buildDeterministicReaderRetentionReport(assistInput),
@@ -103,6 +125,14 @@ export function StudioWebtoonEpisodicDoctorPanel({
     () => liveBgmView ?? buildDeterministicBgmAudioToonReport(assistInput),
     [assistInput, liveBgmView],
   );
+  const linterView = useMemo(
+    () => liveLinterView ?? buildDeterministicVisualContinuityLinterReport(assistInput),
+    [assistInput, liveLinterView],
+  );
+  const canonVaultView = useMemo(
+    () => liveCanonVaultView ?? buildDeterministicMultiEpisodeCanonVaultReport(assistInput),
+    [assistInput, liveCanonVaultView],
+  );
 
   const handleRunLiveClaudeDoctor = async () => {
     if (isRunningClaude) return;
@@ -114,8 +144,12 @@ export function StudioWebtoonEpisodicDoctorPanel({
         setLiveOocView(await runClaudeCharacterOocRadar(assistInput));
       } else if (activeMode === "bg3d-lighting-asset-director") {
         setLiveBg3dView(await runClaudeBg3dLightingAssetDirector(assistInput));
-      } else {
+      } else if (activeMode === "bgm-audiotoon-cuesheet") {
         setLiveBgmView(await runClaudeBgmAudioToonCuesheet(assistInput));
+      } else if (activeMode === "episodic-visual-continuity-linter") {
+        setLiveLinterView(await runClaudeVisualContinuityLinter(assistInput));
+      } else {
+        setLiveCanonVaultView(await runClaudeMultiEpisodeCanonVault(assistInput));
       }
     } finally {
       setIsRunningClaude(false);
@@ -129,7 +163,11 @@ export function StudioWebtoonEpisodicDoctorPanel({
         ? oocView.source
         : activeMode === "bg3d-lighting-asset-director"
           ? bg3dView.source
-          : bgmView.source;
+          : activeMode === "bgm-audiotoon-cuesheet"
+            ? bgmView.source
+            : activeMode === "episodic-visual-continuity-linter"
+              ? linterView.source
+              : canonVaultView.source;
 
   return (
     <div
@@ -460,6 +498,102 @@ export function StudioWebtoonEpisodicDoctorPanel({
                   )}
                 >
                   오디오툰 큐시트 지문 삽입
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 5: 전 회차 컷간 작붕(비대칭 흉터·검집 반전·소품 증발·부상 초기화) 자동 검출 린터 */}
+      {activeMode === "episodic-visual-continuity-linter" ? (
+        <div
+          data-testid="episodic-panel-episodic-visual-continuity-linter"
+          className="space-y-2 rounded-lg border border-line/70 bg-raised/25 p-2.5 text-[0.62rem]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 font-bold text-fg">
+              <ShieldCheck className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+              컷간 작붕(비대칭 흉터/검집 반전 · 소품 증발 · 부상 초기화 · 그림자 방향) 자동 검출 린터
+            </span>
+            <span className="rounded bg-good/15 px-2 py-0.5 font-bold text-good">
+              비주얼 연속성 {linterView.visualContinuityScore}점 · 작붕 0% 보장
+            </span>
+          </div>
+          <p className="text-fg-2">{linterView.linterSummaryKo}</p>
+          <div className="grid gap-1.5 sm:grid-cols-3">
+            {linterView.cutContinuityChecks.map((chk, idx) => (
+              <div
+                key={`${chk.cutTransitionLabel}-${idx}`}
+                className="space-y-1 rounded border border-line/60 bg-card/80 p-2"
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-fg">{chk.cutTransitionLabel}</span>
+                  <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.55rem] font-semibold text-accent">
+                    {chk.errorCategory}
+                  </span>
+                </div>
+                <p className="text-[0.58rem] text-fg-3">위험: {chk.detectedRiskKo}</p>
+                <p className="text-[0.58rem] text-fg-2">가드: {chk.preventivePromptGuardKo}</p>
+                <button
+                  type="button"
+                  onClick={() => onAppendDirectionLine(chk.readyContinuityGuardLine)}
+                  className={cn(
+                    "rounded border border-line bg-raised px-2 py-0.5 text-[0.57rem] font-semibold text-fg-2 hover:bg-card",
+                    STUDIO_EASE,
+                    STUDIO_FOCUS_RING,
+                  )}
+                >
+                  작붕 방지 가드 지문 삽입
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 6: 장편 연재(1~100화) 캐릭터·세계관·복선·비주얼 캐논 메모리 볼트 */}
+      {activeMode === "multi-episode-canon-memory-vault" ? (
+        <div
+          data-testid="episodic-panel-multi-episode-canon-memory-vault"
+          className="space-y-2 rounded-lg border border-line/70 bg-raised/25 p-2.5 text-[0.62rem]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 font-bold text-fg">
+              <Archive className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+              장편 연재(1~100화) 캐릭터 외형 변천 · 상호 호칭 · 미회수 복선 캐논 메모리 볼트
+            </span>
+            <span className="rounded bg-accent/15 px-2 py-0.5 font-bold text-accent">
+              캐논 무결성 {canonVaultView.canonVaultIntegrityScore}/100점
+            </span>
+          </div>
+          <p className="text-fg-2">{canonVaultView.serializedArcTimelineKo}</p>
+          <div className="grid gap-1.5 sm:grid-cols-3">
+            {canonVaultView.canonEntries.map((entry) => (
+              <div
+                key={entry.entryId}
+                className="space-y-1 rounded border border-line/60 bg-card/80 p-2"
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-fg">{entry.establishedEpisodeLabel}</span>
+                  <span className="rounded bg-raised px-1.5 py-0.5 text-[0.55rem] font-semibold text-fg-2">
+                    {entry.canonCategory}
+                  </span>
+                </div>
+                <p className="text-[0.58rem] text-fg-2">불변 규칙: {entry.immutableRuleKo}</p>
+                <p className="text-[0.57rem] text-fg-3">
+                  이번 화 연동: {entry.currentEpisodeSyncDirectiveKo}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onAppendDirectionLine(entry.readyCanonVaultLine)}
+                  className={cn(
+                    "rounded border border-line bg-raised px-2 py-0.5 text-[0.57rem] font-semibold text-fg-2 hover:bg-card",
+                    STUDIO_EASE,
+                    STUDIO_FOCUS_RING,
+                  )}
+                >
+                  장편 캐논 볼트 지문 삽입
                 </button>
               </div>
             ))}

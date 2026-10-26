@@ -26,15 +26,21 @@ import {
   buildDeterministicBg3dLightingAssetReport,
   buildDeterministicBgmAudioToonReport,
   buildDeterministicCharacterOocRadarReport,
+  buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
+  buildDeterministicVisualContinuityLinterReport,
   ClaudeBg3dLightingAssetSchema,
   ClaudeBgmAudioToonSchema,
   ClaudeCharacterOocRadarSchema,
+  ClaudeMultiEpisodeCanonVaultSchema,
   ClaudeReaderRetentionSchema,
+  ClaudeVisualContinuityLinterSchema,
   type ClaudeBg3dLightingAssetView,
   type ClaudeBgmAudioToonView,
   type ClaudeCharacterOocRadarView,
+  type ClaudeMultiEpisodeCanonVaultView,
   type ClaudeReaderRetentionView,
+  type ClaudeVisualContinuityLinterView,
   type WebtoonEpisodicDoctorMode,
   type WebtoonEpisodicDoctorView,
 } from "./claude-webtoon-episodic-schemas";
@@ -449,6 +455,184 @@ export async function runClaudeBgmAudioToonCuesheet(
   }
 }
 
+export async function runClaudeVisualContinuityLinter(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeVisualContinuityLinterView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false)
+      return buildDeterministicVisualContinuityLinterReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:visual-continuity-linter", {
+    model: options.model as never,
+  });
+  const requestedModel = resolveClaudeRequestModel(
+    options.model ?? taskRoute.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 웹툰 연재 원고의 컷간 작붕(비대칭 흉터·안대·검집 좌우 반전, 무기/소품 증발, 전투 부상 초기화, 배경-인물 그림자 광원 충돌)을 전수 감사하는 비주얼 연속성 린터(Visual Continuity Linter)입니다. 컷 전환 구간별 작붕 위험도와 예방 프롬프트 가드를 JSON으로 출력하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 에피소드의 연속 컷 전환 구간(최대 4개 전환)에서 발생하기 쉬운 작붕 위험과 예방 프롬프트 가드를 JSON으로 진단해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel)
+      ? { output_config: { effort: taskRoute.effort } }
+      : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeVisualContinuityLinterSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeVisualContinuityLinterSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "episodic-visual-continuity-linter",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      visualContinuityScore: clampInt(parsed.visualContinuityScore, 50, 100, 98),
+      zeroAnimationErrorGuarantee: Boolean(parsed.zeroAnimationErrorGuarantee),
+      linterSummaryKo: cleanSingleLineText(parsed.linterSummaryKo, 200),
+      cutContinuityChecks: Object.freeze(
+        (parsed.cutContinuityChecks ?? []).slice(0, 4).map((c) =>
+          Object.freeze({
+            cutTransitionLabel: cleanSingleLineText(c.cutTransitionLabel, 80) || "Cut 1 → Cut 2",
+            errorCategory: c.errorCategory,
+            riskSeverity: c.riskSeverity,
+            detectedRiskKo: cleanSingleLineText(c.detectedRiskKo, 180),
+            preventivePromptGuardKo: cleanSingleLineText(c.preventivePromptGuardKo, 180),
+            readyContinuityGuardLine: cleanSingleLineText(c.readyContinuityGuardLine, 180),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicVisualContinuityLinterReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeMultiEpisodeCanonVault(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeMultiEpisodeCanonVaultView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false)
+      return buildDeterministicMultiEpisodeCanonVaultReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:multi-episode-canon-vault", {
+    model: options.model as never,
+  });
+  const requestedModel = resolveClaudeRequestModel(
+    options.model ?? taskRoute.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 장편 연재 웹툰(1~100화)의 캐릭터 외형 변천사, 상호 호칭/말투 매트릭스, 미회수 복선(Chekhov's Gun), 세계관 공간 규칙을 관리하는 멀티 에피소드 캐논 메모리 볼트(Canon Memory Vault) 디렉터입니다. JSON으로 캐논 무결성 점검 결과를 생성하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 에피소드가 장편 연재 캐논(외형 변천·상호 호칭·미회수 떡밥·공간 규칙)과 100% 일관되도록 캐논 메모리 볼트 항목(최대 4개)을 JSON으로 설계해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel)
+      ? { output_config: { effort: taskRoute.effort } }
+      : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeMultiEpisodeCanonVaultSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeMultiEpisodeCanonVaultSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "multi-episode-canon-memory-vault",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      canonVaultIntegrityScore: clampInt(parsed.canonVaultIntegrityScore, 50, 100, 99),
+      serializedArcTimelineKo: cleanSingleLineText(parsed.serializedArcTimelineKo, 200),
+      canonEntries: Object.freeze(
+        (parsed.canonEntries ?? []).slice(0, 4).map((e, idx) =>
+          Object.freeze({
+            entryId: cleanSingleLineText(e.entryId, 40) || `canon-vault-0${idx + 1}`,
+            canonCategory: e.canonCategory,
+            establishedEpisodeLabel: cleanSingleLineText(e.establishedEpisodeLabel, 60) || "EP.01",
+            immutableRuleKo: cleanSingleLineText(e.immutableRuleKo, 180),
+            currentEpisodeSyncDirectiveKo: cleanSingleLineText(
+              e.currentEpisodeSyncDirectiveKo,
+              180,
+            ),
+            readyCanonVaultLine: cleanSingleLineText(e.readyCanonVaultLine, 180),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicMultiEpisodeCanonVaultReport(input);
+    }
+    throw error;
+  }
+}
+
 export async function runClaudeWebtoonEpisodicDoctor(
   mode: WebtoonEpisodicDoctorMode,
   input: WebtoonProductionAssistInput,
@@ -463,5 +647,9 @@ export async function runClaudeWebtoonEpisodicDoctor(
       return runClaudeBg3dLightingAssetDirector(input, options);
     case "bgm-audiotoon-cuesheet":
       return runClaudeBgmAudioToonCuesheet(input, options);
+    case "episodic-visual-continuity-linter":
+      return runClaudeVisualContinuityLinter(input, options);
+    case "multi-episode-canon-memory-vault":
+      return runClaudeMultiEpisodeCanonVault(input, options);
   }
 }
