@@ -316,3 +316,319 @@ export function parseShaperUniWinCFileTypesFilter(
     allowedExtensions: allowsAllFiles ? null : allExtensions,
   };
 }
+
+/**
+ * SHAPER `UIManager::Awake` (`0x06000327`), `UIManager::.ctor` (`0x06000339`), `UIButtonHelper::.ctor` (`0x060002c1`),
+ * `UIImageView::ShowEditButtons`/`SetImage` (`0x060002e8..0x060002eb`), `UILayerToggleHelper::Start` (`0x0600030d`),
+ * `UIManager::AlignUI` (`0x06000317`), `UIScrollViewMaxHeightPanel::AlignPanel` (`0x06000373`),
+ * `UIManager::AddUIHeadPartItem` (`0x06000328`) 역공학 UI/UX 디자인 토큰:
+ * CIL `ldc.r4` 상수에서 추출한 스튜디오 다크 테마 색상 및 레이아웃 치수.
+ */
+export const SHAPER_UI_DESIGN_TOKENS = {
+  /** UIImageView::SetImage (0x060002eb): (0.07, 0.07, 0.07, 1.0) -> #121212 */
+  canvasBackdropHex: "#121212",
+  canvasBackdropRgba: [0.07, 0.07, 0.07, 1.0] as const,
+  /** UIImageView::ShowEditButtons (0x060002e8): (0.07, 0.07, 0.07, 0.5) */
+  hoverEditScrimRgba: [0.07, 0.07, 0.07, 0.5] as const,
+  /** UIManager::Awake (0x06000327): defaultColorBlock (0.2, 0.2, 0.2, 1.0) -> #333333 */
+  defaultPanelHex: "#333333",
+  defaultPanelRgba: [0.2, 0.2, 0.2, 1.0] as const,
+  /** UILayerToggleHelper::Start (0x0600030d): (0.4, 0.4, 0.4, 1.0) -> #666666 */
+  layerToggleMutedRgba: [0.4, 0.4, 0.4, 1.0] as const,
+  /** UIButtonHelper::.ctor (0x060002c1): disabled (0.45, 0.45, 0.45, 1.0) -> #737373 */
+  buttonDisabledRgba: [0.45, 0.45, 0.45, 1.0] as const,
+  /** UIManager::.ctor (0x06000339) & UITextKeycap::SetKeyCap (0x06000384): (0.69, 0.69, 0.69, 1.0) -> #B0B0B0 */
+  toolIconDefaultHex: "#b0b0b0",
+  toolIconDefaultRgba: [0.69, 0.69, 0.69, 1.0] as const,
+  /** UIButtonHelper::.ctor (0x060002c1): enabled (0.98, 0.98, 0.98, 1.0) -> #FAFAFA */
+  buttonActiveRgba: [0.98, 0.98, 0.98, 1.0] as const,
+  /** UIManager::Awake (0x06000327): toggleColorBlock (1.0, 1.0, 0.0, 1.0) */
+  toggleHighlightRgba: [1.0, 1.0, 0.0, 1.0] as const,
+  /** UIManager::AlignUI (0x06000317): 좌측 툴 도크 170px, 우측 인스펙터 330px, 상단 60px, 하단 24px */
+  leftDockWidthPx: 170,
+  rightInspectorWidthPx: 330,
+  topBarHeightPx: 60,
+  bottomStatusBarHeightPx: 24,
+  /** UIScrollViewMaxHeightPanel::AlignPanel (0x06000373): windowH - 90 */
+  scrollPanelVerticalReservePx: 90,
+  /** UIManager::AddUIHeadPartItem (0x06000328): 100x100 카드, 122px 간격, 20px 패딩 */
+  presetCardSizePx: 100,
+  presetCardStepPx: 122,
+  presetGridPaddingPx: 20,
+} as const;
+
+export interface ShaperColorPalettePickerInput {
+  /** 2D 채도·명도(SV) 피커 사각형 내 포인터 로컬 좌표 (px) */
+  readonly svPointerPos: readonly [number, number];
+  /** 2D SV 피커 사각형 크기 (width, height px) */
+  readonly svRectSize: readonly [number, number];
+  /** 1D 색상(Hue) 리본 내 포인터 로컬 X 좌표 (px) */
+  readonly huePointerX: number;
+  /** 1D Hue 리본 너비 (px) */
+  readonly hueRectWidth: number;
+  /** UIManager.instance.scaleFactor (기본 1.0) */
+  readonly scaleFactor?: number;
+  /** 클릭된 UIColorBox 앵커 좌표 (ColorPalette::Open 0x06000121 팝업 배치용) */
+  readonly anchorBoxPos?: readonly [number, number];
+}
+
+export interface ShaperColorPalettePickerResult {
+  readonly hsv: readonly [number, number, number];
+  readonly rgb01: readonly [number, number, number];
+  readonly rgb255: readonly [number, number, number];
+  readonly hex: string;
+  readonly pureHueRgb01: readonly [number, number, number];
+  readonly clampedSvHandlePos: readonly [number, number];
+  readonly clampedHueHandleX: number;
+  readonly popupPosition: readonly [number, number];
+}
+
+function hsvToRgb01(h: number, s: number, v: number): readonly [number, number, number] {
+  const hue = ((h % 1) + 1) % 1;
+  const i = Math.floor(hue * 6);
+  const f = hue * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0:
+      return [v, t, p];
+    case 1:
+      return [q, v, p];
+    case 2:
+      return [p, v, t];
+    case 3:
+      return [p, q, v];
+    case 4:
+      return [t, p, v];
+    default:
+      return [v, p, q];
+  }
+}
+
+/**
+ * SHAPER `ColorPalette` (`0x0600011c..0x06000121`), `ColorPalettePicker0` (`0x06000127..0x06000129`),
+ * `ColorPalettePicker1` (`0x06000132..0x06000134`), `UIColorBox` (`0x060002c4`) 역공학 내재화:
+ * 2D SV 사각형과 1D Hue 리본의 포인터 오프셋을 `scaleFactor`로 나눈 뒤 `[0, sizeDelta]`로 정규화하여
+ * HSV, 선형 RGB(`0..1`), 8비트 RGB(`0..255`), `#RRGGBB` 헥스 문자열, `[4, size - 4]` 클램프 핸들 좌표 및
+ * `ColorPalette::Open` (`0x06000121`)의 `(-20, +4)` 팝업 오프셋 좌표를 산출한다.
+ */
+export function sampleShaperColorPalettePicker2d(
+  input: ShaperColorPalettePickerInput,
+): ShaperColorPalettePickerResult {
+  const {
+    svPointerPos,
+    svRectSize,
+    huePointerX,
+    hueRectWidth,
+    scaleFactor = 1,
+    anchorBoxPos = [0, 0],
+  } = input;
+  const safeScale = scaleFactor > 1e-6 ? scaleFactor : 1;
+  const svW = Math.max(8, svRectSize[0]);
+  const svH = Math.max(8, svRectSize[1]);
+  const hueW = Math.max(8, hueRectWidth);
+
+  const localSvX = Math.max(0, Math.min(svW, svPointerPos[0] / safeScale));
+  const localSvY = Math.max(0, Math.min(svH, svPointerPos[1] / safeScale));
+  const localHueX = Math.max(0, Math.min(hueW, huePointerX / safeScale));
+
+  const s = localSvX / svW;
+  const v = localSvY / svH;
+  const h = localHueX / hueW;
+
+  const clampedSvHandlePos: readonly [number, number] = [
+    Math.max(4, Math.min(svW - 4, localSvX)),
+    Math.max(4, Math.min(svH - 4, localSvY)),
+  ];
+  const clampedHueHandleX = Math.max(4, Math.min(hueW - 4, localHueX));
+
+  const pureHueRgb01 = hsvToRgb01(h, 1, 1);
+  const rgb01 = hsvToRgb01(h, s, v);
+  const r255 = Math.round(rgb01[0] * 255);
+  const g255 = Math.round(rgb01[1] * 255);
+  const b255 = Math.round(rgb01[2] * 255);
+  const toHex2 = (n: number): string => n.toString(16).padStart(2, "0").toUpperCase();
+  const hex = `#${toHex2(r255)}${toHex2(g255)}${toHex2(b255)}`;
+
+  return {
+    hsv: [h, s, v],
+    rgb01,
+    rgb255: [r255, g255, b255],
+    hex,
+    pureHueRgb01,
+    clampedSvHandlePos,
+    clampedHueHandleX,
+    popupPosition: [anchorBoxPos[0] - 20, anchorBoxPos[1] + 4],
+  };
+}
+
+export interface ShaperPresetGridItemLayout {
+  readonly column: 0 | 1;
+  readonly row: number;
+  readonly anchoredX: number;
+  readonly anchoredY: number;
+  readonly cardWidth: number;
+  readonly cardHeight: number;
+  readonly contentHeight: number;
+  readonly maxScrollPanelHeight: number;
+}
+
+/**
+ * SHAPER `UIManager::AddUIHeadPartItem` (`0x06000328`, RVA `219100`) &
+ * `UIScrollViewMaxHeightPanel::AlignPanel` (`0x06000373`, RVA `229152`) 역공학 내재화:
+ * 우측 330px 패널 내부의 2열 프리셋 썸네일 카드 배치(`x = 20 + col * 122`, `y = -20 - row * 122`, 카드 크기 `100x100`)와
+ * 전체 스크롤 컨텐츠 높이 및 최대 스크롤 뷰 높이(`windowHeightPx - 90`)를 계산한다.
+ */
+export function computeShaperPresetGridItemLayout(
+  itemIndex: number,
+  totalCount: number,
+  windowHeightPx = 900,
+): ShaperPresetGridItemLayout {
+  const idx = Math.max(0, Math.trunc(itemIndex));
+  const count = Math.max(0, Math.trunc(totalCount));
+  const column = (idx % 2) as 0 | 1;
+  const row = Math.floor(idx / 2);
+  const totalRows = Math.ceil(count / 2);
+  return {
+    column,
+    row,
+    anchoredX: 20 + column * 122,
+    anchoredY: -20 - row * 122,
+    cardWidth: 100,
+    cardHeight: 100,
+    contentHeight: totalRows > 0 ? totalRows * 122 + 20 : 0,
+    maxScrollPanelHeight: Math.max(
+      120,
+      windowHeightPx - SHAPER_UI_DESIGN_TOKENS.scrollPanelVerticalReservePx,
+    ),
+  };
+}
+
+export interface ShaperWebcamPopupLayout {
+  readonly previewWidth: number;
+  readonly previewHeight: number;
+  readonly popupWidth: number;
+  readonly popupHeight: number;
+  readonly actionBarHeight: number;
+}
+
+/**
+ * SHAPER `UIManager::ResizeWebCamPopup` (`0x06000325`, RVA `217164`) 역공학 내재화:
+ * 웹캠/사진 AI 포즈 캡처 팝업에서 원본 영상 종횡비를 유지하면서 프리뷰 폭(`372..552px`)과
+ * 팝업 외곽 크기(`popupWidth = Math.max(420, previewW + 48)`, `popupHeight = previewH + 172`, 하단 버튼바 `36px`)를 계산한다.
+ */
+export function computeShaperWebcamPopupLayout(
+  sourceWidth: number,
+  sourceHeight: number,
+  targetPreviewHeight = 372,
+): ShaperWebcamPopupLayout {
+  const safeW = Math.max(1, sourceWidth);
+  const safeH = Math.max(1, sourceHeight);
+  const previewHeight = Math.max(120, targetPreviewHeight);
+  const aspect = safeW / safeH;
+  const previewWidth = Math.min(552, Math.max(190, Math.round(previewHeight * aspect)));
+  return {
+    previewWidth,
+    previewHeight,
+    popupWidth: Math.max(420, previewWidth + 48),
+    popupHeight: previewHeight + 172,
+    actionBarHeight: 36,
+  };
+}
+
+export interface ShaperKeycapShortcutItem {
+  readonly keys: string;
+  readonly description: string;
+}
+
+export interface ShaperContextStatusBarGuide {
+  readonly contextLabelKo: string;
+  readonly shortcuts: readonly ShaperKeycapShortcutItem[];
+  readonly rawToolTipText: string;
+}
+
+/**
+ * SHAPER `UIManager::SetDefaultToolTip` (`0x0600032e`, RVA `220068`) &
+ * `UITextKeycap::SetKeyCap` (`0x06000384`, RVA `229600`) 역공학 내재화:
+ * 현재 활성 인스펙터 탭·드로잉 모드·플랫폼(`isMac`)에 맞춰 하단 24px 상태바에 표시할
+ * SHAPER 원문 키캡 단축키 가이드(`0x70004847`, `0x70004934`, `0x70004f4d`, `0x7000502e`, `0x700050fd`)를 생성한다.
+ */
+export function resolveShaperContextStatusBarGuide(options: {
+  readonly inspectorTab: string;
+  readonly drawingMode?: boolean;
+  readonly isMac?: boolean;
+}): ShaperContextStatusBarGuide {
+  const { inspectorTab, drawingMode = false, isMac = false } = options;
+  const modCtrl = isMac ? "Cmd" : "Ctrl";
+  const modAlt = isMac ? "Option" : "Alt";
+
+  if (drawingMode || inspectorTab === "paint") {
+    const shortcuts: readonly ShaperKeycapShortcutItem[] = [
+      { keys: "LMB 드래그", description: "3D 표면 앵커링 삼각기둥 스트로크 그리기" },
+      { keys: `${modAlt} + 클릭`, description: "파츠 프리셋 펜선 제외 적용" },
+      { keys: "Shift + 클릭", description: "기존 펜선 유지 적용" },
+      { keys: `${modCtrl} + Z`, description: "스트로크 실행 취소" },
+    ];
+    return {
+      contextLabelKo: "3D 브러시 · 라인 드로잉 모드",
+      shortcuts,
+      rawToolTipText: shortcuts.map((s) => `${s.description} [${s.keys}]`).join("   "),
+    };
+  }
+
+  switch (inspectorTab) {
+    case "pose": {
+      const shortcuts: readonly ShaperKeycapShortcutItem[] = [
+        { keys: `${modAlt} + 클릭`, description: "포즈 좌우 대칭(Mirror) 적용" },
+        { keys: "Shift + 클릭", description: "카메라 각도 제외 포즈만 적용" },
+        { keys: `${modCtrl} + 클릭`, description: "카메라 각도만 적용" },
+        { keys: "F5", description: "시점 초기화 / 턴테이블" },
+      ];
+      return {
+        contextLabelKo: "포즈 · IK/FK 리깅 편집",
+        shortcuts,
+        rawToolTipText: shortcuts.map((s) => `${s.description} [${s.keys}]`).join("   "),
+      };
+    }
+    case "render": {
+      const shortcuts: readonly ShaperKeycapShortcutItem[] = [
+        { keys: "F12 / Space", description: "정면·씬 조명 및 툰 셰이더 전환" },
+        { keys: "← → ↑ ↓", description: "씬 조명 회전" },
+        { keys: `${modAlt} + ← →`, description: "툰 명암 경계(Cubic MatCap) 조절" },
+        { keys: "F10", description: "안구 카메라 응시 고정 토글" },
+      ];
+      return {
+        contextLabelKo: "툰 셰이딩 · 비등방 외곽선 · 조명",
+        shortcuts,
+        rawToolTipText: shortcuts.map((s) => `${s.description} [${s.keys}]`).join("   "),
+      };
+    }
+    case "physics": {
+      const shortcuts: readonly ShaperKeycapShortcutItem[] = [
+        { keys: "LMB", description: "헤어 가닥 심기(Plant)" },
+        { keys: `${modCtrl} + Scroll`, description: "Z축 모근 뿌리 회전 (±10°)" },
+        { keys: `${modAlt} + Scroll`, description: "헤어 휘어짐(Bend) 조절" },
+        { keys: "Shift + Scroll", description: "헤어 길이(Length) 조절" },
+      ];
+      return {
+        contextLabelKo: "헤어 스플라인 · DynamicBone 물리",
+        shortcuts,
+        rawToolTipText: shortcuts.map((s) => `${s.description} [${s.keys}]`).join("   "),
+      };
+    }
+    default: {
+      const shortcuts: readonly ShaperKeycapShortcutItem[] = [
+        { keys: "Shift + 클릭", description: "프리셋 색상만 적용" },
+        { keys: `${modCtrl} + 클릭`, description: "프리셋 형태만 적용" },
+        { keys: "F / B / C", description: "전신 · 상반신 · 얼굴 카메라 프레이밍" },
+        { keys: "1 ~ 9", description: "우측 인스펙터 탭 즉시 전환" },
+      ];
+      return {
+        contextLabelKo: "케이지 제어점 · 슬롯 프리셋 조합",
+        shortcuts,
+        rawToolTipText: shortcuts.map((s) => `${s.description} [${s.keys}]`).join("   "),
+      };
+    }
+  }
+}

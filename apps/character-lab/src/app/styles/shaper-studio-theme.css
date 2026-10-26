@@ -1,0 +1,254 @@
+/**
+ * SHAPER Studio UI/UX 디자인 시스템 & 모던 웹 가이드라인(browser-ui-theming, slider, color, premium-ui-design) 스타일시트.
+ *
+ * REA 역공학 근거 (Assembly-CSharp.dll):
+ * - UIImageView::SetImage (0x060002eb): 캔버스/썸네일 배경 #121212 (0.07, 0.07, 0.07, 1.0)
+ * - UIImageView::ShowEditButtons (0x060002e8): 호버 스크림 rgba(18, 18, 18, 0.5)
+ * - UIManager::Awake (0x06000327): defaultColorBlock #333333 (0.2, 0.2, 0.2), toggleColorBlock #FFFF00 (스튜디오 옐로 하이라이트)
+ * - UILayerToggleHelper::Start (0x0600030d): 비활성 레이어 #666666 (0.4, 0.4, 0.4)
+ * - UIButtonHelper::.ctor (0x060002c1): 활성 아이콘 #FAFAFA (0.98), 비활성 #737373 (0.45)
+ * - UITextKeycap::SetKeyCap (0x06000384) & UIManager::AlignUI (0x06000317): 하단 24px 컨텍스트 단축키 상태바 및 키캡 배지 (#B0B0B0)
+ */
+
+:root {
+  --shaper-canvas: #121212;
+  --shaper-panel: #1a1c22;
+  --shaper-panel-2: #262932;
+  --shaper-surface-elevated: #333333;
+  --shaper-fg: #fafafa;
+  --shaper-muted: #b0b0b0;
+  --shaper-disabled: #737373;
+  --shaper-line: #3d4250;
+  --shaper-highlight: #f5d90a;
+  --shaper-scrim: rgba(18, 18, 18, 0.5);
+  --studio-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* SHAPER Studio 다크 테마 토글 시 루트 토큰 오버라이드 */
+:root[data-studio-theme="shaper"] {
+  --lab-canvas: var(--shaper-canvas);
+  --lab-panel: var(--shaper-panel);
+  --lab-panel-2: var(--shaper-panel-2);
+  --lab-fg: var(--shaper-fg);
+  --lab-muted: var(--shaper-muted);
+  --lab-line: var(--shaper-line);
+  --lab-accent: #eab308;
+}
+
+:root[data-studio-theme="shaper"] .cl-button--primary,
+:root[data-studio-theme="shaper"] .cl-button[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--shaper-highlight) 85%, black);
+  border-color: var(--shaper-highlight);
+  color: #121212;
+  font-weight: 600;
+}
+
+/* ---------- Browser UI Theming (modern-web-guidance: browser-ui-theming) ---------- */
+::selection {
+  background: color-mix(in oklab, var(--lab-accent) 45%, transparent);
+  color: var(--lab-fg);
+}
+
+.cl-workbench-left,
+.cl-workbench-right {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--lab-line) 85%, white) transparent;
+}
+
+/* 사용자 상호작용 이후에만 유효성 보더 표시 (range 슬라이더는 제외) */
+input:not(input[type="range"]):user-invalid {
+  border-color: var(--lab-error);
+  outline: 1px solid color-mix(in oklab, var(--lab-error) 60%, transparent);
+}
+
+input:not(input[type="range"]):user-valid {
+  border-color: color-mix(in oklab, var(--lab-ok) 65%, var(--lab-line));
+}
+
+/* ---------- Brand-Consistent Range Slider (modern-web-guidance: slider) ---------- */
+.cl-app input[type="range"] {
+  --slider-track-size: 0.375rem;
+  --slider-thumb-size: 1rem;
+  --slider-track-radius: 999px;
+  --slider-thumb-radius: 50%;
+  --slider-track-color: color-mix(in oklab, var(--lab-line) 80%, black);
+  --slider-fill-color: var(--lab-accent);
+  --slider-thumb-color: var(--lab-fg);
+
+  appearance: none;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  accent-color: var(--slider-fill-color);
+}
+
+/* WebKit/Blink — Firefox 선택자와 합치지 않고 별도 선언하여 규칙 드롭 방지 */
+.cl-app input[type="range"]::-webkit-slider-runnable-track {
+  block-size: var(--slider-track-size);
+  border: 0;
+  border-radius: var(--slider-track-radius);
+  background: var(--slider-track-color);
+}
+
+.cl-app input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  inline-size: var(--slider-thumb-size);
+  block-size: var(--slider-thumb-size);
+  margin-block-start: calc((var(--slider-track-size) - var(--slider-thumb-size)) / 2);
+  border: 2px solid var(--slider-fill-color);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-color);
+  transition: transform 150ms var(--studio-ease-out), background-color 150ms var(--studio-ease-out);
+}
+
+.cl-app input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+/* Firefox */
+.cl-app input[type="range"]::-moz-range-track {
+  block-size: var(--slider-track-size);
+  border: 0;
+  border-radius: var(--slider-track-radius);
+  background: var(--slider-track-color);
+}
+
+.cl-app input[type="range"]::-moz-range-progress {
+  block-size: var(--slider-track-size);
+  border-radius: var(--slider-track-radius);
+  background: var(--slider-fill-color);
+}
+
+.cl-app input[type="range"]::-moz-range-thumb {
+  inline-size: var(--slider-thumb-size);
+  block-size: var(--slider-thumb-size);
+  border: 2px solid var(--slider-fill-color);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-color);
+  transition: transform 150ms var(--studio-ease-out), background-color 150ms var(--studio-ease-out);
+}
+
+.cl-app input[type="range"]:focus-visible {
+  outline: 2px solid var(--slider-fill-color);
+  outline-offset: 4px;
+}
+
+/* ---------- Premium UI Micro-Interactions & Glassmorphism ---------- */
+.cl-button,
+.cl-slot-card,
+.cl-inspector-tab {
+  transition:
+    transform 160ms var(--studio-ease-out),
+    border-color 160ms var(--studio-ease-out),
+    background-color 160ms var(--studio-ease-out),
+    box-shadow 160ms var(--studio-ease-out);
+}
+
+.cl-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.cl-slot-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--lab-accent) 70%, white);
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+}
+
+.cl-viewport-toolbar,
+.cl-viewport-hud,
+.cl-help-panel {
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  background: color-mix(in oklab, var(--lab-panel) 84%, transparent);
+  border: 1px solid color-mix(in oklab, var(--lab-line) 75%, white 12%);
+}
+
+/* ---------- SHAPER 24px 하단 컨텍스트 키캡 상태바 (UIManager::AlignUI & UITextKeycap) ---------- */
+.cl-shaper-statusbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 24px;
+  padding: 2px 12px;
+  background: color-mix(in oklab, var(--lab-panel) 92%, black);
+  border-top: 1px solid var(--lab-line);
+  color: var(--lab-muted);
+  font-size: 0.74rem;
+  line-height: 1.2;
+  user-select: none;
+}
+
+.cl-shaper-statusbar-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.cl-shaper-statusbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cl-shaper-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in oklab, var(--lab-line) 75%, white 18%);
+  background: color-mix(in oklab, var(--lab-panel-2) 88%, white 8%);
+  color: #b0b0b0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cl-shaper-keycap[data-modifier="true"] {
+  min-width: 24px;
+  color: var(--lab-fg);
+}
+
+.cl-shaper-statusbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lab-muted);
+  font-size: 0.7rem;
+}
+
+/* 컬러 피커 스워치는 색상 자체가 필수 정보이므로 forced-color-adjust: none 유지 */
+.cl-paint-swatch,
+.cl-color-swatch {
+  forced-color-adjust: none;
+}
+
+/* ---------- Forced Colors Mode 접근성 폴백 (modern-web-guidance: color) ---------- */
+@media (forced-colors: active) {
+  .cl-shaper-statusbar {
+    background: Canvas;
+    color: CanvasText;
+    border-top: 1px solid ButtonBorder;
+  }
+
+  .cl-shaper-keycap {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid ButtonBorder;
+  }
+
+  .cl-button[aria-pressed="true"],
+  .cl-button--primary {
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+}

@@ -6,8 +6,10 @@
 import { useEffect, useRef } from "react";
 
 import { InspectorTabs } from "./InspectorTabs";
-import { useEngineSession, useViewportRegistry } from "./lab-store-context";
+import { useEngineSession, useUiState, useViewportRegistry } from "./lab-store-context";
+import { resolveShaperContextStatusBarGuide } from "./panels/viewport-interactions";
 import { SlotRail } from "./SlotRail";
+import { INSPECTOR_TAB_LABELS_KO } from "./ui-state";
 
 import type { LabPanels } from "./lab-runtime";
 
@@ -59,7 +61,12 @@ export interface WorkbenchLayoutProps {
 
 export function WorkbenchLayout({ panels }: WorkbenchLayoutProps) {
   const viewport = useViewportRegistry();
+  const ui = useUiState();
   const { SlotPanel, ViewportPane } = panels;
+  const statusGuide = resolveShaperContextStatusBarGuide({
+    inspectorTab: ui.inspectorTab,
+    drawingMode: ui.drawingMode,
+  });
   return (
     <div className="cl-workbench">
       <aside className="cl-workbench-left" aria-label="슬롯">
@@ -78,6 +85,25 @@ export function WorkbenchLayout({ panels }: WorkbenchLayoutProps) {
       <aside className="cl-workbench-right" aria-label="인스펙터">
         <InspectorTabs panels={panels} />
       </aside>
+      <footer className="cl-shaper-statusbar" data-testid="shaper-context-statusbar" aria-label="단축키 상태바">
+        <div className="cl-shaper-statusbar-items">
+          {statusGuide.shortcuts.map((item) => (
+            <span key={`${item.keys}:${item.description}`} className="cl-shaper-statusbar-item">
+              <kbd className="cl-shaper-keycap" data-modifier={item.keys.includes("+") ? "true" : "false"}>
+                {item.keys}
+              </kbd>
+              <span>{item.description}</span>
+            </span>
+          ))}
+        </div>
+        <div className="cl-shaper-statusbar-meta" data-testid="shaper-statusbar-context">
+          <span>{statusGuide.contextLabelKo}</span>
+          <span>·</span>
+          <span>탭: {INSPECTOR_TAB_LABELS_KO[ui.inspectorTab]}</span>
+          <span>·</span>
+          <span>{ui.drawingMode ? "드로잉 모드" : "뷰포트 탐색 모드"}</span>
+        </div>
+      </footer>
     </div>
   );
 }

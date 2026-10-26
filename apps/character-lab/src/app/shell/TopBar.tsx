@@ -52,6 +52,14 @@ export function TopBar() {
   const viewport = useViewportRegistry();
   const { setInspectorTab } = useUiActions();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [studioTheme, setStudioTheme] = useState<"nebula" | "shaper">(() =>
+    typeof document !== "undefined" && document.documentElement.dataset.studioTheme === "shaper" ? "shaper" : "nebula",
+  );
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.dataset.studioTheme = studioTheme;
+  }, [studioTheme]);
 
   const engineText = describeEngineStatus(state.engine);
   const initializing = state.engine.phase === "initializing";
@@ -193,6 +201,15 @@ export function TopBar() {
         ))}
       </div>
       <div className="cl-topbar-group">
+        <button
+          type="button"
+          className="cl-button cl-button-small"
+          data-testid="topbar-studio-theme-toggle"
+          aria-pressed={studioTheme === "shaper"}
+          onClick={() => setStudioTheme((prev) => (prev === "shaper" ? "nebula" : "shaper"))}
+        >
+          {studioTheme === "shaper" ? "SHAPER 다크 테마" : "네뷸라 기본 테마"}
+        </button>
         <button
           type="button"
           className="cl-button cl-button-small"

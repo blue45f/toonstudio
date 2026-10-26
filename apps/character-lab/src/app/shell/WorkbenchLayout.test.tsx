@@ -34,6 +34,8 @@ describe("app/shell/WorkbenchLayout", () => {
     expect(screen.getByText(/SlotPanel\(state-presets 작업자\)/u)).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "슬롯 레일(15칸)" })).toBeTruthy();
     expect(screen.getByRole("tablist", { name: "인스펙터" })).toBeTruthy();
+    expect(screen.getByTestId("shaper-context-statusbar")).toBeTruthy();
+    expect(screen.getByTestId("shaper-statusbar-context").textContent).toContain("뷰포트 탐색 모드");
   });
 
   it("ViewportPane·SlotPanel이 있으면 그것을 그리고 호스트 탐색으로 캔버스를 찾는다", () => {
