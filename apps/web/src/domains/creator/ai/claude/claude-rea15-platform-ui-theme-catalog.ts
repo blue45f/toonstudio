@@ -113,6 +113,27 @@ export const REA15_PLATFORM_IDS = [
   "tvpaint-animation",
   "moho-animation",
   "eagle-cool",
+  // Wave 8 (20개 플랫폼 — 총 120개 플랫폼 완성)
+  "naver-webtoon-ai-painter",
+  "lezhin-comics-studio",
+  "kakao-webtoon-alive",
+  "pocket-comics-comico",
+  "bilibili-comics",
+  "comixology-guided-view",
+  "clipdrop-relight-uncrop",
+  "magnific-ai-relight",
+  "photoroom-matting",
+  "ideogram-v3-typography",
+  "midjourney-web-editor",
+  "comfyui-ipadapter-controlnet",
+  "invokeai-unified-canvas",
+  "procreate-5-3-ipad",
+  "paint-tool-sai-v2",
+  "rebelle-7-nanopixel",
+  "heavy-paint-color-block",
+  "zbrush-npr-matcap",
+  "daz3d-genesis9-figure",
+  "nomad-sculpt-webtoon",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -120,6 +141,7 @@ export const REA50_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA65_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA80_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA100_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA120_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -455,3 +477,4 @@ export const REA50_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA65_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA80_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA100_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA120_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

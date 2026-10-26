@@ -1,0 +1,107 @@
+{
+  "packId": "nano-banana-v12",
+  "generator": "Nano Banana (Google DeepMind Image Generator Subagent + PIL RGBA Floodfill Pipeline)",
+  "themeCount": 4,
+  "personaCount": 4,
+  "spriteFrameCount": 8,
+  "files": [
+    {
+      "id": "genre-studio-themes-atlas",
+      "path": "/assets/virtual-studio/nano-banana-v12/genre-studio-themes-atlas.webp",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "ad892fef8786012399aef1472d9875c87e4b92fe03d560f0ca2b833145a45a94"
+    },
+    {
+      "id": "romance-palace-conservatory",
+      "path": "/assets/virtual-studio/nano-banana-v12/themes/romance-palace-conservatory.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "8d951c64e0ac0811e41473698e6b781c14a2ef01931ae3843be5a53385ee120b"
+    },
+    {
+      "id": "murim-bamboo-pavilion",
+      "path": "/assets/virtual-studio/nano-banana-v12/themes/murim-bamboo-pavilion.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "7b425b9c66c6300bbe7c6db7d800d4f294ad54a4bc35a3967c9e6d40bbb16d3e"
+    },
+    {
+      "id": "scifi-orbital-command",
+      "path": "/assets/virtual-studio/nano-banana-v12/themes/scifi-orbital-command.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "bac3052ee56c39ef03661b1debae8a7841bc0ffaf1da267192ea13cb404e987b"
+    },
+    {
+      "id": "brooklyn-indie-comics-loft",
+      "path": "/assets/virtual-studio/nano-banana-v12/themes/brooklyn-indie-comics-loft.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "a27fc536b02aae8e9293eb70e14a8b13984bb1934bbc79fd6b1fdddac5d8dd8f"
+    },
+    {
+      "id": "story-writer-idle",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/story-writer-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "8c2e60dbbf7524d78e34bc245089b70468fa55418c93af4fb28367d8e05c923a"
+    },
+    {
+      "id": "action-mocap-actor-idle",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/action-mocap-actor-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "10db4278b7fa17576f65fb1ac946b56a89ceefa240d83dd29aa730da188dc88f"
+    },
+    {
+      "id": "sound-letterer-idle",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/sound-letterer-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "262deb842f9e1d90475e51cd9c8d9100234549f1e5edf428440c5c2ba29cce99"
+    },
+    {
+      "id": "studio-cat-mascot-idle",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "5b6cf23e2b498be01fe33e9bed339e92836de28966170204586496cd4fd81189"
+    },
+    {
+      "id": "story-writer-work",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/story-writer-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "fe368d6569e3bd84abaa76594a85c05db5f8c92c13a360981d45a35c1ff1f8d3"
+    },
+    {
+      "id": "action-mocap-actor-work",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/action-mocap-actor-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "2bf5fe403d94e23892913e6fae507d2e30b3e5c845d7ba46b7f4944947fadf07"
+    },
+    {
+      "id": "sound-letterer-work",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/sound-letterer-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "670f0e607f814b4c4300707866a50db9a34c61830234fa04e9fcdab9a13f64c5"
+    },
+    {
+      "id": "studio-cat-mascot-work",
+      "path": "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "218f901307570ea61c3738d7c394108ff2249e9b0554366d444f353c387dee0f"
+    },
+    {
+      "id": "specialist-cast-clean-atlas",
+      "path": "/assets/virtual-studio/nano-banana-v12/specialist-cast-clean-atlas.webp",
+      "width": 1024,
+      "height": 512,
+      "sha256": "a8298fcad0b81c8221eb03789d3759492ec93e87cba82c18e6bab109489d752d"
+    }
+  ]
+}
