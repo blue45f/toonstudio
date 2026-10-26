@@ -706,4 +706,35 @@ export function evaluateLabKlecksDistortAndToAlpha(params: {
   };
 }
 
+/**
+ * Wave 27: Klecks UI (`klecks-ui-slider-falloff.ts`, `klecks-ui-slider-value-mapping.ts`)
+ * non-linear exponent slider mapping and perpendicular-distance precision falloff.
+ */
+export function evaluateKlecksPrecisionSliderMapping(params: {
+  readonly slider01: number;
+  readonly min: number;
+  readonly max: number;
+  readonly exponent?: number;
+  readonly perpendicularDistancePx?: number;
+  readonly isFineMode?: boolean;
+}): {
+  readonly falloffFactor: number;
+  readonly mappedValue: number;
+  readonly roundtripSlider01: number;
+  readonly decimalPlaces: number;
+} {
+  const s01 = clamp01(params.slider01);
+  const exp = Math.max(0.25, params.exponent ?? 1.6);
+  const dPerp = Math.abs(params.perpendicularDistancePx ?? 0);
+  const fineMul = params.isFineMode ? 2 : 1;
+  const distFactor = Math.min(10, 1 + Math.floor(dPerp / 50) ** 2);
+  const falloffFactor = 1 / (distFactor * fineMul);
+  const span = Math.max(1e-6, params.max - params.min);
+  const mappedValue = params.min + s01 ** exp * span;
+  const roundtripSlider01 = clamp01(((mappedValue - params.min) / span) ** (1 / exp));
+  const decimalPlaces = Math.abs(mappedValue) < 10 ? 1 : 0;
+  return { falloffFactor, mappedValue, roundtripSlider01, decimalPlaces };
+}
+
+
 

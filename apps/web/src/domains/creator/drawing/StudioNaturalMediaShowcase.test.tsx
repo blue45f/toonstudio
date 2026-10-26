@@ -188,5 +188,33 @@ describe("StudioNaturalMediaShowcase", () => {
     expect(liveSvgPreview).not.toBeNull();
     expect(liveSvgPreview?.querySelector("path")).not.toBeNull();
     expect(liveSvgPreview?.querySelector("polygon")).not.toBeNull();
+
+    // Wave 27 Klecks·miniPaint REA UI/UX 워크스페이스 도크 탭 및 비선형 정밀 슬라이더·수직 감쇠 HUD 검증
+    const precisionHud = container.querySelector('[data-studio-klecks-precision-hud="true"]');
+    expect(precisionHud).not.toBeNull();
+    const precisionSlider = container.querySelector('[data-studio-precision-slider="size"]') as HTMLInputElement | null;
+    expect(precisionSlider).not.toBeNull();
+    fireEvent.change(precisionSlider!, { target: { value: "0.15" } });
+    const precisionReadout = container.querySelector('[data-studio-precision-readout="true"]');
+    expect(precisionReadout?.textContent).toContain(".");
+
+    const fineToggle = container.querySelector('[data-studio-precision-fine-toggle="true"]') as HTMLButtonElement | null;
+    expect(fineToggle).not.toBeNull();
+    expect(fineToggle?.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(fineToggle!);
+    expect(fineToggle?.getAttribute("aria-pressed")).toBe("true");
+    expect(fineToggle?.textContent).toContain("0.10×");
+
+    const wave26DockTab = container.querySelector('[data-studio-engine-wave-filter="wave26"]') as HTMLButtonElement | null;
+    expect(wave26DockTab).not.toBeNull();
+    fireEvent.click(wave26DockTab!);
+    expect(wave26DockTab?.getAttribute("aria-pressed")).toBe("true");
+
+    const allDockTab = container.querySelector('[data-studio-engine-wave-filter="all"]') as HTMLButtonElement | null;
+    fireEvent.click(allDockTab!);
+    expect(allDockTab?.getAttribute("aria-pressed")).toBe("true");
+
+    const contrastSwatch = container.querySelector("[data-studio-klecks-contrast-swatch]");
+    expect(contrastSwatch).not.toBeNull();
   });
 });

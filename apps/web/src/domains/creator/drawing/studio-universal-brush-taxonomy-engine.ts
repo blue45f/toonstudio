@@ -19,6 +19,7 @@ import {
   applyKlecksFilterAndVanishPointSuite,
   COMPETITOR_FILTER_PRESETS,
   WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER,
+  WAVE27_UIUX_REA_EVIDENCE_LEDGER,
 } from "./studio-competitor-filter-brush-suite";
 import {
   FREEHAND_ROUGH_BRUSH_PRESETS,
@@ -543,6 +544,7 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly wave24ReaEvidenceCount: number;
   readonly wave25ReaEvidenceCount: number;
   readonly wave26ReaEvidenceCount: number;
+  readonly wave27ReaUiUxEvidenceCount: number;
   readonly totalVisitedAstNodes: number;
   readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
@@ -584,11 +586,14 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const wave23Nodes = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const wave25Nodes = WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const wave26Nodes = WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
+  const wave27Nodes = WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.visitedAstNodes ?? 0;
   const totalSemanticDataFlowRelations =
     WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
     WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
-    WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0);
-  const totalVisitedAstNodes = wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes;
+    WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
+    (WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.dataFlowRelations ?? 0);
+  const totalVisitedAstNodes =
+    wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes + wave27Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
@@ -717,12 +722,14 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
       WAVE23_REA_DEEP_SEMANTIC_LEDGER.length +
       WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length +
       WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length +
-      WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length,
+      WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length +
+      WAVE27_UIUX_REA_EVIDENCE_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     wave24ReaEvidenceCount: WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
     wave25ReaEvidenceCount: WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length,
     wave26ReaEvidenceCount: WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length,
+    wave27ReaUiUxEvidenceCount: WAVE27_UIUX_REA_EVIDENCE_LEDGER.length,
     totalVisitedAstNodes,
     totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,

@@ -668,3 +668,109 @@ export function applyMiniPaintArtisticFilterSuite(params: {
     solarizedRgb255,
   };
 }
+
+// ============================================================================
+// 5. Wave 27: Klecks & miniPaint UI/UX REA Evidence Ledger & Precision Slider Math
+// ============================================================================
+
+export interface CompetitorUiUxReaEvidenceEntry {
+  readonly id: string;
+  readonly sourceProject: string;
+  readonly license: string;
+  readonly reaEvidenceId: string;
+  readonly summaryEvidenceId: string;
+  readonly factsEvidenceId: string;
+  readonly semanticTraceEvidenceId: string;
+  readonly rootArtifactSha256: string;
+  readonly visitedAstNodes: number;
+  readonly dataFlowRelations: number;
+  readonly extractedPatterns: readonly string[];
+}
+
+export const WAVE27_UIUX_REA_EVIDENCE_LEDGER: readonly CompetitorUiUxReaEvidenceEntry[] = [
+  {
+    id: "klecks-ui-precision-slider-and-dock",
+    sourceProject: "bitbof/klecks (src/app/script/klecks/ui/components/*)",
+    license: "MIT (Clean-Room Mathematical & Interaction Re-implementation)",
+    reaEvidenceId: "ev_8928297adeb1fe09269a8b3cbb6c159b45204c94279e648cebe3e22e17ab5a88",
+    summaryEvidenceId: "ev_cf2c6131f3afc85fcb2593c96a2637320801fc279374f013d6781faae80fe514",
+    factsEvidenceId: "ev_6c0986fed82c5efbb56fb4c6826be320ae983921754097bbf8bc18c2ee619497",
+    semanticTraceEvidenceId: "ev_257d52abab5184d2f7570e203f97302f5057f9460bd8d776e57d9d5a6d981c18",
+    rootArtifactSha256: "27e57562c00bc9c5b5e0983f1d95394e9017fa2a723ed23dd261907b9629bb4b",
+    visitedAstNodes: 13139,
+    dataFlowRelations: 4179,
+    extractedPatterns: [
+      "calcSliderFalloffFactor: 1 / (min(10, 1 + floor(d_perp / 50)^2) * (isFine ? 2 : 1))",
+      "Non-linear spline/power slider mapping: value = min + slider01^exponent * (max - min)",
+      "Adaptive decimal precision readout: Math.abs(displayValue) < 10 ? 1 : 0",
+      "Dual-ring high-contrast SV swatch & perceptual luminance contrast auto-inversion",
+    ],
+  },
+  {
+    id: "minipaint-gui-dock-and-inspector",
+    sourceProject: "viliusle/miniPaint (src/js/core/gui-*)",
+    license: "MIT (Clean-Room Mathematical & Interaction Re-implementation)",
+    reaEvidenceId: "ev_8928297adeb1fe09269a8b3cbb6c159b45204c94279e648cebe3e22e17ab5a88",
+    summaryEvidenceId: "ev_cf2c6131f3afc85fcb2593c96a2637320801fc279374f013d6781faae80fe514",
+    factsEvidenceId: "ev_6c0986fed82c5efbb56fb4c6826be320ae983921754097bbf8bc18c2ee619497",
+    semanticTraceEvidenceId: "ev_257d52abab5184d2f7570e203f97302f5057f9460bd8d776e57d9d5a6d981c18",
+    rootArtifactSha256: "27e57562c00bc9c5b5e0983f1d95394e9017fa2a723ed23dd261907b9629bb4b",
+    visitedAstNodes: 13139,
+    dataFlowRelations: 4179,
+    extractedPatterns: [
+      "Categorized workspace dock perspective tabs with instant filter switching",
+      "Synchronized multi-channel color & telemetry inspector readout",
+    ],
+  },
+] as const;
+
+export interface KlecksPrecisionSliderMappingEvaluation {
+  readonly falloffFactor: number;
+  readonly mappedValue: number;
+  readonly roundtripSlider01: number;
+  readonly decimalPlaces: number;
+  readonly formattedDisplayValue: string;
+  readonly isWhiteBestContrast: boolean;
+}
+
+/**
+ * Evaluates Klecks UI (`klecks-ui-slider-falloff.ts`, `klecks-ui-slider-value-mapping.ts`,
+ * `klecks-ui-color-slider.ts`) non-linear power slider mapping, perpendicular drag falloff,
+ * adaptive decimal formatting, and perceptual luminance contrast polarity.
+ */
+export function evaluateKlecksPrecisionSliderMapping(params: {
+  readonly slider01: number;
+  readonly min: number;
+  readonly max: number;
+  readonly exponent?: number;
+  readonly perpendicularDistancePx?: number;
+  readonly isFineMode?: boolean;
+  readonly swatchRgb01?: readonly [number, number, number];
+}): KlecksPrecisionSliderMappingEvaluation {
+  const s01 = clamp(params.slider01, 0, 1);
+  const exp = Math.max(0.25, params.exponent ?? 1.6);
+  const dPerp = Math.abs(params.perpendicularDistancePx ?? 0);
+  const fineMultiplier = params.isFineMode ? 2 : 1;
+  const distanceStepFactor = Math.min(10, 1 + Math.floor(dPerp / 50) ** 2);
+  const falloffFactor = 1 / (distanceStepFactor * fineMultiplier);
+
+  const span = Math.max(1e-6, params.max - params.min);
+  const mappedValue = params.min + s01 ** exp * span;
+  const roundtripSlider01 = clamp(((mappedValue - params.min) / span) ** (1 / exp), 0, 1);
+
+  const decimalPlaces = Math.abs(mappedValue) < 10 ? 1 : 0;
+  const formattedDisplayValue = mappedValue.toFixed(decimalPlaces);
+
+  const [r, g, b] = params.swatchRgb01 ?? [0.25, 0.45, 0.85];
+  const luminance01 = 0.299 * clamp(r, 0, 1) + 0.587 * clamp(g, 0, 1) + 0.114 * clamp(b, 0, 1);
+  const isWhiteBestContrast = luminance01 < 0.52;
+
+  return {
+    falloffFactor,
+    mappedValue,
+    roundtripSlider01,
+    decimalPlaces,
+    formattedDisplayValue,
+    isWhiteBestContrast,
+  };
+}

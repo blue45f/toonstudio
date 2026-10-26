@@ -184,6 +184,7 @@ function BrushPreviewArt({
   return (
     <svg
       viewBox="0 0 120 60"
+      style={{ aspectRatio: "2 / 1" }}
       className="h-16 w-full"
       role="img"
       aria-label={`${preset.labelKo} 스트로크 미리보기`}
@@ -412,6 +413,10 @@ export function StudioNaturalMediaShowcase({
         .studio-brush-card { animation: studio-brush-card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .studio-brush-selected-badge { animation: studio-brush-badge-pop 0.35s ease-out both; }
         .studio-brush-orb { animation: studio-brush-orb-drift 9s ease-in-out infinite; }
+        .studio-showcase-fluid-title { font-size: 1.5rem; }
+        @supports (font-size: 1cqi) {
+          .studio-showcase-fluid-title { font-size: clamp(1.375rem, 3.2cqi, 2.125rem); }
+        }
         @media (prefers-reduced-motion: reduce) {
           .studio-brush-card, .studio-brush-selected-badge, .studio-brush-orb { animation: none !important; }
         }
@@ -433,7 +438,7 @@ export function StudioNaturalMediaShowcase({
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
               {tx("무료 내추럴 미디어")}
             </p>
-            <h2 className="mt-1 bg-gradient-to-r from-fg via-accent to-cool bg-clip-text text-2xl font-black text-transparent sm:text-3xl">
+            <h2 className="studio-showcase-fluid-title mt-1 bg-gradient-to-r from-fg via-accent to-cool bg-clip-text font-black text-transparent">
               {tx("마음에 드는 브러시를 하나 골라보세요")}
             </h2>
             <p className="mt-2 max-w-xl text-sm text-fg-2">

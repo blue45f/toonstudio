@@ -105,6 +105,13 @@
     - `heatmap`: BT.709 휘도 $Y = 0.2126R + 0.7152G + 0.0722B$ 기반 5구간 열화상 램프.
     - `blueprint`(#0e58a3 프러시안 블루 + Sobel 윤곽 스크린 합성 + 5배수 주·부 격자) 및 `Solarize`.
 
+### 2.10 Wave 27 `bitbof/klecks` · `viliusle/miniPaint` UI/UX 컴포넌트 역공학 및 정밀 인터랙션 고도화 (Observation)
+- 11개 경쟁사 UI/UX 위젯 소스(`klecks-ui-slider.ts`, `klecks-ui-slider-falloff.ts`, `klecks-ui-slider-value-mapping.ts`, `klecks-ui-color-slider.ts`, `klecks-ui-tab-row.ts`, `klecks-ui-toolspace-top-row.ts`, `klecks-ui-box-toggle.ts`, `minipaint-gui-colors.js`, `minipaint-gui-layers.js`, `minipaint-gui-tools.js`)에 대한 `analyze_javascript_application`(`ev_8928297adeb1fe09269a8b3cbb6c159b45204c94279e648cebe3e22e17ab5a88`), `inspect_analysis_view`(`ev_cf2c6131f3afc85fcb2593c96a2637320801fc279374f013d6781faae80fe514`, `ev_6c0986fed82c5efbb56fb4c6826be320ae983921754097bbf8bc18c2ee619497`), `trace_javascript_semantics`(`ev_257d52abab5184d2f7570e203f97302f5057f9460bd8d776e57d9d5a6d981c18`, SHA-256 `27e57562c00bc9c5b5e0983f1d95394e9017fa2a723ed23dd261907b9629bb4b`, 방문 AST 노드 13,139개, 데이터흐름 관계 4,179개)를 통해 다음 UI/UX 패턴을 `StudioUniversalBrushEngineBar.tsx` 및 `StudioNaturalMediaShowcase.tsx`에 내재화했다:
+  - **Klecks 수직 거리 정밀 감쇠(`calcSliderFalloffFactor`)**: 슬라이더 축에서 수직으로 $d_{\perp}\text{ px}$만큼 멀어지거나 정밀 모드(`isFine`)를 켜면 감도가 $\text{factor} = \frac{1}{\min(10, 1 + \lfloor d_{\perp}/50 \rfloor^2) \cdot (\text{isFine}?2:1)}$로 최대 $1/20\times$까지 감쇠하여 서브픽셀 미세 조정을 지원한다.
+  - **Klecks 비선형 거듭제곱 슬라이더 매핑(`valueToSliderValue` / `sliderValueToValue`)**: $v = v_{\min} + s^{\gamma}(v_{\max}-v_{\min})$ ($\gamma = 1.6$) 매핑과 $|v| < 10$ 구간 소수점 1자리 적응형 표기를 결합해 소형 선화 브러시($1\text{–}10\text{px}$)의 해상도를 극대화한다.
+  - **Klecks 지각 휘도 대비 자동 반전(`testIsWhiteBestContrast`) & 이중 링 스와치**: $0.299R + 0.587G + 0.114B < 0.52$ 기준으로 고대비 지표를 자동 전환한다.
+  - **워크스페이스 도크 관점 필터 탭 & 컨테이너 쿼리 반응형 인스펙터**: `container-type: inline-size`(`@container`), `@supports (font-size: 1cqi)` 유동 타이포그래피(`clamp()`), 미디어 `aspect-ratio` 공간 예약을 결합했다.
+
 ---
 
 ## 3. 한계 및 미확정 영역 (Limitations & Unknowns)

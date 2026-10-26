@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  evaluateKlecksPrecisionSliderMapping,
   evaluateLabGlfxColorHalftoneAndDenoise,
   evaluateLabKlecksBlendAndSmudgeStep,
   evaluateLabKlecksDistortAndToAlpha,
@@ -260,5 +261,17 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
     });
     expect(klecks.extractedAlpha01).toBeCloseTo(0.9, 4);
     expect(klecks.warpedX).not.toBe(20);
+
+    const sliderPrecision = evaluateKlecksPrecisionSliderMapping({
+      slider01: 0.15,
+      min: 1,
+      max: 120,
+      exponent: 1.6,
+      perpendicularDistancePx: 110,
+      isFineMode: true,
+    });
+    expect(sliderPrecision.falloffFactor).toBeCloseTo(0.1, 4);
+    expect(sliderPrecision.decimalPlaces).toBe(1);
+    expect(sliderPrecision.roundtripSlider01).toBeCloseTo(0.15, 4);
   });
 });

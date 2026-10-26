@@ -15,6 +15,7 @@ import {
   evaluateArtRageAndFrescoBrushStep,
   evaluateBayerDitherBrushMask,
   evaluateInkscapeCalligraphicSpiroStroke,
+  evaluateKlecksPrecisionSliderMapping,
   evaluateKlecksTrigonometricPrng01,
   evaluateKonvaCardinalTensionSpline,
   evaluateMiltonAnalyticalCapsuleSdfCoverage01,
@@ -247,12 +248,13 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(30);
+    expect(bench.reaEvidenceTargetCount).toBe(32);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
     expect(bench.wave24ReaEvidenceCount).toBe(4);
     expect(bench.wave25ReaEvidenceCount).toBe(4);
     expect(bench.wave26ReaEvidenceCount).toBe(8);
+    expect(bench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(bench.competitorFilterPresetCount).toBe(12);
     expect(bench.klecksVanishPointRayCount).toBe(36);
     expect(bench.glfxHalftoneDotCmykCount).toBe(4);
@@ -719,5 +721,39 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     expect(miniPaint.heatmapRgb255[0]).toBe(255);
     expect(miniPaint.blueprintCompositeRgb255[2]).toBeGreaterThan(163);
     expect(miniPaint.solarizedRgb255[0]).toBe(185);
+  });
+
+  it("Wave 27 Klecks·miniPaint REA UI/UX 비선형 정밀 슬라이더 매핑 및 수직 거리 감쇠(Falloff)를 검증한다", () => {
+    const smallBrush = evaluateKlecksPrecisionSliderMapping({
+      slider01: 0.15,
+      min: 1,
+      max: 120,
+      exponent: 1.6,
+      perpendicularDistancePx: 0,
+      isFineMode: false,
+      swatchRgb01: [0.1, 0.15, 0.2],
+    });
+    expect(smallBrush.falloffFactor).toBe(1);
+    expect(smallBrush.mappedValue).toBeLessThan(10);
+    expect(smallBrush.decimalPlaces).toBe(1);
+    expect(smallBrush.roundtripSlider01).toBeCloseTo(0.15, 4);
+    expect(smallBrush.isWhiteBestContrast).toBe(true);
+
+    const fineFalloff = evaluateKlecksPrecisionSliderMapping({
+      slider01: 0.75,
+      min: 1,
+      max: 120,
+      exponent: 1.6,
+      perpendicularDistancePx: 110,
+      isFineMode: true,
+      swatchRgb01: [0.92, 0.95, 0.88],
+    });
+    expect(fineFalloff.falloffFactor).toBeCloseTo(0.1, 4);
+    expect(fineFalloff.decimalPlaces).toBe(0);
+    expect(fineFalloff.isWhiteBestContrast).toBe(false);
+
+    const bench = measureUniversalBrushTaxonomyEngineBenchmark();
+    expect(bench.wave27ReaUiUxEvidenceCount).toBe(2);
+    expect(bench.reaEvidenceTargetCount).toBe(32);
   });
 });
