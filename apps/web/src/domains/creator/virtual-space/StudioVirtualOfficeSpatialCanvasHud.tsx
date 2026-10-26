@@ -142,7 +142,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
         style={{ background: activePreset.canvasGradientCss }}
       >
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-200">
-          <span role="status" aria-live="polite" data-testid="spatial-hud-toast">
+          <span aria-live="polite" data-testid="spatial-hud-toast">
             ✨ {hudToastKo}
           </span>
           <span className="tabular-nums opacity-85">
