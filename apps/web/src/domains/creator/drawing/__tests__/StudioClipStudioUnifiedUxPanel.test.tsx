@@ -96,4 +96,33 @@ describe("StudioClipStudioUnifiedUxPanel", () => {
       "감지된 미채움 미세 틈새(hanuke) 픽셀:",
     );
   });
+
+  it("renders PW* composite controls, PWGLCalcVividColor 3D toon shader, .fto fonts, and MENUv3 Bento launcher", () => {
+    const onLaunchBentoItem = vi.fn();
+    render(
+      <StudioClipStudioUnifiedUxPanel
+        initialTab="pwui_bento_3d_toon"
+        onLaunchBentoItem={onLaunchBentoItem}
+      />,
+    );
+
+    expect(screen.getByTestId("csp-pwgl-vivid-readout").textContent).toContain(
+      "양자화 명도: 0.35",
+    );
+    expect(screen.getByTestId("csp-fto-pwui-readout").textContent).toContain(
+      "IwaAntStd-Bd",
+    );
+    expect(screen.getByTestId("csp-fto-pwui-readout").textContent).toContain(
+      "PW* 위젯 클래스: 27종",
+    );
+
+    const fanzineBentoBtn = screen.getByRole("button", {
+      name: /동인지 만들기/,
+    });
+    fireEvent.click(fanzineBentoBtn);
+    expect(onLaunchBentoItem).toHaveBeenCalledWith(
+      "fanzine",
+      "start_fanzine_index.html",
+    );
+  });
 });
