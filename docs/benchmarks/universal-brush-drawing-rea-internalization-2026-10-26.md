@@ -1,7 +1,7 @@
 # 글로벌 GitHub 오픈소스·웹 드로잉·상용 페인팅 브러시 생태계 REA 역공학 및 ToonStudio 전수 내재화 보고서 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 · Wave 25 전수 구현 및 검증 완료)
+- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 · Wave 25 · Wave 26 전수 구현 및 검증 완료)
 - **관련 모듈**:
   - `apps/web/src/domains/creator/drawing/studio-universal-brush-taxonomy-engine.ts`
   - `apps/web/src/domains/creator/drawing/studio-vector-skeletal-pattern-brushes.ts`
@@ -9,6 +9,7 @@
   - `apps/web/src/domains/creator/drawing/studio-bezier-curve-fit-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-mypaint-spectral-boolean-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-freehand-rough-spatial-brushes.ts`
+  - `apps/web/src/domains/creator/drawing/studio-competitor-filter-brush-suite.ts`
   - `apps/web/src/domains/creator/drawing/StudioUniversalBrushEngineBar.tsx`
   - `apps/web/src/domains/creator/drawing/StudioNaturalMediaShowcase.tsx`
   - `apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts`
@@ -36,6 +37,8 @@
 | **Kleki Paint Tool Live Web** (`https://kleki.com/`) | 웹 드로잉 앱 | `ev_e18363e6ca16f1021568217f61ca8b0bd0fb8985502a9bb9cf7caa9b89d8489b` | `ev_fea11f72411af055b8c7ad205cf8e396dbc8422791e9e92f09e86283cf7ddfb3` | `ev_0516537b2ec94a9be6d2a5b8ad462f092ccbfb8385dae17119682e25d66ecc0b` (`ev_4f595af8dd54f2b16616eacd326cec6836a7cf487e2ef741942c51ecfc657cbf`) | `729961c419cdfce0d959e266da81e2084f897acd38a1b7d9ed8394584456ba62` | 6,299 |
 | **SculptGL Live WebGL App** (`https://stephaneginier.com/sculptgl/`) | 웹 3D 조각 앱 | `ev_36354f8da48307c96490a6867a35c5263751e84667a861d366f6aee5c2ef118c` | `ev_5987f111cacd4a5496b4c58fb7adf164805d0445f40f8be8597942b0d1959979` | `ev_69e649b77cb172c5d3af961306998500a9d2e971b0dc9383d818582a9edbf6ef` (`ev_dc3c4491d9c09949ef98b8c5429d5ee8517e128711bf903d731c9135b369d4fb`) | `8b2a7bdcbd67777df57b81fb0c6b7e036a472a115d845dacf9e5f9d8d54423da` | 12,163 |
 | **Wave 25 OSS Freehand·Rough·Spatial Suite** (`steveruizok/perfect-freehand`, `rough-stuff/rough`, `mourner/simplify-js`, `mourner/rbush`) | GitHub OSS 시맨틱 | — | `ev_396f3dc483117865fbe719b384173cdf98ba300894d32c7adbc6f619a93ae485` | `ev_20799b6fe98e9be9b759cc172e64a0dfcfce7d71f377c33b77b96623171e01af` (`ev_f89fe384ed368eddb2cf116d7384604469f217ceb5aa9491f00efad99bda9813`) | `b7ee90dfb1da437134d89a7d31d716850b669c35e462a9a6d6b3ae68d336a8f8` | 19,576 |
+| **Wave 26 Native Competitor Apps** (`PhotoCraft.app`, `EffectCraft.app`, `LightCraft.app`, `DesignCraft.app` Mach-O `arm64`) | 네이티브 데스크톱 앱 | — | `ev_ccc9b89d81933d92ec015ada70f5fd7f8c985dac3656c59c7a3530f2cb3bec96` | `ev_0bda4c0b555577ee84c73c106f26fb68c31c26bcaeb089862a184bb770033748` (`ev_6590dfb3dcfd6eccb3915544dc5ec64276f9f0ecdf717ecaa6b9a3cc14822625`) | `2f2beb092480504a2f462255d677cd3251d9422a66e256cd5d2cb958f8719a96` | — |
+| **Wave 26 Competitor Filter & Brush Suite** (`evanw/glfx.js`, `bitbof/klecks` filters, `viliusle/miniPaint` effects & `imagefilters.js`) | GitHub OSS 필터·브러시 | — | `ev_93c33cb4c74ab01322c59036b508f85c2b7a7585fd7a04295f1582899c050fd2` | `ev_98e833954ba33291660e040ea4b918430b8cc17f74dd87a4ba24a7dc9191fc8f` (`ev_fa464889433a9ea94a81dced88c8de1ce988a386d09515862ae5999c20c765bc`) | `6e9698c0567c3181264ca2e7a359353e1d6cee2748f534d1ec86a2581c139285` | 19,420 |
 
 ---
 
@@ -83,6 +86,31 @@
   - **`rough-stuff/rough` (`rough.esm.js`, SHA-256 `e921535f...`)**: Park-Miller Lehmer LCG PRNG(`seed = Math.imul(48271, seed) & 0x7fffffff`, `next = seed / 2147483648`), 길이 감쇠(`L < 200 -> 1`, `L > 500 -> 0.4`, 그 외 `-0.0016668 * L + 1.233334`), 이중선 휨·거칠기 3차 베지어 오프셋(`bowX`, `bowY`), 회전 활성 에지 테이블(`ymin`, `ymax`, `x`, `islope`) 스캔라인 7종 해칭(`hachure`, `zigzag`, `cross-hatch`, `dots`, `dashed`, `zigzag-line`, `solid`).
   - **`mourner/simplify-js` (`simplify.js`, SHA-256 `e4c7a1a8...`)**: 1단계 방사형 거리 필터($\|\mathbf{p}_i - \mathbf{p}_{\text{prev}}\|^2 > \tau^2$) + 2단계 재귀 Ramer-Douglas-Peucker 수직 제곱 거리 분할.
   - **`mourner/rbush` (`rbush.js`, SHA-256 `cbb358bc...`)**: OMT(Overlap Minimizing Top-down) X-Y 타일 정렬 기반 2D 공간 인덱스 및 벡터 스트로크·지우개 AABB 교차 쿼리.
+
+### 2.9 Wave 26 경쟁사 드로잉·사진·이펙트 앱(`PhotoCraft`, `EffectCraft`, `LightCraft`, `DesignCraft`) 및 `glfx.js` · `Klecks` · `miniPaint` 필터·집중선 스위트 (Observation)
+- `inspect_rust_binary`(`ev_0bda4c0b...`, `ev_a30ee192...`, `ev_86c62ccf...`, `ev_dc085212...`) 및 24개 필터·브러시 아티팩트 `analyze_javascript_application`(`ev_98e833954ba33291660e040ea4b918430b8cc17f74dd87a4ba24a7dc9191fc8f`, `ev_fa464889433a9ea94a81dced88c8de1ce988a386d09515862ae5999c20c765bc`, 방문 AST 노드 19,420개, 데이터흐름 관계 10,961개)을 통해 다음 수식을 `studio-competitor-filter-brush-suite.ts`에 전수 내재화했다:
+  - **`evanw/glfx.js` WebGL 카메라·아티스틱 필터**:
+    - `denoise`: $9\times 9$ 양방향 지수 가중치 $w = (1 - |(\mathbf{c}(x,y) - \mathbf{c}_0)\cdot(0.25, 0.25, 0.25)|)^{\text{exponent}}$.
+    - `lensBlur`: 6날 정육각 조리개 보케를 $\theta_k = \text{angle} + k\frac{2\pi}{3}$ ($k \in \{0,1,2\}$) 3개 마름모 방향으로 분해하고 사전 감마 $\mathbf{c}^p$ ($p = 10^{\text{brightness}}$) 및 사후 역감마 $\mathbf{c}^{1/p}$를 적용.
+    - `colorHalftone`: CMYK 4스크린 회전 정현파 망점($\theta_C = +15^\circ, \theta_M = +75^\circ, \theta_Y = 0^\circ, \theta_K = +45^\circ$).
+    - `ink`: $5\times 5$ 대영역 평균과 $|x|+|y|<2$ 마름모 소영역 평균 차의 제곱에 $\text{strength}^5 \cdot 10^5$를 곱하는 Difference-of-Boxes 잉크 윤곽선 강화.
+    - `hexagonalPixelate`, `swirl`($\theta = ((r-d)/r)^2 \cdot \text{angle}$), `bulgePinch`.
+  - **`bitbof/klecks` 집중선 및 웹툰 필터**:
+    - `drawVanishPoint`: 소실점 $(x_0, y_0)$에서 $\Delta\theta = 180^\circ / \text{lines}$ 간격으로 방사되는 웹툰 집중선(`vanishPointRays`).
+    - `fxDistort`: 스텝 양자화(`floor(x/step)*step`) + 3-모드 정현파 파동 왜곡 및 RGB 채널 위상 변조.
+    - `fxToAlpha`: 명도 $(R+G+B)/3$ 반전 알파 선화 추출 및 단색 치환.
+    - `fxTiltShift`: 초점선 법선 거리 기반 `smoothstep` 틸트시프트 심도 블러 반경.
+  - **`viliusle/miniPaint` 및 `arahaya/ImageFilters.js` 아티스틱 필터**:
+    - `ImageFilters.Oil`: $(2R+1)\times(2R+1)$ 이웃 픽셀을 `(c * levels) >> 8` 히스토그램 빈으로 집계해 최빈 빈의 평균 RGB를 취하는 유화 필터.
+    - `heatmap`: BT.709 휘도 $Y = 0.2126R + 0.7152G + 0.0722B$ 기반 5구간 열화상 램프.
+    - `blueprint`(#0e58a3 프러시안 블루 + Sobel 윤곽 스크린 합성 + 5배수 주·부 격자) 및 `Solarize`.
+
+### 2.10 Wave 27 `bitbof/klecks` · `viliusle/miniPaint` UI/UX 컴포넌트 역공학 및 정밀 인터랙션 고도화 (Observation)
+- 11개 경쟁사 UI/UX 위젯 소스(`klecks-ui-slider.ts`, `klecks-ui-slider-falloff.ts`, `klecks-ui-slider-value-mapping.ts`, `klecks-ui-color-slider.ts`, `klecks-ui-tab-row.ts`, `klecks-ui-toolspace-top-row.ts`, `klecks-ui-box-toggle.ts`, `minipaint-gui-colors.js`, `minipaint-gui-layers.js`, `minipaint-gui-tools.js`)에 대한 `analyze_javascript_application`(`ev_8928297adeb1fe09269a8b3cbb6c159b45204c94279e648cebe3e22e17ab5a88`), `inspect_analysis_view`(`ev_cf2c6131f3afc85fcb2593c96a2637320801fc279374f013d6781faae80fe514`, `ev_6c0986fed82c5efbb56fb4c6826be320ae983921754097bbf8bc18c2ee619497`), `trace_javascript_semantics`(`ev_257d52abab5184d2f7570e203f97302f5057f9460bd8d776e57d9d5a6d981c18`, SHA-256 `27e57562c00bc9c5b5e0983f1d95394e9017fa2a723ed23dd261907b9629bb4b`, 방문 AST 노드 13,139개, 데이터흐름 관계 4,179개)를 통해 다음 UI/UX 패턴을 `StudioUniversalBrushEngineBar.tsx` 및 `StudioNaturalMediaShowcase.tsx`에 내재화했다:
+  - **Klecks 수직 거리 정밀 감쇠(`calcSliderFalloffFactor`)**: 슬라이더 축에서 수직으로 $d_{\perp}\text{ px}$만큼 멀어지거나 정밀 모드(`isFine`)를 켜면 감도가 $\text{factor} = \frac{1}{\min(10, 1 + \lfloor d_{\perp}/50 \rfloor^2) \cdot (\text{isFine}?2:1)}$로 최대 $1/20\times$까지 감쇠하여 서브픽셀 미세 조정을 지원한다.
+  - **Klecks 비선형 거듭제곱 슬라이더 매핑(`valueToSliderValue` / `sliderValueToValue`)**: $v = v_{\min} + s^{\gamma}(v_{\max}-v_{\min})$ ($\gamma = 1.6$) 매핑과 $|v| < 10$ 구간 소수점 1자리 적응형 표기를 결합해 소형 선화 브러시($1\text{–}10\text{px}$)의 해상도를 극대화한다.
+  - **Klecks 지각 휘도 대비 자동 반전(`testIsWhiteBestContrast`) & 이중 링 스와치**: $0.299R + 0.587G + 0.114B < 0.52$ 기준으로 고대비 지표를 자동 전환한다.
+  - **워크스페이스 도크 관점 필터 탭 & 컨테이너 쿼리 반응형 인스펙터**: `container-type: inline-size`(`@container`), `@supports (font-size: 1cqi)` 유동 타이포그래피(`clamp()`), 미디어 `aspect-ratio` 공간 예약을 결합했다.
 
 ---
 

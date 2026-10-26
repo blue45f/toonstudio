@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  evaluateKlecksPrecisionSliderMapping,
+  evaluateLabGlfxColorHalftoneAndDenoise,
   evaluateLabKlecksBlendAndSmudgeStep,
+  evaluateLabKlecksDistortAndToAlpha,
   evaluateLabMyPaintOpaqueLinearizeAndPosterize,
   evaluateLabPerfectFreehandSimulatedPressureAndRadius,
   evaluateLabSaiWatercolorPressure,
@@ -218,5 +221,57 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
     expect(roughShort.dampingFactor).toBe(1);
     expect(roughLong.dampingFactor).toBeCloseTo(0.4, 4);
     expect(roughShort.firstPassMidpoint.x).not.toBe(roughShort.secondPassMidpoint.x);
+  });
+
+  it("Wave 26 glfx.js 양방향 디노이즈·CMYK 하프톤 및 Klecks 파동 왜곡·명도→알파 선화 추출이 정확히 동작한다", () => {
+    const glfxNear = evaluateLabGlfxColorHalftoneAndDenoise({
+      centerRgb01: [0.5, 0.5, 0.5],
+      sampleRgb01: [0.52, 0.49, 0.51],
+      denoiseExponent: 20,
+      dxPx: 8,
+      dyPx: 6,
+      halftoneAngleRad: 0.25,
+      halftoneSizePx: 6,
+    });
+    const glfxEdge = evaluateLabGlfxColorHalftoneAndDenoise({
+      centerRgb01: [0.1, 0.1, 0.1],
+      sampleRgb01: [0.95, 0.95, 0.95],
+      denoiseExponent: 20,
+      dxPx: 8,
+      dyPx: 6,
+      halftoneAngleRad: 0.25,
+      halftoneSizePx: 6,
+    });
+    expect(glfxNear.bilateralWeight01).toBeGreaterThan(0.85);
+    expect(glfxEdge.bilateralWeight01).toBeLessThan(0.05);
+    expect(glfxNear.halftoneCmyk01).toHaveLength(4);
+
+    const klecks = evaluateLabKlecksDistortAndToAlpha({
+      x: 23,
+      y: 19,
+      stepSizePx: 4,
+      scaleX: 20,
+      scaleY: 20,
+      strengthX: 6,
+      strengthY: 6,
+      phaseX: 0.1,
+      phaseY: 0.2,
+      rgba01: [0.1, 0.1, 0.1, 1.0],
+      isInverted: true,
+    });
+    expect(klecks.extractedAlpha01).toBeCloseTo(0.9, 4);
+    expect(klecks.warpedX).not.toBe(20);
+
+    const sliderPrecision = evaluateKlecksPrecisionSliderMapping({
+      slider01: 0.15,
+      min: 1,
+      max: 120,
+      exponent: 1.6,
+      perpendicularDistancePx: 110,
+      isFineMode: true,
+    });
+    expect(sliderPrecision.falloffFactor).toBeCloseTo(0.1, 4);
+    expect(sliderPrecision.decimalPlaces).toBe(1);
+    expect(sliderPrecision.roundtripSlider01).toBeCloseTo(0.15, 4);
   });
 });

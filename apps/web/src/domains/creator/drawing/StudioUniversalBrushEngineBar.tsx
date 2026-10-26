@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
-import type { ReactElement } from "react";
+import type { KeyboardEvent, ReactElement } from "react";
 
 import {
+  applyGlfxFilterSuite,
+  applyKlecksFilterAndVanishPointSuite,
+  COMPETITOR_FILTER_PRESETS,
   COREL_PARTICLE_BRUSH_PRESETS,
   encodeCleanRoomBrushQrPayload,
+  evaluateKlecksPrecisionSliderMapping,
   evaluateMyPaintFullDynamicsStep,
   evaluateSculptGlQuarticFalloff01,
   executeBooleanPolygonBrushClip,
@@ -25,6 +29,7 @@ import {
   traceP5BrushFlowLine,
   warpSkeletalArtBrushAlongSpine,
   type ComicRibbonStampPresetId,
+  type CompetitorFilterPresetId,
   type CorelParticlePresetId,
   type FreehandRoughPresetId,
   type HarmonyBrushKind,
@@ -37,9 +42,107 @@ export interface StudioUniversalBrushEngineBarProps {
   readonly tx: (source: string) => string;
 }
 
+type EngineWaveDockId =
+  | "all"
+  | "wave21"
+  | "wave22"
+  | "wave23"
+  | "wave24"
+  | "wave25"
+  | "wave26";
+
+const ENGINE_WAVE_DOCK_TABS: readonly {
+  readonly id: EngineWaveDockId;
+  readonly labelKo: string;
+}[] = [
+  { id: "all", labelKo: "전체 워크스페이스" },
+  { id: "wave21", labelKo: "절차·웹툰 (W21)" },
+  { id: "wave22", labelKo: "골격·입자 (W22)" },
+  { id: "wave23", labelKo: "베지어·Klecks (W23)" },
+  { id: "wave24", labelKo: "MyPaint·분광 (W24)" },
+  { id: "wave25", labelKo: "윤곽·해칭 (W25)" },
+  { id: "wave26", labelKo: "경쟁사 필터 (W26)" },
+];
+
+function handleRovingRadioKeyDown<T>(
+  e: KeyboardEvent<HTMLButtonElement>,
+  idx: number,
+  items: readonly T[],
+  onSelect: (item: T) => void,
+): void {
+  let nextIdx = -1;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    nextIdx = (idx + 1) % items.length;
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    nextIdx = (idx - 1 + items.length) % items.length;
+  } else if (e.key === "Home") {
+    nextIdx = 0;
+  } else if (e.key === "End") {
+    nextIdx = items.length - 1;
+  }
+  if (nextIdx >= 0) {
+    e.preventDefault();
+    const target = items[nextIdx];
+    if (target !== undefined) {
+      onSelect(target);
+      const container = e.currentTarget.parentElement;
+      const buttons = container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+      buttons?.[nextIdx]?.focus();
+    }
+  }
+}
+
+function radioButtonClassName(isSelected: boolean): string {
+  return isSelected
+    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg shadow-xs"
+    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg";
+}
+
+function PresetRadioGroup<Id extends string>({
+  ariaLabel,
+  items,
+  selectedId,
+  dataAttrName,
+  onSelect,
+  tx,
+}: {
+  readonly ariaLabel: string;
+  readonly items: readonly { readonly id: Id; readonly labelKo: string }[];
+  readonly selectedId: Id;
+  readonly dataAttrName: string;
+  readonly onSelect: (id: Id) => void;
+  readonly tx: (source: string) => string;
+}): ReactElement {
+  return (
+    <div role="radiogroup" aria-label={ariaLabel} className="flex flex-wrap items-center gap-1.5">
+      {items.map((preset, idx, arr) => {
+        const isSelected = preset.id === selectedId;
+        return (
+          <button
+            key={preset.id}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            tabIndex={isSelected ? 0 : -1}
+            {...{ [dataAttrName]: preset.id }}
+            onClick={() => onSelect(preset.id)}
+            onKeyDown={(e) => handleRovingRadioKeyDown(e, idx, arr, (t) => onSelect(t.id))}
+            className={radioButtonClassName(isSelected)}
+          >
+            {tx(preset.labelKo)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function StudioUniversalBrushEngineBar({
   tx,
 }: StudioUniversalBrushEngineBarProps): ReactElement {
+  const [activeWaveDock, setActiveWaveDock] = useState<EngineWaveDockId>("all");
+  const [klecksSlider01, setKlecksSlider01] = useState<number>(0.5);
+  const [isKlecksFineMode, setIsKlecksFineMode] = useState<boolean>(false);
   const [selectedHarmonyKind, setSelectedHarmonyKind] =
     useState<HarmonyBrushKind>("sketchy");
   const [selectedComicRibbonId, setSelectedComicRibbonId] =
@@ -54,6 +157,8 @@ export function StudioUniversalBrushEngineBar({
     useState<MyPaintPresetId>("mypaint-spectral-impasto");
   const [selectedFreehandRoughId, setSelectedFreehandRoughId] =
     useState<FreehandRoughPresetId>("pf-comic-gpen-taper");
+  const [selectedCompetitorFilterId, setSelectedCompetitorFilterId] =
+    useState<CompetitorFilterPresetId>("klecks-vanish-point-speedlines");
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -109,6 +214,15 @@ export function StudioUniversalBrushEngineBar({
       directionAngleDeg: 28,
       tiltAscensionDeg: 12,
     });
+    const klecksPrecision = evaluateKlecksPrecisionSliderMapping({
+      slider01: klecksSlider01,
+      min: 1,
+      max: 120,
+      exponent: 1.6,
+      perpendicularDistancePx: isKlecksFineMode ? 110 : 0,
+      isFineMode: isKlecksFineMode,
+      swatchRgb01: myPaintStep.outputRgb01,
+    });
     const booleanUnion = executeBooleanPolygonBrushClip({
       subject: [
         { x: 165, y: 10 },
@@ -141,6 +255,58 @@ export function StudioUniversalBrushEngineBar({
       ],
       queryBox: { minX: 100, minY: 10, maxX: 160, maxY: 35 },
     });
+    const filterPreset =
+      COMPETITOR_FILTER_PRESETS.find((item) => item.id === selectedCompetitorFilterId) ??
+      COMPETITOR_FILTER_PRESETS[0]!;
+    const glfxEval = applyGlfxFilterSuite({
+      centerRgb01: [0.58, 0.42, 0.25],
+      neighborSamplesRgb01: [
+        [0.56, 0.43, 0.24],
+        [0.61, 0.4, 0.27],
+      ],
+      denoiseExponent: filterPreset.engineFamily === "glfx" ? filterPreset.primaryParam : 18,
+      lensBlurRadiusPx: 12,
+      lensBlurBrightness: 0.4,
+      lensBlurAngleRad: 0.3,
+      sampleX: 44,
+      sampleY: 22,
+      centerX: 32,
+      centerY: 22,
+      halftoneAngleRad: 0.26,
+      halftoneSizePx: 6,
+      inkBigAverageRgb01: [0.72, 0.72, 0.72],
+      inkSmallAverageRgb01: [0.42, 0.42, 0.42],
+      inkStrength01: 0.35,
+      hexScalePx: 12,
+      warpRadiusPx: 60,
+      swirlAngleRad: 1.2,
+      bulgeStrength: 0.4,
+    });
+    const klecksFilterEval = applyKlecksFilterAndVanishPointSuite({
+      vanishCenterX: 110,
+      vanishCenterY: 22,
+      vanishLineCount:
+        filterPreset.id === "klecks-vanish-point-speedlines" ? filterPreset.primaryParam : 16,
+      vanishInnerHollowRadiusPx: 14,
+      vanishOuterRayLengthPx: 95,
+      distortX: 44,
+      distortY: 22,
+      distortStepSizePx: 4,
+      distortType: 1,
+      distortScaleX: 24,
+      distortScaleY: 24,
+      distortStrengthX: 8,
+      distortStrengthY: 6,
+      distortPhaseX: 0.25,
+      distortPhaseY: 0.5,
+      pixelRgba01: [0.15, 0.15, 0.15, 1],
+      isInvertedToAlpha: true,
+      replaceRgb01: [0.1, 0.2, 0.8],
+      tiltStart: { x: 0, y: 22 },
+      tiltEnd: { x: 220, y: 22 },
+      tiltBlurRadiusPx: 16,
+      tiltGradientRadiusPx: 48,
+    });
 
     const bezierSvgPath = schneiderFit.segments
       .map((seg, i) =>
@@ -166,12 +332,16 @@ export function StudioUniversalBrushEngineBar({
       schneiderSegmentCount: schneiderFit.segments.length,
       klecksDabCount: klecks.dabCount,
       myPaintStep,
+      klecksPrecision,
       booleanUnionVertexCount: booleanUnion.vertices.length,
       pfOutline,
       roughHachureSegments: roughSketch.hachureSegments.slice(0, 14),
       roughHachureTotalCount: roughSketch.hachureSegments.length,
       rdpPointCount: rdpSimplified.length,
       rbushHitCount: rbushSpatial.matchedIds.length,
+      vanishRays: klecksFilterEval.vanishPointRays.slice(0, 16),
+      vanishRayTotalCount: klecksFilterEval.vanishPointRays.length,
+      halftoneCmykSum: glfxEval.halftoneCmyk01.reduce((a, b) => a + b, 0),
       bezierSvgPath,
       booleanPolygonPoints,
     };
@@ -183,403 +353,242 @@ export function StudioUniversalBrushEngineBar({
     selectedKlecksId,
     selectedMyPaintId,
     selectedFreehandRoughId,
+    selectedCompetitorFilterId,
+    klecksSlider01,
+    isKlecksFineMode,
   ]);
+
+  const showWave = (wave: EngineWaveDockId): boolean =>
+    activeWaveDock === "all" || activeWaveDock === wave;
 
   return (
     <div
-      className="mt-3 rounded-2xl border border-line bg-card/60 px-3.5 py-2.5"
+      style={{ containerType: "inline-size" }}
+      className="studio-universal-engine-container @container mt-3 rounded-2xl border border-line bg-card/75 px-3.5 py-2.5 shadow-xs backdrop-blur-md"
       data-studio-universal-brush-bar="true"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-bold text-accent">
-          {tx("범용 브러시 엔진 (Harmony 11 · 웹툰 리본):")}
-        </span>
+      <style>{`
+        .studio-universal-engine-title { font-size: 0.75rem; }
+        @supports (font-size: 1cqi) {
+          .studio-universal-engine-title { font-size: clamp(0.6875rem, 1.4cqi, 0.875rem); }
+        }
+        .studio-universal-inspector-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+        @container (min-width: 520px) {
+          .studio-universal-inspector-grid { flex-direction: row; align-items: center; justify-content: space-between; }
+        }
+      `}</style>
+
+      {/* Wave 27: Klecks & miniPaint 스타일 워크스페이스 도크 탭 + 비선형 정밀 슬라이더 HUD */}
+      <div
+        className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-2"
+        data-studio-klecks-precision-hud="true"
+      >
         <div
-          role="radiogroup"
-          aria-label={tx("Harmony 절차적 브러시 모드")}
-          className="flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={tx("범용 브러시 워크스페이스 도크 필터")}
+          className="flex flex-wrap items-center gap-1"
         >
-          {HARMONY_BRUSH_KINDS.map((kind, idx) => {
-            const isSelected = kind === selectedHarmonyKind;
+          {ENGINE_WAVE_DOCK_TABS.map((tab) => {
+            const active = activeWaveDock === tab.id;
             return (
               <button
-                key={kind}
+                key={tab.id}
                 type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-harmony-kind={kind}
-                onClick={() => setSelectedHarmonyKind(kind)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % HARMONY_BRUSH_KINDS.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx =
-                      (idx - 1 + HARMONY_BRUSH_KINDS.length) %
-                      HARMONY_BRUSH_KINDS.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = HARMONY_BRUSH_KINDS.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = HARMONY_BRUSH_KINDS[nextIdx];
-                    if (target) {
-                      setSelectedHarmonyKind(target);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
+                aria-pressed={active}
+                data-studio-engine-wave-filter={tab.id}
+                onClick={() => setActiveWaveDock(tab.id)}
                 className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                  active
+                    ? "rounded-lg border border-accent bg-accent/20 px-2 py-0.5 text-[10px] font-bold text-fg"
+                    : "rounded-lg border border-line/70 bg-raised/50 px-2 py-0.5 text-[10px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
                 }
               >
-                {kind}
+                {tx(tab.labelKo)}
               </button>
             );
           })}
         </div>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("웹툰 리본·멀티스탬프:")}
-        </span>
-        <div
-          role="radiogroup"
-          aria-label={tx("웹툰 리본 및 스탬프 브러시 프리셋")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          {IBIS_MEDIBANG_BRUSH_PRESETS.slice(11, 17).map((preset, idx, arr) => {
-            const isSelected = preset.id === selectedComicRibbonId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-comic-ribbon={preset.id}
-                onClick={() => setSelectedComicRibbonId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedComicRibbonId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-                }
-              >
-                {tx(preset.labelKo)}
-              </button>
-            );
-          })}
+
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line/70 bg-raised/50 px-2.5 py-1 text-[10px] text-fg-2">
+          <label className="inline-flex items-center gap-1.5">
+            <span className="font-semibold text-accent">{tx("Klecks 비선형 곡선 크기")}</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={klecksSlider01}
+              onChange={(e) => setKlecksSlider01(Number(e.target.value))}
+              data-studio-precision-slider="size"
+              aria-label={tx("Klecks 비선형 곡선 브러시 크기 슬라이더")}
+              className="h-1.5 w-20 cursor-pointer accent-accent"
+            />
+          </label>
+          <span className="font-mono font-semibold text-fg" data-studio-precision-readout="true">
+            {activeUniversalTelemetry.klecksPrecision.formattedDisplayValue}px
+          </span>
+          <button
+            type="button"
+            aria-pressed={isKlecksFineMode}
+            data-studio-precision-fine-toggle="true"
+            onClick={() => setIsKlecksFineMode((v) => !v)}
+            className={
+              isKlecksFineMode
+                ? "rounded-md border border-accent bg-accent/25 px-1.5 py-0.5 font-mono text-[10px] font-bold text-fg"
+                : "rounded-md border border-line bg-card/70 px-1.5 py-0.5 font-mono text-[10px] text-fg-3 hover:text-fg"
+            }
+          >
+            {tx("수직 감쇠")}: {activeUniversalTelemetry.klecksPrecision.falloffFactor.toFixed(2)}×
+          </button>
         </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+
+      <div hidden={!showWave("wave21")}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="studio-universal-engine-title font-bold text-accent">
+            {tx("범용 브러시 엔진 (Harmony 11 · 웹툰 리본):")}
+          </span>
+          <div
+            role="radiogroup"
+            aria-label={tx("Harmony 절차적 브러시 모드")}
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            {HARMONY_BRUSH_KINDS.map((kind, idx) => {
+              const isSelected = kind === selectedHarmonyKind;
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  tabIndex={isSelected ? 0 : -1}
+                  data-studio-harmony-kind={kind}
+                  onClick={() => setSelectedHarmonyKind(kind)}
+                  onKeyDown={(e) =>
+                    handleRovingRadioKeyDown(e, idx, HARMONY_BRUSH_KINDS, setSelectedHarmonyKind)
+                  }
+                  className={radioButtonClassName(isSelected)}
+                >
+                  {kind}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-fg-2">
+            {tx("웹툰 리본·멀티스탬프:")}
+          </span>
+          <PresetRadioGroup
+            ariaLabel={tx("웹툰 리본 및 스탬프 브러시 프리셋")}
+            items={IBIS_MEDIBANG_BRUSH_PRESETS.slice(11, 17)}
+            selectedId={selectedComicRibbonId}
+            dataAttrName="data-studio-comic-ribbon"
+            onSelect={setSelectedComicRibbonId}
+            tx={tx}
+          />
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave22")}>
         <span className="text-[11px] font-semibold text-fg-2">
           {tx("벡터 골격·입자 물리 (Wave 22):")}
         </span>
-        <div
-          role="radiogroup"
-          aria-label={tx("벡터 골격 아트 브러시 프리셋")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          {SKELETAL_ART_BRUSH_PRESETS.slice(0, 4).map((preset, idx, arr) => {
-            const isSelected = preset.id === selectedSkeletalId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-skeletal-brush={preset.id}
-                onClick={() => setSelectedSkeletalId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedSkeletalId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-                }
-              >
-                {tx(preset.labelKo)}
-              </button>
-            );
-          })}
-        </div>
-        <div
-          role="radiogroup"
-          aria-label={tx("Corel 입자 물리 브러시 프리셋")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          {COREL_PARTICLE_BRUSH_PRESETS.slice(0, 3).map((preset, idx, arr) => {
-            const isSelected = preset.id === selectedParticleId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-particle-brush={preset.id}
-                onClick={() => setSelectedParticleId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedParticleId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-                }
-              >
-                {tx(preset.labelKo)}
-              </button>
-            );
-          })}
-        </div>
+        <PresetRadioGroup
+          ariaLabel={tx("벡터 골격 아트 브러시 프리셋")}
+          items={SKELETAL_ART_BRUSH_PRESETS.slice(0, 4)}
+          selectedId={selectedSkeletalId}
+          dataAttrName="data-studio-skeletal-brush"
+          onSelect={setSelectedSkeletalId}
+          tx={tx}
+        />
+        <PresetRadioGroup
+          ariaLabel={tx("Corel 입자 물리 브러시 프리셋")}
+          items={COREL_PARTICLE_BRUSH_PRESETS.slice(0, 3)}
+          selectedId={selectedParticleId}
+          dataAttrName="data-studio-particle-brush"
+          onSelect={setSelectedParticleId}
+          tx={tx}
+        />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave23")}>
         <span className="text-[11px] font-semibold text-fg-2">
           {tx("베지어 피팅·Klecks 6종 (Wave 23):")}
         </span>
-        <div
-          role="radiogroup"
-          aria-label={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          {KLECKS_BRUSH_PRESETS.slice(4, 10).map((preset, idx, arr) => {
-            const isSelected = preset.id === selectedKlecksId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-klecks-preset={preset.id}
-                onClick={() => setSelectedKlecksId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedKlecksId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-                }
-              >
-                {tx(preset.labelKo)}
-              </button>
-            );
-          })}
-        </div>
+        <PresetRadioGroup
+          ariaLabel={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")}
+          items={KLECKS_BRUSH_PRESETS.slice(4, 10)}
+          selectedId={selectedKlecksId}
+          dataAttrName="data-studio-klecks-preset"
+          onSelect={setSelectedKlecksId}
+          tx={tx}
+        />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave24")}>
         <span className="text-[11px] font-semibold text-fg-2">
           {tx("MyPaint 46설정·38밴드 분광 (Wave 24):")}
         </span>
-        <div
-          role="radiogroup"
-          aria-label={tx("MyPaint 46설정 및 38밴드 분광 브러시 프리셋")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          {MYPAINT_BRUSH_PRESETS.slice(0, 6).map((preset, idx, arr) => {
-            const isSelected = preset.id === selectedMyPaintId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-mypaint-preset={preset.id}
-                onClick={() => setSelectedMyPaintId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedMyPaintId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-                }
-              >
-                {tx(preset.labelKo)}
-              </button>
-            );
-          })}
-        </div>
+        <PresetRadioGroup
+          ariaLabel={tx("MyPaint 46설정 및 38밴드 분광 브러시 프리셋")}
+          items={MYPAINT_BRUSH_PRESETS.slice(0, 6)}
+          selectedId={selectedMyPaintId}
+          dataAttrName="data-studio-mypaint-preset"
+          onSelect={setSelectedMyPaintId}
+          tx={tx}
+        />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave25")}>
         <span className="text-[11px] font-semibold text-fg-2">
           {tx("프리핸드 윤곽·Rough 해칭·공간 인덱스 (Wave 25):")}
         </span>
-        <div
-          role="radiogroup"
-          aria-label={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          {FREEHAND_ROUGH_BRUSH_PRESETS.slice(0, 6).map((preset, idx, arr) => {
-            const isSelected = preset.id === selectedFreehandRoughId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                data-studio-freehand-rough-preset={preset.id}
-                onClick={() => setSelectedFreehandRoughId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedFreehandRoughId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
-                }
-              >
-                {tx(preset.labelKo)}
-              </button>
-            );
-          })}
-        </div>
+        <PresetRadioGroup
+          ariaLabel={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")}
+          items={FREEHAND_ROUGH_BRUSH_PRESETS.slice(0, 6)}
+          selectedId={selectedFreehandRoughId}
+          dataAttrName="data-studio-freehand-rough-preset"
+          onSelect={setSelectedFreehandRoughId}
+          tx={tx}
+        />
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line/70 bg-raised/40 px-2.5 py-1.5">
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave26")}>
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("경쟁사 필터·집중선·하프톤 (Wave 26):")}
+        </span>
+        <PresetRadioGroup
+          ariaLabel={tx("경쟁사 필터 및 집중선·하프톤 프리셋")}
+          items={COMPETITOR_FILTER_PRESETS.slice(0, 6)}
+          selectedId={selectedCompetitorFilterId}
+          dataAttrName="data-studio-competitor-filter-preset"
+          onSelect={setSelectedCompetitorFilterId}
+          tx={tx}
+        />
+      </div>
+
+      <div className="studio-universal-inspector-grid mt-2.5 rounded-xl border border-line/70 bg-raised/40 px-2.5 py-1.5">
         <svg
           viewBox="0 0 220 44"
           className="h-9 w-52 shrink-0 rounded-lg border border-line/60 bg-canvas/80 [forced-color-adjust:none]"
-          style={{ forcedColorAdjust: "none" }}
+          style={{ forcedColorAdjust: "none", aspectRatio: "5 / 1" }}
           aria-label={tx("범용 브러시 다중 레이어 실시간 스트로크 프리뷰")}
           data-studio-universal-brush-svg-preview="true"
         >
+          {activeUniversalTelemetry.vanishRays.map((ray, idx) => (
+            <line
+              key={`v-${idx}`}
+              x1={ray.x1}
+              y1={ray.y1}
+              x2={ray.x2}
+              y2={ray.y2}
+              className="text-fg-3"
+              stroke="currentColor"
+              strokeWidth={0.55}
+              strokeOpacity={0.35}
+            />
+          ))}
           {activeUniversalTelemetry.pfOutline.svgPolygonPath ? (
             <path
               d={activeUniversalTelemetry.pfOutline.svgPolygonPath}
@@ -641,7 +650,10 @@ export function StudioUniversalBrushEngineBar({
           <circle
             cx={activeUniversalTelemetry.myPaintStep.primaryDabX}
             cy={activeUniversalTelemetry.myPaintStep.primaryDabY}
-            r={Math.min(9, activeUniversalTelemetry.myPaintStep.radiusPx * 0.6)}
+            r={Math.min(
+              11,
+              Math.max(2.5, activeUniversalTelemetry.klecksPrecision.mappedValue * 0.14),
+            )}
             fill={`rgb(${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[0] * 255)}, ${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[1] * 255)}, ${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[2] * 255)})`}
             fillOpacity={activeUniversalTelemetry.myPaintStep.linearizedOpaque01}
           />
@@ -659,7 +671,10 @@ export function StudioUniversalBrushEngineBar({
         <span className="inline-flex flex-wrap items-center gap-2 font-mono text-[10px] text-fg-3">
           <span
             aria-hidden="true"
-            className="inline-block h-2.5 w-2.5 rounded-full border border-line [forced-color-adjust:none]"
+            data-studio-klecks-contrast-swatch={
+              activeUniversalTelemetry.klecksPrecision.isWhiteBestContrast ? "white" : "black"
+            }
+            className="inline-block h-2.5 w-2.5 rounded-full border border-line ring-1 ring-fg/70 ring-offset-1 ring-offset-canvas [forced-color-adjust:none]"
             style={{
               forcedColorAdjust: "none",
               backgroundColor: `rgb(${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[0] * 255)}, ${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[1] * 255)}, ${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[2] * 255)})`,
@@ -699,6 +714,10 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span>
             {tx("Rough 해칭")}: {activeUniversalTelemetry.roughHachureTotalCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("집중선")}: {activeUniversalTelemetry.vanishRayTotalCount}
           </span>
           <span>·</span>
           <span>
