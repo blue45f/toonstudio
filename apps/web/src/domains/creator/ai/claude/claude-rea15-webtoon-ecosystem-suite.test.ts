@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 
 import {
+  buildLocalCotransVroidSkyboxWorldLocalizerReport,
   buildLocalCreativeDopamineAndUxSynthesizerReport,
   buildLocalGlimnaviRelightAndLineartV23Report,
   buildLocalKaistorySingleEnvelopeAndKaionReport,
@@ -10,10 +11,12 @@ import {
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
+  buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
   buildRea15ThemeCssVariables,
   getRea15PlatformTheme,
   listRea15PlatformThemes,
+  runCotransVroidSkyboxWorldLocalizerAssist,
   runCreativeDopamineAndUxSynthesizerAssist,
   runGlimnaviRelightAndLineartV23Assist,
   runKaistorySingleEnvelopeAndKaionAssist,
@@ -22,6 +25,7 @@ import {
   runManhwaKomikoAnifusionFlowAssist,
   runRea15WebtoonEcosystemFullSuite,
   runSnaptoonFrameoShaper3dDirectorAssist,
+  runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
 } from "./claude-rea15-webtoon-ecosystem-suite";
 import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
@@ -48,10 +52,10 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 39대 웹툰 AI 플랫폼 REA 내재화 & 창의적 AI 스위트)", () => {
-  it("0. 39대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 50대 웹툰 AI 플랫폼 REA 내재화 & 창의적 AI 스위트)", () => {
+  it("0. 50대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(39);
+    expect(themes).toHaveLength(50);
 
     const glimnavi = getRea15PlatformTheme("glimnavi");
     expect(glimnavi.reaEvidenceId).toContain("ev_f2c78ddd");
@@ -63,6 +67,9 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 39대 웹툰 AI 플랫�
 
     const gentoon = getRea15PlatformTheme("gentoon");
     expect(gentoon.surfaceHex).toBe("#f4ebfc");
+
+    const vroid = getRea15PlatformTheme("vroid-studio");
+    expect(vroid.reaEvidenceId).toContain("ev_c576d121");
 
     const cssVars = buildRea15ThemeCssVariables("frameo");
     expect(cssVars["--rea15-surface"]).toBe("#09090b");
@@ -249,7 +256,52 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 39대 웹툰 AI 플랫�
     expect(live.report.riveAndJitterStateMachine.scrollTriggerThresholdPct).toBe(65);
   });
 
-  it("9. runRea15WebtoonEcosystemFullSuite 8대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
+  it("9. Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalCotransVroidSkyboxWorldLocalizerReport(SAMPLE_INPUT);
+    expect(local.cotransLetteringAndInpaint.inpaintingModel).toBe("lama-large-512px");
+    expect(local.vroidParametricAvatar.vrmSpecVersion).toBe("VRM-1.0");
+    expect(local.skybox360Environment.equirectangularResolution).toBe("8192x4096-8K");
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 230, output_tokens: 390 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runCotransVroidSkyboxWorldLocalizerAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.cotransLetteringAndInpaint.localizedRegions).toHaveLength(2);
+  });
+
+  it("10. WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자 디렉터(Opus 5.5)를 검증한다", async () => {
+    const local = buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(SAMPLE_INPUT);
+    expect(local.procreateDreamsPerformingTrack.performingRecordSamplingHz).toBe(120);
+    expect(local.kritaLiveDiffusionAndArtbreederGenes.kritaControlNetStack).toHaveLength(3);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 290, output_tokens: 480 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runStoryboarderDreamsKritaArtbreederDirectorAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.shotGeneratorAndComicFactory.inkLineCleanlinessPct).toBeGreaterThanOrEqual(90);
+  });
+
+  it("11. runRea15WebtoonEcosystemFullSuite 10대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
     vi.mocked(claudeParse).mockRejectedValueOnce(new Error("simulated network timeout"));
     vi.mocked(claudeParse).mockResolvedValueOnce({
       message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
@@ -279,16 +331,26 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 39대 웹툰 AI 플랫�
       message: { model: "claude-opus-4-6", usage: { input_tokens: 260, output_tokens: 420 } } as never,
       parsed: buildLocalLtxBoordsCascadeurRiveAnimaticReport(SAMPLE_INPUT),
     });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 220, output_tokens: 350 } } as never,
+      parsed: buildLocalCotransVroidSkyboxWorldLocalizerReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 270, output_tokens: 430 } } as never,
+      parsed: buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(SAMPLE_INPUT),
+    });
 
     const bundle = await runRea15WebtoonEcosystemFullSuite(SAMPLE_INPUT, {
       route: TEST_ROUTE,
     });
-    expect(bundle.liveEngineCount).toBe(7);
+    expect(bundle.liveEngineCount).toBe(9);
     expect(bundle.fallbackEngineCount).toBe(1);
     expect(bundle.glimnaviRelightLineart.source).toBe("local-fallback");
     expect(bundle.creativeDopamineUxSynthesizer.source).toBe("claude-live");
     expect(bundle.tootoonGentoonTooningKrSuite.source).toBe("claude-live");
     expect(bundle.kreaSplineLumiereRealtimeShader.source).toBe("claude-live");
     expect(bundle.ltxBoordsCascadeurRiveAnimatic.source).toBe("claude-live");
+    expect(bundle.cotransVroidSkyboxLocalizer.source).toBe("claude-live");
+    expect(bundle.storyboarderDreamsKritaArtbreeder.source).toBe("claude-live");
   });
 });

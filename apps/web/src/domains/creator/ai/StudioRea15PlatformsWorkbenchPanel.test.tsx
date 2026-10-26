@@ -66,5 +66,13 @@ describe("StudioRea15PlatformsWorkbenchPanel (Phase 7 15대 웹툰 AI 플랫폼 
     // 탭 8: LTX · Boords · Cascadeur · Rive
     fireEvent.click(screen.getByTestId("rea15-tab-ltx-boords-cascadeur-rive"));
     expect(screen.getByTestId("rea15-panel-ltx-boords-cascadeur-rive")).toBeDefined();
+
+    // 탭 9: Cotrans · VRoid · Skybox AI
+    fireEvent.click(screen.getByTestId("rea15-tab-cotrans-vroid-skybox-localizer"));
+    expect(screen.getByTestId("rea15-panel-cotrans-vroid-skybox-localizer")).toBeDefined();
+
+    // 탭 10: Storyboarder · Dreams · Krita · Artbreeder
+    fireEvent.click(screen.getByTestId("rea15-tab-storyboarder-dreams-krita-artbreeder"));
+    expect(screen.getByTestId("rea15-panel-storyboarder-dreams-krita-artbreeder")).toBeDefined();
   });
 });

@@ -1,8 +1,10 @@
-import { Cpu, Film, Store } from "lucide-react";
+import { Clapperboard, Cpu, Film, Globe, Store } from "lucide-react";
 
 import type {
+  CotransVroidSkyboxWorldLocalizerReport,
   KreaSplineLumiereRealtimeShaderReport,
   LtxBoordsCascadeurRiveAnimaticReport,
+  StoryboarderDreamsKritaArtbreederDirectorReport,
   TootoonGentoonTooningKrSuiteReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
 import type { Rea15WorkbenchTabId } from "./StudioRea15PlatformsWorkbenchPanel";
@@ -12,6 +14,8 @@ export interface StudioRea39ExtendedTabPanelsProps {
   readonly currentKrSuite: TootoonGentoonTooningKrSuiteReport;
   readonly currentRealtimeShader: KreaSplineLumiereRealtimeShaderReport;
   readonly currentAnimatic: LtxBoordsCascadeurRiveAnimaticReport;
+  readonly currentWorldLocalizer: CotransVroidSkyboxWorldLocalizerReport;
+  readonly currentDreamsKritaDirector: StoryboarderDreamsKritaArtbreederDirectorReport;
 }
 
 export function StudioRea39ExtendedTabPanels({
@@ -19,6 +23,8 @@ export function StudioRea39ExtendedTabPanels({
   currentKrSuite,
   currentRealtimeShader,
   currentAnimatic,
+  currentWorldLocalizer,
+  currentDreamsKritaDirector,
 }: StudioRea39ExtendedTabPanelsProps) {
   return (
     <>
@@ -177,6 +183,122 @@ export function StudioRea39ExtendedTabPanels({
             {currentAnimatic.riveAndJitterStateMachine.states
               .map((s) => `${s.stateName}(${s.loopFps}fps: ${s.meshDeformationSummaryKo})`)
               .join(" → ")}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 9: Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저 */}
+      {activeTab === "cotrans-vroid-skybox-localizer" ? (
+        <div
+          data-testid="rea15-panel-cotrans-vroid-skybox-localizer"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Globe className="size-3 text-accent" aria-hidden="true" />
+              Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드
+            </span>
+            <span className="text-accent">
+              {currentWorldLocalizer.cotransLetteringAndInpaint.inpaintingModel} ·{" "}
+              {currentWorldLocalizer.vroidParametricAvatar.vrmSpecVersion} ·{" "}
+              {currentWorldLocalizer.skybox360Environment.equirectangularResolution}
+            </span>
+          </div>
+          <p className="text-fg-2">{currentWorldLocalizer.worldLocalizerSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Cotrans OCR & Inpaint</div>
+              <div className="text-fg-2">
+                검출 {currentWorldLocalizer.cotransLetteringAndInpaint.ocrDetectorModel} · 마스크 확장{" "}
+                {currentWorldLocalizer.cotransLetteringAndInpaint.balloonMaskDilatePx}px
+              </div>
+              <div className="text-fg-3">
+                {currentWorldLocalizer.cotransLetteringAndInpaint.localizedRegions
+                  .map((r) => `${r.regionId}: ${r.translatedEnText}`)
+                  .join(" | ")}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">VRoid Studio VRM Avatar</div>
+              <div className="text-fg-2">
+                {currentWorldLocalizer.vroidParametricAvatar.expressionBlendshapePresetKo}
+              </div>
+              <div className="text-fg-3">
+                MToon 림셰이드 {currentWorldLocalizer.vroidParametricAvatar.rimShadeWidthPct}% · 외곽선{" "}
+                {currentWorldLocalizer.vroidParametricAvatar.outlineWidthMm}mm · 스프링본 강성{" "}
+                {currentWorldLocalizer.vroidParametricAvatar.hairSpringBoneStiffness}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Skybox AI 360° HDRI</div>
+              <div className="text-fg-2">
+                {currentWorldLocalizer.skybox360Environment.skyboxStylePresetKo}
+              </div>
+              <div className="text-fg-3">
+                깊이 패럴랙스 {currentWorldLocalizer.skybox360Environment.depthMapParallaxStrengthPct}% ·
+                수평선 피치 {currentWorldLocalizer.skybox360Environment.horizonPitchOffsetDeg}° · IBL{" "}
+                {currentWorldLocalizer.skybox360Environment.ambientIblTintHex}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 10: WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder */}
+      {activeTab === "storyboarder-dreams-krita-artbreeder" ? (
+        <div
+          data-testid="rea15-panel-storyboarder-dreams-krita-artbreeder"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Clapperboard className="size-3 text-accent" aria-hidden="true" />
+              Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자
+            </span>
+            <span className="text-accent">
+              렌즈 {currentDreamsKritaDirector.shotGeneratorAndComicFactory.lensMm}mm · 퍼포밍{" "}
+              {currentDreamsKritaDirector.procreateDreamsPerformingTrack.performingRecordSamplingHz}Hz ·
+              지연 {currentDreamsKritaDirector.kritaLiveDiffusionAndArtbreederGenes.livePaintingLatencyMs}ms
+            </span>
+          </div>
+          <p className="text-fg-2">{currentDreamsKritaDirector.directorExecutiveSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Shot Generator & Comic Factory</div>
+              <div className="text-fg-2">
+                {currentDreamsKritaDirector.shotGeneratorAndComicFactory.comicGridTemplateKo}
+              </div>
+              <div className="text-fg-3">
+                카메라 높이 {currentDreamsKritaDirector.shotGeneratorAndComicFactory.cameraHeightCm}cm ·
+                선화 정밀도 {currentDreamsKritaDirector.shotGeneratorAndComicFactory.inkLineCleanlinessPct}%
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Procreate Dreams Performing</div>
+              <div className="text-fg-2">
+                {currentDreamsKritaDirector.procreateDreamsPerformingTrack.liveMotionGestureSummaryKo}
+              </div>
+              <div className="text-fg-3">
+                워프 격자 {currentDreamsKritaDirector.procreateDreamsPerformingTrack.warpMeshGridSubdivisions}분할 ·
+                어니언스킨 {currentDreamsKritaDirector.procreateDreamsPerformingTrack.flipbookOnionSkinFrames}프레임
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Krita Diffusion & Artbreeder</div>
+              <div className="text-fg-2">
+                ControlNet:{" "}
+                {currentDreamsKritaDirector.kritaLiveDiffusionAndArtbreederGenes.kritaControlNetStack.join(
+                  " + ",
+                )}
+              </div>
+              <div className="text-fg-3">
+                {currentDreamsKritaDirector.kritaLiveDiffusionAndArtbreederGenes.artbreederGeneSliders
+                  .map((g) => `${g.geneNameKo}(${g.weightNormalized})`)
+                  .join(" · ")}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

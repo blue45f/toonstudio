@@ -1,7 +1,7 @@
-# 글로벌·국내 웹툰·스토리보드·3D·드로잉 AI 보조 39대 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 내재화 벤치마크 (2026-10-26)
+# 글로벌·국내 웹툰·스토리보드·3D·드로잉 AI 보조 50대 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 내재화 벤치마크 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (실시간 REA 브라우저 캡처 41건 · 39개 플랫폼 · JS 번들 추출 27건 · AST/라우트 정적 분석 14건 · ToonStudio 8대 엔진 및 39종 UI 토큰 내재화 완료)
+- **상태**: `current` (실시간 REA 브라우저 캡처 52건 · 50개 플랫폼 · JS 번들 추출 27건 · AST/라우트 정적 분석 14건 · ToonStudio 10대 엔진 및 50종 UI 토큰 내재화 완료)
 - **정본 증거 원장**: [`docs/evidence/rea-webtoon-ai-assist-15-platforms-20261026.json`](../evidence/rea-webtoon-ai-assist-15-platforms-20261026.json)
 - **연관 기존 벤치마크**:
   - [`docs/benchmarks/ai-webtoon-assist-ecosystem-rea-benchmark-2026-10-26.md`](./ai-webtoon-assist-ecosystem-rea-benchmark-2026-10-26.md)
@@ -13,7 +13,7 @@
 
 ## 1. 조사 개요 및 인식론적(Epistemic) 분리 원칙
 
-국내외 웹툰·만화·스토리보드·3D 포징·모션·드로잉 AI 보조 생태계 **39개 전체 핵심 플랫폼**(Wave 1: 15개 플랫폼 + Wave 2: 12개 플랫폼 + Wave 3: 12개 플랫폼, 총 41회 브라우저 시나리오 캡처)의 실제 배포 웹/스튜디오 번들을 REA(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 전수 캡처·역공학했다.
+국내외 웹툰·만화·스토리보드·3D 포징·모션·드로잉·번역/인페인팅 AI 보조 생태계 **50개 전체 핵심 플랫폼**(Wave 1: 15개 플랫폼 + Wave 2: 12개 플랫폼 + Wave 3: 12개 플랫폼 + Wave 4: 11개 플랫폼, 총 52회 브라우저 시나리오 캡처)의 실제 배포 웹/스튜디오 번들을 REA(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 전수 캡처·역공학했다.
 
 - **관측 사실(Observed Facts)**: REA Playwright 네트워크 응답 본문(`sha256`), CSS 변수 테이블, DOM 컨트롤 ID, AST 라우트/심볼에서 직접 추출한 사실만 기록한다.
 - **추론(Inferences)**: 클라이언트 번들 구조와 엔드포인트 명명 규칙으로부터 도출한 아키텍처 해석을 분리해 기록한다.
@@ -72,6 +72,22 @@
 | 38 | **ACON3D (에이콘3D)** | `acon3d.com` | `ev_c58fac87...` (`9af0c6f2...`) | 8응답 / 4스크립트 | `#18181b`, `#27272a`, `#313131`, `#6366f1`, `#ec4899` | 웹툰 전용 스케치업·블렌더·스냅툰 3D 배경 카탈로그 & 동적 컴포넌트 제어 |
 | 39 | **WEBTOON CANVAS** | `webtoons.com/en/canvas` | `ev_054b1489...` (`6250ba8e...`) | 52응답 / 6스크립트 | `#121212`, `#1e1e1e`, `#00dc64`, `#00ff74` | `800×1280px` 세로 슬라이스 20MB 규격 검수 및 글로벌 웹툰 퍼블리싱 |
 
+### 2.3 Wave 4 (11개 추가 만화/스토리보드 · 다국어 인페인팅 · 3D VRM 아바타 · 360° 배경 · 실시간 퍼포밍/유전자 플랫폼)
+
+| # | 플랫폼 | 도메인 | 브라우저 캡처 `evidence_id` (`scenario_sha256`) | 네트워크 이벤트 | 추출 UI/UX 컬러 & CSS 토큰 | 핵심 라우트 및 기능 파이프라인 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 40 | **ComicAI** | `comicai.ai` | `ev_8fc708eb...` (`93007115...`) | 12응답 | `#0b0c10`, `#14161f`, `#262938`, `#facc15`, `#a855f7` | 4단계 스토리→코믹 변환, 캐릭터 일관성 학습, 액션 포즈 레퍼런스, 말풍선 레이아웃 |
+| 41 | **AI Comic Factory** | `aicomicfactory.com` | `ev_f72ef904...` (`d96029f8...`) | 346이벤트 | `#1b1b1d`, `#26262a`, `#3f3f46`, `#f59e0b`, `#3b82f6` | 다중 그리드 코믹 페이지 템플릿, 스토리+화풍 듀얼 프롬프트, 패널별 리드로우 |
+| 42 | **WonderUnit Storyboarder** | `wonderunit.com/storyboarder` | `ev_3f9e4e38...` (`fab9d391...`) | 248이벤트 | `#141414`, `#1f1f1f`, `#333333`, `#ff3b30`, `#ffcc00` | 6브러시 고속 콘티 드로잉 + **3D Shot Generator**(가상 렌즈·조명·인물·소품) + NLE/PDF 출력 |
+| 43 | **StoryboardThat** | `storyboardthat.com` | `ev_656fb337...` (`8393bbca...`) | 196이벤트 | `#f8fafc`, `#ffffff`, `#e2e8f0`, `#f0582f`, `#2467c4` | 모듈형 배경·소품·캐릭터 포저 드래그앤드롭 스토리보드 레이아웃(`/storyboard-creator`) |
+| 44 | **Cotrans Manga Translator** | `cotrans.touhou.ai` | `ev_54f95f57...` (`084c2051...`) | 88이벤트 | `#0f172a`, `#1e293b`, `#334155`, `#38bdf8`, `#818cf8` | 말풍선 텍스트 검출(CTD/DBNet) → LaMa/AOT 배경 인페인팅 복원 → 다국어 세로/가로 식자 |
+| 45 | **VRoid Studio (Pixiv)** | `vroid.com/en/studio` | `ev_c576d121...` (`08604aec...`) | 442이벤트 | `#1f2126`, `#2a2d34`, `#3d414a`, `#f5c500`, `#0096fa` | 파라메트릭 애니메이션 체형/표정 슬라이더, 헤어 번들 브러시, MToon 외곽선/림라이트, VRM 1.0 |
+| 46 | **Blockade Labs Skybox AI** | `skybox.blockadelabs.com` | `ev_c46551c5...` (`760211f4...`) | 236이벤트 | `#090a0f`, `#12141f`, `#23273a`, `#00f0ff`, `#7000ff` | 360° 파노라마(8K Equirectangular) + 깊이맵(Depth Map) 기반 자유 앵글 웹툰 배경 생성 |
+| 47 | **Krita & Krita AI Diffusion** | `krita.org/en` | `ev_dc41a093...` (`1a736d6b...`) | 172이벤트 | `#232629`, `#31363b`, `#4d545b`, `#3daee9`, `#e93d96` | Colorize Mask 채색, 심리스 랩어라운드 텍스처, 코믹 페이지 매니저, 실시간 ControlNet Diffusion |
+| 48 | **Procreate Dreams** | `procreate.com/dreams` | `ev_639c3cee...` (`6ba98881...`) | 376이벤트 | `#000000`, `#111113`, `#242429`, `#ff375f`, `#ff9f0a` | 120Hz 실시간 터치 **Performing** 모션 레코딩 + Flipbook 셀 동화 + 멀티트랙 오디오/비디오 |
+| 49 | **Pixiv Sketch** | `sketch.pixiv.net` | `ev_6f549964...` (`4a4918b7...`) | 232이벤트 | `#ffffff`, `#f5f6f8`, `#e1e4e8`, `#0096fa`, `#ff4060` | 애니메이션 러프 스케치, 선화 단순화, 자동 채색 힌트, 멀티 아티스트 라이브 드로잉(`/lives`) |
+| 50 | **Artbreeder** | `artbreeder.com` | `ev_88ee616e...` (`1a9af8e6...`) | 418이벤트 | `#111111`, `#1c1c1e`, `#2c2c2e`, `#10b981`, `#6366f1` | `/create/splicer`, `/create/poser`, `/create/collage` 유전자(Gene) 슬라이더 캐릭터 교배 |
+
 ---
 
 ## 3. UI/UX 디자인 시스템 및 CSS 토큰 비교 분석
@@ -113,7 +129,9 @@
 | **TooToon 5-Studio · GenToon 뷰어/굿즈 · Tooning 6부위 캐릭터 디렉터** | `tootoon.ai`, `gentoon.ai`, `tooning.io` | `/fabulator`~`/emporium` 5단 파이프라인 + `--reading-direction: 1` / `--paper` / `--ink` 뷰어·서포터즈 굿즈 + `/character-make-*` 6부위 캐릭터 조합기 |
 | **Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere/Graphite/PixiEditor 셰이더** | `krea.ai`, `spline.design`, `lumiere.graphics`, `graphite.rs`, `pixieditor.net` | `/realtime-director` 도형 블로킹 + `/ai-style-transfer` 3D 스타일 전이 + Kuwahara/Halation/Glare WebGPU 포스트프로세싱 & 비파괴 노드 그래프 |
 | **LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신** | `ltx.studio`, `boords.com`, `cascadeur.com`, `rive.app`, `jitter.video` | 3샷 프리비즈 애니매틱 카메라 시퀀스 + AutoPosing/AutoPhysics 무게중심·탄도 궤적 + 스크롤 반응형 60fps 2D 메쉬 상태머신 |
-| **창의적 신규 AI 기능 (Claude Live 연동)** | 39대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **39대 플랫폼 UI/UX 테마 토큰 합성기** + **비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
+| **Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드** | `cotrans.touhou.ai`, `vroid.com/en/studio`, `skybox.blockadelabs.com` | CTD/DBNet 말풍선 검출 + LaMa 512px 인페인팅 복원 + VRM 1.0 MToon/스프링본 + 8K 360° 깊이맵 환경광 매칭 |
+| **Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자** | `wonderunit.com`, `comicai.ai`, `aicomicfactory.com`, `storyboardthat.com`, `procreate.com/dreams`, `krita.org`, `artbreeder.com`, `sketch.pixiv.net` | 3D Shot Generator 카메라 + 120Hz 실시간 터치 Performing 트랙 + Krita ControlNet 스택 + Artbreeder 유전자 슬라이더 |
+| **창의적 신규 AI 기능 (Claude Live 연동)** | 50대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **50대 플랫폼 UI/UX 테마 토큰 합성기** + **비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
 
 ---
 
@@ -129,6 +147,8 @@
 | `rea15:tootoon-gentoon-tooning-kr-suite` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 306 | 2,084 | `$0.025102` | TooToon 5대 스튜디오(`fabulator`~`emporium`) + GenToon 세로 뷰어/서포터즈 굿즈 + Tooning 6부위 캐릭터 레시피 설계 |
 | `rea15:krea-spline-lumiere-realtime-shader` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 321 | 1,072 | `$0.000747` | Krea 실시간 디렉터 블로킹 + Spline 3D/Hana 대치 궤도 + Lumiere Kuwahara·Halation·Glare 비파괴 WebGPU 후처리 |
 | `rea15:ltx-boords-cascadeur-rive-animatic` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 326 | 2,604 | `$0.060324` | 3샷 애니매틱(돌리인·더치틸트·트래킹오빗) + Cascadeur 도약 탄도/토크 물리 리그 + Rive/Jitter 스크롤 상태머신 설계 |
+| `rea15:cotrans-vroid-skybox-world-localizer` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 294 | 989 | `$0.014386` | Cotrans 말풍선 KO/EN/JA 인페인팅·세로식자 + VRoid VRM 1.0 MToon/스프링본 + 8K 360° 황궁 유물 스카이박스 설계 |
+| `rea15:storyboarder-dreams-krita-artbreeder-director` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 289 | 1,523 | `$0.038506` | Shot Generator 35mm 블로킹 + Procreate Dreams 120Hz 퍼포밍 + Krita ControlNet 스택 + Artbreeder 유전자 슬라이더 2종 |
 | `ecosystem:glimnavi-color-hint-stroke` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 290 | 1,089 | `$0.000807` | Close-Gap 허용치 및 브러시 색상 힌트 스트로크 좌표 생성 |
 | `ecosystem:novelai-multi-char-vibe` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 319 | 1,681 | `$0.020964` | 2인 주연 X/Y 바운딩박스 분리 및 Vibe Transfer 가중치 설계 |
 | `ecosystem:novel-adaptation-ip-expansion` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 303 | 2,580 | `$0.064112` | 웹소설 산문 압축 각색 및 드라마·애니·게임·오디오웹툰 OSMU 스코어카드 도출 |

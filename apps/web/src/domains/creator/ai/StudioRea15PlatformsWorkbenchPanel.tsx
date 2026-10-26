@@ -28,6 +28,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import {
+  buildLocalCotransVroidSkyboxWorldLocalizerReport,
   buildLocalCreativeDopamineAndUxSynthesizerReport,
   buildLocalGlimnaviRelightAndLineartV23Report,
   buildLocalKaistorySingleEnvelopeAndKaionReport,
@@ -35,9 +36,11 @@ import {
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
+  buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
   getRea15PlatformTheme,
   listRea15PlatformThemes,
+  runCotransVroidSkyboxWorldLocalizerAssist,
   runCreativeDopamineAndUxSynthesizerAssist,
   runGlimnaviRelightAndLineartV23Assist,
   runKaistorySingleEnvelopeAndKaionAssist,
@@ -45,7 +48,9 @@ import {
   runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
   runSnaptoonFrameoShaper3dDirectorAssist,
+  runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
+  type CotransVroidSkyboxWorldLocalizerReport,
   type CreativeDopamineAndUxSynthesizerReport,
   type GlimnaviRelightAndLineartV23Report,
   type KaistorySingleEnvelopeAndKaionReport,
@@ -55,6 +60,7 @@ import {
   type Rea15Envelope,
   type Rea15PlatformId,
   type SnaptoonFrameoShaper3dDirectorReport,
+  type StoryboarderDreamsKritaArtbreederDirectorReport,
   type TootoonGentoonTooningKrSuiteReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
@@ -68,7 +74,9 @@ export type Rea15WorkbenchTabId =
   | "creative-dopamine-ux"
   | "tootoon-gentoon-tooning-kr"
   | "krea-spline-lumiere-shader"
-  | "ltx-boords-cascadeur-rive";
+  | "ltx-boords-cascadeur-rive"
+  | "cotrans-vroid-skybox-localizer"
+  | "storyboarder-dreams-krita-artbreeder";
 
 export interface StudioRea15PlatformsWorkbenchPanelProps {
   readonly assistInput: WebtoonProductionAssistInput;
@@ -81,54 +89,16 @@ const REA15_TABS: readonly {
   readonly badgeKo: string;
   readonly tierBadgeKo: string;
 }[] = [
-  {
-    id: "glimnavi-relight-v23",
-    labelKo: "선화 v1.0~v2.3 · 컬러 분리 · Relight",
-    badgeKo: "그림나비 Studio v2.3",
-    tierBadgeKo: "Haiku 5.5",
-  },
-  {
-    id: "kaistory-envelope-kaion",
-    labelKo: "4단 단일 엔벨로프 · KAION 학습 퀴즈",
-    badgeKo: "KAISTORY · KAITOON",
-    tierBadgeKo: "Sonnet 5.5",
-  },
-  {
-    id: "snaptoon-frameo-shaper-3d",
-    labelKo: "3D 스포트라이트 콘 · SHAPER 직접 드로잉",
-    badgeKo: "Snaptoon · Frameo · SHAPER",
-    tierBadgeKo: "Sonnet 5.5",
-  },
-  {
-    id: "manhwa-komiko-anifusion",
-    labelKo: "6화풍/5톤 · 레이어 분리 · 노드 플로우",
-    badgeKo: "ManhwaAI · Komiko · Anifusion",
-    tierBadgeKo: "Sonnet 5.5",
-  },
-  {
-    id: "creative-dopamine-ux",
-    labelKo: "독자 도파민 히트맵 · UI 테마 합성기",
-    badgeKo: "창의적 AI 특화",
-    tierBadgeKo: "Opus 5.5",
-  },
-  {
-    id: "tootoon-gentoon-tooning-kr",
-    labelKo: "TooToon 5스튜디오 · GenToon 굿즈 · Tooning 6부위",
-    badgeKo: "TooToon · GenToon · Tooning",
-    tierBadgeKo: "Sonnet 5.5",
-  },
-  {
-    id: "krea-spline-lumiere-shader",
-    labelKo: "실시간 디렉터 · 3D 스타일 전이 · WebGPU 셰이더",
-    badgeKo: "Krea · Spline · Lumiere",
-    tierBadgeKo: "Haiku 5.5",
-  },
-  {
-    id: "ltx-boords-cascadeur-rive",
-    labelKo: "프리비즈 애니매틱 · 물리 포징 · Rive 상태머신",
-    badgeKo: "LTX · Boords · Cascadeur · Rive",
-    tierBadgeKo: "Opus 5.5",
-  },
+  { id: "glimnavi-relight-v23", labelKo: "선화 v1.0~v2.3 · 컬러 분리 · Relight", badgeKo: "그림나비 Studio v2.3", tierBadgeKo: "Haiku 5.5" },
+  { id: "kaistory-envelope-kaion", labelKo: "4단 단일 엔벨로프 · KAION 학습 퀴즈", badgeKo: "KAISTORY · KAITOON", tierBadgeKo: "Sonnet 5.5" },
+  { id: "snaptoon-frameo-shaper-3d", labelKo: "3D 스포트라이트 콘 · SHAPER 직접 드로잉", badgeKo: "Snaptoon · Frameo · SHAPER", tierBadgeKo: "Sonnet 5.5" },
+  { id: "manhwa-komiko-anifusion", labelKo: "6화풍/5톤 · 레이어 분리 · 노드 플로우", badgeKo: "ManhwaAI · Komiko · Anifusion", tierBadgeKo: "Sonnet 5.5" },
+  { id: "creative-dopamine-ux", labelKo: "독자 도파민 히트맵 · UI 테마 합성기", badgeKo: "창의적 AI 특화", tierBadgeKo: "Opus 5.5" },
+  { id: "tootoon-gentoon-tooning-kr", labelKo: "TooToon 5스튜디오 · GenToon 굿즈 · Tooning 6부위", badgeKo: "TooToon · GenToon · Tooning", tierBadgeKo: "Sonnet 5.5" },
+  { id: "krea-spline-lumiere-shader", labelKo: "실시간 디렉터 · 3D 스타일 전이 · WebGPU 셰이더", badgeKo: "Krea · Spline · Lumiere", tierBadgeKo: "Haiku 5.5" },
+  { id: "ltx-boords-cascadeur-rive", labelKo: "프리비즈 애니매틱 · 물리 포징 · Rive 상태머신", badgeKo: "LTX · Boords · Cascadeur · Rive", tierBadgeKo: "Opus 5.5" },
+  { id: "cotrans-vroid-skybox-localizer", labelKo: "식자 인페인팅 · VRM 3D 아바타 · 360° 스카이박스", badgeKo: "Cotrans · VRoid · Skybox AI", tierBadgeKo: "Sonnet 5.5" },
+  { id: "storyboarder-dreams-krita-artbreeder", labelKo: "3D Shot Generator · 퍼포밍 트랙 · ControlNet/유전자", badgeKo: "Storyboarder · Dreams · Krita · Artbreeder", tierBadgeKo: "Opus 5.5" },
 ];
 
 export function StudioRea15PlatformsWorkbenchPanel({
@@ -156,6 +126,10 @@ export function StudioRea15PlatformsWorkbenchPanel({
     useState<Rea15Envelope<KreaSplineLumiereRealtimeShaderReport> | null>(null);
   const [animaticEnv, setAnimaticEnv] =
     useState<Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport> | null>(null);
+  const [worldLocalizerEnv, setWorldLocalizerEnv] =
+    useState<Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport> | null>(null);
+  const [dreamsKritaEnv, setDreamsKritaEnv] =
+    useState<Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport> | null>(null);
 
   const platformThemes = useMemo(() => listRea15PlatformThemes(), []);
   const activePlatformTheme = useMemo(
@@ -197,6 +171,17 @@ export function StudioRea15PlatformsWorkbenchPanel({
     () => animaticEnv?.report ?? buildLocalLtxBoordsCascadeurRiveAnimaticReport(assistInput),
     [animaticEnv, assistInput],
   );
+  const currentWorldLocalizer = useMemo(
+    () =>
+      worldLocalizerEnv?.report ?? buildLocalCotransVroidSkyboxWorldLocalizerReport(assistInput),
+    [worldLocalizerEnv, assistInput],
+  );
+  const currentDreamsKritaDirector = useMemo(
+    () =>
+      dreamsKritaEnv?.report ??
+      buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(assistInput),
+    [dreamsKritaEnv, assistInput],
+  );
 
   const activeEnvelope =
     activeTab === "glimnavi-relight-v23"
@@ -213,7 +198,11 @@ export function StudioRea15PlatformsWorkbenchPanel({
                 ? krSuiteEnv
                 : activeTab === "krea-spline-lumiere-shader"
                   ? realtimeShaderEnv
-                  : animaticEnv;
+                  : activeTab === "ltx-boords-cascadeur-rive"
+                    ? animaticEnv
+                    : activeTab === "cotrans-vroid-skybox-localizer"
+                      ? worldLocalizerEnv
+                      : dreamsKritaEnv;
 
   const handleRunActiveTab = async () => {
     setIsRunning(true);
@@ -260,11 +249,23 @@ export function StudioRea15PlatformsWorkbenchPanel({
         onAppendDirectionLine(
           `[Krea·Spline·Lumiere (${res.modelUsed})] ${res.report.lumiereAndNodeGraphShaders.compositeShaderNoteKo}`,
         );
-      } else {
+      } else if (activeTab === "ltx-boords-cascadeur-rive") {
         const res = await runLtxBoordsCascadeurRiveAnimaticAssist(assistInput);
         setAnimaticEnv(res);
         onAppendDirectionLine(
           `[LTX·Boords·Cascadeur·Rive (${res.modelUsed})] ${res.report.cascadeurPhysicsRig.ballisticTrajectoryArcKo}`,
+        );
+      } else if (activeTab === "cotrans-vroid-skybox-localizer") {
+        const res = await runCotransVroidSkyboxWorldLocalizerAssist(assistInput);
+        setWorldLocalizerEnv(res);
+        onAppendDirectionLine(
+          `[Cotrans·VRoid·Skybox (${res.modelUsed})] ${res.report.worldLocalizerSummaryKo}`,
+        );
+      } else {
+        const res = await runStoryboarderDreamsKritaArtbreederDirectorAssist(assistInput);
+        setDreamsKritaEnv(res);
+        onAppendDirectionLine(
+          `[Storyboarder·Dreams·Krita·Artbreeder (${res.modelUsed})] ${res.report.directorExecutiveSummaryKo}`,
         );
       }
     } finally {
@@ -282,10 +283,10 @@ export function StudioRea15PlatformsWorkbenchPanel({
         <div className="flex items-center gap-1.5">
           <Palette className="size-3.5 text-accent" aria-hidden="true" />
           <span className="font-bold text-fg">
-            Phase 7 · 39대 웹툰·스토리보드·3D·드로잉 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 8대 AI 워크벤치
+            Phase 7 · 50대 웹툰·스토리보드·3D·드로잉 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 10대 AI 워크벤치
           </span>
           <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.54rem] font-semibold text-accent">
-            39개 플랫폼 · 41 브라우저 캡처 · 112만+ AST 노드 검증
+            50개 플랫폼 · 52 브라우저 캡처 · 125만+ AST 노드 검증
           </span>
         </div>
 
@@ -306,14 +307,14 @@ export function StudioRea15PlatformsWorkbenchPanel({
         </button>
       </div>
 
-      {/* 39대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
+      {/* 50대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
       <div
         data-testid="rea15-ui-token-inspector"
         className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
       >
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-bold text-fg">
-            39대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
+            50대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
           </span>
           <button
             type="button"
@@ -395,8 +396,8 @@ export function StudioRea15PlatformsWorkbenchPanel({
         </div>
       </div>
 
-      {/* 8대 AI 엔진 탭 네비게이션 */}
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4" role="tablist">
+      {/* 10대 AI 엔진 탭 네비게이션 */}
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-5" role="tablist">
         {REA15_TABS.map((tab) => {
           const isSelected = activeTab === tab.id;
           return (
@@ -732,6 +733,8 @@ export function StudioRea15PlatformsWorkbenchPanel({
         currentKrSuite={currentKrSuite}
         currentRealtimeShader={currentRealtimeShader}
         currentAnimatic={currentAnimatic}
+        currentWorldLocalizer={currentWorldLocalizer}
+        currentDreamsKritaDirector={currentDreamsKritaDirector}
       />
     </div>
   );

@@ -1,8 +1,8 @@
 import { REA39_WAVE23_PLATFORM_UI_THEMES } from "./claude-rea39-wave23-platform-themes";
 
 /* ============================================================================
- * 0. 39대 웹툰·스토리보드·3D·드로잉 AI 보조 플랫폼 REA 정본 카탈로그 및 UI/UX 디자인 토큰 스키마
- *    (하위 호환을 위해 REA15_* 와 REA39_* 식별자를 동시에 노출합니다)
+ * 0. 50대 웹툰·스토리보드·3D·드로잉·번역·채색 AI 보조 플랫폼 REA 정본 카탈로그 및 UI/UX 디자인 토큰 스키마
+ *    (하위 호환을 위해 REA15_*, REA39_*, REA50_* 식별자를 동시에 노출합니다)
  * ============================================================================ */
 
 export const REA15_PLATFORM_IDS = [
@@ -48,12 +48,26 @@ export const REA15_PLATFORM_IDS = [
   "clip-studio-paint",
   "acon3d",
   "webtoon-canvas",
+  // Wave 4 (11개 플랫폼 — 총 50개 플랫폼 완성)
+  "comicai",
+  "ai-comic-factory",
+  "wonderunit-storyboarder",
+  "storyboardthat",
+  "cotrans-manga-translator",
+  "vroid-studio",
+  "blockade-skybox-ai",
+  "krita",
+  "procreate-dreams",
+  "pixiv-sketch",
+  "artbreeder",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA50_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
+export type Rea50PlatformId = Rea15PlatformId;
 
 export interface Rea15PlatformUiThemeSpec {
   readonly platformId: Rea15PlatformId;
@@ -378,3 +392,4 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
 });
 
 export const REA39_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA50_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

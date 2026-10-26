@@ -8,10 +8,11 @@
     "nativeBinaryProviderRule": "ghidra-only-no-hopper"
   },
   "summary": {
-    "platformCount": 39,
+    "platformCount": 50,
     "wave1Platforms": 15,
     "wave2And3Platforms": 24,
-    "browserScenarioCaptures": 41,
+    "wave4Platforms": 11,
+    "browserScenarioCaptures": 52,
     "scriptExports": 27,
     "javascriptApplicationAnalyses": 14,
     "totalExportedScriptFiles": 867,
@@ -1340,6 +1341,280 @@
       ],
       "unknowns": [
         "Internal recommendation ranking weights."
+      ]
+    },
+    {
+      "id": "comicai",
+      "name": "ComicAI",
+      "origin": "https://comicai.ai",
+      "category": "story-to-comic-character-training-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_8fc708ebcd852976d561b083719e41f869c5fe354754bec21844793b124868fa",
+          "scenarioSha256": "930071156853048ff0e0f57ea252e7709087821bdcf076b3ffb03a35d23fd44d"
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0c10", "#14161f", "#262938", "#facc15", "#a855f7", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Provides 4-step story-to-comic generation, character LoRA consistent training, action reference pose matching, and drag-and-drop speech bubble composition."
+      ],
+      "inferences": [
+        "Couples character reference consistency with panel grid templates."
+      ],
+      "unknowns": [
+        "Authenticated GPU queue priority tiers."
+      ]
+    },
+    {
+      "id": "ai-comic-factory",
+      "name": "AI Comic Factory (HuggingFace)",
+      "origin": "https://aicomicfactory.com",
+      "category": "multi-panel-grid-and-prompt-comic-generator",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_f72ef904f9b5a152be22c6fc0ae54793786b3a3e864a99406232961d6189da49",
+          "scenarioSha256": "d96029f8ef11d9338add73112e313b4738e6872ebd3b861e7bafc32ea1c632a1",
+          "networkEventCount": 346
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1b1b1d", "#26262a", "#3f3f46", "#f59e0b", "#3b82f6", "#fafafa"]
+      },
+      "observedFacts": [
+        "Supports multi-panel comic page grid templates, dual story + style prompting, caption toggle, and zoom/redraw per panel."
+      ],
+      "inferences": [
+        "Uses LLM panel script splitting followed by parallel SDXL/Flux panel rendering."
+      ],
+      "unknowns": [
+        "Exact backend model checkpoint rotation."
+      ]
+    },
+    {
+      "id": "wonderunit-storyboarder",
+      "name": "WonderUnit Storyboarder",
+      "origin": "https://wonderunit.com/storyboarder",
+      "category": "3d-shot-generator-and-storyboard-editor",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3f9e4e3851960c2bdc3a5ed49d90e291503bdd5b496e362ab581c507f5f93516",
+          "scenarioSha256": "fab9d391c06610b00601107a9c029766a18c7249e030d329de173d5901dc089d",
+          "networkEventCount": 248
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#141414", "#1f1f1f", "#333333", "#ff3b30", "#ffcc00", "#f5f5f5"]
+      },
+      "observedFacts": [
+        "Features 6-brush quick storyboard sketching, 3D Shot Generator (virtual cameras, lenses, characters, props, lighting), dialogue/action metadata, and Premiere/FinalCut/PDF/GIF export."
+      ],
+      "inferences": [
+        "Combines rapid 2D linework with 3D Shot Generator blocking in one local project directory."
+      ],
+      "unknowns": [
+        "VR Shot Generator headset controller mapping."
+      ]
+    },
+    {
+      "id": "storyboardthat",
+      "name": "StoryboardThat",
+      "origin": "https://www.storyboardthat.com",
+      "category": "modular-scene-prop-and-character-poser",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_656fb33719de2bc19920a03c507045c45066c33407bab52a197446011bcd27c6",
+          "scenarioSha256": "8393bbca4d61579cbf9645e70cf8d8e75833ac527d36a4b92655d103b6bfefa7",
+          "networkEventCount": 196
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#f8fafc", "#ffffff", "#e2e8f0", "#f0582f", "#2467c4", "#1e293b"]
+      },
+      "observedFacts": [
+        "Exposes modular vector scenes, customizable character posers, speech bubbles, and multi-layout storyboard grids (/storyboard-creator)."
+      ],
+      "inferences": [
+        "Uses SVG layer tinting and limb rotation presets for rapid non-drawing storyboards."
+      ],
+      "unknowns": [
+        "Enterprise team sharing permissions."
+      ]
+    },
+    {
+      "id": "cotrans-manga-translator",
+      "name": "Cotrans Manga Image Translator",
+      "origin": "https://cotrans.touhou.ai",
+      "category": "comic-text-detection-inpainting-and-typesetting",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_54f95f57bd3a06ae86707333fb2f0e776d1d40960aa7ba68257edce6f8d64ae0",
+          "scenarioSha256": "084c205150a9f44a69e48dae5432f00fed9ed8d31f73c8b352f5cc4b17faeec3",
+          "networkEventCount": 88
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0f172a", "#1e293b", "#334155", "#38bdf8", "#818cf8", "#f1f5f9"]
+      },
+      "observedFacts": [
+        "Implements end-to-end comic/webtoon balloon text detection (CTD/DBNet), OCR, background text erasure via LaMa/AOT inpainting, and automated vertical/horizontal typesetting."
+      ],
+      "inferences": [
+        "Separates text mask dilation from background inpainting so screentones and gradients underneath balloons are cleanly reconstructed."
+      ],
+      "unknowns": [
+        "Custom glossary injection syntax on self-hosted workers."
+      ]
+    },
+    {
+      "id": "vroid-studio",
+      "name": "VRoid Studio (Pixiv)",
+      "origin": "https://vroid.com/en/studio",
+      "category": "parametric-3d-anime-avatar-and-vrm-exporter",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c576d12146868421e9d6ba8cfa1bfc7f873919c600291f2debf045e15cb7a3a2",
+          "scenarioSha256": "08604aecc4a4fc5f9714062f6699bcd46c1e4ad108b96c06f21a7ed326bfa126",
+          "networkEventCount": 442
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1f2126", "#2a2d34", "#3d414a", "#f5c500", "#0096fa", "#ffffff"]
+      },
+      "observedFacts": [
+        "Provides parametric anime face/body sliders, procedural hair-bundle brush curves, direct texture painting, MToon rim/outline shader tuning, and VRM 0.0/1.0 export."
+      ],
+      "inferences": [
+        "Serves as the primary 3D character creation upstream for Plask, SHAPER, and Snaptoon VRM pipelines."
+      ],
+      "unknowns": [
+        "Internal .vroid zip binary chunk versioning."
+      ]
+    },
+    {
+      "id": "blockade-skybox-ai",
+      "name": "Blockade Labs Skybox AI",
+      "origin": "https://skybox.blockadelabs.com",
+      "category": "360-panorama-hdri-and-depth-world-generator",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c46551c56ec0a695511eda07f1956761de35e23dd59145ea99cf943be999614d",
+          "scenarioSha256": "760211f443ecca704078f2e45036c2236271be226ae9b54d923e13dcc619b8b7",
+          "networkEventCount": 236
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#090a0f", "#12141f", "#23273a", "#00f0ff", "#7000ff", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Generates seam-free 360° equirectangular environments (up to 8K) with depth maps from sketch/remix prompts, enabling instant camera rotation for multi-angle webtoon backgrounds."
+      ],
+      "inferences": [
+        "Combines spherical projection constraints with depth-mesh displacement for parallax camera shifts."
+      ],
+      "unknowns": [
+        "Server-side spherical padding kernel width."
+      ]
+    },
+    {
+      "id": "krita",
+      "name": "Krita & Krita AI Diffusion",
+      "origin": "https://krita.org/en",
+      "category": "open-source-comic-page-manager-and-live-diffusion",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_dc41a093eb389b38b07f62a90b7ca2cb41727b48acd6ce2290e7a3a60e41bbec",
+          "scenarioSha256": "1a736d6bf0d1687c6154907e90ff75170e75d184ba797b333fac46b4f12a463e",
+          "networkEventCount": 172
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#232629", "#31363b", "#4d545b", "#3daee9", "#e93d96", "#eff0f1"]
+      },
+      "observedFacts": [
+        "Provides Colorize Mask (lazy brush flatting), wrap-around seamless texture mode, halftone/panel templates, onion-skin frame animation, and real-time ControlNet Live Diffusion integration."
+      ],
+      "inferences": [
+        "Colorize Mask solves closed/semi-open region segmentation deterministically before optional AI shading passes."
+      ],
+      "unknowns": [
+        "Local ComfyUI bridge socket buffer size."
+      ]
+    },
+    {
+      "id": "procreate-dreams",
+      "name": "Procreate Dreams",
+      "origin": "https://procreate.com/dreams",
+      "category": "realtime-touch-performing-and-flipbook-animation",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_639c3cee989930f743e6b2a8eb07c05d1904eacdd13debfb8970cead77c2d48b",
+          "scenarioSha256": "6ba98881b8877f0eaab202096416deb4eff89f5598f3be4a8e0e53bd1779a913",
+          "networkEventCount": 376
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#000000", "#111113", "#242429", "#ff375f", "#ff9f0a", "#f5f5f7"]
+      },
+      "observedFacts": [
+        "Introduces real-time Performing mode (recording touch gestures directly into transform/warp/filter keyframes during playback) alongside Flipbook cel animation and multi-track timelines."
+      ],
+      "inferences": [
+        "Eliminates manual bezier curve editing for organic camera shake, breathing, and cloth warp in moving-toons."
+      ],
+      "unknowns": [
+        "Proprietary .drm file container layout."
+      ]
+    },
+    {
+      "id": "pixiv-sketch",
+      "name": "Pixiv Sketch",
+      "origin": "https://sketch.pixiv.net",
+      "category": "anime-sketch-redeye-colorize-and-live-draw",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_6f5499644d8fd6ca3e53913452d3d3758a3c65c545f69d3fe0e26877cf290cf3",
+          "scenarioSha256": "4a4918b7d2925c66637802fb38d56d8b77f656f9a4bdb1234affb1dcd91258ad",
+          "networkEventCount": 232
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#ffffff", "#f5f6f8", "#e1e4e8", "#0096fa", "#ff4060", "#1f2328"]
+      },
+      "observedFacts": [
+        "Combines lightweight browser/mobile anime sketching, lineart simplify, automatic colorization, and multi-artist live drawing streams (/lives)."
+      ],
+      "inferences": [
+        "Optimizes brush pressure curves for rapid rough-conti and character expression sketching."
+      ],
+      "unknowns": [
+        "WebRTC bitrate ladder for /lives."
+      ]
+    },
+    {
+      "id": "artbreeder",
+      "name": "Artbreeder (Splicer · Poser · Collager)",
+      "origin": "https://www.artbreeder.com",
+      "category": "latent-gene-splicer-and-character-DNA-mixer",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_88ee616e627fe37325a9d68ce984f9168ea1a06939c072660cc28b6c6644480d",
+          "scenarioSha256": "1a9af8e6d89003b26d314f78fd737d57c83678d9364baa76b329c989a9ac067d",
+          "networkEventCount": 418
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111111", "#1c1c1e", "#2c2c2e", "#10b981", "#6366f1", "#f4f4f5"]
+      },
+      "observedFacts": [
+        "Exposes /create/composer, /create/collage, /create/splicer, and /create/poser for latent Gene slider interpolation, multi-parent character DNA crossbreeding, and shape-to-scene collage."
+      ],
+      "inferences": [
+        "Enables continuous morphological sliders (age, expression, sharpness, lighting) for designing distinct webtoon supporting casts without face-same syndrome."
+      ],
+      "unknowns": [
+        "Exact latent vector dimensionality per splicer category."
       ]
     }
   ]

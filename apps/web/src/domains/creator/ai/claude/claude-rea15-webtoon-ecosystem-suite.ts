@@ -39,11 +39,15 @@ import {
   type SnaptoonFrameoShaper3dDirectorReport,
 } from "./claude-rea15-webtoon-ecosystem-schemas";
 import {
+  buildLocalCotransVroidSkyboxWorldLocalizerReport,
   buildLocalKreaSplineLumiereRealtimeShaderReport,
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
+  buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
+  runCotransVroidSkyboxWorldLocalizerAssist,
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
+  runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
 } from "./claude-rea39-extended-engines";
 import type {
@@ -53,11 +57,15 @@ import type {
 
 export * from "./claude-rea15-webtoon-ecosystem-schemas";
 export {
+  buildLocalCotransVroidSkyboxWorldLocalizerReport,
   buildLocalKreaSplineLumiereRealtimeShaderReport,
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
+  buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
+  runCotransVroidSkyboxWorldLocalizerAssist,
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
+  runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
 };
 
@@ -677,7 +685,7 @@ export async function runCreativeDopamineAndUxSynthesizerAssist(
 }
 
 /* ============================================================================
- * 9. 8대 REA 39-Platform & Creative AI 통합 실행기
+ * 10. 10대 REA 50-Platform & Creative AI 통합 실행기
  * ============================================================================ */
 
 export async function runRea15WebtoonEcosystemFullSuite(
@@ -693,6 +701,8 @@ export async function runRea15WebtoonEcosystemFullSuite(
     tootoonGentoonTooningKrSuite,
     kreaSplineLumiereRealtimeShader,
     ltxBoordsCascadeurRiveAnimatic,
+    cotransVroidSkyboxLocalizer,
+    storyboarderDreamsKritaArtbreeder,
   ] = await Promise.all([
     runGlimnaviRelightAndLineartV23Assist(input, options),
     runKaistorySingleEnvelopeAndKaionAssist(input, options),
@@ -702,6 +712,8 @@ export async function runRea15WebtoonEcosystemFullSuite(
     runTootoonGentoonTooningKrSuiteAssist(input, options),
     runKreaSplineLumiereRealtimeShaderAssist(input, options),
     runLtxBoordsCascadeurRiveAnimaticAssist(input, options),
+    runCotransVroidSkyboxWorldLocalizerAssist(input, options),
+    runStoryboarderDreamsKritaArtbreederDirectorAssist(input, options),
   ]);
 
   const envelopes = [
@@ -713,6 +725,8 @@ export async function runRea15WebtoonEcosystemFullSuite(
     tootoonGentoonTooningKrSuite,
     kreaSplineLumiereRealtimeShader,
     ltxBoordsCascadeurRiveAnimatic,
+    cotransVroidSkyboxLocalizer,
+    storyboarderDreamsKritaArtbreeder,
   ];
 
   const totalEstimatedCostUsd = Number(
@@ -734,5 +748,7 @@ export async function runRea15WebtoonEcosystemFullSuite(
     tootoonGentoonTooningKrSuite,
     kreaSplineLumiereRealtimeShader,
     ltxBoordsCascadeurRiveAnimatic,
+    cotransVroidSkyboxLocalizer,
+    storyboarderDreamsKritaArtbreeder,
   });
 }

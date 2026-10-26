@@ -9,9 +9,12 @@ export {
   REA15_PLATFORM_UI_THEME_CATALOG,
   REA39_PLATFORM_IDS,
   REA39_PLATFORM_UI_THEME_CATALOG,
+  REA50_PLATFORM_IDS,
+  REA50_PLATFORM_UI_THEME_CATALOG,
   type Rea15PlatformId,
   type Rea15PlatformUiThemeSpec,
   type Rea39PlatformId,
+  type Rea50PlatformId,
 } from "./claude-rea15-platform-ui-theme-catalog";
 
 /* ============================================================================
@@ -403,6 +406,83 @@ export type LtxBoordsCascadeurRiveAnimaticReport = z.infer<
 >;
 
 /* ============================================================================
+ * 9. Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저
+ * ============================================================================ */
+
+export const CotransVroidSkyboxWorldLocalizerSchema = z.object({
+  worldLocalizerSummaryKo: z.string(),
+  cotransLetteringAndInpaint: z.object({
+    ocrDetectorModel: z.enum(["ctd-comic-text-detector", "dbnet-manga", "craft-vertical"]),
+    inpaintingModel: z.enum(["lama-large-512px", "aot-inpaint-manga"]),
+    balloonMaskDilatePx: z.number(),
+    localizedRegions: z.array(
+      z.object({
+        regionId: z.string(),
+        sourceKoText: z.string(),
+        translatedEnText: z.string(),
+        translatedJaText: z.string(),
+        verticalTypesetting: z.boolean(),
+      }),
+    ),
+  }),
+  vroidParametricAvatar: z.object({
+    vrmSpecVersion: z.enum(["VRM-1.0", "VRM-0.0"]),
+    rimShadeWidthPct: z.number(),
+    outlineWidthMm: z.number(),
+    hairSpringBoneStiffness: z.number(),
+    expressionBlendshapePresetKo: z.string(),
+  }),
+  skybox360Environment: z.object({
+    equirectangularResolution: z.enum(["8192x4096-8K", "6144x3072-6K"]),
+    depthMapParallaxStrengthPct: z.number(),
+    horizonPitchOffsetDeg: z.number(),
+    skyboxStylePresetKo: z.string(),
+    ambientIblTintHex: z.string(),
+  }),
+});
+
+export type CotransVroidSkyboxWorldLocalizerReport = z.infer<
+  typeof CotransVroidSkyboxWorldLocalizerSchema
+>;
+
+/* ============================================================================
+ * 10. WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자 디렉터
+ * ============================================================================ */
+
+export const StoryboarderDreamsKritaArtbreederDirectorSchema = z.object({
+  directorExecutiveSummaryKo: z.string(),
+  shotGeneratorAndComicFactory: z.object({
+    lensMm: z.number(),
+    cameraHeightCm: z.number(),
+    comicGridTemplateKo: z.string(),
+    inkLineCleanlinessPct: z.number(),
+    storyboardThatPropCount: z.number(),
+  }),
+  procreateDreamsPerformingTrack: z.object({
+    performingRecordSamplingHz: z.number(),
+    warpMeshGridSubdivisions: z.number(),
+    flipbookOnionSkinFrames: z.number(),
+    liveMotionGestureSummaryKo: z.string(),
+  }),
+  kritaLiveDiffusionAndArtbreederGenes: z.object({
+    kritaControlNetStack: z.array(z.string()),
+    livePaintingLatencyMs: z.number(),
+    artbreederGeneSliders: z.array(
+      z.object({
+        geneNameKo: z.string(),
+        weightNormalized: z.number(),
+        visualEffectKo: z.string(),
+      }),
+    ),
+    pixivSketchBrushSyncNoteKo: z.string(),
+  }),
+});
+
+export type StoryboarderDreamsKritaArtbreederDirectorReport = z.infer<
+  typeof StoryboarderDreamsKritaArtbreederDirectorSchema
+>;
+
+/* ============================================================================
  * 공통 실행 엔벨로프 및 통합 번들
  * ============================================================================ */
 
@@ -441,4 +521,6 @@ export interface Rea15FullSuiteBundle {
   readonly tootoonGentoonTooningKrSuite: Rea15Envelope<TootoonGentoonTooningKrSuiteReport>;
   readonly kreaSplineLumiereRealtimeShader: Rea15Envelope<KreaSplineLumiereRealtimeShaderReport>;
   readonly ltxBoordsCascadeurRiveAnimatic: Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport>;
+  readonly cotransVroidSkyboxLocalizer: Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport>;
+  readonly storyboarderDreamsKritaArtbreeder: Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport>;
 }

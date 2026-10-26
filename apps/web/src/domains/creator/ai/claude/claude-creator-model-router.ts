@@ -76,7 +76,7 @@ export type ClaudeCreatorTaskId =
   | "runner:dialogue-translate"
   | "runner:prompt-enhancer"
   | "runner:shading-assist"
-  // 8. Phase 7 REA 39-Platform Deep Internalization & Creative AI Suite (8)
+  // 8. Phase 7 REA 50-Platform Deep Internalization & Creative AI Suite (10)
   | "rea15:glimnavi-relight-lineart-v23"
   | "rea15:kaistory-single-envelope-kaion-quiz"
   | "rea15:snaptoon-frameo-shaper-3d-lighting"
@@ -84,7 +84,9 @@ export type ClaudeCreatorTaskId =
   | "rea15:creative-dopamine-scroll-ux-synthesizer"
   | "rea15:tootoon-gentoon-tooning-kr-suite"
   | "rea15:krea-spline-lumiere-realtime-shader"
-  | "rea15:ltx-boords-cascadeur-rive-animatic";
+  | "rea15:ltx-boords-cascadeur-rive-animatic"
+  | "rea15:cotrans-vroid-skybox-world-localizer"
+  | "rea15:storyboarder-dreams-krita-artbreeder-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -523,6 +525,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "phase6-ecosystem",
     "deep-architecture",
     "프리비즈 애니매틱 카메라 시퀀스·Cascadeur 무게중심/탄도 물리 궤적·Rive 인터랙티브 상태머신 설계는 Opus 5.5 심층 추론 적용",
+    6_144,
+  ),
+  "rea15:cotrans-vroid-skybox-world-localizer": defineRoute(
+    "rea15:cotrans-vroid-skybox-world-localizer",
+    "Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저",
+    "phase6-ecosystem",
+    "creative-production",
+    "다국어 식자 LaMa/AOT 인페인팅 마스크·VRoid VRM 본/외곽선·360도 파노라마 스카이박스 환경 매칭은 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:storyboarder-dreams-krita-artbreeder-director": defineRoute(
+    "rea15:storyboarder-dreams-krita-artbreeder-director",
+    "WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자 디렉터",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "3D Shot Generator 카메라·Procreate Dreams 실시간 퍼포밍 키프레임·Krita Live Diffusion·Artbreeder 유전자 교배 통합 설계는 Opus 5.5 심층 추론 적용",
     6_144,
   ),
 });

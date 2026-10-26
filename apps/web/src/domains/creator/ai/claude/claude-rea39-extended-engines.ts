@@ -2,12 +2,16 @@ import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 
 import { executeRea15Engine } from "./claude-rea15-webtoon-ecosystem-suite";
 import {
+  CotransVroidSkyboxWorldLocalizerSchema,
   KreaSplineLumiereRealtimeShaderSchema,
   LtxBoordsCascadeurRiveAnimaticSchema,
+  StoryboarderDreamsKritaArtbreederDirectorSchema,
   TootoonGentoonTooningKrSuiteSchema,
+  type CotransVroidSkyboxWorldLocalizerReport,
   type KreaSplineLumiereRealtimeShaderReport,
   type LtxBoordsCascadeurRiveAnimaticReport,
   type Rea15Envelope,
+  type StoryboarderDreamsKritaArtbreederDirectorReport,
   type TootoonGentoonTooningKrSuiteReport,
 } from "./claude-rea15-webtoon-ecosystem-schemas";
 import type {
@@ -272,6 +276,136 @@ export async function runLtxBoordsCascadeurRiveAnimaticAssist(
     userDirectiveKo:
       "현재 대본의 3개 핵심 샷 애니매틱 카메라 무빙·보이스오버 비트, Cascadeur 물리 기반 무게중심/탄도/관성 팔로우스루 수치, 그리고 Rive/Jitter 스크롤 반응형 상태머신(State Machine) 2개 상태를 설계하세요.",
     schema: LtxBoordsCascadeurRiveAnimaticSchema,
+    fallbackReport,
+  });
+}
+
+/* ============================================================================
+ * 9. Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저
+ * ============================================================================ */
+
+export function buildLocalCotransVroidSkyboxWorldLocalizerReport(
+  input: WebtoonProductionAssistInput = {},
+): CotransVroidSkyboxWorldLocalizerReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+
+  return {
+    worldLocalizerSummaryKo: `Cotrans Manga Image Translator의 CTD 말풍선 검출 + LaMa 512px 배경 인페인팅, VRoid Studio의 VRM-1.0 파라메트릭 아바타(MToon 림셰이드·스프링본), Blockade Labs Skybox AI의 8K 360° 파노라마 깊이맵 배경을 통합한 월드·식자 파이프라인입니다.`,
+    cotransLetteringAndInpaint: {
+      ocrDetectorModel: "ctd-comic-text-detector",
+      inpaintingModel: "lama-large-512px",
+      balloonMaskDilatePx: 6,
+      localizedRegions: [
+        {
+          regionId: "balloon-cut01-01",
+          sourceKoText: `${protagonist}: 이 봉인을 여는 순간, 우리의 시간은 되돌릴 수 없어.`,
+          translatedEnText: "The moment we break this seal, our time can never be turned back.",
+          translatedJaText: "この封印を解いた瞬間、俺たちの時間は二度と戻せない。",
+          verticalTypesetting: true,
+        },
+        {
+          regionId: "balloon-cut01-02",
+          sourceKoText: `${partner}: 그래도 멈추지 않아. 끝까지 볼 거야.`,
+          translatedEnText: "Even so, I won't stop. I'll see it through to the end.",
+          translatedJaText: "それでも止まらない。最後まで見届けるから。",
+          verticalTypesetting: true,
+        },
+      ],
+    },
+    vroidParametricAvatar: {
+      vrmSpecVersion: "VRM-1.0",
+      rimShadeWidthPct: 44,
+      outlineWidthMm: 1.4,
+      hairSpringBoneStiffness: 0.72,
+      expressionBlendshapePresetKo: `${protagonist} 결의에 찬 눈매(Funnel 25% + AngryBrow 40%)`,
+    },
+    skybox360Environment: {
+      equirectangularResolution: "8192x4096-8K",
+      depthMapParallaxStrengthPct: 68,
+      horizonPitchOffsetDeg: -12,
+      skyboxStylePresetKo: "Anime Sanctum Ruins Twilight 360° HDRI",
+      ambientIblTintHex: "#38BDF8",
+    },
+  };
+}
+
+export async function runCotransVroidSkyboxWorldLocalizerAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport>> {
+  const fallbackReport = buildLocalCotransVroidSkyboxWorldLocalizerReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:cotrans-vroid-skybox-world-localizer",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 Cotrans Manga Translator(CTD/DBNet 말풍선 검출·LaMa/AOT 인페인팅·세로쓰기 식자), VRoid Studio(VRM 1.0 MToon 외곽선·스프링본·블렌드셰이프), Blockade Labs Skybox AI(8K 360° 파노라마·깊이맵 패럴랙스) 통합 디렉터입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 대본의 2개 핵심 말풍선 다국어(KO/EN/JA) 인페인팅·식자 사양, VRoid VRM 캐릭터 셰이더/물리 수치, 그리고 Skybox AI 360° 배경 환경광 사양을 생성하세요.",
+    schema: CotransVroidSkyboxWorldLocalizerSchema,
+    fallbackReport,
+  });
+}
+
+/* ============================================================================
+ * 10. WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자 디렉터
+ * ============================================================================ */
+
+export function buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(
+  input: WebtoonProductionAssistInput = {},
+): StoryboarderDreamsKritaArtbreederDirectorReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+
+  return {
+    directorExecutiveSummaryKo: `WonderUnit Storyboarder의 3D Shot Generator와 ComicAI/AI Comic Factory의 컷 분할 템플릿, Procreate Dreams의 실시간 터치 퍼포밍(Performing) 키프레임 트랙, Krita Live Diffusion ControlNet 스택, Artbreeder 유전자(Gene) 슬라이더 및 Pixiv Sketch 브러시 스트로크를 결합한 마스터 작화·연출 사양입니다.`,
+    shotGeneratorAndComicFactory: {
+      lensMm: 24,
+      cameraHeightCm: 135,
+      comicGridTemplateKo: "세로 3단 비대칭 다이나믹 블리드 + 대각선 슬래시 거터",
+      inkLineCleanlinessPct: 96,
+      storyboardThatPropCount: 5,
+    },
+    procreateDreamsPerformingTrack: {
+      performingRecordSamplingHz: 120,
+      warpMeshGridSubdivisions: 16,
+      flipbookOnionSkinFrames: 4,
+      liveMotionGestureSummaryKo: `${protagonist}의 검격 궤적을 120Hz 실시간 터치 퍼포밍으로 기록해 카메라 셰이크와 망토 워프 메쉬를 동기화`,
+    },
+    kritaLiveDiffusionAndArtbreederGenes: {
+      kritaControlNetStack: ["Lineart-Anime-v1.1", "Depth-Anything-V2", "IP-Adapter-FaceID-PlusV2"],
+      livePaintingLatencyMs: 85,
+      artbreederGeneSliders: [
+        {
+          geneNameKo: "샤프 다크 판타지 선화 밀도",
+          weightNormalized: 0.84,
+          visualEffectKo: "턱선·눈매 잉크 펜선 대비 강화 및 미세 크로스해칭 추가",
+        },
+        {
+          geneNameKo: "시네마틱 청록 역광 채도",
+          weightNormalized: 0.72,
+          visualEffectKo: "어두운 배경 대비 유물 발광 시안-바이올렛 색수차 강조",
+        },
+      ],
+      pixivSketchBrushSyncNoteKo: "G펜 필압 곡선(감도 88%) 및 수채 경계 블렌딩 브러시 프리셋 동기화 완료",
+    },
+  };
+}
+
+export async function runStoryboarderDreamsKritaArtbreederDirectorAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport>> {
+  const fallbackReport = buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:storyboarder-dreams-krita-artbreeder-director",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 WonderUnit Storyboarder(3D Shot Generator), ComicAI/AI Comic Factory/StoryboardThat, Procreate Dreams(120Hz 실시간 Performing·Flipbook), Krita AI Diffusion(ControlNet), Artbreeder(Gene Splicer), Pixiv Sketch를 통합 지휘하는 마스터 작화·애니메이션 감독입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 장면을 위한 Shot Generator 카메라·코믹 그리드 사양, Procreate Dreams 실시간 퍼포밍 트랙, Krita ControlNet 스택 및 Artbreeder 유전자 슬라이더 2종을 설계하세요.",
+    schema: StoryboarderDreamsKritaArtbreederDirectorSchema,
     fallbackReport,
   });
 }
