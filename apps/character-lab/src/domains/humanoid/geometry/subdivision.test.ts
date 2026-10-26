@@ -27,11 +27,14 @@ import {
   matchNeckSeamVertices,
   normalizeShaperContourOrientation,
   parseShaperQuadObj,
+  parseShaperSimpleQuadObj,
   parseShaperStlBinaryHeaderAndTriangles,
   predictVertexCount,
   projectShaperContour3dTo2d,
   recalculateCreaseNormals,
+  recalculateShaperNormalsByAngle,
   selectControlPointsInScreenRect,
+  solveShaperOrientationConstraintHalfSlerp,
   subdividedToTriMesh,
   tessellateShaperPolygonContour,
   weldAdjacentBodyPartNormals,
@@ -565,5 +568,42 @@ describe("SHAPER 준-샤프(Semi-Sharp) 세분화 및 파츠/목 심(Seam) 정�
     expect(parsedStl.headerColorRgba?.[1]).toBeCloseTo(128 / 255, 5);
     expect(Array.from(parsedStl.positions.slice(0, 3))).toEqual([1, 2, 3]);
     expect(Array.from(parsedStl.normals.slice(0, 3))).toEqual([0, 0, 1]);
+  });
+
+  it("NormalSolver::RecalculateNormals, SimpleQuadOBJLoader::Load, OrientationConstraint::Update 역공학 유틸을 검증한다", () => {
+    // 90도로 꺾인 두 삼각형(정점 0,1,2는 XY 평면 법선 +Z, 정점 3,4,5는 XZ 평면 법선 -Y, 정점 1===3, 2===4 동일 좌표)
+    const positions = new Float32Array([
+      0, 0, 0, 1, 0, 0, 0, 1, 0,
+      1, 0, 0, 0, 1, 0, 0, 0, -1,
+    ]);
+    const indices = new Uint32Array([0, 1, 2, 3, 4, 5]);
+    const hardNormals = recalculateShaperNormalsByAngle(positions, indices, 30);
+    expect(hardNormals[2]).toBeCloseTo(1, 4); // 삼각형 0의 +Z 법선 유지
+    const smoothNormals = recalculateShaperNormalsByAngle(positions, indices, 120);
+    // 120도 스무딩 시 정점 1과 정점 3의 법선이 병합되어 Z성분이 1보다 작아짐
+    expect(smoothNormals[1 * 3 + 2]!).toBeLessThan(0.95);
+
+    const parsedObj = parseShaperSimpleQuadObj(
+      [
+        "# SHAPER quad obj",
+        "v 0,0 0.0 0.0",
+        "v 1.0 0.0 0.0",
+        "v 1.0 1.0 0.0",
+        "v 0.0 1.0 0.0",
+        "f -4/1 -3/2 -2/3 -1/4",
+      ].join("\n"),
+    );
+    expect(parsedObj.vertices).toHaveLength(4);
+    expect(parsedObj.quads).toEqual([0, 1, 2, 3]);
+    expect(parsedObj.triangles).toEqual([0, 1, 2, 0, 2, 3]);
+
+    // Identity (0,0,0,1) 와 Z축 90도 회전 (0,0,sin45,cos45) 의 0.5 Slerp = Z축 45도 회전 (0,0,sin22.5,cos22.5)
+    const halfSlerp = solveShaperOrientationConstraintHalfSlerp(
+      [0, 0, 0, 1],
+      [0, 0, Math.SQRT1_2, Math.SQRT1_2],
+      0.5,
+    );
+    expect(halfSlerp[2]).toBeCloseTo(Math.sin(Math.PI / 8), 5);
+    expect(halfSlerp[3]).toBeCloseTo(Math.cos(Math.PI / 8), 5);
   });
 });

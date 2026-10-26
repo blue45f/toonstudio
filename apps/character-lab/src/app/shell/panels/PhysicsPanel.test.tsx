@@ -141,4 +141,17 @@ describe("PhysicsPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "완전 정착 (120스텝)" }));
     expect((screen.getByLabelText(/정착 스텝/u) as HTMLInputElement).value).toBe("120");
   });
+
+  it("SHAPER DynamicBone · 캡슐 콜라이더 베를레 물리 섹션(damping·elasticity·stiffness·inert·Outside/Inside)을 렌더링하고 조작한다", () => {
+    render(
+      <MockLabProvider>
+        <PhysicsPanel />
+      </MockLabProvider>,
+    );
+    expect(screen.getByTestId("shaper-physics-dynamicbone-section")).toBeTruthy();
+    expect(screen.getByTestId("shaper-dynamicbone-readout").textContent).toContain("콜라이더 (outside) 투영 좌표");
+
+    fireEvent.click(screen.getByTestId("shaper-db-bound-inside"));
+    expect(screen.getByTestId("shaper-dynamicbone-readout").textContent).toContain("콜라이더 (inside) 투영 좌표");
+  });
 });

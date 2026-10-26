@@ -356,4 +356,24 @@ describe("VisionPanel", () => {
       }
     });
   });
+
+  it("SHAPER BoneAIManager · UIAIPreset 섹션(5모드·512px/512×288 리샘플링·16/24 신뢰 게이트·ChangeFixVector·6부위×3후보)을 렌더링하고 조작한다", () => {
+    render(
+      <MockLabProvider catalog={catalog}>
+        <VisionPanel deps={fakeDeps(fakeLoaders())} />
+      </MockLabProvider>,
+    );
+    const section = screen.getByTestId("shaper-vision-ai-section");
+    expect(section).toBeTruthy();
+    expect(screen.getByTestId("shaper-ai-downscale-badge").textContent).toContain("512×288px");
+    expect(screen.getByTestId("shaper-ai-confidence-gate-status").textContent).toContain("게이트 통과 (20/24본");
+
+    fireEvent.click(screen.getByTestId("shaper-ai-fix-vector-btn"));
+    expect(screen.getByTestId("shaper-ai-fix-vector-btn").textContent).toContain("+90°");
+
+    const topHeadCard = screen.getByTestId("shaper-ai-preset-card-head-0");
+    expect(topHeadCard.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(topHeadCard);
+    expect(topHeadCard.getAttribute("aria-pressed")).toBe("true");
+  });
 });

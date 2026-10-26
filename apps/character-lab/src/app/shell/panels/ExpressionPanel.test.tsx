@@ -112,4 +112,14 @@ describe("ExpressionPanel", () => {
     expect(expressionsEqual({ jawOpen: 1.5 }, { jawOpen: 1 })).toBe(true);
     expect(expressionsEqual({ jawOpen: 0.5 }, { jawOpen: 0.4 })).toBe(false);
   });
+
+  it("SHAPER EyeballData 안구 시선·하이라이트 동기화 섹션(EyeballHighlightType 4종·대칭 Yaw 미러링)을 렌더링하고 조작한다", () => {
+    setup();
+    const section = screen.getByTestId("shaper-expression-headpart-section");
+    expect(section).toBeTruthy();
+    expect(screen.getByTestId("shaper-eyeball-readout").textContent).toContain("좌안 Yaw 12° · 우안 미러 Yaw -12°");
+
+    fireEvent.change(screen.getByLabelText("좌측 안구 수평 시선 (Yaw°)"), { target: { value: "20" } });
+    expect(screen.getByTestId("shaper-eyeball-readout").textContent).toContain("좌안 Yaw 20° · 우안 미러 Yaw -20°");
+  });
 });

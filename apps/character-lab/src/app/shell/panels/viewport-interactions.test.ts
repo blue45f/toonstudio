@@ -16,6 +16,7 @@ import {
   classifyShaperTrackpadTwoFingerGesture,
   composeShaperHangulJamo,
   computeJointDrag,
+  computeShaperModelControllerTransform,
   computeShaperPartThumbnailCameraFrame,
   computeShaperPresetGridItemLayout,
   computeShaperWebcamPopupLayout,
@@ -26,12 +27,14 @@ import {
   jointLabelKo,
   mapShaperNsTouchPhaseToRingPhase,
   parseShaperUniWinCFileTypesFilter,
+  parseShaperUniWinDroppedPaths,
   pushShaperHistoryEntry,
   resolveDragPivot,
   resolveShaperCameraInputAction,
   resolveShaperContextStatusBarGuide,
   resolveShaperGizmoCastPlaneEuler,
   resolveShaperPresetClickModifiers,
+  resolveShaperResizeHandleCursor,
   resolveShaperToolModeForPartTab,
   resolveShaperViewportKeyShortcut,
   sampleShaperColorPalettePicker2d,
@@ -494,5 +497,37 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
     expect(paintGuide.shortcuts.some((g) => g.description.includes("스트로크"))).toBe(true);
     const poseGuide = resolveShaperContextStatusBarGuide({ inspectorTab: "pose", drawingMode: false });
     expect(poseGuide.shortcuts.some((g) => g.description.includes("대칭"))).toBe(true);
+  });
+
+  it("UniWindowController (parsePaths·ResizeHandle) 및 Kirurobo.ModelController 지수 줌·회전 변환을 검증한다", () => {
+    const dropped = parseShaperUniWinDroppedPaths(
+      '"/Users/test/My ""Avatar"".obj"\n/Users/test/Pose.json\0"/Users/test/Hair.shaper"',
+    );
+    expect(dropped).toEqual([
+      '/Users/test/My "Avatar".obj',
+      "/Users/test/Pose.json",
+      "/Users/test/Hair.shaper",
+    ]);
+
+    expect(resolveShaperResizeHandleCursor({ left: true, top: true })).toBe("nwse-resize");
+    expect(resolveShaperResizeHandleCursor({ left: true, bottom: true })).toBe("nesw-resize");
+    expect(resolveShaperResizeHandleCursor({ right: true, top: true })).toBe("nesw-resize");
+    expect(resolveShaperResizeHandleCursor({ right: true, bottom: true })).toBe("nwse-resize");
+    expect(resolveShaperResizeHandleCursor({ left: true })).toBe("ew-resize");
+    expect(resolveShaperResizeHandleCursor({ top: true })).toBe("ns-resize");
+
+    const transformed = computeShaperModelControllerTransform({
+      yawDeg: 0,
+      pitchDeg: 80,
+      zoom: 0,
+      dragDeltaPx: [100, 100],
+      wheelDelta: 5,
+      screenSizePx: [1000, 1000],
+      zoomSensitivity: 0.2,
+    });
+    expect(transformed.yawDeg).toBeCloseTo(-36, 5);
+    expect(transformed.pitchDeg).toBe(90); // 80 + 36 -> clamped to 90
+    expect(transformed.zoom).toBeCloseTo(1, 5);
+    expect(transformed.scale).toEqual([10, 10, 10]); // 10^1 = 10
   });
 });

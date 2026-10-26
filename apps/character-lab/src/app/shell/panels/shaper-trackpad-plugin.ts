@@ -632,3 +632,147 @@ export function resolveShaperContextStatusBarGuide(options: {
     }
   }
 }
+
+/**
+ * Unity.UniWindowController.dll `Kirurobo.UniWinCore::parsePaths` (`0x06000012`, RVA `8812`, `ev_8f394932f2860ccd31ec2b70027459b905977d1e3a515dc9f4dec7b554f44fa8`) 역공학 내재화:
+ * 드래그 앤 드롭 또는 네이티브 파일 패널에서 전달된 다중 경로 문자열을 상태 머신(`state 0/1/2/3`)으로 파싱하여
+ * 큰따옴표(`"..."`) 감싸기, 이중 따옴표(`""`) 이스케이프, 개행(`\r`/`\n`) 및 널 문자(`\0`) 구분자를 처리한다.
+ */
+export function parseShaperUniWinDroppedPaths(text: string): readonly string[] {
+  const paths: string[] = [];
+  let state = 0;
+  let current = "";
+
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i]!;
+    if (state === 1) {
+      if (ch === "\0" || ch === "\n" || ch === "\r") {
+        paths.push(current);
+        current = "";
+        state = 0;
+      } else {
+        current += ch;
+      }
+    } else if (state === 2) {
+      if (ch === '"') {
+        state = 3;
+      } else {
+        current += ch;
+      }
+    } else if (state === 3) {
+      if (ch === '"') {
+        current += '"';
+        state = 2;
+      } else {
+        paths.push(current);
+        current = "";
+        state = 0;
+      }
+    } else if (ch === '"') {
+      current = "";
+      state = 2;
+    } else if (ch !== "\0" && ch !== "\t" && ch !== "\n" && ch !== "\r" && ch !== " ") {
+      current = ch;
+      state = 1;
+    }
+  }
+  if (current.length > 0) {
+    paths.push(current);
+  }
+  return paths;
+}
+
+export type ShaperResizeCursorKind =
+  | "default"
+  | "ew-resize"
+  | "ns-resize"
+  | "nwse-resize"
+  | "nesw-resize";
+
+/**
+ * Unity.UniWindowController.dll `Kirurobo.UniWindowResizeHandle::OnPointerEnter` (`0x0600008f`, RVA `14240`) 역공학 내재화:
+ * 좌(`left`)·우(`right`)·하(`bottom`)·상(`top`) 테두리 불리언 조합으로부터 8방향 리사이즈 커서 종류를 결정한다.
+ */
+export function resolveShaperResizeHandleCursor(edges: {
+  readonly left?: boolean;
+  readonly right?: boolean;
+  readonly bottom?: boolean;
+  readonly top?: boolean;
+}): ShaperResizeCursorKind {
+  const { left = false, right = false, bottom = false, top = false } = edges;
+  if (left) {
+    if (bottom) return "nesw-resize";
+    if (top) return "nwse-resize";
+    return "ew-resize";
+  }
+  if (right) {
+    if (bottom) return "nwse-resize";
+    if (top) return "nesw-resize";
+    return "ew-resize";
+  }
+  if (bottom || top) {
+    return "ns-resize";
+  }
+  return "default";
+}
+
+export interface ShaperModelControllerInput {
+  readonly yawDeg: number;
+  readonly pitchDeg: number;
+  readonly zoom: number;
+  readonly dragDeltaPx?: readonly [number, number];
+  readonly wheelDelta?: number;
+  readonly screenSizePx?: readonly [number, number];
+  readonly rotationSensitivity?: readonly [number, number];
+  readonly zoomSensitivity?: number;
+  readonly originalScale?: readonly [number, number, number];
+}
+
+export interface ShaperModelControllerOutput {
+  readonly yawDeg: number;
+  readonly pitchDeg: number;
+  readonly zoom: number;
+  readonly scale: readonly [number, number, number];
+}
+
+/**
+ * SHAPER `Kirurobo.ModelController` (`0x020000c9`, `UpdateTransform` `0x06000606`, `RelativeRotate` `0x06000609`, `RelativeZoom` `0x0600060a`) 역공학 내재화:
+ * - 화면 크기 대비 드래그 변위 `(dx * 360 / screenW) * sensX`, `(dy * 360 / screenH) * sensY`로 회전 갱신 (`pitch`는 `[-90, 90]`, `yaw`는 `(-360, 360)` 순환)
+ * - `zoom`을 `[-1, 2]` 범위로 클램프하고 지수 스케일 `originalScale * 10^zoom` (`Mathf.Pow(10f, zoom)`)을 계산한다.
+ */
+export function computeShaperModelControllerTransform(
+  input: ShaperModelControllerInput,
+): ShaperModelControllerOutput {
+  const {
+    yawDeg,
+    pitchDeg,
+    zoom,
+    dragDeltaPx = [0, 0],
+    wheelDelta = 0,
+    screenSizePx = [1280, 720],
+    rotationSensitivity = [1, 1],
+    zoomSensitivity = 0.2,
+    originalScale = [1, 1, 1],
+  } = input;
+
+  const safeW = Math.max(1, screenSizePx[0]);
+  const safeH = Math.max(1, screenSizePx[1]);
+  const dYaw = (-dragDeltaPx[0] * 360 * rotationSensitivity[0]) / safeW;
+  const dPitch = (dragDeltaPx[1] * 360 * rotationSensitivity[1]) / safeH;
+
+  const nextYaw = (yawDeg + dYaw) % 360;
+  const nextPitch = Math.max(-90, Math.min(90, pitchDeg + dPitch));
+  const nextZoom = Math.max(-1, Math.min(2, zoom + wheelDelta * zoomSensitivity));
+  const factor = Math.pow(10, nextZoom);
+
+  return {
+    yawDeg: nextYaw,
+    pitchDeg: nextPitch,
+    zoom: nextZoom,
+    scale: [
+      originalScale[0] * factor,
+      originalScale[1] * factor,
+      originalScale[2] * factor,
+    ],
+  };
+}

@@ -530,8 +530,11 @@ export {
   evaluateShaperTessWindingRule,
   findShaperDominantAxis3d,
   normalizeShaperContourOrientation,
+  parseShaperSimpleQuadObj,
   parseShaperStlBinaryHeaderAndTriangles,
   projectShaperContour3dTo2d,
+  recalculateShaperNormalsByAngle,
+  solveShaperOrientationConstraintHalfSlerp,
   tessellateShaperPolygonContour,
 } from "./shaper-tess";
 export type {
@@ -539,6 +542,7 @@ export type {
   ShaperProjectedContour2d,
   ShaperRightHandToLeftHandInput,
   ShaperRightHandToLeftHandResult,
+  ShaperSimpleQuadObjParsed,
   ShaperStlParsedData,
   ShaperTessWindingRule,
   ShaperTessellateContourOptions,
