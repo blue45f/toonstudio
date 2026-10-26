@@ -172,7 +172,7 @@ jobs:
         run: pnpm exec playwright install chromium firefox webkit
       - name: Install drawing browser dependencies
         run: pnpm exec playwright install-deps chromium firefox webkit
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: studio-discovery-dist
           path: dist
