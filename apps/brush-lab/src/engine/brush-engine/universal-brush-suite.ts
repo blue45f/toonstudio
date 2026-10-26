@@ -450,4 +450,67 @@ export function evaluateLabWickCroquisPressure01(rawPressure01: number): number 
   return Math.fround(0.14 + 0.86 * clamp01(rawPressure01));
 }
 
+/**
+ * libmypaint `opaque_linearize` 다중 댑 광학 선형화 및 `posterize` / `posterize_num` 이산 색상 양자화.
+ */
+export function evaluateLabMyPaintOpaqueLinearizeAndPosterize(params: {
+  readonly baseOpaque01: number;
+  readonly opaqueLinearize01: number;
+  readonly dabsPerRadius: number;
+  readonly rgb01: readonly [number, number, number];
+  readonly posterize01: number;
+  readonly posterizeNum: number;
+}): {
+  readonly linearizedAlphaPerDab01: number;
+  readonly quantizedRgb01: [number, number, number];
+} {
+  const baseOpaque = clamp01(params.baseOpaque01);
+  const linearize = clamp01(params.opaqueLinearize01);
+  const dabsPerDiameter = Math.max(1, (Number.isFinite(params.dabsPerRadius) ? params.dabsPerRadius : 2) * 2);
+  let alphaPerDab = baseOpaque;
+  if (linearize > 0 && baseOpaque < 0.999) {
+    const linearized = 1 - Math.pow(1 - baseOpaque, 1 / dabsPerDiameter);
+    alphaPerDab = clamp01(baseOpaque * (1 - linearize) + linearized * linearize);
+  }
+  const post = clamp01(params.posterize01);
+  const levels = Math.max(2, Math.round(Math.max(0.01, Math.min(1.28, params.posterizeNum)) * 100));
+  const quantize = (c: number) => {
+    const clamped = clamp01(c);
+    const q = Math.floor(clamped * levels) / levels;
+    return Math.fround(clamp01(clamped * (1 - post) + q * post));
+  };
+  return {
+    linearizedAlphaPerDab01: Math.fround(alphaPerDab),
+    quantizedRgb01: [
+      quantize(params.rgb01[0]),
+      quantize(params.rgb01[1]),
+      quantize(params.rgb01[2]),
+    ],
+  };
+}
+
+/**
+ * spectral.js CIE 휘도($Y$) 및 착색력($\text{tintingStrength}^2$) 가중 Kubelka-Munk 혼합.
+ */
+export function mixLabLuminanceWeightedKubelkaMunk(params: {
+  readonly rgbA: readonly [number, number, number];
+  readonly factorA: number;
+  readonly tintingStrengthA?: number;
+  readonly rgbB: readonly [number, number, number];
+  readonly factorB: number;
+  readonly tintingStrengthB?: number;
+}): [number, number, number] {
+  const lum = (rgb: readonly [number, number, number]) =>
+    Math.max(1e-4, 0.2126 * clamp01(rgb[0]) + 0.7152 * clamp01(rgb[1]) + 0.0722 * clamp01(rgb[2]));
+  const fA = Math.max(0, Number.isFinite(params.factorA) ? params.factorA : 0.5);
+  const fB = Math.max(0, Number.isFinite(params.factorB) ? params.factorB : 0.5);
+  const tA = Math.max(0.01, Number.isFinite(params.tintingStrengthA) ? params.tintingStrengthA! : 1);
+  const tB = Math.max(0.01, Number.isFinite(params.tintingStrengthB) ? params.tintingStrengthB! : 1);
+  const cA = fA * fA * tA * tA * lum(params.rgbA);
+  const cB = fB * fB * tB * tB * lum(params.rgbB);
+  const ratioB = cA + cB > 0 ? clamp01(cB / (cA + cB)) : 0.5;
+  return kmMixRgb(params.rgbA, params.rgbB, ratioB);
+}
+
+
 

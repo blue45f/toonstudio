@@ -1,12 +1,13 @@
 # 글로벌 GitHub 오픈소스·웹 드로잉·상용 페인팅 브러시 생태계 REA 역공학 및 ToonStudio 전수 내재화 보고서 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 전수 구현 및 검증 완료)
+- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 전수 구현 및 검증 완료)
 - **관련 모듈**:
   - `apps/web/src/domains/creator/drawing/studio-universal-brush-taxonomy-engine.ts`
   - `apps/web/src/domains/creator/drawing/studio-vector-skeletal-pattern-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-particle-pixol-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-bezier-curve-fit-brushes.ts`
+  - `apps/web/src/domains/creator/drawing/studio-mypaint-spectral-boolean-brushes.ts`
   - `apps/web/src/domains/creator/drawing/StudioUniversalBrushEngineBar.tsx`
   - `apps/web/src/domains/creator/drawing/StudioNaturalMediaShowcase.tsx`
   - `apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts`
@@ -66,6 +67,13 @@
   - **Pomax (`bezier.js`)**: 단위 법선 $\hat{n}(t)$ 오프셋 레일 및 부호 곡률 $\kappa(t) = \frac{x'y'' - y'x''}{(x'^2+y'^2)^{3/2}}$ 기반 첨점($|\kappa(t)\cdot r(t)| > 1$) 감지·억제.
   - **Klecks (`bitbof/klecks`) 6종 브러시**: `PenBrush`(4종 알파 팁·3단계 밉맵·분필 회전 `((x+y)*53123)%(2*PI)`), `BlendBrush`(적응형 스페이싱 `mix(size, size*2/9)`·45% 양방향 픽업·샤프니스 `opacity^2*0.8`), `SmudgeBrush`(자기 덮어쓰기 방지 양방향 스캔라인 복사), `SketchyBrush`(삼각함수 결정론적 PRNG `sin(6324634.2345*cos(++seed*5342.3423))*0.5+0.5`), `ChemyBrush`(4분면 대칭 실루엣), `PixelBrush`(`PixelDiscUnion` 수평 스캔라인 병합).
   - **Wick Editor & Konva**: Croquis 필압 매핑 $[0, 1] \to [0.14, 1.0]$ + 모폴로지 갭필, Konva 현 길이 비례 Cardinal Tension 제어점 확장.
+
+### 2.7 Wave 24 `libmypaint` 46종 설정·18종 입력 동역학 · `spectral.js` 38밴드 KM+OKLCh 가멋 매핑 · `colormix.js` CIE Lab · `polygon-clipping` 2D 불리언 폴리곤 (Observation)
+- `inspect_analysis_view`(`ev_bf902cf092d273befdafa0630fd0dbc9b347f97afae41a62ed4b92f508a64699`, `ev_ea7266ced6917ad222f7bfa7cbad6762c27bf51d4c23c95dc512a9916374ae7f`) 및 `trace_javascript_semantics`(`ev_e1dd4fc34488bf77fcdc2ac382abcf14f496ec2311596033942542310bc60f70`, `ev_9272517fe5f92e40682a14229e9d39bb1e8c1c7e2db10ad0be7cc5b7c01c07d8`)를 통해 다음 커널을 `studio-mypaint-spectral-boolean-brushes.ts`에 전수 내재화했다:
+  - **`libmypaint` 46종 설정·18종 입력 카탈로그(`brushsettings.json`, SHA-256 `080dac10...`)**: `opaque_linearize`(다중 댑 누적 비선형성 광학 선형화 $\alpha_{\text{dab}} = 1 - (1 - \alpha)^{1/(2 \cdot \text{dabs\_per\_radius})}$), `gridmap_scale`/`gridmap_x`/`gridmap_y`($256 \times 256$ 모듈러 캔버스 텍스처 좌표계), `offset_angle_2`(양방향 대칭 Bilateral 법선 오프셋), `smudge_bucket`(256개 독립 픽업 버킷), `posterize`·`posterize_num`($\lfloor c \cdot L \rfloor / L$ 이산 단계 양자화).
+  - **`rvanwijnen/spectral.js` 38밴드(380~750nm) Kubelka-Munk + OKLCh 이진 탐색 가멋 매핑(`spectral.js`, SHA-256 `dbaa1a8b...`)**: CIE 휘도 $Y_i$와 착색력 $\text{tintingStrength}_i^2$을 곱한 가중 농도 $c_i = f_i^2 \cdot T_i^2 \cdot Y_i$, 38밴드 $K/S = (1-R)^2/(2R)$ 및 역변환 $KM(KS) = 1 + KS - \sqrt{KS^2 + 2KS}$, 그리고 OKLCh 채도 $C \in [0, C_0]$ 이진 탐색($\Delta E_{\text{OK}} < 0.03$, $\epsilon = 10^{-4}$) 가멋 매핑.
+  - **`colormix.js` CIE XYZ D65 & CIE $L^*a^*b^*$ 혼합(`colormix.js`, SHA-256 `13deb762...`)**: sRGB $\leftrightarrow$ CIE XYZ(D65 `95.047, 100.0, 108.883`) $\leftrightarrow$ CIE $L^*a^*b^*$ 양방향 지각 색공간 혼합.
+  - **`mfogel/polygon-clipping` 2D 불리언 폴리곤 클리핑(`polygon-clipping.esm.js`, SHA-256 `766d182d...`)**: 벡터 블롭 브러시 합집합(`union`) 및 벡터 지우개 차집합(`difference`)·교집합(`intersection`)·대칭차(`xor`) 클리핑 및 `StudioUniversalBrushEngineBar` 실시간 다중 레이어 SVG 스트로크 프리뷰(`data-studio-universal-brush-svg-preview="true"`).
 
 ---
 

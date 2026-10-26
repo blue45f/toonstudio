@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   evaluateLabKlecksBlendAndSmudgeStep,
+  evaluateLabMyPaintOpaqueLinearizeAndPosterize,
   evaluateLabSaiWatercolorPressure,
   evaluateLabSculptGlQuarticFalloff01,
   evaluateLabWickCroquisPressure01,
   filterLabPixelPerfectCells,
   fitLabSchneiderCubicBezier,
   generateLabHarmonySegments,
+  mixLabLuminanceWeightedKubelkaMunk,
   stepLabKmMixerBrushReservoir,
   stepLabLazyBrushCircularFriction,
   warpLabSkeletalNonStretchU01,
@@ -143,5 +145,29 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
 
     expect(evaluateLabWickCroquisPressure01(0)).toBeCloseTo(0.14, 4);
     expect(evaluateLabWickCroquisPressure01(1)).toBeCloseTo(1.0, 4);
+  });
+
+  it("Wave 24 MyPaint opaque_linearize 광학 선형화·포스터라이즈 양자화 및 spectral.js 휘도 가중 KM 혼합이 정확히 동작한다", () => {
+    const myPaint = evaluateLabMyPaintOpaqueLinearizeAndPosterize({
+      baseOpaque01: 0.8,
+      opaqueLinearize01: 0.9,
+      dabsPerRadius: 3,
+      rgb01: [0.78, 0.42, 0.19],
+      posterize01: 1.0,
+      posterizeNum: 0.04,
+    });
+    expect(myPaint.linearizedAlphaPerDab01).toBeLessThan(0.8);
+    expect(myPaint.linearizedAlphaPerDab01).toBeGreaterThan(0.2);
+    expect(myPaint.quantizedRgb01[0]).toBeCloseTo(0.75, 2);
+
+    const mixed = mixLabLuminanceWeightedKubelkaMunk({
+      rgbA: [0.05, 0.2, 0.9],
+      factorA: 0.5,
+      tintingStrengthA: 1.2,
+      rgbB: [0.95, 0.85, 0.1],
+      factorB: 0.5,
+      tintingStrengthB: 1.0,
+    });
+    expect(mixed[1]).toBeGreaterThan(0.25);
   });
 });

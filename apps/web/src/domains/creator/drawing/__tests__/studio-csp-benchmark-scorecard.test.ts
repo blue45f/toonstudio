@@ -105,9 +105,10 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(14);
+    expect(universalBench.reaEvidenceTargetCount).toBe(18);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
+    expect(universalBench.wave24ReaEvidenceCount).toBe(4);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -117,6 +118,11 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.fiveTilePatternPresetCount).toBe(8);
     expect(universalBench.corelParticlePresetCount).toBe(9);
     expect(universalBench.klecksPresetCount).toBe(10);
+    expect(universalBench.myPaintInputCount).toBe(18);
+    expect(universalBench.myPaintSettingCount).toBe(64);
+    expect(universalBench.myPaintPresetCount).toBe(10);
+    expect(universalBench.spectral38BandCount).toBe(38);
+    expect(universalBench.booleanPolygonUnionVertexCount).toBeGreaterThanOrEqual(4);
     expect(universalBench.schneiderFittedSegmentCount).toBeGreaterThanOrEqual(2);
     expect(universalBench.pomaxOffsetCuspCount).toBeGreaterThan(0);
     expect(universalBench.wickClosedGapCount).toBe(1);

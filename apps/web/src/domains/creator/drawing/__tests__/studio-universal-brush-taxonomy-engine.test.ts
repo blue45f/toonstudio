@@ -14,9 +14,11 @@ import {
   evaluateKlecksTrigonometricPrng01,
   evaluateKonvaCardinalTensionSpline,
   evaluateMiltonAnalyticalCapsuleSdfCoverage01,
+  evaluateMyPaintFullDynamicsStep,
   evaluateP5BrushVectorFieldAngleDeg,
   evaluateSaiVer2BrushStep,
   evaluateSculptGlQuarticFalloff01,
+  executeBooleanPolygonBrushClip,
   executeFabricBrushSuite,
   executeHarmonyProceduralBrush,
   executeKlecksBrushEngineSuite,
@@ -30,10 +32,16 @@ import {
   KLECKS_BRUSH_PRESETS,
   layoutFiveTileVectorPatternBrush,
   measureUniversalBrushTaxonomyEngineBenchmark,
+  mixCieLabColorSpace,
+  mixSpectral38BandKubelkaMunkWithGamutMap,
+  MYPAINT_BRUSH_PRESETS,
+  MYPAINT_CANONICAL_INPUT_CATALOG,
+  MYPAINT_CANONICAL_SETTING_CATALOG,
   P5_BRUSH_PRESET_CATALOG,
   P5_BRUSH_VECTOR_FIELDS,
   SKELETAL_ART_BRUSH_PRESETS,
   SKETCHPAD_BRUSH_KINDS,
+  SPECTRAL_38BAND_WAVELENGTHS_NM,
   stepCorelPainterParticleBrush,
   stepLazyBrushWithCircularFriction,
   stepPhotoshopMixerBrushReservoir,
@@ -47,6 +55,7 @@ import {
   warpSkeletalArtBrushAlongSpine,
   WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
   WAVE23_REA_DEEP_SEMANTIC_LEDGER,
+  WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER,
 } from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브러시·드로잉 엔진 내재화)", () => {
@@ -227,9 +236,10 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(14);
+    expect(bench.reaEvidenceTargetCount).toBe(18);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
+    expect(bench.wave24ReaEvidenceCount).toBe(4);
     expect(bench.totalVisitedAstNodes).toBeGreaterThan(360000);
     expect(bench.totalSemanticDataFlowRelations).toBeGreaterThan(42000);
     expect(bench.qrCodecRoundtripVerified).toBe(true);
@@ -466,5 +476,78 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     expect(konvaControls).toHaveLength(1);
     expect(konvaControls[0].prevControlPoint.x).toBeLessThan(30);
     expect(konvaControls[0].nextControlPoint.x).toBeGreaterThan(30);
+  });
+
+  it("Wave 24 libmypaint 46종 설정·18종 입력 동역학, spectral.js 38밴드 KM + OKLCh 가멋 매핑, colormix.js CIE Lab 혼합, polygon-clipping 2D 불리언 폴리곤 연산이 정확히 동작한다", () => {
+    expect(WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER).toHaveLength(4);
+    for (const entry of WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER) {
+      expect(entry.parentAnalysisEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.jsFactsEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.nodeId).toMatch(/^jag_node_[0-9a-f]{64}$/);
+      expect(entry.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+
+    expect(MYPAINT_CANONICAL_INPUT_CATALOG).toHaveLength(18);
+    expect(MYPAINT_CANONICAL_SETTING_CATALOG).toHaveLength(64);
+    expect(MYPAINT_BRUSH_PRESETS).toHaveLength(10);
+    expect(SPECTRAL_38BAND_WAVELENGTHS_NM).toHaveLength(38);
+    expect(SPECTRAL_38BAND_WAVELENGTHS_NM[0]).toBe(380);
+    expect(SPECTRAL_38BAND_WAVELENGTHS_NM[37]).toBe(750);
+
+    for (const preset of MYPAINT_BRUSH_PRESETS) {
+      const step = evaluateMyPaintFullDynamicsStep({
+        presetId: preset.id,
+        x: 64,
+        y: 128,
+        pressure01: 0.78,
+        directionAngleDeg: 45,
+        tiltAscensionDeg: 10,
+      });
+      expect(step.presetId).toBe(preset.id);
+      expect(step.radiusPx).toBeGreaterThan(0);
+      expect(step.linearizedOpaque01).toBeGreaterThan(0);
+      expect(step.linearizedOpaque01).toBeLessThanOrEqual(1);
+      expect(step.gridmapX256).toBeGreaterThanOrEqual(0);
+      expect(step.gridmapX256).toBeLessThan(256);
+    }
+
+    const spectralMix = mixSpectral38BandKubelkaMunkWithGamutMap([
+      { rgb01: [0.02, 0.22, 0.94], factor: 0.5, tintingStrength: 1.1 },
+      { rgb01: [0.98, 0.86, 0.08], factor: 0.5, tintingStrength: 1.0 },
+    ]);
+    expect(spectralMix.reflectance38).toHaveLength(38);
+    expect(spectralMix.rgb01[1]).toBeGreaterThan(0.25);
+    expect(spectralMix.oklab[0]).toBeGreaterThan(0.2);
+
+    const labMix = mixCieLabColorSpace([
+      { rgb01: [0.95, 0.1, 0.1], weight: 1 },
+      { rgb01: [0.1, 0.1, 0.95], weight: 1 },
+    ]);
+    expect(labMix.lab[0]).toBeGreaterThan(20);
+    expect(labMix.rgb01[0]).toBeGreaterThan(0.3);
+    expect(labMix.rgb01[2]).toBeGreaterThan(0.3);
+
+    const rectA = [
+      { x: 0, y: 0 },
+      { x: 20, y: 0 },
+      { x: 20, y: 20 },
+      { x: 0, y: 20 },
+    ];
+    const rectB = [
+      { x: 10, y: 5 },
+      { x: 30, y: 5 },
+      { x: 30, y: 25 },
+      { x: 10, y: 25 },
+    ];
+    for (const op of ["union", "difference", "intersection", "xor"] as const) {
+      const clipRes = executeBooleanPolygonBrushClip({
+        subject: rectA,
+        clip: rectB,
+        operation: op,
+      });
+      expect(clipRes.operation).toBe(op);
+      expect(clipRes.vertices.length).toBeGreaterThanOrEqual(3);
+      expect(clipRes.signedAreaPx2).toBeGreaterThan(0);
+    }
   });
 });

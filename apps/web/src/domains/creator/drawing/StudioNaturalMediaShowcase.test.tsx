@@ -158,5 +158,18 @@ describe("StudioNaturalMediaShowcase", () => {
     fireEvent.keyDown(klecksBlendRadio!, { key: "End" });
     const klecksPixelRadio = container.querySelector('[data-studio-klecks-preset="klecks-pixel-disc-union"]') as HTMLButtonElement | null;
     expect(klecksPixelRadio?.getAttribute("aria-checked")).toBe("true");
+
+    // Wave 24 MyPaint 46설정·38밴드 분광 브러시 Roving Tabindex 및 실시간 다중 레이어 SVG 프리뷰 검증
+    const myPaintImpastoRadio = container.querySelector('[data-studio-mypaint-preset="mypaint-spectral-impasto"]') as HTMLButtonElement | null;
+    expect(myPaintImpastoRadio).not.toBeNull();
+    expect(myPaintImpastoRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(myPaintImpastoRadio!, { key: "Home" });
+    const myPaintKnifeRadio = container.querySelector('[data-studio-mypaint-preset="mypaint-classic-knife"]') as HTMLButtonElement | null;
+    expect(myPaintKnifeRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const liveSvgPreview = container.querySelector('[data-studio-universal-brush-svg-preview="true"]');
+    expect(liveSvgPreview).not.toBeNull();
+    expect(liveSvgPreview?.querySelector("path")).not.toBeNull();
+    expect(liveSvgPreview?.querySelector("polygon")).not.toBeNull();
   });
 });

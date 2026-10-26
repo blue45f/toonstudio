@@ -15,6 +15,15 @@ import {
   filterPixelPerfectStroke,
 } from "./studio-commercial-pixel-brush-kernels";
 import {
+  evaluateMyPaintFullDynamicsStep,
+  executeBooleanPolygonBrushClip,
+  mixSpectral38BandKubelkaMunkWithGamutMap,
+  MYPAINT_BRUSH_PRESETS,
+  MYPAINT_CANONICAL_INPUT_CATALOG,
+  MYPAINT_CANONICAL_SETTING_CATALOG,
+  WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER,
+} from "./studio-mypaint-spectral-boolean-brushes";
+import {
   COREL_PARTICLE_BRUSH_PRESETS,
   evaluateMiltonAnalyticalCapsuleSdfCoverage01,
   evaluateSculptGlQuarticFalloff01,
@@ -42,6 +51,7 @@ export * from "./studio-commercial-pixel-brush-kernels";
 export * from "./studio-vector-skeletal-pattern-brushes";
 export * from "./studio-particle-pixol-brushes";
 export * from "./studio-bezier-curve-fit-brushes";
+export * from "./studio-mypaint-spectral-boolean-brushes";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -576,6 +586,7 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly reaEvidenceTargetCount: number;
   readonly wave22ReaEvidenceTargetCount: number;
   readonly wave23ReaSemanticTargetCount: number;
+  readonly wave24ReaEvidenceCount: number;
   readonly totalVisitedAstNodes: number;
   readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
@@ -587,6 +598,12 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly fiveTilePatternPresetCount: number;
   readonly corelParticlePresetCount: number;
   readonly klecksPresetCount: number;
+  readonly myPaintInputCount: number;
+  readonly myPaintSettingCount: number;
+  readonly myPaintPresetCount: number;
+  readonly myPaintLinearizedOpaque01: number;
+  readonly spectral38BandCount: number;
+  readonly booleanPolygonUnionVertexCount: number;
   readonly schneiderFittedSegmentCount: number;
   readonly pomaxOffsetCuspCount: number;
   readonly wickClosedGapCount: number;
@@ -670,14 +687,42 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     radiusA: 4,
     radiusB: 4,
   });
+  const myPaintStep = evaluateMyPaintFullDynamicsStep({
+    presetId: "mypaint-spectral-impasto",
+    x: 42,
+    y: 28,
+    pressure01: 0.8,
+    directionAngleDeg: 35,
+  });
+  const spectral38 = mixSpectral38BandKubelkaMunkWithGamutMap([
+    { rgb01: [0.05, 0.25, 0.92], factor: 0.5, tintingStrength: 1.0 },
+    { rgb01: [0.98, 0.85, 0.12], factor: 0.5, tintingStrength: 1.0 },
+  ]);
+  const booleanUnion = executeBooleanPolygonBrushClip({
+    subject: [
+      { x: 10, y: 10 },
+      { x: 30, y: 10 },
+      { x: 30, y: 30 },
+      { x: 10, y: 30 },
+    ],
+    clip: [
+      { x: 20, y: 15 },
+      { x: 40, y: 15 },
+      { x: 40, y: 35 },
+      { x: 20, y: 35 },
+    ],
+    operation: "union",
+  });
 
   return {
     reaEvidenceTargetCount:
       UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.length +
       WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length +
-      WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
+      WAVE23_REA_DEEP_SEMANTIC_LEDGER.length +
+      WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
+    wave24ReaEvidenceCount: WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
     totalVisitedAstNodes,
     totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
@@ -689,6 +734,12 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     fiveTilePatternPresetCount: FIVE_TILE_PATTERN_BRUSH_PRESETS.length,
     corelParticlePresetCount: COREL_PARTICLE_BRUSH_PRESETS.length,
     klecksPresetCount: KLECKS_BRUSH_PRESETS.length,
+    myPaintInputCount: MYPAINT_CANONICAL_INPUT_CATALOG.length,
+    myPaintSettingCount: MYPAINT_CANONICAL_SETTING_CATALOG.length,
+    myPaintPresetCount: MYPAINT_BRUSH_PRESETS.length,
+    myPaintLinearizedOpaque01: Math.round(myPaintStep.linearizedOpaque01 * 10000) / 10000,
+    spectral38BandCount: spectral38.reflectance38.length,
+    booleanPolygonUnionVertexCount: booleanUnion.vertices.length,
     schneiderFittedSegmentCount: schneiderFit.segments.length,
     pomaxOffsetCuspCount: pomaxOffset.cuspCount,
     wickClosedGapCount: wickResult.closedGapBridgeCount,
