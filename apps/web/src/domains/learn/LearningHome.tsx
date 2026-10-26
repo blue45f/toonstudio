@@ -58,6 +58,7 @@ import { learningPathTintStyle } from "./learning-path-tints";
 import { SKILL_ICONS } from "./learning-skill-icons";
 import { useLearningProgress, type LearningStore } from "./use-learning-progress";
 import { LearningProcessStudy } from "./LearningProcessStudy";
+import { LEARN_CURRICULUM_ROADMAP_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 import "./learning-hub.css";
 
@@ -355,6 +356,50 @@ export function LearningHome() {
           <Link to={lessonUrl(nextLesson.id)}>{nextLesson.title} →</Link>
         </div>
       </aside>
+
+      <section
+        aria-label="직무·스킬트리별 실전 커리큘럼 로드맵"
+        data-testid="learn-rea-curriculum-roadmap"
+        className="mb-6 rounded-2xl border border-line bg-panel/70 p-4 sm:p-5"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
+              COLOSO · MUNPIA ACADEMY · CSP SKILL-TREE
+            </p>
+            <h2 className="text-sm font-bold text-fg">
+              스토리 각색 · 작화 · 3D 연출 · 데뷔 수익화 4대 실전 스킬트리 로드맵
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
+            학습 후 즉시 실습 스튜디오 연동
+          </span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {LEARN_CURRICULUM_ROADMAP_TRACKS.map((trackItem) => (
+            <div
+              key={trackItem.id}
+              className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 transition-colors hover:border-accent/50"
+            >
+              <div>
+                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                  {trackItem.badge}
+                </span>
+                <h3 className="mt-2 text-xs font-bold text-fg">{trackItem.label}</h3>
+                <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{trackItem.description}</p>
+              </div>
+              <div className="mt-3 pt-2 border-t border-line/50">
+                <Link
+                  to={trackItem.practiceHref}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+                >
+                  {trackItem.practiceLabel} →
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section id={LEARN_TAB_PREFIX} className="learn-hub-tabs" aria-label="학습 영역">
         <SiteSectionTabs tabs={hubTabs} value={activeTab} onChange={selectTab} label="학습 영역" idPrefix={LEARN_TAB_PREFIX} />

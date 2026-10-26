@@ -30,7 +30,7 @@ describe("PromoVideoLibraryPage — 20종 REA 3-Mode 뷰 스위처·필터·허�
     expect(root?.getAttribute("data-view-mode")).toBe("card");
 
     const reaItems = container.querySelectorAll("[data-rea-platform]");
-    expect(reaItems).toHaveLength(23);
+    expect(reaItems).toHaveLength(28);
 
     const pipelineNav = screen.getByRole("navigation", {
       name: "창작·예고편·배포 6단계 통합 동선",

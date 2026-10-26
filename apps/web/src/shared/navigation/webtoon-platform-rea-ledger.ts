@@ -1,8 +1,8 @@
 /**
- * 글로벌 웹툰·만화·창작·에셋 플랫폼 20종 REA(Reverse-Engineer-Anything) 역공학 증거 원장.
+ * 글로벌 웹툰·만화·웹소설·창작·에셋·교육·포트폴리오 플랫폼 28종 REA(Reverse-Engineer-Anything) 역공학 증거 원장.
  *
  * 분석 기준일: 2026-10-26
- * 이 파일은 20개 플랫폼/서피스에 대한 REA MCP(capture_browser_scenario, export_web_scripts,
+ * 이 파일은 28개 플랫폼/서피스에 대한 REA MCP(capture_browser_scenario, export_web_scripts,
  * analyze_javascript_application) 분석 결과와 SHA-256 해시, 라우터·UI/UX 패턴을 보존한다.
  */
 
@@ -29,7 +29,12 @@ export type CompetitorPlatformId =
   | "mrblue-webtoon"
   | "bomtoon"
   | "sketchfab-3d"
-  | "toomics";
+  | "toomics"
+  | "munpia-novel"
+  | "coloso-academy"
+  | "notefolio-creative"
+  | "comic-walker-jp"
+  | "loud-sourcing";
 
 export interface CompetitorPlatformReaEvidence {
   readonly id: CompetitorPlatformId;
@@ -644,6 +649,130 @@ export const COMPETITOR_PLATFORM_REA_LEDGER: readonly CompetitorPlatformReaEvide
     ],
     keyUiUxPatterns: [
       "요일·장르·연령등급 즉시 전환 바 및 모바일·웹 크로스 디바이스 이어보기 동선",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "munpia-novel",
+    name: "Munpia (문피아 웹소설·웹툰)",
+    targetUrl: "https://www.munpia.com/",
+    appVersion: "munpia-ui-2026",
+    routerFramework: "Hybrid SSR + Munpia Author & Reader Hub Router",
+    captureEvidenceId: "ev_17f21a11336581f46413c8c0a82f7098b0551b48ac9aff02ff10b339cf724484",
+    exportScriptsEvidenceId: "ev_e1c76ed503b61a2620d55d6cb8bdb7f6e49c666c41860c9c0ac30523eb402767",
+    astAnalysisViewEvidenceId: "ev_783d3f7d620279807336c7026f7479c7d24b2fa18a381e6d82081ae5d214d199",
+    rootSha256: "dfa78dfa020240d739cb0be45338eb4ac5986fac5d6a2eea6f4b2441f0943126",
+    scriptCount: 14,
+    totalBytes: 147474,
+    astNodeCount: 30391,
+    findingCount: 227,
+    moduleCount: 14,
+    routeCount: 9,
+    keyRouterPatterns: [
+      "/page/novelous/group/pl.serial (연재 웹소설·노블코믹스 원작 탐색)",
+      "https://larc.munpia.com/ (작가 전용 집필·정산·통계 아카데미 및 랩)",
+      "https://academy.munpia.com/ (웹소설·웹툰 스토리텔링 아카데미)",
+    ],
+    keyUiUxPatterns: [
+      "웹소설 원작 → 콘티·노블코믹스 각색 파이프라인 브리지 및 투데이 베스트·집필실 직행 동선",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "coloso-academy",
+    name: "Coloso (콜로소 크리에이터 클래스)",
+    targetUrl: "https://coloso.co.kr/",
+    appVersion: "nuxt-coloso-2026",
+    routerFramework: "Vue/Nuxt SPA + Category Skill-Tree Router (43 routes)",
+    captureEvidenceId: "ev_c933234acdfcc1c9ba61f6b693da66f1a07ecdf27030dbcec7599913418d2733",
+    exportScriptsEvidenceId: "ev_b0883be3e181cb10f6e6f3ff318bd7cc7abd6285679f340592cb73cadf371014",
+    astAnalysisViewEvidenceId: "ev_b34e8e4e791bc6593585065b34851e07deb1fa850767c7f0f6ce370d4c792f77",
+    rootSha256: "a4bd2b1ff37951c010098e6e7eea2a091625fad1ba2bcccb89fa977d8606de55",
+    scriptCount: 30,
+    totalBytes: 801179,
+    astNodeCount: 188572,
+    findingCount: 301,
+    moduleCount: 37,
+    routeCount: 43,
+    keyRouterPatterns: [
+      "/illust_webtoon, /3d_vfx, /graphicdesign, /programming (직무·스킬트리별 커리큘럼 라우터)",
+      "/myclassroom, /catalog, /event, /coupon (수강 대시보드 및 로드맵 카탈로그)",
+    ],
+    keyUiUxPatterns: [
+      "드로잉·채색·3D 배경·콘티 연출 단계별 스킬트리 로드맵 바 및 실습 에디터 즉시 연결",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "notefolio-creative",
+    name: "Notefolio (노트폴리오 크리에이터 쇼케이스)",
+    targetUrl: "https://notefolio.net/",
+    appVersion: "notefolio-spa-2026",
+    routerFramework: "React SPA + Creative Portfolio & Recruiting Router",
+    captureEvidenceId: "ev_7e1c815f21899c3d78026fa71dbe2230ebce4b9160c81829be5871192e9fc594",
+    exportScriptsEvidenceId: "ev_15f3a521ab1f1bd08311427aff64483c550c4e9099ee7d00971eb00d2e56ec08",
+    astAnalysisViewEvidenceId: "ev_3c7c13732e819150ef996915c57dece676ce39311a824bfcb2db98485726f625",
+    rootSha256: "36f90aed0cd9bb4cbcb2fcf8f4bffabc4bb11375cad896abb15d84708cece601",
+    scriptCount: 12,
+    totalBytes: 298489,
+    astNodeCount: 78279,
+    findingCount: 359,
+    moduleCount: 30,
+    routeCount: 8,
+    keyRouterPatterns: [
+      "/discover, /jobs, /workshops, /creators (포트폴리오 탐색·구인구직·워크숍 통합 라우터)",
+    ],
+    keyUiUxPatterns: [
+      "분야별 크리에이터 아트워크 큐레이션 그리드 및 외주·협업(채색·배경·각색) 리크루팅 카드",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "comic-walker-jp",
+    name: "KadoComi (カドコミ / ComicWalker)",
+    targetUrl: "https://comic-walker.com/",
+    appVersion: "nextjs-kadocomi-2026",
+    routerFramework: "Next.js App/Pages Hybrid Router (78 routes, 372 modules)",
+    captureEvidenceId: "ev_fca19fa93465ae35e8fc7d8a3fbc8cb7a36d93c402d35ef35c3ee5b2dd630e07",
+    exportScriptsEvidenceId: "ev_fdfd1132371265a20632752ffe05500bbecc86acaf27bf191d13b76b31924a60",
+    astAnalysisViewEvidenceId: "ev_809afe69cb4ed01abb7b78362770a15620d6bac50a08bda151a70e5c75a2acb0",
+    rootSha256: "4c79e83531f55a169faa0411b6bfdfd99a1da64d7d984590c61dfbd332cee099",
+    scriptCount: 20,
+    totalBytes: 477584,
+    astNodeCount: 126106,
+    findingCount: 1338,
+    moduleCount: 372,
+    routeCount: 78,
+    keyRouterPatterns: [
+      "/rankings, /weekdays, /labels, /genres, /tags, /ReadHistory, /bookmarks (7축 직교 탐색 및 감상 이력)",
+      "/detail/[workCode]/episodes/[episodeCode] (작품·회차·레이블 딥링크)",
+    ],
+    keyUiUxPatterns: [
+      "레이블·잡지·장르·태그 멀티 필터 및 비로그인 즉시 감상 이력(ReadHistory) 보존",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "loud-sourcing",
+    name: "LOUD (라우드소싱 크리에이터 콘테스트·협업)",
+    targetUrl: "https://www.loud.kr/",
+    appVersion: "loud-nextjs-2026",
+    routerFramework: "Next.js Router (42 scripts, 12 routes)",
+    captureEvidenceId: "ev_2b2bb84e7bd557eaabc5d54f17a2857d81b6f2ac45aaf71d73e135a53133a1c6",
+    exportScriptsEvidenceId: "ev_5a75edd5fe6e5753f6dce33584fc914d5de4689609e22ae865e75ee24ed11579",
+    astAnalysisViewEvidenceId: "ev_3d4b2528a9b446a3f8349c93a207abf76ddd5fcfc28a3559d139eeb147eed473",
+    rootSha256: "5e49b624f8dd83500904c831c9b34568b515df28b542b2a1fbb2b75029ba6f6c",
+    scriptCount: 42,
+    totalBytes: 478530,
+    astNodeCount: 101917,
+    findingCount: 948,
+    moduleCount: 42,
+    routeCount: 12,
+    keyRouterPatterns: [
+      "/contest/list, /market, /portfolios, /creatives (공모전·1:1 의뢰·포트폴리오·전문가 매칭)",
+    ],
+    keyUiUxPatterns: [
+      "공모전(Contest) + 1:1 팀원·어시스턴트 매칭 + 포트폴리오 검증 3단계 협업 보드",
     ],
     epistemicStatus: "verified",
   },

@@ -38,6 +38,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { useApp } from "@/shared/lib/store";
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 /** 질문형 인터뷰는 "내 이야기"를 고른 사람만 쓰므로 시작 시트 본문과 분리해 늦게 불러온다. */
 const MyStoryStartFlow = lazyRetry(
@@ -130,6 +132,7 @@ export function CreateStartPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/create" className="mb-5" />
       <header className="max-w-2xl">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
           {bt("시작하기", "Start")}
@@ -203,6 +206,46 @@ export function CreateStartPage() {
               {bt("외부 작업 파일 열기 →", "Open external work files →")}
             </span>
           </Link>
+        </div>
+      </section>
+
+      <section
+        aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
+        data-testid="create-rea-story-pipeline"
+        className="mt-6 rounded-2xl border border-line bg-panel/60 p-4 sm:p-5"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
+              MUNPIA · MANTA · CLIP STUDIO PIPELINE
+            </p>
+            <h2 className="text-sm font-bold text-fg">
+              {bt("원작 세계관 · 웹소설 대본 → 콘티 · 3D 블로킹 · 연재 4단계 파이프라인", "Worldbuilding & Novel Script to Storyboard, 3D Blocking & Serial Launch")}
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
+            {bt("문피아 · 만타 · 클립스튜디오 제작 동선 내재화", "Munpia · Manta · CSP Workflow")}
+          </span>
+        </div>
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => (
+            <Link
+              key={mode.id}
+              href={mode.targetHref}
+              className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 text-left transition-colors hover:border-accent/50"
+            >
+              <div>
+                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                  {mode.step}
+                </span>
+                <p className="mt-2 text-xs font-bold text-fg">{mode.label}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{mode.description}</p>
+              </div>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-accent">
+                {mode.ctaLabel} →
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 

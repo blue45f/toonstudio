@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { LoadingState } from "@/shared/components/LoadingState";
@@ -457,6 +458,9 @@ export function CutsFeedPage() {
           </Link>
         </div>
       </header>
+      <div className="mx-auto w-full max-w-5xl px-4 pt-3">
+        <SiteContextualSubNav pathnameOverride="/cuts" />
+      </div>
       {fanOf ? (
         <div className="cuts-feed__filter" role="status">
           <p>

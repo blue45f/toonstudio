@@ -49,6 +49,7 @@ import {
 } from "@/shared/lib/creator-marketplace-resource-contract";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import {
   useDocumentTitle,
   useJsonLd,
@@ -218,6 +219,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       }))} />
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+          {!embedded ? <SiteContextualSubNav pathnameOverride="/market/browse" className="mb-4" /> : null}
           {!embedded ? <MarketNavHeader /> : null}
           <SitePageHeader
             surface="plain"

@@ -10,6 +10,8 @@ import { collaborationRoleBilingualLabel } from "../creator/public/production-la
 import type { CollaborationList } from "../../../../../packages/core/src/collaboration";
 
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { SHOWCASE_COLLABORATION_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -85,6 +87,7 @@ export function CollaborationBoardPage() {
     ? Object.entries(views)
     : Object.entries(views).filter(([key]) => key === "all");
   return <Container size="wide" className="py-8 sm:py-12">
+    <SiteContextualSubNav pathnameOverride="/collaborate" className="mb-5" />
     <header className="relative isolate overflow-hidden rounded-3xl border border-accent/25 bg-[oklch(0.09_0.025_265)] p-6 sm:p-10">
       {/* 첫 화면 무대 — 작업 카드 인계 장면(워크플로 아트)을 배경으로 깔고 전경을 종속시킨다.
           스크림은 공용 헤더 배너와 같은 남색 문법이다. */}
@@ -119,6 +122,26 @@ export function CollaborationBoardPage() {
       <p className="mt-5 flex items-center gap-2 text-xs text-white/60"><ShieldCheck size={15} aria-hidden="true" />{bt("지원 연락처 비공개 · 보수 조건 명시 · 결제 중개 없음", "Application contacts stay private · pay terms required · no payment brokering")}</p>
       </div>
     </header>
+    <div
+      data-testid="collaborate-rea-tracks"
+      className="mt-5 grid gap-2.5 sm:grid-cols-3"
+    >
+      {SHOWCASE_COLLABORATION_TRACKS.map((track) => (
+        <Link
+          key={track.id}
+          href={track.route}
+          className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel/70 px-4 py-3 text-left transition-colors hover:border-accent/50"
+        >
+          <div className="min-w-0">
+            <span className="inline-block rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-extrabold text-accent">
+              {track.badge}
+            </span>
+            <p className="mt-1 truncate text-xs font-bold text-fg">{track.label}</p>
+          </div>
+          <span className="shrink-0 text-xs font-bold text-accent">{track.ctaLabel} →</span>
+        </Link>
+      ))}
+    </div>
     <div className="mt-6 grid gap-3 sm:grid-cols-3">{categories.map(({ type: category, label, enLabel, description, enDescription, icon: Icon }) => <button key={category} type="button" aria-pressed={type === category} onClick={() => change("type", type === category ? "all" : category)} className={`flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${type === category ? "border-accent bg-accent/10" : "border-line bg-panel hover:border-accent/50"}`}><Icon size={25} className="shrink-0 text-accent" aria-hidden="true" /><span className="font-bold text-fg">{bt(label, enLabel)}<span className="mt-1 block text-xs font-normal text-fg-3">{bt(description, enDescription)}</span></span></button>)}</div>
     <section id="collaboration-results" className="mt-8 scroll-mt-24" aria-label={bt("공고 검색과 필터", "Post search and filters")}>
       {visibleViews.length > 1 ? (

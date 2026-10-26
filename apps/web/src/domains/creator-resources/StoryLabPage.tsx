@@ -18,6 +18,9 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { MotionIllustration } from "@/shared/motion-assets";
+import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 const SCOPE = "domains.creator.resources.StoryLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
@@ -122,6 +125,38 @@ export function StoryLabPage() {
       srcSet: "/brand/hero-20261009-wave10/story-lab-board-960.webp 960w, /brand/hero-20261009-wave10/story-lab-board-1680.webp 1680w",
       alt: tx("인물 스케치와 사건 사진을 붉은 실로 이어 붙인 스토리 연구실의 코르크보드와 램프가 켜진 책상"),
     }}>
+    <SiteContextualSubNav pathnameOverride="/story-lab" className="mb-5" />
+    <section
+      aria-label={tx("노블코믹스 · 원작 각색 → 콘티 4단계 파이프라인")}
+      data-testid="story-lab-rea-pipeline"
+      className="mb-6 rounded-2xl border border-line bg-panel/70 p-4"
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-extrabold uppercase tracking-wider text-accent">
+          STORY LAB → NOVELCOMICS → CONTI PIPELINE
+        </p>
+        <span className="text-xs text-fg-3">
+          {tx("기획서 작성 후 대본·콘티·3D 블로킹·연재 발행까지 바로 이동")}
+        </span>
+      </div>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => (
+          <Link
+            key={mode.id}
+            href={mode.targetHref}
+            className="flex flex-col justify-between rounded-xl border border-line bg-canvas p-3 text-left transition-colors hover:border-accent/50"
+          >
+            <div>
+              <span className="inline-block rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-extrabold text-accent">
+                {mode.step}
+              </span>
+              <p className="mt-1.5 text-xs font-bold text-fg">{mode.label}</p>
+            </div>
+            <span className="mt-2 text-[11px] font-bold text-accent">{mode.ctaLabel} →</span>
+          </Link>
+        ))}
+      </div>
+    </section>
     <div className="grid gap-6 lg:grid-cols-2">
       <form className="space-y-5 rounded-2xl border border-line bg-panel p-5" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
         <p className="text-sm text-fg-2">{formatI18nTemplate(tx("작성한 항목 {v0}/8 · 미저장 변경 {v1}개"), { v0: completedCount, v1: dirty })}</p>

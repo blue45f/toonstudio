@@ -18,6 +18,7 @@ import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { fetchApiResource, useApiResource } from "@/platform/use-api-resource";
 
@@ -137,6 +138,7 @@ export function ReviewsPage() {
   return (
     <div>
       <Container size="wide" className="pt-7 sm:pt-10 lg:pt-12">
+        <SiteContextualSubNav pathnameOverride="/reviews" className="mb-5" />
         <SitePageHeader
           icon={MessageSquareQuote}
           eyebrow="READER REVIEWS"

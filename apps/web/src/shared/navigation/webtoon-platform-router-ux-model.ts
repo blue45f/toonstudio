@@ -28,9 +28,12 @@ export {
   DISCOVER_SERIALIZATION_TRACKS,
   EXPLORE_DIRECTORY_MODES,
   EXPLORE_PREFERENCE_TAG_COMBOS,
+  LEARN_CURRICULUM_ROADMAP_TRACKS,
   LIBRARY_PILLAR_CARDS,
   MARKET_ECOSYSTEM_PRESETS,
   RANKING_STREAM_MODES,
+  SHOWCASE_COLLABORATION_TRACKS,
+  STORY_TO_WEBTOON_PIPELINE_MODES,
   type CalendarBmFilter,
   type CalendarBmFilterId,
   type CommunityPromotionLeagueTier,
@@ -39,11 +42,14 @@ export {
   type ExploreDirectoryMode,
   type ExploreDirectoryModeId,
   type ExplorePreferenceTagCombo,
+  type LearnCurriculumTrack,
   type LibraryPillarCard,
   type MarketEcosystemPreset,
   type MarketEcosystemPresetId,
   type RankingStreamMode,
   type RankingStreamModeId,
+  type ShowcaseCollaborationTrack,
+  type StoryToWebtoonPipelineMode,
 } from "./webtoon-platform-rea-surface-presets";
 
 /**
@@ -535,12 +541,20 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
     pathname === "/showcase" ||
     pathname === "/reviews" ||
     pathname === "/collaborate" ||
-    pathname === "/opportunities"
+    pathname === "/opportunities" ||
+    pathname === "/Creators" ||
+    pathname === "/creators" ||
+    pathname === "/community/Write" ||
+    pathname === "/community/write"
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[2] ?? null;
   }
   if (
     pathname === "/create" ||
+    pathname === "/story-lab" ||
+    pathname === "/learn" ||
+    pathname === "/tutorials" ||
+    pathname === "/guides" ||
     pathname === "/studio" ||
     pathname === "/studio/new" ||
     pathname === "/studio/comic" ||

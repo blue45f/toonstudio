@@ -5,6 +5,7 @@ import { useRef, type MouseEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useDocumentTitle, useJsonLd, useMetaDescription, usePageSocialMeta } from "@/shared/seo/use-document-title";
 import { useI18n } from "@/shared/lib/i18n";
 import { ServiceStoryJourney } from "@/shared/components/service-story-journey";
@@ -97,6 +98,9 @@ export function ProductTourPage() {
 
   return (
     <div className="mk-page product-tour" lang={locale}>
+      <div className="mk-shell pt-4">
+        <SiteContextualSubNav pathnameOverride="/product-tour" />
+      </div>
       <header className="mk-shell product-tour__hero">
         <ProductTourIntroBackdrop />
         <div className="product-tour__hero-copy">

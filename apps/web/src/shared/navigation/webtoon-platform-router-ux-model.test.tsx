@@ -18,11 +18,14 @@ import {
   DISCOVER_SERIALIZATION_TRACKS,
   EXPLORE_DIRECTORY_MODES,
   EXPLORE_PREFERENCE_TAG_COMBOS,
+  LEARN_CURRICULUM_ROADMAP_TRACKS,
   LIBRARY_PILLAR_CARDS,
   MARKET_ECOSYSTEM_PRESETS,
   PERSONAL_LIBRARY_SEGMENTS,
   RANKING_STREAM_MODES,
   SERIES_LANDING_VIEW_MODES,
+  SHOWCASE_COLLABORATION_TRACKS,
+  STORY_TO_WEBTOON_PIPELINE_MODES,
   VRM_CHARACTER_SUB_ROUTES,
   VRM_LICENSE_PRESETS,
   classifyMediaAspectRatio,
@@ -41,9 +44,9 @@ afterEach(() => {
   useI18n.getState().setLang("ko");
 });
 
-describe("글로벌 웹툰·창작·에셋·3D 캐릭터 스튜디오 플랫폼 23종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
-  it("23개 플랫폼/서피스의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
-    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(23);
+describe("글로벌 웹툰·창작·에셋·교육·협업 플랫폼 28종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
+  it("28개 플랫폼/서피스의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
+    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(28);
     const ids = COMPETITOR_PLATFORM_REA_LEDGER.map((item) => item.id);
     expect(ids).toEqual([
       "naver-webtoon",
@@ -69,6 +72,11 @@ describe("글로벌 웹툰·창작·에셋·3D 캐릭터 스튜디오 플랫폼 
       "bomtoon",
       "sketchfab-3d",
       "toomics",
+      "munpia-novel",
+      "coloso-academy",
+      "notefolio-creative",
+      "comic-walker-jp",
+      "loud-sourcing",
     ]);
 
     for (const entry of COMPETITOR_PLATFORM_REA_LEDGER) {
@@ -206,6 +214,23 @@ describe("글로벌 웹툰·창작·에셋·3D 캐릭터 스튜디오 플랫폼 
       "originals",
       "creator-101",
     ]);
+    expect(LEARN_CURRICULUM_ROADMAP_TRACKS.map((t) => t.id)).toEqual([
+      "story-novelcomics",
+      "drawing-coloring",
+      "3d-character-scene",
+      "debut-monetization",
+    ]);
+    expect(STORY_TO_WEBTOON_PIPELINE_MODES.map((m) => m.id)).toEqual([
+      "worldbuilding-synopsis",
+      "novel-to-script",
+      "storyboard-3d-blocking",
+      "ink-render-publish",
+    ]);
+    expect(SHOWCASE_COLLABORATION_TRACKS.map((t) => t.id)).toEqual([
+      "portfolio-curation",
+      "team-recruiting",
+      "contest-pitch",
+    ]);
   });
 
   it("KakaoPage 3-Mode 뷰 스위처(card, poster, list)와 화면 비율 분류·필터가 정확히 동작한다", () => {
@@ -272,6 +297,14 @@ describe("글로벌 웹툰·창작·에셋·3D 캐릭터 스튜디오 플랫폼 
       "community-hub",
     );
     expect(resolveContextualSubNavForPath("/studio")?.id).toBe("studio-hub");
+    expect(resolveContextualSubNavForPath("/story-lab")?.id).toBe("studio-hub");
+    expect(resolveContextualSubNavForPath("/learn")?.id).toBe("studio-hub");
+    expect(resolveContextualSubNavForPath("/reviews")?.id).toBe("community-hub");
+    expect(resolveContextualSubNavForPath("/collaborate")?.id).toBe("community-hub");
+    expect(resolveContextualSubNavForPath("/recommend")?.id).toBe("discover-hub");
+    expect(resolveContextualSubNavForPath("/compare")?.id).toBe("discover-hub");
+    expect(resolveContextualSubNavForPath("/brand-film")?.id).toBe("promo-cuts-hub");
+    expect(resolveContextualSubNavForPath("/product-tour")?.id).toBe("promo-cuts-hub");
     expect(resolveContextualSubNavForPath("/studio/comic")?.id).toBe(
       "studio-hub",
     );

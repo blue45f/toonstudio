@@ -68,6 +68,7 @@
       "watchUrl": "https://www.gentoon.ai/webtoon-maker",
       "priority": "P0",
       "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_e62beed518f1e75ad009869facc63f7acfee12f6116364a44b714551e07027de",
       "focus": [
         "character-consistency",
         "automatic-panel-layout",
@@ -213,6 +214,7 @@
       "watchUrl": "https://www.webtoons.com/en/notice/list",
       "priority": "P0",
       "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_054b1489efcd0052fd9893f98109861b735650a268d87a777e36a0de7fb781c3",
       "focus": [
         "contextual-glossary-translation",
         "human-review",

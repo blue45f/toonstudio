@@ -3,14 +3,14 @@
   "capturedAt": "2026-10-26",
   "analysisProvider": "rea-mcp-web-and-ast",
   "summary": {
-    "targetCount": 23,
-    "verifiedPlatforms": 21,
+    "targetCount": 28,
+    "verifiedPlatforms": 26,
     "botChallengeBoundedPlatforms": 2,
-    "totalEvidenceIds": 70,
-    "totalAnalyzedScripts": 399,
-    "totalAnalyzedBytes": 8584157,
-    "totalAstNodes": 2107782,
-    "totalFindings": 13880
+    "totalEvidenceIds": 85,
+    "totalAnalyzedScripts": 517,
+    "totalAnalyzedBytes": 10787409,
+    "totalAstNodes": 2633047,
+    "totalFindings": 17053
   },
   "platforms": [
     {
@@ -475,6 +475,91 @@
       ],
       "inferences": [
         "Streamlined reader-to-member continuation and clear adult/youth rating filters reduce drop-off on entry."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "munpia-novel",
+      "name": "Munpia (문피아 웹소설·웹툰)",
+      "targetUrl": "https://www.munpia.com/",
+      "appVersion": "munpia-ui-2026",
+      "captureEvidenceId": "ev_17f21a11336581f46413c8c0a82f7098b0551b48ac9aff02ff10b339cf724484",
+      "exportScriptsEvidenceId": "ev_e1c76ed503b61a2620d55d6cb8bdb7f6e49c666c41860c9c0ac30523eb402767",
+      "astAnalysisViewEvidenceId": "ev_783d3f7d620279807336c7026f7479c7d24b2fa18a381e6d82081ae5d214d199",
+      "rootSha256": "dfa78dfa020240d739cb0be45338eb4ac5986fac5d6a2eea6f4b2441f0943126",
+      "observedFacts": [
+        "14 parsed scripts (147,474 B, 30,391 AST nodes, 227 findings) connecting serial webnovels (/page/novelous/group/pl.serial) with dedicated author writing lab (larc.munpia.com) and storytelling academy (academy.munpia.com)."
+      ],
+      "inferences": [
+        "Integrating a 4-step Webnovel/Synopsis -> Script -> Storyboard -> Launch pipeline directly inside /create and /story-lab bridges novel writing and webtoon adaptation."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "coloso-academy",
+      "name": "Coloso (콜로소 크리에이터 클래스)",
+      "targetUrl": "https://coloso.co.kr/",
+      "appVersion": "nuxt-coloso-2026",
+      "captureEvidenceId": "ev_c933234acdfcc1c9ba61f6b693da66f1a07ecdf27030dbcec7599913418d2733",
+      "exportScriptsEvidenceId": "ev_b0883be3e181cb10f6e6f3ff318bd7cc7abd6285679f340592cb73cadf371014",
+      "astAnalysisViewEvidenceId": "ev_b34e8e4e791bc6593585065b34851e07deb1fa850767c7f0f6ce370d4c792f77",
+      "rootSha256": "a4bd2b1ff37951c010098e6e7eea2a091625fad1ba2bcccb89fa977d8606de55",
+      "observedFacts": [
+        "30 parsed scripts (801,179 B, 188,572 AST nodes, 301 findings, 37 modules, 43 routes) organizing creator education by job/skill tracks (/illust_webtoon, /3d_vfx, /graphicdesign, /myclassroom, /catalog)."
+      ],
+      "inferences": [
+        "Surfacing a 4-track skill-tree roadmap in /learn with direct 1-click practice links into /story-lab, /studio/comic, /studio/assets/characters/new, and /showcase/promo turns passive lessons into active creation."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "notefolio-creative",
+      "name": "Notefolio (노트폴리오 크리에이터 쇼케이스)",
+      "targetUrl": "https://notefolio.net/",
+      "appVersion": "notefolio-spa-2026",
+      "captureEvidenceId": "ev_7e1c815f21899c3d78026fa71dbe2230ebce4b9160c81829be5871192e9fc594",
+      "exportScriptsEvidenceId": "ev_15f3a521ab1f1bd08311427aff64483c550c4e9099ee7d00971eb00d2e56ec08",
+      "astAnalysisViewEvidenceId": "ev_3c7c13732e819150ef996915c57dece676ce39311a824bfcb2db98485726f625",
+      "rootSha256": "36f90aed0cd9bb4cbcb2fcf8f4bffabc4bb11375cad896abb15d84708cece601",
+      "observedFacts": [
+        "12 parsed scripts (298,489 B, 78,279 AST nodes, 359 findings, 30 modules) coupling portfolio curation (/discover) with creator recruiting (/jobs), workshops (/workshops), and creator directories (/creators)."
+      ],
+      "inferences": [
+        "Connecting /showcase and /collaborate via shared portfolio-to-recruiting tracks eliminates the gap between showcasing artwork and hiring studio assistants."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "comic-walker-jp",
+      "name": "KadoComi (カドコミ / ComicWalker)",
+      "targetUrl": "https://comic-walker.com/",
+      "appVersion": "nextjs-kadocomi-2026",
+      "captureEvidenceId": "ev_fca19fa93465ae35e8fc7d8a3fbc8cb7a36d93c402d35ef35c3ee5b2dd630e07",
+      "exportScriptsEvidenceId": "ev_fdfd1132371265a20632752ffe05500bbecc86acaf27bf191d13b76b31924a60",
+      "astAnalysisViewEvidenceId": "ev_809afe69cb4ed01abb7b78362770a15620d6bac50a08bda151a70e5c75a2acb0",
+      "rootSha256": "4c79e83531f55a169faa0411b6bfdfd99a1da64d7d984590c61dfbd332cee099",
+      "observedFacts": [
+        "20 parsed scripts (477,584 B, 126,106 AST nodes, 1,338 findings, 372 modules, 78 routes) providing 7 orthogonal discovery axes (/rankings, /weekdays, /labels, /genres, /tags, /ReadHistory, /bookmarks) and deep episode links (/detail/[workCode]/episodes/[episodeCode])."
+      ],
+      "inferences": [
+        "Combining multi-axis discovery tabs with persistent ReadHistory and Bookmarks reinforces seamless exploration across /discover, /explore, /ranking, /calendar, /recommend, and /library."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "loud-sourcing",
+      "name": "LOUD (라우드소싱 크리에이터 콘테스트·협업)",
+      "targetUrl": "https://www.loud.kr/",
+      "appVersion": "loud-nextjs-2026",
+      "captureEvidenceId": "ev_2b2bb84e7bd557eaabc5d54f17a2857d81b6f2ac45aaf71d73e135a53133a1c6",
+      "exportScriptsEvidenceId": "ev_5a75edd5fe6e5753f6dce33584fc914d5de4689609e22ae865e75ee24ed11579",
+      "astAnalysisViewEvidenceId": "ev_3d4b2528a9b446a3f8349c93a207abf76ddd5fcfc28a3559d139eeb147eed473",
+      "rootSha256": "5e49b624f8dd83500904c831c9b34568b515df28b542b2a1fbb2b75029ba6f6c",
+      "observedFacts": [
+        "42 parsed scripts (478,530 B, 101,917 AST nodes, 948 findings, 12 routes) uniting creative contests (/contest/list), 1:1 commissions (/market), verified portfolios (/portfolios), and expert directories (/creatives)."
+      ],
+      "inferences": [
+        "Unifying Contest Pitching (/opportunities), 1:1 Team/Assistant Matching (/collaborate), and Portfolio Curation (/showcase) into a 3-track collaboration bar accelerates studio team assembly."
       ],
       "unknowns": []
     }

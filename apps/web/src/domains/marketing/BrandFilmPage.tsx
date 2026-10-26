@@ -11,6 +11,7 @@ import type { CreatorBrandFilmController } from "./creator-film-playback";
 import { PRODUCT_TOUR, formatProductTourDuration } from "./product-tour-content";
 
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import {
   useDocumentTitle,
   useJsonLd,
@@ -144,6 +145,9 @@ export function BrandFilmPage() {
 
   return (
     <div className="mk-page brand-film-page" data-brand-film="remotion" lang={documentLocale}>
+      <div className="mk-shell pt-4">
+        <SiteContextualSubNav pathnameOverride="/brand-film" />
+      </div>
       <header className="mk-shell brand-film-page__hero">
         <div className="brand-film-page__hero-copy">
           <p className="mk-eyebrow"><MonitorPlay size={15} aria-hidden="true" />{copy.eyebrow}</p>

@@ -476,3 +476,159 @@ export const COMMUNITY_PROMOTION_LEAGUE_TIERS: readonly CommunityPromotionLeague
     derivedFrom: ["naver-best-challenge", "postype", "bomtoon"],
   },
 ]);
+
+/**
+ * 8. 아카데미 · 학습 로드맵 허브 (`/learn`) 전용 REA 스킬트리 프리셋
+ *    - Coloso (`/illust_webtoon`, `/3d_vfx`, `/myclassroom`, `/catalog`)
+ *    - Munpia (`academy.munpia.com`, `larc.munpia.com`)
+ *    - Clip Studio (4단계 공식 강좌 및 튜토리얼)
+ */
+export interface LearnCurriculumTrack {
+  readonly id: string;
+  readonly label: string;
+  readonly badge: string;
+  readonly description: string;
+  readonly practiceHref: string;
+  readonly practiceLabel: string;
+  readonly derivedFrom: readonly CompetitorPlatformId[];
+}
+
+export const LEARN_CURRICULUM_ROADMAP_TRACKS: readonly LearnCurriculumTrack[] = Object.freeze([
+  {
+    id: "story-novelcomics",
+    label: "스토리텔링 · 노블코믹스 각색",
+    badge: "MUNPIA · LARC",
+    description: "웹소설 원작 기승전결 설계부터 화별 스크립트·콘티 컷 배분까지 실습하는 입문·심화 트랙",
+    practiceHref: "/story-lab",
+    practiceLabel: "스토리 랩 실습",
+    derivedFrom: ["munpia-novel", "kakaopage"],
+  },
+  {
+    id: "drawing-coloring",
+    label: "드로잉 · 선화 · 채색 마스터",
+    badge: "COLOSO · CSP",
+    description: "인체 데생, 펜선 필압, 셀 채색 및 웹툰 조명 후보정 워크플로를 단계별로 마스터하는 트랙",
+    practiceHref: "/studio/comic",
+    practiceLabel: "원고 에디터 실습",
+    derivedFrom: ["coloso-academy", "clip-studio"],
+  },
+  {
+    id: "3d-character-scene",
+    label: "3D 캐릭터 · 배경 연출",
+    badge: "3D · VROID · ACON",
+    description: "VRoid 캐릭터 커스터마이징과 3D 배경 투시·카메라 앵글·툰 셰이더 합성을 익히는 실전 트랙",
+    practiceHref: "/studio/assets/characters/new",
+    practiceLabel: "3D 캐릭터 셰이퍼",
+    derivedFrom: ["coloso-academy", "vroid-studio", "acon3d", "sketchfab-3d"],
+  },
+  {
+    id: "debut-monetization",
+    label: "연재 데뷔 · 숏폼 홍보 · 정산",
+    badge: "CANVAS · CUTS",
+    description: "도전만화 승격 전략, 9:16 컷츠 트레일러 제작, 유료분·후원 수익화까지 완주하는 프로 트랙",
+    practiceHref: "/showcase/promo",
+    practiceLabel: "예고편 스튜디오",
+    derivedFrom: ["naver-best-challenge", "webtoons-canvas", "postype"],
+  },
+]);
+
+/**
+ * 9. 스토리 랩 · 창작 시작점 (`/story-lab`, `/create`) 전용 노블코믹스 & 제작 파이프라인 프리셋
+ *    - Munpia (`/page/novelous/group/pl.serial`, `larc.munpia.com`)
+ *    - Manta (`/creator/studio/*`)
+ *    - Clip Studio (4단계 제작 파이프라인)
+ */
+export interface StoryToWebtoonPipelineMode {
+  readonly id: string;
+  readonly step: string;
+  readonly label: string;
+  readonly description: string;
+  readonly targetHref: string;
+  readonly ctaLabel: string;
+  readonly derivedFrom: readonly CompetitorPlatformId[];
+}
+
+export const STORY_TO_WEBTOON_PIPELINE_MODES: readonly StoryToWebtoonPipelineMode[] = Object.freeze([
+  {
+    id: "worldbuilding-synopsis",
+    step: "STEP 01 · WORLD",
+    label: "세계관 · 로그라인 · 회귀/빙의/환생 플롯",
+    description: "문피아·카카오페이지 검증 흥행 코드와 캐릭터 아크를 구조화하고 시놉시스를 설계합니다.",
+    targetHref: "/story-lab",
+    ctaLabel: "플롯 보드 열기",
+    derivedFrom: ["munpia-novel", "kakaopage"],
+  },
+  {
+    id: "novel-to-script",
+    step: "STEP 02 · SCRIPT",
+    label: "웹소설 → 웹툰 대본·연출 지문 변환",
+    description: "서술형 문장을 화별 60~80컷 스크립트, 말풍선 대사, 카메라 앵글 지문으로 자동 분해합니다.",
+    targetHref: "/studio/new",
+    ctaLabel: "신작 대본 생성",
+    derivedFrom: ["munpia-novel", "manta"],
+  },
+  {
+    id: "storyboard-3d-blocking",
+    step: "STEP 03 · CONTI",
+    label: "세로 스크롤 콘티 · 3D 캐릭터/배경 블로킹",
+    description: "대본 컷마다 3D 캐릭터 포즈와 배경 앵글을 배치해 호흡과 시선 유도를 검증합니다.",
+    targetHref: "/studio/comic",
+    ctaLabel: "콘티 에디터 직행",
+    derivedFrom: ["clip-studio", "vroid-studio", "acon3d"],
+  },
+  {
+    id: "ink-render-publish",
+    step: "STEP 04 · LAUNCH",
+    label: "펜선·채색 마감 · 컷츠 예고편 동시 발행",
+    description: "원고 최종 검수 후 본편 연재와 9:16 숏폼 예고편을 원클릭으로 동시 배포합니다.",
+    targetHref: "/studio/publish",
+    ctaLabel: "연재·배포 센터",
+    derivedFrom: ["naver-webtoon", "webtoons-canvas", "pixiv-comic"],
+  },
+]);
+
+/**
+ * 10. 쇼케이스 · 외주/협업 보드 (`/showcase`, `/collaborate`) 전용 크리에이터 매칭 프리셋
+ *    - Notefolio (`/discover`, `/jobs`, `/workshops`, `/creators`)
+ *    - LOUD (`/contest/list`, `/market`, `/portfolios`, `/creatives`)
+ *    - Pixiv Booth / VRoid Hub 크리에이터 커미션·협업 구조
+ */
+export interface ShowcaseCollaborationTrack {
+  readonly id: string;
+  readonly label: string;
+  readonly badge: string;
+  readonly description: string;
+  readonly route: string;
+  readonly ctaLabel: string;
+  readonly derivedFrom: readonly CompetitorPlatformId[];
+}
+
+export const SHOWCASE_COLLABORATION_TRACKS: readonly ShowcaseCollaborationTrack[] = Object.freeze([
+  {
+    id: "portfolio-curation",
+    label: "크리에이터 아트워크 · 캐릭터 쇼케이스",
+    badge: "NOTEFOLIO · PIXIV",
+    description: "일러스트·선화·3D 캐릭터·배경 아트워크를 작업 공정별로 공개하고 피드백을 받는 갤러리",
+    route: "/showcase",
+    ctaLabel: "갤러리 탐색",
+    derivedFrom: ["notefolio-creative", "pixiv-comic", "vroid-hub"],
+  },
+  {
+    id: "team-recruiting",
+    label: "스토리 · 작화 · 채색 · 3D 어시 구인/매칭",
+    badge: "JOBS · TEAM",
+    description: "분업화 웹툰 스튜디오를 위한 글작가·선화·채색·식자·3D 배경 전문가 1:1 매칭 보드",
+    route: "/collaborate",
+    ctaLabel: "구인·의뢰 매칭",
+    derivedFrom: ["notefolio-creative", "loud-sourcing"],
+  },
+  {
+    id: "contest-pitch",
+    label: "신작 공모전 · 노블코믹스 각색 피칭",
+    badge: "LOUD · CONTEST",
+    description: "원작 IP 웹툰화 피칭 및 시즌별 창작 콘테스트에 참가해 연재 계약과 상금을 확보하는 트랙",
+    route: "/opportunities",
+    ctaLabel: "공모·기회 보기",
+    derivedFrom: ["loud-sourcing", "naver-best-challenge", "munpia-novel"],
+  },
+]);

@@ -11,6 +11,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useEngagement } from "@/domains/engagement/public/engagement-store";
 
 const SCOPE = "domains.catalog.RecommendPage";
@@ -40,6 +41,7 @@ export function RecommendPage() {
         artPlacement={sitePageHeaderArtPlacementFor("/recommend")}
       />
 
+      <SiteContextualSubNav pathnameOverride="/recommend" className="mb-5" />
       <DiscoveryWorkspaceNav current="recommend" className="mb-8" />
       <RecommendView initialGenres={initialGenres} tastePreferences={savedTaste} />
     </Container>

@@ -15,6 +15,8 @@ import { CreativeJourneyLinks } from "@/shared/components/public-creative";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { SHOWCASE_COLLABORATION_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 export function ShowcasePage() {
   const bt = useBilingual("ShowcasePage");
@@ -28,7 +30,52 @@ export function ShowcasePage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/showcase" className="mb-5" />
       <ShowcaseSpotlight />
+
+      <section
+        aria-label={bt("크리에이터 쇼케이스 · 협업 · 공모 트랙", "Creator showcase, collaboration & contest tracks")}
+        data-testid="showcase-rea-collaboration-tracks"
+        className="mt-8 rounded-2xl border border-line bg-panel/60 p-4 sm:p-5"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
+              PORTFOLIO · RECRUITING · CONTEST
+            </p>
+            <h2 className="text-sm font-bold text-fg">
+              {bt("노트폴리오 · 픽시브 · 라우드소싱 방식 크리에이터 쇼케이스 & 협업 허브", "Creator Portfolio, Team Matching & Pitch Hub")}
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
+            {bt("공정별 포트폴리오 · 팀 매칭 · 공모전 연결", "Stage Portfolio · Team Match · Contest")}
+          </span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {SHOWCASE_COLLABORATION_TRACKS.map((track) => (
+            <div
+              key={track.id}
+              className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/80 p-3.5 transition-colors hover:border-accent/50"
+            >
+              <div>
+                <span className="inline-block rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                  {track.badge}
+                </span>
+                <h3 className="mt-2 text-sm font-bold text-fg">{track.label}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-fg-2">{track.description}</p>
+              </div>
+              <div className="mt-3 pt-2 border-t border-line/50">
+                <Link
+                  href={track.route}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+                >
+                  {track.ctaLabel} →
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section aria-labelledby="showcase-browse-title" className="mt-12">
         <div className="mb-4">

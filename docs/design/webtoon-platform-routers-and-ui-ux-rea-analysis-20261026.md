@@ -1,4 +1,4 @@
-# 글로벌 웹툰·창작·3D 캐릭터·에셋 플랫폼 23종 REA 라우터·동선 역공학 및 전 허브 UI/UX 고도화 설계서
+# 글로벌 웹툰·웹소설·창작·3D 캐릭터·에셋·아카데미·협업 플랫폼 28종 REA 라우터·동선 역공학 및 전 허브 UI/UX 고도화 설계서
 
 - **작성일**: `2026-10-26`
 - **상태**: `current`
@@ -12,10 +12,22 @@
   - [`apps/web/src/domains/catalog/RankingPage.tsx`](../../apps/web/src/domains/catalog/RankingPage.tsx)
   - [`apps/web/src/domains/catalog/CalendarPage.tsx`](../../apps/web/src/domains/catalog/CalendarPage.tsx)
   - [`apps/web/src/domains/catalog/ExplorePage.tsx`](../../apps/web/src/domains/catalog/ExplorePage.tsx)
+  - [`apps/web/src/domains/catalog/RecommendPage.tsx`](../../apps/web/src/domains/catalog/RecommendPage.tsx)
+  - [`apps/web/src/domains/catalog/ComparePage.tsx`](../../apps/web/src/domains/catalog/ComparePage.tsx)
   - [`apps/web/src/domains/catalog/LibraryPage.tsx`](../../apps/web/src/domains/catalog/LibraryPage.tsx)
   - [`apps/web/src/domains/market/pages/MarketHomePage.tsx`](../../apps/web/src/domains/market/pages/MarketHomePage.tsx)
+  - [`apps/web/src/domains/market/pages/MarketBrowsePage.tsx`](../../apps/web/src/domains/market/pages/MarketBrowsePage.tsx)
   - [`apps/web/src/domains/community/CommunityPage.tsx`](../../apps/web/src/domains/community/CommunityPage.tsx)
+  - [`apps/web/src/domains/community/ReviewsPage.tsx`](../../apps/web/src/domains/community/ReviewsPage.tsx)
+  - [`apps/web/src/domains/creator/ShowcasePage.tsx`](../../apps/web/src/domains/creator/ShowcasePage.tsx)
+  - [`apps/web/src/domains/collaboration/CollaborationBoardPage.tsx`](../../apps/web/src/domains/collaboration/CollaborationBoardPage.tsx)
+  - [`apps/web/src/domains/creator/CreateStartPage.tsx`](../../apps/web/src/domains/creator/CreateStartPage.tsx)
+  - [`apps/web/src/domains/creator-resources/StoryLabPage.tsx`](../../apps/web/src/domains/creator-resources/StoryLabPage.tsx)
+  - [`apps/web/src/domains/learn/LearningHome.tsx`](../../apps/web/src/domains/learn/LearningHome.tsx)
   - [`apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx`](../../apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx)
+  - [`apps/web/src/domains/marketing/BrandFilmPage.tsx`](../../apps/web/src/domains/marketing/BrandFilmPage.tsx)
+  - [`apps/web/src/domains/marketing/ProductTourPage.tsx`](../../apps/web/src/domains/marketing/ProductTourPage.tsx)
+  - [`apps/web/src/domains/cuts/CutsFeedPage.tsx`](../../apps/web/src/domains/cuts/CutsFeedPage.tsx)
   - [`apps/web/src/domains/cuts/CutsStudioPage.tsx`](../../apps/web/src/domains/cuts/CutsStudioPage.tsx)
   - [`apps/web/src/domains/legal/SitemapPage.tsx`](../../apps/web/src/domains/legal/SitemapPage.tsx)
   - [`apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx`](../../apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx)
@@ -24,9 +36,9 @@
 
 ## 1. 목적 및 배경
 
-글로벌 주요 웹툰·만화·오픈연재·창작·3D 캐릭터·2D/3D 에셋 플랫폼 23종(**NAVER WEBTOON**, **KakaoPage**, **WEBTOON Global**, **Tapas**, **Lezhin Comics**, **Pixiv Comic**, **RIDI Webtoon**, **Kakao Webtoon**, **Postype**, **Manta**, **CLIP STUDIO**, **ACON3D**, **Manga Plus by SHUEISHA**, **VRoid Hub**, **VRoid Studio**, **BOOTH 3D Models**, **NAVER Best Challenge**, **WEBTOON Global CANVAS**, **Pixiv BOOTH**, **MrBlue Webtoon**, **Bomtoon**, **Sketchfab 3D Models**, **Toomics**)의 프로덕션 웹 애플리케이션을 REA(`reverse-engineer-anything`) MCP 도구(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 일괄 캡처·역공학하여 라우터 계층, GNB/서브탭/LNB/푸터 동선, 뷰 스위처, 3D 캐릭터 뷰어/포토부스/트래킹 하위 라우트, VRM 라이선스·이용권한 매트릭스, 창작 파이프라인, 오픈연재 승격 리그, BM·태그 필터 아키텍처, UI/UX 디자인 토큰을 도출하고 ToonStudio 전 허브 및 `apps/character-lab`에 클린룸 내재화하였다.
+글로벌 주요 웹툰·만화·웹소설·오픈연재·창작·3D 캐릭터·2D/3D 에셋·교육·협업 플랫폼 28종(**NAVER WEBTOON**, **KakaoPage**, **WEBTOON Global**, **Tapas**, **Lezhin Comics**, **Pixiv Comic**, **RIDI Webtoon**, **Kakao Webtoon**, **Postype**, **Manta**, **CLIP STUDIO**, **ACON3D**, **Manga Plus by SHUEISHA**, **VRoid Hub**, **VRoid Studio**, **BOOTH 3D Models**, **NAVER Best Challenge**, **WEBTOON Global CANVAS**, **Pixiv BOOTH**, **MrBlue Webtoon**, **Bomtoon**, **Sketchfab 3D Models**, **Toomics**, **Munpia**, **Coloso**, **Notefolio**, **KadoComi / ComicWalker**, **LOUD**)의 프로덕션 웹 애플리케이션을 REA(`reverse-engineer-anything`) MCP 도구(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 일괄 캡처·역공학하여 라우터 계층, GNB/서브탭/LNB/푸터 동선, 뷰 스위처, 3D 캐릭터 뷰어/포토부스/트래킹 하위 라우트, VRM 라이선스·이용권한 매트릭스, 창작 파이프라인, 노블코믹스 각색 보드, 스킬트리 커리큘럼 로드맵, 포트폴리오·구인·공모전 매칭 트랙, 오픈연재 승격 리그, BM·태그 필터 아키텍처, UI/UX 디자인 토큰을 도출하고 ToonStudio 전 허브 및 `apps/character-lab`에 클린룸 내재화하였다.
 
-## 2. REA 역공학 증거 원장 (23개 플랫폼/서피스 · 70개 Evidence ID)
+## 2. REA 역공학 증거 원장 (28개 플랫폼/서피스 · 85개 Evidence ID)
 
 | 플랫폼 / 서피스 | 대상 URL | 버전 / 라우터 | `capture_browser_scenario` | `export_web_scripts` | `analyze_javascript_application` / `inspect_analysis_view` | 스크립트 / AST 노드 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -53,6 +65,11 @@
 | **Bomtoon** | `https://www.bomtoon.com/` | Next.js `5WWxOnDBPisKWwWSNIVO6` (125 routes) | `ev_a190688ff032060b7351baa85103f514dbcc0d9e440d501bd17e1296c0e88859` | `ev_e86e9eb3d50b3c4347179cb3fc39de9510bf113a27bb29077c19ed543b79de53` | `ev_2079960ca21702d3b690e7a81f2c6770558d7b1532da2267e2a89b69564d4feb` | 29 files / 145,615 nodes |
 | **Sketchfab 3D Models** | `https://sketchfab.com/3d-models` | WebGL 3D Inspector + Collections | `ev_0c1b5badc807214c7520facd40c5a5992e98af7075b08591b97c2270f8dd6da3` | `ev_3bb063dc68ce8733a9fc0a3144705cf31a98ab162d59896be868176eb99d1abb` | `ev_3207d32b972cdfc12a43d62aca2dc4b480141ebff55f3d4eae662c1edb9455c3` | 26 files / 97,764 nodes |
 | **Toomics** | `https://www.toomics.com/ko` | `web_v4` + Cross-Device QR Continuation | `ev_d6dd968aa244bc8656ed4382076cfa3a0a04bef39fc9b2390a51301be62f444f` | `ev_47d469e9515ed5280670f6ea7cc17ec5573e1512780e39d0691026a4ff324c25` | `ev_f254846e117cafdd01f6fde5ff0a98d5eb57708a0a190f31ad023cc710835d24` | 15 files / 63,723 nodes |
+| **Munpia** | `https://www.munpia.com/` | Hybrid SSR + LARC/Academy Router (9 routes) | `ev_17f21a11336581f46413c8c0a82f7098b0551b48ac9aff02ff10b339cf724484` | `ev_e1c76ed503b61a2620d55d6cb8bdb7f6e49c666c41860c9c0ac30523eb402767` | `ev_783d3f7d620279807336c7026f7479c7d24b2fa18a381e6d82081ae5d214d199` | 14 files / 30,391 nodes |
+| **Coloso** | `https://coloso.co.kr/` | Vue/Nuxt Skill-Tree Router (43 routes) | `ev_c933234acdfcc1c9ba61f6b693da66f1a07ecdf27030dbcec7599913418d2733` | `ev_b0883be3e181cb10f6e6f3ff318bd7cc7abd6285679f340592cb73cadf371014` | `ev_b34e8e4e791bc6593585065b34851e07deb1fa850767c7f0f6ce370d4c792f77` | 30 files / 188,572 nodes |
+| **Notefolio** | `https://notefolio.net/` | React SPA Portfolio & Jobs Router (8 routes) | `ev_7e1c815f21899c3d78026fa71dbe2230ebce4b9160c81829be5871192e9fc594` | `ev_15f3a521ab1f1bd08311427aff64483c550c4e9099ee7d00971eb00d2e56ec08` | `ev_3c7c13732e819150ef996915c57dece676ce39311a824bfcb2db98485726f625` | 12 files / 78,279 nodes |
+| **KadoComi (ComicWalker)** | `https://comic-walker.com/` | Next.js Hybrid Router (78 routes, 372 modules) | `ev_fca19fa93465ae35e8fc7d8a3fbc8cb7a36d93c402d35ef35c3ee5b2dd630e07` | `ev_fdfd1132371265a20632752ffe05500bbecc86acaf27bf191d13b76b31924a60` | `ev_809afe69cb4ed01abb7b78362770a15620d6bac50a08bda151a70e5c75a2acb0` | 20 files / 126,106 nodes |
+| **LOUD (라우드소싱)** | `https://www.loud.kr/` | Next.js Contest & Market Router (12 routes) | `ev_2b2bb84e7bd557eaabc5d54f17a2857d81b6f2ac45aaf71d73e135a53133a1c6` | `ev_5a75edd5fe6e5753f6dce33584fc914d5de4689609e22ae865e75ee24ed11579` | `ev_3d4b2528a9b446a3f8349c93a207abf76ddd5fcfc28a3559d139eeb147eed473` | 42 files / 101,917 nodes |
 
 ## 3. 플랫폼별 핵심 발견 사항 및 전 서피스 내재화 설계
 
@@ -97,3 +114,15 @@
   - **ACON3D**: 헤드리스 브라우저 접근 시 Cloudflare 보안 검증(`Performing security verification`, Ray ID `a50910fcaabbba04`)이 관찰되어 REA 인식론 규율에 따라 `bounded-by-bot-challenge`로 정직하게 기록.
 - **내재화 (`internalization`)**:
   - `VRM_CHARACTER_SUB_ROUTES`(`overview`, `edit`, `photobooth`, `tracking`, `embed`, `license`), `VrmUsageConditionMatrix` 및 `summarizeVrmUsageMatrix`, `CREATOR_GUIDED_WORKFLOW_STAGES`(5단계 가이드 창작 스테퍼), `resolveCreatorPostActionBridgeRoutes`(창작 단계 완료 후 컷츠·소재실·홍보 영상실 연관 동선 브리지)를 `webtoon-platform-router-ux-model.ts`와 `CharacterPlatformWorkbench.tsx`, `apps/character-lab` 상단 워크플로 바 및 URL 쿼리 라우터 동기화에 내재화.
+
+### 3.5 Munpia, Coloso, Notefolio, KadoComi (ComicWalker), LOUD: 노블코믹스 파이프라인 · 스킬트리 로드맵 · 쇼케이스-구인-공모 통합
+- **관찰된 사실 (`observedFacts`)**:
+  - **Munpia (`14 JS files / 30,391 AST nodes`)**: 연재 웹소설(`/page/novelous/group/pl.serial`)에서 작가 전용 집필실(`larc.munpia.com`)과 스토리텔링 아카데미(`academy.munpia.com`)로 직결되는 원작-집필-교육 3원 라우터.
+  - **Coloso (`30 JS files / 188,572 AST nodes / 43 routes`)**: `/illust_webtoon`, `/3d_vfx`, `/graphicdesign`, `/myclassroom`, `/catalog` 직무·스킬트리 단위 커리큘럼 라우터.
+  - **Notefolio (`12 JS files / 78,279 AST nodes`) & LOUD (`42 JS files / 101,917 AST nodes`)**: 크리에이터 포트폴리오(`/discover`, `/portfolios`), 팀원·외주 구인구직(`/jobs`, `/creatives`), 공모전·1:1 의뢰(`/contest/list`, `/market`)를 하나의 크리에이터 커리어 루프로 결합.
+  - **KadoComi / ComicWalker (`20 JS files / 126,106 AST nodes / 78 routes / 372 modules`)**: `/rankings`, `/weekdays`, `/labels`, `/genres`, `/tags`, `/ReadHistory`, `/bookmarks` 7축 직교 탐색 및 감상 이력 보존.
+- **내재화 (`internalization`)**:
+  - `CreateStartPage.tsx` (`/create`) 및 `StoryLabPage.tsx` (`/story-lab`): `SiteContextualSubNav`와 `STORY_TO_WEBTOON_PIPELINE_MODES` (원작 세계관·플롯 → 웹소설 대본 변환 → 세로 스크롤 콘티·3D 블로킹 → 펜선·채색 마감 및 컷츠 동시 발행) 탑재.
+  - `LearningHome.tsx` (`/learn`): `LEARN_CURRICULUM_ROADMAP_TRACKS` (스토리·노블코믹스 각색, 드로잉·선화·채색 마스터, 3D 캐릭터·배경 연출, 연재 데뷔·숏폼 홍보·정산 4대 스킬트리 로드맵 및 실습 에디터 즉시 연결) 탑재.
+  - `ShowcasePage.tsx` (`/showcase`), `CollaborationBoardPage.tsx` (`/collaborate`), `ReviewsPage.tsx` (`/reviews`): `SiteContextualSubNav` 및 `SHOWCASE_COLLABORATION_TRACKS` (아트워크 쇼케이스 ↔ 공정별 어시·팀원 매칭 ↔ 신작 공모전·노블코믹스 피칭) 탑재.
+  - `RecommendPage.tsx` (`/recommend`), `ComparePage.tsx` (`/compare`), `CutsFeedPage.tsx` (`/cuts`), `BrandFilmPage.tsx` (`/brand-film`), `ProductTourPage.tsx` (`/product-tour`), `MarketBrowsePage.tsx` (`/market/browse`): 6대 허브의 모든 하위 탭 페이지에 `SiteContextualSubNav`를 완비하여 어느 탭을 클릭해도 맥락형 2단 서브 내비게이션이 끊기지 않도록 일원화.

@@ -9,6 +9,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 
 const SCOPE = "domains.catalog.ComparePage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
@@ -29,6 +30,7 @@ export function ComparePage() {
         art={sitePageHeaderArtFor("/compare")}
         artPlacement={sitePageHeaderArtPlacementFor("/compare")}
       />
+      <SiteContextualSubNav pathnameOverride="/compare" className="mb-5" />
       <CompareView initialA={searchParams.get("a") ?? undefined} initialB={searchParams.get("b") ?? undefined} />
     </Container>
   );
