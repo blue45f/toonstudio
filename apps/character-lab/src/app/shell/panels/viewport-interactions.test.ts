@@ -10,12 +10,15 @@ import {
   SHAPER_HISTORY_TYPE_ORDER,
   SHAPER_TRACKPAD_MAX_FINGERS,
   SHAPER_TRACKPAD_RING_BUFFER_CAPACITY,
+  SHAPER_UI_DESIGN_TOKENS,
   clampShaperColorPickerHandle,
   clampShaperGizmoDelta,
   classifyShaperTrackpadTwoFingerGesture,
   composeShaperHangulJamo,
   computeJointDrag,
   computeShaperPartThumbnailCameraFrame,
+  computeShaperPresetGridItemLayout,
+  computeShaperWebcamPopupLayout,
   createShaperTrackpadTouchTracker,
   handlesKey,
   hudRows,
@@ -26,10 +29,12 @@ import {
   pushShaperHistoryEntry,
   resolveDragPivot,
   resolveShaperCameraInputAction,
+  resolveShaperContextStatusBarGuide,
   resolveShaperGizmoCastPlaneEuler,
   resolveShaperPresetClickModifiers,
   resolveShaperToolModeForPartTab,
   resolveShaperViewportKeyShortcut,
+  sampleShaperColorPalettePicker2d,
   shouldPassThroughShaperNativeWindowClick,
   stepShaperHistoryCursor,
   visibleHandles,
@@ -444,5 +449,50 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
         colorKeyTolerance: 0.02,
       }),
     ).toBe(true);
+  });
+
+  it("SHAPER UI/UX 디자인 토큰·2D 컬러피커·2열 프리셋 그리드·웹캠 팝업·하단 키캡 가이드를 정확히 계산한다", () => {
+    expect(SHAPER_UI_DESIGN_TOKENS.canvasBackdropHex).toBe("#121212");
+    expect(SHAPER_UI_DESIGN_TOKENS.toggleHighlightRgba).toEqual([1, 1, 0, 1]);
+    expect(SHAPER_UI_DESIGN_TOKENS.bottomStatusBarHeightPx).toBe(24);
+    expect(SHAPER_UI_DESIGN_TOKENS.presetCardStepPx).toBe(122);
+
+    const sampled = sampleShaperColorPalettePicker2d({
+      svPointerPos: [200, 200],
+      svRectSize: [200, 200],
+      huePointerX: 0,
+      hueRectWidth: 200,
+      scaleFactor: 1,
+      anchorBoxPos: [100, 50],
+    });
+    expect(sampled.clampedSvHandlePos).toEqual([196, 196]);
+    expect(sampled.popupPosition).toEqual([80, 54]);
+    expect(sampled.hex).toBe("#FF0000");
+    expect(sampled.rgb255[0]).toBe(255);
+
+    const grid0 = computeShaperPresetGridItemLayout(0, 4, 800);
+    const grid1 = computeShaperPresetGridItemLayout(1, 4, 800);
+    const grid2 = computeShaperPresetGridItemLayout(2, 4, 800);
+    expect(grid0).toEqual({
+      row: 0,
+      column: 0,
+      anchoredX: 20,
+      anchoredY: -20,
+      cardWidth: 100,
+      cardHeight: 100,
+      contentHeight: 264,
+      maxScrollPanelHeight: 710,
+    });
+    expect(grid1.anchoredX).toBe(142);
+    expect(grid2.anchoredY).toBe(-142);
+
+    const webcamLandscape = computeShaperWebcamPopupLayout(1920, 1080);
+    expect(webcamLandscape.popupWidth).toBe(600);
+    expect(webcamLandscape.popupHeight).toBe(544);
+
+    const paintGuide = resolveShaperContextStatusBarGuide({ inspectorTab: "paint", drawingMode: true });
+    expect(paintGuide.shortcuts.some((g) => g.description.includes("스트로크"))).toBe(true);
+    const poseGuide = resolveShaperContextStatusBarGuide({ inspectorTab: "pose", drawingMode: false });
+    expect(poseGuide.shortcuts.some((g) => g.description.includes("대칭"))).toBe(true);
   });
 });

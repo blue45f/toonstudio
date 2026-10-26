@@ -1,4 +1,5 @@
 import "../styles/character-lab.css";
+import "../styles/shaper-studio-theme.css";
 
 /**
  * 조립 루트. LabRuntime(app/composition.ts 또는 테스트의 모의 조립)을 받아 Provider·TopBar·FailureBanner·워크벤치를 그린다.

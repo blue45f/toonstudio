@@ -118,6 +118,14 @@ describe("app/shell/TopBar", () => {
     expect(ui.getState().inspectorTab).toBe("physics");
     fireEvent.keyDown(window, { key: "9" });
     expect(ui.getState().inspectorTab).toBe("export");
+
+    const themeBtn = screen.getByTestId("topbar-studio-theme-toggle");
+    expect(themeBtn.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(themeBtn);
+    expect(themeBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(document.documentElement.dataset.studioTheme).toBe("shaper");
+    fireEvent.click(themeBtn);
+    expect(document.documentElement.dataset.studioTheme).toBe("nebula");
   });
 
   it("detectQualityPreset는 shadows/postfx/ibl만 비교한다", () => {
