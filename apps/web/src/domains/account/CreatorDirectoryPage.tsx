@@ -25,6 +25,7 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { genreBorder, genreTextColor, genreTint, spectrumGradient } from "@/shared/lib/genre-color";
 import { cn } from "@/shared/lib/utils";
@@ -306,6 +307,7 @@ export function CreatorDirectoryPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-bg">
       <Container size="wide" className="py-8 sm:py-12">
+        <SiteContextualSubNav pathnameOverride="/creators" className="mb-5" />
         <SitePageHeader
           surface="plain"
           icon={UsersRound}

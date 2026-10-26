@@ -18,6 +18,7 @@ import {
   useMetaDescription,
   usePageSocialMeta,
 } from "@/shared/seo/use-document-title";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingual, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
@@ -78,6 +79,9 @@ export function CharacterShaperLandingPage() {
 
   return (
     <div className="studio-character-guide">
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
+        <SiteContextualSubNav pathnameOverride="/studio/assets/characters/new" className="mb-4" />
+      </div>
       <CharacterShaperLandingHero editor={editor} />
       <CharacterShaperLandingSteps />
       <CharacterShaperLandingGuide />

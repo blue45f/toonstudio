@@ -9,6 +9,7 @@ import Link from "@/shared/navigation/router-link";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { TitleCard } from "@/shared/components/title-card";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useSearchParams } from "@/shared/navigation/navigation";
@@ -78,6 +79,7 @@ export function RandomPage() {
 
   return (
     <Container size="wide" className="py-10 sm:py-14">
+      <SiteContextualSubNav pathnameOverride="/random" className="mb-6" />
       <header className="mx-auto max-w-2xl text-center">
         <span className="mx-auto grid size-14 place-items-center rounded-2xl border border-accent/30 bg-accent-soft text-accent">
           <Shuffle size={26} className={phase === "loading" ? "motion-safe:animate-pulse" : ""} aria-hidden="true" />

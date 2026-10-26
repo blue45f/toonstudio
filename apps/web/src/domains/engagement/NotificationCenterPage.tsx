@@ -26,6 +26,7 @@ import { useRoleNotificationSettings } from "./use-role-notification-settings";
 
 import Link from "@/shared/navigation/router-link";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useDocumentTitle, useMetaRobots } from "@/shared/seo/use-document-title";
 import { NOINDEX_PRIVATE_ROBOTS } from "@/shared/lib/seo-route-policy";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -301,6 +302,7 @@ export function NotificationCenterPage() {
 
   return (
     <Container size="wide" className="py-8 sm:py-12">
+      <SiteContextualSubNav pathnameOverride="/notifications" className="mb-5" />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow text-accent">NOTIFICATION CENTER</p>

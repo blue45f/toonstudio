@@ -31,6 +31,7 @@ import { FriendlyQuickGuide } from "@/shared/components/purpose-experience-stage
 import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import {
   creatorDestinationLabel,
@@ -220,6 +221,7 @@ export function MySpaceHubPage() {
 
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+      <SiteContextualSubNav pathnameOverride="/my" className="mb-5" />
       <SitePageHeader
         size="hero"
         icon={UserRound}

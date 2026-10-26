@@ -12,6 +12,7 @@ import { SearchExplorer } from "@/shared/components/search-explorer";
 import { UnifiedSearchSections } from "@/shared/components/unified-search-sections";
 import { DiscoveryWorkspaceNav } from "@/shared/components/discovery-workspace-nav";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { parseCatalogDiscoveryState } from "@/shared/lib/catalog-discovery-state";
 import { useT } from "@/shared/lib/i18n";
@@ -30,6 +31,7 @@ export function SearchPage() {
   return (
     <PageEntrance variant="pop">
     <Container size="wide" className="py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/search" className="mb-4" />
       <SitePageHeader
         className="mb-6 sm:mb-8"
         icon={Search}
