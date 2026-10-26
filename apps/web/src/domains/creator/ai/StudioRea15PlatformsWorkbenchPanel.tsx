@@ -1,16 +1,30 @@
 /**
  * StudioRea15PlatformsWorkbenchPanel.tsx
  *
- * Phase 7 글로벌·국내 15대 웹툰 AI 보조 플랫폼 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 창의적 AI 워크벤치:
- * - 상단: 15대 플랫폼 REA UI/UX 디자인 토큰 탐색기 (실제 캡처 evidence_id · sha256 · 컬러 팔레트 · 라우트 · 프리뷰)
+ * Phase 7 글로벌·국내 39대 웹툰·스토리보드·3D·드로잉 AI 보조 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 창의적 AI 워크벤치:
+ * - 상단: 39대 플랫폼 REA UI/UX 디자인 토큰 탐색기 (41 브라우저 캡처 evidence_id · sha256 · 컬러 팔레트 · 라우트 · 프리뷰)
  * - 탭 1: 그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터 (`claude-haiku-5-5`)
  * - 탭 2: 카이스토리(KAISTORY) 4단 단일 데이터 엔벨로프 & KAION 웹툰 학습카드·독자 퀴즈 (`claude-sonnet-5-5`)
  * - 탭 3: Snaptoon·Frameo 스포트라이트 콘·NAVER SHAPER 3D 직접 드로잉·Plask/Posemaniacs (`claude-sonnet-5-5`)
  * - 탭 4: ManhwaAI 6대 화풍/5대 톤·Komiko 레이어 분리/인비트윈·Anifusion 노드 플로우 (`claude-sonnet-5-5`)
  * - 탭 5: [창의적 AI] 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & UI/UX 테마 합성기 (`claude-opus-5-5`)
+ * - 탭 6: TooToon 5-Studio(fabulator~emporium) · GenToon 뷰어/굿즈 · Tooning 6부위 캐릭터 디렉터 (`claude-sonnet-5-5`)
+ * - 탭 7: Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere/Graphite/PixiEditor 셰이더 (`claude-haiku-5-5`)
+ * - 탭 8: LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터 (`claude-opus-5-5`)
  */
 
-import { Activity, Box, GraduationCap, Layers, Palette, Sparkles, Wand2 } from "lucide-react";
+import {
+  Activity,
+  Box,
+  Cpu,
+  Film,
+  GraduationCap,
+  Layers,
+  Palette,
+  Sparkles,
+  Store,
+  Wand2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -20,22 +34,31 @@ import {
   buildLocalCreativeDopamineAndUxSynthesizerReport,
   buildLocalGlimnaviRelightAndLineartV23Report,
   buildLocalKaistorySingleEnvelopeAndKaionReport,
+  buildLocalKreaSplineLumiereRealtimeShaderReport,
+  buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
+  buildLocalTootoonGentoonTooningKrSuiteReport,
   getRea15PlatformTheme,
   listRea15PlatformThemes,
   runCreativeDopamineAndUxSynthesizerAssist,
   runGlimnaviRelightAndLineartV23Assist,
   runKaistorySingleEnvelopeAndKaionAssist,
+  runKreaSplineLumiereRealtimeShaderAssist,
+  runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
   runSnaptoonFrameoShaper3dDirectorAssist,
+  runTootoonGentoonTooningKrSuiteAssist,
   type CreativeDopamineAndUxSynthesizerReport,
   type GlimnaviRelightAndLineartV23Report,
   type KaistorySingleEnvelopeAndKaionReport,
+  type KreaSplineLumiereRealtimeShaderReport,
+  type LtxBoordsCascadeurRiveAnimaticReport,
   type ManhwaKomikoAnifusionFlowReport,
   type Rea15Envelope,
   type Rea15PlatformId,
   type SnaptoonFrameoShaper3dDirectorReport,
+  type TootoonGentoonTooningKrSuiteReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
 
@@ -44,7 +67,10 @@ export type Rea15WorkbenchTabId =
   | "kaistory-envelope-kaion"
   | "snaptoon-frameo-shaper-3d"
   | "manhwa-komiko-anifusion"
-  | "creative-dopamine-ux";
+  | "creative-dopamine-ux"
+  | "tootoon-gentoon-tooning-kr"
+  | "krea-spline-lumiere-shader"
+  | "ltx-boords-cascadeur-rive";
 
 export interface StudioRea15PlatformsWorkbenchPanelProps {
   readonly assistInput: WebtoonProductionAssistInput;
@@ -87,6 +113,24 @@ const REA15_TABS: readonly {
     badgeKo: "창의적 AI 특화",
     tierBadgeKo: "Opus 5.5",
   },
+  {
+    id: "tootoon-gentoon-tooning-kr",
+    labelKo: "TooToon 5스튜디오 · GenToon 굿즈 · Tooning 6부위",
+    badgeKo: "TooToon · GenToon · Tooning",
+    tierBadgeKo: "Sonnet 5.5",
+  },
+  {
+    id: "krea-spline-lumiere-shader",
+    labelKo: "실시간 디렉터 · 3D 스타일 전이 · WebGPU 셰이더",
+    badgeKo: "Krea · Spline · Lumiere",
+    tierBadgeKo: "Haiku 5.5",
+  },
+  {
+    id: "ltx-boords-cascadeur-rive",
+    labelKo: "프리비즈 애니매틱 · 물리 포징 · Rive 상태머신",
+    badgeKo: "LTX · Boords · Cascadeur · Rive",
+    tierBadgeKo: "Opus 5.5",
+  },
 ];
 
 export function StudioRea15PlatformsWorkbenchPanel({
@@ -108,6 +152,12 @@ export function StudioRea15PlatformsWorkbenchPanel({
     useState<Rea15Envelope<ManhwaKomikoAnifusionFlowReport> | null>(null);
   const [dopamineUxEnv, setDopamineUxEnv] =
     useState<Rea15Envelope<CreativeDopamineAndUxSynthesizerReport> | null>(null);
+  const [krSuiteEnv, setKrSuiteEnv] =
+    useState<Rea15Envelope<TootoonGentoonTooningKrSuiteReport> | null>(null);
+  const [realtimeShaderEnv, setRealtimeShaderEnv] =
+    useState<Rea15Envelope<KreaSplineLumiereRealtimeShaderReport> | null>(null);
+  const [animaticEnv, setAnimaticEnv] =
+    useState<Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport> | null>(null);
 
   const platformThemes = useMemo(() => listRea15PlatformThemes(), []);
   const activePlatformTheme = useMemo(
@@ -136,6 +186,19 @@ export function StudioRea15PlatformsWorkbenchPanel({
       dopamineUxEnv?.report ?? buildLocalCreativeDopamineAndUxSynthesizerReport(assistInput),
     [dopamineUxEnv, assistInput],
   );
+  const currentKrSuite = useMemo(
+    () => krSuiteEnv?.report ?? buildLocalTootoonGentoonTooningKrSuiteReport(assistInput),
+    [krSuiteEnv, assistInput],
+  );
+  const currentRealtimeShader = useMemo(
+    () =>
+      realtimeShaderEnv?.report ?? buildLocalKreaSplineLumiereRealtimeShaderReport(assistInput),
+    [realtimeShaderEnv, assistInput],
+  );
+  const currentAnimatic = useMemo(
+    () => animaticEnv?.report ?? buildLocalLtxBoordsCascadeurRiveAnimaticReport(assistInput),
+    [animaticEnv, assistInput],
+  );
 
   const activeEnvelope =
     activeTab === "glimnavi-relight-v23"
@@ -146,7 +209,13 @@ export function StudioRea15PlatformsWorkbenchPanel({
           ? snaptoon3dEnv
           : activeTab === "manhwa-komiko-anifusion"
             ? manhwaFlowEnv
-            : dopamineUxEnv;
+            : activeTab === "creative-dopamine-ux"
+              ? dopamineUxEnv
+              : activeTab === "tootoon-gentoon-tooning-kr"
+                ? krSuiteEnv
+                : activeTab === "krea-spline-lumiere-shader"
+                  ? realtimeShaderEnv
+                  : animaticEnv;
 
   const handleRunActiveTab = async () => {
     setIsRunning(true);
@@ -175,11 +244,29 @@ export function StudioRea15PlatformsWorkbenchPanel({
         onAppendDirectionLine(
           `[ManhwaAI·Komiko·Anifusion (${res.modelUsed})] 화풍 ${res.report.manhwaStylePreset} · 인비트윈 ${res.report.komikoLayerSplitterAndInbetween.inbetweenFrameCount}프레임 · 노드 ${res.report.anifusionNodeFlowGraph.length}개`,
         );
-      } else {
+      } else if (activeTab === "creative-dopamine-ux") {
         const res = await runCreativeDopamineAndUxSynthesizerAssist(assistInput);
         setDopamineUxEnv(res);
         onAppendDirectionLine(
           `[독자 도파민 & UI 합성기 (${res.modelUsed})] 도파민 피크 ${res.report.overallDopaminePeakScore}점 · 완독률 ${res.report.predictedEpisodeCompletionRatePct}% · 테마 '${res.report.synthesizedUiUxTheme.themeTitleKo}'`,
+        );
+      } else if (activeTab === "tootoon-gentoon-tooning-kr") {
+        const res = await runTootoonGentoonTooningKrSuiteAssist(assistInput);
+        setKrSuiteEnv(res);
+        onAppendDirectionLine(
+          `[TooToon·GenToon·Tooning (${res.modelUsed})] ${res.report.suiteSummaryKo}`,
+        );
+      } else if (activeTab === "krea-spline-lumiere-shader") {
+        const res = await runKreaSplineLumiereRealtimeShaderAssist(assistInput);
+        setRealtimeShaderEnv(res);
+        onAppendDirectionLine(
+          `[Krea·Spline·Lumiere (${res.modelUsed})] ${res.report.lumiereAndNodeGraphShaders.compositeShaderNoteKo}`,
+        );
+      } else {
+        const res = await runLtxBoordsCascadeurRiveAnimaticAssist(assistInput);
+        setAnimaticEnv(res);
+        onAppendDirectionLine(
+          `[LTX·Boords·Cascadeur·Rive (${res.modelUsed})] ${res.report.cascadeurPhysicsRig.ballisticTrajectoryArcKo}`,
         );
       }
     } finally {
@@ -197,10 +284,10 @@ export function StudioRea15PlatformsWorkbenchPanel({
         <div className="flex items-center gap-1.5">
           <Palette className="size-3.5 text-accent" aria-hidden="true" />
           <span className="font-bold text-fg">
-            Phase 7 · 15대 웹툰 AI 플랫폼 REA UI/UX 디자인 토큰 & 창의적 AI 워크벤치
+            Phase 7 · 39대 웹툰·스토리보드·3D·드로잉 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 8대 AI 워크벤치
           </span>
           <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.54rem] font-semibold text-accent">
-            17 브라우저 캡처 · 112만 AST 노드 검증
+            39개 플랫폼 · 41 브라우저 캡처 · 112만+ AST 노드 검증
           </span>
         </div>
 
@@ -221,14 +308,14 @@ export function StudioRea15PlatformsWorkbenchPanel({
         </button>
       </div>
 
-      {/* 15대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
+      {/* 39대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
       <div
         data-testid="rea15-ui-token-inspector"
         className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
       >
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-bold text-fg">
-            15대 웹툰 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터
+            39대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
           </span>
           <button
             type="button"
@@ -310,8 +397,8 @@ export function StudioRea15PlatformsWorkbenchPanel({
         </div>
       </div>
 
-      {/* 5대 AI 엔진 탭 네비게이션 */}
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-5" role="tablist">
+      {/* 8대 AI 엔진 탭 네비게이션 */}
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4" role="tablist">
         {REA15_TABS.map((tab) => {
           const isSelected = activeTab === tab.id;
           return (
@@ -638,6 +725,165 @@ export function StudioRea15PlatformsWorkbenchPanel({
             <div className="mt-0.5 text-fg-2">
               {currentDopamineUx.synthesizedUiUxTheme.designRationaleKo}
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 6: TooToon 5-Studio · GenToon 뷰어/굿즈 · Tooning Plus 6부위 캐릭터 디렉터 */}
+      {activeTab === "tootoon-gentoon-tooning-kr" ? (
+        <div
+          data-testid="rea15-panel-tootoon-gentoon-tooning-kr"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Store className="size-3 text-accent" aria-hidden="true" />
+              TooToon 5-Studio · GenToon 뷰어/굿즈 · Tooning Plus 6부위 캐릭터 빌더
+            </span>
+            <span className="text-accent">
+              GenToon {currentKrSuite.gentoonReaderAndCommerce.readingDirection} · Paper{" "}
+              {currentKrSuite.gentoonReaderAndCommerce.paperHex}
+            </span>
+          </div>
+          <p className="text-fg-2">{currentKrSuite.suiteSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-5">
+            {currentKrSuite.tootoonFiveStudios.map((mod) => (
+              <div
+                key={mod.moduleId}
+                className="rounded border border-line bg-card p-1.5 text-[0.54rem]"
+              >
+                <div className="font-bold text-accent">{mod.routePath}</div>
+                <div className="font-semibold text-fg">{mod.stageTitleKo}</div>
+                <div className="text-fg-2">{mod.deliverableSummaryKo}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+            {currentKrSuite.tooningSixPartCharacterRecipe.map((part) => (
+              <div
+                key={part.partRoute}
+                className="flex items-center justify-between rounded border border-line bg-card px-2 py-1 text-[0.54rem]"
+              >
+                <div>
+                  <div className="font-bold text-fg">
+                    {part.partLabelKo} <span className="text-fg-3">({part.partRoute})</span>
+                  </div>
+                  <div className="text-fg-2">{part.selectedPresetSummaryKo}</div>
+                </div>
+                <span className="font-bold text-accent">{part.consistencyLockScorePct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 7: Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere/Graphite/PixiEditor 셰이더 */}
+      {activeTab === "krea-spline-lumiere-shader" ? (
+        <div
+          data-testid="rea15-panel-krea-spline-lumiere-shader"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Cpu className="size-3 text-accent" aria-hidden="true" />
+              Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere WebGPU 셰이더
+            </span>
+            <span className="text-accent">
+              Krea {currentRealtimeShader.kreaRealtimeDirector.activeRoute} · Denoise{" "}
+              {currentRealtimeShader.kreaRealtimeDirector.i2iDenoiseStrength}
+            </span>
+          </div>
+          <p className="text-fg-2">{currentRealtimeShader.realtimePipelineSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Krea Realtime Director</div>
+              <div className="text-fg-2">
+                {currentRealtimeShader.kreaRealtimeDirector.directorCoachingKo}
+              </div>
+              <div className="text-fg-3">
+                도형 블로킹 {currentRealtimeShader.kreaRealtimeDirector.blockingPrimitiveCount}개 ·
+                업스케일 {currentRealtimeShader.kreaRealtimeDirector.enhanceUpscaleFactor}x
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">
+                Spline 3D & Hana ({currentRealtimeShader.spline3dAndHanaBridge.activeRoute})
+              </div>
+              <div className="text-fg-2">
+                {currentRealtimeShader.spline3dAndHanaBridge.styleTransferPresetKo}
+              </div>
+              <div className="text-fg-3">
+                궤도 {currentRealtimeShader.spline3dAndHanaBridge.cameraOrbitAzimuthDeg}° /{" "}
+                {currentRealtimeShader.spline3dAndHanaBridge.cameraOrbitElevationDeg}° ·{" "}
+                {currentRealtimeShader.spline3dAndHanaBridge.interactiveStateTriggerKo}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Lumiere · Graphite · PixiEditor</div>
+              <div className="text-fg-2">
+                Kuwahara {currentRealtimeShader.lumiereAndNodeGraphShaders.kuwaharaPaintRadiusPx}px ·
+                Halation {currentRealtimeShader.lumiereAndNodeGraphShaders.filmHalationIntensityPct}% ·
+                Glare {currentRealtimeShader.lumiereAndNodeGraphShaders.anamorphicGlareStreakPct}%
+              </div>
+              <div className="text-fg-3">
+                Graphite 노드{" "}
+                {currentRealtimeShader.lumiereAndNodeGraphShaders.graphiteProceduralNodeCount}개 ·
+                PixiEditor 루프{" "}
+                {currentRealtimeShader.lumiereAndNodeGraphShaders.pixiEditorFrameLoopCount}프레임
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 8: LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 */}
+      {activeTab === "ltx-boords-cascadeur-rive" ? (
+        <div
+          data-testid="rea15-panel-ltx-boords-cascadeur-rive"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Film className="size-3 text-accent" aria-hidden="true" />
+              LTX · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신
+            </span>
+            <span className="text-accent">
+              AutoPosing {currentAnimatic.cascadeurPhysicsRig.autoPosingConfidencePct}% · 무게중심{" "}
+              {currentAnimatic.cascadeurPhysicsRig.centerOfMassHeightCm}cm · 토크{" "}
+              {currentAnimatic.cascadeurPhysicsRig.angularMomentumTorqueNm}N·m
+            </span>
+          </div>
+          <p className="text-fg-2">{currentAnimatic.animaticExecutiveSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+            {currentAnimatic.ltxAndBoordsAnimaticShots.map((shot) => (
+              <div
+                key={shot.shotNumber}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.54rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>
+                    샷 #{shot.shotNumber} · {shot.cameraMove}
+                  </span>
+                  <span className="text-accent">{shot.durationMs}ms</span>
+                </div>
+                <div className="text-fg-2">{shot.voiceoverBeatKo}</div>
+                <div className="text-fg-3">{shot.visualTransitionKo}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded border border-line bg-card px-2 py-1 text-[0.54rem] text-fg-2">
+            <strong>
+              Rive & Jitter 상태머신 ({currentAnimatic.riveAndJitterStateMachine.stateMachineName},
+              스크롤 트리거 {currentAnimatic.riveAndJitterStateMachine.scrollTriggerThresholdPct}%):
+            </strong>{" "}
+            {currentAnimatic.riveAndJitterStateMachine.states
+              .map((s) => `${s.stateName}(${s.loopFps}fps: ${s.meshDeformationSummaryKo})`)
+              .join(" → ")}
           </div>
         </div>
       ) : null}

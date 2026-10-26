@@ -6,17 +6,23 @@ import {
   buildLocalCreativeDopamineAndUxSynthesizerReport,
   buildLocalGlimnaviRelightAndLineartV23Report,
   buildLocalKaistorySingleEnvelopeAndKaionReport,
+  buildLocalKreaSplineLumiereRealtimeShaderReport,
+  buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
+  buildLocalTootoonGentoonTooningKrSuiteReport,
   buildRea15ThemeCssVariables,
   getRea15PlatformTheme,
   listRea15PlatformThemes,
   runCreativeDopamineAndUxSynthesizerAssist,
   runGlimnaviRelightAndLineartV23Assist,
   runKaistorySingleEnvelopeAndKaionAssist,
+  runKreaSplineLumiereRealtimeShaderAssist,
+  runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
   runRea15WebtoonEcosystemFullSuite,
   runSnaptoonFrameoShaper3dDirectorAssist,
+  runTootoonGentoonTooningKrSuiteAssist,
 } from "./claude-rea15-webtoon-ecosystem-suite";
 import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
 
@@ -42,14 +48,21 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 15대 웹툰 AI 플랫폼 REA 내재화 & 창의적 AI 스위트)", () => {
-  it("0. 15대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 39대 웹툰 AI 플랫폼 REA 내재화 & 창의적 AI 스위트)", () => {
+  it("0. 39대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(15);
+    expect(themes).toHaveLength(39);
 
     const glimnavi = getRea15PlatformTheme("glimnavi");
     expect(glimnavi.reaEvidenceId).toContain("ev_f2c78ddd");
     expect(glimnavi.surfaceHex).toBe("#f6f7fb");
+
+    const tootoon = getRea15PlatformTheme("tootoon");
+    expect(tootoon.keyRoutes).toContain("/fabulator");
+    expect(tootoon.keyRoutes).toContain("/artifex");
+
+    const gentoon = getRea15PlatformTheme("gentoon");
+    expect(gentoon.surfaceHex).toBe("#f4ebfc");
 
     const cssVars = buildRea15ThemeCssVariables("frameo");
     expect(cssVars["--rea15-surface"]).toBe("#09090b");
@@ -169,7 +182,74 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 15대 웹툰 AI 플랫�
     expect(live.report.cliffhangerHookPowerPct).toBeGreaterThanOrEqual(90);
   });
 
-  it("6. runRea15WebtoonEcosystemFullSuite 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
+  it("6. TooToon 5-Studio · GenToon 뷰어/굿즈 · Tooning 6부위 캐릭터 디렉터(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalTootoonGentoonTooningKrSuiteReport(SAMPLE_INPUT);
+    expect(local.tootoonFiveStudios).toHaveLength(5);
+    expect(local.tooningSixPartCharacterRecipe).toHaveLength(6);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 240, output_tokens: 410 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runTootoonGentoonTooningKrSuiteAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.gentoonReaderAndCommerce.paperHex).toBe("#f4ebfc");
+  });
+
+  it("7. Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere/Graphite/PixiEditor 셰이더 디렉터(Haiku 5.5)를 검증한다", async () => {
+    const local = buildLocalKreaSplineLumiereRealtimeShaderReport(SAMPLE_INPUT);
+    expect(local.kreaRealtimeDirector.activeRoute).toBe("/realtime-director");
+    expect(local.lumiereAndNodeGraphShaders.kuwaharaPaintRadiusPx).toBe(4);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-4-5",
+        usage: { input_tokens: 190, output_tokens: 310 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runKreaSplineLumiereRealtimeShaderAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("fast-inline");
+    expect(live.routedModel).toBe("claude-haiku-5-5");
+    expect(live.report.spline3dAndHanaBridge.activeRoute).toBe("/ai-style-transfer");
+  });
+
+  it("8. LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터(Opus 5.5)를 검증한다", async () => {
+    const local = buildLocalLtxBoordsCascadeurRiveAnimaticReport(SAMPLE_INPUT);
+    expect(local.ltxAndBoordsAnimaticShots).toHaveLength(3);
+    expect(local.cascadeurPhysicsRig.autoPosingConfidencePct).toBeGreaterThanOrEqual(90);
+    expect(local.riveAndJitterStateMachine.states).toHaveLength(2);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 310, output_tokens: 520 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runLtxBoordsCascadeurRiveAnimaticAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.riveAndJitterStateMachine.scrollTriggerThresholdPct).toBe(65);
+  });
+
+  it("9. runRea15WebtoonEcosystemFullSuite 8대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
     vi.mocked(claudeParse).mockRejectedValueOnce(new Error("simulated network timeout"));
     vi.mocked(claudeParse).mockResolvedValueOnce({
       message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
@@ -187,13 +267,28 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 15대 웹툰 AI 플랫�
       message: { model: "claude-opus-4-6", usage: { input_tokens: 250, output_tokens: 400 } } as never,
       parsed: buildLocalCreativeDopamineAndUxSynthesizerReport(SAMPLE_INPUT),
     });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 220, output_tokens: 340 } } as never,
+      parsed: buildLocalTootoonGentoonTooningKrSuiteReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-haiku-4-5", usage: { input_tokens: 180, output_tokens: 290 } } as never,
+      parsed: buildLocalKreaSplineLumiereRealtimeShaderReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 260, output_tokens: 420 } } as never,
+      parsed: buildLocalLtxBoordsCascadeurRiveAnimaticReport(SAMPLE_INPUT),
+    });
 
     const bundle = await runRea15WebtoonEcosystemFullSuite(SAMPLE_INPUT, {
       route: TEST_ROUTE,
     });
-    expect(bundle.liveEngineCount).toBe(4);
+    expect(bundle.liveEngineCount).toBe(7);
     expect(bundle.fallbackEngineCount).toBe(1);
     expect(bundle.glimnaviRelightLineart.source).toBe("local-fallback");
     expect(bundle.creativeDopamineUxSynthesizer.source).toBe("claude-live");
+    expect(bundle.tootoonGentoonTooningKrSuite.source).toBe("claude-live");
+    expect(bundle.kreaSplineLumiereRealtimeShader.source).toBe("claude-live");
+    expect(bundle.ltxBoordsCascadeurRiveAnimatic.source).toBe("claude-live");
   });
 });

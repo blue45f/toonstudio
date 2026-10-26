@@ -76,12 +76,15 @@ export type ClaudeCreatorTaskId =
   | "runner:dialogue-translate"
   | "runner:prompt-enhancer"
   | "runner:shading-assist"
-  // 8. Phase 7 REA 15-Platform Deep Internalization & Creative AI Suite (5)
+  // 8. Phase 7 REA 39-Platform Deep Internalization & Creative AI Suite (8)
   | "rea15:glimnavi-relight-lineart-v23"
   | "rea15:kaistory-single-envelope-kaion-quiz"
   | "rea15:snaptoon-frameo-shaper-3d-lighting"
   | "rea15:manhwa-komiko-anifusion-flow"
-  | "rea15:creative-dopamine-scroll-ux-synthesizer";
+  | "rea15:creative-dopamine-scroll-ux-synthesizer"
+  | "rea15:tootoon-gentoon-tooning-kr-suite"
+  | "rea15:krea-spline-lumiere-realtime-shader"
+  | "rea15:ltx-boords-cascadeur-rive-animatic";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -492,10 +495,34 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   ),
   "rea15:creative-dopamine-scroll-ux-synthesizer": defineRoute(
     "rea15:creative-dopamine-scroll-ux-synthesizer",
-    "웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & 15대 플랫폼 UI/UX 테마 토큰 합성기",
+    "웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & 39대 플랫폼 UI/UX 테마 토큰 합성기",
     "phase6-ecosystem",
     "deep-architecture",
-    "컷별 독자 도파민 곡선·스크롤 정지 시간(ms)·클리프행어 훅 강도 예측 및 15대 REA UI/UX 테마 합성은 Opus 5.5 심층 추론 적용",
+    "컷별 독자 도파민 곡선·스크롤 정지 시간(ms)·클리프행어 훅 강도 예측 및 39대 REA UI/UX 테마 합성은 Opus 5.5 심층 추론 적용",
+    6_144,
+  ),
+  "rea15:tootoon-gentoon-tooning-kr-suite": defineRoute(
+    "rea15:tootoon-gentoon-tooning-kr-suite",
+    "TooToon 5-Studio(fabulator~emporium) · GenToon 리더/굿즈 · Tooning 6부위 캐릭터 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "TooToon 5대 모듈·GenToon 뷰어/굿즈 수익화·Tooning Plus 6부위 캐릭터 조합 설계는 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:krea-spline-lumiere-realtime-shader": defineRoute(
+    "rea15:krea-spline-lumiere-realtime-shader",
+    "Krea 실시간 디렉터 · Spline 3D/Hana 스타일 트랜스퍼 · Lumiere/Graphite/PixiEditor 셰이더 디렉터",
+    "phase6-ecosystem",
+    "fast-inline",
+    "실시간 i2i 브러시·Spline 3D 스타일 전이·Lumiere Kuwahara/Halation 셰이더·비파괴 노드 파라미터 산출은 Haiku 5.5로 즉각 처리",
+    3_072,
+  ),
+  "rea15:ltx-boords-cascadeur-rive-animatic": defineRoute(
+    "rea15:ltx-boords-cascadeur-rive-animatic",
+    "LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "프리비즈 애니매틱 카메라 시퀀스·Cascadeur 무게중심/탄도 물리 궤적·Rive 인터랙티브 상태머신 설계는 Opus 5.5 심층 추론 적용",
     6_144,
   ),
 });

@@ -4,10 +4,12 @@ import type { ClaudeTokenUsage } from "@/shared/ai/claude/claude-models";
 import type { ClaudeCreatorTaskId, ClaudeCreatorTaskProfile } from "./claude-creator-model-router";
 
 /* ============================================================================
- * 0. 15대 웹툰 AI 보조 플랫폼 REA 정본 카탈로그 및 UI/UX 디자인 토큰 스키마
+ * 0. 39대 웹툰·스토리보드·3D·드로잉 AI 보조 플랫폼 REA 정본 카탈로그 및 UI/UX 디자인 토큰 스키마
+ *    (하위 호환을 위해 REA15_* 와 REA39_* 식별자를 동시에 노출합니다)
  * ============================================================================ */
 
 export const REA15_PLATFORM_IDS = [
+  // Wave 1 (15개 플랫폼)
   "glimnavi",
   "snaptoon",
   "kaistory",
@@ -23,9 +25,38 @@ export const REA15_PLATFORM_IDS = [
   "frameo",
   "naver-webtoon-shaper",
   "posemaniacs",
+  // Wave 2 (12개 플랫폼)
+  "llamagen",
+  "dashtoon",
+  "ltx-studio",
+  "boords",
+  "magic-poser",
+  "posemy-art",
+  "cascadeur",
+  "krea",
+  "leonardo-ai",
+  "gentoon",
+  "tootoon",
+  "tooning-plus",
+  // Wave 3 (12개 플랫폼)
+  "enkava",
+  "jitter",
+  "lumiere-graphics",
+  "graphite-editor",
+  "pixieditor",
+  "spline",
+  "rive",
+  "medibang-paint",
+  "ibispaint",
+  "clip-studio-paint",
+  "acon3d",
+  "webtoon-canvas",
 ] as const;
 
+export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
+
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
+export type Rea39PlatformId = Rea15PlatformId;
 
 export interface Rea15PlatformUiThemeSpec {
   readonly platformId: Rea15PlatformId;
@@ -346,7 +377,468 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
     coreWorkflowKo: "3D 에코르셰(근육) 해부학 회전 뷰어 + 핸드/표정 레퍼런스 + 오늘의 포즈 드로잉",
     keyRoutes: ["/poses", "/tools", "/faces", "/generated-photos", "/pose-of-the-day"],
   },
+  llamagen: {
+    platformId: "llamagen",
+    nameKo: "LlamaGen AI",
+    originUrl: "https://llamagen.ai/",
+    reaEvidenceId: "ev_5d6e3e4aab21c7ff11fdddfa7d4d30d44627b638626558de15fb02c60e7b2c57",
+    scenarioSha256: "4bbf2d622452a1b98ef744cf5f307b1bdf1d989a5eedf2b272b7166cff158c8f",
+    surfaceHex: "#0D0C22",
+    panelHex: "#171713",
+    borderHex: "#4F5263",
+    textPrimaryHex: "#F7F7F8",
+    textMutedHex: "#7B7194",
+    accentPrimaryHex: "#f3ad22",
+    accentSecondaryHex: "#524B63",
+    borderRadiusPx: 12,
+    fontStack: "Inter, Plus Jakarta Sans, sans-serif",
+    coreWorkflowKo:
+      "AI 코믹 스트립(/new/ai-comic-strips) + 에이전트 멀티패널 워크플로우(/agents, /workflows, /draw, /story)",
+    keyRoutes: ["/new/ai-comic-strips", "/agents", "/draw", "/workflows", "/story"],
+  },
+  dashtoon: {
+    platformId: "dashtoon",
+    nameKo: "Dashtoon Studio",
+    originUrl: "https://dashtoon.com/",
+    reaEvidenceId: "ev_c9f6c0db817e24eb5a604fd1da1112281d7e765b0846f1e9aa17caa2434eaf3c",
+    scenarioSha256: "880e084418ad76b288336cb5134f64b275edaa5f06bbcd5f2e08218abdffd194",
+    surfaceHex: "#111214",
+    panelHex: "#1a1b1e",
+    borderHex: "#2B2B2B",
+    textPrimaryHex: "#e5e7eb",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#3090FC",
+    accentSecondaryHex: "#60A5FA",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo:
+      "세로 스크롤 웹툰 제작(/create) + 포토 투 코믹 변환(/api/v2/ai-apps/photo-to-comic) + 글로벌 연재(/comics)",
+    keyRoutes: ["/comics", "/create", "/api/v2/ai-apps/photo-to-comic", "/api/v2/ai-apps/photo-to-comic/poll"],
+  },
+  "ltx-studio": {
+    platformId: "ltx-studio",
+    nameKo: "LTX Studio (Lightricks)",
+    originUrl: "https://ltx.studio/",
+    reaEvidenceId: "ev_47dd3a8e80ef7b298a798ce6610a116d5e64904937c128c8f4c53190c9425ad0",
+    scenarioSha256: "eb2f2d23e2fa72dd4dc010a5b64bb2ef898addec6667fd1f2122458bdd76d9f6",
+    surfaceHex: "#0f1115",
+    panelHex: "#181b22",
+    borderHex: "#2c323d",
+    textPrimaryHex: "#fafafa",
+    textMutedHex: "#aaadb0",
+    accentPrimaryHex: "#3898ec",
+    accentSecondaryHex: "#ea384c",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "시나리오 → 샷별 프리비즈 스토리보드 → 카메라 모션·캐릭터 일관성 애니매틱 디렉팅",
+    keyRoutes: ["/", "/pricing", "/lead-survey"],
+  },
+  boords: {
+    platformId: "boords",
+    nameKo: "Boords AI Storyboard",
+    originUrl: "https://boords.com/",
+    reaEvidenceId: "ev_45aab73c640e451a57e56d4f59d3a56365d00d8ce4845861d685cd5cc3779853",
+    scenarioSha256: "6591c40a8c78780e637d868476b2936243ed17a3e7511d4992ffd4a215dc03ec",
+    surfaceHex: "#120e0b",
+    panelHex: "#211c19",
+    borderHex: "#453d37",
+    textPrimaryHex: "#D5D5CC",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#FF2D8D",
+    accentSecondaryHex: "#D97757",
+    borderRadiusPx: 12,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "대본 기반 프레임별 스토리보드 & 보이스오버 타임라인 애니매틱 시퀀서",
+    keyRoutes: ["/", "/offer", "/docs"],
+  },
+  "magic-poser": {
+    platformId: "magic-poser",
+    nameKo: "Magic Poser",
+    originUrl: "https://magicposer.com/",
+    reaEvidenceId: "ev_0340777a4ef59f77df35658b8b4cea7c996b4cd19a9826d9d93985294c590161",
+    scenarioSha256: "718afbeb1b9bc87923a8ab22458d97e1258812646c6f3a8386393211d40408d2",
+    surfaceHex: "#12121C",
+    panelHex: "#24262D",
+    borderHex: "#383B47",
+    textPrimaryHex: "#F8F8F8",
+    textMutedHex: "#D8D8D8",
+    accentPrimaryHex: "#00B7FD",
+    accentSecondaryHex: "#F45253",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo:
+      "웹툰·만화 특화 다중 인체 물리 관절 드래그 포징(--mp-dark-blue: #00B7FD) + 원근 투시 및 방향성 조명 스튜디오",
+    keyRoutes: ["/"],
+  },
+  "posemy-art": {
+    platformId: "posemy-art",
+    nameKo: "PoseMy.Art",
+    originUrl: "https://posemy.art/",
+    reaEvidenceId: "ev_abdd16e2770ee661c9bb1b1b803bf8c9b7940249f13e797ed82638533bcb71c5",
+    scenarioSha256: "d82bc95e815514a87ab82c07db2c82e08825a640d34bf7470ab8eab37976c173",
+    surfaceHex: "#463853",
+    panelHex: "#5A5563",
+    borderHex: "#726B7D",
+    textPrimaryHex: "#FBFBFD",
+    textMutedHex: "#eafeff",
+    accentPrimaryHex: "#ff30b2",
+    accentSecondaryHex: "#7de5da",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "브라우저 즉시 구동 3D 마네킹·블록 메쉬·애니메이션 포즈 씬 빌더",
+    keyRoutes: ["/", "/track"],
+  },
+  cascadeur: {
+    platformId: "cascadeur",
+    nameKo: "Cascadeur AI Physics Rigging",
+    originUrl: "https://cascadeur.com/",
+    reaEvidenceId: "ev_71b8739079fbf7ee061823ba33f787549a304e36c9394624d4899f8d781ef6f5",
+    scenarioSha256: "f28f6adbfbdffb7e51c0d9cc0afd8fe8d30501eadcf6ed4fa6b7fcc09a645b7f",
+    surfaceHex: "#030303",
+    panelHex: "#14181f",
+    borderHex: "#2F96B4",
+    textPrimaryHex: "#ffffff",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#009ee8",
+    accentSecondaryHex: "#80fff2",
+    borderRadiusPx: 8,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo:
+      "AutoPosing AI 관절 자동 추론 + AutoPhysics 무게중심(Center of Mass)·각운동량·탄도 궤적 물리 보정",
+    keyRoutes: ["/", "/creative/list", "/preview"],
+  },
+  krea: {
+    platformId: "krea",
+    nameKo: "Krea AI Realtime Director",
+    originUrl: "https://www.krea.ai/",
+    reaEvidenceId: "ev_3fbbde1134e1842d9c5306aa04efaab4604118ad3f3a9452245fcccceda86af9",
+    scenarioSha256: "bd928d2c4b5440618916390f1b17eca190c8445bb0982caf39b1d75c210b8440",
+    surfaceHex: "#050505",
+    panelHex: "#0a0a0a",
+    borderHex: "#262626",
+    textPrimaryHex: "#f5f5f5",
+    textMutedHex: "#646464",
+    accentPrimaryHex: "#c4956a",
+    accentSecondaryHex: "#6b9e7a",
+    borderRadiusPx: 12,
+    fontStack: "Inter, Geist, sans-serif",
+    coreWorkflowKo:
+      "실시간 도형·3D·브러시 캔버스 → AI 즉시 합성(/realtime, /realtime-director) + 업스케일·디테일 강화(/apps/enhance, /apps/image/flux-krea)",
+    keyRoutes: ["/realtime", "/realtime-director", "/apps/image/flux-krea", "/apps/enhance", "/image", "/video"],
+  },
+  "leonardo-ai": {
+    platformId: "leonardo-ai",
+    nameKo: "Leonardo.Ai Canvas & Flow",
+    originUrl: "https://leonardo.ai/",
+    reaEvidenceId: "ev_aba9a01e0b16e259d691e1c2b1a8a07555a0fb6123a613e7e4d2e52b5c65271b",
+    scenarioSha256: "eafbf44f53c4c57edb70bd4fee34aa9afe3ac4905aa059e3c4fde5e618d24de3",
+    surfaceHex: "#0d0f17",
+    panelHex: "#171a26",
+    borderHex: "#313131",
+    textPrimaryHex: "#f3f4f6",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#8b5cf6",
+    accentSecondaryHex: "#ec4899",
+    borderRadiusPx: 12,
+    fontStack: "Plus Jakarta Sans, Inter, sans-serif",
+    coreWorkflowKo: "Realtime Canvas 인페인팅·아웃페인팅 + Character Reference/Style Reference 멀티 가중치 제어",
+    keyRoutes: ["/"],
+  },
+  gentoon: {
+    platformId: "gentoon",
+    nameKo: "GenToon (젠툰)",
+    originUrl: "https://www.gentoon.ai/",
+    reaEvidenceId: "ev_e62beed518f1e75ad009869facc63f7acfee12f6116364a44b714551e07027de",
+    scenarioSha256: "622b3fbbab14dcc8705ea68c675d65b1f4615f06ad7367f1a23e121f9b51711f",
+    surfaceHex: "#f4ebfc",
+    panelHex: "#e7d7f6",
+    borderHex: "#6f5486",
+    textPrimaryHex: "#40215f",
+    textMutedHex: "#6f5486",
+    accentPrimaryHex: "#7646bd",
+    accentSecondaryHex: "#ffe9a4",
+    borderRadiusPx: 14,
+    fontStack: "Pretendard, sans-serif",
+    coreWorkflowKo:
+      "읽기 방향 제어(--reading-direction:1, --paper:#f4ebfc, --ink:#40215f) 웹툰 뷰어(/view) + 서포터즈·굿즈 주문·크리에이터 정산(/supporters, /goods/orders, /creator-hub/earnings)",
+    keyRoutes: ["/view", "/supporters", "/goods/orders", "/creator-hub/earnings", "/achievements"],
+  },
+  tootoon: {
+    platformId: "tootoon",
+    nameKo: "TooToon (투툰 · Onoma AI)",
+    originUrl: "https://tootoon.ai/",
+    reaEvidenceId: "ev_ed83b1f1e6e9d943e547c3e705e1bec9ed1149c34e008ac9526cc99e9d0986bf",
+    scenarioSha256: "0fd9e464f594a4dba361c16012e16908c9d945f3c12e12502e05e9f2fca53d72",
+    surfaceHex: "#121212",
+    panelHex: "#1F1F1F",
+    borderHex: "#333333",
+    textPrimaryHex: "#ffffff",
+    textMutedHex: "#B3B3B3",
+    accentPrimaryHex: "#363cff",
+    accentSecondaryHex: "#4285F4",
+    borderRadiusPx: 12,
+    fontStack: "Pretendard, Inter, sans-serif",
+    coreWorkflowKo:
+      "5대 전문 스튜디오 모듈: Fabulator(/fabulator 스토리) → Character Studio(/character-studio) → Visual Studio(/visual-studio 콘티) → Artifex(/artifex 작화) → Emporium(/emporium 에셋 마켓) & Anima 피드(/anima/feed/list)",
+    keyRoutes: [
+      "/fabulator",
+      "/character-studio",
+      "/visual-studio",
+      "/artifex",
+      "/emporium",
+      "/anima/feed/list",
+    ],
+  },
+  "tooning-plus": {
+    platformId: "tooning-plus",
+    nameKo: "Tooning Plus (투닝 플러스)",
+    originUrl: "https://tooning.io/",
+    reaEvidenceId: "ev_fb15db7d87f332c7a168570f1ae75041b2dffb840b74dd24ea17286716434865",
+    scenarioSha256: "64e77ab9486e3fb6f873d2aff54cb139f970068916557440a4b4cae3352f7eeb",
+    surfaceHex: "#f7f7f7",
+    panelHex: "#ffffff",
+    borderHex: "#eaeaea",
+    textPrimaryHex: "#424242",
+    textMutedHex: "#969696",
+    accentPrimaryHex: "#3b82f6",
+    accentSecondaryHex: "#c1c4cd",
+    borderRadiusPx: 12,
+    fontStack: "Pretendard, sans-serif",
+    coreWorkflowKo:
+      "6부위 모듈형 캐릭터 빌더(/character-make-basic, -face, -body, -hand, -hair, -etc) + 커스텀 에셋 업로드(/etcUpload-make-addOrSet) + /100x 고속 컷 제작",
+    keyRoutes: [
+      "/100x",
+      "/character-make-basic",
+      "/character-make-face",
+      "/character-make-body",
+      "/character-make-hand",
+      "/character-make-hair",
+      "/character-make-etc",
+    ],
+  },
+  enkava: {
+    platformId: "enkava",
+    nameKo: "Enkava (엔카바)",
+    originUrl: "https://enkava.com/",
+    reaEvidenceId: "ev_bd2f37c70899ba98a372d30c7fa86b64247954bc03156764a19d7b88de10d1b6",
+    scenarioSha256: "6ab5faccdeda58e09d95097208c57124389672f69b465e805f8087340d0a119a",
+    surfaceHex: "#101218",
+    panelHex: "#181c24",
+    borderHex: "#2a303c",
+    textPrimaryHex: "#f3f4f6",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#6366f1",
+    accentSecondaryHex: "#22d3ee",
+    borderRadiusPx: 10,
+    fontStack: "Pretendard, Inter, sans-serif",
+    coreWorkflowKo: "국내 서브컬처·웹툰 창작자 에셋 & 커미션·협업 스테이지",
+    keyRoutes: ["/"],
+  },
+  jitter: {
+    platformId: "jitter",
+    nameKo: "Jitter Motion Design",
+    originUrl: "https://jitter.video/",
+    reaEvidenceId: "ev_2d1aa187b94021f527b0d3ac70f50d79b4b747935d04c55d4f5dd1b2fcd69a91",
+    scenarioSha256: "90e125c7bb09b1c1e9bc3788c7a437cce97de4d1f4f2449d0c26e92e78cfc31d",
+    surfaceHex: "#19171C",
+    panelHex: "#232028",
+    borderHex: "#36313d",
+    textPrimaryHex: "#FFFFFF",
+    textMutedHex: "#b3b3b3",
+    accentPrimaryHex: "#7A40ED",
+    accentSecondaryHex: "#a855f7",
+    borderRadiusPx: 12,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "레이어드 아트보드 → 모션 프리셋 애니메이션 → 무손실 4K/Lottie/무빙툰 루프 익스포트",
+    keyRoutes: ["/"],
+  },
+  "lumiere-graphics": {
+    platformId: "lumiere-graphics",
+    nameKo: "Lumiere Graphics WebGPU Shaders",
+    originUrl: "https://lumiere.graphics/",
+    reaEvidenceId: "ev_1b6dac1de41311e357dbbcffe8ac3a0152ac8a38566670b69e64cce0c2819387",
+    scenarioSha256: "a8299ab08f35cbf13becd96d6b8e267a570eacdec7010f1c015f5ce299e160b1",
+    surfaceHex: "#0e0c13",
+    panelHex: "#181520",
+    borderHex: "#2d273b",
+    textPrimaryHex: "#f8fafc",
+    textMutedHex: "#a1a1aa",
+    accentPrimaryHex: "#ff5a31",
+    accentSecondaryHex: "#9a86fc",
+    borderRadiusPx: 10,
+    fontStack: "Geist, Inter, sans-serif",
+    coreWorkflowKo:
+      "실시간 WebGPU 비파괴 포스트프로세싱: Kuwahara 회화 필터 · 필름 Halation · 아나모픽 Glare · CRT/디더링 셰이더 체인",
+    keyRoutes: ["/", "/changelog", "/roadmap"],
+  },
+  "graphite-editor": {
+    platformId: "graphite-editor",
+    nameKo: "Graphite Procedural Node Editor",
+    originUrl: "https://graphite.rs/",
+    reaEvidenceId: "ev_635a2c265c07c191273b2a7a893507c0495e7b3498aedfdc6f91471adfaa2f86",
+    scenarioSha256: "db99212fb5132845e7743ddaefe217063847e305b61d23ea8c1464d53914e39b",
+    surfaceHex: "#111111",
+    panelHex: "#222222",
+    borderHex: "#333333",
+    textPrimaryHex: "#dddddd",
+    textMutedHex: "#888888",
+    accentPrimaryHex: "#e08838",
+    accentSecondaryHex: "#4992d6",
+    borderRadiusPx: 6,
+    fontStack: "Source Sans Pro, Inter, sans-serif",
+    coreWorkflowKo: "Rust/WASM 기반 비파괴 벡터·래스터 하이브리드 노드 그래프 컴포지터",
+    keyRoutes: ["/", "/api/event"],
+  },
+  pixieditor: {
+    platformId: "pixieditor",
+    nameKo: "PixiEditor Universal 2D",
+    originUrl: "https://pixieditor.net/",
+    reaEvidenceId: "ev_beb60ae9754671115d8cea321a358724b7601c0967065663192d4d6435f9b919",
+    scenarioSha256: "1e017e75b925ae2fd960d81fe79c01e787e3bc5da2350c8d241eaf727a572cae",
+    surfaceHex: "#111214",
+    panelHex: "#15171a",
+    borderHex: "#23262b",
+    textPrimaryHex: "#DCDCDC",
+    textMutedHex: "#80848E",
+    accentPrimaryHex: "#F3C31A",
+    accentSecondaryHex: "#302c24",
+    borderRadiusPx: 8,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo:
+      "노드 그래프 + 레이어 스택 + 프레임 바이 프레임 애니메이션 + 커스텀 셰이더를 통합한 범용 2D 파이프라인",
+    keyRoutes: ["/docs", "/extensions", "/colorpicker", "/download"],
+  },
+  spline: {
+    platformId: "spline",
+    nameKo: "Spline 3D & Hana",
+    originUrl: "https://spline.design/",
+    reaEvidenceId: "ev_3171b5f912972cab97571d062102a47b20a00293a0d49b5c5b272001a948b32f",
+    scenarioSha256: "773b0e108cf1f9f9a73bf9f4d3d2963f107cfda96c63d8538516f3b847940e2b",
+    surfaceHex: "#000000",
+    panelHex: "#121316",
+    borderHex: "#363636",
+    textPrimaryHex: "#ffffff",
+    textMutedHex: "#e0e0e0",
+    accentPrimaryHex: "#5865F2",
+    accentSecondaryHex: "#38E2B3",
+    borderRadiusPx: 12,
+    fontStack: "Spline Sans, Inter, sans-serif",
+    coreWorkflowKo:
+      "브라우저 실시간 3D 디자인(/3d-design) + AI 3D 생성(/ai-generate) + AI 스타일 트랜스퍼(/ai-style-transfer) + Hana 2D/3D 인터랙티브 캔버스(/hana) + MCP 연동(/mcp)",
+    keyRoutes: ["/3d-design", "/hana", "/ai-generate", "/ai-style-transfer", "/mcp"],
+  },
+  rive: {
+    platformId: "rive",
+    nameKo: "Rive Interactive State Machine",
+    originUrl: "https://rive.app/",
+    reaEvidenceId: "ev_0694fab590921fecb24ca0a5ebddb7cadf52273043897a3ef0dfabf38c70b4b7",
+    scenarioSha256: "2b2493ee53f3ffc4f86ffb3665abf059724e92366389224402a5fad471c3e721",
+    surfaceHex: "#070708",
+    panelHex: "#0d0d0f",
+    borderHex: "#222328",
+    textPrimaryHex: "#FFFFFF",
+    textMutedHex: "#a5a5a5",
+    accentPrimaryHex: "#0099FF",
+    accentSecondaryHex: "#FF483C",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "2D 본·메쉬 디포메이션 리그 + 스크롤/터치 입력 반응형 인터랙티브 상태머신(State Machine)",
+    keyRoutes: ["/"],
+  },
+  "medibang-paint": {
+    platformId: "medibang-paint",
+    nameKo: "MediBang Paint",
+    originUrl: "https://medibangpaint.com/",
+    reaEvidenceId: "ev_2a409645bc383af67c30cc72cde5c63397b4dce431ece4ff762d8e022ec1f6a4",
+    scenarioSha256: "718f21e20611bef71c3c1d6a04536e0c716759221cfce38899c30ac2bd3fb636",
+    surfaceHex: "#313131",
+    panelHex: "#242424",
+    borderHex: "#444444",
+    textPrimaryHex: "#ffffff",
+    textMutedHex: "#cccccc",
+    accentPrimaryHex: "#007cba",
+    accentSecondaryHex: "#7a00df",
+    borderRadiusPx: 8,
+    fontStack: "Noto Sans JP, Pretendard, sans-serif",
+    coreWorkflowKo: "만화 컷 칼날 분할 + 클라우드 스크린톤/브러시 동기화 + 스냅 가이드 자(Ruler)",
+    keyRoutes: ["/"],
+  },
+  ibispaint: {
+    platformId: "ibispaint",
+    nameKo: "ibisPaint",
+    originUrl: "https://ibispaint.com/",
+    reaEvidenceId: "ev_75aa161f8a02eefbfba96631394b51d6a228d049f24e13988c400022dd674eab",
+    scenarioSha256: "b69e291c96ef70a7ee63d76f2ea642246f5c888efe04ba4d28e883f8efae4b4a",
+    surfaceHex: "#dbe2e7",
+    panelHex: "#FFFFFF",
+    borderHex: "#CCCCCC",
+    textPrimaryHex: "#525559",
+    textMutedHex: "#666666",
+    accentPrimaryHex: "#006699",
+    accentSecondaryHex: "#ff6699",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "타임랩스 작화 리플레이 기록 + 만화 배경 필터(Anime Background) + 손떨림 보정 스트로크 안정화",
+    keyRoutes: ["/"],
+  },
+  "clip-studio-paint": {
+    platformId: "clip-studio-paint",
+    nameKo: "Clip Studio Paint",
+    originUrl: "https://www.clipstudio.net/en/",
+    reaEvidenceId: "ev_6ef8739eb39c554d45fe2735be7bec6323b81dd6636cecd4de13ff339dff673d",
+    scenarioSha256: "b8006fa8e94809251353b459d1490ccd467cbc285116d0d0eb3494ae1b68aa2d",
+    surfaceHex: "#1B1E24",
+    panelHex: "#262930",
+    borderHex: "#3a3f4a",
+    textPrimaryHex: "#f4f4f4",
+    textMutedHex: "#b7b7b7",
+    accentPrimaryHex: "#0B96E3",
+    accentSecondaryHex: "#61B001",
+    borderRadiusPx: 6,
+    fontStack: "Inter, Pretendard, sans-serif",
+    coreWorkflowKo: "벡터 지우개 교차점 절단 + 참조 레이어 틈새 닫기 채우기 + 3D 데생 인형/음영 어시스트",
+    keyRoutes: ["/", "/releases/v"],
+  },
+  acon3d: {
+    platformId: "acon3d",
+    nameKo: "ACON3D (에이콘3D)",
+    originUrl: "https://www.acon3d.com/",
+    reaEvidenceId: "ev_c58fac87f1de010c366346d3f144baed81b0de4a7ae5e310fa4ace18c1ae617b",
+    scenarioSha256: "9af0c6f2143b88c164e34c7f65f3abfd3fe5e153c6b847f325f511421094ec38",
+    surfaceHex: "#18181b",
+    panelHex: "#27272a",
+    borderHex: "#313131",
+    textPrimaryHex: "#f4f4f5",
+    textMutedHex: "#a1a1aa",
+    accentPrimaryHex: "#6366f1",
+    accentSecondaryHex: "#ec4899",
+    borderRadiusPx: 10,
+    fontStack: "Pretendard, sans-serif",
+    coreWorkflowKo: "웹툰 전용 스케치업·블렌더·스냅툰 3D 배경 카탈로그 & 동적 컴포넌트(문/창문/조명) 제어",
+    keyRoutes: ["/"],
+  },
+  "webtoon-canvas": {
+    platformId: "webtoon-canvas",
+    nameKo: "WEBTOON CANVAS",
+    originUrl: "https://www.webtoons.com/en/canvas",
+    reaEvidenceId: "ev_054b1489efcd0052fd9893f98109861b735650a268d87a777e36a0de7fb781c3",
+    scenarioSha256: "6250ba8e36382b5015267440225dcaaf359e101aae6e4e939656f3112cba9b0f",
+    surfaceHex: "#121212",
+    panelHex: "#1e1e1e",
+    borderHex: "#2e2e2e",
+    textPrimaryHex: "#ffffff",
+    textMutedHex: "#999999",
+    accentPrimaryHex: "#00dc64",
+    accentSecondaryHex: "#00ff74",
+    borderRadiusPx: 8,
+    fontStack: "Pretendard, Hind, sans-serif",
+    coreWorkflowKo:
+      "800×1280px 세로 슬라이스 20MB 규격 검수 + 에피소드 썸네일/시리즈 배너 패키징 + 글로벌 독자 퍼블리싱",
+    keyRoutes: ["/en/canvas", "/creative/list", "/preview"],
+  },
 });
+
+export const REA39_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 
 /* ============================================================================
  * 1. GlimNavi Studio v2.3 — 5종 선화 워크플로우 · 6종 표현 프리셋 · 컬러 레이어 분리 · Relight
@@ -598,6 +1090,145 @@ export type CreativeDopamineAndUxSynthesizerReport = z.infer<
 >;
 
 /* ============================================================================
+ * 6. TooToon 5-Studio(fabulator~emporium) · GenToon 뷰어/굿즈 · Tooning Plus 6부위 캐릭터 디렉터
+ * ============================================================================ */
+
+export const TOOTOON_STUDIO_MODULES = [
+  "fabulator",
+  "character-studio",
+  "visual-studio",
+  "artifex",
+  "emporium",
+] as const;
+
+export const TOONING_CHARACTER_PART_ROUTES = [
+  "/character-make-basic",
+  "/character-make-face",
+  "/character-make-body",
+  "/character-make-hand",
+  "/character-make-hair",
+  "/character-make-etc",
+] as const;
+
+export const TootoonGentoonTooningKrSuiteSchema = z.object({
+  suiteSummaryKo: z.string(),
+  tootoonFiveStudios: z.array(
+    z.object({
+      moduleId: z.enum(TOOTOON_STUDIO_MODULES),
+      routePath: z.string(),
+      stageTitleKo: z.string(),
+      deliverableSummaryKo: z.string(),
+    }),
+  ),
+  gentoonReaderAndCommerce: z.object({
+    readingDirection: z.enum(["vertical-scroll-1", "paged-ltr-0", "paged-rtl-2"]),
+    paperHex: z.string(),
+    inkHex: z.string(),
+    violetAccentHex: z.string(),
+    recommendedGoodsItems: z.array(
+      z.object({
+        skuId: z.string(),
+        goodsNameKo: z.string(),
+        targetSupporterTierKo: z.string(),
+        estimatedMarginPct: z.number(),
+      }),
+    ),
+  }),
+  tooningSixPartCharacterRecipe: z.array(
+    z.object({
+      partRoute: z.enum(TOONING_CHARACTER_PART_ROUTES),
+      partLabelKo: z.string(),
+      selectedPresetSummaryKo: z.string(),
+      consistencyLockScorePct: z.number(),
+    }),
+  ),
+});
+
+export type TootoonGentoonTooningKrSuiteReport = z.infer<
+  typeof TootoonGentoonTooningKrSuiteSchema
+>;
+
+/* ============================================================================
+ * 7. Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere/Graphite/PixiEditor 셰이더 디렉터
+ * ============================================================================ */
+
+export const KreaSplineLumiereRealtimeShaderSchema = z.object({
+  realtimePipelineSummaryKo: z.string(),
+  kreaRealtimeDirector: z.object({
+    activeRoute: z.enum(["/realtime", "/realtime-director", "/apps/image/flux-krea", "/apps/enhance"]),
+    i2iDenoiseStrength: z.number(),
+    enhanceUpscaleFactor: z.number(),
+    blockingPrimitiveCount: z.number(),
+    directorCoachingKo: z.string(),
+  }),
+  spline3dAndHanaBridge: z.object({
+    activeRoute: z.enum(["/3d-design", "/hana", "/ai-generate", "/ai-style-transfer", "/mcp"]),
+    styleTransferPresetKo: z.string(),
+    cameraOrbitAzimuthDeg: z.number(),
+    cameraOrbitElevationDeg: z.number(),
+    interactiveStateTriggerKo: z.string(),
+  }),
+  lumiereAndNodeGraphShaders: z.object({
+    kuwaharaPaintRadiusPx: z.number(),
+    filmHalationIntensityPct: z.number(),
+    anamorphicGlareStreakPct: z.number(),
+    graphiteProceduralNodeCount: z.number(),
+    pixiEditorFrameLoopCount: z.number(),
+    compositeShaderNoteKo: z.string(),
+  }),
+});
+
+export type KreaSplineLumiereRealtimeShaderReport = z.infer<
+  typeof KreaSplineLumiereRealtimeShaderSchema
+>;
+
+/* ============================================================================
+ * 8. LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터
+ * ============================================================================ */
+
+export const LtxBoordsCascadeurRiveAnimaticSchema = z.object({
+  animaticExecutiveSummaryKo: z.string(),
+  ltxAndBoordsAnimaticShots: z.array(
+    z.object({
+      shotNumber: z.number(),
+      cameraMove: z.enum([
+        "dolly-in",
+        "whip-pan",
+        "crane-up",
+        "dutch-tilt-push",
+        "tracking-orbit",
+      ]),
+      durationMs: z.number(),
+      voiceoverBeatKo: z.string(),
+      visualTransitionKo: z.string(),
+    }),
+  ),
+  cascadeurPhysicsRig: z.object({
+    autoPosingConfidencePct: z.number(),
+    centerOfMassHeightCm: z.number(),
+    ballisticTrajectoryArcKo: z.string(),
+    angularMomentumTorqueNm: z.number(),
+    secondaryClothHairFollowThroughKo: z.string(),
+  }),
+  riveAndJitterStateMachine: z.object({
+    stateMachineName: z.string(),
+    scrollTriggerThresholdPct: z.number(),
+    states: z.array(
+      z.object({
+        stateName: z.string(),
+        triggerConditionKo: z.string(),
+        meshDeformationSummaryKo: z.string(),
+        loopFps: z.number(),
+      }),
+    ),
+  }),
+});
+
+export type LtxBoordsCascadeurRiveAnimaticReport = z.infer<
+  typeof LtxBoordsCascadeurRiveAnimaticSchema
+>;
+
+/* ============================================================================
  * 공통 실행 엔벨로프 및 통합 번들
  * ============================================================================ */
 
@@ -633,4 +1264,7 @@ export interface Rea15FullSuiteBundle {
   readonly snaptoonFrameoShaper3d: Rea15Envelope<SnaptoonFrameoShaper3dDirectorReport>;
   readonly manhwaKomikoAnifusionFlow: Rea15Envelope<ManhwaKomikoAnifusionFlowReport>;
   readonly creativeDopamineUxSynthesizer: Rea15Envelope<CreativeDopamineAndUxSynthesizerReport>;
+  readonly tootoonGentoonTooningKrSuite: Rea15Envelope<TootoonGentoonTooningKrSuiteReport>;
+  readonly kreaSplineLumiereRealtimeShader: Rea15Envelope<KreaSplineLumiereRealtimeShaderReport>;
+  readonly ltxBoordsCascadeurRiveAnimatic: Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport>;
 }
