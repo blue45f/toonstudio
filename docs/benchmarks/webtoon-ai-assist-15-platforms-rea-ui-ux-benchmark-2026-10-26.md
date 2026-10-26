@@ -202,11 +202,12 @@
 | **SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 멀티협업 · Recraft/Cara 스튜디오** | `3dwarehouse.sketchup.com`, `blender.org`, `petalica.com`, `comicsmaker.ai`, `magma.com`, `playground.com`, `recraft.ai`, `cara.app` | SketchUp SKP 동적 컴포넌트 & Blender Grease Pencil 3D 공간 2D 작화 + Petalica 힌트 스트로크 자동 채색 + Magma 6인 실시간 역할 분담 + Recraft V3 순수 SVG 마법진/효과음 + Cara NoAI/Glaze 보호 |
 | **Tapas · Tappytoon · RIDI · Postype 글로벌 연재 & Sudowrite · Novelcrafter · Campfire 코덱스** | `tapas.io`, `tappytoon.com`, `ridibooks.com`, `postype.com`, `sudowrite.com`, `novelcrafter.com`, `campfirewriting.com`, `milanote.com`, `pureref.com` | Tapas WUF/Ink · Tappytoon Club · 리디 노블코믹스 · 포스타입 멤버십 수익 모델 + Sudowrite 대본 압축 + Novelcrafter Codex + Campfire 세계관 타임라인 + Milanote/PureRef 무드보드 |
 | **Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle** | `mixamo.com`, `marvelousdesigner.com`, `adobe.com/products/substance3d`, `coolors.co`, `color.adobe.com`, `noonnu.cc`, `blambot.com`, `toonboom.com`, `tvpaint.com`, `moho.lostmarble.com`, `en.eagle.cool` | Mixamo 60fps 모캡 리타게팅 + Marvelous 의상 주름 노말맵 + Substance 3D 툰 재질 + Coolors/Adobe Color 감정 팔레트 + 눈누/Blambot 한영 식자 + ToonBoom/TVPaint CTG/Moho Smart Bone + Eagle 컬러 스마트 폴더 |
-| **창의적 신규 AI 기능 (Claude Live 연동)** | 100대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **100대 플랫폼 UI/UX 테마 토큰 합성기** + **16대 비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
+| **웹툰 일관성 확보(Webtoon Consistency) 7대 DNA 가드레일 & 6대 창의 AI 엔진** | `StudioAiCharacterConsistencyPanel.tsx`, `claude-phase6-ecosystem-suite.ts`, `claude-webtoon-episodic-doctor.ts` | **7대 일관성 DNA 락**(안면 골격·가르마 방향·비대칭 복식/흉터 좌우반전 금지·손 대비 무기 비례·180° 시선 축/신장 차·고유색 Albedo·부상 누적) + **비대칭 복식·흉터·무기 비례·부상 원장(`Sonnet 5.5`)** + **180° 시선 축·신장 차이 감독(`Opus 5.5`)** + **컷간 고유색 Albedo 고정기(`Haiku 5.5`)** + **FACS 미세 표정·시선 궤적 연속성 디렉터(`Sonnet 5.5`)** + **전 회차 작붕 검출 린터(`Opus 5.5`)** + **장편 연재(1~100화) 캐논 메모리 볼트(`Sonnet 5.5`)** |
+| **창의적 신규 AI 기능 (Claude Live 연동 · 총 57개 스마트 라우팅 태스크)** | 100대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **100대 플랫폼 UI/UX 테마 토큰 합성기** + **총 57개(`fast-inline` 11 · `creative-production` 29 · `deep-architecture` 17) Task-Aware Smart Model Router 실시간 구조화 출력 및 결정적 폴백** |
 
 ---
 
-## 5. 실시간 Claude API (`claude-haiku-5-5` · `claude-sonnet-5-5` · `claude-opus-5-5`) 구조화 출력 검증 결과 (2026-10-26)
+## 5. 실시간 Claude API (`claude-haiku-5-5` · `claude-sonnet-5-5` · `claude-opus-5-5`) 구조화 출력 검증 결과 (2026-10-26 ~ 2026-10-27)
 
 | 엔진 ID | 라우팅 프로필 | 실행 모델 | 실행 소스 | 입력 토큰 | 출력 토큰 | 추정 비용 (USD) | 실시간 생성 결과 요약 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -220,6 +221,18 @@
 | `rea15:ltx-boords-cascadeur-rive-animatic` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 326 | 2,604 | `$0.060324` | 3샷 애니매틱(돌리인·더치틸트·트래킹오빗) + Cascadeur 도약 탄도/토크 물리 리그 + Rive/Jitter 스크롤 상태머신 설계 |
 | `rea15:cotrans-vroid-skybox-world-localizer` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 294 | 989 | `$0.014386` | Cotrans 말풍선 KO/EN/JA 인페인팅·세로식자 + VRoid VRM 1.0 MToon/스프링본 + 8K 360° 황궁 유물 스카이박스 설계 |
 | `rea15:storyboarder-dreams-krita-artbreeder-director` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 289 | 1,523 | `$0.038506` | Shot Generator 35mm 블로킹 + Procreate Dreams 120Hz 퍼포밍 + Krita ControlNet 스택 + Artbreeder 유전자 슬라이더 2종 |
+| `rea15:niji-pixai-civitai-lora-sref-director` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 98 | 300 | `$0.004794` | Niji 7 `--sref`/`--cref`/`--cw 100` 레퍼런스 락 + Civitai/PixAI 멀티 LoRA + Picrew 색상 락 |
+| `rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 104 | 300 | `$0.009060` | Tripo3D/Meshy PBR 3D 무기 프롭 + HeroForge 2인 대치 + Suno v4 OST + ElevenLabs 더빙 + MANGA Plus OSMU |
+| `rea15:runway-luma-pika-viggle-live2d-spine-motion` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 99 | 300 | `$0.004797` | Runway Gen-3 모션브러시 + Luma 키프레임 + Pika 립싱크 + Viggle 모션전이 + Live2D/Spine 무빙툰 리깅 |
+| `rea15:sketchup-blender-petalica-magma-recraft-studio` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 101 | 300 | `$0.004803` | SketchUp 동적 컴포넌트 + Blender Grease Pencil + Petalica 3종 채색 + Magma 협업 + Recraft SVG + Cara Glaze |
+| `rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 93 | 320 | `$0.009395` | Tapas·Tappytoon·RIDI·Postype 글로벌 연재 규격 및 Sudowrite/Novelcrafter/Campfire 코덱스 바이블 동기화 |
+| `rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 102 | 320 | `$0.005106` | Mixamo 3D 모션·Marvelous 의상 주름·Substance 툰셰이더·Coolors 배색·눈누/Blambot 식자·ToonBoom/Eagle 통합 |
 | `ecosystem:glimnavi-color-hint-stroke` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 290 | 1,089 | `$0.000807` | Close-Gap 허용치 및 브러시 색상 힌트 스트로크 좌표 생성 |
 | `ecosystem:novelai-multi-char-vibe` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 319 | 1,681 | `$0.020964` | 2인 주연 X/Y 바운딩박스 분리 및 Vibe Transfer 가중치 설계 |
 | `ecosystem:novel-adaptation-ip-expansion` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 303 | 2,580 | `$0.064112` | 웹소설 산문 압축 각색 및 드라마·애니·게임·오디오웹툰 OSMU 스코어카드 도출 |
+| `ecosystem:asymmetric-costume-prop-wound-ledger` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 144 | 320 | `$0.005232` | 왼눈 흉터·오른손 흑철검·왼허리 검집 좌우반전 0% 고정 및 망토 파손·부상 누적 원장 도출 |
+| `ecosystem:camera-axis-eyeline-height-lock` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 103 | 320 | `$0.009545` | 180° 시선 축(Side-A) 고정 및 서진(184cm)·하윤(168cm) 신장 차이(16cm) 로우/하이앵글 원근 보정 |
+| `ecosystem:cross-cut-color-script-albedo-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 102 | 320 | `$0.001362` | 야간 달빛(4,100K) 역광 환경에서 피부톤·의상 고유색(Albedo HEX) Delta-E ≤ 1.4 고정 |
+| `ecosystem:micro-expression-acting-continuity` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 105 | 320 | `$0.005115` | 컷간 FACS 안면 근육(AU4+AU7 / AU1+2)·동공 수축·시선 궤적 및 감정 관성(Emotional Inertia) 설계 |
+| `nextgen:visual-continuity-linter` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 114 | 320 | `$0.009710` | 전 회차 컷간 4대 작붕(흉터/검집 반전·소품 증발·부상 초기화·그림자 역방향) 검출 린터 |
+| `nextgen:multi-episode-canon-vault` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 108 | 320 | `$0.005124` | 장편 연재(1~50화) 캐릭터 외형 변천·호칭 매트릭스·미회수 복선(회중시계 고대 룬) 캐논 볼트 동기화 |

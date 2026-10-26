@@ -63,4 +63,38 @@ describe("StudioAiCharacterConsistencyPanel", () => {
     expect(screen.getByAltText("기준 캐릭터 미리보기")).toBeTruthy();
     expect(screen.getByRole("button", { name: "같은 캐릭터로 생성" })).toBeTruthy();
   });
+
+  it("synthesizes and injects 7-layer Webtoon Consistency DNA lock tags and multi-angle presets into prompt", () => {
+    const onPromptChange = vi.fn();
+    render(
+      <StudioAiCharacterConsistencyPanel
+        configured
+        hasReference
+        referenceThumbnail="data:image/png;base64,AA=="
+        prompt="빗속에서 검을 뽑는 서진"
+        onPromptChange={onPromptChange}
+        busy={false}
+        error={null}
+        onGenerate={vi.fn()}
+        onRequestSelectReference={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("webtoon-consistency-7layer-guard")).toBeTruthy();
+    expect(screen.getByTestId("consistency-guardrail-score-badge").textContent).toContain("62점");
+
+    // 부상 누적 락 추가 활성화 + 로우앵글 선택
+    fireEvent.click(screen.getByTestId("consistency-lock-toggle-cumulative-wound-state"));
+    expect(screen.getByTestId("consistency-guardrail-score-badge").textContent).toContain("74점");
+
+    fireEvent.click(screen.getByTestId("consistency-angle-low-angle-hero"));
+    fireEvent.click(screen.getByTestId("inject-consistency-dna-prompt-btn"));
+
+    expect(onPromptChange).toHaveBeenCalledOnce();
+    const injectedPrompt = onPromptChange.mock.calls[0]?.[0] as string;
+    expect(injectedPrompt).toContain("빗속에서 검을 뽑는 서진");
+    expect(injectedPrompt).toContain("지면 로우앵글(24mm 광각) 각성 구도");
+    expect(injectedPrompt).toContain("비대칭 흉터·장신구·검집 미러링 절대 금지");
+    expect(injectedPrompt).toContain("의상 찢김·혈흔·땀방울 상태 초기화 금지");
+  });
 });

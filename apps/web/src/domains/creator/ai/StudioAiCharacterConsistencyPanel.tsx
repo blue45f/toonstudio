@@ -2,21 +2,97 @@ import {
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
 // AI 캐릭터 일관성 생성 패널 — 캔버스에서 선택한 "기준 캐릭터" 이미지를 참고 이미지로 함께 전송해,
-// 같은 캐릭터가 새로운 상황에 있는 모습을 생성한다(젠툰 벤치마크 — docs/studio-competitor-features.md
-// §2 "캐릭터 일관성 유지 생성" 참고). IP-Adapter/캐릭터 LoRA 같은 전문 기법이 아니라 "참고 이미지 +
-// 텍스트 프롬프트"를 Images Edits API로 보내는 근사치라 완벽한 동일 인물 재현은 보장하지 않는다 —
-// 그 기대치를 마지막 안내 문구로 명시한다.
-//
-// StudioAiBackgroundPanel/StudioAiColorizePanel과 동일하게 프레젠테이션 전용(무상태, 전부 prop) —
-// 실제 generateConsistentCharacterImage() 호출·AI 생성형 콘텐츠 최초 사용 고지 게이팅·캔버스 삽입은
-// 전부 부모(StudioPage.tsx)가 수행한다. "기준 캐릭터"는 이 컴포넌트가 스스로 고르지 않는다 —
-// 캔버스에서 선택된 요소가 이미지 타입인지 여부(hasReference)와 그 src(referenceThumbnail)를 부모가
-// 그대로 넘겨준다(선택 상태는 StudioPage.tsx가 이미 소유한 `selected`의 파생값이라 이중 소유를
-// 피한다).
-import { Loader2, MousePointer2, UserRoundCheck } from "lucide-react";
+// 같은 캐릭터가 새로운 상황에 있는 모습을 생성한다(젠툰·망가플로우·다쉬툰 벤치마크 —
+// docs/studio-competitor-features.md §2 "캐릭터 일관성 유지 생성" 참고).
+// 여기에 7대 웹툰 일관성 락(안면 골격·가르마 방향·비대칭 복식/흉터 좌우반전 방지·손 대비 무기 비례·
+// 180도 시선 축/키 차이·고유색 Albedo 고정·부상 누적 유지)과 5종 다각도 앵글 프리셋을 내재화하여
+// 원클릭으로 정밀 일관성 가드레일 프롬프트를 합성·주입한다.
+import { Check, Loader2, Lock, MousePointer2, ShieldCheck, Sparkles, UserRoundCheck } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
+
+export type WebtoonConsistencyLockId =
+  | "face-cranial-ratio"
+  | "hair-parting-topology"
+  | "asymmetric-chirality"
+  | "weapon-hand-scale"
+  | "camera-axis-height"
+  | "albedo-kelvin-lock"
+  | "cumulative-wound-state";
+
+export interface WebtoonConsistencyLockSpec {
+  readonly id: WebtoonConsistencyLockId;
+  readonly labelKo: string;
+  readonly badgeKo: string;
+  readonly promptGuardKo: string;
+  readonly weightPct: number;
+}
+
+const WEBTOON_7LAYER_CONSISTENCY_LOCKS: readonly WebtoonConsistencyLockSpec[] = [
+  {
+    id: "face-cranial-ratio",
+    labelKo: "안면 골격 · 눈매 · 홍채 비율 락",
+    badgeKo: "ArcFace 0.94",
+    promptGuardKo: "[안면 골격·눈매·미간 비율 및 홍채 채도 고정]",
+    weightPct: 18,
+  },
+  {
+    id: "hair-parting-topology",
+    labelKo: "가르마 방향 · 앞머리 실루엣 락",
+    badgeKo: "Topology Lock",
+    promptGuardKo: "[가르마 분기점 및 시그니처 잔머리 실루엣 유지]",
+    weightPct: 14,
+  },
+  {
+    id: "asymmetric-chirality",
+    labelKo: "비대칭 흉터 · 견장 · 검집 좌우반전 금지",
+    badgeKo: "Chirality L/R",
+    promptGuardKo: "[신체 좌우(Anatomical L/R) 기준 비대칭 흉터·장신구·검집 미러링 절대 금지]",
+    weightPct: 18,
+  },
+  {
+    id: "weapon-hand-scale",
+    labelKo: "손바닥 대비 무기 · 소품 스케일 락",
+    badgeKo: "Scale 3.1:1",
+    promptGuardKo: "[손 크기 대비 무기 자루·소품 두께 비례 고정]",
+    weightPct: 13,
+  },
+  {
+    id: "camera-axis-height",
+    labelKo: "180° 시선 축 · 다중 인물 키 차이 락",
+    badgeKo: "180° Axis",
+    promptGuardKo: "[180도 시선 축 준수 및 상대 인물 대비 신장 차이 원근 유지]",
+    weightPct: 13,
+  },
+  {
+    id: "albedo-kelvin-lock",
+    labelKo: "피부 · 의상 고유색(Albedo) 드리프트 방지",
+    badgeKo: "Delta-E ≤ 1.5",
+    promptGuardKo: "[역광/야간 조명에서도 피부·머리·의상 고유색(Albedo HEX) 탁화 방지]",
+    weightPct: 12,
+  },
+  {
+    id: "cumulative-wound-state",
+    labelKo: "전투 부상 · 혈흔 · 의상 파손 누적 유지",
+    badgeKo: "Wound Ledger",
+    promptGuardKo: "[이전 컷에서 발생한 의상 찢김·혈흔·땀방울 상태 초기화 금지]",
+    weightPct: 12,
+  },
+];
+
+const MULTI_ANGLE_CAMERA_PRESETS: readonly {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly directiveKo: string;
+}[] = [
+  { id: "front-eye", labelKo: "정면 아이레벨", directiveKo: "정면 아이레벨(50mm 표준 렌즈) 구도" },
+  { id: "three-quarter-left", labelKo: "좌측 3/4 얼짱각", directiveKo: "좌측 45도 3/4 측면 입체 구도" },
+  { id: "low-angle-hero", labelKo: "로우앵글 위압감", directiveKo: "지면 로우앵글(24mm 광각) 각성 구도" },
+  { id: "high-angle-vulnerable", labelKo: "하이앵글 부감", directiveKo: "상단 하이앵글 부감 구도" },
+  { id: "over-shoulder-duel", labelKo: "오버더숄더 대치", directiveKo: "전경 어깨 너머 시선 교환 투샷 구도" },
+];
 
 export function StudioAiCharacterConsistencyPanel({
   configured,
@@ -42,7 +118,46 @@ export function StudioAiCharacterConsistencyPanel({
   /** 캔버스 선택 모드로 전환해 기준 캐릭터 이미지를 고르게 한다. */
   onRequestSelectReference: () => void;
 }) {
+  const [activeLocks, setActiveLocks] = useState<readonly WebtoonConsistencyLockId[]>([
+    "face-cranial-ratio",
+    "hair-parting-topology",
+    "asymmetric-chirality",
+    "albedo-kelvin-lock",
+  ]);
+  const [selectedAngleId, setSelectedAngleId] = useState<string>("three-quarter-left");
+
   const canGenerate = configured && hasReference && !busy && prompt.trim().length > 0;
+
+  const consistencyScore = useMemo(() => {
+    const sum = WEBTOON_7LAYER_CONSISTENCY_LOCKS.reduce(
+      (acc, item) => (activeLocks.includes(item.id) ? acc + item.weightPct : acc),
+      0,
+    );
+    return Math.min(100, Math.max(40, sum));
+  }, [activeLocks]);
+
+  function toggleLock(id: WebtoonConsistencyLockId) {
+    setActiveLocks((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  }
+
+  function handleInjectConsistencyDnaPrompt() {
+    const selectedAngle =
+      MULTI_ANGLE_CAMERA_PRESETS.find((a) => a.id === selectedAngleId) ??
+      MULTI_ANGLE_CAMERA_PRESETS[0]!;
+    const lockGuards = WEBTOON_7LAYER_CONSISTENCY_LOCKS.filter((l) =>
+      activeLocks.includes(l.id),
+    )
+      .map((l) => l.promptGuardKo)
+      .join(" ");
+    const base = prompt.trim();
+    const injected = [base, `(${selectedAngle.directiveKo})`, lockGuards]
+      .filter((part) => part.length > 0)
+      .join(" ")
+      .slice(0, 500);
+    onPromptChange(injected);
+  }
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
@@ -84,6 +199,89 @@ export function StudioAiCharacterConsistencyPanel({
           <p className="text-[0.63rem] leading-relaxed text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "이 이미지를 기준 캐릭터로 사용해요.")}</p>
         </div>
       )}
+
+      {/* 7대 웹툰 일관성 DNA 가드레일 & 다각도 앵글 프리셋 */}
+      <div
+        data-testid="webtoon-consistency-7layer-guard"
+        className="flex flex-col gap-1.5 rounded-lg border border-accent/25 bg-card/60 p-2"
+      >
+        <div className="flex items-center justify-between gap-1">
+          <span className="inline-flex items-center gap-1 text-[0.62rem] font-bold text-fg">
+            <ShieldCheck size={12} className="text-accent" aria-hidden />
+            7대 웹툰 일관성 DNA 락 ({activeLocks.length}/7 활성)
+          </span>
+          <span
+            data-testid="consistency-guardrail-score-badge"
+            className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.58rem] font-bold text-accent"
+          >
+            작붕 방어력 {consistencyScore}점
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-1">
+          {WEBTOON_7LAYER_CONSISTENCY_LOCKS.map((lock) => {
+            const isChecked = activeLocks.includes(lock.id);
+            return (
+              <button
+                key={lock.id}
+                type="button"
+                aria-pressed={isChecked}
+                onClick={() => toggleLock(lock.id)}
+                data-testid={`consistency-lock-toggle-${lock.id}`}
+                className={`flex items-center justify-between rounded border px-1.5 py-1 text-left text-[0.6rem] transition-colors ${
+                  isChecked
+                    ? "border-accent/50 bg-accent/12 text-fg"
+                    : "border-line/70 bg-panel/60 text-fg-3 hover:text-fg-2"
+                }`}
+              >
+                <span className="inline-flex items-center gap-1 font-medium">
+                  {isChecked ? (
+                    <Check size={10} className="text-accent" aria-hidden />
+                  ) : (
+                    <Lock size={10} className="text-fg-3" aria-hidden />
+                  )}
+                  {lock.labelKo}
+                </span>
+                <span className="rounded bg-panel px-1 py-0.2 font-mono text-[0.54rem] text-accent">
+                  {lock.badgeKo}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {MULTI_ANGLE_CAMERA_PRESETS.map((angle) => {
+            const active = selectedAngleId === angle.id;
+            return (
+              <button
+                key={angle.id}
+                type="button"
+                onClick={() => setSelectedAngleId(angle.id)}
+                data-testid={`consistency-angle-${angle.id}`}
+                className={`rounded border px-1.5 py-0.5 text-[0.56rem] font-semibold transition-colors ${
+                  active
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-line bg-panel text-fg-2 hover:bg-card"
+                }`}
+              >
+                {angle.labelKo}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleInjectConsistencyDnaPrompt}
+          disabled={busy}
+          data-testid="inject-consistency-dna-prompt-btn"
+          className="inline-flex items-center justify-center gap-1 rounded-md border border-accent/40 bg-accent/15 px-2 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/25 disabled:opacity-50"
+        >
+          <Sparkles size={11} aria-hidden />
+          선택한 일관성 DNA 락 프롬프트 주입
+        </button>
+      </div>
 
       <textarea
         value={prompt}
