@@ -2,7 +2,7 @@
   "schemaVersion": "toonstudio.rea.virtual-office-benchmark/1.0",
   "capturedOn": "2026-10-26",
   "methodology": "REA MCP (capture_browser_scenario, export_web_scripts, analyze_javascript_application, inspect_analysis_view) + Clean-Room Domain Internalization",
-  "totalPlatformsAnalyzed": 21,
+  "totalPlatformsAnalyzed": 28,
   "networkBoundaryExcluded": [
     {
       "platform": "Butter",
@@ -488,6 +488,160 @@
       },
       "observedCapabilities": [
         "멀티유저 화면 위 실시간 드로잉 및 원격 마우스·키보드 제어권 즉각 교대(Shared App Control Handoff)"
+      ]
+    },
+    {
+      "id": "remo",
+      "name": "Remo",
+      "targetUrl": "https://remo.co/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_ad223a2c008118e3d60ef333135f40f39c5d6f54dded5e26271db6a3706742b6",
+        "exportWebScripts": "ev_801ff9688e65bd79574772aeb6e2e39be5a86d5bb7c60aa4821d9281e4181054",
+        "analyzeJavascriptApplication": "ev_301afb9abef06ead74530d62896f611e19fe58d681507980ba2ee2350d28f651",
+        "inspectAnalysisView": "ev_16303d5c975f72ee0a90a4d60ef7d6020087ffd3199e19fdb3ee5b4b2210af4a"
+      },
+      "rootSha256": "e0d7d76458f6c394f950874c7247f89f7f9954cd0e4c084c3532095f2cd37d21",
+      "astMetrics": {
+        "jsFileCount": 9,
+        "totalBytes": 716258,
+        "astNodeCount": 225046,
+        "moduleCount": 201,
+        "findingCount": 916
+      },
+      "observedCapabilities": [
+        "연회·품평 테이블 플로어플랜 간 더블클릭 이동 및 타이머 연동 스피드 품평 로테이션(Speed-Critique Table Rotation)",
+        "스테이지 실시간 Q&A 추천(Upvote) 우선순위 정렬 보드"
+      ]
+    },
+    {
+      "id": "spatialio",
+      "name": "Spatial.io",
+      "targetUrl": "https://www.spatial.io/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_19ef4a201dbfae7763116a6c37391acdb99d75ff3cba5e26340e7ba686afc34b",
+        "exportWebScripts": "ev_c7a6c3abe16d97000079378b9dad93043446d4e7296ae5e0ed1f9f0486c5209f",
+        "analyzeJavascriptApplication": "ev_fb089614c71945d84e1c72d54ffa66f065faeacf04675bab258c6a86990187d4",
+        "inspectAnalysisView": "ev_5914fb68f593ea40beb4f106a65ef89fa785fb435d860782a30535741f03cadf"
+      },
+      "rootSha256": "6efbe371efdeca5cee1fcf75b64a87c42f842055221d9251565bbd40be1481bb",
+      "astMetrics": {
+        "jsFileCount": 6,
+        "totalBytes": 35326,
+        "astNodeCount": 11143,
+        "moduleCount": 23,
+        "findingCount": 150
+      },
+      "observedCapabilities": [
+        "3D 갤러리 월드 간 즉시 이동하는 크로스-월드 포털 텔레포터(Portal Teleporters) 및 3D 전시 프레임"
+      ]
+    },
+    {
+      "id": "engagevr",
+      "name": "ENGAGE XR",
+      "targetUrl": "https://engagevr.io/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_2fbf6cd73fe2fb40d3de0b6a727478c262dc3a2b876fd0ce148d29fc30a3f08b",
+        "exportWebScripts": "ev_ed05e65c4bca4f1b5e83531182a230a3627eb724e496b50a3bffdc985846b301",
+        "analyzeJavascriptApplication": "ev_7530f4e1c8d355c138ce6057bb6ed9cebea19e0b8cadd20b3418bc1fc2ac903b",
+        "inspectAnalysisView": "ev_b3ed888b1805b27978a8f9452e6f3a3c7858fa67e476f25ddc5b82ef5e724678"
+      },
+      "rootSha256": "a4f5e45778e623a851c96bccb1cd2fd6f7523a130c675414e5cbb71df144ec02",
+      "astMetrics": {
+        "jsFileCount": 2,
+        "totalBytes": 49509,
+        "astNodeCount": 16622,
+        "findingCount": 16
+      },
+      "observedCapabilities": [
+        "3D 공간 내 아바타 동선·음성·소품을 통째로 녹화하여 홀로그램 고스트로 재생하는 Spatial Ghost Avatar Recording"
+      ]
+    },
+    {
+      "id": "airmeet",
+      "name": "Airmeet",
+      "targetUrl": "https://www.airmeet.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_5ce60fa35f223b22baa0a91feb62dd12d73f332afece983f645b2bed2a2ac2d8",
+        "exportWebScripts": "ev_5e7f8c2519c25dc002d3c42be22b5ce7e909cf439c3fefe4696052e4694d5b5a",
+        "analyzeJavascriptApplication": "ev_02c3b94fc60a40fe112f378b5b38c6fd583d83315145360d558f9e6a15e65c42",
+        "inspectAnalysisView": "ev_e77846a2dec37568d25416eeb1439cbefdda74a960e9014e1933a5c9448f9d3c"
+      },
+      "rootSha256": "80b5580f1fba3a514d1035f661fb8af3fcfb865ff08bea29253cd6a65a8572f4",
+      "astMetrics": {
+        "jsFileCount": 33,
+        "totalBytes": 869061,
+        "astNodeCount": 235843,
+        "moduleCount": 279,
+        "findingCount": 1153
+      },
+      "observedCapabilities": [
+        "본무대 라이브 송출 전 발표자 마이크·카메라·콘티덱 동기화를 사전 점검하는 그린룸 백스테이지(Backstage Green Room)"
+      ]
+    },
+    {
+      "id": "bramble",
+      "name": "Bramble",
+      "targetUrl": "https://www.bramble.live/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_eb4a75ae2098c07ff75ede201196ca058b2b03da6091eb377fab4ad0c6d5c05d",
+        "exportWebScripts": "ev_5602f8587e925189f5ec3af6407063ad068b4d1bad1d21fe6a7367431e161f4d",
+        "analyzeJavascriptApplication": "ev_0d86e127fb5f182a5514a8e78ebec66546707e14e4c5f118a9b0e57907e9aa09",
+        "inspectAnalysisView": "ev_49715b00c271613c1128b75f8ce6a19a8530fac9235265559aed4a559d511e36"
+      },
+      "rootSha256": "2f790d6fdfc627c3023ed0d7c2680a3e40ecbc386df954564478fa02dc573999",
+      "astMetrics": {
+        "jsFileCount": 6,
+        "totalBytes": 100848,
+        "astNodeCount": 25396,
+        "moduleCount": 11,
+        "findingCount": 57
+      },
+      "observedCapabilities": [
+        "유체 공간 구역별 앰비언트 사운드스케이프(`lofi-atelier`, `rainy-rooftop`, `cafe-murmur`, `cathedral-reverb`) 및 음성 대화 시 자동 볼륨 더킹(Voice Ducking)"
+      ]
+    },
+    {
+      "id": "focusmate",
+      "name": "Focusmate",
+      "targetUrl": "https://www.focusmate.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_2b07c1117a2d54ef6a56c5482a469f72c313d095eb7abb7d41a64c6d7034f2ee",
+        "exportWebScripts": "ev_a879f8c389285f73b0cefd5edce3976d3c2ef55b925c9575b7629a9cef082cca",
+        "analyzeJavascriptApplication": "ev_3ba19aea64378e41053fd1fb3413381f37f63c9d748a320c8ffd5f605597e4f6",
+        "inspectAnalysisView": "ev_781f115f9e0a69ddd4be75bc5237b3f4b97793fda3cf45a8c6bda788f164781a"
+      },
+      "rootSha256": "335fbd877131781d1aca1d06f5525763f1cfbda8436395e2f9232ac14cfea5ca",
+      "astMetrics": {
+        "jsFileCount": 13,
+        "totalBytes": 725694,
+        "astNodeCount": 221232,
+        "moduleCount": 168,
+        "findingCount": 1037
+      },
+      "observedCapabilities": [
+        "25/50/75분 구조화 책임감 스프린트(목표 선언 Check-in → 무언 딥드로잉 → 종료 회고)"
+      ]
+    },
+    {
+      "id": "flowclub",
+      "name": "Flow Club",
+      "targetUrl": "https://www.flow.club/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_663eb2aff5d841c006f5c2479e574580b9923705971a6dcad7e863015ccd6de7",
+        "exportWebScripts": "ev_0ff98584ef080a7639ebc91cc9a6f5b85160c62bdc713cb06b53a82e1bb0380b",
+        "analyzeJavascriptApplication": "ev_2e9f3c503ffc59dc1d5716f465054958c6148c71068288a5503c6e04883b9457",
+        "inspectAnalysisView": "ev_4992fa1f5ecdb67394500b807b3491716ddf275c35a4601e5243e34a43ab3e0f"
+      },
+      "rootSha256": "3420afbaea5a284e08fdecd04b91915505d66ffeeb3f95575ce68a11cf750e4a",
+      "astMetrics": {
+        "jsFileCount": 10,
+        "totalBytes": 484124,
+        "astNodeCount": 148178,
+        "moduleCount": 295,
+        "findingCount": 858
+      },
+      "observedCapabilities": [
+        "호스트 플레이북 기반 포모도로 세션, 동기화 Lo-Fi 음악 스트림, 참가자별 목표 체크리스트 보드"
       ]
     }
   ]

@@ -1,6 +1,6 @@
-# 21대 글로벌·국내 가상 오피스 · 원격 페어링 · 공간 XR 플랫폼 REA 전수 역공학 분석 및 툰스튜디오 내재화 설계서 (2026-10-26)
+# 28대 글로벌·국내 가상 오피스 · 원격 페어링 · 공간 XR · 딥워크 플랫폼 REA 전수 역공학 분석 및 툰스튜디오 내재화 설계서 (2026-10-26)
 
-- **문서 상태**: `current` (2026-10-26 Wave 1 13종 + Wave 2 8종 = 총 21종 구현 및 테스트 완료)
+- **문서 상태**: `current` (2026-10-26 Wave 1 13종 + Wave 2 8종 + Wave 3 7종 = 총 28종 구현 및 테스트 완료)
 - **증거 원장**: [`docs/evidence/rea-virtual-office-benchmark-20261026.json`](../evidence/rea-virtual-office-benchmark-20261026.json)
 - **기존 벤치마크 연계**: [`docs/studio/virtual-studio-office-collaboration-benchmark-20260927.md`](../studio/virtual-studio-office-collaboration-benchmark-20260927.md)
 
@@ -8,11 +8,11 @@
 
 ## 1. 목적 및 분석 범위
 
-본 문서는 REA(Reverse Engineer Anything) MCP 도구 체인(`capture_browser_scenario` → `export_web_scripts` → `analyze_javascript_application` → `inspect_analysis_view`)을 사용해 글로벌 및 국내 대표 가상 오피스·원격 페어링·공간 XR 협업 플랫폼 **21종**의 클라이언트 번들과 AST·라우트·상호작용 계약을 역공학 분석하고, 그 결과를 **클린룸(Clean-Room) 순수 TypeScript 도메인 모델 및 React UI 스위트**로 툰스튜디오(`apps/web/src/domains/creator/virtual-space/`)에 전수 내재화한 기록이다.
+본 문서는 REA(Reverse Engineer Anything) MCP 도구 체인(`capture_browser_scenario` → `export_web_scripts` → `analyze_javascript_application` → `inspect_analysis_view`)을 사용해 글로벌 및 국내 대표 가상 오피스·원격 페어링·공간 XR·포모도로 딥워크 협업 플랫폼 **28종**의 클라이언트 번들과 AST·라우트·상호작용 계약을 역공학 분석하고, 그 결과를 **클린룸(Clean-Room) 순수 TypeScript 도메인 모델 및 React UI 스위트**로 툰스튜디오(`apps/web/src/domains/creator/virtual-space/`)에 전수 내재화한 기록이다.
 
 ---
 
-## 2. 관측 사실(Observed Facts) — 21개 플랫폼 REA 증거 요약
+## 2. 관측 사실(Observed Facts) — 28개 플랫폼 REA 증거 요약
 
 | # | 플랫폼 | 대상 URL | 주요 REA Evidence ID (`capture` / `ast`) | JS 파일 / AST 노드 / Findings | 핵심 역공학 추출 기능 |
 | --- | --- | --- | --- | --- | --- |
@@ -37,6 +37,13 @@
 | 19 | **Frame VR** | `https://learn.framevr.io/` | `ev_e73d8298...` / `ev_b2cc903c...` | 9파일 / 82,289노드 / 127건 | 브라우저 WebXR 3D GLB/VRM 에셋 페데스탈(Pedestal) 턴테이블 각도 동기화 회전 및 3D 공간 핀 노트 |
 | 20 | **Arthur Digital** | `https://www.arthur.digital/` | `ev_43772a39...` / `ev_eeef58bd...` | 15파일 / 145,702노드 / 347건 | XR 공간 프레젠테이션 보드, 3D 공간 오디오 존, AI 회의 요약 핸드오프 |
 | 21 | **Pop** | `https://pop.com/` | `ev_a3a79b45...` / `ev_c0965471...` | 75파일 / 104,889노드 / 1,319건 | 멀티유저 화면 위 실시간 드로잉 및 원격 마우스·펜 제어권 즉각 교대(`handoffRemoteAppControlDriver`) |
+| 22 | **Remo** | `https://remo.co/` | `ev_ad223a2c...` / `ev_301afb9a...` | 9파일 / 225,046노드 / 916건 | 컷별 스피드 품평 테이블 순환 로테이션(`rotateSpeedCritiqueTables`) 및 실시간 Q&A 업보트 정렬 보드 |
+| 23 | **Spatial.io** | `https://www.spatial.io/` | `ev_19ef4a20...` / `ev_fb089614...` | 6파일 / 11,143노드 / 150건 | 3D 갤러리 월드 간 즉시 이동하는 크로스-월드 포털 텔레포터(`traverseSpatialPortal`) 및 3D 전시 프레임 |
+| 24 | **ENGAGE XR** | `https://engagevr.io/` | `ev_2fbf6cd7...` / `ev_7530f4e1...` | 2파일 / 16,622노드 / 16건 | 3D 공간 내 아바타 동선·음성·소품 홀로그램 고스트 녹화·재생(`recordNewSpatialGhostClip`, `setSpatialGhostPlaybackState`) |
+| 25 | **Airmeet** | `https://www.airmeet.com/` | `ev_5ce60fa3...` / `ev_02c3b94f...` | 33파일 / 235,843노드 / 1,153건 | 본무대 송출 전 마이크·캠·콘티덱 동기화 점검 그린룸 백스테이지(`toggleGreenRoomDeviceCheck`, `promoteGreenRoomPresenterToMainStage`) |
+| 26 | **Bramble** | `https://www.bramble.live/` | `ev_eb4a75ae...` / `ev_0d86e127...` | 6파일 / 25,396노드 / 57건 | 유체 공간 구역별 앰비언트 사운드스케이프(`lofi-atelier`, `rainy-rooftop`, `cafe-murmur`, `cathedral-reverb`) 및 보이스 더킹 |
+| 27 | **Focusmate** | `https://www.focusmate.com/` | `ev_2b07c111...` / `ev_3ba19aea...` | 13파일 / 221,232노드 / 1,037건 | 25/50/75분 구조화 책임감 스프린트(목표 선언 Check-in → 무언 딥드로잉 → 종료 회고, `advanceFocusSprintPhase`) |
+| 28 | **Flow Club** | `https://www.flow.club/` | `ev_663eb2af...` / `ev_2e9f3c50...` | 10파일 / 148,178노드 / 858건 | 호스트 플레이북 기반 포모도로 세션, 동기화 Lo-Fi 음악 스트림, 참가자 목표 체크리스트(`toggleFocusSprintIntentionCompleted`) |
 
 ### 미해결 경계 (Unknowns / Boundaries)
 - **Butter (`https://www.butter.us/`) & Welo (`https://www.welospaces.com/`)**: 헤드리스 브라우저 시나리오 캡처 시 각각 `net::ERR_CONNECTION_TIMED_OUT` 및 `net::ERR_NAME_NOT_RESOLVED`가 발생하여 번들 추출에서 제외하고 네트워크 경계로 기록했다.
@@ -46,7 +53,7 @@
 
 ## 3. 툰스튜디오 내재화 아키텍처 매핑
 
-21개 플랫폼에서 도출한 핵심 기능을 웹툰·애니메이션 스튜디오 제작 공정(콘티 → 선화 → 3D 배경 → 채색/조명 → 식자/검수)에 맞춰 다음 5개 핵심 모듈로 내재화했다.
+28개 플랫폼에서 도출한 핵심 기능을 웹툰·애니메이션 스튜디오 제작 공정(콘티 → 선화 → 3D 배경 → 채색/조명 → 식자/검수)에 맞춰 다음 7개 핵심 모듈로 내재화했다.
 
 1. [`studio-virtual-office-spatial-floors-model.ts`](../../apps/web/src/domains/creator/virtual-space/studio-virtual-office-spatial-floors-model.ts)
    - **다층 빌딩 엘리베이터 (`1F 로비·타운홀`, `2F 작화·3D배경·채색 아틀리에`, `3F 콘티·편집검수·AI관제실`)**: 층간 이동, 잠긴 방 입장 통제, Room/Floor/Building 3단계 스코프 채팅 라우팅.
@@ -64,5 +71,9 @@
    - **Sococo 플로어플랜 미디어 매트릭스 · `Get Teammate` 호출(`summonTeammateToStudioRoom`, `respondToTeammateSummon`) · 외부 게스트 리셉션 로비(`resolveReceptionLobbyGuest`)**.
    - **Tuple & Pop 5K 초저지연 페어 드로잉 · 자동소멸 레이저 잉크(`addStudioScreenInkStroke`, `pruneExpiredFadingInkStrokes`) · 원격 앱 제어권 교대(`handoffRemoteAppControlDriver`)**.
    - **Nooks AI 플로어 섀도잉(`joinFloorShadowingSession`) & PD 귓속말 코칭(`sendDirectorWhisperDirective`) + Virbela · Frame VR · Arthur 3D 에셋 페데스탈 턴테이블(`update3dAssetPedestalInspection`)**.
-4. [`StudioVirtualOfficePairingXrPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficePairingXrPanel.tsx) & [`StudioVirtualOfficeEnterpriseSuite.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx)
-   - [`StudioVirtualSpaceCollaborationHub.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceCollaborationHub.tsx)의 `"13대 가상오피스 통합관제"` 탭 및 [`StudioVirtualSpaceTownProgramPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceTownProgramPanel.tsx)의 `"가상오피스"`(`"Office suite"`) 탭에 5대 통합 탭으로 연결 완료.
+4. [`studio-virtual-office-stage-sprint-holo-model.ts`](../../apps/web/src/domains/creator/virtual-space/studio-virtual-office-stage-sprint-holo-model.ts) & [`StudioVirtualOfficeStageSprintHoloPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeStageSprintHoloPanel.tsx)
+   - **Airmeet 그린룸 백스테이지(`toggleGreenRoomDeviceCheck`, `promoteGreenRoomPresenterToMainStage`) & Remo 컷별 스피드 품평 테이블 순환 로테이션(`rotateSpeedCritiqueTables`) · 실시간 Q&A 업보트 보드(`upvoteStageQnaItem`)**.
+   - **ENGAGE XR 3D 고스트 아바타 홀로그램 공간 녹화/재생(`recordNewSpatialGhostClip`, `setSpatialGhostPlaybackState`) & Spatial.io 크로스-월드 포털 텔레포터(`traverseSpatialPortal`)**.
+   - **Focusmate & Flow Club 호스트 플레이북 기반 작화 딥워크 스프린트(`advanceFocusSprintPhase`, `toggleFocusSprintIntentionCompleted`, `addFocusSprintIntention`) & Bramble 유체 공간 사운드스케이프 존(`updateAmbientSoundscapeZone`)**.
+5. [`StudioVirtualOfficePairingXrPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficePairingXrPanel.tsx) & [`StudioVirtualOfficeEnterpriseSuite.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx)
+   - [`StudioVirtualSpaceCollaborationHub.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceCollaborationHub.tsx)의 `"13대 가상오피스 통합관제"` 탭 및 [`StudioVirtualSpaceTownProgramPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceTownProgramPanel.tsx)의 `"가상오피스"`(`"Office suite"`) 탭에 6대 통합 탭으로 연결 완료.

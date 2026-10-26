@@ -145,6 +145,50 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     );
   });
 
+  it("탭 6: Wave 3 그린룸·품평로테이션(Airmeet·Remo), 3D홀로그램·포털(ENGAGE XR·Spatial.io), 딥스프린트(Focusmate·Flow Club), 사운드스케이프(Bramble)를 제어한다", () => {
+    render(<StudioVirtualOfficeEnterpriseSuite />);
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: /그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트/u,
+      }),
+    );
+
+    expect(
+      screen.getByTestId("studio-virtual-office-stage-sprint-holo-panel"),
+    ).toBeTruthy();
+
+    // Airmeet 그린룸 콘티덱 동기화 완료 후 본무대 라이브 전환
+    fireEvent.click(screen.getByTestId("toggle-greenroom-deck-btn"));
+    fireEvent.click(screen.getByTestId("promote-main-stage-btn"));
+    expect(screen.getByTestId("wave3-kpi-stage").textContent).toContain(
+      "ON-AIR 본무대 송출중",
+    );
+
+    // Remo 스피드 품평 테이블 로테이션
+    fireEvent.click(screen.getByTestId("rotate-critique-tables-btn"));
+    expect(screen.getByTestId("wave3-kpi-rotation").textContent).toContain(
+      "2라운드",
+    );
+
+    // ENGAGE XR 3D 홀로그램 녹화 & Spatial.io 포털 워프
+    fireEvent.click(screen.getByTestId("record-ghost-clip-btn"));
+    fireEvent.click(screen.getByTestId("traverse-portal-portal-ep42-cathedral"));
+    expect(screen.getByTestId("wave3-kpi-hologram").textContent).toContain(
+      "3D 홀로그램 재생 2개 · 포털 이동 7명",
+    );
+
+    // Focusmate / Flow Club 스프린트 단계 전환 및 목표 추가
+    fireEvent.click(screen.getByTestId("advance-sprint-phase-btn"));
+    expect(screen.getByTestId("sprint-phase-badge").textContent).toContain(
+      "silent-deep-drawing",
+    );
+    fireEvent.click(screen.getByTestId("add-sprint-goal-btn"));
+    expect(screen.getByTestId("wave3-kpi-sprint").textContent).toContain(
+      "1/4",
+    );
+  });
+
   it("StudioVirtualSpaceCollaborationHub 및 StudioVirtualSpaceTownProgramPanel 내부 탭으로 통합 연결된다", () => {
     render(<StudioVirtualSpaceCollaborationHub />);
     fireEvent.click(screen.getByRole("tab", { name: "13대 가상오피스 통합관제" }));

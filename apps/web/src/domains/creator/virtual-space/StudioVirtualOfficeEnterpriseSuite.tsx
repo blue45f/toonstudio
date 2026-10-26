@@ -1,5 +1,6 @@
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { StudioVirtualOfficePairingXrPanel } from "./StudioVirtualOfficePairingXrPanel";
+import { StudioVirtualOfficeStageSprintHoloPanel } from "./StudioVirtualOfficeStageSprintHoloPanel";
 import {
   acknowledgeAsyncDeskNote, completeAiAgentDeskTask, computeWeeklyOfficePulseInsights,
   createDefaultVirtualOfficeEnterpriseState, dispatchTaskToAiAgentDesk, executeHostModerationCommand,
@@ -27,7 +28,8 @@ type EnterpriseSuiteTabId =
   | "ai-agents-memory-mcp"
   | "dcc-presence-aikido-multishare"
   | "host-canvas-pulse-matrix"
-  | "pairing-xr-floor-coaching";
+  | "pairing-xr-floor-coaching"
+  | "stage-sprint-holo-lounge";
 
 const SUITE_TABS: readonly {
   readonly id: EnterpriseSuiteTabId;
@@ -39,13 +41,14 @@ const SUITE_TABS: readonly {
   { id: "dcc-presence-aikido-multishare", labelKo: "DCC 작업 프레즌스 · 데스크 비동기 노트 · 4화면 동시공유", platformsBadge: "Tandem · Roam Aikido · Cosmos Video" },
   { id: "host-canvas-pulse-matrix", labelKo: "호스트 관제 · 공간 미디어 핀 · 주간 인사이트", platformsBadge: "ZEP · SpatialChat · SoWork Insights" },
   { id: "pairing-xr-floor-coaching", labelKo: "원격페어링 · 상태모자 · 리셉션 · 3D페데스탈", platformsBadge: "Teemyco · Sococo · Tuple · Pop · Nooks · FrameVR · Arthur · Virbela" },
+  { id: "stage-sprint-holo-lounge", labelKo: "그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트", platformsBadge: "Remo · Spatial.io · ENGAGE XR · Airmeet · Bramble · Focusmate · Flow Club" },
 ];
 
 export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualOfficeEnterpriseSuiteProps) {
   const [activeTab, setActiveTab] = useState<EnterpriseSuiteTabId>("spatial-floors-knock-audio");
   const [buildingState, setBuildingState] = useState<StudioVirtualOfficeBuildingState>(() => createDefaultVirtualOfficeBuildingState());
   const [enterpriseState, setEnterpriseState] = useState<StudioVirtualOfficeEnterpriseState>(() => createDefaultVirtualOfficeEnterpriseState());
-  const [statusNotice, setStatusNotice] = useState<string>("21개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
+  const [statusNotice, setStatusNotice] = useState<string>("28개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>("room-2f-color-booth");
   const [knockMessageDraft, setKnockMessageDraft] = useState<string>("15화 피날레 배경 톤앤매너 조율차 입장 요청합니다.");
@@ -895,27 +898,12 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
               <div className="space-y-2 rounded border border-line bg-card p-2.5 text-xs">
                 <h5 className="font-semibold">공간 캔버스 레퍼런스 보드 다중 핀 고정</h5>
                 <div className="flex gap-1.5">
-                  <input
-                    type="text"
-                    aria-label="공간 캔버스에 고정할 레퍼런스 제목"
-                    value={newPinTitleDraft}
-                    onChange={(e) => setNewPinTitleDraft(e.target.value)}
-                    className="flex-1 rounded border border-line bg-panel px-2 py-1 text-xs"
-                  />
+                  <input type="text" aria-label="공간 캔버스에 고정할 레퍼런스 제목" value={newPinTitleDraft} onChange={(e) => setNewPinTitleDraft(e.target.value)} className="flex-1 rounded border border-line bg-panel px-2 py-1 text-xs" />
                   <button
                     type="button"
                     onClick={() => {
                       setEnterpriseState((prev) =>
-                        pinCanvasReferenceMedia(prev, {
-                          id: `pin-media-${Date.now()}`,
-                          titleKo: newPinTitleDraft,
-                          mediaType: "reference-sheet",
-                          x: 240,
-                          y: 160,
-                          scale: 1,
-                          lockedOnCanvas: true,
-                          pinnedByName: "수석 배경 아티스트",
-                        }),
+                        pinCanvasReferenceMedia(prev, { id: `pin-media-${Date.now()}`, titleKo: newPinTitleDraft, mediaType: "reference-sheet", x: 240, y: 160, scale: 1, lockedOnCanvas: true, pinnedByName: "수석 배경 아티스트" }),
                       );
                       setStatusNotice("공간 캔버스에 신규 레퍼런스 미디어를 핀 고정했습니다.");
                     }}
@@ -928,11 +916,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
                   {enterpriseState.pinnedCanvasMedia.map((media) => (
                     <li key={media.id} className="flex items-center justify-between gap-2 rounded border border-line bg-panel p-2">
                       <span><strong>{media.titleKo}</strong> ({media.mediaType}) — {media.lockedOnCanvas ? "위치 잠김" : "이동 가능"}</span>
-                      <button
-                        type="button"
-                        onClick={() => setEnterpriseState((prev) => togglePinCanvasReferenceMediaLock(prev, media.id))}
-                        className="rounded border border-line bg-card px-2 py-0.5 text-[11px]"
-                      >
+                      <button type="button" onClick={() => setEnterpriseState((prev) => togglePinCanvasReferenceMediaLock(prev, media.id))} className="rounded border border-line bg-card px-2 py-0.5 text-[11px]">
                         {media.lockedOnCanvas ? "잠금 해제" : "위치 잠금"}
                       </button>
                     </li>
@@ -944,22 +928,10 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
             <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <h4 className="text-xs font-semibold">주간 워크 인사이트 & 집중 작화 밸런스 (SoWork `04 Insights` · Kumospace Analytics)</h4>
               <dl className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded border border-line bg-card p-2.5">
-                  <dt className="text-fg-2">주간 딥 포커스(집중 작화) 시간</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{weeklyPulse.deepFocusHours}시간</dd>
-                </div>
-                <div className="rounded border border-line bg-card p-2.5">
-                  <dt className="text-fg-2">주간 실시간 회의 시간</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{weeklyPulse.meetingHours}시간</dd>
-                </div>
-                <div className="rounded border border-line bg-card p-2.5">
-                  <dt className="text-fg-2">집중 대 회의 비율 (Focus/Meeting)</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{weeklyPulse.focusToMeetingRatio}배</dd>
-                </div>
-                <div className="rounded border border-line bg-card p-2.5">
-                  <dt className="text-fg-2">AI 에이전트 절감 시간</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{weeklyPulse.aiMinutesSaved}분 절감</dd>
-                </div>
+                <div className="rounded border border-line bg-card p-2.5"><dt className="text-fg-2">주간 딥 포커스(집중 작화) 시간</dt><dd className="text-sm font-semibold tabular-nums">{weeklyPulse.deepFocusHours}시간</dd></div>
+                <div className="rounded border border-line bg-card p-2.5"><dt className="text-fg-2">주간 실시간 회의 시간</dt><dd className="text-sm font-semibold tabular-nums">{weeklyPulse.meetingHours}시간</dd></div>
+                <div className="rounded border border-line bg-card p-2.5"><dt className="text-fg-2">집중 대 회의 비율 (Focus/Meeting)</dt><dd className="text-sm font-semibold tabular-nums">{weeklyPulse.focusToMeetingRatio}배</dd></div>
+                <div className="rounded border border-line bg-card p-2.5"><dt className="text-fg-2">AI 에이전트 절감 시간</dt><dd className="text-sm font-semibold tabular-nums">{weeklyPulse.aiMinutesSaved}분 절감</dd></div>
               </dl>
               <p className="rounded border border-line bg-card p-2.5 text-xs text-fg-2">{weeklyPulse.recommendationKo}</p>
             </div>
@@ -969,6 +941,11 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
       {activeTab === "pairing-xr-floor-coaching" ? (
         <div role="tabpanel" id="enterprise-tabpanel-pairing-xr-floor-coaching" aria-label="원격페어링 · 상태모자 · 리셉션 · 3D페데스탈">
           <StudioVirtualOfficePairingXrPanel />
+        </div>
+      ) : null}
+      {activeTab === "stage-sprint-holo-lounge" ? (
+        <div role="tabpanel" id="enterprise-tabpanel-stage-sprint-holo-lounge" aria-label="그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트">
+          <StudioVirtualOfficeStageSprintHoloPanel />
         </div>
       ) : null}
     </section>
