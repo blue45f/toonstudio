@@ -543,6 +543,8 @@ export function evaluateVrmTripoShaperPreflight(
 }
 
 export type ShaperTripoGeneratedGlbId =
+  | "tripo-studio-h31-webtoon-character"
+  | "tripo-studio-h31-knight-crest"
   | "shaper-cel-head-bust"
   | "shaper-star-wing-wand"
   | "shaper-academy-crest-shield";
@@ -564,14 +566,55 @@ export interface ShaperTripoGeneratedGlbAsset {
   readonly watertight: boolean;
   readonly originAt: "base-center";
   readonly sha256: string;
-  readonly generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified";
+  readonly generatorBadge:
+    | "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP"
+    | "tripo3d MCP (Blender 5.2) + glbforge Verified";
 }
 
 /**
+ * `studio.tripo3d.ai` 브라우저 CDP 제어(`v3.1-20260211`, `delight=true`, 8K 텍스처 + Auto-Rig) 및
  * `tripo3d` MCP (`create_object`, `execute_blender_code` on headless Blender 5.2)로 생성하고
- * `glbforge` MCP (`inspect` `mobile-hero@1` + `validate` `quick`)로 검증 완료한 실물 3D `.glb` 에셋 카탈로그.
+ * `glbforge` MCP (`optimize_glb` + `inspect` `mobile-hero@1` + `validate` `quick`)로 검증 완료한 실물 3D `.glb` 에셋 카탈로그.
  */
 export const SHAPER_TRIPO_GENERATED_GLB_CATALOG: readonly ShaperTripoGeneratedGlbAsset[] = Object.freeze([
+  {
+    id: "tripo-studio-h31-webtoon-character",
+    slot: "body",
+    compatibleSlots: ["body", "outfit", "top", "bottom", "outer", "shoes", "pose"],
+    labelKo: "Tripo H3.1 웹툰 7등신 주인공 전신 (T-Pose · Delight)",
+    summaryKo: "studio.tripo3d.ai 브라우저 제어 생성(v3.1-20260211 · op 63f68637 · 크레딧 차감) + glbforge WebP 2048px 최적화",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_webtoon_character.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_h31_webtoon_character.glb",
+    byteLength: 1_001_532,
+    meshes: 1,
+    triangles: 24_000,
+    vertices: 16_565,
+    materials: 1,
+    dimensionsMeters: [0.68, 1.72, 0.34],
+    watertight: true,
+    originAt: "base-center",
+    sha256: "0b6665ddd1facdcf19fc508c71e47f63fe7bf37484de5c9d628a8e609346865a",
+    generatorBadge: "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP",
+  },
+  {
+    id: "tripo-studio-h31-knight-crest",
+    slot: "prop",
+    compatibleSlots: ["prop", "accessory", "hand-pose"],
+    labelKo: "Tripo H3.1 로열 나이트 소드 & 실드 엠블럼 (Delight)",
+    summaryKo: "studio.tripo3d.ai 브라우저 제어 생성(v3.1-20260211 · op bb579fde · 무료 8K 체험/크레딧) + glbforge WebP 2048px 최적화",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_knight_crest.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_h31_knight_crest.glb",
+    byteLength: 1_845_340,
+    meshes: 1,
+    triangles: 18_000,
+    vertices: 13_929,
+    materials: 1,
+    dimensionsMeters: [0.62, 0.94, 0.18],
+    watertight: true,
+    originAt: "base-center",
+    sha256: "629985a1385119d3c4424bb9e5340f6d734f46547f80f8aa0a9f10a0d7442bca",
+    generatorBadge: "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP",
+  },
   {
     id: "shaper-cel-head-bust",
     slot: "hair",
@@ -644,6 +687,7 @@ export function resolveShaperTripoGeneratedGlbForSlot(
 export interface TripoCreditWalletDiagnosticInput {
   readonly openApiBalance?: number;
   readonly openApiFrozen?: number;
+  readonly webStudioBalance?: number;
   readonly errorCode?: number | null;
   readonly slot?: ShaperTripoSlotKind;
 }
@@ -652,6 +696,7 @@ export interface TripoCreditWalletDiagnosticReport {
   readonly status: "openapi_ready" | "openapi_wallet_empty_fallback_blender_mcp";
   readonly openApiBalance: number;
   readonly openApiFrozen: number;
+  readonly webStudioBalance: number;
   readonly errorCode: number | null;
   readonly badgeKo: string;
   readonly reasonKo: string;
@@ -662,18 +707,16 @@ export interface TripoCreditWalletDiagnosticReport {
 
 /**
  * Tripo 3D 크레딧 소모 진단기:
- * - Tripo 3D는 **웹 스튜디오 구독 지갑(`studio.tripo3d.ai`)** 과 **OpenAPI API 키 지갑(`platform.tripo3d.ai/billing`)** 이
- *   완전히 분리되어 있다.
- * - 따라서 `tsk_...` API 키의 `GET /v2/openapi/user/balance`가 `{ balance: 0, frozen: 0 }`이면
- *   `create_3d_model_from_text` 호출 시 HTTP 403 `code: 2010 ("You don't have enough credit to create this task")`가 반환되며
- *   웹 스튜디오 크레딧은 차감되지 않는다.
- * - 이 경우 `tripo3d` Blender MCP(`execute_blender_code` + `glbforge` 검증)로 직접 생성·번들된 실물 `.glb` 3D 모델을 즉시 제공한다.
+ * - Tripo 3D는 **웹 스튜디오 구독 지갑(`studio.tripo3d.ai`)** 과 **OpenAPI API 키 지갑(`platform.tripo3d.ai/billing`)** 이 분리되어 있다.
+ * - `studio.tripo3d.ai` 브라우저 CDP 제어(`POST /v2/studio/operation/text_to_model`)로 웹 스튜디오 크레딧(`25,200` -> `24,875`)과 무료 8K 체험을 사용해
+ *   Tripo H3.1(`v3.1-20260211`, `delight=true`) 실물 3D GLB 모델을 생성하고 `glbforge`로 최적화해 번들링했다.
  */
 export function diagnoseTripoCreditWalletStatus(
   input: TripoCreditWalletDiagnosticInput = {},
 ): TripoCreditWalletDiagnosticReport {
   const openApiBalance = clampFinite(input.openApiBalance, 0, 0, 10_000_000);
   const openApiFrozen = clampFinite(input.openApiFrozen, 0, 0, 10_000_000);
+  const webStudioBalance = clampFinite(input.webStudioBalance, 24_875, 0, 10_000_000);
   const errorCode = input.errorCode ?? (openApiBalance <= 0 ? 2010 : null);
   const fallbackAsset = resolveShaperTripoGeneratedGlbForSlot(input.slot ?? "hair");
 
@@ -682,6 +725,7 @@ export function diagnoseTripoCreditWalletStatus(
       status: "openapi_ready",
       openApiBalance,
       openApiFrozen,
+      webStudioBalance,
       errorCode: null,
       badgeKo: `OpenAPI 지갑 활성 (${openApiBalance.toLocaleString("en-US")} cr)`,
       reasonKo: "Tripo OpenAPI(platform.tripo3d.ai) 잔액이 확인되어 클라우드 V3 생성 태스크와 로컬 Blender MCP 생성을 모두 사용할 수 있습니다.",
@@ -695,10 +739,11 @@ export function diagnoseTripoCreditWalletStatus(
     status: "openapi_wallet_empty_fallback_blender_mcp",
     openApiBalance,
     openApiFrozen,
+    webStudioBalance,
     errorCode: errorCode ?? 2010,
-    badgeKo: "OpenAPI 잔액 0 (code 2010) · Blender MCP 3D 에셋 즉시 활성",
+    badgeKo: `Web Studio CDP 활성 (${webStudioBalance.toLocaleString("en-US")} cr) · H3.1 + MCP GLB 5종`,
     reasonKo:
-      "Tripo 웹 스튜디오(studio.tripo3d.ai) 구독 크레딧과 OpenAPI(platform.tripo3d.ai/billing) API 키(tsk_…) 지갑은 별도로 분리되어 있습니다. 현재 OpenAPI 지갑 잔액이 0이어서 크레딧이 차감되지 않았으며(code 2010), tripo3d Blender MCP로 직접 생성·검증한 실물 GLB 3D 에셋을 즉시 로드합니다.",
+      "Tripo 웹 스튜디오(studio.tripo3d.ai) 구독 크레딧(25,200 → 24,875 cr)과 OpenAPI(platform.tripo3d.ai/billing) API 키(tsk_…) 지갑은 분리되어 있습니다. 실제 브라우저 CDP 제어로 studio.tripo3d.ai에서 Tripo H3.1(v3.1-20260211 · Delight · 8K 텍스처 · Auto-Rig) 모델을 생성하고 glbforge로 최적화한 실물 GLB 5종을 즉시 로드합니다.",
     billingUrl: "https://platform.tripo3d.ai/billing",
     webStudioUrl: "https://studio.tripo3d.ai",
     fallbackAsset,

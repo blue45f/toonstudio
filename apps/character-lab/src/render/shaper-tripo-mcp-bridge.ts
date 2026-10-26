@@ -168,7 +168,12 @@ export function buildLabShaperTripoPipelineSpec(input: {
 }
 
 export interface LabShaperTripoGeneratedGlbAsset {
-  readonly id: "shaper-cel-head-bust" | "shaper-star-wing-wand" | "shaper-academy-crest-shield";
+  readonly id:
+    | "tripo-studio-h31-webtoon-character"
+    | "tripo-studio-h31-knight-crest"
+    | "shaper-cel-head-bust"
+    | "shaper-star-wing-wand"
+    | "shaper-academy-crest-shield";
   readonly labelKo: string;
   readonly assetUrl: string;
   readonly byteLength: number;
@@ -181,6 +186,30 @@ export interface LabShaperTripoGeneratedGlbAsset {
 }
 
 export const LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS: readonly LabShaperTripoGeneratedGlbAsset[] = Object.freeze([
+  {
+    id: "tripo-studio-h31-webtoon-character",
+    labelKo: "Tripo H3.1 웹툰 7등신 주인공 전신 (T-Pose · Delight)",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_webtoon_character.glb",
+    byteLength: 1_001_532,
+    meshes: 1,
+    triangles: 24_000,
+    vertices: 16_565,
+    materials: 1,
+    watertight: true,
+    sha256: "0b6665ddd1facdcf19fc508c71e47f63fe7bf37484de5c9d628a8e609346865a",
+  },
+  {
+    id: "tripo-studio-h31-knight-crest",
+    labelKo: "Tripo H3.1 로열 나이트 소드 & 실드 엠블럼 (Delight)",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_knight_crest.glb",
+    byteLength: 1_845_340,
+    meshes: 1,
+    triangles: 18_000,
+    vertices: 13_929,
+    materials: 1,
+    watertight: true,
+    sha256: "629985a1385119d3c4424bb9e5340f6d734f46547f80f8aa0a9f10a0d7442bca",
+  },
   {
     id: "shaper-cel-head-bust",
     labelKo: "SHAPER 7등신 셀 두상·보브 헤어 마네킹",

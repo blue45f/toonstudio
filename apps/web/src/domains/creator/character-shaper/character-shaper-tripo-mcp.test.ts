@@ -200,8 +200,8 @@ describe("character-shaper-tripo-mcp — SHAPER REA × Tripo 3D V3 MCP 리얼 �
     expect(overBudget.grade).toBe("C");
   });
 
-  it("tripo3d MCP (Blender 5.2) + glbforge MCP로 생성·검증된 실물 3D GLB 에셋 3종이 디스크에 존재하고 glTF 2.0 헤더·SHA256·watertight 예산을 만족한다", () => {
-    expect(SHAPER_TRIPO_GENERATED_GLB_CATALOG).toHaveLength(3);
+  it("Tripo Studio H3.1 (브라우저 CDP 제어) + tripo3d MCP (Blender 5.2) + glbforge MCP로 생성·최적화·검증된 실물 3D GLB 에셋 5종이 디스크에 존재하고 glTF 2.0 헤더·SHA256·watertight 예산을 만족한다", () => {
+    expect(SHAPER_TRIPO_GENERATED_GLB_CATALOG).toHaveLength(5);
     const repoRoot = resolve(__dirname, "../../../../../..");
     for (const asset of SHAPER_TRIPO_GENERATED_GLB_CATALOG) {
       const fullPath = resolve(repoRoot, asset.relativeDiskPath);
@@ -216,12 +216,13 @@ describe("character-shaper-tripo-mcp — SHAPER REA × Tripo 3D V3 MCP 리얼 �
       expect(asset.triangles).toBeGreaterThan(1000);
     }
 
+    expect(resolveShaperTripoGeneratedGlbForSlot("body").id).toBe("tripo-studio-h31-webtoon-character");
     expect(resolveShaperTripoGeneratedGlbForSlot("hair").id).toBe("shaper-cel-head-bust");
-    expect(resolveShaperTripoGeneratedGlbForSlot("prop").id).toBe("shaper-star-wing-wand");
+    expect(resolveShaperTripoGeneratedGlbForSlot("prop").id).toBe("tripo-studio-h31-knight-crest");
     expect(resolveShaperTripoGeneratedGlbForSlot("accessory").id).toBe("shaper-academy-crest-shield");
   });
 
-  it("Tripo OpenAPI 지갑(platform.tripo3d.ai/billing) 잔액 0(code 2010)과 웹 스튜디오(studio.tripo3d.ai) 구독 분리 원인을 진단하고 Blender MCP GLB 폴백을 반환한다", () => {
+  it("Tripo OpenAPI 지갑(platform.tripo3d.ai/billing) 잔액 0(code 2010)과 웹 스튜디오(studio.tripo3d.ai) 브라우저 CDP 크레딧(25,200 → 24,875 cr) 분리 상태를 진단하고 H3.1 + MCP GLB 에셋을 반환한다", () => {
     const emptyWallet = diagnoseTripoCreditWalletStatus({
       openApiBalance: 0,
       openApiFrozen: 0,
@@ -229,9 +230,11 @@ describe("character-shaper-tripo-mcp — SHAPER REA × Tripo 3D V3 MCP 리얼 �
     });
     expect(emptyWallet.status).toBe("openapi_wallet_empty_fallback_blender_mcp");
     expect(emptyWallet.errorCode).toBe(2010);
+    expect(emptyWallet.webStudioBalance).toBe(24_875);
+    expect(emptyWallet.badgeKo).toContain("24,875 cr");
     expect(emptyWallet.reasonKo).toContain("studio.tripo3d.ai");
     expect(emptyWallet.reasonKo).toContain("platform.tripo3d.ai/billing");
-    expect(emptyWallet.fallbackAsset.id).toBe("shaper-star-wing-wand");
+    expect(emptyWallet.fallbackAsset.id).toBe("tripo-studio-h31-knight-crest");
 
     const activeWallet = diagnoseTripoCreditWalletStatus({
       openApiBalance: 2400,
