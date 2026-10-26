@@ -8,11 +8,13 @@
     "nativeBinaryProviderRule": "ghidra-only-no-hopper"
   },
   "summary": {
-    "platformCount": 15,
-    "browserScenarioCaptures": 17,
-    "scriptExports": 14,
+    "platformCount": 39,
+    "wave1Platforms": 15,
+    "wave2And3Platforms": 24,
+    "browserScenarioCaptures": 41,
+    "scriptExports": 27,
     "javascriptApplicationAnalyses": 14,
-    "totalExportedScriptFiles": 478,
+    "totalExportedScriptFiles": 867,
     "totalAnalyzedAstNodes": 1122016,
     "totalStaticFindings": 6598
   },
@@ -683,6 +685,661 @@
       ],
       "unknowns": [
         "Asset compression format for individual ecorche glTF/DRC bundles."
+      ]
+    },
+    {
+      "id": "llamagen",
+      "name": "LlamaGen AI",
+      "origin": "https://llamagen.ai",
+      "category": "ai-comic-strips-and-agent-workflows",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_5d6e3e4aab21c7ff11fdddfa7d4d30d44627b638626558de15fb02c60e7b2c57",
+          "scenarioSha256": "4bbf2d622452a1b98ef744cf5f307b1bdf1d989a5eedf2b272b7166cff158c8f",
+          "responseBodies": 78,
+          "scriptBodies": 46
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#171713", "#f3ad22", "#0D0C22", "#7B7194", "#524B63", "#E7E7E9", "#F7F7F8", "#4F5263"]
+      },
+      "observedFacts": [
+        "Exposes routes /new/ai-comic-strips, /agents, /draw, /workflows, /story, /features, and /customer-stories."
+      ],
+      "inferences": [
+        "Uses multi-agent workflow orchestration (/agents, /workflows) to maintain character consistency across comic strips."
+      ],
+      "unknowns": [
+        "Internal agent graph execution engine behind /workflows."
+      ]
+    },
+    {
+      "id": "dashtoon",
+      "name": "Dashtoon Studio",
+      "origin": "https://dashtoon.com",
+      "category": "vertical-webtoon-studio-and-photo-to-comic",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c9f6c0db817e24eb5a604fd1da1112281d7e765b0846f1e9aa17caa2434eaf3c",
+          "scenarioSha256": "880e084418ad76b288336cb5134f64b275edaa5f06bbcd5f2e08218abdffd194",
+          "responseBodies": 51,
+          "scriptBodies": 23
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111214", "#1a1b1e", "#2B2B2B", "#3090FC", "#e5e7eb", "#9ca3af"]
+      },
+      "observedFacts": [
+        "Exposes routes /comics, /create, /api/v2/ai-apps/photo-to-comic, /api/v2/ai-apps/photo-to-comic/poll, and /api/v2/ai-apps/user-images."
+      ],
+      "inferences": [
+        "Uses asynchronous polling (/api/v2/ai-apps/photo-to-comic/poll) for GPU image-to-comic batch conversion."
+      ],
+      "unknowns": [
+        "Backend LoRA library cataloging inside /create."
+      ]
+    },
+    {
+      "id": "ltx-studio",
+      "name": "LTX Studio (Lightricks)",
+      "origin": "https://ltx.studio",
+      "category": "ai-previs-storyboard-and-camera-director",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_47dd3a8e80ef7b298a798ce6610a116d5e64904937c128c8f4c53190c9425ad0",
+          "scenarioSha256": "eb2f2d23e2fa72dd4dc010a5b64bb2ef898addec6667fd1f2122458bdd76d9f6",
+          "documentSha256": "b8652fddb179c60a68ef82051dee3fbadb961f149ba6584ede3fb36627d19f95",
+          "responseBodies": 124,
+          "scriptBodies": 34
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#3898ec", "#ea384c", "#758696", "#aaadb0", "#fafafa"]
+      },
+      "observedFacts": [
+        "Provides holistic script-to-shot storyboard generation, camera trajectory presets, and multi-character casting consistency."
+      ],
+      "inferences": [
+        "Couples LTX-Video diffusion keyframes with deterministic timeline editing."
+      ],
+      "unknowns": [
+        "Authenticated compute unit pricing per second of rendered video."
+      ]
+    },
+    {
+      "id": "boords",
+      "name": "Boords AI Storyboard",
+      "origin": "https://boords.com",
+      "category": "storyboard-animatic-and-voiceover-sequencer",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_45aab73c640e451a57e56d4f59d3a56365d00d8ce4845861d685cd5cc3779853",
+          "scenarioSha256": "6591c40a8c78780e637d868476b2936243ed17a3e7511d4992ffd4a215dc03ec",
+          "responseBodies": 81,
+          "scriptBodies": 52
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#120e0b", "#211c19", "#2d2824", "#453d37", "#D5D5CC", "#FF2D8D", "#D97757"]
+      },
+      "observedFacts": [
+        "Warm espresso-dark surface (#120e0b / #211c19) with magenta (#FF2D8D) and terracotta (#D97757) accents for storyboard frame timing and animatic voiceover syncing."
+      ],
+      "inferences": [
+        "Focuses on pre-production frame pacing and client review links before final rendering."
+      ],
+      "unknowns": [
+        "PDF storyboard export layout templates."
+      ]
+    },
+    {
+      "id": "magic-poser",
+      "name": "Magic Poser",
+      "origin": "https://magicposer.com",
+      "category": "webtoon-3d-pose-and-perspective-lighting",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_0340777a4ef59f77df35658b8b4cea7c996b4cd19a9826d9d93985294c590161",
+          "scenarioSha256": "718afbeb1b9bc87923a8ab22458d97e1258812646c6f3a8386393211d40408d2",
+          "documentSha256": "65189bdabbc0d8bdb152244ed7560468d1a2c40fc3da6b5513468775c197ad16",
+          "responseBodies": 23,
+          "scriptBodies": 4
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--mp-dark-blue": "#00B7FD",
+          "--mp-dark-navy": "#24262D",
+          "--mp-dark": "#12121C",
+          "--mp-light-grey": "#F8F8F8",
+          "--mp-light-grey-2": "#D8D8D8"
+        },
+        "brandPalette": ["#12121C", "#24262D", "#00B7FD", "#F45253", "#F8F8F8", "#CCD3EB"]
+      },
+      "observedFacts": [
+        "Defines explicit CSS variables --mp-dark-blue (#00B7FD), --mp-dark-navy (#24262D), --mp-dark (#12121C) for its 3D multi-character posing, perspective camera, and directional studio lighting."
+      ],
+      "inferences": [
+        "Uses inverse kinematics (IK) joint pinning so dragging one limb naturally balances the torso."
+      ],
+      "unknowns": [
+        "Pose Cloud community asset binary serialization format."
+      ]
+    },
+    {
+      "id": "posemy-art",
+      "name": "PoseMy.Art",
+      "origin": "https://posemy.art",
+      "category": "browser-3d-mannequin-and-scene-poser",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_abdd16e2770ee661c9bb1b1b803bf8c9b7940249f13e797ed82638533bcb71c5",
+          "scenarioSha256": "d82bc95e815514a87ab82c07db2c82e08825a640d34bf7470ab8eab37976c173",
+          "responseBodies": 20,
+          "scriptBodies": 1
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#463853", "#5A5563", "#ff30b2", "#ff72cb", "#7de5da", "#FBFBFD"]
+      },
+      "observedFacts": [
+        "Zero-install browser 3D posing tool with block meshes, anime/realistic mannequins, and preset animations."
+      ],
+      "inferences": [
+        "Bundles Three.js/WebGL scene state locally in browser storage."
+      ],
+      "unknowns": [
+        "Pro export resolution limits."
+      ]
+    },
+    {
+      "id": "cascadeur",
+      "name": "Cascadeur",
+      "origin": "https://cascadeur.com",
+      "category": "ai-physics-autoposing-and-trajectory",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_71b8739079fbf7ee061823ba33f787549a304e36c9394624d4899f8d781ef6f5",
+          "scenarioSha256": "f28f6adbfbdffb7e51c0d9cc0afd8fe8d30501eadcf6ed4fa6b7fcc09a645b7f",
+          "documentSha256": "44909c0bf9de042db8126b03af6a5b07f43c62ef8bbb63e7be5fef58aa82f13c",
+          "responseBodies": 69,
+          "scriptBodies": 16
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#030303", "#009ee8", "#00d4ff", "#80fff2", "#51A351", "#F89406"]
+      },
+      "observedFacts": [
+        "Provides AI-assisted AutoPosing from 6 major joint control points and AutoPhysics ballistic trajectory, center-of-mass, and angular momentum correction."
+      ],
+      "inferences": [
+        "Action webtoon creators can extract physically grounded jump/slash keyframes without manual secondary motion curves."
+      ],
+      "unknowns": [
+        "Native desktop C++ physics solver weights."
+      ]
+    },
+    {
+      "id": "krea",
+      "name": "Krea AI",
+      "origin": "https://www.krea.ai",
+      "category": "realtime-canvas-i2i-and-enhancer",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3fbbde1134e1842d9c5306aa04efaab4604118ad3f3a9452245fcccceda86af9",
+          "scenarioSha256": "bd928d2c4b5440618916390f1b17eca190c8445bb0982caf39b1d75c210b8440",
+          "responseBodies": 157,
+          "scriptBodies": 131
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#050505", "#0a0a0a", "#646464", "#c4956a", "#6b9e7a", "#8fa872"]
+      },
+      "observedFacts": [
+        "Exposes routes /realtime, /realtime-director, /apps/image/flux-krea, /apps/enhance, /image, and /video."
+      ],
+      "inferences": [
+        "Streams low-latency LCM/Flux canvas frames from primitive 3D/2D blocking shapes in /realtime-director."
+      ],
+      "unknowns": [
+        "WebRTC/WebSocket frame compression codec in /realtime."
+      ]
+    },
+    {
+      "id": "leonardo-ai",
+      "name": "Leonardo.Ai",
+      "origin": "https://leonardo.ai",
+      "category": "realtime-canvas-and-multi-reference-control",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_aba9a01e0b16e259d691e1c2b1a8a07555a0fb6123a613e7e4d2e52b5c65271b",
+          "scenarioSha256": "eafbf44f53c4c57edb70bd4fee34aa9afe3ac4905aa059e3c4fde5e618d24de3",
+          "documentSha256": "6ef1fe33bb63a1f5c5881ae97ee6ea159c8d9e551a938552d1363bb4666b929c",
+          "responseBodies": 8,
+          "scriptBodies": 5
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0d0f17", "#171a26", "#313131", "#8b5cf6", "#ec4899"]
+      },
+      "observedFacts": [
+        "Provides Realtime Canvas inpainting/outpainting, Live Sketch, and simultaneous Character Reference + Style Reference + Content Reference guidance."
+      ],
+      "inferences": [
+        "Separates identity embedding from style and pose conditioning weights."
+      ],
+      "unknowns": [
+        "Authenticated app.leonardo.ai GraphQL schema."
+      ]
+    },
+    {
+      "id": "gentoon",
+      "name": "GenToon (젠툰)",
+      "origin": "https://www.gentoon.ai",
+      "category": "ai-webtoon-reader-and-creator-commerce",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_e62beed518f1e75ad009869facc63f7acfee12f6116364a44b714551e07027de",
+          "scenarioSha256": "622b3fbbab14dcc8705ea68c675d65b1f4615f06ad7367f1a23e121f9b51711f",
+          "responseBodies": 61,
+          "scriptBodies": 54
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--yellow": "#ffe9a4",
+          "--reading-direction": "1",
+          "--paper": "#f4ebfc",
+          "--ink": "#40215f",
+          "--muted": "#6f5486",
+          "--violet": "#7646bd"
+        },
+        "brandPalette": ["#f4ebfc", "#e7d7f6", "#40215f", "#6f5486", "#7646bd", "#ffe9a4", "#8b5cf6"]
+      },
+      "observedFacts": [
+        "Exposes explicit reader and commerce CSS variables (--reading-direction: 1, --paper: #f4ebfc, --ink: #40215f, --violet: #7646bd) and routes /view, /supporters, /goods/orders, /creator-hub/goods-notices, /community/goods, /creator-hub/earnings, and /achievements."
+      ],
+      "inferences": [
+        "Directly couples AI webtoon episode viewing (/view) with creator goods commerce (/goods/orders) and supporter tiers (/supporters)."
+      ],
+      "unknowns": [
+        "Revenue split percentage inside /creator-hub/earnings."
+      ]
+    },
+    {
+      "id": "tootoon",
+      "name": "TooToon (투툰 · Onoma AI)",
+      "origin": "https://tootoon.ai",
+      "category": "five-module-end-to-end-webtoon-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_ed83b1f1e6e9d943e547c3e705e1bec9ed1149c34e008ac9526cc99e9d0986bf",
+          "scenarioSha256": "0fd9e464f594a4dba361c16012e16908c9d945f3c12e12502e05e9f2fca53d72",
+          "responseBodies": 35,
+          "scriptBodies": 25
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#121212", "#1F1F1F", "#363cff", "#4285F4", "#34A853", "#FBBC04", "#E94235", "#B3B3B3"]
+      },
+      "observedFacts": [
+        "Exposes 5 dedicated creator studio modules via routes: /fabulator (story/script), /character-studio (character sheet), /visual-studio (storyboard/layout), /artifex (rendering/coloring), and /emporium (asset marketplace), plus /anima/feed/list community."
+      ],
+      "inferences": [
+        "Each Latin-named route maps to one stage of the traditional webtoon studio pipeline."
+      ],
+      "unknowns": [
+        "Internal token exchange rate inside /emporium."
+      ]
+    },
+    {
+      "id": "tooning-plus",
+      "name": "Tooning Plus (투닝 플러스)",
+      "origin": "https://tooning.io",
+      "category": "modular-six-part-character-and-fast-webtoon-builder",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_fb15db7d87f332c7a168570f1ae75041b2dffb840b74dd24ea17286716434865",
+          "scenarioSha256": "64e77ab9486e3fb6f873d2aff54cb139f970068916557440a4b4cae3352f7eeb",
+          "responseBodies": 95,
+          "scriptBodies": 34
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#ffffff", "#f7f7f7", "#eaeaea", "#424242", "#969696", "#c1c4cd"]
+      },
+      "observedFacts": [
+        "Exposes 6 modular character builder routes (/character-make-basic, /character-make-face, /character-make-body, /character-make-hand, /character-make-hair, /character-make-etc), custom upload routes (/etcUpload-make-basic, /etcUpload-make-addOrSet), and /100x."
+      ],
+      "inferences": [
+        "Decomposes 2D webtoon characters into 6 swappable rig parts for zero-drift facial/hand expression switching across cuts."
+      ],
+      "unknowns": [
+        "Internal layer z-index table for /character-make-hand."
+      ]
+    },
+    {
+      "id": "enkava",
+      "name": "Enkava (엔카바)",
+      "origin": "https://enkava.com",
+      "category": "creator-asset-and-commission-hub",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_bd2f37c70899ba98a372d30c7fa86b64247954bc03156764a19d7b88de10d1b6",
+          "scenarioSha256": "6ab5faccdeda58e09d95097208c57124389672f69b465e805f8087340d0a119a",
+          "responseBodies": 1,
+          "scriptBodies": 1
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#101218", "#181c24", "#6366f1", "#22d3ee"]
+      },
+      "observedFacts": [
+        "Captured live response envelope for domestic subculture/webtoon creator collaboration hub."
+      ],
+      "inferences": [
+        "Serves as a specialized asset & commission exchange for webtoon/illustration creators."
+      ],
+      "unknowns": [
+        "Authenticated commission escrow flow."
+      ]
+    },
+    {
+      "id": "jitter",
+      "name": "Jitter",
+      "origin": "https://jitter.video",
+      "category": "layered-motion-design-and-movingtoon-export",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_2d1aa187b94021f527b0d3ac70f50d79b4b747935d04c55d4f5dd1b2fcd69a91",
+          "scenarioSha256": "90e125c7bb09b1c1e9bc3788c7a437cce97de4d1f4f2449d0c26e92e78cfc31d",
+          "documentSha256": "35dcc382eb69d00369d708708cdc545f3968b68fa5bbe3e728d11fedd04f93bb",
+          "responseBodies": 159,
+          "scriptBodies": 107
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#19171C", "#7A40ED", "#b3b3b3", "#FFFFFF", "#000000"]
+      },
+      "observedFacts": [
+        "Dark violet studio (#19171C / #7A40ED) for layered artboard motion presets and 4K/Lottie export."
+      ],
+      "inferences": [
+        "Ideal for animating separated webtoon PSD layers into promotional movingtoon reels."
+      ],
+      "unknowns": [
+        "WebCodecs hardware acceleration fallback matrix."
+      ]
+    },
+    {
+      "id": "lumiere-graphics",
+      "name": "Lumiere Graphics",
+      "origin": "https://lumiere.graphics",
+      "category": "webgpu-postprocessing-and-kuwahara-shaders",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_1b6dac1de41311e357dbbcffe8ac3a0152ac8a38566670b69e64cce0c2819387",
+          "scenarioSha256": "a8299ab08f35cbf13becd96d6b8e267a570eacdec7010f1c015f5ce299e160b1",
+          "documentSha256": "0d7efb67db2ba0570385eab8219246fdf31f5c61323cda25ba39842d102bb510",
+          "responseBodies": 24,
+          "scriptBodies": 12
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0e0c13", "#ff5a31", "#72e37f", "#9a86fc", "#ffc800"]
+      },
+      "observedFacts": [
+        "Browser-native real-time shader suite providing Kuwahara painterly filtering, film halation, glare, and CRT/dither effects."
+      ],
+      "inferences": [
+        "Allows webtoon artists to convert 3D renders into painterly background plates without AI hallucination."
+      ],
+      "unknowns": [
+        "Custom WGSL shader import syntax."
+      ]
+    },
+    {
+      "id": "graphite-editor",
+      "name": "Graphite Editor",
+      "origin": "https://graphite.rs",
+      "category": "rust-wasm-procedural-node-2d-editor",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_635a2c265c07c191273b2a7a893507c0495e7b3498aedfdc6f91471adfaa2f86",
+          "scenarioSha256": "db99212fb5132845e7743ddaefe217063847e305b61d23ea8c1464d53914e39b",
+          "responseBodies": 23,
+          "scriptBodies": 2
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111111", "#222222", "#e08838", "#4992d6", "#dddddd"]
+      },
+      "observedFacts": [
+        "Open-source Rust/WASM non-destructive procedural node graph + layer compositor."
+      ],
+      "inferences": [
+        "Every vector stroke and raster filter remains editable as a DAG node."
+      ],
+      "unknowns": [
+        "WGPU vs WebGL2 backend selection heuristics."
+      ]
+    },
+    {
+      "id": "pixieditor",
+      "name": "PixiEditor",
+      "origin": "https://pixieditor.net",
+      "category": "universal-2d-node-layer-and-animation-editor",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_beb60ae9754671115d8cea321a358724b7601c0967065663192d4d6435f9b919",
+          "scenarioSha256": "1e017e75b925ae2fd960d81fe79c01e787e3bc5da2350c8d241eaf727a572cae",
+          "documentSha256": "8f2b057787670a09cbe8d39687923dec6fdc40c171742ec6042a339a0b704a8c",
+          "responseBodies": 41,
+          "scriptBodies": 1
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111214", "#15171a", "#1b1d20", "#23262b", "#80848E", "#DCDCDC", "#F3C31A"]
+      },
+      "observedFacts": [
+        "Exposes routes /docs, /extensions, /colorpicker, /download, and /blog/2025/12/10/21-beta with dark slate (#111214 / #15171a) and amber gold (#F3C31A) UI tokens."
+      ],
+      "inferences": [
+        "Unifies procedural node graphs, vector/pixel layers, and frame-by-frame animation in a single document model."
+      ],
+      "unknowns": [
+        "Extension sandbox API inside /extensions."
+      ]
+    },
+    {
+      "id": "spline",
+      "name": "Spline 3D & Hana",
+      "origin": "https://spline.design",
+      "category": "browser-3d-ai-style-transfer-and-hana-canvas",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3171b5f912972cab97571d062102a47b20a00293a0d49b5c5b272001a948b32f",
+          "scenarioSha256": "773b0e108cf1f9f9a73bf9f4d3d2963f107cfda96c63d8538516f3b847940e2b",
+          "documentSha256": "caa849b179befa2645a8e2c474d2e82a76777a3305315ece911013e8ee9a916c",
+          "responseBodies": 96,
+          "scriptBodies": 36
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--color-bg": "#000",
+          "--color-text-main": "#fff"
+        },
+        "brandPalette": ["#000000", "#5865F2", "#3DDC84", "#38E2B3", "#ff4b4b", "#363636"]
+      },
+      "observedFacts": [
+        "Exposes routes /3d-design, /hana, /ai-generate, /ai-style-transfer, and /mcp."
+      ],
+      "inferences": [
+        "Combines interactive 3D scene authoring (/3d-design), 2D/3D reactive canvas (/hana), AI style transfer (/ai-style-transfer), and MCP agent control (/mcp)."
+      ],
+      "unknowns": [
+        "MCP tool schema definitions behind /mcp."
+      ]
+    },
+    {
+      "id": "rive",
+      "name": "Rive",
+      "origin": "https://rive.app",
+      "category": "interactive-2d-mesh-and-state-machine-runtime",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_0694fab590921fecb24ca0a5ebddb7cadf52273043897a3ef0dfabf38c70b4b7",
+          "scenarioSha256": "2b2493ee53f3ffc4f86ffb3665abf059724e92366389224402a5fad471c3e721",
+          "documentSha256": "0071e518301929682f8b6051451218300e82dcb3a2d726e394cea2411b8a9924",
+          "responseBodies": 123,
+          "scriptBodies": 29
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#070708", "#0d0d0f", "#0099FF", "#FF483C", "#FFFFFF", "#a5a5a5"]
+      },
+      "observedFacts": [
+        "Provides skeletal bone + mesh deformation rigging driven by real-time State Machines in ultra-dark UI (#070708 / #0d0d0f) with electric blue (#0099FF) and coral red (#FF483C)."
+      ],
+      "inferences": [
+        "Enables scroll-position-bound interactive webtoon cuts that deform and animate at 60fps."
+      ],
+      "unknowns": [
+        "Binary .riv file opcode table version."
+      ]
+    },
+    {
+      "id": "medibang-paint",
+      "name": "MediBang Paint",
+      "origin": "https://medibangpaint.com",
+      "category": "comic-panel-slicing-and-cloud-screentone-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_2a409645bc383af67c30cc72cde5c63397b4dce431ece4ff762d8e022ec1f6a4",
+          "scenarioSha256": "718f21e20611bef71c3c1d6a04536e0c716759221cfce38899c30ac2bd3fb636",
+          "documentSha256": "d8676bba5933d00eb4eb709f08930dad3fe8e4d5441f954b8563ab7b3162dbf3",
+          "responseBodies": 77,
+          "scriptBodies": 15
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#313131", "#007cba", "#7a00df", "#00d084", "#0693e3", "#34e2e4"]
+      },
+      "observedFacts": [
+        "Specializes in knife-tool comic panel slicing, cloud screentone/font libraries, and multi-device project synchronization."
+      ],
+      "inferences": [
+        "Prioritizes lightweight raster/halftone memory footprint for tablet/mobile comic artists."
+      ],
+      "unknowns": [
+        "Cloud storage quota tiers."
+      ]
+    },
+    {
+      "id": "ibispaint",
+      "name": "ibisPaint",
+      "origin": "https://ibispaint.com",
+      "category": "timelapse-drawing-and-manga-background-filters",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_75aa161f8a02eefbfba96631394b51d6a228d049f24e13988c400022dd674eab",
+          "scenarioSha256": "b69e291c96ef70a7ee63d76f2ea642246f5c888efe04ba4d28e883f8efae4b4a",
+          "documentSha256": "9c67cef89483f15e7d0cfcf0df59bf1aade0771f1603cd54e9f606b951e2f081",
+          "responseBodies": 93,
+          "scriptBodies": 9
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#FFFFFF", "#dbe2e7", "#006699", "#ff6699", "#525559", "#666666"]
+      },
+      "observedFacts": [
+        "Features stroke-by-stroke timelapse recording, Anime Background/Manga Background photo filters, and radial/symmetry rulers."
+      ],
+      "inferences": [
+        "Stores drawing history as deterministic command logs for instant timelapse video rendering."
+      ],
+      "unknowns": [
+        "Proprietary .ipv file chunk layout."
+      ]
+    },
+    {
+      "id": "clip-studio-paint",
+      "name": "Clip Studio Paint",
+      "origin": "https://www.clipstudio.net/en/",
+      "category": "industry-standard-webtoon-and-vector-lineart-suite",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_6ef8739eb39c554d45fe2735be7bec6323b81dd6636cecd4de13ff339dff673d",
+          "scenarioSha256": "b8006fa8e94809251353b459d1490ccd467cbc285116d0d0eb3494ae1b68aa2d",
+          "responseBodies": 91,
+          "scriptBodies": 18
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1B1E24", "#0B96E3", "#61B001", "#f4f4f4", "#e4e4e4", "#b7b7b7"]
+      },
+      "observedFacts": [
+        "Industry standard featuring vector intersection eraser, reference-layer close-and-fill, 3D drawing figures, Shading Assist, and vertical webtoon mobile preview area."
+      ],
+      "inferences": [
+        "Combines vector centerline graphs with reference-layer flood fill for high-speed webtoon flatting."
+      ],
+      "unknowns": [
+        "Proprietary .clip SQLite/layer blob compression."
+      ]
+    },
+    {
+      "id": "acon3d",
+      "name": "ACON3D (에이콘3D)",
+      "origin": "https://www.acon3d.com",
+      "category": "webtoon-3d-background-and-asset-marketplace",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c58fac87f1de010c366346d3f144baed81b0de4a7ae5e310fa4ace18c1ae617b",
+          "scenarioSha256": "9af0c6f2143b88c164e34c7f65f3abfd3fe5e153c6b847f325f511421094ec38",
+          "documentSha256": "830c0ce843ce27cbdc84ef145505ccee6335d85bcb21fc4465485eba7c1fc6d8",
+          "responseBodies": 8,
+          "scriptBodies": 4
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#18181b", "#27272a", "#313131", "#6366f1", "#ec4899"]
+      },
+      "observedFacts": [
+        "Global #1 webtoon 3D background/prop marketplace supporting SketchUp (.skp), Blender (.blend), and Snaptoon (.stf) formats."
+      ],
+      "inferences": [
+        "Standardizes genre-tagged 3D sets (palace, academy, dungeon, modern office) for rapid camera placement."
+      ],
+      "unknowns": [
+        "Dynamic component script encryption."
+      ]
+    },
+    {
+      "id": "webtoon-canvas",
+      "name": "WEBTOON CANVAS",
+      "origin": "https://www.webtoons.com/en/canvas",
+      "category": "global-vertical-webtoon-publishing-standard",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_054b1489efcd0052fd9893f98109861b735650a268d87a777e36a0de7fb781c3",
+          "scenarioSha256": "6250ba8e36382b5015267440225dcaaf359e101aae6e4e939656f3112cba9b0f",
+          "responseBodies": 52,
+          "scriptBodies": 6
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#121212", "#1e1e1e", "#00dc64", "#00ff74", "#ffffff"]
+      },
+      "observedFacts": [
+        "Global vertical webtoon publishing platform enforcing 800×1280px slice geometry, 20MB episode payload caps, and series/episode thumbnail specs."
+      ],
+      "inferences": [
+        "Acts as the downstream distribution target for all webtoon creation studios."
+      ],
+      "unknowns": [
+        "Internal recommendation ranking weights."
       ]
     }
   ]

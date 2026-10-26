@@ -54,5 +54,17 @@ describe("StudioRea15PlatformsWorkbenchPanel (Phase 7 15대 웹툰 AI 플랫폼 
     await waitFor(() => {
       expect(appendedLines.some((l) => l.includes("[독자 도파민 & UI 합성기"))).toBe(true);
     });
+
+    // 탭 6: TooToon · GenToon · Tooning Plus
+    fireEvent.click(screen.getByTestId("rea15-tab-tootoon-gentoon-tooning-kr"));
+    expect(screen.getByTestId("rea15-panel-tootoon-gentoon-tooning-kr")).toBeDefined();
+
+    // 탭 7: Krea · Spline · Lumiere
+    fireEvent.click(screen.getByTestId("rea15-tab-krea-spline-lumiere-shader"));
+    expect(screen.getByTestId("rea15-panel-krea-spline-lumiere-shader")).toBeDefined();
+
+    // 탭 8: LTX · Boords · Cascadeur · Rive
+    fireEvent.click(screen.getByTestId("rea15-tab-ltx-boords-cascadeur-rive"));
+    expect(screen.getByTestId("rea15-panel-ltx-boords-cascadeur-rive")).toBeDefined();
   });
 });
