@@ -37,6 +37,27 @@ import {
   type Tripo3dRigType,
 } from "./lib/tripo3d-catalog.mts";
 import {
+  BLEND_AI_SCALE_REFERENCE_METERS,
+  BLEND_AI_THREE_POINT_LIGHTING_RATIO,
+  GLBFORGE_EXTRUDE_MATERIAL_PRESETS,
+  GLBFORGE_LINT_RULES,
+  GLBFORGE_PERFORMANCE_PROFILES,
+  HYPER3D_RODIN_MCP_TOOLS,
+  MESHY_CREATIVE_LAB_PRODUCTS,
+  MESHY_MULTI_COLOR_SLICERS,
+  TRIPO3D_STUDIO_ASSET_FILTERS,
+  TRIPO3D_STUDIO_WEB_WORKSPACES,
+  VRM0_REQUIRED_BONES,
+  VRM1_REQUIRED_BONES,
+  VRM_CAMERA_FRAMING_PRESETS,
+  auditGlbAssetAgainstProfile,
+  plan2dTo3dReliefExtrusion,
+  planRodinBangDecomposition,
+  validateVrmAssetSummary,
+  type GlbForgeExtrudeMaterialPresetId,
+  type GlbForgePerformanceBudget,
+} from "./lib/tripo3d-ecosystem-catalog.mts";
+import {
   buildTripo3dPlanCard,
   computeTripo3dAdaptivePollIntervalMs,
   detectTripo3dLowPolyIntent,
@@ -54,15 +75,26 @@ import {
 } from "./lib/tripo3d-runtime.mts";
 
 export {
+  auditGlbAssetAgainstProfile,
+  BLEND_AI_SCALE_REFERENCE_METERS,
+  BLEND_AI_THREE_POINT_LIGHTING_RATIO,
   buildTripo3dPlanCard,
   COMPETITOR_3D_PLATFORM_MATRIX,
   computeTripo3dAdaptivePollIntervalMs,
   detectTripo3dLowPolyIntent,
   formatTripo3dPoseControlPromptSuffix,
+  GLBFORGE_EXTRUDE_MATERIAL_PRESETS,
+  GLBFORGE_LINT_RULES,
+  GLBFORGE_PERFORMANCE_PROFILES,
+  HYPER3D_RODIN_MCP_TOOLS,
   inspectTripo3dMcpAndTools,
   loadTripo3dConfig,
   maskTripoApiKey,
+  MESHY_CREATIVE_LAB_PRODUCTS,
+  MESHY_MULTI_COLOR_SLICERS,
   parseTripo3dChainExpression,
+  plan2dTo3dReliefExtrusion,
+  planRodinBangDecomposition,
   REPO_ROOT,
   requestTripo3dJson,
   requireTripo3dApiKey,
@@ -82,9 +114,15 @@ export {
   TRIPO3D_RIG_TYPES,
   TRIPO3D_RIG_VERSIONS,
   TRIPO3D_SCENARIO_PRESETS,
+  TRIPO3D_STUDIO_ASSET_FILTERS,
+  TRIPO3D_STUDIO_WEB_WORKSPACES,
   TRIPO3D_WIRE_MODELS,
   type Tripo3dResolvedConfig,
   validateTripo3dChain,
+  validateVrmAssetSummary,
+  VRM0_REQUIRED_BONES,
+  VRM1_REQUIRED_BONES,
+  VRM_CAMERA_FRAMING_PRESETS,
 };
 
 export interface ParsedTripoCliArgs {
@@ -342,6 +380,24 @@ export async function executeTripo3dCli(
         output: { competitorPlatforms: COMPETITOR_3D_PLATFORM_MATRIX },
       };
     }
+    if (section === "ecosystem") {
+      return {
+        exitCode: 0,
+        output: {
+          studioWebWorkspaces: TRIPO3D_STUDIO_WEB_WORKSPACES,
+          studioAssetFilters: TRIPO3D_STUDIO_ASSET_FILTERS,
+          glbforgeProfiles: GLBFORGE_PERFORMANCE_PROFILES,
+          glbforgeLintRules: GLBFORGE_LINT_RULES,
+          glbforgeExtrudePresets: GLBFORGE_EXTRUDE_MATERIAL_PRESETS,
+          rodinMcpTools: HYPER3D_RODIN_MCP_TOOLS,
+          meshyCreativeLabProducts: MESHY_CREATIVE_LAB_PRODUCTS,
+          meshyMultiColorSlicers: MESHY_MULTI_COLOR_SLICERS,
+          vrmCameraPresets: VRM_CAMERA_FRAMING_PRESETS,
+          blendAiScaleReferenceMeters: BLEND_AI_SCALE_REFERENCE_METERS,
+          blendAiThreePointLightingRatio: BLEND_AI_THREE_POINT_LIGHTING_RATIO,
+        },
+      };
+    }
     return {
       exitCode: 0,
       output: {
@@ -351,8 +407,89 @@ export async function executeTripo3dCli(
         scenarios: TRIPO3D_SCENARIO_PRESETS,
         errorCatalog: TRIPO3D_ERROR_CATALOG,
         competitorPlatforms: COMPETITOR_3D_PLATFORM_MATRIX,
+        studioWebWorkspaces: TRIPO3D_STUDIO_WEB_WORKSPACES,
       },
     };
+  }
+
+  if (parsed.command === "ecosystem") {
+    return {
+      exitCode: 0,
+      output: {
+        studioWebWorkspaces: TRIPO3D_STUDIO_WEB_WORKSPACES,
+        studioAssetFilters: TRIPO3D_STUDIO_ASSET_FILTERS,
+        glbforgeProfiles: GLBFORGE_PERFORMANCE_PROFILES,
+        glbforgeLintRules: GLBFORGE_LINT_RULES,
+        glbforgeExtrudePresets: GLBFORGE_EXTRUDE_MATERIAL_PRESETS,
+        rodinMcpTools: HYPER3D_RODIN_MCP_TOOLS,
+        meshyCreativeLabProducts: MESHY_CREATIVE_LAB_PRODUCTS,
+        meshyMultiColorSlicers: MESHY_MULTI_COLOR_SLICERS,
+        vrmCameraPresets: VRM_CAMERA_FRAMING_PRESETS,
+        blendAiScaleReferenceMeters: BLEND_AI_SCALE_REFERENCE_METERS,
+        blendAiThreePointLightingRatio: BLEND_AI_THREE_POINT_LIGHTING_RATIO,
+      },
+    };
+  }
+
+  if (parsed.command === "lint-glb") {
+    const profile = (parsed.options.get("profile") ?? "mobile-hero") as GlbForgePerformanceBudget["id"];
+    const report = auditGlbAssetAgainstProfile({
+      profile,
+      triangles: Number.parseInt(parsed.options.get("triangles") ?? "12000", 10),
+      vertices: Number.parseInt(parsed.options.get("vertices") ?? "8000", 10),
+      drawCalls: Number.parseInt(parsed.options.get("draw-calls") ?? "2", 10),
+      materials: Number.parseInt(parsed.options.get("materials") ?? "2", 10),
+      fileBytes: Number.parseInt(parsed.options.get("file-bytes") ?? "1500000", 10),
+      maxTextureDimension: Number.parseInt(parsed.options.get("texture-size") ?? "1024", 10),
+      textureBytesTotal: Number.parseInt(parsed.options.get("texture-bytes") ?? "800000", 10),
+      nonManifoldEdges: Number.parseInt(parsed.options.get("non-manifold") ?? "0", 10),
+    });
+    return { exitCode: report.passed ? 0 : 2, output: { ...report } };
+  }
+
+  if (parsed.command === "extrude-plan") {
+    const preset = (parsed.options.get("preset") ?? "enamel") as GlbForgeExtrudeMaterialPresetId;
+    const mode = (parsed.options.get("mode") ?? "alpha") as "alpha" | "luma";
+    const plan = plan2dTo3dReliefExtrusion({
+      preset,
+      mode,
+      depthCm: parsed.options.has("depth-cm") ? Number(parsed.options.get("depth-cm")) : undefined,
+      bevelCm: parsed.options.has("bevel-cm") ? Number(parsed.options.get("bevel-cm")) : undefined,
+      layers: parsed.options.has("layers") ? Number(parsed.options.get("layers")) : undefined,
+      pillowCm: parsed.options.has("pillow-cm") ? Number(parsed.options.get("pillow-cm")) : undefined,
+      embossCm: parsed.options.has("emboss-cm") ? Number(parsed.options.get("emboss-cm")) : undefined,
+    });
+    return { exitCode: 0, output: { ...plan } };
+  }
+
+  if (parsed.command === "validate-vrm") {
+    const specVersion = (parsed.options.get("spec") ?? "1.0") as "0.x" | "1.0";
+    const defaultBones = specVersion === "1.0" ? VRM1_REQUIRED_BONES : VRM0_REQUIRED_BONES;
+    const missingRaw = parsed.options.get("missing-bones");
+    const missingSet = new Set(missingRaw ? missingRaw.split(",").map((s) => s.trim()) : []);
+    const presentBones = defaultBones.filter((b) => !missingSet.has(b));
+    const report = validateVrmAssetSummary({
+      specVersion,
+      presentBones,
+      triangleCount: Number.parseInt(parsed.options.get("triangles") ?? "18000", 10),
+      fileSizeBytes: Number.parseInt(parsed.options.get("file-bytes") ?? "4500000", 10),
+      maxTextureSize: Number.parseInt(parsed.options.get("texture-size") ?? "2048", 10),
+      materialCount: Number.parseInt(parsed.options.get("materials") ?? "6", 10),
+    });
+    return { exitCode: report.valid ? 0 : 2, output: { ...report } };
+  }
+
+  if (parsed.command === "bang-plan") {
+    const report = planRodinBangDecomposition({
+      assetId: parsed.options.get("asset-id"),
+      instruction: parsed.options.get("instruction"),
+      strength: parsed.options.has("strength") ? Number(parsed.options.get("strength")) : undefined,
+      explodeStrength: parsed.options.has("explode-strength")
+        ? Number(parsed.options.get("explode-strength"))
+        : undefined,
+      resolution: (parsed.options.get("resolution") as "Basic" | "High" | undefined) ?? "High",
+    });
+    return { exitCode: 0, output: { ...report } };
   }
 
   if (parsed.command === "plan") {

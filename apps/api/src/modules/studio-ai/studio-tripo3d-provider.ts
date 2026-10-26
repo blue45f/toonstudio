@@ -17,6 +17,7 @@ export const TRIPO_3D_OPENAPI_DEFAULT_BASE_URL = "https://api.tripo3d.ai" as con
 export const TRIPO_3D_CREDITS_EXHAUSTED_PROVIDER_CODE = "tripo-credits-exhausted" as const;
 
 export type Tripo3dModelVersion =
+  | "H3.1-20260901"
   | "v3.1-20260211"
   | "P1-20260311"
   | "P2-20260801"
@@ -96,6 +97,13 @@ export function selectTripo3dModelVersion(options: {
   readonly quad?: boolean;
   readonly smartLowPoly?: boolean;
 }): Tripo3dModelVersion {
+  if (
+    options.requestedModel === "H3.1-20260901" ||
+    options.requestedModel === "h3.1" ||
+    options.requestedModel === "tripo-h3.1"
+  ) {
+    return "H3.1-20260901";
+  }
   if (
     options.requestedModel === "v3.1-20260211" ||
     options.requestedModel === "P1-20260311" ||

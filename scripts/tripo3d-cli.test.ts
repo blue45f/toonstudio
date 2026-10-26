@@ -186,4 +186,75 @@ describe("tripo3d-cli", () => {
     expect(balanceRes.exitCode).toBe(0);
     expect((balanceRes.output.data as { balance: number }).balance).toBe(2900);
   });
+
+  it("REA 2026-10-27 3D 생태계(H3.1, 12개 워크스페이스, GLBForge 린터/2D→3D 부조 압출, VRM 검증기, Rodin BANG) 명령을 수행한다", async () => {
+    const h31Plan = resolveTripo3dModelAndValidateParams({
+      prompt: "industrial water tank piping facility",
+      modelVersion: "h3.1",
+      geometryQuality: "detailed",
+    });
+    expect(h31Plan.wireModel).toBe("H3.1-20260901");
+
+    const ecoRes = await executeTripo3dCli(["ecosystem"]);
+    expect(ecoRes.exitCode).toBe(0);
+    expect((ecoRes.output.studioWebWorkspaces as unknown[]).length).toBe(12);
+    expect((ecoRes.output.glbforgeLintRules as unknown[]).length).toBe(17);
+    expect((ecoRes.output.rodinMcpTools as unknown[]).length).toBe(7);
+
+    const lintPass = await executeTripo3dCli([
+      "lint-glb",
+      "--profile",
+      "mobile-hero",
+      "--triangles",
+      "24000",
+      "--draw-calls",
+      "2",
+    ]);
+    expect(lintPass.exitCode).toBe(0);
+    expect(lintPass.output.passed).toBe(true);
+
+    const lintFail = await executeTripo3dCli([
+      "lint-glb",
+      "--profile",
+      "webtoon-scene-cluster",
+      "--triangles",
+      "95000",
+      "--draw-calls",
+      "8",
+    ]);
+    expect(lintFail.exitCode).toBe(2);
+    expect(lintFail.output.passed).toBe(false);
+
+    const extrudeRes = await executeTripo3dCli([
+      "extrude-plan",
+      "--preset",
+      "neon",
+      "--layers",
+      "3",
+      "--pillow-cm",
+      "0.3",
+    ]);
+    expect(extrudeRes.exitCode).toBe(0);
+    expect((extrudeRes.output.materialSpec as { id: string }).id).toBe("neon");
+
+    const vrmFail = await executeTripo3dCli([
+      "validate-vrm",
+      "--spec",
+      "1.0",
+      "--missing-bones",
+      "leftHand,rightHand",
+    ]);
+    expect(vrmFail.exitCode).toBe(2);
+    expect(vrmFail.output.valid).toBe(false);
+
+    const bangRes = await executeTripo3dCli([
+      "bang-plan",
+      "--strength",
+      "8",
+      "--explode-strength",
+      "1.5",
+    ]);
+    expect(bangRes.exitCode).toBe(0);
+    expect(bangRes.output.estimatedSubparts).toBe(16);
+  });
 });

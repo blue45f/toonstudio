@@ -264,6 +264,30 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           </button>
         ))}
       </div>
+      <div className="cl-export-row" role="group" aria-label="VRM 4-View 턴어라운드 및 프레이밍 프리셋" data-testid="export-vrm-framing-presets">
+        {(
+          [
+            { id: "vrm-full", label: "VRM 전신 턴어라운드 (1024×1536)", w: 1024, h: 1536, mode: "full-body" as const },
+            { id: "vrm-bust", label: "VRM 상반신 소개컷 (1024×1024)", w: 1024, h: 1024, mode: "bust" as const },
+            { id: "vrm-face", label: "VRM 표정 시트 클로즈업 (1024×1024)", w: 1024, h: 1024, mode: "face" as const },
+          ] as const
+        ).map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cl-preset-chip"
+            data-testid={`export-preset-${preset.id}`}
+            aria-pressed={width === preset.w && height === preset.h && framing === preset.mode}
+            onClick={() => {
+              setWidth(preset.w);
+              setHeight(preset.h);
+              setFraming(preset.mode);
+            }}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
       <div className="cl-export-row">
         <label htmlFor={`${ids}-width`}>너비(px)</label>
         <input id={`${ids}-width`} type="number" min={MIN_EXPORT_DIMENSION} max={MAX_PNG_EXPORT_DIMENSION} value={width} onChange={(event) => setWidth(clampInt(event.target.value, 1, MAX_PNG_EXPORT_DIMENSION, width))} />

@@ -14,6 +14,19 @@ import {
   planTripoV3Pipeline,
   STUDIO_3D_COMPETITOR_REA_BENCHMARKS,
 } from "./studio-tripo3d-competitor-engine";
+import {
+  BLEND_AI_SCALE_GUIDES,
+  evaluateTripoStudioWorkspaceGuard,
+  GLBFORGE_EXTRUDE_PRESETS,
+  GLBFORGE_PROFILES,
+  MESHY_CREATIVE_PRODUCTS,
+  MESHY_SLICERS,
+  planWebtoonSignageReliefExtrusion,
+  simulateGlbForgeAuditAndOptimization,
+  TRIPO_STUDIO_12_WORKSPACES,
+  TRIPO_TEXT_TO_MOTION_PRESETS,
+  VRM_FRAMING_PRESETS,
+} from "./studio-tripo3d-ecosystem-engine";
 
 describe("studio-tripo3d-competitor-engine", () => {
   it("Tripo V3 3원 모델 라우팅(v3.1 / P1 / P2), 파라미터 제거 및 체인 검증을 수행한다", () => {
@@ -171,5 +184,58 @@ describe("studio-tripo3d-competitor-engine", () => {
     expect(cluster.proceduralModuleCount).toBe(24);
     expect(cluster.aiHeroPropCount).toBe(6);
     expect(cluster.cameraFovDeg).toBe(28);
+  });
+
+  it("H3.1-20260901 모델, Tripo Studio 12개 워크스페이스, GLBForge 감사·돌출, Meshy 7종 제품, VRM 검증 및 Blend-AI 스케일을 계산한다", () => {
+    const h31Plan = planTripoV3Pipeline({
+      mode: "text-to-model",
+      prompt: "anime protagonist character",
+      requestedModel: "H3.1-20260901",
+      smartLowPoly: false,
+      generateParts: true,
+      geometryQuality: "detailed",
+      faceLimit: 24000,
+    });
+    expect(h31Plan.valid).toBe(true);
+    expect(h31Plan.selectedModel).toBe("H3.1-20260901");
+
+    expect(TRIPO_STUDIO_12_WORKSPACES).toHaveLength(12);
+    expect(TRIPO_TEXT_TO_MOTION_PRESETS).toHaveLength(6);
+    expect(GLBFORGE_PROFILES).toHaveLength(4);
+    expect(GLBFORGE_EXTRUDE_PRESETS).toHaveLength(5);
+    expect(MESHY_CREATIVE_PRODUCTS).toHaveLength(7);
+    expect(MESHY_SLICERS).toHaveLength(8);
+    expect(VRM_FRAMING_PRESETS).toHaveLength(4);
+    expect(BLEND_AI_SCALE_GUIDES).toHaveLength(6);
+
+    const uvGuard = evaluateTripoStudioWorkspaceGuard({
+      workspaceId: "smart-uv",
+      faceCount: 50_000,
+      quad: true,
+    });
+    expect(uvGuard.allowed).toBe(false);
+    expect(uvGuard.blockersKo[0]).toContain("40,000");
+
+    const glbAudit = simulateGlbForgeAuditAndOptimization({
+      profileId: "mobile-hero",
+      triangles: 8104,
+      drawCalls: 8,
+      materials: 5,
+      textureSizePx: 2048,
+    });
+    expect(glbAudit.profile.id).toBe("mobile-hero");
+    expect(glbAudit.passed).toBe(false);
+    expect(glbAudit.score).toBe(65);
+    expect(glbAudit.optimizedDrawCalls).toBe(4);
+
+    const relief = planWebtoonSignageReliefExtrusion({
+      presetId: "neon",
+      layers: 3,
+      depthCm: 1.5,
+      pillowCm: 0.3,
+    });
+    expect(relief.preset.id).toBe("neon");
+    expect(relief.watertightStlReady).toBe(true);
+    expect(relief.summaryKo).toContain("야경 네온사인 간판");
   });
 });

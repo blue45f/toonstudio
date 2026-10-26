@@ -48,5 +48,32 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
     expect(screen.getByTestId("bgcluster-summary-readout").textContent).toContain(
       "로맨스판타지 황궁 회랑",
     );
+
+    // H3.1 모델 선택 및 6대 MCP 생태계 확장 패널 제어
+    fireEvent.click(screen.getByTestId("tripo3d-model-H3.1-20260901"));
+    fireEvent.click(screen.getByTestId("tripo3d-toggle-quad"));
+    expect(screen.getByTestId("tripo3d-selected-model-readout").textContent).toContain(
+      "H3.1-20260901",
+    );
+
+    expect(screen.getByTestId("tripo-ws-guard-readout").textContent).toContain("/ko/workspace/smart-uv");
+    fireEvent.click(screen.getByTestId("tripo-ws-segmentation"));
+    expect(screen.getByTestId("tripo-ws-guard-readout").textContent).toContain(
+      "/ko/workspace/segmentation",
+    );
+
+    expect(screen.getByTestId("glbforge-audit-readout").textContent).toContain("/100");
+    fireEvent.click(screen.getByTestId("glbforge-extrude-acrylic"));
+    expect(screen.getByTestId("glbforge-extrude-readout").textContent).toContain(
+      "투명 아크릴 스탠드",
+    );
+
+    fireEvent.click(screen.getByTestId("meshy-product-figure"));
+    expect(screen.getByTestId("meshy-blendai-summary-readout").textContent).toContain(
+      "피규어 (베이스 포함)",
+    );
+    expect(screen.getByTestId("meshy-blendai-summary-readout").textContent).toContain(
+      "Key:Fill:Rim = 3:1:1.5",
+    );
   });
 });

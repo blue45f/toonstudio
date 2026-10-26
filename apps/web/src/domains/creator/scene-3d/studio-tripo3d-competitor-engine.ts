@@ -1,6 +1,7 @@
 import type { ShaperBodySliderValues } from "./studio-shaper-model";
 
 export type TripoV3ModelVersion =
+  | "H3.1-20260901"
   | "v3.1-20260211"
   | "P1-20260311"
   | "P2-20260801"
@@ -330,10 +331,10 @@ export function planTripoV3Pipeline(input: TripoV3PipelinePlanInput): TripoV3Pip
       if (input.faceLimit < 48 || input.faceLimit > maxP2) {
         hardErrors.push(`P2-20260801 face_limit 범위는 48..${maxP2} 입니다 (입력값: ${input.faceLimit}).`);
       }
-    } else if (selectedModel === "v3.1-20260211") {
+    } else if (selectedModel === "v3.1-20260211" || selectedModel === "H3.1-20260901") {
       const maxV31 = input.quad ? 150_000 : 2_000_000;
       if (input.faceLimit < 1_000 || input.faceLimit > maxV31) {
-        hardErrors.push(`v3.1-20260211 face_limit 범위는 1000..${maxV31} 입니다 (입력값: ${input.faceLimit}).`);
+        hardErrors.push(`${selectedModel} face_limit 범위는 1000..${maxV31} 입니다 (입력값: ${input.faceLimit}).`);
       }
     }
   }

@@ -31,6 +31,66 @@ export interface VrmcVrmInfo {
   /** 본 어휘 밖 이름(파서가 조용히 버리지 않고 노출) */
   readonly unknownHumanBones: readonly string[];
   readonly expressions: readonly string[];
+  /** VRMC_materials_mtoon 또는 VRM 0.x MToon 재질 확장 포함 여부 */
+  readonly hasMtoonExtension?: boolean;
+  /** VRMC_springBone springs 또는 VRM 0.x secondaryAnimation boneGroups 개수 */
+  readonly springBoneGroupCount?: number;
+}
+
+export interface GlbVrmBudgetAuditResult {
+  readonly score: number;
+  readonly vrmToolkitPassed: boolean;
+  readonly glbForgeTier: "mobile-hero" | "desktop-hero" | "over-budget";
+  readonly warningsKo: readonly string[];
+  readonly summaryKo: string;
+}
+
+/**
+ * VRM Toolkit (`vrm-toolkit-mcp` 70k Tri / 50MB) 및 GLBForge (`@glbforge/core` mobile-hero 150k / desktop-hero 500k)
+ * 기준을 결합해 패키지 GLB의 런타임 예산을 순수 함수로 진단한다.
+ */
+export function auditGlbAndVrmBudget(options: {
+  readonly glbBytesLength: number;
+  readonly triangles: number;
+  readonly missingRequiredBoneCount: number;
+}): GlbVrmBudgetAuditResult {
+  const warningsKo: string[] = [];
+  let penalty = 0;
+
+  if (options.triangles > 70_000) {
+    warningsKo.push(`VRM 권장 삼각형 상한 초과 (${options.triangles.toLocaleString("ko-KR")} > 70,000)`);
+    penalty += 15;
+  }
+  if (options.glbBytesLength > 50 * 1024 * 1024) {
+    warningsKo.push("VRM 권장 파일 크기 초과 (> 50 MiB)");
+    penalty += 20;
+  }
+  if (options.missingRequiredBoneCount > 0) {
+    warningsKo.push(`필수 휴머노이드 본 누락 ${options.missingRequiredBoneCount}개`);
+    penalty += options.missingRequiredBoneCount * 5;
+  }
+
+  const glbForgeTier: "mobile-hero" | "desktop-hero" | "over-budget" =
+    options.triangles <= 150_000 && options.glbBytesLength <= 6 * 1024 * 1024
+      ? "mobile-hero"
+      : options.triangles <= 500_000 && options.glbBytesLength <= 20 * 1024 * 1024
+        ? "desktop-hero"
+        : "over-budget";
+
+  if (glbForgeTier === "over-budget") {
+    warningsKo.push("GLBForge desktop-hero 예산 초과 (Meshopt/Draco 압축 권장)");
+    penalty += 15;
+  }
+
+  const score = Math.max(0, 100 - penalty);
+  const vrmToolkitPassed = warningsKo.length === 0;
+  return {
+    score,
+    vrmToolkitPassed,
+    glbForgeTier,
+    warningsKo,
+    summaryKo: `점수 ${score}/100 · GLBForge ${glbForgeTier} · VRM 70k 예산 ${vrmToolkitPassed ? "통과" : `경고 ${warningsKo.length}건`}`,
+  };
 }
 
 type Json = Record<string, unknown>;
@@ -51,7 +111,7 @@ function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-function parseVrm1(ext: Json): VrmcVrmInfo {
+function parseVrm1(ext: Json, rootExtensions: Json, extensionsUsed: readonly string[]): VrmcVrmInfo {
   const meta = asRecord(ext.meta) ?? {};
   const humanoid: Partial<Record<HumanoidBoneName, number>> = {};
   const unknown: string[] = [];
@@ -64,6 +124,9 @@ function parseVrm1(ext: Json): VrmcVrmInfo {
   }
   const expressions = asRecord(ext.expressions);
   const names = [...Object.keys(asRecord(expressions?.preset) ?? {}), ...Object.keys(asRecord(expressions?.custom) ?? {})];
+  const springBone = asRecord(rootExtensions.VRMC_springBone);
+  const springs = Array.isArray(springBone?.springs) ? springBone.springs.length : 0;
+  const hasMtoon = extensionsUsed.includes("VRMC_materials_mtoon");
   return {
     specVersion: asString(ext.specVersion) ?? "1.0",
     family: "vrm-1.0",
@@ -81,6 +144,8 @@ function parseVrm1(ext: Json): VrmcVrmInfo {
     humanoidMissingRequired: REQUIRED_HUMANOID_BONES.filter((bone) => humanoid[bone] === undefined),
     unknownHumanBones: unknown,
     expressions: names,
+    hasMtoonExtension: hasMtoon,
+    springBoneGroupCount: springs,
   };
 }
 
@@ -102,6 +167,13 @@ function parseVrm0(ext: Json): VrmcVrmInfo {
   const groups = asRecord(ext.blendShapeMaster)?.blendShapeGroups;
   const expressions = Array.isArray(groups) ? groups.map((group) => asString(asRecord(group)?.name) ?? asString(asRecord(group)?.presetName) ?? "").filter((name) => name.length > 0) : [];
   const author = asString(meta.author);
+  const boneGroups = asRecord(ext.secondaryAnimation)?.boneGroups;
+  const springBoneGroupCount = Array.isArray(boneGroups) ? boneGroups.length : 0;
+  const matProps = Array.isArray(ext.materialProperties) ? ext.materialProperties : [];
+  const hasMtoonExtension = matProps.some((m) => {
+    const shader = asString(asRecord(m)?.shader);
+    return shader !== null && shader.toLowerCase().includes("mtoon");
+  });
   return {
     specVersion: asString(ext.specVersion) ?? asString(ext.exporterVersion) ?? "0.x",
     family: "vrm-0.x",
@@ -119,6 +191,8 @@ function parseVrm0(ext: Json): VrmcVrmInfo {
     humanoidMissingRequired: REQUIRED_HUMANOID_BONES.filter((bone) => humanoid[bone] === undefined),
     unknownHumanBones: unknown,
     expressions,
+    hasMtoonExtension,
+    springBoneGroupCount,
   };
 }
 
@@ -127,8 +201,9 @@ export function parseVrmcVrmFromGltfJson(json: unknown): VrmcVrmInfo | null {
   const root = asRecord(json);
   const extensions = asRecord(root?.extensions);
   if (!extensions) return null;
+  const extensionsUsed = asStringArray(root?.extensionsUsed);
   const vrm1 = asRecord(extensions.VRMC_vrm);
-  if (vrm1) return parseVrm1(vrm1);
+  if (vrm1) return parseVrm1(vrm1, extensions, extensionsUsed);
   const vrm0 = asRecord(extensions.VRM);
   if (vrm0) return parseVrm0(vrm0);
   return null;

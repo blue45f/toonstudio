@@ -43,6 +43,7 @@ export const TRIPO3D_REGIONS = {
 export type Tripo3dRegionId = keyof typeof TRIPO3D_REGIONS;
 
 export const TRIPO3D_WIRE_MODELS = {
+  H31: "H3.1-20260901",
   V31: "v3.1-20260211",
   P1: "P1-20260311",
   P2: "P2-20260801",
@@ -57,6 +58,10 @@ export type Tripo3dWireModel =
   (typeof TRIPO3D_WIRE_MODELS)[keyof typeof TRIPO3D_WIRE_MODELS];
 
 export const TRIPO3D_MODEL_ALIASES: Readonly<Record<string, Tripo3dWireModel>> = {
+  "tripo-h3.1": TRIPO3D_WIRE_MODELS.H31,
+  "h3.1": TRIPO3D_WIRE_MODELS.H31,
+  "h3.1-20260901": TRIPO3D_WIRE_MODELS.H31,
+  "H3.1-20260901": TRIPO3D_WIRE_MODELS.H31,
   "tripo-v3.1": TRIPO3D_WIRE_MODELS.V31,
   "v3.1": TRIPO3D_WIRE_MODELS.V31,
   "v3.1-20260211": TRIPO3D_WIRE_MODELS.V31,
@@ -624,65 +629,65 @@ export interface Competitor3dPlatformSpec {
 export const COMPETITOR_3D_PLATFORM_MATRIX: readonly Competitor3dPlatformSpec[] = [
   {
     id: "tripo-3d-v3",
-    name: "Tripo Studio 3D & OpenAPI V3",
+    name: "Tripo Studio 3D (H3.1 & Smart Mesh P2.0) & OpenAPI V3",
     vendor: "VAST (Tripo)",
-    reaEvidenceId: "ev_df8868fdd94e82d702e70c0edfdce8d7b3c132ce99032cd119abf4fd87f809e9",
-    coreModels: ["v3.1-20260211", "P1-20260311", "P2-20260801", "v3.5-20260815 (Texture)"],
+    reaEvidenceId: "ev_753d835fcf08b13ec795f411d76e6ab028927b23790b1ae46b320dabb9b5b7d8",
+    coreModels: ["H3.1-20260901 (~1.75M Tri HD)", "v3.1-20260211", "P1-20260311", "P2-20260801 (Smart Mesh P2.0)", "v3.5-20260815 (Texture)"],
     spatialControlModes: [
       "T-Pose / A-Pose 5-Ratio Pose Control",
       "4-View Multiview (Front/Left/Back/Right)",
-      "P2 Local BBox Region Mesh Redo",
-      "4x4 Transform SmartSegment",
+      "P2 Local BBox Region Mesh Redo & Magic Brush Local Texture Inpaint",
+      "4x4 Transform SmartSegment & Smart UV (80k Tri / 40k Quad)",
     ],
     signatureCapabilities: [
-      "Dual/Triple Model Auto-Routing (v3.1 High-Fidelity vs P1 Low-Poly vs P2 Quad Low-Poly)",
+      "12 Studio Workspaces (generate-image, generate H3.1/P2.0, segmentation, fill-parts, retopology, smart-uv, texture, texture-edit Magic Brush, texture-upscale 8K, texture-pbr, rigging, animate Text-to-Motion)",
       "12-Step Composable Post-Processing Chain (segment → complete → decimate → uv → texture → rig-check → rig → retarget → convert)",
-      "Texture v3.5 Delight (Baked Shadow Removal) & Extreme 4K PBR",
-      "Auto-Rig v3.0 across 8 Creature Families (biped/quadruped/hexapod/octopod/avian/serpentine/aquatic/others) & 6 Specs (VRM/Mixamo/Unity/Unreal/ActorCore/Tripo)",
-      "3D Gaussian Splatting (image-to-splat) & 3D Print Flatten Bottom",
+      "Texture v3.5 Delight (Baked Shadow Removal) & Extreme 4K/8K PBR",
+      "Auto-Rig v3.0 across 8 Creature Families & 6 Specs + Text-to-Motion ('텍스트를 동작으로')",
     ],
     internalizedInToonStudio: [
-      "Tripo V3 Provider (apps/api/src/modules/studio-ai/studio-tripo3d-provider.ts)",
+      "Tripo V3/H3.1 Provider (apps/api/src/modules/studio-ai/studio-tripo3d-provider.ts)",
       "Tripo 3D CLI & MCP Bridge (scripts/tripo3d-cli.mts)",
       "Tripo V3 + Competitor 3D Engine & Workbench UI (apps/web/src/domains/creator/scene-3d/)",
     ],
   },
   {
     id: "hyper3d-rodin-gen25",
-    name: "Hyper3D Rodin Gen-2.5 & Deemos Bang",
+    name: "Hyper3D Rodin Gen-2.5, Official 7-Tool MCP & Deemos BANG",
     vendor: "Deemos",
-    reaEvidenceId: "ev_3f0f37982a54ee2e3df8746fe1f9cb7415d21cdd0a5e512408ca2e60520b6f33",
-    coreModels: ["Gen-2.5", "Gen-1.5", "Remix Gen", "Turbo Gen"],
+    reaEvidenceId: "ev_fd211a7f75b88ab05328751ea650b0b1f1272625bcaaa24dfc7880b201587872",
+    coreModels: ["Gen-2.5-High", "Gen-2.5-Medium", "Gen-2.5-Extreme-Low", "Deemos BANG"],
     spatialControlModes: [
       "Bounding Box ControlNet ([width, height, depth])",
       "Voxel ControlNet (16³~64³ Occupancy Grid)",
       "PointCloud ControlNet (4096-pt Surface Sampler)",
+      "BANG Strength (1..12) & Explode Strength (>=0)",
     ],
     signatureCapabilities: [
+      "Official 7-Tool MCP (rodin_create_uploads, rodin_import_images, rodin_generate, rodin_generate_bang, rodin_get_status, rodin_wait, rodin_get_result)",
       "5-Tier Thinking Effort Scheduler (Extreme-Low 4s / Low 9s / Medium 20s / High 40s / Extreme-High 80s)",
-      "Deemos Bang Part-Aware Decomposition (Parts / Refine / Modify)",
-      "Dual-Card Generation vs 3D Editing Mode Switcher (.obj/.fbx/.glb)",
+      "Deemos BANG Part-Aware Decomposition (strength 1..12, explode_strength, escore, reference_scale)",
     ],
     internalizedInToonStudio: [
       "Rodin ControlNet (BBox / Voxel / PointCloud) & 5-Tier Thinking Effort Planner",
-      "Part-Aware Decomposition (Parts / Refine / Modify) & Webtoon Background Cluster Builder",
+      "Deemos BANG Part-Splitter & Webtoon Background Cluster Builder",
     ],
   },
   {
-    id: "meshy-ai-v4",
-    name: "Meshy AI Studio v4/v5",
+    id: "meshy-ai-v7",
+    name: "Meshy AI Studio v7, Smart Topology (meshy-t2) & Creative Lab",
     vendor: "Meshy",
-    reaEvidenceId: "shipped-competitor-synthesis:meshy-v4",
-    coreModels: ["Meshy-4", "Meshy-5 Preview", "AI Texture Healer"],
-    spatialControlModes: ["Multi-View Reference", "UV Smart Heal", "Polycount LOD Ladder"],
+    reaEvidenceId: "ev_b3ae03ba1166a7d6cd69fe23d66ce93d3521d753ff5257ab5920d1e9e7c6ed5a",
+    coreModels: ["meshy-7", "meshy-6", "meshy-t2 (Smart Topology)", "meshy-t1"],
+    spatialControlModes: ["Multi-View Reference", "Smart Topology (meshy-t1/t2)", "UV Unwrap (≤40k faces)", "Rigging (≤300k faces)"],
     signatureCapabilities: [
-      "AI Texture Delighting & Albedo Shadow Neutralization",
-      "Multi-LOD Game Ladder (LOD0 50k / LOD1 15k / LOD2 5k / LOD3 1.5k)",
-      "PBR Map Channel Synthesis (BaseColor / Normal / Roughness / Metallic / AO)",
+      "AI Texture Delighting & 2K/4K/8K PBR Map Synthesis (ultra_mode +5cr, 8K +15cr)",
+      "7 Creative Lab 2-Stage Products (figure, lamp, keychain, fridge-magnet, vinyl-figure, brick-figure, keycap cherry-mx-1x1-r1)",
+      "Multi-Color 3D Print across 8 Slicers (bambu, orcaslicer, creality_print, elegoo_slicer, anycubic_slicer, prusaslicer, cura)",
     ],
     internalizedInToonStudio: [
       "Webtoon Toon-Friendly Albedo Delighting & 4-Stage LOD Ladder Calculator",
-      "ORM/PBR Channel Unpacker & Whiteout Normal Blending",
+      "Creative Lab 7-Product & 8-Slicer Multi-Color Merch Planner",
     ],
   },
   {
@@ -719,6 +724,27 @@ export const COMPETITOR_3D_PLATFORM_MATRIX: readonly Competitor3dPlatformSpec[] 
     internalizedInToonStudio: [
       "Parametric 3D Background Cluster & Architectural Slider Engine",
       "Character-to-Prop Attachment Socket & Pose Alignment Solver",
+    ],
+  },
+  {
+    id: "glbforge-vrm-blendai",
+    name: "GLBForge 0.4, VRM Toolkit 0.1 & Blend-AI 175-Tool MCP",
+    vendor: "GLBForge / VRM Consortium / Blender MCP",
+    reaEvidenceId: "ev_238693ba315199ddc55df0bf5b06f4d2e20a5d2ceaee7936d8748eb159c0570a",
+    coreModels: ["GLBForge 17-Rule Linter", "2D-to-3D EDT Extruder", "VRM 0.x/1.0 + VRMA Inspector"],
+    spatialControlModes: [
+      "EDT Pillow Dome + Chaikin 42° Relief Extrusion (enamel/chrome/rubber/neon/acrylic)",
+      "VRM 4-View Camera Framing (front / three_quarter / side / face)",
+      "Blend-AI Real-World Meter Scale (1.75m adult / 2.1m door / 0.75m desk) & 3:1:1.5 Lighting",
+    ],
+    signatureCapabilities: [
+      "3 Performance Budgets (mobile-hero / desktop-hero / product-configurator) & 8-Stage Meshopt Optimization",
+      "2D PNG/SVG to Watertight 3D Relief Signage & Prop Extrusion (K-Means 2..6 Stepped Layers)",
+      "VRM 0.x (17 Bones) / VRM 1.0 (15 Bones) + VRMA Animation Timing & 13-Rule Package Validator",
+    ],
+    internalizedInToonStudio: [
+      "GLBForge 17-Rule Linter & 2D-to-3D Webtoon Signage/Merch Extruder (scripts/lib/tripo3d-ecosystem-catalog.mts)",
+      "VRM/VRMA Validator & Camera Framing Presets in Character Lab & 3D Mannequin Poser",
     ],
   },
 ] as const;
