@@ -10,6 +10,7 @@ import "./promotion-community.css";
 
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -44,6 +45,7 @@ export function PromotionBoardPage() {
         kind: "promotion-post",
         exposure: "public",
       }))} />
+      <SiteContextualSubNav pathnameOverride="/community/promote" />
       <header className="pc-hero pc-hero-stage">
         {/* 첫 화면 무대 — 스포트라이트 아트를 히어로 배경으로 깔고 제목·피처드를 종속시킨다.
             아트만 있던 밴드와 제목 블록이 따로 적층되던 구도를 한 무대로 통합한 것. */}
