@@ -26,6 +26,7 @@ import {
   type StudioVarco3d12ViewAngle,
   type StudioVarco3d12ViewMapFamily,
 } from "./studio-varco3d-vibe-pipeline-canonical-bridge";
+import { StudioVarco3dFullPlatformDeck } from "./StudioVarco3dFullPlatformDeck";
 
 const TURNAROUND_ANGLES: readonly StudioVarco3dTurnaroundAngle[] = Object.freeze([
   "front",
@@ -663,6 +664,8 @@ export function StudioVarco3dCatalogExecutionPanel({
           </div>
         </div>
       </details>
+
+      <StudioVarco3dFullPlatformDeck accordionGroupName={accordionGroupName} />
     </>
   );
 }
