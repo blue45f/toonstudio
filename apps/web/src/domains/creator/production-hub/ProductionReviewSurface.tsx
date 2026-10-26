@@ -3,6 +3,7 @@ import { ArrowRight, ClipboardCheck, Columns2, MessageSquareMore } from "lucide-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { ProductionCreativeReviewConsensusSuite } from "./ProductionCreativeReviewConsensusSuite";
 import { ProductionReviewRequestForm } from "./ProductionReviewRequestForm";
 import { ProductionReviewWorkspace } from "./ProductionReviewWorkspace";
 import { buildCompareReviewPath } from "./review-request-model";
@@ -123,6 +124,8 @@ export function ProductionReviewSurface({
       </ProductionSectionCard>
 
       <ProductionReviewWorkspace aggregate={aggregate} execute={execute} canEdit={canEdit} roleLens={roleLens} />
+
+      <ProductionCreativeReviewConsensusSuite />
 
       <ProductionSectionCard
         title={bt("결정 기록", "Decision log")}
