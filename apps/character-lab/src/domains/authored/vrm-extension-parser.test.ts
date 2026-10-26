@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildMinimalGlb } from "../../testing/minimal-glb";
 
-import { parseVrmFromGlb, parseVrmcVrmFromGltfJson, vrmHumanoidToBoneMap } from "./vrm-extension-parser";
+import { auditGlbAndVrmBudget, parseVrmFromGlb, parseVrmcVrmFromGltfJson, vrmHumanoidToBoneMap } from "./vrm-extension-parser";
 
 const VRM1 = {
   VRMC_vrm: {
@@ -61,5 +61,35 @@ describe("authored/vrm-extension-parser", () => {
     const noExt = parseVrmFromGlb(buildMinimalGlb());
     expect(noExt.ok && noExt.info).toBeNull();
     expect(parseVrmFromGlb(new Uint8Array([0, 0])).ok).toBe(false);
+  });
+
+  it("MToon·SpringBone 확장과 GLBForge·VRM 70k 예산을 진단한다", () => {
+    const info = parseVrmcVrmFromGltfJson({
+      extensionsUsed: ["VRMC_vrm", "VRMC_materials_mtoon", "VRMC_springBone"],
+      extensions: {
+        ...VRM1,
+        VRMC_springBone: { springs: [{ name: "Hair" }, { name: "Ribbon" }] },
+      },
+    });
+    expect(info?.hasMtoonExtension).toBe(true);
+    expect(info?.springBoneGroupCount).toBe(2);
+
+    const budgetOk = auditGlbAndVrmBudget({
+      glbBytesLength: 3 * 1024 * 1024,
+      triangles: 24_000,
+      missingRequiredBoneCount: 0,
+    });
+    expect(budgetOk.vrmToolkitPassed).toBe(true);
+    expect(budgetOk.glbForgeTier).toBe("mobile-hero");
+    expect(budgetOk.score).toBe(100);
+
+    const budgetWarn = auditGlbAndVrmBudget({
+      glbBytesLength: 60 * 1024 * 1024,
+      triangles: 85_000,
+      missingRequiredBoneCount: 2,
+    });
+    expect(budgetWarn.vrmToolkitPassed).toBe(false);
+    expect(budgetWarn.glbForgeTier).toBe("over-budget");
+    expect(budgetWarn.score).toBeLessThan(100);
   });
 });

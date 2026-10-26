@@ -29,34 +29,27 @@ Codex·Claude Desktop·Claude Code·Gemini·Cursor에 `tripo3d`(Blender MCP 16�
 
 연결 확인은 모델을 생성하지 않는 `tripo doctor --json`, `tripo balance --json`, 저장소 내장 `pnpm run tripo3d:check` 및 MCP 도구 목록 조회(`tools/list`)로 수행한다. 2026-10-26 기준 `tripo3d` 16개 도구와 `tripo-cli` 5개 도구 응답 및 `openapi.tripo3d.ai` 연결을 확인했다. 실제 생성 전에는 공급자 balance를 읽고, 예상 credit cost가 남은 wallet을 넘으면 요청을 보내지 않는다.
 
-### 저장소 내재화 CLI · API 프로바이더 · 3D 워크벤치 (2026-10-26 REA 역공학 반영)
+### 저장소 내재화 CLI · API 프로바이더 · 3D 워크벤치 (2026-10-26 ~ 2026-10-27 REA 역공학 반영)
 
-- **저장소 전용 CLI**: `pnpm run tripo3d` (`scripts/tripo3d-cli.mts`, `scripts/lib/tripo3d-catalog.mts`, `scripts/lib/tripo3d-runtime.mts`)
+- **저장소 전용 CLI**: `pnpm run tripo3d` (`scripts/tripo3d-cli.mts`, `scripts/lib/tripo3d-catalog.mts`, `scripts/lib/tripo3d-ecosystem-catalog.mts`, `scripts/lib/tripo3d-runtime.mts`)
   - `doctor --check`: 로컬 `.env.infrastructure.local` / `~/.tripo/config.json` / MCP 런처 점검(비밀값 비노출)
-  - `catalog`: 8종 생성 엔드포인트(`/v3/generation/*`), 12종 후처리 체인(`/v3/postprocess/*`, `/v3/mesh/edit`, `/v3/scene/smartsegment`), 오류 코드 카탈로그(`2000`~`2018`), 경쟁사 REA 벤치마크 출력
-  - `plan` / `make`: `v3.1-20260211` / `P1-20260311`(네이티브 삼각 로우폴리) / `P2-20260801`(쿼드 로우폴리 + 로컬 BBox 리두) 3원 자동 라우팅, P1 비호환 파라미터 자동 제거, `segment -> complete` 및 `rig -> retarget` 체인 검증, 비-바이페드 골격(`quadruped`, `hexapod`, `octopod`, `serpentine`, `aquatic`) 모션 프리셋 자동 스왑, Blender 5비율 T/A-Pose 접미사 생성
+  - `catalog` / `ecosystem`: 8종 생성 엔드포인트(`/v3/generation/*`), 12종 후처리 체인(`/v3/postprocess/*`, `/v3/mesh/edit`, `/v3/scene/smartsegment`), `studio.tripo3d.ai` 12개 웹 워크스페이스(`H3.1` ~1.75M Tri HD, `Smart Mesh P2.0`, `Smart UV` 80k Tri / 40k Quad 상한, `Magic Brush` 국소 텍스처 인페인팅, `Text-to-Motion`), 오류 코드 카탈로그(`2000`~`2018`), 경쟁사 REA 벤치마크 출력
+  - `plan` / `make`: `H3.1-20260901` / `v3.1-20260211` / `P1-20260311`(네이티브 삼각 로우폴리) / `P2-20260801`(쿼드 로우폴리 + 로컬 BBox 리두) 자동 라우팅, P1 비호환 파라미터 자동 제거, `segment -> complete` 및 `rig -> retarget` 체인 검증, 비-바이페드 골격(`quadruped`, `hexapod`, `octopod`, `serpentine`, `aquatic`) 모션 프리셋 자동 스왑, Blender 5비율 T/A-Pose 접미사 생성
+  - `lint-glb` / `extrude-plan` / `validate-vrm` / `bang-plan`: GLBForge 17-Rule 성능 예산(`mobile-hero`, `desktop-hero`, `product-configurator`, `webtoon-scene-cluster`) 진단, 2D→3D EDT 부조/간판/굿즈 압출 플래너(`enamel`, `chrome`, `rubber`, `neon`, `acrylic`), VRM 0.x(17본)/1.0(15본) 검증기, Hyper3D Rodin Deemos BANG 파츠 분해 플래너
   - `balance` / `status` / `wait`: 지갑 잔액 조회 및 2초→5초→10초 적응형 폴링
-- **Core API 프로바이더**: `apps/api/src/modules/studio-ai/studio-tripo3d-provider.ts` (`providerId: "tripo-3d"`, `Studio3dGenerationService` 통합, STS 이미지 업로드 토큰 발급, 크레딧 소진 코드 `2010`/HTTP `402` 감지, GLB 바이너리 검증)
-- **프론트엔드 3D 워크벤치**: `apps/web/src/domains/creator/scene-3d/StudioTripo3dCompetitorWorkbench.tsx` 및 `studio-tripo3d-competitor-engine.ts`
-  - Tripo V3 3원 모델 라우터, 12단계 체인 빌더, Blender 5비율 포즈→Shaper 마네킹 슬라이더 연동, Pre-Run 크레딧/USD 카드
-  - Hyper3D Rodin Gen-2.5 Dual-Card(`Generation` ↔ `3D Editing` Deemos Bang `Parts`/`Refine`/`Modify`), 4종 공간 ControlNet(`default`/`bbox`/`voxel`/`pointcloud`), 5단계 Thinking Effort(`4s`~`80s`)
-  - Meshy AI 4단계 웹툰 LOD 래더(`LOD0`~`LOD3`) & Albedo 디라이팅, Sloyd 파라메트릭 건축 × CSM 6-Plane 웹툰 3D 배경 클러스터 빌더
+- **Core API 프로바이더**: `apps/api/src/modules/studio-ai/studio-tripo3d-provider.ts` (`providerId: "tripo-3d"`, `H3.1-20260901`/`v3.1-20260211`/`P1-20260311`/`P2-20260801` 지원, `Studio3dGenerationService` 통합, STS 이미지 업로드 토큰 발급, 크레딧 소진 코드 `2010`/HTTP `402` 감지, GLB 바이너리 검증)
+- **프론트엔드 3D 워크벤치 · 3D 데생인형 · 캐릭터 랩**:
+  - `apps/web/src/domains/creator/scene-3d/StudioTripo3dCompetitorWorkbench.tsx` 및 `studio-tripo3d-competitor-engine.ts`: Tripo Studio 12-Workspace 허브(`H3.1`, `Smart Mesh P2.0`, `Smart UV`, `Magic Brush`, `Text-to-Motion`), GLBForge 17-Rule 린터 & 2D→3D 웹툰 간판/아크릴/네온 부조 압출기, Meshy 7(`meshy-t2` Smart Topology) & 7종 크리에이티브 랩 굿즈 빌더, Hyper3D Rodin 7-Tool MCP & Deemos BANG 파츠 분해기
+  - `apps/web/src/domains/creator/scene-3d/StudioMannequinPoserPanel.tsx`: Tripo 5비율 T/A-Pose 보정, Text-to-Motion 액션 프리셋, VRM 4-View 카메라 프레이밍(`front`, `three_quarter`, `side`, `face`) + 웹툰 앵글, Blend-AI 실측 스케일 기준선(성인 1.75m / 눈높이 1.6m / 방문 2.1m / 책상 0.75m) 및 3점 조명 비율(`3:1:1.5`) 원클릭 동기화
+  - `apps/character-lab`: VRM 0.x/1.0 & VRMA 패키지 진단, 4-View 카메라 프레이밍, 포즈/표정 빠른 검색·필터 및 턴어라운드 시트 익스포트 편의성 강화
 
-## Meshy MCP·CLI
+## Meshy · GLBForge · VRM Toolkit · Blend-AI MCP·CLI
 
-- CLI: `meshy`/`meshy-cli` (node). `meshy auth status`로 OAuth 연결 확인, `meshy api GET /balance`로 잔액 조회. 2026-09-29 기준 balance 180을 확인했다.
-- 공식 MCP: `npx -y @meshy-ai/meshy-mcp-server@0.5.2`, env `MESHY_API_KEY` (`msy_`로 시작, https://www.meshy.ai/settings/api 에서 발급).
-- credential-safe launcher: `~/.local/bin/toonspectrum-meshy-mcp` (mode `0700`). `.env.local`의 `MESHY_API_KEY`를 읽어 MCP 서버에 주입한다.
-- Muse에 `meshy` stdio 서버가 등록되어 있다. 2026-09-29 기준 `.env.local`에 키가 없어 서버는 대기 상태이며, 키 등록 후 세션 재시작으로 활성화된다.
-- MCP 서버는 시작 시 키를 검증하므로 더미 키로는 tools/list 확인이 불가하다. 연결 확인은 키 등록 후 도구 목록 조회로 수행한다.
-
-## Hyper3D Rodin CLI·MCP
-
-- 공식 standalone MCP/CLI는 없다. MCP 경로는 Blender MCP 내장 Hyper3D Rodin 연동(`blendermcp_use_hyper3d`, `MAIN_SITE`/`FAL_AI` 모드)을 사용하고, headless 자동화는 아래 CLI를 사용한다.
-- CLI: `~/.local/bin/toonspectrum-hyper3d` (mode `0700`, Python stdlib only). `.env.local`의 `HYPER3D_API_KEY`를 읽는다. 키 발급: https://hyper3d.ai/workspace/api-dashboard.
-- 근거 문서: https://docs.hyper3d.ai (base `https://api.hyper3d.com/api/v2`, `Authorization: Bearer`, submit → status → download 비동기 흐름).
-- 유료 API이므로 `submit-text`/`submit-image`는 기본 dry-run이며 `--confirm`을 붙여야 실제 전송한다. `status`/`wait`/`download`는 조회·수신 전용이다.
-- 2026-09-29 기준 `.env.local`에 키가 없어 대기 상태이다. 공개 API는 Business 구독 경로라 zero-cost 생성을 보장하지 않으며, 무료 한도 거부 시 생성을 중단한다.
+- **Meshy CLI & MCP**: `meshy`/`meshy-cli` (`meshy auth status`, `meshy api GET /balance`). 2026-10-27 기준 잔액 160(`monthly_credits: 100`, `permanent_credits: 60`)을 확인했으나 무료 플랜 API 태스크 생성이 서버 측에서 `402 NoMorePendingTasks`로 차단되어 있어 정책에 따라 즉시 중단했다. 공식 MCP(`@meshy-ai/meshy-mcp-server@0.5.2`)는 `meshy-7`, `meshy-t1`/`meshy-t2`(Smart Topology), 7종 크리에이티브 랩 상품, 8종 멀티컬러 슬라이서를 제공한다.
+- **GLBForge MCP (`@glbforge/mcp@0.4.1` / `@glbforge/core@0.4.0`)**: 11개 도구(`list_profiles`, `analyze_glb`, `audit_directory`, `optimize_glb`, `extrude_image`, `export_stl` 등). 3종 성능 프로파일, 17개 린트 규칙, 8단계 Meshopt+WebP 최적화, 2D→3D EDT 부조 압출을 지원한다.
+- **VRM Toolkit MCP (`vrm-toolkit-mcp@0.1.1`)**: `vrm_inspect`, `vrm_validate`, `vrm_compare`, `vrm_render_preview` 4개 도구. VRM 0.x(17 필수 본) / VRM 1.0(15 필수 본) 및 VRMA 애니메이션 트랙·표정·메타데이터·예산 검증을 수행한다.
+- **Blend-AI MCP (`blend-ai`)**: 175개 Blender 제어 도구(`analyze_mesh_quality`, `create_light_rig`, `smart_uv_project` 등). 실측 미터 스케일 및 3점 조명(`Key:Fill:Rim = 3:1:1.5`) 기준을 제공한다.
+- **Hyper3D Rodin CLI·MCP (`@hyper3d/cli`)**: 공식 원격 MCP 엔드포인트(`https://api.hyper3d.com/api/mcp`, 7개 도구: `rodin_create_uploads`, `rodin_import_images`, `rodin_generate`, `rodin_generate_bang`, `rodin_get_status`, `rodin_wait`, `rodin_get_result`) 및 로컬 `~/.local/bin/toonspectrum-hyper3d` 래퍼를 지원한다.
 
 ## 생성 프로필
 

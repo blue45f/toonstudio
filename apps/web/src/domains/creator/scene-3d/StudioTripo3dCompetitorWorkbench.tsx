@@ -27,6 +27,7 @@ import {
   type Webtoon3dBackgroundClusterInput,
 } from "./studio-tripo3d-competitor-engine";
 import type { StudioVarco3dMannequinPosePresetId } from "./studio-varco3d-character-lab-diorama-catalog";
+import { StudioTripo3dEcosystemExtensionPanel } from "./StudioTripo3dEcosystemExtensionPanel";
 
 export interface StudioTripo3dCompetitorWorkbenchProps {
   readonly accordionGroupName: string;
@@ -264,7 +265,7 @@ export function StudioTripo3dCompetitorWorkbench({
               className="rounded border border-line bg-panel px-2 py-1 text-[0.7rem] text-fg"
             />
             <div className="flex flex-wrap items-center gap-1.5">
-              {(["auto", "v3.1-20260211", "P1-20260311", "P2-20260801"] as const).map((ver) => (
+              {(["auto", "H3.1-20260901", "v3.1-20260211", "P1-20260311", "P2-20260801"] as const).map((ver) => (
                 <button
                   key={ver}
                   type="button"
@@ -765,6 +766,14 @@ export function StudioTripo3dCompetitorWorkbench({
           </div>
         </div>
       </details>
+
+      <StudioTripo3dEcosystemExtensionPanel
+        accordionGroupName={accordionGroupName}
+        faceLimit={faceLimit}
+        quadEnabled={quadEnabled}
+        defaultShaperSliders={poseSpec.shaperSliders}
+        onApplyMannequinBodySliders={onApplyMannequinBodySliders}
+      />
     </>
   );
 }

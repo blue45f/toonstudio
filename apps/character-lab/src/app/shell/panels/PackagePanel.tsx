@@ -37,7 +37,7 @@ import {
 } from "../../../contracts";
 import { deriveKitCapabilities } from "../../../domains/authored/kit-capability";
 import { compareCapabilities } from "../../../domains/authored/package-capability";
-import { parseVrmFromGlb } from "../../../domains/authored/vrm-extension-parser";
+import { auditGlbAndVrmBudget, parseVrmFromGlb } from "../../../domains/authored/vrm-extension-parser";
 import { evaluateShaperPresetAssetUpdates } from "../../../export/shaper-preset";
 import { presetUnavailableReasonKo } from "../../../state/apply-plan";
 import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState } from "../lab-store-context";
@@ -191,6 +191,11 @@ function PackageDetail({ state }: PackageDetailProps) {
   const { plan, detail } = result;
   const { bones, shapeKeys, meshes } = detail.judgement.mappings;
   const quality = plan.manifest.quality;
+  const budgetAudit = auditGlbAndVrmBudget({
+    glbBytesLength: plan.glbBytes,
+    triangles: plan.manifest.capabilities.authoredHair.lodTriangles[0] ?? 12_000,
+    missingRequiredBoneCount: Math.max(0, 15 - bones.required.covered.length),
+  });
   return (
     <div className="cl-package-detail">
       <p className="cl-package-status" role="status">
@@ -201,6 +206,8 @@ function PackageDetail({ state }: PackageDetailProps) {
         <dd>
           {quality.score} / 최소 {quality.minimumScore} · {quality.passed ? "통과" : "미통과"}
         </dd>
+        <dt>GLBForge · VRM 예산</dt>
+        <dd data-testid="package-glbforge-vrm-audit">{budgetAudit.summaryKo}</dd>
         <dt>라이선스</dt>
         <dd>{plan.licenseNote}</dd>
         <dt>헤어</dt>

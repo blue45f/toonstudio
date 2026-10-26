@@ -283,6 +283,11 @@ describe("ExportPanel", () => {
     fireEvent.click(within(group).getByRole("button", { name: "웹툰 컷 (800×1200)" }));
     expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("800");
     expect((screen.getByLabelText("높이(px)") as HTMLInputElement).value).toBe("1200");
+
+    fireEvent.click(screen.getByTestId("export-preset-vrm-face"));
+    expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("1024");
+    expect((screen.getByLabelText("높이(px)") as HTMLInputElement).value).toBe("1024");
+    expect((screen.getByLabelText("프레이밍") as HTMLSelectElement).value).toBe("face");
   });
 
   it("readTextFile은 File 내용을 읽는다", async () => {

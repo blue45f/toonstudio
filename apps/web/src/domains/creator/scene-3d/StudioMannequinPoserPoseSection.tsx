@@ -44,6 +44,7 @@ import {
 } from "./studio-webtoon-pose-preset-storage";
 import { StudioPoseFirstRunGuide } from "./StudioPoseFirstRunGuide";
 import { StudioPoseLibraryCard } from "./StudioPoseLibraryCard";
+import { TRIPO_TEXT_TO_MOTION_PRESETS } from "./studio-tripo3d-ecosystem-engine";
 import { StudioWebtoonPoseFavoritesShare } from "./StudioWebtoonPosePresetGrid";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
@@ -256,6 +257,35 @@ export function StudioMannequinPoseSection({
             <X size={13} aria-hidden />
           </button>
         ) : null}
+      </div>
+
+      <div
+        data-testid="mannequin-text-to-motion-bar"
+        className="rounded-lg border border-line/70 bg-card/80 p-2 text-[0.68rem]"
+      >
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="font-semibold text-fg">
+            Tripo Studio 텍스트를 동작으로 (Text-to-Motion) & 리깅 액션 프리셋
+          </span>
+          <span className="text-[0.62rem] text-fg-3">클릭 시 데생 인형 포즈 즉시 반영</span>
+        </div>
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Tripo Text-to-Motion 액션 프리셋">
+          {TRIPO_TEXT_TO_MOTION_PRESETS.map((motion) => (
+            <button
+              key={motion.id}
+              type="button"
+              data-testid={`mannequin-motion-${motion.id}`}
+              disabled={applyDisabled}
+              onClick={() => {
+                onApplyPreset(motion.mannequinPosePresetId);
+              }}
+              title={`${motion.motionPrompt} (${motion.tripoPresetId})`}
+              className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.65rem] text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft hover:text-fg disabled:opacity-50"
+            >
+              {motion.labelKo}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-1.5">

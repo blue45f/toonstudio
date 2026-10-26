@@ -340,6 +340,31 @@ export function PosePanel() {
           관절 제한으로 클램프
         </button>
       </div>
+      <div className="cl-pose-row" role="group" aria-label="Tripo Text-to-Motion 및 VRM 캘리브레이션 빠른 스탠스" data-testid="pose-tripo-quick-chips">
+        {(
+          [
+            { id: "pose/a-pose", label: "A-Pose 리깅 기준" },
+            { id: "pose/t-pose", label: "T-Pose VRM 기준" },
+            { id: "pose/action-ready", label: "액션 전투 스탠스" },
+            { id: "pose/walk", label: "Text-to-Motion 워킹" },
+          ] as const
+        ).map((quick) => {
+          const matched = POSE_PRESETS.find((item) => item.id === quick.id);
+          if (!matched) return null;
+          return (
+            <button
+              key={quick.id}
+              type="button"
+              className="cl-preset-chip"
+              disabled={poseDisabled}
+              data-testid={`pose-quick-chip-${quick.id.replace("pose/", "")}`}
+              onClick={() => applyPosePreset(matched, false)}
+            >
+              {quick.label}
+            </button>
+          );
+        })}
+      </div>
       <p className="cl-pose-status">
         포즈 본 {boneCount}개 · 관절 제한 위반 {violations.length}건{violations.length > 0 ? `: ${violations.map((v) => v.bone).join(", ")}` : ""}
       </p>
