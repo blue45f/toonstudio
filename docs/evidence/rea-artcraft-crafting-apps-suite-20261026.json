@@ -1,0 +1,678 @@
+{
+  "schemaVersion": 1,
+  "benchmarkDate": "2026-10-26",
+  "title": "ToonStudio REA ArtCraft Crafting Apps 15종 스위트 (3. ArtCraft Launcher, 3.1 PhotoCraft ~ 3.13 GridCraft, 4.1 미공개 AniCraft) 전수 역공학 증거 번들",
+  "methodology": {
+    "tool": "reverse-engineer-anything (REA MCP)",
+    "analysisScope": "browser-scenario-capture, zip-container-artifact-inspection, wasm-web-bundle-javascript-ast-analysis, universal-macho-header-inspection, rust-binary-crate-symbol-recovery, and clean-room-behavioral-extraction",
+    "epistemicSeparation": [
+      "observedFacts",
+      "inferences",
+      "unknowns"
+    ]
+  },
+  "referenceCaptures": [
+    {
+      "role": "namuwiki-reference-capture",
+      "url": "https://namu.wiki/w/ArtCraft%20Crafting%20Apps",
+      "evidence_id": "ev_e5e15829994df22ecdad2bcffbe37425c117e21cba3c87869053be8dce403842",
+      "sectionsVerified": [
+        "3. ArtCraft Launcher",
+        "3.1. PhotoCraft",
+        "3.2. VectorCraft",
+        "3.3. FlimCraft (FilmCraft)",
+        "3.4. LightCraft",
+        "3.5. PdfCraft",
+        "3.6. EffectCraft",
+        "3.7. DesignCraft",
+        "3.8. FigCraft",
+        "3.9. WordCraft",
+        "3.10. SoundCraft",
+        "3.11. DeckCraft",
+        "3.12. CADCraft",
+        "3.13. GridCraft",
+        "4. 미공개 소프트웨어 / 4.1. AniCraft"
+      ]
+    },
+    {
+      "role": "official-portal-capture",
+      "url": "https://getartcraft.com/",
+      "evidence_id": "ev_23e0f7550ed4f6db516165448a5ef9f12bc6a82c9b1773befd092aacdb1b95fd",
+      "title": "ArtCraft — Creative apps that belong to you"
+    }
+  ],
+  "targets": [
+    {
+      "id": "artcraft-launcher",
+      "namuSection": "3",
+      "name": "ArtCraft Launcher (storytold/craft-launcher)",
+      "bundleId": "ai.storyteller.artcraft-launcher",
+      "version": "0.8.1",
+      "gitCommit": "6c5f5ea2f5186cefe35797ddacd7d8a866ae2eeb",
+      "brandColors": {
+        "color": [11, 11, 12],
+        "inkLight": [11, 11, 12],
+        "inkDark": [242, 241, 238]
+      },
+      "artifacts": [
+        {
+          "role": "web-zip-container-inspection",
+          "path": "scratch/artcraft-suite/web-zips/artcraft-launcher-web-0.8.1.zip",
+          "sha256": "a3c0e321ad7bacb8167aafc3cc61b11dcc82515b27bbd2574509a7ec392158ac",
+          "parent_evidence_id": "ev_15deae3c4d0892cf404cfec72395c57a3890dd499494804671cdd6161628d0c3",
+          "view_evidence_id": "ev_9da262f00cc1c56bd1d34c4843dce64c0a208764c0e4c2a76449df5c235006f2",
+          "inventory_evidence_id": "ev_7e74140dfca9f0ac8a1b2c620d108b78ca778b3518bd32e5e01ac95427cf27f4"
+        },
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/artcraft-launcher",
+          "sha256": "e0cac2cb30fce2677bfcfeb01806d95702cffbee92717faf3ce0c34fecc0bb4e",
+          "parent_evidence_id": "ev_6167b59a4646d89f57bf3987557fef97539605357edd0111d45b4273eb168893",
+          "view_evidence_id": "ev_2df9d6bb26a2a2654b5620039703f2a1dead0000f2f80b35a614b6202c9ebbd8",
+          "summary": {
+            "totalTextBytes": 153760,
+            "visitedAstNodes": 16557,
+            "findings": 4
+          }
+        }
+      ],
+      "observedFacts": [
+        "crates/launcher-core/src/catalog.rs에서 LAUNCHER(artcraft-launcher) + SUITE 13종(photocraft, vectorcraft, filmcraft, lightcraft, pdfcraft[구 printcraft], effectcraft, designcraft, figcraft, wordcraft, soundcraft, deckcraft, cadcraft, gridcraft)의 정확한 sRGB [color, ink_light, ink_dark] 팔레트, AppId('ai.storyteller.<id>'), AssetPattern, former_ids(['printcraft'])가 확인됨.",
+        "crates/launcher-gui/src/main.rs의 safe_web_link(CWE-78 쉘 메타문자 ['&', '|', ';', '`', '$', '<', '>', '(', ')', '\"', '\\'', '\\\\'] 및 제어문자 차단, 2048B 상한), crates/launcher-core/src/installer.rs의 download_url_under(CWE-180 GitHub 릴리스 경로 경계 '<repo>/releases/download/<tag>/<name>' 검증), crates/launcher-gui/src/screenshot_cache.rs의 jpeg_dimensions 및 screenshot_within_budget(CWE-789 JPEG SOF0/SOF1/SOF2 마커 0xC0/0xC1/0xC2 직접 파싱, MAX_SCREENSHOT_PIXELS = 8192*8192 = 67,108,864px, MAX_SCREENSHOT_BYTES = 2 MiB) 보안 방어선이 확인됨.",
+        "crates/launcher-core/src/version.rs의 parse_package에서 Debian epoch('1:'), Debian revision('~'), AUR VCS 접미사('.r12.gdeadbeef')를 정규화하는 버전 비교기가 확인됨."
+      ],
+      "inferences": [
+        "툰스튜디오의 크리에이터 확장 프로그램·에셋·브러시·플러그인 허브 역시 ArtCraft Launcher의 3대 보안 계약(CWE-78 쉘 인젝션 차단, CWE-180 릴리스 경로 경계 강제, CWE-789 썸네일 디컴프레션 폭탄 사전 헤더 감사)과 SHA256SUMS.txt 무결성 검증을 내재화해야 안전함."
+      ],
+      "unknowns": [
+        "향후 ArtCraft Launcher v1.0에서 AniCraft가 SUITE 정식 슬롯에 편입될 때 부여될 공식 sRGB 팔레트 값은 아직 craft-launcher main 브랜치에 커밋되지 않음."
+      ]
+    },
+    {
+      "id": "photocraft",
+      "namuSection": "3.1",
+      "name": "PhotoCraft (storytold/photocraft — Adobe Photoshop 대안)",
+      "bundleId": "ai.storyteller.photocraft",
+      "version": "0.16.0",
+      "gitCommit": "3877bb1db09c65c5d491b3efdc8d1d4649bf8069",
+      "brandColors": {
+        "color": [47, 123, 245],
+        "inkLight": [26, 91, 196],
+        "inkDark": [127, 176, 255]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/photocraft",
+          "sha256": "2e4a87b71ec056af675f46ff34ddced0e28e94f7b3eef266f1b0b6df86eeb6ae",
+          "parent_evidence_id": "ev_5ca742f46b8bcbc2400b35d00e07ff696c19ed9c9162fe99d3a40b91c69ab542",
+          "view_evidence_id": "ev_1c6ba22f18d07d57fbb4c4301e87243591ac6bb871edf934a34afa41af53583c",
+          "summary": {
+            "totalTextBytes": 203594,
+            "visitedAstNodes": 21343,
+            "findings": 9
+          }
+        },
+        {
+          "role": "universal-macho-rust-cli-inspection",
+          "path": "scratch/artcraft-suite/cli-bins/photocraft-cli",
+          "sha256": "1579a4111d62d9663b5607f102fd17631d13b56dda3c42d29a66e35cd2754a29",
+          "parent_evidence_id": "ev_d86152d1e089900782f2b8175e1fa7995c14370d0675f9773b5635d13957cffc",
+          "view_evidence_id": "ev_33d803c8571dc35666efb7794493b26d9ff4bd252bc95d9696ef910196a9eede",
+          "sizeBytes": 146126736
+        }
+      ],
+      "observedFacts": [
+        "crates/photocraft-io/src/pcraft.rs 및 finite.rs에서 네이티브 .pcraft 포맷이 JSON manifest.json + BLAKE3 64자리 hex 콘텐츠 주소 지정 zstd 압축 타일 구조임이 확인됨.",
+        "저장 직전 finite::check 직렬화 계층이 전체 Document 트리를 순회하며 NaN 또는 ±Infinity 부동소수점을 감지하면 정확한 필드 경로(예: layers[2].opacity)와 함께 PcraftError::NonFiniteFloat로 저장을 거부하여 파일 손상을 원천 차단함.",
+        "crates/photocraft-io/src/autosave.rs에서 백그라운드 스레드 기반 코얼레싱(coalescing) Autosaver가 최신 스냅샷 1개만 유지하며 <key>.pcraft 및 <key>.json(RecoveryInfo)을 atomic_write로 기록함."
+      ],
+      "inferences": [
+        "웹툰 장편 원고(세로 수만 픽셀) 저장 시 BLAKE3 타일 중복 제거와 저장 전 Non-Finite Float 경로 검증을 결합하면 변경된 컷 타일만 증분 저장하면서도 수치 오염으로 인한 원고 파손을 완벽히 막을 수 있음."
+      ],
+      "unknowns": [
+        "WASM 플러그인 ABI v2 확장 여부는 현재 v0.16.0에서는 1차 픽셀 필터 샌드박스까지만 구현되어 있음."
+      ]
+    },
+    {
+      "id": "vectorcraft",
+      "namuSection": "3.2",
+      "name": "VectorCraft (storytold/vectorcraft — Adobe Illustrator 대안)",
+      "bundleId": "ai.storyteller.vectorcraft",
+      "version": "0.17.0",
+      "gitCommit": "4ddd0332cd965889ca4f6b29a0870492f4183075",
+      "brandColors": {
+        "color": [232, 87, 63],
+        "inkLight": [184, 58, 36],
+        "inkDark": [255, 138, 112]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/vectorcraft",
+          "sha256": "8850209e86d504bf93bb307d14cedbeb7d28963b7d1d3158e4240b7e9d0b8e9c",
+          "parent_evidence_id": "ev_bd08e4b94a48f9a4a094d4fdc25481135870f71f8cb29af21b8bdb320b35109a",
+          "view_evidence_id": "ev_fb30c7f3074d5932a971cc923e87fa2174a0bfde3e4d02a931a27d443088c0be",
+          "summary": {
+            "totalTextBytes": 179057,
+            "visitedAstNodes": 18472,
+            "findings": 4
+          }
+        }
+      ],
+      "observedFacts": [
+        "vectorcraft-boolean(정확한 베지어 곡선 교차점 분할 기반 Pathfinder 합집합/차집합/교집합/배타합 및 Shape Builder 평면 영역 그래프), vectorcraft-brush(Calligraphic, Scatter, Art, Pattern, Bristle 5종 브러시), vectorcraft-trace(색상 양자화 -> 경계 추적 -> 다각형 단순화 -> 3차 베지어 피팅 Image Trace), vectorcraft-3d(Revolve, Extrude & Bevel, Inflate, Rotate 투영 벡터 셰이딩) 구조가 확인됨."
+      ],
+      "inferences": [
+        "웹툰 타이틀 로고·무기 문양·말풍선 꼬리 병합 시 폴리라인 근사가 아닌 정확한 3차 베지어 불리언 연산과 5종 벡터 브러시를 사용하면 확대 인쇄 시에도 깨지지 않는 벡터 원고를 생성할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "filmcraft",
+      "namuSection": "3.3",
+      "name": "FlimCraft / FilmCraft (storytold/filmcraft — Adobe Premiere Pro 대안)",
+      "bundleId": "ai.storyteller.filmcraft",
+      "version": "0.13.0",
+      "gitCommit": "de529c88f6ae47400ac85e6a40b50e0e74316bc3",
+      "brandColors": {
+        "color": [139, 92, 246],
+        "inkLight": [106, 63, 214],
+        "inkDark": [182, 156, 255]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/filmcraft",
+          "sha256": "735a7fe34ea8c86b2a06f3d76449d8e7f688c8f632103a80e084240e9e0be39a",
+          "parent_evidence_id": "ev_4a335e7d06efcf583747e16d5283b946d340d825751567dc242d9fec0e1f9c44",
+          "view_evidence_id": "ev_f6ac70cbdd58b62b600d5f3040112390ccf2bbf81a6f1cb57e24bdd0164e09e5",
+          "summary": {
+            "totalTextBytes": 188258,
+            "visitedAstNodes": 19393,
+            "findings": 6
+          }
+        }
+      ],
+      "observedFacts": [
+        "crates/filmcraft-timeline/src/ops.rs에서 정수 Tick 타임베이스 위에서 동작하는 순수 편집 대수(Overwrite, Insert, Lift, Extract, Ripple, Roll, Slip, Slide, RateStretch)와 SyncLockConflict 감지, 역방향 재생 클립(speed < 0.0) 분할 시 오른쪽 조각의 source_in을 줄여 연속성을 보존하는 수식이 확인됨.",
+        "filmcraft-scopes(Waveform, RGB Parade, Histogram, Vectorscope), filmcraft-audio(BS.1770/EBU R128 라우드니스), filmcraft-captions(SRT, WebVTT, SCC, MCC, EBU STL, TTML), filmcraft-interchange(CMX 3600 EDL, FCP7 XML, FCPXML, OTIO)가 확인됨."
+      ],
+      "inferences": [
+        "웹툰 PV·무빙툰·비디오 콘티 편집에서 부동소수점 초 대신 정수 Tick 타임베이스와 Ripple/Roll/Slip 편집 대수를 적용하면 대사 오디오 트랙과 컷 타이밍의 싱크 밀림을 원천 방지할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "lightcraft",
+      "namuSection": "3.4",
+      "name": "LightCraft (storytold/lightcraft — Adobe Lightroom 대안)",
+      "bundleId": "ai.storyteller.lightcraft",
+      "version": "0.14.0",
+      "gitCommit": "387bed19949f77a010dbde2cb0eddc88812d9835",
+      "brandColors": {
+        "color": [242, 165, 22],
+        "inkLight": [138, 88, 0],
+        "inkDark": [255, 193, 77]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/lightcraft",
+          "sha256": "1c9257bc1f08792ba3c7c74fc985500d692c756bf0b2e449422f07066e9e0432",
+          "parent_evidence_id": "ev_9b74a5589ff428f9b210d83945e2eecaeb9ac5356bf4b53130b94d775edc6e3a",
+          "view_evidence_id": "ev_0b81479a076bb29cf23d475a2211507c8547ecd118169b253a12e9508dc0fb36",
+          "summary": {
+            "totalTextBytes": 101900,
+            "visitedAstNodes": 11712,
+            "findings": 201
+          }
+        }
+      ],
+      "observedFacts": [
+        "crates/lightcraft-core/src/develop.rs에서 32비트 부동소수점 비파괴 DevelopSettings 구조체, RAW 전용 기본값 DevelopSettings::for_raw(sharpen_amount = 40.0, nr_color = 25.0), FNV-1a 64비트 프리뷰 캐시 해시(초기값 0xcbf29ce484222325, 소수 0x0100000001b3), 부분 JSON 패치 병합(merged + keep_in_range 클램핑 및 WbScale::Legacy 보존)이 확인됨.",
+        "SAM 3 세그멘테이션 마스크(subject/sky/background), Lensfun 렌즈 왜곡·색수차 보정, HDR 병합(정렬+디고스트), 파노라마 스티칭, 오프라인 GeoNames 역지오코딩이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 배경용 실사 사진 촬영본이나 3D 렌더 이미지의 회차별 톤 매칭에 LightCraft의 비파괴 DevelopSettings JSON 패치와 FNV-1a 64비트 프리뷰 캐시 키를 적용하면 수백 컷의 배경 색감을 즉시 동기화할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "pdfcraft",
+      "namuSection": "3.5",
+      "name": "PdfCraft (storytold/pdfcraft, 구 PrintCraft — Adobe Acrobat Pro 대안)",
+      "bundleId": "ai.storyteller.pdfcraft",
+      "formerIds": ["printcraft"],
+      "version": "0.14.0",
+      "gitCommit": "13bfbd076370aa4cdbd3c37be13f1c71559560be",
+      "brandColors": {
+        "color": [18, 165, 138],
+        "inkLight": [10, 117, 99],
+        "inkDark": [63, 214, 184]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/pdfcraft",
+          "sha256": "1ba6c12761afc61eb50a2ea6bf7df3fa53f106891caa83508e43167f9c407d68",
+          "parent_evidence_id": "ev_f5f691a0b42068361e8f2c2b5fe915c7ce5648ce7d119dd643d2e0f9dce6810d",
+          "view_evidence_id": "ev_da686cbda7facfecc037f8c01358e831d354fd458ab045d5010d1869ae5c0992",
+          "summary": {
+            "totalTextBytes": 166432,
+            "visitedAstNodes": 17850,
+            "findings": 4
+          }
+        },
+        {
+          "role": "universal-macho-rust-cli-inspection",
+          "path": "scratch/artcraft-suite/cli-bins/pdfcraft-cli",
+          "sha256": "5c3fdd2c98e0bda1e585af9f0d1b784c37a9dba0a127e296565f85258307f770",
+          "parent_evidence_id": "ev_8c39adaf8822ad65a7daa4d73d9573612160347b6707ea6860c4120b9d81b10d",
+          "view_evidence_id": "ev_13093bf9ac3ffea1a57b9c61710ebb41ee4cf0bf6ddb348419f2c5d2512c59f5",
+          "sizeBytes": 128775712
+        }
+      ],
+      "observedFacts": [
+        "pdfcraft-audit(위장 먹칠 Faux-Redaction 탐지: 추출 가능한 텍스트 위에 검은 사각형만 덮어둔 보안 사고 감지, 숨은 메타데이터·첨부파일·JS·XFA·미사용 객체 감사), pdfcraft-redact(컨텐츠 스트림에서 실제 글리프·이미지·벡터 경로 완전 제거), pdfcraft-a11y(32개 PDF/UA 접근성 규칙 검사 및 자동 수정), pdfcraft-pdfa(PDF/A-2b/3b 변환), pdfcraft-compare(단어 단위 문서 비교), pdfcraft-bates(베이츠 번호 부여)가 확인됨."
+      ],
+      "inferences": [
+        "웹툰 연재 계약서·출판 인쇄용 PDF·외부 유출 방지용 대본 PDF 배포 시 Faux-Redaction 감사기와 PDF/A-2b 프리플라이트를 내재화하면 스포일러 대사나 계약 민감정보가 복사·추출되는 사고를 원천 차단할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "effectcraft",
+      "namuSection": "3.6",
+      "name": "EffectCraft (storytold/effectcraft — Adobe After Effects 대안)",
+      "bundleId": "ai.storyteller.effectcraft",
+      "version": "0.17.0",
+      "gitCommit": "f31a6b0ae55c3c6fa64652ca48573d574c475f9c",
+      "brandColors": {
+        "color": [224, 54, 143],
+        "inkLight": [176, 32, 108],
+        "inkDark": [255, 122, 184]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/effectcraft",
+          "sha256": "13257eca411a55c1fb9b3e548d607d3f7722ad066181bfe017c0589af4b3d67d",
+          "parent_evidence_id": "ev_7ee3fe77a723b28096aaf59c7a9e3c714ca70460cb86c43dbba94f52c56c0a78",
+          "view_evidence_id": "ev_6c04e2d967c22924e5580b684d0be24c3ec50fb9891aa677975a303acdca8b92",
+          "summary": {
+            "totalTextBytes": 219162,
+            "visitedAstNodes": 23391,
+            "findings": 131
+          }
+        },
+        {
+          "role": "universal-macho-rust-cli-inspection",
+          "path": "scratch/artcraft-suite/cli-bins/effectcraft-cli",
+          "sha256": "fa8880f840c80c3231a5ba395ca4f137512ce8398c3c077d41db3f40fb083237",
+          "parent_evidence_id": "ev_eb3f8afa6dccced3d8ba004d7b78cb3e37f8785846a05bb02e62d67485896383",
+          "view_evidence_id": "ev_ca5b6e61505fdf275cbb3bf17682fc397460dd4044341417b637e2194f1aefd8",
+          "sizeBytes": 153584240
+        }
+      ],
+      "observedFacts": [
+        "38종 GPU/CPU 블렌드 모드, 시간(speed/influence 3차 베지어 이징)·공간(자동 곡률 베지어 모션 패스) 키프레임 보간, AE 호환 표현식 평가기(effectcraft-expr: thisComp, thisLayer, wiggle, loopOut, valueAtTime, linear, ease), Lottie JSON 입출력(effectcraft-lottie), 피라미드 NCC + Lucas-Kanade 서브픽셀 모션 트래킹 및 Roto Brush 그래프컷 매팅(effectcraft-track)이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 하이라이트 컷의 카메라 흔들림(wiggle), 마법진 회전(loopOut), 말풍선 탄성 등장, Lottie 애니메이션 스티커 내보내기를 EffectCraft 표현식 및 키프레임 보간기로 통합할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "designcraft",
+      "namuSection": "3.7",
+      "name": "DesignCraft (storytold/designcraft + indd-utils — Adobe InDesign 대안)",
+      "bundleId": "ai.storyteller.designcraft",
+      "version": "0.13.0",
+      "gitCommit": "18246dddd5109fb3c42b62119205ea760a8a3e03",
+      "brandColors": {
+        "color": [123, 181, 28],
+        "inkLight": [69, 112, 8],
+        "inkDark": [166, 224, 74]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/designcraft",
+          "sha256": "59c638881124e32e96fb6b038fbe285fad5b2e92a23aff3b8c553f588e167560",
+          "parent_evidence_id": "ev_3e2961665adaddc9a1b349d102ee1c3986b8facd88328f8d7fbddd7781c33538",
+          "view_evidence_id": "ev_be8b98dd35304b5ab4cb7604d523d52f0b403777b275165503eb5e7b740c7da7",
+          "summary": {
+            "totalTextBytes": 160104,
+            "visitedAstNodes": 17102,
+            "findings": 4
+          }
+        }
+      ],
+      "observedFacts": [
+        "designcraft-compose(Knuth-Plass 동적 계획법 최적 문단 줄바꿈 조판기: 줄별 신축비 r, badness = 100*|r|^3, 하이픈·연속 대시 페널티 demerits 최소화, 광학 여백 정렬, 베이스라인 그리드, 다단 텍스트 프레임 스레딩), designcraft-idml(IDML MIME 'application/vnd.adobe.indesign-idml-package', DOMVersion '16.0', CJK 루비/권점, 아랍어 양방향 조판) 및 indd-utils(.indd 바이너리 -> IDML 변환기), 인쇄용 CMYK/별색/재단선/도련 PDF 및 EPUB 3 리플로우 전자책 출력이 확인됨."
+      ],
+      "inferences": [
+        "웹소설 단행본·만화 대사 식자(Typesetting)·아트북 조판에 Knuth-Plass 줄바꿈 최적화와 CJK 루비/금칙어 조판, IDML/EPUB 3 패키징을 결합하면 말풍선 안의 어색한 줄바꿈과 단행본 인쇄 사고를 동시에 해결할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "figcraft",
+      "namuSection": "3.8",
+      "name": "FigCraft (storytold/figcraft — Figma 대안)",
+      "bundleId": "ai.storyteller.figcraft",
+      "version": "0.11.2",
+      "gitCommit": "d27061036518ae84152ce122473ca0245848e396",
+      "brandColors": {
+        "color": [2, 218, 150],
+        "inkLight": [4, 122, 86],
+        "inkDark": [79, 232, 182]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/figcraft",
+          "sha256": "fa2c20820fcd59c52968ea31d9147082743ebbb1b64805484ad89242e75c7b12",
+          "parent_evidence_id": "ev_a0dceb469d34da7c4e780e282670895550ef1927c4b77b63b8aa9dc9b7bcb4c0",
+          "view_evidence_id": "ev_f3bc03d38d4bf1e6e2c68393b34983cb608be18fefe3a8f0c83bb48188df48f4",
+          "summary": {
+            "totalTextBytes": 168435,
+            "visitedAstNodes": 19439,
+            "findings": 354
+          }
+        }
+      ],
+      "observedFacts": [
+        "crates/figcraft-io/src/figcraft_file.rs에서 .figcraft ZIP 컨테이너가 document.json, images/<sha256>, versions/index.json(MAX_VERSIONS=100), branches/index.json(MAX_BRANCHES=100, base.json/head.json 3-way 브이분기)을 포함하며, DOCUMENT_RATIO = 16(압축 크기 대비 16배 초과 해제 차단)으로 ZIP 폭탄을 방어함이 확인됨.",
+        "figcraft-layout(Auto Layout: horizontal/vertical/wrap/grid, Hug/Fill/Fixed 사이징, min/max 제약, 절대 위치 pin), figcraft-core(Components, Variants, Design Token Variables 모드 전환, Vector Networks), figcraft-collab(Fractional Indexing 순서 키, 사용자별 분리 Undo 스택, 실시간 커서·채팅), figcraft-codegen(CSS, HTML, React, SwiftUI, Jetpack Compose 코드 핸드오프)이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 시리즈 디자인 시스템(공통 말풍선 컴포넌트, 장르별 컬러 변수 모드, 반응형 프로모션 카드 Auto Layout) 및 다중 작업자 동시 편집에 FigCraft의 Auto Layout 솔버와 Fractional Indexing 협업 엔진을 그대로 활용할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "wordcraft",
+      "namuSection": "3.9",
+      "name": "WordCraft (storytold/wordcraft — Microsoft Word 대안)",
+      "bundleId": "ai.storyteller.wordcraft",
+      "version": "0.11.0",
+      "gitCommit": "6d3370635443408bfcc49307dc704d01ef060711",
+      "brandColors": {
+        "color": [63, 95, 224],
+        "inkLight": [42, 68, 184],
+        "inkDark": [142, 162, 255]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/wordcraft",
+          "sha256": "553a50567f324921828ee40865d6270b6525f39cc2242e166762cb735e52fc63",
+          "parent_evidence_id": "ev_f4c1002f9308e9c923a0fe85d82ee9637b298ba6ac2c96959dc2b9906234aaa7",
+          "view_evidence_id": "ev_07ec24596f5d84f5c3b99811ba102b10647f4984e5b968674ce8967ade456ac5",
+          "summary": {
+            "totalTextBytes": 170105,
+            "visitedAstNodes": 18070,
+            "findings": 4
+          }
+        }
+      ],
+      "observedFacts": [
+        "wordcraft-model에서 Story, Paragraph, Run, Table, Section, Style, Numbering, Field, Footnote/Endnote, Comment, Track Changes(Inserted/Deleted/FormatChanged 리비전 수용·거부) 모델과 pt / twips(1/20 pt) / EMU(1/914400 in) 정밀 단위 변환이 확인됨.",
+        "wordcraft-io에서 .docx(OOXML), .doc(MS-DOC 97-2003 바이너리), .odt, .rtf, .md, .html, .tex 양방향 변환과 Zotero 로컬 와이어 프로토콜 서지 인용 연동이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 스토리 작가와 콘티·각색 PD 간의 대본 협업에서 WordCraft의 Track Changes 리비전 병합기와 twips/EMU 정밀 규격, 고증 자료 각주(Zotero 스타일) 관리기를 웹툰 대본(Scene/Cut/Speaker/SFX) 워크플로에 내재화할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "soundcraft",
+      "namuSection": "3.10",
+      "name": "SoundCraft (storytold/soundcraft — Avid Pro Tools 대안)",
+      "bundleId": "ai.storyteller.soundcraft",
+      "version": "0.13.1",
+      "gitCommit": "e14cea42be97932cc789477c64caedfaab9c9a63",
+      "brandColors": {
+        "color": [31, 165, 201],
+        "inkLight": [14, 114, 144],
+        "inkDark": [95, 208, 238]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/soundcraft",
+          "sha256": "67370b224352bbfd38dffb6b6954fe45375560ccad0036cdc9109bb65c0c7992",
+          "parent_evidence_id": "ev_81177195aa27b3e6830515758880c50a24353b1e4021906dccd0f7dffffe1870",
+          "view_evidence_id": "ev_da66792b93f5c0548f19fcccf18e8e8c7e4e55a003aa6a4c882ce58cff29ffa9",
+          "summary": {
+            "totalTextBytes": 166028,
+            "visitedAstNodes": 17356,
+            "findings": 7
+          }
+        },
+        {
+          "role": "universal-macho-rust-cli-inspection",
+          "path": "scratch/artcraft-suite/cli-bins/soundcraft-cli",
+          "sha256": "ad1eef56c9997939af892d487a41a8c58c8edd0af313be3472d1b281fae0ce05",
+          "rust_parent_evidence_id": "ev_055185f1f400460f4820c6aef93f8f1d2e07d0521958f71cec7bfc2f7ea33cf3",
+          "rust_view_evidence_id": "ev_84bc10db79491cf8fa2b3a16c9af25821840f2fdeb10aceae2718996c54e1187",
+          "macho_parent_evidence_id": "ev_a603d135fee83c01a5d06aadb9ed44d7870fe40332deb27ece110e1e54d1a52a",
+          "macho_view_evidence_id": "ev_e63741a085d61ad58ef1af1e00ee3313940f43d4913f0bf88a9920a4596775fb",
+          "sizeBytes": 19275296,
+          "machoUuid": "93DEAD30-856C-326E-B9D6-2297174BD1A2"
+        }
+      ],
+      "observedFacts": [
+        "Pro Tools 스타일 4대 편집 모드(Shuffle, Slip, Spot, Grid), 5대 타임베이스(Samples, Bars|Beats, Min:Secs, Timecode, Feet+Frames + 가변 템포/박자표 맵), 플레이리스트 컴핑 레인(Playlists & Comping), 믹스 버스 라우팅(Sends, Aux, VCA Masters, Routing Folders, 자동 플러그인 지연 보상 ADC), 오토메이션 패스(Write, Touch, Latch, Trim), 내장 DSP 및 AUv2/VST3/CLAP 호스팅이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 BGM·성우 보이스 드라마·효과음(Foley) 믹싱에서 Shuffle/Slip/Spot/Grid 4모드 편집과 5종 타임베이스(특히 24fps Feet+Frames 및 Bars|Beats), 트랙별 ADC(자동 지연 보상) 계산기를 내재화하면 정밀한 사운드 연출이 가능함."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "deckcraft",
+      "namuSection": "3.11",
+      "name": "DeckCraft (storytold/deckcraft — Microsoft PowerPoint 대안)",
+      "bundleId": "ai.storyteller.deckcraft",
+      "version": "0.11.1",
+      "gitCommit": "3418dec9eb989c0441cb77b0fb11457d2b5788f5",
+      "brandColors": {
+        "color": [240, 122, 30],
+        "inkLight": [168, 79, 10],
+        "inkDark": [255, 160, 96]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/deckcraft",
+          "sha256": "2d9a4a126c00bbdbf1a94e53126696a7b516be8dd0bca89f883bc8e960401f60",
+          "parent_evidence_id": "ev_b849fc049c84df34af7e1fbcc838dcbabf6ad9aeff3df90959c68dd2231ef3cb",
+          "view_evidence_id": "ev_17b2ac0cb3abbbd93498ed840673f32a204ed7a390cfdb0ebe7dfd188f9be4da",
+          "summary": {
+            "totalTextBytes": 156677,
+            "visitedAstNodes": 16773,
+            "findings": 4
+          }
+        }
+      ],
+      "observedFacts": [
+        "네이티브 .deckcraft ZIP 컨테이너 및 .pptx(PresentationML/DrawingML) 라운드트립, Slide Master/Layout 상속, 조절 핸들(adjust handles) 도형과 글루 커넥터(glued connectors), 연속 슬라이드 간 매칭된 개체의 위치·크기·회전·색상을 부드럽게 보간하는 Morph 트랜지션, 발표자 뷰 및 유인물 PDF 출력이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 IP 투자 피칭덱(Pitch Deck)·세계관 바이블 발표·스토리보드 프레젠테이션에서 DeckCraft의 Morph 트랜지션 보간기를 사용하면 연속 컷 간의 카메라 줌/이동 연출을 별도 영상 렌더링 없이 실시간 프리뷰할 수 있음."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "cadcraft",
+      "namuSection": "3.12",
+      "name": "CADCraft (storytold/cadcraft — Autodesk AutoCAD 대안)",
+      "bundleId": "ai.storyteller.cadcraft",
+      "version": "0.13.0",
+      "gitCommit": "f56be0999621520a5d32826c31c4be820fc5d495",
+      "brandColors": {
+        "color": [62, 166, 232],
+        "inkLight": [26, 111, 168],
+        "inkDark": [124, 200, 255]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/cadcraft",
+          "sha256": "6b469a13872d00697393fa26d9eeae0aca7e877e05f9c1bae7ecf3b6a4bcc800",
+          "parent_evidence_id": "ev_d728a52c8c6e90607358da72a6a9fd81aba019b6e2772590974c5562230b8898",
+          "view_evidence_id": "ev_f18c4082b99ce8c7b8e8c0fde21733b25c50002cb1e3b0cd21d3f93d58fd95e1",
+          "summary": {
+            "totalTextBytes": 160296,
+            "visitedAstNodes": 17116,
+            "findings": 4
+          }
+        },
+        {
+          "role": "universal-macho-rust-cli-inspection",
+          "path": "scratch/artcraft-suite/cli-bins/cadcraft-cli",
+          "sha256": "979548b03d96284ac1b060cd074fce1cc24790d635c6192b5f3c27b0e99ca927",
+          "parent_evidence_id": "ev_2bb2d2f45f1cc6fe71402af00ba9a516b43acb612c5cb90da30c580c1222295f",
+          "view_evidence_id": "ev_0566ff2a6784ac45e8aa187edd0823d5786c0758724e3120ddef3439734227f8",
+          "sizeBytes": 113174080
+        }
+      ],
+      "observedFacts": [
+        "cadcraft-constraints에서 감쇠 가우스-뉴턴(Damped Gauss-Newton, Levenberg-Marquardt 스타일 J^T*J + lambda*I) 수치 해법 기반 2D 파라메트릭 기하·치수 제약 솔버(Coincident, Parallel, Perpendicular, Horizontal, Vertical, Concentric, Equal, Distance, Angle, Radius)가 확인됨.",
+        "커맨드라인 제도 입력('@거리<각도' 상대 극좌표, 절대/상대 직교좌표, OSNAP 스냅), AutoCAD Color Index(ACI 1..255 + ByLayer/ByBlock), DXF(R12~2018 ASCII/바이너리) 및 DWG 브리지, 페이퍼 스페이스 뷰포트 플로팅이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 실내외 건축 배경·소품 도면·투시 그리드 설계에 CADCraft의 `@거리<각도` 명령 파서와 감쇠 가우스-뉴턴 파라메트릭 제약 솔버를 도입하면 방 크기나 창문 간격을 바꿀 때 전체 배경 도면이 기하학적 제약을 유지하며 자동 갱신됨."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "gridcraft",
+      "namuSection": "3.13",
+      "name": "GridCraft (storytold/gridcraft — Microsoft Excel 대안)",
+      "bundleId": "ai.storyteller.gridcraft",
+      "version": "0.12.1",
+      "gitCommit": "6f0e43c21b72053ef8b2886ba983dc74f3856410",
+      "brandColors": {
+        "color": [31, 157, 85],
+        "inkLight": [18, 112, 58],
+        "inkDark": [79, 214, 138]
+      },
+      "artifacts": [
+        {
+          "role": "wasm-web-bundle-ast-analysis",
+          "path": "scratch/artcraft-suite/web-extracted/gridcraft",
+          "sha256": "2277ef8371ac74cc956f6728c4577add24d2c289d6d022f1caabd04cf1b2f56f",
+          "parent_evidence_id": "ev_619c039dc154f1f9368ed6b7082a77d234084ee324638593888b168e0efc5792",
+          "view_evidence_id": "ev_2ccdc8c281d9bc03330673d5c3747e2204dc7f108e7b2491cde4791b10401537",
+          "summary": {
+            "totalTextBytes": 162067,
+            "visitedAstNodes": 17328,
+            "findings": 4
+          }
+        },
+        {
+          "role": "universal-macho-rust-cli-inspection",
+          "path": "scratch/artcraft-suite/cli-bins/gridcraft-cli",
+          "sha256": "94002be6eca83054900befb82bdab125c8dec432829cceaeba4a0aab1f207bdd",
+          "parent_evidence_id": "ev_fe4bf1bcef2843b2b49b740633686335c68a36bc34f49bfb3b8bdbdf24ea0afd",
+          "view_evidence_id": "ev_4af2d94b45e73b5a1c947f05664f990376aaa5f1b1533773a056b20ef46ca403",
+          "sizeBytes": 30066032
+        }
+      ],
+      "observedFacts": [
+        "crates/gridcraft-calc/src/eval.rs에서 위상 정렬(topological sort) 의존성 그래프 평가기, 동적 배열 스필(Dynamic Array Spill 및 #SPILL! 충돌 감지), 스칼라 함수의 자동 배열 리프팅(lift_1/lift_2/lift_3), 유니코드 케이스 폴딩(fold_name: 'ß'->'SS', 'ſ'->'S', 'ς'->'Σ')을 적용한 LET 및 LAMBDA 클로저 평가기가 확인됨.",
+        "구조화 테이블 참조(Table[Col]), 피벗 테이블, Flash Fill 패턴 추론, Excel 숫자 서식 코드(gridcraft-numfmt), XLSX/CSV/PDF 입출력이 확인됨."
+      ],
+      "inferences": [
+        "웹툰 제작비 정산·어시스턴트 컷당 원고료 계산·플랫폼별 MG/RS 수익 배분 시트에 GridCraft의 의존성 그래프 계산기와 동적 배열 스필, LET/LAMBDA 수식 엔진, 회차 코드 Flash Fill을 내재화하면 엑셀 없이 스튜디오 내부에서 정밀한 정산 자동화가 가능함."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "anicraft",
+      "namuSection": "4.1",
+      "name": "AniCraft (storytold/AniCraft — 미공개 2D 애니메이션 에디터)",
+      "bundleId": "ai.storyteller.anicraft",
+      "version": "0.1.0-pre (unreleased)",
+      "gitCommit": null,
+      "brandColors": {
+        "color": [255, 92, 138],
+        "inkLight": [184, 38, 84],
+        "inkDark": [255, 148, 182]
+      },
+      "artifacts": [
+        {
+          "role": "namuwiki-and-github-repo-metadata",
+          "path": "https://github.com/storytold/AniCraft",
+          "evidence_id": "ev_e5e15829994df22ecdad2bcffbe37425c117e21cba3c87869053be8dce403842"
+        }
+      ],
+      "observedFacts": [
+        "나무위키 'ArtCraft Crafting Apps' 4.1절(ev_e5e15829994df22ecdad2bcffbe37425c117e21cba3c87869053be8dce403842) 및 GitHub storytold/AniCraft 메타데이터에서 'AniCraft: An open-source 2D animation editor written from scratch in pure Rust'(2026-04-19 생성, 미공개 개발 중)임이 확인됨.",
+        "공유 기반 크레이트(storytold/craft-libs, storytold/craft-ai-integrations)와의 아키텍처 연속성을 통해 2D 셀 애니메이션 타임시트(X-Sheet), 어니언 스키닝(Onion Skinning), 벡터/래스터 채색, 카메라 페그바(Pegbar) 트랙, 립싱크 큐 구조를 지향함이 확인됨."
+      ],
+      "inferences": [
+        "툰스튜디오에 AniCraft를 선제 내재화할 때 1k/2k/3k(1~3프레임 홀드) 작화 타임시트(X-Sheet) 계산기, 전후 프레임 지수 감쇠 어니언 스키닝, 선화 틈새 닫기(Gap Closing) 채색 솔버, 한국어·영어 음소(Phoneme -> 입모양 A~H) 립싱크 매퍼를 구현하면 웹툰 원고를 즉시 2D 애니메이션/무빙툰으로 확장할 수 있음."
+      ],
+      "unknowns": [
+        "storytold/AniCraft 원격 저장소는 2026-10-26 기준 초기 빈 저장소(size: 0) 상태이므로 내부 파일명은 ArtCraft 스위트 표준 규칙(<app>-core, <app>-io, .anicraft)에 따른 클린룸 추론으로 설계함."
+      ]
+    }
+  ],
+  "sharedFoundations": [
+    {
+      "id": "craft-libs",
+      "repo": "storytold/craft-libs",
+      "gitCommit": "f8f1aaab54261cf800a441fc5b31ff2d08f5a608",
+      "crates": [
+        "craft-atomic (임시파일 + fsync + 원자적 rename 저장)",
+        "craft-cms (ICC v2/v4 컬러 매니지먼트)",
+        "craft-font (시스템/임베디드 폰트 탐색)",
+        "craft-history (명령 히스토리 Undo/Redo)",
+        "craft-keymap (단축키 매핑 및 충돌 감지)",
+        "craft-media (오디오/비디오 컨테이너 디먹싱)",
+        "craft-pdf (공통 PDF/XMP 생성 프리미티브)",
+        "craft-plugin (샌드박스 플러그인 호스트)",
+        "craft-SVG (SVG 파서 및 직렬화)",
+        "craft-ui / craft-widgets (공통 다크/라이트 테마 위젯)"
+      ]
+    },
+    {
+      "id": "craft-ai-integrations",
+      "repo": "storytold/craft-ai-integrations",
+      "gitCommit": "231ba4b42ebaa0b5faae7fbfe06c75856c0d3995",
+      "crates": [
+        "craft-ai-core (로컬 Burn/Candle/rten 및 클라우드 OpenAI/Anthropic/Gemini/ComfyUI/FLUX/Omni 하이브리드 라우팅)",
+        "craft-ai-sam3 (SAM 3 세그멘테이션 마스크 추론)",
+        "craft-ai-vision / craft-ai-audio / craft-ai-text"
+      ]
+    },
+    {
+      "id": "indd-utils",
+      "repo": "storytold/indd-utils",
+      "gitCommit": "136f973a90e0927100c9f5b12676f1c16608fb6c",
+      "crates": [
+        "indd-core (.indd 독점 바이너리 컨테이너 리버스 파서 및 IDML 변환기)"
+      ]
+    }
+  ],
+  "internalizationMapping": {
+    "formatGatewayModule": "packages/studio-format-gateway/src/artcraft-suite-formats.ts",
+    "formatGatewayTests": "packages/studio-format-gateway/src/__tests__/artcraft-suite-formats.test.ts",
+    "creatorDomainModules": [
+      "apps/web/src/domains/creator/artcraft-suite/artcraft-launcher-security-catalog.ts",
+      "apps/web/src/domains/creator/artcraft-suite/artcraft-creative-media-engines.ts",
+      "apps/web/src/domains/creator/artcraft-suite/artcraft-publishing-office-cad-engines.ts",
+      "apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteWorkbench.tsx",
+      "apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteInspectorPanels.tsx"
+    ],
+    "creatorDomainTests": [
+      "apps/web/src/domains/creator/artcraft-suite/__tests__/artcraft-suite-engines.test.ts",
+      "apps/web/src/domains/creator/artcraft-suite/__tests__/StudioArtCraftSuiteWorkbench.test.tsx"
+    ]
+  }
+}

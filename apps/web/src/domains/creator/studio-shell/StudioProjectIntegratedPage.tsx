@@ -74,6 +74,12 @@ const StudioDesignPlatformWorkbench = lazy(async () => {
   return { default: module.StudioDesignPlatformWorkbench };
 });
 
+// ArtCraft Crafting Apps 15종 스위트 (Launcher, PhotoCraft ~ GridCraft, 미공개 AniCraft) 역공학 내재화 워크벤치.
+const StudioArtCraftSuiteWorkbench = lazy(async () => {
+  const module = await import("../artcraft-suite/StudioArtCraftSuiteWorkbench");
+  return { default: module.StudioArtCraftSuiteWorkbench };
+});
+
 function SubmissionPackageFallback() {
   const bt = useBilingual("studioProjectIntegrated.submissionFallback");
   return (
@@ -163,6 +169,9 @@ function SectionWorkflow({
           </Suspense>
           <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
             <StudioDesignPlatformWorkbench projectId={projectId} />
+          </Suspense>
+          <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+            <StudioArtCraftSuiteWorkbench projectId={projectId} />
           </Suspense>
         </>
       ) : null}
