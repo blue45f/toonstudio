@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactElement } from "react";
 
 import type { ShaperBodySliderValues } from "./studio-shaper-model";
 import type { StudioVarco3dMannequinPosePresetId } from "./studio-varco3d-character-lab-diorama-catalog";
+import { StudioTripo3dCompetitorWorkbench } from "./StudioTripo3dCompetitorWorkbench";
 import { StudioVarco3dCatalogExecutionPanel } from "./StudioVarco3dCatalogExecutionPanel";
 import {
   STUDIO_VARCO3D_ANIMATION_CATEGORIES,
@@ -317,6 +318,11 @@ export function StudioVarco3dWorkflowMcpExportSection({
       </details>
 
       <StudioVarco3dCatalogExecutionPanel
+        accordionGroupName={accordionGroupName}
+        onApplyMannequinBodySliders={onApplyMannequinBodySliders}
+      />
+
+      <StudioTripo3dCompetitorWorkbench
         accordionGroupName={accordionGroupName}
         onApplyMannequinBodySliders={onApplyMannequinBodySliders}
       />

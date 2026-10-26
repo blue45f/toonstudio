@@ -35,6 +35,11 @@ import {
 import { createHyper3dRodinProvider } from "./studio-hyper3d-rodin-provider";
 import { STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION } from "./studio-3d-generation-provider";
 import {
+  createTripo3dProvider,
+  TRIPO_3D_PROVIDER_ID,
+  type Tripo3dFetch,
+} from "./studio-tripo3d-provider";
+import {
   createVarco3dProvider,
   VARCO_3D_PROVIDER_ID,
   type Varco3dFetch,
@@ -211,6 +216,7 @@ export class Studio3dGenerationService {
   readonly #identityStore: Studio3dGenerationProviderIdentityStore;
   readonly #ledger: Studio3dGenerationJobLedger;
   #varcoFetch: Varco3dFetch | undefined;
+  #tripoFetch: Tripo3dFetch | undefined;
 
   constructor(
     @Optional() @Inject(STUDIO_3D_CREDIT_WALLET) private readonly creditWallet: Studio3dCreditWallet | null = null,
@@ -243,14 +249,19 @@ export class Studio3dGenerationService {
     this.#varcoFetch = fetchImpl;
   }
 
+  setTripo3dFetchForTesting(fetchImpl: Tripo3dFetch | undefined): void {
+    this.#tripoFetch = fetchImpl;
+  }
+
   status() {
     const hyper3dConfigured = Boolean(process.env.HYPER3D_API_KEY?.trim() || process.env.RODIN_API_KEY?.trim());
     const varcoConfigured = Boolean(process.env.VARCO_3D_API_KEY?.trim() || process.env.OPENAPI_KEY?.trim());
+    const tripoConfigured = Boolean(process.env.TRIPO_API_KEY?.trim() || process.env.TRIPO_3D_API_KEY?.trim());
     return Object.freeze({
-      configured: operatorAiFundingEnabled() && (hyper3dConfigured || varcoConfigured),
+      configured: operatorAiFundingEnabled() && (hyper3dConfigured || varcoConfigured || tripoConfigured),
       durable: Boolean(process.env.DATABASE_URL?.trim()),
       provider: "hyper3d-rodin",
-      supportedProviders: Object.freeze(["hyper3d-rodin", VARCO_3D_PROVIDER_ID]),
+      supportedProviders: Object.freeze(["hyper3d-rodin", VARCO_3D_PROVIDER_ID, TRIPO_3D_PROVIDER_ID]),
       modes: Object.freeze(["text-to-3d", "image-to-3d", "multiview-to-3d", "texture-only"]),
       apiKeyExposedToClient: false,
       inputTransport: "inline-json",
@@ -259,17 +270,33 @@ export class Studio3dGenerationService {
     });
   }
 
-  #resolveProviderId(requestedProvider?: unknown, providerApiKey?: string): "hyper3d-rodin" | typeof VARCO_3D_PROVIDER_ID {
+  #resolveProviderId(
+    requestedProvider?: unknown,
+    providerApiKey?: string,
+  ): "hyper3d-rodin" | typeof VARCO_3D_PROVIDER_ID | typeof TRIPO_3D_PROVIDER_ID {
+    if (
+      requestedProvider === TRIPO_3D_PROVIDER_ID ||
+      requestedProvider === "tripo3d" ||
+      requestedProvider === "tripo"
+    ) {
+      return TRIPO_3D_PROVIDER_ID;
+    }
     if (requestedProvider === VARCO_3D_PROVIDER_ID || requestedProvider === "varco3d") {
       return VARCO_3D_PROVIDER_ID;
     }
-    if (providerApiKey?.trim().startsWith("varco:")) {
+    const trimmedKey = providerApiKey?.trim();
+    if (trimmedKey?.startsWith("tripo:") || trimmedKey?.startsWith("tsk_")) {
+      return TRIPO_3D_PROVIDER_ID;
+    }
+    if (trimmedKey?.startsWith("varco:")) {
       return VARCO_3D_PROVIDER_ID;
     }
     const hyper3dEnv = Boolean(process.env.HYPER3D_API_KEY?.trim() || process.env.RODIN_API_KEY?.trim());
     const varcoEnv = Boolean(process.env.VARCO_3D_API_KEY?.trim() || process.env.OPENAPI_KEY?.trim());
-    if (!providerApiKey?.trim() && operatorAiFundingEnabled() && !hyper3dEnv && varcoEnv) {
-      return VARCO_3D_PROVIDER_ID;
+    const tripoEnv = Boolean(process.env.TRIPO_API_KEY?.trim() || process.env.TRIPO_3D_API_KEY?.trim());
+    if (!trimmedKey && operatorAiFundingEnabled() && !hyper3dEnv) {
+      if (varcoEnv) return VARCO_3D_PROVIDER_ID;
+      if (tripoEnv) return TRIPO_3D_PROVIDER_ID;
     }
     return "hyper3d-rodin";
   }
@@ -279,6 +306,17 @@ export class Studio3dGenerationService {
     providerId: string = "hyper3d-rodin",
     surfaceOption?: unknown,
   ): Studio3dProviderRuntime {
+    if (providerId === TRIPO_3D_PROVIDER_ID) {
+      const apiKey = providerApiKey?.trim()
+        || (operatorAiFundingEnabled()
+          ? process.env.TRIPO_API_KEY?.trim() || process.env.TRIPO_3D_API_KEY?.trim()
+          : undefined);
+      if (!apiKey) throw new ServiceUnavailableException("Tripo 3D is not configured.");
+      return createTripo3dProvider({
+        apiKey,
+        ...(this.#tripoFetch ? { fetchImpl: this.#tripoFetch } : {}),
+      }) as unknown as Studio3dProviderRuntime;
+    }
     if (providerId === VARCO_3D_PROVIDER_ID) {
       const apiKey = providerApiKey?.trim()
         || (operatorAiFundingEnabled()
@@ -303,7 +341,7 @@ export class Studio3dGenerationService {
   #request(input: Studio3dGenerationCreateInput, requestId: string, providerApiKey?: string): {
     readonly providerRequest: unknown;
     readonly summary: Studio3dGenerationJobRequestSummary;
-    readonly providerId: "hyper3d-rodin" | typeof VARCO_3D_PROVIDER_ID;
+    readonly providerId: "hyper3d-rodin" | typeof VARCO_3D_PROVIDER_ID | typeof TRIPO_3D_PROVIDER_ID;
   } {
     const encodedInputCharacters = (input.images ?? []).reduce((total, item) => total + (typeof item.dataBase64 === "string" ? item.dataBase64.length : 0), 0)
       + (typeof input.model?.dataBase64 === "string" ? input.model.dataBase64.length : 0);
@@ -328,8 +366,18 @@ export class Studio3dGenerationService {
     const options = Object.freeze({ ...(input.options ?? {}) });
     const transport = input.transport ?? "server";
     const providerId = this.#resolveProviderId(options.provider, providerApiKey);
-    const defaultModel = providerId === VARCO_3D_PROVIDER_ID ? "VARCO 3D" : "Rodin Gen-2.5";
-    const defaultTier = providerId === VARCO_3D_PROVIDER_ID ? "VARCO-3D-v2" : "Gen-2.5-Medium";
+    const defaultModel =
+      providerId === TRIPO_3D_PROVIDER_ID
+        ? "Tripo v3.1"
+        : providerId === VARCO_3D_PROVIDER_ID
+          ? "VARCO 3D"
+          : "Rodin Gen-2.5";
+    const defaultTier =
+      providerId === TRIPO_3D_PROVIDER_ID
+        ? "v3.1-20260211"
+        : providerId === VARCO_3D_PROVIDER_ID
+          ? "VARCO-3D-v2"
+          : "Gen-2.5-Medium";
     return Object.freeze({
       providerId,
       providerRequest: Object.freeze({
