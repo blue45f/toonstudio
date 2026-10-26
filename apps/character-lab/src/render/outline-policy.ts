@@ -89,3 +89,72 @@ export function computeAnisotropicOutlineOffset(
 export function shouldSuppressHairInline(role: PartRole, disableHairInline: boolean): boolean {
   return disableHairInline && (role === "hair" || role === "hair-accessory");
 }
+
+export type ShaperSelectionOutlineColorSlot = 0 | 1 | 2;
+
+export interface ShaperSelectionOutlineEffectInput {
+  /** 기본 실루엣 선 두께 (SHAPER cakeslice.OutlineEffect.lineThickness, 기본 1.25) */
+  readonly lineThickness?: number;
+  /** 실루엣 강도 (lineIntensity, 기본 0.5) */
+  readonly lineIntensity?: number;
+  /** 선택 영역 내부 채움 투명도 (fillAmount 0..1, 기본 0.2) */
+  readonly fillAmount?: number;
+  /** 3-슬롯 색상 인덱스 (cakeslice.Outline.color: 0 = 주 선택 주황, 1 = 보조 선택 청록, 2 = 대칭/참조 노랑) */
+  readonly colorIndex?: ShaperSelectionOutlineColorSlot;
+  /** 화면 높이 비례 두께 스케일링 여부 (scaleWithScreenSize, 기본 true) */
+  readonly scaleWithScreenSize?: boolean;
+  /** 현재 뷰포트 세로 픽셀 높이 (scaleWithScreenSize 기준 1080px 정규화) */
+  readonly viewportHeightPx?: number;
+  /** 코너 대각선 샘플링 확장 여부 (cornerOutlines, 기본 false) */
+  readonly cornerOutlines?: boolean;
+}
+
+export interface ShaperSelectionOutlineEffectConfig {
+  readonly effectiveLineThickness: number;
+  readonly lineIntensity: number;
+  readonly fillAmount: number;
+  readonly colorHex: string;
+  readonly cornerSampleMultiplier: 1 | 2;
+}
+
+/**
+ * SHAPER cakeslice.OutlineEffect (0x0200001e: lineColor0, lineColor1, lineColor2) 기본 3-슬롯 선택 실루엣 팔레트:
+ * - Slot 0 (`lineColor0`): 주 선택 파츠/케이지 하이라이트 (`#ff8000`)
+ * - Slot 1 (`lineColor1`): 보조/그룹 선택 하이라이트 (`#00bfff`)
+ * - Slot 2 (`lineColor2`): 대칭(Mirror) 또는 참조 선택 하이라이트 (`#ffd93d`)
+ */
+export const SHAPER_SELECTION_OUTLINE_COLORS: Readonly<Record<ShaperSelectionOutlineColorSlot, string>> =
+  Object.freeze({
+    0: "#ff8000",
+    1: "#00bfff",
+    2: "#ffd93d",
+  });
+
+/**
+ * SHAPER cakeslice.OutlineEffect (Assembly-CSharp.dll 0x0200001e) & cakeslice.Outline (0x0200001d) 역공학 내재화:
+ * 선택된 파츠/헤어/장신구 메시의 포스트프로세싱 선택 실루엣 두께(해상도 비례 보정), 내부 채움 강도(`fillAmount`),
+ * 코너 샘플 배수(`cornerOutlines`), 3-슬롯 색상 팔레트를 계산한다.
+ */
+export function computeShaperSelectionOutlineEffect(
+  input: ShaperSelectionOutlineEffectInput = {},
+): ShaperSelectionOutlineEffectConfig {
+  const baseThickness = Math.min(6, Math.max(0, input.lineThickness ?? 1.25));
+  const lineIntensity = Math.min(2, Math.max(0, input.lineIntensity ?? 0.5));
+  const fillAmount = Math.min(1, Math.max(0, input.fillAmount ?? 0.2));
+  const colorIndex: ShaperSelectionOutlineColorSlot = input.colorIndex ?? 0;
+  const scaleWithScreenSize = input.scaleWithScreenSize ?? true;
+  const viewportHeightPx = Math.max(1, input.viewportHeightPx ?? 1080);
+  const cornerOutlines = input.cornerOutlines ?? false;
+
+  const screenScale = scaleWithScreenSize
+    ? Math.min(4, Math.max(0.5, viewportHeightPx / 1080))
+    : 1;
+
+  return {
+    effectiveLineThickness: Number((baseThickness * screenScale).toFixed(4)),
+    lineIntensity,
+    fillAmount,
+    colorHex: SHAPER_SELECTION_OUTLINE_COLORS[colorIndex],
+    cornerSampleMultiplier: cornerOutlines ? 2 : 1,
+  };
+}

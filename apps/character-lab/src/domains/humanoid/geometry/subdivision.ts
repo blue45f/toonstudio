@@ -520,3 +520,19 @@ export type {
   SymmetricControlPointPositionEdit,
   SymmetricControlPointPowerEdit,
 } from "./cage-control";
+export {
+  computeShaperContourNormal3d,
+  computeShaperSignedContourArea2d,
+  evaluateShaperTessWindingRule,
+  findShaperDominantAxis3d,
+  normalizeShaperContourOrientation,
+  projectShaperContour3dTo2d,
+  tessellateShaperPolygonContour,
+} from "./shaper-tess";
+export type {
+  ShaperContourOrientation,
+  ShaperProjectedContour2d,
+  ShaperTessWindingRule,
+  ShaperTessellateContourOptions,
+  ShaperTessellatedMeshResult,
+} from "./shaper-tess";

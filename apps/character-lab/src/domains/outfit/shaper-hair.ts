@@ -431,3 +431,182 @@ export function applyShaperHairAddShortcutAdjustment(
     hairRootAngleZ,
   };
 }
+
+export type ShaperDynamicBoneBoundMode = "outside" | "inside";
+
+export interface ShaperDynamicBoneParticleInput {
+  readonly position: Vec3;
+  readonly prevPosition: Vec3;
+  /** 부모 본 기준 초기(Rest) 목표 위치 */
+  readonly restTargetPosition: Vec3;
+  /** 부모 루트 본의 프레임 이동 변위 (inert 계수 적용 대상) */
+  readonly parentDisplacement?: Vec3;
+  /** 감쇠율 m_Damping (0..1, 기본 0.1) */
+  readonly damping?: number;
+  /** 탄성 복원율 m_Elasticity (0..1, 기본 0.1) */
+  readonly elasticity?: number;
+  /** 강성 한계 m_Stiffness (0..1, 기본 0.1: restTargetPosition으로부터의 최대 허용 변위 억제율) */
+  readonly stiffness?: number;
+  /** 관성 추종율 m_Inert (0..1, 기본 0) */
+  readonly inert?: number;
+  /** 중력 및 외력 합산 변위 (m_Gravity + m_Force) */
+  readonly externalForce?: Vec3;
+}
+
+export interface ShaperDynamicBoneParticleStepResult {
+  readonly position: Vec3;
+  readonly prevPosition: Vec3;
+  readonly velocity: Vec3;
+}
+
+/**
+ * SHAPER DynamicBone::UpdateParticles1 & UpdateParticles2 (Assembly-CSharp.dll 0x02000018) 역공학 클린룸 내재화:
+ * 보조 헤어·장신구 본 체인의 베를레(Verlet) 관성·감쇠·탄성·강성(Stiffness) 스텝을 계산한다.
+ * - 속도 감쇠: `v = (position - prevPosition) * (1 - damping)`
+ * - 관성 보정: 부모 이동량 `parentDisplacement * inert` 반영
+ * - 탄성 복원 및 외력: `nextPos += (restTargetPosition - nextPos) * elasticity + externalForce`
+ * - 강성(Stiffness) 구속: `restTargetPosition`으로부터의 변위를 `(1 - stiffness)` 비율 이내로 제한
+ */
+export function stepShaperDynamicBoneParticle(
+  input: ShaperDynamicBoneParticleInput,
+): ShaperDynamicBoneParticleStepResult {
+  const damping = Math.min(1, Math.max(0, input.damping ?? 0.1));
+  const elasticity = Math.min(1, Math.max(0, input.elasticity ?? 0.1));
+  const stiffness = Math.min(1, Math.max(0, input.stiffness ?? 0.1));
+  const inert = Math.min(1, Math.max(0, input.inert ?? 0));
+  const parentDisp = input.parentDisplacement ?? [0, 0, 0];
+  const extForce = input.externalForce ?? [0, 0, 0];
+
+  const vx = (input.position[0] - input.prevPosition[0]) * (1 - damping);
+  const vy = (input.position[1] - input.prevPosition[1]) * (1 - damping);
+  const vz = (input.position[2] - input.prevPosition[2]) * (1 - damping);
+
+  const prevPos: Vec3 = [
+    input.position[0] + parentDisp[0] * inert,
+    input.position[1] + parentDisp[1] * inert,
+    input.position[2] + parentDisp[2] * inert,
+  ];
+
+  let nx = prevPos[0] + vx + extForce[0];
+  let ny = prevPos[1] + vy + extForce[1];
+  let nz = prevPos[2] + vz + extForce[2];
+
+  // 탄성 복원 (UpdateParticles2: m_Elasticity)
+  nx += (input.restTargetPosition[0] - nx) * elasticity;
+  ny += (input.restTargetPosition[1] - ny) * elasticity;
+  nz += (input.restTargetPosition[2] - nz) * elasticity;
+
+  // 강성 구속 (m_Stiffness > 0일 때 restTarget 방향으로 당김)
+  if (stiffness > 0) {
+    nx += (input.restTargetPosition[0] - nx) * stiffness;
+    ny += (input.restTargetPosition[1] - ny) * stiffness;
+    nz += (input.restTargetPosition[2] - nz) * stiffness;
+  }
+
+  return {
+    position: [nx, ny, nz],
+    prevPosition: prevPos,
+    velocity: [vx, vy, vz],
+  };
+}
+
+/**
+ * SHAPER DynamicBoneCollider::OutsideSphere / InsideSphere (0x02000019) 역공학 내재화:
+ * 파티클(반경 `particleRadius`)을 구체 콜라이더(`colliderCenter`, `colliderRadius`) 바깥으로 밀어내거나(`outside`),
+ * 구체 내부에 가둔다(`inside`).
+ */
+export function collideShaperDynamicBoneSphere(options: {
+  readonly particlePosition: Vec3;
+  readonly particleRadius: number;
+  readonly colliderCenter: Vec3;
+  readonly colliderRadius: number;
+  readonly bound?: ShaperDynamicBoneBoundMode;
+}): Vec3 {
+  const {
+    particlePosition,
+    particleRadius,
+    colliderCenter,
+    colliderRadius,
+    bound = "outside",
+  } = options;
+  const delta = v3Sub(particlePosition, colliderCenter);
+  const distSq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
+
+  if (bound === "outside") {
+    const rSum = colliderRadius + particleRadius;
+    if (distSq < rSum * rSum) {
+      if (distSq <= 1e-12) {
+        return [colliderCenter[0], colliderCenter[1] + rSum, colliderCenter[2]];
+      }
+      const dist = Math.sqrt(distSq);
+      const scale = rSum / dist;
+      return [
+        colliderCenter[0] + delta[0] * scale,
+        colliderCenter[1] + delta[1] * scale,
+        colliderCenter[2] + delta[2] * scale,
+      ];
+    }
+    return particlePosition;
+  }
+
+  // bound === "inside"
+  const rInner = Math.max(0, colliderRadius - particleRadius);
+  if (distSq > rInner * rInner && distSq > 1e-12) {
+    const dist = Math.sqrt(distSq);
+    const scale = rInner / dist;
+    return [
+      colliderCenter[0] + delta[0] * scale,
+      colliderCenter[1] + delta[1] * scale,
+      colliderCenter[2] + delta[2] * scale,
+    ];
+  }
+  return particlePosition;
+}
+
+/**
+ * SHAPER DynamicBoneCollider::OutsideCapsule / InsideCapsule (0x02000019) 역공학 내재화:
+ * 선분 `[capsuleP0, capsuleP1]` 위로 파티클 중심을 최근접 투영한 뒤 구체 충돌과 동일한 반경 투영을 수행한다.
+ */
+export function collideShaperDynamicBoneCapsule(options: {
+  readonly particlePosition: Vec3;
+  readonly particleRadius: number;
+  readonly capsuleP0: Vec3;
+  readonly capsuleP1: Vec3;
+  readonly capsuleRadius: number;
+  readonly bound?: ShaperDynamicBoneBoundMode;
+}): Vec3 {
+  const {
+    particlePosition,
+    particleRadius,
+    capsuleP0,
+    capsuleP1,
+    capsuleRadius,
+    bound = "outside",
+  } = options;
+  const ab = v3Sub(capsuleP1, capsuleP0);
+  const abLenSq = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2];
+  if (abLenSq <= 1e-12) {
+    return collideShaperDynamicBoneSphere({
+      particlePosition,
+      particleRadius,
+      colliderCenter: capsuleP0,
+      colliderRadius: capsuleRadius,
+      bound,
+    });
+  }
+  const ap = v3Sub(particlePosition, capsuleP0);
+  const dot = ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2];
+  const t = Math.min(1, Math.max(0, dot / abLenSq));
+  const closestCenter: Vec3 = [
+    capsuleP0[0] + ab[0] * t,
+    capsuleP0[1] + ab[1] * t,
+    capsuleP0[2] + ab[2] * t,
+  ];
+  return collideShaperDynamicBoneSphere({
+    particlePosition,
+    particleRadius,
+    colliderCenter: closestCenter,
+    colliderRadius: capsuleRadius,
+    bound,
+  });
+}

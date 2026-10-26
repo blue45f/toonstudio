@@ -17,6 +17,8 @@ import {
   buildHair,
   buildPlantedHairControlChain,
   buildShaperHairStrandTube,
+  collideShaperDynamicBoneCapsule,
+  collideShaperDynamicBoneSphere,
   computeShaperHairBaseUvTransform,
   computeShaperSymmetricRay,
   evaluateShaperHairSplinePoint,
@@ -25,6 +27,7 @@ import {
   reanchorPlantedHairRoot,
   sampleShaperHairSpline,
   simulateShaperHairPhysicsStep,
+  stepShaperDynamicBoneParticle,
 } from "./hair-builder";
 import { HAIR_STYLE_SPECS, hairChainBudget } from "./hair-styles";
 
@@ -303,6 +306,53 @@ describe("outfit/hair-builder", () => {
       expect(adjusted.hairBend).toBeCloseTo(40, 5);
       expect(adjusted.hairRootAngleZ).toBeCloseTo(10, 5);
       expect(adjusted.hairWidth).toBeCloseTo(0.6, 5);
+    });
+
+    it("DynamicBone 베를레 파티클 스텝(감쇠·관성·탄성·강성) 및 구체·캡슐 콜라이더(outside/inside) 충돌 투영을 수행한다", () => {
+      const stepped = stepShaperDynamicBoneParticle({
+        position: [0, 1.0, 0],
+        prevPosition: [0, 1.1, 0],
+        restTargetPosition: [0, 1.2, 0],
+        parentDisplacement: [0.2, 0, 0],
+        damping: 0.2,
+        elasticity: 0.5,
+        stiffness: 0.2,
+        inert: 0.5,
+        externalForce: [0, -0.05, 0],
+      });
+      // vx = 0, prevPos.x = 0 + 0.2 * 0.5 = 0.1 -> 탄성(0.5)·강성(0.2) 복원 후 0.1 * 0.5 * 0.8 = 0.04
+      expect(stepped.prevPosition[0]).toBeCloseTo(0.1, 5);
+      expect(stepped.position[0]).toBeCloseTo(0.04, 5);
+      expect(stepped.velocity[1]).toBeCloseTo(-0.08, 5);
+
+      const sphereOut = collideShaperDynamicBoneSphere({
+        particlePosition: [0.05, 0, 0],
+        particleRadius: 0.02,
+        colliderCenter: [0, 0, 0],
+        colliderRadius: 0.1,
+        bound: "outside",
+      });
+      expect(sphereOut[0]).toBeCloseTo(0.12, 5);
+
+      const sphereIn = collideShaperDynamicBoneSphere({
+        particlePosition: [0.5, 0, 0],
+        particleRadius: 0.02,
+        colliderCenter: [0, 0, 0],
+        colliderRadius: 0.2,
+        bound: "inside",
+      });
+      expect(sphereIn[0]).toBeCloseTo(0.18, 5);
+
+      const capsuleOut = collideShaperDynamicBoneCapsule({
+        particlePosition: [0.03, 0.5, 0],
+        particleRadius: 0.02,
+        capsuleP0: [0, 0, 0],
+        capsuleP1: [0, 1, 0],
+        capsuleRadius: 0.08,
+        bound: "outside",
+      });
+      expect(capsuleOut[0]).toBeCloseTo(0.1, 5);
+      expect(capsuleOut[1]).toBeCloseTo(0.5, 5);
     });
   });
 });
