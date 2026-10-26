@@ -6,6 +6,10 @@ import {
   type CspBrushShapePresetId,
 } from "../../../../../../packages/studio-format-gateway/src/csp-bfps-cscr-prmi";
 import {
+  CSP_MENUV3_THEME_TOKENS,
+  evaluateCspPwglVividToonShading,
+} from "../../../../../../packages/studio-format-gateway/src/csp-fto-pwui-bento-design";
+import {
   CSP_HAND_SETUP_PEP_PRESETS,
   interpolateCspHandSetupPadPose,
   type CspHandFingerGroup,
@@ -27,52 +31,10 @@ import {
   type CspCmykPressProfileId,
 } from "./studio-csp-icc-audio-xpg-engine";
 import { computeCspAiliaHanukeEnclosedGapMap } from "./studio-csp-osqp-sharpyuv-ailia-engine";
-
-export type StudioCspUnifiedUxTabId =
-  | "command_dock"
-  | "color_palettes"
-  | "brush_3d_hand"
-  | "icc_audio_ailia";
-
-export type StudioCspWorkspacePresetId =
-  | "presetMac_1_illustration"
-  | "presetMac_2_comic"
-  | "presetMac_3_category"
-  | "ux_simple_mode";
-
-export interface StudioClipStudioUnifiedUxPanelProps {
-  readonly initialTab?: StudioCspUnifiedUxTabId;
-  readonly initialWorkspacePreset?: StudioCspWorkspacePresetId;
-  readonly onSelectColorHex?: (hex: string) => void;
-  readonly onSelectBrushShapePreset?: (presetId: CspBrushShapePresetId) => void;
-  readonly onExecuteCommandBarItem?: (command: string) => void;
-}
-
-const UX_TABS: readonly { readonly id: StudioCspUnifiedUxTabId; readonly labelKo: string }[] = [
-  { id: "command_dock", labelKo: "커맨드 바·도킹·수식키 (.spws/.tomd)" },
-  { id: "color_palettes", labelKo: "중간색·근사색·색 혼합 팔레트" },
-  { id: "brush_3d_hand", labelKo: "브러시 모양(.bfps)·3D 핸드 셋업" },
-  { id: "icc_audio_ailia", labelKo: "ICC CMYK 프루프·립싱크·선화 틈새" },
-] as const;
-
-const WORKSPACE_PRESETS: readonly {
-  readonly id: StudioCspWorkspacePresetId;
-  readonly labelKo: string;
-  readonly badgeKo: string;
-}[] = [
-  { id: "presetMac_1_illustration", labelKo: "일러스트 (presetMac_1.spws)", badgeKo: "스튜디오 28팔레트" },
-  { id: "presetMac_2_comic", labelKo: "코믹·웹툰 (presetMac_2.spws)", badgeKo: "만화·톤·페이지 특화" },
-  { id: "presetMac_3_category", labelKo: "카테고리별 도킹 (presetMac_3.spws)", badgeKo: "다열 탭 도크" },
-  { id: "ux_simple_mode", labelKo: "심플 모드 UX (UXEditImageTool.todb)", badgeKo: "136노드 슬림 UI" },
-] as const;
-
-const FINGER_GROUPS: readonly { readonly id: CspHandFingerGroup; readonly labelKo: string }[] = [
-  { id: "thumb", labelKo: "엄지" },
-  { id: "index", labelKo: "검지" },
-  { id: "middle", labelKo: "중지" },
-  { id: "ring", labelKo: "약지" },
-  { id: "pinky", labelKo: "소지" },
-] as const;
+import {
+  CspPwEditSliderJoint,
+  StudioCspPwuiBentoToonSection,
+} from "./StudioCspPwuiBentoToonSection";
 
 function parseHexToRgb255(hex: string): [number, number, number] {
   const clean = hex.replace(/^#/, "").padEnd(6, "0");
@@ -101,7 +63,6 @@ function buildBilinearIntermediateColorGrid(
   const bl = parseHexToRgb255(bottomLeftHex);
   const br = parseHexToRgb255(bottomRightHex);
   const cells: string[] = [];
-
   for (let row = 0; row < gridSize; row += 1) {
     const v = gridSize > 1 ? row / (gridSize - 1) : 0;
     for (let col = 0; col < gridSize; col += 1) {
@@ -119,27 +80,77 @@ function buildApproximateColorGrid(baseHex: string, gridSize = 5): readonly stri
   const [baseR, baseG, baseB] = parseHexToRgb255(baseHex);
   const cells: string[] = [];
   const half = Math.floor(gridSize / 2);
-
   for (let row = 0; row < gridSize; row += 1) {
     const lumShift = (half - row) * 18;
     for (let col = 0; col < gridSize; col += 1) {
       const warmCoolShift = (col - half) * 16;
-      cells.push(
-        rgb255ToHex(baseR + lumShift + warmCoolShift, baseG + lumShift, baseB + lumShift - warmCoolShift),
-      );
+      cells.push(rgb255ToHex(baseR + lumShift + warmCoolShift, baseG + lumShift, baseB + lumShift - warmCoolShift));
     }
   }
   return cells;
 }
 
+export type StudioCspUnifiedUxTabId =
+  | "command_dock"
+  | "color_palettes"
+  | "brush_3d_hand"
+  | "icc_audio_ailia"
+  | "pwui_bento_3d_toon";
+
+export type StudioCspWorkspacePresetId =
+  | "presetMac_1_illustration"
+  | "presetMac_2_comic"
+  | "presetMac_3_category"
+  | "ux_simple_mode";
+
+export interface StudioClipStudioUnifiedUxPanelProps {
+  readonly initialTab?: StudioCspUnifiedUxTabId;
+  readonly initialWorkspacePreset?: StudioCspWorkspacePresetId;
+  readonly initialThemeMode?: "dark" | "light";
+  readonly onSelectColorHex?: (hex: string) => void;
+  readonly onSelectBrushShapePreset?: (presetId: CspBrushShapePresetId) => void;
+  readonly onExecuteCommandBarItem?: (command: string) => void;
+  readonly onLaunchBentoItem?: (bentoId: string, target: string) => void;
+}
+
+const UX_TABS: readonly { readonly id: StudioCspUnifiedUxTabId; readonly labelKo: string }[] = [
+  { id: "command_dock", labelKo: "커맨드 바·도킹·수식키 (.spws/.tomd)" },
+  { id: "color_palettes", labelKo: "중간색·근사색·색 혼합 팔레트" },
+  { id: "brush_3d_hand", labelKo: "브러시 모양(.bfps)·3D 핸드 셋업" },
+  { id: "icc_audio_ailia", labelKo: "ICC CMYK 프루프·립싱크·선화 틈새" },
+  { id: "pwui_bento_3d_toon", labelKo: "PW* 디자인 시스템·벤토 런처·3D 툰(.fto)" },
+] as const;
+
+const WORKSPACE_PRESETS: readonly {
+  readonly id: StudioCspWorkspacePresetId;
+  readonly labelKo: string;
+  readonly badgeKo: string;
+}[] = [
+  { id: "presetMac_1_illustration", labelKo: "일러스트 (presetMac_1.spws)", badgeKo: "스튜디오 28팔레트" },
+  { id: "presetMac_2_comic", labelKo: "코믹·웹툰 (presetMac_2.spws)", badgeKo: "만화·톤·페이지 특화" },
+  { id: "presetMac_3_category", labelKo: "카테고리별 도킹 (presetMac_3.spws)", badgeKo: "다열 탭 도크" },
+  { id: "ux_simple_mode", labelKo: "심플 모드 UX (UXEditImageTool.todb)", badgeKo: "136노드·40다이얼로그" },
+] as const;
+
+const FINGER_GROUPS: readonly { readonly id: CspHandFingerGroup; readonly labelKo: string }[] = [
+  { id: "thumb", labelKo: "엄지" },
+  { id: "index", labelKo: "검지" },
+  { id: "middle", labelKo: "중지" },
+  { id: "ring", labelKo: "약지" },
+  { id: "pinky", labelKo: "소지" },
+] as const;
+
 export function StudioClipStudioUnifiedUxPanel({
   initialTab = "command_dock",
   initialWorkspacePreset = "presetMac_1_illustration",
+  initialThemeMode = "dark",
   onSelectColorHex,
   onSelectBrushShapePreset,
   onExecuteCommandBarItem,
+  onLaunchBentoItem,
 }: StudioClipStudioUnifiedUxPanelProps): ReactElement {
   const [activeTab, setActiveTab] = useState<StudioCspUnifiedUxTabId>(initialTab);
+  const [themeMode, setThemeMode] = useState<"dark" | "light">(initialThemeMode);
   const [workspacePreset, setWorkspacePreset] =
     useState<StudioCspWorkspacePresetId>(initialWorkspacePreset);
   const [lastExecutedCommand, setLastExecutedCommand] = useState<string>("filesave");
@@ -169,6 +180,14 @@ export function StudioClipStudioUnifiedUxPanel({
   const [cmykProfileId, setCmykProfileId] =
     useState<CspCmykPressProfileId>("JapanColor2001Coated");
   const [highlightOutOfGamut, setHighlightOutOfGamut] = useState<boolean>(true);
+
+  const [toonShadingEnabled, setToonShadingEnabled] = useState<boolean>(true);
+  const [vividnessPercent, setVividnessPercent] = useState<number>(500);
+  const [lightIntensityPercent, setLightIntensityPercent] = useState<number>(30);
+  const [selectedFtoFont, setSelectedFtoFont] = useState<string>("IwaAntStd-Bd");
+  const [verticalBalloonMode, setVerticalBalloonMode] = useState<boolean>(true);
+
+  const activeThemeTokens = CSP_MENUV3_THEME_TOKENS[themeMode];
 
   const resolvedModifier = useMemo(
     () =>
@@ -259,6 +278,30 @@ export function StudioClipStudioUnifiedUxPanel({
     });
   }, []);
 
+  const pwglVividToonPreview = useMemo(() => {
+    const [r, g, b] = parseHexToRgb255(activeColorHex);
+    const l = lightIntensityPercent / 100;
+    const res = evaluateCspPwglVividToonShading({
+      texRgb01: [r / 255, g / 255, b / 255],
+      ambientMaterialRgb01: [0.55, 0.55, 0.55],
+      diffuseMaterialRgb01: [0.92, 0.92, 0.92],
+      lightRgb01: [l, l, l],
+      vividness: vividnessPercent / 100,
+      maxSaturationEffect: 0.12,
+      brightness: 0.8,
+      toonShading: toonShadingEnabled,
+      toonFaultList: [0.35, 0.7],
+    });
+    return {
+      ...res,
+      shadedHex: rgb255ToHex(
+        res.shadedRgb01[0] * 255,
+        res.shadedRgb01[1] * 255,
+        res.shadedRgb01[2] * 255,
+      ),
+    };
+  }, [activeColorHex, lightIntensityPercent, vividnessPercent, toonShadingEnabled]);
+
   const handlePickSwatch = (hex: string): void => {
     setActiveColorHex(hex);
     onSelectColorHex?.(hex);
@@ -300,20 +343,30 @@ export function StudioClipStudioUnifiedUxPanel({
   return (
     <section
       aria-label="클립스튜디오 통합 UI/UX 워크스페이스 및 팔레트 도크"
+      style={{ colorScheme: themeMode }}
       className="flex flex-col gap-3 rounded-lg border border-line bg-card p-3 text-xs text-fg"
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
         <div>
           <h2 className="text-sm font-semibold">
-            클립스튜디오 5.1.5 통합 UI/UX 도크 &amp; 네이티브 팔레트 허브
+            클립스튜디오 5.1.5 통합 UI/UX 도크 &amp; PW* 디자인 시스템 허브
           </h2>
           <p className="text-[0.68rem] text-fg-2">
-            .spws 28종 팔레트 도크 · 21종 커맨드 바 · .tomd 수식키 · 중간색/근사색/색 혼합 · .bfps 14종 · 3D 핸드 패드 · ICC CMYK
+            .spws 28팔레트 · 21커맨드바 · .tomd 수식키 · PW* 27위젯(742DEA58 507다이얼로그) · MENUv3 벤토 · .fto 5폰트 · PWGL 3D툰
           </p>
         </div>
-        <span className="rounded bg-accent/15 px-2 py-0.5 text-[0.65rem] font-medium text-accent">
-          활성 색: {activeColorHex.toUpperCase()}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
+            className="rounded border border-line bg-panel px-2 py-0.5 text-[0.65rem] font-medium"
+          >
+            테마: {themeMode === "dark" ? `다크 (${activeThemeTokens.colorBgMain})` : `라이트 (${activeThemeTokens.colorBgMain})`}
+          </button>
+          <span className="rounded bg-accent/15 px-2 py-0.5 text-[0.65rem] font-medium text-accent">
+            활성 색: {activeColorHex.toUpperCase()}
+          </span>
+        </div>
       </header>
 
       <div
@@ -592,29 +645,21 @@ export function StudioClipStudioUnifiedUxPanel({
                 </button>
               ))}
             </div>
-            <div className="mb-2 flex flex-col gap-1.5 text-[0.68rem]">
-              <label className="flex items-center justify-between gap-2">
-                <span>가로 벌림 (pa01↔pa00): {Math.round(handSpreadX01 * 100)}%</span>
-                <input
-                  type="range"
-                  aria-label="손가락 가로 벌림"
-                  min={0}
-                  max={100}
-                  value={Math.round(handSpreadX01 * 100)}
-                  onChange={(e) => setHandSpreadX01(Number(e.target.value) / 100)}
-                />
-              </label>
-              <label className="flex items-center justify-between gap-2">
-                <span>세로 주먹 쥐기 ({handFistPresetId}): {Math.round(handFistY01 * 100)}%</span>
-                <input
-                  type="range"
-                  aria-label="손가락 세로 주먹 쥐기"
-                  min={0}
-                  max={100}
-                  value={Math.round(handFistY01 * 100)}
-                  onChange={(e) => setHandFistY01(Number(e.target.value) / 100)}
-                />
-              </label>
+            <div className="mb-2 flex flex-col gap-1.5">
+              <CspPwEditSliderJoint
+                label="손가락 가로 벌림"
+                value={Math.round(handSpreadX01 * 100)}
+                min={0}
+                max={100}
+                onChange={(v) => setHandSpreadX01(v / 100)}
+              />
+              <CspPwEditSliderJoint
+                label="손가락 세로 주먹 쥐기"
+                value={Math.round(handFistY01 * 100)}
+                min={0}
+                max={100}
+                onChange={(v) => setHandFistY01(v / 100)}
+              />
             </div>
             <div className="mb-1.5 flex flex-wrap gap-1">
               {FINGER_GROUPS.map((fg) => {
@@ -700,6 +745,25 @@ export function StudioClipStudioUnifiedUxPanel({
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === "pwui_bento_3d_toon" && (
+        <StudioCspPwuiBentoToonSection
+          toonShadingEnabled={toonShadingEnabled}
+          onChangeToonShadingEnabled={setToonShadingEnabled}
+          vividnessPercent={vividnessPercent}
+          onChangeVividnessPercent={setVividnessPercent}
+          lightIntensityPercent={lightIntensityPercent}
+          onChangeLightIntensityPercent={setLightIntensityPercent}
+          quantizedLightValue={pwglVividToonPreview.quantizedLightValue}
+          appliedSaturationBoost={pwglVividToonPreview.appliedSaturationBoost}
+          shadedHex={pwglVividToonPreview.shadedHex}
+          selectedFtoFont={selectedFtoFont}
+          onChangeSelectedFtoFont={setSelectedFtoFont}
+          verticalBalloonMode={verticalBalloonMode}
+          onChangeVerticalBalloonMode={setVerticalBalloonMode}
+          onLaunchBentoItem={onLaunchBentoItem}
+        />
       )}
     </section>
   );
