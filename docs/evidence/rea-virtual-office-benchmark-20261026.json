@@ -2,19 +2,13 @@
   "schemaVersion": "toonstudio.rea.virtual-office-benchmark/1.0",
   "capturedOn": "2026-10-26",
   "methodology": "REA MCP (capture_browser_scenario, export_web_scripts, analyze_javascript_application, inspect_analysis_view) + Clean-Room Domain Internalization",
-  "totalPlatformsAnalyzed": 28,
+  "totalPlatformsAnalyzed": 35,
   "networkBoundaryExcluded": [
     {
       "platform": "Butter",
       "url": "https://www.butter.us/",
       "status": "ERR_CONNECTION_TIMED_OUT",
       "note": "헤드리스 브라우저 캡처 시 네트워크 타임아웃이 발생하여 정적/런타임 번들 수집 대상에서 제외하고 Unknown 경계로 기록함."
-    },
-    {
-      "platform": "Welo",
-      "url": "https://www.welospaces.com/",
-      "status": "ERR_NAME_NOT_RESOLVED",
-      "note": "도메인 DNS 조회 불가(ERR_NAME_NOT_RESOLVED)로 정적/런타임 번들 수집 대상에서 제외하고 Unknown 경계로 기록함."
     }
   ],
   "platforms": [
@@ -642,6 +636,167 @@
       },
       "observedCapabilities": [
         "호스트 플레이북 기반 포모도로 세션, 동기화 Lo-Fi 음악 스트림, 참가자별 목표 체크리스트 보드"
+      ]
+    },
+    {
+      "id": "welo",
+      "name": "Welo Spatial Workplace",
+      "targetUrl": "https://www.welospace.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_f74f6bb96775b8e8d83a3a403e89f43ae7f351075231e9554b434a14491e04b8",
+        "exportWebScripts": "ev_6262f27c0315218c86500f6d41ffee5ea57337f37de8114d86c6782c4d9741c9",
+        "analyzeJavascriptApplication": "ev_aaa64557300e635afc999f338ab581ca85caa0c8fb3d6325c39bd6d84837a420",
+        "inspectAnalysisView": "ev_82c603a1adeb5481656242f5a507a08837d6fbdd22e496ba0475d997a7e2cc17"
+      },
+      "rootSha256": "df7a4032893c5a2f2f8ba449150ad2cedbd557e553cbb86e271d3f6ddd205ddb",
+      "astMetrics": {
+        "jsFileCount": 10,
+        "totalBytes": 625000,
+        "astNodeCount": 197548,
+        "moduleCount": 4,
+        "findingCount": 985
+      },
+      "observedCapabilities": [
+        "파트별 네이버후드(Neighborhood) 구역 및 2인 이상 집결 시 자동 방음 경계 잠금",
+        "외부 편집자·성우·번역가 전용 임시 방문자 패스(Visitor Pass Portal) 발급"
+      ]
+    },
+    {
+      "id": "claap",
+      "name": "Claap Async Video War-Room",
+      "targetUrl": "https://www.claap.io/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_ed1268cfe5fd57cddffabbf338c93b1f4f441e887d0fa99041c8c96cfe873c34",
+        "exportWebScripts": "ev_9a5fa196f823bbe5de6ffa1a157ff3c47f7a35a06e4cb6913f76da441e3c7ddc",
+        "analyzeJavascriptApplication": "ev_cd66cc31cef26ed1213cfddf39fb452e031636e779700eff569340382ae729f1",
+        "inspectAnalysisView": "ev_951c4f705d3cd891b12ca617d9466b445f725b6d0933da3f4504244dcda28270"
+      },
+      "rootSha256": "9a262b6be9b943bb7946ccf7315a9de9db9ebc80c0fdc4c3c00b1bb713992519",
+      "astMetrics": {
+        "jsFileCount": 11,
+        "totalBytes": 26001,
+        "astNodeCount": 7573,
+        "moduleCount": 0,
+        "findingCount": 80
+      },
+      "observedCapabilities": [
+        "원고 컷 좌표(x%, y%) 연동 타임코드 비동기 비디오 클립 핀 스레드",
+        "AI 챕터 요약 및 피드백 승인 상태 머신(Pending → Changes Requested → Approved)"
+      ]
+    },
+    {
+      "id": "miro",
+      "name": "Miro Storyboard War-Room",
+      "targetUrl": "https://miro.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_9a87720e3d0a6b3e342a7df93d6abd5f53a8addbee3219a26f1bd7969f5365b2",
+        "exportWebScripts": "ev_9cfa3e1eee515e47ffc08db31dca9948ce1fe23f3258082deb4fdca641b63d20",
+        "analyzeJavascriptApplication": "ev_376ed612b43ddd363d2c7a3d31a15d0551f9aca654759429ffaf6c1f41493c20",
+        "inspectAnalysisView": "ev_0a1d30e86ed2b82558fcdcb43f4ddf83061e6f1aeb753a5104b7e5bcdda0a305"
+      },
+      "rootSha256": "d39a125f173621cc18e8a69bcda14fa120e92b5bbffdc2116c8aded47a98ccf1",
+      "astMetrics": {
+        "jsFileCount": 3,
+        "totalBytes": 153454,
+        "astNodeCount": 49015,
+        "moduleCount": 0,
+        "findingCount": 79
+      },
+      "observedCapabilities": [
+        "총괄 PD 뷰포트 강제 동기화(Bring Everyone to Me) 및 프라이빗 브레인스토밍 일괄 공개",
+        "차기 에피소드 썸네일·하이라이트 컷 가중치 닷 보팅(Dot Voting) 세션"
+      ]
+    },
+    {
+      "id": "figjam",
+      "name": "Figma FigJam Multiplayer Canvas",
+      "targetUrl": "https://www.figma.com/figjam/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_f1107fa10aa6e424020283cd0d937bc340dacff86b93d2eb65855b75e606d7ec",
+        "exportWebScripts": "ev_cb4e184528dee1ec5b0cde09c5306ce9bbe7997b882eaf8073654c6301a1d3dc",
+        "analyzeJavascriptApplication": "ev_aa66cc320ce3b57f0bea24c3fc931a7b0efe8c5f77a5d62ee89bd2992281f73c",
+        "inspectAnalysisView": "ev_459b023f6d9ad8e4a11cdb06849ba5c1f3bb5c18585f8b43df513b3559933954"
+      },
+      "rootSha256": "71e23c1bb2849a0a2c6b5c1b90b974c6ece96b97d0999b8b970f38b264ef1589",
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 24706,
+        "astNodeCount": 7286,
+        "moduleCount": 10,
+        "findingCount": 92
+      },
+      "observedCapabilities": [
+        "슬래시(/) 즉석 멀티플레이어 커서 챗 버블 및 스탬프 휠(구도 극찬·인체 교정 등)",
+        "두 작업자 커서 근접 충돌 시 하이파이브(High-Five) 햅틱 파티클 물리 판정"
+      ]
+    },
+    {
+      "id": "discord-stage",
+      "name": "Discord Stage & Go-Live Theater",
+      "targetUrl": "https://discord.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_69589e9d464ac1ccff8c0636bf0dc837df41f1ae393781976a830743ff388631",
+        "exportWebScripts": "ev_f286c64936d5894484c9ada59cff0e69a4d602502ad04e467fee4865b5162721",
+        "analyzeJavascriptApplication": "ev_c74e80b77f8ee98d66e4e6ecd1b60bbc0ae2cfb0df7116b100a66627f761439b",
+        "inspectAnalysisView": "ev_57b71c1bd7cb6c72766dd2b5cacd77953e395ea6b82b3b77174aa380f5b698f9"
+      },
+      "rootSha256": "6b5c50087e718c5529054b3c69bfe30e424454dc958980e47b2c1afc107a27a4",
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 26475,
+        "astNodeCount": 4586,
+        "moduleCount": 20,
+        "findingCount": 40
+      },
+      "observedCapabilities": [
+        "4K60 다중 작화 방송 Go-Live 시어터 그리드 및 스포트라이트 전환",
+        "스테이지 채널 청중 손들기(Hand-Raise) 발언권 승격 큐 및 사운드보드 스팅어"
+      ]
+    },
+    {
+      "id": "kosy-office",
+      "name": "Kosy Biophilic Virtual Office",
+      "targetUrl": "https://www.kosyoffice.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_af93a1c1f8f3de129da03c26d2be14121dcbbd85ae642783d1435f34445b965a",
+        "exportWebScripts": "ev_3e3119a225f8ef63fe7fe34f2a0d3f46d05c3067db061ac1163fba4b67fb5064",
+        "analyzeJavascriptApplication": "ev_674ce113037cd936f919180768377812d88ccc5da11d37278c102e7915cfacaf",
+        "inspectAnalysisView": "ev_d4eacdfb90e64b259b7f64ba734af46fc1f2e40602607a21a9f1408e523fdc12"
+      },
+      "rootSha256": "ba60bc44784427dc1d66cfa2501f6cacee6a1c1bfa7acafc5074ab6e31c5e5d0",
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 3662,
+        "astNodeCount": 909,
+        "moduleCount": 0,
+        "findingCount": 0
+      },
+      "observedCapabilities": [
+        "바이오필릭(Biophilic) 환경 테마 전환 및 크리에이터 데일리 에너지·번아웃 체크인",
+        "파트 간 아이스브레이킹 커피 룰렛(Coffee Roulette) 랜덤 매칭"
+      ]
+    },
+    {
+      "id": "slack-huddles",
+      "name": "Slack Thread Huddles & Canvas Sidecar",
+      "targetUrl": "https://slack.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_c55ea1f6ba3af48e03602b4deedaa8007cd4616c71971acc8c571a097cf6f8f4",
+        "exportWebScripts": "ev_a8a2442514929250d044c843196bad8f0b125bf7498f166b3cbac1f8a9d6ed46",
+        "analyzeJavascriptApplication": "ev_31955775a9b62bcd0c945204a1bb6bc99c73f6ede45414568cc97cd18f318bf9",
+        "inspectAnalysisView": "ev_13b8413c7105a8a7cba0d49ae4cbbdbc022a7640e67a2c42604dd5ffc40c6e30"
+      },
+      "rootSha256": "06daeceac9d0c1ee3b05742dad5f561c85ad7771d3afb9568d6f88bb4ad6d6e4",
+      "astMetrics": {
+        "jsFileCount": 3,
+        "totalBytes": 10282,
+        "astNodeCount": 2687,
+        "moduleCount": 2,
+        "findingCount": 13
+      },
+      "observedCapabilities": [
+        "원고 이슈 스레드 직결 경량 오디오 허들(Thread Huddle) 및 공유 캔버스 사이드카 체크리스트",
+        "실시간 이모지 리액션 버스트 파운틴(Emoji Burst Fountain) 피드백"
       ]
     }
   ]

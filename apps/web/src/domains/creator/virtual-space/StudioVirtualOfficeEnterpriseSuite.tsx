@@ -1,6 +1,7 @@
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { StudioVirtualOfficePairingXrPanel } from "./StudioVirtualOfficePairingXrPanel";
 import { StudioVirtualOfficeStageSprintHoloPanel } from "./StudioVirtualOfficeStageSprintHoloPanel";
+import { StudioVirtualOfficeWarroomAsyncStagePanel } from "./StudioVirtualOfficeWarroomAsyncStagePanel";
 import {
   acknowledgeAsyncDeskNote, completeAiAgentDeskTask, computeWeeklyOfficePulseInsights,
   createDefaultVirtualOfficeEnterpriseState, dispatchTaskToAiAgentDesk, executeHostModerationCommand,
@@ -29,7 +30,8 @@ type EnterpriseSuiteTabId =
   | "dcc-presence-aikido-multishare"
   | "host-canvas-pulse-matrix"
   | "pairing-xr-floor-coaching"
-  | "stage-sprint-holo-lounge";
+  | "stage-sprint-holo-lounge"
+  | "warroom-async-stage";
 
 const SUITE_TABS: readonly {
   readonly id: EnterpriseSuiteTabId;
@@ -42,13 +44,14 @@ const SUITE_TABS: readonly {
   { id: "host-canvas-pulse-matrix", labelKo: "호스트 관제 · 공간 미디어 핀 · 주간 인사이트", platformsBadge: "ZEP · SpatialChat · SoWork Insights" },
   { id: "pairing-xr-floor-coaching", labelKo: "원격페어링 · 상태모자 · 리셉션 · 3D페데스탈", platformsBadge: "Teemyco · Sococo · Tuple · Pop · Nooks · FrameVR · Arthur · Virbela" },
   { id: "stage-sprint-holo-lounge", labelKo: "그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트", platformsBadge: "Remo · Spatial.io · ENGAGE XR · Airmeet · Bramble · Focusmate · Flow Club" },
+  { id: "warroom-async-stage", labelKo: "워룸투표 · 비동기컷핀 · Go-Live시어터 · 바이오필릭", platformsBadge: "Welo · Claap · Miro · FigJam · Discord · Kosy · Slack" },
 ];
 
 export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualOfficeEnterpriseSuiteProps) {
   const [activeTab, setActiveTab] = useState<EnterpriseSuiteTabId>("spatial-floors-knock-audio");
   const [buildingState, setBuildingState] = useState<StudioVirtualOfficeBuildingState>(() => createDefaultVirtualOfficeBuildingState());
   const [enterpriseState, setEnterpriseState] = useState<StudioVirtualOfficeEnterpriseState>(() => createDefaultVirtualOfficeEnterpriseState());
-  const [statusNotice, setStatusNotice] = useState<string>("28개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
+  const [statusNotice, setStatusNotice] = useState<string>("35개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>("room-2f-color-booth");
   const [knockMessageDraft, setKnockMessageDraft] = useState<string>("15화 피날레 배경 톤앤매너 조율차 입장 요청합니다.");
@@ -946,6 +949,11 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
       {activeTab === "stage-sprint-holo-lounge" ? (
         <div role="tabpanel" id="enterprise-tabpanel-stage-sprint-holo-lounge" aria-label="그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트">
           <StudioVirtualOfficeStageSprintHoloPanel />
+        </div>
+      ) : null}
+      {activeTab === "warroom-async-stage" ? (
+        <div role="tabpanel" id="enterprise-tabpanel-warroom-async-stage" aria-label="워룸투표 · 비동기컷핀 · Go-Live시어터 · 바이오필릭">
+          <StudioVirtualOfficeWarroomAsyncStagePanel />
         </div>
       ) : null}
     </section>

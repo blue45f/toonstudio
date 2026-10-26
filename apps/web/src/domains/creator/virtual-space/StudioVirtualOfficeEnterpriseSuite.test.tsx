@@ -189,6 +189,39 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     );
   });
 
+  it("탭 7: Wave 4 네이버후드(Welo), 비동기컷핀(Claap), 스토리보드워룸(Miro), 커서챗·하이파이브(FigJam), Go-Live시어터(Discord), 바이오필릭·허들(Kosy·Slack)을 제어한다", () => {
+    render(<StudioVirtualOfficeEnterpriseSuite />);
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: /워룸투표 · 비동기컷핀 · Go-Live시어터 · 바이오필릭/u,
+      }),
+    );
+
+    expect(screen.getByTestId("virtual-office-wave4-panel")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("welo-issue-visitor-pass-btn"));
+    expect(screen.getByTestId("welo-zone-nb-bg-3d").textContent).toContain("자동 방음 잠김");
+
+    fireEvent.click(screen.getByTestId("claap-approve-claap-pin-14-38"));
+    expect(screen.getByTestId("claap-thread-claap-pin-14-38").textContent).toContain(
+      "approved-signoff",
+    );
+
+    fireEvent.click(screen.getByTestId("miro-bring-everyone-btn"));
+    expect(screen.getByTestId("miro-bring-everyone-btn").textContent).toContain(
+      "뷰포트 동기화 켜짐 (#42컷)",
+    );
+
+    fireEvent.click(screen.getByTestId("miro-vote-vote-opt-a"));
+    fireEvent.click(screen.getByTestId("figjam-send-cursor-bubble-btn"));
+    fireEvent.click(screen.getByTestId("discord-promote-member-color-lead"));
+    fireEvent.click(screen.getByTestId("kosy-theme-sunlit-greenhouse"));
+    fireEvent.click(screen.getByTestId("slack-check-chk-2"));
+    fireEvent.click(screen.getByTestId("slack-burst-🚀"));
+    expect(screen.getByTestId("wave4-status-notice").textContent).toContain("🚀");
+  });
+
   it("StudioVirtualSpaceCollaborationHub 및 StudioVirtualSpaceTownProgramPanel 내부 탭으로 통합 연결된다", () => {
     render(<StudioVirtualSpaceCollaborationHub />);
     fireEvent.click(screen.getByRole("tab", { name: "13대 가상오피스 통합관제" }));
