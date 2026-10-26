@@ -63,4 +63,15 @@ describe("포즈 V3 편집 UI", () => {
     expect(state.cancel).toHaveBeenCalledOnce();
     expect(state.apply).not.toHaveBeenCalled();
   });
+
+  it("SHAPER BoneAI 롤 보정 축 순환(+90°) 버튼을 클릭하면 0° -> +90° -> +180° 순서로 순환한다", () => {
+    render(<CharacterPoseV3Panel runtime={runtime()} />);
+    const bar = screen.getByTestId("shaper-pose-fix-vector-bar");
+    expect(bar.textContent).toContain("기본 축 (0°)");
+    const cycleBtn = screen.getByRole("button", { name: "AI 관절 롤 보정 축 순환 (+90°)" });
+    fireEvent.click(cycleBtn);
+    expect(bar.textContent).toContain("+90° 롤 보정 축 (Mode 1)");
+    fireEvent.click(cycleBtn);
+    expect(bar.textContent).toContain("+180° 반전 보정 축 (Mode 2)");
+  });
 });

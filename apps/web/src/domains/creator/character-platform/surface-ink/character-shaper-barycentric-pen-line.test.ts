@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   alignPenLinesByPartMesh,
+  buildShaperPrismLineMesh,
   computePenLinePointThickness,
+  computeShaperRealTabletWidthMultiplier,
+  filterCostumeOccludedBodyStrokes,
   interpolateStepPointPenLine,
   mirrorPenLineStroke,
   resolvePenLineColor,
@@ -235,5 +238,50 @@ describe("character-shaper-barycentric-pen-line", () => {
     expect(mirrored.points[0]!.v0).toBe(3);
     expect(mirrored.points[0]!.v1).toBe(5);
     expect(mirrored.points[0]!.v2).toBe(4);
+  });
+
+  it("computes 2x real tablet pressure multiplier, builds 3-vertex triangular prism mesh, and masks costume-occluded body strokes", () => {
+    expect(computeShaperRealTabletWidthMultiplier(1.0, 0.2, true)).toBeCloseTo(2.0, 6);
+    expect(computeShaperRealTabletWidthMultiplier(0.5, 0.2, true)).toBeCloseTo(1.1, 6);
+    expect(computeShaperRealTabletWidthMultiplier(1.0, 0.2, false)).toBeCloseTo(1.0, 6);
+
+    const stroke = createSampleStroke();
+    const prism = buildShaperPrismLineMesh(stroke);
+    expect(prism.rings).toHaveLength(3);
+    // 3 rings * 3 vertices * 3 floats = 27
+    expect(prism.positions).toHaveLength(27);
+    // 2 segments * 18 indices = 36
+    expect(prism.indices).toHaveLength(36);
+    // Ridge vertex offset along normal [0,0,1] by 0.3 * w
+    expect(prism.rings[0]!.ridgeVertex[2]).toBeCloseTo(
+      stroke.points[0]!.worldPosition[2] + stroke.points[0]!.thickness * 0.3,
+      6,
+    );
+
+    const bodyStrokeOccluded: ShaperPenLineStroke = {
+      ...stroke,
+      lineId: "collarbone_ink",
+      baseMeshType: "body",
+    };
+    const bodyStrokeExposed: ShaperPenLineStroke = {
+      ...stroke,
+      lineId: "wrist_ink",
+      baseMeshType: "body",
+    };
+    const maskPixels = new Uint8Array(16);
+    maskPixels.fill(255);
+    // Mark top-left cell (0,0) as occluded by clothing (0)
+    maskPixels[0] = 0;
+
+    const filtered = filterCostumeOccludedBodyStrokes(
+      [stroke, bodyStrokeOccluded, bodyStrokeExposed],
+      { maskTextureWidth: 4, maskTextureHeight: 4, maskTexPixels: maskPixels },
+      {
+        collarbone_ink: [[0.05, 0.05], [0.1, 0.1]],
+        wrist_ink: [[0.8, 0.8], [0.9, 0.9]],
+      },
+    );
+    expect(filtered.occludedLineIds).toEqual(["collarbone_ink"]);
+    expect(filtered.visibleStrokes.map((s) => s.lineId)).toEqual(["cheek_blush_L", "wrist_ink"]);
   });
 });

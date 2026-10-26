@@ -10,14 +10,26 @@
  *   (`param/set`과 같은 규칙, state/lab-store가 처리). 프리셋 카드·세기·초기화·완화는 각각 1단계다.
  * - 스타일 접두 `cl-expression-`(core의 character-lab.css가 정의).
  */
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { blendExpression, blendExpressionPresets, expressionToMorphWeights, relaxAntagonists } from "../../../animation/expression-blend";
 import { EXPRESSION_PRESETS } from "../../../animation/presets";
 import { FACS_LABELS_KO, FACS_UNITS, clampExpression } from "../../../contracts";
+import { applyShaperSymmetricEyeballTransform, computeEyeballHighlightTransform } from "../../../render/toon-reference";
 import { useApplyPlan, useDispatch, useLabState } from "../lab-store-context";
 
 import type { ExpressionPreset, ExpressionWeights, FacsUnit } from "../../../contracts";
+import type { EyeballHighlightMode } from "../../../render/toon-reference";
+
+const SHAPER_EYEBALL_HIGHLIGHT_MODES: readonly {
+  readonly id: EyeballHighlightMode;
+  readonly labelKo: string;
+}[] = [
+  { id: "fix", labelKo: "안구 고정 (fix)" },
+  { id: "cam", labelKo: "카메라 추적 (cam)" },
+  { id: "light", labelKo: "조명 반사 (light)" },
+  { id: "world", labelKo: "월드 고정 (world)" },
+];
 
 /** 두 표정이 클램프 후 같은지(없는 유닛 = 0) */
 export function expressionsEqual(a: ExpressionWeights, b: ExpressionWeights): boolean {
@@ -38,6 +50,29 @@ export function ExpressionPanel() {
   /** 이 패널에서 슬라이더로 만진 유닛(프리셋 세기 변경 시 보존) */
   const [overrides, setOverrides] = useState<ExpressionWeights>({});
   const [influence, setInfluence] = useState(1);
+  const [highlightMode, setHighlightMode] = useState<EyeballHighlightMode>("cam");
+  const [fixEyeballCam, setFixEyeballCam] = useState<boolean>(false);
+  const [eyeballSymmetry, setEyeballSymmetry] = useState<boolean>(true);
+  const [leftEyeYawDeg, setLeftEyeYawDeg] = useState<number>(12);
+
+  const shaperEyeballPreview = useMemo(() => {
+    const symmetric = applyShaperSymmetricEyeballTransform({
+      selectEyeball: 1,
+      symmetryControl: eyeballSymmetry,
+      leftEyeball: { position: [-3.2, 0, 0], eulerDeg: [0, 0, 0], localScale: [1, 1, 1] },
+      rightEyeball: { position: [3.2, 0, 0], eulerDeg: [0, 0, 0], localScale: [1, 1, 1] },
+      nextTransform: { eulerDeg: [0, leftEyeYawDeg, 0] },
+    });
+    const highlight = computeEyeballHighlightTransform({
+      mode: highlightMode,
+      eyeballEulerDeg: symmetric.leftEyeball.eulerDeg,
+      cameraLookEulerDeg: [0, 15, 0],
+      lightEulerDeg: [25, -30, 0],
+      offsetPos: [4, -2],
+      fixEyeballCam,
+    });
+    return { symmetric, highlight };
+  }, [eyeballSymmetry, fixEyeballCam, highlightMode, leftEyeYawDeg]);
 
   const capability = capabilities.expression;
   const disabled = capability.status === "unavailable";
@@ -173,6 +208,68 @@ export function ExpressionPanel() {
       <p className="cl-expression-status">
         활성 유닛 {activeUnits.length}개 · morph {morphCount}개{currentPreset ? ` · 프리셋 ${currentPreset.labelKo}` : ""}
       </p>
+
+      <div
+        className="cl-expression-shaper-eyeball"
+        data-testid="shaper-expression-headpart-section"
+      >
+        <h3>SHAPER EyeballData · 안구 시선·하이라이트 동기화</h3>
+        <fieldset className="cl-expression-row">
+          <legend>하이라이트 기준 (EyeballHighlightType 4종)</legend>
+          {SHAPER_EYEBALL_HIGHLIGHT_MODES.map((entry) => (
+            <label key={entry.id} htmlFor={`${ids}-eyeball-hl-${entry.id}`}>
+              <input
+                id={`${ids}-eyeball-hl-${entry.id}`}
+                type="radio"
+                name={`${ids}-eyeball-highlight-mode`}
+                value={entry.id}
+                checked={highlightMode === entry.id}
+                onChange={() => setHighlightMode(entry.id)}
+              />
+              {entry.labelKo}
+            </label>
+          ))}
+        </fieldset>
+        <div className="cl-expression-row">
+          <label htmlFor={`${ids}-fix-eyeball-cam`}>
+            F10 카메라 응시 고정 (fixEyeballCam)
+          </label>
+          <input
+            id={`${ids}-fix-eyeball-cam`}
+            type="checkbox"
+            checked={fixEyeballCam}
+            onChange={(event) => setFixEyeballCam(event.target.checked)}
+          />
+          <label htmlFor={`${ids}-eyeball-symmetry`}>
+            좌우 안구 대칭 회전 (symmetryControl)
+          </label>
+          <input
+            id={`${ids}-eyeball-symmetry`}
+            type="checkbox"
+            checked={eyeballSymmetry}
+            onChange={(event) => setEyeballSymmetry(event.target.checked)}
+          />
+        </div>
+        <div className="cl-expression-row">
+          <label htmlFor={`${ids}-left-eye-yaw`}>좌측 안구 수평 시선 (Yaw°)</label>
+          <input
+            id={`${ids}-left-eye-yaw`}
+            type="range"
+            min={-45}
+            max={45}
+            step={1}
+            value={leftEyeYawDeg}
+            onChange={(event) => setLeftEyeYawDeg(Number(event.target.value))}
+          />
+          <output htmlFor={`${ids}-left-eye-yaw`}>{leftEyeYawDeg}°</output>
+        </div>
+        <p className="cl-expression-footer" data-testid="shaper-eyeball-readout">
+          좌안 Yaw {shaperEyeballPreview.symmetric.leftEyeball.eulerDeg[1]}° · 우안 미러 Yaw{" "}
+          {shaperEyeballPreview.symmetric.rightEyeball.eulerDeg[1]}° · 하이라이트 오일러 (
+          {shaperEyeballPreview.highlight.highlightEulerDeg.join("°, ")}°)
+        </p>
+      </div>
+
       <p className="cl-expression-footer">같은 슬라이더의 연속 드래그는 되돌리기 1단계로 병합되고, 프리셋 카드·세기·초기화는 각각 1단계입니다.</p>
     </section>
   );

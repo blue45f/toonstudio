@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyHairPlantingGesture,
+  calibrateShaperHairBaseZoneUv,
   clampBarycentricWeights,
   classifyHairBaseUvRegion,
+  createShaperDiamondHairBaseMesh,
   createSymmetricHairStrand,
+  evaluateShaperHybridHairSpline,
   plantHairStrandOnFace,
   resetHairStrandPhysics,
   resolveHairPlantingGestureMode,
+  resolveShaperDynamicBoneCapsuleCollision,
   SHAPER_HAIR_GESTURE_LABELS,
   ShaperHairPlantingError,
   stepHairStrandPhysics,
@@ -204,5 +208,48 @@ describe("character-shaper-hair-planting", () => {
     expect(reset.controlPointVelocities.every((v) => v[0] === 0 && v[1] === 0 && v[2] === 0)).toBe(
       true,
     );
+  });
+
+  it("evaluates 50/50 hybrid hair spline, builds 4-vertex diamond base mesh with 0.8 ridge sharpness, calibrates 4-zone UV, and resolves DynamicBone capsule collisions", () => {
+    const spline = evaluateShaperHybridHairSpline(
+      [
+        [0, 1.6, 0.1],
+        [0, 1.45, 0.14],
+        [0, 1.25, 0.12],
+        [0, 1.05, 0.08],
+      ],
+      4,
+    );
+    expect(spline).toHaveLength(13);
+    expect(spline[0]).toEqual([0, 1.6, 0.1]);
+    expect(spline[12]).toEqual([0, 1.05, 0.08]);
+
+    const diamond = createShaperDiamondHairBaseMesh({
+      centerline: spline,
+      baseWidth: 0.04,
+      thicknessRatio: 0.5,
+    });
+    expect(diamond.rings).toHaveLength(13);
+    expect(diamond.rings[0]!.vertexSharpness).toEqual([1, 1, 1, 1]);
+    expect(diamond.rings[6]!.vertexSharpness).toEqual([0, 0.8, 0, 0.8]);
+    expect(diamond.rings[6]!.sinTaper).toBeGreaterThan(diamond.rings[0]!.sinTaper);
+
+    expect(calibrateShaperHairBaseZoneUv([0.5, 0.5], 0)).toEqual([0.5, 0.5]);
+    expect(calibrateShaperHairBaseZoneUv([0.5, 0.5], 1)).toEqual([0.5, 0.5]);
+
+    const pushedOut = resolveShaperDynamicBoneCapsuleCollision(
+      [0.02, 1.3, 0],
+      0.01,
+      {
+        colliderId: "neck_capsule",
+        center: [0, 1.3, 0],
+        radius: 0.06,
+        height: 0.24,
+        direction: "Y",
+        bound: "outside",
+      },
+    );
+    expect(pushedOut.collided).toBe(true);
+    expect(pushedOut.position[0]).toBeCloseTo(0.07, 5);
   });
 });

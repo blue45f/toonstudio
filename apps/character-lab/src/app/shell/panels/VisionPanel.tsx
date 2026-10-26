@@ -23,6 +23,8 @@ import { VISION_MODEL_KEYS, VISION_MODEL_LABELS_KO, resolveHandSide, toContractV
 import { createVisionSession } from "../../../domains/vision/vision-session";
 import { useCatalog, useDispatch, useLabContext, useLabState } from "../lab-store-context";
 
+import { ShaperVisionAiSection } from "./shaper-vision-ai-section";
+
 import type { CapturedRaster, LabFailure, LandmarkApplyScope, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/vision/kmeans-palette";
 import type { LandmarkSpace } from "../../../domains/vision/landmark-space";
@@ -781,6 +783,7 @@ export function VisionPanel({ deps: providedDeps }: VisionPanelProps) {
       <ModelStatusList session={session} delegate={delegate} onDelegateChange={setDelegate} />
       <ReferenceSection session={session} deps={deps} now={now} />
       <PhotoPoseSection session={session} deps={deps} now={now} />
+      <ShaperVisionAiSection />
     </section>
   );
 }

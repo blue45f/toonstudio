@@ -1,4 +1,4 @@
-# 글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터·동선 역공학 및 UI/UX 고도화 설계서
+# 글로벌 웹툰·창작·3D 캐릭터·에셋 플랫폼 16종 REA 라우터·동선 역공학 및 UI/UX 고도화 설계서
 
 - **작성일**: `2026-10-26`
 - **상태**: `current`
@@ -8,14 +8,17 @@
   - [`apps/web/src/shared/components/site-contextual-subnav.tsx`](../../apps/web/src/shared/components/site-contextual-subnav.tsx)
   - [`apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx`](../../apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx)
   - [`apps/web/src/domains/cuts/CutsStudioPage.tsx`](../../apps/web/src/domains/cuts/CutsStudioPage.tsx)
+  - [`apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx`](../../apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx)
+  - [`apps/character-lab/src/app/shell/ui-state.ts`](../../apps/character-lab/src/app/shell/ui-state.ts)
+  - [`apps/character-lab/src/app/shell/TopBar.tsx`](../../apps/character-lab/src/app/shell/TopBar.tsx)
 
 ## 1. 목적 및 배경
 
-글로벌 주요 웹툰·만화·창작·에셋 플랫폼 13종(**NAVER WEBTOON**, **KakaoPage**, **WEBTOON Global**, **Tapas**, **Lezhin Comics**, **Pixiv Comic**, **RIDI Webtoon**, **Kakao Webtoon**, **Postype**, **Manta**, **CLIP STUDIO**, **ACON3D**, **Manga Plus by SHUEISHA**)의 실제 프로덕션 웹 애플리케이션을 REA(`reverse-engineer-anything`) MCP 도구(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`)로 캡처·역공학하여 라우터 계층, GNB/서브탭/LNB/푸터 동선, 뷰 스위처, 창작 파이프라인, 필터 아키텍처, UI/UX 디자인 토큰을 도출하고 ToonStudio에 클린룸 내재화하였다.
+글로벌 주요 웹툰·만화·창작·3D 캐릭터·에셋 플랫폼 16종(**NAVER WEBTOON**, **KakaoPage**, **WEBTOON Global**, **Tapas**, **Lezhin Comics**, **Pixiv Comic**, **RIDI Webtoon**, **Kakao Webtoon**, **Postype**, **Manta**, **CLIP STUDIO**, **ACON3D**, **Manga Plus by SHUEISHA**, **VRoid Hub**, **VRoid Studio**, **BOOTH 3D Models**)의 실제 프로덕션 웹 애플리케이션을 REA(`reverse-engineer-anything`) MCP 도구(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 캡처·역공학하여 라우터 계층, GNB/서브탭/LNB/푸터 동선, 뷰 스위처, 3D 캐릭터 뷰어/포토부스/트래킹 하위 라우트, VRM 라이선스·이용권한 매트릭스, 창작 파이프라인, 사후 연관 동선 브리지(Onward Route Bridge), 필터 아키텍처, UI/UX 디자인 토큰을 도출하고 `apps/web` 및 `apps/character-lab`에 클린룸 내재화하였다.
 
-## 2. REA 역공학 증거 원장 (13개 플랫폼 · 40개 Evidence ID)
+## 2. REA 역공학 증거 원장 (16개 플랫폼 · 49개 Evidence ID)
 
-| 플랫폼 | 대상 URL | 버전 / 라우터 | `capture_browser_scenario` | `export_web_scripts` | `analyze_javascript_application` | 스크립트 / AST 노드 |
+| 플랫폼 | 대상 URL | 버전 / 라우터 | `capture_browser_scenario` | `export_web_scripts` | `analyze_javascript_application` / `inspect_analysis_view` | 스크립트 / AST 노드 |
 | --- | --- | --- | --- | --- | --- | --- |
 | **NAVER WEBTOON** | `https://comic.naver.com/index` | React Router v6 (44 routes) | `ev_559fd63b85ab64546f20cc5e607ed81fa9b9b45406e9da7e37a50fa69408b86e` | `ev_1a784b9c27c37fca96c271d4317fac660a8a1ddff1b61974466913d3a5b31cb7` | `ev_258bfdd5a04aa96486680a11f6d034716d64240b53fd7e127d407c896f81b1c5` | 8 files / 59,852 nodes |
 | **KakaoPage** | `https://page.kakao.com/` | Next.js `v2.43.1-pc-ko` (152 routes) | `ev_6f6aa106e603e822d7af0706866296f9d414428009956062faf73d75fdb24722` | `ev_0feeb788c3e88366a84e2f00c28217cff883974368dbf55c660ffe3c101de0bb` | `ev_bdef249b6a4ff2e27ca8061ecf6bd031b293f83daca0ec5f734205aa1f72b173` | 16 files / 47,135 nodes |
@@ -30,6 +33,9 @@
 | **CLIP STUDIO** | `https://www.clipstudio.net/kr/` | Hybrid Web + Asset Hub (24 routes) | `ev_9c7f31b4d9b547b9d1e10a7803e03d389dc030a3a2c0b9d24d74156a822e687f` | `ev_774bf741e3b15aee8ae917ef44dcb68e76228c7f572fe857fc8a7790f8567545` | `ev_d83fbd1f28c39b2a77bbc594354a4bbec7a486d7a83ca611fbd7dd770f1e0701` | 23 files / 86,203 nodes |
 | **ACON3D** | `https://www.acon3d.com/ko` | Cloudflare Turnstile 경계 | `ev_4197631fc9cedfbe4b2f7d9e854e61baf25ecdfee5842f08c3ea308a5bac174b` | `ev_8dd35a6f70ff6e2786c21c2eb567698f9ceb4db853cb0dd2bc5208393d0ea3d2` | `ev_e2eb55f9bd5563f090b59d25985920ecf25a04cba5800af7b98dde26eb9e2b7e` | 4 files / 336 nodes |
 | **Manga Plus** | `https://mangaplus.shueisha.co.jp/updates` | Vue Router (`app.41982a95.js`, 36 routes) | `ev_8e22c5f6215ef0e8189d1d6f643648272c8a029c8ea99eb580cf6669aafa50a9` | `ev_abb29088cb2dcd559c734d3bc69744fe7ccfce4f152ca5a16432c7024c402cd2` | `ev_0b6aa7c4ab507ae8278742a6616c6ac5ec06ebf1aa7915302f2e1016b4636b82` | 3 files / 202,081 nodes |
+| **VRoid Hub** | `https://hub.vroid.com/en` | Next.js Pages Router (65 routes) | `ev_f1ecf030b5868731e6c636e8702158468243d88596307ecacfe9ad9086906f83` | `ev_90e7d9c6f7f335eb4f098a8e855bf4d38111c439f5927620b0e75a875a001e57` | `ev_309f1dae9b7d104a3fb0a85120b6b316b8a75927843da580ce5c23d4d473f0fa` | 5 files / 7,217 nodes |
+| **VRoid Studio** | `https://vroid.com/en/studio` | Next.js Pages Router (26 routes) | `ev_0e79c9c80a9d191d54632087ba929765c32165e8b771b2f7f36e8fdbe9eb1228` | `ev_39c57cd108aab1b19c587b4143f7c2c43e27a38d2110e141ceb060f05378e5f8` | `ev_7c4e50edf71d08c8d335702fd41056723e71528178828138abbf0dd18b256643` | 10 files / 24,680 nodes |
+| **BOOTH 3D Models** | `https://booth.pm/ko/browse/3D%20Models` | Multi-Origin Marketplace Router (19 routes) | `ev_e42d625e48b74db8cd12e65ab7876aed389056d762c6922385352ec8045d7895` | `ev_aa51dc986add3d5b81c53a00aaab77b7a23703492a41517ae098c6138818017d` | `ev_061939e46eb35dee70bc518584053adda8b7fe90886977e1483b4e6304a53ed5` | 10 files / 36,633 nodes |
 
 ## 3. 플랫폼별 핵심 발견 사항 및 내재화 설계
 
@@ -54,3 +60,15 @@
   - **CLIP STUDIO**: 드로잉 엔진과 소재 마켓(ASSETS)·강좌(TIPS)의 창작 단계별 결합.
 - **내재화 (`internalization`)**:
   - `CONTEXTUAL_SUBNAV_GROUPS`를 6대 핵심 허브(`promo-cuts-hub`, `discover-hub`, `community-hub`, `studio-hub`, `market-hub`, `personal-library-hub`)로 확장하고 `PERSONAL_LIBRARY_SEGMENTS`와 `COMPETITOR_DISCOVERY_ROUTER_PRESETS`를 구축.
+  - `SiteContextualSubNav`에 지각 균일 `oklch()` 허브 액센트 토큰과 Tapas 스타일 배지(`SHORT-VOD`, `AI STUDIO`, `UP`, `NEW`, `GALLERY`), Forced-Colors 고대비 안전 경계를 적용.
+
+### 3.4 VRoid Hub, VRoid Studio, Clip Studio Paint & Assets, BOOTH 3D Models, ACON3D
+
+- **관찰된 사실 (`observedFacts`)**:
+  - **VRoid Hub (`_buildManifest.js` 65 routes)**: `/characters/[characterId]/models/[modelId]` 하위에 `/edit`, `/embed`, `/photobooth`, `/tracking` 서브 라우트와 `/license`, `/model_assets/[modelAssetId]`, `/apps/[id]/character_models`를 분리하여 3D 뷰어·포토부스·트래킹·VRM 라이선스 조건(아바타 사용, 폭력/선정성 표현, 법인/개인 상업 이용, 개작·재배포 권한)을 즉시 검증할 수 있는 라우터 계층을 구성.
+  - **VRoid Studio (`_buildManifest.js` 26 routes)**: `/studio`, `/studio/releases`, `/studio/guidelines`, `/mobile`, `/wear`, `/special/shooting_studio/vko_ar`로 이어지는 프리셋 우선 진입(`Pick items -> Adjust parameters -> Draw hair bundles -> Shooting Studio / Export`) 동선을 제공.
+  - **Clip Studio Paint & Assets (`23 JS files / 86,203 AST nodes`)**: 스튜디오 본체(`/kr/`, `/kr/function/`)에서 소재 카탈로그(`assets.clip-studio.com/q/search?type=3dhead%2Cother_3dmodel&order=dl`, `?type=brush&order=dl`) 및 4단계 가이드 튜토리얼(`3D 두상 모델 #11034`, `체형 커스터마이즈 #9936`, `3D 소재 조합 #8416`, `퍼펫 변형 #10496`, `3D에 직접 그리기 #10495`)로 딥링크 브리지를 제공.
+  - **BOOTH 3D Models (`10 JS files / 36,633 AST nodes`)**: `/ko/browse/3D%20Models` 하위에 `3D Characters`, `3D Tools & Systems`, `3D Motion & Animation` 분류 칩과 `?tags[]=VRChat`, `?in_stock=true` 필터 및 원클릭 `Reset` 동선을 배치.
+  - **ACON3D**: 헤드리스 브라우저 접근 시 Cloudflare 보안 검증(`Performing security verification`, Ray ID `a50910fcaabbba04`)이 관찰되어 REA 인식론 규율에 따라 `bounded-by-bot-challenge`로 정직하게 기록.
+- **내재화 (`internalization`)**:
+  - `VRM_CHARACTER_SUB_ROUTES`(`overview`, `edit`, `photobooth`, `tracking`, `embed`, `license`), `VrmUsageConditionMatrix` 및 `summarizeVrmUsageMatrix`, `CREATOR_GUIDED_WORKFLOW_STAGES`(5단계 가이드 창작 스테퍼), `resolveCreatorPostActionBridgeRoutes`(창작 단계 완료 후 컷츠·소재실·홍보 영상실 연관 동선 브리지)를 `webtoon-platform-router-ux-model.ts`와 `CharacterPlatformWorkbench.tsx`, `apps/character-lab` 상단 워크플로 바 및 URL 쿼리 라우터 동기화에 내재화.

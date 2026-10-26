@@ -30,6 +30,12 @@ import { CharacterGroomPanel } from "./CharacterGroomPanel";
 import { CharacterPoseV3Panel } from "../pose-v3/CharacterPoseV3Panel";
 import { CharacterCanonicalPartsPanel } from "./CharacterCanonicalPartsPanel";
 import { useCharacterPlatformWorkbench } from "./use-character-platform-workbench";
+import { computeShaperRealTabletWidthMultiplier } from "../surface-ink/character-shaper-barycentric-pen-line";
+import {
+  computeShaperAnisotropicOutlineOffset,
+  computeShaperCubicMatCapIntensity,
+  type EyeballHighlightType,
+} from "../render/character-shaper-eyeball-seam-mask";
 
 import type { CharacterSlotKind } from "../../character-shaper/character-shaper-contract";
 import type { CharacterShaperBinding } from "../../character-shaper/character-shaper-ui-contract";
@@ -40,6 +46,13 @@ import type { ChangeEvent, ReactNode, RefObject } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import {
+  VRM_CHARACTER_SUB_ROUTES,
+  VRM_LICENSE_PRESETS,
+  resolveCreatorPostActionBridgeRoutes,
+  summarizeVrmUsageMatrix,
+  type VrmUsageConditionMatrix,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 type WorkbenchTab = "quality" | "presets" | "groom" | "pose" | "ink" | "render" | "runtime";
 type ImportTarget = "manifest" | "presets" | "ink" | "document-v3";
@@ -171,6 +184,17 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   const [savingPreset, setSavingPreset] = useState(false);
   const [runtimeTestStatus, setRuntimeTestStatus] = useState<"idle" | "running" | "passed" | "failed">("idle");
   const [runtimeTestMessage, setRuntimeTestMessage] = useState<string | null>(null);
+  const [shaperMatcapWeight, setShaperMatcapWeight] = useState(0.2);
+  const [shaperOutlineThickness, setShaperOutlineThickness] = useState(0.01);
+  const [shaperEyeballMode, setShaperEyeballMode] = useState<EyeballHighlightType>("cam");
+  const [vrmLicensePresetId, setVrmLicensePresetId] = useState<VrmUsageConditionMatrix["presetId"]>("webtoon-serial-ready");
+  const activeVrmLicense = VRM_LICENSE_PRESETS.find((item) => item.presetId === vrmLicensePresetId) ?? VRM_LICENSE_PRESETS[0]!;
+  const vrmLicenseBadges = summarizeVrmUsageMatrix(activeVrmLicense);
+  const activeSubRoute = VRM_CHARACTER_SUB_ROUTES.find((route) => route.workbenchTab === tab) ?? VRM_CHARACTER_SUB_ROUTES[0]!;
+  const onwardBridges = resolveCreatorPostActionBridgeRoutes(tab === "presets" ? "preset" : tab === "groom" ? "groom" : tab === "pose" ? "pose" : tab === "ink" ? "ink" : "render");
+  const shaperMatcap = computeShaperCubicMatCapIntensity(shaperMatcapWeight);
+  const shaperOutline = computeShaperAnisotropicOutlineOffset({ normal: [0, 0, 1], outlineThickness: shaperOutlineThickness });
+  const shaperTabletOverdrive = computeShaperRealTabletWidthMultiplier(1.0, 0.18, true);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [launcherRoot, setLauncherRoot] = useState<HTMLElement | null>(null);
   const compact = !useMediaQuery(CHARACTER_SHAPER_TABLET_QUERY);
@@ -501,6 +525,13 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
       </Section>
       <Section title="동작 방식">
         <p className="text-[0.68rem] leading-relaxed text-fg-3">선은 Hit Triangle의 배리센트릭 좌표와 보간된 Skin Weight를 저장합니다. 포즈는 GPU Skinning으로 따라가며, 토폴로지가 달라지면 원본 획을 지우지 않고 재투영 필요 상태로 보존합니다.</p>
+        <div data-testid="shaper-ink-prism-badge" className="rounded-xl border border-line bg-panel/60 px-2.5 py-2 text-[0.65rem] text-fg-2">
+          <div className="flex items-center justify-between font-semibold text-fg">
+            <span>SHAPER 3정점 삼각기둥 튜브 · 태블릿 2x 필압</span>
+            <span className="font-mono text-accent">{shaperTabletOverdrive.toFixed(1)}x Max</span>
+          </div>
+          <p className="mt-1 font-mono text-[0.6rem] text-fg-3">단면: ±{(workbench.surfaceInk.style.baseWidth * 500).toFixed(2)}mm 좌우 기저 · +{(workbench.surfaceInk.style.baseWidth * 300).toFixed(2)}mm 능선 돌출 · 의상 가림 자동 마스킹</p>
+        </div>
       </Section>
     </div>
   );
@@ -516,6 +547,25 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
             </li>
           ))}
         </ul>
+      </Section>
+      <Section title="SHAPER Toon · 안구 하이라이트 보정" description="125×(1-w)³ 3차 MatCap 램프와 1.5×0.3 비등방성 외곽선, 4모드 안구 하이라이트를 제어합니다.">
+        <div data-testid="shaper-render-toon-calibration" className="space-y-2 text-[0.68rem] text-fg-2">
+          <label className="block font-semibold">Cubic MatCap 감쇠 (w={shaperMatcapWeight.toFixed(2)}) · 강도 {shaperMatcap.rawIntensity.toFixed(1)}
+            <input aria-label="Cubic MatCap 감쇠" type="range" min="0" max="1" step="0.05" value={shaperMatcapWeight} onChange={(event) => setShaperMatcapWeight(Number(event.currentTarget.value))} className="h-9 w-full accent-accent" />
+          </label>
+          <label className="block font-semibold">비등방성 외곽선 (1.5×0.3) · 유효 돌출 {(shaperOutline.effectiveScale * 1000).toFixed(2)}mm
+            <input aria-label="비등방성 외곽선 두께" type="range" min="0.002" max="0.03" step="0.002" value={shaperOutlineThickness} onChange={(event) => setShaperOutlineThickness(Number(event.currentTarget.value))} className="h-9 w-full accent-accent" />
+          </label>
+          <label className="block space-y-1 font-semibold">
+            <span>안구 하이라이트 추종 모드 (EyeballHighlightType)</span>
+            <select aria-label="안구 하이라이트 추종 모드" value={shaperEyeballMode} onChange={(event) => setShaperEyeballMode(event.currentTarget.value as EyeballHighlightType)} className={cn("min-h-10 w-full rounded-xl border border-line bg-panel px-2.5 text-xs text-fg", STUDIO_FOCUS_RING)}>
+              <option value="cam">카메라 추종 (cam · F10 응시 연동)</option>
+              <option value="light">주광원 추종 (light)</option>
+              <option value="world">월드 천정 고정 (world)</option>
+              <option value="fix">수동 오프셋 고정 (fix)</option>
+            </select>
+          </label>
+        </div>
       </Section>
       <Section title="PSD 출력 Preflight" description={`${psdPreflight.width}×${psdPreflight.height} · ${psdPreflight.strategy === "tile-worker" ? "타일 Worker" : "직접 처리"}`}>
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -581,6 +631,23 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         <button type="button" className={PRIMARY_BUTTON} disabled={runtimeTestStatus === "running"} onClick={() => void runRuntimeSelfTest()}><Cpu size={14} aria-hidden />{runtimeTestStatus === "running" ? "검증 중" : "3D 코어 검증"}</button>
         {runtimeTestMessage ? <p role="status" className={cn("rounded-lg border p-2 text-[0.66rem]", runtimeTestStatus === "failed" ? "border-bad/40 bg-bad/10 text-bad" : runtimeTestStatus === "passed" ? "border-good/40 bg-good/10 text-good" : "border-line bg-panel text-fg-3")}>{runtimeTestMessage}</p> : null}
       </Section>
+      <Section title="VRoid Hub · BOOTH 3D 이용권한 매트릭스" description="캐릭터·VRM 에셋의 상업 웹툰 연재, 개작, 액션 연출 허용 범위를 즉시 검증합니다.">
+        <div data-testid="workbench-vrm-license-matrix" className="space-y-2">
+          <label className="block space-y-1 text-[0.68rem] font-semibold text-fg-2">
+            <span>라이선스 프리셋</span>
+            <select aria-label="VRM 라이선스 프리셋" value={vrmLicensePresetId} onChange={(event) => setVrmLicensePresetId(event.currentTarget.value as VrmUsageConditionMatrix["presetId"])} className={cn("min-h-10 w-full rounded-xl border border-line bg-panel px-2.5 text-xs text-fg", STUDIO_FOCUS_RING)}>
+              {VRM_LICENSE_PRESETS.map((preset) => <option key={preset.presetId} value={preset.presetId}>{preset.koTitle}</option>)}
+            </select>
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {vrmLicenseBadges.map((badge) => (
+              <span key={badge.id} className={cn("rounded-full border px-2 py-0.5 text-[0.6rem] font-bold", badge.allowed ? "border-good/40 bg-good/10 text-good" : "border-warn/40 bg-warn/10 text-warn")}>
+                {badge.koLabel}
+              </span>
+            ))}
+          </div>
+        </div>
+      </Section>
     </div>
   );
 
@@ -589,9 +656,17 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
       {!drawing ? <div aria-hidden className="fixed inset-0 z-[94] bg-black/25" onPointerDown={close} /> : null}
       <div ref={panelRef} role="dialog" aria-modal={!drawing} data-character-authoring-workbench="true" data-drawing={drawing ? "true" : undefined} data-studio-vrm-child-tool="true" data-studio-vrm-child-history={drawing || tab === "ink" ? "surface-ink" : undefined} aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className={cn("fixed right-2 z-[95] flex w-[min(31rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.04_0.01_70/0.65)] outline-none", drawing ? "bottom-2" : "inset-y-2")}>
         <header className="flex items-center gap-3 border-b border-line px-3 py-2.5">
-          <div className="min-w-0 flex-1"><p className="text-[0.62rem] font-bold tracking-wide text-accent">CHARACTER PLATFORM V3 · WEB FIRST</p><h2 id={titleId} className="truncate text-base font-bold text-fg">캐릭터 품질 워크벤치</h2><p id={descriptionId} className="sr-only">공식 캐릭터, 파츠 프리셋, Pose, 3D 펜선, 렌더 패스, 브라우저 저작 코어를 관리합니다.</p></div>
+          <div className="min-w-0 flex-1"><p className="text-[0.62rem] font-bold tracking-wide text-accent">CHARACTER PLATFORM V3 · WEB FIRST</p><h2 id={titleId} className="truncate text-base font-bold text-fg">캐릭터 품질 워크벤치</h2><p data-testid="workbench-vroid-subroute" className="truncate text-[0.62rem] text-fg-3">{activeSubRoute.koLabel} · <code>{activeSubRoute.vroidRoutePattern}</code></p><p id={descriptionId} className="sr-only">공식 캐릭터, 파츠 프리셋, Pose, 3D 펜선, 렌더 패스, 브라우저 저작 코어를 관리합니다.</p></div>
           <button type="button" aria-label="캐릭터 품질 워크벤치 닫기" className={ICON_BUTTON} onClick={close}><X size={17} aria-hidden /></button>
         </header>
+        {!drawing ? <nav aria-label="단계별 연관 이동 동선" data-testid="workbench-onward-bridge" className="flex flex-wrap items-center gap-1.5 border-b border-line bg-card/50 px-3 py-1.5 text-[0.62rem]">
+          <span className="font-bold text-fg-3">다음 동선:</span>
+          {onwardBridges.map((bridge) => (
+            <a key={bridge.id} href={bridge.href} className="rounded-full border border-line bg-panel px-2 py-0.5 font-semibold text-fg-2 hover:border-accent/60 hover:text-accent">
+              {bridge.koLabel}
+            </a>
+          ))}
+        </nav> : null}
         {drawing ? <div className="flex items-center gap-3 p-3">
           <p className="min-w-0 flex-1 text-[0.68rem] leading-relaxed text-fg-3">캐릭터 표면에 그리세요. 그리기를 종료하면 펜선 도구로 돌아갑니다.</p>
           <button type="button" className={PRIMARY_BUTTON} onClick={() => workbench.surfaceInk.setActive(false)}>그리기 종료</button>

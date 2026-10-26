@@ -753,3 +753,5 @@ export function resetHairStrandPhysics(strand: ShaperHairStrandData): ShaperHair
     controlPointVelocities: strand.controlPointRestPos.map(() => [0, 0, 0] as const),
   };
 }
+
+export * from "./character-shaper-hair-hybrid-spline";

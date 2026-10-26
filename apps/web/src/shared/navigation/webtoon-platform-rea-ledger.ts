@@ -19,7 +19,10 @@ export type CompetitorPlatformId =
   | "manta"
   | "clip-studio"
   | "acon3d"
-  | "mangaplus";
+  | "mangaplus"
+  | "vroid-hub"
+  | "vroid-studio"
+  | "booth-3d";
 
 export interface CompetitorPlatformReaEvidence {
   readonly id: CompetitorPlatformId;
@@ -380,6 +383,83 @@ export const COMPETITOR_PLATFORM_REA_LEDGER: readonly CompetitorPlatformReaEvide
     ],
     keyUiUxPatterns: [
       "상단 Updates / Featured / Manga List / Ranking / Creators / Favorited 직행 GNB 및 Hottest·Trending·Completed 3축 랭킹 스위처",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "vroid-hub",
+    name: "VRoid Hub",
+    targetUrl: "https://hub.vroid.com/en",
+    appVersion: "nextjs-7O1MwYwwRlg80I--EEiL8",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 65 routes)",
+    captureEvidenceId: "ev_f1ecf030b5868731e6c636e8702158468243d88596307ecacfe9ad9086906f83",
+    exportScriptsEvidenceId: "ev_90e7d9c6f7f335eb4f098a8e855bf4d38111c439f5927620b0e75a875a001e57",
+    astAnalysisViewEvidenceId: "ev_309f1dae9b7d104a3fb0a85120b6b316b8a75927843da580ce5c23d4d473f0fa",
+    rootSha256: "bc847a0eb1532258545218e685b1a0c41a98c2159ebd6c6a54bcdd24e29e9445",
+    scriptCount: 5,
+    totalBytes: 73757,
+    astNodeCount: 7217,
+    findingCount: 9,
+    moduleCount: 2,
+    routeCount: 65,
+    keyRouterPatterns: [
+      "/characters/[characterId]/models/[modelId]/{edit,embed,photobooth,tracking} (3D 모델 서브 라우트 분리)",
+      "/model_assets/[modelAssetId], /license, /content-protection-policy, /guidelines",
+      "/models, /models/followings, /artworks, /hearts, /search/[query]/{artworks,creators}, /apps/[id]/character_models",
+    ],
+    keyUiUxPatterns: [
+      "듀얼 포트레이트·전신 썸네일 카드(300x400) + 원클릭 하트(/hearts) + 3D 뷰어/포토부스/트래킹 서브탭",
+      "VRM 이용 조건 매트릭스(아바타 사용, 폭력·선정성 표현, 법인·개인 상업 이용, 개작·재배포 권한 배지)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "vroid-studio",
+    name: "VRoid Studio",
+    targetUrl: "https://vroid.com/en/studio",
+    appVersion: "nextjs-X3VkFB2zRKGJg3S3P8tDQ-v2.14.0",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 26 routes)",
+    captureEvidenceId: "ev_0e79c9c80a9d191d54632087ba929765c32165e8b771b2f7f36e8fdbe9eb1228",
+    exportScriptsEvidenceId: "ev_39c57cd108aab1b19c587b4143f7c2c43e27a38d2110e141ceb060f05378e5f8",
+    astAnalysisViewEvidenceId: "ev_7c4e50edf71d08c8d335702fd41056723e71528178828138abbf0dd18b256643",
+    rootSha256: "dd8286d1a04fac852921f1274edb8603f67cb31995ae05ad103deca50b947a34",
+    scriptCount: 10,
+    totalBytes: 151626,
+    astNodeCount: 24680,
+    findingCount: 162,
+    moduleCount: 46,
+    routeCount: 26,
+    keyRouterPatterns: [
+      "/studio, /studio/_beta_releases_container, /studio/guidelines, /studio/notice/[noticeId], /studio/releases",
+      "/mobile, /wear/{chloma,eiji-kotouge,levis}, /special/shooting_studio/vko_ar",
+    ],
+    keyUiUxPatterns: [
+      "프리셋 우선 온보딩(프리셋 선택 -> 파라미터 조절 -> 3D 헤어 번들 직접 드로잉 -> 포토부스/VRM 내보내기)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "booth-3d",
+    name: "BOOTH 3D Models",
+    targetUrl: "https://booth.pm/ko/browse/3D%20Models",
+    appVersion: "booth-ch-token-v2",
+    routerFramework: "Multi-Origin Marketplace Router (booth.pm / accounts.booth.pm / manage.booth.pm)",
+    captureEvidenceId: "ev_e42d625e48b74db8cd12e65ab7876aed389056d762c6922385352ec8045d7895",
+    exportScriptsEvidenceId: "ev_aa51dc986add3d5b81c53a00aaab77b7a23703492a41517ae098c6138818017d",
+    astAnalysisViewEvidenceId: "ev_061939e46eb35dee70bc518584053adda8b7fe90886977e1483b4e6304a53ed5",
+    rootSha256: "a9d9a22f5704592520b242af5a98b46b30502c42f9b73d35132333b7eb1cbc5c",
+    scriptCount: 10,
+    totalBytes: 126286,
+    astNodeCount: 36633,
+    findingCount: 218,
+    moduleCount: 34,
+    routeCount: 19,
+    keyRouterPatterns: [
+      "/ko/browse/3D%20Models, /ko/browse/3D%20Characters, /ko/browse/3D%20Tools%20&%20Systems, /ko/browse/3D%20Motion%20&%20Animation",
+      "/ko/items/[id], /ko/items?tags[]=VRChat, /ko/events/bf-vrchat, accounts.booth.pm/library, manage.booth.pm/items",
+    ],
+    keyUiUxPatterns: [
+      "3D 서브카테고리 칩(Characters / Tools & Systems / Motion & Animation) + 호환 태그 배지 + 위시리스트 카운터",
     ],
     epistemicStatus: "verified",
   },

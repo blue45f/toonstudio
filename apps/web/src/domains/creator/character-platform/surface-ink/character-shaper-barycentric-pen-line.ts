@@ -546,3 +546,193 @@ export function mirrorPenLineStroke(
     points: mirroredPoints,
   };
 }
+
+export interface ShaperPrismRingCrossSection {
+  readonly pointId: string;
+  readonly center: CharacterGeometryStrokeVector3;
+  readonly leftVertex: CharacterGeometryStrokeVector3;
+  readonly ridgeVertex: CharacterGeometryStrokeVector3;
+  readonly rightVertex: CharacterGeometryStrokeVector3;
+  readonly width: number;
+}
+
+export interface ShaperPrismLineMeshResult {
+  readonly lineId: string;
+  readonly rings: readonly ShaperPrismRingCrossSection[];
+  readonly positions: Float32Array;
+  readonly normals: Float32Array;
+  readonly indices: Uint16Array;
+}
+
+export interface CostumeOccludedStrokeFilterResult {
+  readonly visibleStrokes: readonly ShaperPenLineStroke[];
+  readonly occludedStrokes: readonly ShaperPenLineStroke[];
+  readonly occludedLineIds: readonly string[];
+}
+
+/**
+ * `LineData::CreateLineMesh` (`0x06000222`) & `LineManager::DrawPoint` (`0x06000232`) 명세:
+ * 실제 태블릿 펜 입력(`isRealTabletPen = true`)이 감지되면 최대 2.0배(`minRatio + (2.0 - minRatio) * p`)까지
+ * 선폭 배율을 확장한다.
+ */
+export function computeShaperRealTabletWidthMultiplier(
+  rawPressure: number,
+  minPressureRatio = 0.18,
+  isRealTabletPen = true,
+): number {
+  const minRatio = clamp(minPressureRatio, 0.02, 1.0);
+  const p = clamp(Number.isFinite(rawPressure) ? rawPressure : 1, 0, 1);
+  const maxFactor = isRealTabletPen ? 2.0 : 1.0;
+  return Number((minRatio + (maxFactor - minRatio) * p).toFixed(6));
+}
+
+/**
+ * `LineData::SetVerticesPosFromStepPoints` (`0x06000224`) 명세:
+ * 각 스텝 포인트마다 3정점 삼각기둥(Triangular Prism) 단면을 생성한다:
+ * - `v0 = center - binormal * (w * 0.5)` (좌측 기저 정점)
+ * - `v1 = center + normal * (w * 0.3)` (상단 능선 정점)
+ * - `v2 = center + binormal * (w * 0.5)` (우측 기저 정점)
+ */
+export function buildShaperPrismLineMesh(
+  stroke: ShaperPenLineStroke,
+  options: { readonly closedLoop?: boolean } = {},
+): ShaperPrismLineMeshResult {
+  const pts = stroke.points;
+  if (pts.length < 2) {
+    return {
+      lineId: stroke.lineId,
+      rings: [],
+      positions: new Float32Array(0),
+      normals: new Float32Array(0),
+      indices: new Uint16Array(0),
+    };
+  }
+
+  const rings: ShaperPrismRingCrossSection[] = [];
+  const positions = new Float32Array(pts.length * 3 * 3);
+  const normals = new Float32Array(pts.length * 3 * 3);
+
+  for (let i = 0; i < pts.length; i += 1) {
+    const pt = pts[i]!;
+    const prev = i > 0 ? pts[i - 1]! : pts[i]!;
+    const next = i + 1 < pts.length ? pts[i + 1]! : pts[i]!;
+    const rawTangent = i === 0
+      ? sub3(next.worldPosition, pt.worldPosition)
+      : i === pts.length - 1
+        ? sub3(pt.worldPosition, prev.worldPosition)
+        : sub3(next.worldPosition, prev.worldPosition);
+    const tangent = normalize3(rawTangent, [0, 1, 0]);
+    const normal = normalize3(pt.worldNormal, [0, 0, 1]);
+    const binormal = normalize3(cross3(tangent, normal), [1, 0, 0]);
+    const w = Math.max(1e-5, pt.thickness);
+
+    const leftVertex = add3(pt.worldPosition, scale3(binormal, -0.5 * w));
+    const ridgeVertex = add3(pt.worldPosition, scale3(normal, 0.3 * w));
+    const rightVertex = add3(pt.worldPosition, scale3(binormal, 0.5 * w));
+
+    rings.push({
+      pointId: pt.pointId,
+      center: pt.worldPosition,
+      leftVertex,
+      ridgeVertex,
+      rightVertex,
+      width: w,
+    });
+
+    const baseOffset = i * 9;
+    const verts = [leftVertex, ridgeVertex, rightVertex] as const;
+    const norms = [scale3(binormal, -1), normal, binormal] as const;
+    for (let vIdx = 0; vIdx < 3; vIdx += 1) {
+      const v = verts[vIdx]!;
+      const n = norms[vIdx]!;
+      positions[baseOffset + vIdx * 3] = v[0];
+      positions[baseOffset + vIdx * 3 + 1] = v[1];
+      positions[baseOffset + vIdx * 3 + 2] = v[2];
+      normals[baseOffset + vIdx * 3] = n[0];
+      normals[baseOffset + vIdx * 3 + 1] = n[1];
+      normals[baseOffset + vIdx * 3 + 2] = n[2];
+    }
+  }
+
+  const closed = Boolean(options.closedLoop) && pts.length >= 3;
+  const segmentCount = closed ? pts.length : pts.length - 1;
+  const indices = new Uint16Array(segmentCount * 18);
+  let writeIdx = 0;
+
+  for (let seg = 0; seg < segmentCount; seg += 1) {
+    const r0 = seg * 3;
+    const r1 = ((seg + 1) % pts.length) * 3;
+    for (let side = 0; side < 3; side += 1) {
+      const s0 = side;
+      const s1 = (side + 1) % 3;
+      indices[writeIdx++] = r0 + s0;
+      indices[writeIdx++] = r1 + s0;
+      indices[writeIdx++] = r1 + s1;
+      indices[writeIdx++] = r0 + s0;
+      indices[writeIdx++] = r1 + s1;
+      indices[writeIdx++] = r0 + s1;
+    }
+  }
+
+  return {
+    lineId: stroke.lineId,
+    rings,
+    positions,
+    normals,
+    indices,
+  };
+}
+
+/**
+ * `HeadPartsManager::RefreshBodyTexture` (`0x060001ee`) 명세:
+ * 의상 착용으로 가려진 바디(`baseMeshType === "body"`) 영역(`_MaskTex` 픽셀값 0)에 속한
+ * 펜 스트로크를 자동으로 마스킹/숨김 처리한다.
+ */
+export function filterCostumeOccludedBodyStrokes(
+  strokes: readonly ShaperPenLineStroke[],
+  mask: {
+    readonly maskTextureWidth: number;
+    readonly maskTextureHeight: number;
+    readonly maskTexPixels: Uint8Array;
+  },
+  strokePointUvs: Readonly<Record<string, readonly (readonly [number, number])[]>>,
+  occlusionRatioThreshold = 0.5,
+): CostumeOccludedStrokeFilterResult {
+  const visibleStrokes: ShaperPenLineStroke[] = [];
+  const occludedStrokes: ShaperPenLineStroke[] = [];
+  const occludedLineIds: string[] = [];
+  const threshold = clamp(occlusionRatioThreshold, 0.05, 1.0);
+
+  for (const stroke of strokes) {
+    if (stroke.baseMeshType !== "body") {
+      visibleStrokes.push(stroke);
+      continue;
+    }
+    const uvs = strokePointUvs[stroke.lineId];
+    if (!uvs || uvs.length === 0) {
+      visibleStrokes.push(stroke);
+      continue;
+    }
+    let occludedCount = 0;
+    for (const [u, v] of uvs) {
+      const x = clamp(Math.floor(clamp(u, 0, 1) * mask.maskTextureWidth), 0, mask.maskTextureWidth - 1);
+      const y = clamp(Math.floor(clamp(v, 0, 1) * mask.maskTextureHeight), 0, mask.maskTextureHeight - 1);
+      if (mask.maskTexPixels[y * mask.maskTextureWidth + x] === 0) {
+        occludedCount += 1;
+      }
+    }
+    if (occludedCount / uvs.length >= threshold) {
+      occludedStrokes.push(stroke);
+      occludedLineIds.push(stroke.lineId);
+    } else {
+      visibleStrokes.push(stroke);
+    }
+  }
+
+  return {
+    visibleStrokes,
+    occludedStrokes,
+    occludedLineIds,
+  };
+}
+

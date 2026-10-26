@@ -131,15 +131,7 @@ const BODY_REGION_UV_BOXES: Readonly<
 };
 
 const ALL_BODY_MASK_REGIONS: readonly BodyMaskRegion[] = [
-  "upperChest",
-  "lowerTorso",
-  "shoulders",
-  "upperArms",
-  "forearms",
-  "pelvis",
-  "thighs",
-  "calves",
-  "feet",
+  "upperChest", "lowerTorso", "shoulders", "upperArms", "forearms", "pelvis", "thighs", "calves", "feet",
 ];
 
 function clamp(value: number, min: number, max: number): number {
@@ -164,11 +156,7 @@ function normalize3(v: ShaperVector3, fallback: ShaperVector3 = [0, 0, 1]): Shap
 }
 
 function lerp3(a: ShaperVector3, b: ShaperVector3, t: number): ShaperVector3 {
-  return [
-    a[0] + (b[0] - a[0]) * t,
-    a[1] + (b[1] - a[1]) * t,
-    a[2] + (b[2] - a[2]) * t,
-  ];
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
 
 function wrapAngleDeg(deg: number): number {
@@ -685,16 +673,106 @@ export function rebindAccessoryParentBone(
   ];
 
   return {
-    accessoryId: accessory.accessoryId,
-    parentBoneName: nextParentBone.boneName,
-    px: nextLocalPos[0],
-    py: nextLocalPos[1],
-    pz: nextLocalPos[2],
-    rx: nextLocalRot[0],
-    ry: nextLocalRot[1],
-    rz: nextLocalRot[2],
-    sx: nextLocalScale[0],
-    sy: nextLocalScale[1],
-    sz: nextLocalScale[2],
+    accessoryId: accessory.accessoryId, parentBoneName: nextParentBone.boneName,
+    px: nextLocalPos[0], py: nextLocalPos[1], pz: nextLocalPos[2],
+    rx: nextLocalRot[0], ry: nextLocalRot[1], rz: nextLocalRot[2],
+    sx: nextLocalScale[0], sy: nextLocalScale[1], sz: nextLocalScale[2],
+  };
+}
+
+export interface ShaperThreeZoneSeamAnchors {
+  readonly left: ShaperVector3;
+  readonly center: ShaperVector3;
+  readonly right: ShaperVector3;
+}
+
+export interface ShaperThreeZoneSeamAlignmentResult {
+  readonly alignedVertices: readonly NeckBoundaryVertex[];
+  readonly zoneDeltas: ShaperThreeZoneSeamAnchors;
+  readonly zoneCounts: { readonly left: number; readonly center: number; readonly right: number };
+}
+
+/**
+ * `HeadPartsManager::SmoothNormals` (`0x060001f0..0x060001f3`) 명세:
+ * X축 임계값(`X < -0.5` 좌측, `-0.5 <= X <= 0.5` 중앙, `X > 0.5` 우측) 기준 3구역 심 무게중심을
+ * 목표 앵커(`seam_L`, `seam_C`, `seam_R`)에 정렬한다.
+ */
+export function alignThreeZoneHeadSeamCentroids(
+  vertices: readonly NeckBoundaryVertex[],
+  anchors: ShaperThreeZoneSeamAnchors,
+  xThreshold = 0.5,
+): ShaperThreeZoneSeamAlignmentResult {
+  const buckets: Record<"left" | "center" | "right", NeckBoundaryVertex[]> = { left: [], center: [], right: [] };
+  for (const v of vertices) {
+    if (v.position[0] < -xThreshold) buckets.left.push(v);
+    else if (v.position[0] > xThreshold) buckets.right.push(v);
+    else buckets.center.push(v);
+  }
+  const computeDelta = (list: readonly NeckBoundaryVertex[], target: ShaperVector3): ShaperVector3 => {
+    if (list.length === 0) return [0, 0, 0];
+    let sx = 0, sy = 0, sz = 0;
+    for (const item of list) { sx += item.position[0]; sy += item.position[1]; sz += item.position[2]; }
+    const n = list.length;
+    return [Number((target[0] - sx / n).toFixed(6)), Number((target[1] - sy / n).toFixed(6)), Number((target[2] - sz / n).toFixed(6))];
+  };
+  const zoneDeltas: ShaperThreeZoneSeamAnchors = {
+    left: computeDelta(buckets.left, anchors.left),
+    center: computeDelta(buckets.center, anchors.center),
+    right: computeDelta(buckets.right, anchors.right),
+  };
+  const alignedVertices = vertices.map((v) => {
+    const d = v.position[0] < -xThreshold ? zoneDeltas.left : v.position[0] > xThreshold ? zoneDeltas.right : zoneDeltas.center;
+    return {
+      ...v,
+      position: [Number((v.position[0] + d[0]).toFixed(6)), Number((v.position[1] + d[1]).toFixed(6)), Number((v.position[2] + d[2]).toFixed(6))] as const,
+    };
+  });
+  return {
+    alignedVertices, zoneDeltas,
+    zoneCounts: { left: buckets.left.length, center: buckets.center.length, right: buckets.right.length },
+  };
+}
+
+/**
+ * `LightManager::UpdateLightColor` (`0x06000210`) 명세:
+ * 3차(Cubic) MatCap 램프 `125 * (1 - w)^3` 강도와 정규화 게인을 계산한다.
+ */
+export function computeShaperCubicMatCapIntensity(weight: number): {
+  readonly clampedWeight: number;
+  readonly normalizedGain: number;
+  readonly rawIntensity: number;
+} {
+  const clampedWeight = clamp(Number.isFinite(weight) ? weight : 0, 0, 1);
+  const inv = 1 - clampedWeight;
+  const normalizedGain = Number((inv * inv * inv).toFixed(6));
+  return {
+    clampedWeight,
+    normalizedGain,
+    rawIntensity: Number((125 * normalizedGain).toFixed(6)),
+  };
+}
+
+/**
+ * `CustomToonOutline.shader` 명세:
+ * 비등방성 외곽선 스케일(`1.5 × 0.3 = 0.45`) 및 정점 컬러 채널(`G` 곡률 가중치, `B` 심 억제)을 반영한
+ * 법선 돌출 오프셋을 계산한다.
+ */
+export function computeShaperAnisotropicOutlineOffset(input: {
+  readonly normal: ShaperVector3;
+  readonly outlineThickness: number;
+  readonly curvatureWeightG?: number;
+  readonly seamSuppressionB?: number;
+}): { readonly offset: ShaperVector3; readonly effectiveScale: number } {
+  const unitNormal = normalize3(input.normal, [0, 0, 1]);
+  const gWeight = clamp(input.curvatureWeightG ?? 1, 0, 1);
+  const bSuppress = clamp(input.seamSuppressionB ?? 1, 0, 1);
+  const effectiveScale = Number((Math.max(0, input.outlineThickness) * 1.5 * 0.3 * gWeight * bSuppress).toFixed(6));
+  return {
+    offset: [
+      Number((unitNormal[0] * effectiveScale).toFixed(6)),
+      Number((unitNormal[1] * effectiveScale).toFixed(6)),
+      Number((unitNormal[2] * effectiveScale).toFixed(6)),
+    ],
+    effectiveScale,
   };
 }

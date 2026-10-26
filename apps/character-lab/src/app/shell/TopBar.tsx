@@ -9,8 +9,8 @@ import { ENGINE_BACKENDS, ENGINE_BACKEND_LABELS_KO, QUALITY_PRESETS, QUALITY_PRE
 import { stableStringify } from "../../shared/stable-json";
 
 import { describeEngineStatus } from "./engine-status-text";
-import { useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useViewportRegistry } from "./lab-store-context";
-import { INSPECTOR_TAB_IDS } from "./ui-state";
+import { useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "./lab-store-context";
+import { CHARACTER_LAB_WORKFLOW_STAGES, INSPECTOR_TAB_IDS, resolveActiveWorkflowStageId } from "./ui-state";
 
 import type { EngineBackend, QualityPresetId, ShadingMode, ShadingProfile } from "../../contracts";
 
@@ -50,7 +50,9 @@ export function TopBar() {
   const dispatch = useDispatch();
   const engineSession = useEngineSession();
   const viewport = useViewportRegistry();
-  const { setInspectorTab } = useUiActions();
+  const ui = useUiState();
+  const { setActiveSlot, setDrawingMode, setInspectorTab } = useUiActions();
+  const activeStageId = resolveActiveWorkflowStageId(ui);
   const [helpOpen, setHelpOpen] = useState(false);
   const [studioTheme, setStudioTheme] = useState<"nebula" | "shaper">(() =>
     typeof document !== "undefined" && document.documentElement.dataset.studioTheme === "shaper" ? "shaper" : "nebula",
@@ -200,6 +202,27 @@ export function TopBar() {
           </button>
         ))}
       </div>
+      <nav className="cl-topbar-group" aria-label="가이드 창작 5단계 동선" data-testid="topbar-workflow-stepper">
+        {CHARACTER_LAB_WORKFLOW_STAGES.map((stage) => {
+          const active = activeStageId === stage.id;
+          return (
+            <button
+              key={stage.id}
+              type="button"
+              className="cl-button cl-button-small"
+              aria-current={active ? "step" : undefined}
+              title={stage.competitorRouteBadge}
+              onClick={() => {
+                setActiveSlot(stage.targetSlot);
+                setInspectorTab(stage.targetTab);
+                setDrawingMode(stage.drawingMode);
+              }}
+            >
+              {stage.labelKo}
+            </button>
+          );
+        })}
+      </nav>
       <div className="cl-topbar-group">
         <button
           type="button"

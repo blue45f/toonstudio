@@ -7,13 +7,15 @@
  * - 프레임 스케줄러는 주입 가능(`schedule`)하며 기본은 requestAnimationFrame이다. rAF가 없는 환경은 재생 불가 사유를 표시한다.
  * - 스타일 접두 `cl-physics-`(app/styles/character-lab.css, core 소유).
  */
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { PHYSICS_PROVIDER_IDS, PHYSICS_PROVIDER_LABELS_KO, SETTLE_DEFAULTS, isPhysicsProviderId } from "../../../contracts";
+import { collideShaperDynamicBoneCapsule, stepShaperDynamicBoneParticle } from "../../../domains/outfit/shaper-hair";
 import { PHYSICS_PROVIDER_CATALOG } from "../../../domains/physics/provider-factory";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
 import type { PhysicsProviderId, PhysicsStatus, SettleReceipt } from "../../../contracts";
+import type { ShaperDynamicBoneBoundMode } from "../../../domains/outfit/shaper-hair";
 import type { PhysicsProviderDescriptor } from "../../../domains/physics/provider-factory";
 
 /** 프레임마다 tick을 호출하는 스케줄러. 돌려주는 함수가 중지한다. */
@@ -72,7 +74,35 @@ export function PhysicsPanel({ schedule = rafScheduler }: PhysicsPanelProps) {
   const [playing, setPlaying] = useState(false);
   const [previewSteps, setPreviewSteps] = useState(0);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [dbDamping, setDbDamping] = useState(0.15);
+  const [dbElasticity, setDbElasticity] = useState(0.2);
+  const [dbStiffness, setDbStiffness] = useState(0.1);
+  const [dbInert, setDbInert] = useState(0.05);
+  const [dbBoundMode, setDbBoundMode] = useState<ShaperDynamicBoneBoundMode>("outside");
   const inFlight = useRef(false);
+
+  const shaperDynamicBonePreview = useMemo(() => {
+    const stepped = stepShaperDynamicBoneParticle({
+      position: [0.05, -0.35, 0.02],
+      prevPosition: [0.01, -0.3, 0.0],
+      restTargetPosition: [0.0, -0.4, 0.0],
+      parentDisplacement: [0.02, 0.0, 0.0],
+      damping: dbDamping,
+      elasticity: dbElasticity,
+      stiffness: dbStiffness,
+      inert: dbInert,
+      externalForce: [0, -0.0098, 0],
+    });
+    const collided = collideShaperDynamicBoneCapsule({
+      particlePosition: stepped.position,
+      particleRadius: 0.04,
+      capsuleP0: [0, -0.5, 0],
+      capsuleP1: [0, 0.1, 0],
+      capsuleRadius: 0.12,
+      bound: dbBoundMode,
+    });
+    return { stepped, collided };
+  }, [dbBoundMode, dbDamping, dbElasticity, dbInert, dbStiffness]);
 
   const selected: PhysicsProviderId = state.recipe.physics.provider;
   const status = describePhysicsStatus(state.physics);
@@ -216,6 +246,89 @@ export function PhysicsPanel({ schedule = rafScheduler }: PhysicsPanelProps) {
           {previewError}
         </p>
       ) : null}
+
+      <div
+        className="cl-physics-shaper-dynamicbone"
+        data-testid="shaper-physics-dynamicbone-section"
+      >
+        <h3>SHAPER DynamicBone · 캡슐 콜라이더 베를레 물리</h3>
+        <div className="cl-physics-row" role="group" aria-label="DynamicBone 콜라이더 바운드 모드">
+          {(
+            [
+              { id: "outside", label: "외부 밀어내기 (Outside)" },
+              { id: "inside", label: "내부 구속 (Inside)" },
+            ] as const
+          ).map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              className="cl-preset-chip"
+              aria-pressed={dbBoundMode === mode.id}
+              data-testid={`shaper-db-bound-${mode.id}`}
+              onClick={() => setDbBoundMode(mode.id)}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+        <div className="cl-physics-row">
+          <label htmlFor={`${ids}-db-damping`}>감쇠 (m_Damping)</label>
+          <input
+            id={`${ids}-db-damping`}
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={dbDamping}
+            onChange={(event) => setDbDamping(Number(event.target.value))}
+          />
+          <span className="cl-physics-hint">{dbDamping.toFixed(2)}</span>
+        </div>
+        <div className="cl-physics-row">
+          <label htmlFor={`${ids}-db-elasticity`}>탄성 복원 (m_Elasticity)</label>
+          <input
+            id={`${ids}-db-elasticity`}
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={dbElasticity}
+            onChange={(event) => setDbElasticity(Number(event.target.value))}
+          />
+          <span className="cl-physics-hint">{dbElasticity.toFixed(2)}</span>
+        </div>
+        <div className="cl-physics-row">
+          <label htmlFor={`${ids}-db-stiffness`}>강성 한계 (m_Stiffness)</label>
+          <input
+            id={`${ids}-db-stiffness`}
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={dbStiffness}
+            onChange={(event) => setDbStiffness(Number(event.target.value))}
+          />
+          <span className="cl-physics-hint">{dbStiffness.toFixed(2)}</span>
+        </div>
+        <div className="cl-physics-row">
+          <label htmlFor={`${ids}-db-inert`}>부모 관성 추종 (m_Inert)</label>
+          <input
+            id={`${ids}-db-inert`}
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={dbInert}
+            onChange={(event) => setDbInert(Number(event.target.value))}
+          />
+          <span className="cl-physics-hint">{dbInert.toFixed(2)}</span>
+        </div>
+        <p className="cl-physics-hint" data-testid="shaper-dynamicbone-readout">
+          콜라이더 ({dbBoundMode}) 투영 좌표: (
+          {shaperDynamicBonePreview.collided.map((v) => v.toFixed(3)).join(", ")}) · 속도 크기{" "}
+          {Math.hypot(...shaperDynamicBonePreview.stepped.velocity).toFixed(4)}
+        </p>
+      </div>
     </section>
   );
 }

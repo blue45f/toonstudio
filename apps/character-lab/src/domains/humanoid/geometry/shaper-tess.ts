@@ -133,45 +133,24 @@ export function computeShaperContourNormal3d(
   const first = vertices3d[0] ?? [0, 0, 0];
   const minVal: [number, number, number] = [first[0], first[1], first[2]];
   const maxVal: [number, number, number] = [first[0], first[1], first[2]];
-  const minVert: [
-    readonly [number, number, number],
-    readonly [number, number, number],
-    readonly [number, number, number],
-  ] = [first, first, first];
-  const maxVert: [
-    readonly [number, number, number],
-    readonly [number, number, number],
-    readonly [number, number, number],
-  ] = [first, first, first];
+  const minVert: [readonly [number, number, number], readonly [number, number, number], readonly [number, number, number]] = [first, first, first];
+  const maxVert: [readonly [number, number, number], readonly [number, number, number], readonly [number, number, number]] = [first, first, first];
 
   for (const v of vertices3d) {
     for (let c = 0 as 0 | 1 | 2; c < 3; c = (c + 1) as 0 | 1 | 2) {
-      if (v[c] < minVal[c]) {
-        minVal[c] = v[c];
-        minVert[c] = v;
-      }
-      if (v[c] > maxVal[c]) {
-        maxVal[c] = v[c];
-        maxVert[c] = v;
-      }
+      if (v[c] < minVal[c]) { minVal[c] = v[c]; minVert[c] = v; }
+      if (v[c] > maxVal[c]) { maxVal[c] = v[c]; maxVert[c] = v; }
     }
   }
 
   let axis: 0 | 1 | 2 = 0;
   if (maxVal[1] - minVal[1] > maxVal[0] - minVal[0]) axis = 1;
   if (maxVal[2] - minVal[2] > maxVal[axis] - minVal[axis]) axis = 2;
-
-  if (minVal[axis] >= maxVal[axis]) {
-    return [0, 0, 1];
-  }
+  if (minVal[axis] >= maxVal[axis]) return [0, 0, 1];
 
   const vMin = minVert[axis];
   const vMax = maxVert[axis];
-  const d1: [number, number, number] = [
-    vMin[0] - vMax[0],
-    vMin[1] - vMax[1],
-    vMin[2] - vMax[2],
-  ];
+  const d1: [number, number, number] = [vMin[0] - vMax[0], vMin[1] - vMax[1], vMin[2] - vMax[2]];
 
   let maxLen2 = 0;
   let norm: [number, number, number] = [0, 0, 0];
@@ -183,10 +162,7 @@ export function computeShaperContourNormal3d(
     const ty = d1[2] * d2x - d1[0] * d2z;
     const tz = d1[0] * d2y - d1[1] * d2x;
     const tLen2 = tx * tx + ty * ty + tz * tz;
-    if (tLen2 > maxLen2) {
-      maxLen2 = tLen2;
-      norm = [tx, ty, tz];
-    }
+    if (tLen2 > maxLen2) { maxLen2 = tLen2; norm = [tx, ty, tz]; }
   }
 
   if (maxLen2 <= 0) {
@@ -626,13 +602,7 @@ export function parseShaperStlBinaryHeaderAndTriangles(
   }
 
   if (!isBinary || bytes.length < 84) {
-    return {
-      isBinary,
-      headerColorRgba,
-      triangleCount: 0,
-      positions: new Float32Array(0),
-      normals: new Float32Array(0),
-    };
+    return { isBinary, headerColorRgba, triangleCount: 0, positions: new Float32Array(0), normals: new Float32Array(0) };
   }
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -659,11 +629,163 @@ export function parseShaperStlBinaryHeaderAndTriangles(
     }
   }
 
-  return {
-    isBinary,
-    headerColorRgba,
-    triangleCount,
-    positions,
-    normals,
+  return { isBinary, headerColorRgba, triangleCount, positions, normals };
+}
+
+/**
+ * SHAPER `NormalSolver::RecalculateNormals` (`0x06000274`, RVA `189228`, `ev_7c0b58628d8db1ad3c3ad1109b3945d7c3c2ac12b059c2f64b7682f7123b7f27`) 역공학 내재화:
+ * `cosineThreshold = cos(angle * 0.017453292f)` 임계값과 공간 양자화 `VertexKey`(`round(coord * 100000)`)를 사용해
+ * 동일 위치 정점들의 삼각형 면 법선 중 내적 `dot(n1, n2) >= cosineThreshold` (또는 동일 정점 인덱스)인 법선만 합산·정규화한다.
+ */
+export function recalculateShaperNormalsByAngle(
+  positions: Float32Array,
+  indices: Uint32Array,
+  smoothingAngleDeg = 60,
+): Float32Array {
+  const vertexCount = Math.floor(positions.length / 3);
+  const normals = new Float32Array(vertexCount * 3);
+  const triCount = Math.floor(indices.length / 3);
+  if (vertexCount === 0 || triCount === 0) return normals;
+
+  const cosineThreshold = Math.cos(smoothingAngleDeg * 0.01745329238474369);
+  const triNormals = new Float32Array(triCount * 3);
+  const buckets = new Map<string, Array<{ readonly triIndex: number; readonly vertexIndex: number }>>();
+  const makeVertexKey = (vIdx: number): string =>
+    `${Math.round((positions[vIdx * 3] ?? 0) * 100000)}:${Math.round((positions[vIdx * 3 + 1] ?? 0) * 100000)}:${Math.round((positions[vIdx * 3 + 2] ?? 0) * 100000)}`;
+
+  for (let t = 0; t < triCount; t += 1) {
+    const i1 = indices[t * 3]!;
+    const i2 = indices[t * 3 + 1]!;
+    const i3 = indices[t * 3 + 2]!;
+    if (i1 >= vertexCount || i2 >= vertexCount || i3 >= vertexCount) continue;
+
+    const p1x = positions[i2 * 3]! - positions[i1 * 3]!;
+    const p1y = positions[i2 * 3 + 1]! - positions[i1 * 3 + 1]!;
+    const p1z = positions[i2 * 3 + 2]! - positions[i1 * 3 + 2]!;
+    const p2x = positions[i3 * 3]! - positions[i1 * 3]!;
+    const p2y = positions[i3 * 3 + 1]! - positions[i1 * 3 + 1]!;
+    const p2z = positions[i3 * 3 + 2]! - positions[i1 * 3 + 2]!;
+
+    const cx = p1y * p2z - p1z * p2y;
+    const cy = p1z * p2x - p1x * p2z;
+    const cz = p1x * p2y - p1y * p2x;
+    const len = Math.hypot(cx, cy, cz);
+    if (len > 1e-8) {
+      triNormals[t * 3] = cx / len;
+      triNormals[t * 3 + 1] = cy / len;
+      triNormals[t * 3 + 2] = cz / len;
+    }
+
+    for (const vIdx of [i1, i2, i3]) {
+      const key = makeVertexKey(vIdx);
+      const list = buckets.get(key);
+      if (list) list.push({ triIndex: t, vertexIndex: vIdx });
+      else buckets.set(key, [{ triIndex: t, vertexIndex: vIdx }]);
+    }
+  }
+
+  for (const entries of buckets.values()) {
+    for (const lhs of entries) {
+      const n1x = triNormals[lhs.triIndex * 3]!;
+      const n1y = triNormals[lhs.triIndex * 3 + 1]!;
+      const n1z = triNormals[lhs.triIndex * 3 + 2]!;
+      let sumX = 0;
+      let sumY = 0;
+      let sumZ = 0;
+      for (const rhs of entries) {
+        const n2x = triNormals[rhs.triIndex * 3]!;
+        const n2y = triNormals[rhs.triIndex * 3 + 1]!;
+        const n2z = triNormals[rhs.triIndex * 3 + 2]!;
+        const dot = n1x * n2x + n1y * n2y + n1z * n2z;
+        if (lhs.vertexIndex === rhs.vertexIndex || dot >= cosineThreshold) {
+          sumX += n2x;
+          sumY += n2y;
+          sumZ += n2z;
+        }
+      }
+      const len = Math.hypot(sumX, sumY, sumZ);
+      const dst = lhs.vertexIndex * 3;
+      if (len > 1e-8) {
+        normals[dst] = sumX / len;
+        normals[dst + 1] = sumY / len;
+        normals[dst + 2] = sumZ / len;
+      }
+    }
+  }
+  return normals;
+}
+
+export interface ShaperSimpleQuadObjParsed {
+  readonly vertices: readonly (readonly [number, number, number])[];
+  readonly triangles: readonly number[];
+  readonly quads: readonly number[];
+}
+
+/**
+ * SHAPER `SimpleQuadOBJ.SimpleQuadOBJLoader::Load` (`0x060005aa`, RVA `275016`) &
+ * `CharReaderHelper.CharReader::ReadFloat` (`0x060005b8`) 역공학 내재화:
+ * `.` 및 `,` 소수점 구분자와 음수 상대 정점 인덱스(`count + idx`)를 지원하며,
+ * 4각형 면 `(v0, v1, v2, v3)`를 2개 삼각형 `(v0, v1, v2) + (v0, v2, v3)`와 원본 쿼드 인덱스 배열로 동시 파싱한다.
+ */
+export function parseShaperSimpleQuadObj(objText: string): ShaperSimpleQuadObjParsed {
+  const vertices: Array<readonly [number, number, number]> = [];
+  const triangles: number[] = [];
+  const quads: number[] = [];
+  const parseNum = (token: string): number => Number(token.replace(",", "."));
+  const resolveIdx = (rawToken: string, count: number): number => {
+    const parsed = Math.trunc(Number(rawToken.split("/")[0] ?? "1"));
+    return parsed < 0 ? count + parsed : parsed - 1;
   };
+
+  for (const rawLine of objText.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parts = line.split(/\s+/);
+    if (parts[0] === "v" && parts.length >= 4) {
+      vertices.push([parseNum(parts[1]!), parseNum(parts[2]!), parseNum(parts[3]!)]);
+    } else if (parts[0] === "f" && parts.length >= 4) {
+      const face = parts.slice(1).map((tok) => resolveIdx(tok, vertices.length));
+      if (face.length === 3) {
+        triangles.push(face[0]!, face[1]!, face[2]!);
+      } else if (face.length >= 4) {
+        triangles.push(face[0]!, face[1]!, face[2]!, face[0]!, face[2]!, face[3]!);
+        quads.push(face[0]!, face[1]!, face[2]!, face[3]!);
+      }
+    }
+  }
+  return { vertices, triangles, quads };
+}
+
+/**
+ * SHAPER `OrientationConstraint::Update` (`0x06000276`, RVA `189998`) 역공학 내재화:
+ * 두 타깃 트랜스폼의 회전 쿼터니언을 `Quaternion.Slerp(target0.rotation, target1.rotation, 0.5f)` 구면 선형 보간한다.
+ */
+export function solveShaperOrientationConstraintHalfSlerp(
+  q0: readonly [number, number, number, number],
+  q1: readonly [number, number, number, number],
+  t = 0.5,
+): readonly [number, number, number, number] {
+  let [bx, by, bz, bw] = q1;
+  let dot = q0[0] * bx + q0[1] * by + q0[2] * bz + q0[3] * bw;
+  if (dot < 0) {
+    dot = -dot;
+    bx = -bx;
+    by = -by;
+    bz = -bz;
+    bw = -bw;
+  }
+  let s0 = 1 - t;
+  let s1 = t;
+  if (dot < 0.9995) {
+    const theta = Math.acos(Math.min(1, dot));
+    const sinTheta = Math.sin(theta);
+    s0 = Math.sin((1 - t) * theta) / sinTheta;
+    s1 = Math.sin(t * theta) / sinTheta;
+  }
+  const rx = s0 * q0[0] + s1 * bx;
+  const ry = s0 * q0[1] + s1 * by;
+  const rz = s0 * q0[2] + s1 * bz;
+  const rw = s0 * q0[3] + s1 * bw;
+  const len = Math.hypot(rx, ry, rz, rw) || 1;
+  return [rx / len, ry / len, rz / len, rw / len];
 }

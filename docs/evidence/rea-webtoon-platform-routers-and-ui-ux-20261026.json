@@ -3,14 +3,14 @@
   "capturedAt": "2026-10-26",
   "analysisProvider": "rea-mcp-web-and-ast",
   "summary": {
-    "targetCount": 13,
-    "verifiedPlatforms": 11,
+    "targetCount": 16,
+    "verifiedPlatforms": 14,
     "botChallengeBoundedPlatforms": 2,
-    "totalEvidenceIds": 40,
-    "totalAnalyzedScripts": 254,
-    "totalAnalyzedBytes": 5996345,
-    "totalAstNodes": 1521022,
-    "totalFindings": 9858
+    "totalEvidenceIds": 49,
+    "totalAnalyzedScripts": 279,
+    "totalAnalyzedBytes": 6356623,
+    "totalAstNodes": 1589552,
+    "totalFindings": 10319
   },
   "platforms": [
     {
@@ -225,6 +225,43 @@
       "unknowns": []
     },
     {
+      "id": "vroid-hub",
+      "name": "VRoid Hub",
+      "targetUrl": "https://hub.vroid.com/en",
+      "captureEvidenceId": "ev_f1ecf030b5868731e6c636e8702158468243d88596307ecacfe9ad9086906f83",
+      "exportScriptsEvidenceId": "ev_90e7d9c6f7f335eb4f098a8e855bf4d38111c439f5927620b0e75a875a001e57",
+      "astAnalysisViewEvidenceId": "ev_309f1dae9b7d104a3fb0a85120b6b316b8a75927843da580ce5c23d4d473f0fa",
+      "astAnalysisParentEvidenceId": "ev_3476252ea1758a009ef7f452c0ad43e3b280678f0b3bcd4206a119e2c6183c5d",
+      "rootSha256": "bc847a0eb1532258545218e685b1a0c41a98c2159ebd6c6a54bcdd24e29e9445",
+      "observedFacts": [
+        "65 Next.js routes in _buildManifest.js (/_next/static/7O1MwYwwRlg80I--EEiL8/_buildManifest.js) across 7,217 AST nodes.",
+        "Model inspector sub-route hierarchy: /characters/[characterId], /characters/[characterId]/models/[modelId], /characters/[characterId]/models/[modelId]/{edit,embed,photobooth,tracking}, /model_assets/[modelAssetId], /license.",
+        "Discovery & social routes: /models, /models/followings, /artworks, /artworks/followings, /hearts, /hearts/artworks, /search/[query]/{artworks,creators}, /apps/[id]/character_models."
+      ],
+      "inferences": [
+        "Dedicated sub-routes for 3D viewer overview, edit, photobooth, tracking, and license conditions allow creators to verify VRM usage permissions (avatar use, violence/sexual expression, corporate/personal commercial use, modification, redistribution) before importing into a webtoon panel."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "vroid-studio",
+      "name": "VRoid Studio",
+      "targetUrl": "https://vroid.com/en/studio",
+      "captureEvidenceId": "ev_0e79c9c80a9d191d54632087ba929765c32165e8b771b2f7f36e8fdbe9eb1228",
+      "exportScriptsEvidenceId": "ev_39c57cd108aab1b19c587b4143f7c2c43e27a38d2110e141ceb060f05378e5f8",
+      "astAnalysisViewEvidenceId": "ev_7c4e50edf71d08c8d335702fd41056723e71528178828138abbf0dd18b256643",
+      "astAnalysisParentEvidenceId": "ev_6326927c14d9c486f5984d91d2fddad2cfe9ea940813c9c0a981fe99ae96e524",
+      "rootSha256": "dd8286d1a04fac852921f1274edb8603f67cb31995ae05ad103deca50b947a34",
+      "observedFacts": [
+        "26 Next.js routes in _buildManifest.js (/_next/static/X3VkFB2zRKGJg3S3P8tDQ/_buildManifest.js) across 24,680 AST nodes and 162 findings.",
+        "Studio ecosystem routes: /studio, /studio/_beta_releases_container, /studio/guidelines, /studio/notice/[noticeId], /studio/releases, /studio/sctl, /mobile, /wear, /special/shooting_studio/vko_ar, /news/[articleId]."
+      ],
+      "inferences": [
+        "Preset-first onboarding ('pick items you like and adjust parameters' -> 'draw hair bundles in 3D' -> 'export to shooting studio / VRoid Hub / BOOTH') lowers initial 3D modeling friction."
+      ],
+      "unknowns": []
+    },
+    {
       "id": "clip-studio",
       "name": "CLIP STUDIO",
       "targetUrl": "https://www.clipstudio.net/kr/",
@@ -236,10 +273,29 @@
       "astAnalysisParentEvidenceId": "ev_353ab6a4420960cf3339c6dd583908a36cf2f47b87f849b4f3773052667154f7",
       "rootSha256": "a6ae8a432dd2a6b717f906be098de7537ccbb339859d333ef05563476c1d91cd",
       "observedFacts": [
-        "23 parsed scripts (360,278 B, 86,203 AST nodes) linking drawing workflow features with CLIP STUDIO ASSETS, TIPS, and SHARE."
+        "23 parsed scripts (360,278 B, 86,203 AST nodes) linking drawing workflow features with CLIP STUDIO ASSETS, TIPS, and SHARE.",
+        "Cross-subdomain workflow linking studio product routes (/kr/, /kr/function/, /kr/dl/, /kr/purchase/) directly to asset queries (https://assets.clip-studio.com/q/search?type=3dhead%2Cother_3dmodel&order=dl, ?type=brush&order=dl) and 4-stage guided tutorials (3D 두상 모델 #11034, 체형 커스터마이즈 #9936, 3D 소재 조합 #8416, 퍼스자 사용법 #1975, 퍼펫 변형 #10496, 3D에 직접 그리기 #10495)."
       ],
       "inferences": [
-        "Dedicated market-hub contextual navigation (/market, /market/browse, /studio/assets, /studio/brushes, /research) keeps asset acquisition adjacent to canvas editing."
+        "Dedicated market-hub contextual navigation (/market, /market/browse, /studio/assets, /studio/brushes, /research) and 5-stage guided workflow progression bridge learning and production."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "booth-3d",
+      "name": "BOOTH 3D Models",
+      "targetUrl": "https://booth.pm/ko/browse/3D%20Models",
+      "captureEvidenceId": "ev_e42d625e48b74db8cd12e65ab7876aed389056d762c6922385352ec8045d7895",
+      "exportScriptsEvidenceId": "ev_aa51dc986add3d5b81c53a00aaab77b7a23703492a41517ae098c6138818017d",
+      "astAnalysisViewEvidenceId": "ev_061939e46eb35dee70bc518584053adda8b7fe90886977e1483b4e6304a53ed5",
+      "astAnalysisParentEvidenceId": "ev_4262289e101f196b58961f172024f4a75c7418e4c52d9c2e042d7d805cbea178",
+      "rootSha256": "a9d9a22f5704592520b242af5a98b46b30502c42f9b73d35132333b7eb1cbc5c",
+      "observedFacts": [
+        "10 parsed JavaScript bundles across 36,633 AST nodes and 218 findings, with 439 retained network events.",
+        "Hierarchical 3D marketplace routes: /ko/browse/3D%20Models, /ko/browse/3D%20Characters, /ko/browse/3D%20Tools%20&%20Systems, /ko/browse/3D%20Motion%20&%20Animation, /ko/items/[id], /ko/items?tags[]=VRChat, /ko/events/bf-vrchat, plus accounts.booth.pm/library and manage.booth.pm/items."
+      ],
+      "inferences": [
+        "Taxonomy chips separating 3D Characters, 3D Tools & Systems, and 3D Motion & Animation paired with compatibility tag badges and wishlist counters enable fast asset triage."
       ],
       "unknowns": []
     },

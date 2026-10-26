@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_UI_STATE, INSPECTOR_TAB_IDS, INSPECTOR_TAB_LABELS_KO, createUiStateStore, isInspectorTabId } from "./ui-state";
+import {
+  CHARACTER_LAB_WORKFLOW_STAGES,
+  DEFAULT_UI_STATE,
+  INSPECTOR_TAB_IDS,
+  INSPECTOR_TAB_LABELS_KO,
+  createUiStateStore,
+  isInspectorTabId,
+  parseLabRouteSearchParams,
+  resolveActiveWorkflowStageId,
+  serializeLabRouteSearchParams,
+} from "./ui-state";
 
 describe("app/shell/ui-state", () => {
   it("탭 9개가 한글 라벨을 가진다", () => {
@@ -27,5 +37,28 @@ describe("app/shell/ui-state", () => {
     unsubscribe();
     store.setDrawingMode(false);
     expect(calls).toBe(3);
+  });
+
+  it("5단계 가이드 창작 스테퍼와 URL 쿼리 라우터 동기화(parse/serialize)가 정확히 동작한다", () => {
+    expect(CHARACTER_LAB_WORKFLOW_STAGES).toHaveLength(5);
+    expect(resolveActiveWorkflowStageId(DEFAULT_UI_STATE)).toBe("1-proportion");
+    expect(resolveActiveWorkflowStageId({ activeSlot: "hair", inspectorTab: "physics", drawingMode: false })).toBe("2-wardrobe-groom");
+    expect(resolveActiveWorkflowStageId({ activeSlot: "pose", inspectorTab: "pose", drawingMode: false })).toBe("3-pose-gaze");
+    expect(resolveActiveWorkflowStageId({ activeSlot: "face-shape", inspectorTab: "paint", drawingMode: true })).toBe("4-ink-paint");
+    expect(resolveActiveWorkflowStageId({ activeSlot: "lighting", inspectorTab: "export", drawingMode: false })).toBe("5-render-export");
+
+    const parsed = parseLabRouteSearchParams("?stage=4-ink-paint");
+    expect(parsed).toEqual({
+      activeSlot: "face-shape",
+      inspectorTab: "paint",
+      drawingMode: true,
+    });
+
+    const serialized = serializeLabRouteSearchParams({
+      activeSlot: "pose",
+      inspectorTab: "pose",
+      drawingMode: false,
+    });
+    expect(serialized).toBe("?stage=3-pose-gaze&slot=pose&tab=pose");
   });
 });

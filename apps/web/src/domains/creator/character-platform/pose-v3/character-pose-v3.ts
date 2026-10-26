@@ -205,3 +205,96 @@ export function validateCharacterPoseDocumentV3(
     }) : null,
   });
 }
+
+export const SHAPER_BONE_AI_24_KEYPOINTS = Object.freeze([
+  "hips", "leftUpperLeg", "rightUpperLeg", "spine", "leftLowerLeg", "rightLowerLeg",
+  "chest", "leftFoot", "rightFoot", "upperChest", "leftToes", "rightToes",
+  "neck", "leftShoulder", "rightShoulder", "head", "leftUpperArm", "rightUpperArm",
+  "leftLowerArm", "rightLowerArm", "leftHand", "rightHand", "leftThumb", "rightThumb",
+] as const);
+
+export type ShaperBoneAiFixVectorMode = 0 | 1 | 2;
+
+export interface ShaperBoneAiConfidenceResult {
+  readonly accepted: boolean;
+  readonly validJointCount: number;
+  readonly requiredValidJointCount: number;
+  readonly uncertaintyThreshold: number;
+  readonly validJoints: readonly string[];
+  readonly rejectedJoints: readonly string[];
+}
+
+/**
+ * `BoneAIManager::GetPosFromAI` (`0x06000097`) 명세:
+ * 24개 관절의 불확실성(`uncertainty < 0.03`)을 검사하고 최소 16개 이상 통과해야 AI 포즈를 승인한다.
+ */
+export function evaluateShaperBoneAiConfidenceGate(
+  jointUncertainties: Readonly<Record<string, number>>,
+  options: { readonly uncertaintyThreshold?: number; readonly minimumValidJoints?: number } = {},
+): ShaperBoneAiConfidenceResult {
+  const threshold = options.uncertaintyThreshold ?? 0.03;
+  const minValid = options.minimumValidJoints ?? 16;
+  const validJoints: string[] = [];
+  const rejectedJoints: string[] = [];
+
+  for (const joint of SHAPER_BONE_AI_24_KEYPOINTS) {
+    const u = jointUncertainties[joint];
+    if (typeof u === "number" && Number.isFinite(u) && u >= 0 && u < threshold) {
+      validJoints.push(joint);
+    } else {
+      rejectedJoints.push(joint);
+    }
+  }
+
+  return {
+    accepted: validJoints.length >= minValid,
+    validJointCount: validJoints.length,
+    requiredValidJointCount: minValid,
+    uncertaintyThreshold: threshold,
+    validJoints,
+    rejectedJoints,
+  };
+}
+
+/**
+ * `BoneAIManager::ChangeFixVector` (`0x0600009d`) 명세:
+ * AI 추정 본 롤(Roll) 보정 축을 `0 -> 1 -> 2 -> 0` 순서(`+90°` 단계)로 순환한다.
+ */
+export function cycleShaperBoneAiFixVector(currentMode: ShaperBoneAiFixVectorMode): {
+  readonly nextMode: ShaperBoneAiFixVectorMode;
+  readonly rollOffsetDeg: 0 | 90 | 180;
+  readonly label: string;
+} {
+  const nextMode = ((currentMode + 1) % 3) as ShaperBoneAiFixVectorMode;
+  const rollOffsetDeg = (nextMode * 90) as 0 | 90 | 180;
+  const labels: Record<ShaperBoneAiFixVectorMode, string> = {
+    0: "기본 축 (0°)",
+    1: "+90° 롤 보정 축 (Mode 1)",
+    2: "+180° 반전 보정 축 (Mode 2)",
+  };
+  return { nextMode, rollOffsetDeg, label: labels[nextMode] };
+}
+
+/**
+ * `OrientationConstraint::UpdatePose` (`0x06000280`) 명세:
+ * 단위 쿼터니언 `[0, 0, 0, 1]`과 목표 회전 `deltaQuat` 사이의 50% 구면 선형 보간(`Slerp(I, delta, 0.5)`)을 계산한다.
+ */
+export function solveShaperOrientationConstraintHalfSlerp(
+  deltaQuat: CharacterQuaternion,
+): CharacterQuaternion {
+  let [x, y, z, w] = deltaQuat;
+  const len = Math.hypot(x, y, z, w);
+  if (len <= 1e-8) return [0, 0, 0, 1];
+  x /= len; y /= len; z /= len; w /= len;
+  if (w < 0) { x = -x; y = -y; z = -z; w = -w; }
+  // Half-angle quaternion between [0,0,0,1] and [x,y,z,w] is normalized [x, y, z, w + 1]
+  const hw = w + 1;
+  const hLen = Math.hypot(x, y, z, hw);
+  if (hLen <= 1e-8) return [0, 0, 0, 1];
+  return [
+    Number((x / hLen).toFixed(6)),
+    Number((y / hLen).toFixed(6)),
+    Number((z / hLen).toFixed(6)),
+    Number((hw / hLen).toFixed(6)),
+  ];
+}
