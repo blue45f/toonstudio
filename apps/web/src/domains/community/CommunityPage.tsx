@@ -30,6 +30,7 @@ import {
 } from "@/shared/components/site-experience/workflow-illustration";
 import { Container, Section } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -224,6 +225,8 @@ export function CommunityPage() {
       <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
         {t(COPY.tagline)}
       </p>
+
+      <NanoBananaSurfaceSpotlight cardId="nb-community-plaza" compact className="mt-6" />
 
       <section
         aria-label="오픈 연재 승격 리그 및 창작자 성장 트랙"

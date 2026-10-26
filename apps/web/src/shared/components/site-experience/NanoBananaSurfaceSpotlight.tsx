@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useI18n } from "@/shared/lib/i18n";
-import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { runSameDocumentViewTransition } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
@@ -28,9 +27,8 @@ export function NanoBananaSurfaceSpotlight({
   defaultLensId = "curation",
   className = "",
 }: NanoBananaSurfaceSpotlightProps) {
-  useBilingualI18nRevision();
   const location = useLocation();
-  const lang = useI18n((state) => state.lang);
+  const lang = useI18n((state) => state.lang) ?? "ko";
   const isEn = !lang.toLowerCase().startsWith("ko");
   const pick = (copy: { readonly ko: string; readonly en: string }) =>
     isEn ? copy.en : copy.ko;

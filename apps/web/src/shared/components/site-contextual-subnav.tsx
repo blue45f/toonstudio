@@ -10,8 +10,10 @@ import {
   resolveContextualSubNavForPath,
   type ContextualSubNavGroup,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
+import { resolveNanoBananaCardForSubNavGroup } from "./site-experience/nano-banana-site-ui-pack";
 
 import "./site-contextual-subnav.css";
+import "./site-experience/nano-banana-site-ui.css";
 
 export function SiteContextualSubNav({
   pathnameOverride,
@@ -33,16 +35,30 @@ export function SiteContextualSubNav({
 
   const title = isKo ? group.koTitle : group.enTitle;
   const style = { "--subnav-accent": group.accentToken } as CSSProperties;
+  const nbCard = resolveNanoBananaCardForSubNavGroup(group.id);
 
   return (
     <nav
       aria-label={title}
       data-contextual-subnav={group.id}
+      data-nano-banana-card={nbCard.cardId}
       className={cn("site-contextual-subnav", className)}
       style={style}
     >
       <div className="site-contextual-subnav__header">
-        <span className="site-contextual-subnav__dot" aria-hidden="true" />
+        <span className="nb-site-subnav-brand" aria-hidden="true">
+          <img
+            src={nbCard.src320}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            width={34}
+            height={20}
+            className="nb-site-subnav-thumb"
+          />
+          <span className="site-contextual-subnav__dot" aria-hidden="true" />
+        </span>
         <span>{title}</span>
       </div>
       <ul className="site-contextual-subnav__list">

@@ -1,13 +1,14 @@
-import { formatI18nTemplate, translateCurrentStaticSourceText, getActiveI18nLocale, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { getActiveI18nLocale, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowUpRight, BookOpen, CalendarDays, Compass, Images, Library, MessageCircle, PenTool, Search, Sparkles, Store } from "lucide-react";
 import { useId } from "react";
 import { useLocation } from "react-router-dom";
 
 import { SiteAtelierChapter } from "./SiteAtelierChapter";
-import { DESTINATION_ART } from "./site-atelier-content";
 import { useSiteExperience } from "./site-experience-context";
 import { EXPERIENCE_DESTINATIONS, nextExperienceDestinations } from "./site-experience-model";
+import { resolveNanoBananaCardForPath } from "./nano-banana-site-ui-pack";
 import Link from "@/shared/navigation/router-link";
+import "./nano-banana-site-ui.css";
 
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -45,9 +46,10 @@ export function SiteNextSteps() {
           const destination = EXPERIENCE_DESTINATIONS[id];
           const Icon = ICONS[destination.icon];
           const [title, description] = bi((destination).ko, (destination).en);
+          const nbCard = resolveNanoBananaCardForPath(destination.href);
           return (
-            <Link href={destination.href} className="site-next-steps__card" key={id} data-tone={index}>
-              <span className="site-next-steps__art" aria-hidden="true"><img src={formatI18nTemplate(translateCurrentStaticSourceText("shared.components.site.experience.SiteNextSteps", "en", "/brand/atelier-{v0}.webp"), { v0: String(DESTINATION_ART[id]) })} alt="" width={1536} height={1024} loading="lazy" decoding="async" /><span>0{index + 1} / {id.toUpperCase()}</span></span>
+            <Link href={destination.href} className="site-next-steps__card" key={id} data-tone={index} data-nano-banana-card={nbCard.cardId}>
+              <span className="site-next-steps__art" aria-hidden="true"><img src={nbCard.src640} srcSet={nbCard.srcSet} sizes="(max-width: 767px) calc(100vw - 48px), 320px" alt="" width={640} height={360} loading="lazy" decoding="async" /><span>0{index + 1} / {id.toUpperCase()} · {nbCard.stageBadge[locale]}</span></span>
               <span className="site-next-steps__icon"><Icon size={21} aria-hidden="true" /></span>
               <span className="site-next-steps__copy"><strong>{title}</strong><span>{description}</span></span>
               <ArrowUpRight className="site-next-steps__arrow" size={19} aria-hidden="true" />

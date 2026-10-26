@@ -25,6 +25,7 @@ import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { Container } from "@/shared/components/section";
 import { ShimmerTitle } from "@/shared/components/shimmer-title";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
@@ -354,6 +355,8 @@ export function ExplorePage() {
                 : bt("조건은 됐고, 그냥 놀래켜줘", "Skip the filters — surprise me")}
             </Link>
           </div>
+
+          <NanoBananaSurfaceSpotlight cardId="nb-explore-spectrum" compact className="mt-6" />
 
           <RevealOnScroll className="mt-8" delayMs={60}>
             <div

@@ -26,6 +26,7 @@ import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/l
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
@@ -265,6 +266,8 @@ export function DiscoverHubPage() {
         </nav>
         <CatalogSnapshotLine snapshot={home.data} loading={home.loading} onArt={!showSpotlight} />
       </SitePageHeader>
+
+      <NanoBananaSurfaceSpotlight cardId="nb-discover-spotlight" compact className="mt-5" />
 
       <section
         aria-label={bt("연재 트랙 스위처", "Serialization track switcher")}

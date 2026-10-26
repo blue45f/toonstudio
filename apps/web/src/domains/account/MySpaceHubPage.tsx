@@ -32,6 +32,7 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import {
   creatorDestinationLabel,
@@ -252,6 +253,8 @@ export function MySpaceHubPage() {
           </dl>
         ) : null}
       </SitePageHeader>
+
+      <NanoBananaSurfaceSpotlight cardId="nb-manage-vault" compact className="mt-5" />
 
       <section className="mt-5" aria-label={recent ? (studioRecent ? copy.continueTitle : copy.revisitTitle) : copy.emptyTitle} data-my-space-next-action="true">
         {recent ? (

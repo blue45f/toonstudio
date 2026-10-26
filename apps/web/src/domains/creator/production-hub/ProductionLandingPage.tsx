@@ -31,6 +31,7 @@ import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionLandingBackdropBadge, ProductionLandingBackdropMedia } from "./ProductionLandingBackdrop";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
@@ -560,6 +561,8 @@ export function ProductionLandingPage() {
             </div>
           </div>
         </header>
+
+        <NanoBananaSurfaceSpotlight cardId="nb-production-control" compact className="mt-6" />
 
         {userId ? (
           <PortfolioSection

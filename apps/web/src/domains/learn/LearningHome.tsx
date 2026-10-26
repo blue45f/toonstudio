@@ -21,6 +21,7 @@ import { SiteRail, SiteShowMoreButton } from "@/domains/legal/public/site-rail";
 import { SiteSectionTabs, SiteTabPanel, type SiteSectionTab } from "@/domains/legal/public/site-section-tabs";
 import { useShowMore } from "@/domains/legal/public/site-show-more";
 import { useSiteTabAnchors, useSiteTabs } from "@/domains/legal/public/site-tabs";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { WorkflowIllustration } from "@/shared/components/site-experience/WorkflowIllustration";
 
 import { LESSONS, TERMS } from "./learning-content";
@@ -400,6 +401,8 @@ export function LearningHome() {
           ))}
         </div>
       </section>
+
+      <NanoBananaSurfaceSpotlight cardId="nb-learn-academy" compact className="mt-6" />
 
       <section id={LEARN_TAB_PREFIX} className="learn-hub-tabs" aria-label="학습 영역">
         <SiteSectionTabs tabs={hubTabs} value={activeTab} onChange={selectTab} label="학습 영역" idPrefix={LEARN_TAB_PREFIX} />

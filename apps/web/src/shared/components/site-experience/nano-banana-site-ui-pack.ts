@@ -1,7 +1,4 @@
-import {
-  resolveSiteRouteVisualKind,
-  type SiteRouteVisualKind,
-} from "@/shared/lib/site-route-visual";
+import type { SiteRouteVisualKind } from "@/shared/lib/site-route-visual";
 import { NANO_BANANA_SITE_CARDS } from "./nano-banana-site-cards-data";
 
 export type SiteDesignDomain =
@@ -234,5 +231,9 @@ export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCa
     return NANO_BANANA_SITE_CARDS["nb-trust-sanctuary"];
   }
 
-  return resolveNanoBananaCardForRouteVisual(resolveSiteRouteVisualKind(clean));
+  if (clean.startsWith("/admin")) {
+    return NANO_BANANA_SITE_CARDS["nb-production-control"];
+  }
+
+  return NANO_BANANA_SITE_CARDS["nb-workflow-bridge"];
 }

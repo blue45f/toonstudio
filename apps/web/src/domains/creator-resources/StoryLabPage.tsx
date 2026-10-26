@@ -20,6 +20,7 @@ import {
 import { MotionIllustration } from "@/shared/motion-assets";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 const SCOPE = "domains.creator.resources.StoryLabPage";
@@ -126,6 +127,7 @@ export function StoryLabPage() {
       alt: tx("인물 스케치와 사건 사진을 붉은 실로 이어 붙인 스토리 연구실의 코르크보드와 램프가 켜진 책상"),
     }}>
     <SiteContextualSubNav pathnameOverride="/story-lab" className="mb-5" />
+    <NanoBananaSurfaceSpotlight cardId="nb-planning-storylab" compact className="mb-5" />
     <section
       aria-label={tx("노블코믹스 · 원작 각색 → 콘티 4단계 파이프라인")}
       data-testid="story-lab-rea-pipeline"
