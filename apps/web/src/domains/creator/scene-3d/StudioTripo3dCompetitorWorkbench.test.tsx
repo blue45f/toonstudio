@@ -79,15 +79,19 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
     // Tripo3D MCP + GLBForge MCP + VRM Toolkit MCP 실생성 에셋 라이브러리 검증
     expect(screen.getByTestId("tripo3d-mcp-generated-models-section")).toBeTruthy();
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
+      "tripo_h31_korean_convenience_store.glb",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-mcp-model-tripo3d-mcp-bg-korean-alley-stairway"));
+    expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
       "webtoon_korean_alley_stairway_module.glb",
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-mannequin"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "mannequin_articulated_calibration_rig.glb",
+      "tripo_h31_articulated_artist_mannequin.glb",
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-character-lab"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "character_lab_crest_shoulder_pauldron.glb",
+      "tripo_h31_webtoon_protagonist_character.glb",
     );
     expect(screen.getByTestId("vrm-toolkit-mcp-avatar-summary").textContent).toContain(
       "Avatar_Orion.vrm",

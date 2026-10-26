@@ -25,7 +25,9 @@ import {
   simulateGlbForgeAuditAndOptimization,
   TRIPO_STUDIO_12_WORKSPACES,
   TRIPO_TEXT_TO_MOTION_PRESETS,
+  TRIPO3D_MCP_GENERATED_MODELS,
   VRM_FRAMING_PRESETS,
+  VRM_TOOLKIT_MCP_INSPECTED_AVATARS,
 } from "./studio-tripo3d-ecosystem-engine";
 
 describe("studio-tripo3d-competitor-engine", () => {
@@ -237,5 +239,11 @@ describe("studio-tripo3d-competitor-engine", () => {
     expect(relief.preset.id).toBe("neon");
     expect(relief.watertightStlReady).toBe(true);
     expect(relief.summaryKo).toContain("야경 네온사인 간판");
+
+    expect(TRIPO3D_MCP_GENERATED_MODELS).toHaveLength(13);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d")).toHaveLength(6);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin")).toHaveLength(3);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab")).toHaveLength(4);
+    expect(VRM_TOOLKIT_MCP_INSPECTED_AVATARS).toHaveLength(2);
   });
 });
