@@ -65,7 +65,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - name: Install isolated TypeScript checker
@@ -84,7 +84,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - uses: pnpm/action-setup@v6
