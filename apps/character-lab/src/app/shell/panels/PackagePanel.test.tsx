@@ -510,5 +510,6 @@ describe("PackagePanel — 모듈식 키트", () => {
     expect(male.disabled).toBe(true);
     expect(male.title).toMatch(/해당 베이스가 없습니다/u);
     expect(document.querySelector('td[data-base="male"]')).toBeNull();
+    expect(screen.getByTestId("shaper-package-asset-check").textContent).toContain("SHAPER 에셋 버전 진단");
   });
 });

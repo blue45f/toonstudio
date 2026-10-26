@@ -7,8 +7,11 @@ import {
   buildSubdivisionPlan,
   catmullClark,
   computeSeamCentroids3Zone,
+  computeShaperContourNormal3d,
   computeShaperControlEdgeTransform,
+  computeShaperSignedContourArea2d,
   computeShaperVertexKeyHash,
+  evaluateShaperTessWindingRule,
   expandWelded,
   findAdjacentBodyPartSeamPairs,
   findCoincidentVertexGroups,
@@ -18,11 +21,14 @@ import {
   liftRegions,
   lockCoincidentSeamVertices,
   matchNeckSeamVertices,
+  normalizeShaperContourOrientation,
   parseShaperQuadObj,
   predictVertexCount,
+  projectShaperContour3dTo2d,
   recalculateCreaseNormals,
   selectControlPointsInScreenRect,
   subdividedToTriMesh,
+  tessellateShaperPolygonContour,
   weldAdjacentBodyPartNormals,
   weldNeckSeamPositionsAndNormals,
 } from "./subdivision";
@@ -450,5 +456,60 @@ describe("SHAPER 준-샤프(Semi-Sharp) 세분화 및 파츠/목 심(Seam) 정�
     // thickness = 10 * 0.0005 * (60 / 30) = 0.01
     expect(edgeGizmo.thickness).toBeCloseTo(0.01, 6);
     expect(edgeGizmo.localScale).toEqual([0.01, 0.01, 2]);
+  });
+
+  it("LibTessDotNet.Tess: 5종 와인딩 규칙, 3D 평면 법선·정사영(ProjectPolygon), ConnectedPolygons 삼각분할을 수행한다", () => {
+    expect(evaluateShaperTessWindingRule(1, "even-odd")).toBe(true);
+    expect(evaluateShaperTessWindingRule(2, "even-odd")).toBe(false);
+    expect(evaluateShaperTessWindingRule(-1, "non-zero")).toBe(true);
+    expect(evaluateShaperTessWindingRule(-1, "positive")).toBe(false);
+    expect(evaluateShaperTessWindingRule(-1, "negative")).toBe(true);
+    expect(evaluateShaperTessWindingRule(-2, "abs-geq-two")).toBe(true);
+    expect(evaluateShaperTessWindingRule(1, "abs-geq-two")).toBe(false);
+
+    // 시계 방향 2D 사각형 -> 부호 면적 음수, counter-clockwise 정규화 시 역전
+    const cwQuad: readonly (readonly [number, number])[] = [
+      [0, 0],
+      [0, 2],
+      [2, 2],
+      [2, 0],
+    ];
+    expect(computeShaperSignedContourArea2d(cwQuad)).toBeCloseTo(-4, 6);
+    const normalizedCcw = normalizeShaperContourOrientation(cwQuad, (p) => p, "counter-clockwise");
+    expect(computeShaperSignedContourArea2d(normalizedCcw)).toBeCloseTo(4, 6);
+
+    // 3D 오각형 컨투어 (XZ 평면, Y=3 일정 -> 지배 법선 축 Y=1)
+    const pentagon3d: readonly (readonly [number, number, number])[] = [
+      [0, 3, 0],
+      [2, 3, 0],
+      [3, 3, 1.5],
+      [1, 3, 3],
+      [-1, 3, 1.5],
+    ];
+    const normal = computeShaperContourNormal3d(pentagon3d);
+    expect(Math.abs(normal[1])).toBeCloseTo(1, 5);
+
+    const projected = projectShaperContour3dTo2d(pentagon3d);
+    expect(projected.dominantAxis).toBe(1);
+    expect(projected.bounds2d[1] - projected.bounds2d[0]).toBeGreaterThan(0);
+    expect(projected.bounds2d[3] - projected.bounds2d[2]).toBeGreaterThan(0);
+
+    const tessellated = tessellateShaperPolygonContour(pentagon3d, {
+      orientation: "counter-clockwise",
+      noEmptyPolygons: true,
+      connectedPolygons: true,
+    });
+    // 오각형 -> 삼각형 3개, ConnectedPolygons elements 길이 = 3 * 6 = 18
+    expect(tessellated.triangleCount).toBe(3);
+    expect(tessellated.triangleIndices.length).toBe(9);
+    expect(tessellated.elements.length).toBe(18);
+    // 내부 공유 엣지는 인접 삼각형 인덱스(>=0), 외곽 경계 엣지는 -1
+    const neighborSlots = [
+      tessellated.elements[3],
+      tessellated.elements[4],
+      tessellated.elements[5],
+    ];
+    expect(neighborSlots.some((n) => n !== undefined && n >= 0)).toBe(true);
+    expect(neighborSlots.some((n) => n === -1)).toBe(true);
   });
 });

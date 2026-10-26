@@ -7,7 +7,9 @@ import {
   KIT_SKIN_OUTLINE_WIDTH_SCALE,
   SHAPER_OUTLINE_PRESSURE_OFF_ASPECT,
   SHAPER_OUTLINE_PRESSURE_ON_ASPECT,
+  SHAPER_SELECTION_OUTLINE_COLORS,
   computeAnisotropicOutlineOffset,
+  computeShaperSelectionOutlineEffect,
   hullOutlineAllowed,
   hullOutlineWidthScale,
   resolveOutlinePressureAspect,
@@ -58,5 +60,19 @@ describe("hull 외곽선 정책(A-5·A-9)", () => {
     expect(shouldSuppressHairInline("hair", true)).toBe(true);
     expect(shouldSuppressHairInline("hair", false)).toBe(false);
     expect(shouldSuppressHairInline("skin", true)).toBe(false);
+
+    const selection2k = computeShaperSelectionOutlineEffect({
+      lineThickness: 2.0,
+      lineIntensity: 0.8,
+      fillAmount: 0.35,
+      colorIndex: 1,
+      scaleWithScreenSize: true,
+      viewportHeightPx: 2160,
+      cornerOutlines: true,
+    });
+    expect(selection2k.effectiveLineThickness).toBeCloseTo(4.0, 4);
+    expect(selection2k.fillAmount).toBeCloseTo(0.35, 4);
+    expect(selection2k.colorHex).toBe(SHAPER_SELECTION_OUTLINE_COLORS[1]);
+    expect(selection2k.cornerSampleMultiplier).toBe(2);
   });
 });
