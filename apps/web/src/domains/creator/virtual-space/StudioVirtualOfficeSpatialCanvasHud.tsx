@@ -23,6 +23,8 @@ export interface StudioVirtualOfficeSpatialCanvasHudProps {
   ) => void;
 }
 
+const SPATIAL_QUICK_COMMANDS_COUNT = 6;
+
 export function StudioVirtualOfficeSpatialCanvasHud({
   onNavigateToTab,
 }: StudioVirtualOfficeSpatialCanvasHudProps) {
@@ -123,7 +125,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             onChange={(e) => {
               const nextId = e.target.value as BiophilicAtmospherePresetId;
               setHudState((prev) => setSpatialCanvasAtmospherePreset(prev, nextId));
-              setHudToastKo(`바이오필릭 공간 조명 테마를 변경했습니다.`);
+              setHudToastKo("바이오필릭 공간 조명 테마를 변경했습니다.");
             }}
             className="rounded-lg border border-line bg-panel px-2 py-1 text-xs"
           >
@@ -141,7 +143,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
         className="relative overflow-hidden rounded-xl border border-line p-2"
         style={{ background: activePreset.canvasGradientCss }}
       >
-        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-200">
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-fg-2">
           <span aria-live="polite" data-testid="spatial-hud-toast">
             ✨ {hudToastKo}
           </span>
@@ -165,7 +167,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
         >
           <defs>
             <pattern id="spatial-grid-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="rgba(148, 163, 184, 0.24)" />
+              <circle cx="2" cy="2" r="1" fill="var(--color-line)" />
             </pattern>
             <radialGradient id="voice-aura-grad" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor={activePreset.accentStrokeHex} stopOpacity="0.42" />
@@ -178,12 +180,6 @@ export function StudioVirtualOfficeSpatialCanvasHud({
           {/* Clickable Room Zones */}
           {hudState.zones.map((zone) => {
             const isSelected = hudState.selectedZoneId === zone.zoneId;
-            const heatOpacity =
-              hudState.viewMode === "acoustic-heatmap"
-                ? Math.min(0.55, zone.acousticDbLevel / 110)
-                : isSelected
-                  ? 0.24
-                  : 0.12;
             return (
               <g
                 key={zone.zoneId}
@@ -202,23 +198,30 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                   rx={12}
                   fill={
                     hudState.viewMode === "acoustic-heatmap"
-                      ? `rgba(56, 189, 248, ${heatOpacity})`
-                      : `rgba(15, 23, 42, ${0.58 + heatOpacity})`
+                      ? "var(--color-raised)"
+                      : "var(--color-panel)"
                   }
-                  stroke={isSelected ? activePreset.accentStrokeHex : "rgba(148, 163, 184, 0.35)"}
+                  fillOpacity={
+                    hudState.viewMode === "acoustic-heatmap"
+                      ? Math.min(0.95, 0.35 + zone.acousticDbLevel / 100)
+                      : isSelected
+                        ? 0.94
+                        : 0.8
+                  }
+                  stroke={isSelected ? activePreset.accentStrokeHex : "var(--color-line)"}
                   strokeWidth={isSelected ? 2.2 : 1.2}
                   strokeDasharray={zone.soundproofed ? "0" : "5 3"}
                 />
                 <text
                   x={zone.x + 12}
                   y={zone.y + 22}
-                  fill="#f8fafc"
+                  fill="var(--color-fg)"
                   fontSize="11.5"
                   fontWeight="600"
                 >
                   {zone.categoryIcon} {zone.labelKo}
                 </text>
-                <text x={zone.x + 12} y={zone.y + 40} fill="#cbd5e1" fontSize="10">
+                <text x={zone.x + 12} y={zone.y + 40} fill="var(--color-fg-2)" fontSize="10">
                   {zone.locked ? "🔒 노크 필요" : "🔓 즉시 입장"} ·{" "}
                   {zone.soundproofed ? "🛡️ 방음 룸" : "🌊 개방형"} · {zone.acousticDbLevel}dB
                 </text>
@@ -228,13 +231,13 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                   width={Math.min(zone.width - 24, 152)}
                   height={18}
                   rx={5}
-                  fill="rgba(30, 41, 59, 0.85)"
-                  stroke="rgba(148, 163, 184, 0.3)"
+                  fill="var(--color-card)"
+                  stroke="var(--color-line)"
                 />
                 <text
                   x={zone.x + 18}
                   y={zone.y + zone.height - 13}
-                  fill="#93c5fd"
+                  fill="var(--color-accent)"
                   fontSize="9.5"
                 >
                   💻 {zone.activeDccBadge}
@@ -280,8 +283,8 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               ) : null}
               <circle
                 r="14"
-                fill={avatar.isSelf ? "#2563eb" : "#1e293b"}
-                stroke={avatar.isSelf ? "#93c5fd" : "#64748b"}
+                fill={avatar.isSelf ? "var(--color-accent)" : "var(--color-raised)"}
+                stroke={avatar.isSelf ? "var(--color-cool)" : "var(--color-line)"}
                 strokeWidth="2"
               />
               <text textAnchor="middle" y="4" fontSize="12">
@@ -293,9 +296,16 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                 width="108"
                 height="16"
                 rx="6"
-                fill="rgba(15, 23, 42, 0.88)"
+                fill="var(--color-card)"
+                stroke="var(--color-line)"
               />
-              <text textAnchor="middle" y="28" fill="#f8fafc" fontSize="9.5" fontWeight="500">
+              <text
+                textAnchor="middle"
+                y="28"
+                fill="var(--color-fg)"
+                fontSize="9.5"
+                fontWeight="500"
+              >
                 {avatar.displayNameKo}
               </text>
             </g>
@@ -306,7 +316,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
         <div
           role="toolbar"
           aria-label="가상 오피스 플로팅 퀵 컨트롤 독"
-          className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-xs text-slate-100 backdrop-blur-md"
+          className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel/90 px-3 py-2 text-xs text-fg backdrop-blur-md"
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <button
@@ -323,8 +333,8 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               }}
               className={`rounded-lg border px-2.5 py-1 font-medium transition ${
                 !hudState.dockMicMuted
-                  ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-200"
-                  : "border-rose-400/50 bg-rose-500/20 text-rose-200"
+                  ? "border-good bg-good-soft text-good"
+                  : "border-bad bg-bad-soft text-bad"
               }`}
             >
               {hudState.dockMicMuted ? "🔇 마이크 꺼짐" : "🎙️ 지향성 마이크 켜짐"}
@@ -337,7 +347,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                 setHudState((prev) => rotateSelfAvatarVoiceCone(prev, 30));
                 setHudToastKo("내 아바타 시선 및 지향성 음성 콘 방향을 +30° 회전했습니다.");
               }}
-              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 hover:bg-white/15"
+              className="rounded-lg border border-line bg-card px-2.5 py-1 hover:border-accent"
             >
               🧭 음성 콘 회전 (+30°)
             </button>
@@ -352,8 +362,8 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               }}
               className={`rounded-lg border px-2.5 py-1 transition ${
                 hudState.dockMegaphoneActive
-                  ? "border-amber-400/60 bg-amber-500/25 font-semibold text-amber-200"
-                  : "border-white/20 bg-white/10"
+                  ? "border-warn bg-warn-soft font-semibold text-warn"
+                  : "border-line bg-card"
               }`}
             >
               📢 {hudState.dockMegaphoneActive ? "메가폰 방송 중" : "메가폰"}
@@ -369,8 +379,8 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               }}
               className={`rounded-lg border px-2.5 py-1 transition ${
                 hudState.dockFocusHelmetOn
-                  ? "border-purple-400/60 bg-purple-500/25 font-semibold text-purple-200"
-                  : "border-white/20 bg-white/10"
+                  ? "border-accent bg-accent-soft font-semibold text-accent"
+                  : "border-line bg-card"
               }`}
             >
               ⛑️ {hudState.dockFocusHelmetOn ? "초집중 헬멧 착용 중" : "상태 모자"}
@@ -387,7 +397,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                 commandPaletteOpen: !prev.commandPaletteOpen,
               }))
             }
-            className="rounded-lg border border-sky-400/50 bg-sky-500/20 px-3 py-1 font-semibold text-sky-200 hover:bg-sky-500/30"
+            className="rounded-lg border border-accent bg-accent-soft px-3 py-1 font-semibold text-accent hover:opacity-90"
           >
             ⌘K 공간 커맨드 런처 ({SPATIAL_QUICK_COMMANDS_COUNT}종)
           </button>
@@ -438,7 +448,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                   <div className="font-semibold">{cmd.titleKo}</div>
                   <div className="text-[10px] text-fg-2">{cmd.categoryKo}</div>
                 </div>
-                <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 text-[10px] font-mono">
+                <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[10px]">
                   {cmd.shortcutLabel}
                 </kbd>
               </button>
@@ -449,5 +459,3 @@ export function StudioVirtualOfficeSpatialCanvasHud({
     </section>
   );
 }
-
-const SPATIAL_QUICK_COMMANDS_COUNT = 6;
