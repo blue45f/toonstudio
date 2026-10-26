@@ -5,14 +5,22 @@ import {
   CotransVroidSkyboxWorldLocalizerSchema,
   KreaSplineLumiereRealtimeShaderSchema,
   LtxBoordsCascadeurRiveAnimaticSchema,
+  NijiPixaiCivitaiLoraSrefDirectorSchema,
+  RunwayLumaPikaViggleLive2dSpineMotionSchema,
+  SketchupBlenderPetalicaMagmaRecraftStudioSchema,
   StoryboarderDreamsKritaArtbreederDirectorSchema,
   TootoonGentoonTooningKrSuiteSchema,
+  TripoMeshyHeroforgeSunoElevenlabsOsmuSchema,
   type CotransVroidSkyboxWorldLocalizerReport,
   type KreaSplineLumiereRealtimeShaderReport,
   type LtxBoordsCascadeurRiveAnimaticReport,
+  type NijiPixaiCivitaiLoraSrefDirectorReport,
   type Rea15Envelope,
+  type RunwayLumaPikaViggleLive2dSpineMotionReport,
+  type SketchupBlenderPetalicaMagmaRecraftStudioReport,
   type StoryboarderDreamsKritaArtbreederDirectorReport,
   type TootoonGentoonTooningKrSuiteReport,
+  type TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
 } from "./claude-rea15-webtoon-ecosystem-schemas";
 import type {
   RunWebtoonProductionAssistOptions,
@@ -409,3 +417,339 @@ export async function runStoryboarderDreamsKritaArtbreederDirectorAssist(
     fallbackReport,
   });
 }
+
+/* ============================================================================
+ * 11. Wave 5: NijiJourney V6 · PixAI · Civitai · TensorArt · WaifuLabs · Picrew · CHARAT 디렉터
+ * ============================================================================ */
+
+export function buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(
+  input: WebtoonProductionAssistInput = {},
+): NijiPixaiCivitaiLoraSrefDirectorReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
+
+  return {
+    loraAndSrefSummaryKo: `NijiJourney V6(--style expressive·--sref·--cref), Civitai·PixAI.Art·SeaArt·Tensor.Art의 Illustrious/NoobAI 다중 LoRA 가중치 스택, Moescape Tavern 페르소나 훅, 그리고 Waifu Labs 4단 잠재 그리드 및 Picrew/CHARAT 파츠 레이어 Z-order를 통합한 ${genre} 캐릭터·화풍 일관성 디렉팅 사양입니다.`,
+    nijiJourneyV6Spec: {
+      nijiStyleMode: "expressive",
+      srefCode: "sref-4829103744",
+      styleWeightSw: 240,
+      characterWeightCw: 95,
+      compiledNijiPrompt: `${protagonist} and ${partner} standing in a shattered celestial sanctum, dramatic cyan rim light, manhwa vertical composition, sharp cel-shading --niji 6 --style expressive --sref 4829103744 --sw 240 --cw 95 --ar 9:16`,
+    },
+    civitaiPixaiTensorLoraStack: {
+      baseCheckpointModel: "Illustrious-XL-v1.1-Manhwa-Tune",
+      loraAdapters: [
+        {
+          loraNameKo: "K-Webtoon S-Rank Lineart & RimLight v2",
+          platformSource: "Civitai / Tensor.Art",
+          weight: 0.75,
+          triggerWords: "kwebtoon_line, crisp_cel_shade, glowing_cyan_rim",
+        },
+        {
+          loraNameKo: "PixAI Dynamic Action Speedline & Aura",
+          platformSource: "PixAI.Art / SeaArt AI",
+          weight: 0.55,
+          triggerWords: "mana_vortex, slash_motion_blur, dramatic_backlight",
+        },
+      ],
+      controlNetPreprocessor: "AnyLine + Depth-Anything-V2 + OpenPose-Full (Weight 0.85)",
+      moescapeTavernPersonaHookKo: `${protagonist} 냉철한 반말 어조와 ${partner}의 결단력 있는 대사 턴을 Moescape Tavern 롤플레이 시뮬레이터로 사전 검증 완료`,
+    },
+    waifuLabsPicrewCharatModularParts: {
+      waifuLabs4StepSeedGridKo:
+        "Step 1 초기 실루엣 시드(#09) → Step 2 청록/보라 야간 팔레트(#14) → Step 3 날카로운 눈매 디테일(#03) → Step 4 전투 스탠스 포즈(#11)",
+      picrewLayerZOrder: [
+        "01_back_cloak_wing",
+        "02_base_body_neck",
+        "03_uniform_armor_torso",
+        "04_face_expression_eyes",
+        "05_front_hair_bangs",
+        "06_foreground_mana_weapon_fx",
+      ],
+      charatPngTuberExpressions: [
+        "idle_calm_blink",
+        "speaking_determined",
+        "awakened_glow_eyes",
+        "shocked_combat_alert",
+      ],
+      paletteSwapHexList: ["#0D111A", "#A855F7", "#E879F9", "#38BDF8", "#FF477E"],
+    },
+  };
+}
+
+export async function runNijiPixaiCivitaiLoraSrefDirectorAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<NijiPixaiCivitaiLoraSrefDirectorReport>> {
+  const fallbackReport = buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:niji-pixai-civitai-lora-sref-director",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 NijiJourney V6(--style/--sref/--cref), Civitai·PixAI.Art·SeaArt AI·Tensor.Art(Illustrious/SDXL 체크포인트·다중 LoRA·ControlNet), Moescape AI, Waifu Labs(4단계 16-그리드), Picrew·CHARAT(파츠 레이어 Z-order & PNGTuber 표정 시트)를 통합 지휘하는 서브컬처·웹툰 캐릭터 화풍 총괄 디렉터입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 대본과 장르에 최적화된 NijiJourney V6 프롬프트/가중치, Civitai/PixAI/TensorArt LoRA 스택 2종 및 ControlNet 구성, 그리고 WaifuLabs 4단 시드 그리드와 Picrew/CHARAT 모듈형 파츠 레이어 사양을 생성하세요.",
+    schema: NijiPixaiCivitaiLoraSrefDirectorSchema,
+    fallbackReport,
+  });
+}
+
+/* ============================================================================
+ * 12. Wave 5: Tripo3D · Meshy 7 · HeroForge 3D 소품/갑주 · Suno V6 OST · ElevenLabs 더빙 · MANGA Plus 디렉터
+ * ============================================================================ */
+
+export function buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(
+  input: WebtoonProductionAssistInput = {},
+): TripoMeshyHeroforgeSunoElevenlabsOsmuReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
+
+  return {
+    osmuExecutiveSummaryKo: `Tripo 3D·Meshy 7·Hero Forge의 3D 판타지 무기/갑주/성소 소품 쿼드 메쉬 및 툰 텍스처 베이킹과 Suno V6 에피소드 테마 OST, ElevenLabs 다중 성우 감정 더빙/폴리 SFX, 그리고 슈에이샤 MANGA Plus Creators 글로벌 동시 연재 패키지를 통합한 입체 제작·OSMU 사양입니다.`,
+    tripoMeshyHeroforge3dPropSpec: {
+      targetPropAndArmorNameKo: `${protagonist}의 각성 아케인 성검 & ${partner}의 크로노스 성유물 갑주`,
+      tripoQuadPolyCount: 28_500,
+      meshyTextureStyle: "toon-cel-pbr",
+      heroforgePosePresetKo: "HeroForge Dynamic Low-Angle Blade Draw + Floating Rune Base",
+      toonOutlineThicknessMm: 1.35,
+    },
+    sunoAndElevenLabsAudioScore: {
+      sunoV6TrackTitleKo: `${genre} — Sanctum Awakening (Suno V6 Orchestral Hybrid OST)`,
+      sunoGenreAndBpmTags: "Dark Orchestral Hybrid, Choir, Synth Arpeggio, C Minor, 134 BPM",
+      stemSeparationChannels: ["Vocals/Choir", "Strings & Brass", "Taiko Percussion", "Sub-Bass & Drone"],
+      elevenLabsVoiceCast: [
+        {
+          characterNameKo: protagonist,
+          voiceTimbreKo: "중저음의 절제된 긴장감과 폭발적 각성 톤을 오가는 남성 주연 보이스",
+          stabilityPct: 68,
+          styleExaggerationPct: 82,
+        },
+        {
+          characterNameKo: partner,
+          voiceTimbreKo: "선명하고 단호한 호흡과 미세한 떨림이 공존하는 여성 주연 보이스",
+          stabilityPct: 74,
+          styleExaggerationPct: 78,
+        },
+      ],
+      foleySfxPromptKo:
+        "Shattering ancient stone seal followed by resonant crystalline sword unsheathing and deep mana hum",
+    },
+    mangaPlusCreatorsGlobalRelease: {
+      readingMode: "vertical-scroll",
+      localizedLanguages: ["ko-KR", "en-US", "ja-JP", "es-ES"],
+      shueishaMonthlyAwardTargetScore: 95,
+      globalPromoHookKo:
+        "3D 아케인 유물 연출과 Suno V6·ElevenLabs 오디오툰 트랙을 결합한 MANGA Plus Creators 글로벌 동시 런칭",
+    },
+  };
+}
+
+export async function runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<TripoMeshyHeroforgeSunoElevenlabsOsmuReport>> {
+  const fallbackReport = buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 Tripo 3D(쿼드 리토폴로지·오토리깅), Meshy 7(Text/Image-to-3D·PBR/툰 텍스처), Hero Forge(판타지 갑주·무기·포토부스), Suno V6(웹툰 OST·스템 분리), ElevenLabs(다중 성우 더빙·폴리 SFX), MANGA Plus Creators by SHUEISHA(글로벌 투고·어워드) 통합 총괄 프로듀서입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 장면을 위한 Tripo3D/Meshy 7/HeroForge 3D 무기·소품 메쉬 사양, Suno V6 OST 및 ElevenLabs 주연 2인 보이스/폴리 SFX 큐시트, 그리고 MANGA Plus Creators 글로벌 투고 전략을 설계하세요.",
+    schema: TripoMeshyHeroforgeSunoElevenlabsOsmuSchema,
+    fallbackReport,
+  });
+}
+
+/* ============================================================================
+ * 13. Wave 6: Runway Gen-4.5 · Luma Ray 2 · Pika 2.2 · Viggle JST-2 · Live2D Cubism · Spine 2D 무빙툰 디렉터
+ * ============================================================================ */
+
+export function buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(
+  input: WebtoonProductionAssistInput = {},
+): RunwayLumaPikaViggleLive2dSpineMotionReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
+
+  return {
+    movingToonExecutiveSummaryKo: `Runway Gen-4.5 Multi-Motion Brush(5영역 X/Y/Z/Ambient 제어), Luma Dream Machine Ray 2 Start/End 키프레임 모핑, Pika 2.2 Pikaffects 물리 타격, Viggle JST-2 3D 모션 전이(/mix), 그리고 Live2D Cubism 5 ArtMesh/Warp 디포머와 Spine 2D IK 본 스켈레탈 리그를 통합한 ${genre} 무빙툰·숏폼 트레일러 연출 사양입니다.`,
+    motionBrushAndCameraRig: {
+      runwayMotionBrushVectors: [
+        {
+          regionNameKo: `${protagonist} 망토·앞머리 역풍 레이어`,
+          horizontalX: 4.2,
+          verticalY: -1.5,
+          proximityZ: 0.8,
+          ambientNoise: 3.4,
+        },
+        {
+          regionNameKo: `${partner} 아케인 마력 오라 파티클`,
+          horizontalX: -2.1,
+          verticalY: 5.6,
+          proximityZ: 2.5,
+          ambientNoise: 4.8,
+        },
+      ],
+      lumaStartEndKeyframeLock: {
+        startKeyframePromptKo: `컷 #14: ${protagonist}이(가) 검자루를 쥔 로우앵글 정지 구도`,
+        endKeyframePromptKo: `컷 #15: 청록색 검기가 화면 대각선을 가르며 ${partner}와 교차하는 클라이맥스`,
+        cameraOrbitAndDollyKo: "Fast Dolly-In + 18° Counter-Clockwise Dutch Roll Orbit",
+      },
+      pikaffectsAndPhysics: {
+        effectPreset: "mana-shatter",
+        lipSyncPhonemeFps: 24,
+      },
+      viggleJst2MotionTransfer: {
+        commandMode: "/mix",
+        drivingMotionSourceKo: "고속 검술 발도 & 공중 회전 착지 스턴트 레퍼런스 영상 (60fps)",
+        backgroundPlateMode: "toon-bg-lock",
+      },
+    },
+    live2dAndSpine2dRig: {
+      live2dArtMeshVertexCount: 1_840,
+      warpDeformerGrid: "8x8 Bezier Warp Deformer + Head XYZ Rotation Deformer",
+      eyeBlinkAndLipSyncParams: [
+        "ParamEyeLOpen",
+        "ParamEyeROpen",
+        "ParamEyeBallX",
+        "ParamMouthOpenY",
+        "ParamBreath",
+      ],
+      spine2dIkConstraints: [
+        "IK_SwordArm_TwoBone",
+        "IK_FootGroundPin_Left",
+        "IK_FootGroundPin_Right",
+        "TransformConstraint_ShoulderFollow",
+      ],
+      hairAndCapePhysicsDamping: 0.86,
+    },
+  };
+}
+
+export async function runRunwayLumaPikaViggleLive2dSpineMotionAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<RunwayLumaPikaViggleLive2dSpineMotionReport>> {
+  const fallbackReport = buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:runway-luma-pika-viggle-live2d-spine-motion",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 Runway Gen-4.5(Multi-Motion Brush), Luma Dream Machine(Start/End Keyframe), Pika Art(Pikaffects·립싱크), Viggle AI(JST-2 /mix 모션 전이), Live2D Cubism 5(ArtMesh·Warp Deformer), Spine 2D(IK 본 스켈레탈 리깅)를 통합 지휘하는 무빙툰·모션 그래픽 총괄 감독입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 대본과 캐릭터를 바탕으로 Runway 모션 브러시 2개 영역 벡터, Luma 시작/끝 키프레임, Pikaffects/Viggle JST-2 모션 전이 설정, 그리고 Live2D Cubism ArtMesh 및 Spine 2D IK 본 리깅 사양을 설계하세요.",
+    schema: RunwayLumaPikaViggleLive2dSpineMotionSchema,
+    fallbackReport,
+  });
+}
+
+/* ============================================================================
+ * 14. Wave 6: SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터
+ * ============================================================================ */
+
+export function buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(
+  input: WebtoonProductionAssistInput = {},
+): SketchupBlenderPetalicaMagmaRecraftStudioReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
+
+  return {
+    hybridStudioExecutiveSummaryKo: `SketchUp 3D Warehouse 동적 배경 컴포넌트·은선 추출, Blender Grease Pencil 3.0 3D 카메라 공간 2D 작화, Pixiv Petalica Paint(Satsuki 셀채색)·OpenArt·Playground AI 스티커 합성, Magma 30인 실시간 분업 캔버스, Recraft V3 CanvasKit 순수 SVG 문양 벡터, 그리고 Cara Glaze/NoAI 창작자 보호를 결합한 ${genre} 하이브리드 스튜디오 사양입니다.`,
+    sketchupAndGreasePencil3d: {
+      warehouseDynamicComponentKo:
+        "황궁 대신전 아치형 성문 & 스테인드글라스 채광창 (SketchUp Dynamic Door/Window Hinge 0°~115°)",
+      hiddenLineStyleAndShadowTime: "Hidden Line 1.2px + Shadow Study 17:45 Sunset (Azimuth 248°, Altitude 16°)",
+      greasePencilStrokeLayers: [
+        "GP_01_3D_Perspective_Guide",
+        "GP_02_Hero_Ink_Lineart",
+        "GP_03_RimLight_Accent_Stroke",
+        "GP_04_Foreground_Speedline_FX",
+      ],
+      cameraPlane3dProjectionNoteKo:
+        "3D 성전 기둥 배열에 Grease Pencil 2D 캐릭터 스트로크를 Z-Depth 투영하여 카메라 패닝 시 완벽한 원근 시차 유지",
+    },
+    petalicaAndOpenArtColorStudio: {
+      petalicaModelStyle: "Satsuki",
+      colorHintStrokeCount: 14,
+      lineSimplifyLevel: 2,
+      openArtDirectorConsistencyScorePct: 96,
+      playgroundMixedCanvasStickerSpecKo: `${protagonist}·${partner} 감정 데코 스티커 및 마법진 글로우 오버레이(Playground Radial Dot Grid 22px 캔버스 합성)`,
+    },
+    magmaRecraftCaraProduction: {
+      magmaCollaboratorRoles: [
+        "1. 콘티/3D 배치 디렉터 (Layer Lock: BG_3D)",
+        "2. 메인 선화 작가 (Layer Lock: Ink_Main)",
+        "3. Petalica 밑색/명암 어시스턴트 (Layer Lock: Cel_Color)",
+        "4. 식자/Recraft SVG 타이포 디자이너 (Layer Lock: SFX_Vector)",
+      ],
+      recraftCanvaskitSvgEmblemKo:
+        "황실 성유물 12각 기하학 마법진 & 에피소드 타이틀 로고 (Recraft V3 Skia CanvasKit 무손실 SVG 패스)",
+      caraGlazeProtectionStrength: "balanced-shield",
+      noAiMetaTagEnabled: true,
+    },
+  };
+}
+
+export async function runSketchupBlenderPetalicaMagmaRecraftStudioAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport>> {
+  const fallbackReport = buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:sketchup-blender-petalica-magma-recraft-studio",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 SketchUp 3D Warehouse(동적 구성요소·은선), Blender Grease Pencil 3.0(3D 공간 2D 작화), Pixiv Petalica Paint(Tanpopo/Satsuki/Canna 자동 채색)·ComicsMaker·OpenArt·Playground AI, Magma(30인 동시 협업 캔버스), Recraft V3(Skia CanvasKit SVG 벡터), Cara(Glaze 적대적 워터마킹·NoAI 보호) 통합 프로덕션 디렉터입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 장면을 위한 SketchUp 3D/Blender Grease Pencil 레이어 설계, Petalica/OpenArt/Playground 채색·스티커 사양, 그리고 Magma 분업 역할·Recraft SVG 벡터·Cara Glaze 원화 보호 파이프라인을 생성하세요.",
+    schema: SketchupBlenderPetalicaMagmaRecraftStudioSchema,
+    fallbackReport,
+  });
+}
+
+export type Rea15WorkbenchTabId =
+  | "glimnavi-relight-v23"
+  | "kaistory-envelope-kaion"
+  | "snaptoon-frameo-shaper-3d"
+  | "manhwa-komiko-anifusion"
+  | "creative-dopamine-ux"
+  | "tootoon-gentoon-tooning-kr"
+  | "krea-spline-lumiere-shader"
+  | "ltx-boords-cascadeur-rive"
+  | "cotrans-vroid-skybox-localizer"
+  | "storyboarder-dreams-krita-artbreeder"
+  | "niji-pixai-civitai-lora-sref"
+  | "tripo-meshy-heroforge-suno-osmu"
+  | "runway-luma-pika-viggle-live2d-spine"
+  | "sketchup-blender-petalica-magma-recraft";
+
+export const REA15_TABS: readonly {
+  readonly id: Rea15WorkbenchTabId;
+  readonly labelKo: string;
+  readonly badgeKo: string;
+  readonly tierBadgeKo: string;
+}[] = [
+  { id: "glimnavi-relight-v23", labelKo: "선화 v1.0~v2.3 · 컬러 분리 · Relight", badgeKo: "그림나비 Studio v2.3", tierBadgeKo: "Haiku 5.5" },
+  { id: "kaistory-envelope-kaion", labelKo: "4단 단일 엔벨로프 · KAION 학습 퀴즈", badgeKo: "KAISTORY · KAITOON", tierBadgeKo: "Sonnet 5.5" },
+  { id: "snaptoon-frameo-shaper-3d", labelKo: "3D 스포트라이트 콘 · SHAPER 직접 드로잉", badgeKo: "Snaptoon · Frameo · SHAPER", tierBadgeKo: "Sonnet 5.5" },
+  { id: "manhwa-komiko-anifusion", labelKo: "6화풍/5톤 · 레이어 분리 · 노드 플로우", badgeKo: "ManhwaAI · Komiko · Anifusion", tierBadgeKo: "Sonnet 5.5" },
+  { id: "creative-dopamine-ux", labelKo: "독자 도파민 히트맵 · UI 테마 합성기", badgeKo: "창의적 AI 특화", tierBadgeKo: "Opus 5.5" },
+  { id: "tootoon-gentoon-tooning-kr", labelKo: "TooToon 5스튜디오 · GenToon 굿즈 · Tooning 6부위", badgeKo: "TooToon · GenToon · Tooning", tierBadgeKo: "Sonnet 5.5" },
+  { id: "krea-spline-lumiere-shader", labelKo: "실시간 디렉터 · 3D 스타일 전이 · WebGPU 셰이더", badgeKo: "Krea · Spline · Lumiere", tierBadgeKo: "Haiku 5.5" },
+  { id: "ltx-boords-cascadeur-rive", labelKo: "프리비즈 애니매틱 · 물리 포징 · Rive 상태머신", badgeKo: "LTX · Boords · Cascadeur · Rive", tierBadgeKo: "Opus 5.5" },
+  { id: "cotrans-vroid-skybox-localizer", labelKo: "식자 인페인팅 · VRM 3D 아바타 · 360° 스카이박스", badgeKo: "Cotrans · VRoid · Skybox AI", tierBadgeKo: "Sonnet 5.5" },
+  { id: "storyboarder-dreams-krita-artbreeder", labelKo: "3D Shot Generator · 퍼포밍 트랙 · ControlNet/유전자", badgeKo: "Storyboarder · Dreams · Krita · Artbreeder", tierBadgeKo: "Opus 5.5" },
+  { id: "niji-pixai-civitai-lora-sref", labelKo: "Niji V6 (--sref/--cref) · LoRA 스택 · Picrew 파츠", badgeKo: "Niji · Civitai · PixAI · Picrew", tierBadgeKo: "Sonnet 5.5" },
+  { id: "tripo-meshy-heroforge-suno-osmu", labelKo: "3D 프롭/미니어처 · Suno OST · ElevenLabs · MANGA Plus", badgeKo: "Tripo3D · Suno · ElevenLabs · OSMU", tierBadgeKo: "Opus 5.5" },
+  { id: "runway-luma-pika-viggle-live2d-spine", labelKo: "모션 브러시 · 키프레임 모핑 · JST-2 · Live2D/Spine 2D", badgeKo: "Runway · Luma · Pika · Viggle · Live2D · Spine", tierBadgeKo: "Opus 5.5" },
+  { id: "sketchup-blender-petalica-magma-recraft", labelKo: "SketchUp/Grease Pencil · Petalica · Magma 협업 · Recraft SVG", badgeKo: "SketchUp · Blender · Petalica · Magma · Recraft", tierBadgeKo: "Sonnet 5.5" },
+];

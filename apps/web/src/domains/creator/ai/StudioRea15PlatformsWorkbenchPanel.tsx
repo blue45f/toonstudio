@@ -1,27 +1,9 @@
 /**
  * StudioRea15PlatformsWorkbenchPanel.tsx
- *
- * Phase 7 글로벌·국내 39대 웹툰·스토리보드·3D·드로잉 AI 보조 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 창의적 AI 워크벤치:
- * - 상단: 39대 플랫폼 REA UI/UX 디자인 토큰 탐색기 (41 브라우저 캡처 evidence_id · sha256 · 컬러 팔레트 · 라우트 · 프리뷰)
- * - 탭 1: 그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터 (`claude-haiku-5-5`)
- * - 탭 2: 카이스토리(KAISTORY) 4단 단일 데이터 엔벨로프 & KAION 웹툰 학습카드·독자 퀴즈 (`claude-sonnet-5-5`)
- * - 탭 3: Snaptoon·Frameo 스포트라이트 콘·NAVER SHAPER 3D 직접 드로잉·Plask/Posemaniacs (`claude-sonnet-5-5`)
- * - 탭 4: ManhwaAI 6대 화풍/5대 톤·Komiko 레이어 분리/인비트윈·Anifusion 노드 플로우 (`claude-sonnet-5-5`)
- * - 탭 5: [창의적 AI] 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & UI/UX 테마 합성기 (`claude-opus-5-5`)
- * - 탭 6: TooToon 5-Studio(fabulator~emporium) · GenToon 뷰어/굿즈 · Tooning 6부위 캐릭터 디렉터 (`claude-sonnet-5-5`)
- * - 탭 7: Krea 실시간 디렉터 · Spline 3D/Hana 스타일 전이 · Lumiere/Graphite/PixiEditor 셰이더 (`claude-haiku-5-5`)
- * - 탭 8: LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터 (`claude-opus-5-5`)
+ * Phase 7 글로벌·국내 80대 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·협업 AI 보조 플랫폼 전수 REA 역공학 및 14대 창의적 AI 워크벤치
  */
 
-import {
-  Activity,
-  Box,
-  GraduationCap,
-  Layers,
-  Palette,
-  Sparkles,
-  Wand2,
-} from "lucide-react";
+import { Activity, Box, GraduationCap, Layers, Palette, Sparkles, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -35,9 +17,13 @@ import {
   buildLocalKreaSplineLumiereRealtimeShaderReport,
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
+  buildLocalNijiPixaiCivitaiLoraSrefDirectorReport,
+  buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport,
+  buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
   buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
+  buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport,
   getRea15PlatformTheme,
   listRea15PlatformThemes,
   runCotransVroidSkyboxWorldLocalizerAssist,
@@ -47,9 +33,13 @@ import {
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
+  runNijiPixaiCivitaiLoraSrefDirectorAssist,
+  runRunwayLumaPikaViggleLive2dSpineMotionAssist,
+  runSketchupBlenderPetalicaMagmaRecraftStudioAssist,
   runSnaptoonFrameoShaper3dDirectorAssist,
   runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
+  runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist,
   type CotransVroidSkyboxWorldLocalizerReport,
   type CreativeDopamineAndUxSynthesizerReport,
   type GlimnaviRelightAndLineartV23Report,
@@ -57,49 +47,24 @@ import {
   type KreaSplineLumiereRealtimeShaderReport,
   type LtxBoordsCascadeurRiveAnimaticReport,
   type ManhwaKomikoAnifusionFlowReport,
+  type NijiPixaiCivitaiLoraSrefDirectorReport,
   type Rea15Envelope,
   type Rea15PlatformId,
+  type RunwayLumaPikaViggleLive2dSpineMotionReport,
+  type SketchupBlenderPetalicaMagmaRecraftStudioReport,
   type SnaptoonFrameoShaper3dDirectorReport,
   type StoryboarderDreamsKritaArtbreederDirectorReport,
   type TootoonGentoonTooningKrSuiteReport,
+  type TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
+import { REA15_TABS, type Rea15WorkbenchTabId } from "./claude/claude-rea39-extended-engines";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
 import { StudioRea39ExtendedTabPanels } from "./StudioRea39ExtendedTabPanels";
-
-export type Rea15WorkbenchTabId =
-  | "glimnavi-relight-v23"
-  | "kaistory-envelope-kaion"
-  | "snaptoon-frameo-shaper-3d"
-  | "manhwa-komiko-anifusion"
-  | "creative-dopamine-ux"
-  | "tootoon-gentoon-tooning-kr"
-  | "krea-spline-lumiere-shader"
-  | "ltx-boords-cascadeur-rive"
-  | "cotrans-vroid-skybox-localizer"
-  | "storyboarder-dreams-krita-artbreeder";
 
 export interface StudioRea15PlatformsWorkbenchPanelProps {
   readonly assistInput: WebtoonProductionAssistInput;
   readonly onAppendDirectionLine: (line: string) => void;
 }
-
-const REA15_TABS: readonly {
-  readonly id: Rea15WorkbenchTabId;
-  readonly labelKo: string;
-  readonly badgeKo: string;
-  readonly tierBadgeKo: string;
-}[] = [
-  { id: "glimnavi-relight-v23", labelKo: "선화 v1.0~v2.3 · 컬러 분리 · Relight", badgeKo: "그림나비 Studio v2.3", tierBadgeKo: "Haiku 5.5" },
-  { id: "kaistory-envelope-kaion", labelKo: "4단 단일 엔벨로프 · KAION 학습 퀴즈", badgeKo: "KAISTORY · KAITOON", tierBadgeKo: "Sonnet 5.5" },
-  { id: "snaptoon-frameo-shaper-3d", labelKo: "3D 스포트라이트 콘 · SHAPER 직접 드로잉", badgeKo: "Snaptoon · Frameo · SHAPER", tierBadgeKo: "Sonnet 5.5" },
-  { id: "manhwa-komiko-anifusion", labelKo: "6화풍/5톤 · 레이어 분리 · 노드 플로우", badgeKo: "ManhwaAI · Komiko · Anifusion", tierBadgeKo: "Sonnet 5.5" },
-  { id: "creative-dopamine-ux", labelKo: "독자 도파민 히트맵 · UI 테마 합성기", badgeKo: "창의적 AI 특화", tierBadgeKo: "Opus 5.5" },
-  { id: "tootoon-gentoon-tooning-kr", labelKo: "TooToon 5스튜디오 · GenToon 굿즈 · Tooning 6부위", badgeKo: "TooToon · GenToon · Tooning", tierBadgeKo: "Sonnet 5.5" },
-  { id: "krea-spline-lumiere-shader", labelKo: "실시간 디렉터 · 3D 스타일 전이 · WebGPU 셰이더", badgeKo: "Krea · Spline · Lumiere", tierBadgeKo: "Haiku 5.5" },
-  { id: "ltx-boords-cascadeur-rive", labelKo: "프리비즈 애니매틱 · 물리 포징 · Rive 상태머신", badgeKo: "LTX · Boords · Cascadeur · Rive", tierBadgeKo: "Opus 5.5" },
-  { id: "cotrans-vroid-skybox-localizer", labelKo: "식자 인페인팅 · VRM 3D 아바타 · 360° 스카이박스", badgeKo: "Cotrans · VRoid · Skybox AI", tierBadgeKo: "Sonnet 5.5" },
-  { id: "storyboarder-dreams-krita-artbreeder", labelKo: "3D Shot Generator · 퍼포밍 트랙 · ControlNet/유전자", badgeKo: "Storyboarder · Dreams · Krita · Artbreeder", tierBadgeKo: "Opus 5.5" },
-];
 
 export function StudioRea15PlatformsWorkbenchPanel({
   assistInput,
@@ -130,6 +95,14 @@ export function StudioRea15PlatformsWorkbenchPanel({
     useState<Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport> | null>(null);
   const [dreamsKritaEnv, setDreamsKritaEnv] =
     useState<Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport> | null>(null);
+  const [loraSrefEnv, setLoraSrefEnv] =
+    useState<Rea15Envelope<NijiPixaiCivitaiLoraSrefDirectorReport> | null>(null);
+  const [tripoSunoEnv, setTripoSunoEnv] =
+    useState<Rea15Envelope<TripoMeshyHeroforgeSunoElevenlabsOsmuReport> | null>(null);
+  const [runwayMotionEnv, setRunwayMotionEnv] =
+    useState<Rea15Envelope<RunwayLumaPikaViggleLive2dSpineMotionReport> | null>(null);
+  const [sketchupStudioEnv, setSketchupStudioEnv] =
+    useState<Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport> | null>(null);
 
   const platformThemes = useMemo(() => listRea15PlatformThemes(), []);
   const activePlatformTheme = useMemo(
@@ -182,6 +155,28 @@ export function StudioRea15PlatformsWorkbenchPanel({
       buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(assistInput),
     [dreamsKritaEnv, assistInput],
   );
+  const currentLoraSrefDirector = useMemo(
+    () =>
+      loraSrefEnv?.report ?? buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(assistInput),
+    [loraSrefEnv, assistInput],
+  );
+  const currentTripoSunoOsmu = useMemo(
+    () =>
+      tripoSunoEnv?.report ?? buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(assistInput),
+    [tripoSunoEnv, assistInput],
+  );
+  const currentRunwayMotion = useMemo(
+    () =>
+      runwayMotionEnv?.report ??
+      buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(assistInput),
+    [runwayMotionEnv, assistInput],
+  );
+  const currentSketchupStudio = useMemo(
+    () =>
+      sketchupStudioEnv?.report ??
+      buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(assistInput),
+    [sketchupStudioEnv, assistInput],
+  );
 
   const activeEnvelope =
     activeTab === "glimnavi-relight-v23"
@@ -202,7 +197,15 @@ export function StudioRea15PlatformsWorkbenchPanel({
                     ? animaticEnv
                     : activeTab === "cotrans-vroid-skybox-localizer"
                       ? worldLocalizerEnv
-                      : dreamsKritaEnv;
+                      : activeTab === "storyboarder-dreams-krita-artbreeder"
+                        ? dreamsKritaEnv
+                        : activeTab === "niji-pixai-civitai-lora-sref"
+                          ? loraSrefEnv
+                          : activeTab === "tripo-meshy-heroforge-suno-osmu"
+                            ? tripoSunoEnv
+                            : activeTab === "runway-luma-pika-viggle-live2d-spine"
+                              ? runwayMotionEnv
+                              : sketchupStudioEnv;
 
   const handleRunActiveTab = async () => {
     setIsRunning(true);
@@ -261,11 +264,35 @@ export function StudioRea15PlatformsWorkbenchPanel({
         onAppendDirectionLine(
           `[Cotrans·VRoid·Skybox (${res.modelUsed})] ${res.report.worldLocalizerSummaryKo}`,
         );
-      } else {
+      } else if (activeTab === "storyboarder-dreams-krita-artbreeder") {
         const res = await runStoryboarderDreamsKritaArtbreederDirectorAssist(assistInput);
         setDreamsKritaEnv(res);
         onAppendDirectionLine(
           `[Storyboarder·Dreams·Krita·Artbreeder (${res.modelUsed})] ${res.report.directorExecutiveSummaryKo}`,
+        );
+      } else if (activeTab === "niji-pixai-civitai-lora-sref") {
+        const res = await runNijiPixaiCivitaiLoraSrefDirectorAssist(assistInput);
+        setLoraSrefEnv(res);
+        onAppendDirectionLine(
+          `[Niji·Civitai·PixAI·Picrew (${res.modelUsed})] ${res.report.loraAndSrefSummaryKo}`,
+        );
+      } else if (activeTab === "tripo-meshy-heroforge-suno-osmu") {
+        const res = await runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist(assistInput);
+        setTripoSunoEnv(res);
+        onAppendDirectionLine(
+          `[Tripo3D·Suno·ElevenLabs·MANGA Plus (${res.modelUsed})] ${res.report.osmuExecutiveSummaryKo}`,
+        );
+      } else if (activeTab === "runway-luma-pika-viggle-live2d-spine") {
+        const res = await runRunwayLumaPikaViggleLive2dSpineMotionAssist(assistInput);
+        setRunwayMotionEnv(res);
+        onAppendDirectionLine(
+          `[Runway·Luma·Pika·Viggle·Live2D·Spine (${res.modelUsed})] ${res.report.movingToonExecutiveSummaryKo}`,
+        );
+      } else {
+        const res = await runSketchupBlenderPetalicaMagmaRecraftStudioAssist(assistInput);
+        setSketchupStudioEnv(res);
+        onAppendDirectionLine(
+          `[SketchUp·Blender·Petalica·Magma·Recraft (${res.modelUsed})] ${res.report.hybridStudioExecutiveSummaryKo}`,
         );
       }
     } finally {
@@ -283,10 +310,10 @@ export function StudioRea15PlatformsWorkbenchPanel({
         <div className="flex items-center gap-1.5">
           <Palette className="size-3.5 text-accent" aria-hidden="true" />
           <span className="font-bold text-fg">
-            Phase 7 · 50대 웹툰·스토리보드·3D·드로잉 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 10대 AI 워크벤치
+            Phase 7 · 80대 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·협업 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 14대 AI 워크벤치
           </span>
           <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.54rem] font-semibold text-accent">
-            50개 플랫폼 · 52 브라우저 캡처 · 125만+ AST 노드 검증
+            80개 플랫폼 · 82 브라우저 캡처 · 175만+ AST 노드 검증
           </span>
         </div>
 
@@ -307,14 +334,14 @@ export function StudioRea15PlatformsWorkbenchPanel({
         </button>
       </div>
 
-      {/* 50대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
+      {/* 80대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
       <div
         data-testid="rea15-ui-token-inspector"
         className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
       >
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-bold text-fg">
-            50대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
+            80대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
           </span>
           <button
             type="button"
@@ -735,6 +762,10 @@ export function StudioRea15PlatformsWorkbenchPanel({
         currentAnimatic={currentAnimatic}
         currentWorldLocalizer={currentWorldLocalizer}
         currentDreamsKritaDirector={currentDreamsKritaDirector}
+        currentLoraSrefDirector={currentLoraSrefDirector}
+        currentTripoSunoOsmu={currentTripoSunoOsmu}
+        currentRunwayMotion={currentRunwayMotion}
+        currentSketchupStudio={currentSketchupStudio}
       />
     </div>
   );

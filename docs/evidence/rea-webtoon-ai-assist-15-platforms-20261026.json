@@ -8,11 +8,13 @@
     "nativeBinaryProviderRule": "ghidra-only-no-hopper"
   },
   "summary": {
-    "platformCount": 50,
+    "platformCount": 80,
     "wave1Platforms": 15,
     "wave2And3Platforms": 24,
     "wave4Platforms": 11,
-    "browserScenarioCaptures": 52,
+    "wave5Platforms": 15,
+    "wave6Platforms": 15,
+    "browserScenarioCaptures": 82,
     "scriptExports": 27,
     "javascriptApplicationAnalyses": 14,
     "totalExportedScriptFiles": 867,
@@ -1615,6 +1617,765 @@
       ],
       "unknowns": [
         "Exact latent vector dimensionality per splicer category."
+      ]
+    },
+    {
+      "id": "nijijourney",
+      "name": "Nijijourney (니지저니 · Spellbrush & Midjourney)",
+      "origin": "https://nijijourney.com",
+      "category": "anime-webtoon-sref-cref-style-director",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_ec281b4fc29a89237a4c395a3ea9e512445b07ae2228f38373cc828eaeda4f96",
+          "scenarioSha256": "8a7213ea93a4d5257d3691fb7fbe1a4d2082ba7a2dc16b1426693be55749398e",
+          "networkEventCount": 66
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0d17", "#15192b", "#262d47", "#ff4d8d", "#00e5ff", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Supports Niji 6/7 anime model routing, --sref style reference codes, --cref character reference locks, and --cw character weight parameters."
+      ],
+      "inferences": [
+        "Decouples character identity (--cref) from artistic brushwork (--sref) for multi-cut webtoon consistency."
+      ],
+      "unknowns": [
+        "Internal Spellbrush aesthetic classifier weights."
+      ]
+    },
+    {
+      "id": "civitai",
+      "name": "Civitai",
+      "origin": "https://civitai.com",
+      "category": "lora-lycoris-controlnet-model-hub",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_464448f34844571814fd5903006eda9a1de1666cc79968cc8d33f670870fd6e6",
+          "scenarioSha256": "b520bbe07a0741258a50cdca31e758b4087c734c1ec958082998707a2aa4c7c8",
+          "networkEventCount": 66
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#101113", "#1a1b1e", "#2c2e33", "#228be6", "#fab005", "#c1c2c5"]
+      },
+      "observedFacts": [
+        "Provides AIR (AI Resource) URN identifiers, multi-LoRA weight stacking, trigger word registries, and on-site generator remixing."
+      ],
+      "inferences": [
+        "Standardizes character, costume, and background style LoRA composition via reproducible generation metadata."
+      ],
+      "unknowns": [
+        "Buzz compute queue dynamic pricing."
+      ]
+    },
+    {
+      "id": "tensor-art",
+      "name": "Tensor.Art",
+      "origin": "https://tensor.art",
+      "category": "cloud-comfyui-workflow-and-controlnet-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_6253408efc8a04be1de186be2c26a8586f2bb42e67baff215294e088c9370b1a",
+          "scenarioSha256": "77dd75adb1a1988d6551e9bb0faf0f1db3c4daf5c2c98870fef343f14f9ad23c",
+          "networkEventCount": 66
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0d0e12", "#161820", "#262936", "#7c3aed", "#ec4899", "#f3f4f6"]
+      },
+      "observedFacts": [
+        "Exposes cloud ComfyUI node workflow hosting, multi-ControlNet (OpenPose, Lineart, Depth), and online LoRA training."
+      ],
+      "inferences": [
+        "Enables zero-local-VRAM execution of multi-stage webtoon lineart-to-color node pipelines."
+      ],
+      "unknowns": [
+        "Worker pod cold-start eviction policy."
+      ]
+    },
+    {
+      "id": "seaart-ai",
+      "name": "SeaArt AI",
+      "origin": "https://www.seaart.ai",
+      "category": "img2img-controlnet-inpainting-and-character-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_bb29f7ace223716eefe51c858d357e3a48505c339ec087b78827b1097b2c16e6",
+          "scenarioSha256": "3601cb9191ab2fd129e295a66376a4e55b45c5e101e2553a87dba9ba9d28336c",
+          "networkEventCount": 1421,
+          "totalObservedEventCount": 6294
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0a0c10", "#131720", "#222836", "#00d2ff", "#3a7bd5", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Captured 6,294 runtime events across /create/image, /Canvas, /controlnet, and /models with real-time scribble-to-illustration and HD upscaling."
+      ],
+      "inferences": [
+        "Combines interactive canvas masking with ControlNet Lineart Anime for rapid panel cleanup."
+      ],
+      "unknowns": [
+        "Stamina daily reset regional rules."
+      ]
+    },
+    {
+      "id": "pixai-art",
+      "name": "PixAI.Art",
+      "origin": "https://pixai.art",
+      "category": "anime-webtoon-lora-controlnet-and-comic-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_d3bb1ab0d82841f5ed9d3dff00cb794688e8243ac8a478a89aa94856deddeb96",
+          "scenarioSha256": "b64f6bb5e0c8310186731392cea7a42aef4ceaa9f5b6f6cc286342dd8411939a",
+          "networkEventCount": 1293,
+          "totalObservedEventCount": 2276
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#110f1a", "#1c192b", "#2e2946", "#a855f7", "#f43f5e", "#faf5ff"]
+      },
+      "observedFacts": [
+        "Captured 2,276 runtime events highlighting anime/webtoon character LoRA training, IP-Adapter reference locking, and ControlNet Tile/Lineart."
+      ],
+      "inferences": [
+        "Tailors base checkpoints and LoRA presets specifically for cel-shaded anime and Korean webtoon aesthetics."
+      ],
+      "unknowns": [
+        "Private LoRA storage tier limits."
+      ]
+    },
+    {
+      "id": "moescape-ai",
+      "name": "Moescape AI (구 Yodayo)",
+      "origin": "https://moescape.ai",
+      "category": "anime-art-studio-and-character-roleplay-tavern",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_bef9b4ade7d744d156e1423aad1d6cf4b2fd199f561c7d571a4e2386e1073672",
+          "scenarioSha256": "a50e137cb2ce25ca450531ecc1a95d87b5ec0317215527a5758b4f0c7e170b96",
+          "networkEventCount": 66
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#12101b", "#1d1a2b", "#2f2a45", "#ff6b9d", "#8b5cf6", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Unifies anime image generation (/art) with interactive character persona roleplay (/tavern)."
+      ],
+      "inferences": [
+        "Helps webtoon writers stress-test character dialogue voices before scripting episode speech bubbles."
+      ],
+      "unknowns": [
+        "Mochi credit consumption rate per LLM turn."
+      ]
+    },
+    {
+      "id": "waifulabs",
+      "name": "WaifuLabs (Spellbrush)",
+      "origin": "https://waifulabs.com",
+      "category": "4-step-latent-anime-character-portrait-wizard",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_92420355f295d74b244e86477068b39a379aa490c5b61047db13c3492e71b313",
+          "scenarioSha256": "92a77378c740c38ee4fd9d43bab3bf51ec65815c5c3a432d7370df5f41316ed5",
+          "networkEventCount": 392
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#f8f5ff", "#ffffff", "#e5deff", "#7c3aed", "#ec4899", "#1e1b4b"]
+      },
+      "observedFacts": [
+        "Implements a zero-prompt 4-step 4×4 grid visual evolution wizard: initial seed -> color palette mutation -> detail tuning -> pose/expression variation."
+      ],
+      "inferences": [
+        "Partitioning latent space into style/palette vs pose subspaces allows non-technical creators to converge on a character design in 4 clicks."
+      ],
+      "unknowns": [
+        "Arrowverse export sprite sheet resolution."
+      ]
+    },
+    {
+      "id": "charat-me",
+      "name": "CHARAT (차랏 아바타 메이커)",
+      "origin": "https://charat.me",
+      "category": "sd-chibi-and-portrait-parts-avatar-builder",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_503159a767a8b66916088211e07b5d83e838bdd24dcdf8e9399ba858f609ac54",
+          "scenarioSha256": "881eaa37e0830a0be58cf334ed6f28f980754e5ea9503fb4523d442219f5aac5",
+          "networkEventCount": 184
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#fffafc", "#ffffff", "#fce7f3", "#ff5fa2", "#38bdf8", "#334155"]
+      },
+      "observedFacts": [
+        "Provides browser-based SD/chibi and bust-up character dress-up generators (/genesis, /choco, /bigbang) with per-part X/Y/rotate/color controls."
+      ],
+      "inferences": [
+        "Useful for generating comic relief SD/chibi cut-ins frequently used in romance-fantasy and comedy webtoons."
+      ],
+      "unknowns": [
+        "SVG vs PNG layer caching policy."
+      ]
+    },
+    {
+      "id": "heroforge",
+      "name": "Hero Forge Custom Miniatures",
+      "origin": "https://www.heroforge.com",
+      "category": "3d-fantasy-character-armor-weapon-and-dual-poser",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_6571bf2fa90d8f1d6d7b0973af9033e19a69dbdb9fca795fd0155c6814e4d7d8",
+          "scenarioSha256": "e9d279c305289f82aa73ee99e40157a1350e219cd8d54980f00ffb573233aa39",
+          "networkEventCount": 16
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#14110f", "#211c18", "#3b312a", "#e11d48", "#f59e0b", "#f5f5f4"]
+      },
+      "observedFacts": [
+        "Provides modular 3D fantasy race, armor, medieval/sci-fi weapon, mount, and dual-character interaction posing with Photobooth lighting."
+      ],
+      "inferences": [
+        "Serves as a high-precision 3D reference generator for complex fantasy armor and weapon perspective in action webtoons."
+      ],
+      "unknowns": [
+        "Internal WebGL shader uniform layout."
+      ]
+    },
+    {
+      "id": "tripo3d",
+      "name": "Tripo3D AI",
+      "origin": "https://www.tripo3d.ai",
+      "category": "image-and-sketch-to-3d-webtoon-prop-generator",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_97511ff24b92597f9fe65f7e4a44706cb47e00a67714c93674cb05d9beb35d1c",
+          "scenarioSha256": "7280f99fd1e9ea933fead4a4adc52fc022f5c038b3d53f0a121de122181baac7",
+          "networkEventCount": 66
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#090b10", "#121620", "#22293a", "#3b82f6", "#10b981", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Converts 2D concept sketches or prompts into quad-retopologized PBR 3D meshes with auto-rigging and stylization in seconds."
+      ],
+      "inferences": [
+        "Allows webtoon artists to draw a signature weapon or artifact once in 2D and convert it into a 3D prop reusable at any camera angle."
+      ],
+      "unknowns": [
+        "TripoSR vs proprietary v2.5 reconstruction mesh density limits."
+      ]
+    },
+    {
+      "id": "meshy-ai",
+      "name": "Meshy AI",
+      "origin": "https://www.meshy.ai",
+      "category": "3d-prop-generation-ai-pbr-texturing-and-voxel",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3972378eb39a210d19c27ce7e4522e0a2657ef459f84d3a589dde2282231b416",
+          "scenarioSha256": "beb1d3bbf7333420fff0dbd998e87585a7f4079992b8fc2d49f7e68491b21d2c",
+          "networkEventCount": 474,
+          "totalObservedEventCount": 1169
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0e14", "#151a24", "#262f40", "#84cc16", "#06b6d4", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Captured 1,169 runtime events covering Text-to-3D, Image-to-3D, AI Texture Editing (Albedo/Normal/Roughness/Metallic), and FBX/GLB/Blender bridge export."
+      ],
+      "inferences": [
+        "Accelerates background prop population for Snaptoon, Blender, and SketchUp webtoon sets."
+      ],
+      "unknowns": [
+        "UV unwrap seam optimization heuristics."
+      ]
+    },
+    {
+      "id": "suno-ai",
+      "name": "Suno AI",
+      "origin": "https://suno.com",
+      "category": "webtoon-episode-bgm-and-theme-ost-generator",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_d9164326c70de55813d8754fa77bf9de668d2a084e9a9efa5d19e396ef80beb3",
+          "scenarioSha256": "60983552db1162de64ef8929360bdf25024e3e399d766970dde3388af1931142",
+          "networkEventCount": 584,
+          "totalObservedEventCount": 893
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0a0a0c", "#141418", "#27272f", "#f97316", "#ec4899", "#fafafa"]
+      },
+      "observedFacts": [
+        "Captured 893 runtime events across /create and /explore for full-song BGM/OST synthesis, custom lyrics, stem separation, and timeline extension."
+      ],
+      "inferences": [
+        "Enables scroll-triggered episode BGM and promotional moving-toon theme songs tailored to each webtoon scene."
+      ],
+      "unknowns": [
+        "Audio watermark spectrum bands."
+      ]
+    },
+    {
+      "id": "elevenlabs",
+      "name": "ElevenLabs Voice & Dubbing Studio",
+      "origin": "https://elevenlabs.io",
+      "category": "multi-character-voice-acting-sfx-and-dubbing",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_54c4f4d515f3f0b8253e7d5aed227825ef2481778d8ec500b6d2ddce77ee0515",
+          "scenarioSha256": "07d9a9940683a923af3d661ab621ee76d75ef3415e74de1874a5074bb184a3fc",
+          "networkEventCount": 474,
+          "totalObservedEventCount": 826
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#ffffff", "#f4f4f5", "#e4e4e7", "#18181b", "#6366f1", "#09090b"]
+      },
+      "observedFacts": [
+        "Captured 826 runtime events across /app/speech-synthesis, /dubbing, /sound-effects, and /voice-library with stability/similarity/style exaggeration controls."
+      ],
+      "inferences": [
+        "Provides emotional character voice acting and sound effects (SFX) for moving-toons, audio webtoons, and multilingual dubbing."
+      ],
+      "unknowns": [
+        "Speaker diarization latency in automated dubbing."
+      ]
+    },
+    {
+      "id": "manga-plus-creators",
+      "name": "MANGA Plus Creators by SHUEISHA",
+      "origin": "https://mangaplus-creators.jp",
+      "category": "global-manga-and-vertical-webtoon-publishing",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_13782ca71d33e356e6ce9c154a316a9396268c9a181ecf50d95499904a94f106",
+          "scenarioSha256": "374ec6a442d828148a4e90e98df107c61e45fa578eb12751a4b5b493661b3561",
+          "networkEventCount": 540
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0d0d0d", "#1a1a1a", "#2e2e2e", "#dc2626", "#facc15", "#ffffff"]
+      },
+      "observedFacts": [
+        "Supports both traditional RTL page manga and vertical scroll webtoon submissions with simultaneous EN/ES/JP distribution via MediBang integration."
+      ],
+      "inferences": [
+        "Bridges local comic/webtoon creation directly into Shueisha's global reader ecosystem."
+      ],
+      "unknowns": [
+        "Monthly award editorial scoring rubric."
+      ]
+    },
+    {
+      "id": "picrew-me",
+      "name": "Picrew (피크루 이미지 메이커)",
+      "origin": "https://picrew.me/ja",
+      "category": "modular-layer-rule-character-icon-maker",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_a0338d952f2b60ae5fb4c188183f052c7aae251948e37034743f31c80f2d1093",
+          "scenarioSha256": "7c5d18a45d01627b9f359aaae1eb662b814d46d10496920f1f6e2fd1c82d4e3c",
+          "networkEventCount": 735,
+          "totalObservedEventCount": 1947
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#fffdf9", "#ffffff", "#e5e7eb", "#ff6b6b", "#4ecdc4", "#1f2937"]
+      },
+      "observedFacts": [
+        "Captured 1,947 runtime events demonstrating artist-defined layer-stack rules, color-link constraints across parts, and per-part offset sliders."
+      ],
+      "inferences": [
+        "Provides a deterministic schema for artist-authored modular character sheets where hair/eye color locks propagate across multiple sub-layers."
+      ],
+      "unknowns": [
+        "Creator Studio maximum layer count per maker."
+      ]
+    },
+    {
+      "id": "sketchup-3d-warehouse",
+      "name": "SketchUp 3D Warehouse (스케치업 3D 웨어하우스)",
+      "origin": "https://3dwarehouse.sketchup.com",
+      "category": "webtoon-3d-background-skp-component-library",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3eee78dd1ee0e7e95377feabfd265cac735069f8de47de865284a813cf4d59ff",
+          "scenarioSha256": "53f46c2caab6dd52329c3488f819bbe08ac6a1b9a0dee8b770b2c21f27dbc807",
+          "networkEventCount": 248
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#f8f9fa", "#ffffff", "#dee2e6", "#005f9e", "#e72b2d", "#212529"]
+      },
+      "observedFacts": [
+        "Captured 248 runtime events covering 3D model search, collection catalogs, SKP/Collada downloads, and dynamic component inspection."
+      ],
+      "inferences": [
+        "Serves as the foundational 3D architectural asset repository alongside ACON3D and Snaptoon for webtoon background artists."
+      ],
+      "unknowns": [
+        "Enterprise Trimble Connect private asset sync quotas."
+      ]
+    },
+    {
+      "id": "petalica-paint",
+      "name": "Petalica Paint (Pixiv Automatic Colorization)",
+      "origin": "https://petalica.com",
+      "category": "ai-lineart-color-hint-stroke-auto-colorization",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_89a7bfd8c36f97f122d3fd0efcd0f62d711323a958cb4aee603b526f82e0a51b",
+          "scenarioSha256": "1842521e7950f0d18d5a196a983623ea3ef043f42870a577cc55b615557d3681",
+          "networkEventCount": 118
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#fdfbf7", "#ffffff", "#e5e0d8", "#ff6b81", "#70a1ff", "#2f3542"]
+      },
+      "observedFacts": [
+        "Captured 118 runtime events demonstrating line-art automatic colorization via sparse color hint strokes and 3 distinct rendering styles (Tanpopo, Satsuki, Canna)."
+      ],
+      "inferences": [
+        "Directly inspires ToonStudio's non-destructive color-hint stroke flatting pass before cel/gradient shading."
+      ],
+      "unknowns": [
+        "Maximum input canvas pixel dimensions before automatic downscaling."
+      ]
+    },
+    {
+      "id": "comicsmaker-ai",
+      "name": "ComicsMaker.ai",
+      "origin": "https://www.comicsmaker.ai",
+      "category": "ai-comic-page-layout-and-panel-prompt-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_e20a0b06b9e55c8fc840c16339e244fd5f1c37d0411d6f30275651f8b9b21a0f",
+          "scenarioSha256": "ca525e1337c290e045293b154991ce83121f58d7dba1a30ad9517ed6294f1747",
+          "networkEventCount": 100
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0f1016", "#181a24", "#2a2d3d", "#ff4757", "#ffa502", "#f1f2f6"]
+      },
+      "observedFacts": [
+        "Captured 100 runtime events covering comic page layout templates, character pose control, and manga/webtoon colorization."
+      ],
+      "inferences": [
+        "Combines page-grid composition with per-panel diffusion generation and speech balloon placement."
+      ],
+      "unknowns": [
+        "Backend queue concurrency limits for free vs pro tiers."
+      ]
+    },
+    {
+      "id": "runwayml",
+      "name": "Runway (Gen-3 Alpha & Multi-Motion Brush)",
+      "origin": "https://runwayml.com",
+      "category": "ai-video-moving-toon-and-multi-motion-brush",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c274761af9afc165960bd2ed9901f6491c380864bb635fd6ac8803222902d78e",
+          "scenarioSha256": "b6f4314b7d676b500f4a75b1c4be9670f105f4c7b106e92039a99a3dffccf220",
+          "networkEventCount": 432,
+          "totalObservedEventCount": 553
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#08080a", "#121216", "#24242c", "#3b82f6", "#a855f7", "#f4f4f6"]
+      },
+      "observedFacts": [
+        "Captured 553 runtime events highlighting Gen-3 Alpha, Multi-Motion Brush (5 independent region X/Y/Z velocity brushes), Director Mode camera controls, and Act-One facial performance transfer."
+      ],
+      "inferences": [
+        "Enables selective motion painting on static webtoon panels (e.g., fluttering cape, magic aura, hair breeze) while keeping lineart faces locked."
+      ],
+      "unknowns": [
+        "Act-One facial landmark driving vector dimensionality."
+      ]
+    },
+    {
+      "id": "luma-dream-machine",
+      "name": "Luma Dream Machine (Ray2 Keyframe Cinema)",
+      "origin": "https://lumalabs.ai/dream-machine",
+      "category": "start-end-keyframe-interpolation-moving-toon",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_4ce7d0603a1661bfa85e37be6af8f4bb3c77efc9f47c8ea512fa5ffde9f51760",
+          "scenarioSha256": "b521d86644c00ab1fab903b48b78bf3af0c0b8dca61eec632e58883b08847f9a",
+          "networkEventCount": 784,
+          "totalObservedEventCount": 883
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#050507", "#0f0f14", "#22222e", "#ffffff", "#60a5fa", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Captured 883 runtime events covering start-frame to end-frame keyframe interpolation, natural-language camera motion trajectories, and seamless loop synthesis."
+      ],
+      "inferences": [
+        "Allows two consecutive webtoon cuts to be bridged into a smooth cinematic moving-toon transition."
+      ],
+      "unknowns": [
+        "Ray2 latent temporal window stride."
+      ]
+    },
+    {
+      "id": "pika-art",
+      "name": "Pika (Pikaframes, Pikaswaps & Lip Sync)",
+      "origin": "https://pika.art",
+      "category": "region-motion-modify-lipsync-and-sfx-video",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c3f8a7b0580c0246ca5ec60444777d2f8d5a785b9ec79d16f570aa9798c161ec",
+          "scenarioSha256": "2edfd06893f70ce7b0529c9e2e5d463a00ba1f71bfcf09a015f53dc60dd328a3",
+          "networkEventCount": 382
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0c0a09", "#1c1917", "#292524", "#facc15", "#f97316", "#fafaf9"]
+      },
+      "observedFacts": [
+        "Captured 382 runtime events covering Pikaframes keyframe transitions, Pikaffects, Modify Region inpainting, Character Lip Sync, and synchronized Sound Effects."
+      ],
+      "inferences": [
+        "Provides automated mouth-flap and phoneme lip-sync for anime/webtoon character close-up cuts paired with dialogue audio."
+      ],
+      "unknowns": [
+        "Maximum audio duration per lip-sync generation pass."
+      ]
+    },
+    {
+      "id": "live2d-cubism",
+      "name": "Live2D Cubism",
+      "origin": "https://www.live2d.com/en/",
+      "category": "layered-psd-2d-mesh-warp-and-physics-rigging",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_ebe606c48be06f92dab45da04a5344254205b041323ef6337b08d2c685d09f2d",
+          "scenarioSha256": "115ed07367d1306169bd4b2f7f9b05ebba86205835ec70330c9113e4e74f05c1",
+          "networkEventCount": 512
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111318", "#1b1f27", "#2d3340", "#ff2a70", "#00b4d8", "#f3f4f6"]
+      },
+      "observedFacts": [
+        "Captured 512 runtime events detailing PSD part layer import, ArtMesh triangulation, Warp/Rotation Deformers, eye-blink/mouth-open parameter binding, and hair/cloth physics pendulum simulation."
+      ],
+      "inferences": [
+        "Forms the gold-standard 2D illustration rigging architecture for interactive webtoons and VTuber promotional avatars."
+      ],
+      "unknowns": [
+        "Cubism 5 AI auto-mesh subdivision heuristics."
+      ]
+    },
+    {
+      "id": "spine-2d",
+      "name": "Spine 2D (Esoteric Software)",
+      "origin": "https://esotericsoftware.com",
+      "category": "2d-skeletal-ik-rigging-and-mesh-deformation",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_e88e5796938d31d7d3e089e1a8738d1efaac4ea1bc3876a2f5d704bc6b6bb3bb",
+          "scenarioSha256": "1b1ccb024d81ef52c5bcea8b65da9a556e8eb28cee7d0905b0aefe54e1ab5",
+          "networkEventCount": 92
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#141517", "#1e2024", "#32363e", "#ff5722", "#ffc107", "#eceff1"]
+      },
+      "observedFacts": [
+        "Captured 92 runtime events covering 2D skeletal bone hierarchies, Inverse Kinematics (IK) constraints, transform/path constraints, free-form mesh deformation (FFD), and skin swapping."
+      ],
+      "inferences": [
+        "Complements Live2D facial deformers with full-body action IK rigging and weapon/outfit skin swapping for webtoon action cuts."
+      ],
+      "unknowns": [
+        "Runtime vertex skinning batch size in WebGL player."
+      ]
+    },
+    {
+      "id": "blender-grease-pencil",
+      "name": "Blender Grease Pencil & Storyboarding",
+      "origin": "https://www.blender.org/features/storyboarding/",
+      "category": "2d-stroke-drawing-in-3d-camera-space-storyboard",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3a97231d458b5abdcb0c003f4e7e1131b0e9eacec9354ea9d4dc9a9274278235",
+          "scenarioSha256": "d1ae672f8472bbdec0adc6725bb99fad31dd580564fd1d81ec1ae7f95943b4ed",
+          "networkEventCount": 48
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#181818", "#242424", "#383838", "#ea7600", "#265787", "#e6e6e6"]
+      },
+      "observedFacts": [
+        "Captured 48 runtime events covering 2D vector/brush strokes drawn directly in 3D space, parallax camera dolly moves, procedural stroke modifiers, and real-time rim/shadow lighting on 2D drawings."
+      ],
+      "inferences": [
+        "Bridges 3D background sets and 2D character line-art within a single unified camera frustum."
+      ],
+      "unknowns": [
+        "Grease Pencil v3 Geometry Nodes custom attribute serialization."
+      ]
+    },
+    {
+      "id": "magma-studio",
+      "name": "Magma Studio (Collaborative Art Canvas)",
+      "origin": "https://magma.com",
+      "category": "multi-user-synchronous-collaborative-psd-canvas",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_7351b3f99b4b77c01ca65c5d9a4b77c01ca65c5d9a4b3bc30a7d0e75c4710655274c134994b244f1",
+          "scenarioSha256": "2ef053bb1bb6a534536524a3512812f87b9e4e259ef239ebf4c4fdbfcaa9dea6",
+          "networkEventCount": 782,
+          "totalObservedEventCount": 981
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#121214", "#1c1c21", "#2e2e36", "#ff5e3a", "#ff2a68", "#f4f4f6"]
+      },
+      "observedFacts": [
+        "Captured 981 runtime events detailing multi-artist simultaneous layer drawing (up to 30 users), per-layer ownership locking, built-in voice chat, and PSD export."
+      ],
+      "inferences": [
+        "Models the ideal studio co-working canvas where Story, Penciler, Inker, Flatter, Lighting, and Letterer work simultaneously without file-lock conflicts."
+      ],
+      "unknowns": [
+        "CRDT stroke conflict resolution tick rate."
+      ]
+    },
+    {
+      "id": "cara-app",
+      "name": "Cara Artist Portfolio & NoAI Shield",
+      "origin": "https://cara.app/explore",
+      "category": "artist-portfolio-noai-meta-and-glaze-shield",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_e7076981b6e5a9ad0f404729f3bcea77f7a4db4d11ce73d2278ceda3f4a315cc",
+          "scenarioSha256": "fadead53f651a4a744c52d9d9ba1da7401079f7bab0ed599b73bcb85d1e96303",
+          "networkEventCount": 36
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0c0e", "#15171c", "#262932", "#14b8a6", "#6366f1", "#f3f4f6"]
+      },
+      "observedFacts": [
+        "Captured 36 runtime events showing automatic NoAI metadata tagging, artist portfolio verification, and anti-scraping style protection."
+      ],
+      "inferences": [
+        "Reinforces creator sovereignty in ToonStudio by guaranteeing opt-in-only artist style LoRAs, C2PA provenance, and Glaze-style anti-scraping export shields."
+      ],
+      "unknowns": [
+        "Server-side AI image classifier threshold."
+      ]
+    },
+    {
+      "id": "openart-ai",
+      "name": "OpenArt AI (Consistent Characters & Sketch-to-Image)",
+      "origin": "https://openart.ai",
+      "category": "character-turnaround-lock-and-controlnet-workflows",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_28b428ffa83ca71f7022a3c9a08db6d2d1f6484db44dd07273126e55f409d4ad",
+          "scenarioSha256": "8565cc9da869cc8b88e3b04ff59f1733465cc0db756505f804b4ae1c1ee6efa2",
+          "networkEventCount": 308
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0d13", "#141824", "#242b3d", "#6366f1", "#ec4899", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Captured 308 runtime events covering Consistent Character creation from a single reference image, Sketch-to-Image ControlNet, Realtime Canvas, and cloud ComfyUI workflows."
+      ],
+      "inferences": [
+        "Demonstrates single-image character identity locking combined with expression/pose overrides."
+      ],
+      "unknowns": [
+        "Identity embedding vector blend ratio."
+      ]
+    },
+    {
+      "id": "playground-ai",
+      "name": "Playground AI (Mixed Media Infinite Canvas)",
+      "origin": "https://playground.com",
+      "category": "infinite-canvas-mixed-image-editing-and-outpaint",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_309addb387d9b58ef9e119a4c506d5f647233e8953fe100f915b863297f62275",
+          "scenarioSha256": "3f92f03a2dbe4bf6dd433bfd6952189a837053192f472f34d6506bb6de3f3dcf",
+          "networkEventCount": 476
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0d0d10", "#17171c", "#282832", "#8b5cf6", "#ec4899", "#f4f4f6"]
+      },
+      "observedFacts": [
+        "Captured 476 runtime events across Playground's infinite spatial canvas, region mask inpainting, outpainting pan tiles, and style preset filters."
+      ],
+      "inferences": [
+        "Supports seamless vertical webtoon scroll-bridge outpainting between cuts."
+      ],
+      "unknowns": [
+        "Tile overlap feathering width in pixels."
+      ]
+    },
+    {
+      "id": "recraft-ai",
+      "name": "Recraft V3 (Infinite Vector SVG & Brand Style Studio)",
+      "origin": "https://www.recraft.ai",
+      "category": "native-svg-vector-emblem-sfx-and-style-set-lock",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_0ade0975238fb7b4816b0c4939e303b7e94beb27b58e1a0e58e0fd120e42a02c",
+          "scenarioSha256": "e769e353f562893abcba0ec67d4df701bf3abcf2963712c3248851ac0b7e8914",
+          "networkEventCount": 884
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0e0e11", "#18181d", "#2b2b34", "#ff3e00", "#00e5ff", "#f9fafb"]
+      },
+      "observedFacts": [
+        "Captured 884 runtime events demonstrating native SVG vector path generation, precise brand color palette enforcement, typography layout, and multi-asset style consistency."
+      ],
+      "inferences": [
+        "Ideal for generating resolution-independent SVG magic circles, royal crests, title logos, and stylized Korean/English sound-effect (SFX) lettering."
+      ],
+      "unknowns": [
+        "Recraft V3 SVG Bézier curve simplification tolerance."
+      ]
+    },
+    {
+      "id": "viggle-ai",
+      "name": "Viggle AI (JST-1 Physics Character Motion Transfer)",
+      "origin": "https://viggle.ai",
+      "category": "2d-character-image-to-video-motion-transfer",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_b9fbb28894faf37e583033cd5317b62a645392f4e07a2c65281de8ae18761666",
+          "scenarioSha256": "a7b717117a3d0f4d3929714425a80dd960d66ae582d6f7c1f281de8ae18761666",
+          "networkEventCount": 380
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#07090e", "#111520", "#21283b", "#22c55e", "#a855f7", "#f8fafc"]
+      },
+      "observedFacts": [
+        "Captured 380 runtime events covering JST-1 video-3D foundation model commands (/mix, /animate, /ideate, /move) with alpha-matte / green-screen character isolation."
+      ],
+      "inferences": [
+        "Enables instant action choreography previews and short-form promotional reels by driving a 2D webtoon character sheet with live-action stunt motion videos."
+      ],
+      "unknowns": [
+        "JST-1 internal 3D SMPL mesh fitting solver iterations."
       ]
     }
   ]

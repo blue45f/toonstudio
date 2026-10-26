@@ -1,7 +1,7 @@
-# 글로벌·국내 웹툰·스토리보드·3D·드로잉 AI 보조 50대 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 내재화 벤치마크 (2026-10-26)
+# 글로벌·국내 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·협업 AI 보조 80대 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 14대 AI 내재화 벤치마크 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (실시간 REA 브라우저 캡처 52건 · 50개 플랫폼 · JS 번들 추출 27건 · AST/라우트 정적 분석 14건 · ToonStudio 10대 엔진 및 50종 UI 토큰 내재화 완료)
+- **상태**: `current` (실시간 REA 브라우저 캡처 82건 · 80개 플랫폼 · JS 번들 추출 27건 · AST/라우트 정적 분석 14건 · ToonStudio 14대 엔진 및 80종 UI 토큰 내재화 완료)
 - **정본 증거 원장**: [`docs/evidence/rea-webtoon-ai-assist-15-platforms-20261026.json`](../evidence/rea-webtoon-ai-assist-15-platforms-20261026.json)
 - **연관 기존 벤치마크**:
   - [`docs/benchmarks/ai-webtoon-assist-ecosystem-rea-benchmark-2026-10-26.md`](./ai-webtoon-assist-ecosystem-rea-benchmark-2026-10-26.md)
@@ -13,7 +13,7 @@
 
 ## 1. 조사 개요 및 인식론적(Epistemic) 분리 원칙
 
-국내외 웹툰·만화·스토리보드·3D 포징·모션·드로잉·번역/인페인팅 AI 보조 생태계 **50개 전체 핵심 플랫폼**(Wave 1: 15개 플랫폼 + Wave 2: 12개 플랫폼 + Wave 3: 12개 플랫폼 + Wave 4: 11개 플랫폼, 총 52회 브라우저 시나리오 캡처)의 실제 배포 웹/스튜디오 번들을 REA(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 전수 캡처·역공학했다.
+국내외 웹툰·만화·스토리보드·3D 포징·모션·드로잉·번역/인페인팅·애니메이션 LoRA/ControlNet·3D 프롭·OST/더빙·무빙툰 비디오·Live2D/Spine 리깅·Grease Pencil·멀티유저 협업 캔버스·SVG 벡터 AI 보조 생태계 **80개 전체 핵심 플랫폼**(Wave 1: 15개 플랫폼 + Wave 2: 12개 플랫폼 + Wave 3: 12개 플랫폼 + Wave 4: 11개 플랫폼 + Wave 5: 15개 플랫폼 + Wave 6: 15개 플랫폼, 총 82회 브라우저 시나리오 캡처)의 실제 배포 웹/스튜디오 번들을 REA(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 전수 캡처·역공학했다.
 
 - **관측 사실(Observed Facts)**: REA Playwright 네트워크 응답 본문(`sha256`), CSS 변수 테이블, DOM 컨트롤 ID, AST 라우트/심볼에서 직접 추출한 사실만 기록한다.
 - **추론(Inferences)**: 클라이언트 번들 구조와 엔드포인트 명명 규칙으로부터 도출한 아키텍처 해석을 분리해 기록한다.
@@ -88,6 +88,46 @@
 | 49 | **Pixiv Sketch** | `sketch.pixiv.net` | `ev_6f549964...` (`4a4918b7...`) | 232이벤트 | `#ffffff`, `#f5f6f8`, `#e1e4e8`, `#0096fa`, `#ff4060` | 애니메이션 러프 스케치, 선화 단순화, 자동 채색 힌트, 멀티 아티스트 라이브 드로잉(`/lives`) |
 | 50 | **Artbreeder** | `artbreeder.com` | `ev_88ee616e...` (`1a9af8e6...`) | 418이벤트 | `#111111`, `#1c1c1e`, `#2c2c2e`, `#10b981`, `#6366f1` | `/create/splicer`, `/create/poser`, `/create/collage` 유전자(Gene) 슬라이더 캐릭터 교배 |
 
+### 2.4 Wave 5 (15개 추가 애니메이션 LoRA/ControlNet · 캐릭터 파츠 메이커 · 3D 무기/소품 · 웹툰 OST/성우 더빙 · 글로벌 연재 플랫폼)
+
+| # | 플랫폼 | 도메인 | 브라우저 캡처 `evidence_id` (`scenario_sha256`) | 네트워크 이벤트 | 추출 UI/UX 컬러 & CSS 토큰 | 핵심 라우트 및 기능 파이프라인 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 51 | **Nijijourney (니지저니)** | `nijijourney.com` | `ev_ec281b4f...` (`8a7213ea...`) | 66이벤트 | `#0b0d17`, `#15192b`, `#262d47`, `#ff4d8d`, `#00e5ff` | Niji 6/7 애니메이션 특화 생성, `--sref` 화풍 레퍼런스 코드, `--cref`/`--cw` 캐릭터 일관성 락 |
+| 52 | **Civitai** | `civitai.com` | `ev_464448f3...` (`b520bbe0...`) | 66이벤트 | `#101113`, `#1a1b1e`, `#2c2e33`, `#228be6`, `#fab005` | AIR URN 식별자, 멀티 LoRA/LyCORIS 가중치 스태킹, 트리거 워드 레지스트리, 리믹스 생성 |
+| 53 | **Tensor.Art** | `tensor.art` | `ev_6253408e...` (`77dd75ad...`) | 66이벤트 | `#0d0e12`, `#161820`, `#262936`, `#7c3aed`, `#ec4899` | 클라우드 ComfyUI 노드 워크플로우, 다중 ControlNet(OpenPose·Lineart·Depth), 온라인 LoRA 학습 |
+| 54 | **SeaArt AI** | `seaart.ai` | `ev_bb29f7ac...` (`3601cb91...`) | 1,421보존 / 6,294총이벤트 | `#0a0c10`, `#131720`, `#222836`, `#00d2ff`, `#3a7bd5` | `/create/image`, `/Canvas`, `/controlnet`, 실시간 스케치→일러스트 변환, 고해상도 업스케일 |
+| 55 | **PixAI.Art** | `pixai.art` | `ev_d3bb1ab0...` (`b64f6bb5...`) | 1,293보존 / 2,276총이벤트 | `#110f1a`, `#1c192b`, `#2e2946`, `#a855f7`, `#f43f5e` | 애니/웹툰 특화 LoRA 마켓, IP-Adapter 캐릭터 레퍼런스 고정, ControlNet Tile/Lineart |
+| 56 | **Moescape AI (Yodayo)** | `moescape.ai` | `ev_bef9b4ad...` (`a50e137c...`) | 66이벤트 | `#12101b`, `#1d1a2b`, `#2f2a45`, `#ff6b9d`, `#8b5cf6` | 애니 일러스트 스튜디오(`/art`) + 인터랙티브 캐릭터 페르소나 롤플레이(`/tavern`) |
+| 57 | **WaifuLabs (Spellbrush)** | `waifulabs.com` | `ev_92420355...` (`92a77378...`) | 392이벤트 | `#f8f5ff`, `#ffffff`, `#e5deff`, `#7c3aed`, `#ec4899` | 무프롬프트 4단계 4×4 그리드 잠재공간 진화 마법사(초기 시드→팔레트→디테일→포즈/표정) |
+| 58 | **CHARAT (차랏)** | `charat.me` | `ev_503159a7...` (`881eaa37...`) | 184이벤트 | `#fffafc`, `#ffffff`, `#fce7f3`, `#ff5fa2`, `#38bdf8` | `/genesis`, `/choco`, `/bigbang` SD/치비(2~3등신) 및 상반신 파츠 위치·회전·컬러 커스터마이저 |
+| 59 | **Hero Forge** | `heroforge.com` | `ev_6571bf2f...` (`e9d279c3...`) | 16이벤트 | `#14110f`, `#211c18`, `#3b312a`, `#e11d48`, `#f59e0b` | 판타지 종족·복식·무기·탈것·2인 상호작용 3D 미니어처 포징 및 포토부스 조명 |
+| 60 | **Tripo3D AI** | `tripo3d.ai` | `ev_97511ff2...` (`7280f99f...`) | 66이벤트 | `#090b10`, `#121620`, `#22293a`, `#3b82f6`, `#10b981` | 2D 컨셉 스케치/이미지 → 쿼드 리토폴로지 PBR 3D 메쉬 & 자동 리깅 고속 생성 |
+| 61 | **Meshy AI** | `meshy.ai` | `ev_3972378e...` (`beb1d3bb...`) | 474보존 / 1,169총이벤트 | `#0b0e14`, `#151a24`, `#262f40`, `#84cc16`, `#06b6d4` | Text/Image-to-3D, AI PBR 텍스처(Albedo/Normal/Roughness/Metallic), Blender/GLB 브리지 |
+| 62 | **Suno AI** | `suno.com` | `ev_d9164326...` (`60983552...`) | 584보존 / 893총이벤트 | `#0a0a0c`, `#141418`, `#27272f`, `#f97316`, `#ec4899` | 웹툰 회차별 스크롤 반응형 BGM & 무빙툰 오프닝/엔딩 보컬 OST 작곡 및 스템 분리 |
+| 63 | **ElevenLabs** | `elevenlabs.io` | `ev_54c4f4d5...` (`07d9a994...`) | 474보존 / 826총이벤트 | `#ffffff`, `#f4f4f5`, `#e4e4e7`, `#18181b`, `#6366f1` | 캐릭터별 다국어 감정 성우 보이스 합성(`/app/speech-synthesis`), 더빙(`/dubbing`), 효과음(`/sound-effects`) |
+| 64 | **MANGA Plus Creators** | `mangaplus-creators.jp` | `ev_13782ca7...` (`374ec6a4...`) | 540이벤트 | `#0d0d0d`, `#1a1a1a`, `#2e2e2e`, `#dc2626`, `#facc15` | 슈에이샤 글로벌 만화(RTL)·세로 웹툰 동시 투고 및 EN/ES/JP 글로벌 배포 규격 |
+| 65 | **Picrew (피크루)** | `picrew.me/ja` | `ev_a0338d95...` (`7c5d18a4...`) | 735보존 / 1,947총이벤트 | `#fffdf9`, `#ffffff`, `#e5e7eb`, `#ff6b6b`, `#4ecdc4` | 레이어 순서 규칙·색상 연동 락(Color Rule Lock)·파츠 오프셋 기반 모듈형 캐릭터 메이커 |
+
+### 2.5 Wave 6 (15개 추가 3D 웨어하우스 · AI 선화 힌트 채색 · 무빙툰 모션 브러시/키프레임 · Live2D/Spine 2D 리깅 · Grease Pencil 3D 스토리보드 · 멀티유저 협업 캔버스 · SVG 벡터/저작권 보호 플랫폼)
+
+| # | 플랫폼 | 도메인 | 브라우저 캡처 `evidence_id` (`scenario_sha256`) | 네트워크 이벤트 | 추출 UI/UX 컬러 & CSS 토큰 | 핵심 라우트 및 기능 파이프라인 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 66 | **SketchUp 3D Warehouse** | `3dwarehouse.sketchup.com` | `ev_3eee78dd...` (`53f46c2c...`) | 248이벤트 | `#f8f9fa`, `#ffffff`, `#dee2e6`, `#005f9e`, `#e72b2d` | 웹툰 3D 배경 SKP/Collada 컴포넌트 라이브러리, 동적 구성요소(문·창문·조명) 제어 |
+| 67 | **Petalica Paint (Pixiv)** | `petalica.com` | `ev_89a7bfd8...` (`1842521e...`) | 118이벤트 | `#fdfbf7`, `#ffffff`, `#e5e0d8`, `#ff6b81`, `#70a1ff` | 선화 자동 인식 + 컬러 힌트 브러시 스트로크 기반 3대 화풍(Tanpopo·Satsuki·Canna) 자동 채색 |
+| 68 | **ComicsMaker.ai** | `comicsmaker.ai` | `ev_e20a0b06...` (`ca525e13...`) | 100이벤트 | `#0f1016`, `#181a24`, `#2a2d3d`, `#ff4757`, `#ffa502` | 만화 페이지 패널 그리드 설계, 캐릭터 일관성 포즈 제어, 흑백→컬러 만화 자동 채색 |
+| 69 | **Runway (Gen-3 Alpha)** | `runwayml.com` | `ev_c274761a...` (`b6f4314b...`) | 432보존 / 553총이벤트 | `#08080a`, `#121216`, `#24242c`, `#3b82f6`, `#a855f7` | Multi-Motion Brush(5개 독립 영역 X/Y/Z 모션 페인팅), Camera Control, Act-One 표정 전이 |
+| 70 | **Luma Dream Machine** | `lumalabs.ai/dream-machine` | `ev_4ce7d060...` (`b521d866...`) | 784보존 / 883총이벤트 | `#050507`, `#0f0f14`, `#22222e`, `#ffffff`, `#60a5fa` | 웹툰 시작 컷~종료 컷 Start/End Keyframe 보간, 자연어 카메라 궤적, 심리스 루프 무빙툰 |
+| 71 | **Pika Art** | `pika.art` | `ev_c3f8a7b0...` (`2edfd068...`) | 382이벤트 | `#0c0a09`, `#1c1917`, `#292524`, `#facc15`, `#f97316` | Pikaframes 키프레임 전환, Modify Region 부분 애니메이션, 캐릭터 립싱크 & 동기화 효과음 |
+| 72 | **Live2D Cubism** | `live2d.com/en/` | `ev_ebe606c4...` (`115ed073...`) | 512이벤트 | `#111318`, `#1b1f27`, `#2d3340`, `#ff2a70`, `#00b4d8` | PSD 파츠 레이어 분리 → ArtMesh 폴리곤 메쉬 & 워프/회전 디포머 → 눈깜빡임·호흡·머리카락 물리 진자 |
+| 73 | **Spine 2D** | `esotericsoftware.com` | `ev_e88e5796...` (`1b1ccb02...`) | 92이벤트 | `#141517`, `#1e2024`, `#32363e`, "#ff5722", "#ffc107" | 2D 본(Bone) 계층 리깅, 역운동학(IK) 제약, 자유 변형 메쉬(FFD), 복식/무기 스킨 스왑 |
+| 74 | **Blender Grease Pencil** | `blender.org/features/storyboarding/` | `ev_3a97231d...` (`d1ae672f...`) | 48이벤트 | `#181818`, `#242424`, `#383838`, `#ea7600`, `#265787` | 3D 카메라 공간 내 2D 스트로크 드로잉, 패럴랙스 카메라 무빙, 2D 선화 위 실시간 3D 림라이트/그림자 |
+| 75 | **Magma Studio** | `magma.com` | `ev_7351b3f9...` (`2ef053bb...`) | 782보존 / 981총이벤트 | `#121214`, `#1c1c21`, `#2e2e36`, `#ff5e3a`, `#ff2a68` | 최대 30인 동시 접속 멀티유저 실시간 레이어 협업 캔버스, 레이어 소유권 잠금, 보이스챗 & PSD 연동 |
+| 76 | **Cara App** | `cara.app/explore` | `ev_e7076981...` (`fadead53...`) | 36이벤트 | `#0b0c0e`, `#15171c`, `#262932`, `#14b8a6`, `#6366f1` | 아티스트 포트폴리오 검증, NoAI 메타데이터 자동 삽입, Glaze 스타일 학습 방지 워터마크 보호 |
+| 77 | **OpenArt AI** | `openart.ai` | `ev_28b428ff...` (`8565cc9d...`) | 308이벤트 | `#0b0d13`, `#141824`, `#242b3d`, `#6366f1`, `#ec4899` | 단일 시트 캐릭터 일관성 락(Consistent Character), 스케치 투 이미지 ControlNet, 클라우드 ComfyUI |
+| 78 | **Playground AI** | `playground.com` | `ev_309addb3...` (`3f92f03a...`) | 476이벤트 | `#0d0d10`, `#17171c`, `#282832`, `#8b5cf6`, `#ec4899` | 무한 공간 캔버스 멀티타일 아웃페인팅(세로 스크롤 브리지 확장), 영역 마스크 인페인팅 |
+| 79 | **Recraft V3** | `recraft.ai` | `ev_0ade0975...` (`e769e353...`) | 884이벤트 | `#0e0e11`, `#18181d`, `#2b2b34`, `#ff3e00`, `#00e5ff` | 순수 SVG 벡터 패스 생성(마법진·가문 문장·타이틀 로고·효과음 타이포), 브랜드 컬러 팔레트 강제 |
+| 80 | **Viggle AI** | `viggle.ai` | `ev_b9fbb288...` (`a7b71711...`) | 380이벤트 | `#07090e`, `#111520`, `#21283b`, `#22c55e`, `#a855f7` | JST-1 물리 기반 2D 캐릭터 모션 전이(`/mix`, `/animate`, `/move`), 그린스크린/알파 매트 분리 |
+
 ---
 
 ## 3. UI/UX 디자인 시스템 및 CSS 토큰 비교 분석
@@ -131,7 +171,11 @@
 | **LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신** | `ltx.studio`, `boords.com`, `cascadeur.com`, `rive.app`, `jitter.video` | 3샷 프리비즈 애니매틱 카메라 시퀀스 + AutoPosing/AutoPhysics 무게중심·탄도 궤적 + 스크롤 반응형 60fps 2D 메쉬 상태머신 |
 | **Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드** | `cotrans.touhou.ai`, `vroid.com/en/studio`, `skybox.blockadelabs.com` | CTD/DBNet 말풍선 검출 + LaMa 512px 인페인팅 복원 + VRM 1.0 MToon/스프링본 + 8K 360° 깊이맵 환경광 매칭 |
 | **Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자** | `wonderunit.com`, `comicai.ai`, `aicomicfactory.com`, `storyboardthat.com`, `procreate.com/dreams`, `krita.org`, `artbreeder.com`, `sketch.pixiv.net` | 3D Shot Generator 카메라 + 120Hz 실시간 터치 Performing 트랙 + Krita ControlNet 스택 + Artbreeder 유전자 슬라이더 |
-| **창의적 신규 AI 기능 (Claude Live 연동)** | 50대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **50대 플랫폼 UI/UX 테마 토큰 합성기** + **비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
+| **Niji 7 (`--sref`/`--cref`) · Civitai/Tensor/SeaArt/PixAI LoRA 스택 · Picrew/WaifuLabs/Charat** | `nijijourney.com`, `civitai.com`, `tensor.art`, `seaart.ai`, `pixai.art`, `moescape.ai`, `waifulabs.com`, `charat.me`, `picrew.me` | Niji 7 `--sref`/`--cref`/`--cw` 레퍼런스 락 + 멀티 LoRA/ControlNet 스택 + Picrew 색상 연동 락 & WaifuLabs 4단 그리드 & Charat SD 파츠 |
+| **Tripo3D/Meshy/HeroForge 3D 프롭 · Suno OST · ElevenLabs 더빙 · MANGA Plus 글로벌 OSMU** | `tripo3d.ai`, `meshy.ai`, `heroforge.com`, `suno.com`, `elevenlabs.io`, `mangaplus-creators.jp` | 2D 스케치→쿼드 PBR 3D 무기/소품 & 2인 미니어처 포징 + Suno v4 회차별 OST + ElevenLabs 다국어 성우/효과음 + MANGA Plus 글로벌 연재 규격 |
+| **Runway Gen-3 · Luma · Pika · Viggle 모션 · Live2D Cubism · Spine 2D 무빙툰 디렉터** | `runwayml.com`, `lumalabs.ai`, `pika.art`, `viggle.ai`, `openart.ai`, `live2d.com`, `esotericsoftware.com` | Runway 5영역 Multi-Motion Brush + Luma Start/End 키프레임 보간 + Pika 캐릭터 립싱크 + Viggle JST-1 실사 모션 전이 + Live2D PSD 디포머/물리 진자 & Spine 2D IK 본 리깅 |
+| **SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 멀티협업 · Recraft/Cara 스튜디오** | `3dwarehouse.sketchup.com`, `blender.org`, `petalica.com`, `comicsmaker.ai`, `magma.com`, `playground.com`, `recraft.ai`, `cara.app` | SketchUp SKP 동적 컴포넌트 & Blender Grease Pencil 3D 공간 2D 작화 + Petalica 힌트 스트로크 자동 채색 + Magma 6인 실시간 역할 분담 + Recraft V3 순수 SVG 마법진/효과음 + Cara NoAI/Glaze 보호 |
+| **창의적 신규 AI 기능 (Claude Live 연동)** | 80대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **80대 플랫폼 UI/UX 테마 토큰 합성기** + **14대 비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
 
 ---
 

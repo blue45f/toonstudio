@@ -11,10 +11,16 @@ export {
   REA39_PLATFORM_UI_THEME_CATALOG,
   REA50_PLATFORM_IDS,
   REA50_PLATFORM_UI_THEME_CATALOG,
+  REA65_PLATFORM_IDS,
+  REA65_PLATFORM_UI_THEME_CATALOG,
+  REA80_PLATFORM_IDS,
+  REA80_PLATFORM_UI_THEME_CATALOG,
   type Rea15PlatformId,
   type Rea15PlatformUiThemeSpec,
   type Rea39PlatformId,
   type Rea50PlatformId,
+  type Rea65PlatformId,
+  type Rea80PlatformId,
 } from "./claude-rea15-platform-ui-theme-catalog";
 
 /* ============================================================================
@@ -483,6 +489,162 @@ export type StoryboarderDreamsKritaArtbreederDirectorReport = z.infer<
 >;
 
 /* ============================================================================
+ * 11. Wave 5: NijiJourney V6 · PixAI · Civitai · TensorArt · SeaArt · WaifuLabs · Picrew · CHARAT 디렉터
+ * ============================================================================ */
+
+export const NijiPixaiCivitaiLoraSrefDirectorSchema = z.object({
+  loraAndSrefSummaryKo: z.string(),
+  nijiJourneyV6Spec: z.object({
+    nijiStyleMode: z.enum(["expressive", "cute", "scenic", "original"]),
+    srefCode: z.string(),
+    styleWeightSw: z.number(),
+    characterWeightCw: z.number(),
+    compiledNijiPrompt: z.string(),
+  }),
+  civitaiPixaiTensorLoraStack: z.object({
+    baseCheckpointModel: z.string(),
+    loraAdapters: z.array(
+      z.object({
+        loraNameKo: z.string(),
+        platformSource: z.string(),
+        weight: z.number(),
+        triggerWords: z.string(),
+      }),
+    ),
+    controlNetPreprocessor: z.string(),
+    moescapeTavernPersonaHookKo: z.string(),
+  }),
+  waifuLabsPicrewCharatModularParts: z.object({
+    waifuLabs4StepSeedGridKo: z.string(),
+    picrewLayerZOrder: z.array(z.string()),
+    charatPngTuberExpressions: z.array(z.string()),
+    paletteSwapHexList: z.array(z.string()),
+  }),
+});
+
+export type NijiPixaiCivitaiLoraSrefDirectorReport = z.infer<
+  typeof NijiPixaiCivitaiLoraSrefDirectorSchema
+>;
+
+/* ============================================================================
+ * 12. Wave 5: Tripo3D · Meshy 7 · HeroForge 3D 소품/갑주 · Suno V6 OST · ElevenLabs 더빙 · MANGA Plus 디렉터
+ * ============================================================================ */
+
+export const TripoMeshyHeroforgeSunoElevenlabsOsmuSchema = z.object({
+  osmuExecutiveSummaryKo: z.string(),
+  tripoMeshyHeroforge3dPropSpec: z.object({
+    targetPropAndArmorNameKo: z.string(),
+    tripoQuadPolyCount: z.number(),
+    meshyTextureStyle: z.enum(["toon-cel-pbr", "handpainted-arcane", "metallic-gilded"]),
+    heroforgePosePresetKo: z.string(),
+    toonOutlineThicknessMm: z.number(),
+  }),
+  sunoAndElevenLabsAudioScore: z.object({
+    sunoV6TrackTitleKo: z.string(),
+    sunoGenreAndBpmTags: z.string(),
+    stemSeparationChannels: z.array(z.string()),
+    elevenLabsVoiceCast: z.array(
+      z.object({
+        characterNameKo: z.string(),
+        voiceTimbreKo: z.string(),
+        stabilityPct: z.number(),
+        styleExaggerationPct: z.number(),
+      }),
+    ),
+    foleySfxPromptKo: z.string(),
+  }),
+  mangaPlusCreatorsGlobalRelease: z.object({
+    readingMode: z.enum(["vertical-scroll", "rtl-page-spread"]),
+    localizedLanguages: z.array(z.string()),
+    shueishaMonthlyAwardTargetScore: z.number(),
+    globalPromoHookKo: z.string(),
+  }),
+});
+
+export type TripoMeshyHeroforgeSunoElevenlabsOsmuReport = z.infer<
+  typeof TripoMeshyHeroforgeSunoElevenlabsOsmuSchema
+>;
+
+/* ============================================================================
+ * 13. Wave 6: Runway Gen-4.5 · Luma Ray 2 · Pika 2.2 · Viggle JST-2 · Live2D Cubism · Spine 2D 무빙툰 디렉터
+ * ============================================================================ */
+
+export const RunwayLumaPikaViggleLive2dSpineMotionSchema = z.object({
+  movingToonExecutiveSummaryKo: z.string(),
+  motionBrushAndCameraRig: z.object({
+    runwayMotionBrushVectors: z.array(
+      z.object({
+        regionNameKo: z.string(),
+        horizontalX: z.number(),
+        verticalY: z.number(),
+        proximityZ: z.number(),
+        ambientNoise: z.number(),
+      }),
+    ),
+    lumaStartEndKeyframeLock: z.object({
+      startKeyframePromptKo: z.string(),
+      endKeyframePromptKo: z.string(),
+      cameraOrbitAndDollyKo: z.string(),
+    }),
+    pikaffectsAndPhysics: z.object({
+      effectPreset: z.enum(["pika-crush", "pika-melt", "pika-explode", "mana-shatter"]),
+      lipSyncPhonemeFps: z.number(),
+    }),
+    viggleJst2MotionTransfer: z.object({
+      commandMode: z.enum(["/mix", "/animate", "/ideate", "/character"]),
+      drivingMotionSourceKo: z.string(),
+      backgroundPlateMode: z.enum(["green-screen-alpha", "original-plate", "toon-bg-lock"]),
+    }),
+  }),
+  live2dAndSpine2dRig: z.object({
+    live2dArtMeshVertexCount: z.number(),
+    warpDeformerGrid: z.string(),
+    eyeBlinkAndLipSyncParams: z.array(z.string()),
+    spine2dIkConstraints: z.array(z.string()),
+    hairAndCapePhysicsDamping: z.number(),
+  }),
+});
+
+export type RunwayLumaPikaViggleLive2dSpineMotionReport = z.infer<
+  typeof RunwayLumaPikaViggleLive2dSpineMotionSchema
+>;
+
+/* ============================================================================
+ * 14. Wave 6: SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터
+ * ============================================================================ */
+
+export const SketchupBlenderPetalicaMagmaRecraftStudioSchema = z.object({
+  hybridStudioExecutiveSummaryKo: z.string(),
+  sketchupAndGreasePencil3d: z.object({
+    warehouseDynamicComponentKo: z.string(),
+    hiddenLineStyleAndShadowTime: z.string(),
+    greasePencilStrokeLayers: z.array(z.string()),
+    cameraPlane3dProjectionNoteKo: z.string(),
+  }),
+  petalicaAndOpenArtColorStudio: z.object({
+    petalicaModelStyle: z.enum(["Tanpopo", "Satsuki", "Canna"]),
+    colorHintStrokeCount: z.number(),
+    lineSimplifyLevel: z.number(),
+    openArtDirectorConsistencyScorePct: z.number(),
+    playgroundMixedCanvasStickerSpecKo: z.string(),
+  }),
+  magmaRecraftCaraProduction: z.object({
+    magmaCollaboratorRoles: z.array(z.string()),
+    recraftCanvaskitSvgEmblemKo: z.string(),
+    caraGlazeProtectionStrength: z.enum([
+      "low-perceptual",
+      "balanced-shield",
+      "max-adversarial-glaze",
+    ]),
+    noAiMetaTagEnabled: z.boolean(),
+  }),
+});
+
+export type SketchupBlenderPetalicaMagmaRecraftStudioReport = z.infer<
+  typeof SketchupBlenderPetalicaMagmaRecraftStudioSchema
+>;
+
+/* ============================================================================
  * 공통 실행 엔벨로프 및 통합 번들
  * ============================================================================ */
 
@@ -523,4 +685,8 @@ export interface Rea15FullSuiteBundle {
   readonly ltxBoordsCascadeurRiveAnimatic: Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport>;
   readonly cotransVroidSkyboxLocalizer: Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport>;
   readonly storyboarderDreamsKritaArtbreeder: Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport>;
+  readonly nijiPixaiCivitaiLoraSrefDirector: Rea15Envelope<NijiPixaiCivitaiLoraSrefDirectorReport>;
+  readonly tripoMeshyHeroforgeSunoElevenlabsOsmu: Rea15Envelope<TripoMeshyHeroforgeSunoElevenlabsOsmuReport>;
+  readonly runwayLumaPikaViggleLive2dSpineMotion: Rea15Envelope<RunwayLumaPikaViggleLive2dSpineMotionReport>;
+  readonly sketchupBlenderPetalicaMagmaRecraftStudio: Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport>;
 }

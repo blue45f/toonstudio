@@ -74,5 +74,21 @@ describe("StudioRea15PlatformsWorkbenchPanel (Phase 7 15대 웹툰 AI 플랫폼 
     // 탭 10: Storyboarder · Dreams · Krita · Artbreeder
     fireEvent.click(screen.getByTestId("rea15-tab-storyboarder-dreams-krita-artbreeder"));
     expect(screen.getByTestId("rea15-panel-storyboarder-dreams-krita-artbreeder")).toBeDefined();
+
+    // 탭 11: Niji 7 · Civitai · PixAI · Picrew
+    fireEvent.click(screen.getByTestId("rea15-tab-niji-pixai-civitai-lora-sref"));
+    expect(screen.getByTestId("rea15-panel-niji-pixai-civitai-lora-sref")).toBeDefined();
+
+    // 탭 12: Tripo3D · Suno · ElevenLabs · MANGA Plus OSMU
+    fireEvent.click(screen.getByTestId("rea15-tab-tripo-meshy-heroforge-suno-osmu"));
+    expect(screen.getByTestId("rea15-panel-tripo-meshy-heroforge-suno-osmu")).toBeDefined();
+
+    // 탭 13: Runway · Luma · Pika · Viggle · Live2D · Spine
+    fireEvent.click(screen.getByTestId("rea15-tab-runway-luma-pika-viggle-live2d-spine"));
+    expect(screen.getByTestId("rea15-panel-runway-luma-pika-viggle-live2d-spine")).toBeDefined();
+
+    // 탭 14: SketchUp · Blender · Petalica · Magma · Recraft
+    fireEvent.click(screen.getByTestId("rea15-tab-sketchup-blender-petalica-magma-recraft"));
+    expect(screen.getByTestId("rea15-panel-sketchup-blender-petalica-magma-recraft")).toBeDefined();
   });
 });

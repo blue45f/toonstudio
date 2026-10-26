@@ -39,16 +39,15 @@ import {
   type SnaptoonFrameoShaper3dDirectorReport,
 } from "./claude-rea15-webtoon-ecosystem-schemas";
 import {
-  buildLocalCotransVroidSkyboxWorldLocalizerReport,
-  buildLocalKreaSplineLumiereRealtimeShaderReport,
-  buildLocalLtxBoordsCascadeurRiveAnimaticReport,
-  buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
-  buildLocalTootoonGentoonTooningKrSuiteReport,
   runCotransVroidSkyboxWorldLocalizerAssist,
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
+  runNijiPixaiCivitaiLoraSrefDirectorAssist,
+  runRunwayLumaPikaViggleLive2dSpineMotionAssist,
+  runSketchupBlenderPetalicaMagmaRecraftStudioAssist,
   runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
+  runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist,
 } from "./claude-rea39-extended-engines";
 import type {
   RunWebtoonProductionAssistOptions,
@@ -56,18 +55,7 @@ import type {
 } from "./claude-webtoon-production-schemas";
 
 export * from "./claude-rea15-webtoon-ecosystem-schemas";
-export {
-  buildLocalCotransVroidSkyboxWorldLocalizerReport,
-  buildLocalKreaSplineLumiereRealtimeShaderReport,
-  buildLocalLtxBoordsCascadeurRiveAnimaticReport,
-  buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
-  buildLocalTootoonGentoonTooningKrSuiteReport,
-  runCotransVroidSkyboxWorldLocalizerAssist,
-  runKreaSplineLumiereRealtimeShaderAssist,
-  runLtxBoordsCascadeurRiveAnimaticAssist,
-  runStoryboarderDreamsKritaArtbreederDirectorAssist,
-  runTootoonGentoonTooningKrSuiteAssist,
-};
+export * from "./claude-rea39-extended-engines";
 
 function resolveOrHydrateClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
@@ -685,7 +673,7 @@ export async function runCreativeDopamineAndUxSynthesizerAssist(
 }
 
 /* ============================================================================
- * 10. 10대 REA 50-Platform & Creative AI 통합 실행기
+ * 14. 14대 REA 80-Platform & Creative AI 통합 실행기
  * ============================================================================ */
 
 export async function runRea15WebtoonEcosystemFullSuite(
@@ -703,6 +691,10 @@ export async function runRea15WebtoonEcosystemFullSuite(
     ltxBoordsCascadeurRiveAnimatic,
     cotransVroidSkyboxLocalizer,
     storyboarderDreamsKritaArtbreeder,
+    nijiPixaiCivitaiLoraSrefDirector,
+    tripoMeshyHeroforgeSunoElevenlabsOsmu,
+    runwayLumaPikaViggleLive2dSpineMotion,
+    sketchupBlenderPetalicaMagmaRecraftStudio,
   ] = await Promise.all([
     runGlimnaviRelightAndLineartV23Assist(input, options),
     runKaistorySingleEnvelopeAndKaionAssist(input, options),
@@ -714,6 +706,10 @@ export async function runRea15WebtoonEcosystemFullSuite(
     runLtxBoordsCascadeurRiveAnimaticAssist(input, options),
     runCotransVroidSkyboxWorldLocalizerAssist(input, options),
     runStoryboarderDreamsKritaArtbreederDirectorAssist(input, options),
+    runNijiPixaiCivitaiLoraSrefDirectorAssist(input, options),
+    runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist(input, options),
+    runRunwayLumaPikaViggleLive2dSpineMotionAssist(input, options),
+    runSketchupBlenderPetalicaMagmaRecraftStudioAssist(input, options),
   ]);
 
   const envelopes = [
@@ -727,6 +723,10 @@ export async function runRea15WebtoonEcosystemFullSuite(
     ltxBoordsCascadeurRiveAnimatic,
     cotransVroidSkyboxLocalizer,
     storyboarderDreamsKritaArtbreeder,
+    nijiPixaiCivitaiLoraSrefDirector,
+    tripoMeshyHeroforgeSunoElevenlabsOsmu,
+    runwayLumaPikaViggleLive2dSpineMotion,
+    sketchupBlenderPetalicaMagmaRecraftStudio,
   ];
 
   const totalEstimatedCostUsd = Number(
@@ -750,5 +750,9 @@ export async function runRea15WebtoonEcosystemFullSuite(
     ltxBoordsCascadeurRiveAnimatic,
     cotransVroidSkyboxLocalizer,
     storyboarderDreamsKritaArtbreeder,
+    nijiPixaiCivitaiLoraSrefDirector,
+    tripoMeshyHeroforgeSunoElevenlabsOsmu,
+    runwayLumaPikaViggleLive2dSpineMotion,
+    sketchupBlenderPetalicaMagmaRecraftStudio,
   });
 }

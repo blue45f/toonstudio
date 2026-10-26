@@ -76,7 +76,7 @@ export type ClaudeCreatorTaskId =
   | "runner:dialogue-translate"
   | "runner:prompt-enhancer"
   | "runner:shading-assist"
-  // 8. Phase 7 REA 50-Platform Deep Internalization & Creative AI Suite (10)
+  // 8. Phase 7 REA 80-Platform Deep Internalization & Creative AI Suite (14)
   | "rea15:glimnavi-relight-lineart-v23"
   | "rea15:kaistory-single-envelope-kaion-quiz"
   | "rea15:snaptoon-frameo-shaper-3d-lighting"
@@ -86,7 +86,11 @@ export type ClaudeCreatorTaskId =
   | "rea15:krea-spline-lumiere-realtime-shader"
   | "rea15:ltx-boords-cascadeur-rive-animatic"
   | "rea15:cotrans-vroid-skybox-world-localizer"
-  | "rea15:storyboarder-dreams-krita-artbreeder-director";
+  | "rea15:storyboarder-dreams-krita-artbreeder-director"
+  | "rea15:niji-pixai-civitai-lora-sref-director"
+  | "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu"
+  | "rea15:runway-luma-pika-viggle-live2d-spine-motion"
+  | "rea15:sketchup-blender-petalica-magma-recraft-studio";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -542,6 +546,38 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "deep-architecture",
     "3D Shot Generator 카메라·Procreate Dreams 실시간 퍼포밍 키프레임·Krita Live Diffusion·Artbreeder 유전자 교배 통합 설계는 Opus 5.5 심층 추론 적용",
     6_144,
+  ),
+  "rea15:niji-pixai-civitai-lora-sref-director": defineRoute(
+    "rea15:niji-pixai-civitai-lora-sref-director",
+    "NijiJourney V6 · PixAI · Civitai · TensorArt · WaifuLabs · Picrew · CHARAT LoRA/Sref/파츠 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "Niji V6 --sref/--cref 가중치·PixAI/Civitai/SeaArt/TensorArt LoRA 스택·WaifuLabs 4단 그리드·Picrew/CHARAT 파츠 레이어 설계는 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu": defineRoute(
+    "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu",
+    "Tripo3D · Meshy 7 · HeroForge 3D 소품/갑주 · Suno V6 OST · ElevenLabs 더빙 · MANGA Plus 디렉터",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "Tripo3D/Meshy 7/HeroForge 3D 판타지 소품·갑주 메쉬·Suno V6 스템 OST·ElevenLabs 다중 성우 더빙·MANGA Plus 글로벌 투고 패키징은 Opus 5.5 심층 추론 적용",
+    6_144,
+  ),
+  "rea15:runway-luma-pika-viggle-live2d-spine-motion": defineRoute(
+    "rea15:runway-luma-pika-viggle-live2d-spine-motion",
+    "Runway Gen-4.5 · Luma Ray 2 · Pika 2.2 · Viggle JST-2 · Live2D Cubism · Spine 2D 무빙툰 디렉터",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "Runway Multi-Motion Brush·Luma Start/End 키프레임·Pika 물리 이펙트·Viggle JST-2 모션 전이·Live2D ArtMesh/Spine 2D IK 본 리깅 통합 설계는 Opus 5.5 심층 추론 적용",
+    6_144,
+  ),
+  "rea15:sketchup-blender-petalica-magma-recraft-studio": defineRoute(
+    "rea15:sketchup-blender-petalica-magma-recraft-studio",
+    "SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "SketchUp 동적 컴포넌트/은선·Blender Grease Pencil 3D 스트로크·Petalica 3종 채색·Magma 멀티유저 협업·Recraft SVG 벡터·Cara Glaze 보호 설계는 Sonnet 5.5 적용",
+    4_096,
   ),
 });
 

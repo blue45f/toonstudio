@@ -10,9 +10,13 @@ import {
   buildLocalKreaSplineLumiereRealtimeShaderReport,
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
+  buildLocalNijiPixaiCivitaiLoraSrefDirectorReport,
+  buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport,
+  buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
   buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
+  buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport,
   buildRea15ThemeCssVariables,
   getRea15PlatformTheme,
   listRea15PlatformThemes,
@@ -23,10 +27,14 @@ import {
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
+  runNijiPixaiCivitaiLoraSrefDirectorAssist,
   runRea15WebtoonEcosystemFullSuite,
+  runRunwayLumaPikaViggleLive2dSpineMotionAssist,
+  runSketchupBlenderPetalicaMagmaRecraftStudioAssist,
   runSnaptoonFrameoShaper3dDirectorAssist,
   runStoryboarderDreamsKritaArtbreederDirectorAssist,
   runTootoonGentoonTooningKrSuiteAssist,
+  runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist,
 } from "./claude-rea15-webtoon-ecosystem-suite";
 import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
 
@@ -52,10 +60,10 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 50대 웹툰 AI 플랫폼 REA 내재화 & 창의적 AI 스위트)", () => {
-  it("0. 50대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 80대 웹툰 AI 플랫폼 REA 내재화 & 14대 창의적 AI 스위트)", () => {
+  it("0. 80대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(50);
+    expect(themes).toHaveLength(80);
 
     const glimnavi = getRea15PlatformTheme("glimnavi");
     expect(glimnavi.reaEvidenceId).toContain("ev_f2c78ddd");
@@ -70,6 +78,30 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 50대 웹툰 AI 플랫�
 
     const vroid = getRea15PlatformTheme("vroid-studio");
     expect(vroid.reaEvidenceId).toContain("ev_c576d121");
+
+    const niji = getRea15PlatformTheme("nijijourney");
+    expect(niji.reaEvidenceId).toContain("ev_ec281b4f");
+
+    const pixai = getRea15PlatformTheme("pixai-art");
+    expect(pixai.reaEvidenceId).toContain("ev_d3bb1ab0");
+
+    const suno = getRea15PlatformTheme("suno-ai");
+    expect(suno.reaEvidenceId).toContain("ev_d9164326");
+
+    const picrew = getRea15PlatformTheme("picrew-me");
+    expect(picrew.reaEvidenceId).toContain("ev_a0338d95");
+
+    const runway = getRea15PlatformTheme("runwayml");
+    expect(runway.reaEvidenceId).toContain("ev_c274761a");
+
+    const live2d = getRea15PlatformTheme("live2d-cubism");
+    expect(live2d.reaEvidenceId).toContain("ev_ebe606c4");
+
+    const recraft = getRea15PlatformTheme("recraft-ai");
+    expect(recraft.reaEvidenceId).toContain("ev_0ade0975");
+
+    const viggle = getRea15PlatformTheme("viggle-ai");
+    expect(viggle.reaEvidenceId).toContain("ev_b9fbb288");
 
     const cssVars = buildRea15ThemeCssVariables("frameo");
     expect(cssVars["--rea15-surface"]).toBe("#09090b");
@@ -301,7 +333,99 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 50대 웹툰 AI 플랫�
     expect(live.report.shotGeneratorAndComicFactory.inkLineCleanlinessPct).toBeGreaterThanOrEqual(90);
   });
 
-  it("11. runRea15WebtoonEcosystemFullSuite 10대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
+  it("11. Niji 6 (--sref/--cref) · Civitai/Tensor/SeaArt/PixAI LoRA 스택 · Picrew/WaifuLabs/Charat 캐릭터 디렉터(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(SAMPLE_INPUT);
+    expect(local.nijiJourneyV6Spec.nijiStyleMode).toBe("expressive");
+    expect(local.civitaiPixaiTensorLoraStack.loraAdapters).toHaveLength(2);
+    expect(local.waifuLabsPicrewCharatModularParts.paletteSwapHexList).toHaveLength(5);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 240, output_tokens: 390 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runNijiPixaiCivitaiLoraSrefDirectorAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.nijiJourneyV6Spec.characterWeightCw).toBe(95);
+  });
+
+  it("12. Tripo3D/Meshy/HeroForge 3D 프롭 · Suno OST · ElevenLabs 더빙 · MANGA Plus 글로벌 OSMU 디렉터(Opus 5.5)를 검증한다", async () => {
+    const local = buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(SAMPLE_INPUT);
+    expect(local.tripoMeshyHeroforge3dPropSpec.tripoQuadPolyCount).toBe(28_500);
+    expect(local.sunoAndElevenLabsAudioScore.stemSeparationChannels).toHaveLength(4);
+    expect(local.mangaPlusCreatorsGlobalRelease.localizedLanguages).toContain("en-US");
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 290, output_tokens: 470 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.mangaPlusCreatorsGlobalRelease.readingMode).toBe("vertical-scroll");
+  });
+
+  it("13. Runway Gen-3 · Luma · Pika · Viggle 모션 · Live2D Cubism · Spine 2D 무빙툰 디렉터(Opus 5.5)를 검증한다", async () => {
+    const local = buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(SAMPLE_INPUT);
+    expect(local.motionBrushAndCameraRig.runwayMotionBrushVectors).toHaveLength(2);
+    expect(local.motionBrushAndCameraRig.viggleJst2MotionTransfer.commandMode).toBe("/mix");
+    expect(local.live2dAndSpine2dRig.live2dArtMeshVertexCount).toBe(1840);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 300, output_tokens: 490 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runRunwayLumaPikaViggleLive2dSpineMotionAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.live2dAndSpine2dRig.spine2dIkConstraints).toHaveLength(4);
+  });
+
+  it("14. SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 멀티협업 · Recraft/Cara 보호 스튜디오(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(SAMPLE_INPUT);
+    expect(local.sketchupAndGreasePencil3d.greasePencilStrokeLayers).toHaveLength(4);
+    expect(local.petalicaAndOpenArtColorStudio.petalicaModelStyle).toBe("Satsuki");
+    expect(local.magmaRecraftCaraProduction.noAiMetaTagEnabled).toBe(true);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 250, output_tokens: 410 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runSketchupBlenderPetalicaMagmaRecraftStudioAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.magmaRecraftCaraProduction.magmaCollaboratorRoles).toHaveLength(4);
+  });
+
+  it("15. runRea15WebtoonEcosystemFullSuite 14대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
     vi.mocked(claudeParse).mockRejectedValueOnce(new Error("simulated network timeout"));
     vi.mocked(claudeParse).mockResolvedValueOnce({
       message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
@@ -339,11 +463,27 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 50대 웹툰 AI 플랫�
       message: { model: "claude-opus-4-6", usage: { input_tokens: 270, output_tokens: 430 } } as never,
       parsed: buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(SAMPLE_INPUT),
     });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 230, output_tokens: 360 } } as never,
+      parsed: buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 280, output_tokens: 440 } } as never,
+      parsed: buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 290, output_tokens: 450 } } as never,
+      parsed: buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 240, output_tokens: 380 } } as never,
+      parsed: buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(SAMPLE_INPUT),
+    });
 
     const bundle = await runRea15WebtoonEcosystemFullSuite(SAMPLE_INPUT, {
       route: TEST_ROUTE,
     });
-    expect(bundle.liveEngineCount).toBe(9);
+    expect(bundle.liveEngineCount).toBe(13);
     expect(bundle.fallbackEngineCount).toBe(1);
     expect(bundle.glimnaviRelightLineart.source).toBe("local-fallback");
     expect(bundle.creativeDopamineUxSynthesizer.source).toBe("claude-live");
@@ -352,5 +492,9 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 50대 웹툰 AI 플랫�
     expect(bundle.ltxBoordsCascadeurRiveAnimatic.source).toBe("claude-live");
     expect(bundle.cotransVroidSkyboxLocalizer.source).toBe("claude-live");
     expect(bundle.storyboarderDreamsKritaArtbreeder.source).toBe("claude-live");
+    expect(bundle.nijiPixaiCivitaiLoraSrefDirector.source).toBe("claude-live");
+    expect(bundle.tripoMeshyHeroforgeSunoElevenlabsOsmu.source).toBe("claude-live");
+    expect(bundle.runwayLumaPikaViggleLive2dSpineMotion.source).toBe("claude-live");
+    expect(bundle.sketchupBlenderPetalicaMagmaRecraftStudio.source).toBe("claude-live");
   });
 });
