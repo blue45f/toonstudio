@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-03",
-  "purpose": "Focused registry for domestic and international webtoon creation, drawing-assist, 3D production, localization, publishing, and creator-support products. Sources are first-party product pages where available; implementation work must reproduce capabilities and workflows without copying proprietary assets, code, models, or trade dress.",
+  "updatedAt": "2026-10-26",
+  "purpose": "Focused registry for domestic and international webtoon creation, drawing-assist, 3D production, localization, publishing, and creator-support products. Sources are first-party product pages and REA browser/AST evidence captures; implementation work must reproduce capabilities and workflows without copying proprietary assets, code, models, or trade dress.",
   "products": [
     {
       "id": "snaptoon",
@@ -12,14 +12,16 @@
       "officialUrl": "https://snaptoon.co.kr/",
       "watchUrl": "https://snaptoon.co.kr/",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_b1e4285baa78b85f3ad6b72dd54277f72ecff570448402bebd87070fac64a8c3",
       "focus": [
         "unreal-real-time-rendering",
         "sketchup-direct-import",
         "three-d-asset-warehouse",
         "lighting-style-filters",
         "camera-exposure",
-        "multi-scene"
+        "multi-scene",
+        "snapboard-ai-style-transform"
       ],
       "laneHints": [
         "three-d-import",
@@ -27,7 +29,7 @@
         "materials-library",
         "storyboard-camera-audio"
       ],
-      "implementationNotes": "Prioritize canonical model ingest, searchable local/remote 3D materials, reproducible camera-light presets, and scene variants without coupling the document model to a single renderer."
+      "implementationNotes": "Prioritize canonical model ingest, searchable local/remote 3D materials, reproducible camera-light presets, and Snapboard-style AI scene variants without coupling the document model to a single renderer."
     },
     {
       "id": "naver-webtoon-shaper",
@@ -38,7 +40,8 @@
       "officialUrl": "https://shaper.webtoons.com/",
       "watchUrl": "https://shaper.webtoons.com/",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_b31cfbe08e61ccbdb81f0bc2104108e580b7a7c5d3602039136136f7a999bdda",
       "focus": [
         "three-d-character-presets",
         "surface-direct-drawing",
@@ -64,7 +67,7 @@
       "officialUrl": "https://www.gentoon.ai/",
       "watchUrl": "https://www.gentoon.ai/webtoon-maker",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
       "focus": [
         "character-consistency",
         "automatic-panel-layout",
@@ -92,7 +95,8 @@
       "officialUrl": "https://kaistory.net/",
       "watchUrl": "https://kaistory.net/",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_76255f44204c56a3615ba3ed1dd0f8a5f1cf15aaf954649b456e50cc80824613",
       "focus": [
         "offline-first-conti",
         "single-project-data-model",
@@ -100,7 +104,8 @@
         "multi-language-translation",
         "speaker-tts",
         "browser-full-resolution-export",
-        "global-distribution"
+        "global-distribution",
+        "kaion-learning-cards-quiz"
       ],
       "laneHints": [
         "storage-recovery",
@@ -110,7 +115,7 @@
         "storyboard-camera-audio",
         "quality-delivery"
       ],
-      "implementationNotes": "Use one versioned project envelope from storyboard to publish, keep local-first recovery authoritative, and treat translation/audio/rendered assets as derived revisions."
+      "implementationNotes": "Use one versioned project envelope from storyboard to publish, keep local-first recovery authoritative, and treat translation/audio/rendered assets and KAION learning cards as derived revisions."
     },
     {
       "id": "glimnavi",
@@ -119,26 +124,31 @@
       "stage": "funded-startup",
       "category": "ai-webtoon-assist",
       "officialUrl": "https://glimnavi.com/",
-      "watchUrl": "https://glimnavi.com/",
+      "watchUrl": "https://glimnavi.com/function-step3.html",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_f2c78ddd17640152c0ce5ea59a6634cd0f7029fe29a852251b9147d1e60e3570",
       "focus": [
         "script-adaptation",
         "automatic-shot-splitting",
         "storyboard-layout",
         "line-art",
+        "lineart-v1-to-v2-3-workflows",
+        "color-layer-separation",
         "coloring",
         "lighting-shadow",
-        "stage-by-stage-regeneration"
+        "stage-by-stage-regeneration",
+        "layered-psd-export"
       ],
       "laneHints": [
         "structured-ai",
         "storyboard-camera-audio",
         "co-creative",
         "asset-variants",
-        "live-effects"
+        "live-effects",
+        "import-export"
       ],
-      "implementationNotes": "Model each AI stage as an explicit proposal over source layers with accept, reject, compare, rerun, undo, and provenance instead of destructive replacement."
+      "implementationNotes": "Model each AI stage (adaptation, conti, lineart v1.0~v2.3, coloring, shadow/lighting/shading) as an explicit proposal over source layers with accept, reject, compare, rerun, undo, and provenance instead of destructive replacement."
     },
     {
       "id": "ggooming",
@@ -149,7 +159,8 @@
       "officialUrl": "https://www.ggooms.com/",
       "watchUrl": "https://www.ggooms.com/",
       "priority": "P1",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_28d88e317e86129ace97da5ecc1aa6be41335b246956741190f7f5416fc37e32",
       "focus": [
         "style-consistency",
         "fast-panel-generation",
@@ -173,7 +184,8 @@
       "officialUrl": "https://plask.ai/",
       "watchUrl": "https://plask.ai/",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_e4c693a8ddd64ef1def91fcb5c6fc6fec52335a136eb945fbe376747ead4c7cb",
       "focus": [
         "single-camera-motion-capture",
         "vrm-animation",
@@ -200,7 +212,7 @@
       "officialUrl": "https://www.webtoons.com/en/canvas",
       "watchUrl": "https://www.webtoons.com/en/notice/list",
       "priority": "P0",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
       "focus": [
         "contextual-glossary-translation",
         "human-review",
@@ -226,14 +238,17 @@
       "officialUrl": "https://www.manhwaai.net/",
       "watchUrl": "https://www.manhwaai.net/",
       "priority": "P1",
-      "evidenceAsOf": "2026-09-03",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_0a8511a3646c5da383e58a2b265eb450df9661c4601ca6414526ebeab5cfaee3",
       "focus": [
         "consistent-characters",
         "editable-panels",
         "speech-bubbles",
         "vertical-webtoon-layouts",
         "shared-character-briefs",
-        "panel-by-panel-generation"
+        "panel-by-panel-generation",
+        "six-manhwa-style-presets",
+        "five-procedural-tone-overlays"
       ],
       "laneHints": [
         "structured-ai",
@@ -242,7 +257,131 @@
         "asset-variants",
         "co-creative"
       ],
-      "implementationNotes": "Use shared structured character bibles and panel briefs, but preserve manual layout and drawing as first-class authority."
+      "implementationNotes": "Use shared structured character bibles, 6 art style presets, and 5 tone overlays, while preserving manual layout and drawing as first-class authority."
+    },
+    {
+      "id": "komiko-ai",
+      "name": "Komiko AI",
+      "region": "US-global",
+      "stage": "startup",
+      "category": "ai-anime-comic-and-inbetween",
+      "officialUrl": "https://komiko.app/",
+      "watchUrl": "https://komiko.app/",
+      "priority": "P1",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_a6091c8e574902740961b2395722ee6d65d22ef730bf05408d69f249434dc3ea",
+      "focus": [
+        "character-consistency",
+        "line-art-colorization",
+        "sketch-simplification",
+        "layer-splitter",
+        "inbetween-animation",
+        "speaker-tts"
+      ],
+      "laneHints": [
+        "structured-ai",
+        "asset-variants",
+        "animation-timeline",
+        "comic-pages-panels"
+      ],
+      "implementationNotes": "Provide OC character anchors, non-destructive layer splitting, line-art colorization, and inbetween motion interpolation."
+    },
+    {
+      "id": "anifusion",
+      "name": "Anifusion",
+      "region": "US-global",
+      "stage": "startup",
+      "category": "node-flow-and-infinite-canvas-manga",
+      "officialUrl": "https://anifusion.ai/",
+      "watchUrl": "https://anifusion.ai/",
+      "priority": "P1",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_01828021391fc904afa8460e67291e1e0cedeb7bddfa084da1a92fe64adff8c8",
+      "focus": [
+        "node-flow-generation",
+        "infinite-canvas-panel-layout",
+        "character-consistency",
+        "style-variants"
+      ],
+      "laneHints": [
+        "structured-ai",
+        "comic-pages-panels",
+        "asset-variants",
+        "co-creative"
+      ],
+      "implementationNotes": "Support node-flow pipeline composition alongside direct canvas panel editing and reusable character sheets."
+    },
+    {
+      "id": "katalist-ai",
+      "name": "Katalist AI",
+      "region": "US-EU",
+      "stage": "startup",
+      "category": "script-to-storyboard-continuity",
+      "officialUrl": "https://www.katalist.ai/",
+      "watchUrl": "https://www.katalist.ai/",
+      "priority": "P1",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_6a2f91553a83af023e5531e399a40b2a077eb8dbdf3345f8d1d8af3ec6d23cc5",
+      "focus": [
+        "script-to-storyboard",
+        "character-consistency",
+        "camera-pose-capture",
+        "panel-layout"
+      ],
+      "laneHints": [
+        "storyboard-camera-audio",
+        "structured-ai",
+        "three-d-rig-pose",
+        "comic-pages-panels"
+      ],
+      "implementationNotes": "Link script breakdown directly to shot-table camera angles and pose controls."
+    },
+    {
+      "id": "frameo",
+      "name": "Frameo AI",
+      "region": "US-global",
+      "stage": "startup",
+      "category": "ai-storyboard-and-short-drama",
+      "officialUrl": "https://frameo.ai/",
+      "watchUrl": "https://frameo.ai/",
+      "priority": "P1",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_1b43ad4a78636801dfd2660774f04d7ce09f826e64a2fccfdd9d0ba60f87ab5a",
+      "focus": [
+        "script-to-storyboard",
+        "spotlight-cone-lighting",
+        "speaker-tts",
+        "vertical-scroll"
+      ],
+      "laneHints": [
+        "storyboard-camera-audio",
+        "live-effects",
+        "structured-ai",
+        "comic-pages-panels"
+      ],
+      "implementationNotes": "Expose directional cone lighting parameters (--cursor-angle, --cone-spread) and storyboard-to-reel timing."
+    },
+    {
+      "id": "posemaniacs",
+      "name": "Posemaniacs",
+      "region": "JP-global",
+      "stage": "established-platform",
+      "category": "three-d-anatomy-and-pose-reference",
+      "officialUrl": "https://www.posemaniacs.com/",
+      "watchUrl": "https://www.posemaniacs.com/",
+      "priority": "P1",
+      "evidenceAsOf": "2026-10-26",
+      "reaEvidenceId": "ev_da8dc6db9a1253ca2e1c2bc2ae6b410e3f76ffbbc86f44ab797b83415afb284e",
+      "focus": [
+        "pose-capture",
+        "ecorche-muscle-reference",
+        "hand-and-expression-rig"
+      ],
+      "laneHints": [
+        "three-d-rig-pose",
+        "three-d-render"
+      ],
+      "implementationNotes": "Provide fast 3D anatomy, hand, and focal-length reference presets for figure drawing."
     }
   ]
 }
