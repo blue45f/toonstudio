@@ -214,6 +214,40 @@ describe("StudioNaturalMediaShowcase", () => {
     fireEvent.click(allDockTab!);
     expect(allDockTab?.getAttribute("aria-pressed")).toBe("true");
 
+    // Wave 28 통합 드로잉 파이프라인(플루드필·호모그래피·톤커브·W3C 레이어 합성) 검증
+    const wave28DockTab = container.querySelector('[data-studio-engine-wave-filter="wave28"]') as HTMLButtonElement | null;
+    expect(wave28DockTab).not.toBeNull();
+    fireEvent.click(wave28DockTab!);
+    expect(wave28DockTab?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(allDockTab!);
+
+    const holisticToolRadio = container.querySelector('[data-studio-holistic-tool-preset="holistic-flood-fill-contiguous"]') as HTMLButtonElement | null;
+    expect(holisticToolRadio).not.toBeNull();
+    expect(holisticToolRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(holisticToolRadio!, { key: "End" });
+    const holisticPerspectiveRadio = container.querySelector('[data-studio-holistic-tool-preset="holistic-perspective-4pt-homography"]') as HTMLButtonElement | null;
+    expect(holisticPerspectiveRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const blendModeRadio = container.querySelector('[data-studio-holistic-blend-mode="multiply"]') as HTMLButtonElement | null;
+    expect(blendModeRadio).not.toBeNull();
+    fireEvent.keyDown(blendModeRadio!, { key: "End" });
+    const lumaBlendRadio = container.querySelector('[data-studio-holistic-blend-mode="luminosity"]') as HTMLButtonElement | null;
+    expect(lumaBlendRadio?.getAttribute("aria-checked")).toBe("true");
+
+    // Wave 29 전 생태계 비분할(Unfragmented) 통합 도구(FFD·선택·타이포·어니언스킨) 검증
+    const wave29DockTab = container.querySelector('[data-studio-engine-wave-filter="wave29"]') as HTMLButtonElement | null;
+    expect(wave29DockTab).not.toBeNull();
+    fireEvent.click(wave29DockTab!);
+    expect(wave29DockTab?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(allDockTab!);
+
+    const ffdRadio = container.querySelector('[data-studio-complete-ecosystem-preset="ecosystem-ffd-lattice-5x5"]') as HTMLButtonElement | null;
+    expect(ffdRadio).not.toBeNull();
+    expect(ffdRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(ffdRadio!, { key: "End" });
+    const colorReplaceRadio = container.querySelector('[data-studio-complete-ecosystem-preset="ecosystem-color-replace-eraser"]') as HTMLButtonElement | null;
+    expect(colorReplaceRadio?.getAttribute("aria-checked")).toBe("true");
+
     const contrastSwatch = container.querySelector("[data-studio-klecks-contrast-swatch]");
     expect(contrastSwatch).not.toBeNull();
   });

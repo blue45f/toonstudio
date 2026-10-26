@@ -5,17 +5,21 @@ import {
   applyGlfxFilterSuite,
   applyKlecksFilterAndVanishPointSuite,
   COMPETITOR_FILTER_PRESETS,
+  COMPLETE_ECOSYSTEM_TOOL_PRESETS,
   COREL_PARTICLE_BRUSH_PRESETS,
   encodeCleanRoomBrushQrPayload,
+  evaluateCompleteUnfragmentedStudioSummary,
   evaluateKlecksPrecisionSliderMapping,
   evaluateMyPaintFullDynamicsStep,
   evaluateSculptGlQuarticFalloff01,
+  evaluateStudioHolisticInspectorTelemetry,
   executeBooleanPolygonBrushClip,
   executeHarmonyProceduralBrush,
   executeKlecksBrushEngineSuite,
   fitSchneiderCubicBezierSpline,
   FREEHAND_ROUGH_BRUSH_PRESETS,
   HARMONY_BRUSH_KINDS,
+  HOLISTIC_STUDIO_TOOL_PRESETS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
   KLECKS_BRUSH_PRESETS,
   MYPAINT_BRUSH_PRESETS,
@@ -30,9 +34,12 @@ import {
   warpSkeletalArtBrushAlongSpine,
   type ComicRibbonStampPresetId,
   type CompetitorFilterPresetId,
+  type CompleteEcosystemToolPresetId,
   type CorelParticlePresetId,
   type FreehandRoughPresetId,
   type HarmonyBrushKind,
+  type HolisticLayerBlendMode,
+  type HolisticStudioToolPresetId,
   type KlecksPresetId,
   type MyPaintPresetId,
   type SkeletalArtBrushPresetId,
@@ -49,19 +56,35 @@ type EngineWaveDockId =
   | "wave23"
   | "wave24"
   | "wave25"
-  | "wave26";
+  | "wave26"
+  | "wave28"
+  | "wave29";
 
 const ENGINE_WAVE_DOCK_TABS: readonly {
   readonly id: EngineWaveDockId;
   readonly labelKo: string;
 }[] = [
-  { id: "all", labelKo: "전체 워크스페이스" },
-  { id: "wave21", labelKo: "절차·웹툰 (W21)" },
-  { id: "wave22", labelKo: "골격·입자 (W22)" },
-  { id: "wave23", labelKo: "베지어·Klecks (W23)" },
-  { id: "wave24", labelKo: "MyPaint·분광 (W24)" },
-  { id: "wave25", labelKo: "윤곽·해칭 (W25)" },
-  { id: "wave26", labelKo: "경쟁사 필터 (W26)" },
+  { id: "all", labelKo: "전체 통합 스튜디오" },
+  { id: "wave21", labelKo: "절차·웹툰 브러시" },
+  { id: "wave22", labelKo: "벡터 골격·입자" },
+  { id: "wave23", labelKo: "베지어·자연매체" },
+  { id: "wave24", labelKo: "MyPaint·분광안료" },
+  { id: "wave25", labelKo: "프리핸드·해칭" },
+  { id: "wave26", labelKo: "셰이더 필터·특수효과" },
+  { id: "wave28", labelKo: "채우기·레이어·이젤" },
+  { id: "wave29", labelKo: "FFD·선택·타이포·어니언" },
+];
+
+const QUICK_W3C_BLEND_MODES: readonly {
+  readonly id: HolisticLayerBlendMode;
+  readonly labelKo: string;
+}[] = [
+  { id: "multiply", labelKo: "곱하기 (Multiply)" },
+  { id: "screen", labelKo: "스크린 (Screen)" },
+  { id: "overlay", labelKo: "오버레이 (Overlay)" },
+  { id: "color-dodge", labelKo: "닷지 (Dodge)" },
+  { id: "difference", labelKo: "차이 (Diff)" },
+  { id: "luminosity", labelKo: "광도 (Luma)" },
 ];
 
 function handleRovingRadioKeyDown<T>(
@@ -159,6 +182,12 @@ export function StudioUniversalBrushEngineBar({
     useState<FreehandRoughPresetId>("pf-comic-gpen-taper");
   const [selectedCompetitorFilterId, setSelectedCompetitorFilterId] =
     useState<CompetitorFilterPresetId>("klecks-vanish-point-speedlines");
+  const [selectedHolisticToolId, setSelectedHolisticToolId] =
+    useState<HolisticStudioToolPresetId>("holistic-flood-fill-contiguous");
+  const [selectedBlendMode, setSelectedBlendMode] =
+    useState<HolisticLayerBlendMode>("multiply");
+  const [selectedCompleteEcosystemId, setSelectedCompleteEcosystemId] =
+    useState<CompleteEcosystemToolPresetId>("ecosystem-ffd-lattice-5x5");
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -166,87 +195,29 @@ export function StudioUniversalBrushEngineBar({
       y: 22 + Math.sin(idx * 0.7) * 9,
       pressure01: 0.82,
     }));
-    const harmony = executeHarmonyProceduralBrush(selectedHarmonyKind, sampleStroke, {
-      seed: 20261026,
-    });
-    const flow = traceP5BrushFlowLine({
-      presetId: "charcoal",
-      fieldKind: "waves",
-      startX: 20,
-      startY: 20,
-      lengthPx: 72,
-      baseAngleDeg: 18,
-    });
-    const ribbonPreset =
-      IBIS_MEDIBANG_BRUSH_PRESETS.find((item) => item.id === selectedComicRibbonId) ??
-      IBIS_MEDIBANG_BRUSH_PRESETS[0]!;
-    const qrPayload = encodeCleanRoomBrushQrPayload({
-      presetId: ribbonPreset.id,
-      baseDiameterPx: 24,
-      opacity01: 0.9,
-      spacingRatio: ribbonPreset.spacingRatio,
-    });
-    const mixer = stepPhotoshopMixerBrushReservoir(
-      { wet01: 0.75, load01: 0.65, mix01: 0.7, flow01: 0.88 },
-      [0.95, 0.82, 0.18],
-      [0.18, 0.45, 0.92],
-      [0.18, 0.45, 0.92],
-    );
+    const harmony = executeHarmonyProceduralBrush(selectedHarmonyKind, sampleStroke, { seed: 20261026 });
+    const flow = traceP5BrushFlowLine({ presetId: "charcoal", fieldKind: "waves", startX: 20, startY: 20, lengthPx: 72, baseAngleDeg: 18 });
+    const ribbonPreset = IBIS_MEDIBANG_BRUSH_PRESETS.find((item) => item.id === selectedComicRibbonId) ?? IBIS_MEDIBANG_BRUSH_PRESETS[0]!;
+    const qrPayload = encodeCleanRoomBrushQrPayload({ presetId: ribbonPreset.id, baseDiameterPx: 24, opacity01: 0.9, spacingRatio: ribbonPreset.spacingRatio });
+    const mixer = stepPhotoshopMixerBrushReservoir({ wet01: 0.75, load01: 0.65, mix01: 0.7, flow01: 0.88 }, [0.95, 0.82, 0.18], [0.18, 0.45, 0.92], [0.18, 0.45, 0.92]);
     const skeletalSamples = warpSkeletalArtBrushAlongSpine(selectedSkeletalId, sampleStroke, 1);
-    const particleSegments = stepCorelPainterParticleBrush({
-      presetId: selectedParticleId,
-      points: sampleStroke,
-      radiusPx: 18,
-      seed: 20261026,
-    });
+    const particleSegments = stepCorelPainterParticleBrush({ presetId: selectedParticleId, points: sampleStroke, radiusPx: 18, seed: 20261026 });
     const sculptQuarticMid = evaluateSculptGlQuarticFalloff01(0.5);
     const schneiderFit = fitSchneiderCubicBezierSpline(sampleStroke, 2.5);
-    const klecks = executeKlecksBrushEngineSuite({
-      presetId: selectedKlecksId,
-      points: sampleStroke,
-      seed: 20261026,
-    });
-    const myPaintStep = evaluateMyPaintFullDynamicsStep({
-      presetId: selectedMyPaintId,
-      x: 78,
-      y: 22,
-      pressure01: 0.82,
-      directionAngleDeg: 28,
-      tiltAscensionDeg: 12,
-    });
+    const klecks = executeKlecksBrushEngineSuite({ presetId: selectedKlecksId, points: sampleStroke, seed: 20261026 });
+    const myPaintStep = evaluateMyPaintFullDynamicsStep({ presetId: selectedMyPaintId, x: 78, y: 22, pressure01: 0.82, directionAngleDeg: 28, tiltAscensionDeg: 12 });
     const klecksPrecision = evaluateKlecksPrecisionSliderMapping({
-      slider01: klecksSlider01,
-      min: 1,
-      max: 120,
-      exponent: 1.6,
+      slider01: klecksSlider01, min: 1, max: 120, exponent: 1.6,
       perpendicularDistancePx: isKlecksFineMode ? 110 : 0,
-      isFineMode: isKlecksFineMode,
-      swatchRgb01: myPaintStep.outputRgb01,
+      isFineMode: isKlecksFineMode, swatchRgb01: myPaintStep.outputRgb01,
     });
     const booleanUnion = executeBooleanPolygonBrushClip({
-      subject: [
-        { x: 165, y: 10 },
-        { x: 188, y: 10 },
-        { x: 188, y: 32 },
-        { x: 165, y: 32 },
-      ],
-      clip: [
-        { x: 176, y: 14 },
-        { x: 202, y: 14 },
-        { x: 202, y: 36 },
-        { x: 176, y: 36 },
-      ],
+      subject: [{ x: 165, y: 10 }, { x: 188, y: 10 }, { x: 188, y: 32 }, { x: 165, y: 32 }],
+      clip: [{ x: 176, y: 14 }, { x: 202, y: 14 }, { x: 202, y: 36 }, { x: 176, y: 36 }],
       operation: "union",
     });
-    const pfOutline = synthesizePerfectFreehandStrokeOutline({
-      presetId: selectedFreehandRoughId,
-      points: sampleStroke,
-    });
-    const roughSketch = synthesizeRoughSketchyStrokeAndHachureFill({
-      presetId: selectedFreehandRoughId,
-      strokePoints: sampleStroke.slice(0, 5),
-      seed: 20261026,
-    });
+    const pfOutline = synthesizePerfectFreehandStrokeOutline({ presetId: selectedFreehandRoughId, points: sampleStroke });
+    const roughSketch = synthesizeRoughSketchyStrokeAndHachureFill({ presetId: selectedFreehandRoughId, strokePoints: sampleStroke.slice(0, 5), seed: 20261026 });
     const rdpSimplified = simplifyStrokePolylineRdp(sampleStroke, 1.6);
     const rbushSpatial = queryStrokeSpatialRTreeBBox({
       items: [
@@ -255,57 +226,37 @@ export function StudioUniversalBrushEngineBar({
       ],
       queryBox: { minX: 100, minY: 10, maxX: 160, maxY: 35 },
     });
-    const filterPreset =
-      COMPETITOR_FILTER_PRESETS.find((item) => item.id === selectedCompetitorFilterId) ??
-      COMPETITOR_FILTER_PRESETS[0]!;
+    const filterPreset = COMPETITOR_FILTER_PRESETS.find((item) => item.id === selectedCompetitorFilterId) ?? COMPETITOR_FILTER_PRESETS[0]!;
     const glfxEval = applyGlfxFilterSuite({
       centerRgb01: [0.58, 0.42, 0.25],
-      neighborSamplesRgb01: [
-        [0.56, 0.43, 0.24],
-        [0.61, 0.4, 0.27],
-      ],
+      neighborSamplesRgb01: [[0.56, 0.43, 0.24], [0.61, 0.4, 0.27]],
       denoiseExponent: filterPreset.engineFamily === "glfx" ? filterPreset.primaryParam : 18,
-      lensBlurRadiusPx: 12,
-      lensBlurBrightness: 0.4,
-      lensBlurAngleRad: 0.3,
-      sampleX: 44,
-      sampleY: 22,
-      centerX: 32,
-      centerY: 22,
-      halftoneAngleRad: 0.26,
-      halftoneSizePx: 6,
-      inkBigAverageRgb01: [0.72, 0.72, 0.72],
-      inkSmallAverageRgb01: [0.42, 0.42, 0.42],
-      inkStrength01: 0.35,
-      hexScalePx: 12,
-      warpRadiusPx: 60,
-      swirlAngleRad: 1.2,
-      bulgeStrength: 0.4,
+      lensBlurRadiusPx: 12, lensBlurBrightness: 0.4, lensBlurAngleRad: 0.3,
+      sampleX: 44, sampleY: 22, centerX: 32, centerY: 22, halftoneAngleRad: 0.26, halftoneSizePx: 6,
+      inkBigAverageRgb01: [0.72, 0.72, 0.72], inkSmallAverageRgb01: [0.42, 0.42, 0.42], inkStrength01: 0.35,
+      hexScalePx: 12, warpRadiusPx: 60, swirlAngleRad: 1.2, bulgeStrength: 0.4,
     });
     const klecksFilterEval = applyKlecksFilterAndVanishPointSuite({
-      vanishCenterX: 110,
-      vanishCenterY: 22,
-      vanishLineCount:
-        filterPreset.id === "klecks-vanish-point-speedlines" ? filterPreset.primaryParam : 16,
-      vanishInnerHollowRadiusPx: 14,
-      vanishOuterRayLengthPx: 95,
-      distortX: 44,
-      distortY: 22,
-      distortStepSizePx: 4,
-      distortType: 1,
-      distortScaleX: 24,
-      distortScaleY: 24,
-      distortStrengthX: 8,
-      distortStrengthY: 6,
-      distortPhaseX: 0.25,
-      distortPhaseY: 0.5,
-      pixelRgba01: [0.15, 0.15, 0.15, 1],
-      isInvertedToAlpha: true,
-      replaceRgb01: [0.1, 0.2, 0.8],
-      tiltStart: { x: 0, y: 22 },
-      tiltEnd: { x: 220, y: 22 },
-      tiltBlurRadiusPx: 16,
-      tiltGradientRadiusPx: 48,
+      vanishCenterX: 110, vanishCenterY: 22,
+      vanishLineCount: filterPreset.id === "klecks-vanish-point-speedlines" ? filterPreset.primaryParam : 16,
+      vanishInnerHollowRadiusPx: 14, vanishOuterRayLengthPx: 95,
+      distortX: 44, distortY: 22, distortStepSizePx: 4, distortType: 1,
+      distortScaleX: 24, distortScaleY: 24, distortStrengthX: 8, distortStrengthY: 6,
+      distortPhaseX: 0.25, distortPhaseY: 0.5, pixelRgba01: [0.15, 0.15, 0.15, 1],
+      isInvertedToAlpha: true, replaceRgb01: [0.1, 0.2, 0.8],
+      tiltStart: { x: 0, y: 22 }, tiltEnd: { x: 220, y: 22 }, tiltBlurRadiusPx: 16, tiltGradientRadiusPx: 48,
+    });
+    const holisticEval = evaluateStudioHolisticInspectorTelemetry({
+      toolPresetId: selectedHolisticToolId,
+      blendMode: selectedBlendMode,
+      baseRgb01: myPaintStep.outputRgb01,
+      strokePoints: sampleStroke,
+    });
+    const unfragmentedEval = evaluateCompleteUnfragmentedStudioSummary({
+      presetId: selectedCompleteEcosystemId,
+      sampleX: 44,
+      sampleY: 22,
+      rgb01: myPaintStep.outputRgb01,
     });
 
     const bezierSvgPath = schneiderFit.segments
@@ -342,6 +293,11 @@ export function StudioUniversalBrushEngineBar({
       vanishRays: klecksFilterEval.vanishPointRays.slice(0, 16),
       vanishRayTotalCount: klecksFilterEval.vanishPointRays.length,
       halftoneCmykSum: glfxEval.halftoneCmyk01.reduce((a, b) => a + b, 0),
+      floodFillCount: holisticEval.floodFillCount,
+      curveLutMid: holisticEval.curveLutMid,
+      dirtyTileCount: holisticEval.dirtyTileCount,
+      ffdDisplacementPx: unfragmentedEval.ffdDisplacementPx,
+      onionSkinAlpha01: unfragmentedEval.onionSkinAlpha01,
       bezierSvgPath,
       booleanPolygonPoints,
     };
@@ -354,6 +310,9 @@ export function StudioUniversalBrushEngineBar({
     selectedMyPaintId,
     selectedFreehandRoughId,
     selectedCompetitorFilterId,
+    selectedHolisticToolId,
+    selectedBlendMode,
+    selectedCompleteEcosystemId,
     klecksSlider01,
     isKlecksFineMode,
   ]);
@@ -492,7 +451,7 @@ export function StudioUniversalBrushEngineBar({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave22")}>
         <span className="text-[11px] font-semibold text-fg-2">
-          {tx("벡터 골격·입자 물리 (Wave 22):")}
+          {tx("벡터 골격·입자 물리:")}
         </span>
         <PresetRadioGroup
           ariaLabel={tx("벡터 골격 아트 브러시 프리셋")}
@@ -514,7 +473,7 @@ export function StudioUniversalBrushEngineBar({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave23")}>
         <span className="text-[11px] font-semibold text-fg-2">
-          {tx("베지어 피팅·Klecks 6종 (Wave 23):")}
+          {tx("베지어 피팅·Klecks 자연매체:")}
         </span>
         <PresetRadioGroup
           ariaLabel={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")}
@@ -528,7 +487,7 @@ export function StudioUniversalBrushEngineBar({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave24")}>
         <span className="text-[11px] font-semibold text-fg-2">
-          {tx("MyPaint 46설정·38밴드 분광 (Wave 24):")}
+          {tx("MyPaint 46설정·38밴드 분광:")}
         </span>
         <PresetRadioGroup
           ariaLabel={tx("MyPaint 46설정 및 38밴드 분광 브러시 프리셋")}
@@ -542,7 +501,7 @@ export function StudioUniversalBrushEngineBar({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave25")}>
         <span className="text-[11px] font-semibold text-fg-2">
-          {tx("프리핸드 윤곽·Rough 해칭·공간 인덱스 (Wave 25):")}
+          {tx("프리핸드 윤곽·Rough 해칭·공간 인덱스:")}
         </span>
         <PresetRadioGroup
           ariaLabel={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")}
@@ -556,7 +515,7 @@ export function StudioUniversalBrushEngineBar({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave26")}>
         <span className="text-[11px] font-semibold text-fg-2">
-          {tx("경쟁사 필터·집중선·하프톤 (Wave 26):")}
+          {tx("셰이더 필터·집중선·하프톤:")}
         </span>
         <PresetRadioGroup
           ariaLabel={tx("경쟁사 필터 및 집중선·하프톤 프리셋")}
@@ -564,6 +523,42 @@ export function StudioUniversalBrushEngineBar({
           selectedId={selectedCompetitorFilterId}
           dataAttrName="data-studio-competitor-filter-preset"
           onSelect={setSelectedCompetitorFilterId}
+          tx={tx}
+        />
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave28")}>
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("채우기·변형·W3C 레이어·이젤:")}
+        </span>
+        <PresetRadioGroup
+          ariaLabel={tx("통합 드로잉 파이프라인 도구 프리셋")}
+          items={HOLISTIC_STUDIO_TOOL_PRESETS.slice(0, 6)}
+          selectedId={selectedHolisticToolId}
+          dataAttrName="data-studio-holistic-tool-preset"
+          onSelect={setSelectedHolisticToolId}
+          tx={tx}
+        />
+        <PresetRadioGroup
+          ariaLabel={tx("W3C 16모드 레이어 합성 블렌드 모드")}
+          items={QUICK_W3C_BLEND_MODES}
+          selectedId={selectedBlendMode}
+          dataAttrName="data-studio-holistic-blend-mode"
+          onSelect={setSelectedBlendMode}
+          tx={tx}
+        />
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave29")}>
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("FFD 메쉬워프·다중선택·타이포·어니언스킨:")}
+        </span>
+        <PresetRadioGroup
+          ariaLabel={tx("전 생태계 비분할 통합 도구 프리셋")}
+          items={COMPLETE_ECOSYSTEM_TOOL_PRESETS.slice(0, 7)}
+          selectedId={selectedCompleteEcosystemId}
+          dataAttrName="data-studio-complete-ecosystem-preset"
+          onSelect={setSelectedCompleteEcosystemId}
           tx={tx}
         />
       </div>
@@ -726,6 +721,18 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span>
             {tx("불리언 정점")}: {activeUniversalTelemetry.booleanUnionVertexCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("플러드필·타일")}: {activeUniversalTelemetry.floodFillCount}/{activeUniversalTelemetry.dirtyTileCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("톤커브 LUT")}: {activeUniversalTelemetry.curveLutMid}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("FFD·어니언")}: {activeUniversalTelemetry.ffdDisplacementPx}px/{activeUniversalTelemetry.onionSkinAlpha01}
           </span>
           <span>·</span>
           <span>

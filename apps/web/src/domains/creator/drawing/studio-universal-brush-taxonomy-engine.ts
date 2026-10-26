@@ -56,6 +56,14 @@ import {
   type SketchpadBrushKind,
 } from "./studio-universal-brush-presets";
 import {
+  COMPLETE_ECOSYSTEM_TOOL_PRESETS,
+  COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER,
+} from "./studio-complete-unfragmented-ecosystem-suite";
+import {
+  HOLISTIC_STUDIO_TOOL_PRESETS,
+  WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER,
+} from "./studio-holistic-drawing-workspace-suite";
+import {
   FIVE_TILE_PATTERN_BRUSH_PRESETS,
   SKELETAL_ART_BRUSH_PRESETS,
   WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
@@ -69,6 +77,8 @@ export * from "./studio-bezier-curve-fit-brushes";
 export * from "./studio-mypaint-spectral-boolean-brushes";
 export * from "./studio-freehand-rough-spatial-brushes";
 export * from "./studio-competitor-filter-brush-suite";
+export * from "./studio-holistic-drawing-workspace-suite";
+export * from "./studio-complete-unfragmented-ecosystem-suite";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -545,6 +555,8 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly wave25ReaEvidenceCount: number;
   readonly wave26ReaEvidenceCount: number;
   readonly wave27ReaUiUxEvidenceCount: number;
+  readonly wave28HolisticReaEvidenceCount: number;
+  readonly unfragmentedEcosystemReaEvidenceCount: number;
   readonly totalVisitedAstNodes: number;
   readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
@@ -568,6 +580,8 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly rdpSimplifiedPointCount: number;
   readonly rbushSpatialHitCount: number;
   readonly competitorFilterPresetCount: number;
+  readonly holisticToolPresetCount: number;
+  readonly completeEcosystemToolPresetCount: number;
   readonly klecksVanishPointRayCount: number;
   readonly glfxHalftoneDotCmykCount: number;
   readonly schneiderFittedSegmentCount: number;
@@ -587,13 +601,17 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const wave25Nodes = WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const wave26Nodes = WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const wave27Nodes = WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.visitedAstNodes ?? 0;
+  const wave28Nodes = WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes ?? 0;
+  const wave29Nodes = COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes ?? 0;
   const totalSemanticDataFlowRelations =
     WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
     WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
     WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
-    (WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.dataFlowRelations ?? 0);
+    (WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.dataFlowRelations ?? 0) +
+    (WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER[0]?.dataFlowRelations ?? 0) +
+    (COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER[0]?.dataFlowRelations ?? 0);
   const totalVisitedAstNodes =
-    wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes + wave27Nodes;
+    wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes + wave27Nodes + wave28Nodes + wave29Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
@@ -610,10 +628,7 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const wickResult = executeWickCroquisBlobAndGapFill({
     points: samplePoints,
     baseRadiusPx: 10,
-    gapEndpoints: [
-      { a: { x: 10, y: 10 }, b: { x: 16, y: 12 } },
-      { a: { x: 40, y: 40 }, b: { x: 95, y: 95 } },
-    ],
+    gapEndpoints: [{ a: { x: 10, y: 10 }, b: { x: 16, y: 12 } }, { a: { x: 40, y: 40 }, b: { x: 95, y: 95 } }],
     gapFillAmountPx: 12,
   });
   const noisyPixelLine = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 2 }];
@@ -628,21 +643,10 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const qrDecoded = decodeCleanRoomBrushQrPayload(qrEncoded);
   const sculptGlQuarticMidFalloff01 = evaluateSculptGlQuarticFalloff01(0.5);
   const miltonCapsuleCenterCoverage01 = evaluateMiltonAnalyticalCapsuleSdfCoverage01({
-    pixelCenterX: 50,
-    pixelCenterY: 50,
-    segAx: 40,
-    segAy: 50,
-    segBx: 60,
-    segBy: 50,
-    radiusA: 4,
-    radiusB: 4,
+    pixelCenterX: 50, pixelCenterY: 50, segAx: 40, segAy: 50, segBx: 60, segBy: 50, radiusA: 4, radiusB: 4,
   });
   const myPaintStep = evaluateMyPaintFullDynamicsStep({
-    presetId: "mypaint-spectral-impasto",
-    x: 42,
-    y: 28,
-    pressure01: 0.8,
-    directionAngleDeg: 35,
+    presetId: "mypaint-spectral-impasto", x: 42, y: 28, pressure01: 0.8, directionAngleDeg: 35,
   });
   const spectral38 = mixSpectral38BandKubelkaMunkWithGamutMap([
     { rgb01: [0.05, 0.25, 0.92], factor: 0.5, tintingStrength: 1.0 },
@@ -674,45 +678,18 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const glfxSuite = applyGlfxFilterSuite({
     centerRgb01: [0.6, 0.4, 0.25],
     neighborSamplesRgb01: [[0.58, 0.42, 0.24], [0.62, 0.39, 0.26], [0.95, 0.95, 0.95]],
-    denoiseExponent: 18,
-    lensBlurRadiusPx: 12,
-    lensBlurBrightness: 0.4,
-    lensBlurAngleRad: 0.3,
-    sampleX: 42,
-    sampleY: 28,
-    centerX: 32,
-    centerY: 22,
-    halftoneAngleRad: 0.26,
-    halftoneSizePx: 6,
-    inkBigAverageRgb01: [0.7, 0.7, 0.7],
-    inkSmallAverageRgb01: [0.4, 0.4, 0.4],
-    inkStrength01: 0.35,
-    hexScalePx: 12,
-    warpRadiusPx: 60,
-    swirlAngleRad: 1.2,
-    bulgeStrength: 0.4,
+    denoiseExponent: 18, lensBlurRadiusPx: 12, lensBlurBrightness: 0.4, lensBlurAngleRad: 0.3,
+    sampleX: 42, sampleY: 28, centerX: 32, centerY: 22, halftoneAngleRad: 0.26, halftoneSizePx: 6,
+    inkBigAverageRgb01: [0.7, 0.7, 0.7], inkSmallAverageRgb01: [0.4, 0.4, 0.4], inkStrength01: 0.35,
+    hexScalePx: 12, warpRadiusPx: 60, swirlAngleRad: 1.2, bulgeStrength: 0.4,
   });
   const klecksSuite = applyKlecksFilterAndVanishPointSuite({
-    vanishCenterX: 110,
-    vanishCenterY: 22,
-    vanishLineCount: 18,
-    distortX: 40,
-    distortY: 24,
-    distortStepSizePx: 4,
-    distortType: 1,
-    distortScaleX: 24,
-    distortScaleY: 24,
-    distortStrengthX: 8,
-    distortStrengthY: 6,
-    distortPhaseX: 0.25,
-    distortPhaseY: 0.5,
-    pixelRgba01: [0.15, 0.15, 0.15, 1],
-    isInvertedToAlpha: true,
-    replaceRgb01: [0.1, 0.2, 0.8],
-    tiltStart: { x: 0, y: 22 },
-    tiltEnd: { x: 220, y: 22 },
-    tiltBlurRadiusPx: 16,
-    tiltGradientRadiusPx: 48,
+    vanishCenterX: 110, vanishCenterY: 22, vanishLineCount: 18,
+    distortX: 40, distortY: 24, distortStepSizePx: 4, distortType: 1,
+    distortScaleX: 24, distortScaleY: 24, distortStrengthX: 8, distortStrengthY: 6,
+    distortPhaseX: 0.25, distortPhaseY: 0.5, pixelRgba01: [0.15, 0.15, 0.15, 1],
+    isInvertedToAlpha: true, replaceRgb01: [0.1, 0.2, 0.8],
+    tiltStart: { x: 0, y: 22 }, tiltEnd: { x: 220, y: 22 }, tiltBlurRadiusPx: 16, tiltGradientRadiusPx: 48,
   });
 
   return {
@@ -723,13 +700,17 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
       WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length +
       WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length +
       WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length +
-      WAVE27_UIUX_REA_EVIDENCE_LEDGER.length,
+      WAVE27_UIUX_REA_EVIDENCE_LEDGER.length +
+      WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER.length +
+      COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     wave24ReaEvidenceCount: WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
     wave25ReaEvidenceCount: WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length,
     wave26ReaEvidenceCount: WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length,
     wave27ReaUiUxEvidenceCount: WAVE27_UIUX_REA_EVIDENCE_LEDGER.length,
+    wave28HolisticReaEvidenceCount: WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER.length,
+    unfragmentedEcosystemReaEvidenceCount: COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER.length,
     totalVisitedAstNodes,
     totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
@@ -753,6 +734,8 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     rdpSimplifiedPointCount: rdpSimplified.length,
     rbushSpatialHitCount: rbushQuery.matchedIds.length,
     competitorFilterPresetCount: COMPETITOR_FILTER_PRESETS.length,
+    holisticToolPresetCount: HOLISTIC_STUDIO_TOOL_PRESETS.length,
+    completeEcosystemToolPresetCount: COMPLETE_ECOSYSTEM_TOOL_PRESETS.length,
     klecksVanishPointRayCount: klecksSuite.vanishPointRays.length,
     glfxHalftoneDotCmykCount: glfxSuite.halftoneCmyk01.length,
     schneiderFittedSegmentCount: schneiderFit.segments.length,

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   evaluateKlecksPrecisionSliderMapping,
+  evaluateLabBernsteinFfdAndVibrance,
   evaluateLabGlfxColorHalftoneAndDenoise,
+  evaluateLabHolisticHomographyAndToneCurve,
   evaluateLabKlecksBlendAndSmudgeStep,
   evaluateLabKlecksDistortAndToAlpha,
   evaluateLabMyPaintOpaqueLinearizeAndPosterize,
@@ -273,5 +275,29 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
     expect(sliderPrecision.falloffFactor).toBeCloseTo(0.1, 4);
     expect(sliderPrecision.decimalPlaces).toBe(1);
     expect(sliderPrecision.roundtripSlider01).toBeCloseTo(0.15, 4);
+
+    const holisticEval = evaluateLabHolisticHomographyAndToneCurve({
+      rgb01: [0.8, 0.2, 0.1],
+      hueShiftMinus1To1: 0.25,
+      saturationMinus1To1: 0.3,
+      midtoneBoost01: 0.7,
+      baseChannel01: 0.6,
+    });
+    expect(holisticEval.rotatedRgb01[0]).toBeGreaterThan(0);
+    expect(holisticEval.curveMidpoint255).toBeGreaterThan(128);
+    expect(holisticEval.softLightBlended01).toBeGreaterThan(0.1);
+
+    const ffdEval = evaluateLabBernsteinFfdAndVibrance({
+      u01: 0.5,
+      v01: 0.5,
+      centerDeltaX: 20,
+      centerDeltaY: -12,
+      rgb01: [0.4, 0.55, 0.3],
+      vibranceMinus1To1: 0.5,
+    });
+    expect(ffdEval.bernsteinCenterWeight01).toBeCloseTo(0.1406, 4);
+    expect(ffdEval.warpedDeltaX).toBeCloseTo(2.812, 2);
+    expect(ffdEval.vibranceRgb01[0]).toBeLessThan(0.4);
+    expect(ffdEval.vibranceRgb01[1]).toBeCloseTo(0.55, 4);
   });
 });
