@@ -1,11 +1,12 @@
 # 글로벌 GitHub 오픈소스·웹 드로잉·상용 페인팅 브러시 생태계 REA 역공학 및 ToonStudio 전수 내재화 보고서 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (Wave 21 & Wave 22 전수 구현 및 검증 완료)
+- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 전수 구현 및 검증 완료)
 - **관련 모듈**:
   - `apps/web/src/domains/creator/drawing/studio-universal-brush-taxonomy-engine.ts`
   - `apps/web/src/domains/creator/drawing/studio-vector-skeletal-pattern-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-particle-pixol-brushes.ts`
+  - `apps/web/src/domains/creator/drawing/studio-bezier-curve-fit-brushes.ts`
   - `apps/web/src/domains/creator/drawing/StudioUniversalBrushEngineBar.tsx`
   - `apps/web/src/domains/creator/drawing/StudioNaturalMediaShowcase.tsx`
   - `apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts`
@@ -29,6 +30,9 @@
 | **Piskel** (`https://www.piskelapp.com/`) | 웹 픽셀·스프라이트 앱 | `ev_31e9df64e7f548071647c690e34cf2f42075cefc7359d7dc19059f64c155e03c` | `ev_6fda2408a20363be44feeef9409982682e3c8425bf5db45f61c6a62a23bcde0e` | `ev_5a75a372d991fc4dde5896b74d6d91b36b78b43d2500f1ebb1ebefa43e8d18f9` (`ev_82b7781c296d130965ced1b9c7271602063fe4a33541a4108242486740727a3d`) | `9154751284c4e63ff06a889631bfbab0c2d33c4acc83ff611231732cacbe7ca5` | 8,929 |
 | **Drawpile** (`https://drawpile.net/`) | 협업 페인팅 시스템 | `ev_767fbe775e3da4520ed43966ebe658bdc75d4b867ca6217d62ca253b497211cc` | `ev_4522a94365cee2c024020f69da2fc75bac6018dbe8341d3f0de38a257ebca71e` | `ev_46da1a1c19b0742519ff5d8d880d566ae7a834f7b1857e60d83eed4985791034` (`ev_fe38bbdeace34a459a3480551f85a4df2f524cc685b94988b0422b88f787d03d`) | `fe7723120806a795457f965aea210db1efc942687876f62efdbc1f80456a016c` | 447 |
 | **HeavyPaint & Commercial Vector/Particle Suite** (`https://www.heavypaint.com/`) | 상용 그래픽·입자 앱 | `ev_b6f1dfacd4c2abfcf79528fad5a585dce05c631d58530767c14b9787da3c95ba` | `ev_b5d8a9f72f29f17b4b6ce5fb17ceee3f646a25db1ca993667dcc9e0f067ba57d` | `ev_0f42419ab6f9c7b153f1cb23a878d61880dd76e4e70878c6113c9797ac67abb3` (`ev_a871b839aa1210775ae3db8922977f6eb7ac6f530ee6f3ea8dffc4bc9b7d69f9`) | `d0eb89a25893da8ee9b9f652b2d32722c03b7a8bad423690035db8c33ed04442` | 15,666 |
+| **Wave 23 OSS Klecks 6-Brush + MyPaint + Spectral Suite** (`bitbof/klecks`, `libmypaint`, `polygon-clipping`, `spectral.js`, `colormix.js`) | GitHub OSS 시맨틱 | — | `ev_5a5058a8b1e9c6068bf847583f6765e826500678c159276275968696ab6b6498` | `ev_937159dfabc0d0622717008d837dab1785fb85ea95bd8e43660ee3bcd18e1fd6` (`ev_daf2ba14969413fdf609777edfe943394072c96f6047ed14a5d8599f251f06d0`) | `0f2b28c8083d60a19094833592f9b5f236339d5f546e8078dc4fd3a45efa5994` | 40,379 |
+| **Kleki Paint Tool Live Web** (`https://kleki.com/`) | 웹 드로잉 앱 | `ev_e18363e6ca16f1021568217f61ca8b0bd0fb8985502a9bb9cf7caa9b89d8489b` | `ev_fea11f72411af055b8c7ad205cf8e396dbc8422791e9e92f09e86283cf7ddfb3` | `ev_0516537b2ec94a9be6d2a5b8ad462f092ccbfb8385dae17119682e25d66ecc0b` (`ev_4f595af8dd54f2b16616eacd326cec6836a7cf487e2ef741942c51ecfc657cbf`) | `729961c419cdfce0d959e266da81e2084f897acd38a1b7d9ed8394584456ba62` | 6,299 |
+| **SculptGL Live WebGL App** (`https://stephaneginier.com/sculptgl/`) | 웹 3D 조각 앱 | `ev_36354f8da48307c96490a6867a35c5263751e84667a861d366f6aee5c2ef118c` | `ev_5987f111cacd4a5496b4c58fb7adf164805d0445f40f8be8597942b0d1959979` | `ev_69e649b77cb172c5d3af961306998500a9d2e971b0dc9383d818582a9edbf6ef` (`ev_dc3c4491d9c09949ef98b8c5429d5ee8517e128711bf903d731c9135b369d4fb`) | `8b2a7bdcbd67777df57b81fb0c6b7e036a472a115d845dacf9e5f9d8d54423da` | 12,163 |
 
 ---
 
@@ -55,6 +59,13 @@
 ### 2.5 상용 벡터 골격·5-타일 패턴·입자 물리·다중색 스와치 브러시 (Inference & Clean-Room Behavioral Modeling)
 - **Illustrator / Affinity Designer**: 비신축 가이드(`headGuide01`, `tailGuide01`)로 양 끝단 물리 호 길이를 보존하는 `warpSkeletalArtBrushAlongSpine`과 꼭짓점 회전각 $\Delta\theta$로 내·외측 코너 타일을 자동 배치하는 `layoutFiveTileVectorPatternBrush`로 내재화했다.
 - **Inkscape / Corel Painter / WeaveSilk / HeavyPaint / ArtRage / Fresco / Milton**: 캘리그라피 펜촉 관성·Spiro 곡률·PowerStroke 폭 보간, 3대 입자 브러시(`spring`/`gravity`/`curl_flow`), WeaveSilk $D_n$ 조화 리본, HeavyPaint 블록인, ArtRage Gloop 점성 방울, Fresco 다중색 스와치, Milton $4\times$ RGSS 해석적 캡슐 SDF를 클린룸 수식으로 통합했다.
+
+### 2.6 Wave 23 심층 시맨틱 추적: Schneider 3차 베지어 피팅·Pomax 평행 오프셋·Klecks 6종 브러시·Wick Croquis/갭필 (Observation)
+- `trace_javascript_semantics`(`ev_0249f50541a3e6ba75de40cacc096f72ef58e3732ff4a2b758512c0f91fbab21`, `ev_b6695ade9b6a931144c9eaa40e5fc84c1874519aa23b3eac76b448fed446d311`, `ev_2407e4b505a3225eefd4a545d9857ec0c36b57c70dd22a37274af0e8f9060047`, `ev_4582e87f1e836effa76e2d7c4434e9e9e25027a220c09ef1f4ac4d86dca80d11`)로 다음 수식이 직접 관찰되어 `studio-bezier-curve-fit-brushes.ts`에 내재화되었다:
+  - **Philip J. Schneider (`fit-curve.js`)**: 현 길이 매개변수화 $u_i$, $2\times2$ Cramer 공분산 행렬 최소자승 제어점 해법($\alpha_l, \alpha_r$)과 Wu/Barsky $\text{segLength}/3$ 폴백, Newton-Raphson 재매개변수화 $u_i' = u_i - \frac{(Q(u_i)-P_i)\cdot Q'(u_i)}{\|Q'(u_i)\|^2 + (Q(u_i)-P_i)\cdot Q''(u_i)}$.
+  - **Pomax (`bezier.js`)**: 단위 법선 $\hat{n}(t)$ 오프셋 레일 및 부호 곡률 $\kappa(t) = \frac{x'y'' - y'x''}{(x'^2+y'^2)^{3/2}}$ 기반 첨점($|\kappa(t)\cdot r(t)| > 1$) 감지·억제.
+  - **Klecks (`bitbof/klecks`) 6종 브러시**: `PenBrush`(4종 알파 팁·3단계 밉맵·분필 회전 `((x+y)*53123)%(2*PI)`), `BlendBrush`(적응형 스페이싱 `mix(size, size*2/9)`·45% 양방향 픽업·샤프니스 `opacity^2*0.8`), `SmudgeBrush`(자기 덮어쓰기 방지 양방향 스캔라인 복사), `SketchyBrush`(삼각함수 결정론적 PRNG `sin(6324634.2345*cos(++seed*5342.3423))*0.5+0.5`), `ChemyBrush`(4분면 대칭 실루엣), `PixelBrush`(`PixelDiscUnion` 수평 스캔라인 병합).
+  - **Wick Editor & Konva**: Croquis 필압 매핑 $[0, 1] \to [0.14, 1.0]$ + 모폴로지 갭필, Konva 현 길이 비례 Cardinal Tension 제어점 확장.
 
 ---
 

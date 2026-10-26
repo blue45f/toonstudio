@@ -4,23 +4,30 @@ import {
   applyConceptsNudgeAndSlice,
   applyPixelArtAdvancedBrush,
   applySculptGlPixol25DBrushDab,
+  computePomaxBezierParallelOffsetEnvelope,
   COREL_PARTICLE_BRUSH_PRESETS,
   decodeCleanRoomBrushQrPayload,
   encodeCleanRoomBrushQrPayload,
   evaluateArtRageAndFrescoBrushStep,
   evaluateBayerDitherBrushMask,
   evaluateInkscapeCalligraphicSpiroStroke,
+  evaluateKlecksTrigonometricPrng01,
+  evaluateKonvaCardinalTensionSpline,
   evaluateMiltonAnalyticalCapsuleSdfCoverage01,
   evaluateP5BrushVectorFieldAngleDeg,
   evaluateSaiVer2BrushStep,
   evaluateSculptGlQuarticFalloff01,
   executeFabricBrushSuite,
   executeHarmonyProceduralBrush,
+  executeKlecksBrushEngineSuite,
+  executeWickCroquisBlobAndGapFill,
   filterPixelPerfectStroke,
+  fitSchneiderCubicBezierSpline,
   FIVE_TILE_PATTERN_BRUSH_PRESETS,
   generateJsPaintBrushMask,
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
+  KLECKS_BRUSH_PRESETS,
   layoutFiveTileVectorPatternBrush,
   measureUniversalBrushTaxonomyEngineBenchmark,
   P5_BRUSH_PRESET_CATALOG,
@@ -39,6 +46,7 @@ import {
   UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER,
   warpSkeletalArtBrushAlongSpine,
   WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
+  WAVE23_REA_DEEP_SEMANTIC_LEDGER,
 } from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브러시·드로잉 엔진 내재화)", () => {
@@ -219,9 +227,11 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(10);
+    expect(bench.reaEvidenceTargetCount).toBe(14);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
-    expect(bench.totalVisitedAstNodes).toBeGreaterThan(300000);
+    expect(bench.wave23ReaSemanticTargetCount).toBe(4);
+    expect(bench.totalVisitedAstNodes).toBeGreaterThan(360000);
+    expect(bench.totalSemanticDataFlowRelations).toBeGreaterThan(42000);
     expect(bench.qrCodecRoundtripVerified).toBe(true);
   });
 
@@ -373,5 +383,88 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
       radiusB: 5,
     });
     expect(miltonCenter).toBe(1);
+  });
+
+  it("Wave 23 REA 심층 시맨틱 원장(4개 타깃, 8.2만+ AST 노드, 4.2만+ 데이터흐름), Schneider 3차 베지어 피팅, Pomax 평행 오프셋 첨점 감지, Klecks 6종 엔진(10종 프리셋), Wick Croquis/갭필, Konva 텐션 스플라인이 정확히 동작한다", () => {
+    expect(WAVE23_REA_DEEP_SEMANTIC_LEDGER).toHaveLength(4);
+    for (const entry of WAVE23_REA_DEEP_SEMANTIC_LEDGER) {
+      expect(entry.parentAnalysisEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.summaryViewEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.modulesViewEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.jsFactsViewEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.visitedAstNodes).toBeGreaterThan(5000);
+      expect(entry.dataFlowRelations).toBeGreaterThan(3000);
+    }
+
+    const sWavePoints = Array.from({ length: 18 }, (_, i) => ({
+      x: i * 10,
+      y: Math.sin(i * 0.45) * 32,
+      pressure01: 0.75,
+    }));
+    const fitted = fitSchneiderCubicBezierSpline(sWavePoints, 2.5);
+    expect(fitted.segments.length).toBeGreaterThanOrEqual(2);
+    expect(fitted.svgPathData).toMatch(/^M 0\.00 0\.00 C /);
+
+    const sharpBendSegment = {
+      p0: { x: 0, y: 0 },
+      ctrl1: { x: 18, y: 90 },
+      ctrl2: { x: 20, y: -90 },
+      p3: { x: 38, y: 0 },
+    };
+    const offsetEnv = computePomaxBezierParallelOffsetEnvelope({
+      segment: sharpBendSegment,
+      startRadiusPx: 30,
+      endRadiusPx: 30,
+      sampleSteps: 32,
+    });
+    expect(offsetEnv.samples).toHaveLength(33);
+    expect(offsetEnv.cuspCount).toBeGreaterThan(0);
+    expect(offsetEnv.maxAbsCurvature).toBeGreaterThan(0.03);
+
+    expect(KLECKS_BRUSH_PRESETS).toHaveLength(10);
+    for (const preset of KLECKS_BRUSH_PRESETS) {
+      const res = executeKlecksBrushEngineSuite({
+        presetId: preset.id,
+        points: sWavePoints,
+        seed: 20261026,
+      });
+      expect(res.presetId).toBe(preset.id);
+      expect(res.dabCount).toBeGreaterThan(0);
+    }
+
+    const prngVal = evaluateKlecksTrigonometricPrng01(7);
+    expect(prngVal).toBeGreaterThanOrEqual(0);
+    expect(prngVal).toBeLessThanOrEqual(1);
+
+    const wick = executeWickCroquisBlobAndGapFill({
+      points: [
+        { x: 0, y: 0, pressure01: 0 },
+        { x: 40, y: 0, pressure01: 1 },
+      ],
+      baseRadiusPx: 12,
+      stabilizerWeight0to100: 50,
+      gapEndpoints: [
+        { a: { x: 5, y: 5 }, b: { x: 11, y: 8 } },
+        { a: { x: 0, y: 0 }, b: { x: 80, y: 80 } },
+      ],
+      gapFillAmountPx: 10,
+    });
+    expect(wick.croquisPressures01[0]).toBeCloseTo(0.14, 4);
+    expect(wick.croquisPressures01[1]).toBeCloseTo(1.0, 4);
+    expect(wick.effectiveStabilizerWeight).toBeCloseTo(0.8, 3);
+    expect(wick.closedGapBridgeCount).toBe(1);
+
+    const konvaControls = evaluateKonvaCardinalTensionSpline(
+      [
+        { x: 0, y: 0 },
+        { x: 30, y: 40 },
+        { x: 60, y: 0 },
+      ],
+      0.5,
+    );
+    expect(konvaControls).toHaveLength(1);
+    expect(konvaControls[0].prevControlPoint.x).toBeLessThan(30);
+    expect(konvaControls[0].nextControlPoint.x).toBeGreaterThan(30);
   });
 });

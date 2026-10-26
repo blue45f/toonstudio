@@ -327,3 +327,127 @@ export function warpLabSkeletalNonStretchU01(params: {
   return Math.fround(clamp01(headGuide + clamp01(midProgress) * (tailGuide - headGuide)));
 }
 
+/**
+ * Philip J. Schneider (`Graphics Gems` / `fit-curve`) $2 \times 2$ Cramer 최소자승 3차 베지어 제어점 피팅.
+ */
+export function fitLabSchneiderCubicBezier(
+  points: readonly LabStrokeAnchor2D[],
+): {
+  readonly p0: { readonly x: number; readonly y: number };
+  readonly ctrl1: { readonly x: number; readonly y: number };
+  readonly ctrl2: { readonly x: number; readonly y: number };
+  readonly p3: { readonly x: number; readonly y: number };
+} | null {
+  const valid = points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+  if (valid.length < 2) return null;
+
+  const first = valid[0];
+  const last = valid[valid.length - 1];
+  const second = valid[1];
+  const penult = valid[valid.length - 2];
+
+  const norm = (dx: number, dy: number): readonly [number, number] => {
+    const len = Math.hypot(dx, dy);
+    return len > 1e-6 ? [dx / len, dy / len] : [1, 0];
+  };
+  const [ltX, ltY] = norm(second.x - first.x, second.y - first.y);
+  const [rtX, rtY] = norm(penult.x - last.x, penult.y - last.y);
+
+  const u: number[] = [0];
+  for (let i = 1; i < valid.length; i += 1) {
+    u.push(u[i - 1] + Math.hypot(valid[i].x - valid[i - 1].x, valid[i].y - valid[i - 1].y));
+  }
+  const totalLen = u[u.length - 1];
+  for (let i = 0; i < u.length; i += 1) {
+    u[i] = totalLen > 1e-6 ? u[i] / totalLen : i / Math.max(1, valid.length - 1);
+  }
+
+  let c00 = 0;
+  let c01 = 0;
+  let c11 = 0;
+  let x0 = 0;
+  let x1 = 0;
+
+  for (let i = 0; i < valid.length; i += 1) {
+    const ui = u[i];
+    const mt = 1 - ui;
+    const b1 = 3 * ui * mt * mt;
+    const b2 = 3 * ui * ui * mt;
+    const a0x = ltX * b1;
+    const a0y = ltY * b1;
+    const a1x = rtX * b2;
+    const a1y = rtY * b2;
+
+    c00 += a0x * a0x + a0y * a0y;
+    c01 += a0x * a1x + a0y * a1y;
+    c11 += a1x * a1x + a1y * a1y;
+
+    const w0 = mt * mt * (1 + 2 * ui);
+    const w3 = ui * ui * (3 - 2 * ui);
+    const tx = valid[i].x - (first.x * w0 + last.x * w3);
+    const ty = valid[i].y - (first.y * w0 + last.y * w3);
+
+    x0 += a0x * tx + a0y * ty;
+    x1 += a1x * tx + a1y * ty;
+  }
+
+  const det = c00 * c11 - c01 * c01;
+  const chord = Math.hypot(last.x - first.x, last.y - first.y);
+  const eps = 1e-6 * chord;
+  let alphaL = Math.abs(det) > 1e-9 ? (x0 * c11 - x1 * c01) / det : 0;
+  let alphaR = Math.abs(det) > 1e-9 ? (c00 * x1 - c01 * x0) / det : 0;
+  if (alphaL < eps || alphaR < eps) {
+    alphaL = chord / 3;
+    alphaR = chord / 3;
+  }
+
+  return {
+    p0: { x: Math.fround(first.x), y: Math.fround(first.y) },
+    ctrl1: { x: Math.fround(first.x + ltX * alphaL), y: Math.fround(first.y + ltY * alphaL) },
+    ctrl2: { x: Math.fround(last.x + rtX * alphaR), y: Math.fround(last.y + rtY * alphaR) },
+    p3: { x: Math.fround(last.x), y: Math.fround(last.y) },
+  };
+}
+
+/**
+ * Klecks (`bitbof/klecks`) BlendBrush 적응형 스페이싱·샤프니스·KM 물감 혼합 및 SmudgeBrush 스캔라인 순서.
+ */
+export function evaluateLabKlecksBlendAndSmudgeStep(params: {
+  readonly sizePx: number;
+  readonly opacity01: number;
+  readonly blending01: number;
+  readonly prevY: number;
+  readonly currY: number;
+  readonly brushRgb: readonly [number, number, number];
+  readonly canvasRgb: readonly [number, number, number];
+}): {
+  readonly adaptiveSpacingPx: number;
+  readonly radialSharpness01: number;
+  readonly mixedRgb: [number, number, number];
+  readonly smudgeScanlineOrder: "bottom-to-top" | "top-to-bottom";
+} {
+  const size = Math.max(0.5, Number.isFinite(params.sizePx) ? params.sizePx : 12);
+  const opacity = clamp01(params.opacity01);
+  const blending = clamp01(params.blending01);
+  const t = clamp01((size - 2.7) / (12 - 2.7));
+  const adaptiveSpacingPx = Math.fround(size + ((size * 2) / 9 - size) * t);
+  const radialSharpness01 = Math.fround(opacity * opacity * 0.8);
+  const mixedRgb = kmMixRgb(params.brushRgb, params.canvasRgb, clamp01(0.45 * blending));
+  const smudgeScanlineOrder = params.prevY < params.currY ? "bottom-to-top" : "top-to-bottom";
+
+  return {
+    adaptiveSpacingPx,
+    radialSharpness01,
+    mixedRgb,
+    smudgeScanlineOrder,
+  };
+}
+
+/**
+ * Wick Editor Croquis 필압 매핑: $p_{\text{croquis}} = 0.14 + 0.86p$.
+ */
+export function evaluateLabWickCroquisPressure01(rawPressure01: number): number {
+  return Math.fround(0.14 + 0.86 * clamp01(rawPressure01));
+}
+
+

@@ -6,8 +6,11 @@ import {
   encodeCleanRoomBrushQrPayload,
   evaluateSculptGlQuarticFalloff01,
   executeHarmonyProceduralBrush,
+  executeKlecksBrushEngineSuite,
+  fitSchneiderCubicBezierSpline,
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
+  KLECKS_BRUSH_PRESETS,
   SKELETAL_ART_BRUSH_PRESETS,
   stepCorelPainterParticleBrush,
   stepPhotoshopMixerBrushReservoir,
@@ -16,6 +19,7 @@ import {
   type ComicRibbonStampPresetId,
   type CorelParticlePresetId,
   type HarmonyBrushKind,
+  type KlecksPresetId,
   type SkeletalArtBrushPresetId,
 } from "./studio-universal-brush-taxonomy-engine";
 
@@ -34,6 +38,8 @@ export function StudioUniversalBrushEngineBar({
     useState<SkeletalArtBrushPresetId>("katana-blade");
   const [selectedParticleId, setSelectedParticleId] =
     useState<CorelParticlePresetId>("silk-harmonic-spring");
+  const [selectedKlecksId, setSelectedKlecksId] =
+    useState<KlecksPresetId>("klecks-blend-watercolor");
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -75,6 +81,12 @@ export function StudioUniversalBrushEngineBar({
       seed: 20261026,
     });
     const sculptQuarticMid = evaluateSculptGlQuarticFalloff01(0.5);
+    const schneiderFit = fitSchneiderCubicBezierSpline(sampleStroke, 2.5);
+    const klecks = executeKlecksBrushEngineSuite({
+      presetId: selectedKlecksId,
+      points: sampleStroke,
+      seed: 20261026,
+    });
     return {
       harmony,
       flowCount: flow.length,
@@ -84,8 +96,16 @@ export function StudioUniversalBrushEngineBar({
       skeletalCount: skeletalSamples.length,
       particleSegmentCount: particleSegments.length,
       sculptQuarticMid,
+      schneiderSegmentCount: schneiderFit.segments.length,
+      klecksDabCount: klecks.dabCount,
     };
-  }, [selectedHarmonyKind, selectedComicRibbonId, selectedSkeletalId, selectedParticleId]);
+  }, [
+    selectedHarmonyKind,
+    selectedComicRibbonId,
+    selectedSkeletalId,
+    selectedParticleId,
+    selectedKlecksId,
+  ]);
 
   return (
     <div
@@ -309,6 +329,61 @@ export function StudioUniversalBrushEngineBar({
           })}
         </div>
       </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("베지어 피팅·Klecks 6종 (Wave 23):")}
+        </span>
+        <div
+          role="radiogroup"
+          aria-label={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")}
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          {KLECKS_BRUSH_PRESETS.slice(4, 10).map((preset, idx, arr) => {
+            const isSelected = preset.id === selectedKlecksId;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                data-studio-klecks-preset={preset.id}
+                onClick={() => setSelectedKlecksId(preset.id)}
+                onKeyDown={(e) => {
+                  let nextIdx = -1;
+                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                    nextIdx = (idx + 1) % arr.length;
+                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                    nextIdx = (idx - 1 + arr.length) % arr.length;
+                  } else if (e.key === "Home") {
+                    nextIdx = 0;
+                  } else if (e.key === "End") {
+                    nextIdx = arr.length - 1;
+                  }
+                  if (nextIdx >= 0) {
+                    e.preventDefault();
+                    const target = arr[nextIdx];
+                    if (target) {
+                      setSelectedKlecksId(target.id);
+                      const container = e.currentTarget.parentElement;
+                      const buttons =
+                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+                      buttons?.[nextIdx]?.focus();
+                    }
+                  }
+                }}
+                className={
+                  isSelected
+                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
+                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {tx(preset.labelKo)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-2">
         <span>
           {tx(activeUniversalTelemetry.ribbonPreset.labelKo)} ({activeUniversalTelemetry.ribbonPreset.sourceApp})
@@ -336,6 +411,14 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span>
             {tx("입자 궤적")}: {activeUniversalTelemetry.particleSegmentCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("베지어 피팅")}: {activeUniversalTelemetry.schneiderSegmentCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("Klecks 댑")}: {activeUniversalTelemetry.klecksDabCount}
           </span>
           <span>·</span>
           <span>
