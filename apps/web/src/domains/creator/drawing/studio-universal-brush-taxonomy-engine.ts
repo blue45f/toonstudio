@@ -64,6 +64,10 @@ import {
   WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER,
 } from "./studio-holistic-drawing-workspace-suite";
 import {
+  MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER,
+  MONOLITHIC_TOTAL_TOOL_PRESETS,
+} from "./studio-monolithic-total-drawing-engine";
+import {
   FIVE_TILE_PATTERN_BRUSH_PRESETS,
   SKELETAL_ART_BRUSH_PRESETS,
   WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
@@ -79,6 +83,7 @@ export * from "./studio-freehand-rough-spatial-brushes";
 export * from "./studio-competitor-filter-brush-suite";
 export * from "./studio-holistic-drawing-workspace-suite";
 export * from "./studio-complete-unfragmented-ecosystem-suite";
+export * from "./studio-monolithic-total-drawing-engine";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -557,6 +562,7 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly wave27ReaUiUxEvidenceCount: number;
   readonly wave28HolisticReaEvidenceCount: number;
   readonly unfragmentedEcosystemReaEvidenceCount: number;
+  readonly monolithicTotalReaEvidenceCount: number;
   readonly totalVisitedAstNodes: number;
   readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
@@ -582,6 +588,7 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly competitorFilterPresetCount: number;
   readonly holisticToolPresetCount: number;
   readonly completeEcosystemToolPresetCount: number;
+  readonly monolithicTotalToolPresetCount: number;
   readonly klecksVanishPointRayCount: number;
   readonly glfxHalftoneDotCmykCount: number;
   readonly schneiderFittedSegmentCount: number;
@@ -603,15 +610,17 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const wave27Nodes = WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.visitedAstNodes ?? 0;
   const wave28Nodes = WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes ?? 0;
   const wave29Nodes = COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes ?? 0;
+  const wave30Nodes = MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes ?? 0;
   const totalSemanticDataFlowRelations =
     WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
     WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
     WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
     (WAVE27_UIUX_REA_EVIDENCE_LEDGER[0]?.dataFlowRelations ?? 0) +
     (WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER[0]?.dataFlowRelations ?? 0) +
-    (COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER[0]?.dataFlowRelations ?? 0);
+    (COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER[0]?.dataFlowRelations ?? 0) +
+    MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0);
   const totalVisitedAstNodes =
-    wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes + wave27Nodes + wave28Nodes + wave29Nodes;
+    wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes + wave27Nodes + wave28Nodes + wave29Nodes + wave30Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
@@ -702,7 +711,8 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
       WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length +
       WAVE27_UIUX_REA_EVIDENCE_LEDGER.length +
       WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER.length +
-      COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER.length,
+      COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER.length +
+      MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     wave24ReaEvidenceCount: WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
@@ -711,6 +721,7 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     wave27ReaUiUxEvidenceCount: WAVE27_UIUX_REA_EVIDENCE_LEDGER.length,
     wave28HolisticReaEvidenceCount: WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER.length,
     unfragmentedEcosystemReaEvidenceCount: COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER.length,
+    monolithicTotalReaEvidenceCount: MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER.length,
     totalVisitedAstNodes,
     totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
@@ -736,6 +747,7 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     competitorFilterPresetCount: COMPETITOR_FILTER_PRESETS.length,
     holisticToolPresetCount: HOLISTIC_STUDIO_TOOL_PRESETS.length,
     completeEcosystemToolPresetCount: COMPLETE_ECOSYSTEM_TOOL_PRESETS.length,
+    monolithicTotalToolPresetCount: MONOLITHIC_TOTAL_TOOL_PRESETS.length,
     klecksVanishPointRayCount: klecksSuite.vanishPointRays.length,
     glfxHalftoneDotCmykCount: glfxSuite.halftoneCmyk01.length,
     schneiderFittedSegmentCount: schneiderFit.segments.length,

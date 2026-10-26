@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactElement } from "react";
 
 import {
@@ -10,6 +10,7 @@ import {
   encodeCleanRoomBrushQrPayload,
   evaluateCompleteUnfragmentedStudioSummary,
   evaluateKlecksPrecisionSliderMapping,
+  evaluateMonolithicTotalEngineTelemetry,
   evaluateMyPaintFullDynamicsStep,
   evaluateSculptGlQuarticFalloff01,
   evaluateStudioHolisticInspectorTelemetry,
@@ -22,6 +23,7 @@ import {
   HOLISTIC_STUDIO_TOOL_PRESETS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
   KLECKS_BRUSH_PRESETS,
+  MONOLITHIC_TOTAL_TOOL_PRESETS,
   MYPAINT_BRUSH_PRESETS,
   queryStrokeSpatialRTreeBBox,
   simplifyStrokePolylineRdp,
@@ -41,6 +43,7 @@ import {
   type HolisticLayerBlendMode,
   type HolisticStudioToolPresetId,
   type KlecksPresetId,
+  type MonolithicTotalToolPresetId,
   type MyPaintPresetId,
   type SkeletalArtBrushPresetId,
 } from "./studio-universal-brush-taxonomy-engine";
@@ -58,7 +61,8 @@ type EngineWaveDockId =
   | "wave25"
   | "wave26"
   | "wave28"
-  | "wave29";
+  | "wave29"
+  | "wave30";
 
 const ENGINE_WAVE_DOCK_TABS: readonly {
   readonly id: EngineWaveDockId;
@@ -73,6 +77,7 @@ const ENGINE_WAVE_DOCK_TABS: readonly {
   { id: "wave26", labelKo: "셰이더 필터·특수효과" },
   { id: "wave28", labelKo: "채우기·레이어·이젤" },
   { id: "wave29", labelKo: "FFD·선택·타이포·어니언" },
+  { id: "wave30", labelKo: "만다라·칼레이도·벡터·엘보우" },
 ];
 
 const QUICK_W3C_BLEND_MODES: readonly {
@@ -110,7 +115,9 @@ function handleRovingRadioKeyDown<T>(
       onSelect(target);
       const container = e.currentTarget.parentElement;
       const buttons = container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-      buttons?.[nextIdx]?.focus();
+      const nextBtn = buttons?.[nextIdx];
+      nextBtn?.focus();
+      nextBtn?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
     }
   }
 }
@@ -163,6 +170,7 @@ function PresetRadioGroup<Id extends string>({
 export function StudioUniversalBrushEngineBar({
   tx,
 }: StudioUniversalBrushEngineBarProps): ReactElement {
+  const barRef = useRef<HTMLDivElement | null>(null);
   const [activeWaveDock, setActiveWaveDock] = useState<EngineWaveDockId>("all");
   const [klecksSlider01, setKlecksSlider01] = useState<number>(0.5);
   const [isKlecksFineMode, setIsKlecksFineMode] = useState<boolean>(false);
@@ -188,6 +196,22 @@ export function StudioUniversalBrushEngineBar({
     useState<HolisticLayerBlendMode>("multiply");
   const [selectedCompleteEcosystemId, setSelectedCompleteEcosystemId] =
     useState<CompleteEcosystemToolPresetId>("ecosystem-ffd-lattice-5x5");
+  const [selectedMonolithicToolId, setSelectedMonolithicToolId] =
+    useState<MonolithicTotalToolPresetId>("monolithic-kaleidoscope-polar");
+  const [mandalaAxes, setMandalaAxes] = useState<number>(8);
+
+  useEffect(() => {
+    const root = barRef.current;
+    if (!root) return;
+    const onBeforeMatch = (evt: Event): void => {
+      const target = evt.target as HTMLElement | null;
+      const section = target?.closest<HTMLElement>("[data-studio-wave-section]");
+      const waveId = section?.getAttribute("data-studio-wave-section") as EngineWaveDockId | null;
+      if (waveId) setActiveWaveDock(waveId);
+    };
+    root.addEventListener("beforematch", onBeforeMatch);
+    return () => root.removeEventListener("beforematch", onBeforeMatch);
+  }, []);
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -258,6 +282,11 @@ export function StudioUniversalBrushEngineBar({
       sampleY: 22,
       rgb01: myPaintStep.outputRgb01,
     });
+    const monolithicEval = evaluateMonolithicTotalEngineTelemetry({
+      presetId: selectedMonolithicToolId,
+      strength01: klecksSlider01,
+      symmetryAxes: mandalaAxes,
+    });
 
     const bezierSvgPath = schneiderFit.segments
       .map((seg, i) =>
@@ -298,6 +327,7 @@ export function StudioUniversalBrushEngineBar({
       dirtyTileCount: holisticEval.dirtyTileCount,
       ffdDisplacementPx: unfragmentedEval.ffdDisplacementPx,
       onionSkinAlpha01: unfragmentedEval.onionSkinAlpha01,
+      monolithicEval,
       bezierSvgPath,
       booleanPolygonPoints,
     };
@@ -313,15 +343,20 @@ export function StudioUniversalBrushEngineBar({
     selectedHolisticToolId,
     selectedBlendMode,
     selectedCompleteEcosystemId,
+    selectedMonolithicToolId,
+    mandalaAxes,
     klecksSlider01,
     isKlecksFineMode,
   ]);
 
   const showWave = (wave: EngineWaveDockId): boolean =>
     activeWaveDock === "all" || activeWaveDock === wave;
+  const hiddenUntilFound = (wave: EngineWaveDockId): boolean | undefined =>
+    showWave(wave) ? undefined : ("until-found" as unknown as boolean);
 
   return (
     <div
+      ref={barRef}
       style={{ containerType: "inline-size" }}
       className="studio-universal-engine-container @container mt-3 rounded-2xl border border-line bg-card/75 px-3.5 py-2.5 shadow-xs backdrop-blur-md"
       data-studio-universal-brush-bar="true"
@@ -329,9 +364,12 @@ export function StudioUniversalBrushEngineBar({
       <style>{`
         .studio-universal-engine-title { font-size: 0.75rem; }
         @supports (font-size: 1cqi) {
-          .studio-universal-engine-title { font-size: clamp(0.6875rem, 1.4cqi, 0.875rem); }
+          .studio-universal-engine-title { font-size: clamp(0.6875rem, 0.55rem + 0.5cqi, 0.875rem); }
         }
         .studio-universal-inspector-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+        @media (min-width: 640px) {
+          .studio-universal-inspector-grid { flex-direction: row; align-items: center; justify-content: space-between; }
+        }
         @container (min-width: 520px) {
           .studio-universal-inspector-grid { flex-direction: row; align-items: center; justify-content: space-between; }
         }
@@ -402,7 +440,7 @@ export function StudioUniversalBrushEngineBar({
         </div>
       </div>
 
-      <div hidden={!showWave("wave21")}>
+      <div data-studio-wave-section="wave21" hidden={hiddenUntilFound("wave21")}>
         <div className="flex flex-wrap items-center gap-2">
           <span className="studio-universal-engine-title font-bold text-accent">
             {tx("범용 브러시 엔진 (Harmony 11 · 웹툰 리본):")}
@@ -435,9 +473,7 @@ export function StudioUniversalBrushEngineBar({
           </div>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-fg-2">
-            {tx("웹툰 리본·멀티스탬프:")}
-          </span>
+          <span className="text-[11px] font-semibold text-fg-2">{tx("웹툰 리본·멀티스탬프:")}</span>
           <PresetRadioGroup
             ariaLabel={tx("웹툰 리본 및 스탬프 브러시 프리셋")}
             items={IBIS_MEDIBANG_BRUSH_PRESETS.slice(11, 17)}
@@ -449,10 +485,8 @@ export function StudioUniversalBrushEngineBar({
         </div>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave22")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("벡터 골격·입자 물리:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave22" hidden={hiddenUntilFound("wave22")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("벡터 골격·입자 물리:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("벡터 골격 아트 브러시 프리셋")}
           items={SKELETAL_ART_BRUSH_PRESETS.slice(0, 4)}
@@ -471,10 +505,8 @@ export function StudioUniversalBrushEngineBar({
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave23")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("베지어 피팅·Klecks 자연매체:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave23" hidden={hiddenUntilFound("wave23")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("베지어 피팅·Klecks 자연매체:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")}
           items={KLECKS_BRUSH_PRESETS.slice(4, 10)}
@@ -485,10 +517,8 @@ export function StudioUniversalBrushEngineBar({
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave24")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("MyPaint 46설정·38밴드 분광:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave24" hidden={hiddenUntilFound("wave24")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("MyPaint 46설정·38밴드 분광:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("MyPaint 46설정 및 38밴드 분광 브러시 프리셋")}
           items={MYPAINT_BRUSH_PRESETS.slice(0, 6)}
@@ -499,10 +529,8 @@ export function StudioUniversalBrushEngineBar({
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave25")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("프리핸드 윤곽·Rough 해칭·공간 인덱스:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave25" hidden={hiddenUntilFound("wave25")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("프리핸드 윤곽·Rough 해칭·공간 인덱스:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")}
           items={FREEHAND_ROUGH_BRUSH_PRESETS.slice(0, 6)}
@@ -513,10 +541,8 @@ export function StudioUniversalBrushEngineBar({
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave26")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("셰이더 필터·집중선·하프톤:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave26" hidden={hiddenUntilFound("wave26")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("셰이더 필터·집중선·하프톤:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("경쟁사 필터 및 집중선·하프톤 프리셋")}
           items={COMPETITOR_FILTER_PRESETS.slice(0, 6)}
@@ -527,10 +553,8 @@ export function StudioUniversalBrushEngineBar({
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave28")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("채우기·변형·W3C 레이어·이젤:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave28" hidden={hiddenUntilFound("wave28")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("채우기·변형·W3C 레이어·이젤:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("통합 드로잉 파이프라인 도구 프리셋")}
           items={HOLISTIC_STUDIO_TOOL_PRESETS.slice(0, 6)}
@@ -549,10 +573,8 @@ export function StudioUniversalBrushEngineBar({
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" hidden={!showWave("wave29")}>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {tx("FFD 메쉬워프·다중선택·타이포·어니언스킨:")}
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave29" hidden={hiddenUntilFound("wave29")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("FFD 메쉬워프·다중선택·타이포·어니언스킨:")}</span>
         <PresetRadioGroup
           ariaLabel={tx("전 생태계 비분할 통합 도구 프리셋")}
           items={COMPLETE_ECOSYSTEM_TOOL_PRESETS.slice(0, 7)}
@@ -561,6 +583,26 @@ export function StudioUniversalBrushEngineBar({
           onSelect={setSelectedCompleteEcosystemId}
           tx={tx}
         />
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-studio-wave-section="wave30" hidden={hiddenUntilFound("wave30")}>
+        <span className="text-[11px] font-semibold text-fg-2">{tx("만다라·칼레이도·Catmull벡터·직교엘보우:")}</span>
+        <PresetRadioGroup
+          ariaLabel={tx("755모듈 모놀리식 총망라 도구 프리셋")}
+          items={MONOLITHIC_TOTAL_TOOL_PRESETS}
+          selectedId={selectedMonolithicToolId}
+          dataAttrName="data-studio-monolithic-tool-preset"
+          onSelect={setSelectedMonolithicToolId}
+          tx={tx}
+        />
+        <button
+          type="button"
+          data-studio-mandala-axes-toggle="true"
+          onClick={() => setMandalaAxes((prev) => (prev >= 16 ? 4 : prev + 4))}
+          className="rounded-md border border-accent/60 bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-fg"
+        >
+          {tx("만다라 대칭축")}: {mandalaAxes}× ({activeUniversalTelemetry.monolithicEval.mandalaSymmetricCopyCount})
+        </button>
       </div>
 
       <div className="studio-universal-inspector-grid mt-2.5 rounded-xl border border-line/70 bg-raised/40 px-2.5 py-1.5">
@@ -675,69 +717,39 @@ export function StudioUniversalBrushEngineBar({
               backgroundColor: `rgb(${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[0] * 255)}, ${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[1] * 255)}, ${Math.round(activeUniversalTelemetry.myPaintStep.outputRgb01[2] * 255)})`,
             }}
           />
-          <span>
-            {tx("세그먼트")}: {activeUniversalTelemetry.harmony.primitiveCount}
-          </span>
+          <span>{tx("세그먼트")}: {activeUniversalTelemetry.harmony.primitiveCount}</span>
           <span>·</span>
-          <span>
-            {tx("코드 링크")}: {activeUniversalTelemetry.harmony.chordLinkCount}
-          </span>
+          <span>{tx("코드 링크")}: {activeUniversalTelemetry.harmony.chordLinkCount}</span>
           <span>·</span>
-          <span>
-            {tx("골격 리본")}: {activeUniversalTelemetry.skeletalCount}
-          </span>
+          <span>{tx("골격 리본")}: {activeUniversalTelemetry.skeletalCount}</span>
           <span>·</span>
-          <span>
-            {tx("입자 궤적")}: {activeUniversalTelemetry.particleSegmentCount}
-          </span>
+          <span>{tx("입자 궤적")}: {activeUniversalTelemetry.particleSegmentCount}</span>
           <span>·</span>
-          <span>
-            {tx("베지어 피팅")}: {activeUniversalTelemetry.schneiderSegmentCount}
-          </span>
+          <span>{tx("베지어 피팅")}: {activeUniversalTelemetry.schneiderSegmentCount}</span>
           <span>·</span>
-          <span>
-            {tx("Klecks 댑")}: {activeUniversalTelemetry.klecksDabCount}
-          </span>
+          <span>{tx("Klecks 댑")}: {activeUniversalTelemetry.klecksDabCount}</span>
           <span>·</span>
-          <span>
-            {tx("MyPaint 선형알파")}: {activeUniversalTelemetry.myPaintStep.linearizedOpaque01.toFixed(3)}
-          </span>
+          <span>{tx("MyPaint 선형알파")}: {activeUniversalTelemetry.myPaintStep.linearizedOpaque01.toFixed(3)}</span>
           <span>·</span>
-          <span>
-            {tx("PF 윤곽")}: {activeUniversalTelemetry.pfOutline.outlinePoints.length}
-          </span>
+          <span>{tx("PF 윤곽")}: {activeUniversalTelemetry.pfOutline.outlinePoints.length}</span>
           <span>·</span>
-          <span>
-            {tx("Rough 해칭")}: {activeUniversalTelemetry.roughHachureTotalCount}
-          </span>
+          <span>{tx("Rough 해칭")}: {activeUniversalTelemetry.roughHachureTotalCount}</span>
           <span>·</span>
-          <span>
-            {tx("집중선")}: {activeUniversalTelemetry.vanishRayTotalCount}
-          </span>
+          <span>{tx("집중선")}: {activeUniversalTelemetry.vanishRayTotalCount}</span>
           <span>·</span>
-          <span>
-            {tx("RDP·RTree")}: {activeUniversalTelemetry.rdpPointCount}/{activeUniversalTelemetry.rbushHitCount}
-          </span>
+          <span>{tx("RDP·RTree")}: {activeUniversalTelemetry.rdpPointCount}/{activeUniversalTelemetry.rbushHitCount}</span>
           <span>·</span>
-          <span>
-            {tx("불리언 정점")}: {activeUniversalTelemetry.booleanUnionVertexCount}
-          </span>
+          <span>{tx("불리언 정점")}: {activeUniversalTelemetry.booleanUnionVertexCount}</span>
           <span>·</span>
-          <span>
-            {tx("플러드필·타일")}: {activeUniversalTelemetry.floodFillCount}/{activeUniversalTelemetry.dirtyTileCount}
-          </span>
+          <span>{tx("플러드필·타일")}: {activeUniversalTelemetry.floodFillCount}/{activeUniversalTelemetry.dirtyTileCount}</span>
           <span>·</span>
-          <span>
-            {tx("톤커브 LUT")}: {activeUniversalTelemetry.curveLutMid}
-          </span>
+          <span>{tx("톤커브 LUT")}: {activeUniversalTelemetry.curveLutMid}</span>
           <span>·</span>
-          <span>
-            {tx("FFD·어니언")}: {activeUniversalTelemetry.ffdDisplacementPx}px/{activeUniversalTelemetry.onionSkinAlpha01}
-          </span>
+          <span>{tx("FFD·어니언")}: {activeUniversalTelemetry.ffdDisplacementPx}px/{activeUniversalTelemetry.onionSkinAlpha01}</span>
           <span>·</span>
-          <span>
-            {tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B
-          </span>
+          <span>{tx("칼레이도·만다라")}: {activeUniversalTelemetry.monolithicEval.kaleidoscopeMirroredSector}/{activeUniversalTelemetry.monolithicEval.mandalaSymmetricCopyCount}</span>
+          <span>·</span>
+          <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>
       </div>
     </div>
