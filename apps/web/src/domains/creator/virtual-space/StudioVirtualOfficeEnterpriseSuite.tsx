@@ -1,5 +1,6 @@
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { StudioVirtualOfficePairingXrPanel } from "./StudioVirtualOfficePairingXrPanel";
+import { StudioVirtualOfficeSpatialCanvasHud } from "./StudioVirtualOfficeSpatialCanvasHud";
 import { StudioVirtualOfficeStageSprintHoloPanel } from "./StudioVirtualOfficeStageSprintHoloPanel";
 import { StudioVirtualOfficeWarroomAsyncStagePanel } from "./StudioVirtualOfficeWarroomAsyncStagePanel";
 import {
@@ -227,16 +228,9 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="가상 오피스 엔터프라이즈 기능 도메인 탭">
           {SUITE_TABS.map((tab) => (
             <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              id={`tab-${tab.id}`}
-              aria-selected={activeTab === tab.id}
-              aria-controls={`panel-${tab.id}`}
+              key={tab.id} type="button" role="tab" id={`tab-${tab.id}`} aria-selected={activeTab === tab.id} aria-controls={`panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
-                activeTab === tab.id ? "border-accent bg-accent-soft font-semibold text-accent" : "border-line bg-panel text-fg-2 hover:text-fg"
-              }`}
+              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${activeTab === tab.id ? "border-accent bg-accent-soft font-semibold text-accent shadow-xs" : "border-line bg-panel text-fg-2 hover:text-fg"}`}
             >
               <div>{tab.labelKo}</div>
               <div className="text-[11px] opacity-80">{tab.platformsBadge}</div>
@@ -244,6 +238,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
           ))}
         </div>
       </header>
+      <StudioVirtualOfficeSpatialCanvasHud onNavigateToTab={(tabId, msg) => { setActiveTab(tabId); setStatusNotice(msg); }} />
 
       {activeTab === "spatial-floors-knock-audio" ? (
         <div id="panel-spatial-floors-knock-audio" role="tabpanel" aria-labelledby="tab-spatial-floors-knock-audio" className="space-y-4">

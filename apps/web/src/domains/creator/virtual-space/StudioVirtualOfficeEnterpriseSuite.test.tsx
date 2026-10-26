@@ -222,6 +222,30 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(screen.getByTestId("wave4-status-notice").textContent).toContain("🚀");
   });
 
+  it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {
+    render(<StudioVirtualOfficeEnterpriseSuite />);
+
+    expect(screen.getByTestId("studio-virtual-office-spatial-canvas-hud")).toBeTruthy();
+    expect(screen.getByTestId("spatial-voice-cone-svg")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("spatial-view-mode-acoustic-heatmap"));
+    expect(screen.getByTestId("spatial-hud-toast").textContent).toContain("음향 dB 히트맵");
+
+    fireEvent.click(screen.getByTestId("spatial-canvas-zone-zone-3f-conte-vault"));
+    expect(screen.getByTestId("spatial-hud-toast").textContent).toContain(
+      "3F 스포일러 보안 콘티 워룸",
+    );
+
+    fireEvent.click(screen.getByTestId("spatial-dock-rotate-cone-btn"));
+    fireEvent.click(screen.getByTestId("spatial-dock-megaphone-btn"));
+    fireEvent.click(screen.getByTestId("spatial-dock-helmet-btn"));
+
+    fireEvent.click(screen.getByTestId("spatial-dock-cmdk-btn"));
+    expect(screen.getByTestId("spatial-cmdk-palette")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("spatial-cmdk-item-cmd-warroom-dot-vote"));
+    expect(screen.getByTestId("virtual-office-wave4-panel")).toBeTruthy();
+  });
+
   it("StudioVirtualSpaceCollaborationHub 및 StudioVirtualSpaceTownProgramPanel 내부 탭으로 통합 연결된다", () => {
     render(<StudioVirtualSpaceCollaborationHub />);
     fireEvent.click(screen.getByRole("tab", { name: "13대 가상오피스 통합관제" }));
