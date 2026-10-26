@@ -10,6 +10,11 @@ import { useMemo, useState } from "react";
 import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
+import {
+  computeShaperVertexKeyHashFnva,
+  interpolateShaperPartMorphTransition,
+  resolveShaperPresetClickModifierMode,
+} from "../assets/character-canonical-part-plan";
 
 import type { CharacterCanonicalPartSlot } from "../assets/character-canonical-manifest";
 import type { CharacterCanonicalPartsWorkbench } from "./use-character-canonical-parts";
@@ -48,6 +53,16 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
 }) {
   const [query, setQuery] = useState("");
   const [slotFilter, setSlotFilter] = useState<SlotFilter>("all");
+  const [modifierLabel, setModifierLabel] = useState(() => resolveShaperPresetClickModifierMode({}).koLabel);
+  const morphSample = interpolateShaperPartMorphTransition({
+    elapsedSec: 0.1,
+    durationSec: 0.2,
+    startPosition: [0, 0, 0],
+    endPosition: [0.02, 0.04, 0],
+    startPower: 0,
+    endPower: 0.8,
+  });
+  const seamVertexHash = computeShaperVertexKeyHashFnva([0.05, 1.42, 0.01]);
 
   const supportedCount = workbench.options.filter((option) => option.status === "supported").length;
   const unavailableCount = workbench.options.length - supportedCount;
@@ -125,6 +140,11 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
           <span className="block text-[0.58rem] font-semibold text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.character.partsPanel.incompatible", "호환 불가")}</span>
           <strong className="mt-0.5 block text-base text-warn">{unavailableCount}</strong>
         </div>
+      </div>
+
+      <div data-testid="shaper-parts-modifier-guide" className="flex flex-wrap items-center justify-between gap-1.5 rounded-xl border border-line bg-panel/60 px-2.5 py-1.5 text-[0.6rem] text-fg-3">
+        <span className="font-semibold text-fg-2">SHAPER 0.2s 모핑 (p={morphSample.power}) · Crease FNV-1a #{seamVertexHash.hash.toString(16).slice(0, 6)}</span>
+        <span className="font-mono text-accent">{modifierLabel}</span>
       </div>
 
       {selectedOptions.length > 0 ? (
@@ -221,7 +241,10 @@ export function CharacterCanonicalPartsPanel({ workbench }: {
                 aria-disabled={disabled}
                 disabled={disabled}
                 title={option.reason ?? undefined}
-                onClick={() => void workbench.apply(option.part.id)}
+                onClick={(event) => {
+                  setModifierLabel(resolveShaperPresetClickModifierMode(event).koLabel);
+                  void workbench.apply(option.part.id);
+                }}
                 className={cn(
                   "group relative min-h-44 overflow-hidden rounded-2xl border bg-card text-left transition-[border-color,background-color,transform] motion-reduce:transition-none",
                   selected ? "border-accent/70 bg-accent-soft" : "border-line hover:-translate-y-0.5 hover:border-accent/35 hover:bg-raised",

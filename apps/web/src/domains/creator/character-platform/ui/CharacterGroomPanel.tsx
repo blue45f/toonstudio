@@ -7,10 +7,12 @@ import {
 } from "../groom/character-groom-edit";
 import { validateCharacterGroomDocument } from "../groom/character-groom-document";
 import {
+  applyShaperHairScrollWheelShortcut,
   calibrateShaperHairBaseZoneUv,
   createShaperDiamondHairBaseMesh,
   evaluateShaperHybridHairSpline,
   SHAPER_HAIR_BASE_ZONE_CALIBRATIONS,
+  stepShaperDynamicBoneVerletParticle,
   type ShaperHairBaseZoneIndex,
 } from "../groom/character-shaper-hair-hybrid-spline";
 
@@ -180,7 +182,21 @@ export function CharacterGroomPanel({ authoring, runtime }: {
             {([0, 1, 2, 3] as const).map((zoneIdx) => <option key={zoneIdx} value={zoneIdx}>{SHAPER_HAIR_BASE_ZONE_CALIBRATIONS[zoneIdx].label}</option>)}
           </select>
         </label>
-        <p className="font-mono text-[11px] text-fg-3">UV ({shaperCalibratedUv[0].toFixed(3)}, {shaperCalibratedUv[1].toFixed(3)}) · 정점 {shaperDiamondMesh.positions.length / 3}개</p>
+        <p className="font-mono text-[11px] text-fg-3">UV ({shaperCalibratedUv[0].toFixed(3)}, {shaperCalibratedUv[1].toFixed(3)}) · 정점 {shaperDiamondMesh.positions.length / 3}개 · DynamicBone v={stepShaperDynamicBoneVerletParticle({ position: [0.02, -0.1, 0], prevPosition: [0, -0.1, 0], restPosition: [0, -0.1, 0], segmentLength: 0.1, damping: 0.1, elasticity: 0.05, stiffness: 0.2, inert: 0 }).velocityMagnitude.toFixed(3)}</p>
+        <div className="flex flex-wrap gap-1.5 pt-1" role="group" aria-label="SHAPER 식모 휠 단축키">
+          <button type="button" data-testid="shaper-groom-shortcut-length" className={BUTTON} disabled={groupDisabled} onClick={() => {
+            const next = applyShaperHairScrollWheelShortcut(group.profile, "shift-scroll-up");
+            profileChange("lengthScale", next.lengthScale);
+          }}>Shift+휠 길이 +0.2</button>
+          <button type="button" data-testid="shaper-groom-shortcut-curl" className={BUTTON} disabled={groupDisabled} onClick={() => {
+            const next = applyShaperHairScrollWheelShortcut(group.profile, "alt-scroll-up");
+            profileChange("curl", next.curl);
+          }}>Alt+휠 굽힘 +0.05</button>
+          <button type="button" data-testid="shaper-groom-shortcut-width" className={BUTTON} disabled={groupDisabled} onClick={() => {
+            const next = applyShaperHairScrollWheelShortcut(group.profile, "width-inc");
+            profileChange("baseWidth", next.baseWidth);
+          }}>= 두께 +0.01m</button>
+        </div>
       </div> : null}
       {anchored || group.scalpRegionId !== "scalp:head-local" ? <p role="status" className="text-xs text-warn">{anchorAttached
         ? t("studio.character.groom.anchorAttached", "두피 루트 앵커가 원본 표면에 부착되었습니다. 포즈·표정 변형을 따라 표시하며 길이·폭·표시를 편집할 수 있습니다. 앵커 좌표 재배치와 자동 재투영은 지원하지 않습니다.")

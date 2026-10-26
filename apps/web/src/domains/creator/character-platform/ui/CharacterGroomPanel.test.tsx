@@ -154,12 +154,20 @@ describe("CharacterGroomPanel", () => {
   });
 
   it("SHAPER 50:50 하이브리드 스플라인 다이아몬드 단면 인스펙터와 두피 4구역 UV 보정을 표시한다", () => {
-    fixture();
+    const authority = fixture();
     click("그룹 추가");
     const inspector = screen.getByTestId("shaper-groom-hybrid-inspector");
     expect(inspector.textContent).toContain("능선 0.8");
+    expect(inspector.textContent).toContain("DynamicBone v=0.018");
     const zoneSelect = screen.getByLabelText("두피 UV 구역");
     fireEvent.change(zoneSelect, { target: { value: "2" } });
     expect(inspector.textContent).toContain("UV (0.500, 0.500)");
+    fireEvent.click(screen.getByTestId("shaper-groom-shortcut-length"));
+    fireEvent.click(screen.getByTestId("shaper-groom-shortcut-curl"));
+    fireEvent.click(screen.getByTestId("shaper-groom-shortcut-width"));
+    click("헤어 미리보기");
+    click("헤어 적용");
+    expect(authority.getSnapshot().document.groom.groups[0]?.profile.lengthScale).toBe(1.2);
+    expect(authority.getSnapshot().document.groom.groups[0]?.profile.curl).toBe(0.05);
   });
 });

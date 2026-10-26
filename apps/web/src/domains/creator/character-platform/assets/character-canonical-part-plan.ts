@@ -241,3 +241,144 @@ export function createCharacterCanonicalPartPlan(input: {
     ...(poseCorrectives ? { poseCorrectiveContributions: poseCorrectives.contributions } : {}),
   });
 }
+
+/**
+ * `NormalSolver.VertexKey` (`0x06000689`) 명세:
+ * 정점 좌표를 `Math.round(coord * 100000)` ($10^{-5}$ 격자)로 양자화하고
+ * 32-bit FNV-1a (`init = -2128831035`, `prime = 16777619`) 해시를 계산한다.
+ */
+export function computeShaperVertexKeyHashFnva(
+  position: readonly [number, number, number],
+  tolerance = 100_000,
+): { readonly qx: number; readonly qy: number; readonly qz: number; readonly hash: number } {
+  const qx = Math.round(position[0] * tolerance);
+  const qy = Math.round(position[1] * tolerance);
+  const qz = Math.round(position[2] * tolerance);
+  let h = -2128831035 | 0;
+  h = Math.imul(h ^ qx, 16777619);
+  h = Math.imul(h ^ qy, 16777619);
+  h = Math.imul(h ^ qz, 16777619);
+  return { qx, qy, qz, hash: h >>> 0 };
+}
+
+/**
+ * `NormalSolver::RecalculateNormals` (`0x06000274`) 명세:
+ * 동일 위치($10^{-5}$) 코너 정점들 중 면 법선 내적 $\mathbf{n}_1 \cdot \mathbf{n}_2 \ge \cos(\theta_{\text{deg}})$을
+ * 만족하는 면 법선만 합산·정규화하여 하드 엣지(Crease)와 스무딩을 동시에 보존한다.
+ */
+export function recalculateShaperCreaseNormalsFnva(
+  vertices: readonly (readonly [number, number, number])[],
+  triangles: readonly (readonly [number, number, number])[],
+  creaseAngleDeg = 60,
+): readonly (readonly [number, number, number])[] {
+  const cosTheta = Math.cos((clamp(creaseAngleDeg, 0, 180) * Math.PI) / 180);
+  const faceNormals: (readonly [number, number, number])[] = triangles.map(([i0, i1, i2]) => {
+    const v0 = vertices[i0] ?? [0, 0, 0];
+    const v1 = vertices[i1] ?? [0, 0, 0];
+    const v2 = vertices[i2] ?? [0, 0, 0];
+    const e1x = v1[0] - v0[0], e1y = v1[1] - v0[1], e1z = v1[2] - v0[2];
+    const e2x = v2[0] - v0[0], e2y = v2[1] - v0[1], e2z = v2[2] - v0[2];
+    const nx = e1y * e2z - e1z * e2y;
+    const ny = e1z * e2x - e1x * e2z;
+    const nz = e1x * e2y - e1y * e2x;
+    const len = Math.hypot(nx, ny, nz);
+    return len > 1e-8 ? [nx / len, ny / len, nz / len] : [0, 1, 0];
+  });
+
+  const bucketMap = new Map<string, { readonly vertexIndex: number; readonly faceIndex: number }[]>();
+  triangles.forEach((tri, faceIndex) => {
+    for (const vertexIndex of tri) {
+      const pos = vertices[vertexIndex] ?? [0, 0, 0];
+      const key = computeShaperVertexKeyHashFnva(pos);
+      const bucketKey = `${key.qx}:${key.qy}:${key.qz}:${key.hash}`;
+      let list = bucketMap.get(bucketKey);
+      if (!list) {
+        list = [];
+        bucketMap.set(bucketKey, list);
+      }
+      list.push({ vertexIndex, faceIndex });
+    }
+  });
+
+  const out: (readonly [number, number, number])[] = vertices.map(() => [0, 1, 0]);
+  for (const entries of bucketMap.values()) {
+    for (const lhs of entries) {
+      const n1 = faceNormals[lhs.faceIndex]!;
+      let sx = 0, sy = 0, sz = 0;
+      for (const rhs of entries) {
+        const n2 = faceNormals[rhs.faceIndex]!;
+        const dot = n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2];
+        if (lhs.vertexIndex === rhs.vertexIndex || dot >= cosTheta) {
+          sx += n2[0];
+          sy += n2[1];
+          sz += n2[2];
+        }
+      }
+      const len = Math.hypot(sx, sy, sz);
+      if (len > 1e-8) {
+        out[lhs.vertexIndex] = [
+          Number((sx / len).toFixed(6)),
+          Number((sy / len).toFixed(6)),
+          Number((sz / len).toFixed(6)),
+        ];
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * `MeshData::Update` (`0x06000272`) 파츠 교체 `0.2s` 모핑 전환 명세:
+ * `meshChangeAniDuration = 0.2f` (200ms) 동안 정점 위치, Catmull-Clark `SubVertex.power` 샤프니스,
+ * 안구 피벗을 선형 보간한다.
+ */
+export function interpolateShaperPartMorphTransition(input: {
+  readonly elapsedSec: number;
+  readonly durationSec?: number;
+  readonly startPosition: readonly [number, number, number];
+  readonly endPosition: readonly [number, number, number];
+  readonly startPower: number;
+  readonly endPower: number;
+}): {
+  readonly progress01: number;
+  readonly completed: boolean;
+  readonly position: readonly [number, number, number];
+  readonly power: number;
+} {
+  const duration = Math.max(1e-4, input.durationSec ?? 0.2);
+  const t = clamp(input.elapsedSec / duration, 0, 1);
+  return {
+    progress01: Number(t.toFixed(4)),
+    completed: t >= 1,
+    position: [
+      Number((input.startPosition[0] + (input.endPosition[0] - input.startPosition[0]) * t).toFixed(6)),
+      Number((input.startPosition[1] + (input.endPosition[1] - input.startPosition[1]) * t).toFixed(6)),
+      Number((input.startPosition[2] + (input.endPosition[2] - input.startPosition[2]) * t).toFixed(6)),
+    ],
+    power: Number((input.startPower + (input.endPower - input.startPower) * t).toFixed(6)),
+  };
+}
+
+/**
+ * `UIManager::LateUpdate` (`0x0600037e`) 프리셋 카드 수정자 클릭 명세:
+ * - `Shift+Click`: 색상만 적용 (`color-only`)
+ * - `Ctrl/Cmd+Click`: 기존 색상을 유지하고 형태만 적용 (`shape-only`)
+ * - 일반 클릭: 형태+색상 전체 적용 (`full`)
+ */
+export function resolveShaperPresetClickModifierMode(modifiers: {
+  readonly shiftKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly metaKey?: boolean;
+}): {
+  readonly mode: "full" | "color-only" | "shape-only";
+  readonly koLabel: string;
+} {
+  if (modifiers.shiftKey) {
+    return { mode: "color-only", koLabel: "Shift+클릭 · 색상만 적용" };
+  }
+  if (modifiers.ctrlKey || modifiers.metaKey) {
+    return { mode: "shape-only", koLabel: "Ctrl/Cmd+클릭 · 형태만 적용" };
+  }
+  return { mode: "full", koLabel: "클릭 · 형태+색상 전체 적용" };
+}
+

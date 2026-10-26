@@ -10,8 +10,13 @@ import {
   characterSupportMargin,
 } from "./character-support-polygon";
 import {
+  computeShaperBoneWeightHighlightColor,
+  computeShaperGroundedBodyHeightCm,
+  computeShaperMultiBonePivot,
+  computeShaperMuscleFatBlendShapeAttenuation,
   cycleShaperBoneAiFixVector,
   evaluateShaperBoneAiConfidenceGate,
+  mirrorShaperPoseEffectorOffset,
   SHAPER_BONE_AI_24_KEYPOINTS,
   solveShaperOrientationConstraintHalfSlerp,
 } from "./character-pose-v3";
@@ -124,5 +129,60 @@ describe("character pose v3 foundation", () => {
     const half = solveShaperOrientationConstraintHalfSlerp([0, 0, Math.SQRT1_2, Math.SQRT1_2]);
     expect(half[2]).toBeCloseTo(Math.sin(Math.PI / 8), 5);
     expect(half[3]).toBeCloseTo(Math.cos(Math.PI / 8), 5);
+  });
+
+  it("computes SHAPER grounded body height in cm, 100/90 blendshape attenuation, Alt-click effector mirroring, multi-bone pivot, and 4*w1^2 heatmap", () => {
+    const height = computeShaperGroundedBodyHeightCm({
+      headTopY: 1.75,
+      leftAnkleY: 0.03,
+      rightAnkleY: -0.02,
+      soleOffsetMeters: 0.03,
+    });
+    expect(height.minAnkleY).toBe(-0.02);
+    expect(height.groundingOffsetY).toBe(0.05);
+    expect(height.heightCm).toBe(180);
+    expect(height.formattedBadge).toBe("신장 : 180 cm");
+
+    const att = computeShaperMuscleFatBlendShapeAttenuation(0.8, 0.5);
+    expect(att).toEqual({
+      bodyMuscleWeight: 80,
+      bodyFatWeight: 50,
+      costumeMuscleWeight: 72,
+      costumeFatWeight: 45,
+      shoeMuscleWeight: 0,
+      shoeFatWeight: 0,
+    });
+
+    const mirrored = mirrorShaperPoseEffectorOffset("leftHand", [0.15, 0.05, -0.1], {
+      leftHand: "rightHand",
+      rightHand: "leftHand",
+    });
+    expect(mirrored).toEqual({
+      mirroredBone: "rightHand",
+      mirroredOffset: [-0.15, 0.05, -0.1],
+      ikYawOffsetDeg: 180,
+    });
+
+    const ikPivot = computeShaperMultiBonePivot([
+      { boneId: "leftHand", position: [-0.4, 1.0, 0], parentDepth: 4 },
+      { boneId: "rightHand", position: [0.4, 1.2, 0.2], parentDepth: 4 },
+    ], "ik");
+    expect(ikPivot.pivotPosition).toEqual([0, 1.1, 0.1]);
+    expect(ikPivot.activeGizmos).toEqual(["move", "rotate"]);
+
+    const fkPivot = computeShaperMultiBonePivot([
+      { boneId: "leftLowerArm", position: [-0.3, 1.1, 0], parentDepth: 3 },
+      { boneId: "leftUpperArm", position: [-0.2, 1.4, 0], parentDepth: 2 },
+    ], "fk");
+    expect(fkPivot.anchorBoneId).toBe("leftUpperArm");
+    expect(fkPivot.activeGizmos).toEqual(["rotate"]);
+
+    const heatmap = computeShaperBoneWeightHighlightColor({
+      slot: 1,
+      secondaryWeight1: 0.35,
+      state: "selected",
+    });
+    expect(heatmap.amplifiedWeight).toBeCloseTo(0.49, 5);
+    expect(heatmap.rgb).toEqual([1, 0.51, 0.51]);
   });
 });

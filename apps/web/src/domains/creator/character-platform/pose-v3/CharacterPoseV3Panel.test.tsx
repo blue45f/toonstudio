@@ -65,9 +65,22 @@ describe("포즈 V3 편집 UI", () => {
   });
 
   it("SHAPER BoneAI 롤 보정 축 순환(+90°) 버튼을 클릭하면 0° -> +90° -> +180° 순서로 순환한다", () => {
-    render(<CharacterPoseV3Panel runtime={runtime()} />);
+    const state = runtime({ effectors: ["leftHand", "rightHand", "leftFoot", "rightFoot"] });
+    render(<CharacterPoseV3Panel runtime={state} />);
     const bar = screen.getByTestId("shaper-pose-fix-vector-bar");
     expect(bar.textContent).toContain("기본 축 (0°)");
+    expect(screen.getByTestId("shaper-pose-rig-inspector").textContent).toContain("신장 : 172 cm");
+    expect(screen.getByTestId("shaper-pose-rig-inspector").textContent).toContain("바디 50% · 의상 45%");
+
+    fireEvent.change(screen.getByRole("slider", { name: "체형 근육 블렌드쉐입 비율" }), { target: { value: "0.8" } });
+    expect(screen.getByTestId("shaper-pose-rig-inspector").textContent).toContain("바디 80% · 의상 72%");
+
+    fireEvent.change(screen.getByRole("slider", { name: "좌우 이동" }), { target: { value: "0.15" } });
+    fireEvent.click(screen.getByTestId("shaper-pose-mirror-btn"));
+    expect((screen.getByLabelText("끝 관절") as HTMLSelectElement).value).toBe("rightHand");
+    fireEvent.click(screen.getByRole("button", { name: "위치 수정 미리보기" }));
+    expect(state.previewTarget).toHaveBeenCalledWith("rightHand", [-0.15, 0, 0]);
+
     const cycleBtn = screen.getByRole("button", { name: "AI 관절 롤 보정 축 순환 (+90°)" });
     fireEvent.click(cycleBtn);
     expect(bar.textContent).toContain("+90° 롤 보정 축 (Mode 1)");

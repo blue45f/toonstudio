@@ -299,3 +299,98 @@ export function resolveShaperDynamicBoneCapsuleCollision(
   }
   return { position: particlePos, collided: false };
 }
+
+/**
+ * `DynamicBone::UpdateParticles1` & `UpdateParticles2` (`0x02000018`) 명세:
+ * 베를레 속도 감쇠(`(pos - prevPos) * (1 - damping)`), 부모 이동 관성(`parentDelta * inert`),
+ * 탄성 복원(`elasticity`) 및 강성 반경 제한(`stiffness`)을 적분한다.
+ */
+export function stepShaperDynamicBoneVerletParticle(input: {
+  readonly position: CharacterGroomVector3;
+  readonly prevPosition: CharacterGroomVector3;
+  readonly restPosition: CharacterGroomVector3;
+  readonly parentDisplacement?: CharacterGroomVector3;
+  readonly segmentLength: number;
+  readonly damping: number;
+  readonly elasticity: number;
+  readonly stiffness: number;
+  readonly inert: number;
+}): {
+  readonly nextPosition: CharacterGroomVector3;
+  readonly velocityMagnitude: number;
+  readonly stiffnessClamped: boolean;
+} {
+  const damping = clamp(input.damping, 0, 1);
+  const elasticity = clamp(input.elasticity, 0, 1);
+  const stiffness = clamp(input.stiffness, 0, 1);
+  const inert = clamp(input.inert, 0, 1);
+  const parentDelta = input.parentDisplacement ?? [0, 0, 0];
+
+  const vel = scale3(sub3(input.position, input.prevPosition), 1 - damping);
+  const withInert = add3(add3(input.position, vel), scale3(parentDelta, inert));
+  const pulled = add3(withInert, scale3(sub3(input.restPosition, withInert), elasticity));
+
+  const maxOffset = Math.max(0, input.segmentLength * (1 - stiffness));
+  const offsetFromRest = sub3(pulled, input.restPosition);
+  const distFromRest = Math.hypot(offsetFromRest[0], offsetFromRest[1], offsetFromRest[2]);
+
+  let finalPos = pulled;
+  let stiffnessClamped = false;
+  if (distFromRest > maxOffset && distFromRest > 1e-7) {
+    finalPos = add3(input.restPosition, scale3(normalize3(offsetFromRest), maxOffset));
+    stiffnessClamped = true;
+  }
+
+  return {
+    nextPosition: [
+      Number(finalPos[0].toFixed(6)),
+      Number(finalPos[1].toFixed(6)),
+      Number(finalPos[2].toFixed(6)),
+    ],
+    velocityMagnitude: Number(Math.hypot(vel[0], vel[1], vel[2]).toFixed(6)),
+    stiffnessClamped,
+  };
+}
+
+/**
+ * `HairData::Update` (`0x060001df`) 식모 휠/키보드 단축키 명세:
+ * - `Shift+Scroll`: 길이 배율(`lengthScale`) `±0.2 * scrollSteps`
+ * - `Alt+Scroll`: 굽힘/말림(`curl`) `±0.05 * scrollSteps`
+ * - `Ctrl+Scroll`: 모근 회전(`rootRotation`) `±10° (0.174533 rad) * scrollSteps`
+ * - `=` / `-`: 가닥 두께(`baseWidth`) `±0.01m`
+ */
+export function applyShaperHairScrollWheelShortcut(
+  profile: {
+    readonly lengthScale: number;
+    readonly baseWidth: number;
+    readonly curl: number;
+    readonly rootRotation: number;
+  },
+  action: "shift-scroll-up" | "shift-scroll-down" | "alt-scroll-up" | "alt-scroll-down" | "ctrl-scroll-up" | "ctrl-scroll-down" | "width-inc" | "width-dec",
+): {
+  readonly lengthScale: number;
+  readonly baseWidth: number;
+  readonly curl: number;
+  readonly rootRotation: number;
+} {
+  const stepRad = Number(((10 * Math.PI) / 180).toFixed(4));
+  switch (action) {
+    case "shift-scroll-up":
+      return { ...profile, lengthScale: Number(clamp(profile.lengthScale + 0.2, 0.1, 4).toFixed(3)) };
+    case "shift-scroll-down":
+      return { ...profile, lengthScale: Number(clamp(profile.lengthScale - 0.2, 0.1, 4).toFixed(3)) };
+    case "alt-scroll-up":
+      return { ...profile, curl: Number(clamp(profile.curl + 0.05, 0, 1).toFixed(3)) };
+    case "alt-scroll-down":
+      return { ...profile, curl: Number(clamp(profile.curl - 0.05, 0, 1).toFixed(3)) };
+    case "ctrl-scroll-up":
+      return { ...profile, rootRotation: Number(clamp(profile.rootRotation + stepRad, -Math.PI, Math.PI).toFixed(3)) };
+    case "ctrl-scroll-down":
+      return { ...profile, rootRotation: Number(clamp(profile.rootRotation - stepRad, -Math.PI, Math.PI).toFixed(3)) };
+    case "width-inc":
+      return { ...profile, baseWidth: Number(clamp(profile.baseWidth + 0.01, 0.005, 0.25).toFixed(3)) };
+    case "width-dec":
+      return { ...profile, baseWidth: Number(clamp(profile.baseWidth - 0.01, 0.005, 0.25).toFixed(3)) };
+  }
+}
+

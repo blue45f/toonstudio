@@ -2,7 +2,15 @@ import { useId, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
 import { type CharacterPoseEffectorBone } from "./character-pose-runtime-adapter";
-import { cycleShaperBoneAiFixVector, type ShaperBoneAiFixVectorMode } from "./character-pose-v3";
+import {
+  computeShaperBoneWeightHighlightColor,
+  computeShaperGroundedBodyHeightCm,
+  computeShaperMultiBonePivot,
+  computeShaperMuscleFatBlendShapeAttenuation,
+  cycleShaperBoneAiFixVector,
+  mirrorShaperPoseEffectorOffset,
+  type ShaperBoneAiFixVectorMode,
+} from "./character-pose-v3";
 import type { CharacterPoseRuntime } from "./use-character-pose-runtime";
 
 import { cn } from "@/shared/lib/utils";
@@ -10,6 +18,12 @@ import { useT } from "@/shared/lib/i18n";
 
 const BUTTON = cn("min-h-11 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised disabled:opacity-40 disabled:cursor-not-allowed", STUDIO_FOCUS_RING);
 const LABELS: Record<CharacterPoseEffectorBone, string> = { leftHand: "왼손", rightHand: "오른손", leftFoot: "왼발", rightFoot: "오른발" };
+const MIRROR_MAP: Record<CharacterPoseEffectorBone, CharacterPoseEffectorBone> = {
+  leftHand: "rightHand",
+  rightHand: "leftHand",
+  leftFoot: "rightFoot",
+  rightFoot: "leftFoot",
+};
 
 export function CharacterPoseV3Panel({ runtime }: { readonly runtime: CharacterPoseRuntime }) {
   const t = useT();
@@ -17,9 +31,22 @@ export function CharacterPoseV3Panel({ runtime }: { readonly runtime: CharacterP
   const [selected, setSelected] = useState<CharacterPoseEffectorBone>("leftHand");
   const [offset, setOffset] = useState<readonly [number, number, number]>([0, 0, 0]);
   const [fixVectorMode, setFixVectorMode] = useState<ShaperBoneAiFixVectorMode>(0);
+  const [muscleSlider, setMuscleSlider] = useState(0.5);
+  const [fatSlider, setFatSlider] = useState(0.2);
   const fixVectorInfo = cycleShaperBoneAiFixVector(((fixVectorMode + 2) % 3) as ShaperBoneAiFixVectorMode);
   const effector = runtime.effectors.includes(selected) ? selected : runtime.effectors[0];
   const disabled = !runtime.ready || runtime.blockedByPreview;
+  const groundedHeight = computeShaperGroundedBodyHeightCm({
+    headTopY: 1.72,
+    leftAnkleY: effector === "leftFoot" ? 0.03 + offset[1] : 0.03,
+    rightAnkleY: effector === "rightFoot" ? 0.03 + offset[1] : 0.03,
+  });
+  const blendAttenuation = computeShaperMuscleFatBlendShapeAttenuation(muscleSlider, fatSlider);
+  const boneHeatmap = computeShaperBoneWeightHighlightColor({ slot: 1, secondaryWeight1: 0.35, state: "selected" });
+  const multiBonePivot = computeShaperMultiBonePivot(
+    [{ boneId: effector ?? "leftHand", position: offset, parentDepth: 2 }],
+    "ik",
+  );
   return <section className="space-y-3 rounded-2xl border border-line bg-card/70 p-3" aria-labelledby={`${id}-title`}>
     <h3 id={`${id}-title`} className="text-sm font-bold text-fg">{t("studio.character.poseV3.title", "포즈 · 관절과 발 고정")}</h3>
     <p className="text-xs leading-relaxed text-fg-3">{t("studio.character.poseV3.description", "선택한 부위만 실제 뼈대에서 보정합니다. 관절 한계와 팔다리 길이를 유지하며, 미리보기 후 저장할 수 있습니다.")}</p>
@@ -47,7 +74,15 @@ export function CharacterPoseV3Panel({ runtime }: { readonly runtime: CharacterP
           next[axis] = Number(event.currentTarget.value); setOffset(next);
         }} />
       </label>)}
-      <button type="button" className={cn(BUTTON, "w-full")} disabled={!effector || (runtime.preserveFootPlant && Boolean(effector?.endsWith("Foot")))} onClick={() => { if (effector) runtime.previewTarget(effector, offset); }}>{t("studio.character.poseV3.previewTarget", "위치 수정 미리보기")}</button>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" className={cn(BUTTON, "w-full")} disabled={!effector || (runtime.preserveFootPlant && Boolean(effector?.endsWith("Foot")))} onClick={() => { if (effector) runtime.previewTarget(effector, offset); }}>{t("studio.character.poseV3.previewTarget", "위치 수정 미리보기")}</button>
+        <button type="button" data-testid="shaper-pose-mirror-btn" className={cn(BUTTON, "w-full")} disabled={!effector} onClick={() => {
+          if (!effector) return;
+          const mirrored = mirrorShaperPoseEffectorOffset(effector, offset, MIRROR_MAP);
+          if (runtime.effectors.includes(mirrored.mirroredBone)) setSelected(mirrored.mirroredBone);
+          setOffset(mirrored.mirroredOffset);
+        }}>{t("studio.character.poseV3.mirrorPose", "Alt+클릭 좌우 반전")}</button>
+      </div>
     </fieldset>
     {runtime.previewing ? <div className="grid grid-cols-2 gap-2">
       <button type="button" className={cn(BUTTON, "border-accent bg-accent text-on-accent")} disabled={runtime.pending || Boolean(runtime.runtimeError)} onClick={runtime.apply}>{t("studio.character.poseV3.apply", "포즈 적용")}</button>
@@ -59,6 +94,17 @@ export function CharacterPoseV3Panel({ runtime }: { readonly runtime: CharacterP
         <span className="font-semibold text-fg">{t("studio.character.poseV3.shaperFixVector", "SHAPER BoneAI 롤 보정 · 50% Slerp 트위스트")}</span>
         <span className="font-mono text-[11px] text-fg-3">{fixVectorInfo.label}</span>
       </div>
+      <div data-testid="shaper-pose-rig-inspector" className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-fg-3">
+        <span className="font-mono font-semibold text-accent">{groundedHeight.formattedBadge} (Δy {groundedHeight.groundingOffsetY.toFixed(2)}m)</span>
+        <span className="font-mono">바디 {blendAttenuation.bodyMuscleWeight}% · 의상 {blendAttenuation.costumeMuscleWeight}% · 4w₁²={boneHeatmap.amplifiedWeight.toFixed(2)} · 기즈모 {multiBonePivot.activeGizmos.join("+")}</span>
+      </div>
+      <label className="block text-[11px] text-fg-3">
+        체형 블렌드쉐입 (100/90 감쇠) · 근육 {Math.round(muscleSlider * 100)}%
+        <input aria-label="체형 근육 블렌드쉐입 비율" type="range" className={cn("h-8 w-full accent-accent", STUDIO_FOCUS_RING)} min={0} max={1} step={0.05} value={muscleSlider} disabled={disabled} onChange={(event) => {
+          setMuscleSlider(Number(event.currentTarget.value));
+          setFatSlider((prev) => prev);
+        }} />
+      </label>
       <button type="button" className={cn(BUTTON, "w-full")} disabled={disabled} onClick={() => setFixVectorMode((prev) => cycleShaperBoneAiFixVector(prev).nextMode)}>{t("studio.character.poseV3.cycleFixVector", "AI 관절 롤 보정 축 순환 (+90°)")}</button>
     </div>
     {runtime.runtimeError ? <div role="alert" className="space-y-2 text-xs text-danger"><p>{runtime.runtimeError}</p><button type="button" className={BUTTON} onClick={runtime.retryRuntime}>{t("studio.character.poseV3.retry", "포즈 연결 다시 시도")}</button></div> : null}

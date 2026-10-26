@@ -736,3 +736,58 @@ export function filterCostumeOccludedBodyStrokes(
   };
 }
 
+/**
+ * `LineData::CreateLine` (`0x0600022d`) Dyn-Levin-Gregory 4-점 보간 중점 공식:
+ * $P_{\text{mid}} = \frac{9}{16}(P_i + P_{i+1}) - \frac{1}{16}(P_{i-1} + P_{i+2})$
+ */
+export function evaluateShaperDynLevinGregoryMidpoint(
+  pPrev: CharacterGeometryStrokeVector3,
+  pCurr: CharacterGeometryStrokeVector3,
+  pNext: CharacterGeometryStrokeVector3,
+  pNext2: CharacterGeometryStrokeVector3,
+): CharacterGeometryStrokeVector3 {
+  return [
+    Number(((9 / 16) * (pCurr[0] + pNext[0]) - (1 / 16) * (pPrev[0] + pNext2[0])).toFixed(6)),
+    Number(((9 / 16) * (pCurr[1] + pNext[1]) - (1 / 16) * (pPrev[1] + pNext2[1])).toFixed(6)),
+    Number(((9 / 16) * (pCurr[2] + pNext[2]) - (1 / 16) * (pPrev[2] + pNext2[2])).toFixed(6)),
+  ];
+}
+
+/**
+ * `LineManager::Update` (`0x06000240`) `8.0ms` (`0.008s`) 프레임 예산 기반 스트로크 재투영 스케줄러:
+ * 프레임당 누적 소요 시간이 `budgetMs` (`8.0ms`)를 초과하기 직전까지만 획을 처리하고 다음 시작 인덱스를 반환한다.
+ */
+export function scheduleShaperPenLineFrameBudget(
+  strokeCostsMs: readonly number[],
+  startIndex = 0,
+  budgetMs = 8.0,
+): {
+  readonly processedCount: number;
+  readonly nextIndex: number;
+  readonly elapsedMs: number;
+  readonly completedAll: boolean;
+} {
+  if (strokeCostsMs.length === 0) {
+    return { processedCount: 0, nextIndex: 0, elapsedMs: 0, completedAll: true };
+  }
+  const safeStart = clamp(Math.floor(startIndex), 0, strokeCostsMs.length - 1);
+  let elapsed = 0;
+  let count = 0;
+  let cursor = safeStart;
+  while (count < strokeCostsMs.length) {
+    const cost = Math.max(0, strokeCostsMs[cursor] ?? 0);
+    if (count > 0 && elapsed + cost > budgetMs) break;
+    elapsed += cost;
+    count += 1;
+    cursor = (cursor + 1) % strokeCostsMs.length;
+    if (elapsed >= budgetMs) break;
+  }
+  return {
+    processedCount: count,
+    nextIndex: cursor,
+    elapsedMs: Number(elapsed.toFixed(4)),
+    completedAll: count >= strokeCostsMs.length,
+  };
+}
+
+

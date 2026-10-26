@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  computeShaperVertexKeyHashFnva,
   createCharacterCanonicalPartPlan,
   deriveCharacterCanonicalPartFitScale,
   inspectCharacterCanonicalPartAvailability,
+  interpolateShaperPartMorphTransition,
+  recalculateShaperCreaseNormalsFnva,
+  resolveShaperPresetClickModifierMode,
   selectCharacterCanonicalPartLod,
 } from "./character-canonical-part-plan";
 import {
@@ -198,5 +202,40 @@ describe("canonical production parts", () => {
     expect(plan.clearanceMeters).toBe(0.002);
     expect(plan.correctiveMorphs["hair-temple-clearance"]).toBe(0.25);
     expect(Object.isFrozen(plan)).toBe(true);
+  });
+
+  it("computes SHAPER 1e-5 FNV-1a crease normals, 0.2s part morph interpolation, and modifier click modes", () => {
+    const keyA = computeShaperVertexKeyHashFnva([0.123454, -0.5, 1.0]);
+    const keyB = computeShaperVertexKeyHashFnva([0.123451, -0.5, 1.0]);
+    expect(keyA).toEqual(keyB);
+
+    // Two triangles sharing vertices (0,0,0)-(1,0,0) at 90 degrees
+    const vertices = [
+      [0, 0, 0], [1, 0, 0], [0, 1, 0],
+      [0, 0, 0], [0, 0, 1], [1, 0, 0],
+    ] as const;
+    const triangles = [[0, 1, 2], [3, 4, 5]] as const;
+    const hardNormals = recalculateShaperCreaseNormalsFnva(vertices, triangles, 45);
+    const smoothNormals = recalculateShaperCreaseNormalsFnva(vertices, triangles, 120);
+    expect(hardNormals[0]).not.toEqual(smoothNormals[0]);
+
+    const morph = interpolateShaperPartMorphTransition({
+      elapsedSec: 0.1,
+      durationSec: 0.2,
+      startPosition: [0, 0, 0],
+      endPosition: [0.2, 0.4, -0.2],
+      startPower: 0,
+      endPower: 0.8,
+    });
+    expect(morph).toEqual({
+      progress01: 0.5,
+      completed: false,
+      position: [0.1, 0.2, -0.1],
+      power: 0.4,
+    });
+
+    expect(resolveShaperPresetClickModifierMode({ shiftKey: true }).mode).toBe("color-only");
+    expect(resolveShaperPresetClickModifierMode({ ctrlKey: true }).mode).toBe("shape-only");
+    expect(resolveShaperPresetClickModifierMode({}).mode).toBe("full");
   });
 });

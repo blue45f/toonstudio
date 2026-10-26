@@ -298,3 +298,160 @@ export function solveShaperOrientationConstraintHalfSlerp(
     Number((hw / hLen).toFixed(6)),
   ];
 }
+
+/**
+ * `BoneManager::UpdateHeight` (`0x06000105`) 명세:
+ * 양쪽 발목(`leftAnkleY`, `rightAnkleY`) 중 더 낮은 발목 높이를 기준으로 지면 접지 보정량(`groundingOffsetY`)과
+ * 실시간 신장(`cm`, `"신장 : N cm"`)을 산출한다.
+ */
+export function computeShaperGroundedBodyHeightCm(input: {
+  readonly headTopY: number;
+  readonly leftAnkleY: number;
+  readonly rightAnkleY: number;
+  readonly soleOffsetMeters?: number;
+}): {
+  readonly minAnkleY: number;
+  readonly groundingOffsetY: number;
+  readonly heightCm: number;
+  readonly formattedBadge: string;
+} {
+  const sole = Number.isFinite(input.soleOffsetMeters) ? (input.soleOffsetMeters as number) : 0.03;
+  const minAnkleY = Math.min(input.leftAnkleY, input.rightAnkleY);
+  const footBottomY = minAnkleY - sole;
+  const groundingOffsetY = Number((-footBottomY).toFixed(4));
+  const rawSpanMeters = Math.max(0, input.headTopY - footBottomY);
+  const heightCm = Math.round(rawSpanMeters * 100);
+  return {
+    minAnkleY: Number(minAnkleY.toFixed(4)),
+    groundingOffsetY,
+    heightCm,
+    formattedBadge: `신장 : ${heightCm} cm`,
+  };
+}
+
+/**
+ * `BodyPartsManager::SetBlendShapes` (`0x060000b4`) & `CostumeManager::SetBlendShapes` (`0x06000163`) 명세:
+ * 신체/목 경계는 `slider * 100`(100%), 의상(신발 `type === 3` 제외)은 메쉬 관통 방지를 위해 `slider * 90`(90%)으로 감쇠한다.
+ */
+export function computeShaperMuscleFatBlendShapeAttenuation(
+  muscleRatio: number,
+  fatRatio: number,
+): {
+  readonly bodyMuscleWeight: number;
+  readonly bodyFatWeight: number;
+  readonly costumeMuscleWeight: number;
+  readonly costumeFatWeight: number;
+  readonly shoeMuscleWeight: 0;
+  readonly shoeFatWeight: 0;
+} {
+  const m = Math.min(1, Math.max(0, Number.isFinite(muscleRatio) ? muscleRatio : 0));
+  const f = Math.min(1, Math.max(0, Number.isFinite(fatRatio) ? fatRatio : 0));
+  return {
+    bodyMuscleWeight: Number((m * 100).toFixed(2)),
+    bodyFatWeight: Number((f * 100).toFixed(2)),
+    costumeMuscleWeight: Number((m * 90).toFixed(2)),
+    costumeFatWeight: Number((f * 90).toFixed(2)),
+    shoeMuscleWeight: 0,
+    shoeFatWeight: 0,
+  };
+}
+
+/**
+ * `HeadPartsManager::ApplyHeadPart` (`0x060001f3`) Alt-클릭 포즈 좌우 미러링 명세:
+ * 대칭 이펙터 본(`left* <-> right*`)을 맞바꾸고 IK 타깃 오프셋 `(-x, y, z)` 및 `+180°` Y축 보정을 반환한다.
+ */
+export function mirrorShaperPoseEffectorOffset<TBone extends string>(
+  bone: TBone,
+  offset: CharacterVector3,
+  mirrorMap: Readonly<Record<TBone, TBone>>,
+): {
+  readonly mirroredBone: TBone;
+  readonly mirroredOffset: CharacterVector3;
+  readonly ikYawOffsetDeg: 180;
+} {
+  const mirroredBone = mirrorMap[bone] ?? bone;
+  return {
+    mirroredBone,
+    mirroredOffset: [
+      offset[0] === 0 ? 0 : Number((-offset[0]).toFixed(4)),
+      Number(offset[1].toFixed(4)),
+      Number(offset[2].toFixed(4)),
+    ],
+    ikYawOffsetDeg: 180,
+  };
+}
+
+/**
+ * `BoneManager::AlignPivot` (`0x0600010c`) 다중 본 피벗 정렬 명세:
+ * - IK 모드: 선택된 본들의 산술 무게중심(`1/N * Σ p_i`)에 피벗을 배치하고 `move`+`rotate` 기즈모를 동시에 활성화
+ * - FK 모드: 조상 깊이(`parentDepth`)가 가장 작은 최상위 본 1개에만 피벗을 부착해 하위 본의 이중 회전을 방지
+ */
+export function computeShaperMultiBonePivot(
+  selectedBones: readonly {
+    readonly boneId: string;
+    readonly position: CharacterVector3;
+    readonly parentDepth: number;
+  }[],
+  mode: "ik" | "fk",
+): {
+  readonly pivotPosition: CharacterVector3;
+  readonly anchorBoneId: string | null;
+  readonly activeGizmos: readonly ("move" | "rotate")[];
+} {
+  if (selectedBones.length === 0) {
+    return { pivotPosition: [0, 0, 0], anchorBoneId: null, activeGizmos: [] };
+  }
+  if (mode === "ik") {
+    let sx = 0, sy = 0, sz = 0;
+    for (const b of selectedBones) {
+      sx += b.position[0];
+      sy += b.position[1];
+      sz += b.position[2];
+    }
+    const n = selectedBones.length;
+    return {
+      pivotPosition: [
+        Number((sx / n).toFixed(6)),
+        Number((sy / n).toFixed(6)),
+        Number((sz / n).toFixed(6)),
+      ],
+      anchorBoneId: selectedBones[0]!.boneId,
+      activeGizmos: ["move", "rotate"],
+    };
+  }
+  let shallowest = selectedBones[0]!;
+  for (const candidate of selectedBones) {
+    if (candidate.parentDepth < shallowest.parentDepth) {
+      shallowest = candidate;
+    }
+  }
+  return {
+    pivotPosition: [...shallowest.position],
+    anchorBoneId: shallowest.boneId,
+    activeGizmos: ["rotate"],
+  };
+}
+
+/**
+ * `BodyPartsManager::InitBodyPart` (`0x060000a8`) & `HighlightSkinBones` (`0x060000b1`) 명세:
+ * 1차 본(`slot === 0`)은 `1.0`, 2차 본(`slot === 1`)은 `4 * w1^2` 증폭 가중치를 부여하고
+ * 선택 본 `(1, 1 - w, 1 - w)` / 호버 본 `(1, 1 - 0.4w, 1 - 0.4w)` 정점 히트맵 색상을 계산한다.
+ */
+export function computeShaperBoneWeightHighlightColor(input: {
+  readonly slot: 0 | 1;
+  readonly secondaryWeight1?: number;
+  readonly state: "selected" | "hovered";
+}): {
+  readonly amplifiedWeight: number;
+  readonly rgb: CharacterVector3;
+} {
+  const rawW1 = Math.min(1, Math.max(0, input.secondaryWeight1 ?? 0));
+  const amplifiedWeight = input.slot === 0 ? 1 : Number(Math.min(1, 4 * rawW1 * rawW1).toFixed(6));
+  const attenuation = input.state === "selected" ? amplifiedWeight : 0.4 * amplifiedWeight;
+  const gb = Number((1 - attenuation).toFixed(6));
+  return {
+    amplifiedWeight,
+    rgb: [1, gb, gb],
+  };
+}
+
