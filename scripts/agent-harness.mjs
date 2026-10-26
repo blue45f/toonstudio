@@ -129,6 +129,8 @@ export function inspectHarness(root = ROOT) {
       "<!-- agent-harness:canonical -->",
       "## 2. 언어 및 기록 정책",
       "pnpm harness:verify",
+      'provider_id: "ghidra"',
+      "REA_ANALYSIS_PROVIDER=ghidra",
       "## 8. 운영 및 배포 정책",
       "## 9. 로컬 시크릿·토큰 저장 정책",
       ".env.infrastructure.local",

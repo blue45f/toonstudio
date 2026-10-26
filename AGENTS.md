@@ -71,6 +71,7 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 - 네트워크·파일·DB·브라우저 작업은 실패와 재시도를 명시적으로 처리하고 가능한 경우 dry-run을 둔다.
 - 생성 파일과 소스 파일의 권위를 구분하고, 재생성 가능한 임시 산출물을 커밋하지 않는다.
 - 사용자 데이터, 토큰, 키, 쿠키, 로컬 `.env` 값을 로그·문서·테스트 fixture에 넣지 않는다.
+- REA(`reverse-engineer-anything`)를 통한 네이티브 바이너리·패키지 역공학 시 유료인 Hopper 대신 무료 오픈소스인 **Ghidra**(`provider_id: "ghidra"`, `--provider ghidra`, `REA_ANALYSIS_PROVIDER=ghidra`)를 기본 및 강제 분석 엔진으로 사용한다. MCP `open_binary` 호출 시 `provider_id: "ghidra"`를 명시하고, `hopper` 선택이나 `--install-hopper` 실행은 하지 않는다.
 
 ## 7. 아키텍처 및 OpenWiki 규칙
 

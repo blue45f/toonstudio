@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import {
@@ -10,6 +12,12 @@ import {
 
 test("저장소 하네스 필수 파일과 연결이 완전하다", () => {
   assert.deepEqual(inspectHarness(ROOT), []);
+});
+
+test("루트 AGENTS.md는 REA 역공학 기본 엔진으로 Ghidra 강제 정책을 명시한다", () => {
+  const agents = readFileSync(join(ROOT, "AGENTS.md"), "utf8");
+  assert.match(agents, /provider_id:\s*"ghidra"/u);
+  assert.match(agents, /REA_ANALYSIS_PROVIDER=ghidra/u);
 });
 
 test("문서 전용 변경은 무거운 코드 검증 대상으로 분류하지 않는다", () => {
