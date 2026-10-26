@@ -175,6 +175,15 @@ describe("StudioNaturalMediaShowcase", () => {
     const roughCrossHatchRadio = container.querySelector('[data-studio-freehand-rough-preset="rough-cross-hatch-ink"]') as HTMLButtonElement | null;
     expect(roughCrossHatchRadio?.getAttribute("aria-checked")).toBe("true");
 
+    // Wave 26 경쟁사 필터·집중선·하프톤 Roving Tabindex 검증
+    const filterFirstRadio = container.querySelector('[data-studio-competitor-filter-preset="glfx-denoise-bilateral"]') as HTMLButtonElement | null;
+    expect(filterFirstRadio).not.toBeNull();
+    fireEvent.click(filterFirstRadio!);
+    expect(filterFirstRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(filterFirstRadio!, { key: "End" });
+    const filterSwirlRadio = container.querySelector('[data-studio-competitor-filter-preset="glfx-swirl-bulge-warp"]') as HTMLButtonElement | null;
+    expect(filterSwirlRadio?.getAttribute("aria-checked")).toBe("true");
+
     const liveSvgPreview = container.querySelector('[data-studio-universal-brush-svg-preview="true"]');
     expect(liveSvgPreview).not.toBeNull();
     expect(liveSvgPreview?.querySelector("path")).not.toBeNull();

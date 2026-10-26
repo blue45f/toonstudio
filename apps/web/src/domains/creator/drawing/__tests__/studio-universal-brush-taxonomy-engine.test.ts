@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyConceptsNudgeAndSlice,
+  applyGlfxFilterSuite,
+  applyKlecksFilterAndVanishPointSuite,
+  applyMiniPaintArtisticFilterSuite,
   applyPixelArtAdvancedBrush,
   applySculptGlPixol25DBrushDab,
+  COMPETITOR_FILTER_PRESETS,
   computePomaxBezierParallelOffsetEnvelope,
   COREL_PARTICLE_BRUSH_PRESETS,
   decodeCleanRoomBrushQrPayload,
@@ -62,6 +66,7 @@ import {
   WAVE23_REA_DEEP_SEMANTIC_LEDGER,
   WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER,
   WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER,
+  WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER,
 } from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브러시·드로잉 엔진 내재화)", () => {
@@ -242,13 +247,17 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(22);
+    expect(bench.reaEvidenceTargetCount).toBe(30);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
     expect(bench.wave24ReaEvidenceCount).toBe(4);
     expect(bench.wave25ReaEvidenceCount).toBe(4);
-    expect(bench.totalVisitedAstNodes).toBeGreaterThan(380000);
-    expect(bench.totalSemanticDataFlowRelations).toBeGreaterThan(55000);
+    expect(bench.wave26ReaEvidenceCount).toBe(8);
+    expect(bench.competitorFilterPresetCount).toBe(12);
+    expect(bench.klecksVanishPointRayCount).toBe(36);
+    expect(bench.glfxHalftoneDotCmykCount).toBe(4);
+    expect(bench.totalVisitedAstNodes).toBeGreaterThan(400000);
+    expect(bench.totalSemanticDataFlowRelations).toBeGreaterThan(65000);
     expect(bench.qrCodecRoundtripVerified).toBe(true);
   });
 
@@ -620,5 +629,95 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     });
     expect(spatial.collides).toBe(true);
     expect(spatial.matchedIds).toEqual(["s1", "s2"]);
+  });
+
+  it("Wave 26 경쟁사 드로잉·사진·이펙트 앱(PhotoCraft, EffectCraft, LightCraft, DesignCraft) 및 glfx.js / Klecks / miniPaint 필터·집중선·하프톤·유화·청사진 커널이 정확히 동작한다", () => {
+    expect(WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER).toHaveLength(8);
+    expect(COMPETITOR_FILTER_PRESETS).toHaveLength(12);
+    for (const entry of WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER) {
+      expect(entry.parentEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.summaryEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.internalizedKernels.length).toBeGreaterThanOrEqual(2);
+    }
+
+    const glfx = applyGlfxFilterSuite({
+      centerRgb01: [0.55, 0.42, 0.25],
+      neighborSamplesRgb01: [
+        [0.54, 0.43, 0.24],
+        [0.57, 0.41, 0.26],
+        [0.98, 0.98, 0.98],
+      ],
+      denoiseExponent: 24,
+      lensBlurRadiusPx: 14,
+      lensBlurBrightness: 0.5,
+      lensBlurAngleRad: 0.4,
+      sampleX: 48,
+      sampleY: 32,
+      centerX: 30,
+      centerY: 20,
+      halftoneAngleRad: 0.25,
+      halftoneSizePx: 6,
+      inkBigAverageRgb01: [0.75, 0.75, 0.75],
+      inkSmallAverageRgb01: [0.35, 0.35, 0.35],
+      inkStrength01: 0.4,
+      hexScalePx: 12,
+      warpRadiusPx: 60,
+      swirlAngleRad: 1.5,
+      bulgeStrength: 0.5,
+    });
+    expect(glfx.denoisedRgb01[0]).toBeLessThan(0.6);
+    expect(glfx.lensBlurRhombusDirections).toHaveLength(3);
+    expect(glfx.lensBlurGammaPower).toBeCloseTo(Math.pow(10, 0.5), 4);
+    expect(glfx.halftoneCmyk01).toHaveLength(4);
+    expect(glfx.inkDarkenedRgb01[0]).toBeLessThan(0.55);
+    expect(glfx.swirlWarpedCoord.x).not.toBe(48);
+    expect(glfx.bulgeWarpedCoord.x).not.toBe(48);
+
+    const klecks = applyKlecksFilterAndVanishPointSuite({
+      vanishCenterX: 100,
+      vanishCenterY: 50,
+      vanishLineCount: 24,
+      distortX: 45,
+      distortY: 25,
+      distortStepSizePx: 4,
+      distortType: 0,
+      distortScaleX: 20,
+      distortScaleY: 20,
+      distortStrengthX: 10,
+      distortStrengthY: 8,
+      distortPhaseX: 0.2,
+      distortPhaseY: 0.3,
+      pixelRgba01: [0.1, 0.1, 0.1, 1],
+      isInvertedToAlpha: true,
+      replaceRgb01: [0.2, 0.4, 0.9],
+      tiltStart: { x: 0, y: 50 },
+      tiltEnd: { x: 200, y: 50 },
+      tiltBlurRadiusPx: 18,
+      tiltGradientRadiusPx: 50,
+    });
+    expect(klecks.vanishPointRays).toHaveLength(48);
+    expect(klecks.toAlphaPixelRgba01[3]).toBeCloseTo(0.9, 4);
+    expect(klecks.toAlphaPixelRgba01[2]).toBeCloseTo(0.9, 4);
+    expect(klecks.tiltShiftBlurRadiusPx).toBeGreaterThan(0);
+
+    const miniPaint = applyMiniPaintArtisticFilterSuite({
+      neighborhoodRgb255: [
+        [200, 100, 50],
+        [204, 102, 48],
+        [202, 99, 52],
+        [20, 20, 20],
+      ],
+      oilLevels: 32,
+      sampleRgb255: [220, 180, 40],
+      sobelEdgeLuminance255: 190,
+      coordX: 100,
+      coordY: 40,
+      blueprintGridStepPx: 20,
+    });
+    expect(miniPaint.oilModalRgb255[0]).toBeGreaterThan(195);
+    expect(miniPaint.heatmapRgb255[0]).toBe(255);
+    expect(miniPaint.blueprintCompositeRgb255[2]).toBeGreaterThan(163);
+    expect(miniPaint.solarizedRgb255[0]).toBe(185);
   });
 });

@@ -610,3 +610,100 @@ export function generateLabRoughLehmerDoubleStroke(params: {
   };
 }
 
+/**
+ * `evanw/glfx.js` 양방향 지수 가중 디노이즈(`pow(1 - abs(dot(diff, 0.25)), exponent)`) 및 CMYK 4스크린 하프톤 계산기.
+ */
+export function evaluateLabGlfxColorHalftoneAndDenoise(params: {
+  readonly centerRgb01: readonly [number, number, number];
+  readonly sampleRgb01: readonly [number, number, number];
+  readonly denoiseExponent: number;
+  readonly dxPx: number;
+  readonly dyPx: number;
+  readonly halftoneAngleRad: number;
+  readonly halftoneSizePx: number;
+}): {
+  readonly bilateralWeight01: number;
+  readonly halftoneCmyk01: readonly [number, number, number, number];
+} {
+  const [cr, cg, cb] = [
+    clamp01(params.centerRgb01[0]),
+    clamp01(params.centerRgb01[1]),
+    clamp01(params.centerRgb01[2]),
+  ];
+  const [sr, sg, sb] = [
+    clamp01(params.sampleRgb01[0]),
+    clamp01(params.sampleRgb01[1]),
+    clamp01(params.sampleRgb01[2]),
+  ];
+  const dotDiff = (sr - cr) * 0.25 + (sg - cg) * 0.25 + (sb - cb) * 0.25;
+  const bilateralWeight01 = Math.fround(
+    Math.pow(Math.max(0, 1 - Math.abs(dotDiff)), Math.max(0.5, params.denoiseExponent)),
+  );
+  const cmyR = 1 - cr;
+  const cmyG = 1 - cg;
+  const cmyB = 1 - cb;
+  const k = Math.min(cmyR, cmyG, cmyB);
+  const denom = Math.max(1e-5, 1 - k);
+  const c = (cmyR - k) / denom;
+  const m = (cmyG - k) / denom;
+  const y = (cmyB - k) / denom;
+  const scale = Math.PI / Math.max(1, params.halftoneSizePx);
+  const pat = (off: number): number => {
+    const a = params.halftoneAngleRad + off;
+    const sinA = Math.sin(a);
+    const cosA = Math.cos(a);
+    const px = (cosA * params.dxPx - sinA * params.dyPx) * scale;
+    const py = (sinA * params.dxPx + cosA * params.dyPx) * scale;
+    return Math.sin(px) * Math.sin(py) * 4;
+  };
+  return {
+    bilateralWeight01,
+    halftoneCmyk01: [
+      Math.fround(clamp01(c * 10 - 3 + pat(0.26179))),
+      Math.fround(clamp01(m * 10 - 3 + pat(1.30899))),
+      Math.fround(clamp01(y * 10 - 3 + pat(0))),
+      Math.fround(clamp01(k * 10 - 5 + pat(0.78539))),
+    ],
+  };
+}
+
+/**
+ * `bitbof/klecks` 스텝 양자화 파동 왜곡(`fxDistort`) 및 명도→알파 선화 추출(`fxToAlpha`).
+ */
+export function evaluateLabKlecksDistortAndToAlpha(params: {
+  readonly x: number;
+  readonly y: number;
+  readonly stepSizePx: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  readonly strengthX: number;
+  readonly strengthY: number;
+  readonly phaseX: number;
+  readonly phaseY: number;
+  readonly rgba01: readonly [number, number, number, number];
+  readonly isInverted: boolean;
+}): {
+  readonly warpedX: number;
+  readonly warpedY: number;
+  readonly extractedAlpha01: number;
+} {
+  const step = Math.max(1, params.stepSizePx);
+  const qx = step > 1 ? Math.floor(params.x / step) * step : params.x;
+  const qy = step > 1 ? Math.floor(params.y / step) * step : params.y;
+  const wx =
+    Math.sin((qx / Math.max(1e-3, params.scaleX) + params.phaseX) * Math.PI * 2) *
+    params.strengthX;
+  const wy =
+    Math.sin((qy / Math.max(1e-3, params.scaleY) + params.phaseY) * Math.PI * 2) *
+    params.strengthY;
+  const lum =
+    (clamp01(params.rgba01[0]) + clamp01(params.rgba01[1]) + clamp01(params.rgba01[2])) / 3;
+  const rawAlpha = params.isInverted ? 1 - lum : lum;
+  return {
+    warpedX: Math.fround(qx + wx),
+    warpedY: Math.fround(qy + wy),
+    extractedAlpha01: Math.fround(Math.min(clamp01(params.rgba01[3]), clamp01(rawAlpha))),
+  };
+}
+
+

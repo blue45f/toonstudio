@@ -15,6 +15,12 @@ import {
   filterPixelPerfectStroke,
 } from "./studio-commercial-pixel-brush-kernels";
 import {
+  applyGlfxFilterSuite,
+  applyKlecksFilterAndVanishPointSuite,
+  COMPETITOR_FILTER_PRESETS,
+  WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER,
+} from "./studio-competitor-filter-brush-suite";
+import {
   FREEHAND_ROUGH_BRUSH_PRESETS,
   queryStrokeSpatialRTreeBBox,
   simplifyStrokePolylineRdp,
@@ -61,6 +67,7 @@ export * from "./studio-particle-pixol-brushes";
 export * from "./studio-bezier-curve-fit-brushes";
 export * from "./studio-mypaint-spectral-boolean-brushes";
 export * from "./studio-freehand-rough-spatial-brushes";
+export * from "./studio-competitor-filter-brush-suite";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -150,6 +157,16 @@ export function executeHarmonyProceduralBrush(
   const rng = createDeterministicRng(options?.seed ?? 20261026);
   const primitives: HarmonySegmentPrimitive[] = [];
   let chordLinkCount = 0;
+  const pushLine = (
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    alpha01: number,
+    rgbShift01: readonly [number, number, number] = [1, 1, 1],
+  ): void => {
+    primitives.push({ kind: "line", x0, y0, x1, y1, alpha01: clamp01(alpha01), rgbShift01 });
+  };
 
   if (brushKind === "ribbon") {
     const painters = Array.from({ length: 16 }, () => ({
@@ -171,15 +188,7 @@ export function executeHarmonyProceduralBrush(
         painter.ay = (painter.ay + (painter.dy - target.y) * painter.div) * painter.ease;
         painter.dx -= painter.ax;
         painter.dy -= painter.ay;
-        primitives.push({
-          kind: "line",
-          x0,
-          y0,
-          x1: painter.dx,
-          y1: painter.dy,
-          alpha01: clamp01(0.05 * Math.max(0.15, p)),
-          rgbShift01: [1, 1, 1],
-        });
+        pushLine(x0, y0, painter.dx, painter.dy, 0.05 * Math.max(0.15, p));
       }
     }
     return { brushKind, primitiveCount: primitives.length, chordLinkCount: 0, primitives };
@@ -193,15 +202,7 @@ export function executeHarmonyProceduralBrush(
     history.push(curr);
 
     if (brushKind === "simple") {
-      primitives.push({
-        kind: "line",
-        x0: prev.x,
-        y0: prev.y,
-        x1: curr.x,
-        y1: curr.y,
-        alpha01: clamp01(0.5 * p),
-        rgbShift01: [1, 1, 1],
-      });
+      pushLine(prev.x, prev.y, curr.x, curr.y, 0.5 * p);
       continue;
     }
 
@@ -266,15 +267,7 @@ export function executeHarmonyProceduralBrush(
 
     if (brushKind !== "shaded" && brushKind !== "longfur") {
       const baseAlpha = brushKind === "web" ? 0.5 * p : brushKind === "sketchy" ? 0.05 * p : 0.1 * p;
-      primitives.push({
-        kind: "line",
-        x0: prev.x,
-        y0: prev.y,
-        x1: curr.x,
-        y1: curr.y,
-        alpha01: clamp01(baseAlpha),
-        rgbShift01: [1, 1, 1],
-      });
+      pushLine(prev.x, prev.y, curr.x, curr.y, baseAlpha);
     }
 
     for (let i = 0; i < history.length - 1; i += 1) {
@@ -285,71 +278,23 @@ export function executeHarmonyProceduralBrush(
 
       if (brushKind === "sketchy" && dSq < 4000 && rng() > dSq / 2000) {
         chordLinkCount += 1;
-        primitives.push({
-          kind: "line",
-          x0: curr.x + dx * 0.3,
-          y0: curr.y + dy * 0.3,
-          x1: pt.x - dx * 0.3,
-          y1: pt.y - dy * 0.3,
-          alpha01: clamp01(0.05 * p),
-          rgbShift01: [1, 1, 1],
-        });
+        pushLine(curr.x + dx * 0.3, curr.y + dy * 0.3, pt.x - dx * 0.3, pt.y - dy * 0.3, 0.05 * p);
       } else if (brushKind === "shaded" && dSq < 1000) {
         chordLinkCount += 1;
-        primitives.push({
-          kind: "line",
-          x0: curr.x,
-          y0: curr.y,
-          x1: pt.x,
-          y1: pt.y,
-          alpha01: clamp01((1 - dSq / 1000) * 0.1 * p),
-          rgbShift01: [1, 1, 1],
-        });
+        pushLine(curr.x, curr.y, pt.x, pt.y, (1 - dSq / 1000) * 0.1 * p);
       } else if (brushKind === "chrome" && dSq < 1000) {
         chordLinkCount += 1;
-        primitives.push({
-          kind: "line",
-          x0: curr.x + dx * 0.2,
-          y0: curr.y + dy * 0.2,
-          x1: pt.x - dx * 0.2,
-          y1: pt.y - dy * 0.2,
-          alpha01: clamp01(0.1 * p),
-          rgbShift01: [rng(), rng(), rng()],
-        });
+        pushLine(curr.x + dx * 0.2, curr.y + dy * 0.2, pt.x - dx * 0.2, pt.y - dy * 0.2, 0.1 * p, [rng(), rng(), rng()]);
       } else if (brushKind === "fur" && dSq < 2000 && rng() > dSq / 2000) {
         chordLinkCount += 1;
-        primitives.push({
-          kind: "line",
-          x0: curr.x + dx * 0.5,
-          y0: curr.y + dy * 0.5,
-          x1: curr.x - dx * 0.5,
-          y1: curr.y - dy * 0.5,
-          alpha01: clamp01(0.1 * p),
-          rgbShift01: [1, 1, 1],
-        });
+        pushLine(curr.x + dx * 0.5, curr.y + dy * 0.5, curr.x - dx * 0.5, curr.y - dy * 0.5, 0.1 * p);
       } else if (brushKind === "longfur" && dSq < 4000 && rng() > dSq / 4000) {
         chordLinkCount += 1;
         const size = -rng();
-        primitives.push({
-          kind: "line",
-          x0: curr.x + dx * size,
-          y0: curr.y + dy * size,
-          x1: pt.x - dx * size + rng() * 2,
-          y1: pt.y - dy * size + rng() * 2,
-          alpha01: clamp01(0.05 * p),
-          rgbShift01: [1, 1, 1],
-        });
+        pushLine(curr.x + dx * size, curr.y + dy * size, pt.x - dx * size + rng() * 2, pt.y - dy * size + rng() * 2, 0.05 * p);
       } else if (brushKind === "web" && dSq < 2500 && rng() > 0.4) {
         chordLinkCount += 1;
-        primitives.push({
-          kind: "line",
-          x0: curr.x,
-          y0: curr.y,
-          x1: pt.x,
-          y1: pt.y,
-          alpha01: clamp01(0.1 * p),
-          rgbShift01: [1, 1, 1],
-        });
+        pushLine(curr.x, curr.y, pt.x, pt.y, 0.1 * p);
       }
     }
   }
@@ -597,6 +542,7 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly wave23ReaSemanticTargetCount: number;
   readonly wave24ReaEvidenceCount: number;
   readonly wave25ReaEvidenceCount: number;
+  readonly wave26ReaEvidenceCount: number;
   readonly totalVisitedAstNodes: number;
   readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
@@ -619,6 +565,9 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly roughHachureSegmentCount: number;
   readonly rdpSimplifiedPointCount: number;
   readonly rbushSpatialHitCount: number;
+  readonly competitorFilterPresetCount: number;
+  readonly klecksVanishPointRayCount: number;
+  readonly glfxHalftoneDotCmykCount: number;
   readonly schneiderFittedSegmentCount: number;
   readonly pomaxOffsetCuspCount: number;
   readonly wickClosedGapCount: number;
@@ -634,10 +583,12 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const wave22Nodes = WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const wave23Nodes = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const wave25Nodes = WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
+  const wave26Nodes = WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
   const totalSemanticDataFlowRelations =
     WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
-    WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0);
-  const totalVisitedAstNodes = wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes;
+    WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
+    WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0);
+  const totalVisitedAstNodes = wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes + wave26Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
@@ -715,6 +666,49 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     ],
     queryBox: { minX: 25, minY: 15, maxX: 60, maxY: 50 },
   });
+  const glfxSuite = applyGlfxFilterSuite({
+    centerRgb01: [0.6, 0.4, 0.25],
+    neighborSamplesRgb01: [[0.58, 0.42, 0.24], [0.62, 0.39, 0.26], [0.95, 0.95, 0.95]],
+    denoiseExponent: 18,
+    lensBlurRadiusPx: 12,
+    lensBlurBrightness: 0.4,
+    lensBlurAngleRad: 0.3,
+    sampleX: 42,
+    sampleY: 28,
+    centerX: 32,
+    centerY: 22,
+    halftoneAngleRad: 0.26,
+    halftoneSizePx: 6,
+    inkBigAverageRgb01: [0.7, 0.7, 0.7],
+    inkSmallAverageRgb01: [0.4, 0.4, 0.4],
+    inkStrength01: 0.35,
+    hexScalePx: 12,
+    warpRadiusPx: 60,
+    swirlAngleRad: 1.2,
+    bulgeStrength: 0.4,
+  });
+  const klecksSuite = applyKlecksFilterAndVanishPointSuite({
+    vanishCenterX: 110,
+    vanishCenterY: 22,
+    vanishLineCount: 18,
+    distortX: 40,
+    distortY: 24,
+    distortStepSizePx: 4,
+    distortType: 1,
+    distortScaleX: 24,
+    distortScaleY: 24,
+    distortStrengthX: 8,
+    distortStrengthY: 6,
+    distortPhaseX: 0.25,
+    distortPhaseY: 0.5,
+    pixelRgba01: [0.15, 0.15, 0.15, 1],
+    isInvertedToAlpha: true,
+    replaceRgb01: [0.1, 0.2, 0.8],
+    tiltStart: { x: 0, y: 22 },
+    tiltEnd: { x: 220, y: 22 },
+    tiltBlurRadiusPx: 16,
+    tiltGradientRadiusPx: 48,
+  });
 
   return {
     reaEvidenceTargetCount:
@@ -722,11 +716,13 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
       WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length +
       WAVE23_REA_DEEP_SEMANTIC_LEDGER.length +
       WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length +
-      WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length,
+      WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length +
+      WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     wave24ReaEvidenceCount: WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
     wave25ReaEvidenceCount: WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length,
+    wave26ReaEvidenceCount: WAVE26_COMPETITOR_FILTER_BRUSH_REA_LEDGER.length,
     totalVisitedAstNodes,
     totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
@@ -749,6 +745,9 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     roughHachureSegmentCount: roughSketch.hachureSegments.length,
     rdpSimplifiedPointCount: rdpSimplified.length,
     rbushSpatialHitCount: rbushQuery.matchedIds.length,
+    competitorFilterPresetCount: COMPETITOR_FILTER_PRESETS.length,
+    klecksVanishPointRayCount: klecksSuite.vanishPointRays.length,
+    glfxHalftoneDotCmykCount: glfxSuite.halftoneCmyk01.length,
     schneiderFittedSegmentCount: schneiderFit.segments.length,
     pomaxOffsetCuspCount: pomaxOffset.cuspCount,
     wickClosedGapCount: wickResult.closedGapBridgeCount,

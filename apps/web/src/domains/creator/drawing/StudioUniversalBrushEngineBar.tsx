@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
-import type { ReactElement } from "react";
+import type { KeyboardEvent, ReactElement } from "react";
 
 import {
+  applyGlfxFilterSuite,
+  applyKlecksFilterAndVanishPointSuite,
+  COMPETITOR_FILTER_PRESETS,
   COREL_PARTICLE_BRUSH_PRESETS,
   encodeCleanRoomBrushQrPayload,
   evaluateMyPaintFullDynamicsStep,
@@ -25,6 +28,7 @@ import {
   traceP5BrushFlowLine,
   warpSkeletalArtBrushAlongSpine,
   type ComicRibbonStampPresetId,
+  type CompetitorFilterPresetId,
   type CorelParticlePresetId,
   type FreehandRoughPresetId,
   type HarmonyBrushKind,
@@ -35,6 +39,40 @@ import {
 
 export interface StudioUniversalBrushEngineBarProps {
   readonly tx: (source: string) => string;
+}
+
+function handleRovingRadioKeyDown<T>(
+  e: KeyboardEvent<HTMLButtonElement>,
+  idx: number,
+  items: readonly T[],
+  onSelect: (item: T) => void,
+): void {
+  let nextIdx = -1;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    nextIdx = (idx + 1) % items.length;
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    nextIdx = (idx - 1 + items.length) % items.length;
+  } else if (e.key === "Home") {
+    nextIdx = 0;
+  } else if (e.key === "End") {
+    nextIdx = items.length - 1;
+  }
+  if (nextIdx >= 0) {
+    e.preventDefault();
+    const target = items[nextIdx];
+    if (target !== undefined) {
+      onSelect(target);
+      const container = e.currentTarget.parentElement;
+      const buttons = container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+      buttons?.[nextIdx]?.focus();
+    }
+  }
+}
+
+function radioButtonClassName(isSelected: boolean): string {
+  return isSelected
+    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
+    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg";
 }
 
 export function StudioUniversalBrushEngineBar({
@@ -54,6 +92,8 @@ export function StudioUniversalBrushEngineBar({
     useState<MyPaintPresetId>("mypaint-spectral-impasto");
   const [selectedFreehandRoughId, setSelectedFreehandRoughId] =
     useState<FreehandRoughPresetId>("pf-comic-gpen-taper");
+  const [selectedCompetitorFilterId, setSelectedCompetitorFilterId] =
+    useState<CompetitorFilterPresetId>("klecks-vanish-point-speedlines");
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -141,6 +181,58 @@ export function StudioUniversalBrushEngineBar({
       ],
       queryBox: { minX: 100, minY: 10, maxX: 160, maxY: 35 },
     });
+    const filterPreset =
+      COMPETITOR_FILTER_PRESETS.find((item) => item.id === selectedCompetitorFilterId) ??
+      COMPETITOR_FILTER_PRESETS[0]!;
+    const glfxEval = applyGlfxFilterSuite({
+      centerRgb01: [0.58, 0.42, 0.25],
+      neighborSamplesRgb01: [
+        [0.56, 0.43, 0.24],
+        [0.61, 0.4, 0.27],
+      ],
+      denoiseExponent: filterPreset.engineFamily === "glfx" ? filterPreset.primaryParam : 18,
+      lensBlurRadiusPx: 12,
+      lensBlurBrightness: 0.4,
+      lensBlurAngleRad: 0.3,
+      sampleX: 44,
+      sampleY: 22,
+      centerX: 32,
+      centerY: 22,
+      halftoneAngleRad: 0.26,
+      halftoneSizePx: 6,
+      inkBigAverageRgb01: [0.72, 0.72, 0.72],
+      inkSmallAverageRgb01: [0.42, 0.42, 0.42],
+      inkStrength01: 0.35,
+      hexScalePx: 12,
+      warpRadiusPx: 60,
+      swirlAngleRad: 1.2,
+      bulgeStrength: 0.4,
+    });
+    const klecksFilterEval = applyKlecksFilterAndVanishPointSuite({
+      vanishCenterX: 110,
+      vanishCenterY: 22,
+      vanishLineCount:
+        filterPreset.id === "klecks-vanish-point-speedlines" ? filterPreset.primaryParam : 16,
+      vanishInnerHollowRadiusPx: 14,
+      vanishOuterRayLengthPx: 95,
+      distortX: 44,
+      distortY: 22,
+      distortStepSizePx: 4,
+      distortType: 1,
+      distortScaleX: 24,
+      distortScaleY: 24,
+      distortStrengthX: 8,
+      distortStrengthY: 6,
+      distortPhaseX: 0.25,
+      distortPhaseY: 0.5,
+      pixelRgba01: [0.15, 0.15, 0.15, 1],
+      isInvertedToAlpha: true,
+      replaceRgb01: [0.1, 0.2, 0.8],
+      tiltStart: { x: 0, y: 22 },
+      tiltEnd: { x: 220, y: 22 },
+      tiltBlurRadiusPx: 16,
+      tiltGradientRadiusPx: 48,
+    });
 
     const bezierSvgPath = schneiderFit.segments
       .map((seg, i) =>
@@ -172,6 +264,9 @@ export function StudioUniversalBrushEngineBar({
       roughHachureTotalCount: roughSketch.hachureSegments.length,
       rdpPointCount: rdpSimplified.length,
       rbushHitCount: rbushSpatial.matchedIds.length,
+      vanishRays: klecksFilterEval.vanishPointRays.slice(0, 16),
+      vanishRayTotalCount: klecksFilterEval.vanishPointRays.length,
+      halftoneCmykSum: glfxEval.halftoneCmyk01.reduce((a, b) => a + b, 0),
       bezierSvgPath,
       booleanPolygonPoints,
     };
@@ -183,6 +278,7 @@ export function StudioUniversalBrushEngineBar({
     selectedKlecksId,
     selectedMyPaintId,
     selectedFreehandRoughId,
+    selectedCompetitorFilterId,
   ]);
 
   return (
@@ -210,36 +306,10 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-harmony-kind={kind}
                 onClick={() => setSelectedHarmonyKind(kind)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % HARMONY_BRUSH_KINDS.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx =
-                      (idx - 1 + HARMONY_BRUSH_KINDS.length) %
-                      HARMONY_BRUSH_KINDS.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = HARMONY_BRUSH_KINDS.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = HARMONY_BRUSH_KINDS[nextIdx];
-                    if (target) {
-                      setSelectedHarmonyKind(target);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, HARMONY_BRUSH_KINDS, setSelectedHarmonyKind)
                 }
+                className={radioButtonClassName(isSelected)}
               >
                 {kind}
               </button>
@@ -267,34 +337,10 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-comic-ribbon={preset.id}
                 onClick={() => setSelectedComicRibbonId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedComicRibbonId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedComicRibbonId(t.id))
                 }
+                className={radioButtonClassName(isSelected)}
               >
                 {tx(preset.labelKo)}
               </button>
@@ -322,34 +368,10 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-skeletal-brush={preset.id}
                 onClick={() => setSelectedSkeletalId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedSkeletalId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedSkeletalId(t.id))
                 }
+                className={radioButtonClassName(isSelected)}
               >
                 {tx(preset.labelKo)}
               </button>
@@ -372,34 +394,10 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-particle-brush={preset.id}
                 onClick={() => setSelectedParticleId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedParticleId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedParticleId(t.id))
                 }
+                className={radioButtonClassName(isSelected)}
               >
                 {tx(preset.labelKo)}
               </button>
@@ -427,34 +425,10 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-klecks-preset={preset.id}
                 onClick={() => setSelectedKlecksId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedKlecksId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedKlecksId(t.id))
                 }
+                className={radioButtonClassName(isSelected)}
               >
                 {tx(preset.labelKo)}
               </button>
@@ -482,34 +456,10 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-mypaint-preset={preset.id}
                 onClick={() => setSelectedMyPaintId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedMyPaintId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedMyPaintId(t.id))
                 }
+                className={radioButtonClassName(isSelected)}
               >
                 {tx(preset.labelKo)}
               </button>
@@ -537,34 +487,41 @@ export function StudioUniversalBrushEngineBar({
                 tabIndex={isSelected ? 0 : -1}
                 data-studio-freehand-rough-preset={preset.id}
                 onClick={() => setSelectedFreehandRoughId(preset.id)}
-                onKeyDown={(e) => {
-                  let nextIdx = -1;
-                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    nextIdx = (idx + 1) % arr.length;
-                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    nextIdx = (idx - 1 + arr.length) % arr.length;
-                  } else if (e.key === "Home") {
-                    nextIdx = 0;
-                  } else if (e.key === "End") {
-                    nextIdx = arr.length - 1;
-                  }
-                  if (nextIdx >= 0) {
-                    e.preventDefault();
-                    const target = arr[nextIdx];
-                    if (target) {
-                      setSelectedFreehandRoughId(target.id);
-                      const container = e.currentTarget.parentElement;
-                      const buttons =
-                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-                      buttons?.[nextIdx]?.focus();
-                    }
-                  }
-                }}
-                className={
-                  isSelected
-                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
-                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedFreehandRoughId(t.id))
                 }
+                className={radioButtonClassName(isSelected)}
+              >
+                {tx(preset.labelKo)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("경쟁사 필터·집중선·하프톤 (Wave 26):")}
+        </span>
+        <div
+          role="radiogroup"
+          aria-label={tx("경쟁사 필터 및 집중선·하프톤 프리셋")}
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          {COMPETITOR_FILTER_PRESETS.slice(0, 6).map((preset, idx, arr) => {
+            const isSelected = preset.id === selectedCompetitorFilterId;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                data-studio-competitor-filter-preset={preset.id}
+                onClick={() => setSelectedCompetitorFilterId(preset.id)}
+                onKeyDown={(e) =>
+                  handleRovingRadioKeyDown(e, idx, arr, (t) => setSelectedCompetitorFilterId(t.id))
+                }
+                className={radioButtonClassName(isSelected)}
               >
                 {tx(preset.labelKo)}
               </button>
@@ -580,6 +537,19 @@ export function StudioUniversalBrushEngineBar({
           aria-label={tx("범용 브러시 다중 레이어 실시간 스트로크 프리뷰")}
           data-studio-universal-brush-svg-preview="true"
         >
+          {activeUniversalTelemetry.vanishRays.map((ray, idx) => (
+            <line
+              key={`v-${idx}`}
+              x1={ray.x1}
+              y1={ray.y1}
+              x2={ray.x2}
+              y2={ray.y2}
+              className="text-fg-3"
+              stroke="currentColor"
+              strokeWidth={0.55}
+              strokeOpacity={0.35}
+            />
+          ))}
           {activeUniversalTelemetry.pfOutline.svgPolygonPath ? (
             <path
               d={activeUniversalTelemetry.pfOutline.svgPolygonPath}
@@ -699,6 +669,10 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span>
             {tx("Rough 해칭")}: {activeUniversalTelemetry.roughHachureTotalCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("집중선")}: {activeUniversalTelemetry.vanishRayTotalCount}
           </span>
           <span>·</span>
           <span>
