@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   evaluateLabSaiWatercolorPressure,
+  evaluateLabSculptGlQuarticFalloff01,
   filterLabPixelPerfectCells,
   generateLabHarmonySegments,
   stepLabKmMixerBrushReservoir,
+  stepLabLazyBrushCircularFriction,
+  warpLabSkeletalNonStretchU01,
 } from "./universal-brush-suite";
 
-describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널)", () => {
+describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 & Wave 22)", () => {
   it("Harmony 절차적 브러시 모드별로 결정론적 근접 코드 세그먼트를 생성한다", () => {
     const anchors = Array.from({ length: 12 }, (_, idx) => ({
       x: 10 + idx * 6,
@@ -71,5 +74,41 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널)", () =>
       { x: 1, y: 1 },
       { x: 2, y: 2 },
     ]);
+  });
+
+  it("Wave 22 SculptGL C^2 4차 다항식 폴오프, Lazy-Brush 원형 마찰 감쇠, 골격 비신축 가이드 매핑이 정확히 동작한다", () => {
+    expect(evaluateLabSculptGlQuarticFalloff01(0)).toBe(1);
+    expect(evaluateLabSculptGlQuarticFalloff01(0.5)).toBeCloseTo(0.6875, 4);
+    expect(evaluateLabSculptGlQuarticFalloff01(1)).toBe(0);
+
+    const stay = stepLabLazyBrushCircularFriction({
+      brushX: 0,
+      brushY: 0,
+      pointerX: 12,
+      pointerY: 0,
+      radiusPx: 20,
+      friction01: 0.5,
+    });
+    expect(stay.hasMoved).toBe(false);
+
+    const move = stepLabLazyBrushCircularFriction({
+      brushX: 0,
+      brushY: 0,
+      pointerX: 50,
+      pointerY: 0,
+      radiusPx: 20,
+      friction01: 0.5,
+    });
+    expect(move.hasMoved).toBe(true);
+    expect(move.brushX).toBeGreaterThan(0);
+
+    const headU = warpLabSkeletalNonStretchU01({
+      arcPositionPx: 15,
+      totalSpineArcPx: 300,
+      nominalLengthPx: 150,
+      headGuide01: 0.2,
+      tailGuide01: 0.8,
+    });
+    expect(headU).toBeCloseTo(0.1, 3);
   });
 });

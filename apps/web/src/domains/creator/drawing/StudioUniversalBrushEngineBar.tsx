@@ -2,14 +2,21 @@ import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
 import {
+  COREL_PARTICLE_BRUSH_PRESETS,
   encodeCleanRoomBrushQrPayload,
+  evaluateSculptGlQuarticFalloff01,
   executeHarmonyProceduralBrush,
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
+  SKELETAL_ART_BRUSH_PRESETS,
+  stepCorelPainterParticleBrush,
   stepPhotoshopMixerBrushReservoir,
   traceP5BrushFlowLine,
+  warpSkeletalArtBrushAlongSpine,
   type ComicRibbonStampPresetId,
+  type CorelParticlePresetId,
   type HarmonyBrushKind,
+  type SkeletalArtBrushPresetId,
 } from "./studio-universal-brush-taxonomy-engine";
 
 export interface StudioUniversalBrushEngineBarProps {
@@ -23,6 +30,10 @@ export function StudioUniversalBrushEngineBar({
     useState<HarmonyBrushKind>("sketchy");
   const [selectedComicRibbonId, setSelectedComicRibbonId] =
     useState<ComicRibbonStampPresetId>("ribbon-petal-chain");
+  const [selectedSkeletalId, setSelectedSkeletalId] =
+    useState<SkeletalArtBrushPresetId>("katana-blade");
+  const [selectedParticleId, setSelectedParticleId] =
+    useState<CorelParticlePresetId>("silk-harmonic-spring");
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -56,14 +67,25 @@ export function StudioUniversalBrushEngineBar({
       [0.18, 0.45, 0.92],
       [0.18, 0.45, 0.92],
     );
+    const skeletalSamples = warpSkeletalArtBrushAlongSpine(selectedSkeletalId, sampleStroke, 1);
+    const particleSegments = stepCorelPainterParticleBrush({
+      presetId: selectedParticleId,
+      points: sampleStroke,
+      radiusPx: 18,
+      seed: 20261026,
+    });
+    const sculptQuarticMid = evaluateSculptGlQuarticFalloff01(0.5);
     return {
       harmony,
       flowCount: flow.length,
       ribbonPreset,
       qrLength: qrPayload.length,
       mixer,
+      skeletalCount: skeletalSamples.length,
+      particleSegmentCount: particleSegments.length,
+      sculptQuarticMid,
     };
-  }, [selectedHarmonyKind, selectedComicRibbonId]);
+  }, [selectedHarmonyKind, selectedComicRibbonId, selectedSkeletalId, selectedParticleId]);
 
   return (
     <div
@@ -182,6 +204,111 @@ export function StudioUniversalBrushEngineBar({
           })}
         </div>
       </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("벡터 골격·입자 물리 (Wave 22):")}
+        </span>
+        <div
+          role="radiogroup"
+          aria-label={tx("벡터 골격 아트 브러시 프리셋")}
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          {SKELETAL_ART_BRUSH_PRESETS.slice(0, 4).map((preset, idx, arr) => {
+            const isSelected = preset.id === selectedSkeletalId;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                data-studio-skeletal-brush={preset.id}
+                onClick={() => setSelectedSkeletalId(preset.id)}
+                onKeyDown={(e) => {
+                  let nextIdx = -1;
+                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                    nextIdx = (idx + 1) % arr.length;
+                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                    nextIdx = (idx - 1 + arr.length) % arr.length;
+                  } else if (e.key === "Home") {
+                    nextIdx = 0;
+                  } else if (e.key === "End") {
+                    nextIdx = arr.length - 1;
+                  }
+                  if (nextIdx >= 0) {
+                    e.preventDefault();
+                    const target = arr[nextIdx];
+                    if (target) {
+                      setSelectedSkeletalId(target.id);
+                      const container = e.currentTarget.parentElement;
+                      const buttons =
+                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+                      buttons?.[nextIdx]?.focus();
+                    }
+                  }
+                }}
+                className={
+                  isSelected
+                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
+                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {tx(preset.labelKo)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          role="radiogroup"
+          aria-label={tx("Corel 입자 물리 브러시 프리셋")}
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          {COREL_PARTICLE_BRUSH_PRESETS.slice(0, 3).map((preset, idx, arr) => {
+            const isSelected = preset.id === selectedParticleId;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                data-studio-particle-brush={preset.id}
+                onClick={() => setSelectedParticleId(preset.id)}
+                onKeyDown={(e) => {
+                  let nextIdx = -1;
+                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                    nextIdx = (idx + 1) % arr.length;
+                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                    nextIdx = (idx - 1 + arr.length) % arr.length;
+                  } else if (e.key === "Home") {
+                    nextIdx = 0;
+                  } else if (e.key === "End") {
+                    nextIdx = arr.length - 1;
+                  }
+                  if (nextIdx >= 0) {
+                    e.preventDefault();
+                    const target = arr[nextIdx];
+                    if (target) {
+                      setSelectedParticleId(target.id);
+                      const container = e.currentTarget.parentElement;
+                      const buttons =
+                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+                      buttons?.[nextIdx]?.focus();
+                    }
+                  }
+                }}
+                className={
+                  isSelected
+                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
+                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {tx(preset.labelKo)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-fg-2">
         <span>
           {tx(activeUniversalTelemetry.ribbonPreset.labelKo)} ({activeUniversalTelemetry.ribbonPreset.sourceApp})
@@ -204,7 +331,15 @@ export function StudioUniversalBrushEngineBar({
           </span>
           <span>·</span>
           <span>
-            {tx("노즐 주기")}: {activeUniversalTelemetry.ribbonPreset.nozzleCycleCount}
+            {tx("골격 리본")}: {activeUniversalTelemetry.skeletalCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("입자 궤적")}: {activeUniversalTelemetry.particleSegmentCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("Pixol C²")}: {activeUniversalTelemetry.sculptQuarticMid.toFixed(4)}
           </span>
           <span>·</span>
           <span>

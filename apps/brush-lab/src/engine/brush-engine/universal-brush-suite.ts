@@ -247,3 +247,83 @@ export function filterLabPixelPerfectCells(
   }
   return out;
 }
+
+/**
+ * SculptGL / ZBrush 2.5D Pixol 브러시용 C^2 4차 다항식 폴오프: `f(d) = 3d^4 - 4d^3 + 1` ($d \in [0, 1]$).
+ */
+export function evaluateLabSculptGlQuarticFalloff01(normalizedDist01: number): number {
+  if (!Number.isFinite(normalizedDist01) || normalizedDist01 >= 1) return 0;
+  if (normalizedDist01 <= 0) return 1;
+  const d = normalizedDist01;
+  const d2 = d * d;
+  return Math.fround(clamp01(3 * d2 * d2 - 4 * d2 * d + 1));
+}
+
+/**
+ * Lazy-Brush 원형 마찰 감쇠(`1 - sqrt(1 - (1 - friction)^2)`) 및 불감대 반경 스텝.
+ */
+export function stepLabLazyBrushCircularFriction(params: {
+  readonly brushX: number;
+  readonly brushY: number;
+  readonly pointerX: number;
+  readonly pointerY: number;
+  readonly radiusPx: number;
+  readonly friction01?: number;
+}): {
+  readonly brushX: number;
+  readonly brushY: number;
+  readonly hasMoved: boolean;
+} {
+  const dx = params.pointerX - params.brushX;
+  const dy = params.pointerY - params.brushY;
+  const dist = Math.hypot(dx, dy);
+  const radius = Math.max(0, params.radiusPx);
+  const excess = dist - radius;
+  if (Math.round(excess * 10) / 10 <= 0) {
+    return {
+      brushX: Math.fround(params.brushX),
+      brushY: Math.fround(params.brushY),
+      hasMoved: false,
+    };
+  }
+  const f = Math.max(0, Math.min(0.98, Number.isFinite(params.friction01) ? (params.friction01 as number) : 0));
+  const damp = f > 0 ? 1 - Math.sqrt(Math.max(0, 1 - Math.pow(1 - f, 2))) : 1;
+  const moveAngle = Math.atan2(dy, dx) + Math.PI * 0.5;
+  const stepDist = excess * damp;
+  return {
+    brushX: Math.fround(params.brushX + Math.sin(moveAngle) * stepDist),
+    brushY: Math.fround(params.brushY - Math.cos(moveAngle) * stepDist),
+    hasMoved: true,
+  };
+}
+
+/**
+ * Illustrator / Affinity 골격 아트 브러시 비신축 가이드(Head/Tail Non-Stretch) 템플릿 U 매핑.
+ */
+export function warpLabSkeletalNonStretchU01(params: {
+  readonly arcPositionPx: number;
+  readonly totalSpineArcPx: number;
+  readonly nominalLengthPx: number;
+  readonly headGuide01: number;
+  readonly tailGuide01: number;
+}): number {
+  const total = Math.max(1e-3, params.totalSpineArcPx);
+  const s = Math.max(0, Math.min(total, params.arcPositionPx));
+  const headGuide = clamp01(params.headGuide01);
+  const tailGuide = Math.max(headGuide + 0.05, clamp01(params.tailGuide01));
+  const maxEndArc = total * 0.42;
+  const headArc = Math.min(headGuide * params.nominalLengthPx, maxEndArc);
+  const tailArc = Math.min((1 - tailGuide) * params.nominalLengthPx, maxEndArc);
+  const midArc = Math.max(1e-3, total - headArc - tailArc);
+
+  if (s <= headArc && headArc > 1e-3) {
+    return Math.fround(clamp01((s / headArc) * headGuide));
+  }
+  if (s >= total - tailArc && tailArc > 1e-3) {
+    const tailProgress = (s - (total - tailArc)) / tailArc;
+    return Math.fround(clamp01(tailGuide + tailProgress * (1 - tailGuide)));
+  }
+  const midProgress = (s - headArc) / midArc;
+  return Math.fround(clamp01(headGuide + clamp01(midProgress) * (tailGuide - headGuide)));
+}
+
