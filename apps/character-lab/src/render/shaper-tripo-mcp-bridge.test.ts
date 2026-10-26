@@ -6,6 +6,7 @@ import {
   applyLabShaperTripoLookToShading,
   buildLabShaperTripoPipelineSpec,
   getLabShaperTripoLookPreset,
+  LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS,
   LAB_SHAPER_TRIPO_LOOK_PRESETS,
 } from "./shaper-tripo-mcp-bridge";
 
@@ -47,5 +48,10 @@ describe("shaper-tripo-mcp-bridge (character-lab)", () => {
     expect(spec8.hairShaderVariant).toBe("simpleMatCapShader");
     expect(spec8.pipelineSummaryKo).toContain("delight=false");
     expect(spec8.pipelineSummaryKo).toContain("simpleMatCapShader");
+  });
+
+  it("tripo3d MCP + glbforge 검증 3D GLB 에셋 카탈로그 3종 메타데이터를 제공한다", () => {
+    expect(LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS).toHaveLength(3);
+    expect(LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS.every((item) => item.watertight && item.triangles > 1000)).toBe(true);
   });
 });
