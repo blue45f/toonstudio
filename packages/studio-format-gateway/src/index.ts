@@ -12,6 +12,8 @@ export * from "./csp-laf-sgs-spws";
 export * from "./csp-print-epub-3d-archive";
 export * from "./csp-material-boot-placement";
 export * from "./csp-c2fr-c3dd-psd-pdfx";
+export * from "./csp-bfps-cscr-prmi";
+export * from "./csp-tomd-spws-palette-dock";
 export * from "./openraster";
 export * from "./artcraft-suite-formats";
 
