@@ -15,12 +15,15 @@ export {
   REA65_PLATFORM_UI_THEME_CATALOG,
   REA80_PLATFORM_IDS,
   REA80_PLATFORM_UI_THEME_CATALOG,
+  REA100_PLATFORM_IDS,
+  REA100_PLATFORM_UI_THEME_CATALOG,
   type Rea15PlatformId,
   type Rea15PlatformUiThemeSpec,
   type Rea39PlatformId,
   type Rea50PlatformId,
   type Rea65PlatformId,
   type Rea80PlatformId,
+  type Rea100PlatformId,
 } from "./claude-rea15-platform-ui-theme-catalog";
 
 /* ============================================================================

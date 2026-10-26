@@ -169,10 +169,11 @@ export function buildShaperTripoPoseControlSuffix(input: ShaperTripoPoseControlI
   };
 }
 
+export type ShaperTripoSlotKind = CharacterSlotKind | "prop" | "outfit" | "outer";
 export type ShaperTripoScenarioKind = "webtoon-character" | "webtoon-prop" | "smart-segment-wearable";
 
 export interface ShaperTripoSlotGenerationPlan {
-  readonly slot: CharacterSlotKind;
+  readonly slot: ShaperTripoSlotKind;
   readonly scenario: ShaperTripoScenarioKind;
   readonly modelVersion: "v3.1-20260211" | "P2-20260801";
   readonly textureModelVersion: "v3.5-20260815";
@@ -193,12 +194,12 @@ export interface ShaperTripoSlotGenerationPlan {
   readonly visualProfile: ShaperTripoVisualProfile;
 }
 
-const PROP_SLOTS: ReadonlySet<CharacterSlotKind> = new Set([
+const PROP_SLOTS: ReadonlySet<ShaperTripoSlotKind> = new Set([
   "prop",
   "accessory",
 ]);
 
-const WEARABLE_SEGMENT_SLOTS: ReadonlySet<CharacterSlotKind> = new Set([
+const WEARABLE_SEGMENT_SLOTS: ReadonlySet<ShaperTripoSlotKind> = new Set([
   "outfit",
   "top",
   "bottom",
@@ -212,7 +213,7 @@ const WEARABLE_SEGMENT_SLOTS: ReadonlySet<CharacterSlotKind> = new Set([
  * Tripo 3D V3 MCP / CLI 실행 플랜을 생성한다.
  */
 export function buildShaperTripoSlotGenerationPlan(input: {
-  readonly slot: CharacterSlotKind;
+  readonly slot: ShaperTripoSlotKind;
   readonly prompt: string;
   readonly visualStyleId?: ShaperTripoVisualStyleId;
   readonly poseControl?: ShaperTripoPoseControlInput;
