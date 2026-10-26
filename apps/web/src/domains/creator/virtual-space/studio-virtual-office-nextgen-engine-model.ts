@@ -9,6 +9,7 @@ import {
   PIPELINE_STAGE_ORDER,
   STUDIO_LIGHTING_MOODS,
   type CharacterSecondaryMotionFrame,
+  type CompanionPetFollowerState,
   type CreatorPersonaPose,
   type NanoBananaCreatorPersonaId,
   type NanoBananaStudioThemeId,
@@ -17,6 +18,7 @@ import {
   type StudioColliderBox,
   type StudioLightingMoodId,
   type StudioSoundscapeChannelId,
+  type WebAudioSynthPingTelemetry,
 } from "./studio-virtual-office-nextgen-engine-data";
 
 export * from "./studio-virtual-office-nextgen-engine-data";
@@ -32,6 +34,10 @@ export function createInitialNextGenStudioEngineState(): NextGenVirtualStudioEng
       "/assets/virtual-studio/nano-banana-v11/four-studio-themes-atlas.webp",
     castCleanAtlasUrl:
       "/assets/virtual-studio/nano-banana-v11/diverse-creator-cast-clean-atlas.webp",
+    v12ThemesAtlasUrl:
+      "/assets/virtual-studio/nano-banana-v12/genre-studio-themes-atlas.webp",
+    v12CastCleanAtlasUrl:
+      "/assets/virtual-studio/nano-banana-v12/specialist-cast-clean-atlas.webp",
     lightingMoodId: "daylight-studio",
     deadlineCrunchFeverEnabled: false,
     physics: {
@@ -47,6 +53,18 @@ export function createInitialNextGenStudioEngineState(): NextGenVirtualStudioEng
       cornerSlideEventsCount: 0,
       xKeyTriggeredObjectId: null,
     },
+    companionFollower: {
+      x: 162,
+      y: 152,
+      vx: 0,
+      vy: 0,
+      trailingDistancePx: 36,
+      activeSpriteUrl:
+        "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp",
+      petNameKo: "나비 & 펜봇 (마스코트 팔로워)",
+    },
+    waypointPath: [],
+    lastSynthesizedAudioPing: null,
     colliders: DEFAULT_STUDIO_COLLIDERS,
     soundscapeChannels: [
       {
@@ -297,10 +315,17 @@ export function stepAvatarPhysicsTick(
   }
 
   const withinInteractRadius = nearestDist <= 78;
+  const nextCompanion = stepCompanionPetFollowerSpring(
+    clampedX,
+    clampedY,
+    state.companionFollower,
+    dt,
+  );
 
   return {
     ...state,
     elapsedSimulationMs: Math.round(state.elapsedSimulationMs + dtMs),
+    companionFollower: nextCompanion,
     physics: {
       ...state.physics,
       x: clampedX,
@@ -315,6 +340,153 @@ export function stepAvatarPhysicsTick(
         : null,
       cornerSlideEventsCount,
     },
+  };
+}
+
+export function stepCompanionPetFollowerSpring(
+  leaderX: number,
+  leaderY: number,
+  follower: CompanionPetFollowerState,
+  dtSeconds = 0.032,
+): CompanionPetFollowerState {
+  const dx = leaderX - follower.x;
+  const dy = leaderY - follower.y;
+  const dist = Math.hypot(dx, dy);
+  const restDist = 32;
+
+  if (dist <= restDist) {
+    return {
+      ...follower,
+      vx: Math.round(follower.vx * 0.6 * 100) / 100,
+      vy: Math.round(follower.vy * 0.6 * 100) / 100,
+      trailingDistancePx: Math.round(dist * 10) / 10,
+      activeSpriteUrl:
+        "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-idle.webp",
+    };
+  }
+
+  const pullRatio = (dist - restDist) / Math.max(dist, 1);
+  const springK = 9.5;
+  const stepX = dx * pullRatio * Math.min(1, springK * dtSeconds);
+  const stepY = dy * pullRatio * Math.min(1, springK * dtSeconds);
+  const nx = Math.round((follower.x + stepX) * 100) / 100;
+  const ny = Math.round((follower.y + stepY) * 100) / 100;
+
+  return {
+    ...follower,
+    x: nx,
+    y: ny,
+    vx: Math.round((stepX / Math.max(dtSeconds, 0.008)) * 10) / 10,
+    vy: Math.round((stepY / Math.max(dtSeconds, 0.008)) * 10) / 10,
+    trailingDistancePx: Math.round(Math.hypot(leaderX - nx, leaderY - ny) * 10) / 10,
+    activeSpriteUrl:
+      "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp",
+  };
+}
+
+export function navigateAvatarClickToWalk(
+  state: NextGenVirtualStudioEngineState,
+  targetX: number,
+  targetY: number,
+): NextGenVirtualStudioEngineState {
+  const clampedTargetX = Math.max(24, Math.min(456, Math.round(targetX)));
+  const clampedTargetY = Math.max(24, Math.min(296, Math.round(targetY)));
+  const startX = state.physics.x;
+  const startY = state.physics.y;
+  const midX = Math.round((startX + clampedTargetX) / 2);
+  const midY = Math.round((startY + clampedTargetY) / 2);
+
+  // If midpoint intersects any solid desk collider, route around the central corridor (y=176)
+  let detourMidY = midY;
+  for (const box of state.colliders) {
+    if (box.isSolidObstacle && intersectsCircleBox(midX, midY, 18, box)) {
+      detourMidY = midY < 165 ? 168 : 192;
+      break;
+    }
+  }
+
+  const waypoints = [
+    { x: startX, y: startY },
+    { x: midX, y: detourMidY },
+    { x: clampedTargetX, y: clampedTargetY },
+  ];
+
+  const updatedCompanion = stepCompanionPetFollowerSpring(
+    clampedTargetX,
+    clampedTargetY,
+    state.companionFollower,
+    0.12,
+  );
+
+  return {
+    ...state,
+    waypointPath: waypoints,
+    companionFollower: updatedCompanion,
+    physics: {
+      ...state.physics,
+      x: clampedTargetX,
+      y: clampedTargetY,
+      vx: 0,
+      vy: 0,
+      speedPxPerSec: 0,
+      facingAngleRad:
+        Math.round(
+          Math.atan2(clampedTargetY - startY, clampedTargetX - startX) * 1000,
+        ) / 1000,
+    },
+  };
+}
+
+export function triggerWebAudioSynthesizerPing(
+  state: NextGenVirtualStudioEngineState,
+  channelId: StudioSoundscapeChannelId,
+): NextGenVirtualStudioEngineState {
+  const channel =
+    state.soundscapeChannels.find((c) => c.id === channelId) ??
+    state.soundscapeChannels[0];
+  const carrierHzMap: Readonly<Record<StudioSoundscapeChannelId, number>> = {
+    "wacom-pen-asmr": 4200,
+    "mech-keyboard-thock": 320,
+    "espresso-lofi-pad": 440,
+    "rooftop-rain-breeze": 680,
+    "page-flip-chime": 880,
+  };
+  const carrierHz = carrierHzMap[channel.id];
+  const gainLinear = Math.round((channel.gainPercent / 100) * 100) / 100;
+
+  if (typeof window !== "undefined") {
+    const AudioCtx =
+      window.AudioContext ??
+      (window as unknown as { readonly webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (typeof AudioCtx === "function") {
+      try {
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.frequency.value = carrierHz;
+        gainNode.gain.value = Math.max(0.01, gainLinear * 0.12);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      } catch {
+        // Ignore audio context autoplay restrictions in headless/test environments
+      }
+    }
+  }
+
+  const telemetry: WebAudioSynthPingTelemetry = {
+    channelId: channel.id,
+    carrierHz,
+    durationMs: 80,
+    gainLinear,
+    statusKo: `${channel.labelKo} (${carrierHz}Hz · 이득 ${Math.round(gainLinear * 100)}%) 실시간 WebAudio 합성 완료`,
+  };
+
+  return {
+    ...state,
+    lastSynthesizedAudioPing: telemetry,
   };
 }
 
@@ -475,6 +647,12 @@ export function approachCutDeskAndInspect(
     selectedCutDeskId: desk.deskId,
     activePersonaId: desk.assignedPersonaId,
     activePersonaPose: "work",
+    companionFollower: stepCompanionPetFollowerSpring(
+      desk.x,
+      desk.y + 28,
+      state.companionFollower,
+      0.12,
+    ),
     physics: {
       ...state.physics,
       x: desk.x,

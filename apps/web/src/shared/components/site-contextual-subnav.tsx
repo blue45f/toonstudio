@@ -10,7 +10,7 @@ import {
   resolveContextualSubNavForPath,
   type ContextualSubNavGroup,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
-import { resolveNanoBananaCardForSubNavGroup } from "./site-experience/nano-banana-site-ui-pack";
+import { resolveNanoBananaCardMetaForSubNavGroup } from "./site-experience/nano-banana-site-card-meta";
 
 import "./site-contextual-subnav.css";
 import "./site-experience/nano-banana-site-ui.css";
@@ -35,7 +35,7 @@ export function SiteContextualSubNav({
 
   const title = isKo ? group.koTitle : group.enTitle;
   const style = { "--subnav-accent": group.accentToken } as CSSProperties;
-  const nbCard = resolveNanoBananaCardForSubNavGroup(group.id);
+  const nbCard = resolveNanoBananaCardMetaForSubNavGroup(group.id);
 
   return (
     <nav

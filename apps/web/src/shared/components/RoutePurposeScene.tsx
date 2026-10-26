@@ -31,7 +31,7 @@ import type {
   SiteRouteVisualKind,
   SiteRouteVisualProfile,
 } from "@/shared/lib/site-route-visual";
-import { resolveNanoBananaCardForRouteVisual } from "./site-experience/nano-banana-site-ui-pack";
+import { resolveNanoBananaCardMetaForRouteVisual } from "./site-experience/nano-banana-site-card-meta";
 
 import "./route-purpose-scene.css";
 import "./site-experience/nano-banana-site-ui.css";
@@ -191,11 +191,11 @@ export function RoutePurposeScene({
           </div>
           <p
             className="nb-site-purpose-pill"
-            data-nano-banana-card={resolveNanoBananaCardForRouteVisual(profile.kind).cardId}
+            data-nano-banana-card={resolveNanoBananaCardMetaForRouteVisual(profile.kind).cardId}
           >
-            <span>{resolveNanoBananaCardForRouteVisual(profile.kind).atelierModelLabel}</span>
+            <span>{resolveNanoBananaCardMetaForRouteVisual(profile.kind).atelierModelLabel}</span>
             <span aria-hidden="true">·</span>
-            <span>{resolveNanoBananaCardForRouteVisual(profile.kind).stageBadge[copyLocale]}</span>
+            <span>{resolveNanoBananaCardMetaForRouteVisual(profile.kind).stageBadge[copyLocale]}</span>
           </p>
         </div>
 
