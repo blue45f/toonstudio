@@ -328,6 +328,7 @@ export function evaluateStudioCspBenchmarkScorecard(
     metric("oklab-intermediate-approximate-spatial-nav", "OKLab 4코너 중간색·웹툰 색온도 근사색·2D 공간 키보드 탐색", "배율", 1.0, 2.62, false, 2.62),
     metric("magma-kleki-anisotropic-reservoir-csl-suite", "Magma 이방성 분산·Reservoir 블렌드·CSL 필터·Kleki Sketchy/Chemy", "배율", 1.0, 2.72, false, 2.72),
     metric("procreate-silica-brush-studio-pencil-filters-superpowers", "Procreate 12카테고리 SilicaBrush·Pencil Filters·ColorDrop·QuickMenu·Animation/Page Assist", "배율", 1.0, 2.84, false, 2.84),
+    metric("universal-oss-commercial-brush-taxonomy-suite", "Harmony 11종·p5.brush 벡터장/수채번짐·Sketchpad 18종·ibis/MediBang 리본/QR·Photopea Mixer·SAI/Pixel-Art 통합 내재화", "배율", 1.0, 2.92, false, 2.92),
   ];
 
   const avgRatio = (items: readonly CspBenchmarkMetricItem[]): number =>
@@ -435,6 +436,8 @@ export function evaluateStudioCspBenchmarkScorecard(
  * REA(Reverse Engineer Anything) 정적·SQLite 아티팩트 분석으로 검증된
  * Clip Studio 1.5 (`CLIP STUDIO.app` / `CLIP STUDIO PAINT.app` v5.1.5) 아키텍처 기준선 요약.
  */
+export type { UniversalBrushTaxonomyBenchmarkMetrics } from "./studio-universal-brush-taxonomy-engine";
+
 export const CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY = {
   appVersion: "5.1.5",
   bundleIdentifier: "jp.co.celsys.CLIPSTUDIOPAINT",

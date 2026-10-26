@@ -43,6 +43,7 @@ import {
   vectorizeFreehandStroke,
   type StudioVectorizerPoint,
 } from "./studio-stroke-vectorizer";
+import { StudioUniversalBrushEngineBar } from "./StudioUniversalBrushEngineBar";
 
 type StudioNaturalMediaCraft = StudioNaturalMediaPreset["crafts"][number];
 
@@ -686,6 +687,8 @@ export function StudioNaturalMediaShowcase({
             </span>
           </div>
         </div>
+
+        <StudioUniversalBrushEngineBar tx={tx} />
 
         {/* 브러시 카드 그리드 */}
         <div
