@@ -49,6 +49,7 @@ function resolveOrHydrateClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
   if (explicit) return explicit;
+  if (import.meta.env.MODE === "test") return null;
   const current = resolveClaudeRoute();
   if (current) return current;
   hydrateDefaultEnvClaudeConnection();

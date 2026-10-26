@@ -4,7 +4,7 @@
 
 | 공급자 | 공식 자동화 경로 | 로컬 연결 | 무료 생성 판단 | ToonStudio 반영 |
 |---|---|---|---|---|
-| Tripo | 공식 MCP, 공식 Blender add-on, Python SDK/API | Codex·Claude Desktop MCP와 Blender 5.2 add-on 연결 | 결제수단 없는 600-credit API wallet에서 가능 | v3 detailed/PBR 환경 에셋 10종 생성·검수·번들링 |
+| Tripo | 공식 `tripo-cli` (`tripo` / `tripo mcp`), 공식 Blender MCP (`tripo-mcp`), 공식 Blender add-on, Python SDK/API | `tripo-cli` v0.7.3 + `tripo3d`/`tripo-cli` MCP (Codex·Claude·Gemini·Cursor) + Blender 5.2 add-on 연결 | 결제수단 없는 600-credit API wallet에서 가능 (2026-10-26 기준 잔액 0 확인) | v3 detailed/PBR 환경 에셋 10종 생성·검수·번들링 |
 | Meshy | 공식 `meshy-cli`, 공식 MCP/API | CLI OAuth + 잔액 180 확인, MCP launcher·서버 등록(키 대기) | free plan API task 거부가 보고된 바 있음. 생성 전 balance/cost 확인 | MCP 키 등록 후 도구 목록으로 연결 확인 예정 |
 | Hyper3D/Rodin | API + Blender 내장 연동 | CLI 생성·self-test 통과, MCP는 Blender 내장 경로(키 대기) | 공개 API는 유료 Business 경로라 zero-cost 보장 불가 | 키 등록 전까지 생성 없음. `--confirm` 없이 전송 불가 |
 | Sloyd | API | 연결하지 않음 | 결제수단과 선불 크레딧이 필요하고 auto-recharge 경로가 있음 | 제외 |
@@ -13,19 +13,21 @@
 
 유료 업그레이드, 카드 등록, 선불 구매, 자동 충전은 수행하지 않는다. 무료 한도가 서버 측에서 거부되면 생성 작업을 중단하고 웹 무료 이용과 API 자동화를 혼동하지 않는다.
 
-## Tripo MCP
+## Tripo MCP·CLI
 
 공식 소스는 사용자 로컬 도구 디렉터리에 설치하고, 저장소에는 공급자 코드를 복제하지 않는다.
 
-- MCP source: `~/.local/share/toonstudio-tools/tripo-mcp`
+- 공식 CLI (`tripo-cli` v0.7.3): `~/.local/bin/tripo` (`~/.local/bin/toonspectrum-tripo` 래퍼 → Node 24 전역 `tripo-cli`)
+- 공식 CLI 내장 MCP (`tripo mcp`): `~/.local/bin/toonspectrum-tripo-cli-mcp` (`tripo_make`, `tripo_task_get`, `tripo_task_wait`, `tripo_balance`, `tripo_history` 5개 도구)
+- 공식 Blender MCP (`tripo-mcp` v0.1.2): `~/.local/bin/tripo-mcp` (source: `~/.local/share/toonstudio-tools/tripo-mcp`)
 - Blender add-on source: `~/.local/share/toonstudio-tools/tripo-blender-addon`
-- credential-safe launcher: `~/.local/bin/toonspectrum-tripo-mcp` (구 문서명의 `toonstudio-tripo-mcp`는 오기)
-- ignored credential: `~/WebstormProjects/toonstudio/.env.local`의 `TRIPO_API_KEY`
+- Blender MCP credential-safe launcher: `~/.local/bin/toonspectrum-tripo-mcp` (구 문서명의 `toonstudio-tripo-mcp`는 오기)
+- ignored credential: `~/WebstormProjects/toonstudio/.env.infrastructure.local` 및 `~/WebstormProjects/toonstudio/.env.local`의 `TRIPO_API_KEY`, `~/.tripo/config.json` (mode `0600`)
 - Blender encrypted credential: Blender 5.2 add-on의 `api_key.enc`
 
-Codex·Claude Desktop·Muse에 `tripo3d` stdio 서버가 등록되어 있다. 설정 파일에는 키를 직접 넣지 않고 launcher가 mode `0600`인 `.env.local`을 읽는다. launcher 자체는 mode `0700`이다.
+Codex·Claude Desktop·Claude Code·Gemini·Cursor에 `tripo3d`(Blender MCP 16개 도구)와 `tripo-cli`(단독 V3 API MCP 5개 도구) stdio 서버가 등록되어 있다. 설정 파일에는 키를 직접 넣지 않고 launcher가 mode `0600`인 `.env.infrastructure.local`(또는 `.env.local`)을 읽는다. launcher 자체는 mode `0700`이다.
 
-연결 확인은 모델을 생성하지 않는 도구 목록 조회로 수행한다. 2026-09-29 기준 16개 도구 응답을 확인했다. 실제 생성 전에는 공급자 balance를 읽고, 예상 credit cost가 남은 무료 wallet을 넘으면 요청을 보내지 않는다.
+연결 확인은 모델을 생성하지 않는 `tripo doctor --json`, `tripo balance --json` 및 MCP 도구 목록 조회(`tools/list`)로 수행한다. 2026-10-26 기준 `tripo3d` 16개 도구와 `tripo-cli` 5개 도구 응답 및 `openapi.tripo3d.ai` 연결(`balance: 0`)을 확인했다. 실제 생성 전에는 공급자 balance를 읽고, 예상 credit cost가 남은 무료 wallet을 넘으면 요청을 보내지 않는다.
 
 ## Meshy MCP·CLI
 
