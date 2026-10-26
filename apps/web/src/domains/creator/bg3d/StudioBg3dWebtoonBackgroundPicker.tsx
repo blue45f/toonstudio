@@ -43,6 +43,12 @@ import {
   type StudioBg3dWebtoonUniverseId,
   type StudioBg3dWorldBuildResult,
 } from "./studio-bg3d-webtoon-world-shaper";
+import {
+  STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
+  evaluateVarco3dDioramaScenePlacement,
+  type StudioVarco3dIsometricDioramaEntry,
+} from "../scene-3d/studio-varco3d-character-lab-diorama-catalog";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -112,6 +118,45 @@ type PickerNotice =
       readonly anchorX: number;
     };
 
+function mapVarcoDioramaToWorldUniverseAndMood(
+  diorama: StudioVarco3dIsometricDioramaEntry,
+): { readonly universeId: StudioBg3dWebtoonUniverseId; readonly moodId: StudioBg3dMoodId } {
+  if (diorama.id === "diorama_hospital_room") {
+    return { universeId: "medical-drama-ward", moodId: "hospital-clean" };
+  }
+  if (
+    diorama.id === "diorama_open_office" ||
+    diorama.id === "diorama_chaebol_penthouse" ||
+    diorama.id === "diorama_subway_car"
+  ) {
+    return { universeId: "modern-office-noir", moodId: "noir-night" };
+  }
+  if (
+    diorama.id === "diorama_modern_cafe" ||
+    diorama.id === "diorama_studio_oneroom" ||
+    diorama.id === "diorama_convenience_store_patio" ||
+    diorama.id === "diorama_traditional_market" ||
+    diorama.id === "diorama_residential_alley" ||
+    diorama.id === "diorama_webtoon_creator_studio"
+  ) {
+    return { universeId: "daily-cafe-street", moodId: "sunset-romance" };
+  }
+  switch (diorama.genre) {
+    case "romance-fantasy":
+      return { universeId: "romance-fantasy-palace", moodId: "arcane-fantasy" };
+    case "murim":
+    case "joseon-historical":
+      return { universeId: "murim-martial-courtyard", moodId: "murim-ink" };
+    case "hunter-action":
+      return { universeId: "hunter-dungeon-altar", moodId: "noir-night" };
+    case "cyberpunk":
+      return { universeId: "cyberpunk-neon-alley", moodId: "noir-night" };
+    case "daily-school":
+    default:
+      return { universeId: "school-romance", moodId: "daylight" };
+  }
+}
+
 export function StudioBg3dWebtoonBackgroundPicker({
   disabled = false,
   autoCutaway,
@@ -125,6 +170,18 @@ export function StudioBg3dWebtoonBackgroundPicker({
   const [universeId, setUniverseId] = useState<StudioBg3dWebtoonUniverseId>("school-romance");
   const [moodId, setMoodId] = useState<StudioBg3dMoodId>("daylight");
   const [blendPercent, setBlendPercent] = useState(50);
+  const [selectedDioramaId, setSelectedDioramaId] = useState<string>(
+    STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES[0]!.id,
+  );
+  const [selectedVarcoPropIds, setSelectedVarcoPropIds] = useState<readonly string[]>([
+    "prop_school_desk_chair",
+    "prop_school_steel_lockers",
+  ]);
+
+  const selectedDioramaPlan = evaluateVarco3dDioramaScenePlacement({
+    dioramaId: selectedDioramaId,
+    propIds: selectedVarcoPropIds,
+  });
 
   const selectedUniverse = getStudioBg3dWebtoonUniverse(universeId);
   const blendedSliders =
@@ -194,6 +251,59 @@ export function StudioBg3dWebtoonBackgroundPicker({
             anchorX: built.anchorX,
           }
         : { kind: "failed" },
+    );
+  };
+
+  const buildVarcoDioramaAndProps = () => {
+    const mapped = mapVarcoDioramaToWorldUniverseAndMood(selectedDioramaPlan.diorama);
+    const built: { primitives: BgPrimitive[]; anchorX: number } = {
+      primitives: [],
+      anchorX: 0,
+    };
+    const accepted = onBuild((existingCount) => {
+      const world = instantiateStudioBg3dWebtoonWorld({
+        universeId: mapped.universeId,
+        sliders: blendedSliders,
+        moodId: mapped.moodId,
+        existingCount,
+      });
+      const anchorX = existingCount > 0 ? existingCount * (world.roomSpec.width / 6) : 0;
+      const propPrimitives: BgPrimitive[] = selectedDioramaPlan.props.map((prop, index) => {
+        const [w, d, h] = prop.footprintMeters;
+        const offsetX = (index - (selectedDioramaPlan.props.length - 1) / 2) * 1.6;
+        return {
+          id: `varco3d_prop_${prop.id}_${existingCount + index}`,
+          name: `${prop.labelKo} (VARCO 3D)`,
+          kind: "box",
+          position: [anchorX + offsetX, Number((h / 2).toFixed(2)), 0.6],
+          rotation: [0, 0, 0],
+          scale: [w, h, d],
+          color: STUDIO_BG3D_MOOD_PALETTES[mapped.moodId].propAccentColor,
+          componentRef: { id: prop.id, name: prop.labelKo },
+          tags: ["varco3d-prop", prop.category, prop.meshTaskId],
+        };
+      });
+      built.primitives = [...world.primitives, ...propPrimitives];
+      built.anchorX = anchorX;
+      return built.primitives;
+    });
+    setNotice(
+      accepted && built.primitives.length > 0
+        ? {
+            kind: "built",
+            label: `${selectedDioramaPlan.diorama.labelKo} (+소품 ${selectedDioramaPlan.props.length}종)`,
+            objectCount: built.primitives.length,
+            hiddenWalls: summarizeStudioBg3dHiddenWalls(built.primitives),
+            wallsRestored: false,
+            anchorX: built.anchorX,
+          }
+        : { kind: "failed" },
+    );
+  };
+
+  const toggleVarcoProp = (propId: string) => {
+    setSelectedVarcoPropIds((prev) =>
+      prev.includes(propId) ? prev.filter((id) => id !== propId) : [...prev, propId],
     );
   };
 
@@ -346,6 +456,82 @@ export function StudioBg3dWebtoonBackgroundPicker({
               >
                 선택 세계관 장면에 배치
               </button>
+            </div>
+
+            <div
+              data-testid="bg3d-varco3d-diorama-catalog-section"
+              className="mt-2 space-y-1.5 border-t border-line/60 pt-2"
+            >
+              <label className="block text-[0.6rem] font-semibold text-fg-3">
+                VARCO 3D 아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종)
+                <select
+                  aria-label="VARCO 3D 아이소메트릭 디오라마 선택"
+                  data-testid="bg3d-varco3d-diorama-select"
+                  disabled={disabled}
+                  value={selectedDioramaId}
+                  onChange={(event) => {
+                    const nextId = event.target.value;
+                    setSelectedDioramaId(nextId);
+                    const diorama = STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.find(
+                      (item) => item.id === nextId,
+                    );
+                    if (diorama) {
+                      const mapped = mapVarcoDioramaToWorldUniverseAndMood(diorama);
+                      setUniverseId(mapped.universeId);
+                      setMoodId(mapped.moodId);
+                    }
+                  }}
+                  className="mt-0.5 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
+                >
+                  {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.map((scene) => (
+                    <option key={scene.id} value={scene.id}>
+                      {scene.labelKo} (FOV {scene.cameraFovDeg}° · {scene.ambientKelvin}K)
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div
+                className="flex max-h-20 flex-wrap gap-1 overflow-y-auto rounded border border-line/50 bg-panel/60 p-1"
+                role="group"
+                aria-label="VARCO 3D 한국 웹툰 소품 선택"
+              >
+                {STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.map((prop) => {
+                  const active = selectedVarcoPropIds.includes(prop.id);
+                  return (
+                    <button
+                      key={prop.id}
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={active}
+                      data-testid={`bg3d-varco3d-prop-${prop.id}`}
+                      onClick={() => toggleVarcoProp(prop.id)}
+                      className={`rounded border px-1.5 py-0.5 text-[0.58rem] ${
+                        active
+                          ? "border-accent bg-accent-soft font-semibold text-fg"
+                          : "border-line bg-card text-fg-3"
+                      }`}
+                    >
+                      {prop.labelKo}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 text-[0.58rem] text-fg-3">
+                <span data-testid="bg3d-varco3d-diorama-summary" className="truncate">
+                  선택 소품 <strong className="text-fg">{selectedDioramaPlan.props.length}종</strong> ({selectedDioramaPlan.totalFootprintAreaSqMeters}㎡)
+                </span>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  data-testid="bg3d-varco3d-diorama-build-btn"
+                  onClick={buildVarcoDioramaAndProps}
+                  className="shrink-0 rounded border border-accent bg-accent/15 px-2.5 py-1 text-[0.6rem] font-bold text-fg hover:bg-accent/25 disabled:opacity-45"
+                >
+                  선택 VARCO 디오라마·소품 장면에 배치
+                </button>
+              </div>
             </div>
           </div>
         ) : null}

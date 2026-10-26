@@ -11,6 +11,7 @@ import {
   type Studio3dGenerationCreateInput,
   type Studio3dGenerationJob,
   type Studio3dGenerationMode,
+  type Studio3dGenerationProviderId,
 } from "./studio-3d-generation-client";
 import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 import { aiStatusText } from "./studio-ai-status-i18n";
@@ -76,6 +77,7 @@ export function StudioAi3dGenerationPanel({
   const [files, setFiles] = useState<readonly File[]>([]);
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [preset, setPreset] = useState<"blockout" | "webtoon" | "line-tone" | "character" | "quality">("webtoon");
+  const [provider, setProvider] = useState<Studio3dGenerationProviderId>("hyper3d-rodin");
   const [advanced, setAdvanced] = useState(false);
   const [seed, setSeed] = useState(73);
   const [targetFaceCount, setTargetFaceCount] = useState(20_000);
@@ -99,9 +101,10 @@ export function StudioAi3dGenerationPanel({
       geometryFormat: "GLB",
       seed,
       symmetry: true,
+      ...(provider === "varco-3d" ? { provider: "varco-3d" as const } : {}),
       ...(advanced ? { targetFaceCount } : {}),
     });
-  }, [advanced, preset, seed, targetFaceCount]);
+  }, [advanced, preset, provider, seed, targetFaceCount]);
 
   const expectedFileCount = mode === "image-to-3d" ? 1 : mode === "multiview-to-3d" ? 2 : mode === "texture-only" ? 1 : 0;
   const inputBytes = files.reduce((total, file) => total + file.size, modelFile?.size ?? 0);
@@ -303,10 +306,18 @@ export function StudioAi3dGenerationPanel({
             <option value="quality">{translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "고품질 소재")}</option>
           </select>
         </label>
-        <div className="grid gap-1 text-xs font-semibold">
-          {translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "처리 경로")}<div className="flex min-h-11 items-center rounded-lg border border-line bg-panel px-2 font-normal text-fg-2">
-            {translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "통합 AI 설정의 내 Hyper3D/Rodin 키")}</div>
-        </div>
+        <label className="grid gap-1 text-xs font-semibold">
+          {translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "처리 경로")}<select
+            aria-label="처리 경로"
+            data-testid="studio-ai-3d-provider-select"
+            value={provider}
+            onChange={(event) => setProvider(event.currentTarget.value as Studio3dGenerationProviderId)}
+            className="min-h-11 rounded-lg border border-line bg-panel px-2 font-normal text-fg-2"
+          >
+            <option value="hyper3d-rodin">{translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "통합 AI 설정의 내 Hyper3D/Rodin 키")}</option>
+            <option value="varco-3d">VARCO 3D (3d.varco.ai / NC OpenAPI)</option>
+          </select>
+        </label>
       </div>
 
       <details onToggle={(event) => setAdvanced(event.currentTarget.open)} className="rounded-lg border border-line bg-panel/50">

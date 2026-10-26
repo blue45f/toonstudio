@@ -199,6 +199,14 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(screen.getByTestId("varco3d-retargeted-policy-readout").textContent).toContain(
       "INSUFFICIENT_POINT",
     );
+
+    // Zero-point optimization task selector & prop toggle
+    fireEvent.change(screen.getByTestId("varco3d-zeropoint-task-select"), {
+      target: { value: "521dbca5-de66-4da9-aa03-64b0030e2715" },
+    });
+    expect(screen.getByTestId("varco3d-zeropoint-task-readout").textContent).toContain("PBR");
+    fireEvent.click(screen.getByTestId("varco3d-prop-toggle-prop_cafe_table_set"));
+    expect(screen.getByTestId("varco3d-diorama-plan-readout").textContent).toContain("㎡");
   });
 });
 

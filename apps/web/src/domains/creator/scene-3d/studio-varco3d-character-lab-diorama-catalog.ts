@@ -147,18 +147,18 @@ export const STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS: readonly StudioVarco3dC
     defineModularItem("charlab_outfit_school_blazer", "outfit-set", "daily-school", "네이비 금장 블레이저 교복 세트", "High School Navy Gold-Crest Blazer Uniform", "mixamorig:Spine2", "94d3dc20098ebfbf39be2105c8c68b30", "1ce18023-8e57-4ffc-99c6-a7dac55df00e", "94d3dc20098ebfbf39be2105c8c68b30", MV_SET_B, 34000, 0.65, 0.1),
     defineModularItem("charlab_outfit_rofan_crimson_gown", "outfit-set", "romance-fantasy", "로판 황실 크림슨 금사 자수 드레스", "Rofan Imperial Crimson & Gold Ballgown", "mixamorig:Spine2", "d854a2a7f870fc68c1ca858678ded295", "6283a372-9b58-4ba5-bf2f-3cb551282423", "d854a2a7f870fc68c1ca858678ded295", MV_SET_A, 48000, 0.38, 0.35),
     defineModularItem("charlab_outfit_northern_duke_cape", "outfit-set", "romance-fantasy", "북부대공 흑은 모피 하프케이프 제복", "Northern Grand Duke Fur-Collar Cape Uniform", "mixamorig:Spine2", "76a4e574d95baba1075279c33e3a7815", "2cc94d41-9454-43e1-902c-aea80a033826", "76a4e574d95baba1075279c33e3a7815", MV_SET_B, 44500, 0.45, 0.42),
-    defineModularItem("charlab_outfit_murim_mount_hua_robe", "outfit-set", "murim", "화산파 매화 자수 도포 & 가죽완갑", "Mount Hua Sect Plum-Blossom Martial Robe", "mixamorig:Spine2", "ae7dd076e5d0673ffbd55bf6df7092f7", "f06c0148-7e74-4a7b-a585-caa418d35335", "ae7dd076e5d0673ffbd55bf6df7092f7", MV_SET_A, 39200, 0.54, 0.16),
-    defineModularItem("charlab_outfit_hunter_raid_armor", "outfit-set", "hunter-action", "S급 헌터 마나코어 전술 레이드 아머", "S-Rank Hunter Mana-Core Tactical Raid Armor", "mixamorig:Spine2", "701f221dcb19d4cb240b872e83c24cd5", "50c8e464-8251-402a-adcd-a194905bc661", "701f221dcb19d4cb240b872e83c24cd5", MV_SET_B, 46800, 0.28, 0.68),
-    defineModularItem("charlab_outfit_cyber_techwear", "outfit-set", "cyberpunk", "사이버펑크 홀로그램 크롭 테크웨어", "Cyberpunk Holographic Cropped Techwear Set", "mixamorig:Spine2", "e6575e70a79a3501c113022a99993a98", "166ebd71-45f7-48da-81a3-c532317336ee", "e6575e70a79a3501c113022a99993a98", MV_SET_A, 37400, 0.34, 0.44),
-    defineModularItem("charlab_outfit_joseon_royal_durumagi", "outfit-set", "joseon-historical", "조선 왕실 금박 운문단 두루마기 한복", "Joseon Royal Indigo-Gold Embroidered Durumagi", "mixamorig:Spine2", "66e0b34cf3d74b7438b47396116ef601", "466dc073-ce2a-42ad-8663-d5928eef2c26", "66e0b34cf3d74b7438b47396116ef601", MV_SET_B, 41200, 0.46, 0.24),
-    defineModularItem("charlab_acc_rofan_ruby_tiara", "head-accessory", "romance-fantasy", "로판 황실 루비 필리그리 티아라", "Rofan Imperial Ruby & Diamond Filigree Tiara", "mixamorig:Head", "bee45fccc3ba5f313e10996dc8a0c526", "8acd6d9b-a002-4ddf-98d1-e97e5850f85f", "bee45fccc3ba5f313e10996dc8a0c526", MV_SET_A, 12400, 0.16, 0.88),
-    defineModularItem("charlab_weapon_paladin_greatsword", "weapon-r", "romance-fantasy", "성기사 태양문양 사파이어 대검", "Holy Paladin Sunburst Sapphire Greatsword", "mixamorig:RightHand", "20f9bce509fc742e8c0921f095610a61", "ccf99460-4932-4715-9f9c-807e5b19aa0d", "20f9bce509fc742e8c0921f095610a61", MV_SET_B, 16800, 0.2, 0.85),
-    defineModularItem("charlab_weapon_shadow_twin_daggers", "weapon-l", "hunter-action", "S급 그림자 암살자 마나 쌍단검", "S-Rank Shadow Assassin Purple-Mana Twin Daggers", "mixamorig:LeftHand", "e32ce5fc0542c1a0359595e3a325c86b", "b32d0a49-3493-4ec3-adda-5ced0e7f2e3d", "e32ce5fc0542c1a0359595e3a325c86b", MV_SET_A, 14500, 0.24, 0.78),
-    defineModularItem("charlab_weapon_archmage_astrolabe_staff", "weapon-r", "romance-fantasy", "대마법사 아스트롤라베 마나 지팡이", "Archmage Celestial Astrolabe Mana Staff", "mixamorig:RightHand", "4b3eb0b40ddcb09920d3659337d53c25", "1fed16d7-0095-435c-afac-a813cf9c5024", "4b3eb0b40ddcb09920d3659337d53c25", MV_SET_B, 19200, 0.22, 0.82),
-    defineModularItem("charlab_weapon_murim_jade_sword", "weapon-r", "murim", "무림 천옥 청련 장검 & 검집", "Murim Heavenly Jade Longsword & Scabbard", "mixamorig:RightHand", "a5548b2902988ca642a569103f149419", "6e9e77f6-1f06-4862-9c15-8002da188eb9", "a5548b2902988ca642a569103f149419", MV_SET_A, 15600, 0.26, 0.74),
-    defineModularItem("charlab_acc_cyber_ar_visor", "head-accessory", "cyberpunk", "사이버펑크 네온 HUD 전술 바이저 헤드셋", "Cyberpunk Neon HUD Tactical AR Visor Headset", "mixamorig:Head", "54730ecf1c2444d6f49e8cf866c5548d", "932b0c67-4e0b-4eb0-a5fe-ab1e9d9a4784", "54730ecf1c2444d6f49e8cf866c5548d", MV_SET_B, 11800, 0.18, 0.64),
-    defineModularItem("charlab_wings_archangel_six", "back-wings", "romance-fantasy", "대천사 순백 금빛 깃털 날개 파츠", "Archangel White & Gold Feathered Back Wings", "mixamorig:Spine2", "802f2f89f30b3413913c0cc7d755fc64", "f3cee0b5-3e72-4bd5-a226-3dd1ed0e7432", "802f2f89f30b3413913c0cc7d755fc64", MV_SET_A, 28400, 0.44, 0.22),
-    defineModularItem("charlab_wings_demon_lord_dragon", "back-wings", "hunter-action", "마왕 흑요석 홍염 드래곤 날개 파츠", "Demon Lord Obsidian & Crimson Vein Dragon Wings", "mixamorig:Spine2", "1667a5abc941d0f813bf02dc3068961c", "df4fed16-d540-496d-83bc-05627475ee87", "1667a5abc941d0f813bf02dc3068961c", MV_SET_B, 29600, 0.35, 0.38),
+    defineModularItem("charlab_outfit_murim_mount_hua_robe", "outfit-set", "murim", "화산파 매화 자수 도포 & 가죽완갑", "Mount Hua Sect Plum-Blossom Martial Robe", "mixamorig:Spine2", "ae7dd076e5d07c1f8831ceb8319d2506", "f06c0148-7e74-4a7b-a585-caa418d35335", "ae7dd076e5d07c1f8831ceb8319d2506", MV_SET_A, 39200, 0.54, 0.16),
+    defineModularItem("charlab_outfit_hunter_raid_armor", "outfit-set", "hunter-action", "S급 헌터 마나코어 전술 레이드 아머", "S-Rank Hunter Mana-Core Tactical Raid Armor", "mixamorig:Spine2", "701f221dcb197405ce8bba2010c81de7", "50c8e464-8251-402a-adcd-a194905bc661", "701f221dcb197405ce8bba2010c81de7", MV_SET_B, 46800, 0.28, 0.68),
+    defineModularItem("charlab_outfit_cyber_techwear", "outfit-set", "cyberpunk", "사이버펑크 홀로그램 크롭 테크웨어", "Cyberpunk Holographic Cropped Techwear Set", "mixamorig:Spine2", "e6575e70a79a046d775546596d6f33d8", "166ebd71-45f7-48da-81a3-c532317336ee", "e6575e70a79a046d775546596d6f33d8", MV_SET_A, 37400, 0.34, 0.44),
+    defineModularItem("charlab_outfit_joseon_royal_durumagi", "outfit-set", "joseon-historical", "조선 왕실 금박 운문단 두루마기 한복", "Joseon Royal Indigo-Gold Embroidered Durumagi", "mixamorig:Spine2", "66e0b34cf3d7f82d4d8cd04f6650403c", "466dc073-ce2a-42ad-8663-d5928eef2c26", "66e0b34cf3d7f82d4d8cd04f6650403c", MV_SET_B, 41200, 0.46, 0.24),
+    defineModularItem("charlab_acc_rofan_ruby_tiara", "head-accessory", "romance-fantasy", "로판 황실 루비 필리그리 티아라", "Rofan Imperial Ruby & Diamond Filigree Tiara", "mixamorig:Head", "bee45fccc3ba0d128ec6a489c66edf14", "8acd6d9b-a002-4ddf-98d1-e97e5850f85f", "bee45fccc3ba0d128ec6a489c66edf14", MV_SET_A, 12400, 0.16, 0.88),
+    defineModularItem("charlab_weapon_paladin_greatsword", "weapon-r", "romance-fantasy", "성기사 태양문양 사파이어 대검", "Holy Paladin Sunburst Sapphire Greatsword", "mixamorig:RightHand", "20f9bce509fc3ba67c9984ac576d345c", "ccf99460-4932-4715-9f9c-807e5b19aa0d", "20f9bce509fc3ba67c9984ac576d345c", MV_SET_B, 16800, 0.2, 0.85),
+    defineModularItem("charlab_weapon_shadow_twin_daggers", "weapon-l", "hunter-action", "S급 그림자 암살자 마나 쌍단검", "S-Rank Shadow Assassin Purple-Mana Twin Daggers", "mixamorig:LeftHand", "e32ce5fc0542f2f4f7cd115dd66e48e3", "b32d0a49-3493-4ec3-adda-5ced0e7f2e3d", "e32ce5fc0542f2f4f7cd115dd66e48e3", MV_SET_A, 14500, 0.24, 0.78),
+    defineModularItem("charlab_weapon_archmage_astrolabe_staff", "weapon-r", "romance-fantasy", "대마법사 아스트롤라베 마나 지팡이", "Archmage Celestial Astrolabe Mana Staff", "mixamorig:RightHand", "4b3eb0b40ddc67c2b8d9851393e9aa08", "1fed16d7-0095-435c-afac-a813cf9c5024", "4b3eb0b40ddc67c2b8d9851393e9aa08", MV_SET_B, 19200, 0.22, 0.82),
+    defineModularItem("charlab_weapon_murim_jade_sword", "weapon-r", "murim", "무림 천옥 청련 장검 & 검집", "Murim Heavenly Jade Longsword & Scabbard", "mixamorig:RightHand", "a5548b290298b396e65969ed7e25fd04", "6e9e77f6-1f06-4862-9c15-8002da188eb9", "a5548b290298b396e65969ed7e25fd04", MV_SET_A, 15600, 0.26, 0.74),
+    defineModularItem("charlab_acc_cyber_ar_visor", "head-accessory", "cyberpunk", "사이버펑크 네온 HUD 전술 바이저 헤드셋", "Cyberpunk Neon HUD Tactical AR Visor Headset", "mixamorig:Head", "54730ecf1c24f343603084a033326b85", "932b0c67-4e0b-4eb0-a5fe-ab1e9d9a4784", "54730ecf1c24f343603084a033326b85", MV_SET_B, 11800, 0.18, 0.64),
+    defineModularItem("charlab_wings_archangel_six", "back-wings", "romance-fantasy", "대천사 순백 금빛 깃털 날개 파츠", "Archangel White & Gold Feathered Back Wings", "mixamorig:Spine2", "802f2f89f30bfc6a7d82f822361406bd", "f3cee0b5-3e72-4bd5-a226-3dd1ed0e7432", "802f2f89f30bfc6a7d82f822361406bd", MV_SET_A, 28400, 0.44, 0.22),
+    defineModularItem("charlab_wings_demon_lord_dragon", "back-wings", "hunter-action", "마왕 흑요석 홍염 드래곤 날개 파츠", "Demon Lord Obsidian & Crimson Vein Dragon Wings", "mixamorig:Spine2", "1667a5abc94133900dc58763f86168cd", "df4fed16-d540-496d-83bc-05627475ee87", "1667a5abc94133900dc58763f86168cd", MV_SET_B, 29600, 0.35, 0.38),
   ]);
 
 function defineArchetype(
@@ -386,6 +386,82 @@ export const STUDIO_VARCO3D_WEBTOON_PROP_ASSETS: readonly StudioVarco3dWebtoonPr
     defineProp("prop_dual_monitor_office_desk", "듀얼 모니터 오피스 데스크 세트", "interior", "f71b4299f96f4d07bcb8f3050facb272", "24bf4272-3861-4c2b-9efd-38d7f34b0a33", [1.4, 0.75, 1.18]),
   ]);
 
+export interface StudioVarco3dCompletedTurnaroundSheet extends StudioVarco3dMultiviewTurnaround {
+  readonly referenceImagePath: string;
+}
+
+function defineTurnaroundSheet(
+  taskId: string,
+  refHash: string,
+  frontHash: string,
+  backHash: string,
+  leftHash: string,
+  rightHash: string,
+): StudioVarco3dCompletedTurnaroundSheet {
+  return {
+    taskId,
+    referenceImagePath: `/api/objects/${refHash}.png`,
+    frontPath: `/api/objects/${frontHash}.png`,
+    backPath: `/api/objects/${backHash}.png`,
+    leftPath: `/api/objects/${leftHash}.png`,
+    rightPath: `/api/objects/${rightHash}.png`,
+  };
+}
+
+export const STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS: readonly StudioVarco3dCompletedTurnaroundSheet[] =
+  Object.freeze([
+    defineTurnaroundSheet("2aeb993c-4d7b-4ee3-bd02-fe1103c1288a", "806ccb1e7afbfe4701983a0f2249bc71", "3e46113ff7e0439ceddc0c12604d8b91", "8b23d71cda5b9b8fb0c466e8962cfe4b", "07f7044d3bb661a4059eb6019de69d3c", "54fb417e408722a409c9ebfba769ac0f"),
+    defineTurnaroundSheet("95f54a99-c8c2-4f0a-9730-dcf98f233b68", "806ccb1e7afbfe4701983a0f2249bc71", "741a9a3f7fdef6f86c574d3f000b8d20", "dde18bc5536fb96025dbd6fa43ac068f", "95cb31cf3d9ce50e9ef78e61d64ff451", "fb5b1cf517fb740a38e400515eaf9f48"),
+    defineTurnaroundSheet("a2b43c76-68eb-401b-8391-cc904a150ddf", "ee921d48b14a0b34fd8ab74d4262a2e8", "edc63aa485afd2e5efc708c7fbf458a5", "7f87e7ea8b3c4ac3cdd3c1aae2a1ebcf", "aba55e17c8478ee79a05974e5cfb2d91", "61d9441af254686060dc26580d80cb46"),
+    defineTurnaroundSheet("f18a1134-2161-40a1-a1d4-d1a080cb8d53", "7af8249b7dcc90c35afe5d82e9b55bd0", "4e1c1367e813504ceab621639707bfce", "363ebb88171149cf500891de3ab38842", "0088492c15c1dd3fa93b4b5185f23260", "94058e6c5df120f1861f3e80cc826dea"),
+    defineTurnaroundSheet("a862bf36-157c-41f2-a682-9a90f09592b8", "83e0247dc5636b3c8fe7db6cfa7aa8a9", "c4c6f921950143659d7dfdd05484cca6", "74153844bc518345298545079afe64c1", "0c06765659e3d6aa2af5f392b003a29c", "f2e8a29c453a3ac6158f45f4b4058eab"),
+    defineTurnaroundSheet("88a25861-222a-41c7-8f6d-7ea2d3654893", "118b31c63cb802ef53334fb21271c353", "c852f66e7f50b2b691d042ff1b69c302", "9f8bd26b695dae48ef77b2c82fb5d09b", "b4aa13ee4ec34cb3c2dfbb8e72d4d943", "c429df1a6d2c5919e4377fd9481e2232"),
+    defineTurnaroundSheet("71c2e285-ae67-4c4f-b8da-f3e26cb4060e", "3e6ef54f70305dae6d902e22a4b99e96", "be77053f6645a36513b20428b07d00f0", "3f62de7050a618157a8682e4b5140e1d", "4b8b76fee65d87c0947eab4bf95aa59e", "0a79e93efea941fad5b9cfa3a284ddfb"),
+    defineTurnaroundSheet("6eb1aa31-a7ae-477f-989e-aef95f6b9e17", "b849ef0d16d8fad2b668e1f096e205d9", "a189a2b5c75c4fb24c67bbfc382153b9", "dda0b1f8a45f77161cd053ba00fa8ea6", "a401cb879a0c22c2bf271fe5f9a72494", "c09245bb858b9499ee0d124ba0ca8cc8"),
+    defineTurnaroundSheet("175130d4-f388-462d-b81e-30489b9fb452", "5ff731a0f1820f2a26858bb68d965d6c", "c37964d55a20119540f145c582124fd1", "96884d425a55ac5e32dfa84fa803fd0c", "e383101dc411bf81df2d4e007ef6ddc9", "8d71e7a49e4664876c978a53507f9814"),
+    defineTurnaroundSheet("d7397009-ee87-4b88-be73-0436f35a442f", "a909d67a6b26eeb8a41c976e4eed77e3", "339feae4532ddf34fe652c3a9691d7c8", "329f1e66e6ff25889b8b7d816f689f34", "66be8f8f3a8881ca304d49894c9c6ea7", "5a901bd873f0d1222054f9daff931e10"),
+    defineTurnaroundSheet("e004bb6d-c232-4a1e-9713-4bc1527295b9", "354a869ad4aacd38fa53aba860e11f7d", "c18f3cf5e47e59da2cb3cd176c043fd0", "0ecc49d1732517c2542bf9c9389f459c", "3add179fe2dda0d04370b1833aa99589", "355cfbb93231fe265abf7600b764dd44"),
+    defineTurnaroundSheet("3d9b42f3-6525-47c5-ab53-7ace454de7b3", "69f67757d2a197c1eb1ba142524142d6", "a8462c1143dca00a1cb4f96ad4040311", "767af18ddedb8f1662874603307cd5a6", "a7f7e10189f0b51be785a51d29d9196e", "48b19838682a2886c4d85873277dbe22"),
+    defineTurnaroundSheet("1291351b-da0c-44fb-a347-2af286cd5fa3", "6c4a47e016394e21c4923fe2eefea467", "e3656860d9b8686e3226d815d9be2d6d", "7150c7b7e234bf73b81b45cea6f46569", "1133ada9afdabc75b0c2047f99b3eaa7", "b66cb57972bc2462fb958d241a754787"),
+    defineTurnaroundSheet("abf9e72c-25ed-4a80-80ef-9a1d080f0723", "22e31ceabaee048334b08c6b18531e11", "a608de3e586b88f8a9f4ff4d0037d994", "7af8bd77142358d88d49e50ccb9d37fc", "2b915c0914877352ec2c9593ce200dc4", "ce2348158204db107c9b9a6daecea4b2"),
+    defineTurnaroundSheet("863529f3-44ff-4992-b171-25e0e9a89f30", "1f8cf972c0d0948f2b35399139a85365", "6be195d58119332353b960405201b083", "d126150cd7e4f54fc1bea2e4073a5a2a", "5296016c0ad5ae0f63bb182cfdb567e3", "bcfca0dbab86ee715199222a9b4d909f"),
+    defineTurnaroundSheet("7abb6ea8-0660-45b5-b379-17fe98530400", "042d6fcf17b0eea7cf517b4b453dc14e", "a5162370ec08d39ef029e5e5c6815acd", "fff45343a604d2707e19e51359c65687", "d5ff46baf0182c5281345a9a3d6eff11", "6c05d292b6ad14f8756d757b27f550c1"),
+    defineTurnaroundSheet("853f098a-780e-4358-8cf6-d3c0b6b632a5", "51c101fc7996e642d6f57e1bdd57e9a0", "7e614a7cb1a2352b154708ecd35d58b8", "bff697122fa8f40ef63322bbda2f7b49", "3c84dbc249947f3d577811a4fed9fe81", "f11da5a3f33eaa6775b52ec73be472b9"),
+    defineTurnaroundSheet("d5a34bfb-0750-42ea-9d02-770ca72fecba", "605e15e3799c1d0885349ed0a869a1ce", "015058522c7dbaac69805a64530d83fb", "c6b596aebc8d073a9c9ad4e7d68fdecb", "e987ea55ecff54211bcfeccd9b40c562", "c1bfc76e943c3841b73d1e788e1a06d7"),
+    defineTurnaroundSheet("78b09913-a54a-4367-9a2d-323b029c04e8", "ded59b8eb8cbeeeffc67159efdf4589f", "763b4b23c3a339072e3a384455614ca4", "d1f7619e92111d45cb815d602ee2b17b", "078bc5bd27658ba78954751e69d9c678", "f6e0999a91b7bb259e13df28f9c3d41b"),
+    defineTurnaroundSheet("c3430f64-4d8a-4b2f-a8ca-2fcfff718298", "9de04f0ab16b2a03086d8bc870d7e091", "70e8cdf65240aa24471b9808511f57ca", "e232145ffb7feac426817482fb04fd60", "904220950734fea6708c706cf379387c", "001860260c0e6dc9a59a84c0028f9d75"),
+    defineTurnaroundSheet("e911ddc0-4c04-4ff1-ba3e-614f143a323f", "4072dc42d2717f448200ac3a31d3dff1", "933508fa0ce6aad3aebb3c306ecc737c", "6fc5ac7750f2cb473ff40d2250c938a2", "bed723bd4b5ed547db8503995b20b7ff", "c68af493d02ee40de3a80171703f5911"),
+    defineTurnaroundSheet("6e6d7ae4-4657-428a-9bf3-699dbd53c30c", "89389238df694b2d362198307f198374", "d128f52fe93b64ec8108d966f187aa51", "ad587207510c24b2ecccecfd7c9bdbbf", "2da8c59aab166fa60835061630ea53cd", "920d6f0e2046b1e861111b2659c0423e"),
+    defineTurnaroundSheet("15be5f97-9adf-4728-9af1-b23ae8db5828", "876b36dd524fc1996fabf1e97a14273b", "321b15524d24d0d07cacd085d1a82db5", "b03572f7d5485ddada8a1a26fc2c4581", "6e2d9131613c5fa5f08fbac437bacaa9", "4bafd092b8c91c66c6ae762be315eec1"),
+    defineTurnaroundSheet("6871de5c-9532-4790-9627-88d03bf380f5", "f65ba87dd37d521ee745c8bffc2d0fb8", "08b57b060118640aaba804ef0abc2a3b", "4482d5710a91f872efbdde4c7a185a64", "273cff6eaa7aad012bdd41f42a12b88c", "9b351c94435be67205aefd945d7a07dd"),
+    defineTurnaroundSheet("31298178-e181-466c-96ed-8409a8b6a4e9", "6ef850ec78a446ba7a1973b7b81cb613", "053fc52938b58b7d7cb4700703eea04a", "478f9e8593c3eeeb4a799f2214037547", "ab4181f08fb32dcc06f6699f4a8d7692", "6255d59a9e5cf4e52707225239f02dfe"),
+    defineTurnaroundSheet("28f98934-96b4-4310-8d65-b8909dc29c7c", "167833a4c3f4e54152b035a944159293", "690fa6c2c68189b67aaa36ecb6c3a335", "ad16715bef4ab163fdee3ff2a0205bf6", "537c850f51811942535bc8eadfb1d30e", "07c3f3b06751734697015ea362934070"),
+    defineTurnaroundSheet("3ca15b08-a618-4a00-af03-344c043dabab", "8739f103fc0ca8622350cf2153e1d5db", "8aed5691ef1b6314d5023f5c8861b4ec", "97030e4077556ec4b1f57254fd4c4732", "d4864f7c57605777d2aecaf464b23fc7", "3042fbccbc211d66ec02bc7b5f79facd"),
+    defineTurnaroundSheet("c5730e12-c9c6-4208-acd8-0882cd0c72ac", "50ba0888a46c94a833ed8c393cf83b74", "cc5c1f5a6649f4e87e7f45dfff37a7ab", "2a4b95ce97f30988b92fa26bba85d4af", "4405c3ed246fbdfe025833959377c8aa", "0d8e1c1cd5583794f9d82d7169c37187"),
+    defineTurnaroundSheet("a5987805-3843-42ce-92f1-8b324bfef1ba", "2b9d8ac495e8d561c5c845b8f3b21389", "3356d9ad9ced9646beb5a88d4e7f3ab2", "dc66c627d0ad0993b24da24ec1171fe1", "fe56626d87a99d637a1f57cfa982c539", "4ce2b6c6475c89a30ac1e5a9c4db3235"),
+    defineTurnaroundSheet("f5474631-4f9d-4e20-b6d6-adb8bf2f0d99", "e0a2cff4eb463ded23d26f3ad2b90333", "a71feb53a9391b23c1fff62490e5ead5", "157d87e6a5e3604926fef85637133bb8", "6aa27a1d3fc247a473acf372038403db", "fa6e8d39b5cecd3f713f80a91796dcb6"),
+    defineTurnaroundSheet("1fc57182-e8c8-436f-a438-db19a98ec8ef", "3aa29161d245143e07f3db144d8e12ba", "44a23a2d601c6a9a1ca40d64c7fbdd6d", "f2f27aa5ceccc32e21918b211f56f8bc", "b32a1efbd5be4706a79792d4f28af8da", "e495f8e22d325649a761c9a992fc83fa"),
+    defineTurnaroundSheet("982a572f-45d4-4bd2-85e8-d468db2d4fdc", "41b54ee4e8feb125287a885275e5d83e", "29dd1e62b4df05d1a0846df085a589aa", "14a38a525a5ee2e7b01e16ee3144e18d", "9becd3a62b24d6d674bac74471039f2a", "cf954c90d7efa47a55c83a7cc5bf33e1"),
+    defineTurnaroundSheet("f79d5896-8a21-4980-b599-579206f4b3db", "2412715fe59011b75cde9bbc9c479a25", "d719c1864f5ab966e756af2e698a6383", "8449d50b5cfffb32fed7052db67fbe11", "cbac271d651bc0d5f85a6860b5cf207e", "ec11cf4565ba93c8e3d7dba4feb227a1"),
+    defineTurnaroundSheet("1606ae10-0ab5-4f9f-992e-7c0386e8fa7f", "e7f1740a5f9d9d63959071561bb6c9c8", "205bfe0ef600a00282b12becfa8ea812", "f8370627b7885c07d67f9829e7545ca5", "36a48db9392a3476c98f2c442fa3ed06", "a89ac1b4b2d75899f8027a9fe08dc7e9"),
+    defineTurnaroundSheet("36c1cfc0-4757-427d-a851-71c0251dac8f", "16883f7240cff16dc50b0fd8eeda46e5", "a23e24596f50d3d00790bbbb5386facd", "d61f808ad841e3007f47208498db1919", "749d6a2ee1040988e927b805d1f260cb", "149d92089581f612bf4251e9a01bb57c"),
+    defineTurnaroundSheet("61238180-24a5-49f1-b235-dca19e2f7f61", "f6b6a6eee22c54554b903ad0110ce7de", "15c4514d310a3626b1babcba87dbcea2", "dda211efeb45735006237fa835d0b3ea", "bb6eff1bd995a2bd974881cadc3fe828", "eb757c971a89aa3e79600723368a8119"),
+    defineTurnaroundSheet("980d031b-ea87-4661-aaf7-b2eeb1512d7a", "6162d26ef00445bcb019f1617aabf24c", "e1957270c4b72700f809f0eed4181797", "e01831584612f9d3b02dca3ed4361904", "b97ace20c7aeef5530b36b95bd4a87d7", "f5eaa8757a60af87c93b3a56e3526ffb"),
+    defineTurnaroundSheet("4bc99848-b7b9-42b8-bf68-82e6705c9590", "77fdb40cdde7c122de079050bdab2c28", "f535689ba5bd8244cd973daca92f947c", "580f371ade08a75aa68f82ffb5787a6a", "f5b81778b4fbb5f45a38426e956c86c8", "55d4f23ffa0c17ca677185e28b553510"),
+    defineTurnaroundSheet("e5505b05-484e-4f1a-a32d-2db2633a66cf", "efacc87de3a4d385ceffa2e6c6e685ca", "71d031f5d9f0b654a42999dbec50ba42", "e2fb7347aec82598dc27918efba938a7", "7995efe3fb49c063a8e5f563d88fbf7f", "513720b686c0984608dde3145ee43629"),
+    defineTurnaroundSheet("a1361927-2e20-4d13-98e5-970d48d087a8", "015f684aa3e3f3a5fd0533f552bc5c29", "4ebd0093241909ccba39572bf5dcca6b", "c3fe6a7955ac35b0a0c4b03b8a199562", "78191e86554dd80844ff23a66fa5beee", "20ffc89027e40d49edf530d3c44b9228"),
+  ]);
+
+export function findVarco3dTurnaroundForReferenceImage(
+  referenceImagePath: string,
+): StudioVarco3dCompletedTurnaroundSheet | null {
+  return (
+    STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS.find(
+      (entry) => entry.referenceImagePath === referenceImagePath,
+    ) ?? null
+  );
+}
+
 export interface StudioVarco3dCharacterLabLoadoutSummary {
   readonly archetype: StudioVarco3dCharacterArchetypeEntry;
   readonly equippedItems: readonly StudioVarco3dCharacterLabModularItem[];
@@ -443,7 +519,9 @@ export function composeVarco3dCharacterLabLoadout(input: {
     totalPolygonBudget,
     attachedBones,
     genreSynergyScore,
-    primaryTurnaround: equippedItems[0]?.multiviewTurnaround ?? null,
+    primaryTurnaround:
+      equippedItems[0]?.multiviewTurnaround ??
+      findVarco3dTurnaroundForReferenceImage(archetype.referenceImagePath),
   };
 }
 
@@ -453,6 +531,47 @@ export interface StudioVarco3dDioramaPlacementPlan {
   readonly totalFootprintAreaSqMeters: number;
   readonly recommendedShadowBias: number;
   readonly varcoAssetPortalUrl: string;
+  readonly turnaroundSheet: StudioVarco3dCompletedTurnaroundSheet | null;
+  readonly mappedBg3dTemplateId: string;
+}
+
+export function mapVarco3dDioramaToBg3dTemplateId(dioramaId: string): string {
+  const diorama =
+    STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.find((entry) => entry.id === dioramaId) ??
+    STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES[0]!;
+  if (
+    diorama.id === "diorama_modern_cafe" ||
+    diorama.id === "diorama_studio_oneroom" ||
+    diorama.id === "diorama_chaebol_penthouse" ||
+    diorama.id === "diorama_webtoon_creator_studio" ||
+    diorama.id === "diorama_open_office"
+  ) {
+    return "modern-cafe-terrace";
+  }
+  if (
+    diorama.id === "diorama_convenience_store_patio" ||
+    diorama.id === "diorama_residential_alley" ||
+    diorama.id === "diorama_traditional_market" ||
+    diorama.id === "diorama_subway_car" ||
+    diorama.id === "diorama_hospital_room"
+  ) {
+    return "convenience-store-night";
+  }
+  switch (diorama.genre) {
+    case "romance-fantasy":
+      return "rofan-palace-ballroom";
+    case "murim":
+      return "murim-bamboo-pavilion";
+    case "hunter-action":
+      return "hunter-dungeon-boss-gate";
+    case "cyberpunk":
+      return "cyberpunk-neon-alley";
+    case "joseon-historical":
+      return "joseon-palace-courtyard";
+    case "daily-school":
+    default:
+      return "school-classroom-sunset";
+  }
 }
 
 export function evaluateVarco3dDioramaScenePlacement(input: {
@@ -479,5 +598,110 @@ export function evaluateVarco3dDioramaScenePlacement(input: {
     totalFootprintAreaSqMeters,
     recommendedShadowBias: diorama.cameraElevationDeg >= 32 ? -0.0004 : -0.0006,
     varcoAssetPortalUrl: `${STUDIO_VARCO3D_CLOUD_BASE_URL}/myAssets/${diorama.meshTaskId}`,
+    turnaroundSheet: findVarco3dTurnaroundForReferenceImage(diorama.referenceImagePath),
+    mappedBg3dTemplateId: mapVarco3dDioramaToBg3dTemplateId(diorama.id),
+  };
+}
+
+export type StudioVarco3dMannequinPosePresetId =
+  | "standing"
+  | "walking"
+  | "running"
+  | "sitting"
+  | "action"
+  | "contrapposto"
+  | "dramatic"
+  | "webtoon-lookback";
+
+export interface StudioVarco3dArchetypeMannequinApplication {
+  readonly archetype: StudioVarco3dCharacterArchetypeEntry;
+  readonly motionTask: StudioVarco3dRetargetedMotionTaskPreset | null;
+  readonly posePresetId: StudioVarco3dMannequinPosePresetId;
+  readonly mannequinSliders: {
+    readonly heightCm: number;
+    readonly headCount: number;
+    readonly build: number;
+    readonly shoulderWidth: number;
+    readonly hipWidth: number;
+  };
+  readonly bodySliders: {
+    readonly heightHeads: number;
+    readonly shoulderWidthRatio: number;
+    readonly waistRatio: number;
+    readonly hipRatio: number;
+    readonly legLengthRatio: number;
+    readonly armLengthRatio: number;
+    readonly muscleMass: number;
+    readonly neckLengthRatio: number;
+  };
+}
+
+export function resolveVarco3dArchetypeMannequinApplication(input: {
+  readonly archetypeId: string;
+  readonly animTaskId?: string | null;
+}): StudioVarco3dArchetypeMannequinApplication {
+  const archetype =
+    STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES.find((entry) => entry.id === input.archetypeId) ??
+    STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES[0]!;
+  const motionTask = input.animTaskId
+    ? (STUDIO_VARCO3D_RETARGETED_MOTION_TASKS.find((entry) => entry.animTaskId === input.animTaskId) ??
+      null)
+    : (STUDIO_VARCO3D_RETARGETED_MOTION_TASKS.find((entry) => entry.archetypeId === archetype.id) ??
+      null);
+
+  const fbx = motionTask?.animationFbx ?? "standing_idle_1";
+  let posePresetId: StudioVarco3dMannequinPosePresetId = "standing";
+  if (fbx === "walk") posePresetId = "walking";
+  else if (fbx === "run" || fbx === "sprint") posePresetId = "running";
+  else if (fbx === "sit_on_chair" || fbx === "crouch_kneel_idle") posePresetId = "sitting";
+  else if (
+    fbx === "kneel_combat_idle" ||
+    fbx === "forward_roll" ||
+    fbx === "rope_swing_down" ||
+    fbx === "basketball_shot" ||
+    fbx === "jump_in_place"
+  ) {
+    posePresetId = "action";
+  } else if (fbx === "dragon_wing_idle" || fbx === "shuffle_dance" || fbx === "arm_wave_dance") {
+    posePresetId = "dramatic";
+  } else if (fbx === "gesture_talk" || fbx === "explain_talk" || fbx === "drink") {
+    posePresetId = "contrapposto";
+  }
+
+  const clampedHeads = Math.min(9.5, Math.max(3.0, archetype.headTallRatio));
+  const isAthletic =
+    archetype.genre === "hunter-action" ||
+    archetype.genre === "murim" ||
+    archetype.headTallRatio >= 8.5;
+  const heightCm =
+    archetype.headTallRatio <= 4.5
+      ? 125
+      : archetype.headTallRatio >= 8.5
+        ? 185
+        : archetype.headTallRatio >= 8.0
+          ? 176
+          : 168;
+
+  return {
+    archetype,
+    motionTask,
+    posePresetId,
+    mannequinSliders: {
+      heightCm,
+      headCount: clampedHeads,
+      build: isAthletic ? 1.8 : 0.9,
+      shoulderWidth: isAthletic ? 1.16 : 0.98,
+      hipWidth: isAthletic ? 0.96 : 1.0,
+    },
+    bodySliders: {
+      heightHeads: clampedHeads,
+      shoulderWidthRatio: isAthletic ? 1.16 : 1.02,
+      waistRatio: isAthletic ? 0.88 : 0.92,
+      hipRatio: 0.98,
+      legLengthRatio: clampedHeads >= 8.5 ? 0.56 : clampedHeads <= 6.5 ? 0.46 : 0.52,
+      armLengthRatio: clampedHeads >= 8.5 ? 1.05 : 1.0,
+      muscleMass: isAthletic ? 0.62 : 0.32,
+      neckLengthRatio: clampedHeads >= 8.5 ? 1.08 : 1.0,
+    },
   };
 }

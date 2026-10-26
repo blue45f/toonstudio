@@ -20,6 +20,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { StudioPageIntro } from "../page-intro/StudioPageIntro";
 
+import { getProductStudioMannequinStateSqliteRepository } from "./studio-mannequin-bg3d-preset-sqlite-repository";
+import {
+  STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+  clampStudioMannequinBodyParams,
+} from "./studio-mannequin-model";
+import {
+  STUDIO_MANNEQUIN_POSE_PRESETS,
+  createStudioMannequinRestPose,
+  normalizeStudioMannequinPose,
+} from "./studio-mannequin-poses";
 import {
   StudioMannequinPoserPanel,
   type StudioMannequinCaptureResult,
@@ -33,6 +43,10 @@ export function StudioPoserPage(): ReactElement {
   const [searchParams] = useSearchParams();
   const starterPresetId = searchParams.get("starter")?.trim() || undefined;
   const [workbenchOpen, setWorkbenchOpen] = useState<boolean>(false);
+  const [appliedPosePresetId, setAppliedPosePresetId] = useState<string | undefined>(
+    starterPresetId,
+  );
+  const [mannequinRepo] = useState(getProductStudioMannequinStateSqliteRepository);
 
   const handleClose = useCallback(() => {
     navigate("/studio", { replace: true });
@@ -82,9 +96,41 @@ export function StudioPoserPage(): ReactElement {
           className="relative z-20 mx-auto max-w-5xl px-3 pt-16 pb-2"
         >
           <StudioVarco3dInspectorWorkbench
-            onApplyMannequinBodySliders={(sliders) => {
+            onApplyMannequinBodySliders={(sliders, options) => {
+              const nextParams = clampStudioMannequinBodyParams({
+                ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+                heightCm: sliders.heightCm,
+                headCount: sliders.headCount,
+                build: sliders.build,
+                shoulderWidth: sliders.shoulderWidth,
+                pelvisWidth: sliders.hipWidth,
+              });
+              const matchedPreset = options?.posePresetId
+                ? STUDIO_MANNEQUIN_POSE_PRESETS.find((preset) => preset.id === options.posePresetId)
+                : undefined;
+              if (options?.posePresetId) {
+                setAppliedPosePresetId(options.posePresetId);
+              }
+              void mannequinRepo
+                .load()
+                .then((stored) =>
+                  mannequinRepo.save({
+                    params: clampStudioMannequinBodyParams({
+                      ...(stored?.params ?? STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS),
+                      ...nextParams,
+                    }),
+                    pose: matchedPreset
+                      ? normalizeStudioMannequinPose(matchedPreset.pose)
+                      : (stored?.pose ?? createStudioMannequinRestPose()),
+                    ...(stored?.partner ? { partner: stored.partner } : {}),
+                  }),
+                )
+                .catch(() => undefined);
+              const detailSuffix = options?.archetypeLabelKo
+                ? ` · ${options.archetypeLabelKo}${options.motionLabelKo ? ` (${options.motionLabelKo})` : ""}`
+                : "";
               toast(
-                `세계관 체형 비율 적용됨 (${sliders.headCount.toFixed(1)}등신 · ${Math.round(sliders.heightCm)}cm)`,
+                `세계관 체형 비율 적용됨 (${sliders.headCount.toFixed(1)}등신 · ${Math.round(sliders.heightCm)}cm)${detailSuffix}`,
                 { tone: "success", durationMs: 3_000 },
               );
             }}
@@ -96,7 +142,7 @@ export function StudioPoserPage(): ReactElement {
         open
         onClose={handleClose}
         onInsert={handleInsert}
-        initialPosePresetId={starterPresetId}
+        initialPosePresetId={appliedPosePresetId}
         captureTarget="download"
       />
     </div>

@@ -123,6 +123,12 @@ describe("StudioPoserPage (/studio/poser)", () => {
     const toasts = useToastStore.getState().toasts;
     expect(toasts).toHaveLength(1);
     expect(toasts[0]?.message).toContain("세계관 체형 비율 적용됨");
+
+    // Apply VARCO 3D archetype & motion preset directly to the mannequin poser
+    fireEvent.click(screen.getByTestId("varco3d-apply-archetype-motion-to-mannequin"));
+    const updatedToasts = useToastStore.getState().toasts;
+    expect(updatedToasts).toHaveLength(2);
+    expect(updatedToasts[1]?.message).toContain("로판 악녀 황후 여주인공");
     useToastStore.setState({ toasts: [] });
   });
 });

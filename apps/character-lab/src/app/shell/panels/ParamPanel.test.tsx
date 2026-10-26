@@ -287,6 +287,20 @@ describe("ParamPanel — 요약·사유", () => {
       "SHAPER 블렌드쉐입 가중치: 신체 근육 100% · 체지방 100% (의상 감쇠 90% / 90%)",
     );
   });
+
+  it("VARCO 3D 웹툰 세계관 셰이퍼 프리셋(8종) 클릭 시 recipe/load를 디스패치하고 소품 바인딩과 HDRI 프리뷰를 갱신한다", () => {
+    const dispatched = setup();
+    const group = screen.getByTestId("param-varco3d-universe-presets");
+    expect(within(group).getAllByRole("button")).toHaveLength(8);
+    fireEvent.click(screen.getByTestId("param-varco3d-preset-romance-fantasy-noble"));
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]?.type).toBe("recipe/load");
+    if (dispatched[0]?.type === "recipe/load") {
+      expect(dispatched[0].recipe.style.packId).toBe("jp-shoujo-soft");
+      expect(dispatched[0].recipe.slots.hair).toBe("hair/romance-long");
+    }
+    expect(screen.getByTestId("param-varco3d-binding-summary").textContent).toContain("shaper-rofan-tiara.glb");
+  });
 });
 
 describe("ParamPanel — 색 팔레트", () => {
