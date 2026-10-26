@@ -11,6 +11,8 @@ import { useId, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
+import { runSameDocumentViewTransition } from "@/shared/navigation/webtoon-platform-router-ux-model";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import {
   formatI18nTemplate,
@@ -646,7 +648,11 @@ function StudioLobbyWorkflowGuide() {
                 type="button"
                 aria-pressed={active}
                 data-workflow-persona={option.id}
-                onClick={() => setPersona(option.id)}
+                onClick={() => {
+                  runSameDocumentViewTransition(() => {
+                    setPersona(option.id);
+                  });
+                }}
                 className={
                   active
                     ? "min-h-9 rounded-full bg-accent px-3 text-xs font-bold text-on-accent"
@@ -728,6 +734,7 @@ export function StudioCreatorLobby({
       aria-label={bi("툰스튜디오 크리에이터 로비", "ToonStudio creator lobby")}
     >
       <StudioLobbyHero />
+      <NanoBananaSurfaceSpotlight cardId="nb-create-canvas" defaultLensId="recipe" compact className="mt-4" />
       <StudioLobbyWorkflowGuide />
       <div className="studio-lobby__grid">
         <StudioLobbyRecentShelf controller={controller} projects={recentProjects} temporaryCount={temporaryCount} />

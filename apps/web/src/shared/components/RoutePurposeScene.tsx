@@ -31,8 +31,10 @@ import type {
   SiteRouteVisualKind,
   SiteRouteVisualProfile,
 } from "@/shared/lib/site-route-visual";
+import { resolveNanoBananaCardForRouteVisual } from "./site-experience/nano-banana-site-ui-pack";
 
 import "./route-purpose-scene.css";
+import "./site-experience/nano-banana-site-ui.css";
 
 function toBilingualLocale(locale: string): "ko" | "en" {
   return locale.toLowerCase().split(/[-_]/u)[0] === "ko" ? "ko" : "en";
@@ -187,6 +189,14 @@ export function RoutePurposeScene({
             <span>{mobile}</span>
             {action ? <strong>{copyLocale === "ko" ? "다음: " : "Next: "}{action}</strong> : null}
           </div>
+          <p
+            className="nb-site-purpose-pill"
+            data-nano-banana-card={resolveNanoBananaCardForRouteVisual(profile.kind).cardId}
+          >
+            <span>{resolveNanoBananaCardForRouteVisual(profile.kind).atelierModelLabel}</span>
+            <span aria-hidden="true">·</span>
+            <span>{resolveNanoBananaCardForRouteVisual(profile.kind).stageBadge[copyLocale]}</span>
+          </p>
         </div>
 
         <figure className="route-purpose-scene__visual" aria-hidden="true">

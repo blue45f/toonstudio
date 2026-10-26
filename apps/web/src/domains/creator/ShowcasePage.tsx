@@ -16,6 +16,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { SHOWCASE_COLLABORATION_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 export function ShowcasePage() {
@@ -32,6 +33,7 @@ export function ShowcasePage() {
     <Container size="wide" className="py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/showcase" className="mb-5" />
       <ShowcaseSpotlight />
+      <NanoBananaSurfaceSpotlight cardId="nb-showcase-premiere" compact className="mt-6" />
 
       <section
         aria-label={bt("크리에이터 쇼케이스 · 협업 · 공모 트랙", "Creator showcase, collaboration & contest tracks")}

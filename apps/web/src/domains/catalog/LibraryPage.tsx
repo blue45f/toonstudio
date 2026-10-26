@@ -9,6 +9,7 @@ import { LibraryView } from "@/shared/components/library-view";
 import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome";
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import {
   translateCurrentStaticSourceText,
   useBilingual,
@@ -88,6 +89,8 @@ export function LibraryPage() {
           ))}
         </ol>
       </SitePageHeader>
+
+      <NanoBananaSurfaceSpotlight cardId="nb-library-archive" compact className="mb-5" />
 
       <section
         aria-label={bt("4대 개인 서재 허브", "4-pillar personal library hub")}

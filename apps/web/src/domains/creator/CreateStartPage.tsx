@@ -31,6 +31,7 @@ import {
 
 import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
@@ -248,6 +249,8 @@ export function CreateStartPage() {
           ))}
         </div>
       </section>
+
+      <NanoBananaSurfaceSpotlight cardId="nb-create-canvas" compact className="mt-6" />
 
       <section
         aria-labelledby="create-start-my-story-title"

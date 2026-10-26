@@ -35,6 +35,7 @@ import { useMobileShowMore } from "@/domains/legal/public/site-show-more";
 import { useServiceCapabilityState } from "@/platform/service-capability-state";
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -308,6 +309,7 @@ export function MarketHomePage() {
       <div data-market-band="explore">
       <Container size="wide">
         <MarketNavHeader />
+        <NanoBananaSurfaceSpotlight cardId="nb-market-atelier" compact className="mt-4" />
       </Container>
 
       <Container size="wide" className="py-8 sm:py-10 lg:py-12">

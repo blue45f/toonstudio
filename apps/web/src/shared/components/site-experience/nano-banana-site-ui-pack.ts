@@ -1,8 +1,30 @@
-import type { SiteDesignDomain } from "@/shared/lib/site-route-experience";
-import { resolveSiteRouteExperience } from "@/shared/lib/site-route-experience";
 import type { SiteRouteVisualKind } from "@/shared/lib/site-route-visual";
-import type { ContextualSubNavGroupId } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { NANO_BANANA_SITE_CARDS } from "./nano-banana-site-cards-data";
+
+export type SiteDesignDomain =
+  | "workflow"
+  | "create"
+  | "planning"
+  | "spatial"
+  | "production"
+  | "discover"
+  | "learn"
+  | "market"
+  | "community"
+  | "showcase"
+  | "manage"
+  | "play"
+  | "trust"
+  | "workspace"
+  | "admin";
+
+export type ContextualSubNavGroupId =
+  | "discover"
+  | "create"
+  | "production"
+  | "ecosystem"
+  | "academy"
+  | "personal";
 
 export type NanoBananaBoardId =
   | "board-01-discovery-universe"
@@ -209,6 +231,9 @@ export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCa
     return NANO_BANANA_SITE_CARDS["nb-trust-sanctuary"];
   }
 
-  const routeExp = resolveSiteRouteExperience(clean);
-  return resolveNanoBananaCardForDomain(routeExp.domain);
+  if (clean.startsWith("/admin")) {
+    return NANO_BANANA_SITE_CARDS["nb-production-control"];
+  }
+
+  return NANO_BANANA_SITE_CARDS["nb-workflow-bridge"];
 }
