@@ -76,7 +76,7 @@ jobs:
       # package.json의 packageManager를 단일 버전 소스로 사용한다.
       - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm

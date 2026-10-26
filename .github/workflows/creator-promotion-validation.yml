@@ -42,7 +42,7 @@ jobs:
             apps/api/src/platform/database/migrations/0046_creator_promotion_community.sql
             config/http-response-headers.json
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Validate inputs, responses, routes and additive migration
@@ -59,7 +59,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm

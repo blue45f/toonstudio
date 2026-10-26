@@ -91,7 +91,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/quality-static"
           git rev-parse HEAD > "$RUNNER_TEMP/quality-static/revision.txt"
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -128,7 +128,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/finishing-quality"
           git rev-parse HEAD > "$RUNNER_TEMP/finishing-quality/revision.txt"
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm

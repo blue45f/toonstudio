@@ -31,7 +31,7 @@ jobs:
             scripts/export-reference-rebuild.mjs
             scripts/verify-reference-rebuild.mjs
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - run: node --test scripts/verify-reference-rebuild.mjs

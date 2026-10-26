@@ -65,7 +65,7 @@ jobs:
             /scripts/verify-character-contact-naturalness.mjs
             /apps/web/src/domains/creator/vrm/studio-vrm-contact-refinement.ts
             /apps/web/src/domains/creator/vrm/studio-vrm-portrait-framing.ts
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Verify contact, rollback, replay and portrait math
@@ -79,7 +79,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
