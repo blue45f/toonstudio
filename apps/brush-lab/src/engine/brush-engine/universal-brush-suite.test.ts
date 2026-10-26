@@ -10,6 +10,7 @@ import {
   evaluateLabKonvaKaleidoscopeAndEmboss,
   evaluateLabMyPaintOpaqueLinearizeAndPosterize,
   evaluateLabPerfectFreehandSimulatedPressureAndRadius,
+  evaluateLabPsdPackBitsAndOtsuThreshold,
   evaluateLabSaiWatercolorPressure,
   evaluateLabSculptGlQuarticFalloff01,
   evaluateLabWickCroquisPressure01,
@@ -312,5 +313,15 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
     });
     expect(konvaEval.mirroredThetaIndex).toBe(11);
     expect(konvaEval.reliefGray255).toBeGreaterThan(128);
+
+    const psdOtsu = evaluateLabPsdPackBitsAndOtsuThreshold({
+      runValue: 200,
+      runLength: 5,
+      darkClassMean: 24,
+      lightClassMean: 214,
+      darkWeight01: 0.5,
+    });
+    expect(psdOtsu.packBitsHeaderByte).toBe(252);
+    expect(psdOtsu.betweenClassVariance).toBe(9025);
   });
 });

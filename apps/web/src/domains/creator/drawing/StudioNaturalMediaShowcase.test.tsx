@@ -248,6 +248,44 @@ describe("StudioNaturalMediaShowcase", () => {
     const colorReplaceRadio = container.querySelector('[data-studio-complete-ecosystem-preset="ecosystem-color-replace-eraser"]') as HTMLButtonElement | null;
     expect(colorReplaceRadio?.getAttribute("aria-checked")).toBe("true");
 
+    // Wave 30 755개 파일 모놀리식 총망라(만다라·칼레이도·Catmull 벡터·직교 엘보우) 및 beforematch 탐색 검증
+    const wave30DockTab = container.querySelector('[data-studio-engine-wave-filter="wave30"]') as HTMLButtonElement | null;
+    expect(wave30DockTab).not.toBeNull();
+    fireEvent.click(wave30DockTab!);
+    expect(wave30DockTab?.getAttribute("aria-pressed")).toBe("true");
+
+    const wave24Section = container.querySelector('[data-studio-wave-section="wave24"]');
+    expect(wave24Section).not.toBeNull();
+    fireEvent(wave24Section!, new Event("beforematch", { bubbles: true }));
+    const wave24DockTab = container.querySelector('[data-studio-engine-wave-filter="wave24"]') as HTMLButtonElement | null;
+    expect(wave24DockTab?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(allDockTab!);
+
+    const kaleidoRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-kaleidoscope-polar"]') as HTMLButtonElement | null;
+    expect(kaleidoRadio).not.toBeNull();
+    expect(kaleidoRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(kaleidoRadio!, { key: "End" });
+    const skiaLookaheadRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-skia-patheffect-lookahead"]') as HTMLButtonElement | null;
+    expect(skiaLookaheadRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const psdPackBitsRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-ag-psd-packbits-8bim"]') as HTMLButtonElement | null;
+    expect(psdPackBitsRadio).not.toBeNull();
+    fireEvent.click(psdPackBitsRadio!);
+    expect(psdPackBitsRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const quickSearchInput = container.querySelector('[data-studio-monolithic-quick-search="true"]') as HTMLInputElement | null;
+    expect(quickSearchInput).not.toBeNull();
+    fireEvent.change(quickSearchInput!, { target: { value: "CIEDE2000" } });
+    const culoriRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-culori-oklch-ciede2000"]') as HTMLButtonElement | null;
+    expect(culoriRadio).not.toBeNull();
+    fireEvent.change(quickSearchInput!, { target: { value: "" } });
+
+    const mandalaAxesToggle = container.querySelector('[data-studio-mandala-axes-toggle="true"]') as HTMLButtonElement | null;
+    expect(mandalaAxesToggle).not.toBeNull();
+    expect(mandalaAxesToggle?.textContent).toContain("8× (16)");
+    fireEvent.click(mandalaAxesToggle!);
+    expect(mandalaAxesToggle?.textContent).toContain("12× (24)");
+
     const contrastSwatch = container.querySelector("[data-studio-klecks-contrast-swatch]");
     expect(contrastSwatch).not.toBeNull();
   });
