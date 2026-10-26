@@ -45,22 +45,28 @@ export type ClaudeCreatorTaskId =
   | "production:color-mood-script"
   | "production:continuity-foreshadow"
   | "production:sfx-typo-director"
-  // 3. Next-Gen Suite (4)
+  // 3. Next-Gen Suite (6)
   | "nextgen:retention-simulator"
   | "nextgen:ooc-voice-doctor"
   | "nextgen:audio-cuesheet-director"
   | "nextgen:3d-asset-placement"
+  | "nextgen:visual-continuity-linter"
+  | "nextgen:multi-episode-canon-vault"
   // 4. Phase 5 Competitor Full Suite (3)
   | "competitor:beluga-clipstudio-production"
   | "competitor:onoma-kakaopage-ip"
   | "competitor:llamagen-manga-ai"
-  // 5. Phase 6 Global & Domestic 20-Competitor Ecosystem Suite (6)
+  // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite (10)
   | "ecosystem:novelai-multi-char-vibe"
   | "ecosystem:mangaflow-identity-verification"
   | "ecosystem:glimnavi-color-hint-stroke"
   | "ecosystem:snaptoon-3d-environment-shader"
   | "ecosystem:novel-adaptation-ip-expansion"
   | "ecosystem:tooncrafter-inbetween-stitch"
+  | "ecosystem:asymmetric-costume-prop-wound-ledger"
+  | "ecosystem:camera-axis-eyeline-height-lock"
+  | "ecosystem:cross-cut-color-script-albedo-lock"
+  | "ecosystem:micro-expression-acting-continuity"
   // 6. Phase 6 Domain Engine Fusion (4)
   | "fusion:localization-qa-copyfit"
   | "fusion:sfx-envelope-warp"
@@ -283,6 +289,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "18~85mm 렌즈 화각·소실점·3D 에셋 배치는 Sonnet 5.5 적용",
     2_048,
   ),
+  "nextgen:visual-continuity-linter": defineRoute(
+    "nextgen:visual-continuity-linter",
+    "전 회차 컷간 작붕(비대칭 흉터·검집 반전·소품 증발·부상 초기화·그림자 방향) 자동 검출 린터",
+    "nextgen-studio",
+    "deep-architecture",
+    "다중 컷 사이의 해부학적 좌우 반전·소품 증발·배경 투시·부상 누적 불일치 정밀 감사는 Opus 5.5 심층 추론 적용",
+    4_096,
+  ),
+  "nextgen:multi-episode-canon-vault": defineRoute(
+    "nextgen:multi-episode-canon-vault",
+    "장편 연재(1~100화) 캐릭터·세계관·복선·비주얼 캐논 메모리 볼트 디렉터",
+    "nextgen-studio",
+    "creative-production",
+    "회차 간 시간 경과·인물 호칭·복장/외형 변천사·미회수 떡밥 캐논 볼트 동기화는 Sonnet 5.5 적용",
+    4_096,
+  ),
 
   // 4. Phase 5 Competitor Full Suite
   "competitor:beluga-clipstudio-production": defineRoute(
@@ -310,7 +332,7 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     2_560,
   ),
 
-  // 5. Phase 6 Global & Domestic 20-Competitor Ecosystem Suite
+  // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite
   "ecosystem:novelai-multi-char-vibe": defineRoute(
     "ecosystem:novelai-multi-char-vibe",
     "NovelAI V4.5/V5 다중 캐릭터 공간 좌표 & Vibe Transfer 디렉터",
@@ -357,6 +379,38 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "phase6-ecosystem",
     "creative-production",
     "시작·끝 키프레임 중간 동화 보간·Krita 인페인팅 마스크·Comistitch 안전 분할선 계산은 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "ecosystem:asymmetric-costume-prop-wound-ledger": defineRoute(
+    "ecosystem:asymmetric-costume-prop-wound-ledger",
+    "비대칭 복식·흉터·무기 파지 비례·부상 누적 연속성 원장 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "신체 좌우(Anatomical L/R) 기준 비대칭 흉터·견장·검집 미러링 방지 및 손 대비 무기 스케일·부상 누적 락은 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "ecosystem:camera-axis-eyeline-height-lock": defineRoute(
+    "ecosystem:camera-axis-eyeline-height-lock",
+    "180도 시선 축(180° Rule)·다중 인물 키 차이(Height Delta)·원근 소실점 일관성 감독",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "컷간 180도 카메라 축 침범 방지·로우/하이앵글 신장 차이 원근 보정·오버더숄더 시선 벡터 감사는 Opus 5.5 적용",
+    4_096,
+  ),
+  "ecosystem:cross-cut-color-script-albedo-lock": defineRoute(
+    "ecosystem:cross-cut-color-script-albedo-lock",
+    "컷간 피부톤·의상 고유색(Albedo) 드리프트 방지 & 시간대 환경광(LUT) 일관성 고정기",
+    "phase6-ecosystem",
+    "fast-inline",
+    "컷간 캐릭터 고유색(Albedo HEX)과 역광/야간 색온도(Kelvin) 분리 및 Delta-E 색상 흔들림 제어는 Haiku 5.5 적용",
+    3_072,
+  ),
+  "ecosystem:micro-expression-acting-continuity": defineRoute(
+    "ecosystem:micro-expression-acting-continuity",
+    "컷간 미세 표정(FACS 근육)·시선 궤적·호흡 감정선 연속성 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "연속된 대화/액션 컷 사이의 안면 근육(FACS)·동공 수축·시선 이동 궤적·감정 관성 설계는 Sonnet 5.5 적용",
     4_096,
   ),
 

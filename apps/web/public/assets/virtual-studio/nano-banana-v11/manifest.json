@@ -1,0 +1,107 @@
+{
+  "packId": "nano-banana-v11",
+  "generator": "Nano Banana (Google DeepMind Image Generator Subagent + PIL RGBA Floodfill Pipeline)",
+  "themeCount": 4,
+  "personaCount": 4,
+  "spriteFrameCount": 8,
+  "files": [
+    {
+      "id": "four-studio-themes-atlas",
+      "path": "/assets/virtual-studio/nano-banana-v11/four-studio-themes-atlas.webp",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "8b9e0232e7f0f803c4eb409e7cfa26d9bd3432e2270ed311b839218658e5b11b"
+    },
+    {
+      "id": "seoul-editorial-hq",
+      "path": "/assets/virtual-studio/nano-banana-v11/themes/seoul-editorial-hq.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "e843f387b7e6737eafa4da3bfc271770c095929b3700acda3a7d4da7aa075e1c"
+    },
+    {
+      "id": "cyber-neon-lab",
+      "path": "/assets/virtual-studio/nano-banana-v11/themes/cyber-neon-lab.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "4aa55fb4640f166940f47bda9b8279e0ff1bba25cfadb472793aab7ed2da0bbe"
+    },
+    {
+      "id": "hanok-botanical-atelier",
+      "path": "/assets/virtual-studio/nano-banana-v11/themes/hanok-botanical-atelier.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "3a2bcf64ffa5a8cb73cadd1cef5918fdef167eb795394baa782589292c7ab064"
+    },
+    {
+      "id": "lofi-cat-storyhouse",
+      "path": "/assets/virtual-studio/nano-banana-v11/themes/lofi-cat-storyhouse.webp",
+      "width": 640,
+      "height": 560,
+      "sha256": "1ac87979abda46e2aed8f716cf77088065188770793175a30517afa8e2a9bc2c"
+    },
+    {
+      "id": "line-artist-idle",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "5c30d65255dcb3df702b89f59dfe4d8ba1d3a35d26b9678a6915acde9a8a9d68"
+    },
+    {
+      "id": "cgi-director-idle",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/cgi-director-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "6b77872e61ad1be3aad05dca68dade9176fe4fb2aef3b7ad770343f8b12b17ce"
+    },
+    {
+      "id": "colorist-idle",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/colorist-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "c848e8eb50c2e9244cf6b519cff0e254f99d6929c703280d08162386744305e5"
+    },
+    {
+      "id": "chief-pd-idle",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-idle.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "b03548f7853638e12afc2a8e6538eb70cb33bcca2468cb41d4656f7e3cf42f4c"
+    },
+    {
+      "id": "line-artist-work",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/line-artist-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "2bb0c8f0d20af78e5dfb3c31a0866c052e7a13fa49254b5d64bdc46417966479"
+    },
+    {
+      "id": "cgi-director-work",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/cgi-director-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "d13c0783ca8284a4783d0b743f1d25d2dcab329f80737cda4e375ae646999760"
+    },
+    {
+      "id": "colorist-work",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/colorist-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "edadea23b075327219f609e91fc6bbe2efea1ebf8114b3d9f3bf0277e2115090"
+    },
+    {
+      "id": "chief-pd-work",
+      "path": "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-work.webp",
+      "width": 256,
+      "height": 256,
+      "sha256": "a0581771e9bdab8f25285d108bf475d22d5083fb397d08793c98bd820070a6f7"
+    },
+    {
+      "id": "diverse-creator-cast-clean-atlas",
+      "path": "/assets/virtual-studio/nano-banana-v11/diverse-creator-cast-clean-atlas.webp",
+      "width": 1024,
+      "height": 512,
+      "sha256": "34fbaf657c42ff9a5141bf5182df8c671034f2a06260b7115a1892b656b5eadd"
+    }
+  ]
+}

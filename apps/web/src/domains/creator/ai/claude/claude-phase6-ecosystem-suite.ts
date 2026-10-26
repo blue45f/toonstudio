@@ -20,14 +20,22 @@ import {
 } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import {
+  AsymmetricCostumePropWoundLedgerReportSchema,
+  CameraAxisEyelineHeightLockReportSchema,
+  CrossCutColorScriptAlbedoLockReportSchema,
   GlimnaviColorHintReportSchema,
   MangaFlowIdentityVerificationReportSchema,
+  MicroExpressionActingContinuityReportSchema,
   NovelAdaptationAndIpExpansionReportSchema,
   NovelAiMultiCharVibeReportSchema,
   Snaptoon3dEnvironmentShaderReportSchema,
   ToonCrafterInbetweenAndStitchReportSchema,
+  type AsymmetricCostumePropWoundLedgerReport,
+  type CameraAxisEyelineHeightLockReport,
+  type CrossCutColorScriptAlbedoLockReport,
   type GlimnaviColorHintReport,
   type MangaFlowIdentityVerificationReport,
+  type MicroExpressionActingContinuityReport,
   type NovelAdaptationAndIpExpansionReport,
   type NovelAiMultiCharVibeReport,
   type Phase6EcosystemEnvelope,
@@ -560,40 +568,12 @@ export function buildLocalToonCrafterInbetweenAndStitchReport(
     zeroBubbleSliceGuarantee: true,
     productionSummaryKo: `ToonCrafter 키프레임 보간과 AniDoc 컬러 전파 락으로 ${protagonist}의 발도술 액션 중간 동화 8프레임을 일관된 채색으로 생성하고, Krita AI Diffusion 아웃페인팅 및 Comistitch 여백(Gutter) 안전 분할선으로 말풍선 잘림 0건을 보장했습니다.`,
     inbetweenBridges: [
-      {
-        bridgeId: "bridge-slash-01",
-        startKeyframeCut: 1,
-        endKeyframeCut: 2,
-        inbetweenFrameCount: 8,
-        motionCurveType: "impact-snap",
-        anidocColorReferenceLock: true,
-        occlusionRepairGuideKo: `${protagonist}의 오른팔 뒤로 가려지는 망토 안감 영역을 AniDoc 턴어라운드 컬러 시트 기준으로 복원`,
-      },
-      {
-        bridgeId: "bridge-camera-pan-02",
-        startKeyframeCut: 2,
-        endKeyframeCut: 3,
-        inbetweenFrameCount: 6,
-        motionCurveType: "ease-in-out",
-        anidocColorReferenceLock: true,
-        occlusionRepairGuideKo: "배경 기둥 패럴랙스 이동 시 발생하는 외곽선 끊김을 Krita ControlNet Lineart로 보정",
-      },
+      { bridgeId: "bridge-slash-01", startKeyframeCut: 1, endKeyframeCut: 2, inbetweenFrameCount: 8, motionCurveType: "impact-snap", anidocColorReferenceLock: true, occlusionRepairGuideKo: `${protagonist}의 오른팔 뒤로 가려지는 망토 안감 영역을 AniDoc 턴어라운드 컬러 시트 기준으로 복원` },
+      { bridgeId: "bridge-camera-pan-02", startKeyframeCut: 2, endKeyframeCut: 3, inbetweenFrameCount: 6, motionCurveType: "ease-in-out", anidocColorReferenceLock: true, occlusionRepairGuideKo: "배경 기둥 패럴랙스 이동 시 발생하는 외곽선 끊김을 Krita ControlNet Lineart로 보정" },
     ],
     comistitchSlices: [
-      {
-        sliceIndex: 1,
-        startYPx: 0,
-        endYPx: 4_800,
-        safeSplitInGutterConfirmed: true,
-        kritaOutpaintTransitionPromptKo: "검은 안개에서 황궁 대리석 바닥으로 이어지는 수직 그라데이션 아웃페인팅",
-      },
-      {
-        sliceIndex: 2,
-        startYPx: 4_800,
-        endYPx: 9_600,
-        safeSplitInGutterConfirmed: true,
-        kritaOutpaintTransitionPromptKo: "클리프행어 암전 여백(1,100px) 구간에 미세한 마력 입자 잔광 추가",
-      },
+      { sliceIndex: 1, startYPx: 0, endYPx: 4_800, safeSplitInGutterConfirmed: true, kritaOutpaintTransitionPromptKo: "검은 안개에서 황궁 대리석 바닥으로 이어지는 수직 그라데이션 아웃페인팅" },
+      { sliceIndex: 2, startYPx: 4_800, endYPx: 9_600, safeSplitInGutterConfirmed: true, kritaOutpaintTransitionPromptKo: "클리프행어 암전 여백(1,100px) 구간에 미세한 마력 입자 잔광 추가" },
     ],
   };
 }
@@ -602,17 +582,164 @@ export async function runClaudeToonCrafterInbetweenAndStitchDirector(
   input: WebtoonProductionAssistInput = {},
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<Phase6EcosystemEnvelope<ToonCrafterInbetweenAndStitchReport>> {
-  const fallbackReport = buildLocalToonCrafterInbetweenAndStitchReport(input);
   return executePhase6EcosystemEngine({
     taskId: "ecosystem:tooncrafter-inbetween-stitch",
     input,
     options,
     systemPromptKo:
-      "당신은 ToonCrafter, AniDoc, Krita AI Diffusion, Comistitch를 결합한 모션웹툰 인비트윈 동화 보간 및 세로 스크롤 무한 캔버스 스티칭 디렉터입니다. " +
-      "시작·끝 키프레임 사이의 중간 동화 프레임 수와 모션 커브, AniDoc 컬러 전파 락, Krita 아웃페인팅 프롬프트, 말풍선이 절대 잘리지 않는 Comistitch 안전 분할 Y좌표를 JSON으로 설계하세요.",
+      "당신은 ToonCrafter, AniDoc, Krita AI Diffusion, Comistitch를 결합한 모션웹툰 인비트윈 동화 보간 및 세로 스크롤 무한 캔버스 스티칭 디렉터입니다. 시작·끝 키프레임 사이의 중간 동화 프레임 수와 모션 커브, AniDoc 컬러 전파 락, Krita 아웃페인팅 프롬프트, 말풍선이 절대 잘리지 않는 Comistitch 안전 분할 Y좌표를 JSON으로 설계하세요.",
     userDirectiveKo:
       "위 에피소드의 핵심 액션 전환 구간에 대해 ToonCrafter/AniDoc 인비트윈 브리지 명세와 Krita/Comistitch 세로 스크롤 안전 분할 명세를 JSON으로 생성해 주세요.",
     schema: ToonCrafterInbetweenAndStitchReportSchema,
-    fallbackReport,
+    fallbackReport: buildLocalToonCrafterInbetweenAndStitchReport(input),
+  });
+}
+
+/* ============================================================================
+ * 7. 비대칭 복식·흉터·무기 파지 비례·부상 누적 연속성 원장 디렉터 (Sonnet 5.5)
+ * ============================================================================ */
+
+export function buildLocalAsymmetricCostumePropWoundLedgerReport(
+  input: WebtoonProductionAssistInput = {},
+): AsymmetricCostumePropWoundLedgerReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  return {
+    chiralityConsistencyScore: 99,
+    zeroMirrorFlipGuarantee: true,
+    ledgerSummaryKo: `${protagonist}·${partner}의 신체 해부학적 좌우(Anatomical L/R) 기준 흉터·견장·검집 위치와 손 대비 무기 그립 비례, 전투 중 발생한 의상 파손·혈흔의 컷간 누적 상태를 고정하여 AI 생성 시 흔히 발생하는 좌우 반전 작붕을 원천 차단했습니다.`,
+    ledgerItems: [
+      { itemId: "asym-scar-01", characterName: protagonist, anatomicalAnchorSide: "anatomical-left", featureCategory: "facial-scar-mole", canonicalSpecKo: `${protagonist} 왼쪽 눈썹 위에서 광대까지 이어지는 사선 자상 흉터와 왼쪽 귀 은색 피어싱`, weaponToHandScaleRatio: "N/A (안면 고정 랜드마크)", mirrorFlipRiskWarningKo: "우측 측면 앵글(Right Profile) 촬영 시 흉터가 오른쪽 눈에 그려지지 않도록 가림 처리 필수", activeFromCutToCut: "Cut 1 ~ 전체 회차 영구 유지", persistencePromptLock: "scar strictly on character's anatomical left eyebrow, never mirrored to right eye" },
+      { itemId: "asym-weapon-02", characterName: protagonist, anatomicalAnchorSide: "anatomical-right", featureCategory: "weapon-scabbard-grip", canonicalSpecKo: "오른손 주 파지 흑철 장검(검집은 왼쪽 허리 패용), 검자루(Hilt) 길이 28cm / 검신 폭 4.5cm 고정", weaponToHandScaleRatio: "손바닥 폭(9cm) 대비 검자루 3.1배 · 검신 길이 신장의 0.62배 고정", mirrorFlipRiskWarningKo: "발도 후 클로즈업 컷에서 검집이 오른쪽 허리로 이동하거나 왼손잡이로 반전되는 현상 차단", activeFromCutToCut: "Cut 1 ~ Cut 12", persistencePromptLock: "right-handed sword grip, scabbard anchored on left hip, fixed hilt-to-hand ratio 3.1:1" },
+      { itemId: "asym-wound-03", characterName: partner, anatomicalAnchorSide: "anatomical-left", featureCategory: "cumulative-battle-wound", canonicalSpecKo: `Cut 2 방어전 이후 ${partner}의 왼쪽 어깨 망토 찢김(12cm) 및 소매 끝단 그을림 누적 유지`, weaponToHandScaleRatio: "마법 지팡이 헤드 직경 = 머리 크기의 0.75배 고정", mirrorFlipRiskWarningKo: "Cut 3 이후 컷에서 찢어진 망토가 멀쩡하게 복구되는 연속성 증발 방지", activeFromCutToCut: "Cut 2 발생 → 에피소드 종료까지 비가역 유지", persistencePromptLock: "persistent torn left cape shoulder and scorched cuff from Cut 2 onward" },
+    ],
+  };
+}
+
+export async function runClaudeAsymmetricCostumePropWoundLedgerDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Phase6EcosystemEnvelope<AsymmetricCostumePropWoundLedgerReport>> {
+  return executePhase6EcosystemEngine({
+    taskId: "ecosystem:asymmetric-costume-prop-wound-ledger",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 웹툰 캐릭터의 비대칭 복식·흉터·안대·검집의 신체 해부학적 좌우(Anatomical Left/Right) 고정, 손 크기 대비 무기 비례(Scale Lock), 컷간 부상·혈흔·의상 파손 누적 원장을 총괄하는 일관성 감독입니다. 좌우 반전 작붕과 소품 증발을 차단하는 명세를 JSON으로 작성하세요.",
+    userDirectiveKo:
+      "위 에피소드 주요 인물들의 비대칭 외형/복식/무기 파지 비례 및 컷간 부상 누적 연속성 원장을 JSON으로 생성해 주세요.",
+    schema: AsymmetricCostumePropWoundLedgerReportSchema,
+    fallbackReport: buildLocalAsymmetricCostumePropWoundLedgerReport(input),
+  });
+}
+
+/* ============================================================================
+ * 8. 180도 시선 축(180° Rule)·다중 인물 키 차이·원근 소실점 일관성 감독 (Opus 5.5)
+ * ============================================================================ */
+
+export function buildLocalCameraAxisEyelineHeightLockReport(
+  input: WebtoonProductionAssistInput = {},
+): CameraAxisEyelineHeightLockReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  return {
+    canonicalHeightDeltaCm: 16,
+    axis180ViolationCount: 0,
+    spatialContinuitySummaryKo: `2인 대치 씬 전체에서 180도 액션 축(Action Axis) Side-A를 엄격히 고수하여 화면 좌측=${protagonist}(184cm), 우측=${partner}(168cm)의 위치·시선 교환 벡터(좌→우 하향 -8°, 우→좌 상향 +8°)와 신장 차이(16cm)를 원근 소실점에 맞춰 동기화했습니다.`,
+    cutAxisAudits: [
+      { cutNumber: 1, cameraSideOfAxis: "axis-side-A-standard", leftScreenCharacter: protagonist, rightScreenCharacter: partner, eyelineVectorMatchPass: true, heightDeltaApparentCm: 16, horizonLineRatioY: 0.48, spatialCorrectionGuideKo: `아이레벨(Y:0.48) 투샷에서 ${partner}의 정수리가 ${protagonist}의 눈썹 높이에 오도록 신장 차 16cm 고정` },
+      { cutNumber: 2, cameraSideOfAxis: "axis-side-A-standard", leftScreenCharacter: protagonist, rightScreenCharacter: partner, eyelineVectorMatchPass: true, heightDeltaApparentCm: 19, horizonLineRatioY: 0.28, spatialCorrectionGuideKo: `로우앵글(Y:0.28) 오버더숄더 컷에서 원근 과장으로 전경 ${protagonist} 어깨 너머 ${partner}가 위압감 있게 내려다보이는 시선각 보정` },
+    ],
+  };
+}
+
+export async function runClaudeCameraAxisEyelineHeightLockDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Phase6EcosystemEnvelope<CameraAxisEyelineHeightLockReport>> {
+  return executePhase6EcosystemEngine({
+    taskId: "ecosystem:camera-axis-eyeline-height-lock",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 웹툰 연출의 180도 시선 축(180-Degree Rule / Line of Action), 다중 인물 신장 차이(Height Delta) 원근 보정, 오버더숄더 시선 벡터 일관성을 총괄하는 시네마틱 공간 감독입니다. 컷간 카메라 축 침범(Axis Jump)과 키 비율 붕괴를 방지하는 명세를 JSON으로 설계하세요.",
+    userDirectiveKo:
+      "위 에피소드 대치/대화 장면의 180도 카메라 축 유지, 인물 좌우 배치, 시선 교환 각도, 앵글별 체감 신장 차이 보정표를 JSON으로 생성해 주세요.",
+    schema: CameraAxisEyelineHeightLockReportSchema,
+    fallbackReport: buildLocalCameraAxisEyelineHeightLockReport(input),
+  });
+}
+
+/* ============================================================================
+ * 9. 컷간 피부톤·의상 고유색(Albedo) 드리프트 방지 & 환경광 일관성 고정기 (Haiku 5.5)
+ * ============================================================================ */
+
+export function buildLocalCrossCutColorScriptAlbedoLockReport(
+  input: WebtoonProductionAssistInput = {},
+): CrossCutColorScriptAlbedoLockReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  return {
+    maxDeltaEDrift: 1.4,
+    albedoConsistencyPass: true,
+    sceneLightingKelvinsSummaryKo: `야간 청색 달빛(4,100K)과 마법진 역광 환경에서도 ${protagonist}·${partner}의 고유 피부톤·머리색(Albedo HEX)이 회색빛으로 탁해지거나 컷마다 채도가 널뛰지 않도록 Delta-E 오차 1.4 이내로 고정했습니다.`,
+    colorLocks: [
+      { characterOrPropName: protagonist, partLabelKo: "안면 피부 베이스 (Cool Ivory Albedo)", albedoBaseHex: "#FCE7DC", shadowMultiplyHex: "#C99E93", lightingKelvinK: 4100, renderedApparentHex: "#DFD2D8", deltaEDriftTolerance: 1.5 },
+      { characterOrPropName: partner, partLabelKo: "시그니처 실버 헤어 & 크림슨 망토", albedoBaseHex: "#E2E8F0", shadowMultiplyHex: "#94A3B8", lightingKelvinK: 4100, renderedApparentHex: "#CBD5E1", deltaEDriftTolerance: 1.8 },
+    ],
+  };
+}
+
+export async function runClaudeCrossCutColorScriptAlbedoLockDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Phase6EcosystemEnvelope<CrossCutColorScriptAlbedoLockReport>> {
+  return executePhase6EcosystemEngine({
+    taskId: "ecosystem:cross-cut-color-script-albedo-lock",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 웹툰 컷간 피부톤·머리색·의상 고유색(Albedo HEX)과 시간대별 환경광 색온도(Kelvin) 합성 시 발생하는 색상 드리프트(Delta-E)를 통제하는 컬러스크립트 디렉터입니다. JSON으로 고유색·그림자색·조명 반영색 락을 설계하세요.",
+    userDirectiveKo:
+      "위 에피소드 주요 인물과 핵심 소품의 고유색(Albedo HEX), 셀 그림자 Multiply HEX, 조명 색온도(K) 반영 HEX 및 Delta-E 허용치를 JSON으로 생성해 주세요.",
+    schema: CrossCutColorScriptAlbedoLockReportSchema,
+    fallbackReport: buildLocalCrossCutColorScriptAlbedoLockReport(input),
+  });
+}
+
+/* ============================================================================
+ * 10. 컷간 미세 표정(FACS 근육)·시선 궤적·호흡 감정선 연속성 디렉터 (Sonnet 5.5)
+ * ============================================================================ */
+
+export function buildLocalMicroExpressionActingContinuityReport(
+  input: WebtoonProductionAssistInput = {},
+): MicroExpressionActingContinuityReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  return {
+    emotionalContinuityScore: 98,
+    zeroWhiplashGuarantee: true,
+    actingArcSummaryKo: `컷마다 표정이 갑자기 무표정으로 초기화되거나 과장된 AI 표정으로 튀는 현상(Emotional Whiplash)을 막기 위해, FACS 안면 근육 유닛(AU)과 동공 수축률·눈썹 긴장도의 컷간 감정 관성(Emotional Inertia)을 정밀 연결했습니다.`,
+    microExpressionBeats: [
+      { cutNumber: 1, characterName: protagonist, facsActionUnits: "AU4(미간 수축) + AU7(눈꺼풀 긴장) + AU24(입술 굳게 다묾)", pupilConstrictionLevel: "contracted-rage", browTensionPct: 82, gazeTrajectoryKo: "하단 검 끝에서 정면 상대의 미간으로 15° 급격히 치켜뜨는 시선", emotionalInertiaNoteKo: "이전 컷의 배신감 충격이 식지 않은 채 차가운 살의로 응축되는 전환", actingPromptLock: "subtle furrowed brow AU4, tightened lower eyelids AU7, pressed lips, constricted pupils, cold suppressed fury" },
+      { cutNumber: 2, characterName: partner, facsActionUnits: "AU1+2(안쪽 눈썹 미세 거상) + AU5(상안검 확장) + AU17(턱 끝 미세 떨림)", pupilConstrictionLevel: "trembling-grief", browTensionPct: 68, gazeTrajectoryKo: `${protagonist}의 눈을 마주보다가 죄책감에 0.5초간 좌하단으로 흔들리는 시선`, emotionalInertiaNoteKo: "단호한 방어 태세 이면에 숨겨진 동요가 눈가 미세 떨림으로 잔류", actingPromptLock: "micro-trembling pupils, slightly raised inner brows AU1, guarded yet conflicted expression, no exaggerated smiling" },
+    ],
+  };
+}
+
+export async function runClaudeMicroExpressionActingContinuityDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Phase6EcosystemEnvelope<MicroExpressionActingContinuityReport>> {
+  return executePhase6EcosystemEngine({
+    taskId: "ecosystem:micro-expression-acting-continuity",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 웹툰 캐릭터의 컷간 미세 표정 연기(FACS 안면 근육 Action Units, 동공 수축도, 눈썹 긴장도, 시선 이동 궤적, 감정 관성) 연속성을 총괄하는 액팅 디렉터입니다. 컷 사이에 표정이 급변하거나 마네킹처럼 굳는 현상을 방지하는 명세를 JSON으로 작성하세요.",
+    userDirectiveKo:
+      "위 에피소드 핵심 감정 교차 컷들에 대해 캐릭터별 FACS 안면 근육 코드, 동공 상태, 시선 궤적, 감정 관성(Emotional Inertia) 프롬프트 락을 JSON으로 생성해 주세요.",
+    schema: MicroExpressionActingContinuityReportSchema,
+    fallbackReport: buildLocalMicroExpressionActingContinuityReport(input),
   });
 }

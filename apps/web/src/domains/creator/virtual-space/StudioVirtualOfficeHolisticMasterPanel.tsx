@@ -32,6 +32,7 @@ import {
   type NanoBananaCharacterPose,
   type TranslationLocaleCode,
 } from "./studio-virtual-office-holistic-master-model";
+import { StudioVirtualOfficeNextGenEnginePanel } from "./StudioVirtualOfficeNextGenEnginePanel";
 
 const PRESENTATION_MODES: readonly {
   readonly id: CreatorPresentationOverlayMode;
@@ -651,6 +652,9 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           </div>
         </div>
       </section>
+
+      {/* 7. Nano Banana v11 Next-Gen Multi-Theme, Diverse Creator Cast, 60fps Physics & HRTF Soundscape Engine */}
+      <StudioVirtualOfficeNextGenEnginePanel onBannerChange={onBannerChange} />
     </div>
   );
 }

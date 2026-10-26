@@ -274,3 +274,132 @@ export type ToonCrafterInbetweenAndStitchReport = z.infer<
 >;
 export type ToonCrafterInbetweenAndStitchEnvelope =
   Phase6EcosystemEnvelope<ToonCrafterInbetweenAndStitchReport>;
+
+/* ------------------------------------------------------------------ */
+/* 7. 비대칭 복식·흉터·무기 파지 비례·부상 누적 연속성 원장 디렉터        */
+/* ------------------------------------------------------------------ */
+
+export const AsymmetricCostumePropWoundItemSchema = z.object({
+  itemId: z.string(),
+  characterName: z.string(),
+  anatomicalAnchorSide: z.enum([
+    "anatomical-left",
+    "anatomical-right",
+    "bilateral-symmetric",
+  ]),
+  featureCategory: z.enum([
+    "facial-scar-mole",
+    "asymmetric-pauldron-cape",
+    "weapon-scabbard-grip",
+    "cumulative-battle-wound",
+  ]),
+  canonicalSpecKo: z.string(),
+  weaponToHandScaleRatio: z.string(),
+  mirrorFlipRiskWarningKo: z.string(),
+  activeFromCutToCut: z.string(),
+  persistencePromptLock: z.string(),
+});
+
+export const AsymmetricCostumePropWoundLedgerReportSchema = z.object({
+  chiralityConsistencyScore: z.number(),
+  zeroMirrorFlipGuarantee: z.boolean(),
+  ledgerSummaryKo: z.string(),
+  ledgerItems: z.array(AsymmetricCostumePropWoundItemSchema),
+});
+
+export type AsymmetricCostumePropWoundItem = z.infer<
+  typeof AsymmetricCostumePropWoundItemSchema
+>;
+export type AsymmetricCostumePropWoundLedgerReport = z.infer<
+  typeof AsymmetricCostumePropWoundLedgerReportSchema
+>;
+export type AsymmetricCostumePropWoundLedgerEnvelope =
+  Phase6EcosystemEnvelope<AsymmetricCostumePropWoundLedgerReport>;
+
+/* ------------------------------------------------------------------ */
+/* 8. 180도 시선 축(180° Rule)·다중 인물 키 차이·원근 소실점 일관성 감독  */
+/* ------------------------------------------------------------------ */
+
+export const CameraAxisCutSpecSchema = z.object({
+  cutNumber: z.number(),
+  cameraSideOfAxis: z.enum(["axis-side-A-standard", "intentional-axis-bridge"]),
+  leftScreenCharacter: z.string(),
+  rightScreenCharacter: z.string(),
+  eyelineVectorMatchPass: z.boolean(),
+  heightDeltaApparentCm: z.number(),
+  horizonLineRatioY: z.number(),
+  spatialCorrectionGuideKo: z.string(),
+});
+
+export const CameraAxisEyelineHeightLockReportSchema = z.object({
+  canonicalHeightDeltaCm: z.number(),
+  axis180ViolationCount: z.number(),
+  spatialContinuitySummaryKo: z.string(),
+  cutAxisAudits: z.array(CameraAxisCutSpecSchema),
+});
+
+export type CameraAxisCutSpec = z.infer<typeof CameraAxisCutSpecSchema>;
+export type CameraAxisEyelineHeightLockReport = z.infer<
+  typeof CameraAxisEyelineHeightLockReportSchema
+>;
+export type CameraAxisEyelineHeightLockEnvelope =
+  Phase6EcosystemEnvelope<CameraAxisEyelineHeightLockReport>;
+
+/* ------------------------------------------------------------------ */
+/* 9. 컷간 피부톤·의상 고유색(Albedo) 드리프트 방지 & 환경광 일관성 고정기 */
+/* ------------------------------------------------------------------ */
+
+export const CrossCutColorSwatchLockSchema = z.object({
+  characterOrPropName: z.string(),
+  partLabelKo: z.string(),
+  albedoBaseHex: z.string(),
+  shadowMultiplyHex: z.string(),
+  lightingKelvinK: z.number(),
+  renderedApparentHex: z.string(),
+  deltaEDriftTolerance: z.number(),
+});
+
+export const CrossCutColorScriptAlbedoLockReportSchema = z.object({
+  maxDeltaEDrift: z.number(),
+  albedoConsistencyPass: z.boolean(),
+  sceneLightingKelvinsSummaryKo: z.string(),
+  colorLocks: z.array(CrossCutColorSwatchLockSchema),
+});
+
+export type CrossCutColorSwatchLock = z.infer<typeof CrossCutColorSwatchLockSchema>;
+export type CrossCutColorScriptAlbedoLockReport = z.infer<
+  typeof CrossCutColorScriptAlbedoLockReportSchema
+>;
+export type CrossCutColorScriptAlbedoLockEnvelope =
+  Phase6EcosystemEnvelope<CrossCutColorScriptAlbedoLockReport>;
+
+/* ------------------------------------------------------------------ */
+/* 10. 컷간 미세 표정(FACS 근육)·시선 궤적·호흡 감정선 연속성 디렉터     */
+/* ------------------------------------------------------------------ */
+
+export const MicroExpressionBeatTransitionSchema = z.object({
+  cutNumber: z.number(),
+  characterName: z.string(),
+  facsActionUnits: z.string(),
+  pupilConstrictionLevel: z.enum(["normal", "dilated-shock", "contracted-rage", "trembling-grief"]),
+  browTensionPct: z.number(),
+  gazeTrajectoryKo: z.string(),
+  emotionalInertiaNoteKo: z.string(),
+  actingPromptLock: z.string(),
+});
+
+export const MicroExpressionActingContinuityReportSchema = z.object({
+  emotionalContinuityScore: z.number(),
+  zeroWhiplashGuarantee: z.boolean(),
+  actingArcSummaryKo: z.string(),
+  microExpressionBeats: z.array(MicroExpressionBeatTransitionSchema),
+});
+
+export type MicroExpressionBeatTransition = z.infer<
+  typeof MicroExpressionBeatTransitionSchema
+>;
+export type MicroExpressionActingContinuityReport = z.infer<
+  typeof MicroExpressionActingContinuityReportSchema
+>;
+export type MicroExpressionActingContinuityEnvelope =
+  Phase6EcosystemEnvelope<MicroExpressionActingContinuityReport>;

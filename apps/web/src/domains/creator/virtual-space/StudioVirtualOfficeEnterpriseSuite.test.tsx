@@ -248,6 +248,26 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     ).toContain("/assets/virtual-studio/nano-banana-v10/frames/idle-left.webp");
     fireEvent.click(screen.getByTestId("nano-banana-prop-biophilic-planter-set-btn"));
     expect(screen.getByRole("status").textContent).toContain("바이오필릭 플랜테리어 컬렉션");
+
+    // Nano Banana v11 Next-Gen Engine Panel verification
+    expect(screen.getByTestId("virtual-office-nextgen-engine-panel")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("nextgen-theme-hanok-botanical-atelier-btn"));
+    expect(
+      screen.getByTestId("nextgen-active-theme-hero-img").getAttribute("src"),
+    ).toContain("/assets/virtual-studio/nano-banana-v11/themes/hanok-botanical-atelier.webp");
+
+    fireEvent.click(screen.getByTestId("nextgen-persona-colorist-btn"));
+    expect(
+      screen.getByTestId("nextgen-active-persona-sprite-img").getAttribute("src"),
+    ).toContain("/assets/virtual-studio/nano-banana-v11/cast/colorist-work.webp");
+
+    fireEvent.click(screen.getByTestId("nextgen-ghost-mode-g-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-move-left-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-interact-x-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-wall-barrier-toggle-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-approach-desk-desk-ep43-c19-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-advance-cut-desk-ep43-c19-btn"));
+    expect(screen.getByRole("status").textContent).toContain("EP.43 C19");
   });
 
   it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {
