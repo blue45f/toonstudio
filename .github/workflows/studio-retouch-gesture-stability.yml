@@ -67,7 +67,7 @@ jobs:
             2>&1 | tee /tmp/studio-retouch-evidence/types.log
       - name: Preserve pass or failure evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: studio-retouch-gesture-evidence
           path: /tmp/studio-retouch-evidence

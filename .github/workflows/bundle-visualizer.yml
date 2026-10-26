@@ -57,7 +57,7 @@ jobs:
         run: pnpm run bundle:visualize
       - name: Keep the bundle composition report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-visualizer-report
           path: .qa/bundle-visualizer.html

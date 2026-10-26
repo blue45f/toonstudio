@@ -118,7 +118,7 @@ jobs:
         run: node scripts/verify-studio-reference-projects.mjs --run --receipt qa-results/studio-reference-projects/receipt.json
       - name: Upload certification receipts
         if: always()
-        uses: actions/upload-artifact@v6 # NOSONAR S7637 trusted first-party action
+        uses: actions/upload-artifact@v7 # NOSONAR S7637 trusted first-party action
         with:
           name: studio-competitor-replacement-${{ github.run_id }}
           path: qa-results/studio-reference-projects

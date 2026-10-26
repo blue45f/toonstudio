@@ -77,7 +77,7 @@ jobs:
         run: node scripts/qa/studio-chromium-inapp-suite-runner.mjs
       - name: Upload source, browser, renderer, queue and failure evidence
         if: always()
-        uses: actions/upload-artifact@v4 # NOSONAR S7637 trusted first-party action
+        uses: actions/upload-artifact@v7 # NOSONAR S7637 trusted first-party action
         with:
           name: studio-gpu-soak-repro-${{ github.sha }}-${{ github.run_attempt }}
           path: artifacts/studio-gpu-soak-repro

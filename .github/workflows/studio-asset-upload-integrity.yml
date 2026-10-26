@@ -67,7 +67,7 @@ jobs:
           done
       - name: Retain actual per-seed results, including failures
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: upload-review-regressions-${{ github.sha }}
           path: test-results/upload-review/*.json

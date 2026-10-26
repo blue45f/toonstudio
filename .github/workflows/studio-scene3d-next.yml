@@ -133,7 +133,7 @@ jobs:
         run: node scripts/verify-studio-scene3d-recipe-reuse.mjs
       - name: Preserve specialist verification evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: scene3d-specialist-browser-evidence
           path: |
@@ -174,7 +174,7 @@ jobs:
         run: pnpm run verify:studio-3d-tiled:browser
       - name: Preserve bounded tile verification evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: scene3d-tiled-output-evidence
           path: |

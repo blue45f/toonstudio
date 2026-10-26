@@ -134,7 +134,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm run build:bundle
       - run: test -s dist/.vite/manifest.json
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: studio-discovery-dist
           path: dist
@@ -200,7 +200,7 @@ jobs:
           node scripts/verify-studio-drawing-ux-v2.mjs http://127.0.0.1:5219 chromium,firefox,webkit
       - name: Preserve drawing UX evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: studio-drawing-ux-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -210,7 +210,7 @@ jobs:
           if-no-files-found: warn
       - name: Preserve screenshots and receipts on failure
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: studio-discovery-browser-${{ github.run_id }}-${{ github.run_attempt }}
           path: /tmp/studio-discovery-evidence

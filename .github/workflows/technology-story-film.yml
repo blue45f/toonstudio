@@ -33,7 +33,7 @@ jobs:
         env:
           FILM_FORMAT: ${{ inputs.format }}
         run: npm --prefix tools/media/brand-film run render:technology -- "$FILM_FORMAT"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: toonstudio-technology-story-${{ inputs.format }}-${{ github.sha }}
           path: |

@@ -53,7 +53,7 @@ jobs:
           exit "$result"
       - name: Preserve machine-readable contract results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: studio-discovery-contracts
           path: /tmp/studio-discovery-contracts.json

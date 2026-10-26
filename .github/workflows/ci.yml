@@ -296,7 +296,7 @@ jobs:
           mkdir -p artifacts/core
           git rev-parse HEAD > artifacts/core/commit.txt
           pnpm run test:perf 2>&1 | tee artifacts/core/serial.log
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: core-serial-attempt-${{ github.run_attempt }}
@@ -324,7 +324,7 @@ jobs:
         run: pnpm run test:a11y
       - name: 제작 작업 보드 실제 흐름과 반응형 접근성 검증
         run: pnpm exec playwright test --config playwright.production-workflows.config.ts
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: core-production-workflows-attempt-${{ github.run_attempt }}
@@ -361,7 +361,7 @@ jobs:
           set -euo pipefail
           pnpm run test:studio-virtual-art
           pnpm run verify:studio-virtual-art
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: core-build-attempt-${{ github.run_attempt }}

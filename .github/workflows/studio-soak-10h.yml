@@ -64,7 +64,7 @@ jobs:
         run: node scripts/qa/studio-soak-runner.mjs
       - name: Upload UX soak evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: studio-soak-ux-persistence-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/studio-soak/ux-persistence
@@ -107,7 +107,7 @@ jobs:
         run: node scripts/qa/studio-soak-runner.mjs
       - name: Upload rendering soak evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: studio-soak-rendering-brush-3d-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/studio-soak/rendering-brush-3d

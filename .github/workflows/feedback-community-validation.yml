@@ -100,7 +100,7 @@ jobs:
           EOF
           tar -czf artifacts/feedback/reviewed-source.tar.gz -T /tmp/feedback-lint-files .github/workflows/feedback-community-validation.yml apps/web/src/domains/legal/feedback/feedback-community.css e2e/feedback-community.html e2e/community-replies.html docs/feedback-community.md
       - name: Upload exact source for independent review
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: feedback-review-source-${{ github.sha }}
           path: artifacts/feedback/reviewed-source.tar.gz
@@ -153,7 +153,7 @@ jobs:
           git diff -- . ':!pnpm-lock.yaml' > artifacts/feedback/eslint-suggested.patch
       - name: Upload verification evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: feedback-community-verification
           retention-days: 7
