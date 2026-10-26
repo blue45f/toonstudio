@@ -6,8 +6,11 @@ import {
   ArrowRight,
   BellRing,
   BookOpen,
+  ChartColumn,
   Clock3,
   Coins,
+  Crown,
+  Film,
   Images,
   KeyRound,
   Layers,
@@ -99,6 +102,10 @@ const COPY = {
       ["설정", "언어, 기록, 필터, 데이터 가져오기·내보내기", "/settings", "account"],
       ["AI 연결 설정", "캐릭터 토크·스튜디오 보조용 내 AI 키(BYOK) 관리", "/settings/ai", "account"],
       ["에셋 포인트·정산", "에셋 구매 포인트 지갑 및 판매·컷츠 리워드 내역", "/asset-points", "creator"],
+      ["창작자 수익·멤버십", "후원·멤버십·선공개·마켓 수익 집계와 티어 설정", "/creator/revenue", "creator"],
+      ["구독 중인 멤버십", "내가 후원·구독 중인 창작자 멤버십과 혜택 관리", "/memberships", "reader"],
+      ["뉴스레터 구독·발송", "구독 중인 작가 소식지 관리 및 새 화 뉴스레터 발송", "/newsletter", "reader"],
+      ["홍보 영상 스튜디오", "작품 티저·트레일러 영상 제작 및 홍보 게시판 연결", "/showcase/promo", "creator"],
     ] as const,
   },
   en: {
@@ -153,11 +160,15 @@ const COPY = {
       ["Settings", "Language, history, filters and data import/export", "/settings", "account"],
       ["AI connection", "Manage your own AI keys (BYOK) for Character Talk and Studio", "/settings/ai", "account"],
       ["Points & rewards", "Asset point wallet, sales and Cuts reward history", "/asset-points", "creator"],
+      ["Creator revenue & tiers", "Track tips, memberships, early access and market revenue", "/creator/revenue", "creator"],
+      ["My memberships", "Manage your active creator memberships and supporter perks", "/memberships", "reader"],
+      ["Newsletters", "Manage author newsletter subscriptions and send episode updates", "/newsletter", "reader"],
+      ["Promo video studio", "Create work teasers and trailers and share to the promo board", "/showcase/promo", "creator"],
     ] as const,
   },
 } as const;
 
-const ICONS = [Layers, Images, Library, Store, BookOpen, UserRound, Mail, Settings, KeyRound, Coins] as const;
+const ICONS = [Layers, Images, Library, Store, BookOpen, UserRound, Mail, Settings, KeyRound, Coins, ChartColumn, Crown, Mail, Film] as const;
 const QUICK_ICONS = [BellRing, BookOpen, Store] as const;
 
 function visitTimeLabel(value: number, locale: "ko" | "en"): string {

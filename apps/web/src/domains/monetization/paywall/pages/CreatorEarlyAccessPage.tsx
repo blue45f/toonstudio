@@ -29,6 +29,7 @@ import {
   upsertEarlyAccessPolicy,
 } from "../models/paywall-store";
 import { EarlyAccessReaderPreview } from "../components/EarlyAccessReaderPreview";
+import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
 
 export function CreatorEarlyAccessPage() {
   const t = useT();
@@ -97,19 +98,22 @@ export function CreatorEarlyAccessPage() {
 
   if (!authenticated) {
     return (
-      <Container className="py-16 text-center">
-        <CalendarClock className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
-        <h1 className="mt-3 text-xl font-bold text-fg">{t("paywall.creatorPage.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
-          {t("paywall.creatorPage.loginRequired")}
-        </p>
-        <button
-          type="button"
-          onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-early-access", mode: "login" })}
-          className={cn(buttonClass({ variant: "solid" }), "mt-4")}
-        >
-          {t("paywall.creatorPage.login")}
-        </button>
+      <Container className="py-10">
+        <CreatorMonetizationNav current="/creator/early-access" />
+        <div className="py-8 text-center">
+          <CalendarClock className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
+          <h1 className="mt-3 text-xl font-bold text-fg">{t("paywall.creatorPage.title")}</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
+            {t("paywall.creatorPage.loginRequired")}
+          </p>
+          <button
+            type="button"
+            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-early-access", mode: "login" })}
+            className={cn(buttonClass({ variant: "solid" }), "mt-4")}
+          >
+            {t("paywall.creatorPage.login")}
+          </button>
+        </div>
       </Container>
     );
   }
@@ -119,6 +123,7 @@ export function CreatorEarlyAccessPage() {
 
   return (
     <Container className="py-8">
+      <CreatorMonetizationNav current="/creator/early-access" />
       <header>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">
           <CalendarClock className="h-6 w-6 text-accent" aria-hidden />

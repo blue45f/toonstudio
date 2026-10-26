@@ -153,11 +153,17 @@ export function CutsRewardsPage() {
 
   return (
     <div className="cuts-rewards">
-      <p>
+      <nav className="flex flex-wrap items-center gap-2" aria-label={t("컷츠 및 정산 이동", "Cuts and settlement navigation")}>
         <Link href="/cuts" className="cuts-button cuts-button--ghost">
           <ArrowLeft size={16} aria-hidden="true" /> {t("피드로 돌아가기", "Back to feed")}
         </Link>
-      </p>
+        <Link href="/cuts/studio" className="cuts-button cuts-button--ghost">
+          <Clapperboard size={16} aria-hidden="true" /> {t("클립 만들기", "Create a clip")}
+        </Link>
+        <Link href="/creator/revenue" className="cuts-button cuts-button--ghost">
+          {t("창작자 수익·정산 대시보드", "Creator revenue dashboard")}
+        </Link>
+      </nav>
       <h1>
         <Coins size={24} aria-hidden="true" /> {t("리워드 펀드 정산", "Reward fund settlement")}
       </h1>

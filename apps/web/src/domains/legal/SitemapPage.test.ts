@@ -18,14 +18,18 @@ const SITEMAP_SOURCE = "apps/web/src/domains/legal/SitemapPage.tsx";
 const PUBLIC_ROUTE_SOURCE_FILES = [
   "apps/web/src/app/routes/groups/account.routes.tsx",
   "apps/web/src/app/routes/groups/catalog.routes.tsx",
+  "apps/web/src/app/routes/groups/character-chat.routes.tsx",
   "apps/web/src/app/routes/groups/community.routes.tsx",
   "apps/web/src/app/routes/groups/creator.routes.tsx",
   "apps/web/src/app/routes/groups/creator-showcase-routes.tsx",
   "apps/web/src/app/routes/groups/creator-resources.routes.tsx",
+  "apps/web/src/app/routes/groups/cuts.routes.tsx",
   "apps/web/src/app/routes/groups/experience.routes.tsx",
   "apps/web/src/app/routes/groups/legal.routes.tsx",
   "apps/web/src/app/routes/groups/market.routes.tsx",
   "apps/web/src/app/routes/groups/marketing.routes.tsx",
+  "apps/web/src/app/routes/groups/monetization.routes.tsx",
+  "apps/web/src/app/routes/groups/newsletter.routes.tsx",
   "apps/web/src/app/routes/groups/production.routes.tsx",
   "apps/web/src/app/routes/groups/reference.routes.tsx",
 ] as const;
@@ -47,12 +51,16 @@ const INTENTIONAL_NON_DIRECTORY_ROUTES = new Set([
 ]);
 
 const LEGACY_REDIRECT_ALIASES = new Map([
+  ["/asset-points", "/account/points"],
   ["/brush-lab", "/studio/assets/brushes/new"],
   ["/create/challenges", "/showcase/challenges"],
   ["/create/promo", "/showcase/promo"],
+  ["/creator-support", "/support-creators"],
+  ["/market/fit-lab", "/market/fit"],
   ["/motion-webtoon", "/studio/motion-webtoon"],
   ["/music", "/studio/assets/audio"],
   ["/publishing", "/studio/publish"],
+  ["/research/story", "/story-lab"],
 ]);
 
 const LEGACY_CROSS_DOMAIN_ALIASES = new Map([

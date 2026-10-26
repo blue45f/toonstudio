@@ -376,6 +376,11 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         href: "/library",
       },
       {
+        name: { ko: "숏폼 컷츠", en: "Short-form Cuts" },
+        description: { ko: "세로형 짧은 클립으로 작품 명장면과 팬 리믹스 감상", en: "Watch iconic scenes and fan remixes in vertical short clips" },
+        href: "/cuts",
+      },
+      {
         name: { ko: "업계 소식", en: "Industry news" },
         description: { ko: "웹툰·웹소설 관련 소식 모음", en: "News from the webtoon and web novel industry" },
         href: "/news",
@@ -402,6 +407,11 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         href: "/community/promote",
       },
       {
+        name: { ko: "홍보 영상 스튜디오", en: "Promo video studio" },
+        description: { ko: "웹툰 컷으로 10·15·30·60초 예고편·쇼츠·모션툰을 브라우저에서 제작", en: "Create 10, 15, 30, or 60-second trailers, shorts and motion comics in the browser" },
+        href: "/showcase/promo",
+      },
+      {
         name: { ko: "작품 쇼케이스", en: "Showcase" },
         description: { ko: "완성작과 홍보 페이지를 전시", en: "Exhibit finished works and promo pages" },
         href: "/showcase",
@@ -410,6 +420,21 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         name: { ko: "뉴스레터", en: "Newsletter" },
         description: { ko: "구독자에게 작품 소식을 메일로 발송", en: "Send work updates to subscribers by email" },
         href: "/newsletter",
+      },
+      {
+        name: { ko: "창작자 수익·정산", en: "Creator revenue & settlement" },
+        description: { ko: "멤버십·선공개·후원 수익과 월별 정산 내역 확인", en: "Track membership, early-access and support revenue and monthly settlements" },
+        href: "/creator/revenue",
+      },
+      {
+        name: { ko: "창작자 멤버십 운영", en: "Creator memberships" },
+        description: { ko: "팬 후원 멤버십 티어와 월 구독 혜택 설정", en: "Configure fan membership tiers and monthly subscriber perks" },
+        href: "/creator/membership",
+      },
+      {
+        name: { ko: "선공개·얼리 액세스", en: "Early-access episodes" },
+        description: { ko: "후원자 전용 선공개 회차와 자동 무료 전환 일정 관리", en: "Manage supporter-only early-access episodes and free-release schedules" },
+        href: "/creator/early-access",
       },
       {
         name: { ko: "이벤트", en: "Events" },
@@ -454,6 +479,16 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         name: { ko: "홍보영상", en: "Brand film" },
         description: { ko: "24초로 보는 창작 흐름(무음 브랜드 필름)", en: "The creative flow in 24 seconds (a silent brand film)" },
         href: "/brand-film",
+      },
+      {
+        name: { ko: "홍보 영상 자료실", en: "Promo video library" },
+        description: { ko: "생성형 AI 홍보 영상·쇼츠 204편을 카테고리별로 미리 보고 원본 내려받기", en: "Preview and download 204 AI-generated promo clips and shorts by category" },
+        href: "/promo-library",
+      },
+      {
+        name: { ko: "기술 영상 제작 구조", en: "Engineering video system" },
+        description: { ko: "Remotion 코드 기반 제품 투어·브랜드 필름 렌더링과 검증 구조", en: "Code-driven Remotion rendering and verification for the product tour and brand film" },
+        href: "/about/technology/videos",
       },
       {
         name: { ko: "웹툰 제작 과정", en: "Webtoon workflow" },

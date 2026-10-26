@@ -309,6 +309,12 @@ export function StudioPromoPage() {
           <p className="promo-eyebrow">TOONSTUDIO · MOTION COMIC</p>
           <h1 id="promo-title">{bt("당신의 웹툰을, 움직이는 예고편으로.", "Turn your webtoon into a moving trailer.")}</h1>
           <p>{bt("컷을 올리고 분위기를 고르면 예고편·쇼츠·모션툰을 이 브라우저에서 바로 만들어 저장합니다.", "Add panels, pick a mood, and make trailers, shorts or motion comics right in this browser.")}</p>
+          <nav className="promo-button-row" aria-label={bt("영상 홍보 관련 경로", "Video promotion pathways")}>
+            <Link href="/community/promote" className="promo-back">{bt("신작·작가 홍보 게시판", "Creator promotion board")} →</Link>
+            <Link href="/promo-library" className="promo-back">{bt("홍보 영상 자료실 (204편)", "Promo video library (204 clips)")} →</Link>
+            <Link href="/cuts/studio" className="promo-back">{bt("숏폼 컷츠 만들기", "Create a Cuts clip")} →</Link>
+            <Link href="/studio/motion-webtoon" className="promo-back">{bt("모션 웹툰 스튜디오", "Motion webtoon studio")} →</Link>
+          </nav>
         </div>
         <span className="promo-badge">{bt("10 / 15 / 30 / 60초", "10 / 15 / 30 / 60 s")}</span>
       </header>
@@ -410,6 +416,10 @@ export function StudioPromoPage() {
             </div>
             <label htmlFor="promo-import">프로젝트 JSON 불러오기 (현재 구성 교체)</label><input id="promo-import" type="file" accept="application/json,.json" disabled={busy} onChange={(event) => { void importProject(event.target.files?.[0]); event.target.value = ""; }} />
             <p className="promo-muted">초안은 이 브라우저에 자동 저장합니다. 브라우저 데이터 삭제·저장 공간 부족에 대비해 프로젝트 JSON도 백업하세요. 미디어가 포함되므로 공유 대상을 확인하세요.</p>
+            <div className="promo-button-row" aria-label={bt("완성 영상 배포 동선", "Next steps after exporting")}>
+              <Link href="/community/promote/new">{bt("완성한 트레일러 홍보 글 올리기", "Post your finished trailer")}</Link>
+              <Link href="/cuts">{bt("숏폼 컷츠 피드 둘러보기", "Browse the Cuts feed")}</Link>
+            </div>
           </section>
           <details className="promo-card promo-locale-details" onToggle={(event) => setLocaleOpen(event.currentTarget.open)}>
             <summary>{bt("로케일별 자막 일괄 출력 · 음성 미리듣기", "Batch captions by locale · voice preview")}</summary>

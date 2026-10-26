@@ -1,5 +1,7 @@
 import { defineAppRoutes } from "../app-route-definition";
 
+import { withRouteBreadcrumb } from "@/app/components/breadcrumb";
+import { resolveBreadcrumbTrail } from "@/app/routes/route-breadcrumb";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 const MyNewslettersPage = lazyRetry(
@@ -16,5 +18,9 @@ const NewsletterComposePage = lazyRetry(
 
 export const newsletterRoutes = defineAppRoutes([
   { id: "newsletter", path: "/newsletter", element: <MyNewslettersPage /> },
-  { id: "newsletter-compose", path: "/newsletter/compose", element: <NewsletterComposePage /> },
+  {
+    id: "newsletter-compose",
+    path: "/newsletter/compose",
+    element: withRouteBreadcrumb(resolveBreadcrumbTrail("/newsletter/compose"), <NewsletterComposePage />),
+  },
 ]);

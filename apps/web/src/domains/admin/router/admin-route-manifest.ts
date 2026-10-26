@@ -46,7 +46,7 @@ export interface AdminRouteDescriptor {
 
 export const ADMIN_ROUTES: readonly AdminRouteDescriptor[] = [
   { id: "overview", path: "/admin/overview", labelKey: "admin.tabs.dashboard", icon: "overview", keywords: ["dashboard", "운영 홈", "overview"] },
-  { id: "traffic", path: "/admin/analytics/traffic", labelKey: "admin.tabs.traffic", icon: "activity", keywords: ["analytics", "traffic", "트래픽"] },
+  { id: "traffic", path: "/admin/analytics/traffic", labelKey: "admin.tabs.traffic", icon: "activity", keywords: ["analytics", "traffic", "트래픽", "web vitals", "웹 바이탈", "성능", "LCP", "INP", "CLS"] },
   { id: "members", path: "/admin/users/members", labelKey: "admin.splitRoutes.members", icon: "members", keywords: ["member", "user", "회원"] },
   { id: "reports", path: "/admin/trust/cases", labelKey: "admin.tabs.reports", icon: "reports", keywords: ["report", "case", "신고", "심의"] },
   { id: "community", path: "/admin/trust/community", labelKey: "admin.splitRoutes.community", icon: "community", keywords: ["community", "moderation", "커뮤니티"] },
@@ -144,6 +144,9 @@ export function resolveAdminRedirectHref(
   }
   if (normalized === "/admin/integrations") {
     return appendLocation(ADMIN_ROUTE_BY_ID.ops.path, search, hash || "#integrations");
+  }
+  if (normalized === "/admin/web-vitals" || normalized === "/admin/analytics/web-vitals") {
+    return appendLocation(ADMIN_ROUTE_BY_ID.traffic.path, search, hash || "#web-vitals");
   }
 
   const modernRoute = resolveAdminRoute(normalized);

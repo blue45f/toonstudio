@@ -60,6 +60,7 @@ export const marketRoutes = defineAppRoutes([
   { id: "market-home", path: "/market", element: <PageIntro variant="market"><MarketHomePage /></PageIntro> },
   { id: "market-browse", path: "/market/browse", element: <PageIntro variant="market">{withRouteBreadcrumb(resolveBreadcrumbTrail("/market/browse"), <MarketBrowsePage />)}</PageIntro> },
   { id: "market-fit", path: "/market/fit", element: <PageIntro variant="market"><MarketFitLabPage /></PageIntro> },
+  { id: "market-fit-lab", path: "/market/fit-lab", element: <PageIntro variant="market"><MarketFitLabPage /></PageIntro> },
   // 판매자 센터 등록 탭 (단계형 마법사) 딥링크 — 정본은 market-seller.
   { id: "market-publish", path: "/market/publish", element: <PageIntro variant="market"><MarketPublishAuthorityPage /></PageIntro> },
   // 판매자 센터 패키지 관리 탭 딥링크 — 정본은 market-seller.

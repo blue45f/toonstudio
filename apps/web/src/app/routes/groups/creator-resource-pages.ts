@@ -175,6 +175,10 @@ export const StoryLabPage = lazyRetry(
   () => import("@/domains/creator-resources/StoryLabPage").then((module) => ({ default: module.StoryLabPage })),
   "StoryLabPage",
 );
+export const PublishingPage = lazyRetry(
+  () => import("@/domains/creator-resources/PublishingPage").then((module) => ({ default: module.PublishingPage })),
+  "PublishingPage",
+);
 export const OpenCreationPage = lazyRetry(
   () => import("@/domains/creator-resources/OpenCreationPage").then((module) => ({ default: module.OpenCreationPage })),
   "OpenCreationPage",

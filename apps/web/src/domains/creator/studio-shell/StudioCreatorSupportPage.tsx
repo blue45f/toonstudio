@@ -83,6 +83,9 @@ export function StudioCreatorSupportPage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <button type="button" onClick={speakIntro} className={buttonClass({ variant: "outline", className: "gap-2" })}><Volume2 size={16} /> {bt("음성으로 안내 듣기", "Listen to overview")}</button>
                 <a href="#product-tour" className={buttonClass({ variant: "quiet", className: "gap-2" })}><PlayCircle size={16} /> {bt("영상 가이드", "Video guide")}</a>
+                <Link to="/creator-support" className={buttonClass({ variant: "outline", className: "gap-2" })}>{bt("신인·학생 창작자 지원 안내", "New & student creator support")}</Link>
+                <Link to="/studio/growth-ip" className={buttonClass({ variant: "outline", className: "gap-2" })}>{bt("작가 성장·IP 확장 작업대", "Growth & IP workbench")}</Link>
+                <Link to="/help" className={buttonClass({ variant: "quiet", className: "gap-2" })}>{bt("도움말 센터", "Help center")}</Link>
               </div>
             </div>
             <div className="flex flex-col gap-4">

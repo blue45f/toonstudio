@@ -30,6 +30,7 @@ import {
 } from "../models/membership-store";
 import { MembershipTierEditor } from "../components/MembershipTierEditor";
 import { MembershipTierCard } from "../components/MembershipTierCard";
+import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
 
 const REVENUE_CTA = defineBilingualText(
   "creatorMembershipPage",
@@ -75,25 +76,29 @@ export function CreatorMembershipPage() {
 
   if (!authenticated) {
     return (
-      <Container className="py-16 text-center">
-        <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
-        <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.creatorPage.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
-          {t("membership.creatorPage.loginRequired")}
-        </p>
-        <button
-          type="button"
-          onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-membership", mode: "login" })}
-          className={cn(buttonClass({ variant: "solid" }), "mt-4")}
-        >
-          {t("membership.creatorPage.login")}
-        </button>
+      <Container className="py-10">
+        <CreatorMonetizationNav current="/creator/membership" />
+        <div className="py-8 text-center">
+          <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
+          <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.creatorPage.title")}</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
+            {t("membership.creatorPage.loginRequired")}
+          </p>
+          <button
+            type="button"
+            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-membership", mode: "login" })}
+            className={cn(buttonClass({ variant: "solid" }), "mt-4")}
+          >
+            {t("membership.creatorPage.login")}
+          </button>
+        </div>
       </Container>
     );
   }
 
   return (
     <Container className="py-8">
+      <CreatorMonetizationNav current="/creator/membership" />
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">

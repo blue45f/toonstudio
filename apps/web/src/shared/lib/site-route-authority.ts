@@ -102,6 +102,7 @@ const route = ({
  * 목적지와 같은 문맥을 쓴다. legacy.routes.test.ts가 두 표의 목적지 일치를 검증한다.
  */
 export const SITE_ROUTE_ALIASES = {
+  "/asset-points": "/account/points",
   "/brush-lab": "/studio/assets/brushes/new",
   "/canvas": "/studio/canvas",
   "/challenges": "/showcase/challenges",
@@ -109,12 +110,15 @@ export const SITE_ROUTE_ALIASES = {
   "/create/promo": "/showcase/promo",
   "/creator-hub": "/studio",
   "/creator-hub/references": "/research/assets",
+  "/creator-support": "/support-creators",
   "/make": "/create",
+  "/market/fit-lab": "/market/fit",
   "/more": "/sitemap",
   "/music": "/studio/assets/audio",
   "/new": "/create",
   "/principles": "/about/principles",
   "/publishing": "/studio/publish",
+  "/research/story": "/story-lab",
   "/shaper": "/studio/assets/characters/new",
   "/story": "/story-lab",
   "/studio/brush-lab": "/studio/assets/brushes/new",

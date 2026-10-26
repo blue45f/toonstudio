@@ -14,7 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   assessGrowthExperiment,
@@ -141,13 +141,19 @@ function ProjectGrowthDashboard({ experiments }: { readonly experiments: readonl
             구독 합계 · 상세 열기 대비 {percent(subscribeRate)}
           </dd>
         </div>
-        <div className="rounded-2xl border border-dashed border-line bg-panel p-4">
+        <div className="rounded-2xl border border-line bg-panel p-4">
           <dt className="flex items-center gap-1.5 text-xs font-bold text-fg-2">
-            <Wallet size={14} className="text-fg-3" aria-hidden="true" /> 수익
+            <Wallet size={14} className="text-accent" aria-hidden="true" /> 수익·멤버십
           </dt>
-          <dd className="numeral mt-2 text-2xl text-fg-3">연동 예정</dd>
-          <dd className="mt-1 text-[0.68rem] leading-5 text-fg-3">
-            수익 원천을 연결하면 이 자리에서 합계를 보여줍니다
+          <dd className="mt-2">
+            <Link to="/creator/revenue" className="inline-flex items-center gap-1 text-base font-black text-accent hover:underline">
+              수익 대시보드 열기 →
+            </Link>
+          </dd>
+          <dd className="mt-1.5 flex flex-wrap gap-2 text-[0.68rem] leading-5 text-fg-3">
+            <Link to="/creator/membership" className="font-semibold text-fg-2 hover:text-accent hover:underline">멤버십 티어 설정</Link>
+            <span aria-hidden="true">·</span>
+            <Link to="/creator/early-access" className="font-semibold text-fg-2 hover:text-accent hover:underline">유료 미리보기</Link>
           </dd>
         </div>
       </dl>
@@ -296,6 +302,14 @@ export function CreatorGrowthLabPage() {
                 <ShieldCheck size={15} className="text-good" aria-hidden="true" /> 집계 데이터만 표시
               </div>
             </div>
+            <nav aria-label="창작자 성장·수익 바로가기" className="mt-4 flex flex-wrap gap-2">
+              <Link to="/studio/analytics" className={buttonClass({ variant: "outline", size: "sm" })}>창작자 애널리틱스</Link>
+              <Link to="/creator/revenue" className={buttonClass({ variant: "outline", size: "sm" })}>수익·정산 대시보드</Link>
+              <Link to="/creator/membership" className={buttonClass({ variant: "outline", size: "sm" })}>멤버십 설정</Link>
+              <Link to="/creator/early-access" className={buttonClass({ variant: "outline", size: "sm" })}>유료 미리보기</Link>
+              <Link to="/showcase/promo" className={buttonClass({ variant: "outline", size: "sm" })}>홍보 영상 만들기</Link>
+              <Link to="/studio/growth-ip" className={buttonClass({ variant: "outline", size: "sm" })}>작가 성장·IP 확장</Link>
+            </nav>
           </div>
           <div className="hidden w-60 shrink-0 self-center lg:block xl:w-72" aria-hidden="true">
             <SectionArt image="explore" className="aspect-[16/10] w-full rounded-2xl border border-line object-cover" />

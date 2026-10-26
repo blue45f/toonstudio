@@ -48,6 +48,7 @@ import {
   TrafficSourceList,
   TrafficTopPages,
 } from "./AdminTrafficBreakdowns";
+import { WebVitalsDashboardPage } from "../traffic/WebVitalsDashboardPage";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -540,6 +541,13 @@ export function AdminTraffic({ uid }: { uid: string }) {
               <Download className="size-3.5" />
               {t("admin.traffic.export")}
             </button>
+            <a
+              href="#web-vitals"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-medium text-fg-2 hover:border-accent/50 hover:text-fg"
+            >
+              <Activity className="size-3.5 text-accent" />
+              {t("admin.webVitals.title", "웹 바이탈 실사용 성능")}
+            </a>
           </div>
         </div>
         {statusStale ? (
@@ -665,6 +673,14 @@ export function AdminTraffic({ uid }: { uid: string }) {
           </div>
         </>
       )}
+
+      <section
+        id="web-vitals"
+        aria-label={t("admin.webVitals.title", "웹 바이탈 실사용 성능")}
+        className="rounded-2xl border border-line bg-card p-4 sm:p-5"
+      >
+        <WebVitalsDashboardPage />
+      </section>
 
       <aside className="flex items-start gap-2 rounded-2xl border border-line bg-card px-4 py-3 text-xs leading-relaxed text-fg-3">
         <Wifi className="mt-0.5 size-4 shrink-0 text-accent" />

@@ -31,19 +31,38 @@ export function MyNewslettersPage() {
 
   return (
     <Container size="wide" className="py-10">
-      <header className="mb-8">
-        <p className="eyebrow flex items-center gap-1.5 text-accent">
-          <Mail size={13} /> {t("뉴스레터", "NEWSLETTER")}
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          {t("내 뉴스레터 구독", "My newsletter subscriptions")}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-fg-2">
-          {t(
-            "구독한 작가의 새 화 소식을 이메일로 받아 봅니다. 기본은 주 1회 묶음 발송이라 메일함이 붐비지 않아요.",
-            "Get new-episode news from authors you subscribe to by email. The default is a weekly digest, so your inbox stays calm.",
-          )}
-        </p>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow flex items-center gap-1.5 text-accent">
+            <Mail size={13} /> {t("뉴스레터", "NEWSLETTER")}
+          </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+            {t("내 뉴스레터 구독", "My newsletter subscriptions")}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-fg-2">
+            {t(
+              "구독한 작가의 새 화 소식을 이메일로 받아 봅니다. 기본은 주 1회 묶음 발송이라 메일함이 붐비지 않아요.",
+              "Get new-episode news from authors you subscribe to by email. The default is a weekly digest, so your inbox stays calm.",
+            )}
+          </p>
+        </div>
+        <nav aria-label={t("뉴스레터 메뉴", "Newsletter navigation")} className="flex flex-wrap gap-2">
+          <Link
+            href="/newsletter"
+            aria-current="page"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-sm font-semibold text-white"
+          >
+            <Mail size={15} aria-hidden />
+            {t("내 구독 관리", "My subscriptions")}
+          </Link>
+          <Link
+            href="/newsletter/compose"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+          >
+            <PenLine size={15} aria-hidden />
+            {t("작가용 뉴스레터 발송", "Author compose")}
+          </Link>
+        </nav>
       </header>
 
       <img

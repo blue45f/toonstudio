@@ -119,6 +119,9 @@ const EXPLORE_FILMS = [
  */
 const MORE_LINKS = [
   { href: "/features", icon: LayoutGrid, ko: "전체 기능 한눈에", en: "All features at a glance" },
+  { href: "/promo-library", icon: CirclePlay, ko: "홍보 영상 자료실 (204편)", en: "Promo video library (204 clips)" },
+  { href: "/showcase/promo", icon: Play, ko: "작품 홍보 영상 만들기", en: "Make a promo for my work" },
+  { href: "/about/technology/videos", icon: Presentation, ko: "기술 영상 제작 구조", en: "Engineering video system" },
   { href: "/about/technology/architecture", icon: Network, ko: "기술 아키텍처 해설", en: "Architecture guide" },
   { href: "/about/technology/story", icon: Cpu, ko: "기술 제작 스토리", en: "Engineering story" },
   { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 모드", en: "Engineering presentation mode" },

@@ -1,5 +1,7 @@
 import { defineAppRoutes } from "../app-route-definition";
 
+import { withRouteBreadcrumb } from "@/app/components/breadcrumb";
+import { resolveBreadcrumbTrail } from "@/app/routes/route-breadcrumb";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 const CharacterChatPage = lazyRetry(
@@ -13,5 +15,9 @@ const CharacterChatManagePage = lazyRetry(
 
 export const characterChatRoutes = defineAppRoutes([
   { id: "character-chat", path: "/character-chat", element: <CharacterChatPage /> },
-  { id: "character-chat-manage", path: "/character-chat/manage", element: <CharacterChatManagePage /> },
+  {
+    id: "character-chat-manage",
+    path: "/character-chat/manage",
+    element: withRouteBreadcrumb(resolveBreadcrumbTrail("/character-chat/manage"), <CharacterChatManagePage />),
+  },
 ]);
