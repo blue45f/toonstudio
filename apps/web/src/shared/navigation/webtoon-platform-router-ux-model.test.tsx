@@ -326,6 +326,27 @@ describe("글로벌 웹툰·창작·에셋·교육·협업 플랫폼 28종 REA �
     expect(resolveContextualSubNavForPath("/library")?.id).toBe(
       "personal-library-hub",
     );
+    expect(resolveContextualSubNavForPath("/cuts/rewards")?.id).toBe(
+      "promo-cuts-hub",
+    );
+    expect(resolveContextualSubNavForPath("/search")?.id).toBe(
+      "discover-hub",
+    );
+    expect(resolveContextualSubNavForPath("/random")?.id).toBe(
+      "discover-hub",
+    );
+    expect(resolveContextualSubNavForPath("/creators")?.id).toBe(
+      "community-hub",
+    );
+    expect(resolveContextualSubNavForPath("/my")?.id).toBe(
+      "personal-library-hub",
+    );
+    expect(resolveContextualSubNavForPath("/notifications")?.id).toBe(
+      "personal-library-hub",
+    );
+    expect(resolveContextualSubNavForPath("/studio/publish")?.id).toBe(
+      "studio-hub",
+    );
     expect(resolveContextualSubNavForPath("/settings")).toBeNull();
 
     render(

@@ -1,9 +1,9 @@
 import type { CSSProperties } from "react";
+import { useLocation } from "react-router-dom";
 
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
 import { cn } from "@/shared/lib/utils";
 import {
@@ -23,7 +23,7 @@ export function SiteContextualSubNav({
   readonly className?: string;
 } = {}) {
   useBilingualI18nRevision();
-  const currentPathname = usePathname();
+  const { pathname: currentPathname } = useLocation();
   const pathname = canonicalSitePath(pathnameOverride ?? currentPathname);
   const lang = useI18n((state) => state.lang);
   const isKo = lang.toLowerCase().startsWith("ko");

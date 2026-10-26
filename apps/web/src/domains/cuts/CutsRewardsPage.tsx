@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "@/shared/navigation/router-link";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
@@ -153,6 +154,7 @@ export function CutsRewardsPage() {
 
   return (
     <div className="cuts-rewards">
+      <SiteContextualSubNav pathnameOverride="/cuts/rewards" className="mb-4" />
       <nav className="flex flex-wrap items-center gap-2" aria-label={t("컷츠 및 정산 이동", "Cuts and settlement navigation")}>
         <Link href="/cuts" className="cuts-button cuts-button--ghost">
           <ArrowLeft size={16} aria-hidden="true" /> {t("피드로 돌아가기", "Back to feed")}

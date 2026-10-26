@@ -29,6 +29,14 @@
   - [`apps/web/src/domains/marketing/ProductTourPage.tsx`](../../apps/web/src/domains/marketing/ProductTourPage.tsx)
   - [`apps/web/src/domains/cuts/CutsFeedPage.tsx`](../../apps/web/src/domains/cuts/CutsFeedPage.tsx)
   - [`apps/web/src/domains/cuts/CutsStudioPage.tsx`](../../apps/web/src/domains/cuts/CutsStudioPage.tsx)
+  - [`apps/web/src/domains/cuts/CutsRewardsPage.tsx`](../../apps/web/src/domains/cuts/CutsRewardsPage.tsx)
+  - [`apps/web/src/domains/catalog/SearchPage.tsx`](../../apps/web/src/domains/catalog/SearchPage.tsx)
+  - [`apps/web/src/domains/catalog/RandomPage.tsx`](../../apps/web/src/domains/catalog/RandomPage.tsx)
+  - [`apps/web/src/domains/account/CreatorDirectoryPage.tsx`](../../apps/web/src/domains/account/CreatorDirectoryPage.tsx)
+  - [`apps/web/src/domains/account/MySpaceHubPage.tsx`](../../apps/web/src/domains/account/MySpaceHubPage.tsx)
+  - [`apps/web/src/domains/engagement/NotificationCenterPage.tsx`](../../apps/web/src/domains/engagement/NotificationCenterPage.tsx)
+  - [`apps/web/src/domains/creator/CharacterShaperLandingPage.tsx`](../../apps/web/src/domains/creator/CharacterShaperLandingPage.tsx)
+  - [`apps/web/src/domains/integrations/PublishCenterPage.tsx`](../../apps/web/src/domains/integrations/PublishCenterPage.tsx)
   - [`apps/web/src/domains/legal/SitemapPage.tsx`](../../apps/web/src/domains/legal/SitemapPage.tsx)
   - [`apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx`](../../apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx)
   - [`apps/character-lab/src/app/shell/ui-state.ts`](../../apps/character-lab/src/app/shell/ui-state.ts)
@@ -125,4 +133,4 @@
   - `CreateStartPage.tsx` (`/create`) 및 `StoryLabPage.tsx` (`/story-lab`): `SiteContextualSubNav`와 `STORY_TO_WEBTOON_PIPELINE_MODES` (원작 세계관·플롯 → 웹소설 대본 변환 → 세로 스크롤 콘티·3D 블로킹 → 펜선·채색 마감 및 컷츠 동시 발행) 탑재.
   - `LearningHome.tsx` (`/learn`): `LEARN_CURRICULUM_ROADMAP_TRACKS` (스토리·노블코믹스 각색, 드로잉·선화·채색 마스터, 3D 캐릭터·배경 연출, 연재 데뷔·숏폼 홍보·정산 4대 스킬트리 로드맵 및 실습 에디터 즉시 연결) 탑재.
   - `ShowcasePage.tsx` (`/showcase`), `CollaborationBoardPage.tsx` (`/collaborate`), `ReviewsPage.tsx` (`/reviews`): `SiteContextualSubNav` 및 `SHOWCASE_COLLABORATION_TRACKS` (아트워크 쇼케이스 ↔ 공정별 어시·팀원 매칭 ↔ 신작 공모전·노블코믹스 피칭) 탑재.
-  - `RecommendPage.tsx` (`/recommend`), `ComparePage.tsx` (`/compare`), `CutsFeedPage.tsx` (`/cuts`), `BrandFilmPage.tsx` (`/brand-film`), `ProductTourPage.tsx` (`/product-tour`), `MarketBrowsePage.tsx` (`/market/browse`): 6대 허브의 모든 하위 탭 페이지에 `SiteContextualSubNav`를 완비하여 어느 탭을 클릭해도 맥락형 2단 서브 내비게이션이 끊기지 않도록 일원화.
+  - `RecommendPage.tsx` (`/recommend`), `ComparePage.tsx` (`/compare`), `SearchPage.tsx` (`/search`), `RandomPage.tsx` (`/random`), `CutsFeedPage.tsx` (`/cuts`), `CutsRewardsPage.tsx` (`/cuts/rewards`), `BrandFilmPage.tsx` (`/brand-film`), `ProductTourPage.tsx` (`/product-tour`), `CreatorDirectoryPage.tsx` (`/creators`), `MySpaceHubPage.tsx` (`/my`), `NotificationCenterPage.tsx` (`/notifications`), `CharacterShaperLandingPage.tsx` (`/studio/assets/characters/new`), `PublishCenterPage.tsx` (`/publish`, `/studio/publish`), `MarketBrowsePage.tsx` (`/market/browse`): 6대 허브의 모든 주요 및 보조 하위 경로(총 32개 핵심 서피스)에 `SiteContextualSubNav`를 완비하여 어느 탭을 클릭해도 맥락형 2단 서브 내비게이션이 끊기지 않도록 일원화.
