@@ -74,6 +74,12 @@ const STUDIO_VARCO3D_AXIS_GIZMO_DIRS: readonly { readonly axis: StudioVarco3dAxi
 ];
 const STUDIO_VARCO3D_MAP_CHANNELS = Object.values(STUDIO_VARCO3D_MAP_CHANNEL_RECORD);
 const STUDIO_VARCO3D_ENVIRONMENT_PRESETS = Object.values(STUDIO_VARCO3D_ENVIRONMENTS);
+const HDRI_SPHERE_GRADIENTS: readonly string[] = [
+  "bg-gradient-to-br from-[#F5F0E7] via-[#D4B68D] to-[#6A4B3C]",
+  "bg-gradient-to-br from-[#76A9D5] via-[#D98B5F] to-[#31586C]",
+  "bg-gradient-to-br from-[#F2F5F6] via-[#6F7A82] to-[#12181F]",
+  "bg-gradient-to-br from-[#E8F3FC] via-[#7FAEDC] to-[#3A6D9E]",
+];
 function buildVarco3dLightingDialTicks(count = 24) {
   return Array.from({ length: count }, (_, index) => ({
     index,
@@ -204,7 +210,7 @@ export function StudioVarco3dViewportHud({
     <section
       aria-label="VARCO 3D 뷰포트 인스펙터 HUD"
       className={cn(
-        "flex flex-col gap-2 rounded-2xl border border-line bg-panel/90 p-2.5 text-fg shadow-sm backdrop-blur-md",
+        "flex flex-col gap-2 rounded-2xl border border-line/80 bg-panel/90 p-2.5 text-fg shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.28),0px_14px_28px_-6px_rgba(0,0,0,0.24)] backdrop-blur-[15px]",
         className,
       )}
     >
@@ -649,14 +655,17 @@ export function StudioVarco3dViewportHud({
             </button>
           </div>
 
-          {/* 4종 HDRI 환경 프리셋 선택기 */}
+          {/* 4종 HDRI 환경 프리셋 선택기 (REA 복원 3D Lit Sphere Swatch 적용) */}
           <div
             role="group"
             aria-label="HDRI 환경 프리셋"
             className="grid grid-cols-2 gap-1.5 sm:grid-cols-4"
           >
-            {STUDIO_VARCO3D_ENVIRONMENT_PRESETS.map((preset) => {
+            {STUDIO_VARCO3D_ENVIRONMENT_PRESETS.map((preset, index) => {
               const active = state.environmentId === preset.id;
+              const sphereGradient =
+                HDRI_SPHERE_GRADIENTS[index % HDRI_SPHERE_GRADIENTS.length] ??
+                HDRI_SPHERE_GRADIENTS[0];
               return (
                 <button
                   key={preset.id}
@@ -668,14 +677,26 @@ export function StudioVarco3dViewportHud({
                     )
                   }
                   className={cn(
-                    "flex items-center justify-between rounded-lg border px-2 py-1.5 text-left text-[0.66rem] font-semibold transition-colors",
+                    "flex items-center justify-between gap-1.5 rounded-lg border px-2 py-1.5 text-left text-[0.66rem] font-semibold transition-all duration-200 ease-out",
                     active
-                      ? "border-accent bg-accent-soft/40 text-fg"
+                      ? "border-accent bg-accent-soft/40 text-fg shadow-[0px_3.75px_7.5px_-1.25px_rgba(0,0,0,0.18)]"
                       : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
                   )}
                 >
-                  <span className="truncate">{preset.labelKo}</span>
-                  <span className="text-[0.6rem] text-fg-3">{preset.defaultIntensity}x</span>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      data-testid={`varco3d-hdri-sphere-swatch-${preset.id}`}
+                      className={cn(
+                        "size-3.5 shrink-0 rounded-full shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.35),inset_2px_2px_3px_rgba(255,255,255,0.3)]",
+                        sphereGradient,
+                      )}
+                    />
+                    <span className="truncate">{preset.labelKo}</span>
+                  </span>
+                  <span className="shrink-0 rounded bg-[rgba(84,231,250,0.1)] px-1 py-0.5 font-mono text-[0.58rem] text-[#54e7fa]">
+                    {preset.defaultIntensity}x
+                  </span>
                 </button>
               );
             })}

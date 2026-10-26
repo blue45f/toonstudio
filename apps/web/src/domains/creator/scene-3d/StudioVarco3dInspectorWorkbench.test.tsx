@@ -161,6 +161,11 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(screen.getByTestId("varco3d-motion-family-readout").textContent).toContain("quadruped");
 
     // Character Labs modular coordinator, 4-view turnaround sheet, and 3D background diorama
+    expect(screen.getByTestId("varco3d-hdri-sphere-swatch-lebombo")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-hdri-sphere-swatch-venice_sunset")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-hdri-sphere-swatch-studio_small")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-hdri-sphere-swatch-daylight")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-turnaround-2x2-minigrid")).toBeTruthy();
     expect(screen.getByTestId("varco3d-charlab-loadout-readout").textContent).toContain("100%");
     expect(screen.getByTestId("varco3d-turnaround-view-url").textContent).toContain(
       "https://3d.varco.ai/api/objects/741a9a3f7fdef6f86c574d3f000b8d20.png",

@@ -228,13 +228,23 @@ export function StudioVarco3dCatalogExecutionPanel({
         name={accordionGroupName}
         data-testid="varco3d-details-character-lab-diorama"
         style={DEFERRED_CATALOG_CONTAINER_STYLE}
-        className="rounded-lg border border-line/60 bg-card px-3 py-2"
+        className="rounded-xl border border-line/60 bg-card/90 px-3 py-2 shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.28)]"
       >
-        <summary className="cursor-pointer font-semibold text-fg">
-          VARCO 3D Character Labs 모듈러 파츠 ({STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.length}
-          종 · 4-View 턴어라운드 {STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS.length}시트) & 3D 배경
-          아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종) · 한국 웹툰 소품
-          ({STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.length}종)
+        <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 font-semibold text-fg">
+          <span>
+            VARCO 3D Character Labs 모듈러 파츠 ({STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS.length}
+            종 · 4-View 턴어라운드 {STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS.length}시트) & 3D 배경
+            아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종) · 한국 웹툰 소품
+            ({STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.length}종)
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded-full bg-[#163D2F] px-2 py-0.5 text-[10px] font-semibold text-[#41D18D]">
+              66 AI-RIGGED
+            </span>
+            <span className="rounded-[4px] bg-[rgba(84,231,250,0.1)] px-[6px] py-[3px] text-[9px] font-semibold leading-none text-[#54e7fa]">
+              4-VIEW · 40 SHEETS
+            </span>
+          </span>
         </summary>
         <div className="mt-2 grid grid-cols-1 gap-2.5 text-[0.72rem] text-fg-2 md:grid-cols-3">
           <div className="flex flex-col gap-1">
@@ -344,7 +354,7 @@ export function StudioVarco3dCatalogExecutionPanel({
                     motionLabelKo: archetypeMannequinApp.motionTask?.labelKo,
                   })
                 }
-                className="mt-1 rounded border border-accent bg-accent/15 px-2 py-1 text-[0.68rem] font-semibold text-fg hover:bg-accent/25"
+                className="mt-1 rounded-md border border-[#338FFF]/70 bg-gradient-to-l from-[#1f83ff] via-[#47c5ff] to-[#33ccff] px-2.5 py-1 text-[0.68rem] font-semibold text-white shadow-[0px_3.75px_7.5px_-1.25px_rgba(0,0,0,0.18),0px_3.75px_7.5px_0px_rgba(0,0,0,0.16)] transition-opacity hover:opacity-95"
               >
                 데생 인형 포저에 선택 아키타입({archetypeMannequinApp.archetype.headTallRatio}등신)·모션(
                 {archetypeMannequinApp.posePresetId}) 즉시 적용
@@ -357,31 +367,51 @@ export function StudioVarco3dCatalogExecutionPanel({
               실시간 4-View 직교 턴어라운드 시트 (FOUR_VIEW_GENERATION) & 무기 파츠 (
               {weaponOptions.length}종)
             </span>
-            <div className="flex flex-wrap gap-1">
-              {TURNAROUND_ANGLES.map((angle) => (
-                <button
-                  key={angle}
-                  type="button"
-                  data-testid={`varco3d-turnaround-angle-${angle}`}
-                  aria-pressed={selectedTurnaroundAngle === angle}
-                  onClick={() => setSelectedTurnaroundAngle(angle)}
-                  className={`rounded border px-2 py-0.5 text-[0.66rem] uppercase ${
-                    selectedTurnaroundAngle === angle
-                      ? "border-accent bg-accent-soft font-semibold text-fg"
-                      : "border-line bg-panel text-fg-2"
-                  }`}
-                >
-                  {angle}
-                </button>
-              ))}
-              <button
-                type="button"
-                data-testid="varco3d-charlab-weapon-murim"
-                onClick={() => setSelectedWeaponId("charlab_weapon_murim_jade_sword")}
-                className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.65rem] text-fg-2"
+            <div className="flex items-center gap-2">
+              <div
+                aria-hidden="true"
+                data-testid="varco3d-turnaround-2x2-minigrid"
+                className="grid h-[42px] w-[42px] shrink-0 grid-cols-2 grid-rows-2 gap-[1px] overflow-hidden rounded-[4px] border border-[#303030] bg-[#19191B]"
               >
-                무림 장검 장착
-              </button>
+                {TURNAROUND_ANGLES.map((ang) => (
+                  <span
+                    key={ang}
+                    className={`flex items-center justify-center text-[8px] font-bold uppercase ${
+                      selectedTurnaroundAngle === ang
+                        ? "bg-[#338FFF]/35 text-[#54e7fa]"
+                        : "bg-[#222226] text-fg-3"
+                    }`}
+                  >
+                    {ang[0]}
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {TURNAROUND_ANGLES.map((angle) => (
+                  <button
+                    key={angle}
+                    type="button"
+                    data-testid={`varco3d-turnaround-angle-${angle}`}
+                    aria-pressed={selectedTurnaroundAngle === angle}
+                    onClick={() => setSelectedTurnaroundAngle(angle)}
+                    className={`rounded border px-2 py-0.5 text-[0.66rem] uppercase ${
+                      selectedTurnaroundAngle === angle
+                        ? "border-[#338FFF] bg-gradient-to-l from-[#1f83ff] via-[#47c5ff] to-[#33ccff] font-semibold text-white"
+                        : "border-line bg-panel text-fg-2"
+                    }`}
+                  >
+                    {angle}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  data-testid="varco3d-charlab-weapon-murim"
+                  onClick={() => setSelectedWeaponId("charlab_weapon_murim_jade_sword")}
+                  className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.65rem] text-fg-2"
+                >
+                  무림 장검 장착
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-1" role="group" aria-label="무기 파츠 선택">
               {weaponOptions.map((weapon) => (
@@ -478,13 +508,23 @@ export function StudioVarco3dCatalogExecutionPanel({
         name={accordionGroupName}
         data-testid="varco3d-details-vibe-pipeline-canonical"
         style={DEFERRED_CATALOG_CONTAINER_STYLE}
-        className="rounded-lg border border-line/60 bg-card px-3 py-2"
+        className="rounded-xl border border-line/60 bg-card/90 px-3 py-2 shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.28)]"
       >
-        <summary className="cursor-pointer font-semibold text-fg">
-          CharacterCanonicalPart 브리지 & 12-View PBR 재구성 링 (mvImages/mvAlbedo/mvOrm) &{" "}
-          {STUDIO_VARCO3D_ANIMATION_LIBRARY_SUMMARY.totalClips}-모션 리타겟팅 (mixamo52) & 0pt 최적화 (
-          {STUDIO_VARCO3D_ZERO_POINT_OPTIMIZATION_TASKS.length}종) &{" "}
-          {STUDIO_VARCO3D_POINT_POLICIES.length}종 포인트/큐 정책
+        <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 font-semibold text-fg">
+          <span>
+            CharacterCanonicalPart 브리지 & 12-View PBR 재구성 링 (mvImages/mvAlbedo/mvOrm) &{" "}
+            {STUDIO_VARCO3D_ANIMATION_LIBRARY_SUMMARY.totalClips}-모션 리타겟팅 (mixamo52) & 0pt 최적화 (
+            {STUDIO_VARCO3D_ZERO_POINT_OPTIMIZATION_TASKS.length}종) &{" "}
+            {STUDIO_VARCO3D_POINT_POLICIES.length}종 포인트/큐 정책
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded-[4px] bg-[rgba(84,231,250,0.1)] px-[6px] py-[3px] text-[9px] font-semibold leading-none text-[#54e7fa]">
+              0pt FREE · 11 TASKS
+            </span>
+            <span className="rounded-full bg-[#163D2F] px-2 py-0.5 text-[10px] font-semibold text-[#41D18D]">
+              12-VIEW PBR
+            </span>
+          </span>
         </summary>
         <div className="mt-2 grid grid-cols-1 gap-2.5 text-[0.72rem] text-fg-2 md:grid-cols-3">
           <div className="flex flex-col gap-1">

@@ -460,10 +460,17 @@ export function StudioBg3dWebtoonBackgroundPicker({
 
             <div
               data-testid="bg3d-varco3d-diorama-catalog-section"
-              className="mt-2 space-y-1.5 border-t border-line/60 pt-2"
+              className="mt-2 space-y-1.5 rounded-lg border border-line/60 bg-card/90 p-2 shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.22)] backdrop-blur-[15px]"
             >
               <label className="block text-[0.6rem] font-semibold text-fg-3">
-                VARCO 3D 아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종)
+                <span className="flex items-center justify-between gap-1.5">
+                  <span>
+                    VARCO 3D 아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종)
+                  </span>
+                  <span className="rounded-[4px] bg-[rgba(84,231,250,0.1)] px-[5px] py-[2px] text-[9px] font-semibold leading-none text-[#54e7fa]">
+                    FOV {selectedDioramaPlan.diorama.cameraFovDeg}° · {selectedDioramaPlan.diorama.ambientKelvin}K
+                  </span>
+                </span>
                 <select
                   aria-label="VARCO 3D 아이소메트릭 디오라마 선택"
                   data-testid="bg3d-varco3d-diorama-select"
@@ -481,7 +488,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
                       setMoodId(mapped.moodId);
                     }
                   }}
-                  className="mt-0.5 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
+                  className="mt-1 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
                 >
                   {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.map((scene) => (
                     <option key={scene.id} value={scene.id}>
@@ -506,9 +513,9 @@ export function StudioBg3dWebtoonBackgroundPicker({
                       aria-pressed={active}
                       data-testid={`bg3d-varco3d-prop-${prop.id}`}
                       onClick={() => toggleVarcoProp(prop.id)}
-                      className={`rounded border px-1.5 py-0.5 text-[0.58rem] ${
+                      className={`rounded border px-1.5 py-0.5 text-[0.58rem] transition-colors ${
                         active
-                          ? "border-accent bg-accent-soft font-semibold text-fg"
+                          ? "border-[#338FFF] bg-[#338FFF]/20 font-semibold text-fg"
                           : "border-line bg-card text-fg-3"
                       }`}
                     >
@@ -527,7 +534,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
                   disabled={disabled}
                   data-testid="bg3d-varco3d-diorama-build-btn"
                   onClick={buildVarcoDioramaAndProps}
-                  className="shrink-0 rounded border border-accent bg-accent/15 px-2.5 py-1 text-[0.6rem] font-bold text-fg hover:bg-accent/25 disabled:opacity-45"
+                  className="shrink-0 rounded-md border border-[#338FFF]/70 bg-gradient-to-l from-[#1f83ff] via-[#47c5ff] to-[#33ccff] px-2.5 py-1 text-[0.6rem] font-bold text-white shadow-[0px_3.75px_7.5px_-1.25px_rgba(0,0,0,0.18)] transition-opacity hover:opacity-95 disabled:opacity-45"
                 >
                   선택 VARCO 디오라마·소품 장면에 배치
                 </button>

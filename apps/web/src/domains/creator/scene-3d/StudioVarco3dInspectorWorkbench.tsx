@@ -410,14 +410,14 @@ export function StudioVarco3dInspectorWorkbench({
       aria-label="VARCO 3D 스튜디오 인스펙터 워크벤치"
       data-testid="studio-varco3d-inspector-workbench"
       data-active-studio-mode={workbenchMode}
-      className={`flex flex-col gap-3 rounded-2xl border border-line bg-card p-3 text-fg shadow-sm ${className}`}
+      className={`flex flex-col gap-3 rounded-2xl border border-line/80 bg-card/95 p-3.5 text-fg shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.28),0px_14px_28px_-6px_rgba(0,0,0,0.24)] backdrop-blur-[20px] ${className}`}
     >
       <StudioVarco3dViewportHud state={hudState} onChange={handleHudStateChange} />
 
       <div
         role="group"
         aria-label="VARCO 3D 스튜디오 6-모드 스위처"
-        className="flex flex-wrap items-center gap-1 rounded-xl border border-line/70 bg-panel p-1.5"
+        className="flex flex-wrap items-center gap-1 rounded-xl border border-line/70 bg-panel/90 p-1.5 backdrop-blur-[10px]"
       >
         {WORKBENCH_MODES.map((mode) => {
           const active = workbenchMode === mode.id;
@@ -428,9 +428,9 @@ export function StudioVarco3dInspectorWorkbench({
               data-testid={`varco3d-studio-mode-${mode.id}`}
               aria-pressed={active}
               onClick={() => setWorkbenchMode(mode.id)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all duration-200 ease-out ${
                 active
-                  ? "bg-accent text-canvas"
+                  ? "bg-gradient-to-l from-[#1f83ff] via-[#47c5ff] to-[#33ccff] text-white shadow-[0px_3.75px_7.5px_-1.25px_rgba(0,0,0,0.18),0px_3.75px_7.5px_0px_rgba(0,0,0,0.16)]"
                   : "bg-card text-fg-2 hover:bg-raised hover:text-fg"
               }`}
             >
@@ -514,16 +514,21 @@ export function StudioVarco3dInspectorWorkbench({
                 type="button"
                 data-testid="varco3d-apply-shaper-to-mannequin"
                 onClick={() => onApplyMannequinBodySliders(blendedShaper.mannequinBodySliders)}
-                className="mt-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-canvas transition-opacity hover:opacity-90"
+                className="mt-1 rounded-lg bg-gradient-to-l from-[#1f83ff] via-[#47c5ff] to-[#33ccff] px-3 py-1.5 text-xs font-semibold text-white shadow-[0px_3.75px_7.5px_-1.25px_rgba(0,0,0,0.18)] transition-all hover:opacity-95"
               >
                 인형 체형에 세계관 비율 즉시 적용
               </button>
             ) : null}
           </div>
 
-          <div className="flex flex-col justify-between gap-2 rounded-lg border border-line/60 bg-card p-2.5 text-[0.72rem] text-fg-2">
+          <div className="flex flex-col justify-between gap-2 rounded-lg border border-line/60 bg-card/90 p-2.5 text-[0.72rem] text-fg-2 backdrop-blur-[10px]">
             <div>
-              <div className="font-semibold text-fg">실시간 셰이퍼 & 턴테이블 메트릭</div>
+              <div className="flex items-center justify-between gap-2 font-semibold text-fg">
+                <span>실시간 셰이퍼 & 턴테이블 메트릭</span>
+                <span className="rounded bg-[rgba(84,231,250,0.1)] px-1.5 py-0.5 font-mono text-[0.62rem] font-semibold text-[#54e7fa]">
+                  25-AXIS SHAPER
+                </span>
+              </div>
               <p className="mt-1">
                 등신비: <strong>{blendedShaper.sliders.bodyProportion.headCount.toFixed(1)}등신</strong>{" "}
                 · 신장: <strong>{Math.round(blendedShaper.sliders.bodyProportion.heightCm)}cm</strong>{" "}
@@ -573,7 +578,7 @@ export function StudioVarco3dInspectorWorkbench({
               </h3>
               <span
                 data-testid="varco3d-pbr-brush-size-readout"
-                className="rounded bg-card px-1.5 py-0.5 text-[0.68rem] font-semibold text-fg"
+                className="rounded bg-[rgba(84,231,250,0.1)] px-1.5 py-0.5 font-mono text-[0.66rem] font-semibold text-[#54e7fa]"
               >
                 {pbrBrushSizePx}px ([ / ] ±1px)
               </span>
