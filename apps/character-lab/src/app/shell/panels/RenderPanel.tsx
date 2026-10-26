@@ -97,6 +97,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const [eyeballHighlightMode, setEyeballHighlightMode] = useState<EyeballHighlightMode>("cam");
   const [tripoLookId, setTripoLookId] = useState<LabShaperTripoLookId>("shaper-cel");
   const [tripoDelight, setTripoDelight] = useState(true);
+  const [disableHairInline, setDisableHairInline] = useState(true);
   useEffect(() => {
     setIblDraft(shading.ibl.intensity);
   }, [shading.ibl.intensity]);
@@ -469,15 +470,26 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
             onChange={(event) => setTripoDelight(event.target.checked)}
           />
         </div>
+        <div className="cl-render-row">
+          <label htmlFor={`${ids}-tripo-hair-inline`}>SHAPER hID*1 헤어 내부 주선 억제</label>
+          <input
+            id={`${ids}-tripo-hair-inline`}
+            data-testid="shaper-tripo-hair-inline-toggle"
+            type="checkbox"
+            checked={disableHairInline}
+            onChange={(event) => setDisableHairInline(event.target.checked)}
+          />
+        </div>
         {(() => {
           const spec = buildLabShaperTripoPipelineSpec({
             lookId: tripoLookId,
             delight: tripoDelight,
+            disableHairInline,
           });
           return (
             <>
               <p className="cl-render-hint" data-testid="shaper-tripo-pipeline-summary">
-                {spec.pipelineSummaryKo} · 포즈 접미어 {spec.poseControlSuffix}
+                {spec.pipelineSummaryKo} · 포즈 접미어 {spec.poseControlSuffix} · 반사광 {spec.rLightScaleU.toFixed(1)}×
               </p>
               <code className="cl-render-hint" data-testid="shaper-tripo-cli-preview">
                 {spec.cliPreview}

@@ -352,6 +352,8 @@ describe("CharacterShaperInspector per slot", () => {
     const call = (h.handleAvatarForgeChange as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
     expect(call.proportions.legLength).toBe(1.1);
     expect(call.proportions.presetId).toBeUndefined();
+    expect(screen.getByTestId("shaper-inspector-material-readout").textContent).toContain("외곽선 1.5×0.3");
+    expect(screen.getByTestId("shaper-tripo-vrm-preflight").textContent).toContain("vrm_validate · S");
   });
 
   it("body disables the proportion ranges while the rig is applying", () => {

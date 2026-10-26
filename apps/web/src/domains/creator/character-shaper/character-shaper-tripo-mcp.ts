@@ -336,3 +336,200 @@ export function resolveShaperPresetClickModifiers(event: {
     badgeLabel: parts.length > 0 ? parts.join(" · ") : null,
   };
 }
+
+export interface ShaperMaterialDataInput {
+  /** 음영 경계 위치 (`shadePos`, 0..1, 기본 0.5) */
+  readonly shadePos?: number;
+  /** 음영 부드러움 폭 (`shadeWidth`, 0..1, 기본 0.12) */
+  readonly shadeWidth?: number;
+  /** 반사광 경계 위치 (`rLightPos`, 0..1, 기본 0.82) */
+  readonly rLightPos?: number;
+  /** 반사광 폭 (`rLightWidth`, 0..1, 기본 0.25) */
+  readonly rLightWidth?: number;
+  /** 비등방 필압 외곽선 (`_Outline_W=1.5`, `_Outline_H=0.3`, 기본 true) */
+  readonly outlinePressure?: boolean;
+  /** 헤어 내부 주선 억제 (`hID*1` -> `simpleDisableInlineMatCapShader`, 기본 true) */
+  readonly disableHairInline?: boolean;
+}
+
+export interface ShaperMaterialDataUniforms {
+  readonly shadePos: number;
+  readonly shadeWidth: number;
+  readonly shadeScaleU: number;
+  readonly shadeOffsetU: number;
+  readonly rLightPos: number;
+  readonly rLightWidth: number;
+  readonly rLightScaleU: number;
+  readonly rLightOffsetU: number;
+  readonly outlineWidthScale: number;
+  readonly outlineHeightScale: number;
+  readonly outlineAspectRatio: number;
+  readonly hairShaderVariant: "simpleDisableInlineMatCapShader" | "simpleMatCapShader";
+  readonly mtoonShadingToonyFactor: number;
+  readonly mtoonShadingShiftFactor: number;
+  readonly mtoonParametricRimLift: number;
+  readonly summaryLabel: string;
+}
+
+function computeCubicRampPair(pos: number, width: number): { readonly scaleU: number; readonly offsetU: number } {
+  const inv = 1 - width;
+  const rawScale = 125 * inv * inv * inv;
+  const scaleU = Math.max(0.001, Math.round(rawScale * 100) / 100);
+  const offsetU = Math.round((-0.5 * (scaleU - 1) + pos * scaleU) * 100) / 100;
+  return { scaleU, offsetU };
+}
+
+/**
+ * SHAPER REA `MaterialData::ApplyShadeLine` (`0x06000236`) + `MaterialData::SetValuesFromUI` (`0x06000235`)
+ * 3차 스무스스텝 MatCap 램프($125(1-w)^3$)·반사광·비등방 필압 외곽선($1.5\times 0.3$)·`hID*1` 헤어 내선 억제 유니폼 계산.
+ */
+export function computeShaperMaterialDataUniforms(
+  input: ShaperMaterialDataInput = {},
+): ShaperMaterialDataUniforms {
+  const shadePos = clampFinite(input.shadePos, 0.5, 0, 1);
+  const shadeWidth = clampFinite(input.shadeWidth, 0.12, 0, 1);
+  const rLightPos = clampFinite(input.rLightPos, 0.82, 0, 1);
+  const rLightWidth = clampFinite(input.rLightWidth, 0.25, 0, 1);
+  const outlinePressure = input.outlinePressure ?? true;
+  const disableHairInline = input.disableHairInline ?? true;
+
+  const shade = computeCubicRampPair(shadePos, shadeWidth);
+  const rLight = computeCubicRampPair(rLightPos, rLightWidth);
+  const outlineWidthScale = outlinePressure ? 1.5 : 1.0;
+  const outlineHeightScale = outlinePressure ? 0.3 : 1.0;
+  const outlineAspectRatio = outlinePressure ? 5.0 : 1.0;
+  const hairShaderVariant = disableHairInline
+    ? "simpleDisableInlineMatCapShader"
+    : "simpleMatCapShader";
+
+  const mtoonShadingToonyFactor = Number(clampFinite(1 - 0.85 * shadeWidth, 0.9, 0.05, 0.99).toFixed(2));
+  const mtoonShadingShiftFactor = Number(clampFinite((shadePos - 0.5) * -0.6, 0, -0.5, 0.5).toFixed(2));
+  const mtoonParametricRimLift = Number(clampFinite((rLightPos - 0.5) * 0.8, 0.25, -0.5, 0.5).toFixed(2));
+
+  return {
+    shadePos,
+    shadeWidth,
+    shadeScaleU: shade.scaleU,
+    shadeOffsetU: shade.offsetU,
+    rLightPos,
+    rLightWidth,
+    rLightScaleU: rLight.scaleU,
+    rLightOffsetU: rLight.offsetU,
+    outlineWidthScale,
+    outlineHeightScale,
+    outlineAspectRatio,
+    hairShaderVariant,
+    mtoonShadingToonyFactor,
+    mtoonShadingShiftFactor,
+    mtoonParametricRimLift,
+    summaryLabel: `MatCap ${shade.scaleU.toFixed(1)}× · 반사광 ${rLight.scaleU.toFixed(1)}× · 외곽선 ${outlineWidthScale.toFixed(1)}×${outlineHeightScale.toFixed(1)} · ${disableHairInline ? "hID*1 무내선" : "헤어 내선 활성"}`,
+  };
+}
+
+export interface VrmTripoShaperPreflightInput {
+  readonly humanoidReady: boolean;
+  readonly mappedBoneCount?: number;
+  readonly hasEyeGazeBones?: boolean;
+  readonly triangleCount?: number;
+  readonly materialCount?: number;
+  readonly maxTextureDimension?: number;
+  readonly tripoDelightApplied?: boolean;
+}
+
+export interface VrmTripoShaperPreflightCheck {
+  readonly id: "humanoid" | "eye-gaze" | "triangles" | "materials" | "texture" | "delight";
+  readonly labelKo: string;
+  readonly passed: boolean;
+  readonly detailKo: string;
+}
+
+export interface VrmTripoShaperPreflightReport {
+  readonly passed: boolean;
+  readonly grade: "S" | "A" | "B" | "C";
+  readonly summaryKo: string;
+  readonly checks: readonly VrmTripoShaperPreflightCheck[];
+}
+
+export const VRM_TRIPO_SHAPER_BUDGETS = Object.freeze({
+  maxTriangles: 70_000,
+  maxMaterials: 16,
+  maxTextureDimension: 4096,
+  recommendedHumanoidBones: 53,
+});
+
+/**
+ * `vrm-toolkit` (`vrm_inspect` / `vrm_validate` VRM 1.0 예산: 70k tris · 16 mats · 4096px · 53 humanoid bones)
+ * + Tripo Texture `v3.5-20260815` (`delight=true`) + SHAPER 안구 시선(`leftEye`/`rightEye`) 호환성 프리플라이트 진단.
+ */
+export function evaluateVrmTripoShaperPreflight(
+  input: VrmTripoShaperPreflightInput,
+): VrmTripoShaperPreflightReport {
+  const mappedBoneCount = clampFinite(
+    input.mappedBoneCount,
+    input.humanoidReady ? VRM_TRIPO_SHAPER_BUDGETS.recommendedHumanoidBones : 0,
+    0,
+    256,
+  );
+  const hasEyeGazeBones = input.hasEyeGazeBones ?? input.humanoidReady;
+  const triangleCount = clampFinite(input.triangleCount, 38_400, 0, 1_000_000);
+  const materialCount = clampFinite(input.materialCount, 8, 0, 256);
+  const maxTextureDimension = clampFinite(input.maxTextureDimension, 2048, 64, 16_384);
+  const tripoDelightApplied = input.tripoDelightApplied ?? true;
+
+  const checks: readonly VrmTripoShaperPreflightCheck[] = [
+    {
+      id: "humanoid",
+      labelKo: "VRM 1.0 휴머노이드 본 매핑",
+      passed: input.humanoidReady && mappedBoneCount >= 15,
+      detailKo: `${mappedBoneCount} / ${VRM_TRIPO_SHAPER_BUDGETS.recommendedHumanoidBones} 본 (Auto-Rig v3.0 biped)`,
+    },
+    {
+      id: "eye-gaze",
+      labelKo: "SHAPER 안구 시선·하이라이트 본",
+      passed: hasEyeGazeBones,
+      detailKo: hasEyeGazeBones ? "leftEye·rightEye 활성 (F10 시선 잠금 호환)" : "안구 본 미감지 (시선 잠금 제한)",
+    },
+    {
+      id: "triangles",
+      labelKo: "삼각형 예산 (vrm_validate)",
+      passed: triangleCount <= VRM_TRIPO_SHAPER_BUDGETS.maxTriangles,
+      detailKo: `${triangleCount.toLocaleString("en-US")} / ${VRM_TRIPO_SHAPER_BUDGETS.maxTriangles.toLocaleString("en-US")} tris`,
+    },
+    {
+      id: "materials",
+      labelKo: "서브메시·머티리얼 슬롯 예산",
+      passed: materialCount <= VRM_TRIPO_SHAPER_BUDGETS.maxMaterials,
+      detailKo: `${materialCount} / ${VRM_TRIPO_SHAPER_BUDGETS.maxMaterials} mats`,
+    },
+    {
+      id: "texture",
+      labelKo: "텍스처 해상도 상한",
+      passed: maxTextureDimension <= VRM_TRIPO_SHAPER_BUDGETS.maxTextureDimension,
+      detailKo: `${maxTextureDimension}px / ${VRM_TRIPO_SHAPER_BUDGETS.maxTextureDimension}px`,
+    },
+    {
+      id: "delight",
+      labelKo: "Tripo v3.5 Delight 무음영 알베도",
+      passed: tripoDelightApplied,
+      detailKo: tripoDelightApplied ? "구워진 그림자 제거됨 (PSD 3-Layer 분리 최적)" : "원본 조명 그림자 포함",
+    },
+  ];
+
+  const passCount = checks.filter((check) => check.passed).length;
+  const passed = checks[0]!.passed && checks[2]!.passed && checks[3]!.passed && checks[4]!.passed;
+  const grade: "S" | "A" | "B" | "C" =
+    passCount === checks.length && mappedBoneCount >= 50
+      ? "S"
+      : passCount >= 5
+        ? "A"
+        : passed
+          ? "B"
+          : "C";
+
+  return {
+    passed,
+    grade,
+    summaryKo: `VRM 1.0 · Tripo V3 프리플라이트 등급 ${grade} (${passCount}/${checks.length} 통과)`,
+    checks,
+  };
+}

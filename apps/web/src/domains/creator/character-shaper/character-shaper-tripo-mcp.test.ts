@@ -5,6 +5,8 @@ import { isCharacterPsdWorkerRequest } from "./character-shaper-psd-worker-proto
 import {
   buildShaperTripoPoseControlSuffix,
   buildShaperTripoSlotGenerationPlan,
+  computeShaperMaterialDataUniforms,
+  evaluateVrmTripoShaperPreflight,
   getShaperTripoVisualProfile,
   resolveShaperPresetClickModifiers,
   SHAPER_TRIPO_VISUAL_PROFILES,
@@ -134,5 +136,60 @@ describe("character-shaper-tripo-mcp — SHAPER REA × Tripo 3D V3 MCP 리얼 �
     expect(assembled.receipt.layerNames).toContain("Hair Base");
     expect(assembled.receipt.layerNames).toContain("Hair Shadow");
     expect(assembled.receipt.layerNames).toContain("Hair Line");
+  });
+
+  it("SHAPER MaterialData::ApplyShadeLine (0x06000236) 3차 MatCap 램프·반사광·비등방 외곽선(1.5×0.3)·hID*1 헤어 내선 억제를 계산한다", () => {
+    const crisp = computeShaperMaterialDataUniforms({
+      shadePos: 0.5,
+      shadeWidth: 0,
+      rLightPos: 0.8,
+      rLightWidth: 0.2,
+      outlinePressure: true,
+      disableHairInline: true,
+    });
+    expect(crisp.shadeScaleU).toBe(125);
+    expect(crisp.shadeOffsetU).toBe(0.5);
+    expect(crisp.rLightScaleU).toBeCloseTo(64, 1);
+    expect(crisp.outlineWidthScale).toBe(1.5);
+    expect(crisp.outlineHeightScale).toBe(0.3);
+    expect(crisp.outlineAspectRatio).toBe(5);
+    expect(crisp.hairShaderVariant).toBe("simpleDisableInlineMatCapShader");
+    expect(crisp.summaryLabel).toContain("hID*1 무내선");
+
+    const soft = computeShaperMaterialDataUniforms({
+      shadePos: 0.3,
+      shadeWidth: 0.6,
+      outlinePressure: false,
+      disableHairInline: false,
+    });
+    expect(soft.shadeScaleU).toBeCloseTo(8, 1);
+    expect(soft.outlineWidthScale).toBe(1);
+    expect(soft.outlineHeightScale).toBe(1);
+    expect(soft.hairShaderVariant).toBe("simpleMatCapShader");
+    expect(soft.summaryLabel).toContain("헤어 내선 활성");
+  });
+
+  it("vrm-toolkit (vrm_validate) 예산(70k tris · 16 mats · 4096px · 53 humanoid bones)과 Tripo v3.5 Delight 프리플라이트를 진단한다", () => {
+    const sReport = evaluateVrmTripoShaperPreflight({
+      humanoidReady: true,
+      mappedBoneCount: 53,
+      hasEyeGazeBones: true,
+      triangleCount: 38_400,
+      materialCount: 8,
+      maxTextureDimension: 2048,
+      tripoDelightApplied: true,
+    });
+    expect(sReport.passed).toBe(true);
+    expect(sReport.grade).toBe("S");
+    expect(sReport.checks).toHaveLength(6);
+
+    const overBudget = evaluateVrmTripoShaperPreflight({
+      humanoidReady: false,
+      mappedBoneCount: 0,
+      triangleCount: 95_000,
+      materialCount: 22,
+    });
+    expect(overBudget.passed).toBe(false);
+    expect(overBudget.grade).toBe("C");
   });
 });
