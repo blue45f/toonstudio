@@ -17,16 +17,25 @@ import {
   evaluateBernsteinFfdLatticeMeshWarp,
   evaluateCloneStampAndConicalAirbrush,
   evaluateCompleteUnfragmentedStudioSummary,
+  evaluateExcalidrawElbowArrowAndLaserTrail,
+  evaluateFabricSprayDeduplicationAndAtrament,
   evaluateHolisticGradientTool,
   evaluateHolisticLayerCompositorAndEasel,
   evaluateHolisticPerspectiveAndFreeTransform,
+  evaluateKonvaEmbossEnhancePosterizeSuite,
+  evaluateKonvaKaleidoscopePolarMirror,
+  evaluateMandalaSymmetryAndPerspectiveRuler,
+  evaluateMonolithicTotalEngineTelemetry,
   evaluateMultiPolygonSelectAndMarquee,
+  evaluatePaperCatmullRomSmoothAndFlatten,
   evaluatePiskelOnionSkinAndSpritesheet,
   evaluateRichCanvasTypographyLayout,
   evaluateSculptGlTwistAndDynamicTopology,
   executeHolisticFloodFillAndMagicErase,
   HOLISTIC_STUDIO_TOOL_PRESETS,
   measureUniversalBrushTaxonomyEngineBenchmark,
+  MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER,
+  MONOLITHIC_TOTAL_TOOL_PRESETS,
   WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER,
 } from "../studio-universal-brush-taxonomy-engine";
 
@@ -125,7 +134,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(45);
+    expect(universalBench.reaEvidenceTargetCount).toBe(51);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -134,8 +143,10 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
+    expect(universalBench.monolithicTotalReaEvidenceCount).toBe(6);
     expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
+    expect(universalBench.monolithicTotalToolPresetCount).toBe(12);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -394,6 +405,108 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     });
     expect(summary.ffdDisplacementPx).toBeGreaterThan(0);
     expect(summary.onionSkinAlpha01).toBeCloseTo(0.35, 4);
+  });
+
+  it("Wave 30 755개 파일 총망라 일괄 REA 원장(6개 서브시스템·12개 프리셋)과 칼레이도스코프·엠보스·Paper.js 스무딩·Excalidraw 엘보우·만다라 대칭을 검증한다", () => {
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER).toHaveLength(6);
+    expect(MONOLITHIC_TOTAL_TOOL_PRESETS).toHaveLength(12);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.relevantFiles).toBe(755);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes).toBe(771934);
+
+    const kaleido = evaluateKonvaKaleidoscopePolarMirror({
+      width: 128,
+      height: 128,
+      sampleX: 100,
+      sampleY: 40,
+      power: 3,
+      angleDeg: 45,
+    });
+    expect(kaleido.clampedPower).toBe(3);
+    expect(kaleido.minSectionSize).toBe(16);
+    expect(kaleido.mirroredThetaIndex).toBeGreaterThanOrEqual(0);
+    expect(kaleido.mirroredThetaIndex).toBeLessThan(16);
+
+    const embossSuite = evaluateKonvaEmbossEnhancePosterizeSuite({
+      rgb: [140, 120, 100],
+      neighborLuminance3x3: [20, 40, 60, 50, 120, 190, 90, 180, 240],
+      channelMinRgb: [20, 20, 20],
+      channelMaxRgb: [220, 220, 220],
+      embossStrength01: 0.8,
+      embossWhiteLevel01: 0.5,
+      embossDirection: "top-left",
+      embossBlend: true,
+      enhanceAmount: 0.5,
+      posterizeLevels: 4,
+      threshold01: 0.5,
+    });
+    expect(embossSuite.directionalSobelResponse).not.toBe(0);
+    expect(embossSuite.enhancedRgb[0]).toBeGreaterThan(140);
+    expect([0, 255]).toContain(embossSuite.thresholdBit);
+
+    const paper = evaluatePaperCatmullRomSmoothAndFlatten({
+      points: [
+        { x: 0, y: 0 },
+        { x: 40, y: 80 },
+        { x: 90, y: 10 },
+        { x: 140, y: 90 },
+      ],
+      factor: 0.5,
+      flatness: 0.4,
+    });
+    expect(paper.controlHandles).toHaveLength(4);
+    expect(paper.subdivisionCount).toBeGreaterThan(0);
+    expect(paper.flattenedPolyline.length).toBeGreaterThan(4);
+
+    const elbow = evaluateExcalidrawElbowArrowAndLaserTrail({
+      start: { x: 20, y: 20 },
+      end: { x: 180, y: 120 },
+      startHeading: "RIGHT",
+      endHeading: "DOWN",
+      obstaclePaddingPx: 24,
+      laserTrailSamples: [
+        { x: 30, y: 30, ageMs: 100 },
+        { x: 60, y: 50, ageMs: 800 },
+      ],
+      laserDurationMs: 1000,
+    });
+    expect(elbow.bendCount).toBeGreaterThanOrEqual(2);
+    expect(elbow.laserSegments[0]!.opacity01).toBeGreaterThan(elbow.laserSegments[1]!.opacity01);
+
+    const spray = evaluateFabricSprayDeduplicationAndAtrament({
+      pointerX: 50,
+      pointerY: 50,
+      sprayWidth: 20,
+      density: 24,
+      dotWidth: 3,
+      dotWidthVariance: 2,
+      randomOpacity: true,
+      prevPoint: { x: 30, y: 40 },
+      baseSmoothing01: 0.7,
+    });
+    expect(spray.optimizedRectCount).toBeGreaterThan(0);
+    expect(spray.optimizedRectCount).toBeLessThanOrEqual(24);
+    expect(spray.atramentAdaptiveSmoothing01).toBeGreaterThan(0.7);
+
+    const mandala = evaluateMandalaSymmetryAndPerspectiveRuler({
+      centerX: 100,
+      centerY: 100,
+      sampleX: 140,
+      sampleY: 110,
+      axisCount: 8,
+      includeMirrorReflection: true,
+      vanishingPoint: { x: 100, y: 20 },
+      rulerMode: "isometric-30",
+    });
+    expect(mandala.totalSymmetricCopies).toBe(16);
+    expect([30, 90, 150, 210, 270, 330]).toContain(mandala.snappedAngleDeg);
+
+    const telemetry = evaluateMonolithicTotalEngineTelemetry({
+      presetId: "monolithic-kaleidoscope-polar",
+      strength01: 0.75,
+      symmetryAxes: 8,
+    });
+    expect(telemetry.mandalaSymmetricCopyCount).toBe(16);
+    expect(telemetry.paperSubdivisionCount).toBeGreaterThan(0);
   });
 });
 

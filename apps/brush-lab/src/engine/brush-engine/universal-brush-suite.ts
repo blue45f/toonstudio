@@ -774,10 +774,7 @@ export function evaluateLabBernsteinFfdAndVibrance(params: {
   };
 }
 
-/**
- * Wave 30 Grand Monolithic 755-File REA (`ev_982d49cba6a55578fec43ba3a6e0b6384950de96491ca43cf0149f03b1c884fd`):
- * Konva `Kaleidoscope.ts` polar sector reflection + `Emboss.ts` Sobel directional relief.
- */
+/** Wave 30 Grand Monolithic 755-File REA (`ev_982d49cba6a55578fec43ba3a6e0b6384950de96491ca43cf0149f03b1c884fd`): Konva Kaleidoscope + Emboss. */
 export function evaluateLabKonvaKaleidoscopeAndEmboss(params: {
   readonly width: number;
   readonly thetaIndex: number;
@@ -792,8 +789,7 @@ export function evaluateLabKonvaKaleidoscopeAndEmboss(params: {
   const local = ((params.thetaIndex % (sectionSize * 2)) + sectionSize * 2) % (sectionSize * 2);
   const mirroredThetaIndex = local >= sectionSize ? sectionSize * 2 - local - 1 : local;
   const response = Math.cos(params.directionRad) * params.sobelX - Math.sin(params.directionRad) * params.sobelY;
-  const scale = (128 / 1020) * (clamp01(params.strength01) * 10);
-  const reliefGray255 = Math.min(255, Math.max(0, Math.round(128 + response * scale)));
+  const reliefGray255 = Math.min(255, Math.max(0, Math.round(128 + response * (128 / 1020) * (clamp01(params.strength01) * 10))));
   return { mirroredThetaIndex, reliefGray255 };
 }
 
