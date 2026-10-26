@@ -337,3 +337,22 @@ export type {
   SyncShaperIkTargetsInput,
   SyncShaperIkTargetsResult,
 } from "./shaper-rig";
+export {
+  applyShaperRotationLimitAngle,
+  applyShaperRotationLimitHinge,
+  clampShaperLookAtDirection,
+  solveShaperFinalIkFabrikChain,
+  solveShaperFinalIkGrounding,
+  solveShaperFinalIkLookAt,
+  solveShaperFinalIkTwistRelaxer,
+} from "./shaper-final-ik";
+export type {
+  ShaperFabrikChainInput,
+  ShaperFabrikChainResult,
+  ShaperFinalIkGroundingInput,
+  ShaperFinalIkGroundingResult,
+  ShaperFinalIkLookAtInput,
+  ShaperFinalIkLookAtResult,
+  ShaperTwistRelaxerInput,
+  ShaperTwistRelaxerResult,
+} from "./shaper-final-ik";

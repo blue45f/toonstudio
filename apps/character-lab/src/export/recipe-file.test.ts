@@ -7,6 +7,7 @@ import { defaultRecipeFixture } from "../testing/recipe-fixtures";
 import {
   MAX_RECIPE_FILE_BYTES,
   RECIPE_FILE_SUFFIX,
+  buildShaper3mfModelXml,
   buildShaperProjectArchiveEntries,
   characterRecipeToShaperProjectState,
   computeShaperViewportCameraRect,
@@ -16,6 +17,7 @@ import {
   extractPaintLayers,
   formatShaperInputStyleGuide,
   parseRecipeFile,
+  parseShaper3mfModelXml,
   parseShaperPartPreset,
   parseShaperPresetTextToRecipe,
   parseShaperProjectArchiveEntries,
@@ -258,5 +260,31 @@ describe("recipe-file", () => {
     expect(camRect.y).toBeCloseTo(24 / 1000, 5);
     expect(camRect.width).toBeCloseTo(1500 / 2000, 5);
     expect(camRect.height).toBeCloseTo(916 / 1000, 5);
+
+    const xml3mf = buildShaper3mfModelXml({
+      unit: "millimeter",
+      objects: [
+        {
+          id: 1,
+          name: "HeadPart",
+          vertices: [
+            [0, 0, 0],
+            [10, 0, 0],
+            [0, 10, 0],
+          ],
+          triangles: [[0, 1, 2]],
+        },
+      ],
+    });
+    const parsed3mf = parseShaper3mfModelXml(xml3mf);
+    expect(parsed3mf.unit).toBe("millimeter");
+    expect(parsed3mf.objects).toHaveLength(1);
+    expect(parsed3mf.objects[0]?.name).toBe("HeadPart");
+    expect(parsed3mf.objects[0]?.vertices).toEqual([
+      [0, 0, 0],
+      [10, 0, 0],
+      [0, 10, 0],
+    ]);
+    expect(parsed3mf.objects[0]?.triangles).toEqual([[0, 1, 2]]);
   });
 });

@@ -786,3 +786,5 @@ export function clampShaperColorPickerHandle(
     Math.max(marginPx, Math.min(Math.max(marginPx, s - marginPx), v));
   return [clampAxis(pos[0], sizeDelta[0]), clampAxis(pos[1], sizeDelta[1])];
 }
+export { SHAPER_TRACKPAD_MAX_FINGERS, SHAPER_TRACKPAD_RING_BUFFER_CAPACITY, SHAPER_TRACKPAD_STALE_TIMEOUT_SEC, createShaperTrackpadTouchTracker, shouldPassThroughShaperNativeWindowClick } from "./shaper-trackpad-plugin";
+export type { ShaperNativeWindowStateInput, ShaperRawTrackpadTouchEvent, ShaperTrackpadFingerSlot, ShaperTrackpadTouchPhase, ShaperTrackpadTouchRecord, ShaperTrackpadTouchTracker } from "./shaper-trackpad-plugin";
