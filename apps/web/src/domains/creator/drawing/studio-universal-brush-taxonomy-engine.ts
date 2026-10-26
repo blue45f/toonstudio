@@ -3,6 +3,13 @@
  */
 
 import {
+  computePomaxBezierParallelOffsetEnvelope,
+  executeWickCroquisBlobAndGapFill,
+  fitSchneiderCubicBezierSpline,
+  KLECKS_BRUSH_PRESETS,
+  WAVE23_REA_DEEP_SEMANTIC_LEDGER,
+} from "./studio-bezier-curve-fit-brushes";
+import {
   decodeCleanRoomBrushQrPayload,
   encodeCleanRoomBrushQrPayload,
   filterPixelPerfectStroke,
@@ -34,6 +41,7 @@ export * from "./studio-universal-brush-presets";
 export * from "./studio-commercial-pixel-brush-kernels";
 export * from "./studio-vector-skeletal-pattern-brushes";
 export * from "./studio-particle-pixol-brushes";
+export * from "./studio-bezier-curve-fit-brushes";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -567,7 +575,9 @@ export function synthesizeSketchpadBrushDabs(
 export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly reaEvidenceTargetCount: number;
   readonly wave22ReaEvidenceTargetCount: number;
+  readonly wave23ReaSemanticTargetCount: number;
   readonly totalVisitedAstNodes: number;
+  readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
   readonly p5BrushPresetCount: number;
   readonly p5BrushVectorFieldCount: number;
@@ -576,6 +586,10 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly skeletalArtBrushPresetCount: number;
   readonly fiveTilePatternPresetCount: number;
   readonly corelParticlePresetCount: number;
+  readonly klecksPresetCount: number;
+  readonly schneiderFittedSegmentCount: number;
+  readonly pomaxOffsetCuspCount: number;
+  readonly wickClosedGapCount: number;
   readonly harmonySketchyChordCount: number;
   readonly pixelPerfectReductionRatio: number;
   readonly sculptGlQuarticMidFalloff01: number;
@@ -592,13 +606,42 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     (sum, item) => sum + item.visitedAstNodes,
     0,
   );
-  const totalVisitedAstNodes = wave21Nodes + wave22Nodes;
+  const wave23Nodes = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce(
+    (sum, item) => sum + item.visitedAstNodes,
+    0,
+  );
+  const totalSemanticDataFlowRelations = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce(
+    (sum, item) => sum + item.dataFlowRelations,
+    0,
+  );
+  const totalVisitedAstNodes = wave21Nodes + wave22Nodes + wave23Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
     pressure01: 0.75,
   }));
   const harmonySketchy = executeHarmonyProceduralBrush("sketchy", samplePoints, { seed: 42 });
+  const schneiderFit = fitSchneiderCubicBezierSpline(samplePoints, 2.5);
+  const pomaxOffset = computePomaxBezierParallelOffsetEnvelope({
+    segment: {
+      p0: { x: 0, y: 0 },
+      ctrl1: { x: 20, y: 80 },
+      ctrl2: { x: 22, y: -80 },
+      p3: { x: 40, y: 0 },
+    },
+    startRadiusPx: 28,
+    endRadiusPx: 28,
+    sampleSteps: 32,
+  });
+  const wickResult = executeWickCroquisBlobAndGapFill({
+    points: samplePoints,
+    baseRadiusPx: 10,
+    gapEndpoints: [
+      { a: { x: 10, y: 10 }, b: { x: 16, y: 12 } },
+      { a: { x: 40, y: 40 }, b: { x: 95, y: 95 } },
+    ],
+    gapFillAmountPx: 12,
+  });
   const noisyPixelLine = [
     { x: 0, y: 0 },
     { x: 1, y: 0 },
@@ -631,9 +674,12 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   return {
     reaEvidenceTargetCount:
       UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.length +
-      WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
+      WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length +
+      WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
+    wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     totalVisitedAstNodes,
+    totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
     p5BrushPresetCount: P5_BRUSH_PRESET_CATALOG.length,
     p5BrushVectorFieldCount: P5_BRUSH_VECTOR_FIELDS.length,
@@ -642,6 +688,10 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     skeletalArtBrushPresetCount: SKELETAL_ART_BRUSH_PRESETS.length,
     fiveTilePatternPresetCount: FIVE_TILE_PATTERN_BRUSH_PRESETS.length,
     corelParticlePresetCount: COREL_PARTICLE_BRUSH_PRESETS.length,
+    klecksPresetCount: KLECKS_BRUSH_PRESETS.length,
+    schneiderFittedSegmentCount: schneiderFit.segments.length,
+    pomaxOffsetCuspCount: pomaxOffset.cuspCount,
+    wickClosedGapCount: wickResult.closedGapBridgeCount,
     harmonySketchyChordCount: harmonySketchy.chordLinkCount,
     pixelPerfectReductionRatio,
     sculptGlQuarticMidFalloff01,

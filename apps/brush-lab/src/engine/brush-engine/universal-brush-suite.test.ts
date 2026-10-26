@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  evaluateLabKlecksBlendAndSmudgeStep,
   evaluateLabSaiWatercolorPressure,
   evaluateLabSculptGlQuarticFalloff01,
+  evaluateLabWickCroquisPressure01,
   filterLabPixelPerfectCells,
+  fitLabSchneiderCubicBezier,
   generateLabHarmonySegments,
   stepLabKmMixerBrushReservoir,
   stepLabLazyBrushCircularFriction,
@@ -110,5 +113,35 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
       tailGuide01: 0.8,
     });
     expect(headU).toBeCloseTo(0.1, 3);
+  });
+
+  it("Wave 23 Schneider 3차 베지어 피팅, Klecks KM 블렌드/스머지 스캔라인, Wick Croquis 필압 매핑이 정확히 동작한다", () => {
+    const fitted = fitLabSchneiderCubicBezier([
+      { x: 0, y: 0 },
+      { x: 25, y: 18 },
+      { x: 55, y: 22 },
+      { x: 90, y: 5 },
+    ]);
+    expect(fitted).not.toBeNull();
+    expect(fitted?.p0).toEqual({ x: 0, y: 0 });
+    expect(fitted?.p3).toEqual({ x: 90, y: 5 });
+    expect(fitted?.ctrl1.y).toBeGreaterThan(0);
+
+    const klecks = evaluateLabKlecksBlendAndSmudgeStep({
+      sizePx: 18,
+      opacity01: 0.8,
+      blending01: 0.7,
+      prevY: 10,
+      currY: 30,
+      brushRgb: [0.1, 0.3, 0.9],
+      canvasRgb: [0.95, 0.85, 0.15],
+    });
+    expect(klecks.adaptiveSpacingPx).toBeCloseTo(4, 3);
+    expect(klecks.radialSharpness01).toBeCloseTo(0.512, 3);
+    expect(klecks.smudgeScanlineOrder).toBe("bottom-to-top");
+    expect(klecks.mixedRgb[1]).toBeGreaterThan(0.3);
+
+    expect(evaluateLabWickCroquisPressure01(0)).toBeCloseTo(0.14, 4);
+    expect(evaluateLabWickCroquisPressure01(1)).toBeCloseTo(1.0, 4);
   });
 });

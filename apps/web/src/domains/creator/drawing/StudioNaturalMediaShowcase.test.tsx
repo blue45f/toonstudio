@@ -150,5 +150,13 @@ describe("StudioNaturalMediaShowcase", () => {
     fireEvent.keyDown(silkRadio!, { key: "End" });
     const hairRadio = container.querySelector('[data-studio-particle-brush="hair-lock-spring"]') as HTMLButtonElement | null;
     expect(hairRadio?.getAttribute("aria-checked")).toBe("true");
+
+    // Wave 23 Klecks 6종 및 베지어 곡선 브러시 Roving Tabindex 검증
+    const klecksBlendRadio = container.querySelector('[data-studio-klecks-preset="klecks-blend-watercolor"]') as HTMLButtonElement | null;
+    expect(klecksBlendRadio).not.toBeNull();
+    expect(klecksBlendRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(klecksBlendRadio!, { key: "End" });
+    const klecksPixelRadio = container.querySelector('[data-studio-klecks-preset="klecks-pixel-disc-union"]') as HTMLButtonElement | null;
+    expect(klecksPixelRadio?.getAttribute("aria-checked")).toBe("true");
   });
 });
