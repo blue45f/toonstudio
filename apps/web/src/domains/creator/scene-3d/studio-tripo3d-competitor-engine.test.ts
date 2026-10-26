@@ -1,0 +1,175 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  buildMultiStageLodLadder,
+  buildSmartSegmentTransformMatrix,
+  buildTripoPoseControlSpec,
+  buildWebtoon3dBackgroundCluster,
+  computeAlbedoDelightingMetrics,
+  computeTripoPlatformWalletSummary,
+  detectTripoLowPolyIntent,
+  HYPER3D_RODIN_GEN25_GRADIENT,
+  normalizeTripoP2BBoxEditRegion,
+  planHyper3dRodinGen25Session,
+  planTripoV3Pipeline,
+  STUDIO_3D_COMPETITOR_REA_BENCHMARKS,
+} from "./studio-tripo3d-competitor-engine";
+
+describe("studio-tripo3d-competitor-engine", () => {
+  it("Tripo V3 3원 모델 라우팅(v3.1 / P1 / P2), 파라미터 제거 및 체인 검증을 수행한다", () => {
+    expect(detectTripoLowPolyIntent("low-poly street lamp")).toBe(true);
+    expect(detectTripoLowPolyIntent("저폴리곤 웹툰 편의점 진열대")).toBe(true);
+    expect(detectTripoLowPolyIntent("ultra detailed palace throne")).toBe(false);
+
+    const p1Plan = planTripoV3Pipeline({
+      mode: "text-to-model",
+      prompt: "low-poly classroom chair",
+      smartLowPoly: true,
+      generateParts: true,
+      geometryQuality: "detailed",
+      faceLimit: 3500,
+    });
+    expect(p1Plan.valid).toBe(true);
+    expect(p1Plan.selectedModel).toBe("P1-20260311");
+    expect(p1Plan.autoRoutedLowPoly).toBe(true);
+    expect(p1Plan.strippedParams).toEqual([
+      "smart_low_poly",
+      "generate_parts",
+      "geometry_quality",
+    ]);
+
+    const p2Plan = planTripoV3Pipeline({
+      mode: "text-to-model",
+      prompt: "low-poly temple pillar",
+      quad: true,
+      faceLimit: 8000,
+    });
+    expect(p2Plan.valid).toBe(true);
+    expect(p2Plan.selectedModel).toBe("P2-20260801");
+
+    const invalidChain = planTripoV3Pipeline({
+      mode: "text-to-model",
+      prompt: "stone statue",
+      chainSteps: ["complete", "retarget"],
+    });
+    expect(invalidChain.valid).toBe(false);
+    expect(invalidChain.hardErrors.length).toBeGreaterThanOrEqual(2);
+
+    const quadrupedRig = planTripoV3Pipeline({
+      mode: "text-to-model",
+      prompt: "guardian wolf",
+      poseControl: { poseType: "T-Pose", headBodyHeightRatio: 1.2, spanOfLegs: 12 },
+      chainSteps: ["rig-check", "rig", "retarget"],
+      rigType: "quadruped",
+      animations: ["preset:idle", "preset:walk"],
+    });
+    expect(quadrupedRig.valid).toBe(true);
+    expect(quadrupedRig.swappedAnimations).toEqual([
+      "preset:quadruped:idle",
+      "preset:quadruped:walk",
+    ]);
+    expect(quadrupedRig.effectivePrompt).toContain("t-pose:1.2:1.0:1.0:1.0:12.0");
+
+    const avianRig = planTripoV3Pipeline({
+      mode: "text-to-model",
+      prompt: "messenger hawk",
+      chainSteps: ["rig", "retarget"],
+      rigType: "avian",
+      animations: ["preset:idle"],
+    });
+    expect(avianRig.valid).toBe(true);
+    expect(avianRig.skippedRetarget).toBe(true);
+  });
+
+  it("포즈 비율 Shaper 슬라이더 변환, P2 BBox 정규화, SmartSegment 4x4 행렬 및 지갑 요약을 계산한다", () => {
+    const pose = buildTripoPoseControlSpec({
+      poseType: "A-Pose",
+      headBodyHeightRatio: 1.3,
+      legsBodyHeightRatio: 1.2,
+      armsBodyLengthRatio: 1.1,
+      spanOfLegs: 15,
+    });
+    expect(pose.promptSuffix).toBe(", a-pose:1.3:1.0:1.2:1.1:15.0");
+    expect(pose.shaperSliders.headCount).toBeGreaterThan(7.5);
+    expect(pose.shaperSliders.heightCm).toBeGreaterThan(170);
+
+    const bbox = normalizeTripoP2BBoxEditRegion({
+      taskId: "task_123",
+      minCorner: [1.2, -0.5, 0.8],
+      maxCorner: [-0.4, 1.5, -0.2],
+      editPrompt: "add ornate carving",
+    });
+    expect(bbox.modelVersion).toBe("P2-20260801");
+    expect(bbox.normalizedMin).toEqual([-0.4, -0.5, -0.2]);
+    expect(bbox.normalizedMax).toEqual([1.2, 1.5, 0.8]);
+    expect(bbox.volumeCubicUnits).toBeCloseTo(3.2, 3);
+
+    const mat = buildSmartSegmentTransformMatrix({
+      translate: [2, 3, -1],
+      scale: [1, 2, 1],
+      yawDeg: 0,
+    });
+    expect(mat).toHaveLength(16);
+    expect(mat.slice(12, 16)).toEqual([2, 3, -1, 1]);
+
+    const wallet = computeTripoPlatformWalletSummary({
+      defaultBalance: 150,
+      defaultFrozen: 50,
+      freeBalance: 20,
+      alertThreshold: 200,
+    });
+    expect(wallet.totalAvailableCredits).toBe(170);
+    expect(wallet.usdEquivalent).toBe(1.5);
+    expect(wallet.thresholdAlertTriggered).toBe(true);
+  });
+
+  it("Hyper3D Rodin Gen-2.5 Thinking Effort·ControlNet·Deemos Bang Parts 및 Meshy/Sloyd/CSM 기능을 계획한다", () => {
+    expect(STUDIO_3D_COMPETITOR_REA_BENCHMARKS).toHaveLength(5);
+
+    const gen25 = planHyper3dRodinGen25Session({
+      cardMode: "Generation",
+      requestedVersion: "Gen-2.5",
+      controlNetMode: "voxel",
+      voxelResolution: 64,
+      thinkingEffort: "Extreme-High",
+    });
+    expect(gen25.effectiveVersion).toBe("Gen-2.5");
+    expect(gen25.badgeStyle).toBe(HYPER3D_RODIN_GEN25_GRADIENT);
+    expect(gen25.thinkingEffort?.durationSeconds).toBe(80);
+    expect(gen25.controlNetSummaryKo).toContain("64³");
+
+    const editCard = planHyper3dRodinGen25Session({
+      cardMode: "3D Editing",
+      requestedVersion: "Gen-1.5",
+      editOperation: "Parts",
+    });
+    expect(editCard.effectiveVersion).toBe("Gen-2.5");
+    expect(editCard.versionLockedByEditingCard).toBe(true);
+    expect(editCard.deemosBangPartsEnabled).toBe(true);
+
+    const lods = buildMultiStageLodLadder(40_000, true);
+    expect(lods).toHaveLength(4);
+    expect(lods[0]?.targetFaces).toBe(40_000);
+    expect(lods[3]?.targetFaces).toBe(4_000);
+
+    const delight = computeAlbedoDelightingMetrics({
+      delightEnabled: true,
+      shadowIntensity: 90,
+      toonShadingTarget: true,
+    });
+    expect(delight.toonShaderReady).toBe(true);
+    expect(delight.shadowRemovalPercent).toBeGreaterThan(90);
+
+    const cluster = buildWebtoon3dBackgroundCluster({
+      presetId: "korean-alley-commercial",
+      floorCount: 4,
+      roofPitchDeg: 20,
+      windowBayCount: 5,
+      alleyWidthMeters: 4.5,
+      cameraPlane: "street-low",
+    });
+    expect(cluster.proceduralModuleCount).toBe(24);
+    expect(cluster.aiHeroPropCount).toBe(6);
+    expect(cluster.cameraFovDeg).toBe(28);
+  });
+});

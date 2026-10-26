@@ -27,7 +27,20 @@
 
 Codex·Claude Desktop·Claude Code·Gemini·Cursor에 `tripo3d`(Blender MCP 16개 도구)와 `tripo-cli`(단독 V3 API MCP 5개 도구) stdio 서버가 등록되어 있다. 설정 파일에는 키를 직접 넣지 않고 launcher가 mode `0600`인 `.env.infrastructure.local`(또는 `.env.local`)을 읽는다. launcher 자체는 mode `0700`이다.
 
-연결 확인은 모델을 생성하지 않는 `tripo doctor --json`, `tripo balance --json` 및 MCP 도구 목록 조회(`tools/list`)로 수행한다. 2026-10-26 기준 `tripo3d` 16개 도구와 `tripo-cli` 5개 도구 응답 및 `openapi.tripo3d.ai` 연결(`balance: 0`)을 확인했다. 실제 생성 전에는 공급자 balance를 읽고, 예상 credit cost가 남은 무료 wallet을 넘으면 요청을 보내지 않는다.
+연결 확인은 모델을 생성하지 않는 `tripo doctor --json`, `tripo balance --json`, 저장소 내장 `pnpm run tripo3d:check` 및 MCP 도구 목록 조회(`tools/list`)로 수행한다. 2026-10-26 기준 `tripo3d` 16개 도구와 `tripo-cli` 5개 도구 응답 및 `openapi.tripo3d.ai` 연결을 확인했다. 실제 생성 전에는 공급자 balance를 읽고, 예상 credit cost가 남은 wallet을 넘으면 요청을 보내지 않는다.
+
+### 저장소 내재화 CLI · API 프로바이더 · 3D 워크벤치 (2026-10-26 REA 역공학 반영)
+
+- **저장소 전용 CLI**: `pnpm run tripo3d` (`scripts/tripo3d-cli.mts`, `scripts/lib/tripo3d-catalog.mts`, `scripts/lib/tripo3d-runtime.mts`)
+  - `doctor --check`: 로컬 `.env.infrastructure.local` / `~/.tripo/config.json` / MCP 런처 점검(비밀값 비노출)
+  - `catalog`: 8종 생성 엔드포인트(`/v3/generation/*`), 12종 후처리 체인(`/v3/postprocess/*`, `/v3/mesh/edit`, `/v3/scene/smartsegment`), 오류 코드 카탈로그(`2000`~`2018`), 경쟁사 REA 벤치마크 출력
+  - `plan` / `make`: `v3.1-20260211` / `P1-20260311`(네이티브 삼각 로우폴리) / `P2-20260801`(쿼드 로우폴리 + 로컬 BBox 리두) 3원 자동 라우팅, P1 비호환 파라미터 자동 제거, `segment -> complete` 및 `rig -> retarget` 체인 검증, 비-바이페드 골격(`quadruped`, `hexapod`, `octopod`, `serpentine`, `aquatic`) 모션 프리셋 자동 스왑, Blender 5비율 T/A-Pose 접미사 생성
+  - `balance` / `status` / `wait`: 지갑 잔액 조회 및 2초→5초→10초 적응형 폴링
+- **Core API 프로바이더**: `apps/api/src/modules/studio-ai/studio-tripo3d-provider.ts` (`providerId: "tripo-3d"`, `Studio3dGenerationService` 통합, STS 이미지 업로드 토큰 발급, 크레딧 소진 코드 `2010`/HTTP `402` 감지, GLB 바이너리 검증)
+- **프론트엔드 3D 워크벤치**: `apps/web/src/domains/creator/scene-3d/StudioTripo3dCompetitorWorkbench.tsx` 및 `studio-tripo3d-competitor-engine.ts`
+  - Tripo V3 3원 모델 라우터, 12단계 체인 빌더, Blender 5비율 포즈→Shaper 마네킹 슬라이더 연동, Pre-Run 크레딧/USD 카드
+  - Hyper3D Rodin Gen-2.5 Dual-Card(`Generation` ↔ `3D Editing` Deemos Bang `Parts`/`Refine`/`Modify`), 4종 공간 ControlNet(`default`/`bbox`/`voxel`/`pointcloud`), 5단계 Thinking Effort(`4s`~`80s`)
+  - Meshy AI 4단계 웹툰 LOD 래더(`LOD0`~`LOD3`) & Albedo 디라이팅, Sloyd 파라메트릭 건축 × CSM 6-Plane 웹툰 3D 배경 클러스터 빌더
 
 ## Meshy MCP·CLI
 
