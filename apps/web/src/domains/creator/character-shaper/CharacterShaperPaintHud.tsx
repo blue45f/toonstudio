@@ -53,6 +53,8 @@ export function CharacterShaperPaintHud({ h, onExit, compact = false }: Characte
   const [optionsOpen, setOptionsOpen] = useState(false);
   const keyHandlerRef = useRef<(event: KeyboardEvent) => boolean>(() => false);
   const [resetArmed, setResetArmed] = useState(false);
+  const [pressureMode, setPressureMode] = useState<"fake" | "real" | "none">("fake");
+  const [lineColorMode, setLineColorMode] = useState<"baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique">("baseLineColor");
 
   const settings: StudioVrmTexturePaintPanelSettings =
     (h.texturePaintSettings as StudioVrmTexturePaintPanelSettings | undefined)
@@ -228,6 +230,37 @@ export function CharacterShaperPaintHud({ h, onExit, compact = false }: Characte
             )}
             onChange={(event) => update({ color: event.currentTarget.value.toLowerCase() })}
           />
+
+          <select
+            data-testid="shaper-paint-pressure-mode"
+            aria-label="필압 모드"
+            value={pressureMode}
+            disabled={disabled}
+            onChange={(event) => setPressureMode(event.currentTarget.value as "fake" | "real" | "none")}
+            className="h-9 rounded-lg border border-line bg-card px-1.5 text-[11px] font-medium text-fg-2 disabled:opacity-45"
+          >
+            <option value="fake">필압: 가상 sin(πt)</option>
+            <option value="real">필압: 태블릿 2p</option>
+            <option value="none">필압: 고정 1.0x</option>
+          </select>
+
+          <select
+            data-testid="shaper-paint-line-color-mode"
+            aria-label="선 색 동기화"
+            value={lineColorMode}
+            disabled={disabled}
+            onChange={(event) =>
+              setLineColorMode(
+                event.currentTarget.value as "baseLineColor" | "baseHairColor" | "baseSkinColor" | "unique",
+              )
+            }
+            className="h-9 rounded-lg border border-line bg-card px-1.5 text-[11px] font-medium text-fg-2 disabled:opacity-45"
+          >
+            <option value="baseLineColor">선색: 기본 선색</option>
+            <option value="baseHairColor">선색: 헤어 기준</option>
+            <option value="baseSkinColor">선색: 피부 기준</option>
+            <option value="unique">선색: 개별 지정</option>
+          </select>
 
           <span aria-hidden className="h-6 w-px shrink-0 bg-line/70" />
 

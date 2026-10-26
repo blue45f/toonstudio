@@ -233,6 +233,59 @@ export function CharacterShaperHairInspector({
         />
       </InspectorSection>
       <InspectorSection title="헤어 형태">
+        <div
+          data-testid="shaper-hair-inspector-shortcuts"
+          className="mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border border-line/60 bg-raised/60 p-1.5 text-[11px]"
+        >
+          <span
+            data-testid="shaper-hair-scalp-zones"
+            className="w-full text-[10px] text-fg-3"
+          >
+            두피 4구역 UV 보정: Zone 0 0.87x · Zone 1 1.00x · Zone 2 0.85x · Zone 3 0.85x (v+0.025)
+          </span>
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() =>
+              commitNumber(
+                "length",
+                Math.min(AVATAR_FORGE_HAIR_LIMITS.length.max, Number((hair.length + 0.1).toFixed(2))),
+                AVATAR_FORGE_HAIR_LIMITS.length.label,
+              )
+            }
+            className="rounded border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg-2 hover:bg-raised disabled:opacity-45"
+          >
+            Shift+휠 길이 +0.1
+          </button>
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() =>
+              commitNumber(
+                "curl",
+                Math.min(AVATAR_FORGE_HAIR_LIMITS.curl.max, Number((hair.curl + 0.05).toFixed(2))),
+                AVATAR_FORGE_HAIR_LIMITS.curl.label,
+              )
+            }
+            className="rounded border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg-2 hover:bg-raised disabled:opacity-45"
+          >
+            Alt+휠 컬 +0.05
+          </button>
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() =>
+              commitNumber(
+                "strandWidth",
+                Math.min(AVATAR_FORGE_HAIR_LIMITS.strandWidth.max, Number((hair.strandWidth + 0.01).toFixed(2))),
+                AVATAR_FORGE_HAIR_LIMITS.strandWidth.label,
+              )
+            }
+            className="rounded border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg-2 hover:bg-raised disabled:opacity-45"
+          >
+            = 가닥 폭 +0.01
+          </button>
+        </div>
         {HAIR_SHAPE_KEYS.map((key) => (
           <HairRange key={key} hair={hair} limitKey={key} locked={locked} onCommit={commitNumber} />
         ))}

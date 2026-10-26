@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CHARACTER_SLOT_KINDS } from "./character-shaper-contract";
 import {
+  buildShaperHairThreeLayerGroup,
+  extractShaperPsdOutlineAlpha,
+} from "./character-shaper-psd-assembly";
+import {
   characterLightingToneLabel,
   characterShaperSlotIcon,
   characterSlotDiffersFromBaseline,
@@ -270,5 +274,24 @@ describe("character-shaper-ui-model key layers", () => {
     expect(resolveShaperContextKeycapStatusGuide({ tab: "pose" })[0]?.keycap).toBe("Alt");
     expect(resolveShaperContextKeycapStatusGuide({ tab: "groom" })[0]?.keycap).toBe("Shift");
     expect(resolveShaperContextKeycapStatusGuide({ tab: "parts", drawingActive: true })[0]?.keycap).toBe("LMB");
+
+    const outlineAlpha = extractShaperPsdOutlineAlpha(
+      new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255]),
+      [10, 20, 30],
+    );
+    expect(outlineAlpha[3]).toBe(0);
+    expect(outlineAlpha[7]).toBe(255);
+    expect(outlineAlpha[4]).toBe(10);
+
+    const hairGroup = buildShaperHairThreeLayerGroup({
+      width: 2,
+      height: 1,
+      hairBaseRgba: outlineAlpha,
+      shadowRgba: outlineAlpha,
+      lineRgba: outlineAlpha,
+    });
+    expect(hairGroup.name).toBe("헤어 (SHAPER 3-Layer)");
+    expect(hairGroup.children?.map((c) => c.name)).toEqual(["Hair Line", "Hair Shadow", "Hair Base"]);
+    expect(hairGroup.children?.[1]?.blendMode).toBe("multiply");
   });
 });

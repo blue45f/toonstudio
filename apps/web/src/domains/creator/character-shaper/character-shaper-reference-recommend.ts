@@ -486,3 +486,114 @@ export function recommendReferencePresetCombination(
   }
   return { ok: true, dimensions: Object.freeze(dimensions), coverage };
 }
+
+/* -------------------------------------------------------------------------- */
+/* SHAPER BoneAIManager (0x02000014) & UIAIPreset (0x02000059) 내재화         */
+/* -------------------------------------------------------------------------- */
+
+export type ShaperAiPoseMode = "body" | "hand" | "bodyWebCam" | "handWebCam" | "preset";
+export type ShaperAiPresetPartSlot = "head" | "eyes" | "nose" | "mouth" | "ears" | "hair";
+
+export interface ShaperAiPresetGridCell {
+  readonly partSlot: ShaperAiPresetPartSlot;
+  readonly rank: 0 | 1 | 2;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly rowOffsetY: number;
+  readonly borderAlpha: number;
+}
+
+/**
+ * SHAPER `BoneAIManager::OpenImage` (`0x060000cd`) & `GetTexture2DFromWebcamTexture` (`0x060000d9`) 내재화:
+ * 정지 영상은 최장변 `512px` 종횡비 보존 축소, 웹캠 모드는 고정 `512×288` 해상도로 리샘플링한다.
+ */
+export function computeShaperAiReferenceDownscaleSize(
+  sourceWidth: number,
+  sourceHeight: number,
+  mode: ShaperAiPoseMode = "preset",
+): { readonly width: number; readonly height: number; readonly scaleFactor: number } {
+  if (mode === "bodyWebCam" || mode === "handWebCam") {
+    return Object.freeze({ width: 512, height: 288, scaleFactor: Number((512 / Math.max(1, sourceWidth)).toFixed(4)) });
+  }
+  const w = Math.max(1, Math.round(sourceWidth));
+  const h = Math.max(1, Math.round(sourceHeight));
+  const longest = Math.max(w, h);
+  if (longest <= 512) {
+    return Object.freeze({ width: w, height: h, scaleFactor: 1 });
+  }
+  const scale = 512 / longest;
+  return Object.freeze({
+    width: Math.max(1, Math.round(w * scale)),
+    height: Math.max(1, Math.round(h * scale)),
+    scaleFactor: Number(scale.toFixed(4)),
+  });
+}
+
+/**
+ * SHAPER `BoneAIManager::ApplyJSON` (`0x060000c7`) 내재화:
+ * 24개 전신 본의 `uncertainty < 0.03f` 여부를 판정하고, 신뢰 본이 최소 `16/24`개 이상일 때만 포즈 적용을 승인한다.
+ */
+export function evaluateShaperBoneAiConfidenceGate(
+  boneUncertainties: readonly number[],
+  threshold: number = 0.03,
+  minConfidentBones: number = 16,
+): {
+  readonly accepted: boolean;
+  readonly confidentBoneCount: number;
+  readonly totalBoneCount: number;
+  readonly rejectedIndices: readonly number[];
+} {
+  let confident = 0;
+  const rejected: number[] = [];
+  for (let i = 0; i < boneUncertainties.length; i += 1) {
+    const u = boneUncertainties[i]!;
+    if (Number.isFinite(u) && u < threshold) {
+      confident += 1;
+    } else {
+      rejected.push(i);
+    }
+  }
+  return Object.freeze({
+    accepted: confident >= minConfidentBones,
+    confidentBoneCount: confident,
+    totalBoneCount: boneUncertainties.length,
+    rejectedIndices: Object.freeze(rejected),
+  });
+}
+
+const SHAPER_AI_PRESET_SLOTS: readonly ShaperAiPresetPartSlot[] = Object.freeze([
+  "head",
+  "eyes",
+  "nose",
+  "mouth",
+  "ears",
+  "hair",
+]);
+
+/**
+ * SHAPER `UIAIPreset::Awake` (`0x060002a8`) & `UIAIPresetItem` (`0x060002ae..0x060002b4`) 내재화:
+ * 6개 얼굴·헤어 부위(`head`, `eyes`, `nose`, `mouth`, `ears`, `hair`) × 상위 3후보 그리드 좌표(`x = rank * 82`, `y = -22`, 행 간격 `-114`)와
+ * `fadeDuration = 0.1s` 호버 테두리 알파를 계산한다.
+ */
+export function buildShaperSixSlotThreeRankGrid(
+  hoverElapsedSec: number = 0,
+): readonly ShaperAiPresetGridCell[] {
+  const borderAlpha = Number(Math.max(0, Math.min(1, hoverElapsedSec / 0.1)).toFixed(4));
+  const cells: ShaperAiPresetGridCell[] = [];
+  for (let rowIdx = 0; rowIdx < SHAPER_AI_PRESET_SLOTS.length; rowIdx += 1) {
+    const partSlot = SHAPER_AI_PRESET_SLOTS[rowIdx]!;
+    for (const rank of [0, 1, 2] as const) {
+      cells.push(
+        Object.freeze({
+          partSlot,
+          rank,
+          offsetX: rank * 82,
+          offsetY: -22,
+          rowOffsetY: rowIdx * -114,
+          borderAlpha,
+        }),
+      );
+    }
+  }
+  return Object.freeze(cells);
+}
