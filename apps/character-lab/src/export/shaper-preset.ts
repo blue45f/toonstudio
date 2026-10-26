@@ -612,3 +612,98 @@ export function serializeShaperPartPreset(data: ShaperPartPresetData): string {
 
   return `${data.version || "1.0"}\n${tokens.join(",")}`;
 }
+
+export interface ShaperServerAssetDescriptor {
+  readonly id: number;
+  readonly filename: string;
+  readonly name: string;
+  readonly category: string;
+  readonly type: string;
+  readonly version: number;
+}
+
+export interface ShaperCheckedAssetResult extends ShaperServerAssetDescriptor {
+  readonly path: string;
+  readonly normalizedVersion: number;
+  /** 0 = 최신 상태, 1 = 로컬 미존재(신규 다운로드), 2 = 로컬 버전 구형(인플레이스 업데이트) */
+  readonly update: 0 | 1 | 2;
+  readonly progressPercent: number;
+}
+
+/**
+ * SHAPER PresetServerManager::CheckAsset (0x0600028a) & Update (0x0600028f) 역공학 내재화:
+ * - `version == 0`이면 기본값 `1.0`으로 정규화한다.
+ * - `${appDataPath}/${category}/${type}/${filename}` 경로를 조합하고 중복 슬래시(`//`)를 `/`로 치환한다.
+ * - 진행률은 `Math.ceil(((index + 1) / assets.length) * 100)`(%)으로 계산한다.
+ * - 로컬 파일이 없으면 `update = 1`, `.preset` 파일의 첫 줄 버전이 서버 `version`보다 작으면 `update = 2`, 같거나 크면 `update = 0`으로 판정하며,
+ *   동일 `(확장자 제외 파일명, category, type)`을 공유하는 에셋 엔트리들에도 동일한 `update` 상태를 전파한다.
+ */
+export function evaluateShaperPresetAssetUpdates(options: {
+  readonly appDataPath: string;
+  readonly assets: readonly ShaperServerAssetDescriptor[];
+  readonly localPresetContentsByPath: Readonly<Record<string, string | undefined>>;
+}): readonly ShaperCheckedAssetResult[] {
+  const { appDataPath, assets, localPresetContentsByPath } = options;
+  const total = assets.length;
+  if (total === 0) return [];
+
+  const stripExtension = (filename: string): string => {
+    const dot = filename.lastIndexOf(".");
+    return dot > 0 ? filename.slice(0, dot) : filename;
+  };
+  const getExtension = (path: string): string => {
+    const dot = path.lastIndexOf(".");
+    return dot >= 0 ? path.slice(dot) : "";
+  };
+
+  const results = assets.map((asset, idx) => {
+    const normalizedVersion = asset.version === 0 ? 1 : asset.version;
+    const rawPath = `${appDataPath}/${asset.category}/${asset.type}/${asset.filename}`;
+    const path = rawPath.replace(/\/\//g, "/");
+    const progressPercent = Math.ceil(((idx + 1) / total) * 100);
+    return {
+      ...asset,
+      path,
+      normalizedVersion,
+      update: 0 as 0 | 1 | 2,
+      progressPercent,
+    };
+  });
+
+  for (let i = 0; i < total; i += 1) {
+    const current = results[i];
+    if (current === undefined || current.update !== 0) continue;
+
+    const localContent = localPresetContentsByPath[current.path];
+    let updateState: 0 | 1 | 2 = 0;
+    if (localContent === undefined) {
+      updateState = 1;
+    } else if (getExtension(current.path) === ".preset") {
+      const firstLine = localContent.replace(/\r\n/g, "\n").split("\n")[0]?.trim() ?? "0";
+      const localVersion = Number.parseFloat(firstLine);
+      if (!Number.isFinite(localVersion) || localVersion < current.normalizedVersion) {
+        updateState = 2;
+      }
+    }
+
+    current.update = updateState;
+    if (updateState > 0) {
+      const currentStem = stripExtension(current.filename);
+      for (let j = 0; j < total; j += 1) {
+        const peer = results[j];
+        if (
+          peer !== undefined &&
+          stripExtension(peer.filename) === currentStem &&
+          peer.category === current.category &&
+          peer.type === current.type
+        ) {
+          peer.update = updateState;
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+

@@ -26,6 +26,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { flushSync } from "react-dom";
 
 import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { formatShaperInputStyleGuide } from "../../../export/recipe-file";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
@@ -36,9 +37,9 @@ import { describeEngineStatus } from "../engine-status-text";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
-import { computeJointDrag, handlesKey, hudRows, jointLabelKo, resolveDragPivot, visibleHandles } from "./viewport-interactions";
+import { computeJointDrag, handlesKey, hudRows, jointLabelKo, resolveDragPivot, resolveShaperViewportKeyShortcut, visibleHandles } from "./viewport-interactions";
 
-import type { DragPivot, JointDragOutcome } from "./viewport-interactions";
+import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle } from "./viewport-interactions";
 import type { ApplyPlan, CameraFraming, CharacterEngine, EngineBackend, HudSample, JointDragHandle, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
@@ -105,6 +106,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [showFingers, setShowFingers] = useState(false);
   const [showHud, setShowHud] = useState(initialOverlays?.hud ?? false);
   const [framing, setFraming] = useState<CameraFraming["mode"]>(DEFAULT_FRAMING.mode);
+  const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [hud, setHud] = useState<HudSample | null>(null);
   const [handles, setHandles] = useState<readonly JointDragHandle[]>([]);
   const [renderSize, setRenderSize] = useState<{ readonly width: number; readonly height: number } | null>(null);
@@ -258,25 +260,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     [registry, store, engineSession],
   );
 
-  // ---- 카메라 프레이밍 키보드 단축키(F: 전신, B: 상반신, C: 얼굴)
-  useEffect(() => {
-    if (!engine) return undefined;
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) {
-        return;
-      }
-      const key = event.key.toLowerCase();
-      if (key === "f") onFraming("full-body");
-      else if (key === "b") onFraming("bust");
-      else if (key === "c") onFraming("face");
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [engine, onFraming]);
-
-  // ---- 시점 초기화(현재 프레이밍을 다시 적용 — 휠·팬·회전으로 바뀐 시점을 되돌린다). 캔버스 더블클릭·0 키는 엔진 입력이 같은 일을 한다.
+  // ---- 시점 초기화(현재 프레이밍을 다시 적용 — 휠·팬·회전으로 바뀐 시점을 되돌린다). 캔버스 더블클릭·0 키·F5 키는 엔진 입력이 같은 일을 한다.
   const onResetView = useCallback((): void => {
     if (!engine) return;
     try {
@@ -286,6 +270,49 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       setNotice(failureText(error, "시점을 초기화하지 못했습니다."));
     }
   }, [engine, framing]);
+
+  // ---- 카메라 프레이밍 및 SHAPER 뷰포트 단축키(F: 전신, B: 상반신, C: 얼굴, F5: 시점 초기화, Ctrl+Z/Y: 실행 취소/다시 실행)
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target;
+      const isTextInput =
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
+      if (isTextInput) return;
+
+      const ctrlOrMeta = event.ctrlKey || event.metaKey;
+      const lowerKey = event.key.toLowerCase();
+      if (ctrlOrMeta && !event.altKey) {
+        if (lowerKey === "z" && !event.shiftKey) {
+          event.preventDefault();
+          dispatch({ type: "history/undo" });
+          return;
+        }
+        if ((lowerKey === "z" && event.shiftKey) || lowerKey === "y") {
+          event.preventDefault();
+          dispatch({ type: "history/redo" });
+          return;
+        }
+        return;
+      }
+
+      if (!engine || event.altKey) return;
+      const shaperAction = resolveShaperViewportKeyShortcut(event.key, {
+        shift: event.shiftKey,
+        ctrl: ctrlOrMeta,
+        alt: event.altKey,
+      });
+      if (shaperAction?.kind === "reset-camera") {
+        onResetView();
+        return;
+      }
+      if (lowerKey === "f") onFraming("full-body");
+      else if (lowerKey === "b") onFraming("bust");
+      else if (lowerKey === "c") onFraming("face");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [engine, onFraming, onResetView, dispatch]);
 
   // ---- 관절 드래그
   const cancelDrag = useCallback((): void => {
@@ -450,9 +477,20 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
               {entry.label}
             </button>
           ))}
-          <button type="button" className="cl-viewport-button" disabled={!engine} onClick={onResetView} title="현재 프레이밍으로 시점을 되돌립니다(캔버스 더블클릭·0 키와 같음)">
+          <button type="button" className="cl-viewport-button" disabled={!engine} onClick={onResetView} title="현재 프레이밍으로 시점을 되돌립니다(캔버스 더블클릭·0 키·F5 키와 같음)">
             시점 초기화
           </button>
+          <select
+            className="cl-viewport-select"
+            aria-label="카메라 조작 방식"
+            value={cameraInputStyle}
+            title={formatShaperInputStyleGuide(cameraInputStyle).camControlToolTipText}
+            onChange={(event) => setCameraInputStyle(event.target.value as ShaperCameraInputStyle)}
+          >
+            <option value="unity">Unity 조작</option>
+            <option value="blender">Blender 조작</option>
+            <option value="max">3ds Max 조작</option>
+          </select>
         </span>
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>

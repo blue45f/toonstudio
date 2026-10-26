@@ -8,9 +8,9 @@ import { installPsdCanvasStub } from "../testing/psd-canvas-stub";
 import { rasterEquals } from "../testing/raster-fixtures";
 import { defaultRecipeFixture } from "../testing/recipe-fixtures";
 
-import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, buildCaptureRequest, exportFileName, exportGlb, exportLayeredPsd, exportRecipe, exportTransparentPng, isGlb, validateExportDimensions } from "./export-session";
+import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, buildCaptureRequest, exportFileName, exportGlb, exportLayeredPsd, exportRecipe, exportShaperStylePreset, exportTransparentPng, isGlb, validateExportDimensions } from "./export-session";
 import { decodePng } from "./png-encoder";
-import { parseRecipeFile } from "./recipe-file";
+import { parseRecipeFile, parseShaperPresetTextToRecipe } from "./recipe-file";
 
 import type { CaptureRequest } from "../contracts";
 
@@ -115,6 +115,19 @@ describe("exportGlb / exportRecipe", () => {
     if (!parsed.ok) throw new Error(parsed.failure.reasonKo);
     expect(parsed.recipe.paint.layers).toHaveLength(1);
     expect(buildCaptureRequest({ width: 8, height: 8, settleSteps: 99999 }, ["lit"]).settleSteps).toBe(600);
+  });
+
+  it("exportShaperStylePreset은 SHAPER .preset 파일을 직렬화하고 다시 레시피로 파싱된다", () => {
+    const recipe = defaultRecipeFixture();
+    const result = exportShaperStylePreset(recipe, { now: () => 1000 });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(result.receipt.kind).toBe("shaper-preset");
+    expect(result.receipt.fileName).toMatch(/^character-[0-9a-f]{8}-style\.preset$/u);
+    const parsed = parseShaperPresetTextToRecipe(new TextDecoder().decode(result.bytes), recipe);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.recipe.colors.skin).toBe(recipe.colors.skin);
+    }
   });
 });
 

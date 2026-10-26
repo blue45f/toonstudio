@@ -13,7 +13,7 @@
  */
 import { PART_ROLES, PART_ROLE_LABELS_KO, failVisible } from "../contracts";
 
-import { extractLineArt, lineArtToRaster } from "./line-extract";
+import { extractLineArt, extractOutlinePassLuminanceToAlpha, lineArtToRaster } from "./line-extract";
 import { decodeIdPass } from "./raster-convert";
 import { opaqueMae, recompose, splitTones } from "./tone-split";
 
@@ -310,10 +310,18 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     ...(partIds ? { partId: partIds } : {}),
     ...(idPass ? { idPass } : {}),
   };
-  const lineMask = extractLineArt(lineInput, options.lineArt ?? {});
   let lineArtPixels = 0;
-  for (let p = 0; p < lineMask.length; p += 1) if ((lineMask[p] ?? 0) > 0) lineArtPixels += 1;
-  const fullLineRaster = lineArtToRaster(lineMask, width, height);
+  let fullLineRaster: CapturedRaster;
+  if (options.lineArt?.useLuminanceToAlpha) {
+    fullLineRaster = extractOutlinePassLuminanceToAlpha(lit);
+    for (let i = 3; i < fullLineRaster.rgba.length; i += 4) {
+      if ((fullLineRaster.rgba[i] ?? 0) > 0) lineArtPixels += 1;
+    }
+  } else {
+    const lineMask = extractLineArt(lineInput, options.lineArt ?? {});
+    for (let p = 0; p < lineMask.length; p += 1) if ((lineMask[p] ?? 0) > 0) lineArtPixels += 1;
+    fullLineRaster = lineArtToRaster(lineMask, width, height);
+  }
   layers.push(raster(PSD_LAYER_NAMES.line, "normal", fullLineRaster));
 
   if (options.splitHairLayers) {

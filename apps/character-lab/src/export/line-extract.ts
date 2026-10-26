@@ -38,6 +38,8 @@ export interface LineArtOptions {
   readonly lumaEdges: boolean;
   /** 선폭(px). 1이면 팽창 없음, n이면 반지름 floor((n−1)/2)로 팽창 */
   readonly lineWidthPx: number;
+  /** SHAPER ExportManager::SavePSD(0x06000187) 호환 휘도 반전 알파(a = 1 - r) 선화 추출 사용 여부 */
+  readonly useLuminanceToAlpha?: boolean;
 }
 
 export const DEFAULT_LINE_ART_OPTIONS: LineArtOptions = Object.freeze({

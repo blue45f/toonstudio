@@ -298,5 +298,35 @@ describe("SlotPanel — 프리셋 단위 미제공(unavailablePresets)", () => {
     expect(within(card("소프트 보브")).getByText("일부 스타일만 반영")).toBeTruthy();
     expect(card("소프트 보브").disabled).toBe(false);
   });
+
+  it("SHAPER Shift+클릭은 프리셋 색상만 적용하고 Ctrl+클릭은 기존 색상을 보존하며 형태만 적용한다", () => {
+    const baseCat = catalog();
+    const roundBase = baseCat.get("face-shape/round")!;
+    const customCat = createPresetCatalog([
+      ...baseCat.entries.filter((e) => e.id !== "face-shape/round"),
+      {
+        ...roundBase,
+        patch: { ...roundBase.patch, colors: { skin: "#abcdef" } },
+      },
+    ]);
+    const dispatchSpy = vi.fn();
+    render(
+      <MockLabProvider catalog={customCat} dispatchSpy={dispatchSpy} initialState={{ capabilities: capabilities() }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    fireEvent.click(card("둥근형"), { shiftKey: true });
+    expect(dispatchSpy).toEqual(expect.anything());
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: "color/set", key: "skin", value: "#abcdef" });
+    dispatchSpy.mockClear();
+
+    fireEvent.click(card("둥근형"), { ctrlKey: true });
+    expect(dispatchSpy).toHaveBeenNthCalledWith(1, { type: "slot/apply", slot: "face-shape", presetId: "face-shape/round" });
+    expect(dispatchSpy).toHaveBeenNthCalledWith(2, {
+      type: "color/set",
+      key: "skin",
+      value: createDefaultRecipe().colors.skin,
+    });
+  });
 });
 
