@@ -36,6 +36,9 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 3
+    ignore:
+      # studio-hokusai-wasm은 0.2.123 기준 바이트 재현 INTEGRITY.sha256 봉인 릴리스 계약을 따른다.
+      - dependency-name: "wasm-bindgen"
 
   # crates/vendor/wgpu-toon 은 벤더링된 포크라 Dependabot 대상에서 제외한다.
   # (벤더 코드의 의존성은 업스트림 동기화 때 함께 갱신하는 것이 안전)
