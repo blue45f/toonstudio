@@ -123,6 +123,8 @@ export function applyLabShaperTripoLookToShading(
 export interface LabShaperTripoPipelineSpec {
   readonly look: LabShaperTripoLookPreset;
   readonly matCapScaleU: number;
+  readonly rLightScaleU: number;
+  readonly hairShaderVariant: "simpleDisableInlineMatCapShader" | "simpleMatCapShader";
   readonly poseControlSuffix: string;
   readonly delightFlag: boolean;
   readonly pipelineSummaryKo: string;
@@ -130,12 +132,13 @@ export interface LabShaperTripoPipelineSpec {
 }
 
 /**
- * SHAPER 등신비(5~8등신)와 Delight 설정으로부터 Tripo V3 파이프라인 명세를 계산한다.
+ * SHAPER 등신비(5~8등신)와 Delight·헤어 내선 억제(`hID*1`) 설정으로부터 Tripo V3 파이프라인 명세를 계산한다.
  */
 export function buildLabShaperTripoPipelineSpec(input: {
   readonly lookId: LabShaperTripoLookId;
   readonly headUnits?: number;
   readonly delight?: boolean;
+  readonly disableHairInline?: boolean;
 }): LabShaperTripoPipelineSpec {
   const look = getLabShaperTripoLookPreset(input.lookId);
   const heads = typeof input.headUnits === "number" && Number.isFinite(input.headUnits)
@@ -145,14 +148,21 @@ export function buildLabShaperTripoPipelineSpec(input: {
   const legRatio = heads >= 7.5 ? "1.2" : "1.0";
   const poseControlSuffix = `, t-pose:${headRatio}:1.0:${legRatio}:1.0:9.0`;
   const delightFlag = input.delight ?? look.tripoDelight;
+  const disableHairInline = input.disableHairInline ?? true;
   const ramp = computeCubicMatCapRamp(0.5, look.matCapSmoothWidth);
+  const rLightRamp = computeCubicMatCapRamp(0.82, Math.min(0.95, look.matCapSmoothWidth + 0.15));
+  const hairShaderVariant = disableHairInline
+    ? "simpleDisableInlineMatCapShader"
+    : "simpleMatCapShader";
 
   return {
     look,
     matCapScaleU: ramp.scaleU,
+    rLightScaleU: rLightRamp.scaleU,
+    hairShaderVariant,
     poseControlSuffix,
     delightFlag,
-    pipelineSummaryKo: `Tripo ${look.tripoModelVersion} → Texture ${look.tripoTextureVersion} (delight=${delightFlag ? "true" : "false"}) → Auto-Rig ${look.tripoAutoRigVersion} (VRM biped)`,
+    pipelineSummaryKo: `Tripo ${look.tripoModelVersion} → Texture ${look.tripoTextureVersion} (delight=${delightFlag ? "true" : "false"}) → Auto-Rig ${look.tripoAutoRigVersion} (VRM biped · ${hairShaderVariant})`,
     cliPreview: `pnpm tripo3d:scenario --scenario webtoon-character --model ${look.tripoModelVersion}${delightFlag ? " --delight" : ""}`,
   };
 }

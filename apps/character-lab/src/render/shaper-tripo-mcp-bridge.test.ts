@@ -40,9 +40,12 @@ describe("shaper-tripo-mcp-bridge (character-lab)", () => {
       lookId: "shaper-romance-soft",
       headUnits: 8.0,
       delight: false,
+      disableHairInline: false,
     });
     expect(spec8.poseControlSuffix).toBe(", t-pose:0.9:1.0:1.2:1.0:9.0");
     expect(spec8.delightFlag).toBe(false);
+    expect(spec8.hairShaderVariant).toBe("simpleMatCapShader");
     expect(spec8.pipelineSummaryKo).toContain("delight=false");
+    expect(spec8.pipelineSummaryKo).toContain("simpleMatCapShader");
   });
 });

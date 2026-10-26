@@ -6,6 +6,8 @@ import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { prepareBlenderCharacterPackage } from "../vrm/studio-vrm-blender-package-import";
 
+import { evaluateVrmTripoShaperPreflight } from "./character-shaper-tripo-mcp";
+
 import type { BlenderPackagePreview } from "../vrm/studio-vrm-blender-package-import";
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 import type { ChangeEvent } from "react";
@@ -127,6 +129,36 @@ export function CharacterShaperBlenderPackage({ h, disabled = false }: Character
           : state.kind === "sent" ? r3c04StatusText("studio.r3c04Status.shaper.blender.sentWithName", { name: state.name }, "{name} 파일을 모델 로더에 전달했습니다. 최종 결과는 모델 화면에서 확인하세요.")
           : r3c04StatusText("studio.r3c04Status.shaper.blender.empty", "아직 불러온 패키지가 없습니다.")}
       </p>
+      {(() => {
+        const preflight = evaluateVrmTripoShaperPreflight({
+          humanoidReady: h.status === "ready" && Boolean(h.vrm),
+          materialCount: Math.max(4, (h.costumeMeshes?.length ?? 0) + 6),
+          tripoDelightApplied: true,
+        });
+        return (
+          <details
+            data-testid="shaper-tripo-vrm-preflight"
+            className="rounded-xl border border-line/70 bg-card/70 p-2.5 text-[0.68rem] text-fg-2"
+          >
+            <summary className={cn("flex cursor-pointer items-center justify-between gap-2 font-semibold text-fg", STUDIO_FOCUS_RING)}>
+              <span>{preflight.summaryKo}</span>
+              <span className="rounded bg-accent/15 px-1.5 py-0.5 font-mono text-[0.62rem] text-accent">
+                vrm_validate · {preflight.grade}
+              </span>
+            </summary>
+            <ul className="mt-2 space-y-1 text-[0.65rem] text-fg-3">
+              {preflight.checks.map((check) => (
+                <li key={check.id} className="flex items-center justify-between gap-2">
+                  <span>{check.labelKo}</span>
+                  <span className="font-mono text-[0.62rem] text-fg-2">
+                    {check.passed ? "통과" : "주의"} · {check.detailKo}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        );
+      })()}
     </section>
   );
 }

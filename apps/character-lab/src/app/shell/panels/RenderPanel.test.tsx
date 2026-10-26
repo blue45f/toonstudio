@@ -504,5 +504,8 @@ describe("베타 기능 토글", () => {
 
     fireEvent.click(getByTestId("shaper-tripo-delight-toggle"));
     expect(getByTestId("shaper-tripo-pipeline-summary").textContent).toContain("delight=false");
+
+    fireEvent.click(getByTestId("shaper-tripo-hair-inline-toggle"));
+    expect(getByTestId("shaper-tripo-pipeline-summary").textContent).toContain("simpleMatCapShader");
   });
 });
