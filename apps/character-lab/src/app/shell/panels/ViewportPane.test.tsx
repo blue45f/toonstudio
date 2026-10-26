@@ -683,4 +683,23 @@ describe("접근성", () => {
     expect(screen.getByRole("group", { name: "관절 핸들" })).toBeTruthy();
     expect(screen.getByLabelText("성능 HUD")).toBeTruthy();
   });
+
+  it("SHAPER 카메라 조작 방식(Unity/Blender/3ds Max) 선택 및 F5·Ctrl+Z·Ctrl+Y 단축키를 처리한다", () => {
+    const engine = createTestEngine();
+    const view = renderPane({ engine });
+    const select = screen.getByLabelText("카메라 조작 방식") as HTMLSelectElement;
+    expect(select.value).toBe("unity");
+    fireEvent.change(select, { target: { value: "blender" } });
+    expect(select.value).toBe("blender");
+    expect(select.title).toContain("시점 초기화  [F5]");
+
+    fireEvent.keyDown(window, { key: "F5" });
+    expect(engine.calls.some((c) => c.method === "setCamera")).toBe(true);
+
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(view.dispatched).toContainEqual({ type: "history/undo" });
+
+    fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+    expect(view.dispatched).toContainEqual({ type: "history/redo" });
+  });
 });

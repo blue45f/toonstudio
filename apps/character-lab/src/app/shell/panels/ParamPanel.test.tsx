@@ -280,6 +280,13 @@ describe("ParamPanel — 요약·사유", () => {
     expect(describeParamValue(-0.004, ["작게", "크게"])).toBe("0.00 · 기본");
     expect(describeParamValue(-0.3, ["작게", "크게"])).toBe("-0.30 · 작게");
   });
+
+  it("SHAPER 신체(100%)·의상(90%) 블렌드쉐입 가중치 요약 줄을 표시한다", () => {
+    setup({ recipe: recipeWith({ body: { shoulderWidth: 1, hip: 1 } }) });
+    expect(screen.getByTestId("param-shaper-blend-weights").textContent).toContain(
+      "SHAPER 블렌드쉐입 가중치: 신체 근육 100% · 체지방 100% (의상 감쇠 90% / 90%)",
+    );
+  });
 });
 
 describe("ParamPanel — 색 팔레트", () => {

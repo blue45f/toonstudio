@@ -7,19 +7,27 @@ import { DEFAULT_FRAMING, failVisible, isLabFailure, recipeDigest } from "../con
 import { encodePng, PNG_MIME } from "./png-encoder";
 import { assemblePsd, PSD_MIME } from "./psd-assemble";
 import { PSD_MAX_DIMENSION, planCharacterPsd } from "./psd-plan";
-import { RECIPE_MIME, embedPaintLayers, recipeFileName, serializeRecipe } from "./recipe-file";
+import {
+  RECIPE_MIME,
+  characterRecipeToShaperProjectState,
+  embedPaintLayers,
+  recipeFileName,
+  serializeRecipe,
+  serializeShaperStylePreset,
+} from "./recipe-file";
 
 import type { CameraFraming, CaptureProvenance, CaptureRequest, CharacterEngine, CharacterRecipe, LabFailure, PaintLayer, RenderPassId } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
 import type { PsdPlanReceipt } from "./psd-plan";
 
 export const GLB_MIME = "model/gltf-binary";
+export const SHAPER_PRESET_MIME = "text/plain;charset=utf-8";
 export const MIN_EXPORT_DIMENSION = 16;
 export const MAX_PNG_EXPORT_DIMENSION = 4096;
 export const MAX_PSD_EXPORT_DIMENSION = PSD_MAX_DIMENSION;
 export const MAX_SETTLE_STEPS = 600;
 
-export type ExportKind = "png" | "psd" | "glb" | "recipe";
+export type ExportKind = "png" | "psd" | "glb" | "recipe" | "shaper-preset";
 
 export interface ExportCaptureOptions {
   readonly width: number;
@@ -32,6 +40,7 @@ export interface ExportCaptureOptions {
 export interface ExportPsdOptions extends ExportCaptureOptions {
   readonly includeIdMasks: boolean;
   readonly includeReferencePasses: boolean;
+  readonly splitHairLayers?: boolean;
   readonly lineArt?: Partial<LineArtOptions>;
 }
 
@@ -64,7 +73,7 @@ export function validateExportDimensions(width: number, height: number, max: num
   return null;
 }
 
-export function exportFileName(kind: Exclude<ExportKind, "recipe">, digest: string, width: number, height: number): string {
+export function exportFileName(kind: Exclude<ExportKind, "recipe" | "shaper-preset">, digest: string, width: number, height: number): string {
   const suffix = kind === "glb" ? "glb" : kind;
   const size = kind === "glb" ? "" : `-${width}x${height}`;
   return `character-${digest.slice(0, 8)}${size}.${suffix}`;
@@ -159,7 +168,12 @@ export async function exportLayeredPsd(engine: CharacterEngine, paintLayers: rea
   const planned = planCharacterPsd(
     captured.result,
     paintLayers,
-    { includeIdMasks: options.includeIdMasks, includeReferencePasses: options.includeReferencePasses, ...(options.lineArt ? { lineArt: options.lineArt } : {}) },
+    {
+      includeIdMasks: options.includeIdMasks,
+      includeReferencePasses: options.includeReferencePasses,
+      ...(options.splitHairLayers !== undefined ? { splitHairLayers: options.splitHairLayers } : {}),
+      ...(options.lineArt ? { lineArt: options.lineArt } : {}),
+    },
     started,
   );
   if (!planned.ok) return planned;
@@ -220,5 +234,30 @@ export async function exportRecipe(recipe: CharacterRecipe, paintLayers: readonl
     };
   } catch (error) {
     return { ok: false, failure: toFailure("export-recipe", "레시피 직렬화에 실패했습니다.", error, started) };
+  }
+}
+
+/** SHAPER 호환 `.preset` 텍스트 파일 내보내기(HeadPartsManager::SaveStyle DSL). */
+export function exportShaperStylePreset(recipe: CharacterRecipe, deps: ExportDeps = {}): ExportOutcome {
+  const now = deps.now ?? defaultNow;
+  const started = now();
+  try {
+    const project = characterRecipeToShaperProjectState(recipe);
+    const text = serializeShaperStylePreset(project.style ?? { version: "1.0" });
+    const bytes = new TextEncoder().encode(text);
+    const fileName = `character-${recipeDigest(recipe).slice(0, 8)}-style.preset`;
+    return {
+      ok: true,
+      bytes,
+      receipt: {
+        kind: "shaper-preset",
+        fileName,
+        mime: SHAPER_PRESET_MIME,
+        bytes: bytes.length,
+        durationMs: now() - started,
+      },
+    };
+  } catch (error) {
+    return { ok: false, failure: toFailure("export-shaper-preset", "SHAPER 프리셋 직렬화에 실패했습니다.", error, started) };
   }
 }

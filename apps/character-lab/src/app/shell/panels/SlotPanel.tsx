@@ -20,7 +20,10 @@ import { CHARACTER_SLOT_KINDS, SLOT_GROUPS, SLOT_GROUP_LABELS_KO, SLOT_LABELS_KO
 import { presetConflicts, presetUnavailableReasonKo } from "../../../state/apply-plan";
 import { useApplyPlan, useCatalog, useDispatch, useLabState, useUiActions, useUiState } from "../lab-store-context";
 
-import type { CapturedRaster, PresetEntry, PresetId, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
+import { resolveShaperPresetClickModifiers } from "./viewport-interactions";
+
+import type { CapturedRaster, PresetEntry, PresetId, RecipeColorKey, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
+import type { MouseEvent as ReactMouseEvent } from "react";
 
 /** 비울 수 있는 슬롯("없음" 카드 표시) */
 export const NULLABLE_SLOTS: readonly SlotKind[] = ["accessory"];
@@ -82,7 +85,7 @@ interface PresetCardProps {
   readonly conflicts: readonly PresetEntry[];
   readonly unsupported: UnsupportedSlot | undefined;
   readonly thumbnail: ThumbnailEntry | undefined;
-  readonly onApply: (presetId: PresetId) => void;
+  readonly onApply: (presetId: PresetId, event?: ReactMouseEvent<HTMLButtonElement>) => void;
 }
 
 function PresetCard({ entry, selected, capability, conflicts, unsupported, thumbnail, onApply }: PresetCardProps) {
@@ -109,7 +112,7 @@ function PresetCard({ entry, selected, capability, conflicts, unsupported, thumb
       title={title || undefined}
       data-preset-id={entry.id}
       data-preset-unavailable={presetReason !== null ? "true" : undefined}
-      onClick={() => onApply(entry.id)}
+      onClick={(event) => onApply(entry.id, event)}
     >
       <span className="cl-slot-card-thumb">
         {presetReason !== null ? <span className="cl-slot-thumb cl-slot-thumb--text">미제공</span> : <ThumbnailView entry={thumbnail} labelKo={entry.labelKo} />}
@@ -138,7 +141,33 @@ export function SlotPanel() {
   const { recipe, thumbnails, history } = state;
   const unsupportedForSlot = plan?.unsupported.find((item) => item.slot === slot);
 
-  const apply = (presetId: PresetId | null): void => {
+  const apply = (presetId: PresetId | null, event?: ReactMouseEvent<HTMLButtonElement>): void => {
+    if (presetId !== null && event && (event.shiftKey || event.ctrlKey || event.metaKey)) {
+      const policy = resolveShaperPresetClickModifiers(
+        {
+          shift: event.shiftKey,
+          ctrl: event.ctrlKey || event.metaKey,
+          alt: event.altKey,
+        },
+        slot === "pose" ? "pose" : "part",
+      );
+      const entry = catalog.get(presetId);
+      const patchColors = entry?.patch.colors;
+      if (policy.keepExistingLines && !(event.ctrlKey || event.metaKey) && patchColors) {
+        for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
+          if (value !== undefined) dispatch({ type: "color/set", key, value });
+        }
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && !policy.keepExistingLines && patchColors) {
+        const prevColors = { ...recipe.colors };
+        dispatch({ type: "slot/apply", slot, presetId });
+        for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
+          if (value !== undefined) dispatch({ type: "color/set", key, value: prevColors[key] });
+        }
+        return;
+      }
+    }
     dispatch({ type: "slot/apply", slot, presetId });
   };
 

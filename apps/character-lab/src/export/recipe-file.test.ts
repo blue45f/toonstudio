@@ -8,10 +8,16 @@ import {
   MAX_RECIPE_FILE_BYTES,
   RECIPE_FILE_SUFFIX,
   buildShaperProjectArchiveEntries,
+  characterRecipeToShaperProjectState,
+  computeShaperViewportCameraRect,
   embedPaintLayers,
+  evaluateShaperNumericInput,
+  evaluateShaperPresetAssetUpdates,
   extractPaintLayers,
+  formatShaperInputStyleGuide,
   parseRecipeFile,
   parseShaperPartPreset,
+  parseShaperPresetTextToRecipe,
   parseShaperProjectArchiveEntries,
   parseShaperStylePreset,
   recipeFileName,
@@ -199,5 +205,58 @@ describe("recipe-file", () => {
     expect(restored.accessories?.[0]?.accessories?.[0]?.parentName).toBe("BoneHead");
     expect(restored.poseAndCamera?.camFov).toBe(25);
     expect(restored.style?.outlineThickness).toBe(1.5);
+  });
+
+  it("characterRecipeToShaperProjectState와 parseShaperPresetTextToRecipe 및 서버 프리셋/UI 보조 수식을 검증한다", () => {
+    const base = createDefaultRecipe();
+    const project = characterRecipeToShaperProjectState({
+      ...base,
+      colors: { ...base.colors, skin: "#ffe0cc", hair: "#223344" },
+      body: { shoulderWidth: 0.5, hip: -0.5 },
+    });
+    expect(project.style?.skinColorHex).toBe("#ffe0cc");
+    expect(project.style?.hairColorHex).toBe("#223344");
+    expect(project.bodyPart?.muscle).toBeCloseTo(0.75, 5);
+    expect(project.bodyPart?.fat).toBeCloseTo(0.25, 5);
+
+    const presetText = serializeShaperStylePreset(project.style!);
+    const parsedFromPreset = parseShaperPresetTextToRecipe(presetText, base);
+    expect(parsedFromPreset.ok).toBe(true);
+    if (parsedFromPreset.ok) {
+      expect(parsedFromPreset.recipe.colors.skin).toBe("#ffe0cc");
+      expect(parsedFromPreset.recipe.colors.hair).toBe("#223344");
+    }
+
+    const assetChecks = evaluateShaperPresetAssetUpdates({
+      appDataPath: "/data/",
+      assets: [
+        { id: 1, filename: "bob.preset", name: "bob", category: "Preset", type: "hair", version: 2.0 },
+        { id: 2, filename: "bob.png", name: "bob", category: "Preset", type: "hair", version: 0 },
+        { id: 3, filename: "new.preset", name: "new", category: "Preset", type: "eyes", version: 1.0 },
+      ],
+      localPresetContentsByPath: {
+        "/data/Preset/hair/bob.preset": "1.0\nmt*6,mid*1",
+        "/data/Preset/hair/bob.png": "PNG",
+      },
+    });
+    expect(assetChecks[0]?.path).toBe("/data/Preset/hair/bob.preset");
+    expect(assetChecks[0]?.update).toBe(2);
+    // 동일 stem/category/type인 bob.png에도 update=2가 전파됨
+    expect(assetChecks[1]?.update).toBe(2);
+    expect(assetChecks[2]?.update).toBe(1);
+    expect(assetChecks[2]?.progressPercent).toBe(100);
+
+    const guide = formatShaperInputStyleGuide("blender", { macOs: true });
+    expect(guide.camControlSettingText).toContain("[Command]");
+    expect(guide.camControlToolTipText).toContain("시점 초기화  [F5]");
+
+    expect(evaluateShaperNumericInput({ rawText: "-10", min: 0, max: 360, loop: true })).toBe(360);
+    expect(evaluateShaperNumericInput({ rawText: "400", min: 0, max: 360, loop: false })).toBe(360);
+
+    const camRect = computeShaperViewportCameraRect({ screenWidth: 2000, screenHeight: 1000, scaleFactor: 1 });
+    expect(camRect.x).toBeCloseTo(170 / 2000, 5);
+    expect(camRect.y).toBeCloseTo(24 / 1000, 5);
+    expect(camRect.width).toBeCloseTo(1500 / 2000, 5);
+    expect(camRect.height).toBeCloseTo(916 / 1000, 5);
   });
 });

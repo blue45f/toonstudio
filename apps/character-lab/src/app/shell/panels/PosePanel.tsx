@@ -18,10 +18,11 @@ import { clampPoseToLimits, poseLimitViolations } from "../../../animation/joint
 import { HAND_POSE_PRESETS, POSE_PRESETS } from "../../../animation/presets";
 import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
+import { computeGroundedBodyHeight } from "../../../animation/two-bone-ik";
 import { IK_CHAINS, POSE_SCOPE_LABELS_KO } from "../../../contracts";
 import { useApplyPlan, useDispatch, useLabState } from "../lab-store-context";
 
-import type { HandPosePreset, HumanoidBoneName, IkChainId, Pose, PosePreset, PoseScope, Vec3 } from "../../../contracts";
+import type { HandPosePreset, HumanoidBoneName, IkChainId, Pose, PosePreset, PoseScope, Quat, Vec3 } from "../../../contracts";
 
 /** 패널에서 고를 수 있는 적용 범위(손 전용 스코프는 손 포즈 섹션이 맡는다) */
 export const POSE_PANEL_SCOPES: readonly PoseScope[] = ["full", "upper", "arms-hands", "lower"];
@@ -45,6 +46,26 @@ const HAND_SIDES: readonly HandSide[] = ["both", "left", "right"];
 
 /** 패널 IK 환산에 쓰는 소스 독립 참조 스켈레톤(결정적) */
 const REFERENCE_SKELETON = createReferenceSkeleton();
+const REST_WORLD_TRANSFORMS = computeWorldTransforms(REFERENCE_SKELETON, {});
+
+/**
+ * SHAPER UIPresetManager::ClickItem (0x06000357) & BoneManager::SymmetryBoneRot (0x04000083 = [1, -1, -1]) 역공학 내재화:
+ * 좌(`left*`)·우(`right*`) 휴머노이드 본 이름을 맞바꾸고 쿼터니언의 Y·Z 회전 성분을 반전(`[qx, -qy, -qz, qw]`)해 포즈를 좌우 대칭 반전한다.
+ */
+export function mirrorHumanoidPoseLeftRight(pose: Pose): Pose {
+  const swapBoneName = (bone: HumanoidBoneName): HumanoidBoneName => {
+    if (bone.startsWith("left")) return `right${bone.slice(4)}` as HumanoidBoneName;
+    if (bone.startsWith("right")) return `left${bone.slice(5)}` as HumanoidBoneName;
+    return bone;
+  };
+  const mirrorQuat = (q: Quat): Quat => [q[0], -q[1], -q[2], q[3]];
+  const out: Partial<Record<HumanoidBoneName, Quat>> = {};
+  for (const [bone, q] of Object.entries(pose) as Array<[HumanoidBoneName, Quat | undefined]>) {
+    if (!q) continue;
+    out[swapBoneName(bone)] = mirrorQuat(q);
+  }
+  return out;
+}
 
 interface Coords {
   readonly x: string;
@@ -165,8 +186,34 @@ export function PosePanel() {
   const unsupportedHand = plan?.unsupported.find((item) => item.slot === "hand-pose");
   const violations = useMemo(() => poseLimitViolations(recipe.pose, REFERENCE_SKELETON), [recipe.pose]);
   const boneCount = Object.keys(recipe.pose).length;
+  const groundedHeight = useMemo(() => {
+    const world = computeWorldTransforms(REFERENCE_SKELETON, recipe.pose);
+    const defaultAnkleY = REST_WORLD_TRANSFORMS.get("leftFoot")?.position[1] ?? 0.08;
+    const ankleLeftY = world.get("leftFoot")?.position[1] ?? defaultAnkleY;
+    const ankleRightY = world.get("rightFoot")?.position[1] ?? defaultAnkleY;
+    const rootPosition = world.get("hips")?.position ?? [0, 0.9, 0];
+    const headBoneY = world.get("head")?.position[1] ?? 1.52;
+    return computeGroundedBodyHeight({
+      ankleLeftY,
+      ankleRightY,
+      defaultAnkleY,
+      rootPosition,
+      pelvisIkTargetY: rootPosition[1],
+      headBoneY,
+      headMeshMaxLocalY: 0.18,
+    });
+  }, [recipe.pose]);
 
-  const applyPosePreset = (preset: PosePreset): void => {
+  const applyPosePreset = (preset: PosePreset, altMirror = false): void => {
+    if (altMirror) {
+      dispatch({
+        type: "pose/set",
+        pose: mirrorHumanoidPoseLeftRight(preset.pose),
+        scope,
+        labelKo: `포즈 ${preset.labelKo} (좌우 반전)`,
+      });
+      return;
+    }
     if (scope === "full") {
       dispatch({ type: "slot/apply", slot: "pose", presetId: preset.id });
       return;
@@ -231,6 +278,10 @@ export function PosePanel() {
     dispatch({ type: "pose/set", pose: clampPoseToLimits(recipe.pose, REFERENCE_SKELETON), scope: "full", labelKo: "관절 제한으로 클램프" });
   };
 
+  const mirrorCurrentPose = (): void => {
+    dispatch({ type: "pose/set", pose: mirrorHumanoidPoseLeftRight(recipe.pose), scope: "full", labelKo: "포즈 좌우 반전" });
+  };
+
   return (
     <section className="cl-pose-panel" aria-label="포즈">
       <h2 className="cl-pose-title">포즈</h2>
@@ -268,7 +319,7 @@ export function PosePanel() {
               disabled={poseDisabled}
               title={poseCapability.reasonKo}
               data-preset-id={preset.id}
-              onClick={() => applyPosePreset(preset)}
+              onClick={(event) => applyPosePreset(preset, event.altKey)}
             >
               <span className="cl-pose-card-label">{preset.labelKo}</span>
               <span className="cl-pose-card-meta">
@@ -282,12 +333,19 @@ export function PosePanel() {
         <button type="button" onClick={resetPose}>
           포즈 초기화
         </button>
+        <button type="button" onClick={mirrorCurrentPose} disabled={poseDisabled || boneCount === 0}>
+          포즈 좌우 반전
+        </button>
         <button type="button" onClick={clampPose} disabled={violations.length === 0}>
           관절 제한으로 클램프
         </button>
       </div>
       <p className="cl-pose-status">
         포즈 본 {boneCount}개 · 관절 제한 위반 {violations.length}건{violations.length > 0 ? `: ${violations.map((v) => v.bone).join(", ")}` : ""}
+      </p>
+      <p className="cl-pose-grounded" data-testid="pose-grounded-height">
+        {groundedHeight.labelKo} · 최저 발목 접지 보정 {groundedHeight.groundDeltaY >= 0 ? "+" : ""}
+        {(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
       </p>
 
       <fieldset className="cl-pose-hand">

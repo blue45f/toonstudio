@@ -208,7 +208,27 @@ describe("PosePanel 관절 제한·초기화", () => {
   it("rest 포즈에서는 클램프 버튼이 비활성이다", () => {
     setup();
     expect((screen.getByRole("button", { name: "관절 제한으로 클램프" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "포즈 좌우 반전" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/포즈 본 0개 · 관절 제한 위반 0건/u)).toBeTruthy();
+    expect(screen.getByTestId("pose-grounded-height").textContent).toMatch(/신장 : \d+ cm/u);
+  });
+
+  it("포즈 좌우 반전 버튼과 Alt+클릭은 좌·우 본을 대칭 반전한 pose/set을 보낸다", () => {
+    const recipe = createDefaultRecipe();
+    recipe.pose = { leftUpperArm: qFromAxisAngle([0, 0, 1], degToRad(-30)) };
+    const dispatched = setup({ recipe });
+    fireEvent.click(screen.getByRole("button", { name: "포즈 좌우 반전" }));
+    expect(dispatched).toHaveLength(1);
+    const mirrored = dispatched[0];
+    if (mirrored?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(mirrored.labelKo).toBe("포즈 좌우 반전");
+    expect(mirrored.pose.rightUpperArm).toBeDefined();
+    expect(mirrored.pose.leftUpperArm).toBeUndefined();
+
+    fireEvent.click(card("포즈 프리셋", "손 흔들기"), { altKey: true });
+    const altCmd = dispatched[1];
+    if (altCmd?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(altCmd.labelKo).toBe("포즈 손 흔들기 (좌우 반전)");
   });
 });
 

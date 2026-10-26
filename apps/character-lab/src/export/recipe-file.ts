@@ -7,6 +7,7 @@ import { stableStringify } from "../shared/stable-json";
 
 import { decodePaintLayerRecord, encodePaintLayerRecord } from "./paint-layer-record";
 import {
+  evaluateShaperPresetAssetUpdates,
   hexToUnitRgb,
   parseShaperPartPreset,
   rgbFloatStringsToHex,
@@ -15,6 +16,7 @@ import {
 } from "./shaper-preset";
 
 import type {
+  ShaperCheckedAssetResult,
   ShaperPartPresetData,
   ShaperPresetAccessoryRecord,
   ShaperPresetHairBaseZoneRecord,
@@ -22,6 +24,7 @@ import type {
   ShaperPresetLinePointRecord,
   ShaperPresetLineRecord,
   ShaperPresetTransformRecord,
+  ShaperServerAssetDescriptor,
 } from "./shaper-preset";
 import type { CharacterRecipe, LabFailure, PaintLayer, ParseRecipeResult } from "../contracts";
 
@@ -460,8 +463,216 @@ export function parseShaperProjectArchiveEntries(
   };
 }
 
-export { parseShaperPartPreset, serializeShaperPartPreset };
+function unitRgbToHex(rgb: readonly [number, number, number]): string {
+  const toHex = (c: number): string =>
+    Math.round(Math.min(1, Math.max(0, c)) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+}
+
+/**
+ * CharacterRecipe v3를 SHAPER 프로젝트 아카이브 상태(`ShaperProjectState`)로 역변환한다.
+ */
+export function characterRecipeToShaperProjectState(recipe: CharacterRecipe): ShaperProjectState {
+  const muscle = Math.min(1, Math.max(0, ((recipe.body.shoulderWidth ?? 0) + 1) * 0.5));
+  const fat = Math.min(1, Math.max(0, ((recipe.body.hip ?? 0) + 1) * 0.5));
+  const sex = recipe.source.kind === "kit" && recipe.source.baseId === "male" ? 1 : 0;
+
+  const shadeSkin = recipe.shading.look.shade.skin;
+  const shadeColorHex = shadeSkin.kind === "multiply" ? unitRgbToHex(shadeSkin.rgb) : recipe.colors.skin;
+  const lineColor = recipe.shading.look.line.color;
+  const outlineColorHex = lineColor.mode === "fixed" ? unitRgbToHex(lineColor.rgb) : "#1a1412";
+  const outlineThickness = Math.max(0, recipe.shading.look.line.widthMm / 4);
+
+  const emptyPart = (partType: number, colorsHex: readonly string[] = []): ShaperPartPresetData => ({
+    version: "1.0",
+    partType,
+    controlVertices: [],
+    hairBaseZones: [],
+    hairs: [],
+    lines: [],
+    lineBaseMeshTypes: [],
+    linePoints: [],
+    linePointBaseMeshTypes: [],
+    boneNames: [],
+    bonePositions: [],
+    boneAngles: [],
+    boneScales: [],
+    colorsHex,
+    outlineRatios: [1],
+  });
+
+  return {
+    headParts: {
+      0: emptyPart(0, [recipe.colors.skin]),
+      1: emptyPart(1, [recipe.colors.iris]),
+    },
+    hairPart: emptyPart(6, [recipe.colors.hair]),
+    bodyPart: {
+      ...emptyPart(7, [recipe.colors.skin]),
+      sex,
+      muscle,
+      fat,
+    },
+    costumes: {
+      8: emptyPart(8, [recipe.colors.top]),
+      9: emptyPart(9, [recipe.colors.bottom]),
+      10: emptyPart(10, [recipe.colors.shoes]),
+    },
+    style: {
+      version: "1.0",
+      hairColorHex: recipe.colors.hair,
+      skinColorHex: recipe.colors.skin,
+      shadeColorHex,
+      outlineColorHex,
+      outlineThickness,
+      outlinePressure: true,
+      disableHairInline: false,
+      shadowType: recipe.shading.mode === "toon" ? 0 : 1,
+    },
+  };
+}
+
+/**
+ * SHAPER `.preset` 텍스트(스타일 프리셋 또는 파츠 프리셋)를 파싱해 `CharacterRecipe` v3로 변환한다.
+ */
+export function parseShaperPresetTextToRecipe(
+  text: string,
+  baseRecipe?: CharacterRecipe,
+  now?: number,
+): ParseRecipeResult {
+  if (text.length > MAX_RECIPE_FILE_BYTES) {
+    return {
+      ok: false,
+      failure: failVisible(
+        "recipe-file-too-large",
+        `프리셋 파일이 상한(${MAX_RECIPE_FILE_BYTES} B)을 넘습니다.`,
+        undefined,
+        now,
+      ),
+    };
+  }
+  const { pairs } = tokenizeShaperPresetLines(text);
+  if (pairs.length === 0) {
+    return {
+      ok: false,
+      failure: failVisible("shaper-preset-syntax", "SHAPER 프리셋 토큰을 찾을 수 없습니다.", undefined, now),
+    };
+  }
+  const styleKeys = new Set(["hC", "sC", "ssT", "ssC", "ssL", "ssW", "rsT", "rsC", "rsL", "rsW", "olC", "olT", "olP", "hID", "shT", "lAX", "lAY"]);
+  const hasStyleToken = pairs.some(([k]) => styleKeys.has(k));
+  const hasPartToken = pairs.some(([k]) => !styleKeys.has(k));
+  const style = hasStyleToken ? parseShaperStylePreset(text) : undefined;
+  const part = hasPartToken ? (parseShaperPartPreset(text) ?? undefined) : undefined;
+  const recipe = shaperPresetToCharacterRecipe({
+    ...(style !== undefined ? { style } : {}),
+    ...(part !== undefined ? { part } : {}),
+    ...(baseRecipe !== undefined ? { baseRecipe } : {}),
+  });
+  return { ok: true, recipe };
+}
+
+/**
+ * SHAPER SettingManager::SetInputStyleText (0x06000297) & UITextKeycap::ReplaceKeyCapString (0x06000383) 역공학 내재화:
+ * 카메라 조작 방식(`0=unity`, `1=blender`, `2=max`)에 따른 단축키 안내 문자열 및 macOS 키캡 치환(`[Alt]->[Option]`, `[Ctrl]->[Command]`)을 생성한다.
+ */
+export function formatShaperInputStyleGuide(
+  style: "unity" | "blender" | "max",
+  options: { readonly macOs?: boolean } = {},
+): {
+  readonly camControlText: string;
+  readonly camControlSettingText: string;
+  readonly camControlToolTipText: string;
+} {
+  let camControlText: string;
+  let camControlSettingText: string;
+  let modifierBlock = "\n[Shift]\n[Ctrl]";
+
+  if (style === "unity") {
+    camControlText = "카메라 이동 [i']\n카메라 회전  [Alt] +[i,]\n카메라 확대 & 축소  [Alt] +[i.]";
+    camControlSettingText = "[i']\n[Alt] +[i,]\n[Alt] +[i.]";
+  } else if (style === "blender") {
+    camControlText = "카메라 이동  [Shift] +[i']\n카메라 회전 [i']\n카메라 확대 & 축소  [Ctrl] +[i']";
+    camControlSettingText = "[Shift] +[i']\n[i']\n[Ctrl] +[i']";
+  } else {
+    camControlText = "카메라 이동 [i']\n카메라 회전  [Alt] +[i']\n카메라 확대 & 축소  [Ctrl] + [Alt] +[i']";
+    camControlSettingText = "[i']\n[Alt] +[i']\n[Ctrl] + [Alt] +[i']";
+    modifierBlock = "\n[Ctrl]\n[Alt]";
+  }
+
+  let settingCombined = `${camControlSettingText}${modifierBlock}\n[Space]`;
+  if (options.macOs !== false) {
+    settingCombined = settingCombined.replace(/\[Alt\]/g, "[Option]").replace(/\[Ctrl\]/g, "[Command]");
+  }
+
+  const camControlToolTipText = `${camControlText}\n툰 쉐이더 전환  [Space]`
+    .replace(/\n/g, "          ")
+    .concat("          시점 초기화  [F5]");
+
+  return {
+    camControlText,
+    camControlSettingText: settingCombined,
+    camControlToolTipText,
+  };
+}
+
+/**
+ * SHAPER UIInputField::EndEditProc (0x060002f2) 역공학 내재화:
+ * 수치 입력 시 `loop == false`이면 `[min, max]`로 클램프하고, `loop == true`(오일러 각도 기본 `max=360`)이면
+ * `val < min -> max`, `val > max -> min`으로 순환 래핑한다.
+ */
+export function evaluateShaperNumericInput(options: {
+  readonly rawText: string;
+  readonly min: number;
+  readonly max?: number;
+  readonly loop?: boolean;
+  readonly fallback?: number;
+}): number {
+  const max = options.max ?? 360;
+  const parsed = Number.parseFloat(options.rawText);
+  if (!Number.isFinite(parsed)) {
+    return options.fallback ?? options.min;
+  }
+  if (parsed < options.min) {
+    return options.loop ? max : options.min;
+  }
+  if (parsed > max) {
+    return options.loop ? options.min : max;
+  }
+  return parsed;
+}
+
+/**
+ * SHAPER UIManager::AlignUI (0x0600031a) 역공학 내재화:
+ * 전체 창 해상도(`screenWidth`, `screenHeight`)와 UI 배율(`scaleFactor`, 0이면 1로 정규화)에서
+ * 좌측 패널(170px), 우측 패널(330px -> 좌우 합 500px), 상단 바(60px), 하단 바(24px -> 상하 합 84px)를 제외한
+ * 정규화 뷰포트 카메라 영역 `Rect(x, y, width, height)`를 계산한다.
+ */
+export function computeShaperViewportCameraRect(options: {
+  readonly screenWidth: number;
+  readonly screenHeight: number;
+  readonly scaleFactor: number;
+}): {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+} {
+  const sf = options.scaleFactor === 0 ? 1 : options.scaleFactor;
+  const w = Math.max(1, options.screenWidth);
+  const h = Math.max(1, options.screenHeight);
+  return {
+    x: (170 * sf) / w,
+    y: (24 * sf) / h,
+    width: Math.max(0, (w - 500 * sf) / w),
+    height: Math.max(0, (h - 84 * sf) / h),
+  };
+}
+
+export { evaluateShaperPresetAssetUpdates, parseShaperPartPreset, serializeShaperPartPreset };
 export type {
+  ShaperCheckedAssetResult,
   ShaperPartPresetData,
   ShaperPresetAccessoryRecord,
   ShaperPresetHairBaseZoneRecord,
@@ -469,4 +680,5 @@ export type {
   ShaperPresetLinePointRecord,
   ShaperPresetLineRecord,
   ShaperPresetTransformRecord,
+  ShaperServerAssetDescriptor,
 };

@@ -10,9 +10,9 @@ import { useCallback, useId, useState, useSyncExternalStore } from "react";
 
 import { CAMERA_FRAMING_MODES, DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
 import { saveBytes } from "../../../export/download.browser";
-import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportGlb, exportLayeredPsd, exportRecipe, exportTransparentPng } from "../../../export/export-session";
+import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportGlb, exportLayeredPsd, exportRecipe, exportShaperStylePreset, exportTransparentPng } from "../../../export/export-session";
 import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
-import { RECIPE_FILE_SUFFIX, extractPaintLayers, parseRecipeFile } from "../../../export/recipe-file";
+import { RECIPE_FILE_SUFFIX, extractPaintLayers, parseRecipeFile, parseShaperPresetTextToRecipe } from "../../../export/recipe-file";
 import { uploadReplacedLayers } from "../../../paint/paint-bridge";
 import { kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
@@ -81,6 +81,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [settleSteps, setSettleSteps] = useState(0);
   const [includeIdMasks, setIncludeIdMasks] = useState(true);
   const [includeReferencePasses, setIncludeReferencePasses] = useState(false);
+  const [splitHairLayers, setSplitHairLayers] = useState(false);
+  const [useLuminanceToAlpha, setUseLuminanceToAlpha] = useState(false);
   const [busy, setBusy] = useState<ExportKind | "import" | null>(null);
   const [receipt, setReceipt] = useState<ExportReceipt | null>(null);
   const [failure, setFailure] = useState<LabFailure | null>(null);
@@ -145,7 +147,23 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         setFailure(failVisible("export-psd-canvas", "PSD 캔버스 팩토리를 등록할 수 없어 PSD를 만들 수 없습니다.", error, now()));
         return;
       }
-      finish(await exportLayeredPsd(engine, session.layersForExport(), { width, height, framing: framingValue, settleSteps, includeIdMasks, includeReferencePasses }, { now }));
+      finish(
+        await exportLayeredPsd(
+          engine,
+          session.layersForExport(),
+          {
+            width,
+            height,
+            framing: framingValue,
+            settleSteps,
+            includeIdMasks,
+            includeReferencePasses,
+            splitHairLayers,
+            ...(useLuminanceToAlpha ? { lineArt: { useLuminanceToAlpha: true } } : {}),
+          },
+          { now },
+        ),
+      );
     });
   };
 
@@ -163,6 +181,12 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     });
   };
 
+  const onShaperPresetSave = (): void => {
+    void run("shaper-preset", async () => {
+      finish(exportShaperStylePreset(labState.recipe, { now }));
+    });
+  };
+
   const onRecipeFile = (file: File | undefined): void => {
     if (!file) return;
     void run("import", async () => {
@@ -173,13 +197,19 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         setFailure(failVisible("recipe-file-read", `${file.name}: 파일을 읽을 수 없습니다.`, error, now()));
         return;
       }
-      const parsed = parseRecipeFile(text, now());
+      const isShaperPreset = file.name.toLowerCase().endsWith(".preset");
+      const parsed = isShaperPreset
+        ? parseShaperPresetTextToRecipe(text, labState.recipe, now())
+        : parseRecipeFile(text, now());
       if (!parsed.ok) {
         setFailure(parsed.failure);
         return;
       }
       const paint = await extractPaintLayers(parsed.recipe, now());
       const importNotices: string[] = [];
+      if (isShaperPreset) {
+        importNotices.push("SHAPER 프리셋 파일을 현재 형식(v3)으로 변환해 열었습니다.");
+      }
       const migrationNotice = recipeMigrationNoticeKo(parsed);
       if (migrationNotice !== null) importNotices.push(migrationNotice);
       // recipe/load는 스토어가 이전 레이어를 가리키는 페인트 undo 이력을 비운다. 엔진 텍스처는 여기서 새 세션과 맞춘다.
@@ -262,9 +292,12 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <button type="button" onClick={onRecipeSave} disabled={busy !== null}>
           레시피 저장
         </button>
+        <button type="button" onClick={onShaperPresetSave} disabled={busy !== null}>
+          SHAPER 프리셋 저장
+        </button>
         <label className="cl-export-file" htmlFor={`${ids}-file`}>
           레시피 불러오기
-          <input id={`${ids}-file`} type="file" accept={`${RECIPE_FILE_SUFFIX},.json,application/json`} disabled={busy !== null} onChange={(event) => onRecipeFile(event.target.files?.[0])} />
+          <input id={`${ids}-file`} type="file" accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`} disabled={busy !== null} onChange={(event) => onRecipeFile(event.target.files?.[0])} />
         </label>
       </div>
       <fieldset className="cl-export-psd">
@@ -274,6 +307,12 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         </label>
         <label htmlFor={`${ids}-ref`}>
           <input id={`${ids}-ref`} type="checkbox" checked={includeReferencePasses} onChange={(event) => setIncludeReferencePasses(event.target.checked)} /> 참조 패스(깊이·법선) 포함
+        </label>
+        <label htmlFor={`${ids}-hairsplit`}>
+          <input id={`${ids}-hairsplit`} type="checkbox" checked={splitHairLayers} onChange={(event) => setSplitHairLayers(event.target.checked)} /> 헤어 3-레이어 분리(Hair Base·Shadow·Line)
+        </label>
+        <label htmlFor={`${ids}-lumalpha`}>
+          <input id={`${ids}-lumalpha`} type="checkbox" checked={useLuminanceToAlpha} onChange={(event) => setUseLuminanceToAlpha(event.target.checked)} /> SHAPER 휘도 반전 선화 추출(a = 1 - r)
         </label>
         <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null}>
           레이어 PSD 저장

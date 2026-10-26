@@ -289,4 +289,49 @@ describe("ExportPanel", () => {
     const file = new File(["안녕"], "hello.txt", { type: "text/plain" });
     expect(await readTextFile(file)).toBe("안녕");
   });
+
+  it("SHAPER 프리셋 저장 및 .preset 파일 불러오기·헤어 3-레이어 분리 PSD 옵션을 지원한다", async () => {
+    const calls: SaveCall[] = [];
+    const dispatched: LabCommand[] = [];
+    const engine = createMockEngine({ partIdPalette: { 1: { role: "hair", labelKo: "머리" } } });
+    let presetText = "";
+    render(
+      <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(command) => dispatched.push(command)}>
+        <ExportPanel
+          session={createPaintSession({ layerSize: 8 })}
+          deps={{
+            save: (fileName, bytes, mime) => {
+              if (fileName.endsWith(".preset")) {
+                presetText = new TextDecoder().decode(bytes);
+              }
+              return fakeSave(calls)(fileName, bytes, mime);
+            },
+            now: () => 1,
+            readFile: async () => presetText || "1.0\nhC*0.2/0.4/0.6,sC*1/0.8/0.7",
+          }}
+        />
+      </MockLabProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "SHAPER 프리셋 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.fileName).toMatch(/-style\.preset$/u);
+
+    const input = screen.getByLabelText("레시피 불러오기") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [new File([presetText], "style.preset", { type: "text/plain" })] } });
+    });
+    await waitFor(() => expect(dispatched).toHaveLength(1));
+    expect(dispatched[0]?.type).toBe("recipe/load");
+    expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain(
+      "SHAPER 프리셋 파일을 현재 형식(v3)으로 변환해 열었습니다.",
+    );
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "24" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "24" } });
+    fireEvent.click(screen.getByLabelText(/헤어 3-레이어 분리/u));
+    fireEvent.click(screen.getByLabelText(/SHAPER 휘도 반전 선화 추출/u));
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]?.fileName).toBe("character-mock-24x24.psd");
+  });
 });
