@@ -1,13 +1,15 @@
-import { Clapperboard, Cpu, Film, Globe, Music, Sparkles, Store, Video, Wrench } from "lucide-react";
+import { BookOpen, Clapperboard, Cpu, Film, Globe, Music, Palette, Sparkles, Store, Video, Wrench } from "lucide-react";
 
 import type {
   CotransVroidSkyboxWorldLocalizerReport,
   KreaSplineLumiereRealtimeShaderReport,
   LtxBoordsCascadeurRiveAnimaticReport,
+  MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport,
   NijiPixaiCivitaiLoraSrefDirectorReport,
   RunwayLumaPikaViggleLive2dSpineMotionReport,
   SketchupBlenderPetalicaMagmaRecraftStudioReport,
   StoryboarderDreamsKritaArtbreederDirectorReport,
+  TapasTappytoonRidiPostypeSudowriteNovelcrafterReport,
   TootoonGentoonTooningKrSuiteReport,
   TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
@@ -24,6 +26,8 @@ export interface StudioRea39ExtendedTabPanelsProps {
   readonly currentTripoSunoOsmu: TripoMeshyHeroforgeSunoElevenlabsOsmuReport;
   readonly currentRunwayMotion: RunwayLumaPikaViggleLive2dSpineMotionReport;
   readonly currentSketchupStudio: SketchupBlenderPetalicaMagmaRecraftStudioReport;
+  readonly currentTapasCodex: TapasTappytoonRidiPostypeSudowriteNovelcrafterReport;
+  readonly currentMixamoToonboom: MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport;
 }
 
 export function StudioRea39ExtendedTabPanels({
@@ -37,6 +41,8 @@ export function StudioRea39ExtendedTabPanels({
   currentTripoSunoOsmu,
   currentRunwayMotion,
   currentSketchupStudio,
+  currentTapasCodex,
+  currentMixamoToonboom,
 }: StudioRea39ExtendedTabPanelsProps) {
   return (
     <>
@@ -524,6 +530,109 @@ export function StudioRea39ExtendedTabPanels({
               </div>
               <div className="text-fg-3">
                 {currentSketchupStudio.magmaRecraftCaraProduction.magmaCollaboratorRoles.join(" · ")}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 15: Tapas · Tappytoon · RIDI · Postype 글로벌 연재 · Sudowrite · Novelcrafter · Campfire 코덱스 */}
+      {activeTab === "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter" ? (
+        <div
+          data-testid="rea15-panel-tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <BookOpen className="size-3 text-accent" aria-hidden="true" />
+              Tapas · Tappytoon · 리디 · 포스타입 글로벌 연재 & Sudowrite · Novelcrafter · Campfire 코덱스
+            </span>
+            <span className="text-accent">
+              Tapas WUF {currentTapasCodex.globalPublishingEconomics.tapasWaitUntilFreeHours}h (
+              {currentTapasCodex.globalPublishingEconomics.tapasInkPerEpisode} Ink) · 포스타입 ₩
+              {currentTapasCodex.globalPublishingEconomics.postypeMembershipMonthlyKrw.toLocaleString()}
+            </span>
+          </div>
+          <p className="text-fg-2">{currentTapasCodex.publishingAndCodexSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Tapas · Tappytoon · RIDI · Postype</div>
+              <div className="text-fg-2">
+                {currentTapasCodex.globalPublishingEconomics.tappytoonClubPointBundleKo}
+              </div>
+              <div className="text-fg-3">
+                {currentTapasCodex.globalPublishingEconomics.ridiWaitFreeAndNoblesseTierKo}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Sudowrite & Novelcrafter Codex</div>
+              <div className="text-fg-2">
+                {currentTapasCodex.novelToWebtoonStoryCodex.sudowriteStoryEngineBeatKo}
+              </div>
+              <div className="text-fg-3">
+                {currentTapasCodex.novelToWebtoonStoryCodex.novelcrafterCodexEntries.join(" · ")}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Campfire · Milanote · PureRef</div>
+              <div className="text-fg-2">
+                {currentTapasCodex.novelToWebtoonStoryCodex.campfireTimelineArcKo}
+              </div>
+              <div className="text-fg-3">
+                {currentTapasCodex.novelToWebtoonStoryCodex.milanoteAndPurerefMoodboardSpecKo}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 16: Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle */}
+      {activeTab === "mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle" ? (
+        <div
+          data-testid="rea15-panel-mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Palette className="size-3 text-accent" aria-hidden="true" />
+              Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle
+            </span>
+            <span className="text-accent">
+              WCAG {currentMixamoToonboom.colorHarmonyAndWebtoonTypography.wcagContrastRatio}:1 ·{" "}
+              {currentMixamoToonboom.colorHarmonyAndWebtoonTypography.blambotEnglishLetteringFont}
+            </span>
+          </div>
+          <p className="text-fg-2">{currentMixamoToonboom.productionPipelineSummaryKo}</p>
+
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Mixamo · Marvelous · Substance 3D</div>
+              <div className="text-fg-2">
+                {currentMixamoToonboom.mixamoMarvelousSubstance3dRig.mixamoMocapFbxClipKo}
+              </div>
+              <div className="text-fg-3">
+                {currentMixamoToonboom.mixamoMarvelousSubstance3dRig.marvelousClothPatternWeftWarpKo} ·{" "}
+                {currentMixamoToonboom.mixamoMarvelousSubstance3dRig.substanceStylizedToonMaterialKo}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">Coolors · Adobe Color · 눈누 · Blambot</div>
+              <div className="text-fg-2">
+                팔레트 {currentMixamoToonboom.colorHarmonyAndWebtoonTypography.coolorsAndAdobeColorMoodHexes.join(" / ")}
+              </div>
+              <div className="text-fg-3">
+                {currentMixamoToonboom.colorHarmonyAndWebtoonTypography.noonnuDialogueAndSfxFontsKo.join(" · ")}
+              </div>
+            </div>
+            <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
+              <div className="font-bold text-fg">ToonBoom · TVPaint · Moho · Eagle</div>
+              <div className="text-fg-2">
+                {currentMixamoToonboom.toonBoomTvpaintMohoAndEagleHub.toonBoomHarmonyNodeCompositeKo}
+              </div>
+              <div className="text-fg-3">
+                {currentMixamoToonboom.toonBoomTvpaintMohoAndEagleHub.tvpaintCtgColorAndMohoSmartBoneKo} ·{" "}
+                {currentMixamoToonboom.toonBoomTvpaintMohoAndEagleHub.eagleSmartFolderColorTags.join(" / ")}
               </div>
             </div>
           </div>

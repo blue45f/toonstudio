@@ -1,6 +1,6 @@
 /**
  * StudioRea15PlatformsWorkbenchPanel.tsx
- * Phase 7 글로벌·국내 80대 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·협업 AI 보조 플랫폼 전수 REA 역공학 및 14대 창의적 AI 워크벤치
+ * Phase 7 글로벌·국내 100대 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·출판·식자·애니메이션 AI 보조 플랫폼 전수 REA 역공학 및 16대 창의적 AI 워크벤치
  */
 
 import { Activity, Box, GraduationCap, Layers, Palette, Sparkles, Wand2 } from "lucide-react";
@@ -17,11 +17,13 @@ import {
   buildLocalKreaSplineLumiereRealtimeShaderReport,
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
+  buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport,
   buildLocalNijiPixaiCivitaiLoraSrefDirectorReport,
   buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport,
   buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
   buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
+  buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
   buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport,
   getRea15PlatformTheme,
@@ -33,11 +35,13 @@ import {
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
+  runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist,
   runNijiPixaiCivitaiLoraSrefDirectorAssist,
   runRunwayLumaPikaViggleLive2dSpineMotionAssist,
   runSketchupBlenderPetalicaMagmaRecraftStudioAssist,
   runSnaptoonFrameoShaper3dDirectorAssist,
   runStoryboarderDreamsKritaArtbreederDirectorAssist,
+  runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist,
   runTootoonGentoonTooningKrSuiteAssist,
   runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist,
   type CotransVroidSkyboxWorldLocalizerReport,
@@ -47,6 +51,7 @@ import {
   type KreaSplineLumiereRealtimeShaderReport,
   type LtxBoordsCascadeurRiveAnimaticReport,
   type ManhwaKomikoAnifusionFlowReport,
+  type MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport,
   type NijiPixaiCivitaiLoraSrefDirectorReport,
   type Rea15Envelope,
   type Rea15PlatformId,
@@ -54,6 +59,7 @@ import {
   type SketchupBlenderPetalicaMagmaRecraftStudioReport,
   type SnaptoonFrameoShaper3dDirectorReport,
   type StoryboarderDreamsKritaArtbreederDirectorReport,
+  type TapasTappytoonRidiPostypeSudowriteNovelcrafterReport,
   type TootoonGentoonTooningKrSuiteReport,
   type TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
@@ -75,108 +81,42 @@ export function StudioRea15PlatformsWorkbenchPanel({
   const [isRunning, setIsRunning] = useState(false);
   const [selectedQuizChoice, setSelectedQuizChoice] = useState<Record<string, number>>({});
 
-  const [glimnaviEnv, setGlimnaviEnv] =
-    useState<Rea15Envelope<GlimnaviRelightAndLineartV23Report> | null>(null);
-  const [kaistoryEnv, setKaistoryEnv] =
-    useState<Rea15Envelope<KaistorySingleEnvelopeAndKaionReport> | null>(null);
-  const [snaptoon3dEnv, setSnaptoon3dEnv] =
-    useState<Rea15Envelope<SnaptoonFrameoShaper3dDirectorReport> | null>(null);
-  const [manhwaFlowEnv, setManhwaFlowEnv] =
-    useState<Rea15Envelope<ManhwaKomikoAnifusionFlowReport> | null>(null);
-  const [dopamineUxEnv, setDopamineUxEnv] =
-    useState<Rea15Envelope<CreativeDopamineAndUxSynthesizerReport> | null>(null);
-  const [krSuiteEnv, setKrSuiteEnv] =
-    useState<Rea15Envelope<TootoonGentoonTooningKrSuiteReport> | null>(null);
-  const [realtimeShaderEnv, setRealtimeShaderEnv] =
-    useState<Rea15Envelope<KreaSplineLumiereRealtimeShaderReport> | null>(null);
-  const [animaticEnv, setAnimaticEnv] =
-    useState<Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport> | null>(null);
-  const [worldLocalizerEnv, setWorldLocalizerEnv] =
-    useState<Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport> | null>(null);
-  const [dreamsKritaEnv, setDreamsKritaEnv] =
-    useState<Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport> | null>(null);
-  const [loraSrefEnv, setLoraSrefEnv] =
-    useState<Rea15Envelope<NijiPixaiCivitaiLoraSrefDirectorReport> | null>(null);
-  const [tripoSunoEnv, setTripoSunoEnv] =
-    useState<Rea15Envelope<TripoMeshyHeroforgeSunoElevenlabsOsmuReport> | null>(null);
-  const [runwayMotionEnv, setRunwayMotionEnv] =
-    useState<Rea15Envelope<RunwayLumaPikaViggleLive2dSpineMotionReport> | null>(null);
-  const [sketchupStudioEnv, setSketchupStudioEnv] =
-    useState<Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport> | null>(null);
+  const [glimnaviEnv, setGlimnaviEnv] = useState<Rea15Envelope<GlimnaviRelightAndLineartV23Report> | null>(null);
+  const [kaistoryEnv, setKaistoryEnv] = useState<Rea15Envelope<KaistorySingleEnvelopeAndKaionReport> | null>(null);
+  const [snaptoon3dEnv, setSnaptoon3dEnv] = useState<Rea15Envelope<SnaptoonFrameoShaper3dDirectorReport> | null>(null);
+  const [manhwaFlowEnv, setManhwaFlowEnv] = useState<Rea15Envelope<ManhwaKomikoAnifusionFlowReport> | null>(null);
+  const [dopamineUxEnv, setDopamineUxEnv] = useState<Rea15Envelope<CreativeDopamineAndUxSynthesizerReport> | null>(null);
+  const [krSuiteEnv, setKrSuiteEnv] = useState<Rea15Envelope<TootoonGentoonTooningKrSuiteReport> | null>(null);
+  const [realtimeShaderEnv, setRealtimeShaderEnv] = useState<Rea15Envelope<KreaSplineLumiereRealtimeShaderReport> | null>(null);
+  const [animaticEnv, setAnimaticEnv] = useState<Rea15Envelope<LtxBoordsCascadeurRiveAnimaticReport> | null>(null);
+  const [worldLocalizerEnv, setWorldLocalizerEnv] = useState<Rea15Envelope<CotransVroidSkyboxWorldLocalizerReport> | null>(null);
+  const [dreamsKritaEnv, setDreamsKritaEnv] = useState<Rea15Envelope<StoryboarderDreamsKritaArtbreederDirectorReport> | null>(null);
+  const [loraSrefEnv, setLoraSrefEnv] = useState<Rea15Envelope<NijiPixaiCivitaiLoraSrefDirectorReport> | null>(null);
+  const [tripoSunoEnv, setTripoSunoEnv] = useState<Rea15Envelope<TripoMeshyHeroforgeSunoElevenlabsOsmuReport> | null>(null);
+  const [runwayMotionEnv, setRunwayMotionEnv] = useState<Rea15Envelope<RunwayLumaPikaViggleLive2dSpineMotionReport> | null>(null);
+  const [sketchupStudioEnv, setSketchupStudioEnv] = useState<Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport> | null>(null);
+  const [tapasCodexEnv, setTapasCodexEnv] = useState<Rea15Envelope<TapasTappytoonRidiPostypeSudowriteNovelcrafterReport> | null>(null);
+  const [mixamoToonboomEnv, setMixamoToonboomEnv] = useState<Rea15Envelope<MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport> | null>(null);
 
   const platformThemes = useMemo(() => listRea15PlatformThemes(), []);
-  const activePlatformTheme = useMemo(
-    () => getRea15PlatformTheme(selectedPlatformId),
-    [selectedPlatformId],
-  );
+  const activePlatformTheme = useMemo(() => getRea15PlatformTheme(selectedPlatformId), [selectedPlatformId]);
 
-  const currentGlimnavi = useMemo(
-    () => glimnaviEnv?.report ?? buildLocalGlimnaviRelightAndLineartV23Report(assistInput),
-    [glimnaviEnv, assistInput],
-  );
-  const currentKaistory = useMemo(
-    () => kaistoryEnv?.report ?? buildLocalKaistorySingleEnvelopeAndKaionReport(assistInput),
-    [kaistoryEnv, assistInput],
-  );
-  const currentSnaptoon3d = useMemo(
-    () => snaptoon3dEnv?.report ?? buildLocalSnaptoonFrameoShaper3dDirectorReport(assistInput),
-    [snaptoon3dEnv, assistInput],
-  );
-  const currentManhwaFlow = useMemo(
-    () => manhwaFlowEnv?.report ?? buildLocalManhwaKomikoAnifusionFlowReport(assistInput),
-    [manhwaFlowEnv, assistInput],
-  );
-  const currentDopamineUx = useMemo(
-    () =>
-      dopamineUxEnv?.report ?? buildLocalCreativeDopamineAndUxSynthesizerReport(assistInput),
-    [dopamineUxEnv, assistInput],
-  );
-  const currentKrSuite = useMemo(
-    () => krSuiteEnv?.report ?? buildLocalTootoonGentoonTooningKrSuiteReport(assistInput),
-    [krSuiteEnv, assistInput],
-  );
-  const currentRealtimeShader = useMemo(
-    () =>
-      realtimeShaderEnv?.report ?? buildLocalKreaSplineLumiereRealtimeShaderReport(assistInput),
-    [realtimeShaderEnv, assistInput],
-  );
-  const currentAnimatic = useMemo(
-    () => animaticEnv?.report ?? buildLocalLtxBoordsCascadeurRiveAnimaticReport(assistInput),
-    [animaticEnv, assistInput],
-  );
-  const currentWorldLocalizer = useMemo(
-    () =>
-      worldLocalizerEnv?.report ?? buildLocalCotransVroidSkyboxWorldLocalizerReport(assistInput),
-    [worldLocalizerEnv, assistInput],
-  );
-  const currentDreamsKritaDirector = useMemo(
-    () =>
-      dreamsKritaEnv?.report ??
-      buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(assistInput),
-    [dreamsKritaEnv, assistInput],
-  );
-  const currentLoraSrefDirector = useMemo(
-    () =>
-      loraSrefEnv?.report ?? buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(assistInput),
-    [loraSrefEnv, assistInput],
-  );
-  const currentTripoSunoOsmu = useMemo(
-    () =>
-      tripoSunoEnv?.report ?? buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(assistInput),
-    [tripoSunoEnv, assistInput],
-  );
-  const currentRunwayMotion = useMemo(
-    () =>
-      runwayMotionEnv?.report ??
-      buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(assistInput),
-    [runwayMotionEnv, assistInput],
-  );
-  const currentSketchupStudio = useMemo(
-    () =>
-      sketchupStudioEnv?.report ??
-      buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(assistInput),
-    [sketchupStudioEnv, assistInput],
-  );
+  const currentGlimnavi = useMemo(() => glimnaviEnv?.report ?? buildLocalGlimnaviRelightAndLineartV23Report(assistInput), [glimnaviEnv, assistInput]);
+  const currentKaistory = useMemo(() => kaistoryEnv?.report ?? buildLocalKaistorySingleEnvelopeAndKaionReport(assistInput), [kaistoryEnv, assistInput]);
+  const currentSnaptoon3d = useMemo(() => snaptoon3dEnv?.report ?? buildLocalSnaptoonFrameoShaper3dDirectorReport(assistInput), [snaptoon3dEnv, assistInput]);
+  const currentManhwaFlow = useMemo(() => manhwaFlowEnv?.report ?? buildLocalManhwaKomikoAnifusionFlowReport(assistInput), [manhwaFlowEnv, assistInput]);
+  const currentDopamineUx = useMemo(() => dopamineUxEnv?.report ?? buildLocalCreativeDopamineAndUxSynthesizerReport(assistInput), [dopamineUxEnv, assistInput]);
+  const currentKrSuite = useMemo(() => krSuiteEnv?.report ?? buildLocalTootoonGentoonTooningKrSuiteReport(assistInput), [krSuiteEnv, assistInput]);
+  const currentRealtimeShader = useMemo(() => realtimeShaderEnv?.report ?? buildLocalKreaSplineLumiereRealtimeShaderReport(assistInput), [realtimeShaderEnv, assistInput]);
+  const currentAnimatic = useMemo(() => animaticEnv?.report ?? buildLocalLtxBoordsCascadeurRiveAnimaticReport(assistInput), [animaticEnv, assistInput]);
+  const currentWorldLocalizer = useMemo(() => worldLocalizerEnv?.report ?? buildLocalCotransVroidSkyboxWorldLocalizerReport(assistInput), [worldLocalizerEnv, assistInput]);
+  const currentDreamsKritaDirector = useMemo(() => dreamsKritaEnv?.report ?? buildLocalStoryboarderDreamsKritaArtbreederDirectorReport(assistInput), [dreamsKritaEnv, assistInput]);
+  const currentLoraSrefDirector = useMemo(() => loraSrefEnv?.report ?? buildLocalNijiPixaiCivitaiLoraSrefDirectorReport(assistInput), [loraSrefEnv, assistInput]);
+  const currentTripoSunoOsmu = useMemo(() => tripoSunoEnv?.report ?? buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport(assistInput), [tripoSunoEnv, assistInput]);
+  const currentRunwayMotion = useMemo(() => runwayMotionEnv?.report ?? buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport(assistInput), [runwayMotionEnv, assistInput]);
+  const currentSketchupStudio = useMemo(() => sketchupStudioEnv?.report ?? buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(assistInput), [sketchupStudioEnv, assistInput]);
+  const currentTapasCodex = useMemo(() => tapasCodexEnv?.report ?? buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport(assistInput), [tapasCodexEnv, assistInput]);
+  const currentMixamoToonboom = useMemo(() => mixamoToonboomEnv?.report ?? buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport(assistInput), [mixamoToonboomEnv, assistInput]);
 
   const activeEnvelope =
     activeTab === "glimnavi-relight-v23"
@@ -205,7 +145,11 @@ export function StudioRea15PlatformsWorkbenchPanel({
                             ? tripoSunoEnv
                             : activeTab === "runway-luma-pika-viggle-live2d-spine"
                               ? runwayMotionEnv
-                              : sketchupStudioEnv;
+                              : activeTab === "sketchup-blender-petalica-magma-recraft"
+                                ? sketchupStudioEnv
+                                : activeTab === "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"
+                                  ? tapasCodexEnv
+                                  : mixamoToonboomEnv;
 
   const handleRunActiveTab = async () => {
     setIsRunning(true);
@@ -213,87 +157,67 @@ export function StudioRea15PlatformsWorkbenchPanel({
       if (activeTab === "glimnavi-relight-v23") {
         const res = await runGlimnaviRelightAndLineartV23Assist(assistInput);
         setGlimnaviEnv(res);
-        onAppendDirectionLine(
-          `[GlimNavi v2.3 (${res.modelUsed})] ${res.report.selectedLineartVersion} / ${res.report.selectedLineartPreset} · ${res.report.relightPass.relightDirectiveKo}`,
-        );
+        onAppendDirectionLine(`[GlimNavi v2.3 (${res.modelUsed})] ${res.report.selectedLineartVersion} / ${res.report.selectedLineartPreset} · ${res.report.relightPass.relightDirectiveKo}`);
       } else if (activeTab === "kaistory-envelope-kaion") {
         const res = await runKaistorySingleEnvelopeAndKaionAssist(assistInput);
         setKaistoryEnv(res);
-        onAppendDirectionLine(
-          `[KAISTORY & KAION (${res.modelUsed})] ${res.report.envelopeSummaryKo} (퀴즈 카드 ${res.report.kaionLearningCards.length}종 생성)`,
-        );
+        onAppendDirectionLine(`[KAISTORY & KAION (${res.modelUsed})] ${res.report.envelopeSummaryKo} (퀴즈 카드 ${res.report.kaionLearningCards.length}종 생성)`);
       } else if (activeTab === "snaptoon-frameo-shaper-3d") {
         const res = await runSnaptoonFrameoShaper3dDirectorAssist(assistInput);
         setSnaptoon3dEnv(res);
-        onAppendDirectionLine(
-          `[Snaptoon·Frameo·SHAPER (${res.modelUsed})] ${res.report.frameoSpotlightShader.shortDramaTransitionRuleKo}`,
-        );
+        onAppendDirectionLine(`[Snaptoon·Frameo·SHAPER (${res.modelUsed})] ${res.report.frameoSpotlightShader.shortDramaTransitionRuleKo}`);
       } else if (activeTab === "manhwa-komiko-anifusion") {
         const res = await runManhwaKomikoAnifusionFlowAssist(assistInput);
         setManhwaFlowEnv(res);
-        onAppendDirectionLine(
-          `[ManhwaAI·Komiko·Anifusion (${res.modelUsed})] 화풍 ${res.report.manhwaStylePreset} · 인비트윈 ${res.report.komikoLayerSplitterAndInbetween.inbetweenFrameCount}프레임 · 노드 ${res.report.anifusionNodeFlowGraph.length}개`,
-        );
+        onAppendDirectionLine(`[ManhwaAI·Komiko·Anifusion (${res.modelUsed})] 화풍 ${res.report.manhwaStylePreset} · 인비트윈 ${res.report.komikoLayerSplitterAndInbetween.inbetweenFrameCount}프레임 · 노드 ${res.report.anifusionNodeFlowGraph.length}개`);
       } else if (activeTab === "creative-dopamine-ux") {
         const res = await runCreativeDopamineAndUxSynthesizerAssist(assistInput);
         setDopamineUxEnv(res);
-        onAppendDirectionLine(
-          `[독자 도파민 & UI 합성기 (${res.modelUsed})] 도파민 피크 ${res.report.overallDopaminePeakScore}점 · 완독률 ${res.report.predictedEpisodeCompletionRatePct}% · 테마 '${res.report.synthesizedUiUxTheme.themeTitleKo}'`,
-        );
+        onAppendDirectionLine(`[독자 도파민 & UI 합성기 (${res.modelUsed})] 도파민 피크 ${res.report.overallDopaminePeakScore}점 · 완독률 ${res.report.predictedEpisodeCompletionRatePct}% · 테마 '${res.report.synthesizedUiUxTheme.themeTitleKo}'`);
       } else if (activeTab === "tootoon-gentoon-tooning-kr") {
         const res = await runTootoonGentoonTooningKrSuiteAssist(assistInput);
         setKrSuiteEnv(res);
-        onAppendDirectionLine(
-          `[TooToon·GenToon·Tooning (${res.modelUsed})] ${res.report.suiteSummaryKo}`,
-        );
+        onAppendDirectionLine(`[TooToon·GenToon·Tooning (${res.modelUsed})] ${res.report.suiteSummaryKo}`);
       } else if (activeTab === "krea-spline-lumiere-shader") {
         const res = await runKreaSplineLumiereRealtimeShaderAssist(assistInput);
         setRealtimeShaderEnv(res);
-        onAppendDirectionLine(
-          `[Krea·Spline·Lumiere (${res.modelUsed})] ${res.report.lumiereAndNodeGraphShaders.compositeShaderNoteKo}`,
-        );
+        onAppendDirectionLine(`[Krea·Spline·Lumiere (${res.modelUsed})] ${res.report.lumiereAndNodeGraphShaders.compositeShaderNoteKo}`);
       } else if (activeTab === "ltx-boords-cascadeur-rive") {
         const res = await runLtxBoordsCascadeurRiveAnimaticAssist(assistInput);
         setAnimaticEnv(res);
-        onAppendDirectionLine(
-          `[LTX·Boords·Cascadeur·Rive (${res.modelUsed})] ${res.report.cascadeurPhysicsRig.ballisticTrajectoryArcKo}`,
-        );
+        onAppendDirectionLine(`[LTX·Boords·Cascadeur·Rive (${res.modelUsed})] ${res.report.cascadeurPhysicsRig.ballisticTrajectoryArcKo}`);
       } else if (activeTab === "cotrans-vroid-skybox-localizer") {
         const res = await runCotransVroidSkyboxWorldLocalizerAssist(assistInput);
         setWorldLocalizerEnv(res);
-        onAppendDirectionLine(
-          `[Cotrans·VRoid·Skybox (${res.modelUsed})] ${res.report.worldLocalizerSummaryKo}`,
-        );
+        onAppendDirectionLine(`[Cotrans·VRoid·Skybox (${res.modelUsed})] ${res.report.worldLocalizerSummaryKo}`);
       } else if (activeTab === "storyboarder-dreams-krita-artbreeder") {
         const res = await runStoryboarderDreamsKritaArtbreederDirectorAssist(assistInput);
         setDreamsKritaEnv(res);
-        onAppendDirectionLine(
-          `[Storyboarder·Dreams·Krita·Artbreeder (${res.modelUsed})] ${res.report.directorExecutiveSummaryKo}`,
-        );
+        onAppendDirectionLine(`[Storyboarder·Dreams·Krita·Artbreeder (${res.modelUsed})] ${res.report.directorExecutiveSummaryKo}`);
       } else if (activeTab === "niji-pixai-civitai-lora-sref") {
         const res = await runNijiPixaiCivitaiLoraSrefDirectorAssist(assistInput);
         setLoraSrefEnv(res);
-        onAppendDirectionLine(
-          `[Niji·Civitai·PixAI·Picrew (${res.modelUsed})] ${res.report.loraAndSrefSummaryKo}`,
-        );
+        onAppendDirectionLine(`[Niji·Civitai·PixAI·Picrew (${res.modelUsed})] ${res.report.loraAndSrefSummaryKo}`);
       } else if (activeTab === "tripo-meshy-heroforge-suno-osmu") {
         const res = await runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist(assistInput);
         setTripoSunoEnv(res);
-        onAppendDirectionLine(
-          `[Tripo3D·Suno·ElevenLabs·MANGA Plus (${res.modelUsed})] ${res.report.osmuExecutiveSummaryKo}`,
-        );
+        onAppendDirectionLine(`[Tripo3D·Suno·ElevenLabs·MANGA Plus (${res.modelUsed})] ${res.report.osmuExecutiveSummaryKo}`);
       } else if (activeTab === "runway-luma-pika-viggle-live2d-spine") {
         const res = await runRunwayLumaPikaViggleLive2dSpineMotionAssist(assistInput);
         setRunwayMotionEnv(res);
-        onAppendDirectionLine(
-          `[Runway·Luma·Pika·Viggle·Live2D·Spine (${res.modelUsed})] ${res.report.movingToonExecutiveSummaryKo}`,
-        );
-      } else {
+        onAppendDirectionLine(`[Runway·Luma·Pika·Viggle·Live2D·Spine (${res.modelUsed})] ${res.report.movingToonExecutiveSummaryKo}`);
+      } else if (activeTab === "sketchup-blender-petalica-magma-recraft") {
         const res = await runSketchupBlenderPetalicaMagmaRecraftStudioAssist(assistInput);
         setSketchupStudioEnv(res);
-        onAppendDirectionLine(
-          `[SketchUp·Blender·Petalica·Magma·Recraft (${res.modelUsed})] ${res.report.hybridStudioExecutiveSummaryKo}`,
-        );
+        onAppendDirectionLine(`[SketchUp·Blender·Petalica·Magma·Recraft (${res.modelUsed})] ${res.report.hybridStudioExecutiveSummaryKo}`);
+      } else if (activeTab === "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter") {
+        const res = await runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist(assistInput);
+        setTapasCodexEnv(res);
+        onAppendDirectionLine(`[Tapas·Tappytoon·RIDI·Postype·Sudowrite·Novelcrafter (${res.modelUsed})] ${res.report.publishingAndCodexSummaryKo}`);
+      } else {
+        const res = await runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist(assistInput);
+        setMixamoToonboomEnv(res);
+        onAppendDirectionLine(`[Mixamo·Marvelous·Coolors·눈누·Blambot·ToonBoom·Eagle (${res.modelUsed})] ${res.report.productionPipelineSummaryKo}`);
       }
     } finally {
       setIsRunning(false);
@@ -310,10 +234,10 @@ export function StudioRea15PlatformsWorkbenchPanel({
         <div className="flex items-center gap-1.5">
           <Palette className="size-3.5 text-accent" aria-hidden="true" />
           <span className="font-bold text-fg">
-            Phase 7 · 80대 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·협업 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 14대 AI 워크벤치
+            Phase 7 · 100대 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·출판·식자·애니메이션 AI 플랫폼 전수 REA UI/UX 디자인 토큰 & 16대 AI 워크벤치
           </span>
           <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[0.54rem] font-semibold text-accent">
-            80개 플랫폼 · 82 브라우저 캡처 · 175만+ AST 노드 검증
+            100개 플랫폼 · 102 브라우저 캡처 · 205만+ AST 노드 검증
           </span>
         </div>
 
@@ -334,14 +258,14 @@ export function StudioRea15PlatformsWorkbenchPanel({
         </button>
       </div>
 
-      {/* 80대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
+      {/* 100대 플랫폼 UI/UX 디자인 토큰 탐색기 */}
       <div
         data-testid="rea15-ui-token-inspector"
         className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
       >
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-bold text-fg">
-            80대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
+            100대 웹툰·창작 AI 플랫폼 REA 디자인 토큰 & 라우트 인스펙터 ({platformThemes.length}종)
           </span>
           <button
             type="button"
@@ -766,6 +690,8 @@ export function StudioRea15PlatformsWorkbenchPanel({
         currentTripoSunoOsmu={currentTripoSunoOsmu}
         currentRunwayMotion={currentRunwayMotion}
         currentSketchupStudio={currentSketchupStudio}
+        currentTapasCodex={currentTapasCodex}
+        currentMixamoToonboom={currentMixamoToonboom}
       />
     </div>
   );

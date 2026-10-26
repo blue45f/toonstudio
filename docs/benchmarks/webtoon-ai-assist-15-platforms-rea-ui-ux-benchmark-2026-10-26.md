@@ -1,7 +1,7 @@
-# 글로벌·국내 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·협업 AI 보조 80대 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 14대 AI 내재화 벤치마크 (2026-10-26)
+# 글로벌·국내 웹툰·스토리보드·3D·드로잉·오디오·무빙툰·출판·식자·애니메이션 AI 보조 100대 플랫폼 전수 REA 심층 역공학(기능·라우트·UI/UX 디자인 토큰) 및 16대 AI 내재화 벤치마크 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (실시간 REA 브라우저 캡처 82건 · 80개 플랫폼 · JS 번들 추출 27건 · AST/라우트 정적 분석 14건 · ToonStudio 14대 엔진 및 80종 UI 토큰 내재화 완료)
+- **상태**: `current` (실시간 REA 브라우저 캡처 102건 · 100개 플랫폼 · JS 번들 추출 27건 · AST/라우트 정적 분석 14건 · ToonStudio 16대 엔진 및 100종 UI 토큰 내재화 완료)
 - **정본 증거 원장**: [`docs/evidence/rea-webtoon-ai-assist-15-platforms-20261026.json`](../evidence/rea-webtoon-ai-assist-15-platforms-20261026.json)
 - **연관 기존 벤치마크**:
   - [`docs/benchmarks/ai-webtoon-assist-ecosystem-rea-benchmark-2026-10-26.md`](./ai-webtoon-assist-ecosystem-rea-benchmark-2026-10-26.md)
@@ -13,7 +13,7 @@
 
 ## 1. 조사 개요 및 인식론적(Epistemic) 분리 원칙
 
-국내외 웹툰·만화·스토리보드·3D 포징·모션·드로잉·번역/인페인팅·애니메이션 LoRA/ControlNet·3D 프롭·OST/더빙·무빙툰 비디오·Live2D/Spine 리깅·Grease Pencil·멀티유저 협업 캔버스·SVG 벡터 AI 보조 생태계 **80개 전체 핵심 플랫폼**(Wave 1: 15개 플랫폼 + Wave 2: 12개 플랫폼 + Wave 3: 12개 플랫폼 + Wave 4: 11개 플랫폼 + Wave 5: 15개 플랫폼 + Wave 6: 15개 플랫폼, 총 82회 브라우저 시나리오 캡처)의 실제 배포 웹/스튜디오 번들을 REA(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 전수 캡처·역공학했다.
+국내외 웹툰·만화·스토리보드·3D 포징·모션·드로잉·번역/인페인팅·애니메이션 LoRA/ControlNet·3D 프롭·OST/더빙·무빙툰 비디오·Live2D/Spine 리깅·Grease Pencil·멀티유저 협업 캔버스·SVG 벡터·글로벌 웹툰 연재·노벨투웹툰 코덱스·한영 식자·2D 애니메이션 AI 보조 생태계 **100개 전체 핵심 플랫폼**(Wave 1: 15개 + Wave 2: 12개 + Wave 3: 12개 + Wave 4: 11개 + Wave 5: 15개 + Wave 6: 15개 + Wave 7: 20개 플랫폼, 총 102회 브라우저 시나리오 캡처)의 실제 배포 웹/스튜디오 번들을 REA(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`)로 전수 캡처·역공학했다.
 
 - **관측 사실(Observed Facts)**: REA Playwright 네트워크 응답 본문(`sha256`), CSS 변수 테이블, DOM 컨트롤 ID, AST 라우트/심볼에서 직접 추출한 사실만 기록한다.
 - **추론(Inferences)**: 클라이언트 번들 구조와 엔드포인트 명명 규칙으로부터 도출한 아키텍처 해석을 분리해 기록한다.
@@ -128,6 +128,31 @@
 | 79 | **Recraft V3** | `recraft.ai` | `ev_0ade0975...` (`e769e353...`) | 884이벤트 | `#0e0e11`, `#18181d`, `#2b2b34`, `#ff3e00`, `#00e5ff` | 순수 SVG 벡터 패스 생성(마법진·가문 문장·타이틀 로고·효과음 타이포), 브랜드 컬러 팔레트 강제 |
 | 80 | **Viggle AI** | `viggle.ai` | `ev_b9fbb288...` (`a7b71711...`) | 380이벤트 | `#07090e`, `#111520`, `#21283b`, `#22c55e`, `#a855f7` | JST-1 물리 기반 2D 캐릭터 모션 전이(`/mix`, `/animate`, `/move`), 그린스크린/알파 매트 분리 |
 
+### 2.6 Wave 7 (20개 추가 글로벌 연재 · 노벨투웹툰 코덱스 · 3D 의상/모캡/재질 · 색채 조화 · 한영 식자 · 2D 애니메이션 · 에셋 허브 플랫폼)
+
+| # | 플랫폼 | 도메인 | 브라우저 캡처 `evidence_id` (`scenario_sha256`) | 네트워크 이벤트 | 추출 UI/UX 컬러 & CSS 토큰 | 핵심 라우트 및 기능 파이프라인 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 81 | **Tapas (타파스)** | `tapas.io` | `ev_60987ef5...` (`5f250f33...`) | 548이벤트 | `#ffffff`, `#f7f8fa`, `#e5e7eb`, `#ff6200`, `#ffd100` | Wait-Until-Free(WUF) 타이머, Ink 후원 경제, 웹툰·웹소설 동시 연재(`/series`, `/novels`, `/publish`) |
+| 82 | **Tappytoon (태피툰)** | `tappytoon.com` | `ev_faff18c0...` (`c3948756...`) | 638보존 / 668총이벤트 | `#0e1015`, `#171a22`, `#262b38`, `#00d67a`, `#38bdf8` | EN/FR/DE 다국어 식자 현지화, Tappytoon Club 월정액 패스, Point/Token 조기 해금 |
+| 83 | **RIDI Webtoon (리디)** | `ridibooks.com/webtoon` | `ev_e4e54a17...` (`0141bf11...`) | 66이벤트 | `#ffffff`, `#f5f7fa`, `#e1e6ee`, `#1f8ce6`, `#0066cc` | 리디 블루(`#1F8CE6`) 큐레이션, 리디 기다리면 무료(기무), 원작 웹소설-웹툰 합본 크로스오버 |
+| 84 | **Postype (포스타입)** | `postype.com` | `ev_4c9cf9f6...` (`315448af...`) | 344보존 / 802총이벤트 | `#0b0c10`, `#14161d`, `#252836`, `#3b82f6`, `#6366f1` | 회차별 포인트 유료 발행, 크리에이터 월정액 팬덤 멤버십, 디지털 브러시/3D 소재 스토어 |
+| 85 | **Adobe Mixamo** | `mixamo.com` | `ev_93ff1c37...` (`6ac944be...`) | 110이벤트 | `#141414`, `#1f1f1f`, `#333333`, `#1473e6`, `#ff9d00` | 3D 캐릭터 FBX/OBJ 자동 스켈레탈 리깅 & 2,500+ 전투/일상 모션캡처 리타게팅 |
+| 86 | **Marvelous Designer** | `marvelousdesigner.com` | `ev_2779126a...` (`1db75aaa...`) | 504이벤트 | `#0b0b0d`, `#16161a`, `#2a2a32`, `#f59e0b`, `#38bdf8` | 2D 의상 재단 패턴 설계 & 실시간 3D 로판 드레스/판타지 망토 주름 물리 시뮬레이션 |
+| 87 | **Adobe Substance 3D** | `adobe.com/products/substance3d` | `ev_9a4ecd90...` (`8b336ed8...`) | 4이벤트 | `#111111`, `#1d1d1d`, `#333333`, `#e1251b`, `#84cc16` | 웹툰 3D 배경/소품 전용 스타일라이즈드 셀셰이딩·하프톤·모서리 마모 스마트 머티리얼 |
+| 88 | **Coolors** | `coolors.co` | `ev_a108be87...` (`c6cfeb39...`) | 236이벤트 | `#ffffff`, `#f7f7f9`, `#e5e7eb`, `#0066ff`, `#ff0055` | 5색 스와치 잠금 팔레트 제너레이터, 레퍼런스 이미지 컬러 추출, WCAG 명암비 검증 |
+| 89 | **Adobe Color** | `color.adobe.com` | `ev_47f52dff...` (`96f731ee...`) | 510보존 / 554총이벤트 | `#181818`, `#242424`, `#383838`, `#1473e6`, `#ec4899` | 보색·삼각·유사색 색채 조화 휠(Color Wheel), 무드 그라데이션 추출, 색각 이상 시뮬레이션 |
+| 90 | **Noonnu (눈누)** | `noonnu.cc` | `ev_7195cab8...` (`bb7f1e0d...`) | 443보존 / 596총이벤트 | `#fffdf9`, `#ffffff`, `#e5e0d5`, `#ff5a36`, `#1e293b` | 상업용 무료 한글 웹툰 대사·독백·효과음(SFX) 폰트 큐레이션 & 라이선스 허용 범위 검증 |
+| 91 | **Blambot Fonts** | `blambot.com` | `ev_c6be0b83...` (`b0d762d2...`) | 652보존 / 1,090총이벤트 | `#121316`, `#1c1e24`, `#2e323b`, `#ef4444`, `#f59e0b` | 북미/글로벌 웹툰 표준 영문 대사체(Anime Ace) 및 타격/공포 효과음(SFX) 디스플레이 타이포그래피 |
+| 92 | **Sudowrite** | `sudowrite.com` | `ev_f50c19d0...` (`53468b07...`) | 331보존 / 515총이벤트 | `#fdfaf6`, `#ffffff`, `#e6dfd5`, `#7c3aed`, `#f97316` | Story Bible·Scene Beats·오감 묘사 확장·클리프행어 반전 생성(웹소설→웹툰 각색 엔진) |
+| 93 | **Novelcrafter** | `novelcrafter.com` | `ev_af32e8c3...` (`bacfe4ba...`) | 108이벤트 | `#0f1117`, `#181b24`, `#282d3c`, `#6366f1`, `#10b981` | 관계형 세계관 위키 **Codex**(캐릭터·장소·유물·세력) & 100화+ 장편 회차 플롯 매트릭스 |
+| 94 | **Campfire Writing** | `campfirewriting.com` | `ev_26dfe487...` (`393fd21c...`) | 509보존 / 1,058총이벤트 | `#111319`, `#1a1d26`, `#2c3140`, `#ff6b35`, `#38bdf8` | 18종 모듈형 세계관 빌더(캐릭터 관계도·연표 타임라인·마법 체계·세계 지도) |
+| 95 | **Milanote** | `milanote.com` | `ev_640851fe...` (`2c451691...`) | 548보존 / 594총이벤트 | `#f5f5f3`, `#ffffff`, `#e2e2de`, `#ff4b4b`, `#18181b` | 공간형 비주얼 스토리보드, 캐릭터 레퍼런스 컬럼, 컬러 스와치 카드 & 화살표 동선 보드 |
+| 96 | **PureRef** | `pureref.com` | `ev_3790d8a9...` (`d53f1140...`) | 144이벤트 | `#1e1e1e`, `#282828`, `#3c3c3c`, `#38bdf8`, `#a3e635` | Always-on-Top 무경계 인피니트 레퍼런스 캔버스, 마우스 투과(Pass-through) 알파 오버레이 |
+| 97 | **Toon Boom Harmony** | `toonboom.com/products/harmony` | `ev_d0370360...` (`f7607712...`) | 240이벤트 | `#16181d`, `#21242c`, `#343946`, `#8b5cf6`, `#06b6d4` | Line-Art/Color-Art 서브레이어 분리, Curve/Envelope 디포머, Z-Depth 멀티플레인 노드 합성 |
+| 98 | **TVPaint Animation** | `tvpaint.com/en` | `ev_82cecee1...` (`19ae5227...`) | 200이벤트 | `#1f2328`, `#2b3036`, `#3f464f`, `#f97316`, `#eab308` | **CTG(Color & Texture Generator)** 스마트 스트로크 자동 밑색 채우기 & Out-of-Pegs 어니언스킨 |
+| 99 | **Moho Animation** | `moho.lostmarble.com` | `ev_1bbe9879...` (`534c6bc8...`) | 844보존 / 1,176총이벤트 | `#141619`, `#1e2227`, `#313740`, `#10b981`, `#3b82f6` | **Smart Bones** 다이얼 표정/관절 보간, Vitruvian Bones 각도별 파츠 스왑, 쿼드 메쉬 워핑 |
+| 100 | **Eagle** | `en.eagle.cool` | `ev_bb317c12...` (`28b9f8d2...`) | 560이벤트 | `#141518`, `#1e2025`, `#2f323a`, `#3b82f6`, `#06b6d4` | 주요 색상(Dominant Color) 필터 검색, 스마트 폴더, PSD/CLIP/ABR/GLB 즉시 프리뷰 에셋 허브 |
+
 ---
 
 ## 3. UI/UX 디자인 시스템 및 CSS 토큰 비교 분석
@@ -175,7 +200,9 @@
 | **Tripo3D/Meshy/HeroForge 3D 프롭 · Suno OST · ElevenLabs 더빙 · MANGA Plus 글로벌 OSMU** | `tripo3d.ai`, `meshy.ai`, `heroforge.com`, `suno.com`, `elevenlabs.io`, `mangaplus-creators.jp` | 2D 스케치→쿼드 PBR 3D 무기/소품 & 2인 미니어처 포징 + Suno v4 회차별 OST + ElevenLabs 다국어 성우/효과음 + MANGA Plus 글로벌 연재 규격 |
 | **Runway Gen-3 · Luma · Pika · Viggle 모션 · Live2D Cubism · Spine 2D 무빙툰 디렉터** | `runwayml.com`, `lumalabs.ai`, `pika.art`, `viggle.ai`, `openart.ai`, `live2d.com`, `esotericsoftware.com` | Runway 5영역 Multi-Motion Brush + Luma Start/End 키프레임 보간 + Pika 캐릭터 립싱크 + Viggle JST-1 실사 모션 전이 + Live2D PSD 디포머/물리 진자 & Spine 2D IK 본 리깅 |
 | **SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 멀티협업 · Recraft/Cara 스튜디오** | `3dwarehouse.sketchup.com`, `blender.org`, `petalica.com`, `comicsmaker.ai`, `magma.com`, `playground.com`, `recraft.ai`, `cara.app` | SketchUp SKP 동적 컴포넌트 & Blender Grease Pencil 3D 공간 2D 작화 + Petalica 힌트 스트로크 자동 채색 + Magma 6인 실시간 역할 분담 + Recraft V3 순수 SVG 마법진/효과음 + Cara NoAI/Glaze 보호 |
-| **창의적 신규 AI 기능 (Claude Live 연동)** | 80대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **80대 플랫폼 UI/UX 테마 토큰 합성기** + **14대 비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
+| **Tapas · Tappytoon · RIDI · Postype 글로벌 연재 & Sudowrite · Novelcrafter · Campfire 코덱스** | `tapas.io`, `tappytoon.com`, `ridibooks.com`, `postype.com`, `sudowrite.com`, `novelcrafter.com`, `campfirewriting.com`, `milanote.com`, `pureref.com` | Tapas WUF/Ink · Tappytoon Club · 리디 노블코믹스 · 포스타입 멤버십 수익 모델 + Sudowrite 대본 압축 + Novelcrafter Codex + Campfire 세계관 타임라인 + Milanote/PureRef 무드보드 |
+| **Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle** | `mixamo.com`, `marvelousdesigner.com`, `adobe.com/products/substance3d`, `coolors.co`, `color.adobe.com`, `noonnu.cc`, `blambot.com`, `toonboom.com`, `tvpaint.com`, `moho.lostmarble.com`, `en.eagle.cool` | Mixamo 60fps 모캡 리타게팅 + Marvelous 의상 주름 노말맵 + Substance 3D 툰 재질 + Coolors/Adobe Color 감정 팔레트 + 눈누/Blambot 한영 식자 + ToonBoom/TVPaint CTG/Moho Smart Bone + Eagle 컬러 스마트 폴더 |
+| **창의적 신규 AI 기능 (Claude Live 연동)** | 100대 플랫폼 융합 | **AI 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터** + **100대 플랫폼 UI/UX 테마 토큰 합성기** + **16대 비파괴 멀티스테이지 레이어 디렉터(`claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-opus-5-5` 실시간 구조화 출력 및 폴백)** |
 
 ---
 

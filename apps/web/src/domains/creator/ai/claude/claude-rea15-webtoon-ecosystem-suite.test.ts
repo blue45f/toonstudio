@@ -10,11 +10,13 @@ import {
   buildLocalKreaSplineLumiereRealtimeShaderReport,
   buildLocalLtxBoordsCascadeurRiveAnimaticReport,
   buildLocalManhwaKomikoAnifusionFlowReport,
+  buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport,
   buildLocalNijiPixaiCivitaiLoraSrefDirectorReport,
   buildLocalRunwayLumaPikaViggleLive2dSpineMotionReport,
   buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport,
   buildLocalSnaptoonFrameoShaper3dDirectorReport,
   buildLocalStoryboarderDreamsKritaArtbreederDirectorReport,
+  buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport,
   buildLocalTootoonGentoonTooningKrSuiteReport,
   buildLocalTripoMeshyHeroforgeSunoElevenlabsOsmuReport,
   buildRea15ThemeCssVariables,
@@ -27,12 +29,14 @@ import {
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
   runManhwaKomikoAnifusionFlowAssist,
+  runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist,
   runNijiPixaiCivitaiLoraSrefDirectorAssist,
   runRea15WebtoonEcosystemFullSuite,
   runRunwayLumaPikaViggleLive2dSpineMotionAssist,
   runSketchupBlenderPetalicaMagmaRecraftStudioAssist,
   runSnaptoonFrameoShaper3dDirectorAssist,
   runStoryboarderDreamsKritaArtbreederDirectorAssist,
+  runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist,
   runTootoonGentoonTooningKrSuiteAssist,
   runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist,
 } from "./claude-rea15-webtoon-ecosystem-suite";
@@ -60,10 +64,10 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 80대 웹툰 AI 플랫폼 REA 내재화 & 14대 창의적 AI 스위트)", () => {
-  it("0. 80대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
+  it("0. 100대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(80);
+    expect(themes).toHaveLength(100);
 
     const glimnavi = getRea15PlatformTheme("glimnavi");
     expect(glimnavi.reaEvidenceId).toContain("ev_f2c78ddd");
@@ -102,6 +106,15 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 80대 웹툰 AI 플랫�
 
     const viggle = getRea15PlatformTheme("viggle-ai");
     expect(viggle.reaEvidenceId).toContain("ev_b9fbb288");
+
+    const tapas = getRea15PlatformTheme("tapas-io");
+    expect(tapas.reaEvidenceId).toContain("ev_60987ef5");
+
+    const mixamo = getRea15PlatformTheme("mixamo");
+    expect(mixamo.reaEvidenceId).toContain("ev_93ff1c37");
+
+    const eagle = getRea15PlatformTheme("eagle-cool");
+    expect(eagle.reaEvidenceId).toContain("ev_bb317c12");
 
     const cssVars = buildRea15ThemeCssVariables("frameo");
     expect(cssVars["--rea15-surface"]).toBe("#09090b");
@@ -425,7 +438,51 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 80대 웹툰 AI 플랫�
     expect(live.report.magmaRecraftCaraProduction.magmaCollaboratorRoles).toHaveLength(4);
   });
 
-  it("15. runRea15WebtoonEcosystemFullSuite 14대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
+  it("15. Tapas · Tappytoon · RIDI · Postype 글로벌 연재 & Sudowrite · Novelcrafter · Campfire 코덱스(Opus 5.5)를 검증한다", async () => {
+    const local = buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport(SAMPLE_INPUT);
+    expect(local.globalPublishingEconomics.tapasWaitUntilFreeHours).toBe(24);
+    expect(local.novelToWebtoonStoryCodex.novelcrafterCodexEntries).toHaveLength(3);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 260, output_tokens: 430 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.globalPublishingEconomics.postypeMembershipMonthlyKrw).toBe(9900);
+  });
+
+  it("16. Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport(SAMPLE_INPUT);
+    expect(local.colorHarmonyAndWebtoonTypography.coolorsAndAdobeColorMoodHexes).toHaveLength(5);
+    expect(local.toonBoomTvpaintMohoAndEagleHub.eagleSmartFolderColorTags).toHaveLength(3);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 240, output_tokens: 390 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.colorHarmonyAndWebtoonTypography.wcagContrastRatio).toBeGreaterThanOrEqual(7);
+  });
+
+  it("17. runRea15WebtoonEcosystemFullSuite 16대 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
     vi.mocked(claudeParse).mockRejectedValueOnce(new Error("simulated network timeout"));
     vi.mocked(claudeParse).mockResolvedValueOnce({
       message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
@@ -479,11 +536,19 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 80대 웹툰 AI 플랫�
       message: { model: "claude-sonnet-4-6", usage: { input_tokens: 240, output_tokens: 380 } } as never,
       parsed: buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(SAMPLE_INPUT),
     });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 260, output_tokens: 410 } } as never,
+      parsed: buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 240, output_tokens: 380 } } as never,
+      parsed: buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport(SAMPLE_INPUT),
+    });
 
     const bundle = await runRea15WebtoonEcosystemFullSuite(SAMPLE_INPUT, {
       route: TEST_ROUTE,
     });
-    expect(bundle.liveEngineCount).toBe(13);
+    expect(bundle.liveEngineCount).toBe(15);
     expect(bundle.fallbackEngineCount).toBe(1);
     expect(bundle.glimnaviRelightLineart.source).toBe("local-fallback");
     expect(bundle.creativeDopamineUxSynthesizer.source).toBe("claude-live");
@@ -496,5 +561,7 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 80대 웹툰 AI 플랫�
     expect(bundle.tripoMeshyHeroforgeSunoElevenlabsOsmu.source).toBe("claude-live");
     expect(bundle.runwayLumaPikaViggleLive2dSpineMotion.source).toBe("claude-live");
     expect(bundle.sketchupBlenderPetalicaMagmaRecraftStudio.source).toBe("claude-live");
+    expect(bundle.tapasTappytoonRidiPostypeSudowriteNovelcrafter.source).toBe("claude-live");
+    expect(bundle.mixamoMarvelousCoolorsNoonnuBlambotToonboomEagle.source).toBe("claude-live");
   });
 });

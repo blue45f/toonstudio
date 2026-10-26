@@ -5,20 +5,24 @@ import {
   CotransVroidSkyboxWorldLocalizerSchema,
   KreaSplineLumiereRealtimeShaderSchema,
   LtxBoordsCascadeurRiveAnimaticSchema,
+  MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleSchema,
   NijiPixaiCivitaiLoraSrefDirectorSchema,
   RunwayLumaPikaViggleLive2dSpineMotionSchema,
   SketchupBlenderPetalicaMagmaRecraftStudioSchema,
   StoryboarderDreamsKritaArtbreederDirectorSchema,
+  TapasTappytoonRidiPostypeSudowriteNovelcrafterSchema,
   TootoonGentoonTooningKrSuiteSchema,
   TripoMeshyHeroforgeSunoElevenlabsOsmuSchema,
   type CotransVroidSkyboxWorldLocalizerReport,
   type KreaSplineLumiereRealtimeShaderReport,
   type LtxBoordsCascadeurRiveAnimaticReport,
+  type MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport,
   type NijiPixaiCivitaiLoraSrefDirectorReport,
   type Rea15Envelope,
   type RunwayLumaPikaViggleLive2dSpineMotionReport,
   type SketchupBlenderPetalicaMagmaRecraftStudioReport,
   type StoryboarderDreamsKritaArtbreederDirectorReport,
+  type TapasTappytoonRidiPostypeSudowriteNovelcrafterReport,
   type TootoonGentoonTooningKrSuiteReport,
   type TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
 } from "./claude-rea15-webtoon-ecosystem-schemas";
@@ -41,36 +45,11 @@ export function buildLocalTootoonGentoonTooningKrSuiteReport(
   return {
     suiteSummaryKo: `TooToon(오노마AI)의 5대 스튜디오 모듈(/fabulator·/character-studio·/visual-studio·/artifex·/emporium), GenToon의 읽기 방향·뷰어 토큰(--reading-direction:1, --paper:#f4ebfc, --ink:#40215f) 및 굿즈 수익화, Tooning Plus의 6부위 모듈형 캐릭터 빌더(/character-make-*)를 결합한 K-웹툰 전 주기 제작 사양입니다.`,
     tootoonFiveStudios: [
-      {
-        moduleId: "fabulator",
-        routePath: "/fabulator",
-        stageTitleKo: "Fabulator — 세계관·대본 집필 스튜디오",
-        deliverableSummaryKo: `${genre} 에피소드 기승전결 대본 및 ${protagonist}·${partner} 대사 지문 구조화`,
-      },
-      {
-        moduleId: "character-studio",
-        routePath: "/character-studio",
-        stageTitleKo: "Character Studio — 캐릭터 시트 & 시드 앵커",
-        deliverableSummaryKo: `${protagonist}·${partner} 표정 6종 및 전투 복식 컬러 시드 고정`,
-      },
-      {
-        moduleId: "visual-studio",
-        routePath: "/visual-studio",
-        stageTitleKo: "Visual Studio — 콘티 & 카메라 레이아웃",
-        deliverableSummaryKo: "세로 스크롤 컷 분할 및 소실점·말풍선 동선 배치",
-      },
-      {
-        moduleId: "artifex",
-        routePath: "/artifex",
-        stageTitleKo: "Artifex — 최종 작화·채색·후보정",
-        deliverableSummaryKo: "선화 정리, 셀 셰이딩, 역광 글로우 합성 완료",
-      },
-      {
-        moduleId: "emporium",
-        routePath: "/emporium",
-        stageTitleKo: "Emporium — 3D 배경·브러시·소품 에셋 마켓 연동",
-        deliverableSummaryKo: "황궁 결전 3D 배경 및 고대 유물 이펙트 브러시 번들 마운트",
-      },
+      { moduleId: "fabulator", routePath: "/fabulator", stageTitleKo: "Fabulator — 세계관·대본 집필 스튜디오", deliverableSummaryKo: `${genre} 에피소드 기승전결 대본 및 ${protagonist}·${partner} 대사 지문 구조화` },
+      { moduleId: "character-studio", routePath: "/character-studio", stageTitleKo: "Character Studio — 캐릭터 시트 & 시드 앵커", deliverableSummaryKo: `${protagonist}·${partner} 표정 6종 및 전투 복식 컬러 시드 고정` },
+      { moduleId: "visual-studio", routePath: "/visual-studio", stageTitleKo: "Visual Studio — 콘티 & 카메라 레이아웃", deliverableSummaryKo: "세로 스크롤 컷 분할 및 소실점·말풍선 동선 배치" },
+      { moduleId: "artifex", routePath: "/artifex", stageTitleKo: "Artifex — 최종 작화·채색·후보정", deliverableSummaryKo: "선화 정리, 셀 셰이딩, 역광 글로우 합성 완료" },
+      { moduleId: "emporium", routePath: "/emporium", stageTitleKo: "Emporium — 3D 배경·브러시·소품 에셋 마켓 연동", deliverableSummaryKo: "황궁 결전 3D 배경 및 고대 유물 이펙트 브러시 번들 마운트" },
     ],
     gentoonReaderAndCommerce: {
       readingDirection: "vertical-scroll-1",
@@ -78,57 +57,17 @@ export function buildLocalTootoonGentoonTooningKrSuiteReport(
       inkHex: "#40215f",
       violetAccentHex: "#7646bd",
       recommendedGoodsItems: [
-        {
-          skuId: "goods-acrylic-diorama-01",
-          goodsNameKo: `${protagonist} × ${partner} 각성 결전 아크릴 디오라마 스탠드`,
-          targetSupporterTierKo: "로열 서포터즈 (/supporters)",
-          estimatedMarginPct: 64,
-        },
-        {
-          skuId: "goods-lenticular-card-02",
-          goodsNameKo: "고대 유물 봉인 해제 렌티큘러 포토카드 세트",
-          targetSupporterTierKo: "얼리버드 독자 펀딩 (/goods/orders)",
-          estimatedMarginPct: 72,
-        },
+        { skuId: "goods-acrylic-diorama-01", goodsNameKo: `${protagonist} × ${partner} 각성 결전 아크릴 디오라마 스탠드`, targetSupporterTierKo: "로열 서포터즈 (/supporters)", estimatedMarginPct: 64 },
+        { skuId: "goods-lenticular-card-02", goodsNameKo: "고대 유물 봉인 해제 렌티큘러 포토카드 세트", targetSupporterTierKo: "얼리버드 독자 펀딩 (/goods/orders)", estimatedMarginPct: 72 },
       ],
     },
     tooningSixPartCharacterRecipe: [
-      {
-        partRoute: "/character-make-basic",
-        partLabelKo: "기본 체형·비율 (8등신 웹툰 주연)",
-        selectedPresetSummaryKo: `${protagonist} 슬림 근육형 8등신 베이스 체형`,
-        consistencyLockScorePct: 98,
-      },
-      {
-        partRoute: "/character-make-face",
-        partLabelKo: "얼굴·눈매·표정 파츠",
-        selectedPresetSummaryKo: "날카로운 청안(Cyan) 눈매 + 각성 문양 레이어",
-        consistencyLockScorePct: 96,
-      },
-      {
-        partRoute: "/character-make-body",
-        partLabelKo: "의상·전투복 파츠",
-        selectedPresetSummaryKo: "다크 네이비 롱코트 & 은장 견장 세트",
-        consistencyLockScorePct: 95,
-      },
-      {
-        partRoute: "/character-make-hand",
-        partLabelKo: "손 동작·파지 파츠",
-        selectedPresetSummaryKo: "검자루 파지 및 마력 방출 제스처 프리셋",
-        consistencyLockScorePct: 94,
-      },
-      {
-        partRoute: "/character-make-hair",
-        partLabelKo: "헤어 전면·후면 레이어",
-        selectedPresetSummaryKo: "바람에 흩날리는 흑발 레이어드 컷",
-        consistencyLockScorePct: 97,
-      },
-      {
-        partRoute: "/character-make-etc",
-        partLabelKo: "소품·오라·귀걸이 파츠",
-        selectedPresetSummaryKo: "고대 유물 파편 홀로그램 오라 파츠",
-        consistencyLockScorePct: 95,
-      },
+      { partRoute: "/character-make-basic", partLabelKo: "기본 체형·비율 (8등신 웹툰 주연)", selectedPresetSummaryKo: `${protagonist} 슬림 근육형 8등신 베이스 체형`, consistencyLockScorePct: 98 },
+      { partRoute: "/character-make-face", partLabelKo: "얼굴·눈매·표정 파츠", selectedPresetSummaryKo: "날카로운 청안(Cyan) 눈매 + 각성 문양 레이어", consistencyLockScorePct: 96 },
+      { partRoute: "/character-make-body", partLabelKo: "의상·전투복 파츠", selectedPresetSummaryKo: "다크 네이비 롱코트 & 은장 견장 세트", consistencyLockScorePct: 95 },
+      { partRoute: "/character-make-hand", partLabelKo: "손 동작·파지 파츠", selectedPresetSummaryKo: "검자루 파지 및 마력 방출 제스처 프리셋", consistencyLockScorePct: 94 },
+      { partRoute: "/character-make-hair", partLabelKo: "헤어 전면·후면 레이어", selectedPresetSummaryKo: "바람에 흩날리는 흑발 레이어드 컷", consistencyLockScorePct: 97 },
+      { partRoute: "/character-make-etc", partLabelKo: "소품·오라·귀걸이 파츠", selectedPresetSummaryKo: "고대 유물 파편 홀로그램 오라 파츠", consistencyLockScorePct: 95 },
     ],
   };
 }
@@ -219,27 +158,9 @@ export function buildLocalLtxBoordsCascadeurRiveAnimaticReport(
   return {
     animaticExecutiveSummaryKo: `LTX Studio와 Boords의 프리비즈 애니매틱 카메라 시퀀서, Cascadeur의 무게중심(Center of Mass)·탄도 물리 기반 AutoPosing/AutoPhysics, Rive·Jitter의 스크롤 반응형 2D 메쉬 상태머신(State Machine)을 결합한 무빙툰·숏폼 프리비즈 사양입니다.`,
     ltxAndBoordsAnimaticShots: [
-      {
-        shotNumber: 1,
-        cameraMove: "dolly-in",
-        durationMs: 1800,
-        voiceoverBeatKo: `${protagonist}: "이 봉인을 여는 순간, 우리의 시간은 되돌릴 수 없어."`,
-        visualTransitionKo: "전경 유물 파편 블러 처리 후 주연 눈동자 익스트림 클로즈업으로 달리 인",
-      },
-      {
-        shotNumber: 2,
-        cameraMove: "dutch-tilt-push",
-        durationMs: 2100,
-        voiceoverBeatKo: `${partner}: "그래도 멈추지 않아. 끝까지 볼 거야."`,
-        visualTransitionKo: "18도 더치 틸트 회전과 함께 두 인물의 대립 구도를 대각선 분할",
-      },
-      {
-        shotNumber: 3,
-        cameraMove: "tracking-orbit",
-        durationMs: 2400,
-        voiceoverBeatKo: "유물 코어 폭발음(SFX) 및 공중 도약 액션 비트",
-        visualTransitionKo: "카메라가 180도 트래킹 오빗하며 슬로모션 충격파 프레임을 포착",
-      },
+      { shotNumber: 1, cameraMove: "dolly-in", durationMs: 1800, voiceoverBeatKo: `${protagonist}: "이 봉인을 여는 순간, 우리의 시간은 되돌릴 수 없어."`, visualTransitionKo: "전경 유물 파편 블러 처리 후 주연 눈동자 익스트림 클로즈업으로 달리 인" },
+      { shotNumber: 2, cameraMove: "dutch-tilt-push", durationMs: 2100, voiceoverBeatKo: `${partner}: "그래도 멈추지 않아. 끝까지 볼 거야."`, visualTransitionKo: "18도 더치 틸트 회전과 함께 두 인물의 대립 구도를 대각선 분할" },
+      { shotNumber: 3, cameraMove: "tracking-orbit", durationMs: 2400, voiceoverBeatKo: "유물 코어 폭발음(SFX) 및 공중 도약 액션 비트", visualTransitionKo: "카메라가 180도 트래킹 오빗하며 슬로모션 충격파 프레임을 포착" },
     ],
     cascadeurPhysicsRig: {
       autoPosingConfidencePct: 96,
@@ -253,18 +174,8 @@ export function buildLocalLtxBoordsCascadeurRiveAnimaticReport(
       stateMachineName: "SM_WebtoonCut_Climax_Interactive",
       scrollTriggerThresholdPct: 65,
       states: [
-        {
-          stateName: "Idle_Tension_Breathing",
-          triggerConditionKo: "뷰포트 진입 0% ~ 64% 구간",
-          meshDeformationSummaryKo: "흉곽 호흡 메쉬 미세 수축·팽창 및 안광 파티클 24fps 루프",
-          loopFps: 24,
-        },
-        {
-          stateName: "Relic_Awaken_Burst",
-          triggerConditionKo: "스크롤 진행률 65% 돌파 시 즉시 전이",
-          meshDeformationSummaryKo: "헤어·망토 메쉬 외곽 팽창 + 충격파 링 60fps 버스트 재생",
-          loopFps: 60,
-        },
+        { stateName: "Idle_Tension_Breathing", triggerConditionKo: "뷰포트 진입 0% ~ 64% 구간", meshDeformationSummaryKo: "흉곽 호흡 메쉬 미세 수축·팽창 및 안광 파티클 24fps 루프", loopFps: 24 },
+        { stateName: "Relic_Awaken_Burst", triggerConditionKo: "스크롤 진행률 65% 돌파 시 즉시 전이", meshDeformationSummaryKo: "헤어·망토 메쉬 외곽 팽창 + 충격파 링 60fps 버스트 재생", loopFps: 60 },
       ],
     },
   };
@@ -305,20 +216,8 @@ export function buildLocalCotransVroidSkyboxWorldLocalizerReport(
       inpaintingModel: "lama-large-512px",
       balloonMaskDilatePx: 6,
       localizedRegions: [
-        {
-          regionId: "balloon-cut01-01",
-          sourceKoText: `${protagonist}: 이 봉인을 여는 순간, 우리의 시간은 되돌릴 수 없어.`,
-          translatedEnText: "The moment we break this seal, our time can never be turned back.",
-          translatedJaText: "この封印を解いた瞬間、俺たちの時間は二度と戻せない。",
-          verticalTypesetting: true,
-        },
-        {
-          regionId: "balloon-cut01-02",
-          sourceKoText: `${partner}: 그래도 멈추지 않아. 끝까지 볼 거야.`,
-          translatedEnText: "Even so, I won't stop. I'll see it through to the end.",
-          translatedJaText: "それでも止まらない。最後まで見届けるから。",
-          verticalTypesetting: true,
-        },
+        { regionId: "balloon-cut01-01", sourceKoText: `${protagonist}: 이 봉인을 여는 순간, 우리의 시간은 되돌릴 수 없어.`, translatedEnText: "The moment we break this seal, our time can never be turned back.", translatedJaText: "この封印を解いた瞬間、俺たちの時間は二度と戻せない。", verticalTypesetting: true },
+        { regionId: "balloon-cut01-02", sourceKoText: `${partner}: 그래도 멈추지 않아. 끝까지 볼 거야.`, translatedEnText: "Even so, I won't stop. I'll see it through to the end.", translatedJaText: "それでも止まらない。最後まで見届けるから。", verticalTypesetting: true },
       ],
     },
     vroidParametricAvatar: {
@@ -716,6 +615,115 @@ export async function runSketchupBlenderPetalicaMagmaRecraftStudioAssist(
   });
 }
 
+/* ============================================================================
+ * 15. Wave 7: Tapas · Tappytoon · RIDI · Postype 글로벌 연재 · Sudowrite · Novelcrafter · Campfire 코덱스
+ * ============================================================================ */
+
+export function buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport(
+  input: WebtoonProductionAssistInput = {},
+): TapasTappytoonRidiPostypeSudowriteNovelcrafterReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const partner = cleanSingleLineText(input.partnerName ?? "하윤", 30) || "하윤";
+  const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
+
+  return {
+    publishingAndCodexSummaryKo: `Tapas(Wait Until Free·Ink 후원), Tappytoon(Club 멤버십·북미/유럽 로컬라이징), 리디북스 웹툰(리디셀렉트·노블코믹스), 포스타입(크리에이터 멤버십·팬딩) 글로벌 연재 수익 모델과 Sudowrite Story Engine, Novelcrafter Codex, Campfire 세계관 타임라인, Milanote·PureRef 무드보드를 결합한 ${genre} 노벨투웹툰(Novel-to-Webtoon) 총괄 사양입니다.`,
+    globalPublishingEconomics: {
+      tapasWaitUntilFreeHours: 24,
+      tapasInkPerEpisode: 375,
+      tappytoonClubPointBundleKo: "Tappytoon Club 월정액 패스 + 에피소드당 300 Points 조기 해금",
+      ridiWaitFreeAndNoblesseTierKo: "리디 기다리면 무료(24시간 주기) + 원작 웹소설 합본 크로스 프로모션",
+      postypeMembershipMonthlyKrw: 9900,
+    },
+    novelToWebtoonStoryCodex: {
+      sudowriteStoryEngineBeatKo: `${protagonist}의 내면 독백 3문단을 세로 스크롤 4컷 비주얼 액션 비트와 말풍선 28자 이내 대사로 압축 각색`,
+      novelcrafterCodexEntries: [
+        `[Character] ${protagonist} — 각성 등급 S, 시그니처 무기: 아케인 성검`,
+        `[Character] ${partner} — 크로노스 성유물 계승자, 시간 역행 제약 조건 보유`,
+        "[Location] 황궁 대신전 지하 봉인소 — 고대 룬 기둥 12개 및 역광 채광 구조",
+      ],
+      campfireTimelineArcKo: "제1막 봉인 균열(1~12화) → 제2막 성유물 각성 결전(13~35화) → 제3막 신계 침공 반격(36~60화)",
+      milanoteAndPurerefMoodboardSpecKo:
+        "Milanote 4열 캐릭터·배경·조명·톤앤매너 보드 + PureRef 알파 오버레이(투명도 85%, Always-on-Top) 작화 레퍼런스 동기화",
+    },
+  };
+}
+
+export async function runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<TapasTappytoonRidiPostypeSudowriteNovelcrafterReport>> {
+  const fallbackReport = buildLocalTapasTappytoonRidiPostypeSudowriteNovelcrafterReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 Tapas·Tappytoon·리디북스 웹툰·포스타입(글로벌 연재·BM·팬덤 멤버십) 및 Sudowrite·Novelcrafter·Campfire·Milanote·PureRef(웹소설 원작 각색 코덱스·무드보드) 통합 총괄 프로듀서입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 작품을 위한 Tapas/Tappytoon/리디/포스타입 글로벌 연재 수익화 지표와 Sudowrite/Novelcrafter/Campfire/Milanote/PureRef 노벨투웹툰 각색 코덱스 사양을 설계하세요.",
+    schema: TapasTappytoonRidiPostypeSudowriteNovelcrafterSchema,
+    fallbackReport,
+  });
+}
+
+/* ============================================================================
+ * 16. Wave 7: Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle
+ * ============================================================================ */
+
+export function buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport(
+  input: WebtoonProductionAssistInput = {},
+): MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 30) || "서진";
+  const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
+
+  return {
+    productionPipelineSummaryKo: `Adobe Mixamo 3D 모션캡처 FBX 리타게팅, Marvelous Designer 패턴 의상 주름 시뮬레이션, Substance 3D 툰 PBR 재질, Coolors·Adobe Color 감정 팔레트, 눈누·Blambot 한영 웹툰 식자/효과음 타이포그래피, Toon Boom Harmony·TVPaint·Moho 2D 작화 애니메이션, Eagle 스마트 컬러 에셋 라이브러리를 통합한 ${genre} 하이엔드 제작 파이프라인입니다.`,
+    mixamoMarvelousSubstance3dRig: {
+      mixamoMocapFbxClipKo: `${protagonist} Sword & Shield Slash Combo (Mixamo 60fps FBX Auto-Rig + Root Motion Lock)`,
+      marvelousClothPatternWeftWarpKo: "롱코트 및 망토 2D 패턴(Weft 42 / Warp 48, 바람 저항 650mm/s²) 실시간 주름 노말맵 추출",
+      substanceStylizedToonMaterialKo: "Substance 3D Stylized Brushed Metal + Edge Wear Curvature Mask + Halftone Shadow Ramp",
+    },
+    colorHarmonyAndWebtoonTypography: {
+      coolorsAndAdobeColorMoodHexes: ["#0B0F19", "#1E293B", "#00A8C2", "#A855F7", "#F43F5E"],
+      wcagContrastRatio: 15.4,
+      noonnuDialogueAndSfxFontsKo: [
+        "대사 기본: 프리텐다드(Pretendard Medium) 자간 -2% / 행간 142%",
+        "독백/회상: 마루부리(MaruBuri SemiBold) 명조 감성 연출",
+        "효과음(SFX): 삼립호빵체 & 평창평화체 외곽선 4px 기울기 -12°",
+      ],
+      blambotEnglishLetteringFont: "Blambot Anime Ace 3.0 BB (Dialogue) + Disasterrama BB (Impact SFX)",
+    },
+    toonBoomTvpaintMohoAndEagleHub: {
+      toonBoomHarmonyNodeCompositeKo: "Harmony Line-Art / Color-Art 서브레이어 분리 + Cutter·Glow·Peg 카메라 Z-Depth 노드 합성",
+      tvpaintCtgColorAndMohoSmartBoneKo: "TVPaint CTG(Color & Texture Generator) 자동 밑색 채우기 + Moho 14 Smart Bone 다이얼 표정/관절 보간",
+      eagleSmartFolderColorTags: [
+        "Eagle Smart Folder: #00A8C2 [아케인 마법진/이펙트 브러시]",
+        "Eagle Smart Folder: #A855F7 [황궁 3D 배경 & 조명 프리셋]",
+        "Eagle Smart Folder: #F43F5E [액션 동세 & 망토 주름 레퍼런스]",
+      ],
+    },
+  };
+}
+
+export async function runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<Rea15Envelope<MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport>> {
+  const fallbackReport = buildLocalMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport(input);
+  return executeRea15Engine({
+    taskId: "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle",
+    input,
+    options,
+    systemPromptKo:
+      "당신은 Mixamo(3D 모캡 리타게팅), Marvelous Designer(3D 의상 주름), Substance 3D(툰 PBR 재질), Coolors·Adobe Color(색채학 무드스크립트), 눈누·Blambot(한영 웹툰 식자/SFX 폰트), Toon Boom Harmony·TVPaint·Moho(2D 애니메이션), Eagle(에셋 DAM) 통합 테크니컬 디렉터입니다. JSON 스키마에 맞춰 응답하세요.",
+    userDirectiveKo:
+      "현재 장면을 위한 Mixamo/Marvelous/Substance 3D 의상·모션·재질 사양, Coolors/Adobe Color 팔레트 및 눈누/Blambot 한영 식자 사양, 그리고 ToonBoom/TVPaint/Moho 애니메이션 및 Eagle 스마트 에셋 태그를 생성하세요.",
+    schema: MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleSchema,
+    fallbackReport,
+  });
+}
+
 export type Rea15WorkbenchTabId =
   | "glimnavi-relight-v23"
   | "kaistory-envelope-kaion"
@@ -730,7 +738,9 @@ export type Rea15WorkbenchTabId =
   | "niji-pixai-civitai-lora-sref"
   | "tripo-meshy-heroforge-suno-osmu"
   | "runway-luma-pika-viggle-live2d-spine"
-  | "sketchup-blender-petalica-magma-recraft";
+  | "sketchup-blender-petalica-magma-recraft"
+  | "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"
+  | "mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle";
 
 export const REA15_TABS: readonly {
   readonly id: Rea15WorkbenchTabId;
@@ -752,4 +762,6 @@ export const REA15_TABS: readonly {
   { id: "tripo-meshy-heroforge-suno-osmu", labelKo: "3D 프롭/미니어처 · Suno OST · ElevenLabs · MANGA Plus", badgeKo: "Tripo3D · Suno · ElevenLabs · OSMU", tierBadgeKo: "Opus 5.5" },
   { id: "runway-luma-pika-viggle-live2d-spine", labelKo: "모션 브러시 · 키프레임 모핑 · JST-2 · Live2D/Spine 2D", badgeKo: "Runway · Luma · Pika · Viggle · Live2D · Spine", tierBadgeKo: "Opus 5.5" },
   { id: "sketchup-blender-petalica-magma-recraft", labelKo: "SketchUp/Grease Pencil · Petalica · Magma 협업 · Recraft SVG", badgeKo: "SketchUp · Blender · Petalica · Magma · Recraft", tierBadgeKo: "Sonnet 5.5" },
+  { id: "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter", labelKo: "Tapas/Tappytoon/리디/포스타입 · Sudowrite/Novelcrafter 코덱스", badgeKo: "Tapas · Tappytoon · RIDI · Sudowrite · Novelcrafter", tierBadgeKo: "Opus 5.5" },
+  { id: "mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle", labelKo: "Mixamo/Marvelous 3D · Coolors · 눈누/Blambot · ToonBoom/Eagle", badgeKo: "Mixamo · Marvelous · Coolors · 눈누 · ToonBoom · Eagle", tierBadgeKo: "Sonnet 5.5" },
 ];

@@ -42,10 +42,12 @@ import {
   runCotransVroidSkyboxWorldLocalizerAssist,
   runKreaSplineLumiereRealtimeShaderAssist,
   runLtxBoordsCascadeurRiveAnimaticAssist,
+  runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist,
   runNijiPixaiCivitaiLoraSrefDirectorAssist,
   runRunwayLumaPikaViggleLive2dSpineMotionAssist,
   runSketchupBlenderPetalicaMagmaRecraftStudioAssist,
   runStoryboarderDreamsKritaArtbreederDirectorAssist,
+  runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist,
   runTootoonGentoonTooningKrSuiteAssist,
   runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist,
 } from "./claude-rea39-extended-engines";
@@ -608,33 +610,9 @@ export function buildLocalCreativeDopamineAndUxSynthesizerReport(
     predictedEpisodeCompletionRatePct: 91,
     cliffhangerHookPowerPct: 96,
     cutScrollHeatmap: [
-      {
-        cutNumber: 1,
-        narrativeBeatKo: `도입부 정적 — ${protagonist}의 결의와 불길한 전조 조명`,
-        predictedDwellTimeMs: 1850,
-        scrollVelocityPxPerSec: 420,
-        dopamineSpikePct: 68,
-        recommendedVisualAmplifierKo:
-          "Snaptoon 다크 스튜디오(#0A0A0A) 여백과 28mm 광각 구도로 공간적 압박감 부여",
-      },
-      {
-        cutNumber: 2,
-        narrativeBeatKo: `갈등 폭발 — ${protagonist}과 ${partner}의 시선 교차 및 유물 각성`,
-        predictedDwellTimeMs: 2640,
-        scrollVelocityPxPerSec: 210,
-        dopamineSpikePct: 89,
-        recommendedVisualAmplifierKo:
-          "ManhwaAI FocusingLine + GlimNavi v2.3 선화 + 역광(#00A8C2) 림라이트로 스크롤 감속 유도",
-      },
-      {
-        cutNumber: 3,
-        narrativeBeatKo: "엔딩 클리프행어 — 세로 풀블리드 충격 컷 & 단문 반전 대사",
-        predictedDwellTimeMs: 3480,
-        scrollVelocityPxPerSec: 95,
-        dopamineSpikePct: 97,
-        recommendedVisualAmplifierKo:
-          "Frameo 45도 스포트라이트 콘(#C084FC) + KAION 다음 화 추리 퀴즈 카드로 댓글·결제 전환 극대화",
-      },
+      { cutNumber: 1, narrativeBeatKo: `도입부 정적 — ${protagonist}의 결의와 불길한 전조 조명`, predictedDwellTimeMs: 1850, scrollVelocityPxPerSec: 420, dopamineSpikePct: 68, recommendedVisualAmplifierKo: "Snaptoon 다크 스튜디오(#0A0A0A) 여백과 28mm 광각 구도로 공간적 압박감 부여" },
+      { cutNumber: 2, narrativeBeatKo: `갈등 폭발 — ${protagonist}과 ${partner}의 시선 교차 및 유물 각성`, predictedDwellTimeMs: 2640, scrollVelocityPxPerSec: 210, dopamineSpikePct: 89, recommendedVisualAmplifierKo: "ManhwaAI FocusingLine + GlimNavi v2.3 선화 + 역광(#00A8C2) 림라이트로 스크롤 감속 유도" },
+      { cutNumber: 3, narrativeBeatKo: "엔딩 클리프행어 — 세로 풀블리드 충격 컷 & 단문 반전 대사", predictedDwellTimeMs: 3480, scrollVelocityPxPerSec: 95, dopamineSpikePct: 97, recommendedVisualAmplifierKo: "Frameo 45도 스포트라이트 콘(#C084FC) + KAION 다음 화 추리 퀴즈 카드로 댓글·결제 전환 극대화" },
     ],
     synthesizedUiUxTheme: {
       themeTitleKo: "GlimNavi × Frameo 시네마틱 네온 스튜디오 테마",
@@ -664,16 +642,16 @@ export async function runCreativeDopamineAndUxSynthesizerAssist(
     input,
     options,
     systemPromptKo:
-      "당신은 웹툰 독자 행동 데이터 과학자이자 39대 웹툰·스토리보드·3D·드로잉 AI 플랫폼의 UI/UX 디자인 시스템 총괄 아키텍트입니다. JSON 스키마에 맞춰 응답하세요.",
+      "당신은 웹툰 독자 행동 데이터 과학자이자 100대 웹툰·스토리보드·3D·드로잉·출판 AI 플랫폼의 UI/UX 디자인 시스템 총괄 아키텍트입니다. JSON 스키마에 맞춰 응답하세요.",
     userDirectiveKo:
-      "현재 원고의 컷별(3개 핵심 컷) 독자 체류 시간(ms), 스크롤 속도(px/s), 도파민 스파이크(%)와 시각 증폭 처방을 시뮬레이션하고, 작품 분위기에 가장 잘 어울리는 39대 플랫폼 기반 합성 UI/UX 테마 토큰을 설계하세요.",
+      "현재 원고의 컷별(3개 핵심 컷) 독자 체류 시간(ms), 스크롤 속도(px/s), 도파민 스파이크(%)와 시각 증폭 처방을 시뮬레이션하고, 작품 분위기에 가장 잘 어울리는 100대 플랫폼 기반 합성 UI/UX 테마 토큰을 설계하세요.",
     schema: CreativeDopamineAndUxSynthesizerSchema,
     fallbackReport,
   });
 }
 
 /* ============================================================================
- * 14. 14대 REA 80-Platform & Creative AI 통합 실행기
+ * 16. 16대 REA 100-Platform & Creative AI 통합 실행기
  * ============================================================================ */
 
 export async function runRea15WebtoonEcosystemFullSuite(
@@ -695,6 +673,8 @@ export async function runRea15WebtoonEcosystemFullSuite(
     tripoMeshyHeroforgeSunoElevenlabsOsmu,
     runwayLumaPikaViggleLive2dSpineMotion,
     sketchupBlenderPetalicaMagmaRecraftStudio,
+    tapasTappytoonRidiPostypeSudowriteNovelcrafter,
+    mixamoMarvelousCoolorsNoonnuBlambotToonboomEagle,
   ] = await Promise.all([
     runGlimnaviRelightAndLineartV23Assist(input, options),
     runKaistorySingleEnvelopeAndKaionAssist(input, options),
@@ -710,6 +690,8 @@ export async function runRea15WebtoonEcosystemFullSuite(
     runTripoMeshyHeroforgeSunoElevenlabsOsmuAssist(input, options),
     runRunwayLumaPikaViggleLive2dSpineMotionAssist(input, options),
     runSketchupBlenderPetalicaMagmaRecraftStudioAssist(input, options),
+    runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist(input, options),
+    runMixamoMarvelousCoolorsNoonnuBlambotToonboomEagleAssist(input, options),
   ]);
 
   const envelopes = [
@@ -727,6 +709,8 @@ export async function runRea15WebtoonEcosystemFullSuite(
     tripoMeshyHeroforgeSunoElevenlabsOsmu,
     runwayLumaPikaViggleLive2dSpineMotion,
     sketchupBlenderPetalicaMagmaRecraftStudio,
+    tapasTappytoonRidiPostypeSudowriteNovelcrafter,
+    mixamoMarvelousCoolorsNoonnuBlambotToonboomEagle,
   ];
 
   const totalEstimatedCostUsd = Number(
@@ -754,5 +738,7 @@ export async function runRea15WebtoonEcosystemFullSuite(
     tripoMeshyHeroforgeSunoElevenlabsOsmu,
     runwayLumaPikaViggleLive2dSpineMotion,
     sketchupBlenderPetalicaMagmaRecraftStudio,
+    tapasTappytoonRidiPostypeSudowriteNovelcrafter,
+    mixamoMarvelousCoolorsNoonnuBlambotToonboomEagle,
   });
 }

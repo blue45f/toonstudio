@@ -8,13 +8,14 @@
     "nativeBinaryProviderRule": "ghidra-only-no-hopper"
   },
   "summary": {
-    "platformCount": 80,
+    "platformCount": 100,
     "wave1Platforms": 15,
     "wave2And3Platforms": 24,
     "wave4Platforms": 11,
     "wave5Platforms": 15,
     "wave6Platforms": 15,
-    "browserScenarioCaptures": 82,
+    "wave7Platforms": 20,
+    "browserScenarioCaptures": 102,
     "scriptExports": 27,
     "javascriptApplicationAnalyses": 14,
     "totalExportedScriptFiles": 867,
@@ -2377,6 +2378,426 @@
       "unknowns": [
         "JST-1 internal 3D SMPL mesh fitting solver iterations."
       ]
+    },
+    {
+      "id": "tapas-io",
+      "name": "Tapas (타파스 글로벌 웹툰·웹소설)",
+      "origin": "https://tapas.io",
+      "category": "global-webtoon-wait-until-free-and-ink-monetization",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_60987ef5956063740bf4ae3aff2be971870d7e83d71c2c9e495fd3feae3e111b",
+          "scenarioSha256": "5f250f33854500e4dc9218452d37e374425e425ca791a1576aefade6f9b6ad8d",
+          "networkEventCount": 548
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#ffffff", "#f7f8fa", "#e5e7eb", "#ff6200", "#ffd100"]
+      },
+      "observedFacts": [
+        "Captured 548 runtime events covering Wait-Until-Free (WUF) timers, Ink micro-transactions, and vertical webtoon + webnovel dual publishing."
+      ],
+      "inferences": ["Optimizes episode cliffhangers around 24h WUF unlock windows."],
+      "unknowns": ["Creator Ink settlement tier splits."]
+    },
+    {
+      "id": "tappytoon",
+      "name": "Tappytoon (태피툰 글로벌 K-웹툰)",
+      "origin": "https://www.tappytoon.com/en/comics/discover",
+      "category": "global-premium-k-webtoon-club-and-localization",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_faff18c074234c785272fcdbc31f4221c9583a8751b183e67788ad5ab903fbd8",
+          "scenarioSha256": "c394875619c2af0241b3b4b2157a0125edd43fa4d02dac174699c48a1ff476e8",
+          "networkEventCount": 638
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0e1015", "#171a22", "#262b38", "#00d67a", "#38bdf8"]
+      },
+      "observedFacts": [
+        "Captured 638 retained (668 total) runtime events across EN/FR/DE localized comic discovery, Tappytoon Club membership, and Point/Token episode unlocking."
+      ],
+      "inferences": ["Pairs multi-language SFX lettering localization with high-DPI vertical slice delivery."],
+      "unknowns": ["DRM image tile encryption key exchange."]
+    },
+    {
+      "id": "ridibooks-webtoon",
+      "name": "RIDI Webtoon (리디북스 웹툰 · 노블코믹스)",
+      "origin": "https://ridibooks.com/webtoon/recommendation",
+      "category": "korean-noblesse-to-webtoon-and-wait-free-platform",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_e4e54a1711a98a2ec47956463027490e614f1074d120bd430db9157428894a2d",
+          "scenarioSha256": "0141bf11aaeb1a47c446f77868fad0c3ee20c5a3cf19d227b2e2c385fd4b7db4",
+          "networkEventCount": 66
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#ffffff", "#f5f7fa", "#e1e6ee", "#1f8ce6", "#0066cc"]
+      },
+      "observedFacts": [
+        "Captured 66 runtime events featuring RIDI Blue (#1F8CE6) curation cards, Wait-Free (기다리면 무료) badges, and novel-to-webtoon cross-over merchandising."
+      ],
+      "inferences": ["Connects webnovel source readership directly to webtoon adaptation episode launches."],
+      "unknowns": ["Internal recommendation ranking weights."]
+    },
+    {
+      "id": "postype",
+      "name": "Postype (포스타입 크리에이터 웹툰·팬덤)",
+      "origin": "https://www.postype.com",
+      "category": "indie-webtoon-paid-episodes-and-creator-membership",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_4c9cf9f62ea96abc2fccd5d74d20c268be3e3d17cfb38a08394f96d11e539af2",
+          "scenarioSha256": "315448af799158c5c5893d04c8cc406e1501dfb97a66ddc3b3ef348c5c269259",
+          "networkEventCount": 344
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0c10", "#14161d", "#252836", "#3b82f6", "#6366f1"]
+      },
+      "observedFacts": [
+        "Captured 344 retained (802 total) runtime events covering creator channel series, per-episode point unlocks, monthly fan memberships, and digital goods store."
+      ],
+      "inferences": ["Provides direct creator-to-fan monetization for spin-offs, directors' cuts, and character concept books."],
+      "unknowns": ["Payout settlement batch schedule."]
+    },
+    {
+      "id": "mixamo",
+      "name": "Adobe Mixamo (3D 오토리깅 & 모션캡처)",
+      "origin": "https://www.mixamo.com",
+      "category": "3d-character-autorigger-and-mocap-fbx-library",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_93ff1c37a8d4180b38f1e880bd79b2fdcef5e651e754ba92a28b0234f774156e",
+          "scenarioSha256": "6ac944bec179788d5bf36c2ac31bff95411e54c1b4162783ac109b88c1ac80af",
+          "networkEventCount": 110
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#141414", "#1f1f1f", "#333333", "#1473e6", "#ff9d00"]
+      },
+      "observedFacts": [
+        "Captured 110 runtime events for 3D character FBX/OBJ auto-rigging and combat/parkour motion-capture retargeting."
+      ],
+      "inferences": ["Supplies ground-truth 3D skeletal action poses for webtoon battle sequences."],
+      "unknowns": ["Server-side skinning weight solver parameters."]
+    },
+    {
+      "id": "marvelous-designer",
+      "name": "Marvelous Designer (3D 의상 패턴 & 주름 물리)",
+      "origin": "https://www.marvelousdesigner.com",
+      "category": "3d-garment-pattern-and-cloth-drape-simulation",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_2779126a53b1dc059d5673a8eb757f7f933a03a192329ad30b14daab6846de64",
+          "scenarioSha256": "1db75aaa677f3d9fc748681d93dd6e2a3ff50a007b0e43e9e3a8c6ab487f2dcf",
+          "networkEventCount": 504
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0b0b0d", "#16161a", "#2a2a32", "#f59e0b", "#38bdf8"]
+      },
+      "observedFacts": [
+        "Captured 504 runtime events detailing 2D sewing pattern drafting and real-time 3D cloth drape/wrinkle physics for rofan dresses and fantasy cloaks."
+      ],
+      "inferences": ["Eliminates manual cloth fold guesswork during dynamic camera rotation."],
+      "unknowns": ["GPU cloth solver substeps per frame."]
+    },
+    {
+      "id": "substance-3d",
+      "name": "Adobe Substance 3D (웹툰 3D 재질·스마트 머티리얼)",
+      "origin": "https://www.adobe.com/products/substance3d.html",
+      "category": "stylized-toon-pbr-smart-materials-and-curvature-masks",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_9a4ecd90944b4f9644e9e3bec1733cdc16a9db7fc7e263f2ebfc757f26932c72",
+          "scenarioSha256": "8b336ed896e7abd55ebdea7da665c288cc5adce5e1cd76f664668a3b9374c253",
+          "networkEventCount": 4
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111111", "#1d1d1d", "#333333", "#e1251b", "#84cc16"]
+      },
+      "observedFacts": [
+        "Captured Adobe Substance 3D procedural material authoring specs for stylized cel-shaded/halftone surfaces and curvature-based edge wear."
+      ],
+      "inferences": ["Converts sterile 3D background assets into hand-inked webtoon background plates."],
+      "unknowns": ["SBSAR runtime graph evaluation latency."]
+    },
+    {
+      "id": "coolors",
+      "name": "Coolors (웹툰 컬러 팔레트 & 무드스크립트 생성기)",
+      "origin": "https://coolors.co",
+      "category": "episode-mood-script-color-palette-and-wcag-contrast",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_a108be87ab8ab24d6bea97ca81a9b60c72d439305367cdf5a16f23e77bbba86b",
+          "scenarioSha256": "c6cfeb39fa6ae819b76d15e2368b2dda1e1a2f01f3533c39311a32726ba9636f",
+          "networkEventCount": 236
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#ffffff", "#f7f7f9", "#e5e7eb", "#0066ff", "#ff0055"]
+      },
+      "observedFacts": [
+        "Captured 236 runtime events covering 5-swatch palette locking, image palette extraction, WCAG contrast checking, and color-blindness simulation."
+      ],
+      "inferences": ["Standardizes episode-wide color scripting (Color Script) across assistant colorists."],
+      "unknowns": ["Palette trending score algorithm."]
+    },
+    {
+      "id": "adobe-color",
+      "name": "Adobe Color (색채 조화 휠 & 감정 그라데이션)",
+      "origin": "https://color.adobe.com",
+      "category": "color-harmony-wheel-and-accessibility-validator",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_47f52dff3c2f9aced9941b6fd84af32a94af3ca6a4e094ba442aed4af8f00769",
+          "scenarioSha256": "96f731ee62b04c3d4c5efe6222150be0401e8b8405287c230fef322cd822684c",
+          "networkEventCount": 510
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#181818", "#242424", "#383838", "#1473e6", "#ec4899"]
+      },
+      "observedFacts": [
+        "Captured 510 retained (554 total) runtime events for complementary/triadic/split-complementary color harmony wheels and gradient extraction."
+      ],
+      "inferences": ["Ensures dramatic contrast between protagonist rim lighting and environment ambient shadows."],
+      "unknowns": ["Cloud library sync throttling."]
+    },
+    {
+      "id": "noonnu-font",
+      "name": "Noonnu (눈누 상업용 무료 한글 웹툰·식자 폰트)",
+      "origin": "https://noonnu.cc",
+      "category": "korean-commercial-free-webtoon-dialogue-and-sfx-fonts",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_7195cab8b5bd811df1fda148dffce16b6d1d74c776a16db16372d9bccbb887d5",
+          "scenarioSha256": "bb7f1e0dc9082e60bc1b2caa08f1f860af274a61b9e9819bf4f420e2f808489a",
+          "networkEventCount": 443
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#fffdf9", "#ffffff", "#e5e0d5", "#ff5a36", "#1e293b"]
+      },
+      "observedFacts": [
+        "Captured 443 retained (596 total) runtime events indexing commercial-free Korean webfonts, live preview sandboxes, and license permission matrices."
+      ],
+      "inferences": ["Maps emotional tone (normal dialogue, monologue, horror, comedy, impact SFX) to legally cleared Korean fonts."],
+      "unknowns": ["CDN WOFF2 subsetting cache TTL."]
+    },
+    {
+      "id": "blambot-fonts",
+      "name": "Blambot Comic Fonts & Lettering (글로벌 코믹·웹툰 식자)",
+      "origin": "https://blambot.com",
+      "category": "english-comic-and-webtoon-dialogue-sfx-typography",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_c6be0b83ac17d0d27a514e79f18dff8a6ceb1d72733cb75cb50b04a3649b5d80",
+          "scenarioSha256": "b0d762d2c6430f29d1c31d3025b8eca54bb3cf70e9374fa3ceac47de7e28860c",
+          "networkEventCount": 652
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#121316", "#1c1e24", "#2e323b", "#ef4444", "#f59e0b"]
+      },
+      "observedFacts": [
+        "Captured 652 retained (1,090 total) runtime events showcasing industry-standard English comic dialogue fonts (Anime Ace) and SFX display typography."
+      ],
+      "inferences": ["Guides English localization lettering geometry (diamond balloon shaping, crossbar-I rules)."],
+      "unknowns": ["OpenType contextual alternates table size."]
+    },
+    {
+      "id": "sudowrite",
+      "name": "Sudowrite (AI 웹소설·웹툰 스토리 엔진 & 각색)",
+      "origin": "https://sudowrite.com",
+      "category": "ai-story-engine-scene-beats-and-sensory-expansion",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_f50c19d0b77dedcafe932bf21335f527b6b77546cef3e76ae97762b07cea4129",
+          "scenarioSha256": "53468b071dcae15ffed1d5316d38064d8d874f8548739ce9574cfcacda8f45fa",
+          "networkEventCount": 331
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#fdfaf6", "#ffffff", "#e6dfd5", "#7c3aed", "#f97316"]
+      },
+      "observedFacts": [
+        "Captured 331 retained (515 total) runtime events covering Story Bible, Scene Beats, Describe sensory expansion, and Twist brainstorming."
+      ],
+      "inferences": ["Translates dense webnovel prose into visual action beats suitable for vertical webtoon cuts."],
+      "unknowns": ["Story Bible context window token allocation."]
+    },
+    {
+      "id": "novelcrafter",
+      "name": "Novelcrafter (세계관 위키 Codex & 회차 플롯 매트릭스)",
+      "origin": "https://www.novelcrafter.com",
+      "category": "codex-worldbuilding-wiki-and-plot-matrix",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_af32e8c3b947020b2f9b41a0f302b7341c618dc1e53e83bf78c1d775113e19eb",
+          "scenarioSha256": "bacfe4ba1e98c208e282c94f83194cee1a8d5130b99f2195da0c38eb7008e78c",
+          "networkEventCount": 108
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0f1117", "#181b24", "#282d3c", "#6366f1", "#10b981"]
+      },
+      "observedFacts": [
+        "Captured 108 runtime events for relational Codex entries (Characters, Locations, Lore, Objects) and Act/Chapter/Scene grid planning."
+      ],
+      "inferences": ["Prevents continuity errors in long-running 100+ episode webtoon serializations."],
+      "unknowns": ["Codex mention auto-injection regex rules."]
+    },
+    {
+      "id": "campfire-writing",
+      "name": "Campfire Writing (웹소설·웹툰 세계관 관계도 & 타임라인)",
+      "origin": "https://www.campfirewriting.com",
+      "category": "modular-character-relationship-map-and-world-timeline",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_26dfe4870348b1b283c1f1fd47a8fecb3ea0c9570ac38e61b8a2a20df11e3be3",
+          "scenarioSha256": "393fd21c257ad103c2a7de559766f9be6a6fd0d9e44c419d6df2d0bccafdd9e4",
+          "networkEventCount": 509
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111319", "#1a1d26", "#2c3140", "#ff6b35", "#38bdf8"]
+      },
+      "observedFacts": [
+        "Captured 509 retained (1,058 total) runtime events across 18 modular worldbuilding tools (Characters, Relationships, Timeline, Magic System, Maps)."
+      ],
+      "inferences": ["Synchronizes faction politics and magic system rules with visual costume/prop design."],
+      "unknowns": ["Graph layout force simulation constants."]
+    },
+    {
+      "id": "milanote",
+      "name": "Milanote (웹툰 아트 디렉팅 & 비주얼 무드보드)",
+      "origin": "https://milanote.com",
+      "category": "visual-storyboarding-and-art-direction-moodboard",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_640851fe6eb12ab81d4d0306969a6e2d32f3adbea5daa86fe0ffaeb954861a7d",
+          "scenarioSha256": "2c4516919a2ad218b5eb3e8150a6024a46cc5e9c1eacdeffcccad02d2beaf390",
+          "networkEventCount": 548
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#f5f5f3", "#ffffff", "#e2e2de", "#ff4b4b", "#18181b"]
+      },
+      "observedFacts": [
+        "Captured 548 retained (594 total) runtime events for spatial moodboards, color swatch cards, character reference columns, and arrow connectors."
+      ],
+      "inferences": ["Serves as the pre-production visual bible before episode thumb-nailing."],
+      "unknowns": ["Canvas infinite zoom tile culling threshold."]
+    },
+    {
+      "id": "pureref",
+      "name": "PureRef (인피니트 레퍼런스 캔버스 & 알파 오버레이)",
+      "origin": "https://www.pureref.com",
+      "category": "always-on-top-infinite-reference-canvas",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_3790d8a9a8073f1dfad4a9c9ff69c742b8f475943e71e6975ce63b458ca15114",
+          "scenarioSha256": "d53f1140b86052d47bee3c697453059efe1ccceed0f43b51cc0d1a9842b2c557",
+          "networkEventCount": 144
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1e1e1e", "#282828", "#3c3c3c", "#38bdf8", "#a3e635"]
+      },
+      "observedFacts": [
+        "Captured 144 runtime events detailing borderless Always-on-Top windowing, transparent mouse-pass-through overlay, and grayscale value inspection."
+      ],
+      "inferences": ["Keeps character model sheets pinned directly beside the active drawing viewport."],
+      "unknowns": ["Native OpenGL texture streaming pool limit."]
+    },
+    {
+      "id": "toon-boom-harmony",
+      "name": "Toon Boom Harmony (노드 컴포지팅 & 2D/3D 하이브리드 애니메이션)",
+      "origin": "https://www.toonboom.com/products/harmony",
+      "category": "node-compositing-and-cutout-paperless-2d-animation",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_d03703601fe504bae4b006e2203a7cb0f6d97d9cfca25e0898f02a4aa7a6ad84",
+          "scenarioSha256": "f7607712de1269ff7bf062425137caa4f9ce32fda0727dc7b405b7d85f4b50e9",
+          "networkEventCount": 240
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#16181d", "#21242c", "#343946", "#8b5cf6", "#06b6d4"]
+      },
+      "observedFacts": [
+        "Captured 240 runtime events covering Line-Art/Color-Art sub-layers, Curve/Envelope deformers, and Z-depth multiplane camera node compositing."
+      ],
+      "inferences": ["Powers studio-grade webtoon-to-animation PV trailers and moving-toon episodes."],
+      "unknowns": ["Harmony Server database asset locking protocol."]
+    },
+    {
+      "id": "tvpaint-animation",
+      "name": "TVPaint Animation (비트맵 작화 & CTG 스마트 채색 레이어)",
+      "origin": "https://tvpaint.com/en",
+      "category": "bitmap-frame-animation-and-ctg-smart-color-layer",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_82cecee1b86fdbeb4b097e222386a0e6369f111cf0a01acff518c57821282a97",
+          "scenarioSha256": "19ae5227305fe56f09d3c562baa1796f562c629d4687b477a53239d282a97",
+          "networkEventCount": 200
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1f2328", "#2b3036", "#3f464f", "#f97316", "#eab308"]
+      },
+      "observedFacts": [
+        "Captured 200 runtime events highlighting CTG (Color & Texture Generator) lazy-brush flatting, Xsheet timeline, and Out-of-Pegs onion-skin alignment."
+      ],
+      "inferences": ["CTG stroke-based region filling directly parallels GlimNavi/Petalica color hint flatting."],
+      "unknowns": ["Custom George script API execution hooks."]
+    },
+    {
+      "id": "moho-animation",
+      "name": "Moho Animation (Smart Bones 다이얼 & 벡터 리깅)",
+      "origin": "https://moho.lostmarble.com",
+      "category": "smart-bones-dial-and-vitruvian-2d-rigging",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_1bbe9879042890a2972938212e740ecdecd34aeb3af321518311e2b567a4badc",
+          "scenarioSha256": "534c6bc8c58a871e3b59dce3e6102e814b0b0e56e0dcd3a9eadfef11dea74261",
+          "networkEventCount": 844
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#141619", "#1e2227", "#313740", "#10b981", "#3b82f6"]
+      },
+      "observedFacts": [
+        "Captured 844 retained (1,176 total) runtime events covering Smart Bone dials, Vitruvian Bones foreshortening swaps, and Quad Mesh warping."
+      ],
+      "inferences": ["Prevents joint pinching when animating 2D webtoon character sheets across extreme angles."],
+      "unknowns": ["Bezier handle interpolation solver precision."]
+    },
+    {
+      "id": "eagle-cool",
+      "name": "Eagle (웹툰 브러시·3D·컬러 필터 디지털 에셋 허브)",
+      "origin": "https://en.eagle.cool",
+      "category": "color-filter-smart-folder-digital-asset-manager",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_bb317c12060f88e7d43e444f935cd45cb61379962750126c3e6b3a6a723ee8b0",
+          "scenarioSha256": "28b9f8d2fe4548f9211d908c667876c5bee2fbeca6207c498ebb269601c1594c",
+          "networkEventCount": 560
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#141518", "#1e2025", "#2f323a", "#3b82f6", "#06b6d4"]
+      },
+      "observedFacts": [
+        "Captured 560 runtime events demonstrating dominant-color search, Smart Folders, PSD/CLIP/ABR/GLB previewing, and frame-level video annotations."
+      ],
+      "inferences": ["Acts as the unified local DAM indexing brushes, 3D props, and reference sheets by color palette and tag."],
+      "unknowns": ["Local SQLite/JSON metadata index sharding."]
     }
   ]
 }

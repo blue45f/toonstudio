@@ -76,7 +76,7 @@ export type ClaudeCreatorTaskId =
   | "runner:dialogue-translate"
   | "runner:prompt-enhancer"
   | "runner:shading-assist"
-  // 8. Phase 7 REA 80-Platform Deep Internalization & Creative AI Suite (14)
+  // 8. Phase 7 REA 100-Platform Deep Internalization & Creative AI Suite (16)
   | "rea15:glimnavi-relight-lineart-v23"
   | "rea15:kaistory-single-envelope-kaion-quiz"
   | "rea15:snaptoon-frameo-shaper-3d-lighting"
@@ -90,7 +90,9 @@ export type ClaudeCreatorTaskId =
   | "rea15:niji-pixai-civitai-lora-sref-director"
   | "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu"
   | "rea15:runway-luma-pika-viggle-live2d-spine-motion"
-  | "rea15:sketchup-blender-petalica-magma-recraft-studio";
+  | "rea15:sketchup-blender-petalica-magma-recraft-studio"
+  | "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"
+  | "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -577,6 +579,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "phase6-ecosystem",
     "creative-production",
     "SketchUp 동적 컴포넌트/은선·Blender Grease Pencil 3D 스트로크·Petalica 3종 채색·Magma 멀티유저 협업·Recraft SVG 벡터·Cara Glaze 보호 설계는 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter": defineRoute(
+    "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter",
+    "Tapas · Tappytoon · RIDI · Postype 글로벌/노블코믹스 연재 & Sudowrite · Novelcrafter · Campfire 코덱스 디렉터",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "북미/유럽/한국 4대 연재 플랫폼(Tapas·Tappytoon·RIDI·Postype) 규격·수익화 퍼널과 Sudowrite/Novelcrafter/Campfire 세계관 코덱스·씬 비트 매트릭스 통합 설계는 Opus 5.5 심층 추론 적용",
+    6_144,
+  ),
+  "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle": defineRoute(
+    "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle",
+    "Mixamo 모션 · Marvelous 의상 · Substance 재질 · Coolors/Adobe 배색 · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle 에셋 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "Mixamo 3D 모션캡처·Marvelous 의상 주름·Substance 툰 머티리얼·Coolors/Adobe 배색·눈누/Blambot 한영 식자·ToonBoom/TVPaint/Moho 작화·PureRef/Milanote/Eagle 에셋 관리는 Sonnet 5.5 적용",
     4_096,
   ),
 });

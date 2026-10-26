@@ -648,6 +648,59 @@ export type SketchupBlenderPetalicaMagmaRecraftStudioReport = z.infer<
 >;
 
 /* ============================================================================
+ * 15. Wave 7: Tapas · Tappytoon · RIDI · Postype 글로벌 연재 · Sudowrite · Novelcrafter · Campfire 노벨투웹툰 코덱스
+ * ============================================================================ */
+
+export const TapasTappytoonRidiPostypeSudowriteNovelcrafterSchema = z.object({
+  publishingAndCodexSummaryKo: z.string(),
+  globalPublishingEconomics: z.object({
+    tapasWaitUntilFreeHours: z.number(),
+    tapasInkPerEpisode: z.number(),
+    tappytoonClubPointBundleKo: z.string(),
+    ridiWaitFreeAndNoblesseTierKo: z.string(),
+    postypeMembershipMonthlyKrw: z.number(),
+  }),
+  novelToWebtoonStoryCodex: z.object({
+    sudowriteStoryEngineBeatKo: z.string(),
+    novelcrafterCodexEntries: z.array(z.string()),
+    campfireTimelineArcKo: z.string(),
+    milanoteAndPurerefMoodboardSpecKo: z.string(),
+  }),
+});
+
+export type TapasTappytoonRidiPostypeSudowriteNovelcrafterReport = z.infer<
+  typeof TapasTappytoonRidiPostypeSudowriteNovelcrafterSchema
+>;
+
+/* ============================================================================
+ * 16. Wave 7: Mixamo · Marvelous · Substance 3D · Coolors · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle 에셋
+ * ============================================================================ */
+
+export const MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleSchema = z.object({
+  productionPipelineSummaryKo: z.string(),
+  mixamoMarvelousSubstance3dRig: z.object({
+    mixamoMocapFbxClipKo: z.string(),
+    marvelousClothPatternWeftWarpKo: z.string(),
+    substanceStylizedToonMaterialKo: z.string(),
+  }),
+  colorHarmonyAndWebtoonTypography: z.object({
+    coolorsAndAdobeColorMoodHexes: z.array(z.string()),
+    wcagContrastRatio: z.number(),
+    noonnuDialogueAndSfxFontsKo: z.array(z.string()),
+    blambotEnglishLetteringFont: z.string(),
+  }),
+  toonBoomTvpaintMohoAndEagleHub: z.object({
+    toonBoomHarmonyNodeCompositeKo: z.string(),
+    tvpaintCtgColorAndMohoSmartBoneKo: z.string(),
+    eagleSmartFolderColorTags: z.array(z.string()),
+  }),
+});
+
+export type MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport = z.infer<
+  typeof MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleSchema
+>;
+
+/* ============================================================================
  * 공통 실행 엔벨로프 및 통합 번들
  * ============================================================================ */
 
@@ -692,4 +745,6 @@ export interface Rea15FullSuiteBundle {
   readonly tripoMeshyHeroforgeSunoElevenlabsOsmu: Rea15Envelope<TripoMeshyHeroforgeSunoElevenlabsOsmuReport>;
   readonly runwayLumaPikaViggleLive2dSpineMotion: Rea15Envelope<RunwayLumaPikaViggleLive2dSpineMotionReport>;
   readonly sketchupBlenderPetalicaMagmaRecraftStudio: Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport>;
+  readonly tapasTappytoonRidiPostypeSudowriteNovelcrafter: Rea15Envelope<TapasTappytoonRidiPostypeSudowriteNovelcrafterReport>;
+  readonly mixamoMarvelousCoolorsNoonnuBlambotToonboomEagle: Rea15Envelope<MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport>;
 }

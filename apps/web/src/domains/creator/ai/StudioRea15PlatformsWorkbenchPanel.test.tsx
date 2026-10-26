@@ -90,5 +90,13 @@ describe("StudioRea15PlatformsWorkbenchPanel (Phase 7 15대 웹툰 AI 플랫폼 
     // 탭 14: SketchUp · Blender · Petalica · Magma · Recraft
     fireEvent.click(screen.getByTestId("rea15-tab-sketchup-blender-petalica-magma-recraft"));
     expect(screen.getByTestId("rea15-panel-sketchup-blender-petalica-magma-recraft")).toBeDefined();
+
+    // 탭 15: Tapas · Tappytoon · RIDI · Postype · Sudowrite · Novelcrafter
+    fireEvent.click(screen.getByTestId("rea15-tab-tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"));
+    expect(screen.getByTestId("rea15-panel-tapas-tappytoon-ridi-postype-sudowrite-novelcrafter")).toBeDefined();
+
+    // 탭 16: Mixamo · Marvelous · Coolors · 눈누 · Blambot · ToonBoom · Eagle
+    fireEvent.click(screen.getByTestId("rea15-tab-mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle"));
+    expect(screen.getByTestId("rea15-panel-mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle")).toBeDefined();
   });
 });

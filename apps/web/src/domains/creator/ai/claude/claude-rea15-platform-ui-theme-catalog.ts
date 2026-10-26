@@ -92,18 +92,41 @@ export const REA15_PLATFORM_IDS = [
   "playground-ai",
   "recraft-ai",
   "viggle-ai",
+  // Wave 7 (20개 플랫폼 — 총 100개 플랫폼 완성)
+  "tapas-io",
+  "tappytoon",
+  "ridibooks-webtoon",
+  "postype",
+  "mixamo",
+  "marvelous-designer",
+  "substance-3d",
+  "coolors",
+  "adobe-color",
+  "noonnu-font",
+  "blambot-fonts",
+  "sudowrite",
+  "novelcrafter",
+  "campfire-writing",
+  "milanote",
+  "pureref",
+  "toon-boom-harmony",
+  "tvpaint-animation",
+  "moho-animation",
+  "eagle-cool",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA50_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA65_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA80_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA100_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
 export type Rea50PlatformId = Rea15PlatformId;
 export type Rea65PlatformId = Rea15PlatformId;
 export type Rea80PlatformId = Rea15PlatformId;
+export type Rea100PlatformId = Rea15PlatformId;
 
 export interface Rea15PlatformUiThemeSpec {
   readonly platformId: Rea15PlatformId;
@@ -431,3 +454,4 @@ export const REA39_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA50_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA65_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA80_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA100_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
