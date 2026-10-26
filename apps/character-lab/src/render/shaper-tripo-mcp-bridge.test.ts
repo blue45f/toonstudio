@@ -50,8 +50,8 @@ describe("shaper-tripo-mcp-bridge (character-lab)", () => {
     expect(spec8.pipelineSummaryKo).toContain("simpleMatCapShader");
   });
 
-  it("tripo3d MCP + glbforge 검증 3D GLB 에셋 카탈로그 3종 메타데이터를 제공한다", () => {
-    expect(LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS).toHaveLength(3);
+  it("Tripo Studio H3.1 + tripo3d MCP + glbforge 검증 3D GLB 에셋 카탈로그 5종 메타데이터를 제공한다", () => {
+    expect(LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS).toHaveLength(5);
     expect(LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS.every((item) => item.watertight && item.triangles > 1000)).toBe(true);
   });
 });

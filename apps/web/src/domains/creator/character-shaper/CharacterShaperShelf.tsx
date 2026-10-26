@@ -324,7 +324,9 @@ function CharacterShaperShelfContent({
                   className="mt-1.5 space-y-1 rounded-lg border border-line/70 bg-panel p-1.5"
                 >
                   <div className="flex items-center justify-between gap-1 text-[0.6rem]">
-                    <span className="font-semibold text-fg-2">tripo3d MCP 생성 3D 에셋 (실제 GLB 3종)</span>
+                    <span className="font-semibold text-fg-2">
+                      Tripo Studio H3.1 &amp; MCP 생성 3D 에셋 (실제 GLB {SHAPER_TRIPO_GENERATED_GLB_CATALOG.length}종)
+                    </span>
                     <span
                       data-testid="shaper-tripo-wallet-notice"
                       className="truncate rounded bg-accent-soft px-1.5 py-0.5 text-[0.56rem] font-semibold text-accent"
