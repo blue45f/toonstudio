@@ -350,6 +350,17 @@ describe("V6 brush experiments in the workbench", () => {
     expect(screen.getByText("클립스튜디오(CSP) 대비 2× 벤치마크")).toBeTruthy();
     expect(screen.getByText("2.0x 목표 달성")).toBeTruthy();
     expect(screen.getByText(/7채널 잠재 안료 \+ Kubelka-Munk/u)).toBeTruthy();
+
+    const openCspDockBtn = screen.getByRole("button", {
+      name: "클립스튜디오 5.1.5 통합 UI/UX 도크 열기 (6탭 전체)",
+    });
+    expect(openCspDockBtn.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(openCspDockBtn);
+    expect(
+      screen.getByRole("heading", {
+        name: /클립스튜디오 5\.1\.5 통합 UI\/UX 도크/,
+      }),
+    ).toBeTruthy();
   });
 
 });

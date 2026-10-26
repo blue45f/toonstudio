@@ -33,6 +33,7 @@ import {
 import { computeCspAiliaHanukeEnclosedGapMap } from "./studio-csp-osqp-sharpyuv-ailia-engine";
 import {
   CspPwEditSliderJoint,
+  StudioCspCompleteArchiveFoilShortcutsSection,
   StudioCspPwuiBentoToonSection,
 } from "./StudioCspPwuiBentoToonSection";
 
@@ -95,7 +96,8 @@ export type StudioCspUnifiedUxTabId =
   | "color_palettes"
   | "brush_3d_hand"
   | "icc_audio_ailia"
-  | "pwui_bento_3d_toon";
+  | "pwui_bento_3d_toon"
+  | "cs3o_foil_shortcuts_wkbridge";
 
 export type StudioCspWorkspacePresetId =
   | "presetMac_1_illustration"
@@ -119,6 +121,7 @@ const UX_TABS: readonly { readonly id: StudioCspUnifiedUxTabId; readonly labelKo
   { id: "brush_3d_hand", labelKo: "브러시 모양(.bfps)·3D 핸드 셋업" },
   { id: "icc_audio_ailia", labelKo: "ICC CMYK 프루프·립싱크·선화 틈새" },
   { id: "pwui_bento_3d_toon", labelKo: "PW* 디자인 시스템·벤토 런처·3D 툰(.fto)" },
+  { id: "cs3o_foil_shortcuts_wkbridge", labelKo: ".cs3o 두상·금박(Foil) 셰이더·단축키(870/258)·WKBridge" },
 ] as const;
 
 const WORKSPACE_PRESETS: readonly {
@@ -764,6 +767,10 @@ export function StudioClipStudioUnifiedUxPanel({
           onChangeVerticalBalloonMode={setVerticalBalloonMode}
           onLaunchBentoItem={onLaunchBentoItem}
         />
+      )}
+
+      {activeTab === "cs3o_foil_shortcuts_wkbridge" && (
+        <StudioCspCompleteArchiveFoilShortcutsSection />
       )}
     </section>
   );

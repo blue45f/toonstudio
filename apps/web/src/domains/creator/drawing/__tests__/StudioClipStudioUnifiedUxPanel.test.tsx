@@ -125,4 +125,27 @@ describe("StudioClipStudioUnifiedUxPanel", () => {
       "start_fanzine_index.html",
     );
   });
+
+  it("renders .cs3o 3D head/hand objects, PWGLisfoilstamptex foil-stamp shader, .spws 870/258 shortcuts, WKBridge _TellBoard, and Parapara flipbook", () => {
+    render(
+      <StudioClipStudioUnifiedUxPanel initialTab="cs3o_foil_shortcuts_wkbridge" />,
+    );
+
+    expect(screen.getByTestId("csp-cs3o-rig-readout").textContent).toContain(
+      "dessindoll_head_ver1.cs3o",
+    );
+    expect(screen.getByTestId("csp-cs3o-rig-readout").textContent).toContain(
+      "전신 본: 67개",
+    );
+    expect(screen.getByTestId("csp-foil-shadeds-readout").textContent).toContain(
+      "금박 페더 알파:",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "WKBridge jump (ASSETS)" }));
+    fireEvent.click(screen.getByRole("button", { name: /Parapara 페이지 넘김/ }));
+
+    const wkReadout = screen.getByTestId("csp-shortcuts-wkbridge-readout");
+    expect(wkReadout.textContent).toContain("https://assets.clip-studio.com/ko-kr");
+    expect(wkReadout.textContent).toContain("PWPiece 아틀라스 8종");
+  });
 });

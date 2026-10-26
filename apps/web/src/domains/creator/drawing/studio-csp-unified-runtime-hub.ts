@@ -10,6 +10,14 @@
  */
 
 import {
+	CSP_BUILTIN_CS3O_CHARACTER_OBJECT_SPECS,
+	CSP_CROSS_PLATFORM_SPWS_PRESET_SPECS,
+	CSP_DEFAULT_POSE_VER2_67_BONES,
+	CSP_MENUV3_ALL_18_SVG_ICONS,
+	CSP_PWPIECE_SPRITE_ATLAS_ARCHIVES,
+	CSP_SPWS_SHORTCUT_DB_SUMMARY,
+} from "../../../../../../packages/studio-format-gateway/src/csp-complete-archive-cs3o-foil-shortcuts";
+import {
 	CSP_NATIVE_PLUGIN_BINARY_MANIFEST,
 	CSP_UX_EDIT_IMAGE_TOOL_CATALOG,
 	applyCspGaussBlurFilter,
@@ -772,5 +780,12 @@ export function getCspCompleteInternalizationManifest() {
 		projectWorkflowTemplateCount: CSP_CLIP_STUDIO_3_PROJECT_TEMPLATES.length,
 		tgMaterialSymbolCount: CSP_TG_MATERIAL_PLUGIN_ARCHITECTURE.exportedSymbolCount,
 		wkBridgeExportedApi: CSP_WKBRIDGE_AND_TGCXS_ARCHITECTURE.wkBridgeBundle.exportedCApi,
+		cs3oCharacterObjectCount: CSP_BUILTIN_CS3O_CHARACTER_OBJECT_SPECS.length,
+		defaultPoseVer2BoneCount: CSP_DEFAULT_POSE_VER2_67_BONES.length,
+		pwPieceSpriteAtlasArchiveCount: CSP_PWPIECE_SPRITE_ATLAS_ARCHIVES.length,
+		spwsMenuShortcutRowCount: CSP_SPWS_SHORTCUT_DB_SUMMARY.totalMenuCommandRows,
+		spwsToolShortcutRowCount: CSP_SPWS_SHORTCUT_DB_SUMMARY.totalToolShortcutRows,
+		crossPlatformSpwsPresetCount: CSP_CROSS_PLATFORM_SPWS_PRESET_SPECS.length,
+		menuV3OfficialSvgIconCount: CSP_MENUV3_ALL_18_SVG_ICONS.length,
 	} as const;
 }
