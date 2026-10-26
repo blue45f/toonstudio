@@ -8,9 +8,13 @@
   - `apps/web/src/domains/creator/artcraft-suite/artcraft-launcher-security-catalog.ts`
   - `apps/web/src/domains/creator/artcraft-suite/artcraft-creative-media-engines.ts`
   - `apps/web/src/domains/creator/artcraft-suite/artcraft-publishing-office-cad-engines.ts`
+  - `apps/web/src/domains/creator/artcraft-suite/artcraft-multimodal-world-studio-engine.ts`
+  - `apps/web/src/domains/creator/artcraft-suite/artcraft-desktop-native-deep-engines.ts`
   - `apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteInspectorPanels.tsx`
+  - `apps/web/src/domains/creator/artcraft-suite/StudioArtCraftMultimodalAndDesktopPanel.tsx`
   - `apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteWorkbench.tsx`
   - `apps/web/src/domains/creator/studio-shell/StudioProjectIntegratedPage.tsx`
+  - `apps/web/src/domains/creator/promo/StudioPromoPage.tsx`
 - **구현 원칙**: 외부 바이너리나 소스 코드를 복제하지 않고, REA 역공학으로 검증한 **포맷 불변조건(Format Invariants), 수치 알고리즘(Numerical Algorithms), 보안 방어선(CWE Hardening), 편집 대수(Timeline/Audio/CAD/Spreadsheet Algebra)**를 추출하여 웹툰·만화·웹소설·단행본·애니메이션 스튜디오 워크플로에 맞춘 클린룸(Clean-Room) 순수 TypeScript 엔진 및 React 워크벤치로 내재화한다.
 
 ---
@@ -54,6 +58,40 @@
 | `photocraft-cli` | `1579a4111d62d9663b5607f102fd17631d13b56dda3c42d29a66e35cd2754a29` | 146,126,736 B (offset 75,726,848 / len 70,399,888) | `ev_33d803c8571dc35666efb7794493b26d9ff4bd252bc95d9696ef910196a9eede` (`ev_d86152d1e089900782f2b8175e1fa7995c14370d0675f9773b5635d13957cffc`) | `photocraft-core`, `photocraft-io` (`.pcraft`, PSD/PSB, Affinity), `craft-cms` ICC 엔진 확인 |
 | `effectcraft-cli` | `fa8880f840c80c3231a5ba395ca4f137512ce8398c3c077d41db3f40fb083237` | 153,584,240 B (offset 80,117,760 / len 73,466,480) | `ev_ca5b6e61505fdf275cbb3bf17682fc397460dd4044341417b637e2194f1aefd8` (`ev_eb3f8afa6dccced3d8ba004d7b78cb3e37f8785846a05bb02e62d67485896383`) | `effectcraft-core`, `effectcraft-expr`, `effectcraft-lottie`, `effectcraft-track` 확인 |
 | `pdfcraft-cli` | `5c3fdd2c98e0bda1e585af9f0d1b784c37a9dba0a127e296565f85258307f770` | 128,775,712 B (offset 66,912,256 / len 61,863,456) | `ev_13093bf9ac3ffea1a57b9c61710ebb41ee4cf0bf6ddb348419f2c5d2512c59f5` (`ev_8c39adaf8822ad65a7daa4d73d9573612160347b6707ea6860c4120b9d81b10d`) | `pdfcraft-core`, `pdfcraft-a11y`, `pdfcraft-audit`, `pdfcraft-redact`, `pdfcraft-pdfa` 확인 |
+
+### 1.4 macOS 네이티브 데스크톱 `.app` 15종 (`ArtCraft.app` v0.41.0 + `ArtCraft Launcher.app` v0.5.1 + `/Applications/*Craft.app` 13종) 정밀 감사
+
+- **공통 서명 주체**: `Developer ID Application: Learning Machines LLC (DJ6XS33FX8)` (`inspect_signature` 검증 완료)
+- **`ArtCraft.app` v0.41.0 (`ai.artcraft.app`, `/Volumes/ArtCraft/ArtCraft.app/Contents/MacOS/artcraft`, 157,411,568 B)**:
+  - Binary SHA-256: `d0e6da63cbfe5d8ed033c57b0c37bdc5bd534d4fb993c965354794c605cdcec8`
+  - `inspect_rust_binary`: `ev_88f17ab02466aa4275e7a39eb283f0f80d305de3bf01964b45b04b8f37ae54e1` (슬라이스당 22,967개 디맹글 심볼, 양 슬라이스 총 57,689개 심볼, 11개 독자 크레이트: `artcraft`, `artcraft_api_defs`, `artcraft_router`, `fal_client`, `grok_consumer_client`, `midjourney_client`, `openai_sora_client`, `worldlabs_consumer_client`, `media_metadata`, `utils`, `tauri_plugin_NativeWindow`)
+  - `inspect_desktop_application`: `ev_2fe65f3ecbb60ff1caa2016a53dc989f47c7dd365601cf0cb595b795c8ddc2e7` (Tauri v2 `wry`/`tao` 런타임)
+  - `inspect_with_objdump`: `ev_0a8c1cd66af2fbedbfed480ae04925c746f3e1a4ec1ce01a765cc9b1807a3da4`
+  - `inspect_macho`: `ev_101a05f1695d8da47bd1d1e06a6b8fbfebe0a223ab734d34c05fb4d46fef4310`
+  - `inspect_plist`: `ev_a9d1f851b412200b63d0e827c1720388e9dbdcba70fd15e19373d2ef98e82792`
+  - `inspect_signature`: `ev_56c39f178993ccd21f22c8a19aa855ec01e25043eaa122156ea924978a8e77ed` (`cdhash: 35e80f40d6089464fafa8dc4f70ac447d725991f`)
+- **`ArtCraft Launcher.app` v0.5.1 (`ai.storyteller.artcraft-launcher`, `/Volumes/ArtCraft Launcher/ArtCraft Launcher.app/Contents/MacOS/ArtCraft Launcher`, 42,641,104 B)**:
+  - Binary SHA-256: `273c108d2f701cd68de7ed93feb40873ad9fcb832b06868ed56f7d8ea04adf89`
+  - `inspect_rust_binary`: `ev_d924383d3ec5ab5c1aa704f1cf5ce356bcf5d3c29ffff970ab7855ab4b8c82ff` (`crates/native/src/{feed_throttle,single_instance,self_update,github,installer,verify}.rs`, `crates/gui/src/cjk_font.rs`)
+  - `inspect_desktop_application`: `ev_cf6150b4fdf1e740b2eac63915bda7bae1d44e50c81ed236a8bed1b4ad8ca05d`
+  - `inspect_with_objdump`: `ev_87e21526fa3e42ad3bf925864b2afc3f3c1b309ac3b3eff7a79dd9945334d343`
+  - `inspect_macho`: `ev_c9cd2a83f389429c508fa74424a5d77d93fa53dbe77beed1bbd5cf2f862ba7d5`
+  - `inspect_plist`: `ev_ad858445919d59e90d408edb7f8533c357f1ad9641f9ca071e2117786b01892b`
+  - `inspect_signature`: `ev_9db2912ec015932d527687769683207756bd167888fe2616113ca109031cfc58`
+- **`/Applications/*Craft.app` 13종 데스크톱 GUI 바이너리**:
+  - `PhotoCraft` (`ev_579a0596...`), `VectorCraft` (`ev_c2b4831f...`), `FilmCraft` (`ev_a8e9bc59...`), `LightCraft` (`ev_9cc2c0d3...`), `PdfCraft` (`ev_b67fdde1...`), `EffectCraft` (`ev_fb73bb8f...`), `DesignCraft` (`ev_bf76b152...`), `FigCraft` (`ev_67591426...`), `WordCraft` (`ev_43dfbcfa...`), `SoundCraft` (`ev_c0a5da1d...`), `DeckCraft` (`ev_9bd1c881...`), `CADCraft` (`ev_c1dd987f...`), `GridCraft` (`ev_566485cf...`) 전수 감사 완료.
+
+### 1.5 `ArtCraft.app` v0.41.0 멀티모달 AI 월드/3D/영상 라우터 및 데스크톱 심화 크레이트 내재화
+1. **WorldLabs Marble 0.1 Mini/Plus 3D 가우시안 스플랫(`.spz`) 월드 생성기 (`worldlabs_consumer_client`)**:
+   - `ImageInputNode` → `PanoNode` → `WorldNode`(`TypeGenerateWorld`) RunGraph와 `Recaption2` 360° 공간 프롬프트 확장기 및 `.spz` (`NGSP` / gzip) 바이너리 헤더 검증기를 내재화하였다.
+2. **Hunyuan3D v2.0 / v2.1 / v3.0 멀티펑션 3D 메시(`.glb`) 생성기 (`fal_client::extract_model_glb`)**:
+   - Quad(사각 메시·웹툰 펜선 추출 최적화) 및 Triangle(실시간 엔진용) 토폴로지 플래너와 glTF 2.0 `.glb` 헤더 검증기를 내재화하였다.
+3. **3D 카메라 궤도 각도 회전 편집기 (`flux_2_lora_edit_image_angle` & `qwen_edit_2511_angles`)**:
+   - `require_at_least_one_image_input` 가드레일과 Yaw/Pitch/Roll 궤도 디스크립터 계산기를 내재화하였다.
+4. **영상 홍보(PV·트레일러) 멀티모달 비디오 라우터 & Beeble SwitchX 리라이팅**:
+   - `Veo 3.1`, `Sora 2 Pro`, `Kling 3.0 Pro`, `Vidu Q3`, `Seedance 2.5 Ultra`, `Beeble SwitchX`, `Grok Imagine Video 1.5` 모델 라우팅과 `SQLite` 태스크 큐(`AutoDownloadCheckpoint`, `PreferredDownloadFilename`)를 내재화하고 `/showcase/promo`, `/cuts/studio`, `/promo-library`와 양방향 연동하였다.
+5. **macOS 데스크톱 `.app` 14종 심화 엔진 (`artcraft-desktop-native-deep-engines.ts`)**:
+   - Launcher `feed_throttle` 지수 백오프 & `cjk_font`, PhotoCraft `motion_fft` / `faces::cnn` / `matting::morphology` / Affinity `.afphoto` 스트림 매직, FilmCraft & EffectCraft `APV`/`AV1` 방송 코덱 & 10단 오디오 DSP 체인, FigCraft `collab-net` 스로틀 & `code_connect`, DesignCraft `mojikumi`/`warichu` & 3D `CLUT`, LightCraft `GainMap` ISO 21496-1 HDR & `catalog::stacks`, PdfCraft `camera_edges` & `formcalc`, CADCraft `Levenberg-Marquardt` 솔버 & `dynblock`, Word/Deck/GridCraft `Holt` 예측 & `Goal Seek` 솔버를 내재화하였다.
 
 ---
 

@@ -1,14 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ARTCRAFT_MULTIMODAL_STUDIO_041_SPEC,
   ARTCRAFT_SUITE_CATALOG,
   auditPdfCraftRedactions,
+  buildPreferredArtCraftDownloadFilename,
   composeDesignCraftParagraphKnuthPlass,
   computeSoundCraftSessionAdcAndTimebase,
   convertWordCraftPoints,
+  estimateArtCraftOmniCost,
+  evaluateDesignCraftMojikumiAndClut,
   evaluateEffectCraftExpression,
+  evaluateFigCraftCollabAndCodeConnect,
+  evaluateFilmAndEffectCraftBroadcastPipeline,
   evaluateGridCraftEpisodeSettlement,
+  evaluateLauncherNativeDaemonState,
+  evaluateLightCraftCatalogAndGainMap,
   evaluateLightCraftDevelopPipeline,
+  evaluateOfficeSuiteDesktopDeepFeatures,
+  evaluatePdfCraftDocumentScannerAndFormCalc,
+  evaluatePhotoCraftDesktopDeepPipeline,
   evaluateVectorCraftPipeline,
   foldGridCraftIdentifier,
   interpolateDeckCraftMorphTransition,
@@ -19,14 +30,20 @@ import {
   parseCadCraftPolarCommand,
   parseJpegSofDimensions,
   parseSha256SumsManifest,
+  planCameraAngleImageEdit,
+  planHunyuan3dMeshGeneration,
   planPhotoCraftTiledCanvas,
+  planPromoVideoOmniRouter,
+  planWorldLabsGaussianSplatPipeline,
   resolveArtCraftAppById,
   resolveWordCraftTrackChanges,
   routeCraftAiTask,
   simulateAniCraftCelScene,
+  solveCadCraftLevenbergMarquardtAndDynBlock,
   solveCadCraftTwoDistanceConstraint,
   solveFigCraftHorizontalAutoLayout,
   splitFilmCraftClipAtOffset,
+  summarizeSqliteTaskQueueAndAutoDownload,
 } from "../index";
 
 describe("ArtCraft Crafting Apps 15-Suite Clean-Room Engines", () => {
@@ -263,5 +280,203 @@ describe("ArtCraft Crafting Apps 15-Suite Clean-Room Engines", () => {
     expect(grid.foldedVariableKeys).toEqual(["MASS_1", "BONUS_Σ"]);
     expect(grid.spilledCutFeesKrw).toEqual([1900000, 2200000]);
     expect(grid.totalSettlementKrw).toBe(4100000);
+  });
+
+  it("internalizes ArtCraft.app v0.41.0 (ai.artcraft.app, Learning Machines LLC DJ6XS33FX8) Multimodal AI World/3D/Video Router", () => {
+    expect(ARTCRAFT_MULTIMODAL_STUDIO_041_SPEC.version).toBe("0.41.0");
+    expect(ARTCRAFT_MULTIMODAL_STUDIO_041_SPEC.teamIdentifier).toBe("DJ6XS33FX8");
+    expect(ARTCRAFT_MULTIMODAL_STUDIO_041_SPEC.demangledSymbolCount).toBe(22967);
+
+    // Every installed macOS desktop .app (14 out of 15 entries; AniCraft is spec-only) has its Universal Mach-O SHA-256 recorded
+    const desktopAppsWithHashes = ARTCRAFT_SUITE_CATALOG.filter((app) => Boolean(app.desktopAppBinarySha256));
+    expect(desktopAppsWithHashes).toHaveLength(14);
+
+    // WorldLabs Marble 0.1 Plus Splat pipeline
+    const splat = planWorldLabsGaussianSplatPipeline({
+      model: "worldlabs_marble_0p1_plus",
+      sourcePrompt: "왕도 시계탑 광장",
+      hasInputReferenceImage: true,
+      enableRecaption2: true,
+    });
+    expect(splat.estimatedGaussianCount).toBe(2_400_000);
+    expect(splat.spzDownloadUrl).toContain(".spz");
+    expect(splat.recaptionedWorldPrompt).toContain("[Recaption2 360° Spatial]");
+
+    // Hunyuan3D v3 Quad Mesh
+    const mesh = planHunyuan3dMeshGeneration({
+      model: "hunyuan3d_v3_multi_function_object_gen",
+      generateType: "multi-view-to-3d",
+      polygonType: "quad",
+      quality: "high",
+    });
+    expect(mesh.faceCount).toBe(120_000);
+    expect(mesh.outputGlbFilename).toContain(".glb");
+
+    // Flux 2 / Qwen Camera Angle Edit
+    const angleOk = planCameraAngleImageEdit({
+      model: "flux_2_lora_angles",
+      referenceImageCount: 1,
+      yawDeg: 45,
+      pitchDeg: -20,
+      numOutputs: 4,
+    });
+    expect(angleOk.valid).toBe(true);
+    expect(angleOk.cameraOrbitDescriptor).toContain("yaw=45°");
+
+    const angleBlocked = planCameraAngleImageEdit({
+      model: "qwen_edit_2511_angles",
+      referenceImageCount: 0,
+      yawDeg: 0,
+      pitchDeg: 0,
+      numOutputs: 1,
+    });
+    expect(angleBlocked.valid).toBe(false);
+    expect(angleBlocked.validationError).toBe("RequireAtLeastOneImageInput");
+
+    // Promo Video Omni Router & SwitchX Relighting
+    const pv = planPromoVideoOmniRouter({
+      videoModel: "sora_2_pro",
+      mode: "text-to-video",
+      aspectRatio: "16:9",
+      durationSeconds: 8,
+      resolution: "1080p",
+      referenceImageCount: 2,
+      hasAudioReference: true,
+      switchxLightingPreset: "cyberpunk-neon",
+    });
+    expect(pv.selectedProvider).toBe("sora");
+    expect(pv.pipelineSteps.some((s) => s.includes("BeebleSwitchX"))).toBe(true);
+
+    // SQLite task queue & preferred_download_filename
+    expect(
+      buildPreferredArtCraftDownloadFilename({
+        modelType: "worldlabs_marble_0p1_plus",
+        dateIso: "2026-10-26T12:00:00Z",
+        promptSnippet: "clocktower",
+        extension: "spz",
+      }),
+    ).toBe("artcraft_worldlabs-marble-0p1-plus_2026-10-26_clocktower.spz");
+
+    const cost = estimateArtCraftOmniCost({
+      modality: "video",
+      model: "veo_3p1",
+      provider: "fal",
+      resolution: "4k",
+      durationSeconds: 10,
+      count: 2,
+    });
+    expect(cost.estimatedCredits).toBeGreaterThan(50);
+
+    const queue = summarizeSqliteTaskQueueAndAutoDownload(
+      [
+        {
+          taskId: "task-abc12345",
+          provider: "worldlabs",
+          modelType: "worldlabs_marble_0p1_plus",
+          status: "completed",
+          createdAtIso: "2026-10-26T12:00:00Z",
+          resultUrls: ["https://cdn.example/scene.spz"],
+        },
+      ],
+      new Set(),
+    );
+    expect(queue.completedCount).toBe(1);
+    expect(queue.autoDownloadCheckpointUrls).toHaveLength(1);
+  });
+
+  it("internalizes macOS native desktop .app deep crate engines across all 14 installed apps", () => {
+    const daemon = evaluateLauncherNativeDaemonState({
+      consecutiveFailures: 3,
+      hasSingleInstanceLock: true,
+      uiLocale: "ko",
+    });
+    expect(daemon.nextPollDelaySeconds).toBe(480);
+    expect(daemon.selectedCjkFontFamily).toContain("AppleSDGothicNeo-Regular");
+
+    const pcraft = evaluatePhotoCraftDesktopDeepPipeline({
+      widthPx: 1600,
+      heightPx: 4000,
+      motionBlurLengthPx: 36,
+      motionBlurAngleDeg: 30,
+      trimapUnknownBandPx: 12,
+      importAffinityStream: true,
+    });
+    expect(pcraft.fftSpeedupVsDirectSpatial).toBeGreaterThan(1);
+    expect(pcraft.affinityChunksDecoded).toEqual(["raster", "shapes", "stream"]);
+
+    const broadcast = evaluateFilmAndEffectCraftBroadcastPipeline({
+      codec: "apv-422-10bit",
+      widthPx: 3840,
+      heightPx: 2160,
+      fps: 24,
+      durationSeconds: 10,
+      enableSpectralDenoise: true,
+      enableDeclick: true,
+      pitchShiftSemitones: 2,
+      timeStretchRatio: 1.1,
+    });
+    expect(broadcast.activeAudioDspStages.length).toBeGreaterThanOrEqual(6);
+    expect(broadcast.estimatedBitrateMbps).toBeGreaterThan(100);
+
+    const fig = evaluateFigCraftCollabAndCodeConnect({
+      componentName: "EpisodeBanner",
+      activePeers: 8,
+      guestRole: "viewer",
+      cursorUpdatesPerSec: 120,
+    });
+    expect(fig.canMutateSceneGraph).toBe(false);
+    expect(fig.throttledBroadcastHz).toBe(30);
+
+    const mojikumi = evaluateDesignCraftMojikumiAndClut({
+      mainText: "「서막」(1화)",
+      warichuInlineNote: "왕립도서관주석",
+      cmykSample: [0.2, 0.5, 0.3, 0.1],
+    });
+    expect(mojikumi.mojikumiQuarterEmInsertions).toBeGreaterThanOrEqual(1);
+    expect(mojikumi.warichuTopLine).toBe("왕립도서");
+    expect(mojikumi.warichuBottomLine).toBe("관주석");
+
+    const gain = evaluateLightCraftCatalogAndGainMap({
+      photoCount: 100,
+      burstStackSize: 4,
+      hdrTargetPeakNits: 1000,
+      softProofProfile: "display-p3",
+    });
+    expect(gain.collapsedStackCount).toBe(25);
+    expect(gain.gainMapHeadroomStops).toBeGreaterThan(2);
+
+    const pdf = evaluatePdfCraftDocumentScannerAndFormCalc({
+      quadCornersClockwise: [
+        [0, 0],
+        [800, 0],
+        [800, 1131],
+        [0, 1131],
+      ],
+      illuminationUnevenness: 0.4,
+      lineItemValues: [100000, 200000],
+      taxRate: 0.1,
+    });
+    expect(pdf.formCalcSum).toBe(300000);
+    expect(pdf.formCalcGrossTotal).toBe(330000);
+
+    const cad = solveCadCraftLevenbergMarquardtAndDynBlock({
+      bx: 100,
+      targetDistOrigin: 100,
+      targetDistB: 100,
+      blockVisibilityState: "door-open-90",
+      stretchDeltaMm: 200,
+      arrayRepeatCount: 3,
+    });
+    expect(cad.converged).toBe(true);
+    expect(cad.evaluatedBlockWidthMm).toBe(1100);
+
+    const office = evaluateOfficeSuiteDesktopDeepFeatures({
+      historicalEpisodeViews: [10000, 12000, 14000, 16000],
+      targetBreakEvenRevenueKrw: 1000000,
+      revenuePerViewKrw: 50,
+      slideElementCount: 4,
+    });
+    expect(office.nextEpisodeForecastViews).toBe(18000);
+    expect(office.requiredViewsForBreakEven).toBe(20000);
   });
 });

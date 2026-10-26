@@ -52,7 +52,32 @@ export interface ArtCraftAppCatalogEntry {
   readonly reaViewEvidenceId: string;
   readonly cliBinarySha256?: string;
   readonly reaCliEvidenceId?: string;
+  readonly desktopAppBinarySha256?: string;
+  readonly reaDesktopRustEvidenceId?: string;
+  readonly reaDesktopMachoEvidenceId?: string;
 }
+
+/**
+ * `/Volumes/ArtCraft/ArtCraft.app` (`ai.artcraft.app` v0.41.0, Learning Machines LLC `DJ6XS33FX8`)
+ * 정밀 역공학 메타데이터 명세.
+ */
+export const ARTCRAFT_MULTIMODAL_STUDIO_041_SPEC = Object.freeze({
+  appName: "ArtCraft",
+  bundleId: "ai.artcraft.app",
+  version: "0.41.0",
+  teamIdentifier: "DJ6XS33FX8",
+  authority: "Developer ID Application: Learning Machines LLC (DJ6XS33FX8)",
+  binarySha256: "d0e6da63cbfe5d8ed033c57b0c37bdc5bd534d4fb993c965354794c605cdcec8",
+  bundleSha256: "94b23bb8c4464c646c976b9394a28a4765684b3cc5613069faa7d798806418d1",
+  demangledSymbolCount: 22967,
+  domainPathCount: 2093,
+  reaRustBinaryEvidenceId: "ev_88f17ab02466aa4275e7a39eb283f0f80d305de3bf01964b45b04b8f37ae54e1",
+  reaDesktopAppEvidenceId: "ev_2fe65f3ecbb60ff1caa2016a53dc989f47c7dd365601cf0cb595b795c8ddc2e7",
+  reaObjdumpEvidenceId: "ev_0a8c1cd66af2fbedbfed480ae04925c746f3e1a4ec1ce01a765cc9b1807a3da4",
+  reaMachoEvidenceId: "ev_101a05f1695d8da47bd1d1e06a6b8fbfebe0a223ab734d34c05fb4d46fef4310",
+  reaPlistEvidenceId: "ev_a9d1f851b412200b63d0e827c1720388e9dbdcba70fd15e19373d2ef98e82792",
+  reaSignatureEvidenceId: "ev_56c39f178993ccd21f22c8a19aa855ec01e25043eaa122156ea924978a8e77ed",
+});
 
 /**
  * `crates/launcher-core/src/catalog.rs`에서 역공학한 정본 14종 + 4.1절 미공개 `AniCraft` 통합 카탈로그.
@@ -76,6 +101,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0xf2, 0xf1, 0xee],
     webBundleSha256: "e0cac2cb30fce2677bfcfeb01806d95702cffbee92717faf3ce0c34fecc0bb4e",
     reaViewEvidenceId: "ev_2df9d6bb26a2a2654b5620039703f2a1dead0000f2f80b35a614b6202c9ebbd8",
+    desktopAppBinarySha256: "273c108d2f701cd68de7ed93feb40873ad9fcb832b06868ed56f7d8ea04adf89",
+    reaDesktopRustEvidenceId: "ev_d924383d3ec5ab5c1aa704f1cf5ce356bcf5d3c29ffff970ab7855ab4b8c82ff",
+    reaDesktopMachoEvidenceId: "ev_c9cd2a83f389429c508fa74424a5d77d93fa53dbe77beed1bbd5cf2f862ba7d5",
   },
   {
     id: "photocraft",
@@ -97,6 +125,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     reaViewEvidenceId: "ev_1c6ba22f18d07d57fbb4c4301e87243591ac6bb871edf934a34afa41af53583c",
     cliBinarySha256: "1579a4111d62d9663b5607f102fd17631d13b56dda3c42d29a66e35cd2754a29",
     reaCliEvidenceId: "ev_33d803c8571dc35666efb7794493b26d9ff4bd252bc95d9696ef910196a9eede",
+    desktopAppBinarySha256: "2f2beb092480504a2f462255d677cd3251d9422a66e256cd5d2cb958f8719a96",
+    reaDesktopRustEvidenceId: "ev_ccc9b89d81933d92ec015ada70f5fd7f8c985dac3656c59c7a3530f2cb3bec96",
+    reaDesktopMachoEvidenceId: "ev_99a3f91ec24f8532dbe4a30d15a8818f70b5540ce8d3b51b8d2baeb86727f0b3",
   },
   {
     id: "vectorcraft",
@@ -116,6 +147,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0xff, 0x8a, 0x70],
     webBundleSha256: "8850209e86d504bf93bb307d14cedbeb7d28963b7d1d3158e4240b7e9d0b8e9c",
     reaViewEvidenceId: "ev_fb30c7f3074d5932a971cc923e87fa2174a0bfde3e4d02a931a27d443088c0be",
+    desktopAppBinarySha256: "110ae3e6937b20ec4fab125e8b1d57c14ef10667c7342189a63e72cf5c7a71b8",
+    reaDesktopRustEvidenceId: "ev_f0ca6a9e6b5b355022aca203aba98615065f59dc2cf6cffd4a05d53406d0ad03",
+    reaDesktopMachoEvidenceId: "ev_54473805b02632fc26939bb8bc656eb0bf5d67c2d385599463b8be6ce2004689",
   },
   {
     id: "filmcraft",
@@ -135,6 +169,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0xb6, 0x9c, 0xff],
     webBundleSha256: "735a7fe34ea8c86b2a06f3d76449d8e7f688c8f632103a80e084240e9e0be39a",
     reaViewEvidenceId: "ev_f6ac70cbdd58b62b600d5f3040112390ccf2bbf81a6f1cb57e24bdd0164e09e5",
+    desktopAppBinarySha256: "d35d42eafd33cdb77b862e3bce07e5b910db2b8874e8f5ab7c09c52e4770650f",
+    reaDesktopRustEvidenceId: "ev_1c3f07cdb62a0aadc72e4acd4eec499d207f6d5eb6fa91485be8d98341f1c498",
+    reaDesktopMachoEvidenceId: "ev_883cff56d7448ef5d158a2090264bacb7bd0cb1bb43e043bac0850e3bd2c124c",
   },
   {
     id: "lightcraft",
@@ -154,6 +191,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0xff, 0xc1, 0x4d],
     webBundleSha256: "1c9257bc1f08792ba3c7c74fc985500d692c756bf0b2e449422f07066e9e0432",
     reaViewEvidenceId: "ev_0b81479a076bb29cf23d475a2211507c8547ecd118169b253a12e9508dc0fb36",
+    desktopAppBinarySha256: "4434365a0d09d0a14c8d4f292f74eb08f862484448f93e1bf838230c64d2667e",
+    reaDesktopRustEvidenceId: "ev_4d67f567426983e3e22f4a138fc76b2b3088f6d90cf8f02aa558c46b90316bb0",
+    reaDesktopMachoEvidenceId: "ev_0e50571f7bc9b1d17b8e4aa6391a586754eaf11c7fd46b7dfb3db2483a7d9312",
   },
   {
     id: "pdfcraft",
@@ -175,6 +215,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     reaViewEvidenceId: "ev_da686cbda7facfecc037f8c01358e831d354fd458ab045d5010d1869ae5c0992",
     cliBinarySha256: "5c3fdd2c98e0bda1e585af9f0d1b784c37a9dba0a127e296565f85258307f770",
     reaCliEvidenceId: "ev_13093bf9ac3ffea1a57b9c61710ebb41ee4cf0bf6ddb348419f2c5d2512c59f5",
+    desktopAppBinarySha256: "de60d5bb7f0d922c147568173c7154cf88189ac2675326ee726e16008eba4551",
+    reaDesktopRustEvidenceId: "ev_b72b4027d610551705ae6072352cc440baad4813c1a23031db1cea6a00f09ad1",
+    reaDesktopMachoEvidenceId: "ev_794da729fb51252e4e52ce963baa7e5a29ec6a2e93e3a9ff041eb2e2a3304d87",
   },
   {
     id: "effectcraft",
@@ -196,6 +239,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     reaViewEvidenceId: "ev_6c04e2d967c22924e5580b684d0be24c3ec50fb9891aa677975a303acdca8b92",
     cliBinarySha256: "fa8880f840c80c3231a5ba395ca4f137512ce8398c3c077d41db3f40fb083237",
     reaCliEvidenceId: "ev_ca5b6e61505fdf275cbb3bf17682fc397460dd4044341417b637e2194f1aefd8",
+    desktopAppBinarySha256: "b8098b2b6fc22a502e013f35f893c5db62b4780d69c5924ecd8272302753812c",
+    reaDesktopRustEvidenceId: "ev_6590dfb3dcfd6eccb3915544dc5ec64276f9f0ecdf717ecaa6b9a3cc14822625",
+    reaDesktopMachoEvidenceId: "ev_de2fb8f13146dda791382e6f5afc12ba8a580d12240d42bf5cc88fe6c40576fe",
   },
   {
     id: "designcraft",
@@ -215,6 +261,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0xa6, 0xe0, 0x4a],
     webBundleSha256: "59c638881124e32e96fb6b038fbe285fad5b2e92a23aff3b8c553f588e167560",
     reaViewEvidenceId: "ev_be8b98dd35304b5ab4cb7604d523d52f0b403777b275165503eb5e7b740c7da7",
+    desktopAppBinarySha256: "a81cd662f2a94cb66fbd35a617838225f098994290481641fa74e428697b4d17",
+    reaDesktopRustEvidenceId: "ev_7d6be3a85bbca00fa1ffe91bdaf6fe4f102928f31a32c21acf7f1735eb84771a",
+    reaDesktopMachoEvidenceId: "ev_68f46c3f8c74127b89ac639175df7139c7803a0e9272b819e023f5404960b861",
   },
   {
     id: "figcraft",
@@ -234,6 +283,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0x4f, 0xe8, 0xb6],
     webBundleSha256: "fa2c20820fcd59c52968ea31d9147082743ebbb1b64805484ad89242e75c7b12",
     reaViewEvidenceId: "ev_f3bc03d38d4bf1e6e2c68393b34983cb608be18fefe3a8f0c83bb48188df48f4",
+    desktopAppBinarySha256: "e2f0be10f9d79a5c112b15a7dad4e4af1349464f99d23058803a7ea38e071991",
+    reaDesktopRustEvidenceId: "ev_d60938ccb3661f4d27b9b9135f99234344460e23a8dd581f838e370445603451",
+    reaDesktopMachoEvidenceId: "ev_bbebc5b537d3e6851dcbae9e27f00e4fb31f0a19396bfe026e9dc80f528a10ed",
   },
   {
     id: "wordcraft",
@@ -253,6 +305,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0x8e, 0xa2, 0xff],
     webBundleSha256: "553a50567f324921828ee40865d6270b6525f39cc2242e166762cb735e52fc63",
     reaViewEvidenceId: "ev_07ec24596f5d84f5c3b99811ba102b10647f4984e5b968674ce8967ade456ac5",
+    desktopAppBinarySha256: "bf7d3947447cff79095cd58fd54705ec510261aa4435eff882e6d48f01e93353",
+    reaDesktopRustEvidenceId: "ev_d7e4d2d96d08059d93680ecca0845d07fb20907ddbd8d7d182787eeac6e12818",
+    reaDesktopMachoEvidenceId: "ev_c8f43805db46ab5ecbcc32cfc75e951c6a309c7ec1039a1d8bfb4b85acb387f9",
   },
   {
     id: "soundcraft",
@@ -274,6 +329,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     reaViewEvidenceId: "ev_da66792b93f5c0548f19fcccf18e8e8c7e4e55a003aa6a4c882ce58cff29ffa9",
     cliBinarySha256: "ad1eef56c9997939af892d487a41a8c58c8edd0af313be3472d1b281fae0ce05",
     reaCliEvidenceId: "ev_84bc10db79491cf8fa2b3a16c9af25821840f2fdeb10aceae2718996c54e1187",
+    desktopAppBinarySha256: "00acc605b0cf4c270be0642a71d79cc1d2bcc217465dc1a70853101b0ec2a8a8",
+    reaDesktopRustEvidenceId: "ev_3d05fbdd838d078f84a943c36bc2c0e6a620107d9d8c966275942b454b289e8a",
+    reaDesktopMachoEvidenceId: "ev_0e4ae1c1a37efa64277c4205736d682a4faa8f524c56f27f085cda030e8152c8",
   },
   {
     id: "deckcraft",
@@ -293,6 +351,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     inkDark: [0xff, 0xa0, 0x60],
     webBundleSha256: "2d9a4a126c00bbdbf1a94e53126696a7b516be8dd0bca89f883bc8e960401f60",
     reaViewEvidenceId: "ev_17b2ac0cb3abbbd93498ed840673f32a204ed7a390cfdb0ebe7dfd188f9be4da",
+    desktopAppBinarySha256: "4c0c0c6f954b89424b5dbcaa2cfb556a0ff564492255897b7a51c37f3b281105",
+    reaDesktopRustEvidenceId: "ev_feda687f2cb0f19c6729a52e029baa05a40eaa8d327cbf993fbb067caac231d2",
+    reaDesktopMachoEvidenceId: "ev_03c38602909af4f1da66a7c3740633926b4aa1b36f1820d5b8a0294de5409f72",
   },
   {
     id: "cadcraft",
@@ -314,6 +375,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     reaViewEvidenceId: "ev_f18c4082b99ce8c7b8e8c0fde21733b25c50002cb1e3b0cd21d3f93d58fd95e1",
     cliBinarySha256: "979548b03d96284ac1b060cd074fce1cc24790d635c6192b5f3c27b0e99ca927",
     reaCliEvidenceId: "ev_0566ff2a6784ac45e8aa187edd0823d5786c0758724e3120ddef3439734227f8",
+    desktopAppBinarySha256: "424012382761ea6dd1d10a8c3d88945d0a26774b1079b956f8e825a60ece1276",
+    reaDesktopRustEvidenceId: "ev_6d63d355483801172208127762b682bb4c9029feba4e317539ed0c9b4d36e2b1",
+    reaDesktopMachoEvidenceId: "ev_8c2cafc2eb6e7d1005d939d80b72a354943267a529fa87e4d96c9c15957cafbf",
   },
   {
     id: "gridcraft",
@@ -335,6 +399,9 @@ export const ARTCRAFT_SUITE_CATALOG: readonly ArtCraftAppCatalogEntry[] = Object
     reaViewEvidenceId: "ev_2ccdc8c281d9bc03330673d5c3747e2204dc7f108e7b2491cde4791b10401537",
     cliBinarySha256: "94002be6eca83054900befb82bdab125c8dec432829cceaeba4a0aab1f207bdd",
     reaCliEvidenceId: "ev_4af2d94b45e73b5a1c947f05664f990376aaa5f1b1533773a056b20ef46ca403",
+    desktopAppBinarySha256: "c5fb2e7b571274e15ee9371b921f1afda27d4289902e930ea56ab34a92249a8c",
+    reaDesktopRustEvidenceId: "ev_8c40622e456088d20b755c36ff34d1f8f97cf3044c3e60f630f91d0e67705b07",
+    reaDesktopMachoEvidenceId: "ev_8fb35b896cce692e16878afca1d4fd525bb2951aad1d6ab811557d7ac4f5029d",
   },
   {
     id: "anicraft",

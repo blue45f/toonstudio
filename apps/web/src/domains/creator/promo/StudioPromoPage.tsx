@@ -314,6 +314,7 @@ export function StudioPromoPage() {
             <Link href="/promo-library" className="promo-back">{bt("홍보 영상 자료실 (204편)", "Promo video library (204 clips)")} →</Link>
             <Link href="/cuts/studio" className="promo-back">{bt("숏폼 컷츠 만들기", "Create a Cuts clip")} →</Link>
             <Link href="/studio/motion-webtoon" className="promo-back">{bt("모션 웹툰 스튜디오", "Motion webtoon studio")} →</Link>
+            <Link href="/studio" className="promo-back">{bt("ArtCraft v0.41.0 AI 영상·스플랫·스위트", "ArtCraft v0.41.0 AI Video & Splat Suite")} →</Link>
           </nav>
         </div>
         <span className="promo-badge">{bt("10 / 15 / 30 / 60초", "10 / 15 / 30 / 60 s")}</span>

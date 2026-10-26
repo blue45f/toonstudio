@@ -42,7 +42,10 @@ export type ArtCraftNativeFormatExtension =
   | ".deckcraft"
   | ".dxf"
   | ".xlsx"
-  | ".anicraft";
+  | ".anicraft"
+  | ".spz"
+  | ".glb"
+  | ".afphoto";
 
 export interface FiniteFloatViolation {
   readonly path: string;
@@ -490,4 +493,86 @@ export function validateAniCraftManifest(
     errors,
     totalExposedFrames,
   };
+}
+
+/**
+ * ArtCraft v0.41.0 `fal_client::extract_model_glb` / `generate_mesh_command`의 glTF 2.0 `.glb` 바이너리 헤더 검증기:
+ * 오프셋 0..4 `"glTF"` (`0x67, 0x6c, 0x54, 0x46`), 버전 `2` (LE u32), 첫 청크 타입 `"JSON"` (`0x4A, 0x53, 0x4F, 0x4E`).
+ */
+export function validateArtCraftGlbHeader(bytes: Uint8Array): {
+  readonly valid: boolean;
+  readonly version: number | null;
+  readonly declaredByteLength: number | null;
+  readonly hasJsonChunk: boolean;
+} {
+  if (bytes.byteLength < 20) {
+    return { valid: false, version: null, declaredByteLength: null, hasJsonChunk: false };
+  }
+  const isGltfMagic =
+    bytes[0] === 0x67 &&
+    bytes[1] === 0x6c &&
+    bytes[2] === 0x54 &&
+    bytes[3] === 0x46;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const version = view.getUint32(4, true);
+  const declaredByteLength = view.getUint32(8, true);
+  const hasJsonChunk =
+    bytes[16] === 0x4a &&
+    bytes[17] === 0x53 &&
+    bytes[18] === 0x4f &&
+    bytes[19] === 0x4e;
+
+  return {
+    valid: isGltfMagic && version === 2 && declaredByteLength >= 20 && hasJsonChunk,
+    version,
+    declaredByteLength,
+    hasJsonChunk,
+  };
+}
+
+/**
+ * ArtCraft v0.41.0 `worldlabs_consumer_client`의 `.spz` (Compressed 3D Gaussian Splat) 헤더 검증기:
+ * gzip 스트림(`0x1f 0x8b`) 또는 비압축 `NGSP` (`0x4e, 0x47, 0x53, 0x50`) 매직을 검증한다.
+ */
+export function validateWorldLabsSpzHeader(bytes: Uint8Array): {
+  readonly valid: boolean;
+  readonly containerKind: "gzip-spz" | "raw-ngsp" | "invalid";
+  readonly pointCount: number | null;
+} {
+  if (bytes.byteLength < 16) {
+    return { valid: false, containerKind: "invalid", pointCount: null };
+  }
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    return { valid: true, containerKind: "gzip-spz", pointCount: null };
+  }
+  const isNgsp =
+    bytes[0] === 0x4e &&
+    bytes[1] === 0x47 &&
+    bytes[2] === 0x53 &&
+    bytes[3] === 0x50;
+  if (isNgsp) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const version = view.getUint32(4, true);
+    const pointCount = view.getUint32(8, true);
+    return {
+      valid: version >= 1 && version <= 3 && pointCount > 0,
+      containerKind: "raw-ngsp",
+      pointCount,
+    };
+  }
+  return { valid: false, containerKind: "invalid", pointCount: null };
+}
+
+/**
+ * PhotoCraft Desktop `crates/photocraft-io/src/affinity/stream.rs`의 `.afphoto`/`.afdesign` 스트림 매직 검사:
+ * `0x00 0xFF 0x4B 0x41` (`\0\xFFKA`).
+ */
+export function isAffinityStreamMagicHeader(bytes: Uint8Array): boolean {
+  return (
+    bytes.byteLength >= 4 &&
+    bytes[0] === 0x00 &&
+    bytes[1] === 0xff &&
+    bytes[2] === 0x4b &&
+    bytes[3] === 0x41
+  );
 }
