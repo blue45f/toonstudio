@@ -1,46 +1,20 @@
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
-
+import { StudioVirtualOfficePairingXrPanel } from "./StudioVirtualOfficePairingXrPanel";
 import {
-  acknowledgeAsyncDeskNote,
-  completeAiAgentDeskTask,
-  computeWeeklyOfficePulseInsights,
-  createDefaultVirtualOfficeEnterpriseState,
-  dispatchTaskToAiAgentDesk,
-  executeHostModerationCommand,
-  executeVirtualOfficeMcpQuery,
-  formatCreatorDccTrueStatusBadge,
-  leaveAsyncDeskNote,
-  MAX_SIMULTANEOUS_SCREEN_SHARE_SLOTS,
-  moveScreenShareLaserPointer,
-  pinCanvasReferenceMedia,
-  searchVirtualOfficeMeetingMemories,
-  spinVirtualOfficeRoulette,
-  startSimultaneousScreenShareSlot,
-  stopSimultaneousScreenShareSlot,
-  toggleMeetingActionItemDone,
-  togglePinCanvasReferenceMediaLock,
-  updateCreatorDccTrueStatus,
-  type StudioCreatorDccAppId,
-  type StudioHostModerationCommand,
-  type StudioMcpQueryIntent,
-  type StudioVirtualOfficeEnterpriseState,
+  acknowledgeAsyncDeskNote, completeAiAgentDeskTask, computeWeeklyOfficePulseInsights,
+  createDefaultVirtualOfficeEnterpriseState, dispatchTaskToAiAgentDesk, executeHostModerationCommand,
+  executeVirtualOfficeMcpQuery, formatCreatorDccTrueStatusBadge, leaveAsyncDeskNote,
+  MAX_SIMULTANEOUS_SCREEN_SHARE_SLOTS, moveScreenShareLaserPointer, pinCanvasReferenceMedia,
+  searchVirtualOfficeMeetingMemories, spinVirtualOfficeRoulette, startSimultaneousScreenShareSlot,
+  stopSimultaneousScreenShareSlot, toggleMeetingActionItemDone, togglePinCanvasReferenceMediaLock,
+  updateCreatorDccTrueStatus, type StudioCreatorDccAppId, type StudioHostModerationCommand,
+  type StudioMcpQueryIntent, type StudioVirtualOfficeEnterpriseState,
 } from "./studio-virtual-office-ai-agents-memory-model";
 import {
-  computeDirectionalVoiceConeGain,
-  createDefaultVirtualOfficeBuildingState,
-  filterVisibleFloorChatMessages,
-  getRoomPersistentTableSnapshot,
-  moveParticipantToFloor,
-  pinRoomTableApp,
-  postFloorScopedChatMessage,
-  requestRoomKnock,
-  resolveRoomKnock,
-  sendShoulderTap,
-  toggleVirtualOfficeRoomLock,
-  unpinRoomTableApp,
-  type StudioFloorChatScope,
-  type StudioShoulderTapReasonCategory,
-  type StudioVirtualOfficeBuildingState,
+  computeDirectionalVoiceConeGain, createDefaultVirtualOfficeBuildingState, filterVisibleFloorChatMessages,
+  getRoomPersistentTableSnapshot, moveParticipantToFloor, pinRoomTableApp, postFloorScopedChatMessage,
+  requestRoomKnock, resolveRoomKnock, sendShoulderTap, toggleVirtualOfficeRoomLock, unpinRoomTableApp,
+  type StudioFloorChatScope, type StudioShoulderTapReasonCategory, type StudioVirtualOfficeBuildingState,
   type StudioVirtualOfficeFloorId,
 } from "./studio-virtual-office-spatial-floors-model";
 
@@ -52,7 +26,8 @@ type EnterpriseSuiteTabId =
   | "spatial-floors-knock-audio"
   | "ai-agents-memory-mcp"
   | "dcc-presence-aikido-multishare"
-  | "host-canvas-pulse-matrix";
+  | "host-canvas-pulse-matrix"
+  | "pairing-xr-floor-coaching";
 
 const SUITE_TABS: readonly {
   readonly id: EnterpriseSuiteTabId;
@@ -63,13 +38,14 @@ const SUITE_TABS: readonly {
   { id: "ai-agents-memory-mcp", labelKo: "AI 에이전트 데스크 · 회의 메모리 · MCP 브리지", platformsBadge: "SoWork · Spot Virtual · Cosmos Replay" },
   { id: "dcc-presence-aikido-multishare", labelKo: "DCC 작업 프레즌스 · 데스크 비동기 노트 · 4화면 동시공유", platformsBadge: "Tandem · Roam Aikido · Cosmos Video" },
   { id: "host-canvas-pulse-matrix", labelKo: "호스트 관제 · 공간 미디어 핀 · 주간 인사이트", platformsBadge: "ZEP · SpatialChat · SoWork Insights" },
+  { id: "pairing-xr-floor-coaching", labelKo: "원격페어링 · 상태모자 · 리셉션 · 3D페데스탈", platformsBadge: "Teemyco · Sococo · Tuple · Pop · Nooks · FrameVR · Arthur · Virbela" },
 ];
 
 export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualOfficeEnterpriseSuiteProps) {
   const [activeTab, setActiveTab] = useState<EnterpriseSuiteTabId>("spatial-floors-knock-audio");
   const [buildingState, setBuildingState] = useState<StudioVirtualOfficeBuildingState>(() => createDefaultVirtualOfficeBuildingState());
   const [enterpriseState, setEnterpriseState] = useState<StudioVirtualOfficeEnterpriseState>(() => createDefaultVirtualOfficeEnterpriseState());
-  const [statusNotice, setStatusNotice] = useState<string>("13개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
+  const [statusNotice, setStatusNotice] = useState<string>("21개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>("room-2f-color-booth");
   const [knockMessageDraft, setKnockMessageDraft] = useState<string>("15화 피날레 배경 톤앤매너 조율차 입장 요청합니다.");
@@ -988,6 +964,11 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
               <p className="rounded border border-line bg-card p-2.5 text-xs text-fg-2">{weeklyPulse.recommendationKo}</p>
             </div>
           </div>
+        </div>
+      ) : null}
+      {activeTab === "pairing-xr-floor-coaching" ? (
+        <div role="tabpanel" id="enterprise-tabpanel-pairing-xr-floor-coaching" aria-label="원격페어링 · 상태모자 · 리셉션 · 3D페데스탈">
+          <StudioVirtualOfficePairingXrPanel />
         </div>
       ) : null}
     </section>

@@ -2,13 +2,19 @@
   "schemaVersion": "toonstudio.rea.virtual-office-benchmark/1.0",
   "capturedOn": "2026-10-26",
   "methodology": "REA MCP (capture_browser_scenario, export_web_scripts, analyze_javascript_application, inspect_analysis_view) + Clean-Room Domain Internalization",
-  "totalPlatformsAnalyzed": 13,
+  "totalPlatformsAnalyzed": 21,
   "networkBoundaryExcluded": [
     {
       "platform": "Butter",
       "url": "https://www.butter.us/",
       "status": "ERR_CONNECTION_TIMED_OUT",
       "note": "헤드리스 브라우저 캡처 시 네트워크 타임아웃이 발생하여 정적/런타임 번들 수집 대상에서 제외하고 Unknown 경계로 기록함."
+    },
+    {
+      "platform": "Welo",
+      "url": "https://www.welospaces.com/",
+      "status": "ERR_NAME_NOT_RESOLVED",
+      "note": "도메인 DNS 조회 불가(ERR_NAME_NOT_RESOLVED)로 정적/런타임 번들 수집 대상에서 제외하고 Unknown 경계로 기록함."
     }
   ],
   "platforms": [
@@ -312,6 +318,176 @@
         "라우트 `/product/features/call-recording--ai-cosmos-replay`: 회의 녹화 및 AI Cosmos Replay 요약·하이라이트",
         "라우트 `/product/features/true-statuses`: 실제 작업 중인 앱/회차 상태를 자동 반영하는 True Statuses",
         "라우트 `/solutions/remote-vfx-game-studio`: 원격 VFX·게임·크리에이티브 스튜디오 특화 고해상도 다중 화면 공유 및 레이저 포인터"
+      ]
+    },
+    {
+      "id": "teemyco",
+      "name": "Teemyco",
+      "targetUrl": "https://www.teemyco.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_6061ac93ef5fccb75c3613ee213535ad82ba242c7af3e4e98d2fea6fc54d28a7",
+        "exportWebScripts": "ev_c72e0ad41b8070cd70077812e7ce28d97d1040af517de0889d6af6275fe90a01",
+        "analyzeJavascriptApplication": "ev_f4cf169dc250783e292928913a4a142d163bbcf560dd2ba17996eccfe859842f",
+        "inspectAnalysisView": "ev_87620f106ad06b9a144fe0148e4b3d6fb2f5904a28bd9bfb217d2790c0cd27c9"
+      },
+      "rootSha256": "db7164c96a38d0568a6ef7aaeb328a993a434a3bc367a990d1e158c992b0e5ef",
+      "astMetrics": {
+        "jsFileCount": 28,
+        "totalBytes": 448527,
+        "astNodeCount": 139426,
+        "moduleCount": 245,
+        "findingCount": 955
+      },
+      "observedCapabilities": [
+        "아바타 시각 상태 모자(Status Hats: 초집중 헬멧, 커피 브레이크 캡, 페어링 베레모 등) 착용 및 인터럽트 차단 연동",
+        "팀원 마감 완주 칭찬 Kudos / Shoutout 벽 및 리액션 카운터"
+      ]
+    },
+    {
+      "id": "sococo",
+      "name": "Sococo",
+      "targetUrl": "https://www.sococo.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_78ba461207d3da216554f3b8e9c53318eee0609c06656f8560bec0d014a89c18",
+        "exportWebScripts": "ev_52d8230ee59552e24e96b782c47bd02be6ec3143f0d3176e4837f183575a2e63",
+        "analyzeJavascriptApplication": "ev_07701dbc09fddede87065e69b27e9bfdfaf60680a23935925b0db9a4268c80a8"
+      },
+      "astMetrics": {
+        "jsFileCount": 8,
+        "totalBytes": 275419,
+        "astNodeCount": 2637,
+        "findingCount": 6
+      },
+      "observedCapabilities": [
+        "플로어플랜 룸별 실시간 미디어 활성 인디케이터 매트릭스(마이크·카메라·듀얼 스크린 스트림·도어 잠금)",
+        "Get Teammate 현재 룸 즉시 합류 호출 및 외부 방문객 리셉션 로비(Reception Lobby) 승인 큐"
+      ]
+    },
+    {
+      "id": "nooks",
+      "name": "Nooks",
+      "targetUrl": "https://www.nooks.ai/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_45d8d5585d5ba3bdd9998f9d8c09cb8010d3cdc1225c9609bc519ac0d548db2b",
+        "exportWebScripts": "ev_fc709b48fee125ac8773a406a3066ee9013f8ce088f346cba631063cea042347",
+        "analyzeJavascriptApplication": "ev_c2284173114bf1324107a883742c19bb04c1e0a2900aeb263467b84fc0a07049",
+        "inspectAnalysisView": "ev_bf1e3be00fa5ae7e1575b87a297d500e0211d832f4b99906f05c01af106c9351"
+      },
+      "rootSha256": "570cc82d1f34b6a619385be5ac45cee7345960cfa0cab682bddc759ba11eadca",
+      "astMetrics": {
+        "jsFileCount": 10,
+        "totalBytes": 499130,
+        "astNodeCount": 165174,
+        "findingCount": 758
+      },
+      "observedCapabilities": [
+        "AI 가상 플로어 Call-Along 섀도잉(신입 어시스턴트 청취 전용 참관)",
+        "발표자 전용 PD 귓속말 코칭(Whisper Director Coaching) 및 실시간 AI 배틀카드 프롬프트"
+      ]
+    },
+    {
+      "id": "tuple",
+      "name": "Tuple",
+      "targetUrl": "https://tuple.app/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_83d0e498f681954b3987f9be9849ec998c43a2ac1d584d2ed0618b9a30b3f450",
+        "exportWebScripts": "ev_68f7a5ce8292e6c0a468e1eea79772698b9480532daabf5bb54648036b10948f",
+        "analyzeJavascriptApplication": "ev_72542a57b950a41034f3a76bd985eb912f89ac6e9c5b80349cf314837322260e",
+        "inspectAnalysisView": "ev_0922be9d0c80399ba9a66410a203b4558e2ef5b85205dc318242647771b68d99"
+      },
+      "astMetrics": {
+        "jsFileCount": 26,
+        "totalBytes": 793273,
+        "astNodeCount": 224282,
+        "moduleCount": 5,
+        "findingCount": 350
+      },
+      "observedCapabilities": [
+        "5K 60fps 초저지연(Low-CPU) 페어 드로잉 화면 스트리밍",
+        "자동 소멸 레이저 잉크(Fading Laser Ink) 대 영구 레드라인 주석(Persistent Redline) 분리 및 원클릭 제어권 교대"
+      ]
+    },
+    {
+      "id": "virbela",
+      "name": "Virbela",
+      "targetUrl": "https://www.virbela.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_5f8cca16522d9cd4cd1f592a3b08ee1c87504cec0fe03bec3fc972c8ac5b5a9f",
+        "exportWebScripts": "ev_1ed06cc5b63895f0057e5b0ba9b8f9a24354a48b9573fea40402ea7b1a118b7b",
+        "analyzeJavascriptApplication": "ev_c876cf15ddd390584d85c3952c4e79784fe27250ec7b754e2f120f46e2a1001e",
+        "inspectAnalysisView": "ev_6c025fc91c9a56fc1f60516aee4647aadccd91095218f518c078a294133c31bf"
+      },
+      "astMetrics": {
+        "jsFileCount": 6,
+        "totalBytes": 160575,
+        "astNodeCount": 57444,
+        "moduleCount": 195,
+        "findingCount": 651
+      },
+      "observedCapabilities": [
+        "대규모 캠퍼스 오디토리움 스테이지 카메라 프리셋 전환(Stage Wide / Presenter Closeup / Audience Split)"
+      ]
+    },
+    {
+      "id": "framevr",
+      "name": "Frame VR",
+      "targetUrl": "https://learn.framevr.io/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_e73d82982ef5d69ac8d7b64eb3e7452a120e24a5c34973b6eb6e6ee1679d23e8",
+        "exportWebScripts": "ev_a17a5b3f9db7e0f72b71c423e677fac043a8a384e275e02af1356c88e345ad4a",
+        "analyzeJavascriptApplication": "ev_b2cc903cd894f4cbfa2bb59288dbcfe827eaff226afcb9aea172bc20b66467eb",
+        "inspectAnalysisView": "ev_ebb7fd34b3174e4df87670a877a9895cec993beaf5626c0ae577e0ec69a6968c"
+      },
+      "astMetrics": {
+        "jsFileCount": 9,
+        "totalBytes": 311967,
+        "astNodeCount": 82289,
+        "findingCount": 127
+      },
+      "observedCapabilities": [
+        "브라우저 WebXR 3D GLB/VRM 에셋 페데스탈(Pedestal) 턴테이블 동기화 회전 및 3D 공간 핀 노트"
+      ]
+    },
+    {
+      "id": "arthur",
+      "name": "Arthur Digital",
+      "targetUrl": "https://www.arthur.digital/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_43772a3968806b2b19ac4ba3292f9b3b3e7c569e000511cdde6f693dc505938a",
+        "exportWebScripts": "ev_ceeb6b538c6c103931ba7f6c0b5491ca7de57669f8cae10267b8e593861365c3",
+        "analyzeJavascriptApplication": "ev_eeef58bd0380bfc52d5a041f8f36ba5167881c8652880781b9a63c80d909d00b",
+        "inspectAnalysisView": "ev_2e2ad588d39bd024674afd12f2da2316cb154d74cca96aa1a824302d93ec659c"
+      },
+      "astMetrics": {
+        "jsFileCount": 15,
+        "totalBytes": 591109,
+        "astNodeCount": 145702,
+        "findingCount": 347
+      },
+      "observedCapabilities": [
+        "XR 공간 프레젠테이션 보드, 3D 공간 오디오 존, AI 회의 요약 핸드오프"
+      ]
+    },
+    {
+      "id": "pop",
+      "name": "Pop",
+      "targetUrl": "https://pop.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_a3a79b45c50c8c7a19841e546ef1af680e071c41ee8c91c4a331654bcf9797cb",
+        "exportWebScripts": "ev_2dd60d1b92908465ff28046307fb5baaafb1824b4f4676e0ce3fb0f1db7acab2",
+        "analyzeJavascriptApplication": "ev_c096547145efb584a2d21a08527feddb558f18aedb39ba6219575b2821bf7c38",
+        "inspectAnalysisView": "ev_6456b98a08590c9032d9ee665d2598a1de0c626d7660e486eeedca5be6119592"
+      },
+      "rootSha256": "65083e89adb91e3330538ad20b63255a0ca2d47bd5278874dcfabad57d9716bf",
+      "astMetrics": {
+        "jsFileCount": 75,
+        "totalBytes": 660556,
+        "astNodeCount": 104889,
+        "moduleCount": 83,
+        "findingCount": 1319
+      },
+      "observedCapabilities": [
+        "멀티유저 화면 위 실시간 드로잉 및 원격 마우스·키보드 제어권 즉각 교대(Shared App Control Handoff)"
       ]
     }
   ]

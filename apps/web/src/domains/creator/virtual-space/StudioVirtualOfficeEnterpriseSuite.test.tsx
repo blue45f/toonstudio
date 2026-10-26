@@ -95,6 +95,56 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(screen.getByText(/주간 딥 포커스\(집중 작화\) 시간/u)).toBeTruthy();
   });
 
+  it("탭 5: Wave 2 원격페어링(Tuple·Pop), 상태모자·Kudos(Teemyco), 리셉션·호출(Sococo), 귓속말코칭·3D페데스탈(Nooks·FrameVR·Arthur·Virbela)을 제어한다", () => {
+    render(<StudioVirtualOfficeEnterpriseSuite />);
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: /원격페어링 · 상태모자 · 리셉션 · 3D페데스탈/u,
+      }),
+    );
+
+    expect(
+      screen.getByTestId("studio-virtual-office-pairing-xr-panel"),
+    ).toBeTruthy();
+
+    // Teemyco Kudos 발송
+    fireEvent.click(screen.getByTestId("post-kudos-shoutout-btn"));
+    expect(screen.getByTestId("wave2-kpi-kudos").textContent).toContain(
+      "칭찬 Kudos 3건",
+    );
+
+    // Sococo 게스트 리셉션 입장 승인 & Get Teammate 호출 수락
+    fireEvent.click(screen.getByTestId("admit-guest-guest-ext-sound"));
+    fireEvent.click(screen.getByTestId("accept-summon-sum-1"));
+
+    // Tuple/Pop 레이저 잉크 추가 및 만료 정리
+    fireEvent.click(screen.getByTestId("add-fading-laser-ink-btn"));
+    expect(screen.getByTestId("wave2-kpi-ink").textContent).toContain(
+      "레이저 2",
+    );
+    fireEvent.click(screen.getByTestId("prune-fading-ink-btn"));
+    expect(screen.getByTestId("wave2-kpi-ink").textContent).toContain(
+      "레이저 0",
+    );
+
+    // Nooks 귓속말 코칭 & FrameVR/Arthur 3D 페데스탈 회전 + 공간 핀 추가
+    fireEvent.click(screen.getByTestId("send-whisper-directive-btn"));
+    expect(screen.getByTestId("coaching-whisper-banner").textContent).toContain(
+      "42화 성채 3D 역광 포인트",
+    );
+
+    fireEvent.click(screen.getByTestId("rotate-pedestal-45-btn"));
+    expect(screen.getByTestId("pedestal-angle-readout").textContent).toContain(
+      "회전각 90°",
+    );
+
+    fireEvent.click(screen.getByTestId("add-pedestal-spatial-pin-btn"));
+    expect(screen.getByTestId("wave2-kpi-pedestal").textContent).toContain(
+      "공간핀 3개",
+    );
+  });
+
   it("StudioVirtualSpaceCollaborationHub 및 StudioVirtualSpaceTownProgramPanel 내부 탭으로 통합 연결된다", () => {
     render(<StudioVirtualSpaceCollaborationHub />);
     fireEvent.click(screen.getByRole("tab", { name: "13대 가상오피스 통합관제" }));
