@@ -167,6 +167,14 @@ describe("StudioNaturalMediaShowcase", () => {
     const myPaintKnifeRadio = container.querySelector('[data-studio-mypaint-preset="mypaint-classic-knife"]') as HTMLButtonElement | null;
     expect(myPaintKnifeRadio?.getAttribute("aria-checked")).toBe("true");
 
+    // Wave 25 프리핸드 윤곽(perfect-freehand) 및 Rough 해칭(rough.js) Roving Tabindex 검증
+    const pfGpenRadio = container.querySelector('[data-studio-freehand-rough-preset="pf-comic-gpen-taper"]') as HTMLButtonElement | null;
+    expect(pfGpenRadio).not.toBeNull();
+    expect(pfGpenRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(pfGpenRadio!, { key: "End" });
+    const roughCrossHatchRadio = container.querySelector('[data-studio-freehand-rough-preset="rough-cross-hatch-ink"]') as HTMLButtonElement | null;
+    expect(roughCrossHatchRadio?.getAttribute("aria-checked")).toBe("true");
+
     const liveSvgPreview = container.querySelector('[data-studio-universal-brush-svg-preview="true"]');
     expect(liveSvgPreview).not.toBeNull();
     expect(liveSvgPreview?.querySelector("path")).not.toBeNull();

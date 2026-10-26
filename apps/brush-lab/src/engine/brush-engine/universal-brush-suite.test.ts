@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateLabKlecksBlendAndSmudgeStep,
   evaluateLabMyPaintOpaqueLinearizeAndPosterize,
+  evaluateLabPerfectFreehandSimulatedPressureAndRadius,
   evaluateLabSaiWatercolorPressure,
   evaluateLabSculptGlQuarticFalloff01,
   evaluateLabWickCroquisPressure01,
   filterLabPixelPerfectCells,
   fitLabSchneiderCubicBezier,
   generateLabHarmonySegments,
+  generateLabRoughLehmerDoubleStroke,
   mixLabLuminanceWeightedKubelkaMunk,
   stepLabKmMixerBrushReservoir,
   stepLabLazyBrushCircularFriction,
@@ -169,5 +171,52 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
       tintingStrengthB: 1.0,
     });
     expect(mixed[1]).toBeGreaterThan(0.25);
+  });
+
+  it("Wave 25 perfect-freehand 속도 기반 가상 필압·박화 반경 및 rough.js Park-Miller Lehmer LCG 이중선 오프셋이 정확히 동작한다", () => {
+    const pfSlow = evaluateLabPerfectFreehandSimulatedPressureAndRadius({
+      prevPressure01: 0.5,
+      distancePx: 2,
+      sizePx: 16,
+      thinning: 0.7,
+      runningLengthPx: 24,
+      totalLengthPx: 80,
+      taperStartPx: 12,
+      taperEndPx: 16,
+    });
+    const pfFast = evaluateLabPerfectFreehandSimulatedPressureAndRadius({
+      prevPressure01: 0.5,
+      distancePx: 15,
+      sizePx: 16,
+      thinning: 0.7,
+      runningLengthPx: 24,
+      totalLengthPx: 80,
+      taperStartPx: 12,
+      taperEndPx: 16,
+    });
+    expect(pfSlow.simulatedPressure01).toBeGreaterThan(pfFast.simulatedPressure01);
+    expect(pfSlow.radiusPx).toBeGreaterThan(pfFast.radiusPx);
+
+    const roughShort = generateLabRoughLehmerDoubleStroke({
+      x1: 10,
+      y1: 20,
+      x2: 110,
+      y2: 40,
+      roughness: 1.4,
+      bowing: 1.2,
+      seed: 20261026,
+    });
+    const roughLong = generateLabRoughLehmerDoubleStroke({
+      x1: 0,
+      y1: 0,
+      x2: 600,
+      y2: 0,
+      roughness: 1.4,
+      bowing: 1.2,
+      seed: 20261026,
+    });
+    expect(roughShort.dampingFactor).toBe(1);
+    expect(roughLong.dampingFactor).toBeCloseTo(0.4, 4);
+    expect(roughShort.firstPassMidpoint.x).not.toBe(roughShort.secondPassMidpoint.x);
   });
 });

@@ -1,13 +1,14 @@
 # 글로벌 GitHub 오픈소스·웹 드로잉·상용 페인팅 브러시 생태계 REA 역공학 및 ToonStudio 전수 내재화 보고서 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 전수 구현 및 검증 완료)
+- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 · Wave 25 전수 구현 및 검증 완료)
 - **관련 모듈**:
   - `apps/web/src/domains/creator/drawing/studio-universal-brush-taxonomy-engine.ts`
   - `apps/web/src/domains/creator/drawing/studio-vector-skeletal-pattern-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-particle-pixol-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-bezier-curve-fit-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-mypaint-spectral-boolean-brushes.ts`
+  - `apps/web/src/domains/creator/drawing/studio-freehand-rough-spatial-brushes.ts`
   - `apps/web/src/domains/creator/drawing/StudioUniversalBrushEngineBar.tsx`
   - `apps/web/src/domains/creator/drawing/StudioNaturalMediaShowcase.tsx`
   - `apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts`
@@ -34,6 +35,7 @@
 | **Wave 23 OSS Klecks 6-Brush + MyPaint + Spectral Suite** (`bitbof/klecks`, `libmypaint`, `polygon-clipping`, `spectral.js`, `colormix.js`) | GitHub OSS 시맨틱 | — | `ev_5a5058a8b1e9c6068bf847583f6765e826500678c159276275968696ab6b6498` | `ev_937159dfabc0d0622717008d837dab1785fb85ea95bd8e43660ee3bcd18e1fd6` (`ev_daf2ba14969413fdf609777edfe943394072c96f6047ed14a5d8599f251f06d0`) | `0f2b28c8083d60a19094833592f9b5f236339d5f546e8078dc4fd3a45efa5994` | 40,379 |
 | **Kleki Paint Tool Live Web** (`https://kleki.com/`) | 웹 드로잉 앱 | `ev_e18363e6ca16f1021568217f61ca8b0bd0fb8985502a9bb9cf7caa9b89d8489b` | `ev_fea11f72411af055b8c7ad205cf8e396dbc8422791e9e92f09e86283cf7ddfb3` | `ev_0516537b2ec94a9be6d2a5b8ad462f092ccbfb8385dae17119682e25d66ecc0b` (`ev_4f595af8dd54f2b16616eacd326cec6836a7cf487e2ef741942c51ecfc657cbf`) | `729961c419cdfce0d959e266da81e2084f897acd38a1b7d9ed8394584456ba62` | 6,299 |
 | **SculptGL Live WebGL App** (`https://stephaneginier.com/sculptgl/`) | 웹 3D 조각 앱 | `ev_36354f8da48307c96490a6867a35c5263751e84667a861d366f6aee5c2ef118c` | `ev_5987f111cacd4a5496b4c58fb7adf164805d0445f40f8be8597942b0d1959979` | `ev_69e649b77cb172c5d3af961306998500a9d2e971b0dc9383d818582a9edbf6ef` (`ev_dc3c4491d9c09949ef98b8c5429d5ee8517e128711bf903d731c9135b369d4fb`) | `8b2a7bdcbd67777df57b81fb0c6b7e036a472a115d845dacf9e5f9d8d54423da` | 12,163 |
+| **Wave 25 OSS Freehand·Rough·Spatial Suite** (`steveruizok/perfect-freehand`, `rough-stuff/rough`, `mourner/simplify-js`, `mourner/rbush`) | GitHub OSS 시맨틱 | — | `ev_396f3dc483117865fbe719b384173cdf98ba300894d32c7adbc6f619a93ae485` | `ev_20799b6fe98e9be9b759cc172e64a0dfcfce7d71f377c33b77b96623171e01af` (`ev_f89fe384ed368eddb2cf116d7384604469f217ceb5aa9491f00efad99bda9813`) | `b7ee90dfb1da437134d89a7d31d716850b669c35e462a9a6d6b3ae68d336a8f8` | 19,576 |
 
 ---
 
@@ -74,6 +76,13 @@
   - **`rvanwijnen/spectral.js` 38밴드(380~750nm) Kubelka-Munk + OKLCh 이진 탐색 가멋 매핑(`spectral.js`, SHA-256 `dbaa1a8b...`)**: CIE 휘도 $Y_i$와 착색력 $\text{tintingStrength}_i^2$을 곱한 가중 농도 $c_i = f_i^2 \cdot T_i^2 \cdot Y_i$, 38밴드 $K/S = (1-R)^2/(2R)$ 및 역변환 $KM(KS) = 1 + KS - \sqrt{KS^2 + 2KS}$, 그리고 OKLCh 채도 $C \in [0, C_0]$ 이진 탐색($\Delta E_{\text{OK}} < 0.03$, $\epsilon = 10^{-4}$) 가멋 매핑.
   - **`colormix.js` CIE XYZ D65 & CIE $L^*a^*b^*$ 혼합(`colormix.js`, SHA-256 `13deb762...`)**: sRGB $\leftrightarrow$ CIE XYZ(D65 `95.047, 100.0, 108.883`) $\leftrightarrow$ CIE $L^*a^*b^*$ 양방향 지각 색공간 혼합.
   - **`mfogel/polygon-clipping` 2D 불리언 폴리곤 클리핑(`polygon-clipping.esm.js`, SHA-256 `766d182d...`)**: 벡터 블롭 브러시 합집합(`union`) 및 벡터 지우개 차집합(`difference`)·교집합(`intersection`)·대칭차(`xor`) 클리핑 및 `StudioUniversalBrushEngineBar` 실시간 다중 레이어 SVG 스트로크 프리뷰(`data-studio-universal-brush-svg-preview="true"`).
+
+### 2.8 Wave 25 `perfect-freehand` 가변 폭 윤곽 · `rough.js` 7종 해칭/이중선 베지어 · `simplify-js` 2단계 RDP · `rbush` OMT 2D 공간 인덱스 (Observation)
+- `inspect_analysis_view`(`ev_f89fe384ed368eddb2cf116d7384604469f217ceb5aa9491f00efad99bda9813`, `ev_396f3dc483117865fbe719b384173cdf98ba300894d32c7adbc6f619a93ae485`) 및 4회 `trace_javascript_semantics`(`ev_e3f8614c0111647f896b2027e2af88866cb011403441d28a8ae740dcb298b36c`, `ev_7864c6ccb7eaebc0973d388f38b82cc68973ca16e49aba20ed80d7709d3bace2`, `ev_891b719ae7fceb9376c127e87065355b4b8454199a4340f5d0b33392d4e3136a`, `ev_b59a8b7de407c36f43bf461f28ce223ff4905cff9fd820713bc41dafa6f9d8de`)를 통해 다음 수식을 `studio-freehand-rough-spatial-brushes.ts`에 전수 내재화했다:
+  - **`steveruizok/perfect-freehand` (`perfect-freehand.mjs`, SHA-256 `a02e221f...`)**: 스트림라인 저역통과 보간 계수 $s = 0.15 + (1 - \text{streamline}) \cdot 0.85$, 속도 기반 가상 필압 $sp = \min(1, d/\text{size})$, $p = \min(1, p_{\text{prev}} + (\min(1, 1 - sp) - p_{\text{prev}}) \cdot (sp \cdot 0.275))$, 박화(thinning) 반경 $r = \text{size} \cdot (0.5 - \text{thinning} \cdot (0.5 - p))$, 시작/끝 테이퍼 이징(`easeOutQuad` $t(2-t)$, `easeOutCubic` $(t-1)^3+1$), 급회전($\mathbf{v}_i \cdot \mathbf{v}_{i+1} < 0$) 13단계 반원 부채꼴 및 13/29단계 원형·사각 캡.
+  - **`rough-stuff/rough` (`rough.esm.js`, SHA-256 `e921535f...`)**: Park-Miller Lehmer LCG PRNG(`seed = Math.imul(48271, seed) & 0x7fffffff`, `next = seed / 2147483648`), 길이 감쇠(`L < 200 -> 1`, `L > 500 -> 0.4`, 그 외 `-0.0016668 * L + 1.233334`), 이중선 휨·거칠기 3차 베지어 오프셋(`bowX`, `bowY`), 회전 활성 에지 테이블(`ymin`, `ymax`, `x`, `islope`) 스캔라인 7종 해칭(`hachure`, `zigzag`, `cross-hatch`, `dots`, `dashed`, `zigzag-line`, `solid`).
+  - **`mourner/simplify-js` (`simplify.js`, SHA-256 `e4c7a1a8...`)**: 1단계 방사형 거리 필터($\|\mathbf{p}_i - \mathbf{p}_{\text{prev}}\|^2 > \tau^2$) + 2단계 재귀 Ramer-Douglas-Peucker 수직 제곱 거리 분할.
+  - **`mourner/rbush` (`rbush.js`, SHA-256 `cbb358bc...`)**: OMT(Overlap Minimizing Top-down) X-Y 타일 정렬 기반 2D 공간 인덱스 및 벡터 스트로크·지우개 AABB 교차 쿼리.
 
 ---
 

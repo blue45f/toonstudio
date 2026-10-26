@@ -512,5 +512,101 @@ export function mixLabLuminanceWeightedKubelkaMunk(params: {
   return kmMixRgb(params.rgbA, params.rgbB, ratioB);
 }
 
+/**
+ * `perfect-freehand` 속도 기반 가상 필압(`sp * 0.275`) 및 박화(thinning) 반경·테이퍼 계산기.
+ */
+export function evaluateLabPerfectFreehandSimulatedPressureAndRadius(params: {
+  readonly prevPressure01: number;
+  readonly distancePx: number;
+  readonly sizePx: number;
+  readonly thinning: number;
+  readonly runningLengthPx?: number;
+  readonly totalLengthPx?: number;
+  readonly taperStartPx?: number;
+  readonly taperEndPx?: number;
+}): {
+  readonly simulatedPressure01: number;
+  readonly radiusPx: number;
+} {
+  const size = Math.max(1, Number.isFinite(params.sizePx) ? params.sizePx : 16);
+  const prevP = clamp01(params.prevPressure01);
+  const sp = Math.min(1, Math.max(0, params.distancePx) / size);
+  const rp = Math.min(1, 1 - sp);
+  const simulatedPressure01 = Math.fround(
+    Math.min(1, prevP + (rp - prevP) * (sp * 0.275)),
+  );
+  const baseRadius =
+    size * clamp01(0.5 - params.thinning * (0.5 - simulatedPressure01));
+  const runLen = params.runningLengthPx ?? size;
+  const totLen = params.totalLengthPx ?? size * 4;
+  const ts =
+    params.taperStartPx && params.taperStartPx > 0
+      ? (() => {
+          const t = clamp01(runLen / params.taperStartPx);
+          return t * (2 - t);
+        })()
+      : 1;
+  const te =
+    params.taperEndPx && params.taperEndPx > 0
+      ? (() => {
+          const t = clamp01((totLen - runLen) / params.taperEndPx) - 1;
+          return t * t * t + 1;
+        })()
+      : 1;
+  return {
+    simulatedPressure01,
+    radiusPx: Math.fround(Math.max(0.01, baseRadius * Math.min(ts, te))),
+  };
+}
 
+/**
+ * `rough.js` Park-Miller Lehmer LCG (`Math.imul(48271, seed) & 0x7fffffff`) 및 길이 감쇠 이중선 오프셋.
+ */
+export function generateLabRoughLehmerDoubleStroke(params: {
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+  readonly roughness?: number;
+  readonly bowing?: number;
+  readonly seed?: number;
+}): {
+  readonly dampingFactor: number;
+  readonly bowOffset: { readonly x: number; readonly y: number };
+  readonly firstPassMidpoint: { readonly x: number; readonly y: number };
+  readonly secondPassMidpoint: { readonly x: number; readonly y: number };
+} {
+  let seed = Math.abs(Math.trunc(params.seed ?? 20261026)) % 2147483647;
+  if (seed === 0) seed = 48271;
+  const nextRand = (): number => {
+    seed = (Math.imul(48271, seed) & 0x7fffffff) >>> 0;
+    return seed / 2147483648;
+  };
+  const dx = params.x2 - params.x1;
+  const dy = params.y2 - params.y1;
+  const len = Math.hypot(dx, dy);
+  const dampingFactor = Math.fround(
+    len < 200 ? 1 : len > 500 ? 0.4 : -0.0016668 * len + 1.233334,
+  );
+  const roughness = params.roughness ?? 1.2;
+  const bowing = params.bowing ?? 1.0;
+  const maxOff = 2.0;
+  const bowX = Math.fround((bowing * maxOff * (params.y2 - params.y1)) / 200);
+  const bowY = Math.fround((bowing * maxOff * (params.x1 - params.x2)) / 200);
+  const off = () => (nextRand() * 2 - 1) * maxOff * roughness * dampingFactor;
+  const mx = (params.x1 + params.x2) * 0.5;
+  const my = (params.y1 + params.y2) * 0.5;
+  return {
+    dampingFactor,
+    bowOffset: { x: bowX, y: bowY },
+    firstPassMidpoint: {
+      x: Math.fround(mx + bowX + off()),
+      y: Math.fround(my + bowY + off()),
+    },
+    secondPassMidpoint: {
+      x: Math.fround(mx + bowX * 0.5 + off() * 0.5),
+      y: Math.fround(my + bowY * 0.5 + off() * 0.5),
+    },
+  };
+}
 

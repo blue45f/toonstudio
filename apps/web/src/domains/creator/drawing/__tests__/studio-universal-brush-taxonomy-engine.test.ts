@@ -26,6 +26,7 @@ import {
   filterPixelPerfectStroke,
   fitSchneiderCubicBezierSpline,
   FIVE_TILE_PATTERN_BRUSH_PRESETS,
+  FREEHAND_ROUGH_BRUSH_PRESETS,
   generateJsPaintBrushMask,
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
@@ -39,6 +40,8 @@ import {
   MYPAINT_CANONICAL_SETTING_CATALOG,
   P5_BRUSH_PRESET_CATALOG,
   P5_BRUSH_VECTOR_FIELDS,
+  queryStrokeSpatialRTreeBBox,
+  simplifyStrokePolylineRdp,
   SKELETAL_ART_BRUSH_PRESETS,
   SKETCHPAD_BRUSH_KINDS,
   SPECTRAL_38BAND_WAVELENGTHS_NM,
@@ -48,6 +51,8 @@ import {
   synthesizeComicRibbonStampChain,
   synthesizeHeavyPaintBlockInPolygons,
   synthesizeP5BrushWatercolorBleedPolygon,
+  synthesizePerfectFreehandStrokeOutline,
+  synthesizeRoughSketchyStrokeAndHachureFill,
   synthesizeSketchpadBrushDabs,
   synthesizeWeaveSilkSymmetryRibbons,
   traceP5BrushFlowLine,
@@ -56,6 +61,7 @@ import {
   WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
   WAVE23_REA_DEEP_SEMANTIC_LEDGER,
   WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER,
+  WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER,
 } from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브러시·드로잉 엔진 내재화)", () => {
@@ -236,12 +242,13 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(18);
+    expect(bench.reaEvidenceTargetCount).toBe(22);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
     expect(bench.wave24ReaEvidenceCount).toBe(4);
-    expect(bench.totalVisitedAstNodes).toBeGreaterThan(360000);
-    expect(bench.totalSemanticDataFlowRelations).toBeGreaterThan(42000);
+    expect(bench.wave25ReaEvidenceCount).toBe(4);
+    expect(bench.totalVisitedAstNodes).toBeGreaterThan(380000);
+    expect(bench.totalSemanticDataFlowRelations).toBeGreaterThan(55000);
     expect(bench.qrCodecRoundtripVerified).toBe(true);
   });
 
@@ -549,5 +556,69 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
       expect(clipRes.vertices.length).toBeGreaterThanOrEqual(3);
       expect(clipRes.signedAreaPx2).toBeGreaterThan(0);
     }
+  });
+
+  it("Wave 25 perfect-freehand 가변 폭 윤곽, rough.js 7종 해칭·이중선 베지어, simplify-js 2단계 RDP 단순화, rbush OMT 2D 공간 인덱스 쿼리가 정확히 동작한다", () => {
+    expect(WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER).toHaveLength(4);
+    for (const entry of WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER) {
+      expect(entry.parentAnalysisEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.summaryViewEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.factsViewEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.semanticTraceEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.semanticQueryId).toMatch(/^jsrq_[0-9a-f]{64}$/);
+      expect(entry.assetNodeId).toMatch(/^jag_node_[0-9a-f]{64}$/);
+      expect(entry.primarySymbolNodeId).toMatch(/^jag_node_[0-9a-f]{64}$/);
+      expect(entry.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+
+    expect(FREEHAND_ROUGH_BRUSH_PRESETS).toHaveLength(10);
+    const sampleStroke = [
+      { x: 10, y: 10, pressure01: 0.7 },
+      { x: 40, y: 12, pressure01: 0.85 },
+      { x: 25, y: 28, pressure01: 0.6 },
+      { x: 75, y: 32, pressure01: 0.9 },
+      { x: 110, y: 18, pressure01: 0.75 },
+    ];
+
+    for (const preset of FREEHAND_ROUGH_BRUSH_PRESETS) {
+      const pf = synthesizePerfectFreehandStrokeOutline({
+        presetId: preset.id,
+        points: sampleStroke,
+      });
+      expect(pf.presetId).toBe(preset.id);
+      expect(pf.outlinePoints.length).toBeGreaterThan(10);
+      expect(pf.svgPolygonPath).toMatch(/^M /);
+      expect(pf.totalLengthPx).toBeGreaterThan(60);
+
+      const rough = synthesizeRoughSketchyStrokeAndHachureFill({
+        presetId: preset.id,
+        strokePoints: sampleStroke,
+        seed: 20261026,
+      });
+      expect(rough.presetId).toBe(preset.id);
+      expect(rough.doubleLineBeziers.length).toBe((sampleStroke.length - 1) * 2);
+      expect(rough.hachureSegments.length).toBeGreaterThan(0);
+      expect(rough.svgStrokePath).toMatch(/^M /);
+    }
+
+    const denseLine = Array.from({ length: 30 }, (_, idx) => ({
+      x: idx * 4,
+      y: idx < 15 ? idx * 2 : 30 - (idx - 15) * 2,
+      pressure01: 0.8,
+    }));
+    const rdp = simplifyStrokePolylineRdp(denseLine, 1.5, false);
+    expect(rdp.length).toBeGreaterThanOrEqual(3);
+    expect(rdp.length).toBeLessThan(denseLine.length);
+
+    const spatial = queryStrokeSpatialRTreeBBox({
+      items: [
+        { id: "s1", minX: 0, minY: 0, maxX: 25, maxY: 25 },
+        { id: "s2", minX: 20, minY: 15, maxX: 60, maxY: 50 },
+        { id: "s3", minX: 90, minY: 90, maxX: 120, maxY: 120 },
+      ],
+      queryBox: { minX: 18, minY: 10, maxX: 40, maxY: 35 },
+    });
+    expect(spatial.collides).toBe(true);
+    expect(spatial.matchedIds).toEqual(["s1", "s2"]);
   });
 });

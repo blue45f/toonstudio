@@ -15,6 +15,14 @@ import {
   filterPixelPerfectStroke,
 } from "./studio-commercial-pixel-brush-kernels";
 import {
+  FREEHAND_ROUGH_BRUSH_PRESETS,
+  queryStrokeSpatialRTreeBBox,
+  simplifyStrokePolylineRdp,
+  synthesizePerfectFreehandStrokeOutline,
+  synthesizeRoughSketchyStrokeAndHachureFill,
+  WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER,
+} from "./studio-freehand-rough-spatial-brushes";
+import {
   evaluateMyPaintFullDynamicsStep,
   executeBooleanPolygonBrushClip,
   mixSpectral38BandKubelkaMunkWithGamutMap,
@@ -52,6 +60,7 @@ export * from "./studio-vector-skeletal-pattern-brushes";
 export * from "./studio-particle-pixol-brushes";
 export * from "./studio-bezier-curve-fit-brushes";
 export * from "./studio-mypaint-spectral-boolean-brushes";
+export * from "./studio-freehand-rough-spatial-brushes";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -587,6 +596,7 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly wave22ReaEvidenceTargetCount: number;
   readonly wave23ReaSemanticTargetCount: number;
   readonly wave24ReaEvidenceCount: number;
+  readonly wave25ReaEvidenceCount: number;
   readonly totalVisitedAstNodes: number;
   readonly totalSemanticDataFlowRelations: number;
   readonly harmonyBrushKindCount: number;
@@ -604,6 +614,11 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly myPaintLinearizedOpaque01: number;
   readonly spectral38BandCount: number;
   readonly booleanPolygonUnionVertexCount: number;
+  readonly freehandRoughPresetCount: number;
+  readonly perfectFreehandOutlineVertexCount: number;
+  readonly roughHachureSegmentCount: number;
+  readonly rdpSimplifiedPointCount: number;
+  readonly rbushSpatialHitCount: number;
   readonly schneiderFittedSegmentCount: number;
   readonly pomaxOffsetCuspCount: number;
   readonly wickClosedGapCount: number;
@@ -615,23 +630,14 @@ export interface UniversalBrushTaxonomyBenchmarkMetrics {
 }
 
 export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTaxonomyBenchmarkMetrics {
-  const wave21Nodes = UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.reduce(
-    (sum, item) => sum + item.visitedAstNodes,
-    0,
-  );
-  const wave22Nodes = WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.reduce(
-    (sum, item) => sum + item.visitedAstNodes,
-    0,
-  );
-  const wave23Nodes = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce(
-    (sum, item) => sum + item.visitedAstNodes,
-    0,
-  );
-  const totalSemanticDataFlowRelations = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce(
-    (sum, item) => sum + item.dataFlowRelations,
-    0,
-  );
-  const totalVisitedAstNodes = wave21Nodes + wave22Nodes + wave23Nodes;
+  const wave21Nodes = UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
+  const wave22Nodes = WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
+  const wave23Nodes = WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
+  const wave25Nodes = WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.visitedAstNodes, 0);
+  const totalSemanticDataFlowRelations =
+    WAVE23_REA_DEEP_SEMANTIC_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0) +
+    WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.reduce((s, i) => s + i.dataFlowRelations, 0);
+  const totalVisitedAstNodes = wave21Nodes + wave22Nodes + wave23Nodes + wave25Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
@@ -640,12 +646,7 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
   const harmonySketchy = executeHarmonyProceduralBrush("sketchy", samplePoints, { seed: 42 });
   const schneiderFit = fitSchneiderCubicBezierSpline(samplePoints, 2.5);
   const pomaxOffset = computePomaxBezierParallelOffsetEnvelope({
-    segment: {
-      p0: { x: 0, y: 0 },
-      ctrl1: { x: 20, y: 80 },
-      ctrl2: { x: 22, y: -80 },
-      p3: { x: 40, y: 0 },
-    },
+    segment: { p0: { x: 0, y: 0 }, ctrl1: { x: 20, y: 80 }, ctrl2: { x: 22, y: -80 }, p3: { x: 40, y: 0 } },
     startRadiusPx: 28,
     endRadiusPx: 28,
     sampleSteps: 32,
@@ -659,16 +660,9 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     ],
     gapFillAmountPx: 12,
   });
-  const noisyPixelLine = [
-    { x: 0, y: 0 },
-    { x: 1, y: 0 },
-    { x: 1, y: 1 },
-    { x: 2, y: 1 },
-    { x: 2, y: 2 },
-  ];
+  const noisyPixelLine = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 2 }];
   const cleanPixelLine = filterPixelPerfectStroke(noisyPixelLine);
-  const pixelPerfectReductionRatio =
-    Math.round((noisyPixelLine.length / Math.max(1, cleanPixelLine.length)) * 100) / 100;
+  const pixelPerfectReductionRatio = Math.round((noisyPixelLine.length / Math.max(1, cleanPixelLine.length)) * 100) / 100;
   const qrEncoded = encodeCleanRoomBrushQrPayload({
     presetId: "ribbon-petal-chain",
     baseDiameterPx: 28,
@@ -699,19 +693,27 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     { rgb01: [0.98, 0.85, 0.12], factor: 0.5, tintingStrength: 1.0 },
   ]);
   const booleanUnion = executeBooleanPolygonBrushClip({
-    subject: [
-      { x: 10, y: 10 },
-      { x: 30, y: 10 },
-      { x: 30, y: 30 },
-      { x: 10, y: 30 },
-    ],
-    clip: [
-      { x: 20, y: 15 },
-      { x: 40, y: 15 },
-      { x: 40, y: 35 },
-      { x: 20, y: 35 },
-    ],
+    subject: [{ x: 10, y: 10 }, { x: 30, y: 10 }, { x: 30, y: 30 }, { x: 10, y: 30 }],
+    clip: [{ x: 20, y: 15 }, { x: 40, y: 15 }, { x: 40, y: 35 }, { x: 20, y: 35 }],
     operation: "union",
+  });
+  const pfOutline = synthesizePerfectFreehandStrokeOutline({
+    presetId: "pf-comic-gpen-taper",
+    points: samplePoints,
+  });
+  const roughSketch = synthesizeRoughSketchyStrokeAndHachureFill({
+    presetId: "rough-cross-hatch-ink",
+    strokePoints: samplePoints.slice(0, 5),
+    seed: 20261026,
+  });
+  const rdpSimplified = simplifyStrokePolylineRdp(samplePoints, 1.8);
+  const rbushQuery = queryStrokeSpatialRTreeBBox({
+    items: [
+      { id: "stroke-1", minX: 10, minY: 10, maxX: 45, maxY: 40 },
+      { id: "stroke-2", minX: 35, minY: 20, maxX: 85, maxY: 55 },
+      { id: "stroke-3", minX: 120, minY: 90, maxX: 160, maxY: 130 },
+    ],
+    queryBox: { minX: 25, minY: 15, maxX: 60, maxY: 50 },
   });
 
   return {
@@ -719,10 +721,12 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
       UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.length +
       WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length +
       WAVE23_REA_DEEP_SEMANTIC_LEDGER.length +
-      WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
+      WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length +
+      WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length,
     wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     wave23ReaSemanticTargetCount: WAVE23_REA_DEEP_SEMANTIC_LEDGER.length,
     wave24ReaEvidenceCount: WAVE24_MYPAINT_SPECTRAL_BOOLEAN_REA_LEDGER.length,
+    wave25ReaEvidenceCount: WAVE25_FREEHAND_ROUGH_SPATIAL_REA_LEDGER.length,
     totalVisitedAstNodes,
     totalSemanticDataFlowRelations,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
@@ -740,6 +744,11 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     myPaintLinearizedOpaque01: Math.round(myPaintStep.linearizedOpaque01 * 10000) / 10000,
     spectral38BandCount: spectral38.reflectance38.length,
     booleanPolygonUnionVertexCount: booleanUnion.vertices.length,
+    freehandRoughPresetCount: FREEHAND_ROUGH_BRUSH_PRESETS.length,
+    perfectFreehandOutlineVertexCount: pfOutline.outlinePoints.length,
+    roughHachureSegmentCount: roughSketch.hachureSegments.length,
+    rdpSimplifiedPointCount: rdpSimplified.length,
+    rbushSpatialHitCount: rbushQuery.matchedIds.length,
     schneiderFittedSegmentCount: schneiderFit.segments.length,
     pomaxOffsetCuspCount: pomaxOffset.cuspCount,
     wickClosedGapCount: wickResult.closedGapBridgeCount,

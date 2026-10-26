@@ -10,17 +10,23 @@ import {
   executeHarmonyProceduralBrush,
   executeKlecksBrushEngineSuite,
   fitSchneiderCubicBezierSpline,
+  FREEHAND_ROUGH_BRUSH_PRESETS,
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
   KLECKS_BRUSH_PRESETS,
   MYPAINT_BRUSH_PRESETS,
+  queryStrokeSpatialRTreeBBox,
+  simplifyStrokePolylineRdp,
   SKELETAL_ART_BRUSH_PRESETS,
   stepCorelPainterParticleBrush,
   stepPhotoshopMixerBrushReservoir,
+  synthesizePerfectFreehandStrokeOutline,
+  synthesizeRoughSketchyStrokeAndHachureFill,
   traceP5BrushFlowLine,
   warpSkeletalArtBrushAlongSpine,
   type ComicRibbonStampPresetId,
   type CorelParticlePresetId,
+  type FreehandRoughPresetId,
   type HarmonyBrushKind,
   type KlecksPresetId,
   type MyPaintPresetId,
@@ -46,6 +52,8 @@ export function StudioUniversalBrushEngineBar({
     useState<KlecksPresetId>("klecks-blend-watercolor");
   const [selectedMyPaintId, setSelectedMyPaintId] =
     useState<MyPaintPresetId>("mypaint-spectral-impasto");
+  const [selectedFreehandRoughId, setSelectedFreehandRoughId] =
+    useState<FreehandRoughPresetId>("pf-comic-gpen-taper");
 
   const activeUniversalTelemetry = useMemo(() => {
     const sampleStroke = Array.from({ length: 10 }, (_, idx) => ({
@@ -116,6 +124,23 @@ export function StudioUniversalBrushEngineBar({
       ],
       operation: "union",
     });
+    const pfOutline = synthesizePerfectFreehandStrokeOutline({
+      presetId: selectedFreehandRoughId,
+      points: sampleStroke,
+    });
+    const roughSketch = synthesizeRoughSketchyStrokeAndHachureFill({
+      presetId: selectedFreehandRoughId,
+      strokePoints: sampleStroke.slice(0, 5),
+      seed: 20261026,
+    });
+    const rdpSimplified = simplifyStrokePolylineRdp(sampleStroke, 1.6);
+    const rbushSpatial = queryStrokeSpatialRTreeBBox({
+      items: [
+        { id: "stroke-pf", minX: 16, minY: 12, maxX: 142, maxY: 32 },
+        { id: "stroke-rough", minX: 120, minY: 8, maxX: 158, maxY: 36 },
+      ],
+      queryBox: { minX: 100, minY: 10, maxX: 160, maxY: 35 },
+    });
 
     const bezierSvgPath = schneiderFit.segments
       .map((seg, i) =>
@@ -142,6 +167,11 @@ export function StudioUniversalBrushEngineBar({
       klecksDabCount: klecks.dabCount,
       myPaintStep,
       booleanUnionVertexCount: booleanUnion.vertices.length,
+      pfOutline,
+      roughHachureSegments: roughSketch.hachureSegments.slice(0, 14),
+      roughHachureTotalCount: roughSketch.hachureSegments.length,
+      rdpPointCount: rdpSimplified.length,
+      rbushHitCount: rbushSpatial.matchedIds.length,
       bezierSvgPath,
       booleanPolygonPoints,
     };
@@ -152,6 +182,7 @@ export function StudioUniversalBrushEngineBar({
     selectedParticleId,
     selectedKlecksId,
     selectedMyPaintId,
+    selectedFreehandRoughId,
   ]);
 
   return (
@@ -486,6 +517,61 @@ export function StudioUniversalBrushEngineBar({
           })}
         </div>
       </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-fg-2">
+          {tx("프리핸드 윤곽·Rough 해칭·공간 인덱스 (Wave 25):")}
+        </span>
+        <div
+          role="radiogroup"
+          aria-label={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")}
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          {FREEHAND_ROUGH_BRUSH_PRESETS.slice(0, 6).map((preset, idx, arr) => {
+            const isSelected = preset.id === selectedFreehandRoughId;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                data-studio-freehand-rough-preset={preset.id}
+                onClick={() => setSelectedFreehandRoughId(preset.id)}
+                onKeyDown={(e) => {
+                  let nextIdx = -1;
+                  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                    nextIdx = (idx + 1) % arr.length;
+                  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                    nextIdx = (idx - 1 + arr.length) % arr.length;
+                  } else if (e.key === "Home") {
+                    nextIdx = 0;
+                  } else if (e.key === "End") {
+                    nextIdx = arr.length - 1;
+                  }
+                  if (nextIdx >= 0) {
+                    e.preventDefault();
+                    const target = arr[nextIdx];
+                    if (target) {
+                      setSelectedFreehandRoughId(target.id);
+                      const container = e.currentTarget.parentElement;
+                      const buttons =
+                        container?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+                      buttons?.[nextIdx]?.focus();
+                    }
+                  }
+                }}
+                className={
+                  isSelected
+                    ? "rounded-full border border-accent bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold text-fg"
+                    : "rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {tx(preset.labelKo)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line/70 bg-raised/40 px-2.5 py-1.5">
         <svg
           viewBox="0 0 220 44"
@@ -494,6 +580,29 @@ export function StudioUniversalBrushEngineBar({
           aria-label={tx("범용 브러시 다중 레이어 실시간 스트로크 프리뷰")}
           data-studio-universal-brush-svg-preview="true"
         >
+          {activeUniversalTelemetry.pfOutline.svgPolygonPath ? (
+            <path
+              d={activeUniversalTelemetry.pfOutline.svgPolygonPath}
+              className="text-warn"
+              fill="currentColor"
+              fillOpacity={0.22}
+              stroke="currentColor"
+              strokeWidth={0.7}
+            />
+          ) : null}
+          {activeUniversalTelemetry.roughHachureSegments.map((seg, idx) => (
+            <line
+              key={`r-${idx}`}
+              x1={seg.x1}
+              y1={seg.y1}
+              x2={seg.x2}
+              y2={seg.y2}
+              className="text-warn"
+              stroke="currentColor"
+              strokeWidth={0.85}
+              strokeOpacity={0.65}
+            />
+          ))}
           {activeUniversalTelemetry.harmony.primitives.slice(0, 18).map((prim, idx) => (
             <line
               key={`h-${idx}`}
@@ -582,6 +691,18 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span>
             {tx("MyPaint 선형알파")}: {activeUniversalTelemetry.myPaintStep.linearizedOpaque01.toFixed(3)}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("PF 윤곽")}: {activeUniversalTelemetry.pfOutline.outlinePoints.length}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("Rough 해칭")}: {activeUniversalTelemetry.roughHachureTotalCount}
+          </span>
+          <span>·</span>
+          <span>
+            {tx("RDP·RTree")}: {activeUniversalTelemetry.rdpPointCount}/{activeUniversalTelemetry.rbushHitCount}
           </span>
           <span>·</span>
           <span>
