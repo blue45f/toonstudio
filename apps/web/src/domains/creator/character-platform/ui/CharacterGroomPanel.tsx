@@ -6,6 +6,13 @@ import {
   duplicateCharacterGroomGuide, editCharacterGroomGroup,
 } from "../groom/character-groom-edit";
 import { validateCharacterGroomDocument } from "../groom/character-groom-document";
+import {
+  calibrateShaperHairBaseZoneUv,
+  createShaperDiamondHairBaseMesh,
+  evaluateShaperHybridHairSpline,
+  SHAPER_HAIR_BASE_ZONE_CALIBRATIONS,
+  type ShaperHairBaseZoneIndex,
+} from "../groom/character-shaper-hair-hybrid-spline";
 
 import type { CharacterGroomDocument, CharacterGroomProfile } from "../groom/character-groom-document";
 import type { CharacterGroomRuntimeState } from "../groom/use-character-groom-runtime";
@@ -29,12 +36,19 @@ export function CharacterGroomPanel({ authoring, runtime }: {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedGuideId, setSelectedGuideId] = useState<string | null>(null);
   const [pointIndex, setPointIndex] = useState(0);
+  const [shaperZoneIndex, setShaperZoneIndex] = useState<ShaperHairBaseZoneIndex>(0);
   const [error, setError] = useState<string | null>(null);
   const snapshot = authoring.snapshot;
   const activeDraft = draft?.base === snapshot.document ? draft : null;
   const groom = activeDraft?.groom ?? snapshot.document.groom;
   const group = groom.groups.find((candidate) => candidate.groupId === selectedGroupId) ?? groom.groups[0];
   const guide = group?.guides.find((candidate) => candidate.guideId === selectedGuideId) ?? group?.guides[0];
+  const shaperHybridSpline = guide ? evaluateShaperHybridHairSpline(guide.points.map((entry) => entry.position), 4) : [];
+  const shaperDiamondMesh = guide && group ? createShaperDiamondHairBaseMesh({
+    centerline: shaperHybridSpline,
+    baseWidth: group.profile.baseWidth,
+  }) : null;
+  const shaperCalibratedUv = calibrateShaperHairBaseZoneUv([0.5, 0.5], shaperZoneIndex);
   const selectedPointIndex = guide ? Math.min(pointIndex, guide.points.length - 1) : 0;
   const point = guide?.points[selectedPointIndex];
   const ownPreview = snapshot.previewCommandId?.startsWith(prefix) === true;
@@ -155,6 +169,19 @@ export function CharacterGroomPanel({ authoring, runtime }: {
           }) }) })));
         }} /></label>)}</div>
       </fieldset> : null}
+      {shaperDiamondMesh ? <div data-testid="shaper-groom-hybrid-inspector" className="space-y-1.5 rounded-xl border border-line bg-panel/60 p-2 text-xs text-fg-2">
+        <div className="flex items-center justify-between font-semibold text-fg">
+          <span>{t("studio.character.groom.shaperHybridTitle", "SHAPER 50:50 하이브리드 스플라인 · 다이아몬드 단면")}</span>
+          <span className="font-mono text-[11px] text-fg-3">{shaperDiamondMesh.rings.length} 링 · 능선 0.8</span>
+        </div>
+        <label className="block space-y-1">
+          <span>{t("studio.character.groom.shaperZoneLabel", "두피 4구역 UV 보정 (HairBaseData::SetTexture)")}</span>
+          <select aria-label={t("studio.character.groom.shaperZoneSelect", "두피 UV 구역")} className={INPUT} value={shaperZoneIndex} disabled={groupDisabled} onChange={(event) => setShaperZoneIndex(Number(event.currentTarget.value) as ShaperHairBaseZoneIndex)}>
+            {([0, 1, 2, 3] as const).map((zoneIdx) => <option key={zoneIdx} value={zoneIdx}>{SHAPER_HAIR_BASE_ZONE_CALIBRATIONS[zoneIdx].label}</option>)}
+          </select>
+        </label>
+        <p className="font-mono text-[11px] text-fg-3">UV ({shaperCalibratedUv[0].toFixed(3)}, {shaperCalibratedUv[1].toFixed(3)}) · 정점 {shaperDiamondMesh.positions.length / 3}개</p>
+      </div> : null}
       {anchored || group.scalpRegionId !== "scalp:head-local" ? <p role="status" className="text-xs text-warn">{anchorAttached
         ? t("studio.character.groom.anchorAttached", "두피 루트 앵커가 원본 표면에 부착되었습니다. 포즈·표정 변형을 따라 표시하며 길이·폭·표시를 편집할 수 있습니다. 앵커 좌표 재배치와 자동 재투영은 지원하지 않습니다.")
         : t("studio.character.groom.anchorPending", "불러온 두피 표면과 루트 앵커를 확인하기 전에는 메시로 표시하지 않습니다. 다른 topology, 여러 점의 앵커, 별도 primitive는 원본을 보존합니다.")}</p> : null}

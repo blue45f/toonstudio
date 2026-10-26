@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
 import { type CharacterPoseEffectorBone } from "./character-pose-runtime-adapter";
+import { cycleShaperBoneAiFixVector, type ShaperBoneAiFixVectorMode } from "./character-pose-v3";
 import type { CharacterPoseRuntime } from "./use-character-pose-runtime";
 
 import { cn } from "@/shared/lib/utils";
@@ -15,6 +16,8 @@ export function CharacterPoseV3Panel({ runtime }: { readonly runtime: CharacterP
   const id = useId();
   const [selected, setSelected] = useState<CharacterPoseEffectorBone>("leftHand");
   const [offset, setOffset] = useState<readonly [number, number, number]>([0, 0, 0]);
+  const [fixVectorMode, setFixVectorMode] = useState<ShaperBoneAiFixVectorMode>(0);
+  const fixVectorInfo = cycleShaperBoneAiFixVector(((fixVectorMode + 2) % 3) as ShaperBoneAiFixVectorMode);
   const effector = runtime.effectors.includes(selected) ? selected : runtime.effectors[0];
   const disabled = !runtime.ready || runtime.blockedByPreview;
   return <section className="space-y-3 rounded-2xl border border-line bg-card/70 p-3" aria-labelledby={`${id}-title`}>
@@ -51,6 +54,13 @@ export function CharacterPoseV3Panel({ runtime }: { readonly runtime: CharacterP
       <button type="button" className={BUTTON} onClick={runtime.cancel}>{t("studio.character.poseV3.cancel", "미리보기 취소")}</button>
     </div> : null}
     <button type="button" className={cn(BUTTON, "w-full")} disabled={!runtime.canUndo || runtime.blockedByPreview} onClick={runtime.undo}>{t("studio.character.poseV3.undo", "실행 취소")}</button>
+    <div data-testid="shaper-pose-fix-vector-bar" className="space-y-1.5 rounded-xl border border-line bg-panel/60 p-2 text-xs text-fg-2">
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-fg">{t("studio.character.poseV3.shaperFixVector", "SHAPER BoneAI 롤 보정 · 50% Slerp 트위스트")}</span>
+        <span className="font-mono text-[11px] text-fg-3">{fixVectorInfo.label}</span>
+      </div>
+      <button type="button" className={cn(BUTTON, "w-full")} disabled={disabled} onClick={() => setFixVectorMode((prev) => cycleShaperBoneAiFixVector(prev).nextMode)}>{t("studio.character.poseV3.cycleFixVector", "AI 관절 롤 보정 축 순환 (+90°)")}</button>
+    </div>
     {runtime.runtimeError ? <div role="alert" className="space-y-2 text-xs text-danger"><p>{runtime.runtimeError}</p><button type="button" className={BUTTON} onClick={runtime.retryRuntime}>{t("studio.character.poseV3.retry", "포즈 연결 다시 시도")}</button></div> : null}
     {runtime.message ? <p role="status" aria-live="polite" className="text-xs leading-relaxed text-fg-2">{runtime.message}</p> : null}
     <p className="text-xs text-fg-3">{t("studio.character.poseV3.limits", "정규화된 VRM 사람형 모델에서 사용할 수 있습니다. 손가락은 기존 손 모양 편집을 사용하며, 도달할 수 없는 목표는 남은 오차를 안내합니다.")}</p>

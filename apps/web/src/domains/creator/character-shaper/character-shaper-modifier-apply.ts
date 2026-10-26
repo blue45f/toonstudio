@@ -396,3 +396,117 @@ export function applyShaperPosePresetWithModifiers(
     activeDescriptions,
   };
 }
+
+export type ShaperPresetColorShapeMode = "both" | "colorOnly" | "shapeOnly";
+
+export interface ShaperColorShapePartSnapshot {
+  readonly meshId: string;
+  readonly morphWeights: readonly number[];
+  readonly primaryColorHex: string;
+  readonly secondaryColorHex: string;
+}
+
+export type ShaperAiSixPartSlot = "hair" | "face" | "eyes" | "top" | "bottom" | "shoes";
+
+export interface ShaperAiPartCandidate {
+  readonly slot: ShaperAiSixPartSlot;
+  readonly rank: 1 | 2 | 3;
+  readonly presetId: string;
+  readonly score: number;
+  readonly recommendedColorHex: string;
+}
+
+/**
+ * `PresetItem::ApplyPart` (`0x0600028b..0x0600028d`) 명세:
+ * - `[Shift]+[Click]` -> `colorOnly` (현재 파츠의 메쉬·모프 형태는 유지하고 프리셋 색상만 적용)
+ * - `[Ctrl/Cmd]+[Click]` -> `shapeOnly` (현재 파츠의 색상은 유지하고 프리셋 메쉬·모프 형태만 적용)
+ * - 기본 클릭 -> `both` (형태 + 색상 모두 적용)
+ */
+export function resolveShaperPresetColorShapeMode(input: {
+  readonly shiftKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly metaKey?: boolean;
+}): { readonly mode: ShaperPresetColorShapeMode; readonly description: string } {
+  if (input.ctrlKey || input.metaKey) {
+    return {
+      mode: "shapeOnly",
+      description: "색상을 제외하고 파츠 형태만 가져옵니다 [Ctrl]+[Click]",
+    };
+  }
+  if (input.shiftKey) {
+    return {
+      mode: "colorOnly",
+      description: "형태를 유지하고 파츠 색상만 가져옵니다 [Shift]+[Click]",
+    };
+  }
+  return {
+    mode: "both",
+    description: "파츠 형태와 색상을 함께 적용합니다 [Click]",
+  };
+}
+
+export function applyShaperPresetColorShapeFilter(
+  current: ShaperColorShapePartSnapshot,
+  incoming: ShaperColorShapePartSnapshot,
+  mode: ShaperPresetColorShapeMode,
+): ShaperColorShapePartSnapshot {
+  if (mode === "colorOnly") {
+    return {
+      meshId: current.meshId,
+      morphWeights: [...current.morphWeights],
+      primaryColorHex: incoming.primaryColorHex,
+      secondaryColorHex: incoming.secondaryColorHex,
+    };
+  }
+  if (mode === "shapeOnly") {
+    return {
+      meshId: incoming.meshId,
+      morphWeights: [...incoming.morphWeights],
+      primaryColorHex: current.primaryColorHex,
+      secondaryColorHex: current.secondaryColorHex,
+    };
+  }
+  return {
+    meshId: incoming.meshId,
+    morphWeights: [...incoming.morphWeights],
+    primaryColorHex: incoming.primaryColorHex,
+    secondaryColorHex: incoming.secondaryColorHex,
+  };
+}
+
+const AI_SIX_PART_CATALOG: Readonly<Record<ShaperAiSixPartSlot, readonly [string, string, string]>> = {
+  hair: ["hair:short", "hair:bob", "hair:long"],
+  face: ["face:oval", "face:sharp", "face:round"],
+  eyes: ["eyes: almond", "eyes:round", "eyes:slanted"],
+  top: ["top:tshirt", "top:hoodie", "top:dress"],
+  bottom: ["bottom:pants", "bottom:shorts", "bottom:pleated"],
+  shoes: ["shoes:sneakers", "shoes:loafers", "shoes:boots"],
+};
+
+/**
+ * `UIAIPreset` (`0x02000059`) 명세:
+ * 6개 파츠(`hair`, `face`, `eyes`, `top`, `bottom`, `shoes`)별로 3순위(`rank 1..3`) 후보를 생성한다.
+ */
+export function recommendShaperSixPartCandidates(input: {
+  readonly aspectRatio: number;
+  readonly dominantHexBySlot?: Partial<Record<ShaperAiSixPartSlot, string>>;
+}): Readonly<Record<ShaperAiSixPartSlot, readonly [ShaperAiPartCandidate, ShaperAiPartCandidate, ShaperAiPartCandidate]>> {
+  const slots: readonly ShaperAiSixPartSlot[] = ["hair", "face", "eyes", "top", "bottom", "shoes"];
+  const offset = input.aspectRatio >= 2.7 ? 2 : input.aspectRatio >= 2.0 ? 1 : 0;
+  const out = {} as Record<ShaperAiSixPartSlot, readonly [ShaperAiPartCandidate, ShaperAiPartCandidate, ShaperAiPartCandidate]>;
+
+  for (const slot of slots) {
+    const baseList = AI_SIX_PART_CATALOG[slot];
+    const color = input.dominantHexBySlot?.[slot] ?? "#3b4252";
+    const candidates = ([0, 1, 2] as const).map((rankIdx): ShaperAiPartCandidate => ({
+      slot,
+      rank: (rankIdx + 1) as 1 | 2 | 3,
+      presetId: baseList[(rankIdx + offset) % 3]!.replace(/\s+/gu, ""),
+      score: Number((0.92 - rankIdx * 0.14).toFixed(2)),
+      recommendedColorHex: color,
+    }));
+    out[slot] = [candidates[0]!, candidates[1]!, candidates[2]!];
+  }
+
+  return out;
+}

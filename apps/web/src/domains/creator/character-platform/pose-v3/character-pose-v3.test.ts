@@ -9,6 +9,12 @@ import {
   characterCenterOfMass,
   characterSupportMargin,
 } from "./character-support-polygon";
+import {
+  cycleShaperBoneAiFixVector,
+  evaluateShaperBoneAiConfidenceGate,
+  SHAPER_BONE_AI_24_KEYPOINTS,
+  solveShaperOrientationConstraintHalfSlerp,
+} from "./character-pose-v3";
 
 import type { CharacterPoseCandidateV2 } from "../pose/character-pose-v2";
 
@@ -94,5 +100,29 @@ describe("character pose v3 foundation", () => {
     expect(solved.verticalCorrection).toBeCloseTo(-0.02);
     expect(solved.horizontalCorrection[0]).toBeLessThan(0);
     expect(solved.marginAfter).toBeGreaterThan(solved.marginBefore);
+  });
+
+  it("evaluates BoneAIManager 24-bone uncertainty < 0.03 confidence gate, cycles FixVector (0->1->2->0), and solves 50% Slerp orientation constraint", () => {
+    const uncertainties: Record<string, number> = {};
+    for (let i = 0; i < SHAPER_BONE_AI_24_KEYPOINTS.length; i += 1) {
+      const joint = SHAPER_BONE_AI_24_KEYPOINTS[i]!;
+      uncertainties[joint] = i < 18 ? 0.015 : 0.05;
+    }
+    const gatePass = evaluateShaperBoneAiConfidenceGate(uncertainties);
+    expect(gatePass.accepted).toBe(true);
+    expect(gatePass.validJointCount).toBe(18);
+    expect(gatePass.rejectedJoints).toHaveLength(6);
+
+    const step1 = cycleShaperBoneAiFixVector(0);
+    const step2 = cycleShaperBoneAiFixVector(step1.nextMode);
+    const step3 = cycleShaperBoneAiFixVector(step2.nextMode);
+    expect(step1).toEqual({ nextMode: 1, rollOffsetDeg: 90, label: "+90° 롤 보정 축 (Mode 1)" });
+    expect(step2.rollOffsetDeg).toBe(180);
+    expect(step3.nextMode).toBe(0);
+
+    // 90 deg rotation around Z: [0, 0, sin(45°), cos(45°)] => half slerp is 45 deg: [0, 0, sin(22.5°), cos(22.5°)]
+    const half = solveShaperOrientationConstraintHalfSlerp([0, 0, Math.SQRT1_2, Math.SQRT1_2]);
+    expect(half[2]).toBeCloseTo(Math.sin(Math.PI / 8), 5);
+    expect(half[3]).toBeCloseTo(Math.cos(Math.PI / 8), 5);
   });
 });

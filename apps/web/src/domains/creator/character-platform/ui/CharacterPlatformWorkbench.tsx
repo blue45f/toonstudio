@@ -30,6 +30,12 @@ import { CharacterGroomPanel } from "./CharacterGroomPanel";
 import { CharacterPoseV3Panel } from "../pose-v3/CharacterPoseV3Panel";
 import { CharacterCanonicalPartsPanel } from "./CharacterCanonicalPartsPanel";
 import { useCharacterPlatformWorkbench } from "./use-character-platform-workbench";
+import { computeShaperRealTabletWidthMultiplier } from "../surface-ink/character-shaper-barycentric-pen-line";
+import {
+  computeShaperAnisotropicOutlineOffset,
+  computeShaperCubicMatCapIntensity,
+  type EyeballHighlightType,
+} from "../render/character-shaper-eyeball-seam-mask";
 
 import type { CharacterSlotKind } from "../../character-shaper/character-shaper-contract";
 import type { CharacterShaperBinding } from "../../character-shaper/character-shaper-ui-contract";
@@ -171,6 +177,12 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   const [savingPreset, setSavingPreset] = useState(false);
   const [runtimeTestStatus, setRuntimeTestStatus] = useState<"idle" | "running" | "passed" | "failed">("idle");
   const [runtimeTestMessage, setRuntimeTestMessage] = useState<string | null>(null);
+  const [shaperMatcapWeight, setShaperMatcapWeight] = useState(0.2);
+  const [shaperOutlineThickness, setShaperOutlineThickness] = useState(0.01);
+  const [shaperEyeballMode, setShaperEyeballMode] = useState<EyeballHighlightType>("cam");
+  const shaperMatcap = computeShaperCubicMatCapIntensity(shaperMatcapWeight);
+  const shaperOutline = computeShaperAnisotropicOutlineOffset({ normal: [0, 0, 1], outlineThickness: shaperOutlineThickness });
+  const shaperTabletOverdrive = computeShaperRealTabletWidthMultiplier(1.0, 0.18, true);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [launcherRoot, setLauncherRoot] = useState<HTMLElement | null>(null);
   const compact = !useMediaQuery(CHARACTER_SHAPER_TABLET_QUERY);
@@ -501,6 +513,13 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
       </Section>
       <Section title="동작 방식">
         <p className="text-[0.68rem] leading-relaxed text-fg-3">선은 Hit Triangle의 배리센트릭 좌표와 보간된 Skin Weight를 저장합니다. 포즈는 GPU Skinning으로 따라가며, 토폴로지가 달라지면 원본 획을 지우지 않고 재투영 필요 상태로 보존합니다.</p>
+        <div data-testid="shaper-ink-prism-badge" className="rounded-xl border border-line bg-panel/60 px-2.5 py-2 text-[0.65rem] text-fg-2">
+          <div className="flex items-center justify-between font-semibold text-fg">
+            <span>SHAPER 3정점 삼각기둥 튜브 · 태블릿 2x 필압</span>
+            <span className="font-mono text-accent">{shaperTabletOverdrive.toFixed(1)}x Max</span>
+          </div>
+          <p className="mt-1 font-mono text-[0.6rem] text-fg-3">단면: ±{(workbench.surfaceInk.style.baseWidth * 500).toFixed(2)}mm 좌우 기저 · +{(workbench.surfaceInk.style.baseWidth * 300).toFixed(2)}mm 능선 돌출 · 의상 가림 자동 마스킹</p>
+        </div>
       </Section>
     </div>
   );
@@ -516,6 +535,25 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
             </li>
           ))}
         </ul>
+      </Section>
+      <Section title="SHAPER Toon · 안구 하이라이트 보정" description="125×(1-w)³ 3차 MatCap 램프와 1.5×0.3 비등방성 외곽선, 4모드 안구 하이라이트를 제어합니다.">
+        <div data-testid="shaper-render-toon-calibration" className="space-y-2 text-[0.68rem] text-fg-2">
+          <label className="block font-semibold">Cubic MatCap 감쇠 (w={shaperMatcapWeight.toFixed(2)}) · 강도 {shaperMatcap.rawIntensity.toFixed(1)}
+            <input aria-label="Cubic MatCap 감쇠" type="range" min="0" max="1" step="0.05" value={shaperMatcapWeight} onChange={(event) => setShaperMatcapWeight(Number(event.currentTarget.value))} className="h-9 w-full accent-accent" />
+          </label>
+          <label className="block font-semibold">비등방성 외곽선 (1.5×0.3) · 유효 돌출 {(shaperOutline.effectiveScale * 1000).toFixed(2)}mm
+            <input aria-label="비등방성 외곽선 두께" type="range" min="0.002" max="0.03" step="0.002" value={shaperOutlineThickness} onChange={(event) => setShaperOutlineThickness(Number(event.currentTarget.value))} className="h-9 w-full accent-accent" />
+          </label>
+          <label className="block space-y-1 font-semibold">
+            <span>안구 하이라이트 추종 모드 (EyeballHighlightType)</span>
+            <select aria-label="안구 하이라이트 추종 모드" value={shaperEyeballMode} onChange={(event) => setShaperEyeballMode(event.currentTarget.value as EyeballHighlightType)} className={cn("min-h-10 w-full rounded-xl border border-line bg-panel px-2.5 text-xs text-fg", STUDIO_FOCUS_RING)}>
+              <option value="cam">카메라 추종 (cam · F10 응시 연동)</option>
+              <option value="light">주광원 추종 (light)</option>
+              <option value="world">월드 천정 고정 (world)</option>
+              <option value="fix">수동 오프셋 고정 (fix)</option>
+            </select>
+          </label>
+        </div>
       </Section>
       <Section title="PSD 출력 Preflight" description={`${psdPreflight.width}×${psdPreflight.height} · ${psdPreflight.strategy === "tile-worker" ? "타일 Worker" : "직접 처리"}`}>
         <div className="grid grid-cols-3 gap-2 text-center">

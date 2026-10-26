@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  alignThreeZoneHeadSeamCentroids,
   computeBodyOcclusionMask,
   computeEyeballHighlightOffset,
+  computeShaperAnisotropicOutlineOffset,
+  computeShaperCubicMatCapIntensity,
   findSamePositionNeckVertices,
   nudgeEyeballRotationByArrow,
   rebindAccessoryParentBone,
@@ -223,5 +226,39 @@ describe("character-shaper-eyeball-seam-mask", () => {
     expect(roundTripToHead.pz).toBeCloseTo(glassesOnHead.pz, 5);
     expect(roundTripToHead.ry).toBeCloseTo(glassesOnHead.ry, 5);
     expect(roundTripToHead.sx).toBeCloseTo(glassesOnHead.sx, 5);
+  });
+
+  it("aligns 3-zone head seam centroids, evaluates 125*(1-w)^3 cubic MatCap ramp, and computes 1.5*0.3 anisotropic outline offset", () => {
+    const seamVerts = [
+      { vertexIndex: 0, position: [-0.8, 1.38, 0.0] as const, normal: [0, 1, 0] as const },
+      { vertexIndex: 1, position: [0.0, 1.38, 0.0] as const, normal: [0, 1, 0] as const },
+      { vertexIndex: 2, position: [0.8, 1.38, 0.0] as const, normal: [0, 1, 0] as const },
+    ];
+    const aligned = alignThreeZoneHeadSeamCentroids(seamVerts, {
+      left: [-0.85, 1.4, 0.02],
+      center: [0.0, 1.39, 0.01],
+      right: [0.85, 1.4, 0.02],
+    });
+    expect(aligned.zoneCounts).toEqual({ left: 1, center: 1, right: 1 });
+    expect(aligned.alignedVertices[0]!.position).toEqual([-0.85, 1.4, 0.02]);
+    expect(aligned.alignedVertices[1]!.position).toEqual([0.0, 1.39, 0.01]);
+    expect(aligned.alignedVertices[2]!.position).toEqual([0.85, 1.4, 0.02]);
+
+    const matcapZero = computeShaperCubicMatCapIntensity(0);
+    const matcapHalf = computeShaperCubicMatCapIntensity(0.5);
+    const matcapFull = computeShaperCubicMatCapIntensity(1);
+    expect(matcapZero.rawIntensity).toBeCloseTo(125, 6);
+    expect(matcapHalf.rawIntensity).toBeCloseTo(15.625, 6);
+    expect(matcapFull.rawIntensity).toBe(0);
+
+    const outline = computeShaperAnisotropicOutlineOffset({
+      normal: [0, 0, 1],
+      outlineThickness: 0.01,
+      curvatureWeightG: 0.8,
+      seamSuppressionB: 0.5,
+    });
+    // 0.01 * 1.5 * 0.3 * 0.8 * 0.5 = 0.0018
+    expect(outline.effectiveScale).toBeCloseTo(0.0018, 6);
+    expect(outline.offset).toEqual([0, 0, 0.0018]);
   });
 });

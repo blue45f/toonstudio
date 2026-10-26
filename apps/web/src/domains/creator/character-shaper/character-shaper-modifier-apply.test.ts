@@ -4,8 +4,11 @@ import {
   SHAPER_MODIFIER_LABELS,
   applyShaperPartPresetWithModifiers,
   applyShaperPosePresetWithModifiers,
+  applyShaperPresetColorShapeFilter,
+  recommendShaperSixPartCandidates,
   resolveShaperPartModifierFromInput,
   resolveShaperPoseModifierFromInput,
+  resolveShaperPresetColorShapeMode,
 } from "./character-shaper-modifier-apply";
 import { parseShaperNativePreset } from "./character-shaper-native-preset-codec";
 
@@ -232,5 +235,42 @@ describe("character-shaper-modifier-apply", () => {
       y: 25,
       z: 35,
     });
+  });
+
+  it("PresetItem::ApplyPart 색상 전용([Shift]+Click) / 형태 전용([Ctrl]+Click) 필터와 UIAIPreset 6파츠 3순위 후보 추천을 검증한다", () => {
+    const current = {
+      meshId: "hair_01",
+      morphWeights: [0.2, 0.5],
+      primaryColorHex: "#112233",
+      secondaryColorHex: "#445566",
+    };
+    const incoming = {
+      meshId: "hair_08",
+      morphWeights: [0.9, 0.1],
+      primaryColorHex: "#ff8800",
+      secondaryColorHex: "#ffcc00",
+    };
+
+    const colorOnlyMode = resolveShaperPresetColorShapeMode({ shiftKey: true });
+    expect(colorOnlyMode.mode).toBe("colorOnly");
+    const colorOnlyApplied = applyShaperPresetColorShapeFilter(current, incoming, colorOnlyMode.mode);
+    expect(colorOnlyApplied.meshId).toBe("hair_01");
+    expect(colorOnlyApplied.primaryColorHex).toBe("#ff8800");
+
+    const shapeOnlyMode = resolveShaperPresetColorShapeMode({ ctrlKey: true });
+    expect(shapeOnlyMode.mode).toBe("shapeOnly");
+    const shapeOnlyApplied = applyShaperPresetColorShapeFilter(current, incoming, shapeOnlyMode.mode);
+    expect(shapeOnlyApplied.meshId).toBe("hair_08");
+    expect(shapeOnlyApplied.primaryColorHex).toBe("#112233");
+
+    const recommendations = recommendShaperSixPartCandidates({
+      aspectRatio: 2.8,
+      dominantHexBySlot: { hair: "#2b1d18", top: "#e0f2fe" },
+    });
+    expect(Object.keys(recommendations)).toEqual(["hair", "face", "eyes", "top", "bottom", "shoes"]);
+    expect(recommendations.hair).toHaveLength(3);
+    expect(recommendations.hair[0]!.rank).toBe(1);
+    expect(recommendations.hair[0]!.presetId).toBe("hair:long");
+    expect(recommendations.hair[0]!.recommendedColorHex).toBe("#2b1d18");
   });
 });
