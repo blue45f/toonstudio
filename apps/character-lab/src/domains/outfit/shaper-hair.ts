@@ -332,3 +332,102 @@ export function reanchorPlantedHairRoot(options: {
     nodes: movedNodes,
   };
 }
+
+export interface ShaperSymmetricRay {
+  readonly origin: Vec3;
+  readonly direction: Vec3;
+}
+
+export interface ShaperHairAddParams {
+  readonly hairLength: number;
+  readonly hairWidth: number;
+  readonly hairBend: number;
+  readonly hairRootAngleZ: number;
+}
+
+export interface ShaperHairAddShortcutInput {
+  readonly scrollDeltaY?: number;
+  readonly shiftKey?: boolean;
+  readonly altKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly keyPressed?: "=" | "-" | null;
+}
+
+/**
+ * SHAPER HairData::Update (0x060001df) 및 LineData::Update (0x0600022b) 역공학 내재화:
+ * 화면 좌표를 근평면 두 깊이(`z0 = 0.01`, `z1 = 0.02` 또는 `0.1`)로 역투영한 두 월드 점의 X 부호를 반전(`-x, y, z`)하여
+ * 좌우 대칭 식모(`symmetryHairHelper`) 및 대칭 펜 브러시(`symmetryLineHelper`) 레이를 생성한다.
+ */
+export function computeShaperSymmetricRay(
+  nearWorldPoint: Vec3,
+  farWorldPoint: Vec3,
+): ShaperSymmetricRay {
+  const origin: Vec3 = [
+    -nearWorldPoint[0] || 0,
+    nearWorldPoint[1],
+    nearWorldPoint[2],
+  ];
+  const farMirrored: Vec3 = [
+    -farWorldPoint[0] || 0,
+    farWorldPoint[1],
+    farWorldPoint[2],
+  ];
+  const rawDir = v3Sub(farMirrored, origin);
+  const direction: Vec3 =
+    v3Length(rawDir) > 1e-8 ? v3Normalize(rawDir) : [0, 0, 1];
+  return { origin, direction };
+}
+
+/**
+ * SHAPER HairData::Update (0x060001df) 역공학 내재화:
+ * 좌우 대칭 식모 시 모근 회전 각도 `(angleX, angleY, angleZ)`를 `(angleX, -angleY, -angleZ)`로 반전한다.
+ */
+export function mirrorShaperHairRootAngles(rootEulerDeg: Vec3): Vec3 {
+  return [
+    rootEulerDeg[0],
+    -rootEulerDeg[1] || 0,
+    -rootEulerDeg[2] || 0,
+  ];
+}
+
+/**
+ * SHAPER HairData::Update (0x060001df) 역공학 내재화:
+ * 식모 도구(`HairAdd`, `curUIToolMode == 4`) 활성 상태에서 휠 스크롤 및 단축키 입력으로
+ * 식모 파라미터(`hairLength`, `hairBend`, `hairRootAngleZ`, `hairWidth`)를 실시간 증감한다.
+ * - `Shift + Scroll`: `hairLength += scrollDeltaY * 0.2`
+ * - `Alt + Scroll`: `hairBend += scrollDeltaY * 10`
+ * - `Ctrl + Scroll`: `hairRootAngleZ = (hairRootAngleZ + scrollDeltaY * 10 + 360) % 360`
+ * - `=` / `-` 키(`KeyCode 61 / 45`): `hairWidth += 0.1` / `hairWidth -= 0.1`
+ */
+export function applyShaperHairAddShortcutAdjustment(
+  current: ShaperHairAddParams,
+  input: ShaperHairAddShortcutInput,
+): ShaperHairAddParams {
+  const dy = input.scrollDeltaY ?? 0;
+  let { hairLength, hairWidth, hairBend, hairRootAngleZ } = current;
+
+  if (dy !== 0) {
+    if (input.shiftKey) {
+      hairLength = Math.max(0.1, Number((hairLength + dy * 0.2).toFixed(4)));
+    }
+    if (input.altKey) {
+      hairBend = Number((hairBend + dy * 10).toFixed(4));
+    }
+    if (input.ctrlKey) {
+      hairRootAngleZ = (((hairRootAngleZ + dy * 10) % 360) + 360) % 360;
+    }
+  }
+
+  if (input.keyPressed === "=") {
+    hairWidth = Math.max(0.1, Number((hairWidth + 0.1).toFixed(4)));
+  } else if (input.keyPressed === "-") {
+    hairWidth = Math.max(0.1, Number((hairWidth - 0.1).toFixed(4)));
+  }
+
+  return {
+    hairLength,
+    hairWidth,
+    hairBend,
+    hairRootAngleZ,
+  };
+}

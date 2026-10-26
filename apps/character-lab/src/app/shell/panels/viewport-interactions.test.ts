@@ -8,8 +8,10 @@ import { qRotateVec3, v3Add, v3Length, v3Sub } from "../../../shared/math";
 
 import {
   SHAPER_HISTORY_TYPE_ORDER,
+  clampShaperColorPickerHandle,
   clampShaperGizmoDelta,
   classifyShaperTrackpadTwoFingerGesture,
+  composeShaperHangulJamo,
   computeJointDrag,
   computeShaperPartThumbnailCameraFrame,
   handlesKey,
@@ -21,11 +23,13 @@ import {
   resolveShaperCameraInputAction,
   resolveShaperGizmoCastPlaneEuler,
   resolveShaperPresetClickModifiers,
+  resolveShaperToolModeForPartTab,
   resolveShaperViewportKeyShortcut,
   stepShaperHistoryCursor,
   visibleHandles,
 } from "./viewport-interactions";
 
+import type { ShaperHistoryStack } from "./viewport-interactions";
 import type { HumanoidBoneName, HudSample, JointDragHandle, Pose, Quat, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
@@ -307,7 +311,7 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
     expect(computeShaperPartThumbnailCameraFrame({ tabIndex: 13 }).distance).toBe(70);
 
     expect(SHAPER_HISTORY_TYPE_ORDER).toHaveLength(14);
-    let stack = { entries: [] as const, curPos: -1 };
+    let stack: ShaperHistoryStack<number> = { entries: [], curPos: -1 };
     stack = pushShaperHistoryEntry(stack, { type: "selectControlPoints", payload: 1 });
     stack = pushShaperHistoryEntry(stack, { type: "createLine", payload: 2 });
     stack = pushShaperHistoryEntry(stack, { type: "createHair", payload: 3 });
@@ -322,5 +326,24 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
     expect(branched.entries).toHaveLength(3);
     expect(branched.curPos).toBe(2);
     expect(branched.entries[2]?.type).toBe("changeColor");
+  });
+
+  it("UIInputFieldFixKorean 한글 자모 오토마타(복합모음·겹받침·종성분리), 탭별 툴 모드 자동 전환, 컬러 피커 4px 클램프를 수행한다", () => {
+    // ㅎ+ㅏ+ㄴ+ㄱ+ㅡ+ㄹ -> 한글
+    expect(composeShaperHangulJamo(["ㅎ", "ㅏ", "ㄴ", "ㄱ", "ㅡ", "ㄹ"])).toBe("한글");
+    // 겹받침 및 연음 종성분리: ㄷ+ㅏ+ㄹ+ㄱ -> 닭, 뒤에 ㅏ 입력 시 -> 달가
+    expect(composeShaperHangulJamo(["ㄷ", "ㅏ", "ㄹ", "ㄱ"])).toBe("닭");
+    expect(composeShaperHangulJamo(["ㄷ", "ㅏ", "ㄹ", "ㄱ", "ㅏ"])).toBe("달가");
+    // 복합모음: ㄱ+ㅗ+ㅏ -> 과
+    expect(composeShaperHangulJamo(["ㄱ", "ㅗ", "ㅏ"])).toBe("과");
+
+    expect(resolveShaperToolModeForPartTab(0, 11)).toBe(0);
+    expect(resolveShaperToolModeForPartTab(2, 1)).toBe(1);
+    expect(resolveShaperToolModeForPartTab(6, 0)).toBe(3);
+    expect(resolveShaperToolModeForPartTab(7, 3)).toBe(9);
+    expect(resolveShaperToolModeForPartTab(9, 0)).toBe(10);
+    expect(resolveShaperToolModeForPartTab(12, 0)).toBe(11);
+
+    expect(clampShaperColorPickerHandle([0, 250], [200, 200])).toEqual([4, 196]);
   });
 });

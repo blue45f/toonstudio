@@ -398,3 +398,215 @@ export function resolveShaperCostumeMaterialSlotIndex(
   }
   return Math.min(slotIndex, Math.max(0, materialNames.length - 1));
 }
+
+export interface ShaperVertexSkinWeight {
+  readonly boneIndex0: number;
+  readonly boneIndex1: number;
+  readonly weight1: number;
+}
+
+export interface ShaperBoneVertexHighlightEntry {
+  readonly vertexIndex: number;
+  readonly weight: number;
+}
+
+export interface ShaperSurfaceHitBoneResult {
+  readonly primaryBoneName: string;
+  readonly focusBoneNames: readonly string[];
+}
+
+export interface ShaperSelectableBonePoint {
+  readonly id: string;
+  readonly position: Vec3;
+  readonly eulerDeg: Vec3;
+  readonly parentDepth: number;
+}
+
+export interface ShaperMultiBonePivotResult {
+  readonly activeGizmos: {
+    readonly move: boolean;
+    readonly rotate: boolean;
+    readonly scale: boolean;
+  };
+  readonly pivotPosition: Vec3;
+  readonly pivotEulerDeg: Vec3;
+  readonly attachedPointIds: readonly string[];
+  readonly rootPointId: string | null;
+}
+
+/**
+ * SHAPER BodyPartsManager::InitBodyPart (0x060000a8) 역공학 내재화:
+ * 각 스키닝 정점의 주 본(`boneIndex0`)에는 가중치 `1.0`을, 보조 본(`boneIndex1`)에는
+ * 2차 가중치 제곱 증폭식 `w_hl = 4 * weight1^2` (`weight1 * weight1 * 4f`)을 기록해 본 하이라이트 테이블을 구축한다.
+ */
+export function computeShaperBoneWeightHighlightTable(
+  vertexWeights: readonly ShaperVertexSkinWeight[],
+  boneCount: number,
+): readonly (readonly ShaperBoneVertexHighlightEntry[])[] {
+  const table: ShaperBoneVertexHighlightEntry[][] = Array.from(
+    { length: Math.max(0, boneCount) },
+    () => [],
+  );
+  for (let vIdx = 0; vIdx < vertexWeights.length; vIdx += 1) {
+    const { boneIndex0, boneIndex1, weight1 } = vertexWeights[vIdx];
+    if (boneIndex0 >= 0 && boneIndex0 < table.length) {
+      table[boneIndex0].push({ vertexIndex: vIdx, weight: 1.0 });
+    }
+    if (
+      weight1 > 0 &&
+      boneIndex1 >= 0 &&
+      boneIndex1 < table.length &&
+      boneIndex1 !== boneIndex0
+    ) {
+      table[boneIndex1].push({
+        vertexIndex: vIdx,
+        weight: weight1 * weight1 * 4.0,
+      });
+    }
+  }
+  return table;
+}
+
+/**
+ * SHAPER BodyPartsManager::GetBone (0x060000af) 역공학 내재화:
+ * 레이캐스트로 적중한 삼각형(`triangleIndex`)의 첫 정점(`triangles[triangleIndex * 3]`) 주 본(`boneIndex0`)을 조회한 뒤,
+ * `BodyBoneToss` 리다이렉션과 `BodyBoneSet` 연결 본 그룹 확장을 수행해 포커스 대상 본 목록을 반환한다.
+ */
+export function resolveShaperSurfaceHitBone(options: {
+  readonly triangleIndex: number;
+  readonly triangles: ArrayLike<number>;
+  readonly vertexBoneIndex0: ArrayLike<number>;
+  readonly boneNames: readonly string[];
+  readonly boneTossMap?: Readonly<Record<string, string>>;
+  readonly boneSetMap?: Readonly<Record<string, readonly string[]>>;
+}): ShaperSurfaceHitBoneResult | null {
+  const {
+    triangleIndex,
+    triangles,
+    vertexBoneIndex0,
+    boneNames,
+    boneTossMap,
+    boneSetMap,
+  } = options;
+  const triBase = triangleIndex * 3;
+  if (triBase < 0 || triBase >= triangles.length) {
+    return null;
+  }
+  const v0 = triangles[triBase];
+  if (v0 < 0 || v0 >= vertexBoneIndex0.length) {
+    return null;
+  }
+  const boneIdx = vertexBoneIndex0[v0];
+  const rawBoneName = boneNames[boneIdx];
+  if (rawBoneName === undefined) {
+    return null;
+  }
+  const primaryBoneName = boneTossMap?.[rawBoneName] ?? rawBoneName;
+  const focusBoneNames = boneSetMap?.[primaryBoneName] ?? [primaryBoneName];
+  return {
+    primaryBoneName,
+    focusBoneNames,
+  };
+}
+
+/**
+ * SHAPER BodyPartsManager::HighlightSkinBones (0x060000b1) 역공학 내재화:
+ * 포커스된 본들의 정점 가중치 테이블을 순회하며 정점 색상(`RGBA`)을 칠한다.
+ * - 선택 상태(`selected = true`): `g = b = clamp01(1 - w)`
+ * - 호버 상태(`selected = false`): `g = b = clamp01(0.6 + (1 - w) * (1 - 0.6)) = clamp01(1 - 0.4 * w)`
+ * 다중 본이 겹치는 정점은 더 강한 하이라이트(더 작은 `g` 채널 값)를 우선 유지한다.
+ */
+export function computeShaperSkinBoneVertexColors(options: {
+  readonly vertexCount: number;
+  readonly highlightTable: readonly (readonly ShaperBoneVertexHighlightEntry[])[];
+  readonly focusBoneIndices: readonly number[];
+  readonly selected: boolean;
+}): Float32Array {
+  const { vertexCount, highlightTable, focusBoneIndices, selected } = options;
+  const colors = new Float32Array(Math.max(0, vertexCount) * 4);
+  colors.fill(1.0);
+
+  for (const boneIdx of focusBoneIndices) {
+    const entries = highlightTable[boneIdx];
+    if (entries === undefined) continue;
+    for (const { vertexIndex, weight } of entries) {
+      if (vertexIndex < 0 || vertexIndex >= vertexCount) continue;
+      const clampedWeight = Math.max(0, Math.min(1, weight));
+      const channel = selected
+        ? 1.0 - clampedWeight
+        : 0.6 + (1.0 - clampedWeight) * (1.0 - 0.6);
+      const base = vertexIndex * 4;
+      if (colors[base + 1] > channel) {
+        colors[base] = 1.0;
+        colors[base + 1] = channel;
+        colors[base + 2] = channel;
+        colors[base + 3] = 1.0;
+      }
+    }
+  }
+  return colors;
+}
+
+/**
+ * SHAPER BoneManager::AlignPivot (0x0600010c) 및 SetControlPointsPivot (0x0600010d) 역공학 내재화:
+ * - IK 모드(`pivotIkMode = true`): 선택된 모든 IK 제어점의 산술 무게중심에 피벗을 배치하고(다중 선택 시 월드 회전 `0,0,0`),
+ *   Move + Rotate 기즈모를 동시에 활성화한다.
+ * - FK 모드(`pivotIkMode = false`): 선택된 FK 제어점 중 계층 깊이(`parentDepth`, `GetParentCount`)가 가장 작은
+ *   최상위 조상 본(`minParentIndex`)에 피벗을 맞추고, 이중 회전을 방지하기 위해 최상위 본 하나만 피벗에 부착하며 Rotate 기즈모만 켠다.
+ */
+export function computeShaperMultiBonePivot(options: {
+  readonly pivotIkMode: boolean;
+  readonly selectedPoints: readonly ShaperSelectableBonePoint[];
+}): ShaperMultiBonePivotResult {
+  const { pivotIkMode, selectedPoints } = options;
+  if (selectedPoints.length === 0) {
+    return {
+      activeGizmos: { move: false, rotate: false, scale: false },
+      pivotPosition: [0, 0, 0],
+      pivotEulerDeg: [0, 0, 0],
+      attachedPointIds: [],
+      rootPointId: null,
+    };
+  }
+
+  if (pivotIkMode) {
+    let sx = 0;
+    let sy = 0;
+    let sz = 0;
+    for (const pt of selectedPoints) {
+      sx += pt.position[0];
+      sy += pt.position[1];
+      sz += pt.position[2];
+    }
+    const inv = 1 / selectedPoints.length;
+    const pivotPosition: Vec3 = [sx * inv, sy * inv, sz * inv];
+    const pivotEulerDeg: Vec3 =
+      selectedPoints.length === 1
+        ? ([...selectedPoints[0].eulerDeg] as Vec3)
+        : [0, 0, 0];
+    return {
+      activeGizmos: { move: true, rotate: true, scale: false },
+      pivotPosition,
+      pivotEulerDeg,
+      attachedPointIds: selectedPoints.map((pt) => pt.id),
+      rootPointId: selectedPoints[0].id,
+    };
+  }
+
+  let minParentIdx = 0;
+  let minDepth = selectedPoints[0].parentDepth;
+  for (let i = 1; i < selectedPoints.length; i += 1) {
+    if (selectedPoints[i].parentDepth < minDepth) {
+      minDepth = selectedPoints[i].parentDepth;
+      minParentIdx = i;
+    }
+  }
+  const rootPoint = selectedPoints[minParentIdx];
+  return {
+    activeGizmos: { move: false, rotate: true, scale: false },
+    pivotPosition: [...rootPoint.position] as Vec3,
+    pivotEulerDeg: [...rootPoint.eulerDeg] as Vec3,
+    attachedPointIds: [rootPoint.id],
+    rootPointId: rootPoint.id,
+  };
+}

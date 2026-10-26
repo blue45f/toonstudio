@@ -7,12 +7,16 @@ import {
   IK_REACH_TOLERANCE,
   computeGroundedBodyHeight,
   computeShaperBoneControlPointCollider,
+  computeShaperBoneWeightHighlightTable,
   computeShaperDetachedBoneVolumes,
+  computeShaperMultiBonePivot,
   computeShaperMuscleFatBlendShapeWeights,
+  computeShaperSkinBoneVertexColors,
   mirrorShaperPose,
   normalizeSignedAngleDeg,
   pairShaperSymmetryBones,
   resolveShaperCostumeMaterialSlotIndex,
+  resolveShaperSurfaceHitBone,
   rotationBetweenFrames,
   scaleShaperAccessoryVertices,
   solveShaperOrientationConstraint,
@@ -345,5 +349,78 @@ describe("SHAPER TwistBone, OrientationConstraint 및 자동 지면 접지/신�
 
     expect(resolveShaperCostumeMaterialSlotIndex(["Skin", "Jacket", "Trim"], 0)).toBe(1);
     expect(resolveShaperCostumeMaterialSlotIndex(["Jacket", "Trim"], 0)).toBe(0);
+  });
+
+  it("BodyPartsManager 2차 가중치 제곱(4*w1^2) 하이라이트 테이블, BodyBoneToss/BodyBoneSet 리다이렉션, 정점 컬러 히트맵 및 다중 본 피벗(AlignPivot)을 수행한다", () => {
+    const table = computeShaperBoneWeightHighlightTable(
+      [
+        { boneIndex0: 0, boneIndex1: 1, weight1: 0.25 },
+        { boneIndex0: 1, boneIndex1: 0, weight1: 0 },
+      ],
+      2,
+    );
+    expect(table[0]).toEqual([{ vertexIndex: 0, weight: 1.0 }]);
+    // 0.25^2 * 4 = 0.25
+    expect(table[1]).toEqual([
+      { vertexIndex: 0, weight: 0.25 },
+      { vertexIndex: 1, weight: 1.0 },
+    ]);
+
+    const hitBone = resolveShaperSurfaceHitBone({
+      triangleIndex: 0,
+      triangles: [0, 1, 1],
+      vertexBoneIndex0: [0, 1],
+      boneNames: ["BoneLHandTwist", "BoneLForearm"],
+      boneTossMap: { BoneLHandTwist: "BoneLForearm" },
+      boneSetMap: { BoneLForearm: ["BoneLForearm", "BoneLUpperArm"] },
+    });
+    expect(hitBone).toEqual({
+      primaryBoneName: "BoneLForearm",
+      focusBoneNames: ["BoneLForearm", "BoneLUpperArm"],
+    });
+
+    const selectedColors = computeShaperSkinBoneVertexColors({
+      vertexCount: 2,
+      highlightTable: table,
+      focusBoneIndices: [1],
+      selected: true,
+    });
+    // v0: weight 0.25 -> g = b = 0.75; v1: weight 1.0 -> g = b = 0.0
+    expect(selectedColors[1]).toBeCloseTo(0.75, 6);
+    expect(selectedColors[5]).toBeCloseTo(0.0, 6);
+
+    const hoverColors = computeShaperSkinBoneVertexColors({
+      vertexCount: 2,
+      highlightTable: table,
+      focusBoneIndices: [1],
+      selected: false,
+    });
+    // v0: weight 0.25 -> g = 0.6 + 0.75 * 0.4 = 0.9; v1: weight 1.0 -> g = 0.6
+    expect(hoverColors[1]).toBeCloseTo(0.9, 6);
+    expect(hoverColors[5]).toBeCloseTo(0.6, 6);
+
+    const ikPivot = computeShaperMultiBonePivot({
+      pivotIkMode: true,
+      selectedPoints: [
+        { id: "ikL", position: [-1, 2, 0], eulerDeg: [10, 20, 30], parentDepth: 1 },
+        { id: "ikR", position: [1, 4, 2], eulerDeg: [10, -20, -30], parentDepth: 1 },
+      ],
+    });
+    expect(ikPivot.pivotPosition).toEqual([0, 3, 1]);
+    expect(ikPivot.pivotEulerDeg).toEqual([0, 0, 0]);
+    expect(ikPivot.activeGizmos).toEqual({ move: true, rotate: true, scale: false });
+    expect(ikPivot.attachedPointIds).toEqual(["ikL", "ikR"]);
+
+    const fkPivot = computeShaperMultiBonePivot({
+      pivotIkMode: false,
+      selectedPoints: [
+        { id: "fkHand", position: [-0.5, 1.0, 0], eulerDeg: [0, 0, 45], parentDepth: 5 },
+        { id: "fkUpperArm", position: [-0.2, 1.4, 0], eulerDeg: [0, 15, 0], parentDepth: 3 },
+      ],
+    });
+    expect(fkPivot.rootPointId).toBe("fkUpperArm");
+    expect(fkPivot.pivotPosition).toEqual([-0.2, 1.4, 0]);
+    expect(fkPivot.attachedPointIds).toEqual(["fkUpperArm"]);
+    expect(fkPivot.activeGizmos).toEqual({ move: false, rotate: true, scale: false });
   });
 });

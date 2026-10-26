@@ -12,13 +12,16 @@ import {
   SHAPER_HAIR_PHYSICS_LERP,
   SHAPER_HAIR_RIDGE_SHARPNESS,
   alignShaperHairControlRotations,
+  applyShaperHairAddShortcutAdjustment,
   assumedHeadPivot,
   buildHair,
   buildPlantedHairControlChain,
   buildShaperHairStrandTube,
   computeShaperHairBaseUvTransform,
+  computeShaperSymmetricRay,
   evaluateShaperHairSplinePoint,
   hairStrands,
+  mirrorShaperHairRootAngles,
   reanchorPlantedHairRoot,
   sampleShaperHairSpline,
   simulateShaperHairPhysicsStep,
@@ -283,6 +286,23 @@ describe("outfit/hair-builder", () => {
       });
       expect(reanchored.rootPosition).toEqual([0.25, 1.7, 0.25]);
       expect(reanchored.nodes[0].position).toEqual([0.25, 1.7, 0.25]);
+    });
+
+    it("좌우 대칭 레이(symmetryHairHelper/symmetryLineHelper), 모근 각도 반전, 식모 휠/단축키 조정을 수행한다", () => {
+      const symRay = computeShaperSymmetricRay([0.25, 1.6, 0.01], [0.25, 1.6, 0.02]);
+      expect(symRay.origin).toEqual([-0.25, 1.6, 0.01]);
+      expect(symRay.direction).toEqual([0, 0, 1]);
+
+      expect(mirrorShaperHairRootAngles([15, 30, -45])).toEqual([15, -30, 45]);
+
+      const adjusted = applyShaperHairAddShortcutAdjustment(
+        { hairLength: 1.0, hairWidth: 0.5, hairBend: 20, hairRootAngleZ: 350 },
+        { scrollDeltaY: 2, shiftKey: true, altKey: true, ctrlKey: true, keyPressed: "=" },
+      );
+      expect(adjusted.hairLength).toBeCloseTo(1.4, 5);
+      expect(adjusted.hairBend).toBeCloseTo(40, 5);
+      expect(adjusted.hairRootAngleZ).toBeCloseTo(10, 5);
+      expect(adjusted.hairWidth).toBeCloseTo(0.6, 5);
     });
   });
 });
