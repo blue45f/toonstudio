@@ -212,6 +212,23 @@ describe("StudioVarco3dInspectorWorkbench", () => {
     expect(screen.getByTestId("varco3d-zeropoint-task-readout").textContent).toContain("PBR");
     fireEvent.click(screen.getByTestId("varco3d-prop-toggle-prop_cafe_table_set"));
     expect(screen.getByTestId("varco3d-diorama-plan-readout").textContent).toContain("㎡");
+
+    // Full Platform 25-module REA Deck: ExpMap decal, 4-limb IK, magnetic snap, Universal Agent, DCC plugins, tRPC
+    expect(screen.getByTestId("varco3d-details-full-platform-rea-deck")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-weight-ramp-gradient-bar")).toBeTruthy();
+    expect(screen.getByTestId("varco3d-decal-ik-readout").textContent).toContain("left-arm");
+    expect(screen.getByTestId("varco3d-snap-tidy-agent-readout").textContent).toContain("100px");
+    fireEvent.click(screen.getByTestId("varco3d-universal-agent-multiview-toggle"));
+    expect(screen.getByTestId("varco3d-snap-tidy-agent-readout").textContent).toContain(
+      "single-image 3D generation only",
+    );
+    fireEvent.change(screen.getByTestId("varco3d-official-dcc-plugin-select"), {
+      target: { value: "unreal" },
+    });
+    expect(screen.getByTestId("varco3d-dcc-plugin-download-readout").textContent).toContain(
+      "VARCO3DPlugin-1.1.1-Win64-UE5.8.zip",
+    );
+    expect(screen.getByTestId("varco3d-external-api-trpc-readout").textContent).toContain("141");
   });
 });
 
