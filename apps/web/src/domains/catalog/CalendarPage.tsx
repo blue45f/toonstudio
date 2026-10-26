@@ -9,6 +9,7 @@ import { AvailabilityDots } from "@/shared/components/availability";
 import { MiniPoster } from "@/shared/components/rank-row";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { RatingInline } from "@/shared/components/ui/stars";
@@ -30,6 +31,11 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { cn, kstTodayIdx } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
+import {
+  CALENDAR_BM_FILTERS,
+  runSameDocumentViewTransition,
+  type CalendarBmFilterId,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { useApiResource } from "@/platform/use-api-resource";
 
@@ -136,6 +142,23 @@ export function CalendarPage() {
   const dayTabsId = useId();
   // 모바일: 요일 탭으로 하루씩 본다(null = 오늘). 데스크톱(xl)은 7열 그리드 유지.
   const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
+  const [bmFilterId, setBmFilterId] = useState<CalendarBmFilterId>("all");
+  const applyBmPreset = (nextBmId: CalendarBmFilterId) => {
+    runSameDocumentViewTransition(() => {
+      setBmFilterId(nextBmId);
+      if (nextBmId === "all") {
+        setFilters({ ...filters, pricing: [], status: [], yearRange: null });
+      } else if (nextBmId === "wait-free") {
+        setFilters({ ...filters, pricing: ["wait-free"], status: [], yearRange: null });
+      } else if (nextBmId === "free") {
+        setFilters({ ...filters, pricing: ["free"], status: [], yearRange: null });
+      } else if (nextBmId === "new") {
+        setFilters({ ...filters, pricing: [], status: ["ongoing"], yearRange: [2025, 2026] });
+      } else if (nextBmId === "completed") {
+        setFilters({ ...filters, pricing: [], status: ["completed"], yearRange: null });
+      }
+    });
+  };
   const savedIds = useSavedTitleIds();
   // '상세 필터' 배지는 패널에 보이는 facet만 센다(플랫폼은 전용 칩으로 분리 노출).
   const titleFilterCount = countActiveTitleFilters(filters) - filters.platforms.length;
@@ -211,6 +234,7 @@ export function CalendarPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/calendar" className="mb-5" />
       <header className="mb-6 rounded-2xl border border-line bg-panel/45 p-4 surface-hl sm:mb-7 sm:p-6">
         <SectionArt
           image="explore"
@@ -252,6 +276,39 @@ export function CalendarPage() {
                 없어 수동 "갱신"은 동일 데이터를 다시 읽을 뿐이라 오해를 줘 제거했다. 로드 실패 시
                 재시도는 아래 ErrorState 의 onRetry(reload) 로 제공한다. */}
           </div>
+        </div>
+
+        <div
+          role="group"
+          aria-label={bt("이용권·연재 방식 빠른 필터", "Business model & release filter")}
+          data-testid="calendar-bm-filter-bar"
+          className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-4"
+        >
+          <span className="mr-1 text-xs font-bold text-fg-3">
+            {bt("BM·연재 필터:", "BM Filter:")}
+          </span>
+          {CALENDAR_BM_FILTERS.map((bm) => {
+            const active = bmFilterId === bm.id;
+            return (
+              <button
+                key={bm.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => applyBmPreset(bm.id)}
+                className={cn(
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                  active
+                    ? "border-accent bg-accent text-canvas shadow-sm"
+                    : "border-line bg-card text-fg-2 hover:border-accent/45 hover:text-fg",
+                )}
+              >
+                <span>{bm.label}</span>
+                <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
+                  {bm.badge}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {data?.platformCoverage.length ? (

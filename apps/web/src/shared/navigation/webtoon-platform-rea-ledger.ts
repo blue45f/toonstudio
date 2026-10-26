@@ -1,8 +1,8 @@
 /**
- * 글로벌 웹툰·만화·창작·에셋 플랫폼 13종 REA(Reverse-Engineer-Anything) 역공학 증거 원장.
+ * 글로벌 웹툰·만화·창작·에셋 플랫폼 20종 REA(Reverse-Engineer-Anything) 역공학 증거 원장.
  *
  * 분석 기준일: 2026-10-26
- * 이 파일은 13개 플랫폼에 대한 REA MCP(capture_browser_scenario, export_web_scripts,
+ * 이 파일은 20개 플랫폼/서피스에 대한 REA MCP(capture_browser_scenario, export_web_scripts,
  * analyze_javascript_application) 분석 결과와 SHA-256 해시, 라우터·UI/UX 패턴을 보존한다.
  */
 
@@ -22,7 +22,14 @@ export type CompetitorPlatformId =
   | "mangaplus"
   | "vroid-hub"
   | "vroid-studio"
-  | "booth-3d";
+  | "booth-3d"
+  | "naver-best-challenge"
+  | "webtoons-canvas"
+  | "pixiv-booth"
+  | "mrblue-webtoon"
+  | "bomtoon"
+  | "sketchfab-3d"
+  | "toomics";
 
 export interface CompetitorPlatformReaEvidence {
   readonly id: CompetitorPlatformId;
@@ -460,6 +467,183 @@ export const COMPETITOR_PLATFORM_REA_LEDGER: readonly CompetitorPlatformReaEvide
     ],
     keyUiUxPatterns: [
       "3D 서브카테고리 칩(Characters / Tools & Systems / Motion & Animation) + 호환 태그 배지 + 위시리스트 카운터",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "naver-best-challenge",
+    name: "NAVER Best Challenge",
+    targetUrl: "https://comic.naver.com/bestChallenge",
+    appVersion: "react-router-v6-best-challenge",
+    routerFramework: "React Router v6 (Open Serialization League + IP Proposal)",
+    captureEvidenceId: "ev_66013c0d071ebb31cbac9e4692bf44e8c5788772ea8c8c5596648923a45956f1",
+    exportScriptsEvidenceId: "ev_3e3f2546d69526fd42013dc99e67563beb7cc79c270ee88d299131f4d47fde87",
+    astAnalysisViewEvidenceId: "ev_903bf4d25b5b9c4507059b98d70d3917389ac854d8dbbe6bcce699bc584a6aee",
+    rootSha256: "3b0f8cf9b6da0220f0ac31cbdaeac46075bd7d4bdd878cfe8bfd859b3a5f23d5",
+    scriptCount: 9,
+    totalBytes: 241838,
+    astNodeCount: 61986,
+    findingCount: 175,
+    moduleCount: 26,
+    routeCount: 37,
+    keyRouterPatterns: [
+      "/challenge -> /bestChallenge -> /webtoon (3단계 오픈 연재 승격 리그)",
+      "/titleTagList, /tagList, /curation/list (태그·큐레이션 기반 작품 탐색)",
+      "/proposal/business/{home,entertainment,licensingMerchandising,publishing,game,promotions,contact}",
+    ],
+    keyUiUxPatterns: [
+      "도전만화 -> 베스트도전 -> 정식연재 승격 트랙 배지 및 B2B IP 사업화 직행 내비게이션",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "webtoons-canvas",
+    name: "WEBTOON Global CANVAS",
+    targetUrl: "https://www.webtoons.com/en/canvas",
+    appVersion: "canvas-challenge-home-2026",
+    routerFramework: "challengeHome-765622cb46e92f0800ce.js + Global GNB",
+    captureEvidenceId: "ev_f2b608242098851dc63309d9d7c5af94dbc7bf0395c2de90629f17fe220e4e51",
+    exportScriptsEvidenceId: "ev_e080c59a87eed963bbad65fb7617607dd9c27f6d533f722d57377e9c0a162979",
+    astAnalysisViewEvidenceId: "ev_27abcc6c1aabd09ac3f6fc10cab8d6ddb8ad729c15c55590342aa0a85ee30f59",
+    rootSha256: "0e32fc5fa8c4d0ed5dbe020c400ed63af98211eb071659ab88bebf5389236b84",
+    scriptCount: 6,
+    totalBytes: 208955,
+    astNodeCount: 35300,
+    findingCount: 231,
+    moduleCount: 41,
+    routeCount: 12,
+    keyRouterPatterns: [
+      "/canvas, /challenge, /creative/list, /mycreator, /preview",
+      "/favorite, /mycomment, /account, /coin/shop",
+    ],
+    keyUiUxPatterns: [
+      "ORIGINALS vs CANVAS 듀얼 트랙 스위처 및 window.__challengeHomeState__ 기반 장르별 인기작(popularByGenreArea) 그리드",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "pixiv-booth",
+    name: "Pixiv BOOTH",
+    targetUrl: "https://booth.pm/ko",
+    appVersion: "booth-creator-market-2026",
+    routerFramework: "Webpack Asset Bundles + /autocomplete/tag.json",
+    captureEvidenceId: "ev_4885b79c74bb7e6e13af894f9d2e4ceb8f7d349583617d70cc6697492e3c0195",
+    exportScriptsEvidenceId: "ev_4d8df7c16200249cf4f98ff7ac46b9952e8eef626c6debe17f3b8dfef8e8388c",
+    astAnalysisViewEvidenceId: "ev_73aad89b609189452b4ba5c1351f903b2506628fb26ae5696ff529d5ccdfcf0a",
+    rootSha256: "09d3e2dd292e8c8a5bc807c5827f435b7f72aa4679549c88b6c666c751204636",
+    scriptCount: 12,
+    totalBytes: 162958,
+    astNodeCount: 42610,
+    findingCount: 258,
+    moduleCount: 39,
+    routeCount: 14,
+    keyRouterPatterns: [
+      "/autocomplete/tag.json (실시간 에셋 태그 자동완성)",
+      "/ko/browse/* (3D 모델, VRoid, 2D 일러스트·브러시·배경 소재 마켓)",
+    ],
+    keyUiUxPatterns: [
+      "창작자 에셋 카테고리 퀵 프리셋(2D 브러시, 3D 배경, 3D 캐릭터·포즈, 식자·효과음, 무료·포인트) 및 즉시 다운로드·장착 동선",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "mrblue-webtoon",
+    name: "MrBlue Webtoon",
+    targetUrl: "https://www.mrblue.com/webtoon",
+    appVersion: "mrblue-bundle-2026",
+    routerFramework: "mrblue.bundle.min.js + viewer.bundle.min.js (Virtual Layer Router)",
+    captureEvidenceId: "ev_1798820ae7a425d4704b4198f979a49514ca71c7212d4b469a725d671f793918",
+    exportScriptsEvidenceId: "ev_0e1eb10fcd3556021ebfa626f9956ed87860c4f7bbc5cd7dabd10cea6da5c24d",
+    astAnalysisViewEvidenceId: "ev_bc6e080bd12ed4600593e21ca700676062016b25c1b8be4a5bf309d219171250",
+    rootSha256: "fd60b42cf9bbdf96c2f45ef8feccdd551be8737a9c3a0bf7e94cf8ed43d2ee41",
+    scriptCount: 23,
+    totalBytes: 338142,
+    astNodeCount: 71232,
+    findingCount: 188,
+    moduleCount: 34,
+    routeCount: 36,
+    keyRouterPatterns: [
+      "/virtual/menu, /search/virtual/searchlayer, /virtual/myblue, /virtual/mylibrary",
+      "/Zzim/List, /Zzim/Add, /Zzim/Del, /Alarm/Setting, /popup/TicketInfo",
+      "/api/viewer/default-info & viewer.mrblue.com 전용 뷰어 브리지",
+    ],
+    keyUiUxPatterns: [
+      "요일·장르·기다무(티켓) 실시간 필터 바 및 찜(Zzim)·내 서재 가상 드로어 원클릭 진입",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "bomtoon",
+    name: "Bomtoon",
+    targetUrl: "https://www.bomtoon.com/",
+    appVersion: "nextjs-5WWxOnDBPisKWwWSNIVO6",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 125 routes)",
+    captureEvidenceId: "ev_a190688ff032060b7351baa85103f514dbcc0d9e440d501bd17e1296c0e88859",
+    exportScriptsEvidenceId: "ev_e86e9eb3d50b3c4347179cb3fc39de9510bf113a27bb29077c19ed543b79de53",
+    astAnalysisViewEvidenceId: "ev_2079960ca21702d3b690e7a81f2c6770558d7b1532da2267e2a89b69564d4feb",
+    rootSha256: "effd2c42c1bc3bd29f9be609fe9d368420e31c475c30964806aa73ed9b271cc5",
+    scriptCount: 29,
+    totalBytes: 576091,
+    astNodeCount: 145615,
+    findingCount: 1445,
+    moduleCount: 186,
+    routeCount: 125,
+    keyRouterPatterns: [
+      "/search/preference, /search/preference/tag, /search/preference/result (다중 취향 태그 조합 검색)",
+      "/home/short/[key], /play/hotclip, /home/webtoonPan (숏폼·핫클립·커뮤니티 판)",
+      "/my/library/{recent,favorite,download,my,myFolder,myFolder-add,edit,secret} (8분류 내 서재)",
+      "/writer/myWork/{work,regContents,regEpisode,comment}, /writer/propose, /writer/sale/{paid,refund,saleHistory}, /writer/stat",
+    ],
+    keyUiUxPatterns: [
+      "다중 취향 태그 조합기(Tag Preference Combinator), 핫클립 숏폼 브리지, 8분류 개인 서재 폴더링",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "sketchfab-3d",
+    name: "Sketchfab 3D Models",
+    targetUrl: "https://sketchfab.com/3d-models",
+    appVersion: "sketchfab-web-v2",
+    routerFramework: "Webpack v2 WebGL 3D Inspector + Collections Router",
+    captureEvidenceId: "ev_0c1b5badc807214c7520facd40c5a5992e98af7075b08591b97c2270f8dd6da3",
+    exportScriptsEvidenceId: "ev_3bb063dc68ce8733a9fc0a3144705cf31a98ab162d59896be868176eb99d1abb",
+    astAnalysisViewEvidenceId: "ev_3207d32b972cdfc12a43d62aca2dc4b480141ebff55f3d4eae662c1edb9455c3",
+    rootSha256: "a191727482438b7806a40dfbd295c5aa84f6d760a6229f63899e8edc7379b4ce",
+    scriptCount: 26,
+    totalBytes: 438479,
+    astNodeCount: 97764,
+    findingCount: 1157,
+    moduleCount: 475,
+    routeCount: 12,
+    keyRouterPatterns: [
+      "/3d-models, /collections, /collections/popular (3D 에셋 컬렉션 허브)",
+    ],
+    keyUiUxPatterns: [
+      "3D 모델 실시간 뷰포트 인스펙터(와이어프레임·조명·카메라 앵글) 및 3D 씬/캐릭터 랩 직행 브리지",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "toomics",
+    name: "Toomics",
+    targetUrl: "https://www.toomics.com/ko",
+    appVersion: "web-v4-240806",
+    routerFramework: "Hybrid SSR + web_v4/index-min-240806142712.js",
+    captureEvidenceId: "ev_d6dd968aa244bc8656ed4382076cfa3a0a04bef39fc9b2390a51301be62f444f",
+    exportScriptsEvidenceId: "ev_47d469e9515ed5280670f6ea7cc17ec5573e1512780e39d0691026a4ff324c25",
+    astAnalysisViewEvidenceId: "ev_f254846e117cafdd01f6fde5ff0a98d5eb57708a0a190f31ad023cc710835d24",
+    rootSha256: "8741fc8baaf27c04501279d34d9f205a6394c50ed08b022fdb0d524d6d3f4608",
+    scriptCount: 15,
+    totalBytes: 269680,
+    astNodeCount: 63723,
+    findingCount: 179,
+    moduleCount: 30,
+    routeCount: 18,
+    keyRouterPatterns: [
+      "/ko, /index/check_qr_event, /?qr=s2 (크로스 디바이스 감상 이어보기 및 온보딩)",
+    ],
+    keyUiUxPatterns: [
+      "요일·장르·연령등급 즉시 전환 바 및 모바일·웹 크로스 디바이스 이어보기 동선",
     ],
     epistemicStatus: "verified",
   },

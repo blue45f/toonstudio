@@ -24,8 +24,11 @@ import { CountUp } from "@/shared/components/count-up";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { Container } from "@/shared/components/section";
 import { ShimmerTitle } from "@/shared/components/shimmer-title";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
+
+import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
 import {
   genreBorder,
   genreColor,
@@ -429,7 +432,14 @@ export function ExplorePage() {
       </section>
 
       <Container size="wide" className="flex flex-col gap-8 py-10">
+        <SiteContextualSubNav pathnameOverride="/explore" />
         <DiscoveryWorkspaceNav current="explore" />
+        <ExploreReaDirectoryBar
+          filters={filters}
+          sort={sort}
+          onApplyFilters={applyFilters}
+          onChangeSort={changeSort}
+        />
 
         <RevealOnScroll variant="fade">
           <p className="eyebrow mb-3 text-fg-2">{bt("BY CODE / 코드로 좁히기", "BY CODE / NARROW DOWN")}</p>

@@ -7,7 +7,9 @@ import type { ReactNode } from "react";
 import type { Title } from "@/shared/lib/types";
 
 import { DiscoverHubPage } from "./DiscoverHubPage";
+import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
 import { currentKstWeekDay, type DiscoverHomeSnapshot } from "./discover-home";
+import { EMPTY_TITLE_FILTERS } from "@/shared/lib/title-filters";
 
 const resource = vi.hoisted(() => ({ read: vi.fn(), reload: vi.fn() }));
 vi.mock("@/platform/use-api-resource", () => ({ useApiResource: resource.read }));
@@ -196,5 +198,35 @@ describe("DiscoverHubPage", () => {
     expect(await screen.findByRole("radio", { name: /전혀 기억나지 않아요/ }, { timeout: 4000 })).toBeTruthy();
     await waitFor(() => expect(document.querySelector("[data-memory-finder]")).not.toBeNull());
     expect(within(finder).getByRole("button", { name: /작품 찾기/ })).toBeTruthy();
+  });
+
+  it("renders the REA serialization track switcher and ExploreReaDirectoryBar filter callbacks", () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPage();
+
+    const switcher = screen.getByTestId("discover-serialization-track-switcher");
+    const canvasTab = within(switcher).getByRole("tab", {
+      name: /오픈 연재 \(CANVAS · 베스트도전\)/u,
+    });
+    fireEvent.click(canvasTab);
+    expect(canvasTab.getAttribute("aria-selected")).toBe("true");
+
+    const onApplyFilters = vi.fn();
+    const onChangeSort = vi.fn();
+    render(
+      <ExploreReaDirectoryBar
+        filters={EMPTY_TITLE_FILTERS}
+        sort="popular"
+        onApplyFilters={onApplyFilters}
+        onChangeSort={onChangeSort}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /완결 \(Completed\)/u }));
+    expect(onApplyFilters).toHaveBeenCalledWith({
+      ...EMPTY_TITLE_FILTERS,
+      status: ["completed"],
+    });
+    expect(onChangeSort).toHaveBeenCalledWith("rating");
   });
 });

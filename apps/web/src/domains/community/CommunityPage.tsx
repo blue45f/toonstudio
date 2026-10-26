@@ -29,11 +29,13 @@ import {
   workflowIllustrationSources,
 } from "@/shared/components/site-experience/workflow-illustration";
 import { Container, Section } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { COMMUNITY_SCOPE_DIRECTORIES } from "@/shared/lib/community-ui";
 import Link from "@/shared/navigation/router-link";
+import { COMMUNITY_PROMOTION_LEAGUE_TIERS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
   defineBilingualText,
   formatI18nTemplate,
@@ -189,6 +191,7 @@ export function CommunityPage() {
   useDocumentTitle(t(COPY.docTitle));
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+      <SiteContextualSubNav pathnameOverride="/community" className="mb-5" />
       <SitePageHeader
         size="hero"
         icon={UsersRound}
@@ -221,6 +224,56 @@ export function CommunityPage() {
       <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
         {t(COPY.tagline)}
       </p>
+
+      <section
+        aria-label="오픈 연재 승격 리그 및 창작자 성장 트랙"
+        data-testid="community-promotion-league-strip"
+        className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
+              OPEN SERIALIZATION LEAGUE · CHALLENGE → BEST → ORIGINALS → IP BIZ
+            </span>
+            <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+              첫 1화 등록부터 정식 요일연재·수익화까지 4단계 성장 리그
+            </h2>
+          </div>
+          <Link
+            href="/community/promote"
+            className={buttonClass({ size: "sm", className: "min-h-9 gap-1.5 rounded-full px-3.5 text-xs font-bold" })}
+          >
+            내 작품 홍보 등록
+            <ArrowRight size={13} aria-hidden="true" />
+          </Link>
+        </div>
+        <ol className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {COMMUNITY_PROMOTION_LEAGUE_TIERS.map((tier) => (
+            <li
+              key={tier.id}
+              className="flex flex-col justify-between gap-2 rounded-2xl border border-line bg-panel/65 p-3.5 transition-colors hover:border-accent/45"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
+                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                    STEP {tier.stepNumber}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs font-extrabold text-fg sm:text-sm">{tier.label}</p>
+                <p className="mt-1 text-[11px] leading-snug text-fg-3">{tier.description}</p>
+              </div>
+              <Link
+                href={tier.route}
+                className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+              >
+                {tier.ctaLabel}
+                <ArrowRight size={12} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <CommunityActivityPreview />
 
@@ -375,6 +428,7 @@ export function CommunityScopePage() {
   }
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+      <SiteContextualSubNav pathnameOverride="/community" className="mb-5" />
       <SitePageHeader
         surface="plain"
         className="mb-6 sm:mb-8"

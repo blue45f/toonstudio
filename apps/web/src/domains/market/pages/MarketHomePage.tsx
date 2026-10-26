@@ -11,7 +11,7 @@ import {
   Store,
   Upload,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
@@ -34,10 +34,17 @@ import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { useMobileShowMore } from "@/domains/legal/public/site-show-more";
 import { useServiceCapabilityState } from "@/platform/service-capability-state";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
+import {
+  MARKET_ECOSYSTEM_PRESETS,
+  runSameDocumentViewTransition,
+  type MarketEcosystemPresetId,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
   useDocumentTitle,
   useJsonLd,
@@ -103,12 +110,17 @@ export function MarketHomePage() {
     (item) => item.kind === "3d-asset" || item.kind === "3d-preset",
   );
   const recentMore = useMobileShowMore(latest.items.length, MOBILE_RECENT_LIMIT);
+  const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>("all");
+  const activePreset =
+    MARKET_ECOSYSTEM_PRESETS.find((preset) => preset.id === activePresetId) ??
+    MARKET_ECOSYSTEM_PRESETS[0];
 
   return (
     <div>
       <div data-market-band="buy">
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-6 sm:py-8 lg:py-10">
+          <SiteContextualSubNav pathnameOverride="/market" className="mb-5" />
           <SitePageHeader
             size="hero"
             icon={Store}
@@ -138,6 +150,71 @@ export function MarketHomePage() {
       </section>
 
       <Container size="wide" className="pt-6 sm:pt-8">
+        <section
+          aria-label={t("2D·3D 창작 에셋 프리셋 및 스튜디오 즉시 장착", "2D/3D creator asset presets & 1-click Studio mount")}
+          data-testid="market-rea-ecosystem-presets"
+          className="mb-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
+                ASSET ECOSYSTEM · 2D BRUSH / 3D STAGE / 3D POSE / TONE
+              </span>
+              <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+                {t("창작 단계별 소재 프리셋 & 스튜디오 1-Click 장착", "Workflow asset presets & 1-click Studio mount")}
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
+              {MARKET_ECOSYSTEM_PRESETS.map((preset) => {
+                const selected = preset.id === activePresetId;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => {
+                      runSameDocumentViewTransition(() => {
+                        setActivePresetId(preset.id);
+                      });
+                    }}
+                    className={cn(
+                      "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                      selected
+                        ? "border-accent bg-accent text-canvas shadow-sm"
+                        : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
+                    )}
+                  >
+                    <span>{preset.label}</span>
+                    <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
+                      {preset.badge}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {activePreset ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
+              <p className="max-w-2xl">{activePreset.description}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={activePreset.studioMountRoute}
+                  className={buttonClass({ variant: "solid", size: "sm", className: "min-h-10 gap-1.5 rounded-full px-4 text-xs font-bold" })}
+                >
+                  {activePreset.studioMountLabel}
+                  <ArrowRight size={13} aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/market/browse"
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 rounded-full px-3.5 text-xs font-semibold" })}
+                >
+                  {t("전체 에셋 카탈로그", "Full asset catalog")}
+                </Link>
+              </div>
+            </div>
+          ) : null}
+        </section>
         <MarketCategoryTiles />
       </Container>
 

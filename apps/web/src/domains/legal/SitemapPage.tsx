@@ -29,10 +29,16 @@ import {
   siteNavigationText,
 } from "@/shared/components/site-navigation";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { resolveSiteRouteMetadata } from "@/shared/lib/site-route-metadata";
 import Link from "@/shared/navigation/router-link";
+import {
+  COMPETITOR_PLATFORM_REA_LEDGER,
+  CONTEXTUAL_SUBNAV_GROUPS,
+  CREATOR_STUDIO_PIPELINE_STEPS,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("SitemapPage", ko, en);
@@ -114,6 +120,7 @@ export function SitemapPage() {
 
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+      <SiteContextualSubNav pathnameOverride="/sitemap" className="mb-5" />
       <SitePageHeader
         size="hero"
         icon={MapIcon}
@@ -160,6 +167,83 @@ export function SitemapPage() {
             <dd className="numeral mt-1 text-2xl font-bold text-fg">{SITEMAP_EXTENDED_DESTINATION_GROUPS.length}</dd>
           </div>
         </dl>
+      </section>
+
+      <section
+        aria-label={bi("6대 맥락형 허브 및 6단계 창작-홍보 파이프라인", "6 contextual hubs and 6-stage creator-promo pipeline")}
+        data-testid="sitemap-rea-hub-architecture"
+        className="mt-6 rounded-3xl border border-line bg-card/85 p-5 shadow-sm sm:p-6"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-display text-xs font-extrabold uppercase tracking-[0.14em] text-accent">
+              REA ARCHITECTURE · {COMPETITOR_PLATFORM_REA_LEDGER.length} PLATFORMS ANALYZED
+            </p>
+            <h2 className="mt-1 font-display text-lg font-bold text-fg sm:text-xl">
+              {bi("6대 핵심 맥락 허브 & 6단계 창작·홍보 순환 동선", "6 Contextual Hubs & 6-Stage Creator-Promo Flow")}
+            </h2>
+          </div>
+          <Link
+            href="/promo-library"
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-9 gap-1.5 rounded-full text-xs font-bold" })}
+          >
+            {bi("영상 홍보관 열기", "Open Promo Hub")}
+            <ArrowRight size={13} aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {CONTEXTUAL_SUBNAV_GROUPS.map((hub) => (
+            <div
+              key={hub.id}
+              className="flex flex-col justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-3.5"
+            >
+              <div>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
+                  {hub.enTitle}
+                </span>
+                <p className="mt-0.5 text-sm font-bold text-fg">
+                  {locale === "en" ? hub.enTitle : hub.koTitle}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {hub.items.map((item) => (
+                  <Link
+                    key={`${hub.id}-${item.id}`}
+                    href={item.href}
+                    className="inline-flex min-h-7 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    <span>{locale === "en" ? item.enLabel : item.koLabel}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <ol
+          aria-label={bi("6단계 창작-홍보 파이프라인", "6-stage creator-promo pipeline")}
+          className="mt-4 grid grid-cols-2 gap-2 border-t border-line/70 pt-4 sm:grid-cols-3 lg:grid-cols-6"
+        >
+          {CREATOR_STUDIO_PIPELINE_STEPS.map((step) => (
+            <li key={step.id}>
+              <Link
+                href={step.toonstudioHref}
+                className="flex h-full flex-col justify-between gap-1 rounded-xl border border-line bg-card/80 p-2.5 text-xs transition-colors hover:border-accent/45 hover:bg-card"
+              >
+                <span className="text-[10px] font-extrabold text-accent">
+                  STEP 0{step.stepNumber}
+                </span>
+                <strong className="font-bold text-fg">
+                  {locale === "en" ? step.enTitle : step.koTitle}
+                </strong>
+                <span className="line-clamp-2 text-[11px] text-fg-3">
+                  {locale === "en" ? step.enSummary : step.koSummary}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <div id="sitemap-directory" className="scroll-mt-24">
