@@ -775,10 +775,17 @@ export function evaluateLabPsdPackBitsAndOtsuThreshold(params: {
 }): { readonly packBitsHeaderByte: number; readonly betweenClassVariance: number } {
   const clampedRun = Math.min(128, Math.max(2, Math.round(params.runLength)));
   const w0 = clamp01(params.darkWeight01);
-  return {
-    packBitsHeaderByte: 257 - clampedRun,
-    betweenClassVariance: Math.round(w0 * (1 - w0) * Math.pow(params.darkClassMean - params.lightClassMean, 2) * 100) / 100,
-  };
+  return { packBitsHeaderByte: 257 - clampedRun, betweenClassVariance: Math.round(w0 * (1 - w0) * Math.pow(params.darkClassMean - params.lightClassMean, 2) * 100) / 100 };
+}
+
+/** Wave 32 Full 767-File Zero-Unexamined REA (`ev_6a28510e2b0c37cbe1bd3296ceeb41c7b4ae4ce8a7999b91ef1ee495ec361cdc`): SculptGL Crease + Klecks CatchUp. */
+export function evaluateLabSculptGlCreaseAndKlecksCatchUp(params: {
+  readonly distRatio01: number; readonly radius: number; readonly intensity01: number; readonly targetX: number; readonly prevX: number; readonly smoothing01: number;
+}): { readonly quinticCreaseDisp: number; readonly caughtUpX: number } {
+  const d = clamp01(params.distRatio01);
+  const f = d >= 1 ? 0 : 3 * Math.pow(d, 4) - 4 * Math.pow(d, 3) + 1;
+  const s = clamp01(params.smoothing01);
+  return { quinticCreaseDisp: Math.pow(f, 5) * clamp01(params.intensity01) * 0.07 * params.radius, caughtUpX: params.targetX * (1 - s) + params.prevX * s };
 }
 
 

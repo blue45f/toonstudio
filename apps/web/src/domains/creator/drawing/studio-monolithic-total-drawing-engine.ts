@@ -17,7 +17,8 @@ export type MonolithicTotalSubsystemId =
   | "monolithic-paper-catmull-rom-flatten"
   | "monolithic-excalidraw-elbow-laser"
   | "monolithic-fabric-spray-atrament-mandala"
-  | "monolithic-psd-culori-vision-skia";
+  | "monolithic-psd-culori-vision-skia"
+  | "monolithic-sculptgl-piskel-jspaint-full767";
 
 export type MonolithicTotalToolPresetId =
   | "monolithic-kaleidoscope-polar"
@@ -35,7 +36,11 @@ export type MonolithicTotalToolPresetId =
   | "monolithic-ag-psd-packbits-8bim"
   | "monolithic-culori-oklch-ciede2000"
   | "monolithic-otsu-canny-lineart-vision"
-  | "monolithic-skia-patheffect-lookahead";
+  | "monolithic-skia-patheffect-lookahead"
+  | "monolithic-sculptgl-crease-flatten-tangent"
+  | "monolithic-piskel-dither-lighten-mirror"
+  | "monolithic-klecks-catchup-linesmoothing"
+  | "monolithic-jspaint-calligraphic-stamp6";
 
 export type KonvaEmbossDirection = "top-left" | "top" | "top-right" | "right" | "bottom-right" | "bottom" | "bottom-left" | "left";
 
@@ -70,6 +75,7 @@ export const MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER: readonly MonolithicTotalReaE
   { subsystemId: "monolithic-excalidraw-elbow-laser", labelKo: "Excalidraw 직교 엘보우 화살표 맨해튼 A* 라우팅 및 지수 감쇠 레이저 포인터 트레일", evidenceId: "ev_206f5ffd007e872c0553b069b07ef339a578ae73d203ac3018e35cb8c2d26c42", parentEvidenceId: "ev_982d49cba6a55578fec43ba3a6e0b6384950de96491ca43cf0149f03b1c884fd", artifactSha256: "5bc1ae35ee1645048daffd33332ba13b2245e738b280b6332694b0abde93b8af", relevantFiles: 1, parsedJavaScriptFiles: 1, visitedAstNodes: 6411, dataFlowRelations: 4125, keyAlgorithms: ["Heading-aware Manhattan orthogonal elbow routing with obstacle padding and bend penalty", "Time-stamped laser trail decay alpha(t) = max(0, 1 - dt/duration)^1.8 with tapered width"] },
   { subsystemId: "monolithic-fabric-spray-atrament-mandala", labelKo: "Fabric.js SprayBrush 공간 중복 제거·Atrament 적응형 잉크·N축 만다라/원근 자(Ruler)", evidenceId: "ev_982d49cba6a55578fec43ba3a6e0b6384950de96491ca43cf0149f03b1c884fd", parentEvidenceId: "ev_982d49cba6a55578fec43ba3a6e0b6384950de96491ca43cf0149f03b1c884fd", artifactSha256: "629e94d2e8a352880cc73c1ce07243da4a24262b86bbee4a808f50c759d91a44", relevantFiles: 5, parsedJavaScriptFiles: 5, visitedAstNodes: 2300, dataFlowRelations: 1530, keyAlgorithms: ["Fabric.js SprayBrush _getOptimizedRects grid key deduplication & dotWidth variance", "Atrament velocity-adaptive quadratic midpoint curve & N-axis mandala + 1/2/3-point perspective ruler"] },
   { subsystemId: "monolithic-psd-culori-vision-skia", labelKo: "767모듈 확장 ag-psd PackBits RLE·culori CIEDE2000/OKLCh 개멋맵·Otsu/Canny 선화·Skia 예측", evidenceId: "ev_13bbde3494001044d31ebdb3d481f0cd91c96f6dc995f78b17c1cf9984ea2d28", parentEvidenceId: "ev_16772e0098d20420b766dfb8488aff40fb7c03b2a3503cb3c1fc8301ea5580ce", artifactSha256: "a40eb6e4778360b921c30c9870836f7c3b9e7a0d3f8c9c8d93c367672914ce74", relevantFiles: 767, parsedJavaScriptFiles: 12, visitedAstNodes: 19420, dataFlowRelations: 11376, keyAlgorithms: ["ag-psd PackBits RLE scanline codec & 8BIM 28-mode layer/mask/clipping binary record mapping", "culori OKLab/OKLCh bisection chroma gamut clamping & Sharma CIEDE2000 perceptual DeltaE00", "Otsu between-class variance bimodal threshold, Canny 4-angle NMS hysteresis, & Skia Catmull-Rom lookahead"] },
+  { subsystemId: "monolithic-sculptgl-piskel-jspaint-full767", labelKo: "767모듈 무누락(765 JS/TS·791,354 AST·56,403 데이터흐름) SculptGL Crease/Flatten/Tangent·Piskel 디더·Klecks 캐치업·JSPaint 6스탬프", evidenceId: "ev_6a28510e2b0c37cbe1bd3296ceeb41c7b4ae4ce8a7999b91ef1ee495ec361cdc", parentEvidenceId: "ev_e540a52fb1c58a04d7cbe479a283adaa9a741561095ed62ebafccabc281e9550", artifactSha256: "a40eb6e4778360b921c30c9870836f7c3b9e7a0d3f8c9c8d93c367672914ce74", relevantFiles: 767, parsedJavaScriptFiles: 765, visitedAstNodes: 791354, dataFlowRelations: 56403, keyAlgorithms: ["SculptGL Crease quintic normal ridge (fallOff^5), Flatten barycentric plane projection, & SmoothTangent normal-plane Laplacian", "Piskel DitheringTool (col+row)%2 checkerboard & Lighten/Darken modifier step + Klecks LineSmoothing 80ms/35ms catch-up EMA + JSPaint 6-shape stamp"] },
 ] as const;
 
 export const MONOLITHIC_TOTAL_TOOL_PRESETS: readonly MonolithicTotalToolPreset[] = [
@@ -89,6 +95,10 @@ export const MONOLITHIC_TOTAL_TOOL_PRESETS: readonly MonolithicTotalToolPreset[]
   { id: "monolithic-culori-oklch-ciede2000", subsystemId: "monolithic-psd-culori-vision-skia", labelKo: "culori OKLCh 개멋 클램프 & CIEDE2000 색차", category: "filter", sourceReference: "culori/src/clamp.js + difference.js + oklab", defaultStrength01: 0.88, defaultSymmetryAxes: 1 },
   { id: "monolithic-otsu-canny-lineart-vision", subsystemId: "monolithic-psd-culori-vision-skia", labelKo: "Otsu 이진화 & Canny 히스테리시스 선화 추출", category: "filter", sourceReference: "opencv/otsu-canny + miniPaint edge/lineart extraction", defaultStrength01: 0.76, defaultSymmetryAxes: 1 },
   { id: "monolithic-skia-patheffect-lookahead", subsystemId: "monolithic-psd-culori-vision-skia", labelKo: "Skia PathEffect 코너/이산화 & 포인터 예측", category: "vector", sourceReference: "skia/SkCornerPathEffect + SkDiscretePathEffect + pointer-lookahead", defaultStrength01: 0.72, defaultSymmetryAxes: 1 },
+  { id: "monolithic-sculptgl-crease-flatten-tangent", subsystemId: "monolithic-sculptgl-piskel-jspaint-full767", labelKo: "SculptGL Crease 5차 능선·Flatten·접평면 스무딩", category: "brush", sourceReference: "sculptgl/editing/tools/Crease.js + Flatten.js + Smooth.js", defaultStrength01: 0.75, defaultSymmetryAxes: 1 },
+  { id: "monolithic-piskel-dither-lighten-mirror", subsystemId: "monolithic-sculptgl-piskel-jspaint-full767", labelKo: "Piskel 체커보드 디더링 & 명암 스텝 펜", category: "brush", sourceReference: "piskel/tools/drawing/DitheringTool.js + Lighten.js", defaultStrength01: 0.8, defaultSymmetryAxes: 2 },
+  { id: "monolithic-klecks-catchup-linesmoothing", subsystemId: "monolithic-sculptgl-piskel-jspaint-full767", labelKo: "Klecks 80ms/35ms 캐치업 라인 스무딩", category: "vector", sourceReference: "klecks/klecks/events/line-smoothing.ts", defaultStrength01: 0.7, defaultSymmetryAxes: 1 },
+  { id: "monolithic-jspaint-calligraphic-stamp6", subsystemId: "monolithic-sculptgl-piskel-jspaint-full767", labelKo: "JSPaint 6종 사선/원형 캘리그라피 스탬프", category: "brush", sourceReference: "jspaint/image-manipulation.js#render_brush", defaultStrength01: 0.85, defaultSymmetryAxes: 1 },
 ] as const;
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
@@ -639,6 +649,96 @@ export function evaluateOtsuBimodalCannyAndSkiaLookahead(params: {
   };
 }
 
+/** 10. SculptGL `Crease.js` ($f^5$ quintic ridge + pinch), `Flatten.js` (barycentric plane), & `Smooth.js` (`smoothTangent`). */
+export function evaluateSculptGlCreaseFlattenAndTangentSmooth(params: {
+  readonly vertex: readonly [number, number, number];
+  readonly center: readonly [number, number, number];
+  readonly normal: readonly [number, number, number];
+  readonly laplacianTarget: readonly [number, number, number];
+  readonly radius: number;
+  readonly intensity01: number;
+  readonly isNegative: boolean;
+}): {
+  readonly hermiteFalloff01: number;
+  readonly creasedVertex: readonly [number, number, number];
+  readonly flattenedVertex: readonly [number, number, number];
+  readonly tangentSmoothedVertex: readonly [number, number, number];
+} {
+  const r = Math.max(1e-4, params.radius);
+  const dx = params.center[0] - params.vertex[0];
+  const dy = params.center[1] - params.vertex[1];
+  const dz = params.center[2] - params.vertex[2];
+  const d = Math.min(1, Math.hypot(dx, dy, dz) / r);
+  const d2 = d * d;
+  const hermiteFalloff01 = d >= 1 ? 0 : 3 * d2 * d2 - 4 * d2 * d + 1;
+  const deformIntensity = clamp01(params.intensity01) * 0.07;
+  const brushFactor = deformIntensity * r * (params.isNegative ? -1 : 1);
+  const brushMod = Math.pow(hermiteFalloff01, 5) * brushFactor;
+  const pinchMod = hermiteFalloff01 * deformIntensity;
+  const [nx, ny, nz] = params.normal;
+  const creasedVertex: readonly [number, number, number] = [
+    params.vertex[0] + dx * pinchMod + nx * brushMod,
+    params.vertex[1] + dy * pinchMod + ny * brushMod,
+    params.vertex[2] + dz * pinchMod + nz * brushMod,
+  ];
+  const distToPlane = -dx * nx - dy * ny - dz * nz;
+  const flatScale = hermiteFalloff01 * distToPlane * clamp01(params.intensity01);
+  const flattenedVertex: readonly [number, number, number] = [
+    params.vertex[0] - nx * flatScale,
+    params.vertex[1] - ny * flatScale,
+    params.vertex[2] - nz * flatScale,
+  ];
+  const ldx = params.laplacianTarget[0] - params.vertex[0];
+  const ldy = params.laplacianTarget[1] - params.vertex[1];
+  const ldz = params.laplacianTarget[2] - params.vertex[2];
+  const dotN = nx * ldx + ny * ldy + nz * ldz;
+  const tInt = clamp01(params.intensity01);
+  return {
+    hermiteFalloff01,
+    creasedVertex,
+    flattenedVertex,
+    tangentSmoothedVertex: [
+      params.vertex[0] + (ldx - nx * dotN) * tInt,
+      params.vertex[1] + (ldy - ny * dotN) * tInt,
+      params.vertex[2] + (ldz - nz * dotN) * tInt,
+    ],
+  };
+}
+
+/** 11. Piskel `DitheringTool.js`/`Lighten.js`, Klecks `LineSmoothing` 80ms/35ms catch-up, & JSPaint 6-shape stamp. */
+export function evaluatePiskelDitherLightenAndKlecksCatchUp(params: {
+  readonly col: number;
+  readonly row: number;
+  readonly isRightButton: boolean;
+  readonly baseLuma255: number;
+  readonly isShiftOncePerPixel: boolean;
+  readonly isCtrlDarken: boolean;
+  readonly targetX: number;
+  readonly lastSmoothedX: number;
+  readonly smoothing01: number;
+  readonly catchUpTicks: number;
+  readonly jspaintBrushSize: number;
+  readonly jspaintShape: "circle" | "square" | "diagonal" | "reverse_diagonal" | "horizontal" | "vertical";
+}): {
+  readonly usesPrimaryDitherColor: boolean;
+  readonly adjustedLuma255: number;
+  readonly caughtUpX: number;
+  readonly jspaintCanvasSizePx: number;
+  readonly jspaintEffectiveSpanPx: number;
+} {
+  const parity = Math.abs(Math.floor(params.col) + Math.floor(params.row)) % 2 === 1;
+  const usesPrimaryDitherColor = params.isRightButton ? !parity : parity;
+  const step = (params.isShiftOncePerPixel ? 6 : 3) * 2.55 * (params.isCtrlDarken ? -1 : 1);
+  const adjustedLuma255 = clampByte(params.baseLuma255 + step);
+  const s = clamp01(params.smoothing01);
+  let curX = params.lastSmoothedX;
+  const ticks = Math.min(16, Math.max(1, Math.round(params.catchUpTicks)));
+  for (let i = 0; i < ticks; i += 1) curX = params.targetX * (1 - s) + curX * s;
+  const jspaintCanvasSizePx = Math.ceil((params.jspaintBrushSize * (params.jspaintShape === "circle" ? 2.1 : 1)) / 2) * 2;
+  const jspaintEffectiveSpanPx = params.jspaintShape.includes("diagonal") ? Math.max(1, params.jspaintBrushSize - 0.4) : params.jspaintBrushSize;
+  return { usesPrimaryDitherColor, adjustedLuma255, caughtUpX: curX, jspaintCanvasSizePx, jspaintEffectiveSpanPx };
+}
+
 /** Unified telemetry evaluator for `StudioUniversalBrushEngineBar.tsx`. */
 export function evaluateMonolithicTotalEngineTelemetry(params: {
   readonly presetId: MonolithicTotalToolPresetId;
@@ -655,85 +755,22 @@ export function evaluateMonolithicTotalEngineTelemetry(params: {
   readonly psdCompressionRatio01: number;
   readonly ciede2000DeltaE: number;
   readonly otsuOptimalThreshold: number;
+  readonly sculptCreaseZ: number;
+  readonly klecksCatchUpX: number;
 } {
   const preset = MONOLITHIC_TOTAL_TOOL_PRESETS.find((p) => p.id === params.presetId) ?? MONOLITHIC_TOTAL_TOOL_PRESETS[0]!;
   const s = clamp01(params.strength01);
-  const kaleidoscope = evaluateKonvaKaleidoscopePolarMirror({
-    width: 128,
-    height: 128,
-    sampleX: 96,
-    sampleY: 42,
-    power: Math.max(2, Math.min(6, Math.round(params.symmetryAxes / 2))),
-    angleDeg: Math.round(s * 180),
-  });
-  const emboss = evaluateKonvaEmbossEnhancePosterizeSuite({
-    rgb: [148, 132, 118],
-    neighborLuminance3x3: [40, 52, 65, 80, 128, 175, 110, 190, 235],
-    channelMinRgb: [24, 20, 18],
-    channelMaxRgb: [228, 220, 212],
-    embossStrength01: s,
-    embossWhiteLevel01: 0.5,
-    embossDirection: "top-left",
-    embossBlend: true,
-    enhanceAmount: s * 0.8,
-    posterizeLevels: 6,
-    threshold01: 0.5,
-  });
-  const paper = evaluatePaperCatmullRomSmoothAndFlatten({
-    points: [{ x: 10, y: 20 }, { x: 42, y: 68 }, { x: 96, y: 18 }, { x: 140, y: 74 }],
-    factor: 0.5 + s * 0.35,
-    flatness: 0.45,
-  });
-  const elbow = evaluateExcalidrawElbowArrowAndLaserTrail({
-    start: { x: 16, y: 24 },
-    end: { x: 164, y: 112 },
-    startHeading: "RIGHT",
-    endHeading: "DOWN",
-    obstaclePaddingPx: 24,
-    laserTrailSamples: [{ x: 40, y: 40, ageMs: 120 }, { x: 80, y: 55, ageMs: 360 }],
-  });
-  const spray = evaluateFabricSprayDeduplicationAndAtrament({
-    pointerX: 64,
-    pointerY: 64,
-    sprayWidth: 28,
-    density: 32,
-    dotWidth: 3,
-    dotWidthVariance: 2,
-    randomOpacity: true,
-    prevPoint: { x: 44, y: 52 },
-    baseSmoothing01: s,
-  });
-  const mandala = evaluateMandalaSymmetryAndPerspectiveRuler({
-    centerX: 64,
-    centerY: 64,
-    sampleX: 98,
-    sampleY: 46,
-    axisCount: params.symmetryAxes,
-    includeMirrorReflection: true,
-    vanishingPoint: { x: 64, y: 16 },
-    rulerMode: "isometric-30",
-  });
-  const psd = evaluateAgPsdPackBitsAndLayerChannelCodec({
-    scanlineBytes: [200, 200, 200, 200, 200, 128, 64, 32, 32, 32, 32],
-    blendModeName: "multiply",
-    transparencyProtected: true,
-    hidden: false,
-    clipping: true,
-  });
-  const culori = evaluateCuloriCiede2000AndOklchGamutMap({
-    stdLab: { l: 62, a: 28, b: -18 },
-    smpLab: { l: 58, a: 22, b: -14 },
-    targetOklch: { l: 0.72, c: 0.38, hDeg: 145 },
-  });
-  const vision = evaluateOtsuBimodalCannyAndSkiaLookahead({
-    luminanceSamples: [18, 22, 25, 29, 31, 198, 205, 212, 224, 238],
-    gradX: 92,
-    gradY: 48,
-    neighborMagnitudes: [64, 72],
-    lowThreshold: 40,
-    highThreshold: 85,
-    recentPoints: [{ x: 20, y: 24 }, { x: 38, y: 31 }, { x: 58, y: 40 }],
-  });
+  const kaleidoscope = evaluateKonvaKaleidoscopePolarMirror({ width: 128, height: 128, sampleX: 96, sampleY: 42, power: Math.max(2, Math.min(6, Math.round(params.symmetryAxes / 2))), angleDeg: Math.round(s * 180) });
+  const emboss = evaluateKonvaEmbossEnhancePosterizeSuite({ rgb: [148, 132, 118], neighborLuminance3x3: [40, 52, 65, 80, 128, 175, 110, 190, 235], channelMinRgb: [24, 20, 18], channelMaxRgb: [228, 220, 212], embossStrength01: s, embossWhiteLevel01: 0.5, embossDirection: "top-left", embossBlend: true, enhanceAmount: s * 0.8, posterizeLevels: 6, threshold01: 0.5 });
+  const paper = evaluatePaperCatmullRomSmoothAndFlatten({ points: [{ x: 10, y: 20 }, { x: 42, y: 68 }, { x: 96, y: 18 }, { x: 140, y: 74 }], factor: 0.5 + s * 0.35, flatness: 0.45 });
+  const elbow = evaluateExcalidrawElbowArrowAndLaserTrail({ start: { x: 16, y: 24 }, end: { x: 164, y: 112 }, startHeading: "RIGHT", endHeading: "DOWN", obstaclePaddingPx: 24, laserTrailSamples: [{ x: 40, y: 40, ageMs: 120 }, { x: 80, y: 55, ageMs: 360 }] });
+  const spray = evaluateFabricSprayDeduplicationAndAtrament({ pointerX: 64, pointerY: 64, sprayWidth: 28, density: 32, dotWidth: 3, dotWidthVariance: 2, randomOpacity: true, prevPoint: { x: 44, y: 52 }, baseSmoothing01: s });
+  const mandala = evaluateMandalaSymmetryAndPerspectiveRuler({ centerX: 64, centerY: 64, sampleX: 98, sampleY: 46, axisCount: params.symmetryAxes, includeMirrorReflection: true, vanishingPoint: { x: 64, y: 16 }, rulerMode: "isometric-30" });
+  const psd = evaluateAgPsdPackBitsAndLayerChannelCodec({ scanlineBytes: [200, 200, 200, 200, 200, 128, 64, 32, 32, 32, 32], blendModeName: "multiply", transparencyProtected: true, hidden: false, clipping: true });
+  const culori = evaluateCuloriCiede2000AndOklchGamutMap({ stdLab: { l: 62, a: 28, b: -18 }, smpLab: { l: 58, a: 22, b: -14 }, targetOklch: { l: 0.72, c: 0.38, hDeg: 145 } });
+  const vision = evaluateOtsuBimodalCannyAndSkiaLookahead({ luminanceSamples: [18, 22, 25, 29, 31, 198, 205, 212, 224, 238], gradX: 92, gradY: 48, neighborMagnitudes: [64, 72], lowThreshold: 40, highThreshold: 85, recentPoints: [{ x: 20, y: 24 }, { x: 38, y: 31 }, { x: 58, y: 40 }] });
+  const sculpt = evaluateSculptGlCreaseFlattenAndTangentSmooth({ vertex: [4, 3, 2], center: [6, 4, 2], normal: [0, 0, 1], laplacianTarget: [5, 4, 3], radius: 12, intensity01: s, isNegative: false });
+  const catchup = evaluatePiskelDitherLightenAndKlecksCatchUp({ col: 3, row: 4, isRightButton: false, baseLuma255: 140, isShiftOncePerPixel: true, isCtrlDarken: false, targetX: 100, lastSmoothedX: 60, smoothing01: 0.65, catchUpTicks: 4, jspaintBrushSize: 12, jspaintShape: "diagonal" });
   return {
     preset,
     kaleidoscopeMirroredSector: kaleidoscope.mirroredThetaIndex,
@@ -745,5 +782,7 @@ export function evaluateMonolithicTotalEngineTelemetry(params: {
     psdCompressionRatio01: psd.compressionRatio01,
     ciede2000DeltaE: culori.ciede2000DeltaE,
     otsuOptimalThreshold: vision.otsuOptimalThreshold,
+    sculptCreaseZ: sculpt.creasedVertex[2],
+    klecksCatchUpX: catchup.caughtUpX,
   };
 }

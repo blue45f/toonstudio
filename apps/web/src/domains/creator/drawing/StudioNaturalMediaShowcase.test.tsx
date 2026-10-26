@@ -265,8 +265,16 @@ describe("StudioNaturalMediaShowcase", () => {
     expect(kaleidoRadio).not.toBeNull();
     expect(kaleidoRadio?.getAttribute("aria-checked")).toBe("true");
     fireEvent.keyDown(kaleidoRadio!, { key: "End" });
-    const skiaLookaheadRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-skia-patheffect-lookahead"]') as HTMLButtonElement | null;
-    expect(skiaLookaheadRadio?.getAttribute("aria-checked")).toBe("true");
+    const jspaintStampRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-jspaint-calligraphic-stamp6"]') as HTMLButtonElement | null;
+    expect(jspaintStampRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const brushCategoryFilterBtn = container.querySelector('[data-studio-monolithic-category-filter="brush"]') as HTMLButtonElement | null;
+    expect(brushCategoryFilterBtn).not.toBeNull();
+    fireEvent.click(brushCategoryFilterBtn!);
+    expect(brushCategoryFilterBtn?.getAttribute("aria-pressed")).toBe("true");
+    const allCategoryFilterBtn = container.querySelector('[data-studio-monolithic-category-filter="all"]') as HTMLButtonElement | null;
+    fireEvent.click(allCategoryFilterBtn!);
+    expect(allCategoryFilterBtn?.getAttribute("aria-pressed")).toBe("true");
 
     const psdPackBitsRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-ag-psd-packbits-8bim"]') as HTMLButtonElement | null;
     expect(psdPackBitsRadio).not.toBeNull();
