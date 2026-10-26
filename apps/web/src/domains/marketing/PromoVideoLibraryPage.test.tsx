@@ -13,8 +13,8 @@ afterEach(() => {
   useI18n.getState().setLang("ko");
 });
 
-describe("PromoVideoLibraryPage — REA 3-Mode 뷰 스위처·필터·허브 서브탭", () => {
-  it("맥락형 서브탭과 3-Mode 뷰 스위처(card, poster, list), 화면 비율 필터, REA 기준표를 렌더링한다", () => {
+describe("PromoVideoLibraryPage — 13종 REA 3-Mode 뷰 스위처·필터·허브 서브탭·6단계 파이프라인", () => {
+  it("맥락형 서브탭과 3-Mode 뷰 스위처(card, poster, list), 화면 비율 필터, 13종 REA 기준표 및 6단계 창작 동선을 렌더링한다", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/promo-library"]}>
         <PromoVideoLibraryPage />
@@ -28,6 +28,19 @@ describe("PromoVideoLibraryPage — REA 3-Mode 뷰 스위처·필터·허브 서
 
     const root = container.querySelector(".promo-library");
     expect(root?.getAttribute("data-view-mode")).toBe("card");
+
+    const reaItems = container.querySelectorAll("[data-rea-platform]");
+    expect(reaItems).toHaveLength(13);
+
+    const pipelineNav = screen.getByRole("navigation", {
+      name: "창작·예고편·배포 6단계 통합 동선",
+    });
+    expect(pipelineNav).toBeTruthy();
+
+    const presetNav = screen.getByRole("navigation", {
+      name: "경쟁사 표준 탐색·랭킹 바로가기",
+    });
+    expect(presetNav).toBeTruthy();
 
     const posterBtn = screen.getByRole("button", {
       name: "포스터·쇼츠 그리드",

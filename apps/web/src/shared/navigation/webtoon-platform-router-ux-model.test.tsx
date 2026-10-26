@@ -8,12 +8,18 @@ import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav
 import { useI18n } from "@/shared/lib/i18n";
 
 import {
+  COMPETITOR_DISCOVERY_ROUTER_PRESETS,
   COMPETITOR_PLATFORM_REA_LEDGER,
+  CONTEXTUAL_SUBNAV_GROUPS,
+  CREATOR_STUDIO_PIPELINE_STEPS,
   DEFAULT_PROMO_MEDIA_FILTER_STATE,
+  PERSONAL_LIBRARY_SEGMENTS,
   SERIES_LANDING_VIEW_MODES,
   classifyMediaAspectRatio,
   matchesPromoMediaFilter,
+  resolveActiveWeekdayKey,
   resolveContextualSubNavForPath,
+  resolveMondayFirstWeekdayIndex,
   runSameDocumentViewTransition,
 } from "./webtoon-platform-router-ux-model";
 
@@ -23,9 +29,9 @@ afterEach(() => {
   useI18n.getState().setLang("ko");
 });
 
-describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
-  it("7개 플랫폼의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
-    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(7);
+describe("글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
+  it("13개 플랫폼의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
+    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(13);
     const ids = COMPETITOR_PLATFORM_REA_LEDGER.map((item) => item.id);
     expect(ids).toEqual([
       "naver-webtoon",
@@ -35,6 +41,12 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
       "lezhin-comics",
       "pixiv-comic",
       "ridi-webtoon",
+      "kakao-webtoon",
+      "postype",
+      "manta",
+      "clip-studio",
+      "acon3d",
+      "mangaplus",
     ]);
 
     for (const entry of COMPETITOR_PLATFORM_REA_LEDGER) {
@@ -50,10 +62,55 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
     expect(kakaopage?.routeCount).toBe(152);
     expect(kakaopage?.epistemicStatus).toBe("verified");
 
+    const kakaoWebtoon = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "kakao-webtoon",
+    );
+    expect(kakaoWebtoon?.routeCount).toBe(80);
+    expect(kakaoWebtoon?.epistemicStatus).toBe("verified");
+
+    const mangaplus = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "mangaplus",
+    );
+    expect(mangaplus?.routeCount).toBe(36);
+    expect(mangaplus?.epistemicStatus).toBe("verified");
+
     const ridi = COMPETITOR_PLATFORM_REA_LEDGER.find(
       (item) => item.id === "ridi-webtoon",
     );
     expect(ridi?.epistemicStatus).toBe("bounded-by-bot-challenge");
+
+    const acon3d = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "acon3d",
+    );
+    expect(acon3d?.epistemicStatus).toBe("bounded-by-bot-challenge");
+  });
+
+  it("Kakao Webtoon 월요일 시작 요일 인덱스((weekday + 6) % 7)와 창작 파이프라인·서재·탐색 프리셋을 정확히 계산한다", () => {
+    // JS getDay(): 0 = 일요일 -> 6, 1 = 월요일 -> 0, 2 = 화요일 -> 1 ...
+    expect(resolveMondayFirstWeekdayIndex(0)).toBe(6);
+    expect(resolveMondayFirstWeekdayIndex(1)).toBe(0);
+    expect(resolveMondayFirstWeekdayIndex(2)).toBe(1);
+    expect(resolveActiveWeekdayKey(0)).toBe("sun");
+    expect(resolveActiveWeekdayKey(1)).toBe("mon");
+    expect(resolveActiveWeekdayKey(5)).toBe("fri");
+
+    expect(CREATOR_STUDIO_PIPELINE_STEPS).toHaveLength(6);
+    expect(CREATOR_STUDIO_PIPELINE_STEPS.map((s) => s.toonstudioHref)).toEqual([
+      "/create",
+      "/studio/new",
+      "/studio/comic",
+      "/studio/import",
+      "/showcase/promo",
+      "/community/promote",
+    ]);
+
+    expect(PERSONAL_LIBRARY_SEGMENTS.map((s) => s.id)).toEqual([
+      "view",
+      "likes",
+      "purchases",
+      "collections",
+    ]);
+    expect(COMPETITOR_DISCOVERY_ROUTER_PRESETS).toHaveLength(6);
   });
 
   it("KakaoPage 3-Mode 뷰 스위처(card, poster, list)와 화면 비율 분류·필터가 정확히 동작한다", () => {
@@ -105,7 +162,8 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
     ).toBe(false);
   });
 
-  it("경로별 맥락형 서브탭(SiteContextualSubNav)을 판정하고 aria-current='page'를 표시한다", () => {
+  it("6대 허브 경로별 맥락형 서브탭(SiteContextualSubNav)을 판정하고 aria-current='page'를 표시한다", () => {
+    expect(CONTEXTUAL_SUBNAV_GROUPS).toHaveLength(6);
     expect(resolveContextualSubNavForPath("/promo-library")?.id).toBe(
       "promo-cuts-hub",
     );
@@ -117,6 +175,15 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
     );
     expect(resolveContextualSubNavForPath("/showcase")?.id).toBe(
       "community-hub",
+    );
+    expect(resolveContextualSubNavForPath("/studio/comic")?.id).toBe(
+      "studio-hub",
+    );
+    expect(resolveContextualSubNavForPath("/market/browse")?.id).toBe(
+      "market-hub",
+    );
+    expect(resolveContextualSubNavForPath("/library")?.id).toBe(
+      "personal-library-hub",
     );
     expect(resolveContextualSubNavForPath("/settings")).toBeNull();
 

@@ -1,239 +1,257 @@
 /**
- * 유사 웹툰·창작 플랫폼 7종 REA(Reverse-Engineer-Anything) 라우터·페이지 구조 및 UI/UX 아키텍처 엔진.
+ * 글로벌 웹툰·만화·창작·에셋 플랫폼 13종 REA(Reverse-Engineer-Anything) 라우터·동선 및 UI/UX 아키텍처 엔진.
  *
  * 분석 기준일: 2026-10-26
- * 분석 대상:
- * 1. NAVER WEBTOON (https://comic.naver.com/index)
- * 2. KakaoPage (https://page.kakao.com/, v2.43.1-pc-ko)
- * 3. WEBTOON Global (https://www.webtoons.com/en/)
- * 4. Tapas (https://tapas.io/, v7.8.2)
- * 5. Lezhin Comics (https://www.lezhin.com/ko)
- * 6. Pixiv Comic (https://comic.pixiv.net/)
- * 7. RIDI Webtoon (https://ridibooks.com/webtoon/recommendation)
- *
- * 이 모듈은 REA MCP(capture_browser_scenario, export_web_scripts, analyze_javascript_application)로
- * 추출·검증한 실제 프로덕션 라우터 트리와 UI/UX 패턴을 클린룸 데이터 계약 및 순수 함수로 내재화한다.
+ * 13개 플랫폼의 REA 증거 원장은 `./webtoon-platform-rea-ledger.ts`에서 재수출하며,
+ * 이 모듈은 역공학으로 도출한 라우터 프리셋, 월요일 기준 요일 계산식, 4-Tab 개인 서재,
+ * 6단계 창작 스튜디오 파이프라인, 3-Mode 뷰 스위처, 6대 맥락형 허브 서브탭을 정의한다.
  */
 
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 
-export type CompetitorPlatformId =
-  | "naver-webtoon"
-  | "kakaopage"
-  | "webtoons-global"
-  | "tapas"
-  | "lezhin-comics"
-  | "pixiv-comic"
-  | "ridi-webtoon";
+import {
+  COMPETITOR_PLATFORM_REA_LEDGER,
+  type CompetitorPlatformId,
+  type CompetitorPlatformReaEvidence,
+} from "./webtoon-platform-rea-ledger";
 
-export interface CompetitorPlatformReaEvidence {
-  readonly id: CompetitorPlatformId;
-  readonly name: string;
-  readonly targetUrl: string;
-  readonly appVersion: string;
-  readonly routerFramework: string;
-  readonly captureEvidenceId: string;
-  readonly exportScriptsEvidenceId: string;
-  readonly astAnalysisViewEvidenceId: string;
-  readonly rootSha256: string;
-  readonly scriptCount: number;
-  readonly totalBytes: number;
-  readonly astNodeCount: number;
-  readonly findingCount: number;
-  readonly moduleCount: number;
-  readonly routeCount: number;
-  readonly keyRouterPatterns: readonly string[];
-  readonly keyUiUxPatterns: readonly string[];
-  readonly epistemicStatus: "verified" | "bounded-by-bot-challenge";
+export {
+  COMPETITOR_PLATFORM_REA_LEDGER,
+  type CompetitorPlatformId,
+  type CompetitorPlatformReaEvidence,
+};
+
+/**
+ * Kakao Webtoon `source-13-89cae4c1decd50887cbf2f5bfd05957c3e68b79ab1548c434f55a5e9ef5b7c27.js`에서
+ * 역공학한 월요일 시작 요일 인덱스 계산식 `(weekday + 6) % 7` 및 요일 키.
+ */
+export const KAKAO_WEBTOON_WEEKDAY_KEYS = Object.freeze([
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+] as const);
+
+export type KakaoWebtoonWeekdayKey = (typeof KAKAO_WEBTOON_WEEKDAY_KEYS)[number];
+
+export function resolveMondayFirstWeekdayIndex(jsDay: number): number {
+  const normalized = ((Math.trunc(jsDay) % 7) + 7) % 7;
+  return (normalized + 6) % 7;
 }
 
-export const COMPETITOR_PLATFORM_REA_LEDGER: readonly CompetitorPlatformReaEvidence[] = Object.freeze([
+export function resolveActiveWeekdayKey(
+  dateOrJsDay: Date | number = new Date(),
+): KakaoWebtoonWeekdayKey {
+  const jsDay =
+    typeof dateOrJsDay === "number" ? dateOrJsDay : dateOrJsDay.getDay();
+  const idx = resolveMondayFirstWeekdayIndex(jsDay);
+  return KAKAO_WEBTOON_WEEKDAY_KEYS[idx] ?? "mon";
+}
+
+/**
+ * Manga Plus `/manga_list/{all,ongoing,completed,one_shot,updated}` +
+ * `/ranking/{hottest,trending,completed}` + Manta `/new-and-now`, `/curation`을
+ * ToonStudio 라우터 쿼리와 매핑한 경쟁사 표준 탐색 프리셋.
+ */
+export interface CompetitorRouterPreset {
+  readonly id: string;
+  readonly competitorSource: CompetitorPlatformId;
+  readonly competitorRoute: string;
+  readonly toonstudioHref: string;
+  readonly koLabel: string;
+  readonly enLabel: string;
+}
+
+export const COMPETITOR_DISCOVERY_ROUTER_PRESETS: readonly CompetitorRouterPreset[] = Object.freeze([
   {
-    id: "naver-webtoon",
-    name: "NAVER WEBTOON",
-    targetUrl: "https://comic.naver.com/index",
-    appVersion: "react-router-v6-webpack5",
-    routerFramework: "React Router v6 (createBrowserRouter / nested children)",
-    captureEvidenceId: "ev_559fd63b85ab64546f20cc5e607ed81fa9b9b45406e9da7e37a50fa69408b86e",
-    exportScriptsEvidenceId: "ev_1a784b9c27c37fca96c271d4317fac660a8a1ddff1b61974466913d3a5b31cb7",
-    astAnalysisViewEvidenceId: "ev_258bfdd5a04aa96486680a11f6d034716d64240b53fd7e127d407c896f81b1c5",
-    rootSha256: "d173fd1ddedd33c6b14a690c79eb12fec5b5ddfa5496344dd57982a3cf0aa034",
-    scriptCount: 8,
-    totalBytes: 211138,
-    astNodeCount: 59852,
-    findingCount: 173,
-    moduleCount: 26,
-    routeCount: 44,
-    keyRouterPatterns: [
-      "/proposal/business/* (home, entertainment, licensingMerchandising, publishing, game, promotions, contact)",
-      "/creators/manage/title/{new,edit} & /creators/manage/article/{new,edit}",
-      "/creators/manage/cuts/title/{new,edit} & /creators/manage/cuts/article (숏폼 Cuts 대칭 라우팅)",
-      "/creators/article/preview & /creators/community",
-      "/index, /webtoon, /webtoon/list, /bestChallenge, /challenge, /mypage/{favorite,recently,bookmark}",
-    ],
-    keyUiUxPatterns: [
-      "2단 GNB + 서브 내비게이션 및 우측Creator Studio(크리에이터스) 즉시 진입 CTA",
-      "시그니처 그린(--color-webtoon-green: #00dc64) 및 프로모션 배너(--color-solid-promotion-bar: #e5fbef)",
-      "1190px 컨테이너(840px 메인 그리드 + 우측 실시간 랭킹·공지 어사이드 레일)",
-    ],
-    epistemicStatus: "verified",
+    id: "mangaplus-hottest",
+    competitorSource: "mangaplus",
+    competitorRoute: "/ranking/hottest",
+    toonstudioHref: "/ranking?axis=popular",
+    koLabel: "실시간 인기 (Hottest)",
+    enLabel: "Hottest Ranking",
   },
   {
-    id: "kakaopage",
-    name: "KakaoPage",
-    targetUrl: "https://page.kakao.com/",
-    appVersion: "v2.43.1-pc-ko",
-    routerFramework: "Next.js Pages Router (_buildManifest.js 152 routes)",
-    captureEvidenceId: "ev_6f6aa106e603e822d7af0706866296f9d414428009956062faf73d75fdb24722",
-    exportScriptsEvidenceId: "ev_0feeb788c3e88366a84e2f00c28217cff883974368dbf55c660ffe3c101de0bb",
-    astAnalysisViewEvidenceId: "ev_bdef249b6a4ff2e27ca8061ecf6bd031b293f83daca0ec5f734205aa1f72b173",
-    rootSha256: "f942ff97342c622329bd040a0fdf5e5932bf55920f99d4dcbbb1008e88c7a982",
-    scriptCount: 16,
-    totalBytes: 175108,
-    astNodeCount: 47135,
-    findingCount: 585,
-    moduleCount: 81,
-    routeCount: 152,
-    keyRouterPatterns: [
-      "/menu/[menuUid]/screen/[screenUid] (동적 Menu/Screen 조합 라우터)",
-      "/landing/series/card/[[...pathParams]] (와이드 카드·트레일러 뷰)",
-      "/landing/series/list/[[...pathParams]] (컴팩트 메타데이터 리스트 뷰)",
-      "/landing/series/poster/[[...pathParams]] (고밀도 포스터·쇼츠 그리드 뷰)",
-      "/cms/short-vod-viewer-preview & /cms/text-viewer-preview (숏폼 홍보 VOD·뷰어 CMS 프리뷰)",
-    ],
-    keyUiUxPatterns: [
-      "depth: 2 스티키 서브탭 바(h-57pxr bg-theme-bg-base) 및 MainAndSub 반응형 헤더 계약",
-      "3-Mode 뷰 스위처(Card / List / Poster) 및 7축 다중 필터(Category, Genre, BM, Day, Sort, Completed, TabType)",
-    ],
-    epistemicStatus: "verified",
+    id: "mangaplus-trending",
+    competitorSource: "mangaplus",
+    competitorRoute: "/ranking/trending",
+    toonstudioHref: "/ranking?axis=rising",
+    koLabel: "급상승 트렌딩 (Trending)",
+    enLabel: "Trending Now",
   },
   {
-    id: "webtoons-global",
-    name: "WEBTOON Global",
-    targetUrl: "https://www.webtoons.com/en/",
-    appVersion: "global-pc-2026",
-    routerFramework: "Hybrid SSR + Webpack GNB/Home Controller",
-    captureEvidenceId: "ev_98317ae85066c238eccda4c1f0cfacd4b8e041586595c08f14e43df37be1e16c",
-    exportScriptsEvidenceId: "ev_7e323239eb335e22b01f487423ba8f0f1d07b6a8979f7bb6ef9b20c3ecb7a16a",
-    astAnalysisViewEvidenceId: "ev_b882700c129e5e6755bcdcf8a0ef825286aa894bca7da6197df43aeb4d4c07cf",
-    rootSha256: "2572587de0bcdb68ba9d2f4ab41d0d718a086cd2dd192c465de22fe35e788811",
-    scriptCount: 16,
-    totalBytes: 593353,
-    astNodeCount: 150354,
-    findingCount: 611,
-    moduleCount: 83,
-    routeCount: 28,
-    keyRouterPatterns: [
-      "/[locale]/originals, /[locale]/canvas, /[locale]/genres, /[locale]/popular, /[locale]/creators101",
-      "/search?keyword= & /search?searchMode=AUTHOR&keyword= (작품·작가 이원 검색)",
-    ],
-    keyUiUxPatterns: [
-      "장르별 동적 컬러 액센트 토큰(genreCssCode, genreName) 및 카드 호버 플립 요약",
-      "독자·창작자 통합 계정 팝오버(Dashboard, My Series, Subscribed, Comments, Creators 101)",
-    ],
-    epistemicStatus: "verified",
+    id: "mangaplus-completed",
+    competitorSource: "mangaplus",
+    competitorRoute: "/ranking/completed",
+    toonstudioHref: "/explore?status=completed&sort=popular",
+    koLabel: "완결 명작 랭킹 (Completed)",
+    enLabel: "Completed Hits",
   },
   {
-    id: "tapas",
-    name: "Tapas",
-    targetUrl: "https://tapas.io/",
-    appVersion: "v7.8.2",
-    routerFramework: "Next.js Pages Router (_buildManifest.js 55 routes)",
-    captureEvidenceId: "ev_1ec34b24fd3e43cbbb237351c8ede37c1a42de1fa02408b1cbb2418d3a5c14fd",
-    exportScriptsEvidenceId: "ev_cc2a18023e114a0d8450f59e3605bc55c3560eab469ea4dc8f47fc798a1e4100",
-    astAnalysisViewEvidenceId: "ev_f9364850b854aa96a9810d45eadfb020156b998f7ab742e79f084953c24c05b2",
-    rootSha256: "89246a38198add73be52bed43de868aaff075484247b7a944adc8ff24dd395b5",
-    scriptCount: 35,
-    totalBytes: 565750,
-    astNodeCount: 167085,
-    findingCount: 884,
-    moduleCount: 161,
-    routeCount: 55,
-    keyRouterPatterns: [
-      "/static-landing/{daily,free,genre,new,original,ranking} (6대 정적 랜딩 택소노미)",
-      "/library/{reading-list,recent,subscribed,unlocked}",
-      "/dev/design-system/bar/{navigation,tab} & /dev/design-system/common/{badge,ranking}",
-    ],
-    keyUiUxPatterns: [
-      "NavigationBar / TabBar 디자인 시스템 프리미티브 분리 및 UP·NEW·EVENT 배지 규격화",
-    ],
-    epistemicStatus: "verified",
+    id: "kakao-webtoon-timetable",
+    competitorSource: "kakao-webtoon",
+    competitorRoute: "/[[...home]]?tab=timetable",
+    toonstudioHref: "/calendar",
+    koLabel: "요일별 연재표 (Timetable)",
+    enLabel: "Weekly Timetable",
   },
   {
-    id: "lezhin-comics",
-    name: "Lezhin Comics",
-    targetUrl: "https://www.lezhin.com/ko",
-    appVersion: "nextjs-app-router-2026",
-    routerFramework: "Next.js App Router (RSC / [language] dynamic segment)",
-    captureEvidenceId: "ev_64f618fc3e2734111941444d47bfbb5cdd4a7740980a8fa06de08f814991b87f",
-    exportScriptsEvidenceId: "ev_88ccde2265b0819463b65ce41763c2ae26c767664c11c085409de3e169e9bf61",
-    astAnalysisViewEvidenceId: "ev_81ff8ffef66c3eb7ae1a371da33901dfaf73dc2fe9e0b20b8a9cec80d1be5c80",
-    rootSha256: "656ac519a55786950ed0fc59ec7aadd21a4807834f72e9b686d861ffb5ef883f",
-    scriptCount: 35,
-    totalBytes: 486892,
-    astNodeCount: 137631,
-    findingCount: 1345,
-    moduleCount: 403,
-    routeCount: 38,
-    keyRouterPatterns: [
-      "/[language]/{scheduled,ranking,free,sale,presents,bookshome,genreplus}",
-      "/[language]/library & /[language]/account",
-    ],
-    keyUiUxPatterns: [
-      "다크 캔버스 기반 고대비 포스터 카드 및 상단 선물함(presents)·무료(free) 프로모션 직행 탭",
-    ],
-    epistemicStatus: "verified",
+    id: "manta-new-and-now",
+    competitorSource: "manta",
+    competitorRoute: "/new-and-now",
+    toonstudioHref: "/explore?status=ongoing&sort=latest",
+    koLabel: "신작·최신 업데이트 (New & Now)",
+    enLabel: "New & Now",
   },
   {
-    id: "pixiv-comic",
-    name: "Pixiv Comic",
-    targetUrl: "https://comic.pixiv.net/",
-    appVersion: "nextjs-pages-2026",
-    routerFramework: "Next.js Pages Router (_buildManifest.js 111 routes)",
-    captureEvidenceId: "ev_b4781757598d3aab579b2f4d3b5215ed1b2a31da40911e58cf4dd4f4986ea57a",
-    exportScriptsEvidenceId: "ev_943b64b03822fc79a2b4d8e7fcd89a195bff5929b5be7f26fd129f95a929c967",
-    astAnalysisViewEvidenceId: "ev_2e78b819f376bdf3a9ab2041042be3d32b284d258b7b0a5541954b0edc6273c6",
-    rootSha256: "ea2567463d60bba34694f25f77d3af29751b1b0431ce5c15503e577ea5f63879",
-    scriptCount: 20,
-    totalBytes: 514805,
-    astNodeCount: 142720,
-    findingCount: 290,
-    moduleCount: 30,
-    routeCount: 111,
-    keyRouterPatterns: [
-      "/search/cover (표지 이미지 기반 시각 탐색 라우트)",
-      "/mypage/color_theme (사용자 정의 테마 컬러 설정 라우트)",
-      "/finish_reading/[sku] (열람 직후 연관 작품·후원·댓글 연결 브리지 라우트)",
-      "/magazines/[magazineId] & / rankings / /genres / /tags",
-    ],
-    keyUiUxPatterns: [
-      "표지 그리드 비주얼 서치(/search/cover) 및 완독 후 브리지 페이지(/finish_reading/[sku])",
-    ],
-    epistemicStatus: "verified",
+    id: "pixiv-cover-visual",
+    competitorSource: "pixiv-comic",
+    competitorRoute: "/search/cover",
+    toonstudioHref: "/promo-library",
+    koLabel: "표지·포스터 비주얼 탐색",
+    enLabel: "Visual Cover & Poster Grid",
+  },
+]);
+
+/**
+ * Postype `/library/{view,purchases,likes,collections}` +
+ * Tapas `/library/{reading-list,recent,subscribed,unlocked}` +
+ * NAVER WEBTOON `/mypage/{favorite,recently,bookmark}`를 통합한 4-Tab 개인 서재 택소노미.
+ */
+export interface PersonalLibrarySegmentSpec {
+  readonly id: "view" | "purchases" | "likes" | "collections";
+  readonly postypeRoute: string;
+  readonly tapasRoute: string;
+  readonly naverRoute: string;
+  readonly toonstudioHref: string;
+  readonly koLabel: string;
+  readonly enLabel: string;
+}
+
+export const PERSONAL_LIBRARY_SEGMENTS: readonly PersonalLibrarySegmentSpec[] = Object.freeze([
+  {
+    id: "view",
+    postypeRoute: "/library/view",
+    tapasRoute: "/library/recent",
+    naverRoute: "/mypage/recently",
+    toonstudioHref: "/library?tab=diary",
+    koLabel: "최근 감상·일기",
+    enLabel: "Recent & Diary",
   },
   {
-    id: "ridi-webtoon",
-    name: "RIDI Webtoon",
-    targetUrl: "https://ridibooks.com/webtoon/recommendation",
-    appVersion: "cloudflare-turnstile-edge",
-    routerFramework: "Next.js Edge (Cloudflare Turnstile Challenge Observed)",
-    captureEvidenceId: "ev_c4dd1056f8442aa4db1b37cfda305018a202f046b82a217232ad7ae25f9f5b32",
-    exportScriptsEvidenceId: "ev_21c888f2b1a769d1362520f8e2ff4c0f8b677e5382f484b25fbbed2b5b66c50f",
-    astAnalysisViewEvidenceId: "ev_2099d4bc73f672aec5d9b3c252fd83ad7a2e39a04704836c682c3322eeb4a1a4",
-    rootSha256: "c85322cebeeb53da5c4814ef15e2a17f5f2ce7cb6fd25be9c355616ef3ca761f",
-    scriptCount: 2,
-    totalBytes: 17118,
-    astNodeCount: 1214,
-    findingCount: 12,
-    moduleCount: 2,
-    routeCount: 0,
-    keyRouterPatterns: [
-      "/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1 (Cloudflare Turnstile 봇 방어 경계 확인)",
-    ],
-    keyUiUxPatterns: [
-      "REA 인식론적 규율에 따라 봇 챌린지 뒤의 번들은 추측하지 않고 unknowns로 기록",
-    ],
-    epistemicStatus: "bounded-by-bot-challenge",
+    id: "likes",
+    postypeRoute: "/library/likes",
+    tapasRoute: "/library/subscribed",
+    naverRoute: "/mypage/favorite",
+    toonstudioHref: "/library?tab=shelf",
+    koLabel: "관심·구독 작품",
+    enLabel: "Saved & Subscribed",
+  },
+  {
+    id: "purchases",
+    postypeRoute: "/library/purchases",
+    tapasRoute: "/library/unlocked",
+    naverRoute: "/mypage/bookmark",
+    toonstudioHref: "/library?tab=rated",
+    koLabel: "평가·소장 기록",
+    enLabel: "Rated & Unlocked",
+  },
+  {
+    id: "collections",
+    postypeRoute: "/library/collections",
+    tapasRoute: "/library/reading-list",
+    naverRoute: "/mypage/favorite",
+    toonstudioHref: "/library?tab=collections",
+    koLabel: "큐레이션 컬렉션",
+    enLabel: "Collections",
+  },
+]);
+
+/**
+ * Manta `/creator/studio/*` + `/uot-printcomic-v2` + NAVER WEBTOON `/creators/manage/{title,article,cuts}` +
+ * Postype `/studio` ↔ `/editor`를 통합한 6단계 창작자 엔드투엔드 파이프라인 모델.
+ */
+export interface CreatorStudioPipelineStep {
+  readonly stepNumber: number;
+  readonly id: string;
+  readonly mantaRoute: string;
+  readonly naverRoute: string;
+  readonly toonstudioHref: string;
+  readonly koTitle: string;
+  readonly enTitle: string;
+  readonly koSummary: string;
+  readonly enSummary: string;
+}
+
+export const CREATOR_STUDIO_PIPELINE_STEPS: readonly CreatorStudioPipelineStep[] = Object.freeze([
+  {
+    stepNumber: 1,
+    id: "onboarding-apply",
+    mantaRoute: "/creator/apply",
+    naverRoute: "/creators/welcome",
+    toonstudioHref: "/create",
+    koTitle: "01 · 창작 시작·설계",
+    enTitle: "01 · Creator Launchpad",
+    koSummary: "작품 기획·세계관·콘티 워크플로를 고르고 프로젝트를 시작합니다.",
+    enSummary: "Pick your planning, worldbuilding and storyboard workflow.",
+  },
+  {
+    stepNumber: 2,
+    id: "series-new",
+    mantaRoute: "/creator/studio/series/new",
+    naverRoute: "/creators/manage/title/new",
+    toonstudioHref: "/studio/new",
+    koTitle: "02 · 신작 시리즈 개설",
+    enTitle: "02 · New Series Setup",
+    koSummary: "표지·장르·연재 주기·캐릭터 시트를 등록합니다.",
+    enSummary: "Register cover art, genres, schedule and character sheets.",
+  },
+  {
+    stepNumber: 3,
+    id: "episode-editor",
+    mantaRoute: "/creator/studio/series/[seriesId]/episodes/new",
+    naverRoute: "/creators/manage/article/new",
+    toonstudioHref: "/studio/comic",
+    koTitle: "03 · 원고·에피소드 작화",
+    enTitle: "03 · Episode Canvas Editor",
+    koSummary: "브러시·3D 포즈·배경·말풍선으로 회차 원고를 완성합니다.",
+    enSummary: "Draw episodes with brushes, 3D poses, backgrounds and balloons.",
+  },
+  {
+    stepNumber: 4,
+    id: "print-to-webtoon",
+    mantaRoute: "/uot-printcomic-v2",
+    naverRoute: "/creators/article/preview",
+    toonstudioHref: "/studio/import",
+    koTitle: "04 · 출판만화·세로 스크롤 변환",
+    enTitle: "04 · Print-to-Webtoon & Import",
+    koSummary: "기존 원고·컷을 웹툰 스크롤 호흡과 모바일 뷰어 규격으로 변환·검수합니다.",
+    enSummary: "Convert and inspect panels for vertical scroll webtoon readers.",
+  },
+  {
+    stepNumber: 5,
+    id: "short-vod-cuts",
+    mantaRoute: "/preview/episodes/[episodeId]",
+    naverRoute: "/creators/manage/cuts/title/new",
+    toonstudioHref: "/showcase/promo",
+    koTitle: "05 · 예고편 · 숏폼 컷츠 제작",
+    enTitle: "05 · Promo Trailer & Cuts",
+    koSummary: "완성 원고로 9:16 숏폼 컷츠(/cuts/studio)와 AI 보이스 예고편을 만듭니다.",
+    enSummary: "Turn finished panels into 9:16 Cuts and AI-voiced promo trailers.",
+  },
+  {
+    stepNumber: 6,
+    id: "publish-promote",
+    mantaRoute: "/campaigns/voting",
+    naverRoute: "/creators/community",
+    toonstudioHref: "/community/promote",
+    koTitle: "06 · 연재 배포 · 독자 홍보",
+    enTitle: "06 · Publish & Reader Spotlight",
+    koSummary: "신작·작가 홍보 게시판과 창작 갤러리에 공개하고 독자 피드백을 받습니다.",
+    enSummary: "Share on the Creator Promo Board and gather reader feedback.",
   },
 ]);
 
@@ -343,9 +361,9 @@ export function matchesPromoMediaFilter(
 
 /**
  * NAVER WEBTOON 2단 서브 내비게이션 + KakaoPage `depth: 2` Subtab (`h-57pxr`) +
- * Tapas `bar/tab` 프리미티브를 결합한 맥락형 허브 서브탭 모델.
+ * Tapas `bar/tab` + Postype `/library/*` + Manta `/creator/studio/*`를 결합한 6대 맥락형 허브 서브탭 모델.
  */
-export type ContextualHubBadge = "UP" | "NEW" | "SHORT-VOD" | "AI STUDIO" | "GALLERY";
+export type ContextualHubBadge = "UP" | "NEW" | "SHORT-VOD" | "AI STUDIO" | "GALLERY" | "3D·ASSET";
 
 export interface ContextualSubNavItem {
   readonly id: string;
@@ -356,8 +374,16 @@ export interface ContextualSubNavItem {
   readonly exact?: boolean;
 }
 
+export type ContextualHubGroupId =
+  | "promo-cuts-hub"
+  | "discover-hub"
+  | "community-hub"
+  | "studio-hub"
+  | "market-hub"
+  | "personal-library-hub";
+
 export interface ContextualSubNavGroup {
-  readonly id: "promo-cuts-hub" | "discover-hub" | "community-hub" | "studio-hub" | "market-hub";
+  readonly id: ContextualHubGroupId;
   readonly koTitle: string;
   readonly enTitle: string;
   readonly accentToken: string;
@@ -449,6 +475,47 @@ export const CONTEXTUAL_SUBNAV_GROUPS: readonly ContextualSubNavGroup[] = Object
       { id: "collaborate", href: "/collaborate", koLabel: "구인·의뢰", enLabel: "Collaborate" },
     ],
   },
+  {
+    id: "studio-hub",
+    koTitle: "창작 스튜디오 · 파이프라인",
+    enTitle: "Creator Studio Pipeline",
+    accentToken: "oklch(0.71 0.16 290)",
+    items: [
+      { id: "create", href: "/create", koLabel: "창작 시작점", enLabel: "Launchpad", exact: true },
+      { id: "studio", href: "/studio", koLabel: "통합 스튜디오", enLabel: "Studio Home", badge: "AI STUDIO", exact: true },
+      { id: "studio-new", href: "/studio/new", koLabel: "신작 개설", enLabel: "New Series", badge: "NEW" },
+      { id: "studio-comic", href: "/studio/comic", koLabel: "원고 에디터", enLabel: "Comic Editor" },
+      { id: "studio-import", href: "/studio/import", koLabel: "원고 변환·검수", enLabel: "Import & Convert" },
+      { id: "showcase-promo", href: "/showcase/promo", koLabel: "예고편 스튜디오", enLabel: "Promo Trailer", badge: "SHORT-VOD" },
+      { id: "studio-publish", href: "/studio/publish", koLabel: "연재·유통 배포", enLabel: "Publish" },
+    ],
+  },
+  {
+    id: "market-hub",
+    koTitle: "소재 마켓 · 3D · 브러시 에셋",
+    enTitle: "Asset Market & 3D Studio",
+    accentToken: "oklch(0.72 0.15 190)",
+    items: [
+      { id: "market", href: "/market", koLabel: "소재 마켓 홈", enLabel: "Market Home", exact: true },
+      { id: "market-browse", href: "/market/browse", koLabel: "전체 소재 탐색", enLabel: "Browse Assets", badge: "3D·ASSET" },
+      { id: "studio-assets", href: "/studio/assets", koLabel: "내 에셋 보관함", enLabel: "My Assets" },
+      { id: "studio-brushes", href: "/studio/brushes", koLabel: "브러시 엔진", enLabel: "Brush Engine", badge: "NEW" },
+      { id: "research", href: "/research", koLabel: "레퍼런스 탐색", enLabel: "Reference Search" },
+    ],
+  },
+  {
+    id: "personal-library-hub",
+    koTitle: "내 서재 · 감상 · 컬렉션",
+    enTitle: "My Library & Collections",
+    accentToken: "oklch(0.71 0.15 330)",
+    items: [
+      { id: "library-shelf", href: "/library", koLabel: "내 서재 (관심·구독)", enLabel: "Saved Shelf", exact: true },
+      { id: "library-diary", href: "/library?tab=diary", koLabel: "최근 감상·일기", enLabel: "Reading Diary", badge: "NEW" },
+      { id: "library-rated", href: "/library?tab=rated", koLabel: "평가·소장 기록", enLabel: "Rated & Owned" },
+      { id: "library-collections", href: "/library?tab=collections", koLabel: "큐레이션 컬렉션", enLabel: "Collections" },
+      { id: "recommend", href: "/recommend", koLabel: "취향 맞춤 추천", enLabel: "For You", badge: "UP" },
+    ],
+  },
 ]);
 
 export function resolveContextualSubNavForPath(rawPathname: string): ContextualSubNavGroup | null {
@@ -459,6 +526,7 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
     pathname === "/community/promote" ||
     pathname === "/cuts" ||
     pathname === "/cuts/studio" ||
+    pathname === "/cuts/rewards" ||
     pathname === "/brand-film" ||
     pathname === "/product-tour"
   ) {
@@ -469,7 +537,10 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
     pathname === "/explore" ||
     pathname === "/ranking" ||
     pathname === "/calendar" ||
-    pathname === "/recommend"
+    pathname === "/recommend" ||
+    pathname === "/search" ||
+    pathname === "/random" ||
+    pathname === "/compare"
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[1] ?? null;
   }
@@ -477,9 +548,38 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
     pathname === "/community" ||
     pathname === "/showcase" ||
     pathname === "/reviews" ||
-    pathname === "/collaborate"
+    pathname === "/collaborate" ||
+    pathname === "/opportunities"
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[2] ?? null;
+  }
+  if (
+    pathname === "/create" ||
+    pathname === "/studio" ||
+    pathname === "/studio/new" ||
+    pathname === "/studio/comic" ||
+    pathname === "/studio/import" ||
+    pathname === "/studio/motion-webtoon" ||
+    pathname === "/studio/publish"
+  ) {
+    return CONTEXTUAL_SUBNAV_GROUPS[3] ?? null;
+  }
+  if (
+    pathname === "/market" ||
+    pathname === "/market/browse" ||
+    pathname === "/studio/assets" ||
+    pathname === "/studio/brushes" ||
+    pathname === "/research"
+  ) {
+    return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
+  }
+  if (
+    pathname === "/library" ||
+    pathname === "/my" ||
+    pathname === "/notifications" ||
+    pathname === "/messages"
+  ) {
+    return CONTEXTUAL_SUBNAV_GROUPS[5] ?? null;
   }
   return null;
 }

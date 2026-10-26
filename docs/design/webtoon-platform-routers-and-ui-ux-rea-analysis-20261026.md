@@ -1,4 +1,4 @@
-# 유사 웹툰·창작 플랫폼 7종 REA 라우터·페이지 구조 역공학 및 UI/UX 고도화 설계서
+# 글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터·동선 역공학 및 UI/UX 고도화 설계서
 
 - **작성일**: `2026-10-26`
 - **상태**: `current`
@@ -7,12 +7,13 @@
   - [`apps/web/src/shared/navigation/webtoon-platform-router-ux-model.ts`](../../apps/web/src/shared/navigation/webtoon-platform-router-ux-model.ts)
   - [`apps/web/src/shared/components/site-contextual-subnav.tsx`](../../apps/web/src/shared/components/site-contextual-subnav.tsx)
   - [`apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx`](../../apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx)
+  - [`apps/web/src/domains/cuts/CutsStudioPage.tsx`](../../apps/web/src/domains/cuts/CutsStudioPage.tsx)
 
 ## 1. 목적 및 배경
 
-글로벌 주요 웹툰·만화·창작 플랫폼 7종(**NAVER WEBTOON**, **KakaoPage**, **WEBTOON Global**, **Tapas**, **Lezhin Comics**, **Pixiv Comic**, **RIDI Webtoon**)의 실제 프로덕션 웹 애플리케이션을 REA(`reverse-engineer-anything`) MCP 도구(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`)로 캡처·역공학하여 라우터 계층, GNB/서브탭/LNB/푸터 동선, 뷰 스위처, 필터 아키텍처, UI/UX 디자인 토큰을 도출하고 ToonStudio에 클린룸 내재화하였다.
+글로벌 주요 웹툰·만화·창작·에셋 플랫폼 13종(**NAVER WEBTOON**, **KakaoPage**, **WEBTOON Global**, **Tapas**, **Lezhin Comics**, **Pixiv Comic**, **RIDI Webtoon**, **Kakao Webtoon**, **Postype**, **Manta**, **CLIP STUDIO**, **ACON3D**, **Manga Plus by SHUEISHA**)의 실제 프로덕션 웹 애플리케이션을 REA(`reverse-engineer-anything`) MCP 도구(`capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`)로 캡처·역공학하여 라우터 계층, GNB/서브탭/LNB/푸터 동선, 뷰 스위처, 창작 파이프라인, 필터 아키텍처, UI/UX 디자인 토큰을 도출하고 ToonStudio에 클린룸 내재화하였다.
 
-## 2. REA 역공학 증거 원장 (21개 Evidence ID)
+## 2. REA 역공학 증거 원장 (13개 플랫폼 · 40개 Evidence ID)
 
 | 플랫폼 | 대상 URL | 버전 / 라우터 | `capture_browser_scenario` | `export_web_scripts` | `analyze_javascript_application` | 스크립트 / AST 노드 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -23,31 +24,33 @@
 | **Lezhin Comics** | `https://www.lezhin.com/ko` | Next.js App Router (38 routes) | `ev_64f618fc3e2734111941444d47bfbb5cdd4a7740980a8fa06de08f814991b87f` | `ev_88ccde2265b0819463b65ce41763c2ae26c767664c11c085409de3e169e9bf61` | `ev_81ff8ffef66c3eb7ae1a371da33901dfaf73dc2fe9e0b20b8a9cec80d1be5c80` | 35 files / 137,631 nodes |
 | **Pixiv Comic** | `https://comic.pixiv.net/` | Next.js Pages Router (111 routes) | `ev_b4781757598d3aab579b2f4d3b5215ed1b2a31da40911e58cf4dd4f4986ea57a` | `ev_943b64b03822fc79a2b4d8e7fcd89a195bff5929b5be7f26fd129f95a929c967` | `ev_2e78b819f376bdf3a9ab2041042be3d32b284d258b7b0a5541954b0edc6273c6` | 20 files / 142,720 nodes |
 | **RIDI Webtoon** | `https://ridibooks.com/webtoon/recommendation` | Cloudflare Turnstile 경계 | `ev_c4dd1056f8442aa4db1b37cfda305018a202f046b82a217232ad7ae25f9f5b32` | `ev_21c888f2b1a769d1362520f8e2ff4c0f8b677e5382f484b25fbbed2b5b66c50f` | `ev_2099d4bc73f672aec5d9b3c252fd83ad7a2e39a04704836c682c3322eeb4a1a4` | 2 files / 1,214 nodes |
+| **Kakao Webtoon** | `https://webtoon.kakao.com/` | Next.js `v5.12.1` (80 routes) | `ev_c6a1431dc4229fa786363a233867ae53b980a8b1249e7e1a09f8eebbe618728c` | `ev_bb8ae6bf5ab5beae17ed3cacbb31b2d6169b90f02a9879e49cc3b0fb01dd079a` | `ev_80c23cf54c9491d42c4c161fe13e576596300750a16357c9c309a1b5c12c26d5` | 14 files / 73,293 nodes |
+| **Postype** | `https://www.postype.com/` | Next.js App Router (32 routes) | `ev_19ccd9e17aeef7d1cc49e76de06b6632d4be2a5f921ba0ea1b7cf5f6b927e833` | `ev_2513ce480ba89cae5d10d18496f51a107371a595aec0d7bc661afbe2009f6ba9` | `ev_b5025b619c348cf7c99cb3f9e7967fd035bfb4ed50faed503aca68cf6de0f79c` | 54 files / 357,650 nodes |
+| **Manta** | `https://manta.net/en` | Next.js Pages Router (55 routes) | `ev_1661c6b127c94c6b952cf8a24285c46e972313059781e122578592a3f7ba8735` | `ev_e67622ca1075c3b096e3fe83d4abec8b38793e38325454cebf76c473496624d4` | `ev_8e497bdbd7ab1e304f3d48d5f6bc00b30384ef13c0123bd35c5b7caa24bad2fa` | 24 files / 95,468 nodes |
+| **CLIP STUDIO** | `https://www.clipstudio.net/kr/` | Hybrid Web + Asset Hub (24 routes) | `ev_9c7f31b4d9b547b9d1e10a7803e03d389dc030a3a2c0b9d24d74156a822e687f` | `ev_774bf741e3b15aee8ae917ef44dcb68e76228c7f572fe857fc8a7790f8567545` | `ev_d83fbd1f28c39b2a77bbc594354a4bbec7a486d7a83ca611fbd7dd770f1e0701` | 23 files / 86,203 nodes |
+| **ACON3D** | `https://www.acon3d.com/ko` | Cloudflare Turnstile 경계 | `ev_4197631fc9cedfbe4b2f7d9e854e61baf25ecdfee5842f08c3ea308a5bac174b` | `ev_8dd35a6f70ff6e2786c21c2eb567698f9ceb4db853cb0dd2bc5208393d0ea3d2` | `ev_e2eb55f9bd5563f090b59d25985920ecf25a04cba5800af7b98dde26eb9e2b7e` | 4 files / 336 nodes |
+| **Manga Plus** | `https://mangaplus.shueisha.co.jp/updates` | Vue Router (`app.41982a95.js`, 36 routes) | `ev_8e22c5f6215ef0e8189d1d6f643648272c8a029c8ea99eb580cf6669aafa50a9` | `ev_abb29088cb2dcd559c734d3bc69744fe7ccfce4f152ca5a16432c7024c402cd2` | `ev_0b6aa7c4ab507ae8278742a6616c6ac5ec06ebf1aa7915302f2e1016b4636b82` | 3 files / 202,081 nodes |
 
 ## 3. 플랫폼별 핵심 발견 사항 및 내재화 설계
 
-### 3.1 NAVER WEBTOON (`router-394efe0e852153c2d1ea.js`)
-
+### 3.1 NAVER WEBTOON & Manta: 6단계 창작·변환·숏폼·배포 통합 파이프라인
 - **관찰된 사실 (`observedFacts`)**:
-  - 최상위 라우터가 `/proposal/business/*` (7개 IP 비즈니스 하위 경로), `/creators/article/preview`, `/creators/welcome`, `/creators/community`, `/creators/*`, `/navercontest/*`, `/*` 7개 분기로 구성됨.
-  - `/creators/*` 내부에서 일반 웹툰 관리(`/creators/manage/title/{new,edit}`, `/creators/manage/article/{new,edit}`)와 숏폼 **Cuts** 관리(`/creators/manage/cuts/title/{new,edit}`, `/creators/manage/cuts/article`)가 완전한 대칭 트리를 이룸.
+  - **NAVER WEBTOON** (`router-394efe0e852153c2d1ea.js`): 일반 웹툰 관리(`/creators/manage/title/{new,edit}`, `/creators/manage/article/{new,edit}`)와 숏폼 **Cuts** 관리(`/creators/manage/cuts/title/{new,edit}`, `/creators/manage/cuts/article`)가 대칭 트리를 형성.
+  - **Manta** (`_buildManifest.js`): `/creator/apply` → `/creator/studio` → `/creator/studio/series/new` → `/creator/studio/series/[seriesId]/episodes/{new,[episodeId]/edit}` → `/preview/episodes/[episodeId]` 및 출판만화·웹소설 자동 변환(`/uot-printcomic-v2`, `/uot-printnovel-v2`), 캠페인 투표(`/campaigns/voting`)로 이어지는 전주기 창작자 라우터를 보유.
 - **내재화 (`internalization`)**:
-  - `CONTEXTUAL_SUBNAV_GROUPS`의 `promo-cuts-hub`에서 `/promo-library` ↔ `/showcase/promo` ↔ `/community/promote` ↔ `/cuts` ↔ `/cuts/studio` ↔ `/brand-film` ↔ `/product-tour`를 대칭형 허브 서브탭으로 통합 연결.
+  - `CREATOR_STUDIO_PIPELINE_STEPS` 6단계 파이프라인(`01 창작 시작 /create` → `02 신작 개설 /studio/new` → `03 원고 작화 /studio/comic` → `04 출판만화·스크롤 변환 /studio/import` → `05 예고편·숏폼 컷츠 /showcase/promo` → `06 연재 배포·독자 홍보 /community/promote`)과 `studio-hub` 서브탭 그룹을 내재화하고 `CutsStudioPage.tsx` 및 `PromoVideoLibraryPage.tsx`에 연결.
 
-### 3.2 KakaoPage (`_buildManifest.js` 152 routes & `pages/index-2890639f35c99101.js`)
-
+### 3.2 KakaoPage & Kakao Webtoon: 3-Mode 뷰 스위처 및 월요일 시작 타임테이블 리졸버
 - **관찰된 사실 (`observedFacts`)**:
-  - `/menu/[menuUid]/screen/[screenUid]` 동적 라우터와 `depth: 2` 스티키 서브탭 바(`h-57pxr bg-theme-bg-base`)를 통해 GNB 아래에서 하위 화면을 즉시 전환.
-  - 시리즈 랜딩을 3가지 뷰 모드(`/landing/series/card/[[...pathParams]]`, `/landing/series/list/[[...pathParams]]`, `/landing/series/poster/[[...pathParams]]`)로 제공하며, 숏폼 홍보 영상을 위한 `/cms/short-vod-viewer-preview` 라우트를 보유.
+  - **KakaoPage**: `/landing/series/{card,list,poster}/[[...pathParams]]` 3-Mode 뷰 스위처 및 `/cms/short-vod-viewer-preview`, `depth: 2` 스티키 서브탭(`h-57pxr`).
+  - **Kakao Webtoon** (`v5.12.1`, `source-13-89cae4c1decd50887cbf2f5bfd05957c3e68b79ab1548c434f55a5e9ef5b7c27.js`): `/[[...home]]` 라우터가 `(weekday + 6) % 7` 수식으로 월요일 기준(`mon`~`sun`) 활성 요일을 결정하고 `bmFilterKey`로 타임테이블을 즉시 필터링.
 - **내재화 (`internalization`)**:
-  - `SERIES_LANDING_VIEW_MODES` (`"card" | "poster" | "list"`)와 화면 비율 필터(`"all" | "landscape-16-9" | "vertical-9-16" | "square-1-1"`), 키워드 실시간 검색을 `PromoVideoLibraryPage.tsx`에 적용하고 `runSameDocumentViewTransition`으로 전환 애니메이션을 연결.
+  - `resolveMondayFirstWeekdayIndex`, `resolveActiveWeekdayKey`, `SERIES_LANDING_VIEW_MODES` (`card | poster | list`)를 구현.
 
-### 3.3 WEBTOON Global, Tapas, Lezhin Comics, Pixiv Comic
-
+### 3.3 Postype, Tapas, CLIP STUDIO, Manga Plus: 6대 맥락형 허브 및 탐색 프리셋
 - **관찰된 사실 (`observedFacts`)**:
-  - **WEBTOON Global**: 장르별 동적 색상 액센트(`genreCssCode`)와 작품·작가 이원 검색.
-  - **Tapas v7.8.2**: `/dev/design-system/bar/{navigation,tab}` 및 `/dev/design-system/common/{badge,ranking}` 디자인 시스템 프리미티브 분리.
-  - **Lezhin Comics**: 다크 캔버스 기반 고대비 카드와 직행 프로모션 탭.
-  - **Pixiv Comic**: 표지 비주얼 탐색(`/search/cover`), 컬러 테마(`/mypage/color_theme`), 열람 직후 연관 동선 브리지(`/finish_reading/[sku]`).
+  - **Postype**: `/library/{view,purchases,likes,collections}` 4-Tab 개인 서재 및 `/studio` ↔ `/editor` 브리지.
+  - **Manga Plus** (`app.41982a95.js`): `/manga_list/{all,ongoing,completed,one_shot,browser_a,browser_z,updated}` 및 `/ranking/{hottest,trending,completed}` 3축 랭킹 라우터.
+  - **CLIP STUDIO**: 드로잉 엔진과 소재 마켓(ASSETS)·강좌(TIPS)의 창작 단계별 결합.
 - **내재화 (`internalization`)**:
-  - `SiteContextualSubNav`에 지각 균일 `oklch()` 허브 액센트 토큰과 Tapas 스타일 배지(`SHORT-VOD`, `AI STUDIO`, `UP`, `NEW`, `GALLERY`), Forced-Colors 고대비 안전 경계를 적용.
+  - `CONTEXTUAL_SUBNAV_GROUPS`를 6대 핵심 허브(`promo-cuts-hub`, `discover-hub`, `community-hub`, `studio-hub`, `market-hub`, `personal-library-hub`)로 확장하고 `PERSONAL_LIBRARY_SEGMENTS`와 `COMPETITOR_DISCOVERY_ROUTER_PRESETS`를 구축.

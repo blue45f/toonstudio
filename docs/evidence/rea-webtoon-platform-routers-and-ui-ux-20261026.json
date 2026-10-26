@@ -3,14 +3,14 @@
   "capturedAt": "2026-10-26",
   "analysisProvider": "rea-mcp-web-and-ast",
   "summary": {
-    "targetCount": 7,
-    "verifiedPlatforms": 6,
-    "botChallengeBoundedPlatforms": 1,
-    "totalEvidenceIds": 21,
-    "totalAnalyzedScripts": 132,
-    "totalAnalyzedBytes": 2564164,
-    "totalAstNodes": 705991,
-    "totalFindings": 3900
+    "targetCount": 13,
+    "verifiedPlatforms": 11,
+    "botChallengeBoundedPlatforms": 2,
+    "totalEvidenceIds": 40,
+    "totalAnalyzedScripts": 254,
+    "totalAnalyzedBytes": 5996345,
+    "totalAstNodes": 1521022,
+    "totalFindings": 9858
   },
   "platforms": [
     {
@@ -110,7 +110,7 @@
         "55 routes in _buildManifest.js including 6 static-landing taxonomies (/static-landing/{daily,free,genre,new,original,ranking}) and design-system bar/tab/badge primitives."
       ],
       "inferences": [
-        "Standardized badge primitives (UP, NEW, SHORT-VOD, AI STUDIO) improve scannability in contextual tab bars."
+        "Standardized badge primitives (UP, NEW, SHORT-VOD, AI STUDIO, GALLERY, 3D·ASSET) improve scannability in contextual tab bars."
       ],
       "unknowns": []
     },
@@ -165,6 +165,122 @@
       "unknowns": [
         "Client-side route manifest behind Cloudflare Turnstile interactive challenge on ridibooks.com was not fabricated and is recorded as an explicit unknown per REA epistemic discipline."
       ]
+    },
+    {
+      "id": "kakao-webtoon",
+      "name": "Kakao Webtoon",
+      "targetUrl": "https://webtoon.kakao.com/",
+      "appVersion": "v5.12.1",
+      "captureEvidenceId": "ev_c6a1431dc4229fa786363a233867ae53b980a8b1249e7e1a09f8eebbe618728c",
+      "captureSha256": "d89cd072ec9d0c556bf6d9a57317d6a33d2acd7e97afd206f904e1acd4d20c31",
+      "exportScriptsEvidenceId": "ev_bb8ae6bf5ab5beae17ed3cacbb31b2d6169b90f02a9879e49cc3b0fb01dd079a",
+      "astAnalysisViewEvidenceId": "ev_80c23cf54c9491d42c4c161fe13e576596300750a16357c9c309a1b5c12c26d5",
+      "astAnalysisParentEvidenceId": "ev_2c8d713b8fee84d1884df611e72e931ab9c8d9c2fb4a6c0e3c19d531ea3b9080",
+      "rootSha256": "05d1313d9df65cfdbb8de539c4fea16ca0974c980e24a5dd945d603c6be457b7",
+      "observedFacts": [
+        "80 Next.js routes in _buildManifest.js centered around catch-all /[[...home]] with automatic Monday-first weekday index formula (weekday + 6) % 7 and bmFilterKey.",
+        "Direct content-to-viewer pairing (/content/[sid]/[id] and /viewer/[sid]/[id]) and reward routes (/gift, /luckydraw, /raffle)."
+      ],
+      "inferences": [
+        "Deterministic Monday-first weekday resolution ((jsDay + 6) % 7) and BM filters streamline release calendar navigation."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "postype",
+      "name": "Postype",
+      "targetUrl": "https://www.postype.com/",
+      "appVersion": "nextjs-app-router-2026",
+      "captureEvidenceId": "ev_19ccd9e17aeef7d1cc49e76de06b6632d4be2a5f921ba0ea1b7cf5f6b927e833",
+      "captureSha256": "330806770d1cbd7b4576b850fcb215753a931c79464da37d66979934d626d265",
+      "exportScriptsEvidenceId": "ev_2513ce480ba89cae5d10d18496f51a107371a595aec0d7bc661afbe2009f6ba9",
+      "astAnalysisViewEvidenceId": "ev_b5025b619c348cf7c99cb3f9e7967fd035bfb4ed50faed503aca68cf6de0f79c",
+      "astAnalysisParentEvidenceId": "ev_fcf2a55dcef05b7b1078b77780aa70d62bfae8e59aa442bcf6c447d7a8c149ed",
+      "rootSha256": "f8620e02aaf2b8d703ca9e13ceb0a758a9f43237aa92f492bb86ccd797b1b236",
+      "observedFacts": [
+        "54 Next.js App Router chunks (1,509,129 B, 357,650 AST nodes, 723 modules) implementing a 4-tab personal library (/library/view, /library/purchases, /library/likes, /library/collections) alongside /studio, /editor, and /messages."
+      ],
+      "inferences": [
+        "Unifying library tabs (Recent/Diary, Saved/Likes, Rated/Purchases, Collections) with one-click Studio/Editor switching bridges reading and creation."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "manta",
+      "name": "Manta",
+      "targetUrl": "https://manta.net/en",
+      "appVersion": "nextjs-pages-2026",
+      "captureEvidenceId": "ev_1661c6b127c94c6b952cf8a24285c46e972313059781e122578592a3f7ba8735",
+      "captureSha256": "a8bcbe69d35ac75d4f3e4794ac4e929965dd99cb694ae3b1ea80ce7cee395af1",
+      "exportScriptsEvidenceId": "ev_e67622ca1075c3b096e3fe83d4abec8b38793e38325454cebf76c473496624d4",
+      "astAnalysisViewEvidenceId": "ev_8e497bdbd7ab1e304f3d48d5f6bc00b30384ef13c0123bd35c5b7caa24bad2fa",
+      "astAnalysisParentEvidenceId": "ev_b929d9745b35dfbfc74cbd7218a0226bf84f060124f7b0ebe525ce3e49e2f3d2",
+      "rootSha256": "583cdd5bd585e1db017f056820bd2278c443ebc4b06bee10bcb92c527cd25b1e",
+      "observedFacts": [
+        "55 routes in _buildManifest.js featuring a complete Creator Studio hierarchy (/creator/apply, /creator/studio, /creator/studio/series/new, /creator/studio/series/[seriesId]/episodes/new, /preview/episodes/[episodeId]) and print-to-webtoon conversion (/uot-printcomic-v2, /uot-printnovel-v2)."
+      ],
+      "inferences": [
+        "Modeling a 6-step Creator-to-Promotion pipeline connects onboarding (/create), series creation (/studio/new), episode editing (/studio/comic), print-to-webtoon import (/studio/import), promo/cuts (/showcase/promo), and reader promotion (/community/promote)."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "clip-studio",
+      "name": "CLIP STUDIO",
+      "targetUrl": "https://www.clipstudio.net/kr/",
+      "appVersion": "clipstudio-kr-2026",
+      "captureEvidenceId": "ev_9c7f31b4d9b547b9d1e10a7803e03d389dc030a3a2c0b9d24d74156a822e687f",
+      "captureSha256": "a84cb1b223b3108b50861b7296b963dc9374d3c1db8696a63a4cda98499c5fde",
+      "exportScriptsEvidenceId": "ev_774bf741e3b15aee8ae917ef44dcb68e76228c7f572fe857fc8a7790f8567545",
+      "astAnalysisViewEvidenceId": "ev_d83fbd1f28c39b2a77bbc594354a4bbec7a486d7a83ca611fbd7dd770f1e0701",
+      "astAnalysisParentEvidenceId": "ev_353ab6a4420960cf3339c6dd583908a36cf2f47b87f849b4f3773052667154f7",
+      "rootSha256": "a6ae8a432dd2a6b717f906be098de7537ccbb339859d333ef05563476c1d91cd",
+      "observedFacts": [
+        "23 parsed scripts (360,278 B, 86,203 AST nodes) linking drawing workflow features with CLIP STUDIO ASSETS, TIPS, and SHARE."
+      ],
+      "inferences": [
+        "Dedicated market-hub contextual navigation (/market, /market/browse, /studio/assets, /studio/brushes, /research) keeps asset acquisition adjacent to canvas editing."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "acon3d",
+      "name": "ACON3D",
+      "targetUrl": "https://www.acon3d.com/ko",
+      "appVersion": "cloudflare-turnstile-edge",
+      "captureEvidenceId": "ev_4197631fc9cedfbe4b2f7d9e854e61baf25ecdfee5842f08c3ea308a5bac174b",
+      "captureSha256": "09215c83a902ff27cf5282d5e0780a7eb5aeaea3926401d20d62411a2adb4bd7",
+      "exportScriptsEvidenceId": "ev_8dd35a6f70ff6e2786c21c2eb567698f9ceb4db853cb0dd2bc5208393d0ea3d2",
+      "astAnalysisViewEvidenceId": "ev_e2eb55f9bd5563f090b59d25985920ecf25a04cba5800af7b98dde26eb9e2b7e",
+      "astAnalysisParentEvidenceId": "ev_32151dd9d0f94f4c0ecf3fb9e0bbef1bc71ff809b8657d9df9e64d37bbcb35ee",
+      "rootSha256": "f0c0615e55fa1a963e9e8821c61a2654b9ba823c7dda8600ebaf0c8e0e67ddbb",
+      "observedFacts": [
+        "Automated headless capture encountered Cloudflare Turnstile challenge at /cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1."
+      ],
+      "inferences": [],
+      "unknowns": [
+        "Client-side route manifest behind Cloudflare Turnstile interactive challenge on acon3d.com was not fabricated and is recorded as bounded-by-bot-challenge."
+      ]
+    },
+    {
+      "id": "mangaplus",
+      "name": "Manga Plus by SHUEISHA",
+      "targetUrl": "https://mangaplus.shueisha.co.jp/updates",
+      "appVersion": "vue-router-app-41982a95",
+      "captureEvidenceId": "ev_8e22c5f6215ef0e8189d1d6f643648272c8a029c8ea99eb580cf6669aafa50a9",
+      "captureSha256": "9bbded2c2874fbeff29650c5327cb50f6bc5662bc95c32b369e1c07f6354fbdd",
+      "exportScriptsEvidenceId": "ev_abb29088cb2dcd559c734d3bc69744fe7ccfce4f152ca5a16432c7024c402cd2",
+      "scenarioAstAnalysisViewEvidenceId": "ev_6db64189e64582d344ebfb7083213fdfe37381267f0a1a926cca41ca25a1fe7e",
+      "astAnalysisViewEvidenceId": "ev_0b6aa7c4ab507ae8278742a6616c6ac5ec06ebf1aa7915302f2e1016b4636b82",
+      "astAnalysisParentEvidenceId": "ev_73201620868c55d168f143a25848c51074f7b7b972d73a7a50e35f6d33fb6d3c",
+      "rootSha256": "1f8ba6a0bff0062452468bd96dd06a9da9a79001540afa7b26dcf29fb0d4f1ec",
+      "observedFacts": [
+        "Vue Router configuration in app.41982a95.js (795,324 B, 201,345 AST nodes, 36 routes): /updates, /featured, /manga_list/{all,ongoing,completed,one_shot,browser_a,browser_z,updated}, /ranking/{hottest,trending,completed}, /favorited, /titles/:id, /comments/:id, /viewer/:chapterId."
+      ],
+      "inferences": [
+        "Exposing Hottest, Trending, and Completed ranking/catalog presets as one-click chips accelerates reader discovery."
+      ],
+      "unknowns": []
     }
   ]
 }
