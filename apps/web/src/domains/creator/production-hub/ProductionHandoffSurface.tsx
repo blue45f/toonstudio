@@ -5,6 +5,7 @@ import { evaluateHandoffReadiness, type CreativeInstructionPriority, type Handof
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
+import { ProductionDivisionHandoffTriageSuite } from "./ProductionDivisionHandoffTriageSuite";
 import type { ProductionClientCommand } from "./production-api";
 import { handoffBoardHref, handoffDirections, handoffNextProcess } from "./handoff-next-process-model";
 import {
@@ -299,6 +300,9 @@ export function ProductionHandoffSurface({
             {clarifications.length === 0 ? <p className="text-xs text-fg-3">{bt("질문이 없습니다.", "No questions.")}</p> : null}
           </div>
         </ProductionSectionCard>
+      </div>
+      <div className="xl:col-span-2">
+        <ProductionDivisionHandoffTriageSuite episodeLabel={episodeName} />
       </div>
     </div>
   );

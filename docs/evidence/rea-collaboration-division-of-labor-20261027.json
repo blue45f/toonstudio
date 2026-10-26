@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-27",
+  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 서비스 REA 역공학 증거 원장",
+  "toolchain": {
+    "mcp_server": "rea",
+    "provider_browser": "rea-playwright-browser-scenario",
+    "operations": [
+      "capture_browser_scenario",
+      "export_web_scripts",
+      "analyze_javascript_application",
+      "inspect_analysis_view",
+      "export_evidence_bundle"
+    ],
+    "native_binary_policy": "ghidra_only_no_hopper"
+  },
+  "targets": [
+    {
+      "id": "linear",
+      "name": "Linear",
+      "url": "https://linear.app/",
+      "domain_role": "이슈·서브이슈 분업화, Triage(Intake) 인박스, Asks 교차 팀 요청, SLA 타이머 및 사이클/마일스톤 핸드오프",
+      "evidence": {
+        "capture_evidence_id": "ev_f9d2e8ef642ee7614237f8887bf8d5bd0d6823e0ee33470348746515882be875",
+        "scenario_sha256": "7449e16233a195a701523074ce3f687dfa4dc5198a21e5815614b0a0d55e3d8e",
+        "export_evidence_id": "ev_968699f791f4614bc86f827fa47033e254ca14bc0ead297d6918ee9b91eb6844",
+        "manifest_sha256": "f0a8e9411cb377ed273e50ce2fd90e21cdefd98b02241bdee240dffb1cfbc818",
+        "ast_parent_evidence_id": "ev_a9ba83bd45b33525ecd900e89154c461bc40b1c126865775e33f3bc0cf3b3560",
+        "ast_summary_evidence_id": "ev_1a0767916ccd345cf27bf77a2cd11acf76697f2eb9d006e04d6c05c3e7584be6",
+        "root_artifact_sha256": "f47b365a530120a1fa441422119520fb668ff9d7ce9036342b76d0ca08ccb961",
+        "route_evidence_id": "ev_732d7d7541cabf9a852c363f78cced6581131d45f6d3c3337f86e0fe998d8628"
+      },
+      "metrics": {
+        "retained_events": 1076,
+        "dropped_events": 399,
+        "total_scripts_observed": 250,
+        "exported_scripts": 189,
+        "text_bytes_read": 985839,
+        "visited_ast_nodes": 194408,
+        "findings": 2680,
+        "semantic_relations": {
+          "boundary": 93,
+          "call_flow": 5193,
+          "closure": 7576,
+          "data_flow": 87809,
+          "event": 27,
+          "object_flow": 8064,
+          "promise_ownership": 77,
+          "timer": 16
+        },
+        "application_unknowns": 103,
+        "semantic_unknowns": 29663,
+        "recovered_routes_count": 36,
+        "key_routes": [
+          "/intake",
+          "/asks",
+          "/plan",
+          "/build",
+          "/quality",
+          "/insights",
+          "/agents",
+          "/customer-requests"
+        ]
+      }
+    },
+    {
+      "id": "frameio",
+      "name": "Frame.io",
+      "url": "https://frame.io/",
+      "domain_role": "크리에이티브 프레임/컷 단위 드로오버(Draw-Over) 어노테이션, 버전 스택 비교, C2PA/워터마크 보안 리뷰 링크, 다부서 승인 게이트",
+      "evidence": {
+        "capture_evidence_id": "ev_ca7ea51fab576e4a7cf8fb19add5318ca436fb97008374d4e75e2c5b43d8212e",
+        "scenario_sha256": "ba8630603a1a08a838ba7d96d0cf2d9780551a3fdd5ec233b6d92207addfd62a",
+        "export_evidence_id": "ev_25c3fcf8987c1e3101e709708b1dd43ab1eba7cc6f710df3fc80c25366ddeb07",
+        "manifest_sha256": "9bc45ea34dc308ebf23357cfffe3dd56673a2d388c6aee2cbc14bc92e16e509b",
+        "ast_parent_evidence_id": "ev_9cf80745bef9c8fb5710db8e8e6987cae8408a138e866a6409e494eeb14be84b",
+        "ast_summary_evidence_id": "ev_6e1be2c6fe414d1bc1b796460035f810ade397e372aaf9fc1d47b686cad6182f",
+        "root_artifact_sha256": "3d6e14c5e654302bd30c4c08e25341006846a50ddd960eedf3e1a0b1f63b44d6",
+        "route_evidence_id": "ev_2f915992fdc59f0572c8b83c5f246bf225d2a017c4c87dc839a73c8ade5c1356"
+      },
+      "metrics": {
+        "retained_events": 306,
+        "dropped_events": 0,
+        "total_scripts_observed": 34,
+        "exported_scripts": 19,
+        "text_bytes_read": 528852,
+        "visited_ast_nodes": 153234,
+        "findings": 1074,
+        "modules": 288,
+        "semantic_relations": {
+          "boundary": 37,
+          "call_flow": 2345,
+          "closure": 4936,
+          "data_flow": 79431,
+          "object_flow": 7207,
+          "promise_ownership": 551,
+          "request": 18,
+          "timer": 13
+        },
+        "application_unknowns": 7,
+        "semantic_unknowns": 26149,
+        "recovered_routes_count": 0,
+        "dynamic_router_chunks": [
+          "app/[lang]/layout-5d3b1b46a6d1db27.js",
+          "app/[lang]/[[...slug]]/page-50b0e3b5a6957b49.js",
+          "app/[lang]/[[...slug]]/layout-affd0525b9b5fcd1.js"
+        ]
+      }
+    },
+    {
+      "id": "figma",
+      "name": "Figma",
+      "url": "https://www.figma.com/",
+      "domain_role": "멀티플레이어 캔버스 협업, 브랜치 생성·병합(Branch & Merge), 섹션 단위 핸드오프 준비 상태(Ready for Next Stage), 핀 코멘트",
+      "evidence": {
+        "capture_evidence_id": "ev_274345ca8f8511df4e8b903db915ccc3ef4cc10028fa190e088a52368a38d43b",
+        "scenario_sha256": "3c0567f8b871fef2e25a02b553ccbcb5f9f66d10a70799aaccc665d230b79b1c",
+        "export_evidence_id": "ev_4be57205de61cc21bc5caca8514773bf2c2e02562c7f347d1cbcaabe6e02698d",
+        "manifest_sha256": "a364a2d075eaee0cb5d46edf81ce978e6d61eab1e483a014fba677768c9eff7c",
+        "ast_parent_evidence_id": "ev_cbc65765a208f4eab4970f761400b18e4ba6d81e9becf89821ad52aa48ead382",
+        "ast_summary_evidence_id": "ev_a80571a33b32a20a10c311f732617d28a87a580fea1b50898be743fc6a921357",
+        "root_artifact_sha256": "8353ea6ba3eacc88c52b09053d8c5823b2fb9eae173d0d54b5c497925d0d16da",
+        "route_evidence_id": "ev_4e86e8a07f0e1d1955658da9ec8e3079ade77d895ebf3e9813d7f3cafc9eaf4a"
+      },
+      "metrics": {
+        "retained_events": 730,
+        "dropped_events": 57,
+        "total_scripts_observed": 88,
+        "exported_scripts": 41,
+        "text_bytes_read": 916842,
+        "visited_ast_nodes": 289544,
+        "findings": 1289,
+        "modules": 146,
+        "semantic_relations": {
+          "boundary": 331,
+          "call_flow": 11657,
+          "closure": 5308,
+          "data_flow": 62948,
+          "object_flow": 7933,
+          "promise_ownership": 309,
+          "timer": 50
+        },
+        "application_unknowns": 40,
+        "semantic_unknowns": 22633,
+        "recovered_routes_count": 2,
+        "key_api_endpoints_observed": [
+          "GET https://www.figma.com/api/user (HTTP 202)"
+        ]
+      }
+    },
+    {
+      "id": "kmong",
+      "name": "크몽 (Kmong Enterprise & Market)",
+      "url": "https://kmong.com/",
+      "domain_role": "국내 웹툰·일러스트·배경·후보정 외주 분업 마켓플레이스, 엔터프라이즈 게이트, 에스크로 대금 정산, 무료 수정 횟수(Revision Round) 및 세금계산서/후불 정산",
+      "evidence": {
+        "capture_evidence_id": "ev_c98ec296a0b874d335f3f8ae58c2b12a512c89c3e28dfd8e090bd79587570514",
+        "scenario_sha256": "7667a8cf22a1bcc26715c9c56230aab54793b44163dd453d30236119a714200b",
+        "export_evidence_id": "ev_f25eda577544a4589a23c61826147db75641c6823f2edd9509b1f9a303ceef17",
+        "manifest_sha256": "f7308a0464875c9ec80d4c2aba7992f0f83366998bdb80f91d234b4d4fe5d7e7",
+        "ast_parent_evidence_id": "ev_1b85a521ff54446e57b7f6da6ed2a99d620a3e78f7f2e33b78e2e245c7f1f610",
+        "ast_summary_evidence_id": "ev_2a801e736626b7d913f64e6c4a27d8e169a0784de4a11ed0052e3882a7ad907b",
+        "root_artifact_sha256": "7fe4505989e65df6a0128fc8302cac3651ac728d7703480adced384b0bc1d394",
+        "route_evidence_id": "ev_dac8146bc7028892d3268c8307ea637a4f18429b5b4a81af88aed9967bcca09f"
+      },
+      "metrics": {
+        "retained_events": 370,
+        "dropped_events": 557,
+        "total_scripts_observed": 59,
+        "exported_scripts": 35,
+        "text_bytes_read": 1110689,
+        "visited_ast_nodes": 264841,
+        "findings": 354,
+        "modules": 1,
+        "semantic_relations": {
+          "boundary": 89,
+          "call_flow": 3785,
+          "closure": 4400,
+          "data_flow": 69987,
+          "event": 13,
+          "object_flow": 6711,
+          "promise_ownership": 266,
+          "request": 2,
+          "timer": 16
+        },
+        "application_unknowns": 24,
+        "semantic_unknowns": 21702,
+        "recovered_routes_count": 36,
+        "key_routes": [
+          "/buyer/order-list",
+          "/seller/order-list",
+          "/seller/dashboard",
+          "/inboxes",
+          "/enterprise",
+          "/enterprise/projects/new",
+          "/enterprise/simple-apply/gate",
+          "/kmongbiz/biz-postpaid/histories",
+          "/kmongbiz/biz-postpaid/inbox-histories",
+          "/kmongbiz/settings/organization",
+          "/kmongbiz/settings/members",
+          "/kmongbiz/settings/biz-card"
+        ]
+      }
+    }
+  ],
+  "internalized_modules": [
+    {
+      "id": "division-handoff-triage",
+      "model": "apps/web/src/domains/creator/production-hub/production-division-handoff-triage-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionDivisionHandoffTriageSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionHandoffSurface.tsx"
+    },
+    {
+      "id": "creative-review-consensus",
+      "model": "apps/web/src/domains/creator/production-hub/production-creative-review-consensus-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionCreativeReviewConsensusSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionReviewSurface.tsx"
+    },
+    {
+      "id": "outsourcing-settlement-guard",
+      "model": "apps/web/src/domains/creator/production-hub/production-outsourcing-settlement-guard-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionOutsourcingSettlementGuardSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionCommercialSurfaces.tsx"
+    },
+    {
+      "id": "collaboration-crew-division-planner",
+      "model": "apps/web/src/domains/collaboration/collaboration-crew-division-planner-model.ts",
+      "component": "apps/web/src/domains/collaboration/CollaborationCrewDivisionPlanner.tsx",
+      "mounted_surface": "apps/web/src/domains/collaboration/CollaborationBoardPage.tsx"
+    }
+  ]
+}

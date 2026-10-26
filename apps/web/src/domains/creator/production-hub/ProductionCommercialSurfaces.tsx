@@ -22,6 +22,7 @@ import {
 import { hubText } from "./production-hub-text";
 import type { BilingualLabel, ProductionLocalize } from "./production-labels";
 import { formatProductionDay } from "./production-format";
+import { ProductionOutsourcingSettlementGuardSuite } from "./ProductionOutsourcingSettlementGuardSuite";
 import { ProductionEmptyState, ProductionMetric, ProductionPill, ProductionSectionCard } from "./production-ui";
 
 import { LazyContractReviewChecklist } from "@/shared/components/contract-review/LazyContractReviewChecklist";
@@ -180,6 +181,8 @@ export function ProductionProcurementSurface({ aggregate }: { readonly aggregate
           </div>
         </ProductionSectionCard>
       </div>
+
+      <ProductionOutsourcingSettlementGuardSuite />
     </div>
   );
 }
