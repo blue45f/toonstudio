@@ -43,6 +43,7 @@ import "./promo-studio.css";
 
 import { SHOWCASE_HOME_PATH } from "../publishing/showcase-links";
 
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
@@ -303,6 +304,7 @@ export function StudioPromoPage() {
   };
   return (
     <div className="promo-studio" aria-labelledby="promo-title">
+      <SiteContextualSubNav pathnameOverride="/showcase/promo" />
       <header className="promo-header">
         <div>
           <Link href={SHOWCASE_HOME_PATH} className="promo-back">← {bt("창작 갤러리", "Creator gallery")}</Link>

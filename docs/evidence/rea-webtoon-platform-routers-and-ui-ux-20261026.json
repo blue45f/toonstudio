@@ -1,0 +1,170 @@
+{
+  "bundleId": "rea-webtoon-platform-routers-and-ui-ux-20261026",
+  "capturedAt": "2026-10-26",
+  "analysisProvider": "rea-mcp-web-and-ast",
+  "summary": {
+    "targetCount": 7,
+    "verifiedPlatforms": 6,
+    "botChallengeBoundedPlatforms": 1,
+    "totalEvidenceIds": 21,
+    "totalAnalyzedScripts": 132,
+    "totalAnalyzedBytes": 2564164,
+    "totalAstNodes": 705991,
+    "totalFindings": 3900
+  },
+  "platforms": [
+    {
+      "id": "naver-webtoon",
+      "name": "NAVER WEBTOON",
+      "targetUrl": "https://comic.naver.com/index",
+      "captureEvidenceId": "ev_559fd63b85ab64546f20cc5e607ed81fa9b9b45406e9da7e37a50fa69408b86e",
+      "captureSha256": "0816e849253c00527deb353e4769545b5ab233eef29838cc69837db42369f09c",
+      "exportScriptsEvidenceId": "ev_1a784b9c27c37fca96c271d4317fac660a8a1ddff1b61974466913d3a5b31cb7",
+      "manifestSha256": "cc81873c609d6cfc85189bd3bed96864858903557f5f7bcf6f9fcf7679fe9374",
+      "astAnalysisViewEvidenceId": "ev_258bfdd5a04aa96486680a11f6d034716d64240b53fd7e127d407c896f81b1c5",
+      "astAnalysisParentEvidenceId": "ev_56a8ffb711fa43286b269fb108381a26efa2abd849548f4fec8e613713549c01",
+      "rootSha256": "d173fd1ddedd33c6b14a690c79eb12fec5b5ddfa5496344dd57982a3cf0aa034",
+      "keyBundles": {
+        "router-394efe0e852153c2d1ea.js": {
+          "bytes": 23254,
+          "sha256": "86e3877ca5a50a9a01d49fe50a4eed99da59888c6c6a23870e5420b9ca892fb8"
+        },
+        "321-304541b6a85bf222089d.bundle.js": {
+          "bytes": 31993,
+          "sha256": "a1e28095541db4830c91cf615df7c87ddd5611b03592e20a1a940f10e84ab6a4"
+        }
+      },
+      "observedFacts": [
+        "7-branch React Router v6 configuration in router-394efe0e852153c2d1ea.js: /proposal/business/*, /creators/article/preview, /creators/welcome, /creators/community, /creators/*, /navercontest/*, and /*.",
+        "Symmetric Creator Management routes for regular Webtoons (/creators/manage/title/{new,edit}, /creators/manage/article/{new,edit}) and Short-form Cuts (/creators/manage/cuts/title/{new,edit}, /creators/manage/cuts/article).",
+        "Design tokens: --color-webtoon-green: #00dc64, --color-bg-weekday: #ccf8e0, --color-solid-promotion-bar: #e5fbef, --color-solid-badge: #ff4747."
+      ],
+      "inferences": [
+        "Treating short-form Cuts (/cuts, /cuts/studio) and Promo Videos (/promo-library, /showcase/promo) as first-class siblings of Webtoon creation reduces creator navigation friction."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "kakaopage",
+      "name": "KakaoPage",
+      "targetUrl": "https://page.kakao.com/",
+      "appVersion": "v2.43.1-pc-ko",
+      "captureEvidenceId": "ev_6f6aa106e603e822d7af0706866296f9d414428009956062faf73d75fdb24722",
+      "captureSha256": "0d1fc9a5bbb2eceea59d8e4b5508552f9e69fc0b8777a3ae3bbb285953f2fc5d",
+      "exportScriptsEvidenceId": "ev_0feeb788c3e88366a84e2f00c28217cff883974368dbf55c660ffe3c101de0bb",
+      "manifestSha256": "d17f0ce30c522b7c496d8962598680fac20ef6f581af92ff5c66badad716c131",
+      "astAnalysisViewEvidenceId": "ev_bdef249b6a4ff2e27ca8061ecf6bd031b293f83daca0ec5f734205aa1f72b173",
+      "astAnalysisParentEvidenceId": "ev_1459d189c991a27dd9a79527daf7f96e38bde56a56bc3f61cf6dc795244a872a",
+      "rootSha256": "f942ff97342c622329bd040a0fdf5e5932bf55920f99d4dcbbb1008e88c7a982",
+      "keyBundles": {
+        "_buildManifest.js": {
+          "bytes": 22177,
+          "sha256": "a72040423f618c21641e14e4c390eaf8780464ea9e9efe48bac63177382bfca8"
+        },
+        "pages/index-2890639f35c99101.js": {
+          "bytes": 5424,
+          "sha256": "ca1792176850c4461894d5b2986deb0add697fb1f43c57f11a21e61de65599f9"
+        }
+      },
+      "observedFacts": [
+        "152 Next.js routes in _buildManifest.js centered around /menu/[menuUid]/screen/[screenUid] and depth: 2 Subtab bar (h-57pxr bg-theme-bg-base).",
+        "3-Mode Series Landing View Switcher: /landing/series/card/[[...pathParams]], /landing/series/list/[[...pathParams]], and /landing/series/poster/[[...pathParams]].",
+        "Dedicated Short-VOD CMS previewer route: /cms/short-vod-viewer-preview alongside /cms/text-viewer-preview."
+      ],
+      "inferences": [
+        "Providing a 3-mode view switcher (Card / Poster / List) and depth-2 contextual sub-navigation enables both rich trailer previewing and high-density catalog scanning."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "webtoons-global",
+      "name": "WEBTOON Global",
+      "targetUrl": "https://www.webtoons.com/en/",
+      "captureEvidenceId": "ev_98317ae85066c238eccda4c1f0cfacd4b8e041586595c08f14e43df37be1e16c",
+      "exportScriptsEvidenceId": "ev_7e323239eb335e22b01f487423ba8f0f1d07b6a8979f7bb6ef9b20c3ecb7a16a",
+      "manifestSha256": "91c942d158c22cac93431446660ada92628329ba5afb9dac5e892ae17ed46bde",
+      "astAnalysisViewEvidenceId": "ev_b882700c129e5e6755bcdcf8a0ef825286aa894bca7da6197df43aeb4d4c07cf",
+      "astAnalysisParentEvidenceId": "ev_4700094cea320e2c01dd3fa1395e503ee57a5ce0268d7fcd10b51f94381994f6",
+      "rootSha256": "2572587de0bcdb68ba9d2f4ab41d0d718a086cd2dd192c465de22fe35e788811",
+      "observedFacts": [
+        "Dual-mode search in gnb-736381cd2afac3623cc7.js (/search?keyword= vs /search?searchMode=AUTHOR&keyword=).",
+        "Genre-specific CSS color accent tokens (genreCssCode, genreName) in home-6387362bd6d663297dec.js."
+      ],
+      "inferences": [
+        "Per-hub accent tokens in oklch() provide clear visual wayfinding across creation, discovery, and promo hubs."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "tapas",
+      "name": "Tapas",
+      "targetUrl": "https://tapas.io/",
+      "appVersion": "v7.8.2",
+      "captureEvidenceId": "ev_1ec34b24fd3e43cbbb237351c8ede37c1a42de1fa02408b1cbb2418d3a5c14fd",
+      "exportScriptsEvidenceId": "ev_cc2a18023e114a0d8450f59e3605bc55c3560eab469ea4dc8f47fc798a1e4100",
+      "manifestSha256": "d553d1fa62dbb2ced564376fe3b4d7aa91db108099ead71b6ccb80b01191a021",
+      "astAnalysisViewEvidenceId": "ev_f9364850b854aa96a9810d45eadfb020156b998f7ab742e79f084953c24c05b2",
+      "astAnalysisParentEvidenceId": "ev_9a79eaea647338a68ec6ffd9b4102c877abc3e69467831cf9685f68e37beae79",
+      "rootSha256": "89246a38198add73be52bed43de868aaff075484247b7a944adc8ff24dd395b5",
+      "observedFacts": [
+        "55 routes in _buildManifest.js including 6 static-landing taxonomies (/static-landing/{daily,free,genre,new,original,ranking}) and design-system bar/tab/badge primitives."
+      ],
+      "inferences": [
+        "Standardized badge primitives (UP, NEW, SHORT-VOD, AI STUDIO) improve scannability in contextual tab bars."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "lezhin-comics",
+      "name": "Lezhin Comics",
+      "targetUrl": "https://www.lezhin.com/ko",
+      "captureEvidenceId": "ev_64f618fc3e2734111941444d47bfbb5cdd4a7740980a8fa06de08f814991b87f",
+      "exportScriptsEvidenceId": "ev_88ccde2265b0819463b65ce41763c2ae26c767664c11c085409de3e169e9bf61",
+      "manifestSha256": "4f1c6711eac0708c31004ce7ae9cf999402abe0f51ecfb2564f9f6c6ab05e96a",
+      "astAnalysisViewEvidenceId": "ev_81ff8ffef66c3eb7ae1a371da33901dfaf73dc2fe9e0b20b8a9cec80d1be5c80",
+      "astAnalysisParentEvidenceId": "ev_524ff3c839ba8b7354ce953e0e574358af634352c957ae3093391af76598b67d",
+      "rootSha256": "656ac519a55786950ed0fc59ec7aadd21a4807834f72e9b686d861ffb5ef883f",
+      "observedFacts": [
+        "Next.js App Router with locale-prefixed segments /[language]/{scheduled,ranking,free,sale,presents,bookshome,genreplus}."
+      ],
+      "inferences": [
+        "Dark-first high-contrast surfaces highlight artwork and vertical video thumbnails."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "pixiv-comic",
+      "name": "Pixiv Comic",
+      "targetUrl": "https://comic.pixiv.net/",
+      "captureEvidenceId": "ev_b4781757598d3aab579b2f4d3b5215ed1b2a31da40911e58cf4dd4f4986ea57a",
+      "exportScriptsEvidenceId": "ev_943b64b03822fc79a2b4d8e7fcd89a195bff5929b5be7f26fd129f95a929c967",
+      "manifestSha256": "c62c05b1f9ab5eafd2ba60e8c328934b8ac114c3f89375dd7ffb0ba0226f84b5",
+      "astAnalysisViewEvidenceId": "ev_2e78b819f376bdf3a9ab2041042be3d32b284d258b7b0a5541954b0edc6273c6",
+      "astAnalysisParentEvidenceId": "ev_c8e3385ea521dd9b38b5e64b0f46e4321bc36dfd1aec9a72e7513adca0384573",
+      "rootSha256": "ea2567463d60bba34694f25f77d3af29751b1b0431ce5c15503e577ea5f63879",
+      "observedFacts": [
+        "111 routes in _buildManifest.js including /search/cover (visual cover grid search), /mypage/color_theme, and /finish_reading/[sku]."
+      ],
+      "inferences": [
+        "Visual cover/poster grid mode and post-viewing onward bridges keep users in the discovery-to-creation loop."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "ridi-webtoon",
+      "name": "RIDI Webtoon",
+      "targetUrl": "https://ridibooks.com/webtoon/recommendation",
+      "captureEvidenceId": "ev_c4dd1056f8442aa4db1b37cfda305018a202f046b82a217232ad7ae25f9f5b32",
+      "exportScriptsEvidenceId": "ev_21c888f2b1a769d1362520f8e2ff4c0f8b677e5382f484b25fbbed2b5b66c50f",
+      "astAnalysisViewEvidenceId": "ev_2099d4bc73f672aec5d9b3c252fd83ad7a2e39a04704836c682c3322eeb4a1a4",
+      "rootSha256": "c85322cebeeb53da5c4814ef15e2a17f5f2ce7cb6fd25be9c355616ef3ca761f",
+      "observedFacts": [
+        "Automated headless capture encountered Cloudflare Turnstile challenge at /cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1."
+      ],
+      "inferences": [],
+      "unknowns": [
+        "Client-side route manifest behind Cloudflare Turnstile interactive challenge on ridibooks.com was not fabricated and is recorded as an explicit unknown per REA epistemic discipline."
+      ]
+    }
+  ]
+}

@@ -1,7 +1,6 @@
-/* 홍보 영상 자료실(/promo-library) — 카테고리별 영상 카드 목록.
-   색·표면은 marketing-page.css의 --mk-* 토큰만 쓴다.
-   미리보기는 자동재생하지 않으므로(컴포넌트 주석 참고) 움직임 관련
-   미디어 쿼리로 숨길 영상은 없다. */
+/* 홍보 영상 자료실(/promo-library) — 카테고리별 영상 카드 목록 및
+   KakaoPage 3-Mode 뷰 스위처(Card / Poster / List), 다축 필터 바, REA 벤치마크 패널.
+   색·표면은 marketing-page.css의 --mk-* 토큰과 지각 균일 oklch()를 쓴다. */
 
 .promo-library__hero {
   display: grid;
@@ -23,6 +22,125 @@
 
 .promo-library__nav-chip {
   text-decoration: none;
+}
+
+.promo-library__controls {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--mk-line);
+  border-radius: 16px;
+  background: color-mix(in oklch, var(--mk-raised) 88%, transparent);
+}
+
+.promo-library__controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.promo-library__view-switcher,
+.promo-library__aspect-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.promo-library__filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid var(--mk-line);
+  border-radius: 999px;
+  background: var(--mk-card);
+  color: var(--mk-fg-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}
+
+.promo-library__filter-btn:hover {
+  color: var(--mk-fg);
+  border-color: var(--mk-accent);
+}
+
+.promo-library__filter-btn[aria-pressed="true"] {
+  color: var(--mk-fg);
+  border-color: var(--mk-accent);
+  background: color-mix(in oklch, var(--mk-accent) 18%, var(--mk-card));
+}
+
+.promo-library__filter-btn:focus-visible {
+  outline: 2px solid var(--mk-accent);
+  outline-offset: 2px;
+}
+
+.promo-library__search-box {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 12px;
+  border: 1px solid var(--mk-line);
+  border-radius: 999px;
+  background: var(--mk-card);
+}
+
+.promo-library__search-box input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--mk-fg);
+  font-size: 13.5px;
+  outline: none;
+}
+
+.promo-library__rea-benchmark {
+  margin-top: 8px;
+  border: 1px solid var(--mk-line);
+  border-radius: 14px;
+  background: var(--mk-card);
+  padding: 12px 16px;
+}
+
+.promo-library__rea-benchmark summary {
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--mk-fg);
+}
+
+.promo-library__rea-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.promo-library__rea-item {
+  border: 1px solid var(--mk-line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--mk-raised);
+  font-size: 12.5px;
+  display: grid;
+  gap: 6px;
+}
+
+.promo-library__rea-item code {
+  font-size: 11px;
+  color: var(--mk-fg-3);
+  word-break: break-all;
 }
 
 .promo-library__section {
@@ -54,8 +172,14 @@
   padding: 0;
 }
 
-.promo-library__grid--portrait {
+.promo-library__grid--portrait,
+.promo-library[data-view-mode="poster"] .promo-library__grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.promo-library[data-view-mode="list"] .promo-library__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 
 .promo-library__card {
@@ -63,6 +187,12 @@
   grid-template-rows: auto 1fr;
   overflow: hidden;
   min-width: 0;
+}
+
+.promo-library[data-view-mode="list"] .promo-library__card {
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: auto;
+  align-items: center;
 }
 
 .promo-library__card video {
@@ -79,11 +209,21 @@
   max-height: 520px;
 }
 
+.promo-library[data-view-mode="list"] .promo-library__card video {
+  aspect-ratio: 16 / 9;
+  max-height: 140px;
+}
+
 .promo-library__card-copy {
   display: grid;
   align-content: start;
   gap: 10px;
   padding: 20px;
+}
+
+.promo-library[data-view-mode="poster"] .promo-library__card-copy {
+  padding: 14px;
+  gap: 6px;
 }
 
 .promo-library__card-copy h3 {
@@ -149,17 +289,17 @@
 }
 
 @media (max-width: 1100px) {
-  .promo-library__grid--portrait {
+  .promo-library__grid--portrait,
+  .promo-library[data-view-mode="poster"] .promo-library__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
-  .promo-library__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .promo-library__grid--portrait {
+  .promo-library__grid,
+  .promo-library__grid--portrait,
+  .promo-library[data-view-mode="poster"] .promo-library__grid,
+  .promo-library[data-view-mode="list"] .promo-library__card {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -173,5 +313,11 @@
 
   .promo-library__section {
     margin-top: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-library__filter-btn {
+    transition: none;
   }
 }

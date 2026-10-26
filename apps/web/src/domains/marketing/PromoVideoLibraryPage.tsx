@@ -1,9 +1,31 @@
 import { SITE_URL } from "@toonstudio/core/business";
-import { ArrowLeft, ArrowRight, Clapperboard, Download, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Clapperboard,
+  Download,
+  LayoutGrid,
+  List,
+  RotateCcw,
+  Search,
+  Sparkles,
+} from "lucide-react";
+import { useState } from "react";
 
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { normalizeLocaleCode, useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
+import {
+  COMPETITOR_PLATFORM_REA_LEDGER,
+  DEFAULT_PROMO_MEDIA_FILTER_STATE,
+  SERIES_LANDING_VIEW_MODES,
+  matchesPromoMediaFilter,
+  runSameDocumentViewTransition,
+  type MediaAspectFilter,
+  type PromoMediaFilterState,
+  type SeriesLandingViewMode,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
   useDocumentTitle,
   useMetaDescription,
@@ -50,6 +72,16 @@ const COPY = {
     closingPromoteBoard: "신작·작가 홍보 게시판",
     closingCuts: "숏폼 컷츠 피드",
     wayfindingLabel: "영상·홍보 바로가기",
+    viewModeLabel: "화면 보기 방식",
+    aspectFilterLabel: "화면 비율 필터",
+    aspectAll: "전체 비율",
+    aspectLandscape: "가로 16:9",
+    aspectVertical: "세로 9:16 쇼츠",
+    aspectSquare: "정사각 1:1",
+    searchPlaceholder: "영상 제목·설명·쓰는 곳으로 검색",
+    resetFilter: "필터 초기화",
+    reaBenchmarkTitle:
+      "유사 웹툰·창작 플랫폼 7종 REA 라우터·UI/UX 역공학 아키텍처 기준표 보기",
   },
   en: {
     pageTitle: "Promo Video Library",
@@ -80,6 +112,16 @@ const COPY = {
     closingPromoteBoard: "Creator promotion board",
     closingCuts: "Short-form Cuts feed",
     wayfindingLabel: "Video & promotion shortcuts",
+    viewModeLabel: "View mode",
+    aspectFilterLabel: "Aspect ratio filter",
+    aspectAll: "All ratios",
+    aspectLandscape: "16:9 Landscape",
+    aspectVertical: "9:16 Shorts",
+    aspectSquare: "1:1 Square",
+    searchPlaceholder: "Search by clip title, description or usage",
+    resetFilter: "Reset filters",
+    reaBenchmarkTitle:
+      "View REA router & UI/UX reverse-engineering benchmark across 7 webtoon platforms",
   },
 } as const;
 
@@ -138,7 +180,11 @@ export function PromoVideoLibraryPage() {
   const bi = useBilingualLocalizer("domains.marketing.PromoVideoLibraryPage");
   const language = useI18n((state) => state.lang);
   const documentLocale = normalizeLocaleCode(language) || "en";
+  const isKo = documentLocale === "ko";
   const copy = bi(COPY.ko, COPY.en);
+  const [filter, setFilter] = useState<PromoMediaFilterState>(
+    DEFAULT_PROMO_MEDIA_FILTER_STATE,
+  );
 
   useDocumentTitle(copy.pageTitle);
   useMetaDescription(copy.metaDescription);
@@ -150,6 +196,23 @@ export function PromoVideoLibraryPage() {
     imageAlt: copy.imageAlt,
   });
 
+  const updateViewMode = (viewMode: SeriesLandingViewMode) => {
+    runSameDocumentViewTransition(() => {
+      setFilter((prev) => ({ ...prev, viewMode }));
+    });
+  };
+
+  const updateAspectFilter = (aspectFilter: MediaAspectFilter) => {
+    runSameDocumentViewTransition(() => {
+      setFilter((prev) => ({ ...prev, aspectFilter }));
+    });
+  };
+
+  const hasActiveFilter =
+    filter.aspectFilter !== "all" ||
+    filter.categoryFilter !== "all" ||
+    filter.searchQuery.trim().length > 0;
+
   const facts = [
     `${PROMO_VIDEO_ITEMS.length}${copy.clipsUnit}`,
     `${PROMO_VIDEO_CATEGORIES.length}${bi("개 카테고리", " categories")}`,
@@ -157,9 +220,21 @@ export function PromoVideoLibraryPage() {
     bi("전부 생성형 AI 개념 영상", "All AI-generated concept clips"),
   ];
 
+  const aspectOptions: readonly { id: MediaAspectFilter; label: string }[] = [
+    { id: "all", label: copy.aspectAll },
+    { id: "landscape-16-9", label: copy.aspectLandscape },
+    { id: "vertical-9-16", label: copy.aspectVertical },
+    { id: "square-1-1", label: copy.aspectSquare },
+  ];
+
   return (
-    <div className="mk-page promo-library" lang={documentLocale}>
+    <div
+      className="mk-page promo-library"
+      lang={documentLocale}
+      data-view-mode={filter.viewMode}
+    >
       <header className="mk-shell promo-library__hero">
+        <SiteContextualSubNav pathnameOverride="/promo-library" />
         <p className="mk-eyebrow">
           <Clapperboard size={15} aria-hidden="true" />
           {copy.eyebrow}
@@ -198,11 +273,103 @@ export function PromoVideoLibraryPage() {
             );
           })}
         </nav>
+
+        <div className="promo-library__controls">
+          <div className="promo-library__controls-row">
+            <div
+              className="promo-library__view-switcher"
+              role="group"
+              aria-label={copy.viewModeLabel}
+            >
+              {SERIES_LANDING_VIEW_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  aria-pressed={filter.viewMode === mode.id}
+                  onClick={() => updateViewMode(mode.id)}
+                  className="promo-library__filter-btn"
+                  data-view-switcher={mode.id}
+                >
+                  {mode.id === "list" ? (
+                    <List size={14} aria-hidden="true" />
+                  ) : (
+                    <LayoutGrid size={14} aria-hidden="true" />
+                  )}
+                  <span>{isKo ? mode.koLabel : mode.enLabel}</span>
+                </button>
+              ))}
+            </div>
+
+            <div
+              className="promo-library__aspect-filter"
+              role="group"
+              aria-label={copy.aspectFilterLabel}
+            >
+              {aspectOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={filter.aspectFilter === option.id}
+                  onClick={() => updateAspectFilter(option.id)}
+                  className="promo-library__filter-btn"
+                  data-aspect-filter={option.id}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <label className="promo-library__search-box">
+              <Search size={15} aria-hidden="true" />
+              <span className="sr-only">{copy.searchPlaceholder}</span>
+              <input
+                type="search"
+                value={filter.searchQuery}
+                onChange={(event) =>
+                  setFilter((prev) => ({
+                    ...prev,
+                    searchQuery: event.target.value,
+                  }))
+                }
+                placeholder={copy.searchPlaceholder}
+              />
+            </label>
+
+            {hasActiveFilter ? (
+              <button
+                type="button"
+                onClick={() => setFilter(DEFAULT_PROMO_MEDIA_FILTER_STATE)}
+                className="promo-library__filter-btn"
+              >
+                <RotateCcw size={14} aria-hidden="true" />
+                {copy.resetFilter}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <details className="promo-library__rea-benchmark">
+          <summary>{copy.reaBenchmarkTitle}</summary>
+          <ul className="promo-library__rea-grid">
+            {COMPETITOR_PLATFORM_REA_LEDGER.map((entry) => (
+              <li key={entry.id} className="promo-library__rea-item">
+                <strong>
+                  {entry.name} ({entry.appVersion})
+                </strong>
+                <span>{entry.routerFramework}</span>
+                <code>{entry.astAnalysisViewEvidenceId}</code>
+              </li>
+            ))}
+          </ul>
+        </details>
       </header>
 
       {PROMO_VIDEO_CATEGORIES.map((category) => {
         const categoryCopy = bi(category.ko, category.en);
-        const items = promoVideosByCategory(category.id);
+        const items = promoVideosByCategory(category.id).filter((item) =>
+          matchesPromoMediaFilter(item, filter),
+        );
+        if (items.length === 0) return null;
         return (
           <section
             key={category.id}
