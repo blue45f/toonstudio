@@ -239,6 +239,15 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     fireEvent.click(screen.getByTestId("holistic-locale-en-btn"));
     fireEvent.click(screen.getByTestId("holistic-cal-time-610-btn"));
     expect(screen.getByRole("status").textContent).toContain("in-meeting");
+
+    expect(screen.getByTestId("nano-banana-studio-pack-section")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("nano-banana-pose-idle-btn"));
+    fireEvent.click(screen.getByTestId("nano-banana-dir-left-btn"));
+    expect(
+      screen.getByTestId("nano-banana-active-character-img").getAttribute("src"),
+    ).toContain("/assets/virtual-studio/nano-banana-v10/frames/idle-left.webp");
+    fireEvent.click(screen.getByTestId("nano-banana-prop-biophilic-planter-set-btn"));
+    expect(screen.getByRole("status").textContent).toContain("바이오필릭 플랜테리어 컬렉션");
   });
 
   it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {

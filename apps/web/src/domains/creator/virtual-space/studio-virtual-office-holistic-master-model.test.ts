@@ -2,15 +2,20 @@ import { describe, expect, it } from "vitest";
 
 import {
   HOLISTIC_40_VIRTUAL_OFFICE_PLATFORMS,
+  NANO_BANANA_V10_CHARACTER_FRAMES,
+  NANO_BANANA_V10_DECOR_PROPS,
   VIRTUAL_OFFICE_WAVE5_REA_EVIDENCE_LEDGER,
   advancePresentationSlideDeck,
   createInitialHolisticMasterState,
   evaluateCalendarAutoPresenceAtMinute,
   filterHolistic40Platforms,
+  getActiveNanoBananaCharacterFrame,
+  selectNanoBananaCharacterFrame,
   setCreatorPresentationMode,
   setKrispTranslationLocale,
   toggleFloatingPipAlwaysOnTop,
   toggleKrispBvcNoiseCancellation,
+  toggleNanoBananaDecorPropPlacement,
 } from "./studio-virtual-office-holistic-master-model";
 
 describe("studio-virtual-office-holistic-master-model", () => {
@@ -78,5 +83,23 @@ describe("studio-virtual-office-holistic-master-model", () => {
     const inCritique = evaluateCalendarAutoPresenceAtMinute(initial, 16 * 60 + 45);
     expect(inCritique.calendarSync.activeSyncedStatus).toBe("reviewing");
     expect(inCritique.calendarSync.scheduledBlocks[2]?.roomUnlocked).toBe(true);
+  });
+
+  it("manages Nano Banana v10 high-DPI studio theme props and 8-frame RGBA character sprites", () => {
+    let state = createInitialHolisticMasterState();
+    expect(NANO_BANANA_V10_DECOR_PROPS).toHaveLength(5);
+    expect(NANO_BANANA_V10_CHARACTER_FRAMES).toHaveLength(8);
+    expect(getActiveNanoBananaCharacterFrame(state).id).toBe("drawing-down");
+
+    state = selectNanoBananaCharacterFrame(state, "left", "idle");
+    const activeLeftIdle = getActiveNanoBananaCharacterFrame(state);
+    expect(activeLeftIdle.id).toBe("idle-left");
+    expect(activeLeftIdle.mirroredForDirectionConsistency).toBe(true);
+
+    expect(state.nanoBananaStudioPack.equippedDecorPropIds).toContain("cintiq-drawing-desk");
+    state = toggleNanoBananaDecorPropPlacement(state, "biophilic-planter-set");
+    expect(state.nanoBananaStudioPack.equippedDecorPropIds).toContain("biophilic-planter-set");
+    state = toggleNanoBananaDecorPropPlacement(state, "cintiq-drawing-desk");
+    expect(state.nanoBananaStudioPack.equippedDecorPropIds).not.toContain("cintiq-drawing-desk");
   });
 });
