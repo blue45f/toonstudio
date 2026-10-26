@@ -248,13 +248,14 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(32);
+    expect(bench.reaEvidenceTargetCount).toBe(38);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
     expect(bench.wave24ReaEvidenceCount).toBe(4);
     expect(bench.wave25ReaEvidenceCount).toBe(4);
     expect(bench.wave26ReaEvidenceCount).toBe(8);
     expect(bench.wave27ReaUiUxEvidenceCount).toBe(2);
+    expect(bench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(bench.competitorFilterPresetCount).toBe(12);
     expect(bench.klecksVanishPointRayCount).toBe(36);
     expect(bench.glfxHalftoneDotCmykCount).toBe(4);
@@ -754,6 +755,8 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
     expect(bench.wave27ReaUiUxEvidenceCount).toBe(2);
-    expect(bench.reaEvidenceTargetCount).toBe(32);
+    expect(bench.wave28HolisticReaEvidenceCount).toBe(6);
+    expect(bench.holisticToolPresetCount).toBe(12);
+    expect(bench.reaEvidenceTargetCount).toBe(38);
   });
 });

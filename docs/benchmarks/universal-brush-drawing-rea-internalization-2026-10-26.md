@@ -112,6 +112,15 @@
   - **Klecks 지각 휘도 대비 자동 반전(`testIsWhiteBestContrast`) & 이중 링 스와치**: $0.299R + 0.587G + 0.114B < 0.52$ 기준으로 고대비 지표를 자동 전환한다.
   - **워크스페이스 도크 관점 필터 탭 & 컨테이너 쿼리 반응형 인스펙터**: `container-type: inline-size`(`@container`), `@supports (font-size: 1cqi)` 유동 타이포그래피(`clamp()`), 미디어 `aspect-ratio` 공간 예약을 결합했다.
 
+### 2.11 Wave 28 114개 파일 전 기능 통합 코퍼스 일괄 REA 역공학 및 풀스택 드로잉 파이프라인 내재화 (Observation)
+- 단편적 분석 대신 114개 경쟁사 드로잉·브러시·필터·레이어·캔버스·이젤·트랜스폼·UI/UX 아티팩트 전체(`1,210,238` 바이트, 루트 SHA-256 `c0c4ef2aa87bdc75d1d38bfa5ad8fd990d10a433a08caefc7b4b29ab93fa4efa`)를 단일 통합 코퍼스로 묶어 `analyze_javascript_application`(`ev_442cce74aefb79ad517d22c48d4442e8d7ef4f8d50446d56609154642b36cfa8`, `max_semantic_nodes: 500000`, 방문 AST 노드 195,455개, 데이터흐름 관계 97,197개, 객체흐름 11,380개, 호출흐름 5,730개, 클로저 5,411개), `inspect_analysis_view`(`ev_d3a8a413cd9e5587da2fee4411a5d4bce8ed02ba3e5535d7e234da9e660928c8`, `ev_7f48c056edeaad5159e751eecdb4f7c15a82935f655f1ff4d9c3274f6e2d78ed`), `trace_javascript_semantics`(`ev_eb3150c44486644513d27b25c72c32a176c2776425c8ff25c03a83a06158dbf6`, `ev_88e5f1263a8ebf81cc4a28d3d8c53abb878b9859e8969c5bf8e585fc2d17443f`)로 일괄 역공학하고 `studio-holistic-drawing-workspace-suite.ts`에 6대 풀스택 드로잉 서브시스템을 전수 내재화했다:
+  1. **연결/비연결 플루드필(Flood Fill) · 8방향 영역 확장(Grow) · 매직 이레이저**: 4채널 제곱 허용오차 $\Delta c^2 \le \tau^2$ 검사와 자기 재귀 확장을 방지하는 `254` 스테이징 모폴로지 팽창, `miniPaint` 민감도($\tau = \text{sensitivity} \cdot 255 / 100$) 매직 이레이저.
+  2. **$45^\circ$ 캔버스 회전 보정 스냅 그라디언트 & 알파 잠금/Bayer 디더링**: 캔버스 회전각 보정 스냅 $\theta_{\text{snap}} = \text{round}((\theta + \theta_{\text{canvas}})/45^\circ)\cdot 45^\circ - \theta_{\text{canvas}}$, `linear`/`linear-mirror`/`radial` 램프 및 $4\times 4$ Bayer 행렬 디더링.
+  3. **4점 사영 호모그래피($3\times 3$ Projective Homography) 원근 변환 & FreeTransform 스냅**: $\mathbf{H} = \text{getSquareToQuad}(\text{after})^{-1} \cdot \text{getSquareToQuad}(\text{before})$ 사영 행렬, 8방위 회전 반응형 리사이즈 커서, 뷰포트 배율 보정 스냅 임계거리 $7 / \text{scale}$.
+  4. **3채널 단조 스플라인 톤 커브(256-LUT) · 언샵 마스크 · 3D 회전 색조/채도 · 비선형 명도/대비**: Catmull-Rom 256-LUT, 언샵 마스크 $\text{mix}(\text{blurred}, \text{orig}, 1+s)$, Wolfram $(1,1,1)$ 대각축 3D 회전 색조 변환 및 유리함수 채도 보정 $1 - \frac{1}{1.001 - \text{sat}}$.
+  5. **16종 W3C 레이어 합성기 · 클리핑 마스크 · 알파 잠금 · $256\times 256$ 더티 타일 히스토리**: W3C `soft-light` 피스와이즈 $D(cb)$ 수식, 클리핑 마스크 유효 알파($\alpha_{\text{eff}} = \alpha_s \cdot \alpha_b$), `HISTORY_TILE_SIZE = 256` 더티 타일 분할.
+  6. **이젤(Easel) 아핀 뷰포트 & 실시간 스트로크 손떨림 보정(Stabilizer)**: $15^\circ$ 회전 스냅, 좌우 미러 각도 변환, 지수이동평균(EMA) 스트로크 안정화.
+
 ---
 
 ## 3. 한계 및 미확정 영역 (Limitations & Unknowns)

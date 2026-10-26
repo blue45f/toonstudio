@@ -736,5 +736,45 @@ export function evaluateKlecksPrecisionSliderMapping(params: {
   return { falloffFactor, mappedValue, roundtripSlider01, decimalPlaces };
 }
 
-
+/**
+ * Wave 28: Holistic All-In-One REA (`ev_442cce74aefb79ad517d22c48d4442e8d7ef4f8d50446d56609154642b36cfa8`)
+ * 3D Hue/Saturation Wolfram rotation + Catmull-Rom Tone Curve 256-LUT + W3C Soft-Light blend kernel.
+ */
+export function evaluateLabHolisticHomographyAndToneCurve(params: {
+  readonly rgb01: readonly [number, number, number];
+  readonly hueShiftMinus1To1: number;
+  readonly saturationMinus1To1: number;
+  readonly midtoneBoost01: number;
+  readonly baseChannel01: number;
+}): {
+  readonly rotatedRgb01: readonly [number, number, number];
+  readonly curveMidpoint255: number;
+  readonly softLightBlended01: number;
+} {
+  const angle = Math.max(-1, Math.min(1, params.hueShiftMinus1To1)) * Math.PI;
+  const sinA = Math.sin(angle);
+  const cosA = Math.cos(angle);
+  const sqrt3 = Math.sqrt(3);
+  const wx = (2 * cosA + 1) / 3;
+  const wy = (-sqrt3 * sinA - cosA + 1) / 3;
+  const wz = (sqrt3 * sinA - cosA + 1) / 3;
+  const [r, g, b] = params.rgb01;
+  let hr = r * wx + g * wy + b * wz;
+  let hg = r * wz + g * wx + b * wy;
+  let hb = r * wy + g * wz + b * wx;
+  const avg = (hr + hg + hb) / 3;
+  const sat = Math.max(-1, Math.min(1, params.saturationMinus1To1));
+  const satMul = sat > 0 ? 1 - 1 / (1.001 - sat) : -sat;
+  hr = clamp01(hr + (avg - hr) * satMul);
+  hg = clamp01(hg + (avg - hg) * satMul);
+  hb = clamp01(hb + (avg - hb) * satMul);
+  const curveMidpoint255 = Math.round(clamp01(0.5 + (params.midtoneBoost01 - 0.5) * 0.75) * 255);
+  const cb = clamp01(params.baseChannel01);
+  const cs = hr;
+  const d = cb <= 0.25 ? ((16 * cb - 12) * cb + 4) * cb : Math.sqrt(cb);
+  const softLightBlended01 = clamp01(
+    cs <= 0.5 ? cb - (1 - 2 * cs) * cb * (1 - cb) : cb + (2 * cs - 1) * (d - cb),
+  );
+  return { rotatedRgb01: [hr, hg, hb], curveMidpoint255, softLightBlended01 };
+}
 

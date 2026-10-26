@@ -8,7 +8,16 @@ import {
   resolveStudioDeviceFormFactor,
 } from "../studio-csp-benchmark-scorecard";
 import { measureProcreateSilicaEngineBenchmark } from "../studio-procreate-silica-codecs";
-import { measureUniversalBrushTaxonomyEngineBenchmark } from "../studio-universal-brush-taxonomy-engine";
+import {
+  applyHolisticColorGradingAndCurvesSuite,
+  evaluateHolisticGradientTool,
+  evaluateHolisticLayerCompositorAndEasel,
+  evaluateHolisticPerspectiveAndFreeTransform,
+  executeHolisticFloodFillAndMagicErase,
+  HOLISTIC_STUDIO_TOOL_PRESETS,
+  measureUniversalBrushTaxonomyEngineBenchmark,
+  WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER,
+} from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 검증)", () => {
   it("뷰포트 폭과 포인터 특성에 따라 데스크톱·태블릿·모바일(compact) 폼팩터를 판별한다", () => {
@@ -105,13 +114,15 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(32);
+    expect(universalBench.reaEvidenceTargetCount).toBe(38);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
     expect(universalBench.wave25ReaEvidenceCount).toBe(4);
     expect(universalBench.wave26ReaEvidenceCount).toBe(8);
     expect(universalBench.wave27ReaUiUxEvidenceCount).toBe(2);
+    expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
+    expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -162,6 +173,93 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY.filterPluginBundles).toContain(
       "TPPChromaticAberration.bundle",
     );
+  });
+
+  it("Wave 28 114개 파일 전 기능 통합 코퍼스 일괄 REA 원장(6개 서브시스템) 및 플루드필·그라디언트·호모그래피·톤커브·W3C 레이어·이젤 커널을 검증한다", () => {
+    expect(WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER).toHaveLength(6);
+    expect(HOLISTIC_STUDIO_TOOL_PRESETS).toHaveLength(12);
+    for (const entry of WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER) {
+      expect(entry.parentEvidenceId).toBe(
+        "ev_442cce74aefb79ad517d22c48d4442e8d7ef4f8d50446d56609154642b36cfa8",
+      );
+      expect(entry.corpusFileCount).toBe(114);
+      expect(entry.visitedAstNodes).toBe(195455);
+      expect(entry.dataFlowRelations).toBe(97197);
+    }
+
+    const floodFill = executeHolisticFloodFillAndMagicErase({
+      rgbaBuffer: new Uint8ClampedArray(16 * 4).fill(220),
+      width: 4,
+      height: 4,
+      seedX: 1,
+      seedY: 1,
+      tolerance255: 20,
+      growPx: 1,
+      isContiguous: true,
+    });
+    expect(floodFill.filledPixelCount).toBe(16);
+    expect(floodFill.grownPixelCount).toBe(16);
+
+    const grad = evaluateHolisticGradientTool({
+      x1: 0,
+      y1: 0,
+      x2: 40,
+      y2: 38,
+      doSnap45: true,
+      kind: "linear-mirror",
+      doLockAlpha: true,
+      sampleX: 20,
+      sampleY: 20,
+    });
+    expect(grad.snappedAngleDeg).toBe(45);
+    expect(grad.compositeOperation).toBe("source-atop");
+
+    const homography = evaluateHolisticPerspectiveAndFreeTransform({
+      beforeQuad: [0, 0, 100, 0, 100, 100, 0, 100],
+      afterQuad: [10, 5, 95, 12, 105, 95, 5, 90],
+      sampleX: 50,
+      sampleY: 50,
+      transformAngleDeg: 45,
+      viewportScale: 2,
+    });
+    expect(homography.resizeCursor).toBe("ne-resize");
+    expect(homography.effectiveSnapDistancePx).toBe(3.5);
+
+    const grading = applyHolisticColorGradingAndCurvesSuite({
+      originalRgb01: [0.6, 0.4, 0.2],
+      blurredRgb01: [0.3, 0.3, 0.3],
+      unsharpStrength: 0.5,
+      brightness: 0.1,
+      contrast: 0.2,
+      hueShiftMinus1To1: 0.2,
+      saturationMinus1To1: 0.3,
+      curveControlPoints01: [
+        [0, 0],
+        [0.5, 0.65],
+        [1, 1],
+      ],
+    });
+    expect(grading.toneCurveLut256[128]).toBeGreaterThan(140);
+
+    const comp = evaluateHolisticLayerCompositorAndEasel({
+      baseRgba01: [0.8, 0.7, 0.6, 0.9],
+      activeRgba01: [0.3, 0.5, 0.9, 0.8],
+      blendMode: "soft-light",
+      hasClippingMask: true,
+      isAlphaLocked: false,
+      dirtyRect: { x: 10, y: 10, width: 300, height: 300 },
+      rawPoints: [
+        { x: 0, y: 0 },
+        { x: 20, y: 20 },
+      ],
+      stabilizerStrength01: 0.7,
+      easelScale: 1.5,
+      easelAngleDeg: 14,
+      easelIsMirrored: true,
+      snapRotation15: true,
+    });
+    expect(comp.dirtyHistoryTileCount).toBe(4);
+    expect(comp.snappedEaselAngleDeg).toBe(15);
   });
 });
 

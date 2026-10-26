@@ -214,6 +214,26 @@ describe("StudioNaturalMediaShowcase", () => {
     fireEvent.click(allDockTab!);
     expect(allDockTab?.getAttribute("aria-pressed")).toBe("true");
 
+    // Wave 28 통합 드로잉 파이프라인(플루드필·호모그래피·톤커브·W3C 레이어 합성) 검증
+    const wave28DockTab = container.querySelector('[data-studio-engine-wave-filter="wave28"]') as HTMLButtonElement | null;
+    expect(wave28DockTab).not.toBeNull();
+    fireEvent.click(wave28DockTab!);
+    expect(wave28DockTab?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(allDockTab!);
+
+    const holisticToolRadio = container.querySelector('[data-studio-holistic-tool-preset="holistic-flood-fill-contiguous"]') as HTMLButtonElement | null;
+    expect(holisticToolRadio).not.toBeNull();
+    expect(holisticToolRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(holisticToolRadio!, { key: "End" });
+    const holisticPerspectiveRadio = container.querySelector('[data-studio-holistic-tool-preset="holistic-perspective-4pt-homography"]') as HTMLButtonElement | null;
+    expect(holisticPerspectiveRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const blendModeRadio = container.querySelector('[data-studio-holistic-blend-mode="multiply"]') as HTMLButtonElement | null;
+    expect(blendModeRadio).not.toBeNull();
+    fireEvent.keyDown(blendModeRadio!, { key: "End" });
+    const lumaBlendRadio = container.querySelector('[data-studio-holistic-blend-mode="luminosity"]') as HTMLButtonElement | null;
+    expect(lumaBlendRadio?.getAttribute("aria-checked")).toBe("true");
+
     const contrastSwatch = container.querySelector("[data-studio-klecks-contrast-swatch]");
     expect(contrastSwatch).not.toBeNull();
   });
