@@ -222,6 +222,25 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(screen.getByTestId("wave4-status-notice").textContent).toContain("🚀");
   });
 
+  it("탭 8: Wave 5 플로팅PiP·오버더숄더(Whereby·Airtime), AI소음번역(Krisp), 캘린더동기화(Cal.com), 스탠드업봇·40대카탈로그(Pumble)를 제어한다", () => {
+    render(<StudioVirtualOfficeEnterpriseSuite />);
+
+    fireEvent.click(
+      screen.getByRole("tab", {
+        name: /플로팅PiP · AI소음번역 · 캘린더동기화 · 40대총괄/u,
+      }),
+    );
+
+    expect(screen.getByTestId("virtual-office-holistic-master-panel")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("holistic-toggle-pip-btn"));
+    fireEvent.click(screen.getByTestId("holistic-next-slide-btn"));
+    fireEvent.click(screen.getByTestId("holistic-toggle-krisp-btn"));
+    fireEvent.click(screen.getByTestId("holistic-locale-en-btn"));
+    fireEvent.click(screen.getByTestId("holistic-cal-time-610-btn"));
+    expect(screen.getByRole("status").textContent).toContain("in-meeting");
+  });
+
   it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {
     render(<StudioVirtualOfficeEnterpriseSuite />);
 

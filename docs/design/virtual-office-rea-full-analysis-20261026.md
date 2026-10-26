@@ -1,6 +1,6 @@
-# 35대 글로벌·국내 가상 오피스 · 원격 페어링 · 공간 XR · 딥워크 · 스토리보드 워룸 플랫폼 REA 전수 역공학 분석 및 툰스튜디오 내재화 설계서 (2026-10-26)
+# 40대 글로벌·국내 가상 오피스 · 원격 페어링 · 공간 XR · 딥워크 · 스토리보드 워룸 · 플로팅PiP·AI음성·캘린더 플랫폼 REA 전수 역공학 분석 및 툰스튜디오 내재화 설계서 (2026-10-26)
 
-- **문서 상태**: `current` (2026-10-26 Wave 1 13종 + Wave 2 8종 + Wave 3 7종 + Wave 4 7종 = 총 35종 구현 및 테스트 완료)
+- **문서 상태**: `current` (2026-10-26 Wave 1 13종 + Wave 2 8종 + Wave 3 7종 + Wave 4 7종 + Wave 5 5종 = 총 40종 구현 및 테스트 완료)
 - **증거 원장**: [`docs/evidence/rea-virtual-office-benchmark-20261026.json`](../evidence/rea-virtual-office-benchmark-20261026.json)
 - **기존 벤치마크 연계**: [`docs/studio/virtual-studio-office-collaboration-benchmark-20260927.md`](../studio/virtual-studio-office-collaboration-benchmark-20260927.md)
 
@@ -8,11 +8,11 @@
 
 ## 1. 목적 및 분석 범위
 
-본 문서는 REA(Reverse Engineer Anything) MCP 도구 체인(`capture_browser_scenario` → `export_web_scripts` → `analyze_javascript_application` → `inspect_analysis_view`)을 사용해 글로벌 및 국내 대표 가상 오피스·원격 페어링·공간 XR·포모도로 딥워크·스토리보드 워룸 협업 플랫폼 **35종**의 클라이언트 번들과 AST·라우트·상호작용 계약을 역공학 분석하고, 그 결과를 **클린룸(Clean-Room) 순수 TypeScript 도메인 모델 및 React UI 스위트**로 툰스튜디오(`apps/web/src/domains/creator/virtual-space/`)에 전수 내재화한 기록이다.
+본 문서는 REA(Reverse Engineer Anything) MCP 도구 체인(`capture_browser_scenario` → `export_web_scripts` → `analyze_javascript_application` → `inspect_analysis_view`)을 사용해 글로벌 및 국내 대표 가상 오피스·원격 페어링·공간 XR·포모도로 딥워크·스토리보드 워룸·플로팅 PiP·AI 음성/번역·캘린더 자동 상태 동기화 협업 플랫폼 **40종**의 클라이언트 번들과 AST·라우트·상호작용 계약을 역공학 분석하고, 그 결과를 **클린룸(Clean-Room) 순수 TypeScript 도메인 모델 및 React UI 스위트 + 메인 HUD 도크(`SpaceStatusMenu`, `SpaceSelfCard`)** 로 툰스튜디오(`apps/web/src/domains/creator/virtual-space/`)에 전수 내재화한 기록이다.
 
 ---
 
-## 2. 관측 사실(Observed Facts) — 35개 플랫폼 REA 증거 요약
+## 2. 관측 사실(Observed Facts) — 40개 플랫폼 REA 증거 요약
 
 | # | 플랫폼 | 대상 URL | 주요 REA Evidence ID (`capture` / `ast`) | JS 파일 / AST 노드 / Findings | 핵심 역공학 추출 기능 |
 | --- | --- | --- | --- | --- | --- |
@@ -51,6 +51,11 @@
 | 33 | **Discord Stage & Go-Live** | `https://discord.com/` | `ev_69589e9d...` / `ev_c74e80b7...` | 4파일 / 4,586노드 / 40건 | 4K60 다중 작화 방송 Go-Live 시어터 스포트라이트(`switchGoLiveSpotlightStream`), 스테이지 손들기 발언권 승격(`promoteStageHandRaiseToSpeaker`) |
 | 34 | **Kosy Office** | `https://www.kosyoffice.com/` | `ev_af93a1c1...` / `ev_674ce113...` | 4파일 / 909노드 / 0건 | 바이오필릭 환경 테마(`switchBiophilicHabitatTheme`), 데일리 에너지 체크인, 커피 룰렛 아이스브레이커 |
 | 35 | **Slack Huddles & Canvas** | `https://slack.com/` | `ev_c55ea1f6...` / `ev_31955775...` | 3파일 / 2,687노드 / 13건 | 원고 이슈 스레드 직결 경량 오디오 허들, 캔버스 사이드카 체크리스트(`toggleThreadHuddleChecklistItem`), 이모지 버스트 파운틴(`triggerThreadHuddleEmojiBurst`) |
+| 36 | **Whereby** | `https://whereby.com/` | `ev_88ee72ee...` / `ev_d331c2e4...` | 3파일 / 1,652노드 / 12건 | 클립스튜디오·블렌더 위 항상 위(Always-on-Top) 플로팅 PiP 카메라 버블(`toggleFloatingPipAlwaysOnTop`), 외부 편집자 무설치 브라우저 게스트 룸 |
+| 37 | **Pumble** | `https://pumble.com/` | `ev_c0377732...` / `ev_915ad0d0...` | 4파일 / 64,197노드 / 605건 | 회차·공정 영구 채널 및 일일 비동기 스탠드업 다이제스트 봇(완료 컷·진행 컷·블로커 집계) |
+| 38 | **Krisp AI** | `https://krisp.ai/` | `ev_1dd9b64c...` / `ev_071163af...` | 4파일 / 37,650노드 / 94건 | 펜 태블릿 타건음·기계식 키보드 소음 실시간 필터링(BVC, `toggleKrispBvcNoiseCancellation`) 및 한·영·일·중 실시간 다국어 자막 번역(`setKrispTranslationLocale`) |
+| 39 | **Airtime (mmhmm)** | `https://www.airtime.com/` | `ev_c37028cb...` / `ev_013703b2...` | 4파일 / 44,901노드 / 93건 | 작가 실루엣 오버더숄더(Over-the-Shoulder) 에피소드 콘티 슬라이드 브리핑(`setCreatorPresentationMode`, `advancePresentationSlideDeck`) |
+| 40 | **Cal.com** | `https://cal.com/` | `ev_4efc58a1...` / `ev_6237217c...` | 4파일 / 29,573노드 / 102건 | 연재·회의 캘린더 연동 아바타 상태 및 상태 모자 자동 전환, 예약 룸 시작 5분 전(T-5m) 자동 잠금 해제(`evaluateCalendarAutoPresenceAtMinute`) |
 
 ### 미해결 경계 (Unknowns / Boundaries)
 - **Butter (`https://www.butter.us/`)**: 헤드리스 브라우저 시나리오 캡처 시 `net::ERR_CONNECTION_TIMED_OUT`이 발생하여 번들 추출에서 제외하고 네트워크 경계로 기록했다(구 `welospaces.com` 오타는 정식 도메인 `https://www.welospace.com/`으로 해결하여 Wave 4에 편입 완료).
@@ -84,5 +89,8 @@
    - **Focusmate & Flow Club 호스트 플레이북 기반 작화 딥워크 스프린트(`advanceFocusSprintPhase`, `toggleFocusSprintIntentionCompleted`, `addFocusSprintIntention`) & Bramble 유체 공간 사운드스케이프 존(`updateAmbientSoundscapeZone`)**.
 5. [`studio-virtual-office-warroom-async-stage-model.ts`](../../apps/web/src/domains/creator/virtual-space/studio-virtual-office-warroom-async-stage-model.ts) & [`StudioVirtualOfficeWarroomAsyncStagePanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeWarroomAsyncStagePanel.tsx)
    - **Welo 네이버후드 자동 방음 경계 및 외부 방문자 패스(`issueWeloVisitorPass`), Claap 원고 컷 좌표 비동기 비디오 클립 핀(`updateAsyncCutPinDecision`), Miro 스토리보드 워룸 뷰포트 동기화·닷 보팅(`toggleWarroomBringEveryoneToHost`, `castWarroomDotVote`), FigJam 멀티플레이어 커서 챗·하이파이브 물리(`postMultiplayerCursorBubble`, `detectCursorHighFiveCollision`), Discord Go-Live 4K60 시어터·스테이지 발언자 승격(`switchGoLiveSpotlightStream`, `promoteStageHandRaiseToSpeaker`), Kosy 바이오필릭 환경 웰니스(`switchBiophilicHabitatTheme`), Slack 스레드 허들 캔버스 사이드카(`toggleThreadHuddleChecklistItem`, `triggerThreadHuddleEmojiBurst`)**.
-6. [`StudioVirtualOfficePairingXrPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficePairingXrPanel.tsx) & [`StudioVirtualOfficeEnterpriseSuite.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx)
-   - [`StudioVirtualSpaceCollaborationHub.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceCollaborationHub.tsx)의 `"13대 가상오피스 통합관제"` 탭 및 [`StudioVirtualSpaceTownProgramPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceTownProgramPanel.tsx)의 `"가상오피스"`(`"Office suite"`) 탭에 7대 통합 탭(35대 플랫폼)으로 연결 완료.
+6. [`studio-virtual-office-holistic-master-model.ts`](../../apps/web/src/domains/creator/virtual-space/studio-virtual-office-holistic-master-model.ts) & [`StudioVirtualOfficeHolisticMasterPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeHolisticMasterPanel.tsx) & [`hud/SpaceStatusMenu.tsx`](../../apps/web/src/domains/creator/virtual-space/hud/SpaceStatusMenu.tsx)
+   - **Whereby 플로팅 PiP 카메라 버블 & Airtime(mmhmm) 오버더숄더 콘티 슬라이드 브리핑(`setCreatorPresentationMode`, `toggleFloatingPipAlwaysOnTop`, `advancePresentationSlideDeck`), Krisp AI 펜·키보드 소음 제거(BVC) 및 4개국어 실시간 자막 번역(`toggleKrispBvcNoiseCancellation`, `setKrispTranslationLocale`), Cal.com 캘린더 연동 자동 상태·모자 전환 및 T-5분 룸 잠금 해제(`evaluateCalendarAutoPresenceAtMinute`), Pumble 데일리 에피소드 스탠드업 다이제스트 봇, 40대 플랫폼 통합 카탈로그(`filterHolistic40Platforms`)**.
+   - **메인 가상 공간 HUD(`hud/space-dock-model.ts`, `hud/SpaceStatusMenu.tsx`, `hud/SpaceSelfCard.tsx`) 직결**: 도크 내 상태 메뉴와 내 카드에서 Teemyco 상태 모자, Tandem 실행 창작 툴(Clip Studio·Blender·Photoshop·Storyboard), Krisp AI 소음 필터, Whereby 플로팅 PiP를 즉시 제어.
+7. [`StudioVirtualOfficePairingXrPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficePairingXrPanel.tsx) & [`StudioVirtualOfficeEnterpriseSuite.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx)
+   - [`StudioVirtualSpaceCollaborationHub.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceCollaborationHub.tsx)의 `"13대 가상오피스 통합관제"` 탭 및 [`StudioVirtualSpaceTownProgramPanel.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceTownProgramPanel.tsx)의 `"가상오피스"`(`"Office suite"`) 탭에 8대 통합 탭(40대 플랫폼) + 인터랙티브 공간 레이더 HUD(`StudioVirtualOfficeSpatialCanvasHud.tsx`)로 연결 완료.

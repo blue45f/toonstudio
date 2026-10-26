@@ -151,4 +151,29 @@ describe("SpaceDock", () => {
     render(<Harness self={{ identity: "alice", name: "Alice", activity: "available", userStatus: "break", avatarIndex: 0 }} />);
     expect(screen.getByRole("button", { name: "내 상태: 휴식 중 · Alice" })).toBeTruthy();
   });
+
+  it("내 상태 메뉴에서 Teemyco 상태 모자·Tandem 실행 창작 툴·Krisp BVC 소음 제거·Whereby 플로팅 PiP를 설정한다", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "내 상태: 대화 가능 · Alice" }));
+
+    const hatGroup = screen.getByRole("radiogroup", { name: "상태 모자" });
+    const focusCap = within(hatGroup).getByRole("radio", { name: /집중 캡/u });
+    fireEvent.click(focusCap);
+    expect(focusCap.getAttribute("aria-checked")).toBe("true");
+
+    const dccGroup = screen.getByRole("radiogroup", { name: "실행 중인 창작 툴" });
+    const cspRadio = within(dccGroup).getByRole("radio", { name: /클립스튜디오 EX/u });
+    fireEvent.click(cspRadio);
+    expect(cspRadio.getAttribute("aria-checked")).toBe("true");
+
+    const krispBtn = screen.getByRole("button", { name: /AI 펜·키보드 소음 제거 \(Krisp BVC\)/u });
+    expect(krispBtn.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(krispBtn);
+    expect(krispBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const pipBtn = screen.getByRole("button", { name: /창작 툴 위 플로팅 PiP 버블 \(Whereby\)/u });
+    expect(pipBtn.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(pipBtn);
+    expect(pipBtn.getAttribute("aria-pressed")).toBe("true");
+  });
 });

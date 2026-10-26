@@ -209,6 +209,8 @@ export const SPACE_BUBBLE_SOUND_OPTIONS: readonly SpaceBubbleSoundOption[] = [
 export interface SpaceProximityPreferences {
   readonly ignoreFollowRequests: boolean;
   readonly bubbleSound: SpaceBubbleSoundMode;
+  readonly krispNoiseSuppression?: boolean;
+  readonly wherebyFloatingPip?: boolean;
 }
 
 export const SPACE_PROXIMITY_PREFS_STORAGE_KEY = "toonspectrum:virtual-space-proximity-prefs:v1";
@@ -216,21 +218,106 @@ export const SPACE_PROXIMITY_PREFS_STORAGE_KEY = "toonspectrum:virtual-space-pro
 export function readSpaceProximityPreferences(): SpaceProximityPreferences {
   try {
     const raw = globalThis.localStorage?.getItem(SPACE_PROXIMITY_PREFS_STORAGE_KEY);
-    if (!raw) return { ignoreFollowRequests: false, bubbleSound: "ding" };
+    if (!raw) return { ignoreFollowRequests: false, bubbleSound: "ding", krispNoiseSuppression: true, wherebyFloatingPip: false };
     const parsed = JSON.parse(raw) as Partial<SpaceProximityPreferences> | null;
     const bubbleSound: SpaceBubbleSoundMode =
       parsed?.bubbleSound === "wobble" || parsed?.bubbleSound === "off" ? parsed.bubbleSound : "ding";
     return {
       ignoreFollowRequests: Boolean(parsed?.ignoreFollowRequests),
       bubbleSound,
+      krispNoiseSuppression: parsed?.krispNoiseSuppression ?? true,
+      wherebyFloatingPip: Boolean(parsed?.wherebyFloatingPip),
     };
   } catch {
-    return { ignoreFollowRequests: false, bubbleSound: "ding" };
+    return { ignoreFollowRequests: false, bubbleSound: "ding", krispNoiseSuppression: true, wherebyFloatingPip: false };
   }
 }
 
 export function writeSpaceProximityPreferences(next: SpaceProximityPreferences): void {
   try {
     globalThis.localStorage?.setItem(SPACE_PROXIMITY_PREFS_STORAGE_KEY, JSON.stringify(next));
+  } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
+}
+
+/**
+ * 아바타 상태 모자(Teemyco Status Hat 대응).
+ */
+export type SpaceStatusHatId = "none" | "focus-cap" | "question-hat" | "pair-crown" | "coffee-mug" | "on-air-mic";
+
+export interface SpaceStatusHatOption {
+  readonly id: SpaceStatusHatId;
+  readonly emoji: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+export const SPACE_STATUS_HAT_OPTIONS: readonly SpaceStatusHatOption[] = [
+  { id: "none", emoji: "", labelKo: "모자 없음", labelEn: "No hat" },
+  { id: "focus-cap", emoji: "🧢", labelKo: "집중 캡", labelEn: "Focus Cap" },
+  { id: "question-hat", emoji: "👒", labelKo: "질문 환영", labelEn: "Open for Questions" },
+  { id: "pair-crown", emoji: "👑", labelKo: "페어 작화", labelEn: "Pair Drawing" },
+  { id: "coffee-mug", emoji: "☕", labelKo: "커피 타임", labelEn: "Coffee Break" },
+  { id: "on-air-mic", emoji: "🎙️", labelKo: "녹음·방송 중", labelEn: "On-Air Recording" },
+];
+
+export const SPACE_STATUS_HAT_STORAGE_KEY = "toonspectrum:virtual-space-status-hat:v1";
+
+export function spaceStatusHatOptionById(id: SpaceStatusHatId): SpaceStatusHatOption {
+  return SPACE_STATUS_HAT_OPTIONS.find((item) => item.id === id) ?? SPACE_STATUS_HAT_OPTIONS[0]!;
+}
+
+export function readSpaceStatusHatId(): SpaceStatusHatId {
+  try {
+    const raw = globalThis.localStorage?.getItem(SPACE_STATUS_HAT_STORAGE_KEY);
+    return SPACE_STATUS_HAT_OPTIONS.some((item) => item.id === raw) ? (raw as SpaceStatusHatId) : "none";
+  } catch {
+    return "none";
+  }
+}
+
+export function writeSpaceStatusHatId(id: SpaceStatusHatId): void {
+  try {
+    globalThis.localStorage?.setItem(SPACE_STATUS_HAT_STORAGE_KEY, id);
+  } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
+}
+
+/**
+ * 실행 중인 창작 앱 표시(Tandem / Cosmos Video True Status 대응).
+ */
+export type SpaceActiveDccId = "none" | "clip-studio" | "blender-3d" | "photoshop" | "storyboard";
+
+export interface SpaceActiveDccOption {
+  readonly id: SpaceActiveDccId;
+  readonly badge: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+export const SPACE_ACTIVE_DCC_OPTIONS: readonly SpaceActiveDccOption[] = [
+  { id: "none", badge: "", labelKo: "작업 툴 숨김", labelEn: "Hide active app" },
+  { id: "clip-studio", badge: "🎨", labelKo: "클립스튜디오 EX", labelEn: "Clip Studio Paint" },
+  { id: "blender-3d", badge: "🧊", labelKo: "블렌더·스케치업 3D", labelEn: "Blender & SketchUp" },
+  { id: "photoshop", badge: "✨", labelKo: "포토샵·후보정", labelEn: "Photoshop & LUT" },
+  { id: "storyboard", badge: "📝", labelKo: "콘티·대본", labelEn: "Storyboard & Script" },
+];
+
+export const SPACE_ACTIVE_DCC_STORAGE_KEY = "toonspectrum:virtual-space-active-dcc:v1";
+
+export function spaceActiveDccOptionById(id: SpaceActiveDccId): SpaceActiveDccOption {
+  return SPACE_ACTIVE_DCC_OPTIONS.find((item) => item.id === id) ?? SPACE_ACTIVE_DCC_OPTIONS[0]!;
+}
+
+export function readSpaceActiveDccId(): SpaceActiveDccId {
+  try {
+    const raw = globalThis.localStorage?.getItem(SPACE_ACTIVE_DCC_STORAGE_KEY);
+    return SPACE_ACTIVE_DCC_OPTIONS.some((item) => item.id === raw) ? (raw as SpaceActiveDccId) : "none";
+  } catch {
+    return "none";
+  }
+}
+
+export function writeSpaceActiveDccId(id: SpaceActiveDccId): void {
+  try {
+    globalThis.localStorage?.setItem(SPACE_ACTIVE_DCC_STORAGE_KEY, id);
   } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
 }

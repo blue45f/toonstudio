@@ -2,7 +2,7 @@
   "schemaVersion": "toonstudio.rea.virtual-office-benchmark/1.0",
   "capturedOn": "2026-10-26",
   "methodology": "REA MCP (capture_browser_scenario, export_web_scripts, analyze_javascript_application, inspect_analysis_view) + Clean-Room Domain Internalization",
-  "totalPlatformsAnalyzed": 35,
+  "totalPlatformsAnalyzed": 40,
   "networkBoundaryExcluded": [
     {
       "platform": "Butter",
@@ -797,6 +797,111 @@
       "observedCapabilities": [
         "원고 이슈 스레드 직결 경량 오디오 허들(Thread Huddle) 및 공유 캔버스 사이드카 체크리스트",
         "실시간 이모지 리액션 버스트 파운틴(Emoji Burst Fountain) 피드백"
+      ]
+    },
+    {
+      "id": "whereby",
+      "name": "Whereby Embedded Hybrid Rooms",
+      "targetUrl": "https://whereby.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_88ee72ee510fe15d3336d0f6588d0b8e4692dbbee243cfd227215e4114e80cf9",
+        "exportWebScripts": "ev_9c9d323ab0877338214e7d2406b16d6f8a0d60ef71fd989a814341ae40933433",
+        "analyzeJavascriptApplication": "ev_d331c2e41b8a89f8f5a63593e17a59c6372d84cb1400edfd37b72ae68559addf",
+        "inspectAnalysisView": "ev_74a9509f92be0094eb3462594cbd9ef6e87daedc350ee2f9ae786510f0bcaef4"
+      },
+      "astMetrics": {
+        "jsFileCount": 3,
+        "totalBytes": 8814,
+        "astNodeCount": 1652,
+        "findingCount": 12
+      },
+      "observedCapabilities": [
+        "클립스튜디오·블렌더 위 항상 위(Always-on-Top) 플로팅 PiP 카메라 버블",
+        "외부 연재처 편집자 무설치 브라우저 게스트 룸 노크 링크 및 에코 감쇠"
+      ]
+    },
+    {
+      "id": "pumble",
+      "name": "Pumble Async Standup & Channels",
+      "targetUrl": "https://pumble.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_c03777321f4eb47a849a8c9b757fdf781a0223e4a9780845af6c9b877520c6df",
+        "exportWebScripts": "ev_e0def067928e289797fa301dc98b40ebfe1a3f081498a7d286365a2084a63f01",
+        "analyzeJavascriptApplication": "ev_915ad0d0df6374e02fabdde65da0149ddfe5467d79a5980923dcb4e9bedbc157",
+        "inspectAnalysisView": "ev_a8316ccd362945d269f620e20d6f44bf0b915bb2c8efee5fa4d6da51561404d0"
+      },
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 210789,
+        "astNodeCount": 64197,
+        "findingCount": 605
+      },
+      "observedCapabilities": [
+        "회차·공정별 영구 채널 및 데일리 비동기 스탠드업 다이제스트 봇(완료 컷·진행 컷·블로커 집계)",
+        "전 층 통합 스레드 검색 및 음성 허들 아카이브"
+      ]
+    },
+    {
+      "id": "krisp",
+      "name": "Krisp AI Voice Clarity & Translation",
+      "targetUrl": "https://krisp.ai/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_1dd9b64ca95aee569a60f6ba9e0b0cde3bfadd863f24e1c461f3a87d457ee2de",
+        "exportWebScripts": "ev_e90b5bc0a49b3a8feab46ed45ae704ed847a69fbad72439fdf828b8babce8c83",
+        "analyzeJavascriptApplication": "ev_071163afad380416d12606f4cc01d3de8d4412ea8530d603880e7a188b941059",
+        "inspectAnalysisView": "ev_9cf29bbab9236e211d02ded42d16851778c7149374935d1a63055b117d95b2ad"
+      },
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 161012,
+        "astNodeCount": 37650,
+        "findingCount": 94
+      },
+      "observedCapabilities": [
+        "배경 대화 음성 차단(BVC) 및 펜 태블릿 타건음·기계식 키보드 소음 실시간 필터링",
+        "한·영·일·중 글로벌 웹툰 로컬라이제이션 검수용 실시간 다국어 자막 번역"
+      ]
+    },
+    {
+      "id": "airtime-mmhmm",
+      "name": "Airtime (mmhmm) Over-the-Shoulder Stage",
+      "targetUrl": "https://www.airtime.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_c37028cbab1502ca4720506fce3834a96becbead05fa7cedc583b6f48f587d9f",
+        "exportWebScripts": "ev_8a4eb9639d66e7ea28adccfca6bf9e5164248a7371ea8a082cef755e8986c568",
+        "analyzeJavascriptApplication": "ev_013703b2f38d754281b37087beb98dad09ee607a6a22a0cfac373eca4d9157ed",
+        "inspectAnalysisView": "ev_d49bf4eb716e9f5a1e7daee2676478fbe30d0d545d5fa2cb90859ff2f58b85a9"
+      },
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 159464,
+        "astNodeCount": 44901,
+        "findingCount": 93
+      },
+      "observedCapabilities": [
+        "작가 투명 실루엣 컷아웃 및 어깨 위(Over-the-Shoulder) 에피소드 콘티 슬라이드 브리핑",
+        "듀얼 펜 태블릿 분할 프리젠테이션 스테이지 전환"
+      ]
+    },
+    {
+      "id": "calcom",
+      "name": "Cal.com Calendar-Driven Presence Sync",
+      "targetUrl": "https://cal.com/",
+      "evidenceIds": {
+        "captureBrowserScenario": "ev_4efc58a1e2b9efe9ca83157cb2034dd5443b36f2baf8a064301be28af1945187",
+        "exportWebScripts": "ev_a0833cbb9b1b86ea10c42e183738407330ee0d164c8061d7dcd0ed6044098123",
+        "analyzeJavascriptApplication": "ev_6237217ce3796f8e1f3eb8c9fc1a1def8c411af6efe63b42ba8e30336fe3d6d7",
+        "inspectAnalysisView": "ev_81934c8ebc94c0c8b0ad5862c2d56e8d5f87c679a218c2dbef12df306fad4c75"
+      },
+      "astMetrics": {
+        "jsFileCount": 4,
+        "totalBytes": 97782,
+        "astNodeCount": 29573,
+        "findingCount": 102
+      },
+      "observedCapabilities": [
+        "연재 마감·편집부 회의 캘린더 일정 연동 아바타 상태 및 Teemyco 상태 모자 자동 전환",
+        "예약된 검수 회의실 시작 5분 전(T-5m) 자동 잠금 해제(Auto-Unlock)"
       ]
     }
   ]

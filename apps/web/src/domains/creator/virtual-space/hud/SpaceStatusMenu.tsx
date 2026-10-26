@@ -4,23 +4,31 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
+  readSpaceActiveDccId,
   readSpaceCompanionId,
   readSpaceProximityPreferences,
+  readSpaceStatusHatId,
   readSpaceStatusUrgency,
+  SPACE_ACTIVE_DCC_OPTIONS,
   SPACE_BUBBLE_SOUND_OPTIONS,
   SPACE_COMPANION_OPTIONS,
   SPACE_PROXIMITY_RANGE_OPTIONS,
   SPACE_STATUS_EXPIRY_OPTIONS,
+  SPACE_STATUS_HAT_OPTIONS,
   SPACE_STATUS_OPTIONS,
   SPACE_STATUS_URGENCY_OPTIONS,
+  writeSpaceActiveDccId,
   writeSpaceCompanionId,
   writeSpaceProximityPreferences,
+  writeSpaceStatusHatId,
   writeSpaceStatusUrgency,
+  type SpaceActiveDccId,
   type SpaceBubbleSoundMode,
   type SpaceCompanionId,
   type SpaceProximityPreferences,
   type SpaceProximityRangeOption,
   type SpaceStatusExpiryMinutes,
+  type SpaceStatusHatId,
   type SpaceStatusId,
   type SpaceStatusOption,
   type SpaceStatusUrgency,
@@ -31,11 +39,13 @@ import type { SpaceProximityRangeMode } from "./space-proximity-media";
  * 내 상태 6종(대화 가능·집중·검토·회의·휴식·자리 비움)과 캐릭터·이름 바꾸기.
  * 상태는 색 점과 글자로 함께 보여 주고, 고른 값은 이름표와 팀원 목록에 그대로 보인다.
  * 근접 음성 범위(기본·좁게·끄기)를 함께 두면 좁게·끄기일 때 내 상태 점이 빨간색으로 바뀐다(Gather Quiet 대응).
- * oVice 긴급도 배지(일반·주의·긴급)와 WorkAdventure 동행 펫(companion)·따라가기 거절·버블 효과음도 함께 설정한다.
+ * oVice 긴급도 배지(일반·주의·긴급), WorkAdventure 동행 펫(companion)·따라가기 거절·버블 효과음,
+ * Teemyco 상태 모자(statusHat), Tandem 실행 중인 창작 툴(activeDcc), Krisp AI 소음 제거·Whereby 플로팅 PiP도 함께 설정한다.
  */
 export function SpaceStatusMenu({
   status, onStatus, onEditCharacter, proximityRange, onProximityRange, statusExpiryMinutes = null, onStatusExpiry,
   statusUrgency, onStatusUrgency, companionId, onCompanionChange, proximityPreferences, onProximityPreferences,
+  statusHatId, onStatusHatChange, activeDccId, onActiveDccChange,
 }: {
   readonly status: SpaceStatusId;
   /** close가 true면 고른 뒤 메뉴를 닫는다(클릭). 화살표 이동은 메뉴를 유지한다. */
@@ -56,6 +66,12 @@ export function SpaceStatusMenu({
   /** 근접 버블 효과음·따라가기 거절(WorkAdventure LocalUserStore 대응). */
   readonly proximityPreferences?: SpaceProximityPreferences;
   readonly onProximityPreferences?: (next: SpaceProximityPreferences) => void;
+  /** 아바타 상태 모자(Teemyco Status Hat 대응). */
+  readonly statusHatId?: SpaceStatusHatId;
+  readonly onStatusHatChange?: (hatId: SpaceStatusHatId) => void;
+  /** 실행 중인 창작 툴 표시(Tandem / Cosmos True Status 대응). */
+  readonly activeDccId?: SpaceActiveDccId;
+  readonly onActiveDccChange?: (dccId: SpaceActiveDccId) => void;
 }) {
   const bt = useBilingual("SpaceStatusMenu");
   const group = useRef<HTMLDivElement>(null);
@@ -63,9 +79,13 @@ export function SpaceStatusMenu({
   const [localUrgency, setLocalUrgency] = useState<SpaceStatusUrgency>(() => readSpaceStatusUrgency());
   const [localCompanion, setLocalCompanion] = useState<SpaceCompanionId>(() => readSpaceCompanionId());
   const [localPrefs, setLocalPrefs] = useState<SpaceProximityPreferences>(() => readSpaceProximityPreferences());
+  const [localHat, setLocalHat] = useState<SpaceStatusHatId>(() => readSpaceStatusHatId());
+  const [localDcc, setLocalDcc] = useState<SpaceActiveDccId>(() => readSpaceActiveDccId());
   const activeUrgency = statusUrgency ?? localUrgency;
   const activeCompanion = companionId ?? localCompanion;
   const activePrefs = proximityPreferences ?? localPrefs;
+  const activeHat = statusHatId ?? localHat;
+  const activeDcc = activeDccId ?? localDcc;
 
   const selectUrgency = (next: SpaceStatusUrgency) => {
     setLocalUrgency(next);
@@ -76,6 +96,16 @@ export function SpaceStatusMenu({
     setLocalCompanion(next);
     writeSpaceCompanionId(next);
     onCompanionChange?.(next);
+  };
+  const selectHat = (next: SpaceStatusHatId) => {
+    setLocalHat(next);
+    writeSpaceStatusHatId(next);
+    onStatusHatChange?.(next);
+  };
+  const selectDcc = (next: SpaceActiveDccId) => {
+    setLocalDcc(next);
+    writeSpaceActiveDccId(next);
+    onActiveDccChange?.(next);
   };
   const updatePrefs = (patch: Partial<SpaceProximityPreferences>) => {
     const next: SpaceProximityPreferences = { ...activePrefs, ...patch };
@@ -153,6 +183,32 @@ export function SpaceStatusMenu({
       onClick={() => updatePrefs({ ignoreFollowRequests: !activePrefs.ignoreFollowRequests })}>
       <span className="space-menu-row__label">{bt("따라가기 요청 자동 거절", "Ignore follow requests")}</span>
       {activePrefs.ignoreFollowRequests ? <Check size={16} aria-hidden /> : null}
+    </button>
+    <div role="radiogroup" aria-label={bt("상태 모자", "Status hat")} className="space-status-menu__options">
+      {SPACE_STATUS_HAT_OPTIONS.map((item) => <button key={item.id} type="button" role="radio"
+        aria-checked={activeHat === item.id} data-status-hat-option={item.id} className="space-menu-row"
+        onClick={() => selectHat(item.id)}>
+        <span className="space-menu-row__label">{item.emoji ? `${item.emoji} ` : ""}{bt(item.labelKo, item.labelEn)}</span>
+        {activeHat === item.id ? <Check size={16} aria-hidden /> : null}
+      </button>)}
+    </div>
+    <div role="radiogroup" aria-label={bt("실행 중인 창작 툴", "Active creative app")} className="space-status-menu__options">
+      {SPACE_ACTIVE_DCC_OPTIONS.map((item) => <button key={item.id} type="button" role="radio"
+        aria-checked={activeDcc === item.id} data-active-dcc-option={item.id} className="space-menu-row"
+        onClick={() => selectDcc(item.id)}>
+        <span className="space-menu-row__label">{item.badge ? `${item.badge} ` : ""}{bt(item.labelKo, item.labelEn)}</span>
+        {activeDcc === item.id ? <Check size={16} aria-hidden /> : null}
+      </button>)}
+    </div>
+    <button type="button" className="space-menu-row" aria-pressed={activePrefs.krispNoiseSuppression ?? true}
+      onClick={() => updatePrefs({ krispNoiseSuppression: !(activePrefs.krispNoiseSuppression ?? true) })}>
+      <span className="space-menu-row__label">{bt("AI 펜·키보드 소음 제거 (Krisp BVC)", "AI stylus & keyboard noise filter (Krisp BVC)")}</span>
+      {(activePrefs.krispNoiseSuppression ?? true) ? <Check size={16} aria-hidden /> : null}
+    </button>
+    <button type="button" className="space-menu-row" aria-pressed={Boolean(activePrefs.wherebyFloatingPip)}
+      onClick={() => updatePrefs({ wherebyFloatingPip: !activePrefs.wherebyFloatingPip })}>
+      <span className="space-menu-row__label">{bt("창작 툴 위 플로팅 PiP 버블 (Whereby)", "Floating PiP camera bubble (Whereby)")}</span>
+      {activePrefs.wherebyFloatingPip ? <Check size={16} aria-hidden /> : null}
     </button>
     {proximityRange && onProximityRange ? <>
       <div ref={rangeGroup} role="radiogroup" aria-label={bt("근접 음성 범위", "Proximity voice range")} className="space-status-menu__options">
