@@ -25,6 +25,7 @@ import { CAMERA_PRESETS } from "../vrm/studio-vrm-poser-catalogs";
 import {
   characterLightingToneLabel,
   nextCharacterLightingTone,
+  resolveShaperContextKeycapStatusGuide,
 } from "./character-shaper-ui-model";
 
 import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
@@ -416,17 +417,38 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
         ) : null}
       </div>
 
-      <div role="status" className="pointer-events-auto absolute bottom-2 left-2 max-w-[70%]">
-        <StudioHudPill
-          accent={pill.accent}
-          title={modelName ? `${modelName} · ${pill.text}` : pill.text}
-          className="max-w-full truncate"
-        >
-          {status === "loading" ? (
-            <LoaderCircle size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />
-          ) : null}
-          {pill.text}
-        </StudioHudPill>
+      <div className="pointer-events-auto absolute bottom-2 left-2 flex max-w-[75%] flex-wrap items-center gap-1.5">
+        <div role="status" className="min-w-0 max-w-full">
+          <StudioHudPill
+            accent={pill.accent}
+            title={modelName ? `${modelName} · ${pill.text}` : pill.text}
+            className="max-w-full truncate"
+          >
+            {status === "loading" ? (
+              <LoaderCircle size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />
+            ) : null}
+            {pill.text}
+          </StudioHudPill>
+        </div>
+        {!compact && modelReady ? (
+          <div
+            data-testid="shaper-hud-context-keycaps"
+            aria-label="단축키 안내"
+            className="flex items-center gap-2 rounded-xl border border-line/60 bg-panel/85 px-2.5 py-1 text-[0.65rem] font-medium text-fg-2 shadow-sm backdrop-blur"
+          >
+            {resolveShaperContextKeycapStatusGuide({
+              tab: paintMode ? "draw" : "pose",
+              drawingActive: paintMode,
+            }).map((item) => (
+              <span key={item.keycap} className="inline-flex items-center gap-1">
+                <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-line-strong/70 bg-card px-1 font-mono text-[0.6rem] font-bold text-fg">
+                  {item.keycap}
+                </kbd>
+                <span>{item.actionKo}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <StudioLtConvertDialog

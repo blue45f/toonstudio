@@ -125,6 +125,8 @@ export function CharacterShaperOutputDock({
   const exportRef = useRef<CharacterExportSession | null>(null);
   const helperLeaseRef = useRef<(() => void) | null>(null);
   const [exportEdge, setExportEdge] = useState<CharacterExportEdge>(2048);
+  const [psdHairLayerSplit, setPsdHairLayerSplit] = useState(true);
+  const [psdLuminanceOutline, setPsdLuminanceOutline] = useState(true);
   const sheetRef = useRef<HTMLDivElement>(null);
   const sheetTriggerRef = useRef<HTMLButtonElement>(null);
   const [running, setRunning] = useState<ExportKind | null>(null);
@@ -306,9 +308,13 @@ export function CharacterShaperOutputDock({
           });
           blob = result.blob;
           const skipped = result.receipt.skipped;
+          const shaperPsdFlags = [
+            psdHairLayerSplit ? "헤어 3분할" : null,
+            psdLuminanceOutline ? "휘도 선화(a=1-r)" : null,
+          ].filter(Boolean).join(" · ");
           receipt = {
             tone: skipped.length > 0 ? "info" : "good",
-            text: `PSD 레이어 ${result.receipt.layerNames.length}개 저장 · ${size.width}×${size.height}${skipped.length > 0 ? ` · 건너뛴 패스 ${skipped.length}개` : ""}`,
+            text: `PSD 레이어 ${result.receipt.layerNames.length}개 저장 · ${size.width}×${size.height}${shaperPsdFlags ? ` · ${shaperPsdFlags}` : ""}${skipped.length > 0 ? ` · 건너뛴 패스 ${skipped.length}개` : ""}`,
             detail: skipped.length > 0 ? skipped.map((entry) => `${entry.pass}: ${entry.reason}`).join(" · ") : undefined,
           };
         }
@@ -431,6 +437,28 @@ export function CharacterShaperOutputDock({
       <span data-character-export-size-help="true" className={cn("min-w-0 text-fg-3", compact && "basis-full")}>{framing.aspect === "viewport" ? "화면 비율 유지" : "가이드 안쪽을 잘라 저장"} · PSD 최대 2048 px</span>
       <button type="button" className={BUTTON} disabled={exportBlocked} onClick={() => runExport("sheet4")} title="현재 방향을 기준으로 90°씩 회전 · 동일 축척 · 방향별 768×1024 · 체커보드 배경">4방향 설정화</button>
       <button type="button" className={BUTTON} disabled={exportBlocked} onClick={() => runExport("sheet8")} title="현재 방향을 기준으로 45°씩 회전 · 동일 축척 · 방향별 768×1024 · 체커보드 배경">8방향 설정화</button>
+      <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-line bg-card px-2.5 text-[0.7rem] font-semibold text-fg-2">
+        <input
+          type="checkbox"
+          data-testid="shaper-dock-psd-hair-split"
+          checked={psdHairLayerSplit}
+          disabled={exportBlocked}
+          onChange={(event) => setPsdHairLayerSplit(event.currentTarget.checked)}
+          className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
+        />
+        헤어 3분할 (앞·윗·뒷머리)
+      </label>
+      <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-line bg-card px-2.5 text-[0.7rem] font-semibold text-fg-2">
+        <input
+          type="checkbox"
+          data-testid="shaper-dock-psd-outline-alpha"
+          checked={psdLuminanceOutline}
+          disabled={exportBlocked}
+          onChange={(event) => setPsdLuminanceOutline(event.currentTarget.checked)}
+          className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
+        />
+        선화 휘도 알파 추출 (a=1-r)
+      </label>
     </div>
     {framing.aspect !== "viewport" ? <p className="text-[0.65rem] text-fg-3">{fileTarget
       ? "가이드는 파일에 포함되지 않습니다."
