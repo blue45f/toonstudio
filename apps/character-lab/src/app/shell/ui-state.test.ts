@@ -45,7 +45,7 @@ describe("app/shell/ui-state", () => {
     expect(resolveActiveWorkflowStageId({ activeSlot: "hair", inspectorTab: "physics", drawingMode: false })).toBe("2-wardrobe-groom");
     expect(resolveActiveWorkflowStageId({ activeSlot: "pose", inspectorTab: "pose", drawingMode: false })).toBe("3-pose-gaze");
     expect(resolveActiveWorkflowStageId({ activeSlot: "face-shape", inspectorTab: "paint", drawingMode: true })).toBe("4-ink-paint");
-    expect(resolveActiveWorkflowStageId({ activeSlot: "lighting", inspectorTab: "export", drawingMode: false })).toBe("5-render-export");
+    expect(resolveActiveWorkflowStageId({ activeSlot: "accessory", inspectorTab: "export", drawingMode: false })).toBe("5-render-export");
 
     const parsed = parseLabRouteSearchParams("?stage=4-ink-paint");
     expect(parsed).toEqual({

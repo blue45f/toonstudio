@@ -260,6 +260,19 @@ describe("CharacterPlatformWorkbench drawing mode", () => {
 
       expect(screen.getByTestId("workbench-vroid-subroute").textContent).toContain("photobooth");
       expect(screen.getByTestId("workbench-onward-bridge").textContent).toContain("본편 원고 스튜디오로 삽입");
+      const psdOptions = screen.getByTestId("shaper-psd-preflight-options");
+      expect(psdOptions.textContent).toContain("Hair Base / Hair Shadow / Hair Line");
+      expect(psdOptions.textContent).toContain("a = 1 - r");
+
+      const camSelect = screen.getByTestId("workbench-camera-style-select") as HTMLSelectElement;
+      expect(camSelect.value).toBe("unity");
+      fireEvent.change(camSelect, { target: { value: "blender" } });
+      expect(screen.getByTestId("workbench-shaper-context-statusbar").textContent).toContain("MMB");
+
+      const gazeLockBtn = screen.getByTestId("workbench-eyeball-gaze-lock");
+      expect(gazeLockBtn.textContent).toContain("F10 응시 ON");
+      fireEvent.click(gazeLockBtn);
+      expect(gazeLockBtn.textContent).toContain("F10 응시 OFF");
 
       fireEvent.click(screen.getByRole("tab", { name: "웹 코어" }));
       const licenseMatrix = screen.getByTestId("workbench-vrm-license-matrix");

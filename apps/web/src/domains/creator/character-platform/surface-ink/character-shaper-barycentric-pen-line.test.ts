@@ -5,10 +5,12 @@ import {
   buildShaperPrismLineMesh,
   computePenLinePointThickness,
   computeShaperRealTabletWidthMultiplier,
+  evaluateShaperDynLevinGregoryMidpoint,
   filterCostumeOccludedBodyStrokes,
   interpolateStepPointPenLine,
   mirrorPenLineStroke,
   resolvePenLineColor,
+  scheduleShaperPenLineFrameBudget,
   ShaperBarycentricPenLineError,
   shaperRgbaToHex,
   type ShaperPartMeshGeometry,
@@ -283,5 +285,17 @@ describe("character-shaper-barycentric-pen-line", () => {
     );
     expect(filtered.occludedLineIds).toEqual(["collarbone_ink"]);
     expect(filtered.visibleStrokes.map((s) => s.lineId)).toEqual(["cheek_blush_L", "wrist_ink"]);
+  });
+
+  it("evaluates Dyn-Levin-Gregory 4-point subdivision midpoint and 8ms frame budget scheduler", () => {
+    const mid = evaluateShaperDynLevinGregoryMidpoint([0, 0, 0], [1, 1, 0], [2, 1, 0], [3, 0, 0]);
+    expect(mid[0]).toBeCloseTo(1.5, 6);
+    expect(mid[1]).toBeGreaterThan(1.0);
+
+    const budget = scheduleShaperPenLineFrameBudget([3, 4, 5], 0, 8);
+    expect(budget.processedCount).toBe(2);
+    expect(budget.nextIndex).toBe(2);
+    expect(budget.elapsedMs).toBe(7);
+    expect(budget.completedAll).toBe(false);
   });
 });

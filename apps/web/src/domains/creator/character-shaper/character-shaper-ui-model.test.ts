@@ -25,6 +25,11 @@ import {
   pushCharacterShaperKeyLayer,
   reduceCharacterShaperUiState,
   resolveCharacterShaperLayout,
+  clampShaperColorPalettePicker2d,
+  composeShaperKoreanJamoInput,
+  resolveShaperContextKeycapStatusGuide,
+  resolveShaperThreeStyleCameraAction,
+  SHAPER_STUDIO_UI_DESIGN_TOKENS,
 } from "./character-shaper-ui-model";
 
 import type { CharacterRecipe, CharacterSlotEntry, CharacterSlotMeta } from "./character-shaper-contract";
@@ -242,5 +247,28 @@ describe("character-shaper-ui-model key layers", () => {
     expect(countCharacterShaperKeyLayers()).toBe(before);
     target.dispatchEvent(new Event("keydown"));
     expect(outer).toHaveBeenCalledTimes(1);
+  });
+
+  it("exposes SHAPER studio UI tokens, 3-style camera mapping, 2D palette clamping, Hangul IME, and context keycap guide", () => {
+    expect(SHAPER_STUDIO_UI_DESIGN_TOKENS.colors.canvasDarkHex).toBe("#121212");
+    expect(SHAPER_STUDIO_UI_DESIGN_TOKENS.colors.studioYellowAccentHex).toBe("#ffff00");
+    expect(SHAPER_STUDIO_UI_DESIGN_TOKENS.layout.bottomStatusBarHeightPx).toBe(24);
+
+    expect(resolveShaperThreeStyleCameraAction({ style: "unity", button: "left", altKey: true })).toBe("orbit");
+    expect(resolveShaperThreeStyleCameraAction({ style: "blender", button: "middle", shiftKey: true })).toBe("pan");
+    expect(resolveShaperThreeStyleCameraAction({ style: "max", button: "middle", altKey: true })).toBe("orbit");
+
+    const clamped = clampShaperColorPalettePicker2d({ pointerX: -10, pointerY: 200, boxSizePx: 108 });
+    expect(clamped.clampedX).toBe(4);
+    expect(clamped.clampedY).toBe(104);
+    expect(clamped.saturation).toBe(0);
+    expect(clamped.value).toBe(0);
+
+    expect(composeShaperKoreanJamoInput("ㅎ", "ㅏ", "ㄴ")).toBe("한");
+    expect(composeShaperKoreanJamoInput("ㅅ", "ㅔ")).toBe("세");
+
+    expect(resolveShaperContextKeycapStatusGuide({ tab: "pose" })[0]?.keycap).toBe("Alt");
+    expect(resolveShaperContextKeycapStatusGuide({ tab: "groom" })[0]?.keycap).toBe("Shift");
+    expect(resolveShaperContextKeycapStatusGuide({ tab: "parts", drawingActive: true })[0]?.keycap).toBe("LMB");
   });
 });

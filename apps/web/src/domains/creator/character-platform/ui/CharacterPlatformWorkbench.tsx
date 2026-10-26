@@ -24,6 +24,8 @@ import {
   CHARACTER_SHAPER_TOUCH_PORTRAIT_QUERY,
   isCharacterShaperTypingTarget,
   pushCharacterShaperKeyLayer,
+  resolveShaperContextKeycapStatusGuide,
+  type ShaperCameraControlStyle,
 } from "../../character-shaper/character-shaper-ui-model";
 import { executeCharacterAuthoringTaskInBrowser } from "../runtime/character-authoring-worker-client";
 import { CharacterGroomPanel } from "./CharacterGroomPanel";
@@ -187,6 +189,10 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   const [shaperMatcapWeight, setShaperMatcapWeight] = useState(0.2);
   const [shaperOutlineThickness, setShaperOutlineThickness] = useState(0.01);
   const [shaperEyeballMode, setShaperEyeballMode] = useState<EyeballHighlightType>("cam");
+  const [cameraStyle, setCameraStyle] = useState<ShaperCameraControlStyle>("unity");
+  const [fixEyeballCam, setFixEyeballCam] = useState(true);
+  const [createHairLayer, setCreateHairLayer] = useState(true);
+  const [extractLuminanceOutline, setExtractLuminanceOutline] = useState(true);
   const [vrmLicensePresetId, setVrmLicensePresetId] = useState<VrmUsageConditionMatrix["presetId"]>("webtoon-serial-ready");
   const activeVrmLicense = VRM_LICENSE_PRESETS.find((item) => item.presetId === vrmLicensePresetId) ?? VRM_LICENSE_PRESETS[0]!;
   const vrmLicenseBadges = summarizeVrmUsageMatrix(activeVrmLicense);
@@ -212,6 +218,11 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
     error: t("studio.character.persistence.error", "저장소 오류"),
   };
   const drawing = open && workbench.surfaceInk.active;
+  const shaperContextStatusGuide = resolveShaperContextKeycapStatusGuide({
+    tab,
+    drawingActive: drawing,
+    cameraStyle,
+  });
   const ownerDialogRef = h.dialogRef as RefObject<HTMLElement | null> | undefined;
 
   useEffect(() => {
@@ -236,7 +247,9 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
     compatibility: workbench.compatibility,
     hasSurfacePaint: Boolean(h.texturePaintCanUndo || h.texturePaintHasContent || h.texturePaintDirty),
     canonical: workbench.canonicalManifest !== null,
-  }), [binding.profile, exportSize.height, exportSize.width, h.texturePaintCanUndo, h.texturePaintDirty, h.texturePaintHasContent, h.transparentBackground, workbench.canonicalManifest, workbench.compatibility]);
+    createHairLayer,
+    extractLuminanceOutline,
+  }), [binding.profile, createHairLayer, exportSize.height, exportSize.width, extractLuminanceOutline, h.texturePaintCanUndo, h.texturePaintDirty, h.texturePaintHasContent, h.transparentBackground, workbench.canonicalManifest, workbench.compatibility]);
 
   const close = () => {
     runtimeTestAbortRef.current?.abort();
@@ -573,6 +586,16 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
           <div className="rounded-xl bg-warn/10 p-2"><strong className="block text-warn">{psdPreflight.conditionalCount}</strong><span className="text-[0.62rem] text-fg-3">조건부</span></div>
           <div className="rounded-xl bg-bad/10 p-2"><strong className="block text-bad">{psdPreflight.skippedCount}</strong><span className="text-[0.62rem] text-fg-3">생략</span></div>
         </div>
+        <div data-testid="shaper-psd-preflight-options" className="space-y-1.5 rounded-xl border border-line bg-panel/60 p-2 text-[0.64rem] text-fg-2">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="checkbox" className="size-4 accent-accent" checked={createHairLayer} onChange={(event) => setCreateHairLayer(event.currentTarget.checked)} />
+            <span>헤어 3-레이어 분리 ({psdPreflight.shaperHairThreeLayers?.map((l) => l.psdLayerName).join(" / ") || "비활성"})</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="checkbox" className="size-4 accent-accent" checked={extractLuminanceOutline} onChange={(event) => setExtractLuminanceOutline(event.currentTarget.checked)} />
+            <span>SHAPER 휘도 반전 선화 추출 ({psdPreflight.shaperLuminanceOutlineFormula ?? "기본 알파"})</span>
+          </label>
+        </div>
         <p className="text-[0.68rem] text-fg-3">예상 작업 메모리 {formatCharacterBytes(psdPreflight.estimatedResidentBytes)}</p>
         {psdPreflight.warnings.map((warning) => <p key={warning.code} className="rounded-lg border border-warn/35 bg-warn/10 p-2 text-[0.64rem] text-warn">{warning.message}</p>)}
         <p className="text-[0.64rem] leading-relaxed text-fg-3">실제 PNG·PSD 파일 생성은 아래 기존 내보내기 버튼에서 동일한 카메라·문서 상태를 사용합니다.</p>
@@ -666,6 +689,12 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
               {bridge.koLabel}
             </a>
           ))}
+          <select aria-label="3D 카메라 조작 스타일" data-testid="workbench-camera-style-select" value={cameraStyle} onChange={(event) => setCameraStyle(event.currentTarget.value as ShaperCameraControlStyle)} className="ml-auto rounded-lg border border-line bg-panel px-1.5 py-0.5 text-[0.6rem] font-semibold text-fg-2">
+            <option value="unity">Unity 카메라</option>
+            <option value="blender">Blender 카메라</option>
+            <option value="max">3ds Max 카메라</option>
+          </select>
+          <button type="button" data-testid="workbench-eyeball-gaze-lock" aria-pressed={fixEyeballCam} onClick={() => setFixEyeballCam((prev) => !prev)} className={cn("rounded-lg border px-1.5 py-0.5 text-[0.6rem] font-semibold", fixEyeballCam ? "border-accent/60 bg-accent-soft text-accent" : "border-line bg-panel text-fg-3")}>F10 응시 {fixEyeballCam ? "ON" : "OFF"}</button>
         </nav> : null}
         {drawing ? <div className="flex items-center gap-3 p-3">
           <p className="min-w-0 flex-1 text-[0.68rem] leading-relaxed text-fg-3">캐릭터 표면에 그리세요. 그리기를 종료하면 펜선 도구로 돌아갑니다.</p>
@@ -703,6 +732,14 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         </div> : null}
         {fileError ? <p role="alert" className="border-t border-line px-3 py-2 text-xs text-bad">{fileError}</p> : null}
         {workbench.notice ? <p role="status" className="border-t border-line bg-card px-3 py-2 text-[0.68rem] font-semibold text-accent">{workbench.notice}</p> : null}
+        <footer data-testid="workbench-shaper-context-statusbar" className="flex min-h-6 flex-wrap items-center gap-2 border-t border-line bg-[#121212] px-3 py-1 text-[0.6rem] text-[#b0b0b0]">
+          {shaperContextStatusGuide.map((item) => (
+            <span key={item.keycap} className="inline-flex items-center gap-1">
+              <kbd className="rounded border border-[#666666] bg-[#333333] px-1 py-0.5 font-mono text-[0.56rem] font-bold text-[#ffff00]">{item.keycap}</kbd>
+              <span>{item.actionKo}</span>
+            </span>
+          ))}
+        </footer>
         <input ref={fileInputRef} type="file" accept="application/json,.json" tabIndex={-1} aria-label="캐릭터 품질 데이터 파일 선택" className="sr-only" onChange={onFileChange} />
       </div>
     </>
