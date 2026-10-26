@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CHARACTER_SLOT_KINDS } from "./character-shaper-contract";
 import { CharacterShaperOutputDock } from "./CharacterShaperOutputDock";
+import { CharacterShaperViewportHud } from "./CharacterShaperViewportHud";
 
 import type {
   CharacterCapabilityProfile,
@@ -398,4 +399,20 @@ it("참조 작업면의 출력 설정은 팝오버로 열리고 Escape로 닫으
   expect(document.querySelector("[data-character-export-sheet]")).toBeNull();
   expect(document.activeElement).toBe(trigger);
   expect(trigger.getAttribute("aria-expanded")).toBe("false");
+});
+
+it("뷰포트 HUD는 SHAPER 3종 카메라 조작·4모드 안구 시선 선택기와 24px 단축키 키캡 안내를 렌더링한다", () => {
+  render(<CharacterShaperViewportHud h={makeHost()} binding={makeBinding()} compact={false} />);
+  const cameraStyle = screen.getByTestId("shaper-camera-style-select") as HTMLSelectElement;
+  expect(cameraStyle.value).toBe("unity");
+  fireEvent.change(cameraStyle, { target: { value: "blender" } });
+  expect(cameraStyle.value).toBe("blender");
+
+  const eyeballTracking = screen.getByTestId("shaper-eyeball-tracking-select") as HTMLSelectElement;
+  expect(eyeballTracking.value).toBe("cam");
+  fireEvent.change(eyeballTracking, { target: { value: "fix" } });
+  expect(eyeballTracking.value).toBe("fix");
+
+  const keycaps = screen.getByTestId("shaper-hud-context-keycaps");
+  expect(keycaps.textContent).toContain("F10");
 });
