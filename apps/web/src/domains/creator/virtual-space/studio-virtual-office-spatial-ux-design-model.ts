@@ -87,7 +87,7 @@ export const BIOPHILIC_UX_THEME_PRESETS: readonly BiophilicAtmosphereUxPreset[] 
     ambientSoundLabelKo: "신스웨이브 앰비언트 + 타블렛 펜촉음",
     canvasGradientCss: "linear-gradient(135deg, var(--color-card) 0%, var(--color-raised) 100%)",
     accentStrokeHex: "var(--color-warn)",
-    badgeClass: "border-warn bg-warn-soft text-warn",
+    badgeClass: "border-warn bg-raised text-warn",
   },
 ];
 

@@ -362,7 +362,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               }}
               className={`rounded-lg border px-2.5 py-1 transition ${
                 hudState.dockMegaphoneActive
-                  ? "border-warn bg-warn-soft font-semibold text-warn"
+                  ? "border-warn bg-raised font-semibold text-warn"
                   : "border-line bg-card"
               }`}
             >
