@@ -166,3 +166,56 @@ export function buildLabShaperTripoPipelineSpec(input: {
     cliPreview: `pnpm tripo3d:scenario --scenario webtoon-character --model ${look.tripoModelVersion}${delightFlag ? " --delight" : ""}`,
   };
 }
+
+export interface LabShaperTripoGeneratedGlbAsset {
+  readonly id: "shaper-cel-head-bust" | "shaper-star-wing-wand" | "shaper-academy-crest-shield";
+  readonly labelKo: string;
+  readonly assetUrl: string;
+  readonly byteLength: number;
+  readonly meshes: number;
+  readonly triangles: number;
+  readonly vertices: number;
+  readonly materials: number;
+  readonly watertight: boolean;
+  readonly sha256: string;
+}
+
+export const LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS: readonly LabShaperTripoGeneratedGlbAsset[] = Object.freeze([
+  {
+    id: "shaper-cel-head-bust",
+    labelKo: "SHAPER 7등신 셀 두상·보브 헤어 마네킹",
+    assetUrl: "/assets/3d/shaper/shaper_cel_head_bust.glb",
+    byteLength: 160_684,
+    meshes: 20,
+    triangles: 5_692,
+    vertices: 3_721,
+    materials: 7,
+    watertight: true,
+    sha256: "bc638d2e6ce360a4f0b017e675d56990ad88a715f0027efded76141a57c88c91",
+  },
+  {
+    id: "shaper-star-wing-wand",
+    labelKo: "SHAPER 로맨스 판타지 스타 윙 마법봉",
+    assetUrl: "/assets/3d/shaper/shaper_star_wing_wand.glb",
+    byteLength: 111_756,
+    meshes: 19,
+    triangles: 3_972,
+    vertices: 2_640,
+    materials: 4,
+    watertight: true,
+    sha256: "451ce57d755bfd187b9f670e1b3e79d079537180848df45df49bbc4882f97ad7",
+  },
+  {
+    id: "shaper-academy-crest-shield",
+    labelKo: "SHAPER 아카데미 엠블럼 룬 실드",
+    assetUrl: "/assets/3d/shaper/shaper_academy_crest_shield.glb",
+    byteLength: 56_376,
+    meshes: 9,
+    triangles: 1_772,
+    vertices: 1_224,
+    materials: 4,
+    watertight: true,
+    sha256: "4ec993b6b71af9296fdf076e23503bdb71d6430052542505d11a0fd25e409de5",
+  },
+]);
+

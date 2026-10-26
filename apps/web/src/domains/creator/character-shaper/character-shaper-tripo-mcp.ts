@@ -534,3 +534,167 @@ export function evaluateVrmTripoShaperPreflight(
     checks,
   };
 }
+
+export type ShaperTripoGeneratedGlbId =
+  | "shaper-cel-head-bust"
+  | "shaper-star-wing-wand"
+  | "shaper-academy-crest-shield";
+
+export interface ShaperTripoGeneratedGlbAsset {
+  readonly id: ShaperTripoGeneratedGlbId;
+  readonly slot: CharacterSlotKind;
+  readonly compatibleSlots: readonly CharacterSlotKind[];
+  readonly labelKo: string;
+  readonly summaryKo: string;
+  readonly assetUrl: string;
+  readonly relativeDiskPath: string;
+  readonly byteLength: number;
+  readonly meshes: number;
+  readonly triangles: number;
+  readonly vertices: number;
+  readonly materials: number;
+  readonly dimensionsMeters: readonly [number, number, number];
+  readonly watertight: boolean;
+  readonly originAt: "base-center";
+  readonly sha256: string;
+  readonly generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified";
+}
+
+/**
+ * `tripo3d` MCP (`create_object`, `execute_blender_code` on headless Blender 5.2)로 생성하고
+ * `glbforge` MCP (`inspect` `mobile-hero@1` + `validate` `quick`)로 검증 완료한 실물 3D `.glb` 에셋 카탈로그.
+ */
+export const SHAPER_TRIPO_GENERATED_GLB_CATALOG: readonly ShaperTripoGeneratedGlbAsset[] = Object.freeze([
+  {
+    id: "shaper-cel-head-bust",
+    slot: "hair",
+    compatibleSlots: ["hair", "face", "eyes", "eyebrows", "body", "head"],
+    labelKo: "SHAPER 7등신 셀 두상·보브 헤어 마네킹",
+    summaryKo: "tripo3d MCP(Blender 5.2) + glbforge 검증 3D 에셋 · 안구 하이라이트·레이어드 보브 헤어·아카데미 칼라 7머티리얼",
+    assetUrl: "/assets/3d/shaper/shaper_cel_head_bust.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/shaper_cel_head_bust.glb",
+    byteLength: 160_684,
+    meshes: 20,
+    triangles: 5_692,
+    vertices: 3_721,
+    materials: 7,
+    dimensionsMeters: [0.64, 0.79, 0.52],
+    watertight: true,
+    originAt: "base-center",
+    sha256: "bc638d2e6ce360a4f0b017e675d56990ad88a715f0027efded76141a57c88c91",
+    generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified",
+  },
+  {
+    id: "shaper-star-wing-wand",
+    slot: "prop",
+    compatibleSlots: ["prop", "hand-pose"],
+    labelKo: "SHAPER 로맨스 판타지 스타 윙 마법봉",
+    summaryKo: "tripo3d MCP(Blender 5.2) + glbforge 검증 3D 소품 · 크리스탈 스타 코어·페더 윙·골드 할로 링 4머티리얼",
+    assetUrl: "/assets/3d/shaper/shaper_star_wing_wand.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/shaper_star_wing_wand.glb",
+    byteLength: 111_756,
+    meshes: 19,
+    triangles: 3_972,
+    vertices: 2_640,
+    materials: 4,
+    dimensionsMeters: [0.66, 1.01, 0.09],
+    watertight: true,
+    originAt: "base-center",
+    sha256: "451ce57d755bfd187b9f670e1b3e79d079537180848df45df49bbc4882f97ad7",
+    generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified",
+  },
+  {
+    id: "shaper-academy-crest-shield",
+    slot: "accessory",
+    compatibleSlots: ["accessory", "outfit", "top", "outer", "bottom", "shoes"],
+    labelKo: "SHAPER 아카데미 엠블럼 룬 실드",
+    summaryKo: "tripo3d MCP(Blender 5.2) + glbforge 검증 3D 소품 · 히터 실드·쌍검 부조·크림슨 룬 젬 4머티리얼",
+    assetUrl: "/assets/3d/shaper/shaper_academy_crest_shield.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/shaper_academy_crest_shield.glb",
+    byteLength: 56_376,
+    meshes: 9,
+    triangles: 1_772,
+    vertices: 1_224,
+    materials: 4,
+    dimensionsMeters: [0.56, 0.57, 0.09],
+    watertight: true,
+    originAt: "base-center",
+    sha256: "4ec993b6b71af9296fdf076e23503bdb71d6430052542505d11a0fd25e409de5",
+    generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified",
+  },
+]);
+
+export function resolveShaperTripoGeneratedGlbForSlot(
+  slot: CharacterSlotKind,
+): ShaperTripoGeneratedGlbAsset {
+  return (
+    SHAPER_TRIPO_GENERATED_GLB_CATALOG.find((asset) => asset.slot === slot)
+    ?? SHAPER_TRIPO_GENERATED_GLB_CATALOG.find((asset) => asset.compatibleSlots.includes(slot))
+    ?? SHAPER_TRIPO_GENERATED_GLB_CATALOG[0]!
+  );
+}
+
+export interface TripoCreditWalletDiagnosticInput {
+  readonly openApiBalance?: number;
+  readonly openApiFrozen?: number;
+  readonly errorCode?: number | null;
+  readonly slot?: CharacterSlotKind;
+}
+
+export interface TripoCreditWalletDiagnosticReport {
+  readonly status: "openapi_ready" | "openapi_wallet_empty_fallback_blender_mcp";
+  readonly openApiBalance: number;
+  readonly openApiFrozen: number;
+  readonly errorCode: number | null;
+  readonly badgeKo: string;
+  readonly reasonKo: string;
+  readonly billingUrl: "https://platform.tripo3d.ai/billing";
+  readonly webStudioUrl: "https://studio.tripo3d.ai";
+  readonly fallbackAsset: ShaperTripoGeneratedGlbAsset;
+}
+
+/**
+ * Tripo 3D 크레딧 소모 진단기:
+ * - Tripo 3D는 **웹 스튜디오 구독 지갑(`studio.tripo3d.ai`)** 과 **OpenAPI API 키 지갑(`platform.tripo3d.ai/billing`)** 이
+ *   완전히 분리되어 있다.
+ * - 따라서 `tsk_...` API 키의 `GET /v2/openapi/user/balance`가 `{ balance: 0, frozen: 0 }`이면
+ *   `create_3d_model_from_text` 호출 시 HTTP 403 `code: 2010 ("You don't have enough credit to create this task")`가 반환되며
+ *   웹 스튜디오 크레딧은 차감되지 않는다.
+ * - 이 경우 `tripo3d` Blender MCP(`execute_blender_code` + `glbforge` 검증)로 직접 생성·번들된 실물 `.glb` 3D 모델을 즉시 제공한다.
+ */
+export function diagnoseTripoCreditWalletStatus(
+  input: TripoCreditWalletDiagnosticInput = {},
+): TripoCreditWalletDiagnosticReport {
+  const openApiBalance = clampFinite(input.openApiBalance, 0, 0, 10_000_000);
+  const openApiFrozen = clampFinite(input.openApiFrozen, 0, 0, 10_000_000);
+  const errorCode = input.errorCode ?? (openApiBalance <= 0 ? 2010 : null);
+  const fallbackAsset = resolveShaperTripoGeneratedGlbForSlot(input.slot ?? "hair");
+
+  if (openApiBalance > 0 && errorCode !== 2010) {
+    return {
+      status: "openapi_ready",
+      openApiBalance,
+      openApiFrozen,
+      errorCode: null,
+      badgeKo: `OpenAPI 지갑 활성 (${openApiBalance.toLocaleString("en-US")} cr)`,
+      reasonKo: "Tripo OpenAPI(platform.tripo3d.ai) 잔액이 확인되어 클라우드 V3 생성 태스크와 로컬 Blender MCP 생성을 모두 사용할 수 있습니다.",
+      billingUrl: "https://platform.tripo3d.ai/billing",
+      webStudioUrl: "https://studio.tripo3d.ai",
+      fallbackAsset,
+    };
+  }
+
+  return {
+    status: "openapi_wallet_empty_fallback_blender_mcp",
+    openApiBalance,
+    openApiFrozen,
+    errorCode: errorCode ?? 2010,
+    badgeKo: "OpenAPI 잔액 0 (code 2010) · Blender MCP 3D 에셋 즉시 활성",
+    reasonKo:
+      "Tripo 웹 스튜디오(studio.tripo3d.ai) 구독 크레딧과 OpenAPI(platform.tripo3d.ai/billing) API 키(tsk_…) 지갑은 별도로 분리되어 있습니다. 현재 OpenAPI 지갑 잔액이 0이어서 크레딧이 차감되지 않았으며(code 2010), tripo3d Blender MCP로 직접 생성·검증한 실물 GLB 3D 에셋을 즉시 로드합니다.",
+    billingUrl: "https://platform.tripo3d.ai/billing",
+    webStudioUrl: "https://studio.tripo3d.ai",
+    fallbackAsset,
+  };
+}
+

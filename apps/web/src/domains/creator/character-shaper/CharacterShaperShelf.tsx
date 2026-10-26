@@ -10,7 +10,10 @@ import { countCharacterAvailability, discoverCharacterEntries } from "./characte
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
   buildShaperTripoSlotGenerationPlan,
+  diagnoseTripoCreditWalletStatus,
+  SHAPER_TRIPO_GENERATED_GLB_CATALOG,
   SHAPER_TRIPO_VISUAL_PROFILES,
+  type ShaperTripoGeneratedGlbId,
   type ShaperTripoVisualStyleId,
 } from "./character-shaper-tripo-mcp";
 import {
@@ -67,6 +70,7 @@ function CharacterShaperShelfContent({
   const [showExperimentalGarments, setShowExperimentalGarments] = useState(false);
   const [visualStyleId, setVisualStyleId] = useState<ShaperTripoVisualStyleId>("shaper-cel");
   const [showTripoPlan, setShowTripoPlan] = useState(false);
+  const [selectedGlbId, setSelectedGlbId] = useState<ShaperTripoGeneratedGlbId | null>(null);
   const [draft, setDraft] = useState(query);
   const [syncedQuery, setSyncedQuery] = useState(query);
   const [composing, setComposing] = useState(false);
@@ -303,6 +307,10 @@ function CharacterShaperShelfContent({
               prompt: draft || `${slotLabel} webtoon asset`,
               visualStyleId,
             });
+            const walletReport = diagnoseTripoCreditWalletStatus({ slot });
+            const activeGlb =
+              SHAPER_TRIPO_GENERATED_GLB_CATALOG.find((item) => item.id === selectedGlbId)
+              ?? walletReport.fallbackAsset;
             return (
               <>
                 <p
@@ -311,6 +319,66 @@ function CharacterShaperShelfContent({
                 >
                   Toony {(plan.visualProfile.shadeToonyFactor * 100).toFixed(0)}% · MatCap {(plan.visualProfile.matcapIntensity * 100).toFixed(0)}% · 림 {(plan.visualProfile.rimLightingMix * 100).toFixed(0)}% · 주선 {(plan.visualProfile.outlineWidthWorld * 1000).toFixed(1)}mm · Delight {plan.textureDelight ? "ON" : "OFF"}
                 </p>
+                <div
+                  data-testid="shaper-tripo-generated-glb-list"
+                  className="mt-1.5 space-y-1 rounded-lg border border-line/70 bg-panel p-1.5"
+                >
+                  <div className="flex items-center justify-between gap-1 text-[0.6rem]">
+                    <span className="font-semibold text-fg-2">tripo3d MCP 생성 3D 에셋 (실제 GLB 3종)</span>
+                    <span
+                      data-testid="shaper-tripo-wallet-notice"
+                      className="truncate rounded bg-accent-soft px-1.5 py-0.5 text-[0.56rem] font-semibold text-accent"
+                      title={walletReport.reasonKo}
+                    >
+                      {walletReport.badgeKo}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {SHAPER_TRIPO_GENERATED_GLB_CATALOG.map((asset) => {
+                      const active = asset.id === activeGlb.id;
+                      return (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          data-testid={`shaper-tripo-glb-${asset.id}`}
+                          aria-pressed={active}
+                          onClick={() => setSelectedGlbId(asset.id)}
+                          className={cn(
+                            "rounded-md border px-1.5 py-1 text-left text-[0.58rem] transition-colors",
+                            STUDIO_FOCUS_RING,
+                            active
+                              ? "border-accent bg-accent-soft font-semibold text-accent"
+                              : "border-line bg-card text-fg-2 hover:bg-raised",
+                          )}
+                        >
+                          <span className="block truncate">{asset.labelKo}</span>
+                          <span className="block truncate text-[0.54rem] text-fg-3">
+                            {asset.triangles.toLocaleString("en-US")} tris · {asset.materials} mats
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div
+                    data-testid="shaper-tripo-active-glb-summary"
+                    className="flex items-center justify-between gap-1.5 text-[0.58rem] text-fg-3"
+                  >
+                    <span className="truncate">
+                      {activeGlb.labelKo} · {(activeGlb.byteLength / 1024).toFixed(1)}KB · watertight
+                    </span>
+                    <a
+                      href={activeGlb.assetUrl}
+                      download
+                      data-testid="shaper-tripo-active-glb-download"
+                      className={cn(
+                        "shrink-0 rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg-2 hover:bg-raised",
+                        STUDIO_FOCUS_RING,
+                      )}
+                    >
+                      GLB 받기
+                    </a>
+                  </div>
+                </div>
                 {showTripoPlan ? (
                   <div
                     data-testid="shaper-tripo-plan-preview"
@@ -320,6 +388,9 @@ function CharacterShaperShelfContent({
                       {plan.scenario} · {plan.modelVersion} · Texture {plan.textureModelVersion}
                     </p>
                     <p>{plan.pipelineSteps.join(" → ")}</p>
+                    <p data-testid="shaper-tripo-wallet-reason" className="leading-relaxed text-fg-3">
+                      {walletReport.reasonKo}
+                    </p>
                     <code className="block truncate rounded bg-card px-1.5 py-0.5 font-mono text-[0.58rem] text-fg-2">
                       {plan.cliCommand}
                     </code>

@@ -1,3 +1,7 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { buildCharacterSemanticPsd } from "./character-shaper-psd-assembly";
@@ -6,9 +10,12 @@ import {
   buildShaperTripoPoseControlSuffix,
   buildShaperTripoSlotGenerationPlan,
   computeShaperMaterialDataUniforms,
+  diagnoseTripoCreditWalletStatus,
   evaluateVrmTripoShaperPreflight,
   getShaperTripoVisualProfile,
   resolveShaperPresetClickModifiers,
+  resolveShaperTripoGeneratedGlbForSlot,
+  SHAPER_TRIPO_GENERATED_GLB_CATALOG,
   SHAPER_TRIPO_VISUAL_PROFILES,
 } from "./character-shaper-tripo-mcp";
 
@@ -191,5 +198,48 @@ describe("character-shaper-tripo-mcp — SHAPER REA × Tripo 3D V3 MCP 리얼 �
     });
     expect(overBudget.passed).toBe(false);
     expect(overBudget.grade).toBe("C");
+  });
+
+  it("tripo3d MCP (Blender 5.2) + glbforge MCP로 생성·검증된 실물 3D GLB 에셋 3종이 디스크에 존재하고 glTF 2.0 헤더·SHA256·watertight 예산을 만족한다", () => {
+    expect(SHAPER_TRIPO_GENERATED_GLB_CATALOG).toHaveLength(3);
+    const repoRoot = resolve(__dirname, "../../../../../..");
+    for (const asset of SHAPER_TRIPO_GENERATED_GLB_CATALOG) {
+      const fullPath = resolve(repoRoot, asset.relativeDiskPath);
+      const buf = readFileSync(fullPath);
+      expect(buf.byteLength).toBe(asset.byteLength);
+      expect(buf.subarray(0, 4).toString("ascii")).toBe("glTF");
+      expect(buf.readUInt32LE(4)).toBe(2);
+      const sha256 = createHash("sha256").update(buf).digest("hex");
+      expect(sha256).toBe(asset.sha256);
+      expect(asset.watertight).toBe(true);
+      expect(asset.originAt).toBe("base-center");
+      expect(asset.triangles).toBeGreaterThan(1000);
+    }
+
+    expect(resolveShaperTripoGeneratedGlbForSlot("hair").id).toBe("shaper-cel-head-bust");
+    expect(resolveShaperTripoGeneratedGlbForSlot("prop").id).toBe("shaper-star-wing-wand");
+    expect(resolveShaperTripoGeneratedGlbForSlot("accessory").id).toBe("shaper-academy-crest-shield");
+  });
+
+  it("Tripo OpenAPI 지갑(platform.tripo3d.ai/billing) 잔액 0(code 2010)과 웹 스튜디오(studio.tripo3d.ai) 구독 분리 원인을 진단하고 Blender MCP GLB 폴백을 반환한다", () => {
+    const emptyWallet = diagnoseTripoCreditWalletStatus({
+      openApiBalance: 0,
+      openApiFrozen: 0,
+      slot: "prop",
+    });
+    expect(emptyWallet.status).toBe("openapi_wallet_empty_fallback_blender_mcp");
+    expect(emptyWallet.errorCode).toBe(2010);
+    expect(emptyWallet.reasonKo).toContain("studio.tripo3d.ai");
+    expect(emptyWallet.reasonKo).toContain("platform.tripo3d.ai/billing");
+    expect(emptyWallet.fallbackAsset.id).toBe("shaper-star-wing-wand");
+
+    const activeWallet = diagnoseTripoCreditWalletStatus({
+      openApiBalance: 2400,
+      openApiFrozen: 0,
+      slot: "hair",
+    });
+    expect(activeWallet.status).toBe("openapi_ready");
+    expect(activeWallet.errorCode).toBeNull();
+    expect(activeWallet.badgeKo).toContain("2,400 cr");
   });
 });
