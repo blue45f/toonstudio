@@ -74,6 +74,14 @@ pnpm harness:verify -- --full
 즉시 저장하고, 하네스·문서·테스트에는 환경변수 이름만 기록한다. 실제 값은 로그, PR, 커밋, 문서,
 채팅 결과로 재출력하지 않는다.
 
+## 역공학(REA) 분석 엔진 정책
+
+REA(`reverse-engineer-anything`)로 네이티브 바이너리나 패키지를 역공학할 때는 유료인 Hopper 대신
+무료 오픈소스인 **Ghidra**를 강제한다. 강제는 다음 두 계층으로 동작한다.
+
+1. **하네스 계약 강제 (`AGENTS.md`)**: 모든 에이전트가 MCP `open_binary` 호출 시 `provider_id: "ghidra"`를 명시하고, CLI 실행 시 `--provider ghidra`를 사용하며 `--install-hopper`나 `provider_id: "hopper"`를 사용하지 않도록 강제한다.
+2. **런타임·MCP 환경변수 강제 (`REA_ANALYSIS_PROVIDER=ghidra`)**: MCP 서버 등록 환경(`env`)과 셸 환경에 `REA_ANALYSIS_PROVIDER=ghidra`, `GHIDRA_INSTALL_DIR`, `JAVA_HOME`을 설정해 호출 시 `provider_id`가 생략되더라도 REA 라우터가 Hopper 대신 Ghidra를 기본 선택하도록 고정한다.
+
 ## 실패 처리
 
 하네스 실패를 hook 우회나 ignore로 해결하지 않는다. 누락 파일, 어댑터 drift, 잘못된 package script,
