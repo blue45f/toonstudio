@@ -635,3 +635,159 @@ export function pushCharacterShaperKeyLayer(layer: CharacterShaperKeyLayer, targ
 export function countCharacterShaperKeyLayers(): number {
   return keyLayers.length;
 }
+
+/* -------------------------------------------------------------------------- */
+/* SHAPER reverse-engineered UI/UX tokens, 3-style camera, Hangul IME, status */
+/* -------------------------------------------------------------------------- */
+
+export type ShaperCameraControlStyle = "unity" | "blender" | "max";
+export type ShaperCameraDragAction = "orbit" | "pan" | "zoom" | "none";
+
+export interface ShaperContextKeycapGuideItem {
+  readonly keycap: string;
+  readonly widthPx: 16 | 24;
+  readonly heightPx: 16;
+  readonly actionKo: string;
+}
+
+/**
+ * SHAPER `UIManager` (`0x02000068`), `UIImageView` (`0x02000060`), `UIButtonHelper` (`0x0200005c`),
+ * `UILayerToggleHelper` (`0x02000066`), `UITextKeycap` (`0x02000075`) 실측 디자인 토큰.
+ */
+export const SHAPER_STUDIO_UI_DESIGN_TOKENS = Object.freeze({
+  colors: Object.freeze({
+    canvasDarkHex: "#121212", // (0.07, 0.07, 0.07, 1.0)
+    cardHoverScrimRgba: "rgba(18, 18, 18, 0.5)", // (0.07, 0.07, 0.07, 0.5)
+    defaultControlHex: "#333333", // (0.2, 0.2, 0.2, 1.0)
+    studioYellowAccentHex: "#ffff00", // (1.0, 1.0, 0.0, 1.0)
+    layerToggleMutedHex: "#666666", // (0.4, 0.4, 0.4, 1.0)
+    iconActiveHex: "#fafafa", // (0.98, 0.98, 0.98, 1.0)
+    iconInactiveHex: "#737373", // (0.45, 0.45, 0.45, 1.0)
+    keycapNeutralHex: "#b0b0b0", // (0.69, 0.69, 0.69, 1.0)
+  }),
+  layout: Object.freeze({
+    leftRailWidthPx: 170,
+    rightInspectorWidthPx: 330,
+    topHeaderHeightPx: 60,
+    bottomStatusBarHeightPx: 24,
+    presetGridCardSizePx: 100,
+    presetGridStridePx: 122,
+  }),
+});
+
+/**
+ * SHAPER `CameraController` (`0x0200002d`) 3종 DCC 카메라 조작 프리셋(`Unity` / `Blender` / `3ds Max`) 매핑.
+ */
+export function resolveShaperThreeStyleCameraAction(input: {
+  readonly style: ShaperCameraControlStyle;
+  readonly button: "left" | "middle" | "right";
+  readonly altKey?: boolean;
+  readonly shiftKey?: boolean;
+  readonly ctrlKey?: boolean;
+}): ShaperCameraDragAction {
+  const alt = input.altKey === true;
+  const shift = input.shiftKey === true;
+  const ctrl = input.ctrlKey === true;
+  if (input.style === "unity") {
+    if (alt && input.button === "left") return "orbit";
+    if (alt && input.button === "middle") return "pan";
+    if (alt && input.button === "right") return "zoom";
+    if (input.button === "middle") return "pan";
+    if (input.button === "right") return "orbit";
+    return "none";
+  }
+  if (input.style === "blender") {
+    if (input.button === "middle" && shift) return "pan";
+    if (input.button === "middle" && ctrl) return "zoom";
+    if (input.button === "middle") return "orbit";
+    return "none";
+  }
+  // 3ds Max
+  if (input.button === "middle" && alt) return "orbit";
+  if (input.button === "middle" && ctrl && alt) return "zoom";
+  if (input.button === "middle") return "pan";
+  return "none";
+}
+
+/**
+ * SHAPER `ColorPalettePicker0` (`0x06000127..0x06000129`) 2D SV 사각형 핸들 `[4, size - 4]` 클램핑.
+ */
+export function clampShaperColorPalettePicker2d(input: {
+  readonly pointerX: number;
+  readonly pointerY: number;
+  readonly boxSizePx: number;
+}): {
+  readonly clampedX: number;
+  readonly clampedY: number;
+  readonly saturation: number;
+  readonly value: number;
+} {
+  const size = Math.max(16, input.boxSizePx);
+  const clampedX = Math.max(4, Math.min(size - 4, input.pointerX));
+  const clampedY = Math.max(4, Math.min(size - 4, input.pointerY));
+  const span = Math.max(1, size - 8);
+  return Object.freeze({
+    clampedX,
+    clampedY,
+    saturation: Number(((clampedX - 4) / span).toFixed(4)),
+    value: Number((1 - (clampedY - 4) / span).toFixed(4)),
+  });
+}
+
+const HANGUL_CHO = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"] as const;
+const HANGUL_JUNG = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"] as const;
+const HANGUL_JONG = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"] as const;
+
+/**
+ * SHAPER `UnicodeHandler::GetKoreanString` (`0x060003bf`) 내재화:
+ * 유니코드 한글 음절 조합 공식 `0xAC00 + (cho * 21 + jung) * 28 + jong`을 통해 자모를 완성형 음절로 합성한다.
+ */
+export function composeShaperKoreanJamoInput(
+  cho: string,
+  jung: string,
+  jong: string = "",
+): string {
+  const choIdx = HANGUL_CHO.indexOf(cho as (typeof HANGUL_CHO)[number]);
+  const jungIdx = HANGUL_JUNG.indexOf(jung as (typeof HANGUL_JUNG)[number]);
+  const jongIdx = HANGUL_JONG.indexOf(jong as (typeof HANGUL_JONG)[number]);
+  if (choIdx < 0 || jungIdx < 0 || jongIdx < 0) return `${cho}${jung}${jong}`;
+  return String.fromCharCode(0xac00 + (choIdx * 21 + jungIdx) * 28 + jongIdx);
+}
+
+/**
+ * SHAPER `UIManager::SetDefaultToolTip` (`0x0600032e`) & `UITextKeycap::SetKeyCap` (`0x06000384`)
+ * 하단 24px 컨텍스트 단축키 상태바 가이드 리졸버.
+ */
+export function resolveShaperContextKeycapStatusGuide(input: {
+  readonly tab: string;
+  readonly drawingActive?: boolean;
+  readonly cameraStyle?: ShaperCameraControlStyle;
+}): readonly ShaperContextKeycapGuideItem[] {
+  if (input.drawingActive) {
+    return Object.freeze([
+      { keycap: "LMB", widthPx: 24, heightPx: 16, actionKo: "3D 표면 무게중심 스트로크" },
+      { keycap: "Shift", widthPx: 24, heightPx: 16, actionKo: "직선 스텝 보간 (0.033s 예산)" },
+      { keycap: "X", widthPx: 16, heightPx: 16, actionKo: "좌우 대칭 미러링" },
+    ]);
+  }
+  if (input.tab === "pose") {
+    return Object.freeze([
+      { keycap: "Alt", widthPx: 24, heightPx: 16, actionKo: "클릭 시 포즈 좌우 반전" },
+      { keycap: "R", widthPx: 16, heightPx: 16, actionKo: "관절 회전 기즈모" },
+      { keycap: "F10", widthPx: 24, heightPx: 16, actionKo: "카메라 응시 고정" },
+    ]);
+  }
+  if (input.tab === "groom") {
+    return Object.freeze([
+      { keycap: "Shift", widthPx: 24, heightPx: 16, actionKo: "휠 스크롤 길이 ±0.2" },
+      { keycap: "Alt", widthPx: 24, heightPx: 16, actionKo: "휠 스크롤 굽힘 ±0.05" },
+      { keycap: "=", widthPx: 16, heightPx: 16, actionKo: "가닥 폭 +0.01m" },
+    ]);
+  }
+  const styleLabel = input.cameraStyle === "blender" ? "MMB" : input.cameraStyle === "max" ? "Alt+MMB" : "Alt+LMB";
+  return Object.freeze([
+    { keycap: styleLabel, widthPx: 24, heightPx: 16, actionKo: `카메라 회전 (${(input.cameraStyle ?? "unity").toUpperCase()})` },
+    { keycap: "Ctrl", widthPx: 24, heightPx: 16, actionKo: "프리셋 재질·컬러 유지 교체" },
+    { keycap: "F10", widthPx: 24, heightPx: 16, actionKo: "안구 카메라 응시 고정" },
+  ]);
+}

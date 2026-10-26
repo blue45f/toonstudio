@@ -3,7 +3,7 @@
  * 레시피와 무관한 화면 상태라 LabState·history에 넣지 않는다.
  * 패널은 lab-store-context의 useUiState()/useUiActions()로 읽고 바꾼다(선택 사항).
  */
-import { SLOT_KINDS } from "../../contracts";
+import { CHARACTER_SLOT_KINDS } from "../../contracts";
 
 import type { SlotKind } from "../../contracts";
 
@@ -57,19 +57,19 @@ export const CHARACTER_LAB_WORKFLOW_STAGES: readonly CharacterLabWorkflowStageSp
   { id: "2-wardrobe-groom", stepNumber: 2, labelKo: "2. 헤어·의상", competitorRouteBadge: "VRoid Studio · /wear", targetSlot: "hair", targetTab: "physics", drawingMode: false },
   { id: "3-pose-gaze", stepNumber: 3, labelKo: "3. 포즈·시선", competitorRouteBadge: "VRoid Hub · /tracking", targetSlot: "pose", targetTab: "pose", drawingMode: false },
   { id: "4-ink-paint", stepNumber: 4, labelKo: "4. 3D 펜선·페인트", competitorRouteBadge: "CSP #10495 · /embed", targetSlot: "face-shape", targetTab: "paint", drawingMode: true },
-  { id: "5-render-export", stepNumber: 5, labelKo: "5. 포토부스·내보내기", competitorRouteBadge: "VRoid Hub · /photobooth", targetSlot: "lighting", targetTab: "export", drawingMode: false },
+  { id: "5-render-export", stepNumber: 5, labelKo: "5. 포토부스·내보내기", competitorRouteBadge: "VRoid Hub · /photobooth", targetSlot: "accessory", targetTab: "export", drawingMode: false },
 ]);
 
 export function resolveActiveWorkflowStageId(state: UiState): CharacterLabWorkflowStageId {
   if (state.drawingMode || state.inspectorTab === "paint") return "4-ink-paint";
   if (state.inspectorTab === "export" || state.inspectorTab === "render" || state.inspectorTab === "package") return "5-render-export";
   if (state.inspectorTab === "pose" || state.inspectorTab === "vision" || state.activeSlot === "pose") return "3-pose-gaze";
-  if (state.inspectorTab === "physics" || state.activeSlot === "hair" || state.activeSlot === "outfit") return "2-wardrobe-groom";
+  if (state.inspectorTab === "physics" || state.activeSlot === "hair" || state.activeSlot === "top" || state.activeSlot === "bottom" || state.activeSlot === "shoes") return "2-wardrobe-groom";
   return "1-proportion";
 }
 
 export function isSlotKind(value: string): value is SlotKind {
-  return (SLOT_KINDS as readonly string[]).includes(value);
+  return (CHARACTER_SLOT_KINDS as readonly string[]).includes(value);
 }
 
 export function parseLabRouteSearchParams(search: string): Partial<UiState> {

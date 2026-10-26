@@ -340,6 +340,10 @@ describe("CharacterShaperInspector per slot", () => {
 
     fireEvent.click(screen.getByRole("switch", { name: /원본 헤어 감추기/u }));
     expect(binding.commitHairParams).toHaveBeenLastCalledWith({ replaceOriginal: true }, "헤어: 원본 헤어 감추기");
+
+    expect(screen.getByTestId("shaper-hair-scalp-zones").textContent).toContain("Zone 0 0.87x");
+    fireEvent.click(screen.getByRole("button", { name: "Shift+휠 길이 +0.1" }));
+    expect(binding.commitHairParams).toHaveBeenLastCalledWith({ length: 1.1 }, "헤어: 길이");
   });
 
   it("body writes proportions through the host forge state", () => {

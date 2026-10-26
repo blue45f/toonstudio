@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CHARACTER_SLOT_KINDS } from "./character-shaper-contract";
 import {
+  buildShaperHairThreeLayerGroup,
+  extractShaperPsdOutlineAlpha,
+} from "./character-shaper-psd-assembly";
+import {
   characterLightingToneLabel,
   characterShaperSlotIcon,
   characterSlotDiffersFromBaseline,
@@ -25,6 +29,11 @@ import {
   pushCharacterShaperKeyLayer,
   reduceCharacterShaperUiState,
   resolveCharacterShaperLayout,
+  clampShaperColorPalettePicker2d,
+  composeShaperKoreanJamoInput,
+  resolveShaperContextKeycapStatusGuide,
+  resolveShaperThreeStyleCameraAction,
+  SHAPER_STUDIO_UI_DESIGN_TOKENS,
 } from "./character-shaper-ui-model";
 
 import type { CharacterRecipe, CharacterSlotEntry, CharacterSlotMeta } from "./character-shaper-contract";
@@ -242,5 +251,47 @@ describe("character-shaper-ui-model key layers", () => {
     expect(countCharacterShaperKeyLayers()).toBe(before);
     target.dispatchEvent(new Event("keydown"));
     expect(outer).toHaveBeenCalledTimes(1);
+  });
+
+  it("exposes SHAPER studio UI tokens, 3-style camera mapping, 2D palette clamping, Hangul IME, and context keycap guide", () => {
+    expect(SHAPER_STUDIO_UI_DESIGN_TOKENS.colors.canvasDarkHex).toBe("#121212");
+    expect(SHAPER_STUDIO_UI_DESIGN_TOKENS.colors.studioYellowAccentHex).toBe("#ffff00");
+    expect(SHAPER_STUDIO_UI_DESIGN_TOKENS.layout.bottomStatusBarHeightPx).toBe(24);
+
+    expect(resolveShaperThreeStyleCameraAction({ style: "unity", button: "left", altKey: true })).toBe("orbit");
+    expect(resolveShaperThreeStyleCameraAction({ style: "blender", button: "middle", shiftKey: true })).toBe("pan");
+    expect(resolveShaperThreeStyleCameraAction({ style: "max", button: "middle", altKey: true })).toBe("orbit");
+
+    const clamped = clampShaperColorPalettePicker2d({ pointerX: -10, pointerY: 200, boxSizePx: 108 });
+    expect(clamped.clampedX).toBe(4);
+    expect(clamped.clampedY).toBe(104);
+    expect(clamped.saturation).toBe(0);
+    expect(clamped.value).toBe(0);
+
+    expect(composeShaperKoreanJamoInput("ㅎ", "ㅏ", "ㄴ")).toBe("한");
+    expect(composeShaperKoreanJamoInput("ㅅ", "ㅔ")).toBe("세");
+
+    expect(resolveShaperContextKeycapStatusGuide({ tab: "pose" })[0]?.keycap).toBe("Alt");
+    expect(resolveShaperContextKeycapStatusGuide({ tab: "groom" })[0]?.keycap).toBe("Shift");
+    expect(resolveShaperContextKeycapStatusGuide({ tab: "parts", drawingActive: true })[0]?.keycap).toBe("LMB");
+
+    const outlineAlpha = extractShaperPsdOutlineAlpha(
+      new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255]),
+      [10, 20, 30],
+    );
+    expect(outlineAlpha[3]).toBe(0);
+    expect(outlineAlpha[7]).toBe(255);
+    expect(outlineAlpha[4]).toBe(10);
+
+    const hairGroup = buildShaperHairThreeLayerGroup({
+      width: 2,
+      height: 1,
+      hairBaseRgba: outlineAlpha,
+      shadowRgba: outlineAlpha,
+      lineRgba: outlineAlpha,
+    });
+    expect(hairGroup.name).toBe("헤어 (SHAPER 3-Layer)");
+    expect(hairGroup.children?.map((c) => c.name)).toEqual(["Hair Line", "Hair Shadow", "Hair Base"]);
+    expect(hairGroup.children?.[1]?.blendMode).toBe("multiply");
   });
 });

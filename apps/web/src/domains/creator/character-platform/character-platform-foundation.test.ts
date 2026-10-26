@@ -13,7 +13,12 @@ import {
   parseCharacterDocumentV2,
   projectCharacterRecipeV1,
 } from "./document/character-document-v2";
-import { createCharacterExportPreflight } from "./export/character-export-preflight";
+import {
+  createCharacterExportPreflight,
+  evaluateShaperPresetServerAssetUpdates,
+  extractShaperOutlineLuminanceToAlpha,
+  planShaperHairThreeLayerSplit,
+} from "./export/character-export-preflight";
 import { projectCharacterShaperDocument } from "../character-shaper/character-shaper-document-projection";
 import { summarizeCharacterSlotSupport } from "../character-shaper/character-shaper-slot-support";
 
@@ -243,6 +248,22 @@ describe("Character Platform V2 foundation", () => {
     });
     expect(highResolution.strategy).toBe("tile-worker");
     expect(highResolution.tileEdge).toBe(1024);
+    expect(highResolution.shaperHairThreeLayers).toHaveLength(3);
+    expect(highResolution.shaperHairThreeLayers?.[1]?.blendMode).toBe("multiply");
+    expect(highResolution.shaperLuminanceOutlineFormula).toBe("a = 1 - r");
+
+    const extracted = extractShaperOutlineLuminanceToAlpha(
+      new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255]),
+      [20, 30, 40],
+    );
+    expect(extracted[3]).toBe(0);
+    expect(extracted[7]).toBe(255);
+    expect(extracted[4]).toBe(20);
+
+    expect(planShaperHairThreeLayerSplit(false)).toHaveLength(0);
+    const assetCheck = evaluateShaperPresetServerAssetUpdates({ hair_01: 1, top_02: 2 }, { hair_01: 2, top_02: 2 });
+    expect(assetCheck.compatible).toBe(false);
+    expect(assetCheck.outdatedAssetIds).toEqual(["hair_01"]);
   });
 
   it("projects the current host snapshot without making Three.js state part of the document", () => {

@@ -27,6 +27,19 @@ export interface CharacterExportPreflightWarning {
   readonly message: string;
 }
 
+export interface ShaperHairThreeLayerPlan {
+  readonly layerId: "hair-base" | "hair-shadow" | "hair-line";
+  readonly psdLayerName: "Hair Base" | "Hair Shadow" | "Hair Line";
+  readonly blendMode: "normal" | "multiply";
+  readonly clippingMaskToBase: boolean;
+}
+
+export interface ShaperPresetAssetVersionCheck {
+  readonly compatible: boolean;
+  readonly outdatedAssetIds: readonly string[];
+  readonly summaryKo: string;
+}
+
 export interface CharacterExportPreflight {
   readonly format: CharacterExportFormat;
   readonly width: number;
@@ -41,6 +54,8 @@ export interface CharacterExportPreflight {
   readonly skippedCount: number;
   readonly compatibility: CharacterCompatibilityReport;
   readonly warnings: readonly CharacterExportPreflightWarning[];
+  readonly shaperHairThreeLayers?: readonly ShaperHairThreeLayerPlan[];
+  readonly shaperLuminanceOutlineFormula?: "a = 1 - r";
 }
 
 export interface CreateCharacterExportPreflightInput {
@@ -52,6 +67,8 @@ export interface CreateCharacterExportPreflightInput {
   readonly compatibility?: CharacterCompatibilityReport;
   readonly hasSurfacePaint?: boolean;
   readonly canonical?: boolean;
+  readonly createHairLayer?: boolean;
+  readonly extractLuminanceOutline?: boolean;
 }
 
 export class CharacterExportPreflightError extends Error {
@@ -247,5 +264,89 @@ export function createCharacterExportPreflight(
     skippedCount,
     compatibility,
     warnings: Object.freeze(warnings),
+    shaperHairThreeLayers: input.format === "psd" && input.createHairLayer !== false
+      ? planShaperHairThreeLayerSplit(true)
+      : Object.freeze([]),
+    shaperLuminanceOutlineFormula: input.extractLuminanceOutline !== false ? "a = 1 - r" : undefined,
+  });
+}
+
+/**
+ * SHAPER `PsdWriter::ExtractOutline` (`0x060002ac`) 내재화:
+ * 흰색 배경 위에 렌더링된 선화 패스의 R 채널 휘도를 반전(`a = 1 - r`)하여
+ * 순수 투명 배경의 잉크 레이어 알파(`alphaByte`)와 선 색상(`lineColorRgb`)으로 변환한다.
+ */
+export function extractShaperOutlineLuminanceToAlpha(
+  rgbaPixels: Uint8ClampedArray | Uint8Array,
+  lineColorRgb: readonly [number, number, number] = [0, 0, 0],
+): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(rgbaPixels.length);
+  const rLine = Math.max(0, Math.min(255, Math.round(lineColorRgb[0])));
+  const gLine = Math.max(0, Math.min(255, Math.round(lineColorRgb[1])));
+  const bLine = Math.max(0, Math.min(255, Math.round(lineColorRgb[2])));
+  for (let i = 0; i + 3 < rgbaPixels.length; i += 4) {
+    const rNorm = rgbaPixels[i]! / 255;
+    const srcAlpha = rgbaPixels[i + 3]! / 255;
+    const inkAlpha = Math.max(0, Math.min(1, (1 - rNorm) * srcAlpha));
+    out[i] = rLine;
+    out[i + 1] = gLine;
+    out[i + 2] = bLine;
+    out[i + 3] = Math.round(inkAlpha * 255);
+  }
+  return out;
+}
+
+/**
+ * SHAPER `PsdWriter::WritePSD` (`0x060002aa`) `createHairLayer` 3-레이어 분리 규칙 내재화:
+ * 헤어 영역을 `Hair Base`(밑색 Normal), `Hair Shadow`(음영 Multiply 클리핑), `Hair Line`(선화 Normal) 3개 레이어로 분리한다.
+ */
+export function planShaperHairThreeLayerSplit(
+  createHairLayer: boolean = true,
+): readonly ShaperHairThreeLayerPlan[] {
+  if (!createHairLayer) return Object.freeze([]);
+  return Object.freeze([
+    {
+      layerId: "hair-base",
+      psdLayerName: "Hair Base",
+      blendMode: "normal",
+      clippingMaskToBase: false,
+    },
+    {
+      layerId: "hair-shadow",
+      psdLayerName: "Hair Shadow",
+      blendMode: "multiply",
+      clippingMaskToBase: true,
+    },
+    {
+      layerId: "hair-line",
+      psdLayerName: "Hair Line",
+      blendMode: "normal",
+      clippingMaskToBase: false,
+    },
+  ]);
+}
+
+/**
+ * SHAPER `PresetManager::CheckAsset` (`0x0600028a`) 내재화:
+ * 프리셋에 기록된 파츠·헤어·의상 에셋 버전과 서버 최신 에셋 버전을 비교하여 업데이트 필요 항목을 진단한다.
+ */
+export function evaluateShaperPresetServerAssetUpdates(
+  presetAssetVersions: Readonly<Record<string, number>>,
+  serverAssetVersions: Readonly<Record<string, number>>,
+): ShaperPresetAssetVersionCheck {
+  const outdatedAssetIds: string[] = [];
+  for (const [assetId, version] of Object.entries(presetAssetVersions)) {
+    const latest = serverAssetVersions[assetId];
+    if (typeof latest === "number" && latest > version) {
+      outdatedAssetIds.push(assetId);
+    }
+  }
+  return Object.freeze({
+    compatible: outdatedAssetIds.length === 0,
+    outdatedAssetIds: Object.freeze(outdatedAssetIds),
+    summaryKo:
+      outdatedAssetIds.length === 0
+        ? "모든 파츠 에셋 버전 최신 호환"
+        : `에셋 업데이트 권장 ${outdatedAssetIds.length}건 (${outdatedAssetIds.join(", ")})`,
   });
 }

@@ -14,6 +14,8 @@ export interface CharacterSemanticSkip {
 }
 export interface BuildCharacterSemanticPsdOptions {
   readonly title: string;
+  readonly createHairLayer?: boolean;
+  readonly extractLuminanceOutline?: boolean;
 }
 export interface CharacterSemanticPsdResult {
   readonly blob: Blob;
@@ -200,13 +202,26 @@ export function buildCharacterSemanticPsd(
   });
   const line = byId.get("line");
   if (line) {
+    const lineRgba = options.extractLuminanceOutline ? extractShaperPsdOutlineAlpha(line.rgba) : line.rgba;
     children.push(extractedGroup(CHARACTER_PSD_GROUP_NAMES.line,
-      rasterLayer(CHARACTER_PSD_CHILD_NAMES.line, width, height, line.rgba)));
+      rasterLayer(CHARACTER_PSD_CHILD_NAMES.line, width, height, lineRgba)));
   }
   const paint = byId.get("surface-paint");
   if (paint) {
     children.push(extractedGroup(CHARACTER_PSD_GROUP_NAMES.paint,
       rasterLayer(CHARACTER_PSD_CHILD_NAMES.paint, width, height, paint.rgba)));
+  }
+  const hairMask = byId.get("mask-hair");
+  if (options.createHairLayer && hairMask && !isEmptyPass(hairMask.rgba)) {
+    colourGroups.push(
+      buildShaperHairThreeLayerGroup({
+        width,
+        height,
+        hairBaseRgba: hairMask.rgba,
+        shadowRgba: byId.get("shadow")?.rgba ?? hairMask.rgba,
+        lineRgba: line ? extractShaperPsdOutlineAlpha(line.rgba) : hairMask.rgba,
+      }),
+    );
   }
   const highlight = byId.get("highlight");
   if (highlight) {
@@ -276,4 +291,42 @@ export function buildCharacterSemanticPsd(
       byteLength: buffer.byteLength,
     },
   };
+}
+
+/**
+ * SHAPER `PsdWriter::ExtractOutline` (`0x060002ac`) 내재화:
+ * R 채널 휘도를 반전(`a = 1 - r`)하여 순수 잉크 알파 채널로 변환한다.
+ */
+export function extractShaperPsdOutlineAlpha(
+  rgba: Uint8ClampedArray,
+  inkRgb: readonly [number, number, number] = [0, 0, 0],
+): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(rgba.length);
+  for (let i = 0; i + 3 < rgba.length; i += 4) {
+    const rNorm = rgba[i]! / 255;
+    const srcAlpha = rgba[i + 3]! / 255;
+    out[i] = inkRgb[0];
+    out[i + 1] = inkRgb[1];
+    out[i + 2] = inkRgb[2];
+    out[i + 3] = Math.round(Math.max(0, Math.min(1, (1 - rNorm) * srcAlpha)) * 255);
+  }
+  return out;
+}
+
+/**
+ * SHAPER `PsdWriter::WritePSD` (`0x060002aa`) `createHairLayer` 3-레이어 그룹(`Hair Base` / `Hair Shadow` Multiply / `Hair Line`) 생성기.
+ */
+export function buildShaperHairThreeLayerGroup(input: {
+  readonly width: number;
+  readonly height: number;
+  readonly hairBaseRgba: Uint8ClampedArray;
+  readonly shadowRgba: Uint8ClampedArray;
+  readonly lineRgba: Uint8ClampedArray;
+}): Layer {
+  const { width, height, hairBaseRgba, shadowRgba, lineRgba } = input;
+  return group("헤어 (SHAPER 3-Layer)", "normal", [
+    rasterLayer("Hair Line", width, height, lineRgba, { blendMode: "normal" }),
+    rasterLayer("Hair Shadow", width, height, shadowRgba, { blendMode: "multiply", clipping: true }),
+    rasterLayer("Hair Base", width, height, hairBaseRgba, { blendMode: "normal" }),
+  ]);
 }

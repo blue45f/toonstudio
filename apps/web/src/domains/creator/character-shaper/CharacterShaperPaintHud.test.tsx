@@ -113,6 +113,16 @@ describe("CharacterShaperPaintHud", () => {
 
     fireEvent.change(screen.getByLabelText("칠할 색"), { target: { value: "#123456" } });
     expect(h.handleTexturePaintSettingsChange).toHaveBeenLastCalledWith({ color: "#123456" });
+
+    const pressureSelect = screen.getByTestId("shaper-paint-pressure-mode") as HTMLSelectElement;
+    expect(pressureSelect.value).toBe("fake");
+    fireEvent.change(pressureSelect, { target: { value: "real" } });
+    expect(pressureSelect.value).toBe("real");
+
+    const lineColorSelect = screen.getByTestId("shaper-paint-line-color-mode") as HTMLSelectElement;
+    expect(lineColorSelect.value).toBe("baseLineColor");
+    fireEvent.change(lineColorSelect, { target: { value: "baseHairColor" } });
+    expect(lineColorSelect.value).toBe("baseHairColor");
   });
 
   it("resizes the brush with the [ and ] keys", () => {

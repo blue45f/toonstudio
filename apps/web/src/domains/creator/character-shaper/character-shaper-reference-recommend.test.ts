@@ -8,6 +8,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildShaperSixSlotThreeRankGrid,
+  computeShaperAiReferenceDownscaleSize,
+  evaluateShaperBoneAiConfidenceGate,
   recommendReferencePresetCombination,
 } from "./character-shaper-reference-recommend";
 
@@ -174,5 +177,33 @@ describe("recommendReferencePresetCombination", () => {
     for (const dimension of result.dimensions) {
       expect(dimension.confidence).toBe("low");
     }
+  });
+
+  it("computes SHAPER BoneAIManager 512px/512x288 downscale, 16/24 uncertainty gate, and UIAIPreset 6x3 grid", () => {
+    expect(computeShaperAiReferenceDownscaleSize(1024, 512, "body")).toEqual({
+      width: 512,
+      height: 256,
+      scaleFactor: 0.5,
+    });
+    expect(computeShaperAiReferenceDownscaleSize(1280, 720, "bodyWebCam")).toEqual({
+      width: 512,
+      height: 288,
+      scaleFactor: 0.4,
+    });
+
+    const gatePass = evaluateShaperBoneAiConfidenceGate(new Array<number>(24).fill(0.01));
+    expect(gatePass.accepted).toBe(true);
+    expect(gatePass.confidentBoneCount).toBe(24);
+
+    const gateFail = evaluateShaperBoneAiConfidenceGate(new Array<number>(24).fill(0.05));
+    expect(gateFail.accepted).toBe(false);
+    expect(gateFail.confidentBoneCount).toBe(0);
+
+    const grid = buildShaperSixSlotThreeRankGrid(0.05);
+    expect(grid).toHaveLength(18);
+    expect(grid[0]?.partSlot).toBe("head");
+    expect(grid[1]?.offsetX).toBe(82);
+    expect(grid[3]?.rowOffsetY).toBe(-114);
+    expect(grid[0]?.borderAlpha).toBeCloseTo(0.5, 4);
   });
 });
