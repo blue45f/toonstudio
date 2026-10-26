@@ -31,24 +31,30 @@ import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   buildLocal3dHandHeadPoseAndLtRig,
+  buildLocalActionWeaponMotionArcSmearLock,
   buildLocalBackgroundPerspectivePropScaleLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
+  buildLocalSpeechBubbleTailOcclusionLock,
   buildLocalStyleTransferAndRelighting,
   buildLocalTurnaroundOrthographicSheetLock,
   Claude3dHandHeadRigReportSchema,
+  ClaudeActionWeaponMotionArcReportSchema,
   ClaudeBackgroundPerspectiveReportSchema,
   ClaudeSakugaMotionReportSchema,
   ClaudeScreenplayLoraBridgeReportSchema,
   ClaudeSketchToLineartReportSchema,
+  ClaudeSpeechBubbleTailOcclusionReportSchema,
   ClaudeStyleTransferReportSchema,
   ClaudeTurnaroundOrthographicReportSchema,
   type Claude3dHandHeadRigReport,
+  type ClaudeActionWeaponMotionArcReport,
   type ClaudeBackgroundPerspectiveReport,
   type ClaudeSakugaMotionReport,
   type ClaudeScreenplayLoraBridgeReport,
   type ClaudeSketchToLineartReport,
+  type ClaudeSpeechBubbleTailOcclusionReport,
   type ClaudeStyleTransferReport,
   type ClaudeTurnaroundOrthographicReport,
   type CompetitorEngineExecutionMeta,
@@ -476,6 +482,82 @@ export async function runClaudeBackgroundPerspectivePropScaleDirector(
               floatingCharacterFixKo: cleanSingleLineText(c.floatingCharacterFixKo, 220),
             }))
           : fallback.cutLocks,
+    }),
+  });
+}
+
+export async function runClaudeSpeechBubbleTailOcclusionDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeSpeechBubbleTailOcclusionReport>> {
+  return executeCompetitorEngine({
+    taskId: "competitor:speech-bubble-tail-occlusion-lock",
+    input,
+    options,
+    fallback: buildLocalSpeechBubbleTailOcclusionLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 말풍선·SFX 비가림 & 꼬리 벡터 고정 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 웹툰 말풍선 및 대형 효과음(SFX)이 캐릭터의 얼굴·눈빛·비대칭 흉터·핵심 손동작을 가리지 않도록 네거티브 여백 좌표를 배치하고, 화자의 입 방향으로 말풍선 꼬리 각도를 고정하는 식자 공간 감독입니다. " +
+      "antiOcclusionHealthScore는 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷에 대해 화자별 말풍선 안전 배치 영역(safeAnchorZone), 안면 가림률(%), 입 방향 꼬리 각도(deg), SFX 레이어 Z-index 및 비가림 지침을 JSON으로 출력하세요.",
+    schema: ClaudeSpeechBubbleTailOcclusionReportSchema,
+    normalize: (parsed, fallback) => ({
+      antiOcclusionHealthScore: clampPercent(parsed.antiOcclusionHealthScore, 99),
+      letteringSpatialSummaryKo:
+        cleanSingleLineText(parsed.letteringSpatialSummaryKo, 340) ||
+        fallback.letteringSpatialSummaryKo,
+      cutBubbleLocks:
+        parsed.cutBubbleLocks.length > 0
+          ? parsed.cutBubbleLocks.slice(0, 6).map((b, idx) => ({
+              cutNumber: clampInt(b.cutNumber, 1, 50, idx + 1),
+              speakerName: cleanSingleLineText(b.speakerName, 40) || "서진",
+              safeAnchorZone: b.safeAnchorZone,
+              faceAndEyeOcclusionPct: clampInt(b.faceAndEyeOcclusionPct, 0, 15, 0),
+              tailTargetMouthAngleDeg: clampInt(b.tailTargetMouthAngleDeg, -180, 180, 132),
+              sfxZIndexLayer: b.sfxZIndexLayer,
+              antiOcclusionDirectiveKo: cleanSingleLineText(b.antiOcclusionDirectiveKo, 220),
+            }))
+          : fallback.cutBubbleLocks,
+    }),
+  });
+}
+
+export async function runClaudeActionWeaponMotionArcDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeActionWeaponMotionArcReport>> {
+  return executeCompetitorEngine({
+    taskId: "competitor:action-weapon-motion-arc-smear-lock",
+    input,
+    options,
+    fallback: buildLocalActionWeaponMotionArcSmearLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 검격·마법 궤적(Motion Arc) & 잔상 연속성 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 웹툰 액션 씬의 예비 동작(Wind-up) → 참격(Slash Smear) → 타격 역경직(Hit-Stop) → 잔심(Follow-through) 컷 간 무기/마법 궤적(Motion Arc) 각도 연속성과 잔상(Smear) 왜곡률을 총괄하는 액션 동화 감독입니다. " +
+      "kineticContinuityScore는 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷에 대해 액션 단계(actionPhase), 궤적 진입/이탈 각도(deg), 잔상 스트레치 배율, 집중선 수렴점 및 궤적 연속성 지침을 JSON으로 출력하세요.",
+    schema: ClaudeActionWeaponMotionArcReportSchema,
+    normalize: (parsed, fallback) => ({
+      kineticContinuityScore: clampPercent(parsed.kineticContinuityScore, 97),
+      combatChoreographySummaryKo:
+        cleanSingleLineText(parsed.combatChoreographySummaryKo, 340) ||
+        fallback.combatChoreographySummaryKo,
+      cutArcs:
+        parsed.cutArcs.length > 0
+          ? parsed.cutArcs.slice(0, 6).map((a, idx) => ({
+              cutNumber: clampInt(a.cutNumber, 1, 50, idx + 1),
+              actionPhase: a.actionPhase,
+              entryVectorAngleDeg: clampInt(a.entryVectorAngleDeg, -180, 180, -45),
+              exitVectorAngleDeg: clampInt(a.exitVectorAngleDeg, -180, 180, 135),
+              smearStretchRatio:
+                Math.round(Math.min(3.0, Math.max(1.0, Number(a.smearStretchRatio) || 1.4)) * 100) /
+                100,
+              speedlineConvergencePointKo: cleanSingleLineText(a.speedlineConvergencePointKo, 160),
+              arcContinuityDirectiveKo: cleanSingleLineText(a.arcContinuityDirectiveKo, 220),
+            }))
+          : fallback.cutArcs,
     }),
   });
 }

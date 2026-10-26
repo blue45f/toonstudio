@@ -240,3 +240,6 @@
 | `competitor:background-perspective-prop-scale-lock` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 144 | 340 | `$0.010660` | 3D 배경 1/2/3점 소실점 그리드 ↔ 2D 인물 발 접지(Foot Contact AO)·문틀/책상 인체 비례 고정 |
 | `production:multi-character-crowd-wardrobe-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 160 | 340 | `$0.005580` | 주연·조연·배경 엑스트라 세력별 제복 컬러코드·견장/휘장 위치 및 주연 장신구 전이 차단 |
 | `production:weather-particle-time-progression-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 159 | 340 | `$0.001487` | 컷간 강우/뇌우/수막 반사 날씨·젖은 모발/의상 투과도·시간 경과 그림자 길이 물리 연속성 고정 |
+| `competitor:speech-bubble-tail-occlusion-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 160 | 340 | `$0.001488` | 안면·동공·비대칭 흉터 가림 0% 말풍선 안전 영역 및 화자 입 방향 꼬리 벡터·SFX L1.5 분리 고정 |
+| `competitor:action-weapon-motion-arc-smear-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 145 | 340 | `$0.005535` | 4단계 전투(Wind-up→Slash Smear→Hit-Stop→Follow-through) 검기 궤적 연속성 및 잔상 배율 고정 |
+| `rea15:creative-dopamine-scroll-ux-synthesizer (120-platform)` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 147 | 340 | `$0.010705` | 네이버 AI 페인터·카카오 얼라이브·레진·ComfyUI IP-Adapter 포함 120대 플랫폼 UI/UX 테마 합성 |

@@ -10,7 +10,19 @@
  * - 탭 5: Katalist.ai & Anifusion 시나리오 액션 비트 분해 & FLUX/Animagine LoRA 브리지
  */
 
-import { Box, Brush, Clapperboard, Compass, Cpu, Hand, Layers, Sparkles, Wand2 } from "lucide-react";
+import {
+  Box,
+  Brush,
+  Clapperboard,
+  Compass,
+  Cpu,
+  Hand,
+  Layers,
+  MessageSquare,
+  Sparkles,
+  Swords,
+  Wand2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -18,24 +30,30 @@ import { cn } from "@/shared/lib/utils";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import {
   buildLocal3dHandHeadPoseAndLtRig,
+  buildLocalActionWeaponMotionArcSmearLock,
   buildLocalBackgroundPerspectivePropScaleLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
+  buildLocalSpeechBubbleTailOcclusionLock,
   buildLocalStyleTransferAndRelighting,
   buildLocalTurnaroundOrthographicSheetLock,
   runClaude3dHandHeadPoseAndLtRigDirector,
+  runClaudeActionWeaponMotionArcDirector,
   runClaudeBackgroundPerspectivePropScaleDirector,
   runClaudeSakugaMotionAndFacialMatrixDirector,
   runClaudeScreenplayBeatAndLoraLockBridge,
   runClaudeSketchToLineartLayerSplitter,
+  runClaudeSpeechBubbleTailOcclusionDirector,
   runClaudeStyleTransferAndRelightingDirector,
   runClaudeTurnaroundOrthographicSheetDirector,
   type Claude3dHandHeadRigReport,
+  type ClaudeActionWeaponMotionArcReport,
   type ClaudeBackgroundPerspectiveReport,
   type ClaudeSakugaMotionReport,
   type ClaudeScreenplayLoraBridgeReport,
   type ClaudeSketchToLineartReport,
+  type ClaudeSpeechBubbleTailOcclusionReport,
   type ClaudeStyleTransferReport,
   type ClaudeTurnaroundOrthographicReport,
   type CompetitorEngineExecutionMeta,
@@ -52,7 +70,9 @@ export type CompetitorSuiteTabId =
   | "csp5-3d-hand-head-lt"
   | "katalist-anifusion-lora"
   | "turnaround-orthographic-sheet"
-  | "background-perspective-scale";
+  | "background-perspective-scale"
+  | "speech-bubble-tail-occlusion"
+  | "action-weapon-motion-arc";
 
 export interface StudioCompetitorFullSuitePanelProps {
   readonly assistInput: WebtoonProductionAssistInput;
@@ -99,6 +119,16 @@ const SUITE_TABS: readonly {
     labelKo: "3D 배경 투시 · 발 접지 스케일",
     benchmarkBadgeKo: "3D Vanishing Point & Foot AO",
   },
+  {
+    id: "speech-bubble-tail-occlusion",
+    labelKo: "말풍선·SFX 안면 비가림 & 꼬리 락",
+    benchmarkBadgeKo: "Anti-Occlusion & Tail Vector",
+  },
+  {
+    id: "action-weapon-motion-arc",
+    labelKo: "검격·마법 궤적 & 잔상(Smear) 락",
+    benchmarkBadgeKo: "Motion Arc & Hit-Stop Lock",
+  },
 ];
 
 const STYLE_PRESETS: readonly {
@@ -136,6 +166,10 @@ export function StudioCompetitorFullSuitePanel({
     useState<CompetitorEngineExecutionMeta<ClaudeTurnaroundOrthographicReport> | null>(null);
   const [perspectiveMeta, setPerspectiveMeta] =
     useState<CompetitorEngineExecutionMeta<ClaudeBackgroundPerspectiveReport> | null>(null);
+  const [bubbleOcclusionMeta, setBubbleOcclusionMeta] =
+    useState<CompetitorEngineExecutionMeta<ClaudeSpeechBubbleTailOcclusionReport> | null>(null);
+  const [motionArcMeta, setMotionArcMeta] =
+    useState<CompetitorEngineExecutionMeta<ClaudeActionWeaponMotionArcReport> | null>(null);
 
   const localLineart = useMemo(
     () => buildLocalSketchToLineartLayerSplit(assistInput),
@@ -165,6 +199,14 @@ export function StudioCompetitorFullSuitePanel({
     () => buildLocalBackgroundPerspectivePropScaleLock(assistInput),
     [assistInput],
   );
+  const localBubbleOcclusion = useMemo(
+    () => buildLocalSpeechBubbleTailOcclusionLock(assistInput),
+    [assistInput],
+  );
+  const localMotionArc = useMemo(
+    () => buildLocalActionWeaponMotionArcSmearLock(assistInput),
+    [assistInput],
+  );
 
   const currentLineart = lineartMeta?.report ?? localLineart;
   const currentStyle = styleMeta?.report ?? localStyle;
@@ -173,6 +215,8 @@ export function StudioCompetitorFullSuitePanel({
   const currentBridge = bridgeMeta?.report ?? localBridge;
   const currentTurnaround = turnaroundMeta?.report ?? localTurnaround;
   const currentPerspective = perspectiveMeta?.report ?? localPerspective;
+  const currentBubbleOcclusion = bubbleOcclusionMeta?.report ?? localBubbleOcclusion;
+  const currentMotionArc = motionArcMeta?.report ?? localMotionArc;
 
   const activeExecutionMeta =
     activeTab === "aid-lineart-splitter"
@@ -187,7 +231,11 @@ export function StudioCompetitorFullSuitePanel({
               ? bridgeMeta
               : activeTab === "turnaround-orthographic-sheet"
                 ? turnaroundMeta
-                : perspectiveMeta;
+                : activeTab === "background-perspective-scale"
+                  ? perspectiveMeta
+                  : activeTab === "speech-bubble-tail-occlusion"
+                    ? bubbleOcclusionMeta
+                    : motionArcMeta;
 
   const handleRunActiveClaudeEngine = async () => {
     setIsRunning(true);
@@ -208,8 +256,12 @@ export function StudioCompetitorFullSuitePanel({
         setBridgeMeta(await runClaudeScreenplayBeatAndLoraLockBridge(assistInput));
       } else if (activeTab === "turnaround-orthographic-sheet") {
         setTurnaroundMeta(await runClaudeTurnaroundOrthographicSheetDirector(assistInput));
-      } else {
+      } else if (activeTab === "background-perspective-scale") {
         setPerspectiveMeta(await runClaudeBackgroundPerspectivePropScaleDirector(assistInput));
+      } else if (activeTab === "speech-bubble-tail-occlusion") {
+        setBubbleOcclusionMeta(await runClaudeSpeechBubbleTailOcclusionDirector(assistInput));
+      } else {
+        setMotionArcMeta(await runClaudeActionWeaponMotionArcDirector(assistInput));
       }
     } finally {
       setIsRunning(false);
@@ -259,9 +311,23 @@ export function StudioCompetitorFullSuitePanel({
       );
       return;
     }
-    const first = currentPerspective.cutLocks[0];
+    if (activeTab === "background-perspective-scale") {
+      const first = currentPerspective.cutLocks[0];
+      onAppendDirectionLine(
+        `[3D 배경 투시·발 접지 락] ${first?.vanishingPointMode ?? "2-point-architectural"} (FOV ${first?.cameraFovMm ?? 35}mm) · ${first?.footContactShadowSpecKo ?? ""}`,
+      );
+      return;
+    }
+    if (activeTab === "speech-bubble-tail-occlusion") {
+      const first = currentBubbleOcclusion.cutBubbleLocks[0];
+      onAppendDirectionLine(
+        `[말풍선·SFX 비가림 락] ${first?.speakerName ?? "서진"} (${first?.safeAnchorZone ?? "top-left-sky-margin"}) · ${first?.antiOcclusionDirectiveKo ?? ""}`,
+      );
+      return;
+    }
+    const first = currentMotionArc.cutArcs[0];
     onAppendDirectionLine(
-      `[3D 배경 투시·발 접지 락] ${first?.vanishingPointMode ?? "2-point-architectural"} (FOV ${first?.cameraFovMm ?? 35}mm) · ${first?.footContactShadowSpecKo ?? ""}`,
+      `[검격·마법 궤적 & 잔상 락] ${first?.actionPhase ?? "slash-release-smear"} (${first?.entryVectorAngleDeg ?? -45}°→${first?.exitVectorAngleDeg ?? 135}°) · ${first?.arcContinuityDirectiveKo ?? ""}`,
     );
   };
 
@@ -619,6 +685,80 @@ export function StudioCompetitorFullSuitePanel({
                 </div>
                 <div className="text-fg-2">{lock.footContactShadowSpecKo}</div>
                 <div className="text-fg-3">{lock.propScaleRatioAnchorKo}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 8: 말풍선·효과음(SFX) 안면 비가림 & 화자 입 방향 꼬리 벡터 고정기 */}
+      {activeTab === "speech-bubble-tail-occlusion" ? (
+        <div
+          data-testid="suite-panel-speech-bubble-tail-occlusion"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <MessageSquare size={11} className="text-accent" aria-hidden="true" />
+              말풍선·SFX 안면/눈빛 비가림(Anti-Occlusion) & 입 방향 꼬리 벡터 락
+            </span>
+            <span className="text-accent">
+              비가림 안전도: {currentBubbleOcclusion.antiOcclusionHealthScore}%
+            </span>
+          </div>
+          <p className="text-fg-2">{currentBubbleOcclusion.letteringSpatialSummaryKo}</p>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {currentBubbleOcclusion.cutBubbleLocks.slice(0, 4).map((b) => (
+              <div
+                key={b.cutNumber}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.56rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>
+                    컷 #{b.cutNumber} [{b.speakerName}] · {b.safeAnchorZone}
+                  </span>
+                  <span className="text-accent">
+                    안면 가림 {b.faceAndEyeOcclusionPct}% · 꼬리 {b.tailTargetMouthAngleDeg}°
+                  </span>
+                </div>
+                <div className="text-fg-2">{b.antiOcclusionDirectiveKo}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 9: 검격·마법 궤적(Motion Arc) 연속성 & 잔상(Smear) 감독 */}
+      {activeTab === "action-weapon-motion-arc" ? (
+        <div
+          data-testid="suite-panel-action-weapon-motion-arc"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Swords size={11} className="text-accent" aria-hidden="true" />
+              검격·마법·타격 궤적(Motion Arc) 연속성 · 잔상(Smear) · 역경직(Hit-Stop) 감독
+            </span>
+            <span className="text-accent">
+              궤적 연속성 점수: {currentMotionArc.kineticContinuityScore}%
+            </span>
+          </div>
+          <p className="text-fg-2">{currentMotionArc.combatChoreographySummaryKo}</p>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {currentMotionArc.cutArcs.slice(0, 4).map((arc) => (
+              <div
+                key={arc.cutNumber}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.56rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>
+                    컷 #{arc.cutNumber} ({arc.actionPhase})
+                  </span>
+                  <span className="text-accent">
+                    {arc.entryVectorAngleDeg}° → {arc.exitVectorAngleDeg}° · Smear {arc.smearStretchRatio}x
+                  </span>
+                </div>
+                <div className="text-fg-2">{arc.arcContinuityDirectiveKo}</div>
               </div>
             ))}
           </div>

@@ -54,12 +54,14 @@ export type ClaudeCreatorTaskId =
   | "nextgen:3d-asset-placement"
   | "nextgen:visual-continuity-linter"
   | "nextgen:multi-episode-canon-vault"
-  // 4. Phase 5 Competitor Full Suite (5)
+  // 4. Phase 5 Competitor Full Suite (7)
   | "competitor:beluga-clipstudio-production"
   | "competitor:onoma-kakaopage-ip"
   | "competitor:llamagen-manga-ai"
   | "competitor:turnaround-orthographic-sheet-lock"
   | "competitor:background-perspective-prop-scale-lock"
+  | "competitor:speech-bubble-tail-occlusion-lock"
+  | "competitor:action-weapon-motion-arc-smear-lock"
   // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite (10)
   | "ecosystem:novelai-multi-char-vibe"
   | "ecosystem:mangaflow-identity-verification"
@@ -366,6 +368,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "deep-architecture",
     "3D 배경 지평선(Eye-Line)·소실점과 2D 캐릭터 발바닥 접지 각도·문틀/책상/마차 대비 인체 스케일 왜곡 교정은 Opus 5.5 적용",
     4_096,
+  ),
+  "competitor:speech-bubble-tail-occlusion-lock": defineRoute(
+    "competitor:speech-bubble-tail-occlusion-lock",
+    "말풍선·효과음(SFX) 안면/눈빛/핵심 액션 비가림(Anti-Occlusion) 안전 영역 & 화자 입 방향 꼬리 벡터 고정기",
+    "competitor-suite",
+    "fast-inline",
+    "인물 얼굴·동공·손동작 가림 0% 보장 여백 좌표 계산 및 화자 입 중심 말풍선 꼬리 벡터 잠금은 Haiku 5.5 적용",
+    2_560,
+  ),
+  "competitor:action-weapon-motion-arc-smear-lock": defineRoute(
+    "competitor:action-weapon-motion-arc-smear-lock",
+    "검격·마법·타격 궤적(Motion Arc) 연속성 · 잔상(Smear Frame) · 타격 역경직(Hit-Stop) 물리 일관성 감독",
+    "competitor-suite",
+    "creative-production",
+    "연속 전투 컷 사이의 검기 궤적 벡터 일치·잔상(Smear) 왜곡률·집중선 수렴점·역경직 연출은 Sonnet 5.5 적용",
+    3_584,
   ),
 
   // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite

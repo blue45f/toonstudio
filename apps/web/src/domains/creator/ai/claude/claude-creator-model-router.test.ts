@@ -46,11 +46,11 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 10대 창의 AI 작업을 포함한 총 61개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 12대 창의 AI 작업을 포함한 총 63개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(61);
-    expect(summary.byProfile["fast-inline"]).toBe(12);
-    expect(summary.byProfile["creative-production"]).toBe(31);
+    expect(summary.totalTasks).toBe(63);
+    expect(summary.byProfile["fast-inline"]).toBe(13);
+    expect(summary.byProfile["creative-production"]).toBe(32);
     expect(summary.byProfile["deep-architecture"]).toBe(18);
 
     expect(
@@ -77,6 +77,12 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(
       resolveCreatorTaskModelRoute("competitor:background-perspective-prop-scale-lock").model,
     ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("competitor:speech-bubble-tail-occlusion-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("competitor:action-weapon-motion-arc-smear-lock").model,
+    ).toBe("claude-sonnet-5-5");
     expect(
       resolveCreatorTaskModelRoute("production:multi-character-crowd-wardrobe-lock").model,
     ).toBe("claude-sonnet-5-5");

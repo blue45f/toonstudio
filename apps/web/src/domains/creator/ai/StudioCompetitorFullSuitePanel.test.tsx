@@ -50,6 +50,16 @@ describe("StudioCompetitorFullSuitePanel", () => {
     fireEvent.click(screen.getByTestId("append-competitor-suite-line-btn"));
     expect(onAppend).toHaveBeenCalledWith(expect.stringContaining("[3D 배경 투시·발 접지 락]"));
 
+    fireEvent.click(screen.getByTestId("competitor-suite-tab-speech-bubble-tail-occlusion"));
+    expect(screen.getByTestId("suite-panel-speech-bubble-tail-occlusion")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("append-competitor-suite-line-btn"));
+    expect(onAppend).toHaveBeenCalledWith(expect.stringContaining("[말풍선·SFX 비가림 락]"));
+
+    fireEvent.click(screen.getByTestId("competitor-suite-tab-action-weapon-motion-arc"));
+    expect(screen.getByTestId("suite-panel-action-weapon-motion-arc")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("append-competitor-suite-line-btn"));
+    expect(onAppend).toHaveBeenCalledWith(expect.stringContaining("[검격·마법 궤적 & 잔상 락]"));
+
     // Phase 6 20대 웹툰 AI 생태계 확장 워크벤치 6개 탭 확인
     expect(screen.getByTestId("studio-phase6-ecosystem-suite-panel")).toBeTruthy();
     fireEvent.click(screen.getByTestId("phase6-ecosystem-tab-mangaflow-identity-audit"));

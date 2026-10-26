@@ -4,17 +4,21 @@ import { claudeParse } from "@/shared/ai/claude/claude-transport";
 
 import {
   buildLocal3dHandHeadPoseAndLtRig,
+  buildLocalActionWeaponMotionArcSmearLock,
   buildLocalBackgroundPerspectivePropScaleLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
+  buildLocalSpeechBubbleTailOcclusionLock,
   buildLocalStyleTransferAndRelighting,
   buildLocalTurnaroundOrthographicSheetLock,
   runClaude3dHandHeadPoseAndLtRigDirector,
+  runClaudeActionWeaponMotionArcDirector,
   runClaudeBackgroundPerspectivePropScaleDirector,
   runClaudeSakugaMotionAndFacialMatrixDirector,
   runClaudeScreenplayBeatAndLoraLockBridge,
   runClaudeSketchToLineartLayerSplitter,
+  runClaudeSpeechBubbleTailOcclusionDirector,
   runClaudeStyleTransferAndRelightingDirector,
   runClaudeTurnaroundOrthographicSheetDirector,
 } from "./claude-competitor-full-suite";
@@ -214,5 +218,53 @@ describe("claude-competitor-full-suite (5대 신규 경쟁사 벤치마크 엔�
     expect(live.source).toBe("claude-live");
     expect(live.report.perspectiveAlignmentScore).toBe(98);
     expect(live.report.cutLocks.length).toBeGreaterThan(0);
+  });
+
+  it("8. 말풍선·효과음(SFX) 안면 비가림 안전 영역 & 화자 입 방향 꼬리 벡터 고정기를 검증한다", async () => {
+    const local = buildLocalSpeechBubbleTailOcclusionLock(SAMPLE_INPUT);
+    expect(local.antiOcclusionHealthScore).toBe(99);
+    expect(local.cutBubbleLocks[0]?.faceAndEyeOcclusionPct).toBe(0);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-4-5-20251001",
+        usage: { input_tokens: 280, output_tokens: 390 },
+      } as never,
+      parsed: {
+        antiOcclusionHealthScore: 100,
+        letteringSpatialSummaryKo: "안면·동공 가림 0% 및 입 방향 꼬리 벡터 고정 완료",
+        cutBubbleLocks: local.cutBubbleLocks,
+      },
+    });
+
+    const live = await runClaudeSpeechBubbleTailOcclusionDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.report.antiOcclusionHealthScore).toBe(100);
+  });
+
+  it("9. 검격·마법·타격 궤적(Motion Arc) 연속성 · 잔상(Smear) · 역경직(Hit-Stop) 감독을 검증한다", async () => {
+    const local = buildLocalActionWeaponMotionArcSmearLock(SAMPLE_INPUT);
+    expect(local.kineticContinuityScore).toBe(97);
+    expect(local.cutArcs.length).toBeGreaterThan(0);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 300, output_tokens: 410 },
+      } as never,
+      parsed: {
+        kineticContinuityScore: 99,
+        combatChoreographySummaryKo: "4단계 액션 검기 궤적 및 잔상 연속성 100% 정합",
+        cutArcs: local.cutArcs,
+      },
+    });
+
+    const live = await runClaudeActionWeaponMotionArcDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.report.kineticContinuityScore).toBe(99);
   });
 });
