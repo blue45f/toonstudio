@@ -1,4 +1,4 @@
-import { PackageCheck, PackagePlus, Store, type LucideIcon } from "lucide-react";
+import { ChartColumn, Coins, PackageCheck, PackagePlus, Store, type LucideIcon } from "lucide-react";
 
 import {
   SELLER_CENTER_TABS,
@@ -28,8 +28,8 @@ export function MarketSellerCenterTabs({
   const bt = useBilingual("MarketSellerCenterTabs");
 
   return (
-    <nav aria-label={bt("판매자 센터 탭", "Seller center tabs")} className="mt-6">
-      <ul className="flex flex-wrap gap-1.5 border-b border-line pb-3">
+    <nav aria-label={bt("판매자 센터 탭", "Seller center tabs")} className="mt-6 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+      <ul className="flex flex-wrap gap-1.5">
         {SELLER_CENTER_TABS.map((tab) => {
           const Icon = TAB_ICONS[tab.id];
           const isActive = tab.id === active;
@@ -54,6 +54,22 @@ export function MarketSellerCenterTabs({
           );
         })}
       </ul>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Link
+          href="/creator/revenue"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+        >
+          <ChartColumn className="size-3.5 text-accent" aria-hidden="true" />
+          {bt("창작자 수익·정산", "Creator Revenue")}
+        </Link>
+        <Link
+          href="/asset-points"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+        >
+          <Coins className="size-3.5 text-accent" aria-hidden="true" />
+          {bt("포인트 지갑", "Points Wallet")}
+        </Link>
+      </div>
     </nav>
   );
 }

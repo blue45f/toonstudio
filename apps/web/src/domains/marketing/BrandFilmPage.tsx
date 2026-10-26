@@ -240,6 +240,12 @@ export function BrandFilmPage() {
             <Link href="/showcase/promo" className="mk-button">
               {copy.promo}
             </Link>
+            <Link href="/promo-library" className="mk-button">
+              {bi("홍보 영상 자료실 204편", "Promo video library (204 clips)")}
+            </Link>
+            <Link href="/community/promote" className="mk-button">
+              {bi("신작·작가 홍보 게시판", "Creator promotion board")}
+            </Link>
           </div>
         </section>
 

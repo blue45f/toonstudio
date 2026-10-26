@@ -81,8 +81,8 @@ const STUDIO_CREATE_PREFIXES = [
   "/studio/import",
   "/make",
 ] as const;
-const STUDIO_LEARN_PREFIXES = ["/learn", "/help", "/guide", "/studio/manual"] as const;
-const STUDIO_PUBLISH_PREFIXES = ["/studio/publish", "/publishing"] as const;
+const STUDIO_LEARN_PREFIXES = ["/learn", "/help", "/guide", "/studio/manual", "/developers"] as const;
+const STUDIO_PUBLISH_PREFIXES = ["/studio/publish", "/publishing", "/publish", "/creator", "/automation", "/creator-support", "/cuts/studio"] as const;
 const STUDIO_WORK_EXCLUDED_PREFIXES = [
   ...STUDIO_CREATE_PREFIXES,
   ...STUDIO_ASSET_PREFIXES,
@@ -94,20 +94,8 @@ const STUDIO_WORK_EXCLUDED_PREFIXES = [
 const COLLABORATION_PURPOSE_PREFIXES = ["/production", "/team", "/collaborate"] as const;
 /** 개인 가상 스튜디오와 프로젝트 협업 공간. */
 const VIRTUAL_STUDIO_PATTERN = /^\/studio\/(?:space|p\/[^/]+\/space)(?:\/|$)/u;
-const COMMUNITY_PURPOSE_PREFIXES = [
-  "/reviews",
-  "/showcase",
-  "/create",
-  "/pencafe",
-] as const;
-const MY_PURPOSE_PREFIXES = [
-  "/my",
-  "/me",
-  "/library",
-  "/notifications",
-  "/messages",
-  "/settings",
-] as const;
+const COMMUNITY_PURPOSE_PREFIXES = ["/reviews", "/showcase", "/create", "/pencafe", "/events", "/newsletter", "/character-chat", "/support-creators"] as const;
+const MY_PURPOSE_PREFIXES = ["/my", "/me", "/library", "/notifications", "/messages", "/settings", "/memberships"] as const;
 
 /**
  * Canonical destinations for the header's key actions. Legacy aliases (/new, /more)
@@ -449,7 +437,7 @@ function headerSectionForPath(rawPathname: string): HeaderSectionId | null {
   if (pathMatchesAny(pathname, COLLABORATION_PURPOSE_PREFIXES)) return "collaborate";
   // 리서치 데스크는 단일 지도에서도 자료·성장(grow) 그룹이라 배우기 구역으로 본다.
   if (pathMatchesAny(pathname, STUDIO_LEARN_PREFIXES) || matchesPrefix(pathname, "/research")) return "learn";
-  if (matchesPrefix(pathname, "/market")) return "market";
+  if (matchesPrefix(pathname, "/market") || matchesPrefix(pathname, "/asset-points")) return "market";
   if (
     matchesPrefix(pathname, "/studio")
     || pathMatchesAny(pathname, STUDIO_CREATE_PREFIXES)
@@ -459,7 +447,7 @@ function headerSectionForPath(rawPathname: string): HeaderSectionId | null {
   // /create 정확 경로는 작품 시작 시트라 제작 문맥이다. 하위 경로는 갤러리 문맥을 유지한다.
   if (pathname === "/create") return "studio";
   if (matchesPrefix(pathname, "/community") || pathMatchesAny(pathname, COMMUNITY_PURPOSE_PREFIXES)) return "community";
-  if (isDiscoverPurposeRoute(pathname)) return "explore";
+  if (isDiscoverPurposeRoute(pathname) || matchesPrefix(pathname, "/cuts")) return "explore";
   return null;
 }
 

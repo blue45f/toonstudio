@@ -444,6 +444,9 @@ export function CutsFeedPage() {
           <span className="hidden rounded-full bg-black/45 px-2.5 py-1 text-[0.72rem] font-medium text-white/75 md:inline-block">
             {t("↑/↓ 클립 이동 · M 음소거 토글", "↑/↓ move · M toggle mute")}
           </span>
+          <Link href="/showcase/promo" className="cuts-feed__rewards">
+            {t("예고편 스튜디오", "Promo studio")}
+          </Link>
           <Link href="/cuts/rewards" className="cuts-feed__rewards">
             <Coins size={15} aria-hidden="true" />
             {t("리워드", "Rewards")}

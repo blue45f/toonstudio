@@ -238,6 +238,8 @@ export function ProductTourPage() {
         <div className="product-tour__next-links">
           <Link className="mk-link" href="/ir">{copy.irDeck}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/brand-film">{copy.brandFilm}<ArrowRight size={14} aria-hidden="true" /></Link>
+          <Link className="mk-link" href="/promo-library">{bi("홍보 영상 자료실 204편", "Promo video library (204 clips)")}<ArrowRight size={14} aria-hidden="true" /></Link>
+          <Link className="mk-link" href="/showcase/promo">{bi("작품 홍보 영상 스튜디오", "Promo video studio")}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/features">{copy.nextFeatures}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/about/workflow">{copy.nextWorkflow}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/about/technology">{copy.nextTechnology}<ArrowRight size={14} aria-hidden="true" /></Link>

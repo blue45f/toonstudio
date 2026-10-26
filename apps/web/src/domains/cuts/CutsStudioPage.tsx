@@ -346,11 +346,20 @@ export function CutsStudioPage() {
 
   return (
     <div className="cuts-studio">
-      <p>
+      <nav className="flex flex-wrap items-center gap-2" aria-label={t("컷츠 및 영상 도구 이동", "Cuts and video tool navigation")}>
         <Link href="/cuts" className="cuts-button cuts-button--ghost">
           <ArrowLeft size={16} aria-hidden="true" /> {t("피드로 돌아가기", "Back to feed")}
         </Link>
-      </p>
+        <Link href="/cuts/rewards" className="cuts-button cuts-button--ghost">
+          <Coins size={16} aria-hidden="true" /> {t("리워드 정산", "Reward settlement")}
+        </Link>
+        <Link href="/showcase/promo" className="cuts-button cuts-button--ghost">
+          <Clapperboard size={16} aria-hidden="true" /> {t("예고편·트레일러 스튜디오", "Promo trailer studio")}
+        </Link>
+        <Link href="/studio/motion-webtoon" className="cuts-button cuts-button--ghost">
+          {t("모션 웹툰 스튜디오", "Motion webtoon studio")}
+        </Link>
+      </nav>
       <h1>
         <Clapperboard size={24} aria-hidden="true" /> {t("컷츠 클립 만들기", "Create a Cuts clip")}
       </h1>

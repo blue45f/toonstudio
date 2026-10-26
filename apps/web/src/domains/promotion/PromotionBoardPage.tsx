@@ -69,6 +69,7 @@ export function PromotionBoardPage() {
           <p className="pc-lead">{bt("첫 연재의 설렘부터 한 편의 트레일러까지.", "From the thrill of a first serialization to a full trailer.")}<br />{bt("새로운 작가를 만나고, 만드는 과정을 응원해 주세요.", "Meet new creators and cheer on their process.")}</p>
           <div className="pc-actions">
             <Link className="pc-button pc-primary" to="/community/promote/new"><PenLine size={17} aria-hidden="true" />{bt("내 작품 소개하기", "Introduce my work")}</Link>
+            <Link className="pc-button" to="/showcase/promo"><Clapperboard size={16} aria-hidden="true" />{bt("홍보 영상·트레일러 만들기", "Create a promo trailer")} <ArrowRight size={16} aria-hidden="true" /></Link>
             <Link className="pc-button" to="/collaborate">{bt("용역·어시·팀원 찾기", "Find gigs · assistants · teammates")} <ArrowRight size={16} aria-hidden="true" /></Link>
             <Link className="pc-button" to="/showcase">{bt("창작 갤러리", "Creator gallery")} <ArrowRight size={16} aria-hidden="true" /></Link>
           </div>
@@ -178,6 +179,9 @@ export function PromotionBoardPage() {
       <footer className="pc-bottom">
         <p>{bt("읽기는 누구나, 등록·댓글·저장은 로그인 후 이용할 수 있어요. 도용·스팸·괴롭힘은 신고해 주세요.", "Anyone can read; posting, commenting, and saving need sign-in. Report plagiarism, spam, or harassment.")}</p>
         <Link to="/community">{bt("전체 커뮤니티", "All communities")}</Link>
+        <Link to="/showcase/promo">{bt("홍보 영상 스튜디오", "Promo video studio")}</Link>
+        <Link to="/promo-library">{bt("홍보 영상 자료실", "Promo video library")}</Link>
+        <Link to="/cuts">{bt("숏폼 컷츠 피드", "Cuts feed")}</Link>
         {feed.page?.canModerate && <Link to="/community/promote/moderation">{bt("홍보 신고 관리", "Promotion report moderation")}</Link>}
       </footer>
     </div>

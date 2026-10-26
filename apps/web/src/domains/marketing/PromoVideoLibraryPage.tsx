@@ -43,9 +43,13 @@ const COPY = {
     conceptBadge: "개념 영상",
     closingTitle: "영상이 쓰이는 자리도 함께 보세요.",
     closingBody:
-      "이 자료실의 영상 상당수는 이미 브랜드 필름과 제품 투어, 기능 요약 페이지에 걸려 있습니다. 완성된 화면에서 어떻게 보이는지 먼저 확인해 보세요.",
+      "이 자료실의 영상 상당수는 이미 브랜드 필름과 제품 투어, 기능 요약 페이지에 걸려 있습니다. 완성된 화면에서 어떻게 보이는지 먼저 확인하거나, 내 작품의 홍보 예고편을 직접 만들어 보세요.",
     closingBrandFilm: "브랜드 필름 보기",
     closingTour: "제품 투어 보기",
+    closingPromoStudio: "내 작품 홍보 영상 만들기",
+    closingPromoteBoard: "신작·작가 홍보 게시판",
+    closingCuts: "숏폼 컷츠 피드",
+    wayfindingLabel: "영상·홍보 바로가기",
   },
   en: {
     pageTitle: "Promo Video Library",
@@ -69,9 +73,13 @@ const COPY = {
     conceptBadge: "Concept clip",
     closingTitle: "See the clips where they run.",
     closingBody:
-      "Many of these clips already run on the brand film, the product tour and the features overview. Check how they look in the finished pages first.",
+      "Many of these clips already run on the brand film, the product tour and the features overview. Check how they look in the finished pages first, or make a promo trailer for your own work.",
     closingBrandFilm: "Watch the brand film",
     closingTour: "Watch the product tour",
+    closingPromoStudio: "Make a promo for my work",
+    closingPromoteBoard: "Creator promotion board",
+    closingCuts: "Short-form Cuts feed",
+    wayfindingLabel: "Video & promotion shortcuts",
   },
 } as const;
 
@@ -162,6 +170,18 @@ export function PromoVideoLibraryPage() {
         <p className="mk-lead">{copy.lead}</p>
         <p className="mk-body promo-library__notice">{copy.notice}</p>
         <p className="mk-body">{copy.howto}</p>
+        <div className="mk-actions" aria-label={copy.wayfindingLabel}>
+          <Link href="/showcase/promo" className="mk-button mk-button--primary">
+            {copy.closingPromoStudio}
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+          <Link href="/community/promote" className="mk-button">
+            {copy.closingPromoteBoard}
+          </Link>
+          <Link href="/cuts" className="mk-button">
+            {copy.closingCuts}
+          </Link>
+        </div>
         <ul className="mk-chip-list" aria-label={copy.factsLabel}>
           {facts.map((fact) => (
             <li key={fact} className="mk-chip">{fact}</li>
@@ -217,6 +237,12 @@ export function PromoVideoLibraryPage() {
             </Link>
             <Link href="/product-tour" className="mk-button">
               {copy.closingTour}
+            </Link>
+            <Link href="/showcase/promo" className="mk-button">
+              {copy.closingPromoStudio}
+            </Link>
+            <Link href="/community/promote" className="mk-button">
+              {copy.closingPromoteBoard}
             </Link>
           </div>
         </section>

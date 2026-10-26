@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { MarketFitScenePreview } from "../components/MarketFitScenePreview";
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -76,9 +77,11 @@ export function MarketFitLabPage() {
     { id: "review", label: t("확인 필요", "Needs review"), icon: CircleAlert },
     { id: "blocked", label: t("차단", "Blocked"), icon: ShieldX },
   ];
+  const [searchParams] = useSearchParams();
+  const initialSlug = searchParams.get("slug");
   const [search, setSearch] = useState("");
   const [fitFilter, setFitFilter] = useState<FitFilter>("all");
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(initialSlug);
   const previewSectionRef = useRef<HTMLDivElement | null>(null);
   const {
     profile,

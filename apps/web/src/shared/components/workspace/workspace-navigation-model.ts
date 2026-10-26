@@ -5,20 +5,20 @@ export function workspaceNavigationActiveId(pathname: string): string | null {
   const path = canonicalSitePath(pathname);
   if (path === "/" || path === "/home" || path === "/studio/space" || /^\/studio\/p\/[^/]+\/space$/u.test(path)) return "workspace-home";
   const matches = (prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
-  if (["/studio", "/production", "/story-lab", "/publish"].some(matches)) return "studio";
+  if (["/studio", "/production", "/story-lab", "/publish", "/creator", "/automation", "/creator-support", "/cuts/studio"].some(matches)) return "studio";
   // /create 정확 경로는 작품 시작 시트라 제작 문맥이다. 하위 경로(작품·연재·챌린지)는 갤러리 문맥을 유지한다.
   if (path === "/create") return "studio";
-  if (["/team", "/collaborate", "/community", "/showcase", "/create", "/reviews", "/events", "/pencafe"].some(matches)) return "community";
+  if (["/team", "/collaborate", "/community", "/showcase", "/create", "/reviews", "/events", "/pencafe", "/newsletter", "/character-chat", "/support-creators"].some(matches)) return "community";
   const explore = [
-    "/hub", "/discover", "/explore", "/ranking", "/market", "/research",
+    "/hub", "/discover", "/explore", "/ranking", "/market", "/asset-points", "/research",
     "/learn", "/opportunities", "/fortune", "/library", "/search", "/title", "/author",
-    "/calendar", "/recommend", "/insights", "/now", "/play", "/news", "/tags", "/authors", "/references", "/compare", "/random",
+    "/calendar", "/recommend", "/insights", "/now", "/play", "/news", "/tags", "/authors", "/references", "/compare", "/random", "/cuts",
   ];
   if (explore.some(matches)) return "explore";
   const all = [
-    "/sitemap", "/help", "/settings", "/about", "/support", "/contact", "/business",
-    "/accessibility", "/copyright", "/design", "/guide", "/product-tour", "/brand-film",
-    "/my", "/me", "/messages", "/notifications",
+    "/sitemap", "/help", "/settings", "/about", "/support", "/support-us", "/contact", "/business",
+    "/accessibility", "/copyright", "/design", "/guide", "/features", "/product-tour", "/brand-film", "/promo-library", "/developers",
+    "/my", "/me", "/messages", "/notifications", "/memberships",
   ];
   return all.some(matches) ? "all-menu" : null;
 }

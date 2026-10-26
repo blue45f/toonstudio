@@ -181,6 +181,9 @@ export function CreatorGrowthIpPage() {
             className="min-h-11 rounded-xl px-4 text-sm"
           />
           <Link to="/studio/ecosystem" className={GROWTH_BUTTON}><Sparkles size={16} aria-hidden />{bi("창작 생태계 보기", "Creator ecosystem")}</Link>
+          <Link to="/studio/growth" className={GROWTH_BUTTON}>{bi("성장 실험·퍼널", "Growth experiments")}</Link>
+          <Link to="/creator/revenue" className={GROWTH_BUTTON}>{bi("창작자 수익·멤버십", "Creator revenue")}</Link>
+          <Link to="/studio/support" className={GROWTH_BUTTON}>{bi("작가 지원 센터", "Creator support")}</Link>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-sm leading-6 text-fg-2">
           <span className="inline-flex items-start gap-1.5">

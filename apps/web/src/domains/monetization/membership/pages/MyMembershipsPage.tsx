@@ -26,6 +26,7 @@ import {
   subscribeMembershipStore,
 } from "../models/membership-store";
 import { MyMembershipCard } from "../components/MyMembershipCard";
+import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
 
 const BROWSE_CTA = defineBilingualText("myMembershipsPage", "browseCta", "멤버십 작품 찾아보기", "Browse membership titles");
 
@@ -58,25 +59,29 @@ export function MyMembershipsPage() {
 
   if (!authenticated) {
     return (
-      <Container className="py-16 text-center">
-        <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
-        <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.myPage.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
-          {t("membership.myPage.loginRequired")}
-        </p>
-        <button
-          type="button"
-          onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "my-memberships", mode: "login" })}
-          className={cn(buttonClass({ variant: "solid" }), "mt-4")}
-        >
-          {t("membership.myPage.login")}
-        </button>
+      <Container className="py-10">
+        <CreatorMonetizationNav current="/memberships" />
+        <div className="py-8 text-center">
+          <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
+          <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.myPage.title")}</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
+            {t("membership.myPage.loginRequired")}
+          </p>
+          <button
+            type="button"
+            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "my-memberships", mode: "login" })}
+            className={cn(buttonClass({ variant: "solid" }), "mt-4")}
+          >
+            {t("membership.myPage.login")}
+          </button>
+        </div>
       </Container>
     );
   }
 
   return (
     <Container className="py-8">
+      <CreatorMonetizationNav current="/memberships" />
       <header>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">
           <Crown className="h-6 w-6 text-accent" aria-hidden />

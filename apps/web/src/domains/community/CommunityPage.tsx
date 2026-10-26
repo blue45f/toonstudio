@@ -141,6 +141,24 @@ const COPY = {
     "내 작품 소개와 홍보 영상을 올리고 피드백을 받아요.",
     "Post your work intro or trailer and collect feedback.",
   ),
+  promoteStudio: defineBilingualText(
+    "communityPage",
+    "promoteStudio",
+    "홍보 영상 스튜디오",
+    "Promo video studio",
+  ),
+  promoteStudioBody: defineBilingualText(
+    "communityPage",
+    "promoteStudioBody",
+    "웹툰 컷으로 10·15·30·60초 예고편과 세로 쇼츠를 바로 만듭니다.",
+    "Turn webtoon panels into 10, 15, 30, or 60-second trailers and vertical shorts.",
+  ),
+  promoteStudioCta: defineBilingualText(
+    "communityPage",
+    "promoteStudioCta",
+    "예고편 만들기",
+    "Create trailer",
+  ),
   promoteOpen: defineBilingualText("communityPage", "promoteOpen", "둘러보기", "Browse"),
   unifiedFeedRegion: defineBilingualText("communityPage", "unifiedFeedRegion", "통합 커뮤니티 피드", "Unified community feed"),
   unifiedFeedLabel: defineBilingualText("communityPage", "unifiedFeedLabel", "통합 커뮤니티 피드", "Unified community feed"),
@@ -260,6 +278,27 @@ export function CommunityPage() {
               내 신작 홍보하기
               <ArrowRight size={12} aria-hidden="true" />
             </Link>
+            <Link
+              href="/showcase/promo"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            >
+              홍보 영상·트레일러 만들기
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/cuts"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            >
+              숏폼 컷츠 피드
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/newsletter"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            >
+              뉴스레터 구독·발송
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>
@@ -274,7 +313,7 @@ export function CommunityPage() {
         title={t(COPY.promoteTitle)}
         desc={t(COPY.promoteDescription)}
       >
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SiteLinkCard
             href="/community/promote?stage=amateur"
             icon={Sparkles}
@@ -288,6 +327,13 @@ export function CommunityPage() {
             title={t(COPY.promoteTrailer)}
             description={t(COPY.promoteTrailerBody)}
             cta={t(COPY.promoteOpen)}
+          />
+          <SiteLinkCard
+            href="/showcase/promo"
+            icon={Clapperboard}
+            title={t(COPY.promoteStudio)}
+            description={t(COPY.promoteStudioBody)}
+            cta={t(COPY.promoteStudioCta)}
           />
           <SiteLinkCard
             href="/community/promote/new"

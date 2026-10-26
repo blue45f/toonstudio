@@ -5,12 +5,13 @@
 // 주인공은 공개 작품 목록의 좋아요순 첫 작품(표지가 있으면 우선)이며, 선정 기준을 머리말에
 // 그대로 밝힌다. 데이터는 갤러리 본문과 같은 공개 목록(listWorks)을 재사용하고, 표지가 없는
 // 작품은 지어내지 않고 제목 타이포 타일로 정직하게 보여 준다.
-import { ArrowRight, Eye, Heart, MessageCircle, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { ArrowRight, Clapperboard, Eye, Heart, Megaphone, MessageCircle, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 
 import { AuthorAvatar } from "../creator-community-ui";
 import {
   SHOWCASE_CHALLENGES_PATH,
   SHOWCASE_HOME_PATH,
+  SHOWCASE_PROMO_PATH,
   SHOWCASE_REVIEWS_PATH,
   creatorProfileHref,
   creatorWorkHref,
@@ -66,6 +67,14 @@ function ShowcaseHeader({ onStage }: { onStage?: boolean }) {
         <Link href={SHOWCASE_REVIEWS_PATH} className={onStage ? STAGE_TEXT_LINK : TEXT_LINK}>
           <ShieldCheck size={15} aria-hidden className={onStage ? "text-white" : "text-accent"} />
           {bt("승인본 전시", "Approved showcase")}
+        </Link>
+        <Link href={SHOWCASE_PROMO_PATH} className={onStage ? STAGE_TEXT_LINK : TEXT_LINK}>
+          <Clapperboard size={15} aria-hidden className={onStage ? "text-white" : "text-accent"} />
+          {bt("홍보 영상 스튜디오", "Promo video studio")}
+        </Link>
+        <Link href="/community/promote" className={onStage ? STAGE_TEXT_LINK : TEXT_LINK}>
+          <Megaphone size={15} aria-hidden className={onStage ? "text-white" : "text-accent"} />
+          {bt("신작·작가 홍보 게시판", "Creator promotion board")}
         </Link>
       </nav>
     </header>

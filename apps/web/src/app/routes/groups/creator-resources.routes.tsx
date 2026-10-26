@@ -37,6 +37,7 @@ import {
   GlobalBooksPage,
   LearnRecipesRoute,
   StoryLabPage,
+  PublishingPage,
   OpenCreationPage,
   SourcesPage,
   ContentPacksPage,
@@ -94,6 +95,8 @@ export const creatorResourcesRoutes = defineAppRoutes([
   // 한 요소(LearnRecipesRoute)로 지연 로딩해 학습 콘텐츠가 앱 진입 번들에 섞이지 않게 한다.
   { id: "resources-recipes", path: "/learn/recipes", element: <LearnRecipesRoute /> },
   { id: "resources-story", path: "/story-lab", element: <StoryLabPage /> },
+  { id: "resources-research-story", path: "/research/story", element: <Navigate to="/story-lab" replace /> },
+  { id: "resources-checklist", path: "/research/checklist", element: <PublishingPage /> },
   { id: "resources-works", path: "/discover/works", element: <WorksPage /> },
   { id: "resources-sources", path: "/insights/resources", element: <SourcesPage /> },
   { id: "ecosystem-home", path: "/ecosystem", element: <Navigate to="/ecosystem/education" replace /> },

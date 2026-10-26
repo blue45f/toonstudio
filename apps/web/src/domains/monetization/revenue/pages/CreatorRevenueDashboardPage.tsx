@@ -44,6 +44,7 @@ import {
 import { SettlementCard } from "../components/SettlementCard";
 import { PayoutDialog } from "../components/PayoutDialog";
 import { EpisodeTipRanking } from "@/domains/monetization/tipping/components/EpisodeTipRanking";
+import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
 
 type PeriodKey = "month" | "3m" | "6m";
 
@@ -134,20 +135,23 @@ export function CreatorRevenueDashboardPage() {
 
   if (!authenticated || !summary) {
     return (
-      <Container className="py-16 text-center">
-        <ChartColumn className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
-        <h1 className="mt-3 text-xl font-bold text-fg">{t("revenue.dashboard.title")}</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
-          {t("revenue.dashboard.loginRequired")}
-        </p>
-        <button
-          type="button"
-          onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-revenue", mode: "login" })}
-          className={cn(buttonClass({ variant: "solid" }), "mt-4 gap-1.5")}
-        >
-          <LogIn className="h-4 w-4" aria-hidden />
-          {t("revenue.dashboard.login")}
-        </button>
+      <Container className="py-10">
+        <CreatorMonetizationNav current="/creator/revenue" />
+        <div className="py-8 text-center">
+          <ChartColumn className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
+          <h1 className="mt-3 text-xl font-bold text-fg">{t("revenue.dashboard.title")}</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-fg-3">
+            {t("revenue.dashboard.loginRequired")}
+          </p>
+          <button
+            type="button"
+            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-revenue", mode: "login" })}
+            className={cn(buttonClass({ variant: "solid" }), "mt-4 gap-1.5")}
+          >
+            <LogIn className="h-4 w-4" aria-hidden />
+            {t("revenue.dashboard.login")}
+          </button>
+        </div>
       </Container>
     );
   }
@@ -163,6 +167,7 @@ export function CreatorRevenueDashboardPage() {
 
   return (
     <Container className="py-8">
+      <CreatorMonetizationNav current="/creator/revenue" />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">
