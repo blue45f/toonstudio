@@ -14,6 +14,8 @@ import {
   computeShaperMultiBonePivot,
   computeShaperMuscleFatBlendShapeWeights,
   computeShaperSkinBoneVertexColors,
+  enforceShaperHumanoidBoneTPose,
+  limitAndNormalizeShaperBoneWeights,
   mirrorShaperPose,
   normalizeSignedAngleDeg,
   pairShaperSymmetryBones,
@@ -486,5 +488,49 @@ describe("SHAPER TwistBone, OrientationConstraint 및 자동 지면 접지/신�
     });
     expect(grounded.pelvisOffsetY).toBeCloseTo(-0.15, 6);
     expect(grounded.footTiltDeg).toBeCloseTo(30, 6);
+  });
+
+  it("TriLibCore.dll (GeometryGroupUtils::LimitBoneWeights·LimitMaxBoneWeights & HumanoidAvatarMapper::EnforceBoneTPose) 역공학 로직을 검증한다", () => {
+    const normalized = limitAndNormalizeShaperBoneWeights(
+      [
+        { boneIndex: 3, weight: 0.1 },
+        { boneIndex: 1, weight: 0.6 },
+        { boneIndex: 4, weight: 0.05 },
+        { boneIndex: 2, weight: 0.2 },
+        { boneIndex: 5, weight: 0.05 },
+      ],
+      4,
+    );
+    expect(normalized.boneIndices).toEqual([1, 2, 3, 4]);
+    const totalWeight =
+      normalized.weights[0] +
+      normalized.weights[1] +
+      normalized.weights[2] +
+      normalized.weights[3];
+    expect(totalWeight).toBeCloseTo(1.0, 6);
+    expect(normalized.weights[0]).toBeCloseTo(0.6 / 0.95, 5);
+
+    const tPoseAdjusted = enforceShaperHumanoidBoneTPose({
+      bonePosition: [0, 1.4, 0],
+      childPosition: [0.5, 1.0, 0], // A-pose drooping arm
+      boneRotation: [0, 0, 0, 1],
+      targetDirection: [1, 0, 0], // T-pose horizontal +X
+      secondaryChildPosition: [0, 2.0, 0],
+    });
+    expect(tPoseAdjusted.wasAdjusted).toBe(true);
+    const rotatedDir = qRotateVec3(
+      tPoseAdjusted.correctedRotation,
+      v3Normalize([0.5, -0.4, 0]),
+    );
+    expect(rotatedDir[0]).toBeCloseTo(1, 5);
+    expect(rotatedDir[1]).toBeCloseTo(0, 5);
+
+    const alreadyAligned = enforceShaperHumanoidBoneTPose({
+      bonePosition: [0, 1.4, 0],
+      childPosition: [1, 1.4, 0],
+      boneRotation: [0, 0, 0, 1],
+      targetDirection: [1, 0, 0],
+    });
+    expect(alreadyAligned.wasAdjusted).toBe(false);
   });
 });

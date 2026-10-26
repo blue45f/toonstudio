@@ -21,6 +21,8 @@ import {
   hudRows,
   isFingerBone,
   jointLabelKo,
+  mapShaperNsTouchPhaseToRingPhase,
+  parseShaperUniWinCFileTypesFilter,
   pushShaperHistoryEntry,
   resolveDragPivot,
   resolveShaperCameraInputAction,
@@ -398,5 +400,49 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
         cursorPixelAlpha: 0.85,
       }),
     ).toBe(false);
+
+    // Ghidra 12.1.4 (_HandleTouchEvent 0x2a0c): NSTouchPhase 비트마스크 매핑
+    expect(mapShaperNsTouchPhaseToRingPhase(1)).toBe(0);
+    expect(mapShaperNsTouchPhaseToRingPhase(2)).toBe(1);
+    expect(mapShaperNsTouchPhaseToRingPhase(4)).toBe(4);
+    expect(mapShaperNsTouchPhaseToRingPhase(8)).toBe(2);
+    expect(mapShaperNsTouchPhaseToRingPhase(16)).toBe(3);
+    expect(mapShaperNsTouchPhaseToRingPhase(32)).toBeNull();
+
+    // Ghidra 12.1.4 (_clearFingersOlderThan 0x37d0): 유령 슬롯 제거 시 phase=2(Ended) 레코드 자동 합성
+    const staleTracker = createShaperTrackpadTouchTracker();
+    staleTracker.handleTouchEvents(
+      [{ identity: "ghost-1", phase: 0, normalizedX: 0.4, normalizedY: 0.6 }],
+      1.0,
+    );
+    expect(staleTracker.popTouchRecord()?.phase).toBe(0);
+    expect(staleTracker.clearFingersOlderThan(2.0)).toBe(1);
+    const syntheticEnded = staleTracker.popTouchRecord();
+    expect(syntheticEnded).toMatchObject({
+      touchId: 0,
+      phase: 2,
+      normalizedX: 0,
+      normalizedY: 0,
+    });
+
+    // Ghidra 12.1.4 (LibUniWinC::CustomPanelHelper::addFileTypes 0x4328 & ColorKey 0x3d90..0x3da0)
+    const parsedFilter = parseShaperUniWinCFileTypesFilter(
+      "3D Models\tobj\tfbx\tglb\nImages\tpng\tjpg",
+    );
+    expect(parsedFilter.allowsAllFiles).toBe(false);
+    expect(parsedFilter.allowedExtensions).toEqual(["obj", "fbx", "glb", "png", "jpg"]);
+    expect(parseShaperUniWinCFileTypesFilter("All Files\t*").allowedExtensions).toBeNull();
+
+    expect(
+      shouldPassThroughShaperNativeWindowClick({
+        isTransparent: true,
+        isClickThroughEnabled: true,
+        cursorPixelAlpha: 1.0,
+        transparentType: "color-key",
+        cursorPixelRgb: [0.0, 1.0, 0.01],
+        keyColorRgb: [0.0, 1.0, 0.0],
+        colorKeyTolerance: 0.02,
+      }),
+    ).toBe(true);
   });
 });

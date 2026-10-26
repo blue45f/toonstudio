@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 
 import { NO_REGION, QuadMeshBuilder, quadMeshEdgeStats, type QuadMesh } from "./quad-mesh";
 import {
+  SHAPER_TRILIB_HASH_SEED,
   adaptPartSeamOffsets,
   applySymmetricControlPointEdit,
   buildSubdivisionPlan,
+  calculateShaperMeshTangents,
   catmullClark,
   computeSeamCentroids3Zone,
   computeShaperContourNormal3d,
   computeShaperControlEdgeTransform,
   computeShaperSignedContourArea2d,
+  computeShaperTriLibStringHash64,
   computeShaperVertexKeyHash,
+  convertShaperRightHandToLeftHand,
   evaluateShaperTessWindingRule,
   expandWelded,
   findAdjacentBodyPartSeamPairs,
@@ -23,6 +27,7 @@ import {
   matchNeckSeamVertices,
   normalizeShaperContourOrientation,
   parseShaperQuadObj,
+  parseShaperStlBinaryHeaderAndTriangles,
   predictVertexCount,
   projectShaperContour3dTo2d,
   recalculateCreaseNormals,
@@ -511,5 +516,54 @@ describe("SHAPER 준-샤프(Semi-Sharp) 세분화 및 파츠/목 심(Seam) 정�
     ];
     expect(neighborSlots.some((n) => n !== undefined && n >= 0)).toBe(true);
     expect(neighborSlots.some((n) => n === -1)).toBe(true);
+  });
+
+  it("TriLibCore.dll (HashUtils·TangentSolver·RightHandToLeftHandConverter) 및 TriLibCore.Stl.dll (StlProcessor) 역공학 유틸을 검증한다", () => {
+    expect(computeShaperTriLibStringHash64("")).toBe(SHAPER_TRILIB_HASH_SEED);
+    const hashA = computeShaperTriLibStringHash64("Hips");
+    const hashB = computeShaperTriLibStringHash64("Spine");
+    expect(hashA).not.toBe(hashB);
+
+    const tangents = calculateShaperMeshTangents(
+      new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+      new Float32Array([0, 0, 1, 0, 0, 1]),
+      new Uint32Array([0, 1, 2]),
+    );
+    expect(tangents.length).toBe(12);
+    expect(tangents[0]).toBeCloseTo(1, 5);
+    expect(tangents[1]).toBeCloseTo(0, 5);
+    expect(tangents[2]).toBeCloseTo(0, 5);
+    expect(tangents[3]).toBe(1);
+
+    const converted = convertShaperRightHandToLeftHand({
+      vector: [1.5, 2.0, -3.0],
+      rotationQuat: [0.1, 0.2, -0.3, 0.9],
+      eulerDeg: [10, 25, -40],
+    });
+    expect(converted.vector).toEqual([-1.5, 2.0, -3.0]);
+    expect(converted.rotationQuat).toEqual([0.1, -0.2, 0.3, 0.9]);
+    expect(converted.eulerDeg).toEqual([10, -25, 40]);
+
+    // Binary STL: 80-byte header with "COLOR=" + RGBA + 1 triangle (50 bytes) = 134 bytes
+    const stlBytes = new Uint8Array(134);
+    const colorSig = [67, 79, 76, 79, 82, 61, 255, 128, 0, 255]; // "COLOR=" + orange RGBA
+    stlBytes.set(colorSig, 10);
+    const view = new DataView(stlBytes.buffer);
+    view.setUint32(80, 1, true); // 1 triangle
+    view.setFloat32(84, 0, true);
+    view.setFloat32(88, 0, true);
+    view.setFloat32(92, 1, true); // normal (0, 0, 1)
+    view.setFloat32(96, 1, true);
+    view.setFloat32(100, 2, true);
+    view.setFloat32(104, 3, true); // v0 (1, 2, 3)
+
+    const parsedStl = parseShaperStlBinaryHeaderAndTriangles(stlBytes);
+    expect(parsedStl.isBinary).toBe(true);
+    expect(parsedStl.triangleCount).toBe(1);
+    expect(parsedStl.headerColorRgba?.[0]).toBeCloseTo(1, 5);
+    expect(parsedStl.headerColorRgba?.[1]).toBeCloseTo(128 / 255, 5);
+    expect(Array.from(parsedStl.positions.slice(0, 3))).toEqual([1, 2, 3]);
+    expect(Array.from(parsedStl.normals.slice(0, 3))).toEqual([0, 0, 1]);
   });
 });

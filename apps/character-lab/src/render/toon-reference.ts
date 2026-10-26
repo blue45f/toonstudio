@@ -11,7 +11,7 @@
  *
  * 화면 미분 `fwidth(shading)`은 CPU에서 구할 수 없으므로 호출자가 값을 넣는다(`derivativeWidth`).
  */
-import { lerp, smoothstep, v3Dot, v3Normalize } from "../shared/math";
+import { clamp, lerp, smoothstep, v3Dot, v3Normalize } from "../shared/math";
 
 import type { Vec3 } from "../contracts";
 
@@ -303,4 +303,142 @@ export function applyShaperSymmetricEyeballTransform(
     leftEyeball: left,
     rightEyeball: right,
   };
+}
+
+/**
+ * TriLibCore.HDRLoader.Rgbe::Rgbe2Float (`0x06000007`, RVA `8984`, `ev_8fca3f927f5126e8d732169278484033b29a946f2716323dcada751675af3b1a`) 역공학 내재화:
+ * Radiance HDR RGBE 4바이트 픽셀 `(r, g, b, e)`를 선형 부동소수점 RGBA `[R, G, B, 1.0]`으로 디코딩한다.
+ * `e > 0`이면 `scale = 2^(e - (128 + 8)) = 2^(e - 136)`을 곱하고, `e === 0`이면 `[0, 0, 0, 1]`을 반환한다.
+ */
+export function decodeShaperRgbePixelToFloat(
+  r: number,
+  g: number,
+  b: number,
+  e: number,
+): readonly [number, number, number, number] {
+  const exp = e & 0xff;
+  if (exp <= 0) {
+    return [0, 0, 0, 1];
+  }
+  const scale = Math.pow(2.0, exp - 136);
+  return [(r & 0xff) * scale, (g & 0xff) * scale, (b & 0xff) * scale, 1];
+}
+
+/**
+ * TriLibCore.HDRLoader.Rgbe::ReadPixelsRawRle (`0x06000006`, RVA `8636`) 역공학 내재화:
+ * Radiance `.hdr` 스캔라인 적응형 RLE 헤더(`[2, 2, hi, lo]`, `8 <= scanlineWidth <= 32767`)를 검증하고,
+ * 4개 채널(R, G, B, E)별로 분리 압축된 RLE 스트림(`code > 128`이면 `code - 128`회 반복, `code <= 128`이면 리터럴 복사)을
+ * 인터리브된 `Uint8Array(scanlineWidth * 4)` 픽셀 버퍼로 복원한다.
+ */
+export function decompressShaperRadianceRleScanline(
+  stream: Uint8Array,
+  scanlineWidth: number,
+): Uint8Array {
+  if (
+    scanlineWidth < 8 ||
+    scanlineWidth > 0x7fff ||
+    stream.length < 4 ||
+    stream[0] !== 2 ||
+    stream[1] !== 2 ||
+    (stream[2]! & 0x80) !== 0
+  ) {
+    throw new Error("Invalid Radiance HDR RLE scanline header");
+  }
+  const encodedWidth = ((stream[2]! << 8) | stream[3]!) & 0xffff;
+  if (encodedWidth !== scanlineWidth) {
+    throw new Error(`Radiance RLE scanline width mismatch: expected ${scanlineWidth}, got ${encodedWidth}`);
+  }
+
+  const out = new Uint8Array(scanlineWidth * 4);
+  let pos = 4;
+  for (let ch = 0; ch < 4; ch += 1) {
+    let x = 0;
+    while (x < scanlineWidth) {
+      if (pos >= stream.length) {
+        throw new Error("Unexpected EOF in Radiance HDR RLE stream");
+      }
+      const code = stream[pos++]!;
+      if (code > 128) {
+        const count = code - 128;
+        if (count === 0 || x + count > scanlineWidth || pos >= stream.length) {
+          throw new Error("Invalid run length in Radiance HDR RLE stream");
+        }
+        const val = stream[pos++]!;
+        for (let k = 0; k < count; k += 1) {
+          out[(x + k) * 4 + ch] = val;
+        }
+        x += count;
+      } else {
+        const count = code;
+        if (count === 0 || x + count > scanlineWidth || pos + count > stream.length) {
+          throw new Error("Invalid literal run in Radiance HDR RLE stream");
+        }
+        for (let k = 0; k < count; k += 1) {
+          out[(x + k) * 4 + ch] = stream[pos++]!;
+        }
+        x += count;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * TriLibCore.Utils.ColorUtils::SpecularToGlossiness (`0x060001f8`, RVA `29824`, `ev_71f4448ae78893676b89317bcb4badfb36e0462c47a073039e04846a2b4024a8`) 역공학 내재화:
+ * BT.709 휘도 가중치 `(0.2125, 0.7154, 0.0721)` 내적과 `shininess` 지수로부터 PBR Glossiness `1 - sqrt(2 / (shininess * Y + 2))`를 산출한다.
+ */
+export function convertShaperSpecularToGlossiness(
+  specularRgb: readonly [number, number, number],
+  shininess: number,
+): number {
+  const lum =
+    specularRgb[0] * 0.2125 +
+    specularRgb[1] * 0.7154 +
+    specularRgb[2] * 0.0721;
+  const denom = shininess * lum + 2.0;
+  if (denom <= 0) return 1.0;
+  return clamp(1.0 - Math.sqrt(2.0 / denom), 0, 1);
+}
+
+/**
+ * TriLibCore.Utils.ColorUtils::SpecularToMetallic (`0x060001f9`, RVA `29908`) 역공학 내재화:
+ * Diffuse/Specular 색상 채널 제곱의 지각 휘도(`0.299 R^2 + 0.587 G^2 + 0.114 B^2`)와 비금속 기준 반사율(`k = 0.04`)에 대한
+ * 2차 방정식을 풀어 PBR Metallic 계수(`[0, 1]`)로 변환한다.
+ */
+export function convertShaperSpecularToMetallic(
+  diffuseRgb: readonly [number, number, number],
+  specularRgb: readonly [number, number, number],
+): number {
+  const k = 0.04;
+  const d =
+    0.299 * diffuseRgb[0] * diffuseRgb[0] +
+    0.587 * diffuseRgb[1] * diffuseRgb[1] +
+    0.114 * diffuseRgb[2] * diffuseRgb[2];
+  const s =
+    0.299 * specularRgb[0] * specularRgb[0] +
+    0.587 * specularRgb[1] * specularRgb[1] +
+    0.114 * specularRgb[2] * specularRgb[2];
+  if (s < k) return 0;
+
+  const maxSpec = Math.max(specularRgb[0], specularRgb[1], specularRgb[2]);
+  const oneMinusSpecStrength = 1 - maxSpec;
+  const b = d * (oneMinusSpecStrength / (1 - k)) + s - 2 * k;
+  const c = k - s;
+  const disc = Math.max(0, b * b - 4 * k * c);
+  return clamp((-b + Math.sqrt(disc)) / (2 * k), 0, 1);
+}
+
+/**
+ * TriLibCore.Textures.TextureUtils::IsPOT (`0x06000001`) & GetNextPOT (`0x06000003`, RVA `8408`, `ev_53da777f9602708705aef7947eb03ff8e3805889d4017c48b0bebc9d35832983`) 역공학 내재화:
+ * 텍스처 해상도가 2의 거듭제곱(POT)인지 판별하고, 다음 POT 해상도(`value < 2 ? 1 : 2^(floor(log2(value - 1)) + 1)`)를 반환한다.
+ */
+export function isShaperPowerOfTwo(value: number): boolean {
+  if (!Number.isInteger(value) || value <= 0) return false;
+  return (value & (value - 1)) === 0;
+}
+
+export function getShaperNextPowerOfTwo(value: number): number {
+  const v = Math.trunc(value);
+  if (v < 2) return 1;
+  return Math.pow(2, Math.floor(Math.log2(v - 1)) + 1);
 }

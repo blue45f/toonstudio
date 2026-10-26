@@ -12,8 +12,14 @@ import {
   applyShaperSymmetricEyeballTransform,
   computeCubicMatCapRamp,
   computeEyeballHighlightTransform,
+  convertShaperSpecularToGlossiness,
+  convertShaperSpecularToMetallic,
+  decodeShaperRgbePixelToFloat,
+  decompressShaperRadianceRleScanline,
   evaluateCubicMatCapBand,
   evaluateToon,
+  getShaperNextPowerOfTwo,
+  isShaperPowerOfTwo,
   normalizeToonLighting,
   smoothstep,
   step,
@@ -224,6 +230,48 @@ describe("toon-reference", () => {
       expect(synced.rightEyeball.position).toEqual([0.34, 1.52, 0.22]);
       expect(synced.rightEyeball.eulerDeg).toEqual([5, 12, 3]);
       expect(synced.rightEyeball.localScale).toEqual([1.1, 1.15, 1.0]);
+    });
+
+    it("TriLibCore.HDRLoader (Rgbe2Float·ReadPixelsRawRle), ColorUtils (SpecularToGlossiness·SpecularToMetallic), TextureUtils (IsPOT·GetNextPOT)를 검증한다", () => {
+      // e = 0 -> [0, 0, 0, 1]
+      expect(decodeShaperRgbePixelToFloat(200, 100, 50, 0)).toEqual([0, 0, 0, 1]);
+      // e = 136 -> scale = 2^(136 - 136) = 1.0
+      expect(decodeShaperRgbePixelToFloat(128, 64, 32, 136)).toEqual([128, 64, 32, 1]);
+      // e = 128 -> scale = 2^(-8) = 1/256
+      const unitPixel = decodeShaperRgbePixelToFloat(128, 64, 256 & 0xff, 128);
+      expect(unitPixel[0]).toBeCloseTo(0.5, 6);
+      expect(unitPixel[1]).toBeCloseTo(0.25, 6);
+
+      // Width = 8 scanline with adaptive RLE:
+      // Header: [2, 2, 0, 8]
+      // R channel: run of 8 (128 + 8 = 136) of value 100
+      // G channel: run of 8 (136) of value 150
+      // B channel: literal of 8 (8) values [1..8]
+      // E channel: run of 8 (136) of value 128
+      const rleStream = new Uint8Array([
+        2, 2, 0, 8,
+        136, 100,
+        136, 150,
+        8, 1, 2, 3, 4, 5, 6, 7, 8,
+        136, 128,
+      ]);
+      const scanline = decompressShaperRadianceRleScanline(rleStream, 8);
+      expect(scanline.length).toBe(32);
+      expect(Array.from(scanline.slice(0, 4))).toEqual([100, 150, 1, 128]);
+      expect(Array.from(scanline.slice(28, 32))).toEqual([100, 150, 8, 128]);
+
+      // SpecularToGlossiness: Y = 1.0, shininess = 6 -> 1 - sqrt(2 / (6 + 2)) = 1 - 0.5 = 0.5
+      expect(convertShaperSpecularToGlossiness([1, 1, 1], 6)).toBeCloseTo(0.5, 5);
+      // SpecularToMetallic: low specular (< 0.04) -> 0, high specular -> near 1
+      expect(convertShaperSpecularToMetallic([0.8, 0.8, 0.8], [0.02, 0.02, 0.02])).toBe(0);
+      expect(convertShaperSpecularToMetallic([0.1, 0.1, 0.1], [0.95, 0.95, 0.95])).toBeGreaterThan(0.8);
+
+      // TextureUtils::IsPOT & GetNextPOT
+      expect(isShaperPowerOfTwo(512)).toBe(true);
+      expect(isShaperPowerOfTwo(500)).toBe(false);
+      expect(getShaperNextPowerOfTwo(1)).toBe(1);
+      expect(getShaperNextPowerOfTwo(500)).toBe(512);
+      expect(getShaperNextPowerOfTwo(512)).toBe(512);
     });
   });
 });
