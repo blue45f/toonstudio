@@ -249,21 +249,28 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     fireEvent.click(screen.getByTestId("nano-banana-prop-biophilic-planter-set-btn"));
     expect(screen.getByRole("status").textContent).toContain("바이오필릭 플랜테리어 컬렉션");
 
-    // Nano Banana v11 Next-Gen Engine Panel verification
+    // Nano Banana v11+v12 Next-Gen Engine Panel verification
     expect(screen.getByTestId("virtual-office-nextgen-engine-panel")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("nextgen-theme-hanok-botanical-atelier-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-theme-romance-palace-conservatory-btn"));
     expect(
       screen.getByTestId("nextgen-active-theme-hero-img").getAttribute("src"),
-    ).toContain("/assets/virtual-studio/nano-banana-v11/themes/hanok-botanical-atelier.webp");
+    ).toContain(
+      "/assets/virtual-studio/nano-banana-v12/themes/romance-palace-conservatory.webp",
+    );
 
-    fireEvent.click(screen.getByTestId("nextgen-persona-colorist-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-persona-sound-letterer-btn"));
     expect(
       screen.getByTestId("nextgen-active-persona-sprite-img").getAttribute("src"),
-    ).toContain("/assets/virtual-studio/nano-banana-v11/cast/colorist-work.webp");
+    ).toContain("/assets/virtual-studio/nano-banana-v12/cast/sound-letterer-work.webp");
 
     fireEvent.click(screen.getByTestId("nextgen-ghost-mode-g-btn"));
     fireEvent.click(screen.getByTestId("nextgen-move-left-btn"));
     fireEvent.click(screen.getByTestId("nextgen-interact-x-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-click-to-walk-btn"));
+    fireEvent.click(screen.getByTestId("nextgen-webaudio-ping-page-flip-chime-btn"));
+    expect(screen.getByTestId("nextgen-webaudio-ping-status").textContent).toContain(
+      "880Hz",
+    );
     fireEvent.click(screen.getByTestId("nextgen-wall-barrier-toggle-btn"));
     fireEvent.click(screen.getByTestId("nextgen-approach-desk-desk-ep43-c19-btn"));
     fireEvent.click(screen.getByTestId("nextgen-advance-cut-desk-ep43-c19-btn"));
@@ -275,6 +282,8 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
     expect(screen.getByTestId("studio-virtual-office-spatial-canvas-hud")).toBeTruthy();
     expect(screen.getByTestId("spatial-voice-cone-svg")).toBeTruthy();
+    expect(screen.getByTestId("spatial-nano-banana-floor-backdrop")).toBeTruthy();
+    expect(screen.getByTestId("spatial-companion-mascot-follower")).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("spatial-view-mode-acoustic-heatmap"));
     expect(screen.getByTestId("spatial-hud-toast").textContent).toContain("음향 dB 히트맵");

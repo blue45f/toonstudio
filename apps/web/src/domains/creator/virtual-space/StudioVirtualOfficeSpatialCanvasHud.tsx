@@ -25,6 +25,17 @@ export interface StudioVirtualOfficeSpatialCanvasHudProps {
 
 const SPATIAL_QUICK_COMMANDS_COUNT = 6;
 
+const AVATAR_SPRITE_URLS: Readonly<Record<string, string>> = {
+  "creator-self":
+    "/assets/virtual-studio/nano-banana-v11/cast/cgi-director-work.webp",
+  "creator-line":
+    "/assets/virtual-studio/nano-banana-v11/cast/line-artist-work.webp",
+  "creator-pd":
+    "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-work.webp",
+  "agent-sophia":
+    "/assets/virtual-studio/nano-banana-v12/cast/story-writer-work.webp",
+};
+
 export function StudioVirtualOfficeSpatialCanvasHud({
   onNavigateToTab,
 }: StudioVirtualOfficeSpatialCanvasHudProps) {
@@ -176,6 +187,16 @@ export function StudioVirtualOfficeSpatialCanvasHud({
           </defs>
 
           <rect x="0" y="0" width="714" height="280" fill="url(#spatial-grid-dots)" />
+          <image
+            href="/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp"
+            x="0"
+            y="0"
+            width="714"
+            height="280"
+            preserveAspectRatio="xMidYMid slice"
+            opacity="0.22"
+            data-testid="spatial-nano-banana-floor-backdrop"
+          />
 
           {/* Clickable Room Zones */}
           {hudState.zones.map((zone) => {
@@ -265,7 +286,21 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             </g>
           ) : null}
 
-          {/* Avatar Tokens */}
+          {/* Companion Mascot Follower (WorkAdventure / Gather style trailing pet) */}
+          <g
+            transform={`translate(${Math.max(24, selfAvatar.x - 34)}, ${Math.min(256, selfAvatar.y + 14)})`}
+            data-testid="spatial-companion-mascot-follower"
+          >
+            <image
+              href="/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp"
+              x="-16"
+              y="-18"
+              width="32"
+              height="32"
+            />
+          </g>
+
+          {/* Avatar Tokens with Nano Banana RGBA Chibi Sprites */}
           {hudState.avatars.map((avatar) => (
             <g
               key={avatar.avatarId}
@@ -274,7 +309,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             >
               {avatar.speaking ? (
                 <circle
-                  r="19"
+                  r="22"
                   fill="none"
                   stroke={activePreset.accentStrokeHex}
                   strokeWidth="1.6"
@@ -282,12 +317,23 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                 />
               ) : null}
               <circle
-                r="14"
+                r="16"
                 fill={avatar.isSelf ? "var(--color-accent)" : "var(--color-raised)"}
+                fillOpacity="0.35"
                 stroke={avatar.isSelf ? "var(--color-cool)" : "var(--color-line)"}
                 strokeWidth="2"
               />
-              <text textAnchor="middle" y="4" fontSize="12">
+              <image
+                href={
+                  AVATAR_SPRITE_URLS[avatar.avatarId] ??
+                  "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp"
+                }
+                x="-18"
+                y="-22"
+                width="36"
+                height="36"
+              />
+              <text textAnchor="middle" x="14" y="-12" fontSize="11">
                 {avatar.statusHatIcon}
               </text>
               <rect

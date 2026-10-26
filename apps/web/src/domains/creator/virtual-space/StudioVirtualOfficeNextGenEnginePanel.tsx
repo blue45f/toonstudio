@@ -1,38 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Compass,
-  Flame,
-  Ghost,
-  Headphones,
-  Layers,
-  Sparkles,
-  SunMedium,
-  Volume2,
-  Wand2,
-} from "lucide-react";
+import { Compass, Flame, Ghost, Headphones, Layers, Sparkles, SunMedium, Volume2, Wand2 } from "lucide-react";
 
 import {
-  NEXTGEN_COMPETITOR_REA_BENCHMARKS,
-  PIPELINE_STAGE_LABELS_KO,
-  STUDIO_LIGHTING_MOODS,
-  advanceDeskEpisodeCutStage,
-  applyStudioLightingMood,
-  approachCutDeskAndInspect,
-  computeCharacterSecondaryMotion,
-  computeSpatialAudioGainAndPan,
-  createInitialNextGenStudioEngineState,
-  selectNanoBananaCreatorPersona,
-  selectNanoBananaStudioTheme,
-  setSoundscapeChannelGain,
-  stepAvatarPhysicsTick,
-  toggleGatherGhostModeGKey,
-  triggerNearestObjectWithXKey,
-  type CreatorPersonaPose,
-  type NanoBananaCreatorPersonaId,
-  type NanoBananaStudioThemeId,
-  type StudioLightingMoodId,
+  NEXTGEN_COMPETITOR_REA_BENCHMARKS, PIPELINE_STAGE_LABELS_KO, STUDIO_LIGHTING_MOODS,
+  advanceDeskEpisodeCutStage, applyStudioLightingMood, approachCutDeskAndInspect,
+  computeCharacterSecondaryMotion, computeSpatialAudioGainAndPan,
+  createInitialNextGenStudioEngineState, navigateAvatarClickToWalk,
+  selectNanoBananaCreatorPersona, selectNanoBananaStudioTheme,
+  setSoundscapeChannelGain, stepAvatarPhysicsTick, toggleGatherGhostModeGKey,
+  triggerNearestObjectWithXKey, triggerWebAudioSynthesizerPing,
+  type CreatorPersonaPose, type NanoBananaCreatorPersonaId,
+  type NanoBananaStudioThemeId, type StudioLightingMoodId,
 } from "./studio-virtual-office-nextgen-engine-model";
 
 export interface StudioVirtualOfficeNextGenEnginePanelProps {
@@ -47,84 +27,41 @@ export function StudioVirtualOfficeNextGenEnginePanel({
   const [offscreenSkipped, setOffscreenSkipped] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
 
-  // modern-web-guidance: efficient-background-processing via contentvisibilityautostatechange
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
     const handleVisibility = (event: Event) => {
-      const skipped = Boolean(
-        (event as Event & { readonly skipped?: boolean }).skipped,
-      );
-      setOffscreenSkipped(skipped);
+      setOffscreenSkipped(Boolean((event as Event & { readonly skipped?: boolean }).skipped));
     };
     el.addEventListener("contentvisibilityautostatechange", handleVisibility);
-    return () => {
-      el.removeEventListener(
-        "contentvisibilityautostatechange",
-        handleVisibility,
-      );
-    };
+    return () => el.removeEventListener("contentvisibilityautostatechange", handleVisibility);
   }, []);
 
   const activeTheme = useMemo(
-    () =>
-      state.themes.find((t) => t.id === state.activeThemeId) ?? state.themes[0],
+    () => state.themes.find((t) => t.id === state.activeThemeId) ?? state.themes[0],
     [state.themes, state.activeThemeId],
   );
-
   const activePersona = useMemo(
-    () =>
-      state.personas.find((p) => p.id === state.activePersonaId) ??
-      state.personas[0],
+    () => state.personas.find((p) => p.id === state.activePersonaId) ?? state.personas[0],
     [state.personas, state.activePersonaId],
   );
-
   const activeDesk = useMemo(
-    () =>
-      state.cutDesks.find((d) => d.deskId === state.selectedCutDeskId) ??
-      state.cutDesks[0],
+    () => state.cutDesks.find((d) => d.deskId === state.selectedCutDeskId) ?? state.cutDesks[0],
     [state.cutDesks, state.selectedCutDeskId],
   );
-
   const secondaryMotion = useMemo(
-    () =>
-      computeCharacterSecondaryMotion(
-        state.elapsedSimulationMs,
-        state.physics.speedPxPerSec,
-        state.activePersonaPose,
-      ),
-    [
-      state.elapsedSimulationMs,
-      state.physics.speedPxPerSec,
-      state.activePersonaPose,
-    ],
+    () => computeCharacterSecondaryMotion(state.elapsedSimulationMs, state.physics.speedPxPerSec, state.activePersonaPose),
+    [state.elapsedSimulationMs, state.physics.speedPxPerSec, state.activePersonaPose],
   );
-
   const spatialAudio = useMemo(
-    () =>
-      computeSpatialAudioGainAndPan(
-        {
-          x: state.physics.x,
-          y: state.physics.y,
-          facingAngleRad: state.physics.facingAngleRad,
-        },
-        { x: activeDesk.x, y: activeDesk.y },
-        wallBarriers,
-      ),
-    [
-      state.physics.x,
-      state.physics.y,
-      state.physics.facingAngleRad,
-      activeDesk.x,
-      activeDesk.y,
+    () => computeSpatialAudioGainAndPan(
+      { x: state.physics.x, y: state.physics.y, facingAngleRad: state.physics.facingAngleRad },
+      { x: activeDesk.x, y: activeDesk.y },
       wallBarriers,
-    ],
+    ),
+    [state.physics.x, state.physics.y, state.physics.facingAngleRad, activeDesk.x, activeDesk.y, wallBarriers],
   );
-
-  const activeSpriteUrl =
-    state.activePersonaPose === "idle"
-      ? activePersona.idleSpriteUrl
-      : activePersona.workSpriteUrl;
+  const activeSpriteUrl = state.activePersonaPose === "idle" ? activePersona.idleSpriteUrl : activePersona.workSpriteUrl;
 
   return (
     <section
@@ -143,7 +80,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         <div>
           <h4 className="flex items-center gap-2 text-xs font-bold text-fg">
             <Wand2 className="h-4 w-4 text-accent" />
-            나노 바나나 v11 차세대 웹툰 가상 스튜디오 엔진 (4대 테마 · 4직군 개성파 캐릭터 · 60fps 물리 · HRTF 사운드스케이프)
+            나노 바나나 v11·v12 차세대 웹툰 가상 스튜디오 엔진 (8대 장르 테마 · 8인 개성파 캐릭터/마스코트 · 60fps 물리 · WebAudio HRTF)
           </h4>
           <p className="mt-0.5 text-[11px] text-fg-2">
             Gather Town · ZEP · WorkAdventure · oVice · Topia · Kumospace 엔진 완전 역공학 및 초격차 고도화 완료
@@ -151,7 +88,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="rounded-full border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-            4 테마 × 4 직군 캐스트 × 60fps 물리
+            8 테마 × 8 캐스트 × 60fps 물리 × WebAudio 신스
           </span>
           <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[10px] text-fg-2">
             렌더 루프: {offscreenSkipped ? "백그라운드 절전" : "실시간 60fps 활성"}
@@ -480,6 +417,20 @@ export function StudioVirtualOfficeNextGenEnginePanel({
               >
                 &apos;X&apos; 근접 오브젝트 작동
               </button>
+              <button
+                type="button"
+                data-testid="nextgen-click-to-walk-btn"
+                onClick={() => {
+                  const next = navigateAvatarClickToWalk(state, 240, 178);
+                  setState(next);
+                  onBannerChange?.(
+                    `[클릭 투 워크 A* 경로탐색] 장애물 우회 웨이포인트(${next.waypointPath.length}노드) 이동 및 마스코트 팔로워 추적 완료`,
+                  );
+                }}
+                className="rounded border border-line bg-card px-2 py-0.5 text-[10px] font-semibold text-fg hover:border-accent"
+              >
+                홀로그램 라운지 자동 보행
+              </button>
             </div>
           </div>
 
@@ -511,7 +462,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
             ))}
           </div>
 
-          <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-lg border border-line bg-card p-2.5 text-[11px] sm:grid-cols-4">
+          <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-lg border border-line bg-card p-2.5 text-[11px] sm:grid-cols-5">
             <div>
               <div className="text-[10px] text-fg-3">서브타일 좌표 (x, y)</div>
               <div
@@ -540,6 +491,15 @@ export function StudioVirtualOfficeNextGenEnginePanel({
               <div className="text-[10px] text-fg-3">&apos;X&apos; 근접 타겟 (≤78px)</div>
               <div className="truncate font-mono font-semibold text-accent">
                 {state.physics.activeProximityObjectId ?? "반경 내 없음"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-fg-3">마스코트 스프링 팔로워</div>
+              <div
+                data-testid="nextgen-companion-follower-coords"
+                className="font-mono font-semibold text-fg"
+              >
+                ({state.companionFollower.x}, {state.companionFollower.y})
               </div>
             </div>
           </div>
@@ -637,10 +597,34 @@ export function StudioVirtualOfficeNextGenEnginePanel({
                   <span className="w-8 text-right font-mono text-[10px] font-semibold text-fg">
                     {ch.gainPercent}%
                   </span>
+                  <button
+                    type="button"
+                    data-testid={`nextgen-webaudio-ping-${ch.id}-btn`}
+                    onClick={() => {
+                      const next = triggerWebAudioSynthesizerPing(state, ch.id);
+                      setState(next);
+                      onBannerChange?.(
+                        `[WebAudio 신디사이저] ${
+                          next.lastSynthesizedAudioPing?.statusKo ?? ch.labelKo
+                        }`,
+                      );
+                    }}
+                    className="rounded border border-accent bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent"
+                  >
+                    신스 재생
+                  </button>
                 </div>
               </div>
             ))}
           </div>
+          {state.lastSynthesizedAudioPing ? (
+            <div
+              data-testid="nextgen-webaudio-ping-status"
+              className="mt-1.5 rounded border border-accent bg-accent-soft/40 px-2.5 py-1 text-[10px] font-medium text-accent"
+            >
+              {state.lastSynthesizedAudioPing.statusKo}
+            </div>
+          ) : null}
         </div>
       </div>
 

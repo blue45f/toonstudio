@@ -10,26 +10,30 @@ import {
   computeCharacterSecondaryMotion,
   computeSpatialAudioGainAndPan,
   createInitialNextGenStudioEngineState,
+  navigateAvatarClickToWalk,
   selectNanoBananaCreatorPersona,
   selectNanoBananaStudioTheme,
   setSoundscapeChannelGain,
   stepAvatarPhysicsTick,
   toggleGatherGhostModeGKey,
   triggerNearestObjectWithXKey,
+  triggerWebAudioSynthesizerPing,
 } from "./studio-virtual-office-nextgen-engine-model";
 
 describe("studio-virtual-office-nextgen-engine-model", () => {
-  it("exposes REA competitor benchmarks and 4 Nano Banana v11 themes + 4 creator personas on disk", () => {
+  it("exposes REA competitor benchmarks and 8 Nano Banana (v11+v12) themes + 8 creator/mascot personas on disk", () => {
     const state = createInitialNextGenStudioEngineState();
     expect(NEXTGEN_COMPETITOR_REA_BENCHMARKS).toHaveLength(4);
-    expect(state.themes).toHaveLength(4);
-    expect(state.personas).toHaveLength(4);
+    expect(state.themes).toHaveLength(8);
+    expect(state.personas).toHaveLength(8);
 
     const publicDir = existsSync(resolve(process.cwd(), "public"))
       ? resolve(process.cwd(), "public")
       : resolve(process.cwd(), "apps/web/public");
     expect(existsSync(resolve(publicDir, `.${state.themesAtlasUrl}`))).toBe(true);
     expect(existsSync(resolve(publicDir, `.${state.castCleanAtlasUrl}`))).toBe(true);
+    expect(existsSync(resolve(publicDir, `.${state.v12ThemesAtlasUrl}`))).toBe(true);
+    expect(existsSync(resolve(publicDir, `.${state.v12CastCleanAtlasUrl}`))).toBe(true);
 
     for (const theme of state.themes) {
       expect(existsSync(resolve(publicDir, `.${theme.assetUrl}`))).toBe(true);
@@ -134,5 +138,15 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
 
     state = applyStudioLightingMood(state, "golden-sunset");
     expect(state.lightingMoodId).toBe("golden-sunset");
+
+    // Click-to-walk waypoint navigation + companion pet follower spring tracking + WebAudio synth ping
+    state = navigateAvatarClickToWalk(state, 280, 180);
+    expect(state.waypointPath).toHaveLength(3);
+    expect(state.physics.x).toBe(280);
+    expect(state.companionFollower.trailingDistancePx).toBeGreaterThan(0);
+
+    state = triggerWebAudioSynthesizerPing(state, "page-flip-chime");
+    expect(state.lastSynthesizedAudioPing?.carrierHz).toBe(880);
+    expect(state.lastSynthesizedAudioPing?.statusKo).toContain("WebAudio 합성 완료");
   });
 });
