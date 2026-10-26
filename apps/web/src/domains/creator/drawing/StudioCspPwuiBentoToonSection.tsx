@@ -234,7 +234,7 @@ export function StudioCspPwuiBentoToonSection({
         <div className="grid grid-cols-3 gap-1">
           {CSP_MENUV3_KOREAN_BENTO_ITEMS.map((item) => {
             const svgSpec =
-              CSP_MENUV3_ALL_18_SVG_ICONS.find((s) => s.fileName === item.iconAsset) ??
+              CSP_MENUV3_ALL_18_SVG_ICONS.find((s) => s.fileName === item.svgIconFileName) ??
               CSP_MENUV3_ALL_18_SVG_ICONS[0]!;
             return (
               <button

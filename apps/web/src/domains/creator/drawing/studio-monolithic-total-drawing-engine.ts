@@ -22,6 +22,7 @@
 import {
   MONOLITHIC_TOTAL_TOOL_PRESETS,
   type KonvaEmbossDirection,
+  type MonolithicTotalToolPreset,
   type MonolithicTotalToolPresetId,
 } from "./studio-monolithic-total-drawing-catalog";
 
