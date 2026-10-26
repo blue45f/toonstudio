@@ -105,12 +105,16 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(6);
+    expect(universalBench.reaEvidenceTargetCount).toBe(10);
+    expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
     expect(universalBench.sketchpadBrushKindCount).toBe(18);
     expect(universalBench.ibisMediBangPresetCount).toBe(19);
+    expect(universalBench.skeletalArtBrushPresetCount).toBe(8);
+    expect(universalBench.fiveTilePatternPresetCount).toBe(8);
+    expect(universalBench.corelParticlePresetCount).toBe(9);
     expect(universalBench.qrCodecRoundtripVerified).toBe(true);
   });
 

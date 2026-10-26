@@ -2,37 +2,61 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyConceptsNudgeAndSlice,
+  applyPixelArtAdvancedBrush,
+  applySculptGlPixol25DBrushDab,
+  COREL_PARTICLE_BRUSH_PRESETS,
   decodeCleanRoomBrushQrPayload,
   encodeCleanRoomBrushQrPayload,
+  evaluateArtRageAndFrescoBrushStep,
   evaluateBayerDitherBrushMask,
+  evaluateInkscapeCalligraphicSpiroStroke,
+  evaluateMiltonAnalyticalCapsuleSdfCoverage01,
   evaluateP5BrushVectorFieldAngleDeg,
   evaluateSaiVer2BrushStep,
+  evaluateSculptGlQuarticFalloff01,
+  executeFabricBrushSuite,
   executeHarmonyProceduralBrush,
   filterPixelPerfectStroke,
+  FIVE_TILE_PATTERN_BRUSH_PRESETS,
   generateJsPaintBrushMask,
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
+  layoutFiveTileVectorPatternBrush,
   measureUniversalBrushTaxonomyEngineBenchmark,
   P5_BRUSH_PRESET_CATALOG,
   P5_BRUSH_VECTOR_FIELDS,
+  SKELETAL_ART_BRUSH_PRESETS,
   SKETCHPAD_BRUSH_KINDS,
+  stepCorelPainterParticleBrush,
+  stepLazyBrushWithCircularFriction,
   stepPhotoshopMixerBrushReservoir,
   synthesizeComicRibbonStampChain,
+  synthesizeHeavyPaintBlockInPolygons,
   synthesizeP5BrushWatercolorBleedPolygon,
   synthesizeSketchpadBrushDabs,
+  synthesizeWeaveSilkSymmetryRibbons,
   traceP5BrushFlowLine,
   UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER,
+  warpSkeletalArtBrushAlongSpine,
+  WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
 } from "../studio-universal-brush-taxonomy-engine";
 
-describe("studio-universal-brush-taxonomy-engine (Wave 21 범용 브러시·드로잉 엔진 내재화)", () => {
-  it("2026-10-26 REA 실측 증거 원장(6개 대상, 25만+ AST 노드)을 정본으로 노출한다", () => {
+describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브러시·드로잉 엔진 내재화)", () => {
+  it("2026-10-26 REA 실측 증거 원장(Wave 21 6개 + Wave 22 4개 = 10개 대상, 30만+ AST 노드)을 정본으로 노출한다", () => {
     expect(UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER).toHaveLength(6);
+    expect(WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER).toHaveLength(4);
     for (const entry of UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER) {
       expect(entry.astEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
       expect(entry.parentAstEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
       expect(entry.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
       expect(entry.visitedAstNodes).toBeGreaterThan(5000);
       expect(entry.internalizedBrushCount).toBeGreaterThanOrEqual(10);
+    }
+    for (const entry of WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER) {
+      expect(entry.staticAnalysisEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/);
+      expect(entry.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.visitedAstNodes).toBeGreaterThan(400);
+      expect(entry.internalizedKernels.length).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -195,8 +219,159 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 범용 브러시·드�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(6);
-    expect(bench.totalVisitedAstNodes).toBeGreaterThan(250000);
+    expect(bench.reaEvidenceTargetCount).toBe(10);
+    expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
+    expect(bench.totalVisitedAstNodes).toBeGreaterThan(300000);
     expect(bench.qrCodecRoundtripVerified).toBe(true);
+  });
+
+  it("Wave 22 벡터 골격(Non-Stretch Guide), 5-타일 코너 패턴, Inkscape 캘리그라피/Spiro/PowerStroke, Lazy-Brush, Fabric.js, Corel 입자, WeaveSilk, SculptGL Pixol, HeavyPaint, ArtRage/Fresco, Piskel/Milton 커널이 정확히 동작한다", () => {
+    expect(SKELETAL_ART_BRUSH_PRESETS).toHaveLength(8);
+    expect(FIVE_TILE_PATTERN_BRUSH_PRESETS).toHaveLength(8);
+    expect(COREL_PARTICLE_BRUSH_PRESETS).toHaveLength(9);
+
+    const spine = [
+      { x: 0, y: 0, pressure01: 0.7 },
+      { x: 120, y: 0, pressure01: 0.9 },
+      { x: 120, y: 120, pressure01: 0.8 },
+    ];
+    const warped = warpSkeletalArtBrushAlongSpine("katana-blade", spine, 1);
+    expect(warped.length).toBe(24);
+    expect(warped[0].zone).toBe("head-non-stretch");
+    expect(warped[warped.length - 1].zone).toBe("tail-non-stretch");
+    expect(warped.some((s) => s.zone === "middle-stretch")).toBe(true);
+
+    const patternTiles = layoutFiveTileVectorPatternBrush({
+      presetId: "greek-meander-border",
+      points: spine,
+      nominalTileWidthPx: 24,
+      cornerThresholdDeg: 45,
+    });
+    expect(patternTiles.some((t) => t.role === "start-tile")).toBe(true);
+    expect(patternTiles.some((t) => t.role === "outer-corner-tile")).toBe(true);
+    expect(patternTiles.some((t) => t.role === "end-tile")).toBe(true);
+
+    const inkscape = evaluateInkscapeCalligraphicSpiroStroke(spine, {
+      nibAngleDeg: 35,
+      fixation01: 0.85,
+      mass01: 0.3,
+      tremor01: 0.1,
+      wiggle01: 0.1,
+      baseWidthPx: 18,
+      powerStrokeNodes: [
+        { t01: 0, widthScale: 0.4 },
+        { t01: 0.5, widthScale: 1.6 },
+        { t01: 1, widthScale: 0.3 },
+      ],
+    });
+    expect(inkscape).toHaveLength(3);
+    expect(inkscape[1].projectedWidthPx).toBeGreaterThan(inkscape[0].projectedWidthPx);
+
+    const lazyStay = stepLazyBrushWithCircularFriction({
+      prevBrushX: 10,
+      prevBrushY: 10,
+      targetPointerX: 22,
+      targetPointerY: 10,
+      radiusPx: 20,
+      friction01: 0.4,
+    });
+    expect(lazyStay.hasMoved).toBe(false);
+
+    const lazyMove = stepLazyBrushWithCircularFriction({
+      prevBrushX: 10,
+      prevBrushY: 10,
+      targetPointerX: 50,
+      targetPointerY: 10,
+      radiusPx: 20,
+      friction01: 0.4,
+    });
+    expect(lazyMove.hasMoved).toBe(true);
+    expect(lazyMove.brushX).toBeGreaterThan(10);
+
+    const fabricSpray = executeFabricBrushSuite({
+      kind: "spray",
+      points: [{ x: 40, y: 40 }],
+      widthPx: 8,
+      sprayDensity: 30,
+      optimizeOverlapping: true,
+    });
+    expect(fabricSpray.length).toBeGreaterThan(0);
+    expect(fabricSpray.length).toBeLessThanOrEqual(30);
+
+    const corelSpring = stepCorelPainterParticleBrush({
+      presetId: "silk-harmonic-spring",
+      points: spine,
+      radiusPx: 18,
+    });
+    expect(corelSpring.length).toBe(24);
+
+    const silk = synthesizeWeaveSilkSymmetryRibbons({
+      points: [{ x: 130, y: 100, pressure01: 0.8 }],
+      centerX: 100,
+      centerY: 100,
+      symmetryFolds: 6,
+      mirrorSector: true,
+    });
+    expect(silk).toHaveLength(12);
+
+    expect(evaluateSculptGlQuarticFalloff01(0)).toBe(1);
+    expect(evaluateSculptGlQuarticFalloff01(0.5)).toBeCloseTo(0.6875, 4);
+    expect(evaluateSculptGlQuarticFalloff01(1)).toBe(0);
+
+    const pixolCrease = applySculptGlPixol25DBrushDab({
+      mode: "crease",
+      centerX: 50,
+      centerY: 50,
+      radiusPx: 25,
+      intensity01: 0.8,
+      sampleX: 52,
+      sampleY: 50,
+      currentHeightZ: 10,
+      negative: true,
+    });
+    expect(pixolCrease.heightZ).toBeLessThan(10);
+    expect(pixolCrease.matCapU01).toBeGreaterThanOrEqual(0);
+    expect(pixolCrease.matCapU01).toBeLessThanOrEqual(1);
+
+    const heavySlabs = synthesizeHeavyPaintBlockInPolygons({
+      kind: "rake",
+      points: spine,
+      baseSizePx: 24,
+    });
+    expect(heavySlabs).toHaveLength(3);
+
+    const artrage = evaluateArtRageAndFrescoBrushStep({
+      baseRadiusPx: 16,
+      speedPxPerFrame: 1.5,
+      pressure01: 0.85,
+      existingWetness01: 0.6,
+      swatchPaletteHex: ["#ff0055", "#00ffcc", "#ffee00"],
+    });
+    expect(artrage.gloopViscosityRadiusPx).toBeGreaterThan(16);
+    expect(artrage.multicolorBandRgb).toHaveLength(3);
+
+    const piskelDither = applyPixelArtAdvancedBrush({
+      mode: "checker_dither",
+      col: 2,
+      row: 3,
+      canvasWidthCols: 32,
+      currentColorIndex: 4,
+      paletteHexRamp: ["#111111", "#333333", "#777777", "#bbbbbb", "#ffffff"],
+      secondaryColorHex: "#000000",
+    });
+    expect(piskelDither.outputHex).toBe("#ffffff");
+    expect(piskelDither.mirroredCol).toBe(29);
+
+    const miltonCenter = evaluateMiltonAnalyticalCapsuleSdfCoverage01({
+      pixelCenterX: 30,
+      pixelCenterY: 20,
+      segAx: 10,
+      segAy: 20,
+      segBx: 50,
+      segBy: 20,
+      radiusA: 5,
+      radiusB: 5,
+    });
+    expect(miltonCenter).toBe(1);
   });
 });

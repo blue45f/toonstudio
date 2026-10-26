@@ -1,9 +1,12 @@
 # 글로벌 GitHub 오픈소스·웹 드로잉·상용 페인팅 브러시 생태계 REA 역공학 및 ToonStudio 전수 내재화 보고서 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (Wave 21 구현 및 검증 완료)
+- **상태**: `current` (Wave 21 & Wave 22 전수 구현 및 검증 완료)
 - **관련 모듈**:
   - `apps/web/src/domains/creator/drawing/studio-universal-brush-taxonomy-engine.ts`
+  - `apps/web/src/domains/creator/drawing/studio-vector-skeletal-pattern-brushes.ts`
+  - `apps/web/src/domains/creator/drawing/studio-particle-pixol-brushes.ts`
+  - `apps/web/src/domains/creator/drawing/StudioUniversalBrushEngineBar.tsx`
   - `apps/web/src/domains/creator/drawing/StudioNaturalMediaShowcase.tsx`
   - `apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts`
   - `apps/brush-lab/src/engine/brush-engine/universal-brush-suite.ts`
@@ -22,6 +25,10 @@
 | **ibisPaint X** (`https://ibispaint.com/`) | 상용 웹툰·페인팅 앱 | `ev_a516d528a8f77e80ffe06ead86b37d29d8e637c261023ff8c88e3a9693440f93` | `ev_be3b394af4e52c95c9b50d02948605f0cfa48d5b83fcdaeb1132bb52d1417f9e` | `ev_7caa80e493b3f8cd5ed8c330007d429541002fc4573b69fb50b9be2d80084629` (`ev_58a0d3eb23c5d369893fc5311ddd509139a0ea53fe53f8c8aa07e51700b89139`) | `8e67ed1914d03dc3589232b48b1efd3b478a23031f8c193d4ce815ea466103ee` | 9,176 |
 | **MediBang Paint** (`https://medibangpaint.com/en/`) | 상용 웹툰·클라우드 브러시 | `ev_331ca47f8685d449ee8f1725303e04bd48c7187df2f51a73956edfcf5e0e7eb6` | `ev_73109f9ee1937f99d6bea5cd205de36f01af6d810d7e8731db1009509533712e` | `ev_a781ea653ff05d051f2411b5420d870cd38bc9249f092fab76737c4bc574fd97` (`ev_719930d8d7a8e9f0d50b68f0f5447a1fffbb62839d5d0a1786480613bccbe9b2`) | `bd74f0320df8a7dd55bd886d027d1f3b5184375df19052fcee0b66e5951c5665` | 78,366 |
 | **Photopea** (`https://www.photopea.com/`) | 웹 래스터·ABR 에디터 | `ev_20b66c56a3a07d89aa27f4486a608ba67f1ec73e3f8d783339bb1802ba595e6b` | `ev_0b3590ceddbfa5e86f4d4a96fb21124d752736bcb6388fa9430910a2bca5bf7a` | `ev_2c7410e9b58c4f01ae624554a7a2be12f78edef48545916effd56e0f06970312` (`ev_7274f767d2399b8ce09969ad8fc486c8be733e05081e48048d70768ab8333831`) | `79c4fff49fec275b640238bf5f81fcbde473235363bf72a882511017cc5af3b5` | 10,137 |
+| **Wave 22 OSS Brush·Vector·Sculpt Suite** (`fabric.js`, `piskel`, `sculptgl`, `wick-editor`, `lazy-brush`, `fit-curve`, `bezier.js`, `konva`, `simplify-js`) | GitHub OSS | — | — | `ev_b116ab58b81a3c1b837bf82855bc8b574fefc8c0c8fda21399c1a6ef8a725df1` (`ev_7889f4c77aad850c565c1d5e5b2b9618368d5f94eff95cb2ece35a3771dae667`) | `510a0da4e35bbe61a0d309b737a72d666584d9050085dad6130c7e7a37fa6cae` | 23,390 |
+| **Piskel** (`https://www.piskelapp.com/`) | 웹 픽셀·스프라이트 앱 | `ev_31e9df64e7f548071647c690e34cf2f42075cefc7359d7dc19059f64c155e03c` | `ev_6fda2408a20363be44feeef9409982682e3c8425bf5db45f61c6a62a23bcde0e` | `ev_5a75a372d991fc4dde5896b74d6d91b36b78b43d2500f1ebb1ebefa43e8d18f9` (`ev_82b7781c296d130965ced1b9c7271602063fe4a33541a4108242486740727a3d`) | `9154751284c4e63ff06a889631bfbab0c2d33c4acc83ff611231732cacbe7ca5` | 8,929 |
+| **Drawpile** (`https://drawpile.net/`) | 협업 페인팅 시스템 | `ev_767fbe775e3da4520ed43966ebe658bdc75d4b867ca6217d62ca253b497211cc` | `ev_4522a94365cee2c024020f69da2fc75bac6018dbe8341d3f0de38a257ebca71e` | `ev_46da1a1c19b0742519ff5d8d880d566ae7a834f7b1857e60d83eed4985791034` (`ev_fe38bbdeace34a459a3480551f85a4df2f524cc685b94988b0422b88f787d03d`) | `fe7723120806a795457f965aea210db1efc942687876f62efdbc1f80456a016c` | 447 |
+| **HeavyPaint & Commercial Vector/Particle Suite** (`https://www.heavypaint.com/`) | 상용 그래픽·입자 앱 | `ev_b6f1dfacd4c2abfcf79528fad5a585dce05c631d58530767c14b9787da3c95ba` | `ev_b5d8a9f72f29f17b4b6ce5fb17ceee3f646a25db1ca993667dcc9e0f067ba57d` | `ev_0f42419ab6f9c7b153f1cb23a878d61880dd76e4e70878c6113c9797ac67abb3` (`ev_a871b839aa1210775ae3db8922977f6eb7ac6f530ee6f3ea8dffc4bc9b7d69f9`) | `d0eb89a25893da8ee9b9f652b2d32722c03b7a8bad423690035db8c33ed04442` | 15,666 |
 
 ---
 
@@ -33,21 +40,25 @@
   - **`shaded`**: $d^2 < 1000$인 모든 히스토리 점에 대해 거리 제곱에 반비례하는 불투명도 $\alpha = (1 - d^2/1000) \cdot 0.1p$로 현을 그린다.
   - **`chrome`**: $d^2 < 1000$일 때 $[p_c + 0.2\Delta, p_i - 0.2\Delta]$ 현을 그리되 RGB 각 채널에 독립 난수를 곱해 금속성 색수차 광택을 만든다.
   - **`fur` / `longfur`**: `fur`는 $d^2 < 2000$에서 $[p_c + 0.5\Delta, p_c - 0.5\Delta]$ 대칭 털 가닥을 방출하고, `longfur`는 음수 난수 스케일 $s = -u$와 $d^2 < 4000$ 조건으로 비대칭 장모를 방출한다.
-  - **`ribbon`**: 50개(모바일/웹 실시간 프리뷰 최적화 시 16~50개)의 스프링-댐퍼 서브 페인터가 $a_{t+1} = (a_t + (p_t - m_t) \cdot 0.1) \cdot \text{ease}$ 방정식으로 포인터를 추종한다.
+  - **`ribbon`**: 스프링-댐퍼 서브 페인터가 $a_{t+1} = (a_t + (p_t - m_t) \cdot 0.1) \cdot \text{ease}$ 방정식으로 포인터를 추종한다.
 
 ### 2.2 `acamposuribe/p5.brush` 11종 프리셋·7종 벡터장·다각형 수채 번짐 (Observation)
-- `p5-brush.js` 정적 분석(`ev_65fa507705d8e84f227eda0e5097e313ea7de54220f7fc174f116a98120e40b0`)에서 11종 프리셋 테이블 `vr`(`pen`, `rotring`, `2B`, `HB`, `2H`, `cpencil`, `pastel`, `crayon`, `charcoal`, `spray`, `marker`)의 12개 속성(`weight`, `scatter`, `sharpness`, `grain`, `opacity`, `spacing`, `pressure`, `type`, `tip`, `rotate`, `markerTip`, `noise`)과 7종 벡터장(`hand`, `curved`, `zigzag`, `waves`, `seabed`, `spiral`, `columns`) 생성 함수 `Lt(...)`가 직접 확인되었다.
+- `p5-brush.js` 정적 분석(`ev_65fa507705d8e84f227eda0e5097e313ea7de54220f7fc174f116a98120e40b0`)에서 11종 프리셋 테이블 `vr`(`pen`, `rotring`, `2B`, `HB`, `2H`, `cpencil`, `pastel`, `crayon`, `charcoal`, `spray`, `marker`)의 12개 속성과 7종 벡터장(`hand`, `curved`, `zigzag`, `waves`, `seabed`, `spiral`, `columns`) 생성 함수가 직접 확인되었다.
 
-### 2.3 JS Paint (`jspaint.app`) 비트맵 브러시 및 에어브러시 (Observation)
-- `export_web_scripts`(`ev_c2e6127c08c529c0db1d93e038ea2126dd3605fea7b6829f769bc1be2509d1cd`)로 복원된 `src/tools.js` 및 `src/image-manipulation.js`에서 `bresenham_dense_line`, `render_brush`, `get_circumference_points_for_brush`, `stamp_brush_canvas`가 확인되었으며, `circle`·`square`·`diagonal`·`reverse_diagonal` 4종 브러시 형태가 픽셀 단위로 합성됨을 확인했다.
+### 2.3 JS Paint (`jspaint.app`) · Piskel (`piskelapp.com`) · Pixelorama 비트맵 브러시 (Observation)
+- `export_web_scripts`(`ev_c2e6127c08c529c0db1d93e038ea2126dd3605fea7b6829f769bc1be2509d1cd`)로 복원된 `src/tools.js`에서 `circle`·`square`·`diagonal`·`reverse_diagonal` 4종 브러시 형태가 확인되었고, `piskel-DitheringTool.js` 및 `piskel-Lighten.js`(`ev_b116ab58b81a3c1b837bf82855bc8b574fefc8c0c8fda21399c1a6ef8a725df1`)에서 `(col + row) % 2` 체커보드 디더링과 `oncePerPixel` 멱등 명도 변조가 확인되었다.
 
-### 2.4 상용 웹툰·페인팅 앱 브러시 커널 (Inference & Clean-Room Behavioral Modeling)
-- **ibisPaint X & MediBang Paint**: 웹툰 제작에서 가장 널리 쓰이는 벚꽃잎·구름·반짝이·나뭇잎·사슬·레이스·망점 리본·집중선 브러시는 접선 정렬(`alignToTangent`)과 다중 노즐 순환(`nozzleCycleCount`)으로 모델링되며, QR 브러시 공유는 FNV-1a 체크섬이 포함된 JSON 페이로드로 안전하게 내재화했다.
-- **Photopea / Photoshop Mixer Brush & SAI Ver.2**: Mixer Brush는 `wet01`·`load01`·`mix01`·`flow01` 4변수 저수조 양방향 전이로, SAI Ver.2 수채화는 저필압(`p <= blurPressureThreshold01`) 블러 전용 구간과 고필압 안료 착색 구간의 분리로 정확히 재현된다.
+### 2.4 SculptGL 2.5D/3D 조각 폴오프 · Fabric.js 스프레이 중복 제거 · Lazy-Brush 원형 마찰 (Observation)
+- `sculptgl-Brush.js` 및 `sculptgl-Crease.js`(`ev_b116ab58b81a3c1b837bf82855bc8b574fefc8c0c8fda21399c1a6ef8a725df1`)에서 $d = \|\mathbf{p}-\mathbf{c}\|/R \in [0,1]$에 대한 $C^2$ 4차 다항식 폴오프 $f(d) = 3d^4 - 4d^3 + 1$ 및 Crease 5제곱 날카로운 능선 수식 $f(d)^5$이 직접 확인되었다.
+- `fabric-spray_brush.js`에서 `_getOptimizedRects` 정수 격자 좌표 키 중복 제거(`optimizeOverlapping`)가 확인되었고, `lazy-brush.js`에서 원형 마찰 감쇠 $1 - \sqrt{1 - (1 - f)^2}$가 확인되었다.
+
+### 2.5 상용 벡터 골격·5-타일 패턴·입자 물리·다중색 스와치 브러시 (Inference & Clean-Room Behavioral Modeling)
+- **Illustrator / Affinity Designer**: 비신축 가이드(`headGuide01`, `tailGuide01`)로 양 끝단 물리 호 길이를 보존하는 `warpSkeletalArtBrushAlongSpine`과 꼭짓점 회전각 $\Delta\theta$로 내·외측 코너 타일을 자동 배치하는 `layoutFiveTileVectorPatternBrush`로 내재화했다.
+- **Inkscape / Corel Painter / WeaveSilk / HeavyPaint / ArtRage / Fresco / Milton**: 캘리그라피 펜촉 관성·Spiro 곡률·PowerStroke 폭 보간, 3대 입자 브러시(`spring`/`gravity`/`curl_flow`), WeaveSilk $D_n$ 조화 리본, HeavyPaint 블록인, ArtRage Gloop 점성 방울, Fresco 다중색 스와치, Milton $4\times$ RGSS 해석적 캡슐 SDF를 클린룸 수식으로 통합했다.
 
 ---
 
 ## 3. 한계 및 미확정 영역 (Limitations & Unknowns)
 
-- 상용 네이티브 앱(ibisPaint 모바일 바이너리, Paint Tool SAI Ver.2 Windows 실행 파일)의 비공개 서버/네이티브 GPU 셰이더는 본 웹 세션에서 직접 실행하지 않고, 공개된 웹 포털 캡처(`ev_a516d528...`, `ev_331ca47f...`)와 문서화된 파라미터 사양을 기반으로 클린룸 수학 모델로 재구성했다.
+- 상용 네이티브 데스크톱/모바일 앱(Paint Tool SAI Ver.2, Corel Painter, ArtRage Vitae, Adobe Illustrator/Fresco)의 비공개 바이너리 셰이더는 본 웹 세션에서 직접 실행하지 않고, 공개된 웹 포털·오픈소스 AST 증거(`ev_b116ab58...`, `ev_0f42419a...`)와 문서화된 수학 사양을 기반으로 클린룸 모델로 재구성했다.
 - `apps/brush-lab`의 엄격한 라이선스 게이트(`license-policy.test.ts`, `boundary.test.ts`)에 따라 CC BY-NC(`mixbox`), Prosperity(`lygia`), GPL 원본 코드는 단 한 줄도 참조하거나 복사하지 않았으며, 모든 연산은 결정론적 `Pcg32` 난수와 `kmMixRgb` Kubelka-Munk 색공간 위에서 독립 구현했다.

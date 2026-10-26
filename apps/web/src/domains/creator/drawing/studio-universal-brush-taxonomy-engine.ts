@@ -1,5 +1,5 @@
 /**
- * ToonStudio 범용 브러시·드로잉 생태계 역공학 내재화 실행 엔진 (Wave 21).
+ * ToonStudio 범용 브러시·드로잉 생태계 역공학 내재화 실행 엔진 (Wave 21 & Wave 22).
  */
 
 import {
@@ -7,6 +7,11 @@ import {
   encodeCleanRoomBrushQrPayload,
   filterPixelPerfectStroke,
 } from "./studio-commercial-pixel-brush-kernels";
+import {
+  COREL_PARTICLE_BRUSH_PRESETS,
+  evaluateMiltonAnalyticalCapsuleSdfCoverage01,
+  evaluateSculptGlQuarticFalloff01,
+} from "./studio-particle-pixol-brushes";
 import {
   HARMONY_BRUSH_KINDS,
   IBIS_MEDIBANG_BRUSH_PRESETS,
@@ -19,9 +24,16 @@ import {
   type P5BrushVectorFieldKind,
   type SketchpadBrushKind,
 } from "./studio-universal-brush-presets";
+import {
+  FIVE_TILE_PATTERN_BRUSH_PRESETS,
+  SKELETAL_ART_BRUSH_PRESETS,
+  WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER,
+} from "./studio-vector-skeletal-pattern-brushes";
 
 export * from "./studio-universal-brush-presets";
 export * from "./studio-commercial-pixel-brush-kernels";
+export * from "./studio-vector-skeletal-pattern-brushes";
+export * from "./studio-particle-pixol-brushes";
 
 export interface BrushPoint2D {
   readonly x: number;
@@ -554,22 +566,33 @@ export function synthesizeSketchpadBrushDabs(
 
 export interface UniversalBrushTaxonomyBenchmarkMetrics {
   readonly reaEvidenceTargetCount: number;
+  readonly wave22ReaEvidenceTargetCount: number;
   readonly totalVisitedAstNodes: number;
   readonly harmonyBrushKindCount: number;
   readonly p5BrushPresetCount: number;
   readonly p5BrushVectorFieldCount: number;
   readonly sketchpadBrushKindCount: number;
   readonly ibisMediBangPresetCount: number;
+  readonly skeletalArtBrushPresetCount: number;
+  readonly fiveTilePatternPresetCount: number;
+  readonly corelParticlePresetCount: number;
   readonly harmonySketchyChordCount: number;
   readonly pixelPerfectReductionRatio: number;
+  readonly sculptGlQuarticMidFalloff01: number;
+  readonly miltonCapsuleCenterCoverage01: number;
   readonly qrCodecRoundtripVerified: boolean;
 }
 
 export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTaxonomyBenchmarkMetrics {
-  const totalVisitedAstNodes = UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.reduce(
+  const wave21Nodes = UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.reduce(
     (sum, item) => sum + item.visitedAstNodes,
     0,
   );
+  const wave22Nodes = WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.reduce(
+    (sum, item) => sum + item.visitedAstNodes,
+    0,
+  );
+  const totalVisitedAstNodes = wave21Nodes + wave22Nodes;
   const samplePoints: readonly BrushPoint2D[] = Array.from({ length: 14 }, (_, idx) => ({
     x: 20 + idx * 8,
     y: 30 + Math.sin(idx * 0.6) * 10,
@@ -593,17 +616,36 @@ export function measureUniversalBrushTaxonomyEngineBenchmark(): UniversalBrushTa
     spacingRatio: 0.42,
   });
   const qrDecoded = decodeCleanRoomBrushQrPayload(qrEncoded);
+  const sculptGlQuarticMidFalloff01 = evaluateSculptGlQuarticFalloff01(0.5);
+  const miltonCapsuleCenterCoverage01 = evaluateMiltonAnalyticalCapsuleSdfCoverage01({
+    pixelCenterX: 50,
+    pixelCenterY: 50,
+    segAx: 40,
+    segAy: 50,
+    segBx: 60,
+    segBy: 50,
+    radiusA: 4,
+    radiusB: 4,
+  });
 
   return {
-    reaEvidenceTargetCount: UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.length,
+    reaEvidenceTargetCount:
+      UNIVERSAL_BRUSH_REA_EVIDENCE_LEDGER.length +
+      WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
+    wave22ReaEvidenceTargetCount: WAVE22_VECTOR_PARTICLE_PIXOL_REA_EVIDENCE_LEDGER.length,
     totalVisitedAstNodes,
     harmonyBrushKindCount: HARMONY_BRUSH_KINDS.length,
     p5BrushPresetCount: P5_BRUSH_PRESET_CATALOG.length,
     p5BrushVectorFieldCount: P5_BRUSH_VECTOR_FIELDS.length,
     sketchpadBrushKindCount: SKETCHPAD_BRUSH_KINDS.length,
     ibisMediBangPresetCount: IBIS_MEDIBANG_BRUSH_PRESETS.length,
+    skeletalArtBrushPresetCount: SKELETAL_ART_BRUSH_PRESETS.length,
+    fiveTilePatternPresetCount: FIVE_TILE_PATTERN_BRUSH_PRESETS.length,
+    corelParticlePresetCount: COREL_PARTICLE_BRUSH_PRESETS.length,
     harmonySketchyChordCount: harmonySketchy.chordLinkCount,
     pixelPerfectReductionRatio,
+    sculptGlQuarticMidFalloff01,
+    miltonCapsuleCenterCoverage01,
     qrCodecRoundtripVerified: qrDecoded?.presetId === "ribbon-petal-chain",
   };
 }

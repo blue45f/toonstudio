@@ -135,5 +135,20 @@ describe("StudioNaturalMediaShowcase", () => {
     expect(cloudRibbon).not.toBeNull();
     fireEvent.click(cloudRibbon!);
     expect(cloudRibbon?.getAttribute("aria-checked")).toBe("true");
+
+    // Wave 22 골격 아트 브러시 및 Corel 입자 브러시 Roving Tabindex 검증
+    const katanaRadio = container.querySelector('[data-studio-skeletal-brush="katana-blade"]') as HTMLButtonElement | null;
+    expect(katanaRadio).not.toBeNull();
+    expect(katanaRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(katanaRadio!, { key: "ArrowRight" });
+    const arrowRadio = container.querySelector('[data-studio-skeletal-brush="ornate-arrow"]') as HTMLButtonElement | null;
+    expect(arrowRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const silkRadio = container.querySelector('[data-studio-particle-brush="silk-harmonic-spring"]') as HTMLButtonElement | null;
+    expect(silkRadio).not.toBeNull();
+    expect(silkRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(silkRadio!, { key: "End" });
+    const hairRadio = container.querySelector('[data-studio-particle-brush="hair-lock-spring"]') as HTMLButtonElement | null;
+    expect(hairRadio?.getAttribute("aria-checked")).toBe("true");
   });
 });
