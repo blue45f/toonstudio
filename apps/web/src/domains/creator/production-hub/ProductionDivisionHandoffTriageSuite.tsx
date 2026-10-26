@@ -238,7 +238,7 @@ export function ProductionDivisionHandoffTriageSuite({
               </div>
               <button
                 type="button"
-                className={buttonClass({ size: "sm", variant: "secondary" })}
+                className={buttonClass({ size: "sm", variant: "outline" })}
                 onClick={() => handleAutoFixPacketSpec(selectedEntry.packet.id)}
               >
                 <Sparkles className="mr-1.5 size-3.5" aria-hidden="true" />
@@ -325,7 +325,7 @@ export function ProductionDivisionHandoffTriageSuite({
                     </div>
                     <button
                       type="button"
-                      className={buttonClass({ size: "sm", variant: "secondary" })}
+                      className={buttonClass({ size: "sm", variant: "outline" })}
                       onClick={() => handleAdvanceAskState(ask.id)}
                     >
                       {ask.state === "intake-triage"
@@ -356,7 +356,7 @@ export function ProductionDivisionHandoffTriageSuite({
             </div>
             <button
               type="button"
-              className={buttonClass({ size: "sm", variant: "secondary" })}
+              className={buttonClass({ size: "sm", variant: "outline" })}
               onClick={handleResolveBranchConflicts}
             >
               {bt("레이어 충돌 해소 및 Ready 전환", "Resolve Layer Conflicts & Mark Ready")}

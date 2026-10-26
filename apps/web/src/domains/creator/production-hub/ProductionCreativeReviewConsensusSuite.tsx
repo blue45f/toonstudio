@@ -101,7 +101,7 @@ export function ProductionCreativeReviewConsensusSuite() {
         </div>
         <button
           type="button"
-          className={buttonClass({ size: "sm", variant: "secondary" })}
+          className={buttonClass({ size: "sm", variant: "outline" })}
           onClick={handleApproveAllAndResolvePins}
         >
           <Sparkles className="mr-1.5 size-3.5" aria-hidden="true" />
@@ -196,7 +196,7 @@ export function ProductionCreativeReviewConsensusSuite() {
                   </div>
                   <button
                     type="button"
-                    className={buttonClass({ size: "sm", variant: "secondary" })}
+                    className={buttonClass({ size: "sm", variant: "outline" })}
                     onClick={() => handleTogglePinResolved(pin.id)}
                   >
                     {pin.resolved ? bt("재오픈", "Reopen") : bt("수정 확인", "Mark Resolved")}
@@ -249,7 +249,7 @@ export function ProductionCreativeReviewConsensusSuite() {
                   <td className="px-3 py-2.5">
                     <button
                       type="button"
-                      className={buttonClass({ size: "sm", variant: "secondary" })}
+                      className={buttonClass({ size: "sm", variant: "outline" })}
                       onClick={() => handleToggleDepartmentApproval(vote.department)}
                     >
                       {vote.status === "approved" ? bt("승인 철회", "Revoke") : bt("데스크 승인", "Approve Desk")}

@@ -238,7 +238,7 @@ export function ProductionOutsourcingSettlementGuardSuite() {
                 <td className="px-3 py-2.5">
                   <button
                     type="button"
-                    className={buttonClass({ size: "sm", variant: "secondary" })}
+                    className={buttonClass({ size: "sm", variant: "outline" })}
                     onClick={() => handleCycleEscrowState(order.id)}
                   >
                     {order.escrowState === "released-settled" ? (

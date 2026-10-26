@@ -169,7 +169,14 @@ export function buildShaperTripoPoseControlSuffix(input: ShaperTripoPoseControlI
   };
 }
 
-export type ShaperTripoSlotKind = CharacterSlotKind | "prop" | "outfit" | "outer";
+export type ShaperTripoSlotKind =
+  | CharacterSlotKind
+  | "prop"
+  | "outfit"
+  | "outer"
+  | "head"
+  | "face"
+  | "eyebrows";
 export type ShaperTripoScenarioKind = "webtoon-character" | "webtoon-prop" | "smart-segment-wearable";
 
 export interface ShaperTripoSlotGenerationPlan {
@@ -542,8 +549,8 @@ export type ShaperTripoGeneratedGlbId =
 
 export interface ShaperTripoGeneratedGlbAsset {
   readonly id: ShaperTripoGeneratedGlbId;
-  readonly slot: CharacterSlotKind;
-  readonly compatibleSlots: readonly CharacterSlotKind[];
+  readonly slot: ShaperTripoSlotKind;
+  readonly compatibleSlots: readonly ShaperTripoSlotKind[];
   readonly labelKo: string;
   readonly summaryKo: string;
   readonly assetUrl: string;
@@ -625,7 +632,7 @@ export const SHAPER_TRIPO_GENERATED_GLB_CATALOG: readonly ShaperTripoGeneratedGl
 ]);
 
 export function resolveShaperTripoGeneratedGlbForSlot(
-  slot: CharacterSlotKind,
+  slot: ShaperTripoSlotKind,
 ): ShaperTripoGeneratedGlbAsset {
   return (
     SHAPER_TRIPO_GENERATED_GLB_CATALOG.find((asset) => asset.slot === slot)
@@ -638,7 +645,7 @@ export interface TripoCreditWalletDiagnosticInput {
   readonly openApiBalance?: number;
   readonly openApiFrozen?: number;
   readonly errorCode?: number | null;
-  readonly slot?: CharacterSlotKind;
+  readonly slot?: ShaperTripoSlotKind;
 }
 
 export interface TripoCreditWalletDiagnosticReport {
