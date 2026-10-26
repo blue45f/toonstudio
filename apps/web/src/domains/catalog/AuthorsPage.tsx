@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { proxiedCoverSrc } from "@/shared/lib/cover-proxy";
 import { genreTint, genreBorder, genreTextColor } from "@/shared/lib/genre-color";
 import { useI18n, useT } from "@/shared/lib/i18n";
@@ -51,6 +52,7 @@ export function AuthorsPage() {
 
   return (
     <Container size="default" className="py-10">
+      <SiteContextualSubNav pathnameOverride="/authors" className="mb-5" />
       <header className="mb-7 grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div>
         <p className="eyebrow flex items-center gap-1.5 text-accent">

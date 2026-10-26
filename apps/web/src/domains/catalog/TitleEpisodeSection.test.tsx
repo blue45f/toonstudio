@@ -218,6 +218,11 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
     const items = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(items[0]?.textContent).toContain("신호의 시작");
     expect(screen.getByRole("button", { name: "첫 화부터" }).getAttribute("aria-pressed")).toBe("true");
+    // REA 뷰 모드 토글(목록형 / 컴팩트 칩) 전환 검증
+    const viewGroup = screen.getByTestId("episodes-rea-view-mode");
+    const compactBtn = within(viewGroup).getByRole("button", { name: "컴팩트형" });
+    fireEvent.click(compactBtn);
+    expect(compactBtn.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("뷰어에서 남긴 진도가 있으면 이어보기 바와 읽음 배지가 붙는다", () => {

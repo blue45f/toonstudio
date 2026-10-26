@@ -32,6 +32,7 @@ import { PersonalContentPreferenceNotice } from "@/domains/engagement/public/per
 import { ReadStateSelector } from "@/shared/components/read-state";
 import { ReviewCard, ReviewForm } from "@/domains/community/public/reviews";
 import { ScoreBreakdown } from "@/shared/components/score-breakdown";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { Rail, Section, Container } from "@/shared/components/section";
 import { ShareButton } from "@/shared/components/share-button";
@@ -220,6 +221,7 @@ export function TitleDetailPage() {
   return (
     <PageEntrance variant="pop">
     <Container size="wide" className="relative py-8 lg:py-10">
+      <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
       <TitleDetailBreadcrumb title={title.title} />
       <TitleDetailHero
         title={title}
@@ -229,6 +231,56 @@ export function TitleDetailPage() {
         showSynopsis={showSynopsis}
         firstEpisodeHref={firstEpisodeHref}
       />
+
+      <nav
+        aria-label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세 섹션 이동 및 크로스 허브 브리지")}
+        data-testid="title-detail-rea-bridge-bar"
+        className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/75 px-4 py-2.5 text-xs"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[10px] font-extrabold uppercase tracking-wider text-accent">
+            SERIES HUB · QUICK JUMP
+          </span>
+          <a
+            href="#title-episodes-anchor"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          >
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "회차 목록")}
+          </a>
+          <a
+            href="#title-availability"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          >
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "연재처 · 가격 비교")}
+          </a>
+          <a
+            href="#metrics"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          >
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률 · 정주행 지표")}
+          </a>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Link
+            href="/cuts"
+            className="inline-flex min-h-8 items-center rounded-full border border-accent/35 bg-accent/10 px-3 font-bold text-accent transition-colors hover:bg-accent/20"
+          >
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "숏폼 컷츠 보기")}
+          </Link>
+          <Link
+            href="/compare"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          >
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 스펙 비교")}
+          </Link>
+          <Link
+            href="/showcase/promo"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          >
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "트레일러 제작")}
+          </Link>
+        </div>
+      </nav>
 
       <div className="grid gap-8 lg:grid-cols-[19rem_1fr]">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)] lg:self-start">

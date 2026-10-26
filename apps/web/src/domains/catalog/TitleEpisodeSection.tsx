@@ -26,6 +26,9 @@ import {
 import { STATUS_LABEL } from "@/shared/lib/taxonomy";
 import { cn, formatCount } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
+import { runSameDocumentViewTransition } from "@/shared/navigation/webtoon-platform-router-ux-model";
+
+type EpisodeViewMode = "list" | "compact";
 
 const bi = (ko: string, en: string) =>
   translateBilingualValueForActiveLocale("TitleEpisodeSection", ko, en);
@@ -45,39 +48,47 @@ function EpisodeRow({
   episode,
   isNewest,
   readBadge,
+  compact = false,
 }: {
   title: Title;
   episode: TitleEpisode;
   isNewest: boolean;
   readBadge: string | null;
+  compact?: boolean;
 }) {
   const [coverFrom, coverTo] = title.cover;
   const scheduled = episode.status === "scheduled";
   const content = (
     <>
-      <span className="relative block aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg sm:w-28">
-        {episode.thumbnailUrl ? (
-          <CoverImage
-            src={episode.thumbnailUrl}
-            alt=""
-            srcSet={coverStandardSrcSet(episode.thumbnailUrl)}
-            sizes="(max-width: 639px) 6rem, 7rem"
-            className="absolute inset-0 size-full object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 85%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 80%, oklch(0.15 0.008 70)))`,
-            }}
-          />
-        )}
-        <span className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.1_0.02_265/0.55),transparent_55%)]" aria-hidden />
-        <span className="numeral absolute bottom-1.5 left-2 text-sm font-bold text-white">
+      {!compact ? (
+        <span className="relative block aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg sm:w-28">
+          {episode.thumbnailUrl ? (
+            <CoverImage
+              src={episode.thumbnailUrl}
+              alt=""
+              srcSet={coverStandardSrcSet(episode.thumbnailUrl)}
+              sizes="(max-width: 639px) 6rem, 7rem"
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 85%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 80%, oklch(0.15 0.008 70)))`,
+              }}
+            />
+          )}
+          <span className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.1_0.02_265/0.55),transparent_55%)]" aria-hidden />
+          <span className="numeral absolute bottom-1.5 left-2 text-sm font-bold text-white">
+            {episode.number}
+          </span>
+        </span>
+      ) : (
+        <span className="numeral grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-raised text-xs font-extrabold text-fg">
           {episode.number}
         </span>
-      </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
         <span className="flex flex-wrap items-center gap-1.5">
           <span className="truncate text-[0.95rem] font-semibold text-fg">
@@ -159,6 +170,7 @@ export function TitleEpisodeSection({
   // 빈 상태에서도 외부 플랫폼 이름·링크를 노출하지 않는다.
   const { showAvailability } = useAppConfig();
   const [order, setOrder] = useState<EpisodeSortOrder>("latest");
+  const [viewMode, setViewMode] = useState<EpisodeViewMode>("list");
   const [episodeQuery, setEpisodeQuery] = useState("");
   const [progress] = useState(() => getReaderProgress(title.slug));
   const total = resolveTotalEpisodes(title, episodes);
@@ -278,6 +290,36 @@ export function TitleEpisodeSection({
                 </button>
               ))}
             </div>
+            <div
+              className="flex rounded-full border border-line bg-card p-0.5"
+              role="group"
+              aria-label={bi("회차 표시 형식", "Episode view mode")}
+              data-testid="episodes-rea-view-mode"
+            >
+              {(
+                [
+                  { value: "list", label: bi("리스트형", "List") },
+                  { value: "compact", label: bi("컴팩트형", "Compact") },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={viewMode === option.value}
+                  onClick={() => {
+                    runSameDocumentViewTransition(() => {
+                      setViewMode(option.value);
+                    });
+                  }}
+                  className={cn(
+                    "min-h-9 rounded-full px-3 text-xs font-semibold transition-colors duration-150",
+                    viewMode === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -298,7 +340,7 @@ export function TitleEpisodeSection({
       )}
 
       {hasEpisodes && filteredEpisodes ? (
-        <ol className="flex flex-col gap-2.5">
+        <ol className={cn("grid gap-2.5", viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
           {filteredEpisodes.map((episode) => (
             <EpisodeRow
               key={episode.number}
@@ -306,6 +348,7 @@ export function TitleEpisodeSection({
               episode={episode}
               isNewest={episode.number === newestNumber && episode.status !== "scheduled"}
               readBadge={readBadgeFor(episode)}
+              compact={viewMode === "compact"}
             />
           ))}
         </ol>

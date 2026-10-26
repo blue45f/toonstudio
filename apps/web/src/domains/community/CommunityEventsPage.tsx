@@ -7,6 +7,7 @@ import { CommunityEventsBoard } from "./components/community-events-board";
 
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -90,6 +91,7 @@ export function CommunityEventsPage() {
 
   return (
     <Container size="wide" className="relative py-6 sm:py-8 lg:py-10">
+      <SiteContextualSubNav pathnameOverride="/community/events" className="mb-5" />
       <header className="rounded-3xl border border-line bg-panel/70 p-6 sm:p-8 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
         <div>
         <p className="eyebrow flex items-center gap-2 text-accent">

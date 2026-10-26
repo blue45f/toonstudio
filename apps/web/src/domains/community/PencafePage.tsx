@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 
 import { FanCafePanel } from "./components/fan-cafe-panel";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { compactPublicShareDescription } from "@/shared/lib/public-share-policy";
 import {
   defineBilingualText,
@@ -136,6 +137,7 @@ export function PencafePage() {
 
   return (
     <Container size="wide" className="relative py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/community/pencafe" className="mb-5" />
       <header className="mb-6 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow flex items-center gap-1.5 text-accent">

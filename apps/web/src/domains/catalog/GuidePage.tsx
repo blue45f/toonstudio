@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { PlatformId } from "@/shared/lib/types";
 
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { VisualStepGuide, type VisualStepGuideStep } from "@/shared/components/VisualStepGuide";
 import { PLATFORMS } from "@/shared/lib/platforms";
 import { RANK_AXES, PLATFORM_REACH_WEIGHT } from "@/shared/lib/ranking";
@@ -219,6 +220,7 @@ export function GuidePage() {
 
   return (
     <Container size="prose" className="py-10 sm:py-14">
+      <SiteContextualSubNav pathnameOverride="/guide" className="mb-5" />
       {/* 헤더 — 첫 화면에서 이 페이지가 답하는 것과 규모, 다음 행동(랭킹 검산)을 먼저 세운다 */}
       <header>
         <p className="eyebrow text-accent">{t("guide.eyebrow")}</p>

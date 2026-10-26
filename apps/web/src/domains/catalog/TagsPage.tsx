@@ -14,6 +14,7 @@ import Link from "@/shared/navigation/router-link";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { genreBorder, genreTextColor, genreTint } from "@/shared/lib/genre-color";
 import { useApiResource } from "@/platform/use-api-resource";
 
@@ -53,6 +54,7 @@ export function TagsPage() {
 
   return (
     <Container size="wide" className="py-8 sm:py-11 lg:py-14">
+      <SiteContextualSubNav pathnameOverride="/tags" className="mb-5" />
       <header className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="max-w-3xl">
           <p className="eyebrow flex items-center gap-1.5 text-accent">

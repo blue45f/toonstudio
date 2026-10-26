@@ -13,6 +13,7 @@ import type { getInsightsData } from "@/shared/lib/server/insights";
 import { CountUp } from "@/shared/components/count-up";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { Badge } from "@/shared/components/ui/chip";
 import { DistributionBars, GenreSpectrum, MeterBar } from "@/shared/components/ui/spectrum-bar";
 import { genreColor } from "@/shared/lib/genre-color";
@@ -120,6 +121,7 @@ export function InsightsPage() {
           aria-hidden
         />
         <Container size="wide" className="relative py-12 lg:py-16">
+          <SiteContextualSubNav pathnameOverride="/insights" className="mb-5" />
           <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div>
               <p className="eyebrow text-accent">DATA · INSIGHTS</p>

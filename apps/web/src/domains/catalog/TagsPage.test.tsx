@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,10 +29,12 @@ afterEach(cleanup);
 describe("tags page progressive directory", () => {
   it("renders a bounded initial set and expands on demand", () => {
     render(<MemoryRouter initialEntries={["/tags"]}><TagsPage /></MemoryRouter>);
-    expect(screen.getAllByRole("link")).toHaveLength(120);
+    expect(screen.getByRole("navigation", { name: "작품 탐색 · 큐레이션" })).toBeDefined();
+    const tagList = screen.getByRole("list", { name: "태그 목록" });
+    expect(within(tagList).getAllByRole("link")).toHaveLength(120);
     expect(screen.getByRole("status").textContent).toContain("130개 태그 중 120개 표시");
     fireEvent.click(screen.getByRole("button", { name: "다음 10개 태그 보기" }));
-    expect(screen.getAllByRole("link")).toHaveLength(130);
+    expect(within(tagList).getAllByRole("link")).toHaveLength(130);
     expect(screen.getByRole("status").textContent).toContain("130개 태그 중 130개 표시");
   });
 
@@ -41,6 +43,7 @@ describe("tags page progressive directory", () => {
     expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("태그12");
     expect(screen.getByRole("button", { name: "이름순" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("status").textContent).toContain("10개 태그 중 10개 표시");
-    expect(screen.getAllByRole("link")).toHaveLength(10);
+    const tagList = screen.getByRole("list", { name: "태그 목록" });
+    expect(within(tagList).getAllByRole("link")).toHaveLength(10);
   });
 });

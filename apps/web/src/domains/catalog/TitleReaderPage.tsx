@@ -19,6 +19,7 @@ import type { Title } from "@/shared/lib/types";
 import { getReaderProgress, isResumable, setReaderProgress } from "./reader-progress";
 import { resolveTitleEpisodes, resolveTotalEpisodes } from "./title-episodes";
 import { TitleNotFound } from "./TitleNotFound";
+import { TitleReaderReaBridgeCard } from "./TitleReaderReaBridgeCard";
 
 import { CoverImage } from "@/shared/components/cover-image";
 import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
@@ -519,6 +520,8 @@ function ReaderShell({
             </Link>
           </div>
         )}
+
+        <TitleReaderReaBridgeCard title={title} episode={episode} />
 
         <p className="mt-6 text-center text-xs text-white/45">
           {bi(

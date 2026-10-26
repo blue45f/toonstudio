@@ -110,9 +110,10 @@ describe("TitleReaderPage — 뷰어 셸", () => {
     expect(screen.getByRole("link", { name: "다음 화" }).getAttribute("href")).toBe(
       "/title/fog-signal/read/3",
     );
-    // 진도 바
+    // 진도 바 및 열람 후 확장 동선(REA finish bridge)
     const progressbar = screen.getByRole("progressbar", { name: "읽기 진도" });
     expect(progressbar.getAttribute("aria-valuenow")).toBe("0");
+    expect(screen.getByTestId("reader-rea-finish-bridge")).toBeTruthy();
   });
 
   it("1화에서는 이전 화가 비활성이다", () => {

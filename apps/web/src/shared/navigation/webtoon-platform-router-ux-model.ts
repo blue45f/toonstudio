@@ -509,88 +509,54 @@ export const CONTEXTUAL_SUBNAV_GROUPS: readonly ContextualSubNavGroup[] = Object
   },
 ]);
 
+const PROMO_SUBNAV_PATHS = new Set([
+  "/promo-library", "/showcase/promo", "/community/promote", "/cuts",
+  "/cuts/studio", "/cuts/rewards", "/brand-film", "/product-tour",
+]);
+const CATALOG_SUBNAV_PATHS = new Set([
+  "/discover", "/explore", "/ranking", "/calendar", "/recommend",
+  "/search", "/random", "/compare", "/sitemap", "/tags",
+  "/authors", "/insights", "/news", "/guide",
+]);
+const COMMUNITY_SUBNAV_PATHS = new Set([
+  "/community", "/showcase", "/reviews", "/collaborate", "/opportunities",
+  "/Creators", "/creators", "/community/Write", "/community/write",
+  "/cafes", "/community/events", "/community/timelapse", "/community/author", "/community/pencafe",
+]);
+const STUDIO_SUBNAV_PATHS = new Set([
+  "/create", "/story-lab", "/learn", "/tutorials", "/guides",
+  "/studio", "/studio/new", "/studio/comic", "/studio/character",
+  "/studio/assets/characters/new", "/character-shaper", "/character-lab",
+  "/studio/import", "/studio/motion-webtoon", "/studio/publish", "/publish",
+]);
+const ASSET_SUBNAV_PATHS = new Set([
+  "/market", "/marketplace", "/market/browse", "/market/library",
+  "/market/wishlist", "/market/seller", "/market/fit", "/market/compare",
+  "/studio/assets", "/studio/brushes", "/assets", "/brushes",
+  "/research", "/research/scene-3d", "/research/character-3d",
+]);
+const LIBRARY_SUBNAV_PATHS = new Set(["/library", "/my", "/notifications", "/messages"]);
+
 export function resolveContextualSubNavForPath(rawPathname: string): ContextualSubNavGroup | null {
   const pathname = canonicalSitePath(rawPathname);
+  if (PROMO_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[0] ?? null;
   if (
-    pathname === "/promo-library" ||
-    pathname === "/showcase/promo" ||
-    pathname === "/community/promote" ||
-    pathname === "/cuts" ||
-    pathname === "/cuts/studio" ||
-    pathname === "/cuts/rewards" ||
-    pathname === "/brand-film" ||
-    pathname === "/product-tour"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[0] ?? null;
-  }
-  if (
-    pathname === "/discover" ||
-    pathname === "/explore" ||
-    pathname === "/ranking" ||
-    pathname === "/calendar" ||
-    pathname === "/recommend" ||
-    pathname === "/search" ||
-    pathname === "/random" ||
-    pathname === "/compare" ||
-    pathname === "/sitemap"
+    CATALOG_SUBNAV_PATHS.has(pathname) ||
+    pathname.startsWith("/title/") ||
+    pathname.startsWith("/author/")
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[1] ?? null;
   }
   if (
-    pathname === "/community" ||
-    pathname === "/showcase" ||
-    pathname === "/reviews" ||
-    pathname === "/collaborate" ||
-    pathname === "/opportunities" ||
-    pathname === "/Creators" ||
-    pathname === "/creators" ||
-    pathname === "/community/Write" ||
-    pathname === "/community/write"
+    COMMUNITY_SUBNAV_PATHS.has(pathname) ||
+    pathname.startsWith("/pencafe/") ||
+    pathname.startsWith("/cafes/")
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[2] ?? null;
   }
-  if (
-    pathname === "/create" ||
-    pathname === "/story-lab" ||
-    pathname === "/learn" ||
-    pathname === "/tutorials" ||
-    pathname === "/guides" ||
-    pathname === "/studio" ||
-    pathname === "/studio/new" ||
-    pathname === "/studio/comic" ||
-    pathname === "/studio/character" ||
-    pathname === "/studio/assets/characters/new" ||
-    pathname === "/character-shaper" ||
-    pathname === "/character-lab" ||
-    pathname === "/studio/import" ||
-    pathname === "/studio/motion-webtoon" ||
-    pathname === "/studio/publish"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[3] ?? null;
-  }
-  if (
-    pathname === "/market" ||
-    pathname === "/marketplace" ||
-    pathname === "/market/browse" ||
-    pathname === "/market/library" ||
-    pathname === "/studio/assets" ||
-    pathname === "/studio/brushes" ||
-    pathname === "/assets" ||
-    pathname === "/brushes" ||
-    pathname === "/research" ||
-    pathname === "/research/scene-3d" ||
-    pathname === "/research/character-3d"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
-  }
-  if (
-    pathname === "/library" ||
-    pathname === "/my" ||
-    pathname === "/notifications" ||
-    pathname === "/messages"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[5] ?? null;
-  }
+  if (STUDIO_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[3] ?? null;
+  if (ASSET_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
+  if (LIBRARY_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[5] ?? null;
   return null;
 }
 

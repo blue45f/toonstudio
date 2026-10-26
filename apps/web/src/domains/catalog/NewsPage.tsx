@@ -10,6 +10,7 @@ import { useShowMore } from "@/domains/legal/public/site-show-more";
 import { useApiResource } from "@/platform/use-api-resource";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { formatI18nTemplate, getCurrentUiLocale, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { relativeDate } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -159,6 +160,7 @@ export function NewsPage() {
 
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+      <SiteContextualSubNav pathnameOverride="/news" className="mb-5" />
       <SitePageHeader
         surface="plain"
         icon={Newspaper}

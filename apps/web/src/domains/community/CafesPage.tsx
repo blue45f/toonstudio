@@ -28,6 +28,7 @@ import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useApp, useHydrated } from "@/shared/lib/store";
@@ -274,6 +275,7 @@ export function CafesPage() {
   return (
     <div lang={pageLang}>
       <Container size="wide" className="relative py-6 sm:py-8 lg:py-10">
+        <SiteContextualSubNav pathnameOverride="/cafes" className="mb-5" />
         <SitePageHeader
           surface="plain"
           className="mb-6 sm:mb-8"

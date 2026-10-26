@@ -16,6 +16,7 @@ import { useGuestSession } from "@/domains/auth/public/session/guest-session";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
@@ -69,6 +70,7 @@ export function TimelapseGalleryPage() {
 
   return (
     <Container>
+      <SiteContextualSubNav pathnameOverride="/community/timelapse" className="mb-5" />
       <SitePageHeader
         eyebrow={b("타임랩스", "Timelapse")}
         icon={Clapperboard}
