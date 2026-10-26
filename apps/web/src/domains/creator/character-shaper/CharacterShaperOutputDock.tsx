@@ -291,6 +291,8 @@ export function CharacterShaperOutputDock({
           const result = await exportCharacterSemanticPsd({
             capture: { gl: capture.gl as never, scene: capture.scene as never, camera: exportCamera },
             vrm: h.vrm, width: size.width, height: size.height, title: modelName,
+            createHairLayer: psdHairLayerSplit,
+            extractLuminanceOutline: psdLuminanceOutline,
             screenOutlineScale: framed.screenOutlineScale,
             signal: session.signal, assertCurrent: session.assertCurrent,
             onProgress: ({ pass, phase, completed, total }) => {

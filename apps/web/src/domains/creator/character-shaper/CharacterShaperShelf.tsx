@@ -9,6 +9,11 @@ import { CHARACTER_GENRE_TAG_LABELS } from "./character-shaper-catalog";
 import { countCharacterAvailability, discoverCharacterEntries } from "./character-shaper-discovery";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
+  buildShaperTripoSlotGenerationPlan,
+  SHAPER_TRIPO_VISUAL_PROFILES,
+  type ShaperTripoVisualStyleId,
+} from "./character-shaper-tripo-mcp";
+import {
   CHARACTER_HAND_SIDE_OPTIONS,
   CHARACTER_SHELF_COLUMNS,
   characterSlotSelection,
@@ -60,6 +65,8 @@ function CharacterShaperShelfContent({
   const [collection, setCollection] = useState<CharacterShelfCollection>("all");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [showExperimentalGarments, setShowExperimentalGarments] = useState(false);
+  const [visualStyleId, setVisualStyleId] = useState<ShaperTripoVisualStyleId>("shaper-cel");
+  const [showTripoPlan, setShowTripoPlan] = useState(false);
   const [draft, setDraft] = useState(query);
   const [syncedQuery, setSyncedQuery] = useState(query);
   const [composing, setComposing] = useState(false);
@@ -250,6 +257,84 @@ function CharacterShaperShelfContent({
         <p className="mt-1 text-[0.62rem] leading-relaxed text-fg-3" data-character-capability-counts="true">
           완전 지원 {counts.available} · 일부 적용 {counts.partial} · 적용 불가 {counts.unavailable}
         </p>
+        <div
+          data-testid="shaper-tripo-visual-studio"
+          className="mt-2 rounded-xl border border-line bg-card p-2 text-[0.66rem]"
+        >
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="font-semibold text-fg">SHAPER × Tripo 3D 리얼 툰 셰이더</span>
+            <button
+              type="button"
+              data-testid="shaper-tripo-plan-toggle"
+              aria-expanded={showTripoPlan}
+              onClick={() => setShowTripoPlan((prev) => !prev)}
+              className={cn(
+                "rounded-md border border-line px-1.5 py-0.5 text-[0.62rem] font-semibold text-fg-2 hover:bg-raised",
+                STUDIO_FOCUS_RING,
+              )}
+            >
+              {showTripoPlan ? "파이프라인 접기" : "Tripo V3 파이프라인"}
+            </button>
+          </div>
+          <div role="group" aria-label="SHAPER 툰 비주얼 프로파일" className="mt-1.5 grid grid-cols-2 gap-1">
+            {SHAPER_TRIPO_VISUAL_PROFILES.map((profile) => (
+              <button
+                key={profile.id}
+                type="button"
+                data-testid={`shaper-tripo-style-${profile.id}`}
+                aria-pressed={visualStyleId === profile.id}
+                onClick={() => setVisualStyleId(profile.id)}
+                className={cn(
+                  "rounded-lg border px-2 py-1 text-left text-[0.64rem] font-semibold transition-colors",
+                  STUDIO_FOCUS_RING,
+                  visualStyleId === profile.id
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-panel text-fg-2 hover:bg-raised",
+                )}
+              >
+                <span className="block truncate">{profile.label}</span>
+                <span className="block truncate text-[0.58rem] font-normal text-fg-3">{profile.badge}</span>
+              </button>
+            ))}
+          </div>
+          {(() => {
+            const plan = buildShaperTripoSlotGenerationPlan({
+              slot,
+              prompt: draft || `${slotLabel} webtoon asset`,
+              visualStyleId,
+            });
+            return (
+              <>
+                <p
+                  data-testid="shaper-tripo-visual-readout"
+                  className="mt-1.5 text-[0.62rem] leading-snug text-fg-3"
+                >
+                  Toony {(plan.visualProfile.shadeToonyFactor * 100).toFixed(0)}% · MatCap {(plan.visualProfile.matcapIntensity * 100).toFixed(0)}% · 림 {(plan.visualProfile.rimLightingMix * 100).toFixed(0)}% · 주선 {(plan.visualProfile.outlineWidthWorld * 1000).toFixed(1)}mm · Delight {plan.textureDelight ? "ON" : "OFF"}
+                </p>
+                {showTripoPlan ? (
+                  <div
+                    data-testid="shaper-tripo-plan-preview"
+                    className="mt-1.5 space-y-1 rounded-lg border border-line/70 bg-panel p-1.5 text-[0.6rem] text-fg-3"
+                  >
+                    <p className="font-semibold text-fg-2">
+                      {plan.scenario} · {plan.modelVersion} · Texture {plan.textureModelVersion}
+                    </p>
+                    <p>{plan.pipelineSteps.join(" → ")}</p>
+                    <code className="block truncate rounded bg-card px-1.5 py-0.5 font-mono text-[0.58rem] text-fg-2">
+                      {plan.cliCommand}
+                    </code>
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
+          <p
+            data-testid="shaper-shelf-modifier-hint"
+            className="mt-1.5 text-[0.6rem] text-fg-3"
+          >
+            SHAPER 단축 조작 · Ctrl+클릭: 현재 색상 유지 · Alt+클릭: 포즈 좌우 반전
+          </p>
+        </div>
         {tags.length > 0 ? (
           <div role="group" aria-label="장르 필터" className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button type="button" aria-pressed={tag === null} onClick={() => onTagChange(null)} className={cn(studioSegmentChipClass(tag === null), "shrink-0")}>전체</button>

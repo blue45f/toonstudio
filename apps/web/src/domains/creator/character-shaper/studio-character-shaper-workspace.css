@@ -16,7 +16,18 @@
   flex-shrink: 0;
 }
 [data-character-slot][aria-current="true"] {
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 22%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--shaper-accent-highlight, #ffff00) 42%, var(--color-accent)),
+    0 0 12px color-mix(in oklab, var(--shaper-accent-highlight, #ffff00) 14%, transparent);
+}
+/* SHAPER UIImageView::ShowEditButtons (0x060002e8) 0.1s 카드 보더 페이드 & #ffff00 선택 강조 */
+[data-character-slot-card] {
+  transition-duration: 100ms;
+}
+[data-character-slot-card][data-character-slot-card-selected="true"] {
+  box-shadow:
+    0 0 0 1.5px color-mix(in oklab, var(--shaper-accent-highlight, #ffff00) 55%, var(--color-accent)),
+    0 8px 20px -8px color-mix(in oklab, var(--shaper-accent-highlight, #ffff00) 24%, transparent);
 }
 [data-character-shaper="true"] input[type="range"] {
   accent-color: var(--color-accent);

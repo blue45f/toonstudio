@@ -18,7 +18,11 @@ scope.addEventListener("message", (event: MessageEvent<unknown>) => {
   }
   const request = event.data;
   try {
-    const { blob, receipt } = buildCharacterSemanticPsd(request.passes, request.skipped, { title: request.title });
+    const { blob, receipt } = buildCharacterSemanticPsd(request.passes, request.skipped, {
+      title: request.title,
+      createHairLayer: request.createHairLayer,
+      extractLuminanceOutline: request.extractLuminanceOutline,
+    });
     post({ version: CHARACTER_PSD_WORKER_VERSION, kind: "result", requestId: request.requestId, blob, receipt });
   } catch {
     post({ version: CHARACTER_PSD_WORKER_VERSION, kind: "error", requestId: request.requestId, code: "assembly-failed" });

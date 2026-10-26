@@ -486,4 +486,23 @@ describe("베타 기능 토글", () => {
     expect(describeBetaState(betaFailed("빌드 실패"))).toBe("사용 불가 — 빌드 실패");
     expect(describeBetaState(betaUnsupported("NullEngine", true))).toBe("사용 불가 — NullEngine");
   });
+
+  it("SHAPER × Tripo 3D V3 리얼 툰 & Delight 파이프라인 프리셋 변경 시 셰이딩과 파이프라인 요약을 갱신한다", () => {
+    const { getByTestId, dispatched } = renderPanel();
+
+    expect(getByTestId("shaper-tripo-render-bridge")).toBeTruthy();
+    expect(getByTestId("shaper-tripo-pipeline-summary").textContent).toContain("delight=true");
+
+    fireEvent.change(getByTestId("shaper-tripo-look-select"), {
+      target: { value: "shaper-semi-real" },
+    });
+    const profile = lastProfile(dispatched);
+    expect(profile.mode).toBe("toon");
+    expect(profile.toon?.rampSteps).toBe(4);
+    expect(profile.toon?.rim).toBe(true);
+    expect(getByTestId("shaper-tripo-pipeline-summary").textContent).toContain("P2-20260801");
+
+    fireEvent.click(getByTestId("shaper-tripo-delight-toggle"));
+    expect(getByTestId("shaper-tripo-pipeline-summary").textContent).toContain("delight=false");
+  });
 });

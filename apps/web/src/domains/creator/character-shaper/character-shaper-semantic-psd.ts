@@ -651,6 +651,8 @@ export async function exportCharacterSemanticPsd(
   input.assertCurrent?.();
   const result = await (dependencies.assemblePsd ?? assembleCharacterPsdInWorker)(passes, skipped, {
     title: input.title, signal: input.signal, timeoutMs: input.timeoutMs,
+    ...(input.createHairLayer !== undefined ? { createHairLayer: input.createHairLayer } : {}),
+    ...(input.extractLuminanceOutline !== undefined ? { extractLuminanceOutline: input.extractLuminanceOutline } : {}),
     // Only the native capture dependency creates storage owned exclusively by this export.
     ownership: dependencies === DEFAULT_DEPENDENCIES ? "transfer" : "copy",
   });

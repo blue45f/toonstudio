@@ -19,6 +19,8 @@ export interface CharacterPsdWorkerLike {
 }
 export interface CharacterPsdWorkerOptions {
   readonly title: string;
+  readonly createHairLayer?: boolean;
+  readonly extractLuminanceOutline?: boolean;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   readonly startupTimeoutMs?: number;
@@ -57,6 +59,8 @@ export function assembleCharacterPsdInWorker(
     nextId = nextId === Number.MAX_SAFE_INTEGER ? 1 : nextId + 1;
     request = {
       version: CHARACTER_PSD_WORKER_VERSION, kind: "assemble", requestId, title: options.title,
+      ...(options.createHairLayer !== undefined ? { createHairLayer: options.createHairLayer } : {}),
+      ...(options.extractLuminanceOutline !== undefined ? { extractLuminanceOutline: options.extractLuminanceOutline } : {}),
       skipped: skipped.map(({ pass, reason }) => ({ pass, reason })),
       passes: passes.map(({ id, width, height, rgba }) => ({
         id, width, height,

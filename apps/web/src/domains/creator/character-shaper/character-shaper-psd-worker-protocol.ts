@@ -28,6 +28,8 @@ export interface CharacterPsdWorkerRequest {
   readonly title: string;
   readonly passes: readonly CharacterPsdWorkerPass[];
   readonly skipped: readonly CharacterSemanticSkip[];
+  readonly createHairLayer?: boolean;
+  readonly extractLuminanceOutline?: boolean;
 }
 export type CharacterPsdWorkerResponse =
   | { readonly version: typeof CHARACTER_PSD_WORKER_VERSION; readonly kind: "ready" }
@@ -88,7 +90,13 @@ export function validateCharacterPsdPasses(
 
 export function isCharacterPsdWorkerRequest(value: unknown): value is CharacterPsdWorkerRequest {
   try {
-    if (!object(value) || !keys(value, ["version", "kind", "requestId", "title", "passes", "skipped"])
+    if (!object(value)) return false;
+    const required = ["version", "kind", "requestId", "title", "passes", "skipped"] as const;
+    const allowed = new Set<string>([...required, "createHairLayer", "extractLuminanceOutline"]);
+    if (!required.every((key) => Object.hasOwn(value, key))
+      || Object.keys(value).some((key) => !allowed.has(key))
+      || (value.createHairLayer !== undefined && typeof value.createHairLayer !== "boolean")
+      || (value.extractLuminanceOutline !== undefined && typeof value.extractLuminanceOutline !== "boolean")
       || value.version !== CHARACTER_PSD_WORKER_VERSION || value.kind !== "assemble" || !requestId(value.requestId)) return false;
     validateCharacterPsdPasses(value.passes as readonly CharacterSemanticPass[], value.skipped as readonly CharacterSemanticSkip[], value.title as string);
     const buffers = new Set<ArrayBuffer>();

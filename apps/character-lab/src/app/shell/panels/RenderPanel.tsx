@@ -19,6 +19,7 @@ import { QUALITY_PRESET_LABELS_KO, TONE_MAPPINGS, applyQualityPreset } from "../
 import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, RIG_CAPABILITY_IDS, hasBetaFeatures, readBetaFeatures, readExtendedFeatures } from "../../../render/beta-features";
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
 import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS_KO, readSceneFeatures } from "../../../render/scene-features";
+import { applyLabShaperTripoLookToShading, buildLabShaperTripoPipelineSpec, LAB_SHAPER_TRIPO_LOOK_PRESETS, type LabShaperTripoLookId } from "../../../render/shaper-tripo-mcp-bridge";
 import { computeCubicMatCapRamp, computeEyeballHighlightTransform } from "../../../render/toon-reference";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
@@ -94,6 +95,8 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const [iblDraft, setIblDraft] = useState(shading.ibl.intensity);
   const [outlinePressure, setOutlinePressure] = useState(true);
   const [eyeballHighlightMode, setEyeballHighlightMode] = useState<EyeballHighlightMode>("cam");
+  const [tripoLookId, setTripoLookId] = useState<LabShaperTripoLookId>("shaper-cel");
+  const [tripoDelight, setTripoDelight] = useState(true);
   useEffect(() => {
     setIblDraft(shading.ibl.intensity);
   }, [shading.ibl.intensity]);
@@ -433,6 +436,55 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         <p className="cl-render-hint" data-testid="shaper-toon-readout">
           MatCap 램프 배율 {matCapRamp.scaleU.toFixed(1)}× · 외곽선 비등방 ({outlineAspect.widthScale.toFixed(1)}×{outlineAspect.heightScale.toFixed(1)}) · 하이라이트 Yaw {eyeballHighlight.highlightEulerDeg[1].toFixed(0)}°
         </p>
+      </fieldset>
+
+      <fieldset className="cl-render-group" data-testid="shaper-tripo-render-bridge">
+        <legend>SHAPER × Tripo 3D V3 리얼 툰 & Delight 파이프라인</legend>
+        <div className="cl-render-row">
+          <label htmlFor={`${ids}-tripo-look`}>비주얼 룩 프리셋</label>
+          <select
+            id={`${ids}-tripo-look`}
+            data-testid="shaper-tripo-look-select"
+            value={tripoLookId}
+            onChange={(event) => {
+              const nextId = event.target.value as LabShaperTripoLookId;
+              setTripoLookId(nextId);
+              set(applyLabShaperTripoLookToShading(shading, nextId));
+            }}
+          >
+            {LAB_SHAPER_TRIPO_LOOK_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.labelKo}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="cl-render-row">
+          <label htmlFor={`${ids}-tripo-delight`}>Tripo v3.5 Delight (무음영 알베도 보정)</label>
+          <input
+            id={`${ids}-tripo-delight`}
+            data-testid="shaper-tripo-delight-toggle"
+            type="checkbox"
+            checked={tripoDelight}
+            onChange={(event) => setTripoDelight(event.target.checked)}
+          />
+        </div>
+        {(() => {
+          const spec = buildLabShaperTripoPipelineSpec({
+            lookId: tripoLookId,
+            delight: tripoDelight,
+          });
+          return (
+            <>
+              <p className="cl-render-hint" data-testid="shaper-tripo-pipeline-summary">
+                {spec.pipelineSummaryKo} · 포즈 접미어 {spec.poseControlSuffix}
+              </p>
+              <code className="cl-render-hint" data-testid="shaper-tripo-cli-preview">
+                {spec.cliPreview}
+              </code>
+            </>
+          );
+        })()}
       </fieldset>
 
       <fieldset className="cl-render-group" data-group="beta">

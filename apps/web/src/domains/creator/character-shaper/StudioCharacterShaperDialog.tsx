@@ -331,6 +331,15 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
 
     if (typing || modifier || event.altKey) return false;
 
+    if (key === "F10") {
+      if (paintActive || !modelReady) return false;
+      event.preventDefault();
+      const nextEyeballLock = !h.fixEyeballCam;
+      h.setFixEyeballCam?.(nextEyeballLock);
+      setCommitNotice(nextEyeballLock ? "F10 · 시선 카메라 고정 켜짐" : "F10 · 시선 카메라 고정 꺼짐");
+      return true;
+    }
+
     if (key === "t" || key === "T") {
       if (paintActive || !modelReady) return false;
       event.preventDefault();

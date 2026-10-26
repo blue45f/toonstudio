@@ -252,4 +252,18 @@ describe("CharacterSlotCard", () => {
     fireEvent.click(card);
     expect(onCommit).toHaveBeenCalledTimes(1);
   });
+
+  it("renders SHAPER × Tripo 3D visual profile selector and toggles Tripo V3 pipeline preview", () => {
+    renderShelf({ slot: "accessory" });
+    expect(screen.getByTestId("shaper-tripo-visual-studio")).toBeTruthy();
+    expect(screen.getByTestId("shaper-tripo-visual-readout").textContent).toContain("Toony 94%");
+    expect(screen.getByTestId("shaper-shelf-modifier-hint").textContent).toContain("Ctrl+클릭: 현재 색상 유지");
+
+    fireEvent.click(screen.getByTestId("shaper-tripo-style-shaper-semi-real"));
+    expect(screen.getByTestId("shaper-tripo-visual-readout").textContent).toContain("Toony 62%");
+
+    fireEvent.click(screen.getByTestId("shaper-tripo-plan-toggle"));
+    expect(screen.getByTestId("shaper-tripo-plan-preview").textContent).toContain("webtoon-prop");
+    expect(screen.getByTestId("shaper-tripo-plan-preview").textContent).toContain("P2-20260801");
+  });
 });
