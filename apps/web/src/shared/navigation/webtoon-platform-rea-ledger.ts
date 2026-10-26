@@ -1,0 +1,386 @@
+/**
+ * 글로벌 웹툰·만화·창작·에셋 플랫폼 13종 REA(Reverse-Engineer-Anything) 역공학 증거 원장.
+ *
+ * 분석 기준일: 2026-10-26
+ * 이 파일은 13개 플랫폼에 대한 REA MCP(capture_browser_scenario, export_web_scripts,
+ * analyze_javascript_application) 분석 결과와 SHA-256 해시, 라우터·UI/UX 패턴을 보존한다.
+ */
+
+export type CompetitorPlatformId =
+  | "naver-webtoon"
+  | "kakaopage"
+  | "webtoons-global"
+  | "tapas"
+  | "lezhin-comics"
+  | "pixiv-comic"
+  | "ridi-webtoon"
+  | "kakao-webtoon"
+  | "postype"
+  | "manta"
+  | "clip-studio"
+  | "acon3d"
+  | "mangaplus";
+
+export interface CompetitorPlatformReaEvidence {
+  readonly id: CompetitorPlatformId;
+  readonly name: string;
+  readonly targetUrl: string;
+  readonly appVersion: string;
+  readonly routerFramework: string;
+  readonly captureEvidenceId: string;
+  readonly exportScriptsEvidenceId: string;
+  readonly astAnalysisViewEvidenceId: string;
+  readonly rootSha256: string;
+  readonly scriptCount: number;
+  readonly totalBytes: number;
+  readonly astNodeCount: number;
+  readonly findingCount: number;
+  readonly moduleCount: number;
+  readonly routeCount: number;
+  readonly keyRouterPatterns: readonly string[];
+  readonly keyUiUxPatterns: readonly string[];
+  readonly epistemicStatus: "verified" | "bounded-by-bot-challenge";
+}
+
+export const COMPETITOR_PLATFORM_REA_LEDGER: readonly CompetitorPlatformReaEvidence[] = Object.freeze([
+  {
+    id: "naver-webtoon",
+    name: "NAVER WEBTOON",
+    targetUrl: "https://comic.naver.com/index",
+    appVersion: "react-router-v6-webpack5",
+    routerFramework: "React Router v6 (createBrowserRouter / nested children)",
+    captureEvidenceId: "ev_559fd63b85ab64546f20cc5e607ed81fa9b9b45406e9da7e37a50fa69408b86e",
+    exportScriptsEvidenceId: "ev_1a784b9c27c37fca96c271d4317fac660a8a1ddff1b61974466913d3a5b31cb7",
+    astAnalysisViewEvidenceId: "ev_258bfdd5a04aa96486680a11f6d034716d64240b53fd7e127d407c896f81b1c5",
+    rootSha256: "d173fd1ddedd33c6b14a690c79eb12fec5b5ddfa5496344dd57982a3cf0aa034",
+    scriptCount: 8,
+    totalBytes: 211138,
+    astNodeCount: 59852,
+    findingCount: 173,
+    moduleCount: 26,
+    routeCount: 44,
+    keyRouterPatterns: [
+      "/proposal/business/* (home, entertainment, licensingMerchandising, publishing, game, promotions, contact)",
+      "/creators/manage/title/{new,edit} & /creators/manage/article/{new,edit}",
+      "/creators/manage/cuts/title/{new,edit} & /creators/manage/cuts/article (숏폼 Cuts 대칭 라우팅)",
+      "/creators/article/preview & /creators/community",
+      "/index, /webtoon, /webtoon/list, /bestChallenge, /challenge, /mypage/{favorite,recently,bookmark}",
+    ],
+    keyUiUxPatterns: [
+      "2단 GNB + 서브 내비게이션 및 우측 Creator Studio(크리에이터스) 즉시 진입 CTA",
+      "시그니처 그린(--color-webtoon-green: #00dc64) 및 프로모션 배너(--color-solid-promotion-bar: #e5fbef)",
+      "1190px 컨테이너(840px 메인 그리드 + 우측 실시간 랭킹·공지 어사이드 레일)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "kakaopage",
+    name: "KakaoPage",
+    targetUrl: "https://page.kakao.com/",
+    appVersion: "v2.43.1-pc-ko",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 152 routes)",
+    captureEvidenceId: "ev_6f6aa106e603e822d7af0706866296f9d414428009956062faf73d75fdb24722",
+    exportScriptsEvidenceId: "ev_0feeb788c3e88366a84e2f00c28217cff883974368dbf55c660ffe3c101de0bb",
+    astAnalysisViewEvidenceId: "ev_bdef249b6a4ff2e27ca8061ecf6bd031b293f83daca0ec5f734205aa1f72b173",
+    rootSha256: "f942ff97342c622329bd040a0fdf5e5932bf55920f99d4dcbbb1008e88c7a982",
+    scriptCount: 16,
+    totalBytes: 175108,
+    astNodeCount: 47135,
+    findingCount: 585,
+    moduleCount: 81,
+    routeCount: 152,
+    keyRouterPatterns: [
+      "/menu/[menuUid]/screen/[screenUid] (동적 Menu/Screen 조합 라우터)",
+      "/landing/series/card/[[...pathParams]] (와이드 카드·트레일러 뷰)",
+      "/landing/series/list/[[...pathParams]] (컴팩트 메타데이터 리스트 뷰)",
+      "/landing/series/poster/[[...pathParams]] (고밀도 포스터·쇼츠 그리드 뷰)",
+      "/cms/short-vod-viewer-preview & /cms/text-viewer-preview (숏폼 홍보 VOD·뷰어 CMS 프리뷰)",
+    ],
+    keyUiUxPatterns: [
+      "depth: 2 스티키 서브탭 바(h-57pxr bg-theme-bg-base) 및 MainAndSub 반응형 헤더 계약",
+      "3-Mode 뷰 스위처(Card / List / Poster) 및 7축 다중 필터(Category, Genre, BM, Day, Sort, Completed, TabType)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "webtoons-global",
+    name: "WEBTOON Global",
+    targetUrl: "https://www.webtoons.com/en/",
+    appVersion: "global-pc-2026",
+    routerFramework: "Hybrid SSR + Webpack GNB/Home Controller",
+    captureEvidenceId: "ev_98317ae85066c238eccda4c1f0cfacd4b8e041586595c08f14e43df37be1e16c",
+    exportScriptsEvidenceId: "ev_7e323239eb335e22b01f487423ba8f0f1d07b6a8979f7bb6ef9b20c3ecb7a16a",
+    astAnalysisViewEvidenceId: "ev_b882700c129e5e6755bcdcf8a0ef825286aa894bca7da6197df43aeb4d4c07cf",
+    rootSha256: "2572587de0bcdb68ba9d2f4ab41d0d718a086cd2dd192c465de22fe35e788811",
+    scriptCount: 16,
+    totalBytes: 593353,
+    astNodeCount: 150354,
+    findingCount: 611,
+    moduleCount: 83,
+    routeCount: 28,
+    keyRouterPatterns: [
+      "/[locale]/originals, /[locale]/canvas, /[locale]/genres, /[locale]/popular, /[locale]/creators101",
+      "/search?keyword= & /search?searchMode=AUTHOR&keyword= (작품·작가 이원 검색)",
+    ],
+    keyUiUxPatterns: [
+      "장르별 동적 컬러 액센트 토큰(genreCssCode, genreName) 및 카드 호버 플립 요약",
+      "독자·창작자 통합 계정 팝오버(Dashboard, My Series, Subscribed, Comments, Creators 101)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "tapas",
+    name: "Tapas",
+    targetUrl: "https://tapas.io/",
+    appVersion: "v7.8.2",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 55 routes)",
+    captureEvidenceId: "ev_1ec34b24fd3e43cbbb237351c8ede37c1a42de1fa02408b1cbb2418d3a5c14fd",
+    exportScriptsEvidenceId: "ev_cc2a18023e114a0d8450f59e3605bc55c3560eab469ea4dc8f47fc798a1e4100",
+    astAnalysisViewEvidenceId: "ev_f9364850b854aa96a9810d45eadfb020156b998f7ab742e79f084953c24c05b2",
+    rootSha256: "89246a38198add73be52bed43de868aaff075484247b7a944adc8ff24dd395b5",
+    scriptCount: 35,
+    totalBytes: 565750,
+    astNodeCount: 167085,
+    findingCount: 884,
+    moduleCount: 161,
+    routeCount: 55,
+    keyRouterPatterns: [
+      "/static-landing/{daily,free,genre,new,original,ranking} (6대 정적 랜딩 택소노미)",
+      "/library/{reading-list,recent,subscribed,unlocked}",
+      "/dev/design-system/bar/{navigation,tab} & /dev/design-system/common/{badge,ranking}",
+    ],
+    keyUiUxPatterns: [
+      "NavigationBar / TabBar 디자인 시스템 프리미티브 분리 및 UP·NEW·EVENT 배지 규격화",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "lezhin-comics",
+    name: "Lezhin Comics",
+    targetUrl: "https://www.lezhin.com/ko",
+    appVersion: "nextjs-app-router-2026",
+    routerFramework: "Next.js App Router (RSC / [language] dynamic segment)",
+    captureEvidenceId: "ev_64f618fc3e2734111941444d47bfbb5cdd4a7740980a8fa06de08f814991b87f",
+    exportScriptsEvidenceId: "ev_88ccde2265b0819463b65ce41763c2ae26c767664c11c085409de3e169e9bf61",
+    astAnalysisViewEvidenceId: "ev_81ff8ffef66c3eb7ae1a371da33901dfaf73dc2fe9e0b20b8a9cec80d1be5c80",
+    rootSha256: "656ac519a55786950ed0fc59ec7aadd21a4807834f72e9b686d861ffb5ef883f",
+    scriptCount: 35,
+    totalBytes: 486892,
+    astNodeCount: 137631,
+    findingCount: 1345,
+    moduleCount: 403,
+    routeCount: 38,
+    keyRouterPatterns: [
+      "/[language]/{scheduled,ranking,free,sale,presents,bookshome,genreplus}",
+      "/[language]/library & /[language]/account",
+    ],
+    keyUiUxPatterns: [
+      "다크 캔버스 기반 고대비 포스터 카드 및 상단 선물함(presents)·무료(free) 프로모션 직행 탭",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "pixiv-comic",
+    name: "Pixiv Comic",
+    targetUrl: "https://comic.pixiv.net/",
+    appVersion: "nextjs-pages-2026",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 111 routes)",
+    captureEvidenceId: "ev_b4781757598d3aab579b2f4d3b5215ed1b2a31da40911e58cf4dd4f4986ea57a",
+    exportScriptsEvidenceId: "ev_943b64b03822fc79a2b4d8e7fcd89a195bff5929b5be7f26fd129f95a929c967",
+    astAnalysisViewEvidenceId: "ev_2e78b819f376bdf3a9ab2041042be3d32b284d258b7b0a5541954b0edc6273c6",
+    rootSha256: "ea2567463d60bba34694f25f77d3af29751b1b0431ce5c15503e577ea5f63879",
+    scriptCount: 20,
+    totalBytes: 514805,
+    astNodeCount: 142720,
+    findingCount: 290,
+    moduleCount: 30,
+    routeCount: 111,
+    keyRouterPatterns: [
+      "/search/cover (표지 이미지 기반 시각 탐색 라우트)",
+      "/mypage/color_theme (사용자 정의 테마 컬러 설정 라우트)",
+      "/finish_reading/[sku] (열람 직후 연관 작품·후원·댓글 연결 브리지 라우트)",
+      "/magazines/[magazineId] & /rankings & /genres & /tags",
+    ],
+    keyUiUxPatterns: [
+      "표지 그리드 비주얼 서치(/search/cover) 및 완독 후 브리지 페이지(/finish_reading/[sku])",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "ridi-webtoon",
+    name: "RIDI Webtoon",
+    targetUrl: "https://ridibooks.com/webtoon/recommendation",
+    appVersion: "cloudflare-turnstile-edge",
+    routerFramework: "Next.js Edge (Cloudflare Turnstile Challenge Observed)",
+    captureEvidenceId: "ev_c4dd1056f8442aa4db1b37cfda305018a202f046b82a217232ad7ae25f9f5b32",
+    exportScriptsEvidenceId: "ev_21c888f2b1a769d1362520f8e2ff4c0f8b677e5382f484b25fbbed2b5b66c50f",
+    astAnalysisViewEvidenceId: "ev_2099d4bc73f672aec5d9b3c252fd83ad7a2e39a04704836c682c3322eeb4a1a4",
+    rootSha256: "c85322cebeeb53da5c4814ef15e2a17f5f2ce7cb6fd25be9c355616ef3ca761f",
+    scriptCount: 2,
+    totalBytes: 17118,
+    astNodeCount: 1214,
+    findingCount: 12,
+    moduleCount: 2,
+    routeCount: 0,
+    keyRouterPatterns: [
+      "/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1 (Cloudflare Turnstile 봇 방어 경계 확인)",
+    ],
+    keyUiUxPatterns: [
+      "REA 인식론적 규율에 따라 봇 챌린지 뒤의 번들은 추측하지 않고 unknowns로 기록",
+    ],
+    epistemicStatus: "bounded-by-bot-challenge",
+  },
+  {
+    id: "kakao-webtoon",
+    name: "Kakao Webtoon",
+    targetUrl: "https://webtoon.kakao.com/",
+    appVersion: "v5.12.1",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 80 routes)",
+    captureEvidenceId: "ev_c6a1431dc4229fa786363a233867ae53b980a8b1249e7e1a09f8eebbe618728c",
+    exportScriptsEvidenceId: "ev_bb8ae6bf5ab5beae17ed3cacbb31b2d6169b90f02a9879e49cc3b0fb01dd079a",
+    astAnalysisViewEvidenceId: "ev_80c23cf54c9491d42c4c161fe13e576596300750a16357c9c309a1b5c12c26d5",
+    rootSha256: "05d1313d9df65cfdbb8de539c4fea16ca0974c980e24a5dd945d603c6be457b7",
+    scriptCount: 14,
+    totalBytes: 305604,
+    astNodeCount: 73293,
+    findingCount: 809,
+    moduleCount: 92,
+    routeCount: 80,
+    keyRouterPatterns: [
+      "/[[...home]] (월~일 자동 요일 계산 (weekday + 6) % 7 및 bmFilterKey 타임테이블·랭킹 통합 라우터)",
+      "/content/[sid]/[id] & /viewer/[sid]/[id] (작품 홈 ↔ 뷰어 직결 라우트)",
+      "/my-page/{episode-list,item-list,cash-history,comment-report} & /gift, /luckydraw, /raffle",
+    ],
+    keyUiUxPatterns: [
+      "월요일 시작 자동 요일 탭((weekday + 6) % 7) 및 bmFilterKey(전체·무료·기다무·완결) 실시간 필터링",
+      "인피니트 원형 스와이프 홈 탐색 및 다크 앰비언트 캐릭터 모션 포스터",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "postype",
+    name: "Postype",
+    targetUrl: "https://www.postype.com/",
+    appVersion: "nextjs-app-router-2026",
+    routerFramework: "Next.js App Router (54 chunks / 723 modules)",
+    captureEvidenceId: "ev_19ccd9e17aeef7d1cc49e76de06b6632d4be2a5f921ba0ea1b7cf5f6b927e833",
+    exportScriptsEvidenceId: "ev_2513ce480ba89cae5d10d18496f51a107371a595aec0d7bc661afbe2009f6ba9",
+    astAnalysisViewEvidenceId: "ev_b5025b619c348cf7c99cb3f9e7967fd035bfb4ed50faed503aca68cf6de0f79c",
+    rootSha256: "f8620e02aaf2b8d703ca9e13ceb0a758a9f43237aa92f492bb86ccd797b1b236",
+    scriptCount: 54,
+    totalBytes: 1509129,
+    astNodeCount: 357650,
+    findingCount: 3585,
+    moduleCount: 723,
+    routeCount: 32,
+    keyRouterPatterns: [
+      "/library/view (최근 본 작품), /library/purchases (구매·소장), /library/likes (좋아요), /library/collections (컬렉션)",
+      "/studio (창작 스튜디오 대시보드) ↔ /editor (웹툰·포스트 에디터) ↔ /messages (독자·작가 메시지)",
+    ],
+    keyUiUxPatterns: [
+      "4-Tab 개인 서재 택소노미(view / purchases / likes / collections) 및 GNB 우측 Studio·Editor 원클릭 전환",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "manta",
+    name: "Manta",
+    targetUrl: "https://manta.net/en",
+    appVersion: "nextjs-pages-2026",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 55 routes)",
+    captureEvidenceId: "ev_1661c6b127c94c6b952cf8a24285c46e972313059781e122578592a3f7ba8735",
+    exportScriptsEvidenceId: "ev_e67622ca1075c3b096e3fe83d4abec8b38793e38325454cebf76c473496624d4",
+    astAnalysisViewEvidenceId: "ev_8e497bdbd7ab1e304f3d48d5f6bc00b30384ef13c0123bd35c5b7caa24bad2fa",
+    rootSha256: "583cdd5bd585e1db017f056820bd2278c443ebc4b06bee10bcb92c527cd25b1e",
+    scriptCount: 24,
+    totalBytes: 440618,
+    astNodeCount: 95468,
+    findingCount: 961,
+    moduleCount: 338,
+    routeCount: 55,
+    keyRouterPatterns: [
+      "/creator/apply → /creator/studio → /creator/studio/series/new → /creator/studio/series/[seriesId]/episodes/{new,[episodeId]/edit}",
+      "/preview/episodes/[episodeId] & /uot-printcomic-v2 & /uot-printnovel-v2 (출판만화·소설 → 웹툰 변환 파이프라인)",
+      "/curation, /new-and-now, /theme-curation/[id], /campaign/mantacup, /campaigns/voting",
+    ],
+    keyUiUxPatterns: [
+      "작가 지원(/creator/apply)부터 시리즈·에피소드 편집·프리뷰·출판만화 변환(/uot-printcomic-v2)까지 이어지는 일관된 스튜디오 동선",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "clip-studio",
+    name: "CLIP STUDIO",
+    targetUrl: "https://www.clipstudio.net/kr/",
+    appVersion: "clipstudio-kr-2026",
+    routerFramework: "Hybrid Multi-Surface Web + Asset/Release Hub",
+    captureEvidenceId: "ev_9c7f31b4d9b547b9d1e10a7803e03d389dc030a3a2c0b9d24d74156a822e687f",
+    exportScriptsEvidenceId: "ev_774bf741e3b15aee8ae917ef44dcb68e76228c7f572fe857fc8a7790f8567545",
+    astAnalysisViewEvidenceId: "ev_d83fbd1f28c39b2a77bbc594354a4bbec7a486d7a83ca611fbd7dd770f1e0701",
+    rootSha256: "a6ae8a432dd2a6b717f906be098de7537ccbb339859d333ef05563476c1d91cd",
+    scriptCount: 23,
+    totalBytes: 360278,
+    astNodeCount: 86203,
+    findingCount: 233,
+    moduleCount: 4,
+    routeCount: 24,
+    keyRouterPatterns: [
+      "/kr/ (제품 소개·드로잉 워크플로) ↔ ASSETS 소재 마켓 ↔ TIPS 창작 강좌 ↔ SHARE 웹툰 뷰어 공유",
+    ],
+    keyUiUxPatterns: [
+      "드로잉 엔진·3D 포즈·브러시 소재(ASSETS)·강좌(TIPS)를 창작 단계별로 묶은 크리에이터 워크플로 네비게이션",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "acon3d",
+    name: "ACON3D",
+    targetUrl: "https://www.acon3d.com/ko",
+    appVersion: "cloudflare-turnstile-edge",
+    routerFramework: "Next.js Edge (Cloudflare Turnstile Challenge Observed)",
+    captureEvidenceId: "ev_4197631fc9cedfbe4b2f7d9e854e61baf25ecdfee5842f08c3ea308a5bac174b",
+    exportScriptsEvidenceId: "ev_8dd35a6f70ff6e2786c21c2eb567698f9ceb4db853cb0dd2bc5208393d0ea3d2",
+    astAnalysisViewEvidenceId: "ev_e2eb55f9bd5563f090b59d25985920ecf25a04cba5800af7b98dde26eb9e2b7e",
+    rootSha256: "f0c0615e55fa1a963e9e8821c61a2654b9ba823c7dda8600ebaf0c8e0e67ddbb",
+    scriptCount: 4,
+    totalBytes: 10275,
+    astNodeCount: 336,
+    findingCount: 3,
+    moduleCount: 2,
+    routeCount: 0,
+    keyRouterPatterns: [
+      "/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1 (Cloudflare Turnstile 봇 방어 경계 확인)",
+    ],
+    keyUiUxPatterns: [
+      "REA 인식론적 규율에 따라 봇 챌린지 뒤의 번들은 추측하지 않고 unknowns로 기록",
+    ],
+    epistemicStatus: "bounded-by-bot-challenge",
+  },
+  {
+    id: "mangaplus",
+    name: "Manga Plus by SHUEISHA",
+    targetUrl: "https://mangaplus.shueisha.co.jp/updates",
+    appVersion: "vue-router-app-41982a95",
+    routerFramework: "Vue Router SPA (app.41982a95.js 36 routes)",
+    captureEvidenceId: "ev_8e22c5f6215ef0e8189d1d6f643648272c8a029c8ea99eb580cf6669aafa50a9",
+    exportScriptsEvidenceId: "ev_abb29088cb2dcd559c734d3bc69744fe7ccfce4f152ca5a16432c7024c402cd2",
+    astAnalysisViewEvidenceId: "ev_0b6aa7c4ab507ae8278742a6616c6ac5ec06ebf1aa7915302f2e1016b4636b82",
+    rootSha256: "1f8ba6a0bff0062452468bd96dd06a9da9a79001540afa7b26dcf29fb0d4f1ec",
+    scriptCount: 3,
+    totalBytes: 806277,
+    astNodeCount: 202081,
+    findingCount: 367,
+    moduleCount: 3,
+    routeCount: 36,
+    keyRouterPatterns: [
+      "/updates (요일별 일일 업데이트) & /featured (기획 큐레이션)",
+      "/manga_list/{all,ongoing,completed,one_shot,browser_a,browser_z,updated} (7-Mode 작품 목록 라우터)",
+      "/ranking/{hottest,trending,completed} (3축 랭킹 라우터) & /favorited (내 관심작)",
+      "/titles/:id ↔ /viewer/:chapterId ↔ /comments/:id (작품·뷰어·댓글 3각 동선)",
+    ],
+    keyUiUxPatterns: [
+      "상단 Updates / Featured / Manga List / Ranking / Creators / Favorited 직행 GNB 및 Hottest·Trending·Completed 3축 랭킹 스위처",
+    ],
+    epistemicStatus: "verified",
+  },
+]);

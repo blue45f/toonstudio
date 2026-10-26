@@ -143,6 +143,17 @@
   word-break: break-all;
 }
 
+.promo-library__rea-flows {
+  margin-top: 14px;
+}
+
+.promo-library__rea-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .promo-library__section {
   display: grid;
   gap: 14px;
@@ -319,5 +330,11 @@
 @media (prefers-reduced-motion: reduce) {
   .promo-library__filter-btn {
     transition: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

@@ -10,6 +10,7 @@ import { ArrowLeft, ArrowRight, Check, Clapperboard, Coins, Shuffle, Upload } fr
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { awardCutsClipPublished } from "@/domains/account/public/asset-points";
@@ -346,6 +347,7 @@ export function CutsStudioPage() {
 
   return (
     <div className="cuts-studio">
+      <SiteContextualSubNav pathnameOverride="/cuts/studio" />
       <nav className="flex flex-wrap items-center gap-2" aria-label={t("컷츠 및 영상 도구 이동", "Cuts and video tool navigation")}>
         <Link href="/cuts" className="cuts-button cuts-button--ghost">
           <ArrowLeft size={16} aria-hidden="true" /> {t("피드로 돌아가기", "Back to feed")}

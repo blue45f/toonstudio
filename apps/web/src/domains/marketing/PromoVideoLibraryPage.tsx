@@ -17,7 +17,9 @@ import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { normalizeLocaleCode, useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
 import {
+  COMPETITOR_DISCOVERY_ROUTER_PRESETS,
   COMPETITOR_PLATFORM_REA_LEDGER,
+  CREATOR_STUDIO_PIPELINE_STEPS,
   DEFAULT_PROMO_MEDIA_FILTER_STATE,
   SERIES_LANDING_VIEW_MODES,
   matchesPromoMediaFilter,
@@ -81,7 +83,9 @@ const COPY = {
     searchPlaceholder: "영상 제목·설명·쓰는 곳으로 검색",
     resetFilter: "필터 초기화",
     reaBenchmarkTitle:
-      "유사 웹툰·창작 플랫폼 7종 REA 라우터·UI/UX 역공학 아키텍처 기준표 보기",
+      "글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터·동선 역공학 아키텍처 기준표 보기",
+    pipelineLabel: "창작·예고편·배포 6단계 통합 동선",
+    discoveryPresetsLabel: "경쟁사 표준 탐색·랭킹 바로가기",
   },
   en: {
     pageTitle: "Promo Video Library",
@@ -121,7 +125,9 @@ const COPY = {
     searchPlaceholder: "Search by clip title, description or usage",
     resetFilter: "Reset filters",
     reaBenchmarkTitle:
-      "View REA router & UI/UX reverse-engineering benchmark across 7 webtoon platforms",
+      "View REA router & user-flow reverse-engineering benchmark across 13 webtoon & creator platforms",
+    pipelineLabel: "6-Step Creator-to-Promotion Pipeline",
+    discoveryPresetsLabel: "Competitor-Standard Discovery & Ranking Presets",
   },
 } as const;
 
@@ -352,7 +358,7 @@ export function PromoVideoLibraryPage() {
           <summary>{copy.reaBenchmarkTitle}</summary>
           <ul className="promo-library__rea-grid">
             {COMPETITOR_PLATFORM_REA_LEDGER.map((entry) => (
-              <li key={entry.id} className="promo-library__rea-item">
+              <li key={entry.id} className="promo-library__rea-item" data-rea-platform={entry.id}>
                 <strong>
                   {entry.name} ({entry.appVersion})
                 </strong>
@@ -361,6 +367,30 @@ export function PromoVideoLibraryPage() {
               </li>
             ))}
           </ul>
+          <nav className="promo-library__rea-flows" aria-label={copy.pipelineLabel}>
+            <ul className="promo-library__rea-grid">
+              {CREATOR_STUDIO_PIPELINE_STEPS.map((step) => (
+                <li key={step.id} className="promo-library__rea-item">
+                  <Link href={step.toonstudioHref}>
+                    <strong>{isKo ? step.koTitle : step.enTitle}</strong>
+                  </Link>
+                  <span>{isKo ? step.koSummary : step.enSummary}</span>
+                  <code>{step.mantaRoute} · {step.naverRoute}</code>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <nav className="promo-library__rea-presets" aria-label={copy.discoveryPresetsLabel}>
+            {COMPETITOR_DISCOVERY_ROUTER_PRESETS.map((preset) => (
+              <Link
+                key={preset.id}
+                href={preset.toonstudioHref}
+                className="mk-chip promo-library__nav-chip"
+              >
+                {isKo ? preset.koLabel : preset.enLabel}
+              </Link>
+            ))}
+          </nav>
         </details>
       </header>
 
