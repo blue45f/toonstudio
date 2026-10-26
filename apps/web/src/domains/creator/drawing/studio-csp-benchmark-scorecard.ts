@@ -442,6 +442,13 @@ export const CSP_REA_VERIFIED_ARCHITECTURE_SUMMARY = {
   cscrRepairRuleCount: 5,
   menuCommandIdCount: 874,
   workspaceSpwsPresetCount: 3,
+  crossPlatformSpwsPresetCount: 9,
+  cs3oCharacterObjectCount: 3,
+  defaultPoseVer2FullBodyBoneCount: 67,
+  pwPieceSpriteAtlasArchiveCount: 8,
+  pwPiecePrimaryAtlasPngCount: 305,
+  menuV3OfficialSvgIconCount: 18,
+  wkBridgeTellBoardVerbCount: 9,
   filterPluginBundles: [
     "Artistic.bundle", "Blur.bundle", "BlurMore.bundle", "ChangeOfCurvedSurface.bundle", "ChromaticAberration.bundle",
     "ColorHalftone.bundle", "Conversion.bundle", "Crystal.bundle", "DrawFrame.bundle", "DrawPerlinNoise.bundle",

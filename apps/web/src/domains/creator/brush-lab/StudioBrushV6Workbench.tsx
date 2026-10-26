@@ -68,6 +68,7 @@ import {
   type BrushStudioV6Telemetry,
 } from "./brush-studio-v6-preview";
 import { estimateBrushStudioV6MotionResponseLength } from "./brush-studio-v6-motion-runtime";
+import { StudioClipStudioUnifiedUxPanel } from "../drawing/StudioClipStudioUnifiedUxPanel";
 import { evaluateStudioCspBenchmarkScorecard } from "../drawing/studio-csp-benchmark-scorecard";
 
 const CARD = "rounded-2xl border border-line bg-card/60 p-4 shadow-sm";
@@ -332,6 +333,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
   const [savedHref, setSavedHref] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("recipes");
   const [experience, setExperience] = useState<BrushStudioExperience>(readBrushStudioExperience);
+  const [showCspUnifiedDock, setShowCspUnifiedDock] = useState(false);
   const [status, setStatus] = useState("설정은 이 브라우저에 자동 저장됩니다. 비교·실험에서 기준을 고정하고 변경을 되돌릴 수 있습니다.");
   const [telemetry, setTelemetry] = useState<BrushStudioV6Telemetry>(EMPTY_TELEMETRY);
   const [capabilities, setCapabilities] = useState<BrushStudioV6Capabilities>(() => detectBrushStudioV6Capabilities());
@@ -593,11 +595,31 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
                   </li>
                 ))}
               </ul>
+              <button
+                type="button"
+                aria-expanded={showCspUnifiedDock}
+                onClick={() => setShowCspUnifiedDock((prev) => !prev)}
+                className={`${BUTTON} w-full text-xs`}
+              >
+                {showCspUnifiedDock
+                  ? "클립스튜디오 5.1.5 통합 UI/UX 도크 닫기"
+                  : "클립스튜디오 5.1.5 통합 UI/UX 도크 열기 (6탭 전체)"}
+              </button>
             </div>
           </Panel>
           {experience === "expert" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "선택한 재료·엔진 구성")} description={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "{v0}/{v1}개 타입 노드가 현재 프로그램을 구성합니다."), { v0: String(analysis.nodes.length), v1: String(BRUSH_STUDIO_V6_NODES.length) })}><div className="flex flex-wrap gap-1.5">{analysis.nodes.map((node) => <span key={node.id} title={node.description} className="rounded-full border border-line bg-raised px-2.5 py-1 text-[0.65rem] font-bold text-fg-2">{node.label}</span>)}</div></Panel> : null}
         </aside>
       </div>
+      {showCspUnifiedDock ? (
+        <StudioClipStudioUnifiedUxPanel
+          onSelectColorHex={(hex) =>
+            replace(
+              patchBrushStudioV6Tuning(program, { primaryColor: hex }),
+              `클립스튜디오 통합 팔레트에서 기본 색(${hex.toUpperCase()})을 적용했습니다.`,
+            )
+          }
+        />
+      ) : null}
     </section>
   );
 }
