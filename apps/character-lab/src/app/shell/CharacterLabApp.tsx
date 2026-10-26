@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { FailureBanner } from "./FailureBanner";
 import { LabStoreProvider } from "./lab-store-context";
 import { TopBar } from "./TopBar";
+import { parseLabRouteSearchParams, serializeLabRouteSearchParams } from "./ui-state";
 import { WorkbenchLayout } from "./WorkbenchLayout";
 
 import type { LabRuntime } from "./lab-runtime";
@@ -20,6 +21,29 @@ export interface CharacterLabAppProps {
 
 export function CharacterLabApp({ runtime }: CharacterLabAppProps) {
   useEffect(() => runtime.start(), [runtime]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const applyFromLocation = () => {
+      const patch = parseLabRouteSearchParams(window.location.search);
+      if (patch.activeSlot) runtime.ui.setActiveSlot(patch.activeSlot);
+      if (patch.inspectorTab) runtime.ui.setInspectorTab(patch.inspectorTab);
+      if (typeof patch.drawingMode === "boolean") runtime.ui.setDrawingMode(patch.drawingMode);
+    };
+    applyFromLocation();
+    window.addEventListener("popstate", applyFromLocation);
+    const unsubscribe = runtime.ui.subscribe(() => {
+      const nextSearch = serializeLabRouteSearchParams(runtime.ui.getState());
+      if (window.location.search !== nextSearch && typeof window.history?.replaceState === "function") {
+        window.history.replaceState(null, "", `${window.location.pathname}${nextSearch}${window.location.hash}`);
+      }
+    });
+    return () => {
+      window.removeEventListener("popstate", applyFromLocation);
+      unsubscribe();
+    };
+  }, [runtime]);
+
   return (
     <LabStoreProvider
       store={runtime.store}

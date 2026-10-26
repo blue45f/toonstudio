@@ -165,6 +165,96 @@
       "unknowns": [
         "Client-side route manifest behind Cloudflare Turnstile interactive challenge on ridibooks.com was not fabricated and is recorded as an explicit unknown per REA epistemic discipline."
       ]
+    },
+    {
+      "id": "vroid-hub",
+      "name": "VRoid Hub",
+      "targetUrl": "https://hub.vroid.com/en",
+      "captureEvidenceId": "ev_f1ecf030b5868731e6c636e8702158468243d88596307ecacfe9ad9086906f83",
+      "exportScriptsEvidenceId": "ev_90e7d9c6f7f335eb4f098a8e855bf4d38111c439f5927620b0e75a875a001e57",
+      "astAnalysisViewEvidenceId": "ev_309f1dae9b7d104a3fb0a85120b6b316b8a75927843da580ce5c23d4d473f0fa",
+      "astAnalysisParentEvidenceId": "ev_3476252ea1758a009ef7f452c0ad43e3b280678f0b3bcd4206a119e2c6183c5d",
+      "rootSha256": "bc847a0eb1532258545218e685b1a0c41a98c2159ebd6c6a54bcdd24e29e9445",
+      "observedFacts": [
+        "65 Next.js routes in _buildManifest.js (/_next/static/7O1MwYwwRlg80I--EEiL8/_buildManifest.js) across 7,217 AST nodes.",
+        "Model inspector sub-route hierarchy: /characters/[characterId], /characters/[characterId]/models/[modelId], /characters/[characterId]/models/[modelId]/{edit,embed,photobooth,tracking}, /model_assets/[modelAssetId], /license.",
+        "Discovery & social routes: /models, /models/followings, /artworks, /artworks/followings, /hearts, /hearts/artworks, /search/[query]/{artworks,creators}, /apps/[id]/character_models."
+      ],
+      "inferences": [
+        "Dedicated sub-routes for 3D viewer overview, edit, photobooth, tracking, and license conditions allow creators to verify VRM usage permissions (avatar use, violence/sexual expression, corporate/personal commercial use, modification, redistribution) before importing into a webtoon panel."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "vroid-studio",
+      "name": "VRoid Studio",
+      "targetUrl": "https://vroid.com/en/studio",
+      "captureEvidenceId": "ev_0e79c9c80a9d191d54632087ba929765c32165e8b771b2f7f36e8fdbe9eb1228",
+      "exportScriptsEvidenceId": "ev_39c57cd108aab1b19c587b4143f7c2c43e27a38d2110e141ceb060f05378e5f8",
+      "astAnalysisViewEvidenceId": "ev_7c4e50edf71d08c8d335702fd41056723e71528178828138abbf0dd18b256643",
+      "astAnalysisParentEvidenceId": "ev_6326927c14d9c486f5984d91d2fddad2cfe9ea940813c9c0a981fe99ae96e524",
+      "rootSha256": "dd8286d1a04fac852921f1274edb8603f67cb31995ae05ad103deca50b947a34",
+      "observedFacts": [
+        "26 Next.js routes in _buildManifest.js (/_next/static/X3VkFB2zRKGJg3S3P8tDQ/_buildManifest.js) across 24,680 AST nodes and 162 findings.",
+        "Studio ecosystem routes: /studio, /studio/_beta_releases_container, /studio/guidelines, /studio/notice/[noticeId], /studio/releases, /studio/sctl, /mobile, /wear, /special/shooting_studio/vko_ar, /news/[articleId]."
+      ],
+      "inferences": [
+        "Preset-first onboarding ('pick items you like and adjust parameters' -> 'draw hair bundles in 3D' -> 'export to shooting studio / VRoid Hub / BOOTH') lowers initial 3D modeling friction."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "clip-studio",
+      "name": "Clip Studio Paint & Assets",
+      "targetUrl": "https://www.clipstudio.net/kr/",
+      "captureEvidenceId": "ev_8f03af4a349b97ad4b4ff25a9e918393457671077cceeb742753eab28335704a",
+      "exportScriptsEvidenceId": "ev_16939e377aa98224da3d756888afe41d9a2697eda7f4eadaf69ceb5446d2b185",
+      "astAnalysisViewEvidenceId": "ev_c31892f55e2c633d0c4389762bb42bc136d827b89dad070cb7dc5fd40f906671",
+      "astAnalysisParentEvidenceId": "ev_c823a95d302f724cdd8ec1db5a105c8fbcd435b1ec2aa1f039cdb8c9a9ca5ccc",
+      "rootSha256": "5837e57c21a0c3c3b44e4c4c7a6fef976490a6f115b260e3e1e7b743fdd02eb8",
+      "observedFacts": [
+        "23 parsed JavaScript files across 86,203 AST nodes and 233 static findings, with 541 retained network events.",
+        "Cross-subdomain workflow linking studio product routes (/kr/, /kr/function/, /kr/dl/, /kr/purchase/) directly to asset queries (https://assets.clip-studio.com/q/search?type=3dhead%2Cother_3dmodel&order=dl, ?type=brush&order=dl) and 4-stage guided tutorials (3D 두상 모델 #11034, 체형 커스터마이즈 #9936, 3D 소재 조합 #8416, 퍼스자 사용법 #1975, 퍼펫 변형 #10496, 3D에 직접 그리기 #10495)."
+      ],
+      "inferences": [
+        "Stage-based guided workflow progression (Head/Body -> Outfit/Hair -> Pose/Perspective -> Direct 3D Paint -> Export/Cuts) with direct deep-links to filtered 3D asset catalogs bridges learning and production."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "booth-3d",
+      "name": "BOOTH 3D Models",
+      "targetUrl": "https://booth.pm/ko/browse/3D%20Models",
+      "captureEvidenceId": "ev_e42d625e48b74db8cd12e65ab7876aed389056d762c6922385352ec8045d7895",
+      "exportScriptsEvidenceId": "ev_aa51dc986add3d5b81c53a00aaab77b7a23703492a41517ae098c6138818017d",
+      "astAnalysisViewEvidenceId": "ev_061939e46eb35dee70bc518584053adda8b7fe90886977e1483b4e6304a53ed5",
+      "astAnalysisParentEvidenceId": "ev_4262289e101f196b58961f172024f4a75c7418e4c52d9c2e042d7d805cbea178",
+      "rootSha256": "a9d9a22f5704592520b242af5a98b46b30502c42f9b73d35132333b7eb1cbc5c",
+      "observedFacts": [
+        "10 parsed JavaScript bundles across 36,633 AST nodes and 218 findings, with 439 retained network events.",
+        "Hierarchical 3D marketplace routes: /ko/browse/3D%20Models, /ko/browse/3D%20Characters, /ko/browse/3D%20Tools%20&%20Systems, /ko/browse/3D%20Motion%20&%20Animation, /ko/items/[id], /ko/items?tags[]=VRChat, /ko/events/bf-vrchat, plus accounts.booth.pm/library and manage.booth.pm/items."
+      ],
+      "inferences": [
+        "Taxonomy chips separating 3D Characters, 3D Tools & Systems, and 3D Motion & Animation paired with compatibility tag badges and wishlist counters enable fast asset triage."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "acon3d",
+      "name": "ACON3D",
+      "targetUrl": "https://www.acon3d.com/ko",
+      "captureEvidenceId": "ev_dacd9f842ffd038a4695af1bcc43ddd8fbdcb4b86170b730fd582d6b0acf996d",
+      "exportScriptsEvidenceId": "ev_4b27c4f89c63a75f7295c076b9d1d5f119384376f0abcb004735e1f86be6121d",
+      "astAnalysisViewEvidenceId": "ev_30db3935ab8540e7e350c0082d689a72e2e82ea7ab98a7815c6ce376b5227067",
+      "astAnalysisParentEvidenceId": "ev_2f6337b69787aa2a9cc8d75c660b787b15bb50c54dda2473c9633df1a9841cf3",
+      "rootSha256": "c2a77bdbd02faa7b0a8ff2e7a1fdbc367f88692135d6fd8444598e3e93e12162",
+      "observedFacts": [
+        "Automated headless Chromium capture encountered Cloudflare verification page ('Performing security verification', Ray ID a50910fcaabbba04) with 1 challenge script (84 AST nodes)."
+      ],
+      "inferences": [],
+      "unknowns": [
+        "Client-side route bundle behind Cloudflare bot verification on www.acon3d.com was not fabricated and is recorded as bounded-by-bot-challenge per REA epistemic discipline."
+      ]
     }
   ]
 }

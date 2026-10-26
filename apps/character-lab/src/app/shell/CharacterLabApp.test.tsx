@@ -82,4 +82,23 @@ describe("CharacterLabApp", () => {
     expect(engine.calls.filter((call) => call.method === "applyPlan")).toHaveLength(applied);
     runtime.dispose();
   });
+
+  it("상단 5단계 가이드 창작 스테퍼 클릭 시 슬롯·탭·드로잉 모드 및 URL 쿼리를 동기화한다", () => {
+    window.history.replaceState(null, "", "/");
+    const { runtime } = createMockRuntime();
+    render(<CharacterLabApp runtime={runtime} />);
+    const stepper = screen.getByTestId("topbar-workflow-stepper");
+    expect(stepper).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "4. 3D 펜선·페인트" }));
+    expect(runtime.ui.getState().inspectorTab).toBe("paint");
+    expect(runtime.ui.getState().drawingMode).toBe(true);
+    expect(window.location.search).toContain("stage=4-ink-paint");
+
+    fireEvent.click(screen.getByRole("button", { name: "5. 포토부스·내보내기" }));
+    expect(runtime.ui.getState().inspectorTab).toBe("export");
+    expect(runtime.ui.getState().drawingMode).toBe(false);
+    expect(window.location.search).toContain("stage=5-render-export");
+    window.history.replaceState(null, "", "/");
+  });
 });

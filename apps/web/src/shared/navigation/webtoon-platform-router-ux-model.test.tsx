@@ -11,10 +11,14 @@ import {
   COMPETITOR_PLATFORM_REA_LEDGER,
   DEFAULT_PROMO_MEDIA_FILTER_STATE,
   SERIES_LANDING_VIEW_MODES,
+  VRM_CHARACTER_SUB_ROUTES,
+  VRM_LICENSE_PRESETS,
   classifyMediaAspectRatio,
   matchesPromoMediaFilter,
   resolveContextualSubNavForPath,
+  resolveCreatorPostActionBridgeRoutes,
   runSameDocumentViewTransition,
+  summarizeVrmUsageMatrix,
 } from "./webtoon-platform-router-ux-model";
 
 afterEach(() => {
@@ -23,9 +27,9 @@ afterEach(() => {
   useI18n.getState().setLang("ko");
 });
 
-describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
-  it("7개 플랫폼의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
-    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(7);
+describe("유사 웹툰·창작·3D 캐릭터 스튜디오 플랫폼 12종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
+  it("12개 플랫폼의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
+    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(12);
     const ids = COMPETITOR_PLATFORM_REA_LEDGER.map((item) => item.id);
     expect(ids).toEqual([
       "naver-webtoon",
@@ -35,6 +39,11 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
       "lezhin-comics",
       "pixiv-comic",
       "ridi-webtoon",
+      "vroid-hub",
+      "vroid-studio",
+      "clip-studio",
+      "booth-3d",
+      "acon3d",
     ]);
 
     for (const entry of COMPETITOR_PLATFORM_REA_LEDGER) {
@@ -50,10 +59,21 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
     expect(kakaopage?.routeCount).toBe(152);
     expect(kakaopage?.epistemicStatus).toBe("verified");
 
+    const vroidHub = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "vroid-hub",
+    );
+    expect(vroidHub?.routeCount).toBe(65);
+    expect(vroidHub?.epistemicStatus).toBe("verified");
+
     const ridi = COMPETITOR_PLATFORM_REA_LEDGER.find(
       (item) => item.id === "ridi-webtoon",
     );
     expect(ridi?.epistemicStatus).toBe("bounded-by-bot-challenge");
+
+    const acon3d = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "acon3d",
+    );
+    expect(acon3d?.epistemicStatus).toBe("bounded-by-bot-challenge");
   });
 
   it("KakaoPage 3-Mode 뷰 스위처(card, poster, list)와 화면 비율 분류·필터가 정확히 동작한다", () => {
@@ -118,6 +138,13 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
     expect(resolveContextualSubNavForPath("/showcase")?.id).toBe(
       "community-hub",
     );
+    expect(resolveContextualSubNavForPath("/studio")?.id).toBe("studio-hub");
+    expect(resolveContextualSubNavForPath("/studio/assets/characters/new")?.id).toBe(
+      "studio-hub",
+    );
+    expect(resolveContextualSubNavForPath("/marketplace")?.id).toBe(
+      "market-hub",
+    );
     expect(resolveContextualSubNavForPath("/settings")).toBeNull();
 
     render(
@@ -134,6 +161,30 @@ describe("유사 웹툰·창작 플랫폼 7종 REA 라우터 및 UI/UX 아키텍
       name: /홍보 영상 자료실 \(204편\)/u,
     });
     expect(activeLink.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("VRoid Hub 서브 라우트, VRM 이용권한 매트릭스, 창작 단계별 연관 동선 브리지(Onward Bridge)를 계산한다", () => {
+    expect(VRM_CHARACTER_SUB_ROUTES.map((r) => r.id)).toEqual([
+      "overview",
+      "edit",
+      "photobooth",
+      "tracking",
+      "embed",
+      "license",
+    ]);
+
+    const serialReady = VRM_LICENSE_PRESETS[0]!;
+    const badges = summarizeVrmUsageMatrix(serialReady);
+    expect(badges).toHaveLength(5);
+    expect(badges.find((b) => b.id === "serial")?.allowed).toBe(true);
+    expect(badges.find((b) => b.id === "credit")?.allowed).toBe(true);
+
+    const renderBridges = resolveCreatorPostActionBridgeRoutes("render");
+    expect(renderBridges.map((b) => b.href)).toEqual([
+      "/studio",
+      "/cuts/studio",
+      "/showcase",
+    ]);
   });
 
   it("runSameDocumentViewTransition은 startViewTransition을 호출하고 reduced-motion을 존중한다", () => {

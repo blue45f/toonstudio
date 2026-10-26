@@ -257,6 +257,15 @@ describe("CharacterPlatformWorkbench drawing mode", () => {
       expect(toonCal.textContent).toContain("강도 64.0");
       fireEvent.change(screen.getByLabelText("Cubic MatCap 감쇠"), { target: { value: "0" } });
       expect(toonCal.textContent).toContain("강도 125.0");
+
+      expect(screen.getByTestId("workbench-vroid-subroute").textContent).toContain("photobooth");
+      expect(screen.getByTestId("workbench-onward-bridge").textContent).toContain("본편 원고 스튜디오로 삽입");
+
+      fireEvent.click(screen.getByRole("tab", { name: "웹 코어" }));
+      const licenseMatrix = screen.getByTestId("workbench-vrm-license-matrix");
+      expect(licenseMatrix.textContent).toContain("상업 웹툰 연재 허용");
+      fireEvent.change(screen.getByLabelText("VRM 라이선스 프리셋"), { target: { value: "personal-noncommercial" } });
+      expect(licenseMatrix.textContent).toContain("비상업 습작 전용");
     } finally { f.dispose(); }
   });
 });

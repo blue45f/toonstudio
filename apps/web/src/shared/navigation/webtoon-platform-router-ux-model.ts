@@ -1,5 +1,5 @@
 /**
- * 유사 웹툰·창작 플랫폼 7종 REA(Reverse-Engineer-Anything) 라우터·페이지 구조 및 UI/UX 아키텍처 엔진.
+ * 유사 웹툰·창작·3D 캐릭터 스튜디오 플랫폼 12종 REA(Reverse-Engineer-Anything) 라우터·동선 및 UI/UX 아키텍처 엔진.
  *
  * 분석 기준일: 2026-10-26
  * 분석 대상:
@@ -10,8 +10,13 @@
  * 5. Lezhin Comics (https://www.lezhin.com/ko)
  * 6. Pixiv Comic (https://comic.pixiv.net/)
  * 7. RIDI Webtoon (https://ridibooks.com/webtoon/recommendation)
+ * 8. VRoid Hub (https://hub.vroid.com/en)
+ * 9. VRoid Studio (https://vroid.com/en/studio)
+ * 10. Clip Studio Paint & Assets (https://www.clipstudio.net/kr/)
+ * 11. BOOTH 3D Models (https://booth.pm/ko/browse/3D%20Models)
+ * 12. ACON3D (https://www.acon3d.com/ko)
  *
- * 이 모듈은 REA MCP(capture_browser_scenario, export_web_scripts, analyze_javascript_application)로
+ * 이 모듈은 REA MCP(capture_browser_scenario, export_web_scripts, analyze_javascript_application, inspect_analysis_view)로
  * 추출·검증한 실제 프로덕션 라우터 트리와 UI/UX 패턴을 클린룸 데이터 계약 및 순수 함수로 내재화한다.
  */
 
@@ -24,7 +29,12 @@ export type CompetitorPlatformId =
   | "tapas"
   | "lezhin-comics"
   | "pixiv-comic"
-  | "ridi-webtoon";
+  | "ridi-webtoon"
+  | "vroid-hub"
+  | "vroid-studio"
+  | "clip-studio"
+  | "booth-3d"
+  | "acon3d";
 
 export interface CompetitorPlatformReaEvidence {
   readonly id: CompetitorPlatformId;
@@ -235,6 +245,133 @@ export const COMPETITOR_PLATFORM_REA_LEDGER: readonly CompetitorPlatformReaEvide
     ],
     epistemicStatus: "bounded-by-bot-challenge",
   },
+  {
+    id: "vroid-hub",
+    name: "VRoid Hub",
+    targetUrl: "https://hub.vroid.com/en",
+    appVersion: "nextjs-7O1MwYwwRlg80I--EEiL8",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 65 routes)",
+    captureEvidenceId: "ev_f1ecf030b5868731e6c636e8702158468243d88596307ecacfe9ad9086906f83",
+    exportScriptsEvidenceId: "ev_90e7d9c6f7f335eb4f098a8e855bf4d38111c439f5927620b0e75a875a001e57",
+    astAnalysisViewEvidenceId: "ev_309f1dae9b7d104a3fb0a85120b6b316b8a75927843da580ce5c23d4d473f0fa",
+    rootSha256: "bc847a0eb1532258545218e685b1a0c41a98c2159ebd6c6a54bcdd24e29e9445",
+    scriptCount: 5,
+    totalBytes: 73757,
+    astNodeCount: 7217,
+    findingCount: 9,
+    moduleCount: 2,
+    routeCount: 65,
+    keyRouterPatterns: [
+      "/characters/[characterId]/models/[modelId]/{edit,embed,photobooth,tracking} (3D 모델 서브 라우트 분리)",
+      "/model_assets/[modelAssetId], /license, /content-protection-policy, /guidelines",
+      "/models, /models/followings, /artworks, /hearts, /search/[query]/{artworks,creators}, /apps/[id]/character_models",
+    ],
+    keyUiUxPatterns: [
+      "듀얼 포트레이트·전신 썸네일 카드(300x400) + 원클릭 하트(/hearts) + 3D 뷰어/포토부스/트래킹 서브탭",
+      "VRM 이용 조건 매트릭스(아바타 사용, 폭력·선정성 표현, 법인·개인 상업 이용, 개작·재배포 권한 배지)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "vroid-studio",
+    name: "VRoid Studio",
+    targetUrl: "https://vroid.com/en/studio",
+    appVersion: "nextjs-X3VkFB2zRKGJg3S3P8tDQ-v2.14.0",
+    routerFramework: "Next.js Pages Router (_buildManifest.js 26 routes)",
+    captureEvidenceId: "ev_0e79c9c80a9d191d54632087ba929765c32165e8b771b2f7f36e8fdbe9eb1228",
+    exportScriptsEvidenceId: "ev_39c57cd108aab1b19c587b4143f7c2c43e27a38d2110e141ceb060f05378e5f8",
+    astAnalysisViewEvidenceId: "ev_7c4e50edf71d08c8d335702fd41056723e71528178828138abbf0dd18b256643",
+    rootSha256: "dd8286d1a04fac852921f1274edb8603f67cb31995ae05ad103deca50b947a34",
+    scriptCount: 10,
+    totalBytes: 151626,
+    astNodeCount: 24680,
+    findingCount: 162,
+    moduleCount: 46,
+    routeCount: 26,
+    keyRouterPatterns: [
+      "/studio, /studio/_beta_releases_container, /studio/guidelines, /studio/notice/[noticeId], /studio/releases",
+      "/mobile, /wear/{chloma,eiji-kotouge,levis}, /special/shooting_studio/vko_ar",
+    ],
+    keyUiUxPatterns: [
+      "프리셋 우선 온보딩(프리셋 선택 -> 파라미터 조절 -> 3D 헤어 번들 직접 드로잉 -> 포토부스/VRM 내보내기)",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "clip-studio",
+    name: "Clip Studio Paint & Assets",
+    targetUrl: "https://www.clipstudio.net/kr/",
+    appVersion: "csp-kr-2026",
+    routerFramework: "Cross-Subdomain Studio + Assets Deep-Link Router",
+    captureEvidenceId: "ev_8f03af4a349b97ad4b4ff25a9e918393457671077cceeb742753eab28335704a",
+    exportScriptsEvidenceId: "ev_16939e377aa98224da3d756888afe41d9a2697eda7f4eadaf69ceb5446d2b185",
+    astAnalysisViewEvidenceId: "ev_c31892f55e2c633d0c4389762bb42bc136d827b89dad070cb7dc5fd40f906671",
+    rootSha256: "5837e57c21a0c3c3b44e4c4c7a6fef976490a6f115b260e3e1e7b743fdd02eb8",
+    scriptCount: 23,
+    totalBytes: 301556,
+    astNodeCount: 86203,
+    findingCount: 233,
+    moduleCount: 4,
+    routeCount: 24,
+    keyRouterPatterns: [
+      "/kr/, /kr/function/, /kr/dl/, /kr/purchase/",
+      "assets.clip-studio.com/q/search?type=3dhead%2Cother_3dmodel&order=dl & ?type=brush&order=dl",
+      "tips.clip-studio.com/q/articles/{11034#h01(3D 두상),9936#h01(체형),8416(3D 소재 조합),10496(퍼펫 변형),10495(3D 직접 그리기)}",
+    ],
+    keyUiUxPatterns: [
+      "4단계 프로급 제작 가이드 스테퍼 + 3D 두상·체형·소재조합·3D 직접 그리기 직행 딥링크",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "booth-3d",
+    name: "BOOTH 3D Models",
+    targetUrl: "https://booth.pm/ko/browse/3D%20Models",
+    appVersion: "booth-ch-token-v2",
+    routerFramework: "Multi-Origin Marketplace Router (booth.pm / accounts.booth.pm / manage.booth.pm)",
+    captureEvidenceId: "ev_e42d625e48b74db8cd12e65ab7876aed389056d762c6922385352ec8045d7895",
+    exportScriptsEvidenceId: "ev_aa51dc986add3d5b81c53a00aaab77b7a23703492a41517ae098c6138818017d",
+    astAnalysisViewEvidenceId: "ev_061939e46eb35dee70bc518584053adda8b7fe90886977e1483b4e6304a53ed5",
+    rootSha256: "a9d9a22f5704592520b242af5a98b46b30502c42f9b73d35132333b7eb1cbc5c",
+    scriptCount: 10,
+    totalBytes: 126286,
+    astNodeCount: 36633,
+    findingCount: 218,
+    moduleCount: 34,
+    routeCount: 19,
+    keyRouterPatterns: [
+      "/ko/browse/3D%20Models, /ko/browse/3D%20Characters, /ko/browse/3D%20Tools%20&%20Systems, /ko/browse/3D%20Motion%20&%20Animation",
+      "/ko/items/[id], /ko/items?tags[]=VRChat, /ko/events/bf-vrchat, accounts.booth.pm/library, manage.booth.pm/items",
+    ],
+    keyUiUxPatterns: [
+      "3D 서브카테고리 칩(Characters / Tools & Systems / Motion & Animation) + 호환 태그 배지 + 위시리스트 카운터",
+    ],
+    epistemicStatus: "verified",
+  },
+  {
+    id: "acon3d",
+    name: "ACON3D",
+    targetUrl: "https://www.acon3d.com/ko",
+    appVersion: "cloudflare-challenge-edge",
+    routerFramework: "Cloudflare Bot Security Verification Observed",
+    captureEvidenceId: "ev_dacd9f842ffd038a4695af1bcc43ddd8fbdcb4b86170b730fd582d6b0acf996d",
+    exportScriptsEvidenceId: "ev_4b27c4f89c63a75f7295c076b9d1d5f119384376f0abcb004735e1f86be6121d",
+    astAnalysisViewEvidenceId: "ev_30db3935ab8540e7e350c0082d689a72e2e82ea7ab98a7815c6ce376b5227067",
+    rootSha256: "c2a77bdbd02faa7b0a8ff2e7a1fdbc367f88692135d6fd8444598e3e93e12162",
+    scriptCount: 1,
+    totalBytes: 291,
+    astNodeCount: 84,
+    findingCount: 0,
+    moduleCount: 0,
+    routeCount: 0,
+    keyRouterPatterns: [
+      "Cloudflare Performing security verification (Ray ID a50910fcaabbba04)",
+    ],
+    keyUiUxPatterns: [
+      "REA 인식론적 규율에 따라 봇 검증 뒤의 클라이언트 라우트는 추측하지 않고 bounded-by-bot-challenge로 기록",
+    ],
+    epistemicStatus: "bounded-by-bot-challenge",
+  },
 ]);
 
 /**
@@ -371,54 +508,13 @@ export const CONTEXTUAL_SUBNAV_GROUPS: readonly ContextualSubNavGroup[] = Object
     enTitle: "Promo Video & Cuts Hub",
     accentToken: "oklch(0.72 0.17 154)",
     items: [
-      {
-        id: "promo-library",
-        href: "/promo-library",
-        koLabel: "홍보 영상 자료실 (204편)",
-        enLabel: "Promo Video Library (204)",
-        badge: "SHORT-VOD",
-        exact: true,
-      },
-      {
-        id: "showcase-promo",
-        href: "/showcase/promo",
-        koLabel: "홍보 영상 스튜디오",
-        enLabel: "Promo Video Studio",
-        badge: "AI STUDIO",
-      },
-      {
-        id: "community-promote",
-        href: "/community/promote",
-        koLabel: "신작·작가 홍보 게시판",
-        enLabel: "Creator Promo Board",
-        badge: "UP",
-      },
-      {
-        id: "cuts-feed",
-        href: "/cuts",
-        koLabel: "숏폼 컷츠 피드",
-        enLabel: "Short-form Cuts",
-        badge: "NEW",
-        exact: true,
-      },
-      {
-        id: "cuts-studio",
-        href: "/cuts/studio",
-        koLabel: "컷츠 스튜디오",
-        enLabel: "Cuts Studio",
-      },
-      {
-        id: "brand-film",
-        href: "/brand-film",
-        koLabel: "브랜드 필름",
-        enLabel: "Brand Film",
-      },
-      {
-        id: "product-tour",
-        href: "/product-tour",
-        koLabel: "제품 투어",
-        enLabel: "Product Tour",
-      },
+      { id: "promo-library", href: "/promo-library", koLabel: "홍보 영상 자료실 (204편)", enLabel: "Promo Video Library (204)", badge: "SHORT-VOD", exact: true },
+      { id: "showcase-promo", href: "/showcase/promo", koLabel: "홍보 영상 스튜디오", enLabel: "Promo Video Studio", badge: "AI STUDIO" },
+      { id: "community-promote", href: "/community/promote", koLabel: "신작·작가 홍보 게시판", enLabel: "Creator Promo Board", badge: "UP" },
+      { id: "cuts-feed", href: "/cuts", koLabel: "숏폼 컷츠 피드", enLabel: "Short-form Cuts", badge: "NEW", exact: true },
+      { id: "cuts-studio", href: "/cuts/studio", koLabel: "컷츠 스튜디오", enLabel: "Cuts Studio" },
+      { id: "brand-film", href: "/brand-film", koLabel: "브랜드 필름", enLabel: "Brand Film" },
+      { id: "product-tour", href: "/product-tour", koLabel: "제품 투어", enLabel: "Product Tour" },
     ],
   },
   {
@@ -449,39 +545,195 @@ export const CONTEXTUAL_SUBNAV_GROUPS: readonly ContextualSubNavGroup[] = Object
       { id: "collaborate", href: "/collaborate", koLabel: "구인·의뢰", enLabel: "Collaborate" },
     ],
   },
+  {
+    id: "studio-hub",
+    koTitle: "창작 스튜디오 · 3D 캐릭터 허브",
+    enTitle: "Creator Studio & 3D Character Hub",
+    accentToken: "oklch(0.71 0.16 290)",
+    items: [
+      { id: "studio-home", href: "/studio", koLabel: "통합 스튜디오", enLabel: "Studio Home", exact: true },
+      { id: "character-shaper", href: "/studio/assets/characters/new", koLabel: "3D 캐릭터 셰이퍼", enLabel: "3D Character Shaper", badge: "AI STUDIO" },
+      { id: "cuts-studio", href: "/cuts/studio", koLabel: "컷츠 · 콘티 연출", enLabel: "Cuts & Storyboard", badge: "SHORT-VOD" },
+      { id: "promo-library", href: "/promo-library", koLabel: "홍보 · 연출 자료실", enLabel: "Promo & Stage Library", badge: "NEW" },
+    ],
+  },
+  {
+    id: "market-hub",
+    koTitle: "3D 모델 · 웹툰 소재 마켓 허브",
+    enTitle: "3D Model & Webtoon Asset Market Hub",
+    accentToken: "oklch(0.73 0.15 80)",
+    items: [
+      { id: "marketplace", href: "/marketplace", koLabel: "3D · 웹툰 소재 마켓", enLabel: "Asset Marketplace", exact: true },
+      { id: "market-3d-characters", href: "/studio/assets/characters/new", koLabel: "3D 캐릭터 · 두상 프리셋", enLabel: "3D Characters & Heads", badge: "NEW" },
+      { id: "market-promo-kits", href: "/promo-library", koLabel: "트레일러 · 쇼츠 키트", enLabel: "Trailer & Shorts Kits", badge: "SHORT-VOD" },
+      { id: "market-showcase", href: "/showcase", koLabel: "소재 활용 쇼케이스", enLabel: "Asset Showcase", badge: "GALLERY" },
+    ],
+  },
 ]);
+
+const SUBNAV_PATHS_PROMO = new Set(["/promo-library", "/showcase/promo", "/community/promote", "/cuts", "/cuts/studio", "/brand-film", "/product-tour"]);
+const SUBNAV_PATHS_DISCOVER = new Set(["/discover", "/explore", "/ranking", "/calendar", "/recommend"]);
+const SUBNAV_PATHS_COMMUNITY = new Set(["/community", "/showcase", "/reviews", "/collaborate"]);
+const SUBNAV_PATHS_STUDIO = new Set(["/studio", "/studio/character", "/studio/assets/characters/new", "/character-shaper", "/character-lab"]);
+const SUBNAV_PATHS_MARKET = new Set(["/marketplace", "/assets", "/library", "/brushes"]);
 
 export function resolveContextualSubNavForPath(rawPathname: string): ContextualSubNavGroup | null {
   const pathname = canonicalSitePath(rawPathname);
-  if (
-    pathname === "/promo-library" ||
-    pathname === "/showcase/promo" ||
-    pathname === "/community/promote" ||
-    pathname === "/cuts" ||
-    pathname === "/cuts/studio" ||
-    pathname === "/brand-film" ||
-    pathname === "/product-tour"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[0] ?? null;
-  }
-  if (
-    pathname === "/discover" ||
-    pathname === "/explore" ||
-    pathname === "/ranking" ||
-    pathname === "/calendar" ||
-    pathname === "/recommend"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[1] ?? null;
-  }
-  if (
-    pathname === "/community" ||
-    pathname === "/showcase" ||
-    pathname === "/reviews" ||
-    pathname === "/collaborate"
-  ) {
-    return CONTEXTUAL_SUBNAV_GROUPS[2] ?? null;
-  }
+  if (SUBNAV_PATHS_PROMO.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[0] ?? null;
+  if (SUBNAV_PATHS_DISCOVER.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[1] ?? null;
+  if (SUBNAV_PATHS_COMMUNITY.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[2] ?? null;
+  if (SUBNAV_PATHS_STUDIO.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[3] ?? null;
+  if (SUBNAV_PATHS_MARKET.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
   return null;
+}
+
+/**
+ * VRoid Hub `/characters/[characterId]/models/[modelId]/{edit,photobooth,tracking,embed}` + `/license`
+ * 서브 라우트 계층을 내재화한 3D 캐릭터 모델 인스펙터 서브 라우트 명세.
+ */
+export type VrmCharacterSubRouteId = "overview" | "edit" | "photobooth" | "tracking" | "embed" | "license";
+
+export interface VrmCharacterSubRouteSpec {
+  readonly id: VrmCharacterSubRouteId;
+  readonly vroidRoutePattern: string;
+  readonly koLabel: string;
+  readonly enLabel: string;
+  readonly workbenchTab: "quality" | "presets" | "pose" | "groom" | "ink" | "render" | "runtime";
+}
+
+export const VRM_CHARACTER_SUB_ROUTES: readonly VrmCharacterSubRouteSpec[] = Object.freeze([
+  { id: "overview", vroidRoutePattern: "/characters/[characterId]/models/[modelId]", koLabel: "3D 모델 개요", enLabel: "3D Overview", workbenchTab: "quality" },
+  { id: "edit", vroidRoutePattern: "/characters/[characterId]/models/[modelId]/edit", koLabel: "체형·의상·헤어 편집", enLabel: "Edit Parts & Groom", workbenchTab: "presets" },
+  { id: "photobooth", vroidRoutePattern: "/characters/[characterId]/models/[modelId]/photobooth", koLabel: "포토부스·툰 렌더", enLabel: "Photobooth & Toon Render", workbenchTab: "render" },
+  { id: "tracking", vroidRoutePattern: "/characters/[characterId]/models/[modelId]/tracking", koLabel: "AI 포즈·시선 트래킹", enLabel: "Pose & Gaze Tracking", workbenchTab: "pose" },
+  { id: "embed", vroidRoutePattern: "/characters/[characterId]/models/[modelId]/embed", koLabel: "3D 서피스 펜선·오버레이", enLabel: "3D Surface Pen & Overlay", workbenchTab: "ink" },
+  { id: "license", vroidRoutePattern: "/license", koLabel: "VRM 이용권한·웹툰 연재 라이선스", enLabel: "VRM Usage & Serial License", workbenchTab: "runtime" },
+]);
+
+/**
+ * VRoid Hub `/license` & BOOTH 3D Models 이용 조건 매트릭스.
+ */
+export interface VrmUsageConditionMatrix {
+  readonly presetId: "webtoon-serial-ready" | "open-cc-by" | "personal-noncommercial" | "studio-exclusive";
+  readonly koTitle: string;
+  readonly enTitle: string;
+  readonly avatarUse: "everyone" | "author-only";
+  readonly commercialWebtoonSerial: boolean;
+  readonly corporateCommercialUse: boolean;
+  readonly violentSceneAllowed: boolean;
+  readonly modificationAllowed: boolean;
+  readonly redistributionAllowed: boolean;
+  readonly creditRequired: boolean;
+}
+
+export const VRM_LICENSE_PRESETS: readonly VrmUsageConditionMatrix[] = Object.freeze([
+  {
+    presetId: "webtoon-serial-ready",
+    koTitle: "웹툰 상업 연재 표준 (권장)",
+    enTitle: "Commercial Webtoon Serial Standard",
+    avatarUse: "everyone",
+    commercialWebtoonSerial: true,
+    corporateCommercialUse: true,
+    violentSceneAllowed: true,
+    modificationAllowed: true,
+    redistributionAllowed: false,
+    creditRequired: false,
+  },
+  {
+    presetId: "open-cc-by",
+    koTitle: "크리에이터 공유 (출처 표기·개작 허용)",
+    enTitle: "Creator Open Share (Attribution)",
+    avatarUse: "everyone",
+    commercialWebtoonSerial: true,
+    corporateCommercialUse: false,
+    violentSceneAllowed: true,
+    modificationAllowed: true,
+    redistributionAllowed: true,
+    creditRequired: true,
+  },
+  {
+    presetId: "personal-noncommercial",
+    koTitle: "개인 비상업·습작 전용",
+    enTitle: "Personal Non-Commercial Study",
+    avatarUse: "everyone",
+    commercialWebtoonSerial: false,
+    corporateCommercialUse: false,
+    violentSceneAllowed: false,
+    modificationAllowed: true,
+    redistributionAllowed: false,
+    creditRequired: true,
+  },
+  {
+    presetId: "studio-exclusive",
+    koTitle: "스튜디오 독점 캐릭터 (본인 전용)",
+    enTitle: "Studio Exclusive (Author Only)",
+    avatarUse: "author-only",
+    commercialWebtoonSerial: true,
+    corporateCommercialUse: true,
+    violentSceneAllowed: true,
+    modificationAllowed: true,
+    redistributionAllowed: false,
+    creditRequired: false,
+  },
+]);
+
+export function summarizeVrmUsageMatrix(matrix: VrmUsageConditionMatrix): readonly {
+  readonly id: string;
+  readonly koLabel: string;
+  readonly allowed: boolean;
+}[] {
+  return [
+    { id: "serial", koLabel: matrix.commercialWebtoonSerial ? "상업 웹툰 연재 허용" : "비상업 습작 전용", allowed: matrix.commercialWebtoonSerial },
+    { id: "corp", koLabel: matrix.corporateCommercialUse ? "프로덕션·법인 사용 가능" : "개인 작가 한정", allowed: matrix.corporateCommercialUse },
+    { id: "mod", koLabel: matrix.modificationAllowed ? "체형·리깅·펜선 개작 허용" : "원본 유지 필수", allowed: matrix.modificationAllowed },
+    { id: "action", koLabel: matrix.violentSceneAllowed ? "액션·전투 연출 허용" : "전투·폭력 연출 제한", allowed: matrix.violentSceneAllowed },
+    { id: "credit", koLabel: matrix.creditRequired ? "크레딧 표기 필수" : "크레딧 표기 면제", allowed: !matrix.creditRequired },
+  ];
+}
+
+/**
+ * Pixiv Comic `/finish_reading/[sku]` + Clip Studio 4단계 제작 가이드 + VRoid Studio 온보딩을 결합한
+ * 단계별 연관 동선 브리지(Onward Route Bridge).
+ */
+export type CreatorWorkflowStageId = "preset" | "groom" | "pose" | "ink" | "render";
+
+export interface CreatorOnwardBridgeRoute {
+  readonly id: string;
+  readonly href: string;
+  readonly koLabel: string;
+  readonly enLabel: string;
+  readonly competitorInspiration: CompetitorPlatformId;
+}
+
+export function resolveCreatorPostActionBridgeRoutes(stage: CreatorWorkflowStageId): readonly CreatorOnwardBridgeRoute[] {
+  switch (stage) {
+    case "preset":
+      return [
+        { id: "to-groom", href: "/studio/assets/characters/new?editor=open&stage=groom", koLabel: "헤어 번들 식모로 이동", enLabel: "Next: Hair Bundle Grooming", competitorInspiration: "vroid-studio" },
+        { id: "to-market", href: "/marketplace", koLabel: "BOOTH·3D 캐릭터 소재 탐색", enLabel: "Browse 3D Character Assets", competitorInspiration: "booth-3d" },
+      ];
+    case "groom":
+      return [
+        { id: "to-pose", href: "/studio/assets/characters/new?editor=open&stage=pose", koLabel: "AI 24관절 포즈 트래킹으로 이동", enLabel: "Next: 24-Joint Pose Tracking", competitorInspiration: "vroid-hub" },
+        { id: "to-ink", href: "/studio/assets/characters/new?editor=open&stage=ink", koLabel: "3D 서피스 직접 펜선 그리기", enLabel: "Draw 3D Surface Pen Lines", competitorInspiration: "clip-studio" },
+      ];
+    case "pose":
+      return [
+        { id: "to-ink", href: "/studio/assets/characters/new?editor=open&stage=ink", koLabel: "3D 서피스 펜선·의상 마스킹", enLabel: "Next: 3D Surface Ink & Masking", competitorInspiration: "clip-studio" },
+        { id: "to-cuts", href: "/cuts/studio", koLabel: "컷츠 스튜디오에 포즈 배치", enLabel: "Send Pose to Cuts Studio", competitorInspiration: "naver-webtoon" },
+      ];
+    case "ink":
+      return [
+        { id: "to-render", href: "/studio/assets/characters/new?editor=open&stage=render", koLabel: "포토부스·레이어 PSD 내보내기", enLabel: "Next: Photobooth & Layered PSD", competitorInspiration: "vroid-hub" },
+        { id: "to-studio", href: "/studio", koLabel: "원고 캔버스에 컷 삽입", enLabel: "Insert into Webtoon Canvas", competitorInspiration: "clip-studio" },
+      ];
+    case "render":
+      return [
+        { id: "to-studio", href: "/studio", koLabel: "본편 원고 스튜디오로 삽입", enLabel: "Open in Main Webtoon Studio", competitorInspiration: "clip-studio" },
+        { id: "to-cuts", href: "/cuts/studio", koLabel: "숏폼 컷츠 예고편 제작", enLabel: "Create Short-form Cuts Trailer", competitorInspiration: "naver-webtoon" },
+        { id: "to-showcase", href: "/showcase", koLabel: "창작 갤러리에 캐릭터 공개", enLabel: "Publish to Creator Showcase", competitorInspiration: "pixiv-comic" },
+      ];
+  }
 }
 
 /**
