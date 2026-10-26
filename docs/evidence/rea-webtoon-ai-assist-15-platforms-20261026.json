@@ -1,0 +1,689 @@
+{
+  "schemaVersion": "1.0.0",
+  "capturedAt": "2026-10-26T20:25:00+09:00",
+  "campaign": "webtoon-ai-assist-15-platforms-rea-full-audit-20261026",
+  "epistemicPolicy": {
+    "separation": "strict",
+    "categories": ["observedFacts", "inferences", "unknowns"],
+    "nativeBinaryProviderRule": "ghidra-only-no-hopper"
+  },
+  "summary": {
+    "platformCount": 15,
+    "browserScenarioCaptures": 17,
+    "scriptExports": 14,
+    "javascriptApplicationAnalyses": 14,
+    "totalExportedScriptFiles": 478,
+    "totalAnalyzedAstNodes": 1122016,
+    "totalStaticFindings": 6598
+  },
+  "platforms": [
+    {
+      "id": "glimnavi",
+      "name": "GlimNavi (그림나비)",
+      "origin": "https://glimnavi.com",
+      "category": "ai-webtoon-5-stage-studio-and-relight",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_b90d45b6e8ba921f9be20e9909f436d6a46b132e30d57041f7b62cd3fdbebe26",
+          "scenarioSha256": "8cce0609e26af83cb00414be0594ddddd62f590b3e26586315e7b58cd0ae1b4d",
+          "documentSha256": "47ec1382fe868ed4b713113fbf576045748227091787869f4d432e1819b8b114",
+          "globalCssSha256": "95a7a8c24a0f5a06348bc4aa4b5f6727be5cca9bdac53cef23b909c32cf727da",
+          "tutorialHtmlSha256": "ab096e4ea4864e1885aefa2b629c8bd13a74153b9ea77821d9faa6c16404d14b"
+        },
+        "studioCapture": {
+          "url": "https://glimnavi.com/function-step3.html",
+          "evidenceId": "ev_f2c78ddd17640152c0ce5ea59a6634cd0f7029fe29a852251b9147d1e60e3570",
+          "scenarioSha256": "3ac6113ac3d149b37ff9863b5deb6a7d8ff15ccfb597457ca150a6e9a98f60d1",
+          "documentSha256": "9bda5fafa246fb9f1df686ff16a85ab9a1ab91b3bf8220f2d23dce4cd5c599ea",
+          "relightCssSha256": "8404f64e248ab13ab9b0ee0d77675805b4962a0c29e615199c3a352b65ddeacc"
+        },
+        "planCapture": {
+          "url": "https://glimnavi.com/plan.html",
+          "evidenceId": "ev_2ef14a80269b35268e7f8f31acb5ef086e3d4dc50d629a881c1dc1b22ca80a34",
+          "scenarioSha256": "0c0c1074785af38246b41b22898769605e8b0ce6658242330acbf7bdd40b6627",
+          "configJsSha256": "b8863ece331e90c375c513f0077bcc41eb7df978ac3e00ff43d29fc26db26ea0"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_563bced6ab161a51083ffcf36018506445d6341eed32442bea8f99973a99d62e",
+          "fileCount": 9
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_acd09b262c32d5416d1cd0ba055ce6e71be6eb1b510bce58f3536aa689c9cb70",
+          "parentEvidenceId": "ev_926c5c278fe7b027d406f8cfc318258d90d785cc8e5968bdd6fa927e19c463f5",
+          "rootSha256": "a99c188a4539fa542c275b051d31e8a2cad943ce0b15b7e79626aecb207bc413",
+          "fileCount": 6,
+          "totalBytes": 31354,
+          "astNodeCount": 2717,
+          "findingCount": 8
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--bg": "#f6f7fb",
+          "--panel": "#ffffff",
+          "--line": "#e5e7eb",
+          "--text": "#111827",
+          "--muted": "#6b7280",
+          "--accent": "#2563eb",
+          "--accent-ink": "#1e3a8a",
+          "--canvas-bg": "#bfbfbf",
+          "--radius-lg": "14px",
+          "--radius-md": "12px"
+        },
+        "brandPalette": ["#7ED6E2", "#40C0D2", "#00A8C2", "#3B82F6", "#DBF7FA", "#0A0A0A"],
+        "gradient": "linear-gradient(92deg, #3b82f6 -3.24%, #00a8c2 100%)",
+        "typography": ["Pretendard Variable"]
+      },
+      "observedFacts": [
+        "GlimNavi Studio (/function-step3.html) structures webtoon production into 5 explicit workflow stages: 01 기획 및 각색, 02 콘티, 03 선화, 04 채색(채색/자동 채색), 05 효과(AI 그림자, 조명효과, 명암효과).",
+        "Line-art extraction (AI 선따기) exposes 5 model versions via #lineartWorkflowSelect: v1.0 기본 선화, v2.0 원본 보존 선화, v2.1 정밀 선화, v2.2 학습 선화, v2.3 균형 선화.",
+        "Line-art expression presets (#lineartPresetSelect) expose 6 controls: 얇은 선, 얼굴 보존, 명암 유지, 빠른 변환, 깨끗한 선, 디테일 보존, plus 컬러 레이어 분리.",
+        "Canvas presets support 800×600, 1024×768, 1280×720, 1920×1080, 2560×1440 via custom DOM event relight:setBaseSize and export options downloadCanvas, downloadAllLayers, and downloadPSD."
+      ],
+      "inferences": [
+        "Each of the 5 lineart versions maps to distinct backend ComfyUI/diffusion controlnet workflows behind https://www.glimnavi.com/backend."
+      ],
+      "unknowns": [
+        "Server-side ComfyUI node graph weights and authenticated credit deduction rate per v2.2/v2.3 pass require an authenticated backend session."
+      ]
+    },
+    {
+      "id": "snaptoon",
+      "name": "Snaptoon & Snapboard (스냅툰 · 스냅보드)",
+      "origin": "https://snaptoon.co.kr",
+      "category": "three-d-realtime-and-ai-style-transform",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_b1e4285baa78b85f3ad6b72dd54277f72ecff570448402bebd87070fac64a8c3",
+          "scenarioSha256": "f05844d786ada6594f200e5398c9081345085acd0152146d0111169592e13acb",
+          "documentKoSha256": "27730a537c24d1ee454f07e8004c7fb14d422c372629f85b164e9cc5ee61c875",
+          "documentEnSha256": "61952ffbb13c65fc92e6ffbcc0d8f4c4f40decf707e06e201097022f096aed68"
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--bg-light": "#FAF8F5",
+          "--bg-light-soft": "#F2EFEA",
+          "--text-dark": "#1A1A1A",
+          "--text-muted-light": "#6B6B6B",
+          "--border-light": "#E8E5E0",
+          "--bg-dark": "#0A0A0A",
+          "--bg-dark-soft": "#161616",
+          "--text-on-dark": "#F5F5F5",
+          "--text-muted-dark": "#9A9A9A",
+          "--border-dark": "#2A2A2A",
+          "--accent-indigo": "#1E3A5F",
+          "--accent-indigo-hover": "#2A5285"
+        },
+        "typography": ["Pretendard", "Noto Serif KR", "EB Garamond"]
+      },
+      "observedFacts": [
+        "Snaptoon unifies 3 products under the slogan '3D로 그리고, AI로 변환하고, 이야기로 완성합니다': Snaptoon (3D real-time rendering), Snapboard (AI creation/transformation workspace), and Snaptoon Warehouse (3D asset store).",
+        "Design system contrasts warm editorial paper (--bg-light: #FAF8F5) with deep studio dark (--bg-dark: #0A0A0A) and indigo accents (#1E3A5F)."
+      ],
+      "inferences": [
+        "Snapboard acts as the cloud AI img2img/controlnet bridge consuming camera passes exported from the desktop Snaptoon 3D renderer."
+      ],
+      "unknowns": [
+        "Internal Snapboard workspace authenticated API endpoints and GPU queue parameters."
+      ]
+    },
+    {
+      "id": "kaistory",
+      "name": "KAISTORY & KAITOON (카이스토리 · 카이툰)",
+      "origin": "https://kaistory.net",
+      "category": "conti-to-global-publish-and-edtech-webtoon",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_76255f44204c56a3615ba3ed1dd0f8a5f1cf15aaf954649b456e50cc80824613",
+          "scenarioSha256": "4a783a2b5bd2aa91f0b3c076bce1bb3bb6c1c8f7d84d54742a53493c0bcced7d",
+          "documentSha256": "3120a2ec491832da1e1f4bd164af69e527ee8581c8f793df7d1e3724f7b34e4b"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_4bee25144e19b015bb24541bdc1a7a4f9c48f6e7bdd9e9fd3dc5bf70df40288c",
+          "fileCount": 4
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_aaafd7372a7284b26501943742f8a235f0cf1389c61e0cc78ae2781e7864e07d",
+          "parentEvidenceId": "ev_5b98c991e5b7006e0e8f7edc00a910dc1b5189624a0db26daf1880cdf483f9ee",
+          "rootSha256": "eb230189bcdf0947d365be8066989f81574154ebde5119a8a07e4c680af1d99e",
+          "fileCount": 2,
+          "totalBytes": 84914,
+          "astNodeCount": 7864,
+          "findingCount": 19
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--brand": "#16168f",
+          "--brand-2": "#3a3adf",
+          "--accent": "#ff5a4d",
+          "--ink": "#1a1c2b",
+          "--muted": "#5c6178",
+          "--line": "#e7e8f0",
+          "--bg": "#ffffff",
+          "--bg-soft": "#f6f7fb",
+          "--radius": "14px",
+          "--maxw": "1160px"
+        },
+        "typography": ["Pretendard"]
+      },
+      "observedFacts": [
+        "KAISTORY links 4 dedicated webtoon production subdomains over one project data envelope: conti.kaistory.net (offline-first conti), design.kaistory.net (layered PSD, multilingual automation, speaker TTS), editor.kaistory.net (full-resolution export), and story.kaistory.net (reader distribution).",
+        "Using the same single-project data envelope, KAISTORY generates interactive learning cards and comprehension quizzes for KAION / KAITOON education services."
+      ],
+      "inferences": [
+        "Balloon text, speaker metadata, and cut boundaries are stored as structured JSON alongside raster/PSD layers so translation, TTS, and quiz generation share one canonical source."
+      ],
+      "unknowns": [
+        "Exact IndexedDB schema inside conti.kaistory.net requires authenticated subdomain session."
+      ]
+    },
+    {
+      "id": "ggooming",
+      "name": "GGOOMING (꾸밍)",
+      "origin": "https://www.ggooms.com",
+      "category": "social-instatoon-and-brand-comic-ai",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_28d88e317e86129ace97da5ecc1aa6be41335b246956741190f7f5416fc37e32",
+          "scenarioSha256": "912a469864405fc70aa12501c5f0fa64108ae1b49ca11702696dc6b98fd258aa",
+          "cssSha256": "bd2fb657c1127188b97c89a684b5fd5fc717fb9fb78ecfbcca0632ab5d34aa3f"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_a01131446507bac127c738ebad7a57aab6509a4c5b0962dc331dae49138d444b",
+          "fileCount": 25
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_8c14fd5a7e8335dd6e149a6b748c26ade0e2e066de603d6d3bfa341de178c304",
+          "routesViewEvidenceId": "ev_db68f11aedc31c55c9b4eb7bb8738a56f2b22b200ae2e6936589c321c8991a94",
+          "parentEvidenceId": "ev_e928744432916e100dae7013ed53d306b73b7af7ff41bc377e02d8764472594d",
+          "rootSha256": "364f6e1929d1c62cff563db336f752ea4c5402c5ac61ac08af4d455af5fe48a0",
+          "fileCount": 15,
+          "totalBytes": 350644,
+          "astNodeCount": 47669,
+          "findingCount": 182
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#274bff", "#3659ff", "#4980ff", "#60a5fa", "#1e40af", "#eff6ff"],
+        "typography": ["Geist", "Geist Mono"]
+      },
+      "observedFacts": [
+        "Next.js App Router application exposing routes /, /dashboard, /dashboard/projects, /dashboard/projects/new, /sign-in, /sign-up, /admin.",
+        "Focused on rapid social comic (Instatoon) creation, character style consistency, and brand collaboration project workflows."
+      ],
+      "inferences": [
+        "Uses Clerk/Supabase-style session gating before mounting the project canvas under /dashboard/projects/new."
+      ],
+      "unknowns": [
+        "Authenticated canvas toolbars under /dashboard/projects/[id]."
+      ]
+    },
+    {
+      "id": "plask-motion",
+      "name": "Plask Motion (플라스크)",
+      "origin": "https://plask.ai",
+      "category": "ai-video-mocap-and-3d-retargeting",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_e4c693a8ddd64ef1def91fcb5c6fc6fec52335a136eb945fbe376747ead4c7cb",
+          "scenarioSha256": "12062ecfeaed08c6dda16eee9ad9531e6d5982b08267f72947e57b6564756e1f",
+          "cssSha256": "466f368ace81828a3fca8b27ed433fa079f4fa13df9e79a8d63b53074d4b5486"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_f61fe1b4b4adb84a833e25320e3a2b33c00531590a5bbde5342230c291aa2f3d",
+          "fileCount": 24
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_c7b1cbf300948b64779efe57d9ce9390f1358298a8ec93adbe54c98971e539c1",
+          "parentEvidenceId": "ev_330c30133e43cb7a9d698dd98a72cf98c5495904e6e1d9c0c07ac01a02875db9",
+          "rootSha256": "4640ca42c944fddff0dd7d8808fcfb958f3615d31abc7f6bb461d9210aab04923",
+          "fileCount": 10,
+          "totalBytes": 267656,
+          "astNodeCount": 70411,
+          "findingCount": 56
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0a0a0a", "#171717", "#ededed", "#a0a0a0", "#0467DF"],
+        "typography": ["--font-plask-latin", "--font-plask-cjk"]
+      },
+      "observedFacts": [
+        "Provides single-camera video-to-3D motion capture, VRM/FBX retargeting, keyframe smoothing, and camera/DOF/motion-blur passes for webtoon/animation."
+      ],
+      "inferences": [
+        "Separates inferred pose streams from editable keyframe tracks to prevent foot sliding during camera angle changes."
+      ],
+      "unknowns": [
+        "Server-side pose estimation model architecture."
+      ]
+    },
+    {
+      "id": "manhwa-ai",
+      "name": "ManhwaAI",
+      "origin": "https://www.manhwaai.net",
+      "category": "ai-manhwa-generator-and-vertical-editor",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_0a8511a3646c5da383e58a2b265eb450df9661c4601ca6414526ebeab5cfaee3",
+          "scenarioSha256": "d1cf486502398a0d6d77151a5219a8b55d4c0bc7395c6652f98c97b787dfe809",
+          "cssSha256": "8c1aff94ac4da4331b8562a09ae15600656849669102550c7cd7b3166df1be04"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_30f26657130ceb5ecceaf399a29bff480d8ff0e351add9f760de2350d3d2d0b0",
+          "fileCount": 32
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_01abcffac487da3288d06014a484471e84970b54f353f1b7cf05032f2ae5b824",
+          "routesViewEvidenceId": "ev_5edc62a0336c776c69caf28b5a9cc6c14e48b19ea15696f98a446aa0e87b87f0",
+          "parentEvidenceId": "ev_f42a4d949c9a8d6b7f1222740c4ae89808b429405f0937bff87f3deb10190512",
+          "rootSha256": "e326e0fc999f657763097133555e7c5e4603bccd8d08a1f05be2df381e98dcbd",
+          "fileCount": 24,
+          "totalBytes": 771914,
+          "astNodeCount": 206169,
+          "findingCount": 518
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#17131e", "#1d1825", "#f8f4ee", "#7b5cff", "#8f68ff", "#6d3df0", "#e83f69", "#ff4f7a"],
+        "typography": ["Inter", "System Sans"]
+      },
+      "observedFacts": [
+        "Exposes routes /manhwa-character-generator, /manhwa-editor, /comic-editor, /editor, /characters, /gallery/manhwa, /tools, /pricing, and /api/editor/projects.",
+        "Ships 6 explicit style presets (/styles/black-and-white.webp, full-color.webp, grayscale.webp, monochrome.webp, sketch.webp, watercolor.webp) and 5 procedural manga/manhwa tone overlays (/tones/FocusingLine.png, SpeedLine.png, Tone.png, ToneNoise.png, ToneSnow.png)."
+      ],
+      "inferences": [
+        "Combines AI panel generation with deterministic overlay compositing for speed lines, focus lines, and screentones inside /manhwa-editor."
+      ],
+      "unknowns": [
+        "Backend model provider for /manhwa-character-generator."
+      ]
+    },
+    {
+      "id": "komiko-ai",
+      "name": "Komiko AI",
+      "origin": "https://komiko.app",
+      "category": "ai-anime-comic-inbetween-and-oc-suite",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_a6091c8e574902740961b2395722ee6d65d22ef730bf05408d69f249434dc3ea",
+          "scenarioSha256": "c0bd29800afafd282dee7defc4aadfa39a40f051351063644c1d674d68500c5c"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_6691e4f5b5105a6ce1978ea56dbb391e5f1f71516825d4be1082a131755bb99a",
+          "fileCount": 68
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_848e01a474775539f79b9743d5534e099bfbe7b42256ff5f0235f5ee6dd0547a",
+          "routesViewEvidenceId": "ev_fa7f86da5b598977ed2ee135fc7e8ce1a9069f8b7cb061ff08b860e014ba69d2",
+          "parentEvidenceId": "ev_d927b7ac7c21ef1a9d1c3acdd8747dc4fa07fb91cd9e9e39c450e443eb8e9df2",
+          "rootSha256": "4fc8467e77b829f4cca6c01463632a14421213d85118886a3b2a2b5387587805",
+          "fileCount": 49,
+          "totalBytes": 1004380,
+          "astNodeCount": 245022,
+          "findingCount": 1875
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#7C5CFA", "#5B38FF", "#8B5CF6", "#FF4D9D", "#FF9A44", "#3F8FFF", "#14B8A6"],
+        "typography": ["Inter", "Plus Jakarta Sans"]
+      },
+      "observedFacts": [
+        "Client bundle exposes specialized creator tools: /ai-agent, /ai-comic-generator, /ai-anime-generator, /oc-maker, /inbetween, /video_interpolation, /line_art_colorization, /sketch_simplification, /layer_splitter, /background-removal, /image-upscaling, and /voice/generate."
+      ],
+      "inferences": [
+        "Positions OC Maker (/oc-maker) as the persistent character anchor across comic panels, line-art colorization, and inbetween animation."
+      ],
+      "unknowns": [
+        "Exact credit cost per /layer_splitter and /inbetween invocation."
+      ]
+    },
+    {
+      "id": "anifusion",
+      "name": "Anifusion",
+      "origin": "https://anifusion.ai",
+      "category": "node-flow-and-infinite-canvas-manga-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_01828021391fc904afa8460e67291e1e0cedeb7bddfa084da1a92fe64adff8c8",
+          "scenarioSha256": "841e3a9d62df517833baa136eddc61ede2f971f8a63f6406c864202fdc4ca2fa",
+          "billingPromptsCssSha256": "b1ea482c9bfd6a721a040b314328e9f4e2baaf3ebe258ba515ba3985fee68a88",
+          "flowImageSelectorCssSha256": "6710b50ff3b5e7f39307e87d9d95a28bf35aa1e5a8883568b24701fcbaa521c2"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_704b01c313c3da75e0b8e20b077a8ddb6df39a0e04cb27eb8240e4c5f34b73f4",
+          "fileCount": 104
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_95eb0a7314876d7a5f083d3b059dcb698b1496a8f956a7f9408ed67253253e71",
+          "routesViewEvidenceId": "ev_9bdb01f28a756ff1647281ace377ba99f1fd3ff61c42631becccd08df9868801",
+          "parentEvidenceId": "ev_52358b02bc1bd459591f6b1666ab42ac6919de4a5b5e05607ccc42ee8cb7c5a7",
+          "rootSha256": "f2eec2856a598549fafab81e9d72b38e78c0fc0f983391eecc1b727ed6f89497",
+          "fileCount": 96,
+          "totalBytes": 463731,
+          "astNodeCount": 127590,
+          "findingCount": 1339
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1a1b1e", "#2196f3", "#fcfcfc", "#f3f3f3", "#858585"],
+        "typography": ["Inter"]
+      },
+      "observedFacts": [
+        "SvelteKit application with 22 routes including /dashboard/animator/, /dashboard/canvas/, /dashboard/character-sheets/, /dashboard/comic-presets/, /dashboard/flow/, /dashboard/models/, /dashboard/sketch/, /dashboard/templates/, /dashboard/training/, /dashboard/videos/, and /editor/.",
+        "Includes dedicated UI modules FlowImageSelector, UniversalPromptEditor, and prompt_rephrase_client."
+      ],
+      "inferences": [
+        "Provides dual authoring modalities: node-graph generation (/dashboard/flow/) and spatial panel composition (/dashboard/canvas/ and /editor/)."
+      ],
+      "unknowns": [
+        "LoRA training parameters inside /dashboard/training/."
+      ]
+    },
+    {
+      "id": "katalist-ai",
+      "name": "Katalist AI",
+      "origin": "https://www.katalist.ai",
+      "category": "script-to-storyboard-and-shot-continuity",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_6a2f91553a83af023e5531e399a40b2a077eb8dbdf3345f8d1d8af3ec6d23cc5",
+          "scenarioSha256": "33f0829eb08241e561a034d42f0889221b1d91989ce511b784d2d87592da1ae7",
+          "fluidPixelsCssSha256": "2090371243c7893ca30c77c0d319f7ba6b9d20bff1f79a8f24ec13117dbbe251"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_624809b541c0431bca80204ad407b153b4f64d43dfa95b8029394ef43237c384",
+          "fileCount": 60
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_3f4d3dc4091b21b134f713218e8328f8881ce25c0c7ad537a0d69c91abf84f21",
+          "parentEvidenceId": "ev_ef267acf647024d39e79a96f87462f29ad63db349a1b0a85db776477894a6e2b",
+          "rootSha256": "cafb602352ef9824da06debf0eea8d432cdca4fc4de85feece74f46a0592185d",
+          "fileCount": 38,
+          "totalBytes": 305333,
+          "astNodeCount": 115452,
+          "findingCount": 856
+        }
+      },
+      "uiUxDesignTokens": {
+        "typography": ["Familjen Grotesk", "Crimson Pro", "Vollkorn", "Geist", "Geist Mono", "Inter"]
+      },
+      "observedFacts": [
+        "Specializes in script-to-storyboard parsing, consistent character/scene anchors, and direct pose/angle control per storyboard frame."
+      ],
+      "inferences": [
+        "Uses fluid-pixels responsive scaling for multi-column storyboard strips."
+      ],
+      "unknowns": [
+        "Authenticated app.katalist.ai shot-table WebSocket protocol."
+      ]
+    },
+    {
+      "id": "novelai",
+      "name": "NovelAI",
+      "origin": "https://novelai.net",
+      "category": "anime-diffusion-vibe-transfer-and-storytelling",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_ed7b1d3017d19c852444e210f9905a7784dbf6ebd46e3e06e91c6d3f6e2e9633",
+          "scenarioSha256": "ee8200a356f72e7929601f8bae3c21373a2545bfb8a7caecccba1e179bd2ebc8",
+          "cssSha256": "f23fd96d41624c92aae8cc7657a2544a76012144c4721cf7c10af19786325d5c"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_90c954c4b2a0fa22e0c40c8268d94be100d12213da7769e50268bbe1dd21856c",
+          "fileCount": 43
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_80394902b1aa6b96b8c36a5107496a29d961bfb3b2d0beb8c9fa1b4e41d14b9e",
+          "routesViewEvidenceId": "ev_f520ee3a3854b09b8e18890fe6b55ce0ea98de4ab2a18845a8e7a72548fcb8ff",
+          "parentEvidenceId": "ev_412fea1d9d57922d3cfe80c7e368bb6f9f54809add0c19f7c8e066cd63f4c18b",
+          "rootSha256": "48652862d7295881970e70d4a2dc5bcb20ed23d193510ba4f893469157506e63",
+          "fileCount": 26,
+          "totalBytes": 860507,
+          "astNodeCount": 220125,
+          "findingCount": 222
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--loader-color": "#f5f3c2",
+          "--r": "2px"
+        },
+        "brandPalette": ["#13152c", "#0e0f21", "#f5f3c2", "#DCA7D7", "#5D69DE", "#511466", "#2EB099"]
+      },
+      "observedFacts": [
+        "Exposes /stories and /image workspaces alongside /user/subscription, /user/data, /user/inventory, and /consume.",
+        "Deep navy surface (#0e0f21 / #13152c) paired with warm parchment cream (#f5f3c2) and orchid accents (#DCA7D7)."
+      ],
+      "inferences": [
+        "Couples narrative lorebook memory (/stories) with tag-weighted anime image synthesis (/image)."
+      ],
+      "unknowns": [
+        "Anlas credit consumption formula per Vibe Transfer reference image."
+      ]
+    },
+    {
+      "id": "mootion",
+      "name": "Mootion",
+      "origin": "https://www.mootion.com",
+      "category": "ai-story-to-motion-and-3d-animatic",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_0a0286dd2b8b2c4d017d08fb7af0cb82d91266b998ea37464fcb8ce43ac93e78",
+          "scenarioSha256": "d787a0537e1bddb33799f194acf0ab144b6add9c10185879cba21c07755585da",
+          "styleCssSha256": "b15ede734673c70519f58855e441b2dea6e104e8883db70aa193561a74012611"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_658a8a1e1b0f3d0eb88afd15f05944cc9cc30ab86ab1528f51a4284cf1b03d50",
+          "fileCount": 10
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_800efbb23357c93873e67dad9520f4871b454099ec18e198390cd00d0966250e",
+          "parentEvidenceId": "ev_c578a0b20ba8572118048f3f0ead3c4619e38ddf6d5c5fe5b303606fac8a19ac",
+          "rootSha256": "9b02dd82287181ec1e6b9dfcdccd07ee4213fb648eb01de6d7926e4deba43290",
+          "fileCount": 7,
+          "totalBytes": 122182,
+          "astNodeCount": 36275,
+          "findingCount": 85
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#0e1d47", "#211f2c", "#3021d9", "#4c33ff", "#1993ff", "#a846ee", "#ffcffa"]
+      },
+      "observedFacts": [
+        "Provides prompt-to-story, story-to-storyboard, and 3D motion/video sequence generation workflows."
+      ],
+      "inferences": [
+        "Targets multi-aspect ratio animatics (9:16 vertical shortform and 16:9 horizontal)."
+      ],
+      "unknowns": [
+        "Internal timeline export formats inside studio.mootion.com."
+      ]
+    },
+    {
+      "id": "skyreels",
+      "name": "SkyReels",
+      "origin": "https://www.skyreels.ai",
+      "category": "ai-short-drama-and-comic-reel-studio",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_5b2e30d22a2b9ca1e351d56b727f16a800309bc25a07351272cca8048b87aeca",
+          "scenarioSha256": "86c5cc6fe9d8b1e50abf26cf1b8037fed348b5afbfe5de110f4b559fe246e75c",
+          "featureTabsCssSha256": "a4b5f5f27705498a26c6e84294a32d1ac32501daa406427ee98a14ebce9ee925"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_d6e6833e72b01044e7f74320a3e66f0a59f1015c0ede105cc4887dd04bb433a9",
+          "fileCount": 9
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_9f532d529c7818acaee5b257e15ccd3b5113c355d76f2417fb9c672f7d6589f6",
+          "parentEvidenceId": "ev_1a63a3129bf793ffe6aa2c724cd5e5be899837b121e798499e50286cbdbb4e37",
+          "rootSha256": "b340fdf6e8542a475d9e0e86970e3f2dbcc7cbfd105dd288ec73cfd16a03b932",
+          "fileCount": 4,
+          "totalBytes": 28597,
+          "astNodeCount": 6611,
+          "findingCount": 94
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#1a1a1a", "#FFCF00", "#ffce1f", "#efcf14", "#fff727"],
+        "typography": ["Plus Jakarta Sans", "Poppins"]
+      },
+      "observedFacts": [
+        "Exposes /createVideo and /dev/api-keys routes with dark cinema UI (#1a1a1a) and cinema-gold accent (#FFCF00)."
+      ],
+      "inferences": [
+        "Focused on vertical micro-drama and webtoon-to-reel episode generation with developer API access."
+      ],
+      "unknowns": [
+        "Rate limits on /dev/api-keys."
+      ]
+    },
+    {
+      "id": "frameo",
+      "name": "Frameo AI",
+      "origin": "https://frameo.ai",
+      "category": "ai-storyboard-and-short-drama-director",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_1b43ad4a78636801dfd2660774f04d7ce09f826e64a2fccfdd9d0ba60f87ab5a",
+          "scenarioSha256": "7575ac64bb5935480f6a7ce31920c371e4cd3257c68c28bd102d4923a43cadea",
+          "spotlightCssSha256": "aaa1b28a346a4868d716dc78024ba003750ae556b9fb0732e7ebf15623d28fde",
+          "studioCssSha256": "3dce8d173bdc409cdacdd5b53a3f529c6eb7be1895209f3ada54998c95e0ce98"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_675a90e2af48697c23d9bf2b5f491e4c1652c00ca530562b2ac7f95183d5bdc0",
+          "fileCount": 37
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_2c41567a7085ba3c959e9b4127fced3d7ece4e3e64d8e10a1097492c405faad1",
+          "routesViewEvidenceId": "ev_25086cccea46e059a6614ef302aaa77a419ccd6a425622e43d13201e671e3608",
+          "parentEvidenceId": "ev_4e784d4f977e59c027491d980e21c06f30d06db933dda76f263f1dc6a9073dbf",
+          "rootSha256": "e9663d472c91ee5b92cc58f00945323e15e0c969f938d777f894d1dc277d1570",
+          "fileCount": 21,
+          "totalBytes": 552806,
+          "astNodeCount": 122449,
+          "findingCount": 238
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--studio-bg": "#000",
+          "--studio-surface": "#ffffff0b",
+          "--studio-border": "#ffffff1a",
+          "--studio-text": "#f5f5f7",
+          "--studio-muted": "#a1a1aa",
+          "--cursor-angle": "45deg",
+          "--edge-sensitivity": "30",
+          "--color-sensitivity": "50",
+          "--cone-spread": "25",
+          "--glow-a": "#c084fc",
+          "--glow-b": "#818cf8",
+          "--glow-c": "#38bdf8",
+          "--shiny-accent": "#423be5"
+        },
+        "typography": ["Geist", "Geist Mono", "Averia Serif Libre", "Manrope", "Instrument Serif"]
+      },
+      "observedFacts": [
+        "Exposes 29 routes including /ai-storyboard-generator, /script-to-video, /story-to-video, /ai-animation-generator, /ai-voice-generator, /creative-partner, and /use-veo3.",
+        "Implements an interactive spotlight/cone CSS lighting shader system (--cursor-angle: 45deg, --cone-spread: 25, --glow-a/b/c)."
+      ],
+      "inferences": [
+        "Integrates multi-model video/storyboard backends (including Veo3) under a unified storyboard-to-video director UI."
+      ],
+      "unknowns": [
+        "Per-shot Veo3 token billing inside authenticated workspace."
+      ]
+    },
+    {
+      "id": "naver-webtoon-shaper",
+      "name": "NAVER WEBTOON SHAPER (셰이퍼)",
+      "origin": "https://shaper.webtoons.com",
+      "category": "three-d-webtoon-character-modeling-and-ai-pose",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_b31cfbe08e61ccbdb81f0bc2104108e580b7a7c5d3602039136136f7a999bdda",
+          "scenarioSha256": "7d3810f2fac29eda33110c99652642a4e483932ec41ee8d5298f3579feb87b1c",
+          "documentSha256": "5289e6518a9795c840bf96c36b64d95e8ee01e92e746d03addd73ea7a408e913",
+          "shaperCssSha256": "0986c2f34cfe41d39a7647cf09425040e5c6246dc301301891b16b21af02fdd6"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_86559bf22cb18e2a3d13901df68fd006d2d00f31ee3d78b1e37c3764587cdcf5",
+          "fileCount": 11
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_cab698006ffc1b3d39f5479ff1d1946e5aab214dc022b4e161c5c1d49a9f1f8d",
+          "parentEvidenceId": "ev_731ec8666f063ab3bc05a99745f5e5868283c1589ce6b5a9e6d5cc49a26d5cfd",
+          "rootSha256": "0ddcb7e1fee35b722b2f36fa590087c0ea4af095f4ec63ab8c844d7229c60a11",
+          "fileCount": 5,
+          "totalBytes": 134096,
+          "astNodeCount": 16336,
+          "findingCount": 43
+        }
+      },
+      "uiUxDesignTokens": {
+        "cssVariables": {
+          "--text-primary": "#ededed",
+          "--text-secondary": "#d3d3d3",
+          "--text-minor": "#999",
+          "--text-link": "#3b6cef",
+          "--text-highlight": "#00ff74",
+          "--background-base": "#0a0a0a",
+          "--background-primary": "#222"
+        },
+        "brandPalette": ["#0a0a0a", "#222222", "#00ff74", "#00ffbf", "#3b6cef", "#ff2791"],
+        "typography": ["Volte", "Pretendard"]
+      },
+      "observedFacts": [
+        "Highlights 4 core pillars: 1. 프리셋으로 손쉽게 시작 (face/hair/outfit/pose presets), 2. 모델에 직접 그리기 (3D surface direct drawing), 3. AI 기반 편의 기능 (AI reference preset recommendation & webcam/image pose capture), 4. 창작자 편의 기능 (transparent PNG & layered PSD export)."
+      ],
+      "inferences": [
+        "Bridges 3D character turnaround consistency with 2D webtoon PSD layer pipelines."
+      ],
+      "unknowns": [
+        "Internal Unity/Unreal shader graph inside the desktop Windows/macOS binary."
+      ]
+    },
+    {
+      "id": "posemaniacs",
+      "name": "Posemaniacs",
+      "origin": "https://www.posemaniacs.com",
+      "category": "three-d-anatomy-and-hand-pose-reference",
+      "evidence": {
+        "homeCapture": {
+          "evidenceId": "ev_da8dc6db9a1253ca2e1c2bc2ae6b410e3f76ffbbc86f44ab797b83415afb284e",
+          "scenarioSha256": "6673b4de778f27a4331726e2ba610bfa1aca85610731a7f47c05c685908bd281",
+          "cssSha256": "6333d98c606d74ab73a24b0bb06847013914120bdc0ec0ac7bba9b8d87f45422"
+        },
+        "scriptExport": {
+          "evidenceId": "ev_f5cce997b9f47f0d1e2ec5a60551866cc2839a1c83941ffba38e74923f5ef52b",
+          "fileCount": 41
+        },
+        "astAnalysis": {
+          "viewEvidenceId": "ev_61e9bbcadbe929989f5b9aad2a1b93cb56a219f4555cc6f3f0fcba0d7f5200be",
+          "routesViewEvidenceId": "ev_1e0edb27ab034a4d2f0c76a7f6fc275184d32897c86224dde3b092e0b0e4b64c",
+          "parentEvidenceId": "ev_3705ebb587f1eabed9d327914bd1d07cb9a7cb53e2844cc82c693ca1683b7483",
+          "rootSha256": "5982ec96c11f6dd7b477e5cda9a154d7eb198df69097a9a83fd137fcca8450ec",
+          "fileCount": 31,
+          "totalBytes": 483361,
+          "astNodeCount": 143376,
+          "findingCount": 1283
+        }
+      },
+      "uiUxDesignTokens": {
+        "brandPalette": ["#111827", "#414141", "#2563EB", "#EF4444", "#FD3232", "#32CD32"]
+      },
+      "observedFacts": [
+        "Exposes 12 routes including /poses, /tools, /faces, /generated-photos, /pose-of-the-day, /learn, /articles, /courses, and /submissions.",
+        "Provides interactive 3D muscle/ecorche camera orbiting, focal length switching, and hand/expression reference tools."
+      ],
+      "inferences": [
+        "Combines 3D WebGL anatomy meshes with AI-generated photo reference overlays (/generated-photos)."
+      ],
+      "unknowns": [
+        "Asset compression format for individual ecorche glTF/DRC bundles."
+      ]
+    }
+  ]
+}

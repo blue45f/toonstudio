@@ -37,6 +37,7 @@ import {
 } from "./claude/claude-competitor-full-suite";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
 import { StudioPhase6EcosystemSuitePanel } from "./StudioPhase6EcosystemSuitePanel";
+import { StudioRea15PlatformsWorkbenchPanel } from "./StudioRea15PlatformsWorkbenchPanel";
 
 export type CompetitorSuiteTabId =
   | "aid-lineart-splitter"
@@ -495,6 +496,11 @@ export function StudioCompetitorFullSuitePanel({
       ) : null}
 
       <StudioPhase6EcosystemSuitePanel
+        assistInput={assistInput}
+        onAppendDirectionLine={onAppendDirectionLine}
+      />
+
+      <StudioRea15PlatformsWorkbenchPanel
         assistInput={assistInput}
         onAppendDirectionLine={onAppendDirectionLine}
       />

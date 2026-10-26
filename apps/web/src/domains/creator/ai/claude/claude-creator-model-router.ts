@@ -66,7 +66,7 @@ export type ClaudeCreatorTaskId =
   | "fusion:sfx-envelope-warp"
   | "fusion:tension-pacing-doctor"
   | "fusion:lore-foreshadow-integrity"
-  // 7. N7 & Master Storyboard Runners (7)
+  // 7. N7 & Master Storyboard Runners (9)
   | "runner:master-storyboard-pipeline"
   | "runner:story-seed"
   | "runner:plot-development"
@@ -75,7 +75,13 @@ export type ClaudeCreatorTaskId =
   | "runner:dialogue-suggest"
   | "runner:dialogue-translate"
   | "runner:prompt-enhancer"
-  | "runner:shading-assist";
+  | "runner:shading-assist"
+  // 8. Phase 7 REA 15-Platform Deep Internalization & Creative AI Suite (5)
+  | "rea15:glimnavi-relight-lineart-v23"
+  | "rea15:kaistory-single-envelope-kaion-quiz"
+  | "rea15:snaptoon-frameo-shaper-3d-lighting"
+  | "rea15:manhwa-komiko-anifusion-flow"
+  | "rea15:creative-dopamine-scroll-ux-synthesizer";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -449,6 +455,48 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "fast-inline",
     "광원 방위각·고도각·림라이트 수치 추천은 Haiku 5.5로 즉시 처리",
     1_200,
+  ),
+
+  // 8. Phase 7 REA 15-Platform Deep Internalization & Creative AI Suite
+  "rea15:glimnavi-relight-lineart-v23": defineRoute(
+    "rea15:glimnavi-relight-lineart-v23",
+    "그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터",
+    "phase6-ecosystem",
+    "fast-inline",
+    "선화 v1.0~v2.3 버전·6종 선화 프리셋·컬러 레이어 분리·AI 그림자/조명/명암 파라미터 산출은 Haiku 5.5로 즉각 처리",
+    3_072,
+  ),
+  "rea15:kaistory-single-envelope-kaion-quiz": defineRoute(
+    "rea15:kaistory-single-envelope-kaion-quiz",
+    "카이스토리(KAISTORY) 4단 단일 데이터 엔벨로프 & KAION 웹툰 학습카드·독자 퀴즈 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "conti→design→editor→story 단일 프로젝트 엔벨로프와 KAION 학습카드·독자 몰입 퀴즈 생성은 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:snaptoon-frameo-shaper-3d-lighting": defineRoute(
+    "rea15:snaptoon-frameo-shaper-3d-lighting",
+    "Snaptoon·Frameo·NAVER SHAPER·Plask·Posemaniacs 3D 포즈·스포트라이트 콘 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "Snapboard 3D→AI 변환·Frameo 스포트라이트 콘(--cursor-angle/--cone-spread)·SHAPER 3D 표면 드로잉/포즈·해부학 리그는 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:manhwa-komiko-anifusion-flow": defineRoute(
+    "rea15:manhwa-komiko-anifusion-flow",
+    "ManhwaAI 6대 화풍/5대 톤·Komiko 레이어 분리/인비트윈·Anifusion 노드 플로우 디렉터",
+    "phase6-ecosystem",
+    "creative-production",
+    "6대 만화 화풍·5대 절차적 효과톤·비파괴 레이어 분리·노드 플로우 그래프 설계는 Sonnet 5.5 적용",
+    4_096,
+  ),
+  "rea15:creative-dopamine-scroll-ux-synthesizer": defineRoute(
+    "rea15:creative-dopamine-scroll-ux-synthesizer",
+    "웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & 15대 플랫폼 UI/UX 테마 토큰 합성기",
+    "phase6-ecosystem",
+    "deep-architecture",
+    "컷별 독자 도파민 곡선·스크롤 정지 시간(ms)·클리프행어 훅 강도 예측 및 15대 REA UI/UX 테마 합성은 Opus 5.5 심층 추론 적용",
+    6_144,
   ),
 });
 

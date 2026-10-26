@@ -1,0 +1,636 @@
+import { z } from "zod";
+
+import type { ClaudeTokenUsage } from "@/shared/ai/claude/claude-models";
+import type { ClaudeCreatorTaskId, ClaudeCreatorTaskProfile } from "./claude-creator-model-router";
+
+/* ============================================================================
+ * 0. 15대 웹툰 AI 보조 플랫폼 REA 정본 카탈로그 및 UI/UX 디자인 토큰 스키마
+ * ============================================================================ */
+
+export const REA15_PLATFORM_IDS = [
+  "glimnavi",
+  "snaptoon",
+  "kaistory",
+  "ggooming",
+  "plask-motion",
+  "manhwa-ai",
+  "komiko-ai",
+  "anifusion",
+  "katalist-ai",
+  "novelai",
+  "mootion",
+  "skyreels",
+  "frameo",
+  "naver-webtoon-shaper",
+  "posemaniacs",
+] as const;
+
+export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
+
+export interface Rea15PlatformUiThemeSpec {
+  readonly platformId: Rea15PlatformId;
+  readonly nameKo: string;
+  readonly originUrl: string;
+  readonly reaEvidenceId: string;
+  readonly scenarioSha256: string;
+  readonly surfaceHex: string;
+  readonly panelHex: string;
+  readonly borderHex: string;
+  readonly textPrimaryHex: string;
+  readonly textMutedHex: string;
+  readonly accentPrimaryHex: string;
+  readonly accentSecondaryHex: string;
+  readonly borderRadiusPx: number;
+  readonly fontStack: string;
+  readonly coreWorkflowKo: string;
+  readonly keyRoutes: readonly string[];
+}
+
+export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
+  Record<Rea15PlatformId, Rea15PlatformUiThemeSpec>
+> = Object.freeze({
+  glimnavi: {
+    platformId: "glimnavi",
+    nameKo: "그림나비 (GlimNavi Studio v2.3)",
+    originUrl: "https://glimnavi.com/function-step3.html",
+    reaEvidenceId: "ev_f2c78ddd17640152c0ce5ea59a6634cd0f7029fe29a852251b9147d1e60e3570",
+    scenarioSha256: "3ac6113ac3d149b37ff9863b5deb6a7d8ff15ccfb597457ca150a6e9a98f60d1",
+    surfaceHex: "#f6f7fb",
+    panelHex: "#ffffff",
+    borderHex: "#e5e7eb",
+    textPrimaryHex: "#111827",
+    textMutedHex: "#6b7280",
+    accentPrimaryHex: "#00a8c2",
+    accentSecondaryHex: "#3b82f6",
+    borderRadiusPx: 14,
+    fontStack: "Pretendard Variable, sans-serif",
+    coreWorkflowKo:
+      "5단계(기획·각색→콘티→선화 v1.0~v2.3→자동채색→AI 그림자·조명·명암 Relight) + 컬러 레이어 분리 + PSD 출력",
+    keyRoutes: ["/", "/function-step3.html", "/plan.html", "/tutorial.html"],
+  },
+  snaptoon: {
+    platformId: "snaptoon",
+    nameKo: "스냅툰 · 스냅보드 (Snaptoon & Snapboard)",
+    originUrl: "https://snaptoon.co.kr/",
+    reaEvidenceId: "ev_b1e4285baa78b85f3ad6b72dd54277f72ecff570448402bebd87070fac64a8c3",
+    scenarioSha256: "f05844d786ada6594f200e5398c9081345085acd0152146d0111169592e13acb",
+    surfaceHex: "#FAF8F5",
+    panelHex: "#F2EFEA",
+    borderHex: "#E8E5E0",
+    textPrimaryHex: "#1A1A1A",
+    textMutedHex: "#6B6B6B",
+    accentPrimaryHex: "#1E3A5F",
+    accentSecondaryHex: "#2A5285",
+    borderRadiusPx: 12,
+    fontStack: "Pretendard, Noto Serif KR, EB Garamond",
+    coreWorkflowKo: "스냅툰 3D 실시간 렌더링 → 스냅보드 AI 창작·변환 → 스냅툰 웨어하우스 3D 소재",
+    keyRoutes: ["/", "/en/"],
+  },
+  kaistory: {
+    platformId: "kaistory",
+    nameKo: "카이스토리 · 카이툰 (KAISTORY & KAITOON)",
+    originUrl: "https://kaistory.net/",
+    reaEvidenceId: "ev_76255f44204c56a3615ba3ed1dd0f8a5f1cf15aaf954649b456e50cc80824613",
+    scenarioSha256: "4a783a2b5bd2aa91f0b3c076bce1bb3bb6c1c8f7d84d54742a53493c0bcced7d",
+    surfaceHex: "#f6f7fb",
+    panelHex: "#ffffff",
+    borderHex: "#e7e8f0",
+    textPrimaryHex: "#1a1c2b",
+    textMutedHex: "#5c6178",
+    accentPrimaryHex: "#16168f",
+    accentSecondaryHex: "#ff5a4d",
+    borderRadiusPx: 14,
+    fontStack: "Pretendard, sans-serif",
+    coreWorkflowKo:
+      "단일 프로젝트 데이터 엔벨로프(conti→design→editor→story) + 화자별 TTS + KAION 학습카드·문제 생성",
+    keyRoutes: [
+      "https://conti.kaistory.net",
+      "https://design.kaistory.net",
+      "https://editor.kaistory.net",
+      "https://story.kaistory.net",
+    ],
+  },
+  ggooming: {
+    platformId: "ggooming",
+    nameKo: "꾸밍 (GGOOMING)",
+    originUrl: "https://www.ggooms.com/",
+    reaEvidenceId: "ev_28d88e317e86129ace97da5ecc1aa6be41335b246956741190f7f5416fc37e32",
+    scenarioSha256: "912a469864405fc70aa12501c5f0fa64108ae1b49ca11702696dc6b98fd258aa",
+    surfaceHex: "#eff6ff",
+    panelHex: "#ffffff",
+    borderHex: "#bfdbfe",
+    textPrimaryHex: "#1e3ad4",
+    textMutedHex: "#3f3f3f",
+    accentPrimaryHex: "#274bff",
+    accentSecondaryHex: "#4980ff",
+    borderRadiusPx: 12,
+    fontStack: "Geist, Geist Mono, sans-serif",
+    coreWorkflowKo: "인스타툰·브랜드 콜라보 고속 컷 생성 및 캐릭터 화풍 일관성 락",
+    keyRoutes: ["/", "/dashboard", "/dashboard/projects", "/dashboard/projects/new"],
+  },
+  "plask-motion": {
+    platformId: "plask-motion",
+    nameKo: "플라스크 모션 (Plask Motion)",
+    originUrl: "https://plask.ai/",
+    reaEvidenceId: "ev_e4c693a8ddd64ef1def91fcb5c6fc6fec52335a136eb945fbe376747ead4c7cb",
+    scenarioSha256: "12062ecfeaed08c6dda16eee9ad9531e6d5982b08267f72947e57b6564756e1f",
+    surfaceHex: "#0a0a0a",
+    panelHex: "#171717",
+    borderHex: "#333333",
+    textPrimaryHex: "#ededed",
+    textMutedHex: "#a0a0a0",
+    accentPrimaryHex: "#0467DF",
+    accentSecondaryHex: "#06C755",
+    borderRadiusPx: 10,
+    fontStack: "var(--font-plask-latin), var(--font-plask-cjk)",
+    coreWorkflowKo: "단일 카메라 영상 AI 모션 캡처 → VRM/FBX 리타게팅 → 키프레임 스무딩 & DOF/모션블러",
+    keyRoutes: ["/"],
+  },
+  "manhwa-ai": {
+    platformId: "manhwa-ai",
+    nameKo: "ManhwaAI",
+    originUrl: "https://www.manhwaai.net/",
+    reaEvidenceId: "ev_0a8511a3646c5da383e58a2b265eb450df9661c4601ca6414526ebeab5cfaee3",
+    scenarioSha256: "d1cf486502398a0d6d77151a5219a8b55d4c0bc7395c6652f98c97b787dfe809",
+    surfaceHex: "#17131e",
+    panelHex: "#1d1825",
+    borderHex: "#241925",
+    textPrimaryHex: "#f8f4ee",
+    textMutedHex: "#766b7d",
+    accentPrimaryHex: "#7b5cff",
+    accentSecondaryHex: "#e83f69",
+    borderRadiusPx: 12,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo:
+      "6대 만화 화풍 프리셋(full-color, black-and-white 등) + 5대 톤 오버레이(FocusingLine, SpeedLine, Tone 등)",
+    keyRoutes: ["/manhwa-character-generator", "/manhwa-editor", "/comic-editor", "/gallery/manhwa"],
+  },
+  "komiko-ai": {
+    platformId: "komiko-ai",
+    nameKo: "Komiko AI",
+    originUrl: "https://komiko.app/",
+    reaEvidenceId: "ev_a6091c8e574902740961b2395722ee6d65d22ef730bf05408d69f249434dc3ea",
+    scenarioSha256: "c0bd29800afafd282dee7defc4aadfa39a40f051351063644c1d674d68500c5c",
+    surfaceHex: "#0f101a",
+    panelHex: "#181926",
+    borderHex: "#2a2c42",
+    textPrimaryHex: "#f3f4f6",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#7C5CFA",
+    accentSecondaryHex: "#FF4D9D",
+    borderRadiusPx: 12,
+    fontStack: "Plus Jakarta Sans, Inter, sans-serif",
+    coreWorkflowKo:
+      "OC 캐릭터 메이커 + 선화 채색 + 스케치 단순화 + 레이어 분리기(/layer_splitter) + 인비트윈(/inbetween)",
+    keyRoutes: [
+      "/oc-maker",
+      "/ai-comic-generator",
+      "/line_art_colorization",
+      "/sketch_simplification",
+      "/layer_splitter",
+      "/inbetween",
+      "/voice/generate",
+    ],
+  },
+  anifusion: {
+    platformId: "anifusion",
+    nameKo: "Anifusion",
+    originUrl: "https://anifusion.ai/",
+    reaEvidenceId: "ev_01828021391fc904afa8460e67291e1e0cedeb7bddfa084da1a92fe64adff8c8",
+    scenarioSha256: "841e3a9d62df517833baa136eddc61ede2f971f8a63f6406c864202fdc4ca2fa",
+    surfaceHex: "#1a1b1e",
+    panelHex: "#25262b",
+    borderHex: "#373a40",
+    textPrimaryHex: "#fcfcfc",
+    textMutedHex: "#858585",
+    accentPrimaryHex: "#2196f3",
+    accentSecondaryHex: "#4dabf7",
+    borderRadiusPx: 10,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo:
+      "노드 플로우(/dashboard/flow/) + 무한 캔버스(/dashboard/canvas/) + 캐릭터 시트(/dashboard/character-sheets/)",
+    keyRoutes: [
+      "/dashboard/flow/",
+      "/dashboard/canvas/",
+      "/dashboard/character-sheets/",
+      "/dashboard/comic-presets/",
+      "/dashboard/sketch/",
+      "/editor/",
+    ],
+  },
+  "katalist-ai": {
+    platformId: "katalist-ai",
+    nameKo: "Katalist AI",
+    originUrl: "https://www.katalist.ai/",
+    reaEvidenceId: "ev_6a2f91553a83af023e5531e399a40b2a077eb8dbdf3345f8d1d8af3ec6d23cc5",
+    scenarioSha256: "33f0829eb08241e561a034d42f0889221b1d91989ce511b784d2d87590da1ae7",
+    surfaceHex: "#0f172a",
+    panelHex: "#1e293b",
+    borderHex: "#334155",
+    textPrimaryHex: "#f8fafc",
+    textMutedHex: "#94a3b8",
+    accentPrimaryHex: "#38bdf8",
+    accentSecondaryHex: "#818cf8",
+    borderRadiusPx: 12,
+    fontStack: "Familjen Grotesk, Crimson Pro, Geist, Inter",
+    coreWorkflowKo: "스크립트 자동 샷 분해 → 캐릭터·배경 고정 스토리보드 → 프레임별 포즈·앵글 직접 조작",
+    keyRoutes: ["/"],
+  },
+  novelai: {
+    platformId: "novelai",
+    nameKo: "NovelAI",
+    originUrl: "https://novelai.net/",
+    reaEvidenceId: "ev_ed7b1d3017d19c852444e210f9905a7784dbf6ebd46e3e06e91c6d3f6e2e9633",
+    scenarioSha256: "ee8200a356f72e7929601f8bae3c21373a2545bfb8a7caecccba1e179bd2ebc8",
+    surfaceHex: "#0e0f21",
+    panelHex: "#13152c",
+    borderHex: "#252849",
+    textPrimaryHex: "#f5f3c2",
+    textMutedHex: "#e6e6e6",
+    accentPrimaryHex: "#DCA7D7",
+    accentSecondaryHex: "#5D69DE",
+    borderRadiusPx: 8,
+    fontStack: "Inter, Source Sans Pro, serif",
+    coreWorkflowKo: "로어북 서사 메모리(/stories) + 다중 캐릭터 좌표 분리 & Vibe Transfer(/image)",
+    keyRoutes: ["/stories", "/image", "/user/subscription", "/user/inventory"],
+  },
+  mootion: {
+    platformId: "mootion",
+    nameKo: "Mootion",
+    originUrl: "https://www.mootion.com/",
+    reaEvidenceId: "ev_0a0286dd2b8b2c4d017d08fb7af0cb82d91266b998ea37464fcb8ce43ac93e78",
+    scenarioSha256: "d787a0537e1bddb33799f194acf0ab144b6add9c10185879cba21c07755585da",
+    surfaceHex: "#0e1d47",
+    panelHex: "#211f2c",
+    borderHex: "#3021d9",
+    textPrimaryHex: "#fafafa",
+    textMutedHex: "#9a9a9a",
+    accentPrimaryHex: "#4c33ff",
+    accentSecondaryHex: "#a846ee",
+    borderRadiusPx: 12,
+    fontStack: "Inter, sans-serif",
+    coreWorkflowKo: "프롬프트·대본 → 스토리보드 → 3D/비디오 애니매틱 시퀀스 자동 변환",
+    keyRoutes: ["/"],
+  },
+  skyreels: {
+    platformId: "skyreels",
+    nameKo: "SkyReels",
+    originUrl: "https://www.skyreels.ai/",
+    reaEvidenceId: "ev_5b2e30d22a2b9ca1e351d56b727f16a800309bc25a07351272cca8048b87aeca",
+    scenarioSha256: "86c5cc6fe9d8b1e50abf26cf1b8037fed348b5afbfe5de110f4b559fe246e75c",
+    surfaceHex: "#1a1a1a",
+    panelHex: "#262626",
+    borderHex: "#3f3f46",
+    textPrimaryHex: "#ffffff",
+    textMutedHex: "#a1a1aa",
+    accentPrimaryHex: "#FFCF00",
+    accentSecondaryHex: "#efcf14",
+    borderRadiusPx: 10,
+    fontStack: "Plus Jakarta Sans, Poppins, sans-serif",
+    coreWorkflowKo: "세로형 숏드라마·웹툰 릴스 에피소드 비디오 생성(/createVideo)",
+    keyRoutes: ["/createVideo", "/dev/api-keys"],
+  },
+  frameo: {
+    platformId: "frameo",
+    nameKo: "Frameo AI",
+    originUrl: "https://frameo.ai/",
+    reaEvidenceId: "ev_1b43ad4a78636801dfd2660774f04d7ce09f826e64a2fccfdd9d0ba60f87ab5a",
+    scenarioSha256: "7575ac64bb5935480f6a7ce31920c371e4cd3257c68c28bd102d4923a43cadea",
+    surfaceHex: "#09090b",
+    panelHex: "#18181b",
+    borderHex: "#27272a",
+    textPrimaryHex: "#f5f5f7",
+    textMutedHex: "#a1a1aa",
+    accentPrimaryHex: "#423be5",
+    accentSecondaryHex: "#c084fc",
+    borderRadiusPx: 8,
+    fontStack: "Geist, Averia Serif Libre, Manrope",
+    coreWorkflowKo:
+      "AI 스토리보드·스크립트 투 비디오(/ai-storyboard-generator, /use-veo3) + 스포트라이트 콘 셰이더(--cursor-angle, --cone-spread)",
+    keyRoutes: ["/ai-storyboard-generator", "/script-to-video", "/story-to-video", "/use-veo3"],
+  },
+  "naver-webtoon-shaper": {
+    platformId: "naver-webtoon-shaper",
+    nameKo: "NAVER WEBTOON SHAPER (셰이퍼)",
+    originUrl: "https://shaper.webtoons.com/",
+    reaEvidenceId: "ev_b31cfbe08e61ccbdb81f0bc2104108e580b7a7c5d3602039136136f7a999bdda",
+    scenarioSha256: "7d3810f2fac29eda33110c99652642a4e483932ec41ee8d5298f3579feb87b1c",
+    surfaceHex: "#0a0a0a",
+    panelHex: "#222222",
+    borderHex: "#333333",
+    textPrimaryHex: "#ededed",
+    textMutedHex: "#d3d3d3",
+    accentPrimaryHex: "#00ff74",
+    accentSecondaryHex: "#3b6cef",
+    borderRadiusPx: 12,
+    fontStack: "Volte, Pretendard, sans-serif",
+    coreWorkflowKo:
+      "3D 웹툰 캐릭터 프리셋 조합 + 3D 모델 표면 직접 드로잉 + AI 레퍼런스 프리셋 추천·포즈 캡처 + 레이어 PSD 출력",
+    keyRoutes: ["/"],
+  },
+  posemaniacs: {
+    platformId: "posemaniacs",
+    nameKo: "Posemaniacs",
+    originUrl: "https://www.posemaniacs.com/",
+    reaEvidenceId: "ev_da8dc6db9a1253ca2e1c2bc2ae6b410e3f76ffbbc86f44ab797b83415afb284e",
+    scenarioSha256: "6673b4de778f27a4331726e2ba610bfa1aca85610731a7f47c05c685908bd281",
+    surfaceHex: "#111827",
+    panelHex: "#1f2937",
+    borderHex: "#414141",
+    textPrimaryHex: "#f9fafb",
+    textMutedHex: "#9ca3af",
+    accentPrimaryHex: "#2563EB",
+    accentSecondaryHex: "#EF4444",
+    borderRadiusPx: 8,
+    fontStack: "Roboto, Google Sans Text, sans-serif",
+    coreWorkflowKo: "3D 에코르셰(근육) 해부학 회전 뷰어 + 핸드/표정 레퍼런스 + 오늘의 포즈 드로잉",
+    keyRoutes: ["/poses", "/tools", "/faces", "/generated-photos", "/pose-of-the-day"],
+  },
+});
+
+/* ============================================================================
+ * 1. GlimNavi Studio v2.3 — 5종 선화 워크플로우 · 6종 표현 프리셋 · 컬러 레이어 분리 · Relight
+ * ============================================================================ */
+
+export const GLIMNAVI_LINEART_VERSIONS = [
+  "v1.0-basic",
+  "v2.0-preserve-original",
+  "v2.1-precision",
+  "v2.2-learned",
+  "v2.3-balanced",
+] as const;
+
+export const GLIMNAVI_LINEART_PRESETS = [
+  "thin-line",
+  "face-preserve",
+  "shading-keep",
+  "fast-convert",
+  "clean-line",
+  "detail-preserve",
+] as const;
+
+export const GLIMNAVI_CANVAS_PRESETS = [
+  "800x600",
+  "1024x768",
+  "1280x720",
+  "1920x1080",
+  "2560x1440",
+] as const;
+
+export const GlimnaviRelightAndLineartV23Schema = z.object({
+  studioStageSummaryKo: z.string(),
+  selectedLineartVersion: z.enum(GLIMNAVI_LINEART_VERSIONS),
+  selectedLineartPreset: z.enum(GLIMNAVI_LINEART_PRESETS),
+  canvasBaseSize: z.enum(GLIMNAVI_CANVAS_PRESETS),
+  colorLayerSeparationEnabled: z.boolean(),
+  nonDestructiveProposalId: z.string(),
+  separatedColorLayers: z.array(
+    z.object({
+      layerId: z.string(),
+      layerNameKo: z.string(),
+      dominantHex: z.string(),
+      blendMode: z.enum(["normal", "multiply", "screen", "overlay", "soft-light"]),
+      opacityPct: z.number(),
+      strokeGapTolerancePx: z.number(),
+    }),
+  ),
+  relightPass: z.object({
+    aiShadowDirectionDeg: z.number(),
+    aiShadowSoftnessPct: z.number(),
+    lightingKelvin: z.number(),
+    rimLightHex: z.string(),
+    ambientOcclusionIntensityPct: z.number(),
+    shadingContrastBoostPct: z.number(),
+    relightDirectiveKo: z.string(),
+  }),
+  exportReadiness: z.object({
+    downloadCanvasReady: z.boolean(),
+    downloadAllLayersZipReady: z.boolean(),
+    downloadPsdReady: z.boolean(),
+  }),
+});
+
+export type GlimnaviRelightAndLineartV23Report = z.infer<
+  typeof GlimnaviRelightAndLineartV23Schema
+>;
+
+/* ============================================================================
+ * 2. KAISTORY — 4단계 단일 프로젝트 데이터 엔벨로프 & KAION 학습카드·독자 퀴즈
+ * ============================================================================ */
+
+export const KaistorySingleEnvelopeAndKaionSchema = z.object({
+  envelopeSummaryKo: z.string(),
+  projectEnvelopeVersion: z.string(),
+  offlineFirstSyncStatus: z.enum(["synced-local-authoritative", "pending-delta", "conflict-free-merged"]),
+  subdomainStages: z.array(
+    z.object({
+      subdomain: z.enum([
+        "conti.kaistory.net",
+        "design.kaistory.net",
+        "editor.kaistory.net",
+        "story.kaistory.net",
+      ]),
+      stageNameKo: z.string(),
+      derivedRevisionHash: z.string(),
+      keyOutputSummaryKo: z.string(),
+    }),
+  ),
+  speakerTtsAndMultilingualTracks: z.array(
+    z.object({
+      speakerName: z.string(),
+      voicePresetId: z.string(),
+      koLine: z.string(),
+      enLine: z.string(),
+      jaLine: z.string(),
+      estimatedDurationMs: z.number(),
+    }),
+  ),
+  kaionLearningCards: z.array(
+    z.object({
+      cardId: z.string(),
+      titleKo: z.string(),
+      narrativeConceptKo: z.string(),
+      quizQuestionKo: z.string(),
+      choicesKo: z.array(z.string()),
+      correctChoiceIndex: z.number(),
+      explanationKo: z.string(),
+      rewardBadgeNameKo: z.string(),
+    }),
+  ),
+});
+
+export type KaistorySingleEnvelopeAndKaionReport = z.infer<
+  typeof KaistorySingleEnvelopeAndKaionSchema
+>;
+
+/* ============================================================================
+ * 3. Snaptoon · Frameo · NAVER SHAPER · Plask · Posemaniacs 3D & 스포트라이트 콘 디렉터
+ * ============================================================================ */
+
+export const SnaptoonFrameoShaper3dDirectorSchema = z.object({
+  directorSummaryKo: z.string(),
+  snaptoonBridge: z.object({
+    themeMode: z.enum(["paper-warm-FAF8F5", "dark-studio-0A0A0A"]),
+    warehouseScenePresetNameKo: z.string(),
+    cameraFocalLengthMm: z.number(),
+    snapboardAiTransformStrengthPct: z.number(),
+    preservedLineFidelityPct: z.number(),
+  }),
+  frameoSpotlightShader: z.object({
+    cursorAngleDeg: z.number(),
+    coneSpreadDeg: z.number(),
+    edgeSensitivity: z.number(),
+    colorSensitivity: z.number(),
+    glowPrimaryHex: z.string(),
+    glowSecondaryHex: z.string(),
+    shortDramaTransitionRuleKo: z.string(),
+  }),
+  shaperAndPoseRig: z.object({
+    shaperPresetComboKo: z.string(),
+    surfaceDirectDrawLayerCount: z.number(),
+    posemaniacsEcorcheCameraPitchDeg: z.number(),
+    posemaniacsHandRigPresetKo: z.string(),
+    plaskMocapFootLockConfidencePct: z.number(),
+    layeredPsdPassNames: z.array(z.string()),
+  }),
+});
+
+export type SnaptoonFrameoShaper3dDirectorReport = z.infer<
+  typeof SnaptoonFrameoShaper3dDirectorSchema
+>;
+
+/* ============================================================================
+ * 4. ManhwaAI · Komiko AI · Anifusion 통합 화풍·효과톤·레이어 분리기·노드 플로우 디렉터
+ * ============================================================================ */
+
+export const MANHWAAI_STYLE_PRESETS = [
+  "full-color",
+  "black-and-white",
+  "grayscale",
+  "monochrome",
+  "sketch",
+  "watercolor",
+] as const;
+
+export const MANHWAAI_TONE_OVERLAYS = [
+  "FocusingLine",
+  "SpeedLine",
+  "Tone",
+  "ToneNoise",
+  "ToneSnow",
+] as const;
+
+export const ManhwaKomikoAnifusionFlowSchema = z.object({
+  pipelineSummaryKo: z.string(),
+  manhwaStylePreset: z.enum(MANHWAAI_STYLE_PRESETS),
+  activeToneOverlays: z.array(
+    z.object({
+      toneType: z.enum(MANHWAAI_TONE_OVERLAYS),
+      targetCutNumber: z.number(),
+      opacityPct: z.number(),
+      angleDeg: z.number(),
+      dramaticPurposeKo: z.string(),
+    }),
+  ),
+  komikoLayerSplitterAndInbetween: z.object({
+    ocAnchorId: z.string(),
+    splitParts: z.array(z.string()),
+    inbetweenFrameCount: z.number(),
+    motionCurveType: z.enum(["ease-in-out", "anticipation-snap", "impact-hold", "linear"]),
+  }),
+  anifusionNodeFlowGraph: z.array(
+    z.object({
+      nodeId: z.string(),
+      nodeType: z.enum([
+        "UniversalPromptEditor",
+        "CharacterSheetAnchor",
+        "FlowImageSelector",
+        "ComicPresetStylizer",
+        "LayerSplitterOutput",
+      ]),
+      upstreamNodeIds: z.array(z.string()),
+      outputSummaryKo: z.string(),
+    }),
+  ),
+});
+
+export type ManhwaKomikoAnifusionFlowReport = z.infer<
+  typeof ManhwaKomikoAnifusionFlowSchema
+>;
+
+/* ============================================================================
+ * 5. [창의적 AI 특화] 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & 15대 UI/UX 테마 합성기
+ * ============================================================================ */
+
+export const CreativeDopamineAndUxSynthesizerSchema = z.object({
+  executiveSummaryKo: z.string(),
+  overallDopaminePeakScore: z.number(),
+  predictedEpisodeCompletionRatePct: z.number(),
+  cliffhangerHookPowerPct: z.number(),
+  cutScrollHeatmap: z.array(
+    z.object({
+      cutNumber: z.number(),
+      narrativeBeatKo: z.string(),
+      predictedDwellTimeMs: z.number(),
+      scrollVelocityPxPerSec: z.number(),
+      dopamineSpikePct: z.number(),
+      recommendedVisualAmplifierKo: z.string(),
+    }),
+  ),
+  synthesizedUiUxTheme: z.object({
+    themeTitleKo: z.string(),
+    primarySourcePlatform: z.enum(REA15_PLATFORM_IDS),
+    secondarySourcePlatform: z.enum(REA15_PLATFORM_IDS),
+    surfaceHex: z.string(),
+    panelHex: z.string(),
+    accentPrimaryHex: z.string(),
+    accentSecondaryHex: z.string(),
+    textPrimaryHex: z.string(),
+    borderRadiusPx: z.number(),
+    recommendedFontPairKo: z.string(),
+    wcagContrastRatio: z.number(),
+    designRationaleKo: z.string(),
+  }),
+});
+
+export type CreativeDopamineAndUxSynthesizerReport = z.infer<
+  typeof CreativeDopamineAndUxSynthesizerSchema
+>;
+
+/* ============================================================================
+ * 공통 실행 엔벨로프 및 통합 번들
+ * ============================================================================ */
+
+export interface Rea15ExecutionMeta {
+  readonly taskId: ClaudeCreatorTaskId;
+  readonly taskProfile: ClaudeCreatorTaskProfile;
+  readonly routedModel: string;
+  readonly modelUsed: string;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedCostUsd: number;
+  readonly fallbackReason?: string;
+}
+
+export interface Rea15Envelope<T> {
+  readonly source: "claude-live" | "local-fallback";
+  readonly report: T;
+  readonly modelUsed: string;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedCostUsd: number;
+  readonly taskProfile: ClaudeCreatorTaskProfile;
+  readonly routedModel: string;
+  readonly fallbackReason?: string;
+  readonly meta: Rea15ExecutionMeta;
+}
+
+export interface Rea15FullSuiteBundle {
+  readonly generatedAtIso: string;
+  readonly totalEstimatedCostUsd: number;
+  readonly liveEngineCount: number;
+  readonly fallbackEngineCount: number;
+  readonly glimnaviRelightLineart: Rea15Envelope<GlimnaviRelightAndLineartV23Report>;
+  readonly kaistoryEnvelopeKaion: Rea15Envelope<KaistorySingleEnvelopeAndKaionReport>;
+  readonly snaptoonFrameoShaper3d: Rea15Envelope<SnaptoonFrameoShaper3dDirectorReport>;
+  readonly manhwaKomikoAnifusionFlow: Rea15Envelope<ManhwaKomikoAnifusionFlowReport>;
+  readonly creativeDopamineUxSynthesizer: Rea15Envelope<CreativeDopamineAndUxSynthesizerReport>;
+}

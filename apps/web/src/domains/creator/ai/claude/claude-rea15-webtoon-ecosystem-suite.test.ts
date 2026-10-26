@@ -1,0 +1,199 @@
+import { describe, expect, it, vi } from "vitest";
+
+import { claudeParse } from "@/shared/ai/claude/claude-transport";
+
+import {
+  buildLocalCreativeDopamineAndUxSynthesizerReport,
+  buildLocalGlimnaviRelightAndLineartV23Report,
+  buildLocalKaistorySingleEnvelopeAndKaionReport,
+  buildLocalManhwaKomikoAnifusionFlowReport,
+  buildLocalSnaptoonFrameoShaper3dDirectorReport,
+  buildRea15ThemeCssVariables,
+  getRea15PlatformTheme,
+  listRea15PlatformThemes,
+  runCreativeDopamineAndUxSynthesizerAssist,
+  runGlimnaviRelightAndLineartV23Assist,
+  runKaistorySingleEnvelopeAndKaionAssist,
+  runManhwaKomikoAnifusionFlowAssist,
+  runRea15WebtoonEcosystemFullSuite,
+  runSnaptoonFrameoShaper3dDirectorAssist,
+} from "./claude-rea15-webtoon-ecosystem-suite";
+import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
+
+vi.mock("@/shared/ai/claude/claude-transport", () => ({
+  claudeParse: vi.fn(),
+}));
+
+const SAMPLE_INPUT: WebtoonProductionAssistInput = {
+  genre: "판타지 액션",
+  coreConflict: "봉인된 고대 유물의 각성과 황궁 결전",
+  protagonistName: "서진",
+  partnerName: "하윤",
+  artistLabel: "K-웹툰 마스터 화풍",
+  triggerWord: "ts_master_webtoon",
+  relationshipDynamic: "fated-rivals",
+  posePresetId: "pose-dynamic-slash",
+  scriptText: "서진: 이 봉인을 여는 순간 우리의 시간은 되돌릴 수 없어.\n하윤: 그래도 멈추지 않아.",
+};
+
+const TEST_ROUTE = {
+  apiKey: "sk-ant-test-key",
+  revision: 1,
+  model: "claude-opus-5-5",
+};
+
+describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 15대 웹툰 AI 플랫폼 REA 내재화 & 창의적 AI 스위트)", () => {
+  it("0. 15대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+    const themes = listRea15PlatformThemes();
+    expect(themes).toHaveLength(15);
+
+    const glimnavi = getRea15PlatformTheme("glimnavi");
+    expect(glimnavi.reaEvidenceId).toContain("ev_f2c78ddd");
+    expect(glimnavi.surfaceHex).toBe("#f6f7fb");
+
+    const cssVars = buildRea15ThemeCssVariables("frameo");
+    expect(cssVars["--rea15-surface"]).toBe("#09090b");
+    expect(cssVars["--rea15-accent-primary"]).toBe("#423be5");
+  });
+
+  it("1. 그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터(Haiku 5.5)를 검증한다", async () => {
+    const local = buildLocalGlimnaviRelightAndLineartV23Report(SAMPLE_INPUT);
+    expect(local.selectedLineartVersion).toBe("v2.3-balanced");
+    expect(local.separatedColorLayers.length).toBeGreaterThanOrEqual(4);
+    expect(local.exportReadiness.downloadPsdReady).toBe(true);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-4-5",
+        usage: { input_tokens: 210, output_tokens: 330 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runGlimnaviRelightAndLineartV23Assist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("fast-inline");
+    expect(live.routedModel).toBe("claude-haiku-5-5");
+    expect(live.report.colorLayerSeparationEnabled).toBe(true);
+  });
+
+  it("2. KAISTORY 4단 단일 데이터 엔벨로프 & KAION 학습카드·독자 퀴즈(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalKaistorySingleEnvelopeAndKaionReport(SAMPLE_INPUT);
+    expect(local.subdomainStages).toHaveLength(4);
+    expect(local.kaionLearningCards.length).toBeGreaterThanOrEqual(2);
+    expect(local.speakerTtsAndMultilingualTracks).toHaveLength(2);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 260, output_tokens: 420 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runKaistorySingleEnvelopeAndKaionAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.offlineFirstSyncStatus).toBe("synced-local-authoritative");
+  });
+
+  it("3. Snaptoon · Frameo 스포트라이트 콘 · NAVER SHAPER 3D 직접 드로잉 디렉터(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalSnaptoonFrameoShaper3dDirectorReport(SAMPLE_INPUT);
+    expect(local.frameoSpotlightShader.cursorAngleDeg).toBe(45);
+    expect(local.frameoSpotlightShader.coneSpreadDeg).toBe(25);
+    expect(local.shaperAndPoseRig.layeredPsdPassNames.length).toBeGreaterThanOrEqual(4);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 240, output_tokens: 380 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runSnaptoonFrameoShaper3dDirectorAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.report.snaptoonBridge.preservedLineFidelityPct).toBeGreaterThanOrEqual(90);
+  });
+
+  it("4. ManhwaAI 6대 화풍/5대 톤 · Komiko 레이어 분리/인비트윈 · Anifusion 노드 플로우 디렉터를 검증한다", async () => {
+    const local = buildLocalManhwaKomikoAnifusionFlowReport(SAMPLE_INPUT);
+    expect(local.manhwaStylePreset).toBe("full-color");
+    expect(local.activeToneOverlays).toHaveLength(3);
+    expect(local.anifusionNodeFlowGraph).toHaveLength(5);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 250, output_tokens: 390 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runManhwaKomikoAnifusionFlowAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.report.komikoLayerSplitterAndInbetween.inbetweenFrameCount).toBe(4);
+  });
+
+  it("5. [창의적 AI] 웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & UI/UX 테마 합성기(Opus 5.5)를 검증한다", async () => {
+    const local = buildLocalCreativeDopamineAndUxSynthesizerReport(SAMPLE_INPUT);
+    expect(local.overallDopaminePeakScore).toBeGreaterThanOrEqual(90);
+    expect(local.cutScrollHeatmap).toHaveLength(3);
+    expect(local.synthesizedUiUxTheme.wcagContrastRatio).toBeGreaterThanOrEqual(7);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 320, output_tokens: 510 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runCreativeDopamineAndUxSynthesizerAssist(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.cliffhangerHookPowerPct).toBeGreaterThanOrEqual(90);
+  });
+
+  it("6. runRea15WebtoonEcosystemFullSuite 통합 번들 오케스트레이터 및 폴백 안정성을 검증한다", async () => {
+    vi.mocked(claudeParse).mockRejectedValueOnce(new Error("simulated network timeout"));
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
+      parsed: buildLocalKaistorySingleEnvelopeAndKaionReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
+      parsed: buildLocalSnaptoonFrameoShaper3dDirectorReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 200, output_tokens: 300 } } as never,
+      parsed: buildLocalManhwaKomikoAnifusionFlowReport(SAMPLE_INPUT),
+    });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 250, output_tokens: 400 } } as never,
+      parsed: buildLocalCreativeDopamineAndUxSynthesizerReport(SAMPLE_INPUT),
+    });
+
+    const bundle = await runRea15WebtoonEcosystemFullSuite(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(bundle.liveEngineCount).toBe(4);
+    expect(bundle.fallbackEngineCount).toBe(1);
+    expect(bundle.glimnaviRelightLineart.source).toBe("local-fallback");
+    expect(bundle.creativeDopamineUxSynthesizer.source).toBe("claude-live");
+  });
+});
