@@ -9,10 +9,21 @@ import {
 } from "../studio-csp-benchmark-scorecard";
 import { measureProcreateSilicaEngineBenchmark } from "../studio-procreate-silica-codecs";
 import {
+  applyCompleteGlfxFilterExtensionSuite,
   applyHolisticColorGradingAndCurvesSuite,
+  COMPLETE_ECOSYSTEM_TOOL_PRESETS,
+  COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER,
+  evaluateBernsteinBasis,
+  evaluateBernsteinFfdLatticeMeshWarp,
+  evaluateCloneStampAndConicalAirbrush,
+  evaluateCompleteUnfragmentedStudioSummary,
   evaluateHolisticGradientTool,
   evaluateHolisticLayerCompositorAndEasel,
   evaluateHolisticPerspectiveAndFreeTransform,
+  evaluateMultiPolygonSelectAndMarquee,
+  evaluatePiskelOnionSkinAndSpritesheet,
+  evaluateRichCanvasTypographyLayout,
+  evaluateSculptGlTwistAndDynamicTopology,
   executeHolisticFloodFillAndMagicErase,
   HOLISTIC_STUDIO_TOOL_PRESETS,
   measureUniversalBrushTaxonomyEngineBenchmark,
@@ -114,7 +125,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(38);
+    expect(universalBench.reaEvidenceTargetCount).toBe(45);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -122,7 +133,9 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.wave26ReaEvidenceCount).toBe(8);
     expect(universalBench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
+    expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
     expect(universalBench.holisticToolPresetCount).toBe(12);
+    expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -260,6 +273,127 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     });
     expect(comp.dirtyHistoryTileCount).toBe(4);
     expect(comp.snappedEaselAngleDeg).toBe(15);
+  });
+
+  it("Wave 29 699개 파일(618,741 AST 노드) 비분할 일괄 REA 원장(7개 서브시스템) 및 FFD·다중선택·타이포·클론·3D조각·어니언스킨·Vibrance 커널을 검증한다", () => {
+    expect(COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER).toHaveLength(7);
+    expect(COMPLETE_ECOSYSTEM_TOOL_PRESETS).toHaveLength(14);
+    for (const entry of COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER) {
+      expect(entry.parentEvidenceId).toBe(
+        "ev_4742ae24c0e0894803c2af285fca4288a072af5f0190032d8529e469685af06b",
+      );
+      expect(entry.corpusFileCount).toBe(699);
+      expect(entry.visitedAstNodes).toBe(618741);
+      expect(entry.dataFlowRelations).toBe(13781);
+    }
+
+    expect(evaluateBernsteinBasis(4, 2, 0.5)).toBeCloseTo(0.375, 4);
+    const ffd = evaluateBernsteinFfdLatticeMeshWarp({
+      cols: 5,
+      rows: 5,
+      rect: { x: 0, y: 0, width: 200, height: 100 },
+      centerDisplaceX: 28,
+      centerDisplaceY: -12,
+      sampleS01: 0.5,
+      sampleT01: 0.5,
+      meshResolution: 12,
+    });
+    expect(ffd.warpedPoint.x).toBeGreaterThan(102);
+    expect(ffd.controlPointCount).toBe(25);
+    expect(ffd.triangleIndexCount).toBe(864);
+
+    const sel = evaluateMultiPolygonSelectAndMarquee({
+      shape: "ellipse",
+      startX: 10,
+      startY: 10,
+      endX: 90,
+      endY: 70,
+      isShiftPressed: true,
+      operation: "union",
+    });
+    expect(sel.vertexCount).toBe(50);
+    expect(sel.isTooThin).toBe(false);
+    expect(sel.constrainedEnd.x).toBe(70);
+
+    const typo = evaluateRichCanvasTypographyLayout({
+      text: "TOON\tSTUDIO\nPRO",
+      fontSizePx: 24,
+      lineHeightEm: 1.25,
+      letterSpacingPx: 2,
+      align: "center",
+      strokeWidthPx: 3,
+    });
+    expect(typo.lineCount).toBe(2);
+    expect(typo.effectiveStrokeJoin).toBe("round");
+    expect(typo.boundingBox.width).toBeGreaterThan(150);
+
+    const cloneAir = evaluateCloneStampAndConicalAirbrush({
+      cloneOriginX: 100,
+      cloneOriginY: 80,
+      clickStartX: 50,
+      clickStartY: 50,
+      currentMouseX: 62,
+      currentMouseY: 58,
+      brushDiameterPx: 40,
+      sampleDistFromCenterPx: 14,
+      airbrushSeed01: [0.25, 0.5],
+      targetRgb255: [20, 20, 20],
+      foregroundRgb255: [22, 18, 20],
+      replacementRgb255: [50, 200, 100],
+      tolerance255: 10,
+    });
+    expect(cloneAir.sourceSampleCoord).toEqual({ x: 112, y: 88 });
+    expect(cloneAir.radialFeatherAlpha01).toBeLessThan(1);
+    expect(cloneAir.colorReplacedRgb255).toEqual([50, 200, 100]);
+
+    const sculpt = evaluateSculptGlTwistAndDynamicTopology({
+      vertex: [10, 0, 0],
+      center: [0, 0, 0],
+      radius: 25,
+      twistAngleRad: Math.PI / 2,
+      maskWeight01: 1,
+      edgeLength: 1.8,
+      detailThreshold: 1.0,
+    });
+    expect(sculpt.twistedVertex[1]).toBeGreaterThan(5);
+    expect(sculpt.topologyAction).toBe("subdivide-split");
+
+    const piskel = evaluatePiskelOnionSkinAndSpritesheet({
+      zoom: 2,
+      gridWidth: 1,
+      offsetX: 0,
+      offsetY: 0,
+      width: 64,
+      height: 64,
+      frameHashes: ["f1", "f2"],
+      layerCount: 3,
+      totalFrameCount: 12,
+    });
+    expect(piskel.spritesheetCols).toBe(4);
+    expect(piskel.spritesheetRows).toBe(3);
+
+    const glfxExt = applyCompleteGlfxFilterExtensionSuite({
+      rgb01: [0.4, 0.6, 0.3],
+      vibranceMinus1To1: 0.5,
+      uv01: [0.8, 0.7],
+      vignetteSize01: 0.3,
+      vignetteAmount01: 0.7,
+      sepiaAmount01: 0.6,
+      dotScreenAngleRad: 0.4,
+      dotScreenSizePx: 5,
+      pixelCoord: [24, 18],
+    });
+    expect(glfxExt.vibranceRgb01[0]).toBeLessThan(0.4);
+    expect(glfxExt.vignetteRgb01[1]).toBeLessThan(0.6);
+
+    const summary = evaluateCompleteUnfragmentedStudioSummary({
+      presetId: "ecosystem-ffd-lattice-5x5",
+      sampleX: 44,
+      sampleY: 22,
+      rgb01: [0.3, 0.6, 0.4],
+    });
+    expect(summary.ffdDisplacementPx).toBeGreaterThan(0);
+    expect(summary.onionSkinAlpha01).toBeCloseTo(0.35, 4);
   });
 });
 

@@ -667,37 +667,18 @@ export function evaluateLabGlfxColorHalftoneAndDenoise(params: {
   };
 }
 
-/**
- * `bitbof/klecks` 스텝 양자화 파동 왜곡(`fxDistort`) 및 명도→알파 선화 추출(`fxToAlpha`).
- */
 export function evaluateLabKlecksDistortAndToAlpha(params: {
-  readonly x: number;
-  readonly y: number;
-  readonly stepSizePx: number;
-  readonly scaleX: number;
-  readonly scaleY: number;
-  readonly strengthX: number;
-  readonly strengthY: number;
-  readonly phaseX: number;
-  readonly phaseY: number;
-  readonly rgba01: readonly [number, number, number, number];
-  readonly isInverted: boolean;
-}): {
-  readonly warpedX: number;
-  readonly warpedY: number;
-  readonly extractedAlpha01: number;
-} {
+  readonly x: number; readonly y: number; readonly stepSizePx: number;
+  readonly scaleX: number; readonly scaleY: number; readonly strengthX: number; readonly strengthY: number;
+  readonly phaseX: number; readonly phaseY: number;
+  readonly rgba01: readonly [number, number, number, number]; readonly isInverted: boolean;
+}): { readonly warpedX: number; readonly warpedY: number; readonly extractedAlpha01: number } {
   const step = Math.max(1, params.stepSizePx);
   const qx = step > 1 ? Math.floor(params.x / step) * step : params.x;
   const qy = step > 1 ? Math.floor(params.y / step) * step : params.y;
-  const wx =
-    Math.sin((qx / Math.max(1e-3, params.scaleX) + params.phaseX) * Math.PI * 2) *
-    params.strengthX;
-  const wy =
-    Math.sin((qy / Math.max(1e-3, params.scaleY) + params.phaseY) * Math.PI * 2) *
-    params.strengthY;
-  const lum =
-    (clamp01(params.rgba01[0]) + clamp01(params.rgba01[1]) + clamp01(params.rgba01[2])) / 3;
+  const wx = Math.sin((qx / Math.max(1e-3, params.scaleX) + params.phaseX) * Math.PI * 2) * params.strengthX;
+  const wy = Math.sin((qy / Math.max(1e-3, params.scaleY) + params.phaseY) * Math.PI * 2) * params.strengthY;
+  const lum = (clamp01(params.rgba01[0]) + clamp01(params.rgba01[1]) + clamp01(params.rgba01[2])) / 3;
   const rawAlpha = params.isInverted ? 1 - lum : lum;
   return {
     warpedX: Math.fround(qx + wx),
@@ -706,23 +687,10 @@ export function evaluateLabKlecksDistortAndToAlpha(params: {
   };
 }
 
-/**
- * Wave 27: Klecks UI (`klecks-ui-slider-falloff.ts`, `klecks-ui-slider-value-mapping.ts`)
- * non-linear exponent slider mapping and perpendicular-distance precision falloff.
- */
 export function evaluateKlecksPrecisionSliderMapping(params: {
-  readonly slider01: number;
-  readonly min: number;
-  readonly max: number;
-  readonly exponent?: number;
-  readonly perpendicularDistancePx?: number;
-  readonly isFineMode?: boolean;
-}): {
-  readonly falloffFactor: number;
-  readonly mappedValue: number;
-  readonly roundtripSlider01: number;
-  readonly decimalPlaces: number;
-} {
+  readonly slider01: number; readonly min: number; readonly max: number;
+  readonly exponent?: number; readonly perpendicularDistancePx?: number; readonly isFineMode?: boolean;
+}): { readonly falloffFactor: number; readonly mappedValue: number; readonly roundtripSlider01: number; readonly decimalPlaces: number } {
   const s01 = clamp01(params.slider01);
   const exp = Math.max(0.25, params.exponent ?? 1.6);
   const dPerp = Math.abs(params.perpendicularDistancePx ?? 0);
@@ -736,21 +704,11 @@ export function evaluateKlecksPrecisionSliderMapping(params: {
   return { falloffFactor, mappedValue, roundtripSlider01, decimalPlaces };
 }
 
-/**
- * Wave 28: Holistic All-In-One REA (`ev_442cce74aefb79ad517d22c48d4442e8d7ef4f8d50446d56609154642b36cfa8`)
- * 3D Hue/Saturation Wolfram rotation + Catmull-Rom Tone Curve 256-LUT + W3C Soft-Light blend kernel.
- */
 export function evaluateLabHolisticHomographyAndToneCurve(params: {
   readonly rgb01: readonly [number, number, number];
-  readonly hueShiftMinus1To1: number;
-  readonly saturationMinus1To1: number;
-  readonly midtoneBoost01: number;
-  readonly baseChannel01: number;
-}): {
-  readonly rotatedRgb01: readonly [number, number, number];
-  readonly curveMidpoint255: number;
-  readonly softLightBlended01: number;
-} {
+  readonly hueShiftMinus1To1: number; readonly saturationMinus1To1: number;
+  readonly midtoneBoost01: number; readonly baseChannel01: number;
+}): { readonly rotatedRgb01: readonly [number, number, number]; readonly curveMidpoint255: number; readonly softLightBlended01: number } {
   const angle = Math.max(-1, Math.min(1, params.hueShiftMinus1To1)) * Math.PI;
   const sinA = Math.sin(angle);
   const cosA = Math.cos(angle);
@@ -776,5 +734,43 @@ export function evaluateLabHolisticHomographyAndToneCurve(params: {
     cs <= 0.5 ? cb - (1 - 2 * cs) * cb * (1 - cb) : cb + (2 * cs - 1) * (d - cb),
   );
   return { rotatedRgb01: [hr, hg, hb], curveMidpoint255, softLightBlended01 };
+}
+
+/**
+ * Wave 29 Unfragmented 699-File REA (`ev_4742ae24c0e0894803c2af285fca4288a072af5f0190032d85296b732f9d8fa54072011407`):
+ * Bernstein 4th-degree basis FFD lattice warp + `glfx.js` Vibrance saturation-adaptive boost.
+ */
+export function evaluateLabBernsteinFfdAndVibrance(params: {
+  readonly u01: number;
+  readonly v01: number;
+  readonly centerDeltaX: number;
+  readonly centerDeltaY: number;
+  readonly rgb01: readonly [number, number, number];
+  readonly vibranceMinus1To1: number;
+}): {
+  readonly bernsteinCenterWeight01: number;
+  readonly warpedDeltaX: number;
+  readonly warpedDeltaY: number;
+  readonly vibranceRgb01: readonly [number, number, number];
+} {
+  const u = clamp01(params.u01);
+  const v = clamp01(params.v01);
+  const b24u = 6 * u * u * (1 - u) * (1 - u);
+  const b24v = 6 * v * v * (1 - v) * (1 - v);
+  const bernsteinCenterWeight01 = Math.round(b24u * b24v * 10000) / 10000;
+  const [r, g, b] = params.rgb01;
+  const avg = (r + g + b) / 3;
+  const mx = Math.max(r, g, b);
+  const amt = (mx - avg) * (-params.vibranceMinus1To1 * 3);
+  return {
+    bernsteinCenterWeight01,
+    warpedDeltaX: Math.round(params.centerDeltaX * bernsteinCenterWeight01 * 1000) / 1000,
+    warpedDeltaY: Math.round(params.centerDeltaY * bernsteinCenterWeight01 * 1000) / 1000,
+    vibranceRgb01: [
+      clamp01(r + (mx - r) * amt),
+      clamp01(g + (mx - g) * amt),
+      clamp01(b + (mx - b) * amt),
+    ],
+  };
 }
 

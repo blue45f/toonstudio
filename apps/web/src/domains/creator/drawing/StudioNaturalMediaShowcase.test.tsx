@@ -234,6 +234,20 @@ describe("StudioNaturalMediaShowcase", () => {
     const lumaBlendRadio = container.querySelector('[data-studio-holistic-blend-mode="luminosity"]') as HTMLButtonElement | null;
     expect(lumaBlendRadio?.getAttribute("aria-checked")).toBe("true");
 
+    // Wave 29 전 생태계 비분할(Unfragmented) 통합 도구(FFD·선택·타이포·어니언스킨) 검증
+    const wave29DockTab = container.querySelector('[data-studio-engine-wave-filter="wave29"]') as HTMLButtonElement | null;
+    expect(wave29DockTab).not.toBeNull();
+    fireEvent.click(wave29DockTab!);
+    expect(wave29DockTab?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(allDockTab!);
+
+    const ffdRadio = container.querySelector('[data-studio-complete-ecosystem-preset="ecosystem-ffd-lattice-5x5"]') as HTMLButtonElement | null;
+    expect(ffdRadio).not.toBeNull();
+    expect(ffdRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(ffdRadio!, { key: "End" });
+    const colorReplaceRadio = container.querySelector('[data-studio-complete-ecosystem-preset="ecosystem-color-replace-eraser"]') as HTMLButtonElement | null;
+    expect(colorReplaceRadio?.getAttribute("aria-checked")).toBe("true");
+
     const contrastSwatch = container.querySelector("[data-studio-klecks-contrast-swatch]");
     expect(contrastSwatch).not.toBeNull();
   });

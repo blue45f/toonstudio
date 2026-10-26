@@ -121,6 +121,16 @@
   5. **16종 W3C 레이어 합성기 · 클리핑 마스크 · 알파 잠금 · $256\times 256$ 더티 타일 히스토리**: W3C `soft-light` 피스와이즈 $D(cb)$ 수식, 클리핑 마스크 유효 알파($\alpha_{\text{eff}} = \alpha_s \cdot \alpha_b$), `HISTORY_TILE_SIZE = 256` 더티 타일 분할.
   6. **이젤(Easel) 아핀 뷰포트 & 실시간 스트로크 손떨림 보정(Stabilizer)**: $15^\circ$ 회전 스냅, 좌우 미러 각도 변환, 지수이동평균(EMA) 스트로크 안정화.
 
+### 2.12 Wave 29 6대 오픈소스 드로잉 앱 전체 소스 트리 699개 모듈(618,741 AST 노드) 비분할(Unfragmented) 일괄 REA 역공학 및 전 기능 내재화 (Observation)
+- 파일 선별이나 분할 없이 6대 오픈소스 드로잉·페인팅·픽셀·조각·셰이더 애플리케이션(`bitbof/klecks`, `viliusle/miniPaint`, `evanw/glfx.js`, `1j01/jspaint`, `piskelapp/piskel`, `stephomi/sculptgl`)의 **전체 소스 트리 699개 모듈(`4,548,857` 바이트, 루트 SHA-256 `510242b06be668799b75644d7a776d258575e53a6880633eb6277361bc223e10`)**을 단일 비분할 코퍼스로 구성하여 1회 패스 `analyze_javascript_application`(`ev_4742ae24c0e0894803c2af285fca4288a072af5f0190032d8529e469685af06b`, `max_semantic_nodes: 1000000`, 파싱 JS/TS 파일 697개, 방문 AST 노드 618,741개, 의미론적 발견 3,625건, 데이터흐름 관계 13,781개, 객체흐름 3,429개, 클로저 1,261개, 호출흐름 547개, 이벤트 111개, IPC 24개), `inspect_analysis_view`(`ev_ffd3c0bfb0ebd71953327c28a096b68ce1a53585296b732f9d8fa54072011407`, `ev_7b96160fc160a73950b215fdede4aadc77c181ad625483ea723729f564fe6183`, `ev_7993bb57d707d40ffcafd2894e7143a20c3ca06afa86d4a5b70b322e40facf80`), `trace_javascript_semantics`(`ev_5253d38e49f7321e7357f0e53f7c115aefcca3c85d7c4e4e2ea166567ef88ee8`, `ev_a6872618beb476919edbf47310f28f57990958c1a2b0d17f94971e4d16d98db2`)로 전수 분석하고 `studio-complete-unfragmented-ecosystem-suite.ts`에 7대 서브시스템을 내재화했다:
+  1. **$5\times 5$ 번스타인 다항식 FFD(Free-Form Deformation) 격자 메쉬 워프**: 4차 번스타인 기저 $B_{i,4}(u) = \binom{4}{i} u^i (1-u)^{4-i}$ 텐서곱 $\sum_{i=0}^4 \sum_{j=0}^4 B_{i,4}(u) B_{j,4}(v) \mathbf{P}_{i,j}$ 기반 25제어점 자유 격자 변형.
+  2. **불리언 다중 폴리곤 선택(`select-tool.ts`) & Shift/Alt 제약 마키·50각 타원·올가미**: `replace`/`add`/`subtract` 다중 폴리곤 불리언 선택 연산, 1:1 정방형(Shift) 및 중심 기준(Alt) 제약, 50분할 타원 폴리곤 생성 및 Shoelace 부호 면적 계산.
+  3. **리치 다중행 캔버스 타이포그래피(`render-text.ts`) & Zalgo 안전 클리핑**: 단어/문자 단위 자동 줄바꿈, 자간(`letterSpacingPx`), 행간(`lineHeightRatio`), 정렬(`left`/`center`/`right`), RTL/LTR 방향, 외곽선 스트로크(`strokeText`) 및 결합 분음부호(Zalgo) 침범 방지용 $\pm 3 \times \text{lineHeight}$ 수직 안전 클리핑.
+  4. **클론 스탬프 방사형 페더링(`clone.js`) · 원추형 에어브러시(`brushes.js`) · 색상 치환 지우개(`tools.js`)**: $r \in [0.8, 1.0]$ 구간 선형 코사인 페더링 $(1-r)\cdot 5$, 원추형 에어브러시 폴오프 $(1 - d/R)^k$, 전경→배경 허용오차 색상 치환 지우개.
+  5. **SculptGL 트위스트 쿼터니언 회전(`Twist.js`) & 동적 토폴로지 분할/병합(`Subdivision.js` / `Decimation.js`)**: 축-각 쿼터니언 회전 $\mathbf{v}' = \mathbf{v} + 2\mathbf{q}_{xyz} \times (\mathbf{q}_{xyz} \times \mathbf{v} + q_w \mathbf{v})$ 및 화면 투영 에지 길이 임계치 기반 실시간 삼각형 분할(`subdivide-split`)·데시메이션(`decimate-collapse`).
+  6. **Piskel 어니언 스킨 프레임 해시 캐시(`OnionSkinView.js`) & 스프라이트시트 그리드 패킹**: `frameIdx-versionHash` 더티 체크 캐시, 거리별 반투명 고스트 알파 감쇠 $0.45 / |d|$, $\lceil\sqrt{N}\rceil$ 최적 정방형 아틀라스 그리드 패킹.
+  7. **`glfx.js` Vibrance · Vignette · Sepia · DotScreen 셰이더 확장 완결**: 저채도 픽셀 선택적 부스트 `amt = (mx - avg) * (-vibrance * 3)`, `pow(dist, 1.6)` 광학 비네팅, 3×3 세피아 색행렬, 회전 정현파 흑백 망점 스크린.
+
 ---
 
 ## 3. 한계 및 미확정 영역 (Limitations & Unknowns)
