@@ -431,3 +431,239 @@ export function tessellateShaperPolygonContour(
 
   return { triangleCount: triCount, triangleIndices, elements, projected };
 }
+
+/** TriLibCore.Utils.HashUtils 초기 시드 상수 (`1125899906842597L`) */
+export const SHAPER_TRILIB_HASH_SEED = 1125899906842597n;
+
+/**
+ * TriLibCore.Utils.HashUtils::GetHash (`0x0600021e..0x06000223`, RVA `32516`, `ev_71f4448ae78893676b89317bcb4badfb36e0462c47a073039e04846a2b4024a8`) 역공학 내재화:
+ * 64비트 부호 있는 정수 롤링 해시 `h = 31L * h + text[i]` (초기값 `1125899906842597L`)를 계산한다.
+ */
+export function computeShaperTriLibStringHash64(
+  text: string,
+  initialHash: bigint = SHAPER_TRILIB_HASH_SEED,
+): bigint {
+  let hash = BigInt.asIntN(64, initialHash);
+  for (let i = 0; i < text.length; i += 1) {
+    hash = BigInt.asIntN(64, 31n * hash + BigInt(text.charCodeAt(i)));
+  }
+  return hash;
+}
+
+/**
+ * TriLibCore.Utils.TangentSolver::CalculateTangents (`0x06000235`, RVA `37180`) &
+ * MathUtils::CalculateTangentSign (`0x06000253`, RVA `41124`) 역공학 내재화:
+ * 삼각형 위치·UV 미분으로부터 정점별 `sdir`(`tan1`)·`tdir`(`tan2`)를 누적하고,
+ * Gram-Schmidt 직교화(`normalize(tan1 - n * dot(n, tan1))`)와 핸디드니스 부호(`w = dot(cross(n, tan1), tan2) < 0 ? -1 : 1`)를 계산해
+ * `Float32Array(vertexCount * 4)` (`[tx, ty, tz, tw]`)를 반환한다.
+ */
+export function calculateShaperMeshTangents(
+  positions: Float32Array,
+  normals: Float32Array,
+  uvs: Float32Array,
+  indices: Uint32Array,
+): Float32Array {
+  const vertexCount = Math.floor(positions.length / 3);
+  const tan1 = new Float32Array(vertexCount * 3);
+  const tan2 = new Float32Array(vertexCount * 3);
+  const out = new Float32Array(vertexCount * 4);
+
+  for (let i = 0; i + 2 < indices.length; i += 3) {
+    const i1 = indices[i]!;
+    const i2 = indices[i + 1]!;
+    const i3 = indices[i + 2]!;
+    if (i1 >= vertexCount || i2 >= vertexCount || i3 >= vertexCount) continue;
+
+    const x1 = positions[i2 * 3]! - positions[i1 * 3]!;
+    const y1 = positions[i2 * 3 + 1]! - positions[i1 * 3 + 1]!;
+    const z1 = positions[i2 * 3 + 2]! - positions[i1 * 3 + 2]!;
+    const x2 = positions[i3 * 3]! - positions[i1 * 3]!;
+    const y2 = positions[i3 * 3 + 1]! - positions[i1 * 3 + 1]!;
+    const z2 = positions[i3 * 3 + 2]! - positions[i1 * 3 + 2]!;
+
+    const s1 = uvs[i2 * 2]! - uvs[i1 * 2]!;
+    const t1 = uvs[i2 * 2 + 1]! - uvs[i1 * 2 + 1]!;
+    const s2 = uvs[i3 * 2]! - uvs[i1 * 2]!;
+    const t2 = uvs[i3 * 2 + 1]! - uvs[i1 * 2 + 1]!;
+
+    const denom = s1 * t2 - s2 * t1;
+    const r = Math.abs(denom) > 1e-8 ? 1.0 / denom : 0.0;
+    const sx = (t2 * x1 - t1 * x2) * r;
+    const sy = (t2 * y1 - t1 * y2) * r;
+    const sz = (t2 * z1 - t1 * z2) * r;
+    const tx = (s1 * x2 - s2 * x1) * r;
+    const ty = (s1 * y2 - s2 * y1) * r;
+    const tz = (s1 * z2 - s2 * z1) * r;
+
+    for (const vIdx of [i1, i2, i3]) {
+      tan1[vIdx * 3] = tan1[vIdx * 3]! + sx;
+      tan1[vIdx * 3 + 1] = tan1[vIdx * 3 + 1]! + sy;
+      tan1[vIdx * 3 + 2] = tan1[vIdx * 3 + 2]! + sz;
+      tan2[vIdx * 3] = tan2[vIdx * 3]! + tx;
+      tan2[vIdx * 3 + 1] = tan2[vIdx * 3 + 1]! + ty;
+      tan2[vIdx * 3 + 2] = tan2[vIdx * 3 + 2]! + tz;
+    }
+  }
+
+  for (let a = 0; a < vertexCount; a += 1) {
+    const nx = normals[a * 3] ?? 0;
+    const ny = normals[a * 3 + 1] ?? 0;
+    const nz = normals[a * 3 + 2] ?? 1;
+    const t1x = tan1[a * 3]!;
+    const t1y = tan1[a * 3 + 1]!;
+    const t1z = tan1[a * 3 + 2]!;
+    const t2x = tan2[a * 3]!;
+    const t2y = tan2[a * 3 + 1]!;
+    const t2z = tan2[a * 3 + 2]!;
+
+    const ndott = nx * t1x + ny * t1y + nz * t1z;
+    let ox = t1x - nx * ndott;
+    let oy = t1y - ny * ndott;
+    let oz = t1z - nz * ndott;
+    const len = Math.hypot(ox, oy, oz);
+    if (len > 1e-8) {
+      ox /= len;
+      oy /= len;
+      oz /= len;
+    } else {
+      ox = 1;
+      oy = 0;
+      oz = 0;
+    }
+
+    const cx = ny * t1z - nz * t1y;
+    const cy = nz * t1x - nx * t1z;
+    const cz = nx * t1y - ny * t1x;
+    const handedness = cx * t2x + cy * t2y + cz * t2z < 0 ? -1 : 1;
+
+    out[a * 4] = ox;
+    out[a * 4 + 1] = oy;
+    out[a * 4 + 2] = oz;
+    out[a * 4 + 3] = handedness;
+  }
+
+  return out;
+}
+
+export interface ShaperRightHandToLeftHandInput {
+  readonly vector?: readonly [number, number, number];
+  readonly rotationQuat?: readonly [number, number, number, number];
+  readonly eulerDeg?: readonly [number, number, number];
+}
+
+export interface ShaperRightHandToLeftHandResult {
+  readonly vector: readonly [number, number, number];
+  readonly rotationQuat: readonly [number, number, number, number];
+  readonly eulerDeg: readonly [number, number, number];
+}
+
+/**
+ * TriLibCore.Utils.RightHandToLeftHandConverter (`0x06000256..0x06000258`, RVA `41356..41452`) 역공학 내재화:
+ * 오른손 좌표계(OpenGL/Blender/OBJ)의 위치 벡터 `(x, y, z) -> (-x, y, z)`,
+ * 쿼터니언 `(x, y, z, w) -> (x, -y, -z, w)`, 오일러 각 `(x, y, z) -> (x, -y, -z)`를 왼손 좌표계로 변환한다.
+ */
+export function convertShaperRightHandToLeftHand(
+  input: ShaperRightHandToLeftHandInput,
+): ShaperRightHandToLeftHandResult {
+  const v = input.vector ?? [0, 0, 0];
+  const q = input.rotationQuat ?? [0, 0, 0, 1];
+  const e = input.eulerDeg ?? [0, 0, 0];
+  return {
+    vector: [-v[0] || 0, v[1], v[2]],
+    rotationQuat: [q[0], -q[1] || 0, -q[2] || 0, q[3]],
+    eulerDeg: [e[0], -e[1] || 0, -e[2] || 0],
+  };
+}
+
+export interface ShaperStlParsedData {
+  readonly isBinary: boolean;
+  readonly headerColorRgba: readonly [number, number, number, number] | null;
+  readonly triangleCount: number;
+  readonly positions: Float32Array;
+  readonly normals: Float32Array;
+}
+
+/**
+ * TriLibCore.Stl.StlProcessor::IsBinary (`0x06000031`), CheckForColorHeader (`0x0600002a`), ParseBinary (`0x0600002b`,
+ * `ev_30f96d08171e2843cb79878e2720879f8fc03047b123a31475cc9b3fa722abc9`) 역공학 내재화:
+ * 제어 문자(`b < 32 && b !== 13 && b !== 10 && b !== 9`)로 바이너리 STL 여부를 판별하고,
+ * 80바이트 헤더 내 `"COLOR="` 시그니처 뒤의 4바이트 RGBA 색상과 오프셋 80의 삼각형 개수(`uint32`), 50바이트 레코드들을 파싱한다.
+ */
+export function parseShaperStlBinaryHeaderAndTriangles(
+  bytes: Uint8Array,
+): ShaperStlParsedData {
+  let isBinary = false;
+  const scanLen = Math.min(bytes.length, 512);
+  for (let i = 0; i < scanLen; i += 1) {
+    const b = bytes[i]!;
+    if (b < 32 && b !== 13 && b !== 10 && b !== 9) {
+      isBinary = true;
+      break;
+    }
+  }
+
+  let headerColorRgba: readonly [number, number, number, number] | null = null;
+  const colorSig = [67, 79, 76, 79, 82, 61] as const; // "COLOR="
+  const headerEnd = Math.min(bytes.length, 80);
+  for (let i = 0; i + colorSig.length + 4 <= headerEnd; i += 1) {
+    let matched = true;
+    for (let k = 0; k < colorSig.length; k += 1) {
+      if (bytes[i + k] !== colorSig[k]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) {
+      const base = i + colorSig.length;
+      headerColorRgba = [
+        bytes[base]! / 255,
+        bytes[base + 1]! / 255,
+        bytes[base + 2]! / 255,
+        bytes[base + 3]! / 255,
+      ];
+      break;
+    }
+  }
+
+  if (!isBinary || bytes.length < 84) {
+    return {
+      isBinary,
+      headerColorRgba,
+      triangleCount: 0,
+      positions: new Float32Array(0),
+      normals: new Float32Array(0),
+    };
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const declaredCount = view.getUint32(80, true);
+  const maxAvailable = Math.floor((bytes.length - 84) / 50);
+  const triangleCount = Math.min(declaredCount, maxAvailable);
+  const positions = new Float32Array(triangleCount * 9);
+  const normals = new Float32Array(triangleCount * 9);
+
+  for (let t = 0; t < triangleCount; t += 1) {
+    const offset = 84 + t * 50;
+    const nx = view.getFloat32(offset, true);
+    const ny = view.getFloat32(offset + 4, true);
+    const nz = view.getFloat32(offset + 8, true);
+    for (let v = 0; v < 3; v += 1) {
+      const vOff = offset + 12 + v * 12;
+      const dst = (t * 3 + v) * 3;
+      positions[dst] = view.getFloat32(vOff, true);
+      positions[dst + 1] = view.getFloat32(vOff + 4, true);
+      positions[dst + 2] = view.getFloat32(vOff + 8, true);
+      normals[dst] = nx;
+      normals[dst + 1] = ny;
+      normals[dst + 2] = nz;
+    }
+  }
+
+  return {
+    isBinary,
+    headerColorRgba,
+    triangleCount,
+    positions,
+    normals,
+  };
+}

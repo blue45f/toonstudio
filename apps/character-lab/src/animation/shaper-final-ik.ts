@@ -11,9 +11,11 @@ import {
   degToRad,
   lerp,
   qFromAxisAngle,
+  qMultiply,
   qNormalize,
   quatFromTo,
   v3Add,
+  v3Cross,
   v3Dot,
   v3Length,
   v3Normalize,
@@ -369,5 +371,131 @@ export function solveShaperFinalIkGrounding(
     clampedRightOffsetY,
     pelvisOffsetY,
     footTiltDeg,
+  };
+}
+
+export interface ShaperBoneWeightInfluence {
+  readonly boneIndex: number;
+  readonly weight: number;
+}
+
+export interface ShaperNormalizedBoneWeights4 {
+  readonly boneIndices: readonly [number, number, number, number];
+  readonly weights: readonly [number, number, number, number];
+}
+
+/**
+ * TriLibCore.Utils.GeometryGroupUtils::LimitBoneWeights (`0x060003a5`, RVA `62324`) &
+ * LimitMaxBoneWeights (`0x060003a8`, RVA `63880`, `ev_71f4448ae78893676b89317bcb4badfb36e0462c47a073039e04846a2b4024a8`) 역공학 내재화:
+ * 정점에 연결된 가중치 후보들을 내림차순(`BoneWeightComparer` `0x020000cb`)으로 정렬해 최대 `maxWeights`(`1..4`)개만 남기고,
+ * `invSum = 1 / (w0 + w1 + w2 + w3)`를 곱하여 총합이 `1.0`이 되도록 정규화한다.
+ */
+export function limitAndNormalizeShaperBoneWeights(
+  influences: readonly ShaperBoneWeightInfluence[],
+  maxWeights = 4,
+): ShaperNormalizedBoneWeights4 {
+  const limit = clamp(Math.trunc(maxWeights), 1, 4);
+  const sorted = influences
+    .filter((item) => item.weight > 0)
+    .slice()
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, limit);
+
+  const indices: [number, number, number, number] = [0, 0, 0, 0];
+  const rawWeights: [number, number, number, number] = [0, 0, 0, 0];
+  let sum = 0;
+
+  for (let i = 0; i < sorted.length; i += 1) {
+    const entry = sorted[i]!;
+    indices[i] = entry.boneIndex;
+    rawWeights[i] = entry.weight;
+    sum += entry.weight;
+  }
+
+  if (sum <= 1e-8) {
+    return {
+      boneIndices: indices,
+      weights: [0, 0, 0, 0],
+    };
+  }
+
+  const invSum = 1.0 / sum;
+  return {
+    boneIndices: indices,
+    weights: [
+      rawWeights[0] * invSum,
+      rawWeights[1] * invSum,
+      rawWeights[2] * invSum,
+      rawWeights[3] * invSum,
+    ],
+  };
+}
+
+export interface ShaperHumanoidTPoseBoneInput {
+  readonly bonePosition: Vec3;
+  readonly childPosition: Vec3;
+  readonly boneRotation: Quat;
+  readonly targetDirection: Vec3;
+  readonly secondaryChildPosition?: Vec3;
+}
+
+export interface ShaperHumanoidTPoseBoneResult {
+  readonly correctedRotation: Quat;
+  readonly alignmentDot: number;
+  readonly wasAdjusted: boolean;
+  readonly referenceForward: Vec3;
+}
+
+/**
+ * TriLibCore.HumanoidAvatarMapper::GetReferenceForward (`0x06000270`, RVA `44508`) &
+ * EnforceBoneTPose (`0x06000271`, RVA `44596`) 역공학 내재화:
+ * 부모-자식 본 방향 벡터 `dir1 = normalize(child - bone)`와 목표 T-포즈 축 `targetDirection`의 내적이
+ * `0.999` 미만이면 `FromToRotation(dir1, targetDirection) * boneRotation`으로 회전시켜 T-포즈를 강제한다.
+ */
+export function enforceShaperHumanoidBoneTPose(
+  input: ShaperHumanoidTPoseBoneInput,
+): ShaperHumanoidTPoseBoneResult {
+  const {
+    bonePosition,
+    childPosition,
+    boneRotation,
+    targetDirection,
+    secondaryChildPosition,
+  } = input;
+
+  const dir1 = v3Normalize(v3Sub(childPosition, bonePosition));
+  const targetDir = v3Normalize(targetDirection);
+  const dir2 = secondaryChildPosition
+    ? v3Normalize(v3Sub(secondaryChildPosition, bonePosition))
+    : ([0, 1, 0] as Vec3);
+  const crossFwd = v3Normalize(v3Cross(dir2, dir1));
+  const referenceForward: Vec3 = v3Length(crossFwd) > 0 ? crossFwd : [0, 0, 1];
+
+  if (v3Length(dir1) === 0 || v3Length(targetDir) === 0) {
+    return {
+      correctedRotation: qNormalize(boneRotation),
+      alignmentDot: 1,
+      wasAdjusted: false,
+      referenceForward,
+    };
+  }
+
+  const alignmentDot = clamp(v3Dot(dir1, targetDir), -1, 1);
+  if (Math.abs(alignmentDot) >= 0.999 && alignmentDot > 0) {
+    return {
+      correctedRotation: qNormalize(boneRotation),
+      alignmentDot,
+      wasAdjusted: false,
+      referenceForward,
+    };
+  }
+
+  const deltaQuat = quatFromTo(dir1, targetDir);
+  const correctedRotation = qNormalize(qMultiply(deltaQuat, boneRotation));
+  return {
+    correctedRotation,
+    alignmentDot,
+    wasAdjusted: true,
+    referenceForward,
   };
 }

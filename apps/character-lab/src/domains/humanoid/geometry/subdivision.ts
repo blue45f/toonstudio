@@ -521,17 +521,25 @@ export type {
   SymmetricControlPointPowerEdit,
 } from "./cage-control";
 export {
+  SHAPER_TRILIB_HASH_SEED,
+  calculateShaperMeshTangents,
   computeShaperContourNormal3d,
   computeShaperSignedContourArea2d,
+  computeShaperTriLibStringHash64,
+  convertShaperRightHandToLeftHand,
   evaluateShaperTessWindingRule,
   findShaperDominantAxis3d,
   normalizeShaperContourOrientation,
+  parseShaperStlBinaryHeaderAndTriangles,
   projectShaperContour3dTo2d,
   tessellateShaperPolygonContour,
 } from "./shaper-tess";
 export type {
   ShaperContourOrientation,
   ShaperProjectedContour2d,
+  ShaperRightHandToLeftHandInput,
+  ShaperRightHandToLeftHandResult,
+  ShaperStlParsedData,
   ShaperTessWindingRule,
   ShaperTessellateContourOptions,
   ShaperTessellatedMeshResult,
