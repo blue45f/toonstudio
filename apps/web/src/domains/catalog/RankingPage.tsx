@@ -12,6 +12,7 @@ import { RankingBoard } from "@/shared/components/ranking-board";
 import { RankingMethod } from "@/shared/components/ranking-method";
 import { Container } from "@/shared/components/section";
 import { SharePageButton } from "@/shared/components/share-page-button";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
 import { RANK_AXES, type RankAxis } from "@/shared/lib/ranking";
@@ -22,6 +23,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { RANKING_STREAM_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { MotionIllustration } from "@/shared/motion-assets";
 
 const SCOPE = "domains.catalog.RankingPage";
@@ -57,6 +59,7 @@ export function RankingPage() {
   return (
     <PageEntrance variant="slide">
     <Container size="wide" className="py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/ranking" className="mb-5" />
       <SitePageHeader
         className="mb-6 sm:mb-8"
         icon={Trophy}
@@ -91,6 +94,45 @@ export function RankingPage() {
           </>
         }
       />
+
+      <div
+        role="group"
+        aria-label={bt("4대 글로벌 랭킹 스트림", "4-stream ranking selector")}
+        data-testid="ranking-rea-stream-modes"
+        className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {RANKING_STREAM_MODES.map((stream) => {
+          const targetAxis: RankAxis =
+            stream.id === "hottest"
+              ? "popular"
+              : stream.id === "trending"
+                ? "trending"
+                : stream.id === "completed"
+                  ? "completed"
+                  : "rating";
+          const isCurrent = axis === targetAxis;
+          return (
+            <Link
+              key={stream.id}
+              href={`/ranking?axis=${targetAxis}`}
+              aria-current={isCurrent ? "page" : undefined}
+              className={
+                isCurrent
+                  ? "flex flex-col justify-between gap-1.5 rounded-2xl border border-accent bg-accent/12 p-3.5 text-left shadow-sm transition-colors"
+                  : "flex flex-col justify-between gap-1.5 rounded-2xl border border-line bg-card/75 p-3.5 text-left transition-colors hover:border-accent/45 hover:bg-card"
+              }
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-fg">{stream.label}</span>
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                  {stream.badge}
+                </span>
+              </div>
+              <p className="text-[11px] leading-snug text-fg-3">{stream.subtitle}</p>
+            </Link>
+          );
+        })}
+      </div>
 
       <div
         role="group"

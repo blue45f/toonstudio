@@ -21,6 +21,30 @@ export {
   type CompetitorPlatformReaEvidence,
 };
 
+export {
+  CALENDAR_BM_FILTERS,
+  COMMUNITY_PROMOTION_LEAGUE_TIERS,
+  DISCOVER_SERIALIZATION_TRACKS,
+  EXPLORE_DIRECTORY_MODES,
+  EXPLORE_PREFERENCE_TAG_COMBOS,
+  LIBRARY_PILLAR_CARDS,
+  MARKET_ECOSYSTEM_PRESETS,
+  RANKING_STREAM_MODES,
+  type CalendarBmFilter,
+  type CalendarBmFilterId,
+  type CommunityPromotionLeagueTier,
+  type DiscoverSerializationTrack,
+  type DiscoverSerializationTrackId,
+  type ExploreDirectoryMode,
+  type ExploreDirectoryModeId,
+  type ExplorePreferenceTagCombo,
+  type LibraryPillarCard,
+  type MarketEcosystemPreset,
+  type MarketEcosystemPresetId,
+  type RankingStreamMode,
+  type RankingStreamModeId,
+} from "./webtoon-platform-rea-surface-presets";
+
 /**
  * Kakao Webtoon `source-13-89cae4c1decd50887cbf2f5bfd05957c3e68b79ab1548c434f55a5e9ef5b7c27.js`에서
  * 역공학한 월요일 시작 요일 인덱스 계산식 `(weekday + 6) % 7` 및 요일 키.
@@ -540,7 +564,8 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
     pathname === "/recommend" ||
     pathname === "/search" ||
     pathname === "/random" ||
-    pathname === "/compare"
+    pathname === "/compare" ||
+    pathname === "/sitemap"
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[1] ?? null;
   }
@@ -567,9 +592,12 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
   if (
     pathname === "/market" ||
     pathname === "/market/browse" ||
+    pathname === "/market/library" ||
     pathname === "/studio/assets" ||
     pathname === "/studio/brushes" ||
-    pathname === "/research"
+    pathname === "/research" ||
+    pathname === "/research/scene-3d" ||
+    pathname === "/research/character-3d"
   ) {
     return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
   }

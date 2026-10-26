@@ -8,12 +8,14 @@ import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/l
 import { LibraryView } from "@/shared/components/library-view";
 import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome";
 import { Container } from "@/shared/components/section";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import {
   translateCurrentStaticSourceText,
   useBilingual,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { LIBRARY_PILLAR_CARDS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { useApp } from "@/shared/lib/store";
 
 const SCOPE = "domains.catalog.LibraryPage";
@@ -40,6 +42,7 @@ export function LibraryPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
+      <SiteContextualSubNav pathnameOverride="/library" className="mb-4" />
       <MySpaceModuleChrome />
       <SitePageHeader
         className="mb-5 sm:mb-7"
@@ -85,6 +88,46 @@ export function LibraryPage() {
           ))}
         </ol>
       </SitePageHeader>
+
+      <section
+        aria-label={bt("4대 개인 서재 허브", "4-pillar personal library hub")}
+        data-testid="library-rea-pillar-cards"
+        className="mb-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {LIBRARY_PILLAR_CARDS.map((pillar) => {
+          const targetTab =
+            pillar.id === "purchases"
+              ? "shelf"
+              : pillar.id === "view"
+                ? "diary"
+                : pillar.id === "likes"
+                  ? "rated"
+                  : "collections";
+          const isCurrent = tab === targetTab;
+          const href = targetTab === "shelf" ? "/library" : `/library?tab=${targetTab}`;
+          return (
+            <Link
+              key={pillar.id}
+              href={href}
+              aria-current={isCurrent ? "page" : undefined}
+              className={
+                isCurrent
+                  ? "flex flex-col justify-between gap-1.5 rounded-2xl border border-accent bg-accent/12 p-3.5 shadow-sm transition-colors"
+                  : "flex flex-col justify-between gap-1.5 rounded-2xl border border-line bg-card/80 p-3.5 transition-colors hover:border-accent/45 hover:bg-card"
+              }
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-fg">{pillar.label}</span>
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                  {pillar.badge}
+                </span>
+              </div>
+              <p className="text-[11px] leading-snug text-fg-3">{pillar.description}</p>
+            </Link>
+          );
+        })}
+      </section>
+
       <LibraryView
         initialTab={tab}
         diaryEntries={diaryEntries}

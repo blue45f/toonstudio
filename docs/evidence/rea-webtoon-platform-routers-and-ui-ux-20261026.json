@@ -3,14 +3,14 @@
   "capturedAt": "2026-10-26",
   "analysisProvider": "rea-mcp-web-and-ast",
   "summary": {
-    "targetCount": 13,
-    "verifiedPlatforms": 11,
+    "targetCount": 20,
+    "verifiedPlatforms": 18,
     "botChallengeBoundedPlatforms": 2,
-    "totalEvidenceIds": 40,
-    "totalAnalyzedScripts": 254,
-    "totalAnalyzedBytes": 5996345,
-    "totalAstNodes": 1521022,
-    "totalFindings": 9858
+    "totalEvidenceIds": 61,
+    "totalAnalyzedScripts": 374,
+    "totalAnalyzedBytes": 8232488,
+    "totalAstNodes": 2039252,
+    "totalFindings": 13491
   },
   "platforms": [
     {
@@ -279,6 +279,146 @@
       ],
       "inferences": [
         "Exposing Hottest, Trending, and Completed ranking/catalog presets as one-click chips accelerates reader discovery."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "naver-best-challenge",
+      "name": "NAVER Best Challenge",
+      "targetUrl": "https://comic.naver.com/bestChallenge",
+      "appVersion": "react-router-v6-best-challenge",
+      "captureEvidenceId": "ev_66013c0d071ebb31cbac9e4692bf44e8c5788772ea8c8c5596648923a45956f1",
+      "captureSha256": "bf834f3f888a18cfddcb2319babb9de8fe1edefeb3f14d66e5381dee89a5a0fa",
+      "exportScriptsEvidenceId": "ev_3e3f2546d69526fd42013dc99e67563beb7cc79c270ee88d299131f4d47fde87",
+      "manifestSha256": "e2b19fd0b42f676c3338f7a83d6391b1e24279c7f2108aabddbcf0470e9d7cc1",
+      "astAnalysisViewEvidenceId": "ev_903bf4d25b5b9c4507059b98d70d3917389ac854d8dbbe6bcce699bc584a6aee",
+      "astAnalysisParentEvidenceId": "ev_c37001691a809391b36fd0e87e5b20417084b4cc287da2b722b2c0f22a17c37f",
+      "rootSha256": "3b0f8cf9b6da0220f0ac31cbdaeac46075bd7d4bdd878cfe8bfd859b3a5f23d5",
+      "observedFacts": [
+        "9 parsed scripts (241,838 B, 61,986 AST nodes, 175 findings) exposing the 3-tier Open Serialization League (/challenge -> /bestChallenge -> /webtoon), tag curation (/titleTagList, /tagList, /curation/list), and B2B IP proposal routes (/proposal/business/{home,entertainment,licensingMerchandising,publishing,game,promotions,contact})."
+      ],
+      "inferences": [
+        "Surfacing a visible Challenge -> Best Challenge -> Originals promotion track in Community and Discover hubs clarifies creator progression and reader scouting."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "webtoons-canvas",
+      "name": "WEBTOON Global CANVAS",
+      "targetUrl": "https://www.webtoons.com/en/canvas",
+      "appVersion": "canvas-challenge-home-2026",
+      "captureEvidenceId": "ev_f2b608242098851dc63309d9d7c5af94dbc7bf0395c2de90629f17fe220e4e51",
+      "captureSha256": "39457c2d0008615cd54720a64b3afece8a8a483204a92d90e72d1bf565162749",
+      "exportScriptsEvidenceId": "ev_e080c59a87eed963bbad65fb7617607dd9c27f6d533f722d57377e9c0a162979",
+      "manifestSha256": "d320aaf03bae1d3e64381eaa5ac139df4670988267752331efdbf13dfdc45680",
+      "astAnalysisViewEvidenceId": "ev_27abcc6c1aabd09ac3f6fc10cab8d6ddb8ad729c15c55590342aa0a85ee30f59",
+      "astAnalysisParentEvidenceId": "ev_fd4a6cf0da9c37888688c54fca6bcf54d5a8aebdb9e2b6d97e3443d7501bbdd2",
+      "rootSha256": "0e32fc5fa8c4d0ed5dbe020c400ed63af98211eb071659ab88bebf5389236b84",
+      "observedFacts": [
+        "6 parsed scripts (208,955 B, 35,300 AST nodes, 231 findings) with challengeHome-765622cb46e92f0800ce.js managing window.__challengeHomeState__, popularByGenreArea, and creator dashboard routes (/mycreator, /creative/list, /preview, /favorite, /mycomment)."
+      ],
+      "inferences": [
+        "Separating Originals vs. CANVAS (Open Serialization) tracks while keeping a unified 1-click Publish CTA empowers both readers and indie creators."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "pixiv-booth",
+      "name": "Pixiv BOOTH",
+      "targetUrl": "https://booth.pm/ko",
+      "appVersion": "booth-creator-market-2026",
+      "captureEvidenceId": "ev_4885b79c74bb7e6e13af894f9d2e4ceb8f7d349583617d70cc6697492e3c0195",
+      "captureSha256": "d5f546db070d09f2468857ac0583d68059e26410db38ccc44b75e0cd5c23df28",
+      "exportScriptsEvidenceId": "ev_4d8df7c16200249cf4f98ff7ac46b9952e8eef626c6debe17f3b8dfef8e8388c",
+      "manifestSha256": "6f58dafb0b04309d8eb5bc3480f4729680926da3c8264d26d2c1221c2072cf2b",
+      "astAnalysisViewEvidenceId": "ev_73aad89b609189452b4ba5c1351f903b2506628fb26ae5696ff529d5ccdfcf0a",
+      "astAnalysisParentEvidenceId": "ev_8ec610d54be788619dac6e589d7e2fb621fc0168b5f5a5be05460e629329e4ab",
+      "rootSha256": "09d3e2dd292e8c8a5bc807c5827f435b7f72aa4679549c88b6c666c751204636",
+      "observedFacts": [
+        "12 parsed scripts (162,958 B, 42,610 AST nodes, 258 findings) implementing /autocomplete/tag.json and structured autosuggest containers (autosuggest__container, autosuggest__section) for 3D/2D creator asset discovery."
+      ],
+      "inferences": [
+        "Category-scoped asset presets (2D Brush/Pen, 3D Background, 3D Character/Pose, Tone/SFX, Free/Point) paired with instant Studio mounting reduce asset search friction."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "mrblue-webtoon",
+      "name": "MrBlue Webtoon",
+      "targetUrl": "https://www.mrblue.com/webtoon",
+      "appVersion": "mrblue-bundle-2026",
+      "captureEvidenceId": "ev_1798820ae7a425d4704b4198f979a49514ca71c7212d4b469a725d671f793918",
+      "captureSha256": "6ec5969bb985b6d9de0621fb7a89f902a9d45c117aacf15977c2b6e5015fb603",
+      "exportScriptsEvidenceId": "ev_0e1eb10fcd3556021ebfa626f9956ed87860c4f7bbc5cd7dabd10cea6da5c24d",
+      "manifestSha256": "8828d1317aeba1fc4b4a7f1626645583974a35474d52e2c74a8c783c3326366f",
+      "astAnalysisViewEvidenceId": "ev_bc6e080bd12ed4600593e21ca700676062016b25c1b8be4a5bf309d219171250",
+      "astAnalysisParentEvidenceId": "ev_fc9318574a424e3a56f8f4f5c70823065674bd7079420336dfa26b29859f96cf",
+      "rootSha256": "fd60b42cf9bbdf96c2f45ef8feccdd551be8737a9c3a0bf7e94cf8ed43d2ee41",
+      "observedFacts": [
+        "23 parsed scripts (338,142 B, 71,232 AST nodes, 188 findings) in common.bundle.min.js, mrblue.bundle.min.js, and viewer.bundle.min.js featuring virtual drawer layers (/virtual/menu, /search/virtual/searchlayer, /virtual/myblue, /virtual/mylibrary) and Zzim/Ticket APIs (/Zzim/List, /popup/TicketInfo)."
+      ],
+      "inferences": [
+        "Integrating Wait-Free/Ticket status badges and quick Zzim/Library drawer links into Calendar and Ranking surfaces keeps retention actions one click away."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "bomtoon",
+      "name": "Bomtoon",
+      "targetUrl": "https://www.bomtoon.com/",
+      "appVersion": "nextjs-5WWxOnDBPisKWwWSNIVO6",
+      "captureEvidenceId": "ev_a190688ff032060b7351baa85103f514dbcc0d9e440d501bd17e1296c0e88859",
+      "captureSha256": "4260ba10687254e965e51d9a28a4716c7d878f0a7d3973250ee99da97ff0695a",
+      "exportScriptsEvidenceId": "ev_e86e9eb3d50b3c4347179cb3fc39de9510bf113a27bb29077c19ed543b79de53",
+      "manifestSha256": "e811c3a3027efe4221396ce954c73054f11b4678769538abc84bd6a655a865e0",
+      "astAnalysisViewEvidenceId": "ev_2079960ca21702d3b690e7a81f2c6770558d7b1532da2267e2a89b69564d4feb",
+      "astAnalysisParentEvidenceId": "ev_17df7f4e34dc288236c40da7862064c753634ece4bad402fd02cf91d091fda94",
+      "rootSha256": "effd2c42c1bc3bd29f9be609fe9d368420e31c475c30964806aa73ed9b271cc5",
+      "observedFacts": [
+        "29 parsed scripts (576,091 B, 145,615 AST nodes, 1,445 findings) and 125 Next.js routes in _buildManifest.js: multi-tag preference search (/search/preference, /search/preference/tag, /search/preference/result), short-form & hotclip (/home/short/[key], /play/hotclip, /home/webtoonPan), 8-route personal library (/my/library/{recent,favorite,download,my,myFolder,myFolder-add,edit,secret}), and full writer portal (/writer/myWork/{work,regContents,regEpisode,comment}, /writer/propose, /writer/stat)."
+      ],
+      "inferences": [
+        "Multi-tag preference combinators in Explore, Hotclip/Short-form bridges in Cuts/Promo, and structured Library folders create high-retention cross-hub loops."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "sketchfab-3d",
+      "name": "Sketchfab 3D Models",
+      "targetUrl": "https://sketchfab.com/3d-models",
+      "appVersion": "sketchfab-web-v2",
+      "captureEvidenceId": "ev_0c1b5badc807214c7520facd40c5a5992e98af7075b08591b97c2270f8dd6da3",
+      "captureSha256": "1460e68e22877fa8269cfa3e4d31bd378a9fce73216c5e5777a359022605d5d5",
+      "exportScriptsEvidenceId": "ev_3bb063dc68ce8733a9fc0a3144705cf31a98ab162d59896be868176eb99d1abb",
+      "manifestSha256": "ead2f4c32d58d3f5f7df1384634b2b1efbdc17def90c0baabbe31757a3ce9137",
+      "astAnalysisViewEvidenceId": "ev_3207d32b972cdfc12a43d62aca2dc4b480141ebff55f3d4eae662c1edb9455c3",
+      "astAnalysisParentEvidenceId": "ev_ed606590267feeb3cf1047dca21b99a8482f09d0e900a2b153e216bf46d5b8e2",
+      "rootSha256": "a191727482438b7806a40dfbd295c5aa84f6d760a6229f63899e8edc7379b4ce",
+      "observedFacts": [
+        "26 parsed scripts (438,479 B, 97,764 AST nodes, 1,157 findings, 475 modules) in static/builds/web/dist/*-v2.js exposing curated 3D model collections (/collections, /collections/popular) and interactive 3D viewport inspection."
+      ],
+      "inferences": [
+        "Direct bridges between 3D asset collections (/market) and the 3D Scene/Character Lab (/research/scene-3d, /research/character-3d) make 3D webtoon background staging seamless."
+      ],
+      "unknowns": []
+    },
+    {
+      "id": "toomics",
+      "name": "Toomics",
+      "targetUrl": "https://www.toomics.com/ko",
+      "appVersion": "web-v4-240806",
+      "captureEvidenceId": "ev_d6dd968aa244bc8656ed4382076cfa3a0a04bef39fc9b2390a51301be62f444f",
+      "captureSha256": "00a970eeb28621403f6b5331048a5c0ac0c91d26ab36df42a77edf24b7e7ee76",
+      "exportScriptsEvidenceId": "ev_47d469e9515ed5280670f6ea7cc17ec5573e1512780e39d0691026a4ff324c25",
+      "manifestSha256": "af085405cbe787018899ef63ea98699150b9eb7e9d5143cba351965b1be5cf5a",
+      "astAnalysisViewEvidenceId": "ev_f254846e117cafdd01f6fde5ff0a98d5eb57708a0a190f31ad023cc710835d24",
+      "astAnalysisParentEvidenceId": "ev_a26b2a88ab31ae87e9bd08c7c3744dc32736c44b3221550bfbb52d7663f299a4",
+      "rootSha256": "8741fc8baaf27c04501279d34d9f205a6394c50ed08b022fdb0d524d6d3f4608",
+      "observedFacts": [
+        "15 parsed scripts (269,680 B, 63,723 AST nodes, 179 findings) in assets/js/web_v4/index-min-240806142712.js implementing fast onboarding and cross-device continuation (/index/check_qr_event)."
+      ],
+      "inferences": [
+        "Streamlined reader-to-member continuation and clear adult/youth rating filters reduce drop-off on entry."
       ],
       "unknowns": []
     }

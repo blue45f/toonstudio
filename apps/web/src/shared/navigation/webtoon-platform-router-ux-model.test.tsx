@@ -8,12 +8,20 @@ import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav
 import { useI18n } from "@/shared/lib/i18n";
 
 import {
+  CALENDAR_BM_FILTERS,
+  COMMUNITY_PROMOTION_LEAGUE_TIERS,
   COMPETITOR_DISCOVERY_ROUTER_PRESETS,
   COMPETITOR_PLATFORM_REA_LEDGER,
   CONTEXTUAL_SUBNAV_GROUPS,
   CREATOR_STUDIO_PIPELINE_STEPS,
   DEFAULT_PROMO_MEDIA_FILTER_STATE,
+  DISCOVER_SERIALIZATION_TRACKS,
+  EXPLORE_DIRECTORY_MODES,
+  EXPLORE_PREFERENCE_TAG_COMBOS,
+  LIBRARY_PILLAR_CARDS,
+  MARKET_ECOSYSTEM_PRESETS,
   PERSONAL_LIBRARY_SEGMENTS,
+  RANKING_STREAM_MODES,
   SERIES_LANDING_VIEW_MODES,
   classifyMediaAspectRatio,
   matchesPromoMediaFilter,
@@ -29,9 +37,9 @@ afterEach(() => {
   useI18n.getState().setLang("ko");
 });
 
-describe("글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
-  it("13개 플랫폼의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
-    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(13);
+describe("글로벌 웹툰·창작·에셋 플랫폼 20종 REA 라우터 및 UI/UX 아키텍처 엔진", () => {
+  it("20개 플랫폼/서피스의 REA Evidence ID와 SHA-256 해시, 인식론적 상태를 빠짐없이 기록한다", () => {
+    expect(COMPETITOR_PLATFORM_REA_LEDGER).toHaveLength(20);
     const ids = COMPETITOR_PLATFORM_REA_LEDGER.map((item) => item.id);
     expect(ids).toEqual([
       "naver-webtoon",
@@ -47,6 +55,13 @@ describe("글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터 및 UI/
       "clip-studio",
       "acon3d",
       "mangaplus",
+      "naver-best-challenge",
+      "webtoons-canvas",
+      "pixiv-booth",
+      "mrblue-webtoon",
+      "bomtoon",
+      "sketchfab-3d",
+      "toomics",
     ]);
 
     for (const entry of COMPETITOR_PLATFORM_REA_LEDGER) {
@@ -55,6 +70,24 @@ describe("글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터 및 UI/
       expect(entry.astAnalysisViewEvidenceId).toMatch(/^ev_[0-9a-f]{64}$/u);
       expect(entry.rootSha256).toMatch(/^[0-9a-f]{64}$/u);
     }
+
+    const bomtoon = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "bomtoon",
+    );
+    expect(bomtoon?.routeCount).toBe(125);
+    expect(bomtoon?.epistemicStatus).toBe("verified");
+
+    const bestChallenge = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "naver-best-challenge",
+    );
+    expect(bestChallenge?.routeCount).toBe(37);
+    expect(bestChallenge?.epistemicStatus).toBe("verified");
+
+    const sketchfab = COMPETITOR_PLATFORM_REA_LEDGER.find(
+      (item) => item.id === "sketchfab-3d",
+    );
+    expect(sketchfab?.moduleCount).toBe(475);
+    expect(sketchfab?.epistemicStatus).toBe("verified");
 
     const kakaopage = COMPETITOR_PLATFORM_REA_LEDGER.find(
       (item) => item.id === "kakaopage",
@@ -111,6 +144,55 @@ describe("글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터 및 UI/
       "collections",
     ]);
     expect(COMPETITOR_DISCOVERY_ROUTER_PRESETS).toHaveLength(6);
+    expect(DISCOVER_SERIALIZATION_TRACKS.map((t) => t.id)).toEqual([
+      "all",
+      "originals",
+      "canvas",
+      "wait-free",
+      "cuts-short",
+    ]);
+    expect(RANKING_STREAM_MODES.map((m) => m.id)).toEqual([
+      "hottest",
+      "trending",
+      "completed",
+      "canvas-rising",
+    ]);
+    expect(CALENDAR_BM_FILTERS.map((b) => b.id)).toEqual([
+      "all",
+      "wait-free",
+      "free",
+      "new",
+      "completed",
+    ]);
+    expect(EXPLORE_DIRECTORY_MODES.map((d) => d.id)).toEqual([
+      "all",
+      "ongoing",
+      "completed",
+      "hiatus",
+      "alpha",
+      "updated",
+    ]);
+    expect(EXPLORE_PREFERENCE_TAG_COMBOS).toHaveLength(5);
+    expect(LIBRARY_PILLAR_CARDS.map((p) => p.id)).toEqual([
+      "view",
+      "purchases",
+      "likes",
+      "collections",
+    ]);
+    expect(MARKET_ECOSYSTEM_PRESETS.map((p) => p.id)).toEqual([
+      "all",
+      "brush-2d",
+      "bg-3d",
+      "char-pose-3d",
+      "tone-sfx",
+      "free-point",
+    ]);
+    expect(COMMUNITY_PROMOTION_LEAGUE_TIERS.map((t) => t.id)).toEqual([
+      "challenge",
+      "best-challenge",
+      "originals",
+      "creator-101",
+    ]);
   });
 
   it("KakaoPage 3-Mode 뷰 스위처(card, poster, list)와 화면 비율 분류·필터가 정확히 동작한다", () => {
@@ -181,6 +263,12 @@ describe("글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터 및 UI/
     );
     expect(resolveContextualSubNavForPath("/market/browse")?.id).toBe(
       "market-hub",
+    );
+    expect(resolveContextualSubNavForPath("/research/scene-3d")?.id).toBe(
+      "market-hub",
+    );
+    expect(resolveContextualSubNavForPath("/sitemap")?.id).toBe(
+      "discover-hub",
     );
     expect(resolveContextualSubNavForPath("/library")?.id).toBe(
       "personal-library-hub",

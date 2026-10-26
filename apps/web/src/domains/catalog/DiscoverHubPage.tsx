@@ -25,6 +25,7 @@ import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
@@ -33,6 +34,11 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { GENRES } from "@/shared/lib/taxonomy";
 import Link from "@/shared/navigation/router-link";
+import {
+  DISCOVER_SERIALIZATION_TRACKS,
+  runSameDocumentViewTransition,
+  type DiscoverSerializationTrackId,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { useApiResource } from "@/platform/use-api-resource";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { cn } from "@/shared/lib/utils";
@@ -157,6 +163,10 @@ export function DiscoverHubPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [memoryFinderOpened, setMemoryFinderOpened] = useState(false);
+  const [activeTrackId, setActiveTrackId] = useState<DiscoverSerializationTrackId>("all");
+  const activeTrack =
+    DISCOVER_SERIALIZATION_TRACKS.find((track) => track.id === activeTrackId) ??
+    DISCOVER_SERIALIZATION_TRACKS[0];
   const home = useApiResource<DiscoverHomeSnapshot>(
     DISCOVER_HOME_SNAPSHOT_URL,
     bt("추천 작품을 불러오지 못했습니다.", "Couldn't load story picks."),
@@ -177,6 +187,7 @@ export function DiscoverHubPage() {
   return (
     <PageEntrance variant="rise">
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+      <SiteContextualSubNav pathnameOverride="/discover" className="mb-5" />
       <SitePageHeader
         size="hero"
         icon={Compass}
@@ -254,6 +265,72 @@ export function DiscoverHubPage() {
         </nav>
         <CatalogSnapshotLine snapshot={home.data} loading={home.loading} onArt={!showSpotlight} />
       </SitePageHeader>
+
+      <section
+        aria-label={bt("연재 트랙 스위처", "Serialization track switcher")}
+        data-testid="discover-serialization-track-switcher"
+        className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
+              SERIALIZATION TRACKS · ORIGINALS / CANVAS / WUF / CUTS
+            </span>
+            <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+              {bt("연재 트랙별 바로가기", "Browse by serialization track")}
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={bt("연재 트랙 선택", "Select serialization track")}>
+            {DISCOVER_SERIALIZATION_TRACKS.map((track) => {
+              const selected = track.id === activeTrackId;
+              return (
+                <button
+                  key={track.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => {
+                    runSameDocumentViewTransition(() => {
+                      setActiveTrackId(track.id);
+                    });
+                  }}
+                  className={cn(
+                    "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors",
+                    selected
+                      ? "border-accent bg-accent text-canvas shadow-sm"
+                      : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
+                  )}
+                >
+                  <span>{track.label}</span>
+                  <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
+                    {track.badge}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {activeTrack ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
+            <p className="max-w-2xl">{activeTrack.description}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={activeTrack.primaryRoute}
+                className={buttonClass({ size: "sm", className: "min-h-10 gap-1.5 rounded-full px-4 text-xs font-bold" })}
+              >
+                {activeTrack.label} {bt("열기", "Open")}
+                <ArrowRight size={13} aria-hidden="true" />
+              </Link>
+              <Link
+                href={activeTrack.secondaryRoute}
+                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-10 rounded-full px-3.5 text-xs font-semibold" })}
+              >
+                {activeTrack.secondaryLabel}
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       <section aria-labelledby="discover-shelves-title" className="mt-10 flex flex-col gap-12 sm:mt-12 sm:gap-14">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>

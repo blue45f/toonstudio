@@ -13,8 +13,8 @@ afterEach(() => {
   useI18n.getState().setLang("ko");
 });
 
-describe("PromoVideoLibraryPage — 13종 REA 3-Mode 뷰 스위처·필터·허브 서브탭·6단계 파이프라인", () => {
-  it("맥락형 서브탭과 3-Mode 뷰 스위처(card, poster, list), 화면 비율 필터, 13종 REA 기준표 및 6단계 창작 동선을 렌더링한다", () => {
+describe("PromoVideoLibraryPage — 20종 REA 3-Mode 뷰 스위처·필터·허브 서브탭·6단계 파이프라인", () => {
+  it("맥락형 서브탭과 3-Mode 뷰 스위처(card, poster, list), 화면 비율 필터, 20종 REA 기준표 및 6단계 창작 동선을 렌더링한다", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/promo-library"]}>
         <PromoVideoLibraryPage />
@@ -30,7 +30,7 @@ describe("PromoVideoLibraryPage — 13종 REA 3-Mode 뷰 스위처·필터·허�
     expect(root?.getAttribute("data-view-mode")).toBe("card");
 
     const reaItems = container.querySelectorAll("[data-rea-platform]");
-    expect(reaItems).toHaveLength(13);
+    expect(reaItems).toHaveLength(20);
 
     const pipelineNav = screen.getByRole("navigation", {
       name: "창작·예고편·배포 6단계 통합 동선",

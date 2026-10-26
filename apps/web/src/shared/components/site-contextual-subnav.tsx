@@ -5,6 +5,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
+import { cn } from "@/shared/lib/utils";
 import {
   resolveContextualSubNavForPath,
   type ContextualSubNavGroup,
@@ -15,9 +16,11 @@ import "./site-contextual-subnav.css";
 export function SiteContextualSubNav({
   pathnameOverride,
   groupOverride,
+  className,
 }: {
   readonly pathnameOverride?: string;
   readonly groupOverride?: ContextualSubNavGroup;
+  readonly className?: string;
 } = {}) {
   useBilingualI18nRevision();
   const currentPathname = usePathname();
@@ -35,7 +38,7 @@ export function SiteContextualSubNav({
     <nav
       aria-label={title}
       data-contextual-subnav={group.id}
-      className="site-contextual-subnav"
+      className={cn("site-contextual-subnav", className)}
       style={style}
     >
       <div className="site-contextual-subnav__header">
