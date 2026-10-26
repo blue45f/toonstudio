@@ -213,7 +213,7 @@ export function evaluateInstantQuoteAndSpecialistMatch(
     perCutUnitKRW,
     estimatedTotalKRW,
     freeRevisionRounds,
-    milestoneSplit: Object.freeze([
+    milestoneSplit: Object.freeze<readonly QuoteMilestoneSlice[]>([
       {
         stepId: "deposit",
         labelKo: "1단계 착수 예치 (30%)",

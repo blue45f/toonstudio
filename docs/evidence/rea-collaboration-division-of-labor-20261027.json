@@ -425,7 +425,7 @@
       "id": "studio-live-layer-seat-division-bench",
       "model": "apps/web/src/domains/creator/live/studio-layer-seat-model.ts",
       "component": "apps/web/src/domains/creator/live/StudioLiveLayerSeatDivisionBench.tsx",
-      "mounted_surface": "apps/web/src/domains/creator/live/StudioLiveCollaborationCommandCenter.tsx"
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionHandoffSurface.tsx"
     },
     {
       "id": "collaboration-instant-quote-matcher",
