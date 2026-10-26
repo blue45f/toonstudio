@@ -660,6 +660,66 @@
       ]
     }
   ],
+  "macOsDesktopNativeAppSuite": {
+    "codeSigningAuthority": "Developer ID Application: Learning Machines LLC (DJ6XS33FX8)",
+    "artcraftMultimodalStudio041": {
+      "bundleId": "ai.artcraft.app",
+      "version": "0.41.0",
+      "bundlePath": "/Volumes/ArtCraft/ArtCraft.app",
+      "binaryPath": "/Volumes/ArtCraft/ArtCraft.app/Contents/MacOS/artcraft",
+      "binarySizeBytes": 157411568,
+      "binarySha256": "d0e6da63cbfe5d8ed033c57b0c37bdc5bd534d4fb993c965354794c605cdcec8",
+      "bundleSha256": "94b23bb8c4464c646c976b9394a28a4765684b3cc5613069faa7d798806418d1",
+      "cdhash": "35e80f40d6089464fafa8dc4f70ac447d725991f",
+      "signedTimestamp": "Sep 26, 2026 at 7:53:14 PM",
+      "evidence": {
+        "inspect_rust_binary": "ev_88f17ab02466aa4275e7a39eb283f0f80d305de3bf01964b45b04b8f37ae54e1",
+        "inspect_desktop_application": "ev_2fe65f3ecbb60ff1caa2016a53dc989f47c7dd365601cf0cb595b795c8ddc2e7",
+        "inspect_with_objdump": "ev_0a8c1cd66af2fbedbfed480ae04925c746f3e1a4ec1ce01a765cc9b1807a3da4",
+        "inspect_macho": "ev_101a05f1695d8da47bd1d1e06a6b8fbfebe0a223ab734d34c05fb4d46fef4310",
+        "inspect_plist": "ev_a9d1f851b412200b63d0e827c1720388e9dbdcba70fd15e19373d2ef98e82792",
+        "inspect_signature": "ev_56c39f178993ccd21f22c8a19aa855ec01e25043eaa122156ea924978a8e77ed"
+      },
+      "observedFacts": [
+        "ArtCraft.app v0.41.0(ai.artcraft.app)은 Learning Machines LLC(Team ID: DJ6XS33FX8)가 서명한 Tauri v2(wry/tao) + Rust 워크스페이스(/Users/build/workspace/artcraft) 기반 157.4MB Universal Mach-O 바이너리로, 슬라이스당 22,967개(양 아키텍처 합산 57,689개) 심볼과 11개 독자 크레이트(artcraft, artcraft_api_defs, artcraft_router, fal_client, grok_consumer_client, midjourney_client, openai_sora_client, worldlabs_consumer_client, media_metadata, utils, tauri_plugin_NativeWindow)를 포함함.",
+        "worldlabs_consumer_client(Marble 0.1 Mini/Plus .spz 3D Gaussian Splat 월드 생성 및 Recaption2), Hunyuan3D v2.0/v2.1/v3.0(.glb Quad/Triangle 3D 메시 생성), flux_2_lora_edit_image_angle 및 qwen_edit_2511_angles(카메라 앵글 회전 및 require_at_least_one_image_input 검증), Beeble SwitchX 비디오 리라이팅, Veo 3.1 / Sora 2 Pro / Kling 3.0 / Vidu Q3 / Seedance 2.5 멀티모달 비디오 라우터, SQLite 태스크 큐(sqlite_tasks + AutoDownloadCheckpoint)가 확인됨."
+      ]
+    },
+    "artcraftLauncherDesktop051": {
+      "bundleId": "ai.storyteller.artcraft-launcher",
+      "version": "0.5.1",
+      "gitCommit": "ed6b32ebf365736ba50bb1ccdc24f183415095f5",
+      "binaryPath": "/Volumes/ArtCraft Launcher/ArtCraft Launcher.app/Contents/MacOS/ArtCraft Launcher",
+      "binarySizeBytes": 42641104,
+      "binarySha256": "273c108d2f701cd68de7ed93feb40873ad9fcb832b06868ed56f7d8ea04adf89",
+      "evidence": {
+        "inspect_rust_binary": "ev_d924383d3ec5ab5c1aa704f1cf5ce356bcf5d3c29ffff970ab7855ab4b8c82ff",
+        "inspect_desktop_application": "ev_cf6150b4fdf1e740b2eac63915bda7bae1d44e50c81ed236a8bed1b4ad8ca05d",
+        "inspect_with_objdump": "ev_87e21526fa3e42ad3bf925864b2afc3f3c1b309ac3b3eff7a79dd9945334d343",
+        "inspect_macho": "ev_c9cd2a83f389429c508fa74424a5d77d93fa53dbe77beed1bbd5cf2f862ba7d5",
+        "inspect_plist": "ev_ad858445919d59e90d408edb7f8533c357f1ad9641f9ca071e2117786b01892b",
+        "inspect_signature": "ev_9db2912ec015932d527687769683207756bd167888fe2616113ca109031cfc58"
+      },
+      "observedFacts": [
+        "ArtCraft.app과 동일한 Apple Developer ID(Learning Machines LLC, DJ6XS33FX8)로 코드 서명되었으며, crates/native/src/{feed_throttle,single_instance,self_update,github,installer,verify}.rs 및 crates/gui/src/cjk_font.rs가 확인됨."
+      ]
+    },
+    "installedApplications13": [
+      { "id": "photocraft", "binarySha256": "fb8b4981ca0acfc3b19c53c20296718193d6ab4500df940e7408233ce2c5574a", "inspect_rust_binary": "ev_579a0596414b8e2e61d32f28e79a26d354f0b4d12d6bb0bc5eb2437be95f3c86", "inspect_macho": "ev_aa2d1bc0f2a0ab128ce3f9268b38d2ff6c10e7d8f7e4bc72094be4332a1d11ef" },
+      { "id": "vectorcraft", "binarySha256": "9c2046848f2abfcddfffe86e96707d6ca368635a24425c9264acbe2e415e400b", "inspect_rust_binary": "ev_c2b4831f1063195aa962cb8662bbebfd02a0d22d558b66de74600c5ff73dc5c9", "inspect_macho": "ev_c120153a5bd40f40f97fb7a387ba3143cf63b1dc6b4d2a1308ce688cd01cf7a2" },
+      { "id": "filmcraft", "binarySha256": "e0f3e6087da9f144ff62b771856c8f3ebdb956e179f3aa94f632e0f6fc045562", "inspect_rust_binary": "ev_a8e9bc5965db41df3fd3042f107447ff59c39fb3f2d5e87c65be407bf5d70fa6", "inspect_macho": "ev_017d8a3501bf9ee94b9888bc1436aaae16337b5b49b03cc9007c6b17f6da3ba7" },
+      { "id": "lightcraft", "binarySha256": "7fd26e989675498448aa7fd70091e2fb440c6a47e287615bc043abff3b7c87d6", "inspect_rust_binary": "ev_9cc2c0d3996210ff74b8c3b978abfd41c1317e49fd20aa61977bd8151d62a50d", "inspect_macho": "ev_885a26db78349fa4fa3de6780614e355b024583c924b11303f14ecbb24c9ee77" },
+      { "id": "pdfcraft", "binarySha256": "786c07234ca21d6b4bc3ca5568d08bfcbbe55f2338756479891eb6be76c6371b", "inspect_rust_binary": "ev_b67fdde1d26e485c7583598290910b940254b144eb639dc5c28d984ddbf13fb8", "inspect_macho": "ev_5646f4f73d66b6cced143647a9147ef61c9f08ac26b36f24903025eb143f26cd" },
+      { "id": "effectcraft", "binarySha256": "61fa22b3e302685673acaaee21d08ff34c4bb9fa033fb11d8a8124e2b33d6ae0", "inspect_rust_binary": "ev_fb73bb8fb7b7e519465196859b02c1f70ec8ebcf8631cb9ef37c6d27a7baad6d", "inspect_macho": "ev_372b2852f876037d6b34d55110fb75fb9debeec6c260a70f6f8368e0d8c0f4d8" },
+      { "id": "designcraft", "binarySha256": "9c3a25f1fc6e56eddb32fc48b2ef96ff85360a3b9cb08beec5a7d79d33e79b22", "inspect_rust_binary": "ev_bf76b152a5c30d5620a1a5ac042608a40daab20d7522c0c492d923a83ed1e9f1", "inspect_macho": "ev_0d7b5d0f218c9b0b12e1d0b22026fc9ab4417a9103f1907f01390a5c88db8c13" },
+      { "id": "figcraft", "binarySha256": "6351d526e531aa269258821ba7d1f6f19fa125b78de34a79ddbcddcd6a5baef0", "inspect_rust_binary": "ev_67591426ba5cf2fc9327574896cfbd34ddcf61077bf40de4d118d4be4b698a1f", "inspect_macho": "ev_b676e60cf0c659d5fd5d86e44cbcb1ff29b5064b0d646421265001679cb3c93a" },
+      { "id": "wordcraft", "binarySha256": "9a1db425e3f9ffed1b450174a03f7a44ab209172fa554175f87c65fd37369e43", "inspect_rust_binary": "ev_43dfbcfa643e7b685cbeb2b520813cd73672bc669ee3bc9bc9c6a374b54bf846", "inspect_macho": "ev_aa0b7e91ef52a0ca9ab77ef99ba3c4ca09d2c0b3a05d1484214017be66dc9e5d" },
+      { "id": "soundcraft", "binarySha256": "ebae6d6bc7f1fd5c2a8c28d37bb7421ef7261790cb6da40284e82112a64c29fa", "inspect_rust_binary": "ev_c0a5da1d87fb03dc917fb10efae3a948850eb07e1758ac9f59be1b9ac2c504ab", "inspect_macho": "ev_1be54f3068e4d03c92df6be60c30417f789a56614c17fd7e9d2e7dc471f95a7e" },
+      { "id": "deckcraft", "binarySha256": "1ef49e728b5b9ba8a379a35015b79c4c2faea7fd711101d15e38c2db4e8b434b", "inspect_rust_binary": "ev_9bd1c881fa7eb023508e1c862dc070c96f85c452ab7791e1fd303263e3c6aeac", "inspect_macho": "ev_a196bb2e1bcba39398ca98693efdd034d11f1b32b8d5650c7538e733b7223d81" },
+      { "id": "cadcraft", "binarySha256": "970cb6b8be95d6fd395e5c72e711f0fb7f216299da654cb8db95e2f879aa88db", "inspect_rust_binary": "ev_c1dd987f247dfab7ff9bfee5464eb0742bc0c122026bf5407b2ec8274d336bb0", "inspect_macho": "ev_1b4c2d0626664c9774569e5c3ef8424f79fb62dcba2a2c4f6c096f6b40196e81" },
+      { "id": "gridcraft", "binarySha256": "13794e6797d2cbdb1bb4a24d2dfdc4cb217a1061fb7b7d4c0ca3715a6a73bf32", "inspect_rust_binary": "ev_566485cf73aa94f632b1138eb79407f95c5a18ca84e01c8824de0d7160f35189", "inspect_macho": "ev_fb9703c00754a83cf6cb314fa3eb5a16aa96643a2094649da30bf88ca29c5973" }
+    ]
+  },
   "internalizationMapping": {
     "formatGatewayModule": "packages/studio-format-gateway/src/artcraft-suite-formats.ts",
     "formatGatewayTests": "packages/studio-format-gateway/src/__tests__/artcraft-suite-formats.test.ts",
@@ -667,8 +727,11 @@
       "apps/web/src/domains/creator/artcraft-suite/artcraft-launcher-security-catalog.ts",
       "apps/web/src/domains/creator/artcraft-suite/artcraft-creative-media-engines.ts",
       "apps/web/src/domains/creator/artcraft-suite/artcraft-publishing-office-cad-engines.ts",
+      "apps/web/src/domains/creator/artcraft-suite/artcraft-multimodal-world-studio-engine.ts",
+      "apps/web/src/domains/creator/artcraft-suite/artcraft-desktop-native-deep-engines.ts",
       "apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteWorkbench.tsx",
-      "apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteInspectorPanels.tsx"
+      "apps/web/src/domains/creator/artcraft-suite/StudioArtCraftSuiteInspectorPanels.tsx",
+      "apps/web/src/domains/creator/artcraft-suite/StudioArtCraftMultimodalAndDesktopPanel.tsx"
     ],
     "creatorDomainTests": [
       "apps/web/src/domains/creator/artcraft-suite/__tests__/artcraft-suite-engines.test.ts",

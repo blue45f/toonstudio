@@ -6,11 +6,14 @@ import {
   buildPcraftAutosaveRecoveryInfo,
   computeFnv1a64Hex,
   createDefaultLightCraftDevelopSettings,
+  isAffinityStreamMagicHeader,
   isDesignCraftIdmlArchiveHeader,
   mergeAndClampLightCraftSettings,
   validateAniCraftManifest,
+  validateArtCraftGlbHeader,
   validateFigCraftContainerBudget,
   validatePcraftManifest,
+  validateWorldLabsSpzHeader,
   type PcraftDocumentManifest,
 } from "../artcraft-suite-formats";
 
@@ -145,5 +148,46 @@ describe("artcraft-suite-formats (REA ArtCraft 15-app format gateway)", () => {
     });
     expect(aniValidation.valid).toBe(true);
     expect(aniValidation.totalExposedFrames).toBe(5);
+  });
+
+  it("validates ArtCraft v0.41.0 Hunyuan3D .glb headers, WorldLabs Marble .spz headers, and PhotoCraft Affinity .afphoto streams", () => {
+    // 1. GLB header ("glTF" v2 + "JSON" chunk)
+    const glbBuffer = new Uint8Array(24);
+    glbBuffer.set([0x67, 0x6c, 0x54, 0x46], 0); // "glTF"
+    const glbView = new DataView(glbBuffer.buffer);
+    glbView.setUint32(4, 2, true); // version 2
+    glbView.setUint32(8, 1024, true); // length 1024
+    glbView.setUint32(12, 512, true); // json chunk length
+    glbBuffer.set([0x4a, 0x53, 0x4f, 0x4e], 16); // "JSON"
+
+    const glbResult = validateArtCraftGlbHeader(glbBuffer);
+    expect(glbResult.valid).toBe(true);
+    expect(glbResult.version).toBe(2);
+    expect(glbResult.declaredByteLength).toBe(1024);
+    expect(glbResult.hasJsonChunk).toBe(true);
+
+    expect(validateArtCraftGlbHeader(new Uint8Array([0, 1, 2])).valid).toBe(false);
+
+    // 2. WorldLabs Marble 0.1 .spz header (raw "NGSP" and gzipped 0x1F 0x8B)
+    const spzRaw = new Uint8Array(16);
+    spzRaw.set([0x4e, 0x47, 0x53, 0x50], 0); // "NGSP"
+    const spzView = new DataView(spzRaw.buffer);
+    spzView.setUint32(4, 2, true); // version 2
+    spzView.setUint32(8, 2_400_000, true); // pointCount
+    const spzRawResult = validateWorldLabsSpzHeader(spzRaw);
+    expect(spzRawResult.valid).toBe(true);
+    expect(spzRawResult.containerKind).toBe("raw-ngsp");
+    expect(spzRawResult.pointCount).toBe(2_400_000);
+
+    const spzGzip = new Uint8Array(16);
+    spzGzip[0] = 0x1f;
+    spzGzip[1] = 0x8b;
+    const spzGzipResult = validateWorldLabsSpzHeader(spzGzip);
+    expect(spzGzipResult.valid).toBe(true);
+    expect(spzGzipResult.containerKind).toBe("gzip-spz");
+
+    // 3. PhotoCraft Affinity Stream magic (0x00 0xFF 0x4B 0x41)
+    expect(isAffinityStreamMagicHeader(new Uint8Array([0x00, 0xff, 0x4b, 0x41, 0x01]))).toBe(true);
+    expect(isAffinityStreamMagicHeader(new Uint8Array([0x89, 0x50, 0x4e, 0x47]))).toBe(false);
   });
 });

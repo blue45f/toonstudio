@@ -6,7 +6,7 @@
  * 툰스튜디오(ToonStudio)에 내재화한 통합 프로덕션 워크벤치.
  */
 
-import { useMemo, useState } from "react";
+import { type KeyboardEvent, useId, useMemo, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -18,6 +18,7 @@ import {
   type ArtCraftAppId,
   type ArtCraftCategory,
 } from "./artcraft-launcher-security-catalog";
+import { StudioArtCraftMultimodalAndDesktopPanel } from "./StudioArtCraftMultimodalAndDesktopPanel";
 import { StudioArtCraftAppLiveInspector } from "./StudioArtCraftSuiteInspectorPanels";
 
 type CategoryFilter = "all" | ArtCraftCategory;
@@ -43,6 +44,12 @@ export function StudioArtCraftSuiteWorkbench({
   readonly initialAppId?: ArtCraftAppId;
 }) {
   const bt = useBilingual("StudioArtCraftSuiteWorkbench");
+  const baseId = useId();
+  const headingId = `${baseId}-heading`;
+  const legacyInputId = `${baseId}-legacy-lookup`;
+  const gridPanelId = `${baseId}-apps-grid-panel`;
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [selectedAppId, setSelectedAppId] = useState<ArtCraftAppId>(initialAppId);
   const [legacyLookupQuery, setLegacyLookupQuery] = useState<string>("printcraft");
@@ -62,12 +69,30 @@ export function StudioArtCraftSuiteWorkbench({
     [legacyLookupQuery],
   );
 
+  const handleCategoryTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") {
+      nextIndex = (index + 1) % CATEGORY_TABS.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (index - 1 + CATEGORY_TABS.length) % CATEGORY_TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = CATEGORY_TABS.length - 1;
+    }
+    if (nextIndex !== null) {
+      event.preventDefault();
+      setCategoryFilter(CATEGORY_TABS[nextIndex]!.id);
+      tabRefs.current[nextIndex]?.focus();
+    }
+  };
+
   return (
     <section
-      aria-label={bt(
-        "ArtCraft Crafting Apps 15종 역공학 내재화 통합 워크벤치",
-        "ArtCraft Crafting Apps 15-Suite Internalized Workbench",
-      )}
+      aria-labelledby={headingId}
       data-testid="studio-artcraft-suite-workbench"
       className="rounded-2xl border border-line bg-card/90 p-5 shadow-sm space-y-4"
     >
@@ -75,32 +100,32 @@ export function StudioArtCraftSuiteWorkbench({
         <div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">
-              REA Clean-Room Suite · 15 Apps
+              REA Clean-Room Suite · 15 Apps + ArtCraft v0.41.0
             </span>
             {projectId ? (
               <span className="text-xs font-mono text-fg-3">Project: {projectId}</span>
             ) : null}
           </div>
-          <h2 className="mt-1 text-base font-bold text-fg">
+          <h2 id={headingId} className="mt-1 text-base font-bold text-fg">
             {bt(
-              "ArtCraft Crafting Apps 15종 전수 내재화 스튜디오 (3. Launcher · 3.1 PhotoCraft ~ 3.13 GridCraft · 4.1 AniCraft)",
-              "ArtCraft Crafting Apps 15-Suite Internalized Studio (Launcher, PhotoCraft..GridCraft & AniCraft)",
+              "ArtCraft Crafting Apps 15종 + ArtCraft v0.41.0 전수 내재화 스튜디오 (3. Launcher · 3.1 PhotoCraft ~ 3.13 GridCraft · 4.1 AniCraft)",
+              "ArtCraft Crafting Apps 15-Suite + ArtCraft v0.41.0 Internalized Studio (Launcher, PhotoCraft..GridCraft & AniCraft)",
             )}
           </h2>
           <p className="text-xs text-fg-2">
             {bt(
-              "24개 REA 정적 AST·Mach-O·Rust 심볼·런타임 증거(2026-10-26)를 기반으로 웹툰·단행본·영상·사운드·배경 CAD·원고료 정산·2D 셀 애니메이션 엔진을 단일 워크벤치에 통합했습니다.",
-              "Integrates all 15 ArtCraft apps into ToonStudio backed by 24 REA static AST, Mach-O, Rust binary, and runtime evidence records.",
+              "Ghidra 12.1.4 및 REA 정적 AST·Mach-O·Rust 심볼·코드 서명 증거(2026-10-26)를 기반으로 웹툰·단행본·3D 스플랫 월드·영상 홍보·사운드·배경 CAD·원고료 정산·2D 셀 애니메이션 엔진을 단일 워크벤치에 통합했습니다.",
+              "Integrates all 15 ArtCraft apps and ArtCraft v0.41.0 into ToonStudio backed by Ghidra 12.1.4 and REA static AST, Mach-O, Rust binary, and code-signing evidence.",
             )}
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <label className="flex items-center gap-1.5 text-fg-2">
+          <label htmlFor={legacyInputId} className="flex items-center gap-1.5 text-fg-2">
             <span>{bt("구 식별자 호환 조회", "Former ID Lookup")}:</span>
             <input
+              id={legacyInputId}
               type="text"
-              aria-label={bt("구 식별자 호환 조회", "Former ID Lookup")}
               value={legacyLookupQuery}
               onChange={(e) => setLegacyLookupQuery(e.target.value)}
               className="w-28 rounded border border-line bg-panel px-2 py-0.5 font-mono text-xs text-fg"
@@ -113,16 +138,27 @@ export function StudioArtCraftSuiteWorkbench({
       </div>
 
       {/* 카테고리 탭 */}
-      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={bt("ArtCraft 앱군 필터", "ArtCraft Suite Filter")}>
-        {CATEGORY_TABS.map((tab) => {
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="tablist"
+        aria-label={bt("ArtCraft 앱군 필터", "ArtCraft Suite Filter")}
+      >
+        {CATEGORY_TABS.map((tab, idx) => {
           const active = categoryFilter === tab.id;
           return (
             <button
               key={tab.id}
+              ref={(el) => {
+                tabRefs.current[idx] = el;
+              }}
+              id={`${baseId}-cat-tab-${tab.id}`}
               type="button"
               role="tab"
               aria-selected={active}
+              aria-controls={gridPanelId}
+              tabIndex={active ? 0 : -1}
               onClick={() => setCategoryFilter(tab.id)}
+              onKeyDown={(e) => handleCategoryTabKeyDown(e, idx)}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 active
@@ -137,7 +173,12 @@ export function StudioArtCraftSuiteWorkbench({
       </div>
 
       {/* 15종 앱 선택 그리드 */}
-      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div
+        id={gridPanelId}
+        role="tabpanel"
+        aria-labelledby={`${baseId}-cat-tab-${categoryFilter}`}
+        className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5"
+      >
         {filteredApps.map((app) => {
           const isSelected = app.id === activeApp.id;
           const badgeHex = srgbTripletToHex(app.color);
@@ -146,6 +187,7 @@ export function StudioArtCraftSuiteWorkbench({
               key={app.id}
               type="button"
               data-testid={`artcraft-app-card-${app.id}`}
+              aria-pressed={isSelected}
               onClick={() => setSelectedAppId(app.id)}
               className={cn(
                 "flex flex-col items-start rounded-xl border p-2.5 text-left transition-all",
@@ -174,6 +216,9 @@ export function StudioArtCraftSuiteWorkbench({
 
       {/* 선택된 앱 실시간 엔진 인스펙터 */}
       <StudioArtCraftAppLiveInspector app={activeApp} />
+
+      {/* ArtCraft v0.41.0 멀티모달 AI 월드·3D·영상 라우터 & macOS 데스크톱 심화 엔진 */}
+      <StudioArtCraftMultimodalAndDesktopPanel activeApp={activeApp} />
     </section>
   );
 }
