@@ -248,7 +248,7 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(52);
+    expect(bench.reaEvidenceTargetCount).toBe(53);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
     expect(bench.wave24ReaEvidenceCount).toBe(4);
@@ -257,9 +257,9 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     expect(bench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(bench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(bench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
-    expect(bench.monolithicTotalReaEvidenceCount).toBe(7);
+    expect(bench.monolithicTotalReaEvidenceCount).toBe(8);
     expect(bench.completeEcosystemToolPresetCount).toBe(14);
-    expect(bench.monolithicTotalToolPresetCount).toBe(16);
+    expect(bench.monolithicTotalToolPresetCount).toBe(20);
     expect(bench.competitorFilterPresetCount).toBe(12);
     expect(bench.klecksVanishPointRayCount).toBe(36);
     expect(bench.glfxHalftoneDotCmykCount).toBe(4);
@@ -761,10 +761,10 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     expect(bench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(bench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(bench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
-    expect(bench.monolithicTotalReaEvidenceCount).toBe(7);
+    expect(bench.monolithicTotalReaEvidenceCount).toBe(8);
     expect(bench.holisticToolPresetCount).toBe(12);
     expect(bench.completeEcosystemToolPresetCount).toBe(14);
-    expect(bench.monolithicTotalToolPresetCount).toBe(16);
-    expect(bench.reaEvidenceTargetCount).toBe(52);
+    expect(bench.monolithicTotalToolPresetCount).toBe(20);
+    expect(bench.reaEvidenceTargetCount).toBe(53);
   });
 });

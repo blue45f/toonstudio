@@ -31,8 +31,10 @@ import {
   evaluateMultiPolygonSelectAndMarquee,
   evaluateOtsuBimodalCannyAndSkiaLookahead,
   evaluatePaperCatmullRomSmoothAndFlatten,
+  evaluatePiskelDitherLightenAndKlecksCatchUp,
   evaluatePiskelOnionSkinAndSpritesheet,
   evaluateRichCanvasTypographyLayout,
+  evaluateSculptGlCreaseFlattenAndTangentSmooth,
   evaluateSculptGlTwistAndDynamicTopology,
   executeHolisticFloodFillAndMagicErase,
   HOLISTIC_STUDIO_TOOL_PRESETS,
@@ -137,7 +139,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(52);
+    expect(universalBench.reaEvidenceTargetCount).toBe(53);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -146,10 +148,10 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
-    expect(universalBench.monolithicTotalReaEvidenceCount).toBe(7);
+    expect(universalBench.monolithicTotalReaEvidenceCount).toBe(8);
     expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
-    expect(universalBench.monolithicTotalToolPresetCount).toBe(16);
+    expect(universalBench.monolithicTotalToolPresetCount).toBe(20);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -410,14 +412,20 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(summary.onionSkinAlpha01).toBeCloseTo(0.35, 4);
   });
 
-  it("Wave 30 & 31 767개 파일 총망라 일괄 REA 원장(7개 서브시스템·16개 프리셋)과 칼레이도스코프·엠보스·Paper.js·Excalidraw·만다라·ag-psd PackBits·culori CIEDE2000·Otsu/Canny·Skia 예측을 검증한다", () => {
-    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER).toHaveLength(7);
-    expect(MONOLITHIC_TOTAL_TOOL_PRESETS).toHaveLength(16);
+  it("Wave 30~32 767개 파일 무누락 일괄 REA 원장(8개 서브시스템·20개 프리셋)과 칼레이도스코프·엠보스·Paper.js·Excalidraw·만다라·ag-psd PackBits·culori CIEDE2000·Otsu/Canny·SculptGL Crease·Piskel·Klecks·JSPaint를 검증한다", () => {
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER).toHaveLength(8);
+    expect(MONOLITHIC_TOTAL_TOOL_PRESETS).toHaveLength(20);
     expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.relevantFiles).toBe(755);
     expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes).toBe(771934);
     expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[6]?.relevantFiles).toBe(767);
     expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[6]?.evidenceId).toBe(
       "ev_13bbde3494001044d31ebdb3d481f0cd91c96f6dc995f78b17c1cf9984ea2d28",
+    );
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[7]?.relevantFiles).toBe(767);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[7]?.visitedAstNodes).toBe(791354);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[7]?.dataFlowRelations).toBe(56403);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[7]?.evidenceId).toBe(
+      "ev_6a28510e2b0c37cbe1bd3296ceeb41c7b4ae4ce8a7999b91ef1ee495ec361cdc",
     );
 
     const kaleido = evaluateKonvaKaleidoscopePolarMirror({
@@ -548,6 +556,39 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(vision.cannyEdgeState).toBe("strong");
     expect(vision.predictedNextPoint.x).toBeGreaterThan(32);
 
+    const sculptCrease = evaluateSculptGlCreaseFlattenAndTangentSmooth({
+      vertex: [2, 1, 0.5],
+      center: [0, 0, 0],
+      normal: [0, 0, 1],
+      laplacianTarget: [2.4, 1.3, 1.9],
+      radius: 10,
+      intensity01: 0.8,
+      isNegative: false,
+    });
+    expect(sculptCrease.creasedVertex[2]).toBeGreaterThan(0.5);
+    expect(sculptCrease.flattenedVertex[2]).toBeLessThan(0.5);
+    expect(sculptCrease.tangentSmoothedVertex[2]).toBeCloseTo(0.5, 5);
+
+    const piskelKlecks = evaluatePiskelDitherLightenAndKlecksCatchUp({
+      col: 3,
+      row: 4,
+      isRightButton: false,
+      baseLuma255: 140,
+      isShiftOncePerPixel: true,
+      isCtrlDarken: false,
+      targetX: 100,
+      lastSmoothedX: 60,
+      smoothing01: 0.65,
+      catchUpTicks: 4,
+      jspaintBrushSize: 8,
+      jspaintShape: "reverse_diagonal",
+    });
+    expect(piskelKlecks.usesPrimaryDitherColor).toBe(true);
+    expect(piskelKlecks.adjustedLuma255).toBeGreaterThan(140);
+    expect(piskelKlecks.caughtUpX).toBeGreaterThan(80);
+    expect(piskelKlecks.jspaintCanvasSizePx).toBe(8);
+    expect(piskelKlecks.jspaintEffectiveSpanPx).toBeCloseTo(7.6, 3);
+
     const telemetry = evaluateMonolithicTotalEngineTelemetry({
       presetId: "monolithic-ag-psd-packbits-8bim",
       strength01: 0.75,
@@ -558,6 +599,8 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(telemetry.psdCompressionRatio01).toBeLessThan(1);
     expect(telemetry.ciede2000DeltaE).toBeGreaterThan(0);
     expect(telemetry.otsuOptimalThreshold).toBe(31);
+    expect(telemetry.sculptCreaseZ).toBeGreaterThan(0.5);
+    expect(telemetry.klecksCatchUpX).toBeGreaterThan(20);
   });
 });
 

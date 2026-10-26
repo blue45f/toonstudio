@@ -12,6 +12,7 @@ import {
   evaluateLabPerfectFreehandSimulatedPressureAndRadius,
   evaluateLabPsdPackBitsAndOtsuThreshold,
   evaluateLabSaiWatercolorPressure,
+  evaluateLabSculptGlCreaseAndKlecksCatchUp,
   evaluateLabSculptGlQuarticFalloff01,
   evaluateLabWickCroquisPressure01,
   filterLabPixelPerfectCells,
@@ -323,5 +324,16 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
     });
     expect(psdOtsu.packBitsHeaderByte).toBe(252);
     expect(psdOtsu.betweenClassVariance).toBe(9025);
+
+    const creaseCatch = evaluateLabSculptGlCreaseAndKlecksCatchUp({
+      distRatio01: 0.25,
+      radius: 20,
+      intensity01: 0.8,
+      targetX: 100,
+      prevX: 50,
+      smoothing01: 0.6,
+    });
+    expect(creaseCatch.quinticCreaseDisp).toBeGreaterThan(0.5);
+    expect(creaseCatch.caughtUpX).toBe(70);
   });
 });

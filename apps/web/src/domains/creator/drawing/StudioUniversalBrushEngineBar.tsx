@@ -194,6 +194,7 @@ export function StudioUniversalBrushEngineBar({
   const [selectedBlendMode, setSelectedBlendMode] = useState<HolisticLayerBlendMode>("multiply");
   const [selectedCompleteEcosystemId, setSelectedCompleteEcosystemId] = useState<CompleteEcosystemToolPresetId>("ecosystem-ffd-lattice-5x5");
   const [selectedMonolithicToolId, setSelectedMonolithicToolId] = useState<MonolithicTotalToolPresetId>("monolithic-kaleidoscope-polar");
+  const [monolithicCategoryFilter, setMonolithicCategoryFilter] = useState<"all" | "brush" | "filter" | "vector" | "symmetry" | "whiteboard">("all");
   const [mandalaAxes, setMandalaAxes] = useState<number>(8);
 
   useEffect(() => {
@@ -625,9 +626,31 @@ export function StudioUniversalBrushEngineBar({
       <div data-studio-wave-section="wave30" hidden={hiddenUntilFound("wave30")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("만다라·칼레이도·Catmull벡터·PSD·색차·선화:")}</span>
+          <div className="inline-flex flex-wrap items-center gap-1" role="group" aria-label={tx("모놀리식 도구 카테고리 필터")}>
+            {(["all", "brush", "filter", "vector", "symmetry", "whiteboard"] as const).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                data-studio-monolithic-category-filter={cat}
+                aria-pressed={monolithicCategoryFilter === cat}
+                onClick={() => setMonolithicCategoryFilter(cat)}
+                className={`rounded border px-1.5 py-0.5 font-mono text-[9px] font-semibold ${
+                  monolithicCategoryFilter === cat ? "border-accent bg-accent/20 text-fg" : "border-line/70 bg-canvas text-fg-3"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
           <PresetRadioGroup
             ariaLabel={tx("767모듈 모놀리식 총망라 도구 프리셋")}
-            items={MONOLITHIC_TOTAL_TOOL_PRESETS}
+            items={
+              monolithicCategoryFilter === "all"
+                ? MONOLITHIC_TOTAL_TOOL_PRESETS
+                : MONOLITHIC_TOTAL_TOOL_PRESETS.filter(
+                    (item) => item.category === monolithicCategoryFilter || item.id === selectedMonolithicToolId,
+                  )
+            }
             selectedId={selectedMonolithicToolId}
             dataAttrName="data-studio-monolithic-tool-preset"
             onSelect={setSelectedMonolithicToolId}
@@ -727,6 +750,8 @@ export function StudioUniversalBrushEngineBar({
           <span>{tx("칼레이도·만다라")}: {activeUniversalTelemetry.monolithicEval.kaleidoscopeMirroredSector}/{activeUniversalTelemetry.monolithicEval.mandalaSymmetricCopyCount}</span>
           <span>·</span>
           <span>{tx("PSD·ΔE00·Otsu")}: {activeUniversalTelemetry.monolithicEval.psdCompressionRatio01.toFixed(2)}/{activeUniversalTelemetry.monolithicEval.ciede2000DeltaE.toFixed(1)}/{activeUniversalTelemetry.monolithicEval.otsuOptimalThreshold}</span>
+          <span>·</span>
+          <span>{tx("Crease·CatchUp")}: {activeUniversalTelemetry.monolithicEval.sculptCreaseZ.toFixed(2)}/{activeUniversalTelemetry.monolithicEval.klecksCatchUpX.toFixed(1)}</span>
           <span>·</span>
           <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>
