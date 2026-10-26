@@ -1,7 +1,7 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "generated_at": "2026-10-27",
-  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 서비스 REA 역공학 증거 원장",
+  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 8대 서비스 REA 역공학 증거 원장",
   "toolchain": {
     "mcp_server": "rea",
     "provider_browser": "rea-playwright-browser-scenario",
@@ -12,7 +12,14 @@
       "inspect_analysis_view",
       "export_evidence_bundle"
     ],
-    "native_binary_policy": "ghidra_only_no_hopper"
+    "native_binary_policy": "ghidra_only_no_hopper",
+    "session_bundle": {
+      "records": 148,
+      "unknowns": 36,
+      "total_visited_ast_nodes": 1277705,
+      "total_findings": 7858,
+      "total_exported_scripts": 363
+    }
   },
   "targets": [
     {
@@ -114,7 +121,7 @@
       "domain_role": "멀티플레이어 캔버스 협업, 브랜치 생성·병합(Branch & Merge), 섹션 단위 핸드오프 준비 상태(Ready for Next Stage), 핀 코멘트",
       "evidence": {
         "capture_evidence_id": "ev_274345ca8f8511df4e8b903db915ccc3ef4cc10028fa190e088a52368a38d43b",
-        "scenario_sha256": "3c0567f8b871fef2e25a02b553ccbcb5f9f66d10a70799aaccc665d230b79b1c",
+        "scenario_sha256": "3c0567f8b871fef2e25a02b553ccbcb5f9f66d10a70799aaccc66d230b79b1c",
         "export_evidence_id": "ev_4be57205de61cc21bc5caca8514773bf2c2e02562c7f347d1cbcaabe6e02698d",
         "manifest_sha256": "a364a2d075eaee0cb5d46edf81ce978e6d61eab1e483a014fba677768c9eff7c",
         "ast_parent_evidence_id": "ev_cbc65765a208f4eab4970f761400b18e4ba6d81e9becf89821ad52aa48ead382",
@@ -201,6 +208,192 @@
           "/kmongbiz/settings/biz-card"
         ]
       }
+    },
+    {
+      "id": "miro",
+      "name": "Miro",
+      "url": "https://miro.com/",
+      "domain_role": "무한 캔버스 스토리보드·컷 의존성 맵핑, 다자간 클러스터 투표(Dot Voting) 및 실시간 이벤트 허브 동기화",
+      "evidence": {
+        "capture_evidence_id": "ev_e23e40bfa38a3b273d31882febb0cc6b5ac5434f81286606f7607f3b34e09a21",
+        "scenario_sha256": "37a71576ee09929634f25198ba32410755ba1e65822e34ea4547d8680947c73d",
+        "export_evidence_id": "ev_bc5339df924aaacbd0d4172b6dd69738582668bbec6c19f74100e5646895365a",
+        "manifest_sha256": "c1ab6e1ba7719f9109c00d5bf1ed174623c5297c7dbdca8239ac9d5e789de2a5",
+        "ast_parent_evidence_id": "ev_9cb347a263e8c10869d63c0064ce63b4b1572b66f2a8ed6234030211242b0bc2",
+        "ast_summary_evidence_id": "ev_09c0ecca15f3fa0058b34030edd7f571885c1b8f5377fa093d411b8792f2aa66",
+        "root_artifact_sha256": "85609a94ab3bf8632b42bf53198685e2af54849a8250b7f0342bd43e63de7a6d",
+        "route_evidence_id": "ev_414f25bca9383d7596b94c49bb96e0c60490444af5814c30e1fdd0203574c96d"
+      },
+      "metrics": {
+        "retained_events": 696,
+        "dropped_events": 275,
+        "total_scripts_observed": 55,
+        "exported_scripts": 12,
+        "text_bytes_read": 313054,
+        "visited_ast_nodes": 59796,
+        "findings": 471,
+        "modules": 0,
+        "semantic_relations": {
+          "boundary": 14,
+          "call_flow": 2887,
+          "closure": 4445,
+          "data_flow": 44251,
+          "event": 2,
+          "object_flow": 2854,
+          "promise_ownership": 65,
+          "timer": 6
+        },
+        "application_unknowns": 0,
+        "semantic_unknowns": 11064,
+        "recovered_routes_count": 0,
+        "key_observed_bundles": [
+          "web-tracker.esm.js",
+          "event-hub-irBlRqb4.esm.js",
+          "Interactive_animated_gradient.Drf4PNWN.mjs"
+        ]
+      }
+    },
+    {
+      "id": "clickup",
+      "name": "ClickUp",
+      "url": "https://clickup.com/",
+      "domain_role": "크루 작업량 용량(Workload Capacity), 공정별 소요 시간 추정(/features/time-estimates) 및 실시간 타임 트래킹(/features/project-time-tracking), 간트·화이트보드 연동",
+      "evidence": {
+        "capture_evidence_id": "ev_548ee1cfa869325174d8bff08aaf0fcc862f6e6350aa21010d6bf0a07dfe9344",
+        "scenario_sha256": "bfa91ade25b8bb1c59c7171b168a802ce25b3f30a4af9f70254f895c1603e145",
+        "export_evidence_id": "ev_176a122fff9e85db54c40f53cf343b36c0f9593324de0f56448a17c9f9cac1eb",
+        "manifest_sha256": "df75e19b7b6cdeed75d639c6736910805f8f02d5ef4b84a30f9fa0497ac72dac",
+        "ast_parent_evidence_id": "ev_a1657be0a6ae3a404ce33b320a38df2ab0d7066c099db67bdd2a4ae17e50b9a0",
+        "ast_summary_evidence_id": "ev_219f3160b7e0eb5807f9b1868e787d9911157cbec169ff92223131259537238b",
+        "root_artifact_sha256": "0967b2bddcbec128443b6655945f35f75b8a38d5ce279c820dc0885949fdc4f7",
+        "route_evidence_id": "ev_cbd420a8a66aa0d54c6033bf81db7eb5d8d33a6726d36676644fc2e75ec05eb2"
+      },
+      "metrics": {
+        "retained_events": 519,
+        "dropped_events": 389,
+        "total_scripts_observed": 50,
+        "exported_scripts": 24,
+        "text_bytes_read": 676653,
+        "visited_ast_nodes": 166433,
+        "findings": 1076,
+        "modules": 230,
+        "semantic_relations": {
+          "boundary": 56,
+          "call_flow": 1848,
+          "closure": 3634,
+          "data_flow": 55805,
+          "event": 4,
+          "object_flow": 5036,
+          "promise_ownership": 59,
+          "request": 5,
+          "timer": 4
+        },
+        "application_unknowns": 16,
+        "semantic_unknowns": 16838,
+        "recovered_routes_count": 105,
+        "key_routes": [
+          "/features/time-estimates",
+          "/features/project-time-tracking",
+          "/features/gantt-chart-view",
+          "/features/whiteboards",
+          "/features/kanban-board",
+          "/features/sync-up",
+          "/features/automations",
+          "/brain/agents",
+          "/customers/cartoon-network"
+        ]
+      }
+    },
+    {
+      "id": "soomgo",
+      "name": "숨고 (Soomgo)",
+      "url": "https://soomgo.com/",
+      "domain_role": "창작·전문 공정 즉시 견적요청서 기반 고수 매칭(/search/pro), 포트폴리오·단가 비교 및 알림 제어(/setting/notification)",
+      "evidence": {
+        "capture_evidence_id": "ev_1c7658a2bbc76c3936dd3dcdf892ca6cbf26fcd7c74cd00018dd1c04485f7490",
+        "scenario_sha256": "e1f0e19bf720b5e47c73c2cf1ca9ef507b7bce2903c0c70efea2684d1edfbc14",
+        "export_evidence_id": "ev_301edc86d7f4f7295822bee0509045d3b5578972098eb0a1130e47fda3048267",
+        "manifest_sha256": "ddfcb53a6e7d1f47f99fa9459a700757a4d70e1c235338a8b5a12e0a7f89fe34",
+        "ast_parent_evidence_id": "ev_ded0c49dbc09eef52b4824a471e0306097e38bdf51fd9e9048a09355cd45b81d",
+        "ast_summary_evidence_id": "ev_b1b1e5d459b74c9ea77826c57d49eb0570a48bf9373f2c172f79cf43c7703794",
+        "root_artifact_sha256": "59b7e83d42202a58dc6107391247271641ebafa3675cd963f288cae51fcf22f4",
+        "route_evidence_id": "ev_e70b953af984e6038a3a462b27d8a942b6e82612a6ad23d600529c395791d73c"
+      },
+      "metrics": {
+        "retained_events": 646,
+        "dropped_events": 620,
+        "total_scripts_observed": 51,
+        "exported_scripts": 25,
+        "text_bytes_read": 471402,
+        "visited_ast_nodes": 99296,
+        "findings": 873,
+        "modules": 158,
+        "semantic_relations": {
+          "boundary": 36,
+          "call_flow": 2286,
+          "closure": 3706,
+          "data_flow": 53840,
+          "event": 9,
+          "object_flow": 4560,
+          "promise_ownership": 72,
+          "timer": 22
+        },
+        "application_unknowns": 11,
+        "semantic_unknowns": 14135,
+        "recovered_routes_count": 7,
+        "key_routes": [
+          "/search/globals/[keyword]",
+          "/search/pro",
+          "/store",
+          "/profile",
+          "/setting/notification"
+        ]
+      }
+    },
+    {
+      "id": "wishket",
+      "name": "위시켓 (Wishket)",
+      "url": "https://www.wishket.com/",
+      "domain_role": "전문 스튜디오·프리랜서 대금보호 계약, 저작재산권·이용허락 권리 구분, 다중 조건 필터(wishket-multiselect) 및 가이드 검증",
+      "evidence": {
+        "capture_evidence_id": "ev_e7229ce61c2690e50b7dae607da2d0a52b6435180bb3f43997108a2eb3587765",
+        "scenario_sha256": "8b25c365a8def9d41d1b0d215aa34a85515aef821f8a788bcbe07b08899799be",
+        "export_evidence_id": "ev_7a5b3d1b8b6dcf8467ad22fba02ef990c3f9c6f43ec80e4a56f74e688c5df3a5",
+        "manifest_sha256": "d657831ad5ad5a87cd835f511e513a85608042b02a7d22987fe8c73deb72a519",
+        "ast_parent_evidence_id": "ev_1bc528214eda099e91c4628cbc4a874c0f509e8027c81c8d0b70f588605aed1c",
+        "ast_summary_evidence_id": "ev_5349f3be63bd7585acd4a48d1076d329b208dc0642347803c55f104d679a7f6f",
+        "root_artifact_sha256": "119cc20bc54137bd261061ee7bf13ff14a0461f99ca5948e7538ea1dc2725f75",
+        "route_evidence_id": "ev_b5d86380e42a5ad7c296bd1d7f6e98d2fae9eef69d1ec20383e8ed1a40774697"
+      },
+      "metrics": {
+        "retained_events": 836,
+        "dropped_events": 179,
+        "total_scripts_observed": 31,
+        "exported_scripts": 18,
+        "text_bytes_read": 247786,
+        "visited_ast_nodes": 50153,
+        "findings": 41,
+        "modules": 0,
+        "semantic_relations": {
+          "boundary": 50,
+          "call_flow": 3576,
+          "closure": 1714,
+          "data_flow": 29222,
+          "event": 58,
+          "object_flow": 2878,
+          "promise_ownership": 4,
+          "timer": 10
+        },
+        "application_unknowns": 0,
+        "semantic_unknowns": 13066,
+        "recovered_routes_count": 0,
+        "key_observed_bundles": [
+          "wishket_utility.js",
+          "wishket_component.js",
+          "wishket-multiselect.js",
+          "wishket_guide.js"
+        ]
+      }
     }
   ],
   "internalized_modules": [
@@ -227,6 +420,30 @@
       "model": "apps/web/src/domains/collaboration/collaboration-crew-division-planner-model.ts",
       "component": "apps/web/src/domains/collaboration/CollaborationCrewDivisionPlanner.tsx",
       "mounted_surface": "apps/web/src/domains/collaboration/CollaborationBoardPage.tsx"
+    },
+    {
+      "id": "studio-live-layer-seat-division-bench",
+      "model": "apps/web/src/domains/creator/live/studio-layer-seat-model.ts",
+      "component": "apps/web/src/domains/creator/live/StudioLiveLayerSeatDivisionBench.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/live/StudioLiveCollaborationCommandCenter.tsx"
+    },
+    {
+      "id": "collaboration-instant-quote-matcher",
+      "model": "apps/web/src/domains/collaboration/collaboration-instant-quote-matcher-model.ts",
+      "component": "apps/web/src/domains/collaboration/CollaborationInstantQuoteMatcherSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/collaboration/CollaborationBoardPage.tsx"
+    },
+    {
+      "id": "production-cut-dependency-time-estimator",
+      "model": "apps/web/src/domains/creator/production-hub/production-cut-dependency-time-estimator-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionCutDependencyTimeEstimatorSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionPlanningSurface.tsx"
+    },
+    {
+      "id": "production-crew-workload-contract-matrix",
+      "model": "apps/web/src/domains/creator/production-hub/production-crew-workload-contract-matrix-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionCrewWorkloadContractMatrixSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionTeamSurface.tsx"
     }
   ]
 }

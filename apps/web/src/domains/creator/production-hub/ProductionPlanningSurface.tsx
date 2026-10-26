@@ -7,6 +7,7 @@ import {
 
 import type { AssetRequirement, DecisionAuthorityRule, ProductionProjectAggregate, ProductionRiskStatus } from "@toonstudio/core/production";
 
+import { ProductionCutDependencyTimeEstimatorSuite } from "./ProductionCutDependencyTimeEstimatorSuite";
 import { ProductionVisualPlanningWorkspace } from "./ProductionVisualPlanningWorkspace";
 import type { ProductionClientCommand } from "./production-api";
 import { hubEnText, hubText } from "./production-hub-text";
@@ -168,6 +169,9 @@ export function ProductionPlanningSurface({
           <div className="space-y-2">{openRisks.map((risk) => <div key={risk.id} className="rounded-xl border border-line bg-panel p-3"><div className="flex flex-wrap items-center gap-2"><ProductionPill tone={risk.probability * risk.impact >= 12 ? "danger" : "warning"}>{bt(`가능성 ${risk.probability} × 영향 ${risk.impact}`, `Likelihood ${risk.probability} × impact ${risk.impact}`)}</ProductionPill><span className="font-semibold text-fg">{risk.title}</span><ProductionPill>{bt(RISK_STATUS_LABELS[risk.status].ko, RISK_STATUS_LABELS[risk.status].en)}</ProductionPill></div><p className="mt-2 text-xs leading-5 text-fg-2">{risk.mitigation}</p></div>)}</div>
         </ProductionSectionCard>
       </div>
+      <ProductionCutDependencyTimeEstimatorSuite
+        defaultTargetCuts={currentEpisodePlans[0]?.targetCutCount ?? 68}
+      />
     </div>
   );
 }

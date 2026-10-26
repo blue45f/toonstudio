@@ -10,6 +10,7 @@ import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { assignmentStatusLabel, projectAccessRoleLabel, roleTypeLabel, type BilingualLabel } from "./production-labels";
 import { ProductionAvatar, ProductionPill, ProductionSectionCard } from "./production-ui";
 import { ProductionAssetLicenseDistributionSuite } from "./ProductionAssetLicenseDistributionSuite";
+import { ProductionCrewWorkloadContractMatrixSuite } from "./ProductionCrewWorkloadContractMatrixSuite";
 import { ProductionJiraConfluenceWorkflowSuite } from "./ProductionJiraConfluenceWorkflowSuite";
 import { ProductionWorkspaceGovernanceSuite } from "./ProductionWorkspaceGovernanceSuite";
 
@@ -113,6 +114,7 @@ export function ProductionTeamSurface({
         </div>
       </div>
       <ProductionCrewCoverage aggregate={aggregate} />
+      <ProductionCrewWorkloadContractMatrixSuite />
       <ProductionIntegrationsPanel aggregate={aggregate} />
       <ProductionWorkspaceGovernanceSuite />
       <ProductionJiraConfluenceWorkflowSuite />

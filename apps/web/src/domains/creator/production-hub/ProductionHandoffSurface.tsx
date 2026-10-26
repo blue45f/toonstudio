@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight } from "lucide-react";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
 import { ProductionDivisionHandoffTriageSuite } from "./ProductionDivisionHandoffTriageSuite";
+import { StudioLiveLayerSeatDivisionBench } from "../live/StudioLiveLayerSeatDivisionBench";
 import type { ProductionClientCommand } from "./production-api";
 import { handoffBoardHref, handoffDirections, handoffNextProcess } from "./handoff-next-process-model";
 import {
@@ -301,8 +302,9 @@ export function ProductionHandoffSurface({
           </div>
         </ProductionSectionCard>
       </div>
-      <div className="xl:col-span-2">
+      <div className="space-y-4 xl:col-span-2">
         <ProductionDivisionHandoffTriageSuite episodeLabel={episodeName} />
+        <StudioLiveLayerSeatDivisionBench />
       </div>
     </div>
   );
