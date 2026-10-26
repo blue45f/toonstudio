@@ -50,13 +50,13 @@ const ROUTE_MAP: Record<SiteRouteVisualKind, NanoBananaCardId> = {
   trust: "nb-trust-sanctuary", play: "nb-play-fortune",
 };
 
-const SUBNAV_MAP: Record<ContextualSubNavGroupId, NanoBananaCardId> = {
+const SUBNAV_MAP: Record<string, NanoBananaCardId> = {
   discover: "nb-discover-spotlight", create: "nb-create-canvas", production: "nb-production-control",
   ecosystem: "nb-market-atelier", academy: "nb-learn-academy", personal: "nb-manage-vault",
 };
 
 export const resolveNanoBananaCardMetaForRouteVisual = (k: SiteRouteVisualKind) => meta(ROUTE_MAP[k] ?? "nb-workflow-bridge");
-export const resolveNanoBananaCardMetaForSubNavGroup = (g: ContextualSubNavGroupId) => meta(SUBNAV_MAP[g] ?? "nb-workflow-bridge");
+export const resolveNanoBananaCardMetaForSubNavGroup = (g: string) => meta(SUBNAV_MAP[g] ?? "nb-workflow-bridge");
 
 export function resolveNanoBananaCardMetaForPath(pathname: string): NanoBananaCardMeta {
   const p = (pathname.split(/[?#]/, 1)[0] || "/").toLowerCase();

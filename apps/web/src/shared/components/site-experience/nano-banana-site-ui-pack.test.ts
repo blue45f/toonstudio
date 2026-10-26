@@ -3,10 +3,9 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import type { SiteDesignDomain } from "@/shared/lib/site-route-experience";
 import type { SiteRouteVisualKind } from "@/shared/lib/site-route-visual";
-import type { ContextualSubNavGroupId } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
+  type ContextualSubNavGroupId,
   getNanoBananaSiteCard,
   NANO_BANANA_SITE_CARD_LIST,
   NANO_BANANA_SITE_CARDS,
@@ -14,6 +13,7 @@ import {
   resolveNanoBananaCardForPath,
   resolveNanoBananaCardForRouteVisual,
   resolveNanoBananaCardForSubNavGroup,
+  type SiteDesignDomain,
 } from "./nano-banana-site-ui-pack";
 
 const WEB_PUBLIC_ROOT = resolve(__dirname, "../../../../public");
