@@ -669,3 +669,120 @@ export function stepShaperHistoryCursor<TPayload>(
     appliedEntry: stack.entries[nextPos] ?? null,
   };
 }
+
+const HANGUL_CHO = [
+  "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
+  "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
+] as const;
+const HANGUL_JUNG = [
+  "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
+  "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ",
+] as const;
+const HANGUL_JONG = [
+  "", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ",
+  "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ",
+  "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
+] as const;
+const COMPOUND_JUNG: Readonly<Record<string, string>> = {
+  "ㅗㅏ": "ㅘ", "ㅗㅐ": "ㅙ", "ㅗㅣ": "ㅚ",
+  "ㅜㅓ": "ㅝ", "ㅜㅔ": "ㅞ", "ㅜㅣ": "ㅟ", "ㅡㅣ": "ㅢ",
+};
+const COMPOUND_JONG: Readonly<Record<string, string>> = {
+  "ㄱㅅ": "ㄳ", "ㄴㅈ": "ㄵ", "ㄴㅎ": "ㄶ", "ㄹㄱ": "ㄺ",
+  "ㄹㅁ": "ㄻ", "ㄹㅂ": "ㄼ", "ㄹㅅ": "ㄹㅅ".replace("ㄹㅅ", "ㄽ"),
+  "ㄹㅌ": "ㄾ", "ㄹㅍ": "ㄿ", "ㄹㅎ": "ㅀ", "ㅂㅅ": "ㅄ",
+};
+const SPLIT_JONG: Readonly<Record<string, readonly [string, string]>> = {
+  "ㄳ": ["ㄱ", "ㅅ"], "ㄵ": ["ㄴ", "ㅈ"], "ㄶ": ["ㄴ", "ㅎ"],
+  "ㄺ": ["ㄹ", "ㄱ"], "ㄻ": ["ㄹ", "ㅁ"], "ㄼ": ["ㄹ", "ㅂ"],
+  "ㄽ": ["ㄹ", "ㅅ"], "ㄾ": ["ㄹ", "ㅌ"], "ㄿ": ["ㄹ", "ㅍ"],
+  "ㅀ": ["ㄹ", "ㅎ"], "ㅄ": ["ㅂ", "ㅅ"],
+};
+
+function mergeHangulSyllable(cho: string, jung: string, jong = ""): string {
+  const choIdx = HANGUL_CHO.indexOf(cho as (typeof HANGUL_CHO)[number]);
+  const jungIdx = HANGUL_JUNG.indexOf(jung as (typeof HANGUL_JUNG)[number]);
+  const jongIdx = HANGUL_JONG.indexOf(jong as (typeof HANGUL_JONG)[number]);
+  if (choIdx < 0 || jungIdx < 0 || jongIdx < 0) return `${cho}${jung}${jong}`;
+  return String.fromCharCode(0xac00 + (choIdx * 21 + jungIdx) * 28 + jongIdx);
+}
+
+/**
+ * SHAPER UIInputFieldFixKorean::Merge (0x060002f7) 및 TryTypingCharsCombine (0x060002fb) 역공학 내재화:
+ * 자모 입력 시퀀스를 초성·중성·종성 오토마타(`0xAC00 + (cho * 21 + jung) * 28 + jong`),
+ * 복합 모음(`ㅘ, ㅙ, ㅚ, ㅝ, ㅞ, ㅟ, ㅢ`), 겹받침(`ㄳ, ㄵ, ㄶ, ㄺ, ㄻ, ㄼ, ㄽ, ㄾ, ㄿ, ㅀ, ㅄ`) 및 연음 종성분리 규칙으로 조합한다.
+ */
+export function composeShaperHangulJamo(jamoSequence: readonly string[]): string {
+  const out: string[] = [];
+  let cho = "";
+  let jung = "";
+  let jong = "";
+  const flush = (): void => {
+    if (cho && jung) out.push(mergeHangulSyllable(cho, jung, jong));
+    else if (cho || jung) out.push(cho || jung);
+    cho = "";
+    jung = "";
+    jong = "";
+  };
+  for (const ch of jamoSequence) {
+    const isC = HANGUL_CHO.includes(ch as (typeof HANGUL_CHO)[number]);
+    const isV = HANGUL_JUNG.includes(ch as (typeof HANGUL_JUNG)[number]);
+    if (!isC && !isV) {
+      flush();
+      out.push(ch);
+    } else if (isC) {
+      if (!cho) cho = ch;
+      else if (!jung) { flush(); cho = ch; }
+      else if (!jong && HANGUL_JONG.includes(ch as (typeof HANGUL_JONG)[number])) jong = ch;
+      else if (jong && COMPOUND_JONG[`${jong}${ch}`] !== undefined) jong = COMPOUND_JONG[`${jong}${ch}`];
+      else { flush(); cho = ch; }
+    } else if (!cho) {
+      if (jung && COMPOUND_JUNG[`${jung}${ch}`] !== undefined) jung = COMPOUND_JUNG[`${jung}${ch}`];
+      else { flush(); jung = ch; }
+    } else if (!jung) {
+      jung = ch;
+    } else if (!jong) {
+      if (COMPOUND_JUNG[`${jung}${ch}`] !== undefined) jung = COMPOUND_JUNG[`${jung}${ch}`];
+      else { flush(); jung = ch; }
+    } else {
+      const split = SPLIT_JONG[jong];
+      out.push(mergeHangulSyllable(cho, jung, split ? split[0] : ""));
+      cho = split ? split[1] : jong;
+      jung = ch;
+      jong = "";
+    }
+  }
+  flush();
+  return out.join("");
+}
+
+/**
+ * SHAPER UIManager::SetHeadPartTab (0x06000315) 역공학 내재화:
+ * 파츠 탭(`0..13`) 전환 시 현재 툴 모드가 해당 파츠 카테고리의 유효 범위를 벗어나면 기본 툴 모드로 자동 전환한다.
+ */
+export function resolveShaperToolModeForPartTab(partTabIndex: number, currentToolMode: number): number {
+  if (partTabIndex >= 0 && partTabIndex <= 5) {
+    return currentToolMode >= 0 && currentToolMode <= 2 ? currentToolMode : 0;
+  }
+  if (partTabIndex === 6) {
+    return currentToolMode >= 3 && currentToolMode <= 5 ? currentToolMode : 3;
+  }
+  if (partTabIndex === 7) return 9;
+  if (partTabIndex >= 8 && partTabIndex <= 11) return 10;
+  if (partTabIndex === 12 || partTabIndex === 13) return 11;
+  return currentToolMode;
+}
+
+/**
+ * SHAPER ColorPalettePicker0::FixPickerPos (0x06000127) 역공학 내재화:
+ * 컬러 피커 핸들의 `anchoredPosition`을 패널 가장자리에서 `4px` 안쪽 구간(`[4, size - 4]`)으로 클램프한다.
+ */
+export function clampShaperColorPickerHandle(
+  pos: readonly [number, number],
+  sizeDelta: readonly [number, number],
+  marginPx = 4,
+): readonly [number, number] {
+  const clampAxis = (v: number, s: number): number =>
+    Math.max(marginPx, Math.min(Math.max(marginPx, s - marginPx), v));
+  return [clampAxis(pos[0], sizeDelta[0]), clampAxis(pos[1], sizeDelta[1])];
+}

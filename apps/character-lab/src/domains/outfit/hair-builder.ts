@@ -543,8 +543,11 @@ export {
   SHAPER_HAIR_BASE_ZONE_CALIBRATIONS,
   SHAPER_HAIR_JOINT_SPEC,
   alignShaperHairControlRotations,
+  applyShaperHairAddShortcutAdjustment,
   buildPlantedHairControlChain,
   computeShaperHairBaseUvTransform,
+  computeShaperSymmetricRay,
+  mirrorShaperHairRootAngles,
   reanchorPlantedHairRoot,
 } from "./shaper-hair";
 export type {
@@ -552,8 +555,11 @@ export type {
   PlantedHairControlChainResult,
   PlantedHairControlNode,
   ShaperConfigurableJointSpec,
+  ShaperHairAddParams,
+  ShaperHairAddShortcutInput,
   ShaperHairBaseZoneCalibration,
   ShaperHairBaseZoneIndex,
   ShaperHairBaseZoneUiInput,
   ShaperHairBaseZoneUvTransform,
+  ShaperSymmetricRay,
 } from "./shaper-hair";

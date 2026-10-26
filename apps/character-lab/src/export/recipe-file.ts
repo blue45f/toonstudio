@@ -322,6 +322,144 @@ export function shaperPresetToCharacterRecipe(options: {
   };
 }
 
+export interface ShaperProjectState {
+  readonly headParts: Readonly<Partial<Record<0 | 1 | 2 | 3 | 4, ShaperPartPresetData>>>;
+  readonly hairPart?: ShaperPartPresetData;
+  readonly bodyPart?: ShaperPartPresetData;
+  readonly costumes?: Readonly<Partial<Record<8 | 9 | 10, ShaperPartPresetData>>>;
+  readonly accessories?: readonly ShaperPartPresetData[];
+  readonly poseAndCamera?: ShaperPartPresetData;
+  readonly style?: ShaperStylePresetData;
+}
+
+/**
+ * SHAPER UIManager::<SaveProject>d__77::MoveNext (0x06000683) 역공학 내재화:
+ * `.shaper` 프로젝트 아카이브 내부의 파일 엔트리 맵(`0..4.preset`, `6.preset`, `7.preset`, `8..10.preset`, `11_k.preset`, `12.preset`, `style.preset`)을
+ * SHAPER의 6단계 직렬화 순서 그대로 생성한다.
+ */
+export function buildShaperProjectArchiveEntries(
+  project: ShaperProjectState,
+): Readonly<Record<string, string>> {
+  const entries: Record<string, string> = {};
+
+  // Step 1: 두상 파츠 0..4 (head, eyes, nose, mouth, ears) 및 헤어 6
+  for (const partIdx of [0, 1, 2, 3, 4] as const) {
+    const part = project.headParts[partIdx];
+    if (part !== undefined) {
+      entries[`${partIdx}.preset`] = serializeShaperPartPreset(part);
+    }
+  }
+  if (project.hairPart !== undefined) {
+    entries["6.preset"] = serializeShaperPartPreset(project.hairPart);
+  }
+
+  // Step 2: 체형 파츠 7 (body)
+  if (project.bodyPart !== undefined) {
+    entries["7.preset"] = serializeShaperPartPreset(project.bodyPart);
+  }
+
+  // Step 3: 의상 8..10 (clothTop, clothBottom, shoes) 및 액세서리 11_0, 11_1, ...
+  if (project.costumes !== undefined) {
+    for (const slot of [8, 9, 10] as const) {
+      const costume = project.costumes[slot];
+      if (costume !== undefined) {
+        entries[`${slot}.preset`] = serializeShaperPartPreset(costume);
+      }
+    }
+  }
+  if (project.accessories !== undefined) {
+    project.accessories.forEach((acc, idx) => {
+      entries[`11_${idx}.preset`] = serializeShaperPartPreset(acc);
+    });
+  }
+
+  // Step 4: 포즈 및 카메라 12.preset
+  if (project.poseAndCamera !== undefined) {
+    entries["12.preset"] = serializeShaperPartPreset(project.poseAndCamera);
+  }
+
+  // Step 5: 머티리얼 및 라이팅 style.preset
+  if (project.style !== undefined) {
+    entries["style.preset"] = serializeShaperStylePreset(project.style);
+  }
+
+  return entries;
+}
+
+/**
+ * SHAPER UIManager::<OpenProject>d__74::MoveNext (0x0600067d) 역공학 내재화:
+ * 압축 해제된 `.shaper` 프로젝트 아카이브 엔트리 맵에서 두상(`0..4.preset`), 헤어(`6.preset`), 체형(`7.preset`),
+ * 의상(`8..10.preset`), 액세서리(`11_*.preset`), 포즈+카메라(`12.preset`), 스타일(`style.preset`)을 복원한다.
+ */
+export function parseShaperProjectArchiveEntries(
+  entries: Readonly<Record<string, string>>,
+): ShaperProjectState {
+  const headParts: Partial<Record<0 | 1 | 2 | 3 | 4, ShaperPartPresetData>> = {};
+  for (const partIdx of [0, 1, 2, 3, 4] as const) {
+    const raw = entries[`${partIdx}.preset`];
+    if (raw !== undefined) {
+      const parsed = parseShaperPartPreset(raw);
+      if (parsed !== null) {
+        headParts[partIdx] = parsed;
+      }
+    }
+  }
+
+  const hairPart =
+    entries["6.preset"] !== undefined
+      ? (parseShaperPartPreset(entries["6.preset"]) ?? undefined)
+      : undefined;
+  const bodyPart =
+    entries["7.preset"] !== undefined
+      ? (parseShaperPartPreset(entries["7.preset"]) ?? undefined)
+      : undefined;
+
+  const costumes: Partial<Record<8 | 9 | 10, ShaperPartPresetData>> = {};
+  for (const slot of [8, 9, 10] as const) {
+    const raw = entries[`${slot}.preset`];
+    if (raw !== undefined) {
+      const parsed = parseShaperPartPreset(raw);
+      if (parsed !== null) {
+        costumes[slot] = parsed;
+      }
+    }
+  }
+
+  const accessoryKeys = Object.keys(entries)
+    .filter((key) => /^11_\d+\.preset$/.test(key))
+    .sort((a, b) => {
+      const idxA = Number.parseInt(a.slice(3), 10);
+      const idxB = Number.parseInt(b.slice(3), 10);
+      return idxA - idxB;
+    });
+  const accessories: ShaperPartPresetData[] = [];
+  for (const key of accessoryKeys) {
+    const parsed = parseShaperPartPreset(entries[key]);
+    if (parsed !== null) {
+      accessories.push(parsed);
+    }
+  }
+
+  const poseAndCamera =
+    entries["12.preset"] !== undefined
+      ? (parseShaperPartPreset(entries["12.preset"]) ?? undefined)
+      : undefined;
+  const style =
+    entries["style.preset"] !== undefined
+      ? (parseShaperStylePreset(entries["style.preset"]) ?? undefined)
+      : undefined;
+
+  return {
+    headParts,
+    ...(hairPart !== undefined ? { hairPart } : {}),
+    ...(bodyPart !== undefined ? { bodyPart } : {}),
+    ...(Object.keys(costumes).length > 0 ? { costumes } : {}),
+    ...(accessories.length > 0 ? { accessories } : {}),
+    ...(poseAndCamera !== undefined ? { poseAndCamera } : {}),
+    ...(style !== undefined ? { style } : {}),
+  };
+}
+
 export { parseShaperPartPreset, serializeShaperPartPreset };
 export type {
   ShaperPartPresetData,

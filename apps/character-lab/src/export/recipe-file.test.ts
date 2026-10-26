@@ -7,10 +7,12 @@ import { defaultRecipeFixture } from "../testing/recipe-fixtures";
 import {
   MAX_RECIPE_FILE_BYTES,
   RECIPE_FILE_SUFFIX,
+  buildShaperProjectArchiveEntries,
   embedPaintLayers,
   extractPaintLayers,
   parseRecipeFile,
   parseShaperPartPreset,
+  parseShaperProjectArchiveEntries,
   parseShaperStylePreset,
   recipeFileName,
   serializeRecipe,
@@ -163,5 +165,39 @@ describe("recipe-file", () => {
     const styleReparsed = parseShaperStylePreset(styleSerialized);
     expect(styleReparsed.hairColorHex).toBe("#336699");
     expect(styleReparsed.outlinePressure).toBe(true);
+  });
+
+  it("SaveProject/OpenProject .shaper 아카이브 엔트리(0..4.preset, 6, 7, 8..10, 11_k, 12, style.preset) 왕복을 수행한다", () => {
+    const head0 = parseShaperPartPreset("1.0\nmt*0,mid*1,name*head_a,cC*FFCCAA");
+    const hair6 = parseShaperPartPreset("1.0\nmt*6,mid*2,name*hair_a,hb*1,cC*223344");
+    const body7 = parseShaperPartPreset("1.0\nmt*7,mid*0,muscle*0.4,fat*0.2,cC*FFCCAA");
+    const acc0 = parseShaperPartPreset("1.0\nmt*11,mid*3,acc*BoneHead/0/0.1/0/0/0/0/1/1/1,cC*AABBCC");
+    const pose12 = parseShaperPartPreset("1.0\nbN*RigLArmIK,bP*-0.3/1.2/0.1,bA*0/0/0,bS*1/1/1,camFov*25");
+
+    const entries = buildShaperProjectArchiveEntries({
+      headParts: { 0: head0 },
+      hairPart: hair6,
+      bodyPart: body7,
+      accessories: [acc0],
+      poseAndCamera: pose12,
+      style: { version: "1.0", skinColorHex: "#ffccaa", outlineThickness: 1.5 },
+    });
+
+    expect(Object.keys(entries).sort()).toEqual([
+      "0.preset",
+      "11_0.preset",
+      "12.preset",
+      "6.preset",
+      "7.preset",
+      "style.preset",
+    ]);
+
+    const restored = parseShaperProjectArchiveEntries(entries);
+    expect(restored.headParts[0]?.name).toBe("head_a");
+    expect(restored.hairPart?.hairBaseMeshId).toBe(1);
+    expect(restored.bodyPart?.muscle).toBeCloseTo(0.4, 5);
+    expect(restored.accessories?.[0]?.accessories?.[0]?.parentName).toBe("BoneHead");
+    expect(restored.poseAndCamera?.camFov).toBe(25);
+    expect(restored.style?.outlineThickness).toBe(1.5);
   });
 });
