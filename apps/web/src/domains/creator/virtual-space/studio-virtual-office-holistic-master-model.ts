@@ -267,11 +267,106 @@ export const HOLISTIC_40_VIRTUAL_OFFICE_PLATFORMS: readonly HolisticPlatformCata
   { index: 40, id: "calcom", name: "Cal.com", wave: 5, domainCategory: "pip-voice-calendar-standup", signatureFeatureKo: "연재·회의 캘린더 연동 아바타 상태 자동 전환 및 T-5분 룸 잠금 해제", internalizedModule: "holistic-master-model" },
 ] as const;
 
+export type NanoBananaCharacterDirection = "down" | "left" | "right" | "up";
+export type NanoBananaCharacterPose = "idle" | "drawing";
+
+export interface NanoBananaDecorPropItem {
+  readonly id: string;
+  readonly decorType: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly zoneKo: string;
+  readonly reaInspiration: string;
+  readonly assetUrl: string;
+}
+
+export interface NanoBananaCharacterFrameItem {
+  readonly id: string;
+  readonly direction: NanoBananaCharacterDirection;
+  readonly pose: NanoBananaCharacterPose;
+  readonly labelKo: string;
+  readonly assetUrl: string;
+  readonly mirroredForDirectionConsistency: boolean;
+}
+
+export interface NanoBananaStudioArtPackState {
+  readonly packId: "nano-banana-v10";
+  readonly panoramaAssetUrl: string;
+  readonly decorAtlasAssetUrl: string;
+  readonly characterCleanAtlasUrl: string;
+  readonly characterReferenceSheetUrl: string;
+  readonly activeCharacterDirection: NanoBananaCharacterDirection;
+  readonly activeCharacterPose: NanoBananaCharacterPose;
+  readonly equippedDecorPropIds: readonly string[];
+  readonly props: readonly NanoBananaDecorPropItem[];
+  readonly characterFrames: readonly NanoBananaCharacterFrameItem[];
+}
+
+export const NANO_BANANA_V10_DECOR_PROPS: readonly NanoBananaDecorPropItem[] = [
+  {
+    id: "cintiq-drawing-desk",
+    decorType: "drawing-desk",
+    labelKo: "와콤 신티크 듀얼 작화 데스크",
+    labelEn: "Wacom Cintiq Dual Drawing Desk",
+    zoneKo: "2F 집중 작화 포드",
+    reaInspiration: "Tandem · Gather · Teemyco",
+    assetUrl: "/assets/virtual-studio/nano-banana-v10/props/cintiq-drawing-desk.webp",
+  },
+  {
+    id: "hologram-pedestal",
+    decorType: "portal",
+    labelKo: "3D 캐릭터 홀로그램 페데스탈",
+    labelEn: "3D Character Hologram Pedestal",
+    zoneKo: "2F 3D 레퍼런스 검수 홀",
+    reaInspiration: "Spatial · FrameVR · Arthur VR",
+    assetUrl: "/assets/virtual-studio/nano-banana-v10/props/hologram-pedestal.webp",
+  },
+  {
+    id: "lofi-bookshelf-lounge",
+    decorType: "bookshelf",
+    labelKo: "로파이 북셸프 & 캣 독서 코너",
+    labelEn: "Lo-Fi Bookshelf & Cat Reading Nook",
+    zoneKo: "1F 스토리 라이브러리",
+    reaInspiration: "SoWork · Kumospace · Cozy Cafe",
+    assetUrl: "/assets/virtual-studio/nano-banana-v10/props/lofi-bookshelf-lounge.webp",
+  },
+  {
+    id: "on-air-critique-booth",
+    decorType: "review-board",
+    labelKo: "ON AIR 방음 라이브 합평 부스",
+    labelEn: "ON AIR Soundproof Critique Booth",
+    zoneKo: "1F 타운홀 · 라이브 부스",
+    reaInspiration: "Roam · Airtime · Krisp BVC",
+    assetUrl: "/assets/virtual-studio/nano-banana-v10/props/on-air-critique-booth.webp",
+  },
+  {
+    id: "biophilic-planter-set",
+    decorType: "tree",
+    labelKo: "바이오필릭 플랜테리어 컬렉션",
+    labelEn: "Biophilic Studio Planter Collection",
+    zoneKo: "3F 바이오필릭 웰니스 테라스",
+    reaInspiration: "Breakroom · Virbela · Topia",
+    assetUrl: "/assets/virtual-studio/nano-banana-v10/props/biophilic-planter-set.webp",
+  },
+] as const;
+
+export const NANO_BANANA_V10_CHARACTER_FRAMES: readonly NanoBananaCharacterFrameItem[] = [
+  { id: "idle-down", direction: "down", pose: "idle", labelKo: "정면 대기 (Front Idle)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/idle-down.webp", mirroredForDirectionConsistency: false },
+  { id: "idle-left", direction: "left", pose: "idle", labelKo: "좌측 대기 (Left Idle · 방향 보정)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/idle-left.webp", mirroredForDirectionConsistency: true },
+  { id: "idle-right", direction: "right", pose: "idle", labelKo: "우측 대기 (Right Idle)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/idle-right.webp", mirroredForDirectionConsistency: false },
+  { id: "idle-up", direction: "up", pose: "idle", labelKo: "후면 대기 (Back Idle)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/idle-up.webp", mirroredForDirectionConsistency: false },
+  { id: "drawing-down", direction: "down", pose: "drawing", labelKo: "정면 태블릿 작화 (Front Drawing)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/drawing-down.webp", mirroredForDirectionConsistency: false },
+  { id: "drawing-left", direction: "left", pose: "drawing", labelKo: "좌측 태블릿 작화 (Left Drawing)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/drawing-left.webp", mirroredForDirectionConsistency: false },
+  { id: "drawing-right", direction: "right", pose: "drawing", labelKo: "우측 태블릿 작화 (Right Drawing)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/drawing-right.webp", mirroredForDirectionConsistency: false },
+  { id: "drawing-up", direction: "up", pose: "drawing", labelKo: "후면 듀얼모니터 작화 (Back Drawing)", assetUrl: "/assets/virtual-studio/nano-banana-v10/frames/drawing-up.webp", mirroredForDirectionConsistency: false },
+] as const;
+
 export interface StudioVirtualOfficeHolisticMasterState {
   readonly presentation: FloatingCreatorPresentationState;
   readonly voiceClarity: KrispVoiceClarityTranslationState;
   readonly calendarSync: CalendarAutoPresenceSyncState;
   readonly standupDigest: readonly PumbleStandupDigestEntry[];
+  readonly nanoBananaStudioPack: NanoBananaStudioArtPackState;
 }
 
 export function createInitialHolisticMasterState(): StudioVirtualOfficeHolisticMasterState {
@@ -396,6 +491,26 @@ export function createInitialHolisticMasterState(): StudioVirtualOfficeHolisticM
         submittedAtLabel: "09:58 KST",
       },
     ],
+    nanoBananaStudioPack: {
+      packId: "nano-banana-v10",
+      panoramaAssetUrl:
+        "/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp",
+      decorAtlasAssetUrl:
+        "/assets/virtual-studio/nano-banana-v10/studio-theme-decor-atlas.webp",
+      characterCleanAtlasUrl:
+        "/assets/virtual-studio/nano-banana-v10/creator-character-clean-atlas.webp",
+      characterReferenceSheetUrl:
+        "/assets/virtual-studio/nano-banana-v10/creator-character-spritesheet.webp",
+      activeCharacterDirection: "down",
+      activeCharacterPose: "drawing",
+      equippedDecorPropIds: [
+        "cintiq-drawing-desk",
+        "hologram-pedestal",
+        "on-air-critique-booth",
+      ],
+      props: NANO_BANANA_V10_DECOR_PROPS,
+      characterFrames: NANO_BANANA_V10_CHARACTER_FRAMES,
+    },
   };
 }
 
@@ -534,4 +649,51 @@ export function filterHolistic40Platforms(
       item.internalizedModule.toLowerCase().includes(normalized)
     );
   });
+}
+
+export function selectNanoBananaCharacterFrame(
+  state: StudioVirtualOfficeHolisticMasterState,
+  direction: NanoBananaCharacterDirection,
+  pose: NanoBananaCharacterPose,
+): StudioVirtualOfficeHolisticMasterState {
+  return {
+    ...state,
+    nanoBananaStudioPack: {
+      ...state.nanoBananaStudioPack,
+      activeCharacterDirection: direction,
+      activeCharacterPose: pose,
+    },
+  };
+}
+
+export function toggleNanoBananaDecorPropPlacement(
+  state: StudioVirtualOfficeHolisticMasterState,
+  propId: string,
+): StudioVirtualOfficeHolisticMasterState {
+  const current = state.nanoBananaStudioPack.equippedDecorPropIds;
+  const exists = current.includes(propId);
+  const nextIds = exists
+    ? current.filter((id) => id !== propId)
+    : [...current, propId];
+  return {
+    ...state,
+    nanoBananaStudioPack: {
+      ...state.nanoBananaStudioPack,
+      equippedDecorPropIds: nextIds,
+    },
+  };
+}
+
+export function getActiveNanoBananaCharacterFrame(
+  state: StudioVirtualOfficeHolisticMasterState,
+): NanoBananaCharacterFrameItem {
+  const { activeCharacterDirection, activeCharacterPose, characterFrames } =
+    state.nanoBananaStudioPack;
+  return (
+    characterFrames.find(
+      (f) =>
+        f.direction === activeCharacterDirection &&
+        f.pose === activeCharacterPose,
+    ) ?? characterFrames[0]!
+  );
 }

@@ -20,11 +20,16 @@ import {
   createInitialHolisticMasterState,
   evaluateCalendarAutoPresenceAtMinute,
   filterHolistic40Platforms,
+  getActiveNanoBananaCharacterFrame,
+  selectNanoBananaCharacterFrame,
   setCreatorPresentationMode,
   setKrispTranslationLocale,
   toggleFloatingPipAlwaysOnTop,
   toggleKrispBvcNoiseCancellation,
+  toggleNanoBananaDecorPropPlacement,
   type CreatorPresentationOverlayMode,
+  type NanoBananaCharacterDirection,
+  type NanoBananaCharacterPose,
   type TranslationLocaleCode,
 } from "./studio-virtual-office-holistic-master-model";
 
@@ -464,6 +469,186 @@ export function StudioVirtualOfficeHolisticMasterPanel({
               <p className="mt-1 line-clamp-2 text-fg-2">{item.signatureFeatureKo}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 5. Nano Banana v10 High-DPI Studio Theme · 5 Isometric Props · 8-Frame Chibi Creator Sprite Pack */}
+      <section
+        className="rounded-xl border border-line bg-card/70 p-4"
+        data-testid="nano-banana-studio-pack-section"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
+              <Sparkles className="h-4 w-4 text-accent" />
+              나노 바나나(Nano Banana v10) 고해상도 스튜디오 테마 · 5종 장식 프롭 · 8프레임 치비 캐릭터 스프라이트
+            </h4>
+            <p className="mt-0.5 text-[11px] text-fg-2">
+              2.5D 아이소메트릭 파노라마 테마(1280×720) · 신티크/홀로그램/로파이/ON-AIR/바이오필릭 프롭(384×384) · 4방향×2포즈 투명 RGBA 캐릭터 시트(1024×512)
+            </p>
+          </div>
+          <span className="rounded-md border border-accent bg-accent-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-accent">
+            장착 프롭 {state.nanoBananaStudioPack.equippedDecorPropIds.length}/
+            {state.nanoBananaStudioPack.props.length}종 · 활성 프레임{" "}
+            {getActiveNanoBananaCharacterFrame(state).id}
+          </span>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          {/* Left: Character 8-Frame RGBA Sprite Customizer & Preview */}
+          <div className="rounded-lg border border-line bg-panel p-3">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <strong className="text-xs text-fg">
+                치비 웹툰 크리에이터 4방향×2포즈 RGBA 스프라이트 인스펙터
+              </strong>
+              <div className="flex gap-1">
+                {(["idle", "drawing"] as const).map((poseKey: NanoBananaCharacterPose) => (
+                  <button
+                    key={poseKey}
+                    type="button"
+                    data-testid={`nano-banana-pose-${poseKey}-btn`}
+                    onClick={() => {
+                      const next = selectNanoBananaCharacterFrame(
+                        state,
+                        state.nanoBananaStudioPack.activeCharacterDirection,
+                        poseKey,
+                      );
+                      setState(next);
+                      onBannerChange?.(
+                        `나노 바나나 캐릭터 포즈 전환: ${poseKey === "drawing" ? "태블릿 작화(Drawing)" : "스튜디오 대기(Idle)"}`,
+                      );
+                    }}
+                    className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
+                      state.nanoBananaStudioPack.activeCharacterPose === poseKey
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2"
+                    }`}
+                  >
+                    {poseKey === "idle" ? "대기 (Idle)" : "태블릿 작화 (Drawing)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(
+                [
+                  { dir: "down", label: "정면 (Down)" },
+                  { dir: "left", label: "좌측 (Left)" },
+                  { dir: "right", label: "우측 (Right)" },
+                  { dir: "up", label: "후면 (Up)" },
+                ] as const
+              ).map(({ dir, label }: { readonly dir: NanoBananaCharacterDirection; readonly label: string }) => (
+                <button
+                  key={dir}
+                  type="button"
+                  data-testid={`nano-banana-dir-${dir}-btn`}
+                  onClick={() => {
+                    const next = selectNanoBananaCharacterFrame(
+                      state,
+                      dir,
+                      state.nanoBananaStudioPack.activeCharacterPose,
+                    );
+                    setState(next);
+                    onBannerChange?.(`나노 바나나 캐릭터 방향 전환: ${label}`);
+                  }}
+                  className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
+                    state.nanoBananaStudioPack.activeCharacterDirection === dir
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-card text-fg-2"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <figure className="flex flex-col items-center justify-center rounded-lg border border-line bg-card p-2">
+                <img
+                  src={getActiveNanoBananaCharacterFrame(state).assetUrl}
+                  alt={getActiveNanoBananaCharacterFrame(state).labelKo}
+                  data-testid="nano-banana-active-character-img"
+                  className="h-28 w-28 object-contain"
+                  loading="lazy"
+                />
+                <figcaption className="mt-1 text-center text-[11px] font-medium text-fg">
+                  {getActiveNanoBananaCharacterFrame(state).labelKo}
+                </figcaption>
+              </figure>
+              <figure className="flex flex-col items-center justify-center rounded-lg border border-line bg-card p-2">
+                <img
+                  src={state.nanoBananaStudioPack.characterCleanAtlasUrl}
+                  alt="나노 바나나 4x2 투명 RGBA 캐릭터 아틀라스"
+                  className="h-28 w-full object-contain"
+                  loading="lazy"
+                />
+                <figcaption className="mt-1 text-center text-[10px] text-fg-2">
+                  4×2 투명 RGBA 런타임 시트 (1024×512)
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+
+          {/* Right: 2.5D Studio Floor Panorama & 5 Isometric Decor Props */}
+          <div className="rounded-lg border border-line bg-panel p-3">
+            <div className="flex items-center justify-between">
+              <strong className="text-xs text-fg">
+                2.5D 웹툰 스튜디오 파노라마 테마 & 5대 장식 프롭 배치
+              </strong>
+              <span className="font-mono text-[10px] text-fg-3">
+                /assets/virtual-studio/nano-banana-v10/
+              </span>
+            </div>
+
+            <div className="mt-2 overflow-hidden rounded-lg border border-line bg-card">
+              <img
+                src={state.nanoBananaStudioPack.panoramaAssetUrl}
+                alt="나노 바나나 2.5D 가상 웹툰 스튜디오 플로어 파노라마 테마"
+                className="h-28 w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+
+            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {state.nanoBananaStudioPack.props.map((prop) => {
+                const equipped =
+                  state.nanoBananaStudioPack.equippedDecorPropIds.includes(prop.id);
+                return (
+                  <button
+                    key={prop.id}
+                    type="button"
+                    data-testid={`nano-banana-prop-${prop.id}-btn`}
+                    onClick={() => {
+                      const next = toggleNanoBananaDecorPropPlacement(state, prop.id);
+                      setState(next);
+                      onBannerChange?.(
+                        `나노 바나나 스튜디오 프롭 ${equipped ? "해제" : "배치"}: ${prop.labelKo}`,
+                      );
+                    }}
+                    className={`flex items-center gap-2 rounded-lg border p-1.5 text-left text-[11px] transition ${
+                      equipped
+                        ? "border-accent bg-accent-soft text-fg"
+                        : "border-line bg-card text-fg-2"
+                    }`}
+                  >
+                    <img
+                      src={prop.assetUrl}
+                      alt={prop.labelKo}
+                      className="h-10 w-10 shrink-0 rounded border border-line object-cover"
+                      loading="lazy"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold text-fg">{prop.labelKo}</div>
+                      <div className="truncate text-[10px] text-fg-3">
+                        {prop.zoneKo} · {prop.reaInspiration}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
     </div>
