@@ -10,10 +10,13 @@ import {
   MESHY_SLICERS,
   planWebtoonSignageReliefExtrusion,
   simulateGlbForgeAuditAndOptimization,
+  TRIPO3D_MCP_GENERATED_MODELS,
   TRIPO_STUDIO_12_WORKSPACES,
   TRIPO_TEXT_TO_MOTION_PRESETS,
+  VRM_TOOLKIT_MCP_INSPECTED_AVATARS,
   type GlbForgeBudgetProfileId,
   type ReliefExtrudePresetId,
+  type Tripo3dMcpGeneratedModelDomain,
   type TripoStudioWorkspaceId,
 } from "./studio-tripo3d-ecosystem-engine";
 import type { StudioVarco3dMannequinPosePresetId } from "./studio-varco3d-character-lab-diorama-catalog";
@@ -53,6 +56,28 @@ export function StudioTripo3dEcosystemExtensionPanel({
   const [meshyProductId, setMeshyProductId] = useState<string>("keycap");
   const [meshySlicer, setMeshySlicer] = useState<string>("bambu");
   const [bangStrength, setBangStrength] = useState<number>(6);
+  const [mcpDomainFilter, setMcpDomainFilter] = useState<Tripo3dMcpGeneratedModelDomain | "all">(
+    "all",
+  );
+  const [selectedMcpModelId, setSelectedMcpModelId] = useState<string>(
+    TRIPO3D_MCP_GENERATED_MODELS[0]?.id ?? "tripo3d-mcp-bg-korean-alley-stairway",
+  );
+
+  const visibleMcpModels = useMemo(
+    () =>
+      TRIPO3D_MCP_GENERATED_MODELS.filter(
+        (m) => mcpDomainFilter === "all" || m.domain === mcpDomainFilter,
+      ),
+    [mcpDomainFilter],
+  );
+
+  const activeMcpModel = useMemo(
+    () =>
+      visibleMcpModels.find((m) => m.id === selectedMcpModelId) ??
+      visibleMcpModels[0] ??
+      TRIPO3D_MCP_GENERATED_MODELS[0]!,
+    [selectedMcpModelId, visibleMcpModels],
+  );
 
   const workspaceGuard = useMemo(
     () =>
@@ -367,6 +392,100 @@ export function StudioTripo3dEcosystemExtensionPanel({
               {BLEND_AI_SCALE_GUIDES.map((g) => `${g.labelKo} ${g.meters}m`).join(" · ")} · 3점 조명{" "}
               <strong>Key:Fill:Rim = 3:1:1.5</strong>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 4: Real Tripo3D MCP + GLBForge + VRM Toolkit Generated 3D Models */}
+      <div
+        data-testid="tripo3d-mcp-generated-models-section"
+        className="mt-2.5 rounded-lg border border-line/70 bg-panel/70 p-2 text-[0.68rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-semibold text-fg">
+            4. Tripo3D MCP · GLBForge · VRM Toolkit 실생성 3D 모델 팩 ({TRIPO3D_MCP_GENERATED_MODELS.length}종 GLB +{" "}
+            {VRM_TOOLKIT_MCP_INSPECTED_AVATARS.length}종 VRM 검증)
+          </span>
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Tripo3D MCP 생성 3D 모델 도메인 필터">
+            {(
+              [
+                { id: "all", labelKo: `전체 (${TRIPO3D_MCP_GENERATED_MODELS.length})` },
+                { id: "bg3d", labelKo: "3D 배경 (3)" },
+                { id: "mannequin", labelKo: "3D 데생인형 (2)" },
+                { id: "character-lab", labelKo: "3D 캐릭터 랩 (1)" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                data-testid={`tripo3d-mcp-domain-${tab.id}`}
+                aria-pressed={mcpDomainFilter === tab.id}
+                onClick={() => setMcpDomainFilter(tab.id)}
+                className={`rounded border px-2 py-0.5 text-[0.62rem] ${
+                  mcpDomainFilter === tab.id
+                    ? "border-accent bg-accent-soft font-semibold text-fg"
+                    : "border-line bg-card text-fg-2"
+                }`}
+              >
+                {tab.labelKo}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleMcpModels.map((model) => (
+            <button
+              key={model.id}
+              type="button"
+              data-testid={`tripo3d-mcp-model-${model.id}`}
+              aria-pressed={selectedMcpModelId === model.id}
+              onClick={() => {
+                setSelectedMcpModelId(model.id);
+                onApplyMannequinBodySliders?.(defaultShaperSliders, {
+                  posePresetId: model.recommendedPosePresetId ?? "standing",
+                  archetypeLabelKo: model.nameKo,
+                  motionLabelKo: model.fileName,
+                });
+              }}
+              className={`flex flex-col items-start rounded border p-1.5 text-left transition-colors ${
+                selectedMcpModelId === model.id
+                  ? "border-accent bg-accent-soft/60 text-fg"
+                  : "border-line bg-card text-fg-2 hover:border-accent/50"
+              }`}
+            >
+              <div className="flex w-full items-center justify-between gap-1">
+                <span className="font-semibold text-fg">{model.nameKo}</span>
+                <span className="rounded bg-panel px-1 py-0.5 text-[0.58rem] font-semibold text-accent">
+                  GLBForge {model.glbforgeScore}/100
+                </span>
+              </div>
+              <span className="mt-0.5 line-clamp-2 text-[0.61rem] text-fg-3">
+                {model.descriptionKo}
+              </span>
+              <span className="mt-1 text-[0.59rem] text-fg-2">
+                <code>{model.url}</code> · {model.triangles.toLocaleString()} Tri · {model.drawCalls} DC ·{" "}
+                {Math.round(model.byteSize / 1024)}KB
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div
+          data-testid="tripo3d-mcp-selected-model-readout"
+          className="mt-1.5 flex flex-wrap items-center justify-between gap-2 rounded border border-line/60 bg-card px-2 py-1 text-[0.63rem]"
+        >
+          <div>
+            선택된 3D 모델: <strong>{activeMcpModel.nameKo}</strong> (<code>{activeMcpModel.url}</code>) ·{" "}
+            <span>{activeMcpModel.mcpPipelineKo}</span> · SHA-256{" "}
+            <code>{activeMcpModel.sha256.slice(0, 19)}…</code>
+          </div>
+          <div className="text-fg-3" data-testid="vrm-toolkit-mcp-avatar-summary">
+            VRM Toolkit MCP 검증:{" "}
+            {VRM_TOOLKIT_MCP_INSPECTED_AVATARS.map(
+              (v) =>
+                `${v.nameKo} (${v.specFamily.toUpperCase()} · ${v.mappedBoneCount}본 · ${v.totalTriangles.toLocaleString()} Tri)`,
+            ).join(" / ")}
           </div>
         </div>
       </div>

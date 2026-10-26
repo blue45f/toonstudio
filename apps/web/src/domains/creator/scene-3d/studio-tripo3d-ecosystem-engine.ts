@@ -487,3 +487,170 @@ export const BLEND_AI_SCALE_GUIDES = Object.freeze([
   { id: "chair", labelKo: "의자 좌판", meters: 0.45 },
   { id: "ceiling", labelKo: "표준 천장고", meters: 2.4 },
 ]);
+
+export type Tripo3dMcpGeneratedModelDomain = "bg3d" | "mannequin" | "character-lab";
+
+export interface Tripo3dMcpGeneratedModelEntry {
+  readonly id: string;
+  readonly domain: Tripo3dMcpGeneratedModelDomain;
+  readonly nameKo: string;
+  readonly descriptionKo: string;
+  readonly url: `/models/tripo3d-mcp/${string}.glb`;
+  readonly fileName: `${string}.glb`;
+  readonly byteSize: number;
+  readonly sha256: `sha256:${string}`;
+  readonly triangles: number;
+  readonly vertices: number;
+  readonly drawCalls: number;
+  readonly materials: number;
+  readonly glbforgeScore: number;
+  readonly glbforgeProfile: "desktop-hero@1" | "mobile-hero@1";
+  readonly mcpPipelineKo: string;
+  readonly recommendedPosePresetId?: StudioVarco3dMannequinPosePresetId;
+}
+
+export const TRIPO3D_MCP_GENERATED_MODELS: readonly Tripo3dMcpGeneratedModelEntry[] = Object.freeze([
+  {
+    id: "tripo3d-mcp-bg-korean-alley-stairway",
+    domain: "bg3d",
+    nameKo: "웹툰 한국 골목 계단 모듈 (Tripo3D MCP)",
+    descriptionKo:
+      "10단 콘크리트 경사 계단·적벽돌 담장·스테인리스 양측 핸드레일·계량기함·보안등·화분이 결합된 한국 골목 배경 3D 모델",
+    url: "/models/tripo3d-mcp/webtoon_korean_alley_stairway_module.glb",
+    fileName: "webtoon_korean_alley_stairway_module.glb",
+    byteSize: 49_756,
+    sha256: "sha256:bafb41827f37f79c6354f6e05a2d444644e8b2df9d919b9b947589b62c6bb4be",
+    triangles: 3140,
+    vertices: 6000,
+    drawCalls: 2,
+    materials: 2,
+    glbforgeScore: 100,
+    glbforgeProfile: "desktop-hero@1",
+    mcpPipelineKo: "tripo3d(Blender 5.2) → glbforge.optimize_glb(meshopt+weld) → analyze_glb(100/100)",
+    recommendedPosePresetId: "walking",
+  },
+  {
+    id: "tripo3d-mcp-bg-cafe-counter-cluster",
+    domain: "bg3d",
+    nameKo: "웹툰 카페 카운터 집기 클러스터 (Tripo3D MCP)",
+    descriptionKo:
+      "월넛 원목·쿼츠 상판 카운터, 듀얼 에스프레소 머신, 그라인더, 유리 쇼케이스, 백바 선반, 바 스툴 3종과 펜던트 조명 3종으로 구성된 카페 실내 배경 3D 모델",
+    url: "/models/tripo3d-mcp/webtoon_cafe_counter_fixture_cluster.glb",
+    fileName: "webtoon_cafe_counter_fixture_cluster.glb",
+    byteSize: 38_936,
+    sha256: "sha256:953c4de026e46413bb70c7c665756b9d86d2ab10cd54246e46aa5fb32d79dd69",
+    triangles: 2260,
+    vertices: 4404,
+    drawCalls: 2,
+    materials: 2,
+    glbforgeScore: 100,
+    glbforgeProfile: "desktop-hero@1",
+    mcpPipelineKo: "tripo3d(Blender 5.2) → glbforge.optimize_glb(meshopt+weld) → analyze_glb(100/100)",
+    recommendedPosePresetId: "sitting",
+  },
+  {
+    id: "tripo3d-mcp-bg-rooftop-neon-signboard",
+    domain: "bg3d",
+    nameKo: "웹툰 네온 엠블럼 간판 릴리프 (GLBForge + Tripo3D MCP)",
+    descriptionKo:
+      "2D 그래픽 실루엣을 2레이어 베벨 릴리프로 돌출(extrude_image)하여 생성한 네온 엠블럼 간판 3D 소품 모델",
+    url: "/models/tripo3d-mcp/webtoon_rooftop_neon_signboard.glb",
+    fileName: "webtoon_rooftop_neon_signboard.glb",
+    byteSize: 27_712,
+    sha256: "sha256:80bb1cb8a844ece05d7bd3104d006316a311296d46cbb6d1ae0688756e8fdd9a",
+    triangles: 2492,
+    vertices: 1872,
+    drawCalls: 1,
+    materials: 1,
+    glbforgeScore: 100,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "glbforge.extrude_image(neon 2-layer) → optimize_glb(meshopt) → analyze_glb(100/100)",
+    recommendedPosePresetId: "dramatic",
+  },
+  {
+    id: "tripo3d-mcp-mannequin-calibration-rig",
+    domain: "mannequin",
+    nameKo: "3D 데생인형 8등신 관절·무게중심 캘리브레이션 리그",
+    descriptionKo:
+      "두상 시선 바이저·흉곽·골반 블록·좌우 12관절 구체와 수직 무게중심 추(Plumb Line)가 결합된 3D 데생인형 비례 교정 레퍼런스 모델",
+    url: "/models/tripo3d-mcp/mannequin_articulated_calibration_rig.glb",
+    fileName: "mannequin_articulated_calibration_rig.glb",
+    byteSize: 124_740,
+    sha256: "sha256:fcef181ae7fed30616c99b67704ea36008f7a60e0df908524cc254c1ebadb8b6",
+    triangles: 7152,
+    vertices: 15188,
+    drawCalls: 4,
+    materials: 4,
+    glbforgeScore: 95,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "tripo3d(create_object/set_material/execute_blender_code) → glbforge.optimize_glb(-80.3%)",
+    recommendedPosePresetId: "standing",
+  },
+  {
+    id: "tripo3d-mcp-mannequin-action-pedestal",
+    domain: "mannequin",
+    nameKo: "3D 데생인형 45° 앵글 턴테이블 & 8등신 눈금 스탠드",
+    descriptionKo:
+      "45° 방사형 카메라 앵글 마커 원판, 고저 단차 액션 스텝 블록 2종, 8등신 수직 신장 눈금 기둥으로 구성된 3D 데생인형 포즈 스테이지 모델",
+    url: "/models/tripo3d-mcp/mannequin_action_stage_pedestal.glb",
+    fileName: "mannequin_action_stage_pedestal.glb",
+    byteSize: 37_084,
+    sha256: "sha256:943ff31967e78f5455c66ade1a21715f06e33a2ad51f9caf2f3fb1758eed0f5a",
+    triangles: 2300,
+    vertices: 4680,
+    drawCalls: 3,
+    materials: 3,
+    glbforgeScore: 95,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "tripo3d(Blender 5.2) → glbforge.optimize_glb(-81.7% 바이트 절감)",
+    recommendedPosePresetId: "action",
+  },
+  {
+    id: "tripo3d-mcp-character-lab-shoulder-pauldron",
+    domain: "character-lab",
+    nameKo: "3D 캐릭터 랩 아카데미 스타 크레스트 숄더 폴드런",
+    descriptionKo:
+      "로열 네이비 돔 장갑·골드 가드 트림·스타 엠블럼 코어 젬으로 구성된 3D 캐릭터 랩(Character Lab) 모듈형 어태치먼트 소품 GLB 모델",
+    url: "/models/tripo3d-mcp/character_lab_crest_shoulder_pauldron.glb",
+    fileName: "character_lab_crest_shoulder_pauldron.glb",
+    byteSize: 41_980,
+    sha256: "sha256:37566397f24ef35a0cb22e5d7f1fac012e1ae618c3624593ff51b81874e7cea2",
+    triangles: 1856,
+    vertices: 4246,
+    drawCalls: 3,
+    materials: 3,
+    glbforgeScore: 95,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "tripo3d(Blender 5.2) → glbforge.optimize_glb(-75.6% 바이트 절감)",
+    recommendedPosePresetId: "action",
+  },
+]);
+
+export const VRM_TOOLKIT_MCP_INSPECTED_AVATARS = Object.freeze([
+  {
+    id: "Avatar_Orion.vrm",
+    nameKo: "오리온 (Avatar_Orion.vrm)",
+    specFamily: "vrm1" as const,
+    mappedBoneCount: 53,
+    totalTriangles: 8104,
+    totalVertices: 12683,
+    materialCount: 5,
+    imageCount: 3,
+    maxTextureDimension: 1024,
+    bytes: 2_893_304,
+    ok: true,
+  },
+  {
+    id: "AliciaSolid.vrm",
+    nameKo: "알리시아 솔리드 (AliciaSolid.vrm)",
+    specFamily: "vrm0" as const,
+    mappedBoneCount: 55,
+    totalTriangles: 22192,
+    totalVertices: 16480,
+    materialCount: 12,
+    imageCount: 8,
+    maxTextureDimension: 2048,
+    bytes: 7_878_712,
+    ok: true,
+  },
+]);

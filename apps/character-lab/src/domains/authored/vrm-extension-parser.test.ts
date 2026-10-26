@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { buildMinimalGlb } from "../../testing/minimal-glb";
 
-import { auditGlbAndVrmBudget, parseVrmFromGlb, parseVrmcVrmFromGltfJson, vrmHumanoidToBoneMap } from "./vrm-extension-parser";
+import {
+  TRIPO3D_CHARACTER_LAB_MCP_ASSETS,
+  VRM_TOOLKIT_MCP_BASELINES,
+  auditGlbAndVrmBudget,
+  parseVrmFromGlb,
+  parseVrmcVrmFromGltfJson,
+  vrmHumanoidToBoneMap,
+} from "./vrm-extension-parser";
 
 const VRM1 = {
   VRMC_vrm: {
@@ -91,5 +98,11 @@ describe("authored/vrm-extension-parser", () => {
     expect(budgetWarn.vrmToolkitPassed).toBe(false);
     expect(budgetWarn.glbForgeTier).toBe("over-budget");
     expect(budgetWarn.score).toBeLessThan(100);
+
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbUrl).toBe(
+      "/models/tripo3d-mcp/character_lab_crest_shoulder_pauldron.glb",
+    );
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbforgeScore).toBe(95);
+    expect(VRM_TOOLKIT_MCP_BASELINES).toHaveLength(2);
   });
 });

@@ -45,6 +45,49 @@ export interface GlbVrmBudgetAuditResult {
   readonly summaryKo: string;
 }
 
+export interface Tripo3dCharacterLabMcpAsset {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly slot: "accessory";
+  readonly glbUrl: string;
+  readonly sha256: string;
+  readonly fileSizeBytes: number;
+  readonly triangles: number;
+  readonly drawCalls: number;
+  readonly glbforgeScore: number;
+}
+
+export const TRIPO3D_CHARACTER_LAB_MCP_ASSETS: readonly Tripo3dCharacterLabMcpAsset[] = [
+  {
+    id: "tripo3d-mcp-character-lab-pauldron",
+    labelKo: "웹툰 기사 문장 견갑 (Crest Shoulder Pauldron)",
+    slot: "accessory",
+    glbUrl: "/models/tripo3d-mcp/character_lab_crest_shoulder_pauldron.glb",
+    sha256: "37566397f24ef35a0cb22e5d7f1fac012e1ae618c3624593ff51b81874e7cea2",
+    fileSizeBytes: 41_980,
+    triangles: 1_856,
+    drawCalls: 3,
+    glbforgeScore: 95,
+  },
+] as const;
+
+export const VRM_TOOLKIT_MCP_BASELINES = [
+  {
+    id: "avatar-orion-vrm1",
+    name: "Orion (VRMC_vrm-1.0)",
+    mappedBones: 53,
+    triangles: 8_104,
+    valid: true,
+  },
+  {
+    id: "alicia-solid-vrm0",
+    name: "Alicia Solid (VRM 0.0)",
+    mappedBones: 55,
+    triangles: 22_192,
+    valid: true,
+  },
+] as const;
+
 /**
  * VRM Toolkit (`vrm-toolkit-mcp` 70k Tri / 50MB) 및 GLBForge (`@glbforge/core` mobile-hero 150k / desktop-hero 500k)
  * 기준을 결합해 패키지 GLB의 런타임 예산을 순수 함수로 진단한다.

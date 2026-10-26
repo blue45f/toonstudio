@@ -44,7 +44,10 @@ import {
 } from "./studio-webtoon-pose-preset-storage";
 import { StudioPoseFirstRunGuide } from "./StudioPoseFirstRunGuide";
 import { StudioPoseLibraryCard } from "./StudioPoseLibraryCard";
-import { TRIPO_TEXT_TO_MOTION_PRESETS } from "./studio-tripo3d-ecosystem-engine";
+import {
+  TRIPO3D_MCP_GENERATED_MODELS,
+  TRIPO_TEXT_TO_MOTION_PRESETS,
+} from "./studio-tripo3d-ecosystem-engine";
 import { StudioWebtoonPoseFavoritesShare } from "./StudioWebtoonPosePresetGrid";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
@@ -283,6 +286,29 @@ export function StudioMannequinPoseSection({
               className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.65rem] text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft hover:text-fg disabled:opacity-50"
             >
               {motion.labelKo}
+            </button>
+          ))}
+        </div>
+        <div
+          data-testid="mannequin-tripo3d-mcp-calibration-bar"
+          className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line/50 pt-1.5"
+        >
+          <span className="text-[0.62rem] font-semibold text-fg-3">Tripo3D MCP 캘리브레이션 GLB:</span>
+          {TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin").map((model) => (
+            <button
+              key={model.id}
+              type="button"
+              data-testid={`mannequin-mcp-model-${model.id}`}
+              disabled={applyDisabled}
+              onClick={() => {
+                if (model.recommendedPosePresetId) {
+                  onApplyPreset(model.recommendedPosePresetId);
+                }
+              }}
+              title={`${model.url} (${model.triangles.toLocaleString("ko-KR")} Tri · ${model.drawCalls} DC · GLBForge ${model.glbforgeScore}/100)`}
+              className="rounded-md border border-accent/40 bg-accent-soft/20 px-2 py-0.5 text-[0.63rem] font-medium text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft/50 hover:text-fg disabled:opacity-50"
+            >
+              {model.nameKo} ({model.triangles.toLocaleString("ko-KR")} Tri)
             </button>
           ))}
         </div>

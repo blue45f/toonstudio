@@ -75,5 +75,22 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
     expect(screen.getByTestId("meshy-blendai-summary-readout").textContent).toContain(
       "Key:Fill:Rim = 3:1:1.5",
     );
+
+    // Tripo3D MCP + GLBForge MCP + VRM Toolkit MCP 실생성 에셋 라이브러리 검증
+    expect(screen.getByTestId("tripo3d-mcp-generated-models-section")).toBeTruthy();
+    expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
+      "webtoon_korean_alley_stairway_module.glb",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-mannequin"));
+    expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
+      "mannequin_articulated_calibration_rig.glb",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-character-lab"));
+    expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
+      "character_lab_crest_shoulder_pauldron.glb",
+    );
+    expect(screen.getByTestId("vrm-toolkit-mcp-avatar-summary").textContent).toContain(
+      "Avatar_Orion.vrm",
+    );
   });
 });
