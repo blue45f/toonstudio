@@ -8,6 +8,7 @@ import {
   resolveStudioDeviceFormFactor,
 } from "../studio-csp-benchmark-scorecard";
 import { measureProcreateSilicaEngineBenchmark } from "../studio-procreate-silica-codecs";
+import { measureUniversalBrushTaxonomyEngineBenchmark } from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 검증)", () => {
   it("뷰포트 폭과 포인터 특성에 따라 데스크톱·태블릿·모바일(compact) 폼팩터를 판별한다", () => {
@@ -102,6 +103,15 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.procreatePresetCount).toBeGreaterThanOrEqual(24);
     expect(procreateBench.vineCharcoalTiltExpansionRatio).toBeGreaterThan(1.8);
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
+
+    const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
+    expect(universalBench.reaEvidenceTargetCount).toBe(6);
+    expect(universalBench.harmonyBrushKindCount).toBe(11);
+    expect(universalBench.p5BrushPresetCount).toBe(11);
+    expect(universalBench.p5BrushVectorFieldCount).toBe(7);
+    expect(universalBench.sketchpadBrushKindCount).toBe(18);
+    expect(universalBench.ibisMediBangPresetCount).toBe(19);
+    expect(universalBench.qrCodecRoundtripVerified).toBe(true);
   });
 
   it("REA로 역공학 검증된 Clip Studio Paint 5.1.5 아키텍처 기준선 요약을 제공한다", () => {

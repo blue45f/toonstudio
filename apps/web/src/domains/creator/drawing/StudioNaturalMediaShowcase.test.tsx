@@ -113,4 +113,27 @@ describe("StudioNaturalMediaShowcase", () => {
       expect.objectContaining({ id: "marker" }),
     );
   });
+
+  it("Wave 21 범용 브러시 엔진 바(Harmony 11종 · 웹툰 리본)가 WAI-ARIA Roving Tabindex 키보드 탐색과 함께 동작한다", () => {
+    const { container } = render(<StudioNaturalMediaShowcase {...props()} />);
+    const universalBar = container.querySelector('[data-studio-universal-brush-bar="true"]');
+    expect(universalBar).not.toBeNull();
+
+    const sketchyRadio = container.querySelector('[data-studio-harmony-kind="sketchy"]') as HTMLButtonElement | null;
+    expect(sketchyRadio).not.toBeNull();
+    expect(sketchyRadio?.getAttribute("aria-checked")).toBe("true");
+    expect(sketchyRadio?.getAttribute("tabindex")).toBe("0");
+
+    // ArrowRight 키로 다음 Harmony 브러시(shaded)로 포커스 및 선택 이동
+    fireEvent.keyDown(sketchyRadio!, { key: "ArrowRight" });
+    const shadedRadio = container.querySelector('[data-studio-harmony-kind="shaded"]') as HTMLButtonElement | null;
+    expect(shadedRadio?.getAttribute("aria-checked")).toBe("true");
+    expect(shadedRadio?.getAttribute("tabindex")).toBe("0");
+
+    // 웹툰 리본 멀티스탬프 라디오 전환
+    const cloudRibbon = container.querySelector('[data-studio-comic-ribbon="ribbon-cloud-cluster"]') as HTMLButtonElement | null;
+    expect(cloudRibbon).not.toBeNull();
+    fireEvent.click(cloudRibbon!);
+    expect(cloudRibbon?.getAttribute("aria-checked")).toBe("true");
+  });
 });
