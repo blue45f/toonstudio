@@ -97,7 +97,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-chromium-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps chromium
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: studio-five-hour-dist-${{ github.sha }}
           path: dist
