@@ -36,7 +36,7 @@ jobs:
           node-version: 24
       - run: node --test scripts/verify-reference-rebuild.mjs
       - run: node scripts/export-reference-rebuild.mjs reference-rebuild-output
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reference-rebuilt-glb-six-files
           path: reference-rebuild-output

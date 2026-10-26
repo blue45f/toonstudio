@@ -99,7 +99,7 @@ jobs:
         run: pnpm run verify:studio-manuscript-delivery-acceptance
       - name: Upload delivery acceptance evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: studio-manuscript-delivery-acceptance
           path: .qa/review-delivery-release-acceptance/

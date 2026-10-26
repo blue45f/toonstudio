@@ -70,7 +70,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: Desktop, mobile, search, direct links, clipboard and print
         run: node scripts/verify-studio-manual.mjs
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: studio-manual-browser

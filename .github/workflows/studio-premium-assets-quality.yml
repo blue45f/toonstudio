@@ -69,7 +69,7 @@ jobs:
           node scripts/verify-studio-premium-release.mjs /tmp/toon-asset-tools diversity-20260913
       - name: Upload read-only QA evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: studio-premium-release-qa-${{ github.run_id }}
           path: |

@@ -99,7 +99,7 @@ jobs:
                   browser.close()
           finally:
               (root / 'creator-portable-test-results.json').write_text(json.dumps({'passed': len(results), 'checks': results, 'serverStarted': False}, ensure_ascii=False, indent=2))
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: creator-portable-evidence

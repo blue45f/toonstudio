@@ -55,7 +55,7 @@ jobs:
         run: node "$RUNNER_TEMP/public-site-browser/audit.mjs"
       - name: Keep screenshots and complete coverage inventory
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: public-site-production-observation
           path: public-site-audit
@@ -104,7 +104,7 @@ jobs:
           AUDIT_BASE_URL=http://127.0.0.1:5281 AUDIT_OUTPUT=artifacts/public-site-candidate-inventory node scripts/audit-public-site-experience.mjs
       - name: Keep candidate screenshots and check results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: public-site-candidate-evidence
           path: |

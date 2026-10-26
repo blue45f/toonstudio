@@ -66,7 +66,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/throughput"
           printf 'source=%s\nresult=%s\nbranch_updated=false\ndeployed=false\n' "$GITHUB_SHA" "$VALIDATION_OUTCOME" | tee "$RUNNER_TEMP/throughput/outcome.txt" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ci-throughput-validation-${{ github.run_id }}

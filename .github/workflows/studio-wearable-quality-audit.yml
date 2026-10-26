@@ -42,7 +42,7 @@ jobs:
           pnpm exec vitest run apps/web/src/domains/creator/vrm/studio-vrm-wearable-v5.test.ts apps/web/src/domains/creator/vrm/studio-vrm-props.test.ts apps/web/src/domains/creator/studio-everyday-props-pack-v4.test.ts
       - name: Inspect standalone and worn production renderers
         run: pnpm exec tsx scripts/verify-studio-wearable-v5.mts
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wearable-v5-review-${{ github.sha }}
@@ -52,14 +52,14 @@ jobs:
             .artifacts/wearable-glb-validation.json
           retention-days: 7
           include-hidden-files: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wearable-v5-closeups-${{ github.sha }}
           path: .artifacts/studio-wearable-v5/screenshots/*.png
           retention-days: 7
           include-hidden-files: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wearable-v5-runtime-${{ github.sha }}

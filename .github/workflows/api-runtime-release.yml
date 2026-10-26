@@ -51,7 +51,7 @@ jobs:
             echo "entrypoint=apps/api/dist/apps/api/src/main.js"
             echo "sha=$(git rev-parse HEAD)"
           } > artifacts/api-runtime/runtime.txt
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: api-runtime-release-${{ github.run_id }}-${{ github.run_attempt }}

@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload short-lived private evidence
         if: always() && steps.receipt.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: studio-hyper3d-live-v2-${{ github.run_id }}
           path: artifacts/studio-hyper3d-live

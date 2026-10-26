@@ -71,7 +71,7 @@ jobs:
       - name: Chromium spatial reader and unsupported XR fallback
         if: '!cancelled()'
         run: python tools/creator-runtime/spatial-browser.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: creator-runtime-evidence

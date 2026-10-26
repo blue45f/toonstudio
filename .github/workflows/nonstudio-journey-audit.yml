@@ -61,7 +61,7 @@ jobs:
         run: node scripts/verify-nonstudio-components.mjs
       - name: Upload branch component evidence
         if: always() && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nonstudio-component-evidence-${{ github.run_id }}
           path: artifacts/nonstudio-components
@@ -91,7 +91,7 @@ jobs:
         run: node scripts/verify-nonstudio-live.mjs
       - name: Upload evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nonstudio-browser-evidence-${{ github.run_id }}
           path: artifacts/nonstudio-audit

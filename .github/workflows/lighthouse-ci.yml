@@ -57,7 +57,7 @@ jobs:
         run: pnpm run lhci:autorun
       - name: Keep Lighthouse reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lighthouse-ci-report
           path: .lighthouseci

@@ -61,7 +61,7 @@ jobs:
         run: pnpm exec playwright test --config playwright.references.config.ts
       - name: Upload browser evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: kmas-reference-browser-evidence
           path: test-results/references

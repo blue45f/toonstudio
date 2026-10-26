@@ -236,7 +236,7 @@ jobs:
         run: pnpm run verify:studio-canvas-chrome && pnpm run verify:studio-canvas-surfaces && pnpm run verify:studio-companion && pnpm run verify:studio-inspector-walkthrough && pnpm run verify:studio-icons
       - name: Preserve browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: main-full-qa-isolated-browser-${{ github.sha }}
           path: |

@@ -35,7 +35,7 @@ jobs:
           mkdir -p qa-results/non-studio
           git rev-parse HEAD > qa-results/non-studio/source-sha.txt
           tar -czf /tmp/non-studio-audit-source.tar.gz apps/web/src tools e2e tests packages .github *.json *.ts *.mjs *.yaml *.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: non-studio-audit-source
           path: /tmp/non-studio-audit-source.tar.gz
@@ -51,7 +51,7 @@ jobs:
         run: python tools/audit-non-studio-experience.py
       - name: Preserve browser evidence, including failures
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: non-studio-public-browser-evidence
           path: qa-results/non-studio/

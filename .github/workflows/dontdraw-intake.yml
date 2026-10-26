@@ -47,7 +47,7 @@ jobs:
           node --test scripts/dontdraw/*.test.mjs | tee dontdraw-intake-tests.tap
       - name: Retain actual test output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dontdraw-intake-node24-${{ github.run_id }}
           path: dontdraw-intake-tests.tap
