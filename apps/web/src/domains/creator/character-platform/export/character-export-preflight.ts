@@ -350,3 +350,107 @@ export function evaluateShaperPresetServerAssetUpdates(
         : `에셋 업데이트 권장 ${outdatedAssetIds.length}건 (${outdatedAssetIds.join(", ")})`,
   });
 }
+
+export interface ShaperInstallerEndpoints {
+  readonly subdomain: "dev-shaper" | "shaper";
+  readonly baseUrl: string;
+  readonly buildLogsLatestUrl: string;
+  readonly termsUrl: string;
+  readonly cssBaseUrl: string;
+  readonly downloadClientUrl: string;
+}
+
+export interface ShaperLauncherDiagnostics {
+  readonly stage: "Version Check..." | "Loading SHAPER..." | "Completed..." | "error";
+  readonly alreadyRunning: boolean;
+  readonly needsUpdate: boolean;
+  readonly launchArgs: readonly ["--args", "-logFile", "-"];
+  readonly errorLogFile: "shaperx.txt";
+}
+
+/**
+ * SHAPER `ShaperLauncher.app`, `ShaperInstaller.app`, `Shaper.app` 전수 REA 역공학 매니페스트 상수:
+ * - `ShaperLauncher` (`ev_9ce7560a5f32075f9846fa4921df74ef760396406bbe4cc00695b9a068d8eae6`, 1,347 procs / 1,448 strings)
+ * - `ShaperInstaller` (`ev_108c9d937b61c3bd0b07edde18e2461a45a557c638dca8a5275e2ee0fbede4b2`, 3,432 procs / 3,992 strings)
+ * - `Shaper.app` (`ev_a6bc583c27cbaf0d5a55073219563ad200fdf88682ebad047947a011dcbc69a1`, `com.StudioHORANG.SHAPER` v1.05 build 9, Unity 6000.0.45f1)
+ */
+export const SHAPER_BUNDLE_MANIFEST_SPECS = Object.freeze({
+  bundleIdentifier: "com.StudioHORANG.SHAPER",
+  shortVersion: "1.05",
+  bundleVersion: "9",
+  unityPlayerVersion: "6000.0.45f1 (d91bd3d4e081)",
+  buildGuid: "f86b61fdc39e43dc86876be4319dc709",
+  gfxThreadingMode: 4,
+  teamIdentifier: "2KLJA2N92K",
+  scriptingAssembliesType16Count: 28,
+  nativePluginBundles: Object.freeze([
+    "TrackpadTouchOSX.bundle",
+    "LibUniWinC.bundle",
+    "libzipw.bundle",
+    "Magick.Native-Q8-arm64.bundle",
+    "Magick.Native-Q8-x64.bundle",
+  ]),
+} as const);
+
+/**
+ * `ShaperInstaller` (`0x10012cad0`..`0x10012d068`, `ev_fcc9a88c0be39cb5e8e9d8ff24ddd8f9735c10e2e6531d02087a471935076a00`) 내재화:
+ * `../../dev.txt` 파일 유무에 따라 `dev-shaper` 또는 `shaper` 서브도메인 엔드포인트를 결정한다.
+ */
+export function resolveShaperInstallerEndpointUrls(
+  hasDevTxt: boolean,
+  os: "mac" | "win" = "mac",
+  filePath: string = "SHAPER.zip",
+): ShaperInstallerEndpoints {
+  const subdomain = hasDevTxt ? "dev-shaper" : "shaper";
+  const baseUrl = `https://${subdomain}.webtoons.com`;
+  return Object.freeze({
+    subdomain,
+    baseUrl,
+    buildLogsLatestUrl: `${baseUrl}/api/buildlogs/${os}/latest`,
+    termsUrl: `${baseUrl}/terms`,
+    cssBaseUrl: `${baseUrl}/css/`,
+    downloadClientUrl: `${baseUrl}/api/clients/download?file_path=${encodeURIComponent(filePath)}`,
+  });
+}
+
+/**
+ * `ShaperInstaller` (`0x10012cba0`..`0x10012cd20`) 릴리스 노트 HTML 치환 규칙 내재화:
+ * `<body>`, `class="header"`, `class="notice"`, `/css/` 경로를 인스톨러 뷰포트 스타일로 정규화한다.
+ */
+export function rewriteShaperReleaseNoticeHtml(rawHtml: string, hasDevTxt: boolean = false): string {
+  const subdomain = hasDevTxt ? "dev-shaper" : "shaper";
+  return rawHtml
+    .replaceAll("/css/", `https://${subdomain}.webtoons.com/css/`)
+    .replaceAll("<body>", "<body style='background-color:#fff; --text-primary:#000; --text-secondary:#222'>")
+    .replaceAll('class="header"', "class='header' style='display:none;'")
+    .replaceAll('class="notice"', "class='notice' style='padding:20px;'");
+}
+
+/**
+ * `ShaperLauncher` (`0x100055480`..`0x100055830`, `ev_ba8d0c04c570c5269a82bab17fa0726c967b77b6f6794d68aabf351aadc62976`) 내재화:
+ * `CFBundleShortVersionString` 버전 비교, `pgrep -l SHAPER` 중복 실행 감지 및 런처 상태 단계를 산출한다.
+ */
+export function evaluateShaperLauncherRuntimeDiagnostics(input: {
+  readonly bundleShortVersion: string;
+  readonly serverLatestVersion: string;
+  readonly runningPgrepMatches: readonly string[];
+  readonly launchExitCode?: number;
+}): ShaperLauncherDiagnostics {
+  const alreadyRunning = input.runningPgrepMatches.some((line) => /\bSHAPER\b/u.test(line));
+  const needsUpdate = input.bundleShortVersion.trim() !== input.serverLatestVersion.trim();
+  const stage: ShaperLauncherDiagnostics["stage"] =
+    typeof input.launchExitCode === "number" && input.launchExitCode !== 0
+      ? "error"
+      : needsUpdate
+        ? "Version Check..."
+        : alreadyRunning
+          ? "Completed..."
+          : "Loading SHAPER...";
+  return Object.freeze({
+    stage,
+    alreadyRunning,
+    needsUpdate,
+    launchArgs: Object.freeze(["--args", "-logFile", "-"] as const),
+    errorLogFile: "shaperx.txt",
+  });
+}

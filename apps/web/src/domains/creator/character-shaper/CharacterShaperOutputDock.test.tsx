@@ -390,6 +390,10 @@ it("참조 작업면의 출력 설정은 팝오버로 열리고 Escape로 닫으
   const panel = screen.getByRole("group", { name: "내보내기" });
   expect(panel.id).toBe(trigger.getAttribute("aria-controls"));
   expect(trigger.getAttribute("aria-expanded")).toBe("true");
+  expect((screen.getByTestId("shaper-dock-psd-hair-split") as HTMLInputElement).checked).toBe(true);
+  expect((screen.getByTestId("shaper-dock-psd-outline-alpha") as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(screen.getByTestId("shaper-dock-psd-hair-split"));
+  expect((screen.getByTestId("shaper-dock-psd-hair-split") as HTMLInputElement).checked).toBe(false);
   fireEvent.keyDown(window, { key: "Escape" });
   expect(document.querySelector("[data-character-export-sheet]")).toBeNull();
   expect(document.activeElement).toBe(trigger);

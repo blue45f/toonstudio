@@ -1,21 +1,31 @@
+import { useState } from "react";
+
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_VRM_INSPECTION_VIEWS } from "../vrm/studio-vrm-inspection-framing";
 import { CAMERA_PRESETS } from "../vrm/studio-vrm-poser-catalogs";
 
 import { CHARACTER_SHAPER_CAMERA_PRESET_IDS } from "./character-shaper-ui-model";
 
+import type { ShaperCameraControlStyle } from "./character-shaper-ui-model";
 import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-contract";
 
 import { cn } from "@/shared/lib/utils";
 
 /** Mobile reserves real layout space; desktop retains the floating camera controls. */
 export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShaperViewportHudProps, "h" | "compact">) {
+  const [cameraStyle, setCameraStyle] = useState<ShaperCameraControlStyle>("unity");
+  const [eyeballMode, setEyeballMode] = useState<"fix" | "cam" | "light" | "world">("cam");
   const activeCameraId = typeof h.activeCameraId === "string" ? h.activeCameraId : "front";
   const cameraLocked = Boolean(h.viewportCameraInteractionLocked || h.isCapturing || h.isSharingPose || h.isThumbnailCapturing);
   const disabled = cameraLocked || h.status !== "ready";
   const presets = CHARACTER_SHAPER_CAMERA_PRESET_IDS
     .map((id) => CAMERA_PRESETS.find((preset) => preset.id === id) ?? null)
     .filter((preset): preset is (typeof CAMERA_PRESETS)[number] => preset !== null);
+  const selectClass = cn(
+    "min-h-11 rounded-xl border border-line/70 bg-panel/90 px-2.5 text-xs font-semibold text-fg shadow-sm backdrop-blur",
+    "disabled:cursor-not-allowed disabled:opacity-40",
+    STUDIO_FOCUS_RING,
+  );
   const controls = (
     <>
       <div role="group" aria-label="카메라 프리셋"
@@ -36,20 +46,36 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
             )}>{preset.label}</button>
         ))}
       </div>
-      <select aria-label="부위·방향 확대 검사"
-        title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
-        disabled={disabled}
-        value={STUDIO_VRM_INSPECTION_VIEWS.some((view) => view.id === activeCameraId) ? activeCameraId : ""}
-        onChange={(event) => { if (event.target.value) h.setActiveCameraId(event.target.value); }}
-        className={cn(
-          "pointer-events-auto min-h-11 rounded-xl border border-line/70 bg-panel/90 px-3 text-xs font-semibold text-fg shadow-sm backdrop-blur",
-          compact ? "min-w-0 w-full" : "absolute left-2 top-16 max-w-[calc(100%-5rem)]",
-          "disabled:cursor-not-allowed disabled:opacity-40",
-          STUDIO_FOCUS_RING,
-        )}>
-        <option value="" disabled>부위·방향 확대 검사</option>
-        {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
-      </select>
+      <div className={cn("pointer-events-auto flex flex-wrap gap-1", compact ? "min-w-0 w-full" : "absolute left-2 top-16 max-w-[calc(100%-5rem)]")}>
+        <select aria-label="부위·방향 확대 검사"
+          title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
+          disabled={disabled}
+          value={STUDIO_VRM_INSPECTION_VIEWS.some((view) => view.id === activeCameraId) ? activeCameraId : ""}
+          onChange={(event) => { if (event.target.value) h.setActiveCameraId(event.target.value); }}
+          className={cn(selectClass, compact && "min-w-0 flex-1")}>
+          <option value="" disabled>부위·방향 확대 검사</option>
+          {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
+        </select>
+        <select aria-label="카메라 조작 방식" data-testid="shaper-camera-style-select"
+          title="SHAPER CameraController 3종 DCC 카메라 조작 프리셋 (0: 세이퍼 기본 / 1: 클립스튜디오 / 2: 스케치업)"
+          disabled={disabled} value={cameraStyle}
+          onChange={(event) => setCameraStyle(event.target.value as ShaperCameraControlStyle)}
+          className={selectClass}>
+          <option value="unity">조작: 세이퍼 기본</option>
+          <option value="blender">조작: 클립스튜디오</option>
+          <option value="max">조작: 스케치업</option>
+        </select>
+        <select aria-label="시선 추적 모드" data-testid="shaper-eyeball-tracking-select"
+          title="SHAPER EyeballController 4모드 안구 시선 추적 (fix / cam / light / world, F10 토글)"
+          disabled={disabled} value={eyeballMode}
+          onChange={(event) => setEyeballMode(event.target.value as "fix" | "cam" | "light" | "world")}
+          className={selectClass}>
+          <option value="cam">시선: 카메라 응시</option>
+          <option value="fix">시선: 정면 고정 (F10)</option>
+          <option value="light">시선: 조명 방향</option>
+          <option value="world">시선: 월드 고정</option>
+        </select>
+      </div>
     </>
   );
   return compact ? (

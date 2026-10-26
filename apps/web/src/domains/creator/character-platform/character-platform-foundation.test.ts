@@ -14,10 +14,14 @@ import {
   projectCharacterRecipeV1,
 } from "./document/character-document-v2";
 import {
+  SHAPER_BUNDLE_MANIFEST_SPECS,
   createCharacterExportPreflight,
+  evaluateShaperLauncherRuntimeDiagnostics,
   evaluateShaperPresetServerAssetUpdates,
   extractShaperOutlineLuminanceToAlpha,
   planShaperHairThreeLayerSplit,
+  resolveShaperInstallerEndpointUrls,
+  rewriteShaperReleaseNoticeHtml,
 } from "./export/character-export-preflight";
 import { projectCharacterShaperDocument } from "../character-shaper/character-shaper-document-projection";
 import { summarizeCharacterSlotSupport } from "../character-shaper/character-shaper-slot-support";
@@ -264,6 +268,21 @@ describe("Character Platform V2 foundation", () => {
     const assetCheck = evaluateShaperPresetServerAssetUpdates({ hair_01: 1, top_02: 2 }, { hair_01: 2, top_02: 2 });
     expect(assetCheck.compatible).toBe(false);
     expect(assetCheck.outdatedAssetIds).toEqual(["hair_01"]);
+
+    expect(SHAPER_BUNDLE_MANIFEST_SPECS.scriptingAssembliesType16Count).toBe(28);
+    expect(SHAPER_BUNDLE_MANIFEST_SPECS.nativePluginBundles).toContain("Magick.Native-Q8-arm64.bundle");
+    const devEndpoints = resolveShaperInstallerEndpointUrls(true, "mac", "SHAPER.zip");
+    expect(devEndpoints.buildLogsLatestUrl).toBe("https://dev-shaper.webtoons.com/api/buildlogs/mac/latest");
+    expect(
+      rewriteShaperReleaseNoticeHtml('<body><div class="header">H</div><div class="notice"><link href="/css/app.css"></div></body>', false),
+    ).toContain("https://shaper.webtoons.com/css/app.css");
+    const launcherDiag = evaluateShaperLauncherRuntimeDiagnostics({
+      bundleShortVersion: "1.05",
+      serverLatestVersion: "1.05",
+      runningPgrepMatches: ["41200 SHAPER"],
+    });
+    expect(launcherDiag.alreadyRunning).toBe(true);
+    expect(launcherDiag.stage).toBe("Completed...");
   });
 
   it("projects the current host snapshot without making Three.js state part of the document", () => {
