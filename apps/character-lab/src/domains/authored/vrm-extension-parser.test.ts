@@ -99,10 +99,14 @@ describe("authored/vrm-extension-parser", () => {
     expect(budgetWarn.glbForgeTier).toBe("over-budget");
     expect(budgetWarn.score).toBeLessThan(100);
 
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS).toHaveLength(4);
     expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbUrl).toBe(
+      "/models/tripo3d-mcp/tripo_h31_webtoon_protagonist_character.glb",
+    );
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[3]?.glbUrl).toBe(
       "/models/tripo3d-mcp/character_lab_crest_shoulder_pauldron.glb",
     );
-    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbforgeScore).toBe(95);
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[3]?.glbforgeScore).toBe(95);
     expect(VRM_TOOLKIT_MCP_BASELINES).toHaveLength(2);
   });
 });
