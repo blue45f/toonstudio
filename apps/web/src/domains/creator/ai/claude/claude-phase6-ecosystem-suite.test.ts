@@ -3,14 +3,22 @@ import { describe, expect, it, vi } from "vitest";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 
 import {
+  buildLocalAsymmetricCostumePropWoundLedgerReport,
+  buildLocalCameraAxisEyelineHeightLockReport,
+  buildLocalCrossCutColorScriptAlbedoLockReport,
   buildLocalGlimnaviColorHintReport,
   buildLocalMangaFlowIdentityVerificationReport,
+  buildLocalMicroExpressionActingContinuityReport,
   buildLocalNovelAdaptationAndIpExpansionReport,
   buildLocalNovelAiMultiCharVibeReport,
   buildLocalSnaptoon3dEnvironmentShaderReport,
   buildLocalToonCrafterInbetweenAndStitchReport,
+  runClaudeAsymmetricCostumePropWoundLedgerDirector,
+  runClaudeCameraAxisEyelineHeightLockDirector,
+  runClaudeCrossCutColorScriptAlbedoLockDirector,
   runClaudeGlimnaviColorHintStrokeDirector,
   runClaudeMangaFlowIdentityVerificationDirector,
+  runClaudeMicroExpressionActingContinuityDirector,
   runClaudeNovelAdaptationAndIpExpansionDirector,
   runClaudeNovelAiMultiCharVibeDirector,
   runClaudeSnaptoon3dEnvironmentShaderDirector,
@@ -172,5 +180,97 @@ describe("claude-phase6-ecosystem-suite (Phase 6 글로벌·국내 20대 웹툰 
     expect(live.source).toBe("claude-live");
     expect(live.taskProfile).toBe("creative-production");
     expect(live.report.zeroBubbleSliceGuarantee).toBe(true);
+  });
+
+  it("7. 비대칭 복식·흉터·무기 파지 비례·부상 누적 연속성 원장 디렉터(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalAsymmetricCostumePropWoundLedgerReport(SAMPLE_INPUT);
+    expect(local.zeroMirrorFlipGuarantee).toBe(true);
+    expect(local.chiralityConsistencyScore).toBeGreaterThanOrEqual(95);
+    expect(local.ledgerItems.length).toBeGreaterThanOrEqual(3);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 260, output_tokens: 380 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runClaudeAsymmetricCostumePropWoundLedgerDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.zeroMirrorFlipGuarantee).toBe(true);
+  });
+
+  it("8. 180도 시선 축(180° Rule)·다중 인물 키 차이·원근 소실점 일관성 감독(Opus 5.5)을 검증한다", async () => {
+    const local = buildLocalCameraAxisEyelineHeightLockReport(SAMPLE_INPUT);
+    expect(local.axis180ViolationCount).toBe(0);
+    expect(local.canonicalHeightDeltaCm).toBe(16);
+    expect(local.cutAxisAudits.every((c) => c.eyelineVectorMatchPass)).toBe(true);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 310, output_tokens: 440 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runClaudeCameraAxisEyelineHeightLockDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("deep-architecture");
+    expect(live.routedModel).toBe("claude-opus-5-5");
+    expect(live.report.axis180ViolationCount).toBe(0);
+  });
+
+  it("9. 컷간 피부톤·의상 고유색(Albedo) 드리프트 방지 고정기(Haiku 5.5)를 검증한다", async () => {
+    const local = buildLocalCrossCutColorScriptAlbedoLockReport(SAMPLE_INPUT);
+    expect(local.albedoConsistencyPass).toBe(true);
+    expect(local.maxDeltaEDrift).toBeLessThanOrEqual(2.0);
+    expect(local.colorLocks.length).toBeGreaterThanOrEqual(2);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-4-5",
+        usage: { input_tokens: 190, output_tokens: 280 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runClaudeCrossCutColorScriptAlbedoLockDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("fast-inline");
+    expect(live.routedModel).toBe("claude-haiku-5-5");
+    expect(live.report.albedoConsistencyPass).toBe(true);
+  });
+
+  it("10. 컷간 미세 표정(FACS 근육)·시선 궤적·호흡 감정선 연속성 디렉터(Sonnet 5.5)를 검증한다", async () => {
+    const local = buildLocalMicroExpressionActingContinuityReport(SAMPLE_INPUT);
+    expect(local.zeroWhiplashGuarantee).toBe(true);
+    expect(local.emotionalContinuityScore).toBeGreaterThanOrEqual(95);
+    expect(local.microExpressionBeats.length).toBeGreaterThanOrEqual(2);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 250, output_tokens: 370 },
+      } as never,
+      parsed: local,
+    });
+
+    const live = await runClaudeMicroExpressionActingContinuityDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.taskProfile).toBe("creative-production");
+    expect(live.routedModel).toBe("claude-sonnet-5-5");
+    expect(live.report.zeroWhiplashGuarantee).toBe(true);
   });
 });
