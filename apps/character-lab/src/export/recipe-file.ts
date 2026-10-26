@@ -7,8 +7,10 @@ import { stableStringify } from "../shared/stable-json";
 
 import { decodePaintLayerRecord, encodePaintLayerRecord } from "./paint-layer-record";
 import {
+  buildShaper3mfModelXml,
   evaluateShaperPresetAssetUpdates,
   hexToUnitRgb,
+  parseShaper3mfModelXml,
   parseShaperPartPreset,
   rgbFloatStringsToHex,
   serializeShaperPartPreset,
@@ -16,6 +18,9 @@ import {
 } from "./shaper-preset";
 
 import type {
+  Shaper3mfMeshObject,
+  Shaper3mfModelDocument,
+  Shaper3mfModelUnit,
   ShaperCheckedAssetResult,
   ShaperPartPresetData,
   ShaperPresetAccessoryRecord,
@@ -670,8 +675,17 @@ export function computeShaperViewportCameraRect(options: {
   };
 }
 
-export { evaluateShaperPresetAssetUpdates, parseShaperPartPreset, serializeShaperPartPreset };
+export {
+  buildShaper3mfModelXml,
+  evaluateShaperPresetAssetUpdates,
+  parseShaper3mfModelXml,
+  parseShaperPartPreset,
+  serializeShaperPartPreset,
+};
 export type {
+  Shaper3mfMeshObject,
+  Shaper3mfModelDocument,
+  Shaper3mfModelUnit,
   ShaperCheckedAssetResult,
   ShaperPartPresetData,
   ShaperPresetAccessoryRecord,

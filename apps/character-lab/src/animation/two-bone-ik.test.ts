@@ -5,6 +5,8 @@ import { qRotateVec3, v3Add, v3Cross, v3Distance, v3Dot, v3Normalize, v3Sub } fr
 
 import {
   IK_REACH_TOLERANCE,
+  applyShaperRotationLimitAngle,
+  applyShaperRotationLimitHinge,
   computeGroundedBodyHeight,
   computeShaperBoneControlPointCollider,
   computeShaperBoneWeightHighlightTable,
@@ -19,6 +21,10 @@ import {
   resolveShaperSurfaceHitBone,
   rotationBetweenFrames,
   scaleShaperAccessoryVertices,
+  solveShaperFinalIkFabrikChain,
+  solveShaperFinalIkGrounding,
+  solveShaperFinalIkLookAt,
+  solveShaperFinalIkTwistRelaxer,
   solveShaperOrientationConstraint,
   solveShaperTwistBoneChain,
   solveTwoBoneIk,
@@ -422,5 +428,63 @@ describe("SHAPER TwistBone, OrientationConstraint 및 자동 지면 접지/신�
     expect(fkPivot.pivotPosition).toEqual([-0.2, 1.4, 0]);
     expect(fkPivot.attachedPointIds).toEqual(["fkUpperArm"]);
     expect(fkPivot.activeGizmos).toEqual({ move: false, rotate: true, scale: false });
+  });
+
+  it("Assembly-CSharp-firstpass.dll (FinalIK): LookAt·FABRIK·TwistRelaxer·RotationLimit·Grounding 역공학 솔버를 검증한다", () => {
+    const lookAt = solveShaperFinalIkLookAt({
+      forward: [0, 0, 1],
+      toTarget: [1, 0, 0],
+      bodyWeight: 0.5,
+      headWeight: 0.8,
+      eyesWeight: 1.0,
+      clampWeight: 0.75,
+      clampSmoothing: 2,
+      spineCount: 2,
+    });
+    expect(lookAt.spineRotations).toHaveLength(2);
+    expect(lookAt.clampedBodyDirection[2]).toBeGreaterThan(0);
+
+    const fabrik = solveShaperFinalIkFabrikChain({
+      positions: [
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 2, 0],
+      ],
+      target: [1, 1, 0],
+      maxIterations: 15,
+      tolerance: 1e-3,
+      maxBendDeg: [90, 90],
+    });
+    expect(fabrik.reached).toBe(true);
+    expect(fabrik.positions[0]).toEqual([0, 0, 0]);
+    expect(fabrik.boneLengths).toEqual([1, 1]);
+
+    const twist = solveShaperFinalIkTwistRelaxer({
+      parentTwistDeg: 30,
+      childTwistDeg: 60,
+      weight: 0.5,
+      parentChildCrossfade: 0.5,
+      twistAngleOffsetDeg: 5,
+    });
+    // lerp(-30, 60, 0.5) + 5 = 15 + 5 = 20; * 0.5 = 10
+    expect(twist.twistAngleDeg).toBeCloseTo(10, 6);
+
+    const limitedSwing = applyShaperRotationLimitAngle([120, 60, 80], 50, 45);
+    expect(limitedSwing[0]).toBe(45);
+    expect(Math.hypot(limitedSwing[1], limitedSwing[2])).toBeCloseTo(50, 6);
+    expect(applyShaperRotationLimitHinge(150, 0, 135, true)).toBe(135);
+    expect(applyShaperRotationLimitHinge(150, 0, 135, false)).toBe(150);
+
+    const grounded = solveShaperFinalIkGrounding({
+      leftFootHeightOffset: -0.2,
+      rightFootHeightOffset: 0.1,
+      maxStep: 0.4,
+      lowerPelvisWeight: 0.75,
+      liftPelvisWeight: 0.25,
+      footGroundNormal: [0, Math.SQRT1_2, Math.SQRT1_2],
+      maxFootRotationAngleDeg: 30,
+    });
+    expect(grounded.pelvisOffsetY).toBeCloseTo(-0.15, 6);
+    expect(grounded.footTiltDeg).toBeCloseTo(30, 6);
   });
 });

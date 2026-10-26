@@ -234,6 +234,19 @@ describe("shading/set 명령", () => {
       toon: { ...DEFAULT_SHADING.toon, rampSteps: 3, rim: true, outline: "hull" },
     });
   });
+
+  it("샤퍼 Cubic MatCap 램프 배율·비등방 필압 외곽선(1.5×0.3)·안구 하이라이트 4모드(fix/cam/light/world)를 실시간 표시한다", () => {
+    renderPanel({ shading: { mode: "toon" } });
+    const readout = screen.getByTestId("shaper-toon-readout");
+    expect(readout.textContent).toContain("외곽선 비등방 (1.5×0.3)");
+    expect(readout.textContent).toContain("하이라이트 Yaw 180°");
+
+    fireEvent.click(screen.getByLabelText("비등방 필압 외곽선"));
+    expect(readout.textContent).toContain("외곽선 비등방 (1.0×1.0)");
+
+    fireEvent.change(screen.getByLabelText("안구 하이라이트 기준"), { target: { value: "light" } });
+    expect(readout.textContent).toContain("하이라이트 Yaw 335°");
+  });
 });
 
 describe("엔진 기능 상태·HUD", () => {

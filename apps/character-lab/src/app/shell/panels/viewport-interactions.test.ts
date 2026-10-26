@@ -8,12 +8,15 @@ import { qRotateVec3, v3Add, v3Length, v3Sub } from "../../../shared/math";
 
 import {
   SHAPER_HISTORY_TYPE_ORDER,
+  SHAPER_TRACKPAD_MAX_FINGERS,
+  SHAPER_TRACKPAD_RING_BUFFER_CAPACITY,
   clampShaperColorPickerHandle,
   clampShaperGizmoDelta,
   classifyShaperTrackpadTwoFingerGesture,
   composeShaperHangulJamo,
   computeJointDrag,
   computeShaperPartThumbnailCameraFrame,
+  createShaperTrackpadTouchTracker,
   handlesKey,
   hudRows,
   isFingerBone,
@@ -25,6 +28,7 @@ import {
   resolveShaperPresetClickModifiers,
   resolveShaperToolModeForPartTab,
   resolveShaperViewportKeyShortcut,
+  shouldPassThroughShaperNativeWindowClick,
   stepShaperHistoryCursor,
   visibleHandles,
 } from "./viewport-interactions";
@@ -345,5 +349,54 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
     expect(resolveShaperToolModeForPartTab(12, 0)).toBe(11);
 
     expect(clampShaperColorPickerHandle([0, 250], [200, 200])).toEqual([4, 196]);
+  });
+
+  it("TrackpadTouchOSX (513 링버퍼·10슬롯 타임스탬프 축출·1.5초 유령 터치 제거) 및 LibUniWinC 클릭 투과를 검증한다", () => {
+    expect(SHAPER_TRACKPAD_RING_BUFFER_CAPACITY).toBe(513);
+    expect(SHAPER_TRACKPAD_MAX_FINGERS).toBe(10);
+
+    const tracker = createShaperTrackpadTouchTracker();
+    // 10개 손가락 모두 등록
+    for (let i = 0; i < 10; i += 1) {
+      tracker.handleTouchEvents(
+        [{ identity: `finger-${i}`, phase: 0, normalizedX: i * 0.1, normalizedY: 0.5 }],
+        10 + i * 0.05,
+      );
+    }
+    // 11번째 손가락(finger-10)이 들어오면 가장 오래된 슬롯(touchId=0, timestamp=10.0)을 축출하고 재사용한다
+    const [evictedRecord] = tracker.handleTouchEvents(
+      [{ identity: "finger-10", phase: 0, normalizedX: 0.99, normalizedY: 0.99 }],
+      10.6,
+    );
+    expect(evictedRecord?.touchId).toBe(0);
+    expect(tracker.getPendingCount()).toBe(11);
+
+    // 1.5초 이상 지난 뒤 새 이벤트 도착 시 이전 유령 슬롯들을 모두 정리한다
+    tracker.handleTouchEvents(
+      [{ identity: "fresh-finger", phase: 0, normalizedX: 0.25, normalizedY: 0.75 }],
+      15.0,
+    );
+    const activeSlots = tracker.getFingerSlots().filter((s) => s.identity !== null);
+    expect(activeSlots).toHaveLength(1);
+    expect(activeSlots[0]?.identity).toBe("fresh-finger");
+
+    const firstPopped = tracker.popTouchRecord();
+    expect(firstPopped?.touchId).toBe(0);
+    expect(firstPopped?.phase).toBe(0);
+
+    expect(
+      shouldPassThroughShaperNativeWindowClick({
+        isTransparent: true,
+        isClickThroughEnabled: true,
+        cursorPixelAlpha: 0.02,
+      }),
+    ).toBe(true);
+    expect(
+      shouldPassThroughShaperNativeWindowClick({
+        isTransparent: true,
+        isClickThroughEnabled: true,
+        cursorPixelAlpha: 0.85,
+      }),
+    ).toBe(false);
   });
 });

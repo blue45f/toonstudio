@@ -192,4 +192,22 @@ describe("PaintPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "부드러운 음영 (36px)" }));
     expect(session.getState().brush).toMatchObject({ radiusPx: 36, opacity: 0.45, hardness: 0.25 });
   });
+
+  it("샤퍼 3D 스트로크 필압 모드(fake sin(πt) vs pen 2p) 및 의상 신체 선화 마스킹 토글을 지원한다", () => {
+    const session = createPaintSession({ layerSize: 64, brush: { radiusPx: 10, opacity: 1, hardness: 1 } });
+    render(
+      <MockLabProvider>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+    const readout = screen.getByTestId("shaper-paint-stroke-readout");
+    expect(readout.textContent).toContain("피크 두께 10.0 px · 의상 마스킹 ON");
+
+    fireEvent.change(screen.getByLabelText("3D 스트로크 필압 모드"), { target: { value: "pen" } });
+    // pen mode: 10 * 0.8 * 2.0 = 16.0 px
+    expect(readout.textContent).toContain("피크 두께 16.0 px · 의상 마스킹 ON");
+
+    fireEvent.click(screen.getByLabelText("의상 영역 신체 선화 자동 마스킹"));
+    expect(readout.textContent).toContain("의상 마스킹 OFF");
+  });
 });
