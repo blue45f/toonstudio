@@ -1,16 +1,19 @@
 /**
  * claude-competitor-full-suite.ts
  *
- * REA(reverse-engineer-anything) 정적/의무 원장 분석 및 2025~2026 글로벌·국내 13대 웹툰 AI 경쟁사 벤치마크를 통해
- * 도출된 5대 핵심 프로덕션 AI 엔진:
+ * REA(reverse-engineer-anything) 정적/의무 원장 분석 및 2025~2026 글로벌·국내 웹툰 AI 경쟁사 벤치마크를 통해
+ * 도출된 7대 핵심 프로덕션 & 웹툰 일관성(Webtoon Consistency) AI 엔진:
  * 1. `runClaudeSketchToLineartLayerSplitter` (Cream AiD & Clip Studio Paint 5.0)
  * 2. `runClaudeStyleTransferAndRelightingDirector` (Komiko AI & LlamaGen Colorizer Suite)
  * 3. `runClaudeSakugaMotionAndFacialMatrixDirector` (SkyReels & Mootion)
  * 4. `runClaude3dHandHeadPoseAndLtRigDirector` (Clip Studio Paint 3.0~5.0 & Posemaniacs)
  * 5. `runClaudeScreenplayBeatAndLoraLockBridge` (Katalist.ai & Anifusion)
+ * 6. `runClaudeTurnaroundOrthographicSheetDirector` (360° 5-View Orthographic Turnaround Lock)
+ * 7. `runClaudeBackgroundPerspectivePropScaleDirector` (3D Perspective Grid & Foot Contact Scale Lock)
  */
 
 import type Anthropic from "@anthropic-ai/sdk";
+import type { z } from "zod";
 
 import {
   CLAUDE_DEFAULT_MODEL_ID,
@@ -28,24 +31,33 @@ import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   buildLocal3dHandHeadPoseAndLtRig,
+  buildLocalBackgroundPerspectivePropScaleLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
   buildLocalStyleTransferAndRelighting,
+  buildLocalTurnaroundOrthographicSheetLock,
   Claude3dHandHeadRigReportSchema,
+  ClaudeBackgroundPerspectiveReportSchema,
   ClaudeSakugaMotionReportSchema,
   ClaudeScreenplayLoraBridgeReportSchema,
   ClaudeSketchToLineartReportSchema,
   ClaudeStyleTransferReportSchema,
+  ClaudeTurnaroundOrthographicReportSchema,
   type Claude3dHandHeadRigReport,
+  type ClaudeBackgroundPerspectiveReport,
   type ClaudeSakugaMotionReport,
   type ClaudeScreenplayLoraBridgeReport,
   type ClaudeSketchToLineartReport,
   type ClaudeStyleTransferReport,
+  type ClaudeTurnaroundOrthographicReport,
   type CompetitorEngineExecutionMeta,
   type WebtoonStyleTransferPresetId,
 } from "./claude-competitor-full-suite-schemas";
-import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
+import {
+  resolveCreatorTaskModelRoute,
+  type ClaudeCreatorTaskId,
+} from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import {
   clampInt,
@@ -97,27 +109,33 @@ function buildCompetitorPromptContext(
   ].join("\n");
 }
 
-export async function runClaudeSketchToLineartLayerSplitter(
-  input: WebtoonProductionAssistInput = {},
-  options: RunWebtoonProductionAssistOptions = {},
-): Promise<CompetitorEngineExecutionMeta<ClaudeSketchToLineartReport>> {
-  const fallback = buildLocalSketchToLineartLayerSplit(input);
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+async function executeCompetitorEngine<T>(params: {
+  readonly taskId: ClaudeCreatorTaskId;
+  readonly input: WebtoonProductionAssistInput;
+  readonly options: RunWebtoonProductionAssistOptions;
+  readonly fallback: T;
+  readonly noRouteReasonKo: string;
+  readonly systemPromptKo: string;
+  readonly userDirectiveKo: string;
+  readonly schema: z.ZodType<T>;
+  readonly normalize: (parsed: T, fallback: T) => T;
+}): Promise<CompetitorEngineExecutionMeta<T>> {
+  const activeRoute = resolveOrHydrateClaudeRoute(params.options.route);
   if (!activeRoute) {
     return {
-      report: fallback,
+      report: params.fallback,
       source: "local-fallback",
       modelUsed: "local-deterministic",
       usage: EMPTY_CLAUDE_TOKEN_USAGE,
       estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude 경로가 없어 로컬 AiD 4레이어 분리 엔진을 사용했습니다.",
+      fallbackReason: params.noRouteReasonKo,
     };
   }
-  const taskRoute = resolveCreatorTaskModelRoute("competitor:beluga-clipstudio-production", {
-    model: options.model as never,
+  const taskRoute = resolveCreatorTaskModelRoute(params.taskId, {
+    model: params.options.model as never,
   });
   const requestedModel = resolveClaudeRequestModel(
-    options.model ?? taskRoute.model,
+    params.options.model ?? taskRoute.model,
     activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
   );
   const request: Anthropic.MessageCreateParamsNonStreaming = {
@@ -126,70 +144,34 @@ export async function runClaudeSketchToLineartLayerSplitter(
     system: [
       {
         type: "text",
-        text:
-          "당신은 크림 에이드(Cream AiD)와 클립스튜디오 페인트 5.0 벡터 선화 공정을 총괄하는 웹툰 선화·레이어 분리 디렉터입니다. " +
-          "컷별 외곽선/내선 굵기(mm), 벡터 교차점 트리밍 규칙, L4~L1 4레이어 분리 사양을 한국어로 작성하세요.",
+        text: params.systemPromptKo,
         cache_control: { type: "ephemeral" },
       },
     ],
     messages: [
       {
         role: "user",
-        content: buildCompetitorPromptContext(
-          input,
-          "위 웹툰 에피소드의 주요 4컷에 대해 스케치→벡터 선화 변환 사양과 L4(벡터 선화), L3(셀 그림자), L2(밑색 ID), L1(3D 배경 LT) 4레이어 분리 가이드를 JSON으로 생성해 주세요.",
-        ),
+        content: buildCompetitorPromptContext(params.input, params.userDirectiveKo),
       },
     ],
     ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
   };
 
   try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      ClaudeSketchToLineartReportSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: ClaudeSketchToLineartReportSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
-    const actualModel = claudeModelInfo(message.model || requestedModel)?.id ?? (message.model || requestedModel);
+    const { message, parsed } = await claudeParse(activeRoute, request, params.schema, {
+      signal: params.options.signal,
+      capUsd: estimateStructuredCostCapUsd({
+        model: requestedModel,
+        request,
+        schema: params.schema,
+      }),
+      budgetOverride: params.options.budgetOverride,
+    });
+    const actualModel =
+      claudeModelInfo(message.model || requestedModel)?.id ?? (message.model || requestedModel);
     const usage = toClaudeTokenUsage(message.usage);
     return {
-      report: {
-        inkingTimeReductionEstPct: clampPercent(parsed.inkingTimeReductionEstPct, 82),
-        artistBrushDnaSummaryKo:
-          cleanSingleLineText(parsed.artistBrushDnaSummaryKo, 360) || fallback.artistBrushDnaSummaryKo,
-        cutSpecs:
-          parsed.cutSpecs.length > 0
-            ? parsed.cutSpecs.slice(0, 6).map((c, idx) => ({
-                cutNumber: clampInt(c.cutNumber, 1, 50, idx + 1),
-                outerSilhouetteStrokeMm:
-                  Math.round(Math.min(3.0, Math.max(0.15, Number(c.outerSilhouetteStrokeMm) || 0.55)) * 100) /
-                  100,
-                innerCreaseStrokeMm:
-                  Math.round(Math.min(1.5, Math.max(0.08, Number(c.innerCreaseStrokeMm) || 0.2)) * 100) /
-                  100,
-                vectorIntersectionEraseRuleKo: cleanSingleLineText(
-                  c.vectorIntersectionEraseRuleKo,
-                  220,
-                ),
-                colorHintAutoFlatZonesKo: (c.colorHintAutoFlatZonesKo ?? [])
-                  .slice(0, 4)
-                  .map((z) => cleanSingleLineText(z, 100)),
-                separatedLayers:
-                  c.separatedLayers.length >= 4
-                    ? c.separatedLayers.slice(0, 4)
-                    : fallback.cutSpecs[0]!.separatedLayers,
-              }))
-            : fallback.cutSpecs,
-      },
+      report: params.normalize(parsed, params.fallback),
       source: "claude-live",
       modelUsed: actualModel,
       usage,
@@ -197,7 +179,7 @@ export async function runClaudeSketchToLineartLayerSplitter(
     };
   } catch (err) {
     return {
-      report: fallback,
+      report: params.fallback,
       source: "local-fallback",
       modelUsed: requestedModel,
       usage: EMPTY_CLAUDE_TOKEN_USAGE,
@@ -205,6 +187,53 @@ export async function runClaudeSketchToLineartLayerSplitter(
       fallbackReason: err instanceof Error ? err.message : "Claude API 호출 실패",
     };
   }
+}
+
+export async function runClaudeSketchToLineartLayerSplitter(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeSketchToLineartReport>> {
+  return executeCompetitorEngine({
+    taskId: "competitor:beluga-clipstudio-production",
+    input,
+    options,
+    fallback: buildLocalSketchToLineartLayerSplit(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 AiD 4레이어 분리 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 크림 에이드(Cream AiD)와 클립스튜디오 페인트 5.0 벡터 선화 공정을 총괄하는 웹툰 선화·레이어 분리 디렉터입니다. " +
+      "컷별 외곽선/내선 굵기(mm), 벡터 교차점 트리밍 규칙, L4~L1 4레이어 분리 사양을 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷에 대해 스케치→벡터 선화 변환 사양과 L4(벡터 선화), L3(셀 그림자), L2(밑색 ID), L1(3D 배경 LT) 4레이어 분리 가이드를 JSON으로 생성해 주세요.",
+    schema: ClaudeSketchToLineartReportSchema,
+    normalize: (parsed, fallback) => ({
+      inkingTimeReductionEstPct: clampPercent(parsed.inkingTimeReductionEstPct, 82),
+      artistBrushDnaSummaryKo:
+        cleanSingleLineText(parsed.artistBrushDnaSummaryKo, 360) || fallback.artistBrushDnaSummaryKo,
+      cutSpecs:
+        parsed.cutSpecs.length > 0
+          ? parsed.cutSpecs.slice(0, 6).map((c, idx) => ({
+              cutNumber: clampInt(c.cutNumber, 1, 50, idx + 1),
+              outerSilhouetteStrokeMm:
+                Math.round(Math.min(3.0, Math.max(0.15, Number(c.outerSilhouetteStrokeMm) || 0.55)) * 100) /
+                100,
+              innerCreaseStrokeMm:
+                Math.round(Math.min(1.5, Math.max(0.08, Number(c.innerCreaseStrokeMm) || 0.2)) * 100) /
+                100,
+              vectorIntersectionEraseRuleKo: cleanSingleLineText(
+                c.vectorIntersectionEraseRuleKo,
+                220,
+              ),
+              colorHintAutoFlatZonesKo: (c.colorHintAutoFlatZonesKo ?? [])
+                .slice(0, 4)
+                .map((z) => cleanSingleLineText(z, 100)),
+              separatedLayers:
+                c.separatedLayers.length >= 4
+                  ? c.separatedLayers.slice(0, 4)
+                  : fallback.cutSpecs[0]!.separatedLayers,
+            }))
+          : fallback.cutSpecs,
+    }),
+  });
 }
 
 export async function runClaudeStyleTransferAndRelightingDirector(
@@ -214,412 +243,239 @@ export async function runClaudeStyleTransferAndRelightingDirector(
   } = {},
 ): Promise<CompetitorEngineExecutionMeta<ClaudeStyleTransferReport>> {
   const preset = options.preferredPreset ?? "rofan-watercolor-glow";
-  const fallback = buildLocalStyleTransferAndRelighting(input, preset);
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
-  if (!activeRoute) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: "local-deterministic",
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude 경로가 없어 로컬 Komiko/LlamaGen 리라이팅 엔진을 사용했습니다.",
-    };
-  }
-  const taskRoute = resolveCreatorTaskModelRoute("competitor:llamagen-manga-ai", {
-    model: options.model as never,
+  return executeCompetitorEngine({
+    taskId: "competitor:llamagen-manga-ai",
+    input,
+    options,
+    fallback: buildLocalStyleTransferAndRelighting(input, preset),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 Komiko/LlamaGen 리라이팅 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 Komiko AI와 LlamaGen Colorizer Suite를 능가하는 웹툰 화풍 변환 및 3D 리라이팅(Relighting) 감독입니다. " +
+      "선화 보존율(lineartPreservationPct)은 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
+    userDirectiveKo: `타깃 화풍 프리셋 '${preset}'을 적용해 주요 4컷의 화풍 변환 및 3D 광원 리라이팅(방위각, 고도각, 색온도 K, 대표 HEX 팔레트) 지시서를 JSON으로 작성해 주세요.`,
+    schema: ClaudeStyleTransferReportSchema,
+    normalize: (parsed, fallback) => ({
+      selectedStyleFamilyKo:
+        cleanSingleLineText(parsed.selectedStyleFamilyKo, 160) || fallback.selectedStyleFamilyKo,
+      ocUniverseConsistencyRuleKo:
+        cleanSingleLineText(parsed.ocUniverseConsistencyRuleKo, 340) ||
+        fallback.ocUniverseConsistencyRuleKo,
+      cutDirectives:
+        parsed.cutDirectives.length > 0
+          ? parsed.cutDirectives.slice(0, 6).map((d, idx) => ({
+              cutNumber: clampInt(d.cutNumber, 1, 50, idx + 1),
+              stylePresetId: d.stylePresetId,
+              lineartPreservationPct: clampPercent(d.lineartPreservationPct, 94),
+              keyLightAzimuthDeg: clampInt(d.keyLightAzimuthDeg, 0, 360, 45),
+              keyLightElevationDeg: clampInt(d.keyLightElevationDeg, -90, 90, 35),
+              colorTemperatureKelvin: clampInt(d.colorTemperatureKelvin, 1800, 12000, 5400),
+              primaryPaletteHexes:
+                d.primaryPaletteHexes.length >= 3
+                  ? d.primaryPaletteHexes.slice(0, 5)
+                  : fallback.cutDirectives[0]!.primaryPaletteHexes,
+              relightingDirectiveKo: cleanSingleLineText(d.relightingDirectiveKo, 240),
+            }))
+          : fallback.cutDirectives,
+    }),
   });
-  const requestedModel = resolveClaudeRequestModel(
-    options.model ?? taskRoute.model,
-    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
-  );
-  const request: Anthropic.MessageCreateParamsNonStreaming = {
-    model: requestedModel,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    system: [
-      {
-        type: "text",
-        text:
-          "당신은 Komiko AI와 LlamaGen Colorizer Suite를 능가하는 웹툰 화풍 변환 및 3D 리라이팅(Relighting) 감독입니다. " +
-          "선화 보존율(lineartPreservationPct)은 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [
-      {
-        role: "user",
-        content: buildCompetitorPromptContext(
-          input,
-          `타깃 화풍 프리셋 '${preset}'을 적용해 주요 4컷의 화풍 변환 및 3D 광원 리라이팅(방위각, 고도각, 색온도 K, 대표 HEX 팔레트) 지시서를 JSON으로 작성해 주세요.`,
-        ),
-      },
-    ],
-    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
-  };
-
-  try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      ClaudeStyleTransferReportSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: ClaudeStyleTransferReportSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
-    const actualModel = claudeModelInfo(message.model || requestedModel)?.id ?? (message.model || requestedModel);
-    const usage = toClaudeTokenUsage(message.usage);
-    return {
-      report: {
-        selectedStyleFamilyKo:
-          cleanSingleLineText(parsed.selectedStyleFamilyKo, 160) || fallback.selectedStyleFamilyKo,
-        ocUniverseConsistencyRuleKo:
-          cleanSingleLineText(parsed.ocUniverseConsistencyRuleKo, 340) ||
-          fallback.ocUniverseConsistencyRuleKo,
-        cutDirectives:
-          parsed.cutDirectives.length > 0
-            ? parsed.cutDirectives.slice(0, 6).map((d, idx) => ({
-                cutNumber: clampInt(d.cutNumber, 1, 50, idx + 1),
-                stylePresetId: d.stylePresetId,
-                lineartPreservationPct: clampPercent(d.lineartPreservationPct, 94),
-                keyLightAzimuthDeg: clampInt(d.keyLightAzimuthDeg, 0, 360, 45),
-                keyLightElevationDeg: clampInt(d.keyLightElevationDeg, -90, 90, 35),
-                colorTemperatureKelvin: clampInt(d.colorTemperatureKelvin, 1800, 12000, 5400),
-                primaryPaletteHexes:
-                  d.primaryPaletteHexes.length >= 3
-                    ? d.primaryPaletteHexes.slice(0, 5)
-                    : fallback.cutDirectives[0]!.primaryPaletteHexes,
-                relightingDirectiveKo: cleanSingleLineText(d.relightingDirectiveKo, 240),
-              }))
-            : fallback.cutDirectives,
-      },
-      source: "claude-live",
-      modelUsed: actualModel,
-      usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
-    };
-  } catch (err) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: requestedModel,
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: err instanceof Error ? err.message : "Claude API 호출 실패",
-    };
-  }
 }
 
 export async function runClaudeSakugaMotionAndFacialMatrixDirector(
   input: WebtoonProductionAssistInput = {},
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<CompetitorEngineExecutionMeta<ClaudeSakugaMotionReport>> {
-  const fallback = buildLocalSakugaMotionAndFacialMatrix(input);
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
-  if (!activeRoute) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: "local-deterministic",
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude 경로가 없어 로컬 SkyReels/Mootion 모션웹툰 엔진을 사용했습니다.",
-    };
-  }
-  const taskRoute = resolveCreatorTaskModelRoute("competitor:llamagen-manga-ai", {
-    model: options.model as never,
+  return executeCompetitorEngine({
+    taskId: "competitor:llamagen-manga-ai",
+    input,
+    options,
+    fallback: buildLocalSakugaMotionAndFacialMatrix(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 SkyReels/Mootion 모션웹툰 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 SkyReels Comic Studio와 Mootion의 33종 표정 매트릭스 및 사쿠가(Sakuga) 모션웹툰 총괄 감독입니다. " +
+      "pupilConstrictionPct는 0~100 정수로, 모든 해설은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷을 33종 안면 근육(FACS) 표정 매트릭스 코드와 사쿠가(Sakuga) 카메라 모션 곡선, 9:16 숏폼 비디오 트레일러 키프레임으로 변환해 JSON으로 출력하세요.",
+    schema: ClaudeSakugaMotionReportSchema,
+    normalize: (parsed, fallback) => ({
+      totalTrailerDurationSec:
+        Math.round(Math.min(180, Math.max(2, Number(parsed.totalTrailerDurationSec) || 10)) * 10) /
+        10,
+      facialMatrixSummaryKo:
+        cleanSingleLineText(parsed.facialMatrixSummaryKo, 340) || fallback.facialMatrixSummaryKo,
+      keyframes:
+        parsed.keyframes.length > 0
+          ? parsed.keyframes.slice(0, 6).map((k, idx) => ({
+              cutNumber: clampInt(k.cutNumber, 1, 50, idx + 1),
+              expressionMatrixCode: cleanSingleLineText(k.expressionMatrixCode, 48) || `EXP-0${idx + 1}`,
+              facsActionUnitsKo: cleanSingleLineText(k.facsActionUnitsKo, 180),
+              pupilConstrictionPct: clampPercent(k.pupilConstrictionPct, 65),
+              sakugaMotionCurve: k.sakugaMotionCurve,
+              durationSec:
+                Math.round(Math.min(15, Math.max(0.5, Number(k.durationSec) || 2.5)) * 10) / 10,
+              shortForm9x16CropGuideKo: cleanSingleLineText(k.shortForm9x16CropGuideKo, 220),
+            }))
+          : fallback.keyframes,
+    }),
   });
-  const requestedModel = resolveClaudeRequestModel(
-    options.model ?? taskRoute.model,
-    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
-  );
-  const request: Anthropic.MessageCreateParamsNonStreaming = {
-    model: requestedModel,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    system: [
-      {
-        type: "text",
-        text:
-          "당신은 SkyReels Comic Studio와 Mootion의 33종 표정 매트릭스 및 사쿠가(Sakuga) 모션웹툰 총괄 감독입니다. " +
-          "pupilConstrictionPct는 0~100 정수로, 모든 해설은 한국어로 작성하세요.",
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [
-      {
-        role: "user",
-        content: buildCompetitorPromptContext(
-          input,
-          "위 웹툰 에피소드의 주요 4컷을 33종 안면 근육(FACS) 표정 매트릭스 코드와 사쿠가(Sakuga) 카메라 모션 곡선, 9:16 숏폼 비디오 트레일러 키프레임으로 변환해 JSON으로 출력하세요.",
-        ),
-      },
-    ],
-    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
-  };
-
-  try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      ClaudeSakugaMotionReportSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: ClaudeSakugaMotionReportSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
-    const actualModel = claudeModelInfo(message.model || requestedModel)?.id ?? (message.model || requestedModel);
-    const usage = toClaudeTokenUsage(message.usage);
-    return {
-      report: {
-        totalTrailerDurationSec:
-          Math.round(Math.min(180, Math.max(2, Number(parsed.totalTrailerDurationSec) || 10)) * 10) /
-          10,
-        facialMatrixSummaryKo:
-          cleanSingleLineText(parsed.facialMatrixSummaryKo, 340) || fallback.facialMatrixSummaryKo,
-        keyframes:
-          parsed.keyframes.length > 0
-            ? parsed.keyframes.slice(0, 6).map((k, idx) => ({
-                cutNumber: clampInt(k.cutNumber, 1, 50, idx + 1),
-                expressionMatrixCode: cleanSingleLineText(k.expressionMatrixCode, 48) || `EXP-0${idx + 1}`,
-                facsActionUnitsKo: cleanSingleLineText(k.facsActionUnitsKo, 180),
-                pupilConstrictionPct: clampPercent(k.pupilConstrictionPct, 65),
-                sakugaMotionCurve: k.sakugaMotionCurve,
-                durationSec:
-                  Math.round(Math.min(15, Math.max(0.5, Number(k.durationSec) || 2.5)) * 10) / 10,
-                shortForm9x16CropGuideKo: cleanSingleLineText(k.shortForm9x16CropGuideKo, 220),
-              }))
-            : fallback.keyframes,
-      },
-      source: "claude-live",
-      modelUsed: actualModel,
-      usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
-    };
-  } catch (err) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: requestedModel,
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: err instanceof Error ? err.message : "Claude API 호출 실패",
-    };
-  }
 }
 
 export async function runClaude3dHandHeadPoseAndLtRigDirector(
   input: WebtoonProductionAssistInput = {},
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<CompetitorEngineExecutionMeta<Claude3dHandHeadRigReport>> {
-  const fallback = buildLocal3dHandHeadPoseAndLtRig(input);
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
-  if (!activeRoute) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: "local-deterministic",
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude 경로가 없어 로컬 CSP 5.0 3D 핸드·헤드 리그 엔진을 사용했습니다.",
-    };
-  }
-  const taskRoute = resolveCreatorTaskModelRoute("competitor:beluga-clipstudio-production", {
-    model: options.model as never,
+  return executeCompetitorEngine({
+    taskId: "competitor:beluga-clipstudio-production",
+    input,
+    options,
+    fallback: buildLocal3dHandHeadPoseAndLtRig(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 CSP 5.0 3D 핸드·헤드 리그 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 클립스튜디오 페인트 5.0 3D 핸드·헤드 및 Posemaniacs 인체 투시, 3D LT(Line & Tone) 변환 수석 테크니컬 디렉터입니다. " +
+      "모든 설명은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷에 대해 3D 손 관절 프리셋, 3D 두상 Pitch/Yaw/Roll 각도, Posemaniacs 과장 투시 배율, CSP 5.0 카툰 LT 윤곽선·셀 그림자 추출 임계값을 JSON으로 설계해 주세요.",
+    schema: Claude3dHandHeadRigReportSchema,
+    normalize: (parsed, fallback) => ({
+      anatomyRigSummaryKo:
+        cleanSingleLineText(parsed.anatomyRigSummaryKo, 340) || fallback.anatomyRigSummaryKo,
+      cutRigs:
+        parsed.cutRigs.length > 0
+          ? parsed.cutRigs.slice(0, 6).map((r, idx) => ({
+              cutNumber: clampInt(r.cutNumber, 1, 50, idx + 1),
+              handPosePresetKo: cleanSingleLineText(r.handPosePresetKo, 150),
+              headPitchDeg: clampInt(r.headPitchDeg, -75, 75, 12),
+              headYawDeg: clampInt(r.headYawDeg, -90, 90, 24),
+              headRollDeg: clampInt(r.headRollDeg, -45, 45, 6),
+              posemaniacsForeshorteningRatio:
+                Math.round(
+                  Math.min(2.5, Math.max(1.0, Number(r.posemaniacsForeshorteningRatio) || 1.3)) *
+                    100,
+                ) / 100,
+              ltOutlineThreshold: clampPercent(r.ltOutlineThreshold, 72),
+              ltCelShadowThreshold: clampPercent(r.ltCelShadowThreshold, 58),
+              riggingGuideKo: cleanSingleLineText(r.riggingGuideKo, 240),
+            }))
+          : fallback.cutRigs,
+    }),
   });
-  const requestedModel = resolveClaudeRequestModel(
-    options.model ?? taskRoute.model,
-    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
-  );
-  const request: Anthropic.MessageCreateParamsNonStreaming = {
-    model: requestedModel,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    system: [
-      {
-        type: "text",
-        text:
-          "당신은 클립스튜디오 페인트 5.0 3D 핸드·헤드 및 Posemaniacs 인체 투시, 3D LT(Line & Tone) 변환 수석 테크니컬 디렉터입니다. " +
-          "모든 설명은 한국어로 작성하세요.",
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [
-      {
-        role: "user",
-        content: buildCompetitorPromptContext(
-          input,
-          "위 웹툰 에피소드의 주요 4컷에 대해 3D 손 관절 프리셋, 3D 두상 Pitch/Yaw/Roll 각도, Posemaniacs 과장 투시 배율, CSP 5.0 카툰 LT 윤곽선·셀 그림자 추출 임계값을 JSON으로 설계해 주세요.",
-        ),
-      },
-    ],
-    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
-  };
-
-  try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      Claude3dHandHeadRigReportSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: Claude3dHandHeadRigReportSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
-    const actualModel = claudeModelInfo(message.model || requestedModel)?.id ?? (message.model || requestedModel);
-    const usage = toClaudeTokenUsage(message.usage);
-    return {
-      report: {
-        anatomyRigSummaryKo:
-          cleanSingleLineText(parsed.anatomyRigSummaryKo, 340) || fallback.anatomyRigSummaryKo,
-        cutRigs:
-          parsed.cutRigs.length > 0
-            ? parsed.cutRigs.slice(0, 6).map((r, idx) => ({
-                cutNumber: clampInt(r.cutNumber, 1, 50, idx + 1),
-                handPosePresetKo: cleanSingleLineText(r.handPosePresetKo, 150),
-                headPitchDeg: clampInt(r.headPitchDeg, -75, 75, 12),
-                headYawDeg: clampInt(r.headYawDeg, -90, 90, 24),
-                headRollDeg: clampInt(r.headRollDeg, -45, 45, 6),
-                posemaniacsForeshorteningRatio:
-                  Math.round(
-                    Math.min(2.5, Math.max(1.0, Number(r.posemaniacsForeshorteningRatio) || 1.3)) *
-                      100,
-                  ) / 100,
-                ltOutlineThreshold: clampPercent(r.ltOutlineThreshold, 72),
-                ltCelShadowThreshold: clampPercent(r.ltCelShadowThreshold, 58),
-                riggingGuideKo: cleanSingleLineText(r.riggingGuideKo, 240),
-              }))
-            : fallback.cutRigs,
-      },
-      source: "claude-live",
-      modelUsed: actualModel,
-      usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
-    };
-  } catch (err) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: requestedModel,
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: err instanceof Error ? err.message : "Claude API 호출 실패",
-    };
-  }
 }
 
 export async function runClaudeScreenplayBeatAndLoraLockBridge(
   input: WebtoonProductionAssistInput = {},
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<CompetitorEngineExecutionMeta<ClaudeScreenplayLoraBridgeReport>> {
-  const fallback = buildLocalScreenplayBeatAndLoraLock(input);
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
-  if (!activeRoute) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: "local-deterministic",
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude 경로가 없어 로컬 Katalist/Anifusion 브리지 엔진을 사용했습니다.",
-    };
-  }
-  const taskRoute = resolveCreatorTaskModelRoute("competitor:onoma-kakaopage-ip", {
-    model: options.model as never,
+  return executeCompetitorEngine({
+    taskId: "competitor:onoma-kakaopage-ip",
+    input,
+    options,
+    fallback: buildLocalScreenplayBeatAndLoraLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 Katalist/Anifusion 브리지 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 Katalist.ai와 Anifusion의 시나리오 비트 분해 및 FLUX/Animagine 캐릭터 LoRA 시드 락 파이프라인 아키텍트입니다. " +
+      "pipelineCompatibilityScore는 0~100 정수로, 모든 해설은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷을 시나리오 액션 비트와 패널 그리드 템플릿, FLUX/Animagine 캐릭터 LoRA 가중치 및 REA 의무 원장 ID(reaObligationId)로 분해해 JSON으로 출력하세요.",
+    schema: ClaudeScreenplayLoraBridgeReportSchema,
+    normalize: (parsed, fallback) => ({
+      pipelineCompatibilityScore: clampPercent(parsed.pipelineCompatibilityScore, 98),
+      mcpBridgeSummaryKo:
+        cleanSingleLineText(parsed.mcpBridgeSummaryKo, 340) || fallback.mcpBridgeSummaryKo,
+      actionBeats:
+        parsed.actionBeats.length > 0
+          ? parsed.actionBeats.slice(0, 6).map((b, idx) => ({
+              beatIndex: clampInt(b.beatIndex, 1, 50, idx + 1),
+              panelGridTemplate: b.panelGridTemplate,
+              actionBeatSummaryKo: cleanSingleLineText(b.actionBeatSummaryKo, 220),
+              castAngleLockSpecKo: cleanSingleLineText(b.castAngleLockSpecKo, 180),
+              modelRouterTarget: b.modelRouterTarget,
+              loraWeight:
+                Math.round(Math.min(1.2, Math.max(0.4, Number(b.loraWeight) || 0.88)) * 100) /
+                100,
+              reaObligationId:
+                cleanSingleLineText(b.reaObligationId, 72) ||
+                `ob_webtoon_cut_0${idx + 1}_lora_lock`,
+            }))
+          : fallback.actionBeats,
+    }),
   });
-  const requestedModel = resolveClaudeRequestModel(
-    options.model ?? taskRoute.model,
-    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
-  );
-  const request: Anthropic.MessageCreateParamsNonStreaming = {
-    model: requestedModel,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    system: [
-      {
-        type: "text",
-        text:
-          "당신은 Katalist.ai와 Anifusion의 시나리오 비트 분해 및 FLUX/Animagine 캐릭터 LoRA 시드 락 파이프라인 아키텍트입니다. " +
-          "pipelineCompatibilityScore는 0~100 정수로, 모든 해설은 한국어로 작성하세요.",
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [
-      {
-        role: "user",
-        content: buildCompetitorPromptContext(
-          input,
-          "위 웹툰 에피소드의 주요 4컷을 시나리오 액션 비트와 패널 그리드 템플릿, FLUX/Animagine 캐릭터 LoRA 가중치 및 REA 의무 원장 ID(reaObligationId)로 분해해 JSON으로 출력하세요.",
-        ),
-      },
-    ],
-    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
-  };
+}
 
-  try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      ClaudeScreenplayLoraBridgeReportSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: ClaudeScreenplayLoraBridgeReportSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
-    const actualModel = claudeModelInfo(message.model || requestedModel)?.id ?? (message.model || requestedModel);
-    const usage = toClaudeTokenUsage(message.usage);
-    return {
-      report: {
-        pipelineCompatibilityScore: clampPercent(parsed.pipelineCompatibilityScore, 98),
-        mcpBridgeSummaryKo:
-          cleanSingleLineText(parsed.mcpBridgeSummaryKo, 340) || fallback.mcpBridgeSummaryKo,
-        actionBeats:
-          parsed.actionBeats.length > 0
-            ? parsed.actionBeats.slice(0, 6).map((b, idx) => ({
-                beatIndex: clampInt(b.beatIndex, 1, 50, idx + 1),
-                panelGridTemplate: b.panelGridTemplate,
-                actionBeatSummaryKo: cleanSingleLineText(b.actionBeatSummaryKo, 220),
-                castAngleLockSpecKo: cleanSingleLineText(b.castAngleLockSpecKo, 180),
-                modelRouterTarget: b.modelRouterTarget,
-                loraWeight:
-                  Math.round(Math.min(1.2, Math.max(0.4, Number(b.loraWeight) || 0.88)) * 100) /
-                  100,
-                reaObligationId:
-                  cleanSingleLineText(b.reaObligationId, 72) ||
-                  `ob_webtoon_cut_0${idx + 1}_lora_lock`,
-              }))
-            : fallback.actionBeats,
-      },
-      source: "claude-live",
-      modelUsed: actualModel,
-      usage,
-      estimatedCostUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? 0,
-    };
-  } catch (err) {
-    return {
-      report: fallback,
-      source: "local-fallback",
-      modelUsed: requestedModel,
-      usage: EMPTY_CLAUDE_TOKEN_USAGE,
-      estimatedCostUsd: 0,
-      fallbackReason: err instanceof Error ? err.message : "Claude API 호출 실패",
-    };
-  }
+export async function runClaudeTurnaroundOrthographicSheetDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeTurnaroundOrthographicReport>> {
+  return executeCompetitorEngine({
+    taskId: "competitor:turnaround-orthographic-sheet-lock",
+    input,
+    options,
+    fallback: buildLocalTurnaroundOrthographicSheetLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 360° 5뷰 정투영 턴어라운드 시트 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 웹툰 캐릭터 360° 5뷰(정면·반측면·좌측면·우측면·후면) 정투영(Orthographic) 턴어라운드 시트 및 비대칭 장신구/흉터/검집 기하 일관성 수석 감독입니다. " +
+      "orthographicConsistencyScore는 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 주인공의 5방향(front-0deg, three-quarter-45deg, profile-left-90deg, profile-right-270deg, back-180deg) 정투영 등신대 비율과 비대칭 흉터/장신구/검집 노출·차폐 규칙을 JSON으로 설계해 주세요.",
+    schema: ClaudeTurnaroundOrthographicReportSchema,
+    normalize: (parsed, fallback) => ({
+      orthographicConsistencyScore: clampPercent(parsed.orthographicConsistencyScore, 98),
+      characterName: cleanSingleLineText(parsed.characterName, 40) || fallback.characterName,
+      turnaroundSummaryKo:
+        cleanSingleLineText(parsed.turnaroundSummaryKo, 340) || fallback.turnaroundSummaryKo,
+      views:
+        parsed.views.length > 0
+          ? parsed.views.slice(0, 5).map((v) => ({
+              viewAngle: v.viewAngle,
+              headToBodyRatio:
+                Math.round(Math.min(9.5, Math.max(5.0, Number(v.headToBodyRatio) || 7.5)) * 10) / 10,
+              eyeLineYRatioPct:
+                Math.round(Math.min(15, Math.max(3, Number(v.eyeLineYRatioPct) || 6.8)) * 10) / 10,
+              shoulderWidthHeadUnits:
+                Math.round(Math.min(3.2, Math.max(0.8, Number(v.shoulderWidthHeadUnits) || 2.0)) * 100) /
+                100,
+              pelvisLineYRatioPct:
+                Math.round(Math.min(60, Math.max(38, Number(v.pelvisLineYRatioPct) || 48)) * 10) / 10,
+              visibleAsymmetricAnchorKo: cleanSingleLineText(v.visibleAsymmetricAnchorKo, 200),
+              occludedFeaturesKo: cleanSingleLineText(v.occludedFeaturesKo, 180),
+              orthographicLockDirectiveKo: cleanSingleLineText(v.orthographicLockDirectiveKo, 220),
+            }))
+          : fallback.views,
+    }),
+  });
+}
+
+export async function runClaudeBackgroundPerspectivePropScaleDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeBackgroundPerspectiveReport>> {
+  return executeCompetitorEngine({
+    taskId: "competitor:background-perspective-prop-scale-lock",
+    input,
+    options,
+    fallback: buildLocalBackgroundPerspectivePropScaleLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 3D 배경 투시 & 발 접지 스케일 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 3D 웹툰 배경(SketchUp·Snaptoon·Blender)의 1/2/3점 투시 소실점 그리드와 2D 작화 인물의 발바닥 접지(Foot Contact AO), 문틀·책상·소품 대비 인체 비례 일관성을 총괄하는 공간 투시 감독입니다. " +
+      "perspectiveAlignmentScore는 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
+    userDirectiveKo:
+      "위 웹툰 에피소드의 주요 4컷에 대해 1/2/3점 소실점 모드, 지평선 Y비율(%), 카메라 렌즈 화각(mm), 발바닥 접지 AO 그림자 사양, 문틀·가구·소품 대비 인체 스케일 고정 지침을 JSON으로 출력하세요.",
+    schema: ClaudeBackgroundPerspectiveReportSchema,
+    normalize: (parsed, fallback) => ({
+      perspectiveAlignmentScore: clampPercent(parsed.perspectiveAlignmentScore, 96),
+      spatialIntegrationSummaryKo:
+        cleanSingleLineText(parsed.spatialIntegrationSummaryKo, 340) ||
+        fallback.spatialIntegrationSummaryKo,
+      cutLocks:
+        parsed.cutLocks.length > 0
+          ? parsed.cutLocks.slice(0, 6).map((c, idx) => ({
+              cutNumber: clampInt(c.cutNumber, 1, 50, idx + 1),
+              vanishingPointMode: c.vanishingPointMode,
+              horizonLineYRatioPct: clampPercent(c.horizonLineYRatioPct, 46),
+              cameraFovMm: clampInt(c.cameraFovMm, 14, 120, 35),
+              footContactShadowSpecKo: cleanSingleLineText(c.footContactShadowSpecKo, 220),
+              propScaleRatioAnchorKo: cleanSingleLineText(c.propScaleRatioAnchorKo, 220),
+              floatingCharacterFixKo: cleanSingleLineText(c.floatingCharacterFixKo, 220),
+            }))
+          : fallback.cutLocks,
+    }),
+  });
 }

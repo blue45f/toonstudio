@@ -10,7 +10,7 @@
  * - 탭 5: Katalist.ai & Anifusion 시나리오 액션 비트 분해 & FLUX/Animagine LoRA 브리지
  */
 
-import { Brush, Clapperboard, Cpu, Hand, Layers, Sparkles, Wand2 } from "lucide-react";
+import { Box, Brush, Clapperboard, Compass, Cpu, Hand, Layers, Sparkles, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
@@ -18,20 +18,26 @@ import { cn } from "@/shared/lib/utils";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import {
   buildLocal3dHandHeadPoseAndLtRig,
+  buildLocalBackgroundPerspectivePropScaleLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
   buildLocalStyleTransferAndRelighting,
+  buildLocalTurnaroundOrthographicSheetLock,
   runClaude3dHandHeadPoseAndLtRigDirector,
+  runClaudeBackgroundPerspectivePropScaleDirector,
   runClaudeSakugaMotionAndFacialMatrixDirector,
   runClaudeScreenplayBeatAndLoraLockBridge,
   runClaudeSketchToLineartLayerSplitter,
   runClaudeStyleTransferAndRelightingDirector,
+  runClaudeTurnaroundOrthographicSheetDirector,
   type Claude3dHandHeadRigReport,
+  type ClaudeBackgroundPerspectiveReport,
   type ClaudeSakugaMotionReport,
   type ClaudeScreenplayLoraBridgeReport,
   type ClaudeSketchToLineartReport,
   type ClaudeStyleTransferReport,
+  type ClaudeTurnaroundOrthographicReport,
   type CompetitorEngineExecutionMeta,
   type WebtoonStyleTransferPresetId,
 } from "./claude/claude-competitor-full-suite";
@@ -44,7 +50,9 @@ export type CompetitorSuiteTabId =
   | "komiko-style-relighting"
   | "skyreels-sakuga-motion"
   | "csp5-3d-hand-head-lt"
-  | "katalist-anifusion-lora";
+  | "katalist-anifusion-lora"
+  | "turnaround-orthographic-sheet"
+  | "background-perspective-scale";
 
 export interface StudioCompetitorFullSuitePanelProps {
   readonly assistInput: WebtoonProductionAssistInput;
@@ -81,6 +89,16 @@ const SUITE_TABS: readonly {
     labelKo: "액션 비트 & LoRA 브리지",
     benchmarkBadgeKo: "Katalist.ai · Anifusion",
   },
+  {
+    id: "turnaround-orthographic-sheet",
+    labelKo: "360° 5뷰 정투영 턴어라운드",
+    benchmarkBadgeKo: "5-View Orthographic Lock",
+  },
+  {
+    id: "background-perspective-scale",
+    labelKo: "3D 배경 투시 · 발 접지 스케일",
+    benchmarkBadgeKo: "3D Vanishing Point & Foot AO",
+  },
 ];
 
 const STYLE_PRESETS: readonly {
@@ -114,6 +132,10 @@ export function StudioCompetitorFullSuitePanel({
     useState<CompetitorEngineExecutionMeta<Claude3dHandHeadRigReport> | null>(null);
   const [bridgeMeta, setBridgeMeta] =
     useState<CompetitorEngineExecutionMeta<ClaudeScreenplayLoraBridgeReport> | null>(null);
+  const [turnaroundMeta, setTurnaroundMeta] =
+    useState<CompetitorEngineExecutionMeta<ClaudeTurnaroundOrthographicReport> | null>(null);
+  const [perspectiveMeta, setPerspectiveMeta] =
+    useState<CompetitorEngineExecutionMeta<ClaudeBackgroundPerspectiveReport> | null>(null);
 
   const localLineart = useMemo(
     () => buildLocalSketchToLineartLayerSplit(assistInput),
@@ -135,12 +157,22 @@ export function StudioCompetitorFullSuitePanel({
     () => buildLocalScreenplayBeatAndLoraLock(assistInput),
     [assistInput],
   );
+  const localTurnaround = useMemo(
+    () => buildLocalTurnaroundOrthographicSheetLock(assistInput),
+    [assistInput],
+  );
+  const localPerspective = useMemo(
+    () => buildLocalBackgroundPerspectivePropScaleLock(assistInput),
+    [assistInput],
+  );
 
   const currentLineart = lineartMeta?.report ?? localLineart;
   const currentStyle = styleMeta?.report ?? localStyle;
   const currentSakuga = sakugaMeta?.report ?? localSakuga;
   const currentRig = rigMeta?.report ?? localRig;
   const currentBridge = bridgeMeta?.report ?? localBridge;
+  const currentTurnaround = turnaroundMeta?.report ?? localTurnaround;
+  const currentPerspective = perspectiveMeta?.report ?? localPerspective;
 
   const activeExecutionMeta =
     activeTab === "aid-lineart-splitter"
@@ -151,7 +183,11 @@ export function StudioCompetitorFullSuitePanel({
           ? sakugaMeta
           : activeTab === "csp5-3d-hand-head-lt"
             ? rigMeta
-            : bridgeMeta;
+            : activeTab === "katalist-anifusion-lora"
+              ? bridgeMeta
+              : activeTab === "turnaround-orthographic-sheet"
+                ? turnaroundMeta
+                : perspectiveMeta;
 
   const handleRunActiveClaudeEngine = async () => {
     setIsRunning(true);
@@ -168,8 +204,12 @@ export function StudioCompetitorFullSuitePanel({
         setSakugaMeta(await runClaudeSakugaMotionAndFacialMatrixDirector(assistInput));
       } else if (activeTab === "csp5-3d-hand-head-lt") {
         setRigMeta(await runClaude3dHandHeadPoseAndLtRigDirector(assistInput));
-      } else {
+      } else if (activeTab === "katalist-anifusion-lora") {
         setBridgeMeta(await runClaudeScreenplayBeatAndLoraLockBridge(assistInput));
+      } else if (activeTab === "turnaround-orthographic-sheet") {
+        setTurnaroundMeta(await runClaudeTurnaroundOrthographicSheetDirector(assistInput));
+      } else {
+        setPerspectiveMeta(await runClaudeBackgroundPerspectivePropScaleDirector(assistInput));
       }
     } finally {
       setIsRunning(false);
@@ -205,9 +245,23 @@ export function StudioCompetitorFullSuitePanel({
       );
       return;
     }
-    const first = currentBridge.actionBeats[0];
+    if (activeTab === "katalist-anifusion-lora") {
+      const first = currentBridge.actionBeats[0];
+      onAppendDirectionLine(
+        `[Katalist·Anifusion 브리지] ${first?.actionBeatSummaryKo ?? ""} · ${first?.castAngleLockSpecKo ?? ""} (${first?.modelRouterTarget ?? "flux-1-dev-webtoon-lora"})`,
+      );
+      return;
+    }
+    if (activeTab === "turnaround-orthographic-sheet") {
+      const first = currentTurnaround.views[0];
+      onAppendDirectionLine(
+        `[360° 5뷰 정투영 턴어라운드] ${currentTurnaround.characterName} (${first?.headToBodyRatio ?? 7.5}등신) · ${first?.orthographicLockDirectiveKo ?? ""}`,
+      );
+      return;
+    }
+    const first = currentPerspective.cutLocks[0];
     onAppendDirectionLine(
-      `[Katalist·Anifusion 브리지] ${first?.actionBeatSummaryKo ?? ""} · ${first?.castAngleLockSpecKo ?? ""} (${first?.modelRouterTarget ?? "flux-1-dev-webtoon-lora"})`,
+      `[3D 배경 투시·발 접지 락] ${first?.vanishingPointMode ?? "2-point-architectural"} (FOV ${first?.cameraFovMm ?? 35}mm) · ${first?.footContactShadowSpecKo ?? ""}`,
     );
   };
 
@@ -489,6 +543,82 @@ export function StudioCompetitorFullSuitePanel({
                 <div className="text-fg-3">
                   {beat.castAngleLockSpecKo} · REA `{beat.reaObligationId}`
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 6: 360° 5뷰 정투영 턴어라운드 시트 락 */}
+      {activeTab === "turnaround-orthographic-sheet" ? (
+        <div
+          data-testid="suite-panel-turnaround-orthographic-sheet"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Compass size={11} className="text-accent" aria-hidden="true" />
+              360° 5뷰(0°·45°·90°·270°·180°) 정투영 등신대 & 비대칭 장신구 락
+            </span>
+            <span className="text-accent">
+              정투영 일관성 점수: {currentTurnaround.orthographicConsistencyScore}%
+            </span>
+          </div>
+          <p className="text-fg-2">{currentTurnaround.turnaroundSummaryKo}</p>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {currentTurnaround.views.map((view) => (
+              <div
+                key={view.viewAngle}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.56rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>
+                    {view.viewAngle} · {view.headToBodyRatio}등신
+                  </span>
+                  <span className="text-accent">
+                    어깨 {view.shoulderWidthHeadUnits}두신 · 골반 Y {view.pelvisLineYRatioPct}%
+                  </span>
+                </div>
+                <div className="text-fg-2">노출: {view.visibleAsymmetricAnchorKo}</div>
+                <div className="text-fg-3">차폐: {view.occludedFeaturesKo}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 7: 3D 배경 투시 그리드 & 2D 인물 발 접지 스케일 감독 */}
+      {activeTab === "background-perspective-scale" ? (
+        <div
+          data-testid="suite-panel-background-perspective-scale"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span className="inline-flex items-center gap-1">
+              <Box size={11} className="text-accent" aria-hidden="true" />
+              3D 배경 소실점(1/2/3점) ↔ 2D 인물 발 접지(Foot Contact AO) · 소품 스케일 감독
+            </span>
+            <span className="text-accent">
+              공간 투시 정합성: {currentPerspective.perspectiveAlignmentScore}%
+            </span>
+          </div>
+          <p className="text-fg-2">{currentPerspective.spatialIntegrationSummaryKo}</p>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {currentPerspective.cutLocks.slice(0, 4).map((lock) => (
+              <div
+                key={lock.cutNumber}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.56rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>
+                    컷 #{lock.cutNumber} ({lock.vanishingPointMode})
+                  </span>
+                  <span className="text-accent">
+                    지평선 Y {lock.horizonLineYRatioPct}% · FOV {lock.cameraFovMm}mm
+                  </span>
+                </div>
+                <div className="text-fg-2">{lock.footContactShadowSpecKo}</div>
+                <div className="text-fg-3">{lock.propScaleRatioAnchorKo}</div>
               </div>
             ))}
           </div>

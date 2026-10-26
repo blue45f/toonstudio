@@ -4,15 +4,19 @@ import { claudeParse } from "@/shared/ai/claude/claude-transport";
 
 import {
   buildLocal3dHandHeadPoseAndLtRig,
+  buildLocalBackgroundPerspectivePropScaleLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
   buildLocalStyleTransferAndRelighting,
+  buildLocalTurnaroundOrthographicSheetLock,
   runClaude3dHandHeadPoseAndLtRigDirector,
+  runClaudeBackgroundPerspectivePropScaleDirector,
   runClaudeSakugaMotionAndFacialMatrixDirector,
   runClaudeScreenplayBeatAndLoraLockBridge,
   runClaudeSketchToLineartLayerSplitter,
   runClaudeStyleTransferAndRelightingDirector,
+  runClaudeTurnaroundOrthographicSheetDirector,
 } from "./claude-competitor-full-suite";
 import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
 
@@ -159,5 +163,56 @@ describe("claude-competitor-full-suite (5대 신규 경쟁사 벤치마크 엔�
     });
     expect(live.source).toBe("claude-live");
     expect(live.report.pipelineCompatibilityScore).toBe(99);
+  });
+
+  it("6. 360° 5뷰 정투영 턴어라운드 비율 & 비대칭 장신구/흉터/검집 기하 고정기를 검증한다", async () => {
+    const local = buildLocalTurnaroundOrthographicSheetLock(SAMPLE_INPUT);
+    expect(local.orthographicConsistencyScore).toBe(98);
+    expect(local.views).toHaveLength(5);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 310, output_tokens: 460 },
+      } as never,
+      parsed: {
+        orthographicConsistencyScore: 99,
+        characterName: "서진",
+        turnaroundSummaryKo: "서진 360도 5뷰 정투영 비율 100% 고정",
+        views: local.views,
+      },
+    });
+
+    const live = await runClaudeTurnaroundOrthographicSheetDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.report.orthographicConsistencyScore).toBe(99);
+    expect(live.report.views).toHaveLength(5);
+  });
+
+  it("7. 3D 배경 투시 그리드(1/2/3점 소실점) ↔ 2D 인물 발 접지(Foot Contact AO) · 소품 스케일 감독을 검증한다", async () => {
+    const local = buildLocalBackgroundPerspectivePropScaleLock(SAMPLE_INPUT);
+    expect(local.perspectiveAlignmentScore).toBe(96);
+    expect(local.cutLocks.length).toBeGreaterThan(0);
+
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: {
+        model: "claude-opus-4-6",
+        usage: { input_tokens: 325, output_tokens: 470 },
+      } as never,
+      parsed: {
+        perspectiveAlignmentScore: 98,
+        spatialIntegrationSummaryKo: "3D 배경 소실점 및 2D 발바닥 접지 AO 완전 정합",
+        cutLocks: local.cutLocks,
+      },
+    });
+
+    const live = await runClaudeBackgroundPerspectivePropScaleDirector(SAMPLE_INPUT, {
+      route: TEST_ROUTE,
+    });
+    expect(live.source).toBe("claude-live");
+    expect(live.report.perspectiveAlignmentScore).toBe(98);
+    expect(live.report.cutLocks.length).toBeGreaterThan(0);
   });
 });

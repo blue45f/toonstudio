@@ -343,3 +343,161 @@ export function buildLocalScreenplayBeatAndLoraLock(
     actionBeats,
   };
 }
+
+// ---------------------------------------------------------------------------
+// 6. 360° 5뷰(정면·좌/우 측면·후면·반측면) 턴어라운드 정투영 비율 & 장신구/문양 기하 일관성 고정기
+// ---------------------------------------------------------------------------
+
+export const ClaudeTurnaroundOrthographicViewSpecSchema = z.object({
+  viewAngle: z.enum([
+    "front-0deg",
+    "three-quarter-45deg",
+    "profile-left-90deg",
+    "profile-right-270deg",
+    "back-180deg",
+  ]),
+  headToBodyRatio: z.number(),
+  eyeLineYRatioPct: z.number(),
+  shoulderWidthHeadUnits: z.number(),
+  pelvisLineYRatioPct: z.number(),
+  visibleAsymmetricAnchorKo: z.string(),
+  occludedFeaturesKo: z.string(),
+  orthographicLockDirectiveKo: z.string(),
+});
+
+export const ClaudeTurnaroundOrthographicReportSchema = z.object({
+  orthographicConsistencyScore: z.number(),
+  characterName: z.string(),
+  turnaroundSummaryKo: z.string(),
+  views: z.array(ClaudeTurnaroundOrthographicViewSpecSchema),
+});
+
+export type ClaudeTurnaroundOrthographicReport = z.infer<
+  typeof ClaudeTurnaroundOrthographicReportSchema
+>;
+
+export function buildLocalTurnaroundOrthographicSheetLock(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeTurnaroundOrthographicReport {
+  const protagonist = (input.protagonistName ?? "서진").trim() || "서진";
+  const views: z.infer<typeof ClaudeTurnaroundOrthographicViewSpecSchema>[] = [
+    {
+      viewAngle: "front-0deg",
+      headToBodyRatio: 7.5,
+      eyeLineYRatioPct: 6.8,
+      shoulderWidthHeadUnits: 2.1,
+      pelvisLineYRatioPct: 48.0,
+      visibleAsymmetricAnchorKo: "Anatomical L(화면 우측) 눈 밑 사선 흉터 · 우측 어깨 황금 견장 · 좌측 허리 흑철 검집",
+      occludedFeaturesKo: "등 중앙 봉인 문양 · 후면 망토 자수 가림",
+      orthographicLockDirectiveKo: `${protagonist} 정면(0°) 7.5등신 수평 기준선(정수리·안구·쇄골·골반·발끝) 고정`,
+    },
+    {
+      viewAngle: "three-quarter-45deg",
+      headToBodyRatio: 7.5,
+      eyeLineYRatioPct: 6.8,
+      shoulderWidthHeadUnits: 1.85,
+      pelvisLineYRatioPct: 48.0,
+      visibleAsymmetricAnchorKo: "우측 어깨 견장 입체 돌출 · 좌측 눈 밑 흉터 원근 단축(0.72x) 유지",
+      occludedFeaturesKo: "좌측 후면 허리춤 단검 파우치 절반 가림",
+      orthographicLockDirectiveKo: "반측면(45°) 콧대 돌출 각도 28° 및 양안 너비 비율 1 : 0.68 정투영 잠금",
+    },
+    {
+      viewAngle: "profile-left-90deg",
+      headToBodyRatio: 7.5,
+      eyeLineYRatioPct: 6.8,
+      shoulderWidthHeadUnits: 1.15,
+      pelvisLineYRatioPct: 48.0,
+      visibleAsymmetricAnchorKo: "좌측 눈 밑 사선 흉터 100% 노출 · 좌측 허리 흑철 검집 손잡이 각도 32°",
+      occludedFeaturesKo: "우측 어깨 황금 견장 완전 가림(차폐 규칙 적용)",
+      orthographicLockDirectiveKo: "좌측면(90°) 귀-어깨-복사뼈 수직 중력선 정렬 및 좌측 검집 위치 고정",
+    },
+    {
+      viewAngle: "profile-right-270deg",
+      headToBodyRatio: 7.5,
+      eyeLineYRatioPct: 6.8,
+      shoulderWidthHeadUnits: 1.15,
+      pelvisLineYRatioPct: 48.0,
+      visibleAsymmetricAnchorKo: "우측 어깨 황금 견장 문양 100% 노출 · 우측 옆머리 브릿지 레이어",
+      occludedFeaturesKo: "좌측 눈 밑 흉터 및 좌측 허리 검집 본체 차폐",
+      orthographicLockDirectiveKo: "우측면(270°) 좌우 반전 금지 — 좌측 흉터가 우측 뺨에 나타나지 않도록 마스킹",
+    },
+    {
+      viewAngle: "back-180deg",
+      headToBodyRatio: 7.5,
+      eyeLineYRatioPct: 6.8,
+      shoulderWidthHeadUnits: 2.1,
+      pelvisLineYRatioPct: 48.0,
+      visibleAsymmetricAnchorKo: "등 중앙 창염(蒼炎) 육각 인장 · 후면 기준 좌측 허리 검집 끝단 노출",
+      occludedFeaturesKo: "안면 이목구비 및 전면 가슴 브로치 차폐",
+      orthographicLockDirectiveKo: "후면(180°) 시점 전환 시 Anatomical L/R 역전 반영(좌측 허리 검집이 화면 좌측에 위치)",
+    },
+  ];
+
+  return {
+    orthographicConsistencyScore: 98,
+    characterName: protagonist,
+    turnaroundSummaryKo: `[360° 5-View Orthographic Turnaround Lock] ${protagonist}의 정면(0°)·반측면(45°)·좌측면(90°)·우측면(270°)·후면(180°) 5뷰 정투영 수평 등신대 기준선과 비대칭 장신구/흉터/검집 차폐 규칙을 100% 동기화합니다.`,
+    views,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 7. 3D 배경 투시 그리드(1/2/3점 소실점) ↔ 2D 인물 발 접지(Foot Contact) · 가구/문틀 스케일 감독
+// ---------------------------------------------------------------------------
+
+export const ClaudeBackgroundPerspectiveCutLockSchema = z.object({
+  cutNumber: z.number(),
+  vanishingPointMode: z.enum([
+    "1-point-corridor",
+    "2-point-architectural",
+    "3-point-vertical-vertigo",
+  ]),
+  horizonLineYRatioPct: z.number(),
+  cameraFovMm: z.number(),
+  footContactShadowSpecKo: z.string(),
+  propScaleRatioAnchorKo: z.string(),
+  floatingCharacterFixKo: z.string(),
+});
+
+export const ClaudeBackgroundPerspectiveReportSchema = z.object({
+  perspectiveAlignmentScore: z.number(),
+  spatialIntegrationSummaryKo: z.string(),
+  cutLocks: z.array(ClaudeBackgroundPerspectiveCutLockSchema),
+});
+
+export type ClaudeBackgroundPerspectiveReport = z.infer<
+  typeof ClaudeBackgroundPerspectiveReportSchema
+>;
+
+export function buildLocalBackgroundPerspectivePropScaleLock(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeBackgroundPerspectiveReport {
+  const base = runWebtoonStoryboardMasterPipeline(input);
+  const cuts = base.directingResult.cuts.slice(0, 4);
+  const cutLocks = cuts.map((cut, idx) => {
+    const isExtreme = cut.cameraAngle === "low-angle" || cut.cameraAngle === "high-angle";
+    return {
+      cutNumber: cut.cutNumber,
+      vanishingPointMode: isExtreme
+        ? ("3-point-vertical-vertigo" as const)
+        : idx % 2 === 0
+          ? ("2-point-architectural" as const)
+          : ("1-point-corridor" as const),
+      horizonLineYRatioPct:
+        cut.cameraAngle === "low-angle" ? 74 : cut.cameraAngle === "high-angle" ? 24 : 46,
+      cameraFovMm: isExtreme ? 24 : 35,
+      footContactShadowSpecKo: `컷 #${cut.cutNumber} 3D 바닥 그리드 법선 벡터에 양 발바닥 접지 각도 동기화 + 코어 접지 그림자(AO 6px, 불투명도 78%) 강제 생성`,
+      propScaleRatioAnchorKo:
+        "문틀 높이(210cm) : 주인공 신장(184cm, 0.88배) · 책상 높이(74cm, 골반선 아래 12cm) · 찻잔/검 자루 손바닥 너비(9cm) 비례 고정",
+      floatingCharacterFixKo:
+        "3D 배경 화각(FOV)과 2D 인물 정강이 단축 비율 불일치로 인한 공중부양 착시를 제거하기 위해 발뒤꿈치 Y좌표를 3D 타일 교차점에 스냅",
+    };
+  });
+
+  return {
+    perspectiveAlignmentScore: 96,
+    spatialIntegrationSummaryKo:
+      "[3D Background Perspective & Prop Scale Lock] SketchUp/Snaptoon/Blender 3D 배경의 지평선(Eye-Level)·1/2/3점 소실점 그리드와 2D 작화 인물의 발 접지(Foot Contact AO)·문틀/가구/소품 인체 비례를 컷마다 오차 없이 정렬합니다.",
+    cutLocks,
+  };
+}

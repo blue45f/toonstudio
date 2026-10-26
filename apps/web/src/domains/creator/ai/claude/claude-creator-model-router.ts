@@ -39,12 +39,14 @@ export type ClaudeCreatorTaskId =
   | "core:command-plan"
   | "core:localize"
   | "core:alt-text"
-  // 2. Storyboard & Production Suite (5)
+  // 2. Storyboard & Production Suite (7)
   | "production:storyboard-cut-breakdown"
   | "production:scroll-rhythm-doctor"
   | "production:color-mood-script"
   | "production:continuity-foreshadow"
   | "production:sfx-typo-director"
+  | "production:multi-character-crowd-wardrobe-lock"
+  | "production:weather-particle-time-progression-lock"
   // 3. Next-Gen Suite (6)
   | "nextgen:retention-simulator"
   | "nextgen:ooc-voice-doctor"
@@ -52,10 +54,12 @@ export type ClaudeCreatorTaskId =
   | "nextgen:3d-asset-placement"
   | "nextgen:visual-continuity-linter"
   | "nextgen:multi-episode-canon-vault"
-  // 4. Phase 5 Competitor Full Suite (3)
+  // 4. Phase 5 Competitor Full Suite (5)
   | "competitor:beluga-clipstudio-production"
   | "competitor:onoma-kakaopage-ip"
   | "competitor:llamagen-manga-ai"
+  | "competitor:turnaround-orthographic-sheet-lock"
+  | "competitor:background-perspective-prop-scale-lock"
   // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite (10)
   | "ecosystem:novelai-multi-char-vibe"
   | "ecosystem:mangaflow-identity-verification"
@@ -255,6 +259,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "의성어/의태어 타이포그래피·워프·배치 연출은 Sonnet 5.5 적용",
     2_048,
   ),
+  "production:multi-character-crowd-wardrobe-lock": defineRoute(
+    "production:multi-character-crowd-wardrobe-lock",
+    "다중 등장인물·조연·엑스트라 제복/문장(Crest)/계급장 복식 규율 일관성 디렉터",
+    "storyboard-production",
+    "creative-production",
+    "학원·황궁·기사단·길드 제복 컬러코드·견장/휘장 위치·신분별 소품 혼선 차단은 Sonnet 5.5 적용",
+    3_072,
+  ),
+  "production:weather-particle-time-progression-lock": defineRoute(
+    "production:weather-particle-time-progression-lock",
+    "컷간 날씨(비·눈·안개)·젖은 머리카락/의상 투과도·시간 경과(그림자 길이·노을→야간) 물리 연속성 고정기",
+    "storyboard-production",
+    "fast-inline",
+    "컷간 강우/강설 파티클 밀도·젖은 의상/모발 광택 지속 시간·태양 고도각에 따른 그림자 비율 잠금은 Haiku 5.5 적용",
+    2_560,
+  ),
 
   // 3. Next-Gen Suite
   "nextgen:retention-simulator": defineRoute(
@@ -330,6 +350,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "creative-production",
     "세로 웹툰→출판 만화 페이지 레이아웃·모아레 방지 스크린톤 설계는 Sonnet 5.5 적용",
     2_560,
+  ),
+  "competitor:turnaround-orthographic-sheet-lock": defineRoute(
+    "competitor:turnaround-orthographic-sheet-lock",
+    "360° 5뷰(정면·좌/우 측면·후면·반측면) 턴어라운드 정투영 비율 & 장신구/문양 기하 일관성 고정기",
+    "competitor-suite",
+    "creative-production",
+    "5방향 정투영 등신대 기준선(정수리·눈·어깨·골반·발끝) 정렬 및 비대칭 장신구/등문양 360도 기하 락은 Sonnet 5.5 적용",
+    3_584,
+  ),
+  "competitor:background-perspective-prop-scale-lock": defineRoute(
+    "competitor:background-perspective-prop-scale-lock",
+    "3D 배경 투시 그리드(1/2/3점 소실점) ↔ 2D 인물 발 접지(Foot Contact) · 가구/문틀/소품 인체 비례 일관성 감독",
+    "competitor-suite",
+    "deep-architecture",
+    "3D 배경 지평선(Eye-Line)·소실점과 2D 캐릭터 발바닥 접지 각도·문틀/책상/마차 대비 인체 스케일 왜곡 교정은 Opus 5.5 적용",
+    4_096,
   ),
 
   // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite
