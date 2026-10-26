@@ -547,7 +547,7 @@
     "apps/web/src/domains/creator/studio-zip-reader.ts": 906,
     "apps/web/src/domains/creator/studio/components/runtime/studio-companion-reference-capture-runtime.ts": 889,
     "apps/web/src/domains/creator/studio/components/runtime/studio-companion-reference-source-runtime.ts": 991,
-    "apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx": 1375,
+    "apps/web/src/domains/creator/virtual-space/StudioVirtualOfficeEnterpriseSuite.tsx": 995,
     "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePage.tsx": 2118,
     "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx": 2917,
     "apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx": 810,
