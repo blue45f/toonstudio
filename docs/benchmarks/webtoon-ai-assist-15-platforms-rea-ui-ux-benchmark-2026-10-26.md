@@ -236,3 +236,7 @@
 | `ecosystem:micro-expression-acting-continuity` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 105 | 320 | `$0.005115` | 컷간 FACS 안면 근육(AU4+AU7 / AU1+2)·동공 수축·시선 궤적 및 감정 관성(Emotional Inertia) 설계 |
 | `nextgen:visual-continuity-linter` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 114 | 320 | `$0.009710` | 전 회차 컷간 4대 작붕(흉터/검집 반전·소품 증발·부상 초기화·그림자 역방향) 검출 린터 |
 | `nextgen:multi-episode-canon-vault` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 108 | 320 | `$0.005124` | 장편 연재(1~50화) 캐릭터 외형 변천·호칭 매트릭스·미회수 복선(회중시계 고대 룬) 캐논 볼트 동기화 |
+| `competitor:turnaround-orthographic-sheet-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 158 | 340 | `$0.005574` | 360° 5뷰(0°·45°·90°·270°·180°) 정투영 등신대 기준선 및 비대칭 장신구/흉터/검집 차폐 규칙 100% 고정 |
+| `competitor:background-perspective-prop-scale-lock` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 144 | 340 | `$0.010660` | 3D 배경 1/2/3점 소실점 그리드 ↔ 2D 인물 발 접지(Foot Contact AO)·문틀/책상 인체 비례 고정 |
+| `production:multi-character-crowd-wardrobe-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 160 | 340 | `$0.005580` | 주연·조연·배경 엑스트라 세력별 제복 컬러코드·견장/휘장 위치 및 주연 장신구 전이 차단 |
+| `production:weather-particle-time-progression-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 159 | 340 | `$0.001487` | 컷간 강우/뇌우/수막 반사 날씨·젖은 모발/의상 투과도·시간 경과 그림자 길이 물리 연속성 고정 |

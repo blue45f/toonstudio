@@ -81,7 +81,7 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
     );
 
     expect(screen.getByTestId("competitor-parity-badge").textContent).toContain(
-      "13개 글로벌·국내 웹툰 AI 대비 달성도",
+      "20개 글로벌·국내 웹툰 AI 대비 달성도",
     );
     expect(screen.getByTestId("benchmark-service-genvas")).toBeTruthy();
     expect(screen.getByTestId("benchmark-service-dashtoon-studio")).toBeTruthy();
@@ -98,6 +98,14 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
     // 탭 3: 설정 연속성 · 복선 회수 감수
     fireEvent.click(screen.getByTestId("production-assist-tab-continuity-foreshadow"));
     expect(screen.getByTestId("panel-continuity-foreshadow")).toBeTruthy();
+
+    // 탭 5: 다중 인물·군중 제복/문장 락
+    fireEvent.click(screen.getByTestId("production-assist-tab-multi-character-wardrobe-lock"));
+    expect(screen.getByTestId("panel-multi-character-wardrobe-lock")).toBeTruthy();
+
+    // 탭 6: 날씨·젖은 모발/의상·그림자 연속성
+    fireEvent.click(screen.getByTestId("production-assist-tab-weather-time-progression-lock"));
+    expect(screen.getByTestId("panel-weather-time-progression-lock")).toBeTruthy();
 
     // 탭 4: 다각도 연기 · SFX 오케스트레이터
     fireEvent.click(screen.getByTestId("production-assist-tab-acting-sfx"));

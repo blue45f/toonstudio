@@ -7,10 +7,12 @@
  */
 import {
   CheckCircle2,
+  CloudRain,
   Eye,
   Film,
   GitCompare,
   Palette,
+  ShieldCheck,
   Sparkles,
   Volume2,
   Wand2,
@@ -23,15 +25,21 @@ import {
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
   buildDeterministicContinuityForeshadowReport,
+  buildDeterministicMultiCharacterWardrobeReport,
   buildDeterministicScrollEyePathReport,
+  buildDeterministicWeatherTimeProgressionReport,
   runClaudeActingSfxChoreographer,
   runClaudeColorScriptDirector,
   runClaudeContinuityForeshadowAuditor,
+  runClaudeMultiCharacterWardrobeUniformDirector,
   runClaudeScrollEyePathDoctor,
+  runClaudeWeatherTimeProgressionContinuityDirector,
   type ClaudeActingSfxChoreographyView,
   type ClaudeColorScriptView,
   type ClaudeContinuityForeshadowView,
+  type ClaudeMultiCharacterWardrobeView,
   type ClaudeScrollEyePathView,
+  type ClaudeWeatherTimeProgressionView,
   type WebtoonProductionAssistInput,
   type WebtoonProductionAssistMode,
 } from "./claude/claude-webtoon-production-assist";
@@ -73,6 +81,16 @@ const PRODUCTION_ASSIST_TABS: readonly {
     labelKo: "다각도 연기 · SFX 오케스트레이터",
     benchmarkBadgeKo: "라이언로켓 젠버스 · 투닝 플러스",
   },
+  {
+    id: "multi-character-wardrobe-lock",
+    labelKo: "다중 인물·군중 제복/문장 락",
+    benchmarkBadgeKo: "Faction Crest & Uniform Lock",
+  },
+  {
+    id: "weather-time-progression-lock",
+    labelKo: "날씨·젖은 모발/의상·그림자 연속성",
+    benchmarkBadgeKo: "Wetness & Shadow Physics Lock",
+  },
 ];
 
 export interface StudioWebtoonProductionAssistPanelProps {
@@ -108,6 +126,10 @@ export function StudioWebtoonProductionAssistPanel({
   const [liveActingView, setLiveActingView] = useState<ClaudeActingSfxChoreographyView | null>(
     null,
   );
+  const [liveWardrobeView, setLiveWardrobeView] =
+    useState<ClaudeMultiCharacterWardrobeView | null>(null);
+  const [liveWeatherView, setLiveWeatherView] =
+    useState<ClaudeWeatherTimeProgressionView | null>(null);
 
   const assistInput: WebtoonProductionAssistInput = useMemo(
     () => ({
@@ -150,11 +172,21 @@ export function StudioWebtoonProductionAssistPanel({
     () => buildDeterministicActingSfxReport(assistInput),
     [assistInput],
   );
+  const fallbackWardrobeView = useMemo(
+    () => buildDeterministicMultiCharacterWardrobeReport(assistInput),
+    [assistInput],
+  );
+  const fallbackWeatherView = useMemo(
+    () => buildDeterministicWeatherTimeProgressionReport(assistInput),
+    [assistInput],
+  );
 
   const currentScrollView = liveScrollView ?? fallbackScrollView;
   const currentColorView = liveColorView ?? fallbackColorView;
   const currentContinuityView = liveContinuityView ?? fallbackContinuityView;
   const currentActingView = liveActingView ?? fallbackActingView;
+  const currentWardrobeView = liveWardrobeView ?? fallbackWardrobeView;
+  const currentWeatherView = liveWeatherView ?? fallbackWeatherView;
 
   const currentActiveSource =
     activeMode === "scroll-eyepath"
@@ -163,7 +195,11 @@ export function StudioWebtoonProductionAssistPanel({
         ? currentColorView.source
         : activeMode === "continuity-foreshadow"
           ? currentContinuityView.source
-          : currentActingView.source;
+          : activeMode === "acting-sfx"
+            ? currentActingView.source
+            : activeMode === "multi-character-wardrobe-lock"
+              ? currentWardrobeView.source
+              : currentWeatherView.source;
 
   const currentActiveModel =
     activeMode === "scroll-eyepath"
@@ -172,7 +208,11 @@ export function StudioWebtoonProductionAssistPanel({
         ? currentColorView.model
         : activeMode === "continuity-foreshadow"
           ? currentContinuityView.model
-          : currentActingView.model;
+          : activeMode === "acting-sfx"
+            ? currentActingView.model
+            : activeMode === "multi-character-wardrobe-lock"
+              ? currentWardrobeView.model
+              : currentWeatherView.model;
 
   const handleRunActiveClaudeEngine = async (): Promise<void> => {
     setIsRunningClaude(true);
@@ -186,9 +226,15 @@ export function StudioWebtoonProductionAssistPanel({
       } else if (activeMode === "continuity-foreshadow") {
         const res = await runClaudeContinuityForeshadowAuditor(assistInput);
         setLiveContinuityView(res);
-      } else {
+      } else if (activeMode === "acting-sfx") {
         const res = await runClaudeActingSfxChoreographer(assistInput);
         setLiveActingView(res);
+      } else if (activeMode === "multi-character-wardrobe-lock") {
+        const res = await runClaudeMultiCharacterWardrobeUniformDirector(assistInput);
+        setLiveWardrobeView(res);
+      } else {
+        const res = await runClaudeWeatherTimeProgressionContinuityDirector(assistInput);
+        setLiveWeatherView(res);
       }
     } finally {
       setIsRunningClaude(false);
@@ -209,10 +255,18 @@ export function StudioWebtoonProductionAssistPanel({
       stageLine =
         currentContinuityView.foreshadowPayoffs[0]?.suggestedSubtextLineKo ??
         currentContinuityView.executiveSummaryKo;
-    } else {
+    } else if (activeMode === "acting-sfx") {
       stageLine =
         currentActingView.cutChoreographies[0]?.readyActingScriptLine ??
         currentActingView.genvasConsistencySummaryKo;
+    } else if (activeMode === "multi-character-wardrobe-lock") {
+      stageLine =
+        currentWardrobeView.castUniformSpecs[0]?.readyWardrobeStageLine ??
+        currentWardrobeView.factionUniformSummaryKo;
+    } else {
+      stageLine =
+        currentWeatherView.cutWeatherLocks[0]?.readyWeatherStageLine ??
+        currentWeatherView.atmosphericArcSummaryKo;
     }
     const nextScript = scriptInput.trim() ? `${scriptInput.trim()}\n${stageLine}` : stageLine;
     onApplyScript(nextScript);
@@ -491,6 +545,73 @@ export function StudioWebtoonProductionAssistPanel({
                   말풍선({chor.bubbleFrameKind}) · 회전 {chor.sfxRotationDeg}° · 배율{" "}
                   {chor.sfxScaleMultiplier}x
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 5: 다중 등장인물·조연·엑스트라 제복/문장(Crest) 복식 규율 일관성 디렉터 */}
+      {activeMode === "multi-character-wardrobe-lock" ? (
+        <div
+          data-testid="panel-multi-character-wardrobe-lock"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2 text-[0.6rem]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <span className="inline-flex items-center gap-1 font-bold text-fg">
+              <ShieldCheck size={12} className="text-accent" aria-hidden="true" />
+              다중 인물·군중 제복/문장(Crest) 규율 준수도: {currentWardrobeView.wardrobeComplianceScore}%
+            </span>
+          </div>
+          <p className="text-fg-2">{currentWardrobeView.factionUniformSummaryKo}</p>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+            {currentWardrobeView.castUniformSpecs.map((spec) => (
+              <div
+                key={spec.characterOrGroupRole}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.58rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>{spec.characterOrGroupRole}</span>
+                  <span className="text-accent">
+                    {spec.primaryFabricHex} / {spec.trimAndCrestHex}
+                  </span>
+                </div>
+                <div className="text-fg-2">{spec.factionAndRankKo}</div>
+                <div className="text-fg-3">{spec.insigniaPlacementRuleKo}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 탭 6: 컷간 날씨(비·눈·안개)·젖은 모발/의상·그림자 길이 물리 연속성 고정기 */}
+      {activeMode === "weather-time-progression-lock" ? (
+        <div
+          data-testid="panel-weather-time-progression-lock"
+          className="flex flex-col gap-1.5 rounded border border-line bg-raised p-2 text-[0.6rem]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <span className="inline-flex items-center gap-1 font-bold text-fg">
+              <CloudRain size={12} className="text-accent" aria-hidden="true" />
+              날씨·젖은 모발/의상·그림자 길이 연속성 점수: {currentWeatherView.weatherContinuityScore}%
+            </span>
+          </div>
+          <p className="text-fg-2">{currentWeatherView.atmosphericArcSummaryKo}</p>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {currentWeatherView.cutWeatherLocks.slice(0, 4).map((w) => (
+              <div
+                key={w.cutNumber}
+                className="rounded border border-line bg-card px-2 py-1 text-[0.58rem]"
+              >
+                <div className="flex items-center justify-between font-bold text-fg">
+                  <span>
+                    컷 #{w.cutNumber} (+{w.elapsedMinutesFromStart}분 · {w.weatherState})
+                  </span>
+                  <span className="text-accent">
+                    젖음 {w.hairAndClothWetnessPct}% · 그림자 {w.groundShadowLengthRatio}x
+                  </span>
+                </div>
+                <div className="text-fg-3">{w.readyWeatherStageLine}</div>
               </div>
             ))}
           </div>

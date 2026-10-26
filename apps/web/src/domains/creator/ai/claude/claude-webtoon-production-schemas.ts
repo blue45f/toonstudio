@@ -23,7 +23,9 @@ export type WebtoonProductionAssistMode =
   | "scroll-eyepath"
   | "color-script"
   | "continuity-foreshadow"
-  | "acting-sfx";
+  | "acting-sfx"
+  | "multi-character-wardrobe-lock"
+  | "weather-time-progression-lock";
 
 export interface WebtoonProductionAssistInput {
   readonly scriptText?: string;
@@ -544,6 +546,189 @@ export function buildDeterministicActingSfxReport(
     model: "claude-haiku-5-5",
     genvasConsistencySummaryKo: `${master.genvasCharacterPoseLock.copyrightProvenanceBadge.labelKo} · 전 컷 캐릭터 시드(${master.genvasCharacterPoseLock.characterIdentityToken}) 및 SFX·말풍선 동시 연출 완료`,
     cutChoreographies: Object.freeze(cutChoreographies),
+    usage: EMPTY_CLAUDE_TOKEN_USAGE,
+    estimatedUsd: null,
+  });
+}
+
+// ── 5. 다중 등장인물·조연·엑스트라 제복/문장(Crest)/계급장 복식 규율 일관성 디렉터 ─────
+
+export const ClaudeMultiCharacterWardrobeSchema = z.object({
+  wardrobeComplianceScore: z.number(),
+  factionUniformSummaryKo: z.string(),
+  castUniformSpecs: z.array(
+    z.object({
+      characterOrGroupRole: z.string(),
+      factionAndRankKo: z.string(),
+      primaryFabricHex: z.string(),
+      trimAndCrestHex: z.string(),
+      insigniaPlacementRuleKo: z.string(),
+      forbiddenMixupWarningKo: z.string(),
+      readyWardrobeStageLine: z.string(),
+    }),
+  ),
+});
+
+export interface ClaudeMultiCharacterWardrobeView {
+  readonly mode: "multi-character-wardrobe-lock";
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly wardrobeComplianceScore: number;
+  readonly factionUniformSummaryKo: string;
+  readonly castUniformSpecs: ReadonlyArray<{
+    readonly characterOrGroupRole: string;
+    readonly factionAndRankKo: string;
+    readonly primaryFabricHex: string;
+    readonly trimAndCrestHex: string;
+    readonly insigniaPlacementRuleKo: string;
+    readonly forbiddenMixupWarningKo: string;
+    readonly readyWardrobeStageLine: string;
+  }>;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedUsd: number | null;
+}
+
+export function buildDeterministicMultiCharacterWardrobeReport(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeMultiCharacterWardrobeView {
+  const protagonist = (input.protagonistName ?? "서진").trim() || "서진";
+  const partner = (input.partnerName ?? "하윤").trim() || "하윤";
+  return Object.freeze({
+    mode: "multi-character-wardrobe-lock",
+    source: "deterministic-fallback",
+    model: "claude-sonnet-5-5",
+    wardrobeComplianceScore: 97,
+    factionUniformSummaryKo:
+      "[다중 인물·군중 제복 & 문장(Crest) 규율 락] 주연·조연·배경 엑스트라 간의 소속(황실 근위대·아카데미 학년·마법 길드)·계급장(견장 줄 수)·가문 휘장 위치가 컷마다 섞이지 않도록 복식 계층을 고정합니다.",
+    castUniformSpecs: Object.freeze([
+      {
+        characterOrGroupRole: protagonist,
+        factionAndRankKo: "황실 직속 제1검성 기사단 · 단장(Commander)",
+        primaryFabricHex: "#18181B",
+        trimAndCrestHex: "#F59E0B",
+        insigniaPlacementRuleKo: "우측 어깨 황금 쌍검 견장(3선 태슬) · 좌측 가슴 6각 창염 브로치 · 흑철 망토 비대칭 걸쇠",
+        forbiddenMixupWarningKo: "일반 근위병용 은색 단선 견장이나 좌우 반전된 브로치 배치 절대 금지",
+        readyWardrobeStageLine: `[복식 규율 Lock: ${protagonist}] 흑색 제복(#18181B) + 황금 3선 견장(#F59E0B, 우측 어깨 고정) + 좌측 가슴 창염 브로치`,
+      },
+      {
+        characterOrGroupRole: partner,
+        factionAndRankKo: "아스트라 황립 마탑 · 수석 성좌 마법사",
+        primaryFabricHex: "#1E1B4B",
+        trimAndCrestHex: "#38BDF8",
+        insigniaPlacementRuleKo: "스탠드 칼라 양측 청은색 별자리 자수 · 좌측 손목 마도서 체인 홀더",
+        forbiddenMixupWarningKo: "기사단용 금속 견장 혼입 금지 · 소매 끝단 룬 문양 생략 주의",
+        readyWardrobeStageLine: `[복식 규율 Lock: ${partner}] 심해 남색 로브(#1E1B4B) + 청은색 성좌 칼라 자수(#38BDF8) + 좌측 손목 마도서 체인`,
+      },
+      {
+        characterOrGroupRole: "배경 엑스트라 (황궁 근위병·아카데미 생도)",
+        factionAndRankKo: "제3근위대 일반 병사 & 하급 생도 군중",
+        primaryFabricHex: "#334155",
+        trimAndCrestHex: "#94A3B8",
+        insigniaPlacementRuleKo: "무광 슬레이트 회색 제복 · 견장 태슬 없음(1선 은색 테두리만 허용) · 채도 35% 이하 억제",
+        forbiddenMixupWarningKo: "주인공 전용 황금 견장(#F59E0B)이나 고채도 망토가 엑스트라에게 전이(Attribute Bleeding)되지 않도록 마스킹",
+        readyWardrobeStageLine: "[복식 규율 Lock: 배경 군중] 저채도 슬레이트 제복(#334155) + 무장식 1선 은색 테두리(주연 장신구 전이 차단)",
+      },
+    ]),
+    usage: EMPTY_CLAUDE_TOKEN_USAGE,
+    estimatedUsd: null,
+  });
+}
+
+// ── 6. 컷간 날씨(비·눈·안개)·젖은 머리카락/의상 투과도·시간 경과(그림자 길이) 물리 연속성 고정기 ──
+
+export const ClaudeWeatherTimeProgressionSchema = z.object({
+  weatherContinuityScore: z.number(),
+  atmosphericArcSummaryKo: z.string(),
+  cutWeatherLocks: z.array(
+    z.object({
+      cutNumber: z.number(),
+      elapsedMinutesFromStart: z.number(),
+      weatherState: z.enum([
+        "clear-breeze",
+        "overcast-mist",
+        "steady-rain",
+        "heavy-storm-lightning",
+        "snowfall-frost",
+        "post-rain-wet-ground",
+      ]),
+      hairAndClothWetnessPct: z.number(),
+      sunOrMoonElevationDeg: z.number(),
+      groundShadowLengthRatio: z.number(),
+      particleWindAngleDeg: z.number(),
+      readyWeatherStageLine: z.string(),
+    }),
+  ),
+});
+
+export interface ClaudeWeatherTimeProgressionView {
+  readonly mode: "weather-time-progression-lock";
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly weatherContinuityScore: number;
+  readonly atmosphericArcSummaryKo: string;
+  readonly cutWeatherLocks: ReadonlyArray<{
+    readonly cutNumber: number;
+    readonly elapsedMinutesFromStart: number;
+    readonly weatherState:
+      | "clear-breeze"
+      | "overcast-mist"
+      | "steady-rain"
+      | "heavy-storm-lightning"
+      | "snowfall-frost"
+      | "post-rain-wet-ground";
+    readonly hairAndClothWetnessPct: number;
+    readonly sunOrMoonElevationDeg: number;
+    readonly groundShadowLengthRatio: number;
+    readonly particleWindAngleDeg: number;
+    readonly readyWeatherStageLine: string;
+  }>;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedUsd: number | null;
+}
+
+export function buildDeterministicWeatherTimeProgressionReport(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeWeatherTimeProgressionView {
+  const master = runWebtoonStoryboardMasterPipeline({
+    scriptText: input.scriptText,
+    storylineInput: { genre: input.genre, coreConflict: input.coreConflict },
+    protagonistName: input.protagonistName,
+    partnerName: input.partnerName,
+  });
+  const cuts = master.enrichedCuts.slice(0, 4);
+  const cutWeatherLocks = cuts.map((item, idx) => {
+    const cut = item.cutPlan;
+    const wetness = Math.min(95, 25 + idx * 22);
+    const elevation = Math.max(8, 28 - idx * 6);
+    const shadowRatio = Number((1.4 + idx * 0.45).toFixed(2));
+    const state =
+      idx === 0
+        ? ("overcast-mist" as const)
+        : idx === 1
+          ? ("steady-rain" as const)
+          : idx === 2
+            ? ("heavy-storm-lightning" as const)
+            : ("post-rain-wet-ground" as const);
+    return Object.freeze({
+      cutNumber: cut.cutNumber,
+      elapsedMinutesFromStart: idx * 4,
+      weatherState: state,
+      hairAndClothWetnessPct: wetness,
+      sunOrMoonElevationDeg: elevation,
+      groundShadowLengthRatio: shadowRatio,
+      particleWindAngleDeg: -18,
+      readyWeatherStageLine: `[날씨·시간 연속성 #${cut.cutNumber}: +${idx * 4}분 · ${state} · 젖음 ${wetness}% · 그림자 ${shadowRatio}x] 앞머리 수분 뭉침 및 바닥 수막 반사 유지`,
+    });
+  });
+
+  return Object.freeze({
+    mode: "weather-time-progression-lock",
+    source: "deterministic-fallback",
+    model: "claude-haiku-5-5",
+    weatherContinuityScore: 96,
+    atmosphericArcSummaryKo:
+      "[컷간 날씨·젖은 의상/모발·그림자 길이 물리 연속성 락] 비를 맞은 직후 다음 컷에서 머리카락과 셔츠가 갑자기 마르거나, 빗줄기 각도(-18°)·시간 경과에 따른 그림자 길이가 역행하는 현상을 원천 차단합니다.",
+    cutWeatherLocks: Object.freeze(cutWeatherLocks),
     usage: EMPTY_CLAUDE_TOKEN_USAGE,
     estimatedUsd: null,
   });

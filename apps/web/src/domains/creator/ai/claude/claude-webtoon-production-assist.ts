@@ -29,16 +29,22 @@ import {
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
   buildDeterministicContinuityForeshadowReport,
+  buildDeterministicMultiCharacterWardrobeReport,
   buildDeterministicScrollEyePathReport,
+  buildDeterministicWeatherTimeProgressionReport,
   clampInt,
   ClaudeActingSfxChoreographySchema,
   ClaudeColorScriptSchema,
   ClaudeContinuityForeshadowSchema,
+  ClaudeMultiCharacterWardrobeSchema,
   ClaudeScrollEyePathSchema,
+  ClaudeWeatherTimeProgressionSchema,
   type ClaudeActingSfxChoreographyView,
   type ClaudeColorScriptView,
   type ClaudeContinuityForeshadowView,
+  type ClaudeMultiCharacterWardrobeView,
   type ClaudeScrollEyePathView,
+  type ClaudeWeatherTimeProgressionView,
   type RunWebtoonProductionAssistOptions,
   type WebtoonProductionAssistInput,
 } from "./claude-webtoon-production-schemas";
@@ -459,6 +465,183 @@ export async function runClaudeActingSfxChoreographer(
   } catch (error) {
     if (options.fallbackOnError !== false && !options.signal?.aborted) {
       return buildDeterministicActingSfxReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeMultiCharacterWardrobeUniformDirector(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeMultiCharacterWardrobeView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) {
+      return buildDeterministicMultiCharacterWardrobeReport(input);
+    }
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const taskRoute = resolveCreatorTaskModelRoute("production:multi-character-crowd-wardrobe-lock", {
+    model: options.model as never,
+  });
+  const requestedModel = resolveClaudeRequestModel(
+    options.model ?? taskRoute.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 웹툰 다중 등장인물·조연·배경 엑스트라의 제복/문장(Crest)/계급장 복식 규율 일관성 디렉터입니다. 학원·황궁·기사단·길드 등 세력별 메인 원단 HEX, 테두리/휘장 HEX, 견장/브로치 부착 위치, 주연 장신구가 엑스트라에게 섞이는(Attribute Bleeding) 현상 차단 지침을 JSON으로 작성하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildUserContextPrompt(
+          input,
+          "위 웹툰 장면의 주연·조연·배경 엑스트라 세력별 제복/문장/계급장 복식 규율 일관성 지시서를 JSON으로 작성해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeMultiCharacterWardrobeSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeMultiCharacterWardrobeSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "multi-character-wardrobe-lock",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      wardrobeComplianceScore: clampInt(parsed.wardrobeComplianceScore, 0, 100, 97),
+      factionUniformSummaryKo: cleanSingleLineText(parsed.factionUniformSummaryKo, 240),
+      castUniformSpecs: Object.freeze(
+        (parsed.castUniformSpecs ?? []).slice(0, 4).map((spec) =>
+          Object.freeze({
+            characterOrGroupRole: cleanSingleLineText(spec.characterOrGroupRole, 60) || "주인공",
+            factionAndRankKo: cleanSingleLineText(spec.factionAndRankKo, 100),
+            primaryFabricHex: safeHex(spec.primaryFabricHex, "#18181B"),
+            trimAndCrestHex: safeHex(spec.trimAndCrestHex, "#F59E0B"),
+            insigniaPlacementRuleKo: cleanSingleLineText(spec.insigniaPlacementRuleKo, 180),
+            forbiddenMixupWarningKo: cleanSingleLineText(spec.forbiddenMixupWarningKo, 180),
+            readyWardrobeStageLine: cleanSingleLineText(spec.readyWardrobeStageLine, 200),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicMultiCharacterWardrobeReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeWeatherTimeProgressionContinuityDirector(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeWeatherTimeProgressionView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) {
+      return buildDeterministicWeatherTimeProgressionReport(input);
+    }
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const taskRoute = resolveCreatorTaskModelRoute("production:weather-particle-time-progression-lock", {
+    model: options.model as never,
+  });
+  const requestedModel = resolveClaudeRequestModel(
+    options.model ?? taskRoute.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 웹툰 컷간 날씨(비·눈·안개)·젖은 머리카락/의상 투과도·시간 경과(태양 고도각·바닥 그림자 길이 비율·파티클 풍향 각도) 물리 연속성 고정 감독입니다. 비 맞은 캐릭터가 다음 컷에서 갑자기 마르거나 그림자 길이가 역행하지 않도록 컷별 물리 상태를 JSON으로 설계하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildUserContextPrompt(
+          input,
+          "위 웹툰 장면의 주요 4컷에 대해 경과 시간(분), 날씨 상태, 머리카락/의상 젖음도(%), 태양/달 고도각, 그림자 길이 배율, 빗줄기/바람 각도와 연출 지문을 JSON으로 작성해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeWeatherTimeProgressionSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeWeatherTimeProgressionSchema,
+        }),
+        budgetOverride: options.budgetOverride,
+      },
+    );
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "weather-time-progression-lock",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      weatherContinuityScore: clampInt(parsed.weatherContinuityScore, 0, 100, 96),
+      atmosphericArcSummaryKo: cleanSingleLineText(parsed.atmosphericArcSummaryKo, 240),
+      cutWeatherLocks: Object.freeze(
+        (parsed.cutWeatherLocks ?? []).slice(0, 4).map((w, idx) =>
+          Object.freeze({
+            cutNumber: clampInt(w.cutNumber, 1, 50, idx + 1),
+            elapsedMinutesFromStart: clampInt(w.elapsedMinutesFromStart, 0, 1440, idx * 4),
+            weatherState: w.weatherState,
+            hairAndClothWetnessPct: clampInt(w.hairAndClothWetnessPct, 0, 100, 45),
+            sunOrMoonElevationDeg: clampInt(w.sunOrMoonElevationDeg, -30, 90, 22),
+            groundShadowLengthRatio: Number.isFinite(w.groundShadowLengthRatio)
+              ? Math.max(0.2, Math.min(8.0, Number(w.groundShadowLengthRatio.toFixed(2))))
+              : 1.8,
+            particleWindAngleDeg: clampInt(w.particleWindAngleDeg, -65, 65, -18),
+            readyWeatherStageLine: cleanSingleLineText(w.readyWeatherStageLine, 200),
+          }),
+        ),
+      ),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicWeatherTimeProgressionReport(input);
     }
     throw error;
   }

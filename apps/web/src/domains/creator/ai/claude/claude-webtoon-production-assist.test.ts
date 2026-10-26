@@ -7,11 +7,15 @@ import {
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
   buildDeterministicContinuityForeshadowReport,
+  buildDeterministicMultiCharacterWardrobeReport,
   buildDeterministicScrollEyePathReport,
+  buildDeterministicWeatherTimeProgressionReport,
   runClaudeActingSfxChoreographer,
   runClaudeColorScriptDirector,
   runClaudeContinuityForeshadowAuditor,
+  runClaudeMultiCharacterWardrobeUniformDirector,
   runClaudeScrollEyePathDoctor,
+  runClaudeWeatherTimeProgressionContinuityDirector,
 } from "./claude-webtoon-production-assist";
 
 const { claudeParseMock } = vi.hoisted(() => ({
@@ -263,5 +267,91 @@ describe("claude-webtoon-production-assist (신규 4대 웹툰 AI 보조 엔진 
     const fallback = buildDeterministicActingSfxReport({ genre: "액션판타지" });
     expect(fallback.source).toBe("deterministic-fallback");
     expect(fallback.cutChoreographies.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("5. 다중 등장인물·조연·엑스트라 제복/문장(Crest)/계급장 복식 규율 일관성 디렉터를 검증한다", async () => {
+    connectClaude("claude-sonnet-5-5");
+    claudeParseMock.mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-5-5",
+        usage: {
+          input_tokens: 310,
+          output_tokens: 260,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
+      },
+      parsed: {
+        wardrobeComplianceScore: 99,
+        factionUniformSummaryKo: "황실 기사단 및 마탑 세력별 제복·휘장 위치 100% 고정",
+        castUniformSpecs: [
+          {
+            characterOrGroupRole: "서진",
+            factionAndRankKo: "황실 제1검성 기사단장",
+            primaryFabricHex: "#18181b",
+            trimAndCrestHex: "#f59e0b",
+            insigniaPlacementRuleKo: "우측 어깨 황금 3선 견장 고정",
+            forbiddenMixupWarningKo: "일반 병사용 은색 견장 혼입 금지",
+            readyWardrobeStageLine: "[복식 규율 Lock: 서진] 흑색 제복 + 우측 황금 3선 견장",
+          },
+        ],
+      },
+    });
+
+    const live = await runClaudeMultiCharacterWardrobeUniformDirector({
+      genre: "로판",
+      protagonistName: "서진",
+    });
+    expect(live.mode).toBe("multi-character-wardrobe-lock");
+    expect(live.source).toBe("claude-live");
+    expect(live.wardrobeComplianceScore).toBe(99);
+    expect(live.castUniformSpecs[0]?.trimAndCrestHex).toBe("#F59E0B");
+
+    const fallback = buildDeterministicMultiCharacterWardrobeReport({ protagonistName: "서진" });
+    expect(fallback.source).toBe("deterministic-fallback");
+    expect(fallback.castUniformSpecs.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("6. 컷간 날씨(비·눈·안개)·젖은 머리카락/의상 투과도·시간 경과(그림자 길이) 물리 연속성 고정기를 검증한다", async () => {
+    connectClaude("claude-haiku-5-5");
+    claudeParseMock.mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-5-5",
+        usage: {
+          input_tokens: 295,
+          output_tokens: 245,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
+      },
+      parsed: {
+        weatherContinuityScore: 98,
+        atmosphericArcSummaryKo: "폭우 속에서 젖은 머리카락과 바닥 수막 반사가 전 컷 일관되게 유지됩니다.",
+        cutWeatherLocks: [
+          {
+            cutNumber: 1,
+            elapsedMinutesFromStart: 4,
+            weatherState: "heavy-storm-lightning",
+            hairAndClothWetnessPct: 82,
+            sunOrMoonElevationDeg: 18,
+            groundShadowLengthRatio: 2.1,
+            particleWindAngleDeg: -20,
+            readyWeatherStageLine: "[날씨·시간 연속성 #1] 폭우 · 젖음 82% · 그림자 2.1x",
+          },
+        ],
+      },
+    });
+
+    const live = await runClaudeWeatherTimeProgressionContinuityDirector({
+      genre: "액션스릴러",
+    });
+    expect(live.mode).toBe("weather-time-progression-lock");
+    expect(live.source).toBe("claude-live");
+    expect(live.weatherContinuityScore).toBe(98);
+    expect(live.cutWeatherLocks[0]?.hairAndClothWetnessPct).toBe(82);
+
+    const fallback = buildDeterministicWeatherTimeProgressionReport({ genre: "액션스릴러" });
+    expect(fallback.source).toBe("deterministic-fallback");
+    expect(fallback.cutWeatherLocks.length).toBeGreaterThanOrEqual(1);
   });
 });
