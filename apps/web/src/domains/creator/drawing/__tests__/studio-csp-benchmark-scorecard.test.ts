@@ -13,10 +13,12 @@ import {
   applyHolisticColorGradingAndCurvesSuite,
   COMPLETE_ECOSYSTEM_TOOL_PRESETS,
   COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER,
+  evaluateAgPsdPackBitsAndLayerChannelCodec,
   evaluateBernsteinBasis,
   evaluateBernsteinFfdLatticeMeshWarp,
   evaluateCloneStampAndConicalAirbrush,
   evaluateCompleteUnfragmentedStudioSummary,
+  evaluateCuloriCiede2000AndOklchGamutMap,
   evaluateExcalidrawElbowArrowAndLaserTrail,
   evaluateFabricSprayDeduplicationAndAtrament,
   evaluateHolisticGradientTool,
@@ -27,6 +29,7 @@ import {
   evaluateMandalaSymmetryAndPerspectiveRuler,
   evaluateMonolithicTotalEngineTelemetry,
   evaluateMultiPolygonSelectAndMarquee,
+  evaluateOtsuBimodalCannyAndSkiaLookahead,
   evaluatePaperCatmullRomSmoothAndFlatten,
   evaluatePiskelOnionSkinAndSpritesheet,
   evaluateRichCanvasTypographyLayout,
@@ -134,7 +137,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(51);
+    expect(universalBench.reaEvidenceTargetCount).toBe(52);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -143,10 +146,10 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.wave27ReaUiUxEvidenceCount).toBe(2);
     expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
-    expect(universalBench.monolithicTotalReaEvidenceCount).toBe(6);
+    expect(universalBench.monolithicTotalReaEvidenceCount).toBe(7);
     expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
-    expect(universalBench.monolithicTotalToolPresetCount).toBe(12);
+    expect(universalBench.monolithicTotalToolPresetCount).toBe(16);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -407,11 +410,15 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(summary.onionSkinAlpha01).toBeCloseTo(0.35, 4);
   });
 
-  it("Wave 30 755개 파일 총망라 일괄 REA 원장(6개 서브시스템·12개 프리셋)과 칼레이도스코프·엠보스·Paper.js 스무딩·Excalidraw 엘보우·만다라 대칭을 검증한다", () => {
-    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER).toHaveLength(6);
-    expect(MONOLITHIC_TOTAL_TOOL_PRESETS).toHaveLength(12);
+  it("Wave 30 & 31 767개 파일 총망라 일괄 REA 원장(7개 서브시스템·16개 프리셋)과 칼레이도스코프·엠보스·Paper.js·Excalidraw·만다라·ag-psd PackBits·culori CIEDE2000·Otsu/Canny·Skia 예측을 검증한다", () => {
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER).toHaveLength(7);
+    expect(MONOLITHIC_TOTAL_TOOL_PRESETS).toHaveLength(16);
     expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.relevantFiles).toBe(755);
     expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[0]?.visitedAstNodes).toBe(771934);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[6]?.relevantFiles).toBe(767);
+    expect(MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER[6]?.evidenceId).toBe(
+      "ev_13bbde3494001044d31ebdb3d481f0cd91c96f6dc995f78b17c1cf9984ea2d28",
+    );
 
     const kaleido = evaluateKonvaKaleidoscopePolarMirror({
       width: 128,
@@ -500,13 +507,57 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(mandala.totalSymmetricCopies).toBe(16);
     expect([30, 90, 150, 210, 270, 330]).toContain(mandala.snappedAngleDeg);
 
+    const psd = evaluateAgPsdPackBitsAndLayerChannelCodec({
+      scanlineBytes: [200, 200, 200, 200, 200, 128, 64, 32, 32, 32, 32],
+      blendModeName: "multiply",
+      transparencyProtected: true,
+      hidden: false,
+      clipping: true,
+    });
+    expect(psd.decodedScanline).toEqual([200, 200, 200, 200, 200, 128, 64, 32, 32, 32, 32]);
+    expect(psd.compressionRatio01).toBeLessThan(1);
+    expect(psd.psdBlendKey4Char).toBe("mul ");
+    expect(psd.layerFlagsBitmask).toBe(9);
+    expect(psd.clippingByte).toBe(1);
+
+    const culori = evaluateCuloriCiede2000AndOklchGamutMap({
+      stdLab: { l: 50, a: 2.6772, b: -79.7751 },
+      smpLab: { l: 50, a: 0, b: -82.7485 },
+      targetOklch: { l: 0.72, c: 0.42, hDeg: 145 },
+    });
+    expect(culori.ciede2000DeltaE).toBeCloseTo(2.0425, 3);
+    expect(culori.clampedOklchChroma).toBeGreaterThan(0.1);
+    expect(culori.clampedOklchChroma).toBeLessThan(0.42);
+    expect(culori.gamutMappedSrgb01[1]).toBeGreaterThan(0.5);
+
+    const vision = evaluateOtsuBimodalCannyAndSkiaLookahead({
+      luminanceSamples: [15, 18, 22, 24, 28, 200, 210, 220, 230, 245],
+      gradX: 90,
+      gradY: 45,
+      neighborMagnitudes: [60, 70],
+      lowThreshold: 40,
+      highThreshold: 80,
+      recentPoints: [
+        { x: 10, y: 10 },
+        { x: 20, y: 15 },
+        { x: 32, y: 22 },
+      ],
+    });
+    expect(vision.otsuOptimalThreshold).toBe(28);
+    expect(vision.maxBetweenClassVariance).toBeGreaterThan(8000);
+    expect(vision.cannyEdgeState).toBe("strong");
+    expect(vision.predictedNextPoint.x).toBeGreaterThan(32);
+
     const telemetry = evaluateMonolithicTotalEngineTelemetry({
-      presetId: "monolithic-kaleidoscope-polar",
+      presetId: "monolithic-ag-psd-packbits-8bim",
       strength01: 0.75,
       symmetryAxes: 8,
     });
     expect(telemetry.mandalaSymmetricCopyCount).toBe(16);
     expect(telemetry.paperSubdivisionCount).toBeGreaterThan(0);
+    expect(telemetry.psdCompressionRatio01).toBeLessThan(1);
+    expect(telemetry.ciede2000DeltaE).toBeGreaterThan(0);
+    expect(telemetry.otsuOptimalThreshold).toBe(31);
   });
 });
 

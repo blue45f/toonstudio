@@ -265,8 +265,20 @@ describe("StudioNaturalMediaShowcase", () => {
     expect(kaleidoRadio).not.toBeNull();
     expect(kaleidoRadio?.getAttribute("aria-checked")).toBe("true");
     fireEvent.keyDown(kaleidoRadio!, { key: "End" });
-    const mandalaRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-mandala-perspective-ruler"]') as HTMLButtonElement | null;
-    expect(mandalaRadio?.getAttribute("aria-checked")).toBe("true");
+    const skiaLookaheadRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-skia-patheffect-lookahead"]') as HTMLButtonElement | null;
+    expect(skiaLookaheadRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const psdPackBitsRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-ag-psd-packbits-8bim"]') as HTMLButtonElement | null;
+    expect(psdPackBitsRadio).not.toBeNull();
+    fireEvent.click(psdPackBitsRadio!);
+    expect(psdPackBitsRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const quickSearchInput = container.querySelector('[data-studio-monolithic-quick-search="true"]') as HTMLInputElement | null;
+    expect(quickSearchInput).not.toBeNull();
+    fireEvent.change(quickSearchInput!, { target: { value: "CIEDE2000" } });
+    const culoriRadio = container.querySelector('[data-studio-monolithic-tool-preset="monolithic-culori-oklch-ciede2000"]') as HTMLButtonElement | null;
+    expect(culoriRadio).not.toBeNull();
+    fireEvent.change(quickSearchInput!, { target: { value: "" } });
 
     const mandalaAxesToggle = container.querySelector('[data-studio-mandala-axes-toggle="true"]') as HTMLButtonElement | null;
     expect(mandalaAxesToggle).not.toBeNull();

@@ -736,53 +736,29 @@ export function evaluateLabHolisticHomographyAndToneCurve(params: {
   return { rotatedRgb01: [hr, hg, hb], curveMidpoint255, softLightBlended01 };
 }
 
-/**
- * Wave 29 Unfragmented 699-File REA (`ev_4742ae24c0e0894803c2af285fca4288a072af5f0190032d85296b732f9d8fa54072011407`):
- * Bernstein 4th-degree basis FFD lattice warp + `glfx.js` Vibrance saturation-adaptive boost.
- */
+/** Wave 29 Unfragmented 699-File REA (`ev_4742ae24c0e0894803c2af285fca4288a072af5f0190032d85296b732f9d8fa54072011407`): Bernstein FFD + Vibrance. */
 export function evaluateLabBernsteinFfdAndVibrance(params: {
-  readonly u01: number;
-  readonly v01: number;
-  readonly centerDeltaX: number;
-  readonly centerDeltaY: number;
-  readonly rgb01: readonly [number, number, number];
-  readonly vibranceMinus1To1: number;
-}): {
-  readonly bernsteinCenterWeight01: number;
-  readonly warpedDeltaX: number;
-  readonly warpedDeltaY: number;
-  readonly vibranceRgb01: readonly [number, number, number];
-} {
+  readonly u01: number; readonly v01: number; readonly centerDeltaX: number; readonly centerDeltaY: number;
+  readonly rgb01: readonly [number, number, number]; readonly vibranceMinus1To1: number;
+}): { readonly bernsteinCenterWeight01: number; readonly warpedDeltaX: number; readonly warpedDeltaY: number; readonly vibranceRgb01: readonly [number, number, number] } {
   const u = clamp01(params.u01);
   const v = clamp01(params.v01);
-  const b24u = 6 * u * u * (1 - u) * (1 - u);
-  const b24v = 6 * v * v * (1 - v) * (1 - v);
-  const bernsteinCenterWeight01 = Math.round(b24u * b24v * 10000) / 10000;
+  const bernsteinCenterWeight01 = Math.round(36 * u * u * (1 - u) * (1 - u) * v * v * (1 - v) * (1 - v) * 10000) / 10000;
   const [r, g, b] = params.rgb01;
-  const avg = (r + g + b) / 3;
   const mx = Math.max(r, g, b);
-  const amt = (mx - avg) * (-params.vibranceMinus1To1 * 3);
+  const amt = (mx - (r + g + b) / 3) * (-params.vibranceMinus1To1 * 3);
   return {
     bernsteinCenterWeight01,
     warpedDeltaX: Math.round(params.centerDeltaX * bernsteinCenterWeight01 * 1000) / 1000,
     warpedDeltaY: Math.round(params.centerDeltaY * bernsteinCenterWeight01 * 1000) / 1000,
-    vibranceRgb01: [
-      clamp01(r + (mx - r) * amt),
-      clamp01(g + (mx - g) * amt),
-      clamp01(b + (mx - b) * amt),
-    ],
+    vibranceRgb01: [clamp01(r + (mx - r) * amt), clamp01(g + (mx - g) * amt), clamp01(b + (mx - b) * amt)],
   };
 }
 
 /** Wave 30 Grand Monolithic 755-File REA (`ev_982d49cba6a55578fec43ba3a6e0b6384950de96491ca43cf0149f03b1c884fd`): Konva Kaleidoscope + Emboss. */
 export function evaluateLabKonvaKaleidoscopeAndEmboss(params: {
-  readonly width: number;
-  readonly thetaIndex: number;
-  readonly power: number;
-  readonly sobelX: number;
-  readonly sobelY: number;
-  readonly directionRad: number;
-  readonly strength01: number;
+  readonly width: number; readonly thetaIndex: number; readonly power: number;
+  readonly sobelX: number; readonly sobelY: number; readonly directionRad: number; readonly strength01: number;
 }): { readonly mirroredThetaIndex: number; readonly reliefGray255: number } {
   const w = Math.max(8, Math.floor(params.width));
   const sectionSize = Math.max(8, Math.ceil(w / Math.pow(2, Math.max(1, Math.min(8, params.power)))));
@@ -791,6 +767,18 @@ export function evaluateLabKonvaKaleidoscopeAndEmboss(params: {
   const response = Math.cos(params.directionRad) * params.sobelX - Math.sin(params.directionRad) * params.sobelY;
   const reliefGray255 = Math.min(255, Math.max(0, Math.round(128 + response * (128 / 1020) * (clamp01(params.strength01) * 10))));
   return { mirroredThetaIndex, reliefGray255 };
+}
+
+/** Wave 31 Total 767-File REA (`ev_13bbde3494001044d31ebdb3d481f0cd91c96f6dc995f78b17c1cf9984ea2d28`): ag-psd PackBits RLE + Otsu Bimodal Threshold. */
+export function evaluateLabPsdPackBitsAndOtsuThreshold(params: {
+  readonly runValue: number; readonly runLength: number; readonly darkClassMean: number; readonly lightClassMean: number; readonly darkWeight01: number;
+}): { readonly packBitsHeaderByte: number; readonly betweenClassVariance: number } {
+  const clampedRun = Math.min(128, Math.max(2, Math.round(params.runLength)));
+  const w0 = clamp01(params.darkWeight01);
+  return {
+    packBitsHeaderByte: 257 - clampedRun,
+    betweenClassVariance: Math.round(w0 * (1 - w0) * Math.pow(params.darkClassMean - params.lightClassMean, 2) * 100) / 100,
+  };
 }
 
 
