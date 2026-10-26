@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "engine": "studio-engine-vello",
   "target": "wasm32-unknown-unknown",
-  "cargoManifestSha256": "07fc403c230f6b5aa1bc75ec4507c3ef37ca8008f69e9259dd5fd6f3bfb98158",
-  "cargoLockSha256": "42a1c77dcd6d1f47302244a9178410e319b72b177faa5b1ba3349dd1e3c7b539",
+  "cargoManifestSha256": "ebb02745876d05d532ae44d46ffd83fb197e5267914778ec825c59feac628604",
+  "cargoLockSha256": "e56edb994827e38bc85db58f2bfafa0c30cbecec1916a1a1d7fc7ae5b0fd0b30",
   "artifacts": [
     {
       "id": "pkg",

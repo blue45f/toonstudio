@@ -117,4 +117,4 @@ pollster = "1.0"
 # variant 코퍼스(tests/corpus/wgsl-variants/)를 naga로 전수 파싱+검증한다.
 # 코퍼스가 wgpu 29 세대 naga로 캡처된 기준이라 핀을 유지한다 — wgpu 30의
 # naga 30으로 다시 캡처할 때 함께 올린다 (wasm 아티팩트에는 닿지 않는다).
-naga = { version = "29.0", features = ["wgsl-in"] }
+naga = { version = "30.0", features = ["wgsl-in"] }
