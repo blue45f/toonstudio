@@ -42,6 +42,7 @@ import {
   planStudioExternal3dIntake,
 } from "../scene-3d/studio-external-3d-intake";
 import { TRIPO3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-tripo3d-ecosystem-engine";
+import { getStudioBg3dTripoGlbCalibration } from "./studio-bg3d-rea-webtoon-background-engine";
 import {
   StudioScene3dDocumentCommandError,
   createStudioScene3dTransformOperation,
@@ -116,6 +117,10 @@ export function StudioBg3dVrmHybridDccPanel({
   const activeBg3dModel = useMemo(
     () => bg3dTripoModels.find((m) => m.id === selectedBg3dModelId) ?? bg3dTripoModels[0]!,
     [bg3dTripoModels, selectedBg3dModelId],
+  );
+  const activeBg3dCalibration = useMemo(
+    () => getStudioBg3dTripoGlbCalibration(activeBg3dModel.id),
+    [activeBg3dModel.id],
   );
 
   const vrmAndTextureDiag = useMemo(() => {
@@ -415,7 +420,11 @@ export function StudioBg3dVrmHybridDccPanel({
         >
           <span>
             활성 GLB: <strong>{activeBg3dModel.nameKo}</strong> (<code>{activeBg3dModel.url}</code> ·{" "}
-            {activeBg3dModel.triangles.toLocaleString()} Tri · 파츠 {activeBg3dModel.customizableParts.length}개)
+            {activeBg3dModel.triangles.toLocaleString()} Tri · 파츠 {activeBg3dModel.customizableParts.length}개
+            {activeBg3dCalibration
+              ? ` · GLBForge 실측 보정 ${activeBg3dCalibration.calibratedScale}x · Y+${activeBg3dCalibration.groundYOffset}m`
+              : ""}
+            )
           </span>
           <a
             href={activeBg3dModel.url}

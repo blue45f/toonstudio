@@ -35,6 +35,21 @@ describe("studio-bg3d-webtoon-world-shaper", () => {
       expect(varcoProps[0]?.componentRef?.name.length).toBeGreaterThan(2);
       expect(varcoProps[0]?.tags).toContain("varco3d");
       expect(varcoProps[0]?.tags).toContain(universeId);
+
+      // 다중 파츠(multi-part) VARCO 히어로 소품 및 REA 천장 몰딩·조명 그리드 검증
+      const varcoDetailParts = built.primitives.filter((p) =>
+        p.tags?.includes("varco3d-prop-detail"),
+      );
+      expect(varcoDetailParts.length).toBeGreaterThanOrEqual(4);
+
+      const reaCeilingLights = built.primitives.filter((p) =>
+        p.tags?.includes("rea-ceiling-light"),
+      );
+      expect(reaCeilingLights.length).toBeGreaterThanOrEqual(4);
+
+      const universeDef = STUDIO_BG3D_WEBTOON_UNIVERSES.find((u) => u.id === universeId);
+      expect(universeDef?.recommendedTripoModelId?.startsWith("tripo3d-")).toBe(true);
+      expect(universeDef?.recommendedVarcoDioramaId?.startsWith("diorama_")).toBe(true);
     }
   });
 

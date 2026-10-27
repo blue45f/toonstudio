@@ -296,9 +296,41 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
 
     expect(committed).toHaveLength(1);
     const varcoProps = committed[0]!.filter((item) => item.tags?.includes("varco3d-prop"));
+    const varcoPropDetails = committed[0]!.filter((item) =>
+      item.tags?.includes("varco3d-prop-detail"),
+    );
+    const dioramaDetails = committed[0]!.filter((item) =>
+      item.tags?.includes("varco3d-diorama-detail"),
+    );
     expect(varcoProps).toHaveLength(3);
+    expect(varcoPropDetails.length).toBeGreaterThanOrEqual(15);
+    expect(dioramaDetails.length).toBeGreaterThanOrEqual(10);
     expect(screen.getByRole("status").textContent).toContain(
       "로판 황궁 대연회장 샹들리에 디오라마 (+소품 3종) 추가 완료",
     );
+  });
+
+  it("REA 역공학 유사 서비스 프리셋(8종)과 Tripo 3D 배경 키트(8종) 파츠를 커스터마이징해 장면에 배치한다", () => {
+    const { committed } = renderPicker({ autoCutaway: false });
+    fireEvent.click(screen.getByTestId("bg3d-world-shaper-toggle"));
+
+    const reaSelect = screen.getByTestId("bg3d-rea-competitor-select") as HTMLSelectElement;
+    expect(reaSelect.options).toHaveLength(8);
+    fireEvent.change(reaSelect, { target: { value: "snaptoon-unreal-npr" } });
+    expect(screen.getByTestId("bg3d-rea-competitor-readout").textContent).toContain("색온도");
+
+    const tripoSelect = screen.getByTestId("bg3d-tripo3d-kit-select") as HTMLSelectElement;
+    expect(tripoSelect.options).toHaveLength(9);
+    fireEvent.change(tripoSelect, {
+      target: { value: "tripo3d-h31-bg-romance-fantasy-palace-courtyard" },
+    });
+
+    fireEvent.click(screen.getByTestId("bg3d-tripo3d-part-courtyard-balustrade"));
+    fireEvent.click(screen.getByTestId("bg3d-tripo3d-kit-build-btn"));
+
+    expect(committed).toHaveLength(1);
+    const tripoKitParts = committed[0]!.filter((item) => item.tags?.includes("tripo3d-bg-kit"));
+    expect(tripoKitParts.length).toBe(4);
+    expect(screen.getByRole("status").textContent).toContain("3파츠");
   });
 });

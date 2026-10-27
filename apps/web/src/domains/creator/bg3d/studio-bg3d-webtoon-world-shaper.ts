@@ -188,6 +188,8 @@ export interface StudioBg3dWebtoonUniversePreset {
   readonly openings: readonly StudioBg3dRoomOpening[];
   readonly furniture: readonly StudioBg3dRoomFurnitureItem[];
   readonly varcoPropSlot: StudioBg3dVarcoHeroPropSlot;
+  readonly recommendedTripoModelId?: string;
+  readonly recommendedVarcoDioramaId?: string;
 }
 
 function clampFinite(value: unknown, fallback: number, min: number, max: number): number {
@@ -205,24 +207,9 @@ export function clampStudioBg3dWorldShaperSliders(
   return {
     widthScale: clampFinite(src.widthScale, def.widthScale, lim.widthScale.min, lim.widthScale.max),
     depthScale: clampFinite(src.depthScale, def.depthScale, lim.depthScale.min, lim.depthScale.max),
-    ceilingScale: clampFinite(
-      src.ceilingScale,
-      def.ceilingScale,
-      lim.ceilingScale.min,
-      lim.ceilingScale.max,
-    ),
-    windowDensity: clampFinite(
-      src.windowDensity,
-      def.windowDensity,
-      lim.windowDensity.min,
-      lim.windowDensity.max,
-    ),
-    furnitureDensity: clampFinite(
-      src.furnitureDensity,
-      def.furnitureDensity,
-      lim.furnitureDensity.min,
-      lim.furnitureDensity.max,
-    ),
+    ceilingScale: clampFinite(src.ceilingScale, def.ceilingScale, lim.ceilingScale.min, lim.ceilingScale.max),
+    windowDensity: clampFinite(src.windowDensity, def.windowDensity, lim.windowDensity.min, lim.windowDensity.max),
+    furnitureDensity: clampFinite(src.furnitureDensity, def.furnitureDensity, lim.furnitureDensity.min, lim.furnitureDensity.max),
     aisleRatio: clampFinite(src.aisleRatio, def.aisleRatio, lim.aisleRatio.min, lim.aisleRatio.max),
     propScale: clampFinite(src.propScale, def.propScale, lim.propScale.min, lim.propScale.max),
   };
@@ -256,15 +243,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "학원·청춘",
       descriptionKo: "창가 채광과 교탁, 학생 책상 열이 정돈된 웹툰 표준 교실 공간",
       defaultMood: "daylight",
-      defaultSliders: {
-        widthScale: 1,
-        depthScale: 1,
-        ceilingScale: 1,
-        windowDensity: 1,
-        furnitureDensity: 0.85,
-        aisleRatio: 0.28,
-        propScale: 1,
-      },
+      defaultSliders: { widthScale: 1, depthScale: 1, ceilingScale: 1, windowDensity: 1, furnitureDensity: 0.85, aisleRatio: 0.28, propScale: 1 },
       baseWidth: 8.4,
       baseDepth: 7.2,
       baseWallHeight: 3.1,
@@ -296,8 +275,13 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "box", name: "VARCO 교탁 본체", offset: [0, 0.48, 0], scale: [1.2, 0.95, 0.65], role: "primary" },
           { kind: "box", name: "VARCO 교탁 상판", offset: [0, 0.98, 0], scale: [1.28, 0.06, 0.72], role: "trim" },
           { kind: "cylinder", name: "VARCO 교탁 마이크", offset: [0.35, 1.12, -0.1], scale: [0.04, 0.24, 0.04], role: "accent" },
+          { kind: "box", name: "VARCO 전면 칠판 보드", offset: [0, 1.68, -0.82], scale: [3.6, 1.25, 0.06], role: "trim" },
+          { kind: "box", name: "VARCO 칠판 분필받이", offset: [0, 1.03, -0.78], scale: [3.64, 0.06, 0.12], role: "primary" },
+          { kind: "cylinder", name: "VARCO 교실 벽시계", offset: [0, 2.52, -0.8], scale: [0.32, 0.06, 0.32], role: "accent" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-h31-bg-classroom-furniture-kit",
+      recommendedVarcoDioramaId: "diorama_school_hallway",
     },
     {
       id: "romance-fantasy-palace",
@@ -305,15 +289,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "로맨스 판타지",
       descriptionKo: "높은 아치 창과 좌우 열주, 황실 권좌가 배치된 대리석 알현실",
       defaultMood: "arcane-fantasy",
-      defaultSliders: {
-        widthScale: 1.25,
-        depthScale: 1.3,
-        ceilingScale: 1.35,
-        windowDensity: 1,
-        furnitureDensity: 0.9,
-        aisleRatio: 0.42,
-        propScale: 1.1,
-      },
+      defaultSliders: { widthScale: 1.25, depthScale: 1.3, ceilingScale: 1.35, windowDensity: 1, furnitureDensity: 0.9, aisleRatio: 0.42, propScale: 1.1 },
       baseWidth: 11,
       baseDepth: 12,
       baseWallHeight: 4.8,
@@ -344,8 +320,14 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "box", name: "VARCO 권좌 단상", offset: [0, 0.18, 0], scale: [2.4, 0.36, 1.8], role: "trim" },
           { kind: "box", name: "VARCO 권좌 좌석", offset: [0, 0.65, 0], scale: [1.2, 0.58, 0.95], role: "primary" },
           { kind: "box", name: "VARCO 권좌 등받이", offset: [0, 1.45, -0.38], scale: [1.15, 1.4, 0.22], role: "accent" },
+          { kind: "box", name: "VARCO 황실 레드카펫", offset: [0, 0.03, 2.2], scale: [1.6, 0.04, 4.2], role: "primary" },
+          { kind: "cylinder", name: "VARCO 황금 캐노피 기둥 좌", offset: [-0.95, 1.35, -0.45], scale: [0.16, 2.4, 0.16], role: "trim" },
+          { kind: "cylinder", name: "VARCO 황금 캐노피 기둥 우", offset: [0.95, 1.35, -0.45], scale: [0.16, 2.4, 0.16], role: "trim" },
+          { kind: "sphere", name: "VARCO 황실 크리스탈 샹들리에", offset: [0, 2.95, 1.2], scale: [1.25, 0.72, 1.25], role: "accent" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-h31-bg-romance-fantasy-palace-courtyard",
+      recommendedVarcoDioramaId: "diorama_rofan_imperial_ballroom",
     },
     {
       id: "murim-martial-courtyard",
@@ -353,15 +335,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "무협·동양풍",
       descriptionKo: "목조 기둥 회랑과 연무 석판, 병장기 거치대가 놓인 무림 대청",
       defaultMood: "murim-ink",
-      defaultSliders: {
-        widthScale: 1.2,
-        depthScale: 1.15,
-        ceilingScale: 1.1,
-        windowDensity: 0.75,
-        furnitureDensity: 0.8,
-        aisleRatio: 0.45,
-        propScale: 1,
-      },
+      defaultSliders: { widthScale: 1.2, depthScale: 1.15, ceilingScale: 1.1, windowDensity: 0.75, furnitureDensity: 0.8, aisleRatio: 0.45, propScale: 1 },
       baseWidth: 10,
       baseDepth: 9,
       baseWallHeight: 3.4,
@@ -389,8 +363,13 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "box", name: "VARCO 검걸이대 받침", offset: [0, 0.12, 0], scale: [1.5, 0.24, 0.45], role: "primary" },
           { kind: "box", name: "VARCO 검걸이대 기둥", offset: [0, 0.72, 0], scale: [1.35, 1.0, 0.18], role: "trim" },
           { kind: "cylinder", name: "VARCO 보검 파츠", offset: [0, 0.85, 0.08], scale: [1.2, 0.06, 0.06], role: "accent" },
+          { kind: "cylinder", name: "VARCO 상단 명검 파츠", offset: [0, 1.12, 0.08], scale: [1.24, 0.06, 0.06], role: "accent" },
+          { kind: "cylinder", name: "VARCO 청동 향로 화로", offset: [0, 0.36, 0.95], scale: [0.52, 0.68, 0.52], role: "trim" },
+          { kind: "box", name: "VARCO 문파 현판", offset: [0, 2.35, -0.35], scale: [2.1, 0.52, 0.1], role: "primary" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-mcp-bg-korean-alley-stairway",
+      recommendedVarcoDioramaId: "diorama_murim_sect_courtyard",
     },
     {
       id: "modern-office-noir",
@@ -398,15 +377,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "현대·스릴러",
       descriptionKo: "파노라마 야경 창과 대표 집무 데스크, 소파 라운지가 결합된 느와르 공간",
       defaultMood: "noir-night",
-      defaultSliders: {
-        widthScale: 1.05,
-        depthScale: 1.05,
-        ceilingScale: 1.05,
-        windowDensity: 1,
-        furnitureDensity: 0.85,
-        aisleRatio: 0.32,
-        propScale: 1,
-      },
+      defaultSliders: { widthScale: 1.05, depthScale: 1.05, ceilingScale: 1.05, windowDensity: 1, furnitureDensity: 0.85, aisleRatio: 0.32, propScale: 1 },
       baseWidth: 7.6,
       baseDepth: 6.4,
       baseWallHeight: 3.2,
@@ -433,8 +404,12 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "cylinder", name: "VARCO 조명 베이스", offset: [0, 0.08, 0], scale: [0.55, 0.16, 0.55], role: "primary" },
           { kind: "cylinder", name: "VARCO 조명 기둥", offset: [0, 1.15, 0], scale: [0.1, 2.1, 0.1], role: "trim" },
           { kind: "sphere", name: "VARCO 앰버 램프", offset: [0, 2.25, 0], scale: [0.38, 0.38, 0.38], role: "accent" },
+          { kind: "box", name: "VARCO 임원용 와이드 모니터", offset: [-1.45, 0.96, 0.45], scale: [0.82, 0.42, 0.06], role: "primary" },
+          { kind: "box", name: "VARCO 파노라마 블라인드 바", offset: [-0.8, 2.45, -0.35], scale: [2.8, 0.12, 0.08], role: "trim" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-h31-bg-industrial-rooftop-hvac",
+      recommendedVarcoDioramaId: "diorama_open_office",
     },
     {
       id: "hunter-dungeon-altar",
@@ -442,15 +417,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "헌터·레이드",
       descriptionKo: "거대한 석조 열주와 중앙 마력 각성 오벨리스크가 솟은 보스룸",
       defaultMood: "arcane-fantasy",
-      defaultSliders: {
-        widthScale: 1.35,
-        depthScale: 1.35,
-        ceilingScale: 1.45,
-        windowDensity: 0.4,
-        furnitureDensity: 0.9,
-        aisleRatio: 0.44,
-        propScale: 1.15,
-      },
+      defaultSliders: { widthScale: 1.35, depthScale: 1.35, ceilingScale: 1.45, windowDensity: 0.4, furnitureDensity: 0.9, aisleRatio: 0.44, propScale: 1.15 },
       baseWidth: 12,
       baseDepth: 12,
       baseWallHeight: 5.2,
@@ -478,8 +445,13 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "hexPrism", name: "VARCO 제단 기단", offset: [0, 0.25, 0], scale: [2.2, 0.5, 2.2], role: "primary" },
           { kind: "pyramid", name: "VARCO 마석 오벨리스크", offset: [0, 1.55, 0], scale: [0.95, 2.1, 0.95], role: "accent" },
           { kind: "torus", name: "VARCO 마나 공명 링", offset: [0, 1.65, 0], scale: [1.45, 0.12, 1.45], role: "trim" },
+          { kind: "hexPrism", name: "VARCO 좌측 룬 성화대", offset: [-1.6, 0.85, 0.4], scale: [0.42, 1.65, 0.42], role: "trim" },
+          { kind: "hexPrism", name: "VARCO 우측 룬 성화대", offset: [1.6, 0.85, 0.4], scale: [0.42, 1.65, 0.42], role: "trim" },
+          { kind: "sphere", name: "VARCO 상부 마나 코어 구체", offset: [0, 2.85, 0], scale: [0.56, 0.56, 0.56], role: "accent" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-h31-bg-romance-fantasy-palace-courtyard",
+      recommendedVarcoDioramaId: "diorama_hunter_boss_dungeon",
     },
     {
       id: "cyberpunk-neon-alley",
@@ -487,15 +459,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "SF·사이버펑크",
       descriptionKo: "홀로그램 키오스크와 네온 파이프, 언더그라운드 부스가 결합된 아케이드",
       defaultMood: "noir-night",
-      defaultSliders: {
-        widthScale: 1,
-        depthScale: 1.15,
-        ceilingScale: 1.05,
-        windowDensity: 0.65,
-        furnitureDensity: 0.85,
-        aisleRatio: 0.34,
-        propScale: 1.05,
-      },
+      defaultSliders: { widthScale: 1, depthScale: 1.15, ceilingScale: 1.05, windowDensity: 0.65, furnitureDensity: 0.85, aisleRatio: 0.34, propScale: 1.05 },
       baseWidth: 7.5,
       baseDepth: 8.5,
       baseWallHeight: 3.3,
@@ -521,8 +485,12 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "box", name: "VARCO 키오스크 본체", offset: [0, 1.0, 0], scale: [1.1, 2.0, 0.75], role: "primary" },
           { kind: "box", name: "VARCO 네온 디스플레이", offset: [0, 1.25, 0.39], scale: [0.92, 1.1, 0.05], role: "accent" },
           { kind: "cylinder", name: "VARCO 상단 홀로 프로젝터", offset: [0, 2.12, 0], scale: [0.45, 0.18, 0.45], role: "trim" },
+          { kind: "box", name: "VARCO 네온 간판 바", offset: [-1.4, 2.42, -0.25], scale: [2.2, 0.38, 0.12], role: "accent" },
+          { kind: "cylinder", name: "VARCO 냉각 배관 덕트", offset: [0.72, 1.45, -0.2], scale: [0.18, 2.6, 0.18], role: "trim" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-mcp-bg-rooftop-neon-signboard",
+      recommendedVarcoDioramaId: "diorama_cyberpunk_neon_alley",
     },
     {
       id: "medical-drama-ward",
@@ -530,15 +498,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "메디컬·드라마",
       descriptionKo: "병상 침대와 바이탈 모니터 카트, 관찰창이 갖춰진 대학병원 병동",
       defaultMood: "hospital-clean",
-      defaultSliders: {
-        widthScale: 1,
-        depthScale: 1,
-        ceilingScale: 1,
-        windowDensity: 0.9,
-        furnitureDensity: 0.85,
-        aisleRatio: 0.35,
-        propScale: 1,
-      },
+      defaultSliders: { widthScale: 1, depthScale: 1, ceilingScale: 1, windowDensity: 0.9, furnitureDensity: 0.85, aisleRatio: 0.35, propScale: 1 },
       baseWidth: 7.2,
       baseDepth: 6.0,
       baseWallHeight: 2.9,
@@ -564,8 +524,12 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "box", name: "VARCO 의료 카트 하단", offset: [0, 0.45, 0], scale: [0.62, 0.9, 0.58], role: "primary" },
           { kind: "cylinder", name: "VARCO 수액 폴대", offset: [0.22, 1.2, -0.18], scale: [0.05, 1.5, 0.05], role: "trim" },
           { kind: "box", name: "VARCO 심전도 모니터", offset: [-0.05, 1.18, 0], scale: [0.48, 0.38, 0.16], role: "accent" },
+          { kind: "cylinder", name: "VARCO 수액 파우치", offset: [0.22, 1.82, -0.18], scale: [0.14, 0.26, 0.1], role: "accent" },
+          { kind: "box", name: "VARCO 병상 프라이버시 커튼 레일", offset: [0.85, 2.35, 0.45], scale: [1.9, 0.05, 1.4], role: "trim" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-h31-bg-korean-convenience-store",
+      recommendedVarcoDioramaId: "diorama_hospital_room",
     },
     {
       id: "daily-cafe-street",
@@ -573,15 +537,7 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
       genreTagKo: "일상·로맨스",
       descriptionKo: "통유리 쇼윈도와 에스프레소 카운터, 2인 테이블이 배치된 감성 카페",
       defaultMood: "sunset-romance",
-      defaultSliders: {
-        widthScale: 1,
-        depthScale: 1,
-        ceilingScale: 1,
-        windowDensity: 1,
-        furnitureDensity: 0.9,
-        aisleRatio: 0.3,
-        propScale: 1,
-      },
+      defaultSliders: { widthScale: 1, depthScale: 1, ceilingScale: 1, windowDensity: 1, furnitureDensity: 0.9, aisleRatio: 0.3, propScale: 1 },
       baseWidth: 7.0,
       baseDepth: 5.8,
       baseWallHeight: 2.9,
@@ -609,8 +565,13 @@ export const STUDIO_BG3D_WEBTOON_UNIVERSES: readonly StudioBg3dWebtoonUniversePr
           { kind: "box", name: "VARCO 원목 바 카운터", offset: [0, 0.48, 0], scale: [1.8, 0.96, 0.8], role: "primary" },
           { kind: "box", name: "VARCO 에스프레소 머신", offset: [-0.35, 1.14, -0.05], scale: [0.68, 0.38, 0.48], role: "accent" },
           { kind: "cylinder", name: "VARCO 원두 그라인더", offset: [0.42, 1.16, -0.08], scale: [0.22, 0.42, 0.22], role: "trim" },
+          { kind: "box", name: "VARCO 디저트 유리 쇼케이스", offset: [1.28, 0.62, 0], scale: [0.86, 1.22, 0.76], role: "trim" },
+          { kind: "sphere", name: "VARCO 펜던트 조명 좌", offset: [-0.45, 2.22, 0], scale: [0.28, 0.28, 0.28], role: "accent" },
+          { kind: "sphere", name: "VARCO 펜던트 조명 우", offset: [0.45, 2.22, 0], scale: [0.28, 0.28, 0.28], role: "accent" },
         ],
       },
+      recommendedTripoModelId: "tripo3d-p2-bg-street-cafe-kit",
+      recommendedVarcoDioramaId: "diorama_modern_cafe",
     },
   ]);
 
@@ -677,10 +638,17 @@ export function buildStudioBg3dWebtoonWorldSpec(
     openings: [...doorOpenings, ...activeWindows],
     furniture: activeFurniture,
     trims: {
-      baseboard: { enabled: true, heightM: 0.08, depthM: 0.015 },
-      crown: { style: wallHeight >= 3.0 ? "flat" : "none", heightM: 0.1 },
-      wainscot: { enabled: false, heightM: 0.9 },
-      chairRail: false,
+      baseboard: { enabled: true, heightM: 0.09, depthM: 0.02 },
+      crown: { style: wallHeight >= 2.8 ? "stepped" : "flat", heightM: 0.12 },
+      wainscot: {
+        enabled:
+          universe.id === "school-romance" ||
+          universe.id === "romance-fantasy-palace" ||
+          universe.id === "medical-drama-ward",
+        heightM: 0.92,
+      },
+      chairRail:
+        universe.id === "daily-cafe-street" || universe.id === "modern-office-noir",
     },
   });
 }
@@ -752,13 +720,25 @@ export function instantiateStudioBg3dWebtoonWorld(
         Number((part.scale[2] * propScale).toFixed(4)),
       ],
       color,
-      componentRef: {
-        id: `varco3d:${propSlot.varcoAssetId}`,
-        name: propSlot.labelKo,
-      },
-      tags: ["varco3d", universe.id, propSlot.slotId],
+      componentRef: { id: `varco3d:${propSlot.varcoAssetId}`, name: propSlot.labelKo },
+      tags: ["varco3d", "varco3d-prop-detail", universe.id, propSlot.slotId],
     };
   });
+
+  const ceilingLightY = Number((roomSpec.wallHeight - 0.08).toFixed(4));
+  const lightSpanX = Number((roomSpec.width * 0.28).toFixed(4));
+  const lightLengthZ = Number((roomSpec.depth * 0.52).toFixed(4));
+  const reaArchPrimitives: BgPrimitive[] = ([-1, 1, -0.45, 0.45] as const).map((factor, idx) => ({
+    id: idFactory(),
+    kind: "box",
+    name: `REA 천장 라인 조명 ${idx + 1}`,
+    position: [Number((anchorX + lightSpanX * factor).toFixed(4)), ceilingLightY, 0],
+    rotation: [0, 0, 0],
+    scale: [0.22, 0.05, lightLengthZ],
+    color: mood.propAccentColor,
+    componentRef: { id: `rea-arch:${universe.id}:ceiling-light-${idx}`, name: `${universe.labelKo} 천장 조명 그리드` },
+    tags: ["rea-arch-detail", "rea-ceiling-light", universe.id, "ceiling-light"],
+  }));
 
   const standardHumanHeightMeters = 1.7;
   return {
@@ -766,7 +746,7 @@ export function instantiateStudioBg3dWebtoonWorld(
     moodId,
     sliders,
     roomSpec,
-    primitives: [...roomPrimitives, ...propPrimitives],
+    primitives: [...roomPrimitives, ...propPrimitives, ...reaArchPrimitives],
     varcoPropPrimitiveIds,
     boundsMeters: {
       width: roomSpec.width,

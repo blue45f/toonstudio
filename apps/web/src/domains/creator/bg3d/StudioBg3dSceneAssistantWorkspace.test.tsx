@@ -227,4 +227,30 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /정밀 편집/ })[0]);
     expect(openProfessional).toHaveBeenCalledOnce();
   });
+
+  it("surfaces environment-classified 3D models in the background goal step and adds them on click", () => {
+    const host = createHost({
+      modelLibrary: [
+        {
+          id: "tripo3d-bg-webtoon-palace-courtyard-v1",
+          name: "로판 황실 중정 가든 세트",
+          thumbnail: null,
+          canUse: true,
+        },
+      ],
+      genericModelClassifications: new Map([
+        ["tripo3d-bg-webtoon-palace-courtyard-v1", "environment"],
+      ]),
+    });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+
+    expect(screen.getByText("준비된 3D 환경 모델")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: /로판 황실 중정 가든 세트/ }));
+    expect(host.addCustomModelToScene).toHaveBeenCalledWith(
+      "tripo3d-bg-webtoon-palace-courtyard-v1",
+    );
+    expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe(
+      "arrange",
+    );
+  });
 });

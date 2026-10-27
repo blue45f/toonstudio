@@ -3,30 +3,9 @@
 // shared viewport even when the bag identity itself stays stable.
 
 import {
-  ArrowLeft,
-  ArrowRight,
-  Box,
-  Camera,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  CircleUserRound,
-  Copy,
-  Cuboid,
-  Focus,
-  ImagePlus,
-  Layers3,
-  Loader2,
-  Maximize2,
-  Move3d,
-  Rotate3d,
-  Save,
-  Scaling,
-  ScanLine,
-  SlidersHorizontal,
-  Sparkles,
-  Trash2,
-  Upload,
+  ArrowLeft, ArrowRight, Box, Camera, Check, ChevronDown, ChevronUp, CircleUserRound,
+  Copy, Cuboid, Focus, ImagePlus, Layers3, Loader2, Maximize2, Move3d, Rotate3d,
+  Save, Scaling, ScanLine, SlidersHorizontal, Sparkles, Trash2, Upload,
 } from "lucide-react";
 import { useEffect, useReducer, useRef, useState } from "react";
 
@@ -127,24 +106,9 @@ const GOALS: readonly {
   readonly description: string;
   readonly icon: typeof Layers3;
 }[] = Object.freeze([
-  {
-    id: "background",
-    title: "배경·구도",
-    description: "완성된 장소를 고르고 카메라만 맞춰요",
-    icon: Layers3,
-  },
-  {
-    id: "character",
-    title: "인물·포즈",
-    description: "프로젝트 캐릭터와 포즈 참고를 배치해요",
-    icon: CircleUserRound,
-  },
-  {
-    id: "props",
-    title: "소품",
-    description: "가구와 물건을 현재 장면에 바로 놓아요",
-    icon: Cuboid,
-  },
+  { id: "background", title: "배경·구도", description: "완성된 장소를 고르고 카메라만 맞춰요", icon: Layers3 },
+  { id: "character", title: "인물·포즈", description: "프로젝트 캐릭터와 포즈 참고를 배치해요", icon: CircleUserRound },
+  { id: "props", title: "소품", description: "가구와 물건을 현재 장면에 바로 놓아요", icon: Cuboid },
 ]);
 
 const TRANSFORM_ACTIONS = Object.freeze([
@@ -190,12 +154,13 @@ function classifyAssistantAsset(
 ): StudioBg3dAssistantGoal | null {
   const declared = classifications?.get(entry.id);
   if (declared === "character" || declared === "creature") return "character";
+  if (declared === "environment") return "background";
   if (declared === "prop") return "props";
   const name = entry.name.toLocaleLowerCase();
   if (/character|avatar|girl|boy|woman|man|person|fairy|knight|witch|캐릭터|인물/u.test(name)) {
     return "character";
   }
-  if (/background|environment|room|street|classroom|cafe|배경|공간/u.test(name)) return null;
+  if (/background|environment|room|street|classroom|cafe|배경|공간/u.test(name)) return "background";
   return "props";
 }
 
@@ -413,6 +378,19 @@ function ChooseStep({
                 disabled={busy}
                 onSelect={onSceneSelect}
               />
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {goal === "background" && assets.length > 0 ? (
+        <section aria-labelledby="scene-assistant-env-assets-title">
+          <div className="scene-assistant__section-title">
+            <div><p>READY 3D ENVIRONMENTS</p><h4 id="scene-assistant-env-assets-title">준비된 3D 환경 모델</h4></div>
+            <span>장면에 추가해 공간 밀도를 높여요</span>
+          </div>
+          <div className="scene-assistant__asset-grid" data-testid="scene-assistant-env-asset-grid">
+            {assets.map((asset) => (
+              <AssetCard key={asset.id} asset={asset} disabled={busy} onAdd={onAssetAdd} />
             ))}
           </div>
         </section>

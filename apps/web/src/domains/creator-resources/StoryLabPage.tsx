@@ -26,6 +26,13 @@ import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-pla
 const SCOPE = "domains.creator.resources.StoryLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
+const STORY_PIPELINE_ART_MAP: Readonly<Record<string, string>> = {
+  "worldbuilding-synopsis": "/assets/site-ui-pack/nano-banana-v1/nb-planning-storylab-640.webp",
+  "novel-to-script": "/assets/site-ui-pack/nano-banana-v1/nb-workflow-bridge-640.webp",
+  "storyboard-3d-blocking": "/assets/site-ui-pack/nano-banana-v1/nb-create-canvas-640.webp",
+  "ink-render-publish": "/assets/site-ui-pack/nano-banana-v1/nb-production-control-640.webp",
+};
+
 export function StoryLabPage() {
   useBilingualI18nRevision();
   const { workspace, saveStory, clearError, error, ready, saving, writable, ownerKey } = useCreatorWorkspace();
@@ -120,6 +127,7 @@ export function StoryLabPage() {
   const story = storyDraftView(workspace.story, draft);
   const conflicts = draft ? storyDraftConflicts(workspace.story, draft) : [];
   const completedCount = STORY_FIELDS.filter((field) => story[field]?.trim()).length;
+  const [sectionView, setSectionView] = useState<"all" | "worksheet" | "pipeline">("all");
   return <ResourceLayout title={tx("스토리 연구실")} intro={tx("인물, 욕망, 장애물과 선택을 차근차근 정리하세요. 외부 AI 호출 없이 직접 작성하는 기획 워크시트입니다.")}
     mastheadArt={{
       src: "/brand/hero-20261009-wave10/story-lab-board-1680.webp",
@@ -128,6 +136,41 @@ export function StoryLabPage() {
     }}>
     <SiteContextualSubNav pathnameOverride="/story-lab" className="mb-5" />
     <NanoBananaSurfaceSpotlight cardId="nb-planning-storylab" compact className="mb-5" />
+    <nav
+      aria-label={tx("스토리 연구실 화면 보기 모드 전환")}
+      className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 p-2.5"
+    >
+      <div className="flex flex-wrap gap-1.5">
+        {(
+          [
+            { id: "all", label: tx("전체 통합 보기") },
+            { id: "worksheet", label: tx("기획 워크시트 집중") },
+            { id: "pipeline", label: tx("4단계 제작·스마트 AI 보조") },
+          ] as const
+        ).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            aria-pressed={sectionView === item.id}
+            onClick={() => setSectionView(item.id)}
+            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+              sectionView === item.id
+                ? "border-accent bg-accent text-canvas shadow-sm"
+                : "border-line bg-panel text-fg-2 hover:border-accent/45 hover:text-fg"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <Link
+        href="/studio/ai-lab"
+        className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent-soft/60 px-3 py-1 text-xs font-bold text-accent hover:border-accent"
+      >
+        ✦ {tx("스마트 AI 창작 보조 워크벤치")} →
+      </Link>
+    </nav>
+    {(sectionView === "all" || sectionView === "pipeline") && (
     <section
       aria-label={tx("노블코믹스 · 원작 각색 → 콘티 4단계 파이프라인")}
       data-testid="story-lab-rea-pipeline"
@@ -146,19 +189,31 @@ export function StoryLabPage() {
           <Link
             key={mode.id}
             href={mode.targetHref}
-            className="flex flex-col justify-between rounded-xl border border-line bg-canvas p-3 text-left transition-colors hover:border-accent/50"
+            className="group flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-canvas text-left transition-colors hover:border-accent/50"
           >
-            <div>
-              <span className="inline-block rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-extrabold text-accent">
+            <div className="relative h-24 w-full overflow-hidden border-b border-line/60 bg-panel">
+              <img
+                src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-ui-pack/nano-banana-v1/nb-planning-storylab-640.webp"}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <span className="absolute left-2 top-2 inline-block rounded bg-canvas/90 px-1.5 py-0.5 text-[10px] font-extrabold text-accent backdrop-blur-sm">
                 {mode.step}
               </span>
-              <p className="mt-1.5 text-xs font-bold text-fg">{mode.label}</p>
             </div>
-            <span className="mt-2 text-[11px] font-bold text-accent">{mode.ctaLabel} →</span>
+            <div className="flex flex-1 flex-col justify-between p-3">
+              <p className="text-xs font-bold text-fg">{mode.label}</p>
+              <span className="mt-2 text-[11px] font-bold text-accent">{mode.ctaLabel} →</span>
+            </div>
           </Link>
         ))}
       </div>
     </section>
+    )}
+    {(sectionView === "all" || sectionView === "worksheet") && (
     <div className="grid gap-6 lg:grid-cols-2">
       <form className="space-y-5 rounded-2xl border border-line bg-panel p-5" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
         <p className="text-sm text-fg-2">{formatI18nTemplate(tx("작성한 항목 {v0}/8 · 미저장 변경 {v1}개"), { v0: completedCount, v1: dirty })}</p>

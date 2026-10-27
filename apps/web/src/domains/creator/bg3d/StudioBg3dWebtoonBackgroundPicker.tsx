@@ -49,6 +49,16 @@ import {
   evaluateVarco3dDioramaScenePlacement,
   type StudioVarco3dIsometricDioramaEntry,
 } from "../scene-3d/studio-varco3d-character-lab-diorama-catalog";
+import { TRIPO3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-tripo3d-customizer-engine";
+import {
+  STUDIO_BG3D_REA_COMPETITOR_PROFILES,
+  buildTripoBg3dProceduralTwinPrimitives,
+  buildVarco3dDioramaDetailedPrimitives,
+  buildVarco3dPropDetailedPrimitives,
+  getStudioBg3dTripoGlbCalibration,
+  toBgPrimitives,
+  type StudioBg3dReaCompetitorId,
+} from "./studio-bg3d-rea-webtoon-background-engine";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -177,6 +187,21 @@ export function StudioBg3dWebtoonBackgroundPicker({
     "prop_school_desk_chair",
     "prop_school_steel_lockers",
   ]);
+  const [selectedReaCompetitorId, setSelectedReaCompetitorId] =
+    useState<StudioBg3dReaCompetitorId>("acon3d-carpenstreet");
+  const bg3dTripoModels = TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d");
+  const [selectedTripoBgId, setSelectedTripoBgId] = useState<string>(
+    bg3dTripoModels[0]?.id ?? "tripo3d-p2-bg-street-cafe-kit",
+  );
+  const activeTripoBgModel =
+    bg3dTripoModels.find((m) => m.id === selectedTripoBgId) ?? bg3dTripoModels[0]!;
+  const activeTripoCalibration = getStudioBg3dTripoGlbCalibration(activeTripoBgModel.id);
+  const [enabledTripoPartIds, setEnabledTripoPartIds] = useState<readonly string[]>(() =>
+    activeTripoBgModel.customizableParts.map((p) => p.id),
+  );
+  const activeReaCompetitor =
+    STUDIO_BG3D_REA_COMPETITOR_PROFILES.find((c) => c.id === selectedReaCompetitorId) ??
+    STUDIO_BG3D_REA_COMPETITOR_PROFILES[0]!;
 
   const selectedDioramaPlan = evaluateVarco3dDioramaScenePlacement({
     dioramaId: selectedDioramaId,
@@ -268,22 +293,44 @@ export function StudioBg3dWebtoonBackgroundPicker({
         existingCount,
       });
       const anchorX = existingCount > 0 ? existingCount * (world.roomSpec.width / 6) : 0;
-      const propPrimitives: BgPrimitive[] = selectedDioramaPlan.props.map((prop, index) => {
-        const [w, d, h] = prop.footprintMeters;
-        const offsetX = (index - (selectedDioramaPlan.props.length - 1) / 2) * 1.6;
-        return {
-          id: `varco3d_prop_${prop.id}_${existingCount + index}`,
-          name: `${prop.labelKo} (VARCO 3D)`,
-          kind: "box",
-          position: [anchorX + offsetX, Number((h / 2).toFixed(2)), 0.6],
-          rotation: [0, 0, 0],
-          scale: [w, h, d],
-          color: STUDIO_BG3D_MOOD_PALETTES[mapped.moodId].propAccentColor,
-          componentRef: { id: prop.id, name: prop.labelKo },
-          tags: ["varco3d-prop", prop.category, prop.meshTaskId],
-        };
+
+      // 디오라마 시그니처 건축 디테일 파츠 결합 (varco3d-diorama-detail)
+      const dioramaStageDetailItems = buildVarco3dDioramaDetailedPrimitives(
+        selectedDioramaPlan.diorama,
+        { competitorId: selectedReaCompetitorId },
+      ).filter((item) => item.tags?.includes("varco3d-diorama-detail"));
+      const dioramaDetailPrims = toBgPrimitives(dioramaStageDetailItems).map((prim, idx) => ({
+        ...prim,
+        id: `${prim.id}_${existingCount + idx}`,
+        position: [
+          Number((prim.position[0] + anchorX).toFixed(3)),
+          prim.position[1],
+          prim.position[2],
+        ] as [number, number, number],
+      }));
+
+      // 각 한국형 소품을 단일 박스 대신 다중 세부 파츠(Anchor 1개 + 상세 파츠 5~7개)로 생성
+      const propPrimitives: BgPrimitive[] = selectedDioramaPlan.props.flatMap((prop, index) => {
+        const offsetX = (index - (selectedDioramaPlan.props.length - 1) / 2) * 1.85;
+        const detailedItems = buildVarco3dPropDetailedPrimitives(
+          prop,
+          [anchorX + offsetX, 0.6],
+          `varco3d_prop_${existingCount}_${index}`,
+        );
+        return toBgPrimitives(detailedItems).map((prim) =>
+          prim.tags?.includes("varco3d-prop")
+            ? {
+                ...prim,
+                name: `${prop.labelKo} (VARCO 3D)`,
+                color: STUDIO_BG3D_MOOD_PALETTES[mapped.moodId].propAccentColor,
+                componentRef: { id: prop.id, name: prop.labelKo },
+                tags: ["varco3d-prop", prop.category, prop.meshTaskId],
+              }
+            : prim,
+        );
       });
-      built.primitives = [...world.primitives, ...propPrimitives];
+
+      built.primitives = [...world.primitives, ...dioramaDetailPrims, ...propPrimitives];
       built.anchorX = anchorX;
       return built.primitives;
     });
@@ -299,6 +346,54 @@ export function StudioBg3dWebtoonBackgroundPicker({
           }
         : { kind: "failed" },
     );
+  };
+
+  const buildTripoBgKitAndWorld = () => {
+    const built: { primitives: BgPrimitive[]; anchorX: number } = {
+      primitives: [],
+      anchorX: 0,
+    };
+    const accepted = onBuild((existingCount) => {
+      const world = instantiateStudioBg3dWebtoonWorld({
+        universeId,
+        sliders: blendedSliders,
+        moodId,
+        existingCount,
+      });
+      const anchorX = existingCount > 0 ? existingCount * (world.roomSpec.width / 6) : 0;
+      const tripoKitItems = buildTripoBg3dProceduralTwinPrimitives(activeTripoBgModel.id, {
+        enabledPartIds: enabledTripoPartIds,
+        anchorXZ: [anchorX, -0.8],
+      });
+      const tripoKitPrims = toBgPrimitives(tripoKitItems).map((prim, idx) => ({
+        ...prim,
+        id: `${prim.id}_${existingCount + idx}`,
+      }));
+      built.primitives = [...world.primitives, ...tripoKitPrims];
+      built.anchorX = anchorX;
+      return built.primitives;
+    });
+    setNotice(
+      accepted && built.primitives.length > 0
+        ? {
+            kind: "built",
+            label: `${activeTripoBgModel.nameKo} (${enabledTripoPartIds.length}파츠)`,
+            objectCount: built.primitives.length,
+            hiddenWalls: summarizeStudioBg3dHiddenWalls(built.primitives),
+            wallsRestored: false,
+            anchorX: built.anchorX,
+          }
+        : { kind: "failed" },
+    );
+  };
+
+  const toggleTripoPart = (partId: string) => {
+    setEnabledTripoPartIds((prev) => {
+      if (prev.includes(partId)) {
+        return prev.length > 1 ? prev.filter((id) => id !== partId) : prev;
+      }
+      return [...prev, partId];
+    });
   };
 
   const toggleVarcoProp = (propId: string) => {
@@ -537,6 +632,121 @@ export function StudioBg3dWebtoonBackgroundPicker({
                   className="shrink-0 rounded-md border border-[#338FFF]/70 bg-gradient-to-l from-[#1f83ff] via-[#47c5ff] to-[#33ccff] px-2.5 py-1 text-[0.6rem] font-bold text-white shadow-[0px_3.75px_7.5px_-1.25px_rgba(0,0,0,0.18)] transition-opacity hover:opacity-95 disabled:opacity-45"
                 >
                   선택 VARCO 디오라마·소품 장면에 배치
+                </button>
+              </div>
+            </div>
+
+            {/* Tripo 3D 배경 키트 (8종) & REA 유사 서비스 역공학 프리셋 (8종) */}
+            <div
+              data-testid="bg3d-tripo-and-rea-catalog-section"
+              className="mt-2 space-y-1.5 rounded-lg border border-line/60 bg-card/90 p-2"
+            >
+              <label className="block text-[0.6rem] font-semibold text-fg-3">
+                <span className="flex items-center justify-between gap-1.5">
+                  <span>
+                    REA 유사 서비스 역공학 프리셋 ({STUDIO_BG3D_REA_COMPETITOR_PROFILES.length}종)
+                  </span>
+                  <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[9px] font-semibold text-accent">
+                    외곽선 {activeReaCompetitor.toonRenderProfile.silhouetteLineMm}mm · {activeReaCompetitor.toonRenderProfile.shadowRampSteps}단 톤
+                  </span>
+                </span>
+                <select
+                  aria-label="REA 역공학 유사 서비스 프리셋 선택"
+                  data-testid="bg3d-rea-competitor-select"
+                  disabled={disabled}
+                  value={selectedReaCompetitorId}
+                  onChange={(event) =>
+                    setSelectedReaCompetitorId(event.target.value as StudioBg3dReaCompetitorId)
+                  }
+                  className="mt-1 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
+                >
+                  {STUDIO_BG3D_REA_COMPETITOR_PROFILES.map((comp) => (
+                    <option key={comp.id} value={comp.id}>
+                      {comp.serviceNameKo} (FOV {comp.cameraPreset.fovDeg}° · {comp.toonRenderProfile.ambientKelvin}K)
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div
+                data-testid="bg3d-rea-competitor-readout"
+                className="rounded border border-line/50 bg-panel/60 px-2 py-1 text-[0.56rem] text-fg-3"
+              >
+                <span className="font-semibold text-fg-2">{activeReaCompetitor.coreStrengthKo}</span>
+                <span className="ml-1 text-fg-3">
+                  ({activeReaCompetitor.reverseEngineeredSystemsKo[0]})
+                </span>
+              </div>
+
+              <label className="block pt-1 text-[0.6rem] font-semibold text-fg-3">
+                <span className="flex items-center justify-between gap-1.5">
+                  <span>Tripo 3D 배경 키트 ({bg3dTripoModels.length}종 · 휴먼스케일 보정)</span>
+                  <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-semibold text-accent">
+                    {activeTripoCalibration.calibratedScale}x 스케일 · GLBForge {activeTripoBgModel.glbforgeScore}점
+                  </span>
+                </span>
+                <select
+                  aria-label="Tripo 3D 배경 키트 선택"
+                  data-testid="bg3d-tripo3d-kit-select"
+                  disabled={disabled}
+                  value={selectedTripoBgId}
+                  onChange={(event) => {
+                    const nextId = event.target.value;
+                    setSelectedTripoBgId(nextId);
+                    const nextModel = bg3dTripoModels.find((m) => m.id === nextId);
+                    if (nextModel) {
+                      setEnabledTripoPartIds(nextModel.customizableParts.map((p) => p.id));
+                    }
+                  }}
+                  className="mt-1 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
+                >
+                  {bg3dTripoModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.nameKo} ({model.triangles.toLocaleString("ko-KR")} Tri)
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div
+                className="flex flex-wrap gap-1 rounded border border-line/50 bg-panel/60 p-1"
+                role="group"
+                aria-label="Tripo 3D 배경 키트 시맨틱 파츠 선택"
+              >
+                {activeTripoBgModel.customizableParts.map((part) => {
+                  const active = enabledTripoPartIds.includes(part.id);
+                  return (
+                    <button
+                      key={part.id}
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={active}
+                      data-testid={`bg3d-tripo3d-part-${part.id}`}
+                      onClick={() => toggleTripoPart(part.id)}
+                      className={`rounded border px-1.5 py-0.5 text-[0.56rem] transition-colors ${
+                        active
+                          ? "border-accent bg-accent-soft font-semibold text-fg"
+                          : "border-line bg-card text-fg-3"
+                      }`}
+                    >
+                      {part.labelKo}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 text-[0.58rem] text-fg-3">
+                <span data-testid="bg3d-tripo3d-kit-summary" className="truncate">
+                  활성 파츠 <strong className="text-fg">{enabledTripoPartIds.length}/{activeTripoBgModel.customizableParts.length}개</strong> · {activeTripoBgModel.fileName}
+                </span>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  data-testid="bg3d-tripo3d-kit-build-btn"
+                  onClick={buildTripoBgKitAndWorld}
+                  className="shrink-0 rounded-md border border-accent bg-accent px-2.5 py-1 text-[0.6rem] font-bold text-canvas transition-opacity hover:opacity-95 disabled:opacity-45"
+                >
+                  선택 Tripo 배경 키트 장면에 배치
                 </button>
               </div>
             </div>
