@@ -167,7 +167,7 @@ function HeroPreview() {
         <span aria-hidden="true" className="absolute left-[58%] top-[64%] grid size-8 -translate-x-1/2 -translate-y-full place-items-center rounded-full rounded-bl-sm border-2 border-fg/90 bg-bad text-xs font-black text-canvas">1</span>
         <span aria-hidden="true" className="absolute left-[22%] top-[30%] grid size-8 -translate-x-1/2 -translate-y-full place-items-center rounded-full rounded-bl-sm border-2 border-fg/90 bg-warn text-xs font-black text-canvas">2</span>
       </div>
-      <figcaption className="absolute -bottom-5 left-4 right-4 rounded-2xl border border-line bg-panel/95 p-3 shadow-xl backdrop-blur">
+      <figcaption className="mt-3 rounded-2xl border border-line bg-panel/95 p-3 shadow-xl backdrop-blur">
         <p className="flex items-center gap-2 text-xs font-bold text-fg">
           <ProductionSampleBadge label={bt("샘플 화면", "Sample")} />
           {bt("12화 · 돌아온 봉투", "Ep. 12 · The Returned Envelope")}

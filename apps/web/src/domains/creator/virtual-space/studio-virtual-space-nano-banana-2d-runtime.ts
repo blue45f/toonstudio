@@ -246,10 +246,15 @@ export interface NanoBanana2dWorkstationPlacement {
   readonly height: number;
   readonly spawnPoint: StudioVirtualSpacePoint;
   readonly accentColor: number;
+  readonly partnerPersonaId: NanoBananaCreatorPersonaId;
+  readonly partnerPose: CreatorPersonaPose;
+  readonly partnerLabelKo: string;
+  readonly partnerOffsetX: number;
+  readonly partnerOffsetY: number;
 }
 
 /**
- * 2D 캠퍼스 전역(광장 스폰 주변 + 10개 룸)에 배치되는 나노 바나나 2.5D 웹툰 특화 워크스테이션 & 룸 쇼케이스.
+ * 2D 캠퍼스 전역(광장 스폰 주변 + 10개 룸)에 배치되는 나노 바나나 2.5D 웹툰 특화 워크스테이션 & 전담 파트너 캐스트.
  * 광장(PLAZA) 4대 워크스테이션은 입장 즉시(1472, 1290) 한눈에 보이도록 분수대 대각선 4방위에 배치한다.
  */
 export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacement[] = Object.freeze([
@@ -258,13 +263,18 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     zoneId: "creator-plaza",
     titleKo: "🎨 듀얼 신티크 원고 피드백 포드",
     subtitleKo: "Wacom 5K 실시간 레드라인 합평 데스크",
-    textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"),
+    textureKey: nanoBananaPropTextureKey("dual-cintiq-critique-pod"),
     x: 1272,
     y: 1068,
-    width: 132,
-    height: 118,
+    width: 142,
+    height: 128,
     spawnPoint: { x: 1272, y: 1126 },
     accentColor: 0x38bdf8,
+    partnerPersonaId: "line-artist",
+    partnerPose: "work",
+    partnerLabelKo: "✒️ 펜선 메인 작가",
+    partnerOffsetX: -82,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-plaza-hologram-table",
@@ -274,10 +284,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"),
     x: 1672,
     y: 1068,
-    width: 136,
-    height: 120,
+    width: 144,
+    height: 128,
     spawnPoint: { x: 1672, y: 1126 },
     accentColor: 0xfbbf24,
+    partnerPersonaId: "cgi-director",
+    partnerPose: "work",
+    partnerLabelKo: "🧊 3D 배경 감독",
+    partnerOffsetX: 84,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-plaza-foley-booth",
@@ -287,10 +302,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("webtoon-sound-foley-booth"),
     x: 1272,
     y: 1264,
-    width: 132,
-    height: 118,
+    width: 140,
+    height: 126,
     spawnPoint: { x: 1272, y: 1316 },
     accentColor: 0xa855f7,
+    partnerPersonaId: "sound-letterer",
+    partnerPose: "work",
+    partnerLabelKo: "🎧 효과음·식자",
+    partnerOffsetX: -82,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-plaza-espresso-cat-lounge",
@@ -300,10 +320,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("deadline-espresso-cat-lounge"),
     x: 1672,
     y: 1264,
-    width: 134,
-    height: 118,
+    width: 142,
+    height: 126,
     spawnPoint: { x: 1672, y: 1316 },
     accentColor: 0x34d399,
+    partnerPersonaId: "studio-cat-mascot",
+    partnerPose: "idle",
+    partnerLabelKo: "🐱 치즈냥 마스코트",
+    partnerOffsetX: 82,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-studio-main-cintiq",
@@ -313,10 +338,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"),
     x: 1000,
     y: 564,
-    width: 142,
-    height: 126,
+    width: 148,
+    height: 132,
     spawnPoint: { x: 1000, y: 618 },
     accentColor: 0x38bdf8,
+    partnerPersonaId: "colorist",
+    partnerPose: "work",
+    partnerLabelKo: "🎨 수석 채색 아티스트",
+    partnerOffsetX: -88,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-cowork-tarot-pavilion",
@@ -326,10 +356,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("hologram-pedestal"),
     x: 1940,
     y: 548,
-    width: 136,
-    height: 124,
+    width: 138,
+    height: 126,
     spawnPoint: { x: 1984, y: 604 },
     accentColor: 0xc084fc,
+    partnerPersonaId: "story-writer",
+    partnerPose: "work",
+    partnerLabelKo: "📖 메인 스토리 작가",
+    partnerOffsetX: 84,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-cafe-lofi-storyhouse",
@@ -339,10 +374,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("lofi-bookshelf-lounge"),
     x: 2536,
     y: 648,
-    width: 144,
-    height: 128,
+    width: 148,
+    height: 132,
     spawnPoint: { x: 2620, y: 648 },
     accentColor: 0xf59e0b,
+    partnerPersonaId: "chief-pd",
+    partnerPose: "idle",
+    partnerLabelKo: "🎬 총괄 웹툰 PD",
+    partnerOffsetX: -86,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-lobby-recruit-conservatory",
@@ -352,36 +392,51 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("biophilic-planter-set"),
     x: 566,
     y: 548,
-    width: 126,
-    height: 112,
+    width: 132,
+    height: 118,
     spawnPoint: { x: 448, y: 576 },
     accentColor: 0x10b981,
+    partnerPersonaId: "action-mocap-actor",
+    partnerPose: "idle",
+    partnerLabelKo: "⚡ 모션캡처 디렉터",
+    partnerOffsetX: 82,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-talk-ip-boardroom",
     zoneId: "team-meeting",
     titleKo: "🎬 글로벌 웹툰 IP 드라마 피칭 보드룸",
     subtitleKo: "OTT 영상화·해외 연재 런칭 프레젠테이션",
-    textureKey: nanoBananaPropTextureKey("hologram-pedestal"),
+    textureKey: nanoBananaPropTextureKey("on-air-critique-booth"),
     x: 566,
     y: 1124,
-    width: 132,
-    height: 118,
+    width: 138,
+    height: 124,
     spawnPoint: { x: 448, y: 1116 },
     accentColor: 0x60a5fa,
+    partnerPersonaId: "chief-pd",
+    partnerPose: "work",
+    partnerLabelKo: "📡 글로벌 IP PD",
+    partnerOffsetX: 84,
+    partnerOffsetY: 14,
   },
   {
     id: "nb-game-retro-arcade",
     zoneId: "arcade",
     titleKo: "🕹️ 레트로 픽셀 아케이드 & 캣 가챠 라운지",
     subtitleKo: "마감 후 팀원 미니게임 & 굿즈 캡슐 뽑기",
-    textureKey: nanoBananaPropTextureKey("on-air-critique-booth"),
+    textureKey: nanoBananaPropTextureKey("hologram-pedestal"),
     x: 560,
     y: 1684,
     width: 136,
     height: 120,
     spawnPoint: { x: 448, y: 1588 },
     accentColor: 0xf472b6,
+    partnerPersonaId: "studio-cat-mascot",
+    partnerPose: "work",
+    partnerLabelKo: "🕹️ 아케이드 마스코트",
+    partnerOffsetX: -82,
+    partnerOffsetY: 14,
   },
 ]);
 
@@ -456,6 +511,12 @@ interface WorkstationVisual {
   readonly image: Phaser.GameObjects.Image;
   readonly titleText: Phaser.GameObjects.Text;
   readonly subText: Phaser.GameObjects.Text;
+  readonly partnerTextureKey: string;
+  readonly partnerShadow: Phaser.GameObjects.Graphics;
+  readonly partnerImage: Phaser.GameObjects.Image;
+  readonly partnerBadge: Phaser.GameObjects.Text;
+  readonly partnerX: number;
+  readonly partnerY: number;
   proximityLevel: number;
 }
 
@@ -488,7 +549,7 @@ export class StudioNanoBanana2dCampusRuntime {
   /** 기존 캠퍼스 오브젝트 이미지를 등록해 나노 바나나 텍스처 로드 즉시 고해상도 2.5D 프롭으로 교체한다. */
   registerCampusObjectImage(objectId: string, image: Phaser.GameObjects.Image, width: number, height: number): void {
     if (this.disposed || typeof Image === "undefined") return;
-    if (objectId === "plaza-billboard" || objectId === "event-screen") {
+    if (objectId === "event-screen") {
       this.themeBannerTargets.push({ image, width, height });
     }
     const upgrade = NANO_BANANA_CAMPUS_OBJECT_UPGRADES[objectId];
@@ -560,7 +621,32 @@ export class StudioNanoBanana2dCampusRuntime {
         .setDepth(depth + 1)
         .setAlpha(0);
 
-      this.objects.push(shadow, ring, image, titleText, subText);
+      const partnerX = spec.x + spec.partnerOffsetX;
+      const partnerY = spec.y + spec.partnerOffsetY;
+      const partnerDepth = Math.round(partnerY) + 862;
+      const partnerTextureKey = nanoBananaPersonaTextureKey(spec.partnerPersonaId, spec.partnerPose);
+      const partnerReady = scene.textures.exists(partnerTextureKey);
+      const partnerShadow = scene.add.graphics().setDepth(-893).setPosition(partnerX, partnerY - 2);
+      partnerShadow.fillStyle(0x060913, 0.36).fillEllipse(0, 0, 50, 16);
+      const partnerImage = scene.add
+        .image(partnerX, partnerY, partnerReady ? partnerTextureKey : "__DEFAULT")
+        .setOrigin(0.5, 0.91)
+        .setDisplaySize(104, 104)
+        .setDepth(partnerDepth)
+        .setVisible(partnerReady);
+      const partnerBadge = scene.add
+        .text(partnerX, partnerY + 4, spec.partnerLabelKo, {
+          fontFamily: "Pretendard, 'Noto Sans KR', Inter, sans-serif",
+          fontSize: "9.5px",
+          fontStyle: "bold",
+          color: "#fde68a",
+          backgroundColor: "#090d1ae0",
+          padding: { x: 6, y: 2 },
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(partnerDepth + 2);
+
+      this.objects.push(shadow, ring, image, titleText, subText, partnerShadow, partnerImage, partnerBadge);
       this.workstations.push({
         spec,
         shadow,
@@ -568,6 +654,12 @@ export class StudioNanoBanana2dCampusRuntime {
         image,
         titleText,
         subText,
+        partnerTextureKey,
+        partnerShadow,
+        partnerImage,
+        partnerBadge,
+        partnerX,
+        partnerY,
         proximityLevel: 0,
       });
     }
@@ -600,6 +692,12 @@ export class StudioNanoBanana2dCampusRuntime {
           .setDisplaySize(item.spec.width, item.spec.height)
           .setVisible(currentState.enabled);
       }
+      if (item.partnerTextureKey === loadedKey && scene.textures.exists(loadedKey)) {
+        item.partnerImage
+          .setTexture(loadedKey)
+          .setDisplaySize(104, 104)
+          .setVisible(currentState.enabled);
+      }
     }
     for (const [objectId, upgrade] of Object.entries(NANO_BANANA_CAMPUS_OBJECT_UPGRADES)) {
       if (upgrade.textureKey === loadedKey) {
@@ -612,11 +710,15 @@ export class StudioNanoBanana2dCampusRuntime {
   private syncVisibilityAndTheme(scene: CampusSceneLike, state: NanoBanana2dRuntimeState): void {
     for (const item of this.workstations) {
       const ready = scene.textures.exists(item.spec.textureKey);
+      const partnerReady = scene.textures.exists(item.partnerTextureKey);
       item.image.setVisible(state.enabled && ready);
       item.shadow.setVisible(state.enabled);
       item.ring.setVisible(state.enabled);
       item.titleText.setVisible(state.enabled);
       item.subText.setVisible(state.enabled);
+      item.partnerShadow.setVisible(state.enabled);
+      item.partnerImage.setVisible(state.enabled && partnerReady);
+      item.partnerBadge.setVisible(state.enabled);
     }
     if (this.lastThemeId !== state.themeId) {
       const themeKey = nanoBananaThemeTextureKey(state.themeId);
@@ -650,6 +752,12 @@ export class StudioNanoBanana2dCampusRuntime {
         .setPosition(item.spec.x, item.spec.y - item.spec.height * scaleBoost - 8 + liftY)
         .setScale(1 + item.proximityLevel * 0.08);
       item.subText.setAlpha(item.proximityLevel > 0.15 ? item.proximityLevel * 0.92 : 0);
+
+      const partnerBreath = reducedMotion ? 0 : Math.sin(time / 310 + item.partnerX * 0.02) * 2.2;
+      const partnerScale = 1 + item.proximityLevel * 0.08;
+      item.partnerImage
+        .setPosition(item.partnerX, item.partnerY + partnerBreath)
+        .setDisplaySize(104 * partnerScale, (104 - partnerBreath * 0.4) * partnerScale);
     }
   }
 
