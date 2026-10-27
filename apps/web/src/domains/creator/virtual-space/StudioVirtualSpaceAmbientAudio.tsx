@@ -8,9 +8,34 @@ import {
   studioProximityCurveSamples, studioProximityDisplaySnapshot, subscribeStudioProximityDisplay, type StudioProximityDisplaySnapshot,
 } from "./studio-virtual-space-acoustics";
 import { StudioVirtualSpaceSoundEngine, registerStudioSoundEngine } from "./studio-virtual-space-sound-engine";
+import type { StudioFootstepSurface } from "./studio-virtual-space-footsteps";
+import { studioFootstepSynthSpec, studioSfxSpec, type StudioSfxKind } from "./studio-virtual-space-sound-synth";
 import {
   readStudioVirtualSoundPreference, writeStudioVirtualSoundPreference, type StudioVirtualSoundPreference,
 } from "./studio-virtual-space-sound-preference";
+
+const FOOTSTEP_AUDITION_ITEMS: readonly {
+  readonly surface: StudioFootstepSurface;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}[] = [
+  { surface: "carpet", labelKo: "카펫 발소리 청음", labelEn: "Carpet footstep" },
+  { surface: "wood", labelKo: "원목 마루 발소리 청음", labelEn: "Wood floor footstep" },
+  { surface: "tile", labelKo: "타일 발소리 청음", labelEn: "Tile footstep" },
+];
+
+const SFX_AUDITION_ITEMS: readonly {
+  readonly kind: StudioSfxKind;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}[] = [
+  { kind: "activate", labelKo: "오브젝트 작동음 청음", labelEn: "Object activate" },
+  { kind: "peer-join", labelKo: "동료 입장음 청음", labelEn: "Peer join" },
+  { kind: "focus-start", labelKo: "집중 차임 청음", labelEn: "Focus start chime" },
+  { kind: "wellness-chime", labelKo: "싱잉볼 차임 청음", labelEn: "Wellness singing bowl" },
+  { kind: "dance-beat", labelKo: "댄스 비트 청음", labelEn: "Dance rhythm beat" },
+  { kind: "seat-settle", labelKo: "착석 쿠션음 청음", labelEn: "Seat settle" },
+];
 
 export interface StudioVirtualSpaceAmbientAudioProps {
   readonly scope: unknown;
@@ -34,6 +59,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
   const ducked = useSyncExternalStore(subscribeStudioHuddleAudioFocus, studioHuddleAudioFocusSnapshot, () => false);
   const proximity = useStudioProximityDisplay();
   const [debugVisible, setDebugVisible] = useState(false);
+  const [lastAuditionReadout, setLastAuditionReadout] = useState<string | null>(null);
   const proximityPreset = resolveStudioProximityPreset(proximity.presetId);
   const curveSamples = debugVisible
     ? studioProximityCurveSamples(proximity.presetId).map((sample) => `${sample.distance}px → ${Math.round(sample.gain * 100)}%`).join(" · ")
@@ -70,6 +96,26 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     setSound(next); writeStudioVirtualSoundPreference(next);
     soundEngine.current?.setPreference(next);
     if (next.effectsEnabled) soundEngine.current?.unlock();
+  };
+  const auditionFootstep = (surface: StudioFootstepSurface, labelKo: string, labelEn: string) => {
+    soundEngine.current?.unlock();
+    soundEngine.current?.playFootstep({ surface, foot: "left", volume: 0.9 });
+    const spec = studioFootstepSynthSpec(surface, "left");
+    const toneDesc = spec.tone ? ` + ${spec.tone.frequency}Hz ${spec.tone.wave}` : "";
+    setLastAuditionReadout(
+      `${bt(labelKo, labelEn)} · ${spec.filterFrequency}Hz ${spec.filterType}${toneDesc} (${spec.durationMs}ms)`,
+    );
+  };
+  const auditionSfx = (kind: StudioSfxKind, labelKo: string, labelEn: string) => {
+    soundEngine.current?.unlock();
+    soundEngine.current?.playSfx(kind, 1);
+    const spec = studioSfxSpec(kind);
+    const first = spec.steps[0];
+    const last = spec.steps[spec.steps.length - 1];
+    const freqDesc = first && last
+      ? `${first.fromHz}Hz → ${last.toHz}Hz ${first.wave}`
+      : "WebAudio synth";
+    setLastAuditionReadout(`${bt(labelKo, labelEn)} · ${freqDesc}`);
   };
   const selectedTrack = STUDIO_AMBIENT_TRACKS.find((track) => track.id === audio.trackId);
   const status = audio.phase === "error" ? bt("환경음을 재생하지 못했어요. 다시 켜서 시도할 수 있어요.", "Could not play the recording. Turn it on to try again.")
@@ -112,6 +158,42 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
           onChange={(event) => updateSound({ ...sound, effectsVolume: Number(event.target.value) / 100 })} />
         <output>{Math.round(sound.effectsVolume * 100)}%</output>
       </label>
+      <div className="mt-2 rounded-lg border border-line bg-card p-2.5" data-testid="studio-vspace-sfx-audition-pad">
+        <p className="text-xs font-semibold text-fg">{bt("효과음·발소리 즉시 들어보기 (WebAudio 합성 청음)", "Audition WebAudio footsteps & SFX")}</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={bt("발소리 표면 청음", "Footstep surface audition")}>
+          {FOOTSTEP_AUDITION_ITEMS.map((item) => (
+            <button
+              key={item.surface}
+              type="button"
+              data-testid={`studio-vspace-audition-footstep-${item.surface}`}
+              disabled={!sound.effectsEnabled}
+              onClick={() => auditionFootstep(item.surface, item.labelKo, item.labelEn)}
+              className="rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
+            >
+              {bt(item.labelKo, item.labelEn)}
+            </button>
+          ))}
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={bt("상호작용 효과음 청음", "Interaction SFX audition")}>
+          {SFX_AUDITION_ITEMS.map((item) => (
+            <button
+              key={item.kind}
+              type="button"
+              data-testid={`studio-vspace-audition-sfx-${item.kind}`}
+              disabled={!sound.effectsEnabled}
+              onClick={() => auditionSfx(item.kind, item.labelKo, item.labelEn)}
+              className="rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
+            >
+              {bt(item.labelKo, item.labelEn)}
+            </button>
+          ))}
+        </div>
+        {lastAuditionReadout ? (
+          <p className="mt-1.5 text-[11px] font-medium text-accent" data-testid="studio-vspace-sfx-audition-status">
+            {lastAuditionReadout}
+          </p>
+        ) : null}
+      </div>
     </div>
     <div className="mt-2 border-t border-line pt-2">
       <p className="text-sm font-medium">{bt("근접 음성", "Proximity voice")}</p>

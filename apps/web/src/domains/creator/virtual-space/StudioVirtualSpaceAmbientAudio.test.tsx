@@ -68,4 +68,18 @@ describe("StudioVirtualSpaceAmbientAudio proximity section", () => {
     fireEvent.click(debug);
     expect(document.querySelector("[data-proximity-debug=\"true\"]")).toBeNull();
   });
+
+  it("auditions WebAudio footstep surfaces and interaction SFX cues with acoustic recipe readout", () => {
+    renderPanel();
+    expect(screen.getByTestId("studio-vspace-sfx-audition-pad")).toBeTruthy();
+    const woodFootstepBtn = screen.getByTestId("studio-vspace-audition-footstep-wood");
+    fireEvent.click(woodFootstepBtn);
+    const statusAfterFootstep = screen.getByTestId("studio-vspace-sfx-audition-status");
+    expect(statusAfterFootstep.textContent).toContain("원목 마루 발소리 청음");
+    expect(statusAfterFootstep.textContent).toContain("bandpass");
+
+    const focusSfxBtn = screen.getByTestId("studio-vspace-audition-sfx-focus-start");
+    fireEvent.click(focusSfxBtn);
+    expect(screen.getByTestId("studio-vspace-sfx-audition-status").textContent).toContain("587Hz → 880Hz sine");
+  });
 });
