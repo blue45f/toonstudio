@@ -275,5 +275,8 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave51-53-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave51-ancient-mythology-btn"));
     fireEvent.click(screen.getByTestId("wave53-supreme-1020-meta-btn"));
+    expect(screen.getByTestId("wave54-56-domain-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave54-age-of-sail-btn"));
+    fireEvent.click(screen.getByTestId("wave56-omniverse-1080-btn"));
   });
 });

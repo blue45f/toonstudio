@@ -161,13 +161,7 @@ export interface ClaudeKoreanMilitaryBeretK2RifleDogtag {
   readonly militaryAccuracyScore: number;
   readonly overallPromptKo: string;
 }
-const KoreanMilitarySchema = z.object({
-  rokBeretInsigniaLeftEyeAndRightPullKo: z.string(),
-  dogtagLongShortChainAndRankInsigniaKo: z.string(),
-  k2RifleLeftSelectorAndRightChargingHandleKo: z.string(),
-  militaryAccuracyScore: z.number(),
-  overallPromptKo: z.string(),
-});
+const KoreanMilitarySchema = z.object({ rokBeretInsigniaLeftEyeAndRightPullKo: z.string(), dogtagLongShortChainAndRankInsigniaKo: z.string(), k2RifleLeftSelectorAndRightChargingHandleKo: z.string(), militaryAccuracyScore: z.number(), overallPromptKo: z.string() });
 export async function runClaudeKoreanMilitaryBeretK2RifleDogtagDirector(
   input: Wave30LocalizeAssistInput,
   options: RunWave30LocalizeAssistOptions = {},
@@ -275,13 +269,7 @@ export interface ClaudeKoreanMarketBunsikBbqJjimjilbang {
   readonly koreanLifeAccuracyScore: number;
   readonly overallPromptKo: string;
 }
-const KoreanMarketSchema = z.object({
-  marketRedBasinScaleAndBunsikTteokbokkiPanKo: z.string(),
-  kbbqCopperExhaustPipeAndMelamineStoolKo: z.string(),
-  jjimjilbangSheepTowelLockerAndCoinLaundryKo: z.string(),
-  koreanLifeAccuracyScore: z.number(),
-  overallPromptKo: z.string(),
-});
+const KoreanMarketSchema = z.object({ marketRedBasinScaleAndBunsikTteokbokkiPanKo: z.string(), kbbqCopperExhaustPipeAndMelamineStoolKo: z.string(), jjimjilbangSheepTowelLockerAndCoinLaundryKo: z.string(), koreanLifeAccuracyScore: z.number(), overallPromptKo: z.string() });
 export async function runClaudeKoreanMarketBunsikBbqJjimjilbangDirector(
   input: Wave30LocalizeAssistInput,
   options: RunWave30LocalizeAssistOptions = {},
@@ -317,13 +305,7 @@ export interface ClaudeKoreanWeddingPaebaekJesaHwatuTransit {
   readonly traditionTransitScore: number;
   readonly overallPromptKo: string;
 }
-const KoreanWeddingSchema = z.object({
-  paebaekJokduriAndJesaHongdongbaekseoKo: z.string(),
-  hwatu12Months5KwangGodoriAndBlanketKo: z.string(),
-  subwayRightTurnstileTagAndKtxSeatKo: z.string(),
-  traditionTransitScore: z.number(),
-  overallPromptKo: z.string(),
-});
+const KoreanWeddingSchema = z.object({ paebaekJokduriAndJesaHongdongbaekseoKo: z.string(), hwatu12Months5KwangGodoriAndBlanketKo: z.string(), subwayRightTurnstileTagAndKtxSeatKo: z.string(), traditionTransitScore: z.number(), overallPromptKo: z.string() });
 export async function runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector(
   input: Wave30LocalizeAssistInput,
   options: RunWave30LocalizeAssistOptions = {},
@@ -359,13 +341,7 @@ export interface ClaudeAutonomous7StagePipelineDnaHashPsd {
   readonly pipelineAutonomyScore: number;
   readonly overallPromptKo: string;
 }
-const Autonomous7StageSchema = z.object({
-  sevenStageAgentPipelineAnd100EpDnaHashKo: z.string(),
-  adjacentPanel3dCameraFrustumAndGazeKo: z.string(),
-  semantic5GroupPsdAndTrappedBallFlatKo: z.string(),
-  pipelineAutonomyScore: z.number(),
-  overallPromptKo: z.string(),
-});
+const Autonomous7StageSchema = z.object({ sevenStageAgentPipelineAnd100EpDnaHashKo: z.string(), adjacentPanel3dCameraFrustumAndGazeKo: z.string(), semantic5GroupPsdAndTrappedBallFlatKo: z.string(), pipelineAutonomyScore: z.number(), overallPromptKo: z.string() });
 export async function runClaudeAutonomous7StagePipelineDnaHashPsdDirector(
   input: Wave30LocalizeAssistInput,
   options: RunWave30LocalizeAssistOptions = {},
@@ -401,13 +377,7 @@ export interface ClaudeToonstudio1020PlatformSupremeMeta {
   readonly supremeMetaScore: number;
   readonly overallPromptKo: string;
 }
-const Supreme1020MetaSchema = z.object({
-  supreme1020PlatformUiUxSynthesisKo: z.string(),
-  twelveLocaleSimulpubGlossaryAndCopyfitKo: z.string(),
-  spreadSpectrumWatermarkAnd60sShortsPvKo: z.string(),
-  supremeMetaScore: z.number(),
-  overallPromptKo: z.string(),
-});
+const Supreme1020MetaSchema = z.object({ supreme1020PlatformUiUxSynthesisKo: z.string(), twelveLocaleSimulpubGlossaryAndCopyfitKo: z.string(), spreadSpectrumWatermarkAnd60sShortsPvKo: z.string(), supremeMetaScore: z.number(), overallPromptKo: z.string() });
 export async function runClaudeToonstudio1020PlatformSupremeMetaDirector(
   input: Wave30LocalizeAssistInput,
   options: RunWave30LocalizeAssistOptions = {},

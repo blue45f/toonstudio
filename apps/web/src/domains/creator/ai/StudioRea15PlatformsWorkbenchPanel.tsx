@@ -65,30 +65,14 @@ import {
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
 import { REA15_TABS, type Rea15WorkbenchTabId } from "./claude/claude-rea39-extended-engines";
 import {
-  runClaudeAircraftCarrierCatapultBunkerBsl4Director,
-  runClaudeAncientMythologyTriremeKhopeshRuneDirector,
-  runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
-  runClaudeAutonomous7StagePipelineDnaHashPsdDirector,
-  runClaudeCasinoBaccaratHoldemChipsAuctionDirector,
-  runClaudeCyberTerminalServerRackCctvRooftopDirector,
-  runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector,
-  runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector,
-  runClaudeGrandPianoLidViolinCigarWhiskyDirector,
-  runClaudeHanokOndolBongsuWatermillMatchlockDirector,
-  runClaudeHwachaGeobukseonTrebuchetJoustDirector,
-  runClaudeJoseonGatBinyeoKatanaSayaDirector,
-  runClaudeKoreanMarketBunsikBbqJjimjilbangDirector,
-  runClaudeKoreanMilitaryBeretK2RifleDogtagDirector,
-  runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector,
-  runClaudeMensSuitBottomButtonTieHeelStrapDirector,
-  runClaudeMurimPlumBlossomTangClanBaguaDirector,
-  runClaudeSignLanguageHearingAidLegalDepositDirector,
-  runClaudeSteampunkAirshipAutomatonDivingPlagueDirector,
-  runClaudeSupercarDoorF1HaloYachtPrivateJetDirector,
-  runClaudeToonstudio1020PlatformSupremeMetaDirector,
-  runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector,
-  runClaudeXianxiaFlyingSwordInnBambooScrollDirector,
-  runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
+  runClaudeAgeOfSailGalleonWheelCannonCutlassDirector, runClaudeAircraftCarrierCatapultBunkerBsl4Director, runClaudeAncientMythologyTriremeKhopeshRuneDirector, runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeAutonomous7StagePipelineDnaHashPsdDirector, runClaudeCasinoBaccaratHoldemChipsAuctionDirector, runClaudeCyberTerminalServerRackCctvRooftopDirector, runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector,
+  runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector, runClaudeGitDiffKanbanDiscordSuperchatShortsSafezoneDirector, runClaudeGrandPianoLidViolinCigarWhiskyDirector, runClaudeHanokOndolBongsuWatermillMatchlockDirector,
+  runClaudeHwachaGeobukseonTrebuchetJoustDirector, runClaudeJoseonGatBinyeoKatanaSayaDirector, runClaudeKoreanMarketBunsikBbqJjimjilbangDirector, runClaudeKoreanMilitaryBeretK2RifleDogtagDirector,
+  runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector, runClaudeMensSuitBottomButtonTieHeelStrapDirector, runClaudeMurimPlumBlossomTangClanBaguaDirector, runClaudeNoirTrenchcoatFedoraVenetianBlindSpyDirector,
+  runClaudeSignLanguageHearingAidLegalDepositDirector, runClaudeSteampunkAirshipAutomatonDivingPlagueDirector, runClaudeStreamerMicRingLightCintiqBlenderNodeDirector, runClaudeSupercarDoorF1HaloYachtPrivateJetDirector,
+  runClaudeSurgicalLightEcmoTriageBloodBagBdnaDirector, runClaudeSuspensionBridgeArchKeystoneHanokDoorTbmDirector, runClaudeToonstudio1020PlatformSupremeMetaDirector, runClaudeToonstudio1080OmniverseDcfStrokeSupremeDirector,
+  runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector, runClaudeWesternRevolverWinchesterSaloonLocomotiveDirector, runClaudeXianxiaFlyingSwordInnBambooScrollDirector, runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
 } from "./claude/claude-localize";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
 import { StudioRea39ExtendedTabPanels } from "./StudioRea39ExtendedTabPanels";
@@ -767,6 +751,22 @@ export function StudioRea15PlatformsWorkbenchPanel({
             <button type="button" data-testid="wave52-korean-wedding-hwatu-btn" onClick={() => void runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector(wave45Input, { route: null }).then((r) => { const line = `[폐백/제사상/화투 (${r.model})] ${r.data.paebaekJokduriAndJesaHongdongbaekseoKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>폐백/제사상/화투</button>
             <button type="button" data-testid="wave53-autonomous-7stage-btn" onClick={() => void runClaudeAutonomous7StagePipelineDnaHashPsdDirector(wave45Input, { route: null }).then((r) => { const line = `[7단자율파이프라인 (${r.model})] ${r.data.sevenStageAgentPipelineAnd100EpDnaHashKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>7단파이프라인/DNA</button>
             <button type="button" data-testid="wave53-supreme-1020-meta-btn" onClick={() => void runClaudeToonstudio1020PlatformSupremeMetaDirector(wave45Input, { route: null }).then((r) => { const line = `[1020대수프림메타 (${r.model})] ${r.data.supreme1020PlatformUiUxSynthesisKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>1,020대수프림메타</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-testid="wave54-56-domain-consistency-bar" className="flex flex-col gap-1.5 rounded border border-accent/30 bg-raised p-2 text-[0.55rem]">
+        <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+          <span>Wave 54~56 (1,080대 플랫폼): 범선/함포/커틀러스 · 서부리볼버/살룬/기관차 · 누아르트렌치코트/스파이 · 수술무영등/ECMO/B-DNA · 현수교/석조아치/들어열개문 · 스트리머마이크/신티크 · Git/칸반/슈퍼챗 · 1,080대옴니버스</span>
+          <div className="flex flex-wrap gap-1">
+            <button type="button" data-testid="wave54-age-of-sail-btn" onClick={() => void runClaudeAgeOfSailGalleonWheelCannonCutlassDirector(wave45Input, { route: null }).then((r) => { const line = `[대항해범선 (${r.model})] ${r.data.galleonSquareRigRatlineAndKingSpokeHelmKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>범선/함포/커틀러스</button>
+            <button type="button" data-testid="wave54-western-frontier-btn" onClick={() => void runClaudeWesternRevolverWinchesterSaloonLocomotiveDirector(wave45Input, { route: null }).then((r) => { const line = `[서부극/기관차 (${r.model})] ${r.data.coltSaaRightEjectorRodAndFanningKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>콜트/살룬/기관차</button>
+            <button type="button" data-testid="wave54-noir-espionage-btn" onClick={() => void runClaudeNoirTrenchcoatFedoraVenetianBlindSpyDirector(wave45Input, { route: null }).then((r) => { const line = `[누아르/스파이 (${r.model})] ${r.data.trenchcoatRightGunFlapAndFedoraPinchKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>트렌치코트/스파이</button>
+            <button type="button" data-testid="wave55-surgical-bdna-btn" onClick={() => void runClaudeSurgicalLightEcmoTriageBloodBagBdnaDirector(wave45Input, { route: null }).then((r) => { const line = `[무영등/ECMO/B-DNA (${r.model})] ${r.data.shadowlessSurgicalLightAndAnesthesiaVaporizerKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>무영등/ECMO/B-DNA</button>
+            <button type="button" data-testid="wave55-bridge-hanok-tbm-btn" onClick={() => void runClaudeSuspensionBridgeArchKeystoneHanokDoorTbmDirector(wave45Input, { route: null }).then((r) => { const line = `[현수교/한옥문/TBM (${r.model})] ${r.data.suspensionParabolicVsCableStayedFanBridgeKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>현수교/한옥문/TBM</button>
+            <button type="button" data-testid="wave56-streamer-cintiq-btn" onClick={() => void runClaudeStreamerMicRingLightCintiqBlenderNodeDirector(wave45Input, { route: null }).then((r) => { const line = `[스트리머/신티크 (${r.model})] ${r.data.sideAddressCondenserMicAnd15KeyStreamDeckKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>콘덴서마이크/신티크</button>
+            <button type="button" data-testid="wave56-git-kanban-superchat-btn" onClick={() => void runClaudeGitDiffKanbanDiscordSuperchatShortsSafezoneDirector(wave45Input, { route: null }).then((r) => { const line = `[Git/칸반/슈퍼챗 (${r.model})] ${r.data.gitBranchGraphAndPrGreenRedDiffKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>Git/칸반/슈퍼챗</button>
+            <button type="button" data-testid="wave56-omniverse-1080-btn" onClick={() => void runClaudeToonstudio1080OmniverseDcfStrokeSupremeDirector(wave45Input, { route: null }).then((r) => { const line = `[1080대옴니버스 (${r.model})] ${r.data.omniverse1080PlatformAnd180TaskRoutingKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>1,080대옴니버스</button>
           </div>
         </div>
       </div>

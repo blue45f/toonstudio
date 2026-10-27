@@ -61,14 +61,22 @@ import {
   runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
 } from "./claude-localize-run";
 import {
+  runClaudeAgeOfSailGalleonWheelCannonCutlassDirector,
   runClaudeAncientMythologyTriremeKhopeshRuneDirector,
   runClaudeAutonomous7StagePipelineDnaHashPsdDirector,
   runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector,
+  runClaudeGitDiffKanbanDiscordSuperchatShortsSafezoneDirector,
   runClaudeKoreanMarketBunsikBbqJjimjilbangDirector,
   runClaudeKoreanMilitaryBeretK2RifleDogtagDirector,
   runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector,
+  runClaudeNoirTrenchcoatFedoraVenetianBlindSpyDirector,
   runClaudeSteampunkAirshipAutomatonDivingPlagueDirector,
+  runClaudeStreamerMicRingLightCintiqBlenderNodeDirector,
+  runClaudeSurgicalLightEcmoTriageBloodBagBdnaDirector,
+  runClaudeSuspensionBridgeArchKeystoneHanokDoorTbmDirector,
   runClaudeToonstudio1020PlatformSupremeMetaDirector,
+  runClaudeToonstudio1080OmniverseDcfStrokeSupremeDirector,
+  runClaudeWesternRevolverWinchesterSaloonLocomotiveDirector,
 } from "./claude-art-director-run";
 
 describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
@@ -110,12 +118,21 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 121대 창의 AI 작업을 포함한 총 172개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 129대 창의 AI 작업을 포함한 총 180개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(172);
-    expect(summary.byProfile["fast-inline"]).toBe(44);
-    expect(summary.byProfile["creative-production"]).toBe(86);
-    expect(summary.byProfile["deep-architecture"]).toBe(42);
+    expect(summary.totalTasks).toBe(180);
+    expect(summary.byProfile["fast-inline"]).toBe(46);
+    expect(summary.byProfile["creative-production"]).toBe(90);
+    expect(summary.byProfile["deep-architecture"]).toBe(44);
+
+    expect(resolveCreatorTaskModelRoute("art-director:age-of-sail-galleon-wheel-cannon-cutlass-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:western-revolver-winchester-saloon-locomotive-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:noir-trenchcoat-fedora-venetian-blind-spy-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:surgical-light-ecmo-triage-blood-bag-bdna-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:suspension-bridge-arch-keystone-hanok-door-tbm-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:streamer-mic-ringlight-cintiq-blender-node-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:git-diff-kanban-discord-superchat-shorts-director").model).toBe("claude-opus-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director").model).toBe("claude-opus-5-5");
 
     expect(resolveCreatorTaskModelRoute("art-director:ancient-mythology-trireme-khopesh-rune-lock").model).toBe("claude-haiku-5-5");
     expect(resolveCreatorTaskModelRoute("art-director:korean-military-beret-k2-rifle-dogtag-lock").model).toBe("claude-haiku-5-5");
@@ -578,5 +595,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(n6.data.traditionTransitScore).toBeGreaterThanOrEqual(95);
     expect(n7.data.pipelineAutonomyScore).toBeGreaterThanOrEqual(95);
     expect(n8.data.supremeMetaScore).toBeGreaterThanOrEqual(95);
+
+    const p1 = await runClaudeAgeOfSailGalleonWheelCannonCutlassDirector(sample, { route: null });
+    const p2 = await runClaudeWesternRevolverWinchesterSaloonLocomotiveDirector(sample, { route: null });
+    const p3 = await runClaudeNoirTrenchcoatFedoraVenetianBlindSpyDirector(sample, { route: null });
+    const p4 = await runClaudeSurgicalLightEcmoTriageBloodBagBdnaDirector(sample, { route: null });
+    const p5 = await runClaudeSuspensionBridgeArchKeystoneHanokDoorTbmDirector(sample, { route: null });
+    const p6 = await runClaudeStreamerMicRingLightCintiqBlenderNodeDirector(sample, { route: null });
+    const p7 = await runClaudeGitDiffKanbanDiscordSuperchatShortsSafezoneDirector(sample, { route: null });
+    const p8 = await runClaudeToonstudio1080OmniverseDcfStrokeSupremeDirector(sample, { route: null });
+
+    expect(p1.data.ageOfSailAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(p2.data.westernFrontierScore).toBeGreaterThanOrEqual(95);
+    expect(p3.data.noirEspionageScore).toBeGreaterThanOrEqual(95);
+    expect(p4.data.biomedicalRigorScore).toBeGreaterThanOrEqual(95);
+    expect(p5.data.civilArchIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(p6.data.creatorHardwareScore).toBeGreaterThanOrEqual(95);
+    expect(p7.data.digitalPlatformUxScore).toBeGreaterThanOrEqual(95);
+    expect(p8.data.omniverseSupremeScore).toBeGreaterThanOrEqual(95);
   });
 });
