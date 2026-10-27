@@ -1,6 +1,6 @@
-# 협업·분업화(Division of Labor) 특화 16대 서비스 REA 역공학 분석 및 ToonStudio 내재화·고도화 설계서 (2026-10-27)
+# 협업·분업화(Division of Labor) 특화 20대 서비스 REA 역공학 분석 및 ToonStudio 내재화·고도화 설계서 (2026-10-27)
 
-- **문서 상태**: `current` (2026-10-27 REA 16대 서비스 역공학 분석 및 12대 클린룸 모듈 내재화·고도화 완료)
+- **문서 상태**: `current` (2026-10-27 REA 20대 서비스 역공학 분석 및 14대 클린룸 모듈 내재화·고도화 완료)
 - **증거 원장**: [`docs/evidence/rea-collaboration-division-of-labor-20261027.json`](../evidence/rea-collaboration-division-of-labor-20261027.json)
 - **분석 도구**: `rea` (`reverse-engineer-anything` MCP 서버 — `capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`, `export_evidence_bundle`)
 
@@ -10,13 +10,13 @@
 
 웹툰·디지털 코믹스 스튜디오 및 창작 크루는 단일 작가 체계에서 **8단계 공정(글콘티 → 그림콘티 → 3D배경/소품 → 선화/펜선 → 밑색 → 명암/채색 → 후보정/이펙트 → 식자/최종 검수)** 및 **17개 세부 직무**가 동시에 맞물리는 고밀도 분업 파이프라인으로 진화했다.
 
-본 문서는 글로벌·국내 대표 협업 및 분업화 특화 플랫폼 16종(**Linear**, **Frame.io**, **Figma**, **크몽(Kmong)**, **Miro**, **ClickUp**, **숨고(Soomgo)**, **위시켓(Wishket)**, **Notion**, **Asana**, **아트머그(Artmug)**, **라우드소싱(Loudsourcing)**, **Trello**, **Monday.com**, **Loom**, **포스타입(Postype)**)을 REA 도구체인으로 직접 캡처·역공학(총 **2,356,711개 AST 노드**, **15,120건 정적 분석 Finding**, **611개 추출 스크립트**, **209개 REA 세션 Evidence 레코드**)한 증거를 기록하고, 이를 ToonStudio의 핵심 스튜디오·프로덕션·협업·채용·공동집필 서피스 12곳에 클린룸 내재화·고도화한 아키텍처를 정의한다.
+본 문서는 글로벌·국내 대표 협업 및 분업화 특화 플랫폼 20종(**Linear**, **Frame.io**, **Figma**, **크몽(Kmong)**, **Miro**, **ClickUp**, **숨고(Soomgo)**, **위시켓(Wishket)**, **Notion**, **Asana**, **아트머그(Artmug)**, **라우드소싱(Loudsourcing)**, **Trello**, **Monday.com**, **Loom**, **포스타입(Postype)**, **GitHub Code Review**, **Slack**, **Airtable**, **잔디(JANDI)**)을 REA 도구체인으로 직접 캡처·역공학(총 **3,023,501개 AST 노드**, **17,297건 정적 분석 Finding**, **779개 추출 스크립트**, **229개 REA 세션 Evidence 레코드**)한 증거를 기록하고, 이를 ToonStudio의 핵심 스튜디오·프로덕션·협업·채용·공동집필 서피스 14개 모듈로 클린룸 내재화·고도화한 아키텍처를 정의한다.
 
 ---
 
 ## 2. REA 역공학 증거 요약 (Observed Facts / Inferences / Unknowns)
 
-### 2.1 대상별 REA 정적·동적 캡처 메트릭 (Wave 1 + Wave 2 + Wave 3 + Wave 4 총 16대 서비스)
+### 2.1 대상별 REA 정적·동적 캡처 메트릭 (Wave 1 ~ Wave 5 총 20대 서비스)
 
 | 분석 대상 | `capture_browser_scenario` Evidence ID | `export_web_scripts` Evidence ID | `analyze_javascript_application` Parent / Summary ID | 추출 스크립트 (Bytes) | 방문 AST 노드 / Findings | 핵심 Semantic Relations |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -36,6 +36,10 @@
 | **Monday.com** (`https://monday.com/`) | `ev_8605ebe0e3dc0a041104ecd0ef97445eca10e8fe3b6fe22b387e303900b8bf96` | `ev_dd74a7418cf5e5d232d65604ac864ec80bc8f9cff81cbfa7147d3dc46aed23b8` | Parent: `ev_9c5f9d73e58bda16c4084541a06eca32becc3d432cbed7055d7c986b1eb833ed`<br/>Summary: `ev_095c1d4126a37583d8b7c3d2f5f026e21af18d5d96e862473125c9f16f5349bb` | 12 / 37개 (137,875 B) | **44,260 노드** / 133건 | `data-flow`: 32,363, `closure`: 3,378, `call-flow`: 3,144, `object-flow`: 2,835 |
 | **Loom** (`https://www.loom.com/`) | `ev_036c1d2eda88b63422a55b26ca4893a45cc8ec3fa4d1792098fc339064f158b7` | `ev_c5089c8c295e17e604c4d41fd0e0f8629cfbff224a786a1a78b46954168ca892` | Parent: `ev_76aad1f37a573e6161564d04c766195b619e984603b278794e230dbdd2d04fd5`<br/>Summary: `ev_f62d89dbaa9af0df9d85b670198bb412f0bdcb1c3d4102d32411151f57c974fb` | 28 / 61개 (554,642 B) | **136,267 노드** / 1,332건 | `data-flow`: 84,804, `object-flow`: 6,638, `closure`: 4,882, `promise-ownership`: 103 |
 | **포스타입 (Postype)** (`https://www.postype.com/`) | `ev_43a1ce3a5b2166f16af3903e8bba7559aa6da4cd1c86635ad006dcf5893e0c54` | `ev_716719f952e332fb039c8c07be1bff072fb71d533d042d078acbc581d9623cd7` | Parent: `ev_f493c645df108c0a6355e444ec9c48e43ce26b292d77878fed5f4628c746f4c7`<br/>Summary: `ev_1658697c3873a26ba941c5c1cd68ff985aa5a3e181633a377f953121af72cc87` | 52 / 82개 (1,253,546 B) | **325,070 노드** / 3,117건 | `data-flow`: 68,242, `object-flow`: 6,734, `closure`: 5,346, `call-flow`: 1,695 |
+| **GitHub Code Review** (`https://github.com/features/code-review`) | `ev_a77aa06bf8dff2df0c7902ceba156b1f75ba0268f73071273fff975740055c49` | `ev_4241bd493a493ed994002e09646b96a2c5b2e8fba43281099392a9b875fbd49b` | Parent: `ev_4505c4ccac96373fbe2868a2b1bd39cf512f1badd9151cf8ddc79edf7fa1c6ba`<br/>Summary: `ev_d3443cb6f1b1ab8604159d66679a8ebb09f8970c299bf88f7c4866b4913ce8f1` | 85 / 110개 (1,170,057 B) | **287,135 노드** / 767건 | `data-flow`: 59,875, `object-flow`: 8,327, `closure`: 4,473, `call-flow`: 3,160 |
+| **Slack** (`https://slack.com/`) | `ev_0494fbc9528813556e24b344fe5ea6110baee66d8b6cc22a6bb1699362764e3d` | `ev_4526949567fc31a0b71de05fbd7fc1a89a1a5a4d1897b9795490dc1e68f6aed9` | Parent: `ev_7f6193e39a1322d0d1cf6d154e36b18f30ffba45e5b74bf5ba5720b0fc8c3286`<br/>Summary: `ev_cc32ff3ec6303d4e08b8095d2cb4608fffca1956e98bb76e703b302ed91f7ad2` | 14 / 27개 (297,974 B) | **60,728 노드** / 198건 | `data-flow`: 36,313, `object-flow`: 4,186, `closure`: 2,725, `call-flow`: 2,361 |
+| **Airtable** (`https://www.airtable.com/`) | `ev_bae6678a634f5cf87c922cde25cfa706c04fd37d23fb4922026f25be82b5a0c0` | `ev_40f7b1ff67d72a93326a9f4c6cab7cb3950240ada8e5374c01be5c3634167286` | Parent: `ev_78c069a3108e417af8ac61b40490fb573531e3f2c063ffb6c0f958fa351c3ee9`<br/>Summary: `ev_ac0f106a91ba3e99d3e78446c559e5f6879f02ba411f89b28f1d96bc55b32f12` | 21 / 53개 (613,176 B) | **169,319 노드** / 242건 | `data-flow`: 55,567, `object-flow`: 4,417, `call-flow`: 4,328, `closure`: 3,413 |
+| **잔디 (JANDI)** (`https://www.jandi.com/`) | `ev_69507c2d6b46cbd837150f62687c0722bbb2ccb21617df6828473d29c2d5606a` | `ev_5e834fcf9fa2b7dea34676a016c0ad0aed2406ae116c2f218f28d611c83992f8` | Parent: `ev_dcc7fede96409d495128ec0712ade77d7e7ffcca8f6f789b24a3e5b28fe982fc`<br/>Summary: `ev_ce6352c54ea0d05bc8f3da06fae26d55fd8314d998d3340e42ae8f3e002ec7e6` | 48 / 67개 (752,943 B) | **149,608 노드** / 970건 | `data-flow`: 56,122, `object-flow`: 4,263, `closure`: 3,597, `promise-ownership`: 107 |
 
 ### 2.2 Observed Facts (관찰된 사실)
 
@@ -74,6 +78,14 @@
     - 28개 추출 스크립트(루트 아티팩트 SHA-256 `10512be80418e493b0894e186b589abcfea93c0615b630a0d22ef6541581e1b6`, 136,267 AST 노드, 346개 모듈)에서 `/connect/[slug]`, `/connect/enterprise`, `/pricing` 등 5개 라우트(`ev_2b802492a23fc50b4ebffa7e0dc660943bc561dd25d518876f564feca8178443`)와 84,804건의 `data-flow`, 6,638건의 `object-flow`, 103건의 `promise-ownership`이 관찰되었으며, 타임스탬프 기반 비동기 비디오 워크스루·챕터·트랜스크립트 액션 아이템 추출 및 이모지 리액션 동기화 구조를 갖는다.
 16. **포스타입 Postype (`ev_1658697c3873a26ba941c5c1cd68ff985aa5a3e181633a377f953121af72cc87`)**:
     - 52개 추출 스크립트(루트 아티팩트 SHA-256 `8030fa9b860e17a696f3497e30669bf4ab12102b41304538ccdd2be7fa3d25e8`, 325,070 AST 노드, 643개 모듈)에서 3,117건의 정적 분석 Finding과 68,242건의 `data-flow`, 6,734건의 `object-flow`, 5,346건의 `closure`, 46건의 `boundary` 검증이 관찰되었으며, 공동 창작 시리즈(웹툰·웹소설·일러스트북) 유료 에피소드 코인/포인트 판매·후원·멤버십 수익 배분 및 채널 에디터 분업 구조를 갖는다.
+17. **GitHub Code Review (`ev_d3443cb6f1b1ab8604159d66679a8ebb09f8970c299bf88f7c4866b4913ce8f1`)**:
+    - 85개 추출 스크립트(`react-compiler-runtime`, `primer-react`, `catalyst`, `selector-observer`, `aria-live`, `hotkey` 등 루트 아티팩트 SHA-256 `28e81d29607a2c4f81b025ca6456e3e7dee145a1edb06021299a023c18cdb254`, 287,135 AST 노드)에서 59,875건의 `data-flow`, 8,327건의 `object-flow`, 4,473건의 `closure`, 3,160건의 `call-flow`, 99건의 `promise-ownership`, 41건의 `boundary` 검증이 관찰되었으며, `CODEOWNERS` 경로 패턴 기반 필수 리뷰어 자동 라우팅, 신규 커밋 푸시 시 기존 승인 자동 무효화(Dismiss Stale Pull Request Approvals), 보호 브랜치 필수 상태 체크(Required Status Checks) 병합 게이트 구조를 갖는다.
+18. **Slack (`ev_cc32ff3ec6303d4e08b8095d2cb4608fffca1956e98bb76e703b302ed91f7ad2`)**:
+    - 14개 추출 스크립트(루트 아티팩트 SHA-256 `f064a69775ff097b4ab2625d4724c69c0f93de2cffa8f789dbff0b488fce2924`, 60,728 AST 노드)에서 36,313건의 `data-flow`, 4,186건의 `object-flow`, 2,725건의 `closure`, 2,361건의 `call-flow`, 63건의 `promise-ownership`이 관찰되었으며, `@subteam` 직무 그룹 멘션과 실시간 음성·화면 공유 허들(Live Huddle) 및 워크플로 빌더(Workflow Builder) 인계 자동화 구조를 갖는다.
+19. **Airtable (`ev_ac0f106a91ba3e99d3e78446c559e5f6879f02ba411f89b28f1d96bc55b32f12`)**:
+    - 21개 추출 스크립트(루트 아티팩트 SHA-256 `66410c55dba420bab71fe22f9b70cbe02bff9d66735ceb007c9f1f844df284dc`, 169,319 AST 노드)에서 55,567건의 `data-flow`, 4,417건의 `object-flow`, 4,328건의 `call-flow`, 3,413건의 `closure`, 88건의 `promise-ownership`이 관찰되었으며, 테이블 간 양방향 Linked Record 및 Rollup 집계와 Interface Designer 조건부 필드 잠금(Field Lock) 구조를 갖는다.
+20. **잔디 JANDI (`ev_ce6352c54ea0d05bc8f3da06fae26d55fd8314d998d3340e42ae8f3e002ec7e6`)**:
+    - 48개 추출 스크립트(루트 아티팩트 SHA-256 `181259ccf144bbf48364436dd5e04f841bed7023941e5c6c2d8c35375f0d7bb6`, 149,608 AST 노드, 211개 모듈)에서 970건의 정적 분석 Finding과 56,122건의 `data-flow`, 4,263건의 `object-flow`, 3,597건의 `closure`, 107건의 `promise-ownership`이 관찰되었으며, 주제별 토픽 폴더(Topic Folder), 준회원(외주 파트너) 초청 토픽 외 접근 차단, 메시지별 읽음 확인(Read Receipt) 미열람자 추적 및 할일(Todo) 관리 구조를 갖는다.
 
 ### 2.3 Inferences (역공학 추론 및 도메인 결합 원리)
 
@@ -99,14 +111,18 @@
     - 리뷰 서피스(`ProductionReviewSurface`)에서 PD·감독의 비동기 화면 녹화 워크스루 클립 타임스탬프(`00:18`, `01:05` 등)와 컷·레이어(`layer:p1:lighting-fx` 등) 액션 아이템을 1:1 바인딩하고, 모든 필수 수정 액션 아이템 완료 시 Trello Butler 규칙에 따라 카드를 차기 공정 리스트로 자동 이동·담당자 멘션·인계 체크리스트 자동 생성까지 무중단 수행한다.
 11. **공동 창작 시리즈 유료 수익 정산 원장(포스타입 Postype) & 교차 보드 미러 컬럼·배터리 게이지(Monday.com)**:
     - 공동집필·공고 에디터(`CollaborationEditorPage`)에서 스토리/콘티·선화·배경·채색/식자 공동 창작자의 MG(미니멈 개런티) 우선 공제 후 순수익 RS 지분(합계 100% 불변량 검증)과 3.3% 원천징수 실수령액을 시뮬레이션하고, 4대 분리 보드(시나리오·작화·채색·식자/유통)의 미러 컬럼과 Monday.com 스타일 배터리 게이지를 실시간 동기화한다.
+12. **LAYEROWNERS 경로 패턴 기반 자동 리뷰어 라우팅·Stale 승인 무효화(GitHub) & 에셋 롤업·필드 잠금(Airtable)**:
+    - 인계 서피스(`ProductionHandoffSurface`)에서 레이어 글롭 패턴(`layer:ep*:cut*:lineart/**` 등)별 필수 오너 그룹(`@lineart-owners`, `@bg3d-supervisors`, `@color-directors`, `@editorial-qa`) 승인 쿼럼과 600dpi·sRGB·레이어 명명 자동 상태 체크를 강제하고, 신규 레이어 리비전 업로드 시 기존 오너 승인을 자동 무효화(Dismiss Stale Approvals)하며 Airtable 스타일 연결 에셋(브러시·3D 배경·LUT) 롤업 및 필드 잠금을 수행한다.
+13. **회차·공정별 토픽 폴더·준회원 권한 격리·읽음 확인(잔디 JANDI) & @subteam 실시간 컷 허들(Slack)**:
+    - 협업 보드(`CollaborationBoardPage`)에서 회차별 4대 토픽 폴더와 `@subteam` 호출 그룹을 연결하고, 외주 준회원(Associate Guest)이 초청된 토픽 외 타 회차 비공개 원고에 접근하는 것을 원천 차단하며, 지시사항 미열람자 읽음 확인(Read Receipt)과 실시간 컷 화면공유 허들(Huddle) 세션을 통합 제공한다.
 
 ### 2.4 Explicit Unknowns (명시적 미확정 영역)
 
-- 인증 세션 이후의 서버 측 비공개 Mutation 페이로드(Linear 내부 동기화 델타, Frame.io C2PA 서명 키 교환, 크몽/숨고/위시켓/아트머그/라우드소싱/포스타입 내부 에스크로·정산 PG 웹훅, Miro/ClickUp/Notion/Asana/Trello/Monday.com/Loom 비공개 워크스페이스 소켓 프레임)는 공개 캡처 범위에서 실행되지 않았으므로 `unknown`으로 분리 기록하며, ToonStudio 내재화 시에는 자체 클린룸 결정론적 TypeScript 도메인 모델로 구현한다.
+- 인증 세션 이후의 서버 측 비공개 Mutation 페이로드(Linear 내부 동기화 델타, Frame.io C2PA 서명 키 교환, 크몽/숨고/위시켓/아트머그/라우드소싱/포스타입 내부 에스크로·정산 PG 웹훅, Miro/ClickUp/Notion/Asana/Trello/Monday.com/Loom/GitHub/Slack/Airtable/JANDI 비공개 워크스페이스 소켓 프레임)는 공개 캡처 범위에서 실행되지 않았으므로 `unknown`으로 분리 기록하며, ToonStudio 내재화 시에는 자체 클린룸 결정론적 TypeScript 도메인 모델로 구현한다.
 
 ---
 
-## 3. ToonStudio 클린룸 내재화·고도화 아키텍처 (총 12대 모듈)
+## 3. ToonStudio 클린룸 내재화·고도화 아키텍처 (총 14대 모듈)
 
 | 모듈 | 도메인 모델 | UI 컴포넌트 스위트 | 마운트 서피스 (라우트) |
 | --- | --- | --- | --- |
@@ -122,3 +138,5 @@
 | **Module 10: 멀티호밍(Multi-Homing) 브리프 4대 보드 동기화 & 최소 권한 원고 격리 스위트** | `apps/web/src/domains/collaboration/collaboration-multi-homing-brief-model.ts` | `apps/web/src/domains/collaboration/CollaborationMultiHomingBriefSuite.tsx` | `CollaborationPostPage.tsx` (`/collaborate/:id`) |
 | **Module 11: 비동기 컷·레이어 비디오 워크스루(Loom) & Butler 공정 자동 전이 규칙 스위트(Trello)** | `apps/web/src/domains/creator/production-hub/production-async-walkthrough-butler-model.ts` | `apps/web/src/domains/creator/production-hub/ProductionAsyncWalkthroughButlerSuite.tsx` | `ProductionReviewSurface.tsx` (`/production/projects/:projectId/review`) |
 | **Module 12: 공동 창작 시리즈 유료 수익 정산 원장(Postype) & 교차 보드 미러 컬럼·배터리 게이지 스위트(Monday.com)** | `apps/web/src/domains/collaboration/collaboration-coauthor-revenue-mirror-model.ts` | `apps/web/src/domains/collaboration/CollaborationCoauthorRevenueMirrorSuite.tsx` | `CollaborationEditorPage.tsx` (`/collaborate/new`, `/collaborate/:id/edit`) |
+| **Module 13: LAYEROWNERS 자동 리뷰 라우팅·Stale 승인 무효화(GitHub) & 에셋 롤업·필드 잠금 스위트(Airtable)** | `apps/web/src/domains/creator/production-hub/production-layer-owners-merge-gate-model.ts` | `apps/web/src/domains/creator/production-hub/ProductionLayerOwnersMergeGateSuite.tsx` | `ProductionHandoffSurface.tsx` (`/production/projects/:projectId/handoff`) |
+| **Module 14: 회차별 토픽 폴더·준회원 읽음 확인(JANDI) & @subteam 실시간 컷 허들 스위트(Slack)** | `apps/web/src/domains/collaboration/collaboration-topic-subteam-huddle-model.ts` | `apps/web/src/domains/collaboration/CollaborationTopicSubteamHuddleSuite.tsx` | `CollaborationBoardPage.tsx` (`/collaborate`) |

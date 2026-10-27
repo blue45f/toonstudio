@@ -1,7 +1,7 @@
 {
-  "schema_version": "4.0.0",
+  "schema_version": "5.0.0",
   "generated_at": "2026-10-27",
-  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 16대 서비스 REA 역공학 증거 원장",
+  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 20대 서비스 REA 역공학 증거 원장",
   "toolchain": {
     "mcp_server": "rea",
     "provider_browser": "rea-playwright-browser-scenario",
@@ -14,11 +14,11 @@
     ],
     "native_binary_policy": "ghidra_only_no_hopper",
     "session_bundle": {
-      "records": 209,
-      "unknowns": 36,
-      "total_visited_ast_nodes": 2356711,
-      "total_findings": 15120,
-      "total_exported_scripts": 611
+      "records": 229,
+      "unknowns": 44,
+      "total_visited_ast_nodes": 3023501,
+      "total_findings": 17297,
+      "total_exported_scripts": 779
     }
   },
   "targets": [
@@ -653,6 +653,131 @@
           "boundary": 46
         }
       }
+    },
+    {
+      "id": "github",
+      "name": "GitHub Code Review & CODEOWNERS",
+      "url": "https://github.com/features/code-review",
+      "domain_role": "CODEOWNERS(LAYEROWNERS) 경로 패턴 기반 필수 리뷰어 자동 라우팅, 신규 리비전 푸시 시 기존 승인 자동 무효화(Dismiss Stale Approvals), 보호 브랜치 병합 게이트",
+      "evidence": {
+        "capture_evidence_id": "ev_a77aa06bf8dff2df0c7902ceba156b1f75ba0268f73071273fff975740055c49",
+        "scenario_sha256": "f4798e2f1663fff33470cff6390990f613db19ff59d8971e4a2a4179aa3f50de",
+        "export_evidence_id": "ev_4241bd493a493ed994002e09646b96a2c5b2e8fba43281099392a9b875fbd49b",
+        "manifest_sha256": "e8290f46495a6a52abfbe54392623a81a70500f424a5da63a3e41a6d22d713e8",
+        "ast_parent_evidence_id": "ev_4505c4ccac96373fbe2868a2b1bd39cf512f1badd9151cf8ddc79edf7fa1c6ba",
+        "ast_summary_evidence_id": "ev_d3443cb6f1b1ab8604159d66679a8ebb09f8970c299bf88f7c4866b4913ce8f1",
+        "root_artifact_sha256": "28e81d29607a2c4f81b025ca6456e3e7dee145a1edb06021299a023c18cdb254",
+        "route_evidence_id": "ev_70b39ac0b2f25026469fd9bb1cdad6e6b8783342dc0f9edeb008df412f185f82"
+      },
+      "metrics": {
+        "total_scripts_observed": 110,
+        "exported_scripts": 85,
+        "text_bytes_read": 1170057,
+        "visited_ast_nodes": 287135,
+        "findings": 767,
+        "semantic_relations": {
+          "data_flow": 59875,
+          "object_flow": 8327,
+          "closure": 4473,
+          "call_flow": 3160,
+          "promise_ownership": 99,
+          "boundary": 41,
+          "request": 18
+        }
+      }
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "url": "https://slack.com/",
+      "domain_role": "@subteam 직무 그룹 멘션 호출, 실시간 컷 화면공유 캔버스 허들(Live Huddle), 워크플로 빌더(Workflow Builder) 인계 런북",
+      "evidence": {
+        "capture_evidence_id": "ev_0494fbc9528813556e24b344fe5ea6110baee66d8b6cc22a6bb1699362764e3d",
+        "scenario_sha256": "91684f3379446225ec7ec99ee5b612c169db8229ae50ceaa588877e00c3ed737",
+        "export_evidence_id": "ev_4526949567fc31a0b71de05fbd7fc1a89a1a5a4d1897b9795490dc1e68f6aed9",
+        "manifest_sha256": "05d78fea9017b4a3168b8bb581c05d7aa12ca04bc76964233b264ce5d4d68ad0",
+        "ast_parent_evidence_id": "ev_7f6193e39a1322d0d1cf6d154e36b18f30ffba45e5b74bf5ba5720b0fc8c3286",
+        "ast_summary_evidence_id": "ev_cc32ff3ec6303d4e08b8095d2cb4608fffca1956e98bb76e703b302ed91f7ad2",
+        "root_artifact_sha256": "f064a69775ff097b4ab2625d4724c69c0f93de2cffa8f789dbff0b488fce2924",
+        "route_evidence_id": "ev_a9339aac6f8439bf7f30b1c00740df0004464d76e5ffdee4f4a2cc31a428d81d"
+      },
+      "metrics": {
+        "total_scripts_observed": 27,
+        "exported_scripts": 14,
+        "text_bytes_read": 297974,
+        "visited_ast_nodes": 60728,
+        "findings": 198,
+        "semantic_relations": {
+          "data_flow": 36313,
+          "object_flow": 4186,
+          "closure": 2725,
+          "call_flow": 2361,
+          "promise_ownership": 63,
+          "boundary": 45
+        }
+      }
+    },
+    {
+      "id": "airtable",
+      "name": "Airtable",
+      "url": "https://www.airtable.com/",
+      "domain_role": "양방향 Linked Record 에셋·컷·담당자 Rollup 집계, Interface Designer 대시보드 및 승인 시 조건부 필드 잠금(Field Lock)",
+      "evidence": {
+        "capture_evidence_id": "ev_bae6678a634f5cf87c922cde25cfa706c04fd37d23fb4922026f25be82b5a0c0",
+        "scenario_sha256": "c654e96864160b87656cd9db7d020057571279daf8d192cfda4763f4663b5f99",
+        "export_evidence_id": "ev_40f7b1ff67d72a93326a9f4c6cab7cb3950240ada8e5374c01be5c3634167286",
+        "manifest_sha256": "5693e293d67b21c825dac12fa30308e2bc02aa66803011d35030342569359de6",
+        "ast_parent_evidence_id": "ev_78c069a3108e417af8ac61b40490fb573531e3f2c063ffb6c0f958fa351c3ee9",
+        "ast_summary_evidence_id": "ev_ac0f106a91ba3e99d3e78446c559e5f6879f02ba411f89b28f1d96bc55b32f12",
+        "root_artifact_sha256": "66410c55dba420bab71fe22f9b70cbe02bff9d66735ceb007c9f1f844df284dc",
+        "route_evidence_id": "ev_4528bae693c9481c4376993ea8ee0e43dbdded13389d6f49af1b3cbab40c0f59"
+      },
+      "metrics": {
+        "total_scripts_observed": 53,
+        "exported_scripts": 21,
+        "text_bytes_read": 613176,
+        "visited_ast_nodes": 169319,
+        "findings": 242,
+        "semantic_relations": {
+          "data_flow": 55567,
+          "object_flow": 4417,
+          "call_flow": 4328,
+          "closure": 3413,
+          "promise_ownership": 88,
+          "boundary": 27
+        }
+      }
+    },
+    {
+      "id": "jandi",
+      "name": "잔디 (JANDI)",
+      "url": "https://www.jandi.com/",
+      "domain_role": "회차·공정별 토픽 폴더(Topic Folder), 준회원(외주 어시스턴트) 초청 토픽 외 열람 차단, 지시사항 읽음 확인(Read Receipt) 및 할일(Todo) 트래커",
+      "evidence": {
+        "capture_evidence_id": "ev_69507c2d6b46cbd837150f62687c0722bbb2ccb21617df6828473d29c2d5606a",
+        "scenario_sha256": "ab754080df3a7cde0cad029888f87f19945fc24472f6e947e011b849876be81a",
+        "export_evidence_id": "ev_5e834fcf9fa2b7dea34676a016c0ad0aed2406ae116c2f218f28d611c83992f8",
+        "manifest_sha256": "9d66833ed8ce98991afe15742caaaf39f6149670ee53f713d05c5a8ac82486b9",
+        "ast_parent_evidence_id": "ev_dcc7fede96409d495128ec0712ade77d7e7ffcca8f6f789b24a3e5b28fe982fc",
+        "ast_summary_evidence_id": "ev_ce6352c54ea0d05bc8f3da06fae26d55fd8314d998d3340e42ae8f3e002ec7e6",
+        "root_artifact_sha256": "181259ccf144bbf48364436dd5e04f841bed7023941e5c6c2d8c35375f0d7bb6",
+        "route_evidence_id": "ev_527f6eb07f124bfa3bef47e060a1fa70c40db3205a553ffd6eeb0f0448f130ee"
+      },
+      "metrics": {
+        "total_scripts_observed": 67,
+        "exported_scripts": 48,
+        "text_bytes_read": 752943,
+        "visited_ast_nodes": 149608,
+        "findings": 970,
+        "semantic_relations": {
+          "data_flow": 56122,
+          "object_flow": 4263,
+          "closure": 3597,
+          "call_flow": 1582,
+          "promise_ownership": 107,
+          "boundary": 10
+        }
+      }
     }
   ],
   "internalized_modules": [
@@ -727,6 +852,18 @@
       "model": "apps/web/src/domains/collaboration/collaboration-coauthor-revenue-mirror-model.ts",
       "component": "apps/web/src/domains/collaboration/CollaborationCoauthorRevenueMirrorSuite.tsx",
       "mounted_surface": "apps/web/src/domains/collaboration/CollaborationEditorPage.tsx"
+    },
+    {
+      "id": "production-layer-owners-merge-gate",
+      "model": "apps/web/src/domains/creator/production-hub/production-layer-owners-merge-gate-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionLayerOwnersMergeGateSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionHandoffSurface.tsx"
+    },
+    {
+      "id": "collaboration-topic-subteam-huddle",
+      "model": "apps/web/src/domains/collaboration/collaboration-topic-subteam-huddle-model.ts",
+      "component": "apps/web/src/domains/collaboration/CollaborationTopicSubteamHuddleSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/collaboration/CollaborationBoardPage.tsx"
     }
   ]
 }
