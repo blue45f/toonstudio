@@ -60,6 +60,16 @@ import {
   runClaudeXianxiaFlyingSwordInnBambooScrollDirector,
   runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
 } from "./claude-localize-run";
+import {
+  runClaudeAncientMythologyTriremeKhopeshRuneDirector,
+  runClaudeAutonomous7StagePipelineDnaHashPsdDirector,
+  runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector,
+  runClaudeKoreanMarketBunsikBbqJjimjilbangDirector,
+  runClaudeKoreanMilitaryBeretK2RifleDogtagDirector,
+  runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector,
+  runClaudeSteampunkAirshipAutomatonDivingPlagueDirector,
+  runClaudeToonstudio1020PlatformSupremeMetaDirector,
+} from "./claude-art-director-run";
 
 describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
   it("3단계 프로필(fast-inline, creative-production, deep-architecture)을 정의하고 전체 AI 작업을 최적 모델로 매핑한다", () => {
@@ -100,12 +110,21 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 113대 창의 AI 작업을 포함한 총 164개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 121대 창의 AI 작업을 포함한 총 172개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(164);
-    expect(summary.byProfile["fast-inline"]).toBe(42);
-    expect(summary.byProfile["creative-production"]).toBe(82);
-    expect(summary.byProfile["deep-architecture"]).toBe(40);
+    expect(summary.totalTasks).toBe(172);
+    expect(summary.byProfile["fast-inline"]).toBe(44);
+    expect(summary.byProfile["creative-production"]).toBe(86);
+    expect(summary.byProfile["deep-architecture"]).toBe(42);
+
+    expect(resolveCreatorTaskModelRoute("art-director:ancient-mythology-trireme-khopesh-rune-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:korean-military-beret-k2-rifle-dogtag-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:steampunk-airship-automaton-diving-plague-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:floating-island-world-tree-dragon-mimic-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:korean-market-bunsik-bbq-jjimjilbang-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:autonomous-7stage-pipeline-dna-hash-psd-director").model).toBe("claude-opus-5-5");
+    expect(resolveCreatorTaskModelRoute("art-director:toonstudio-1020-platform-supreme-meta-director").model).toBe("claude-opus-5-5");
 
     expect(resolveCreatorTaskModelRoute("localize:murim-plum-sword-tang-clan-bagua-lock").model).toBe("claude-haiku-5-5");
     expect(resolveCreatorTaskModelRoute("localize:xianxia-flying-sword-inn-bamboo-scroll-lock").model).toBe("claude-haiku-5-5");
@@ -541,5 +560,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(m6.data.extremeHabitatScore).toBeGreaterThanOrEqual(95);
     expect(m7.data.planetaryGeophysicsScore).toBeGreaterThanOrEqual(95);
     expect(m8.data.strategicFacilityScore).toBeGreaterThanOrEqual(95);
+
+    const n1 = await runClaudeAncientMythologyTriremeKhopeshRuneDirector(sample, { route: null });
+    const n2 = await runClaudeKoreanMilitaryBeretK2RifleDogtagDirector(sample, { route: null });
+    const n3 = await runClaudeSteampunkAirshipAutomatonDivingPlagueDirector(sample, { route: null });
+    const n4 = await runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector(sample, { route: null });
+    const n5 = await runClaudeKoreanMarketBunsikBbqJjimjilbangDirector(sample, { route: null });
+    const n6 = await runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector(sample, { route: null });
+    const n7 = await runClaudeAutonomous7StagePipelineDnaHashPsdDirector(sample, { route: null });
+    const n8 = await runClaudeToonstudio1020PlatformSupremeMetaDirector(sample, { route: null });
+
+    expect(n1.data.mythologyAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(n2.data.militaryAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(n3.data.steampunkAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(n4.data.fantasyWorldAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(n5.data.koreanLifeAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(n6.data.traditionTransitScore).toBeGreaterThanOrEqual(95);
+    expect(n7.data.pipelineAutonomyScore).toBeGreaterThanOrEqual(95);
+    expect(n8.data.supremeMetaScore).toBeGreaterThanOrEqual(95);
   });
 });

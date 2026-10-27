@@ -710,3 +710,21 @@ export {
   type ClaudeXianxiaFlyingSwordInnBamboo,
   type ClaudeZombieBarricadeGasMaskLockpick,
 } from "./claude-localize-run";
+export {
+  runClaudeAncientMythologyTriremeKhopeshRuneDirector,
+  runClaudeAutonomous7StagePipelineDnaHashPsdDirector,
+  runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector,
+  runClaudeKoreanMarketBunsikBbqJjimjilbangDirector,
+  runClaudeKoreanMilitaryBeretK2RifleDogtagDirector,
+  runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector,
+  runClaudeSteampunkAirshipAutomatonDivingPlagueDirector,
+  runClaudeToonstudio1020PlatformSupremeMetaDirector,
+  type ClaudeAncientMythologyTriremeKhopeshRune,
+  type ClaudeAutonomous7StagePipelineDnaHashPsd,
+  type ClaudeFloatingIslandWorldTreeDragonMimic,
+  type ClaudeKoreanMarketBunsikBbqJjimjilbang,
+  type ClaudeKoreanMilitaryBeretK2RifleDogtag,
+  type ClaudeKoreanWeddingPaebaekJesaHwatuTransit,
+  type ClaudeSteampunkAirshipAutomatonDivingPlague,
+  type ClaudeToonstudio1020PlatformSupremeMeta,
+} from "./claude-art-director-run";

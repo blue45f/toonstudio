@@ -66,18 +66,26 @@ import {
 import { REA15_TABS, type Rea15WorkbenchTabId } from "./claude/claude-rea39-extended-engines";
 import {
   runClaudeAircraftCarrierCatapultBunkerBsl4Director,
+  runClaudeAncientMythologyTriremeKhopeshRuneDirector,
   runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeAutonomous7StagePipelineDnaHashPsdDirector,
   runClaudeCasinoBaccaratHoldemChipsAuctionDirector,
   runClaudeCyberTerminalServerRackCctvRooftopDirector,
   runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector,
+  runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector,
   runClaudeGrandPianoLidViolinCigarWhiskyDirector,
   runClaudeHanokOndolBongsuWatermillMatchlockDirector,
   runClaudeHwachaGeobukseonTrebuchetJoustDirector,
   runClaudeJoseonGatBinyeoKatanaSayaDirector,
+  runClaudeKoreanMarketBunsikBbqJjimjilbangDirector,
+  runClaudeKoreanMilitaryBeretK2RifleDogtagDirector,
+  runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector,
   runClaudeMensSuitBottomButtonTieHeelStrapDirector,
   runClaudeMurimPlumBlossomTangClanBaguaDirector,
   runClaudeSignLanguageHearingAidLegalDepositDirector,
+  runClaudeSteampunkAirshipAutomatonDivingPlagueDirector,
   runClaudeSupercarDoorF1HaloYachtPrivateJetDirector,
+  runClaudeToonstudio1020PlatformSupremeMetaDirector,
   runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector,
   runClaudeXianxiaFlyingSwordInnBambooScrollDirector,
   runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
@@ -743,6 +751,22 @@ export function StudioRea15PlatformsWorkbenchPanel({
             <button type="button" data-testid="wave50-deep-sea-spacesuit-btn" onClick={() => void runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector(wave45Input, { route: null }).then((r) => { const line = `[심해잠수정/우주복 (${r.model})] ${r.data.submersibleAcrylicDomeAndBioluminescenceKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>잠수정/우주복</button>
             <button type="button" data-testid="wave50-volcano-glacier-btn" onClick={() => void runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector(wave45Input, { route: null }).then((r) => { const line = `[화산/빙하/사막 (${r.model})] ${r.data.lavaCoolingBlackCrustAndIncandescentCrackKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>화산/빙하/사막</button>
             <button type="button" data-testid="wave50-carrier-bunker-bsl4-btn" onClick={() => void runClaudeAircraftCarrierCatapultBunkerBsl4Director(wave45Input, { route: null }).then((r) => { const line = `[항모/방공호/BSL4 (${r.model})] ${r.data.carrierCatapultJbdAnd3rdArrestingWireKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>항모/벙커/BSL4</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-testid="wave51-53-domain-consistency-bar" className="flex flex-col gap-1.5 rounded border border-accent/30 bg-raised p-2 text-[0.55rem]">
+        <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+          <span>Wave 51~53 (1,020대 플랫폼 마일스톤): 고대신화/코페시 · 한국군베레모/K2 · 스팀펑크/잠수모 · 부유섬/드래곤/미믹 · 전통시장/고깃집/찜질방 · 폐백/제사상/화투 · 7단자율파이프라인 · 1,020대수프림메타</span>
+          <div className="flex flex-wrap gap-1">
+            <button type="button" data-testid="wave51-ancient-mythology-btn" onClick={() => void runClaudeAncientMythologyTriremeKhopeshRuneDirector(wave45Input, { route: null }).then((r) => { const line = `[고대신화 (${r.model})] ${r.data.trireme3TierOarsAndCorinthianCapitalKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>삼단노선/코페시</button>
+            <button type="button" data-testid="wave51-korean-military-btn" onClick={() => void runClaudeKoreanMilitaryBeretK2RifleDogtagDirector(wave45Input, { route: null }).then((r) => { const line = `[한국군/K2 (${r.model})] ${r.data.rokBeretInsigniaLeftEyeAndRightPullKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>베레모/K2/군번줄</button>
+            <button type="button" data-testid="wave51-steampunk-airship-btn" onClick={() => void runClaudeSteampunkAirshipAutomatonDivingPlagueDirector(wave45Input, { route: null }).then((r) => { const line = `[스팀펑크 (${r.model})] ${r.data.airshipVentralGondolaAndBourdonGaugeKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>비행선/잠수모</button>
+            <button type="button" data-testid="wave52-floating-island-dragon-btn" onClick={() => void runClaudeFloatingIslandWorldTreeDragonMimicGolemDirector(wave45Input, { route: null }).then((r) => { const line = `[부유섬/드래곤/미믹 (${r.model})] ${r.data.floatingIslandInvertedConeAndWorldTreeKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>부유섬/미믹</button>
+            <button type="button" data-testid="wave52-korean-market-bbq-btn" onClick={() => void runClaudeKoreanMarketBunsikBbqJjimjilbangDirector(wave45Input, { route: null }).then((r) => { const line = `[시장/고깃집/찜질방 (${r.model})] ${r.data.marketRedBasinScaleAndBunsikTteokbokkiPanKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>시장/고깃집/찜질방</button>
+            <button type="button" data-testid="wave52-korean-wedding-hwatu-btn" onClick={() => void runClaudeKoreanWeddingPaebaekJesaHwatuTransitDirector(wave45Input, { route: null }).then((r) => { const line = `[폐백/제사상/화투 (${r.model})] ${r.data.paebaekJokduriAndJesaHongdongbaekseoKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>폐백/제사상/화투</button>
+            <button type="button" data-testid="wave53-autonomous-7stage-btn" onClick={() => void runClaudeAutonomous7StagePipelineDnaHashPsdDirector(wave45Input, { route: null }).then((r) => { const line = `[7단자율파이프라인 (${r.model})] ${r.data.sevenStageAgentPipelineAnd100EpDnaHashKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>7단파이프라인/DNA</button>
+            <button type="button" data-testid="wave53-supreme-1020-meta-btn" onClick={() => void runClaudeToonstudio1020PlatformSupremeMetaDirector(wave45Input, { route: null }).then((r) => { const line = `[1020대수프림메타 (${r.model})] ${r.data.supreme1020PlatformUiUxSynthesisKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>1,020대수프림메타</button>
           </div>
         </div>
       </div>

@@ -272,5 +272,8 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     fireEvent.click(screen.getByTestId("wave45-joseon-gat-katana-btn"));
     expect(screen.getByTestId("wave48-50-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave48-murim-plum-bagua-btn"));
+    expect(screen.getByTestId("wave51-53-domain-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave51-ancient-mythology-btn"));
+    fireEvent.click(screen.getByTestId("wave53-supreme-1020-meta-btn"));
   });
 });
