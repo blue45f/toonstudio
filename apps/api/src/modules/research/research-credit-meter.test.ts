@@ -22,13 +22,24 @@ describe("research-credit-meter 단가", () => {
 
   it("환경변수로 단가를 조정하고 잘못된 값은 기본값으로 되돌린다", () => {
     expect(resolveResearchCreditPricing({
-      DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH: "2",
-      DEEPSEEK_RESEARCH_CREDITS_PER_FETCH: "3",
+      RESEARCH_CREDITS_PER_SEARCH: "2",
+      RESEARCH_CREDITS_PER_FETCH: "3",
     })).toEqual({ creditsPerSearch: 2, creditsPerFetch: 3 });
     expect(resolveResearchCreditPricing({
-      DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH: "0",
-      DEEPSEEK_RESEARCH_CREDITS_PER_FETCH: "abc",
+      RESEARCH_CREDITS_PER_SEARCH: "0",
+      RESEARCH_CREDITS_PER_FETCH: "abc",
     })).toEqual({ creditsPerSearch: 1, creditsPerFetch: 1 });
+  });
+
+  it("하위 호환 폴백 변수도 읽는다", () => {
+    expect(resolveResearchCreditPricing({
+      DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH: "4",
+      DEEPSEEK_RESEARCH_CREDITS_PER_FETCH: "5",
+    })).toEqual({ creditsPerSearch: 4, creditsPerFetch: 5 });
+    expect(resolveResearchCreditPricing({
+      RESEARCH_CREDITS_PER_SEARCH: "2",
+      DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH: "4",
+    })).toEqual({ creditsPerSearch: 2, creditsPerFetch: 1 });
   });
 
   it("장부는 사용자별 사용량을 누적한다", () => {

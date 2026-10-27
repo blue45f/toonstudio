@@ -64,7 +64,7 @@ describe("research-credit-charge 예약", () => {
     expect(input.feature).toBe(RESEARCH_CREDIT_FEATURE);
     expect(input.units).toBe(4);
     expect(input.idempotencyKey).toBe("research-credit:op-1");
-    expect(input.metadata).toMatchObject({ source: "deepseek-research" });
+    expect(input.metadata).toMatchObject({ source: "research" });
     expect(researchCreditIdempotencyKey("op-1")).toBe("research-credit:op-1");
   });
 

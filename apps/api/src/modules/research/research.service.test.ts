@@ -1,19 +1,19 @@
 /**
  * research.service.test.ts — 리서치 서비스 단위 테스트.
- * 가짜 클라이언트·지갑·게이트 스토어로 차감 흐름을 검증한다.
+ * 가짜 프로바이더·지갑·게이트 스토어로 차감 흐름을 검증한다.
  */
 import { HttpException, ServiceUnavailableException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
 import { InMemoryPaidOperationsSettingStore } from "../membership-wallet/paid-operations-gate";
-import { DeepSeekSearchError } from "./deepseek-search-client";
+import { SearchProviderError } from "./search-provider";
 import { ResearchService } from "./research.service";
 
-import type { DeepSeekSearchClient } from "./deepseek-search-client";
+import type { SearchProvider } from "./search-provider";
 import type { MembershipWalletService } from "../membership-wallet/membership-wallet.service";
 import type { PaidOperationsSettingStore } from "../membership-wallet/paid-operations-gate";
 
-function clientHarness() {
+function providerHarness() {
   const search = vi.fn(async () => ({
     results: [{
       title: "첫째",
@@ -22,13 +22,13 @@ function clientHarness() {
       summary: "요약문",
       content: "",
       siteName: "example",
-      rerankScore: 2,
+      relevanceScore: 2,
       authority: 3,
     }],
   }));
   const fetchPage = vi.fn(async () => ({ title: "첫째 원문", content: "본문" }));
-  const client = { search, fetchPage } as unknown as DeepSeekSearchClient;
-  return { client, search, fetchPage };
+  const provider = { providerName: "fake-provider", search, fetchPage } as unknown as SearchProvider;
+  return { provider, search, fetchPage };
 }
 
 function walletHarness() {
@@ -44,16 +44,16 @@ function walletHarness() {
 }
 
 function serviceHarness(options: {
-  client?: DeepSeekSearchClient | null;
+  provider?: SearchProvider | null;
   gateEnabled?: boolean;
   withWallet?: boolean;
 } = {}) {
-  const { client } = clientHarness();
+  const { provider } = providerHarness();
   const { wallet, ...walletFns } = walletHarness();
   const store: PaidOperationsSettingStore =
     new InMemoryPaidOperationsSettingStore(options.gateEnabled ?? true);
   const service = new ResearchService(
-    options.client === undefined ? client : options.client,
+    options.provider === undefined ? provider : options.provider,
     { creditsPerSearch: 1, creditsPerFetch: 1 },
     options.withWallet === false ? undefined : wallet,
     store,
@@ -62,11 +62,13 @@ function serviceHarness(options: {
 }
 
 describe("ResearchService status", () => {
-  it("키가 있으면 configured=true, 없으면 false를 반환한다", () => {
+  it("프로바이더가 있으면 configured=true와 프로바이더 이름을 반환한다", () => {
     const { service } = serviceHarness();
     expect(service.status().configured).toBe(true);
-    const { service: disabled } = serviceHarness({ client: null });
+    expect(service.status().provider).toBe("fake-provider");
+    const { service: disabled } = serviceHarness({ provider: null });
     expect(disabled.status().configured).toBe(false);
+    expect(disabled.status().provider).toBe("unconfigured");
   });
 });
 
@@ -97,8 +99,8 @@ describe("ResearchService brief 차감", () => {
     expect(walletFns.reserveStudioCredits).not.toHaveBeenCalled();
   });
 
-  it("클라이언트 미설정 시 503을 반환한다", async () => {
-    const { service } = serviceHarness({ client: null });
+  it("프로바이더 미설정 시 503을 반환한다", async () => {
+    const { service } = serviceHarness({ provider: null });
     const error = await service.brief("user-1", {
       question: "질의",
     } as never, "idem-1").catch((cause: unknown) => cause);
@@ -106,15 +108,15 @@ describe("ResearchService brief 차감", () => {
   });
 
   it("리서치 실패 시 예약을 해제하고 상류 오류를 매핑한다", async () => {
-    const { client } = clientHarness();
-    (client as unknown as { search: ReturnType<typeof vi.fn> }).search =
+    const { provider } = providerHarness();
+    (provider as unknown as { search: ReturnType<typeof vi.fn> }).search =
       vi.fn(async () => {
-        throw new DeepSeekSearchError("DEEPSEEK_RATE_LIMITED", 429, "한도 초과");
+        throw new SearchProviderError("SEARCH_RATE_LIMITED", 429, "한도 초과");
       });
     const { wallet, ...walletFns } = walletHarness();
     const store = new InMemoryPaidOperationsSettingStore(true);
     const service = new ResearchService(
-      client,
+      provider,
       { creditsPerSearch: 1, creditsPerFetch: 1 },
       wallet,
       store,
