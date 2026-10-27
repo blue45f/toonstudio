@@ -1,14 +1,40 @@
 {
   "schema": "toonstudio.tripo3d-mcp-generated-assets.v2",
-  "version": "3.1.0",
-  "generatedAt": "2026-10-27T15:52:00+09:00",
-  "mcpServersUsed": ["tripo3d", "tripo-cli", "glbforge", "vrm-toolkit", "rea"],
+  "version": "4.0.0",
+  "generatedAt": "2026-10-27T16:50:00+09:00",
+  "mcpServersUsed": [
+    "tripo3d",
+    "tripo-cli",
+    "glbforge",
+    "vrm-toolkit",
+    "rea"
+  ],
   "tripoStudioBrowserEngine": "Tripo Studio Web (studio.tripo3d.ai) + Tripo v3.1 CLI/MCP — H3.1 최고 품질 · Smart Mesh P2.0 Quad · 부분별 생성(Segmentation) · Smart UV · Auto-Rigging v3.0 · 8K PBR · Delight",
   "freeTrialExhaustionLedger": {
-    "smartMeshP2Trial": { "poolId": "smart_mesh_v2_generation", "total": 2, "used": 2, "remaining": 0 },
-    "uvGenerateTrial": { "poolId": "uv_edit_generation", "total": 2, "used": 2, "remaining": 0 },
-    "aiSegmentationFreeTrial": { "id": "ai-segmentation-free-trial", "total": 1, "used": 1, "remaining": 0 },
-    "ultraTextureFreeTrial": { "id": "ultra-texture-free-trial", "total": 1, "used": 1, "remaining": 0 }
+    "smartMeshP2Trial": {
+      "poolId": "smart_mesh_v2_generation",
+      "total": 2,
+      "used": 2,
+      "remaining": 0
+    },
+    "uvGenerateTrial": {
+      "poolId": "uv_edit_generation",
+      "total": 2,
+      "used": 2,
+      "remaining": 0
+    },
+    "aiSegmentationFreeTrial": {
+      "id": "ai-segmentation-free-trial",
+      "total": 1,
+      "used": 1,
+      "remaining": 0
+    },
+    "ultraTextureFreeTrial": {
+      "id": "ultra-texture-free-trial",
+      "total": 1,
+      "used": 1,
+      "remaining": 0
+    }
   },
   "blenderVersion": "5.2.0 LTS",
   "optimizer": "glbforge optimize_glb (EXT_meshopt_compression + EXT_texture_webp + KHR_mesh_quantization)",
@@ -32,8 +58,17 @@
       "materials": 1,
       "glbforgeScore": 90,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["bus-shelter-roof", "waiting-bench", "vending-machine", "route-signpost"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "bus-shelter-roof",
+        "waiting-bench",
+        "vending-machine",
+        "route-signpost"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-mannequin-artist-easel-kit",
@@ -53,8 +88,17 @@
       "materials": 1,
       "glbforgeScore": 90,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["wooden-easel-frame", "canvas-board", "artist-palette", "pose-prop-stand"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "wooden-easel-frame",
+        "canvas-board",
+        "artist-palette",
+        "pose-prop-stand"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-character-lab-crystal-crown-halo-kit",
@@ -74,8 +118,17 @@
       "materials": 1,
       "glbforgeScore": 90,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["crystal-crown-tiara", "radiant-halo-ring", "winged-shoulder-brooch", "gem-pendant-chain"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "crystal-crown-tiara",
+        "radiant-halo-ring",
+        "winged-shoulder-brooch",
+        "gem-pendant-chain"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-p2-bg-street-cafe-kit",
@@ -95,8 +148,17 @@
       "materials": 1,
       "glbforgeScore": 95,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["awning-canopy", "neon-signboard", "window-frame", "counter-bar", "parasol-table"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "awning-canopy",
+        "neon-signboard",
+        "window-frame",
+        "counter-bar",
+        "parasol-table"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-bg-classroom-furniture-kit",
@@ -115,8 +177,18 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["student-desk", "classroom-chair", "teacher-podium", "blackboard-wall", "hallway-locker"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "student-desk",
+        "classroom-chair",
+        "teacher-podium",
+        "blackboard-wall",
+        "hallway-locker"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-bg-korean-convenience-store",
@@ -136,8 +208,18 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["store-signboard", "glass-showcase", "outdoor-parasol", "plastic-table-chairs", "beverage-cooler"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "store-signboard",
+        "glass-showcase",
+        "outdoor-parasol",
+        "plastic-table-chairs",
+        "beverage-cooler"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-bg-romance-fantasy-palace-courtyard",
@@ -156,8 +238,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["marble-fountain-tier", "corinthian-arch-pillars", "gold-filigree-dome", "courtyard-balustrade"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "marble-fountain-tier",
+        "corinthian-arch-pillars",
+        "gold-filigree-dome",
+        "courtyard-balustrade"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-bg-industrial-rooftop-hvac",
@@ -176,8 +267,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["water-tank-tower", "hvac-condenser-bank", "steel-catwalk-railing", "duct-piping"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "water-tank-tower",
+        "hvac-condenser-bank",
+        "steel-catwalk-railing",
+        "duct-piping"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-mcp-bg-korean-alley-stairway",
@@ -196,8 +296,17 @@
       "materials": 2,
       "glbforgeScore": 100,
       "glbforgeProfile": "desktop-hero@1",
-      "customizableParts": ["concrete-steps-10", "red-brick-wall", "stainless-handrail", "utility-meter-box", "alley-street-lamp"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "concrete-steps-10",
+        "red-brick-wall",
+        "stainless-handrail",
+        "utility-meter-box",
+        "alley-street-lamp"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-mcp-bg-cafe-counter-cluster",
@@ -216,8 +325,17 @@
       "materials": 2,
       "glbforgeScore": 100,
       "glbforgeProfile": "desktop-hero@1",
-      "customizableParts": ["walnut-quartz-counter", "dual-espresso-machine", "pastry-glass-showcase", "bar-stools-x3", "pendant-lamps-x3"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "walnut-quartz-counter",
+        "dual-espresso-machine",
+        "pastry-glass-showcase",
+        "bar-stools-x3",
+        "pendant-lamps-x3"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-mcp-bg-rooftop-neon-signboard",
@@ -236,8 +354,14 @@
       "materials": 1,
       "glbforgeScore": 100,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["neon-tube-front", "backing-frame-plate"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "neon-tube-front",
+        "backing-frame-plate"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-p2-mannequin-quad-body",
@@ -257,8 +381,17 @@
       "materials": 1,
       "glbforgeScore": 95,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["head-visor-block", "thorax-ribcage", "pelvis-hip-block", "upper-lower-limbs", "ball-joint-rings"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "head-visor-block",
+        "thorax-ribcage",
+        "pelvis-hip-block",
+        "upper-lower-limbs",
+        "ball-joint-rings"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-mannequin-hands-grip-kit",
@@ -277,8 +410,18 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["sword-grip-hand", "arcane-cast-hand", "clenched-fist-hand", "open-palm-hand", "wrist-ball-socket"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "sword-grip-hand",
+        "arcane-cast-hand",
+        "clenched-fist-hand",
+        "open-palm-hand",
+        "wrist-ball-socket"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-mannequin-rigged-humanoid",
@@ -297,8 +440,17 @@
       "materials": 1,
       "glbforgeScore": 70,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["humanoid-armature-rig", "upper-body-skinned", "lower-body-skinned", "head-neck-skinned"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "humanoid-armature-rig",
+        "upper-body-skinned",
+        "lower-body-skinned",
+        "head-neck-skinned"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-mannequin-articulated-body",
@@ -317,8 +469,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["head-sight-line", "sternum-thorax", "pelvis-landmark", "limb-ball-joints"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "head-sight-line",
+        "sternum-thorax",
+        "pelvis-landmark",
+        "limb-ball-joints"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-mcp-mannequin-calibration-rig",
@@ -337,8 +498,17 @@
       "materials": 4,
       "glbforgeScore": 95,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["head-visor", "ribcage-block", "pelvis-block", "joint-spheres-12", "plumb-line-axis"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "head-visor",
+        "ribcage-block",
+        "pelvis-block",
+        "joint-spheres-12",
+        "plumb-line-axis"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-mcp-mannequin-action-pedestal",
@@ -357,8 +527,16 @@
       "materials": 3,
       "glbforgeScore": 95,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["angle-turntable-disc", "step-riser-low", "step-riser-high", "height-ruler-pillar"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "angle-turntable-disc",
+        "step-riser-low",
+        "step-riser-high",
+        "height-ruler-pillar"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-seg-character-lab-knight-outfit",
@@ -378,8 +556,18 @@
       "materials": 1,
       "glbforgeScore": 80,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["crown-helm", "shoulder-pauldron", "royal-cape", "tunic-armor", "belt-tasset", "greaves-boots"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "crown-helm",
+        "shoulder-pauldron",
+        "royal-cape",
+        "tunic-armor",
+        "belt-tasset",
+        "greaves-boots"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-seg-character-lab-school-uniform",
@@ -398,8 +586,17 @@
       "materials": 1,
       "glbforgeScore": 80,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["hair-ribbon", "capelet-blazer", "collar-bowtie", "pleated-skirt", "loafers-socks"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "hair-ribbon",
+        "capelet-blazer",
+        "collar-bowtie",
+        "pleated-skirt",
+        "loafers-socks"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-character-lab-hair-headgear-kit",
@@ -418,8 +615,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["twintail-hair-wig", "halo-crown-ring", "cyberpunk-visor-headset", "bust-mannequin-stand"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "twintail-hair-wig",
+        "halo-crown-ring",
+        "cyberpunk-visor-headset",
+        "bust-mannequin-stand"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-p2-character-lab-anime-head-bust",
@@ -439,8 +645,16 @@
       "materials": 1,
       "glbforgeScore": 95,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["face-contour-quad", "front-bangs-layer", "side-twintail-locks", "neck-collar-base"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "face-contour-quad",
+        "front-bangs-layer",
+        "side-twintail-locks",
+        "neck-collar-base"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-character-lab-protagonist",
@@ -459,8 +673,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["protagonist-hair", "layered-blazer-jacket", "cargo-trousers", "combat-boots"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "protagonist-hair",
+        "layered-blazer-jacket",
+        "cargo-trousers",
+        "combat-boots"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-character-lab-archmage-regalia",
@@ -479,8 +702,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["archmage-velvet-cape", "gold-filigree-collar", "floating-grimoire-tome", "arcane-crystal-staff"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "archmage-velvet-cape",
+        "gold-filigree-collar",
+        "floating-grimoire-tome",
+        "arcane-crystal-staff"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-h31-character-lab-knight-arms",
@@ -499,8 +731,17 @@
       "materials": 1,
       "glbforgeScore": 85,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["paladin-longsword", "royal-crest-shield", "gem-hilt-guard", "display-armory-stand"],
-      "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "paladin-longsword",
+        "royal-crest-shield",
+        "gem-hilt-guard",
+        "display-armory-stand"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     },
     {
       "id": "tripo3d-mcp-character-lab-shoulder-pauldron",
@@ -519,8 +760,22 @@
       "materials": 3,
       "glbforgeScore": 95,
       "glbforgeProfile": "mobile-hero@1",
-      "customizableParts": ["pauldron-navy-dome", "gold-trim-rim", "star-emblem-gem"],
-      "extensionsRequired": ["EXT_meshopt_compression", "KHR_mesh_quantization"]
+      "customizableParts": [
+        "pauldron-navy-dome",
+        "gold-trim-rim",
+        "star-emblem-gem"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ]
     }
-  ]
+  ],
+  "accountCreditExhaustionLedger": {
+    "initialCredits": 1000,
+    "consumedCredits": 1000,
+    "remainingCredits": 0,
+    "frozenCredits": 0,
+    "totalGeneratedGlbCount": 44
+  }
 }

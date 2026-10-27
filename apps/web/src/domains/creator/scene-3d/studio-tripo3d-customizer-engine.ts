@@ -4,6 +4,7 @@
  * - 3D 배경(8종) · 3D 데생인형(6종) · 3D 캐릭터 랩(8종) 파츠별 ON/OFF, 툰셰이더·PBR·체형·커스텀 GLB 레시피 계산
  */
 
+import { TRIPO3D_MCP_GENERATED_BATCH2_MODELS } from "./studio-tripo3d-mcp-catalog-batch2";
 import type { StudioVarco3dMannequinPosePresetId } from "./studio-varco3d-character-lab-diorama-catalog";
 
 export type Tripo3dMcpGeneratedModelDomain = "bg3d" | "mannequin" | "character-lab";
@@ -631,6 +632,7 @@ export const TRIPO3D_MCP_GENERATED_MODELS: readonly Tripo3dMcpGeneratedModelEntr
     recommendedPosePresetId: "action",
     customizableParts: makeParts([["pauldron-navy-dome", "네이비 장갑 돔"], ["gold-trim-rim", "골드 가드 트림"], ["star-emblem-gem", "스타 엠블럼 코어 젬"]]),
   },
+  ...TRIPO3D_MCP_GENERATED_BATCH2_MODELS,
 ]);
 
 export type Tripo3dCustomizerPaletteId =
