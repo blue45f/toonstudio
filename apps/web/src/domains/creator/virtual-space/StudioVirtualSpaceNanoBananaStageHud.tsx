@@ -484,7 +484,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
       <div
         data-testid="main-stage-nano-banana-hud"
         data-space-interactive="true"
-        className="pointer-events-auto absolute left-3 top-[4.25rem] z-10 flex w-[min(32.5rem,calc(100vw-1.5rem))] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
+        className="pointer-events-auto absolute right-3 top-[17.25rem] z-10 flex w-[min(27.5rem,calc(100vw-1.5rem))] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
