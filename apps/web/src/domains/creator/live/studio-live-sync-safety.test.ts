@@ -298,4 +298,30 @@ describe("studio live sync safety", () => {
     expect(formatStudioLiveLastAck(40_000, 80_000)).toBe("40초 전 서버 승인");
     expect(formatStudioLiveLastAck(20_000, 200_000)).toBe("3분 전 서버 승인");
   });
+
+  it("projects non-authoritative mesh delivery with durable outbox as offline-queued instead of retrying", () => {
+    const snapshot = projectStudioLiveSyncSnapshot({
+      availability: "ready",
+      mode: "server",
+      canEdit: true,
+      operationSyncReady: true,
+      telemetry: telemetry({
+        state: "retrying",
+        pendingCount: 81,
+        persistenceDurability: "durable",
+        transportReady: true,
+        lastAckAt: null,
+        lastAckServerSequence: null,
+        nonAuthoritativeDeliveryPending: true,
+      }),
+    });
+
+    expect(snapshot).toMatchObject({
+      phase: "offline-queued",
+      mode: "server",
+      pendingCount: 81,
+      editsDurablyProtected: true,
+    });
+    expect(presentStudioLiveSyncSnapshot(snapshot).shortLabel).toBe("오프라인 · 81개 보관");
+  });
 });

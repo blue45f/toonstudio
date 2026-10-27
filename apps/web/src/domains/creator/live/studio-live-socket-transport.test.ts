@@ -6240,4 +6240,50 @@ describe("Studio live direct relay lane (STUN-only fallback)", () => {
     expect(received).toEqual([]);
     transport.close();
   });
+
+  it("continues background reconnection and refreshes credentials after Socket.IO reconnect_failed", async () => {
+    vi.useFakeTimers();
+    const ioListeners = new Map<string, Set<(...args: unknown[]) => void>>();
+    const socket = Object.assign(new FakeSocket({ sessionToken: TOKEN }), {
+      io: {
+        on(event: string, listener: (...args: unknown[]) => void) {
+          const set = ioListeners.get(event) ?? new Set();
+          set.add(listener);
+          ioListeners.set(event, set);
+        },
+        off(event: string, listener: (...args: unknown[]) => void) {
+          ioListeners.get(event)?.delete(listener);
+        },
+      },
+    });
+    const refreshedTicket = "refreshed-after-reconnect-exhaustion";
+    const refreshSocketCredential = vi.fn(async () => refreshedTicket);
+    const room = new StudioLiveRoom({
+      workId: "work-1",
+      participant: localParticipant,
+      dependencies: {
+        transportFactory: createStudioServerLiveTransportFactory(TOKEN, {
+          createSocket: () => socket,
+          refreshSocketCredential,
+          now: () => NOW,
+        }),
+        now: () => NOW,
+      },
+    });
+
+    await room.start();
+    expect(room.ready).toBe(true);
+    const connectCallsBeforeDisconnect = socket.connectCalls;
+
+    socket.serverDisconnect();
+    expect(room.ready).toBe(false);
+    for (const listener of ioListeners.get("reconnect_failed") ?? []) {
+      listener();
+    }
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(socket.connectCalls).toBe(connectCallsBeforeDisconnect + 1);
+    expect(room.ready).toBe(true);
+    room.close();
+  });
 });

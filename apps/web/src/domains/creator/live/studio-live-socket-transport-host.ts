@@ -126,6 +126,8 @@ export interface StudioLiveSocketTransportHost {
   selectedCrdtWireFormat: StudioCrdtWireFormat | null;
   crdtWireSelectionTimeout: unknown;
   crdtReconnectTimeout: unknown;
+  socketReconnectTimeout: unknown;
+  reconnectExhausted: boolean;
   credentialRefreshAttempted: boolean;
   credentialRefreshPromise: Promise<void> | null;
 
@@ -147,6 +149,9 @@ export interface StudioLiveSocketTransportHost {
   close(): void;
   onConnect(): void;
   onConnectError(error: unknown): void;
+  onReconnectFailed(): void;
+  scheduleSocketReconnect(): void;
+  clearSocketReconnectTimeout(): void;
   refreshCredentialAfterAuthenticationError(fallbackMessage: string): void;
   revokeFromConnectError(message: string): void;
   onDisconnect(reason: unknown): void;

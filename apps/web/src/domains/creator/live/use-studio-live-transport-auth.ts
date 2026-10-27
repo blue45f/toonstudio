@@ -15,6 +15,16 @@ import type { StudioLiveAuthTicketResponse } from "../../../shared/lib/studio-li
 const INITIAL_RETRY_DELAY_MS = 500;
 const MAX_RETRY_DELAY_MS = 8_000;
 const MAX_AUTOMATIC_RETRY_ATTEMPTS = 5;
+export const STUDIO_LIVE_AUTH_RECOVER_EVENT = "toonstudio:studio-live-auth-recover";
+
+export function requestStudioLiveTransportAuthRecovery(): void {
+  if (typeof globalThis.dispatchEvent !== "function" || typeof Event !== "function") return;
+  try {
+    globalThis.dispatchEvent(new Event(STUDIO_LIVE_AUTH_RECOVER_EVENT));
+  } catch {
+    // Hardened or non-DOM test environments may not allow synthetic global events.
+  }
+}
 
 type StudioServerLiveTransportFactoryBuilder = typeof createStudioServerLiveTransportFactory;
 
@@ -196,6 +206,7 @@ export function useStudioLiveTransportAuth(
     );
     globalThis.addEventListener("online", recover, { passive: true });
     globalThis.addEventListener("focus", recover, { passive: true });
+    globalThis.addEventListener(STUDIO_LIVE_AUTH_RECOVER_EVENT, recover);
     void issueInitialCredential();
 
     return () => {
@@ -204,6 +215,7 @@ export function useStudioLiveTransportAuth(
       requestController?.abort();
       globalThis.removeEventListener("online", recover);
       globalThis.removeEventListener("focus", recover);
+      globalThis.removeEventListener(STUDIO_LIVE_AUTH_RECOVER_EVENT, recover);
     };
   }, [
     cancelTimeout,

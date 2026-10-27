@@ -75,6 +75,7 @@ export interface StudioCrdtSyncTelemetry {
   lastAckAt: number | null;
   lastAckServerSequence: string | null;
   durabilityAtRisk?: boolean;
+  nonAuthoritativeDeliveryPending?: boolean;
 }
 
 export interface ProjectStudioLiveSyncSnapshotInput {
@@ -217,7 +218,7 @@ export function projectStudioLiveSyncSnapshot({
   }
 
   if (
-    (mode === "local" || !transportReady) &&
+    (mode === "local" || !transportReady || telemetry.nonAuthoritativeDeliveryPending === true) &&
     pendingCount > 0 &&
     browserDurable(persistenceDurability)
   ) {

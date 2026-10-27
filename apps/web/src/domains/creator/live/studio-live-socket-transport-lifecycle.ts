@@ -11,48 +11,17 @@ import {
   STUDIO_LIVE_CRDT_BINARY_REMOTE_EVENT,
   STUDIO_LIVE_CRDT_WIRE_SELECT_EVENT,
 } from "./studio-crdt-binary-wire";
+import { createStudioCrdtPermanentError, createStudioCrdtRetryableError } from "./studio-crdt-operation-error";
+import { STUDIO_LIVE_LOCK_REVISION_VERSION } from "./studio-live-collaboration-protocol";
+import { clearStudioLiveLockRevisionState, studioLiveLockDeltasRequireResync } from "./studio-live-lock-revision-ledger";
+import { connectErrorCode, eventMessage, isNonRecoverable, isTerminalConnectErrorCode } from "./studio-live-socket-connect-error";
+import { CONNECT_TIMEOUT_MS } from "./studio-live-socket-connection-factory";
 import {
-  createStudioCrdtPermanentError,
-  createStudioCrdtRetryableError,
-} from "./studio-crdt-operation-error";
-import {
-  STUDIO_LIVE_LOCK_REVISION_VERSION,
-} from "./studio-live-collaboration-protocol";
-import {
-  clearStudioLiveLockRevisionState,
-  studioLiveLockDeltasRequireResync,
-} from "./studio-live-lock-revision-ledger";
-import {
-  connectErrorCode,
-  eventMessage,
-  isNonRecoverable,
-  isTerminalConnectErrorCode,
-} from "./studio-live-socket-connect-error";
-import {
-  CONNECT_TIMEOUT_MS,
-} from "./studio-live-socket-connection-factory";
-import {
-  CRDT_WIRE_SELECT_ACK_TIMEOUT_MS,
-  JOIN_RATE_LIMIT_RETRY_MS,
-  JOIN_RESYNC_RETRY_BASE_MS,
-  JOIN_RESYNC_RETRY_MAX_MS,
-  MAX_TOKEN_LENGTH,
-  STUDIO_LIVE_GESTURE_PREVIEW_SOCKET_EVENT,
-  STUDIO_LIVE_INK_SOCKET_EVENT,
+  CRDT_WIRE_SELECT_ACK_TIMEOUT_MS, JOIN_RATE_LIMIT_RETRY_MS, JOIN_RESYNC_RETRY_BASE_MS, JOIN_RESYNC_RETRY_MAX_MS,
+  MAX_TOKEN_LENGTH, STUDIO_LIVE_GESTURE_PREVIEW_SOCKET_EVENT, STUDIO_LIVE_INK_SOCKET_EVENT,
 } from "./studio-live-socket-transport-types";
-import {
-  isRecord,
-  parseFailure,
-  parseJoinAck,
-  safeString,
-  type ServerFailure,
-  type ServerJoinSnapshot,
-} from "./studio-live-socket-wire";
-
-import type {
-  StudioLiveTransportControlEvent,
-  StudioLiveTransportStatus,
-} from "./studio-live-collaboration-transport";
+import { isRecord, parseFailure, parseJoinAck, safeString, type ServerFailure, type ServerJoinSnapshot } from "./studio-live-socket-wire";
+import type { StudioLiveTransportControlEvent, StudioLiveTransportStatus } from "./studio-live-collaboration-transport";
 import type { StudioLiveSocketTransportHost } from "./studio-live-socket-transport-host";
 
 export function connect(this: StudioLiveSocketTransportHost): Promise<void> {
@@ -100,6 +69,7 @@ export function close(this: StudioLiveSocketTransportHost): void {
   this.selectedCrdtWireFormat = null;
   this.clearCrdtWireSelectionTimeout();
   this.clearCrdtReconnectTimeout();
+  this.clearSocketReconnectTimeout();
   this.clearJoinRetry(true);
   this.clearConnectTimeout();
   this.rejectConnect?.(new Error("팀 공동작업 연결이 종료되었습니다."));
@@ -107,6 +77,7 @@ export function close(this: StudioLiveSocketTransportHost): void {
   this.socket.off("connect", this.onConnect);
   this.socket.off("connect_error", this.onConnectError);
   this.socket.off("disconnect", this.onDisconnect);
+  this.socket.io?.off("reconnect_failed", this.onReconnectFailed);
   this.socket.off("studio:error", this.onServerError);
   this.socket.off("studio:access:revoked", this.onAccessRevoked);
   this.socket.off("studio:presence:snapshot", this.onPresenceSnapshot);
@@ -170,7 +141,9 @@ export function close(this: StudioLiveSocketTransportHost): void {
 
 export function onConnect(this: StudioLiveSocketTransportHost) {
   if (!this.closed && !this.accessRevoked) {
+    this.reconnectExhausted = false;
     this.credentialRefreshAttempted = false;
+    this.clearSocketReconnectTimeout();
     this.clearCrdtReconnectTimeout();
     this.clearJoinRetry(true);
     this.beginJoin();
@@ -201,6 +174,28 @@ export function onConnectError(this: StudioLiveSocketTransportHost, error: unkno
   this.selectedCrdtWireFormat = null;
   this.clearCrdtWireSelectionTimeout();
   this.emitStatus({ state: "error", message, recoverable: true });
+  if (this.reconnectExhausted) this.scheduleSocketReconnect();
+}
+
+export function onReconnectFailed(this: StudioLiveSocketTransportHost): void {
+  if (this.closed || this.accessRevoked || !this.everJoined) return;
+  this.reconnectExhausted = true;
+  this.scheduleSocketReconnect();
+}
+
+export function scheduleSocketReconnect(this: StudioLiveSocketTransportHost): void {
+  if (this.closed || this.accessRevoked || !this.everJoined || this.socket.connected || this.socketReconnectTimeout !== null) return;
+  this.socketReconnectTimeout = this.scheduleTimeout(() => {
+    this.socketReconnectTimeout = null;
+    if (this.closed || this.accessRevoked || !this.everJoined || this.socket.connected) return;
+    this.credentialRefreshAttempted = false;
+    this.socket.connect();
+  }, JOIN_RESYNC_RETRY_MAX_MS);
+}
+
+export function clearSocketReconnectTimeout(this: StudioLiveSocketTransportHost): void {
+  if (this.socketReconnectTimeout !== null) this.cancelTimeout(this.socketReconnectTimeout);
+  this.socketReconnectTimeout = null;
 }
 
 export function refreshCredentialAfterAuthenticationError(this: StudioLiveSocketTransportHost, fallbackMessage: string): void {
@@ -246,6 +241,7 @@ export function revokeFromConnectError(this: StudioLiveSocketTransportHost, mess
   this.selectedCrdtWireFormat = null;
   this.clearCrdtWireSelectionTimeout();
   this.clearCrdtReconnectTimeout();
+  this.clearSocketReconnectTimeout();
   this.clearJoinRetry(true);
   this.pendingInitialSnapshot = null;
   this.pendingPresenceByConnection.clear();
@@ -330,6 +326,7 @@ export function onAccessRevoked(this: StudioLiveSocketTransportHost, value: unkn
   this.selectedCrdtWireFormat = null;
   this.clearCrdtWireSelectionTimeout();
   this.clearCrdtReconnectTimeout();
+  this.clearSocketReconnectTimeout();
   this.clearJoinRetry(true);
   this.pendingInitialSnapshot = null;
   this.pendingPresenceByConnection.clear();
@@ -598,6 +595,7 @@ export function failJoin(this: StudioLiveSocketTransportHost, message: string, r
   if (!recoverable || (code && isNonRecoverable(code))) {
     this.accessRevoked = true;
     this.clearCrdtReconnectTimeout();
+    this.clearSocketReconnectTimeout();
     clearStudioLiveLockRevisionState(this.lockRevisions);
     this.scrubCredentials();
     this.socket.disconnect();
@@ -632,6 +630,7 @@ export function handleFailure(this: StudioLiveSocketTransportHost, failure: Serv
     this.selectedCrdtWireFormat = null;
     this.clearCrdtWireSelectionTimeout();
     this.clearCrdtReconnectTimeout();
+    this.clearSocketReconnectTimeout();
     this.clearJoinRetry(true);
     this.pendingInitialSnapshot = null;
     this.pendingPresenceByConnection.clear();

@@ -1,13 +1,6 @@
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useStudioLiveAutoReconnect } from "./use-studio-live-auto-reconnect";
+import { requestStudioLiveTransportAuthRecovery } from "./use-studio-live-transport-auth";
 import { resolveStudioLiveProducerErrorFromCause } from "../status-i18n/studio-producer-error-i18n-live-room";
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { studioAutomergeOfflineBranchEnabled } from "../offline-branch/studio-offline-branch-feature";
@@ -187,10 +180,10 @@ function mergeBindingTelemetry(options: {
     persistenceDurability,
     transportReady: measured.transportReady ?? transportReady,
     lastAckAt: measured.lastAckAt ?? previous?.lastAckAt ?? null,
-    lastAckServerSequence:
-      measured.lastAckServerSequence ?? previous?.lastAckServerSequence ?? null,
-    ...(status.state === "error" && status.durabilityAtRisk
-      ? { durabilityAtRisk: true }
+    lastAckServerSequence: measured.lastAckServerSequence ?? previous?.lastAckServerSequence ?? null,
+    ...(status.state === "error" && status.durabilityAtRisk ? { durabilityAtRisk: true } : {}),
+    ...(status.state === "retrying" && status.nonAuthoritativeDeliveryPending === true
+      ? { nonAuthoritativeDeliveryPending: true }
       : {}),
   };
 }
@@ -1011,7 +1004,9 @@ export function StudioLiveCollaborationProvider({
   };
 
   const retryServer = useCallback(() => {
-    if (!transportFactory || terminalTransportState !== null) return;
+    if (terminalTransportState !== null) return;
+    requestStudioLiveTransportAuthRecovery();
+    if (!transportFactory) return;
     setError(null);
     setTransportPreference("server");
     setTransportRetryKey((value) => value + 1);

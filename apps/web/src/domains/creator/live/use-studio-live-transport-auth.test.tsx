@@ -4,6 +4,7 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  requestStudioLiveTransportAuthRecovery,
   useStudioLiveTransportAuth,
   type StudioLiveTransportAuthDependencies,
   type StudioLiveTransportAuthInput,
@@ -300,4 +301,36 @@ describe("useStudioLiveTransportAuth", () => {
     ]);
   });
 
+  it("restarts exhausted ticket issuance when manual server retry requests auth recovery", async () => {
+    const live = harness();
+    live.requestTicket
+      .mockRejectedValueOnce(new TypeError("offline-1"))
+      .mockRejectedValueOnce(new TypeError("offline-2"))
+      .mockRejectedValueOnce(new TypeError("offline-3"))
+      .mockRejectedValueOnce(new TypeError("offline-4"))
+      .mockRejectedValueOnce(new TypeError("offline-5"))
+      .mockResolvedValueOnce(ticket(10));
+    const hook = renderHook(
+      (input: StudioLiveTransportAuthInput) =>
+        useStudioLiveTransportAuth(input, live.dependencies),
+      { initialProps: { authReady: true, userId: "artist-manual-retry" } },
+    );
+
+    await flushPromises();
+    for (const delay of [500, 1_000, 2_000, 4_000]) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(delay);
+      });
+    }
+    expect(live.requestTicket).toHaveBeenCalledTimes(5);
+    expect(hook.result.current).toBeUndefined();
+
+    act(() => {
+      requestStudioLiveTransportAuthRecovery();
+    });
+    await flushPromises();
+
+    expect(live.requestTicket).toHaveBeenCalledTimes(6);
+    expect(hook.result.current).toBe(live.factories[0]);
+  });
 });

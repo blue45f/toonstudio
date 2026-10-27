@@ -178,6 +178,8 @@ export class StudioLiveSocketTransport implements StudioLiveTransport {
   selectedCrdtWireFormat: StudioCrdtWireFormat | null = null;
   crdtWireSelectionTimeout: unknown = null;
   crdtReconnectTimeout: unknown = null;
+  socketReconnectTimeout: unknown = null;
+  reconnectExhausted = false;
   credentialRefreshAttempted = false;
   credentialRefreshPromise: Promise<void> | null = null;
 
@@ -211,6 +213,7 @@ export class StudioLiveSocketTransport implements StudioLiveTransport {
     this.socket.on("connect", this.onConnect);
     this.socket.on("connect_error", this.onConnectError);
     this.socket.on("disconnect", this.onDisconnect);
+    this.socket.io?.on("reconnect_failed", this.onReconnectFailed);
     this.socket.on("studio:error", this.onServerError);
     this.socket.on("studio:access:revoked", this.onAccessRevoked);
     this.socket.on("studio:presence:snapshot", this.onPresenceSnapshot);
@@ -302,6 +305,15 @@ export class StudioLiveSocketTransport implements StudioLiveTransport {
   readonly onConnectError = (error: unknown): void => {
     lifecycle.onConnectError.call(this, error);
   };
+  readonly onReconnectFailed = (): void => {
+    lifecycle.onReconnectFailed.call(this);
+  };
+  scheduleSocketReconnect(): void {
+    lifecycle.scheduleSocketReconnect.call(this);
+  }
+  clearSocketReconnectTimeout(): void {
+    lifecycle.clearSocketReconnectTimeout.call(this);
+  }
   readonly onDisconnect = (reason: unknown): void => {
     lifecycle.onDisconnect.call(this, reason);
   };

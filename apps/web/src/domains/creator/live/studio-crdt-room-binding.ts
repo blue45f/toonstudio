@@ -1,11 +1,11 @@
 import {
   classifyStudioCrdtFailure,
+  shouldRetainNonAuthoritativePendingUpdate,
+  tryCoalescePendingCrdtUpdate,
+  type CoalesceablePendingCrdtUpdate,
   type StudioCrdtFailureClassification,
 } from "./studio-crdt-operation-error";
-import {
-  createStudioCrdtOutbox,
-  type StudioCrdtOutbox,
-} from "./studio-crdt-outbox";
+import { createStudioCrdtOutbox, type StudioCrdtOutbox } from "./studio-crdt-outbox";
 import {
   STUDIO_CRDT_ORIGIN_REMOTE,
   STUDIO_CRDT_ORIGIN_SYNC,
@@ -77,45 +77,27 @@ export type StudioCrdtBindingStatusPayload =
   | { state: "repairing"; message: string }
   | { state: "error"; message: string; durabilityAtRisk?: boolean }
   | {
-      state: "recovery-required";
-      message: string;
-      code: string;
-      updateId: string;
-      recoveryUpdateCount: number;
-      collaborativeEditsBlocked: true;
-      retryable: false;
-      recoveryVaultId?: string;
-      recoveryExportAvailable: boolean;
-      outboxCleanupAtRisk?: boolean;
+      state: "recovery-required"; message: string; code: string; updateId: string;
+      recoveryUpdateCount: number; collaborativeEditsBlocked: true; retryable: false;
+      recoveryVaultId?: string; recoveryExportAvailable: boolean; outboxCleanupAtRisk?: boolean;
     };
 
 export interface StudioCrdtBindingTelemetry {
   /** Update batches awaiting local-only delivery, authoritative acknowledgement, or recovery. */
   pendingCount: number;
   /** Browser-durable recovery capability, independent from the authoritative server path. */
-  persistenceDurability:
-    | "checking"
-    | "durable"
-    | "degraded"
-    | "unavailable"
-    | "not-applicable";
+  persistenceDurability: "checking" | "durable" | "degraded" | "unavailable" | "not-applicable";
   transportReady: boolean;
   /** Server mutation ACK only; BroadcastChannel and P2P receipts are never server ACKs. */
   lastAckAt: number | null;
   lastAckServerSequence: string | null;
 }
 
-export type StudioCrdtBindingStatus = StudioCrdtBindingStatusPayload &
-  StudioCrdtBindingTelemetry;
+export type StudioCrdtBindingStatus = StudioCrdtBindingStatusPayload & StudioCrdtBindingTelemetry;
 
 export interface StudioCrdtRecoveryRequiredState {
-  code: string;
-  updateId: string;
-  message: string;
-  recoveryUpdateCount: number;
-  outboxCleanupAtRisk: boolean;
-  recoveryVaultId: string | null;
-  recoveryExportAvailable: boolean;
+  code: string; updateId: string; message: string; recoveryUpdateCount: number;
+  outboxCleanupAtRisk: boolean; recoveryVaultId: string | null; recoveryExportAvailable: boolean;
 }
 
 export interface StudioCrdtAuthoritativeAckBarrierResult {
@@ -157,15 +139,7 @@ interface BindingTransportSnapshot {
   readonly fanout: StudioLiveRoom["crdtFanout"];
 }
 
-interface PendingUpdate {
-  request: StudioCrdtUpdateRequest;
-  attempts: number;
-  persistenceState: "pending" | "ready" | "failed";
-  /** Resolves false on a surfaced durability failure; it never creates an unhandled rejection. */
-  persisted: Promise<boolean>;
-  /** Peer delivery happened, but no authoritative server ACK exists yet. */
-  localBroadcasted?: boolean;
-}
+type PendingUpdate = CoalesceablePendingCrdtUpdate;
 
 const EMPTY_UPDATE_BYTE_LENGTH = 2;
 const RETRY_MIN_MS = 300;
@@ -365,6 +339,7 @@ export class StudioCrdtRoomBinding {
     this.batchSubscription?.flush();
     const deadline = Date.now() + Math.max(100, Math.min(10_000, timeoutMs));
     const pendingAtBoundary = [...this.pending.values()];
+    for (const pending of pendingAtBoundary) pending.draftProtectionBoundary = true;
 
     if (this.outboxScope !== null) {
       const persisted = await this.completeBeforeDeadline(
@@ -438,7 +413,9 @@ export class StudioCrdtRoomBinding {
   /** Holds a collaborative edit lease through delivery without treating peer receipts as server ACKs. */
   async flushAndWaitForDelivery(timeoutMs = 2_000): Promise<void> {
     this.assertDeliveryActive();
-    if (this.room.mode !== "local" || this.outboxScope !== null) {
+    if (this.hasAuthoritativeServer() || shouldRetainNonAuthoritativePendingUpdate({
+      hasAuthoritativeServer: false, workId: this.room.workId, mode: this.room.mode, outboxScope: this.outboxScope,
+    })) {
       await this.flushAndWaitForAuthoritativeAck(timeoutMs);
       this.assertDeliveryActive();
       return;
@@ -692,12 +669,25 @@ export class StudioCrdtRoomBinding {
     if (this.backgroundSyncTimer !== null) this.cancelTimeout(this.backgroundSyncTimer);
     this.backgroundSyncTimer = null;
     this.scheduleBackgroundSync();
-    this.emitStatus({ state: "ready", message: statusFrom("ready-synced") });
+    if (this.pending.size === 0) {
+      this.emitStatus({ state: "ready", message: statusFrom("ready-synced") });
+    }
     await this.drainPending();
   }
 
   private enqueueUpdate(update: Uint8Array): void {
     if (this.closed || this.recoveryState || update.byteLength <= EMPTY_UPDATE_BYTE_LENGTH) return;
+    const canCoalesce = !this.recoveryTransition && (!this.room.ready || (this.hasAuthoritativeServer() && !this.authoritativeSyncReady));
+    const tail = [...this.pending.values()].at(-1);
+    if (tryCoalescePendingCrdtUpdate(tail, update, canCoalesce)) {
+      this.emitStatus({
+        state: this.room.ready ? "syncing" : "retrying",
+        message: this.room.ready ? statusFrom("enqueue-saving-to-server") : statusFrom("enqueue-keep-in-recovery"),
+      });
+      if (this.outboxScope) this.beginPendingPersistence(tail);
+      void this.drainPending();
+      return;
+    }
     let encoded: string;
     try {
       encoded = encodeStudioCrdtUpdate(update);
@@ -909,6 +899,7 @@ export class StudioCrdtRoomBinding {
         this.emitStatus({ state: "retrying", message: statusFrom("retrying-direct-server-save") });
       }
       const transport = this.captureTransport();
+      pending.inFlight = true;
       try {
         const acknowledgement = await this.room.publishCrdtUpdate(pending.request);
         if (!this.isCurrentTransport(transport)) {
@@ -916,22 +907,23 @@ export class StudioCrdtRoomBinding {
           return;
         }
         this.reconcileAuthoritativeAcknowledgement(acknowledgement);
-        if (
-          !this.hasAuthoritativeServer() &&
-          (this.room.mode !== "local" || this.outboxScope !== null)
-        ) {
-          // Scoped local fallbacks and server-backed P2P still require an authoritative ACK.
-          // Local-only rooms need no replay backlog: late peers receive the Y.Doc frontier.
+        if (shouldRetainNonAuthoritativePendingUpdate({
+          hasAuthoritativeServer: this.hasAuthoritativeServer(),
+          workId: this.room.workId, mode: this.room.mode, outboxScope: this.outboxScope,
+        })) {
           pending.localBroadcasted = true;
           continue;
         }
         this.pending.delete(updateId);
+        if (this.pending.size > 0 && !this.closed && !this.recoveryState) {
+          this.emitStatus({ state: "syncing", message: statusFrom("enqueue-saving-to-server") });
+        }
         if (this.outboxScope) {
           void this.outbox
             .remove(this.outboxScope, pending.request.workId, updateId)
             .then(() => {
               this.captureOutboxStatus();
-              if (!this.closed && !this.durabilityWarning) {
+              if (!this.closed && !this.durabilityWarning && this.pending.size === 0) {
                 this.emitStatus({ state: "ready", message: statusFrom("ready-local-synced") });
               }
             })
@@ -954,6 +946,8 @@ export class StudioCrdtRoomBinding {
         this.emitStatus({ state: "retrying", message: statusMessageFrom(error, "publish-retry") });
         this.scheduleRetry(pending.attempts);
         return;
+      } finally {
+        pending.inFlight = false;
       }
     }
     if (this.started && !this.closed) {

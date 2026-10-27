@@ -67,7 +67,7 @@ class FakeRoom {
   ready = true;
   readonly mode: "local" | "server";
   crdtFanout?: "authoritative" | "mesh" | "none";
-  readonly workId = "work-a";
+  workId = "work-a";
   readonly participant = { sessionId: "self", displayName: "Me", role: "editor" as const };
   readonly crdtListeners = new Set<(event: StudioLiveCrdtRoomEvent) => void>();
   readonly roomListeners = new Set<(event: StudioLiveRoomEvent) => void>();
@@ -2213,5 +2213,143 @@ describe("드로잉 동기화 연결 세대 경계", () => {
       expect(statuses.at(-1)?.state).toBe("idle");
       expect(statuses.at(-1)?.lastAckAt).toBeNull();
     } finally { binding.close(); client.destroy(); server.destroy(); }
+  });
+
+  it("저장 전 즉석 잼 방(work-instant-*)에서 81개 획을 그려도 대기열이 누적되지 않고 즉시 0으로 비워진다", async () => {
+    vi.useFakeTimers();
+    const peer = new StudioCrdtDocument();
+    const client = new StudioCrdtDocument();
+    const fake = new FakeRoom(peer, "server");
+    fake.workId = "work-instant-m9abc123-7f2k";
+    fake.crdtFanout = "mesh";
+    const outbox = new DurableMemoryOutbox();
+    const statuses: StudioCrdtBindingStatus[] = [];
+    const binding = new StudioCrdtRoomBinding({
+      document: client,
+      room: room(fake),
+      outbox,
+      outboxScope: "artist-jam-owner",
+      recoveryVault: new MemoryRecoveryVault(),
+      onStatus: (status) => statuses.push(status),
+    });
+    try {
+      await binding.start();
+      for (let index = 0; index < 81; index += 1) {
+        add(client, `jam-stroke-${index}`, index + 1);
+        await vi.advanceTimersByTimeAsync(40);
+      }
+      await vi.runAllTicks();
+      expect(peer.getStrokes()).toHaveLength(81);
+      expect(outbox.requests.size).toBe(0);
+      expect(statuses.at(-1)).toMatchObject({
+        state: "ready",
+        pendingCount: 0,
+      });
+      await expect(binding.flushAndWaitForDelivery()).resolves.toBeUndefined();
+    } finally {
+      binding.close();
+      client.destroy();
+      peer.destroy();
+    }
+  });
+
+  it("오프라인 대기 중 연속 작성된 획 배치를 Y.mergeUpdates로 병합해 재연결 시 단일 요청으로 전송한다", async () => {
+    vi.useFakeTimers();
+    const server = new StudioCrdtDocument();
+    const client = new StudioCrdtDocument();
+    const fake = new FakeRoom(server, "server");
+    const outbox = new DurableMemoryOutbox();
+    const statuses: StudioCrdtBindingStatus[] = [];
+    const binding = new StudioCrdtRoomBinding({
+      document: client,
+      room: room(fake),
+      outbox,
+      outboxScope: "artist-coalesce",
+      recoveryVault: new MemoryRecoveryVault(),
+      onStatus: (status) => statuses.push(status),
+    });
+    try {
+      await binding.start();
+      transportState(fake, "disconnected");
+
+      for (let index = 0; index < 5; index += 1) {
+        add(client, `offline-coalesced-${index}`, index + 10);
+        await vi.advanceTimersByTimeAsync(40);
+        await vi.runAllTicks();
+      }
+
+      expect(outbox.requests.size).toBe(1);
+      expect(statuses.at(-1)?.pendingCount).toBe(1);
+
+      const publicationsBeforeReconnect = fake.publications.length;
+      transportState(fake, "ready");
+      await vi.advanceTimersByTimeAsync(50);
+      await vi.runAllTicks();
+
+      expect(fake.publications.length - publicationsBeforeReconnect).toBe(1);
+      expect(server.getStrokes()).toHaveLength(5);
+      expect(outbox.requests.size).toBe(0);
+      expect(statuses.at(-1)).toMatchObject({
+        state: "ready",
+        pendingCount: 0,
+      });
+    } finally {
+      binding.close();
+      client.destroy();
+      server.destroy();
+    }
+  });
+
+  it("복구 보관함에서 복원된 다중 대기 항목을 서버에 반영할 때 대기 개수가 실시간으로 감소한다", async () => {
+    vi.useFakeTimers();
+    const server = new StudioCrdtDocument();
+    const outbox = new DurableMemoryOutbox();
+    const scope = "artist-countdown";
+    const seedDoc = new StudioCrdtDocument();
+    for (let index = 0; index < 3; index += 1) {
+      const prevVector = seedDoc.encodeStateVector();
+      add(seedDoc, `queued-stroke-${index}`, index + 1);
+      const diff = seedDoc.encodeStateAsUpdate(prevVector);
+      await outbox.put(scope, {
+        protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
+        workId: "work-a",
+        updateId: `00000000-0000-4000-8000-00000000009${index}`,
+        clientSequence: index + 1,
+        update: encodeStudioCrdtUpdate(diff),
+      });
+    }
+    seedDoc.destroy();
+
+    const client = new StudioCrdtDocument();
+    const fake = new FakeRoom(server, "server");
+    const observedPendingCounts: Array<{ state: string; pendingCount: number }> = [];
+    const binding = new StudioCrdtRoomBinding({
+      document: client,
+      room: room(fake),
+      outbox,
+      outboxScope: scope,
+      recoveryVault: new MemoryRecoveryVault(),
+      onStatus: (status) => {
+        observedPendingCounts.push({ state: status.state, pendingCount: status.pendingCount });
+      },
+    });
+    try {
+      await binding.start();
+      await vi.runAllTicks();
+      expect(observedPendingCounts).toEqual(
+        expect.arrayContaining([
+          { state: "syncing", pendingCount: 2 },
+          { state: "syncing", pendingCount: 1 },
+          { state: "ready", pendingCount: 0 },
+        ])
+      );
+      expect(
+        observedPendingCounts.some((item) => item.state === "ready" && item.pendingCount > 0)
+      ).toBe(false);
+    } finally {
+      binding.close();
+      client.destroy();
+      server.destroy();
+    }
   });
 });

@@ -42,9 +42,15 @@ export const STUDIO_LIVE_SOCKET_RETRY_POLICY = Object.freeze({
   timeout: CONNECT_TIMEOUT_MS,
 });
 
+export interface StudioLiveSocketManagerLike {
+  on(event: string, listener: (...args: unknown[]) => void): unknown;
+  off(event: string, listener: (...args: unknown[]) => void): unknown;
+}
+
 export interface StudioLiveSocketLike {
   connected: boolean;
   auth: Record<string, unknown>;
+  io?: StudioLiveSocketManagerLike;
   connect(): StudioLiveSocketLike;
   disconnect(): StudioLiveSocketLike;
   emit(event: string, ...args: unknown[]): StudioLiveSocketLike;
