@@ -35,6 +35,20 @@ import {
   type LlamaGenLayoutModeId,
   type MangotoonLibraryTabId,
 } from "./ai-webtoon-platform-suite";
+import {
+  buildDeterministicBraidPonytailAccessoryKnotLockView,
+  buildDeterministicCapeCloakHemLiningFlutterLockView,
+  buildDeterministicCharacterAgeFlashbackProportionLockView,
+  buildDeterministicMultiPlaneParallaxBokehLockView,
+  buildDeterministicPropScreenUiHologramLockView,
+  buildDeterministicSwordHiltGuardScabbardLockView,
+  runClaudeBraidPonytailAccessoryKnotLockDirector,
+  runClaudeCapeCloakHemLiningFlutterLockDirector,
+  runClaudeCharacterAgeFlashbackProportionLockDirector,
+  runClaudeMultiPlaneParallaxBokehLockDirector,
+  runClaudePropScreenUiHologramLockDirector,
+  runClaudeSwordHiltGuardScabbardLockDirector,
+} from "./claude/claude-creator-domain-assist";
 import { PANEL_CARD_CLASS } from "./studio-ai-super-suite-options";
 
 import { cn } from "@/shared/lib/utils";
@@ -79,6 +93,55 @@ export function StudioAiWebtoonPlatformSuitePanel({
     scriptInput.trim().split("\n")[0] ||
       "학교 교실에서 개인정보 보호 수칙을 꼭 주의해서 확인하세요!",
   );
+  const [wave18SummaryKo, setWave18SummaryKo] = useState<string>(() => {
+    const init = buildDeterministicPropScreenUiHologramLockView(scriptInput);
+    return `[UI/홀로그램 연속성 · ${init.model}] ${init.uiDeviceType} — ${init.clockAndBatteryBadgeRuleKo}`;
+  });
+  const [wave18Loading, setWave18Loading] = useState<boolean>(false);
+
+  async function handleRunWave18Engine(
+    kind: "screen" | "braid" | "cape" | "sword" | "age" | "bokeh",
+  ): Promise<void> {
+    setWave18Loading(true);
+    const seed = scriptInput.trim() || tooningSentence;
+    try {
+      if (kind === "screen") {
+        const res = await runClaudePropScreenUiHologramLockDirector(seed);
+        setWave18SummaryKo(`[UI/홀로그램 · ${res.model}] ${res.uiDeviceType} · ${res.clockAndBatteryBadgeRuleKo}`);
+      } else if (kind === "braid") {
+        const res = await runClaudeBraidPonytailAccessoryKnotLockDirector(seed);
+        setWave18SummaryKo(`[땋은머리/리본 · ${res.model}] ${res.braidSegmentCount}마디 · ${res.accessorySideRuleKo}`);
+      } else if (kind === "cape") {
+        const res = await runClaudeCapeCloakHemLiningFlutterLockDirector(seed);
+        setWave18SummaryKo(`[망토 겉/안감 · ${res.model}] 겉감 ${res.outerFabricHex} / 안감 ${res.innerLiningHex} · ${res.windFlutterPhaseRuleKo}`);
+      } else if (kind === "sword") {
+        const res = await runClaudeSwordHiltGuardScabbardLockDirector(seed);
+        setWave18SummaryKo(`[도검 코등이/칼집 · ${res.model}] ${res.weaponNameAndClassKo} · ${res.scabbardWearingSideRuleKo}`);
+      } else if (kind === "age") {
+        const res = await runClaudeCharacterAgeFlashbackProportionLockDirector(seed);
+        setWave18SummaryKo(`[연령대/회상 비례 · ${res.model}] ${res.childhoodHeadRatio} → ${res.adultCurrentHeadRatio} · ${res.scarAndMarkTimelineRuleKo}`);
+      } else {
+        const res = await runClaudeMultiPlaneParallaxBokehLockDirector(seed);
+        setWave18SummaryKo(`[3평면 DoF/보케 · ${res.model}] 전경 ${res.foregroundBlurRadiusPx}px / 원경 ${res.backgroundBokehRadiusPx}px · ${res.virtualLensMmAndFStop}`);
+      }
+    } catch {
+      const fb =
+        kind === "screen"
+          ? buildDeterministicPropScreenUiHologramLockView(seed).directorNoteKo
+          : kind === "braid"
+            ? buildDeterministicBraidPonytailAccessoryKnotLockView(seed).directorNoteKo
+            : kind === "cape"
+              ? buildDeterministicCapeCloakHemLiningFlutterLockView(seed).directorNoteKo
+              : kind === "sword"
+                ? buildDeterministicSwordHiltGuardScabbardLockView(seed).directorNoteKo
+                : kind === "age"
+                  ? buildDeterministicCharacterAgeFlashbackProportionLockView(seed).directorNoteKo
+                  : buildDeterministicMultiPlaneParallaxBokehLockView(seed).directorNoteKo;
+      setWave18SummaryKo(`[폴백] ${fb}`);
+    } finally {
+      setWave18Loading(false);
+    }
+  }
 
   const selectedGenToonModel = useMemo(
     () =>
@@ -547,6 +610,44 @@ export function StudioAiWebtoonPlatformSuitePanel({
           </div>
         </div>
       ) : null}
+
+      {/* 5. Wave 18~20 웹툰 일관성 & 입체 연출 6대 엔진 퀵 실행 바 */}
+      <div
+        data-testid="wave18-20-domain-consistency-bar"
+        className="mt-2.5 space-y-1.5 rounded border border-accent/40 bg-raised/30 p-2 text-[0.62rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <span className="font-bold text-fg">
+            Wave 18~20 웹툰 작화 일관성 & 3평면 심도 6대 AI 디렉터 (360개 플랫폼 REA 내재화)
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                ["screen", "스마트폰·상태창 UI 고정"],
+                ["braid", "땋은머리·리본 매듭 고정"],
+                ["cape", "망토 겉/안감·바람 고정"],
+                ["sword", "도검 코등이·칼집 고정"],
+                ["age", "회상 연령대·두신비 고정"],
+                ["bokeh", "3평면 DoF·보케 감독"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                disabled={wave18Loading}
+                data-testid={`wave18-run-${id}`}
+                onClick={() => void handleRunWave18Engine(id)}
+                className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 hover:border-accent hover:text-accent"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div data-testid="wave18-summary-output" className="text-[0.6rem] text-fg-2">
+          {wave18Loading ? "Claude 멀티모델 추론 중..." : wave18SummaryKo}
+        </div>
+      </div>
     </div>
   );
 }

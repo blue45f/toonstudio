@@ -1,12 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildDeterministicBraidPonytailAccessoryKnotLockView,
+  buildDeterministicCapeCloakHemLiningFlutterLockView,
+  buildDeterministicCharacterAgeFlashbackProportionLockView,
   buildDeterministicCharacterCanonView,
   buildDeterministicEnhancedPromptView,
+  buildDeterministicMultiPlaneParallaxBokehLockView,
+  buildDeterministicPropScreenUiHologramLockView,
   buildDeterministicSceneShadingView,
+  buildDeterministicSwordHiltGuardScabbardLockView,
+  runClaudeBraidPonytailAccessoryKnotLockDirector,
+  runClaudeCapeCloakHemLiningFlutterLockDirector,
+  runClaudeCharacterAgeFlashbackProportionLockDirector,
   runClaudeCharacterCanonArchitect,
+  runClaudeMultiPlaneParallaxBokehLockDirector,
   runClaudePromptEnhancer,
+  runClaudePropScreenUiHologramLockDirector,
   runClaudeSceneShadingDirector,
+  runClaudeSwordHiltGuardScabbardLockDirector,
 } from "./claude-creator-domain-assist";
 import {
   runClaudeAuthorHandoverSummary,
@@ -146,5 +158,42 @@ describe("claude-creator-domain-assist & claude-n7-and-llm-runners", () => {
     expect(handover).toContain("붉은 성소의 서약");
 
     createSpy.mockRestore();
+  });
+
+  it("Wave 18~20 웹툰 일관성 & 3평면 심도 6대 AI 디렉터 결정적 폴백 및 Claude 추론 경로를 검증한다", async () => {
+    const screenFb = buildDeterministicPropScreenUiHologramLockView("시스템 상태창 스탯 확인");
+    expect(screenFb.model).toBe("claude-haiku-5-5");
+    expect(screenFb.uiDeviceType).toContain("홀로그램");
+
+    const braidFb = buildDeterministicBraidPonytailAccessoryKnotLockView("7마디 땋은 머리");
+    expect(braidFb.braidSegmentCount).toBe(7);
+
+    const capeFb = buildDeterministicCapeCloakHemLiningFlutterLockView("황실 기사단 망토");
+    expect(capeFb.outerFabricHex).toBe("#1E293B");
+    expect(capeFb.innerLiningHex).toBe("#991B1B");
+
+    const swordFb = buildDeterministicSwordHiltGuardScabbardLockView("비대칭 날개 롱소드");
+    expect(swordFb.pommelGemHex).toBe("#38BDF8");
+
+    const ageFb = buildDeterministicCharacterAgeFlashbackProportionLockView("8세 유년기 회상");
+    expect(ageFb.childhoodHeadRatio).toContain("5.2등신");
+
+    const bokehFb = buildDeterministicMultiPlaneParallaxBokehLockView("벚꽃 전경 + 야경 보케");
+    expect(bokehFb.model).toBe("claude-opus-5-5");
+    expect(bokehFb.foregroundBlurRadiusPx).toBe(18);
+    expect(bokehFb.backgroundBokehRadiusPx).toBe(26);
+
+    const parseSpy = vi
+      .spyOn(claudeTransport, "claudeParse")
+      .mockRejectedValue(new Error("simulated offline"));
+
+    expect((await runClaudePropScreenUiHologramLockDirector("스마트폰")).source).toBe("deterministic-fallback");
+    expect((await runClaudeBraidPonytailAccessoryKnotLockDirector("포니테일")).source).toBe("deterministic-fallback");
+    expect((await runClaudeCapeCloakHemLiningFlutterLockDirector("망토")).source).toBe("deterministic-fallback");
+    expect((await runClaudeSwordHiltGuardScabbardLockDirector("성검")).source).toBe("deterministic-fallback");
+    expect((await runClaudeCharacterAgeFlashbackProportionLockDirector("타임스킵")).source).toBe("deterministic-fallback");
+    expect((await runClaudeMultiPlaneParallaxBokehLockDirector("3평면 심도")).source).toBe("deterministic-fallback");
+
+    parseSpy.mockRestore();
   });
 });

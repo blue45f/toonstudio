@@ -46,12 +46,31 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 29대 창의 AI 작업을 포함한 총 80개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 35대 창의 AI 작업을 포함한 총 86개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(80);
-    expect(summary.byProfile["fast-inline"]).toBe(20);
-    expect(summary.byProfile["creative-production"]).toBe(40);
-    expect(summary.byProfile["deep-architecture"]).toBe(20);
+    expect(summary.totalTasks).toBe(86);
+    expect(summary.byProfile["fast-inline"]).toBe(22);
+    expect(summary.byProfile["creative-production"]).toBe(43);
+    expect(summary.byProfile["deep-architecture"]).toBe(21);
+
+    expect(
+      resolveCreatorTaskModelRoute("domain:prop-screen-ui-hologram-text-consistency").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("domain:braid-ponytail-ribbon-accessory-knot-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("domain:cape-cloak-hem-lining-wind-flutter-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("domain:sword-hilt-guard-gem-scabbard-engraving-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("domain:character-age-flashback-growth-proportion-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("domain:multi-plane-parallax-depth-blur-bokeh-lock").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("nextgen:footwear-floor-contact-stride-lock").model,

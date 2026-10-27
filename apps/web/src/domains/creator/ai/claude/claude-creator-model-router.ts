@@ -122,7 +122,14 @@ export type ClaudeCreatorTaskId =
   | "ecosystem:companion-pet-familiar-mascot-scale-lock"
   | "ecosystem:interior-room-furniture-door-hinge-geography-lock"
   | "ecosystem:scroll-pace-silent-beat-panel-height-rhythm"
-  | "ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock";
+  | "ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock"
+  // 10. Wave 18~20 Webtoon Consistency & Production AI Engines (6 — Total 86 Tasks)
+  | "domain:prop-screen-ui-hologram-text-consistency"
+  | "domain:braid-ponytail-ribbon-accessory-knot-lock"
+  | "domain:cape-cloak-hem-lining-wind-flutter-lock"
+  | "domain:sword-hilt-guard-gem-scabbard-engraving-lock"
+  | "domain:character-age-flashback-growth-proportion-lock"
+  | "domain:multi-plane-parallax-depth-blur-bokeh-lock";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -684,6 +691,12 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "ecosystem:interior-room-furniture-door-hinge-geography-lock": defineRoute("ecosystem:interior-room-furniture-door-hinge-geography-lock", "실내 방 구조·가구 배치·창문 채광 방향·문 경첩(Hinge) 개폐 궤적 평면도 고정 감독", "phase6-ecosystem", "deep-architecture", "역앵글 전환 시 방문 손잡이/경첩 방향·창문 위치·책상/침대 동선이 뒤집히는 공간 작붕 차단은 Opus 5.5 심층 추론 적용", 6_144),
   "ecosystem:scroll-pace-silent-beat-panel-height-rhythm": defineRoute("ecosystem:scroll-pace-silent-beat-panel-height-rhythm", "무대사 감정 여운 컷(Silent Beat) 세로 픽셀 호흡·페이드 여백 리듬 디렉터", "phase6-ecosystem", "creative-production", "모바일 세로 스크롤에서 대사 없는 시선 교환·여운 컷의 세로 픽셀 높이(px)와 암전 그라데이션 호흡 설계는 Sonnet 5.5 적용", 4_096),
   "ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock": defineRoute("ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock", "역광 귀·손가락 피하산란(SSS 붉은 투과광) 및 눈물·땀방울 굴절 하이라이트 고정기", "phase6-ecosystem", "creative-production", "강한 역광 클로즈업에서 귀바퀴/손가락 끝 피하산란(SSS) 붉은 투과광과 눈물/땀방울 굴절 스페큘러 일관성 고정은 Sonnet 5.5 적용", 4_096),
+  "domain:prop-screen-ui-hologram-text-consistency": defineRoute("domain:prop-screen-ui-hologram-text-consistency", "스마트폰 화면·게임 상태창(Status Window)·홀로그램 UI·간판 텍스트/시각 연속성 고정기", "n7-llm-runner", "fast-inline", "현대물 스마트폰 채팅/배터리/시각·판타지 상태창 스탯 수치·홀로그램 UI 레이아웃 연속성 고정은 Haiku 5.5 적용", 3_072),
+  "domain:braid-ponytail-ribbon-accessory-knot-lock": defineRoute("domain:braid-ponytail-ribbon-accessory-knot-lock", "땋은 머리(Braid) 마디 수·포니테일 결속 높이·비녀/헤어핀/리본 매듭 위치 고정기", "n7-llm-runner", "fast-inline", "땋은 머리 교차 마디 개수·포니테일 높이·비녀/리본 매듭 좌우 방향이 컷마다 바뀌는 작붕 방지는 Haiku 5.5 적용", 3_072),
+  "domain:cape-cloak-hem-lining-wind-flutter-lock": defineRoute("domain:cape-cloak-hem-lining-wind-flutter-lock", "망토·코트 자락 겉감/안감(Lining) 배색·금박 문양·바람 펄럭임 위상 고정기", "n7-llm-runner", "creative-production", "망토/롱코트 겉감·안감 색상 반전 방지 및 밑단 금박 문양·바람 방향별 펄럭임 위상(Phase) 고정은 Sonnet 5.5 적용", 4_096),
+  "domain:sword-hilt-guard-gem-scabbard-engraving-lock": defineRoute("domain:sword-hilt-guard-gem-scabbard-engraving-lock", "도검 코등이(Crossguard)·자루 보석·칼집(Scabbard) 패용 위치·룬 각인 고정기", "n7-llm-runner", "creative-production", "검 코등이 비대칭 장식·폼멜 보석·칼집 패용 좌우 허리 위치·도신 룬 각인 방향 고정은 Sonnet 5.5 적용", 4_096),
+  "domain:character-age-flashback-growth-proportion-lock": defineRoute("domain:character-age-flashback-growth-proportion-lock", "과거 회상(유년기/소년기)·현재·타임스킵 연령대별 두신비·하관·흉터 타임라인 고정기", "n7-llm-runner", "creative-production", "유년기 회상과 현재 시점 전환 시 두신비(5.5~8등신)·안면 하관 비율·시대별 흉터 유무 고정은 Sonnet 5.5 적용", 4_096),
+  "domain:multi-plane-parallax-depth-blur-bokeh-lock": defineRoute("domain:multi-plane-parallax-depth-blur-bokeh-lock", "전경(Out-of-focus)·중경(인물)·원경(보케) 3평면 피사계 심도(DoF) 블러 감독", "n7-llm-runner", "deep-architecture", "전경 나뭇잎/창살·중경 인물·원경 도시 야경 보케 3평면 조리개(f-stop) 블러 반경 및 색수차 일관성 설계는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

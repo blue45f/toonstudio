@@ -37,6 +37,10 @@ import {
   type LightSourceConfig,
 } from "../studio-ai-shading-assist";
 
+import {
+  resolveCreatorTaskModelRoute,
+  type ClaudeCreatorTaskId,
+} from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import { clampInt, type RunWebtoonProductionAssistOptions } from "./claude-webtoon-production-schemas";
 
@@ -451,4 +455,333 @@ export async function runClaudeSceneShadingDirector(
     }
     throw error;
   }
+}
+
+// ── 4~9. Wave 18~20 웹툰 작화 일관성 & 연출 AI 엔진 6종 ────────────────────────────────
+
+interface Wave18LiveMeta<T> {
+  readonly actualModel: string;
+  readonly parsed: T;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedUsd: number | null;
+}
+
+async function runWave18DomainConsistencyEngine<T extends z.ZodTypeAny>(
+  taskId: ClaudeCreatorTaskId,
+  systemPromptKo: string,
+  userPromptKo: string,
+  schema: T,
+  runOptions: RunWebtoonProductionAssistOptions,
+): Promise<Wave18LiveMeta<z.infer<T>> | null> {
+  const routed = resolveCreatorTaskModelRoute(taskId, runOptions);
+  const activeRoute = resolveOrHydrateClaudeRoute(runOptions.route);
+  if (!activeRoute) {
+    if (runOptions.fallbackOnError !== false) return null;
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const requestedModel = resolveClaudeRequestModel(routed.mergedOptions.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: routed.mergedOptions.maxTokens ?? MAX_OUTPUT_TOKENS,
+    system: [{ type: "text", text: systemPromptKo, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: userPromptKo }],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: routed.mergedOptions.effort ?? ("low" as const) } } : {}),
+  };
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, schema, {
+      signal: runOptions.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requestedModel, request, schema }),
+      budgetOverride: runOptions.budgetOverride,
+    });
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return { actualModel: claudeModelInfo(actualModel)?.id ?? actualModel, parsed, usage, estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null };
+  } catch (error) {
+    if (runOptions.fallbackOnError !== false && !runOptions.signal?.aborted) return null;
+    throw error;
+  }
+}
+
+export interface Wave18ResultEnvelope {
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedUsd: number | null;
+}
+
+// 4) 스마트폰 화면·게임 상태창(Status Window)·홀로그램 UI·간판 텍스트/시각 연속성 고정기
+export const ClaudePropScreenUiHologramLockSchema = z.object({
+  uiDeviceType: z.string(), clockAndBatteryBadgeRuleKo: z.string(), statOrChatRowCount: z.number(),
+  primaryAccentHex: z.string(), typographyAndAlignmentRuleKo: z.string(), continuityWarningKo: z.string(), directorNoteKo: z.string(),
+});
+export type ClaudePropScreenUiHologramLockOutput = z.infer<typeof ClaudePropScreenUiHologramLockSchema>;
+export type ClaudePropScreenUiHologramLockView = ClaudePropScreenUiHologramLockOutput & Wave18ResultEnvelope;
+
+export function buildDeterministicPropScreenUiHologramLockView(sceneNoteKo = ""): ClaudePropScreenUiHologramLockView {
+  const isFantasy = /상태창|스탯|홀로그램|시스템|퀘스트/u.test(sceneNoteKo);
+  return Object.freeze({
+    source: "deterministic-fallback", model: "claude-haiku-5-5",
+    uiDeviceType: isFantasy ? "반투명 시스템 홀로그램 상태창 (Status Window)" : "현대 스마트폰 메신저 화면",
+    clockAndBatteryBadgeRuleKo: isFantasy
+      ? "상단 퀘스트 타이머(00:14:59) 및 마나 게이지(78%) 수치가 연속 컷에서 역행하지 않도록 고정"
+      : "상단 상태바 시각(23:42) 및 배터리 잔량(18% 붉은 아이콘)이 컷 전환 후에도 동일하게 유지되도록 고정",
+    statOrChatRowCount: 4, primaryAccentHex: isFantasy ? "#38BDF8" : "#FACC15",
+    typographyAndAlignmentRuleKo: "본문 고딕 산세리프 14pt 고정 · 발신자 우측 정렬 / 수신자 좌측 정렬 반전 금지",
+    continuityWarningKo: "클로즈업과 오버더숄더(OTS) 컷 사이에서 화면 텍스트 줄 수나 배터리 잔량이 바뀌는 오류 차단",
+    directorNoteKo: "스마트폰/상태창 UI는 별도 벡터 스마트 오브젝트 레이어로 분리해 3D 원근 변형(Perspective Warp)만 적용하세요.",
+    usage: EMPTY_CLAUDE_TOKEN_USAGE, estimatedUsd: null,
+  });
+}
+
+export async function runClaudePropScreenUiHologramLockDirector(
+  sceneNoteKo: string, runOptions: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudePropScreenUiHologramLockView> {
+  const fb = buildDeterministicPropScreenUiHologramLockView(sceneNoteKo);
+  const res = await runWave18DomainConsistencyEngine(
+    "domain:prop-screen-ui-hologram-text-consistency",
+    "당신은 웹툰 스마트폰 채팅 화면·게임 판타지 상태창(Status Window)·홀로그램 UI 연속성 감독입니다. 컷 간 시각/배터리/스탯 수치/정렬 일관성 규칙을 JSON으로 설계하세요.",
+    `장면 설명: ${cleanSingleLineText(sceneNoteKo, 360) || "주인공이 밤거리에서 스마트폰 긴급 문자와 시스템 상태창을 확인하는 컷"}`,
+    ClaudePropScreenUiHologramLockSchema, runOptions,
+  );
+  if (!res) return fb;
+  return Object.freeze({
+    source: "claude-live", model: res.actualModel,
+    uiDeviceType: cleanSingleLineText(res.parsed.uiDeviceType, 90) || fb.uiDeviceType,
+    clockAndBatteryBadgeRuleKo: cleanSingleLineText(res.parsed.clockAndBatteryBadgeRuleKo, 180) || fb.clockAndBatteryBadgeRuleKo,
+    statOrChatRowCount: clampInt(res.parsed.statOrChatRowCount, 1, 12, fb.statOrChatRowCount),
+    primaryAccentHex: safeHex(res.parsed.primaryAccentHex, fb.primaryAccentHex),
+    typographyAndAlignmentRuleKo: cleanSingleLineText(res.parsed.typographyAndAlignmentRuleKo, 180) || fb.typographyAndAlignmentRuleKo,
+    continuityWarningKo: cleanSingleLineText(res.parsed.continuityWarningKo, 180) || fb.continuityWarningKo,
+    directorNoteKo: cleanSingleLineText(res.parsed.directorNoteKo, 200) || fb.directorNoteKo,
+    usage: res.usage, estimatedUsd: res.estimatedUsd,
+  });
+}
+
+// 5) 땋은 머리(Braid) 마디 수·포니테일 결속 높이·비녀/헤어핀/리본 매듭 위치 고정기
+export const ClaudeBraidPonytailAccessoryKnotLockSchema = z.object({
+  hairstyleCategory: z.string(), braidSegmentCount: z.number(), tieHeightAnchorKo: z.string(),
+  accessorySideRuleKo: z.string(), ribbonTailLengthRatio: z.string(), motionInertiaRuleKo: z.string(), directorNoteKo: z.string(),
+});
+export type ClaudeBraidPonytailAccessoryKnotLockOutput = z.infer<typeof ClaudeBraidPonytailAccessoryKnotLockSchema>;
+export type ClaudeBraidPonytailAccessoryKnotLockView = ClaudeBraidPonytailAccessoryKnotLockOutput & Wave18ResultEnvelope;
+
+export function buildDeterministicBraidPonytailAccessoryKnotLockView(characterHairNoteKo = ""): ClaudeBraidPonytailAccessoryKnotLockView {
+  return Object.freeze({
+    source: "deterministic-fallback", model: "claude-haiku-5-5",
+    hairstyleCategory: cleanSingleLineText(characterHairNoteKo, 70) || "사이드 브레이드(땋은 머리) + 하이 포니테일 리본",
+    braidSegmentCount: 7,
+    tieHeightAnchorKo: "귓바퀴 상단 연장선(후두부 상단 15도) 결속점 고정 — 컷마다 묶은 위치가 처지지 않도록 앵커 유지",
+    accessorySideRuleKo: "캐릭터 기준 좌측 관자놀이 진주 헤어핀 2개 고정 (좌우 반전 절대 금지)",
+    ribbonTailLengthRatio: "매듭 루프 1 : 리본 늘어뜨린 꼬리 2.4 (쇄골 하단 3cm 도달)",
+    motionInertiaRuleKo: "고개 회전 후 0.15초 뒤늦게 땋은 머리 끝단과 리본 꼬리가 원심력 궤적을 그리며 추종",
+    directorNoteKo: "땋은 머리 교차 마디 수(7마디)와 좌측 헤어핀 개수를 턴어라운드 시트에 고정해 어시스턴트 작붕을 예방하세요.",
+    usage: EMPTY_CLAUDE_TOKEN_USAGE, estimatedUsd: null,
+  });
+}
+
+export async function runClaudeBraidPonytailAccessoryKnotLockDirector(
+  characterHairNoteKo: string, runOptions: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeBraidPonytailAccessoryKnotLockView> {
+  const fb = buildDeterministicBraidPonytailAccessoryKnotLockView(characterHairNoteKo);
+  const res = await runWave18DomainConsistencyEngine(
+    "domain:braid-ponytail-ribbon-accessory-knot-lock",
+    "당신은 웹툰 캐릭터 헤어스타일(땋은 머리 마디 수·포니테일 높이·비녀/헤어핀/리본 매듭 좌우 위치) 연속성 감독입니다. JSON으로 고정 규칙을 설계하세요.",
+    `캐릭터 헤어/장신구 설명: ${cleanSingleLineText(characterHairNoteKo, 360) || "좌측 진주 핀 2개와 붉은 벨벳 리본으로 묶은 7마디 땋은 머리 여주인공"}`,
+    ClaudeBraidPonytailAccessoryKnotLockSchema, runOptions,
+  );
+  if (!res) return fb;
+  return Object.freeze({
+    source: "claude-live", model: res.actualModel,
+    hairstyleCategory: cleanSingleLineText(res.parsed.hairstyleCategory, 90) || fb.hairstyleCategory,
+    braidSegmentCount: clampInt(res.parsed.braidSegmentCount, 3, 24, fb.braidSegmentCount),
+    tieHeightAnchorKo: cleanSingleLineText(res.parsed.tieHeightAnchorKo, 180) || fb.tieHeightAnchorKo,
+    accessorySideRuleKo: cleanSingleLineText(res.parsed.accessorySideRuleKo, 180) || fb.accessorySideRuleKo,
+    ribbonTailLengthRatio: cleanSingleLineText(res.parsed.ribbonTailLengthRatio, 120) || fb.ribbonTailLengthRatio,
+    motionInertiaRuleKo: cleanSingleLineText(res.parsed.motionInertiaRuleKo, 180) || fb.motionInertiaRuleKo,
+    directorNoteKo: cleanSingleLineText(res.parsed.directorNoteKo, 200) || fb.directorNoteKo,
+    usage: res.usage, estimatedUsd: res.estimatedUsd,
+  });
+}
+
+// 6) 망토·코트 자락 겉감/안감(Lining) 배색·금박 문양·바람 펄럭임 위상 고정기
+export const ClaudeCapeCloakHemLiningFlutterLockSchema = z.object({
+  outerFabricHex: z.string(), innerLiningHex: z.string(), hemEmbroideryPatternKo: z.string(),
+  claspAnchorRuleKo: z.string(), windFlutterPhaseRuleKo: z.string(), flipPreventionRuleKo: z.string(), directorNoteKo: z.string(),
+});
+export type ClaudeCapeCloakHemLiningFlutterLockOutput = z.infer<typeof ClaudeCapeCloakHemLiningFlutterLockSchema>;
+export type ClaudeCapeCloakHemLiningFlutterLockView = ClaudeCapeCloakHemLiningFlutterLockOutput & Wave18ResultEnvelope;
+
+export function buildDeterministicCapeCloakHemLiningFlutterLockView(cloakNoteKo = ""): ClaudeCapeCloakHemLiningFlutterLockView {
+  return Object.freeze({
+    source: "deterministic-fallback", model: "claude-sonnet-5-5",
+    outerFabricHex: "#1E293B", innerLiningHex: "#991B1B",
+    hemEmbroideryPatternKo: cleanSingleLineText(cloakNoteKo, 90) || "밑단 외측에만 금박 쌍두독수리 보더 문양 배치 (안감에는 문양 없음)",
+    claspAnchorRuleKo: "우측 쇄골 위 사자 머리 금속 브로치 1점 고정 + 좌측 어깨 위로는 망토가 절반만 덮이는 비대칭 드레이프",
+    windFlutterPhaseRuleKo: "주풍향(좌→우 30도) 기준 S자 2주기 사인파 주름 유지 — 인접 컷에서 바람 방향 역전 금지",
+    flipPreventionRuleKo: "망토 자락이 뒤집히는 접힘 경계선(Fold Line)에서 겉감(#1E293B)과 안감(#991B1B) 채색 영역이 섞이지 않도록 클리핑 분리",
+    directorNoteKo: "망토 겉감/안감 레이어를 분리하고 밑단 금박 브러시는 겉감 마스크에만 귀속시켜 채색 반전 사고를 차단하세요.",
+    usage: EMPTY_CLAUDE_TOKEN_USAGE, estimatedUsd: null,
+  });
+}
+
+export async function runClaudeCapeCloakHemLiningFlutterLockDirector(
+  cloakNoteKo: string, runOptions: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeCapeCloakHemLiningFlutterLockView> {
+  const fb = buildDeterministicCapeCloakHemLiningFlutterLockView(cloakNoteKo);
+  const res = await runWave18DomainConsistencyEngine(
+    "domain:cape-cloak-hem-lining-wind-flutter-lock",
+    "당신은 웹툰 망토·롱코트 겉감/안감(Lining) 배색·밑단 금박 문양·바람 펄럭임 위상(Phase) 연속성 감독입니다. JSON으로 설계하세요.",
+    `망토/코트 연출 설명: ${cleanSingleLineText(cloakNoteKo, 360) || "황실 기사단장의 짙은 남색 겉감 + 진홍색 안감 망토가 성벽 바람에 휘날리는 장면"}`,
+    ClaudeCapeCloakHemLiningFlutterLockSchema, runOptions,
+  );
+  if (!res) return fb;
+  return Object.freeze({
+    source: "claude-live", model: res.actualModel,
+    outerFabricHex: safeHex(res.parsed.outerFabricHex, fb.outerFabricHex),
+    innerLiningHex: safeHex(res.parsed.innerLiningHex, fb.innerLiningHex),
+    hemEmbroideryPatternKo: cleanSingleLineText(res.parsed.hemEmbroideryPatternKo, 180) || fb.hemEmbroideryPatternKo,
+    claspAnchorRuleKo: cleanSingleLineText(res.parsed.claspAnchorRuleKo, 180) || fb.claspAnchorRuleKo,
+    windFlutterPhaseRuleKo: cleanSingleLineText(res.parsed.windFlutterPhaseRuleKo, 180) || fb.windFlutterPhaseRuleKo,
+    flipPreventionRuleKo: cleanSingleLineText(res.parsed.flipPreventionRuleKo, 180) || fb.flipPreventionRuleKo,
+    directorNoteKo: cleanSingleLineText(res.parsed.directorNoteKo, 200) || fb.directorNoteKo,
+    usage: res.usage, estimatedUsd: res.estimatedUsd,
+  });
+}
+
+// 7) 도검 코등이(Crossguard)·자루 보석·칼집(Scabbard) 패용 위치·룬 각인 고정기
+export const ClaudeSwordHiltGuardScabbardLockSchema = z.object({
+  weaponNameAndClassKo: z.string(), crossguardAsymmetryRuleKo: z.string(), pommelGemHex: z.string(),
+  scabbardWearingSideRuleKo: z.string(), bladeFullerAndRuneRuleKo: z.string(), gripHandDominanceRuleKo: z.string(), directorNoteKo: z.string(),
+});
+export type ClaudeSwordHiltGuardScabbardLockOutput = z.infer<typeof ClaudeSwordHiltGuardScabbardLockSchema>;
+export type ClaudeSwordHiltGuardScabbardLockView = ClaudeSwordHiltGuardScabbardLockOutput & Wave18ResultEnvelope;
+
+export function buildDeterministicSwordHiltGuardScabbardLockView(weaponNoteKo = ""): ClaudeSwordHiltGuardScabbardLockView {
+  return Object.freeze({
+    source: "deterministic-fallback", model: "claude-sonnet-5-5",
+    weaponNameAndClassKo: cleanSingleLineText(weaponNoteKo, 80) || "비대칭 날개형 코등이 롱소드 (Bastard Sword)",
+    crossguardAsymmetryRuleKo: "코등이 좌측은 위로 휜 은빛 독수리 날개, 우측은 아래로 꺾인 가드 — 발도 후에도 방향 고정",
+    pommelGemHex: "#38BDF8",
+    scabbardWearingSideRuleKo: "오른손잡이 기준 캐릭터 좌측 허리 패용 고정 — 발도 후에도 빈 칼집(Scabbard)이 좌측 허리에 반드시 남아 있어야 함",
+    bladeFullerAndRuneRuleKo: "도신 중앙 혈조(Fuller) 1줄 내부에 코발트 블루 고대 룬 문자 5음절이 코등이에서 검끝 방향으로 각인",
+    gripHandDominanceRuleKo: "양손 파지 시 오른손이 코등이 바로 아래(상단), 왼손이 폼멜 쪽(하단)을 잡는 파지 순서 엄수",
+    directorNoteKo: "발도 장면 이후 컷에서 허리의 빈 칼집이 증발하거나 양손 파지 위아래 손 위치가 바뀌는 작붕을 중점 검수하세요.",
+    usage: EMPTY_CLAUDE_TOKEN_USAGE, estimatedUsd: null,
+  });
+}
+
+export async function runClaudeSwordHiltGuardScabbardLockDirector(
+  weaponNoteKo: string, runOptions: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeSwordHiltGuardScabbardLockView> {
+  const fb = buildDeterministicSwordHiltGuardScabbardLockView(weaponNoteKo);
+  const res = await runWave18DomainConsistencyEngine(
+    "domain:sword-hilt-guard-gem-scabbard-engraving-lock",
+    "당신은 판타지·무협 웹툰 무기/도검 코등이(Crossguard)·폼멜 보석·칼집(Scabbard) 패용 위치·양손 파지 순서 연속성 감독입니다. JSON으로 설계하세요.",
+    `무기/전투 설명: ${cleanSingleLineText(weaponNoteKo, 360) || "푸른 마석 폼멜과 비대칭 날개 코등이를 가진 성검을 좌측 허리 칼집에서 발도하는 컷"}`,
+    ClaudeSwordHiltGuardScabbardLockSchema, runOptions,
+  );
+  if (!res) return fb;
+  return Object.freeze({
+    source: "claude-live", model: res.actualModel,
+    weaponNameAndClassKo: cleanSingleLineText(res.parsed.weaponNameAndClassKo, 90) || fb.weaponNameAndClassKo,
+    crossguardAsymmetryRuleKo: cleanSingleLineText(res.parsed.crossguardAsymmetryRuleKo, 180) || fb.crossguardAsymmetryRuleKo,
+    pommelGemHex: safeHex(res.parsed.pommelGemHex, fb.pommelGemHex),
+    scabbardWearingSideRuleKo: cleanSingleLineText(res.parsed.scabbardWearingSideRuleKo, 180) || fb.scabbardWearingSideRuleKo,
+    bladeFullerAndRuneRuleKo: cleanSingleLineText(res.parsed.bladeFullerAndRuneRuleKo, 180) || fb.bladeFullerAndRuneRuleKo,
+    gripHandDominanceRuleKo: cleanSingleLineText(res.parsed.gripHandDominanceRuleKo, 180) || fb.gripHandDominanceRuleKo,
+    directorNoteKo: cleanSingleLineText(res.parsed.directorNoteKo, 200) || fb.directorNoteKo,
+    usage: res.usage, estimatedUsd: res.estimatedUsd,
+  });
+}
+
+// 8) 과거 회상(유년기/소년기)·현재·타임스킵 연령대별 두신비·하관·흉터 타임라인 고정기
+export const ClaudeCharacterAgeFlashbackProportionLockSchema = z.object({
+  childhoodHeadRatio: z.string(), adolescentHeadRatio: z.string(), adultCurrentHeadRatio: z.string(),
+  facialEyeToJawRatioRuleKo: z.string(), scarAndMarkTimelineRuleKo: z.string(), flashbackColorGradingRuleKo: z.string(), directorNoteKo: z.string(),
+});
+export type ClaudeCharacterAgeFlashbackProportionLockOutput = z.infer<typeof ClaudeCharacterAgeFlashbackProportionLockSchema>;
+export type ClaudeCharacterAgeFlashbackProportionLockView = ClaudeCharacterAgeFlashbackProportionLockOutput & Wave18ResultEnvelope;
+
+export function buildDeterministicCharacterAgeFlashbackProportionLockView(timelineNoteKo = ""): ClaudeCharacterAgeFlashbackProportionLockView {
+  return Object.freeze({
+    source: "deterministic-fallback", model: "claude-sonnet-5-5",
+    childhoodHeadRatio: "5.2등신 (8세 유년기 · 어깨너비 머리 1.3배)",
+    adolescentHeadRatio: "6.6등신 (15세 소년기 · 어깨너비 머리 1.7배)",
+    adultCurrentHeadRatio: "7.8등신 (24세 성인 현재 · 어깨너비 머리 2.2배)",
+    facialEyeToJawRatioRuleKo: "유년기는 눈 세로폭이 크고 코~턱 하관이 짧음(1:0.7) · 성인은 콧날과 하관 각도가 길어짐(1:1.15)",
+    scarAndMarkTimelineRuleKo: cleanSingleLineText(timelineNoteKo, 120) || "15세 전쟁 에피소드 이전(8세 유년기 회상)에는 좌측 눈썹 자상 흉터가 절대 그려지지 않도록 타임라인 락 적용",
+    flashbackColorGradingRuleKo: "과거 회상 컷은 채도 -18% 세피아 웜톤 + 상하단 부드러운 비네팅으로 현재 시점과 즉시 구분",
+    directorNoteKo: "회상 컷에서 성인 체형에 얼굴만 어리게 그리거나 사건 발생 전 흉터를 미리 그리는 타임라인 오류를 차단하세요.",
+    usage: EMPTY_CLAUDE_TOKEN_USAGE, estimatedUsd: null,
+  });
+}
+
+export async function runClaudeCharacterAgeFlashbackProportionLockDirector(
+  timelineNoteKo: string, runOptions: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeCharacterAgeFlashbackProportionLockView> {
+  const fb = buildDeterministicCharacterAgeFlashbackProportionLockView(timelineNoteKo);
+  const res = await runWave18DomainConsistencyEngine(
+    "domain:character-age-flashback-growth-proportion-lock",
+    "당신은 웹툰 과거 회상(유년기/소년기)·현재·타임스킵 연령대별 두신비(Head Ratio)·안면 하관 비율·시대별 흉터 유무 타임라인 감독입니다. JSON으로 설계하세요.",
+    `회상/타임스킵 설명: ${cleanSingleLineText(timelineNoteKo, 360) || "8세 유년기 아카데미 입학 전 회상과 15세 첫 출전(눈썹 흉터 발생), 24세 현재 시점이 교차되는 연출"}`,
+    ClaudeCharacterAgeFlashbackProportionLockSchema, runOptions,
+  );
+  if (!res) return fb;
+  return Object.freeze({
+    source: "claude-live", model: res.actualModel,
+    childhoodHeadRatio: cleanSingleLineText(res.parsed.childhoodHeadRatio, 80) || fb.childhoodHeadRatio,
+    adolescentHeadRatio: cleanSingleLineText(res.parsed.adolescentHeadRatio, 80) || fb.adolescentHeadRatio,
+    adultCurrentHeadRatio: cleanSingleLineText(res.parsed.adultCurrentHeadRatio, 80) || fb.adultCurrentHeadRatio,
+    facialEyeToJawRatioRuleKo: cleanSingleLineText(res.parsed.facialEyeToJawRatioRuleKo, 180) || fb.facialEyeToJawRatioRuleKo,
+    scarAndMarkTimelineRuleKo: cleanSingleLineText(res.parsed.scarAndMarkTimelineRuleKo, 180) || fb.scarAndMarkTimelineRuleKo,
+    flashbackColorGradingRuleKo: cleanSingleLineText(res.parsed.flashbackColorGradingRuleKo, 180) || fb.flashbackColorGradingRuleKo,
+    directorNoteKo: cleanSingleLineText(res.parsed.directorNoteKo, 200) || fb.directorNoteKo,
+    usage: res.usage, estimatedUsd: res.estimatedUsd,
+  });
+}
+
+// 9) 전경(Out-of-focus)·중경(인물)·원경(보케) 3평면 피사계 심도(DoF) 블러 감독
+export const ClaudeMultiPlaneParallaxBokehLockSchema = z.object({
+  virtualLensMmAndFStop: z.string(), foregroundBlurRadiusPx: z.number(), midgroundSharpFocusRuleKo: z.string(),
+  backgroundBokehRadiusPx: z.number(), bokehShapeAndHex: z.string(), chromaticAberrationRuleKo: z.string(), directorNoteKo: z.string(),
+});
+export type ClaudeMultiPlaneParallaxBokehLockOutput = z.infer<typeof ClaudeMultiPlaneParallaxBokehLockSchema>;
+export type ClaudeMultiPlaneParallaxBokehLockView = ClaudeMultiPlaneParallaxBokehLockOutput & Wave18ResultEnvelope;
+
+export function buildDeterministicMultiPlaneParallaxBokehLockView(depthSceneNoteKo = ""): ClaudeMultiPlaneParallaxBokehLockView {
+  return Object.freeze({
+    source: "deterministic-fallback", model: "claude-opus-5-5",
+    virtualLensMmAndFStop: "85mm 인물 망원 렌즈 · 조리개 f/1.8 얕은 피사계 심도 고정",
+    foregroundBlurRadiusPx: 18,
+    midgroundSharpFocusRuleKo: cleanSingleLineText(depthSceneNoteKo, 110) || "중경(피사체 눈동자·속눈썹·입술) 선화 샤프니스 100% 유지 — 가우시안 블러 침범 금지",
+    backgroundBokehRadiusPx: 26,
+    bokehShapeAndHex: "6각 조리개 하이라이트 보케 (#FDE047 웜골드 + #38BDF8 네온 시안 혼합)",
+    chromaticAberrationRuleKo: "전경/원경 외곽 보케 경계에만 Red/Cyan 색수차 1.5px 적용 (중경 인물 얼굴에는 색수차 0px)",
+    directorNoteKo: "전경(나뭇가지/어깨 실루엣 18px 블러) · 중경(0px 초점) · 원경(26px 보케) 3레이어 Z-Depth 수치를 시퀀스 내내 유지하세요.",
+    usage: EMPTY_CLAUDE_TOKEN_USAGE, estimatedUsd: null,
+  });
+}
+
+export async function runClaudeMultiPlaneParallaxBokehLockDirector(
+  depthSceneNoteKo: string, runOptions: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeMultiPlaneParallaxBokehLockView> {
+  const fb = buildDeterministicMultiPlaneParallaxBokehLockView(depthSceneNoteKo);
+  const res = await runWave18DomainConsistencyEngine(
+    "domain:multi-plane-parallax-depth-blur-bokeh-lock",
+    "당신은 웹툰 3평면(전경 아웃포커싱·중경 인물 초점·원경 보케) 피사계 심도(DoF) 및 렌즈 블러 연속성 감독입니다. JSON으로 설계하세요.",
+    `3평면 심도 연출 설명: ${cleanSingleLineText(depthSceneNoteKo, 360) || "전경 벚꽃 가지 너머로 중경 남녀 주인공의 시선이 교차하고 원경 야경 불빛이 보케로 맺히는 클라이맥스 컷"}`,
+    ClaudeMultiPlaneParallaxBokehLockSchema, runOptions,
+  );
+  if (!res) return fb;
+  return Object.freeze({
+    source: "claude-live", model: res.actualModel,
+    virtualLensMmAndFStop: cleanSingleLineText(res.parsed.virtualLensMmAndFStop, 90) || fb.virtualLensMmAndFStop,
+    foregroundBlurRadiusPx: clampInt(res.parsed.foregroundBlurRadiusPx, 4, 48, fb.foregroundBlurRadiusPx),
+    midgroundSharpFocusRuleKo: cleanSingleLineText(res.parsed.midgroundSharpFocusRuleKo, 180) || fb.midgroundSharpFocusRuleKo,
+    backgroundBokehRadiusPx: clampInt(res.parsed.backgroundBokehRadiusPx, 6, 64, fb.backgroundBokehRadiusPx),
+    bokehShapeAndHex: cleanSingleLineText(res.parsed.bokehShapeAndHex, 140) || fb.bokehShapeAndHex,
+    chromaticAberrationRuleKo: cleanSingleLineText(res.parsed.chromaticAberrationRuleKo, 180) || fb.chromaticAberrationRuleKo,
+    directorNoteKo: cleanSingleLineText(res.parsed.directorNoteKo, 200) || fb.directorNoteKo,
+    usage: res.usage, estimatedUsd: res.estimatedUsd,
+  });
 }

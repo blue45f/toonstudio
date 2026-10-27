@@ -323,6 +323,69 @@ export const REA15_PLATFORM_IDS = [
   "c2pa-content-credentials",
   "perforce-helix-psd-version",
   "anchorpoint-art-asset-git",
+  // Wave 18 (20개 플랫폼 — 총 320개 플랫폼 완성: 3D 렌더러 툰셰이더·물리 파괴·이펙트·2D 리깅)
+  "chaos-corona-palace-render",
+  "vray-toon-cel-material",
+  "octane-render-anime-kernel",
+  "redshift-npr-contour-shader",
+  "arnold-aitoon-contour",
+  "renderman-stylized-looks",
+  "houdini-vellum-cloth-hair",
+  "houdini-pyro-magic-vfx",
+  "bifrost-maya-aero-slash",
+  "tyflow-3dsmax-destruction",
+  "rayfire-voronoi-shatter",
+  "pulldownit-wall-fracture",
+  "phoenix-fd-fire-ocean",
+  "realflow-liquid-crown",
+  "x-particles-insydium-aura",
+  "stardust-ae-modular-vfx",
+  "newton-4-ae-2d-physics",
+  "duik-angela-ae-2d-rig",
+  "joysticks-n-sliders-head",
+  "rubberhose-3-bendy-limb",
+  // Wave 19 (20개 플랫폼 — 총 340개 플랫폼 완성: 브러시 파운드리·해부학 데생·SDF/복셀 3D 배경)
+  "kyle-t-webster-megapack",
+  "true-grit-texture-supply",
+  "retrosupply-halftone-ink",
+  "frankentoon-vector-brushes",
+  "daub-brushes-natural-media",
+  "ramon-miranda-krita-atelier",
+  "david-revoy-pepper-carrot",
+  "proko-3d-anatomy-skulls",
+  "anatomy-for-sculptors-3d",
+  "sketchdaily-timed-pose",
+  "line-of-action-gesture",
+  "quickposes-dynamic-combat",
+  "justsketchme-multi-doll",
+  "setpose-web-mannequin",
+  "womp-3d-sdf-goop-props",
+  "magica-csg-sdf-modeling",
+  "magicavoxel-isometric-bg",
+  "blockbench-lowpoly-prop",
+  "crocotile-3d-tile-scene",
+  "sprytile-blender-pixel-3d",
+  // Wave 20 (20개 플랫폼 — 총 360개 플랫폼 완성: 오디오툰 폴리·립싱크·VTuber 포즈·인터랙티브 웹툰)
+  "epidemic-sound-webtoon-bgm",
+  "artlist-cinematic-sfx",
+  "soundly-cloud-foley-pro",
+  "krotos-weaponiser-combat",
+  "krotos-dehumaniser-monster",
+  "reaper-daw-audiotoon-stem",
+  "izotope-rx11-dialogue-clean",
+  "fabfilter-pro-q3-eq-duck",
+  "waves-clarity-vx-voice",
+  "rhubarb-lip-sync-2d-mouth",
+  "papagayo-ng-phoneme-mouth",
+  "character-animator-adobe",
+  "cartoon-animator-5-cta",
+  "live3d-vtuber-pose-snap",
+  "vseeface-vrm-expression",
+  "warudo-3d-stage-camera",
+  "vnite-visual-novel-bridge",
+  "renpy-branching-webtoon",
+  "twine-interactive-episode",
+  "ink-inkle-narrative-script",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -340,6 +403,9 @@ export const REA240_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA260_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA280_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA300_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA320_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA340_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA360_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -685,3 +751,6 @@ export const REA240_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA260_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA280_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA300_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA320_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA340_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA360_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

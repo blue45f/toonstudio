@@ -215,5 +215,9 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("tooning-workbench-section")).toBeTruthy();
     fireEvent.click(screen.getByTestId("apply-tooning-sentence-btn"));
     expect(onApplyScript).toHaveBeenCalledTimes(1);
+
+    expect(screen.getByTestId("wave18-20-domain-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave18-run-sword"));
+    expect(screen.getByTestId("wave18-summary-output").textContent).toBeTruthy();
   });
 });
