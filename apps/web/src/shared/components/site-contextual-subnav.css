@@ -94,6 +94,97 @@
   background: color-mix(in oklch, oklch(0.64 0.22 25) 26%, transparent);
 }
 
+.site-contextual-subnav__simplicity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--subnav-accent) 34%, transparent);
+  background: color-mix(in oklch, var(--subnav-accent) 11%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-fg, currentColor);
+}
+
+.site-contextual-subnav__simplicity-grade {
+  color: var(--subnav-accent);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.site-contextual-subnav__simplicity-goal {
+  display: none;
+  color: var(--color-fg-2, currentColor);
+  font-weight: 600;
+  max-width: 26rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 1100px) {
+  .site-contextual-subnav__simplicity-goal {
+    display: inline;
+  }
+}
+
+/* 서피스별 시각 이펙트 프리셋 (Aurora Glass, Cinema Shimmer, Studio Neon Prism 등) */
+.site-contextual-subnav[data-visual-preset="aurora-glass-spotlight"] {
+  background:
+    radial-gradient(120% 180% at 0% 0%, color-mix(in oklch, var(--subnav-accent) 16%, transparent), transparent 58%),
+    color-mix(in oklch, var(--color-panel, oklch(0.18 0.01 250)) 92%, transparent);
+  box-shadow: 0 10px 28px -18px color-mix(in oklch, var(--subnav-accent) 45%, transparent);
+}
+
+.site-contextual-subnav[data-visual-preset="cinema-curtain-shimmer"] {
+  background:
+    linear-gradient(115deg, color-mix(in oklch, var(--subnav-accent) 18%, transparent) 0%, transparent 45%, color-mix(in oklch, var(--subnav-accent) 10%, transparent) 100%),
+    color-mix(in oklch, var(--color-panel, oklch(0.18 0.01 250)) 94%, transparent);
+  box-shadow: 0 12px 30px -18px color-mix(in oklch, var(--subnav-accent) 50%, transparent);
+}
+
+.site-contextual-subnav[data-visual-preset="studio-neon-prism"] {
+  background:
+    radial-gradient(100% 160% at 95% 10%, color-mix(in oklch, var(--subnav-accent) 20%, transparent), transparent 60%),
+    color-mix(in oklch, var(--color-panel, oklch(0.18 0.01 250)) 93%, transparent);
+  box-shadow: 0 10px 30px -16px color-mix(in oklch, var(--subnav-accent) 48%, transparent);
+}
+
+.site-contextual-subnav[data-visual-preset="warm-editorial-elevation"],
+.site-contextual-subnav[data-visual-preset="atelier-vault-glow"] {
+  background:
+    radial-gradient(110% 150% at 12% 0%, color-mix(in oklch, var(--subnav-accent) 15%, transparent), transparent 62%),
+    color-mix(in oklch, var(--color-panel, oklch(0.18 0.01 250)) 93%, transparent);
+  box-shadow: 0 8px 24px -16px color-mix(in oklch, var(--subnav-accent) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-contextual-subnav__link {
+    transition:
+      transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      background-color 160ms ease-out,
+      color 160ms ease-out,
+      border-color 160ms ease-out,
+      box-shadow 180ms ease-out;
+  }
+
+  .site-contextual-subnav__link:hover {
+    transform: translateY(-1.5px);
+  }
+
+  .site-contextual-subnav__link[aria-current="page"] {
+    box-shadow: 0 4px 14px -4px color-mix(in oklch, var(--subnav-accent) 45%, transparent);
+  }
+}
+
+/* Modern Web Guidance (defer-rendering-heavy-content):
+   첫 화면(Above-the-fold) 아래의 무거운 섹션에 적용해 초기 렌더링 부하와 인지 복잡도를 동시에 낮춘다. */
+.ux-deferred-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 220px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .site-contextual-subnav__link {
     transition: none;

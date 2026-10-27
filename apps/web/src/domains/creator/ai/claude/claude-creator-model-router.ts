@@ -238,7 +238,16 @@ export type ClaudeCreatorTaskId =
   | "art-director:suspension-bridge-arch-keystone-hanok-door-tbm-lock"
   | "art-director:streamer-mic-ringlight-cintiq-blender-node-lock"
   | "art-director:git-diff-kanban-discord-superchat-shorts-director"
-  | "art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director";
+  | "art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director"
+  // 23. Wave 57~59 JongmyoGayageum/HahoeLianpuToga/PipeOrganHarp/F1WrcSkydiving/MarshallerLighthouseClock/GlassblowingLuthierLoupe/3dgsNerfControlnet4Facs/HyperSynthesis1140LegalOst AI Engines (8 — Total 188 Tasks)
+  | "alt-text:jongmyo-gayageum-geomungo-daegeum-janggu-lock"
+  | "alt-text:hahoe-mask-lianpu-kabuki-toga-thurible-lock"
+  | "alt-text:pipe-organ-pedal-harp-accordion-bagpipe-lock"
+  | "alt-text:f1-kerb-wrc-rollcage-skydiving-surfing-yacht-lock"
+  | "alt-text:marshaller-lighthouse-antarctic-observatory-clock-lock"
+  | "alt-text:glassblowing-luthier-diamond-loupe-shoemaker-lock"
+  | "alt-text:3dgs-nerf-controlnet4-facs-sfx3d-saccade-director"
+  | "alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -688,6 +697,15 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "art-director:streamer-mic-ringlight-cintiq-blender-node-lock": defineRoute("art-director:streamer-mic-ringlight-cintiq-blender-node-lock", "사이드 어드레스 콘덴서 마이크(측면 수음)·링라이트 도넛 캐치라이트·15키 스트림덱·신티크 왼손 투어박스·블렌더 노드 디렉터", "core-dialog", "creative-production", "스트리머 마이크 측면 수음·링라이트 눈동자 도넛 반사·작가 타블렛/투어박스·3D 노드 소켓 색상은 Sonnet 5.5 적용", 4_096),
   "art-director:git-diff-kanban-discord-superchat-shorts-director": defineRoute("art-director:git-diff-kanban-discord-superchat-shorts-director", "깃 브랜치/PR Diff(초록+/빨강-)·웹툰 6단 마감 칸반·디스코드 발화 그린 링·슈퍼챗 금액 티어·9:16 숏폼 세이프존 총괄 감독", "core-dialog", "deep-architecture", "개발자 깃 Diff·웹툰 마감 칸반·디스코드/슈퍼챗 UI·9:16 숏폼 세이프존 총괄 설계는 Opus 5.5 심층 추론 적용", 6_144),
   "art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director": defineRoute("art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director", "1,080대 웹툰 AI 플랫폼 옴니버스 수프림 엔진·180대 스마트 라우팅·쿠키 미리보기 UX·웹툰 IP DCF 가치평가·선화 예측 총괄 감독", "core-dialog", "deep-architecture", "1,080대 플랫폼 UI/UX 통합·180개 스마트 라우팅·웹툰 IP DCF 가치평가·신경망 선화 예측은 Opus 5.5 심층 추론 적용", 6_144),
+  // 23. Wave 57~59 JongmyoGayageum/HahoeLianpuToga/PipeOrganHarp/F1WrcSkydiving/MarshallerLighthouseClock/GlassblowingLuthierLoupe/3dgsNerfControlnet4Facs/HyperSynthesis1140LegalOst AI Engines (8)
+  "alt-text:jongmyo-gayageum-geomungo-daegeum-janggu-lock": defineRoute("alt-text:jongmyo-gayageum-geomungo-daegeum-janggu-lock", "종묘제례악 편종/편경 16개·축/어·가야금 12현 안족·거문고 오른손 술대·대금 청공·장구 궁편(좌)/열편(우) 고정기", "core-dialog", "fast-inline", "종묘제례악 편종/편경·가야금 안족·거문고 술대·장구 좌우 궁편/열편 구분은 Haiku 5.5로 즉각 검증", 2_560),
+  "alt-text:hahoe-mask-lianpu-kabuki-toga-thurible-lock": defineRoute("alt-text:hahoe-mask-lianpu-kabuki-toga-thurible-lock", "하회탈 양반 분리 턱·경극 검프 색상(적/흑/백)·가부키 쿠마도리/노멘·로마 토가 좌측 어깨 드레이프·성당 4사슬 향로 고정기", "core-dialog", "fast-inline", "하회탈 분리 턱·경극 검프 색상·가부키/노멘·로마 토가 좌측 어깨·성당 향로 사슬 고정은 Haiku 5.5 적용", 2_560),
+  "alt-text:pipe-organ-pedal-harp-accordion-bagpipe-lock": defineRoute("alt-text:pipe-organ-pedal-harp-accordion-bagpipe-lock", "파이프 오르간 다단 건반/스톱/발건반·콘서트 하프 47현(빨간 C/파란 F)·아코디언 좌우·백파이프 3드론 디렉터", "core-dialog", "creative-production", "파이프 오르간 건반·하프 적청 기준현/오른쪽 어깨·아코디언 좌우·백파이프 3드론 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:f1-kerb-wrc-rollcage-skydiving-surfing-yacht-lock": defineRoute("alt-text:f1-kerb-wrc-rollcage-skydiving-surfing-yacht-lock", "F1 연석/타이어 컴파운드·WRC 롤케이지/페이스노트·스카이다이빙 왼손목 고도계·서핑 뒷발목 리쉬코드·요트 하이크아웃 디렉터", "core-dialog", "creative-production", "F1/WRC 모터스포츠·스카이다이빙 고도계·서핑 뒷발 리쉬·요트 하이크아웃 물리 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:marshaller-lighthouse-antarctic-observatory-clock-lock": defineRoute("alt-text:marshaller-lighthouse-antarctic-observatory-clock-lock", "항공기 유도 마샬러 수신호·원양어선 양승기·등대 프레넬 렌즈·남극 2량 설상차·천문대 돔 슬릿·시계탑 탈진기 디렉터", "core-dialog", "creative-production", "공항 마샬러·등대 프레넬 렌즈·남극 설상차·천문대 돔·시계탑 내부 탈진기 역투시 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:glassblowing-luthier-diamond-loupe-shoemaker-lock": defineRoute("alt-text:glassblowing-luthier-diamond-loupe-shoemaker-lock", "유리공예 파이프 회전·바이올린 루시어 썸플레인/사운드포스트·보석 감정 10배율 루페 눈가 밀착·수제화 구두골/고서 제책 디렉터", "core-dialog", "creative-production", "유리공예 파이프·루시어 사운드포스트·보석 루페 눈가 밀착·수제화 구두골·고서 제책 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:3dgs-nerf-controlnet4-facs-sfx3d-saccade-director": defineRoute("alt-text:3dgs-nerf-controlnet4-facs-sfx3d-saccade-director", "3D 가우시안 스플래팅(3DGS)/NeRF 다중 컷 조명·4채널 ControlNet·FACS 뒤센 미소·3D SFX 워프·도약 안구운동(Saccade) 히트맵 총괄 감독", "core-dialog", "deep-architecture", "3DGS/NeRF 조명장·ControlNet 4중 믹서·FACS 안면 근육·독자 시선 히트맵/스크롤 텐션 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director": defineRoute("alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director", "1,140대 웹툰 AI 플랫폼 하이퍼 신세시스·188대 스마트 라우팅·70컷 게이지·PSD 차분 백업·계약서 독소조항 AI 법률 스캐너 총괄 감독", "core-dialog", "deep-architecture", "1,140대 플랫폼 UI/UX 초융합·188개 스마트 라우팅·PSD 차분 백업·계약서 독소조항 법률 스캐너는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

@@ -22,6 +22,15 @@ export {
   type CompetitorPlatformReaEvidence,
 };
 
+import {
+  PAGE_COGNITIVE_SIMPLICITY_PROFILES,
+  measurePageCognitiveComplexity,
+  type PageCognitiveSimplicityProfile,
+  type PageComplexityDecompositionMode,
+  type PageSimplicityGrade,
+  type PageVisualEffectPresetId,
+} from "./webtoon-platform-rea-surface-presets";
+
 export {
   CALENDAR_BM_FILTERS,
   COMMUNITY_PROMOTION_LEAGUE_TIERS,
@@ -31,9 +40,11 @@ export {
   LEARN_CURRICULUM_ROADMAP_TRACKS,
   LIBRARY_PILLAR_CARDS,
   MARKET_ECOSYSTEM_PRESETS,
+  PAGE_COGNITIVE_SIMPLICITY_PROFILES,
   RANKING_STREAM_MODES,
   SHOWCASE_COLLABORATION_TRACKS,
   STORY_TO_WEBTOON_PIPELINE_MODES,
+  measurePageCognitiveComplexity,
   type CalendarBmFilter,
   type CalendarBmFilterId,
   type CommunityPromotionLeagueTier,
@@ -46,6 +57,10 @@ export {
   type LibraryPillarCard,
   type MarketEcosystemPreset,
   type MarketEcosystemPresetId,
+  type PageCognitiveSimplicityProfile,
+  type PageComplexityDecompositionMode,
+  type PageSimplicityGrade,
+  type PageVisualEffectPresetId,
   type RankingStreamMode,
   type RankingStreamModeId,
   type ShowcaseCollaborationTrack,
@@ -558,6 +573,26 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
   if (ASSET_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
   if (LIBRARY_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[5] ?? null;
   return null;
+}
+
+const SIMPLICITY_BY_GROUP_ID: Readonly<Record<string, PageCognitiveSimplicityProfile>> = {
+  "promo-cuts-hub": PAGE_COGNITIVE_SIMPLICITY_PROFILES[1]!,
+  "discover-hub": PAGE_COGNITIVE_SIMPLICITY_PROFILES[0]!,
+  "community-hub": PAGE_COGNITIVE_SIMPLICITY_PROFILES[2]!,
+  "studio-hub": PAGE_COGNITIVE_SIMPLICITY_PROFILES[3]!,
+  "market-hub": PAGE_COGNITIVE_SIMPLICITY_PROFILES[4]!,
+  "personal-library-hub": PAGE_COGNITIVE_SIMPLICITY_PROFILES[5]!,
+};
+
+export function resolvePageSimplicityProfile(rawPathnameOrGroupId: string): PageCognitiveSimplicityProfile {
+  if (rawPathnameOrGroupId in SIMPLICITY_BY_GROUP_ID) {
+    return SIMPLICITY_BY_GROUP_ID[rawPathnameOrGroupId]!;
+  }
+  const group = resolveContextualSubNavForPath(rawPathnameOrGroupId);
+  if (group && group.id in SIMPLICITY_BY_GROUP_ID) {
+    return SIMPLICITY_BY_GROUP_ID[group.id]!;
+  }
+  return PAGE_COGNITIVE_SIMPLICITY_PROFILES[0]!;
 }
 
 /**

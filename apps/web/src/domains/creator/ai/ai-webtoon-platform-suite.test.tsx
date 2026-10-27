@@ -20,6 +20,7 @@ import {
 import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
 import { StudioAiWebtoonPlatformSuitePanel } from "./StudioAiWebtoonPlatformSuitePanel";
 import { StudioRea15PlatformsWorkbenchPanel } from "./StudioRea15PlatformsWorkbenchPanel";
+import { StudioWebtoonMasterPipelineCard } from "./StudioWebtoonMasterPipelineCard";
 
 afterEach(() => {
   cleanup();
@@ -278,5 +279,18 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave54-56-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave54-age-of-sail-btn"));
     fireEvent.click(screen.getByTestId("wave56-omniverse-1080-btn"));
+
+    render(
+      <StudioWebtoonMasterPipelineCard
+        scriptInput="서진: 결전의 시간이다."
+        storyGenre="판타지 액션"
+        coreConflict="봉인된 유물 결전"
+        creatorLevel="pro"
+        targetLocale="ko"
+        activeArtistStyle={null}
+        onApplyScript={onApplyScript}
+      />,
+    );
+    expect(screen.getByTestId("wave57-59-domain-consistency-bar")).toBeTruthy();
   });
 });

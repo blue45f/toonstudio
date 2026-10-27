@@ -8,6 +8,7 @@ import Link from "@/shared/navigation/router-link";
 import { cn } from "@/shared/lib/utils";
 import {
   resolveContextualSubNavForPath,
+  resolvePageSimplicityProfile,
   type ContextualSubNavGroup,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { resolveNanoBananaCardMetaForSubNavGroup } from "./site-experience/nano-banana-site-card-meta";
@@ -36,12 +37,19 @@ export function SiteContextualSubNav({
   const title = isKo ? group.koTitle : group.enTitle;
   const style = { "--subnav-accent": group.accentToken } as CSSProperties;
   const nbCard = resolveNanoBananaCardMetaForSubNavGroup(group.id);
+  const simplicity = resolvePageSimplicityProfile(group.id);
+  const goalCopy = isKo ? simplicity.koPrimaryGoal : simplicity.enPrimaryGoal;
+  const simplicityBadge = isKo
+    ? `직관도 ${simplicity.simplicityGrade} · 인지부하 -${simplicity.loadReductionPercent}%`
+    : `Clarity ${simplicity.simplicityGrade} · Load -${simplicity.loadReductionPercent}%`;
 
   return (
     <nav
       aria-label={title}
       data-contextual-subnav={group.id}
-      data-nano-banana-card={nbCard.cardId}
+      data-atelier-card={nbCard.cardId}
+      data-visual-preset={simplicity.visualEffectPreset}
+      data-simplicity-grade={simplicity.simplicityGrade}
       className={cn("site-contextual-subnav", className)}
       style={style}
     >
@@ -60,6 +68,18 @@ export function SiteContextualSubNav({
           <span className="site-contextual-subnav__dot" aria-hidden="true" />
         </span>
         <span>{title}</span>
+        <span
+          className="site-contextual-subnav__simplicity"
+          data-testid="site-ux-simplicity-pill"
+          title={goalCopy}
+        >
+          <span className="site-contextual-subnav__simplicity-grade">
+            {simplicityBadge}
+          </span>
+          <span className="site-contextual-subnav__simplicity-goal">
+            {goalCopy}
+          </span>
+        </span>
       </div>
       <ul className="site-contextual-subnav__list">
         {group.items.map((item) => {

@@ -315,7 +315,27 @@ export function DiscoverHubPage() {
         </div>
         {activeTrack ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
-            <p className="max-w-2xl">{activeTrack.description}</p>
+            <div className="flex items-center gap-3">
+              <img
+                src={
+                  activeTrack.id === "originals"
+                    ? "/assets/site-ui-pack/nano-banana-v1/nb-ranking-calendar-640.webp"
+                    : activeTrack.id === "canvas"
+                      ? "/assets/site-ui-pack/nano-banana-v1/nb-community-plaza-640.webp"
+                      : activeTrack.id === "wait-free"
+                        ? "/assets/site-ui-pack/nano-banana-v1/nb-library-archive-640.webp"
+                        : activeTrack.id === "cuts-short"
+                          ? "/assets/site-ui-pack/nano-banana-v1/nb-showcase-premiere-640.webp"
+                          : "/assets/site-ui-pack/nano-banana-v1/nb-discover-spotlight-640.webp"
+                }
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
+              />
+              <p className="max-w-2xl">{activeTrack.description}</p>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={activeTrack.primaryRoute}

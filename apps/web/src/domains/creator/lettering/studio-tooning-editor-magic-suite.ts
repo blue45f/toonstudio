@@ -9,7 +9,7 @@
  * - 3D Mannequin Pose Popup (19 Mixamo joints + 10 finger curls `0..1`, camera `low`/`eye`/`high`, FOV `15..110°`)
  * - Multi-Angle Camera Popup (`<sks> <azimuth> <elevation> <distance>` across 8 azimuths × 5 elevations × 3 distances)
  * - AI Voice TTS & Cloning (11 languages) & AI Expo Webcam Style Transfer (7 styles)
- * - Tooning Magic (`MG`): `InhouseStyle` / `OutsideStyle` / `MyStyle` (B-LoRA 3600s training), 5 aspect ratios, post-processing bitmask `(face?4:0)+(rmbg?2:0)+(color?1:0)+1`, and 5-image AI Retouch (`NanoBanana`, `NanoBanana2`, `NanoBananaPro`, `Seedream`, `QwenImageEdit`)
+ * - Tooning Magic (`MG`): `InhouseStyle` / `OutsideStyle` / `MyStyle` (B-LoRA 3600s training), 5 aspect ratios, post-processing bitmask `(face?4:0)+(rmbg?2:0)+(color?1:0)+1`, and 5-image AI Retouch (`SmartRetouchStandard`, `SmartRetouchFlash`, `SmartRetouchPro`, `Seedream`, `QwenImageEdit`)
  */
 
 export type EdArtboardPresetId =
@@ -444,9 +444,9 @@ export function snapEdImageFilterValue(rawValue: number): number {
 export type MgStyleSegment = "InhouseStyle" | "OutsideStyle" | "MyStyle";
 
 export type MgRetouchModelId =
-  | "NanoBanana"
-  | "NanoBanana2"
-  | "NanoBananaPro"
+  | "SmartRetouchStandard"
+  | "SmartRetouchFlash"
+  | "SmartRetouchPro"
   | "Seedream"
   | "QwenImageEdit";
 
@@ -508,7 +508,7 @@ export function computeMgPostProcessingBitmask(settings: {
 }
 
 /**
- * Validates and prepares a Multi-Image AI Retouch job (up to 5 reference images) for `NanoBanana` / `Seedream` / `QwenImageEdit`.
+ * Validates and prepares a Multi-Image AI Retouch job (up to 5 reference images) for `SmartRetouch*` / `Seedream` / `QwenImageEdit`.
  */
 export function prepareMgMultiImageRetouchJob(params: {
   readonly model: MgRetouchModelId;

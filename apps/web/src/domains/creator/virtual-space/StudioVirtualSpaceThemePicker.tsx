@@ -60,7 +60,7 @@ const NANO_BANANA_SPACE_THEME_ART: Readonly<
 };
 
 /**
- * 공간 테마 선택 (트랙 H + 나노 바나나 2.5D 아이소메트릭 테마·캐릭터 하모니).
+ * 공간 테마 선택 (트랙 H + 2.5D 아이소메트릭 테마·캐릭터 하모니).
  * 선택 즉시 공간에 적용되고 이 브라우저에 저장돼 재입장 시 유지된다.
  */
 export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtualSpaceThemePickerProps) {
@@ -100,7 +100,7 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
                   loading="lazy"
                   decoding="async"
                   draggable={false}
-                  data-nano-banana-theme-preview={theme.key}
+                  data-atelier-theme-preview={theme.key}
                   className="studio-theme-picker__nano-art"
                 />
                 <span className="studio-theme-picker__window" />
@@ -126,7 +126,7 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
                   loading="lazy"
                   decoding="async"
                   draggable={false}
-                  data-nano-banana-cast-preview={theme.key}
+                  data-atelier-cast-preview={theme.key}
                   className="studio-theme-picker__nano-cast"
                 />
               </span>

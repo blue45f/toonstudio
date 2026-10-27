@@ -197,7 +197,25 @@ export function MarketHomePage() {
           </div>
           {activePreset ? (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
-              <p className="max-w-2xl">{activePreset.description}</p>
+              <div className="flex items-center gap-3">
+                <img
+                  src={
+                    activePreset.id === "brush-2d"
+                      ? "/assets/site-ui-pack/nano-banana-v1/nb-create-canvas-640.webp"
+                      : activePreset.id === "bg-3d" || activePreset.id === "char-pose-3d"
+                        ? "/assets/site-ui-pack/nano-banana-v1/nb-spatial-stage-640.webp"
+                        : activePreset.id === "tone-sfx"
+                          ? "/assets/site-ui-pack/nano-banana-v1/nb-production-control-640.webp"
+                          : "/assets/site-ui-pack/nano-banana-v1/nb-market-atelier-640.webp"
+                  }
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
+                />
+                <p className="max-w-2xl">{activePreset.description}</p>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href={activePreset.studioMountRoute}

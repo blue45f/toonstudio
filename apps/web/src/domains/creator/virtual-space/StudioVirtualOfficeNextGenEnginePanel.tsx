@@ -86,7 +86,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
       }}
       className="space-y-4 rounded-xl border border-accent bg-card/85 p-4"
     >
-      {/* Top Header: Nano Banana v11 Multi-Theme + REA Competitor Superiority */}
+      {/* Top Header: Multi-Theme + Smart AI Spatial Studio Engine */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h4 className="flex items-center gap-2 text-xs font-bold text-fg">
@@ -94,7 +94,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
             차세대 웹툰 가상 스튜디오 엔진 (12대 장르 테마 · 8인 개성파 캐릭터/마스코트 · 4종 이모트/가구 · 60fps 물리 · WebAudio HRTF)
           </h4>
           <p className="mt-0.5 text-[11px] text-fg-2">
-            Gather Town · ZEP · WorkAdventure · oVice · Topia · Kumospace 엔진 완전 역공학 및 초격차 고도화 완료
+            스마트 AI 공간 보조 · 2.5D 아이소메트릭 테마 · 60fps 서브타일 물리 · HRTF 공간 오디오 통합 엔진
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">

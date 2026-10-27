@@ -25,7 +25,7 @@ describe("NanoBananaSurfaceSpotlight", () => {
     );
 
     expect(
-      container.querySelector('[data-nano-banana-spotlight="nb-discover-spotlight"]'),
+      container.querySelector('[data-smart-ai-spotlight="nb-discover-spotlight"]'),
     ).not.toBeNull();
 
     // Decorative image must not pollute role="img" queries

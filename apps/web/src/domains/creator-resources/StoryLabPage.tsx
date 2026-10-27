@@ -262,6 +262,7 @@ export function StoryLabPage() {
         <p className="text-sm leading-7 text-fg-2">{tx("고전·공개 소재를 각색하는 경우에도 사용한 원문, 번역문, 삽화의 권리를 각각 확인하고 창작 보드에 출처를 남기세요.")}</p>
       </section>
     </div>
+    )}
     <LocalSaveNotice error={error} writable={writable} saving={saving} />
   </ResourceLayout>;
 }

@@ -119,12 +119,12 @@ describe("Tooning Editor (ED) & Tooning Magic (MG) Engine", () => {
     ).toBe(1);
 
     const retouchOk = prepareMgMultiImageRetouchJob({
-      model: "NanoBananaPro",
+      model: "SmartRetouchPro",
       referenceImageUrls: ["a.png", "b.png"],
       editInstruction: "add rim lighting",
     });
     expect(retouchOk.valid).toBe(true);
-    expect(retouchOk.compiledPrompt).toContain("[NanoBananaPro · refs:2]");
+    expect(retouchOk.compiledPrompt).toContain("[SmartRetouchPro · refs:2]");
 
     const retouchTooMany = prepareMgMultiImageRetouchJob({
       model: "Seedream",

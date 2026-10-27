@@ -21,6 +21,7 @@ import {
   LEARN_CURRICULUM_ROADMAP_TRACKS,
   LIBRARY_PILLAR_CARDS,
   MARKET_ECOSYSTEM_PRESETS,
+  PAGE_COGNITIVE_SIMPLICITY_PROFILES,
   PERSONAL_LIBRARY_SEGMENTS,
   RANKING_STREAM_MODES,
   SERIES_LANDING_VIEW_MODES,
@@ -30,10 +31,12 @@ import {
   VRM_LICENSE_PRESETS,
   classifyMediaAspectRatio,
   matchesPromoMediaFilter,
+  measurePageCognitiveComplexity,
   resolveActiveWeekdayKey,
   resolveContextualSubNavForPath,
   resolveCreatorPostActionBridgeRoutes,
   resolveMondayFirstWeekdayIndex,
+  resolvePageSimplicityProfile,
   runSameDocumentViewTransition,
   summarizeVrmUsageMatrix,
 } from "./webtoon-platform-router-ux-model";
@@ -378,10 +381,30 @@ describe("글로벌 웹툰·창작·에셋·교육·협업 플랫폼 28종 REA �
       name: "영상 · 홍보 · 컷츠 허브",
     });
     expect(nav.getAttribute("data-contextual-subnav")).toBe("promo-cuts-hub");
+    expect(nav.getAttribute("data-visual-preset")).toBe("cinema-curtain-shimmer");
+    expect(nav.getAttribute("data-simplicity-grade")).toBe("S+");
+    expect(screen.getByTestId("site-ux-simplicity-pill").textContent).toContain("직관도 S+");
     const activeLink = screen.getByRole("link", {
       name: /홍보 영상 자료실 \(204편\)/u,
     });
     expect(activeLink.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("페이지별 인지 복잡도(Hick-Hyman + Miller's Law)와 화면 분할 후 직관도 등급을 정량 계산한다", () => {
+    expect(PAGE_COGNITIVE_SIMPLICITY_PROFILES).toHaveLength(6);
+    const metrics = measurePageCognitiveComplexity({
+      rawSections: 10,
+      interactiveControls: 24,
+      visibleStagesAfterSplit: 3,
+    });
+    expect(metrics.rawScore).toBeGreaterThan(75);
+    expect(metrics.optimizedScore).toBeLessThanOrEqual(33);
+    expect(metrics.reductionPercent).toBeGreaterThanOrEqual(60);
+    expect(["S+", "S"]).toContain(metrics.simplicityGrade);
+
+    expect(resolvePageSimplicityProfile("/studio").visualEffectPreset).toBe("studio-neon-prism");
+    expect(resolvePageSimplicityProfile("/market/browse").visualEffectPreset).toBe("atelier-vault-glow");
+    expect(resolvePageSimplicityProfile("/discover").visualEffectPreset).toBe("aurora-glass-spotlight");
   });
 
   it("VRoid Hub 서브 라우트, VRM 이용권한 매트릭스, 창작 단계별 연관 동선 브리지(Onward Bridge)를 계산한다", () => {

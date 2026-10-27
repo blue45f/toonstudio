@@ -744,3 +744,21 @@ export {
   type ClaudeToonstudio1080OmniverseDcfStrokeSupreme,
   type ClaudeWesternRevolverWinchesterSaloonLocomotive,
 } from "./claude-art-director-run";
+export {
+  runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector,
+  runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector,
+  runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector,
+  runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector,
+  runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector,
+  runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector,
+  runClaudePipeOrganPedalHarpAccordionBagpipeDirector,
+  runClaudeToonstudio1140HyperSynthesisLegalOstDirector,
+  type Claude3dgsNerfControlnet4FacsSfx3dSaccade,
+  type ClaudeF1KerbWrcRollcageSkydivingSurfingYacht,
+  type ClaudeGlassblowingLuthierDiamondLoupeShoemaker,
+  type ClaudeHahoeMaskLianpuKabukiTogaThurible,
+  type ClaudeJongmyoGayageumGeomungoDaegeumJanggu,
+  type ClaudeMarshallerLighthouseAntarcticObservatoryClock,
+  type ClaudePipeOrganPedalHarpAccordionBagpipe,
+  type ClaudeToonstudio1140HyperSynthesisLegalOst,
+} from "./claude-alt-text-run";

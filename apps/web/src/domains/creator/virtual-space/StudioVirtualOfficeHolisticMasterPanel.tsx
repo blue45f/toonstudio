@@ -38,8 +38,8 @@ const PRESENTATION_MODES: readonly {
   readonly id: CreatorPresentationOverlayMode;
   readonly labelKo: string;
 }[] = [
-  { id: "over-the-shoulder-tablet", labelKo: "Airtime 오버더숄더 콘티 슬라이드" },
-  { id: "floating-pip-bubble", labelKo: "Whereby 플로팅 PiP 카메라 버블" },
+  { id: "over-the-shoulder-tablet", labelKo: "오버더숄더 콘티 슬라이드" },
+  { id: "floating-pip-bubble", labelKo: "플로팅 PiP 카메라 버블" },
   { id: "transparent-silhouette-cutout", labelKo: "투명 실루엣 컷아웃 브리핑" },
   { id: "split-storyboard-stage", labelKo: "듀얼 펜 태블릿 분할 스테이지" },
 ];
@@ -71,6 +71,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
   const [platformQuery, setPlatformQuery] = useState("");
   const [waveFilter, setWaveFilter] = useState<"all" | 1 | 2 | 3 | 4 | 5>("all");
   const [density, setDensity] = useState<"compact" | "spacious">("compact");
+  const [sectionView, setSectionView] = useState<"all" | "ai-collab" | "theme-cast" | "engine">("all");
 
   const activeSlide =
     state.presentation.slides[state.presentation.activeSlideIndex] ??
@@ -86,22 +87,23 @@ export function StudioVirtualOfficeHolisticMasterPanel({
       className="space-y-4"
       data-testid="virtual-office-holistic-master-panel"
       data-density={density}
+      data-section-view={sectionView}
     >
-      {/* 1. Wave 5 REA Reverse-Engineered Evidence Header */}
+      {/* 1. Smart AI Studio Command & View Separation Header */}
       <section className="rounded-xl border border-line bg-card/70 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
               <Sparkles className="h-4 w-4 text-accent" />
-              Wave 5 올인원 커맨드 (Whereby · Pumble · Krisp · Airtime/mmhmm · Cal.com) + 40대 플랫폼 총괄 매트릭스
+              스마트 AI 스튜디오 통합 커맨드 (플로팅 PiP · AI 보이스/자막 · 일정 자동 동기화 · 데일리 다이제스트)
             </h3>
             <p className="mt-0.5 text-xs text-fg-2">
-              플로팅 PiP 오버더숄더 발표 · AI 펜소음 제거(BVC) 및 4개국어 실시간 자막 · 캘린더 자동 상태 전환 · 일일 스탠드업 다이제스트 봇
+              플로팅 PiP 오버더숄더 발표 · 스마트 AI 펜소음 제거(BVC) 및 4개국어 실시간 자막 보조 · 캘린더 자동 상태 전환 · 일일 스탠드업 다이제스트 보조
             </p>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="rounded-full border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-              누적 40개 플랫폼 100% 내재화
+              ✦ 스마트 AI 협업 보조 내재화
             </span>
             <button
               type="button"
@@ -117,6 +119,35 @@ export function StudioVirtualOfficeHolisticMasterPanel({
               밀도: {density === "compact" ? "컴팩트" : "여유"}
             </button>
           </div>
+        </div>
+        <div
+          role="tablist"
+          aria-label="스마트 AI 스튜디오 영역 분리 보기"
+          className="mt-3 flex flex-wrap gap-1.5 border-t border-line/70 pt-2.5"
+        >
+          {(
+            [
+              { id: "all", label: "전체 통합 보기" },
+              { id: "ai-collab", label: "스마트 AI 음성·발표·일정 보조" },
+              { id: "theme-cast", label: "2.5D 스튜디오 테마·캐릭터·프롭" },
+              { id: "engine", label: "차세대 물리·사운드·마감 워크벤치" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={sectionView === tab.id}
+              onClick={() => setSectionView(tab.id)}
+              className={`rounded-full border px-3 py-1 text-[11px] font-bold transition-colors ${
+                sectionView === tab.id
+                  ? "border-accent bg-accent text-canvas shadow-sm"
+                  : "border-line bg-panel text-fg-2 hover:border-accent/45 hover:text-fg"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
@@ -143,20 +174,22 @@ export function StudioVirtualOfficeHolisticMasterPanel({
         </div>
       </section>
 
-      {/* 2. Whereby + Airtime/mmhmm Over-the-Shoulder & Floating PiP Stage + Krisp AI Voice/Translation */}
+      {(sectionView === "all" || sectionView === "ai-collab") && (
+      <>
+      {/* 2. Over-the-Shoulder & Floating PiP Stage + Smart AI Voice/Translation */}
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-line bg-card/70 p-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <PictureInPicture2 className="h-4 w-4 text-accent" />
-              Whereby 플로팅 PiP &amp; Airtime 오버더숄더 콘티 스테이지
+              플로팅 PiP &amp; 오버더숄더 콘티 브리핑 스테이지
             </h4>
             <button
               type="button"
               onClick={() => {
                 setState((prev) => toggleFloatingPipAlwaysOnTop(prev));
                 onBannerChange?.(
-                  `[Whereby PiP] 클립스튜디오 위 항상 위(Always-on-Top) 버블 ${!state.presentation.alwaysOnTopPip ? "활성화" : "해제"}`,
+                  `[플로팅 PiP] 드로잉 창 위 항상 위(Always-on-Top) 버블 ${!state.presentation.alwaysOnTopPip ? "활성화" : "해제"}`,
                 );
               }}
               data-testid="holistic-toggle-pip-btn"
@@ -177,7 +210,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                 type="button"
                 onClick={() => {
                   setState((prev) => setCreatorPresentationMode(prev, m.id));
-                  onBannerChange?.(`[Airtime/Whereby] 발표 레이아웃 전환: ${m.labelKo}`);
+                  onBannerChange?.(`[브리핑 스테이지] 발표 레이아웃 전환: ${m.labelKo}`);
                 }}
                 className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium ${
                   state.presentation.mode === m.id
@@ -219,7 +252,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                   data-testid="holistic-next-slide-btn"
                   onClick={() => {
                     setState((prev) => advancePresentationSlideDeck(prev, "next"));
-                    onBannerChange?.("[Airtime 오버더숄더] 다음 에피소드 컷 브리핑 슬라이드로 전환");
+                    onBannerChange?.("[오버더숄더 브리핑] 다음 에피소드 컷 브리핑 슬라이드로 전환");
                   }}
                   className="rounded border border-accent bg-accent-soft px-2.5 py-1 text-[11px] font-semibold text-accent"
                 >
@@ -230,12 +263,12 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           ) : null}
         </section>
 
-        {/* Krisp AI Voice Clarity & Multilingual Translation */}
+        {/* Smart AI Voice Clarity & Multilingual Translation */}
         <section className="rounded-xl border border-line bg-card/70 p-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <Languages className="h-4 w-4 text-cool" />
-              Krisp AI 펜소음 제거(BVC) &amp; 4개국어 실시간 자막 번역
+              스마트 AI 펜소음 제거(BVC) &amp; 4개국어 실시간 자막 보조
             </h4>
             <button
               type="button"
@@ -243,7 +276,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
               onClick={() => {
                 setState((prev) => toggleKrispBvcNoiseCancellation(prev));
                 onBannerChange?.(
-                  `[Krisp BVC] 펜 태블릿·배경 소음 제거 ${!state.voiceClarity.bvcNoiseCancellationEnabled ? "활성화" : "해제"}`,
+                  `[스마트 AI BVC] 펜 태블릿·배경 소음 제거 ${!state.voiceClarity.bvcNoiseCancellationEnabled ? "활성화" : "해제"}`,
                 );
               }}
               className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${
@@ -266,7 +299,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                 onClick={() => {
                   setState((prev) => setKrispTranslationLocale(prev, loc.code));
                   onBannerChange?.(
-                    `[Krisp 실시간 번역] 글로벌 검수 자막 언어 전환: ${loc.label}`,
+                    `[스마트 AI 실시간 번역] 글로벌 검수 자막 언어 전환: ${loc.label}`,
                   );
                 }}
                 className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium ${
@@ -300,13 +333,13 @@ export function StudioVirtualOfficeHolisticMasterPanel({
         </section>
       </div>
 
-      {/* 3. Cal.com Auto-Presence Sync + Pumble Daily Standup Bot */}
+      {/* 3. Schedule Auto-Presence Sync + Daily Standup Digest Assistant */}
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-line bg-card/70 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <CalendarClock className="h-4 w-4 text-accent" />
-              Cal.com 캘린더 연동 자동 상태·모자 전환 &amp; T-5분 룸 잠금 해제
+              일정 연동 자동 상태·모자 전환 &amp; T-5분 룸 잠금 해제
             </h4>
             <span className="rounded-md border border-accent bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent">
               현재 {formatMinuteOfDay(state.calendarSync.currentMinuteOfDay)} · 상태:{" "}
@@ -329,7 +362,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                   const next = evaluateCalendarAutoPresenceAtMinute(state, preset.minute);
                   setState(next);
                   onBannerChange?.(
-                    `[Cal.com 자동 동기화] ${preset.label} → 상태 ${next.calendarSync.activeSyncedStatus} (${next.calendarSync.activeSyncedHat})`,
+                    `[일정 자동 동기화] ${preset.label} → 상태 ${next.calendarSync.activeSyncedStatus} (${next.calendarSync.activeSyncedHat})`,
                   );
                 }}
                 className="rounded-lg border border-line bg-raised px-2.5 py-1 text-[11px] text-fg-2 hover:text-fg"
@@ -376,12 +409,12 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           </div>
         </section>
 
-        {/* Pumble Daily Episode Standup Digest Bot */}
+        {/* Smart AI Daily Episode Standup Digest Assistant */}
         <section className="rounded-xl border border-line bg-card/70 p-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <CheckCircle2 className="h-4 w-4 text-good" />
-              Pumble 데일리 에피소드 비동기 스탠드업 다이제스트 봇
+              스마트 AI 데일리 에피소드 비동기 스탠드업 다이제스트 보조
             </h4>
             <span className="text-[11px] text-fg-3">
               응답 {state.standupDigest.length}명 · 블로커{" "}
@@ -416,6 +449,8 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           </div>
         </section>
       </div>
+      </>
+      )}
 
       {/* 4. 40-Platform Unified REA Master Catalog & Filter */}
       <section className="rounded-xl border border-line bg-card/70 p-4">
@@ -473,7 +508,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
         </div>
       </section>
 
-      {/* 5. Nano Banana v10 High-DPI Studio Theme · 5 Isometric Props · 8-Frame Chibi Creator Sprite Pack */}
+      {(sectionView === "all" || sectionView === "theme-cast") && (
       <section
         className="rounded-xl border border-line bg-card/70 p-4"
         data-testid="nano-banana-studio-pack-section"
@@ -652,9 +687,12 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           </div>
         </div>
       </section>
+      )}
 
-      {/* 7. Nano Banana v11 Next-Gen Multi-Theme, Diverse Creator Cast, 60fps Physics & HRTF Soundscape Engine */}
-      <StudioVirtualOfficeNextGenEnginePanel onBannerChange={onBannerChange} />
+      {/* 7. Next-Gen Multi-Theme, Diverse Creator Cast, 60fps Physics & HRTF Soundscape Engine */}
+      {(sectionView === "all" || sectionView === "engine") && (
+        <StudioVirtualOfficeNextGenEnginePanel onBannerChange={onBannerChange} />
+      )}
     </div>
   );
 }

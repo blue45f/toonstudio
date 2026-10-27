@@ -23,6 +23,16 @@ import type { CharacterVoiceArchetype } from "../lettering/studio-dialogue-sugge
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
+  runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector,
+  runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector,
+  runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector,
+  runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector,
+  runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector,
+  runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector,
+  runClaudePipeOrganPedalHarpAccordionBagpipeDirector,
+  runClaudeToonstudio1140HyperSynthesisLegalOstDirector,
+} from "./claude/claude-localize";
+import {
   buildDeterministicHandPropGripLock,
   buildDeterministicPanelBorderGutterLock,
   buildDeterministicStoryboardAssistFallback,
@@ -670,6 +680,33 @@ export function StudioWebtoonMasterPipelineCard({
             <strong className="text-accent">손가락 관절·파지법 고정 ({handPropGripLock.anatomyConsistencyScore}점):</strong>{" "}
             {handPropGripLock.characterName} ({handPropGripLock.dominantHand}) · {handPropGripLock.propNameKo} ({handPropGripLock.cutGripDirectives[0]?.gripArchetype})
           </div>
+        </div>
+        <div
+          data-testid="wave57-59-domain-consistency-bar"
+          className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line pt-1.5 text-[0.58rem]"
+        >
+          <span className="font-semibold text-accent">Wave 57~59 (1,140대 플랫폼 · 188태스크):</span>
+          {(
+            [
+              ["국악·종묘제례악", () => runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "국악" }).then((r) => onApplyScript(`${scriptInput}\n[국악고증] ${r.data.gayageum12AnjokAndGeomungoSuldaeKo}`))],
+              ["하회탈·경극·토가", () => runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "가면극" }).then((r) => onApplyScript(`${scriptInput}\n[가면/토가] ${r.data.hahoeSplitChinAndPekingLianpuColorKo}`))],
+              ["오르간·하프·백파이프", () => runClaudePipeOrganPedalHarpAccordionBagpipeDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "악기" }).then((r) => onApplyScript(`${scriptInput}\n[클래식악기] ${r.data.pedalHarp47StringRedCBlueFRightShoulderKo}`))],
+              ["F1·WRC·서핑·요트", () => runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "레이싱" }).then((r) => onApplyScript(`${scriptInput}\n[익스트림스포츠] ${r.data.f1ApexKerbTireCompoundAndWrcRollcageKo}`))],
+              ["마샬러·등대·시계탑", () => runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "등대" }).then((r) => onApplyScript(`${scriptInput}\n[특수시설] ${r.data.observatoryDomeSlitAndClockTowerEscapementKo}`))],
+              ["유리·루시어·보석루페", () => runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "공예" }).then((r) => onApplyScript(`${scriptInput}\n[명장공예] ${r.data.gemologist10xLoupeAtEyeAndLockingTweezersKo}`))],
+              ["3DGS·NeRF·FACS·시선", () => runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "3DGS" }).then((r) => onApplyScript(`${scriptInput}\n[3DGS/FACS] ${r.data.controlnet4WayMixerAndFacsDuchenneSmileKo}`))],
+              ["1140대하이퍼·독소조항", () => runClaudeToonstudio1140HyperSynthesisLegalOstDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "하이퍼" }).then((r) => onApplyScript(`${scriptInput}\n[1140하이퍼] ${r.data.unfairContractLegalScannerAndBirthdayCafeSpecKo}`))],
+            ] as const
+          ).map(([label, act]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => void act()}
+              className="rounded border border-line bg-surface px-1.5 py-0.5 text-fg-2 hover:border-accent hover:text-accent"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 

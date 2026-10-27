@@ -150,7 +150,7 @@ export function StudioTooningPlusSuitePanel({
   const [expoStyleId, setExpoStyleId] = useState(ED_EXPO_STYLE_TRANSFER_PRESETS[0]!.id);
   const [ttsLang, setTtsLang] = useState<(typeof ED_TTS_SUPPORTED_LANGUAGES)[number]>("ko");
   const [mgSettings, setMgSettings] = useState(createDefaultMgAdvancedRenderSettings);
-  const [retouchModel, setRetouchModel] = useState<MgRetouchModelId>("NanoBananaPro");
+  const [retouchModel, setRetouchModel] = useState<MgRetouchModelId>("SmartRetouchPro");
   const [retouchRefCount, setRetouchRefCount] = useState<number>(3);
 
   const multiAnglePrompt = useMemo(
@@ -604,9 +604,9 @@ export function StudioTooningPlusSuitePanel({
                 >
                   {(
                     [
-                      ["NanoBanana", "스탠다드 리터치"],
-                      ["NanoBanana2", "플래시 리터치 2.0"],
-                      ["NanoBananaPro", "프로 디테일 리터치"],
+                      ["SmartRetouchStandard", "스탠다드 리터치"],
+                      ["SmartRetouchFlash", "플래시 리터치 2.0"],
+                      ["SmartRetouchPro", "프로 디테일 리터치"],
                       ["Seedream", "시드림 리터치"],
                       ["QwenImageEdit", "정밀 영역 편집"],
                     ] as const
