@@ -702,7 +702,7 @@ export function StudioWebtoonMasterPipelineCard({
               key={label}
               type="button"
               onClick={() => void act()}
-              className="rounded border border-line bg-surface px-1.5 py-0.5 text-fg-2 hover:border-accent hover:text-accent"
+              className="rounded border border-line bg-panel px-1.5 py-0.5 text-fg-2 hover:border-accent hover:text-accent"
             >
               {label}
             </button>
