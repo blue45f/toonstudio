@@ -183,7 +183,16 @@ export type ClaudeCreatorTaskId =
   | "cost-cap:cyberpunk-prosthetic-mecha-nvg-molle-lock"
   | "cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock"
   | "cost-cap:forensic-luminol-blood-spatter-autopsy-director"
-  | "cost-cap:locked-room-alibi-cipher-archaeology-director";
+  | "cost-cap:locked-room-alibi-cipher-archaeology-director"
+  // 17. Wave 39~41 Esports/Courtroom/KpopStage/Aerospace/MartialSports/FineArts/BotanyCraft/HeavyMachineryErp AI Engines (8 — Total 140 Tasks)
+  | "cost-cap:esports-hud-gamer-keyboard-mouse-lock"
+  | "cost-cap:courtroom-trial-prison-handcuff-lock"
+  | "cost-cap:kpop-stage-choreo-lightstick-iem-lock"
+  | "cost-cap:aviation-cockpit-zerog-submarine-lock"
+  | "cost-cap:archery-fencing-boxing-stance-cue-lock"
+  | "cost-cap:orchestra-piano-guitar-tea-calligraphy-lock"
+  | "cost-cap:botanical-flora-blacksmith-alchemy-director"
+  | "cost-cap:heavy-machinery-signboard-tax-erp-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -318,114 +327,23 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "production:combat-bloodstain-dust-tatter-decay-lock": defineRoute("production:combat-bloodstain-dust-tatter-decay-lock", "전투 혈흔(Blood Spatter)·먼지/그을음·의상 찢어짐(Tatter) 비가역 누적 & 세탁/치유 시점 타임라인 원장 감독", "storyboard-production", "creative-production", "전투 컷 진행에 따른 혈흔/그을음/소매 파열의 비가역 누적 및 치유/환복 전 자동 초기화 방지는 Sonnet 5.5 적용", 3_584),
 
   // 3. Next-Gen Suite
-  "nextgen:retention-simulator": defineRoute(
-    "nextgen:retention-simulator",
-    "독자 이탈 구간·별점 예측 시뮬레이터",
-    "nextgen-studio",
-    "deep-architecture",
-    "컷별 스크롤 잔존율·쿠키 결제 전환율 예측은 Opus 5.5 심층 추론 적용",
-    3_072,
-  ),
-  "nextgen:ooc-voice-doctor": defineRoute(
-    "nextgen:ooc-voice-doctor",
-    "캐릭터 보이스 OOC(캐붕) 실시간 교정기",
-    "nextgen-studio",
-    "creative-production",
-    "화자별 존대/반말 레지스터 및 말버릇 교정은 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "nextgen:audio-cuesheet-director": defineRoute(
-    "nextgen:audio-cuesheet-director",
-    "웹툰 BGM·오디오툰 큐시트 디렉터",
-    "nextgen-studio",
-    "creative-production",
-    "스크롤 구간별 BGM BPM·폴리 사운드·성우 디렉팅은 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "nextgen:3d-asset-placement": defineRoute(
-    "nextgen:3d-asset-placement",
-    "3D 배경·소품·카메라 렌즈 배치 추천기",
-    "nextgen-studio",
-    "creative-production",
-    "18~85mm 렌즈 화각·소실점·3D 에셋 배치는 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "nextgen:visual-continuity-linter": defineRoute(
-    "nextgen:visual-continuity-linter",
-    "전 회차 컷간 작붕(비대칭 흉터·검집 반전·소품 증발·부상 초기화·그림자 방향) 자동 검출 린터",
-    "nextgen-studio",
-    "deep-architecture",
-    "다중 컷 사이의 해부학적 좌우 반전·소품 증발·배경 투시·부상 누적 불일치 정밀 감사는 Opus 5.5 심층 추론 적용",
-    4_096,
-  ),
-  "nextgen:multi-episode-canon-vault": defineRoute(
-    "nextgen:multi-episode-canon-vault",
-    "장편 연재(1~100화) 캐릭터·세계관·복선·비주얼 캐논 메모리 볼트 디렉터",
-    "nextgen-studio",
-    "creative-production",
-    "회차 간 시간 경과·인물 호칭·복장/외형 변천사·미회수 떡밥 캐논 볼트 동기화는 Sonnet 5.5 적용",
-    4_096,
-  ),
+  "nextgen:retention-simulator": defineRoute("nextgen:retention-simulator", "독자 이탈 구간·별점 예측 시뮬레이터", "nextgen-studio", "deep-architecture", "컷별 스크롤 잔존율·쿠키 결제 전환율 예측은 Opus 5.5 심층 추론 적용", 3_072),
+  "nextgen:ooc-voice-doctor": defineRoute("nextgen:ooc-voice-doctor", "캐릭터 보이스 OOC(캐붕) 실시간 교정기", "nextgen-studio", "creative-production", "화자별 존대/반말 레지스터 및 말버릇 교정은 Sonnet 5.5 적용", 2_048),
+  "nextgen:audio-cuesheet-director": defineRoute("nextgen:audio-cuesheet-director", "웹툰 BGM·오디오툰 큐시트 디렉터", "nextgen-studio", "creative-production", "스크롤 구간별 BGM BPM·폴리 사운드·성우 디렉팅은 Sonnet 5.5 적용", 2_048),
+  "nextgen:3d-asset-placement": defineRoute("nextgen:3d-asset-placement", "3D 배경·소품·카메라 렌즈 배치 추천기", "nextgen-studio", "creative-production", "18~85mm 렌즈 화각·소실점·3D 에셋 배치는 Sonnet 5.5 적용", 2_048),
+  "nextgen:visual-continuity-linter": defineRoute("nextgen:visual-continuity-linter", "전 회차 컷간 작붕(비대칭 흉터·검집 반전·소품 증발·부상 초기화·그림자 방향) 자동 검출 린터", "nextgen-studio", "deep-architecture", "다중 컷 사이의 해부학적 좌우 반전·소품 증발·배경 투시·부상 누적 불일치 정밀 감사는 Opus 5.5 심층 추론 적용", 4_096),
+  "nextgen:multi-episode-canon-vault": defineRoute("nextgen:multi-episode-canon-vault", "장편 연재(1~100화) 캐릭터·세계관·복선·비주얼 캐논 메모리 볼트 디렉터", "nextgen-studio", "creative-production", "회차 간 시간 경과·인물 호칭·복장/외형 변천사·미회수 떡밥 캐논 볼트 동기화는 Sonnet 5.5 적용", 4_096),
   "nextgen:footwear-floor-contact-stride-lock": defineRoute("nextgen:footwear-floor-contact-stride-lock", "구두·부츠·군화 굽 높이(Heel Height) & 계단/경사로/바닥 접지 보폭(Stride Mechanics) 연속성 감독", "nextgen-studio", "fast-inline", "컷간 신발 굽 높이·부츠 버클/끈 디테일 증발 방지 및 계단/경사로 발바닥 접지 각도 고정은 Haiku 5.5 적용", 2_560),
   "nextgen:crowd-silhouette-depth-fog-lock": defineRoute("nextgen:crowd-silhouette-depth-fog-lock", "전경·중경·원경 군중(Crowd) 실루엣 밀도 & 대기 원근(Atmospheric Depth Fog)·선 굵기 감쇠 일관성 감독", "nextgen-studio", "creative-production", "주연(1.0x)·중경 엑스트라(0.65x)·원경 군중(0.35x) 선 굵기 계층 및 대기 원근 안개 채도 감쇠 고정은 Sonnet 5.5 적용", 3_584),
 
   // 4. Phase 5 Competitor Full Suite
-  "competitor:beluga-clipstudio-production": defineRoute(
-    "competitor:beluga-clipstudio-production",
-    "벨루가 & 클립스튜디오 7공정·포즈·음영 디렉터",
-    "competitor-suite",
-    "creative-production",
-    "7단계 작화 공정·3D 관절 포즈·그림자 해칭 설계는 Sonnet 5.5 적용",
-    2_560,
-  ),
-  "competitor:onoma-kakaopage-ip": defineRoute(
-    "competitor:onoma-kakaopage-ip",
-    "오노마AI & 카카오페이지 IP 가치·런칭 패키저",
-    "competitor-suite",
-    "deep-architecture",
-    "글로벌 팬덤 타깃·2차 영상화 가치·키비주얼/트레일러 설계는 Opus 5.5 적용",
-    3_072,
-  ),
-  "competitor:llamagen-manga-ai": defineRoute(
-    "competitor:llamagen-manga-ai",
-    "LlamaGen & 다쉬툰 만화 스크린톤·페이지 변환기",
-    "competitor-suite",
-    "creative-production",
-    "세로 웹툰→출판 만화 페이지 레이아웃·모아레 방지 스크린톤 설계는 Sonnet 5.5 적용",
-    2_560,
-  ),
-  "competitor:turnaround-orthographic-sheet-lock": defineRoute(
-    "competitor:turnaround-orthographic-sheet-lock",
-    "360° 5뷰(정면·좌/우 측면·후면·반측면) 턴어라운드 정투영 비율 & 장신구/문양 기하 일관성 고정기",
-    "competitor-suite",
-    "creative-production",
-    "5방향 정투영 등신대 기준선(정수리·눈·어깨·골반·발끝) 정렬 및 비대칭 장신구/등문양 360도 기하 락은 Sonnet 5.5 적용",
-    3_584,
-  ),
-  "competitor:background-perspective-prop-scale-lock": defineRoute(
-    "competitor:background-perspective-prop-scale-lock",
-    "3D 배경 투시 그리드(1/2/3점 소실점) ↔ 2D 인물 발 접지(Foot Contact) · 가구/문틀/소품 인체 비례 일관성 감독",
-    "competitor-suite",
-    "deep-architecture",
-    "3D 배경 지평선(Eye-Line)·소실점과 2D 캐릭터 발바닥 접지 각도·문틀/책상/마차 대비 인체 스케일 왜곡 교정은 Opus 5.5 적용",
-    4_096,
-  ),
-  "competitor:speech-bubble-tail-occlusion-lock": defineRoute(
-    "competitor:speech-bubble-tail-occlusion-lock",
-    "말풍선·효과음(SFX) 안면/눈빛/핵심 액션 비가림(Anti-Occlusion) 안전 영역 & 화자 입 방향 꼬리 벡터 고정기",
-    "competitor-suite",
-    "fast-inline",
-    "인물 얼굴·동공·손동작 가림 0% 보장 여백 좌표 계산 및 화자 입 중심 말풍선 꼬리 벡터 잠금은 Haiku 5.5 적용",
-    2_560,
-  ),
-  "competitor:action-weapon-motion-arc-smear-lock": defineRoute(
-    "competitor:action-weapon-motion-arc-smear-lock",
-    "검격·마법·타격 궤적(Motion Arc) 연속성 · 잔상(Smear Frame) · 타격 역경직(Hit-Stop) 물리 일관성 감독",
-    "competitor-suite",
-    "creative-production",
-    "연속 전투 컷 사이의 검기 궤적 벡터 일치·잔상(Smear) 왜곡률·집중선 수렴점·역경직 연출은 Sonnet 5.5 적용",
-    3_584,
-  ),
+  "competitor:beluga-clipstudio-production": defineRoute("competitor:beluga-clipstudio-production", "벨루가 & 클립스튜디오 7공정·포즈·음영 디렉터", "competitor-suite", "creative-production", "7단계 작화 공정·3D 관절 포즈·그림자 해칭 설계는 Sonnet 5.5 적용", 2_560),
+  "competitor:onoma-kakaopage-ip": defineRoute("competitor:onoma-kakaopage-ip", "오노마AI & 카카오페이지 IP 가치·런칭 패키저", "competitor-suite", "deep-architecture", "글로벌 팬덤 타깃·2차 영상화 가치·키비주얼/트레일러 설계는 Opus 5.5 적용", 3_072),
+  "competitor:llamagen-manga-ai": defineRoute("competitor:llamagen-manga-ai", "LlamaGen & 다쉬툰 만화 스크린톤·페이지 변환기", "competitor-suite", "creative-production", "세로 웹툰→출판 만화 페이지 레이아웃·모아레 방지 스크린톤 설계는 Sonnet 5.5 적용", 2_560),
+  "competitor:turnaround-orthographic-sheet-lock": defineRoute("competitor:turnaround-orthographic-sheet-lock", "360° 5뷰(정면·좌/우 측면·후면·반측면) 턴어라운드 정투영 비율 & 장신구/문양 기하 일관성 고정기", "competitor-suite", "creative-production", "5방향 정투영 등신대 기준선(정수리·눈·어깨·골반·발끝) 정렬 및 비대칭 장신구/등문양 360도 기하 락은 Sonnet 5.5 적용", 3_584),
+  "competitor:background-perspective-prop-scale-lock": defineRoute("competitor:background-perspective-prop-scale-lock", "3D 배경 투시 그리드(1/2/3점 소실점) ↔ 2D 인물 발 접지(Foot Contact) · 가구/문틀/소품 인체 비례 일관성 감독", "competitor-suite", "deep-architecture", "3D 배경 지평선(Eye-Line)·소실점과 2D 캐릭터 발바닥 접지 각도·문틀/책상/마차 대비 인체 스케일 왜곡 교정은 Opus 5.5 적용", 4_096),
+  "competitor:speech-bubble-tail-occlusion-lock": defineRoute("competitor:speech-bubble-tail-occlusion-lock", "말풍선·효과음(SFX) 안면/눈빛/핵심 액션 비가림(Anti-Occlusion) 안전 영역 & 화자 입 방향 꼬리 벡터 고정기", "competitor-suite", "fast-inline", "인물 얼굴·동공·손동작 가림 0% 보장 여백 좌표 계산 및 화자 입 중심 말풍선 꼬리 벡터 잠금은 Haiku 5.5 적용", 2_560),
+  "competitor:action-weapon-motion-arc-smear-lock": defineRoute("competitor:action-weapon-motion-arc-smear-lock", "검격·마법·타격 궤적(Motion Arc) 연속성 · 잔상(Smear Frame) · 타격 역경직(Hit-Stop) 물리 일관성 감독", "competitor-suite", "creative-production", "연속 전투 컷 사이의 검기 궤적 벡터 일치·잔상(Smear) 왜곡률·집중선 수렴점·역경직 연출은 Sonnet 5.5 적용", 3_584),
 
   // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite
   "ecosystem:novelai-multi-char-vibe": defineRoute(
@@ -692,6 +610,16 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock": defineRoute("cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock", "한국 무속 왼손 칠성방울/오른손 부채·괴황지 경면주사 부적·구마 사제 보라 영대·음양사 구자수인 고증 디렉터", "core-dialog", "creative-production", "무당 방울/부채 좌우 지물·부적 탄화 발광·구마 사제 영대/십자가·구자호신법 수인 고정은 Sonnet 5.5 적용", 4_096),
   "cost-cap:forensic-luminol-blood-spatter-autopsy-director": defineRoute("cost-cap:forensic-luminol-blood-spatter-autopsy-director", "과학수사 루미놀 425nm 청백색 발광·증거 번호판 위치 불변·취조실 단방향 거울 명암·폴리그라프 총괄 감독", "core-dialog", "deep-architecture", "루미놀 혈흔 반응 파장·사건현장 증거텐트 평면도·취조실 거울 물리 조건·거짓말탐지기 감리는 Opus 5.5 심층 추론 적용", 6_144),
   "cost-cap:locked-room-alibi-cipher-archaeology-director": defineRoute("cost-cap:locked-room-alibi-cipher-archaeology-director", "추리물 밀실 트릭 평면도·알리바이 타임테이블·레터로킹 암호봉인·유적 발굴 격자/미술품 UV 감정 총괄 감독", "core-dialog", "deep-architecture", "밀실 건축 기하 트릭·시야각/열차 알리바이 매트릭스·고전 암호/미술품 UV 형광 감정은 Opus 5.5 심층 추론 적용", 6_144),
+
+  // 17. Wave 39~41 Esports/Courtroom/KpopStage/Aerospace/MartialSports/FineArts/BotanyCraft/HeavyMachineryErp AI Engines (8)
+  "cost-cap:esports-hud-gamer-keyboard-mouse-lock": defineRoute("cost-cap:esports-hud-gamer-keyboard-mouse-lock", "프로게이머 e스포츠 중계 HUD 킬로그/미니맵 시야 연속성 & 왼손 키보드(WASD/QWER)·오른손 마우스 그립 고정기", "core-dialog", "fast-inline", "중계 화면 킬스코어/골드/미니맵 안개 일치 및 게이머 왼손 키보드·오른손 마우스 좌우 반전 차단은 Haiku 5.5로 즉각 검증", 2_560),
+  "cost-cap:courtroom-trial-prison-handcuff-lock": defineRoute("cost-cap:courtroom-trial-prison-handcuff-lock", "한국 형사법정 좌측 검사석/우측 변호인석 배치·구치소 아크릴 타공 통화구·수갑 열쇠구멍 및 경찰 바디캠 고정기", "core-dialog", "fast-inline", "법정 판사석/방청석 시점별 검사·변호인석 반전 방지 및 구치소 수용번호 명찰·수갑 결박 해부학은 Haiku 5.5 적용", 2_560),
+  "cost-cap:kpop-stage-choreo-lightstick-iem-lock": defineRoute("cost-cap:kpop-stage-choreo-lightstick-iem-lock", "K-POP 아이돌 커스텀 인이어(IEM) 귀뒤 루프·볼 헤드셋 마이크·5/7인조 V자 칼군무·응원봉 파도/DMX 레이저 디렉터", "core-dialog", "creative-production", "아이돌 무대 인이어/마이크 착용·군무 대형 블로킹·객석 블루투스 응원봉 발광 연출은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:aviation-cockpit-zerog-submarine-lock": defineRoute("cost-cap:aviation-cockpit-zerog-submarine-lock", "항공기 좌 기장석/우 부기장석·전투기 애프터버너 마하 다이아몬드·우주 무중력 구형 물방울·잠수함 적색조명 디렉터", "core-dialog", "creative-production", "항공 조종석 좌우·초음속 충격파 마디·무중력 표면장력·잠수함 전투조명/범선 풍향기 일치는 Sonnet 5.5 적용", 4_096),
+  "cost-cap:archery-fencing-boxing-stance-cue-lock": defineRoute("cost-cap:archery-fencing-boxing-stance-cue-lock", "국궁(엄지 깍지+우측 화살) vs 양궁(3지+좌측 화살)·펜싱 3종목 유효면·복싱 스탠스·당구 브릿지/클라이밍 매듭 디렉터", "core-dialog", "creative-production", "동서양 궁술 화살 거치 좌우 구분·펜싱 장비·격투기 오소독스/사우스포 반전 차단은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:orchestra-piano-guitar-tea-calligraphy-lock": defineRoute("cost-cap:orchestra-piano-guitar-tea-calligraphy-lock", "88건반 피아노 검은건반(2-3 주기)·기타 프렛/드럼 교차 팔·오케스트라 지휘·다도 다완 회전·서예 쌍구법 디렉터", "core-dialog", "creative-production", "피아노/기타/드럼 연주 해부학·동양 다도/소믈리에 매너·서예 쌍구법/물레 반시계 회전 고증은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:botanical-flora-blacksmith-alchemy-director": defineRoute("cost-cap:botanical-flora-blacksmith-alchemy-director", "벚꽃 5꽃잎 끝 홈/단풍잎·대나무 빈 단면·대장간 왼손 집게/오른손 해머·스테인드글라스 투영광·연금술 총괄 감독", "core-dialog", "deep-architecture", "식물 계절 해부학·대장간 담금질/테일러 가봉·성당 색수차 투영광·마탑 연금술 기구 감리는 Opus 5.5 심층 추론 적용", 6_144),
+  "cost-cap:heavy-machinery-signboard-tax-erp-director": defineRoute("cost-cap:heavy-machinery-signboard-tax-erp-director", "굴착기 3절 유압 링크/전철 팬터그래프·네온사인 유리관/간판 외계어 차단·여권 MRZ·웹툰 3.3% 세무/어시 ERP 총괄 감독", "core-dialog", "deep-architecture", "중장비 기구학·배경 한글 간판 외계어 방지·여권/화폐 소품·웹툰 스튜디오 세무/어시 정산 ERP는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

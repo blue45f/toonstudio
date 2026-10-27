@@ -27,6 +27,16 @@ import {
   type GenToonStyleFamilyId,
 } from "./all-in-one-webtoon-accelerator-suite";
 import {
+  runClaudeArcheryFencingCombatStanceCueDirector,
+  runClaudeAviationCockpitZeroGSubmarineDirector,
+  runClaudeBotanicalFloraBlacksmithAlchemyDirector,
+  runClaudeCourtroomTrialPrisonHandcuffDirector,
+  runClaudeEsportsHudGamerPeripheralsDirector,
+  runClaudeHeavyMachinerySignboardTaxErpDirector,
+  runClaudeKpopStageChoreoLightstickIemDirector,
+  runClaudeOrchestraPianoGuitarTeaCalligraphyDirector,
+} from "./claude/claude-feature-cost-cap";
+import {
   buildDeterministicBinauralSpatialAudioFoleyLufsView,
   buildDeterministicBreathFrostSmokePlumeLockView,
   buildDeterministicCastShadowSundialAzimuthLockView,
@@ -107,6 +117,32 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
     return `[동공 캐치라이트/시선 고정 · ${init.model}] ${init.catchlightClockHour}시 방향 · ${init.binocularVergenceRuleKo}`;
   });
   const [wave21Loading, setWave21Loading] = useState<boolean>(false);
+  const [wave39SummaryKo, setWave39SummaryKo] = useState<string>(
+    "Wave 39~41 (780개 플랫폼 REA · 140개 스마트 라우팅): e스포츠 HUD·한국법정·K-POP 무대·항공우주·궁술펜싱·피아노다도·식물대장간·중장비세무 ERP 감독 대기",
+  );
+  const [wave39Loading, setWave39Loading] = useState<boolean>(false);
+
+  async function handleRunWave39Engine(
+    kind: "esports" | "court" | "kpop" | "aero" | "martial" | "arts" | "botany" | "erp",
+  ): Promise<void> {
+    setWave39Loading(true);
+    const seed = { episodeTitle: "01화", genre: storyGenre, scriptSummary: scriptInput.trim() || `${storyGenre} 클라이맥스` };
+    const map: Record<typeof kind, () => Promise<string>> = {
+      esports: async () => { const r = await runClaudeEsportsHudGamerPeripheralsDirector(seed); return `[e스포츠/장비 · ${r.model}] ${r.data.mobaHudKillfeedMinimapRuleKo} / ${r.data.keyboardWasdAndMouseGripRuleKo}`; },
+      court: async () => { const r = await runClaudeCourtroomTrialPrisonHandcuffDirector(seed); return `[한국법정/수갑 · ${r.model}] ${r.data.koreanCourtroomSeatLayoutRuleKo} / ${r.data.handcuffKeyholeAndBodycamRuleKo}`; },
+      kpop: async () => { const r = await runClaudeKpopStageChoreoLightstickIemDirector(seed); return `[K-POP무대/응원봉 · ${r.model}] ${r.data.customIemLoopAndCheekMicRuleKo} / ${r.data.lightstickOceanAndDmxLaserRuleKo}`; },
+      aero: async () => { const r = await runClaudeAviationCockpitZeroGSubmarineDirector(seed); return `[항공/무중력/잠수함 · ${r.model}] ${r.data.airlinerAndFighterAfterburnerKo} / ${r.data.zeroGravityHairAndDropletSphereKo}`; },
+      martial: async () => { const r = await runClaudeArcheryFencingCombatStanceCueDirector(seed); return `[국궁양궁/펜싱/복싱 · ${r.model}] ${r.data.gakgungThumbVsRecurveDrawRuleKo} / ${r.data.fencingTargetAndBoxingStanceKo}`; },
+      arts: async () => { const r = await runClaudeOrchestraPianoGuitarTeaCalligraphyDirector(seed); return `[피아노/다도/서예 · ${r.model}] ${r.data.piano88KeyGuitarDrumRuleKo} / ${r.data.teaCeremonyAndSommelierEtiquetteKo}`; },
+      botany: async () => { const r = await runClaudeBotanicalFloraBlacksmithAlchemyDirector(seed); return `[식물/대장간/연금술 · ${r.model}] ${r.data.cherryBlossomNotchAndBambooHollowKo} / ${r.data.blacksmithAnvilQuenchAndTailorKo}`; },
+      erp: async () => { const r = await runClaudeHeavyMachinerySignboardTaxErpDirector(seed); return `[중장비/간판/세무ERP · ${r.model}] ${r.data.neonElectrodeAndSignboardOrthoKo} / ${r.data.passportCurrencyAndWebtoonTaxErpKo}`; },
+    };
+    try {
+      setWave39SummaryKo(await map[kind]());
+    } finally {
+      setWave39Loading(false);
+    }
+  }
 
   async function handleRunWave21Engine(
     kind: "gaze" | "plume" | "wet" | "shadow" | "crater" | "binaural",
@@ -674,6 +710,46 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
         </div>
         <div data-testid="wave21-summary-output" className="text-[0.6rem] text-fg-2">
           {wave21Loading ? "Claude 멀티모델 추론 중..." : wave21SummaryKo}
+        </div>
+      </div>
+
+      {/* Wave 39~41 e스포츠·한국법정·K-POP무대·항공우주·궁술펜싱·피아노다도·식물대장간·중장비세무 8대 감독 */}
+      <div
+        data-testid="wave39-41-ecosystem-domain-bar"
+        className="mt-2 space-y-1.5 rounded border border-accent bg-raised p-2 text-[0.62rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <span className="font-bold text-fg">
+            Wave 39~41 e스포츠HUD·한국법정·K-POP콘서트·항공무중력·국궁펜싱·피아노다도·식물대장간·중장비세무 8대 감독 (780개 플랫폼 REA · 140개 스마트 라우팅)
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                ["esports", "e스포츠HUD·WASD"],
+                ["court", "한국법정·구치소수갑"],
+                ["kpop", "K-POP인이어·응원봉"],
+                ["aero", "항공조종석·무중력"],
+                ["martial", "국궁양궁·펜싱복싱"],
+                ["arts", "피아노88·다도서예"],
+                ["botany", "벚꽃단풍·대장간"],
+                ["erp", "중장비·간판·세무ERP"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                disabled={wave39Loading}
+                data-testid={`wave39-run-${id}`}
+                onClick={() => void handleRunWave39Engine(id)}
+                className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 hover:border-accent hover:text-accent"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div data-testid="wave39-summary-output" className="text-[0.6rem] text-fg-2">
+          {wave39Loading ? "Claude 멀티모델 추론 중..." : wave39SummaryKo}
         </div>
       </div>
     </section>

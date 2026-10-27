@@ -230,6 +230,9 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave21-23-ecosystem-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave21-run-crater"));
     expect(screen.getByTestId("wave21-summary-output").textContent).toBeTruthy();
+    expect(screen.getByTestId("wave39-41-ecosystem-domain-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave39-run-esports"));
+    expect(screen.getByTestId("wave39-summary-output").textContent).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-3-storyboard"));
     expect(screen.getByTestId("wave24-26-category34-consistency-bar")).toBeTruthy();

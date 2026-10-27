@@ -8,14 +8,22 @@ import {
 } from "./claude-creator-model-router";
 import {
   runClaudeAnamorphicFisheyeLensOpticsDirector,
+  runClaudeArcheryFencingCombatStanceCueDirector,
   runClaudeAudiotoonAdrTactileErgonomicsDirector,
+  runClaudeAviationCockpitZeroGSubmarineDirector,
+  runClaudeBotanicalFloraBlacksmithAlchemyDirector,
   runClaudeCastleClockwiseStairCarriageWaltzDirector,
+  runClaudeCourtroomTrialPrisonHandcuffDirector,
   runClaudeCyberpunkProstheticMechaTacticalDirector,
   runClaudeDrapery7FoldsMaterialBrdfDirector,
+  runClaudeEsportsHudGamerPeripheralsDirector,
   runClaudeForensicLuminolAutopsySceneDirector,
   runClaudeGachaSsrSplashRpgSkillCutsceneDirector,
+  runClaudeHeavyMachinerySignboardTaxErpDirector,
   runClaudeHunterGateRaidPartyInventoryDirector,
+  runClaudeKpopStageChoreoLightstickIemDirector,
   runClaudeLockedRoomAlibiCipherArchaeologyDirector,
+  runClaudeOrchestraPianoGuitarTeaCalligraphyDirector,
   runClaudePocketWatchIiiiChessBadukBoardDirector,
   runClaudeRofanCorsetSashSignetEtiquetteDirector,
   runClaudeScreentoneMoireGpenHierarchyDirector,
@@ -64,12 +72,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 81대 창의 AI 작업을 포함한 총 132개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 89대 창의 AI 작업을 포함한 총 140개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(132);
-    expect(summary.byProfile["fast-inline"]).toBe(34);
-    expect(summary.byProfile["creative-production"]).toBe(66);
-    expect(summary.byProfile["deep-architecture"]).toBe(32);
+    expect(summary.totalTasks).toBe(140);
+    expect(summary.byProfile["fast-inline"]).toBe(36);
+    expect(summary.byProfile["creative-production"]).toBe(70);
+    expect(summary.byProfile["deep-architecture"]).toBe(34);
+
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:esports-hud-gamer-keyboard-mouse-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:courtroom-trial-prison-handcuff-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:kpop-stage-choreo-lightstick-iem-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:aviation-cockpit-zerog-submarine-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:archery-fencing-boxing-stance-cue-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:orchestra-piano-guitar-tea-calligraphy-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:botanical-flora-blacksmith-alchemy-director").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:heavy-machinery-signboard-tax-erp-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("cost-cap:rofan-corset-sash-signet-etiquette-lock").model,
@@ -365,5 +398,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(w6.data.occultAuthenticityScore).toBeGreaterThanOrEqual(95);
     expect(w7.data.forensicRigorScore).toBeGreaterThanOrEqual(95);
     expect(w8.data.mysteryLogicScore).toBeGreaterThanOrEqual(95);
+
+    const x1 = await runClaudeEsportsHudGamerPeripheralsDirector(sample, { route: null });
+    const x2 = await runClaudeCourtroomTrialPrisonHandcuffDirector(sample, { route: null });
+    const x3 = await runClaudeKpopStageChoreoLightstickIemDirector(sample, { route: null });
+    const x4 = await runClaudeAviationCockpitZeroGSubmarineDirector(sample, { route: null });
+    const x5 = await runClaudeArcheryFencingCombatStanceCueDirector(sample, { route: null });
+    const x6 = await runClaudeOrchestraPianoGuitarTeaCalligraphyDirector(sample, { route: null });
+    const x7 = await runClaudeBotanicalFloraBlacksmithAlchemyDirector(sample, { route: null });
+    const x8 = await runClaudeHeavyMachinerySignboardTaxErpDirector(sample, { route: null });
+
+    expect(x1.data.esportsContinuityScore).toBeGreaterThanOrEqual(95);
+    expect(x2.data.legalRealismScore).toBeGreaterThanOrEqual(95);
+    expect(x3.data.stageProductionScore).toBeGreaterThanOrEqual(95);
+    expect(x4.data.aerospacePhysicsScore).toBeGreaterThanOrEqual(95);
+    expect(x5.data.martialSportsScore).toBeGreaterThanOrEqual(95);
+    expect(x6.data.fineArtsRigorScore).toBeGreaterThanOrEqual(95);
+    expect(x7.data.craftBotanyScore).toBeGreaterThanOrEqual(95);
+    expect(x8.data.industrialErpScore).toBeGreaterThanOrEqual(95);
   });
 });

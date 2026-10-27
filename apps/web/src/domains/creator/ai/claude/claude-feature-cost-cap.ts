@@ -536,3 +536,199 @@ export async function runClaudeLockedRoomAlibiCipherArchaeologyDirector(
     fallback: () => Object.freeze({ mysteryLogicScore: 98, lockedRoomFloorplanAndSightlineKo: "밀실 사건 해명용 아이소메트릭 단면도에서 문 잠금쇠·환기구 치수·목격자 시야각 콘(Sightline Cone)과 열차 시각표 알리바이 일치", corkboardRedYarnAndCipherRuleKo: "수사 코르크보드 압정 간 붉은 실 중력 현수선(Catenary Sag) 적용 및 알베르티 암호 원판 정렬·봉랍 레터로킹 접기 순서 고정", archaeologyGridAndArtUvAuditKo: "발굴 트렌치 1×1m 수평 실 격자·북쪽 화살표 스케일 보드 배치 및 유화 위작 UV 조사 시 후대 덧칠 부위 암자색 형광 검출" }),
   });
 }
+
+// ============================================================================
+// Wave 39~41: e스포츠·K-POP콘서트·법정·항공우주·궁술펜싱·악기다도·식물대장간·중장비세무 8대 감독
+// ============================================================================
+
+export const ClaudeEsportsHudPeripheralsSchema = z.object({
+  esportsContinuityScore: z.number().int().min(0).max(100),
+  mobaHudKillfeedMinimapRuleKo: z.string(),
+  keyboardWasdAndMouseGripRuleKo: z.string(),
+  boothHeadsetAndMonitorBezelKo: z.string(),
+});
+export type ClaudeEsportsHudPeripherals = z.infer<typeof ClaudeEsportsHudPeripheralsSchema>;
+
+export async function runClaudeEsportsHudGamerPeripheralsDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeEsportsHudPeripherals>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:esports-hud-gamer-keyboard-mouse-lock",
+    systemPrompt: "당신은 프로게이머·인방 웹툰의 e스포츠 중계 HUD 킬로그/미니맵 시야 연속성과 왼손 키보드(WASD/QWER)·오른손 마우스 그립 좌우 고증을 담당하는 감독입니다.",
+    userInstruction: "중계 화면 킬스코어·골드·미니맵 안개 연속성, 왼손 틸트 키보드와 오른손 마우스 파지 고정, 방음 부스 헤드셋 마이크 방향을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeEsportsHudPeripheralsSchema,
+    options,
+    normalize: (p) => Object.freeze({ esportsContinuityScore: clampWave33(p.esportsContinuityScore, 0, 100, 99), mobaHudKillfeedMinimapRuleKo: cleanSingleLineText(p.mobaHudKillfeedMinimapRuleKo, 180), keyboardWasdAndMouseGripRuleKo: cleanSingleLineText(p.keyboardWasdAndMouseGripRuleKo, 180), boothHeadsetAndMonitorBezelKo: cleanSingleLineText(p.boothHeadsetAndMonitorBezelKo, 180) }),
+    fallback: () => Object.freeze({ esportsContinuityScore: 99, mobaHudKillfeedMinimapRuleKo: "중계 화면 상단 팀 킬스코어·글로벌 골드 격차·미니맵 전장의 안개(Fog of War) 와드 시야가 전후 전투 컷과 100% 수치 일치하도록 고정", keyboardWasdAndMouseGripRuleKo: "게이머 1인칭/부스 컷에서 왼손 15° 틸트 기계식 키보드(QWER/WASD) 운지와 오른손 초경량 마우스 클로 그립 좌우 반전 원천 차단", boothHeadsetAndMonitorBezelKo: "경기석 방음 헤드셋 붐마이크 좌측 입꼬리 밀착 + 내부 커스텀 인이어 이중 착용 및 240Hz 모니터 암 각도 고정" }),
+  });
+}
+
+export const ClaudeCourtroomPrisonHandcuffSchema = z.object({
+  legalRealismScore: z.number().int().min(0).max(100),
+  koreanCourtroomSeatLayoutRuleKo: z.string(),
+  prisonPartitionAndInmateBadgeKo: z.string(),
+  handcuffKeyholeAndBodycamRuleKo: z.string(),
+});
+export type ClaudeCourtroomPrisonHandcuff = z.infer<typeof ClaudeCourtroomPrisonHandcuffSchema>;
+
+export async function runClaudeCourtroomTrialPrisonHandcuffDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeCourtroomPrisonHandcuff>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:courtroom-trial-prison-handcuff-lock",
+    systemPrompt: "당신은 한국 형사법정 좌석 배치(판사석 기준 좌측 검사·우측 변호인)·구치소 접견실 아크릴 격벽·수갑 열쇠구멍 및 경찰 바디캠 고증 감독입니다.",
+    userInstruction: "한국 법정 검사석/변호인석 배치 규칙, 구치소 아크릴 타공 통화구와 수용번호 명찰, 수갑 열쇠구멍 및 바디캠 LED 고증을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeCourtroomPrisonHandcuffSchema,
+    options,
+    normalize: (p) => Object.freeze({ legalRealismScore: clampWave33(p.legalRealismScore, 0, 100, 99), koreanCourtroomSeatLayoutRuleKo: cleanSingleLineText(p.koreanCourtroomSeatLayoutRuleKo, 180), prisonPartitionAndInmateBadgeKo: cleanSingleLineText(p.prisonPartitionAndInmateBadgeKo, 180), handcuffKeyholeAndBodycamRuleKo: cleanSingleLineText(p.handcuffKeyholeAndBodycamRuleKo, 180) }),
+    fallback: () => Object.freeze({ legalRealismScore: 99, koreanCourtroomSeatLayoutRuleKo: "한국 형사법정에서 판사석 정면 기준 좌측이 검사석, 우측이 변호인·피고인석(방청석에서 바라보면 좌측 변호인·우측 검사)으로 역앵글 좌우 반전 차단", prisonPartitionAndInmateBadgeKo: "구치소 접견실 투명 아크릴 격벽 하단 원형 타공 통화구 배열 및 수용복 좌측 가슴 수용번호 명찰(미결수/기결수 색상 구분) 고정", handcuffKeyholeAndBodycamRuleKo: "체포 시 등뒤 손등 마주보기(Back-to-Back) 수갑 결박·열쇠구멍 상향 정렬 및 경찰 조끼 중앙 바디캠 녹색 작동 LED 고정" }),
+  });
+}
+
+export const ClaudeKpopStageLightstickIemSchema = z.object({
+  stageProductionScore: z.number().int().min(0).max(100),
+  customIemLoopAndCheekMicRuleKo: z.string(),
+  choreoVFormationAndTrapdoorLiftKo: z.string(),
+  lightstickOceanAndDmxLaserRuleKo: z.string(),
+});
+export type ClaudeKpopStageLightstickIem = z.infer<typeof ClaudeKpopStageLightstickIemSchema>;
+
+export async function runClaudeKpopStageChoreoLightstickIemDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeKpopStageLightstickIem>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:kpop-stage-choreo-lightstick-iem-lock",
+    systemPrompt: "당신은 K-POP 아이돌 웹툰의 커스텀 인이어(IEM) 귀 뒤 케이블 루프·볼 헤드셋 마이크·칼군무 V자 대형·콘서트 응원봉 중앙제어 조명 감독입니다.",
+    userInstruction: "커스텀 인이어와 볼 헤드셋 마이크 착용법, 5/7인조 V자 칼군무 대형과 무대 리프트, 객석 응원봉 파도와 DMX 레이저 연출을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeKpopStageLightstickIemSchema,
+    options,
+    normalize: (p) => Object.freeze({ stageProductionScore: clampWave33(p.stageProductionScore, 0, 100, 99), customIemLoopAndCheekMicRuleKo: cleanSingleLineText(p.customIemLoopAndCheekMicRuleKo, 180), choreoVFormationAndTrapdoorLiftKo: cleanSingleLineText(p.choreoVFormationAndTrapdoorLiftKo, 180), lightstickOceanAndDmxLaserRuleKo: cleanSingleLineText(p.lightstickOceanAndDmxLaserRuleKo, 180) }),
+    fallback: () => Object.freeze({ stageProductionScore: 99, customIemLoopAndCheekMicRuleKo: "무대 위 아이돌 커스텀 인이어(IEM) 케이블은 귓바퀴 위에서 뒤로 넘어가는 오버이어 루프 구조를 유지하며 살구색 볼 밀착 와이어 마이크 방향 고정", choreoVFormationAndTrapdoorLiftKo: "군무 대형 전환 시 센터 중심 V자/대각선 블로킹 바닥 넘버 마커 정렬 및 무대 중앙 유압 리프트(Trapdoor) 승강 높이 일치", lightstickOceanAndDmxLaserRuleKo: "아레나 객석 블루투스 응원봉 중앙제어 발광 색상(#EC4899→#38BDF8) 파도와 상부 트러스 DMX 무빙라이트 볼류메트릭 헤이즈 광선 일치" }),
+  });
+}
+
+export const ClaudeAviationZeroGSubmarineSchema = z.object({
+  aerospacePhysicsScore: z.number().int().min(0).max(100),
+  airlinerAndFighterAfterburnerKo: z.string(),
+  zeroGravityHairAndDropletSphereKo: z.string(),
+  submarineRedLightAndTallshipSailKo: z.string(),
+});
+export type ClaudeAviationZeroGSubmarine = z.infer<typeof ClaudeAviationZeroGSubmarineSchema>;
+
+export async function runClaudeAviationCockpitZeroGSubmarineDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeAviationZeroGSubmarine>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:aviation-cockpit-zerog-submarine-lock",
+    systemPrompt: "당신은 항공기 조종석(좌 기장/우 부기장)·전투기 마하 다이아몬드·우주 무중력 표면장력·잠수함 적색 전투조명 및 범선 풍향 고증 감독입니다.",
+    userInstruction: "여객기/전투기 조종석과 애프터버너 충격파 마디, 우주 무중력 모발 부유와 구형 액체 방울, 잠수함 적색 조명과 범선 풍향기 일치를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeAviationZeroGSubmarineSchema,
+    options,
+    normalize: (p) => Object.freeze({ aerospacePhysicsScore: clampWave33(p.aerospacePhysicsScore, 0, 100, 99), airlinerAndFighterAfterburnerKo: cleanSingleLineText(p.airlinerAndFighterAfterburnerKo, 180), zeroGravityHairAndDropletSphereKo: cleanSingleLineText(p.zeroGravityHairAndDropletSphereKo, 180), submarineRedLightAndTallshipSailKo: cleanSingleLineText(p.submarineRedLightAndTallshipSailKo, 180) }),
+    fallback: () => Object.freeze({ aerospacePhysicsScore: 99, airlinerAndFighterAfterburnerKo: "여객기 조종석 좌측 기장석·우측 부기장석 및 중앙 스로틀 레버 고정, 전투기 애프터버너 배기구 초음속 마하 다이아몬드(Shock Diamonds) 마디 고증", zeroGravityHairAndDropletSphereKo: "우주선 무중력(Micro-G) 구간에서 머리카락/옷자락 무작위 부유 실루엣 및 눈물·혈액이 표면장력으로 완전한 구형(Sphere) 방울을 유지하도록 고정", submarineRedLightAndTallshipSailKo: "잠수함 야간 잠항 시 암적응용 적색 전투조명(Rig for Red) 적용 및 범선 돛 배면 부풀림 방향과 돗대 풍향기(Pennant) 벡터 일치" }),
+  });
+}
+
+export const ClaudeArcheryFencingCombatCueSchema = z.object({
+  martialSportsScore: z.number().int().min(0).max(100),
+  gakgungThumbVsRecurveDrawRuleKo: z.string(),
+  fencingTargetAndBoxingStanceKo: z.string(),
+  billiardsBridgeAndClimbingKnotKo: z.string(),
+});
+export type ClaudeArcheryFencingCombatCue = z.infer<typeof ClaudeArcheryFencingCombatCueSchema>;
+
+export async function runClaudeArcheryFencingCombatStanceCueDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeArcheryFencingCombatCue>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:archery-fencing-boxing-stance-cue-lock",
+    systemPrompt: "당신은 동양 국궁(엄지 깍지+우측 화살 거치) vs 서양 양궁(3지 당김+좌측 거치), 펜싱 3종목 유효면, 복싱 스탠스, 당구 브릿지/클라이밍 매듭 감독입니다.",
+    userInstruction: "국궁과 양궁의 화살 거치 방향 차이, 펜싱 플러레/에페/사브르 장비와 복싱 오소독스/사우스포 고정, 당구 브릿지와 클라이밍 8자 매듭을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeArcheryFencingCombatCueSchema,
+    options,
+    normalize: (p) => Object.freeze({ martialSportsScore: clampWave33(p.martialSportsScore, 0, 100, 99), gakgungThumbVsRecurveDrawRuleKo: cleanSingleLineText(p.gakgungThumbVsRecurveDrawRuleKo, 180), fencingTargetAndBoxingStanceKo: cleanSingleLineText(p.fencingTargetAndBoxingStanceKo, 180), billiardsBridgeAndClimbingKnotKo: cleanSingleLineText(p.billiardsBridgeAndClimbingKnotKo, 180) }),
+    fallback: () => Object.freeze({ martialSportsScore: 99, gakgungThumbVsRecurveDrawRuleKo: "한국 전통 국궁(각궁)은 오른손 엄지 깍지 당김+활 우측면 화살 거치, 서양 양궁(리커브)은 3손가락 당김+활 좌측면 화살 거치로 동서양 궁술 혼동 차단", fencingTargetAndBoxingStanceKo: "펜싱 플러레(몸통 전도조끼)·에페(전신+원형 큰 가드)·사브르(상체+마스크) 구분 및 격투기 오소독스(왼발 앞)/사우스포(오른발 앞) 컷 간 반전 차단", billiardsBridgeAndClimbingKnotKo: "당구 왼손 오픈/클로즈 브릿지 지지점과 수구-목적구 90도 분리각 고증, 클라이밍 안전벨트 8자 매듭(Figure-8) 및 잠금 카라비너 게이트 고정" }),
+  });
+}
+
+export const ClaudeOrchestraTeaCalligraphySchema = z.object({
+  fineArtsRigorScore: z.number().int().min(0).max(100),
+  piano88KeyGuitarDrumRuleKo: z.string(),
+  teaCeremonyAndSommelierEtiquetteKo: z.string(),
+  calligraphyBrushAndPotteryWheelKo: z.string(),
+});
+export type ClaudeOrchestraTeaCalligraphy = z.infer<typeof ClaudeOrchestraTeaCalligraphySchema>;
+
+export async function runClaudeOrchestraPianoGuitarTeaCalligraphyDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeOrchestraTeaCalligraphy>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:orchestra-piano-guitar-tea-calligraphy-lock",
+    systemPrompt: "당신은 피아노 검은건반(2-3 반복)·기타 프렛/드럼 교차 팔·오케스트라 지휘·동양 다도/소믈리에·서예 쌍구법 및 물레 반시계 회전을 담당하는 예술 고증 감독입니다.",
+    userInstruction: "피아노 건반 배열과 기타/드럼 연주 자세, 동양 다도 다완 정면 회전과 와인잔 스템 파지, 서예 쌍구법 붓 파지와 도자기 물레 회전을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeOrchestraTeaCalligraphySchema,
+    options,
+    normalize: (p) => Object.freeze({ fineArtsRigorScore: clampWave33(p.fineArtsRigorScore, 0, 100, 99), piano88KeyGuitarDrumRuleKo: cleanSingleLineText(p.piano88KeyGuitarDrumRuleKo, 180), teaCeremonyAndSommelierEtiquetteKo: cleanSingleLineText(p.teaCeremonyAndSommelierEtiquetteKo, 180), calligraphyBrushAndPotteryWheelKo: cleanSingleLineText(p.calligraphyBrushAndPotteryWheelKo, 180) }),
+    fallback: () => Object.freeze({ fineArtsRigorScore: 99, piano88KeyGuitarDrumRuleKo: "피아노 검은 건반 2개-3개 주기 배열 고정·기타 3/5/7/9/12프렛 마크와 6현 유지·드럼 오른팔(하이햇)/왼팔(스네어) 교차 타격 및 지휘자 좌측 제1바이올린 배치", teaCeremonyAndSommelierEtiquetteKo: "동양 다도에서 다완(찻사발) 정면 문양을 손님 쪽으로 돌려 내는 예법과 소믈리에 와인잔 보울 온도 상승 방지를 위한 스템(기둥) 파지 고정", calligraphyBrushAndPotteryWheelKo: "서예 붓대를 지면과 수직으로 세우는 쌍구법(雙鉤法) 파지·낙관 좌하단 주인 날인 및 도자기 물레 반시계 방향 회전 중심잡기 고증" }),
+  });
+}
+
+export const ClaudeBotanicalBlacksmithAlchemySchema = z.object({
+  craftBotanyScore: z.number().int().min(0).max(100),
+  cherryBlossomNotchAndBambooHollowKo: z.string(),
+  blacksmithAnvilQuenchAndTailorKo: z.string(),
+  stainedGlassCausticAndAlchemyOrreryKo: z.string(),
+});
+export type ClaudeBotanicalBlacksmithAlchemy = z.infer<typeof ClaudeBotanicalBlacksmithAlchemySchema>;
+
+export async function runClaudeBotanicalFloraBlacksmithAlchemyDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeBotanicalBlacksmithAlchemy>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:botanical-flora-blacksmith-alchemy-director",
+    systemPrompt: "당신은 식물학 고증(벚꽃 5꽃잎 끝 홈·단풍 장상열·대나무 빈 단면)·대장간 단조/담금질·의상실 가봉·성당 스테인드글라스 투영광·연금술 증류기를 총괄하는 감독입니다.",
+    userInstruction: "벚꽃잎 끝 홈과 대나무 절단면 고증, 대장간 왼손 집게/오른손 해머 단조와 의상실 마네킹 가봉, 스테인드글라스 투영광과 연금술 기구를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeBotanicalBlacksmithAlchemySchema,
+    options,
+    normalize: (p) => Object.freeze({ craftBotanyScore: clampWave33(p.craftBotanyScore, 0, 100, 99), cherryBlossomNotchAndBambooHollowKo: cleanSingleLineText(p.cherryBlossomNotchAndBambooHollowKo, 180), blacksmithAnvilQuenchAndTailorKo: cleanSingleLineText(p.blacksmithAnvilQuenchAndTailorKo, 180), stainedGlassCausticAndAlchemyOrreryKo: cleanSingleLineText(p.stainedGlassCausticAndAlchemyOrreryKo, 180) }),
+    fallback: () => Object.freeze({ craftBotanyScore: 99, cherryBlossomNotchAndBambooHollowKo: "봄 벚꽃잎 끝 오목 홈(Apical Notch) 5꽃잎 구조와 가을 단풍잎 손바닥 갈래 구분, 무협 대나무 절단 시 마디 격벽과 속이 빈 원통 단면(Hollow Culm) 고증", blacksmithAnvilQuenchAndTailorKo: "대장간 왼손 집게(Tongs) 적열 강철 고정·오른손 해머 타격·담금질 수증기 폭발 연출 및 테일러 샵 마네킹 시침핀·목 줄자 눈금 고정", stainedGlassCausticAndAlchemyOrreryKo: "고딕 성당 스테인드글라스 납선(Lead Came) 문양과 바닥/인물 위 색수차 투영광(Caustics) 일치, 마탑 알렘빅 증류기·아스트롤라베 동심원 고증" }),
+  });
+}
+
+export const ClaudeHeavyMachinerySignboardErpSchema = z.object({
+  industrialErpScore: z.number().int().min(0).max(100),
+  excavatorForkliftPantographRuleKo: z.string(),
+  neonElectrodeAndSignboardOrthoKo: z.string(),
+  passportCurrencyAndWebtoonTaxErpKo: z.string(),
+});
+export type ClaudeHeavyMachinerySignboardErp = z.infer<typeof ClaudeHeavyMachinerySignboardErpSchema>;
+
+export async function runClaudeHeavyMachinerySignboardTaxErpDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeHeavyMachinerySignboardErp>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:heavy-machinery-signboard-tax-erp-director",
+    systemPrompt: "당신은 중장비(굴착기 유압 3절 링크/지게차 후륜조향/전철 팬터그래프)·네온사인 유리관/간판 외계어 방지·여권 MRZ/화폐·웹툰 세무(3.3% 원천징수/면세)/어시 정산 ERP 총괄 감독입니다.",
+    userInstruction: "굴착기 유압 실린더와 전철 팬터그래프 접지, 네온사인 전극과 간판 한글 외계어 차단, 여권 MRZ/돈다발 띠지 및 웹툰 세무/어시 정산 ERP를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeHeavyMachinerySignboardErpSchema,
+    options,
+    normalize: (p) => Object.freeze({ industrialErpScore: clampWave33(p.industrialErpScore, 0, 100, 99), excavatorForkliftPantographRuleKo: cleanSingleLineText(p.excavatorForkliftPantographRuleKo, 180), neonElectrodeAndSignboardOrthoKo: cleanSingleLineText(p.neonElectrodeAndSignboardOrthoKo, 180), passportCurrencyAndWebtoonTaxErpKo: cleanSingleLineText(p.passportCurrencyAndWebtoonTaxErpKo, 180) }),
+    fallback: () => Object.freeze({ industrialErpScore: 99, excavatorForkliftPantographRuleKo: "굴착기 붐-암-버킷 3절 링크 유압 피스톤 직선도·창고 지게차 후륜 조향 회전축·전철 지붕 팬터그래프 전차선 접지 및 송전탑 3상 현수선 고정", neonElectrodeAndSignboardOrthoKo: "느와르 네온사인 굴곡 유리관 양끝 흑색 전극 캡·벽면 지지대 묘사 및 거리 간판 한글·한자·가나 문자의 AI 외계어(Gibberish) 깨짐 원천 차단", passportCurrencyAndWebtoonTaxErpKo: "여권 하단 2줄 MRZ 기계판독 코드·돈다발 100장 띠지 고정 및 한국 웹툰 고료 3.3% 원천징수·ISBN/ISSN 부가세 면세·어시 컷당 정산 ERP 자동화" }),
+  });
+}

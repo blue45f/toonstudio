@@ -187,6 +187,21 @@ export const REA15_PLATFORM_IDS = [
   "fingerprint-whorl-loop-arch-powder", "luminol-chemiluminescence-blue-425nm", "autopsy-suite-stainless-scale-drain", "interrogation-two-way-mirror-cam", "polygraph-galvanic-pneumo-chart",
   "locked-room-mystery-floorplan-alibi", "red-string-conspiracy-corkboard", "cryptography-cipher-wheel-vigenere", "antique-pocket-watch-roman-iiii", "chess-endgame-algebraic-legal-board",
   "baduk-go-board-19x19-star-points", "playing-card-poker-pip-symmetry", "tarot-78-major-minor-spread-cross", "archaeological-trench-grid-trowel", "museum-conservation-uv-fluoresce",
+  // Wave 39 (20개 플랫폼 — 총 740개 플랫폼 완성: e스포츠 HUD/게이머 장비·K-POP 콘서트 인이어/응원봉/칼군무·법정/구치소·항공/우주 무중력/궁술/펜싱)
+  "esports-moba-hud-minimap-killfeed", "gamer-mechanical-keyboard-wasd-mouse", "kpop-idol-wireless-iem-headset-mic", "concert-lightstick-ocean-dmx-laser", "stage-blocking-choreo-v-formation",
+  "korean-courtroom-judge-prosecutor-seat", "prison-interview-acrylic-divider-jumpsuit", "police-handcuff-keyhole-miranda-bodycam", "airliner-cockpit-throttle-yoke-hud", "fighter-jet-hmcs-hud-afterburner-diamond",
+  "zero-gravity-hair-float-tether-thruster", "submarine-sonar-waterfall-periscope", "sailing-tallship-rigging-wind-pennant", "scuba-diving-regulator-bcd-bubble", "mountain-climbing-figure8-knot-carabiner",
+  "archery-mediterranean-thumb-draw-paradox", "fencing-foil-epee-sabre-lame-target", "boxing-mma-orthodox-southpaw-guard", "billiards-cue-bridge-ghostball-tangent", "bowling-3hole-thumb-exit-pin-deck",
+  // Wave 40 (20개 플랫폼 — 총 760개 플랫폼 완성: 피아노 88건반/기타/드럼/오케스트라·에스프레소/오마카세/소믈리에/다도·서예/도예·벚꽃/단풍/대나무·대장간/연금술)
+  "piano-88key-2-3-blackkey-pedal-rig", "acoustic-electric-guitar-6string-fret", "drum-kit-hihat-crossstick-kick-pedal", "orchestra-conductor-baton-seating-arc", "espresso-portafilter-tamp-latte-art",
+  "sushi-omakase-yanagiba-shari-nigiri", "bakery-laminated-croissant-crumb-oven", "wine-sommelier-foil-corkscrew-swirl", "tea-ceremony-chado-dadou-chasen-whisk", "calligraphy-brush-inkstone-seal-chops",
+  "oil-painting-palette-thumbhole-mahlstick", "pottery-wheel-ccw-centring-kiln-glaze", "stained-glass-came-leadline-caustic-proj", "cherry-blossom-5petal-notch-autumn-maple", "bamboo-node-internode-hollow-culm-cut",
+  "bonsai-ikebana-heaven-earth-man-asymmetry", "origami-paper-crane-valley-mountain-fold", "sewing-tailor-mannequin-tape-chalk-stitch", "blacksmith-anvil-horn-tongs-quench-steam", "alchemy-retort-alembic-astrolabe-orrery",
+  // Wave 41 (20개 플랫폼 — 총 780개 플랫폼 완성!: 굴착기/지게차/타워크레인/송전탑/전철·네온사인 유리관/간판 외계어 방지·여권 MRZ/화폐·웹툰 세무/어시 정산 ERP)
+  "construction-excavator-boom-stick-bucket", "forklift-rear-wheel-steer-pallet-mast", "tower-crane-jib-counterweight-trolley", "high-voltage-pylon-catenary-insulator", "railway-pantograph-catenary-sleeper-gauge",
+  "shipping-container-iso-corner-casting-rib", "fire-hydrant-sprinkler-extinguisher-pin", "elevator-call-button-braille-floor-arrow", "escalator-yellow-demarcation-combplate", "vending-machine-coin-slot-can-dispense",
+  "neon-sign-glass-tube-electrode-transformer", "hangul-hanja-kana-shop-signboard-ortho", "newspaper-headline-column-halftone-fold", "passport-boarding-pass-mrz-barcode-stamp", "currency-banknote-serial-hologram-bundle",
+  "hospital-wheelchair-caster-crutch-axilla", "baby-stroller-bassinet-swaddle-bottle", "agricultural-rice-paddy-sickle-terraces", "fishing-rod-parabolic-bend-spinning-reel", "webtoon-studio-tax-withholding-erp-ledger",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -225,6 +240,9 @@ export const REA660_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA680_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA700_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA720_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA740_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA760_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA780_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -617,6 +635,69 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
         ["tarot-78-major-minor-spread-cross", "Celtic Cross Tarot Spread & Upright vs Reversed Arcana Lock", "#a855f7", "#fbbf24", "오컬트 타로 카드 스프레드에서 정방향(Upright)과 역방향(Reversed) 카드의 컷 간 뒤집힘 불일치 차단 및 로마 숫자(0~XXI) 고정"],
         ["archaeological-trench-grid-trowel", "Archaeological 1x1m Trench String Grid & North-Arrow Scale Board", "#d97706", "#22c55e", "유적 발굴 웹툰의 1×1m 백색 수평 실 격자(Grid)·지층(Stratigraphy) 색상 단차·북쪽 화살표 흑백 스케일 보드 고증"],
         ["museum-conservation-uv-fluoresce", "Fine-Art Conservation UV Fluorescence Overpaint & X-Ray Layer", "#8b5cf6", "#00e5ff", "미술품 위작/복원 웹툰에서 자외선(UV) 조사 시 후대 덧칠(Overpaint) 부위만 어두운 보랏빛 형광 반응으로 드러나는 감정 연출 고정"],
+        // Wave 39 (20개 플랫폼 — 총 740개 플랫폼 완성)
+        ["esports-moba-hud-minimap-killfeed", "MOBA/FPS Esports Broadcast HUD, Minimap Fog-of-War & Killfeed Continuity", "#3b82f6", "#ef4444", "프로게이머/인방 웹툰에서 상단 킬스코어·골드 격차·미니맵 전장의 안개 시야가 전후 컷 전투 상황과 100% 일치하도록 고정"],
+        ["gamer-mechanical-keyboard-wasd-mouse", "Left-Hand WASD/QWER Keycap Angle & Right-Hand Low-DPI Mouse Grip", "#10b981", "#a855f7", "게이머 부스 컷에서 왼손 틸트 키보드(WASD/QWER) 운지와 오른손 마우스 그립 좌우 반전 작붕 원천 차단"],
+        ["kpop-idol-wireless-iem-headset-mic", "K-Pop Stage Custom IEM Earphone Cable Loop & Cheek Headset Mic Rig", "#ec4899", "#38bdf8", "아이돌 무대 씬에서 귀 뒤로 넘기는 커스텀 인이어(IEM) 투명 케이블 루프와 볼 밀착 헤드셋 마이크 방향 고정"],
+        ["concert-lightstick-ocean-dmx-laser", "Concert Arena Bluetooth Lightstick Ocean Color Sync & DMX Truss Laser", "#a855f7", "#f43f5e", "콘서트장 객석 응원봉 중앙제어 발광 색상과 상부 트러스 DMX 무빙라이트 빔 각도 원근 일관성 고정"],
+        ["stage-blocking-choreo-v-formation", "Idol Group 5/7-Member Center V-Formation & Stage Trapdoor Lift", "#f59e0b", "#ec4899", "아이돌 칼군무 대형 전환(V자 센터/대각선) 시 멤버별 위치·신장 비례 및 무대 리프트 개폐 위치 고정"],
+        ["korean-courtroom-judge-prosecutor-seat", "Korean Courtroom Bench Layout: Judge Center, Prosecutor Left, Counsel Right", "#3b82f6", "#eab308", "한국 법정 웹툰에서 판사석 정면 기준 좌측 검사석·우측 변호인석/피고인석 배치 좌우 반전 차단"],
+        ["prison-interview-acrylic-divider-jumpsuit", "Detention Center Acrylic Partition Holes & Inmate Number Badge Side", "#64748b", "#f97316", "구치소 접견실 투명 아크릴 격벽 타공 통화구와 수용복 좌측 가슴 수용번호 명찰 색상·번호 고정"],
+        ["police-handcuff-keyhole-miranda-bodycam", "Double-Lock Handcuff Keyhole Orientation & Chest Bodycam Green LED", "#2563eb", "#22c55e", "체포 씬 수갑 열쇠구멍 방향·등뒤 결박 손목 교차 해부학 및 경찰 조끼 바디캠 녹화 LED 위치 고정"],
+        ["airliner-cockpit-throttle-yoke-hud", "Commercial Airliner Captain Left-Seat Yoke & Center Pedestal Thrust Levers", "#0ea5e9", "#10b981", "여객기 조종석 기장석(좌측)·부기장석(우측) 위치와 중앙 스로틀 레버·인공수평계(ADI) 기체 기울기 일치 고정"],
+        ["fighter-jet-hmcs-hud-afterburner-diamond", "Fighter Jet Canopy HMCS Helmet Visor & Supersonic Shock-Diamond Plume", "#f97316", "#38bdf8", "전투기 도그파이트 컷에서 조종사 헬멧 시현기(HMCS) 반사광과 애프터버너 마하 다이아몬드 불꽃 마디 고증"],
+        ["zero-gravity-hair-float-tether-thruster", "Zero-G Microgravity Hair/Blood Droplet Sphere & EVA Umbilical Tether", "#6366f1", "#ec4899", "우주 무중력 선내에서 머리카락 부유 실루엣·구형으로 맺히는 눈물/피 방울 표면장력 및 우주유영 생명줄 고정"],
+        ["submarine-sonar-waterfall-periscope", "Submarine Control Room Red Rig-for-Red Lighting & Sonar Waterfall Display", "#ef4444", "#22c55e", "잠수함 야간 작전 적색 전투조명(Rig for Red)·잠망경 손잡이 각도·소나 폭포수 주파수 스펙트럼 고증"],
+        ["sailing-tallship-rigging-wind-pennant", "Age-of-Sail Square Rigging Billow Direction vs Mast Pennant Wind Vector", "#0284c7", "#fbbf24", "범선 웹툰에서 돛이 부풀어 오른 방향과 돗대 꼭대기 풍향기(Pennant) 바람 벡터 역방향 작붕 차단"],
+        ["scuba-diving-regulator-bcd-bubble", "Scuba Second-Stage Regulator Mouthpiece Right-Hose & Ascending Bubble Cone", "#06b6d4", "#3b82f6", "수중 다이빙 호흡기(Regulator) 우측 어깨 호스 진입 방향·수면으로 갈수록 팽창하는 공기방울 원뿔 물리 고증"],
+        ["mountain-climbing-figure8-knot-carabiner", "Alpinist Harness Figure-Eight Tie-In Knot & Locking Carabiner Gate", "#f59e0b", "#10b981", "클라이밍 안전벨트 8자 매듭(Figure-8) 구조와 잠금 카라비너 개폐 게이트 방향·로프 텐션 고정"],
+        ["archery-mediterranean-thumb-draw-paradox", "Korean Gakgung Thumb-Ring Draw vs Western Recurve Mediterranean Draw", "#10b981", "#eab308", "양궁 리커브(3지 당김+좌측 화살 거치)와 국궁 각궁(엄지 깍지+우측 화살 거치)의 동서양 궁술 좌우 구분 고정"],
+        ["fencing-foil-epee-sabre-lame-target", "Fencing Foil/Epee/Sabre Guard Bell Shape & Conductive Lame Target Zone", "#e2e8f0", "#3b82f6", "펜싱 플러레(몸통 전도조끼)·에페(전신)·사브르(상체+마스크) 종목별 검 코등이 형태와 유효면 장비 고증"],
+        ["boxing-mma-orthodox-southpaw-guard", "Orthodox vs Southpaw Lead-Foot Stance & 10oz Glove Thumb-Lock Tape", "#ef4444", "#fbbf24", "복싱/격투기에서 오소독스(왼발 앞)와 사우스포(오른발 앞) 스탠스가 컷마다 뒤바뀌는 작붕 차단"],
+        ["billiards-cue-bridge-ghostball-tangent", "Billiards Open/Closed Finger Bridge & 90-Degree Tangent Line Deflection", "#22c55e", "#f8fafc", "당구 왼손 브릿지 손가락 지탱 해부학과 수구-목적구 90도 분리각·초크 팁 곡률 고증"],
+        ["bowling-3hole-thumb-exit-pin-deck", "Bowling 10-Pin Triangle Deck Coordinates (1~10) & Thumb-First Release", "#a855f7", "#f97316", "볼링 10개 핀 정삼각형 번호 좌표(1번~10번) 투시 정렬과 엄지 선이탈 리프팅 회전축 고증"],
+        // Wave 40 (20개 플랫폼 — 총 760개 플랫폼 완성)
+        ["piano-88key-2-3-blackkey-pedal-rig", "88-Key Piano 2-3 Black-Key Grouping & Right-Foot Sustain Damper Pedal", "#f8fafc", "#eab308", "피아노 건반의 검은 건반 2개-3개 반복 배열 작붕 차단 및 오른발 서스테인 페달 밟기 고증"],
+        ["acoustic-electric-guitar-6string-fret", "Right-Handed Guitar 6-String Tuners, Fretboard Dot Inlays (3/5/7/9/12) & Pick", "#d97706", "#38bdf8", "기타 연주 왼손 프렛 운지(3·5·7·9·12프렛 마크)·6현 줄 수 불변·오른손 피킹 좌우 고정"],
+        ["drum-kit-hihat-crossstick-kick-pedal", "Right-Handed Drum Kit Crossed Hi-Hat/Snare Arms & Right-Foot Kick Pedal", "#f43f5e", "#fbbf24", "드럼 세트에서 오른팔(왼쪽 하이햇)과 왼팔(스네어)이 교차하는 정통 연주 자세 및 베이스 킥 페달 고정"],
+        ["orchestra-conductor-baton-seating-arc", "Symphony Conductor Right-Hand Baton Beat Pattern & 1st-Violin Left Seating", "#eab308", "#a855f7", "오케스트라 지휘자 오른손 지휘봉 박자 궤적·왼손 표현 분리 및 지휘자 좌측 제1바이올린 배치 고증"],
+        ["espresso-portafilter-tamp-latte-art", "Cafe Espresso Portafilter 9-Bar Extraction Crema & Steamed Milk Pitcher Pour", "#92400e", "#fde68a", "카페 포타필터 장착 회전 방향·더블샷 크레마 층·스팀피처 라떼아트 하트/로제타 푸어링 고증"],
+        ["sushi-omakase-yanagiba-shari-nigiri", "Omakase Yanagiba Single-Bevel Pull-Cut & Tezu Vinegar Hand Nigiri Motion", "#38bdf8", "#f43f5e", "사시미칼(야나기바) 편날 당겨 썰기와 스시 쥐기 손동작 연속성 고정"],
+        ["bakery-laminated-croissant-crumb-oven", "Croissant 27-Layer Honeycomb Crumb Cross-Section & Deck Oven Steam Vent", "#f59e0b", "#fef08a", "크루아상 단면 벌집 기공(Honeycomb Crumb) 구조와 바게트 쿠프(칼집) 팽창 방향 고증"],
+        ["wine-sommelier-foil-corkscrew-swirl", "Sommelier Waiter's Friend Corkscrew Lever, Punt Thumb-Hold & Decanter", "#991b1b", "#fbbf24", "소믈리에 나이프 2단 지렛대 코르크 발주 및 와인잔 스템(Stem)/베이스 파지 매너 고정"],
+        ["tea-ceremony-chado-dadou-chasen-whisk", "Traditional Dado/Chado Tea Bowl Front (Shomen) Rotation & Bamboo Whisk", "#15803d", "#fde047", "동양 다도에서 다완(찻사발) 정면 문양을 손님 쪽으로 돌려 내는 예법과 다선 수직 격불 고증"],
+        ["calligraphy-brush-inkstone-seal-chops", "East Asian Upright Brush Grip (Ssanggu-beop), Inkstone Pool & Red Seal", "#1e293b", "#ef4444", "서예/동양화 붓을 수직으로 세우는 쌍구법 파지·벼루 연지 방향 및 낙관 인주 날인 위치 고정"],
+        ["oil-painting-palette-thumbhole-mahlstick", "Painter's Wooden Palette Left-Thumb Hole & Mahlstick Hand-Rest Bridge", "#d97706", "#3b82f6", "화가가 왼손 엄지를 팔레트 구멍에 끼우고 붓 다발을 쥐는 해부학적 자세와 이젤 고정핀 고증"],
+        ["pottery-wheel-ccw-centring-kiln-glaze", "Pottery Wheel Counter-Clockwise Rotation, Wet Clay Centring & Celadon Craze", "#0d9488", "#e2e8f0", "물레 반시계 방향 회전에 따른 양손 중심잡기 수막 광택과 청자 빙열(균열) 패턴 고정"],
+        ["stained-glass-came-leadline-caustic-proj", "Cathedral Stained-Glass Lead Came Line Network & Colored Floor Caustics", "#8b5cf6", "#f43f5e", "성당 스테인드글라스 납선(Lead Came) 분할 구조와 바닥/인물 위에 맺히는 색수차 투영광 일치"],
+        ["cherry-blossom-5petal-notch-autumn-maple", "Botanical 5-Petal Cherry Blossom Apical Notch vs 5/7-Lobe Palmate Maple", "#f472b6", "#ef4444", "벚꽃잎 끝 갈래 홈(Apical Notch) 5꽃잎 구조와 단풍잎 장상열 잎맥의 계절 혼입 작붕 차단"],
+        ["bamboo-node-internode-hollow-culm-cut", "Bamboo Culm Node Ring Spacing & Hollow Interior Diagonal Sword-Cut", "#22c55e", "#a3e635", "무협 대나무 마디(Node) 테두리 간격과 검으로 베었을 때 속이 빈 원통 단면(Hollow Culm) 고증"],
+        ["bonsai-ikebana-heaven-earth-man-asymmetry", "Ikebana/Suhokekka Heaven-Earth-Human (Cheon-Ji-In) Asymmetric Triangle", "#10b981", "#f59e0b", "동양 꽃꽂이·분재 소품의 천지인(삼재) 부등변 삼각형 비대칭 구도와 수반 침봉 고정"],
+        ["origami-paper-crane-valley-mountain-fold", "Paper Crane (Jong-i-hak) Valley/Mountain Fold Geometry & Wing Crease", "#38bdf8", "#f472b6", "종이학·종이비행기 소품의 산접기/계곡접기 기하학적 면 분할 엣지 보존"],
+        ["sewing-tailor-mannequin-tape-chalk-stitch", "Bespoke Tailor Dress-Form Pinning, Neck Tape-Measure & Basting Stitch", "#ec4899", "#fbbf24", "의상실 가봉 마네킹 시침핀 각도·줄자 눈금 간격·재봉틀 노루발 원단 진행 방향 고정"],
+        ["blacksmith-anvil-horn-tongs-quench-steam", "Blacksmith London-Pattern Anvil Horn, Left-Hand Tongs & Oil/Water Quench", "#f97316", "#64748b", "대장간 왼손 집게 적열 강철 고정·오른손 해머 타격·모루 뿔 방향 및 담금질 수증기 폭발 고증"],
+        ["alchemy-retort-alembic-astrolabe-orrery", "Medieval Alchemy Pelican Retort Distillation & Brass Armillary Sphere", "#eab308", "#a855f7", "마탑/연금술 공방 냉각관 증류기(Alembic)·아스트롤라베(혼천의) 황동 고리 동심원 투시 고증"],
+        // Wave 41 (20개 플랫폼 — 총 780개 플랫폼 완성!)
+        ["construction-excavator-boom-stick-bucket", "Hydraulic Excavator Boom-Stick-Bucket 3-Link Kinematics & Chrome Cylinder", "#eab308", "#64748b", "굴착기(포크레인) 붐-암-버킷 3절 링크 유압 실린더 피스톤 직선 운동과 무한궤도 접지 고증"],
+        ["forklift-rear-wheel-steer-pallet-mast", "Warehouse Forklift Rear-Wheel Steering Pivot & 2-Stage Hydraulic Mast", "#f97316", "#3b82f6", "창고 지게차 후륜 조향 회전 반경·전방 마스트 체인 리프트 및 파렛트 포크 삽입 구멍 일치"],
+        ["tower-crane-jib-counterweight-trolley", "Skyscraper Tower Crane Horizontal Jib Trolley & Concrete Counterweight", "#ef4444", "#eab308", "타워크레인 마스트 트러스 격자·수평 지브 트롤리 후크 로프 수직 하강 및 카운터웨이트 균형 고증"],
+        ["high-voltage-pylon-catenary-insulator", "High-Voltage Transmission Tower Ceramic Insulator Strings & 3-Phase Sag", "#38bdf8", "#94a3b8", "배경 송전탑 자기 애자련 개수와 3상 송전선 중력 현수선(Catenary Curve) 평행 곡률 고정"],
+        ["railway-pantograph-catenary-sleeper-gauge", "Electric Train Roof Pantograph Diamond Contact & 1435mm Standard Gauge", "#0ea5e9", "#22c55e", "전철/고속철도 지붕 팬터그래프 전차선 접지 높이와 레일 침목 소실점 수렴 고정"],
+        ["shipping-container-iso-corner-casting-rib", "20ft/40ft ISO Shipping Container Corrugated Wall Ribs & Corner Locking", "#2563eb", "#f97316", "항만 ISO 컨테이너 측면 골판 간격·모서리 코너 캐스팅 구멍·우측문 선개폐 고증"],
+        ["fire-hydrant-sprinkler-extinguisher-pin", "Fire Extinguisher Safety-Pin Lever, Ceiling Sprinkler Bulb & Hydrant Hose", "#dc2626", "#22c55e", "소화기 안전핀·압력게이지 녹색 영역·천장 스프링클러 디플렉터 물줄기 원뿔 확산 고증"],
+        ["elevator-call-button-braille-floor-arrow", "Elevator Hall Lantern Up/Down Arrow, Braille Call Button & Door Gap", "#fbbf24", "#38bdf8", "엘리베이터 열림/닫힘 버튼 기호 구분과 홀 랜턴 상하 화살표 점등 일관성 고정"],
+        ["escalator-yellow-demarcation-combplate", "Escalator Step Yellow Safety Border, Comb-Plate & Moving Handrail Sync", "#eab308", "#64748b", "에스컬레이터 계단 노란 안전선·상하단 콤플레이트 수평 진입 구간 고증"],
+        ["vending-machine-coin-slot-can-dispense", "Street Vending Machine Lit Sample Display, Coin Return Lever & Flap Door", "#ef4444", "#38bdf8", "거리 자판기 상단 음료 진열대 조명·동전 투입구/반환 레버 우측 배치 및 하단 플랩 도어 고정"],
+        ["neon-sign-glass-tube-electrode-transformer", "Cyberpunk/Noir Bent Glass Neon Tube Electrode Caps & Wall Stand-Offs", "#ec4899", "#00e5ff", "네온사인이 구부러진 유리관 이어짐·양끝 흑색 전극 캡·벽면 지지대로 묘사되도록 고정"],
+        ["hangul-hanja-kana-shop-signboard-ortho", "East Asian Street Signboard Orthographic Perspective & Pseudo-Character Guard", "#10b981", "#fbbf24", "배경 간판의 한글·한자·가나 문자가 외계어(Gibberish)로 깨지는 현상을 차단하고 외벽 소실점과 정렬"],
+        ["newspaper-headline-column-halftone-fold", "Print Newspaper 5-Column Grid, Masthead Date & Center Horizontal Fold", "#94a3b8", "#f8fafc", "신문 소품 제호·다단 칼럼 정렬·흑백 망점 사진·가로 중앙 접힘선 왜곡 고증"],
+        ["passport-boarding-pass-mrz-barcode-stamp", "ICAO Passport MRZ 2-Line OCR Font & Airline Boarding Pass Tear-Stub", "#15803d", "#3b82f6", "여권 하단 2줄 기계판독영역(MRZ)과 탑승권 게이트/좌석 번호·출입국 도장 일관성 고정"],
+        ["currency-banknote-serial-hologram-bundle", "Banknote Stack 100-Note Paper Strap, Hologram Strip & Corner Denomination", "#22c55e", "#eab308", "돈다발 소품 100장 띠지 결속·은색 홀로그램 은선·모서리 액면가 숫자의 좌우 반전 차단"],
+        ["hospital-wheelchair-caster-crutch-axilla", "Wheelchair Large Rear Push-Rim, Front Swivel Caster & Forearm/Axilla Crutch", "#0ea5e9", "#e2e8f0", "휠체어 후방 대구경 핸드림 바퀴·전방 소형 캐스터·발판 구조 및 목발 겨드랑이 여유 간격 고증"],
+        ["baby-stroller-bassinet-swaddle-bottle", "Parenting Webtoon Infant Head-to-Body Ratio (1:4), Swaddle Wrap & Bottle Tilt", "#f472b6", "#fde047", "육아물 영유아 등신비(4등신)·속싸개 여밈 및 젖병 수유 시 공기 유입 차단 45도 기울기 고증"],
+        ["agricultural-rice-paddy-sickle-terraces", "Traditional Rice Paddy Bund Geometry, Crescent Sickle & Threshing Sheaf", "#84cc16", "#d97706", "사극/전원 논두렁 구획·벼 이삭 숙임·오른손 낫 날 곡률 및 볏단 묶음 비례 고정"],
+        ["fishing-rod-parabolic-bend-spinning-reel", "Fishing Rod Parabolic Action Curve, Underslung Spinning Reel & Float", "#06b6d4", "#f97316", "낚시 씬 스피닝 릴 하단 장착 구조(베이트 릴은 상단)와 입질 시 초릿대 포물선 휨 곡선 고증"],
+        ["webtoon-studio-tax-withholding-erp-ledger", "Korean Webtoon Creator 3.3% Business Withholding, VAT-Exempt & Assistant ERP", "#6366f1", "#10b981", "한국 웹툰 작가 고료 3.3% 원천징수·ISBN/ISSN 부가가치세 면세 요건·어시스턴트 정산 ERP 자동화"],
       ] as const
     ).map(([id, nameKo, accentPrimaryHex, accentSecondaryHex, coreWorkflowKo], idx) => [
       id,
@@ -678,3 +759,6 @@ export const REA660_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA680_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA700_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA720_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA740_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA760_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA780_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
