@@ -213,8 +213,9 @@ export function headSurfacePoint(dir: Vec3): Vec3 {
   let f = 1;
   // 뒤통수 아래(후두부 → 목) 수축
   if (y < 0 && z < 0) f *= 1 - 0.5 * Math.pow(-y, 1.5) * -z;
-  // 턱 좁힘(옆·뒤), 턱 끝은 유지
-  f *= 1 - 0.2 * smooth01(-y, 0.35, 1) * (1 - 0.85 * Math.max(z, 0));
+  // 턱 좁힘(옆·뒤 + SHAPER 얼굴형1..6 V라인 하악 수축), 턱 끝 중앙은 유지
+  const frontJaw = Math.max(z, 0) * (1 - 0.55 * smooth01(Math.abs(x), 0.18, 0.7));
+  f *= 1 - 0.22 * smooth01(-y, 0.35, 1) * (1 - 0.85 * frontJaw);
   // 얼굴 평탄화
   f *= 1 - 0.05 * Math.max(z, 0) ** 2;
   // 눈 소켓 함몰
@@ -229,9 +230,11 @@ export function headSurfacePoint(dir: Vec3): Vec3 {
   // 입술
   f *= 1 + 0.025 * gaussian(angleBetween(dir, MOUTH_DIR), 0.15);
   // 턱 끝
-  f *= 1 + 0.04 * gaussian(angleBetween(dir, CHIN_DIR), 0.25);
+  f *= 1 + 0.045 * gaussian(angleBetween(dir, CHIN_DIR), 0.24);
   const r = base * f;
-  return [x * r, y * r, z * r];
+  // SHAPER BuiltInData (얼굴형1..6.preset) 하악관절→턱끝 V라인 측면 폭 테이퍼링
+  const vLineTaper = 1 - 0.24 * smooth01(-y, 0.34, 0.92) * smooth01(Math.abs(x), 0.14, 0.68);
+  return [x * r * vLineTaper, y * r, z * r];
 }
 
 /** 위도 링(경도 c=0 뒤, c=n/2 앞), x는 c ↔ n−c가 정확히 부호만 다르다. */

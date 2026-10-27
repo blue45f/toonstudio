@@ -21,6 +21,43 @@ import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js
 /** 카메라별 팬 범위(프레이밍이 정한다). 없으면 팬을 묶지 않는다. */
 const panBoundsByCamera = new WeakMap<ArcRotateCamera, WorldBounds>();
 
+export type ShaperCameraStyle = "unity" | "blender" | "max";
+
+const cameraStyleByCanvas = new WeakMap<HTMLCanvasElement, ShaperCameraStyle>();
+const cameraByCanvas = new WeakMap<HTMLCanvasElement, ArcRotateCamera>();
+
+/** 캔버스에 연결된 SHAPER 카메라 조작 프리셋(`unity`·`blender`·`max`)을 설정한다. */
+export function setCanvasCameraInputStyle(canvas: HTMLCanvasElement, style: ShaperCameraStyle): void {
+  cameraStyleByCanvas.set(canvas, style);
+}
+
+/** 캔버스에 설정된 SHAPER 카메라 조작 프리셋을 읽는다(기본 `"unity"`). */
+export function getCanvasCameraInputStyle(canvas: HTMLCanvasElement): ShaperCameraStyle {
+  return cameraStyleByCanvas.get(canvas) ?? "unity";
+}
+
+/**
+ * SHAPER 뷰포트 직교 시점 단축키(`F`: 정면, `L`: 좌측면, `T`: 상단)를 캔버스에 연결된 카메라 구면각(`alpha`, `beta`)에 즉시 반영한다.
+ */
+export function applyCanvasShaperViewPreset(canvas: HTMLCanvasElement, view: "front" | "left" | "top"): boolean {
+  const camera = cameraByCanvas.get(canvas);
+  if (!camera) return false;
+  if (view === "front") {
+    camera.alpha = Math.PI / 2;
+    camera.beta = Math.PI / 2;
+    return true;
+  }
+  if (view === "left") {
+    camera.alpha = Math.PI;
+    camera.beta = Math.PI / 2;
+    return true;
+  }
+  const lowerBeta = camera.lowerBetaLimit ?? 0.05;
+  camera.alpha = Math.PI / 2;
+  camera.beta = Math.max(lowerBeta, 0.08);
+  return true;
+}
+
 /** 카메라의 팬 범위를 정한다(scene-builder `applyFraming`이 캐릭터 경계 상자로 부른다). */
 export function setPanBounds(camera: ArcRotateCamera, bounds: WorldBounds): void {
   panBoundsByCamera.set(camera, bounds);
@@ -66,10 +103,32 @@ interface ActivePointer {
   readonly touch: boolean;
 }
 
+type MouseDragMode = "pan" | "orbit" | "zoom";
+
+function resolveMouseDragMode(event: PointerEvent, style: ShaperCameraStyle): MouseDragMode | null {
+  if (style === "blender" && event.button === 1) {
+    if (event.ctrlKey) return "zoom";
+    if (event.shiftKey) return "pan";
+    return "orbit";
+  }
+  if (style === "max" && event.button === 1) {
+    if (event.ctrlKey && event.altKey) return "zoom";
+    if (event.altKey) return "orbit";
+    return "pan";
+  }
+  // Unity 스타일 및 기본 마우스 바인딩
+  if (event.button === 1) return "pan";
+  if (event.button === 2 && event.altKey) return "zoom";
+  if (event.button === 0 && event.altKey) return "orbit";
+  if (event.button === 2 || (event.button === 0 && event.ctrlKey)) return "pan";
+  return null;
+}
+
 /**
  * 캔버스에 카메라 입력을 붙인다. 반환 함수로 해제한다. `resetView`는 현재 프레이밍을 다시 적용한다(엔진 `setCamera(현재 프레이밍)`).
  */
 export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanvasElement, resetView: () => void): () => void {
+  cameraByCanvas.set(canvas, camera);
   camera.attachControl(canvas, true);
   camera.inputs.removeByType("ArcRotateCameraMouseWheelInput");
   camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
@@ -77,15 +136,18 @@ export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanv
   camera.useNaturalPinchZoom = true;
 
   const pointers = new Map<number, ActivePointer>();
-  /** 마우스 팬 중인 포인터(우클릭·Ctrl+좌클릭) */
-  let mousePan: number | null = null;
+  /** 마우스 드래그 중인 포인터와 동작 모드(팬·궤도·줌) */
+  let mouseDrag: { readonly pointerId: number; readonly mode: MouseDragMode } | null = null;
 
   const onPointerDown = (event: PointerEvent): void => {
     const touch = event.pointerType === "touch";
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, touch });
-    if (!touch && (event.button === 2 || (event.button === 0 && event.ctrlKey))) {
-      mousePan = event.pointerId;
-      if (typeof canvas.setPointerCapture === "function") canvas.setPointerCapture(event.pointerId);
+    if (!touch) {
+      const mode = resolveMouseDragMode(event, getCanvasCameraInputStyle(canvas));
+      if (mode) {
+        mouseDrag = { pointerId: event.pointerId, mode };
+        if (typeof canvas.setPointerCapture === "function") canvas.setPointerCapture(event.pointerId);
+      }
     }
   };
   const onPointerMove = (event: PointerEvent): void => {
@@ -96,8 +158,17 @@ export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanv
     active.x = event.clientX;
     active.y = event.clientY;
     const height = canvas.clientHeight;
-    if (mousePan === event.pointerId) {
-      panCameraByPixels(camera, dx, dy, height);
+    if (mouseDrag && mouseDrag.pointerId === event.pointerId) {
+      if (mouseDrag.mode === "pan") {
+        panCameraByPixels(camera, dx, dy, height);
+      } else if (mouseDrag.mode === "orbit") {
+        camera.alpha -= dx * 0.007;
+        const lowerBeta = camera.lowerBetaLimit ?? 0.01;
+        const upperBeta = camera.upperBetaLimit ?? Math.PI - 0.01;
+        camera.beta = Math.min(upperBeta, Math.max(lowerBeta, camera.beta - dy * 0.007));
+      } else {
+        zoomCameraByWheel(camera, dy * 3, 0);
+      }
       return;
     }
     // 두 손가락 터치: 무게중심 이동량(= 움직인 손가락 이동의 절반)만큼 팬한다. 거리 변화(핀치 줌)는 Babylon이 처리한다.
@@ -106,8 +177,8 @@ export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanv
   };
   const onPointerEnd = (event: PointerEvent): void => {
     pointers.delete(event.pointerId);
-    if (mousePan === event.pointerId) {
-      mousePan = null;
+    if (mouseDrag && mouseDrag.pointerId === event.pointerId) {
+      mouseDrag = null;
       if (typeof canvas.hasPointerCapture === "function" && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     }
   };

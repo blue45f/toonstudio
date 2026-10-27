@@ -88,6 +88,7 @@ describe("PackagePanel", () => {
     expect(screen.getByRole("status").textContent).toMatch(/절차적 휴머노이드/u);
     await screen.findByText("Avatar Orion · Authored Toon");
     expect(screen.getByText("ToonStudio Reference Character")).toBeTruthy();
+    expect(screen.getByText("Tripo Studio H3.1 · SHAPER Rigged Webtoon")).toBeTruthy();
     expect(screen.getByText("주 캐릭터")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
     await waitFor(() => expect(screen.getByRole("table")).toBeTruthy(), { timeout: 15000 });

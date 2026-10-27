@@ -52,14 +52,19 @@ async function loadIndexEntries(): Promise<readonly AuthoredIndexEntry[]> {
 }
 
 describe("authored/real-packages (public/assets/characters)", () => {
-  it("index.json은 Orion(primary)·reference 두 항목을 낸다", async () => {
+  it("index.json은 Orion(primary)·reference·tripo-h31-rigged-webtoon 세 항목을 낸다", async () => {
     const entries = await loadIndexEntries();
-    expect(entries.map((entry) => entry.characterId)).toEqual(["avatar-orion-authored", "reference-character"]);
+    expect(entries.map((entry) => entry.characterId)).toEqual([
+      "avatar-orion-authored",
+      "reference-character",
+      "tripo-h31-rigged-webtoon",
+    ]);
     expect(entries[0]?.primary).toBe(true);
     expect(entries[0]?.manifestFormat).toBe("authored-character");
     expect(entries[0]?.licenseNote).toBe("CC0-1.0");
     expect(entries[0]?.summary.hairLodTriangles).toEqual([3752, 1788, 960]);
     expect(entries[1]?.summary.skeleton).toBe(false);
+    expect(entries[2]?.summary.skeleton).toBe(true);
   });
 
   it("Orion: GLB 실측 SHA-256 = manifest·index 값, 플랜·매핑·능력 판정이 선언과 ears·accessory만 다르다", async () => {
@@ -150,5 +155,24 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(parsed.nodeNames.length).toBeGreaterThanOrEqual(67);
     const reference = parseVrmFromGlb(new Uint8Array(await readFile(`${ASSET_ROOT}reference-character/reference-character.glb`)));
     expect(reference.ok && reference.nodeNames).toContain("TS_ReferenceHead");
+  });
+
+  it("tripo-h31-rigged-webtoon: Tripo Studio H3.1 리깅 GLB(65개 Mixamo 본)가 필수 15본·손가락 30본을 모두 매핑하고 규칙·선언이 완전히 일치한다", async () => {
+    const entries = await loadIndexEntries();
+    const tripo = entries.find((entry) => entry.characterId === "tripo-h31-rigged-webtoon");
+    if (!tripo) throw new Error("tripo-h31-rigged-webtoon");
+    const loaded = await loadAuthoredPackageFlow(fsPort(), tripo, { sha256, now: 1 });
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const { plan, detail } = loaded;
+    expect(detail.observedSha256).toBe("6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d");
+    expect(plan.glbBytes).toBe(1_726_300);
+    expect(detail.judgement.mappings.bones.required.missing).toEqual([]);
+    expect(detail.judgement.mappings.bones.fingers.missing).toEqual([]);
+    expect(plan.capabilities.pose.status).toBe("available");
+    expect(plan.capabilities["hand-pose"].status).toBe("available");
+    expect(plan.capabilities.body.status).toBe("partial");
+    const comparison = compareCapabilities(detail.judgement.ruleOnly, plan.capabilities);
+    expect(comparison.divergent).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 {
-  "schema_version": "3.0.0",
+  "schema_version": "4.0.0",
   "generated_at": "2026-10-27",
-  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 12대 서비스 REA 역공학 증거 원장",
+  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 16대 서비스 REA 역공학 증거 원장",
   "toolchain": {
     "mcp_server": "rea",
     "provider_browser": "rea-playwright-browser-scenario",
@@ -14,11 +14,11 @@
     ],
     "native_binary_policy": "ghidra_only_no_hopper",
     "session_bundle": {
-      "records": 173,
+      "records": 209,
       "unknowns": 36,
-      "total_visited_ast_nodes": 1773515,
-      "total_findings": 10023,
-      "total_exported_scripts": 505
+      "total_visited_ast_nodes": 2356711,
+      "total_findings": 15120,
+      "total_exported_scripts": 611
     }
   },
   "targets": [
@@ -525,6 +525,134 @@
           "_recommend.evxQjwjx.chunk.js"
         ]
       }
+    },
+    {
+      "id": "trello",
+      "name": "Trello",
+      "url": "https://trello.com/",
+      "domain_role": "카드 체크리스트 및 Butler 공정 이동 자동화 규칙(Automation Rules), 리스트 간 단계 전이 트리거",
+      "evidence": {
+        "capture_evidence_id": "ev_a6290a6f2604e641fd3c0d33db6a20ab5ae56ca90d8233ededda04bff5c4b40e",
+        "scenario_sha256": "41c8cdb44033a2778d68b7d4e497991b2fab3b195ca2d3a4c67a1ba548ecf3fb",
+        "export_evidence_id": "ev_65261eac5dcb248239a1aa6a4361e20bc9f02348ef6e68b6db7b36ee0b742439",
+        "manifest_sha256": "e6eb747309ab4acee9cf30856ddef555832ac1a8a4c00414a97ca3e0daacfc8c",
+        "ast_parent_evidence_id": "ev_d50e8168ddd9ff202f0a9c84a6f6680422466e1e8214efbb5ba957f3914e70a8",
+        "ast_summary_evidence_id": "ev_3aaa6e525b67b1208fd87971a1f3d1a070a2108d15f6969d18080f257ed64fcf",
+        "root_artifact_sha256": "8cabad7a61fb57445186c2401eed4d189b5b1535c2b646b1d84c7ace4badbbc2",
+        "route_evidence_id": "ev_504fd8f578455f8ebcc1d25c6d6c19112264ca7d237daefe6eda1ba3c9c6d949"
+      },
+      "metrics": {
+        "total_scripts_observed": 23,
+        "exported_scripts": 14,
+        "text_bytes_read": 295711,
+        "visited_ast_nodes": 77599,
+        "findings": 515,
+        "semantic_relations": {
+          "data_flow": 75534,
+          "object_flow": 5884,
+          "closure": 4941,
+          "call_flow": 2919,
+          "promise_ownership": 53,
+          "boundary": 40
+        }
+      }
+    },
+    {
+      "id": "monday",
+      "name": "Monday.com",
+      "url": "https://monday.com/",
+      "domain_role": "교차 보드 미러 컬럼(Mirror Column) 동기화, 공정별 상태 배터리 게이지(Battery Progress Bar) 및 스튜디오 운영 대시보드",
+      "evidence": {
+        "capture_evidence_id": "ev_8605ebe0e3dc0a041104ecd0ef97445eca10e8fe3b6fe22b387e303900b8bf96",
+        "scenario_sha256": "8ccdb4b2efc5542596c5a910789b044ecfb1c0fae8596eb5b73e10cfc568710d",
+        "export_evidence_id": "ev_dd74a7418cf5e5d232d65604ac864ec80bc8f9cff81cbfa7147d3dc46aed23b8",
+        "manifest_sha256": "b716ae7406d8346a372fe1e37a10efc0b2185979e2bdf754be2a1fe28b8f6dca",
+        "ast_parent_evidence_id": "ev_9c5f9d73e58bda16c4084541a06eca32becc3d432cbed7055d7c986b1eb833ed",
+        "ast_summary_evidence_id": "ev_095c1d4126a37583d8b7c3d2f5f026e21af18d5d96e862473125c9f16f5349bb",
+        "root_artifact_sha256": "1b33774e1b878ce164e7f0b78c5e3338392c144c4f24f34bbfc2243f262dc6e4",
+        "route_evidence_id": "ev_3218613dbcec8ac3c9ae919935b0805e1f98497928cc9804cfc50ac2f402dc74"
+      },
+      "metrics": {
+        "total_scripts_observed": 37,
+        "exported_scripts": 12,
+        "text_bytes_read": 137875,
+        "visited_ast_nodes": 44260,
+        "findings": 133,
+        "semantic_relations": {
+          "data_flow": 32363,
+          "closure": 3378,
+          "call_flow": 3144,
+          "object_flow": 2835,
+          "promise_ownership": 66,
+          "boundary": 45
+        }
+      }
+    },
+    {
+      "id": "loom",
+      "name": "Loom",
+      "url": "https://www.loom.com/",
+      "domain_role": "비동기 화면·음성 워크스루 녹화, 타임스탬프 피드백 핀, 자동 트랜스크립트 챕터 및 액션 아이템 추출",
+      "evidence": {
+        "capture_evidence_id": "ev_036c1d2eda88b63422a55b26ca4893a45cc8ec3fa4d1792098fc339064f158b7",
+        "scenario_sha256": "798a8776e253b325e43d7aab781082862383564f62be6a92f3a5e6639d89ed4e",
+        "export_evidence_id": "ev_c5089c8c295e17e604c4d41fd0e0f8629cfbff224a786a1a78b46954168ca892",
+        "manifest_sha256": "7e45f49bd5f6073acd61294123e83760f88a3db29f722a08500152a2eb964c62",
+        "ast_parent_evidence_id": "ev_76aad1f37a573e6161564d04c766195b619e984603b278794e230dbdd2d04fd5",
+        "ast_summary_evidence_id": "ev_f62d89dbaa9af0df9d85b670198bb412f0bdcb1c3d4102d32411151f57c974fb",
+        "root_artifact_sha256": "10512be80418e493b0894e186b589abcfea93c0615b630a0d22ef6541581e1b6",
+        "route_evidence_id": "ev_2b802492a23fc50b4ebffa7e0dc660943bc561dd25d518876f564feca8178443"
+      },
+      "metrics": {
+        "total_scripts_observed": 61,
+        "exported_scripts": 28,
+        "text_bytes_read": 554642,
+        "visited_ast_nodes": 136267,
+        "findings": 1332,
+        "semantic_relations": {
+          "data_flow": 84804,
+          "object_flow": 6638,
+          "closure": 4882,
+          "call_flow": 2639,
+          "promise_ownership": 103
+        },
+        "key_routes": [
+          "/connect/[slug]",
+          "/connect/enterprise",
+          "/pricing"
+        ]
+      }
+    },
+    {
+      "id": "postype",
+      "name": "포스타입 (Postype)",
+      "url": "https://www.postype.com/",
+      "domain_role": "웹툰·웹소설 공동 창작 시리즈 발행, 유료 에피소드·후원·멤버십 수익 배분(Revenue Share) 정산 및 크리에이터 파트너십",
+      "evidence": {
+        "capture_evidence_id": "ev_43a1ce3a5b2166f16af3903e8bba7559aa6da4cd1c86635ad006dcf5893e0c54",
+        "scenario_sha256": "7b5a93cdf76eba97c5cb1b4711faa8d936ed02cc1576aa0275bf779b3d97e1da",
+        "export_evidence_id": "ev_716719f952e332fb039c8c07be1bff072fb71d533d042d078acbc581d9623cd7",
+        "manifest_sha256": "7ad01d7cbe7ab5d27f60c07ab8a35994b8afe491f421e091c116941bbbf7cf0f",
+        "ast_parent_evidence_id": "ev_f493c645df108c0a6355e444ec9c48e43ce26b292d77878fed5f4628c746f4c7",
+        "ast_summary_evidence_id": "ev_1658697c3873a26ba941c5c1cd68ff985aa5a3e181633a377f953121af72cc87",
+        "root_artifact_sha256": "8030fa9b860e17a696f3497e30669bf4ab12102b41304538ccdd2be7fa3d25e8",
+        "route_evidence_id": "ev_92d9601e8ccef567e7a5b4a0624dec985c7c575b7d2fa7750dfb14beaff28bd9"
+      },
+      "metrics": {
+        "total_scripts_observed": 82,
+        "exported_scripts": 52,
+        "text_bytes_read": 1253546,
+        "visited_ast_nodes": 325070,
+        "findings": 3117,
+        "semantic_relations": {
+          "data_flow": 68242,
+          "object_flow": 6734,
+          "closure": 5346,
+          "call_flow": 1695,
+          "promise_ownership": 60,
+          "boundary": 46
+        }
+      }
     }
   ],
   "internalized_modules": [
@@ -587,6 +715,18 @@
       "model": "apps/web/src/domains/collaboration/collaboration-multi-homing-brief-model.ts",
       "component": "apps/web/src/domains/collaboration/CollaborationMultiHomingBriefSuite.tsx",
       "mounted_surface": "apps/web/src/domains/collaboration/CollaborationPostPage.tsx"
+    },
+    {
+      "id": "production-async-walkthrough-butler",
+      "model": "apps/web/src/domains/creator/production-hub/production-async-walkthrough-butler-model.ts",
+      "component": "apps/web/src/domains/creator/production-hub/ProductionAsyncWalkthroughButlerSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionReviewSurface.tsx"
+    },
+    {
+      "id": "collaboration-coauthor-revenue-mirror",
+      "model": "apps/web/src/domains/collaboration/collaboration-coauthor-revenue-mirror-model.ts",
+      "component": "apps/web/src/domains/collaboration/CollaborationCoauthorRevenueMirrorSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/collaboration/CollaborationEditorPage.tsx"
     }
   ]
 }

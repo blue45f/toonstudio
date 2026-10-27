@@ -73,4 +73,10 @@ describe("buildHeadCage", () => {
     expect(big.mesh.faces).toEqual(head.mesh.faces);
     expect(big.mesh.positions.length).toBe(head.mesh.positions.length);
   });
+
+  it("SHAPER 얼굴형 V라인: 하악 측면 폭이 광대/볼 높이에 비해 매끄럽게 좁아진다", () => {
+    const cheekSide = headSurfacePoint(v3Normalize([0.65, -0.05, 0.55]));
+    const lowerJawSide = headSurfacePoint(v3Normalize([0.65, -0.72, 0.55]));
+    expect(lowerJawSide[0]).toBeLessThan(cheekSide[0] * 0.72);
+  });
 });
