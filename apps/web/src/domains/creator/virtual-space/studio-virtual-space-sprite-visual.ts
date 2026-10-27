@@ -36,6 +36,7 @@ import { studioPoseSettleScaleY } from "./studio-virtual-space-sprite-smoothing"
 import { STUDIO_ACTOR_EXPRESSION_PRESENTATION } from "./studio-virtual-space-scene-art-runtime";
 import type { StudioFrameRegistry } from "./studio-virtual-space-frame-registration";
 import { studioEffectiveGaitStride } from "./studio-virtual-space-locomotion-presentation";
+import { resolveNanoBanana2dActorTexture } from "./studio-virtual-space-nano-banana-2d-runtime";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import type {
@@ -133,6 +134,29 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
         .setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
     }
     sprite.setData("faceTextureUsed", false);
+    const nanoBanana = resolveNanoBanana2dActorTexture(scene.textures, {
+      owner: owner || "",
+      skinKey: skin.key,
+      facing: nextFacing,
+      state: nextState,
+    });
+    if (nanoBanana) {
+      if (sprite.anims.isPlaying) sprite.stop();
+      sprite.setData("actionKey", null).setData("poseTextureUsed", false);
+      if (sprite.texture.key !== nanoBanana.textureKey) {
+        sprite.setTexture(nanoBanana.textureKey);
+      }
+      if (typeof sprite.setFlipX === "function") {
+        sprite.setFlipX(nanoBanana.flipX);
+      }
+      sprite.setData("framePresentation", nanoBanana.presentation).setData("nanoBanana2dActive", true);
+      updateDisplaySize(sprite);
+      return;
+    }
+    if (sprite.getData("nanoBanana2dActive") && typeof sprite.setFlipX === "function") {
+      sprite.setFlipX(false);
+      sprite.setData("nanoBanana2dActive", false);
+    }
     const action = studioCharacterActionClip(skin, nextFacing, nextState);
     const actionKey = action ? studioCharacterActionTextureKey(skin, nextFacing, nextState) : null;
     const actionSource = actionKey && scene.textures.exists(actionKey) ? scene.textures.get(actionKey).source[0] : undefined;

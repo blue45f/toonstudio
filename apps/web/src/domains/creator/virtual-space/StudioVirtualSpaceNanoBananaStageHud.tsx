@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Compass, Layers, Sparkles, Wand2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Compass, Layers, MapPin, Sparkles, UserCheck, Wand2, X } from "lucide-react";
 
 import { StudioVirtualOfficeNextGenEnginePanel } from "./StudioVirtualOfficeNextGenEnginePanel";
 import { StudioVirtualOfficeSpatialCanvasHud } from "./StudioVirtualOfficeSpatialCanvasHud";
@@ -15,6 +15,16 @@ import {
   type NanoBananaV13EmoteId,
 } from "./studio-virtual-office-nextgen-engine-data";
 import { NANO_BANANA_V14_WALK_SPRITES } from "./studio-virtual-office-nextgen-engine-model";
+import {
+  requestStudioActiveBridgeEmote,
+  requestStudioActiveBridgeTeleport,
+} from "./studio-virtual-space-engine-bridge";
+import {
+  NANO_BANANA_2D_WORKSTATIONS,
+  triggerNanoBanana2dEmote,
+  triggerNanoBanana2dWalkPreview,
+  updateNanoBanana2dRuntimeState,
+} from "./studio-virtual-space-nano-banana-2d-runtime";
 import { writeStudioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
 
 const NANO_BANANA_TO_2D_SPACE_THEME: Readonly<Record<NanoBananaStudioThemeId, StudioSpaceThemeKey>> = {
@@ -150,6 +160,10 @@ function readNanoBananaPersistedSelection(): NanoBananaPersistedSelection {
 function writeNanoBananaPersistedSelection(
   next: NanoBananaPersistedSelection,
 ): void {
+  updateNanoBanana2dRuntimeState({
+    themeId: next.themeId,
+    personaId: next.personaId,
+  });
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
@@ -207,18 +221,18 @@ export function StudioVirtualSpaceNanoBananaLobbyShowcase() {
   return (
     <section
       data-testid="lobby-nano-banana-showcase"
-      aria-label="나노 바나나 2.5D 스튜디오 테마 및 크리에이터 스프라이트 쇼케이스"
+      aria-label="스마트 AI 2.5D 스튜디오 테마 및 크리에이터 스프라이트 쇼케이스"
       className="mt-4 space-y-3 rounded-2xl border border-accent bg-card/90 p-3.5 text-fg shadow-sm backdrop-blur-md"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Wand2 className="h-4 w-4 text-accent" />
           <strong className="text-xs font-bold text-fg">
-            나노 바나나 2.5D 스튜디오 아틀리에 (12대 테마 · 8인 캐스트 · 4방향 보행 · 4룸 모듈)
+            스마트 AI 2.5D 스튜디오 아틀리에 (12대 테마 · 8인 캐스트 · 4방향 보행 · 4룸 모듈)
           </strong>
         </div>
         <span className="rounded-full border border-accent bg-accent-soft px-2 py-0.5 text-[10px] font-semibold text-accent">
-          v10~v14 신규 적용됨
+          ✦ 스마트 AI 보조 연동
         </span>
       </div>
 
@@ -382,6 +396,17 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
     readNanoBananaPersistedSelection,
   );
   const [workbenchOpen, setWorkbenchOpen] = useState(false);
+  const [activeWorkstationId, setActiveWorkstationId] = useState<string>(
+    NANO_BANANA_2D_WORKSTATIONS[0]?.id ?? "nb-plaza-cintiq-pod",
+  );
+
+  useEffect(() => {
+    updateNanoBanana2dRuntimeState({
+      enabled: true,
+      themeId: selection.themeId,
+      personaId: selection.personaId,
+    });
+  }, [selection.personaId, selection.themeId]);
 
   const activeTheme =
     NANO_BANANA_V11_STUDIO_THEMES.find((t) => t.id === selection.themeId) ??
@@ -393,6 +418,9 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
     NANO_BANANA_V14_DIRECTIONAL_WALK_SPRITES.find(
       (w) => w.direction === selection.walkDirection,
     ) ?? NANO_BANANA_V14_DIRECTIONAL_WALK_SPRITES[0];
+  const activeEmote =
+    NANO_BANANA_V13_CREATOR_EMOTES.find((e) => e.id === selection.emoteId) ??
+    NANO_BANANA_V13_CREATOR_EMOTES[0];
   const activeProp = NANO_BANANA_V13_STUDIO_PROPS[0];
 
   const cycleTheme = () => {
@@ -408,6 +436,34 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
     writeNanoBananaPersistedSelection(next);
   };
 
+  const cyclePersona = () => {
+    const idx = NANO_BANANA_V11_CREATOR_PERSONAS.findIndex(
+      (p) => p.id === selection.personaId,
+    );
+    const nextPersona =
+      NANO_BANANA_V11_CREATOR_PERSONAS[
+        (idx + 1) % NANO_BANANA_V11_CREATOR_PERSONAS.length
+      ] ?? NANO_BANANA_V11_CREATOR_PERSONAS[0];
+    const next = { ...selection, personaId: nextPersona.id };
+    setSelection(next);
+    writeNanoBananaPersistedSelection(next);
+  };
+
+  const cycleEmote = () => {
+    const idx = NANO_BANANA_V13_CREATOR_EMOTES.findIndex(
+      (e) => e.id === selection.emoteId,
+    );
+    const nextEmote =
+      NANO_BANANA_V13_CREATOR_EMOTES[
+        (idx + 1) % NANO_BANANA_V13_CREATOR_EMOTES.length
+      ] ?? NANO_BANANA_V13_CREATOR_EMOTES[0];
+    const next = { ...selection, emoteId: nextEmote.id };
+    setSelection(next);
+    writeNanoBananaPersistedSelection(next);
+    triggerNanoBanana2dEmote(nextEmote.id, 4_000);
+    requestStudioActiveBridgeEmote("sparkles");
+  };
+
   const cycleWalkDirection = () => {
     const dirs: readonly NanoBananaWalkDirection[] = ["down", "left", "right", "up"];
     const idx = dirs.indexOf(selection.walkDirection);
@@ -415,6 +471,14 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
     const next = { ...selection, walkDirection: nextDir };
     setSelection(next);
     writeNanoBananaPersistedSelection(next);
+    triggerNanoBanana2dWalkPreview(nextDir, 2_800);
+  };
+
+  const teleportToWorkstation = (stationId: string) => {
+    const station = NANO_BANANA_2D_WORKSTATIONS.find((s) => s.id === stationId);
+    if (!station) return;
+    setActiveWorkstationId(station.id);
+    requestStudioActiveBridgeTeleport(station.spawnPoint);
   };
 
   return (
@@ -422,61 +486,103 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
       <div
         data-testid="main-stage-nano-banana-hud"
         data-space-interactive="true"
-        className="pointer-events-auto absolute left-4 top-16 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
+        className="pointer-events-auto absolute left-4 top-[4.25rem] z-10 flex max-w-[calc(100vw-2rem)] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md md:max-w-[calc(100vw-20.5rem)]"
       >
-        <img
-          src={activeTheme.assetUrl}
-          alt={activeTheme.titleKo}
-          className="h-9 w-12 rounded-lg border border-line object-cover"
-        />
-        <img
-          src={activePersona.workSpriteUrl}
-          alt={activePersona.nameKo}
-          className="h-9 w-9 rounded-lg border border-line bg-card object-contain p-0.5"
-        />
-        <img
-          src={activeWalk.spriteUrl}
-          alt={activeWalk.labelKo}
-          className="h-9 w-9 rounded-lg border border-line bg-card object-contain p-0.5"
-        />
-        <div className="flex flex-col">
-          <span className="flex items-center gap-1 text-[11px] font-bold text-fg">
-            <Sparkles className="h-3 w-3 text-accent" />
-            {activeTheme.titleKo}
-          </span>
-          <span className="text-[10px] text-fg-2">
-            {activePersona.nameKo.split(" (")[0]} · 보행 {selection.walkDirection.toUpperCase()} · {activeProp.labelKo}
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <img
+            src={activeTheme.assetUrl}
+            alt={activeTheme.titleKo}
+            className="h-9 w-12 rounded-lg border border-line object-cover"
+          />
+          <img
+            src={activePersona.workSpriteUrl}
+            alt={activePersona.nameKo}
+            className="h-9 w-9 rounded-lg border border-line bg-card object-contain p-0.5"
+          />
+          <img
+            src={activeWalk.spriteUrl}
+            alt={activeWalk.labelKo}
+            className="h-9 w-9 rounded-lg border border-line bg-card object-contain p-0.5"
+          />
+          <div className="flex flex-col">
+            <span className="flex items-center gap-1 text-[11px] font-bold text-fg">
+              <Sparkles className="h-3 w-3 text-accent" />
+              {activeTheme.titleKo}
+            </span>
+            <span className="text-[10px] text-fg-2">
+              {activePersona.nameKo.split(" (")[0]} · 보행 {selection.walkDirection.toUpperCase()} · {activeEmote.labelKo} · {activeProp.labelKo}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            data-testid="main-stage-cycle-theme-btn"
+            onClick={cycleTheme}
+            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+          >
+            테마 전환 (12종)
+          </button>
+          <button
+            type="button"
+            data-testid="main-stage-cycle-persona-btn"
+            onClick={cyclePersona}
+            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+          >
+            <UserCheck className="mr-1 inline h-3 w-3 text-accent" />
+            캐릭터 전환 (8인)
+          </button>
+          <button
+            type="button"
+            data-testid="main-stage-cycle-walk-btn"
+            onClick={cycleWalkDirection}
+            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+          >
+            <Compass className="mr-1 inline h-3 w-3 text-accent" />
+            4방향 보행
+          </button>
+          <button
+            type="button"
+            data-testid="main-stage-cycle-emote-btn"
+            onClick={cycleEmote}
+            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+          >
+            이모트 ({activeEmote.labelKo})
+          </button>
+          <button
+            type="button"
+            data-testid="main-stage-open-nano-banana-workbench-btn"
+            onClick={() => setWorkbenchOpen((prev) => !prev)}
+            className="flex items-center gap-1 rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent shadow-sm transition hover:opacity-95"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            {workbenchOpen
+              ? "2.5D 스튜디오 워크벤치 닫기"
+              : "✦ 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 열기"}
+          </button>
         </div>
 
-        <button
-          type="button"
-          data-testid="main-stage-cycle-theme-btn"
-          onClick={cycleTheme}
-          className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
-        >
-          테마 전환 (12종)
-        </button>
-        <button
-          type="button"
-          data-testid="main-stage-cycle-walk-btn"
-          onClick={cycleWalkDirection}
-          className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
-        >
-          <Compass className="mr-1 inline h-3 w-3 text-accent" />
-          4방향 보행
-        </button>
-        <button
-          type="button"
-          data-testid="main-stage-open-nano-banana-workbench-btn"
-          onClick={() => setWorkbenchOpen((prev) => !prev)}
-          className="flex items-center gap-1 rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent shadow-sm transition hover:opacity-95"
-        >
-          <Layers className="h-3.5 w-3.5" />
-          {workbenchOpen
-            ? "2.5D 스튜디오 워크벤치 닫기"
-            : "나노바나나 2.5D 스튜디오 & 실무 워크벤치 열기"}
-        </button>
+        {/* 2D 월드 내 2.5D 웹툰 워크스테이션 즉시 이동 바 */}
+        <div className="flex flex-wrap items-center gap-1 border-t border-line/70 pt-1.5">
+          <span className="mr-1 flex items-center gap-1 text-[10px] font-bold text-accent">
+            <MapPin className="h-3 w-3" />
+            2D 워크스테이션 이동:
+          </span>
+          {NANO_BANANA_2D_WORKSTATIONS.slice(0, 8).map((station) => (
+            <button
+              key={station.id}
+              type="button"
+              data-testid={`main-stage-teleport-${station.id}-btn`}
+              onClick={() => teleportToWorkstation(station.id)}
+              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition ${
+                activeWorkstationId === station.id
+                  ? "border-accent bg-accent-soft font-bold text-accent"
+                  : "border-line bg-card text-fg-2 hover:border-accent hover:text-fg"
+              }`}
+            >
+              {station.titleKo}
+            </button>
+          ))}
+        </div>
       </div>
 
       {workbenchOpen ? (
@@ -484,14 +590,14 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
           data-testid="main-stage-nano-banana-workbench-drawer"
           data-space-interactive="true"
           role="dialog"
-          aria-label="나노 바나나 2.5D 차세대 웹툰 가상 스튜디오 및 실무 마감 워크벤치"
+          aria-label="스마트 AI 2.5D 차세대 웹툰 가상 스튜디오 및 실무 마감 워크벤치"
           className="pointer-events-auto absolute inset-4 z-30 overflow-y-auto rounded-2xl border border-accent bg-panel/95 p-4 text-fg shadow-2xl backdrop-blur-xl"
         >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
             <div>
               <h2 className="flex items-center gap-2 text-sm font-bold text-fg">
                 <Wand2 className="h-4 w-4 text-accent" />
-                나노 바나나 2.5D 차세대 웹툰 가상 스튜디오 & 실무 마감 워크벤치 (v10~v14 전체 통합)
+                스마트 AI 2.5D 차세대 웹툰 가상 스튜디오 & 실무 마감 워크벤치
               </h2>
               <p className="text-xs text-fg-2">
                 12대 장르 스튜디오 테마 · 8인 개성파 캐릭터/마스코트 · 4방향 보행(v14) · 4종 특화 룸(v14) · 60fps 물리엔진 · WebAudio HRTF 사운드 · 일일 원고 마감 워크벤치
