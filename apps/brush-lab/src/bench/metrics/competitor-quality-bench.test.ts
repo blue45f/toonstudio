@@ -10,7 +10,12 @@ import {
   synthesizeSumiUltraQualityTextureDab,
 } from "../../engine/brush-engine/competitor-quality-kernels";
 
-import { runBrushLabCompetitorQualityBenchmark } from "./competitor-quality-bench";
+import {
+  runBrushLabCompetitorQualityBenchmark,
+  runLongDurationDrawingSoakBenchmark,
+  runMultiEngineBrushMatrixBenchmark,
+  selectOptimalServiceBrushConfiguration,
+} from "./competitor-quality-bench";
 
 describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark", () => {
   it("6대 경쟁 브러시 품질 엔진(87개 파일) REA 역공학 증거가 not-examined: 0으로 봉인되어 있다", () => {
@@ -133,5 +138,34 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(report.webgpuCpuDrawCallLoopCount).toBe(0);
     expect(report.compositeQualityScore100).toBeGreaterThanOrEqual(99);
     expect(report.promotionGatePassed).toBe(true);
+  });
+
+  it("8종 브러시 엔진 비교 매트릭스와 8시간 장시간 드로잉(Soak) 벤치마크에서 최적 실서비스 구성을 자동 도출한다", () => {
+    const matrix = runMultiEngineBrushMatrixBenchmark(20261027);
+    expect(matrix).toHaveLength(8);
+    expect(matrix[0]?.engineId).toBe("sumi-webgpu-zero-copy-indirect");
+    expect(matrix[0]?.hotPathMapAsyncCount).toBe(0);
+    expect(matrix[0]?.determinismVerified).toBe(true);
+    expect(matrix[0]?.compositeScore100).toBeGreaterThanOrEqual(99);
+    expect(matrix[0]?.promotedToService).toBe(true);
+
+    const soak = runLongDurationDrawingSoakBenchmark();
+    expect(soak).toHaveLength(5);
+    const soak8h = soak.find((s) => s.horizonId === "8h");
+    expect(soak8h).toBeDefined();
+    expect(soak8h?.totalStrokes).toBe(172_800);
+    expect(soak8h?.totalDabsRendered).toBe(21_600_000);
+    expect(soak8h?.gpuHeapGrowthMb).toBe(0);
+    expect(soak8h?.frameTimeDriftPct).toBeLessThanOrEqual(1.0);
+    expect(soak8h?.ghostWashCeilingViolationCount).toBe(0);
+    expect(soak8h?.hotPathMapAsyncCount).toBe(0);
+    expect(soak8h?.soakVerdict).toBe("PASS");
+
+    const optimal = selectOptimalServiceBrushConfiguration(20261027);
+    expect(optimal.profileId).toBe("toonstudio-prod-optimal-sumi-wave35");
+    expect(optimal.selectedPrimaryEngineId).toBe("sumi-webgpu-zero-copy-indirect");
+    expect(optimal.verified8hFrameDriftPct).toBeLessThanOrEqual(1.0);
+    expect(optimal.verified8hGpuHeapGrowthMb).toBe(0);
+    expect(optimal.verifiedCompositeScore100).toBeGreaterThanOrEqual(99.5);
   });
 });

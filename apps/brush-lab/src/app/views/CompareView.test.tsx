@@ -231,6 +231,21 @@ describe("CompareView", { timeout: 30_000 }, () => {
     const engineSummary = screen.getByTestId("lab-cleanroom-engine-summary");
     expect(engineSummary.textContent).toContain("Rebelle 7 모세관 수채 확산");
     expect(engineSummary.textContent).toContain("SAI / Lazy Nezumi 견인줄");
+
+    // 8종 브러시 엔진 매트릭스 및 8시간 장시간 드로잉(Soak) 벤치마크 대시보드 검증
+    const benchDashboard = screen.getByTestId("lab-benchmark-results-dashboard");
+    expect(benchDashboard.textContent).toContain("toonstudio-prod-optimal-sumi-wave35");
+    expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("Sumi 통합 초고속·최고품질");
+    expect(screen.getByTestId("lab-soak-table-region").textContent).toContain("172,800획");
+    expect(screen.getByTestId("lab-soak-table-region").textContent).toContain("21,600,000 dabs");
+
+    fireEvent.click(screen.getByTestId("lab-Filter-promoted-engines-btn"));
+    expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("7개 표시");
+
+    fireEvent.click(screen.getByTestId("lab-apply-optimal-profile-btn"));
+    expect(store.get().presetId).toBe("watercolor-wet");
+    expect(store.get().overrides.paperRoughness).toBe(0.65);
+    expect(screen.getByTestId("lab-optimal-applied-status").textContent).toContain("적용했습니다");
   });
 });
 

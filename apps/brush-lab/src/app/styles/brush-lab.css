@@ -1008,3 +1008,119 @@ dd {
   cursor: help;
 }
 
+/* ------------------------------------------------------------------ */
+/* 벤치마크 결과 & 장시간 드로잉 검증 반응형 테이블 (modern-web-guidance) */
+/* ------------------------------------------------------------------ */
+.lab-responsive-table-wrap {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: min(500px, 80vh);
+  container-type: inline-size;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+}
+
+.lab-responsive-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+}
+
+.lab-responsive-table caption {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--lab-accent-text);
+  background: var(--lab-raised);
+  border-bottom: 1px solid var(--lab-line);
+}
+
+.lab-responsive-table th,
+.lab-responsive-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--lab-line);
+  text-align: left;
+}
+
+.lab-responsive-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background: var(--lab-raised);
+}
+
+.lab-responsive-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--lab-panel);
+  color: var(--lab-fg);
+  font-weight: 600;
+}
+
+@container (width < 600px) {
+  .lab-responsive-table,
+  .lab-responsive-table thead,
+  .lab-responsive-table tbody,
+  .lab-responsive-table tr,
+  .lab-responsive-table th,
+  .lab-responsive-table td {
+    display: block;
+  }
+
+  .lab-responsive-table thead {
+    display: none;
+  }
+
+  .lab-responsive-table tr {
+    margin-block-end: 1rem;
+    border: 1px solid var(--lab-line);
+    border-radius: 8px;
+  }
+
+  .lab-responsive-table tbody th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    background: var(--lab-raised);
+  }
+
+  .lab-responsive-table td:nth-child(2)::before {
+    content: var(--label-2) ": ";
+    font-weight: 600;
+    color: var(--lab-muted);
+  }
+
+  .lab-responsive-table td:nth-child(3)::before {
+    content: var(--label-3) ": ";
+    font-weight: 600;
+    color: var(--lab-muted);
+  }
+
+  .lab-responsive-table td:nth-child(4)::before {
+    content: var(--label-4) ": ";
+    font-weight: 600;
+    color: var(--lab-muted);
+  }
+
+  .lab-responsive-table td:nth-child(5)::before {
+    content: var(--label-5) ": ";
+    font-weight: 600;
+    color: var(--lab-muted);
+  }
+
+  .lab-responsive-table td:nth-child(6)::before {
+    content: var(--label-6) ": ";
+    font-weight: 600;
+    color: var(--lab-muted);
+  }
+
+  .lab-responsive-table td:nth-child(7)::before {
+    content: var(--label-7) ": ";
+    font-weight: 600;
+    color: var(--lab-muted);
+  }
+}
+
+

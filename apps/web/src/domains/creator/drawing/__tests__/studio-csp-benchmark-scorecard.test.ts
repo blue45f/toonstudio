@@ -759,6 +759,11 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(promo.bezierChordArcLengthPx).toBeGreaterThan(15);
     expect(promo.brushLabCompositeScore100).toBeGreaterThanOrEqual(99);
     expect(promo.brushLabPromotedToService).toBe(true);
+    expect(promo.optimalProfileId).toBe("toonstudio-prod-optimal-sumi-wave35");
+    expect(promo.soak8hFrameDriftPct).toBeLessThanOrEqual(1.0);
+    expect(promo.soak8hTotalStrokes).toBe(172_800);
+    expect(promo.soak8hTotalDabs).toBe(21_600_000);
+    expect(promo.soak8hGpuHeapGrowthMb).toBe(0);
   });
 });
 

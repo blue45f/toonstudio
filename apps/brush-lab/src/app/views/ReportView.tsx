@@ -6,6 +6,8 @@ import { findDescriptor } from "../state/lane-helpers";
 import { rawVerdictNoteKo, summarizeCertification, verdictDisplay } from "../state/lane-maturity";
 import { messageOf } from "../state/run-compare";
 
+import { BenchmarkResultsView } from "./BenchmarkResultsView";
+
 /** 리포트 탭: 세션 안에서 만든 인증 리포트 목록과 원문(정규 직렬화) 보기. 서버 저장은 없다. */
 export function ReportView() {
   const { runner, actions, registry } = useLab();
@@ -35,6 +37,7 @@ export function ReportView() {
 
   return (
     <div className="lab-tabpanel">
+      <BenchmarkResultsView />
       <section className="lab-panel" aria-label="클린룸 내재화 브러시 엔진 아키텍처" data-testid="lab-cleanroom-engine-summary">
         <h2>클린룸 내재화 7대 브러시 엔진 아키텍처</h2>
         <p className="lab-muted">
