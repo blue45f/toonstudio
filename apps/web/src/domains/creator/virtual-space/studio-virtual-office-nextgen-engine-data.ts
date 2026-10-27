@@ -213,7 +213,7 @@ export const NEXTGEN_COMPETITOR_REA_BENCHMARKS: readonly NextGenCompetitorReaBen
       reverseEngineeredMechanism:
         "4방향 스프라이트 시트 상태머신(idle/run/sit) + 스포트라이트 확성기 브로드캐스트 + 미니앱 위젯 오버레이",
       toonStudioSuperiorUpgradeKo:
-        "나노 바나나 v11 4인 4색 직군별 캐릭터 캐스트(선화·3D·채색·PD) + 호흡 스케일·눈깜빡임·펜 드로잉 진동 2차 물리 모션",
+        "8인 직군별 캐릭터 캐스트(선화·3D·채색·PD) + 호흡 스케일·눈깜빡임·펜 드로잉 진동 2차 물리 모션",
       latencyOrPhysicsMetric: "4직군×2포즈 투명 RGBA + 4채널 프로시저럴 모션",
     },
     {

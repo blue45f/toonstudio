@@ -16,7 +16,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#f6c453",
     secondaryHex: "#818cf8",
     stageBadge: { ko: "STAGE 01 · 작품 발견 허브", en: "STAGE 01 · DISCOVERY HUB" },
-    atelierModelLabel: "NanoBanana Pro · Key-Art Curator",
+    atelierModelLabel: "Key-Art Curator",
     title: { ko: "큐레이션 스포트라이트 아트리움", en: "Curated Spotlight Atrium" },
     subtitle: { ko: "오늘의 주목작부터 장르·랭킹·요일 연재까지 한눈에 교차 탐색하고, 영감을 즉시 창작 스튜디오로 연결합니다.", en: "Cross-navigate featured spotlights, genres, rankings, and weekly serials, then bridge inspiration straight into Studio." },
     quickChips: [
@@ -45,9 +45,9 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
         headline: { ko: "주목작의 조명·구도 감성을 내 작품 타이틀 시안으로 실험하세요", en: "Experiment with spotlight lighting and framing for your own title art" },
-        detail: { ko: "스튜디오 키아트 캔버스에서 나노바나나 조명·배경 무드 가이드를 불러와 표지 시안을 빠르게 잡습니다.", en: "Launch Studio Key-Art Canvas with NanoBanana lighting and mood guides to draft cover concepts fast." },
+        detail: { ko: "스튜디오 키아트 캔버스에서 아틀리에 조명·배경 무드 가이드를 불러와 표지 시안을 빠르게 잡습니다.", en: "Launch Studio Key-Art Canvas with atelier lighting and mood guides to draft cover concepts fast." },
         promptSeed: { ko: "Korean webtoon premiere cover composition, indigo starlight + warm persimmon rim light", en: "Korean webtoon premiere cover composition, indigo starlight + warm persimmon rim light" },
         ctaLabel: { ko: "표지 시안 시작", en: "Start Cover Draft" },
         ctaHref: "/create",
@@ -63,7 +63,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#f472b6",
     secondaryHex: "#38bdf8",
     stageBadge: { ko: "STAGE 01 · 장르 스펙트럼 탐색", en: "STAGE 01 · GENRE SPECTRUM" },
-    atelierModelLabel: "NanoBanana 2 · Genre Prism Engine",
+    atelierModelLabel: "Genre Prism Engine",
     title: { ko: "장르 스펙트럼 프리즘 랩", en: "Genre Spectrum Prism Lab" },
     subtitle: { ko: "로맨스 판타지·액션·스릴러·일상까지 색채 스펙트럼과 정렬 필터로 취향 작품을 정밀하게 분광합니다.", en: "Filter Romance Fantasy, Action, Thriller, and Slice-of-Life through chromatic spectrum tags and precision sorting." },
     quickChips: [
@@ -92,8 +92,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "장르별 시그니처 컬러 스크립트를 나노바나나 프리셋으로 생성하세요", en: "Generate genre-signature color scripts with NanoBanana presets" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "장르별 시그니처 컬러 스크립트를 아틀리에 프리셋으로 생성하세요", en: "Generate genre-signature color scripts with atelier presets" },
         detail: { ko: "로맨스 역광, 느와르 로우키, 판타지 마법광 등 장르 특화 조명 시드를 캔버스에서 바로 테스트합니다.", en: "Test romance rim-light, noir low-key, or fantasy arcane glow lighting seeds directly on canvas." },
         promptSeed: { ko: "Chromatic color script study for Korean webtoon, 4 genre lighting moods", en: "Chromatic color script study for Korean webtoon, 4 genre lighting moods" },
         ctaLabel: { ko: "컬러 무드 실험", en: "Try Color Mood" },
@@ -110,7 +110,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#fbbf24",
     secondaryHex: "#60a5fa",
     stageBadge: { ko: "STAGE 01 · 실시간 차트 & 연재 리듬", en: "STAGE 01 · LIVE CHARTS & CALENDAR" },
-    atelierModelLabel: "NanoBanana Pro · Pulse Analytics",
+    atelierModelLabel: "Pulse Analytics",
     title: { ko: "실시간 랭킹 & 연재 천문 시계탑", en: "Constellation Ranking & Serialization Clockwork" },
     subtitle: { ko: "시간대별 급상승 랭킹 포디움과 월~일 요일별 연재 주기를 천문 시계처럼 정교하게 추적합니다.", en: "Track hourly rising podiums and Monday-to-Sunday serialization cycles with astronomical precision." },
     quickChips: [
@@ -139,8 +139,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "클릭률을 높이는 에피소드 썸네일 구도를 나노바나나로 시뮬레이션하세요", en: "Simulate high-CTR episode thumbnail framing with NanoBanana" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "클릭률을 높이는 에피소드 썸네일 구도를 미리 시뮬레이션하세요", en: "Simulate high-CTR episode thumbnail framing in Studio" },
         detail: { ko: "상위 랭킹 작품들의 클로즈업·대비 조명 공식을 적용해 1화·클라이맥스 썸네일 시안을 제작합니다.", en: "Apply top-chart close-up and high-contrast rim-lighting formulas to craft episode thumbnails." },
         promptSeed: { ko: "High-impact webtoon episode thumbnail close-up, dramatic golden rim light", en: "High-impact webtoon episode thumbnail close-up, dramatic golden rim light" },
         ctaLabel: { ko: "썸네일 캔버스 열기", en: "Open Thumbnail Canvas" },
@@ -157,7 +157,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#fb923c",
     secondaryHex: "#a78bfa",
     stageBadge: { ko: "STAGE 04 · 개인 서재 & 아카이브", en: "STAGE 04 · PERSONAL LIBRARY" },
-    atelierModelLabel: "NanoBanana 2 · Archive Curator",
+    atelierModelLabel: "Archive Curator",
     title: { ko: "트와일라잇 서재 & 컬렉션 아카이브", en: "Twilight Personal Library Archive" },
     subtitle: { ko: "최근 읽은 회차 이어보기, 선호작 알림, 소장 에피소드와 영감 레퍼런스 보드를 아늑한 서재에서 관리합니다.", en: "Resume recent episodes, manage favorite alerts, and organize owned series and reference boards in one archive." },
     quickChips: [
@@ -186,7 +186,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
         headline: { ko: "내 서재 취향 키워드로 맞춤형 캐릭터·배경 무드시트를 생성하세요", en: "Generate custom character and background mood sheets from your library keywords" },
         detail: { ko: "자주 읽는 장르의 조명과 색채 밸런스를 추출해 나만의 오리지널 단편 시안을 시작합니다.", en: "Extract lighting and color balance from your favorite genres to kick off an original short webtoon." },
         promptSeed: { ko: "Warm amber & twilight indigo webtoon concept sheet, atmospheric interior lighting", en: "Warm amber & twilight indigo webtoon concept sheet, atmospheric interior lighting" },
@@ -204,12 +204,12 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#ff7849",
     secondaryHex: "#38bdf8",
     stageBadge: { ko: "STAGE 02 · 원고 제작 & 브러시 스튜디오", en: "STAGE 02 · MANUSCRIPT & BRUSH STUDIO" },
-    atelierModelLabel: "NanoBanana Pro · Cel-Brush Engine",
+    atelierModelLabel: "Cel-Brush Engine",
     title: { ko: "원고 캔버스 & 셀셰이딩 브러시 데스크", en: "Manuscript Canvas & Cel-Shaded Brush Desk" },
-    subtitle: { ko: "웹툰 세로 스크롤 콘티부터 선화·밑색·말풍선 식자·나노바나나 AI 보조까지 창작의 모든 출발점을 통합합니다.", en: "Unify vertical-scroll storyboards, lineart, flatting, speech-bubble lettering, and NanoBanana AI assist." },
+    subtitle: { ko: "웹툰 세로 스크롤 콘티부터 선화·밑색·말풍선 식자·AI 작화 보조까지 창작의 모든 출발점을 통합합니다.", en: "Unify vertical-scroll storyboards, lineart, flatting, speech-bubble lettering, and smart AI drawing assist." },
     quickChips: [
       { ko: "간편 모드 즉시 드로잉", en: "Simple Mode Instant Draw" },
-      { ko: "NanoBanana 러프·채색 보조", en: "NanoBanana Rough & Color Assist" },
+      { ko: "스마트 러프·채색 보조", en: "Smart Rough & Color Assist" },
       { ko: "웹툰 세로 컷·말풍선 프리셋", en: "Vertical Panel & Bubble Presets" },
     ],
     lenses: [
@@ -233,9 +233,9 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "NanoBanana Pro / NanoBanana 2 모델로 구도 러프와 조명 레퍼런스를 즉시 생성하세요", en: "Generate pose roughs and lighting references instantly with NanoBanana Pro / 2" },
-        detail: { ko: "막히는 컷 구도나 복잡한 역광 채색 시안을 나노바나나 아틀리에 시드로 뽑아 밑그림 가이드로 활용합니다.", en: "Break through tricky camera angles or backlight shading by generating NanoBanana underdrawing guides." },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "구도 러프와 조명 레퍼런스를 즉시 생성해 작화 속도를 높이세요", en: "Generate pose roughs and lighting references instantly in Studio Pro / 2" },
+        detail: { ko: "막히는 컷 구도나 복잡한 역광 채색 시안을 아틀리에 가이드로 생성해 밑그림 가이드로 활용합니다.", en: "Break through tricky camera angles or backlight shading by generating studio underdrawing guides." },
         promptSeed: { ko: "Action webtoon low-angle panel rough, dramatic foreshortening, persimmon & cyan rim light", en: "Action webtoon low-angle panel rough, dramatic foreshortening, persimmon & cyan rim light" },
         ctaLabel: { ko: "AI 보조 캔버스 시작", en: "Start AI-Assisted Canvas" },
         ctaHref: "/studio?mode=illustration",
@@ -251,7 +251,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#f87171",
     secondaryHex: "#60a5fa",
     stageBadge: { ko: "STAGE 02 · 스토리 랩 & 노벨코믹스 기획", en: "STAGE 02 · STORY LAB & NOVELCOMICS" },
-    atelierModelLabel: "NanoBanana Pro · Narrative Beat Director",
+    atelierModelLabel: "Narrative Beat Director",
     title: { ko: "스토리 랩 & 홀로그램 콘티 테이블", en: "Story Lab & Holographic Storyboard Table" },
     subtitle: { ko: "로그라인·캐릭터 관계도·세계관 바이블부터 웹소설 원문의 에피소드 콘티 변환까지 서사 설계를 시각화합니다.", en: "Visualize loglines, character relationship webs, world bibles, and web-novel-to-episode storyboard beats." },
     quickChips: [
@@ -280,8 +280,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "주인공 표정 시트와 핵심 장면 컨셉 아트를 나노바나나로 즉시 시각화하세요", en: "Visualize protagonist expression sheets and key beat concept art with NanoBanana" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "주인공 표정 시트와 핵심 장면 컨셉 아트를 즉시 시각화하세요", en: "Visualize protagonist expression sheets and key beat concept art in Studio" },
         detail: { ko: "텍스트로만 적힌 캐릭터 외형과 성격을 4면 표정·포즈 시안으로 빠르게 구체화해 팀원들과 공유합니다.", en: "Turn text character bios into 4-angle expression and pose sheets to align your creative team fast." },
         promptSeed: { ko: "Webtoon protagonist character sheet, 4 facial expressions, cel-shaded studio turnaround", en: "Webtoon protagonist character sheet, 4 facial expressions, cel-shaded studio turnaround" },
         ctaLabel: { ko: "캐릭터 시트 생성", en: "Create Character Sheet" },
@@ -298,13 +298,13 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#38bdf8",
     secondaryHex: "#f6c453",
     stageBadge: { ko: "STAGE 02 · 3D 배경 & VRM 공간 스테이지", en: "STAGE 02 · 3D STAGE & VRM VIEWPORT" },
-    atelierModelLabel: "NanoBanana Pro · 3D Paintover Engine",
+    atelierModelLabel: "3D Paintover Engine",
     title: { ko: "3D 배경 & VRM 캐릭터 공간 연출 스테이지", en: "Spatial 3D Background & VRM Character Stage" },
     subtitle: { ko: "까다로운 투시 배경 블록과 VRM 마네킹 포즈·카메라 화각을 3D 뷰포트에서 잡고 웹툰 선화·채색 컷으로 추출합니다.", en: "Stage complex perspective architecture, VRM character poses, and camera lenses in 3D, then extract webtoon panels." },
     quickChips: [
       { ko: "VRM 캐릭터 포즈·다중 카메라", en: "VRM Posing & Multi-Camera" },
       { ko: "건축 블록 투시 가이드", en: "Architectural Perspective Guide" },
-      { ko: "나노바나나 툰 페인트오버", en: "NanoBanana Toon Paintover" },
+      { ko: "툰 셰이딩 페인트오버", en: "Toon-Shaded Paintover" },
     ],
     lenses: [
       {
@@ -327,8 +327,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "단순 3D 블록아웃 위에 나노바나나 웹툰 배경 질감을 페인트오버하세요", en: "Paintover simple 3D blockouts with NanoBanana webtoon background textures" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "단순 3D 블록아웃 위에 웹툰 배경 질감을 페인트오버하세요", en: "Paintover simple 3D blockouts in Studio webtoon background textures" },
         detail: { ko: "석양빛 궁전 회랑, 비 내리는 네온 골목 등 시간대·날씨 프리셋을 입혀 고밀도 배경 시안을 완성합니다.", en: "Apply sunset palace corridors or rainy neon alleys to turn rough 3D blocks into rich background concepts." },
         promptSeed: { ko: "Korean webtoon fantasy palace background paintover, golden hour sky, crisp architectural ink", en: "Korean webtoon fantasy palace background paintover, golden hour sky, crisp architectural ink" },
         ctaLabel: { ko: "배경 에셋 마켓 보기", en: "Browse Background Assets" },
@@ -345,7 +345,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#34d399",
     secondaryHex: "#818cf8",
     stageBadge: { ko: "STAGE 03 · 에피소드 공정 & 품질 검수", en: "STAGE 03 · PRODUCTION & QA CONTROL" },
-    atelierModelLabel: "NanoBanana Pro · QA Diff Inspector",
+    atelierModelLabel: "QA Diff Inspector",
     title: { ko: "에피소드 프로덕션 & 품질 검수 컨트롤 룸", en: "Episode Production & Quality Review Suite" },
     subtitle: { ko: "회차별 공정 칸반(콘티·선화·채색·식자)부터 전후 컷 비교 검수·연재 송출 체크리스트까지 마감 안정성을 책임집니다.", en: "Command episode kanban lanes, side-by-side panel diff inspection, and launch readiness checklists." },
     quickChips: [
@@ -374,8 +374,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "마감 직전 밀도가 부족한 배경·이펙트 컷을 나노바나나 마감 폴리시로 보강하세요", en: "Boost sparse background or FX panels before deadline with NanoBanana polish" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "마감 직전 밀도가 부족한 배경·이펙트 컷을 마감 폴리시 프리셋으로 보강하세요", en: "Boost sparse background or FX panels before deadline in Studio polish" },
         detail: { ko: "클라이맥스 컷의 광원 입자, 스피드선, 공기원근 톤을 빠르게 보강해 에피소드 완성도를 끌어올립니다.", en: "Add ambient light particles, speed lines, and atmospheric depth to elevate climax panels fast." },
         promptSeed: { ko: "Final episode post-processing polish, cinematic bloom, speed lines, color grading", en: "Final episode post-processing polish, cinematic bloom, speed lines, color grading" },
         ctaLabel: { ko: "캔버스 마감 보강", en: "Polish in Studio" },
@@ -392,7 +392,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#f6c453",
     secondaryHex: "#2dd4bf",
     stageBadge: { ko: "STAGE 03 · 창작 에셋 마켓 & 핏 랩", en: "STAGE 03 · ASSET MARKET & FIT LAB" },
-    atelierModelLabel: "NanoBanana 2 · Material & Asset Fit",
+    atelierModelLabel: "Material & Asset Fit",
     title: { ko: "창작 에셋 마켓 & 핏 랩 쇼케이스", en: "Creator Asset Market & Fit Lab Vitrine" },
     subtitle: { ko: "웹툰 전용 브러시·3D 배경 키트·스크린톤·말풍선 프리셋을 내 원고 화풍에 미리 합성해보고 도입합니다.", en: "Preview webtoon brushes, 3D background kits, screentones, and bubble presets against your art style before buying." },
     quickChips: [
@@ -421,8 +421,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "나노바나나 텍스처 시드로 작품 전용 패턴·문양·재질 볼을 커스텀 제작하세요", en: "Craft custom textile patterns, emblems, and material spheres with NanoBanana seeds" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "아틀리에 텍스처 가이드로 작품 전용 패턴·문양·재질 볼을 커스텀 제작하세요", en: "Craft custom textile patterns, emblems, and material spheres in Studio seeds" },
         detail: { ko: "주인공 의상 자수나 마법진 문양처럼 반복 사용되는 소재를 고해상도 타일링 시안으로 빠르게 생성합니다.", en: "Generate high-DPI tiling concepts for recurring costume embroidery, crests, or arcane sigils." },
         promptSeed: { ko: "Ornate Korean webtoon costume embroidery & magic crest material swatch sheet", en: "Ornate Korean webtoon costume embroidery & magic crest material swatch sheet" },
         ctaLabel: { ko: "커스텀 소재 만들기", en: "Create Custom Material" },
@@ -439,7 +439,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#fbbf24",
     secondaryHex: "#60a5fa",
     stageBadge: { ko: "STAGE 02 · 크리에이터 아카데미 & 트레이스", en: "STAGE 02 · CREATOR ACADEMY & TRACE" },
-    atelierModelLabel: "NanoBanana 2 · Interactive Tutor",
+    atelierModelLabel: "Interactive Tutor",
     title: { ko: "크리에이터 아카데미 & 트레이스 실습실", en: "Creator Academy & Trace Practice Studio" },
     subtitle: { ko: "인체 드로잉·컷 연출·클리셰 사전부터 캔버스 위에서 직접 따라 그리는 트레이스 실습까지 실전 감각을 키웁니다.", en: "Master figure drawing, panel staging, and trope encyclopedias with hands-on interactive trace layers." },
     quickChips: [
@@ -468,8 +468,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "연습하고 싶은 포즈·손·옷주름 교본을 나노바나나 스터디 시트로 생성하세요", en: "Generate custom pose, hand, and drapery study sheets with NanoBanana" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "연습하고 싶은 포즈·손·옷주름 교본을 맞춤형 스터디 시트로 생성하세요", en: "Generate custom pose, hand, and drapery study sheets in Studio" },
         detail: { ko: "어려운 각도의 손 동작이나 망토 주름을 단계별 구조선 가이드를 포함한 레퍼런스로 만들어 연습합니다.", en: "Create structure-line reference sheets for tricky hand angles or flowing cloak folds." },
         promptSeed: { ko: "Anatomical hand & dynamic cape drapery construction study sheet for webtoon artists", en: "Anatomical hand & dynamic cape drapery construction study sheet for webtoon artists" },
         ctaLabel: { ko: "드로잉 연습장 열기", en: "Open Practice Canvas" },
@@ -486,7 +486,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#f472b6",
     secondaryHex: "#fb923c",
     stageBadge: { ko: "STAGE 03 · 커뮤니티 라운지 & 리그", en: "STAGE 03 · COMMUNITY & PROMOTION LEAGUE" },
-    atelierModelLabel: "NanoBanana 2 · Fan & Creator Pulse",
+    atelierModelLabel: "Fan & Creator Pulse",
     title: { ko: "커뮤니티 라운지 & 프로모션 리그 광장", en: "Community Lounge & Promotion League Plaza" },
     subtitle: { ko: "창작자 작업 일지·피드백 라운지·독자 팬카페와 주간 프로모션 리그 응원이 살아 숨 쉬는 축제 광장입니다.", en: "A vibrant festival plaza uniting creator WIP logs, critique lounges, fan cafes, and weekly league cheering." },
     quickChips: [
@@ -515,8 +515,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "팬카페 헤더와 연재 축전 일러스트를 나노바나나 축제 무드로 빠르게 제작하세요", en: "Create fan-cafe headers and milestone celebration art with NanoBanana festival mood" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "팬카페 헤더와 연재 축전 일러스트를 화려한 축제 무드로 빠르게 제작하세요", en: "Create fan-cafe headers and milestone celebration art in Studio festival mood" },
         detail: { ko: "정식 연재 확정이나 조회수 달성 기념 축전 배경을 화려한 골든 라이트 톤으로 손쉽게 연출합니다.", en: "Stage milestone celebration illustrations with festive golden lanterns and starlight confetti." },
         promptSeed: { ko: "Festive webtoon celebration illustration backdrop, warm lanterns, starlight sparkles", en: "Festive webtoon celebration illustration backdrop, warm lanterns, starlight sparkles" },
         ctaLabel: { ko: "축전 캔버스 열기", en: "Open Celebration Canvas" },
@@ -533,7 +533,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#a78bfa",
     secondaryHex: "#f6c453",
     stageBadge: { ko: "STAGE 03 · 프리미어 쇼케이스 & 협업", en: "STAGE 03 · PREMIERE SHOWCASE & COLLAB" },
-    atelierModelLabel: "NanoBanana Pro · Premiere Pitch Deck",
+    atelierModelLabel: "Premiere Pitch Deck",
     title: { ko: "작품 프리미어 쇼케이스 & 협업 라운드테이블", en: "Premiere Showcase & Collaboration Roundtable" },
     subtitle: { ko: "완성된 프로젝트의 키비주얼·홍보 릴스를 무대 조명으로 선보이고 글·선화·채색·배경 파트너를 매칭합니다.", en: "Spotlight finished key visuals and promo reels on stage while matching story, lineart, color, and 3D partners." },
     quickChips: [
@@ -562,8 +562,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "피칭 성공률을 높이는 와이드 키비주얼 포스터를 나노바나나로 연출하세요", en: "Stage high-impact wide pitch posters with NanoBanana premiere lighting" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "피칭 성공률을 높이는 와이드 키비주얼 포스터를 입체감 있게 연출하세요", en: "Stage high-impact wide pitch posters in Studio premiere lighting" },
         detail: { ko: "작품의 세계관과 주인공의 대비가 한 장에 압축된 프레젠테이션용 키아트를 빠르게 완성합니다.", en: "Condense your worldbuilding and protagonist contrast into a single pitch-ready key visual." },
         promptSeed: { ko: "Widescreen webtoon pitch deck poster, dramatic stage lighting, cinematic character lineup", en: "Widescreen webtoon pitch deck poster, dramatic stage lighting, cinematic character lineup" },
         ctaLabel: { ko: "피칭 포스터 제작", en: "Create Pitch Poster" },
@@ -580,13 +580,13 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#ff7849",
     secondaryHex: "#f6c453",
     stageBadge: { ko: "ALL-IN-ONE · 창작-연재 통합 브리지", en: "ALL-IN-ONE · CREATION-TO-SERIAL BRIDGE" },
-    atelierModelLabel: "NanoBanana Pro · Unified Atelier OS",
+    atelierModelLabel: "Unified Atelier OS",
     title: { ko: "올인원 창작-연재 골든 브리지", en: "All-in-One Creation-to-Serial Golden Bridge" },
     subtitle: { ko: "아이디어 스케치북에서 3D 공간 연출·원고 캔버스·연재 송출 타워까지 끊김 없이 이어지는 통합 웹툰 제작교입니다.", en: "A seamless golden bridge linking idea sketchbooks, 3D staging, manuscript canvas, and global serialization." },
     quickChips: [
       { ko: "기획 → 작화 → 검수 → 연재 통합", en: "Plan → Draw → QA → Publish" },
       { ko: "독자 탐색 & 작가 작업실 연동", en: "Reader Hub & Creator Studio Sync" },
-      { ko: "NanoBanana 전 공정 가속", en: "Full-Pipeline NanoBanana Boost" },
+      { ko: "전 공정 스마트 가속", en: "Full-Pipeline Smart Boost" },
     ],
     lenses: [
       {
@@ -609,8 +609,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "나노바나나 올인원 킥오프 시드로 새 시리즈의 세계관·주인공·1화 콘티를 동시에 여세요", en: "Kick off your new series world, protagonist, and Episode 1 beat with NanoBanana All-in-One" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "올인원 킥오프 가이드로 새 시리즈의 세계관·주인공·1화 콘티를 동시에 여세요", en: "Kick off your new series world, protagonist, and Episode 1 beat in Studio All-in-One" },
         detail: { ko: "단 한 줄의 아이디어만 있어도 비주얼 무드보드와 첫 화 연출 가이드를 1분 안에 구성할 수 있습니다.", en: "Turn a single-line idea into a visual moodboard and Episode 1 staging guide in under a minute." },
         promptSeed: { ko: "Complete webtoon series starter board: world landscape, protagonist turnaround, episode 1 opening panel", en: "Complete webtoon series starter board: world landscape, protagonist turnaround, episode 1 opening panel" },
         ctaLabel: { ko: "새 시리즈 킥오프", en: "Kick Off New Series" },
@@ -627,13 +627,13 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#38bdf8",
     secondaryHex: "#f6c453",
     stageBadge: { ko: "STAGE 04 · 내 공간 & AI 키 볼트", en: "STAGE 04 · MY SPACE & AI KEY VAULT" },
-    atelierModelLabel: "NanoBanana Pro · BYOK Vault Controller",
+    atelierModelLabel: "BYOK Vault Controller",
     title: { ko: "내 공간 커맨드 데스크 & AI 키 볼트", en: "My Space Command Desk & AI Key Vault" },
     subtitle: { ko: "내 프로필·서재·창작 프로젝트 현황과 브라우저 암호화 기반 BYOK AI 키 볼트를 한 데스크에서 안전하게 제어합니다.", en: "Control your profile, library, project milestones, and browser-encrypted BYOK AI key vault from one command desk." },
     quickChips: [
       { ko: "BYOK AI 키 암호화 볼트", en: "Encrypted BYOK AI Key Vault" },
       { ko: "내 작업·서재 통합 대시보드", en: "Unified Work & Library Desk" },
-      { ko: "NanoBanana 모델 우선순위 설정", en: "NanoBanana Model Priority" },
+      { ko: "AI 생성 모델 우선순위 설정", en: "AI Model Priority" },
     ],
     lenses: [
       {
@@ -648,7 +648,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       {
         id: "workflow",
         label: { ko: "AI 키 볼트", en: "AI Key Vault" },
-        headline: { ko: "Google Gemini(NanoBanana) API 키를 안전하게 연결하고 생성 모드를 제어하세요", en: "Connect your Google Gemini (NanoBanana) API keys securely and control generation modes" },
+        headline: { ko: "Google Gemini API 키를 안전하게 연결하고 생성 모드를 제어하세요", en: "Connect your Google Gemini API keys securely and control generation modes" },
         detail: { ko: "키 값은 AES-GCM 암호화 볼트로 보호되며, 스튜디오 캔버스와 스토리 랩에서 즉시 활성화됩니다.", en: "Keys stay protected with AES-GCM encryption and activate immediately across Studio Canvas and Story Lab." },
         promptSeed: { ko: "Ornate golden security vault with glowing geometric runes protecting creator AI keys", en: "Ornate golden security vault with glowing geometric runes protecting creator AI keys" },
         ctaLabel: { ko: "계정 & 키 설정", en: "Account & Key Settings" },
@@ -656,8 +656,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "작가 프로필 아바타와 시그니처 엠블럼을 나노바나나로 커스텀 제작하세요", en: "Craft your creator profile avatar and signature emblem with NanoBanana" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "작가 프로필 아바타와 시그니처 엠블럼을 손쉽게 커스텀 제작하세요", en: "Craft your creator profile avatar and signature emblem in Studio" },
         detail: { ko: "내 작품 세계관을 상징하는 크리에이터 배지와 채널 배너를 일관된 아틀리에 톤으로 완성합니다.", en: "Design a creator badge and channel header banner that reflect your signature webtoon aesthetic." },
         promptSeed: { ko: "Luminous crystal creator emblem and webtoon artist avatar portrait, starlight gold frame", en: "Luminous crystal creator emblem and webtoon artist avatar portrait, starlight gold frame" },
         ctaLabel: { ko: "프로필 아트워크 제작", en: "Create Profile Art" },
@@ -674,7 +674,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#c084fc",
     secondaryHex: "#f6c453",
     stageBadge: { ko: "PLAY · 데일리 운세 & 컷플레이 아케이드", en: "PLAY · DAILY FORTUNE & CUT-PLAY ARCADE" },
-    atelierModelLabel: "NanoBanana 2 · Tarot & Cut-Play",
+    atelierModelLabel: "Tarot & Cut-Play",
     title: { ko: "스타라이트 웹툰 타로 & 컷플레이 아케이드", en: "Starlight Webtoon Tarot & Cut-Play Arcade" },
     subtitle: { ko: "오늘의 창작·독서 타로 운세부터 명장면 대사 채우기·컷 연출 퀴즈까지 가볍게 즐기는 영감 놀이터입니다.", en: "An enchanting playground featuring daily webtoon tarot fortunes, dialogue remix challenges, and panel quizzes." },
     quickChips: [
@@ -703,8 +703,8 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
       },
       {
         id: "recipe",
-        label: { ko: "나노바나나 레시피", en: "NanoBanana Recipe" },
-        headline: { ko: "타로 아르카나 풍의 스페셜 일러스트 카드를 나노바나나로 직접 제작하세요", en: "Design your own Tarot Arcana character collectible cards with NanoBanana" },
+        label: { ko: "창작 레시피", en: "Creative Recipe" },
+        headline: { ko: "타로 아르카나 풍의 스페셜 일러스트 카드를 직접 제작하세요", en: "Design your own Tarot Arcana character collectible cards in Studio" },
         detail: { ko: "내 작품 주인공을 별자리 금박 프레임이 들어간 타로 굿즈 도안으로 연출해 팬들에게 선물합니다.", en: "Frame your protagonist in celestial gold-foil tarot borders for digital fan collectibles." },
         promptSeed: { ko: "Ornate celestial tarot card illustration of a webtoon hero, gold foil border, starlight indigo", en: "Ornate celestial tarot card illustration of a webtoon hero, gold foil border, starlight indigo" },
         ctaLabel: { ko: "타로 카드 도안 시작", en: "Create Tarot Card Art" },
@@ -721,7 +721,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
     accentHex: "#2dd4bf",
     secondaryHex: "#f6c453",
     stageBadge: { ko: "TRUST · 요금제·보안·접근성 약속", en: "TRUST · PRICING, SECURITY & ACCESSIBILITY" },
-    atelierModelLabel: "NanoBanana Pro · Transparent Governance",
+    atelierModelLabel: "Transparent Governance",
     title: { ko: "플랜·보안·접근성 크리스탈 성소", en: "Pricing, Security & Accessibility Sanctuary" },
     subtitle: { ko: "투명한 크리에이터 요금제와 저작권 보호 원칙, 모든 사용자를 위한 고대비·키보드 접근성 기준을 명료하게 제시합니다.", en: "Clear creator pricing tiers, IP protection guarantees, and high-contrast keyboard accessibility standards." },
     quickChips: [

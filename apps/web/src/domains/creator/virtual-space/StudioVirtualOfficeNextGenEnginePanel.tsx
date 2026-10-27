@@ -91,7 +91,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         <div>
           <h4 className="flex items-center gap-2 text-xs font-bold text-fg">
             <Wand2 className="h-4 w-4 text-accent" />
-            나노 바나나 v11·v12 차세대 웹툰 가상 스튜디오 엔진 (8대 장르 테마 · 8인 개성파 캐릭터/마스코트 · 60fps 물리 · WebAudio HRTF)
+            차세대 웹툰 가상 스튜디오 엔진 (8대 장르 테마 · 8인 개성파 캐릭터/마스코트 · 60fps 물리 · WebAudio HRTF)
           </h4>
           <p className="mt-0.5 text-[11px] text-fg-2">
             Gather Town · ZEP · WorkAdventure · oVice · Topia · Kumospace 엔진 완전 역공학 및 초격차 고도화 완료
@@ -107,13 +107,13 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         </div>
       </div>
 
-      {/* 1. 4 Nano Banana v11 Webtoon Studio Themes + Time-of-Day / Deadline Crunch Lighting */}
+      {/* 1. Webtoon Studio Themes + Time-of-Day / Deadline Crunch Lighting */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
         <div className="rounded-lg border border-line bg-panel p-3 lg:col-span-7">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="flex items-center gap-1.5 text-xs text-fg">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
-              8대 웹툰 스튜디오 장르 테마 아틀리에 전환 (Nano Banana v11·v12 2.5D Isometric)
+              8대 웹툰 스튜디오 장르 테마 아틀리에 전환 (2.5D Isometric)
             </strong>
             <span className="text-[11px] text-fg-2">
               {activeTheme.atmosphereTagKo}
@@ -136,7 +136,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
                     );
                     setState(next);
                     onBannerChange?.(
-                      `[나노 바나나 스튜디오 테마 전환] ${theme.titleKo} (${theme.atmosphereTagKo})`,
+                      `[스튜디오 테마 전환] ${theme.titleKo} (${theme.atmosphereTagKo})`,
                     );
                   }}
                   className={`rounded-lg border p-2 text-left text-[11px] transition ${

@@ -193,8 +193,6 @@ export function RoutePurposeScene({
             className="nb-site-purpose-pill"
             data-nano-banana-card={resolveNanoBananaCardMetaForRouteVisual(profile.kind).cardId}
           >
-            <span>{resolveNanoBananaCardMetaForRouteVisual(profile.kind).atelierModelLabel}</span>
-            <span aria-hidden="true">·</span>
             <span>{resolveNanoBananaCardMetaForRouteVisual(profile.kind).stageBadge[copyLocale]}</span>
           </p>
         </div>

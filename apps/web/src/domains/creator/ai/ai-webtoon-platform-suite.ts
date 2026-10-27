@@ -64,7 +64,7 @@ export interface GenToonAiModelSpec {
 export const GENTOON_AI_MODEL_CATALOG: readonly GenToonAiModelSpec[] = [
   {
     id: "gemini-3.1-flash-image-preview",
-    label: "나노바나나2 (Gemini 3.1 Flash Image)",
+    label: "표준 이미지 생성 (Gemini 3.1 Flash Image)",
     badge: "기본 · 가성비",
     credits: 13,
     costUsd: 0.045,
@@ -73,7 +73,7 @@ export const GENTOON_AI_MODEL_CATALOG: readonly GenToonAiModelSpec[] = [
   },
   {
     id: "gemini-3-pro-image-preview",
-    label: "나노바나나 프로 (Gemini 3 Pro Image)",
+    label: "고해상도 프로 이미지 (Gemini 3 Pro Image)",
     badge: "고품질 · 디테일",
     credits: 25,
     costUsd: 0.134,

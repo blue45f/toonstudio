@@ -147,23 +147,41 @@ describe("nano-banana-site-ui-pack", () => {
     expect(resolveNanoBananaCardForPath("/pricing").cardId).toBe("nb-trust-sanctuary");
   });
 
-  it("keeps English copy free of Hangul across all 16 cards and 48 interactive lenses", () => {
+  it("keeps English copy free of Hangul and omits direct NanoBanana model branding in user-facing copy", () => {
     const hangulRegex = /[가-힣]/u;
+    const directBrandingRegex = /nano\s*banana|나노\s*바나나/iu;
     for (const card of NANO_BANANA_SITE_CARD_LIST) {
       expect(getNanoBananaSiteCard(card.cardId)).toBe(card);
+      expect(card.atelierModelLabel).not.toMatch(directBrandingRegex);
+      expect(card.title.ko).not.toMatch(directBrandingRegex);
       expect(card.title.en).not.toMatch(hangulRegex);
+      expect(card.title.en).not.toMatch(directBrandingRegex);
+      expect(card.subtitle.ko).not.toMatch(directBrandingRegex);
       expect(card.subtitle.en).not.toMatch(hangulRegex);
+      expect(card.subtitle.en).not.toMatch(directBrandingRegex);
+      expect(card.stageBadge.ko).not.toMatch(directBrandingRegex);
       expect(card.stageBadge.en).not.toMatch(hangulRegex);
+      expect(card.stageBadge.en).not.toMatch(directBrandingRegex);
       for (const chip of card.quickChips) {
+        expect(chip.ko).not.toMatch(directBrandingRegex);
         expect(chip.en).not.toMatch(hangulRegex);
+        expect(chip.en).not.toMatch(directBrandingRegex);
       }
       expect(card.lenses).toHaveLength(3);
       for (const lens of card.lenses) {
+        expect(lens.label.ko).not.toMatch(directBrandingRegex);
         expect(lens.label.en).not.toMatch(hangulRegex);
+        expect(lens.label.en).not.toMatch(directBrandingRegex);
+        expect(lens.headline.ko).not.toMatch(directBrandingRegex);
         expect(lens.headline.en).not.toMatch(hangulRegex);
+        expect(lens.headline.en).not.toMatch(directBrandingRegex);
+        expect(lens.detail.ko).not.toMatch(directBrandingRegex);
         expect(lens.detail.en).not.toMatch(hangulRegex);
+        expect(lens.detail.en).not.toMatch(directBrandingRegex);
         expect(lens.promptSeed.en).not.toMatch(hangulRegex);
+        expect(lens.ctaLabel.ko).not.toMatch(directBrandingRegex);
         expect(lens.ctaLabel.en).not.toMatch(hangulRegex);
+        expect(lens.ctaLabel.en).not.toMatch(directBrandingRegex);
       }
     }
   });

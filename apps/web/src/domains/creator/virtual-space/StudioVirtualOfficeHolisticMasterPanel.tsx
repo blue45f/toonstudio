@@ -482,7 +482,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           <div>
             <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <Sparkles className="h-4 w-4 text-accent" />
-              나노 바나나(Nano Banana v10) 고해상도 스튜디오 테마 · 5종 장식 프롭 · 8프레임 치비 캐릭터 스프라이트
+              고해상도 스튜디오 테마 · 5종 장식 프롭 · 8프레임 치비 캐릭터 스프라이트
             </h4>
             <p className="mt-0.5 text-[11px] text-fg-2">
               2.5D 아이소메트릭 파노라마 테마(1280×720) · 신티크/홀로그램/로파이/ON-AIR/바이오필릭 프롭(384×384) · 4방향×2포즈 투명 RGBA 캐릭터 시트(1024×512)
@@ -516,7 +516,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                       );
                       setState(next);
                       onBannerChange?.(
-                        `나노 바나나 캐릭터 포즈 전환: ${poseKey === "drawing" ? "태블릿 작화(Drawing)" : "스튜디오 대기(Idle)"}`,
+                        `캐릭터 포즈 전환: ${poseKey === "drawing" ? "태블릿 작화(Drawing)" : "스튜디오 대기(Idle)"}`,
                       );
                     }}
                     className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
@@ -551,7 +551,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                       state.nanoBananaStudioPack.activeCharacterPose,
                     );
                     setState(next);
-                    onBannerChange?.(`나노 바나나 캐릭터 방향 전환: ${label}`);
+                    onBannerChange?.(`캐릭터 방향 전환: ${label}`);
                   }}
                   className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
                     state.nanoBananaStudioPack.activeCharacterDirection === dir
@@ -580,7 +580,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
               <figure className="flex flex-col items-center justify-center rounded-lg border border-line bg-card p-2">
                 <img
                   src={state.nanoBananaStudioPack.characterCleanAtlasUrl}
-                  alt="나노 바나나 4x2 투명 RGBA 캐릭터 아틀라스"
+                  alt="4x2 투명 RGBA 캐릭터 아틀라스"
                   className="h-28 w-full object-contain"
                   loading="lazy"
                 />
@@ -598,14 +598,14 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                 2.5D 웹툰 스튜디오 파노라마 테마 & 5대 장식 프롭 배치
               </strong>
               <span className="font-mono text-[10px] text-fg-3">
-                /assets/virtual-studio/nano-banana-v10/
+                2.5D 아이소메트릭 테마 팩
               </span>
             </div>
 
             <div className="mt-2 overflow-hidden rounded-lg border border-line bg-card">
               <img
                 src={state.nanoBananaStudioPack.panoramaAssetUrl}
-                alt="나노 바나나 2.5D 가상 웹툰 스튜디오 플로어 파노라마 테마"
+                alt="2.5D 가상 웹툰 스튜디오 플로어 파노라마 테마"
                 className="h-28 w-full object-cover"
                 loading="lazy"
               />
@@ -624,7 +624,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                       const next = toggleNanoBananaDecorPropPlacement(state, prop.id);
                       setState(next);
                       onBannerChange?.(
-                        `나노 바나나 스튜디오 프롭 ${equipped ? "해제" : "배치"}: ${prop.labelKo}`,
+                        `스튜디오 프롭 ${equipped ? "해제" : "배치"}: ${prop.labelKo}`,
                       );
                     }}
                     className={`flex items-center gap-2 rounded-lg border p-1.5 text-left text-[11px] transition ${

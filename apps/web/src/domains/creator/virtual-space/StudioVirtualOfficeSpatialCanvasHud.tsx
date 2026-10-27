@@ -103,13 +103,13 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             onClick={() => {
               onNavigateToTab?.(
                 "holistic-master-command",
-                "실무 원고 마감 워크벤치 & 나노 바나나 8대 스튜디오 엔진을 열었습니다.",
+                "실무 원고 마감 워크벤치 & 8대 가상 스튜디오 엔진을 열었습니다.",
               );
-              setHudToastKo("실무 원고 마감 워크벤치 & 나노 바나나 스튜디오로 이동했습니다.");
+              setHudToastKo("실무 원고 마감 워크벤치 & 가상 스튜디오로 이동했습니다.");
             }}
             className="rounded-md border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent hover:opacity-90"
           >
-            🎨 실무 원고 마감 워크벤치 · 나노 바나나 스튜디오 열기
+            🎨 실무 원고 마감 워크벤치 · 가상 스튜디오 열기
           </button>
         </div>
 

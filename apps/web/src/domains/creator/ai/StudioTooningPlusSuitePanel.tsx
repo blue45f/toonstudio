@@ -604,15 +604,15 @@ export function StudioTooningPlusSuitePanel({
                 >
                   {(
                     [
-                      "NanoBanana",
-                      "NanoBanana2",
-                      "NanoBananaPro",
-                      "Seedream",
-                      "QwenImageEdit",
+                      ["NanoBanana", "스탠다드 리터치"],
+                      ["NanoBanana2", "플래시 리터치 2.0"],
+                      ["NanoBananaPro", "프로 디테일 리터치"],
+                      ["Seedream", "시드림 리터치"],
+                      ["QwenImageEdit", "정밀 영역 편집"],
                     ] as const
-                  ).map((m) => (
+                  ).map(([m, label]) => (
                     <option key={m} value={m}>
-                      {m}
+                      {label}
                     </option>
                   ))}
                 </select>

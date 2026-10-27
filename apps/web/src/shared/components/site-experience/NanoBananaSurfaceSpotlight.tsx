@@ -76,10 +76,6 @@ export function NanoBananaSurfaceSpotlight({
             height={360}
             className="nb-site-spotlight__img"
           />
-          <span className="nb-site-spotlight__visual-badge">
-            <span className="nb-site-spotlight__visual-dot" />
-            <span>{card.atelierModelLabel}</span>
-          </span>
         </div>
 
         <div className="nb-site-spotlight__body">
@@ -130,14 +126,6 @@ export function NanoBananaSurfaceSpotlight({
                   {pick(chip)}
                 </span>
               ))}
-              {activeLens.id === "recipe" ? (
-                <code
-                  className="nb-site-spotlight__seed"
-                  title={pick(activeLens.promptSeed)}
-                >
-                  {pick(activeLens.promptSeed)}
-                </code>
-              ) : null}
             </div>
 
             <Link

@@ -18,22 +18,22 @@ export interface NanoBananaCardMeta {
 }
 
 const RAW: Record<NanoBananaCardId, readonly [string, string, string]> = {
-  "nb-discover-spotlight": ["NanoBanana Pro · Key-Art Curator", "STAGE 01 · 작품 발견 허브", "STAGE 01 · DISCOVERY HUB"],
-  "nb-explore-spectrum": ["NanoBanana 2 · Genre Prism Engine", "STAGE 01 · 장르 스펙트럼 탐색", "STAGE 01 · GENRE SPECTRUM"],
-  "nb-ranking-constellation": ["NanoBanana Pro · Serial Observatory", "STAGE 01 · 실시간 차트 & 요일표", "STAGE 01 · CHARTS & CALENDAR"],
-  "nb-library-archive": ["NanoBanana 2 · Collector's Vault", "STAGE 01 · 개인 서재 아카이브", "STAGE 01 · PERSONAL LIBRARY"],
-  "nb-create-canvas": ["NanoBanana Pro · Direct-Ink Studio", "STAGE 02 · 창작 캔버스", "STAGE 02 · CREATIVE CANVAS"],
-  "nb-planning-storylab": ["NanoBanana 2 · Story Architect", "STAGE 02 · 스토리랩 & 기획", "STAGE 02 · STORY LAB"],
-  "nb-spatial-stage": ["NanoBanana Pro · 3D Spatial Stage", "STAGE 02 · 3D 배경 & 포저", "STAGE 02 · 3D SPATIAL STAGE"],
-  "nb-production-control": ["NanoBanana 2 · Production Control", "STAGE 02 · 제작 운영 & 검수", "STAGE 02 · PRODUCTION OPS"],
-  "nb-market-atelier": ["NanoBanana Pro · Asset Atelier", "STAGE 03 · 에셋 마켓 & 핏", "STAGE 03 · ASSET MARKET"],
-  "nb-learn-academy": ["NanoBanana 2 · Creator Academy", "STAGE 03 · 드로잉 아카데미", "STAGE 03 · CREATOR ACADEMY"],
-  "nb-community-plaza": ["NanoBanana Pro · Creator Plaza", "STAGE 03 · 커뮤니티 광장", "STAGE 03 · COMMUNITY PLAZA"],
-  "nb-showcase-premiere": ["NanoBanana 2 · Premiere Gallery", "STAGE 03 · 쇼케이스 & 콜라보", "STAGE 03 · SHOWCASE GALLERY"],
-  "nb-workflow-bridge": ["NanoBanana Pro · Workflow Compass", "STAGE 00 · 통합 창작 동선", "STAGE 00 · WORKFLOW COMPASS"],
-  "nb-manage-vault": ["NanoBanana 2 · Creator Space", "STAGE 04 · 마이 스페이스", "STAGE 04 · MY SPACE"],
-  "nb-play-fortune": ["NanoBanana Pro · Interactive Play", "STAGE 04 · 플레이 & 운세", "STAGE 04 · INTERACTIVE PLAY"],
-  "nb-trust-sanctuary": ["NanoBanana 2 · Trust Sanctuary", "STAGE 04 · 신뢰 & 접근성", "STAGE 04 · TRUST SANCTUARY"],
+  "nb-discover-spotlight": ["Key-Art Curation", "STAGE 01 · 작품 발견 허브", "STAGE 01 · DISCOVERY HUB"],
+  "nb-explore-spectrum": ["Genre Spectrum", "STAGE 01 · 장르 스펙트럼 탐색", "STAGE 01 · GENRE SPECTRUM"],
+  "nb-ranking-constellation": ["Serial Observatory", "STAGE 01 · 실시간 차트 & 요일표", "STAGE 01 · CHARTS & CALENDAR"],
+  "nb-library-archive": ["Personal Archive", "STAGE 01 · 개인 서재 아카이브", "STAGE 01 · PERSONAL LIBRARY"],
+  "nb-create-canvas": ["Direct-Ink Studio", "STAGE 02 · 창작 캔버스", "STAGE 02 · CREATIVE CANVAS"],
+  "nb-planning-storylab": ["Story Architecture", "STAGE 02 · 스토리랩 & 기획", "STAGE 02 · STORY LAB"],
+  "nb-spatial-stage": ["3D Spatial Stage", "STAGE 02 · 3D 배경 & 포저", "STAGE 02 · 3D SPATIAL STAGE"],
+  "nb-production-control": ["Production Control", "STAGE 02 · 제작 운영 & 검수", "STAGE 02 · PRODUCTION OPS"],
+  "nb-market-atelier": ["Asset Atelier", "STAGE 03 · 에셋 마켓 & 핏", "STAGE 03 · ASSET MARKET"],
+  "nb-learn-academy": ["Creator Academy", "STAGE 03 · 드로잉 아카데미", "STAGE 03 · CREATOR ACADEMY"],
+  "nb-community-plaza": ["Creator Plaza", "STAGE 03 · 커뮤니티 광장", "STAGE 03 · COMMUNITY PLAZA"],
+  "nb-showcase-premiere": ["Premiere Gallery", "STAGE 03 · 쇼케이스 & 콜라보", "STAGE 03 · SHOWCASE GALLERY"],
+  "nb-workflow-bridge": ["Workflow Compass", "STAGE 00 · 통합 창작 동선", "STAGE 00 · WORKFLOW COMPASS"],
+  "nb-manage-vault": ["Creator Space", "STAGE 04 · 마이 스페이스", "STAGE 04 · MY SPACE"],
+  "nb-play-fortune": ["Interactive Play", "STAGE 04 · 플레이 & 운세", "STAGE 04 · INTERACTIVE PLAY"],
+  "nb-trust-sanctuary": ["Trust Sanctuary", "STAGE 04 · 신뢰 & 접근성", "STAGE 04 · TRUST SANCTUARY"],
 };
 
 function meta(cardId: NanoBananaCardId): NanoBananaCardMeta {

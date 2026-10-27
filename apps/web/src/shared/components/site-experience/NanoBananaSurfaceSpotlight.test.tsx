@@ -40,16 +40,17 @@ describe("NanoBananaSurfaceSpotlight", () => {
 
     // Default lens is "curation"
     const curationBtn = screen.getByRole("button", { name: "큐레이션 렌즈" });
-    const recipeBtn = screen.getByRole("button", { name: "나노바나나 레시피" });
+    const recipeBtn = screen.getByRole("button", { name: "창작 레시피" });
     expect(curationBtn.getAttribute("aria-pressed")).toBe("true");
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("false");
+
+    // Ensure technical model badges like "NanoBanana Pro · ..." are not rendered
+    expect(container.querySelector(".nb-site-spotlight__visual-badge")).toBeNull();
+    expect(container.textContent).not.toMatch(/NanoBanana|Cel-Brush Engine/iu);
 
     // Switch to recipe lens
     fireEvent.click(recipeBtn);
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("true");
-    expect(container.querySelector(".nb-site-spotlight__seed")?.textContent).toContain(
-      "Korean webtoon premiere cover composition",
-    );
     expect(screen.getByRole("link", { name: /표지 시안 시작/u }).getAttribute("href")).toBe(
       "/create",
     );
