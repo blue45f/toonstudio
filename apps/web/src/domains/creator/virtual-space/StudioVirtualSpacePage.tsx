@@ -52,11 +52,10 @@ import { StudioVirtualSpaceJoystick } from "./StudioVirtualSpaceJoystick";
 import { StudioVirtualSpaceNpcDialoguePanel, type StudioNpcDialogueAction } from "./StudioVirtualSpaceNpcDialoguePanel";
 import { StudioVirtualSpaceOfficeStart } from "./StudioVirtualSpaceOfficeStart";
 import { StudioVirtualSpacePanelGate } from "./StudioVirtualSpacePanelGate";
-import {
-  StudioVirtualSpacePhaserCanvas,
-  type StudioVirtualSpaceEngineLocalState,
-} from "./StudioVirtualSpacePhaserCanvas";
-import { StudioVirtualSpaceThreeCanvas } from "./three/StudioVirtualSpaceThreeCanvas";
+import type { StudioVirtualSpaceEngineLocalState } from "./StudioVirtualSpacePhaserCanvas";
+import { readStudioVirtualStageMode, resolveStudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
+import { StudioOffice2dCanvas } from "./office2d/StudioOffice2dCanvas";
+import { StudioVirtualSpaceLegacyStage, StudioVirtualSpaceThreeStage } from "./office2d/StudioVirtualSpaceStages";
 import type { StudioSpaceSocialAction, StudioSpaceSocialRequest } from "./StudioVirtualSpaceSocialPanel";
 import { StudioVirtualSpaceUserList } from "./StudioVirtualSpaceUserList";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
@@ -1879,10 +1878,10 @@ export function VirtualSpaceExperience({
       moreItems={moreItems} workLauncher={workLauncher} dockRef={mobileDockRef} onPopover={setDockPopover} onEmote={emote}
       onTogglePeople={() => togglePanel("people")} onToggleMap={toggleMap} />;
 
-  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stage") === "3d" ? "3d" : "2d",
-  );
-  const StageCanvas = engineMode === "3d" && !authoringMode ? StudioVirtualSpaceThreeCanvas : StudioVirtualSpacePhaserCanvas;
+  // 2D(ToonOffice 2D)가 기본이고 3D는 선택형이다. 저작 모드와 ?stage=legacy만 이전 Phaser 스테이지를 쓴다.
+  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() => readStudioVirtualStageMode(typeof window === "undefined" ? "" : window.location.search) === "3d" ? "3d" : "2d");
+  const stageKind = resolveStudioVirtualStageKind({ engineMode, authoringMode, search: typeof window === "undefined" ? "" : window.location.search });
+  const StageCanvas = stageKind === "legacy" ? StudioVirtualSpaceLegacyStage : stageKind === "three" ? StudioVirtualSpaceThreeStage : StudioOffice2dCanvas;
 
   return (
     <div className="space-hud" data-own-control-size="true" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}

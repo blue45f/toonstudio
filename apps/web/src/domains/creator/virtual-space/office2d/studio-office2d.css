@@ -1,0 +1,169 @@
+/* ToonOffice 2D 스테이지 — 캔버스 + 웹툰 제작 공정 레일 */
+.studio-office2d {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-canvas);
+}
+
+.studio-office2d__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.studio-office2d__canvas:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--color-accent);
+}
+
+.studio-office2d__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--color-fg-2);
+  font: 600 0.95rem/1.4 var(--font-sans);
+  background: var(--color-canvas);
+}
+
+/* 웹툰 제작 공정 바: 위치 칩과 지도 사이, 화면 위 가운데 */
+.studio-office2d-pipeline {
+  position: absolute;
+  top: calc(var(--space-safe-top, 0px) + 14px);
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  padding: 5px;
+  border: 1px solid var(--space-border, var(--color-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-card) 86%, transparent);
+  box-shadow: var(--space-shadow, 0 10px 30px color-mix(in srgb, var(--color-fg) 18%, transparent));
+  backdrop-filter: blur(12px);
+  font-family: var(--font-sans);
+}
+
+.studio-office2d-pipeline__steps {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-office2d-pipeline__item {
+  display: flex;
+  align-items: center;
+}
+
+.studio-office2d-pipeline__item + .studio-office2d-pipeline__item::before {
+  content: "";
+  width: 10px;
+  height: 2px;
+  margin-right: 2px;
+  border-radius: 2px;
+  background: var(--space-border, var(--color-line));
+}
+
+.studio-office2d-pipeline__item[data-state="done"] + .studio-office2d-pipeline__item::before,
+.studio-office2d-pipeline__item[data-state="current"] + .studio-office2d-pipeline__item::before {
+  background: var(--color-accent);
+}
+
+.studio-office2d-pipeline__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--color-fg);
+  background: transparent;
+  font: 700 0.8rem/1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.studio-office2d-pipeline__step:hover {
+  background: var(--color-accent-soft);
+}
+
+.studio-office2d-pipeline__step:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.studio-office2d-pipeline__step[aria-current="location"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.studio-office2d-pipeline__index {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--space-border, var(--color-line));
+  border-radius: 50%;
+  color: var(--color-fg-2);
+  background: var(--color-panel, var(--color-card));
+  font: 800 0.74rem/1 var(--font-sans);
+}
+
+.studio-office2d-pipeline__item[data-state="done"] .studio-office2d-pipeline__index,
+.studio-office2d-pipeline__step[aria-current="location"] .studio-office2d-pipeline__index {
+  border-color: var(--color-accent);
+  color: var(--color-card);
+  background: var(--color-accent);
+}
+
+/* 위치 칩·지도와 겹치지 않도록 중간 폭에서는 한 줄 아래로 내리고 현재 공정 이름만 남긴다. */
+@media (max-width: 1559px) {
+  .studio-office2d-pipeline {
+    top: calc(var(--space-safe-top, 0px) + 70px);
+  }
+
+  .studio-office2d-pipeline__step {
+    padding-right: 5px;
+  }
+
+  .studio-office2d-pipeline__label {
+    display: none;
+  }
+
+  .studio-office2d-pipeline__step[aria-current="location"] {
+    padding-right: 10px;
+  }
+
+  .studio-office2d-pipeline__step[aria-current="location"] .studio-office2d-pipeline__label {
+    display: inline;
+  }
+}
+
+/* 작은 화면에서는 지도·하단 독이 길찾기를 맡고 공정 바는 숨긴다. */
+@media (max-width: 719px), (max-height: 520px) {
+  .studio-office2d-pipeline {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-office2d-pipeline__step {
+    transition: background-color 140ms ease, border-color 140ms ease;
+  }
+}
+
+@media (forced-colors: active) {
+  .studio-office2d-pipeline,
+  .studio-office2d-pipeline__step[aria-current="location"] {
+    border: 2px solid CanvasText;
+  }
+}

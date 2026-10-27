@@ -1,0 +1,281 @@
+{
+  "version": 2,
+  "cell": {
+    "width": 128,
+    "height": 192,
+    "cols": 9,
+    "rows": 4
+  },
+  "sources": {
+    "desks": "69303797e4a0dd38f1f22b8f081903c9e38cf22a44b7c1b4e75a2d2f1c9290eb",
+    "furniture": "547022b7a7eb1af0cc4026a6e43c00dabd96bcfcebcf7cd66a7147c4b75b7abe",
+    "pantry": "00bcc7dc7546013cd8c214a4f6a07a63f086cb251ab3616c90cf4ce2d2cf9c46",
+    "decor": "2f78fac53c20f5c574a9da300194dcce0e41dd9dfb842d17f404772648e01a59",
+    "props_a": "a11ab5dafcdf708ffe7acb35537db999e383a29697f0dc8906e51b2347959703",
+    "props_b": "eee3fdbb6a202b2f4702d3b46a2b2f29cb2f55df0507a97ee2af00db444be412",
+    "char_artist": "5075fb7e14bd8d77df584958024d0d595ec178bde3df68739436655c2f8cb9d8",
+    "char_pd": "cfe978d8cba969a41f1cfaa61187aa343edc31becbf9070bb6a8ed1e07288665",
+    "char_writer": "965f5932af0e437ba73987bd3bc6d4022384feb15bf6c5b877431d63307e7431",
+    "char_colorist": "b779b94c22727a43ef5954e1259f377340067d098f2e10a5fe28af46f4aaaecf",
+    "char_bgartist": "94c3f2f161109e11e1cf5d069114dca3a8a14ca180477c516d00ebf2fc5ea30c"
+  },
+  "objects": {
+    "desk-artist": {
+      "width": 239,
+      "height": 218,
+      "sha256": "90c0a5010b73cbe8f9d9a473631dd9d0aadb788ef23823d83cfcd91875c0056f"
+    },
+    "desk-inking": {
+      "width": 220,
+      "height": 243,
+      "sha256": "26619a367cf8a916153a1d7ba46c532d045d9f241591f291d717095eda66e705"
+    },
+    "desk-colorist": {
+      "width": 231,
+      "height": 243,
+      "sha256": "09a9e2cb97b6371b43b15e8990105dfa490ac12f22058ccd841e90a1038efeed"
+    },
+    "desk-3d": {
+      "width": 230,
+      "height": 246,
+      "sha256": "a5b99ea22596f33775a3193a7ae1cffcdf691e17ac7ee15b756f197d53ad40f8"
+    },
+    "desk-lettering": {
+      "width": 224,
+      "height": 308,
+      "sha256": "8ff9a4333fae6ab759b00ca03d2c34228075edf4710c69cd58bad243089c4d04"
+    },
+    "desk-producer": {
+      "width": 224,
+      "height": 205,
+      "sha256": "c90698262774b0a7ddaf2bc223a9b8f695a9c11bced93eba448f038e97423c86"
+    },
+    "desk-writer": {
+      "width": 224,
+      "height": 212,
+      "sha256": "563ed2eed00e3b9602c682284353a29b91e05a42d365a61b2295990c99709d60"
+    },
+    "reception-desk": {
+      "width": 223,
+      "height": 185,
+      "sha256": "a2f329e26608ccf784eba2451919daae9db894579be56ae70293e6f271558f7b"
+    },
+    "storyboard-wall": {
+      "width": 295,
+      "height": 300,
+      "sha256": "77c597cb1fc1bb4195958e145a3d3058a84c0a95d1ecf13b9ee895e0518cc1a5"
+    },
+    "review-screen": {
+      "width": 165,
+      "height": 331,
+      "sha256": "a57b3a5008fc134e7653fa409041f7201fbe24e7da15949124e6d7f87882bb44"
+    },
+    "kanban-board": {
+      "width": 230,
+      "height": 274,
+      "sha256": "a1c861df8f441dd1984f776364a4863756a1ca87e177b6d2d390493cf44f677c"
+    },
+    "bookshelf": {
+      "width": 184,
+      "height": 320,
+      "sha256": "711c0c7d3c32eb1d85e8548feb605e7ca2534f4338b53093ab9161aa1b396c59"
+    },
+    "table-round": {
+      "width": 219,
+      "height": 214,
+      "sha256": "61bd6f0ce436d575a7169570cde7f154133d9abee3c0cd5c2d598f0c0b6afbc8"
+    },
+    "table-conference": {
+      "width": 391,
+      "height": 192,
+      "sha256": "a99a460d67631692262c925101fb713f9396facebdf6fca7c4465c3f756626f0"
+    },
+    "printer-station": {
+      "width": 228,
+      "height": 212,
+      "sha256": "e48c4e23ed0d345cd91f7a09e70607a9dc46bd871fb0ebbc5294c128f1b503c7"
+    },
+    "focus-booth": {
+      "width": 174,
+      "height": 454,
+      "sha256": "253228305d9373f1d21350f3ce024b421e0ef7fbbedded407fd74f7d5b9307d1"
+    },
+    "coffee-machine": {
+      "width": 260,
+      "height": 261,
+      "sha256": "5be2d6f99ad0839f9f741c643ef1ecc77cb20755ce63f4b8e090da32bf8f77cb"
+    },
+    "vending-machine": {
+      "width": 166,
+      "height": 278,
+      "sha256": "cb6b74076053cf77721eece107b9a647c662421b491bc6bc1799ed85e7f07ed5"
+    },
+    "sofa": {
+      "width": 306,
+      "height": 218,
+      "sha256": "c1a28d92f6e9d1651fcab86a5d2306d9d131cc92d877165cc842b5dd766ffd76"
+    },
+    "filing-cabinet": {
+      "width": 118,
+      "height": 268,
+      "sha256": "bea582762a03a19c1f3e4e20a53dd2a03c048e01fb1d1f7feb0d7be8c7cbb01a"
+    },
+    "comic-box": {
+      "width": 238,
+      "height": 199,
+      "sha256": "85116fbf7762f5af57bcbfb7497126809dd68dcc024dce6ade8e8782de4d96f0"
+    },
+    "supply-cart": {
+      "width": 172,
+      "height": 274,
+      "sha256": "0607bf67d03d5c4f0a251220144c4eb7eed98d13ea4b380e3f375ec38fb3c2cd"
+    },
+    "side-table": {
+      "width": 157,
+      "height": 206,
+      "sha256": "48ebd535a1d014656b42dd30e0f972755481999b10bb89b1a5bef67c809815f8"
+    },
+    "partition": {
+      "width": 211,
+      "height": 260,
+      "sha256": "dfbd13593018686e631084f11c4a794d00fb0dcf09d470dfbb2457f6a4105663"
+    },
+    "rug-rect": {
+      "width": 438,
+      "height": 231,
+      "sha256": "9de0582a5bc7423da91469642c126a4a7c6b35ba7290ef8e0677a12a5af09555"
+    },
+    "rug-round": {
+      "width": 270,
+      "height": 265,
+      "sha256": "5c7a880796bffbf19170cb6ef4a717fdeac391fcca8ee6cf710a9c51456ccd9c"
+    },
+    "poster": {
+      "width": 174,
+      "height": 221,
+      "sha256": "e377343405c4bae92417c68883df9b76a4d7f9f078bcab44fc59aa4ccdf5a053"
+    },
+    "wall-clock": {
+      "width": 158,
+      "height": 159,
+      "sha256": "e04d0da2139b33b952705ea1fcba9432ca2ebf2dd004537ec030fae0f9b82325"
+    },
+    "window": {
+      "width": 300,
+      "height": 295,
+      "sha256": "288e90e0b85e29a9a939114c48606b55d3fa6e0ee55d92013c692d61ea34145f"
+    },
+    "neon-balloon": {
+      "width": 151,
+      "height": 140,
+      "sha256": "d8b2c73dbf8036d359b92ff80994ff53a99cf39956c56ddbe35fe462bff53a63"
+    },
+    "pinboard": {
+      "width": 250,
+      "height": 163,
+      "sha256": "5a9dc1f7cec83f9902b070615fefc07a23fcf29ccc1420ff7a15f0c82f46ff6f"
+    },
+    "wall-tv": {
+      "width": 148,
+      "height": 304,
+      "sha256": "e1eded38170c13e74b07ef787804e516ca2c7e689912dd2ec5de674b30f146d3"
+    },
+    "water-cooler": {
+      "width": 115,
+      "height": 322,
+      "sha256": "a343dd98c1afde4a78cb1f0fe4871ad8e7a68d4a9a05d1fbfc9cf3c041cf4898"
+    },
+    "beanbag": {
+      "width": 229,
+      "height": 214,
+      "sha256": "d035c1f0ffd5f6a72d7eb64a40d4f44646114e9bb15ec568e9eee3eba7cc8dd5"
+    },
+    "plant-monstera": {
+      "width": 229,
+      "height": 352,
+      "sha256": "3e9878eba48d1fd7df81bd633a6f3a5064ab493b7aba5207cd3127e58a99c2ee"
+    },
+    "floor-lamp": {
+      "width": 119,
+      "height": 352,
+      "sha256": "54ad4ec2d887a5f88cc1d58dcebc4b8953d77d91cedf87782920ab30ea27c5df"
+    },
+    "chair-back": {
+      "width": 206,
+      "height": 322,
+      "sha256": "e4e19eb3ae62a80e3c5396b365098268032b0ca068bc86d337554ca93d676c75"
+    },
+    "chair-front": {
+      "width": 213,
+      "height": 385,
+      "sha256": "f19d5692ceb8fd28607728c68648e135e9ff085e0548cf06278ea5f4350d6175"
+    },
+    "exercise-ball": {
+      "width": 208,
+      "height": 197,
+      "sha256": "cf013ffb45166b859bde12e99186d11a63fb10162084dc87963ddf48d26bb00f"
+    },
+    "paper-bin": {
+      "width": 189,
+      "height": 267,
+      "sha256": "e0c9455b358ef24e511040bdc1345b22dc255fd5bfc3def1c4c2c9aa764af1db"
+    },
+    "plant-olive": {
+      "width": 225,
+      "height": 386,
+      "sha256": "1138f533af27b5d5180a6d25ff78cda5200d5c369718477d123c664d484433a8"
+    }
+  },
+  "characters": {
+    "artist": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "41831be8707346561137cefe390660e8f8fbf3cf4a2878d44ed3935b4a8bf697",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 65.5
+    },
+    "pd": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "dc243b07365c905538b5b6dc3d100034389f6ad3cbcbb0550b751db9ebb82c5c",
+      "cols": 9,
+      "rows": 4,
+      "facing": "right->right",
+      "hipCx": 64.75
+    },
+    "writer": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "1838ebdae4c2fc992071845542aec31da9091fb00edb566a8eda185a0f2b7105",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 67.25
+    },
+    "colorist": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "f1d642042cf2ed8547c7de0cc04cfc7179a1d93c3ab4b60a7ee5955a19b57fe9",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 65.0
+    },
+    "bgartist": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "1910c093b9dae11141b85953890cc4118663163d5f84fd9adb32632696c1643c",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 63.0
+    }
+  },
+  "preview": {
+    "width": 640,
+    "height": 360,
+    "sha256": "04385d97f6a13f40e673a16ad597eb92891ef474e317cd7cae7007cd381e7ce7"
+  }
+}

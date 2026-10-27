@@ -1,4 +1,6 @@
 import { sha256HexPortable } from "../studio-sha256";
+import { TOON_HQ_PLACE_ID } from "./office2d/hq/toon-hq-blueprint";
+import { studioVirtualToonHqManifest } from "./office2d/hq/toon-hq-manifest";
 import { CAMPUS_GATES } from "./studio-virtual-space-campus-blueprint";
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import {
@@ -19,7 +21,13 @@ import type {
   StudioWorldRect,
 } from "./studio-virtual-space-world-manifest";
 
-export const DEFAULT_STUDIO_VIRTUAL_PLACE_ID = "skyport";
+/**
+ * 처음 들어오는 기본 장소. 2026-10-28부터 2D 웹툰 스튜디오 본사(toon-hq)가 기본이고,
+ * 공중섬 캠퍼스(skyport)는 본사 로비 출입문·장소 목록에서 들어간다.
+ */
+export const DEFAULT_STUDIO_VIRTUAL_PLACE_ID = TOON_HQ_PLACE_ID;
+/** 캠퍼스 입장 장소. 장소 배치 사양이 없는 id의 폴백 배치로도 쓴다. */
+export const STUDIO_VIRTUAL_CAMPUS_HOME_PLACE_ID = "skyport";
 export const STUDIO_VIRTUAL_PLACE_QUERY = "place";
 
 const WORLD_WIDTH = 960;
@@ -228,9 +236,11 @@ function interactionSlots(place: StudioVirtualPlaceDefinition): readonly StudioW
 export function studioVirtualPlaceWorldManifest(placeId: string, personal = false): StudioVirtualSpaceWorldManifest {
   const available = studioVirtualPlacesForMode(personal);
   const resolvedPlaceId = studioVirtualPlaceIdForMode(placeId, personal);
+  if (resolvedPlaceId === TOON_HQ_PLACE_ID) return studioVirtualToonHqManifest(personal);
   const place = available.find((candidate) => candidate.id === resolvedPlaceId)
-    ?? studioVirtualPlaceById(DEFAULT_STUDIO_VIRTUAL_PLACE_ID);
-  const spec = PLACE_LAYOUTS[place.id] ?? PLACE_LAYOUTS[DEFAULT_STUDIO_VIRTUAL_PLACE_ID]!;
+    ?? studioVirtualPlaceById(STUDIO_VIRTUAL_CAMPUS_HOME_PLACE_ID);
+  const spec = PLACE_LAYOUTS[place.id] ?? PLACE_LAYOUTS[STUDIO_VIRTUAL_CAMPUS_HOME_PLACE_ID];
+  if (!spec) throw new Error("Missing campus home place layout");
   if (!NPC_SKINS.includes(spec.npcSkinKey)) throw new Error("Unsupported place NPC skin");
   const index = placeIndex(place.id);
   // 캠퍼스 하위 맵(게이트로 들어오는 장소)은 좌우 포털이 다른 하위 맵으로 이어지고, 아래 포털은 캠퍼스로 돌아간다.
@@ -335,7 +345,7 @@ export function studioVirtualPlaceWorldManifest(placeId: string, personal = fals
     action: npcAction,
   });
   const portals = Object.freeze([
-    { id: "portal-home", point: { x: 480, y: 604 }, radius: 28, href: portalHref(DEFAULT_STUDIO_VIRTUAL_PLACE_ID) },
+    { id: "portal-home", point: { x: 480, y: 604 }, radius: 28, href: portalHref(STUDIO_VIRTUAL_CAMPUS_HOME_PLACE_ID) },
     { id: "portal-previous", point: { x: 58, y: 320 }, radius: 26, href: portalHref(previous.id) },
     { id: "portal-next", point: { x: 902, y: 320 }, radius: 26, href: portalHref(next.id) },
   ]);

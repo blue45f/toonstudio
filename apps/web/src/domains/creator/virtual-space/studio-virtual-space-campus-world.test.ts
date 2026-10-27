@@ -275,8 +275,9 @@ describe("기본 제공 월드 해석기", () => {
     expect(resolveStudioVirtualBuiltinWorld("skyport", true, { arrivalFrom: "unknown" }).spawnId).toBe("main");
   });
 
-  it("개인 모드의 프로젝트 전용 장소는 로비로 정규화된다", () => {
-    expect(resolveStudioVirtualBuiltinWorld("production-control", true)).toMatchObject({ kind: "campus", placeId: "skyport", spawnId: "main" });
+  it("개인 모드의 프로젝트 전용 장소는 기본 장소(웹툰 스튜디오 본사 로비)로 정규화된다", () => {
+    expect(resolveStudioVirtualBuiltinWorld("production-control", true)).toMatchObject({ kind: "place", placeId: "toon-hq", spawnId: "main" });
     expect(resolveStudioVirtualBuiltinWorld("production-control", false)).toMatchObject({ kind: "place", placeId: "production-control" });
+    expect(resolveStudioVirtualBuiltinWorld("skyport", true)).toMatchObject({ kind: "campus", placeId: "skyport", spawnId: "main" });
   });
 });

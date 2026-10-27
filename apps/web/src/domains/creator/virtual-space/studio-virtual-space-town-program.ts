@@ -402,23 +402,51 @@ export function studioRuntimeBudget(viewportWidth: number, reducedMotion: boolea
   });
 }
 
+const BLUEPRINT_ROOM_ALIASES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  meeting: ["hq-meeting-room", "hq-main-hall", "hq-lounge"],
+  review: ["hq-review-room", "hq-main-hall", "hq-lounge"],
+  drawing: ["hq-ink-bay", "hq-main-hall"],
+  live: ["hq-lounge", "hq-main-hall", "hq-lobby"],
+  production: ["hq-war-room", "hq-main-hall"],
+  lounge: ["hq-lounge", "hq-main-hall"],
+  lobby: ["hq-lobby", "hq-main-hall"],
+});
+
 export function applyStudioTownBlueprint(
   state: StudioVirtualDecorationState,
   manifest: StudioVirtualSpaceWorldManifest,
   blueprint: StudioTownBlueprint,
   selfPoint?: StudioVirtualSpacePoint,
 ): StudioDecorationLayoutResult {
-  const room = manifest.rooms.find((candidate) => candidate.id === blueprint.roomId)
-    ?? (manifest.rooms.length === 1 ? manifest.rooms[0] : undefined);
-  if (!room) return { ok: false, reason: "invalid" };
-  const center = { x: room.x + room.width / 2, y: room.y + room.height / 2 };
-  return placeStudioVirtualDecorationGroup(state, blueprint.decor.map((item) => ({
-    type: item.type,
-    x: Math.round(center.x + item.offsetX),
-    y: Math.round(center.y + item.offsetY),
-    rotation: 0 as const,
-    scale: item.scale ?? 1,
-  })), manifest, selfPoint);
+  const aliasIds = BLUEPRINT_ROOM_ALIASES[blueprint.roomId] ?? [];
+  const candidateRooms = [
+    ...manifest.rooms.filter((candidate) => candidate.id === blueprint.roomId),
+    ...aliasIds.flatMap((aliasId) => manifest.rooms.filter((candidate) => candidate.id === aliasId)),
+    ...(manifest.rooms.length === 1 ? [manifest.rooms[0]] : []),
+  ].filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
+  if (!candidateRooms.length) return { ok: false, reason: "invalid" };
+
+  let lastFailure: StudioDecorationLayoutResult = { ok: false, reason: "invalid" };
+  for (const room of candidateRooms) {
+    const anchors = [
+      { x: room.x + room.width / 2, y: room.y + room.height / 2 },
+      { x: room.x + room.width * 0.32, y: room.y + room.height * 0.62 },
+      { x: room.x + room.width * 0.68, y: room.y + room.height * 0.62 },
+    ];
+    for (const center of anchors) {
+      const result = placeStudioVirtualDecorationGroup(state, blueprint.decor.map((item) => ({
+        type: item.type,
+        x: Math.round(center.x + item.offsetX),
+        y: Math.round(center.y + item.offsetY),
+        rotation: 0 as const,
+        scale: item.scale ?? 1,
+      })), manifest, selfPoint);
+      if (result.ok) return result;
+      if (result.reason === "limit" || result.reason === "invalid") return result;
+      lastFailure = result;
+    }
+  }
+  return lastFailure;
 }
 
 export type StudioTownSeason = "spring" | "summer" | "autumn" | "winter";

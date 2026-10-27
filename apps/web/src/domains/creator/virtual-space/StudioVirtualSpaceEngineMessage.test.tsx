@@ -9,9 +9,11 @@ afterEach(cleanup);
 const base = { failure: false, ready: false, loadProgress: null, slowLoad: false, onRetry: () => undefined } as const;
 
 describe("월드 로딩·실패 안내 카드", () => {
-  it("준비되면 아무것도 그리지 않는다", () => {
+  it("준비되면 로딩 안내 카드를 숨기고 스테이지 HUD만 남긴다", () => {
     const { container } = render(<StudioVirtualSpaceEngineMessage {...base} ready />);
-    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(container.querySelector(".studio-vspace-engine-message")).toBeNull();
+    expect(screen.getByTestId("main-stage-nano-banana-hud")).toBeTruthy();
   });
 
   it("로딩 중에는 상태 영역에 문구를 보이고, 진행률을 모르면 막대를 그리지 않는다", () => {

@@ -37,7 +37,20 @@ const ROOT = "/assets/virtual-studio/imagegen25-v7/places";
 const place = (definition: Omit<StudioVirtualPlaceDefinition, "previewUrl">): StudioVirtualPlaceDefinition =>
   Object.freeze({ ...definition, previewUrl: `${ROOT}/${definition.id}.webp` });
 
+/**
+ * 웹툰 스튜디오 본사(2D 기본 장소). 제작 공정(시나리오 → 작화 → 채색 → 배경 → 식자 → 검수 → 연재)이 방으로 이어진다.
+ * 미리보기는 신규 2D 엔진(office2d)으로 렌더한 장면이다.
+ */
+export const STUDIO_VIRTUAL_TOON_HQ_PLACE: StudioVirtualPlaceDefinition = Object.freeze({
+  id: "toon-hq", roomId: "hq-lobby", category: "production", labelKo: "웹툰 스튜디오 본사", labelEn: "Webtoon Studio HQ",
+  descriptionKo: "콘티부터 작화·채색·식자·검수·연재까지 제작 공정이 방으로 이어진 2D 업무 공간.",
+  descriptionEn: "A 2D workplace where storyboards, inking, color, lettering, review and publishing flow room to room.",
+  previewUrl: "/assets/virtual-studio/toon-office-v1/hq-preview.webp",
+  action: "canvas", recommended: true,
+});
+
 export const STUDIO_VIRTUAL_PLACES: readonly StudioVirtualPlaceDefinition[] = Object.freeze([
+  STUDIO_VIRTUAL_TOON_HQ_PLACE,
   place({ id: "skyport", roomId: "skyport", category: "community", labelKo: "스카이 포트", labelEn: "Sky Port",
     descriptionKo: "입장 부두와 월드 이동 게이트가 있는 시작 장소.", descriptionEn: "The arrival dock and gateway to every studio district.", action: "community", recommended: true }),
   place({ id: "creator-plaza", roomId: "creator-plaza", category: "community", labelKo: "창작자 광장", labelEn: "Creator Plaza",

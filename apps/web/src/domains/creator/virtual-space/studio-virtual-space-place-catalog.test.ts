@@ -10,7 +10,7 @@ describe("Virtual Studio place catalog", () => {
     expect(STUDIO_VIRTUAL_PLACES.length).toBeGreaterThanOrEqual(12);
     expect(new Set(STUDIO_VIRTUAL_PLACES.map((item) => item.id)).size).toBe(STUDIO_VIRTUAL_PLACES.length);
     for (const place of STUDIO_VIRTUAL_PLACES) {
-      expect(place.previewUrl).toMatch(/^\/assets\/virtual-studio\/imagegen25-v7\/places\/[a-z0-9-]+\.webp$/u);
+      expect(place.previewUrl).toMatch(/^\/assets\/virtual-studio\/(imagegen25-v7\/places\/[a-z0-9-]+\.webp|toon-office-v1\/hq-preview\.webp)$/u);
       expect(place.roomId.length).toBeGreaterThan(0);
     }
   });
