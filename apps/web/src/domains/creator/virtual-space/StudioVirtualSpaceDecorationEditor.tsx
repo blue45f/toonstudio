@@ -139,7 +139,9 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
           onPointerDown={(event) => beginDrag(item, event)} onPointerMove={trackDrag} onPointerUp={(event) => endDrag(item, event)}
           onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); choose(item.id); } }}
           rx="8" fill={selected?.id === item.id ? "#ad89ff" : "#72b6ca"} fillOpacity=".35" stroke={selected?.id === item.id ? "#f8e5ff" : "#83cfe2"} strokeWidth={selected?.id === item.id ? 4 : 2} />
-        <g transform={`translate(${shown.x} ${shown.y}) rotate(${item.rotation})`} pointerEvents="none">
+        <g transform={item.type === "rug"
+          ? `translate(${shown.x} ${shown.y}) rotate(${item.rotation})`
+          : `translate(${shown.x} ${shown.y}) scale(${item.rotation === 90 || item.rotation === 270 ? -1 : 1} 1)`} pointerEvents="none">
           <StudioVirtualExperienceArtPreview kind="furniture" artStyle={artStyle} frame={frame}
             x={-geometry.width * geometry.originX} y={-geometry.height * geometry.originY}
             width={geometry.width} height={geometry.height} preserveAspectRatio="none" />

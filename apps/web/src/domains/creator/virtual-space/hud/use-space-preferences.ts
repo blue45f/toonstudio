@@ -107,6 +107,14 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, notify }
     setSpaceTheme(next);
     writeStudioSpaceTheme(next);
   }, []);
+  useEffect(() => {
+    const onThemeEvent = (event: Event) => {
+      const next = (event as CustomEvent<StudioSpaceThemeKey>).detail;
+      if (next) setSpaceTheme(next);
+    };
+    window.addEventListener("toonspectrum:space-theme-change", onThemeEvent);
+    return () => window.removeEventListener("toonspectrum:space-theme-change", onThemeEvent);
+  }, []);
 
   const spaceSyncEnabled = studioVirtualSpaceSyncEnabled();
   const [decorationDrafts, setDecorationDrafts] = useState<ReadonlyMap<string, StudioVirtualDecorationState>>(() => new Map());

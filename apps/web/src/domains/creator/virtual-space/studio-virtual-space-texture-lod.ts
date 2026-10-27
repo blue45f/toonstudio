@@ -588,8 +588,8 @@ export class StudioTextureLodRuntime {
     const { record, level } = job;
     if (this.disposed || this.records.get(record.key) !== record || !renderer.createTexture2D) return;
     const { base } = record;
-    // 사본은 이미 프리멀티플라이드라 업로드 때 다시 곱하지 않는다(pma=false).
-    const wrapper = renderer.createTexture2D(0, base.minFilter, base.magFilter, base.wrapT, base.wrapS, base.format, image.data, image.width, image.height, false, false, false);
+    // 사본은 이미 프리멀티플라이드라 업로드 때 다시 곱하지 않는다(pma=false). Phaser 4 WebGLTextureWrapper의 flipY는 원본(base.flipY)을 따른다.
+    const wrapper = renderer.createTexture2D(0, base.minFilter, base.magFilter, base.wrapT, base.wrapS, base.format, image.data, image.width, image.height, false, false, base.flipY);
     const source: object = Object.create(record.source, { glTexture: { value: wrapper, enumerable: true, configurable: true } });
     record.copies.set(level, { wrapper, source, width: image.width, height: image.height, lastUsedAt: time });
     for (const [name, state] of record.frames) {

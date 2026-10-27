@@ -142,15 +142,17 @@ export class StudioVirtualDecorationRuntime {
       // 아직 로드되지 않은 커스텀 가구는 화면에 올리지 않는다.
       if (!visual) continue;
       const geometry = this.geometryFor(visual, 82 * placement.scale);
+      const upright = placement.type !== "rug";
       const sprite = this.scene.add.sprite(placement.x, placement.y, visual.texture, visual.frame)
         .setDisplaySize(geometry.width, geometry.height)
-        .setAngle(placement.rotation)
+        .setAngle(upright ? 0 : placement.rotation)
         .setOrigin(geometry.originX, geometry.originY)
         .setDepth(Math.round(placement.y) + 948)
         .setData("decorType", placement.type)
         .setData("decorAssetId", placement.assetId ?? "")
         .setData("decorNominalSize", 82 * placement.scale)
         .setData("catExpressionAtlas", visual.cat);
+      if (upright) sprite.setFlipX?.(placement.rotation === 90 || placement.rotation === 270);
       sprite.setData("baseScaleX", sprite.scaleX).setData("baseScaleY", sprite.scaleY);
       const glowColor = DECOR_GLOW_COLOR[placement.type];
       if (glowColor && typeof this.scene.add.ellipse === "function") {

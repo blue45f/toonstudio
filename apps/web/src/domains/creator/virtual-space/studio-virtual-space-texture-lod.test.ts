@@ -174,7 +174,7 @@ interface FakeWrapper extends StudioLodWrapper {
   readonly id: string;
 }
 
-const wrapperOf = (id: string): FakeWrapper => ({ id, flipY: false, wrapS: 33071, wrapT: 33071, minFilter: 9729, magFilter: 9729, format: 6408 });
+const wrapperOf = (id: string, flipY = true): FakeWrapper => ({ id, flipY, wrapS: 33071, wrapT: 33071, minFilter: 9729, magFilter: 9729, format: 6408 });
 
 /** Phaser의 Frame처럼 glTexture를 source에서 읽는다(WebGL 파이프라인이 frame.source.glTexture를 바인딩한다). LOD는 칸의 source를 갈아 끼운다. */
 class FakeFrame {
@@ -186,16 +186,16 @@ class FakeFrame {
 }
 
 interface FakeRenderer extends StudioLodRenderer {
-  readonly created: Array<{ wrapper: FakeWrapper; pixels: Uint8Array; width: number; height: number; pma: boolean }>;
+  readonly created: Array<{ wrapper: FakeWrapper; pixels: Uint8Array; width: number; height: number; pma: boolean; flipY: boolean }>;
   readonly deleted: StudioLodWrapper[];
 }
 
 function fakeRenderer(): FakeRenderer {
   const renderer: FakeRenderer = {
     type: 2, gl: {}, created: [], deleted: [],
-    createTexture2D(_mip, _min, _mag, _wrapT, _wrapS, _format, pixels, width, height, pma) {
-      const wrapper = wrapperOf(`copy-${renderer.created.length + 1}`);
-      renderer.created.push({ wrapper, pixels, width, height, pma });
+    createTexture2D(_mip, _min, _mag, _wrapT, _wrapS, _format, pixels, width, height, pma, _forceSize, flipY) {
+      const wrapper = wrapperOf(`copy-${renderer.created.length + 1}`, flipY);
+      renderer.created.push({ wrapper, pixels, width, height, pma, flipY });
       return wrapper;
     },
     deleteTexture(wrapper) { renderer.deleted.push(wrapper); },
@@ -278,6 +278,7 @@ describe("StudioTextureLodRuntime", () => {
     expect(copy?.pixels).toBeInstanceOf(Uint8Array);
     expect(copy?.pixels.length).toBe(80 * 80 * 4);
     expect(copy?.pma).toBe(false);
+    expect(copy?.flipY).toBe(asset.base.flipY);
     expect(asset.frames.__BASE.glTexture).toBe(copy?.wrapper);
     // 칸의 source만 파생 객체로 바뀌고, 원본 TextureSource와 그 GPU 텍스처는 그대로다(나머지 속성은 원본에서 물려받는다)
     expect(asset.frames.__BASE.source).not.toBe(asset.source);

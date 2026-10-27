@@ -15,6 +15,22 @@ import {
   type NanoBananaV13EmoteId,
 } from "./studio-virtual-office-nextgen-engine-data";
 import { NANO_BANANA_V14_WALK_SPRITES } from "./studio-virtual-office-nextgen-engine-model";
+import { writeStudioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
+
+const NANO_BANANA_TO_2D_SPACE_THEME: Readonly<Record<NanoBananaStudioThemeId, StudioSpaceThemeKey>> = {
+  "seoul-editorial-hq": "webtoon-atelier",
+  "cyber-neon-lab": "neon-night",
+  "hanok-botanical-atelier": "garden-terrace",
+  "lofi-cat-storyhouse": "cozy-wood",
+  "romance-palace-conservatory": "sakura-campus",
+  "murim-bamboo-pavilion": "cozy-wood",
+  "scifi-orbital-command": "celestial-observatory",
+  "brooklyn-indie-comics-loft": "modern-office",
+  "dolby-sound-dubbing-studio": "cinema-screening",
+  "magic-academy-astral-library": "library",
+  "rooftop-sunset-screening-stage": "sunset-harbor",
+  "abyssal-bioluminescent-worldlab": "celestial-observatory",
+};
 
 export type NanoBananaWalkDirection = keyof typeof NANO_BANANA_V14_WALK_SPRITES;
 
@@ -140,6 +156,15 @@ function writeNanoBananaPersistedSelection(
       NANO_BANANA_STAGE_STORAGE_KEY,
       JSON.stringify(next),
     );
+    const mappedTheme = NANO_BANANA_TO_2D_SPACE_THEME[next.themeId];
+    if (mappedTheme) {
+      writeStudioSpaceTheme(mappedTheme);
+      window.dispatchEvent(
+        new CustomEvent<StudioSpaceThemeKey>("toonspectrum:space-theme-change", {
+          detail: mappedTheme,
+        }),
+      );
+    }
   } catch {
     // Ignore storage quota errors
   }
@@ -397,7 +422,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
       <div
         data-testid="main-stage-nano-banana-hud"
         data-space-interactive="true"
-        className="pointer-events-auto absolute bottom-16 left-4 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
+        className="pointer-events-auto absolute left-4 top-16 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
       >
         <img
           src={activeTheme.assetUrl}

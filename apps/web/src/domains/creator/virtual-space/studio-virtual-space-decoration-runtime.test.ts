@@ -27,6 +27,7 @@ function fakeSprite(texture: string, frame: number) {
     destroyed: false,
     setDisplaySize: vi.fn().mockReturnThis(),
     setAngle: vi.fn().mockReturnThis(),
+    setFlipX: vi.fn().mockReturnThis(),
     setOrigin: vi.fn().mockReturnThis(),
     setDepth: vi.fn().mockReturnThis().mockReturnThis(),
     setData(key: string, value: unknown) { this.data.set(key, value); return this; },
@@ -182,6 +183,28 @@ describe("custom furniture rendering", () => {
     runtime.refreshTextures();
 
     expect(sprite.setTexture).not.toHaveBeenCalled();
+  });
+
+  it("keeps upright 2.5D furniture right-side up (angle 0, horizontal flip) instead of rotating 90/180/270 degrees", () => {
+    const scene = fakeScene([DECOR_KEY, ATLAS_KEY]);
+    const runtime = new StudioVirtualDecorationRuntime(scene as never, player as never, {
+      decor: DECOR_KEY,
+      accessory: "accessory",
+      furniture: ATLAS_KEY,
+      artStyle: "pastel",
+    });
+
+    runtime.syncDecorations(state([
+      { id: "sofa-180", type: "sofa", x: 20, y: 30, rotation: 180, scale: 1 },
+      { id: "sofa-90", type: "sofa", x: 40, y: 30, rotation: 90, scale: 1 },
+      { id: "rug-90", type: "rug", x: 60, y: 30, rotation: 90, scale: 1 },
+    ]));
+
+    expect(scene.sprites[0]!.setAngle).toHaveBeenCalledWith(0);
+    expect(scene.sprites[0]!.setFlipX).toHaveBeenCalledWith(false);
+    expect(scene.sprites[1]!.setAngle).toHaveBeenCalledWith(0);
+    expect(scene.sprites[1]!.setFlipX).toHaveBeenCalledWith(true);
+    expect(scene.sprites[2]!.setAngle).toHaveBeenCalledWith(90);
   });
 });
 

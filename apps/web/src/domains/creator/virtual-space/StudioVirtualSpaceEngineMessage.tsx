@@ -1,5 +1,7 @@
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import { StudioVirtualSpaceNanoBananaStageHud } from "./StudioVirtualSpaceNanoBananaStageHud";
+
 export interface StudioVirtualSpaceEngineMessageProps {
   readonly failure: boolean;
   readonly ready: boolean;
@@ -11,8 +13,8 @@ export interface StudioVirtualSpaceEngineMessageProps {
 }
 
 /**
- * 월드를 여는 동안(또는 열지 못했을 때) 캔버스 위에 보이는 안내 카드 (캔버스에서 분리).
- * 준비되면 아무것도 그리지 않는다. 번역 키가 바뀌지 않도록 범위 이름은 캔버스의 것을 그대로 쓴다.
+ * 월드를 여는 동안(또는 열지 못했을 때) 캔버스 위에 보이는 안내 카드 및 2D 나노바나나 HUD.
+ * 준비되면 로딩 카드는 숨기고 상단/하단 2.5D 나노바나나 스튜디오 워크벤치 도크만 유지한다.
  */
 export function StudioVirtualSpaceEngineMessage({ failure, ready, loadProgress, slowLoad, onRetry }: StudioVirtualSpaceEngineMessageProps) {
   const bt = useBilingual("StudioVirtualSpacePhaserCanvas");
@@ -26,14 +28,18 @@ export function StudioVirtualSpaceEngineMessage({ failure, ready, loadProgress, 
       </div>
     );
   }
-  if (ready) return null;
   return (
-    <div className="studio-vspace-engine-message" role="status" aria-busy="true">
-      <div className="studio-vspace-engine-card">
-        <p>{bt("스튜디오 불러오는 중…", "Loading studio…")}</p>
-        {loadProgress !== null ? <progress className="studio-vspace-engine-progress" max={100} value={loadProgress} aria-hidden="true" /> : null}
-        {slowLoad ? <p className="studio-vspace-engine-slow">{bt("연결이 느려 조금 더 걸리고 있어요.", "The connection is slow, so this is taking a little longer.")}</p> : null}
-      </div>
-    </div>
+    <>
+      <StudioVirtualSpaceNanoBananaStageHud />
+      {ready ? null : (
+        <div className="studio-vspace-engine-message" role="status" aria-busy="true">
+          <div className="studio-vspace-engine-card">
+            <p>{bt("스튜디오 불러오는 중…", "Loading studio…")}</p>
+            {loadProgress !== null ? <progress className="studio-vspace-engine-progress" max={100} value={loadProgress} aria-hidden="true" /> : null}
+            {slowLoad ? <p className="studio-vspace-engine-slow">{bt("연결이 느려 조금 더 걸리고 있어요.", "The connection is slow, so this is taking a little longer.")}</p> : null}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

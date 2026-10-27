@@ -138,11 +138,14 @@ describe("StudioTextureLodWorkerClient", () => {
 interface Wrapper extends StudioLodWrapper { readonly id: string }
 
 function runtimeHarness() {
-  const base: Wrapper = { id: "base", flipY: false, wrapS: 33071, wrapT: 33071, minFilter: 9729, magFilter: 9729, format: 6408 };
-  const created: Array<{ width: number; height: number; pma: boolean }> = [];
+  const base: Wrapper = { id: "base", flipY: true, wrapS: 33071, wrapT: 33071, minFilter: 9729, magFilter: 9729, format: 6408 };
+  const created: Array<{ width: number; height: number; pma: boolean; flipY: boolean }> = [];
   const renderer: StudioLodRenderer = {
     type: 2, gl: {},
-    createTexture2D(_a, _b, _c, _d, _e, _f, _pixels, width, height, pma) { created.push({ width, height, pma }); return { ...base, id: `copy-${created.length}` }; },
+    createTexture2D(_a, _b, _c, _d, _e, _f, _pixels, width, height, pma, _forceSize, flipY) {
+      created.push({ width, height, pma, flipY });
+      return { ...base, id: `copy-${created.length}`, flipY };
+    },
     deleteTexture() {},
   };
   const source = { width: 160, height: 160, image: { tag: "img" }, scaleMode: 0, isCanvas: false, isVideo: false, isRenderTexture: false, isGLTexture: false, compressionAlgorithm: null, glTexture: base };
@@ -177,7 +180,7 @@ describe("StudioTextureLodRuntime(워커 경로)", () => {
     expect(h.created).toHaveLength(0); // 아직 계산 중
     fake.answerLast();
     lod.update(2);
-    expect(h.created).toEqual([{ width: 80, height: 80, pma: false }]);
+    expect(h.created).toEqual([{ width: 80, height: 80, pma: false, flipY: true }]);
     expect(h.frame.source).not.toBe(h.source);
   });
 
@@ -188,7 +191,7 @@ describe("StudioTextureLodRuntime(워커 경로)", () => {
     lod.update(0);
     fake.fail();
     lod.update(1);
-    expect(h.created).toEqual([{ width: 80, height: 80, pma: false }]);
+    expect(h.created).toEqual([{ width: 80, height: 80, pma: false, flipY: true }]);
   });
 
   it("작업 중에 텍스처가 지워지면 늦게 온 결과를 버린다", () => {
@@ -219,7 +222,7 @@ describe("StudioTextureLodRuntime(워커 경로)", () => {
     expect(readPixels).not.toHaveBeenCalled();
     fake.reply(studioTextureLodWorkerRespond(fake.posted[0] as StudioTextureLodWorkerRequest, () => new Uint8ClampedArray(160 * 160 * 4).fill(180)));
     lod.update(2);
-    expect(h.created).toEqual([{ width: 80, height: 80, pma: false }]);
+    expect(h.created).toEqual([{ width: 80, height: 80, pma: false, flipY: true }]);
     expect(bitmap.close).toHaveBeenCalled();
   });
 
@@ -234,7 +237,7 @@ describe("StudioTextureLodRuntime(워커 경로)", () => {
     lod.update(1);
     fake.reply(studioTextureLodWorkerRespond(fake.posted[0] as StudioTextureLodWorkerRequest, () => null));
     lod.update(2);
-    expect(h.created).toEqual([{ width: 80, height: 80, pma: false }]); // 메인 스레드 계산으로 끝났다
+    expect(h.created).toEqual([{ width: 80, height: 80, pma: false, flipY: true }]); // 메인 스레드 계산으로 끝났다
     expect(createBitmap).toHaveBeenCalledTimes(1);
   });
 });

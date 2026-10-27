@@ -2203,7 +2203,7 @@ export function StudioVirtualSpacePhaserCanvas({
             const motionSample = sampleMotionRender(localMotion, time);
             localSprite.y += motionSample.offsetYPx;
             localSprite.angle += motionSample.rotationDeg + (motionSample.tiltRad * 180) / Math.PI;
-            if (motionSample.scaleY !== 1) localSprite.setScale(localSprite.scaleX, localSprite.scaleX * motionSample.scaleY);
+            if (motionSample.scaleY !== 1) localSprite.setScale(localSprite.scaleX, localSprite.scaleY * motionSample.scaleY);
           }
         }
         // 고스트 모드 + HD 환경광 틴트 + 보행 동기 접지 그림자 농도

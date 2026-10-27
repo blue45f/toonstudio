@@ -1880,7 +1880,7 @@ export function VirtualSpaceExperience({
       onTogglePeople={() => togglePanel("people")} onToggleMap={toggleMap} />;
 
   const [engineMode, setEngineMode] = useState<"2d" | "3d">(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stage") === "2d" ? "2d" : "3d",
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stage") === "3d" ? "3d" : "2d",
   );
   const StageCanvas = engineMode === "3d" && !authoringMode ? StudioVirtualSpaceThreeCanvas : StudioVirtualSpacePhaserCanvas;
 
