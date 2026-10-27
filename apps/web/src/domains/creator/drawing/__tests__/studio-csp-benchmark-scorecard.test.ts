@@ -148,7 +148,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(58);
+    expect(universalBench.reaEvidenceTargetCount).toBe(60);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -158,7 +158,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
     expect(universalBench.monolithicTotalReaEvidenceCount).toBe(8);
-    expect(universalBench.webGpuHighSpeedReaEvidenceCount).toBe(5);
+    expect(universalBench.webGpuHighSpeedReaEvidenceCount).toBe(7);
     expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
     expect(universalBench.monolithicTotalToolPresetCount).toBe(20);
@@ -614,19 +614,19 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(telemetry.klecksCatchUpX).toBeGreaterThan(20);
   });
 
-  it("Wave 33 215개 파일 WebGPU 초고속 브러시 아키텍처(Vello WGSL·Orillusion Indirect·PixiJS v8 RenderBundle/UBO·Three.js Zero-Copy·WASM Morton LBVH) REA 원장(5개 엔트리·12개 프리셋)과 커널을 검증한다", () => {
-    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER).toHaveLength(5);
+  it("Wave 33/34 325개 파일 WebGPU 초고속 브러시 아키텍처(Vello WGSL·Orillusion Indirect·PixiJS v8 RenderBundle/UBO·Three.js Zero-Copy·Babylon.js PipelineTrie/Snapshot·PlayCanvas UploadStream) REA 원장(7개 엔트리·12개 프리셋)과 커널을 검증한다", () => {
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER).toHaveLength(7);
     expect(WEBGPU_HIGHSPEED_ARCHITECTURE_PRESETS).toHaveLength(12);
     expect(WEBGPU_ZERO_COPY_INDIRECT_BRUSH_WGSL).toContain("atomicAdd(&indirect_args.instance_count, 1u)");
     expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.parentEvidenceId).toBe(
       "ev_c8f3c2e349c2ec10d5e86761c2414b5b260185090f10d835f9e767f90eeb7f9b",
     );
-    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.evidenceId).toBe(
-      "ev_346020a1c98a9a75accd29be7d1a2be8690cd59e2ca60ea0eaa42f712c42de8b",
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[5]?.parentEvidenceId).toBe(
+      "ev_519b70777063a1f6d1a5d3a0eb15a142906a852a133ca79d29e89721f8b9d07f",
     );
-    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.relevantFiles).toBe(215);
-    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.visitedAstNodes).toBe(133090);
-    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.dataFlowRelations).toBe(29090);
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[5]?.relevantFiles).toBe(325);
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[5]?.visitedAstNodes).toBe(217486);
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[5]?.dataFlowRelations).toBe(73610);
 
     const vello = evaluateVelloEulerSpiralFlattenAndAnalyticAa({
       p0: { x: 10, y: 12 },

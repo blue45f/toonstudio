@@ -26,7 +26,9 @@ export interface WebGpuHighSpeedReaEvidenceEntry {
     | "webgpu-orillusion-frustum-hiz-indirect-cull"
     | "webgpu-pixijs-v8-renderbundle-statekey"
     | "webgpu-pixijs-v8-ubo-256-batch-texture-array"
-    | "webgpu-threejs-zero-copy-wasm-worker-ring";
+    | "webgpu-threejs-zero-copy-wasm-worker-ring"
+    | "webgpu-babylon-snapshot-bundle-pipeline-trie"
+    | "webgpu-playcanvas-indirect-slot-upload-stream";
   readonly evidenceId: string;
   readonly parentEvidenceId: string;
   readonly corpusRootSha256: string;
@@ -148,6 +150,48 @@ export const WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER: readonly WebGpuHighSpeedReaEvide
     ],
     architecturalArchetypeKo:
       "Three.js WebGPUBackend Compute→Vertex Zero-Copy(STORAGE|VERTEX|INDIRECT) · WASM 선형 메모리 Morton LBVH 다이렉트 매핑 · Web Worker OffscreenCanvas 120Hz 커맨드 인코딩 · 프레임당 mapAsync 제로 가드",
+  },
+  {
+    subsystemId: "webgpu-babylon-snapshot-bundle-pipeline-trie",
+    evidenceId: "ev_dfcdfd07b2ca3440db6ae61007d5596d9813186ddc1e2faf82cec7eb5ffcdbbf",
+    parentEvidenceId: "ev_519b70777063a1f6d1a5d3a0eb15a142906a852a133ca79d29e89721f8b9d07f",
+    corpusRootSha256: "a10762186565facfff4732dd5e0796d06cfb23c5238f5a47dc2efdd55609d4c0",
+    relevantFiles: 325,
+    parsedJavaScriptFiles: 325,
+    unexaminedSources: 0,
+    visitedAstNodes: 217486,
+    dataFlowRelations: 73610,
+    objectFlowRelations: 13946,
+    callFlowRelations: 1858,
+    closureRelations: 5790,
+    primaryModules: [
+      "babylon-webgpu/webgpuDrawContext.ts",
+      "babylon-webgpu/webgpuSnapshotRendering.ts",
+      "babylon-webgpu/webgpuBundleList.ts",
+      "babylon-webgpu/webgpuCacheRenderPipelineTree.ts",
+    ],
+    architecturalArchetypeKo:
+      "Babylon.js WebGPUCacheRenderPipelineTree 정수 상태 트라이(O(k) 파이프라인 조회) · WebGPUSnapshotRendering Fast-Mode GPURenderBundle 일괄 리플레이 · 40B DrawIndexedIndirect + DrawIndirect 듀얼 버퍼",
+  },
+  {
+    subsystemId: "webgpu-playcanvas-indirect-slot-upload-stream",
+    evidenceId: "ev_c839688eb863d37423f9727fafc20bcda961a368823ed14821f2ef4d7f9a02d8",
+    parentEvidenceId: "ev_519b70777063a1f6d1a5d3a0eb15a142906a852a133ca79d29e89721f8b9d07f",
+    corpusRootSha256: "a10762186565facfff4732dd5e0796d06cfb23c5238f5a47dc2efdd55609d4c0",
+    relevantFiles: 325,
+    parsedJavaScriptFiles: 325,
+    unexaminedSources: 0,
+    visitedAstNodes: 217486,
+    dataFlowRelations: 73610,
+    objectFlowRelations: 13946,
+    callFlowRelations: 1858,
+    closureRelations: 5790,
+    primaryModules: [
+      "playcanvas-webgpu/webgpu-draw-commands.js",
+      "playcanvas-webgpu/webgpu-upload-stream.js",
+    ],
+    architecturalArchetypeKo:
+      "PlayCanvas WebgpuDrawCommands 20B(5×u32) Indirect 슬롯 할당기(STORAGE|INDIRECT|COPY_DST) · WebgpuUploadStream submitVersion 가드 논블로킹 스테이징 링 업로드",
   },
 ] as const;
 

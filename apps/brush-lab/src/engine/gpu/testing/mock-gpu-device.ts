@@ -124,6 +124,22 @@ export interface MockDraw {
   pass: number;
 }
 
+export interface MockIndirectDraw {
+  entryPoint: string;
+  kind: "indirect" | "indexed-indirect";
+  indirectBuffer: string;
+  indirectOffset: number;
+  vertexOrIndexCount: number;
+  instanceCount: number;
+  pass: number;
+}
+
+export interface MockRenderBundle {
+  label: string;
+  draws: MockDraw[];
+  indirectDraws: MockIndirectDraw[];
+}
+
 export interface MockWrite {
   target: string;
   offset: number;
@@ -149,6 +165,9 @@ export interface MockGpu {
   bindGroups: { label: string; layout: string; entries: number }[];
   dispatches: MockDispatch[];
   draws: MockDraw[];
+  indirectDraws: MockIndirectDraw[];
+  renderBundles: MockRenderBundle[];
+  bundleExecutions: number;
   writes: MockWrite[];
   textureWrites: MockTextureWrite[];
   clears: MockWrite[];
@@ -192,6 +211,9 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
   const bindGroups: { label: string; layout: string; entries: number }[] = [];
   const dispatches: MockDispatch[] = [];
   const draws: MockDraw[] = [];
+  const indirectDraws: MockIndirectDraw[] = [];
+  const renderBundles: MockRenderBundle[] = [];
+  const bundleOf = new WeakMap<object, MockRenderBundle>();
   const writes: MockWrite[] = [];
   const textureWrites: MockTextureWrite[] = [];
   const clears: MockWrite[] = [];
@@ -508,10 +530,69 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
           setVertexBuffer(): void {
             record("pass.setVertexBuffer");
           },
+          setIndexBuffer(): void {
+            record("pass.setIndexBuffer");
+          },
           draw(vertexCount: number, instanceCount = 1): void {
             record("pass.draw");
             if (!currentPipeline) throw new Error("mock: draw without pipeline");
             draws.push({ entryPoint: currentPipeline.entryPoint, vertexCount, instanceCount, pass: passIndex });
+          },
+          drawIndirect(buffer: GPUBuffer, offset: number): void {
+            record("pass.drawIndirect");
+            if (!currentPipeline) throw new Error("mock: drawIndirect without pipeline");
+            const entry = requireBuffer(buffer);
+            if ((entry.usage & USAGE_INDIRECT) === 0) throw new MockValidationError(`buffer ${entry.label} lacks INDIRECT usage`);
+            if (offset % 4 !== 0) throw new MockValidationError(`indirect offset ${offset} is not a multiple of 4`);
+            if (offset + 16 > entry.size) throw new MockValidationError(`drawIndirect args out of range on ${entry.label}`);
+            const view = new DataView(entry.data);
+            const vertexCount = view.getUint32(offset, true);
+            const instanceCount = view.getUint32(offset + 4, true);
+            draws.push({ entryPoint: currentPipeline.entryPoint, vertexCount, instanceCount, pass: passIndex });
+            indirectDraws.push({
+              entryPoint: currentPipeline.entryPoint,
+              kind: "indirect",
+              indirectBuffer: entry.label,
+              indirectOffset: offset,
+              vertexOrIndexCount: vertexCount,
+              instanceCount,
+              pass: passIndex,
+            });
+          },
+          drawIndexedIndirect(buffer: GPUBuffer, offset: number): void {
+            record("pass.drawIndexedIndirect");
+            if (!currentPipeline) throw new Error("mock: drawIndexedIndirect without pipeline");
+            const entry = requireBuffer(buffer);
+            if ((entry.usage & USAGE_INDIRECT) === 0) throw new MockValidationError(`buffer ${entry.label} lacks INDIRECT usage`);
+            if (offset % 4 !== 0) throw new MockValidationError(`indirect offset ${offset} is not a multiple of 4`);
+            if (offset + 20 > entry.size) throw new MockValidationError(`drawIndexedIndirect args out of range on ${entry.label}`);
+            const view = new DataView(entry.data);
+            const indexCount = view.getUint32(offset, true);
+            const instanceCount = view.getUint32(offset + 4, true);
+            draws.push({ entryPoint: currentPipeline.entryPoint, vertexCount: indexCount, instanceCount, pass: passIndex });
+            indirectDraws.push({
+              entryPoint: currentPipeline.entryPoint,
+              kind: "indexed-indirect",
+              indirectBuffer: entry.label,
+              indirectOffset: offset,
+              vertexOrIndexCount: indexCount,
+              instanceCount,
+              pass: passIndex,
+            });
+          },
+          executeBundles(bundles: Iterable<GPURenderBundle>): void {
+            record("pass.executeBundles");
+            for (const b of bundles) {
+              const bundle = bundleOf.get(b);
+              if (!bundle) throw new MockValidationError("executeBundles: unknown render bundle");
+              mock.bundleExecutions += 1;
+              for (const d of bundle.draws) {
+                draws.push({ ...d, pass: passIndex });
+              }
+              for (const id of bundle.indirectDraws) {
+                indirectDraws.push({ ...id, pass: passIndex });
+              }
+            }
           },
           end(): void {
             record("pass.end");
@@ -773,6 +854,46 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
     createCommandEncoder(): GPUCommandEncoder {
       return makeEncoder();
     },
+    createRenderBundleEncoder(desc: GPURenderBundleEncoderDescriptor): GPURenderBundleEncoder {
+      record("device.createRenderBundleEncoder");
+      const encoderLabel = labelOf(desc, `bundle-encoder#${anonymous++}`);
+      let bundlePipeline: PipelineHandle | null = null;
+      const bundleDraws: MockDraw[] = [];
+      const bundleIndirectDraws: MockIndirectDraw[] = [];
+      const bundleEncoder = {
+        label: encoderLabel,
+        setPipeline(p: GPURenderPipeline): void {
+          const h = pipelineOf.get(p);
+          if (!h) throw new Error("mock: unknown render pipeline in bundle");
+          bundlePipeline = h;
+          record("bundle.setPipeline");
+        },
+        setBindGroup(): void {
+          record("bundle.setBindGroup");
+        },
+        setVertexBuffer(): void {
+          record("bundle.setVertexBuffer");
+        },
+        setIndexBuffer(): void {
+          record("bundle.setIndexBuffer");
+        },
+        draw(vertexCount: number, instanceCount = 1): void {
+          record("bundle.draw");
+          if (!bundlePipeline) throw new Error("mock: bundle draw without pipeline");
+          bundleDraws.push({ entryPoint: bundlePipeline.entryPoint, vertexCount, instanceCount, pass: 0 });
+        },
+        finish(bundleDesc?: GPURenderBundleDescriptor): GPURenderBundle {
+          record("bundle.finish");
+          const label = labelOf(bundleDesc, encoderLabel);
+          const entry: MockRenderBundle = { label, draws: bundleDraws.slice(), indirectDraws: bundleIndirectDraws.slice() };
+          renderBundles.push(entry);
+          const handle = { label } as unknown as GPURenderBundle;
+          bundleOf.set(handle, entry);
+          return handle;
+        },
+      };
+      return bundleEncoder as unknown as GPURenderBundleEncoder;
+    },
     pushErrorScope(): void {
       record("device.pushErrorScope");
     },
@@ -797,6 +918,9 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
     bindGroups,
     dispatches,
     draws,
+    indirectDraws,
+    renderBundles,
+    bundleExecutions: 0,
     writes,
     textureWrites,
     clears,

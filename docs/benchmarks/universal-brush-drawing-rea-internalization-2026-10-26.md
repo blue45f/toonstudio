@@ -170,3 +170,15 @@
 
 - 상용 네이티브 데스크톱/모바일 앱(Paint Tool SAI Ver.2, Corel Painter, ArtRage Vitae, Adobe Illustrator/Fresco)의 비공개 바이너리 셰이더는 본 웹 세션에서 직접 실행하지 않고, 공개된 웹 포털·오픈소스 AST 증거(`ev_b116ab58...`, `ev_0f42419a...`)와 문서화된 수학 사양을 기반으로 클린룸 모델로 재구성했다.
 - `apps/brush-lab`의 엄격한 라이선스 게이트(`license-policy.test.ts`, `boundary.test.ts`)에 따라 CC BY-NC(`mixbox`), Prosperity(`lygia`), GPL 원본 코드는 단 한 줄도 참조하거나 복사하지 않았으며, 모든 연산은 결정론적 `Pcg32` 난수와 `kmMixRgb` Kubelka-Munk 색공간 위에서 독립 구현했다.
+
+## 5. Wave 33/34 — 6대 WebGPU 초고속 엔진(325개 모듈) 일괄 REA 역공학 및 Zero-Copy / Indirect Draw / RenderBundle 아키텍처 고도화
+
+| 엔진 패밀리 | 모듈 수 | 핵심 역공학 모듈 | REA Evidence ID (`not-examined: 0`) | 내재화된 고속·고품질 아키텍처 커널 |
+| --- | ---: | --- | --- | --- |
+| **Linebender Vello WGSL** | 25 | `euler.wgsl`, `flatten.wgsl`, `fine.wgsl`, `pathtag.wgsl` | `ev_346020a1c98a9a75accd29be7d1a2be8690cd59e2ca60ea0eaa42f712c42de8b` | 포물선 호 길이 적분(Euler 스파이럴 평탄화), 4px/스레드 해석적 사다리꼴 면적 AA, `erf7` 가우시안 감쇠, Mitchell-Netravali 16탭 바이큐빅 |
+| **Orillusion WebGPU** | 57 | `GPUCullSystem.ts`, `ComputeShader.ts`, `EntityBatchCollect.ts` | `ev_c76c1188ec57ca6e3e1251ea7e604e6170581c6632a7a62ed7e80e25f7d389fc` | 컴퓨트 셰이더 6평면 프러스텀 + Hi-Z 오클루전 컬링, `atomicAdd(&indirect_args.instance_count, 1u)` 원자적 Indirect Draw 인자 생성 |
+| **PixiJS v8 WebGPU** | 79 | `RenderBundle.ts`, `GpuEncoderSystem.ts`, `GpuUniformBatchPipe.ts` | `ev_b28204858f3fd5f9b58427fa143ede44ff86c24011ae19654cab079eda6f8e90` | `GPURenderBundleEncoder` 정적 레이어 번들 베이킹(`bundleStateKey` 무결성 검증), `executeBundles`, 256B 정렬 동적 UBO 링 배칭 |
+| **Three.js WebGPURenderer** | 54 | `WebGPUBackend.js`, `WebGPUAttributeUtils.js`, `WebGPUTimestampQueryPool.js` | `ev_c8f3c2e349c2ec10d5e86761c2414b5b260185090f10d835f9e767f90eeb7f9b` | `STORAGE \| VERTEX \| INDIRECT` Compute→Vertex Zero-Copy 직결, WASM 선형 메모리 Morton LBVH & LTTB 데시메이션, 120Hz Worker 링 |
+| **Babylon.js WebGPUEngine** | 36 | `webgpuDrawContext.ts`, `webgpuSnapshotRendering.ts`, `webgpuCacheRenderPipelineTree.ts` | `ev_dfcdfd07b2ca3440db6ae61007d5596d9813186ddc1e2faf82cec7eb5ffcdbbf` (부모 `ev_519b7077...`) | `WebGPUCacheRenderPipelineTree` $O(k)$ 정수 상태 트라이 캐시, Snapshot Fast-Mode `executeBundles` 리플레이 |
+| **PlayCanvas WebGPU** | 30 | `webgpu-draw-commands.js`, `webgpu-upload-stream.js` | `ev_c839688eb863d37423f9727fafc20bcda961a368823ed14821f2ef4d7f9a02d8` (부모 `ev_519b7077...`) | 20B(`5×u32`)/16B(`4×u32`) Indirect 슬롯 할당기, `submitVersion` 가드 3-슬롯 링 스테이징 업로드 (`hotPathMapAsyncCount = 0`) |
+
