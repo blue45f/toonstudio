@@ -19,6 +19,8 @@ import {
   type ClaudeTokenUsage,
 } from "./claude-models";
 
+export type { ClaudeTokenUsage };
+
 /** Anthropic `usage` 객체에서 이 미터가 읽는 필드만 구조적으로 받는다(SDK 타입 의존 없음). */
 export interface ClaudeUsageLike {
   readonly input_tokens?: number | null;

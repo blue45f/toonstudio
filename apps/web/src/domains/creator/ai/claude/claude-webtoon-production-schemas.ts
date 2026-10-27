@@ -28,6 +28,7 @@ export type WebtoonProductionAssistMode =
   | "weather-time-progression-lock";
 
 export interface WebtoonProductionAssistInput {
+  readonly episodeTitle?: string;
   readonly scriptText?: string;
   readonly genre?: string;
   readonly coreConflict?: string;

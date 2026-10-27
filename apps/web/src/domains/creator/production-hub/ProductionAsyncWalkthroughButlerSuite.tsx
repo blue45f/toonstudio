@@ -38,7 +38,13 @@ const BUTLER_MODE_OPTIONS: readonly {
   },
 ];
 
-export function ProductionAsyncWalkthroughButlerSuite() {
+export interface ProductionAsyncWalkthroughButlerSuiteProps {
+  readonly aggregate?: unknown;
+}
+
+export function ProductionAsyncWalkthroughButlerSuite(
+  _props: ProductionAsyncWalkthroughButlerSuiteProps = {},
+) {
   const bt = useBilingual("ProductionAsyncWalkthroughButlerSuite");
   const tableCaptionId = useId();
   const clipCodeInputId = useId();

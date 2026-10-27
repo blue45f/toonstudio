@@ -6,11 +6,12 @@ export type ClaudeModelId =
 export type ClaudeEffortLevel = "low" | "medium" | "high";
 
 export interface ClaudeCreateOptions {
-  readonly model?: ClaudeModelId;
+  readonly model?: ClaudeModelId | (string & {});
   readonly effort?: ClaudeEffortLevel;
   readonly maxTokens?: number;
   readonly temperature?: number;
 }
+export type CreatorClaudeTaskId = ClaudeCreatorTaskId;
 
 /**
  * 작업 특성별 최적의 Claude 모델 티어를 자동 배정하는 Task-Aware Smart Model Router.
@@ -228,7 +229,16 @@ export type ClaudeCreatorTaskId =
   | "art-director:korean-market-bunsik-bbq-jjimjilbang-lock"
   | "art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock"
   | "art-director:autonomous-7stage-pipeline-dna-hash-psd-director"
-  | "art-director:toonstudio-1020-platform-supreme-meta-director";
+  | "art-director:toonstudio-1020-platform-supreme-meta-director"
+  // 22. Wave 54~56 AgeOfSail/WesternLocomotive/NoirSpy/SurgicalBdna/BridgeKeystoneHanok/StreamerBlender/GitKanbanSuperchat/Omniverse1080Supreme AI Engines (8 — Total 180 Tasks)
+  | "art-director:age-of-sail-galleon-wheel-cannon-cutlass-lock"
+  | "art-director:western-revolver-winchester-saloon-locomotive-lock"
+  | "art-director:noir-trenchcoat-fedora-venetian-blind-spy-lock"
+  | "art-director:surgical-light-ecmo-triage-blood-bag-bdna-lock"
+  | "art-director:suspension-bridge-arch-keystone-hanok-door-tbm-lock"
+  | "art-director:streamer-mic-ringlight-cintiq-blender-node-lock"
+  | "art-director:git-diff-kanban-discord-superchat-shorts-director"
+  | "art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -668,6 +678,16 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock": defineRoute("art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock", "전통 폐백 연지곤지/돌잡이·제사상 홍동백서/어동육서·화투 12월 패(5광/고도리)·지하철 우측 개찰구 태그/KTX 디렉터", "core-dialog", "creative-production", "폐백/제사상 진설 방위·화투 12월 화초/광·지하철 우측 단말기/KTX 좌석 고증은 Sonnet 5.5 적용", 4_096),
   "art-director:autonomous-7stage-pipeline-dna-hash-psd-director": defineRoute("art-director:autonomous-7stage-pipeline-dna-hash-psd-director", "7단 자율 에이전트 파이프라인·100화 캐릭터 DNA 해시 원장·인접 컷 3D 카메라 프러스텀·시맨틱 5그룹 PSD 총괄 감독", "core-dialog", "deep-architecture", "웹툰 7단 자율 파이프라인·100화 캐릭터 DNA 원장·카메라 프러스텀·Trapped-Ball 밑색 분리는 Opus 5.5 심층 추론 적용", 6_144),
   "art-director:toonstudio-1020-platform-supreme-meta-director": defineRoute("art-director:toonstudio-1020-platform-supreme-meta-director", "1,020대 글로벌 웹툰 AI 플랫폼 UI/UX 메타 오케스트레이터·12개국 동시연재 용어집·주파수 워터마크·쇼츠 PV 총괄 감독", "core-dialog", "deep-architecture", "1,020대 플랫폼 UI/UX 통합·12개국 용어집·비가시 워터마크·9:16 쇼츠 PV 설계는 Opus 5.5 심층 추론 적용", 6_144),
+
+  // 22. Wave 54~56 AgeOfSail/WesternLocomotive/NoirSpy/SurgicalBdna/BridgeKeystoneHanok/StreamerBlender/GitKanbanSuperchat/Omniverse1080Supreme AI Engines (8)
+  "art-director:age-of-sail-galleon-wheel-cannon-cutlass-lock": defineRoute("art-director:age-of-sail-galleon-wheel-cannon-cutlass-lock", "대항해시대 갈레온 가로돛/사다리줄·조타륜 왕살(King Spoke)·함포 브리칭 로프·커틀러스 바스켓 가드·보물지도 나침반 고정기", "core-dialog", "fast-inline", "범선 삭구/조타륜·함포 반동 로프·커틀러스 손등 가드·나침반 북쪽 백합 문양 고정은 Haiku 5.5로 즉각 검증", 2_560),
+  "art-director:western-revolver-winchester-saloon-locomotive-lock": defineRoute("art-director:western-revolver-winchester-saloon-locomotive-lock", "서부극 콜트 리볼버 우측 추출봉/패닝·윈체스터 우측 급탄구·살룬 양방향 스윙도어·보안관 배지(좌가슴)·증기기관차 배장기 고정기", "core-dialog", "fast-inline", "콜트 리볼버/윈체스터 좌우 구조·살룬 스윙도어·보안관 별 배지·증기기관차 커넥팅 로드 고정은 Haiku 5.5 적용", 2_560),
+  "art-director:noir-trenchcoat-fedora-venetian-blind-spy-lock": defineRoute("art-director:noir-trenchcoat-fedora-venetian-blind-spy-lock", "누아르 트렌치코트 우측 건플랩/D링·페도라 핀치·베네치안 블라인드 그림자·톰슨 드럼탄창·소음기 동축·미녹스 카메라 디렉터", "core-dialog", "creative-production", "트렌치코트 건플랩·베네치안 블라인드 줄무늬 그림자·톰슨/소음기 총기·냉전 스파이 소품 고증은 Sonnet 5.5 적용", 4_096),
+  "art-director:surgical-light-ecmo-triage-blood-bag-bdna-lock": defineRoute("art-director:surgical-light-ecmo-triage-blood-bag-bdna-lock", "수술실 무영등·마취기 벨로우즈·ECMO 정맥/동맥혈 색상·트리아지 4색 태그·수혈 점적통 50% 수위·오른나사 B-DNA 디렉터", "core-dialog", "creative-production", "수술실 무영등/ECMO·응급 트리아지 태그·수혈 점적통·오른나사 B-DNA 이중나선 회전 방향 고정은 Sonnet 5.5 적용", 4_096),
+  "art-director:suspension-bridge-arch-keystone-hanok-door-tbm-lock": defineRoute("art-director:suspension-bridge-arch-keystone-hanok-door-tbm-lock", "현수교(포물선+수직 행어) vs 사장교(직선 사선)·아치 중앙 쐐기 종석·고딕 플라잉 버트레스·한옥 들어열개문 걸쇠·TBM 디렉터", "core-dialog", "creative-production", "현수교/사장교 구분·석조 아치 종석·한옥 대청마루 들어열개문·엘리베이터 균형추/TBM 터널 고증은 Sonnet 5.5 적용", 4_096),
+  "art-director:streamer-mic-ringlight-cintiq-blender-node-lock": defineRoute("art-director:streamer-mic-ringlight-cintiq-blender-node-lock", "사이드 어드레스 콘덴서 마이크(측면 수음)·링라이트 도넛 캐치라이트·15키 스트림덱·신티크 왼손 투어박스·블렌더 노드 디렉터", "core-dialog", "creative-production", "스트리머 마이크 측면 수음·링라이트 눈동자 도넛 반사·작가 타블렛/투어박스·3D 노드 소켓 색상은 Sonnet 5.5 적용", 4_096),
+  "art-director:git-diff-kanban-discord-superchat-shorts-director": defineRoute("art-director:git-diff-kanban-discord-superchat-shorts-director", "깃 브랜치/PR Diff(초록+/빨강-)·웹툰 6단 마감 칸반·디스코드 발화 그린 링·슈퍼챗 금액 티어·9:16 숏폼 세이프존 총괄 감독", "core-dialog", "deep-architecture", "개발자 깃 Diff·웹툰 마감 칸반·디스코드/슈퍼챗 UI·9:16 숏폼 세이프존 총괄 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director": defineRoute("art-director:toonstudio-1080-omniverse-dcf-stroke-supreme-director", "1,080대 웹툰 AI 플랫폼 옴니버스 수프림 엔진·180대 스마트 라우팅·쿠키 미리보기 UX·웹툰 IP DCF 가치평가·선화 예측 총괄 감독", "core-dialog", "deep-architecture", "1,080대 플랫폼 UI/UX 통합·180개 스마트 라우팅·웹툰 IP DCF 가치평가·신경망 선화 예측은 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {
@@ -687,7 +707,7 @@ export function resolveCreatorTaskModelRoute(
   const baseRoute = CLAUDE_CREATOR_TASK_ROUTES[taskId];
   const profileSpec = CLAUDE_CREATOR_TASK_PROFILES[baseRoute.profile];
   const explicitOverride = options.model !== undefined;
-  const resolvedModel = options.model ?? baseRoute.model;
+  const resolvedModel = (options.model as ClaudeModelId | undefined) ?? baseRoute.model;
   const resolvedEffort = options.effort ?? baseRoute.effort;
   const resolvedMaxTokens = options.maxTokens ?? baseRoute.maxTokens;
   const resolvedTemperature = options.temperature ?? profileSpec.defaultTemperature;

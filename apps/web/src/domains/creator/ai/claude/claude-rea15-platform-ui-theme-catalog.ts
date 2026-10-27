@@ -168,59 +168,31 @@ export const REA15_PLATFORM_IDS = [
   // Wave 53 (20개 플랫폼 — 총 1,020개 플랫폼 완성!: 7단 자율 파이프라인·100화 캐릭터 DNA 해시·3D 프러스텀 정합·시맨틱 PSD·워터셰드 밑색·2.5D 노말맵 림라이트·스크롤 BGM/햅틱·멀티엔딩·프롬프트 캐시·마감 번다운·12개국 용어집·포렌식 워터마크·1,020대 메타 오케스트레이터)
   "multi-agent-director-storyboard-ink-color-qa", "character-dna-immutable-hash-ledger-100ep", "panel-to-panel-camera-frustum-3d-continuity", "semantic-layer-psd-export-character-bg-sfx-balloon", "smart-flatting-color-id-map-gap-closing-watershed", "dynamic-rim-light-normal-map-25d-relighting", "scroll-velocity-adaptive-bgm-haptic-trigger", "interactive-choice-branching-multi-ending-webtoon", "ai-assistant-credit-budget-token-cache-optimizer", "episode-deadline-burndown-cut-complexity-estimator",
   "global-simulpub-12lang-glossary-term-lock", "cultural-sensitivity-localization-auto-retouch", "piracy-leaks-invisible-forensic-watermark-tracker", "reader-drop-off-funnel-cut-by-cut-diagnosis", "webnovel-to-webtoon-dialogue-compression-ratio", "trailer-pv-60sec-vertical-shorts-auto-composer", "popup-store-md-inventory-forecast-bundle-pricer", "creator-health-neck-posture-blue-light-break-coach", "portfolio-artstation-behance-case-study-packager", "toonstudio-1020-platform-supreme-meta-orchestrator",
+  // Wave 54 (20개 플랫폼 — 총 1,040개 플랫폼 완성: 대항해시대 범선/해적선/육분의·서부극 리볼버/윈체스터/살룬 스윙도어/증기기관차·누아르 트렌치코트/베네치안 블라인드/톰슨 드럼탄창/소음기)
+  "galleon-square-rig-shroud-ratline-quarterdeck", "ship-wheel-helm-binnacle-compass-sextant", "broadside-cannon-gunport-breeching-rope-linstock", "pirate-jolly-roger-cutlass-basket-hilt-flintlock", "treasure-chest-wax-sealed-parchment-compass-rose", "western-colt-saa-peacemaker-6chamber-fanning", "winchester-lever-action-repeating-rifle-saddle", "saloon-batwing-swinging-doors-spurs-rowel", "sheriff-6point-star-badge-wanted-poster-gallows", "steam-locomotive-cowcatcher-driving-rod-tender",
+  "stagecoach-concord-thoroughbrace-roof-luggage", "noir-trenchcoat-storm-flap-epaulette-d-ring", "fedora-crown-pinch-brim-snap-venetian-blind", "thompson-submachine-gun-drum-mag-cutts-comp", "silencer-suppressor-baffle-thread-subsonic-slide", "microfilm-minox-spy-camera-dead-drop-cipher", "rotary-payphone-booth-folding-bifold-glass-door", "vintage-flashbulb-graflex-press-camera-reflector", "detective-magnifying-glass-refraction-deerstalker", "poison-vial-ring-compartment-invisible-ink-lemon",
+  // Wave 55 (20개 플랫폼 — 총 1,060개 플랫폼 완성: 수술실 무영등/ECMO/마취기/트리아지 태그/혈액백/MRI/B-DNA 이중나선·한의원 백안자 약장/약첩·현수교 vs 사장교/아치 쐐기돌/고딕 플라잉 버트레스/한옥 들어열개문/천수각/TBM 터널)
+  "operating-room-shadowless-surgical-light-dome", "anesthesia-machine-bellows-vaporizer-et-tube", "ecmo-heart-lung-bypass-oxygenator-roller-pump", "orthodontic-bracket-archwire-elastics-retainer", "oriental-medicine-herb-cabinet-baekanja-yakcheop", "emergency-triage-tag-red-yellow-green-black", "iv-blood-bag-abo-rh-drip-chamber-roller-clamp", "mri-bore-quench-pipe-non-ferrous-stretcher", "prosthetic-carbon-fiber-running-blade-socket", "crispr-cas9-right-handed-b-dna-double-helix",
+  "suspension-parabolic-vs-cable-stayed-fan-bridge", "roman-arch-keystone-voussoir-impost-springer", "gothic-cathedral-flying-buttress-pinnacle-gargoyle", "hanok-daecheong-deureoyeolgae-lifting-door-hook", "japanese-castle-tenshu-chidori-hafu-ishigaki", "elevator-traction-sheave-counterweight-governor", "escalator-step-chain-comb-plate-skirt-brush", "waterworks-sluice-gate-valve-cast-iron-hydrant", "tunnel-boring-machine-tbm-cutterhead-segment", "arch-dam-ski-jump-spillway-stilling-basin",
+  // Wave 56 (20개 플랫폼 — 총 1,080개 플랫폼 완성!: 스트리머 듀얼PC/XLR 콘덴서/스트림덱/링라이트/크로마키·신티크 암/투어박스/3D 데생인형/블렌더 노드/언리얼5 루멘·깃허브/디스코드/유튜브 슈퍼챗/틱톡 세이프존/쿠키 충전소/1,080대 옴니버스 엔진)
+  "streamer-dual-pc-capture-card-xlr-audio-interface", "condenser-mic-shockmount-pop-filter-boom-arm", "elgato-stream-deck-15key-lcd-macro-switcher", "ring-light-18inch-donut-catchlight-phone-clamp", "green-screen-chroma-key-spill-suppression-cyclorama", "wacom-cintiq-pro-ergo-arm-left-hand-tourbox", "clip-studio-3d-drawing-doll-joint-limit-sphere", "photoshop-curves-histogram-clipping-mask-indent", "blender-geometry-shader-node-bezier-noodle", "unreal-engine-5-nanite-lumen-transform-gizmo",
+  "github-pull-request-diff-commit-graph-branch", "notion-kanban-episode-deadline-sprint-board", "discord-voice-channel-green-speaking-ring-overlay", "youtube-superchat-red-tier-membership-badge", "instagram-story-gradient-ring-live-heart-float", "tiktok-reels-vertical-9x16-ui-safe-zone-mask", "webtoon-cookie-coin-topup-fastpass-unlock-modal", "global-webtoon-ip-valuation-dcf-royalty-multiple", "neural-brush-stroke-predictor-vector-inbetween", "toonstudio-1080-platform-omniverse-supreme-engine",
 ] as const;
 
-export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA50_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA65_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA80_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA100_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA120_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA140_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA160_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA180_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA200_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA220_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA240_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA260_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA280_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA300_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA320_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA340_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA360_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA380_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA400_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA420_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA440_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA460_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA480_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA500_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA520_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA540_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA560_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA580_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA600_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA620_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA640_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA660_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA680_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA700_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA720_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA740_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA760_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA780_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA800_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA820_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA840_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA860_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA880_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA900_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA920_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA940_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA960_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA980_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA1000_PLATFORM_IDS = REA15_PLATFORM_IDS;
-export const REA1020_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA50_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA65_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA80_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA100_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA120_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA140_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA160_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA180_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA200_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA220_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA240_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA260_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA280_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA300_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA320_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA340_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA360_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA380_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA400_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA420_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA440_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA460_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA480_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA500_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA520_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA540_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA560_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA580_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA600_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA620_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA640_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA660_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA680_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA700_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA720_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA740_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA760_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA780_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA800_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA820_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA840_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA860_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA880_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA900_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA920_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA940_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA960_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA980_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA1000_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA1020_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA1040_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA1060_PLATFORM_IDS = REA15_PLATFORM_IDS; export const REA1080_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -646,6 +618,69 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
         ["creator-health-neck-posture-blue-light-break-coach", "Cintiq/iPad Artist Cervical Posture, Eye-Strain & Micro-Break Scheduler", "#22c55e", "#fde047", "장시간 타블렛 작화 시 거북목 각도·안구 건조 예방 20-20-20 규칙 및 손목 스트레칭 알림 설계"],
         ["portfolio-artstation-behance-case-study-packager", "Webtoon Studio Portfolio Breakdown (Conti→Line→Flat→Render Slider) Packager", "#3b82f6", "#a855f7", "작가·어시스턴트 포트폴리오용 단계별 공정(콘티→선화→밑색→완성) 비교 슬라이더 및 메타데이터 패키징"],
         ["toonstudio-1020-platform-supreme-meta-orchestrator", "ToonStudio 1,020-Platform Supreme REA UI/UX & Consistency Meta-Orchestrator", "#00f5d4", "#7c5cfa", "글로벌·국내 1,020대 웹툰 AI 보조 플랫폼 UI/UX 디자인 토큰과 172대 스마트 라우팅 엔진을 총괄하는 최상위 오케스트레이터"],
+        // Wave 54 (20개 플랫폼 — 총 1,040개 플랫폼 완성)
+        ["galleon-square-rig-shroud-ratline-quarterdeck", "Age of Sail Galleon Square-Rigged Sails, Shroud Ratlines & Quarterdeck", "#b45309", "#38bdf8", "대항해시대 갈레온 범선의 가로돛(Square Rig)·사다리줄(Ratline)·후미 고물루(Quarterdeck) 구조 고정"],
+        ["ship-wheel-helm-binnacle-compass-sextant", "Ship's Spoke Helm Wheel (King Spoke Center), Binnacle Compass & Brass Sextant", "#eab308", "#0284c7", "범선 조타륜 정중앙 왕살(King Spoke) 각도와 비나클 나침반·육분의(Sextant) 반사경 고증"],
+        ["broadside-cannon-gunport-breeching-rope-linstock", "Naval Broadside Cannon Gun-Port Lid, Breeching Recoil Rope & Linstock", "#ef4444", "#64748b", "함포 포문 덮개와 포신 후퇴를 잡아주는 브리칭 로프(Breeching Rope)·점화봉 불꽃 고정"],
+        ["pirate-jolly-roger-cutlass-basket-hilt-flintlock", "Pirate Cutlass Brass Basket-Hilt, Flintlock Pistol Frizzen & Jolly Roger", "#f8fafc", "#dc2626", "해적 커틀러스 바스켓 가드(손등 보호대) 방향과 플린트락 권총 부싯돌 격발 연기 고증"],
+        ["treasure-chest-wax-sealed-parchment-compass-rose", "Weathered Parchment Map 32-Point Compass Rose, Red Wax Seal & Doubloons", "#fbbf24", "#b91c1c", "양피지 보물지도 32방위 나침반 장미(북쪽 백합 문양 Fleur-de-lis)와 스페인 금화 더블룬 고정"],
+        ["western-colt-saa-peacemaker-6chamber-fanning", "Colt Single-Action Army 6-Shot Cylinder, Ejector Rod & Fanning Hammer", "#d97706", "#94a3b8", "서부극 콜트 싱글액션 리볼버 총열 우측 추출봉(Ejector Rod)과 패닝 사격 시 왼손바닥 공이치기 고증"],
+        ["winchester-lever-action-repeating-rifle-saddle", "Winchester Model 1873 Lever-Action Loop, Side Loading Gate & Saddle Scabbard", "#92400e", "#f59e0b", "윈체스터 소총 하단 레버 루프 장전 궤적과 우측 리시버 급탄구(Loading Gate)·안장 총집 고정"],
+        ["saloon-batwing-swinging-doors-spurs-rowel", "Western Saloon Double-Action Batwing Louver Doors & Cowboy Boot Rowel Spurs", "#b45309", "#fde047", "서부 살룬 상하 공간이 트인 양방향 스윙도어(Batwing Door) 경첩과 카우보이 부츠 뒤꿈치 톱니 박차 고정"],
+        ["sheriff-6point-star-badge-wanted-poster-gallows", "Old West Tin 6-Point Sheriff Star Pin (Left Chest) & Letterpress Wanted Poster", "#eab308", "#78350f", "서부 보안관 금속 별 배지(왼쪽 가슴 착용)와 활판 인쇄 현상수배 전단지 타이포그래피 고증"],
+        ["steam-locomotive-cowcatcher-driving-rod-tender", "4-4-0 American Steam Locomotive Cowcatcher, Connecting Rods & Coal Tender", "#dc2626", "#475569", "증기기관차 전면 삼각 배장기(Cowcatcher)와 동륜을 잇는 커넥팅 로드 위상·뒤쪽 탄수차(Tender) 연결 고정"],
+        ["stagecoach-concord-thoroughbrace-roof-luggage", "Concord Stagecoach Leather Thoroughbrace Suspension, Driver Box & Strongbox", "#c2410c", "#fbbf24", "서부 역마차 가죽 현가벨트(Thoroughbrace) 흔들림과 마부석 발밑 금고(Strongbox)·지붕 짐칸 고정"],
+        ["noir-trenchcoat-storm-flap-epaulette-d-ring", "Classic Trench Coat Right Gun-Flap, Shoulder Epaulettes & Belt D-Rings", "#94a3b8", "#38bdf8", "누아르 트렌치코트 우측 가슴 건플랩(Gun Flap)·어깨 견장·벨트 D링 및 깃 세우기 실루엣 고증"],
+        ["fedora-crown-pinch-brim-snap-venetian-blind", "Noir Fedora Teardrop Crown Pinch & Venetian Blind Slatted Chiaroscuro Shadow", "#e2e8f0", "#f59e0b", "중절모 페도라 전면 크라운 집기(Pinch)와 베네치안 블라인드 줄무늬 그림자의 인체 굴곡 왜곡 고정"],
+        ["thompson-submachine-gun-drum-mag-cutts-comp", "Thompson M1928 Tommy Gun 50-Round Drum Magazine, Finned Barrel & Cutts Comp", "#64748b", "#ef4444", "톰슨 기관단총 원형 드럼탄창 장착 홈과 총열 냉각핀(Cooling Fins)·상단 블리시 락 장전손잡이 고증"],
+        ["silencer-suppressor-baffle-thread-subsonic-slide", "Threaded Barrel Suppressor Concentric Alignment & Raised Suppressor Sights", "#475569", "#22c55e", "소음기(Suppressor) 장착 권총의 총열 중심축 동축 정렬과 소음기에 가리지 않는 높은 가늠쇠 고정"],
+        ["microfilm-minox-spy-camera-dead-drop-cipher", "Cold-War Minox Subminiature Push-Pull Spy Camera & Hollow Coin Microdot", "#38bdf8", "#a855f7", "냉전 첩보물 초소형 미녹스 스파이 카메라 밀고 당기는 장전 방식과 속 빈 동전 마이크로필름 고증"],
+        ["rotary-payphone-booth-folding-bifold-glass-door", "Classic Street Payphone Booth Bi-Fold Glass Door, Armored Cord & Coin Return", "#ef4444", "#fde047", "공중전화 부스 안쪽으로 접히는 2단 접이식 유리문(Bi-fold Door)과 금속 주름관 수화기 줄 고증"],
+        ["vintage-flashbulb-graflex-press-camera-reflector", "1940s Graflex Speed Graphic Press Camera Parabolic Dish & Magnesium Flashbulb", "#f8fafc", "#eab308", "1940년대 프레스 카메라 우측 대형 원형 반사판과 일회용 마그네슘 플래시 벌브 섬광 연출 고정"],
+        ["detective-magnifying-glass-refraction-deerstalker", "Convex Magnifying Glass Edge Barrel Distortion & Deerstalker Ear-Flap Ribbon", "#10b981", "#f59e0b", "탐정 돋보기 볼록렌즈 내부 상 확대·테두리 굴절 왜곡과 사슴사냥모자(Deerstalker) 정수리 리본 매듭 고정"],
+        ["poison-vial-ring-compartment-invisible-ink-lemon", " Borgia Poison Locket Ring Hinge & Heat-Revealed Invisible Ink Scorch", "#a855f7", "#22c55e", "독약 반지 상단 보석 베젤 경첩 개폐 방향과 촛불 열기로 드러나는 비밀 서신 갈변 연출 고정"],
+        // Wave 55 (20개 플랫폼 — 총 1,060개 플랫폼 완성)
+        ["operating-room-shadowless-surgical-light-dome", "Surgical Petal Lighthead Multi-Reflector Shadow Dilution & Sterile Handle", "#38bdf8", "#f8fafc", "수술실 무영등 다중 반사경 구조와 중앙 녹색 멸균 손잡이·집도의 손 그림자 상쇄 광학 고증"],
+        ["anesthesia-machine-bellows-vaporizer-et-tube", "Anesthesia Ventilator Rising/Falling Bellows, Color-Coded Vaporizers & ET Tube", "#22c55e", "#eab308", "마취기 아코디언 벨로우즈 수직 왕복과 흡입마취제 기화기 색상코드(세보플루란=노란색)·기관삽관 고정"],
+        ["ecmo-heart-lung-bypass-oxygenator-roller-pump", "ECMO Membrane Oxygenator Dark Venous vs Bright Red Arterial Tubing Lock", "#dc2626", "#2563eb", "에크모(ECMO) 체외순환기 검붉은 정맥혈 유입관과 선홍색 동맥혈 유출관 색상 대비 고정"],
+        ["orthodontic-bracket-archwire-elastics-retainer", "Dental Orthodontic Ceramic/Metal Brackets, Archwire & Intermaxillary Elastics", "#e2e8f0", "#38bdf8", "치아 교정 브라켓 중앙 슬롯을 통과하는 아치와이어 연속성과 상하악 고무줄 걸기 위치 고증"],
+        ["oriental-medicine-herb-cabinet-baekanja-yakcheop", "Korean Oriental Clinic Wooden Herb Drawer Grid (Baekanja) & Folded Yakcheop", "#92400e", "#fbbf24", "한의원 약장(백안자) 서랍 황동 고리 손잡이 배열과 한지 약첩(藥貼) 사각 귀 접기 구조 고정"],
+        ["emergency-triage-tag-red-yellow-green-black", "Disaster START Triage Tag Tear-Off Strips (Black/Red/Yellow/Green Priority)", "#ef4444", "#22c55e", "재난 현장 응급 분류(Triage) 태그 하단 절취선 순서(초록→노랑→빨강→검정)와 손목 결속 고증"],
+        ["iv-blood-bag-abo-rh-drip-chamber-roller-clamp", "Transfusion Blood Bag Barcode Label, Half-Full Drip Chamber & Roller Clamp", "#b91c1c", "#f8fafc", "수혈용 혈액백 점적통(Drip Chamber)은 항상 절반만 채워져 방울이 떨어지는 물리 규칙과 롤러 클램프 고정"],
+        ["mri-bore-quench-pipe-non-ferrous-stretcher", "3T MRI Cylindrical Bore, Head Coil Cage & Non-Magnetic Aluminum Stretcher", "#0ea5e9", "#e2e8f0", "MRI 검사실 내부 금속 반입 금지(비자성 전용 카트만 허용)와 두부 코일 케이지 착용 고증"],
+        ["prosthetic-carbon-fiber-running-blade-socket", "J-Shaped Carbon-Fiber Running Prosthesis Blade Deflection & Vacuum Socket", "#14b8a6", "#94a3b8", "파라스포츠 카본 의족 J자 블레이드의 지면 반발 굽힘 곡률과 무릎 소켓 실리콘 라이너 고정"],
+        ["crispr-cas9-right-handed-b-dna-double-helix", "Right-Handed B-DNA Double Helix (Major/Minor Groove) & CRISPR Guide RNA", "#06b6d4", "#ec4899", "DNA 이중나선이 왼쪽으로 꼬이는 작붕(Left-handed Z-DNA 혼동)을 막고 오른나사 법칙(Right-handed B-DNA)과 주홈/부홈 비례 고정"],
+        ["suspension-parabolic-vs-cable-stayed-fan-bridge", "Suspension Bridge Parabolic Main Cable + Vertical Hangers vs Cable-Stayed Fan", "#3b82f6", "#f59e0b", "현수교(포물선 주케이블+수직 행어)와 사장교(주탑에서 상판으로 직선 사선 케이블 연결) 구조 혼동 차단"],
+        ["roman-arch-keystone-voussoir-impost-springer", "Masonry Semicircular Arch Wedge Keystone, Voussoirs & Roman Aqueduct Tier", "#d97706", "#94a3b8", "석조 아치 정중앙 사다리꼴 종석(Keystone)이 위에서 아래로 쐐기처럼 맞물리는 조적 구조 고정"],
+        ["gothic-cathedral-flying-buttress-pinnacle-gargoyle", "Gothic Exterior Flying Buttress Thrust Arch, Pinnacle Weight & Gargoyle Spout", "#64748b", "#a855f7", "고딕 대성당 외벽 플라잉 버트레스 반아치 지지대와 꼭대기 피나클(Pinnacle)·가고일 배수구 고증"],
+        ["hanok-daecheong-deureoyeolgae-lifting-door-hook", "Hanok Daecheong-Maru 4-Fold Lifting Door (Deureoyeolgae) & Ceiling Iron Hook", "#b45309", "#22c55e", "한옥 대청마루 분합문(들어열개문)을 접어 들어올려 처마 밑 걸쇠(약물림)에 매다는 구조 고증"],
+        ["japanese-castle-tenshu-chidori-hafu-ishigaki", "Japanese Castle Tenshu Curvilinear Kara-Hafu Gable & Polygonal Ishigaki Wall", "#475569", "#fbbf24", "일본 성곽 천수각 물결형 카라하후/삼각 치도리하후 박공과 부채꼴 곡선 성벽(오우기노코바) 투시 고정"],
+        ["elevator-traction-sheave-counterweight-governor", "Elevator Shaft Hoist Ropes, Counterweight Frame (45% Load) & Overspeed Governor", "#0284c7", "#eab308", "엘리베이터 승강로 액션 컷에서 카가 올라갈 때 균형추(Counterweight)는 반대 방향으로 내려가는 물리 고정"],
+        ["escalator-step-chain-comb-plate-skirt-brush", "Escalator Step-Chain Drive Loop, Yellow Skirt Deflector Brush & Emergency Stop", "#eab308", "#ef4444", "에스컬레이터 양옆 스커트 가드 검은 솔(Deflector Brush)과 상하단 빨간 비상정지 버튼 위치 고정"],
+        ["waterworks-sluice-gate-valve-cast-iron-hydrant", "Underground Water Main Gate-Valve Handwheel & Cast-Iron Fire Hydrant Pentagonal Nut", "#dc2626", "#38bdf8", "소화전 상단 5각형(Pentagonal) 개폐 너트와 방수구 캡 사슬·지하 상수도 제수밸브 고증"],
+        ["tunnel-boring-machine-tbm-cutterhead-segment", "Mega TBM Disc Cutterhead Face, Hydraulic Thrust Jacks & Precast Segment Ring", "#f97316", "#64748b", "지하 터널 굴착기(TBM) 전면 원형 디스크 커터 배열과 볼트로 조립된 프리캐스트 콘크리트 세그먼트 링 고정"],
+        ["arch-dam-ski-jump-spillway-stilling-basin", "Double-Curvature Arch Dam Concave Downstream Face & Ski-Jump Spillway Plume", "#0ea5e9", "#f8fafc", "아치댐이 상류(저수지 쪽)로 볼록하게 휘어 수압을 양안 암반에 전달하는 곡률 방향과 스키점프 여수로 물보라 고정"],
+        // Wave 56 (20개 플랫폼 — 총 1,080개 플랫폼 완성!)
+        ["streamer-dual-pc-capture-card-xlr-audio-interface", "Streamer Dual-PC Setup, XLR Audio Interface Gain Halo & Chat Monitor Portrait", "#a855f7", "#06b6d4", "인방물 스트리머 가로 메인 게임 모니터 + 세로 채팅 모니터 배치와 오디오 인터페이스 게인 링 고정"],
+        ["condenser-mic-shockmount-pop-filter-boom-arm", "Side-Address Cardioid Condenser Mic (Speak into Side, Not Top), Shockmount & Pop", "#f59e0b", "#38bdf8", "사이드 어드레스 콘덴서 마이크는 위쪽 끝이 아니라 정면 옆구리(로고 방향)에 대고 말해야 하는 수음 방향 고증"],
+        ["elgato-stream-deck-15key-lcd-macro-switcher", "15-Key LCD Stream Deck Scene Switcher & OBS Studio Preview/Program Multiview", "#3b82f6", "#ec4899", "스트리머 책상 위 3×5 배열 LCD 스트림덱 아이콘 발광과 OBS 방송 송출 화면 일관성 고정"],
+        ["ring-light-18inch-donut-catchlight-phone-clamp", "18-Inch LED Ring Light Center Smartphone Mount & Circular Donut Pupil Catchlight", "#f472b6", "#f8fafc", "뷰티/인방 스트리머 링라이트 사용 시 눈동자 정중앙에 맺히는 도넛 모양 원형 캐치라이트 고정"],
+        ["green-screen-chroma-key-spill-suppression-cyclorama", "Chroma-Key #00B140 Cyclorama Cove Wall & Green Rim-Spill Desaturation", "#22c55e", "#14b8a6", "크로마키 스튜디오 바닥과 벽이 둥글게 이어지는 호리존(Cyclorama) 곡면과 머리카락 그린 스필 제거"],
+        ["wacom-cintiq-pro-ergo-arm-left-hand-tourbox", "Webtoon Artist Cintiq Pro Ergo Stand Arm, Left-Hand TourBox/TabMate & Glove", "#6366f1", "#38bdf8", "웹툰 작가 오른손 스타일러스(약지·새끼손가락 2지 타블렛 장갑 착용)와 왼손 단축키 컨트롤러 파지 고증"],
+        ["clip-studio-3d-drawing-doll-joint-limit-sphere", "Clip Studio 3D Drawing Doll Root Manipulator Ring & Joint Rotation Limit Arc", "#0ea5e9", "#fbbf24", "클립스튜디오 3D 데생인형 루트 매니퓰레이터 3축 회전 링과 시선 카메라 FOV 슬라이더 UI 반영"],
+        ["photoshop-curves-histogram-clipping-mask-indent", "Layer Stack Clipping-Mask Downward Arrow Indent, Lock Pixel & S-Curve Histogram", "#38bdf8", "#8b5cf6", "레이어 패널 클리핑 마스크 하향 화살표(↳) 들여쓰기와 RGB S-커브 톤 보정 히스토그램 정합"],
+        ["blender-geometry-shader-node-bezier-noodle", "Blender Shader/Geometry Node Editor Bezier Noodle Sockets (Green Shader / Violet Vector)", "#f97316", "#22c55e", "블렌더 노드 에디터 소켓 색상 규칙(노랑=컬러, 보라=벡터, 회색=플로트, 초록=셰이더) 일치"],
+        ["unreal-engine-5-nanite-lumen-transform-gizmo", "Unreal Engine 5 Viewport XYZ Transform Gizmo (Red=X, Green=Y, Blue=Z Up)", "#ef4444", "#2563eb", "3D 뷰포트 표준 축 색상(X=빨강, Y=초록, Z=파랑) 기즈모 방향 및 루멘 글로벌 일루미네이션 연동"],
+        ["github-pull-request-diff-commit-graph-branch", "Git Branch Merge Graph, Green Addition / Red Deletion Diff & PR Checkmark", "#22c55e", "#ef4444", "개발자 웹툰 깃(Git) 커밋 브랜치 그래프와 PR 코드 리뷰 추가(+초록)/삭제(-빨강) 하이라이트 고증"],
+        ["notion-kanban-episode-deadline-sprint-board", "Webtoon Production Kanban Board (Script → Conti → Line → Flat → Shade → Lettering)", "#f8fafc", "#3b82f6", "웹툰 스튜디오 주간 마감 칸반 보드 6단계 칼럼 카드 이동과 담당자 아바타 배지 연속성 고정"],
+        ["discord-voice-channel-green-speaking-ring-overlay", "Gamer Discord Voice Overlay Green Speaking Avatar Ring & Mute/Deafen Icons", "#5865f2", "#22c55e", "게임/협업 웹툰 보이스챗 오버레이에서 현재 발화 중인 캐릭터 프로필에만 초록색 링이 켜지는 규칙 고정"],
+        ["youtube-superchat-red-tier-membership-badge", "Live-Stream SuperChat Color Tier (Blue→Yellow→Orange→Magenta→Red) & Pin Banner", "#ef4444", "#fbbf24", "실시간 스트리밍 후원 금액별 슈퍼챗 색상 티어(파랑→노랑→주황→마젠타→아카슈파 빨강) 고증"],
+        ["instagram-story-gradient-ring-live-heart-float", "Social Media Story Magenta-Orange-Yellow Gradient Ring & Floating Live Hearts", "#ec4899", "#f59e0b", "SNS 스토리 미열람 프로필의 마젠타-오렌지-옐로우 그라데이션 링과 라이브 방송 우하단 하트 파티클 연출"],
+        ["tiktok-reels-vertical-9x16-ui-safe-zone-mask", "9:16 Vertical Short-Form UI Safe-Zone Mask (Right Action Icons & Bottom Caption)", "#00f5d4", "#ff0050", "9:16 숏폼 웹툰 PV 제작 시 우측 좋아요/댓글 버튼과 하단 자막에 캐릭터 얼굴이 가리지 않는 세이프존 고정"],
+        ["webtoon-cookie-coin-topup-fastpass-unlock-modal", "Webtoon Fast-Pass (Preview) Cookie/Coin Unlock Modal & Countdown Timer UX", "#10b981", "#fbbf24", "웹툰 유료 미리보기(쿠키/캐시) 대여·소장 결제 모달과 무료 공개까지 남은 일수 카운트다운 UX 토큰"],
+        ["global-webtoon-ip-valuation-dcf-royalty-multiple", "Webtoon IP Valuation DCF Model (Pageviews + FastPass + OSMU Licensing Multiple)", "#38bdf8", "#a855f7", "작품 조회수·미리보기 결제율·해외 번역·영상화 판권 멀티플을 결합한 웹툰 IP 가치평가 모델"],
+        ["neural-brush-stroke-predictor-vector-inbetween", "Real-Time Neural Next-Stroke Trajectory Predictor & Vector Inbetweening Assist", "#8b5cf6", "#ec4899", "작가의 펜 궤적 속도와 곡률을 분석해 다음 선화 스트로크와 머리카락 다발 마감을 실시간 예측 보정"],
+        ["toonstudio-1080-platform-omniverse-supreme-engine", "ToonStudio 1,080-Platform Omniverse REA UI/UX & 180-Task Supreme Engine", "#fbbf24", "#00f5d4", "글로벌·국내 1,080대 웹툰 AI 플랫폼 UI/UX 토큰과 180대 스마트 라우팅 엔진을 통합한 옴니버스 수프림 엔진"],
       ] as const
     ).map(([id, nameKo, accentPrimaryHex, accentSecondaryHex, coreWorkflowKo], idx) => [
       id,
@@ -668,57 +703,20 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
         keyRoutes: ["/"],
       }),
     ]),
-  ) as unknown as Record<Rea15PlatformId, Rea15PlatformUiThemeSpec>),
-});
+  )),
+} as unknown as Record<Rea15PlatformId, Rea15PlatformUiThemeSpec>);
 
-export const REA39_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA50_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA65_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA80_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA100_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA120_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA140_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA160_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA180_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA200_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA220_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA240_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA260_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA280_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA300_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA320_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA340_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA360_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA380_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA400_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA420_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA440_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA460_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA480_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA500_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA520_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA540_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA560_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA580_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA600_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA620_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA640_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA660_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA680_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA700_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA720_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA740_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA760_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA780_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA800_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA820_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA840_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA860_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA880_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA900_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA920_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA940_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA960_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA980_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA1000_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
-export const REA1020_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA39_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA50_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA65_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA80_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA100_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA120_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA140_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA160_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA180_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA200_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA220_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA240_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA260_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA280_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA300_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA320_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA340_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA360_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA380_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA400_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA420_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA440_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA460_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA480_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA500_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA520_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA540_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA560_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA580_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA600_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA620_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA640_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA660_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA680_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA700_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA720_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA740_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA760_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA780_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA800_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA820_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA840_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA860_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA880_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA900_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA920_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA940_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA960_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA980_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA1000_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA1020_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA1040_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA1060_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG; export const REA1080_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

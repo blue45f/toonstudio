@@ -109,7 +109,7 @@ async function executeWave33CostCapTask<T>(params: {
   const routed = resolveCreatorTaskModelRoute(taskId, {
     model: options.model as "claude-haiku-5-5" | "claude-sonnet-5-5" | "claude-opus-5-5" | undefined,
   });
-  const requestedModel = resolveClaudeRequestModel(routed.model || CLAUDE_DEFAULT_MODEL_ID);
+  const requestedModel = resolveClaudeRequestModel(routed.model, CLAUDE_DEFAULT_MODEL_ID);
   const activeRoute = options.route !== undefined ? options.route : resolveClaudeRoute();
   if (!activeRoute) {
     return Object.freeze({ taskId, source: "deterministic-fallback", model: requestedModel, data: fallback(), usage: null, estimatedUsd: null });

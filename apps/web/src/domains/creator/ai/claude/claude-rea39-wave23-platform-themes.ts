@@ -52,7 +52,7 @@ function defineWaveTheme(
 }
 
 export const REA39_WAVE23_PLATFORM_UI_THEMES: Readonly<
-  Record<Rea39Wave23PlatformId, Rea15PlatformUiThemeSpec>
+  Partial<Record<Rea39Wave23PlatformId, Rea15PlatformUiThemeSpec>>
 > = Object.freeze({
   // Wave 2 (12개 플랫폼)
   llamagen: defineWaveTheme("llamagen", "LlamaGen AI", "https://llamagen.ai/", "ev_5d6e3e4aab21c7ff11fdddfa7d4d30d44627b638626558de15fb02c60e7b2c57", "4bbf2d622452a1b98ef744cf5f307b1bdf1d989a5eedf2b272b7166cff158c8f", ["#0D0C22", "#171713", "#4F5263", "#F7F7F8", "#7B7194", "#f3ad22", "#524B63"], 12, "Inter, Plus Jakarta Sans, sans-serif", "AI 코믹 스트립(/new/ai-comic-strips) + 에이전트 멀티패널 워크플로우(/agents, /workflows, /draw, /story)", ["/new/ai-comic-strips", "/agents", "/draw", "/workflows", "/story"]),
