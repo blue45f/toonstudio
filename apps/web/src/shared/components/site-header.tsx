@@ -573,7 +573,7 @@ function HeaderPrimaryNavigationEntry({
       aria-current={highlighted ? (isActive(item.href, true) ? "page" : "true") : undefined}
       aria-haspopup={item.children ? "true" : undefined}
       aria-expanded={item.children ? open : undefined}
-      title={siteNavigationText(item.description, locale)}
+      title={item.children ? undefined : siteNavigationText(item.description, locale)}
       data-navigation-entry={item.id}
       className="site-header__primary-link group"
     >
@@ -596,15 +596,14 @@ function HeaderPrimaryNavigationEntry({
   return (
     <div
       ref={entryRef}
+      data-app-tooltip-exclude="true"
       className="group relative"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => {
         escapeClosedRef.current = false;
         setOpen(false);
       }}
-      onFocus={() => {
-        if (!escapeClosedRef.current) setOpen(true);
-      }}
+      onFocus={() => { if (!escapeClosedRef.current) setOpen(true); }}
       onBlur={(event) => {
         if (
           event.relatedTarget instanceof Node &&
@@ -622,7 +621,7 @@ function HeaderPrimaryNavigationEntry({
           "absolute left-0 top-full z-50 w-64 pt-1 transition-[opacity,transform,visibility] duration-150 motion-reduce:transition-none",
           open
             ? "visible translate-y-0 opacity-100"
-            : "invisible translate-y-1 opacity-0"
+            : "invisible pointer-events-none translate-y-1 opacity-0"
         )}
       >
         <ul

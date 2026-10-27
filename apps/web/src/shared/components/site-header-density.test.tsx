@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AccessibleTooltipLayer } from "./AccessibleTooltipLayer";
 import { SiteHeader } from "./site-header";
 import { SiteExperienceContext } from "./site-experience/site-experience-context";
 import type { ExperienceMode } from "./site-experience/site-experience-model";
@@ -206,5 +207,49 @@ describe("단일 창작 헤더", () => {
       .toEqual(["studio", "collaborate", "explore", "community", "learn", "market"]);
     expect(within(navigation).getByRole("link", { name: "Collaborate" }).getAttribute("href"))
       .toBe("/production");
+  });
+
+  it("서브메뉴가 열리는 GNB 항목은 툴팁을 동시에 띄우지 않고 하위 항목 이동 시 열린 상태를 유지한다", () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <>
+          <AccessibleTooltipLayer />
+          <HeaderWithAppearance />
+        </>,
+      );
+
+      const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });
+      const studio = within(navigation).getByRole("link", { name: "제작" });
+      const explore = within(navigation).getByRole("link", { name: "탐색" });
+      const learn = within(navigation).getByRole("link", { name: "배우기" });
+      const community = within(navigation).getByRole("link", { name: "커뮤니티" });
+
+      // 서브메뉴가 있는 1차 항목은 네이티브 title을 두지 않고 툴팁 제외 영역으로 감싼다.
+      for (const trigger of [studio, explore, learn]) {
+        expect(trigger.hasAttribute("title")).toBe(false);
+        expect(trigger.closest('[data-app-tooltip-exclude="true"]')).not.toBeNull();
+      }
+      // 서브메뉴가 없는 단일 목적지는 설명 title을 유지한다.
+      expect(community.getAttribute("title")).toBeTruthy();
+
+      fireEvent.mouseEnter(explore.parentElement!);
+      fireEvent.pointerOver(explore, { pointerType: "mouse" });
+      act(() => vi.advanceTimersByTime(600));
+
+      expect(explore.getAttribute("aria-expanded")).toBe("true");
+      expect(screen.queryByRole("tooltip")).toBeNull();
+
+      // 하위 서브메뉴 항목으로 포인터를 내려도 툴팁 간섭 없이 드롭다운이 열린 채로 유지된다.
+      const ranking = within(explore.parentElement!).getByRole("link", { name: /^랭킹/u });
+      fireEvent.pointerOut(explore, { pointerType: "mouse", relatedTarget: ranking });
+      fireEvent.pointerOver(ranking, { pointerType: "mouse", relatedTarget: explore });
+      act(() => vi.advanceTimersByTime(600));
+
+      expect(explore.getAttribute("aria-expanded")).toBe("true");
+      expect(screen.queryByRole("tooltip")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

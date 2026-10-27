@@ -162,17 +162,30 @@ function contextualDescription(target: HTMLElement): string | undefined {
   return undefined;
 }
 
+const EXCLUDED_SURFACE_SELECTOR =
+  '[data-app-tooltip-exclude="true"], [data-studio-tool-hint-target="true"], [data-studio-tool-hint="true"], [data-studio-tool-hint-mode="off"]';
+
+function hasExpandedPopup(element: Element): boolean {
+  const hasPopup = element.getAttribute("aria-haspopup");
+  return (
+    Boolean(hasPopup && hasPopup !== "false") &&
+    element.getAttribute("aria-expanded") === "true"
+  );
+}
+
+function isTooltipSuppressedTarget(eventTarget: EventTarget | null): boolean {
+  if (!(eventTarget instanceof Element)) return false;
+  if (eventTarget.closest(EXCLUDED_SURFACE_SELECTOR)) return true;
+  const popupTrigger = eventTarget.closest('[aria-haspopup][aria-expanded="true"]');
+  return Boolean(popupTrigger && hasExpandedPopup(popupTrigger));
+}
+
 function tooltipSourceFromEventTarget(eventTarget: EventTarget | null): TooltipSource | null {
   if (!(eventTarget instanceof Element)) return null;
+  if (isTooltipSuppressedTarget(eventTarget)) return null;
   const target = eventTarget.closest<HTMLElement>(CANDIDATE_SELECTOR);
   if (!target || !target.isConnected) return null;
-  if (
-    target.closest(
-      '[data-app-tooltip-exclude="true"], [data-studio-tool-hint-target="true"], [data-studio-tool-hint="true"], [data-studio-tool-hint-mode="off"]',
-    )
-  ) {
-    return null;
-  }
+  if (isTooltipSuppressedTarget(target)) return null;
   if (target.hidden || target.closest('[hidden], [inert], [aria-hidden="true"]')) return null;
 
   const dataTitle = cleanCopy(
@@ -413,7 +426,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
       const delay = activeRef.current ? WARM_SHOW_DELAY_MS : SHOW_DELAY_MS;
       showTimer.current = globalThis.setTimeout(() => {
         showTimer.current = 0;
-        if (!source.target.isConnected) return;
+        if (!source.target.isConnected || isTooltipSuppressedTarget(source.target)) return;
         open(source);
       }, delay) as unknown as number;
     }
@@ -444,6 +457,11 @@ export function AccessibleTooltipLayer(): ReactElement | null {
         return;
       }
       if (event.pointerType === "touch") return;
+      if (isTooltipSuppressedTarget(event.target)) {
+        hoveredTarget = null;
+        close(true);
+        return;
+      }
       const source = sourceForEventTarget(event.target);
       const current = activeRef.current;
       if (source) {
@@ -485,6 +503,11 @@ export function AccessibleTooltipLayer(): ReactElement | null {
 
     function onFocusIn(event: FocusEvent): void {
       if (isInsideTooltip(event.target)) return;
+      if (isTooltipSuppressedTarget(event.target)) {
+        focusedTarget = null;
+        close(true);
+        return;
+      }
       const source = sourceForEventTarget(event.target);
       const activeTarget = activeRef.current?.target ?? null;
       if (source) {
@@ -635,10 +658,17 @@ export function AccessibleTooltipLayer(): ReactElement | null {
     const mutationObserver = typeof MutationObserver === "function"
       ? new MutationObserver(() => {
           const current = activeRef.current;
-          if (current && !current.target.isConnected) close(true);
+          if (current && (!current.target.isConnected || isTooltipSuppressedTarget(current.target))) {
+            close(true);
+          }
         })
       : null;
-    mutationObserver?.observe(document.documentElement, { childList: true, subtree: true });
+    mutationObserver?.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["aria-expanded", "data-app-tooltip-exclude", "hidden", "inert"],
+    });
 
     return () => {
       document.removeEventListener("pointerover", onPointerOver, passiveCapture);

@@ -302,4 +302,45 @@ describe("AccessibleTooltipLayer", () => {
       expect(screen.queryByRole("tooltip")).toBeNull();
     }
   });
+
+  it("suppresses tooltips on expanded popup triggers and closes active tooltips when entering excluded submenu surfaces", () => {
+    vi.useFakeTimers();
+    renderLayer(
+      <>
+        <a href="/community" title="창작자와 독자가 함께 이야기하는 공간">
+          커뮤니티
+        </a>
+        <div data-app-tooltip-exclude="true">
+          <a href="/discover" aria-haspopup="true" aria-expanded="true">
+            탐색
+          </a>
+          <ul aria-label="탐색">
+            <li>
+              <a href="/ranking">랭킹</a>
+            </li>
+          </ul>
+        </div>
+      </>,
+    );
+
+    const community = screen.getByRole("link", { name: "커뮤니티" });
+    const explore = screen.getByRole("link", { name: "탐색" });
+    const ranking = screen.getByRole("link", { name: "랭킹" });
+
+    // 단독 메뉴의 툴팁이 먼저 열린 상태에서 서브메뉴 영역으로 포인터가 이동하면 지연 없이 즉시 닫힌다.
+    revealByHover(community);
+    expect(screen.getByRole("tooltip").textContent).toContain("창작자와 독자가 함께 이야기하는 공간");
+
+    fireEvent.pointerOut(community, { pointerType: "mouse", relatedTarget: explore });
+    fireEvent.pointerOver(explore, { pointerType: "mouse", relatedTarget: community });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+
+    // 서브메뉴가 열린 트리거와 하위 항목 위에서는 시간이 지나도 툴팁이 다시 열리지 않는다.
+    act(() => vi.advanceTimersByTime(600));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+
+    fireEvent.pointerOver(ranking, { pointerType: "mouse", relatedTarget: explore });
+    act(() => vi.advanceTimersByTime(600));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
 });
