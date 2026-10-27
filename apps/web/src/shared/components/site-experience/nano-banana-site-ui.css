@@ -81,7 +81,7 @@
   transform: scale(1.03);
 }
 
-.nb-site-spotlight__visual-badge {
+.nb-site-spotlight__visual-step {
   position: absolute;
   left: 0.625rem;
   bottom: 0.625rem;
@@ -196,6 +196,75 @@
   font-size: 0.8125rem;
   line-height: 1.5;
   color: rgba(226, 232, 240, 0.88);
+}
+
+.nb-site-spotlight__step-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.nb-site-spotlight__step-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.625rem;
+  background: rgba(9, 13, 26, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nb-site-spotlight__step-card:hover {
+  border-color: color-mix(in srgb, var(--nb-accent) 55%, rgba(255, 255, 255, 0.2));
+  transform: translateY(-1px);
+}
+
+.nb-site-spotlight__step-card--active {
+  background: color-mix(in srgb, var(--nb-accent) 22%, rgba(15, 23, 42, 0.86));
+  border-color: color-mix(in srgb, var(--nb-accent) 72%, #fde68a);
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--nb-accent) 45%, transparent);
+}
+
+.nb-site-spotlight__step-art {
+  width: 2.4rem;
+  height: 1.55rem;
+  border-radius: 0.38rem;
+  background-size: cover;
+  background-position: center;
+  background-color: #0d1326;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  flex-shrink: 0;
+}
+
+.nb-site-spotlight__step-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.nb-site-spotlight__step-num {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fde68a;
+}
+
+.nb-site-spotlight__step-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nb-site-spotlight__footer {

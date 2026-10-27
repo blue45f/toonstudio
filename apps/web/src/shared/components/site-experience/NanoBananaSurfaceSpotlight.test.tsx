@@ -40,19 +40,26 @@ describe("NanoBananaSurfaceSpotlight", () => {
 
     // Default lens is "curation"
     const curationBtn = screen.getByRole("button", { name: "큐레이션 렌즈" });
-    const recipeBtn = screen.getByRole("button", { name: "창작 레시피" });
+    const recipeBtn = screen.getByRole("button", { name: "맞춤 추천·서재" });
     expect(curationBtn.getAttribute("aria-pressed")).toBe("true");
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("false");
 
     // Ensure technical model badges like "NanoBanana Pro · ..." are not rendered
     expect(container.querySelector(".nb-site-spotlight__visual-badge")).toBeNull();
-    expect(container.textContent).not.toMatch(/NanoBanana|Cel-Brush Engine/iu);
+    expect(container.textContent).not.toMatch(/NanoBanana|나노바나나|Cel-Brush Engine/iu);
 
-    // Switch to recipe lens
+    // 3 visual step cards are rendered with distinct generated artwork backgrounds
+    const stepCards = container.querySelectorAll(".nb-site-spotlight__step-card");
+    expect(stepCards).toHaveLength(3);
+
+    // Switch to 3rd lens and verify both the hero illustration and CTA update
     fireEvent.click(recipeBtn);
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("link", { name: /표지 시안 시작/u }).getAttribute("href")).toBe(
-      "/create",
+    expect(img?.getAttribute("src")).toBe(
+      "/assets/site-experience/nano-banana-site-v1/cards/nb-library-archive-640.webp",
+    );
+    expect(screen.getByRole("link", { name: /맞춤 추천 보기/u }).getAttribute("href")).toBe(
+      "/recommend",
     );
   });
 

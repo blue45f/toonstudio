@@ -168,8 +168,17 @@ describe("nano-banana-site-ui-pack", () => {
         expect(chip.en).not.toMatch(directBrandingRegex);
       }
       expect(card.lenses).toHaveLength(3);
+      const previewIds = new Set(card.lenses.map((lens) => lens.previewCardId));
+      expect(previewIds.size).toBe(3);
       for (const lens of card.lenses) {
+        expect(lens.previewCardId).toBeDefined();
+        expect(
+          NANO_BANANA_SITE_CARDS[
+            lens.previewCardId as keyof typeof NANO_BANANA_SITE_CARDS
+          ],
+        ).toBeDefined();
         expect(lens.label.ko).not.toMatch(directBrandingRegex);
+        expect(lens.label.ko).not.toMatch(/창작 레시피|AI 키 볼트/u);
         expect(lens.label.en).not.toMatch(hangulRegex);
         expect(lens.label.en).not.toMatch(directBrandingRegex);
         expect(lens.headline.ko).not.toMatch(directBrandingRegex);

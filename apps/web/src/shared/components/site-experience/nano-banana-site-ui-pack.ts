@@ -57,6 +57,7 @@ export interface NanoBananaLocalizedCopy {
 
 export interface NanoBananaInteractiveLens {
   readonly id: "curation" | "workflow" | "recipe";
+  readonly previewCardId?: NanoBananaCardId;
   readonly label: NanoBananaLocalizedCopy;
   readonly headline: NanoBananaLocalizedCopy;
   readonly detail: NanoBananaLocalizedCopy;

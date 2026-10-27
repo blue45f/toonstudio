@@ -42,10 +42,17 @@ export function NanoBananaSurfaceSpotlight({
 
   const activeLens =
     card.lenses.find((lens) => lens.id === activeLensId) ?? card.lenses[0];
+  const activeLensIndex = Math.max(
+    0,
+    card.lenses.findIndex((lens) => lens.id === activeLens.id),
+  );
+  const activePreviewCard = activeLens.previewCardId
+    ? getNanoBananaSiteCard(activeLens.previewCardId)
+    : card;
 
   const customVars = {
-    "--nb-accent": card.accentHex,
-    "--nb-secondary": card.secondaryHex,
+    "--nb-accent": activePreviewCard.accentHex,
+    "--nb-secondary": activePreviewCard.secondaryHex,
   } as CSSProperties;
 
   return (
@@ -65,8 +72,8 @@ export function NanoBananaSurfaceSpotlight({
       >
         <div className="nb-site-spotlight__visual" aria-hidden="true">
           <img
-            src={card.src640}
-            srcSet={card.srcSet}
+            src={activePreviewCard.src640}
+            srcSet={activePreviewCard.srcSet}
             sizes="(max-width: 679px) calc(100vw - 48px), 280px"
             alt=""
             aria-hidden="true"
@@ -76,6 +83,12 @@ export function NanoBananaSurfaceSpotlight({
             height={360}
             className="nb-site-spotlight__img"
           />
+          <span className="nb-site-spotlight__visual-step">
+            <span className="nb-site-spotlight__visual-dot" />
+            <span>
+              {`0${activeLensIndex + 1} · ${pick(activeLens.label)}`}
+            </span>
+          </span>
         </div>
 
         <div className="nb-site-spotlight__body">
@@ -117,6 +130,41 @@ export function NanoBananaSurfaceSpotlight({
               {pick(activeLens.headline)}
             </p>
             <p className="nb-site-spotlight__detail">{pick(activeLens.detail)}</p>
+
+            <div className="nb-site-spotlight__step-grid" aria-hidden="true">
+              {card.lenses.map((lens, idx) => {
+                const stepArt = lens.previewCardId
+                  ? getNanoBananaSiteCard(lens.previewCardId)
+                  : card;
+                const isSelected = lens.id === activeLens.id;
+                return (
+                  <div
+                    key={lens.id}
+                    className={`nb-site-spotlight__step-card ${isSelected ? "nb-site-spotlight__step-card--active" : ""}`.trim()}
+                    data-nb-step-card={lens.id}
+                    onClick={() => {
+                      if (lens.id === activeLens.id) return;
+                      runSameDocumentViewTransition(() => {
+                        setActiveLensId(lens.id);
+                      });
+                    }}
+                  >
+                    <span
+                      className="nb-site-spotlight__step-art"
+                      style={{ backgroundImage: `url(${stepArt.src320})` }}
+                    />
+                    <span className="nb-site-spotlight__step-meta">
+                      <span className="nb-site-spotlight__step-num">
+                        {`0${idx + 1}`}
+                      </span>
+                      <span className="nb-site-spotlight__step-label">
+                        {pick(lens.label)}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="nb-site-spotlight__footer">
