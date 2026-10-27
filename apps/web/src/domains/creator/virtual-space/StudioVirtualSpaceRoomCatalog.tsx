@@ -31,7 +31,7 @@ const privacyCopy = {
   public: ["공개", "Public"],
 } as const;
 
-export const NANO_BANANA_SPACE_MODULE_PREVIEWS: Readonly<
+const NANO_BANANA_SPACE_MODULE_PREVIEWS: Readonly<
   Record<
     string,
     {

@@ -16,6 +16,7 @@ import {
   PIPELINE_STAGE_LABELS_KO,
   type NextGenVirtualStudioEngineState,
 } from "./studio-virtual-office-nextgen-engine-data";
+import { resolveAvatarDirectionalWalkSprite } from "./studio-virtual-office-nextgen-engine-model";
 import {
   STUDIO_PRACTICAL_WORK_MODES,
   addDeskRetakeNote,
@@ -344,9 +345,14 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
               className="pointer-events-none absolute z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
             >
               <img
-                src={activeSpriteUrl}
+                src={resolveAvatarDirectionalWalkSprite(
+                  engineState.physics.facingAngleRad,
+                  engineState.physics.speedPxPerSec,
+                  activeSpriteUrl,
+                )}
                 alt={activePersona.nameKo}
                 loading="lazy"
+                data-testid="practical-floor-self-avatar-sprite"
                 className="h-11 w-11 rounded-full border-2 border-accent bg-panel/90 object-contain shadow-sm"
               />
               <span className="mt-0.5 rounded bg-panel/95 px-1.5 py-0.2 text-[9px] font-semibold text-fg">

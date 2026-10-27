@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceRoomCatalog } from "./StudioVirtualSpaceRoomCatalog";
+import { STUDIO_SPACE_MODULES } from "./studio-virtual-space-room-catalog";
 
 afterEach(() => cleanup());
 
@@ -58,5 +61,23 @@ describe("StudioVirtualSpaceRoomCatalog", () => {
   it("does not advertise template creation in a personal space", () => {
     mount(false);
     expect(screen.queryByRole("button", { name: /콘티룸 만들기/u })).toBeNull();
+  });
+
+  it("renders Nano Banana 2.5D room preview and specialist host sprite for every space module", () => {
+    const publicDir = existsSync(resolve(process.cwd(), "public"))
+      ? resolve(process.cwd(), "public")
+      : resolve(process.cwd(), "apps/web/public");
+
+    mount(true);
+    for (const module of STUDIO_SPACE_MODULES) {
+      const roomImg = screen.getByTestId(`space-module-room-preview-${module.id}`);
+      const hostImg = screen.getByTestId(`space-module-host-sprite-${module.id}`);
+      const roomSrc = roomImg.getAttribute("src") ?? "";
+      const hostSrc = hostImg.getAttribute("src") ?? "";
+      expect(roomSrc).toContain("/assets/virtual-studio/nano-banana-");
+      expect(hostSrc).toContain("/assets/virtual-studio/nano-banana-");
+      expect(existsSync(resolve(publicDir, `.${roomSrc}`))).toBe(true);
+      expect(existsSync(resolve(publicDir, `.${hostSrc}`))).toBe(true);
+    }
   });
 });

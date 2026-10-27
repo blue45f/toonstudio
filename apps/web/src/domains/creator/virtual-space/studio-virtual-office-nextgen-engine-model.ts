@@ -232,6 +232,34 @@ export function selectNanoBananaV13Prop(
   };
 }
 
+export const NANO_BANANA_V14_WALK_SPRITES = {
+  down: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-down.webp",
+  left: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
+  right: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
+  up: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-up.webp",
+} as const;
+
+export function resolveAvatarDirectionalWalkSprite(
+  facingAngleRad: number,
+  speedPxPerSec: number,
+  fallbackSpriteUrl: string,
+): string {
+  if (speedPxPerSec <= 4) {
+    return fallbackSpriteUrl;
+  }
+  const deg = ((facingAngleRad * 180) / Math.PI + 360) % 360;
+  if (deg >= 45 && deg < 135) {
+    return NANO_BANANA_V14_WALK_SPRITES.down;
+  }
+  if (deg >= 135 && deg < 225) {
+    return NANO_BANANA_V14_WALK_SPRITES.left;
+  }
+  if (deg >= 225 && deg < 315) {
+    return NANO_BANANA_V14_WALK_SPRITES.up;
+  }
+  return NANO_BANANA_V14_WALK_SPRITES.right;
+}
+
 export function applyStudioLightingMood(
   state: NextGenVirtualStudioEngineState,
   lightingMoodId: StudioLightingMoodId,

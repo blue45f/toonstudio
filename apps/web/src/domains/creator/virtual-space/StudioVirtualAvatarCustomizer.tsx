@@ -51,6 +51,20 @@ const DIRECTIONS: readonly { readonly key: StudioSpriteDirection; readonly ko: s
   { key: "down-right", ko: "오른쪽 아래", en: "Bottom right", arrow: "↘" },
 ];
 
+const NANO_BANANA_DIRECTIONAL_WALK_SPRITES: Readonly<
+  Record<StudioSpriteDirection, string>
+> = {
+  down: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-down.webp",
+  "down-left": "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
+  left: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
+  "up-left": "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
+  up: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-up.webp",
+  "up-right": "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
+  right: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
+  "down-right":
+    "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
+};
+
 function ColorSwatchGroup({ legend, options, value, onSelect, bt }: {
   readonly legend: string;
   readonly options: readonly { readonly value: string; readonly labelKo: string; readonly labelEn: string }[];
@@ -216,6 +230,29 @@ export function StudioVirtualAvatarCustomizer({ identity }: { readonly identity:
             <figcaption>{bt("픽셀 스프라이트", "Pixel sprite")}</figcaption>
           </figure>
         ) : null}
+
+        <figure className="avatar-customizer__sprite" data-testid="avatar-customizer-nano-banana-walk-figure">
+          <svg
+            width={96}
+            height={112}
+            viewBox="0 0 96 112"
+            role="img"
+            aria-label={bt("웹툰 작가 4방향 보행 스프라이트 미리보기", "Webtoon creator 4-direction walk sprite preview")}
+            data-testid="avatar-customizer-nano-banana-walk-svg"
+            data-walk-direction={direction}
+          >
+            <image
+              href={NANO_BANANA_DIRECTIONAL_WALK_SPRITES[direction]}
+              x="4"
+              y="8"
+              width="88"
+              height="96"
+              preserveAspectRatio="xMidYMid meet"
+              data-testid="avatar-customizer-nano-banana-walk-image"
+            />
+          </svg>
+          <figcaption>{bt("2.5D 보행 스프라이트", "2.5D walk sprite")}</figcaption>
+        </figure>
       </div>
 
       <fieldset className="avatar-customizer__group avatar-customizer__group--boxed">

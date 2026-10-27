@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  NANO_BANANA_V14_WALK_SPRITES,
   NEXTGEN_COMPETITOR_REA_BENCHMARKS,
   advanceDeskEpisodeCutStage,
   applyStudioLightingMood,
@@ -11,6 +12,7 @@ import {
   computeSpatialAudioGainAndPan,
   createInitialNextGenStudioEngineState,
   navigateAvatarClickToWalk,
+  resolveAvatarDirectionalWalkSprite,
   selectNanoBananaCreatorPersona,
   selectNanoBananaStudioTheme,
   selectNanoBananaV13Emote,
@@ -66,6 +68,25 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
     for (const prop of state.v13Props) {
       expect(existsSync(resolve(publicDir, `.${prop.spriteUrl}`))).toBe(true);
     }
+    for (const walkUrl of Object.values(NANO_BANANA_V14_WALK_SPRITES)) {
+      expect(existsSync(resolve(publicDir, `.${walkUrl}`))).toBe(true);
+    }
+
+    expect(
+      resolveAvatarDirectionalWalkSprite(0, 0, "/fallback.webp"),
+    ).toBe("/fallback.webp");
+    expect(
+      resolveAvatarDirectionalWalkSprite(0, 120, "/fallback.webp"),
+    ).toBe(NANO_BANANA_V14_WALK_SPRITES.right);
+    expect(
+      resolveAvatarDirectionalWalkSprite(Math.PI / 2, 120, "/fallback.webp"),
+    ).toBe(NANO_BANANA_V14_WALK_SPRITES.down);
+    expect(
+      resolveAvatarDirectionalWalkSprite(Math.PI, 120, "/fallback.webp"),
+    ).toBe(NANO_BANANA_V14_WALK_SPRITES.left);
+    expect(
+      resolveAvatarDirectionalWalkSprite(-Math.PI / 2, 120, "/fallback.webp"),
+    ).toBe(NANO_BANANA_V14_WALK_SPRITES.up);
 
     const withEmote = selectNanoBananaV13Emote(state, "celebrate-highfive");
     expect(withEmote.activeV13EmoteId).toBe("celebrate-highfive");
