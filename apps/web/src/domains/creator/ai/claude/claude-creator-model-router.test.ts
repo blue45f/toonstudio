@@ -42,6 +42,16 @@ import {
   runClaudeVehicleCockpitSeatbeltDrivetrainDirector,
   runClaudeVtuberArkit52VnSpriteMerchDirector,
 } from "./claude-feature-cost-cap";
+import {
+  runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeCyberTerminalServerRackCctvRooftopDirector,
+  runClaudeHanokOndolBongsuWatermillMatchlockDirector,
+  runClaudeHwachaGeobukseonTrebuchetJoustDirector,
+  runClaudeJoseonGatBinyeoKatanaSayaDirector,
+  runClaudeMensSuitBottomButtonTieHeelStrapDirector,
+  runClaudeSignLanguageHearingAidLegalDepositDirector,
+  runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
+} from "./claude-localize-run";
 
 describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
   it("3단계 프로필(fast-inline, creative-production, deep-architecture)을 정의하고 전체 AI 작업을 최적 모델로 매핑한다", () => {
@@ -82,12 +92,21 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 97대 창의 AI 작업을 포함한 총 148개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 105대 창의 AI 작업을 포함한 총 156개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(148);
-    expect(summary.byProfile["fast-inline"]).toBe(38);
-    expect(summary.byProfile["creative-production"]).toBe(74);
-    expect(summary.byProfile["deep-architecture"]).toBe(36);
+    expect(summary.totalTasks).toBe(156);
+    expect(summary.byProfile["fast-inline"]).toBe(40);
+    expect(summary.byProfile["creative-production"]).toBe(78);
+    expect(summary.byProfile["deep-architecture"]).toBe(38);
+
+    expect(resolveCreatorTaskModelRoute("localize:joseon-gat-binyeo-katana-saya-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:mens-suit-button-tie-heel-eyeglass-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:hwacha-geobukseon-trebuchet-joust-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:hanok-ondol-bongsu-watermill-matchlock-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:zombie-barricade-gasmask-lockpick-laser-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:cyber-terminal-server-cctv-rooftop-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:animal-pupil-spider-octopus-shark-director").model).toBe("claude-opus-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:sign-language-hearing-aid-isbn-archive-director").model).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("localize:dental-ophthalmology-xray-marker-lock").model,
@@ -469,5 +488,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(y6.data.campusTabletopScore).toBeGreaterThanOrEqual(95);
     expect(y7.data.leisurePhysicsScore).toBeGreaterThanOrEqual(95);
     expect(y8.data.propPhysicsPaywallScore).toBeGreaterThanOrEqual(95);
+
+    const z1 = await runClaudeJoseonGatBinyeoKatanaSayaDirector(sample, { route: null });
+    const z2 = await runClaudeMensSuitBottomButtonTieHeelStrapDirector(sample, { route: null });
+    const z3 = await runClaudeHwachaGeobukseonTrebuchetJoustDirector(sample, { route: null });
+    const z4 = await runClaudeHanokOndolBongsuWatermillMatchlockDirector(sample, { route: null });
+    const z5 = await runClaudeZombieBarricadeGasMaskLockpickLaserDirector(sample, { route: null });
+    const z6 = await runClaudeCyberTerminalServerRackCctvRooftopDirector(sample, { route: null });
+    const z7 = await runClaudeAnimalPupilSpider8LegOctopusSharkDirector(sample, { route: null });
+    const z8 = await runClaudeSignLanguageHearingAidLegalDepositDirector(sample, { route: null });
+
+    expect(z1.data.traditionalAccessoryIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z2.data.modernTailoringIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z3.data.siegeWarfareIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z4.data.historicalTechIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z5.data.survivalTacticalIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z6.data.urbanInfraIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z7.data.zoologicalAnatomyIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(z8.data.inclusivityAndArchiveIntegrityScore).toBeGreaterThanOrEqual(95);
   });
 });

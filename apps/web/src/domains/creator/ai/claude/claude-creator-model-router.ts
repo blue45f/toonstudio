@@ -201,7 +201,16 @@ export type ClaudeCreatorTaskId =
   | "localize:film-slate-boom-cstand-broadcast-tally-lock"
   | "localize:school-csat-omr-tcg-dice-mahjong-lock"
   | "localize:amusement-coaster-ferris-camping-ski-director"
-  | "localize:hourglass-candle-scale-book-paywall-director";
+  | "localize:hourglass-candle-scale-book-paywall-director"
+  // 19. Wave 45~47 JoseonGatKatana/MensSuitHeel/SiegeHwacha/HanokOndol/ZombieLockpick/CyberServerCctv/ZoologyPupil/SignLanguageIsbn AI Engines (8 — Total 156 Tasks)
+  | "localize:joseon-gat-binyeo-katana-saya-lock"
+  | "localize:mens-suit-button-tie-heel-eyeglass-lock"
+  | "localize:hwacha-geobukseon-trebuchet-joust-lock"
+  | "localize:hanok-ondol-bongsu-watermill-matchlock-lock"
+  | "localize:zombie-barricade-gasmask-lockpick-laser-lock"
+  | "localize:cyber-terminal-server-cctv-rooftop-lock"
+  | "localize:animal-pupil-spider-octopus-shark-director"
+  | "localize:sign-language-hearing-aid-isbn-archive-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -284,38 +293,10 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   Record<ClaudeCreatorTaskId, ClaudeCreatorTaskRoute>
 > = Object.freeze({
   // 1. Core Dialogs
-  "core:art-director": defineRoute(
-    "core:art-director",
-    "AI 아트 디렉터 피드백",
-    "core-dialog",
-    "creative-production",
-    "페이지 구도·명암·4레이어 액션 매핑은 Sonnet 5.5의 시각 연출 분석이 최적",
-    2_048,
-  ),
-  "core:command-plan": defineRoute(
-    "core:command-plan",
-    "AI 자연어 캔버스 커맨드 플랜",
-    "core-dialog",
-    "fast-inline",
-    "자연어 명령→캔버스 액션 변환은 지연시간 최소화를 위해 Haiku 5.5 배치",
-    1_536,
-  ),
-  "core:localize": defineRoute(
-    "core:localize",
-    "AI 다국어 식자·문화권 번역",
-    "core-dialog",
-    "creative-production",
-    "문화권 뉘앙스 보존 및 42자 말풍선 예산 준수는 Sonnet 5.5가 최적",
-    2_048,
-  ),
-  "core:alt-text": defineRoute(
-    "core:alt-text",
-    "AI 접근성 대체 텍스트·오디오툰 내레이션",
-    "core-dialog",
-    "fast-inline",
-    "컷별 대체 텍스트 및 오디오 내레이션 생성은 Haiku 5.5로 빠르게 처리",
-    1_200,
-  ),
+  "core:art-director": defineRoute("core:art-director", "AI 아트 디렉터 피드백", "core-dialog", "creative-production", "페이지 구도·명암·4레이어 액션 매핑은 Sonnet 5.5의 시각 연출 분석이 최적", 2_048),
+  "core:command-plan": defineRoute("core:command-plan", "AI 자연어 캔버스 커맨드 플랜", "core-dialog", "fast-inline", "자연어 명령→캔버스 액션 변환은 지연시간 최소화를 위해 Haiku 5.5 배치", 1_536),
+  "core:localize": defineRoute("core:localize", "AI 다국어 식자·문화권 번역", "core-dialog", "creative-production", "문화권 뉘앙스 보존 및 42자 말풍선 예산 준수는 Sonnet 5.5가 최적", 2_048),
+  "core:alt-text": defineRoute("core:alt-text", "AI 접근성 대체 텍스트·오디오툰 내레이션", "core-dialog", "fast-inline", "컷별 대체 텍스트 및 오디오 내레이션 생성은 Haiku 5.5로 빠르게 처리", 1_200),
 
   // 2. Storyboard & Production Suite
   "production:storyboard-cut-breakdown": defineRoute("production:storyboard-cut-breakdown", "웹툰 컷 콘티 브레이크다운", "storyboard-production", "creative-production", "대본→컷 구도·카메라·조명·말풍선 분해는 Sonnet 5.5 표준 연출 티어", 2_560),
@@ -639,6 +620,16 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "localize:school-csat-omr-tcg-dice-mahjong-lock": defineRoute("localize:school-csat-omr-tcg-dice-mahjong-lock", "한국 수능 OMR 답안지/학사모 술 방향·TCG 카드 90도 탭·주사위 마주보는 면 합(7/21)·마작 13패 고정 디렉터", "core-dialog", "creative-production", "수능 OMR/아날로그 시계·TCG 매트/탭 상태·주사위 마주보는 면 규칙·마작 손패 13장 고정은 Sonnet 5.5 적용", 4_096),
   "localize:amusement-coaster-ferris-camping-ski-director": defineRoute("localize:amusement-coaster-ferris-camping-ski-director", "롤러코스터 3륜 업스톱 휠·대관람차 곤돌라 중력 수평·인형뽑기 3발 집게·캠핑 텐트 45도 팩·스노보드 스탠스 총괄 감독", "core-dialog", "deep-architecture", "유원지 어트랙션 기구학·관람차 중력 수평·캠핑/설상 스포츠 장비 고증은 Opus 5.5 심층 추론 적용", 6_144),
   "localize:hourglass-candle-scale-book-paywall-director": defineRoute("localize:hourglass-candle-scale-book-paywall-director", "모래시계 34도 안식각·기울어진 촛대 수직 불꽃·천칭 저울·펼친 책 M자 곡면 왜곡 및 유료 쿠키 전환율 총괄 감독", "core-dialog", "deep-architecture", "모래시계/촛불/천칭/우산 물리·펼친 책 제본선 왜곡 투영·유료 미리보기 전환 훅 설계는 Opus 5.5 심층 추론 적용", 6_144),
+
+  // 19. Wave 45~47 JoseonGatKatana/MensSuitHeel/SiegeHwacha/HanokOndol/ZombieLockpick/CyberServerCctv/ZoologyPupil/SignLanguageIsbn AI Engines (8)
+  "localize:joseon-gat-binyeo-katana-saya-lock": defineRoute("localize:joseon-gat-binyeo-katana-saya-lock", "조선 흑립(갓) 양태 망사 투과·비녀 좌→우 꽂기·일본도 카타나(날 위쪽) vs 타치(날 아래쪽) 패용 고정기", "core-dialog", "fast-inline", "갓 양태 반투명 투과·비녀 좌우 방향·카타나/타치 칼날 패용 방향 반전 방지는 Haiku 5.5로 즉각 검증", 2_560),
+  "localize:mens-suit-button-tie-heel-eyeglass-lock": defineRoute("localize:mens-suit-button-tie-heel-eyeglass-lock", "남성 정장 하단 단추 언버튼 규칙·넥타이 벨트 기장/딤플·스틸레토 힐 외측 버클·안경 코받침 고정기", "core-dialog", "fast-inline", "남성 수트/조끼 맨 아래 단추 오픈·넥타이 딤플/기장·구두 외측 버클·안경 코받침 고정은 Haiku 5.5 적용", 2_560),
+  "localize:hwacha-geobukseon-trebuchet-joust-lock": defineRoute("localize:hwacha-geobukseon-trebuchet-joust-lock", "조선 신기전 화차(100발)·거북선 2층 포갑판/8자 노·트레뷰셋 평형추 투석기·마상창시합 좌측 교차 디렉터", "core-dialog", "creative-production", "화차 신기전/거북선 구조·트레뷰셋 평형추 투석·마상창시합 좌측 통행 고증은 Sonnet 5.5 적용", 4_096),
+  "localize:hanok-ondol-bongsu-watermill-matchlock-lock": defineRoute("localize:hanok-ondol-bongsu-watermill-matchlock-lock", "한옥 아궁이-구들-굴뚝 배치·암키와/수키와·봉수대 5연 횃불 신호·물레방아 회전·조총 화승 격발 디렉터", "core-dialog", "creative-production", "한옥 온돌/기와·봉수대 5연 신호·물레방아 회전·조총 화접 점화 백연 고증은 Sonnet 5.5 적용", 4_096),
+  "localize:zombie-barricade-gasmask-lockpick-laser-lock": defineRoute("localize:zombie-barricade-gasmask-lockpick-laser-lock", "문 개폐 방향 바리케이드·방독면 정화통/가이거 계수기·락픽 2도구(텐션렌치+픽)·보안 레이저 산란 디렉터", "core-dialog", "creative-production", "문 경첩 방향별 바리케이드·방독면 비주류손 정화통·락픽 2도구 파지·레이저 산란은 Sonnet 5.5 적용", 4_096),
+  "localize:cyber-terminal-server-cctv-rooftop-lock": defineRoute("localize:cyber-terminal-server-cctv-rooftop-lock", "리눅스 터미널 유효 구문/IPv4 범위(0~255)·42U 서버랙 패치케이블·야간 CCTV 적외선 링·옥상 실외기 디렉터", "core-dialog", "creative-production", "해킹 터미널 CLI/유효 IPv4·42U 서버랙 배선·CCTV IR LED·옥상 설비 고증은 Sonnet 5.5 적용", 4_096),
+  "localize:animal-pupil-spider-octopus-shark-director": defineRoute("localize:animal-pupil-spider-octopus-shark-director", "초식동물 수평 동공 vs 야행성 수직 동공·거미 두흉부 8다리·문어 2열 빨판·상어 수직 꼬리지느러미 총괄 감독", "core-dialog", "deep-architecture", "동물 동공 형태·절지동물 두흉부 다리 부착·두족류 빨판·어류/포유류 꼬리지느러미 감리는 Opus 5.5 심층 추론 적용", 6_144),
+  "localize:sign-language-hearing-aid-isbn-archive-director": defineRoute("localize:sign-language-hearing-aid-isbn-archive-director", "한국수어(KSL) 수형/비수지 신호·보청기/인공와우/흰지팡이 고증 및 단행본 ISBN-13·도서관 납본 총괄 감독", "core-dialog", "deep-architecture", "한국수어 수동 화살표/비수지 신호·보청기/흰지팡이 고증·단행본 ISBN-13/납본 규격은 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

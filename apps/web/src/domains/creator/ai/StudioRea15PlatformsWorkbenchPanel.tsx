@@ -64,6 +64,16 @@ import {
   type TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
 import { REA15_TABS, type Rea15WorkbenchTabId } from "./claude/claude-rea39-extended-engines";
+import {
+  runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeCyberTerminalServerRackCctvRooftopDirector,
+  runClaudeHanokOndolBongsuWatermillMatchlockDirector,
+  runClaudeHwachaGeobukseonTrebuchetJoustDirector,
+  runClaudeJoseonGatBinyeoKatanaSayaDirector,
+  runClaudeMensSuitBottomButtonTieHeelStrapDirector,
+  runClaudeSignLanguageHearingAidLegalDepositDirector,
+  runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
+} from "./claude/claude-localize";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
 import { StudioRea39ExtendedTabPanels } from "./StudioRea39ExtendedTabPanels";
 
@@ -97,6 +107,8 @@ export function StudioRea15PlatformsWorkbenchPanel({
   const [sketchupStudioEnv, setSketchupStudioEnv] = useState<Rea15Envelope<SketchupBlenderPetalicaMagmaRecraftStudioReport> | null>(null);
   const [tapasCodexEnv, setTapasCodexEnv] = useState<Rea15Envelope<TapasTappytoonRidiPostypeSudowriteNovelcrafterReport> | null>(null);
   const [mixamoToonboomEnv, setMixamoToonboomEnv] = useState<Rea15Envelope<MixamoMarvelousCoolorsNoonnuBlambotToonboomEagleReport> | null>(null);
+  const [wave45Notice, setWave45Notice] = useState<string | null>(null);
+  const wave45Input = useMemo(() => ({ episodeTitle: assistInput.episodeTitle || "01화", genre: assistInput.genre || "판타지", scriptSummary: assistInput.scriptText || "주요 장면" }), [assistInput.episodeTitle, assistInput.genre, assistInput.scriptText]);
 
   const platformThemes = useMemo(() => listRea15PlatformThemes(), []);
   const activePlatformTheme = useMemo(() => getRea15PlatformTheme(selectedPlatformId), [selectedPlatformId]);
@@ -693,6 +705,23 @@ export function StudioRea15PlatformsWorkbenchPanel({
         currentTapasCodex={currentTapasCodex}
         currentMixamoToonboom={currentMixamoToonboom}
       />
+
+      <div data-testid="wave45-47-domain-consistency-bar" className="flex flex-col gap-1.5 rounded border border-accent/30 bg-raised p-2 text-[0.55rem]">
+        <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+          <span>Wave 45~47 (900대 플랫폼): 사극갓/비녀/카타나 · 남성수트/힐 · 신기전/거북선/투석기 · 한옥온돌/조총 · 바리케이드/락픽 · 해킹/서버랙 · 동물동공/8다리 · 수어/ISBN</span>
+          <div className="flex flex-wrap gap-1">
+            <button type="button" data-testid="wave45-joseon-gat-katana-btn" onClick={() => void runClaudeJoseonGatBinyeoKatanaSayaDirector(wave45Input, { route: null }).then((r) => { const line = `[갓/비녀/카타나 (${r.model})] ${r.data.gatYangtaeMeshAndGatgeunKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>갓/비녀/카타나</button>
+            <button type="button" data-testid="wave45-mens-suit-heel-btn" onClick={() => void runClaudeMensSuitBottomButtonTieHeelStrapDirector(wave45Input, { route: null }).then((r) => { const line = `[수트단추/힐 (${r.model})] ${r.data.suitBottomButtonUnbuttonedRuleKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>수트단추/힐</button>
+            <button type="button" data-testid="wave45-hwacha-geobukseon-btn" onClick={() => void runClaudeHwachaGeobukseonTrebuchetJoustDirector(wave45Input, { route: null }).then((r) => { const line = `[신기전/거북선/투석기 (${r.model})] ${r.data.hwachaSingijeonAndGeobukseonOarKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>신기전/거북선</button>
+            <button type="button" data-testid="wave46-hanok-ondol-matchlock-btn" onClick={() => void runClaudeHanokOndolBongsuWatermillMatchlockDirector(wave45Input, { route: null }).then((r) => { const line = `[한옥온돌/조총 (${r.model})] ${r.data.hanokAgungiGulddukAndGiwaKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>한옥온돌/조총</button>
+            <button type="button" data-testid="wave46-zombie-lockpick-btn" onClick={() => void runClaudeZombieBarricadeGasMaskLockpickLaserDirector(wave45Input, { route: null }).then((r) => { const line = `[바리케이드/락픽 (${r.model})] ${r.data.inwardDoorWedgeAndPlankNailKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>바리케이드/락픽</button>
+            <button type="button" data-testid="wave46-cyber-server-cctv-btn" onClick={() => void runClaudeCyberTerminalServerRackCctvRooftopDirector(wave45Input, { route: null }).then((r) => { const line = `[터미널/서버랙/CCTV (${r.model})] ${r.data.bashCliSyntaxAndPrivateIpv4Ko}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>터미널/서버랙</button>
+            <button type="button" data-testid="wave47-animal-pupil-spider-btn" onClick={() => void runClaudeAnimalPupilSpider8LegOctopusSharkDirector(wave45Input, { route: null }).then((r) => { const line = `[동물동공/8다리/문어 (${r.model})] ${r.data.goatHorizontalVsCatVerticalPupilKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>동물동공/8다리</button>
+            <button type="button" data-testid="wave47-sign-language-isbn-btn" onClick={() => void runClaudeSignLanguageHearingAidLegalDepositDirector(wave45Input, { route: null }).then((r) => { const line = `[한국수어/보청기/ISBN (${r.model})] ${r.data.kslHandshapeNonManualMarkerKo}`; setWave45Notice(line); onAppendDirectionLine(line); })} className={cn("rounded border border-line bg-card px-1.5 py-0.5 font-semibold text-fg hover:border-accent/50", STUDIO_FOCUS_RING)}>한국수어/ISBN</button>
+          </div>
+        </div>
+        {wave45Notice ? <div data-testid="wave45-47-domain-notice" className="text-fg-2">{wave45Notice}</div> : null}
+      </div>
     </div>
   );
 }

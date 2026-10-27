@@ -676,3 +676,21 @@ export {
   type Wave33CostCapAssistInput,
   type Wave33CostCapAssistResult,
 } from "./claude-feature-cost-cap";
+export {
+  runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeCyberTerminalServerRackCctvRooftopDirector,
+  runClaudeHanokOndolBongsuWatermillMatchlockDirector,
+  runClaudeHwachaGeobukseonTrebuchetJoustDirector,
+  runClaudeJoseonGatBinyeoKatanaSayaDirector,
+  runClaudeMensSuitBottomButtonTieHeelStrapDirector,
+  runClaudeSignLanguageHearingAidLegalDepositDirector,
+  runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
+  type ClaudeAnimalPupilSpiderOctopusShark,
+  type ClaudeCyberTerminalServerCctvRooftop,
+  type ClaudeHanokOndolBongsuMatchlock,
+  type ClaudeHwachaGeobukseonTrebuchet,
+  type ClaudeJoseonGatBinyeoKatana,
+  type ClaudeMensSuitTieHeelEyeglass,
+  type ClaudeSignLanguageHearingAidArchive,
+  type ClaudeZombieBarricadeGasMaskLockpick,
+} from "./claude-localize-run";

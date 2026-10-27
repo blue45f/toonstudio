@@ -217,6 +217,21 @@ export const REA15_PLATFORM_IDS = [
   "polaroid-instant-camera-bottom-eject-border", "hourglass-sand-angle-of-repose-34deg-bulb", "candlestick-wax-drip-wick-flame-teardrop", "oil-lamp-glass-chimney-wick-thumbwheel", "abacus-soroban-1-4-heaven-earth-beads",
   "balance-scale-fulcrum-knife-edge-heavier-low", "spinning-wheel-flyer-bobbin-treadle-loom", "traditional-millstone-maetdol-handle-ccw", "well-pulley-bucket-rope-tension-winch", "umbrella-parabolic-8rib-stretchers-runner",
   "luggage-telescopic-handle-4spinner-tsa", "shopping-cart-child-seat-swivel-caster-nest", "museum-exhibition-stanchion-velvet-rope-plaque", "bookbinding-french-groove-headband-ribbon", "webtoon-episode-cliffhanger-paywall-conversion",
+  // Wave 45 (20개 플랫폼 — 총 860개 플랫폼 완성: 신기전 화차/거북선/투석기/충차/전차/방패진·일본도 카타나/갓 망건/비녀 노리개/가마/봉수대/온돌/장독대/물레방아/조총/마상창시합)
+  "joseon-hwacha-singijeon-multi-rocket", "turtle-ship-geobukseon-dragon-head-oars", "medieval-trebuchet-counterweight-sling", "battering-ram-tortoise-shed-portcullis", "chariot-2horse-yoke-spoked-wheel-rein",
+  "roman-testudo-scutum-phalanx-sarissa", "japanese-katana-tsuba-hamon-left-saya", "joseon-gat-manggeon-gwanja-amber-string", "korean-binyeo-cheopji-norigae-samjak", "palanquin-gama-4bearer-pole-curtain",
+  "beacon-mound-bongsu-5chimney-smoke-code", "traditional-ondol-agungi-gudeul-chimney", "jangdokdae-onggi-breathing-glaze-ferment", "straw-thatched-choga-ridge-rope-grid", "watermill-mullebang-a-overshot-bucket",
+  "black-powder-matchlock-jochong-pan-ramrod", "cannon-breech-muzzle-sponge-recoil-rope", "medieval-wax-tablet-stylus-parchment-scroll", "heraldic-jousting-lance-vamplate-tilt-barrier", "chain-drawbridge-counterweight-moat-reflection",
+  // Wave 46 (20개 플랫폼 — 총 880개 플랫폼 완성: 아포칼립스 바리케이드/방독면/가이거/방호복·빠루/볼트커터/자물쇠따기/금고/보안레이저/열화상·해킹터미널/서버랙/CCTV/블랙박스/옥상난간/무전기)
+  "zombie-bite-tourniquet-barricade-board-nail", "gas-mask-40mm-nato-canister-cheek-filter", "geiger-counter-pancake-probe-sievert-scale", "hazmat-level-a-positive-pressure-suit-zip", "crowbar-goose-neck-fulcrum-padlock-shackle",
+  "bolt-cutter-compound-hinge-chain-link", "lockpick-tension-wrench-bottom-keyway-rake", "safe-combination-dial-3wheel-r-l-r-notch", "laser-tripwire-smoke-scatter-mirror-bounce", "night-vision-green-phosphor-vs-white-thermal",
+  "hacking-terminal-ssh-nmap-wireshark-hex", "server-rack-42u-patch-panel-hot-cold-aisle", "cctv-ptz-dome-blindspot-fisheye-timestamp", "car-blackbox-dashcam-wide140-gps-g-sensor", "subway-platform-screen-door-psd-emergency",
+  "rooftop-parapet-wall-height-ac-outdoor-unit", "manhole-cover-round-lip-ladder-rung-sewer", "fire-escape-counterbalanced-drop-ladder", "diesel-generator-pull-cord-recoil-jerrycan", "walkie-talkie-ptt-thumb-button-helical-ant",
+  // Wave 47 (20개 플랫폼 — 총 900개 플랫폼 대기록 돌파!: 고양이 동공/강아지 하네스/말 귀/올빼미 대지족/뱀/나비/거미 8다리/문어 vs 오징어/상어 vs 고래/갑각류·크로노그래프/정장 단추/넥타이/하이힐/안경다리/보청기/수어/국립중앙도서관 납본)
+  "cat-vertical-slit-pupil-ear-airplane-tail", "dog-play-bow-tail-wag-panting-harness-y", "horse-ear-pinned-back-flemen-hoof-frog", "owl-head-270deg-zygodactyl-talon-silent", "snake-forked-tongue-jacobson-pit-belly-scute",
+  "butterfly-4wing-forewing-overlap-proboscis", "spider-8leg-cephalothorax-pedipalp-spinneret", "octopus-8arm-double-sucker-mantle-siphon", "shark-5gill-slit-vertical-tail-fin-dorsal", "crab-10leg-chela-pincer-sideways-carapace",
+  "watch-chronograph-2pusher-tachymeter-crown", "fountain-pen-converter-piston-iridium-tip", "mens-suit-button-rule-sometimes-always-never", "necktie-four-in-hand-windsor-dimple-belt", "high-heel-stiletto-shank-arch-ankle-strap",
+  "backpack-shoulder-strap-sternum-buckle-zip", "eyeglasses-nose-pad-temple-tip-ear-hook", "hearing-aid-bte-cie-cochlear-magnet-coil", "sign-language-ksl-asl-handshape-nonmanual", "webtoon-global-archive-isbn-issn-legal-deposit",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -261,6 +276,9 @@ export const REA780_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA800_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA820_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA840_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA860_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA880_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA900_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -497,6 +515,69 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
         ["museum-exhibition-stanchion-velvet-rope-plaque", "Art Gallery Wall Eyeline (145~150cm Center), Barrier Stanchion & Label Card", "#991b1b", "#fbbf24", "전시회 액자 중심 높이(바닥에서 145~150cm 눈높이)와 차단봉(벨벳 로프) 안전 거리 고증"],
         ["bookbinding-french-groove-headband-ribbon", "Hardcover Book Spine Headband, French Groove Hinge & Page-Spread Gutter Curve", "#8b5cf6", "#fde047", "마도서/고서 펼친 책 페이지가 책등 제본선(Gutter)으로 들어갈 때 생기는 M자 곡면 굴곡에 맞춰 글자/마법진 왜곡 투영"],
         ["webtoon-episode-cliffhanger-paywall-conversion", "Paywall Episode Preview Thumbnail Crop, Scroll-Stop Cliffhanger & Cookie ROI", "#10b981", "#ec4899", "유료 미리보기(쿠키) 전환율을 극대화하는 마지막 3컷 텐션 곡선·썸네일 크롭 안전영역·결제 유도 대사 분석"],
+        // Wave 45 (20개 플랫폼 — 총 860개 플랫폼 완성)
+        ["joseon-hwacha-singijeon-multi-rocket", "Joseon Hwacha 100-Rocket Singijeon Launch Angle & Fuse Ignition Sequence", "#ef4444", "#fbbf24", "사극 신기전 화차 발사통(100발/200발) 격자 배열과 점화 도화선 연쇄 발사 연기 궤적 고증"],
+        ["turtle-ship-geobukseon-dragon-head-oars", "Geobukseon Iron-Spiked Roof, Dragon-Head Cannon & 8-Oar Rowing Cadence", "#0ea5e9", "#eab308", "거북선 개판 철첨 배열·용두 포구 현자총통 발사 및 좌우 8노(Oar) 노젓기 방향 일치"],
+        ["medieval-trebuchet-counterweight-sling", "Counterweight Trebuchet Hinged Weight Box, Sling Release Pin & Arc", "#d97706", "#94a3b8", "중세 공성 투석기(Trebuchet)가 스프링 방식이 아닌 전면 무게추 낙하+가죽 슬링 원심력 투척 구조임을 고증"],
+        ["battering-ram-tortoise-shed-portcullis", "Suspended Pendulum Battering Ram Roof Shed & Castle Portcullis Iron Grate", "#64748b", "#f97316", "공성 충차(Battering Ram) 지붕 사슬 현수 진자 운동과 성문 위 수직 낙하 쇠살문(Portcullis) 홈 일치"],
+        ["chariot-2horse-yoke-spoked-wheel-rein", "Ancient War Chariot Yoke-Pole, 6/8-Spoke Wheel Hub & Charioteer Rein Loop", "#f59e0b", "#ef4444", "고대 전차(Chariot) 멍에(Yoke)와 중심 굴대 결합·바퀴 살 개수 불변 및 고삐 손목 감기 고정"],
+        ["roman-testudo-scutum-phalanx-sarissa", "Shield Wall Testudo Overlap Order & 5-Meter Pike Phalanx Angle Tier", "#dc2626", "#fbbf24", "방패진(Testudo)에서 앞줄 정면 방패와 윗줄 머리 위 방패가 기와처럼 겹치는 방향 및 장창 각도 계층 고정"],
+        ["japanese-katana-tsuba-hamon-left-saya", "Katana Edge-Up (Ha-Up) Left-Waist Obi Thrust & Chiburi Blood-Flick Arc", "#e2e8f0", "#ef4444", "일본도(카타나)는 반드시 날이 위(Ha-up)를 향하도록 왼쪽 허리에 꽂으며(환도/서양검은 날이 아래) 납도 동작 고정"],
+        ["joseon-gat-manggeon-gwanja-amber-string", "Joseon Nobleman Gat Brim Translucency, Manggeon Forehead & Gat-Kkeun", "#1e293b", "#f59e0b", "사극 갓(흑립) 양태 반투명 말총 투과도·이마 망건(관자) 필수 착용 및 호박 갓끈 가슴 드리움 고증"],
+        ["korean-binyeo-cheopji-norigae-samjak", "Joseon Royal/Noble Hairpin (Yongjam Binyeo), Parting Cheopji & Samjak Norigae", "#ec4899", "#eab308", "사극 여인 쪽머리 비녀(좌→우 관통)·정수리 첩지 및 고름 아래 삼작노리개 매듭 수직 대칭 고정"],
+        ["palanquin-gama-4bearer-pole-curtain", "Traditional 4-Bearer Palanquin (Gama) Carrying Pole Shoulder Pad & Blind", "#991b1b", "#fde047", "사인가마 앞뒤 가마꾼 어깨 멜빵 끈과 발(주렴) 개폐 시 내부 착석 눈높이 일치"],
+        ["beacon-mound-bongsu-5chimney-smoke-code", "Joseon Bongsu-dae 5-Torch Smoke Signal Code (Peace=1, Enemy=2, Battle=5)", "#f97316", "#64748b", "사극 봉수대 5개 화두에서 평시 1줄기·적 출현 2줄기·접전 5줄기 연기 개수로 전황을 전달하는 고증 고정"],
+        ["traditional-ondol-agungi-gudeul-chimney", "Korean Ondol Firebox (Agungi), Underfloor Flue & Detached Low Chimney", "#b45309", "#ef4444", "한옥 아궁이 무쇠 가마솥 걸림 구조와 방바닥 구들 고래를 지나 마당 굴뚝으로 연기가 빠지는 동선 일치"],
+        ["jangdokdae-onggi-breathing-glaze-ferment", "Korean Jangdokdae Stepped Stone Terrace, Onggi Lid Overhang & Solar Angle", "#92400e", "#fbbf24", "장독대 채광을 위해 작은 항아리(앞줄)→큰 항아리(뒷줄) 계단식 배치 및 옹기 뚜껑 처마 곡률 고정"],
+        ["straw-thatched-choga-ridge-rope-grid", "Choga Thatched Roof Ridge-Roll (Yongmaru) & Woven Straw Rope Checker Grid", "#eab308", "#a16207", "초가집 지붕 용마루 엮음과 바람에 날리지 않도록 바둑판 모양으로 얽어맨 새끼줄(고삿) 격자 간격 고정"],
+        ["watermill-mullebang-a-overshot-bucket", "Overshot Watermill (Mullebang-a) Bucket Wheel Rotation vs Flume Stream", "#0284c7", "#d97706", "물레방아 위쪽 수로(학배기)에서 떨어지는 물줄기 방향과 바퀴 회전 방향(물 떨어지는 쪽 하강) 물리 일치"],
+        ["black-powder-matchlock-jochong-pan-ramrod", "Matchlock Musket (Jochong) Serpentine Match-Cord, Flash-Pan & Ramrod", "#64748b", "#ef4444", "조총(화승총) 우측 화승 집게(용두)·화약접시 개폐 및 총열 아래 꽂힌 꼬질대(Ramrod) 고증"],
+        ["cannon-breech-muzzle-sponge-recoil-rope", "Naval/Fortress Muzzle-Loading Cannon Trunnion Carriage & Recoil Breeching", "#475569", "#f97316", "전장식 대포 포신 양옆 포이(Trunnion) 거치대와 발사 반동 제어용 브리칭 로프 고정"],
+        ["medieval-wax-tablet-stylus-parchment-scroll", "Parchment Scroll Dual Wooden Rollers vs Wax Tablet Stylus Flat-Eraser", "#d97706", "#fef08a", "양피지 두루마리 말림 축과 밀랍 서판 첨필(뾰족한 끝=쓰기, 납작한 끝=지우기) 고증"],
+        ["heraldic-jousting-lance-vamplate-tilt-barrier", "Medieval Jousting Tilt Barrier (Left-Shoulder Pass) & Right-Hand Lance", "#3b82f6", "#fbbf24", "마상창시합(Jousting)에서 두 기사는 반드시 중앙 분리벽(Tilt)을 사이에 두고 서로의 왼쪽 어깨가 스치도록 교차 질주"],
+        ["chain-drawbridge-counterweight-moat-reflection", "Castle Drawbridge Overhead Lifting Beams (Fleches) & Moat Water Reflection", "#6366f1", "#38bdf8", "성문 도개교 상부 들보(Lifting Beam)와 성벽 사슬 삼각형 기하학 및 해자 수면 반사 일치"],
+        // Wave 46 (20개 플랫폼 — 총 880개 플랫폼 완성)
+        ["zombie-bite-tourniquet-barricade-board-nail", "Post-Apocalypse Window Plank Barricade Inside-Nail & CAT Tourniquet Windlass", "#dc2626", "#a3e635", "좀비/아포칼립스 창문 판자 바리케이드를 실내 쪽 프레임에 못질하는 생존 원칙과 지혈대(CAT) 윈들러스 막대 고정"],
+        ["gas-mask-40mm-nato-canister-cheek-filter", "CBRN Gas Mask 40mm NATO Filter Thread (Left/Center) & Exhale Valve Fog", "#22c55e", "#64748b", "방독면 정화통을 오른손 사수 견착에 방해되지 않도록 왼쪽 볼 또는 중앙에 장착하는 군사 고증"],
+        ["geiger-counter-pancake-probe-sievert-scale", "Geiger-Muller Tube Probe Cable & mSv/h vs CPM Radiation Unit Consistency", "#eab308", "#ef4444", "가이거 계수기 프로브 케이블 연결과 시버트(mSv/h) 방사선량 단위 연속성 유지"],
+        ["hazmat-level-a-positive-pressure-suit-zip", "Level-A Encapsulated Hazmat Suit Positive-Pressure Inflation & Taped Seam", "#facc15", "#2563eb", "생화학 Level-A 밀폐 방호복이 내부 양압 공기호흡기로 인해 부풀어 있는 실루엣과 밀봉 테이프 고정"],
+        ["crowbar-goose-neck-fulcrum-padlock-shackle", "Wrecking Crowbar Curved Goose-Neck Fulcrum Leverage & Padlock Shackle Cut", "#ef4444", "#94a3b8", "빠루(Crowbar) 구부러진 목 부분(Goose-neck)을 지렛대 받침점으로 삼아 당기는 물리 방향 고정"],
+        ["bolt-cutter-compound-hinge-chain-link", "Compound-Action Bolt Cutter Jaw Leverage & Hardened Chain-Link Fracture", "#f97316", "#64748b", "볼트커터 이중 힌지가 벌어질 때 날 끝은 닫히는 복합 지렛대 기구학과 사슬 절단면 일치"],
+        ["lockpick-tension-wrench-bottom-keyway-rake", "Lockpicking Bottom-of-Keyway Tension Wrench (Thumb) & Upper Hook Pick", "#38bdf8", "#fbbf24", "자물쇠 따기(Lockpicking)에서 반드시 열쇠구멍 하단에 텐션 렌치(돌림쇠)를 걸고 상단에 픽을 넣는 2도구 원칙 고정"],
+        ["safe-combination-dial-3wheel-r-l-r-notch", "Mechanical Safe Dial 3-Wheel Combination (4x-3x-2x) & Stethoscope Contact", "#fbbf24", "#10b981", "금고 다이얼 눈금(0~99)과 청진기 다이어프램을 다이얼 축 옆 금속 문짝에 밀착하는 해부학 고정"],
+        ["laser-tripwire-smoke-scatter-mirror-bounce", "Security Vault 650nm Red Laser Grid Tyndall Smoke Visibility & Mirror Law", "#ef4444", "#00e5ff", "보안 레이저가 연기/에어로졸 분사 시에만 틴들 현상으로 가시화되며 거울 반사각=입사각 물리 일치"],
+        ["night-vision-green-phosphor-vs-white-thermal", "Image-Intensifier NVG Green/White Phosphor vs FLIR Thermal Ironbow Palette", "#22c55e", "#f97316", "야간투시경(유리창 투과 가능)과 열화상 카메라(유리창 투과 불가·체온 발열 감지)의 물리적 차이 혼동 차단"],
+        ["hacking-terminal-ssh-nmap-wireshark-hex", "Realistic Linux Terminal (nmap/ssh/Wireshark Packet Hex) vs Fake 3D Skull UI", "#10b981", "#06b6d4", "해커 웹툰에서 허구적 3D 해골 대신 실제 리눅스 셸·포트 스캔·패킷 헥사 덤프 UI 일관성 유지"],
+        ["server-rack-42u-patch-panel-hot-cold-aisle", "Data Center 19-Inch 42U Server Rack Patch Cable & Front-to-Back Airflow LED", "#3b82f6", "#22c55e", "데이터센터 42U 서버랙 전면 타공 도어·패치케이블 정리(Cable Management) 및 상태 LED 고정"],
+        ["cctv-ptz-dome-blindspot-fisheye-timestamp", "CCTV PTZ Dome Camera FOV Cone Blind-Spot & OSD REC Timestamp Continuity", "#64748b", "#ef4444", "CCTV 화면 우상단 REC 타임스탬프가 사건 타임라인과 일치하고 천장 부감 광각 왜곡 유지"],
+        ["car-blackbox-dashcam-wide140-gps-g-sensor", "Vehicle Dashcam 140-Degree Wide Hood Reflection & G-Sensor Impact Event", "#0ea5e9", "#fbbf24", "차량 블랙박스 영상 하단 날짜·시각·속도(km/h)·차량 보닛 반사광 고증"],
+        ["subway-platform-screen-door-psd-emergency", "Korean Subway Platform Screen Door (PSD) Laser Sensor & Manual Release Bar", "#2563eb", "#ef4444", "지하철 승강장 스크린도어(PSD) 열차 출입문 정렬과 비상 수동 개폐 붉은 바 위치 고증"],
+        ["rooftop-parapet-wall-height-ac-outdoor-unit", "Building Rooftop 120cm Parapet Wall Code, AC Condenser Fan & Emergency Door", "#94a3b8", "#38bdf8", "빌딩 옥상 난간벽(Parapet) 건축법 기준 120cm 이상 높이 비율 및 실외기 팬 그릴 고증"],
+        ["manhole-cover-round-lip-ladder-rung-sewer", "Cast-Iron Round Manhole Cover (Cannot Fall In) & Offset Wall Step Rungs", "#475569", "#eab308", "원형 맨홀 뚜껑 갈고리 홈과 지하 수직 사다리 교차 디딤쇠 간격 고정"],
+        ["fire-escape-counterbalanced-drop-ladder", "Urban Exterior Zig-Zag Fire Escape Balcony & Counterbalanced Drop Ladder", "#dc2626", "#94a3b8", "건물 외벽 지그재그 비상계단과 1층 바닥 위 체중 하강식 드롭 사다리 고증"],
+        ["diesel-generator-pull-cord-recoil-jerrycan", "Portable Generator Recoil Pull-Start Handle, Choke Lever & 20L NATO Jerrycan", "#15803d", "#f59e0b", "비상 발전기 리코일 스타터 당김줄 방향과 20L 철제 제리캔 X자 보강 주름·3갈래 손잡이 고증"],
+        ["walkie-talkie-ptt-thumb-button-helical-ant", "Two-Way Radio Left-Side PTT (Push-To-Talk) Thumb Hold & Squelch Tail", "#f97316", "#22c55e", "무전기 측면 PTT 버튼을 누르고 말한 뒤 떼고 듣는 반이중(Half-Duplex) 교신 동작 고정"],
+        // Wave 47 (20개 플랫폼 — 총 900개 플랫폼 대기록 돌파!)
+        ["cat-vertical-slit-pupil-ear-airplane-tail", "Feline Vertical Slit Pupil (Bright) vs Dilated Round (Dark/Play) & Ear Angle", "#f59e0b", "#10b981", "고양이 밝을 때 세로 실눈 동공·어둡거나 사냥 직전 둥글게 확장된 동공 및 마징가 귀 해부학 고정"],
+        ["dog-play-bow-tail-wag-panting-harness-y", "Canine Play-Bow Posture, Y-Front Chest Harness (Non-Choke) & Ear Back", "#eab308", "#3b82f6", "반려견 앞다리를 낮추는 놀이 시그널(Play Bow)과 어깨 관절을 막지 않는 Y자형 하네스 착용 고증"],
+        ["horse-ear-pinned-back-flemen-hoof-frog", "Equine Pinned-Back Ears (Aggression Warning), Nostril Flare & Horseshoe", "#d97706", "#ef4444", "말이 귀를 뒤로 바짝 젖히는 경계 신호와 말발굽 바닥 V자 쐐기(Frog)·편자 못 개수 고증"],
+        ["owl-head-270deg-zygodactyl-talon-silent", "Owl Zygodactyl Talons (2 Front, 2 Back) & Facial Disc Feather Acoustics", "#a855f7", "#fbbf24", "올빼미/부엉이 사역마의 대지족(앞발가락 2개·뒷발가락 2개) 발톱 구조와 안면반 깃털 고정"],
+        ["snake-forked-tongue-jacobson-pit-belly-scute", "Viper Loreal Heat-Pit, Forked Tongue Flick & Ventral Scute Locomotion", "#22c55e", "#ef4444", "뱀/용 몬스터 윗입술 앞 끝에서 나오는 갈라진 혀와 배 부분 넓은 가로 비늘(복판) 배열 고증"],
+        ["butterfly-4wing-forewing-overlap-proboscis", "Lepidoptera 4-Wing Overlap (Forewing Over Hindwing) & Coiled Proboscis", "#ec4899", "#38bdf8", "나비 소품/이펙트에서 반드시 앞날개가 뒷날개 위를 덮는(Forewing Overlap) 겹침 순서 고정"],
+        ["spider-8leg-cephalothorax-pedipalp-spinneret", "Arachnid 8-Leg Attachment to Cephalothorax (Not Abdomen) & Pedipalp Pair", "#991b1b", "#f8fafc", "거미 몬스터 다리 8개가 배(Abdomen)가 아닌 머리가슴(Cephalothorax)에 모두 붙어 있는 해부학 고정"],
+        ["octopus-8arm-double-sucker-mantle-siphon", "Octopus 8 Arms (Double-Row Suckers) vs Squid 8 Arms + 2 Long Tentacles", "#8b5cf6", "#06b6d4", "문어(8다리+2열 빨판)와 오징어/크라켄(8다리+긴 촉완 2개=10다리)의 두족류 촉수 구분 고정"],
+        ["shark-5gill-slit-vertical-tail-fin-dorsal", "Shark Vertical Caudal Fin (Side-to-Side) vs Whale Horizontal Fluke (Up-Down)", "#0284c7", "#e2e8f0", "상어/어류(수직 꼬리지느러미·좌우 유영)와 고래/돌고래(수평 꼬리지느러미·상하 유영) 꼬리 방향 혼동 차단"],
+        ["crab-10leg-chela-pincer-sideways-carapace", "Decapod Crab 2 Chelipeds (Pincers) + 8 Walking Legs & Sideways Gait", "#ef4444", "#fbbf24", "갑각류 몬스터 집게다리 2개+보행다리 8개(총 10다리)와 안쪽으로 접히는 관절 구조 고정"],
+        ["watch-chronograph-2pusher-tachymeter-crown", "Mechanical Chronograph 2-O'Clock Start/Stop Pusher, 4-O'Clock Reset & Crown", "#eab308", "#38bdf8", "크로노그래프 시계 우측 3시 용두·2시 스타트 버튼·4시 리셋 버튼 및 타키미터 베젤 고증"],
+        ["fountain-pen-converter-piston-iridium-tip", "Fountain Pen Nib Breather Hole, Slit Capillary Action & Piston Converter", "#6366f1", "#fde047", "만년필 펜촉 숨구멍(Breather Hole)에서 끝단 팁까지 이어지는 중앙 슬릿이 위쪽을 향하도록 파지 고정"],
+        ["mens-suit-button-rule-sometimes-always-never", "3-Button Suit Etiquette ('Sometimes-Always-Never') & Jacket Vent Split", "#1e293b", "#38bdf8", "남성 정장 재킷의 맨 아래 단추는 항상 풀어 두는(Never Button Bottom) 슈트 기본 매너 고정"],
+        ["necktie-four-in-hand-windsor-dimple-belt", "Necktie Tip Touching Belt Buckle Center & Under-Knot Dimple Fold", "#2563eb", "#f43f5e", "넥타이 끝단이 벨트 버클 중앙에 정확히 닿는 길이 비율과 매듭 아래 보조개 주름(Dimple) 고정"],
+        ["high-heel-stiletto-shank-arch-ankle-strap", "Stiletto Heel Vertical Plumb-Line Under Ankle Bone & Arch Shank Curve", "#ec4899", "#f8fafc", "하이힐 스틸레토 굽이 뒤꿈치 끝에서 수직으로 내려와 복사뼈 중심선과 정렬되도록 고정"],
+        ["backpack-shoulder-strap-sternum-buckle-zip", "Backpack Dual Shoulder Strap Tension, Sternum Chest Clip & Load Lifter", "#10b981", "#fbbf24", "백팩 착용 시 어깨끈이 겨드랑이 아래로 밀착되고 등판이 허공에 뜨지 않도록 고정"],
+        ["eyeglasses-nose-pad-temple-tip-ear-hook", "Eyeglasses Silicone Nose-Pad Contact & Temple-Tip Bend Behind Pinna", "#38bdf8", "#a855f7", "안경 착용 측면 컷에서 안경다리가 허공에 끝나지 않고 귓바퀴 위를 지나 귀 뒤로 꺾이도록 고정"],
+        ["hearing-aid-bte-cie-cochlear-magnet-coil", "Behind-The-Ear (BTE) Hearing Aid Tube vs Cochlear Implant Scalp Magnet", "#06b6d4", "#fde047", "청각장애 보청기(귓바퀴 뒤 본체+음향관)와 인공와우(측두부 두피 원형 자석 코일) 구조 고증"],
+        ["sign-language-ksl-asl-handshape-nonmanual", "Korean Sign Language (KSL) Finger-Spelling & Non-Manual Facial Grammar", "#14b8a6", "#f472b6", "한국수어(KSL) 수형·수위·수동과 함께 필수 문법 요소인 눈썹/입모양(비수지 기호) 동시 표현"],
+        ["webtoon-global-archive-isbn-issn-legal-deposit", "National Library Legal Deposit (Napbon), UCI/ISBN-13 Barcode & Master PSD", "#6366f1", "#22c55e", "웹툰 국립중앙도서관 납본·단행본 ISBN-13 만화 분류기호(07810) 바코드 및 600dpi 마스터 PSD 아카이브 규격"],
       ] as const
     ).map(([id, nameKo, accentPrimaryHex, accentSecondaryHex, coreWorkflowKo], idx) => [
       id,
@@ -564,3 +645,6 @@ export const REA780_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA800_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA820_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA840_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA860_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA880_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA900_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

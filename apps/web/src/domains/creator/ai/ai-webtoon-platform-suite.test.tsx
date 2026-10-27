@@ -19,6 +19,7 @@ import {
 } from "./ai-webtoon-platform-suite";
 import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
 import { StudioAiWebtoonPlatformSuitePanel } from "./StudioAiWebtoonPlatformSuitePanel";
+import { StudioRea15PlatformsWorkbenchPanel } from "./StudioRea15PlatformsWorkbenchPanel";
 
 afterEach(() => {
   cleanup();
@@ -250,5 +251,24 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     fireEvent.click(screen.getByTestId("wave33-tool-btn-gacha-rpg"));
     expect(screen.getByTestId("wave36-38-category4-mystery-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave36-tool-btn-forensic-luminol"));
+
+    render(
+      <StudioRea15PlatformsWorkbenchPanel
+        assistInput={{
+          genre: "판타지 액션",
+          coreConflict: "봉인된 유물 결전",
+          protagonistName: "서진",
+          partnerName: "하윤",
+          artistLabel: "K-웹툰",
+          triggerWord: "ts_webtoon",
+          relationshipDynamic: "fated-rivals",
+          posePresetId: "pose-dynamic-slash",
+          scriptText: "서진: 결전의 시간이다.",
+        }}
+        onAppendDirectionLine={onApplyScript}
+      />,
+    );
+    expect(screen.getByTestId("wave45-47-domain-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave45-joseon-gat-katana-btn"));
   });
 });
