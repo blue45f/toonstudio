@@ -11,67 +11,42 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  runClaudeAcrylicStandPhotocardDielineDirector,
-  runClaudeCulinaryKnifeGripPlatingSteamDirector,
-  runClaudeEastAsianPalaceDancheongBracketDirector,
-  runClaudeFirearmTacticalSlideEjectionLockDirector,
-  runClaudeMartialArtsQigongMeridianTrajectoryDirector,
-  runClaudeMedicalIcuVitalMonitorSterileDirector,
-  runClaudeReaderCommentSentimentCatharsisDirector,
-  runClaudeTraditionalClothingCollarGoreumLockDirector,
+  runClaudeAcrylicStandPhotocardDielineDirector, runClaudeCulinaryKnifeGripPlatingSteamDirector,
+  runClaudeEastAsianPalaceDancheongBracketDirector, runClaudeFirearmTacticalSlideEjectionLockDirector,
+  runClaudeMartialArtsQigongMeridianTrajectoryDirector, runClaudeMedicalIcuVitalMonitorSterileDirector,
+  runClaudeReaderCommentSentimentCatharsisDirector, runClaudeTraditionalClothingCollarGoreumLockDirector,
 } from "./claude/claude-art-director";
 import {
-  runClaudeAnamorphicFisheyeLensOpticsDirector,
-  runClaudeAnimeSettei3ToneModelSheetDirector,
-  runClaudeAudiotoonAdrTactileErgonomicsDirector,
-  runClaudeDrapery7FoldsMaterialBrdfDirector,
-  runClaudeEmoticon24PackChibiSpecDirector,
-  runClaudeGachaSsrSplashRpgSkillCutsceneDirector,
-  runClaudeGlobalIpMgRsRoyaltyWaterfallDirector,
-  runClaudeKoreanUrbanEverydayGeographyDirector,
-  runClaudeLunarPhaseStarSkyLockDirector,
-  runClaudeOttLiveActionShowrunnerBibleDirector,
-  runClaudeQuadrupedCreatureWingAnatomyDirector,
-  runClaudeScreentoneMoireGpenHierarchyDirector,
-  runClaudeSportsBiomechanicsGaitGripDirector,
-  runClaudeThaiVietnameseArabicRtlShapingDirector,
-  runClaudeVehicleCockpitSeatbeltDrivetrainDirector,
-  runClaudeVtuberArkit52VnSpriteMerchDirector,
+  runClaudeAnamorphicFisheyeLensOpticsDirector, runClaudeAnimeSettei3ToneModelSheetDirector,
+  runClaudeAudiotoonAdrTactileErgonomicsDirector, runClaudeCastleClockwiseStairCarriageWaltzDirector,
+  runClaudeCyberpunkProstheticMechaTacticalDirector, runClaudeDrapery7FoldsMaterialBrdfDirector,
+  runClaudeEmoticon24PackChibiSpecDirector, runClaudeForensicLuminolAutopsySceneDirector,
+  runClaudeGachaSsrSplashRpgSkillCutsceneDirector, runClaudeGlobalIpMgRsRoyaltyWaterfallDirector,
+  runClaudeHunterGateRaidPartyInventoryDirector, runClaudeKoreanUrbanEverydayGeographyDirector,
+  runClaudeLockedRoomAlibiCipherArchaeologyDirector, runClaudeLunarPhaseStarSkyLockDirector,
+  runClaudeOttLiveActionShowrunnerBibleDirector, runClaudePocketWatchIiiiChessBadukBoardDirector,
+  runClaudeQuadrupedCreatureWingAnatomyDirector, runClaudeRofanCorsetSashSignetEtiquetteDirector,
+  runClaudeScreentoneMoireGpenHierarchyDirector, runClaudeShamanGutExorcismTalismanDirector,
+  runClaudeSportsBiomechanicsGaitGripDirector, runClaudeThaiVietnameseArabicRtlShapingDirector,
+  runClaudeVehicleCockpitSeatbeltDrivetrainDirector, runClaudeVtuberArkit52VnSpriteMerchDirector,
 } from "./claude/claude-localize";
 import {
-  runClaudeEyetrackScrollVelocityAoiDirector,
-  runClaudeFastenerOverlapBeltBuckleLockDirector,
-  runClaudeHeraldryCrestEmblemGeometryLockDirector,
-  runClaudeMusicalInstrumentFingeringLockDirector,
-  runClaudeSpeedlineImpactFrameFocusLockDirector,
-  runClaudeTankobonPrintBleedCmykProofDirector,
-  runClaudeVariableFontBalloonDiamondCopyfitDirector,
-  runClaudeWoundBandageHealingTimelineLockDirector,
+  runClaudeEyetrackScrollVelocityAoiDirector, runClaudeFastenerOverlapBeltBuckleLockDirector,
+  runClaudeHeraldryCrestEmblemGeometryLockDirector, runClaudeMusicalInstrumentFingeringLockDirector,
+  runClaudeSpeedlineImpactFrameFocusLockDirector, runClaudeTankobonPrintBleedCmykProofDirector,
+  runClaudeVariableFontBalloonDiamondCopyfitDirector, runClaudeWoundBandageHealingTimelineLockDirector,
 } from "./claude/claude-webtoon-production-assist";
 import {
-  buildMidjourneyStableDiffusionConceptPlan,
-  buildPhotoshopFireflyGenerativePlan,
-  FILMORA_WEBTOON_FILTER_PRESETS,
-  runCanvaInstatoonCarouselPipeline,
-  runFilmoraMediaToWebtoonPipeline,
-  runLlamaGenWebtoonStoryboardDraft,
-  type FilmoraWebtoonFilterPresetId,
-  type FireflyEditOperationMode,
-  type LlamaGenLayoutId,
-  type LlamaGenSuiteFormat,
+  buildMidjourneyStableDiffusionConceptPlan, buildPhotoshopFireflyGenerativePlan,
+  FILMORA_WEBTOON_FILTER_PRESETS, runCanvaInstatoonCarouselPipeline,
+  runFilmoraMediaToWebtoonPipeline, runLlamaGenWebtoonStoryboardDraft,
+  type FilmoraWebtoonFilterPresetId, type FireflyEditOperationMode,
+  type LlamaGenLayoutId, type LlamaGenSuiteFormat,
 } from "./storyboard-style-transfer-suite";
 
 import { cn } from "@/shared/lib/utils";
 
-type Wave24ToolId =
-  | "fastener"
-  | "speedline"
-  | "wound"
-  | "heraldry"
-  | "instrument"
-  | "diamond-font"
-  | "tankobon"
-  | "eyetrack";
+type Wave24ToolId = "fastener" | "speedline" | "wound" | "heraldry" | "instrument" | "diamond-font" | "tankobon" | "eyetrack";
 
 export interface StudioAiWebtoonCategory3PanelProps {
   readonly scriptInput: string;
@@ -483,6 +458,48 @@ export function StudioAiWebtoonCategory4Panel({
     }
   }
 
+  async function handleRunWave36Tool(toolId: string): Promise<void> {
+    setWave27Tool(toolId);
+    const input = {
+      episodeTitle: `${storyGenre} 귀족·던전·오컬트·추리`,
+      genre: storyGenre,
+      scriptSummary: "황궁 무도회 밀실 사건 현장에서 루미놀 혈흔과 회중시계 암호를 해독한다.",
+    };
+    if (toolId === "rofan-etiquette") {
+      const res = await runClaudeRofanCorsetSashSignetEtiquetteDirector(input);
+      setWave27Badge(`${res.model} · 로판복식·에티켓 ${res.data.aristocracyEtiquetteScore}점`);
+      setWave27Summary(`${res.data.corsetBuskAndOrderSashRuleKo} | ${res.data.teacupAndStemwareHoldRuleKo}`);
+    } else if (toolId === "watch-chess") {
+      const res = await runClaudePocketWatchIiiiChessBadukBoardDirector(input);
+      setWave27Badge(`${res.model} · 시계IIII·체스바둑 ${res.data.propPrecisionScore}점`);
+      setWave27Summary(`${res.data.romanWatchDialFourRuleKo} | ${res.data.chessWhiteOnRightAndQueenKo}`);
+    } else if (toolId === "castle-waltz") {
+      const res = await runClaudeCastleClockwiseStairCarriageWaltzDirector(input);
+      setWave27Badge(`${res.model} · 성탑계단·마차·왈츠 ${res.data.historicalStagingScore}점`);
+      setWave27Summary(`${res.data.spiralStairAndPortcullisKo} | ${res.data.waltzClosedFrameHandRuleKo}`);
+    } else if (toolId === "hunter-raid") {
+      const res = await runClaudeHunterGateRaidPartyInventoryDirector(input);
+      setWave27Badge(`${res.model} · 게이트·5인레이드·포션 ${res.data.dungeonContinuityScore}점`);
+      setWave27Summary(`${res.data.fiveManRaidSpatialFormationKo} | ${res.data.subspaceRippleAndPotionMeniscusKo}`);
+    } else if (toolId === "cyber-nvg") {
+      const res = await runClaudeCyberpunkProstheticMechaTacticalDirector(input);
+      setWave27Badge(`${res.model} · 의체·강화복·4안야투경 ${res.data.sciFiTacticalScore}점`);
+      setWave27Summary(`${res.data.pauldronClearanceAndMechaCockpitKo} | ${res.data.plateCarrierMagAndQuadNvgKo}`);
+    } else if (toolId === "shaman-occult") {
+      const res = await runClaudeShamanGutExorcismTalismanDirector(input);
+      setWave27Badge(`${res.model} · 무속방울부채·구마부적 ${res.data.occultAuthenticityScore}점`);
+      setWave27Summary(`${res.data.shamanBellAndFanHandRuleKo} | ${res.data.exorcismStoleAndCrucifixRuleKo}`);
+    } else if (toolId === "forensic-luminol") {
+      const res = await runClaudeForensicLuminolAutopsySceneDirector(input);
+      setWave27Badge(`${res.model} · 루미놀청백광·취조거울 ${res.data.forensicRigorScore}점`);
+      setWave27Summary(`${res.data.luminolBlueGlowAndEvidenceTentKo} | ${res.data.interrogationMirrorLightingRuleKo}`);
+    } else {
+      const res = await runClaudeLockedRoomAlibiCipherArchaeologyDirector(input);
+      setWave27Badge(`${res.model} · 밀실평면도·암호·UV감정 ${res.data.mysteryLogicScore}점`);
+      setWave27Summary(`${res.data.lockedRoomFloorplanAndSightlineKo} | ${res.data.corkboardRedYarnAndCipherRuleKo}`);
+    }
+  }
+
   const filmoraResult = useMemo(
     () => runFilmoraMediaToWebtoonPipeline({ filterPresetId: filmoraPresetId }),
     [filmoraPresetId],
@@ -700,6 +717,42 @@ export function StudioAiWebtoonCategory4Panel({
               data-testid={`wave33-tool-btn-${btn.id}`}
               aria-pressed={wave27Tool === btn.id}
               onClick={() => void handleRunWave33Tool(btn.id)}
+              className={cn(
+                "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
+                STUDIO_FOCUS_RING,
+                wave27Tool === btn.id
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-card text-fg-2",
+              )}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+        <div
+          data-testid="wave36-38-category4-mystery-bar"
+          className="flex flex-wrap gap-1 pt-1"
+          role="group"
+          aria-label="Wave 36~38 720대 플랫폼 로판귀족·던전레이드·오컬트·과학수사추리 도구"
+        >
+          {(
+            [
+              { id: "rofan-etiquette", label: "코르셋버스·훈장띠·찻잔" },
+              { id: "watch-chess", label: "시계IIII·체스백색칸·바둑" },
+              { id: "castle-waltz", label: "성탑시계방향·마차·왈츠" },
+              { id: "hunter-raid", label: "5인레이드·아공간·포션수평" },
+              { id: "cyber-nvg", label: "의체·강화복·4안야투경" },
+              { id: "shaman-occult", label: "무당방울부채·구마·부적" },
+              { id: "forensic-luminol", label: "루미놀청백광·취조거울" },
+              { id: "locked-room", label: "밀실평면도·암호·UV감정" },
+            ] as const
+          ).map((btn) => (
+            <button
+              key={btn.id}
+              type="button"
+              data-testid={`wave36-tool-btn-${btn.id}`}
+              aria-pressed={wave27Tool === btn.id}
+              onClick={() => void handleRunWave36Tool(btn.id)}
               className={cn(
                 "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
                 STUDIO_FOCUS_RING,

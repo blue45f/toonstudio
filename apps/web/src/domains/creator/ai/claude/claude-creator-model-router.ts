@@ -174,7 +174,16 @@ export type ClaudeCreatorTaskId =
   | "cost-cap:sports-biomechanics-gait-grip-edge-lock"
   | "cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock"
   | "cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director"
-  | "cost-cap:audiotoon-adr-timecode-tactile-ergo-director";
+  | "cost-cap:audiotoon-adr-timecode-tactile-ergo-director"
+  // 16. Wave 36~38 RoFanAristocracy/CastleWaltz/HunterRaid/CyberpunkTactical/ShamanOccult/ForensicMystery AI Engines (8 — Total 132 Tasks)
+  | "cost-cap:rofan-corset-sash-signet-etiquette-lock"
+  | "cost-cap:pocket-watch-iiii-chess-baduk-board-lock"
+  | "cost-cap:castle-clockwise-stair-carriage-waltz-lock"
+  | "cost-cap:hunter-gate-raid-party-inventory-potion-lock"
+  | "cost-cap:cyberpunk-prosthetic-mecha-nvg-molle-lock"
+  | "cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock"
+  | "cost-cap:forensic-luminol-blood-spatter-autopsy-director"
+  | "cost-cap:locked-room-alibi-cipher-archaeology-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -675,6 +684,14 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock": defineRoute("cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock", "웹툰 IP 버튜버(Live2D ARKit 52)·비주얼노벨 스탠딩(3단 눈깜빡임/5모음)·58mm 캔배지/렌티큘러 디렉터", "core-dialog", "creative-production", "버튜버 블렌드셰이프·비주얼노벨 표정 파츠 시트·캔배지 6mm 말림 도련·렌티큘러 설계는 Sonnet 5.5 적용", 4_096),
   "cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director": defineRoute("cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director", "웹툰 원작 수집형 RPG 게임 SSR 5평면 스플래시 아트·3초 궁극기 컷신·타격 히트스톱 총괄 감독", "core-dialog", "deep-architecture", "웹툰 캐릭터의 모바일 RPG SSR 가챠 일러스트 5평면 레이어 분리와 3초 필살기 연출 설계는 Opus 5.5 심층 추론 적용", 6_144),
   "cost-cap:audiotoon-adr-timecode-tactile-ergo-director": defineRoute("cost-cap:audiotoon-adr-timecode-tactile-ergo-director", "오디오웹툰 성우 ADR 타임코드 대본·시각장애인 촉각 그래픽 양각선(2.5mm)·작가 손목 필압 피로도 총괄 감독", "core-dialog", "deep-architecture", "성우 호흡/마이크 거리 타임코드 대본·점자 촉각 그래픽 단순화·주간 70컷 펜 터치 예산 관리는 Opus 5.5 심층 추론 적용", 6_144),
+  "cost-cap:rofan-corset-sash-signet-etiquette-lock": defineRoute("cost-cap:rofan-corset-sash-signet-etiquette-lock", "로판 코르셋 전면 버스(Busk)/후면 레이싱·대훈장 어깨띠(우어깨→좌골반)·인장반지 음각·찻잔 노핑키 고정기", "core-dialog", "fast-inline", "로판 복식 코르셋 앞뒤·훈장띠 대각선·인장반지 음각·다과회 찻잔 파지 에티켓 고정은 Haiku 5.5 적용", 3_072),
+  "cost-cap:pocket-watch-iiii-chess-baduk-board-lock": defineRoute("cost-cap:pocket-watch-iiii-chess-baduk-board-lock", "로마자 시계 4시(IIII) 표기·체스판 우하단 백색칸(White-on-Right)·바둑돌 검중지 파지·트럼프 인덱스 고정기", "core-dialog", "fast-inline", "회중시계 IIII 표기·체스판 h1 백색칸·바둑돌 착점 손모양·트럼프 부채꼴 인덱스 고정은 Haiku 5.5 적용", 3_072),
+  "cost-cap:castle-clockwise-stair-carriage-waltz-lock": defineRoute("cost-cap:castle-clockwise-stair-carriage-waltz-lock", "중세 성탑 시계방향 나선계단·4두 마차 작은 앞바퀴/C스프링·무도회 왈츠 프레임(남성 오른손=좌견갑골) 디렉터", "core-dialog", "creative-production", "성탑 나선계단 회전방향·마차 앞뒷바퀴 크기차·왈츠 남녀 손 위치·스테인드글라스 색광 투영은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:hunter-gate-raid-party-inventory-potion-lock": defineRoute("cost-cap:hunter-gate-raid-party-inventory-potion-lock", "헌터 등급별 게이트 색상·5인 던전 레이드 진형·아공간 인벤토리 금빛 파문·포션병 액체 수평면(Meniscus) 디렉터", "core-dialog", "creative-production", "게이트 등급 스펙트럼·탱딜힐 5인 파티 공간 진형·아공간 차폐 평면·포션 액체 중력 수평 고정은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:cyberpunk-prosthetic-mecha-nvg-molle-lock": defineRoute("cost-cap:cyberpunk-prosthetic-mecha-nvg-molle-lock", "사이버펑크 신경포트/기계의수 파팅라인·강화복 어깨장갑 자기충돌 방지·방탄복 탄창 방향·4안 야투경 디렉터", "core-dialog", "creative-production", "의체 결합부·강화복 관절 가동범위·전술 방탄복 탄창 삽탄 방향·야투경 녹색 반사광은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock": defineRoute("cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock", "한국 무속 왼손 칠성방울/오른손 부채·괴황지 경면주사 부적·구마 사제 보라 영대·음양사 구자수인 고증 디렉터", "core-dialog", "creative-production", "무당 방울/부채 좌우 지물·부적 탄화 발광·구마 사제 영대/십자가·구자호신법 수인 고정은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:forensic-luminol-blood-spatter-autopsy-director": defineRoute("cost-cap:forensic-luminol-blood-spatter-autopsy-director", "과학수사 루미놀 425nm 청백색 발광·증거 번호판 위치 불변·취조실 단방향 거울 명암·폴리그라프 총괄 감독", "core-dialog", "deep-architecture", "루미놀 혈흔 반응 파장·사건현장 증거텐트 평면도·취조실 거울 물리 조건·거짓말탐지기 감리는 Opus 5.5 심층 추론 적용", 6_144),
+  "cost-cap:locked-room-alibi-cipher-archaeology-director": defineRoute("cost-cap:locked-room-alibi-cipher-archaeology-director", "추리물 밀실 트릭 평면도·알리바이 타임테이블·레터로킹 암호봉인·유적 발굴 격자/미술품 UV 감정 총괄 감독", "core-dialog", "deep-architecture", "밀실 건축 기하 트릭·시야각/열차 알리바이 매트릭스·고전 암호/미술품 UV 형광 감정은 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

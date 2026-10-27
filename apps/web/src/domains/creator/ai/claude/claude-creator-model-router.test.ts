@@ -9,9 +9,17 @@ import {
 import {
   runClaudeAnamorphicFisheyeLensOpticsDirector,
   runClaudeAudiotoonAdrTactileErgonomicsDirector,
+  runClaudeCastleClockwiseStairCarriageWaltzDirector,
+  runClaudeCyberpunkProstheticMechaTacticalDirector,
   runClaudeDrapery7FoldsMaterialBrdfDirector,
+  runClaudeForensicLuminolAutopsySceneDirector,
   runClaudeGachaSsrSplashRpgSkillCutsceneDirector,
+  runClaudeHunterGateRaidPartyInventoryDirector,
+  runClaudeLockedRoomAlibiCipherArchaeologyDirector,
+  runClaudePocketWatchIiiiChessBadukBoardDirector,
+  runClaudeRofanCorsetSashSignetEtiquetteDirector,
   runClaudeScreentoneMoireGpenHierarchyDirector,
+  runClaudeShamanGutExorcismTalismanDirector,
   runClaudeSportsBiomechanicsGaitGripDirector,
   runClaudeVehicleCockpitSeatbeltDrivetrainDirector,
   runClaudeVtuberArkit52VnSpriteMerchDirector,
@@ -56,12 +64,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 73대 창의 AI 작업을 포함한 총 124개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 81대 창의 AI 작업을 포함한 총 132개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(124);
-    expect(summary.byProfile["fast-inline"]).toBe(32);
-    expect(summary.byProfile["creative-production"]).toBe(62);
-    expect(summary.byProfile["deep-architecture"]).toBe(30);
+    expect(summary.totalTasks).toBe(132);
+    expect(summary.byProfile["fast-inline"]).toBe(34);
+    expect(summary.byProfile["creative-production"]).toBe(66);
+    expect(summary.byProfile["deep-architecture"]).toBe(32);
+
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:rofan-corset-sash-signet-etiquette-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:pocket-watch-iiii-chess-baduk-board-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:castle-clockwise-stair-carriage-waltz-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:hunter-gate-raid-party-inventory-potion-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:cyberpunk-prosthetic-mecha-nvg-molle-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:forensic-luminol-blood-spatter-autopsy-director").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:locked-room-alibi-cipher-archaeology-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("cost-cap:lhd-rhd-cockpit-seatbelt-drivetrain-lock").model,
@@ -314,5 +347,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(r6.data.ipAssetReadinessScore).toBeGreaterThanOrEqual(95);
     expect(r7.data.gameAdaptationScore).toBeGreaterThanOrEqual(95);
     expect(r8.data.productionAccessibilityScore).toBeGreaterThanOrEqual(95);
+
+    const w1 = await runClaudeRofanCorsetSashSignetEtiquetteDirector(sample, { route: null });
+    const w2 = await runClaudePocketWatchIiiiChessBadukBoardDirector(sample, { route: null });
+    const w3 = await runClaudeCastleClockwiseStairCarriageWaltzDirector(sample, { route: null });
+    const w4 = await runClaudeHunterGateRaidPartyInventoryDirector(sample, { route: null });
+    const w5 = await runClaudeCyberpunkProstheticMechaTacticalDirector(sample, { route: null });
+    const w6 = await runClaudeShamanGutExorcismTalismanDirector(sample, { route: null });
+    const w7 = await runClaudeForensicLuminolAutopsySceneDirector(sample, { route: null });
+    const w8 = await runClaudeLockedRoomAlibiCipherArchaeologyDirector(sample, { route: null });
+
+    expect(w1.data.aristocracyEtiquetteScore).toBeGreaterThanOrEqual(95);
+    expect(w2.data.propPrecisionScore).toBeGreaterThanOrEqual(95);
+    expect(w3.data.historicalStagingScore).toBeGreaterThanOrEqual(95);
+    expect(w4.data.dungeonContinuityScore).toBeGreaterThanOrEqual(95);
+    expect(w5.data.sciFiTacticalScore).toBeGreaterThanOrEqual(95);
+    expect(w6.data.occultAuthenticityScore).toBeGreaterThanOrEqual(95);
+    expect(w7.data.forensicRigorScore).toBeGreaterThanOrEqual(95);
+    expect(w8.data.mysteryLogicScore).toBeGreaterThanOrEqual(95);
   });
 });

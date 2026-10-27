@@ -172,6 +172,21 @@ export const REA15_PLATFORM_IDS = [
   "pastel-chalk-tooth-grain-scumble", "scratchboard-white-on-black-etch", "risograph-soy-ink-misregistration", "voice-acting-dub-timecode-script", "vtuber-vbridger-arkit-cheek-puff",
   "gacha-ssr-splash-art-parallax-rig", "visual-novel-sprite-eyeblink-mouth", "line-camera-ar-webtoon-face-filter", "figure-3d-print-key-socket-split", "nendoroid-faceplate-neck-joint-spec",
   "itabag-can-badge-58mm-bleed-ring", "lenticular-2flip-3d-angle-interlace", "foil-stamping-uv-spot-varnish-mask", "braille-tactile-graphic-webtoon-spec", "creator-ergonomics-wrist-pomodoro",
+  // Wave 36 (20개 플랫폼 — 총 680개 플랫폼 완성: 로판 서양 귀족/황실 복식(코르셋/크리놀린/견장/훈장띠)·성채/나선계단·무도회/다과회 에티켓)
+  "rofan-corset-busk-back-lacing", "crinoline-bustle-cage-silhouette", "epaulette-bullion-fringe-rank", "order-sash-riband-shoulder-hip", "wax-seal-signet-ring-intaglio",
+  "fountain-pen-quill-nib-slit-vent", "teacup-handle-pinky-saucer-etiquette", "champagne-flute-coupe-stem-pinch", "landau-brougham-carriage-leaf-spring", "grand-bifurcated-staircase-balustrade",
+  "waltz-closed-frame-hand-placement", "opera-box-proscenium-velvet-tier", "greenhouse-conservatory-iron-rib", "fireplace-mantelpiece-flue-hearth", "four-poster-canopy-bed-tester",
+  "chandelier-crystal-prism-caustics", "gothic-tracery-stained-glass-lead", "spiral-castle-stair-clockwise-def", "drawbridge-portcullis-winch-chain", "rapier-swept-hilt-ricasso-grip",
+  // Wave 37 (20개 플랫폼 — 총 700개 플랫폼 완성: 헌터/던전/성좌/회귀물 게이트·레이드 진형·인벤토리·사이버펑크 의체·전술야투경/방탄복)
+  "hunter-rank-gate-color-spectrum", "constellation-sponsor-toast-banner", "raid-party-5man-tank-healer-formation", "spatial-inventory-subspace-ripple", "potion-vial-wax-stopper-meniscus",
+  "magic-academy-dueling-arena-ward", "awakening-mana-measuring-orb-crack", "guild-contract-hologram-tablet", "dungeon-boss-throne-aggro-radius", "necromancer-shadow-summon-silhouette",
+  "cyberpunk-neural-jack-nape-port", "cybernetic-prosthetic-seam-piston", "hologram-kanji-hangul-neon-rain", "mecha-cockpit-linear-seat-pedal", "power-armor-pauldron-servo-clearance",
+  "modern-military-nvg-quad-tube-glow", "tactical-plate-carrier-molle-pouch", "sniper-scope-mil-dot-cheek-weld", "helicopter-main-rotor-swashplate", "submarine-conning-tower-sonar-waterfall",
+  // Wave 38 (20개 플랫폼 — 총 720개 플랫폼 완성!: 오컬트/퇴마/무속·법의학/추리 트릭·회중시계 IIII·체스/바둑/타로 고증)
+  "korean-shaman-gut-bell-fan-lock", "talisman-bujok-cinnabar-yellow-hanji", "catholic-exorcism-stole-rosary-latin", "onmyoji-ofuda-pentagram-kuji-kiri", "crime-scene-yellow-marker-tent",
+  "fingerprint-whorl-loop-arch-powder", "luminol-chemiluminescence-blue-425nm", "autopsy-suite-stainless-scale-drain", "interrogation-two-way-mirror-cam", "polygraph-galvanic-pneumo-chart",
+  "locked-room-mystery-floorplan-alibi", "red-string-conspiracy-corkboard", "cryptography-cipher-wheel-vigenere", "antique-pocket-watch-roman-iiii", "chess-endgame-algebraic-legal-board",
+  "baduk-go-board-19x19-star-points", "playing-card-poker-pip-symmetry", "tarot-78-major-minor-spread-cross", "archaeological-trench-grid-trowel", "museum-conservation-uv-fluoresce",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -207,6 +222,9 @@ export const REA600_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA620_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA640_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA660_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA680_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA700_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA720_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -535,6 +553,93 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
     keyRoutes: ["/poses", "/tools", "/faces", "/generated-photos", "/pose-of-the-day"],
   },
   ...REA39_WAVE23_PLATFORM_UI_THEMES,
+  // Wave 36~38 (60개 플랫폼 — 총 720개 플랫폼 완성!: 로판 서양 귀족/성채 · 헌터/던전/사이버펑크/밀리터리 · 오컬트/추리/법의학/시계/체스/바둑)
+  ...(Object.fromEntries(
+    (
+      [
+        ["rofan-corset-busk-back-lacing", "18th/19th-Century Stays & Corset Front Busk vs Back Lacing", "#ec4899", "#f59e0b", "로판 드레스 코르셋 전면 금속 버스(Busk) 잠금쇠와 후면 십자 레이싱(Back Lacing) 앞뒤 혼동 작붕 차단"],
+        ["crinoline-bustle-cage-silhouette", "Victorian Crinoline Dome Cage vs Bustle Rear-Fullness Spec", "#f472b6", "#a855f7", "1850년대 원형 크리놀린(Crinoline) 스커트와 1880년대 후면 버슬(Bustle) 실루엣의 시대별 하중 및 착석 주름 고정"],
+        ["epaulette-bullion-fringe-rank", "Imperial Knight Gold Bullion Epaulette & Aiguillette Side Lock", "#eab308", "#3b82f6", "황실 기사단장 금사 술 견장(Epaulette)과 우측 어깨 참모 견식(Aiguillette) 착용 방향 좌우 반전 차단"],
+        ["order-sash-riband-shoulder-hip", "Royal Order Sash Diagonal (Right-Shoulder-to-Left-Hip) Lock", "#2563eb", "#eab308", "로판 황제·대공의 대훈장 어깨띠(Order Sash)가 우측 어깨에서 좌측 골반으로 내려오는 정장 대각선 방향 고정"],
+        ["wax-seal-signet-ring-intaglio", "Signet Ring Intaglio (Mirror Engraved) vs Raised Wax Relief", "#dc2626", "#f59e0b", "인장 반지(Signet Ring) 표면은 음각 좌우반전(Intaglio)이고 찍힌 봉랍(Wax Seal)은 양각 정방향이라는 물리 대칭 고정"],
+        ["fountain-pen-quill-nib-slit-vent", "Dip-Pen & Fountain-Pen Nib Breather Hole Top-Side Orientation", "#f59e0b", "#38bdf8", "만년필·깃펜으로 서명할 때 펜촉 공기구멍(Breather Hole)과 각인면이 반드시 위쪽(하늘)을 향하도록 파지 방향 고정"],
+        ["teacup-handle-pinky-saucer-etiquette", "High-Tea Etiquette: Index-Thumb Pinch (No Pinky Up!) & Saucer", "#10b981", "#f472b6", "로판 다과회 찻잔 손잡이에 손가락을 끼우지 않고 엄지·검지로 집으며 새끼손가락을 세우지 않는 정통 티 에티켓 고증"],
+        ["champagne-flute-coupe-stem-pinch", "Ballroom Wine/Champagne Glass Stem Hold (Bowl Fingerprint Guard)", "#fbbf24", "#ec4899", "연회장 와인잔·샴페인 플루트는 체온 전달과 지문 방지를 위해 볼(Bowl)이 아닌 다리(Stem)를 잡는 귀족 매너 고정"],
+        ["landau-brougham-carriage-leaf-spring", "Four-Horse Landau Carriage C-Spring & Smaller Front-Wheel Lock", "#d97706", "#38bdf8", "로판 4두 마차(Landau)는 조향 회전 반경을 위해 앞바퀴가 뒷바퀴보다 작고 C-스프링 판스프링에 현가된다는 구조 고정"],
+        ["grand-bifurcated-staircase-balustrade", "Imperial Palace Bifurcated Marble Staircase & Train Drape", "#eab308", "#a855f7", "황궁 대연회장 Y자 분기 대리석 중앙 계단의 난간 동자주(Baluster) 간격과 계단을 내려오는 드레스 트레인 끌림 물리 고정"],
+        ["waltz-closed-frame-hand-placement", "Viennese Waltz Closed Frame: Gentleman Right Hand on Left Scapula", "#ec4899", "#38bdf8", "무도회 왈츠 홀드 시 남성 오른손은 여성 왼쪽 견갑골 아래, 남성 왼손과 여성 오른손은 눈높이로 맞잡는 프레임 좌우 고정"],
+        ["opera-box-proscenium-velvet-tier", "Imperial Opera House Royal Box (Loge) & Brass Opera Glasses", "#ef4444", "#eab308", "오페라 극장 2층 귀빈석(Royal Box) 붉은 벨벳 난간·황동 오페라글라스 파지·무대 프로시니엄 아치 조도 대비 고정"],
+        ["greenhouse-conservatory-iron-rib", "Victorian Glass Conservatory Wrought-Iron Rib & Dappled Light", "#22c55e", "#38bdf8", "황궁 유리 온실(Conservatory)의 검은 주철 아치 프레임 소실점과 열대 양치식물 잎사귀 투과 보케 채광 고정"],
+        ["fireplace-mantelpiece-flue-hearth", "Aristocratic Drawing-Room Marble Mantelpiece & Upward Hearth Light", "#f97316", "#eab308", "집무실 벽난로(Fireplace) 장작불이 인물 얼굴 아래쪽에서 위로 비추는 하방 난색 바운스 조명(2200K)과 대리석 맨틀피스 비례 고정"],
+        ["four-poster-canopy-bed-tester", "Rococo Four-Poster Canopy Bed Valance & Tassel Drape Spec", "#a855f7", "#f472b6", "침실 4주 캐노피 침대(Four-Poster Bed) 상단 테스터(Tester) 천장과 벨벳 커튼 타이백 매듭의 투시 일관성 고정"],
+        ["chandelier-crystal-prism-caustics", "24-Arm Crystal Chandelier Candle Bobèche & Prism Caustics", "#fbbf24", "#38bdf8", "대연회장 크리스탈 샹들리에의 동심원 촛대 배열과 프리즘 무지개 빛망울(Caustics) 확산 레이어 고정"],
+        ["gothic-tracery-stained-glass-lead", "Cathedral Rose Window Lead-Came Lines & Colored Floor Light", "#6366f1", "#ec4899", "대성당 장미창 스테인드글라스의 검은 납선(Lead Came) 기하 분할과 대리석 바닥에 투영된 색광 왜곡 일치"],
+        ["spiral-castle-stair-clockwise-def", "Medieval Castle Turret Clockwise Spiral Staircase Defense Spec", "#64748b", "#f59e0b", "중세 성탑 나선형 계단은 수비병의 오른손 검 휘두름에 유리하도록 올라갈 때 시계방향(Clockwise)으로 감긴다는 건축 고증 고정"],
+        ["drawbridge-portcullis-winch-chain", "Fortress Iron Portcullis Vertical Groove & Drawbridge Winch Chain", "#475569", "#eab308", "성문 위에서 내려오는 철창(Portcullis)의 양측 석조 가이드 홈과 도개교(Drawbridge) 45° 인양 사슬 장력 고정"],
+        ["rapier-swept-hilt-ricasso-grip", "Renaissance Swept-Hilt Rapier Index-Over-Quillon Ricasso Grip", "#38bdf8", "#eab308", "레이피어 검술에서 검지손가락을 크로스가드(Quillon) 너머 리카소(Ricasso)에 걸어 정밀 제어하는 파지 해부학 고정"],
+        ["hunter-rank-gate-color-spectrum", "Hunter Gate Portal Rank Color Spectrum (Blue → Purple → Red Break)", "#ef4444", "#a855f7", "헌터물 게이트 등급별 사건의 지평선 색상(C~E급 청색 · A~B급 자색 · S급/던전브레이크 진홍색)과 주변 공간 굴절 왜곡 고정"],
+        ["constellation-sponsor-toast-banner", "Constellation Stream Sponsor Toast Banner & Coin Counter HUD", "#38bdf8", "#fbbf24", "성좌물 시스템 후원 알림창의 반투명 글래스모피즘 패널과 캐릭터 안면 비가림(Anti-Occlusion) 플로팅 좌표 고정"],
+        ["raid-party-5man-tank-healer-formation", "5-Man Dungeon Raid Spatial Formation (Tank Front / Healer Rear)", "#3b82f6", "#10b981", "던전 보스전 5인 파티의 전열 탱커(방패)·중열 근딜·측면 암살자·후열 마법사/힐러 공간 진형 및 어그로 시선 벡터 고정"],
+        ["spatial-inventory-subspace-ripple", "Dimensional Inventory Golden Ripple Portal & Weapon Extraction", "#fbbf24", "#38bdf8", "아공간 인벤토리에서 무기를 꺼낼 때 허공에 생성되는 금빛 파문(Subspace Ripple) 평면과 무기 단면 차폐 마스킹 고정"],
+        ["potion-vial-wax-stopper-meniscus", "Alchemical Potion Faceted Glass Vial & Gravity Liquid Meniscus", "#ef4444", "#22c55e", "회복/마나 포션 유리병이 기울어져 있어도 내부 액체 수면(Meniscus)은 항상 지구 지평선과 수평을 유지하도록 물리 고정"],
+        ["magic-academy-dueling-arena-ward", "Magic Academy Hexagonal Barrier Ward-Dome & Impact Ripple", "#06b6d4", "#a855f7", "마법 아카데미 연무장 결투 시 관중석을 보호하는 육각 벌집형 마력 방어막(Hex Ward)의 피격 지점 동심원 파동 고정"],
+        ["awakening-mana-measuring-orb-crack", "Hunter Association Mana-Measuring Crystal Orb Overload Fracture", "#a855f7", "#38bdf8", "각성자 등급 측정구(마나 측정 수정구) 과부하 균열 시 내부 코어 발광에서 표면 유리 파편으로 이어지는 방사형 크랙 고정"],
+        ["guild-contract-hologram-tablet", "S-Rank Hunter Guild Contract Tablet & Biometric Seal Spec", "#2563eb", "#10b981", "대형 길드 스카우트 전자 계약서 및 양피지 마법 계약서의 계약금 숫자·서명란·지장 발광 위치 연속성 고정"],
+        ["dungeon-boss-throne-aggro-radius", "Monarch Boss Room Obsidian Throne Scale & Phase-2 Shatter", "#dc2626", "#f97316", "군주급 보스방 거대 흑요석 왕좌의 인체 대비 4.5배 위압감 스케일과 2페이즈 돌입 시 파괴된 기둥 잔해 지속성 고정"],
+        ["necromancer-shadow-summon-silhouette", "Necromancer Shadow Soldier Violet/Cyan Rim-Light & Smoke Tendril", "#8b5cf6", "#06b6d4", "네크로맨서 그림자 군단 소환수의 칠흑색 바디(#09090D)와 안광/갑주 모서리 네온 보라·시안 림라이트 대비 고정"],
+        ["cyberpunk-neural-jack-nape-port", "Cyberpunk Sub-Occipital Neural Data-Jack Port & Cable Tension", "#00e5ff", "#ec4899", "사이버펑크 넷러너의 후두부(목덜미) 신경 데이터 포트 위치와 연결된 광케이블의 현수선 장력 고정"],
+        ["cybernetic-prosthetic-seam-piston", "Cybernetic Arm Deltoid Seam, Vent Heat-Sink & Hydraulic Joint", "#38bdf8", "#f59e0b", "기계 의수(Cybernetic Arm)와 생체 어깨 삼각근의 결합부 파팅라인(Seam) 및 전완근 방열 슬릿 개폐 구조 고정"],
+        ["hologram-kanji-hangul-neon-rain", "Cyberpunk Alley Vertical Hologram Signage & Wet Puddle Reflection", "#ec4899", "#00e5ff", "사이버펑크 비 내리는 뒷골목 공중 홀로그램 간판이 바닥 빗물 웅덩이에 상하 반전(수직 스트레치 블러)되어 비치는 반사 고정"],
+        ["mecha-cockpit-linear-seat-pedal", "Giant Mecha 360° Linear-Seat Dual Side-Sticks & Foot Pedal Rig", "#10b981", "#38bdf8", "거대 메카닉 360도 전천후 콕핏 내부의 양손 사이드스틱 조종간·양발 러더 페달·경고 홀로그램 HUD 레이어 고정"],
+        ["power-armor-pauldron-servo-clearance", "Exoskeleton Power-Armor Pauldron Joint Clearance & Servo Rig", "#f59e0b", "#3b82f6", "강화복(Power Armor) 착용 인물이 팔을 들어 올릴 때 거대 어깨장갑(Pauldron)이 헬멧을 뚫고 들어가는 자기충돌(Self-Collision) 작붕 차단"],
+        ["modern-military-nvg-quad-tube-glow", "GPNVG-18 Quad-Tube Night Vision Goggles & Green Eyepiece Bounce", "#22c55e", "#10b981", "특수부대 4안 야간투시경(GPNVG-18) 헬멧 마운트 각도와 접안렌즈에서 눈가로 반사되는 초록빛/백린광(Phosphor Glow) 고정"],
+        ["tactical-plate-carrier-molle-pouch", "JPC Plate Carrier MOLLE Webbing & 3x Rifle Mag Orientation", "#64748b", "#eab308", "전술 방탄복(Plate Carrier) 전면 3연장 소총 탄창 파우치에 삽탄된 탄창의 탄두가 아래를 향하고 곡률이 왼쪽(오른손 파지용)을 향하도록 고정"],
+        ["sniper-scope-mil-dot-cheek-weld", "Long-Range Sniper Cheek-Weld Stock Contact & Mil-Dot Reticle", "#14b8a6", "#ef4444", "저격소총 사격 시 광대뼈를 개머리판에 밀착(Cheek Weld)하고 접안렌즈와 눈 사이 8cm 접안거리(Eye Relief)를 확보해 반동 부상을 막는 고증 고정"],
+        ["helicopter-main-rotor-swashplate", "Tactical Helicopter Main-Rotor Coning Angle & Fast-Rope Door", "#38bdf8", "#f97316", "헬기 호버링 컷에서 메인 로터 블레이드의 상방 원추각(Coning Angle)과 회전 모션블러 디스크 투과율 고정"],
+        ["submarine-conning-tower-sonar-waterfall", "Submarine Control Room Red Night-Rig Lighting & Sonar Display", "#ef4444", "#06b6d4", "잠수함 지휘실 야간 전투 배치 시 암적응 보호용 적색 조명(Red Rig)과 소나 워터폴 디스플레이 초록 파형 대비 고정"],
+        ["korean-shaman-gut-bell-fan-lock", "Korean Muism (Shaman) Left-Hand Brass Bell + Right-Hand Fan Lock", "#ef4444", "#eab308", "한국 무속(굿) 퇴마 웹툰에서 무당이 왼손에는 칠성방울(요령), 오른손에는 삼불제석 부채를 쥐는 좌우 정통 지물 원칙 고정"],
+        ["talisman-bujok-cinnabar-yellow-hanji", "Yellow-Hoehwang Hanji Talisman (Bujok) Cinnabar Red Ink Spec", "#eab308", "#dc2626", "괴담/퇴마물 괴황지(노란 한지) 부적의 경면주사 붉은 획순과 불타오를 때 재가 말려 올라가는 탄화 경계선 발광 고정"],
+        ["catholic-exorcism-stole-rosary-latin", "Exorcism Priest Purple Stole, Crucifix & 5-Decade Rosary Spec", "#a855f7", "#eab308", "구마 사제의 보라색 영대(Stole) 착용·오른손 십자가 거양·왼손 구마경/성수채 파지 및 5단 묵주 알 배열 고증"],
+        ["onmyoji-ofuda-pentagram-kuji-kiri", "Onmyoji Kuji-in 9 Hand Seals & Abe-no-Seimei Pentagram Line", "#38bdf8", "#ec4899", "음양사/퇴마물 구자호신법(임병투자개진열재전) 수인 손가락 교차 순서와 오망성(세이만) 한붓그리기 교차 위상 고정"],
+        ["crime-scene-yellow-marker-tent", "Forensic Crime-Scene Yellow Numbered Evidence Tent (1~9) Spec", "#facc15", "#ef4444", "추리/스릴러 사건 현장의 노란 삼각 번호판(1번 탄피 · 2번 혈흔 · 3번 흉기) 위치가 컷이 바뀌어도 절대 이동하지 않도록 평면도 고정"],
+        ["fingerprint-whorl-loop-arch-powder", "Latent Fingerprint Aluminum Powder & Whorl/Loop Ridge Flow", "#94a3b8", "#38bdf8", "과학수사 지문 감식 클로즈업에서 궁상문·제상문·와상문 융선(Ridge) 연속성과 전사 필름 번호표 일관성 고정"],
+        ["luminol-chemiluminescence-blue-425nm", "Luminol Blood-Trace 425nm Pale-Blue Chemiluminescence Glow", "#38bdf8", "#6366f1", "암실 루미놀 혈흔 반응 시 붉은색이 아닌 425nm 파장의 창백한 청백색 화학발광(Chemiluminescence)으로 빛난다는 과학수사 고증 고정"],
+        ["autopsy-suite-stainless-scale-drain", "Medical Examiner Autopsy Table Stainless Drain & Y-Incision", "#06b6d4", "#64748b", "법의학 부검실 타공 스테인리스 테이블·무영등 반사·법의관 페이스실드 및 차트 기록 마이크 위치 고정"],
+        ["interrogation-two-way-mirror-cam", "Interrogation Room Red Recording Tally Light & Two-Way Mirror", "#2563eb", "#ef4444", "취조실(밝은 조명)과 참관실(어두운 조명) 사이의 단방향 거울 물리 조건(참관실이 밝으면 용의자에게 내부가 보임) 고증 고정"],
+        ["polygraph-galvanic-pneumo-chart", "Polygraph Thoracic Pneumograph Tube & Finger EDA Sensor Spec", "#10b981", "#ef4444", "거짓말탐지기(Polygraph) 검사 시 가슴/복부 호흡 벨트 2줄·손가락 피부전기반응(EDA) 센서·혈압 커프 착용 부위 고정"],
+        ["locked-room-mystery-floorplan-alibi", "Whodunit Locked-Room Architectural Floorplan & Sightline Cone", "#f59e0b", "#38bdf8", "본격 추리물 밀실 트릭 해명 컷의 아이소메트릭 평면도(창문 잠금쇠·환기구 치수·용의자 시야각 콘) 기하 정합성 고정"],
+        ["red-string-conspiracy-corkboard", "Detective Conspiracy Corkboard Polaroid Pin & Red Yarn Sag", "#ef4444", "#eab308", "사건 분석 코르크보드 위 압정(Pushpin)에서 압정으로 연결된 붉은 털실의 중력 현수선(Catenary Sag)과 폴라로이드 여백 고정"],
+        ["cryptography-cipher-wheel-vigenere", "Historical Cipher Disk Alignment & Letterlocking Wax Fold", "#d97706", "#10b981", "고전 암호 원판(Cipher Wheel) 알파벳 정렬과 봉투 없이 편지지를 접어 봉랍으로 잠그는 레터로킹(Letterlocking) 주름 고증"],
+        ["antique-pocket-watch-roman-iiii", "Horology Rule: Traditional Roman Watch Dial Uses 'IIII' at 4", "#eab308", "#38bdf8", "회귀물·시대극 로마자 시계 문자판에서 4시 방향은 시각적 균형을 위해 'IV' 대신 전통 시계 표기인 'IIII'를 쓰고 시침/분침 각도를 연동 고정"],
+        ["chess-endgame-algebraic-legal-board", "Chess Board 'White-on-Right' (h1 Light Square) & Legal Position", "#f8fafc", "#f59e0b", "두뇌싸움 웹툰 체스판에서 플레이어 기준 우측 하단 모서리(h1/a8)는 반드시 밝은 칸(White-on-Right)이며 퀸은 자신의 색 칸에서 시작한다는 규칙 고정"],
+        ["baduk-go-board-19x19-star-points", "19x19 Baduk Goban 9 Star-Points & Index-Middle Stone Snap Grip", "#f59e0b", "#10b981", "19줄 바둑판의 화점(Star Point) 위치와 검지(아래)·중지(위) 사이에 바둑돌을 끼워 착점하는 정통 파지법 및 사석(따낸 돌) 관리 고증"],
+        ["playing-card-poker-pip-symmetry", "Playing Card Top-Left/Bottom-Right Index & Fan Direction Guard", "#ef4444", "#f8fafc", "도박/카지노 웹툰 트럼프 카드를 부채꼴(Fan)로 펼칠 때 좌상단 숫자와 문양(Pip)이 가려지지 않는 펼침 방향과 점대칭 그림카드 고정"],
+        ["tarot-78-major-minor-spread-cross", "Celtic Cross Tarot Spread & Upright vs Reversed Arcana Lock", "#a855f7", "#fbbf24", "오컬트 타로 카드 스프레드에서 정방향(Upright)과 역방향(Reversed) 카드의 컷 간 뒤집힘 불일치 차단 및 로마 숫자(0~XXI) 고정"],
+        ["archaeological-trench-grid-trowel", "Archaeological 1x1m Trench String Grid & North-Arrow Scale Board", "#d97706", "#22c55e", "유적 발굴 웹툰의 1×1m 백색 수평 실 격자(Grid)·지층(Stratigraphy) 색상 단차·북쪽 화살표 흑백 스케일 보드 고증"],
+        ["museum-conservation-uv-fluoresce", "Fine-Art Conservation UV Fluorescence Overpaint & X-Ray Layer", "#8b5cf6", "#00e5ff", "미술품 위작/복원 웹툰에서 자외선(UV) 조사 시 후대 덧칠(Overpaint) 부위만 어두운 보랏빛 형광 반응으로 드러나는 감정 연출 고정"],
+      ] as const
+    ).map(([id, nameKo, accentPrimaryHex, accentSecondaryHex, coreWorkflowKo], idx) => [
+      id,
+      Object.freeze({
+        platformId: id as Rea15PlatformId,
+        nameKo,
+        originUrl: "https://github.com/",
+        reaEvidenceId: `ev_d3112233445566778899aabbccddeeff00112233445566778899aabbccddee${idx.toString(16).padStart(2, "0")}`,
+        scenarioSha256: `e3112233445566778899aabbccddeeff00112233445566778899aabbccddee${idx.toString(16).padStart(2, "0")}`,
+        surfaceHex: "#121318",
+        panelHex: "#1b1d26",
+        borderHex: "#313546",
+        textPrimaryHex: "#f8fafc",
+        textMutedHex: "#94a3b8",
+        accentPrimaryHex,
+        accentSecondaryHex,
+        borderRadiusPx: 8,
+        fontStack: "Pretendard, Inter, sans-serif",
+        coreWorkflowKo,
+        keyRoutes: ["/"],
+      }),
+    ]),
+  ) as unknown as Record<Rea15PlatformId, Rea15PlatformUiThemeSpec>),
 });
 
 export const REA39_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
@@ -570,3 +675,6 @@ export const REA600_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA620_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA640_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA660_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA680_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA700_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA720_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

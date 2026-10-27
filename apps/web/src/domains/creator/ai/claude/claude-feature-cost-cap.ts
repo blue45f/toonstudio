@@ -339,3 +339,200 @@ export async function runClaudeAudiotoonAdrTactileErgonomicsDirector(
     fallback: () => Object.freeze({ productionAccessibilityScore: 98, adrTimecodeAndBreathCueKo: "[00:14.20] (짧은 들숨 #Inhale) → 근접 마이크 독백(-16 LUFS) → [00:17.80] 검집 결속 금속 폴리 사운드 정밀 동기화", brailleTactileLineSimplifyKo: "시각장애인 촉각 도서 변환 시 배경 해칭/스크린톤을 100% 제거하고 인물 실루엣 양각선(최소 간격 2.5mm, 높이 0.5mm)과 점자 말풍선 배치", artistWristStrokeBudgetKo: "주간 70컷 연재 기준 컷당 수동 펜 스트로크 상한을 180회로 제한하고 초과 배경/체인은 3D 스냅 및 리본 브러시로 자동 전환해 손목 터널 증후군 예방" }),
   });
 }
+
+/* ============================================================================
+ * Wave 36~38 RoFan Aristocracy, Castle/Waltz, Hunter/Dungeon, Cyberpunk/Military,
+ * Shaman/Exorcism, Forensic Luminol & Locked-Room Mystery AI Directors (8 Engines)
+ * ============================================================================ */
+
+export const ClaudeRofanCorsetSashEtiquetteSchema = z.object({
+  aristocracyEtiquetteScore: z.number().int().min(0).max(100),
+  corsetBuskAndOrderSashRuleKo: z.string(),
+  signetRingIntaglioAndNibKo: z.string(),
+  teacupAndStemwareHoldRuleKo: z.string(),
+});
+export type ClaudeRofanCorsetSashEtiquette = z.infer<typeof ClaudeRofanCorsetSashEtiquetteSchema>;
+
+export async function runClaudeRofanCorsetSashSignetEtiquetteDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeRofanCorsetSashEtiquette>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:rofan-corset-sash-signet-etiquette-lock",
+    systemPrompt: "당신은 로맨스판타지(로판) 서양 귀족 복식(코르셋 버스/레이싱·대훈장 어깨띠)·인장반지 음각·다과회 찻잔 에티켓 고증 감독입니다.",
+    userInstruction: "코르셋 앞뒤 구조와 대훈장 어깨띠 대각선, 인장반지 음각/만년필 펜촉 방향, 찻잔/와인잔 파지 매너를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeRofanCorsetSashEtiquetteSchema,
+    options,
+    normalize: (p) => Object.freeze({ aristocracyEtiquetteScore: clampWave33(p.aristocracyEtiquetteScore, 0, 100, 99), corsetBuskAndOrderSashRuleKo: cleanSingleLineText(p.corsetBuskAndOrderSashRuleKo, 180), signetRingIntaglioAndNibKo: cleanSingleLineText(p.signetRingIntaglioAndNibKo, 180), teacupAndStemwareHoldRuleKo: cleanSingleLineText(p.teacupAndStemwareHoldRuleKo, 180) }),
+    fallback: () => Object.freeze({ aristocracyEtiquetteScore: 99, corsetBuskAndOrderSashRuleKo: "코르셋 전면은 금속 버스(Busk) 잠금쇠·후면은 십자 끈(Back Lacing) 고정 및 황실 대훈장 어깨띠(Order Sash) 우어깨→좌골반 사선 고정", signetRingIntaglioAndNibKo: "인장 반지(Signet Ring)는 좌우반전 음각(Intaglio)·봉랍은 양각 정방향 고정 및 만년필 펜촉 숨구멍(Breather Hole) 상방 노출 고정", teacupAndStemwareHoldRuleKo: "다과회 찻잔 손잡이는 엄지·검지로 집고 새끼손가락을 세우지 않으며(No Pinky Up), 샴페인/와인잔은 볼이 아닌 스템(다리) 파지 고정" }),
+  });
+}
+
+export const ClaudePocketWatchChessBadukSchema = z.object({
+  propPrecisionScore: z.number().int().min(0).max(100),
+  romanWatchDialFourRuleKo: z.string(),
+  chessWhiteOnRightAndQueenKo: z.string(),
+  badukStoneGripAndCardFanKo: z.string(),
+});
+export type ClaudePocketWatchChessBaduk = z.infer<typeof ClaudePocketWatchChessBadukSchema>;
+
+export async function runClaudePocketWatchIiiiChessBadukBoardDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudePocketWatchChessBaduk>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:pocket-watch-iiii-chess-baduk-board-lock",
+    systemPrompt: "당신은 회중시계 로마자 4시(IIII) 표기·체스판 우하단 백색칸(White-on-Right)·바둑 착점 파지·트럼프 부채꼴 인덱스를 감리하는 소품 감독입니다.",
+    userInstruction: "로마자 시계 4시 표기 규칙, 체스판 우하단 칸 색상 및 퀸 배치, 바둑돌 파지법과 트럼프 카드 펼침 방향을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudePocketWatchChessBadukSchema,
+    options,
+    normalize: (p) => Object.freeze({ propPrecisionScore: clampWave33(p.propPrecisionScore, 0, 100, 99), romanWatchDialFourRuleKo: cleanSingleLineText(p.romanWatchDialFourRuleKo, 180), chessWhiteOnRightAndQueenKo: cleanSingleLineText(p.chessWhiteOnRightAndQueenKo, 180), badukStoneGripAndCardFanKo: cleanSingleLineText(p.badukStoneGripAndCardFanKo, 180) }),
+    fallback: () => Object.freeze({ propPrecisionScore: 99, romanWatchDialFourRuleKo: "전통 회중시계·괘종시계 로마자 다이얼의 4시 방향은 VIII과의 대칭 균형을 위해 'IV'가 아닌 'IIII'로 표기 고정", chessWhiteOnRightAndQueenKo: "체스판 대국자 기준 우측 하단 모서리(h1/a8)는 반드시 밝은 칸(White-on-Right)이며 백퀸은 백색 칸(d1)·흑퀸은 흑색 칸(d8) 배치 고정", badukStoneGripAndCardFanKo: "19줄 바둑판 9화점 정합성 유지 및 검지(하)·중지(상) 사이에 바둑돌을 끼워 착점, 트럼프 부채꼴 펼침 시 좌상단 인덱스 노출 고정" }),
+  });
+}
+
+export const ClaudeCastleStairCarriageWaltzSchema = z.object({
+  historicalStagingScore: z.number().int().min(0).max(100),
+  spiralStairAndPortcullisKo: z.string(),
+  landauCarriageWheelAndSpringKo: z.string(),
+  waltzClosedFrameHandRuleKo: z.string(),
+});
+export type ClaudeCastleStairCarriageWaltz = z.infer<typeof ClaudeCastleStairCarriageWaltzSchema>;
+
+export async function runClaudeCastleClockwiseStairCarriageWaltzDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeCastleStairCarriageWaltz>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:castle-clockwise-stair-carriage-waltz-lock",
+    systemPrompt: "당신은 중세 성탑 시계방향 나선계단·로판 4두 마차(작은 앞바퀴/C-스프링)·무도회 왈츠 홀드 프레임을 감독하는 시대극 연출 디렉터입니다.",
+    userInstruction: "중세 성탑 나선계단 감김 방향, 마차 앞뒷바퀴 크기 차이와 현가장치, 무도회 왈츠 남녀 손 위치를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeCastleStairCarriageWaltzSchema,
+    options,
+    normalize: (p) => Object.freeze({ historicalStagingScore: clampWave33(p.historicalStagingScore, 0, 100, 98), spiralStairAndPortcullisKo: cleanSingleLineText(p.spiralStairAndPortcullisKo, 180), landauCarriageWheelAndSpringKo: cleanSingleLineText(p.landauCarriageWheelAndSpringKo, 180), waltzClosedFrameHandRuleKo: cleanSingleLineText(p.waltzClosedFrameHandRuleKo, 180) }),
+    fallback: () => Object.freeze({ historicalStagingScore: 98, spiralStairAndPortcullisKo: "중세 성탑 나선계단은 수비병의 오른손 검격 공간 확보를 위해 올라갈 때 시계방향(Clockwise)으로 감기는 구조 고정", landauCarriageWheelAndSpringKo: "귀족 사륜마차(Landau)는 조향 회전각 확보를 위해 앞바퀴 직경이 뒷바퀴보다 작고 C-스프링/판스프링에 차체가 현가되는 비례 고정", waltzClosedFrameHandRuleKo: "무도회 왈츠 클로즈드 프레임에서 남성 오른손은 여성 왼쪽 견갑골 하단 지지, 남성 왼손과 여성 오른손은 눈높이 결합 고정" }),
+  });
+}
+
+export const ClaudeHunterGateRaidInventorySchema = z.object({
+  dungeonContinuityScore: z.number().int().min(0).max(100),
+  gateRankColorAndConstellationKo: z.string(),
+  fiveManRaidSpatialFormationKo: z.string(),
+  subspaceRippleAndPotionMeniscusKo: z.string(),
+});
+export type ClaudeHunterGateRaidInventory = z.infer<typeof ClaudeHunterGateRaidInventorySchema>;
+
+export async function runClaudeHunterGateRaidPartyInventoryDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeHunterGateRaidInventory>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:hunter-gate-raid-party-inventory-potion-lock",
+    systemPrompt: "당신은 헌터/성좌/던전 웹툰의 등급별 게이트 색상·5인 레이드 파티 진형·아공간 인벤토리 파문·포션 액체 수평면(Meniscus) 감독입니다.",
+    userInstruction: "게이트 등급별 색상과 성좌 알림창, 5인 레이드 전후열 진형, 아공간 무기 수납 파문과 포션 수평면 규칙을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeHunterGateRaidInventorySchema,
+    options,
+    normalize: (p) => Object.freeze({ dungeonContinuityScore: clampWave33(p.dungeonContinuityScore, 0, 100, 98), gateRankColorAndConstellationKo: cleanSingleLineText(p.gateRankColorAndConstellationKo, 180), fiveManRaidSpatialFormationKo: cleanSingleLineText(p.fiveManRaidSpatialFormationKo, 180), subspaceRippleAndPotionMeniscusKo: cleanSingleLineText(p.subspaceRippleAndPotionMeniscusKo, 180) }),
+    fallback: () => Object.freeze({ dungeonContinuityScore: 98, gateRankColorAndConstellationKo: "일반 게이트(청색) → 고위험 변이(자색) → S급 레드게이트/던전브레이크(진홍색+금빛 왜곡) 스펙트럼 및 성좌 후원창 안면 비가림 배치", fiveManRaidSpatialFormationKo: "전열 메인탱커(12시 보스 어그로 고정) · 측면 근딜/암살자(3시/9시 백어택) · 후열 마법사/힐러(6시 캐스팅 보호) 5인 진형 고정", subspaceRippleAndPotionMeniscusKo: "아공간 인벤토리 금빛 파문 평면에서 무기 단면 클리핑 마스크 적용 및 기울어진 포션 유리병 내부 액체 수면의 지구 지평선 수평 유지" }),
+  });
+}
+
+export const ClaudeCyberpunkMechaTacticalSchema = z.object({
+  sciFiTacticalScore: z.number().int().min(0).max(100),
+  neuralJackAndProstheticSeamKo: z.string(),
+  pauldronClearanceAndMechaCockpitKo: z.string(),
+  plateCarrierMagAndQuadNvgKo: z.string(),
+});
+export type ClaudeCyberpunkMechaTactical = z.infer<typeof ClaudeCyberpunkMechaTacticalSchema>;
+
+export async function runClaudeCyberpunkProstheticMechaTacticalDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeCyberpunkMechaTactical>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:cyberpunk-prosthetic-mecha-nvg-molle-lock",
+    systemPrompt: "당신은 사이버펑크 기계의수 파팅라인·강화복 어깨장갑 가동범위·전술 방탄복 탄창 방향·4안 야간투시경을 감독하는 SF/밀리터리 디렉터입니다.",
+    userInstruction: "신경포트/기계의수 결합선, 강화복 어깨장갑 자기충돌 방지와 메카 콕핏, 방탄복 탄창 방향과 야투경 반사광을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeCyberpunkMechaTacticalSchema,
+    options,
+    normalize: (p) => Object.freeze({ sciFiTacticalScore: clampWave33(p.sciFiTacticalScore, 0, 100, 98), neuralJackAndProstheticSeamKo: cleanSingleLineText(p.neuralJackAndProstheticSeamKo, 180), pauldronClearanceAndMechaCockpitKo: cleanSingleLineText(p.pauldronClearanceAndMechaCockpitKo, 180), plateCarrierMagAndQuadNvgKo: cleanSingleLineText(p.plateCarrierMagAndQuadNvgKo, 180) }),
+    fallback: () => Object.freeze({ sciFiTacticalScore: 98, neuralJackAndProstheticSeamKo: "후두부 신경 데이터포트 광케이블 장력 유지 및 생체 삼각근↔티타늄 기계의수 결합 파팅라인·전완근 방열 슬릿 위치 고정", pauldronClearanceAndMechaCockpitKo: "강화복 상완 거상 시 어깨장갑(Pauldron)이 2단 힌지로 외측 슬라이드되어 헬멧 관통(Self-Collision) 작붕 원천 차단", plateCarrierMagAndQuadNvgKo: "전술 방탄복 전면 3연장 탄창은 탄두 하향·곡률 좌측(오른손 맥풀 파지용) 고정 및 4안 야투경(GPNVG-18) 안면 초록 반사광 부여" }),
+  });
+}
+
+export const ClaudeShamanExorcismTalismanSchema = z.object({
+  occultAuthenticityScore: z.number().int().min(0).max(100),
+  shamanBellAndFanHandRuleKo: z.string(),
+  cinnabarTalismanAndKujiInKo: z.string(),
+  exorcismStoleAndCrucifixRuleKo: z.string(),
+});
+export type ClaudeShamanExorcismTalisman = z.infer<typeof ClaudeShamanExorcismTalismanSchema>;
+
+export async function runClaudeShamanGutExorcismTalismanDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeShamanExorcismTalisman>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:shaman-gut-exorcism-talisman-onmyoji-lock",
+    systemPrompt: "당신은 한국 무속(왼손 방울/오른손 부채)·괴황지 경면주사 부적·가톨릭 구마 사제 영대·음양사 구자수인 고증을 담당하는 오컬트 감독입니다.",
+    userInstruction: "무당 방울/부채 좌우 파지 규칙, 노란 괴황지 부적과 구자호신법 수인, 구마 사제 보라색 영대와 십자가 파지를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeShamanExorcismTalismanSchema,
+    options,
+    normalize: (p) => Object.freeze({ occultAuthenticityScore: clampWave33(p.occultAuthenticityScore, 0, 100, 99), shamanBellAndFanHandRuleKo: cleanSingleLineText(p.shamanBellAndFanHandRuleKo, 180), cinnabarTalismanAndKujiInKo: cleanSingleLineText(p.cinnabarTalismanAndKujiInKo, 180), exorcismStoleAndCrucifixRuleKo: cleanSingleLineText(p.exorcismStoleAndCrucifixRuleKo, 180) }),
+    fallback: () => Object.freeze({ occultAuthenticityScore: 99, shamanBellAndFanHandRuleKo: "한국 전통 굿거리에서 무당은 왼손에 칠성방울(요령)을 흔들고 오른손에 삼불제석 부채를 펼치는 좌우 지물 원칙 고정", cinnabarTalismanAndKujiInKo: "괴황지(노란 한지) 위 경면주사 붉은 부적 획순 유지 및 소각 시 청적색 탄화 발광, 구자호신법(임병투자개진열재전) 손가락 교차 고증", exorcismStoleAndCrucifixRuleKo: "구마 사제는 검은 수단 위 보라색 영대(Stole) 착용, 오른손 십자가 눈높이 거양, 왼손 구마경식서/성수채 파지 고정" }),
+  });
+}
+
+export const ClaudeForensicLuminolAutopsySchema = z.object({
+  forensicRigorScore: z.number().int().min(0).max(100),
+  luminolBlueGlowAndEvidenceTentKo: z.string(),
+  interrogationMirrorLightingRuleKo: z.string(),
+  polygraphAndAutopsySuiteSpecKo: z.string(),
+});
+export type ClaudeForensicLuminolAutopsy = z.infer<typeof ClaudeForensicLuminolAutopsySchema>;
+
+export async function runClaudeForensicLuminolAutopsySceneDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeForensicLuminolAutopsy>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:forensic-luminol-blood-spatter-autopsy-director",
+    systemPrompt: "당신은 과학수사 루미놀 425nm 청백색 발광·사건현장 노란 증거 번호판·취조실 단방향 거울 물리 조건·부검실/폴리그라프를 총괄하는 법의학 감독입니다.",
+    userInstruction: "루미놀 혈흔 발광 색상과 증거 번호판 고정, 취조실 단방향 거울 조도 조건, 거짓말탐지기 센서 및 부검실 고증을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeForensicLuminolAutopsySchema,
+    options,
+    normalize: (p) => Object.freeze({ forensicRigorScore: clampWave33(p.forensicRigorScore, 0, 100, 99), luminolBlueGlowAndEvidenceTentKo: cleanSingleLineText(p.luminolBlueGlowAndEvidenceTentKo, 180), interrogationMirrorLightingRuleKo: cleanSingleLineText(p.interrogationMirrorLightingRuleKo, 180), polygraphAndAutopsySuiteSpecKo: cleanSingleLineText(p.polygraphAndAutopsySuiteSpecKo, 180) }),
+    fallback: () => Object.freeze({ forensicRigorScore: 99, luminolBlueGlowAndEvidenceTentKo: "암실 루미놀 혈흔 반응은 425nm 파장의 창백한 청백색(#38BDF8) 화학발광으로 표현하며 현장 노란 증거 번호판(1~9) 좌표 불변 고정", interrogationMirrorLightingRuleKo: "단방향 거울(Two-Way Mirror) 작동 원리상 취조실은 고조도 밝은 조명, 형사 참관실은 암실 조명을 유지해 역투과 작붕 차단", polygraphAndAutopsySuiteSpecKo: "폴리그라프 흉부/복부 호흡 벨트 2줄·손끝 EDA 센서·혈압 커프 3종 동시 착용 및 부검실 타공 스테인리스 배수 테이블 고증" }),
+  });
+}
+
+export const ClaudeLockedRoomCipherArchaeologySchema = z.object({
+  mysteryLogicScore: z.number().int().min(0).max(100),
+  lockedRoomFloorplanAndSightlineKo: z.string(),
+  corkboardRedYarnAndCipherRuleKo: z.string(),
+  archaeologyGridAndArtUvAuditKo: z.string(),
+});
+export type ClaudeLockedRoomCipherArchaeology = z.infer<typeof ClaudeLockedRoomCipherArchaeologySchema>;
+
+export async function runClaudeLockedRoomAlibiCipherArchaeologyDirector(
+  input: Wave33CostCapAssistInput,
+  options: RunWave33CostCapAssistOptions = {},
+): Promise<Wave33CostCapAssistResult<ClaudeLockedRoomCipherArchaeology>> {
+  return executeWave33CostCapTask({
+    taskId: "cost-cap:locked-room-alibi-cipher-archaeology-director",
+    systemPrompt: "당신은 본격 추리물 밀실 트릭 평면도·용의자 시야각/알리바이 매트릭스·레터로킹 고전 암호·유적 발굴 격자/미술품 UV 감정을 총괄하는 미스터리 감독입니다.",
+    userInstruction: "밀실 트릭 아이소메트릭 평면도와 시야각, 코르크보드 붉은 실 현수선과 암호/레터로킹, 유적 발굴 격자 및 미술품 UV 형광 감정을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeLockedRoomCipherArchaeologySchema,
+    options,
+    normalize: (p) => Object.freeze({ mysteryLogicScore: clampWave33(p.mysteryLogicScore, 0, 100, 98), lockedRoomFloorplanAndSightlineKo: cleanSingleLineText(p.lockedRoomFloorplanAndSightlineKo, 180), corkboardRedYarnAndCipherRuleKo: cleanSingleLineText(p.corkboardRedYarnAndCipherRuleKo, 180), archaeologyGridAndArtUvAuditKo: cleanSingleLineText(p.archaeologyGridAndArtUvAuditKo, 180) }),
+    fallback: () => Object.freeze({ mysteryLogicScore: 98, lockedRoomFloorplanAndSightlineKo: "밀실 사건 해명용 아이소메트릭 단면도에서 문 잠금쇠·환기구 치수·목격자 시야각 콘(Sightline Cone)과 열차 시각표 알리바이 일치", corkboardRedYarnAndCipherRuleKo: "수사 코르크보드 압정 간 붉은 실 중력 현수선(Catenary Sag) 적용 및 알베르티 암호 원판 정렬·봉랍 레터로킹 접기 순서 고정", archaeologyGridAndArtUvAuditKo: "발굴 트렌치 1×1m 수평 실 격자·북쪽 화살표 스케일 보드 배치 및 유화 위작 UV 조사 시 후대 덧칠 부위 암자색 형광 검출" }),
+  });
+}
