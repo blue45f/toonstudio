@@ -735,7 +735,7 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span data-studio-brushlab-quality-telemetry="true">{tx("GGX·GhostWash·와류·브러시랩")}: {activeUniversalTelemetry.competitorQualityEval.ggxSpecularBrdf.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.mudEliminationGain01.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.fluidVorticityForceMagnitude.toFixed(1)}/{activeUniversalTelemetry.competitorQualityEval.brushLabCompositeScore100}점</span>
           <span>·</span>
-          <span data-studio-brushlab-soak-optimal-badge="true">{tx("8h Soak·드리프트·최적프로파일")}: {(activeUniversalTelemetry.competitorQualityEval.soak8hTotalDabs / 1_000_000).toFixed(1)}M댑/{activeUniversalTelemetry.competitorQualityEval.soak8hFrameDriftPct}%/{activeUniversalTelemetry.competitorQualityEval.soak8hGpuHeapGrowthMb}MB</span>
+          <span data-studio-brushlab-soak-optimal-badge="true">{tx("8h Soak·드리프트·Spectral38·Mixbox7D·p5Bleed")}: {(activeUniversalTelemetry.competitorQualityEval.soak8hTotalDabs / 1_000_000).toFixed(1)}M댑/{activeUniversalTelemetry.competitorQualityEval.soak8hFrameDriftPct}%/+{Math.round(activeUniversalTelemetry.competitorQualityEval.spectral38ChromaGain01 * 100)}%/{activeUniversalTelemetry.competitorQualityEval.p5BrushGrownVerticesCount}v</span>
           <span>·</span>
           <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>

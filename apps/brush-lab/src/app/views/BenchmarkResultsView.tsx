@@ -6,6 +6,11 @@ import {
   runMultiEngineBrushMatrixBenchmark,
   selectOptimalServiceBrushConfiguration,
 } from "../../bench/metrics/competitor-quality-bench";
+import {
+  evaluateMixbox7DLatentPigmentMix,
+  evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
+  evaluateSpectral38BandKubelkaMunkMix,
+} from "../../engine/brush-engine/competitor-quality-kernels";
 import { downloadJson } from "../../platform/download";
 import { useLab } from "../shell/lab-context";
 
@@ -20,11 +25,51 @@ export function BenchmarkResultsView() {
   const [seed, setSeed] = useState<number>(20261027);
   const [promotedOnly, setPromotedOnly] = useState<boolean>(false);
   const [appliedBanner, setAppliedBanner] = useState<string | null>(null);
+  const [pigmentMixRatio01, setPigmentMixRatio01] = useState<number>(0.5);
 
   const summaryReport = useMemo(() => runBrushLabCompetitorQualityBenchmark(seed), [seed]);
   const engineMatrix = useMemo(() => runMultiEngineBrushMatrixBenchmark(seed), [seed]);
   const soakHorizons = useMemo(() => runLongDurationDrawingSoakBenchmark(), []);
   const optimalProfile = useMemo(() => selectOptimalServiceBrushConfiguration(seed), [seed]);
+  const liveSpectralMix = useMemo(
+    () =>
+      evaluateSpectral38BandKubelkaMunkMix({
+        colorASrgb01: { r: 0.98, g: 0.88, b: 0.05 },
+        colorBSrgb01: { r: 0.04, g: 0.16, b: 0.62 },
+        factorA: 1 - pigmentMixRatio01,
+        factorB: pigmentMixRatio01,
+        tintingStrengthA: 1.0,
+        tintingStrengthB: 1.15,
+      }),
+    [pigmentMixRatio01],
+  );
+  const liveMixbox7d = useMemo(
+    () =>
+      evaluateMixbox7DLatentPigmentMix(
+        { r: 0.99, g: 0.85, b: 0.02 },
+        { r: 0.05, g: 0.14, b: 0.58 },
+        pigmentMixRatio01,
+      ),
+    [pigmentMixRatio01],
+  );
+  const liveP5Bleed = useMemo(
+    () =>
+      evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure({
+        basePolygon: [
+          { x: 10, y: 10 },
+          { x: 50, y: 10 },
+          { x: 50, y: 50 },
+          { x: 10, y: 50 },
+        ],
+        bleedStrength01: pigmentMixRatio01,
+        bleedDirection: "out",
+        growthIterations: 2,
+        strokeLengthPx: 120,
+        sampleArcPosPx: 54,
+        seed,
+      }),
+    [pigmentMixRatio01, seed],
+  );
 
   const visibleEngines = promotedOnly
     ? engineMatrix.filter((row) => row.promotedToService)
@@ -117,7 +162,7 @@ export function BenchmarkResultsView() {
             aria-pressed={promotedOnly}
             onClick={() => setPromotedOnly((v) => !v)}
           >
-            {promotedOnly ? "전체 8대 엔진 모두 보기" : "실서비스 승격 엔진(7종)만 필터"}
+            {promotedOnly ? "전체 12대 엔진 모두 보기" : "실서비스 승격 엔진(11종)만 필터"}
           </button>
           <button
             type="button"
@@ -146,7 +191,7 @@ export function BenchmarkResultsView() {
       <dl className="lab-stats" data-testid="lab-benchmark-kpi-strip">
         <div>
           <dt title="REA 정적·시맨틱 분석 누락 파일 수 (0이어야 합격)">REA 미분석 파일</dt>
-          <dd className="lab-verdict-PASS">{summaryReport.reaNotExaminedCount}건 (87/87 완결)</dd>
+          <dd className="lab-verdict-PASS">{summaryReport.reaWave36NotExaminedCount}건 ({summaryReport.reaWave36RelevantFiles}/143 완결)</dd>
         </div>
         <div>
           <dt title="주기 종이 질감 타일 경계 이음새 점수 (< 0.05 합격)">종이 이음새 점수</dt>
@@ -158,7 +203,15 @@ export function BenchmarkResultsView() {
         </div>
         <div>
           <dt title="Tegaki Ghost-Buffer 점근 워시를 통한 획 내부 탁해짐 제거 이득">무탁점 워시 이득</dt>
-          <dd className="lab-mono">+{ (summaryReport.ghostWashMudEliminationGain01 * 100).toFixed(1) }%</dd>
+          <dd className="lab-mono">+{(summaryReport.ghostWashMudEliminationGain01 * 100).toFixed(1)}%</dd>
+        </div>
+        <div>
+          <dt title="Spectral.js 38밴드 Kubelka-Munk OKLab 채도 보존 이득">38밴드 KM 채도 이득</dt>
+          <dd className="lab-mono">+{(summaryReport.spectral38ChromaPreservationGain01 * 100).toFixed(1)}%</dd>
+        </div>
+        <div>
+          <dt title="Mixbox 7차원 잠재 안료 끝점(t=0, t=1) 복원 오차">Mixbox 7D 끝점 오차</dt>
+          <dd className="lab-verdict-PASS">{summaryReport.mixbox7DEndpointIdentityError.toFixed(4)}</dd>
         </div>
         <div>
           <dt title="Cook-Torrance GGX 미세면 정반사 임파스토 하이라이트 강도">GGX 임파스토 BRDF</dt>
@@ -171,6 +224,27 @@ export function BenchmarkResultsView() {
           </dd>
         </div>
       </dl>
+
+      <div className="lab-banner" data-testid="lab-wave36-interactive-inspector">
+        <label htmlFor="lab-wave36-pigment-ratio-slider">
+          <strong>12대 경쟁 엔진 실시간 분광 혼색(Spectral 38밴드 · Mixbox 7D) & 수채 번짐(p5.brush) 시뮬레이터:</strong>{" "}
+          <span className="lab-mono">{Math.round(pigmentMixRatio01 * 100)}%</span>
+        </label>
+        <input
+          id="lab-wave36-pigment-ratio-slider"
+          type="range"
+          min={0.05}
+          max={0.95}
+          step={0.05}
+          value={pigmentMixRatio01}
+          aria-valuetext={`${Math.round(pigmentMixRatio01 * 100)}% 안료 혼합 및 수채 번짐 강도`}
+          data-testid="lab-wave36-pigment-ratio-slider"
+          onChange={(e) => setPigmentMixRatio01(Number(e.target.value))}
+        />
+        <p className="lab-mono" data-testid="lab-wave36-live-readout">
+          Spectral38 OKLab(L={liveSpectralMix.oklabLCh.L.toFixed(2)}, C={liveSpectralMix.oklabLCh.C.toFixed(2)}, h={liveSpectralMix.oklabLCh.hDeg.toFixed(1)}°) · 채도 이득 +{(liveSpectralMix.chromaPreservationGain01 * 100).toFixed(1)}% · Mixbox7D RGB({Math.round(liveMixbox7d.mixedRgb01.r * 255)},{Math.round(liveMixbox7d.mixedRgb01.g * 255)},{Math.round(liveMixbox7d.mixedRgb01.b * 255)}) · p5.brush 수채 다각형 정점 {liveP5Bleed.grownVertices.length}개(면적 {liveP5Bleed.polygonAreaPx2}px² · 초가우시안 필압 {liveP5Bleed.superGaussianPressure01})
+        </p>
+      </div>
 
       <div
         tabIndex={0}

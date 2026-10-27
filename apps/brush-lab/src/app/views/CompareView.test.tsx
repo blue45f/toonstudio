@@ -240,7 +240,11 @@ describe("CompareView", { timeout: 30_000 }, () => {
     expect(screen.getByTestId("lab-soak-table-region").textContent).toContain("21,600,000 dabs");
 
     fireEvent.click(screen.getByTestId("lab-Filter-promoted-engines-btn"));
-    expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("7개 표시");
+    expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("11개 표시");
+
+    fireEvent.change(screen.getByTestId("lab-wave36-pigment-ratio-slider"), { target: { value: "0.65" } });
+    expect(screen.getByTestId("lab-wave36-pigment-ratio-slider").getAttribute("aria-valuetext")).toContain("65%");
+    expect(screen.getByTestId("lab-wave36-live-readout").textContent).toContain("Spectral38 OKLab");
 
     fireEvent.click(screen.getByTestId("lab-apply-optimal-profile-btn"));
     expect(store.get().presetId).toBe("watercolor-wet");

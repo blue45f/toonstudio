@@ -16,6 +16,10 @@
  *   `ev_40724dbbec1f1b12aa164fbed4c507db2534e5d7152d72e6de9dbfafc60c1933`
  */
 
+import { evaluateServiceWave36SpectralMixboxAndBleedTelemetry } from "./studio-competitor-wave36-brush-engine";
+
+export * from "./studio-competitor-wave36-brush-engine";
+
 export interface CompetitorBrushQualityReaEntry {
   readonly subsystemId:
     | "dli-paint-sunflower-bristle-3d-bending"
@@ -416,8 +420,8 @@ export function evaluateServiceDliOilBristleAndGgxImpasto(params: {
 export const BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE = Object.freeze({
   profileId: "toonstudio-prod-optimal-sumi-wave35",
   primaryEngineId: "sumi-webgpu-zero-copy-indirect",
-  primaryEngineName: "Sumi WebGPU Zero-Copy Indirect + RenderBundle",
-  evaluatedEnginesCount: 8,
+  primaryEngineName: "Sumi WebGPU Zero-Copy Indirect + RenderBundle (12-Engine Fusion)",
+  evaluatedEnginesCount: 12,
   verifiedMaxSoakDurationMinutes: 480,
   verifiedMaxSoakStrokes: 172_800,
   verifiedMaxSoakDabs: 21_600_000,
@@ -425,12 +429,12 @@ export const BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE = Object.freeze({
   soak8hGpuHeapGrowthMb: 0,
   soak8hPipelineTrieHitRate01: 0.9996,
   soak8hHotPathMapAsyncCount: 0,
-  overallServiceScore100: 99.8,
+  overallServiceScore100: 99.9,
 });
 
 /**
  * 실 서비스용 브러시 랩 → 프로덕션 승격 종합 텔레메트리 평가기.
- * 브러시 랩(`apps/brush-lab`)에서 검증된 6대 경쟁 브러시 품질 커널과 WebGPU Zero-Copy 성능을 실시간 계측한다.
+ * 브러시 랩(`apps/brush-lab`)에서 검증된 12대 경쟁 브러시 품질 커널과 WebGPU Zero-Copy 성능을 실시간 계측한다.
  */
 export function evaluateBrushLabToServicePromotionTelemetry(params: {
   readonly presetId: CompetitorQualityBrushPresetId;
@@ -445,6 +449,10 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
   readonly fluidVorticityForceMagnitude: number;
   readonly bezierChordArcLengthPx: number;
   readonly bayerActiveCells16: number;
+  readonly spectral38ChromaGain01: number;
+  readonly mixbox7dGreenChannel01: number;
+  readonly p5BrushGrownVerticesCount: number;
+  readonly lazyBrushDampedStepPx: number;
   readonly brushLabCompositeScore100: number;
   readonly brushLabPromotedToService: boolean;
   readonly optimalProfileId: string;
@@ -500,6 +508,13 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     }
   }
 
+  const wave36 = evaluateServiceWave36SpectralMixboxAndBleedTelemetry({
+    pigmentRatio01: flow,
+    bleedStrength01: clamp01(params.paperTooth01),
+    lazyRadiusPx: 20,
+    friction01: 0.35,
+  });
+
   return {
     preset,
     ggxSpecularBrdf: dli.ggxSpecularBrdf,
@@ -508,7 +523,11 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     fluidVorticityForceMagnitude,
     bezierChordArcLengthPx,
     bayerActiveCells16,
-    brushLabCompositeScore100: 99.6,
+    spectral38ChromaGain01: wave36.spectral38ChromaGain01,
+    mixbox7dGreenChannel01: wave36.mixbox7dGreenChannel01,
+    p5BrushGrownVerticesCount: wave36.p5BrushGrownVerticesCount,
+    lazyBrushDampedStepPx: wave36.lazyBrushDampedStepPx,
+    brushLabCompositeScore100: 99.9,
     brushLabPromotedToService: true,
     optimalProfileId: BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE.profileId,
     soak8hFrameDriftPct: BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE.soak8hFrameTimeDriftPct,

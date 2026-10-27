@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   COMPETITOR_BRUSH_QUALITY_REA_EVIDENCE,
+  COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE,
   evaluateDliSunflowerBristleAndGgxImpasto,
+  evaluateLazySimplexAndFlatnessBezier,
+  evaluateMixbox7DLatentPigmentMix,
+  evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
   evaluateSignaturePadCatmullBezierAndAtramentInk,
+  evaluateSpectral38BandKubelkaMunkMix,
   evaluateTegakiGhostBufferWashAndBayerTone,
   evaluateWebGlFluidVorticityAndDyeAdvection,
   interpolateRybToRgbTrilinear,
@@ -140,13 +145,69 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(report.promotionGatePassed).toBe(true);
   });
 
-  it("8종 브러시 엔진 비교 매트릭스와 8시간 장시간 드로잉(Soak) 벤치마크에서 최적 실서비스 구성을 자동 도출한다", () => {
+  it("12종 브러시 엔진 비교 매트릭스와 Wave 36(Spectral 38밴드·Mixbox 7D·p5.brush·LazyBrush·Simplex·Points-on-Curve, 143파일) 및 8시간 장시간 드로잉(Soak) 벤치마크에서 최적 실서비스 구성을 자동 도출한다", () => {
+    expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.relevantFiles).toBe(143);
+    expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.parsedJavaScriptFiles).toBe(143);
+    expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.notExaminedCount).toBe(0);
+    expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.visitedAstNodes).toBe(114706);
+    expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.dataFlowRelations).toBe(51007);
+
+    const spec38 = evaluateSpectral38BandKubelkaMunkMix({
+      colorASrgb01: { r: 0.98, g: 0.88, b: 0.05 },
+      colorBSrgb01: { r: 0.04, g: 0.16, b: 0.62 },
+      factorA: 0.5,
+      factorB: 0.5,
+    });
+    expect(spec38.spectralReflectance38).toHaveLength(38);
+    expect(spec38.chromaPreservationGain01).toBeGreaterThan(0.02);
+
+    const mb7d = evaluateMixbox7DLatentPigmentMix(
+      { r: 0.99, g: 0.85, b: 0.02 },
+      { r: 0.05, g: 0.14, b: 0.58 },
+      0.5,
+    );
+    expect(mb7d.endpointIdentityError).toBe(0);
+    expect(mb7d.mixedRgb01.g).toBeGreaterThan(mb7d.mixedRgb01.r);
+
+    const p5Bleed = evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure({
+      basePolygon: [
+        { x: 10, y: 10 },
+        { x: 50, y: 10 },
+        { x: 50, y: 50 },
+        { x: 10, y: 50 },
+      ],
+      bleedStrength01: 0.45,
+      bleedDirection: "out",
+      growthIterations: 2,
+      strokeLengthPx: 120,
+      sampleArcPosPx: 54,
+    });
+    expect(p5Bleed.grownVertices).toHaveLength(16);
+    expect(p5Bleed.superGaussianPressure01).toBeGreaterThan(0.5);
+
+    const lazySimplex = evaluateLazySimplexAndFlatnessBezier({
+      brushPoint: { x: 10, y: 10 },
+      pointerPoint: { x: 48, y: 36 },
+      lazyRadiusPx: 20,
+      friction01: 0.35,
+      sampleCoord: { x: 2.4, y: 1.8 },
+      curveControlPoints: [
+        { x: 0, y: 0 },
+        { x: 20, y: 35 },
+        { x: 45, y: -15 },
+        { x: 70, y: 20 },
+      ],
+      flatnessTolerance: 0.5,
+    });
+    expect(lazySimplex.hasMovedOutsideDeadZone).toBe(true);
+    expect(lazySimplex.subdividedCurvePoints.length).toBeGreaterThan(4);
+
     const matrix = runMultiEngineBrushMatrixBenchmark(20261027);
-    expect(matrix).toHaveLength(8);
+    expect(matrix).toHaveLength(12);
     expect(matrix[0]?.engineId).toBe("sumi-webgpu-zero-copy-indirect");
     expect(matrix[0]?.hotPathMapAsyncCount).toBe(0);
     expect(matrix[0]?.determinismVerified).toBe(true);
-    expect(matrix[0]?.compositeScore100).toBeGreaterThanOrEqual(99);
+    expect(matrix[0]?.compositeScore100).toBeGreaterThanOrEqual(99.8);
     expect(matrix[0]?.promotedToService).toBe(true);
 
     const soak = runLongDurationDrawingSoakBenchmark();
@@ -166,6 +227,6 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(optimal.selectedPrimaryEngineId).toBe("sumi-webgpu-zero-copy-indirect");
     expect(optimal.verified8hFrameDriftPct).toBeLessThanOrEqual(1.0);
     expect(optimal.verified8hGpuHeapGrowthMb).toBe(0);
-    expect(optimal.verifiedCompositeScore100).toBeGreaterThanOrEqual(99.5);
+    expect(optimal.verifiedCompositeScore100).toBeGreaterThanOrEqual(99.8);
   });
 });

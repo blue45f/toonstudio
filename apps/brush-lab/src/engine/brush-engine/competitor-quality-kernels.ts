@@ -763,3 +763,5 @@ export function synthesizeSumiUltraQualityTextureDab(params: {
     meanGrainDeposit01: activeCount > 0 ? depositSum / activeCount : 0,
   };
 }
+
+export * from "./competitor-wave36-kernels";
