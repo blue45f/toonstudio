@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import {
   creatorProfileHref,
   showcaseGalleryHref,
-} from "./publishing/showcase-links";
-import { STUDIO_RASTER_ASSETS } from "./render/studio-raster-assets";
-import { BUBBLE_VARIANTS } from "./studio-assets";
-import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
+} from "./showcase-links";
+import { STUDIO_RASTER_ASSETS } from "../render/studio-raster-assets";
+import { BUBBLE_VARIANTS } from "../studio-assets";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 
 import {
   deleteComment,

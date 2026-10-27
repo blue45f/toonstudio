@@ -101,6 +101,19 @@ describe("WorkspaceHomeRoute", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  it("opens the authentication modal when clicking the sign-in button on the welcome gate", async () => {
+    renderWithSession(visitorSession, "/home");
+    fireEvent.click(screen.getByRole("button", { name: "로그인하기" }));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
+  it("opens the authentication modal when clicking the sign-in button in the guest mode banner", async () => {
+    startGuestSession();
+    renderWithSession(visitorSession, "/home");
+    fireEvent.click(screen.getByRole("button", { name: "로그인하고 저장하기" }));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
   it("shows a loading state while the session is not ready", () => {
     renderWithSession(loadingSession, "/home");
     expect(screen.getByLabelText("ToonStudio")).toBeTruthy();

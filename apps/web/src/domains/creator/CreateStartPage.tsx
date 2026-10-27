@@ -23,6 +23,7 @@ import {
   studioProjectLibraryTypeLabel,
 } from "./studio-shell/studio-project-library-management-model";
 import { useStudioProjectLibrary } from "./studio-shell/useStudioProjectLibrary";
+import { useResolvedStudioProjectThumbnailUrl } from "./studio-shell/useStudioProjectThumbnailUrl";
 import {
   isMyStoryTemplateId,
   MY_STORY_TEMPLATE_IDS,
@@ -72,10 +73,11 @@ function useRecentStudioProjects(
  */
 function RecentProjectThumb({ project }: { readonly project: StudioProjectLibraryEntry }) {
   const [failed, setFailed] = useState(false);
-  if (project.thumbnailUrl && !failed) {
+  const thumbnailUrl = useResolvedStudioProjectThumbnailUrl(project.thumbnailUrl);
+  if (thumbnailUrl && !failed) {
     return (
       <img
-        src={project.thumbnailUrl}
+        src={thumbnailUrl}
         alt=""
         aria-hidden
         loading="lazy"

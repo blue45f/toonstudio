@@ -1,5 +1,5 @@
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
-import { Suspense, useEffect, useState, type ComponentType } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 
 import { safeAuthProfileImageSrc } from "./auth-menu-profile-image";
 import { AuthMenuTrigger } from "./auth-menu-trigger";
@@ -13,10 +13,27 @@ type AuthMenuProps = {
   defaultOpen?: boolean;
   defaultMenuOpen?: boolean;
   defaultMode?: "login" | "signup";
+  headless?: boolean;
+  requestSeq?: number;
+  shouldHandleRequests?: () => boolean;
 };
 type AuthMenuModule = { default: ComponentType<AuthMenuProps> };
 
 let authMenuPromise: Promise<AuthMenuModule> | null = null;
+const interactiveSubscribers = new Set<symbol>();
+const headlessSubscribers = new Set<symbol>();
+
+function canHandleAuthModalRequest(id: symbol, headless: boolean): boolean {
+  if (!headless) {
+    const activeInteractive = Array.from(interactiveSubscribers).at(-1);
+    return activeInteractive === undefined || activeInteractive === id;
+  }
+  if (interactiveSubscribers.size > 0) {
+    return false;
+  }
+  const activeHeadless = Array.from(headlessSubscribers).at(-1);
+  return activeHeadless === undefined || activeHeadless === id;
+}
 
 function loadAuthMenu(): Promise<AuthMenuModule> {
   authMenuPromise ??= import("./auth-menu").then(
@@ -80,23 +97,48 @@ function AuthMenuFallback({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function AuthMenuShell() {
+export function AuthMenuShell({
+  headless = false,
+}: {
+  readonly headless?: boolean;
+} = {}) {
   const { status } = useSession();
+  const instanceIdRef = useRef<symbol | null>(null);
+  if (instanceIdRef.current === null) {
+    instanceIdRef.current = Symbol(headless ? "auth-modal-host" : "auth-menu-shell");
+  }
+  const instanceId = instanceIdRef.current;
   const [enabled, setEnabled] = useState(false);
   const [defaultOpen, setDefaultOpen] = useState(false);
   const [defaultMenuOpen, setDefaultMenuOpen] = useState(false);
   const [defaultMode, setDefaultMode] = useState<"login" | "signup">("login");
+  const [requestSeq, setRequestSeq] = useState(0);
+
+  const shouldHandleRequests = useCallback(
+    () => canHandleAuthModalRequest(instanceId, headless),
+    [headless, instanceId],
+  );
+
+  useEffect(() => {
+    const registry = headless ? headlessSubscribers : interactiveSubscribers;
+    registry.add(instanceId);
+    return () => {
+      registry.delete(instanceId);
+    };
+  }, [headless, instanceId]);
 
   useEffect(
     () =>
       subscribeAuthModalRequests((detail) => {
         if (status === "authenticated") return;
+        if (!shouldHandleRequests()) return;
         setDefaultMode(detail.mode ?? "login");
         setDefaultOpen(true);
         setDefaultMenuOpen(false);
+        setRequestSeq((seq) => seq + 1);
         setEnabled(true);
       }),
-    [status]
+    [shouldHandleRequests, status]
   );
 
   const openAuth = () => {
@@ -104,20 +146,33 @@ export function AuthMenuShell() {
     setDefaultMode("login");
     setDefaultOpen(!authenticated);
     setDefaultMenuOpen(authenticated);
+    setRequestSeq((seq) => seq + 1);
     setEnabled(true);
   };
 
   if (!enabled) {
-    return <AuthMenuFallback onClick={openAuth} />;
+    return headless ? null : <AuthMenuFallback onClick={openAuth} />;
   }
 
   return (
-    <Suspense fallback={<AuthMenuFallback onClick={openAuth} />}>
+    <Suspense fallback={headless ? null : <AuthMenuFallback onClick={openAuth} />}>
       <AuthMenu
         defaultOpen={defaultOpen}
         defaultMenuOpen={defaultMenuOpen}
         defaultMode={defaultMode}
+        headless={headless}
+        requestSeq={requestSeq}
+        shouldHandleRequests={shouldHandleRequests}
       />
     </Suspense>
   );
+}
+
+/**
+ * 전역 헤더나 작업 상단바의 AuthMenuShell 트리거가 마운트되지 않는 몰입·게이트·보호 경로
+ * (/home 게이트, /market/checkout/:id, /team/people/join, 웹툰 뷰어, 에디터 등)에서도
+ * requestAuthModalOpen 호출이 항상 인증 모달을 열도록 보장하는 헤드리스 호스트.
+ */
+export function AuthModalRequestHost() {
+  return <AuthMenuShell headless />;
 }

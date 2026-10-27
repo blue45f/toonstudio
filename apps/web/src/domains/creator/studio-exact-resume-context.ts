@@ -261,14 +261,23 @@ export function studioExactResumeSourceReady(input: {
   return input.autosaveChecked && !input.hasAutosave && !input.localDocumentLocked;
 }
 
+function isInternalResumePageId(pageId: string): boolean {
+  return /^(?:jam-page|work-instant)-/iu.test(pageId);
+}
+
 export function studioExactResumeSummary(
   context: StudioExactResumeContextV1,
   locale: "ko" | "en",
 ): string {
   const zoom = `${Math.round(context.zoom * 100)}%`;
   const selected = context.selectedElementIds.length;
+  const pageLabel = context.pageId && !isInternalResumePageId(context.pageId)
+    ? context.pageId
+    : locale === "ko"
+      ? "최근 페이지"
+      : "Recent page";
   if (locale === "ko") {
-    return `${context.pageId ?? "최근 페이지"} · 확대 ${zoom}${selected > 0 ? ` · 선택 ${selected}개` : ""}`;
+    return `${pageLabel} · 확대 ${zoom}${selected > 0 ? ` · 선택 ${selected}개` : ""}`;
   }
-  return `${context.pageId ?? "Recent page"} · ${zoom} zoom${selected > 0 ? ` · ${selected} selected` : ""}`;
+  return `${pageLabel} · ${zoom} zoom${selected > 0 ? ` · ${selected} selected` : ""}`;
 }

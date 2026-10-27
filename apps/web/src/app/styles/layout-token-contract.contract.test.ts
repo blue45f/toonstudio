@@ -288,8 +288,8 @@ describe("작업공간+프로젝트 레이아웃 계약 (L2)", () => {
   it("프로젝트(ProductionHubPage) 레일은 240px(15rem)에서 216px(13.5rem)으로 통일된다", () => {
     expect(productionHubPage).toContain("lg:grid-cols-[13.5rem_minmax(0,1fr)]");
     expect(productionHubPage).not.toContain("lg:grid-cols-[15rem_minmax(0,1fr)]");
-    // 루트 폭은 폭 4단의 app(100rem) 선언 표면이라 그대로 유지한다.
-    expect(productionHubPage).toContain("max-w-[100rem]");
+    // 루트 폭은 폭 4단의 app(100rem) 선언 표면(LAYOUT_TOKENS.width.app)을 그대로 유지한다.
+    expect(productionHubPage).toMatch(/max-w-\[100rem\]|LAYOUT_TOKENS\.width\.app/u);
   });
 });
 

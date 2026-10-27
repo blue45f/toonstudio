@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { SectionArt } from "@/shared/components/section-art";
 
+import { AuthModalRequestHost } from "@/domains/auth/public/auth-menu-shell";
 import { GuestEntryButton } from "@/domains/auth/public/guest-entry-button";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -111,6 +112,7 @@ export function WorkspaceHomeRoute({ children }: { readonly children: ReactNode 
   if (status === "authenticated" || isGuest) {
     return (
       <>
+        <AuthModalRequestHost />
         {isGuest && status !== "authenticated" && <GuestModeBanner />}
         {children}
       </>
@@ -123,6 +125,7 @@ export function WorkspaceHomeRoute({ children }: { readonly children: ReactNode 
       aria-labelledby="workspace-gate-title"
       className="relative grid min-h-[70dvh] place-items-center overflow-hidden bg-canvas px-5 py-16"
     >
+      <AuthModalRequestHost />
       <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-canvas/40 via-canvas/70 to-canvas" />
       <div className="relative w-full max-w-md rounded-3xl border border-line bg-panel/90 p-8 text-center shadow-xl">
         <SectionArt

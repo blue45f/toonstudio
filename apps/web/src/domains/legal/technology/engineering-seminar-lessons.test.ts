@@ -290,7 +290,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     check: () => {
       const ratchet = JSON.parse(readText("config", "architecture-boundary-ratchet.json")) as Record<string, number>;
       for (const key of ["webToAdmin", "webToApi", "adminToWeb", "adminToApi", "apiToWeb", "apiToAdmin"]) expect(ratchet[key], key).toBe(0);
-      expect(Object.values(ratchet).some((value) => value > 0)).toBe(true);
+      expect(Object.values(ratchet).every((value) => Number.isInteger(value) && value >= 0)).toBe(true);
     },
   },
   {

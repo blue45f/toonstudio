@@ -29,6 +29,7 @@ vi.mock("@toonstudio/core/fx", () => ({
   suspendBgmForContext: mocks.suspend,
   resumeBgmForContext: mocks.resumeContext,
   setMuted: mocks.setMuted,
+  useClickSfx: vi.fn(),
   useAmbientBgm: () => ({
     enabled: mocks.enabled,
     mood: "",

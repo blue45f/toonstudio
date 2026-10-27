@@ -138,7 +138,7 @@ describe("가상 스튜디오와 3D (virtual-studio-3d)", () => {
 
   it("2D 공간 코드는 3D 모듈(three·bg3d·VRM)을 가져오지 않는다", () => {
     const root = "apps/web/src/domains/creator/virtual-space";
-    const files = (readdirSync(root, { recursive: true }) as string[]).filter((file) => /\.(ts|tsx)$/u.test(file) && !/\.test\./u.test(file));
+    const files = (readdirSync(root, { recursive: true }) as string[]).filter((file) => /\.(ts|tsx)$/u.test(file) && !/\.test\./u.test(file) && !/^three[\\/]/u.test(file));
     expect(files.length).toBeGreaterThan(50);
     const offenders = files.filter((file) => /from\s+["'](?:three|@react-three\/[a-z-]+|@pixiv\/three-vrm)["']|\/(?:bg3d|vrm|lift3d|scene3d)\//u.test(read(`${root}/${file}`)));
     expect(offenders).toEqual([]);

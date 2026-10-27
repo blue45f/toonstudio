@@ -41,7 +41,7 @@ import {
   WorkComments,
   WorkCommunityPanel,
   WorkInspector,
-} from "./CreateWorkPageSections";
+} from "./publishing/CreateWorkPageSections";
 import { CreatorWorkRightsAside } from "./ai-training-consent/CreatorWorkRightsAside";
 import { PublishedWorkReader } from "./PublishedWorkReader";
 import {

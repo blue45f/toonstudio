@@ -713,7 +713,7 @@ export function resolveCreatorPostActionBridgeRoutes(stage: CreatorWorkflowStage
     case "preset":
       return [
         { id: "to-groom", href: "/studio/assets/characters/new?editor=open&stage=groom", koLabel: "헤어 번들 식모로 이동", enLabel: "Next: Hair Bundle Grooming", competitorInspiration: "vroid-studio" },
-        { id: "to-market", href: "/marketplace", koLabel: "BOOTH·3D 캐릭터 소재 탐색", enLabel: "Browse 3D Character Assets", competitorInspiration: "booth-3d" },
+        { id: "to-market", href: "/market/browse", koLabel: "BOOTH·3D 캐릭터 소재 탐색", enLabel: "Browse 3D Character Assets", competitorInspiration: "booth-3d" },
       ];
     case "groom":
       return [

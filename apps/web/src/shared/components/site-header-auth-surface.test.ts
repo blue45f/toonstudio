@@ -10,15 +10,17 @@ import { describe, expect, it } from "vitest";
 describe("site header auth surface", () => {
   it("exposes a single canonical session auth control and never remounts Firebase member auth", () => {
     const header = readFileSync(join(process.cwd(), "apps/web/src/shared/components/site-header.tsx"), "utf8");
+    const app = readFileSync(join(process.cwd(), "apps/web/src/app/App.tsx"), "utf8");
 
-    expect(header).toMatch(/import\s+\{\s*AuthMenuShell\s*\}\s+from\s+"\.\.\/\.\.\/domains\/auth\/components\/auth-menu-shell"/);
-    expect(header).toMatch(/<AuthMenuShell\s*\/>/);
+    expect(header).toMatch(/\bauthMenuSlot\b/);
+    expect(app).toMatch(/import\s+\{\s*AuthMenuShell\s*\}\s+from\s+"@\/domains\/auth\/components\/auth-menu-shell"/);
+    expect(app).toMatch(/authMenuSlot=\{<AuthMenuShell\s*\/>\}/);
 
     expect(header).not.toMatch(/MemberAuth/);
     expect(header).not.toMatch(/member-auth/);
     expect(header).not.toMatch(/firebaseAuth/);
 
-    const authMenuCount = (header.match(/AuthMenuShell/g) ?? []).length;
+    const authMenuCount = (app.match(/AuthMenuShell/g) ?? []).length;
     // import + JSX 사용 2회(또는 주석 포함 여유). 중복 마운트 방지.
     expect(authMenuCount).toBeGreaterThanOrEqual(2);
     expect(authMenuCount).toBeLessThanOrEqual(3);

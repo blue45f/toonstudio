@@ -106,6 +106,15 @@ describe("studio exact resume context", () => {
     writeStudioExactResumeContext(storage, { ...BASE, documentId: "episode-13", pageId: "page-1" });
 
     expect(studioExactResumeSummary(context, "ko")).toBe("page-7 · 확대 175% · 선택 2개");
+    const internalIdContext = writeStudioExactResumeContext(storage, {
+      ...BASE,
+      documentId: "episode-14",
+      pageId: "jam-page-work-instant-mvqdm3y0-7tus",
+      selectedElementIds: [],
+      zoom: 1.01,
+    });
+    expect(studioExactResumeSummary(internalIdContext, "ko")).toBe("최근 페이지 · 확대 101%");
+    expect(studioExactResumeSummary(internalIdContext, "en")).toBe("Recent page · 101% zoom");
     removeStudioExactResumeContext(storage, BASE.projectId, BASE.documentId);
     expect(readStudioExactResumeContext(storage, BASE.projectId, BASE.documentId)).toBeNull();
     expect(readStudioExactResumeContext(storage, BASE.projectId, "episode-13")).not.toBeNull();

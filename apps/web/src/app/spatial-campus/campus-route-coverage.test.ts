@@ -43,9 +43,9 @@ describe("campus route authority coverage", () => {
     expect([...CAMPUS_ROUTE_DISTRICTS.keys()].sort()).toEqual(routes.map((route) => route.id).sort());
     for (const route of routes) expect(campusBinding(route.id, route.path), route.id).not.toBeNull();
   });
-  it("covers all eleven market routes without inventing checkout capability", () => {
+  it("covers all twelve market routes without inventing checkout capability", () => {
     const market = routes.filter((route) => route.id.startsWith("market-"));
-    expect(market).toHaveLength(11);
+    expect(market).toHaveLength(12);
     for (const route of market) expect(campusBinding(route.id, route.path)?.districtId).toBe("market");
     expect(campusBinding("market-checkout", "/market/checkout/item")?.surface).toBe("protected");
   });

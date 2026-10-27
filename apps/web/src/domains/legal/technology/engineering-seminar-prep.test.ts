@@ -99,7 +99,7 @@ const PREP_FACTS: readonly PrepFact[] = [
       expect(ledger).toMatch(/id: "perfect-freehand", displayName: "[^"]+", role: "primary"/u);
       expect(ledger).toMatch(/id: "p5-brush", displayName: "[^"]+", role: "provider"/u);
       expect(ledger).toMatch(/id: "hokusai-wasm", displayName: "[^"]+", role: "primary"/u);
-      expect(ledger).toMatch(/id: "libmypaint-wasm", displayName: "[^"]+", role: "reference"/u);
+      expect(ledger).toMatch(/id: "libmypaint-wasm", displayName: "[^"]+", role: "provider"/u);
     },
   },
   {

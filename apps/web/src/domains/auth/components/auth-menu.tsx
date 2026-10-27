@@ -41,10 +41,16 @@ export function AuthMenu({
   defaultOpen = false,
   defaultMenuOpen = false,
   defaultMode = "login",
+  headless = false,
+  requestSeq = 0,
+  shouldHandleRequests,
 }: {
   defaultOpen?: boolean;
   defaultMenuOpen?: boolean;
   defaultMode?: "login" | "signup";
+  headless?: boolean;
+  requestSeq?: number;
+  shouldHandleRequests?: () => boolean;
 }) {
   const { data: session, status } = useSession();
   const [modal, setModal] = useState(defaultOpen);
@@ -62,19 +68,21 @@ export function AuthMenu({
 
   useEffect(() => {
     if (!defaultOpen) return;
+    if (shouldHandleRequests && !shouldHandleRequests()) return;
     setModalMode(defaultMode);
     setModal(true);
-  }, [defaultMode, defaultOpen]);
+  }, [defaultMode, defaultOpen, requestSeq, shouldHandleRequests]);
 
   useEffect(
     () =>
       subscribeAuthModalRequests((detail) => {
         if (status === "authenticated") return;
+        if (shouldHandleRequests && !shouldHandleRequests()) return;
         setMenuOpen(false);
         setModalMode(detail.mode ?? "login");
         setModal(true);
       }),
-    [status]
+    [shouldHandleRequests, status]
   );
 
   // 관리자 콘솔 링크 노출 — 세션 role(화이트리스트 승격 반영) + /api/admin/me 프로브.
@@ -131,24 +139,30 @@ export function AuthMenu({
   if (status !== "authenticated") {
     return (
       <>
-        <AuthMenuTrigger
-          ref={loginTriggerRef}
-          variant="signed-out"
-          label={t("nav.login")}
-          onClick={() => {
-            setModalMode("login");
-            setModal(true);
-          }}
-        />
+        {!headless ? (
+          <AuthMenuTrigger
+            ref={loginTriggerRef}
+            variant="signed-out"
+            label={t("nav.login")}
+            onClick={() => {
+              setModalMode("login");
+              setModal(true);
+            }}
+          />
+        ) : null}
         {modal && (
           <AuthModal
             onClose={() => setModal(false)}
-            returnFocusRef={loginTriggerRef}
+            returnFocusRef={headless ? undefined : loginTriggerRef}
             initialMode={modalMode}
           />
         )}
       </>
     );
+  }
+
+  if (headless) {
+    return null;
   }
 
   const u = session.user;

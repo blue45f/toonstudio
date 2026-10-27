@@ -297,7 +297,7 @@ export function CalendarPage() {
                 aria-pressed={active}
                 onClick={() => applyBmPreset(bm.id)}
                 className={cn(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
                   active
                     ? "border-accent bg-accent text-canvas shadow-sm"
                     : "border-line bg-card text-fg-2 hover:border-accent/45 hover:text-fg",

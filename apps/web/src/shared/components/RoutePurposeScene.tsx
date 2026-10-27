@@ -31,10 +31,26 @@ import type {
   SiteRouteVisualKind,
   SiteRouteVisualProfile,
 } from "@/shared/lib/site-route-visual";
-import { resolveNanoBananaCardMetaForRouteVisual } from "./site-experience/nano-banana-site-card-meta";
 
 import "./route-purpose-scene.css";
 import "./site-experience/nano-banana-site-ui.css";
+
+const ROUTE_STAGE_PILLS: Record<SiteRouteVisualKind, readonly [string, string, string]> = {
+  workflow: ["nb-workflow-bridge", "STAGE 00 · 통합 창작 동선", "STAGE 00 · WORKFLOW COMPASS"],
+  discover: ["nb-discover-spotlight", "STAGE 01 · 작품 발견 허브", "STAGE 01 · DISCOVERY HUB"],
+  create: ["nb-create-canvas", "STAGE 02 · 창작 캔버스", "STAGE 02 · CREATIVE CANVAS"],
+  planning: ["nb-planning-storylab", "STAGE 02 · 스토리랩 & 기획", "STAGE 02 · STORY LAB"],
+  spatial: ["nb-spatial-stage", "STAGE 02 · 3D 배경 & 포저", "STAGE 02 · 3D SPATIAL STAGE"],
+  assets: ["nb-market-atelier", "STAGE 03 · 에셋 마켓 & 핏", "STAGE 03 · ASSET MARKET"],
+  production: ["nb-production-control", "STAGE 02 · 제작 운영 & 검수", "STAGE 02 · PRODUCTION OPS"],
+  review: ["nb-production-control", "STAGE 02 · 제작 운영 & 검수", "STAGE 02 · PRODUCTION OPS"],
+  publish: ["nb-showcase-premiere", "STAGE 03 · 쇼케이스 & 콜라보", "STAGE 03 · SHOWCASE GALLERY"],
+  learn: ["nb-learn-academy", "STAGE 03 · 드로잉 아카데미", "STAGE 03 · CREATOR ACADEMY"],
+  connect: ["nb-community-plaza", "STAGE 03 · 커뮤니티 광장", "STAGE 03 · COMMUNITY PLAZA"],
+  manage: ["nb-manage-vault", "STAGE 04 · 마이 스페이스", "STAGE 04 · MY SPACE"],
+  trust: ["nb-trust-sanctuary", "STAGE 04 · 신뢰 & 접근성", "STAGE 04 · TRUST SANCTUARY"],
+  play: ["nb-play-fortune", "STAGE 04 · 플레이 & 운세", "STAGE 04 · INTERACTIVE PLAY"],
+};
 
 function toBilingualLocale(locale: string): "ko" | "en" {
   return locale.toLowerCase().split(/[-_]/u)[0] === "ko" ? "ko" : "en";
@@ -191,9 +207,9 @@ export function RoutePurposeScene({
           </div>
           <p
             className="nb-site-purpose-pill"
-            data-atelier-card={resolveNanoBananaCardMetaForRouteVisual(profile.kind).cardId}
+            data-atelier-card={(ROUTE_STAGE_PILLS[profile.kind] ?? ROUTE_STAGE_PILLS.workflow)[0]}
           >
-            <span>{resolveNanoBananaCardMetaForRouteVisual(profile.kind).stageBadge[copyLocale]}</span>
+            <span>{(ROUTE_STAGE_PILLS[profile.kind] ?? ROUTE_STAGE_PILLS.workflow)[copyLocale === "ko" ? 1 : 2]}</span>
           </p>
         </div>
 

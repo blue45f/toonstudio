@@ -24,7 +24,11 @@ async function importShell() {
   vi.resetModules();
   const shell = await import("./auth-menu-shell");
   const intent = await import("@/domains/auth/public/session/auth-modal-intent");
-  return { AuthMenuShell: shell.AuthMenuShell, requestAuthModalOpen: intent.requestAuthModalOpen };
+  return {
+    AuthMenuShell: shell.AuthMenuShell,
+    AuthModalRequestHost: shell.AuthModalRequestHost,
+    requestAuthModalOpen: intent.requestAuthModalOpen,
+  };
 }
 
 beforeEach(() => {
@@ -67,5 +71,35 @@ describe("AuthMenuShell 청크 복구", () => {
     });
 
     expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
+  it("전역 헤더 트리거 없이 AuthModalRequestHost만 마운트된 경로에서도 인증 모달이 열린다", async () => {
+    hoisted.failImport = false;
+    const { AuthModalRequestHost, requestAuthModalOpen } = await importShell();
+
+    render(<AuthModalRequestHost />);
+    await act(async () => {
+      requestAuthModalOpen({ mode: "login", source: "headless-host-test" });
+    });
+
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
+  it("AuthMenuShell과 AuthModalRequestHost가 함께 마운트되어도 모달은 하나만 열린다", async () => {
+    hoisted.failImport = false;
+    const { AuthMenuShell, AuthModalRequestHost, requestAuthModalOpen } = await importShell();
+
+    render(
+      <>
+        <AuthModalRequestHost />
+        <AuthMenuShell />
+      </>,
+    );
+    await act(async () => {
+      requestAuthModalOpen({ mode: "login", source: "dedup-test" });
+    });
+
+    const dialogs = await screen.findAllByRole("dialog");
+    expect(dialogs).toHaveLength(1);
   });
 });

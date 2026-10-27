@@ -42,5 +42,16 @@
   "admin.ops.schedulerState": "스케줄러 상태",
   "admin.ops.snapshotTitleCount": "작품 수",
   "admin.ops.statusDesc": "현재 스냅샷, 스케줄러 상태, 최근 실행 이력을 확인합니다.",
-  "admin.ops.statusTitle": "동기화 상태"
+  "admin.ops.statusTitle": "동기화 상태",
+  "admin.paidOperations.desc": "어드민에서 이 스위치를 켠 경우에만 유료 서비스가 실행됩니다. 끈 상태에서는 유료 호출이 거부되고 무료 기능은 그대로 동작합니다.",
+  "admin.paidOperations.disabled": "유료 운영 중단",
+  "admin.paidOperations.enabled": "유료 운영 중",
+  "admin.paidOperations.freeNote": "무료 기능은 이 스위치와 무관하게 동작합니다.",
+  "admin.paidOperations.loadFailed": "유료 운영 상태를 불러오지 못했습니다. 잠시 후 다시 시도하세요.",
+  "admin.paidOperations.retry": "다시 불러오기",
+  "admin.paidOperations.saveFailed": "유료 운영 상태 저장에 실패했습니다. 잠시 후 다시 시도하세요.",
+  "admin.paidOperations.saving": "저장하는 중…",
+  "admin.paidOperations.title": "유료 운영",
+  "admin.paidOperations.toggleOff": "유료 운영 끄기",
+  "admin.paidOperations.toggleOn": "유료 운영 켜기"
 }

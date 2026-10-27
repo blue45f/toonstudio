@@ -56,9 +56,7 @@ export function TitleReaderReaBridgeCard({
     },
     {
       id: "recommend",
-      href: `/DetailRecommendRedirect?from=${encodeURIComponent(detailPath)}`.startsWith("/Detail")
-        ? "/recommend"
-        : "/explore",
+      href: "/recommend",
       icon: Compass,
       badge: "TAPAS · FOR YOU",
       label: bi("비슷한 결 맞춤 추천", "Similar Story Recommendations"),

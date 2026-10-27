@@ -77,7 +77,7 @@ describe("AdminPaidOperationsToggle", () => {
     );
     render(<AdminPaidOperationsToggle uid="admin" />);
     expect(
-      await screen.findByText("유료 운영 상태를 불러오지 못했습니다."),
+      await screen.findByText("유료 운영 상태를 불러오지 못했습니다. 잠시 후 다시 시도하세요."),
     ).toBeTruthy();
     fireEvent.click(screen.getByText("다시 불러오기"));
     expect(await screen.findByText("유료 운영 중단")).toBeTruthy();

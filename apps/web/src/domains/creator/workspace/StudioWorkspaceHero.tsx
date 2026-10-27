@@ -10,6 +10,7 @@ import {
 import { manuscriptCompletion, type ManuscriptCompletion } from "./studio-workspace-hero-model";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-reader";
 import type { StudioProjectResumeTarget } from "../studio-project-resume-target";
+import { useResolvedStudioProjectThumbnailUrl } from "../studio-shell/useStudioProjectThumbnailUrl";
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 
 function useManuscriptCompletion(projectId: string | null): ManuscriptCompletion | null {
@@ -52,6 +53,7 @@ export function StudioWorkspaceHero({
   const reducedMotion = useReducedMotion();
   const completion = useManuscriptCompletion(project?.id ?? null);
   const percent = completion ? Math.round(completion.ratio * 100) : 0;
+  const thumbnailUrl = useResolvedStudioProjectThumbnailUrl(project?.thumbnailUrl ?? null);
 
   return (
     <motion.section
@@ -61,10 +63,10 @@ export function StudioWorkspaceHero({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
     >
-      {project?.thumbnailUrl ? (
+      {thumbnailUrl ? (
         <div className="workspace-hero-thumbnail" aria-hidden="true">
           <img
-            src={project.thumbnailUrl}
+            src={thumbnailUrl}
             alt=""
             loading="lazy"
             decoding="async"

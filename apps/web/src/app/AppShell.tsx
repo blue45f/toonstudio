@@ -13,7 +13,7 @@ import {
 
 import { ErrorBoundary } from "@/app/errors/error-boundary";
 import { AccountNudgeHost } from "@/domains/auth/components/account-required-nudge";
-import { AuthMenuShell } from "@/domains/auth/components/auth-menu-shell";
+import { AuthMenuShell, AuthModalRequestHost } from "@/domains/auth/components/auth-menu-shell";
 import { GuestMigrationBridge } from "@/domains/auth/components/guest-migration-bridge";
 import { AuthSessionProvider } from "@/domains/auth/components/session-provider";
 import {
@@ -227,6 +227,7 @@ export function AppShell({
       <Suspense fallback={null}><StoreSync /></Suspense>
       <GuestMigrationBridge />
       <AccountNudgeHost />
+      <AuthModalRequestHost />
       {pwaInstallPromptAllowed ? (
         <Suspense fallback={null}><PwaInstallShowcaseHost /></Suspense>
       ) : null}
