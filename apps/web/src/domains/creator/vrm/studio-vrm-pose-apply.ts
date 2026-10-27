@@ -4,7 +4,24 @@ import {
   type StudioHumanoidBoneName,
 } from "../studio-humanoid-bones";
 
-import type { FingerRotationMap, PoseBoneMap, Vec3 } from "./studio-vrm-poser-utils";
+import type {
+  DirectionTarget,
+  FingerRotationMap,
+  PoseBone,
+  PoseBoneMap,
+  Vec3,
+} from "./studio-vrm-poser-utils";
+
+const LIMB_DIRECTION_BONE_SET: ReadonlySet<StudioHumanoidBoneName> = new Set([
+  "leftUpperArm",
+  "rightUpperArm",
+  "leftLowerArm",
+  "rightLowerArm",
+  "leftUpperLeg",
+  "rightUpperLeg",
+  "leftLowerLeg",
+  "rightLowerLeg",
+]);
 
 export interface StudioVrmPoseApplyInput {
   readonly currentBones: PoseBoneMap;
@@ -62,6 +79,32 @@ function extractIncomingBodyRotation(value: unknown): Vec3 | null {
   if (value == null || typeof value !== "object") return null;
   const rotation = (value as { rotation?: unknown }).rotation;
   return asFiniteTriple(rotation);
+}
+
+function extractIncomingLimbDirection(
+  bone: StudioHumanoidBoneName,
+  value: unknown,
+): DirectionTarget | null {
+  if (!LIMB_DIRECTION_BONE_SET.has(bone)) return null;
+  if (value == null || typeof value !== "object") return null;
+  const direction = (value as { direction?: unknown }).direction;
+  const tuple = asFiniteTriple(direction);
+  if (tuple) return tuple;
+  if (direction != null && typeof direction === "object" && !Array.isArray(direction)) {
+    const candidate = direction as { sideX?: unknown; y?: unknown; z?: unknown };
+    if (
+      typeof candidate.sideX === "number" && Number.isFinite(candidate.sideX)
+      && typeof candidate.y === "number" && Number.isFinite(candidate.y)
+      && (candidate.z === undefined || (typeof candidate.z === "number" && Number.isFinite(candidate.z)))
+    ) {
+      return Object.freeze({
+        sideX: candidate.sideX,
+        y: candidate.y,
+        ...(candidate.z !== undefined ? { z: candidate.z } : {}),
+      });
+    }
+  }
+  return null;
 }
 
 function available(
@@ -150,23 +193,32 @@ export function createStudioVrmPoseApplyPlan(
       continue;
     }
     const incoming = extractIncomingBodyRotation(rawValue);
-    if (!incoming) {
-      skippedInvalid.push(rawBone);
+    if (incoming) {
+      const next = blendRotation(
+        rawBone,
+        input.currentBones[rawBone]?.rotation,
+        incoming,
+        strength,
+        input.clampRotation,
+      );
+      if (!next) {
+        skippedInvalid.push(rawBone);
+        continue;
+      }
+      bones[rawBone] = { rotation: next };
+      appliedBodyBones.push(rawBone);
       continue;
     }
-    const next = blendRotation(
-      rawBone,
-      input.currentBones[rawBone]?.rotation,
-      incoming,
-      strength,
-      input.clampRotation,
-    );
-    if (!next) {
-      skippedInvalid.push(rawBone);
+    const incomingDirection = extractIncomingLimbDirection(rawBone, rawValue);
+    if (incomingDirection) {
+      if (strength > 0) {
+        const nextSpec: PoseBone = { direction: incomingDirection };
+        bones[rawBone] = nextSpec;
+      }
+      appliedBodyBones.push(rawBone);
       continue;
     }
-    bones[rawBone] = { rotation: next };
-    appliedBodyBones.push(rawBone);
+    skippedInvalid.push(rawBone);
   }
 
   for (const [rawBone, rawValue] of Object.entries(input.incomingFingerEdits ?? {})) {

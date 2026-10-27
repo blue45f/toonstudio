@@ -115,17 +115,15 @@ function idleHands(rollDeg = 1.5): PoseBoneMapSpec {
 
 // 편안한 차렷 기본 사지 — 팔·다리는 거의 내리고, 손목은 직선에 가깝게.
 const BASE_LIMBS: PoseBoneMapSpec = {
-  leftUpperArm: aim(0.28, -0.96, 0.02),
-  rightUpperArm: aim(0.3, -0.95, 0.03),
-  leftLowerArm: aim(0.14, -0.98, 0.14),
-  rightLowerArm: aim(0.16, -0.97, 0.16),
+  hips: rotate([0, 0, 0]), spine: rotate([0, 0, 0]), chest: rotate([0, 0, 0]),
+  neck: rotate([0, 0, 0]), head: rotate([0, 0, 0]),
+  leftShoulder: rotate([0, 0, 0]), rightShoulder: rotate([0, 0, 0]),
+  leftUpperArm: aim(0.28, -0.96, 0.02), rightUpperArm: aim(0.3, -0.95, 0.03),
+  leftLowerArm: aim(0.14, -0.98, 0.14), rightLowerArm: aim(0.16, -0.97, 0.16),
   ...idleHands(1.5),
-  leftUpperLeg: aim(0.06, -1),
-  rightUpperLeg: aim(0.08, -1),
-  leftLowerLeg: aim(0.02, -1),
-  rightLowerLeg: aim(0.03, -1),
-  leftFoot: rotate([0, 0, 0]),
-  rightFoot: rotate([0, 0, 0]),
+  leftUpperLeg: aim(0.06, -1), rightUpperLeg: aim(0.08, -1),
+  leftLowerLeg: aim(0.02, -1), rightLowerLeg: aim(0.03, -1),
+  leftFoot: rotate([0, 0, 0]), rightFoot: rotate([0, 0, 0]),
 };
 
 function basePose(core: PoseBoneMapSpec = {}): PoseBoneMapSpec {

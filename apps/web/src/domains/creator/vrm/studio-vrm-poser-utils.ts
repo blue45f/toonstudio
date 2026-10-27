@@ -75,18 +75,15 @@ function rotate(rotation: Vec3): PoseBone {
 }
 
 const NATURAL_LIMBS: PoseBoneMap = {
-  leftUpperArm: aim(0.35, -0.94),
-  rightUpperArm: aim(0.35, -0.94),
-  leftLowerArm: aim(0.2, -0.98),
-  rightLowerArm: aim(0.2, -0.98),
-  leftHand: rotate([0, 0, d(2)]),
-  rightHand: rotate([0, 0, d(-2)]),
-  leftUpperLeg: aim(0.08, -1),
-  rightUpperLeg: aim(0.08, -1),
-  leftLowerLeg: aim(0.03, -1),
-  rightLowerLeg: aim(0.03, -1),
-  leftFoot: rotate([0, 0, 0]),
-  rightFoot: rotate([0, 0, 0]),
+  hips: rotate([0, 0, 0]), spine: rotate([0, 0, 0]), chest: rotate([0, 0, 0]),
+  neck: rotate([0, 0, 0]), head: rotate([0, 0, 0]),
+  leftShoulder: rotate([0, 0, 0]), rightShoulder: rotate([0, 0, 0]),
+  leftUpperArm: aim(0.35, -0.94), rightUpperArm: aim(0.35, -0.94),
+  leftLowerArm: aim(0.2, -0.98), rightLowerArm: aim(0.2, -0.98),
+  leftHand: rotate([0, 0, d(2)]), rightHand: rotate([0, 0, d(-2)]),
+  leftUpperLeg: aim(0.08, -1), rightUpperLeg: aim(0.08, -1),
+  leftLowerLeg: aim(0.03, -1), rightLowerLeg: aim(0.03, -1),
+  leftFoot: rotate([0, 0, 0]), rightFoot: rotate([0, 0, 0]),
 };
 
 function naturalPose(core: PoseBoneMap = {}) {

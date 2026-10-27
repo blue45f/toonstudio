@@ -38,12 +38,12 @@ export function ProductionLayerOwnersMergeGateSuite() {
         "LAYEROWNERS 자동 리뷰 라우팅 & 보호 회차 병합 게이트 (GitHub Code Review + Airtable REA 내재화)",
         "LAYEROWNERS Auto-Review Routing & Protected Cut Merge Gate (GitHub + Airtable REA)",
       )}
-      subtitle={bt(
+      description={bt(
         "레이어 경로 패턴별 필수 오너 그룹(@subteam) 서명, 신규 리비전 업로드 시 기존 승인 자동 무효화(Dismiss Stale Approvals), Airtable 양방향 에셋 롤업 및 필드 잠금을 통합합니다.",
         "Unifies LAYEROWNERS pattern sign-offs, stale approval dismissal on new layer revisions, and Airtable linked asset rollups with conditional field locking.",
       )}
       action={
-        <ProductionPill tone={summary.protectedBranchReady ? "good" : "warn"}>
+        <ProductionPill tone={summary.protectedBranchReady ? "success" : "warning"}>
           {summary.protectedBranchReady
             ? bt("보호 브랜치 병합 가능 (Protected Merge Ready)", "Protected Merge Ready")
             : bt(
@@ -175,7 +175,7 @@ export function ProductionLayerOwnersMergeGateSuite() {
                     </div>
                   </td>
                   <td className="px-3 py-2.5">
-                    <ProductionPill tone={mergeable ? "good" : "warn"}>
+                    <ProductionPill tone={mergeable ? "success" : "warning"}>
                       {mergeable
                         ? bt("3대 규격 통과", "All 3 Checks Passed")
                         : bt("검수·규격 대기", "Checks Pending")}

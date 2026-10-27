@@ -259,7 +259,7 @@ export function useStudioVrmPoserPoseEdit(h: StudioVrmPoserHost): void {
   function handlePoseSelect(poseId: string) {
     const pose = findPose(poseId);
     const strippedBones = stripFingerBones(pose.bones);
-    const poseFingers = extractStudioVrmFingerRotations(pose.bones);
+    const poseFingers = extractStudioVrmFingerRotations(pose.bones, pose.id);
     const nextYOffset = pose.yOffset ?? 0;
     const nextTranslations = cloneStudioVrmPoseTranslations(EMPTY_STUDIO_VRM_POSE_TRANSLATIONS);
     const before = captureFullState();

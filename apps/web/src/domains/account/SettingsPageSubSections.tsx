@@ -12,7 +12,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { settingsRevealGroupForEntry } from "./settings-surface-tiers";
@@ -244,13 +244,32 @@ export function SettingsSearchAndRelatedPanel({
   toggleAdvancedGroup,
   openAnchor,
 }: {
-  readonly settingsQuery: string;
-  readonly setSettingsQuery: (next: string) => void;
-  readonly searchResults: readonly SettingsSearchEntry[];
+  readonly settingsQuery?: string;
+  readonly setSettingsQuery?: (next: string) => void;
+  readonly searchResults?: readonly SettingsSearchEntry[];
   readonly advancedOpen: readonly string[];
   readonly toggleAdvancedGroup: (groupId: string) => void;
   readonly openAnchor: (anchor: string) => void;
 }) {
+  const [internalQuery, setInternalQuery] = useState("");
+  const activeQuery = settingsQuery ?? internalQuery;
+  const updateQuery = setSettingsQuery ?? setInternalQuery;
+  const computedResults = useMemo<readonly SettingsSearchEntry[]>(() => {
+    if (searchResults) return searchResults;
+    const q = activeQuery.trim();
+    if (!q) return [];
+    const relatedEntries: SettingsSearchEntry[] = RELATED_SETTINGS.map((item) => ({
+      key: item.href,
+      title: item.title,
+      hint: item.description,
+      keywords: RELATED_SEARCH_KEYWORDS[item.href] ?? "",
+      href: item.href,
+    }));
+    return [...SETTINGS_SEARCH_SECTIONS, ...relatedEntries].filter((entry) =>
+      matchesSettingsQuery(entry, q),
+    );
+  }, [activeQuery, searchResults]);
+
   return (
     <>
       {/* 설정 검색 — 이 화면의 섹션과 다른 설정 화면을 한 번에 찾는다. */}
@@ -263,20 +282,20 @@ export function SettingsSearchAndRelatedPanel({
           <input
             id="settings-search"
             type="search"
-            value={settingsQuery}
-            onChange={(event) => setSettingsQuery(event.target.value)}
+            value={activeQuery}
+            onChange={(event) => updateQuery(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Escape") setSettingsQuery("");
+              if (event.key === "Escape") updateQuery("");
             }}
             placeholder={bi("설정 검색 — 예: 알림, 테마, 백업, 직군", "Search settings — e.g. notifications, theme, backup, role")}
             className="min-h-12 w-full rounded-2xl border border-line bg-panel pl-10 pr-4 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
           />
         </div>
-        {settingsQuery.trim() ? (
+        {activeQuery.trim() ? (
           <div className="mt-2 overflow-hidden rounded-2xl border border-line bg-panel">
-            {searchResults.length > 0 ? (
+            {computedResults.length > 0 ? (
               <ul aria-label={bi("설정 검색 결과", "Settings search results")}>
-                {searchResults.map((entry) => (
+                {computedResults.map((entry) => (
                   <li key={entry.key} className="border-b border-line/60 last:border-b-0">
                     {entry.href ? (
                       <Link
@@ -303,7 +322,7 @@ export function SettingsSearchAndRelatedPanel({
                               openAnchor(anchor);
                             }
                           }
-                          setSettingsQuery("");
+                          updateQuery("");
                         }}
                         className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-raised"
                       >

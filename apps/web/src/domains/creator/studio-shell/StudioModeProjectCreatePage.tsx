@@ -1,6 +1,6 @@
 import {
-  ArrowRight,
-  Sparkles,
+  ArrowRight, Lightbulb,
+  Sparkles, Upload,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -45,7 +45,7 @@ import {
   type StudioProjectFormatProfile,
 } from "../studio-project-format-catalog";
 import type {
-  StudioProjectCollaboration,
+  StudioProjectCollaboration, StudioProjectKind,
   StudioProjectFormat,
   StudioProjectPurpose,
   StudioProjectStartPoint,

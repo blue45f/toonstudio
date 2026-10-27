@@ -135,4 +135,28 @@ describe("studio VRM lock-aware pose apply plan", () => {
     });
     expect(invalid.skippedInvalid).toEqual(["head"]);
   });
+
+  it("applies limb direction targets from full-body pose presets while rejecting non-limb directions", () => {
+    const plan = createStudioVrmPoseApplyPlan({
+      currentBones: {
+        leftUpperArm: { direction: { sideX: 0.28, y: -0.96, z: 0.02 } },
+      },
+      currentFingerEdits: {},
+      incomingBones: {
+        leftUpperArm: { direction: { sideX: 0.2, y: 0.85, z: 0.3 } },
+        rightLowerArm: { direction: [0.1, 0.7, 0.4] },
+        neck: { direction: [0, 1, 0] },
+      },
+      isBoneAvailable: () => true,
+    });
+
+    expect(plan.bones.leftUpperArm).toEqual({
+      direction: { sideX: 0.2, y: 0.85, z: 0.3 },
+    });
+    expect(plan.bones.rightLowerArm).toEqual({
+      direction: [0.1, 0.7, 0.4],
+    });
+    expect(plan.appliedBodyBones).toEqual(["leftUpperArm", "rightLowerArm"]);
+    expect(plan.skippedInvalid).toEqual(["neck"]);
+  });
 });

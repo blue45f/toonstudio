@@ -1,5 +1,7 @@
 import type { StudioProjectKind } from "./studio-project-library-reader";
 
+export type { StudioProjectKind };
+
 export const STUDIO_PROJECT_FORMAT_IDS = [
   "vertical-webtoon",
   "cuttoon",

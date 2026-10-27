@@ -528,7 +528,7 @@ const BASE_TRIPO_GLB_CALIBRATIONS: Readonly<
 
 export const STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG: readonly StudioBg3dTripoGlbCalibrationSpec[] =
   Object.freeze(
-    TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").map((model) => {
+    TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").map((model): StudioBg3dTripoGlbCalibrationSpec => {
       const override = BASE_TRIPO_GLB_CALIBRATIONS[model.id];
       if (override) {
         return {

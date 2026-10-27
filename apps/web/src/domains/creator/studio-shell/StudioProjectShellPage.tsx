@@ -1,7 +1,7 @@
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   ArrowLeftRight,
-  ArrowRight,
+  ArrowRight, Brush,
   CheckCircle2,
   ChevronDown,
   MoreHorizontal,
@@ -52,7 +52,7 @@ import {
   SECTION_DEFINITIONS,
   localeFromLanguage,
   projectStatusChipClasses,
-  projectViewHref,
+  projectViewHref, workHref,
 } from "./studio-project-shell-definitions";
 import "./studio-illustrated-project-surfaces.css";
 

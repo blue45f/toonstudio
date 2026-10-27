@@ -9,6 +9,7 @@ import { EXTRA_POSE_PRESETS, NATURAL_IDLE_POSES, POSER_FINGER_BONES } from "../s
 import { createTwoBoneDefaultPoleTarget } from "../studio-rig-two-bone-ik";
 
 import { STUDIO_VRM_HTML_FALLBACK_ERROR as HTML_FALLBACK_VRM_ERROR } from "./studio-vrm-asset-runtime";
+import { createStudioVrmHandPose, type StudioVrmHandPoseType } from "./studio-vrm-hand-poses";
 import { EMPTY_STUDIO_VRM_POSE_TRANSLATIONS } from "./studio-vrm-pose-translations";
 import {
   BONE_CATEGORIES,
@@ -49,14 +50,45 @@ export const FALLBACK_EXPORT_WIDTH = 360;
 export const THUMBNAIL_WIDTH = 72;
 export const THUMBNAIL_HEIGHT = 96;
 
-export function extractStudioVrmFingerRotations(bones: PoseBoneMap): FingerRotationMap {
+const POSE_PRESET_HAND_PAIR: Readonly<
+  Record<string, readonly [left: StudioVrmHandPoseType, right: StudioVrmHandPoseType]>
+> = {
+  peace: ["relaxed", "peace"],
+  wave: ["relaxed", "open"],
+  cheer: ["fist", "fist"],
+  action: ["fist", "fist"],
+  point: ["relaxed", "point"],
+  heroic: ["fist", "fist"],
+  heart: ["fingerHeart", "fingerHeart"],
+  selfie: ["peace", "phoneGrip"],
+  thumbsup: ["relaxed", "thumbsUp"],
+  guard: ["fist", "fist"],
+  punch: ["fist", "fist"],
+  kick: ["fist", "fist"],
+  magic: ["open", "open"],
+  surprise: ["open", "open"],
+  pray: ["open", "open"],
+};
+
+export function extractStudioVrmFingerRotations(
+  bones: PoseBoneMap,
+  poseId?: string,
+): FingerRotationMap {
   const fingers: FingerRotationMap = {};
   for (const boneName of POSER_FINGER_BONES) {
     const rotation = bones[boneName]?.rotation;
     if (!rotation) continue;
     fingers[boneName] = [rotation[0], rotation[1], rotation[2]];
   }
-  return fingers;
+  if (Object.keys(fingers).length > 0) {
+    return fingers;
+  }
+  const [leftPose, rightPose]: readonly [StudioVrmHandPoseType, StudioVrmHandPoseType] =
+    (poseId ? POSE_PRESET_HAND_PAIR[poseId] : undefined) ?? (["relaxed", "relaxed"] as const);
+  return {
+    ...createStudioVrmHandPose("left", leftPose),
+    ...createStudioVrmHandPose("right", rightPose),
+  };
 }
 
 export function mergeStudioVrmFingerRotationsIntoBones(
