@@ -1,6 +1,6 @@
 /**
  * research.dto.test.ts — 리서치 DTO 스키마 단위 테스트.
- * 128자 제한(DeepSeek 쿼리 상한)이 곧 원고 유입 방지 가드레일이다.
+ * 128자 제한(검색 쿼리 상한)이 곧 원고 유입 방지 가드레일이다.
  */
 import { describe, expect, it } from "vitest";
 
@@ -46,15 +46,15 @@ describe("research.dto 존재 여부 확인", () => {
 
 describe("research.dto 트렌드 다이제스트", () => {
   it("질의 수와 중복을 검증한다", () => {
-    expect(TrendDigestSchema.safeParse({ queries: [] }).success).toBe(false);
+    expect(TrendDigestSchema.safeParse({ queries: [] })).toBe(false);
     expect(TrendDigestSchema.safeParse({
       queries: Array.from({ length: 11 }, (_, i) => `질의${i}`),
-    }).success).toBe(false);
+    })).toBe(false);
     expect(TrendDigestSchema.safeParse({
       queries: ["판타지", "판타지"],
-    }).success).toBe(false);
+    })).toBe(false);
     expect(TrendDigestSchema.safeParse({
       queries: ["판타지", "로맨스"],
-    }).success).toBe(true);
+    })).toBe(true);
   });
 });

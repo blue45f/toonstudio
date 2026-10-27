@@ -10,7 +10,7 @@ import { ResearchController } from "./research.controller";
 import type { ResearchService } from "./research.service";
 
 function serviceHarness() {
-  const status = vi.fn(() => ({ configured: true, provider: "deepseek" }));
+  const status = vi.fn(() => ({ configured: true, provider: "test-provider" }));
   const brief = vi.fn(async () => ({ result: { question: "질의" } }));
   const existenceCheck = vi.fn(async () => ({ result: { query: "제목" } }));
   const trendDigest = vi.fn(async () => ({ result: { sections: [] } }));

@@ -1,6 +1,8 @@
 /**
- * research.service.ts — 리서치 Nest 서비스. 순수 로직(deepseek-research.ts,
+ * research.service.ts — 리서치 Nest 서비스. 순수 로직(research-logic.ts,
  * research-credit-*.ts)의 얇은 래퍼이며, 오류를 Nest HTTP 예외로만 매핑한다.
+ * 특정 검색 프로바이더를 언급하지 않는다. 프로바이더는 SearchProvider
+ * 인터페이스로 주입받는다.
  *
  * 처리 순서 (차감 안전):
  *  1. 클라이언트 미설정 시 503으로 거부한다 (키 없으면 기능 비활성화).
@@ -21,10 +23,13 @@ import {
 import { randomUUID } from "node:crypto";
 
 import {
-  RESEARCH_DEEPSEEK_CLIENT,
-  DeepSeekSearchError,
-  type DeepSeekSearchClient,
-} from "./deepseek-search-client";
+  RESEARCH_SEARCH_PROVIDER,
+} from "./search-provider-factory";
+import { RESEARCH_SEARCH_PROVIDER_NAME } from "./search-provider-config";
+import {
+  SearchProviderError,
+  type SearchProvider,
+} from "./search-provider";
 import {
   buildResearchBrief,
   buildTrendDigest,
@@ -32,7 +37,7 @@ import {
   type ExistenceCheckResult,
   type ResearchBrief,
   type TrendDigest,
-} from "./deepseek-research";
+} from "./research-logic";
 import {
   beginResearchCreditCharge,
   ResearchCreditError,
@@ -46,8 +51,10 @@ import {
   type ResearchCreditPricing,
 } from "./research-credit-meter";
 import { resolvePaidOperationsEnabled } from "../membership-wallet/paid-operations-gate";
-import { PAID_OPERATIONS_SETTING_STORE } from "./research-credit-charge";
-import type { PaidOperationsSettingStore } from "./research-credit-charge";
+import {
+  PAID_OPERATIONS_SETTING_STORE,
+  type PaidOperationsSettingStore,
+} from "./research-credit-charge";
 import { MembershipWalletService } from "../membership-wallet/membership-wallet.service";
 import type {
   ExistenceCheckDto,
@@ -60,7 +67,7 @@ export const RESEARCH_CREDIT_PRICING = Symbol("RESEARCH_CREDIT_PRICING");
 
 export interface ResearchServiceResult<T> {
   readonly result: T;
-  /** 이번 요청의 DeepSeek 성공 호출 수. */
+  /** 이번 요청의 검색 API 성공 호출 수. */
   readonly usage: { readonly searches: number; readonly fetches: number };
   /** 이번 요청의 크레딧 환산량 (지갑 차감 여부와 무관하게 표시). */
   readonly credits: number;
@@ -69,7 +76,7 @@ export interface ResearchServiceResult<T> {
 }
 
 function toHttpException(error: unknown): HttpException {
-  if (error instanceof DeepSeekSearchError) {
+  if (error instanceof SearchProviderError) {
     return new HttpException(
       { code: error.code, message: error.message },
       error.status,
@@ -95,8 +102,8 @@ export class ResearchService {
   private readonly ledger = new InMemoryResearchCreditLedger();
 
   constructor(
-    @Inject(RESEARCH_DEEPSEEK_CLIENT)
-    private readonly client: DeepSeekSearchClient | null,
+    @Inject(RESEARCH_SEARCH_PROVIDER)
+    private readonly client: SearchProvider | null,
     @Inject(RESEARCH_CREDIT_PRICING)
     private readonly pricing: ResearchCreditPricing,
     @Optional()
@@ -105,6 +112,9 @@ export class ResearchService {
     @Optional()
     @Inject(PAID_OPERATIONS_SETTING_STORE)
     private readonly paidOperations?: PaidOperationsSettingStore,
+    @Optional()
+    @Inject(RESEARCH_SEARCH_PROVIDER_NAME)
+    private readonly providerName?: string,
   ) {}
 
   status(): {
@@ -116,7 +126,7 @@ export class ResearchService {
   } {
     return {
       configured: this.client !== null,
-      provider: "deepseek",
+      provider: this.providerName ?? this.client?.providerName ?? "unconfigured",
       maxQueryLength: 128,
       creditsPerSearch: this.pricing.creditsPerSearch,
       creditsPerFetch: this.pricing.creditsPerFetch,
@@ -147,7 +157,7 @@ export class ResearchService {
     operation: string,
     estimatedUnits: number,
     idempotencyKey: string | undefined,
-    task: (client: DeepSeekSearchClient) => Promise<{
+    task: (client: SearchProvider) => Promise<{
       result: T;
       usage: { searches: number; fetches: number };
     }>,
@@ -155,7 +165,7 @@ export class ResearchService {
     if (!this.client) {
       throw new ServiceUnavailableException({
         code: "RESEARCH_NOT_CONFIGURED",
-        message: "DeepSeek API 키가 설정되지 않아 리서치 기능을 사용할 수 없습니다.",
+        message: "검색 API 키가 설정되지 않아 리서치 기능을 사용할 수 없습니다.",
       });
     }
     const key = idempotencyKey ?? randomUUID();

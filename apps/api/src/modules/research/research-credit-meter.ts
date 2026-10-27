@@ -1,19 +1,20 @@
 /**
- * research-credit-meter.ts — DeepSeek 리서치 호출량의 크레딧 환산·집계 순수 모듈.
+ * research-credit-meter.ts — 리서치 호출량의 크레딧 환산·집계 순수 모듈.
  * Nest·DB에 의존하지 않는다.
  *
  * 단가 정책:
- *  - DeepSeek 요금은 성공 호출 기준 1,000건당 $0.75다. 1크레딧 = 10원 환산율
+ *  - 호환 검색 API 요금은 성공 호출 기준 1,000건당 $0.75 수준이다. 1크레딧 = 10원 환산율
  *    (credit-pricing.ts의 KRW_PER_CREDIT)로는 검색 1건(약 1원 상당)보다
  *    충분히 여유 있는 수준이므로, 기본 단가는 검색·fetch 각 1크레딧으로 둔다.
  *    즉 크레딧 1개로 약 10건의 호출 원가를 충당하는 보수적 단가다.
- *  - 단가는 환경변수(DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH/_FETCH)로만 조정하고,
+ *  - 단가는 환경변수(RESEARCH_CREDITS_PER_SEARCH/_FETCH, 하위 호환 폴백으로
+ *    DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH/_FETCH)로만 조정하고,
  *    코드에 금액을 하드코딩하지 않는다. 지갑 단가표(core)의 키는 건드리지 않는다.
  *  - 미터는 관찰·과금 근거용이다. 실제 차감은 research-credit-charge.ts가
  *    지갑을 통해 수행하고, 미터와 지갑은 서비스에서 함께 기록한다.
  */
 
-import type { ResearchUsage } from "./deepseek-research";
+import type { ResearchUsage } from "./research-logic";
 
 export interface ResearchCreditPricing {
   readonly creditsPerSearch: number;
@@ -41,11 +42,13 @@ export function resolveResearchCreditPricing(
 ): ResearchCreditPricing {
   return {
     creditsPerSearch: parsePositiveInt(
-      env["DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH"],
+      env["RESEARCH_CREDITS_PER_SEARCH"]
+        ?? env["DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH"],
       DEFAULT_RESEARCH_CREDIT_PRICING.creditsPerSearch,
     ),
     creditsPerFetch: parsePositiveInt(
-      env["DEEPSEEK_RESEARCH_CREDITS_PER_FETCH"],
+      env["RESEARCH_CREDITS_PER_FETCH"]
+        ?? env["DEEPSEEK_RESEARCH_CREDITS_PER_FETCH"],
       DEFAULT_RESEARCH_CREDIT_PRICING.creditsPerFetch,
     ),
   };

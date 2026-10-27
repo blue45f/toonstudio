@@ -1,6 +1,6 @@
 /**
- * deepseek-research.ts — DeepSeek 검색 결과를 창작자용 자료로 바꾸는 순수 모듈.
- * Nest·DB에 의존하지 않으며, 클라이언트만 주입받아 테스트에서 가짜로 대체한다.
+ * research-logic.ts — 검색 프로바이더 결과를 창작자용 자료로 바꾸는 순수 모듈.
+ * Nest·DB에 의존하지 않으며, SearchProvider만 주입받아 테스트에서 가짜로 대체한다.
  *
  * 저작권·요약 원칙:
  *  - 검색 결과의 summary/snippet은 짧게 잘라(출처당 최대 300자) 개요에 연결하고,
@@ -12,18 +12,17 @@
  */
 
 import {
-  DEEPSEEK_MAX_QUERY_LENGTH,
-  normalizeDeepSeekQuery,
-  type DeepSeekSearchClient,
-  type DeepSeekSearchResult,
-} from "./deepseek-search-client";
+  normalizeSearchQuery,
+  type SearchProvider,
+  type SearchResult,
+} from "./search-provider";
 
 export interface ResearchSource {
   readonly title: string;
   readonly url: string;
   readonly snippet: string;
   readonly siteName: string;
-  readonly rerankScore: number;
+  readonly relevanceScore: number;
   readonly authority: number;
 }
 
@@ -86,18 +85,18 @@ export interface TrendDigest {
 const OVERVIEW_SOURCE_CHARS = 300;
 const FETCH_EXCERPT_CHARS = 500;
 
-function toSource(result: DeepSeekSearchResult): ResearchSource {
+function toSource(result: SearchResult): ResearchSource {
   return {
     title: result.title,
     url: result.url,
     snippet: result.snippet,
     siteName: result.siteName,
-    rerankScore: result.rerankScore,
+    relevanceScore: result.relevanceScore,
     authority: result.authority,
   };
 }
 
-function toMatch(result: DeepSeekSearchResult): ExistenceMatch {
+function toMatch(result: SearchResult): ExistenceMatch {
   return {
     title: result.title,
     url: result.url,
@@ -106,13 +105,13 @@ function toMatch(result: DeepSeekSearchResult): ExistenceMatch {
   };
 }
 
-/** 관련도 순으로 정렬한다 (rerank_score 내림차순, 동점 시 authority 내림차순). */
-function byRelevance(a: DeepSeekSearchResult, b: DeepSeekSearchResult): number {
-  if (b.rerankScore !== a.rerankScore) return b.rerankScore - a.rerankScore;
+/** 관련도 순으로 정렬한다 (relevanceScore 내림차순, 동점 시 authority 내림차순). */
+function byRelevance(a: SearchResult, b: SearchResult): number {
+  if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore;
   return b.authority - a.authority;
 }
 
-function overviewFrom(results: readonly DeepSeekSearchResult[]): string {
+function overviewFrom(results: readonly SearchResult[]): string {
   const parts: string[] = [];
   for (const result of results.slice(0, 3)) {
     const text = (result.summary || result.snippet).trim();
@@ -139,10 +138,10 @@ export interface ResearchBriefInput {
  * 질문은 최대 128자로 제한되어 미공개 원고가 쿼리로 나가는 것을 막는다.
  */
 export async function buildResearchBrief(
-  client: DeepSeekSearchClient,
+  client: SearchProvider,
   input: ResearchBriefInput,
 ): Promise<ResearchBrief> {
-  const question = normalizeDeepSeekQuery(input.question);
+  const question = normalizeSearchQuery(input.question);
   const maxFetchSources = input.maxFetchSources === undefined
     ? 2
     : Math.min(3, Math.max(0, Math.floor(input.maxFetchSources)));
@@ -182,10 +181,10 @@ export interface ExistenceCheckInput {
 
 /** 제목·소재 키워드의 공개 존재 여부를 검색한다. 법적 판단은 하지 않는다. */
 export async function checkExistence(
-  client: DeepSeekSearchClient,
+  client: SearchProvider,
   input: ExistenceCheckInput,
 ): Promise<ExistenceCheckResult> {
-  const query = normalizeDeepSeekQuery(input.title);
+  const query = normalizeSearchQuery(input.title);
   const count = input.maxResults === undefined
     ? 10
     : Math.min(10, Math.max(1, Math.floor(input.maxResults)));
@@ -243,14 +242,14 @@ export function trendDigestToMarkdown(
  * 질의 목록이 비어 있거나 10건을 넘기면 거부하고, 각 질의는 128자 제한을 받는다.
  */
 export async function buildTrendDigest(
-  client: DeepSeekSearchClient,
+  client: SearchProvider,
   input: TrendDigestInput,
   now: () => Date = () => new Date(),
 ): Promise<TrendDigest> {
   if (input.queries.length < 1 || input.queries.length > 10) {
     throw new Error("트렌드 다이제스트 질의는 1~10건이어야 합니다.");
   }
-  const queries = input.queries.map((query) => normalizeDeepSeekQuery(query));
+  const queries = input.queries.map((query) => normalizeSearchQuery(query));
   const sections: TrendDigestSection[] = [];
   let searches = 0;
   let fetches = 0;
@@ -283,5 +282,3 @@ export async function buildTrendDigest(
     usage: { searches, fetches },
   };
 }
-
-export { DEEPSEEK_MAX_QUERY_LENGTH };

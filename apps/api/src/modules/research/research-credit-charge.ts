@@ -6,7 +6,7 @@
  *  - core 단가표에 전용 `ai.research` 키를 새로 만들지 않는다. 단가 키 추가는
  *    가격 페이지·단가 테스트와 함께 검토해야 하는 정책 변경이기 때문이다.
  *  - 대신 기존 `ai.text.generate`(기본 1크레딧/단위, 예약 상한 20)를 재사용하고,
- *    metadata.source="deepseek-research"로 리서치 차감을 구분한다.
+ *    metadata.source="research"로 리서치 차감을 구분한다.
  *  - 리서치 1요청의 최대 예상 사용량은 트렌드 다이제스트(질의 10건 + 섹션당
  *    fetch 1건 = 20단위)까지로, 예약 상한 20 안에 들어간다. 상한을 넘는
  *    요청은 서비스 계층에서 거부한다.
@@ -116,7 +116,7 @@ export async function beginResearchCreditCharge(
       units,
       idempotencyKey: researchCreditIdempotencyKey(input.idempotencyKey),
       metadata: {
-        source: "deepseek-research",
+        source: "research",
         operation: input.operation,
       },
     });
