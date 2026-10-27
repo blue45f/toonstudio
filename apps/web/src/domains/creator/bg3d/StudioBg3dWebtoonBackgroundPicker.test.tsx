@@ -320,7 +320,7 @@ describe("StudioBg3dWebtoonBackgroundPicker", () => {
     expect(screen.getByTestId("bg3d-rea-competitor-readout").textContent).toContain("색온도");
 
     const tripoSelect = screen.getByTestId("bg3d-tripo3d-kit-select") as HTMLSelectElement;
-    expect(tripoSelect.options).toHaveLength(9);
+    expect(tripoSelect.options).toHaveLength(17);
     fireEvent.change(tripoSelect, {
       target: { value: "tripo3d-h31-bg-romance-fantasy-palace-courtyard" },
     });

@@ -24,13 +24,41 @@ import {
   TRIPO3D_MCP_GENERATED_MODELS,
   type Tripo3dMcpGeneratedModelEntry,
 } from "../scene-3d/studio-tripo3d-customizer-engine";
-import type { BgPrimitive } from "../studio-background-3d-metadata";
-import type {
-  Bg3dGlbItem,
-  Bg3dPrimitiveItem,
-  Bg3dPrimitiveShape,
-  Vec3,
-} from "../studio-background-3d-stage-types";
+import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
+
+export type Bg3dPrimitiveShape = BgPrimitiveKind;
+export type Vec3 = readonly [number, number, number];
+
+export interface Bg3dPrimitiveItem {
+  readonly id: string;
+  readonly kind: "primitive";
+  readonly shape: Bg3dPrimitiveShape;
+  readonly position: [number, number, number];
+  readonly rotation: Vec3;
+  readonly scale: [number, number, number];
+  readonly color: string;
+  readonly roughness: number;
+  readonly metalness: number;
+  readonly visible: boolean;
+  readonly locked: boolean;
+  readonly tags: readonly string[];
+  readonly componentRef?: {
+    readonly id: string;
+    readonly name: string;
+  };
+}
+
+export interface Bg3dGlbItem {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: "glb";
+  readonly url: string;
+  readonly position: [number, number, number];
+  readonly rotation: [number, number, number];
+  readonly scale: [number, number, number];
+  readonly visible: boolean;
+  readonly locked: boolean;
+}
 
 export {
   buildVarco3dDioramaDetailedPrimitives,
@@ -49,11 +77,7 @@ export function toBgPrimitives(items: readonly Bg3dPrimitiveItem[]): BgPrimitive
     color: item.color,
     visible: item.visible,
     locked: item.locked,
-    materialOverride: {
-      roughness: item.roughness,
-      metalness: item.metalness,
-    },
-    ...(item.tags ? { tags: item.tags } : {}),
+    ...(item.tags ? { tags: [...item.tags] } : {}),
     ...(item.componentRef ? { componentRef: item.componentRef } : {}),
   }));
 }
@@ -407,126 +431,128 @@ export interface StudioBg3dTripoGlbCalibrationSpec {
   readonly linkedUniverseId: string;
 }
 
+const BASE_TRIPO_GLB_CALIBRATIONS: Readonly<
+  Record<string, Omit<StudioBg3dTripoGlbCalibrationSpec, "modelId" | "labelKo" | "url">>
+> = {
+  "tripo3d-h31-bg-bus-stop-vending-shelter": {
+    rawSizeMeters: [0.985, 0.742, 0.618],
+    rawMinY: 0,
+    pivotAtBase: true,
+    calibratedScale: 3.8,
+    groundYOffset: 0,
+    humanScaleDimensionsMeters: [3.74, 2.82, 2.35],
+    recommendedAnchorPosition: [0, 0, -1.2],
+    linkedUniverseId: "daily-cafe-street",
+  },
+  "tripo3d-p2-bg-street-cafe-kit": {
+    rawSizeMeters: [0.994, 0.971, 1.0],
+    rawMinY: -0.478,
+    pivotAtBase: false,
+    calibratedScale: 4.2,
+    groundYOffset: 2.01,
+    humanScaleDimensionsMeters: [4.17, 4.08, 4.2],
+    recommendedAnchorPosition: [0, 2.01, -1.2],
+    linkedUniverseId: "cafe-terrace",
+  },
+  "tripo3d-h31-bg-classroom-furniture-kit": {
+    rawSizeMeters: [0.978, 0.431, 0.781],
+    rawMinY: -0.215,
+    pivotAtBase: false,
+    calibratedScale: 2.2,
+    groundYOffset: 0.47,
+    humanScaleDimensionsMeters: [2.15, 0.95, 1.72],
+    recommendedAnchorPosition: [0, 0.47, 0],
+    linkedUniverseId: "school-romance",
+  },
+  "tripo3d-h31-bg-korean-convenience-store": {
+    rawSizeMeters: [0.983, 0.823, 0.717],
+    rawMinY: 0,
+    pivotAtBase: true,
+    calibratedScale: 5.2,
+    groundYOffset: 0,
+    humanScaleDimensionsMeters: [5.11, 4.28, 3.73],
+    recommendedAnchorPosition: [0, 0, -1.5],
+    linkedUniverseId: "convenience-alley",
+  },
+  "tripo3d-h31-bg-romance-fantasy-palace-courtyard": {
+    rawSizeMeters: [0.975, 0.828, 0.978],
+    rawMinY: 0.001,
+    pivotAtBase: true,
+    calibratedScale: 7.4,
+    groundYOffset: 0,
+    humanScaleDimensionsMeters: [7.22, 6.13, 7.24],
+    recommendedAnchorPosition: [0, 0, -1.8],
+    linkedUniverseId: "rofan-palace",
+  },
+  "tripo3d-h31-bg-industrial-rooftop-hvac": {
+    rawSizeMeters: [0.969, 0.857, 0.981],
+    rawMinY: 0,
+    pivotAtBase: true,
+    calibratedScale: 4.5,
+    groundYOffset: 0,
+    humanScaleDimensionsMeters: [4.36, 3.86, 4.41],
+    recommendedAnchorPosition: [0, 0, -1.4],
+    linkedUniverseId: "cyberpunk-neon",
+  },
+  "tripo3d-mcp-bg-korean-alley-stairway": {
+    rawSizeMeters: [2.68, 2.69, 4.5],
+    rawMinY: 0,
+    pivotAtBase: true,
+    calibratedScale: 1.0,
+    groundYOffset: 0,
+    humanScaleDimensionsMeters: [2.68, 2.69, 4.5],
+    recommendedAnchorPosition: [0, 0, -1.0],
+    linkedUniverseId: "convenience-alley",
+  },
+  "tripo3d-mcp-bg-cafe-counter-cluster": {
+    rawSizeMeters: [3.18, 2.32, 2.25],
+    rawMinY: 0,
+    pivotAtBase: true,
+    calibratedScale: 1.0,
+    groundYOffset: 0,
+    humanScaleDimensionsMeters: [3.18, 2.32, 2.25],
+    recommendedAnchorPosition: [0, 0, -1.2],
+    linkedUniverseId: "cafe-terrace",
+  },
+  "tripo3d-mcp-bg-rooftop-neon-signboard": {
+    rawSizeMeters: [1.13, 1.13, 0.12],
+    rawMinY: -0.563,
+    pivotAtBase: false,
+    calibratedScale: 1.8,
+    groundYOffset: 2.65,
+    humanScaleDimensionsMeters: [2.03, 2.03, 0.22],
+    recommendedAnchorPosition: [0, 2.65, -3.2],
+    linkedUniverseId: "cyberpunk-neon",
+  },
+};
+
 export const STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG: readonly StudioBg3dTripoGlbCalibrationSpec[] =
-  Object.freeze([
-    {
-      modelId: "tripo3d-h31-bg-bus-stop-vending-shelter",
-      labelKo: "한국 버스 정류장 쉘터 & 야간 음료 자판기 세트 (Tripo v3.1 PBR)",
-      url: "/models/tripo3d-mcp/tripo_h31_korean_bus_stop_vending_shelter.glb",
-      rawSizeMeters: [0.985, 0.742, 0.618],
-      rawMinY: 0,
-      pivotAtBase: true,
-      calibratedScale: 3.8,
-      groundYOffset: 0,
-      humanScaleDimensionsMeters: [3.74, 2.82, 2.35],
-      recommendedAnchorPosition: [0, 0, -1.2],
-      linkedUniverseId: "daily-cafe-street",
-    },
-    {
-      modelId: "tripo3d-p2-bg-street-cafe-kit",
-      labelKo: "어반 스트리트 카페 모듈러 키트 (Smart Mesh P2.0)",
-      url: "/models/tripo3d-mcp/tripo_p2_quad_street_cafe_kit.glb",
-      rawSizeMeters: [0.994, 0.971, 1.0],
-      rawMinY: -0.478,
-      pivotAtBase: false,
-      calibratedScale: 4.2,
-      groundYOffset: 2.01,
-      humanScaleDimensionsMeters: [4.17, 4.08, 4.2],
-      recommendedAnchorPosition: [0, 2.01, -1.2],
-      linkedUniverseId: "cafe-terrace",
-    },
-    {
-      modelId: "tripo3d-h31-bg-classroom-furniture-kit",
-      labelKo: "한국 고등학교 교실 가구 모듈러 키트 (H3.1 PBR)",
-      url: "/models/tripo3d-mcp/tripo_h31_korean_classroom_furniture_kit.glb",
-      rawSizeMeters: [0.978, 0.431, 0.781],
-      rawMinY: -0.215,
-      pivotAtBase: false,
-      calibratedScale: 2.2,
-      groundYOffset: 0.47,
-      humanScaleDimensionsMeters: [2.15, 0.95, 1.72],
-      recommendedAnchorPosition: [0, 0.47, 0],
-      linkedUniverseId: "school-romance",
-    },
-    {
-      modelId: "tripo3d-h31-bg-korean-convenience-store",
-      labelKo: "한국 편의점 매장 & 야외 파라솔 세트 (H3.1 Ultra 8K)",
-      url: "/models/tripo3d-mcp/tripo_h31_korean_convenience_store.glb",
-      rawSizeMeters: [0.983, 0.823, 0.717],
-      rawMinY: 0,
-      pivotAtBase: true,
-      calibratedScale: 5.2,
-      groundYOffset: 0,
-      humanScaleDimensionsMeters: [5.11, 4.28, 3.73],
-      recommendedAnchorPosition: [0, 0, -1.5],
-      linkedUniverseId: "convenience-alley",
-    },
-    {
-      modelId: "tripo3d-h31-bg-romance-fantasy-palace-courtyard",
-      labelKo: "로판 황실 대리석 분수 정원 파빌리온 (H3.1 Ultra 8K)",
-      url: "/models/tripo3d-mcp/tripo_h31_romance_fantasy_palace_courtyard.glb",
-      rawSizeMeters: [0.975, 0.828, 0.978],
-      rawMinY: 0.001,
-      pivotAtBase: true,
-      calibratedScale: 7.4,
-      groundYOffset: 0,
-      humanScaleDimensionsMeters: [7.22, 6.13, 7.24],
-      recommendedAnchorPosition: [0, 0, -1.8],
-      linkedUniverseId: "rofan-palace",
-    },
-    {
-      modelId: "tripo3d-h31-bg-industrial-rooftop-hvac",
-      labelKo: "도심 옥상 물탱크 & 공조 설비 클러스터 (Tripo HD)",
-      url: "/models/tripo3d-mcp/tripo_h31_industrial_rooftop_hvac_facility.glb",
-      rawSizeMeters: [0.969, 0.857, 0.981],
-      rawMinY: 0,
-      pivotAtBase: true,
-      calibratedScale: 4.5,
-      groundYOffset: 0,
-      humanScaleDimensionsMeters: [4.36, 3.86, 4.41],
-      recommendedAnchorPosition: [0, 0, -1.4],
-      linkedUniverseId: "cyberpunk-neon",
-    },
-    {
-      modelId: "tripo3d-mcp-bg-korean-alley-stairway",
-      labelKo: "한국 골목 10단 계단 & 적벽돌 담장 모듈 (Tripo3D MCP)",
-      url: "/models/tripo3d-mcp/webtoon_korean_alley_stairway_module.glb",
-      rawSizeMeters: [2.68, 2.69, 4.5],
-      rawMinY: 0,
-      pivotAtBase: true,
-      calibratedScale: 1.0,
-      groundYOffset: 0,
-      humanScaleDimensionsMeters: [2.68, 2.69, 4.5],
-      recommendedAnchorPosition: [0, 0, -1.0],
-      linkedUniverseId: "convenience-alley",
-    },
-    {
-      modelId: "tripo3d-mcp-bg-cafe-counter-cluster",
-      labelKo: "카페 원목·쿼츠 카운터 집기 클러스터 (Tripo3D MCP)",
-      url: "/models/tripo3d-mcp/webtoon_cafe_counter_fixture_cluster.glb",
-      rawSizeMeters: [3.18, 2.32, 2.25],
-      rawMinY: 0,
-      pivotAtBase: true,
-      calibratedScale: 1.0,
-      groundYOffset: 0,
-      humanScaleDimensionsMeters: [3.18, 2.32, 2.25],
-      recommendedAnchorPosition: [0, 0, -1.2],
-      linkedUniverseId: "cafe-terrace",
-    },
-    {
-      modelId: "tripo3d-mcp-bg-rooftop-neon-signboard",
-      labelKo: "웹툰 네온 엠블럼 간판 릴리프 (GLBForge + Tripo3D MCP)",
-      url: "/models/tripo3d-mcp/webtoon_rooftop_neon_signboard.glb",
-      rawSizeMeters: [1.13, 1.13, 0.12],
-      rawMinY: -0.563,
-      pivotAtBase: false,
-      calibratedScale: 1.8,
-      groundYOffset: 2.65,
-      humanScaleDimensionsMeters: [2.03, 2.03, 0.22],
-      recommendedAnchorPosition: [0, 2.65, -3.2],
-      linkedUniverseId: "cyberpunk-neon",
-    },
-  ]);
+  Object.freeze(
+    TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").map((model) => {
+      const override = BASE_TRIPO_GLB_CALIBRATIONS[model.id];
+      if (override) {
+        return {
+          modelId: model.id,
+          labelKo: model.nameKo,
+          url: model.url,
+          ...override,
+        };
+      }
+      return {
+        modelId: model.id,
+        labelKo: model.nameKo,
+        url: model.url,
+        rawSizeMeters: [0.98, 0.85, 0.92],
+        rawMinY: 0,
+        pivotAtBase: true,
+        calibratedScale: 3.6,
+        groundYOffset: 0,
+        humanScaleDimensionsMeters: [3.6, 3.0, 3.4],
+        recommendedAnchorPosition: [0, 0, -1.4],
+        linkedUniverseId: "daily-cafe-street",
+      };
+    }),
+  );
 
 export function getStudioBg3dTripoGlbCalibration(
   modelId: string,

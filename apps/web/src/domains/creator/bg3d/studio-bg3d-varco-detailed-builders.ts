@@ -6,11 +6,6 @@
  * 합성해 실제 웹툰 배경 원고에 즉시 사용할 수 있는 밀도를 제공한다.
  */
 
-import type {
-  Bg3dPrimitiveItem,
-  Bg3dPrimitiveShape,
-  Vec3,
-} from "../studio-background-3d-stage-types";
 import {
   STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
   STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
@@ -20,8 +15,11 @@ import {
 import {
   makeReaBg3dPrim,
   STUDIO_BG3D_REA_COMPETITOR_PROFILES,
+  type Bg3dPrimitiveItem,
+  type Bg3dPrimitiveShape,
   type StudioBg3dReaCompetitorId,
   type StudioBg3dReaCompetitorProfile,
+  type Vec3,
 } from "./studio-bg3d-rea-webtoon-background-engine";
 
 interface SubPartBlueprint {
