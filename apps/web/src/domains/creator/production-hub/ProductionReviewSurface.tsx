@@ -3,6 +3,7 @@ import { ArrowRight, ClipboardCheck, Columns2, MessageSquareMore } from "lucide-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { ProductionAsyncWalkthroughButlerSuite } from "./ProductionAsyncWalkthroughButlerSuite";
 import { ProductionCreativeReviewConsensusSuite } from "./ProductionCreativeReviewConsensusSuite";
 import { ProductionReviewRequestForm } from "./ProductionReviewRequestForm";
 import { ProductionReviewWorkspace } from "./ProductionReviewWorkspace";
@@ -158,6 +159,8 @@ export function ProductionReviewSurface({
           <p className="rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-3">{bt("아직 기록된 결정이 없습니다.", "No decisions yet.")}</p>
         )}
       </ProductionSectionCard>
+
+      <ProductionAsyncWalkthroughButlerSuite aggregate={aggregate} />
     </div>
   );
 }

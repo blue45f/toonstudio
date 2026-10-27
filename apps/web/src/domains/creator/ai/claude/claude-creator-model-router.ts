@@ -210,7 +210,16 @@ export type ClaudeCreatorTaskId =
   | "localize:zombie-barricade-gasmask-lockpick-laser-lock"
   | "localize:cyber-terminal-server-cctv-rooftop-lock"
   | "localize:animal-pupil-spider-octopus-shark-director"
-  | "localize:sign-language-hearing-aid-isbn-archive-director";
+  | "localize:sign-language-hearing-aid-isbn-archive-director"
+  // 20. Wave 48~50 MurimPlumBagua/XianxiaSwordInn/CasinoHoldemAuction/GrandPianoWhisky/SupercarF1Yacht/DeepSeaSpacesuit/VolcanoGlacierDesert/CarrierBunkerBsl4 AI Engines (8 — Total 164 Tasks)
+  | "localize:murim-plum-sword-tang-clan-bagua-lock"
+  | "localize:xianxia-flying-sword-inn-bamboo-scroll-lock"
+  | "localize:casino-baccarat-holdem-chips-auction-lock"
+  | "localize:grand-piano-lid-violin-cigar-whisky-lock"
+  | "localize:supercar-door-f1-halo-yacht-jet-lock"
+  | "localize:deep-sea-submersible-spacesuit-cryopod-lock"
+  | "localize:volcano-lava-glacier-crevasse-desert-director"
+  | "localize:aircraft-carrier-catapult-bunker-bsl4-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -630,6 +639,16 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "localize:cyber-terminal-server-cctv-rooftop-lock": defineRoute("localize:cyber-terminal-server-cctv-rooftop-lock", "리눅스 터미널 유효 구문/IPv4 범위(0~255)·42U 서버랙 패치케이블·야간 CCTV 적외선 링·옥상 실외기 디렉터", "core-dialog", "creative-production", "해킹 터미널 CLI/유효 IPv4·42U 서버랙 배선·CCTV IR LED·옥상 설비 고증은 Sonnet 5.5 적용", 4_096),
   "localize:animal-pupil-spider-octopus-shark-director": defineRoute("localize:animal-pupil-spider-octopus-shark-director", "초식동물 수평 동공 vs 야행성 수직 동공·거미 두흉부 8다리·문어 2열 빨판·상어 수직 꼬리지느러미 총괄 감독", "core-dialog", "deep-architecture", "동물 동공 형태·절지동물 두흉부 다리 부착·두족류 빨판·어류/포유류 꼬리지느러미 감리는 Opus 5.5 심층 추론 적용", 6_144),
   "localize:sign-language-hearing-aid-isbn-archive-director": defineRoute("localize:sign-language-hearing-aid-isbn-archive-director", "한국수어(KSL) 수형/비수지 신호·보청기/인공와우/흰지팡이 고증 및 단행본 ISBN-13·도서관 납본 총괄 감독", "core-dialog", "deep-architecture", "한국수어 수동 화살표/비수지 신호·보청기/흰지팡이 고증·단행본 ISBN-13/납본 규격은 Opus 5.5 심층 추론 적용", 6_144),
+
+  // 20. Wave 48~50 MurimPlumBagua/XianxiaSwordInn/CasinoHoldemAuction/GrandPianoWhisky/SupercarF1Yacht/DeepSeaSpacesuit/VolcanoGlacierDesert/CarrierBunkerBsl4 AI Engines (8)
+  "localize:murim-plum-sword-tang-clan-bagua-lock": defineRoute("localize:murim-plum-sword-tang-clan-bagua-lock", "화산파 5꽃잎 매화검기·남궁세가 뇌전대검·사천당가 암기/독침·제갈세가 기문둔갑 팔진도·무당 불진/개방 타구봉 고정기", "core-dialog", "fast-inline", "무협 문파별 고유 검기/암기/진법/지물 시그니처 혼동 방지는 Haiku 5.5로 즉각 검증", 2_560),
+  "localize:xianxia-flying-sword-inn-bamboo-scroll-lock": defineRoute("localize:xianxia-flying-sword-inn-bamboo-scroll-lock", "선협 어검비행 스탠스·연단로·객잔 2층 중정 난간/붉은천 술독·대나무 45도 절단·죽간/전서구/촌관척 진맥 고정기", "core-dialog", "fast-inline", "어검비행 균형·객잔 2층 중정 구조·대나무 사선 절단·죽간/진맥 고증은 Haiku 5.5 적용", 2_560),
+  "localize:casino-baccarat-holdem-chips-auction-lock": defineRoute("localize:casino-baccarat-holdem-chips-auction-lock", "카지노 바카라 카드 쪼기(Squeeze)·텍사스 홀덤 5커뮤니티 카드·칩 액면가 색상 스택·미술품 경매장 패들 디렉터", "core-dialog", "creative-production", "바카라 카드 변 기호·홀덤 플랍/턴/리버·칩 액면가 스택·경매 패들 번호 고정은 Sonnet 5.5 적용", 4_096),
+  "localize:grand-piano-lid-violin-cigar-whisky-lock": defineRoute("localize:grand-piano-lid-violin-cigar-whisky-lock", "그랜드피아노 우측 덮개 지지대·바이올린 좌측 턱받침/f홀·시가 커터/위스키 아이스볼·네이키드 에스프레소 디렉터", "core-dialog", "creative-production", "그랜드피아노 우측 개방·바이올린 구조·시가/위스키 아이스볼·바텀리스 포타필터는 Sonnet 5.5 적용", 4_096),
+  "localize:supercar-door-f1-halo-yacht-jet-lock": defineRoute("localize:supercar-door-f1-halo-yacht-jet-lock", "슈퍼카 시저/걸윙 도어 경첩·F1 티타늄 헤일로/DRS·폴로 오른손 스틱·슈퍼요트 티크 데크·프라이빗 제트 디렉터", "core-dialog", "creative-production", "슈퍼카 도어 경첩·F1 헤일로·폴로 오른손 규칙·요트/전용기 실내 구조는 Sonnet 5.5 적용", 4_096),
+  "localize:deep-sea-submersible-spacesuit-cryopod-lock": defineRoute("localize:deep-sea-submersible-spacesuit-cryopod-lock", "심해 잠수정 반구형 아크릴창/생물발광·우주정거장 7면 큐폴라/EVA 금도금 바이저·동면 포드 성에/체렌코프 광 디렉터", "core-dialog", "creative-production", "심해 잠수정 관측창·ISS 큐폴라/EVA 우주복·동면 캡슐 성에·체렌코프 청색광은 Sonnet 5.5 적용", 4_096),
+  "localize:volcano-lava-glacier-crevasse-desert-director": defineRoute("localize:volcano-lava-glacier-crevasse-desert-director", "화산 용암 냉각 흑각/백열 균열·빙하 크레바스 청색 산란광/피켈 제동·사막 사구 34도 안식각/쇄빙선 총괄 감독", "core-dialog", "deep-architecture", "화산 용암 흑체복사·빙하 크레바스 다중산란·사막 사구 경사각·쇄빙선 물리는 Opus 5.5 심층 추론 적용", 6_144),
+  "localize:aircraft-carrier-catapult-bunker-bsl4-director": defineRoute("localize:aircraft-carrier-catapult-bunker-bsl4-director", "항공모함 캐터펄트/어레스팅 와이어·수송기 강하 신호등·지하 벙커 방폭문 핸드휠·BSL-4 양압복/냉각탑 총괄 감독", "core-dialog", "deep-architecture", "항모 이착함 장치·수송기 정적줄·방공호 방폭문 기구학·BSL-4 양압복 감리는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

@@ -76,10 +76,10 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
       "Key:Fill:Rim = 3:1:1.5",
     );
 
-    // Tripo3D MCP + GLBForge MCP + VRM Toolkit MCP 실생성 에셋 라이브러리 검증 (22종 GLB)
+    // Tripo3D MCP + GLBForge MCP + VRM Toolkit MCP 실생성 에셋 라이브러리 검증 (25종 GLB)
     expect(screen.getByTestId("tripo3d-mcp-generated-models-section")).toBeTruthy();
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "tripo_p2_quad_street_cafe_kit.glb",
+      "tripo_h31_korean_bus_stop_vending_shelter.glb",
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-model-tripo3d-mcp-bg-korean-alley-stairway"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
@@ -87,9 +87,13 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-mannequin"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "tripo_p2_quad_articulated_mannequin.glb",
+      "tripo_h31_mannequin_artist_easel_prop_kit.glb",
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-character-lab"));
+    expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
+      "tripo_h31_character_crystal_crown_halo_kit.glb",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-mcp-model-tripo3d-seg-character-lab-knight-outfit"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
       "tripo_seg_fantasy_knight_outfit_set.glb",
     );

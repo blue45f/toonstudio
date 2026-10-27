@@ -9,6 +9,7 @@ import {
 
 import { collaborationDraftKey, collaborationTemplate, emptyCollaborationDraft, parseCollaborationTemplate, readCollaborationDraft, saveCollaborationDraft, startCollaborationEditor, type CollaborationTemplateKind } from "./collaboration-draft";
 import { CollaborationConflictPanel, isCollaborationConflictError } from "./collaboration-conflict";
+import { CollaborationCoauthorRevenueMirrorSuite } from "./CollaborationCoauthorRevenueMirrorSuite";
 import { CollabField, CollabLogin, CollabNotice, CollaborationCard, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
 
 import type { CollaborationDetails, CollaborationInput, CollaborationPost, CollaborationStatus } from "../../../../../packages/core/src/collaboration";
@@ -255,6 +256,9 @@ function CollaborationEditorForm({ id, userId, initial, version, postStatus, pos
     {conflict && <CollaborationConflictPanel inputWarning busy={conflictBusy} onReload={() => { setConflictBusy(true); onReloadLatest(); }} onKeepEditing={() => setConflict(false)} />}
     </div>
     <CollaborationLivePreview input={input} userId={userId} postId={id} status={postStatus} hidden={postHidden} version={version} />
+    <div className="lg:col-span-2">
+      <CollaborationCoauthorRevenueMirrorSuite />
+    </div>
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-panel p-5 lg:col-span-2"><p role="status" className="inline-flex max-w-xl items-center gap-2 text-xs leading-6 text-fg-3"><Save size={15} className="shrink-0" aria-hidden="true" />{id ? bt("수정한 내용은 저장 버튼을 눌러야 반영돼요.", "You must press save for edits to apply.") : draftStatus || bt("초안 임시저장 준비 중", "Preparing draft autosave")}</p><button disabled={busy} type="submit" className={collabPrimary}><CheckCircle2 size={17} aria-hidden="true" />{busy ? bt("저장 중…", "Saving…") : id ? bt("수정 내용 저장", "Save changes") : bt("공고 공개 등록", "Publish post")}</button></div>
   </form>;
 }

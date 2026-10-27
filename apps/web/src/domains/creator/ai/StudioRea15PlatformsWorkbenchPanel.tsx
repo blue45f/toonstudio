@@ -65,13 +65,21 @@ import {
 } from "./claude/claude-rea15-webtoon-ecosystem-suite";
 import { REA15_TABS, type Rea15WorkbenchTabId } from "./claude/claude-rea39-extended-engines";
 import {
+  runClaudeAircraftCarrierCatapultBunkerBsl4Director,
   runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeCasinoBaccaratHoldemChipsAuctionDirector,
   runClaudeCyberTerminalServerRackCctvRooftopDirector,
+  runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector,
+  runClaudeGrandPianoLidViolinCigarWhiskyDirector,
   runClaudeHanokOndolBongsuWatermillMatchlockDirector,
   runClaudeHwachaGeobukseonTrebuchetJoustDirector,
   runClaudeJoseonGatBinyeoKatanaSayaDirector,
   runClaudeMensSuitBottomButtonTieHeelStrapDirector,
+  runClaudeMurimPlumBlossomTangClanBaguaDirector,
   runClaudeSignLanguageHearingAidLegalDepositDirector,
+  runClaudeSupercarDoorF1HaloYachtPrivateJetDirector,
+  runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector,
+  runClaudeXianxiaFlyingSwordInnBambooScrollDirector,
   runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
 } from "./claude/claude-localize";
 import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
