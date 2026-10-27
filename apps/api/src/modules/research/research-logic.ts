@@ -147,7 +147,7 @@ export async function buildResearchBrief(
     : Math.min(3, Math.max(0, Math.floor(input.maxFetchSources)));
   const { results } = await client.search(question, { count: 5 });
   const sorted = [...results].sort(byRelevance);
-  const fetchedExcerpts: ResearchBrief["fetchedExcerpts"] = [];
+  const fetchedExcerpts: Array<ResearchBrief["fetchedExcerpts"][number]> = [];
   let fetches = 0;
   if (input.fetchSources && maxFetchSources > 0) {
     for (const result of sorted.slice(0, maxFetchSources)) {
@@ -208,7 +208,7 @@ export interface TrendDigestInput {
 }
 
 function escapeMarkdownCell(text: string): string {
-  return text.replace(/[\[\]]/g, (char) => (char === "[" ? "(" : ")"));
+  return text.replace(/[[\]]/g, (char) => (char === "[" ? "(" : ")"));
 }
 
 export function trendDigestToMarkdown(
