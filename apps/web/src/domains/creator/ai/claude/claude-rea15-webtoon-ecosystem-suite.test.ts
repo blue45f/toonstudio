@@ -65,12 +65,21 @@ const TEST_ROUTE = {
 };
 
 describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
-  it("0. 120대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+  it("0. 140대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(120);
+    expect(themes).toHaveLength(140);
 
     const naverPainter = getRea15PlatformTheme("naver-webtoon-ai-painter");
     expect(naverPainter.accentPrimaryHex).toBe("#00dc64");
+
+    const piccoma = getRea15PlatformTheme("piccoma-smartoon-studio");
+    expect(piccoma.accentPrimaryHex).toBe("#ffd600");
+
+    const manta = getRea15PlatformTheme("manta-comics-studio");
+    expect(manta.accentPrimaryHex).toBe("#6c3ce9");
+
+    const glazeShield = getRea15PlatformTheme("glaze-nightshade-shield");
+    expect(glazeShield.coreWorkflowKo).toContain("Style Cloaking");
 
     const kakaoAlive = getRea15PlatformTheme("kakao-webtoon-alive");
     expect(kakaoAlive.accentPrimaryHex).toBe("#ffdc00");

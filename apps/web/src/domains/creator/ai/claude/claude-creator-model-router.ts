@@ -39,7 +39,7 @@ export type ClaudeCreatorTaskId =
   | "core:command-plan"
   | "core:localize"
   | "core:alt-text"
-  // 2. Storyboard & Production Suite (7)
+  // 2. Storyboard & Production Suite (9)
   | "production:storyboard-cut-breakdown"
   | "production:scroll-rhythm-doctor"
   | "production:color-mood-script"
@@ -47,6 +47,8 @@ export type ClaudeCreatorTaskId =
   | "production:sfx-typo-director"
   | "production:multi-character-crowd-wardrobe-lock"
   | "production:weather-particle-time-progression-lock"
+  | "production:panel-border-gutter-tension-lock"
+  | "production:hand-prop-grip-anatomy-continuity-lock"
   // 3. Next-Gen Suite (6)
   | "nextgen:retention-simulator"
   | "nextgen:ooc-voice-doctor"
@@ -276,6 +278,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "fast-inline",
     "컷간 강우/강설 파티클 밀도·젖은 의상/모발 광택 지속 시간·태양 고도각에 따른 그림자 비율 잠금은 Haiku 5.5 적용",
     2_560,
+  ),
+  "production:panel-border-gutter-tension-lock": defineRoute(
+    "production:panel-border-gutter-tension-lock",
+    "컷 테두리(사선·오버랩·프레임리스 블리드) 두께 & 컷간 여백(Gutter) 배경색 그라데이션 연속성 디렉터",
+    "storyboard-production",
+    "fast-inline",
+    "긴장도에 따른 컷 테두리 두께/기울기(Deg)·프레임 돌파(Pop-out) 레이어·컷간 여백(Gutter) 그라데이션 색상 잠금은 Haiku 5.5 적용",
+    2_560,
+  ),
+  "production:hand-prop-grip-anatomy-continuity-lock": defineRoute(
+    "production:hand-prop-grip-anatomy-continuity-lock",
+    "손가락 관절 해부학·소품 파지법(검자루·찻잔·스마트폰 Grip) & 양손 교대 연속성 고정기",
+    "storyboard-production",
+    "creative-production",
+    "AI 작화에서 가장 흔한 육손/관절 역꺾임 방지·소품별 정밀 파지(Grip) 해부학·컷간 주손(왼손/오른손) 반전 차단은 Sonnet 5.5 적용",
+    3_584,
   ),
 
   // 3. Next-Gen Suite

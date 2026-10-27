@@ -134,6 +134,27 @@ export const REA15_PLATFORM_IDS = [
   "zbrush-npr-matcap",
   "daz3d-genesis9-figure",
   "nomad-sculpt-webtoon",
+  // Wave 9 (20개 플랫폼 — 총 140개 플랫폼 완성)
+  "kuaikan-manhua-studio",
+  "piccoma-smartoon-studio",
+  "line-manga-indies",
+  "mrblue-webtoon-studio",
+  "bomtoon-kidari-studio",
+  "toomics-global-studio",
+  "manta-comics-studio",
+  "qimao-free-comic",
+  "tencent-ac-qq-comic",
+  "pixiv-comic-indie",
+  "artstation-3d-marketplace",
+  "sketchfab-3d-webtoon",
+  "polycam-3d-lidar-room",
+  "luma-genie-3d-prop",
+  "csm-3d-cube-ai",
+  "kaedim-3d-asset",
+  "scenario-gg-game-art",
+  "layer-ai-2d-spine",
+  "dashtoon-character-lora",
+  "glaze-nightshade-shield",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -142,6 +163,7 @@ export const REA65_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA80_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA100_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA120_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA140_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -478,3 +500,4 @@ export const REA65_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA80_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA100_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA120_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA140_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

@@ -10,10 +10,14 @@ import { EMPTY_AI_CONFIGURATION, EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai
 
 import {
   buildClaudeStoryboardAssistRequest,
+  buildDeterministicHandPropGripLock,
+  buildDeterministicPanelBorderGutterLock,
   buildDeterministicStoryboardAssistFallback,
   evaluateLocalizeWebtoonBubbleHealth,
   mapArtDirectorIssuesToProductionLayers,
   normalizeClaudeStoryboardAssist,
+  runClaudeHandPropGripAnatomyDirector,
+  runClaudePanelBorderGutterTensionDirector,
   runClaudeWebtoonStoryboardAssist,
 } from "./claude-webtoon-storyboard-assist";
 
@@ -248,5 +252,58 @@ describe("claude-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 
     expect(health.mobileSafeLineCount).toBe(1);
     expect(health.mobileOverflowLineIndices).toEqual([2]);
     expect(health.readinessScore).toBe(50);
+  });
+
+  it("컷 테두리·사선 프레임·여백(Gutter) 그라데이션 연속성 디렉터(Haiku 5.5)와 손가락 관절·소품 파지법 연속성 고정기(Sonnet 5.5)를 검증한다", async () => {
+    connectClaude("claude-sonnet-5-5");
+
+    const localBorder = buildDeterministicPanelBorderGutterLock({
+      sceneSummaryKo: "황태자 카시안의 결투 참격 시퀀스",
+      cutCount: 3,
+      peakTensionCutIndex: 2,
+      moodMode: "abyss-combat",
+    });
+    expect(localBorder.panelBorderSpecs).toHaveLength(3);
+    expect(localBorder.panelBorderSpecs[1]?.frameStyle).toBe("diagonal-slash-cut");
+
+    claudeParseMock.mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-4-5-20251001",
+        usage: { input_tokens: 180, output_tokens: 290 },
+      },
+      parsed: localBorder,
+    });
+
+    const liveBorder = await runClaudePanelBorderGutterTensionDirector({
+      sceneSummaryKo: "황태자 카시안의 결투 참격 시퀀스",
+      cutCount: 3,
+    });
+    expect(liveBorder.source).toBe("claude-live");
+    expect(liveBorder.taskId).toBe("production:panel-border-gutter-tension-lock");
+
+    const localGrip = buildDeterministicHandPropGripLock({
+      characterName: "카시안",
+      propNameKo: "청류검(장검)",
+      dominantHand: "right-hand",
+    });
+    expect(localGrip.cutGripDirectives.length).toBeGreaterThanOrEqual(2);
+    expect(localGrip.cutGripDirectives[0]?.negativeAnatomyGuardPrompt).toContain("polydactyly");
+
+    claudeParseMock.mockResolvedValueOnce({
+      message: {
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 210, output_tokens: 340 },
+      },
+      parsed: localGrip,
+    });
+
+    const liveGrip = await runClaudeHandPropGripAnatomyDirector({
+      characterName: "카시안",
+      propNameKo: "청류검(장검)",
+      dominantHand: "right-hand",
+    });
+    expect(liveGrip.source).toBe("claude-live");
+    expect(liveGrip.taskId).toBe("production:hand-prop-grip-anatomy-continuity-lock");
+    expect(liveGrip.anatomyConsistencyScore).toBeGreaterThanOrEqual(90);
   });
 });

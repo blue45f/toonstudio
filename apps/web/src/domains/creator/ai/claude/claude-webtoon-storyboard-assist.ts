@@ -38,6 +38,10 @@ import {
   type GenvasPosePresetId,
 } from "../studio-webtoon-storyboard-pipeline";
 
+import {
+  resolveCreatorTaskModelRoute,
+  type ClaudeCreateOptions,
+} from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 
 import type { ArtDirectorReview } from "./claude-art-director";
@@ -395,4 +399,307 @@ export function evaluateLocalizeWebtoonBubbleHealth(
     mobileOverflowLineIndices: Object.freeze(mobileOverflowLineIndices),
     readinessScore,
   });
+}
+
+/* ============================================================================
+ * Wave 10: 컷 테두리·사선 프레임·여백(Gutter) 그라데이션 연속성 디렉터
+ *          & 손가락 관절 해부학·소품 파지(Grip) 양손 연속성 고정기
+ * ============================================================================ */
+
+export const ClaudePanelBorderGutterLockSchema = z.object({
+  sequenceTitleKo: z.string(),
+  overallTensionCurveScore: z.number(),
+  panelBorderSpecs: z
+    .array(
+      z.object({
+        cutNumber: z.number(),
+        frameStyle: z.enum([
+          "rectangular-standard",
+          "diagonal-slash-cut",
+          "frameless-full-bleed",
+          "overlapping-inset",
+          "shattered-impact-frame",
+        ]),
+        borderThicknessPx: z.number(),
+        diagonalTiltDeg: z.number(),
+        popOutBreakthroughElementKo: z.string(),
+        gutterHeightPx: z.number(),
+        gutterGradientFromHex: z.string(),
+        gutterGradientToHex: z.string(),
+      }),
+    )
+    .min(2)
+    .max(6),
+  scrollTransitionNoteKo: z.string(),
+});
+
+export type ClaudePanelBorderGutterLockView = z.infer<
+  typeof ClaudePanelBorderGutterLockSchema
+> & {
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly taskId: "production:panel-border-gutter-tension-lock";
+};
+
+export interface PanelBorderGutterLockInput {
+  readonly sceneSummaryKo: string;
+  readonly cutCount?: number;
+  readonly peakTensionCutIndex?: number;
+  readonly moodMode?: "daylight-romance" | "abyss-combat" | "flashback-fade";
+}
+
+export function buildDeterministicPanelBorderGutterLock(
+  input: PanelBorderGutterLockInput,
+): ClaudePanelBorderGutterLockView {
+  const cutCount = Math.max(2, Math.min(6, input.cutCount ?? 3));
+  const peakIdx = input.peakTensionCutIndex ?? 2;
+  const isDark = (input.moodMode ?? "abyss-combat") === "abyss-combat";
+  const panelBorderSpecs = Array.from({ length: cutCount }, (_, idx) => {
+    const cutNumber = idx + 1;
+    const isPeak = cutNumber === peakIdx;
+    return {
+      cutNumber,
+      frameStyle: isPeak
+        ? ("diagonal-slash-cut" as const)
+        : cutNumber === cutCount
+          ? ("frameless-full-bleed" as const)
+          : ("rectangular-standard" as const),
+      borderThicknessPx: isPeak ? 4 : cutNumber === cutCount ? 0 : 2,
+      diagonalTiltDeg: isPeak ? -14 : 0,
+      popOutBreakthroughElementKo: isPeak
+        ? "검기 궤적과 캐릭터 앞머리가 상단 컷 테두리 바깥 여백으로 48px 돌파(Z-Index Pop-Out)"
+        : "패널 내부 표준 마스킹 유지",
+      gutterHeightPx: isPeak ? 260 : 160,
+      gutterGradientFromHex: isDark ? "#111318" : "#FFFFFF",
+      gutterGradientToHex: isPeak ? "#050608" : isDark ? "#1B1F2A" : "#F5F3FF",
+    };
+  });
+
+  return Object.freeze({
+    source: "deterministic-fallback",
+    model: "claude-haiku-5-5",
+    taskId: "production:panel-border-gutter-tension-lock",
+    sequenceTitleKo: cleanSingleLineText(input.sceneSummaryKo) || "클라이맥스 사선 컷 & 여백 암전 시퀀스",
+    overallTensionCurveScore: 95,
+    panelBorderSpecs,
+    scrollTransitionNoteKo:
+      "클라이맥스 타격 컷에서 -14° 사선 프레임과 260px 암전 그라데이션 여백(Gutter)을 결합해 모바일 스크롤 체류 시간을 극대화합니다.",
+  });
+}
+
+export async function runClaudePanelBorderGutterTensionDirector(
+  input: PanelBorderGutterLockInput,
+  options: ClaudeCreateOptions & {
+    readonly route?: ClaudeRoute | null;
+    readonly fallbackOnError?: boolean;
+    readonly signal?: AbortSignal;
+  } = {},
+): Promise<ClaudePanelBorderGutterLockView> {
+  const taskRoute = resolveCreatorTaskModelRoute(
+    "production:panel-border-gutter-tension-lock",
+    options,
+  );
+  let activeRoute = options.route ?? resolveClaudeRoute();
+  if (!activeRoute) {
+    hydrateDefaultEnvClaudeConnection();
+    activeRoute = resolveClaudeRoute();
+  }
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) {
+      return buildDeterministicPanelBorderGutterLock(input);
+    }
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+
+  const requestedModel = resolveClaudeRequestModel(
+    taskRoute.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: taskRoute.maxTokens,
+    system:
+      "당신은 한국 웹툰 연출 감독입니다. 컷별 프레임 형태(직사각형/사선/프레임리스/오버랩), 테두리 두께(px), 사선 각도(deg), 컷 밖 돌출(Pop-out) 요소, 컷간 여백(Gutter) 그라데이션 HEX를 JSON으로 설계하세요.",
+    messages: [
+      {
+        role: "user",
+        content: `장면: ${input.sceneSummaryKo}\n컷 수: ${input.cutCount ?? 3}\n최고조 컷 번호: ${input.peakTensionCutIndex ?? 2}\n무드: ${input.moodMode ?? "abyss-combat"}`,
+      },
+    ],
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudePanelBorderGutterLockSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudePanelBorderGutterLockSchema,
+        }),
+      },
+    );
+    return Object.freeze({
+      ...parsed,
+      source: "claude-live",
+      model: message.model || requestedModel,
+      taskId: "production:panel-border-gutter-tension-lock",
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicPanelBorderGutterLock(input);
+    }
+    throw error;
+  }
+}
+
+export const ClaudeHandPropGripLockSchema = z.object({
+  characterName: z.string(),
+  propNameKo: z.string(),
+  dominantHand: z.enum(["right-hand", "left-hand", "two-handed"]),
+  anatomyConsistencyScore: z.number(),
+  cutGripDirectives: z
+    .array(
+      z.object({
+        cutNumber: z.number(),
+        activeHand: z.enum(["right-hand", "left-hand", "two-handed"]),
+        gripArchetype: z.enum([
+          "sword-saber-hammer-grip",
+          "teacup-delicate-pinch",
+          "smartphone-onehand-cradle",
+          "bowstring-three-finger-draw",
+          "spellbook-open-palm-support",
+        ]),
+        thumbAndIndexArticulationKo: z.string(),
+        wristAngleDeg: z.number(),
+        propContactAnchorKo: z.string(),
+        negativeAnatomyGuardPrompt: z.string(),
+      }),
+    )
+    .min(2)
+    .max(5),
+  mirroringPreventionRuleKo: z.string(),
+});
+
+export type ClaudeHandPropGripLockView = z.infer<typeof ClaudeHandPropGripLockSchema> & {
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly taskId: "production:hand-prop-grip-anatomy-continuity-lock";
+};
+
+export interface HandPropGripLockInput {
+  readonly characterName: string;
+  readonly propNameKo: string;
+  readonly dominantHand?: "right-hand" | "left-hand" | "two-handed";
+  readonly cutActionsKo?: readonly string[];
+}
+
+export function buildDeterministicHandPropGripLock(
+  input: HandPropGripLockInput,
+): ClaudeHandPropGripLockView {
+  const dominantHand = input.dominantHand ?? "right-hand";
+  const actions =
+    input.cutActionsKo && input.cutActionsKo.length >= 2
+      ? input.cutActionsKo
+      : ["검자루를 뽑아 정안세로 겨눔", "대각선 참격 후 검을 거두며 손목 회전"];
+  const isTea = /찻잔|티컵|잔|와인/.test(input.propNameKo);
+  const isPhone = /스마트폰|휴대폰|폰/.test(input.propNameKo);
+  const gripArchetype = isTea
+    ? ("teacup-delicate-pinch" as const)
+    : isPhone
+      ? ("smartphone-onehand-cradle" as const)
+      : ("sword-saber-hammer-grip" as const);
+
+  return Object.freeze({
+    source: "deterministic-fallback",
+    model: "claude-sonnet-5-5",
+    taskId: "production:hand-prop-grip-anatomy-continuity-lock",
+    characterName: cleanSingleLineText(input.characterName) || "강하준",
+    propNameKo: cleanSingleLineText(input.propNameKo) || "청류검(장검)",
+    dominantHand,
+    anatomyConsistencyScore: 97,
+    cutGripDirectives: actions.slice(0, 4).map((action, idx) => ({
+      cutNumber: idx + 1,
+      activeHand: dominantHand,
+      gripArchetype,
+      thumbAndIndexArticulationKo: `${action} — 엄지 첫마디(IP joint)가 검지 두 번째 마디 위를 감싸 쥐고 새끼손가락이 자루 하단 폼멜을 견고히 지지(5지 관절 고정)`,
+      wristAngleDeg: idx % 2 === 0 ? 15 : -22,
+      propContactAnchorKo: `${input.propNameKo || "소품"} 무게중심 축이 손바닥 생명선 홈(Thenar crease)을 관통하도록 접점 잠금`,
+      negativeAnatomyGuardPrompt:
+        "extra fingers, 6 fingers, polydactyly, fused knuckles, backwards thumb, floating sword hilt, mirrored left-right hand swap",
+    })),
+    mirroringPreventionRuleKo: `${input.characterName || "캐릭터"}의 주사용 손(${dominantHand})을 전 컷 고정하며, 카메라가 180도 회전해도 해부학적 오른손/왼손 반전이 발생하지 않도록 엄지 방향(내측/외측)을 잠급니다.`,
+  });
+}
+
+export async function runClaudeHandPropGripAnatomyDirector(
+  input: HandPropGripLockInput,
+  options: ClaudeCreateOptions & {
+    readonly route?: ClaudeRoute | null;
+    readonly fallbackOnError?: boolean;
+    readonly signal?: AbortSignal;
+  } = {},
+): Promise<ClaudeHandPropGripLockView> {
+  const taskRoute = resolveCreatorTaskModelRoute(
+    "production:hand-prop-grip-anatomy-continuity-lock",
+    options,
+  );
+  let activeRoute = options.route ?? resolveClaudeRoute();
+  if (!activeRoute) {
+    hydrateDefaultEnvClaudeConnection();
+    activeRoute = resolveClaudeRoute();
+  }
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) {
+      return buildDeterministicHandPropGripLock(input);
+    }
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+
+  const requestedModel = resolveClaudeRequestModel(
+    taskRoute.model,
+    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
+  );
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: taskRoute.maxTokens,
+    system:
+      "당신은 웹툰 인체 해부학·작화 감독입니다. AI 생성 시 흔히 발생하는 육손/손가락 기형과 컷간 왼손·오른손 반전을 막기 위해, 컷별 5손가락 관절 파지법(Grip)과 소품 접점, 네거티브 가드 프롬프트를 JSON으로 설계하세요.",
+    messages: [
+      {
+        role: "user",
+        content: `캐릭터: ${input.characterName}\n소품: ${input.propNameKo}\n주사용 손: ${input.dominantHand ?? "right-hand"}\n컷별 동작: ${(input.cutActionsKo ?? []).join(" -> ") || "소품 파지 후 연속 액션"}`,
+      },
+    ],
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(
+      activeRoute,
+      request,
+      ClaudeHandPropGripLockSchema,
+      {
+        signal: options.signal,
+        capUsd: estimateStructuredCostCapUsd({
+          model: requestedModel,
+          request,
+          schema: ClaudeHandPropGripLockSchema,
+        }),
+      },
+    );
+    return Object.freeze({
+      ...parsed,
+      source: "claude-live",
+      model: message.model || requestedModel,
+      taskId: "production:hand-prop-grip-anatomy-continuity-lock",
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicHandPropGripLock(input);
+    }
+    throw error;
+  }
 }

@@ -243,3 +243,6 @@
 | `competitor:speech-bubble-tail-occlusion-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 160 | 340 | `$0.001488` | 안면·동공·비대칭 흉터 가림 0% 말풍선 안전 영역 및 화자 입 방향 꼬리 벡터·SFX L1.5 분리 고정 |
 | `competitor:action-weapon-motion-arc-smear-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 145 | 340 | `$0.005535` | 4단계 전투(Wind-up→Slash Smear→Hit-Stop→Follow-through) 검기 궤적 연속성 및 잔상 배율 고정 |
 | `rea15:creative-dopamine-scroll-ux-synthesizer (120-platform)` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 147 | 340 | `$0.010705` | 네이버 AI 페인터·카카오 얼라이브·레진·ComfyUI IP-Adapter 포함 120대 플랫폼 UI/UX 테마 합성 |
+| `production:panel-border-gutter-tension-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 110 | 450 | `$0.001888` | 클라이맥스 사선(-14°)·프레임리스 블리드 컷 테두리 두께 및 260px 암전 여백(Gutter) 그라데이션 연속성 고정 |
+| `production:hand-prop-grip-anatomy-continuity-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 99 | 450 | `$0.007047` | 5손가락 관절 해부학·청류검/찻잔/스마트폰 정밀 파지법(Grip) 및 육손/좌우반전 네거티브 가드 고정 |
+| `rea140:global-webtoon-3d-platform-ui-ux-synthesis (140-platform)` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 118 | 450 | `$0.013020` | 픽코마 SMARTOON·라인망가·만타·투믹스·콰이칸·글레이즈/나이트셰이드·폴리캠/루마지니 3D 포함 140대 플랫폼 UI/UX 통합 합성 |
