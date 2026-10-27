@@ -53,6 +53,12 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
 }: StudioVirtualOfficePracticalWorkbenchSectionProps) {
   const [wbState, setWbState] = useState(createInitialPracticalWorkbenchState);
   const [retakeDraft, setRetakeDraft] = useState("");
+  const [selectedV13EmoteId, setSelectedV13EmoteId] = useState(
+    engineState.activeV13EmoteId,
+  );
+  const [selectedV13PropId, setSelectedV13PropId] = useState(
+    engineState.activeV13PropId,
+  );
 
   const activeDesk =
     engineState.cutDesks.find((d) => d.deskId === engineState.selectedCutDeskId) ??
@@ -561,6 +567,97 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
                 {wbState.lastGeneratedHandoffMarkdown}
               </pre>
             ) : null}
+          </div>
+
+          {/* 4. Nano Banana v13 Interactive Studio Props & Creator Dynamic Emotes */}
+          <div className="mt-2.5 border-t border-line pt-2.5">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="rounded border border-line bg-panel p-2">
+                <div className="text-[10px] font-bold text-fg">
+                  크리에이터 다이내믹 이모트 & 보행 스프라이트 (v13 RGBA)
+                </div>
+                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  {engineState.v13Emotes.map((emote) => {
+                    const active = emote.id === selectedV13EmoteId;
+                    return (
+                      <button
+                        key={emote.id}
+                        type="button"
+                        data-testid={`nextgen-v13-emote-${emote.id}-btn`}
+                        onClick={() => {
+                          setSelectedV13EmoteId(emote.id);
+                          onBannerChange?.(
+                            `[크리에이터 다이내믹 이모트 발동] ${emote.labelKo} — ${emote.descriptionKo}`,
+                          );
+                        }}
+                        className={`flex items-center gap-1.5 rounded border p-1.5 text-left text-[10px] transition ${
+                          active
+                            ? "border-accent bg-accent-soft text-accent font-semibold"
+                            : "border-line bg-card text-fg-2 hover:text-fg"
+                        }`}
+                      >
+                        <img
+                          src={emote.spriteUrl}
+                          alt={emote.labelKo}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-8 w-8 shrink-0 rounded border border-line bg-panel object-contain"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate">{emote.labelKo}</div>
+                          <div className="text-[9px] text-fg-3">
+                            단축키 [{emote.shortcutKey}]
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="rounded border border-line bg-panel p-2">
+                <div className="text-[10px] font-bold text-fg">
+                  2.5D 아이소메트릭 인터랙티브 스튜디오 가구·존 프롭 (v13 RGBA)
+                </div>
+                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  {engineState.v13Props.map((prop) => {
+                    const active = prop.id === selectedV13PropId;
+                    return (
+                      <button
+                        key={prop.id}
+                        type="button"
+                        data-testid={`nextgen-v13-prop-${prop.id}-btn`}
+                        onClick={() => {
+                          setSelectedV13PropId(prop.id);
+                          onBannerChange?.(
+                            `[스튜디오 인터랙티브 가구 작동] ${prop.labelKo} — ${prop.interactiveHintKo}`,
+                          );
+                        }}
+                        className={`flex items-center gap-1.5 rounded border p-1.5 text-left text-[10px] transition ${
+                          active
+                            ? "border-accent bg-accent-soft text-accent font-semibold"
+                            : "border-line bg-card text-fg-2 hover:text-fg"
+                        }`}
+                      >
+                        <img
+                          src={prop.spriteUrl}
+                          alt={prop.labelKo}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-8 w-8 shrink-0 rounded border border-line bg-panel object-contain"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate">{prop.labelKo}</div>
+                          <div className="truncate text-[9px] text-fg-3">
+                            {prop.zoneRoleKo}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

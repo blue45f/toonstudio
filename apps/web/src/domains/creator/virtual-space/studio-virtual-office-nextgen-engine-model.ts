@@ -6,6 +6,8 @@ import {
   DEFAULT_STUDIO_COLLIDERS,
   NANO_BANANA_V11_CREATOR_PERSONAS,
   NANO_BANANA_V11_STUDIO_THEMES,
+  NANO_BANANA_V13_CREATOR_EMOTES,
+  NANO_BANANA_V13_STUDIO_PROPS,
   PIPELINE_STAGE_ORDER,
   STUDIO_LIGHTING_MOODS,
   type CharacterSecondaryMotionFrame,
@@ -13,6 +15,8 @@ import {
   type CreatorPersonaPose,
   type NanoBananaCreatorPersonaId,
   type NanoBananaStudioThemeId,
+  type NanoBananaV13EmoteId,
+  type NanoBananaV13PropId,
   type NextGenVirtualStudioEngineState,
   type SpatialAudioEvaluation,
   type StudioColliderBox,
@@ -38,6 +42,16 @@ export function createInitialNextGenStudioEngineState(): NextGenVirtualStudioEng
       "/assets/virtual-studio/nano-banana-v12/genre-studio-themes-atlas.webp",
     v12CastCleanAtlasUrl:
       "/assets/virtual-studio/nano-banana-v12/specialist-cast-clean-atlas.webp",
+    v13ThemesAtlasUrl:
+      "/assets/virtual-studio/nano-banana-v13/four-more-studio-themes-atlas.webp",
+    v13PropsAtlasUrl:
+      "/assets/virtual-studio/nano-banana-v13/webtoon-props-and-zones-atlas.webp",
+    v13EmoteSheetUrl:
+      "/assets/virtual-studio/nano-banana-v13/creator-emote-and-walk-sheet.webp",
+    activeV13EmoteId: "crunch-flame-focus",
+    activeV13PropId: "dual-cintiq-critique-pod",
+    v13Emotes: NANO_BANANA_V13_CREATOR_EMOTES,
+    v13Props: NANO_BANANA_V13_STUDIO_PROPS,
     lightingMoodId: "daylight-studio",
     deadlineCrunchFeverEnabled: false,
     physics: {
@@ -191,6 +205,30 @@ export function selectNanoBananaCreatorPersona(
     activePersonaId: persona.id,
     activePersonaPose: pose,
     selectedCutDeskId: persona.defaultDeskId,
+  };
+}
+
+export function selectNanoBananaV13Emote(
+  state: NextGenVirtualStudioEngineState,
+  emoteId: NanoBananaV13EmoteId,
+): NextGenVirtualStudioEngineState {
+  const emote =
+    state.v13Emotes.find((item) => item.id === emoteId) ?? state.v13Emotes[0];
+  return {
+    ...state,
+    activeV13EmoteId: emote.id,
+  };
+}
+
+export function selectNanoBananaV13Prop(
+  state: NextGenVirtualStudioEngineState,
+  propId: NanoBananaV13PropId,
+): NextGenVirtualStudioEngineState {
+  const prop =
+    state.v13Props.find((item) => item.id === propId) ?? state.v13Props[0];
+  return {
+    ...state,
+    activeV13PropId: prop.id,
   };
 }
 

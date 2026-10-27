@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
 import {
+  NANO_BANANA_V11_STUDIO_THEMES,
+  NANO_BANANA_V13_CREATOR_EMOTES,
+  NANO_BANANA_V13_STUDIO_PROPS,
+  type NanoBananaV13EmoteId,
+} from "./studio-virtual-office-nextgen-engine-data";
+import {
   BIOPHILIC_UX_THEME_PRESETS,
   computeVoiceConeSvgPath,
   createDefaultSpatialCanvasHudState,
@@ -42,6 +48,12 @@ export function StudioVirtualOfficeSpatialCanvasHud({
   const [hudState, setHudState] = useState<SpatialCanvasHudState>(() =>
     createDefaultSpatialCanvasHudState(),
   );
+  const [floorBackdropUrl, setFloorBackdropUrl] = useState<string>(
+    "/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp",
+  );
+  const [activeSelfEmoteId, setActiveSelfEmoteId] = useState<
+    NanoBananaV13EmoteId | null
+  >(null);
   const [hudToastKo, setHudToastKo] = useState<string>(
     "아이소메트릭 공간 플로어 캔버스 · 구역을 클릭하면 내 아바타가 즉시 텔레포트합니다.",
   );
@@ -160,6 +172,34 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               </option>
             ))}
           </select>
+
+          <select
+            aria-label="2.5D 스튜디오 플로어 배경 테마 선택 (12종)"
+            data-testid="spatial-floor-theme-select"
+            value={floorBackdropUrl}
+            onChange={(e) => {
+              const nextUrl = e.target.value;
+              setFloorBackdropUrl(nextUrl);
+              const matched = NANO_BANANA_V11_STUDIO_THEMES.find(
+                (t) => t.assetUrl === nextUrl,
+              );
+              setHudToastKo(
+                matched
+                  ? `스튜디오 플로어 배경을 '${matched.titleKo}' 테마로 전환했습니다.`
+                  : "플래그십 2.5D 스튜디오 파노라마 배경을 적용했습니다.",
+              );
+            }}
+            className="rounded-lg border border-line bg-panel px-2 py-1 text-xs"
+          >
+            <option value="/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp">
+              🏛️ 플래그십 2.5D 파노라마 (v10)
+            </option>
+            {NANO_BANANA_V11_STUDIO_THEMES.map((theme) => (
+              <option key={theme.id} value={theme.assetUrl}>
+                🎨 {theme.titleKo}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -202,19 +242,23 @@ export function StudioVirtualOfficeSpatialCanvasHud({
 
           <rect x="0" y="0" width="714" height="280" fill="url(#spatial-grid-dots)" />
           <image
-            href="/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp"
+            href={floorBackdropUrl}
             x="0"
             y="0"
             width="714"
             height="280"
             preserveAspectRatio="xMidYMid slice"
-            opacity="0.22"
+            opacity="0.28"
             data-testid="spatial-nano-banana-floor-backdrop"
           />
 
           {/* Clickable Room Zones */}
-          {hudState.zones.map((zone) => {
+          {hudState.zones.map((zone, zoneIdx) => {
             const isSelected = hudState.selectedZoneId === zone.zoneId;
+            const zoneProp =
+              NANO_BANANA_V13_STUDIO_PROPS[
+                zoneIdx % NANO_BANANA_V13_STUDIO_PROPS.length
+              ];
             return (
               <g
                 key={zone.zoneId}
@@ -247,6 +291,17 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                   strokeWidth={isSelected ? 2.2 : 1.2}
                   strokeDasharray={zone.soundproofed ? "0" : "5 3"}
                 />
+                {zoneProp ? (
+                  <image
+                    href={zoneProp.spriteUrl}
+                    x={zone.x + zone.width - 48}
+                    y={zone.y + zone.height - 46}
+                    width="40"
+                    height="40"
+                    opacity="0.92"
+                    data-testid={`spatial-zone-prop-${zoneProp.id}`}
+                  />
+                ) : null}
                 <text
                   x={zone.x + 12}
                   y={zone.y + 22}
@@ -339,8 +394,12 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               />
               <image
                 href={
-                  AVATAR_SPRITE_URLS[avatar.avatarId] ??
-                  "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp"
+                  avatar.isSelf && activeSelfEmoteId
+                    ? (NANO_BANANA_V13_CREATOR_EMOTES.find(
+                        (e) => e.id === activeSelfEmoteId,
+                      )?.spriteUrl ?? AVATAR_SPRITE_URLS[avatar.avatarId])
+                    : (AVATAR_SPRITE_URLS[avatar.avatarId] ??
+                      "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp")
                 }
                 x="-18"
                 y="-22"
@@ -445,6 +504,42 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             >
               ⛑️ {hudState.dockFocusHelmetOn ? "초집중 헬멧 착용 중" : "상태 모자"}
             </button>
+
+            {/* Nano Banana v13 Dynamic Emote Quick Buttons */}
+            {NANO_BANANA_V13_CREATOR_EMOTES.map((emote) => {
+              const active = activeSelfEmoteId === emote.id;
+              return (
+                <button
+                  key={emote.id}
+                  type="button"
+                  data-testid={`spatial-dock-emote-${emote.id}-btn`}
+                  aria-pressed={active}
+                  onClick={() => {
+                    const nextId = active ? null : emote.id;
+                    setActiveSelfEmoteId(nextId);
+                    setHudToastKo(
+                      nextId
+                        ? `내 캐릭터 이모트 전환: ${emote.labelKo}`
+                        : "기본 작업 아바타 포즈로 복귀했습니다.",
+                    );
+                  }}
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] transition ${
+                    active
+                      ? "border-accent bg-accent-soft font-semibold text-accent"
+                      : "border-line bg-card text-fg-2 hover:text-fg"
+                  }`}
+                >
+                  <img
+                    src={emote.spriteUrl}
+                    alt={emote.labelKo}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-4 w-4 object-contain"
+                  />
+                  <span>{emote.labelKo}</span>
+                </button>
+              );
+            })}
           </div>
 
           <button

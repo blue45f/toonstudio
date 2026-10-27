@@ -13,6 +13,8 @@ import {
   navigateAvatarClickToWalk,
   selectNanoBananaCreatorPersona,
   selectNanoBananaStudioTheme,
+  selectNanoBananaV13Emote,
+  selectNanoBananaV13Prop,
   setSoundscapeChannelGain,
   stepAvatarPhysicsTick,
   toggleGatherGhostModeGKey,
@@ -32,11 +34,13 @@ import {
 } from "./studio-virtual-office-practical-workbench-model";
 
 describe("studio-virtual-office-nextgen-engine-model", () => {
-  it("exposes REA competitor benchmarks and 8 Nano Banana (v11+v12) themes + 8 creator/mascot personas on disk", () => {
+  it("exposes REA competitor benchmarks and 12 Nano Banana (v11+v12+v13) themes + 8 creator/mascot personas + 4 v13 emotes + 4 v13 props on disk", () => {
     const state = createInitialNextGenStudioEngineState();
     expect(NEXTGEN_COMPETITOR_REA_BENCHMARKS).toHaveLength(4);
-    expect(state.themes).toHaveLength(8);
+    expect(state.themes).toHaveLength(12);
     expect(state.personas).toHaveLength(8);
+    expect(state.v13Emotes).toHaveLength(4);
+    expect(state.v13Props).toHaveLength(4);
 
     const publicDir = existsSync(resolve(process.cwd(), "public"))
       ? resolve(process.cwd(), "public")
@@ -45,6 +49,9 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
     expect(existsSync(resolve(publicDir, `.${state.castCleanAtlasUrl}`))).toBe(true);
     expect(existsSync(resolve(publicDir, `.${state.v12ThemesAtlasUrl}`))).toBe(true);
     expect(existsSync(resolve(publicDir, `.${state.v12CastCleanAtlasUrl}`))).toBe(true);
+    expect(existsSync(resolve(publicDir, `.${state.v13ThemesAtlasUrl}`))).toBe(true);
+    expect(existsSync(resolve(publicDir, `.${state.v13PropsAtlasUrl}`))).toBe(true);
+    expect(existsSync(resolve(publicDir, `.${state.v13EmoteSheetUrl}`))).toBe(true);
 
     for (const theme of state.themes) {
       expect(existsSync(resolve(publicDir, `.${theme.assetUrl}`))).toBe(true);
@@ -53,6 +60,18 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
       expect(existsSync(resolve(publicDir, `.${persona.idleSpriteUrl}`))).toBe(true);
       expect(existsSync(resolve(publicDir, `.${persona.workSpriteUrl}`))).toBe(true);
     }
+    for (const emote of state.v13Emotes) {
+      expect(existsSync(resolve(publicDir, `.${emote.spriteUrl}`))).toBe(true);
+    }
+    for (const prop of state.v13Props) {
+      expect(existsSync(resolve(publicDir, `.${prop.spriteUrl}`))).toBe(true);
+    }
+
+    const withEmote = selectNanoBananaV13Emote(state, "celebrate-highfive");
+    expect(withEmote.activeV13EmoteId).toBe("celebrate-highfive");
+
+    const withProp = selectNanoBananaV13Prop(withEmote, "blender-hologram-stage-table");
+    expect(withProp.activeV13PropId).toBe("blender-hologram-stage-table");
   });
 
   it("switches studio themes and automatically syncs recommended lighting mood & soundscape presets", () => {

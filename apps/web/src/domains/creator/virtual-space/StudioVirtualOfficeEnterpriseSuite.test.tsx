@@ -249,13 +249,19 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     fireEvent.click(screen.getByTestId("nano-banana-prop-biophilic-planter-set-btn"));
     expect(screen.getByRole("status").textContent).toContain("바이오필릭 플랜테리어 컬렉션");
 
-    // Nano Banana v11+v12 Next-Gen Engine Panel verification
+    // Nano Banana v11+v12+v13 Next-Gen Engine Panel verification
     expect(screen.getByTestId("virtual-office-nextgen-engine-panel")).toBeTruthy();
     fireEvent.click(screen.getByTestId("nextgen-theme-romance-palace-conservatory-btn"));
     expect(
       screen.getByTestId("nextgen-active-theme-hero-img").getAttribute("src"),
     ).toContain(
       "/assets/virtual-studio/nano-banana-v12/themes/romance-palace-conservatory.webp",
+    );
+    fireEvent.click(screen.getByTestId("nextgen-theme-magic-academy-astral-library-btn"));
+    expect(
+      screen.getByTestId("nextgen-active-theme-hero-img").getAttribute("src"),
+    ).toContain(
+      "/assets/virtual-studio/nano-banana-v13/themes/magic-academy-astral-library.webp",
     );
 
     fireEvent.click(screen.getByTestId("nextgen-persona-sound-letterer-btn"));
@@ -302,6 +308,14 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(
       screen.getByTestId("practical-handoff-markdown-box").textContent,
     ).toContain("[툰스튜디오 일일 원고 마감·인수인계 브리핑]");
+
+    // Nano Banana v13 Creator Emotes & Interactive Props verification
+    fireEvent.click(screen.getByTestId("nextgen-v13-emote-celebrate-highfive-btn"));
+    expect(screen.getByRole("status").textContent).toContain("연재 승인 점프 하이파이브");
+    fireEvent.click(screen.getByTestId("nextgen-v13-prop-blender-hologram-stage-table-btn"));
+    expect(screen.getByRole("status").textContent).toContain(
+      "3D 블렌더 홀로그램 스테이지 테이블",
+    );
   });
 
   it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {
@@ -311,6 +325,21 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(screen.getByTestId("spatial-voice-cone-svg")).toBeTruthy();
     expect(screen.getByTestId("spatial-nano-banana-floor-backdrop")).toBeTruthy();
     expect(screen.getByTestId("spatial-companion-mascot-follower")).toBeTruthy();
+
+    fireEvent.change(screen.getByTestId("spatial-floor-theme-select"), {
+      target: {
+        value:
+          "/assets/virtual-studio/nano-banana-v13/themes/dolby-sound-dubbing-studio.webp",
+      },
+    });
+    expect(
+      screen.getByTestId("spatial-nano-banana-floor-backdrop").getAttribute("href"),
+    ).toBe("/assets/virtual-studio/nano-banana-v13/themes/dolby-sound-dubbing-studio.webp");
+
+    fireEvent.click(screen.getByTestId("spatial-dock-emote-celebrate-highfive-btn"));
+    expect(screen.getByTestId("spatial-hud-toast").textContent).toContain(
+      "연재 승인 점프 하이파이브",
+    );
 
     fireEvent.click(screen.getByTestId("spatial-view-mode-acoustic-heatmap"));
     expect(screen.getByTestId("spatial-hud-toast").textContent).toContain("음향 dB 히트맵");

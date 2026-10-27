@@ -10,7 +10,39 @@ export type NanoBananaStudioThemeId =
   | "romance-palace-conservatory"
   | "murim-bamboo-pavilion"
   | "scifi-orbital-command"
-  | "brooklyn-indie-comics-loft";
+  | "brooklyn-indie-comics-loft"
+  | "dolby-sound-dubbing-studio"
+  | "magic-academy-astral-library"
+  | "rooftop-sunset-screening-stage"
+  | "abyssal-bioluminescent-worldlab";
+
+export type NanoBananaV13EmoteId =
+  | "stride-walk"
+  | "celebrate-highfive"
+  | "crunch-flame-focus"
+  | "coffee-cat-break";
+
+export type NanoBananaV13PropId =
+  | "dual-cintiq-critique-pod"
+  | "blender-hologram-stage-table"
+  | "webtoon-sound-foley-booth"
+  | "deadline-espresso-cat-lounge";
+
+export interface NanoBananaV13EmoteSpec {
+  readonly id: NanoBananaV13EmoteId;
+  readonly labelKo: string;
+  readonly shortcutKey: string;
+  readonly descriptionKo: string;
+  readonly spriteUrl: string;
+}
+
+export interface NanoBananaV13PropSpec {
+  readonly id: NanoBananaV13PropId;
+  readonly labelKo: string;
+  readonly zoneRoleKo: string;
+  readonly interactiveHintKo: string;
+  readonly spriteUrl: string;
+}
 
 export type NanoBananaCreatorPersonaId =
   | "line-artist"
@@ -182,6 +214,13 @@ export interface NextGenVirtualStudioEngineState {
   readonly castCleanAtlasUrl: string;
   readonly v12ThemesAtlasUrl: string;
   readonly v12CastCleanAtlasUrl: string;
+  readonly v13ThemesAtlasUrl: string;
+  readonly v13PropsAtlasUrl: string;
+  readonly v13EmoteSheetUrl: string;
+  readonly activeV13EmoteId: NanoBananaV13EmoteId;
+  readonly activeV13PropId: NanoBananaV13PropId;
+  readonly v13Emotes: readonly NanoBananaV13EmoteSpec[];
+  readonly v13Props: readonly NanoBananaV13PropSpec[];
   readonly lightingMoodId: StudioLightingMoodId;
   readonly deadlineCrunchFeverEnabled: boolean;
   readonly physics: AvatarPhysicsState;
@@ -356,7 +395,135 @@ export const NANO_BANANA_V11_STUDIO_THEMES: readonly NanoBananaStudioThemeSpec[]
       ],
       acousticReverbProfileKo: "브릭 로프트 어쿠스틱 (RT60 0.33s · 바이닐 재즈 감성)",
     },
+    {
+      id: "dolby-sound-dubbing-studio",
+      titleKo: "돌비 애트모스 웹툰 사운드 & 성우 더빙 스튜디오",
+      subtitleKo: "골드 우드 디퓨저 · 성우 보컬 아이솔레이션 부스 · 효과음 폴리 믹싱 콘솔",
+      atmosphereTagKo: "오디오웹툰 · 무빙툰 · 성우 더빙 특화 (v13)",
+      recommendedLightingId: "midnight-crunch-fever",
+      assetUrl:
+        "/assets/virtual-studio/nano-banana-v13/themes/dolby-sound-dubbing-studio.webp",
+      signatureFeaturesKo: [
+        "음향 파형 LED 월과 어쿠스틱 골드 우드 디퓨저 방음 설계",
+        "성우 대사 녹음용 콘덴서 마이크 부스 & 실시간 립싱크 모니터",
+        "타격음·발걸음 폴리(Foley) 사운드 타임라인 신티크 데스크",
+      ],
+      acousticReverbProfileKo: "돌비 마스터링 룸 (RT60 0.18s · 초정밀 무향에 가까운 모니터링)",
+    },
+    {
+      id: "magic-academy-astral-library",
+      titleKo: "대마법 아카데미 아스트랄 도서관 아틀리에",
+      subtitleKo: "부유 천구의 · 나선형 마호가니 서가 · 마나 크리스탈 샹들리에 · 그리모어 화판",
+      atmosphereTagKo: "정통 판타지 · 마법학원 · 회귀물 특화 (v13)",
+      recommendedLightingId: "dawn-ink",
+      assetUrl:
+        "/assets/virtual-studio/nano-banana-v13/themes/magic-academy-astral-library.webp",
+      signatureFeaturesKo: [
+        "천장 중앙 회전하는 황금 천구의(Astrolabe)와 마나 크리스탈 조명",
+        "고대 마법진·룬 문자 레퍼런스가 떠오르는 홀로그램 그리모어 데스크",
+        "복층 나선형 원목 서가 & 세계관 고증 브레인스토밍 테이블",
+      ],
+      acousticReverbProfileKo: "아스트랄 돔 서고 (RT60 0.41s · 신비로운 하모닉 울림)",
+    },
+    {
+      id: "rooftop-sunset-screening-stage",
+      titleKo: "서울 루프탑 선셋 웹툰 페스티벌 & 시사회 스테이지",
+      subtitleKo: "골든아워 루프탑 테라스 · 초대형 LED 프리미어 스크린 · 빈백 합평 라운지",
+      atmosphereTagKo: "시즌 완결 시사회 · 독자 팬미팅 · 타운홀 특화 (v13)",
+      recommendedLightingId: "golden-sunset",
+      assetUrl:
+        "/assets/virtual-studio/nano-banana-v13/themes/rooftop-sunset-screening-stage.webp",
+      signatureFeaturesKo: [
+        "노을빛 서울 스카이라인이 펼쳐지는 개방형 루프탑 시사회 스테이지",
+        "초대형 LED 스크롤 프리뷰 월 & 전 스태프 빈백 합평 소파",
+        "페어리 라이트 가든 & 논알콜 스파클링 에스프레소 케이터링 바",
+      ],
+      acousticReverbProfileKo: "루프탑 오픈에어 스테이지 (RT60 0.26s · 선명한 야외 라인어레이)",
+    },
+    {
+      id: "abyssal-bioluminescent-worldlab",
+      titleKo: "심해 바이오루미네선스 판타지 월드빌딩 랩",
+      subtitleKo: "파노라마 심해 아쿠아 돔 · 발광 산호 조명 · 크리처 3D 스컬프팅 포드",
+      atmosphereTagKo: "던전 · 헌터물 · 심해/이세계 크리처 특화 (v13)",
+      recommendedLightingId: "dawn-ink",
+      assetUrl:
+        "/assets/virtual-studio/nano-banana-v13/themes/abyssal-bioluminescent-worldlab.webp",
+      signatureFeaturesKo: [
+        "발광 해파리와 고대 해저 유적이 보이는 파노라마 아쿠아 돔 뷰포트",
+        "ZBrush·블렌더 몬스터/보스 크리처 3D 스컬프팅 듀얼 포드",
+        "바이오루미네선스 산호 무드등 & 심해 수압 사운드 명상 코너",
+      ],
+      acousticReverbProfileKo: "심해 아쿠아 돔 (RT60 0.36s · 수중 저역 앰비언트 차음)",
+    },
   ];
+
+export const NANO_BANANA_V13_CREATOR_EMOTES: readonly NanoBananaV13EmoteSpec[] = [
+  {
+    id: "stride-walk",
+    labelKo: "타블렛 들고 총총 걸음",
+    shortcutKey: "1",
+    descriptionKo: "발광 디지털 펜과 슬레이트 타블렛을 안고 데스크 사이를 경쾌하게 이동하는 모션",
+    spriteUrl: "/assets/virtual-studio/nano-banana-v13/emotes/stride-walk.webp",
+  },
+  {
+    id: "celebrate-highfive",
+    labelKo: "연재 승인 점프 하이파이브",
+    shortcutKey: "2",
+    descriptionKo: "에피소드 전 컷 최종 승인 시 별빛 이펙트와 함께 뛰어오르는 축하 이모트",
+    spriteUrl:
+      "/assets/virtual-studio/nano-banana-v13/emotes/celebrate-highfive.webp",
+  },
+  {
+    id: "crunch-flame-focus",
+    labelKo: "마감 불꽃 초집중 각성",
+    shortcutKey: "3",
+    descriptionKo: "포커스 캡을 쓰고 청보라빛 집중 오라 불꽃을 피우며 초고속 작화하는 모션",
+    spriteUrl:
+      "/assets/virtual-studio/nano-banana-v13/emotes/crunch-flame-focus.webp",
+  },
+  {
+    id: "coffee-cat-break",
+    labelKo: "라떼 & 어깨냥이 힐링 타임",
+    shortcutKey: "4",
+    descriptionKo: "따뜻한 라떼 머그잔을 들고 어깨 위 스튜디오 고양이와 숨을 돌리는 휴식 이모트",
+    spriteUrl: "/assets/virtual-studio/nano-banana-v13/emotes/coffee-cat-break.webp",
+  },
+];
+
+export const NANO_BANANA_V13_STUDIO_PROPS: readonly NanoBananaV13PropSpec[] = [
+  {
+    id: "dual-cintiq-critique-pod",
+    labelKo: "듀얼 5K 신티크 라이브 합평 포드",
+    zoneRoleKo: "실시간 적색 펜 레드라인 피드백 & 컷 교정 존",
+    interactiveHintKo: "[X]키로 즉시 원고 컷 레이어 미러링 합평 시작",
+    spriteUrl:
+      "/assets/virtual-studio/nano-banana-v13/props/dual-cintiq-critique-pod.webp",
+  },
+  {
+    id: "blender-hologram-stage-table",
+    labelKo: "3D 블렌더 홀로그램 스테이지 테이블",
+    zoneRoleKo: "배경 투시도 · 성채 에셋 · 카메라 앵글 360° 프리뷰 존",
+    interactiveHintKo: "[X]키로 3점 투시 카메라 프리셋 즉시 동기화",
+    spriteUrl:
+      "/assets/virtual-studio/nano-banana-v13/props/blender-hologram-stage-table.webp",
+  },
+  {
+    id: "webtoon-sound-foley-booth",
+    labelKo: "웹툰 효과음(SFX) & 폴리 믹싱 부스",
+    zoneRoleKo: "무빙툰/오디오툰 성우 더빙 & 의성어 타이포 사운드 존",
+    interactiveHintKo: "[X]키로 방음 부스(-28dB) 입장 및 사운드 믹서 실행",
+    spriteUrl:
+      "/assets/virtual-studio/nano-banana-v13/props/webtoon-sound-foley-booth.webp",
+  },
+  {
+    id: "deadline-espresso-cat-lounge",
+    labelKo: "마감 에스프레소 & 캣 해먹 라운지",
+    zoneRoleKo: "스태프 커피챗 · 번아웃 회복 · 로파이 사운드 존",
+    interactiveHintKo: "[X]키로 에스프레소 추출 ASMR 및 휴식 이모트 발동",
+    spriteUrl:
+      "/assets/virtual-studio/nano-banana-v13/props/deadline-espresso-cat-lounge.webp",
+  },
+];
 
 export const NANO_BANANA_V11_CREATOR_PERSONAS: readonly NanoBananaCreatorPersonaSpec[] =
   [

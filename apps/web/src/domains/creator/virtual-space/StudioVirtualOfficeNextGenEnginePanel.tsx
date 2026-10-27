@@ -91,7 +91,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         <div>
           <h4 className="flex items-center gap-2 text-xs font-bold text-fg">
             <Wand2 className="h-4 w-4 text-accent" />
-            차세대 웹툰 가상 스튜디오 엔진 (8대 장르 테마 · 8인 개성파 캐릭터/마스코트 · 60fps 물리 · WebAudio HRTF)
+            차세대 웹툰 가상 스튜디오 엔진 (12대 장르 테마 · 8인 개성파 캐릭터/마스코트 · 4종 이모트/가구 · 60fps 물리 · WebAudio HRTF)
           </h4>
           <p className="mt-0.5 text-[11px] text-fg-2">
             Gather Town · ZEP · WorkAdventure · oVice · Topia · Kumospace 엔진 완전 역공학 및 초격차 고도화 완료
@@ -99,7 +99,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="rounded-full border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-            8 테마 × 8 캐스트 × 60fps 물리 × WebAudio 신스
+            12 테마 × 8 캐스트 × 4 이모트 × 60fps 물리 × WebAudio 신스
           </span>
           <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[10px] text-fg-2">
             렌더 루프: {offscreenSkipped ? "백그라운드 절전" : "실시간 60fps 활성"}
@@ -113,7 +113,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="flex items-center gap-1.5 text-xs text-fg">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
-              8대 웹툰 스튜디오 장르 테마 아틀리에 전환 (2.5D Isometric)
+              12대 웹툰 스튜디오 장르 테마 아틀리에 전환 (2.5D Isometric · v11~v13)
             </strong>
             <span className="text-[11px] text-fg-2">
               {activeTheme.atmosphereTagKo}
