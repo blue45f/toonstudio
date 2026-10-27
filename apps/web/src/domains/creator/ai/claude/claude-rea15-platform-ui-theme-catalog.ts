@@ -260,6 +260,69 @@ export const REA15_PLATFORM_IDS = [
   "speedtree-stylized-foliage",
   "yoondesign-font-cloud",
   "morisawa-fonts-manga-jp",
+  // Wave 15 (20개 플랫폼 — 총 260개 플랫폼 완성: 동남아·중화권·중남미·글로벌 인디 웹툰 플랫폼)
+  "line-webtoon-thailand",
+  "line-webtoon-indonesia",
+  "line-webtoon-taiwan-zh",
+  "mangatoon-global-strip",
+  "wecomics-tencent-sea",
+  "bilibili-comics-global",
+  "dongman-manhua-studio",
+  "webcomics-app-global",
+  "tapastic-indie-canvas",
+  "namicomi-creator-hub",
+  "voyce-me-action-originals",
+  "saturday-am-diverse-manga",
+  "comicfury-webcomic-host",
+  "smackjeeves-archive-layout",
+  "drunkduck-webcomic-strip",
+  "webtoon-latam-espanol",
+  "tappytoon-de-fr-studio",
+  "pocket-comics-comico-global",
+  "manta-spanish-originals",
+  "alpha-manga-alphapolis",
+  // Wave 16 (20개 플랫폼 — 총 280개 플랫폼 완성: 3D 월드·실내 평면도·태양광 그림자·페이스빌더)
+  "kitbash3d-cargo-worlds",
+  "quixel-megascans-bridge",
+  "polyhaven-hdri-lighting",
+  "ambientcg-pbr-materials",
+  "sketchfab-3d-prop-inspector",
+  "turbosquid-royalty-3d",
+  "cgtrader-stylized-props",
+  "hum3d-vehicle-reference",
+  "sweet-home-3d-room-plan",
+  "planner5d-interior-staged",
+  "homestyler-3d-palace-room",
+  "roomsketcher-floorplan-cam",
+  "magicplan-ar-room-measure",
+  "sun-seeker-solar-angle",
+  "shademap-building-shadow",
+  "photoephemeris-moon-sun",
+  "set-a-light-3d-elixxier",
+  "portraitpro-relit-studio",
+  "polygon-runway-isometric",
+  "keentools-facebuilder-head",
+  // Wave 17 (20개 플랫폼 — 총 300개 플랫폼 완성: 컬러과학·업스케일·망점·위조방지·버전관리)
+  "pantone-connect-palette",
+  "colorbrewer-contrast-safe",
+  "stark-wcag-contrast-audit",
+  "polypane-colorblind-sim",
+  "comic-life-3-plasq-balloon",
+  "clip-studio-ex-story-editor",
+  "mediabang-cloud-teamwork",
+  "firealpaca-se-onion-skin",
+  "sai-v2-binary-pixel-line",
+  "open-canvas-7-event-log",
+  "krita-gmic-halftone-filter",
+  "waifu2x-cunet-art-upscale",
+  "real-esrgan-anime-6b-tile",
+  "chai-nn-er-node-upscaler",
+  "upscayl-ncnn-vulkan-toon",
+  "glaze-2-webtoon-cloak",
+  "mist-v2-adversarial-watermark",
+  "c2pa-content-credentials",
+  "perforce-helix-psd-version",
+  "anchorpoint-art-asset-git",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -274,6 +337,9 @@ export const REA180_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA200_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA220_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA240_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA260_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA280_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA300_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -616,3 +682,6 @@ export const REA180_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA200_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA220_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA240_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA260_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA280_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA300_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

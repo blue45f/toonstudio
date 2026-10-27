@@ -65,9 +65,9 @@ const TEST_ROUTE = {
 };
 
 describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
-  it("0. 240대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+  it("0. 300대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(240);
+    expect(themes).toHaveLength(300);
 
     const naverPainter = getRea15PlatformTheme("naver-webtoon-ai-painter");
     expect(naverPainter.accentPrimaryHex).toBe("#00dc64");
@@ -77,6 +77,12 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫�
 
     const moveAi = getRea15PlatformTheme("move-ai-multicam-mocap");
     expect(moveAi.accentPrimaryHex).toBe("#00f5d4");
+
+    const kitbash = getRea15PlatformTheme("kitbash3d-cargo-worlds");
+    expect(kitbash.accentPrimaryHex).toBe("#f59e0b");
+
+    const anchorpoint = getRea15PlatformTheme("anchorpoint-art-asset-git");
+    expect(anchorpoint.accentPrimaryHex).toBe("#6366f1");
 
     const piccoma = getRea15PlatformTheme("piccoma-smartoon-studio");
     expect(piccoma.accentPrimaryHex).toBe("#ffd600");

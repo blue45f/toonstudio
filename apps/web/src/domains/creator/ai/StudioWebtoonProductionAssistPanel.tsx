@@ -22,6 +22,20 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
+  buildLocalCollarTieLapelNecklineLockReport,
+  buildLocalCompanionFamiliarScaleLockReport,
+  buildLocalInteriorRoomGeographyLockReport,
+  buildLocalScrollPaceSilentBeatRhythmReport,
+  buildLocalSubsurfaceScatteringTearSpecularLockReport,
+  buildLocalTattooStigmaUvTopologyLockReport,
+  runClaudeCollarTieLapelNecklineLockDirector,
+  runClaudeCompanionFamiliarScaleLockDirector,
+  runClaudeInteriorRoomGeographyLockDirector,
+  runClaudeScrollPaceSilentBeatRhythmDirector,
+  runClaudeSubsurfaceScatteringTearSpecularLockDirector,
+  runClaudeTattooStigmaUvTopologyLockDirector,
+} from "./claude/claude-phase6-ecosystem-suite";
+import {
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
   buildDeterministicContinuityForeshadowReport,
@@ -617,6 +631,94 @@ export function StudioWebtoonProductionAssistPanel({
           </div>
         </div>
       ) : null}
+
+      <div
+        data-testid="wave15-17-consistency-quick-bar"
+        className="flex flex-col gap-1.5 rounded border border-accent/25 bg-raised/40 p-2 text-[0.58rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <span className="font-bold text-fg">
+            Wave 15~17 300대 플랫폼 REA & 6대 초정밀 작붕 방지 가드 (단추/칼라 · 성흔 UV · 소환수 비례 · 실내 평면도 · 무대사 호흡 · 역광 SSS)
+          </span>
+          <span className="rounded bg-accent/15 px-1.5 py-0.5 font-semibold text-accent">
+            300 Platforms · 80 Routed Tasks
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            data-testid="wave15-collar-tie-lock-btn"
+            onClick={async () => {
+              const env = await runClaudeCollarTieLapelNecklineLockDirector(assistInput);
+              const line = env.report.readyNecklineGuardLine || buildLocalCollarTieLapelNecklineLockReport(assistInput).readyNecklineGuardLine;
+              onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
+            }}
+            className={cn("rounded border border-line bg-card px-2 py-0.5 font-semibold text-fg-2 hover:bg-raised", STUDIO_EASE, STUDIO_FOCUS_RING)}
+          >
+            칼라·단추·크라바트 잠금
+          </button>
+          <button
+            type="button"
+            data-testid="wave15-tattoo-stigma-uv-btn"
+            onClick={async () => {
+              const env = await runClaudeTattooStigmaUvTopologyLockDirector(assistInput);
+              const line = env.report.readyStigmaUvGuardLine || buildLocalTattooStigmaUvTopologyLockReport(assistInput).readyStigmaUvGuardLine;
+              onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
+            }}
+            className={cn("rounded border border-line bg-card px-2 py-0.5 font-semibold text-fg-2 hover:bg-raised", STUDIO_EASE, STUDIO_FOCUS_RING)}
+          >
+            문신·성흔 UV 곡면 잠금
+          </button>
+          <button
+            type="button"
+            data-testid="wave15-companion-scale-btn"
+            onClick={async () => {
+              const env = await runClaudeCompanionFamiliarScaleLockDirector(assistInput);
+              const line = env.report.readyCompanionGuardLine || buildLocalCompanionFamiliarScaleLockReport(assistInput).readyCompanionGuardLine;
+              onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
+            }}
+            className={cn("rounded border border-line bg-card px-2 py-0.5 font-semibold text-fg-2 hover:bg-raised", STUDIO_EASE, STUDIO_FOCUS_RING)}
+          >
+            소환수·신수 체구/뿔 잠금
+          </button>
+          <button
+            type="button"
+            data-testid="wave15-interior-geography-btn"
+            onClick={async () => {
+              const env = await runClaudeInteriorRoomGeographyLockDirector(assistInput);
+              const line = env.report.readyRoomGeographyGuardLine || buildLocalInteriorRoomGeographyLockReport(assistInput).readyRoomGeographyGuardLine;
+              onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
+            }}
+            className={cn("rounded border border-line bg-card px-2 py-0.5 font-semibold text-fg-2 hover:bg-raised", STUDIO_EASE, STUDIO_FOCUS_RING)}
+          >
+            실내 평면도·문 경첩 잠금
+          </button>
+          <button
+            type="button"
+            data-testid="wave15-silent-beat-rhythm-btn"
+            onClick={async () => {
+              const env = await runClaudeScrollPaceSilentBeatRhythmDirector(assistInput);
+              const line = env.report.readySilentBeatGuardLine || buildLocalScrollPaceSilentBeatRhythmReport(assistInput).readySilentBeatGuardLine;
+              onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
+            }}
+            className={cn("rounded border border-line bg-card px-2 py-0.5 font-semibold text-fg-2 hover:bg-raised", STUDIO_EASE, STUDIO_FOCUS_RING)}
+          >
+            무대사 여운 픽셀 호흡
+          </button>
+          <button
+            type="button"
+            data-testid="wave15-sss-tear-specular-btn"
+            onClick={async () => {
+              const env = await runClaudeSubsurfaceScatteringTearSpecularLockDirector(assistInput);
+              const line = env.report.readySssTearGuardLine || buildLocalSubsurfaceScatteringTearSpecularLockReport(assistInput).readySssTearGuardLine;
+              onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
+            }}
+            className={cn("rounded border border-line bg-card px-2 py-0.5 font-semibold text-fg-2 hover:bg-raised", STUDIO_EASE, STUDIO_FOCUS_RING)}
+          >
+            역광 피하산란(SSS)·눈물 굴절
+          </button>
+        </div>
+      </div>
 
       <StudioWebtoonEpisodicDoctorPanel
         assistInput={assistInput}

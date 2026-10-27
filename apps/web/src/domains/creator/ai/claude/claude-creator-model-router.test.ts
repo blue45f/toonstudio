@@ -46,18 +46,36 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 23대 창의 AI 작업을 포함한 총 74개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 29대 창의 AI 작업을 포함한 총 80개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(74);
-    expect(summary.byProfile["fast-inline"]).toBe(18);
-    expect(summary.byProfile["creative-production"]).toBe(37);
-    expect(summary.byProfile["deep-architecture"]).toBe(19);
+    expect(summary.totalTasks).toBe(80);
+    expect(summary.byProfile["fast-inline"]).toBe(20);
+    expect(summary.byProfile["creative-production"]).toBe(40);
+    expect(summary.byProfile["deep-architecture"]).toBe(20);
 
     expect(
       resolveCreatorTaskModelRoute("nextgen:footwear-floor-contact-stride-lock").model,
     ).toBe("claude-haiku-5-5");
     expect(
       resolveCreatorTaskModelRoute("nextgen:crowd-silhouette-depth-fog-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("ecosystem:collar-tie-lapel-neckline-symmetry-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("ecosystem:tattoo-stigma-curse-mark-uv-topology-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("ecosystem:companion-pet-familiar-mascot-scale-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("ecosystem:interior-room-furniture-door-hinge-geography-lock").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("ecosystem:scroll-pace-silent-beat-panel-height-rhythm").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock").model,
     ).toBe("claude-sonnet-5-5");
 
     expect(

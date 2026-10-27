@@ -5,23 +5,35 @@ import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import {
   buildLocalAsymmetricCostumePropWoundLedgerReport,
   buildLocalCameraAxisEyelineHeightLockReport,
+  buildLocalCollarTieLapelNecklineLockReport,
+  buildLocalCompanionFamiliarScaleLockReport,
   buildLocalCrossCutColorScriptAlbedoLockReport,
   buildLocalGlimnaviColorHintReport,
+  buildLocalInteriorRoomGeographyLockReport,
   buildLocalMangaFlowIdentityVerificationReport,
   buildLocalMicroExpressionActingContinuityReport,
   buildLocalNovelAdaptationAndIpExpansionReport,
   buildLocalNovelAiMultiCharVibeReport,
+  buildLocalScrollPaceSilentBeatRhythmReport,
   buildLocalSnaptoon3dEnvironmentShaderReport,
+  buildLocalSubsurfaceScatteringTearSpecularLockReport,
+  buildLocalTattooStigmaUvTopologyLockReport,
   buildLocalToonCrafterInbetweenAndStitchReport,
   runClaudeAsymmetricCostumePropWoundLedgerDirector,
   runClaudeCameraAxisEyelineHeightLockDirector,
+  runClaudeCollarTieLapelNecklineLockDirector,
+  runClaudeCompanionFamiliarScaleLockDirector,
   runClaudeCrossCutColorScriptAlbedoLockDirector,
   runClaudeGlimnaviColorHintStrokeDirector,
+  runClaudeInteriorRoomGeographyLockDirector,
   runClaudeMangaFlowIdentityVerificationDirector,
   runClaudeMicroExpressionActingContinuityDirector,
   runClaudeNovelAdaptationAndIpExpansionDirector,
   runClaudeNovelAiMultiCharVibeDirector,
+  runClaudeScrollPaceSilentBeatRhythmDirector,
   runClaudeSnaptoon3dEnvironmentShaderDirector,
+  runClaudeSubsurfaceScatteringTearSpecularLockDirector,
+  runClaudeTattooStigmaUvTopologyLockDirector,
   runClaudeToonCrafterInbetweenAndStitchDirector,
 } from "./claude-phase6-ecosystem-suite";
 import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
@@ -272,5 +284,27 @@ describe("claude-phase6-ecosystem-suite (Phase 6 글로벌·국내 20대 웹툰 
     expect(live.taskProfile).toBe("creative-production");
     expect(live.routedModel).toBe("claude-sonnet-5-5");
     expect(live.report.zeroWhiplashGuarantee).toBe(true);
+  });
+
+  it("11~16. Wave 15~17 6대 초정밀 웹툰 일관성 엔진(칼라/단추·성흔 UV·소환수 비례·실내 평면도·무대사 호흡·역광 SSS)을 검증한다", async () => {
+    expect(buildLocalCollarTieLapelNecklineLockReport(SAMPLE_INPUT).unbuttonedTopButtonCount).toBe(2);
+    expect(buildLocalTattooStigmaUvTopologyLockReport(SAMPLE_INPUT).uvTopologyLockScore).toBe(99);
+    expect(buildLocalCompanionFamiliarScaleLockReport(SAMPLE_INPUT).bodyLengthCm).toBe(26);
+    expect(buildLocalInteriorRoomGeographyLockReport(SAMPLE_INPUT).roomGeographyScore).toBe(99);
+    expect(buildLocalScrollPaceSilentBeatRhythmReport(SAMPLE_INPUT).silentBeatGutterHeightPx).toBe(1380);
+    expect(buildLocalSubsurfaceScatteringTearSpecularLockReport(SAMPLE_INPUT).earFingertipSssHex).toBe("#FF6B6B");
+
+    const collarEnv = await runClaudeCollarTieLapelNecklineLockDirector(SAMPLE_INPUT);
+    expect(collarEnv.routedModel).toBe("claude-haiku-5-5");
+    const stigmaEnv = await runClaudeTattooStigmaUvTopologyLockDirector(SAMPLE_INPUT);
+    expect(stigmaEnv.routedModel).toBe("claude-sonnet-5-5");
+    const companionEnv = await runClaudeCompanionFamiliarScaleLockDirector(SAMPLE_INPUT);
+    expect(companionEnv.routedModel).toBe("claude-haiku-5-5");
+    const roomEnv = await runClaudeInteriorRoomGeographyLockDirector(SAMPLE_INPUT);
+    expect(roomEnv.routedModel).toBe("claude-opus-5-5");
+    const silentEnv = await runClaudeScrollPaceSilentBeatRhythmDirector(SAMPLE_INPUT);
+    expect(silentEnv.routedModel).toBe("claude-sonnet-5-5");
+    const sssEnv = await runClaudeSubsurfaceScatteringTearSpecularLockDirector(SAMPLE_INPUT);
+    expect(sssEnv.routedModel).toBe("claude-sonnet-5-5");
   });
 });

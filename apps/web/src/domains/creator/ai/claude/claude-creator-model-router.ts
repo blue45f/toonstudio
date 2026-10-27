@@ -115,7 +115,14 @@ export type ClaudeCreatorTaskId =
   | "rea15:runway-luma-pika-viggle-live2d-spine-motion"
   | "rea15:sketchup-blender-petalica-magma-recraft-studio"
   | "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"
-  | "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle";
+  | "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle"
+  // 9. Wave 15~17 Webtoon Consistency & Production AI Engines (6 — Total 80 Tasks)
+  | "ecosystem:collar-tie-lapel-neckline-symmetry-lock"
+  | "ecosystem:tattoo-stigma-curse-mark-uv-topology-lock"
+  | "ecosystem:companion-pet-familiar-mascot-scale-lock"
+  | "ecosystem:interior-room-furniture-door-hinge-geography-lock"
+  | "ecosystem:scroll-pace-silent-beat-panel-height-rhythm"
+  | "ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -670,14 +677,13 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "북미/유럽/한국 4대 연재 플랫폼(Tapas·Tappytoon·RIDI·Postype) 규격·수익화 퍼널과 Sudowrite/Novelcrafter/Campfire 세계관 코덱스·씬 비트 매트릭스 통합 설계는 Opus 5.5 심층 추론 적용",
     6_144,
   ),
-  "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle": defineRoute(
-    "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle",
-    "Mixamo 모션 · Marvelous 의상 · Substance 재질 · Coolors/Adobe 배색 · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle 에셋 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "Mixamo 3D 모션캡처·Marvelous 의상 주름·Substance 툰 머티리얼·Coolors/Adobe 배색·눈누/Blambot 한영 식자·ToonBoom/TVPaint/Moho 작화·PureRef/Milanote/Eagle 에셋 관리는 Sonnet 5.5 적용",
-    4_096,
-  ),
+  "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle": defineRoute("rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle", "Mixamo 모션 · Marvelous 의상 · Substance 재질 · Coolors/Adobe 배색 · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle 에셋 디렉터", "phase6-ecosystem", "creative-production", "Mixamo 3D 모션캡처·Marvelous 의상 주름·Substance 툰 머티리얼·Coolors/Adobe 배색·눈누/Blambot 한영 식자·ToonBoom/TVPaint/Moho 작화·PureRef/Milanote/Eagle 에셋 관리는 Sonnet 5.5 적용", 4_096),
+  "ecosystem:collar-tie-lapel-neckline-symmetry-lock": defineRoute("ecosystem:collar-tie-lapel-neckline-symmetry-lock", "의상 칼라·넥타이 매듭·로판 리본·갑옷 목깃(Gorget) 대칭 및 단추 풀림 단계 고정기", "phase6-ecosystem", "fast-inline", "슛/역슛 전환 시 셔츠 풀어헤친 단추 개수·넥타이 매듭·로판 크라바트 브로치·갑옷 목깃 대칭 고정은 Haiku 5.5 적용", 3_072),
+  "ecosystem:tattoo-stigma-curse-mark-uv-topology-lock": defineRoute("ecosystem:tattoo-stigma-curse-mark-uv-topology-lock", "문신·성흔(Stigma)·마안·저주 낙인 신체 UV 곡면 왜곡 및 발광 단계 고정기", "phase6-ecosystem", "creative-production", "근육 수축·단축법(Foreshortening) 각도에서 문신·성흔·저주 문양의 신체 해부학적 UV 좌표 및 발광 단계 고정은 Sonnet 5.5 적용", 4_096),
+  "ecosystem:companion-pet-familiar-mascot-scale-lock": defineRoute("ecosystem:companion-pet-familiar-mascot-scale-lock", "소환수·신수·마스코트·반려동물 체구 비례(어깨/손바닥 대비) 및 뿔·날개·꼬리 수 고정기", "phase6-ecosystem", "fast-inline", "소형 신수·사역마·반려동물이 컷마다 크기가 변하거나 뿔/꼬리 개수가 바뀌는 작붕 방지는 Haiku 5.5 적용", 3_072),
+  "ecosystem:interior-room-furniture-door-hinge-geography-lock": defineRoute("ecosystem:interior-room-furniture-door-hinge-geography-lock", "실내 방 구조·가구 배치·창문 채광 방향·문 경첩(Hinge) 개폐 궤적 평면도 고정 감독", "phase6-ecosystem", "deep-architecture", "역앵글 전환 시 방문 손잡이/경첩 방향·창문 위치·책상/침대 동선이 뒤집히는 공간 작붕 차단은 Opus 5.5 심층 추론 적용", 6_144),
+  "ecosystem:scroll-pace-silent-beat-panel-height-rhythm": defineRoute("ecosystem:scroll-pace-silent-beat-panel-height-rhythm", "무대사 감정 여운 컷(Silent Beat) 세로 픽셀 호흡·페이드 여백 리듬 디렉터", "phase6-ecosystem", "creative-production", "모바일 세로 스크롤에서 대사 없는 시선 교환·여운 컷의 세로 픽셀 높이(px)와 암전 그라데이션 호흡 설계는 Sonnet 5.5 적용", 4_096),
+  "ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock": defineRoute("ecosystem:subsurface-scattering-skin-tear-sweat-specular-lock", "역광 귀·손가락 피하산란(SSS 붉은 투과광) 및 눈물·땀방울 굴절 하이라이트 고정기", "phase6-ecosystem", "creative-production", "강한 역광 클로즈업에서 귀바퀴/손가락 끝 피하산란(SSS) 붉은 투과광과 눈물/땀방울 굴절 스페큘러 일관성 고정은 Sonnet 5.5 적용", 4_096),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

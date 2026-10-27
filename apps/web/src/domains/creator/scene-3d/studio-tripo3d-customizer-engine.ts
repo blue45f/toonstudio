@@ -648,6 +648,11 @@ export interface Tripo3dCustomizationRecipe {
   readonly mannequinHeadRatio: number;
   readonly handPoseVariantId: Tripo3dHandPoseVariantId;
   readonly mannequinBodySliders: {
+    readonly heightCm: number;
+    readonly headCount: number;
+    readonly build: number;
+    readonly shoulderWidth: number;
+    readonly hipWidth: number;
     readonly height: number;
     readonly muscle: number;
     readonly chest: number;
@@ -704,6 +709,11 @@ export function buildTripo3dCustomizationRecipe(
 
   const ratioDelta = (mannequinHeadRatio - 7.5) / 1.5;
   const mannequinBodySliders = {
+    heightCm: Math.round(170 + ratioDelta * 14),
+    headCount: mannequinHeadRatio,
+    build: Number(Math.min(2.2, Math.max(0.6, 1 + (scaleMultiplier - 1) * 0.6)).toFixed(2)),
+    shoulderWidth: Number(Math.min(1.3, Math.max(0.8, 1 + (scaleMultiplier - 1) * 0.25)).toFixed(2)),
+    hipWidth: 1,
     height: Math.round(Math.min(100, Math.max(0, 65 + ratioDelta * 25))),
     muscle: Math.round(Math.min(100, Math.max(0, 50 + (scaleMultiplier - 1) * 30))),
     chest: Math.round(Math.min(100, Math.max(0, 52 + ratioDelta * 12))),

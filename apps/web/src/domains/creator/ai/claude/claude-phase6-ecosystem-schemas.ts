@@ -403,3 +403,111 @@ export type MicroExpressionActingContinuityReport = z.infer<
 >;
 export type MicroExpressionActingContinuityEnvelope =
   Phase6EcosystemEnvelope<MicroExpressionActingContinuityReport>;
+
+/* ------------------------------------------------------------------ */
+/* 11. 의상 칼라·넥타이 매듭·로판 리본·갑옷 목깃(Gorget) 대칭 및 풀림 고정 */
+/* ------------------------------------------------------------------ */
+
+export const CollarTieLapelNecklineLockReportSchema = z.object({
+  necklineConsistencyScore: z.number(),
+  unbuttonedTopButtonCount: z.number(),
+  collarAndLapelSpecKo: z.string(),
+  tieCravatBroochRuleKo: z.string(),
+  readyNecklineGuardLine: z.string(),
+});
+
+export type CollarTieLapelNecklineLockReport = z.infer<
+  typeof CollarTieLapelNecklineLockReportSchema
+>;
+export type CollarTieLapelNecklineLockEnvelope =
+  Phase6EcosystemEnvelope<CollarTieLapelNecklineLockReport>;
+
+/* ------------------------------------------------------------------ */
+/* 12. 문신·성흔(Stigma)·마안·저주 낙인 신체 UV 곡면 왜곡 및 발광 고정기   */
+/* ------------------------------------------------------------------ */
+
+export const TattooStigmaUvTopologyLockReportSchema = z.object({
+  uvTopologyLockScore: z.number(),
+  anatomicalUvZoneKo: z.string(),
+  foreshorteningWarpRuleKo: z.string(),
+  emissionStageAndHexKo: z.string(),
+  readyStigmaUvGuardLine: z.string(),
+});
+
+export type TattooStigmaUvTopologyLockReport = z.infer<
+  typeof TattooStigmaUvTopologyLockReportSchema
+>;
+export type TattooStigmaUvTopologyLockEnvelope =
+  Phase6EcosystemEnvelope<TattooStigmaUvTopologyLockReport>;
+
+/* ------------------------------------------------------------------ */
+/* 13. 소환수·신수·마스코트·반려동물 체구 비례 및 뿔·날개·꼬리 수 고정기   */
+/* ------------------------------------------------------------------ */
+
+export const CompanionFamiliarScaleLockReportSchema = z.object({
+  companionScaleScore: z.number(),
+  bodyLengthCm: z.number(),
+  hornWingTailCountRuleKo: z.string(),
+  shoulderPalmPerchSpecKo: z.string(),
+  readyCompanionGuardLine: z.string(),
+});
+
+export type CompanionFamiliarScaleLockReport = z.infer<
+  typeof CompanionFamiliarScaleLockReportSchema
+>;
+export type CompanionFamiliarScaleLockEnvelope =
+  Phase6EcosystemEnvelope<CompanionFamiliarScaleLockReport>;
+
+/* ------------------------------------------------------------------ */
+/* 14. 실내 방 구조·가구 배치·창문 채광 방향·문 경첩 개폐 평면도 고정 감독 */
+/* ------------------------------------------------------------------ */
+
+export const InteriorRoomGeographyLockReportSchema = z.object({
+  roomGeographyScore: z.number(),
+  windowWallCompassDirection: z.string(),
+  doorHingeSideAndSwingRuleKo: z.string(),
+  furnitureCoordinateGridKo: z.string(),
+  readyRoomGeographyGuardLine: z.string(),
+});
+
+export type InteriorRoomGeographyLockReport = z.infer<
+  typeof InteriorRoomGeographyLockReportSchema
+>;
+export type InteriorRoomGeographyLockEnvelope =
+  Phase6EcosystemEnvelope<InteriorRoomGeographyLockReport>;
+
+/* ------------------------------------------------------------------ */
+/* 15. 무대사 감정 여운 컷(Silent Beat) 세로 픽셀 호흡·페이드 리듬 디렉터  */
+/* ------------------------------------------------------------------ */
+
+export const ScrollPaceSilentBeatRhythmReportSchema = z.object({
+  silentPacingScore: z.number(),
+  silentBeatGutterHeightPx: z.number(),
+  gradientFadeTransitionKo: z.string(),
+  eyeContactHoldDurationSec: z.number(),
+  readySilentBeatGuardLine: z.string(),
+});
+
+export type ScrollPaceSilentBeatRhythmReport = z.infer<
+  typeof ScrollPaceSilentBeatRhythmReportSchema
+>;
+export type ScrollPaceSilentBeatRhythmEnvelope =
+  Phase6EcosystemEnvelope<ScrollPaceSilentBeatRhythmReport>;
+
+/* ------------------------------------------------------------------ */
+/* 16. 역광 귀·손가락 피하산란(SSS) 및 눈물·땀방울 굴절 하이라이트 고정기  */
+/* ------------------------------------------------------------------ */
+
+export const SubsurfaceScatteringTearSpecularLockReportSchema = z.object({
+  sssAndSpecularScore: z.number(),
+  earFingertipSssHex: z.string(),
+  tearSweatRefractionRuleKo: z.string(),
+  catchlightPositionSpecKo: z.string(),
+  readySssTearGuardLine: z.string(),
+});
+
+export type SubsurfaceScatteringTearSpecularLockReport = z.infer<
+  typeof SubsurfaceScatteringTearSpecularLockReportSchema
+>;
+export type SubsurfaceScatteringTearSpecularLockEnvelope =
+  Phase6EcosystemEnvelope<SubsurfaceScatteringTearSpecularLockReport>;
