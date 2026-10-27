@@ -8,6 +8,7 @@
 
 import {
   STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_VARCO3D_LOCAL_GLB_ASSETS,
   STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
   type StudioVarco3dIsometricDioramaEntry,
   type StudioVarco3dWebtoonPropEntry,
@@ -15,6 +16,7 @@ import {
 import {
   makeReaBg3dPrim,
   STUDIO_BG3D_REA_COMPETITOR_PROFILES,
+  type Bg3dGlbItem,
   type Bg3dPrimitiveItem,
   type Bg3dPrimitiveShape,
   type StudioBg3dReaCompetitorId,
@@ -515,5 +517,175 @@ export function resolveReaDioramaSummaryKo(
     props,
     competitor,
     totalEstimatedPrimitives: dioramaPrimCount + propPrimCount,
+  };
+}
+
+export interface StudioBg3dVarcoGlbCalibrationSpec {
+  readonly assetId: string;
+  readonly labelKo: string;
+  readonly url: `/models/varco3d/${string}.glb`;
+  readonly rawSizeMeters: readonly [number, number, number];
+  readonly rawMinY: number;
+  readonly pivotAtBase: boolean;
+  readonly calibratedScale: number;
+  readonly groundYOffset: number;
+  readonly humanScaleDimensionsMeters: readonly [number, number, number];
+  readonly recommendedAnchorPosition: Vec3;
+  readonly linkedUniverseId: string;
+}
+
+export const STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG: readonly StudioBg3dVarcoGlbCalibrationSpec[] =
+  Object.freeze([
+    {
+      assetId: "varco_diorama_hallway_remesh_quad",
+      labelKo: "VARCO 3D 고등학교 복도 디오라마 (Quad 리메쉬 150k Tri)",
+      url: "/models/varco3d/varco_diorama_hallway_remesh_quad.glb",
+      rawSizeMeters: [0.999, 0.874, 0.677], rawMinY: -0.434, pivotAtBase: false,
+      calibratedScale: 4.2, groundYOffset: 1.82, humanScaleDimensionsMeters: [4.2, 3.67, 2.84],
+      recommendedAnchorPosition: [-1.4, 1.82, -1.6], linkedUniverseId: "school-romance",
+    },
+    {
+      assetId: "varco_prop_school_desk_remesh_quad",
+      labelKo: "VARCO 3D 교실 책걸상 프롭 (Quad 리메쉬 150k Tri)",
+      url: "/models/varco3d/varco_prop_school_desk_remesh_quad.glb",
+      rawSizeMeters: [0.692, 0.999, 0.643], rawMinY: -0.5, pivotAtBase: false,
+      calibratedScale: 0.95, groundYOffset: 0.48, humanScaleDimensionsMeters: [0.66, 0.95, 0.61],
+      recommendedAnchorPosition: [1.1, 0.48, -0.4], linkedUniverseId: "school-romance",
+    },
+    {
+      assetId: "classroom-podium-desk",
+      labelKo: "VARCO 3D 학원물 교탁 & 출석부·노트북·마이크 월드빌드",
+      url: "/models/varco3d/classroom-podium-desk.glb",
+      rawSizeMeters: [1.2, 0.95, 0.65], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [1.2, 0.95, 0.65],
+      recommendedAnchorPosition: [0, 0, -2.4], linkedUniverseId: "school-romance",
+    },
+    {
+      assetId: "rofan-golden-throne",
+      labelKo: "VARCO 3D 로판 황실 3단 대리석 단상 & 금장 벨벳 권좌",
+      url: "/models/varco3d/rofan-golden-throne.glb",
+      rawSizeMeters: [1.4, 2.1, 1.1], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [1.4, 2.1, 1.1],
+      recommendedAnchorPosition: [0, 0, -2.8], linkedUniverseId: "romance-fantasy-palace",
+    },
+    {
+      assetId: "murim-sword-rack",
+      labelKo: "VARCO 3D 무림 문파 흑단 3단 병장기 거치대 & 오검 세트",
+      url: "/models/varco3d/murim-sword-rack.glb",
+      rawSizeMeters: [1.5, 1.35, 0.45], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [1.5, 1.35, 0.45],
+      recommendedAnchorPosition: [-1.6, 0, -2.2], linkedUniverseId: "murim-martial-courtyard",
+    },
+    {
+      assetId: "noir-neon-streetlamp",
+      labelKo: "VARCO 3D 현대 느와르 주철 듀얼 랜턴 가로등 & 네온 사인",
+      url: "/models/varco3d/noir-neon-streetlamp.glb",
+      rawSizeMeters: [0.6, 3.4, 0.6], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [0.6, 3.4, 0.6],
+      recommendedAnchorPosition: [1.8, 0, -1.8], linkedUniverseId: "modern-office-noir",
+    },
+    {
+      assetId: "hunter-awakening-altar",
+      labelKo: "VARCO 3D 헌터 던전 3단 룬 제단 & 마석 오벨리스크",
+      url: "/models/varco3d/hunter-awakening-altar.glb",
+      rawSizeMeters: [2.2, 2.8, 2.2], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [2.2, 2.8, 2.2],
+      recommendedAnchorPosition: [0, 0, -2.5], linkedUniverseId: "hunter-dungeon-altar",
+    },
+    {
+      assetId: "cyberpunk-holo-kiosk",
+      labelKo: "VARCO 3D 사이버펑크 3단 홀로그램 단말기 키오스크",
+      url: "/models/varco3d/cyberpunk-holo-kiosk.glb",
+      rawSizeMeters: [1.1, 2.0, 0.75], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [1.1, 2.0, 0.75],
+      recommendedAnchorPosition: [-1.5, 0, -2.1], linkedUniverseId: "cyberpunk-neon-alley",
+    },
+    {
+      assetId: "medical-iv-monitor",
+      labelKo: "VARCO 3D 메디컬 이동식 수액 폴대 & 심전도 바이탈 모니터 카트",
+      url: "/models/varco3d/medical-iv-monitor.glb",
+      rawSizeMeters: [0.65, 1.65, 0.65], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [0.65, 1.65, 0.65],
+      recommendedAnchorPosition: [1.2, 0, -1.6], linkedUniverseId: "medical-drama-ward",
+    },
+    {
+      assetId: "cafe-espresso-bar",
+      labelKo: "VARCO 3D 일상물 에스프레소 머신·그라인더·쇼케이스 바 카운터",
+      url: "/models/varco3d/cafe-espresso-bar.glb",
+      rawSizeMeters: [1.8, 1.15, 0.8], rawMinY: 0, pivotAtBase: true,
+      calibratedScale: 1.0, groundYOffset: 0, humanScaleDimensionsMeters: [1.8, 1.15, 0.8],
+      recommendedAnchorPosition: [0, 0, -2.2], linkedUniverseId: "daily-cafe-street",
+    },
+  ]);
+
+export function resolveVarcoBg3dGlbIdForDiorama(dioramaId: string): string {
+  if (dioramaId === "diorama_school_hallway") return "varco_diorama_hallway_remesh_quad";
+  if (dioramaId.includes("school") || dioramaId.includes("academy")) return "classroom-podium-desk";
+  if (dioramaId.includes("rofan") || dioramaId.includes("palace") || dioramaId.includes("throne")) {
+    return "rofan-golden-throne";
+  }
+  if (dioramaId.includes("murim") || dioramaId.includes("hanok") || dioramaId.includes("temple")) {
+    return "murim-sword-rack";
+  }
+  if (dioramaId.includes("dungeon") || dioramaId.includes("hunter") || dioramaId.includes("boss")) {
+    return "hunter-awakening-altar";
+  }
+  if (dioramaId.includes("cyberpunk") || dioramaId.includes("lab") || dioramaId.includes("subway")) {
+    return "cyberpunk-holo-kiosk";
+  }
+  if (dioramaId.includes("hospital") || dioramaId.includes("surgery") || dioramaId.includes("ward")) {
+    return "medical-iv-monitor";
+  }
+  if (dioramaId.includes("office") || dioramaId.includes("court") || dioramaId.includes("detective") || dioramaId.includes("interrogation")) {
+    return "noir-neon-streetlamp";
+  }
+  return "cafe-espresso-bar";
+}
+
+export function getStudioBg3dVarcoGlbCalibration(
+  assetIdOrDioramaId: string,
+): StudioBg3dVarcoGlbCalibrationSpec {
+  const direct = STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG.find(
+    (item) => item.assetId === assetIdOrDioramaId || item.linkedUniverseId === assetIdOrDioramaId,
+  );
+  if (direct) return direct;
+  const mappedId = resolveVarcoBg3dGlbIdForDiorama(assetIdOrDioramaId);
+  return (
+    STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG.find((item) => item.assetId === mappedId) ??
+    STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG[0]!
+  );
+}
+
+export function buildCalibratedVarcoBg3dGlbPlacement(
+  assetIdOrDioramaId: string,
+  options?: {
+    readonly positionOffset?: Vec3;
+    readonly scaleMultiplier?: number;
+    readonly rotationYRad?: number;
+    readonly idPrefix?: string;
+  },
+): Bg3dGlbItem {
+  const spec = getStudioBg3dVarcoGlbCalibration(assetIdOrDioramaId);
+  const localAsset = STUDIO_VARCO3D_LOCAL_GLB_ASSETS.find((a) => a.id === spec.assetId);
+  const mult = Math.max(0.25, Math.min(3.0, options?.scaleMultiplier ?? 1));
+  const finalScale = Number((spec.calibratedScale * mult).toFixed(3));
+  const offset = options?.positionOffset ?? [0, 0, 0];
+  const groundedY = Number((spec.groundYOffset * mult + offset[1]).toFixed(3));
+  const idPrefix = options?.idPrefix ?? "varco3d-glb";
+
+  return {
+    id: `${idPrefix}-${spec.assetId}`,
+    name: localAsset?.labelKo ?? spec.labelKo,
+    kind: "glb",
+    url: spec.url,
+    position: [
+      Number((spec.recommendedAnchorPosition[0] + offset[0]).toFixed(3)),
+      groundedY,
+      Number((spec.recommendedAnchorPosition[2] + offset[2]).toFixed(3)),
+    ],
+    rotation: [0, options?.rotationYRad ?? 0, 0],
+    scale: [finalScale, finalScale, finalScale],
+    visible: true,
+    locked: false,
   };
 }

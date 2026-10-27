@@ -8,7 +8,9 @@ import {
 import {
   STUDIO_BG3D_REA_COMPETITOR_PROFILES,
   STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG,
+  STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG,
   buildCalibratedTripoBg3dGlbPlacement,
+  buildCalibratedVarcoBg3dGlbPlacement,
   buildTripoBg3dProceduralTwinPrimitives,
   buildVarco3dDioramaDetailedPrimitives,
   buildVarco3dPropDetailedPrimitives,
@@ -43,8 +45,9 @@ describe("studio-bg3d-rea-webtoon-background-engine", () => {
     }
   });
 
-  it("calibrates all 8 Tripo 3D background GLB assets to human-scale meters with base-pivot grounding", () => {
+  it("calibrates all 17 Tripo 3D and 10 VARCO 3D background GLB assets to human-scale meters with base-pivot grounding", () => {
     const bg3dModels = TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d");
+    expect(bg3dModels).toHaveLength(17);
     expect(STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG).toHaveLength(bg3dModels.length);
 
     for (const model of bg3dModels) {
@@ -57,6 +60,15 @@ describe("studio-bg3d-rea-webtoon-background-engine", () => {
       const twinPrims = buildTripoBg3dProceduralTwinPrimitives(model.id);
       expect(twinPrims.length).toBe(1 + model.customizableParts.length);
       expect(twinPrims.every((p) => p.tags?.includes("tripo3d-bg-kit"))).toBe(true);
+    }
+
+    expect(STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG).toHaveLength(10);
+    for (const varcoSpec of STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG) {
+      const placement = buildCalibratedVarcoBg3dGlbPlacement(varcoSpec.assetId);
+      expect(placement.kind).toBe("glb");
+      expect(placement.url).toBe(varcoSpec.url);
+      expect(placement.scale[0]).toBeGreaterThanOrEqual(0.9);
+      expect(placement.position[1]).toBeGreaterThanOrEqual(0);
     }
   });
 

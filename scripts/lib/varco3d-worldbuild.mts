@@ -15,6 +15,9 @@ import {
   requestVarco3dJson,
   type Varco3dResolvedConfig,
 } from "./varco3d-runtime.mts";
+import { synthesizeDeterministicGlb } from "./varco3d-worldbuild-glb-mesh.mts";
+
+export { synthesizeDeterministicGlb };
 
 export type WebtoonUniverseId =
   | "school-romance"
@@ -274,143 +277,6 @@ export function synthesizeReferencePngBytes(spec: Varco3dWorldbuildAssetSpec): B
     pngChunk("IDAT", deflateSync(rawRows)),
     pngChunk("IEND", new Uint8Array(0)),
   ]);
-}
-
-/**
- * 표준 glTF 2.0 바이너리(.glb) 컨테이너를 생성한다.
- * Three.js GLTFLoader, Babylon.js 및 Blender glTF 임포터에서 즉시 열 수 있는 정점·인덱스·PBR 재질을 포함한다.
- */
-export function synthesizeDeterministicGlb(spec: Varco3dWorldbuildAssetSpec): Buffer {
-  const [w, h, d] = spec.boundingBoxMeters;
-  const hx = Math.max(0.02, w / 2);
-  const hy = Math.max(0.02, h);
-  const hz = Math.max(0.02, d / 2);
-
-  // 바닥(y=0) 위에 서 있는 8정점 박스 지오메트리
-  const positions = new Float32Array([
-    -hx, 0, -hz,
-    hx, 0, -hz,
-    hx, hy, -hz,
-    -hx, hy, -hz,
-    -hx, 0, hz,
-    hx, 0, hz,
-    hx, hy, hz,
-    -hx, hy, hz,
-  ]);
-  const indices = new Uint16Array([
-    0, 1, 2, 2, 3, 0, // back
-    4, 6, 5, 6, 4, 7, // front
-    0, 4, 5, 5, 1, 0, // bottom
-    3, 2, 6, 6, 7, 3, // top
-    0, 3, 7, 7, 4, 0, // left
-    1, 5, 6, 6, 2, 1, // right
-  ]);
-
-  const posBytes = Buffer.from(positions.buffer, positions.byteOffset, positions.byteLength);
-  const idxBytes = Buffer.from(indices.buffer, indices.byteOffset, indices.byteLength);
-  const binChunk = Buffer.concat([posBytes, idxBytes]);
-  const binPad = (4 - (binChunk.byteLength % 4)) % 4;
-  const paddedBin =
-    binPad > 0 ? Buffer.concat([binChunk, Buffer.alloc(binPad, 0)]) : binChunk;
-
-  const [r, g, b] = parseHexToRgb01(spec.primaryColorHex);
-  const [sr, sg, sb] = parseHexToRgb01(spec.secondaryColorHex);
-
-  const gltfJson = {
-    asset: {
-      version: "2.0",
-      generator: "ToonStudio VARCO 3D Worldbuild Pipeline",
-    },
-    extras: {
-      assetId: spec.id,
-      universeId: spec.universeId,
-      category: spec.category,
-      labelKo: spec.labelKo,
-      boundingBoxMeters: spec.boundingBoxMeters,
-      secondaryColorRgb: [sr, sg, sb],
-      bg3dSlotId: spec.bg3dSlotId ?? null,
-      shaperTargetSlot: spec.shaperTargetSlot ?? null,
-    },
-    scene: 0,
-    scenes: [{ name: spec.id, nodes: [0] }],
-    nodes: [{ name: spec.id, mesh: 0 }],
-    materials: [
-      {
-        name: `${spec.id}-mat`,
-        pbrMetallicRoughness: {
-          baseColorFactor: [r, g, b, 1],
-          metallicFactor: spec.category === "character-part" ? 0.35 : 0.15,
-          roughnessFactor: 0.65,
-        },
-      },
-    ],
-    meshes: [
-      {
-        name: `${spec.id}-mesh`,
-        primitives: [
-          {
-            attributes: { POSITION: 0 },
-            indices: 1,
-            material: 0,
-          },
-        ],
-      },
-    ],
-    buffers: [{ byteLength: paddedBin.byteLength }],
-    bufferViews: [
-      {
-        buffer: 0,
-        byteOffset: 0,
-        byteLength: posBytes.byteLength,
-        target: 34962,
-      },
-      {
-        buffer: 0,
-        byteOffset: posBytes.byteLength,
-        byteLength: idxBytes.byteLength,
-        target: 34963,
-      },
-    ],
-    accessors: [
-      {
-        bufferView: 0,
-        byteOffset: 0,
-        componentType: 5126,
-        count: 8,
-        type: "VEC3",
-        min: [-hx, 0, -hz],
-        max: [hx, hy, hz],
-      },
-      {
-        bufferView: 1,
-        byteOffset: 0,
-        componentType: 5123,
-        count: 36,
-        type: "SCALAR",
-      },
-    ],
-  };
-
-  const rawJson = Buffer.from(JSON.stringify(gltfJson), "utf8");
-  const jsonPad = (4 - (rawJson.byteLength % 4)) % 4;
-  const paddedJson =
-    jsonPad > 0 ? Buffer.concat([rawJson, Buffer.alloc(jsonPad, 0x20)]) : rawJson;
-
-  const totalLength = 12 + 8 + paddedJson.byteLength + 8 + paddedBin.byteLength;
-  const header = Buffer.alloc(12);
-  header.writeUInt32LE(0x46546c67, 0); // 'glTF'
-  header.writeUInt32LE(2, 4); // version 2
-  header.writeUInt32LE(totalLength, 8);
-
-  const jsonChunkHeader = Buffer.alloc(8);
-  jsonChunkHeader.writeUInt32LE(paddedJson.byteLength, 0);
-  jsonChunkHeader.writeUInt32LE(0x4e4f534a, 4); // 'JSON'
-
-  const binChunkHeader = Buffer.alloc(8);
-  binChunkHeader.writeUInt32LE(paddedBin.byteLength, 0);
-  binChunkHeader.writeUInt32LE(0x004e4942, 4); // 'BIN\0'
-
-  return Buffer.concat([header, jsonChunkHeader, paddedJson, binChunkHeader, paddedBin]);
 }
 
 export interface WorldbuildAssetResult {
