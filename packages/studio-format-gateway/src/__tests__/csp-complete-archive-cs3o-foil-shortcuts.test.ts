@@ -27,6 +27,7 @@ import {
   parseCspSpwsWorkspacePlacementBlob,
   stepCspParaparaFlipbookState,
   validateCspMaterialEditGroupTagLimit,
+  type CspParaparaFlipbookState,
 } from "../csp-complete-archive-cs3o-foil-shortcuts";
 
 describe("csp-complete-archive-cs3o-foil-shortcuts", () => {
@@ -177,7 +178,7 @@ describe("csp-complete-archive-cs3o-foil-shortcuts", () => {
     s = executeCspWkBridgeTellBoardCommand(s, "enableremotedebug\t1").nextState;
     expect(s.remoteDebugEnabled).toBe(true);
 
-    let flip = {
+    let flip: CspParaparaFlipbookState = {
       frameUrls: ["page_01.png", "page_02.png", "page_03.png"],
       currentFrameIndex: 0,
       intervalMs: 200,
