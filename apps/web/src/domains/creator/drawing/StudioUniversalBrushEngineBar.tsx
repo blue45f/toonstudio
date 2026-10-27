@@ -5,9 +5,11 @@ import {
   applyGlfxFilterSuite,
   applyKlecksFilterAndVanishPointSuite,
   COMPETITOR_FILTER_PRESETS,
+  COMPETITOR_QUALITY_BRUSH_PRESETS,
   COMPLETE_ECOSYSTEM_TOOL_PRESETS,
   COREL_PARTICLE_BRUSH_PRESETS,
   encodeCleanRoomBrushQrPayload,
+  evaluateBrushLabToServicePromotionTelemetry,
   evaluateCompleteUnfragmentedStudioSummary,
   evaluateKlecksPrecisionSliderMapping,
   evaluateMonolithicTotalEngineTelemetry,
@@ -38,6 +40,7 @@ import {
   WEBGPU_HIGHSPEED_ARCHITECTURE_PRESETS,
   type ComicRibbonStampPresetId,
   type CompetitorFilterPresetId,
+  type CompetitorQualityBrushPresetId,
   type CompleteEcosystemToolPresetId,
   type CorelParticlePresetId,
   type FreehandRoughPresetId,
@@ -55,12 +58,9 @@ export interface StudioUniversalBrushEngineBarProps {
   readonly tx: (source: string) => string;
 }
 
-type EngineWaveDockId = "all" | "wave21" | "wave22" | "wave23" | "wave24" | "wave25" | "wave26" | "wave28" | "wave29" | "wave30" | "wave33";
+type EngineWaveDockId = "all" | "wave21" | "wave22" | "wave23" | "wave24" | "wave25" | "wave26" | "wave28" | "wave29" | "wave30" | "wave33" | "wave35";
 
-const ENGINE_WAVE_DOCK_TABS: readonly {
-  readonly id: EngineWaveDockId;
-  readonly labelKo: string;
-}[] = [
+const ENGINE_WAVE_DOCK_TABS: readonly { readonly id: EngineWaveDockId; readonly labelKo: string }[] = [
   { id: "all", labelKo: "전체 통합 스튜디오" },
   { id: "wave21", labelKo: "절차·웹툰 브러시" },
   { id: "wave22", labelKo: "벡터 골격·입자" },
@@ -72,6 +72,7 @@ const ENGINE_WAVE_DOCK_TABS: readonly {
   { id: "wave29", labelKo: "FFD·선택·타이포·어니언" },
   { id: "wave30", labelKo: "만다라·칼레이도·벡터·엘보우" },
   { id: "wave33", labelKo: "WebGPU 초고속·Vello·Indirect" },
+  { id: "wave35", labelKo: "브러시랩 최고품질(12)" },
 ];
 
 const QUICK_W3C_BLEND_MODES: readonly {
@@ -192,6 +193,8 @@ export function StudioUniversalBrushEngineBar({
   const [mandalaAxes, setMandalaAxes] = useState<number>(8);
   const [selectedWebGpuHighSpeedId, setSelectedWebGpuHighSpeedId] = useState<WebGpuHighSpeedPresetId>("webgpu-vello-euler-flatten-aa");
   const [webGpuIndirectCullEnabled, setWebGpuIndirectCullEnabled] = useState<boolean>(true);
+  const [selectedCompetitorQualityId, setSelectedCompetitorQualityId] = useState<CompetitorQualityBrushPresetId>("brushlab-sumi-dual-tooth-coldpress");
+  const [ghostWashFlow01, setGhostWashFlow01] = useState<number>(0.65);
 
   useEffect(() => {
     const root = barRef.current;
@@ -285,6 +288,12 @@ export function StudioUniversalBrushEngineBar({
       indirectCullingEnabled: webGpuIndirectCullEnabled,
       strokeQuality01: klecksSlider01,
     });
+    const competitorQualityEval = evaluateBrushLabToServicePromotionTelemetry({
+      presetId: selectedCompetitorQualityId,
+      impastoRoughness01: klecksSlider01,
+      ghostWashFlow01,
+      paperTooth01: 0.65,
+    });
 
     const bezierSvgPath = schneiderFit.segments
       .map((seg, i) =>
@@ -327,6 +336,7 @@ export function StudioUniversalBrushEngineBar({
       onionSkinAlpha01: unfragmentedEval.onionSkinAlpha01,
       monolithicEval,
       webgpuHighSpeedEval,
+      competitorQualityEval,
       bezierSvgPath,
       booleanPolygonPoints,
     };
@@ -335,6 +345,7 @@ export function StudioUniversalBrushEngineBar({
     selectedKlecksId, selectedMyPaintId, selectedFreehandRoughId, selectedCompetitorFilterId,
     selectedHolisticToolId, selectedBlendMode, selectedCompleteEcosystemId, selectedMonolithicToolId,
     mandalaAxes, klecksSlider01, isKlecksFineMode, selectedWebGpuHighSpeedId, webGpuIndirectCullEnabled,
+    selectedCompetitorQualityId, ghostWashFlow01,
   ]);
 
   const supportsBeforeMatch =
@@ -479,138 +490,58 @@ export function StudioUniversalBrushEngineBar({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("웹툰 리본·멀티스탬프:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("웹툰 리본 및 스탬프 브러시 프리셋")}
-            items={IBIS_MEDIBANG_BRUSH_PRESETS.slice(11, 17)}
-            selectedId={selectedComicRibbonId}
-            dataAttrName="data-studio-comic-ribbon"
-            onSelect={setSelectedComicRibbonId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("웹툰 리본 및 스탬프 브러시 프리셋")} items={IBIS_MEDIBANG_BRUSH_PRESETS.slice(11, 17)} selectedId={selectedComicRibbonId} dataAttrName="data-studio-comic-ribbon" onSelect={setSelectedComicRibbonId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave22" hidden={hiddenUntilFound("wave22")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("벡터 골격·입자 물리:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("벡터 골격 아트 브러시 프리셋")}
-            items={SKELETAL_ART_BRUSH_PRESETS.slice(0, 4)}
-            selectedId={selectedSkeletalId}
-            dataAttrName="data-studio-skeletal-brush"
-            onSelect={setSelectedSkeletalId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
-          <PresetRadioGroup
-            ariaLabel={tx("Corel 입자 물리 브러시 프리셋")}
-            items={COREL_PARTICLE_BRUSH_PRESETS.slice(0, 3)}
-            selectedId={selectedParticleId}
-            dataAttrName="data-studio-particle-brush"
-            onSelect={setSelectedParticleId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("벡터 골격 아트 브러시 프리셋")} items={SKELETAL_ART_BRUSH_PRESETS.slice(0, 4)} selectedId={selectedSkeletalId} dataAttrName="data-studio-skeletal-brush" onSelect={setSelectedSkeletalId} tx={tx} searchQuery={quickSearchQuery} />
+          <PresetRadioGroup ariaLabel={tx("Corel 입자 물리 브러시 프리셋")} items={COREL_PARTICLE_BRUSH_PRESETS.slice(0, 3)} selectedId={selectedParticleId} dataAttrName="data-studio-particle-brush" onSelect={setSelectedParticleId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave23" hidden={hiddenUntilFound("wave23")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("베지어 피팅·Klecks 자연매체:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")}
-            items={KLECKS_BRUSH_PRESETS.slice(4, 10)}
-            selectedId={selectedKlecksId}
-            dataAttrName="data-studio-klecks-preset"
-            onSelect={setSelectedKlecksId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("Klecks 6종 및 베지어 곡선 브러시 프리셋")} items={KLECKS_BRUSH_PRESETS.slice(4, 10)} selectedId={selectedKlecksId} dataAttrName="data-studio-klecks-preset" onSelect={setSelectedKlecksId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave24" hidden={hiddenUntilFound("wave24")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("MyPaint 46설정·38밴드 분광:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("MyPaint 46설정 및 38밴드 분광 브러시 프리셋")}
-            items={MYPAINT_BRUSH_PRESETS.slice(0, 6)}
-            selectedId={selectedMyPaintId}
-            dataAttrName="data-studio-mypaint-preset"
-            onSelect={setSelectedMyPaintId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("MyPaint 46설정 및 38밴드 분광 브러시 프리셋")} items={MYPAINT_BRUSH_PRESETS.slice(0, 6)} selectedId={selectedMyPaintId} dataAttrName="data-studio-mypaint-preset" onSelect={setSelectedMyPaintId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave25" hidden={hiddenUntilFound("wave25")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("프리핸드 윤곽·Rough 해칭·공간 인덱스:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")}
-            items={FREEHAND_ROUGH_BRUSH_PRESETS.slice(0, 6)}
-            selectedId={selectedFreehandRoughId}
-            dataAttrName="data-studio-freehand-rough-preset"
-            onSelect={setSelectedFreehandRoughId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("프리핸드 윤곽 및 Rough 해칭 프리셋")} items={FREEHAND_ROUGH_BRUSH_PRESETS.slice(0, 6)} selectedId={selectedFreehandRoughId} dataAttrName="data-studio-freehand-rough-preset" onSelect={setSelectedFreehandRoughId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave26" hidden={hiddenUntilFound("wave26")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("셰이더 필터·집중선·하프톤:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("경쟁사 필터 및 집중선·하프톤 프리셋")}
-            items={COMPETITOR_FILTER_PRESETS.slice(0, 6)}
-            selectedId={selectedCompetitorFilterId}
-            dataAttrName="data-studio-competitor-filter-preset"
-            onSelect={setSelectedCompetitorFilterId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("경쟁사 필터 및 집중선·하프톤 프리셋")} items={COMPETITOR_FILTER_PRESETS.slice(0, 6)} selectedId={selectedCompetitorFilterId} dataAttrName="data-studio-competitor-filter-preset" onSelect={setSelectedCompetitorFilterId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave28" hidden={hiddenUntilFound("wave28")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("채우기·변형·W3C 레이어·이젤:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("통합 드로잉 파이프라인 도구 프리셋")}
-            items={HOLISTIC_STUDIO_TOOL_PRESETS.slice(0, 6)}
-            selectedId={selectedHolisticToolId}
-            dataAttrName="data-studio-holistic-tool-preset"
-            onSelect={setSelectedHolisticToolId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
-          <PresetRadioGroup
-            ariaLabel={tx("W3C 16모드 레이어 합성 블렌드 모드")}
-            items={QUICK_W3C_BLEND_MODES}
-            selectedId={selectedBlendMode}
-            dataAttrName="data-studio-holistic-blend-mode"
-            onSelect={setSelectedBlendMode}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("통합 드로잉 파이프라인 도구 프리셋")} items={HOLISTIC_STUDIO_TOOL_PRESETS.slice(0, 6)} selectedId={selectedHolisticToolId} dataAttrName="data-studio-holistic-tool-preset" onSelect={setSelectedHolisticToolId} tx={tx} searchQuery={quickSearchQuery} />
+          <PresetRadioGroup ariaLabel={tx("W3C 16모드 레이어 합성 블렌드 모드")} items={QUICK_W3C_BLEND_MODES} selectedId={selectedBlendMode} dataAttrName="data-studio-holistic-blend-mode" onSelect={setSelectedBlendMode} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
       <div data-studio-wave-section="wave29" hidden={hiddenUntilFound("wave29")}>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-fg-2">{tx("FFD 메쉬워프·다중선택·타이포·어니언스킨:")}</span>
-          <PresetRadioGroup
-            ariaLabel={tx("전 생태계 비분할 통합 도구 프리셋")}
-            items={COMPLETE_ECOSYSTEM_TOOL_PRESETS.slice(0, 7)}
-            selectedId={selectedCompleteEcosystemId}
-            dataAttrName="data-studio-complete-ecosystem-preset"
-            onSelect={setSelectedCompleteEcosystemId}
-            tx={tx}
-            searchQuery={quickSearchQuery}
-          />
+          <PresetRadioGroup ariaLabel={tx("전 생태계 비분할 통합 도구 프리셋")} items={COMPLETE_ECOSYSTEM_TOOL_PRESETS.slice(0, 7)} selectedId={selectedCompleteEcosystemId} dataAttrName="data-studio-complete-ecosystem-preset" onSelect={setSelectedCompleteEcosystemId} tx={tx} searchQuery={quickSearchQuery} />
         </div>
       </div>
 
@@ -680,6 +611,38 @@ export function StudioUniversalBrushEngineBar({
           >
             {tx("GPU Indirect 컬링")}: {webGpuIndirectCullEnabled ? "ON" : "OFF"} ({activeUniversalTelemetry.webgpuHighSpeedEval.indirectVisibleInstances}/{activeUniversalTelemetry.webgpuHighSpeedEval.indirectDrawCalls}콜)
           </button>
+        </div>
+      </div>
+
+      <div data-studio-wave-section="wave35" hidden={hiddenUntilFound("wave35")}>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-fg-2">{tx("브러시랩 승격 최고품질(3D유화·GGX·와류수채·GhostWash·베지어):")}</span>
+          <PresetRadioGroup
+            ariaLabel={tx("브러시랩 승격 경쟁사 최고품질 브러시 프리셋")}
+            items={COMPETITOR_QUALITY_BRUSH_PRESETS}
+            selectedId={selectedCompetitorQualityId}
+            dataAttrName="data-studio-competitor-quality-preset"
+            onSelect={setSelectedCompetitorQualityId}
+            tx={tx}
+            searchQuery={quickSearchQuery}
+          />
+          <label className="inline-flex items-center gap-1 rounded-md border border-line/70 bg-raised/60 px-2 py-0.5 text-[10px] text-fg-2">
+            <span className="font-semibold text-accent">{tx("GhostWash 유량")}</span>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={ghostWashFlow01}
+              onChange={(e) => setGhostWashFlow01(Number(e.target.value))}
+              data-studio-ghost-wash-flow-slider="true"
+              aria-label={tx("Tegaki Ghost-Buffer 무탁점 유량 슬라이더")}
+              className="h-1.5 w-16 cursor-pointer accent-accent"
+            />
+            <span className="font-mono text-fg" data-studio-ghost-wash-readout="true">
+              {Math.round(ghostWashFlow01 * 100)}%
+            </span>
+          </label>
         </div>
       </div>
 
@@ -769,6 +732,8 @@ export function StudioUniversalBrushEngineBar({
           <span>{tx("Crease·CatchUp")}: {activeUniversalTelemetry.monolithicEval.sculptCreaseZ.toFixed(2)}/{activeUniversalTelemetry.monolithicEval.klecksCatchUpX.toFixed(1)}</span>
           <span>·</span>
           <span>{tx("WebGPU Vello·Indirect·UBO")}: {activeUniversalTelemetry.webgpuHighSpeedEval.velloEulerSubdivisions}/{activeUniversalTelemetry.webgpuHighSpeedEval.indirectVisibleInstances}/{activeUniversalTelemetry.webgpuHighSpeedEval.uboBatchAlignedBytes}B</span>
+          <span>·</span>
+          <span data-studio-brushlab-quality-telemetry="true">{tx("GGX·GhostWash·와류·브러시랩")}: {activeUniversalTelemetry.competitorQualityEval.ggxSpecularBrdf.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.mudEliminationGain01.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.fluidVorticityForceMagnitude.toFixed(1)}/{activeUniversalTelemetry.competitorQualityEval.brushLabCompositeScore100}점</span>
           <span>·</span>
           <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>

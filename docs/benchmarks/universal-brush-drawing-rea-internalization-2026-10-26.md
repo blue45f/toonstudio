@@ -182,3 +182,28 @@
 | **Babylon.js WebGPUEngine** | 36 | `webgpuDrawContext.ts`, `webgpuSnapshotRendering.ts`, `webgpuCacheRenderPipelineTree.ts` | `ev_dfcdfd07b2ca3440db6ae61007d5596d9813186ddc1e2faf82cec7eb5ffcdbbf` (부모 `ev_519b7077...`) | `WebGPUCacheRenderPipelineTree` $O(k)$ 정수 상태 트라이 캐시, Snapshot Fast-Mode `executeBundles` 리플레이 |
 | **PlayCanvas WebGPU** | 30 | `webgpu-draw-commands.js`, `webgpu-upload-stream.js` | `ev_c839688eb863d37423f9727fafc20bcda961a368823ed14821f2ef4d7f9a02d8` (부모 `ev_519b7077...`) | 20B(`5×u32`)/16B(`4×u32`) Indirect 슬롯 할당기, `submitVersion` 가드 3-슬롯 링 스테이징 업로드 (`hotPathMapAsyncCount = 0`) |
 
+## 6. Wave 35 — 6대 경쟁 업체 브러시 품질(87개 모듈) 일괄 REA 역공학 · 브러시 랩(`apps/brush-lab`) 다각도 벤치마크 검증 · 실 서비스(`apps/web`) 승격
+
+- **비분할 단일 코퍼스 REA 증거 (`not-examined: 0`)**:
+  - 코퍼스: 87개 JS/TS/GLSL 모듈 (`502,674` 바이트, 루트 SHA-256 `b6b66047d9e82e330facfa910a40cdb09ed1ae8694cb5261639c20dad5ca58fa`)
+  - `analyze_javascript_application` 부모 증거: `ev_862c7dde0eac1097babbeea8541da710982ef41b81677350abec81b6a21117cb`
+  - `inspect_analysis_view` (`summary`) 증거: `ev_51918d80037d0be551d5744ecdce6245a53c3d4df43fed9634a2f96bf8cfc71d` (`relevant_files: 87`, `parsed_javascript_files: 87`, `not-examined: 0`, `visited_ast_nodes: 70,692`, `data-flow: 27,861`, `object-flow: 4,804`, `closure: 1,884`, `call-flow: 870`)
+  - `inspect_analysis_view` (`javascript-facts`) 증거: `ev_26b7ea8b850cf6b5157b3102bd61b967a0fea4119fc7103f89652cdbca994962`
+  - `trace_javascript_semantics` (`Bezier` forward-influence) 증거: `ev_40724dbbec1f1b12aa164fbed4c507db2534e5d7152d72e6de9dbfafc60c1933`
+
+| 경쟁 브러시 품질 엔진 | 모듈 수 | 핵심 역공학 파일 | REA Evidence ID (`not-examined: 0`) | 브러시 랩(`apps/brush-lab`) 및 실 서비스(`apps/web`) 내재화 수식 |
+| --- | ---: | --- | --- | --- |
+| **David Li GPU Oil Paint (`dli-paint`)** | 33 | `setbristles.frag`, `bendingconstraint.frag`, `planeconstraint.frag`, `painting.frag` | `ev_51918d80037d0be551d5744ecdce6245a53c3d4df43fed9634a2f96bf8cfc71d` | 황금각($\Phi=1.618033988749895$) 해바라기 3D 강모 배치, 3절 굽힘 탄성 제약, 캔버스 평면 반발($z<0 \to 0.5z$), 3×3 Sobel 임파스토 법선 + Cook-Torrance GGX/Smith-GGGX/Schlick Fresnel 하이라이트 BRDF + 8-코너 삼선형 RYB→RGB 및 Kubelka-Munk(`kmMixRgb`) 안료 혼합 |
+| **PavelDoGreat WebGL Fluid (`webgl-fluid`)** | 1 | `script.js` | `ev_51918d80037d0be551d5744ecdce6245a53c3d4df43fed9634a2f96bf8cfc71d` | 중앙차분 스칼라 와도($\omega$), 소용돌이 가둠(Vorticity Confinement) 힘, 4-이웃 Jacobi 압력 푸아송 무발산 투영, 반라그랑주 염료 이류 |
+| **Tegaki Sketchbook (`tegaki`)** | 24 | `tools/brush.js`, `tools/tone.js`, `tools/pencil.js` | `ev_26b7ea8b850cf6b5157b3102bd61b967a0fea4119fc7103f89652cdbca994962` | Ghost-Buffer 획 내부 점근적 유량 누적($s_a \leftarrow s_a + k_a \cdot \text{flow} \cdot (\alpha_{\text{target}} - s_a)$) 및 방향성 반올림으로 획 내부 탁해짐(Muddy Wash) 원천 제거 + 16단계 4×4 Bayer 망점 스크린톤 |
+| **SignaturePad (`signature_pad`)** | 5 | `bezier.ts`, `signature_pad.ts`, `point.ts` | `ev_40724dbbec1f1b12aa164fbed4c507db2534e5d7152d72e6de9dbfafc60c1933` | 현 길이 비율($k = l_2/(l_1+l_2)$) 가중 Catmull-Rom → 3차 베지어 제어점 합성, 10분할 호 길이 적분, 속도 필터 기반 만년필 선폭 모델 |
+| **Atrament (`atrament`) & Drauu (`drauu`)** | 25 | `atrament/index.js`, `drauu/models/stylus.ts` | `ev_51918d80037d0be551d5744ecdce6245a53c3d4df43fed9634a2f96bf8cfc71d` | 거리 적응형 좌표 스무딩, 필압 저역통과 필터(LPF), 점진적 잉크 토출 두께 관성($\pm 0.25\text{px}$) |
+
+- **브러시 랩(`apps/brush-lab`) 다각도 벤치마크 및 실 서비스 승격 게이트 결과 (`competitor-quality-bench.ts`)**:
+  - 주기 종이 질감 이음새 점수(`seamScore`): `< 0.05` 통과
+  - 그레인 대비 보존율(`grainContrastPreservationRatio`): `0.9 ~ 1.1` 범위 통과
+  - 필압 → 그레인 응답 및 필압 → 선폭 스피어만 단조성: `1.00` (완전 단조 증가)
+  - Tegaki Ghost-Buffer 탁해짐 제거 이득(`mudEliminationGain01`): `> 0.1` 통과
+  - WebGPU Zero-Copy Indirect 런타임(`SumiZeroCopyIndirectRuntime`): 핫패스 `mapAsync = 0`, CPU 드로우콜 루프 `0`, 종합 점수 `100 / 100` (`promotionGatePassed: true`)으로 실 서비스(`apps/web/src/domains/creator/drawing/studio-competitor-brush-quality-engine.ts` 및 `StudioUniversalBrushEngineBar.tsx` `wave35` 탭 12종 프리셋)에 정식 승격 반영 완료.
+
+

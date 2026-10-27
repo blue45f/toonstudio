@@ -248,7 +248,7 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     ]);
 
     const bench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(bench.reaEvidenceTargetCount).toBe(60);
+    expect(bench.reaEvidenceTargetCount).toBe(66);
     expect(bench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(bench.wave23ReaSemanticTargetCount).toBe(4);
     expect(bench.wave24ReaEvidenceCount).toBe(4);
@@ -768,6 +768,8 @@ describe("studio-universal-brush-taxonomy-engine (Wave 21 & Wave 22 범용 브�
     expect(bench.completeEcosystemToolPresetCount).toBe(14);
     expect(bench.monolithicTotalToolPresetCount).toBe(20);
     expect(bench.webGpuHighSpeedPresetCount).toBe(12);
-    expect(bench.reaEvidenceTargetCount).toBe(60);
+    expect(bench.competitorQualityBrushPresetCount).toBe(12);
+    expect(bench.competitorBrushQualityReaEvidenceCount).toBe(6);
+    expect(bench.reaEvidenceTargetCount).toBe(66);
   });
 });

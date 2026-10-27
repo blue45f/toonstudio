@@ -13,9 +13,12 @@ import {
   applyHolisticColorGradingAndCurvesSuite,
   COMPLETE_ECOSYSTEM_TOOL_PRESETS,
   COMPLETE_UNFRAGMENTED_ECOSYSTEM_REA_LEDGER,
+  COMPETITOR_BRUSH_QUALITY_REA_LEDGER,
+  COMPETITOR_QUALITY_BRUSH_PRESETS,
   evaluateAgPsdPackBitsAndLayerChannelCodec,
   evaluateBernsteinBasis,
   evaluateBernsteinFfdLatticeMeshWarp,
+  evaluateBrushLabToServicePromotionTelemetry,
   evaluateCloneStampAndConicalAirbrush,
   evaluateCompleteUnfragmentedStudioSummary,
   evaluateCuloriCiede2000AndOklchGamutMap,
@@ -36,6 +39,7 @@ import {
   evaluateRichCanvasTypographyLayout,
   evaluateSculptGlCreaseFlattenAndTangentSmooth,
   evaluateSculptGlTwistAndDynamicTopology,
+  evaluateServiceDliOilBristleAndGgxImpasto,
   evaluateGpuDrivenFrustumHiZIndirectCull,
   evaluatePixiV8RenderBundleAndUboBatcher,
   evaluateVelloEulerSpiralFlattenAndAnalyticAa,
@@ -148,7 +152,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(60);
+    expect(universalBench.reaEvidenceTargetCount).toBe(66);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -159,10 +163,12 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
     expect(universalBench.monolithicTotalReaEvidenceCount).toBe(8);
     expect(universalBench.webGpuHighSpeedReaEvidenceCount).toBe(7);
+    expect(universalBench.competitorBrushQualityReaEvidenceCount).toBe(6);
     expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
     expect(universalBench.monolithicTotalToolPresetCount).toBe(20);
     expect(universalBench.webGpuHighSpeedPresetCount).toBe(12);
+    expect(universalBench.competitorQualityBrushPresetCount).toBe(12);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -714,6 +720,45 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(archTel.indirectVisibleInstances).toBe(2);
     expect(archTel.renderBundleValidCount).toBe(3);
     expect(archTel.indirectDrawCalls).toBe(1);
+  });
+
+  it("Wave 35 87개 파일 6대 경쟁 브러시 품질 엔진(DLi 3D 유화/GGX/RYB·Pavel 유체 와류·Tegaki Ghost-Buffer/Bayer·SignaturePad 베지어·Atrament/Drauu) REA 원장(6개 엔트리·12개 프리셋)과 실 서비스 승격 커널을 검증한다", () => {
+    expect(COMPETITOR_BRUSH_QUALITY_REA_LEDGER).toHaveLength(6);
+    expect(COMPETITOR_QUALITY_BRUSH_PRESETS).toHaveLength(12);
+    for (const entry of COMPETITOR_BRUSH_QUALITY_REA_LEDGER) {
+      expect(entry.parentEvidenceId).toBe(
+        "ev_862c7dde0eac1097babbeea8541da710982ef41b81677350abec81b6a21117cb",
+      );
+      expect(entry.relevantFiles).toBe(87);
+      expect(entry.parsedJavaScriptFiles).toBe(87);
+      expect(entry.unexaminedSources).toBe(0);
+      expect(entry.visitedAstNodes).toBe(70692);
+      expect(entry.dataFlowRelations).toBe(27861);
+    }
+
+    const dli = evaluateServiceDliOilBristleAndGgxImpasto({
+      bristleCount: 32,
+      brushScalePx: 18,
+      roughness01: 0.25,
+      normalScale: 0.4,
+      rybColor01: [0, 1, 1],
+    });
+    expect(dli.sunflowerOuterBristleRadiusPx).toBeGreaterThan(10);
+    expect(dli.ggxSpecularBrdf).toBeGreaterThan(0);
+    expect(dli.rybGreenComplementRgb01[1]).toBeGreaterThan(dli.rybGreenComplementRgb01[0]);
+
+    const promo = evaluateBrushLabToServicePromotionTelemetry({
+      presetId: "brushlab-sumi-dual-tooth-coldpress",
+      impastoRoughness01: 0.25,
+      ghostWashFlow01: 0.65,
+      paperTooth01: 0.65,
+    });
+    expect(promo.ghostStrokeAlpha01).toBeLessThanOrEqual(0.68);
+    expect(promo.mudEliminationGain01).toBeGreaterThan(0.1);
+    expect(promo.fluidVorticityForceMagnitude).toBeGreaterThan(0);
+    expect(promo.bezierChordArcLengthPx).toBeGreaterThan(15);
+    expect(promo.brushLabCompositeScore100).toBeGreaterThanOrEqual(99);
+    expect(promo.brushLabPromotedToService).toBe(true);
   });
 });
 

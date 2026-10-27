@@ -73,4 +73,6 @@ export * from "./presets/families";
 export * from "./presets/program-schema";
 export * from "./brush-engine/krita-concepts";
 export * from "./brush-engine/universal-brush-suite";
+export * from "./brush-engine/competitor-quality-kernels";
+
 
