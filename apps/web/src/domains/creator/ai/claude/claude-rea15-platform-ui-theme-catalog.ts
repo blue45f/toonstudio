@@ -305,6 +305,21 @@ export const REA15_PLATFORM_IDS = [
   "calibre-epub3-fixed-comic", "kindlegen-kcc-manga-converter", "hakuneko-offline-archive-spec", "komga-opds-webtoon-server", "kavita-manga-reader-metadata",
   "suwayomi-tachidesk-inspector", "comicrack-comicinfo-xml", "yoon-design-font-cloud-v2", "rixfont-webtoon-sfx-pack", "typodesign-forest-kr-fonts",
   "morisawa-fonts-jp-manga-v2", "fontworks-lets-evangelion-typo", "dynacomware-df-manga-fonts", "house-industries-display-letter", "type-network-variable-balloon",
+  // Wave 24 (20개 플랫폼 — 총 440개 플랫폼 완성: 복식사·도검 고증·가문 문장(Heraldry)·판타지 지도 제작)
+  "met-museum-armor-collection", "wallace-collection-sword-hilt", "smithsonian-open-access-3d", "british-museum-pattern-archive", "victoria-albert-costume-db",
+  "fashion-history-timeline-fit", "augustracinet-costume-plates", "armstreet-medieval-tailoring", "kult-of-athena-blade-geometry", "oakeshott-sword-typology-rig",
+  "drawshield-heraldry-blazon", "armoria-procedural-crest", "azgaar-fantasy-map-generator", "watabou-medieval-city-gen", "donjon-fractal-world-atlas",
+  "wonderdraft-parchment-map", "dungeondraft-battlemap-lighting", "inkarnate-watercolor-atlas", "project-line-work-stroke-lib", "thunderbolt-japanese-brush-pack",
+  // Wave 25 (20개 플랫폼 — 총 460개 플랫폼 완성: 안면/바디 리깅·근육 시뮬·옵티컬플로우 보간·선화 복원)
+  "faceit-blender-arkit-52", "rigify-blender-human-metarig", "auto-rig-pro-blender-remap", "arp-smart-ik-fk-snap", "mgear-maya-anime-facial-rig",
+  "advanced-skeleton-5-toon-bend", "ziva-vfx-muscle-fascia-sim", "ragdoll-dynamics-maya-physics", "rife-v4-optical-flow-inbetween", "film-frame-interpolation-google",
+  "topaz-video-ai-proteus-toon", "flowframes-rife-ncnn-anime", "svp-smoothvideo-60fps-preview", "ebsynth-keyframe-style-prop", "cotracker3-meta-point-track",
+  "sam2-segment-anything-video", "matanyone-consistent-video-matte", "pro-painter-video-inpainting", "basicvsr-plusplus-line-restore", "manga-screentone-descreen-ai",
+  // Wave 26 (20개 플랫폼 — 총 480개 플랫폼 완성: 서사 구조학·아이트래킹 히트맵·오디오 마스터링·접근성 감리)
+  "dramatica-pro-story-engine", "contour-plot-structure-system", "plottr-visual-timeline-bible", "aeon-timeline-3-chronology", "writeitnow-character-event-tree",
+  "bibisco-character-interview", "manuskript-snowflake-method", "ywriter7-scene-goal-conflict", "twine-sugarcube-state-tracker", "choicescript-stats-check-rig",
+  "chartbeat-scroll-depth-analytics", "hotjar-vertical-scroll-heatmap", "gazerecorder-webcam-eyetrack", "tobii-pro-lab-saccade-aois", "respeecher-voice-cloning-osmu",
+  "altered-studio-performance-voice", "descript-overdub-audiotoon-edit", "auphonic-multitrack-lufs-leveler", "w3c-wcag-22-contrast-validator", "daisy-epub-accessibility-ace",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -328,6 +343,9 @@ export const REA360_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA380_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA400_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA420_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA440_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA460_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA480_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -679,3 +697,6 @@ export const REA360_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA380_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA400_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA420_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA440_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA460_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA480_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

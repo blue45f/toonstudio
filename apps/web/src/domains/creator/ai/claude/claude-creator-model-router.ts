@@ -136,7 +136,16 @@ export type ClaudeCreatorTaskId =
   | "runner:wet-fabric-rain-translucency-drape-lock"
   | "runner:cast-shadow-sundial-azimuth-elevation-lock"
   | "runner:impact-debris-crater-shatter-persistence-lock"
-  | "runner:binaural-spatial-audio-foley-lufs-director";
+  | "runner:binaural-spatial-audio-foley-lufs-director"
+  // 12. Wave 24~26 Webtoon Consistency, Heraldry, Prepress & Eyetrack AI Engines (8 — Total 100 Tasks)
+  | "production:button-zipper-belt-buckle-fastener-lock"
+  | "production:speedline-impact-frame-radial-focus-lock"
+  | "production:wound-bandage-cast-healing-stage-lock"
+  | "production:heraldry-crest-guild-emblem-geometry-lock"
+  | "production:musical-instrument-fingering-bowing-lock"
+  | "production:variable-font-balloon-diamond-copyfit-lock"
+  | "production:tankobon-print-bleed-cmyk-tac300-proof-lock"
+  | "production:eyetrack-scroll-velocity-aoi-heatmap-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -571,126 +580,21 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   ),
 
   // 8. Phase 7 REA 15-Platform Deep Internalization & Creative AI Suite
-  "rea15:glimnavi-relight-lineart-v23": defineRoute(
-    "rea15:glimnavi-relight-lineart-v23",
-    "그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터",
-    "phase6-ecosystem",
-    "fast-inline",
-    "선화 v1.0~v2.3 버전·6종 선화 프리셋·컬러 레이어 분리·AI 그림자/조명/명암 파라미터 산출은 Haiku 5.5로 즉각 처리",
-    3_072,
-  ),
-  "rea15:kaistory-single-envelope-kaion-quiz": defineRoute(
-    "rea15:kaistory-single-envelope-kaion-quiz",
-    "카이스토리(KAISTORY) 4단 단일 데이터 엔벨로프 & KAION 웹툰 학습카드·독자 퀴즈 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "conti→design→editor→story 단일 프로젝트 엔벨로프와 KAION 학습카드·독자 몰입 퀴즈 생성은 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:snaptoon-frameo-shaper-3d-lighting": defineRoute(
-    "rea15:snaptoon-frameo-shaper-3d-lighting",
-    "Snaptoon·Frameo·NAVER SHAPER·Plask·Posemaniacs 3D 포즈·스포트라이트 콘 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "Snapboard 3D→AI 변환·Frameo 스포트라이트 콘(--cursor-angle/--cone-spread)·SHAPER 3D 표면 드로잉/포즈·해부학 리그는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:manhwa-komiko-anifusion-flow": defineRoute(
-    "rea15:manhwa-komiko-anifusion-flow",
-    "ManhwaAI 6대 화풍/5대 톤·Komiko 레이어 분리/인비트윈·Anifusion 노드 플로우 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "6대 만화 화풍·5대 절차적 효과톤·비파괴 레이어 분리·노드 플로우 그래프 설계는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:creative-dopamine-scroll-ux-synthesizer": defineRoute(
-    "rea15:creative-dopamine-scroll-ux-synthesizer",
-    "웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & 39대 플랫폼 UI/UX 테마 토큰 합성기",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "컷별 독자 도파민 곡선·스크롤 정지 시간(ms)·클리프행어 훅 강도 예측 및 39대 REA UI/UX 테마 합성은 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
-  "rea15:tootoon-gentoon-tooning-kr-suite": defineRoute(
-    "rea15:tootoon-gentoon-tooning-kr-suite",
-    "TooToon 5-Studio(fabulator~emporium) · GenToon 리더/굿즈 · Tooning 6부위 캐릭터 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "TooToon 5대 모듈·GenToon 뷰어/굿즈 수익화·Tooning Plus 6부위 캐릭터 조합 설계는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:krea-spline-lumiere-realtime-shader": defineRoute(
-    "rea15:krea-spline-lumiere-realtime-shader",
-    "Krea 실시간 디렉터 · Spline 3D/Hana 스타일 트랜스퍼 · Lumiere/Graphite/PixiEditor 셰이더 디렉터",
-    "phase6-ecosystem",
-    "fast-inline",
-    "실시간 i2i 브러시·Spline 3D 스타일 전이·Lumiere Kuwahara/Halation 셰이더·비파괴 노드 파라미터 산출은 Haiku 5.5로 즉각 처리",
-    3_072,
-  ),
-  "rea15:ltx-boords-cascadeur-rive-animatic": defineRoute(
-    "rea15:ltx-boords-cascadeur-rive-animatic",
-    "LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "프리비즈 애니매틱 카메라 시퀀스·Cascadeur 무게중심/탄도 물리 궤적·Rive 인터랙티브 상태머신 설계는 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
-  "rea15:cotrans-vroid-skybox-world-localizer": defineRoute(
-    "rea15:cotrans-vroid-skybox-world-localizer",
-    "Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저",
-    "phase6-ecosystem",
-    "creative-production",
-    "다국어 식자 LaMa/AOT 인페인팅 마스크·VRoid VRM 본/외곽선·360도 파노라마 스카이박스 환경 매칭은 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:storyboarder-dreams-krita-artbreeder-director": defineRoute(
-    "rea15:storyboarder-dreams-krita-artbreeder-director",
-    "WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자 디렉터",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "3D Shot Generator 카메라·Procreate Dreams 실시간 퍼포밍 키프레임·Krita Live Diffusion·Artbreeder 유전자 교배 통합 설계는 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
-  "rea15:niji-pixai-civitai-lora-sref-director": defineRoute(
-    "rea15:niji-pixai-civitai-lora-sref-director",
-    "NijiJourney V6 · PixAI · Civitai · TensorArt · WaifuLabs · Picrew · CHARAT LoRA/Sref/파츠 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "Niji V6 --sref/--cref 가중치·PixAI/Civitai/SeaArt/TensorArt LoRA 스택·WaifuLabs 4단 그리드·Picrew/CHARAT 파츠 레이어 설계는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu": defineRoute(
-    "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu",
-    "Tripo3D · Meshy 7 · HeroForge 3D 소품/갑주 · Suno V6 OST · ElevenLabs 더빙 · MANGA Plus 디렉터",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "Tripo3D/Meshy 7/HeroForge 3D 판타지 소품·갑주 메쉬·Suno V6 스템 OST·ElevenLabs 다중 성우 더빙·MANGA Plus 글로벌 투고 패키징은 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
-  "rea15:runway-luma-pika-viggle-live2d-spine-motion": defineRoute(
-    "rea15:runway-luma-pika-viggle-live2d-spine-motion",
-    "Runway Gen-4.5 · Luma Ray 2 · Pika 2.2 · Viggle JST-2 · Live2D Cubism · Spine 2D 무빙툰 디렉터",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "Runway Multi-Motion Brush·Luma Start/End 키프레임·Pika 물리 이펙트·Viggle JST-2 모션 전이·Live2D ArtMesh/Spine 2D IK 본 리깅 통합 설계는 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
-  "rea15:sketchup-blender-petalica-magma-recraft-studio": defineRoute(
-    "rea15:sketchup-blender-petalica-magma-recraft-studio",
-    "SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "SketchUp 동적 컴포넌트/은선·Blender Grease Pencil 3D 스트로크·Petalica 3종 채색·Magma 멀티유저 협업·Recraft SVG 벡터·Cara Glaze 보호 설계는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter": defineRoute(
-    "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter",
-    "Tapas · Tappytoon · RIDI · Postype 글로벌/노블코믹스 연재 & Sudowrite · Novelcrafter · Campfire 코덱스 디렉터",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "북미/유럽/한국 4대 연재 플랫폼(Tapas·Tappytoon·RIDI·Postype) 규격·수익화 퍼널과 Sudowrite/Novelcrafter/Campfire 세계관 코덱스·씬 비트 매트릭스 통합 설계는 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
+  "rea15:glimnavi-relight-lineart-v23": defineRoute("rea15:glimnavi-relight-lineart-v23", "그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터", "phase6-ecosystem", "fast-inline", "선화 v1.0~v2.3 버전·6종 선화 프리셋·컬러 레이어 분리·AI 그림자/조명/명암 파라미터 산출은 Haiku 5.5로 즉각 처리", 3_072),
+  "rea15:kaistory-single-envelope-kaion-quiz": defineRoute("rea15:kaistory-single-envelope-kaion-quiz", "카이스토리(KAISTORY) 4단 단일 데이터 엔벨로프 & KAION 웹툰 학습카드·독자 퀴즈 디렉터", "phase6-ecosystem", "creative-production", "conti→design→editor→story 단일 프로젝트 엔벨로프와 KAION 학습카드·독자 몰입 퀴즈 생성은 Sonnet 5.5 적용", 4_096),
+  "rea15:snaptoon-frameo-shaper-3d-lighting": defineRoute("rea15:snaptoon-frameo-shaper-3d-lighting", "Snaptoon·Frameo·NAVER SHAPER·Plask·Posemaniacs 3D 포즈·스포트라이트 콘 디렉터", "phase6-ecosystem", "creative-production", "Snapboard 3D→AI 변환·Frameo 스포트라이트 콘(--cursor-angle/--cone-spread)·SHAPER 3D 표면 드로잉/포즈·해부학 리그는 Sonnet 5.5 적용", 4_096),
+  "rea15:manhwa-komiko-anifusion-flow": defineRoute("rea15:manhwa-komiko-anifusion-flow", "ManhwaAI 6대 화풍/5대 톤·Komiko 레이어 분리/인비트윈·Anifusion 노드 플로우 디렉터", "phase6-ecosystem", "creative-production", "6대 만화 화풍·5대 절차적 효과톤·비파괴 레이어 분리·노드 플로우 그래프 설계는 Sonnet 5.5 적용", 4_096),
+  "rea15:creative-dopamine-scroll-ux-synthesizer": defineRoute("rea15:creative-dopamine-scroll-ux-synthesizer", "웹툰 독자 도파민·스크롤 정지 히트맵 시뮬레이터 & 39대 플랫폼 UI/UX 테마 토큰 합성기", "phase6-ecosystem", "deep-architecture", "컷별 독자 도파민 곡선·스크롤 정지 시간(ms)·클리프행어 훅 강도 예측 및 39대 REA UI/UX 테마 합성은 Opus 5.5 심층 추론 적용", 6_144),
+  "rea15:tootoon-gentoon-tooning-kr-suite": defineRoute("rea15:tootoon-gentoon-tooning-kr-suite", "TooToon 5-Studio(fabulator~emporium) · GenToon 리더/굿즈 · Tooning 6부위 캐릭터 디렉터", "phase6-ecosystem", "creative-production", "TooToon 5대 모듈·GenToon 뷰어/굿즈 수익화·Tooning Plus 6부위 캐릭터 조합 설계는 Sonnet 5.5 적용", 4_096),
+  "rea15:krea-spline-lumiere-realtime-shader": defineRoute("rea15:krea-spline-lumiere-realtime-shader", "Krea 실시간 디렉터 · Spline 3D/Hana 스타일 트랜스퍼 · Lumiere/Graphite/PixiEditor 셰이더 디렉터", "phase6-ecosystem", "fast-inline", "실시간 i2i 브러시·Spline 3D 스타일 전이·Lumiere Kuwahara/Halation 셰이더·비파괴 노드 파라미터 산출은 Haiku 5.5로 즉각 처리", 3_072),
+  "rea15:ltx-boords-cascadeur-rive-animatic": defineRoute("rea15:ltx-boords-cascadeur-rive-animatic", "LTX Studio · Boords 애니매틱 · Cascadeur 물리 오토포징 · Rive/Jitter 상태머신 디렉터", "phase6-ecosystem", "deep-architecture", "프리비즈 애니매틱 카메라 시퀀스·Cascadeur 무게중심/탄도 물리 궤적·Rive 인터랙티브 상태머신 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "rea15:cotrans-vroid-skybox-world-localizer": defineRoute("rea15:cotrans-vroid-skybox-world-localizer", "Cotrans 식자 인페인팅 · VRoid 3D VRM 아바타 · Blockade Skybox 360° 월드 로컬라이저", "phase6-ecosystem", "creative-production", "다국어 식자 LaMa/AOT 인페인팅 마스크·VRoid VRM 본/외곽선·360도 파노라마 스카이박스 환경 매칭은 Sonnet 5.5 적용", 4_096),
+  "rea15:storyboarder-dreams-krita-artbreeder-director": defineRoute("rea15:storyboarder-dreams-krita-artbreeder-director", "WonderUnit Shot Generator · Procreate Dreams 퍼포밍 · Krita Diffusion · Artbreeder 유전자 디렉터", "phase6-ecosystem", "deep-architecture", "3D Shot Generator 카메라·Procreate Dreams 실시간 퍼포밍 키프레임·Krita Live Diffusion·Artbreeder 유전자 교배 통합 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "rea15:niji-pixai-civitai-lora-sref-director": defineRoute("rea15:niji-pixai-civitai-lora-sref-director", "NijiJourney V6 · PixAI · Civitai · TensorArt · WaifuLabs · Picrew · CHARAT LoRA/Sref/파츠 디렉터", "phase6-ecosystem", "creative-production", "Niji V6 --sref/--cref 가중치·PixAI/Civitai/SeaArt/TensorArt LoRA 스택·WaifuLabs 4단 그리드·Picrew/CHARAT 파츠 레이어 설계는 Sonnet 5.5 적용", 4_096),
+  "rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu": defineRoute("rea15:tripo-meshy-heroforge-suno-elevenlabs-osmu", "Tripo3D · Meshy 7 · HeroForge 3D 소품/갑주 · Suno V6 OST · ElevenLabs 더빙 · MANGA Plus 디렉터", "phase6-ecosystem", "deep-architecture", "Tripo3D/Meshy 7/HeroForge 3D 판타지 소품·갑주 메쉬·Suno V6 스템 OST·ElevenLabs 다중 성우 더빙·MANGA Plus 글로벌 투고 패키징은 Opus 5.5 심층 추론 적용", 6_144),
+  "rea15:runway-luma-pika-viggle-live2d-spine-motion": defineRoute("rea15:runway-luma-pika-viggle-live2d-spine-motion", "Runway Gen-4.5 · Luma Ray 2 · Pika 2.2 · Viggle JST-2 · Live2D Cubism · Spine 2D 무빙툰 디렉터", "phase6-ecosystem", "deep-architecture", "Runway Multi-Motion Brush·Luma Start/End 키프레임·Pika 물리 이펙트·Viggle JST-2 모션 전이·Live2D ArtMesh/Spine 2D IK 본 리깅 통합 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "rea15:sketchup-blender-petalica-magma-recraft-studio": defineRoute("rea15:sketchup-blender-petalica-magma-recraft-studio", "SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터", "phase6-ecosystem", "creative-production", "SketchUp 동적 컴포넌트/은선·Blender Grease Pencil 3D 스트로크·Petalica 3종 채색·Magma 멀티유저 협업·Recraft SVG 벡터·Cara Glaze 보호 설계는 Sonnet 5.5 적용", 4_096),
+  "rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter": defineRoute("rea15:tapas-tappytoon-ridi-postype-sudowrite-novelcrafter", "Tapas · Tappytoon · RIDI · Postype 글로벌/노블코믹스 연재 & Sudowrite · Novelcrafter · Campfire 코덱스 디렉터", "phase6-ecosystem", "deep-architecture", "북미/유럽/한국 4대 연재 플랫폼(Tapas·Tappytoon·RIDI·Postype) 규격·수익화 퍼널과 Sudowrite/Novelcrafter/Campfire 세계관 코덱스·씬 비트 매트릭스 통합 설계는 Opus 5.5 심층 추론 적용", 6_144),
   "rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle": defineRoute("rea15:mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle", "Mixamo 모션 · Marvelous 의상 · Substance 재질 · Coolors/Adobe 배색 · 눈누/Blambot 식자 · ToonBoom/TVPaint/Moho · Eagle 에셋 디렉터", "phase6-ecosystem", "creative-production", "Mixamo 3D 모션캡처·Marvelous 의상 주름·Substance 툰 머티리얼·Coolors/Adobe 배색·눈누/Blambot 한영 식자·ToonBoom/TVPaint/Moho 작화·PureRef/Milanote/Eagle 에셋 관리는 Sonnet 5.5 적용", 4_096),
   "ecosystem:collar-tie-lapel-neckline-symmetry-lock": defineRoute("ecosystem:collar-tie-lapel-neckline-symmetry-lock", "의상 칼라·넥타이 매듭·로판 리본·갑옷 목깃(Gorget) 대칭 및 단추 풀림 단계 고정기", "phase6-ecosystem", "fast-inline", "슛/역슛 전환 시 셔츠 풀어헤친 단추 개수·넥타이 매듭·로판 크라바트 브로치·갑옷 목깃 대칭 고정은 Haiku 5.5 적용", 3_072),
   "ecosystem:tattoo-stigma-curse-mark-uv-topology-lock": defineRoute("ecosystem:tattoo-stigma-curse-mark-uv-topology-lock", "문신·성흔(Stigma)·마안·저주 낙인 신체 UV 곡면 왜곡 및 발광 단계 고정기", "phase6-ecosystem", "creative-production", "근육 수축·단축법(Foreshortening) 각도에서 문신·성흔·저주 문양의 신체 해부학적 UV 좌표 및 발광 단계 고정은 Sonnet 5.5 적용", 4_096),
@@ -710,6 +614,14 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "runner:cast-shadow-sundial-azimuth-elevation-lock": defineRoute("runner:cast-shadow-sundial-azimuth-elevation-lock", "야외 태양 방위각(Azimuth)·고도각(Elevation) 기반 인물·건물 바닥 그림자 길이·방향 고정기", "n7-llm-runner", "creative-production", "동일 시간대 야외 씬에서 태양 방위각/고도각에 따른 인물·건물 바닥 투영 그림자(Cast Shadow) 길이 배율과 각도 고정은 Sonnet 5.5 적용", 4_096),
   "runner:impact-debris-crater-shatter-persistence-lock": defineRoute("runner:impact-debris-crater-shatter-persistence-lock", "전투 타격 바닥 크레이터·벽면 균열·유리 파편 잔해 위치 지속성(원상복구 방지) 고정기", "n7-llm-runner", "creative-production", "전투 중 파손된 바닥 크레이터·기둥 균열·깨진 유리창 파편이 다음 컷에서 멀쩡히 원상복구되는 배경 작붕 차단은 Sonnet 5.5 적용", 4_096),
   "runner:binaural-spatial-audio-foley-lufs-director": defineRoute("runner:binaural-spatial-audio-foley-lufs-director", "무빙툰·오디오툰 3D 바이노럴 폴리(발소리/옷깃/검풍)·대사 사이드체인 더킹(-8dB)·-14 LUFS 마스터 감독", "n7-llm-runner", "deep-architecture", "컷 내 화자/타격 좌우 패닝(Binaural Panning)·폴리 사운드 레이어·성우 대사 -8dB 사이드체인 더킹·-14 LUFS 음량 마스터링 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "production:button-zipper-belt-buckle-fastener-lock": defineRoute("production:button-zipper-belt-buckle-fastener-lock", "의상 여밈 방향(남성 좌상우하·여성 우상좌하·한복 동정)·벨트 버클·지퍼 슬라이더 고정기", "storyboard-production", "fast-inline", "남성복/여성복/전통복 앞여밈 겹침 방향(Left-over-Right) 및 벨트 버클 프롱 방향 좌우 반전 차단은 Haiku 5.5 적용", 3_072),
+  "production:speedline-impact-frame-radial-focus-lock": defineRoute("production:speedline-impact-frame-radial-focus-lock", "집중선(Focus Line) 수렴 중심점·배경 유선(Speed Line) 각도·흑백 임팩트 프레임 감독", "storyboard-production", "fast-inline", "방사형 집중선 수렴 중심(얼굴/타격점) 이탈 방지 및 속도선 벡터 각도·흑백 반전 임팩트 프레임 설계는 Haiku 5.5 적용", 3_072),
+  "production:wound-bandage-cast-healing-stage-lock": defineRoute("production:wound-bandage-cast-healing-stage-lock", "붕대 감긴 방향·깁스/안대 착용 부위·회차별 상처 회복 단계(출혈→봉합→붕대→흉터) 타임라인 고정기", "storyboard-production", "creative-production", "붕대 나선 감김 방향·안대/깁스 좌우 위치·회차 경과에 따른 상처 치유 단계 역행 방지는 Sonnet 5.5 적용", 4_096),
+  "production:heraldry-crest-guild-emblem-geometry-lock": defineRoute("production:heraldry-crest-guild-emblem-geometry-lock", "가문 문장(Heraldry Crest)·황실 국장·길드 엠블럼·교복 배지 기하 도안 및 봉랍 반전 방지기", "storyboard-production", "creative-production", "공작가/황실 문장 방패 분할·사자/독수리 방향(Dexter/Sinister)·깃발/봉랍/마차 문장 좌우 반전 차단은 Sonnet 5.5 적용", 4_096),
+  "production:musical-instrument-fingering-bowing-lock": defineRoute("production:musical-instrument-fingering-bowing-lock", "바이올린(좌턱/우손 활)·피아노 건반 옥타브·기타 프렛·플루트 연주 파지 해부학 고정기", "storyboard-production", "creative-production", "현악기/건반악기/관악기 연주 컷에서 활 쥐는 손(오른손)과 운지 손(왼손)이 좌우 반전되는 고증 오류 차단은 Sonnet 5.5 적용", 4_096),
+  "production:variable-font-balloon-diamond-copyfit-lock": defineRoute("production:variable-font-balloon-diamond-copyfit-lock", "말풍선 내부 다이아몬드 줄바꿈(Diamond Rag)·가변 폰트 자폭(wdth)/굵기(wght) 광학 조판 고정기", "storyboard-production", "creative-production", "말풍선 타원 곡률에 맞춘 가운데 줄이 길고 첫/끝줄이 짧은 다이아몬드 행갈이 및 가변 폰트 자폭 보간은 Sonnet 5.5 적용", 4_096),
+  "production:tankobon-print-bleed-cmyk-tac300-proof-lock": defineRoute("production:tankobon-print-bleed-cmyk-tac300-proof-lock", "세로 웹툰 → 종이 단행본(A5/신서판) 재편집 컷 분할·재단선(Bleed 3mm)·CMYK TAC≤300% 감리 감독", "storyboard-production", "deep-architecture", "세로 스크롤 원고의 단행본 페이지네이션 컷 재배치·안쪽 제책 여백(Gutter)·리치블랙 TAC 300% 인쇄 감리는 Opus 5.5 심층 추론 적용", 6_144),
+  "production:eyetrack-scroll-velocity-aoi-heatmap-director": defineRoute("production:eyetrack-scroll-velocity-aoi-heatmap-director", "모바일 스크롤 속도(px/s) 감속 구간·아이트래킹 관심영역(AOI 1→2→3) 시선 도약 스캔패스 총괄 감독", "storyboard-production", "deep-architecture", "첫 시선 고정점(1st Fixation)→말풍선→액션 타격점 Z-스캔패스 설계 및 Fast-Skim 이탈 절벽 방지는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

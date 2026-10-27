@@ -5,11 +5,21 @@
  * 카테고리 4 (사진·영상 만화 변환: 원더쉐어 필모라 · 캔바 AI) 탭 패널 서브컴포넌트.
  */
 
-import { CheckCircle2, Compass, Film } from "lucide-react";
+import { CheckCircle2, Compass, Film, Sparkles } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
+import {
+  runClaudeEyetrackScrollVelocityAoiDirector,
+  runClaudeFastenerOverlapBeltBuckleLockDirector,
+  runClaudeHeraldryCrestEmblemGeometryLockDirector,
+  runClaudeMusicalInstrumentFingeringLockDirector,
+  runClaudeSpeedlineImpactFrameFocusLockDirector,
+  runClaudeTankobonPrintBleedCmykProofDirector,
+  runClaudeVariableFontBalloonDiamondCopyfitDirector,
+  runClaudeWoundBandageHealingTimelineLockDirector,
+} from "./claude/claude-webtoon-production-assist";
 import {
   buildMidjourneyStableDiffusionConceptPlan,
   buildPhotoshopFireflyGenerativePlan,
@@ -24,6 +34,16 @@ import {
 } from "./storyboard-style-transfer-suite";
 
 import { cn } from "@/shared/lib/utils";
+
+type Wave24ToolId =
+  | "fastener"
+  | "speedline"
+  | "wound"
+  | "heraldry"
+  | "instrument"
+  | "diamond-font"
+  | "tankobon"
+  | "eyetrack";
 
 export interface StudioAiWebtoonCategory3PanelProps {
   readonly scriptInput: string;
@@ -40,6 +60,52 @@ export function StudioAiWebtoonCategory3Panel({
   const [fireflyMode, setFireflyMode] = useState<FireflyEditOperationMode>(
     "generative-expand-vertical",
   );
+  const [wave24ActiveTool, setWave24ActiveTool] = useState<Wave24ToolId | null>(null);
+  const [wave24Summary, setWave24Summary] = useState<string>("");
+  const [wave24Badge, setWave24Badge] = useState<string>("");
+
+  async function handleRunWave24Tool(toolId: Wave24ToolId): Promise<void> {
+    setWave24ActiveTool(toolId);
+    const input = {
+      episodeTitle: `${storyGenre} 콘티 마스터`,
+      genre: storyGenre,
+      scriptSummary: scriptInput,
+      cutCount: 4,
+    };
+    if (toolId === "fastener") {
+      const res = await runClaudeFastenerOverlapBeltBuckleLockDirector(input);
+      setWave24Badge(`${res.model} · 여밈일관성 ${res.data.fastenerLockScore}점`);
+      setWave24Summary(`${res.data.placketOverlapRuleKo} | 단추 ${res.data.buttonCount}개 | ${res.data.mirrorFlipGuardKo}`);
+    } else if (toolId === "speedline") {
+      const res = await runClaudeSpeedlineImpactFrameFocusLockDirector(input);
+      setWave24Badge(`${res.model} · 타격초점 ${res.data.focusLockScore}점`);
+      setWave24Summary(`${res.data.vanishingApexNormalizedXY} | 보호반경 ${res.data.innerClearRadiusPx}px | ${res.data.impactFrameInversionRuleKo}`);
+    } else if (toolId === "wound") {
+      const res = await runClaudeWoundBandageHealingTimelineLockDirector(input);
+      setWave24Badge(`${res.model} · 부상타임라인 ${res.data.medicalContinuityScore}점`);
+      setWave24Summary(`${res.data.anatomicalLandmarkKo} | ${res.data.healingStageProgressionKo}`);
+    } else if (toolId === "heraldry") {
+      const res = await runClaudeHeraldryCrestEmblemGeometryLockDirector(input);
+      setWave24Badge(`${res.model} · 문장기하학 ${res.data.crestGeometryScore}점`);
+      setWave24Summary(`${res.data.motifRatioSpecKo} | ${res.data.metallicFoilBevelRuleKo}`);
+    } else if (toolId === "instrument") {
+      const res = await runClaudeMusicalInstrumentFingeringLockDirector(input);
+      setWave24Badge(`${res.model} · 악기운지 ${res.data.instrumentAccuracyScore}점`);
+      setWave24Summary(`${res.data.instrumentAndStringCountKo} | ${res.data.leftHandFingeringPositionKo}`);
+    } else if (toolId === "diamond-font") {
+      const res = await runClaudeVariableFontBalloonDiamondCopyfitDirector(input);
+      setWave24Badge(`${res.model} · 마름모식자 ${res.data.diamondCopyfitScore}점`);
+      setWave24Summary(`wght ${res.data.fontWeightWght} / wdth ${res.data.fontWidthWdthPct}% | 줄글자수 [${res.data.lineLengthsCharCount.join(",")}] | ${res.data.widowOrphanPreventionNoteKo}`);
+    } else if (toolId === "tankobon") {
+      const res = await runClaudeTankobonPrintBleedCmykProofDirector(input);
+      setWave24Badge(`${res.model} · 단행본인쇄 ${res.data.printReadinessScore}점`);
+      setWave24Summary(`${res.data.trimAndBleedSpecMmKo} | TAC ${res.data.maxTotalAreaCoverageTacPct}% | ${res.data.scrollToPageReflowStrategyKo}`);
+    } else {
+      const res = await runClaudeEyetrackScrollVelocityAoiDirector(input);
+      setWave24Badge(`${res.model} · 시선트래킹 ${res.data.eyePathSmoothnessScore}점`);
+      setWave24Summary(`체류 ${res.data.averageDwellTimeMsPerCut}ms · 사카드 ${res.data.saccadeJumpAngleDeg}° | ${res.data.aoiHeatmapOptimizationKo}`);
+    }
+  }
 
   const llamaGenResult = useMemo(
     () =>
@@ -188,6 +254,59 @@ export function StudioAiWebtoonCategory3Panel({
             레이어: {fireflyResult.nonDestructiveLayerNameKo} (Feather {fireflyResult.maskRegionSpec.featherPx}px)
           </span>
         </div>
+      </div>
+
+      {/* 3-C. Wave 24~26 (480대 플랫폼 내재화): 의상 여밈·부상 타임라인·문장·악기·다이아몬드 식자·단행본 CMYK·시선 AOI 8종 */}
+      <div
+        data-testid="wave24-26-category34-consistency-bar"
+        className="flex flex-col gap-1.5 rounded-md border border-line bg-raised p-2 text-[0.58rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <strong className="inline-flex items-center gap-1 text-accent">
+            <Sparkles size={12} aria-hidden="true" />
+            Wave 24~26 고증·식자·단행본·시선추적 AI 일관성 디렉터 (480대 플랫폼 내재화)
+          </strong>
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Wave 24~26 일관성 도구">
+            {(
+              [
+                { id: "fastener", label: "단추·여밈·버클 고정" },
+                { id: "speedline", label: "집중선·임팩트 초점" },
+                { id: "wound", label: "부상·붕대 타임라인" },
+                { id: "heraldry", label: "가문 문장·엠블럼" },
+                { id: "instrument", label: "악기 운지·보잉 고증" },
+                { id: "diamond-font", label: "말풍선 마름모 식자" },
+                { id: "tankobon", label: "단행본 도련·CMYK" },
+                { id: "eyetrack", label: "아이트래킹·스크롤 AOI" },
+              ] as const
+            ).map((btn) => (
+              <button
+                key={btn.id}
+                type="button"
+                data-testid={`wave24-tool-btn-${btn.id}`}
+                aria-pressed={wave24ActiveTool === btn.id}
+                onClick={() => void handleRunWave24Tool(btn.id)}
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
+                  STUDIO_FOCUS_RING,
+                  wave24ActiveTool === btn.id
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-2",
+                )}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {wave24Summary && (
+          <div
+            data-testid="wave24-26-result-card"
+            className="flex flex-col gap-0.5 rounded border border-line bg-card p-1.5 text-[0.57rem]"
+          >
+            <span className="font-mono font-bold text-accent">{wave24Badge}</span>
+            <p className="text-fg-2">{wave24Summary}</p>
+          </div>
+        )}
       </div>
     </div>
   );

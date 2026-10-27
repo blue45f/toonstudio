@@ -46,12 +46,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 41대 창의 AI 작업을 포함한 총 92개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 49대 창의 AI 작업을 포함한 총 100개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(92);
-    expect(summary.byProfile["fast-inline"]).toBe(24);
-    expect(summary.byProfile["creative-production"]).toBe(46);
-    expect(summary.byProfile["deep-architecture"]).toBe(22);
+    expect(summary.totalTasks).toBe(100);
+    expect(summary.byProfile["fast-inline"]).toBe(26);
+    expect(summary.byProfile["creative-production"]).toBe(50);
+    expect(summary.byProfile["deep-architecture"]).toBe(24);
+
+    expect(
+      resolveCreatorTaskModelRoute("production:button-zipper-belt-buckle-fastener-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:speedline-impact-frame-radial-focus-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:wound-bandage-cast-healing-stage-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:heraldry-crest-guild-emblem-geometry-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:musical-instrument-fingering-bowing-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:variable-font-balloon-diamond-copyfit-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:tankobon-print-bleed-cmyk-tac300-proof-lock").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:eyetrack-scroll-velocity-aoi-heatmap-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("runner:gaze-saccade-pupil-highlight-lock").model,

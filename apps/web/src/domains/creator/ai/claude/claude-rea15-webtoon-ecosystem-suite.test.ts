@@ -65,12 +65,21 @@ const TEST_ROUTE = {
 };
 
 describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
-  it("0. 420대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+  it("0. 480대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(420);
+    expect(themes).toHaveLength(480);
 
     const kreaWan = getRea15PlatformTheme("krea-wan-14b-toon-motion");
     expect(kreaWan.accentPrimaryHex).toBe("#a855f7");
+
+    const metArmor = getRea15PlatformTheme("met-museum-armor-collection");
+    expect(metArmor.accentPrimaryHex).toBe("#d97706");
+
+    const faceitArkit = getRea15PlatformTheme("faceit-blender-arkit-52");
+    expect(faceitArkit.accentPrimaryHex).toBe("#3b82f6");
+
+    const tobiiAoi = getRea15PlatformTheme("tobii-pro-lab-saccade-aois");
+    expect(tobiiAoi.accentPrimaryHex).toBe("#3b82f6");
 
     const worldLabs = getRea15PlatformTheme("world-labs-marble-3d-scene");
     expect(worldLabs.accentPrimaryHex).toBe("#0ea5e9");

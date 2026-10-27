@@ -646,3 +646,25 @@ export async function runClaudeWeatherTimeProgressionContinuityDirector(
     throw error;
   }
 }
+
+export {
+  runClaudeEyetrackScrollVelocityAoiDirector,
+  runClaudeFastenerOverlapBeltBuckleLockDirector,
+  runClaudeHeraldryCrestEmblemGeometryLockDirector,
+  runClaudeMusicalInstrumentFingeringLockDirector,
+  runClaudeSpeedlineImpactFrameFocusLockDirector,
+  runClaudeTankobonPrintBleedCmykProofDirector,
+  runClaudeVariableFontBalloonDiamondCopyfitDirector,
+  runClaudeWoundBandageHealingTimelineLockDirector,
+  type ClaudeEyetrackScrollAoi,
+  type ClaudeFastenerOverlapLock,
+  type ClaudeHeraldryCrestLock,
+  type ClaudeMusicalInstrumentLock,
+  type ClaudeSpeedlineImpactFocus,
+  type ClaudeTankobonPrintBleedProof,
+  type ClaudeVariableFontDiamondCopyfit,
+  type ClaudeWoundBandageTimeline,
+  type RunWave24ProductionAssistOptions,
+  type Wave24ProductionAssistInput,
+  type Wave24ProductionAssistResult,
+} from "./claude-command-plan";
