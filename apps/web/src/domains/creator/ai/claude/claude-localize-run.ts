@@ -397,3 +397,199 @@ export async function runClaudeSignLanguageHearingAidLegalDepositDirector(
     fallback: () => Object.freeze({ inclusivityAndArchiveIntegrityScore: 99, kslHandshapeNonManualMarkerKo: "한국수어(KSL) 대사 컷은 손가락 수형(Handshape)·수위(가슴/얼굴 접점)·수동(반투명 잔상과 이동 화살표)에 눈썹/입모양 비수지 신호(Non-Manual Marker)를 결합", bteHearingAidCochlearCoilAndCaneKo: "귀걸이형(BTE) 보청기 투명 음향 튜브와 인공와우 측두부 원형 자석 코일 위치를 고정하고, 시각장애인용 접이식 흰지팡이 하단 적색 반사 테이프와 롤러 팁 고증", isbn13BarcodeAndLegalDepositSpecKo: "웹툰 단행본 뒷표지 ISBN-13(979-11) 및 5자리 한국문헌번호 부가기호(07810 만화 분류) 바코드 규격과 국립중앙도서관 디지털 납본용 PDF/A-1b 메타데이터 완비" }),
   });
 }
+
+// ============================================================================
+// Wave 48~50 (960대 플랫폼 내재화): 무협화산당가제갈·선협어검객잔죽간·카지노바카라홀덤·그랜드피아노시가위스키·슈퍼카F1요트제트기·심해잠수정우주복콜드슬립·화산용암빙하사막·항공모함방공호BSL4 8종
+// ============================================================================
+
+export const ClaudeMurimPlumTangClanBaguaSchema = z.object({
+  murimSectIntegrityScore: z.number().int().min(0).max(100),
+  mountHwa5PetalPlumQiAndNamgungLightningKo: z.string(),
+  tangClanPoisonNeedleAndZhugeBaguaArrayKo: z.string(),
+  wudangTaijiBuljinAndBeggarsBambooStaffKo: z.string(),
+});
+export type ClaudeMurimPlumTangClanBagua = z.infer<typeof ClaudeMurimPlumTangClanBaguaSchema>;
+
+export async function runClaudeMurimPlumBlossomTangClanBaguaDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeMurimPlumTangClanBagua>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:murim-plum-sword-tang-clan-bagua-lock",
+    systemPrompt: "당신은 무협 웹툰의 화산파 5꽃잎 매화검기·남궁세가 뇌전대검·사천당가 암기/만독불침·제갈세가 기문둔갑 팔진도·무당 태극/개방 타구봉 문파 시그니처 고정기입니다.",
+    userInstruction: "화산파 매화검기와 남궁세가 뇌전대검, 사천당가 독침/암기와 제갈세가 팔진도, 무당파 불진과 개방 타구봉 규칙을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeMurimPlumTangClanBaguaSchema,
+    options,
+    normalize: (p) => Object.freeze({ murimSectIntegrityScore: clampWave45(p.murimSectIntegrityScore, 0, 100, 99), mountHwa5PetalPlumQiAndNamgungLightningKo: cleanSingleLineText(p.mountHwa5PetalPlumQiAndNamgungLightningKo, 180), tangClanPoisonNeedleAndZhugeBaguaArrayKo: cleanSingleLineText(p.tangClanPoisonNeedleAndZhugeBaguaArrayKo, 180), wudangTaijiBuljinAndBeggarsBambooStaffKo: cleanSingleLineText(p.wudangTaijiBuljinAndBeggarsBambooStaffKo, 180) }),
+    fallback: () => Object.freeze({ murimSectIntegrityScore: 99, mountHwa5PetalPlumQiAndNamgungLightningKo: "화산파 매화검법은 검끝 궤적마다 5꽃잎 홍매화 검기(`#F43F5E`)가 피어나고, 남궁세가 제왕검형은 양손 중검에 청백색 뇌전 스파크 아크를 결합", tangClanPoisonNeedleAndZhugeBaguaArrayKo: "사천당가는 손목/허벅지 가죽 암기낭에서 비도·독침 사출 및 자색 독기(`#A855F7`)를 유지하고, 제갈세가는 학우선 부채 지휘와 8방위 기문둔갑 돌기둥 배열 고정", wudangTaijiBuljinAndBeggarsBambooStaffKo: "무당파는 백색 말총 불진(먼지털이)과 태극 음양어 회전 와류를, 개방은 에메랄드빛 대나무 마디 타구봉과 허리 표주박 호리병 매듭을 일관되게 유지" }),
+  });
+}
+
+export const ClaudeXianxiaFlyingSwordInnBambooSchema = z.object({
+  orientalFantasyStagingScore: z.number().int().min(0).max(100),
+  flyingSwordSurfStanceAndPillCauldronKo: z.string(),
+  gaekjanMezzanineWineJarAndBambooCutKo: z.string(),
+  bambooSlipJukganPigeonAndPulseWristKo: z.string(),
+});
+export type ClaudeXianxiaFlyingSwordInnBamboo = z.infer<typeof ClaudeXianxiaFlyingSwordInnBambooSchema>;
+
+export async function runClaudeXianxiaFlyingSwordInnBambooScrollDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeXianxiaFlyingSwordInnBamboo>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:xianxia-flying-sword-inn-bamboo-scroll-lock",
+    systemPrompt: "당신은 무협/선협 웹툰의 어검비행 스탠스·삼족 연단로·객잔 2층 중정 난간/붉은천 술독·대나무 45도 절단·죽간/전서구/촌관척 진맥 고정기입니다.",
+    userInstruction: "선협 어검비행 자세와 연단로, 객잔 2층 난간과 대나무 사선 절단 물리, 죽간 우→좌 펼침과 전서구/진맥 고증을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeXianxiaFlyingSwordInnBambooSchema,
+    options,
+    normalize: (p) => Object.freeze({ orientalFantasyStagingScore: clampWave45(p.orientalFantasyStagingScore, 0, 100, 99), flyingSwordSurfStanceAndPillCauldronKo: cleanSingleLineText(p.flyingSwordSurfStanceAndPillCauldronKo, 180), gaekjanMezzanineWineJarAndBambooCutKo: cleanSingleLineText(p.gaekjanMezzanineWineJarAndBambooCutKo, 180), bambooSlipJukganPigeonAndPulseWristKo: cleanSingleLineText(p.bambooSlipJukganPigeonAndPulseWristKo, 180) }),
+    fallback: () => Object.freeze({ orientalFantasyStagingScore: 99, flyingSwordSurfStanceAndPillCauldronKo: "어검비행 시 검신 중앙에 앞발·코등이 쪽에 뒷발을 둔 측면 서핑 균형 자세와 왼손 검결(Jianjue) 수인을 고정하고 삼족 연단로 화구와 뇌겁 번개 연출", gaekjanMezzanineWineJarAndBambooCutKo: "객잔 2층 목조 회랑 난간에서 1층 중정 탁자를 내려다보는 부감 투시와 붉은 천 봉인 도자기 술독, 대나무 숲 45도 사선 절단면 슬라이딩 물리 고정", bambooSlipJukganPigeonAndPulseWristKo: "고대 비급 죽간은 위아래 2줄 엮음 끈을 따라 우→좌로 펼치며 전서구 발목 대나무 서신통과 신의 진맥 시 손목 요골동맥 위 촌·관·척 3지 접점 유지" }),
+  });
+}
+
+export const ClaudeCasinoBaccaratHoldemAuctionSchema = z.object({
+  highSocietyGamingScore: z.number().int().min(0).max(100),
+  baccaratSqueezeAndHoldem5CommunityKo: z.string(),
+  clayChipDenominationStackIntegrityKo: z.string(),
+  auctionGavelPodiumAndPaddleNumberKo: z.string(),
+});
+export type ClaudeCasinoBaccaratHoldemAuction = z.infer<typeof ClaudeCasinoBaccaratHoldemAuctionSchema>;
+
+export async function runClaudeCasinoBaccaratHoldemChipsAuctionDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeCasinoBaccaratHoldemAuction>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:casino-baccarat-holdem-chips-auction-lock",
+    systemPrompt: "당신은 도박/재벌 스릴러 웹툰의 카지노 바카라 카드 쪼기(Squeeze)·텍사스 홀덤 5커뮤니티 카드·칩 액면가 색상 스택·미술품 경매장 의사봉/패들 디렉터입니다.",
+    userInstruction: "바카라 카드 쪼기와 텍사스 홀덤 플랍-턴-리버 5장 배치, 카지노 칩 액면가 색상, 경매장 패들 번호 연속성을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeCasinoBaccaratHoldemAuctionSchema,
+    options,
+    normalize: (p) => Object.freeze({ highSocietyGamingScore: clampWave45(p.highSocietyGamingScore, 0, 100, 98), baccaratSqueezeAndHoldem5CommunityKo: cleanSingleLineText(p.baccaratSqueezeAndHoldem5CommunityKo, 180), clayChipDenominationStackIntegrityKo: cleanSingleLineText(p.clayChipDenominationStackIntegrityKo, 180), auctionGavelPodiumAndPaddleNumberKo: cleanSingleLineText(p.auctionGavelPodiumAndPaddleNumberKo, 180) }),
+    fallback: () => Object.freeze({ highSocietyGamingScore: 98, baccaratSqueezeAndHoldem5CommunityKo: "바카라 카드 쪼기(Squeeze) 시 긴 변 기호 수(2줄/3줄/4줄)와 숫자 일치, 텍사스 홀덤은 번 카드 분리 후 Flop(3장)-Turn(1장)-River(1장) 총 5장 커뮤니티 카드 정렬", clayChipDenominationStackIntegrityKo: "카지노 칩 스택은 20개 단위 기둥 높이를 맞추고 흑색($100)·보라($500)·황색($1,000)·사각형 플라크(고액권) 색상과 베팅 금액 대사가 일치하도록 고정", auctionGavelPodiumAndPaddleNumberKo: "경매장 경매사 포디움 원형 사운드블록과 의사봉(Gavel), VIP 응찰자의 양면 번호 패들 숫자가 컷이 바뀌어도 절대 변하지 않도록 고정" }),
+  });
+}
+
+export const ClaudeGrandPianoViolinCigarWhiskySchema = z.object({
+  luxuryConnoisseurScore: z.number().int().min(0).max(100),
+  grandPianoRightPropStickAndViolinChinrestKo: z.string(),
+  cigarGuillotineAshAndWhiskyIceSphereKo: z.string(),
+  bottomlessPortafilterAndMichelinTweezersKo: z.string(),
+});
+export type ClaudeGrandPianoViolinCigarWhisky = z.infer<typeof ClaudeGrandPianoViolinCigarWhiskySchema>;
+
+export async function runClaudeGrandPianoLidViolinCigarWhiskyDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeGrandPianoViolinCigarWhisky>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:grand-piano-lid-violin-cigar-whisky-lock",
+    systemPrompt: "당신은 음악/미식/느와르 웹툰의 그랜드피아노 우측 덮개 지지대·바이올린 좌측 턱받침/f홀·시가 커터/위스키 아이스볼·네이키드 에스프레소/미슐랭 핀셋 디렉터입니다.",
+    userInstruction: "그랜드피아노 상판 개방 방향과 바이올린 구조, 시가 커팅/회백색 재와 위스키 아이스볼, 에스프레소 추출 및 파인다이닝 핀셋을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeGrandPianoViolinCigarWhiskySchema,
+    options,
+    normalize: (p) => Object.freeze({ luxuryConnoisseurScore: clampWave45(p.luxuryConnoisseurScore, 0, 100, 99), grandPianoRightPropStickAndViolinChinrestKo: cleanSingleLineText(p.grandPianoRightPropStickAndViolinChinrestKo, 180), cigarGuillotineAshAndWhiskyIceSphereKo: cleanSingleLineText(p.cigarGuillotineAshAndWhiskyIceSphereKo, 180), bottomlessPortafilterAndMichelinTweezersKo: cleanSingleLineText(p.bottomlessPortafilterAndMichelinTweezersKo, 180) }),
+    fallback: () => Object.freeze({ luxuryConnoisseurScore: 99, grandPianoRightPropStickAndViolinChinrestKo: "그랜드 피아노 상판 덮개 지지대(Prop Stick)는 반드시 연주자 기준 우측(객석 방향)에서 열리며, 바이올린은 테일피스 좌측 턱받침과 대칭 f홀·활 송진 가루 고정", cigarGuillotineAshAndWhiskyIceSphereKo: "시가는 기요틴 커터로 캡 숄더만 절단하고 끝단에 원통형 회백색 재(Ash)를 유지하며, 올드패션드 위스키 잔 내부 투명 구형 아이스볼 굴절과 글렌케언 잔 구분", bottomlessPortafilterAndMichelinTweezersKo: "바텀리스 포타필터 중앙으로 모이는 황금빛 타이거 스킨 에스프레소 줄기와 파인다이닝 주방 보온등(Heat Lamp) 아래 핀셋(Tweezers) 플레이팅 고정" }),
+  });
+}
+
+export const ClaudeSupercarF1HaloYachtJetSchema = z.object({
+  prestigeMobilityScore: z.number().int().min(0).max(100),
+  supercarScissorVsGullwingAndBrakeCaliperKo: z.string(),
+  f1HaloTitaniumAndPoloRightHandMalletKo: z.string(),
+  superyachtTeakDeckAndPrivateJetClubSeatKo: z.string(),
+});
+export type ClaudeSupercarF1HaloYachtJet = z.infer<typeof ClaudeSupercarF1HaloYachtJetSchema>;
+
+export async function runClaudeSupercarDoorF1HaloYachtPrivateJetDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeSupercarF1HaloYachtJet>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:supercar-door-f1-halo-yacht-jet-lock",
+    systemPrompt: "당신은 재벌/모터스포츠 웹툰의 슈퍼카 시저/걸윙 도어 경첩·F1 티타늄 헤일로/DRS·폴로 오른손 스틱 규칙·슈퍼요트 티크 데크·프라이빗 제트 클럽시트 디렉터입니다.",
+    userInstruction: "슈퍼카 시저도어/걸윙도어와 브레이크 캘리퍼, F1 헤일로와 폴로 오른손 파지 규칙, 슈퍼요트 갑판과 전용기 객실 구조를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeSupercarF1HaloYachtJetSchema,
+    options,
+    normalize: (p) => Object.freeze({ prestigeMobilityScore: clampWave45(p.prestigeMobilityScore, 0, 100, 99), supercarScissorVsGullwingAndBrakeCaliperKo: cleanSingleLineText(p.supercarScissorVsGullwingAndBrakeCaliperKo, 180), f1HaloTitaniumAndPoloRightHandMalletKo: cleanSingleLineText(p.f1HaloTitaniumAndPoloRightHandMalletKo, 180), superyachtTeakDeckAndPrivateJetClubSeatKo: cleanSingleLineText(p.superyachtTeakDeckAndPrivateJetClubSeatKo, 180) }),
+    fallback: () => Object.freeze({ prestigeMobilityScore: 99, supercarScissorVsGullwingAndBrakeCaliperKo: "슈퍼카 시저도어(앞펜더 A필러 힌지 수직 상승)와 걸윙도어(루프 중앙 힌지)를 구분하고 휠 스포크 안쪽 대형 카본세라믹 브레이크 디스크와 캘리퍼 각도 고정", f1HaloTitaniumAndPoloRightHandMalletKo: "F1 오픈휠 머신 조종석 전면 Y자 티타늄 헤일로(Halo) 보호대와 리어윙 DRS 플랩을 유지하고, 승마 폴로 경기는 안전 규칙상 전원 오른손으로만 스틱(Mallet) 파지", superyachtTeakDeckAndPrivateJetClubSeatKo: "슈퍼요트 선미 티크 우드 데크 검은 코킹 줄눈 소실점과 수평선을 맞추고, 프라이빗 제트기는 마주보는 4인 클럽 가죽시트와 타원형 이중 창문 정렬" }),
+  });
+}
+
+export const ClaudeDeepSeaSpacesuitCryoPodSchema = z.object({
+  extremeHabitatScore: z.number().int().min(0).max(100),
+  submersibleAcrylicDomeAndBioluminescenceKo: z.string(),
+  issCupola7WindowAndEvaGoldVisorTetherKo: z.string(),
+  cryosleepFrostPodAndCherenkovBlueGlowKo: z.string(),
+});
+export type ClaudeDeepSeaSpacesuitCryoPod = z.infer<typeof ClaudeDeepSeaSpacesuitCryoPodSchema>;
+
+export async function runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeDeepSeaSpacesuitCryoPod>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:deep-sea-submersible-spacesuit-cryopod-lock",
+    systemPrompt: "당신은 SF/해양 스릴러 웹툰의 심해 잠수정 반구형 아크릴창/유압 집게·우주정거장 7면 큐폴라/금도금 우주복 바이저·동면 포드 성에/체렌코프 청색광 디렉터입니다.",
+    userInstruction: "심해 잠수정 아크릴 관측창과 발광 생물, 우주정거장 큐폴라 창과 EVA 우주복 바이저/테더, 콜드슬립 캡슐과 체렌코프 발광을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeDeepSeaSpacesuitCryoPodSchema,
+    options,
+    normalize: (p) => Object.freeze({ extremeHabitatScore: clampWave45(p.extremeHabitatScore, 0, 100, 99), submersibleAcrylicDomeAndBioluminescenceKo: cleanSingleLineText(p.submersibleAcrylicDomeAndBioluminescenceKo, 180), issCupola7WindowAndEvaGoldVisorTetherKo: cleanSingleLineText(p.issCupola7WindowAndEvaGoldVisorTetherKo, 180), cryosleepFrostPodAndCherenkovBlueGlowKo: cleanSingleLineText(p.cryosleepFrostPodAndCherenkovBlueGlowKo, 180) }),
+    fallback: () => Object.freeze({ extremeHabitatScore: 99, submersibleAcrylicDomeAndBioluminescenceKo: "심해 유인 잠수정 전면 두꺼운 반구형 아크릴 관측창 가장자리 굴절과 다관절 유압 매니퓰레이터 집게, 암흑 수중의 청록색 생물발광(Bioluminescence) 고정", issCupola7WindowAndEvaGoldVisorTetherKo: "우주정거장 7면 큐폴라(중앙 원형창+주변 6개 사다리꼴 창) 너머 지구 대기권 푸른 에어글로우 곡률과 선외우주복(EVA) 금도금 바이저 반사·안전 테더 후크 유지", cryosleepFrostPodAndCherenkovBlueGlowKo: "콜드슬립 동면 캡슐 유리창 테두리의 수지상 얼음 결정(Dendritic Frost)과 원자로 수조 내부 체렌코프 복사 특유의 청록색(`#00B4D8`) 수중 발광 고증" }),
+  });
+}
+
+export const ClaudeVolcanoGlacierDesertDuneSchema = z.object({
+  planetaryGeophysicsScore: z.number().int().min(0).max(100),
+  lavaCoolingBlackCrustAndIncandescentCrackKo: z.string(),
+  glacierCrevasseBlueLightAndIceAxeArrestKo: z.string(),
+  sandDune34DegSlipfaceAndIcebreakerBowKo: z.string(),
+});
+export type ClaudeVolcanoGlacierDesertDune = z.infer<typeof ClaudeVolcanoGlacierDesertDuneSchema>;
+
+export async function runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeVolcanoGlacierDesertDune>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:volcano-lava-glacier-crevasse-desert-director",
+    systemPrompt: "당신은 재난/탐험 판타지 웹툰의 화산 용암 냉각 흑각/백열 균열·빙하 크레바스 청색 산란광/피켈 제동·사막 모래언덕 34도 안식각/쇄빙선 총괄 감독입니다.",
+    userInstruction: "용암류 검은 냉각 껍질과 균열 발광, 빙하 크레바스 청색광과 아이젠/피켈 고증, 사막 모래언덕 경사각과 쇄빙선 선수 물리를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeVolcanoGlacierDesertDuneSchema,
+    options,
+    normalize: (p) => Object.freeze({ planetaryGeophysicsScore: clampWave45(p.planetaryGeophysicsScore, 0, 100, 99), lavaCoolingBlackCrustAndIncandescentCrackKo: cleanSingleLineText(p.lavaCoolingBlackCrustAndIncandescentCrackKo, 180), glacierCrevasseBlueLightAndIceAxeArrestKo: cleanSingleLineText(p.glacierCrevasseBlueLightAndIceAxeArrestKo, 180), sandDune34DegSlipfaceAndIcebreakerBowKo: cleanSingleLineText(p.sandDune34DegSlipfaceAndIcebreakerBowKo, 180) }),
+    fallback: () => Object.freeze({ planetaryGeophysicsScore: 99, lavaCoolingBlackCrustAndIncandescentCrackKo: "화산 용암류 표면은 공기와 닿아 검회색 현무암 껍질로 굳고, 갈라진 균열 틈새 내부에서만 가장 밝은 황백색→주홍색(`#FF4500`) 흑체복사 백열광이 방출되도록 고정", glacierCrevasseBlueLightAndIceAxeArrestKo: "빙하 크레바스 심부는 적색광 흡수에 의한 고채도 청색 다중산란광을 띠며, 등반가 부츠 12발 아이젠(Crampon)과 피켈(Ice Axe) 피크 설벽 타격 방향 일치", sandDune34DegSlipfaceAndIcebreakerBowKo: "사막 초승달 사구(Barchan)는 바람받이 완경사 물결무늬와 바람그늘 34도 급경사(Slipface)를 구분하고, 극지 쇄빙선은 둥근 스푼형 선수로 해빙 위에 올라타 파쇄" }),
+  });
+}
+
+export const ClaudeAircraftCarrierBunkerBsl4Schema = z.object({
+  strategicFacilityScore: z.number().int().min(0).max(100),
+  carrierCatapultJbdAnd3rdArrestingWireKo: z.string(),
+  cargoRampStaticLineAndBunkerBlastDoorKo: z.string(),
+  bsl4CoiledAirHoseAndCoolingTowerHyperbolaKo: z.string(),
+});
+export type ClaudeAircraftCarrierBunkerBsl4 = z.infer<typeof ClaudeAircraftCarrierBunkerBsl4Schema>;
+
+export async function runClaudeAircraftCarrierCatapultBunkerBsl4Director(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeAircraftCarrierBunkerBsl4>> {
+  return executeWave45LocalizeDirector({
+    taskId: "localize:aircraft-carrier-catapult-bunker-bsl4-director",
+    systemPrompt: "당신은 밀리터리/바이오 스릴러 웹툰의 항공모함 캐터펄트/어레스팅 와이어·수송기 강하 신호등·지하 방공호 방폭문 핸드휠·BSL-4 양압복/냉각탑 총괄 감독입니다.",
+    userInstruction: "항공모함 제트편향판과 착함 와이어, 수송기 램프와 지하 벙커 방폭문 기구학, BSL-4 양압 실험복과 발전소 쌍곡면 냉각탑을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeAircraftCarrierBunkerBsl4Schema,
+    options,
+    normalize: (p) => Object.freeze({ strategicFacilityScore: clampWave45(p.strategicFacilityScore, 0, 100, 99), carrierCatapultJbdAnd3rdArrestingWireKo: cleanSingleLineText(p.carrierCatapultJbdAnd3rdArrestingWireKo, 180), cargoRampStaticLineAndBunkerBlastDoorKo: cleanSingleLineText(p.cargoRampStaticLineAndBunkerBlastDoorKo, 180), bsl4CoiledAirHoseAndCoolingTowerHyperbolaKo: cleanSingleLineText(p.bsl4CoiledAirHoseAndCoolingTowerHyperbolaKo, 180) }),
+    fallback: () => Object.freeze({ strategicFacilityScore: 99, carrierCatapultJbdAnd3rdArrestingWireKo: "항공모함 이함 시 후방 제트화염편향판(JBD) 기립과 캐터펄트 증기 궤적을 유지하고, 착함 시 함재기 테일후크가 갑판 어레스팅 와이어를 V자로 당기는 장력 고정", cargoRampStaticLineAndBunkerBlastDoorKo: "수송기 후방 램프 개방 시 천장 와이어 정적줄(Static Line)과 적색→녹색 강하등을 고증하고, 지하 벙커 방폭문은 중앙 핸드휠 회전 시 사방 강철 빗장(Dogs) 연동", bsl4CoiledAirHoseAndCoolingTowerHyperbolaKo: "BSL-4 생물안전 연구소는 천장 노란 나선형 에어호스가 연결된 양압 우주복과 음압 글러브박스를 유지하고, 발전소 냉각탑은 쌍곡면 실루엣과 순백색 수증기 기둥 고정" }),
+  });
+}

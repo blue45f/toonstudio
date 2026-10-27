@@ -43,13 +43,21 @@ import {
   runClaudeVtuberArkit52VnSpriteMerchDirector,
 } from "./claude-feature-cost-cap";
 import {
+  runClaudeAircraftCarrierCatapultBunkerBsl4Director,
   runClaudeAnimalPupilSpider8LegOctopusSharkDirector,
+  runClaudeCasinoBaccaratHoldemChipsAuctionDirector,
   runClaudeCyberTerminalServerRackCctvRooftopDirector,
+  runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector,
+  runClaudeGrandPianoLidViolinCigarWhiskyDirector,
   runClaudeHanokOndolBongsuWatermillMatchlockDirector,
   runClaudeHwachaGeobukseonTrebuchetJoustDirector,
   runClaudeJoseonGatBinyeoKatanaSayaDirector,
   runClaudeMensSuitBottomButtonTieHeelStrapDirector,
+  runClaudeMurimPlumBlossomTangClanBaguaDirector,
   runClaudeSignLanguageHearingAidLegalDepositDirector,
+  runClaudeSupercarDoorF1HaloYachtPrivateJetDirector,
+  runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector,
+  runClaudeXianxiaFlyingSwordInnBambooScrollDirector,
   runClaudeZombieBarricadeGasMaskLockpickLaserDirector,
 } from "./claude-localize-run";
 
@@ -92,12 +100,21 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 105대 창의 AI 작업을 포함한 총 156개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 113대 창의 AI 작업을 포함한 총 164개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(156);
-    expect(summary.byProfile["fast-inline"]).toBe(40);
-    expect(summary.byProfile["creative-production"]).toBe(78);
-    expect(summary.byProfile["deep-architecture"]).toBe(38);
+    expect(summary.totalTasks).toBe(164);
+    expect(summary.byProfile["fast-inline"]).toBe(42);
+    expect(summary.byProfile["creative-production"]).toBe(82);
+    expect(summary.byProfile["deep-architecture"]).toBe(40);
+
+    expect(resolveCreatorTaskModelRoute("localize:murim-plum-sword-tang-clan-bagua-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:xianxia-flying-sword-inn-bamboo-scroll-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:casino-baccarat-holdem-chips-auction-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:grand-piano-lid-violin-cigar-whisky-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:supercar-door-f1-halo-yacht-jet-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:deep-sea-submersible-spacesuit-cryopod-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:volcano-lava-glacier-crevasse-desert-director").model).toBe("claude-opus-5-5");
+    expect(resolveCreatorTaskModelRoute("localize:aircraft-carrier-catapult-bunker-bsl4-director").model).toBe("claude-opus-5-5");
 
     expect(resolveCreatorTaskModelRoute("localize:joseon-gat-binyeo-katana-saya-lock").model).toBe("claude-haiku-5-5");
     expect(resolveCreatorTaskModelRoute("localize:mens-suit-button-tie-heel-eyeglass-lock").model).toBe("claude-haiku-5-5");
@@ -506,5 +523,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(z6.data.urbanInfraIntegrityScore).toBeGreaterThanOrEqual(95);
     expect(z7.data.zoologicalAnatomyIntegrityScore).toBeGreaterThanOrEqual(95);
     expect(z8.data.inclusivityAndArchiveIntegrityScore).toBeGreaterThanOrEqual(95);
+
+    const m1 = await runClaudeMurimPlumBlossomTangClanBaguaDirector(sample, { route: null });
+    const m2 = await runClaudeXianxiaFlyingSwordInnBambooScrollDirector(sample, { route: null });
+    const m3 = await runClaudeCasinoBaccaratHoldemChipsAuctionDirector(sample, { route: null });
+    const m4 = await runClaudeGrandPianoLidViolinCigarWhiskyDirector(sample, { route: null });
+    const m5 = await runClaudeSupercarDoorF1HaloYachtPrivateJetDirector(sample, { route: null });
+    const m6 = await runClaudeDeepSeaSubmersibleSpacesuitCryoPodDirector(sample, { route: null });
+    const m7 = await runClaudeVolcanoLavaGlacierCrevasseDesertDuneDirector(sample, { route: null });
+    const m8 = await runClaudeAircraftCarrierCatapultBunkerBsl4Director(sample, { route: null });
+
+    expect(m1.data.murimSectIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(m2.data.orientalFantasyStagingScore).toBeGreaterThanOrEqual(95);
+    expect(m3.data.highSocietyGamingScore).toBeGreaterThanOrEqual(95);
+    expect(m4.data.luxuryConnoisseurScore).toBeGreaterThanOrEqual(95);
+    expect(m5.data.prestigeMobilityScore).toBeGreaterThanOrEqual(95);
+    expect(m6.data.extremeHabitatScore).toBeGreaterThanOrEqual(95);
+    expect(m7.data.planetaryGeophysicsScore).toBeGreaterThanOrEqual(95);
+    expect(m8.data.strategicFacilityScore).toBeGreaterThanOrEqual(95);
   });
 });

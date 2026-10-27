@@ -232,6 +232,21 @@ export const REA15_PLATFORM_IDS = [
   "butterfly-4wing-forewing-overlap-proboscis", "spider-8leg-cephalothorax-pedipalp-spinneret", "octopus-8arm-double-sucker-mantle-siphon", "shark-5gill-slit-vertical-tail-fin-dorsal", "crab-10leg-chela-pincer-sideways-carapace",
   "watch-chronograph-2pusher-tachymeter-crown", "fountain-pen-converter-piston-iridium-tip", "mens-suit-button-rule-sometimes-always-never", "necktie-four-in-hand-windsor-dimple-belt", "high-heel-stiletto-shank-arch-ankle-strap",
   "backpack-shoulder-strap-sternum-buckle-zip", "eyeglasses-nose-pad-temple-tip-ear-hook", "hearing-aid-bte-cie-cochlear-magnet-coil", "sign-language-ksl-asl-handshape-nonmanual", "webtoon-global-archive-isbn-issn-legal-deposit",
+  // Wave 48 (20개 플랫폼 — 총 920개 플랫폼 완성: 무협 화산파 매화검기/남궁세가 뇌전대검/사천당가 암기/제갈세가 기문둔갑/소림 108염주/천마신교/개방 타구봉/무당 태극/선협 어검비행/연단로/객잔 2층/대나무 절단/죽간/전서구/은침 진맥)
+  "murim-plum-blossom-sword-qi-petal", "namgung-imperial-lightning-broadsword-rig", "tang-clan-hidden-weapon-poison-needle-pouch", "zhuge-clan-qimen-dunjia-bagua-stone-array", "shaolin-18arhat-wooden-staff-rosary-108",
+  "demonic-cult-heavenly-demon-blood-qi-throne", "beggars-sect-bamboo-dog-beating-staff-gourd", "kunlun-wudang-taiji-yin-yang-fly-whisk", "xianxia-flying-sword-imperial-stance-talisman", "alchemy-pill-furnace-cauldron-tribulation-lightning",
+  "martial-alliance-arena-stone-tile-flagpole", "inn-tavern-2nd-floor-railing-wine-jar-seal", "bamboo-forest-mist-leaf-slash-shockwave", "waterfall-meditation-boulder-splash-refraction", "meridian-dantian-golden-core-nascent-soul",
+  "ancient-scroll-bamboo-slip-silk-manuscript", "imperial-jade-seal-red-cinnabar-paste-box", "carrier-pigeon-bamboo-leg-tube-wax-message", "acupuncture-silver-needle-case-pulse-wrist", "sealed-demonic-sword-chain-talisman-wrap",
+  // Wave 49 (20개 플랫폼 — 총 940개 플랫폼 완성: 카지노 바카라/텍사스홀덤·슈퍼요트/프라이빗제트/펜트하우스·경매장/런웨이/파인다이닝·시가/위스키/에스프레소·그랜드피아노 우측 덮개/스트라디바리우스·골프/폴로/F1 헤일로/슈퍼카 시저도어/스위스 금고)
+  "casino-baccarat-squeeze-shoe-chip-denomination", "poker-texas-holdem-button-flop-turn-river", "luxury-yacht-flybridge-teak-deck-champagne", "private-jet-cabin-club-seating-oval-window", "five-star-penthouse-infinity-pool-city-skyline",
+  "auction-house-podium-gavel-paddle-number", "haute-couture-runway-catwalk-backstage-rack", "michelin-kitchen-pass-heat-lamp-tweezers", "cigar-humidor-guillotine-cutter-cedar-spill", "whisky-glencairn-ice-ball-decanter-cut-glass",
+  "espresso-lever-machine-naked-portafilter-tiger", "violin-stradivarius-f-hole-chinrest-rosin-dust", "grand-piano-lid-prop-stick-right-side-damper", "golf-driver-tee-shot-divot-bunker-sand-splash", "polo-mallet-right-hand-only-helmet-martingale",
+  "f1-pitstop-wheel-gun-halo-cockpit-drs-wing", "supercar-scissor-vs-gullwing-door-hinge-caliper", "swiss-bank-safe-deposit-dual-key-biometric-vault", "red-carpet-step-and-repeat-logo-wall-strobe", "opera-glasses-mother-of-pearl-handle-balcony",
+  // Wave 50 (20개 플랫폼 — 총 960개 플랫폼 완성!: 심해 잠수정/해상 시추선/쇄빙선/사막 모래언덕/화산 용암·우주정거장 큐폴라/선외우주복/화성 로버/콜드슬립/체렌코프 발광·BSL-4 방호복/관제탑/풍력발전/댐 여수로/냉각탑/방공호 방폭문/항공모함 캐터펄트/크레바스)
+  "deep-sea-submersible-acrylic-sphere-biolum", "oil-rig-offshore-derrick-helipad-flare-boom", "arctic-icebreaker-snowmobile-dog-sled-goggle", "desert-sandstorm-mirage-dune-slipface-shemagh", "volcano-lava-tube-obsidian-pyroclastic-ash",
+  "space-station-cupola-window-earth-terminator", "eva-spacesuit-tether-hook-visor-gold-fresnel", "lunar-mars-rover-6wheel-rocker-bogie-habitat", "cryosleep-pod-frost-glass-biomonitor-tube", "particle-accelerator-torus-cherenkov-blue-glow",
+  "bsl4-biohazard-airlock-chemical-shower-glovebox", "air-traffic-control-tower-radar-sweep-runway", "wind-turbine-3blade-nacelle-solar-tracker-farm", "hydroelectric-dam-spillway-floodgate-penstock", "nuclear-cooling-tower-hyperbolic-steam-plume",
+  "underground-bunker-blast-door-handwheel-dog", "cargo-plane-rear-ramp-paratrooper-green-light", "aircraft-carrier-catapult-steam-arresting-wire", "ice-cave-glacier-crevasse-crampon-ice-axe", "mine-shaft-timber-shoring-ore-cart-canary-lamp",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -279,6 +294,9 @@ export const REA840_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA860_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA880_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA900_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA920_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA940_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA960_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -578,6 +596,69 @@ export const REA15_PLATFORM_UI_THEME_CATALOG: Readonly<
         ["hearing-aid-bte-cie-cochlear-magnet-coil", "Behind-The-Ear (BTE) Hearing Aid Tube vs Cochlear Implant Scalp Magnet", "#06b6d4", "#fde047", "청각장애 보청기(귓바퀴 뒤 본체+음향관)와 인공와우(측두부 두피 원형 자석 코일) 구조 고증"],
         ["sign-language-ksl-asl-handshape-nonmanual", "Korean Sign Language (KSL) Finger-Spelling & Non-Manual Facial Grammar", "#14b8a6", "#f472b6", "한국수어(KSL) 수형·수위·수동과 함께 필수 문법 요소인 눈썹/입모양(비수지 기호) 동시 표현"],
         ["webtoon-global-archive-isbn-issn-legal-deposit", "National Library Legal Deposit (Napbon), UCI/ISBN-13 Barcode & Master PSD", "#6366f1", "#22c55e", "웹툰 국립중앙도서관 납본·단행본 ISBN-13 만화 분류기호(07810) 바코드 및 600dpi 마스터 PSD 아카이브 규격"],
+        // Wave 48 (20개 플랫폼 — 총 920개 플랫폼 완성)
+        ["murim-plum-blossom-sword-qi-petal", "Mount Hua Sect 5-Petal Plum Blossom Sword Qi Trajectory & Red Robe Emblem", "#f43f5e", "#fda4af", "화산파 매화검법 5꽃잎 검기 궤적·도포 매화 자수 문양 및 암향표 경공 잔상 고정"],
+        ["namgung-imperial-lightning-broadsword-rig", "Namgung Clan Imperial Lightning Broadsword Two-Handed Center of Mass", "#38bdf8", "#eab308", "남궁세가 제왕검형 뇌전 청백색 스파크와 중검(대검) 양손 파지 무게중심 고증"],
+        ["tang-clan-hidden-weapon-poison-needle-pouch", "Sichuan Tang Clan Poison Needle Wrist-Gauntlet, Throwing Dagger & Purple Qi", "#10b981", "#a855f7", "사천당가 허벅지/손목 암기낭·비도/독침 투척 손목 스냅 및 만독불침 보라 독기 연출"],
+        ["zhuge-clan-qimen-dunjia-bagua-stone-array", "Zhuge Clan Qimen Dunjia 8-Trigram (Bagua) Stone Pillar Array & Feather Fan", "#06b6d4", "#fde047", "제갈세가 기문둔갑 팔진도 8방위 돌기둥 배열과 학우선(깃털 부채) 지휘 수인 고정"],
+        ["shaolin-18arhat-wooden-staff-rosary-108", "Shaolin 108 Wooden Prayer Beads, Eyebrow-Height Bo Staff & Golden Body", "#f59e0b", "#d97706", "소림사 108염주 목걸이 알 크기·육합곤 양손 교차 그립 및 금강불괴 황금빛 금속 반사 고정"],
+        ["demonic-cult-heavenly-demon-blood-qi-throne", "Heavenly Demon Cult Black-Core Crimson Aura & Obsidian Altar Relief", "#dc2626", "#1e1b4b", "천마신교 흑적색 마기(내부 암흑 코어+외곽 심홍 발광) 및 흑요석 마교 본산 제단 고증"],
+        ["beggars-sect-bamboo-dog-beating-staff-gourd", "Beggars' Sect Green Bamboo Staff (Tagubong), Wine Gourd & Drunken Fist Axis", "#22c55e", "#ca8a04", "개방 타구봉 에메랄드빛 대나무 마디·허리 표주박 술병 매듭 및 취권 중심 이동 궤적 고정"],
+        ["kunlun-wudang-taiji-yin-yang-fly-whisk", "Wudang Sect Taiji Yin-Yang Vortex, Horsehair Fly-Whisk (Buljin) & Lotus Pose", "#e2e8f0", "#0284c7", "무당파 태극 음양어 회전 방향·불진(백색 말총 먼지털이) 곡선 궤적 및 결가부좌 발등 위치 고정"],
+        ["xianxia-flying-sword-imperial-stance-talisman", "Xianxia Flying Sword Surf Stance (Front/Rear Foot Balance) & Sword Array", "#38bdf8", "#c084fc", "선협 어검비행 시 검신 위 앞발·뒷발 측면 균형 자세와 왼손 검결(Jianjue) 수인 고정"],
+        ["alchemy-pill-furnace-cauldron-tribulation-lightning", "Three-Legged Pill Cauldron (Danro) Fire Vent & Nine-Heavens Tribulation Lightning", "#f97316", "#a855f7", "무협/선협 삼족 연단로 화구 불꽃 색상과 경지 돌파 시 구중천 뇌겁 번개 소용돌이 연출"],
+        ["martial-alliance-arena-stone-tile-flagpole", "Murim Alliance Duel Arena Shattered Bluestone Tiles & Sect Banner Wind", "#64748b", "#ef4444", "무림맹 비무대회장 청석 타일 파열 반경과 사방 문파 깃발의 풍향 일치 고정"],
+        ["inn-tavern-2nd-floor-railing-wine-jar-seal", "Murim Inn (Gaekjan) 2nd-Floor Mezzanine Balustrade & Red-Cloth Sealed Wine Jar", "#b45309", "#dc2626", "객잔 2층 목조 난간 중정 내려다보기 부감 구도와 붉은 천으로 봉인한 도자기 술독 고증"],
+        ["bamboo-forest-mist-leaf-slash-shockwave", "Bamboo Grove Diagonal Sword-Cut Slip Plane & Floating Leaf Shockwave", "#15803d", "#86efac", "대나무 숲 결투에서 검기에 베인 대나무가 45도 사선 단면를 따라 천천히 미끄러져 내리는 물리 연출"],
+        ["waterfall-meditation-boulder-splash-refraction", "Waterfall Training Boulder Sitting Posture & High-Velocity Water Splash Crown", "#0ea5e9", "#f8fafc", "폭포수 아래 좌선 수련 시 어깨와 정수리에 부딪혀 사방으로 퍼지는 물보라 왕관 궤적 고정"],
+        ["meridian-dantian-golden-core-nascent-soul", "Lower Dantian Golden Core (Geumdan) & 12 Meridian Qi Circulation Glow", "#fbbf24", "#38bdf8", "배꼽 아래 하단전 내단(금단) 코어 발광과 전신 12경맥 기혈 순환 라인 해부학 정렬"],
+        ["ancient-scroll-bamboo-slip-silk-manuscript", "Woven Bamboo Slips (Jukgan) Dual Twine Binding & Right-to-Left Unrolling", "#d97706", "#fef08a", "고대 비급 죽간(대나무 조각) 위아래 2줄 엮음 끈 구조와 우→좌 펼침 순서 고증"],
+        ["imperial-jade-seal-red-cinnabar-paste-box", "Imperial Heirloom Jade Seal (Oksae) Coiled Dragon Knob & Red Seal Impression", "#10b981", "#ef4444", "황실 옥새 반룡 손잡이 조각과 황색 비단 조서 위 경면주사 붉은 전서체 인영 일치"],
+        ["carrier-pigeon-bamboo-leg-tube-wax-message", "Messenger Pigeon Tarsus Bamboo Tube Tie & Rolled Micro-Paper Scroll", "#94a3b8", "#f59e0b", "전서구 발목(부척골)에 묶인 초소형 대나무 서신통 위치와 밀랍 봉인 서찰 크기 비율 고정"],
+        ["acupuncture-silver-needle-case-pulse-wrist", "Traditional Physician 3-Finger Radial Pulse Diagnosis (Chon-Gwan-Cheok) & Silver Needles", "#e2e8f0", "#14b8a6", "의원(신의) 진맥 시 환자 손목 요골동맥 위 검지·중지·약지(촌·관·척) 3지 접점과 은침 롤케이스 고증"],
+        ["sealed-demonic-sword-chain-talisman-wrap", "Cursed Sword Iron Chain Cross-Binding & Talisman Seal Paper Shatter", "#ef4444", "#fbbf24", "봉인된 마검의 쇠사슬 교차 결박과 부적 띠가 발도 순간 탄화하며 찢어지는 연속성 고정"],
+        // Wave 49 (20개 플랫폼 — 총 940개 플랫폼 완성)
+        ["casino-baccarat-squeeze-shoe-chip-denomination", "VIP Casino Baccarat 8-Deck Shoe, Card Squeeze Corner Pip & Clay Chip Stack", "#10b981", "#fbbf24", "VIP 카지노 바카라 카드 쪼기(Squeeze) 시 변 기호 개수로 숫자를 읽는 규칙과 칩 액면가 색상 스택 고정"],
+        ["poker-texas-holdem-button-flop-turn-river", "Texas Hold'em Dealer Button, Burn Card & 5 Community Cards (Flop-Turn-River)", "#ef4444", "#22c55e", "텍사스 홀덤 테이블 딜러 버튼·칩 팟(Pot) 및 중앙 커뮤니티 카드 5장 배치 순서 고정"],
+        ["luxury-yacht-flybridge-teak-deck-champagne", "Superyacht Teak Deck Caulking Lines, Flybridge Helm & Stern Horizon Lock", "#0ea5e9", "#f59e0b", "슈퍼요트 티크 우드 갑판 줄눈 투시선과 바다 수평선 기울기 일치 고정"],
+        ["private-jet-cabin-club-seating-oval-window", "Gulfstream Private Jet 4-Place Club Leather Seating & Dual Oval Windows", "#38bdf8", "#e2e8f0", "프라이빗 제트기 마주보는 클럽 시트·타원형 창문 간격·접이식 우드 테이블 비례 고증"],
+        ["five-star-penthouse-infinity-pool-city-skyline", "Penthouse Floor-to-Ceiling Glass Reflection & Rooftop Infinity Pool Edge", "#6366f1", "#ec4899", "펜트하우스 통유리창 실내 반사상과 야간 스카이라인 소실점 정합성 유지"],
+        ["auction-house-podium-gavel-paddle-number", "Fine Art Auctioneer Rostrum Gavel, Lot Display & Numbered Bidding Paddle", "#d97706", "#fef08a", "경매장 경매사 포디움 의사봉(Gavel) 타격판과 낙찰자 패들 번호가 컷마다 바뀌지 않도록 고정"],
+        ["haute-couture-runway-catwalk-backstage-rack", "Fashion Week Runway Glossy Catwalk Reflection & Photographer Pit Lens Wall", "#ec4899", "#f8fafc", "패션쇼 런웨이 바닥 반사상과 양옆 프레스 카메라 렌즈 벽·조명 트러스 대칭 고정"],
+        ["michelin-kitchen-pass-heat-lamp-tweezers", "Fine-Dining Kitchen Pass Infrared Heat Lamp, Plating Tweezers & Sauce Spoon", "#f97316", "#e2e8f0", "미슐랭 주방 패스(Pass) 보온등 주황빛 반사와 셰프 핀셋(Tweezers) 마이크로허브 플레이팅 고증"],
+        ["cigar-humidor-guillotine-cutter-cedar-spill", "Cigar Double-Blade Guillotine Cut at Cap Shoulder & Cylindrical White Ash", "#b45309", "#ef4444", "시가 헤드 캡 숄더 절단면과 연소 시 끝단에 형성되는 원통형 회백색 재(Ash)·자줏빛 불씨 고정"],
+        ["whisky-glencairn-ice-ball-decanter-cut-glass", "Glencairn Whisky Glass Tulip Bowl vs Old-Fashioned Hand-Carved Ice Sphere", "#d97706", "#fde047", "위스키 온더락 잔 내부 투명 구형 아이스볼(Ice Ball)의 호박색 액체 굴절과 크리스탈 디캔터 고증"],
+        ["espresso-lever-machine-naked-portafilter-tiger", "Bottomless Portafilter Tiger-Stripe Crema Extraction & Microfoam Pitcher", "#92400e", "#fbbf24", "바리스타 바텀리스 포타필터 중앙으로 모이는 황금빛 타이거 스킨 에스프레소 추출 줄기 고정"],
+        ["violin-stradivarius-f-hole-chinrest-rosin-dust", "Violin Left-Side Chinrest, Symmetrical f-Holes, Bridge Curve & Bow Rosin", "#b45309", "#fde047", "바이올린 턱받침(테일피스 좌측)·f홀 대칭·브릿지 곡률 및 활털 위 송진 가루 디테일 고정"],
+        ["grand-piano-lid-prop-stick-right-side-damper", "Concert Grand Piano Lid Prop-Stick Opening on Right (Audience Side) Only", "#f8fafc", "#eab308", "그랜드 피아노 상판 덮개는 반드시 연주자 기준 오른쪽(객석 방향)으로 열리며 좌측 경첩 고정(좌우반전 작붕 차단)"],
+        ["golf-driver-tee-shot-divot-bunker-sand-splash", "Golf Iron Turf Divot Ahead of Ball Position & Bunker Sand Explosion Arc", "#22c55e", "#facc15", "골프 아이언 샷에서 디봇(잔디 파임)이 공이 있던 위치보다 목표 방향 앞쪽에 생성되는 물리 고증"],
+        ["polo-mallet-right-hand-only-helmet-martingale", "Equestrian Polo Right-Hand-Only Mallet Rule, Standing Martingale & Leg Wraps", "#3b82f6", "#ef4444", "귀족 폴로 경기에서 모든 선수는 안전 규칙상 반드시 오른손으로만 스틱(Mallet)을 쥐어야 함을 고정"],
+        ["f1-pitstop-wheel-gun-halo-cockpit-drs-wing", "Formula 1 Titanium Halo Cockpit Bar, Rear Wing DRS Flap & Pit-Stop Wheel Gun", "#ef4444", "#38bdf8", "F1 머신 조종석 중앙 티타늄 헤일로(Halo) 기둥과 타이어 컴파운드 색띠(Soft 적색/Medium 황색/Hard 백색) 고정"],
+        ["supercar-scissor-vs-gullwing-door-hinge-caliper", "Supercar Scissor Door (Front A-Pillar Hinge) vs Butterfly/Gullwing & Brake Caliper", "#f59e0b", "#ef4444", "슈퍼카 시저도어(앞펜더 경첩 수직 상승)와 걸윙도어(지붕 경첩) 구분 및 휠 내부 브레이크 캘리퍼 위치 고정"],
+        ["swiss-bank-safe-deposit-dual-key-biometric-vault", "Private Bank Vault 2-Key Safe Deposit Lock & Exposed Epicyclic Door Gears", "#eab308", "#94a3b8", "스위스 프라이빗 뱅크 대여금고의 이중 열쇠구멍(은행원 키+고객 키 동시 해정)과 원형 금고문 기어 고증"],
+        ["red-carpet-step-and-repeat-logo-wall-strobe", "Awards Red Carpet Step-and-Repeat Sponsor Grid & Velvet Rope Press Line", "#dc2626", "#fbbf24", "시상식 레드카펫 포토월 스폰서 로고 바둑판 배열 연속성과 카메라 플래시 반사 하이라이트 고정"],
+        ["opera-glasses-mother-of-pearl-handle-balcony", "Vintage Mother-of-Pearl Opera Glasses Telescopic Handle & Dual-Circle Vignette", "#ec4899", "#fde047", "로판 황실 극장 오페라글라스 접이식 손잡이 방향과 쌍안경 시점 컷(8자형 듀얼 서클 비네팅) 연출"],
+        // Wave 50 (20개 플랫폼 — 총 960개 플랫폼 완성!)
+        ["deep-sea-submersible-acrylic-sphere-biolum", "Deep-Sea Submersible Thick Acrylic Viewport Refraction & hydraulic Manipulator", "#0284c7", "#00f5d4", "심해 잠수정 두꺼운 반구형 아크릴 관측창 가장자리 굴절 왜곡과 외부 유압 매니퓰레이터 집게 고정"],
+        ["oil-rig-offshore-derrick-helipad-flare-boom", "Offshore Oil Platform Drilling Derrick, Cantilever Helipad & Gas Flare Boom", "#f97316", "#38bdf8", "해상 시추선 드릴링 데릭 철골 구조·캔틸레버 헬리패드 및 가스 플레어 타워 화염 풍향 일치"],
+        ["arctic-icebreaker-snowmobile-dog-sled-goggle", "Polar Icebreaker Spoon Bow, Snow Goggle Mirrored Tint & Dog-Sled Gangline", "#38bdf8", "#f97316", "극지 탐험 설상 고글 곡면 반사상·방한 파카 퍼 후드 성에 및 개썰매 중심 줄(Gangline) 장력 고정"],
+        ["desert-sandstorm-mirage-dune-slipface-shemagh", "Barchan Sand Dune Windward Ripple vs 34-Degree Leeward Slipface & Mirage", "#eab308", "#f97316", "사막 모래언덕 바람받이 잔물결 완경사와 바람그늘 34도 급경사 능선(Crest) 방향 일치"],
+        ["volcano-lava-tube-obsidian-pyroclastic-ash", "Pahoehoe Lava Black Cooling Crust Cracks & Incandescent Orange Core Glow", "#ef4444", "#facc15", "화산 용암 표면이 식어 검게 굳은 껍질 갈라진 틈으로만 가장 밝은 황백색/주홍색 백열광이 비치도록 고정"],
+        ["space-station-cupola-window-earth-terminator", "ISS 7-Window Cupola Dome, Earth Limb Airglow & Orbital Sunrise Terminator", "#2563eb", "#38bdf8", "우주정거장 7면 큐폴라 관측창(중앙 원형창+주변 사다리꼴 6창) 기하학과 지구 대기권 푸른 곡선 고정"],
+        ["eva-spacesuit-tether-hook-visor-gold-fresnel", "Extravehicular Spacesuit Gold-Plated Visor Reflection, Chest DCM & Safety Tether", "#fbbf24", "#e2e8f0", "선외우주복(EVA) 가슴 제어 모듈(DCM) 거울 반전 글자와 금도금 헬멧 바이저 반사상·안전 테더 고정"],
+        ["lunar-mars-rover-6wheel-rocker-bogie-habitat", "Planetary Rover 6-Wheel Rocker-Bogie Suspension & Pressurized Airlock Hatch", "#d97706", "#38bdf8", "화성/달 탐사 로버 6륜 로커-보기 관절 링크와 거주 기지 원형 에어락 내외부 압력차 개폐 방향 고정"],
+        ["cryosleep-pod-frost-glass-biomonitor-tube", "Sci-Fi Cryostasis Pod Dendritic Frost Pattern, Biometric HUD & Coolant Umbilical", "#06b6d4", "#a855f7", "SF 콜드슬립 동면 포드 유리창 가장자리 수지상 성에 결정과 생체 바이탈 홀로그램 수평 정렬"],
+        ["particle-accelerator-torus-cherenkov-blue-glow", "Research Reactor Pool Cherenkov Radiation Blue Glow (#00B4D8) & Torus Magnet", "#00b4d8", "#3b82f6", "원자로 수조 코어 주변에서 발생하는 체렌코프 복사 특유의 청록색 수중 발광과 입자가속기 원통 투시 고정"],
+        ["bsl4-biohazard-airlock-chemical-shower-glovebox", "BSL-4 Positive-Pressure Coiled Air-Hose Suit & Negative-Pressure Glovebox", "#facc15", "#ef4444", "BSL-4 생물안전 실험실 천장 노란 나선형 공기 공급 호스 연결과 글러브박스 음압 장갑 방향 고정"],
+        ["air-traffic-control-tower-radar-sweep-runway", "Airport Control Tower Outward-Tilted Anti-Glare Glass & Runway Approach Lights", "#10b981", "#38bdf8", "공항 관제탑 유리창이 실내 조명 반사를 막기 위해 바깥쪽 위로 15도 기울어진 사다리꼴 단면 고증"],
+        ["wind-turbine-3blade-nacelle-solar-tracker-farm", "3-Blade Wind Turbine 120-Degree Hub Symmetry & Solar Array South Tilt", "#22c55e", "#0ea5e9", "풍력발전기 날개 3개가 정확히 120도 간격을 이루며 원근 투시 타원에 맞춰 회전하는 기하학 고정"],
+        ["hydroelectric-dam-spillway-floodgate-penstock", "Concrete Arch Dam Tainter Spillway Gate & Parabolic Whitewater Plume", "#0284c7", "#e2e8f0", "댐 여수로 수문 하단에서 뿜어져 나오는 고압 방류수의 포물선 궤적과 하류 무지개 물보라 연출"],
+        ["nuclear-cooling-tower-hyperbolic-steam-plume", "Hyperboloid Cooling Tower Waist Curve & Buoyant White Water-Vapor Plume", "#94a3b8", "#f8fafc", "발전소 냉각탑의 오목한 쌍곡면(Hyperboloid) 실루엣과 상단 순백색 수증기 구름 기둥 고증"],
+        ["underground-bunker-blast-door-handwheel-dog", "Heavy Blast Door Central Spoke Handwheel & Radial Locking Dogs Linkage", "#64748b", "#f59e0b", "지하 벙커 방폭문 중앙 핸드휠을 돌릴 때 문 테두리 사방의 강철 빗장(Dogs)이 동시에 물리는 기구학 고정"],
+        ["cargo-plane-rear-ramp-paratrooper-green-light", "Military Transport Rear Cargo Ramp, Static-Line Cable & Jump Light (Red/Green)", "#15803d", "#22c55e", "수송기 후방 램프 개방 시 천장 강하 와이어에 걸린 정적줄(Static Line) 카라비너와 점프 신호등 고증"],
+        ["aircraft-carrier-catapult-steam-arresting-wire", "Carrier Flight Deck Catapult Shuttle, Jet Blast Deflector & 3rd Arresting Wire", "#475569", "#eab308", "항공모함 갑판 제트 화염 편향판(JBD) 기립 각도와 착함기 테일후크가 어레스팅 와이어를 당기는 V자 장력 고정"],
+        ["ice-cave-glacier-crevasse-crampon-ice-axe", "Glacial Crevasse Subsurface Blue Light, 12-Point Crampons & Ice-Axe Self-Arrest", "#38bdf8", "#e0f2fe", "빙하 크레바스 얼음벽 내부 깊은 청색 다중산란광과 피켈(Ice Axe) 헤드/피크 방향 고증"],
+        ["mine-shaft-timber-shoring-ore-cart-canary-lamp", "Underground Mine Post-and-Lintel Timber Sets, Narrow-Gauge Ore Cart & Headlamp", "#92400e", "#fbbf24", "지하 광산 갱도 사각 목재 동바리(기둥+보) 반복 투시와 광차 레일 궤간·안전모 랜턴 원뿔광 고정"],
       ] as const
     ).map(([id, nameKo, accentPrimaryHex, accentSecondaryHex, coreWorkflowKo], idx) => [
       id,
@@ -648,3 +729,6 @@ export const REA840_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA860_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA880_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA900_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA920_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA940_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA960_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

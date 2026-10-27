@@ -270,5 +270,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     );
     expect(screen.getByTestId("wave45-47-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave45-joseon-gat-katana-btn"));
+    expect(screen.getByTestId("wave48-50-domain-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave48-murim-plum-bagua-btn"));
   });
 });
