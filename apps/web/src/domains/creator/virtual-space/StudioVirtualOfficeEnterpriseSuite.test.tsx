@@ -275,6 +275,33 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     fireEvent.click(screen.getByTestId("nextgen-approach-desk-desk-ep43-c19-btn"));
     fireEvent.click(screen.getByTestId("nextgen-advance-cut-desk-ep43-c19-btn"));
     expect(screen.getByRole("status").textContent).toContain("EP.43 C19");
+
+    // Practical Studio Workbench verification (Pomodoro, interactive 2.5D floor map, layer checklist, retakes, daily handoff)
+    expect(screen.getByTestId("practical-studio-workbench-section")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("practical-workmode-open-critique-btn"));
+    fireEvent.click(screen.getByTestId("practical-pomodoro-complete-cut-btn"));
+    expect(screen.getByTestId("practical-daily-cut-quota").textContent).toContain("15/18컷");
+
+    const floorMap = screen.getByTestId("practical-interactive-floor-map");
+    fireEvent.keyDown(floorMap, { key: "w" });
+    fireEvent.keyDown(floorMap, { key: "d" });
+    fireEvent.click(screen.getByTestId("practical-floor-desk-node-desk-ep43-c04"));
+    expect(screen.getByTestId("practical-active-dcc-filename").textContent).toBe(
+      "EP43_C04_Action_Slash_v3.clip",
+    );
+
+    fireEvent.click(screen.getByTestId("practical-checklist-chk-c04-3-btn"));
+    expect(screen.getByTestId("practical-checklist-percent").textContent).toContain("100%");
+
+    fireEvent.change(screen.getByTestId("practical-retake-input"), {
+      target: { value: "검기 글로우 레이어 투명도 90% 조정" },
+    });
+    fireEvent.click(screen.getByTestId("practical-retake-submit-btn"));
+    fireEvent.click(screen.getByTestId("practical-handoff-dept-btn"));
+    fireEvent.click(screen.getByTestId("practical-generate-handoff-btn"));
+    expect(
+      screen.getByTestId("practical-handoff-markdown-box").textContent,
+    ).toContain("[툰스튜디오 일일 원고 마감·인수인계 브리핑]");
   });
 
   it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {

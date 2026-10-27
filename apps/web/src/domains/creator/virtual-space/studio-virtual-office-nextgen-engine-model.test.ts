@@ -19,6 +19,17 @@ import {
   triggerNearestObjectWithXKey,
   triggerWebAudioSynthesizerPing,
 } from "./studio-virtual-office-nextgen-engine-model";
+import {
+  addDeskRetakeNote,
+  completePomodoroSprintAndCut,
+  createInitialPracticalWorkbenchState,
+  generateDailyStudioHandoffMarkdown,
+  handoffDeskToNextDepartment,
+  setPracticalWorkMode,
+  toggleDeskQualityChecklistItem,
+  togglePomodoroSprintRunning,
+  toggleResolveDeskRetakeNote,
+} from "./studio-virtual-office-practical-workbench-model";
 
 describe("studio-virtual-office-nextgen-engine-model", () => {
   it("exposes REA competitor benchmarks and 8 Nano Banana (v11+v12) themes + 8 creator/mascot personas on disk", () => {
@@ -148,5 +159,37 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
     state = triggerWebAudioSynthesizerPing(state, "page-flip-chime");
     expect(state.lastSynthesizedAudioPing?.carrierHz).toBe(880);
     expect(state.lastSynthesizedAudioPing?.statusKo).toContain("WebAudio 합성 완료");
+  });
+
+  it("manages practical daily studio workbench: Pomodoro sprints, DCC layer checklists, retake instructions, and handoff reports", () => {
+    const engineState = createInitialNextGenStudioEngineState();
+    let wb = createInitialPracticalWorkbenchState();
+
+    expect(wb.workModeId).toBe("deep-focus-dnd");
+    wb = setPracticalWorkMode(wb, "coffee-break");
+    expect(wb.workModeId).toBe("coffee-break");
+    expect(wb.pomodoro.isRunning).toBe(false);
+
+    wb = togglePomodoroSprintRunning(wb);
+    expect(wb.pomodoro.isRunning).toBe(true);
+    wb = completePomodoroSprintAndCut(wb);
+    expect(wb.pomodoro.todayCompletedCuts).toBe(15);
+
+    wb = toggleDeskQualityChecklistItem(wb, "desk-ep43-c04", "chk-c04-3");
+    expect(wb.deskWorkbenches["desk-ep43-c04"].checklistCompletionPercent).toBe(100);
+
+    wb = addDeskRetakeNote(wb, "desk-ep43-c04", "박서준 PD", "검기 이펙트 레이어 투명도 90% 보정");
+    expect(wb.deskWorkbenches["desk-ep43-c04"].retakeNotes[0]?.noteKo).toContain("검기 이펙트");
+
+    const retakeId = wb.deskWorkbenches["desk-ep43-c04"].retakeNotes[0]?.id ?? "rt-c04-1";
+    wb = toggleResolveDeskRetakeNote(wb, "desk-ep43-c04", retakeId);
+    expect(wb.deskWorkbenches["desk-ep43-c04"].retakeNotes[0]?.resolved).toBe(true);
+
+    wb = handoffDeskToNextDepartment(wb, "desk-ep43-c04");
+    expect(wb.deskWorkbenches["desk-ep43-c04"].handoffCount).toBe(2);
+
+    wb = generateDailyStudioHandoffMarkdown(wb, engineState);
+    expect(wb.lastGeneratedHandoffMarkdown).toContain("[툰스튜디오 일일 원고 마감·인수인계 브리핑]");
+    expect(wb.lastGeneratedHandoffMarkdown).toContain("EP43_C04_Action_Slash_v3.clip");
   });
 });

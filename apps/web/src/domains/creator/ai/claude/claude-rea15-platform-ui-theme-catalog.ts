@@ -155,6 +155,69 @@ export const REA15_PLATFORM_IDS = [
   "layer-ai-2d-spine",
   "dashtoon-character-lora",
   "glaze-nightshade-shield",
+  // Wave 10 (20개 플랫폼 — 총 160개 플랫폼 완성)
+  "jaedam-media-webtoon",
+  "dccent-noblesse-studio",
+  "redice-studio-action",
+  "ylab-superstring-studio",
+  "kenaz-webtoon-house",
+  "daon-creative-studio",
+  "toyou-dream-webtoon",
+  "celsys-clipstudio-assets",
+  "carapace-3d-perspective",
+  "lazy-nezumi-pro-ruler",
+  "designdoll-terawell-3d",
+  "easy-pose-madcat-mobile",
+  "handy-art-reference-tool",
+  "mara-3d-facial-rig",
+  "style2paints-v45-color",
+  "manga-whisperer-balloons",
+  "typecast-neopience-voice",
+  "supertone-play-webtoon",
+  "fliki-ai-webtoon-reels",
+  "capcut-comic-reels-studio",
+  // Wave 11 (20개 플랫폼 — 총 180개 플랫폼 완성)
+  "flux-1-kontext-character",
+  "sd-forge-controlnet-layer",
+  "fooocus-inpaint-engine",
+  "krita-ai-diffusion-aclysia",
+  "photoshop-firefly-generative",
+  "illustrator-vector-speech-sfx",
+  "affinity-designer-v2-vector",
+  "corel-painter-2025-thick",
+  "artrage-vitae-impasto",
+  "open-toonz-gts-scan",
+  "tahoma2d-stopmotion-toon",
+  "synfig-studio-vector-tween",
+  "wick-editor-interactive-toon",
+  "fable-prism-motion-ai",
+  "haiper-ai-video-keyframe",
+  "kling-ai-motion-brush",
+  "minimax-hailuo-director",
+  "sora-storyboard-timeline",
+  "veo-3-cinematic-audio-cut",
+  "higgsfield-diffuse-camera",
+  // Wave 12 (20개 플랫폼 — 총 200개 플랫폼 완성)
+  "world-anvil-chronicle",
+  "legendkeeper-atlas-wiki",
+  "fantasia-archive-lore",
+  "obsidian-canvas-story-graph",
+  "scrivener-3-corkboard",
+  "final-draft-13-beatboard",
+  "arc-studio-pro-plotline",
+  "causality-story-sequencer",
+  "twinmotion-unreal-toon",
+  "d5-render-ai-atmosphere",
+  "lumion-2025-stylized-arch",
+  "enscape-orthographic-plan",
+  "blender-beer-malt-npr",
+  "goo-engine-dillongoo-anime",
+  "vroid-hub-pose-cloud",
+  "booth-pm-webtoon-3d-assets",
+  "clip-studio-modeler-3d",
+  "sandoll-cloud-webtoon-font",
+  "rixfont-comic-sfx-type",
+  "paletton-color-scheme-lab",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -164,6 +227,9 @@ export const REA80_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA100_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA120_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA140_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA160_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA180_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA200_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -501,3 +567,6 @@ export const REA80_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA100_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA120_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA140_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA160_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA180_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA200_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

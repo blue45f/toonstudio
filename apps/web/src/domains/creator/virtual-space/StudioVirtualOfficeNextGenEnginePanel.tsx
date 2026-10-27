@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, Flame, Ghost, Headphones, Layers, Sparkles, SunMedium, Volume2, Wand2 } from "lucide-react";
 
+import { StudioVirtualOfficePracticalWorkbenchSection } from "./StudioVirtualOfficePracticalWorkbenchSection";
 import {
   NEXTGEN_COMPETITOR_REA_BENCHMARKS, PIPELINE_STAGE_LABELS_KO, STUDIO_LIGHTING_MOODS,
   advanceDeskEpisodeCutStage, applyStudioLightingMood, approachCutDeskAndInspect,
@@ -715,6 +716,17 @@ export function StudioVirtualOfficeNextGenEnginePanel({
           })}
         </div>
       </div>
+
+      <StudioVirtualOfficePracticalWorkbenchSection
+        engineState={state}
+        activeSpriteUrl={activeSpriteUrl}
+        onStepPhysics={(vec) => setState((prev) => stepAvatarPhysicsTick(prev, vec, 32))}
+        onToggleGhostMode={() => setState((prev) => toggleGatherGhostModeGKey(prev))}
+        onTriggerNearestX={() => setState((prev) => triggerNearestObjectWithXKey(prev))}
+        onApproachDesk={(deskId) => setState((prev) => approachCutDeskAndInspect(prev, deskId))}
+        onAdvanceDeskStage={(deskId) => setState((prev) => advanceDeskEpisodeCutStage(prev, deskId))}
+        onBannerChange={onBannerChange}
+      />
 
       {/* 5. REA Competitor Engine Benchmark Table */}
       <div className="rounded-lg border border-line bg-panel p-3">
