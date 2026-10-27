@@ -15,21 +15,16 @@ import {
   type CompetitorPlatformId,
   type CompetitorPlatformReaEvidence,
 } from "./webtoon-platform-rea-ledger";
+import {
+  PAGE_COGNITIVE_SIMPLICITY_PROFILES,
+  type PageCognitiveSimplicityProfile,
+} from "./webtoon-platform-rea-surface-presets";
 
 export {
   COMPETITOR_PLATFORM_REA_LEDGER,
   type CompetitorPlatformId,
   type CompetitorPlatformReaEvidence,
 };
-
-import {
-  PAGE_COGNITIVE_SIMPLICITY_PROFILES,
-  measurePageCognitiveComplexity,
-  type PageCognitiveSimplicityProfile,
-  type PageComplexityDecompositionMode,
-  type PageSimplicityGrade,
-  type PageVisualEffectPresetId,
-} from "./webtoon-platform-rea-surface-presets";
 
 export {
   CALENDAR_BM_FILTERS,
