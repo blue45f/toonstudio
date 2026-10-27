@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { Compass, Layers, MapPin, Sparkles, UserCheck, Wand2, X } from "lucide-react";
 
+import { StudioVirtualDynamicSpriteAvatar } from "./StudioVirtualDynamicSpriteAvatar";
+import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualOfficeNextGenEnginePanel } from "./StudioVirtualOfficeNextGenEnginePanel";
 import { StudioVirtualOfficeSpatialCanvasHud } from "./StudioVirtualOfficeSpatialCanvasHud";
+import { getDynamicCreatorPersonaSpec } from "./studio-virtual-space-dynamic-sprite-engine";
 import {
   NANO_BANANA_V11_CREATOR_PERSONAS,
   NANO_BANANA_V11_STUDIO_THEMES,
@@ -256,13 +259,23 @@ export function StudioVirtualSpaceNanoBananaLobbyShowcase() {
 
         <div className="grid grid-cols-3 gap-2 sm:col-span-6">
           <div className="flex flex-col items-center justify-between rounded-xl border border-line bg-panel p-2 text-center">
-            <span className="text-[10px] font-semibold text-fg-2">8인 크리에이터</span>
-            <img
-              data-testid="lobby-nano-banana-cast-img"
-              src={activePersona.workSpriteUrl}
-              alt={activePersona.nameKo}
-              className="h-16 w-16 rounded border border-line bg-card object-contain p-0.5"
-            />
+            <span className="text-[10px] font-semibold text-fg-2">8인 소두 다중프레임</span>
+            <div className="flex items-center gap-1">
+              <img
+                data-testid="lobby-nano-banana-cast-img"
+                src={activePersona.workSpriteUrl}
+                alt={activePersona.nameKo}
+                className="h-12 w-12 rounded border border-line bg-card object-contain p-0.5"
+              />
+              <StudioVirtualDynamicSpriteAvatar
+                personaId={activePersona.id}
+                actionId={getDynamicCreatorPersonaSpec(activePersona.id).defaultActionId}
+                expressionId={getDynamicCreatorPersonaSpec(activePersona.id).defaultExpressionId}
+                vfxId={getDynamicCreatorPersonaSpec(activePersona.id).defaultVfxId}
+                sizePx={52}
+                testId="lobby-dynamic-sprite-avatar"
+              />
+            </div>
             <strong className="line-clamp-1 text-[10px] text-fg">
               {activePersona.nameKo}
             </strong>
@@ -618,6 +631,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
           </div>
 
           <div className="space-y-4">
+            <StudioVirtualDynamicSpriteWorkspace />
             <StudioVirtualOfficeNextGenEnginePanel />
             <StudioVirtualOfficeSpatialCanvasHud />
           </div>

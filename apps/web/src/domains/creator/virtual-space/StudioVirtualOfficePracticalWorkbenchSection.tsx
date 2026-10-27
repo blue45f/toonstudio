@@ -12,6 +12,8 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+import { StudioVirtualDynamicSpriteAvatar } from "./StudioVirtualDynamicSpriteAvatar";
+import { getDynamicCreatorPersonaSpec } from "./studio-virtual-space-dynamic-sprite-engine";
 import {
   PIPELINE_STAGE_LABELS_KO,
   type NextGenVirtualStudioEngineState,
@@ -335,7 +337,7 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
               className="pointer-events-none absolute z-20 h-8 w-8 -translate-x-1/2 -translate-y-1/2 object-contain"
             />
 
-            {/* Self Creator Avatar on Floor */}
+            {/* Self Creator Avatar on Floor (Live Multi-Frame Small-Face Sprite + VFX) */}
             <div
               data-testid="practical-floor-self-avatar"
               style={{
@@ -344,17 +346,31 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
               }}
               className="pointer-events-none absolute z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
             >
-              <img
-                src={resolveAvatarDirectionalWalkSprite(
-                  engineState.physics.facingAngleRad,
-                  engineState.physics.speedPxPerSec,
-                  activeSpriteUrl,
-                )}
-                alt={activePersona.nameKo}
-                loading="lazy"
-                data-testid="practical-floor-self-avatar-sprite"
-                className="h-11 w-11 rounded-full border-2 border-accent bg-panel/90 object-contain shadow-sm"
-              />
+              <div className="flex items-center gap-0.5">
+                <img
+                  src={resolveAvatarDirectionalWalkSprite(
+                    engineState.physics.facingAngleRad,
+                    engineState.physics.speedPxPerSec,
+                    activeSpriteUrl,
+                  )}
+                  alt={activePersona.nameKo}
+                  loading="lazy"
+                  data-testid="practical-floor-self-avatar-sprite"
+                  className="h-9 w-9 rounded-full border border-accent bg-panel/90 object-contain shadow-xs"
+                />
+                <StudioVirtualDynamicSpriteAvatar
+                  personaId={activePersona.id}
+                  actionId={
+                    engineState.physics.speedPxPerSec > 8
+                      ? "walk-stride"
+                      : getDynamicCreatorPersonaSpec(activePersona.id).defaultActionId
+                  }
+                  expressionId={getDynamicCreatorPersonaSpec(activePersona.id).defaultExpressionId}
+                  vfxId={getDynamicCreatorPersonaSpec(activePersona.id).defaultVfxId}
+                  sizePx={48}
+                  testId="practical-floor-dynamic-sprite"
+                />
+              </div>
               <span className="mt-0.5 rounded bg-panel/95 px-1.5 py-0.2 text-[9px] font-semibold text-fg">
                 {activeWorkMode.dndShieldActive ? "🛡️ DND " : ""}
                 {activePersona.nameKo.split(" ")[0]}

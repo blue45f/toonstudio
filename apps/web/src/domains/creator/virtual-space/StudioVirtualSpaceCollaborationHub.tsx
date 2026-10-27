@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { StudioPresenceRoster } from "./StudioPresenceRoster";
+import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualOfficeEnterpriseSuite } from "./StudioVirtualOfficeEnterpriseSuite";
 import { StudioVirtualSpaceAppHost } from "./StudioVirtualSpaceAppHost";
 import { StudioVirtualSpaceAppStore } from "./StudioVirtualSpaceAppStore";
@@ -141,6 +142,7 @@ type CollabSubTabId =
   | "whiteboard-sticky"
   | "apps-bot-clone"
   | "spatial-npc-engine"
+  | "dynamic-sprite-workspace"
   | "enterprise-virtual-office";
 
 const SELF_SESSION_ID = "session-self-01";
@@ -410,6 +412,7 @@ export function StudioVirtualSpaceCollaborationHub({
               ["whiteboard-sticky", "화이트보드·포스트잇"],
               ["apps-bot-clone", "앱스토어·봇녹화·복제"],
               ["spatial-npc-engine", "공간엔진·NPC·게임필"],
+              ["dynamic-sprite-workspace", "✨ 소두 다중프레임 스프라이트·VFX·협업"],
               ["enterprise-virtual-office", "13대 가상오피스 통합관제"],
             ] as const
           ).map(([id, label]) => (
@@ -697,6 +700,8 @@ export function StudioVirtualSpaceCollaborationHub({
           </div>
         </div>
       ) : null}
+
+      {subTab === "dynamic-sprite-workspace" ? <StudioVirtualDynamicSpriteWorkspace /> : null}
 
       {subTab === "enterprise-virtual-office" ? <StudioVirtualOfficeEnterpriseSuite /> : null}
     </section>

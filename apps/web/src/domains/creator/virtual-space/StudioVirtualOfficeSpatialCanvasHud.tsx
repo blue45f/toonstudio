@@ -1,8 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getDynamicCreatorPersonaSpec,
+  renderDynamicCreatorSpriteDataUri,
+} from "./studio-virtual-space-dynamic-sprite-engine";
 import {
   NANO_BANANA_V11_STUDIO_THEMES,
   NANO_BANANA_V13_CREATOR_EMOTES,
   NANO_BANANA_V13_STUDIO_PROPS,
+  type NanoBananaCreatorPersonaId,
   type NanoBananaV13EmoteId,
 } from "./studio-virtual-office-nextgen-engine-data";
 import {
@@ -31,15 +36,11 @@ export interface StudioVirtualOfficeSpatialCanvasHudProps {
 
 const SPATIAL_QUICK_COMMANDS_COUNT = 6;
 
-const AVATAR_SPRITE_URLS: Readonly<Record<string, string>> = {
-  "creator-self":
-    "/assets/virtual-studio/nano-banana-v11/cast/cgi-director-work.webp",
-  "creator-line":
-    "/assets/virtual-studio/nano-banana-v11/cast/line-artist-work.webp",
-  "creator-pd":
-    "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-work.webp",
-  "agent-sophia":
-    "/assets/virtual-studio/nano-banana-v12/cast/story-writer-work.webp",
+const AVATAR_PERSONA_MAP: Readonly<Record<string, NanoBananaCreatorPersonaId>> = {
+  "creator-self": "cgi-director",
+  "creator-line": "line-artist",
+  "creator-pd": "chief-pd",
+  "agent-sophia": "studio-cat-mascot",
 };
 
 export function StudioVirtualOfficeSpatialCanvasHud({
@@ -54,6 +55,14 @@ export function StudioVirtualOfficeSpatialCanvasHud({
   const [activeSelfEmoteId, setActiveSelfEmoteId] = useState<
     NanoBananaV13EmoteId | null
   >(null);
+  const [spriteFrameIdx, setSpriteFrameIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSpriteFrameIdx((prev) => (prev + 1) % 8);
+    }, 110);
+    return () => window.clearInterval(timer);
+  }, []);
   const [hudToastKo, setHudToastKo] = useState<string>(
     "아이소메트릭 공간 플로어 캔버스 · 구역을 클릭하면 내 아바타가 즉시 텔레포트합니다.",
   );
@@ -393,18 +402,28 @@ export function StudioVirtualOfficeSpatialCanvasHud({
                 strokeWidth="2"
               />
               <image
-                href={
-                  avatar.isSelf && activeSelfEmoteId
-                    ? (NANO_BANANA_V13_CREATOR_EMOTES.find(
-                        (e) => e.id === activeSelfEmoteId,
-                      )?.spriteUrl ?? AVATAR_SPRITE_URLS[avatar.avatarId])
-                    : (AVATAR_SPRITE_URLS[avatar.avatarId] ??
-                      "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp")
-                }
-                x="-18"
-                y="-22"
-                width="36"
-                height="36"
+                href={(() => {
+                  const mappedPersonaId =
+                    AVATAR_PERSONA_MAP[avatar.avatarId] ?? "line-artist";
+                  const spec = getDynamicCreatorPersonaSpec(mappedPersonaId);
+                  return renderDynamicCreatorSpriteDataUri({
+                    personaId: mappedPersonaId,
+                    actionId:
+                      avatar.isSelf && activeSelfEmoteId
+                        ? "awakening-skill-burst"
+                        : spec.defaultActionId,
+                    expressionId:
+                      avatar.isSelf && activeSelfEmoteId
+                        ? "sparkle-star"
+                        : spec.defaultExpressionId,
+                    vfxId: spec.defaultVfxId,
+                    frameIndex: spriteFrameIdx,
+                  });
+                })()}
+                x="-21"
+                y="-25"
+                width="42"
+                height="42"
               />
               <text textAnchor="middle" x="14" y="-12" fontSize="11">
                 {avatar.statusHatIcon}

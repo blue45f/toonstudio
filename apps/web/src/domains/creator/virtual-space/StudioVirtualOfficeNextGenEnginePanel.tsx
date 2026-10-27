@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, Flame, Ghost, Headphones, Layers, Sparkles, SunMedium, Volume2, Wand2 } from "lucide-react";
 
+import { StudioVirtualDynamicSpriteAvatar } from "./StudioVirtualDynamicSpriteAvatar";
 import { StudioVirtualOfficePracticalWorkbenchSection } from "./StudioVirtualOfficePracticalWorkbenchSection";
+import { getDynamicCreatorPersonaSpec } from "./studio-virtual-space-dynamic-sprite-engine";
 import {
   NEXTGEN_COMPETITOR_REA_BENCHMARKS, PIPELINE_STAGE_LABELS_KO, STUDIO_LIGHTING_MOODS,
   advanceDeskEpisodeCutStage, applyStudioLightingMood, approachCutDeskAndInspect,
@@ -318,16 +320,34 @@ export function StudioVirtualOfficeNextGenEnginePanel({
           {/* Active Persona Smooth Procedural Motion Stage */}
           <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <figure className="flex flex-col items-center justify-center rounded-lg border border-line bg-card p-2.5">
-              <img
-                src={activeSpriteUrl}
-                alt={`${activePersona.nameKo} (${state.activePersonaPose})`}
-                data-testid="nextgen-active-persona-sprite-img"
-                loading="lazy"
-                style={{
-                  transform: `translateY(${secondaryMotion.bobOffsetYPx}px) scale(${secondaryMotion.breathScaleX}, ${secondaryMotion.breathScaleY})`,
-                }}
-                className="h-28 w-28 object-contain transition-transform duration-150"
-              />
+              <div className="flex items-center gap-2">
+                <img
+                  src={activeSpriteUrl}
+                  alt={`${activePersona.nameKo} (${state.activePersonaPose})`}
+                  data-testid="nextgen-active-persona-sprite-img"
+                  loading="lazy"
+                  style={{
+                    transform: `translateY(${secondaryMotion.bobOffsetYPx}px) scale(${secondaryMotion.breathScaleX}, ${secondaryMotion.breathScaleY})`,
+                  }}
+                  className="h-24 w-24 object-contain transition-transform duration-150"
+                />
+                <StudioVirtualDynamicSpriteAvatar
+                  personaId={activePersona.id}
+                  actionId={
+                    state.activePersonaPose === "idle"
+                      ? "idle-breathe"
+                      : getDynamicCreatorPersonaSpec(activePersona.id).defaultActionId
+                  }
+                  expressionId={
+                    state.deadlineCrunchFeverEnabled
+                      ? "caffeine-overdrive"
+                      : getDynamicCreatorPersonaSpec(activePersona.id).defaultExpressionId
+                  }
+                  vfxId={getDynamicCreatorPersonaSpec(activePersona.id).defaultVfxId}
+                  sizePx={96}
+                  testId="nextgen-active-dynamic-sprite-avatar"
+                />
+              </div>
               <figcaption className="mt-1 text-center text-[11px] font-semibold text-fg">
                 {activePersona.nameKo}
               </figcaption>
