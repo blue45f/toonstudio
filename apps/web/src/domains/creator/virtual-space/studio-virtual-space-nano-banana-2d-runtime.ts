@@ -120,8 +120,8 @@ export function consumeNanoBanana2dTeleport(): StudioVirtualSpacePoint | null {
 /** 나노 바나나 정사각형(256×256·320×320) 캐릭터 스프라이트의 표준 접지 프레젠테이션. */
 export const NANO_BANANA_CHARACTER_PRESENTATION: StudioCharacterFramePresentation = Object.freeze({
   originX: 0.5,
-  originY: 0.94,
-  displayHeightRatio: 1.04,
+  originY: 0.91,
+  displayHeightRatio: 1.32,
   seatOriginY: 0.82,
 });
 
@@ -258,11 +258,11 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     zoneId: "creator-plaza",
     titleKo: "🎨 듀얼 신티크 원고 피드백 포드",
     subtitleKo: "Wacom 5K 실시간 레드라인 합평 데스크",
-    textureKey: nanoBananaPropTextureKey("dual-cintiq-critique-pod"),
+    textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"),
     x: 1272,
     y: 1068,
-    width: 148,
-    height: 136,
+    width: 132,
+    height: 118,
     spawnPoint: { x: 1272, y: 1126 },
     accentColor: 0x38bdf8,
   },
@@ -274,8 +274,8 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"),
     x: 1672,
     y: 1068,
-    width: 152,
-    height: 138,
+    width: 136,
+    height: 120,
     spawnPoint: { x: 1672, y: 1126 },
     accentColor: 0xfbbf24,
   },
@@ -287,8 +287,8 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("webtoon-sound-foley-booth"),
     x: 1272,
     y: 1264,
-    width: 144,
-    height: 134,
+    width: 132,
+    height: 118,
     spawnPoint: { x: 1272, y: 1316 },
     accentColor: 0xa855f7,
   },
@@ -300,8 +300,8 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("deadline-espresso-cat-lounge"),
     x: 1672,
     y: 1264,
-    width: 148,
-    height: 136,
+    width: 134,
+    height: 118,
     spawnPoint: { x: 1672, y: 1316 },
     accentColor: 0x34d399,
   },
@@ -313,8 +313,8 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"),
     x: 1000,
     y: 564,
-    width: 164,
-    height: 148,
+    width: 142,
+    height: 126,
     spawnPoint: { x: 1000, y: 618 },
     accentColor: 0x38bdf8,
   },
@@ -323,11 +323,11 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     zoneId: "story-lab",
     titleKo: "🔮 웹툰 스토리 타로 & 세계관 파빌리온",
     subtitleKo: "플롯 분기점·회귀물 설정 오라클 테이블",
-    textureKey: nanoBananaRoomTextureKey("tarot-story-oracle-pavilion"),
-    x: 1984,
-    y: 528,
-    width: 196,
-    height: 156,
+    textureKey: nanoBananaPropTextureKey("hologram-pedestal"),
+    x: 1940,
+    y: 548,
+    width: 136,
+    height: 124,
     spawnPoint: { x: 1984, y: 604 },
     accentColor: 0xc084fc,
   },
@@ -339,8 +339,8 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     textureKey: nanoBananaPropTextureKey("lofi-bookshelf-lounge"),
     x: 2536,
     y: 648,
-    width: 168,
-    height: 148,
+    width: 144,
+    height: 128,
     spawnPoint: { x: 2620, y: 648 },
     accentColor: 0xf59e0b,
   },
@@ -349,11 +349,11 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     zoneId: "skyport",
     titleKo: "🌿 작가 포트폴리오 & 채용 인터뷰 온실",
     subtitleKo: "신규 어시스턴트·작가 영입 미팅 라운지",
-    textureKey: nanoBananaRoomTextureKey("recruit-interview-conservatory"),
-    x: 448,
-    y: 492,
-    width: 192,
-    height: 152,
+    textureKey: nanoBananaPropTextureKey("biophilic-planter-set"),
+    x: 566,
+    y: 548,
+    width: 126,
+    height: 112,
     spawnPoint: { x: 448, y: 576 },
     accentColor: 0x10b981,
   },
@@ -362,11 +362,11 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     zoneId: "team-meeting",
     titleKo: "🎬 글로벌 웹툰 IP 드라마 피칭 보드룸",
     subtitleKo: "OTT 영상화·해외 연재 런칭 프레젠테이션",
-    textureKey: nanoBananaRoomTextureKey("global-ip-pitch-boardroom"),
-    x: 448,
-    y: 1042,
-    width: 210,
-    height: 154,
+    textureKey: nanoBananaPropTextureKey("hologram-pedestal"),
+    x: 566,
+    y: 1124,
+    width: 132,
+    height: 118,
     spawnPoint: { x: 448, y: 1116 },
     accentColor: 0x60a5fa,
   },
@@ -375,11 +375,11 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
     zoneId: "arcade",
     titleKo: "🕹️ 레트로 픽셀 아케이드 & 캣 가챠 라운지",
     subtitleKo: "마감 후 팀원 미니게임 & 굿즈 캡슐 뽑기",
-    textureKey: nanoBananaRoomTextureKey("retro-arcade-gacha-lounge"),
-    x: 448,
+    textureKey: nanoBananaPropTextureKey("on-air-critique-booth"),
+    x: 560,
     y: 1684,
-    width: 198,
-    height: 152,
+    width: 136,
+    height: 120,
     spawnPoint: { x: 448, y: 1588 },
     accentColor: 0xf472b6,
   },
@@ -389,15 +389,15 @@ export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacem
 export const NANO_BANANA_CAMPUS_OBJECT_UPGRADES: Readonly<
   Record<string, { readonly textureKey: string; readonly widthScale?: number; readonly heightScale?: number }>
 > = Object.freeze({
-  "studio-monitor-desk": { textureKey: nanoBananaPropTextureKey("dual-cintiq-critique-pod"), widthScale: 1.38, heightScale: 1.85 },
+  "studio-monitor-desk": { textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"), widthScale: 1.25, heightScale: 1.55 },
   "studio-green-screen": { textureKey: nanoBananaPropTextureKey("on-air-critique-booth"), widthScale: 0.82, heightScale: 1.18 },
-  "cowork-focus-desk-west": { textureKey: nanoBananaPropTextureKey("dual-cintiq-critique-pod"), widthScale: 1.35, heightScale: 1.82 },
-  "cowork-focus-desk-east": { textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), widthScale: 1.38, heightScale: 1.85 },
-  "lobby-phone-booth-west": { textureKey: nanoBananaPropTextureKey("webtoon-sound-foley-booth"), widthScale: 1.45, heightScale: 1.15 },
-  "lobby-phone-booth-east": { textureKey: nanoBananaPropTextureKey("on-air-critique-booth"), widthScale: 1.45, heightScale: 1.15 },
-  "cafe-counter": { textureKey: nanoBananaPropTextureKey("deadline-espresso-cat-lounge"), widthScale: 0.78, heightScale: 1.55 },
-  "talk-meeting-table": { textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), widthScale: 0.82, heightScale: 1.65 },
-  "game-claw": { textureKey: nanoBananaRoomTextureKey("retro-arcade-gacha-lounge"), widthScale: 1.65, heightScale: 1.25 },
+  "cowork-focus-desk-west": { textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"), widthScale: 1.22, heightScale: 1.52 },
+  "cowork-focus-desk-east": { textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), widthScale: 1.28, heightScale: 1.58 },
+  "lobby-phone-booth-west": { textureKey: nanoBananaPropTextureKey("webtoon-sound-foley-booth"), widthScale: 1.35, heightScale: 1.12 },
+  "lobby-phone-booth-east": { textureKey: nanoBananaPropTextureKey("on-air-critique-booth"), widthScale: 1.35, heightScale: 1.12 },
+  "cafe-counter": { textureKey: nanoBananaPropTextureKey("deadline-espresso-cat-lounge"), widthScale: 0.78, heightScale: 1.45 },
+  "talk-meeting-table": { textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), widthScale: 0.82, heightScale: 1.52 },
+  "game-claw": { textureKey: nanoBananaPropTextureKey("hologram-pedestal"), widthScale: 1.35, heightScale: 1.18 },
   "gallery-frame-1": { textureKey: nanoBananaThemeTextureKey("seoul-editorial-hq"), widthScale: 1.12, heightScale: 1.08 },
   "gallery-frame-2": { textureKey: nanoBananaThemeTextureKey("cyber-neon-lab"), widthScale: 1.12, heightScale: 1.08 },
   "gallery-frame-3": { textureKey: nanoBananaThemeTextureKey("murim-bamboo-pavilion"), widthScale: 1.12, heightScale: 1.08 },
@@ -515,7 +515,7 @@ export class StudioNanoBanana2dCampusRuntime {
 
   private buildWorkstations(scene: CampusSceneLike): void {
     for (const spec of NANO_BANANA_2D_WORKSTATIONS) {
-      const depth = Math.round(spec.y) + 1_000;
+      const depth = Math.round(spec.y) + 860;
       const shadow = scene.add.graphics().setDepth(-895).setPosition(spec.x, spec.y - 6);
       shadow.fillStyle(0x060913, 0.34).fillEllipse(0, 0, spec.width * 0.92, 34);
       const ring = scene.add
@@ -536,29 +536,29 @@ export class StudioNanoBanana2dCampusRuntime {
         .setVisible(scene.textures.exists(spec.textureKey));
 
       const titleText = scene.add
-        .text(spec.x, spec.y - spec.height - 16, spec.titleKo, {
+        .text(spec.x, spec.y - spec.height - 8, spec.titleKo, {
           fontFamily: "Pretendard, 'Noto Sans KR', Inter, sans-serif",
-          fontSize: "11px",
+          fontSize: "10.5px",
           fontStyle: "bold",
           color: "#f8fafc",
           backgroundColor: "#090d1ae6",
-          padding: { x: 8, y: 3 },
+          padding: { x: 7, y: 2 },
         })
         .setOrigin(0.5, 1)
-        .setDepth(depth + 3);
+        .setDepth(depth + 2);
 
       const subText = scene.add
-        .text(spec.x, spec.y + 8, spec.subtitleKo, {
+        .text(spec.x, spec.y + 6, spec.subtitleKo, {
           fontFamily: "Pretendard, 'Noto Sans KR', Inter, sans-serif",
-          fontSize: "9.5px",
+          fontSize: "9px",
           fontStyle: "600",
           color: "#bae6fd",
           backgroundColor: "#090d1acc",
           padding: { x: 6, y: 2 },
         })
         .setOrigin(0.5, 0)
-        .setDepth(depth + 2)
-        .setAlpha(0.85);
+        .setDepth(depth + 1)
+        .setAlpha(0);
 
       this.objects.push(shadow, ring, image, titleText, subText);
       this.workstations.push({
@@ -647,9 +647,9 @@ export class StudioNanoBanana2dCampusRuntime {
         .setAlpha(0.28 + item.proximityLevel * 0.58 + pulse * 2)
         .setScale(1 + item.proximityLevel * 0.14 + pulse);
       item.titleText
-        .setPosition(item.spec.x, item.spec.y - item.spec.height * scaleBoost - 14 + liftY)
+        .setPosition(item.spec.x, item.spec.y - item.spec.height * scaleBoost - 8 + liftY)
         .setScale(1 + item.proximityLevel * 0.08);
-      item.subText.setAlpha(0.65 + item.proximityLevel * 0.35);
+      item.subText.setAlpha(item.proximityLevel > 0.15 ? item.proximityLevel * 0.92 : 0);
     }
   }
 

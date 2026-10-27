@@ -9,7 +9,6 @@ import {
   NANO_BANANA_V11_CREATOR_PERSONAS,
   NANO_BANANA_V11_STUDIO_THEMES,
   NANO_BANANA_V13_CREATOR_EMOTES,
-  NANO_BANANA_V13_STUDIO_PROPS,
   type NanoBananaCreatorPersonaId,
   type NanoBananaStudioThemeId,
   type NanoBananaV13EmoteId,
@@ -421,7 +420,6 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
   const activeEmote =
     NANO_BANANA_V13_CREATOR_EMOTES.find((e) => e.id === selection.emoteId) ??
     NANO_BANANA_V13_CREATOR_EMOTES[0];
-  const activeProp = NANO_BANANA_V13_STUDIO_PROPS[0];
 
   const cycleTheme = () => {
     const idx = NANO_BANANA_V11_STUDIO_THEMES.findIndex(
@@ -486,39 +484,55 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
       <div
         data-testid="main-stage-nano-banana-hud"
         data-space-interactive="true"
-        className="pointer-events-auto absolute left-4 top-[4.25rem] z-10 flex max-w-[calc(100vw-2rem)] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md md:max-w-[calc(100vw-20.5rem)]"
+        className="pointer-events-auto absolute left-3 top-[4.25rem] z-10 flex w-[min(32.5rem,calc(100vw-1.5rem))] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <img
-            src={activeTheme.assetUrl}
-            alt={activeTheme.titleKo}
-            className="h-9 w-12 rounded-lg border border-line object-cover"
-          />
-          <img
-            src={activePersona.workSpriteUrl}
-            alt={activePersona.nameKo}
-            className="h-9 w-9 rounded-lg border border-line bg-card object-contain p-0.5"
-          />
-          <img
-            src={activeWalk.spriteUrl}
-            alt={activeWalk.labelKo}
-            className="h-9 w-9 rounded-lg border border-line bg-card object-contain p-0.5"
-          />
-          <div className="flex flex-col">
-            <span className="flex items-center gap-1 text-[11px] font-bold text-fg">
-              <Sparkles className="h-3 w-3 text-accent" />
-              {activeTheme.titleKo}
-            </span>
-            <span className="text-[10px] text-fg-2">
-              {activePersona.nameKo.split(" (")[0]} · 보행 {selection.walkDirection.toUpperCase()} · {activeEmote.labelKo} · {activeProp.labelKo}
-            </span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <img
+              src={activeTheme.assetUrl}
+              alt={activeTheme.titleKo}
+              className="h-8 w-11 shrink-0 rounded-lg border border-line object-cover"
+            />
+            <img
+              src={activePersona.workSpriteUrl}
+              alt={activePersona.nameKo}
+              className="h-8 w-8 shrink-0 rounded-lg border border-line bg-card object-contain p-0.5"
+            />
+            <img
+              src={activeWalk.spriteUrl}
+              alt={activeWalk.labelKo}
+              className="h-8 w-8 shrink-0 rounded-lg border border-line bg-card object-contain p-0.5"
+            />
+            <div className="flex min-w-0 flex-col">
+              <span className="flex items-center gap-1 truncate text-[11px] font-bold text-fg">
+                <Sparkles className="h-3 w-3 shrink-0 text-accent" />
+                <span className="truncate">{activeTheme.titleKo}</span>
+              </span>
+              <span className="truncate text-[10px] text-fg-2">
+                {activePersona.nameKo.split(" (")[0]} · 보행 {selection.walkDirection.toUpperCase()} · {activeEmote.labelKo}
+              </span>
+            </div>
           </div>
 
           <button
             type="button"
+            data-testid="main-stage-open-nano-banana-workbench-btn"
+            onClick={() => setWorkbenchOpen((prev) => !prev)}
+            className="flex shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent-soft px-2.5 py-1.5 text-[11px] font-bold text-accent shadow-sm transition hover:opacity-95"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            {workbenchOpen
+              ? "워크벤치 닫기"
+              : "✦ 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 열기"}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
+          <button
+            type="button"
             data-testid="main-stage-cycle-theme-btn"
             onClick={cycleTheme}
-            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
           >
             테마 전환 (12종)
           </button>
@@ -526,7 +540,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
             type="button"
             data-testid="main-stage-cycle-persona-btn"
             onClick={cyclePersona}
-            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
           >
             <UserCheck className="mr-1 inline h-3 w-3 text-accent" />
             캐릭터 전환 (8인)
@@ -535,7 +549,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
             type="button"
             data-testid="main-stage-cycle-walk-btn"
             onClick={cycleWalkDirection}
-            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
           >
             <Compass className="mr-1 inline h-3 w-3 text-accent" />
             4방향 보행
@@ -544,26 +558,15 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
             type="button"
             data-testid="main-stage-cycle-emote-btn"
             onClick={cycleEmote}
-            className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-medium text-fg hover:border-accent"
+            className="shrink-0 rounded-lg border border-line bg-card px-2 py-0.5 text-[10px] font-medium text-fg hover:border-accent"
           >
             이모트 ({activeEmote.labelKo})
-          </button>
-          <button
-            type="button"
-            data-testid="main-stage-open-nano-banana-workbench-btn"
-            onClick={() => setWorkbenchOpen((prev) => !prev)}
-            className="flex items-center gap-1 rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent shadow-sm transition hover:opacity-95"
-          >
-            <Layers className="h-3.5 w-3.5" />
-            {workbenchOpen
-              ? "2.5D 스튜디오 워크벤치 닫기"
-              : "✦ 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 열기"}
           </button>
         </div>
 
         {/* 2D 월드 내 2.5D 웹툰 워크스테이션 즉시 이동 바 */}
-        <div className="flex flex-wrap items-center gap-1 border-t border-line/70 pt-1.5">
-          <span className="mr-1 flex items-center gap-1 text-[10px] font-bold text-accent">
+        <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap border-t border-line/70 pt-1.5 [scrollbar-width:none]">
+          <span className="mr-1 flex shrink-0 items-center gap-1 text-[10px] font-bold text-accent">
             <MapPin className="h-3 w-3" />
             2D 워크스테이션 이동:
           </span>
@@ -573,7 +576,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
               type="button"
               data-testid={`main-stage-teleport-${station.id}-btn`}
               onClick={() => teleportToWorkstation(station.id)}
-              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition ${
+              className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition ${
                 activeWorkstationId === station.id
                   ? "border-accent bg-accent-soft font-bold text-accent"
                   : "border-line bg-card text-fg-2 hover:border-accent hover:text-fg"
