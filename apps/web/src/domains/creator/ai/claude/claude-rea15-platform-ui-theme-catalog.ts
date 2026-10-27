@@ -320,6 +320,21 @@ export const REA15_PLATFORM_IDS = [
   "bibisco-character-interview", "manuskript-snowflake-method", "ywriter7-scene-goal-conflict", "twine-sugarcube-state-tracker", "choicescript-stats-check-rig",
   "chartbeat-scroll-depth-analytics", "hotjar-vertical-scroll-heatmap", "gazerecorder-webcam-eyetrack", "tobii-pro-lab-saccade-aois", "respeecher-voice-cloning-osmu",
   "altered-studio-performance-voice", "descript-overdub-audiotoon-edit", "auphonic-multitrack-lufs-leveler", "w3c-wcag-22-contrast-validator", "daisy-epub-accessibility-ace",
+  // Wave 27 (20개 플랫폼 — 총 500개 플랫폼 완성: 동아시아 전통건축/단청·한복/기모노/한푸 여밈·무협 검법/경맥·수묵/전각)
+  "chaos-cosmos-asian-palace", "heritage-kr-palace-dancheong", "forbidden-city-dougong-3d", "wudang-taiji-sword-forms", "meridian-acupoint-qigong-map",
+  "dunhuang-flying-apsaras-silk", "celadon-porcelain-glaze-spec", "seal-script-talisman-sigil", "hanbok-advancement-center-db", "hanfu-ming-tang-collar-db",
+  "kimono-kosode-obi-musubi-db", "korean-traditional-bow-gakgung", "joseon-hwando-scabbard-cord", "guqin-gayageum-bridge-25", "ink-wash-shan-shui-shader",
+  "gold-leaf-kintsugi-fracture", "bamboo-grove-wind-sway-sim", "paper-lantern-warm-sss-rig", "incense-burner-curl-ribbon", "calligraphy-flying-white-brush",
+  // Wave 28 (20개 플랫폼 — 총 520개 플랫폼 완성: 현대 전술총기·하드서피스 메카·중환자실/법의학·법정·항공/항해·요리·스포츠 고증)
+  "imfdb-firearm-slide-lock", "jane-military-tactical-rig", "plasticity-cad-mecha-fillet", "moi3d-boolean-weapon-prop", "vital-medical-icu-monitor",
+  "surgical-suture-glove-sterile", "forensic-blood-spatter-angle", "courtroom-bench-bar-layout", "aviation-cockpit-hud-pitch", "maritime-ship-rigging-helm",
+  "culinary-knife-grip-brigade", "espresso-latte-art-crema-sim", "motorsport-apex-cockpit-cam", "climbing-carabiner-knot-belay", "archery-modern-recurve-sight",
+  "fencing-foil-epee-sabre-mask", "boxing-mma-glove-wrap-guard", "baseball-pitch-grip-seam", "chess-go-baduk-board-coord", "tarot-arcana-card-orientation",
+  // Wave 29 (20개 플랫폼 — 총 540개 플랫폼 완성: 창작 저작권/워터마크·크라우드펀딩·아크릴/단행본 굿즈 칼선·팬덤 감성 분석)
+  "synthid-deepmind-watermark", "content-credentials-verify", "cara-glaze-anti-scrape-v2", "spawning-haveibeentrained-guard", "creative-commons-license-rig",
+  "tumblbug-webtoon-crowdfunding", "wadiz-ip-merch-launchpad", "kickstarter-graphic-novel-tier", "pacdora-3d-merch-box-dieline", "artioscad-acrylic-stand-slot",
+  "printify-global-pod-apparel", "superplay-game-ip-goods-spec", "brandwatch-reader-sentiment", "sprout-social-pv-shortform", "tubebuddy-webtoon-ost-seo",
+  "patreon-creator-tier-preview", "pixiv-fanbox-psd-layer-strip", "gumroad-webtoon-brush-store", "booth-pm-3d-vrm-asset-pack", "acon3d-carpenter-revenue-opt",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -346,6 +361,9 @@ export const REA420_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA440_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA460_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA480_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA500_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA520_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA540_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -700,3 +718,6 @@ export const REA420_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA440_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA460_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA480_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA500_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA520_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA540_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

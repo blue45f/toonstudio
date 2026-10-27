@@ -11,6 +11,16 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
+  runClaudeAcrylicStandPhotocardDielineDirector,
+  runClaudeCulinaryKnifeGripPlatingSteamDirector,
+  runClaudeEastAsianPalaceDancheongBracketDirector,
+  runClaudeFirearmTacticalSlideEjectionLockDirector,
+  runClaudeMartialArtsQigongMeridianTrajectoryDirector,
+  runClaudeMedicalIcuVitalMonitorSterileDirector,
+  runClaudeReaderCommentSentimentCatharsisDirector,
+  runClaudeTraditionalClothingCollarGoreumLockDirector,
+} from "./claude/claude-art-director";
+import {
   runClaudeEyetrackScrollVelocityAoiDirector,
   runClaudeFastenerOverlapBeltBuckleLockDirector,
   runClaudeHeraldryCrestEmblemGeometryLockDirector,
@@ -325,6 +335,51 @@ export function StudioAiWebtoonCategory4Panel({
     "4:5-instatoon-1080x1350" | "1:1-square-1080x1080"
   >("4:5-instatoon-1080x1350");
   const [canvaSlides, setCanvaSlides] = useState<number>(6);
+  const [wave27Tool, setWave27Tool] = useState<string | null>(null);
+  const [wave27Badge, setWave27Badge] = useState<string>("");
+  const [wave27Summary, setWave27Summary] = useState<string>("");
+
+  async function handleRunWave27Tool(toolId: string): Promise<void> {
+    setWave27Tool(toolId);
+    const input = {
+      episodeTitle: `${storyGenre} 에피소드`,
+      genre: storyGenre,
+      scriptSummary: "주인공이 결전지에서 장비를 점검하고 마지막 일격을 준비한다.",
+    };
+    if (toolId === "goreum") {
+      const res = await runClaudeTraditionalClothingCollarGoreumLockDirector(input);
+      setWave27Badge(`${res.model} · 전통복식여밈 ${res.data.collarLockScore}점`);
+      setWave27Summary(`${res.data.overlapDirectionRuleKo} | ${res.data.knotLoopSideKo}`);
+    } else if (toolId === "firearm") {
+      const res = await runClaudeFirearmTacticalSlideEjectionLockDirector(input);
+      setWave27Badge(`${res.model} · 전술총기고증 ${res.data.tacticalAccuracyScore}점`);
+      setWave27Summary(`${res.data.ejectionPortSideKo} | ${res.data.triggerDisciplineRuleKo}`);
+    } else if (toolId === "qigong") {
+      const res = await runClaudeMartialArtsQigongMeridianTrajectoryDirector(input);
+      setWave27Badge(`${res.model} · 무협기혈검결 ${res.data.qigongContinuityScore}점`);
+      setWave27Summary(`${res.data.meridianPathwayKo} | ${res.data.swordFingerMudraKo}`);
+    } else if (toolId === "icu") {
+      const res = await runClaudeMedicalIcuVitalMonitorSterileDirector(input);
+      setWave27Badge(`${res.model} · 중환자실고증 ${res.data.medicalAccuracyScore}점`);
+      setWave27Summary(`${res.data.vitalMonitorReadoutKo} | ${res.data.sterileFieldRuleKo}`);
+    } else if (toolId === "culinary") {
+      const res = await runClaudeCulinaryKnifeGripPlatingSteamDirector(input);
+      setWave27Badge(`${res.model} · 셰프나이프그립 ${res.data.culinaryAccuracyScore}점`);
+      setWave27Summary(`${res.data.knifeAndGuideHandGripKo} | ${res.data.platingAndSauceGeometryKo}`);
+    } else if (toolId === "acrylic") {
+      const res = await runClaudeAcrylicStandPhotocardDielineDirector(input);
+      setWave27Badge(`${res.model} · 아크릴굿즈칼선 ${res.data.merchReadinessScore}점`);
+      setWave27Summary(`${res.data.acrylicCutlineAndWhitePlateKo} | ${res.data.baseSlotToleranceMmKo}`);
+    } else if (toolId === "dancheong") {
+      const res = await runClaudeEastAsianPalaceDancheongBracketDirector(input);
+      setWave27Badge(`${res.model} · 궁궐단청공포 ${res.data.architecturalIntegrityScore}점`);
+      setWave27Summary(`${res.data.bracketGongpoStructureKo} | ${res.data.dancheongPaletteHexRuleKo}`);
+    } else {
+      const res = await runClaudeReaderCommentSentimentCatharsisDirector(input);
+      setWave27Badge(`${res.model} · 예상별점 ${res.data.predictedRatingScore}`);
+      setWave27Summary(`${res.data.frustrationToCatharsisRatioKo} | ${res.data.predictedTopCommentKo}`);
+    }
+  }
 
   const filmoraResult = useMemo(
     () => runFilmoraMediaToWebtoonPipeline({ filterPresetId: filmoraPresetId }),
@@ -439,6 +494,59 @@ export function StudioAiWebtoonCategory4Panel({
             </li>
           ))}
         </ul>
+      </div>
+
+      {/* 4-C. Wave 27~29 (540대 플랫폼 내재화): 전통복식·전술총기·무협기혈·ICU의학·요리·아크릴칼선·단청·댓글감성 8종 */}
+      <div
+        data-testid="wave27-29-category4-consistency-bar"
+        className="col-span-full flex flex-col gap-1.5 rounded-md border border-line bg-raised p-2 text-[0.58rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <strong className="inline-flex items-center gap-1 text-accent">
+            <Sparkles size={12} aria-hidden="true" />
+            Wave 27~29 전통·전술·의학·요리·굿즈칼선·댓글감성 AI 일관성 디렉터 (540대 플랫폼 내재화)
+          </strong>
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Wave 27~29 일관성 도구">
+            {(
+              [
+                { id: "goreum", label: "한복·기모노 우임" },
+                { id: "firearm", label: "총기 탄피·울외손가락" },
+                { id: "qigong", label: "무협 경맥·검결" },
+                { id: "icu", label: "ICU 바이탈·무균" },
+                { id: "culinary", label: "셰프 칼그립·플레이팅" },
+                { id: "acrylic", label: "아크릴·포카 칼선" },
+                { id: "dancheong", label: "궁궐 공포·단청" },
+                { id: "catharsis", label: "독자 사이다·별점예측" },
+              ] as const
+            ).map((btn) => (
+              <button
+                key={btn.id}
+                type="button"
+                data-testid={`wave27-tool-btn-${btn.id}`}
+                aria-pressed={wave27Tool === btn.id}
+                onClick={() => void handleRunWave27Tool(btn.id)}
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
+                  STUDIO_FOCUS_RING,
+                  wave27Tool === btn.id
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-2",
+                )}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {wave27Summary && (
+          <div
+            data-testid="wave27-29-result-card"
+            className="flex flex-col gap-0.5 rounded border border-line bg-card p-1.5 text-[0.57rem]"
+          >
+            <span className="font-mono font-bold text-accent">{wave27Badge}</span>
+            <p className="text-fg-2">{wave27Summary}</p>
+          </div>
+        )}
       </div>
     </div>
   );

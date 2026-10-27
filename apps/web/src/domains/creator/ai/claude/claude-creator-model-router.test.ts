@@ -46,12 +46,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 49대 창의 AI 작업을 포함한 총 100개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 57대 창의 AI 작업을 포함한 총 108개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(100);
-    expect(summary.byProfile["fast-inline"]).toBe(26);
-    expect(summary.byProfile["creative-production"]).toBe(50);
-    expect(summary.byProfile["deep-architecture"]).toBe(24);
+    expect(summary.totalTasks).toBe(108);
+    expect(summary.byProfile["fast-inline"]).toBe(28);
+    expect(summary.byProfile["creative-production"]).toBe(54);
+    expect(summary.byProfile["deep-architecture"]).toBe(26);
+
+    expect(
+      resolveCreatorTaskModelRoute("art-director:traditional-clothing-collar-knot-goreum-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:firearm-tactical-slide-ejection-finger-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:martial-arts-qigong-meridian-aura-trajectory-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:medical-icu-vital-monitor-sterile-rig-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:culinary-knife-pinch-grip-plating-steam-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:acrylic-stand-photocard-dieline-white-plate-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:east-asian-palace-dancheong-roof-bracket-lock").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("art-director:reader-comment-sentiment-catharsis-cliff-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("production:button-zipper-belt-buckle-fastener-lock").model,

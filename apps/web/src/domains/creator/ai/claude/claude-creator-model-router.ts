@@ -145,7 +145,16 @@ export type ClaudeCreatorTaskId =
   | "production:musical-instrument-fingering-bowing-lock"
   | "production:variable-font-balloon-diamond-copyfit-lock"
   | "production:tankobon-print-bleed-cmyk-tac300-proof-lock"
-  | "production:eyetrack-scroll-velocity-aoi-heatmap-director";
+  | "production:eyetrack-scroll-velocity-aoi-heatmap-director"
+  // 13. Wave 27~29 Traditional/Tactical/Medical/Culinary/Merch/Sentiment AI Engines (8 — Total 108 Tasks)
+  | "art-director:traditional-clothing-collar-knot-goreum-lock"
+  | "art-director:firearm-tactical-slide-ejection-finger-lock"
+  | "art-director:martial-arts-qigong-meridian-aura-trajectory-lock"
+  | "art-director:medical-icu-vital-monitor-sterile-rig-lock"
+  | "art-director:culinary-knife-pinch-grip-plating-steam-lock"
+  | "art-director:acrylic-stand-photocard-dieline-white-plate-lock"
+  | "art-director:east-asian-palace-dancheong-roof-bracket-lock"
+  | "art-director:reader-comment-sentiment-catharsis-cliff-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -622,6 +631,14 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "production:variable-font-balloon-diamond-copyfit-lock": defineRoute("production:variable-font-balloon-diamond-copyfit-lock", "말풍선 내부 다이아몬드 줄바꿈(Diamond Rag)·가변 폰트 자폭(wdth)/굵기(wght) 광학 조판 고정기", "storyboard-production", "creative-production", "말풍선 타원 곡률에 맞춘 가운데 줄이 길고 첫/끝줄이 짧은 다이아몬드 행갈이 및 가변 폰트 자폭 보간은 Sonnet 5.5 적용", 4_096),
   "production:tankobon-print-bleed-cmyk-tac300-proof-lock": defineRoute("production:tankobon-print-bleed-cmyk-tac300-proof-lock", "세로 웹툰 → 종이 단행본(A5/신서판) 재편집 컷 분할·재단선(Bleed 3mm)·CMYK TAC≤300% 감리 감독", "storyboard-production", "deep-architecture", "세로 스크롤 원고의 단행본 페이지네이션 컷 재배치·안쪽 제책 여백(Gutter)·리치블랙 TAC 300% 인쇄 감리는 Opus 5.5 심층 추론 적용", 6_144),
   "production:eyetrack-scroll-velocity-aoi-heatmap-director": defineRoute("production:eyetrack-scroll-velocity-aoi-heatmap-director", "모바일 스크롤 속도(px/s) 감속 구간·아이트래킹 관심영역(AOI 1→2→3) 시선 도약 스캔패스 총괄 감독", "storyboard-production", "deep-architecture", "첫 시선 고정점(1st Fixation)→말풍선→액션 타격점 Z-스캔패스 설계 및 Fast-Skim 이탈 절벽 방지는 Opus 5.5 심층 추론 적용", 6_144),
+  "art-director:traditional-clothing-collar-knot-goreum-lock": defineRoute("art-director:traditional-clothing-collar-knot-goreum-lock", "한복(우임·동정·고름)·기모노(우전)·한푸(교령우임) 전통복식 여밈 방향 및 좌임(수의) 작붕 방지기", "art-director", "fast-inline", "동아시아 전통복식(한복·기모노·한푸) 착용 시 좌측 옷깃이 위로 올라오는 우임 원칙 및 매듭 고정은 Haiku 5.5 적용", 3_072),
+  "art-director:firearm-tactical-slide-ejection-finger-lock": defineRoute("art-director:firearm-tactical-slide-ejection-finger-lock", "총기 탄피 배출구(우측)·슬라이드 후퇴고정·비사격 방아쇠 울외 손가락(Trigger Discipline) 고정기", "art-director", "fast-inline", "현대/느와르/헌터물 총기 탄피 배출구 좌우 반전 차단 및 슬라이드 스톱·방아쇠 울외 검지 고정은 Haiku 5.5 적용", 3_072),
+  "art-director:martial-arts-qigong-meridian-aura-trajectory-lock": defineRoute("art-director:martial-arts-qigong-meridian-aura-trajectory-lock", "무협 내공 단전(기해혈)·12경맥 기혈 발광·왼손 검결(Jianjue)·보법 무게중심 고정 디렉터", "art-director", "creative-production", "무협 운기조식/검기 발현 시 경맥 경로·내공 오러 색상·왼손 검결 수인·하체 보법 중심 고정은 Sonnet 5.5 적용", 4_096),
+  "art-director:medical-icu-vital-monitor-sterile-rig-lock": defineRoute("art-director:medical-icu-vital-monitor-sterile-rig-lock", "중환자실(ICU) 바이탈 모니터(ECG/SpO2/ABP 수치)·기관삽관·수술실 무균 가운/메스 파지 고정 디렉터", "art-director", "creative-production", "의학/스릴러 웹툰 ICU 모니터 파형/수치 정합성·멸균 구역 접촉 금지·무영등 반사 고정은 Sonnet 5.5 적용", 4_096),
+  "art-director:culinary-knife-pinch-grip-plating-steam-lock": defineRoute("art-director:culinary-knife-pinch-grip-plating-steam-lock", "요리 셰프 나이프 핀치 그립·왼손 고양이손(Claw Grip)·플레이팅 소스·김(Steam) 레이어 고정기", "art-director", "creative-production", "요리/카페 웹툰 칼 파지 해부학·도마 위 재료 단면·음식 수증기 및 글레이즈 광택 고정은 Sonnet 5.5 적용", 4_096),
+  "art-director:acrylic-stand-photocard-dieline-white-plate-lock": defineRoute("art-director:acrylic-stand-photocard-dieline-white-plate-lock", "웹툰 IP 아크릴 스탠드 칼선(2mm 오프셋)·화이트 백판·발판 결합 홈(12×3mm)·홀로그램 포토카드 설계기", "art-director", "creative-production", "아크릴 스탠드 레이저 칼선(CutLine)·배면 백판(0.2mm 축소)·3T 발판 꽂이 공차·포토카드 R3 재단선 설계는 Sonnet 5.5 적용", 4_096),
+  "art-director:east-asian-palace-dancheong-roof-bracket-lock": defineRoute("art-director:east-asian-palace-dancheong-roof-bracket-lock", "동아시아 궁궐/사찰 목조건축 공포(포작)·추녀마루 잡상·단청 오방색(뇌록색)·기와 골 원근 총괄 감독", "art-director", "deep-architecture", "사극/무협 전통 건축물의 다포 공포 구조·처마 반전 곡률·단청 뇌록색/석간주 배색·기와 골 소실점 감리는 Opus 5.5 심층 추론 적용", 6_144),
+  "art-director:reader-comment-sentiment-catharsis-cliff-director": defineRoute("art-director:reader-comment-sentiment-catharsis-cliff-director", "연재 직후 예상 독자 댓글 감성(고구마 피로도 vs 사이다 카타르시스)·별점 방어 대사 처방 총괄 감독", "art-director", "deep-architecture", "회차별 독자 고구마 누적 피로도와 사이다 해소 비율 시뮬레이션 및 캐릭터 붕괴/별점 하락 방어 처방은 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

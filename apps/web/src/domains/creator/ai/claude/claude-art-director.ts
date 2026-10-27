@@ -13,9 +13,20 @@
  */
 import { z } from "zod";
 
-import { claudeModelSupportsEffort } from "@/shared/ai/claude/claude-models";
+import {
+  CLAUDE_DEFAULT_MODEL_ID,
+  claudeModelInfo,
+  claudeModelSupportsEffort,
+  estimateClaudeCostUsd,
+} from "@/shared/ai/claude/claude-models";
+import { resolveClaudeRequestModel } from "@/shared/ai/claude/claude-protocol";
+import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-route";
 import { cleanMultilineTextDetailed, cleanSingleLineText, cleanSingleLineTextDetailed } from "@/shared/ai/claude/claude-text";
+import { claudeParse } from "@/shared/ai/claude/claude-transport";
+import { toClaudeTokenUsage, type ClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
+import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
+import { resolveCreatorTaskModelRoute, type ClaudeCreatorTaskId } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 
 import type Anthropic from "@anthropic-ai/sdk";
@@ -478,4 +489,281 @@ export function artDirectorReviewToMarkdown(review: ArtDirectorReview): string {
     lines.push("## 다음 할 일", ...review.nextActions.map((item, index) => `${index + 1}. ${markdownInline(item)}`), "");
   }
   return lines.join("\n").trimEnd();
+}
+
+// ============================================================================
+// Wave 27~29 (540대 플랫폼 내재화): 전통복식·전술총기·무협기혈·ICU의학·요리·굿즈칼선·단청·댓글감성 AI 엔진 8종
+// ============================================================================
+
+export interface Wave27ArtDirectorAssistInput {
+  readonly episodeTitle: string;
+  readonly genre: string;
+  readonly scriptSummary: string;
+}
+
+export interface RunWave27ArtDirectorAssistOptions {
+  readonly route?: ClaudeRoute | null;
+  readonly model?: string;
+  readonly signal?: AbortSignal;
+  readonly budgetOverride?: boolean;
+  readonly fallbackOnError?: boolean;
+}
+
+export interface Wave27ArtDirectorAssistResult<TPayload> {
+  readonly taskId: ClaudeCreatorTaskId;
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly data: TPayload;
+  readonly usage: ClaudeTokenUsage | null;
+  readonly estimatedUsd: number | null;
+}
+
+function clampWave27(value: number, min: number, max: number, fallback: number): number {
+  return Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
+}
+
+async function executeWave27ArtDirectorTask<TSchema extends z.ZodTypeAny, TOut>(params: {
+  readonly taskId: ClaudeCreatorTaskId;
+  readonly systemPrompt: string;
+  readonly userInstruction: string;
+  readonly input: Wave27ArtDirectorAssistInput;
+  readonly schema: TSchema;
+  readonly options: RunWave27ArtDirectorAssistOptions;
+  readonly normalize: (parsed: z.infer<TSchema>) => TOut;
+  readonly fallback: () => TOut;
+}): Promise<Wave27ArtDirectorAssistResult<TOut>> {
+  const { taskId, systemPrompt, userInstruction, input, schema, options, normalize, fallback } = params;
+  const activeRoute = options.route ?? (hydrateDefaultEnvClaudeConnection(), resolveClaudeRoute());
+  const taskRoute = resolveCreatorTaskModelRoute(taskId, { model: options.model as never });
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) {
+      return Object.freeze({ taskId, source: "deterministic-fallback", model: taskRoute.model, data: fallback(), usage: null, estimatedUsd: null });
+    }
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: 1_600,
+    system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+    messages: [{
+      role: "user",
+      content: `${cleanSingleLineText(input.episodeTitle, 100)} (${cleanSingleLineText(input.genre, 60)})\n장면: ${cleanSingleLineText(input.scriptSummary, 400)}\n${userInstruction}`,
+    }],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: "low" as const } } : {}),
+  };
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, schema, {
+      signal: options.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requestedModel, request, schema }),
+      budgetOverride: options.budgetOverride,
+    });
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      taskId,
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      data: normalize(parsed),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return Object.freeze({ taskId, source: "deterministic-fallback", model: requestedModel, data: fallback(), usage: null, estimatedUsd: null });
+    }
+    throw error;
+  }
+}
+
+export const ClaudeTraditionalClothingGoreumSchema = z.object({
+  collarLockScore: z.number().int().min(0).max(100),
+  overlapDirectionRuleKo: z.string(),
+  knotLoopSideKo: z.string(),
+  shroudFlipPreventionKo: z.string(),
+});
+export type ClaudeTraditionalClothingGoreum = z.infer<typeof ClaudeTraditionalClothingGoreumSchema>;
+
+export async function runClaudeTraditionalClothingCollarGoreumLockDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeTraditionalClothingGoreum>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:traditional-clothing-collar-knot-goreum-lock",
+    systemPrompt: "당신은 사극·무협·시대극 웹툰의 한복(우임·동정·고름)·기모노(우전)·한푸(교령우임) 옷깃 여밈 방향 고정 디렉터입니다.",
+    userInstruction: "전통복식 Y자 옷깃 여밈 방향, 고름/오비 매듭 방향, 좌우 반전으로 수의(좌임)가 되는 작붕 차단 규칙을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeTraditionalClothingGoreumSchema,
+    options,
+    normalize: (p) => Object.freeze({ collarLockScore: clampWave27(p.collarLockScore, 0, 100, 98), overlapDirectionRuleKo: cleanSingleLineText(p.overlapDirectionRuleKo, 180), knotLoopSideKo: cleanSingleLineText(p.knotLoopSideKo, 160), shroudFlipPreventionKo: cleanSingleLineText(p.shroudFlipPreventionKo, 180) }),
+    fallback: () => Object.freeze({ collarLockScore: 98, overlapDirectionRuleKo: "생자 복식 표준 우임(右衽: 착용자 좌측 섶이 우측 섶 위로 덮여 Y자 형성) 100% 고정", knotLoopSideKo: "한복 저고리 긴 고름(좌)이 짧은 고름(우) 아래로 감아 좌측 반원 고리(Loop) 형성", shroudFlipPreventionKo: "캔버스 좌우 반전 시 섶과 동정·고름 레이어가 좌임(망자 수의)으로 뒤집히지 않도록 독립 반전 잠금" }),
+  });
+}
+
+export const ClaudeFirearmTacticalLockSchema = z.object({
+  tacticalAccuracyScore: z.number().int().min(0).max(100),
+  ejectionPortSideKo: z.string(),
+  slideStopStateKo: z.string(),
+  triggerDisciplineRuleKo: z.string(),
+});
+export type ClaudeFirearmTacticalLock = z.infer<typeof ClaudeFirearmTacticalLockSchema>;
+
+export async function runClaudeFirearmTacticalSlideEjectionLockDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeFirearmTacticalLock>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:firearm-tactical-slide-ejection-finger-lock",
+    systemPrompt: "당신은 현대·느와르·헌터물 웹툰의 전술 총기 탄피 배출구 방향·슬라이드 후퇴고정·방아쇠 울외 손가락(Trigger Discipline) 고증 감독입니다.",
+    userInstruction: "탄피 배출구 방향, 탄창 소진 시 슬라이드 상태, 비사격 시 검지 위치 고증을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeFirearmTacticalLockSchema,
+    options,
+    normalize: (p) => Object.freeze({ tacticalAccuracyScore: clampWave27(p.tacticalAccuracyScore, 0, 100, 97), ejectionPortSideKo: cleanSingleLineText(p.ejectionPortSideKo, 160), slideStopStateKo: cleanSingleLineText(p.slideStopStateKo, 160), triggerDisciplineRuleKo: cleanSingleLineText(p.triggerDisciplineRuleKo, 180) }),
+    fallback: () => Object.freeze({ tacticalAccuracyScore: 97, ejectionPortSideKo: "자동권총·돌격소총 탄피 배출구 우측면 고정 (좌측 클로즈업 시 배출구 노출 작붕 차단)", slideStopStateKo: "전탄 소진 컷에서 슬라이드 스톱 후퇴고정 및 약실 내부 노출 유지", triggerDisciplineRuleKo: "대치·이동 컷에서는 오른손 검지를 방아쇠울 바깥 프레임에 일자로 밀착(Trigger Discipline)" }),
+  });
+}
+
+export const ClaudeMartialArtsQigongSchema = z.object({
+  qigongContinuityScore: z.number().int().min(0).max(100),
+  meridianPathwayKo: z.string(),
+  swordFingerMudraKo: z.string(),
+  footworkCenterOfGravityKo: z.string(),
+});
+export type ClaudeMartialArtsQigong = z.infer<typeof ClaudeMartialArtsQigongSchema>;
+
+export async function runClaudeMartialArtsQigongMeridianTrajectoryDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeMartialArtsQigong>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:martial-arts-qigong-meridian-aura-trajectory-lock",
+    systemPrompt: "당신은 무협 웹툰 내공 단전(기해혈)·12경맥 기혈 발광 경로·왼손 검결(Jianjue)·보법 무게중심 일관성 감독입니다.",
+    userInstruction: "내공 운기 경맥 경로, 왼손 검결 수인 해부학, 하체 보법 무게중심을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeMartialArtsQigongSchema,
+    options,
+    normalize: (p) => Object.freeze({ qigongContinuityScore: clampWave27(p.qigongContinuityScore, 0, 100, 96), meridianPathwayKo: cleanSingleLineText(p.meridianPathwayKo, 180), swordFingerMudraKo: cleanSingleLineText(p.swordFingerMudraKo, 160), footworkCenterOfGravityKo: cleanSingleLineText(p.footworkCenterOfGravityKo, 180) }),
+    fallback: () => Object.freeze({ qigongContinuityScore: 96, meridianPathwayKo: "하단전(기해혈) → 독맥 → 우측 수태양소장경 → 합곡혈 → 검끝 청백색(#38BDF8) 내공 발현", swordFingerMudraKo: "왼손 검결(검지·중지 밀착 신전, 엄지가 약지·소지 손톱 위를 누름) 수인 고정", footworkCenterOfGravityKo: "전진 궁보(전족 70% : 후족 30% 하중 분배) 및 복숭아뼈 지면 접지선 유지" }),
+  });
+}
+
+export const ClaudeMedicalIcuSterileSchema = z.object({
+  medicalAccuracyScore: z.number().int().min(0).max(100),
+  vitalMonitorReadoutKo: z.string(),
+  sterileFieldRuleKo: z.string(),
+  instrumentGripRuleKo: z.string(),
+});
+export type ClaudeMedicalIcuSterile = z.infer<typeof ClaudeMedicalIcuSterileSchema>;
+
+export async function runClaudeMedicalIcuVitalMonitorSterileDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeMedicalIcuSterile>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:medical-icu-vital-monitor-sterile-rig-lock",
+    systemPrompt: "당신은 의학·스릴러 웹툰의 중환자실(ICU) 바이탈 모니터(ECG/SpO2/ABP 수치 정합성)·수술실 무균 구역·메스 파지 고증 감독입니다.",
+    userInstruction: "환자 상태에 맞는 바이탈 모니터 수치/색상, 수술실 무균 원칙, 메스/겸자 파지법을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeMedicalIcuSterileSchema,
+    options,
+    normalize: (p) => Object.freeze({ medicalAccuracyScore: clampWave27(p.medicalAccuracyScore, 0, 100, 98), vitalMonitorReadoutKo: cleanSingleLineText(p.vitalMonitorReadoutKo, 180), sterileFieldRuleKo: cleanSingleLineText(p.sterileFieldRuleKo, 180), instrumentGripRuleKo: cleanSingleLineText(p.instrumentGripRuleKo, 160) }),
+    fallback: () => Object.freeze({ medicalAccuracyScore: 98, vitalMonitorReadoutKo: "HR 118bpm(녹색 동성빈맥 파형) · SpO2 97%(청색) · ABP 110/70mmHg(적색) 표준 색상 일치", sterileFieldRuleKo: "수술 가운 착용 후 양손은 항상 가슴~허리 사이 멸균 구역 유지 (마스크·안경 터치 작붕 금지)", instrumentGripRuleKo: "정밀 절개 시 #15 메스 연필 파지법(Pencil Grip) 및 약지 조직 지지점 고정" }),
+  });
+}
+
+export const ClaudeCulinaryKnifePlatingSchema = z.object({
+  culinaryAccuracyScore: z.number().int().min(0).max(100),
+  knifeAndGuideHandGripKo: z.string(),
+  platingAndSauceGeometryKo: z.string(),
+  steamAndGlazeSpecularKo: z.string(),
+});
+export type ClaudeCulinaryKnifePlating = z.infer<typeof ClaudeCulinaryKnifePlatingSchema>;
+
+export async function runClaudeCulinaryKnifeGripPlatingSteamDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeCulinaryKnifePlating>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:culinary-knife-pinch-grip-plating-steam-lock",
+    systemPrompt: "당신은 요리·카페·일상 웹툰의 셰프 나이프 핀치 그립·왼손 고양이손(Claw Grip)·플레이팅 소스·수증기 광택 감독입니다.",
+    userInstruction: "오른손 칼 파지와 왼손 재료 고정 자세, 접시 플레이팅 비율, 음식 김과 윤기 연출을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeCulinaryKnifePlatingSchema,
+    options,
+    normalize: (p) => Object.freeze({ culinaryAccuracyScore: clampWave27(p.culinaryAccuracyScore, 0, 100, 96), knifeAndGuideHandGripKo: cleanSingleLineText(p.knifeAndGuideHandGripKo, 180), platingAndSauceGeometryKo: cleanSingleLineText(p.platingAndSauceGeometryKo, 180), steamAndGlazeSpecularKo: cleanSingleLineText(p.steamAndGlazeSpecularKo, 160) }),
+    fallback: () => Object.freeze({ culinaryAccuracyScore: 96, knifeAndGuideHandGripKo: "오른손 엄지·검지로 칼날 볼스터(Bolster)를 쥐는 핀치 그립 + 왼손 중지 첫 마디를 칼면에 대는 고양이손", platingAndSauceGeometryKo: "28cm 원형 플레이트 여백 40% 확보 · 6시→2시 방향 데미글라스 스푼 스와이프 곡선", steamAndGlazeSpecularKo: "육즙 글레이즈 하이라이트(Add 발광 85%) + 상단 반투명 S자 김(불투명도 28%) 2레이어 분리" }),
+  });
+}
+
+export const ClaudeAcrylicPhotocardDielineSchema = z.object({
+  merchReadinessScore: z.number().int().min(0).max(100),
+  acrylicCutlineAndWhitePlateKo: z.string(),
+  baseSlotToleranceMmKo: z.string(),
+  photocardBleedAndCornerKo: z.string(),
+});
+export type ClaudeAcrylicPhotocardDieline = z.infer<typeof ClaudeAcrylicPhotocardDielineSchema>;
+
+export async function runClaudeAcrylicStandPhotocardDielineDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeAcrylicPhotocardDieline>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:acrylic-stand-photocard-dieline-white-plate-lock",
+    systemPrompt: "당신은 웹툰 IP 공식 굿즈(아크릴 스탠드 칼선·화이트 백판·발판 결합 홈 공차·홀로그램 포토카드 재단선) 설계 디렉터입니다.",
+    userInstruction: "아크릴 스탠드 칼선/화이트판 오프셋, 발판 꽂이 규격(mm), 포토카드 재단선/라운드 규격을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeAcrylicPhotocardDielineSchema,
+    options,
+    normalize: (p) => Object.freeze({ merchReadinessScore: clampWave27(p.merchReadinessScore, 0, 100, 98), acrylicCutlineAndWhitePlateKo: cleanSingleLineText(p.acrylicCutlineAndWhitePlateKo, 180), baseSlotToleranceMmKo: cleanSingleLineText(p.baseSlotToleranceMmKo, 160), photocardBleedAndCornerKo: cleanSingleLineText(p.photocardBleedAndCornerKo, 160) }),
+    fallback: () => Object.freeze({ merchReadinessScore: 98, acrylicCutlineAndWhitePlateKo: "일러스트 외곽 +2.0mm 마젠타 칼선(CutLine) · 배면 화이트 인쇄판(WhitePlate)은 일러스트 내측 -0.2mm 축소", baseSlotToleranceMmKo: "3T(3.0mm) 투명 아크릴 기준 하단 결합 돌기 폭 12.0mm × 깊이 4.5mm (발판 홈 12.05×2.95mm 억지끼움)", photocardBleedAndCornerKo: "재단 55×85mm (작업 59×89mm, 사방 2mm 도련) · 모서리 R3.0mm 라운드 컷 + 전면 홀로그램 코팅" }),
+  });
+}
+
+export const ClaudeEastAsianPalaceDancheongSchema = z.object({
+  architecturalIntegrityScore: z.number().int().min(0).max(100),
+  bracketGongpoStructureKo: z.string(),
+  dancheongPaletteHexRuleKo: z.string(),
+  roofRidgeAndTileVanishingKo: z.string(),
+});
+export type ClaudeEastAsianPalaceDancheong = z.infer<typeof ClaudeEastAsianPalaceDancheongSchema>;
+
+export async function runClaudeEastAsianPalaceDancheongBracketDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeEastAsianPalaceDancheong>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:east-asian-palace-dancheong-roof-bracket-lock",
+    systemPrompt: "당신은 사극·무협·동양판타지 웹툰의 전통 궁궐/사찰 목조건축 공포(포작)·추녀마루 곡률·단청 오방색·기와 골 소실점 총괄 감독입니다.",
+    userInstruction: "공포(다포/주심포) 결구 규칙, 단청 뇌록색/석간주 배색 코드, 처마 곡률과 기와 골 투시 규칙을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeEastAsianPalaceDancheongSchema,
+    options,
+    normalize: (p) => Object.freeze({ architecturalIntegrityScore: clampWave27(p.architecturalIntegrityScore, 0, 100, 97), bracketGongpoStructureKo: cleanSingleLineText(p.bracketGongpoStructureKo, 180), dancheongPaletteHexRuleKo: cleanSingleLineText(p.dancheongPaletteHexRuleKo, 180), roofRidgeAndTileVanishingKo: cleanSingleLineText(p.roofRidgeAndTileVanishingKo, 180) }),
+    fallback: () => Object.freeze({ architecturalIntegrityScore: 97, bracketGongpoStructureKo: "중층 다포식 정전 외3출목 내4출목 공포 배열 · 기둥 위 주두(柱頭)와 주간포 등간격 정렬", dancheongPaletteHexRuleKo: "서까래·평방 바탕 뇌록색(#2E5A44) + 기둥 석간주(#8B261D) + 머리초 금박/양록/장단 오방색 고정", roofRidgeAndTileVanishingKo: "팔작지붕 추녀마루 조로(들림) 곡선 및 암키와·수키와 골 간격 3점 투시 소실점 일치" }),
+  });
+}
+
+export const ClaudeReaderCommentCatharsisSchema = z.object({
+  predictedRatingScore: z.number().min(1).max(10),
+  frustrationToCatharsisRatioKo: z.string(),
+  predictedTopCommentKo: z.string(),
+  antiChurnDialoguePrescriptionKo: z.string(),
+});
+export type ClaudeReaderCommentCatharsis = z.infer<typeof ClaudeReaderCommentCatharsisSchema>;
+
+export async function runClaudeReaderCommentSentimentCatharsisDirector(
+  input: Wave27ArtDirectorAssistInput,
+  options: RunWave27ArtDirectorAssistOptions = {},
+): Promise<Wave27ArtDirectorAssistResult<ClaudeReaderCommentCatharsis>> {
+  return executeWave27ArtDirectorTask({
+    taskId: "art-director:reader-comment-sentiment-catharsis-cliff-director",
+    systemPrompt: "당신은 웹툰 연재 직후 예상되는 독자 베스트 댓글 감성(고구마 답답함 피로도 vs 사이다 카타르시스 해소율)과 별점 하락 리스크를 진단하는 총괄 감독입니다.",
+    userInstruction: "예상 별점(10점 만점), 고구마:사이다 비율, 예상 베스트 댓글 1위, 별점 방어를 위한 마지막 컷 대사 처방을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeReaderCommentCatharsisSchema,
+    options,
+    normalize: (p) => Object.freeze({ predictedRatingScore: Number(Math.max(1, Math.min(10, p.predictedRatingScore || 9.94)).toFixed(2)), frustrationToCatharsisRatioKo: cleanSingleLineText(p.frustrationToCatharsisRatioKo, 160), predictedTopCommentKo: cleanSingleLineText(p.predictedTopCommentKo, 180), antiChurnDialoguePrescriptionKo: cleanSingleLineText(p.antiChurnDialoguePrescriptionKo, 180) }),
+    fallback: () => Object.freeze({ predictedRatingScore: 9.94, frustrationToCatharsisRatioKo: "초반 빌드업 고구마 22% : 후반 각성 사이다 78% (3화 연속 고구마 임계치 미초과 안전)", predictedTopCommentKo: "“마지막 컷에서 주인공이 숨겨둔 성검 뽑을 때 소름 돋았다… 다음 화 쿠키 바로 굽습니다”", antiChurnDialoguePrescriptionKo: "오해 유발 침묵 대사 대신 주인공의 속마음 독백 1줄로 반격 계획이 있음을 독자에게 즉시 암시" }),
+  });
 }
