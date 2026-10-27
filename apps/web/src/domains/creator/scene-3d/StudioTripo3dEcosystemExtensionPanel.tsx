@@ -744,9 +744,19 @@ export function StudioTripo3dEcosystemExtensionPanel({
         </div>
 
         <div className="mt-2 flex flex-col gap-1 rounded border border-line/70 bg-card px-2 py-1.5 text-[0.62rem]">
-          <div data-testid="tripo3d-customizer-shader-summary" className="font-medium text-fg">
-            셰이더·파츠 요약: {customizationRecipe.shaderSummaryKo} · 유효 GLB{" "}
-            <code>{customizationRecipe.effectiveGlbUrl}</code>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div data-testid="tripo3d-customizer-shader-summary" className="font-medium text-fg">
+              셰이더·파츠 요약: {customizationRecipe.shaderSummaryKo} · 유효 GLB{" "}
+              <code>{customizationRecipe.effectiveGlbUrl}</code>
+            </div>
+            <a
+              href={customizationRecipe.effectiveGlbUrl}
+              download={activeMcpModel.fileName}
+              data-testid="tripo3d-mcp-direct-glb-download"
+              className="rounded border border-accent/60 bg-accent-soft/40 px-2 py-0.5 text-[0.6rem] font-semibold text-accent hover:bg-accent-soft"
+            >
+              .glb 원본/최적화 파일 다운로드 ({activeMcpModel.fileName})
+            </a>
           </div>
           <code
             data-testid="tripo3d-customizer-recipe-readout"

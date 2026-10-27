@@ -41,6 +41,7 @@ import {
   STUDIO_EXTERNAL_3D_TRIPO_DEFAULT_MODEL,
   planStudioExternal3dIntake,
 } from "../scene-3d/studio-external-3d-intake";
+import { TRIPO3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-tripo3d-ecosystem-engine";
 import {
   StudioScene3dDocumentCommandError,
   createStudioScene3dTransformOperation,
@@ -105,6 +106,17 @@ export function StudioBg3dVrmHybridDccPanel({
     STUDIO_ATTACHMENT_GRIP_PRESETS[0]?.id ?? "sword-one-hand",
   );
   const [externalKind, setExternalKind] = useState<"character" | "garment" | "prop">("prop");
+  const bg3dTripoModels = useMemo(
+    () => TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d"),
+    [],
+  );
+  const [selectedBg3dModelId, setSelectedBg3dModelId] = useState<string>(
+    bg3dTripoModels[0]?.id ?? "tripo3d-p2-bg-street-cafe-kit",
+  );
+  const activeBg3dModel = useMemo(
+    () => bg3dTripoModels.find((m) => m.id === selectedBg3dModelId) ?? bg3dTripoModels[0]!,
+    [bg3dTripoModels, selectedBg3dModelId],
+  );
 
   const vrmAndTextureDiag = useMemo(() => {
     const bodyPlan = buildAvatarForgeBodyAdjustmentPlan(DEFAULT_AVATAR_FORGE_STATE.body);
@@ -334,12 +346,12 @@ export function StudioBg3dVrmHybridDccPanel({
         </div>
       </div>
 
-      {/* 3. 외부 3D 에셋 인테이크 (Tripo CLI) & Scene3D 트랜잭션 */}
+      {/* 3. 외부 3D 에셋 인테이크 (Tripo CLI) & Scene3D 트랜잭션 + 다운로드된 8종 3D 배경 GLB 직결 */}
       <div className="rounded-lg border border-line bg-panel/60 p-2.5">
         <div className="mb-1.5 flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-semibold text-fg">
             <Layers className="size-3.5 text-accent" />
-            외부 3D 에셋 인테이크 ({hybridDccAndScene3dDiag.externalProvider}) · Scene3D 링크드 레이어
+            외부 3D 에셋 인테이크 ({hybridDccAndScene3dDiag.externalProvider}) · 다운로드 3D 배경 GLB ({bg3dTripoModels.length}종)
           </span>
           <span data-testid="bg3d-external-intake-readout" className="text-[11px] text-fg-2">
             모델 {hybridDccAndScene3dDiag.tripoModel} · 삼각형 예산{" "}
@@ -375,6 +387,44 @@ export function StudioBg3dVrmHybridDccPanel({
               {item.labelKo}
             </button>
           ))}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {bg3dTripoModels.map((model) => (
+            <button
+              key={model.id}
+              type="button"
+              disabled={disabled}
+              data-testid={`bg3d-tripo-glb-${model.id}`}
+              onClick={() => {
+                setSelectedBg3dModelId(model.id);
+                onPlanExternalIntake?.(`${model.nameKo} (${model.url})`, model.triangles);
+              }}
+              className={`rounded border px-2 py-0.5 text-[10px] ${
+                activeBg3dModel.id === model.id
+                  ? "border-accent bg-accent-soft font-semibold text-accent"
+                  : "border-line bg-card text-fg-2 hover:text-fg"
+              }`}
+            >
+              {model.nameKo} ({Math.round(model.byteSize / 1024)}KB)
+            </button>
+          ))}
+        </div>
+        <div
+          data-testid="bg3d-tripo-active-glb-readout"
+          className="mt-1.5 flex flex-wrap items-center justify-between gap-2 rounded border border-line/70 bg-card px-2 py-1 text-[10px] text-fg-2"
+        >
+          <span>
+            활성 GLB: <strong>{activeBg3dModel.nameKo}</strong> (<code>{activeBg3dModel.url}</code> ·{" "}
+            {activeBg3dModel.triangles.toLocaleString()} Tri · 파츠 {activeBg3dModel.customizableParts.length}개)
+          </span>
+          <a
+            href={activeBg3dModel.url}
+            download={activeBg3dModel.fileName}
+            data-testid="bg3d-tripo-active-glb-download"
+            className="rounded border border-accent/60 bg-accent-soft/40 px-2 py-0.5 font-semibold text-accent hover:bg-accent-soft"
+          >
+            .glb 다운로드 ({activeBg3dModel.fileName})
+          </a>
         </div>
       </div>
 
