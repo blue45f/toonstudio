@@ -44,7 +44,10 @@ describe("public creative art direction", () => {
   });
   it("keeps artwork CSS inside the public frame, with reduced-motion and contrast rules", () => {
     const css = readFileSync("apps/web/src/shared/components/site-experience/site-art-direction.css", "utf8");
+    const continuityCss = readFileSync("apps/web/src/shared/components/public-site-continuity.css", "utf8");
     expect(css).toContain("[data-site-experience]");
+    expect(css).toContain("details:not([open]) .site-creation-compass__brief { display: none; }");
+    expect(continuityCss).toContain(".public-site-demo:not([open]) > :not(summary) { display: none; }");
     expect(css).toContain("prefers-reduced-motion: reduce");
     expect(css).toContain("forced-colors: active");
     expect(css).not.toMatch(/(?:^|\n)(?:body|html|:root)[\s{]/u);
