@@ -29,12 +29,22 @@ export function StudioVirtualOfficeNextGenEnginePanel({
 
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el) return;
-    const handleVisibility = (event: Event) => {
-      setOffscreenSkipped(Boolean((event as Event & { readonly skipped?: boolean }).skipped));
-    };
-    el.addEventListener("contentvisibilityautostatechange", handleVisibility);
-    return () => el.removeEventListener("contentvisibilityautostatechange", handleVisibility);
+    if (!el || typeof document === "undefined") return;
+    if ("contentVisibility" in document.documentElement.style) {
+      const handleVisibility = (event: Event) => {
+        setOffscreenSkipped(Boolean((event as Event & { readonly skipped?: boolean }).skipped));
+      };
+      el.addEventListener("contentvisibilityautostatechange", handleVisibility);
+      return () => el.removeEventListener("contentvisibilityautostatechange", handleVisibility);
+    }
+    if (typeof IntersectionObserver !== "undefined") {
+      const observer = new IntersectionObserver(
+        (entries) => setOffscreenSkipped(!entries[0]?.isIntersecting),
+        { rootMargin: "200px" },
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
   }, []);
 
   const activeTheme = useMemo(
@@ -102,7 +112,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="flex items-center gap-1.5 text-xs text-fg">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
-              4대 웹툰 스튜디오 테마 아틀리에 전환 (Nano Banana v11 2.5D Isometric)
+              8대 웹툰 스튜디오 장르 테마 아틀리에 전환 (Nano Banana v11·v12 2.5D Isometric)
             </strong>
             <span className="text-[11px] text-fg-2">
               {activeTheme.atmosphereTagKo}
@@ -227,7 +237,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
         <div className="rounded-lg border border-line bg-panel p-3 lg:col-span-5">
           <div className="flex items-center justify-between gap-2">
             <strong className="text-xs text-fg">
-              4직군 개성파 캐릭터 캐스트 & 프로시저럴 2차 모션
+              8직군 개성파 캐릭터·마스코트 캐스트 & 프로시저럴 2차 모션
             </strong>
             <div className="flex gap-1">
               {(["idle", "work"] as const).map((poseKey: CreatorPersonaPose) => (
