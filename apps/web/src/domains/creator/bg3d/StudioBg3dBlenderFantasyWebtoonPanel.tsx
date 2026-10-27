@@ -21,6 +21,7 @@ import {
   type BlenderMonsterPoseMode,
   type BlenderWeaponSocketSlot,
 } from "../scene-3d/studio-3d-blender-fantasy-weapon-monster-crowd";
+import type { BgPrimitive } from "../studio-background-3d-metadata";
 import {
   BLENDER_FREESTYLE_INK_PRESETS,
   BLENDER_NPR_SHADER_PRESETS,
@@ -30,6 +31,8 @@ import {
   type BlenderFreestyleInkPreset,
   type BlenderNprShaderPreset,
 } from "../scene-3d/studio-3d-blender-npr-shader-freestyle";
+import { StudioBg3dBlenderFullSections } from "./StudioBg3dBlenderFullSections";
+import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 
 export interface StudioBg3dBlenderFantasyWebtoonPanelProps {
   readonly disabled?: boolean;
@@ -39,6 +42,10 @@ export interface StudioBg3dBlenderFantasyWebtoonPanelProps {
   readonly onApplyWeaponRig?: (preset: BlenderFantasyWeaponPreset, bladeCount: number) => void;
   readonly onApplyMonsterIk?: (preset: BlenderFantasyMonsterPreset, poseMode: BlenderMonsterPoseMode) => void;
   readonly onSimulateCrowd?: (preset: BlenderFantasyCrowdPreset, totalAgents: number) => void;
+  readonly onStatusChange?: (summaryKo: string) => void;
+  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
+  readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
+  readonly onSyncSceneLineArt?: (enabled: boolean, summaryKo: string) => void;
 }
 
 const MONSTER_POSE_MODES: readonly {
@@ -77,6 +84,10 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   onApplyWeaponRig,
   onApplyMonsterIk,
   onSimulateCrowd,
+  onStatusChange,
+  onInsertScenePrimitives,
+  onApplySceneCamera,
+  onSyncSceneLineArt,
 }: StudioBg3dBlenderFantasyWebtoonPanelProps) {
   const [selectedLightingId, setSelectedLightingId] = useState<string>(
     BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id,
@@ -630,6 +641,14 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           </div>
         </div>
       </section>
+
+      <StudioBg3dBlenderFullSections
+        disabled={disabled}
+        onStatusChange={onStatusChange}
+        onInsertScenePrimitives={onInsertScenePrimitives}
+        onApplySceneCamera={onApplySceneCamera}
+        onSyncSceneLineArt={onSyncSceneLineArt}
+      />
     </div>
   );
 }

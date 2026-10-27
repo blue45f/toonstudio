@@ -41,7 +41,7 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain(
       "glTF 2.0 / GLB): A",
     );
-    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(18);
+    expect(ALL_WORKBENCH_TAB_IDS).toHaveLength(19);
 
     // 기본 탭: atmosphere (높이 안개 감쇠율 & 카메라 추적광 확인)
     expect(screen.getByTestId("bg3d-atmosphere-height-fog-readout").textContent).toContain(
@@ -164,5 +164,60 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
       fireEvent.click(screen.getByTestId(`bg3d-workbench-tab-${tabId}`));
       expect(screen.getByTestId(`bg3d-workbench-surface-${tabId}`)).toBeTruthy();
     }
+  });
+
+  it("SketchUp 3D(Sandbox·Solid Tools·Match Photo·건축 컴포넌트) 및 Blender 5.2(모디파이어·GPv3·물리·카메라)의 3D 장면 배치·카메라·선화 연동이 동작한다", () => {
+    const insertedBatches: number[] = [];
+    const appliedFovs: number[] = [];
+    const lineArtStates: boolean[] = [];
+
+    render(
+      <StudioBg3dAdvancedWorkbenchHub
+        defaultTab="sketchup-studio"
+        onInsertScenePrimitives={(prims) => insertedBatches.push(prims.length)}
+        onApplySceneCamera={(cam) => appliedFovs.push(cam.fovDegrees)}
+        onSyncSceneLineArt={(enabled) => lineArtStates.push(enabled)}
+      />,
+    );
+
+    // SketchUp 3D: Sandbox 지형 배치, Solid Tools 배치, Match Photo 카메라 적용, 건축 컴포넌트 배치, LayOut SVG
+    fireEvent.click(screen.getByTestId("sketchup-sandbox-insert-scene-btn"));
+    expect(insertedBatches.length).toBe(1);
+    expect(insertedBatches[0]).toBeGreaterThan(5);
+
+    fireEvent.click(screen.getByTestId("sketchup-solid-op-split"));
+    fireEvent.click(screen.getByTestId("sketchup-solid-insert-scene-btn"));
+    expect(insertedBatches.length).toBe(2);
+    expect(insertedBatches[1]).toBe(3);
+
+    fireEvent.click(screen.getByTestId("sketchup-match-photo-apply-camera-btn"));
+    expect(appliedFovs.length).toBe(1);
+
+    fireEvent.click(screen.getByTestId("sketchup-arch-kind-roof-hanok"));
+    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    expect(insertedBatches.length).toBe(3);
+
+    fireEvent.click(screen.getByTestId("sketchup-layout-svg-export-btn"));
+    expect(screen.getByTestId("sketchup-layout-svg-summary").textContent).toContain(
+      "LayOut 벡터 단면 SVG",
+    );
+
+    // Blender 5.2: 모디파이어 생성물 배치, GPv3/Freestyle 선화 동기화, 물리 도메인 배치, 시네마틱 카메라 적용, 배경 세트 배치
+    fireEvent.click(screen.getByTestId("bg3d-workbench-tab-blender-fantasy-webtoon"));
+    fireEvent.click(screen.getByTestId("bg3d-blender-modifier-insert-btn"));
+    expect(insertedBatches.length).toBe(4);
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-gp3-sync-lineart-btn"));
+    expect(lineArtStates).toEqual([true]);
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-physics-insert-btn"));
+    expect(insertedBatches.length).toBe(5);
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-apply-camera-btn"));
+    expect(appliedFovs.length).toBe(2);
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-scene-theme-cyberpunk-neon-alley"));
+    fireEvent.click(screen.getByTestId("bg3d-blender-insert-scene-preset-btn"));
+    expect(insertedBatches.length).toBe(6);
   });
 });

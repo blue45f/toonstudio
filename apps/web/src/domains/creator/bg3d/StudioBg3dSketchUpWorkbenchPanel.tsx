@@ -45,6 +45,9 @@ import {
   solveSketchUpFourPinHomography,
   type SketchUpStyleConfig,
 } from "./studio-bg3d-sketchup-styles-uv-engine";
+import type { BgPrimitive } from "../studio-background-3d-metadata";
+import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
+import { StudioBg3dSketchUpFullSections } from "./StudioBg3dSketchUpFullSections";
 import {
   restoreStudioBg3dSkpAnnotationsAndGuides,
   restoreStudioBg3dSkpInstancedHierarchy,
@@ -59,6 +62,8 @@ export interface StudioBg3dSketchUpWorkbenchPanelProps {
   readonly onExecuteArray?: (token: string, placements: readonly SketchUpArrayPlacement[]) => void;
   readonly onRestoreSkpScenes?: (restoredShotCount: number, tagCount: number) => void;
   readonly onExportCadFormat?: (format: SketchUpExportFormat, byteSize: number) => void;
+  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
+  readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
 }
 
 const SAMPLE_SKP_MODEL = Object.freeze({
@@ -126,6 +131,8 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   onExecuteArray,
   onRestoreSkpScenes,
   onExportCadFormat,
+  onInsertScenePrimitives,
+  onApplySceneCamera,
 }: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
   const vcbInputId = useId();
   const protractorInputId = useId();
@@ -735,6 +742,13 @@ export function StudioBg3dSketchUpWorkbenchPanel({
             </div>
           </div>
         </details>
+
+        <StudioBg3dSketchUpFullSections
+          disabled={disabled}
+          onStatusChange={setStatusBanner}
+          onInsertScenePrimitives={onInsertScenePrimitives}
+          onApplySceneCamera={onApplySceneCamera}
+        />
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ import { StudioBg3dPostProcessVfxPanel } from "./StudioBg3dPostProcessVfxPanel";
 import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
 import { StudioBg3dSketchUpWorkbenchPanel } from "./StudioBg3dSketchUpWorkbenchPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
+import type { BgPrimitive } from "../studio-background-3d-metadata";
 import { StudioBg3dSpatialWebtoonPanel } from "./StudioBg3dSpatialWebtoonPanel";
 import { StudioBg3dVrmHybridDccPanel } from "./StudioBg3dVrmHybridDccPanel";
 import {
@@ -38,6 +39,8 @@ import {
   type StudioBg3dPlaceSetState,
   type StudioBg3dPlaceSetUsageRef,
 } from "./studio-bg3d-place-set-package";
+import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
+import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 
 export type StudioBg3dWorkbenchTabId =
   | "atmosphere"
@@ -165,6 +168,9 @@ const SAMPLE_PLACE_SET_USAGES: readonly StudioBg3dPlaceSetUsageRef[] = Object.fr
 export interface StudioBg3dAdvancedWorkbenchHubProps {
   readonly defaultTab?: StudioBg3dWorkbenchTabId;
   readonly disabled?: boolean;
+  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
+  readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
+  readonly onSyncSceneLineArt?: (enabled: boolean, summaryKo: string) => void;
 }
 
 /**
@@ -174,9 +180,14 @@ export interface StudioBg3dAdvancedWorkbenchHubProps {
 export function StudioBg3dAdvancedWorkbenchHub({
   defaultTab = "atmosphere",
   disabled = false,
+  onInsertScenePrimitives,
+  onApplySceneCamera,
+  onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
+  const proSuiteRuntime = useStudioBg3dProSuiteRuntime();
   const [activeTab, setActiveTab] = useState<StudioBg3dWorkbenchTabId>(defaultTab);
   const [lastActionSummary, setLastActionSummary] = useState<string>("준비 완료");
+  const [stagedScenePrimitives, setStagedScenePrimitives] = useState<readonly BgPrimitive[]>([]);
   const [cuts, setCuts] = useState<readonly StoryboardCut[]>(INITIAL_CUTS);
   const [placeSet, setPlaceSet] = useState<StudioBg3dPlaceSetPackage>(() => {
     const v1 = createStudioBg3dPlaceSetPackage({
@@ -213,6 +224,24 @@ export function StudioBg3dAdvancedWorkbenchHub({
     () => evaluateFormatCompatibility("GLB"),
     [],
   );
+
+  const handleInsertScenePrimitives = (primitives: readonly BgPrimitive[], labelKo: string) => {
+    setStagedScenePrimitives((prev) => [...prev, ...primitives]);
+    setLastActionSummary(labelKo);
+    onInsertScenePrimitives?.(primitives, labelKo);
+  };
+
+  const handleApplySceneCamera = (camera: StudioBg3dCameraSettings, labelKo: string) => {
+    proSuiteRuntime?.onApplyCameraView(camera);
+    setLastActionSummary(labelKo);
+    onApplySceneCamera?.(camera, labelKo);
+  };
+
+  const handleSyncSceneLineArt = (enabled: boolean, summaryKo: string) => {
+    proSuiteRuntime?.onSetLineArtPreview?.(enabled);
+    setLastActionSummary(summaryKo);
+    onSyncSceneLineArt?.(enabled, summaryKo);
+  };
 
   const handleAddCut = (cut: StoryboardCut) => {
     setCuts((prev) => [...prev, cut]);
@@ -292,7 +321,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
             data-testid="bg3d-workbench-dcc-compat-badge"
             className="rounded bg-raised px-2 py-0.5 font-mono text-[0.62rem] text-fg-2"
           >
-            DCC 호환성 ({dccFormatReport.format}): {dccFormatReport.grade}
+            DCC 호환성 ({dccFormatReport.format}): {dccFormatReport.grade} · 3D 배치 {stagedScenePrimitives.length}개
           </span>
           <span
             data-testid="bg3d-workbench-last-action"
@@ -394,9 +423,10 @@ export function StudioBg3dAdvancedWorkbenchHub({
             onApplyNprShader={(preset, hex) =>
               setLastActionSummary(`블렌더 NPR: ${preset.nameKo} (${hex})`)
             }
-            onApplyFreestyleInk={(preset, count) =>
-              setLastActionSummary(`Freestyle 선화: ${preset.nameKo} (${count}선분)`)
-            }
+            onApplyFreestyleInk={(preset, count) => {
+              proSuiteRuntime?.onSetLineArtPreview?.(true);
+              setLastActionSummary(`Freestyle 선화: ${preset.nameKo} (${count}선분)`);
+            }}
             onApplyWeaponRig={(preset, blades) =>
               setLastActionSummary(`판타지 무기: ${preset.nameKo} (${blades}자루)`)
             }
@@ -406,6 +436,10 @@ export function StudioBg3dAdvancedWorkbenchHub({
             onSimulateCrowd={(preset, agents) =>
               setLastActionSummary(`군단 Boid: ${preset.nameKo} (${agents}기)`)
             }
+            onStatusChange={setLastActionSummary}
+            onInsertScenePrimitives={handleInsertScenePrimitives}
+            onApplySceneCamera={handleApplySceneCamera}
+            onSyncSceneLineArt={handleSyncSceneLineArt}
           />
         ) : null}
 
@@ -495,7 +529,12 @@ export function StudioBg3dAdvancedWorkbenchHub({
         {activeTab === "sketchup-studio" ? (
           <StudioBg3dSketchUpWorkbenchPanel
             disabled={disabled}
-            onApplyStyle={(style) => setLastActionSummary(`SketchUp 스타일: ${style.labelKo}`)}
+            onApplyStyle={(style) => {
+              if (style.faceStyle === "hidden-line") {
+                proSuiteRuntime?.onSetLineArtPreview?.(true);
+              }
+              setLastActionSummary(`SketchUp 스타일: ${style.labelKo}`);
+            }}
             onApplyShadowSolar={(az, alt, k) =>
               setLastActionSummary(`SketchUp 태양광: 방위 ${az.toFixed(1)}° / 고도 ${alt.toFixed(1)}° (${k}K)`)
             }
@@ -508,6 +547,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
             onExportCadFormat={(fmt, bytes) =>
               setLastActionSummary(`SketchUp 내보내기 (${fmt.toUpperCase()}): ${bytes}B`)
             }
+            onInsertScenePrimitives={handleInsertScenePrimitives}
+            onApplySceneCamera={handleApplySceneCamera}
           />
         ) : null}
 

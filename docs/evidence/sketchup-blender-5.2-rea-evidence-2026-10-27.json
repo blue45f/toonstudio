@@ -1,0 +1,202 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordedAt": "2026-10-27",
+  "analysisProviderPolicy": {
+    "nativeBinaryProvider": "ghidra",
+    "prohibitedProviders": ["hopper"],
+    "enforcedBy": "AGENTS.md §6"
+  },
+  "targets": {
+    "blender52Bundle": {
+      "targetPath": "/Applications/Blender.app",
+      "bundleIdentifier": "org.blenderfoundation.blender",
+      "version": "5.2.0 (2026-07-14)",
+      "minMacOSVersion": "11.2",
+      "executable": "Contents/MacOS/Blender",
+      "architecture": "arm64",
+      "pythonBytecodeMagic": 3571,
+      "pythonBytecodeLayout": "py311 (CPython 3.13)",
+      "plistEvidenceId": "ev_90ad53d5730faf55b2b1b09b0f2363cb11e49bca01da7e2c67a6ef5fb8f0dfa9",
+      "pycModules": [
+        {
+          "module": "properties_data_modifier.cpython-313.pyc",
+          "sha256": "0fd9cb36ecf24cb4760d531544b47f9ff5382cf89ffa216cab6928c2bad0787b",
+          "sizeBytes": 16828,
+          "objectCount": 772,
+          "codeObjectCount": 25,
+          "parentEvidenceId": "ev_0f2ffe615bf5d8bdfc4c7e62247ce684d623951460eef8b15384f1a9166cf346",
+          "viewEvidenceId": "ev_cb900858bf94d3423d3d446ea2c9fdbefea56b671511c881533cd7e472596d72",
+          "recoveredClassesAndMenus": [
+            "DATA_PT_modifiers",
+            "OBJECT_MT_modifier_add",
+            "OBJECT_MT_modifier_add_edit",
+            "OBJECT_MT_modifier_add_generate",
+            "OBJECT_MT_modifier_add_deform",
+            "OBJECT_MT_modifier_add_normals",
+            "OBJECT_MT_modifier_add_physics",
+            "OBJECT_MT_modifier_add_color",
+            "DATA_PT_gpencil_modifiers"
+          ],
+          "recoveredAssetNodeTrees": [
+            "nodes/geometry_nodes_essentials.blend/NodeTree/Array",
+            "nodes/geometry_nodes_essentials.blend/NodeTree/Curve to Tube",
+            "nodes/geometry_nodes_essentials.blend/NodeTree/Scatter on Surface",
+            "nodes/geometry_nodes_essentials.blend/NodeTree/Set Hair Curve Profile"
+          ]
+        },
+        {
+          "module": "properties_data_grease_pencil.cpython-313.pyc",
+          "sha256": "b577a014cdabc83ecf450c7409f3638870f7f90cb60bd73bb1b58f006ae262d8",
+          "sizeBytes": 26427,
+          "objectCount": 1521,
+          "codeObjectCount": 53,
+          "parentEvidenceId": "ev_b6e4c388edcf8ff8d869fefd94ae7bfee267fc0414836fede2a794e08706b88d",
+          "viewEvidenceId": "ev_80bac2b54a1053523bb3e7c991491b05c870b444ff28691aa5beef147b4fe1d7",
+          "recoveredClassesAndMenus": [
+            "DATA_PT_grease_pencil_layers",
+            "GREASE_PENCIL_MT_grease_pencil_add_layer_extra",
+            "GREASE_PENCIL_UL_masks",
+            "DATA_PT_grease_pencil_layer_masks",
+            "DATA_PT_grease_pencil_layer_transform",
+            "DATA_PT_grease_pencil_layer_adjustments",
+            "DATA_PT_grease_pencil_layer_relations",
+            "DATA_PT_grease_pencil_layer_display",
+            "DATA_PT_grease_pencil_onion_skinning",
+            "DATA_PT_grease_pencil_onion_skinning_custom_colors",
+            "DATA_PT_grease_pencil_onion_skinning_display"
+          ]
+        },
+        {
+          "module": "node_add_menu_compositor.cpython-313.pyc",
+          "sha256": "967911c81c517097930f9ab957be42b0eaf117c02f324424a6c7e81e97a39fe3",
+          "sizeBytes": 31451,
+          "objectCount": 1153,
+          "codeObjectCount": 45,
+          "parentEvidenceId": "ev_d828c36826c040dc8a011adcb25be251dfec9ff7e3a4b8848cd2bbba8c64cc32",
+          "viewEvidenceId": "ev_917b00ec40f80e6c3e22c69418a7939ff1dafc34554d3e0b7c1ab2a3152a33d2",
+          "recoveredClassesAndMenus": [
+            "CompositorNodeGlare",
+            "CompositorNodeColorBalance",
+            "CompositorNodeTonemap",
+            "CompositorNodeLensdist",
+            "CompositorNodeBilateralblur",
+            "CompositorNodeBokehBlur",
+            "CompositorNodeVecBlur",
+            "CompositorNodeDenoise",
+            "CompositorNodeCryptomatteV2",
+            "CompositorNodeInpaint",
+            "CompositorNodeMaskToSDF",
+            "CompositorNodeConvolve",
+            "CompositorNodeCornerPin",
+            "CompositorNodeZcombine",
+            "ShaderNodeTexGabor"
+          ]
+        },
+        {
+          "module": "node_add_menu_geometry.cpython-313.pyc",
+          "sha256": "cbc6adc15a66a2879fe6b1100390bd61fe477848b934cf10225a538dc2bf321f",
+          "sizeBytes": 69893,
+          "objectCount": 2603,
+          "codeObjectCount": 115,
+          "parentEvidenceId": "ev_0cf6e7b41209ad3bc6d2111003363029ec28d24bae35312e96b34e0ac1315446",
+          "viewEvidenceId": "ev_b47ff7556569d644942f3339867f67ce76b3830ef7d364b731e704079e42e2d0",
+          "recoveredClassesAndMenus": [
+            "NODE_MT_gn_grease_pencil_base",
+            "NODE_MT_gn_grease_pencil_read_base",
+            "NODE_MT_gn_grease_pencil_write_base",
+            "NODE_MT_gn_grease_pencil_operations_base",
+            "NODE_MT_gn_simulation_base",
+            "NODE_MT_gn_volume_base",
+            "NODE_MT_gn_input_gizmo_base",
+            "NODE_MT_category_utilities_bundle_base",
+            "NODE_MT_category_utilities_closure_base"
+          ]
+        },
+        {
+          "module": "properties_physics_rigidbody.cpython-313.pyc",
+          "sha256": "9bccd497d1c673aa87250e8995f69cfd4cbdbff5109ff9d8373aed387dbc3d74",
+          "sizeBytes": 13750,
+          "objectCount": 745,
+          "codeObjectCount": 28,
+          "parentEvidenceId": "ev_cc2e225d21fab2e3cd2d3686fd1a3d79ffd67c10c2b711178787fea715eacf6e",
+          "viewEvidenceId": "ev_b93286c1a3378a4a00a489dc7ed76b70fd6d3ddb06e4eaf737046704c5be2d5a"
+        },
+        {
+          "module": "properties_physics_cloth.cpython-313.pyc",
+          "sha256": "e136491a3b7114d6951acee6ed0944ed74963db51bcb580882609fbe0ac5022b",
+          "sizeBytes": 21030,
+          "objectCount": 1056,
+          "codeObjectCount": 36,
+          "parentEvidenceId": "ev_23c8a2dbaa7d34f1e063eb4ef7e6eb7f705352dd6b5dcb0e62f49ff10e77774b",
+          "viewEvidenceId": "ev_af2e348f64c3e1389185eb09cf34b1176711961223e5481d2c0bb29f7a64f759"
+        },
+        {
+          "module": "properties_physics_fluid.cpython-313.pyc",
+          "sha256": "ad58e1aabb51953fb9e190daca3b1a1000d85c5af53f4407babf14a1f7d76f98",
+          "sizeBytes": 70508,
+          "objectCount": 3122,
+          "codeObjectCount": 106,
+          "parentEvidenceId": "ev_b6506e5c7c16d68dab09562f65585b524ee39ae5f0d3cb651589372dae8f3c33",
+          "viewEvidenceId": "ev_77428e46f21053261269407c15bf2bcc7c1244ad4e786a13326e733126530b26"
+        },
+        {
+          "module": "properties_data_camera.cpython-313.pyc",
+          "sha256": "f2e1aaae37300d2d74070e11d8dcc8f56520ac5b4516811ddbce1348b23539b1",
+          "sizeBytes": 26958,
+          "objectCount": 1301,
+          "codeObjectCount": 37,
+          "parentEvidenceId": "ev_284de35111b49df22ebb61b21ff2e1bc43fcbd6c23ca56f3b1f7db773b2b7065",
+          "viewEvidenceId": "ev_01f1f75ba4a1623013306c9de8ad5439ba5a20b915ddee703a9c1375055b30fe"
+        },
+        {
+          "module": "properties_freestyle.cpython-313.pyc",
+          "sha256": "30905824a464724a11ab23f1e9bb2918593bbea44d8a0c73d0c22daaa1315dbe",
+          "sizeBytes": 59063,
+          "objectCount": 2793,
+          "codeObjectCount": 84,
+          "parentEvidenceId": "ev_463f657bbba506b7446e5595494fad1fd73f1c83afb18673689fdbe072c556ba",
+          "viewEvidenceId": "ev_dd7007bb240454f2b27f21acc98c103531b773a7fe2b657afcfdacb7298ce931"
+        },
+        {
+          "module": "space_toolsystem_toolbar.cpython-313.pyc",
+          "sha256": "dae4e2d044401f4a7bf61f4dc2e6d319366bcd8b798e76e7046a854983596aca",
+          "sizeBytes": 149324,
+          "objectCount": 8123,
+          "codeObjectCount": 367,
+          "parentEvidenceId": "ev_0dd893e260f5cc624e30c9ea9ba9f12fe9cebf62b10d6a8cfee4e2427c85709a",
+          "viewEvidenceIds": [
+            "ev_77fe3d2203d92a89519b9c086959d36d565484411e12ab726200651fc1875cd4",
+            "ev_cddecfd254cf63e5b90dd0efeb2004746a3037860a0864767be535e6b0200402",
+            "ev_5a2ae1ac39781b8ef4152f365331ffee490e0528726e55a62e3edf4190dbc4be",
+            "ev_9bb1c6d4045541ecb824f121cfd725b2736883ed6e09981cb72065cd57c53477"
+          ]
+        }
+      ]
+    },
+    "openskpPackage": {
+      "targetPath": "node_modules/.pnpm/openskp@1.3.0/node_modules/openskp",
+      "rootSha256": "513f2eeaa30e1b5b0543b0543b036125459340921a0dded17b281c523c6095e479c10",
+      "distIndexJsSha256": "3b4a418e320920083aefa7551a924954b336e5addd0182971c7c66aeab575c2d",
+      "distIndexJsBytes": 1047986,
+      "astNodeCount": 149279,
+      "findingCount": 395,
+      "callFlowRelations": 3975,
+      "dataFlowRelations": 21826,
+      "parentEvidenceId": "ev_b88f7ae56f33742180be344237723c2be5ebb28e00293f4833b89ce396b69aa1",
+      "summaryViewEvidenceId": "ev_6c6ed2d503e8bfb3d83a900b458fa8c31ad172d02b5832c0b79c0ec52bd9a26c",
+      "factsViewEvidenceId": "ev_f4c8394c957dae47aa47bde95c82e75626c2b38acce39e15c39d28f569e5381b"
+    },
+    "cadcraftBundle": {
+      "targetPath": "/Applications/CADCraft.app",
+      "bundleIdentifier": "ai.storyteller.cadcraft",
+      "version": "0.13.0 (1fcf654ea8414ea2ef052ca2b3b77411f2026f78)",
+      "plistEvidenceId": "ev_6a4e2a301510118a8d8410f4dfbe9340842121656aa2e90c49fbc773785c72e9",
+      "binarySha256": "424012382761ea6dd1d10a8c3d88945d0a26774b1079b956f8e825a60ece1276",
+      "binarySizeBytes": 158513200,
+      "arm64SliceOffset": 81526784,
+      "arm64SliceSizeBytes": 76986416,
+      "rustBinaryParentEvidenceId": "ev_ae3622a085454764e608b8ade5cc50afbaaa2b8ec606ec32e7be284c9e7da6a8",
+      "rustBinarySummaryViewEvidenceId": "ev_6d63d355483801172208127762b682bb4c9029feba4e317539ed0c9b4d36e2b1"
+    }
+  }
+}
