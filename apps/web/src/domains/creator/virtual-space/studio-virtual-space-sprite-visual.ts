@@ -139,6 +139,7 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
       skinKey: skin.key,
       facing: nextFacing,
       state: nextState,
+      nowMs: scene.time.now,
     });
     if (nanoBanana) {
       if (sprite.anims.isPlaying) sprite.stop();
