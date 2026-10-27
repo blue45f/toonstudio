@@ -60,7 +60,7 @@ const DEFINITIONS: Readonly<Record<StudioVrmHandPoseType, HandPoseDefinition>> =
   },
   fingerHeart: {
     fingers: [[30, 52, 22], FOLDED[1], FOLDED[2], FOLDED[3]], spread: [10, 0, 0, 0],
-    thumb: [[12, -16, 10], [8, -12, 28], [0, 2, 20]],
+    thumb: [[12, 16, 10], [8, 12, 28], [0, 2, 20]],
   },
   cupGrip: {
     fingers: [[32, 52, 26], [36, 56, 28], [40, 58, 30], [44, 56, 28]], spread: [2, 0, -2, -3],

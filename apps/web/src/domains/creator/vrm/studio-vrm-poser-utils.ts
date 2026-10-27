@@ -1050,7 +1050,7 @@ function orientRelaxedHandPalm(
   const medialScore = palm.dot(medialAxis);
   let changed = false;
 
-  if (medialScore < STUDIO_VRM_HANGING_PALM_ALREADY_MEDIAL) {
+  if (medialScore < STUDIO_VRM_HANGING_PALM_ALREADY_MEDIAL || palm.z < -0.42) {
     // Pass 1 — small partial forearm twist only when clearly non-medial.
     const palmProj = palm.clone().addScaledVector(forearmAxis, -palm.dot(forearmAxis));
     const desiredProj = desired.clone().addScaledVector(forearmAxis, -desired.dot(forearmAxis));
@@ -1874,9 +1874,14 @@ function applyFingerSide(
     if (!String(boneName).startsWith(side)) continue;
     const rot = fingers[boneName];
     if (!rot) continue;
+    const isThumb = String(boneName).includes("Thumb");
+    // VRM 정규화 엄지 본의 로컬 Y 대립(손바닥 안쪽 모음) 방향은 4지 내전과 부호가 반대다
+    // (오른손 -Y / 왼손 +Y 가 검지 쪽 내전). 손 포즈·자동그립·아이들 프리셋은 모두 오른손 +Y /
+    // 왼손 -Y 를 대립(opposition)으로 저작하므로 엄지만 Y 극성을 반전해 히치하이커 외전을 막는다.
+    const yPolarity = isThumb ? -adductPolarity : adductPolarity;
     applyEulerRotation(humanoid, boneName, [
-      curlPolarity * rot[0],
-      adductPolarity * rot[1],
+      rot[0],
+      yPolarity * rot[1],
       curlPolarity * rot[2],
     ]);
   }
@@ -1896,7 +1901,9 @@ function applyFingerSide(
  * 축별 해석 결과만 담는다(미해석 축은 undefined). 기본값으로 채우면 다른 프로브가
  * 만든 엔트리의 미해석 필드를 "해석됨"으로 잘못 보고 스킵하게 된다.
  */
-type FingerAxisPolarityEntry = Partial<Record<"curl" | "adduct", 1 | -1>>;
+type FingerAxisPolarityEntry = Partial<
+  Record<"curlPos" | "curlNeg" | "adductPos" | "adductNeg", 1 | -1>
+>;
 
 const fingerAxisPolarityCache = new WeakMap<
   NonNullable<VRM["humanoid"]>,
@@ -1946,7 +1953,13 @@ export function resolveFingerCurlPolarity(
   );
   if (!hasSide) return 1;
 
-  const cached = cachedFingerAxisPolarity(humanoid, side)?.curl;
+  let zSum = 0;
+  for (const boneName of FINGER_ROTATION_BONE_ORDER) {
+    if (!String(boneName).startsWith(side)) continue;
+    zSum += fingers[boneName]?.[2] ?? 0;
+  }
+  const curlKey = zSum < 0 ? "curlNeg" : "curlPos";
+  const cached = cachedFingerAxisPolarity(humanoid, side)?.[curlKey];
   if (cached !== undefined) return cached;
 
   zeroFingerSide(humanoid, side);
@@ -1961,12 +1974,12 @@ export function resolveFingerCurlPolarity(
   const positive = middleTipPalmDot(vrm, side);
   if (positive === null) return 1;
 
-  // Prefer the polarity that decreases tip·palm (curl into the palm surface).
-  // If +1 makes the tip more palm-normal-aligned, the axes are inverted → use -1.
+  // estimateVrmPalmNormal points out of the palm (+palmNormal). Curling fingers into the
+  // palm moves fingertips toward +palmNormal (increasing tip·palm), avoiding hyperextension.
   const delta = positive - baseline;
-  const polarity: 1 | -1 = delta > 0 ? -1 : 1;
+  const polarity: 1 | -1 = delta < 0 ? -1 : 1;
   if (Math.abs(delta) > STUDIO_VRM_FINGER_CURL_POLARITY_MARGIN) {
-    storeFingerAxisPolarity(humanoid, side, { curl: polarity });
+    storeFingerAxisPolarity(humanoid, side, { [curlKey]: polarity });
   }
   return polarity;
 }
@@ -1977,56 +1990,38 @@ export function resolveFingerCurlPolarity(
  * 줄어드는 부호를 실측해 독립적으로 고른다. 팁 간 거리는 강체 변환에 불변이므로 어떤
  * 포즈에서 측정해도 같은 부호가 나온다.
  */
-export function resolveFingerAdductPolarity(
-  vrm: VRM,
-  fingers: FingerRotationMap,
-  side: "left" | "right",
-): 1 | -1 {
+export function resolveFingerAdductPolarity(vrm: VRM, fingers: FingerRotationMap, side: "left" | "right"): 1 | -1 {
   const humanoid = vrm.humanoid;
-  if (!humanoid) return 1;
-  const hasSide = FINGER_ROTATION_BONE_ORDER.some(
-    (boneName) => String(boneName).startsWith(side) && fingers[boneName],
-  );
-  if (!hasSide) return 1;
-
-  const cached = cachedFingerAxisPolarity(humanoid, side)?.adduct;
+  if (!humanoid || !FINGER_ROTATION_BONE_ORDER.some((boneName) => String(boneName).startsWith(side) && fingers[boneName])) return 1;
+  const adductKey = (fingers[`${side}IndexProximal` as VRMHumanBoneName]?.[1] ?? 0) < 0 ? "adductNeg" : "adductPos";
+  const cached = cachedFingerAxisPolarity(humanoid, side)?.[adductKey];
   if (cached !== undefined) return cached;
 
   const spanOf = (): number | null => {
     humanoid.update();
     vrm.scene.updateMatrixWorld(true);
     const hand = humanoid.getNormalizedBoneNode(`${side}Hand`);
-    const index =
-      humanoid.getNormalizedBoneNode(`${side}IndexDistal`)
-      ?? humanoid.getNormalizedBoneNode(`${side}IndexIntermediate`)
-      ?? humanoid.getNormalizedBoneNode(`${side}IndexProximal`);
-    const little =
-      humanoid.getNormalizedBoneNode(`${side}LittleDistal`)
-      ?? humanoid.getNormalizedBoneNode(`${side}LittleIntermediate`)
-      ?? humanoid.getNormalizedBoneNode(`${side}LittleProximal`);
+    const index = humanoid.getNormalizedBoneNode(`${side}IndexDistal`) ?? humanoid.getNormalizedBoneNode(`${side}IndexIntermediate`) ?? humanoid.getNormalizedBoneNode(`${side}IndexProximal`);
+    const little = humanoid.getNormalizedBoneNode(`${side}LittleDistal`) ?? humanoid.getNormalizedBoneNode(`${side}LittleIntermediate`) ?? humanoid.getNormalizedBoneNode(`${side}LittleProximal`);
     if (!hand || !index || !little) return null;
-    const a = index.getWorldPosition(new THREE.Vector3());
-    const b = little.getWorldPosition(new THREE.Vector3());
-    const span = a.distanceTo(b);
+    const span = index.getWorldPosition(new THREE.Vector3()).distanceTo(little.getWorldPosition(new THREE.Vector3()));
     // three MathUtils에는 EPSILON이 없다 — 비영속 길이 가드는 표준 Number.EPSILON으로.
     return Number.isFinite(span) && span > Number.EPSILON ? span : null;
   };
 
-  // Y-only 트라이: 컬(Z)과 무관하게 내전 기여만 분리해 측정한다.
+  // Y-only 트라이: 입력 제스처가 외전(브이·쫙 펴기)이어도 부호가 뒤집히지 않도록
+  // 정규화 본의 표준 내전 프로브(오른손 검지 -Y·새끼 +Y / 왼손 반전)로 모델 Y축 극성만 실측한다.
+  const sideSign = side === "left" ? -1 : 1;
   const applyYOnly = (polarity: 1 | -1) => {
-    for (const boneName of FINGER_ROTATION_BONE_ORDER) {
-      if (!String(boneName).startsWith(side)) continue;
-      const rot = fingers[boneName];
-      const node = humanoid.getNormalizedBoneNode(boneName);
-      if (!rot || !node) continue;
-      node.rotation.set(0, polarity * rot[1], 0, "YXZ");
-    }
+    const indexNode = humanoid.getNormalizedBoneNode(`${side}IndexProximal` as VRMHumanBoneName);
+    const littleNode = humanoid.getNormalizedBoneNode(`${side}LittleProximal` as VRMHumanBoneName);
+    if (indexNode) indexNode.rotation.set(0, polarity * sideSign * -0.08, 0, "YXZ");
+    if (littleNode) littleNode.rotation.set(0, polarity * sideSign * 0.07, 0, "YXZ");
   };
 
   zeroFingerSide(humanoid, side);
   const baseline = spanOf();
   if (baseline === null) return 1;
-
   applyYOnly(1);
   const positiveSpan = spanOf();
   zeroFingerSide(humanoid, side);
@@ -2037,11 +2032,10 @@ export function resolveFingerAdductPolarity(
 
   const positiveDelta = positiveSpan - baseline;
   const negativeDelta = negativeSpan - baseline;
-  const best = Math.min(positiveDelta, negativeDelta);
   // 어느 쪽도 유의미하게 모으지 못하면(내전 값이 없거나 축이 직교) 부호를 바꾸지 않는다.
   const polarity: 1 | -1 = negativeDelta < positiveDelta ? -1 : 1;
-  if (best < -STUDIO_VRM_FINGER_ADDUCT_POLARITY_MARGIN) {
-    storeFingerAxisPolarity(humanoid, side, { adduct: polarity });
+  if (Math.min(positiveDelta, negativeDelta) < -STUDIO_VRM_FINGER_ADDUCT_POLARITY_MARGIN) {
+    storeFingerAxisPolarity(humanoid, side, { [adductKey]: polarity });
   }
   return polarity;
 }

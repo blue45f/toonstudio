@@ -7,6 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
 import { POSER_FINGER_BONES, pickNaturalIdlePose } from "../studio-pose-presets";
+import { createStudioVrmHandPose } from "./studio-vrm-hand-poses";
 
 import {
   applyFingerRotations,
@@ -89,11 +90,29 @@ describe("VRM finger curl polarity", () => {
       vrm.scene.updateMatrixWorld(true);
       const afterL = tipPalmDot(vrm, "left");
       const afterR = tipPalmDot(vrm, "right");
-      if (afterL - beforeL > 0.05) {
+      // estimateVrmPalmNormal points out of the palm (+palmNormal). Curling fingers into the
+      // palm moves fingertips toward +palmNormal (increasing tip·palm), avoiding hyperextension.
+      if (afterL - beforeL < 0.05) {
         failures.push(`${character.name}/L curl wrong way Δ=${(afterL - beforeL).toFixed(3)}`);
       }
-      if (afterR - beforeR > 0.05) {
+      if (afterR - beforeR < 0.05) {
         failures.push(`${character.name}/R curl wrong way Δ=${(afterR - beforeR).toFixed(3)}`);
+      }
+      // Switching to opposite-sign hand presets (e.g. left fist uses -Z) without cache reset
+      // must still curl fingers into the palm instead of reusing the +Z polarity multiplier.
+      applyFingerRotations(vrm, {
+        ...createStudioVrmHandPose("left", "fist"),
+        ...createStudioVrmHandPose("right", "fist"),
+      });
+      vrm.humanoid?.update();
+      vrm.scene.updateMatrixWorld(true);
+      const fistL = tipPalmDot(vrm, "left");
+      const fistR = tipPalmDot(vrm, "right");
+      if (fistL - beforeL < 0.2) {
+        failures.push(`${character.name}/L fist curl poisoned Δ=${(fistL - beforeL).toFixed(3)}`);
+      }
+      if (fistR - beforeR < 0.2) {
+        failures.push(`${character.name}/R fist curl poisoned Δ=${(fistR - beforeR).toFixed(3)}`);
       }
       // Palm still medial after curl
       const palmL = estimateVrmPalmNormal(vrm, "left");

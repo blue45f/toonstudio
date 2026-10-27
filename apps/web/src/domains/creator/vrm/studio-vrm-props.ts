@@ -15,24 +15,9 @@ export const VRM_PROP_GRIP_FIT_MIN = 0.7;
 export const VRM_PROP_GRIP_FIT_MAX = 1.3;
 
 /** 부착 가능한 humanoid 본(three-vrm humanoid 표준 이름). */
-export type PropAttachBone =
-  | "rightHand"
-  | "leftHand"
-  | "head"
-  | "chest"
-  | "spine"
-  | "hips"
-  | "neck";
+export type PropAttachBone = "rightHand" | "leftHand" | "head" | "chest" | "spine" | "hips" | "neck";
 
-export const PROP_ATTACH_BONES: readonly PropAttachBone[] = [
-  "rightHand",
-  "leftHand",
-  "head",
-  "neck",
-  "chest",
-  "spine",
-  "hips",
-] as const;
+export const PROP_ATTACH_BONES: readonly PropAttachBone[] = ["rightHand", "leftHand", "head", "neck", "chest", "spine", "hips"] as const;
 
 export const PROP_BONE_LABELS: Record<PropAttachBone, string> = {
   rightHand: "오른손",
@@ -319,6 +304,7 @@ const PROP_PROFILES: Record<OriginalVrmPropId, PropProfile> = {
     anchors: [handAnchor("primary", "primary", [0.07, 0, 0], 0.008)],
     grip: grip("handle", 0.008, 58, 42),
     fit: fit("hand", 0.075, 0.72, 1.45),
+    smartRotationDeg: [180, 0, -90],
   },
   sword: {
     anchors: [
@@ -348,8 +334,8 @@ const PROP_PROFILES: Record<OriginalVrmPropId, PropProfile> = {
   book: {
     anchors: [
       // 왼쪽·오른쪽 모서리(Book_Left/RightGripEdge)가 손바닥 접점이다. 책은 XY 평면에 눕고 두께가 Z다.
-      handAnchor("primary", "primary", [-0.07, -0.045, 0], 0.015),
-      handAnchor("secondary", "secondary", [0.07, -0.045, 0], 0.015),
+      handAnchor("primary", "primary", [-0.07, -0.045, 0], 0.015, [1, 0, 0], [0, -1, 0]),
+      handAnchor("secondary", "secondary", [0.07, -0.045, 0], 0.015, [1, 0, 0], [0, -1, 0]),
     ],
     grip: grip("support", 0.015, 22, 24),
     fit: fit("hand", 0.075, 0.72, 1.45),
@@ -372,11 +358,12 @@ const PROP_PROFILES: Record<OriginalVrmPropId, PropProfile> = {
   },
   clipboard: {
     anchors: [
-      handAnchor("primary", "primary", [-0.0725, -0.055, 0], 0.012),
-      handAnchor("secondary", "secondary", [0.0725, -0.055, 0], 0.012),
+      handAnchor("primary", "primary", [-0.0725, -0.055, 0], 0.012, [1, 0, 0], [0, -1, 0]),
+      handAnchor("secondary", "secondary", [0.0725, -0.055, 0], 0.012, [1, 0, 0], [0, -1, 0]),
     ],
     grip: grip("support", 0.012, 24, 28),
     fit: fit("hand", 0.075, 0.72, 1.45),
+    smartRotationDeg: [0, 0, 90],
     secondaryGripInfluence: 0.65,
   },
   syringe: {
@@ -1670,7 +1657,6 @@ export function buildPropObject(
       group.add(mesh(new three.CylinderGeometry(0.04, 0.035, 0.08, 20), mat(0.5)));
       const handle = mesh(new three.TorusGeometry(0.025, 0.008, 8, 16), mat(0.5));
       handle.position.set(0.045, 0, 0);
-      handle.rotation.set(0, Math.PI / 2, 0);
       group.add(handle);
       break;
     }

@@ -280,27 +280,27 @@ describe("VRM GLB validation and content identity", () => {
   it("rejects invalid headers, versions, declared lengths, HTML, and GLBs without VRM extensions", async () => {
     const badMagic = makeVrmGlb(1);
     badMagic[0] = 0;
-    expect(() => validateVrmGlbBytes(badMagic)).toThrow("glTF");
+    expect(() => validateVrmGlbBytes(badMagic)).toThrow("glb-magic-invalid");
 
     const badVersion = makeVrmGlb(1);
     new DataView(badVersion.buffer).setUint32(4, 1, true);
-    expect(() => validateVrmGlbBytes(badVersion)).toThrow("GLB 2.0");
+    expect(() => validateVrmGlbBytes(badVersion)).toThrow("glb-version-unsupported");
 
     const badLength = makeVrmGlb(1);
     new DataView(badLength.buffer).setUint32(8, badLength.byteLength - 4, true);
-    expect(() => validateVrmGlbBytes(badLength)).toThrow("길이");
+    expect(() => validateVrmGlbBytes(badLength)).toThrow("glb-length-mismatch");
 
-    expect(() => validateVrmGlbBytes(makeVrmGlb(1, { extensions: {} }))).toThrow("VRM 확장");
+    expect(() => validateVrmGlbBytes(makeVrmGlb(1, { extensions: {} }))).toThrow("glb-vrm-extension-missing");
     await expect(
       saveUploadedVrm(new File(["<html>not a model</html>"], "looks-valid.vrm", { type: "model/gltf-binary" }))
-    ).rejects.toThrow("VRM");
+    ).rejects.toThrow("glb-magic-invalid");
   });
 
   it("rejects oversized blobs before reading or touching IndexedDB", async () => {
     const state = installFakeIndexedDb();
     const oversized = new OversizedVrmBlob([], { type: "application/octet-stream" });
 
-    await expect(saveVerifiedVrmBlob({ name: "too-large.vrm", blob: oversized })).rejects.toThrow("128MB");
+    await expect(saveVerifiedVrmBlob({ name: "too-large.vrm", blob: oversized })).rejects.toThrow("glb-too-large");
     expect(oversized.arrayBufferSpy).not.toHaveBeenCalled();
     expect(state.requestedVersions).toEqual([]);
     expect(state.writeCount).toBe(0);
@@ -342,7 +342,7 @@ describe("VRM IndexedDB durable identity", () => {
         blob: vrmBlob(0),
         expectedHash: `sha256:${"0".repeat(64)}`,
       }, legacyStorage())
-    ).rejects.toThrow("일치하지 않습니다");
+    ).rejects.toThrow("hash-mismatch");
     expect(state.requestedVersions).toEqual([]);
     expect(state.writeCount).toBe(0);
   });

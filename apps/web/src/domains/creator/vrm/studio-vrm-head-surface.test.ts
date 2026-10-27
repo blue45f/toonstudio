@@ -96,7 +96,25 @@ for (const { filename, eyeBones, hairClearance } of FIXTURES) {
     it("uses reviewed crown contacts, preserves local sockets under body scaling and respects explicit bones", async () => {
       const metrics = measureVrmPropRigMetrics(await fixture(filename));
       const crown = metrics.faceSocket.surfaceCrownHeight!;
-      for (const id of ["cap", "beret", "beanie", "headphones", "ribbon", "blender_wizard_hat"]) {
+      for (const id of [
+        "cap",
+        "beret",
+        "beanie",
+        "headphones",
+        "earmuffs",
+        "elfEars",
+        "ribbon",
+        "hairpin",
+        "crown",
+        "surgicalCap",
+        "headband",
+        "flowerCrown",
+        "catEars",
+        "horns",
+        "halo",
+        "blender_tactical_helmet",
+        "blender_wizard_hat",
+      ]) {
         const socket = studioVrmHeadwearSurfaceSocket(id, "head", metrics.faceSocket)!;
         expect(socket).not.toBeNull();
         expect(socket.position[1]).toBeGreaterThan(0.04);

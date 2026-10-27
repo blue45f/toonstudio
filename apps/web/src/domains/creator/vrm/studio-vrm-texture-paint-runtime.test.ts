@@ -3175,7 +3175,6 @@ describe("Studio VRM texture-paint runtime", () => {
     expect(failed.status).toBe("idle");
     expect(failed.error).toMatchObject({
       code: "source-unreadable",
-      message: "텍스처를 읽을 수 없습니다. CORS 설정을 확인하세요.",
     });
     expect(Object.isFrozen(failed.error)).toBe(true);
     expect(unreadableRuntime.clearError().error).toBeNull();

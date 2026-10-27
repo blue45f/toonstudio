@@ -126,7 +126,18 @@ export function studioVrmHeadwearSurfaceSocket(
     case "beanie": position = [0, crown * 0.70, 0]; break;
     case "blender_wizard_hat": position = [0, crown * 0.784, 0]; break;
     case "headphones": position = [0, face.y + 0.012, 0]; break;
+    case "earmuffs": position = [0, face.y + 0.008, 0]; break;
+    case "elfEars": position = [0, face.y - 0.008, 0]; break;
     case "ribbon": position = [-face.z * 1.2, crown * 0.812, 0]; break;
+    case "hairpin": position = [face.z * 0.75, crown * 0.72, face.z * 0.32]; break;
+    case "crown": position = [0, crown * 0.72, 0]; break;
+    case "surgicalCap": position = [0, crown * 0.56, 0]; break;
+    case "headband": position = [0, crown * 0.62, 0]; break;
+    case "flowerCrown": position = [0, crown * 0.76, 0]; break;
+    case "catEars": position = [0, crown * 0.78, 0]; break;
+    case "horns": position = [0, crown * 0.78, 0]; break;
+    case "halo": position = [0, crown + 0.015, 0]; break;
+    case "blender_tactical_helmet": position = [0, crown * 0.48, 0.01]; break;
     default: return null;
   }
   const point = new THREE.Vector3(...position).applyQuaternion(facing);

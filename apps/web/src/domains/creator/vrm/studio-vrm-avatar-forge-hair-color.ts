@@ -50,6 +50,9 @@ export const AVATAR_FORGE_TIED_HAIR_STYLES: ReadonlySet<AvatarForgeHairParams["s
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 function bounded(value: unknown, limit: AvatarForgeNumericLimit): number | null {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim().length === 0)) {
+    return null;
+  }
   const numeric = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numeric)) return null;
   return Math.min(limit.max, Math.max(limit.min, numeric));

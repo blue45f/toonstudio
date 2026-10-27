@@ -31,33 +31,15 @@ export interface StudioExpressionPreset {
 
 // 포저(applyPoseToVrm)가 손가락 회전(오일러)으로 적용하는 본 — 모델에 없으면 안전하게 무시된다.
 export const POSER_FINGER_BONES: readonly VRMHumanBoneName[] = [
-  "leftThumbMetacarpal",
-  "leftThumbProximal",
-  "leftThumbDistal",
-  "leftIndexProximal",
-  "leftIndexIntermediate",
-  "leftIndexDistal",
-  "leftMiddleProximal",
-  "leftMiddleIntermediate",
-  "leftMiddleDistal",
-  "leftRingProximal",
-  "leftRingIntermediate",
-  "leftRingDistal",
-  "leftLittleProximal",
-  "leftLittleIntermediate",
-  "leftLittleDistal",
-  "rightThumbMetacarpal",
-  "rightThumbProximal",
-  "rightThumbDistal",
-  "rightIndexProximal",
-  "rightIndexIntermediate",
-  "rightIndexDistal",
-  "rightMiddleProximal",
-  "rightMiddleIntermediate",
-  "rightMiddleDistal",
-  "rightRingProximal",
-  "rightRingIntermediate",
-  "rightRingDistal",
+  "leftThumbMetacarpal", "leftThumbProximal", "leftThumbDistal",
+  "leftIndexProximal", "leftIndexIntermediate", "leftIndexDistal",
+  "leftMiddleProximal", "leftMiddleIntermediate", "leftMiddleDistal",
+  "leftRingProximal", "leftRingIntermediate", "leftRingDistal",
+  "leftLittleProximal", "leftLittleIntermediate", "leftLittleDistal",
+  "rightThumbMetacarpal", "rightThumbProximal", "rightThumbDistal",
+  "rightIndexProximal", "rightIndexIntermediate", "rightIndexDistal",
+  "rightMiddleProximal", "rightMiddleIntermediate", "rightMiddleDistal",
+  "rightRingProximal", "rightRingIntermediate", "rightRingDistal",
   "rightLittleProximal",
   "rightLittleIntermediate",
   "rightLittleDistal",
@@ -197,6 +179,7 @@ export function relaxedFingers(leftCurlDeg: number, rightCurlDeg: number): PoseB
 
   (["left", "right"] as const).forEach((side) => {
     const baseDeg = side === "left" ? leftCurlDeg : rightCurlDeg;
+    const sideSign = side === "left" ? -1 : 1;
 
     FINGER_NAMES.forEach((finger) => {
       FINGER_SEGMENTS.forEach((segment) => {
@@ -209,16 +192,16 @@ export function relaxedFingers(leftCurlDeg: number, rightCurlDeg: number): PoseB
         const adductDeg = segment === "Proximal" ? FINGER_ADDUCT_DEG[finger] : FINGER_ADDUCT_DEG[finger] * 0.35;
         bones[`${side}${finger}${segment}` as VRMHumanBoneName] = rotate([
           0,
-          d(adductDeg),
+          d(sideSign * adductDeg),
           d(curlDeg),
         ]);
       });
     });
 
-    // 엄지: 손바닥 쪽으로 살짝 모아 쉼 (과외전 금지)
-    bones[`${side}ThumbMetacarpal` as VRMHumanBoneName] = rotate([0, d(baseDeg * 0.42), d(baseDeg * 0.22)]);
-    bones[`${side}ThumbProximal` as VRMHumanBoneName] = rotate([0, d(baseDeg * 0.32), d(baseDeg * 0.24)]);
-    bones[`${side}ThumbDistal` as VRMHumanBoneName] = rotate([0, d(baseDeg * 0.2), d(baseDeg * 0.08)]);
+    // 엄지: 손가락 포즈/자동그립과 같은 부호 규약(오른손 +Y / 왼손 -Y = 대립·내전)으로 손바닥 쪽에 모은다.
+    bones[`${side}ThumbMetacarpal` as VRMHumanBoneName] = rotate([d(baseDeg * 0.35), d(sideSign * baseDeg * 0.42), d(baseDeg * 0.22)]);
+    bones[`${side}ThumbProximal` as VRMHumanBoneName] = rotate([d(baseDeg * 0.2), d(sideSign * baseDeg * 0.32), d(baseDeg * 0.24)]);
+    bones[`${side}ThumbDistal` as VRMHumanBoneName] = rotate([0, d(sideSign * baseDeg * 0.2), d(baseDeg * 0.08)]);
   });
 
   return bones;

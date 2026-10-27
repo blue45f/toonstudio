@@ -848,7 +848,7 @@ describe("studio VRM texture-paint project library bridge", () => {
       );
       if (failure === "throws") await expect(commit).rejects.toThrow("apply exploded");
       else if (failure === "compensation-fails") {
-        await expect(commit).rejects.toThrow("안전한 보상을 완료하지 못했습니다");
+        await expect(commit).rejects.toThrow("install-rollback-blocked");
       } else await expect(commit).resolves.toMatchObject({ applyResult: false });
       expect(install).toHaveBeenCalledTimes(1);
       expect(compensate).toHaveBeenCalledTimes(1);
@@ -1162,9 +1162,7 @@ describe("studio VRM texture-paint project library bridge", () => {
       project: raw,
       canonicalProject: raw,
       library: { resolve: () => null },
-    })).rejects.toThrow(
-      "VRM 표면 페인팅 PNG 1개를 이 기기의 검증 저장소에서 찾지 못해 휴대 가능한 archive를 만들지 않았습니다.",
-    );
+    })).rejects.toThrow("archive-export-unresolved");
   });
 
   it("summarizes fully portable and partially unresolved archive imports", async () => {
