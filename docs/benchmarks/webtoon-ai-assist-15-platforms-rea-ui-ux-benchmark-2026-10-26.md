@@ -246,3 +246,13 @@
 | `production:panel-border-gutter-tension-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 110 | 450 | `$0.001888` | 클라이맥스 사선(-14°)·프레임리스 블리드 컷 테두리 두께 및 260px 암전 여백(Gutter) 그라데이션 연속성 고정 |
 | `production:hand-prop-grip-anatomy-continuity-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 99 | 450 | `$0.007047` | 5손가락 관절 해부학·청류검/찻잔/스마트폰 정밀 파지법(Grip) 및 육손/좌우반전 네거티브 가드 고정 |
 | `rea140:global-webtoon-3d-platform-ui-ux-synthesis (140-platform)` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 118 | 450 | `$0.013020` | 픽코마 SMARTOON·라인망가·만타·투믹스·콰이칸·글레이즈/나이트셰이드·폴리캠/루마지니 3D 포함 140대 플랫폼 UI/UX 통합 합성 |
+| `production:hair-silhouette-ahoge-parting-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 81 | 378 | `$0.001577` | 좌측 7:3 가르마 뿌리(Root Anchor)·28° 바보털(Ahoge)·견갑골 하단 뒷머리 기장 및 바람 탄성 복원 고정 |
+| `production:eyewear-jewelry-reflection-rig-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 86 | 377 | `$0.001577` | 우안 금테 모노클 체인·좌측 청옥 이어링 해부학적 착용 접점(Anchor) 및 보석 굴절(Add) 하이라이트 고정 |
+| `production:food-tableware-banquet-prop-continuity` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 92 | 400 | `$0.001674` | 다과회 찻잔 홍차 수위 단조 감소(85%→55%→30%) 및 서양식 커틀러리 좌우 파지 일관성 고정 |
+| `production:vehicle-steed-carriage-harness-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 95 | 400 | `$0.006285` | 말 어깨높이(165cm) 대비 기수 앉은키 비례(0.54) 및 등자·재갈·고삐 마구 증발 방지 고정 |
+| `production:magic-aura-elemental-sigil-geometry-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 108 | 400 | `$0.006324` | 8각 성좌 마법진(3중 룬 링) 3D 평면 투영 기하 도면 및 코어(`#E0F2FE`)·외곽(`#2563EB`) 오러 발광 고정 |
+| `production:combat-bloodstain-dust-tatter-decay-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 93 | 400 | `$0.006279` | 전투 혈흔·그을음·망토 열상 비가역(Monotonic) 누적 원장 및 치유/환복 전 자동 초기화 차단 |
+| `production:mirror-water-window-reflection-axis-lock` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 108 | 400 | `$0.011620` | 거울·수면·유리창 반사 법선 벡터 일치 및 비대칭 흉터·가르마 평면 대칭(Plane Symmetry)·프레넬(78%) 고정 |
+| `nextgen:footwear-floor-contact-stride-lock` | `fast-inline` | `claude-haiku-5-5` | `claude-live` | 139 | 260 | `$0.001151` | 4.5cm 굽 블랙 롱부츠·은장 2버클 및 계단 디딤판(Tread) 수평 접지 AO 고정(공중부양 작붕 차단) |
+| `nextgen:crowd-silhouette-depth-fog-lock` | `creative-production` | `claude-sonnet-5-5` | `claude-live` | 152 | 260 | `$0.004356` | 전경 주연(1.0x) 대비 중경 엑스트라(0.65x)·원경 군중(0.35x + 안개 45%) 3단 선굵기·대기원근 분리 |
+| `rea240:global-webtoon-vfx-mocap-ui-ux-synthesis (240-platform)` | `deep-architecture` | `claude-opus-5-5` | `claude-live` | 140 | 260 | `$0.008600` | 유럽/일본 글로벌 플랫폼·3D 그루밍(Ornatrix/CLO3D)·모션캡처(Move.ai/Rokoko)·VFX(EmberGen/IC-Light) 포함 240대 플랫폼 UI/UX 및 23대 작붕 가드 통합 합성 |

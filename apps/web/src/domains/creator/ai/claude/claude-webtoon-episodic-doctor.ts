@@ -26,18 +26,24 @@ import {
   buildDeterministicBg3dLightingAssetReport,
   buildDeterministicBgmAudioToonReport,
   buildDeterministicCharacterOocRadarReport,
+  buildDeterministicCrowdDepthFogLockReport,
+  buildDeterministicFootwearStrideLockReport,
   buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
   buildDeterministicVisualContinuityLinterReport,
   ClaudeBg3dLightingAssetSchema,
   ClaudeBgmAudioToonSchema,
   ClaudeCharacterOocRadarSchema,
+  ClaudeCrowdDepthFogLockSchema,
+  ClaudeFootwearStrideLockSchema,
   ClaudeMultiEpisodeCanonVaultSchema,
   ClaudeReaderRetentionSchema,
   ClaudeVisualContinuityLinterSchema,
   type ClaudeBg3dLightingAssetView,
   type ClaudeBgmAudioToonView,
   type ClaudeCharacterOocRadarView,
+  type ClaudeCrowdDepthFogLockView,
+  type ClaudeFootwearStrideLockView,
   type ClaudeMultiEpisodeCanonVaultView,
   type ClaudeReaderRetentionView,
   type ClaudeVisualContinuityLinterView,
@@ -497,20 +503,11 @@ export async function runClaudeVisualContinuityLinter(
   };
 
   try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      ClaudeVisualContinuityLinterSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: ClaudeVisualContinuityLinterSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeVisualContinuityLinterSchema, {
+      signal: options.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requestedModel, request, schema: ClaudeVisualContinuityLinterSchema }),
+      budgetOverride: options.budgetOverride,
+    });
     const actualModel = message.model || requestedModel;
     const usage = toClaudeTokenUsage(message.usage);
     return Object.freeze({
@@ -549,17 +546,11 @@ export async function runClaudeMultiEpisodeCanonVault(
 ): Promise<ClaudeMultiEpisodeCanonVaultView> {
   const activeRoute = resolveOrHydrateClaudeRoute(options.route);
   if (!activeRoute) {
-    if (options.fallbackOnError !== false)
-      return buildDeterministicMultiEpisodeCanonVaultReport(input);
+    if (options.fallbackOnError !== false) return buildDeterministicMultiEpisodeCanonVaultReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
-  const taskRoute = resolveCreatorTaskModelRoute("nextgen:multi-episode-canon-vault", {
-    model: options.model as never,
-  });
-  const requestedModel = resolveClaudeRequestModel(
-    options.model ?? taskRoute.model,
-    activeRoute.model || CLAUDE_DEFAULT_MODEL_ID,
-  );
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:multi-episode-canon-vault", { model: options.model as never });
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
   const request: Anthropic.MessageCreateParamsNonStreaming = {
     model: requestedModel,
     max_tokens: MAX_OUTPUT_TOKENS,
@@ -579,26 +570,15 @@ export async function runClaudeMultiEpisodeCanonVault(
         ),
       },
     ],
-    ...(claudeModelSupportsEffort(requestedModel)
-      ? { output_config: { effort: taskRoute.effort } }
-      : {}),
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: taskRoute.effort } } : {}),
   };
 
   try {
-    const { message, parsed } = await claudeParse(
-      activeRoute,
-      request,
-      ClaudeMultiEpisodeCanonVaultSchema,
-      {
-        signal: options.signal,
-        capUsd: estimateStructuredCostCapUsd({
-          model: requestedModel,
-          request,
-          schema: ClaudeMultiEpisodeCanonVaultSchema,
-        }),
-        budgetOverride: options.budgetOverride,
-      },
-    );
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeMultiEpisodeCanonVaultSchema, {
+      signal: options.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requestedModel, request, schema: ClaudeMultiEpisodeCanonVaultSchema }),
+      budgetOverride: options.budgetOverride,
+    });
     const actualModel = message.model || requestedModel;
     const usage = toClaudeTokenUsage(message.usage);
     return Object.freeze({
@@ -614,10 +594,7 @@ export async function runClaudeMultiEpisodeCanonVault(
             canonCategory: e.canonCategory,
             establishedEpisodeLabel: cleanSingleLineText(e.establishedEpisodeLabel, 60) || "EP.01",
             immutableRuleKo: cleanSingleLineText(e.immutableRuleKo, 180),
-            currentEpisodeSyncDirectiveKo: cleanSingleLineText(
-              e.currentEpisodeSyncDirectiveKo,
-              180,
-            ),
+            currentEpisodeSyncDirectiveKo: cleanSingleLineText(e.currentEpisodeSyncDirectiveKo, 180),
             readyCanonVaultLine: cleanSingleLineText(e.readyCanonVaultLine, 180),
           }),
         ),
@@ -628,6 +605,129 @@ export async function runClaudeMultiEpisodeCanonVault(
   } catch (error) {
     if (options.fallbackOnError !== false && !options.signal?.aborted) {
       return buildDeterministicMultiEpisodeCanonVaultReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeFootwearStrideLockDirector(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeFootwearStrideLockView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) return buildDeterministicFootwearStrideLockReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:footwear-floor-contact-stride-lock", { model: options.model as never });
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 웹툰 캐릭터의 신발·부츠 굽 높이, 밑창·버클 디테일, 계단·경사로 바닥 접지(Floor Contact AO) 및 보폭 투시 일관성을 총괄하는 디렉터입니다. JSON으로만 응답하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 에피소드에서 캐릭터 신발 굽·밑창 변형 및 계단 공중부양 작붕을 막기 위한 접지 고정 명세를 JSON으로 설계해 주세요.",
+        ),
+      },
+    ],
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeFootwearStrideLockSchema, {
+      signal: options.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requestedModel, request, schema: ClaudeFootwearStrideLockSchema }),
+      budgetOverride: options.budgetOverride,
+    });
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "episodic-footwear-floor-contact-stride-lock",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      footwearIntegrityScore: clampInt(parsed.footwearIntegrityScore, 50, 100, 97),
+      strideSummaryKo: cleanSingleLineText(parsed.strideSummaryKo, 200),
+      heelHeightCm: Math.max(0, Math.min(20, Number(parsed.heelHeightCm) || 4.5)),
+      soleAndBuckleSpecKo: cleanSingleLineText(parsed.soleAndBuckleSpecKo, 180),
+      stairSlopeContactRuleKo: cleanSingleLineText(parsed.stairSlopeContactRuleKo, 180),
+      readyFootwearGuardLine: cleanSingleLineText(parsed.readyFootwearGuardLine, 180),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicFootwearStrideLockReport(input);
+    }
+    throw error;
+  }
+}
+
+export async function runClaudeCrowdDepthFogLockDirector(
+  input: WebtoonProductionAssistInput,
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<ClaudeCrowdDepthFogLockView> {
+  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  if (!activeRoute) {
+    if (options.fallbackOnError !== false) return buildDeterministicCrowdDepthFogLockReport(input);
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
+  }
+  const taskRoute = resolveCreatorTaskModelRoute("nextgen:crowd-silhouette-depth-fog-lock", { model: options.model as never });
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: [
+      {
+        type: "text",
+        text: "당신은 웹툰 전경 주연과 중경·원경 군중 엑스트라의 선화 굵기 감쇠비율 및 대기 원근 안개(Depth Fog) 밀도를 통제하는 배경·군중 디렉터입니다. JSON으로만 응답하세요.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildEpisodicContextPrompt(
+          input,
+          "위 웹툰 에피소드에서 배경 엑스트라가 주연보다 튀는 작붕을 막기 위한 3단 선화·대기원근 고정 명세를 JSON으로 설계해 주세요.",
+        ),
+      },
+    ],
+    ...(claudeModelSupportsEffort(requestedModel) ? { output_config: { effort: taskRoute.effort } } : {}),
+  };
+
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeCrowdDepthFogLockSchema, {
+      signal: options.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requestedModel, request, schema: ClaudeCrowdDepthFogLockSchema }),
+      budgetOverride: options.budgetOverride,
+    });
+    const actualModel = message.model || requestedModel;
+    const usage = toClaudeTokenUsage(message.usage);
+    return Object.freeze({
+      mode: "episodic-crowd-silhouette-depth-fog-lock",
+      source: "claude-live",
+      model: claudeModelInfo(actualModel)?.id ?? actualModel,
+      depthHierarchyScore: clampInt(parsed.depthHierarchyScore, 50, 100, 98),
+      crowdAtmosphereSummaryKo: cleanSingleLineText(parsed.crowdAtmosphereSummaryKo, 200),
+      heroLineWeightMultiplier: Math.max(0.5, Math.min(2.0, Number(parsed.heroLineWeightMultiplier) || 1.0)),
+      midgroundCrowdLineMultiplier: Math.max(0.2, Math.min(1.0, Number(parsed.midgroundCrowdLineMultiplier) || 0.65)),
+      backgroundSilhouetteFogPct: clampInt(parsed.backgroundSilhouetteFogPct, 10, 90, 45),
+      readyCrowdDepthGuardLine: cleanSingleLineText(parsed.readyCrowdDepthGuardLine, 180),
+      usage,
+      estimatedUsd: estimateClaudeCostUsd(actualModel, usage)?.usd ?? null,
+    });
+  } catch (error) {
+    if (options.fallbackOnError !== false && !options.signal?.aborted) {
+      return buildDeterministicCrowdDepthFogLockReport(input);
     }
     throw error;
   }
@@ -651,5 +751,9 @@ export async function runClaudeWebtoonEpisodicDoctor(
       return runClaudeVisualContinuityLinter(input, options);
     case "multi-episode-canon-memory-vault":
       return runClaudeMultiEpisodeCanonVault(input, options);
+    case "episodic-footwear-floor-contact-stride-lock":
+      return runClaudeFootwearStrideLockDirector(input, options);
+    case "episodic-crowd-silhouette-depth-fog-lock":
+      return runClaudeCrowdDepthFogLockDirector(input, options);
   }
 }

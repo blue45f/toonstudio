@@ -16,6 +16,7 @@ import {
 } from "./studio-tripo3d-competitor-engine";
 import {
   BLEND_AI_SCALE_GUIDES,
+  buildTripo3dCustomizationRecipe,
   evaluateTripoStudioWorkspaceGuard,
   GLBFORGE_EXTRUDE_PRESETS,
   GLBFORGE_PROFILES,
@@ -24,6 +25,7 @@ import {
   planWebtoonSignageReliefExtrusion,
   simulateGlbForgeAuditAndOptimization,
   TRIPO_STUDIO_12_WORKSPACES,
+  TRIPO_STUDIO_FREE_TRIAL_LEDGER,
   TRIPO_TEXT_TO_MOTION_PRESETS,
   TRIPO3D_MCP_GENERATED_MODELS,
   VRM_FRAMING_PRESETS,
@@ -240,10 +242,36 @@ describe("studio-tripo3d-competitor-engine", () => {
     expect(relief.watertightStlReady).toBe(true);
     expect(relief.summaryKo).toContain("야경 네온사인 간판");
 
-    expect(TRIPO3D_MCP_GENERATED_MODELS).toHaveLength(13);
-    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d")).toHaveLength(6);
-    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin")).toHaveLength(3);
-    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab")).toHaveLength(4);
+    expect(TRIPO3D_MCP_GENERATED_MODELS).toHaveLength(22);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d")).toHaveLength(8);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin")).toHaveLength(6);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab")).toHaveLength(8);
     expect(VRM_TOOLKIT_MCP_INSPECTED_AVATARS).toHaveLength(2);
+
+    expect(TRIPO_STUDIO_FREE_TRIAL_LEDGER).toHaveLength(4);
+    for (const item of TRIPO_STUDIO_FREE_TRIAL_LEDGER) {
+      expect(item.remainingCount).toBe(0);
+      expect(item.usedCount).toBe(item.totalCount);
+    }
+
+    const recipe = buildTripo3dCustomizationRecipe({
+      modelId: "tripo3d-seg-character-lab-knight-outfit",
+      enabledPartIds: ["crown-helm", "royal-cape", "tunic-armor"],
+      paletteId: "romance-gold-palace",
+      toonRampSteps: 4,
+      outlineWidthMm: 1.4,
+      scaleMultiplier: 1.25,
+      mannequinHeadRatio: 8.5,
+      handPoseVariantId: "sword-grip",
+      customGlbUrl: "/models/tripo3d-mcp/custom_knight.glb",
+    });
+    expect(recipe.isCustomUrlOverride).toBe(true);
+    expect(recipe.effectiveGlbUrl).toBe("/models/tripo3d-mcp/custom_knight.glb");
+    expect(recipe.activePartCount).toBe(3);
+    expect(recipe.totalPartCount).toBe(6);
+    expect(recipe.estimatedActiveTriangles).toBe(11_994);
+    expect(recipe.mannequinBodySliders.height).toBeGreaterThan(75);
+    expect(recipe.shaderSummaryKo).toContain("로판 황실 화이트·골드");
+    expect(recipe.exportableJson).toContain("toonstudio.tripo3d-customization-recipe.v1");
   });
 });

@@ -294,6 +294,28 @@ describe("StudioNaturalMediaShowcase", () => {
     fireEvent.click(mandalaAxesToggle!);
     expect(mandalaAxesToggle?.textContent).toContain("12× (24)");
 
+    // Wave 33 WebGPU 초고속(Vello WGSL·Orillusion Indirect·PixiJS v8 RenderBundle/UBO·Three.js Zero-Copy·WASM Morton LBVH) 검증
+    const wave33DockTab = container.querySelector('[data-studio-engine-wave-filter="wave33"]') as HTMLButtonElement | null;
+    expect(wave33DockTab).not.toBeNull();
+    fireEvent.click(wave33DockTab!);
+    expect(wave33DockTab?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(allDockTab!);
+
+    const velloEulerRadio = container.querySelector('[data-studio-webgpu-highspeed-preset="webgpu-vello-euler-flatten-aa"]') as HTMLButtonElement | null;
+    expect(velloEulerRadio).not.toBeNull();
+    expect(velloEulerRadio?.getAttribute("aria-checked")).toBe("true");
+    fireEvent.keyDown(velloEulerRadio!, { key: "End" });
+    const ringStagingRadio = container.querySelector('[data-studio-webgpu-highspeed-preset="webgpu-ring-staging-zero-mapasync"]') as HTMLButtonElement | null;
+    expect(ringStagingRadio?.getAttribute("aria-checked")).toBe("true");
+
+    const indirectCullToggle = container.querySelector('[data-studio-webgpu-indirect-toggle="true"]') as HTMLButtonElement | null;
+    expect(indirectCullToggle).not.toBeNull();
+    expect(indirectCullToggle?.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(indirectCullToggle!);
+    expect(indirectCullToggle?.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(indirectCullToggle!);
+    expect(indirectCullToggle?.getAttribute("aria-pressed")).toBe("true");
+
     const contrastSwatch = container.querySelector("[data-studio-klecks-contrast-swatch]");
     expect(contrastSwatch).not.toBeNull();
   });

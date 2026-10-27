@@ -76,10 +76,10 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
       "Key:Fill:Rim = 3:1:1.5",
     );
 
-    // Tripo3D MCP + GLBForge MCP + VRM Toolkit MCP 실생성 에셋 라이브러리 검증
+    // Tripo3D MCP + GLBForge MCP + VRM Toolkit MCP 실생성 에셋 라이브러리 검증 (22종 GLB)
     expect(screen.getByTestId("tripo3d-mcp-generated-models-section")).toBeTruthy();
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "tripo_h31_korean_convenience_store.glb",
+      "tripo_p2_quad_street_cafe_kit.glb",
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-model-tripo3d-mcp-bg-korean-alley-stairway"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
@@ -87,14 +87,36 @@ describe("StudioTripo3dCompetitorWorkbench", () => {
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-mannequin"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "tripo_h31_articulated_artist_mannequin.glb",
+      "tripo_p2_quad_articulated_mannequin.glb",
     );
     fireEvent.click(screen.getByTestId("tripo3d-mcp-domain-character-lab"));
     expect(screen.getByTestId("tripo3d-mcp-selected-model-readout").textContent).toContain(
-      "tripo_h31_webtoon_protagonist_character.glb",
+      "tripo_seg_fantasy_knight_outfit_set.glb",
     );
     expect(screen.getByTestId("vrm-toolkit-mcp-avatar-summary").textContent).toContain(
       "Avatar_Orion.vrm",
+    );
+
+    // Section 5: 파츠별 ON/OFF · 툰셰이더 · 등신 비례 · 커스텀 GLB 실시간 커스터마이저 검증
+    expect(screen.getByTestId("tripo3d-customizer-workbench")).toBeTruthy();
+    expect(screen.getByTestId("tripo3d-free-trial-ledger-readout").textContent).toContain(
+      "잔여 무료 체험 0건",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-part-toggle-crown-helm"));
+    expect(screen.getByTestId("tripo3d-customizer-shader-summary").textContent).toContain(
+      "활성 파츠 5/6",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-palette-romance-gold-palace"));
+    expect(screen.getByTestId("tripo3d-customizer-shader-summary").textContent).toContain(
+      "로판 황실 화이트·골드",
+    );
+    fireEvent.click(screen.getByTestId("tripo3d-hand-pose-sword-grip"));
+    expect(onApplySliders).toHaveBeenCalled();
+    fireEvent.change(screen.getByTestId("tripo3d-custom-glb-url-input"), {
+      target: { value: "/models/tripo3d-mcp/custom_user_knight.glb" },
+    });
+    expect(screen.getByTestId("tripo3d-customizer-recipe-readout").textContent).toContain(
+      "/models/tripo3d-mcp/custom_user_knight.glb",
     );
   });
 });

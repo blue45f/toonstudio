@@ -4,12 +4,16 @@ import {
   buildDeterministicBg3dLightingAssetReport,
   buildDeterministicBgmAudioToonReport,
   buildDeterministicCharacterOocRadarReport,
+  buildDeterministicCrowdDepthFogLockReport,
+  buildDeterministicFootwearStrideLockReport,
   buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
   buildDeterministicVisualContinuityLinterReport,
   runClaudeBg3dLightingAssetDirector,
   runClaudeBgmAudioToonCuesheet,
   runClaudeCharacterOocRadar,
+  runClaudeCrowdDepthFogLockDirector,
+  runClaudeFootwearStrideLockDirector,
   runClaudeMultiEpisodeCanonVault,
   runClaudeReaderRetentionSimulator,
   runClaudeVisualContinuityLinter,
@@ -64,6 +68,14 @@ describe("claude-webtoon-episodic-doctor", () => {
     expect(canonVault.mode).toBe("multi-episode-canon-memory-vault");
     expect(canonVault.canonVaultIntegrityScore).toBeGreaterThanOrEqual(95);
     expect(canonVault.canonEntries.length).toBeGreaterThan(0);
+
+    const footwear = buildDeterministicFootwearStrideLockReport(sampleInput);
+    expect(footwear.mode).toBe("episodic-footwear-floor-contact-stride-lock");
+    expect(footwear.heelHeightCm).toBeGreaterThan(0);
+
+    const crowdDepth = buildDeterministicCrowdDepthFogLockReport(sampleInput);
+    expect(crowdDepth.mode).toBe("episodic-crowd-silhouette-depth-fog-lock");
+    expect(crowdDepth.backgroundSilhouetteFogPct).toBeGreaterThanOrEqual(10);
   });
 
   it("Claude 구조화 출력(claudeParse) 성공 시 claude-live 결과를 정규화해 반환한다", async () => {
@@ -146,6 +158,18 @@ describe("claude-webtoon-episodic-doctor", () => {
     );
     expect(r6.mode).toBe("multi-episode-canon-memory-vault");
 
+    const r7 = await runClaudeWebtoonEpisodicDoctor(
+      "episodic-footwear-floor-contact-stride-lock",
+      sampleInput,
+    );
+    expect(r7.mode).toBe("episodic-footwear-floor-contact-stride-lock");
+
+    const r8 = await runClaudeWebtoonEpisodicDoctor(
+      "episodic-crowd-silhouette-depth-fog-lock",
+      sampleInput,
+    );
+    expect(r8.mode).toBe("episodic-crowd-silhouette-depth-fog-lock");
+
     // 개별 실행 함수도 폴백 확인
     const oocFallback = await runClaudeCharacterOocRadar(sampleInput);
     expect(oocFallback.source).toBe("deterministic-fallback");
@@ -157,6 +181,10 @@ describe("claude-webtoon-episodic-doctor", () => {
     expect(linterFallback.source).toBe("deterministic-fallback");
     const canonFallback = await runClaudeMultiEpisodeCanonVault(sampleInput);
     expect(canonFallback.source).toBe("deterministic-fallback");
+    const footwearFallback = await runClaudeFootwearStrideLockDirector(sampleInput);
+    expect(footwearFallback.source).toBe("deterministic-fallback");
+    const crowdFallback = await runClaudeCrowdDepthFogLockDirector(sampleInput);
+    expect(crowdFallback.source).toBe("deterministic-fallback");
 
     parseSpy.mockRestore();
   });

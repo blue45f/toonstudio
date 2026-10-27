@@ -33,30 +33,42 @@ import {
   buildLocal3dHandHeadPoseAndLtRig,
   buildLocalActionWeaponMotionArcSmearLock,
   buildLocalBackgroundPerspectivePropScaleLock,
+  buildLocalFoodTablewareBanquetLock,
+  buildLocalMagicAuraElementalSigilLock,
+  buildLocalMirrorWaterWindowReflectionLock,
   buildLocalSakugaMotionAndFacialMatrix,
   buildLocalScreenplayBeatAndLoraLock,
   buildLocalSketchToLineartLayerSplit,
   buildLocalSpeechBubbleTailOcclusionLock,
   buildLocalStyleTransferAndRelighting,
   buildLocalTurnaroundOrthographicSheetLock,
+  buildLocalVehicleSteedCarriageHarnessLock,
   Claude3dHandHeadRigReportSchema,
   ClaudeActionWeaponMotionArcReportSchema,
   ClaudeBackgroundPerspectiveReportSchema,
+  ClaudeFoodTablewareBanquetReportSchema,
+  ClaudeMagicAuraElementalSigilReportSchema,
+  ClaudeMirrorWaterWindowReflectionReportSchema,
   ClaudeSakugaMotionReportSchema,
   ClaudeScreenplayLoraBridgeReportSchema,
   ClaudeSketchToLineartReportSchema,
   ClaudeSpeechBubbleTailOcclusionReportSchema,
   ClaudeStyleTransferReportSchema,
   ClaudeTurnaroundOrthographicReportSchema,
+  ClaudeVehicleSteedHarnessReportSchema,
   type Claude3dHandHeadRigReport,
   type ClaudeActionWeaponMotionArcReport,
   type ClaudeBackgroundPerspectiveReport,
+  type ClaudeFoodTablewareBanquetReport,
+  type ClaudeMagicAuraElementalSigilReport,
+  type ClaudeMirrorWaterWindowReflectionReport,
   type ClaudeSakugaMotionReport,
   type ClaudeScreenplayLoraBridgeReport,
   type ClaudeSketchToLineartReport,
   type ClaudeSpeechBubbleTailOcclusionReport,
   type ClaudeStyleTransferReport,
   type ClaudeTurnaroundOrthographicReport,
+  type ClaudeVehicleSteedHarnessReport,
   type CompetitorEngineExecutionMeta,
   type WebtoonStyleTransferPresetId,
 } from "./claude-competitor-full-suite-schemas";
@@ -558,6 +570,110 @@ export async function runClaudeActionWeaponMotionArcDirector(
               arcContinuityDirectiveKo: cleanSingleLineText(a.arcContinuityDirectiveKo, 220),
             }))
           : fallback.cutArcs,
+    }),
+  });
+}
+
+export async function runClaudeVehicleSteedCarriageHarnessDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeVehicleSteedHarnessReport>> {
+  return executeCompetitorEngine({
+    taskId: "production:vehicle-steed-carriage-harness-lock",
+    input,
+    options,
+    fallback: buildLocalVehicleSteedCarriageHarnessLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 말/마차/차량 탑승 비례 & 마구 연속성 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 웹툰 말(마필)·마차·차량 탑승 씬에서 기수와 탑승물의 인체 비례, 등자(Stirrup)·고삐(Reins)·운전석 핸들 방향 연속성을 감독하는 3D 에셋·작화 감독입니다.",
+    userDirectiveKo:
+      "위 에피소드에 등장하는 탑승물 명칭, 기수 비례 점수(0~100), 조향/고삐 방식, 등자·안장 접점 및 마구 증발 방지 규칙을 JSON으로 출력하세요.",
+    schema: ClaudeVehicleSteedHarnessReportSchema,
+    normalize: (parsed, fallback) => ({
+      mountOrVehicleNameKo: cleanSingleLineText(parsed.mountOrVehicleNameKo, 120) || fallback.mountOrVehicleNameKo,
+      riderProportionRatioScore: clampPercent(parsed.riderProportionRatioScore, 96),
+      steeringOrReinSide: parsed.steeringOrReinSide,
+      stirrupAndSeatHeightAnchorKo: cleanSingleLineText(parsed.stirrupAndSeatHeightAnchorKo, 240) || fallback.stirrupAndSeatHeightAnchorKo,
+      harnessContinuityRuleKo: cleanSingleLineText(parsed.harnessContinuityRuleKo, 240) || fallback.harnessContinuityRuleKo,
+    }),
+  });
+}
+
+export async function runClaudeMagicAuraElementalSigilDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeMagicAuraElementalSigilReport>> {
+  return executeCompetitorEngine({
+    taskId: "production:magic-aura-elemental-sigil-geometry-lock",
+    input,
+    options,
+    fallback: buildLocalMagicAuraElementalSigilLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 마법진 기하 도면 & 오러 발광 연속성 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 판타지·무협 웹툰의 마법진(Sigil) 다각형 기하 구조·룬 문자 링 수·오러/검기 코어 및 외곽 글로우 HEX 색온도를 고정하는 이펙트(VFX) 감독입니다.",
+    userDirectiveKo:
+      "시전자 이름, 마법진 다각형 꼭짓점 수, 내부 룬 링 수, 코어/외곽 HEX, 블렌드 모드 및 3D 평면 투영 일관성 규칙을 JSON으로 출력하세요.",
+    schema: ClaudeMagicAuraElementalSigilReportSchema,
+    normalize: (parsed, fallback) => ({
+      casterName: cleanSingleLineText(parsed.casterName, 60) || fallback.casterName,
+      sigilPolygonVertices: clampInt(parsed.sigilPolygonVertices, 3, 24, 8),
+      innerRuneRingCount: clampInt(parsed.innerRuneRingCount, 1, 8, 3),
+      coreGlowHex: cleanSingleLineText(parsed.coreGlowHex, 16) || fallback.coreGlowHex,
+      outerRimAuraHex: cleanSingleLineText(parsed.outerRimAuraHex, 16) || fallback.outerRimAuraHex,
+      blendLayerMode: parsed.blendLayerMode,
+      sigilGeometryLockRuleKo: cleanSingleLineText(parsed.sigilGeometryLockRuleKo, 260) || fallback.sigilGeometryLockRuleKo,
+      consistencyScore: clampPercent(parsed.consistencyScore, 98),
+    }),
+  });
+}
+
+export async function runClaudeFoodTablewareBanquetPropDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeFoodTablewareBanquetReport>> {
+  return executeCompetitorEngine({
+    taskId: "production:food-tableware-banquet-prop-continuity",
+    input,
+    options,
+    fallback: buildLocalFoodTablewareBanquetLock(),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 다과회/만찬 식기 배치 & 음료 수위 연속성 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 로맨스판타지 다과회·현대 카페·만찬 씬에서 찻잔/와인잔의 음료 수위 단조 감소(Monotonic Decrease)와 커틀러리 좌우 파지 일관성을 감수하는 소품 감독입니다.",
+    userDirectiveKo:
+      "장소명, 테이블 식기 배치 규칙, 컷 진행에 따른 음료 수위 변화 규칙, 커틀러리 파지 규칙 및 일관성 점수(0~100)를 JSON으로 출력하세요.",
+    schema: ClaudeFoodTablewareBanquetReportSchema,
+    normalize: (parsed, fallback) => ({
+      sceneLocationKo: cleanSingleLineText(parsed.sceneLocationKo, 100) || fallback.sceneLocationKo,
+      tablewareLayoutRuleKo: cleanSingleLineText(parsed.tablewareLayoutRuleKo, 240) || fallback.tablewareLayoutRuleKo,
+      liquidLevelProgressionKo: cleanSingleLineText(parsed.liquidLevelProgressionKo, 240) || fallback.liquidLevelProgressionKo,
+      cutleryHandRuleKo: cleanSingleLineText(parsed.cutleryHandRuleKo, 220) || fallback.cutleryHandRuleKo,
+      continuityScore: clampPercent(parsed.continuityScore, 96),
+    }),
+  });
+}
+
+export async function runClaudeMirrorWaterWindowReflectionDirector(
+  input: WebtoonProductionAssistInput = {},
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<CompetitorEngineExecutionMeta<ClaudeMirrorWaterWindowReflectionReport>> {
+  return executeCompetitorEngine({
+    taskId: "production:mirror-water-window-reflection-axis-lock",
+    input,
+    options,
+    fallback: buildLocalMirrorWaterWindowReflectionLock(input),
+    noRouteReasonKo: "활성 Claude 경로가 없어 로컬 거울·수면·유리창 반사상 광학 대칭축 엔진을 사용했습니다.",
+    systemPromptKo:
+      "당신은 웹툰 거울·유리창·수면 반사 컷에서 입사각/반사각 법선 벡터와 비대칭 흉터·가르마의 평면 대칭(Plane Symmetry), 프레넬 반투명도를 감수하는 광학 연출 감독입니다.",
+    userDirectiveKo:
+      "반사 표면 종류, 대칭 검증 여부, 법선 벡터 규칙, 비대칭 특징 반사 규칙, 프레넬 불투명도(%) 및 광학 점수(0~100)를 JSON으로 출력하세요.",
+    schema: ClaudeMirrorWaterWindowReflectionReportSchema,
+    normalize: (parsed, fallback) => ({
+      reflectiveSurfaceType: parsed.reflectiveSurfaceType,
+      reflectionSymmetryVerified: Boolean(parsed.reflectionSymmetryVerified),
+      normalVectorLawRuleKo: cleanSingleLineText(parsed.normalVectorLawRuleKo, 240) || fallback.normalVectorLawRuleKo,
+      asymmetricFeatureReflectionKo: cleanSingleLineText(parsed.asymmetricFeatureReflectionKo, 240) || fallback.asymmetricFeatureReflectionKo,
+      fresnelOpacityPct: clampPercent(parsed.fresnelOpacityPct, 78),
+      opticalConsistencyScore: clampPercent(parsed.opticalConsistencyScore, 98),
     }),
   });
 }

@@ -36,6 +36,7 @@ import {
   type StudioWriterRoomAiDraft,
 } from "../../studio-writer-room-ai";
 import type { StudioWriterRoomStage } from "../../studio-writer-room";
+import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
 import type { RunWebtoonProductionAssistOptions } from "./claude-webtoon-production-schemas";
 
 function resolveActiveClaudeRoute(
@@ -577,5 +578,215 @@ export async function runClaudeVoiceFingerprintRewriter(
       source: "local-fallback",
       model: null,
     });
+  }
+}
+
+// ── 4. Wave 11 창의적 웹툰 일관성 AI 엔진 3종 (헤어 실루엣·안경/보석 반사·전투 혈흔/파손 누적) ──
+
+export const ClaudeHairSilhouettePartingLockSchema = z.object({
+  characterName: z.string(),
+  canonicalPartingSide: z.enum(["left-parting-7-3", "right-parting-7-3", "center-parting-5-5", "full-bangs"]),
+  ahogeSignatureAngleDeg: z.number(),
+  sideLockCountLeft: z.number(),
+  sideLockCountRight: z.number(),
+  backHairLengthLandmarkKo: z.string(),
+  windElasticityReturnRuleKo: z.string(),
+  silhouetteConsistencyScore: z.number(),
+});
+
+export type ClaudeHairSilhouettePartingLockReport = z.infer<
+  typeof ClaudeHairSilhouettePartingLockSchema
+>;
+
+export function buildLocalHairSilhouettePartingLock(input: {
+  readonly characterName?: string;
+  readonly partingSide?: "left-parting-7-3" | "right-parting-7-3" | "center-parting-5-5" | "full-bangs";
+}): ClaudeHairSilhouettePartingLockReport {
+  return {
+    characterName: input.characterName ?? "세레나",
+    canonicalPartingSide: input.partingSide ?? "left-parting-7-3",
+    ahogeSignatureAngleDeg: 28,
+    sideLockCountLeft: 2,
+    sideLockCountRight: 1,
+    backHairLengthLandmarkKo: "견갑골 하단(Scapula inferior angle) 5cm 아래에서 일정하게 끝나는 웨이브 기장 고정",
+    windElasticityReturnRuleKo:
+      "강풍·참격 컷에서도 해부학적 좌측 7:3 가르마 뿌리(Root Anchor)는 이동하지 않으며, 정지 컷 전환 시 즉시 기본 실루엣으로 복원",
+    silhouetteConsistencyScore: 96,
+  };
+}
+
+export async function runClaudeHairSilhouettePartingLockDirector(
+  input: {
+    readonly characterName?: string;
+    readonly partingSide?: "left-parting-7-3" | "right-parting-7-3" | "center-parting-5-5" | "full-bangs";
+  },
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<{
+  readonly report: ClaudeHairSilhouettePartingLockReport;
+  readonly source: "claude" | "local-fallback";
+  readonly model: string;
+}> {
+  const taskRoute = resolveCreatorTaskModelRoute("production:hair-silhouette-ahoge-parting-lock");
+  const local = buildLocalHairSilhouettePartingLock(input);
+  const activeRoute = resolveActiveClaudeRoute(options);
+  if (!activeRoute) {
+    return Object.freeze({ report: local, source: "local-fallback", model: taskRoute.model });
+  }
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: taskRoute.maxTokens,
+    system: "웹툰 캐릭터 헤어 실루엣·가르마 방향·바보털(Ahoge)·옆머리 가닥 수·뒷머리 기장 일관성 규칙을 JSON으로 설계하세요.",
+    messages: [{ role: "user", content: `캐릭터: ${local.characterName}, 가르마: ${local.canonicalPartingSide}` }],
+  };
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeHairSilhouettePartingLockSchema, {
+      signal: options.signal,
+      capUsd: estimateClaudeRequestCostCapUsd(requestedModel, request),
+    });
+    return Object.freeze({ report: parsed, source: "claude", model: message.model || requestedModel });
+  } catch {
+    return Object.freeze({ report: local, source: "local-fallback", model: taskRoute.model });
+  }
+}
+
+export const ClaudeEyewearJewelryReflectionLockSchema = z.object({
+  characterName: z.string(),
+  accessorySpecKo: z.string(),
+  anatomicalAnchorPointKo: z.string(),
+  chainAndTempleContinuityRuleKo: z.string(),
+  specularHighlightHex: z.string(),
+  gemRefractionBlendMode: z.enum(["Linear Dodge (Add)", "Color Dodge", "Screen"]),
+  consistencyScore: z.number(),
+});
+
+export type ClaudeEyewearJewelryReflectionLockReport = z.infer<
+  typeof ClaudeEyewearJewelryReflectionLockSchema
+>;
+
+export function buildLocalEyewearJewelryReflectionLock(input: {
+  readonly characterName?: string;
+  readonly accessorySpecKo?: string;
+}): ClaudeEyewearJewelryReflectionLockReport {
+  return {
+    characterName: input.characterName ?? "카시안",
+    accessorySpecKo: input.accessorySpecKo ?? "오른쪽 금테 모노클 & 좌측 귀 청옥 드롭 이어링",
+    anatomicalAnchorPointKo:
+      "모노클은 해부학적 우안(Right Orbit) 눈썹뼈와 광대 상단에 고정하고, 금제 체인은 우측 귓바퀴 뒤로만 연결",
+    chainAndTempleContinuityRuleKo:
+      "측면·후면 컷에서 안경다리(Temple)나 모노클 체인이 공중에 끊기거나 반대쪽 눈으로 미러링되는 현상을 원천 차단",
+    specularHighlightHex: "#FFF7CC",
+    gemRefractionBlendMode: "Linear Dodge (Add)",
+    consistencyScore: 97,
+  };
+}
+
+export async function runClaudeEyewearJewelryReflectionLockDirector(
+  input: { readonly characterName?: string; readonly accessorySpecKo?: string },
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<{
+  readonly report: ClaudeEyewearJewelryReflectionLockReport;
+  readonly source: "claude" | "local-fallback";
+  readonly model: string;
+}> {
+  const taskRoute = resolveCreatorTaskModelRoute("production:eyewear-jewelry-reflection-rig-lock");
+  const local = buildLocalEyewearJewelryReflectionLock(input);
+  const activeRoute = resolveActiveClaudeRoute(options);
+  if (!activeRoute) {
+    return Object.freeze({ report: local, source: "local-fallback", model: taskRoute.model });
+  }
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: taskRoute.maxTokens,
+    system: "웹툰 캐릭터 안경·모노클·귀걸이·티아라 착용 접점(Anchor)과 금속/보석 반사 레이어 일관성을 JSON으로 설계하세요.",
+    messages: [{ role: "user", content: `캐릭터: ${local.characterName}, 장신구: ${local.accessorySpecKo}` }],
+  };
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeEyewearJewelryReflectionLockSchema, {
+      signal: options.signal,
+      capUsd: estimateClaudeRequestCostCapUsd(requestedModel, request),
+    });
+    return Object.freeze({ report: parsed, source: "claude", model: message.model || requestedModel });
+  } catch {
+    return Object.freeze({ report: local, source: "local-fallback", model: taskRoute.model });
+  }
+}
+
+export const ClaudeCombatBloodstainTatterDecaySchema = z.object({
+  characterName: z.string(),
+  monotonicDecayVerified: z.boolean(),
+  cutDecayStates: z
+    .array(
+      z.object({
+        cutNumber: z.number(),
+        bloodSpatterZoneKo: z.string(),
+        clothTatterStateKo: z.string(),
+        sootAndDustCoveragePct: z.number(),
+      }),
+    )
+    .min(2)
+    .max(5),
+  resetConditionTriggerKo: z.string(),
+});
+
+export type ClaudeCombatBloodstainTatterDecayReport = z.infer<
+  typeof ClaudeCombatBloodstainTatterDecaySchema
+>;
+
+export function buildLocalCombatBloodstainTatterDecay(input: {
+  readonly characterName?: string;
+}): ClaudeCombatBloodstainTatterDecayReport {
+  return {
+    characterName: input.characterName ?? "서진",
+    monotonicDecayVerified: true,
+    cutDecayStates: [
+      {
+        cutNumber: 1,
+        bloodSpatterZoneKo: "오른쪽 뺨 찰과상 1줄 및 우측 소매 끝단 혈흔(15%)",
+        clothTatterStateKo: "검은 망토 우측 하단 12cm 열상 발생",
+        sootAndDustCoveragePct: 18,
+      },
+      {
+        cutNumber: 2,
+        bloodSpatterZoneKo: "기존 오른뺨 찰과상 유지 + 왼쪽 어깨 갑주 틈새 혈흔 추가(34%)",
+        clothTatterStateKo: "우측 하단 열상 유지 + 좌측 소매 팔꿈치 부위 파열 누적",
+        sootAndDustCoveragePct: 42,
+      },
+    ],
+    resetConditionTriggerKo:
+      "성녀의 치유 마법 시전 컷 또는 숙소 환복 컷이 명시적으로 등장하기 전까지 혈흔·그을음·의상 파열이 다음 컷에서 임의로 깨끗해지지 않도록 비가역(Monotonic) 원장으로 고정",
+  };
+}
+
+export async function runClaudeCombatBloodstainTatterDecayDirector(
+  input: { readonly characterName?: string },
+  options: RunWebtoonProductionAssistOptions = {},
+): Promise<{
+  readonly report: ClaudeCombatBloodstainTatterDecayReport;
+  readonly source: "claude" | "local-fallback";
+  readonly model: string;
+}> {
+  const taskRoute = resolveCreatorTaskModelRoute("production:combat-bloodstain-dust-tatter-decay-lock");
+  const local = buildLocalCombatBloodstainTatterDecay(input);
+  const activeRoute = resolveActiveClaudeRoute(options);
+  if (!activeRoute) {
+    return Object.freeze({ report: local, source: "local-fallback", model: taskRoute.model });
+  }
+  const requestedModel = resolveClaudeRequestModel(options.model ?? taskRoute.model, activeRoute.model || CLAUDE_DEFAULT_MODEL_ID);
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
+    model: requestedModel,
+    max_tokens: taskRoute.maxTokens,
+    system: "웹툰 전투 컷 진행에 따른 혈흔·먼지/그을음·의상 파열의 비가역 누적 원장을 JSON으로 설계하세요.",
+    messages: [{ role: "user", content: `캐릭터: ${local.characterName}` }],
+  };
+  try {
+    const { message, parsed } = await claudeParse(activeRoute, request, ClaudeCombatBloodstainTatterDecaySchema, {
+      signal: options.signal,
+      capUsd: estimateClaudeRequestCostCapUsd(requestedModel, request),
+    });
+    return Object.freeze({ report: parsed, source: "claude", model: message.model || requestedModel });
+  } catch {
+    return Object.freeze({ report: local, source: "local-fallback", model: taskRoute.model });
   }
 }

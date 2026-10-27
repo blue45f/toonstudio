@@ -1,9 +1,10 @@
 # 글로벌 GitHub 오픈소스·웹 드로잉·상용 페인팅 브러시 생태계 REA 역공학 및 ToonStudio 전수 내재화 보고서 (2026-10-26)
 
 - **작성일**: `2026-10-26`
-- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 · Wave 25 · Wave 26 전수 구현 및 검증 완료)
+- **상태**: `current` (Wave 21 · Wave 22 · Wave 23 · Wave 24 · Wave 25 · Wave 26 · Wave 27 · Wave 28 · Wave 29 · Wave 30 · Wave 31 · Wave 32 · Wave 33 전수 구현 및 검증 완료)
 - **관련 모듈**:
   - `apps/web/src/domains/creator/drawing/studio-universal-brush-taxonomy-engine.ts`
+  - `apps/web/src/domains/creator/drawing/studio-webgpu-highspeed-brush-architecture.ts`
   - `apps/web/src/domains/creator/drawing/studio-vector-skeletal-pattern-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-particle-pixol-brushes.ts`
   - `apps/web/src/domains/creator/drawing/studio-bezier-curve-fit-brushes.ts`
@@ -154,6 +155,14 @@
   2. **Piskel `DitheringTool.js`(체커보드 패리티 디더링) · `Lighten.js`(모디파이어 단계 명암 조절)**: `(col + row) % 2` 체커보드 패리티 및 반전 플래그에 따라 주/부 색상을 교차 배치하고, `DEFAULT_STEP = 3`(스트로크당 1회 적용 모드 시 `2 × 3 = 6`) 채널 증감으로 픽셀 명암을 정밀 조정한다.
   3. **Klecks `LineSmoothing` 정지 캐치업(`80ms` 초기 타임아웃 + `35ms` 인터벌 EMA) & JSPaint `image-manipulation.js` 6종 캘리그래피 스탬프**: 스타일러스 정지 상태에서 매 틱마다 `mix(lastInput, oldMixed, pow(s, 1.75) * 0.85)` 지수 감쇠로 펜 끝까지 스트로크를 수렴시키고, `circle`/`square`/`diagonal`/`reverse_diagonal`/`horizontal`/`vertical` 6종 스탬프 및 `round_up_to_even(size * 2)` 캔버스 할당 규격을 내재화했다.
   4. **모놀리식 20종 도구 카테고리 필터(`data-studio-monolithic-category-filter`: `all`/`brush`/`filter`/`vector`/`symmetry`/`whiteboard`) 및 실시간 `Crease·CatchUp` 텔레메트리**: 20종 모놀리식 프리셋을 기능 범주별로 즉시 필터링하는 UI 버튼 그룹과 `sculptCreaseZ`/`klecksCatchUpX` 실시간 수치 배지를 추가했다.
+
+### 2.16 Wave 33 WebGPU 초고속 브러시 아키텍처(Vello WGSL·Orillusion Indirect·PixiJS v8 RenderBundle/UBO·Three.js Zero-Copy·WASM Morton LBVH·ChartGPU LTTB) 215개 모듈 일괄 REA 역공학 및 내재화 (Observation)
+- **Linebender `Vello`**(`vello_shaders/shader/flatten.wgsl`, `fine.wgsl`, `coarse.wgsl`, `pathtag_scan.wgsl` 등 25개 WGSL 컴퓨트 셰이더), **Orillusion WebGPU Engine**(`GPUCullSystem.ts`, `ComputeShader.ts`, `EntityBatchCollect.ts` 등 57개 모듈), **PixiJS v8 WebGPU Renderer**(`GpuEncoderSystem.ts`, `RenderBundle.ts`, `GpuUniformBatchPipe.ts`, `BindGroupSystem.ts` 등 79개 모듈), **Three.js `WebGPURenderer`**(`WebGPUBackend.js`, `WebGPUAttributeUtils.js`, `WebGPUTimestampQueryPool.js` 등 54개 모듈) **총 215개 파일(`1,518,055` 바이트, 루트 SHA-256 `68a869d5beb57e6b011708fef09c6fe235b2f196c6b4e7f8063f7f683ccbb214`, 미분석 파일 `not-examined: 0`)**을 단일 코퍼스로 묶어 `analyze_javascript_application`(부모 증거 `ev_c8f3c2e349c2ec10d5e86761c2414b5b260185090f10d835f9e767f90eeb7f9b`, 요약 증거 `ev_346020a1c98a9a75accd29be7d1a2be8690cd59e2ca60ea0eaa42f712c42de8b`, 팩트 뷰 `ev_2cbb6d05913eb2b2d49169d7761edea307fd5816f0251797602c782483b65af3`, 방문 AST 노드 133,090개, 의미론적 발견 1,677건, 데이터흐름 관계 29,090개, 객체흐름 4,944개, 클로저 1,671개, 호출흐름 1,337개) 및 `trace_javascript_semantics`(`GpuEncoderSystem` `ev_b28204858f3fd5f9b58427fa143ede44ff86c24011ae19654cab079eda6f8e90`, `GPUCullSystem` `ev_c76c1188ec57ca6e3e1251ea7e604e6170581c6632a7a62ed7e80e25f7d389fc`)로 역공학하고 `studio-webgpu-highspeed-brush-architecture.ts`, `apps/brush-lab/src/engine/brush-engine/universal-brush-suite.ts`, `StudioUniversalBrushEngineBar.tsx`에 5대 초고속 아키텍처 기둥(12개 프리셋 및 실행 가능한 WGSL 컴퓨트·인디렉트 셰이더 `WEBGPU_ZERO_COPY_INDIRECT_BRUSH_WGSL`)을 전수 내재화했다:
+  1. **Linebender Vello WGSL 오일러 스파이럴 평탄화(`flatten.wgsl`) & 해석적 사다리꼴 면적 AA(`fine.wgsl`)**: Levien 포물선 호 길이 적분 근사(`approx_parabola_integral(x) = x *inversesqrt(sqrt(0.67^4 + 0.25*x^2))`, 역함수 $B=0.39$), 양 끝 접선각 기반 오일러 스파이럴 곡률 피팅(`es_params_from_angles`) 및 해석적 오프셋 분할 수 `ceil(0.5 * sqrt(scale) * (int1 - int0))`, 스레드당 4픽셀(`TILE_HEIGHT_COMPONENTS = 4`) 해석적 사다리꼴 면적 안티에일리어싱(`fill_path`), 7차 다항식 가우시안 오차함수 근사(`erf7`), Mitchell-Netravali($B=1/3, C=1/3$) 16-탭 바이큐빅 리샘플링을 구현했다.
+  2. **Orillusion GPU-Driven 6-평면 절두체 + Hi-Z 피라미드 오클루전 컴퓨트 컬링 & 단일 `drawIndexedIndirect`**: 12-float AABB 메타데이터 SSBO에 대해 컴퓨트 셰이더가 절두체 및 Hi-Z 깊이 피라미드 가시성을 판정하고 `atomicAdd(&indirectArgs.instanceCount, 1u)`로 5-`u32` `[indexCount, instanceCount, firstIndex, baseVertex, firstInstance]` 인디렉트 버퍼를 직접 갱신하여 CPU 드로우콜 오버헤드를 1회(`drawIndexedIndirect`)로 고정한다.
+  3. **PixiJS v8 `GPURenderBundleEncoder` 정적 레이어 번들 캐시 & `minUniformBufferOffsetAlignment = 256` 동적 UBO 배칭**: 렌더 타깃 서명 `bundleStateKey`(`colorFormat|depthStencilFormat|sampleCount|flipY` 와인딩 패리티) 검증 후 단일 `executeBundles()` 호출로 정적 배경 레이어 드로우 명령을 재생하고, 가변 유니폼 데이터를 256바이트 정렬 스테이징 슬랩(`copyBufferToBuffer` + 동적 오프셋 바인딩)으로 일괄 처리한다.
+  4. **Three.js `WebGPURenderer` Zero-Copy Compute-to-Vertex(`STORAGE | VERTEX | INDIRECT`) & 32비트 기수(Radix) 상태 키 정렬 & ChartGPU LTTB**: 컴퓨트 셰이더가 확장한 댑 버퍼를 CPU 왕복 복사(`0 bytes`) 없이 버텍스/인디렉트 파이프라인에 직결하고, `(pipelineId << 24) | (blendModeId << 16) | textureArraySlice` 기수 정렬로 `setPipeline`/`setBindGroup` 상태 스위칭을 최소화하며, 120Hz 주사율 보장을 위한 ChartGPU LTTB(Largest-Triangle-Three-Buckets) 인스턴스 데시메이션을 결합했다.
+  5. **WASM SIMD 선형 메모리 30비트 Morton Z-Order LBVH & Web Worker + `OffscreenCanvas` 120Hz 링버퍼(Zero `mapAsync`)**: 15비트 인터리빙(`expandBits15`) 30비트 Morton 코드 기반 선형 BVH 공간 분할과 256바이트 정렬 `Float32Array` 제로-GC `queue.writeBuffer` 직결, 그리고 매 프레임 `mapAsync()` 파이프라인 스톨을 완전히 제거한 3-슬롯 트리플 버퍼링 워커 링 아키텍처를 완비했다.
 
 ---
 

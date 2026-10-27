@@ -28,7 +28,9 @@ export type WebtoonEpisodicDoctorMode =
   | "bg3d-lighting-asset-director"
   | "bgm-audiotoon-cuesheet"
   | "episodic-visual-continuity-linter"
-  | "multi-episode-canon-memory-vault";
+  | "multi-episode-canon-memory-vault"
+  | "episodic-footwear-floor-contact-stride-lock"
+  | "episodic-crowd-silhouette-depth-fog-lock";
 
 // ── 1. 독자 스크롤 체류·이탈 구간 & 베스트 댓글·별점 예측 시뮬레이터 ──────────────────
 
@@ -337,13 +339,49 @@ export interface ClaudeMultiEpisodeCanonVaultView {
   readonly estimatedUsd: number | null;
 }
 
+export const ClaudeFootwearStrideLockSchema = z.object({
+  footwearIntegrityScore: z.number(),
+  strideSummaryKo: z.string(),
+  heelHeightCm: z.number(),
+  soleAndBuckleSpecKo: z.string(),
+  stairSlopeContactRuleKo: z.string(),
+  readyFootwearGuardLine: z.string(),
+});
+
+export interface ClaudeFootwearStrideLockView extends z.infer<typeof ClaudeFootwearStrideLockSchema> {
+  readonly mode: "episodic-footwear-floor-contact-stride-lock";
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedUsd: number | null;
+}
+
+export const ClaudeCrowdDepthFogLockSchema = z.object({
+  depthHierarchyScore: z.number(),
+  crowdAtmosphereSummaryKo: z.string(),
+  heroLineWeightMultiplier: z.number(),
+  midgroundCrowdLineMultiplier: z.number(),
+  backgroundSilhouetteFogPct: z.number(),
+  readyCrowdDepthGuardLine: z.string(),
+});
+
+export interface ClaudeCrowdDepthFogLockView extends z.infer<typeof ClaudeCrowdDepthFogLockSchema> {
+  readonly mode: "episodic-crowd-silhouette-depth-fog-lock";
+  readonly source: "claude-live" | "deterministic-fallback";
+  readonly model: string;
+  readonly usage: ClaudeTokenUsage;
+  readonly estimatedUsd: number | null;
+}
+
 export type WebtoonEpisodicDoctorView =
   | ClaudeReaderRetentionView
   | ClaudeCharacterOocRadarView
   | ClaudeBg3dLightingAssetView
   | ClaudeBgmAudioToonView
   | ClaudeVisualContinuityLinterView
-  | ClaudeMultiEpisodeCanonVaultView;
+  | ClaudeMultiEpisodeCanonVaultView
+  | ClaudeFootwearStrideLockView
+  | ClaudeCrowdDepthFogLockView;
 
 // ── 결정적(Deterministic) 폴백 빌더 4종 ──────────────────────────────────────────
 
@@ -678,6 +716,44 @@ export function buildDeterministicMultiEpisodeCanonVaultReport(
     canonVaultIntegrityScore: 99,
     serializedArcTimelineKo: `시즌 1 기승전결 타임라인(EP.01~EP.50) 기준 현재 에피소드의 외형 변천사·호칭 매트릭스·미회수 복선(Chekhov's Gun)이 과거 회차 설정과 99% 무결하게 동기화되었습니다.`,
     canonEntries,
+    usage: EMPTY_CLAUDE_TOKEN_USAGE,
+    estimatedUsd: null,
+  });
+}
+
+export function buildDeterministicFootwearStrideLockReport(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeFootwearStrideLockView {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 24) || "서진";
+  return Object.freeze({
+    mode: "episodic-footwear-floor-contact-stride-lock",
+    source: "deterministic-fallback",
+    model: "claude-haiku-5-5",
+    footwearIntegrityScore: 97,
+    strideSummaryKo: `${protagonist}의 롱부츠 굽 높이(4.5cm)·발목 은장 버클 2개·계단 디딤판(Tread) 수평 접지 각도를 전 컷 고정해 공중 부양 작붕을 차단합니다.`,
+    heelHeightCm: 4.5,
+    soleAndBuckleSpecKo: "무릎 아래 블랙 가죽 롱부츠 + 외측 복숭아뼈 위 은장 버클 2단 고정",
+    stairSlopeContactRuleKo: "계단 승강 컷에서 앞발 볼(Ball of foot)과 뒷굽이 계단 디딤판 투시선과 평행하게 밀착(AO 그림자 6px)",
+    readyFootwearGuardLine: `[신발·계단 접지 고정] ${protagonist} 4.5cm 굽 은장 2버클 롱부츠 유지 · 계단 디딤판 수평 접지 AO 강제`,
+    usage: EMPTY_CLAUDE_TOKEN_USAGE,
+    estimatedUsd: null,
+  });
+}
+
+export function buildDeterministicCrowdDepthFogLockReport(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeCrowdDepthFogLockView {
+  const protagonist = cleanSingleLineText(input.protagonistName ?? "서진", 24) || "서진";
+  return Object.freeze({
+    mode: "episodic-crowd-silhouette-depth-fog-lock",
+    source: "deterministic-fallback",
+    model: "claude-sonnet-5-5",
+    depthHierarchyScore: 98,
+    crowdAtmosphereSummaryKo: `전경 주연(${protagonist} 선굵기 1.0x) 대비 중경 엑스트라(0.65x)·원경 군중(0.35x + 대기 안개 45%)을 계층 분리해 시선 분산을 막습니다.`,
+    heroLineWeightMultiplier: 1.0,
+    midgroundCrowdLineMultiplier: 0.65,
+    backgroundSilhouetteFogPct: 45,
+    readyCrowdDepthGuardLine: `[군중 대기원근 고정] 주연 선굵기 1.0x · 중경 엑스트라 0.65x · 원경 군중 실루엣 안개 45% 채도 감쇠`,
     usage: EMPTY_CLAUDE_TOKEN_USAGE,
     estimatedUsd: null,
   });

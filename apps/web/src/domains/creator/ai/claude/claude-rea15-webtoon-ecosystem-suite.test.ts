@@ -65,12 +65,18 @@ const TEST_ROUTE = {
 };
 
 describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
-  it("0. 140대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+  it("0. 240대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(140);
+    expect(themes).toHaveLength(240);
 
     const naverPainter = getRea15PlatformTheme("naver-webtoon-ai-painter");
     expect(naverPainter.accentPrimaryHex).toBe("#00dc64");
+
+    const embergen = getRea15PlatformTheme("embergen-realtime-fire-smoke");
+    expect(embergen.accentPrimaryHex).toBe("#f97316");
+
+    const moveAi = getRea15PlatformTheme("move-ai-multicam-mocap");
+    expect(moveAi.accentPrimaryHex).toBe("#00f5d4");
 
     const piccoma = getRea15PlatformTheme("piccoma-smartoon-studio");
     expect(piccoma.accentPrimaryHex).toBe("#ffd600");
@@ -80,6 +86,18 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫�
 
     const glazeShield = getRea15PlatformTheme("glaze-nightshade-shield");
     expect(glazeShield.coreWorkflowKo).toContain("Style Cloaking");
+
+    const redice = getRea15PlatformTheme("redice-studio-action");
+    expect(redice.accentPrimaryHex).toBe("#ef4444");
+
+    const fluxKontext = getRea15PlatformTheme("flux-1-kontext-character");
+    expect(fluxKontext.coreWorkflowKo).toContain("In-Context");
+
+    const worldAnvil = getRea15PlatformTheme("world-anvil-chronicle");
+    expect(worldAnvil.coreWorkflowKo).toContain("Bloodline Tree");
+
+    const sandoll = getRea15PlatformTheme("sandoll-cloud-webtoon-font");
+    expect(sandoll.accentPrimaryHex).toBe("#0066ff");
 
     const kakaoAlive = getRea15PlatformTheme("kakao-webtoon-alive");
     expect(kakaoAlive.accentPrimaryHex).toBe("#ffdc00");

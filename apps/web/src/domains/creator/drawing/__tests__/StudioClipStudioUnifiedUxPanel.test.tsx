@@ -148,4 +148,25 @@ describe("StudioClipStudioUnifiedUxPanel", () => {
     expect(wkReadout.textContent).toContain("https://assets.clip-studio.com/ko-kr");
     expect(wkReadout.textContent).toContain("PWPiece 아틀라스 8종");
   });
+
+  it("renders LipPreview QuickLook (.clip/.lip), TGTosPlugIn (.tos), scan.app binarization, libskshaper vertical manga layout, and all 32 FilterPlugIns", () => {
+    render(
+      <StudioClipStudioUnifiedUxPanel initialTab="lippreview_scan_skshaper_filters" />,
+    );
+
+    expect(screen.getByTestId("csp-lippreview-tos-readout").textContent).toContain(
+      "clip_csfchunk",
+    );
+    expect(screen.getByTestId("csp-lippreview-tos-readout").textContent).toContain(
+      "Speckled 1",
+    );
+
+    const skReadout = screen.getByTestId("csp-scan-skshaper-readout");
+    expect(skReadout.textContent).toContain("TCY 2개");
+    expect(skReadout.textContent).toContain("루비 1개");
+
+    const filterReadout = screen.getByTestId("csp-all-32-filters-readout");
+    expect(filterReadout.textContent).toContain("TPPFilmCameraStyle");
+    expect(filterReadout.textContent).toContain("총 바이너리: 143개 / 필터 32종");
+  });
 });

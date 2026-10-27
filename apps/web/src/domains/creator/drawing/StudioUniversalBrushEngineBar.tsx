@@ -14,6 +14,7 @@ import {
   evaluateMyPaintFullDynamicsStep,
   evaluateSculptGlQuarticFalloff01,
   evaluateStudioHolisticInspectorTelemetry,
+  evaluateWebGpuHighSpeedArchitectureTelemetry,
   executeBooleanPolygonBrushClip,
   executeHarmonyProceduralBrush,
   executeKlecksBrushEngineSuite,
@@ -34,6 +35,7 @@ import {
   synthesizeRoughSketchyStrokeAndHachureFill,
   traceP5BrushFlowLine,
   warpSkeletalArtBrushAlongSpine,
+  WEBGPU_HIGHSPEED_ARCHITECTURE_PRESETS,
   type ComicRibbonStampPresetId,
   type CompetitorFilterPresetId,
   type CompleteEcosystemToolPresetId,
@@ -46,23 +48,14 @@ import {
   type MonolithicTotalToolPresetId,
   type MyPaintPresetId,
   type SkeletalArtBrushPresetId,
+  type WebGpuHighSpeedPresetId,
 } from "./studio-universal-brush-taxonomy-engine";
 
 export interface StudioUniversalBrushEngineBarProps {
   readonly tx: (source: string) => string;
 }
 
-type EngineWaveDockId =
-  | "all"
-  | "wave21"
-  | "wave22"
-  | "wave23"
-  | "wave24"
-  | "wave25"
-  | "wave26"
-  | "wave28"
-  | "wave29"
-  | "wave30";
+type EngineWaveDockId = "all" | "wave21" | "wave22" | "wave23" | "wave24" | "wave25" | "wave26" | "wave28" | "wave29" | "wave30" | "wave33";
 
 const ENGINE_WAVE_DOCK_TABS: readonly {
   readonly id: EngineWaveDockId;
@@ -78,6 +71,7 @@ const ENGINE_WAVE_DOCK_TABS: readonly {
   { id: "wave28", labelKo: "채우기·레이어·이젤" },
   { id: "wave29", labelKo: "FFD·선택·타이포·어니언" },
   { id: "wave30", labelKo: "만다라·칼레이도·벡터·엘보우" },
+  { id: "wave33", labelKo: "WebGPU 초고속·Vello·Indirect" },
 ];
 
 const QUICK_W3C_BLEND_MODES: readonly {
@@ -196,6 +190,8 @@ export function StudioUniversalBrushEngineBar({
   const [selectedMonolithicToolId, setSelectedMonolithicToolId] = useState<MonolithicTotalToolPresetId>("monolithic-kaleidoscope-polar");
   const [monolithicCategoryFilter, setMonolithicCategoryFilter] = useState<"all" | "brush" | "filter" | "vector" | "symmetry" | "whiteboard">("all");
   const [mandalaAxes, setMandalaAxes] = useState<number>(8);
+  const [selectedWebGpuHighSpeedId, setSelectedWebGpuHighSpeedId] = useState<WebGpuHighSpeedPresetId>("webgpu-vello-euler-flatten-aa");
+  const [webGpuIndirectCullEnabled, setWebGpuIndirectCullEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     const root = barRef.current;
@@ -284,6 +280,11 @@ export function StudioUniversalBrushEngineBar({
       strength01: klecksSlider01,
       symmetryAxes: mandalaAxes,
     });
+    const webgpuHighSpeedEval = evaluateWebGpuHighSpeedArchitectureTelemetry({
+      presetId: selectedWebGpuHighSpeedId,
+      indirectCullingEnabled: webGpuIndirectCullEnabled,
+      strokeQuality01: klecksSlider01,
+    });
 
     const bezierSvgPath = schneiderFit.segments
       .map((seg, i) =>
@@ -325,25 +326,15 @@ export function StudioUniversalBrushEngineBar({
       ffdDisplacementPx: unfragmentedEval.ffdDisplacementPx,
       onionSkinAlpha01: unfragmentedEval.onionSkinAlpha01,
       monolithicEval,
+      webgpuHighSpeedEval,
       bezierSvgPath,
       booleanPolygonPoints,
     };
   }, [
-    selectedHarmonyKind,
-    selectedComicRibbonId,
-    selectedSkeletalId,
-    selectedParticleId,
-    selectedKlecksId,
-    selectedMyPaintId,
-    selectedFreehandRoughId,
-    selectedCompetitorFilterId,
-    selectedHolisticToolId,
-    selectedBlendMode,
-    selectedCompleteEcosystemId,
-    selectedMonolithicToolId,
-    mandalaAxes,
-    klecksSlider01,
-    isKlecksFineMode,
+    selectedHarmonyKind, selectedComicRibbonId, selectedSkeletalId, selectedParticleId,
+    selectedKlecksId, selectedMyPaintId, selectedFreehandRoughId, selectedCompetitorFilterId,
+    selectedHolisticToolId, selectedBlendMode, selectedCompleteEcosystemId, selectedMonolithicToolId,
+    mandalaAxes, klecksSlider01, isKlecksFineMode, selectedWebGpuHighSpeedId, webGpuIndirectCullEnabled,
   ]);
 
   const supportsBeforeMatch =
@@ -668,6 +659,30 @@ export function StudioUniversalBrushEngineBar({
         </div>
       </div>
 
+      <div data-studio-wave-section="wave33" hidden={hiddenUntilFound("wave33")}>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-fg-2">{tx("WebGPU 초고속·Vello·Indirect·RenderBundle·WASM:")}</span>
+          <PresetRadioGroup
+            ariaLabel={tx("WebGPU 초고속 아키텍처 브러시 프리셋")}
+            items={WEBGPU_HIGHSPEED_ARCHITECTURE_PRESETS}
+            selectedId={selectedWebGpuHighSpeedId}
+            dataAttrName="data-studio-webgpu-highspeed-preset"
+            onSelect={setSelectedWebGpuHighSpeedId}
+            tx={tx}
+            searchQuery={quickSearchQuery}
+          />
+          <button
+            type="button"
+            data-studio-webgpu-indirect-toggle="true"
+            aria-pressed={webGpuIndirectCullEnabled}
+            onClick={() => setWebGpuIndirectCullEnabled((prev) => !prev)}
+            className="rounded-md border border-accent/60 bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-fg"
+          >
+            {tx("GPU Indirect 컬링")}: {webGpuIndirectCullEnabled ? "ON" : "OFF"} ({activeUniversalTelemetry.webgpuHighSpeedEval.indirectVisibleInstances}/{activeUniversalTelemetry.webgpuHighSpeedEval.indirectDrawCalls}콜)
+          </button>
+        </div>
+      </div>
+
       <div className="studio-universal-inspector-grid mt-2.5 rounded-xl border border-line/70 bg-raised/40 px-2.5 py-1.5">
         <svg
           viewBox="0 0 220 44"
@@ -752,6 +767,8 @@ export function StudioUniversalBrushEngineBar({
           <span>{tx("PSD·ΔE00·Otsu")}: {activeUniversalTelemetry.monolithicEval.psdCompressionRatio01.toFixed(2)}/{activeUniversalTelemetry.monolithicEval.ciede2000DeltaE.toFixed(1)}/{activeUniversalTelemetry.monolithicEval.otsuOptimalThreshold}</span>
           <span>·</span>
           <span>{tx("Crease·CatchUp")}: {activeUniversalTelemetry.monolithicEval.sculptCreaseZ.toFixed(2)}/{activeUniversalTelemetry.monolithicEval.klecksCatchUpX.toFixed(1)}</span>
+          <span>·</span>
+          <span>{tx("WebGPU Vello·Indirect·UBO")}: {activeUniversalTelemetry.webgpuHighSpeedEval.velloEulerSubdivisions}/{activeUniversalTelemetry.webgpuHighSpeedEval.indirectVisibleInstances}/{activeUniversalTelemetry.webgpuHighSpeedEval.uboBatchAlignedBytes}B</span>
           <span>·</span>
           <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>

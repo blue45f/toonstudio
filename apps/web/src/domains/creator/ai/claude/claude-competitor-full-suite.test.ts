@@ -12,16 +12,32 @@ import {
   buildLocalSpeechBubbleTailOcclusionLock,
   buildLocalStyleTransferAndRelighting,
   buildLocalTurnaroundOrthographicSheetLock,
+  buildLocalVehicleSteedCarriageHarnessLock,
+  buildLocalMagicAuraElementalSigilLock,
+  buildLocalFoodTablewareBanquetLock,
+  buildLocalMirrorWaterWindowReflectionLock,
   runClaude3dHandHeadPoseAndLtRigDirector,
   runClaudeActionWeaponMotionArcDirector,
   runClaudeBackgroundPerspectivePropScaleDirector,
+  runClaudeFoodTablewareBanquetPropDirector,
+  runClaudeMagicAuraElementalSigilDirector,
+  runClaudeMirrorWaterWindowReflectionDirector,
   runClaudeSakugaMotionAndFacialMatrixDirector,
   runClaudeScreenplayBeatAndLoraLockBridge,
   runClaudeSketchToLineartLayerSplitter,
   runClaudeSpeechBubbleTailOcclusionDirector,
   runClaudeStyleTransferAndRelightingDirector,
   runClaudeTurnaroundOrthographicSheetDirector,
+  runClaudeVehicleSteedCarriageHarnessDirector,
 } from "./claude-competitor-full-suite";
+import {
+  buildLocalCombatBloodstainTatterDecay,
+  buildLocalEyewearJewelryReflectionLock,
+  buildLocalHairSilhouettePartingLock,
+  runClaudeCombatBloodstainTatterDecayDirector,
+  runClaudeEyewearJewelryReflectionLockDirector,
+  runClaudeHairSilhouettePartingLockDirector,
+} from "./claude-writer-and-plot-assist";
 import type { WebtoonProductionAssistInput } from "./claude-webtoon-production-schemas";
 
 vi.mock("@/shared/ai/claude/claude-transport", () => ({
@@ -266,5 +282,67 @@ describe("claude-competitor-full-suite (5대 신규 경쟁사 벤치마크 엔�
     });
     expect(live.source).toBe("claude-live");
     expect(live.report.kineticContinuityScore).toBe(99);
+  });
+
+  it("10. Wave 11 신규 웹툰 일관성 7대 엔진(말/마차 탑승·마법진 기하·식기 수위·거울 반사·헤어 가르마·안경/보석·전투 혈흔 누적)을 검증한다", async () => {
+    const steedLocal = buildLocalVehicleSteedCarriageHarnessLock(SAMPLE_INPUT);
+    expect(steedLocal.riderProportionRatioScore).toBe(96);
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 180, output_tokens: 260 } } as never,
+      parsed: steedLocal,
+    });
+    const steedLive = await runClaudeVehicleSteedCarriageHarnessDirector(SAMPLE_INPUT, { route: TEST_ROUTE });
+    expect(steedLive.source).toBe("claude-live");
+
+    const sigilLocal = buildLocalMagicAuraElementalSigilLock(SAMPLE_INPUT);
+    expect(sigilLocal.sigilPolygonVertices).toBe(8);
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 180, output_tokens: 260 } } as never,
+      parsed: sigilLocal,
+    });
+    const sigilLive = await runClaudeMagicAuraElementalSigilDirector(SAMPLE_INPUT, { route: TEST_ROUTE });
+    expect(sigilLive.source).toBe("claude-live");
+
+    const banquetLocal = buildLocalFoodTablewareBanquetLock();
+    expect(banquetLocal.continuityScore).toBe(96);
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-haiku-4-5-20251001", usage: { input_tokens: 160, output_tokens: 240 } } as never,
+      parsed: banquetLocal,
+    });
+    const banquetLive = await runClaudeFoodTablewareBanquetPropDirector(SAMPLE_INPUT, { route: TEST_ROUTE });
+    expect(banquetLive.source).toBe("claude-live");
+
+    const mirrorLocal = buildLocalMirrorWaterWindowReflectionLock(SAMPLE_INPUT);
+    expect(mirrorLocal.reflectionSymmetryVerified).toBe(true);
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-opus-4-6", usage: { input_tokens: 190, output_tokens: 280 } } as never,
+      parsed: mirrorLocal,
+    });
+    const mirrorLive = await runClaudeMirrorWaterWindowReflectionDirector(SAMPLE_INPUT, { route: TEST_ROUTE });
+    expect(mirrorLive.source).toBe("claude-live");
+
+    const hairLocal = buildLocalHairSilhouettePartingLock({ characterName: "세레나" });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-haiku-4-5-20251001", usage: { input_tokens: 140, output_tokens: 220 } } as never,
+      parsed: hairLocal,
+    });
+    const hairLive = await runClaudeHairSilhouettePartingLockDirector({ characterName: "세레나" }, { route: TEST_ROUTE });
+    expect(hairLive.source).toBe("claude");
+
+    const jewelLocal = buildLocalEyewearJewelryReflectionLock({ characterName: "카시안" });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-haiku-4-5-20251001", usage: { input_tokens: 140, output_tokens: 220 } } as never,
+      parsed: jewelLocal,
+    });
+    const jewelLive = await runClaudeEyewearJewelryReflectionLockDirector({ characterName: "카시안" }, { route: TEST_ROUTE });
+    expect(jewelLive.source).toBe("claude");
+
+    const decayLocal = buildLocalCombatBloodstainTatterDecay({ characterName: "서진" });
+    vi.mocked(claudeParse).mockResolvedValueOnce({
+      message: { model: "claude-sonnet-4-6", usage: { input_tokens: 160, output_tokens: 250 } } as never,
+      parsed: decayLocal,
+    });
+    const decayLive = await runClaudeCombatBloodstainTatterDecayDirector({ characterName: "서진" }, { route: TEST_ROUTE });
+    expect(decayLive.source).toBe("claude");
   });
 });

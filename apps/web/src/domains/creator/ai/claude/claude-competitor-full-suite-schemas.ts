@@ -623,3 +623,117 @@ export function buildLocalActionWeaponMotionArcSmearLock(
     cutArcs,
   };
 }
+
+// ---------------------------------------------------------------------------
+// 10~13. Wave 11 창의적 웹툰 일관성 AI 엔진 4종 (말/마차/차량 탑승 · 마법진 기하 · 식기/음료 수위 · 거울/수면 반사)
+// ---------------------------------------------------------------------------
+
+export const ClaudeVehicleSteedHarnessReportSchema = z.object({
+  mountOrVehicleNameKo: z.string(),
+  riderProportionRatioScore: z.number(),
+  steeringOrReinSide: z.enum(["left-hand-driver-lhd", "right-hand-driver-rhd", "dual-rein-stirrup"]),
+  stirrupAndSeatHeightAnchorKo: z.string(),
+  harnessContinuityRuleKo: z.string(),
+});
+
+export type ClaudeVehicleSteedHarnessReport = z.infer<
+  typeof ClaudeVehicleSteedHarnessReportSchema
+>;
+
+export function buildLocalVehicleSteedCarriageHarnessLock(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeVehicleSteedHarnessReport {
+  const protagonist = (input.protagonistName ?? "서진").trim() || "서진";
+  return {
+    mountOrVehicleNameKo: "황실 흑마(와이즈 스탤리온) & 4두 마차",
+    riderProportionRatioScore: 96,
+    steeringOrReinSide: "dual-rein-stirrup",
+    stirrupAndSeatHeightAnchorKo: `${protagonist} 기승 시 말 어깨높이(Withers 165cm) 대비 기수 앉은키 비율을 0.54로 고정하고, 발볼이 등자(Stirrup) 고리에 정확히 결착되도록 잠금`,
+    harnessContinuityRuleKo:
+      "컷 전환 시 재갈(Bit)·고삐(Reins)·안장 흉걸이 가죽끈이 증발하거나 말의 크기가 조랑말처럼 축소되는 스케일 붕괴를 원천 차단합니다.",
+  };
+}
+
+export const ClaudeMagicAuraElementalSigilReportSchema = z.object({
+  casterName: z.string(),
+  sigilPolygonVertices: z.number(),
+  innerRuneRingCount: z.number(),
+  coreGlowHex: z.string(),
+  outerRimAuraHex: z.string(),
+  blendLayerMode: z.enum(["Linear Dodge (Add)", "Color Dodge", "Screen"]),
+  sigilGeometryLockRuleKo: z.string(),
+  consistencyScore: z.number(),
+});
+
+export type ClaudeMagicAuraElementalSigilReport = z.infer<
+  typeof ClaudeMagicAuraElementalSigilReportSchema
+>;
+
+export function buildLocalMagicAuraElementalSigilLock(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeMagicAuraElementalSigilReport {
+  const protagonist = (input.protagonistName ?? "서진").trim() || "서진";
+  return {
+    casterName: protagonist,
+    sigilPolygonVertices: 8,
+    innerRuneRingCount: 3,
+    coreGlowHex: "#E0F2FE",
+    outerRimAuraHex: "#2563EB",
+    blendLayerMode: "Linear Dodge (Add)",
+    sigilGeometryLockRuleKo: `${protagonist} 고유 8각 성좌 마법진(외곽 3중 고대 룬 링) 기하 도면을 3D 평면 투영으로 고정해, 비스듬한 카메라 앵글에서도 꼭짓점 수(8개)와 회전 방향(시계방향)이 변형되지 않도록 유지합니다.`,
+    consistencyScore: 98,
+  };
+}
+
+export const ClaudeFoodTablewareBanquetReportSchema = z.object({
+  sceneLocationKo: z.string(),
+  tablewareLayoutRuleKo: z.string(),
+  liquidLevelProgressionKo: z.string(),
+  cutleryHandRuleKo: z.string(),
+  continuityScore: z.number(),
+});
+
+export type ClaudeFoodTablewareBanquetReport = z.infer<
+  typeof ClaudeFoodTablewareBanquetReportSchema
+>;
+
+export function buildLocalFoodTablewareBanquetLock(): ClaudeFoodTablewareBanquetReport {
+  return {
+    sceneLocationKo: "황궁 온실 다과회 테이블",
+    tablewareLayoutRuleKo:
+      "3단 실버 트레이는 테이블 중앙 축(X: 50%)에 고정하고, 찻잔 받침(Saucer)과 티스푼(우측 4시 방향) 위치를 전 컷 유지",
+    liquidLevelProgressionKo:
+      "1컷(만수위 85%) → 3컷(한 모금 음용 후 55%) → 5컷(잔 내려놓음 30%)으로 홍차 수위가 단조 감소(Monotonic Decrease)하도록 고정해 다음 컷에서 잔이 다시 가득 차는 역전 오류를 차단",
+    cutleryHandRuleKo:
+      "서양식 커틀러리 기준 오른손 나이프·왼손 포크 파지 규칙을 유지하며 찻잔 손잡이 방향(우측 3시)이 컷마다 뒤집히지 않도록 고정",
+    continuityScore: 96,
+  };
+}
+
+export const ClaudeMirrorWaterWindowReflectionReportSchema = z.object({
+  reflectiveSurfaceType: z.enum(["vanity-mirror", "rain-puddle-water", "night-window-glass"]),
+  reflectionSymmetryVerified: z.boolean(),
+  normalVectorLawRuleKo: z.string(),
+  asymmetricFeatureReflectionKo: z.string(),
+  fresnelOpacityPct: z.number(),
+  opticalConsistencyScore: z.number(),
+});
+
+export type ClaudeMirrorWaterWindowReflectionReport = z.infer<
+  typeof ClaudeMirrorWaterWindowReflectionReportSchema
+>;
+
+export function buildLocalMirrorWaterWindowReflectionLock(
+  input: WebtoonProductionAssistInput = {},
+): ClaudeMirrorWaterWindowReflectionReport {
+  const protagonist = (input.protagonistName ?? "서진").trim() || "서진";
+  return {
+    reflectiveSurfaceType: "vanity-mirror",
+    reflectionSymmetryVerified: true,
+    normalVectorLawRuleKo:
+      "입사각과 반사각 일치 법칙에 따라 카메라가 피사체 등 뒤 대각선(35°)에 위치할 때 거울 속 시선이 정면 카메라가 아닌 실제 광학 반사 축을 향하도록 고정",
+    asymmetricFeatureReflectionKo: `${protagonist}의 실제 해부학적 왼눈 흉터와 왼쪽 7:3 가르마가 거울 평면 대칭 변환(Plane Symmetry)에 의해 거울상 내부에서도 거울면 기준 동일 깊이·동일 측면에 맺히도록 검증`,
+    fresnelOpacityPct: 78,
+    opticalConsistencyScore: 98,
+  };
+}

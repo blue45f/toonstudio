@@ -18,6 +18,12 @@ import {
 	CSP_SPWS_SHORTCUT_DB_SUMMARY,
 } from "../../../../../../packages/studio-format-gateway/src/csp-complete-archive-cs3o-foil-shortcuts";
 import {
+	CSP_LIP_QUICKLOOK_PLUGIN_SPECS,
+	CSP_SKSHAPER_UNICODE_SPEC,
+	CSP_SYSTEM_HELPER_APP_MANIFEST,
+	CSP_TG_TOS_PLUGIN_SPEC,
+} from "../../../../../../packages/studio-format-gateway/src/csp-lippreview-tos-scan-skshaper";
+import {
 	CSP_NATIVE_PLUGIN_BINARY_MANIFEST,
 	CSP_UX_EDIT_IMAGE_TOOL_CATALOG,
 	applyCspGaussBlurFilter,
@@ -49,6 +55,17 @@ import {
 	applyCspTppNormalMapFilter,
 	applyCspTppRotationBlurFilter,
 } from "./studio-csp-native-decompiled-filters";
+import {
+	applyCspFlowBasedAbstractionFilter,
+	applyCspGeometricDistortionPanoramaFilter,
+	applyCspLineWidthFilter,
+	applyCspPencilArtFilter,
+	applyCspSmoothingFilter,
+	applyCspSphereFilter,
+	applyCspTppFilmCameraStyleFilter,
+	applyCspWaveformFilter,
+	applyCspZigzagFilter,
+} from "./studio-csp-remaining-plugin-filters";
 
 // ---------------------------------------------------------------------------
 // 1. Settings/PAINT/ColorTransfer 8종 PNG 실측 CIE L*a*b* (D65) Reinhard 색감 이식 엔진
@@ -301,36 +318,12 @@ export interface CspCaffeSuperResWeightSpec {
 }
 
 export const CSP_CAFFE_SUPERRES_WEIGHT_SPECS: readonly CspCaffeSuperResWeightSpec[] = [
-	{ id: "x2", scale: 2, denoise: false, prototxtFileName: "x2.prototxt", prototxtByteSize: 1384,
-		caffemodelFileName: "x2.caffemodel",
-		caffemodelByteSize: 160_269,
-		runtimeBackend: "libailia.dylib",
-	},
-	{ id: "x2_denoise", scale: 2, denoise: true, prototxtFileName: "x2_denoise.prototxt", prototxtByteSize: 2236,
-		caffemodelFileName: "x2_denoise.caffemodel",
-		caffemodelByteSize: 321_365,
-		runtimeBackend: "libailia.dylib",
-	},
-	{ id: "x3", scale: 3, denoise: false, prototxtFileName: "x3.prototxt", prototxtByteSize: 1384,
-		caffemodelFileName: "x3.caffemodel",
-		caffemodelByteSize: 160_269,
-		runtimeBackend: "libailia.dylib",
-	},
-	{ id: "x3_denoise", scale: 3, denoise: true, prototxtFileName: "x3_denoise.prototxt", prototxtByteSize: 2236,
-		caffemodelFileName: "x3_denoise.caffemodel",
-		caffemodelByteSize: 321_365,
-		runtimeBackend: "libailia.dylib",
-	},
-	{ id: "x4", scale: 4, denoise: false, prototxtFileName: "x4.prototxt", prototxtByteSize: 1384,
-		caffemodelFileName: "x4.caffemodel",
-		caffemodelByteSize: 160_269,
-		runtimeBackend: "libailia.dylib",
-	},
-	{ id: "x4_denoise", scale: 4, denoise: true, prototxtFileName: "x4_denoise.prototxt", prototxtByteSize: 2236,
-		caffemodelFileName: "x4_denoise.caffemodel",
-		caffemodelByteSize: 321_365,
-		runtimeBackend: "libailia.dylib",
-	},
+	{ id: "x2", scale: 2, denoise: false, prototxtFileName: "x2.prototxt", prototxtByteSize: 1384, caffemodelFileName: "x2.caffemodel", caffemodelByteSize: 160_269, runtimeBackend: "libailia.dylib" },
+	{ id: "x2_denoise", scale: 2, denoise: true, prototxtFileName: "x2_denoise.prototxt", prototxtByteSize: 2236, caffemodelFileName: "x2_denoise.caffemodel", caffemodelByteSize: 321_365, runtimeBackend: "libailia.dylib" },
+	{ id: "x3", scale: 3, denoise: false, prototxtFileName: "x3.prototxt", prototxtByteSize: 1384, caffemodelFileName: "x3.caffemodel", caffemodelByteSize: 160_269, runtimeBackend: "libailia.dylib" },
+	{ id: "x3_denoise", scale: 3, denoise: true, prototxtFileName: "x3_denoise.prototxt", prototxtByteSize: 2236, caffemodelFileName: "x3_denoise.caffemodel", caffemodelByteSize: 321_365, runtimeBackend: "libailia.dylib" },
+	{ id: "x4", scale: 4, denoise: false, prototxtFileName: "x4.prototxt", prototxtByteSize: 1384, caffemodelFileName: "x4.caffemodel", caffemodelByteSize: 160_269, runtimeBackend: "libailia.dylib" },
+	{ id: "x4_denoise", scale: 4, denoise: true, prototxtFileName: "x4_denoise.prototxt", prototxtByteSize: 2236, caffemodelFileName: "x4_denoise.caffemodel", caffemodelByteSize: 321_365, runtimeBackend: "libailia.dylib" },
 ] as const;
 
 export interface CspSuperResolutionOptions {
@@ -620,15 +613,24 @@ export type CspUnifiedDispatchedFilterId =
 	| "Pinch"
 	| "LensDistortion"
 	| "GeometricDistortionFishEye"
+	| "GeometricDistortionPanorama"
 	| "TPPChromaticAberration"
+	| "TPPFilmCameraStyle"
 	| "TPPNormalMap"
 	| "TPReduceNoiseFilter"
 	| "TPPAddNoise"
 	| "SimpleWave"
+	| "Waveform"
+	| "Zigzag"
+	| "Sphere"
 	| "Spiral"
 	| "Dust"
 	| "PolarCd"
 	| "PerlinNoise"
+	| "LineWidth"
+	| "PencilArtFilter"
+	| "FlowBasedAbstraction"
+	| "Smoothing"
 	| "ColorTransfer";
 
 export function executeCspUnifiedFilterPlugIn(
@@ -645,129 +647,76 @@ export function executeCspUnifiedFilterPlugIn(
 		case "GaussBlur":
 			return applyCspGaussBlurFilter(raw, width, height, { radiusPx: 2.5 });
 		case "MotionBlur":
-			return applyCspMotionBlurFilter(raw, width, height, {
-				distancePx: 6,
-				angleDeg: 0,
-				direction: "both",
-			});
+			return applyCspMotionBlurFilter(raw, width, height, { distancePx: 6, angleDeg: 0, direction: "both" });
 		case "RadialBlur":
-			return applyCspRadialBlurFilter(raw, width, height, {
-				centerX: cx,
-				centerY: cy,
-				strengthPx: 8,
-				direction: "outward",
-			});
+			return applyCspRadialBlurFilter(raw, width, height, { centerX: cx, centerY: cy, strengthPx: 8, direction: "outward" });
 		case "TPPRotationBlur":
-			return applyCspTppRotationBlurFilter(src, width, height, {
-				amountDeg: 10,
-				direction: "both",
-				aspect: 1,
-				tiltDeg: 0,
-			});
+			return applyCspTppRotationBlurFilter(src, width, height, { amountDeg: 10, direction: "both", aspect: 1, tiltDeg: 0 });
 		case "UnSharpMask":
-			return applyCspUnSharpMaskFilter(raw, width, height, {
-				radiusPx: 2,
-				amountPercent: 120,
-				threshold: 2,
-			});
+			return applyCspUnSharpMaskFilter(raw, width, height, { radiusPx: 2, amountPercent: 120, threshold: 2 });
 		case "Sharp":
 			return applyCspSharpAndBlurMoreFilter(raw, width, height, { mode: "sharp" });
 		case "SharpStrong":
-			return applyCspSharpAndBlurMoreFilter(raw, width, height, {
-				mode: "sharp-strong",
-			});
+			return applyCspSharpAndBlurMoreFilter(raw, width, height, { mode: "sharp-strong" });
 		case "SharpOff":
-			return applyCspSharpAndBlurMoreFilter(raw, width, height, {
-				mode: "blur",
-			});
+			return applyCspSharpAndBlurMoreFilter(raw, width, height, { mode: "blur" });
 		case "SharpOffStrong":
-			return applyCspSharpAndBlurMoreFilter(raw, width, height, {
-				mode: "blur-more",
-			});
+			return applyCspSharpAndBlurMoreFilter(raw, width, height, { mode: "blur-more" });
 		case "Mosaic":
 			return applyCspMosaicFilter(raw, width, height, { tileSizePx: 4 });
 		case "Pinch":
-			return applyCspPinchFilter(raw, width, height, {
-				centerX: cx,
-				centerY: cy,
-				strength: 45,
-			});
+			return applyCspPinchFilter(raw, width, height, { centerX: cx, centerY: cy, strength: 45 });
 		case "LensDistortion":
-			return applyCspPiLensDistortionFilter(src, width, height, {
-				distortion: -0.25,
-				rangeType: "full",
-				radius01: 1,
-				oblateness: 0,
-			});
+			return applyCspPiLensDistortionFilter(src, width, height, { distortion: -0.25, rangeType: "full", radius01: 1, oblateness: 0 });
 		case "GeometricDistortionFishEye":
-			return applyCspGeometricDistortionFishEyeFilter(raw, width, height, {
-				distortion: 50,
-				centerX: cx,
-				centerY: cy,
-				radiusScale: 1,
-			});
+			return applyCspGeometricDistortionFishEyeFilter(raw, width, height, { distortion: 50, centerX: cx, centerY: cy, radiusScale: 1 });
+		case "GeometricDistortionPanorama":
+			return applyCspGeometricDistortionPanoramaFilter(src, width, height, { mode: "equirectangular-to-perspective" });
 		case "TPPChromaticAberration":
-			return applyCspTppChromaticAberrationFilter(raw, width, height, {
-				mode: "radial",
-				intensity: 35,
-			});
+			return applyCspTppChromaticAberrationFilter(raw, width, height, { mode: "radial", intensity: 35 });
+		case "TPPFilmCameraStyle":
+			return applyCspTppFilmCameraStyleFilter(src, width, height, { chromaticAberrationPx: 1.5, vintageSepiaEnabled: true, lightLeakMode: "corner" });
 		case "TPPNormalMap":
-			return applyCspTppNormalMapFilter(src, width, height, {
-				strength: 2.5,
-				yDirectionType: "opengl-y-plus",
-			});
+			return applyCspTppNormalMapFilter(src, width, height, { strength: 2.5, yDirectionType: "opengl-y-plus" });
 		case "TPReduceNoiseFilter":
-			return applyCspTpReduceNoiseFilter(src, width, height, {
-				strength01: 0.6,
-				preserveDetail01: 0.5,
-			});
+			return applyCspTpReduceNoiseFilter(src, width, height, { strength01: 0.6, preserveDetail01: 0.5 });
 		case "TPPAddNoise":
-			return applyCspTppAddNoiseFilter(src, width, height, {
-				amount01: 0.15,
-				colorMode: "monochrome",
-				seed: 42,
-			});
+			return applyCspTppAddNoiseFilter(src, width, height, { amount01: 0.15, colorMode: "monochrome", seed: 42 });
 		case "SimpleWave":
-			return applyCspSimpleWaveFilter(src, width, height, {
-				amplitudeX: 3,
-				amplitudeY: 3,
-				wavelengthX: 16,
-				wavelengthY: 16,
-			});
+			return applyCspSimpleWaveFilter(src, width, height, { amplitudeX: 3, amplitudeY: 3, wavelengthX: 16, wavelengthY: 16 });
+		case "Waveform":
+			return applyCspWaveformFilter(src, width, height, { shape: "triangle", wavelengthPx: 12, amplitudeX: 3, amplitudeY: 3 });
+		case "Zigzag":
+			return applyCspZigzagFilter(src, width, height, { angleDeg: 45, ridges: 4 });
+		case "Sphere":
+			return applyCspSphereFilter(src, width, height, { strength: 60, cylindricalMode: false });
 		case "Spiral":
-			return applyCspSpiralFilter(src, width, height, {
-				twirlTurns: 0.5,
-			});
+			return applyCspSpiralFilter(src, width, height, { twirlTurns: 0.5 });
 		case "Dust":
-			return applyCspDustFilter(src, width, height, {
-				radiusPx: 1,
-				threshold01: 0.1,
-				mode: "median",
-			});
+			return applyCspDustFilter(src, width, height, { radiusPx: 1, threshold01: 0.1, mode: "median" });
 		case "PolarCd":
-			return applyCspPolarCoordinatesFilter(src, width, height, {
-				mode: "rect-to-polar",
-			});
+			return applyCspPolarCoordinatesFilter(src, width, height, { mode: "rect-to-polar" });
 		case "PerlinNoise":
-			return applyCspPerlinNoiseFilter(src, width, height, {
-				scalePx: 32,
-				octaves: 4,
-				persistence: 0.5,
-				seed: 7,
-				blendOpacity01: 1,
-			});
+			return applyCspPerlinNoiseFilter(src, width, height, { scalePx: 32, octaves: 4, persistence: 0.5, seed: 7, blendOpacity01: 1 });
+		case "LineWidth":
+			return applyCspLineWidthFilter(src, width, height, { mode: "thicken", radiusPx: 1, remainOnePixelCore: true });
+		case "PencilArtFilter":
+			return applyCspPencilArtFilter(src, width, height, { showOutline: true, showHatchingBackground: true, grayscaleOutput: true });
+		case "FlowBasedAbstraction":
+			return applyCspFlowBasedAbstractionFilter(src, width, height, { numberOfGradations: 6, lineOpacity01: 0.85 });
+		case "Smoothing":
+			return applyCspSmoothingFilter(src, width, height);
 		case "ColorTransfer":
-			return applyCspColorTransferFilter(src, width, height, {
-				presetId: "01_sunrise",
-				strength: 1,
-			});
+			return applyCspColorTransferFilter(src, width, height, { presetId: "01_sunrise", strength: 1 });
 	}
 }
 
 export function getCspCompleteInternalizationManifest() {
 	return {
 		appVersion: "5.1.5",
+		totalMachOBinaryCount: 143,
 		totalPlugInAndFrameworkBundles: 36,
+		dispatchedFilterPlugInCount: 32,
 		corePluginManifestEntries: CSP_NATIVE_PLUGIN_BINARY_MANIFEST.length,
 		uxSubToolCatalogCount: CSP_UX_EDIT_IMAGE_TOOL_CATALOG.length,
 		brushShapePresetCount: CSP_BRUSH_SHAPE_PRESETS.length,
@@ -787,5 +736,9 @@ export function getCspCompleteInternalizationManifest() {
 		spwsToolShortcutRowCount: CSP_SPWS_SHORTCUT_DB_SUMMARY.totalToolShortcutRows,
 		crossPlatformSpwsPresetCount: CSP_CROSS_PLATFORM_SPWS_PRESET_SPECS.length,
 		menuV3OfficialSvgIconCount: CSP_MENUV3_ALL_18_SVG_ICONS.length,
+		lipQuickLookPluginCount: CSP_LIP_QUICKLOOK_PLUGIN_SPECS.length,
+		tgTosTonePatternCount: CSP_TG_TOS_PLUGIN_SPEC.builtInTonePatterns.length,
+		systemHelperAppCount: CSP_SYSTEM_HELPER_APP_MANIFEST.length,
+		skShaperLibraryCount: CSP_SKSHAPER_UNICODE_SPEC.libraries.length,
 	} as const;
 }

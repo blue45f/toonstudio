@@ -39,7 +39,7 @@ export type ClaudeCreatorTaskId =
   | "core:command-plan"
   | "core:localize"
   | "core:alt-text"
-  // 2. Storyboard & Production Suite (9)
+  // 2. Storyboard & Production Suite (16)
   | "production:storyboard-cut-breakdown"
   | "production:scroll-rhythm-doctor"
   | "production:color-mood-script"
@@ -49,13 +49,22 @@ export type ClaudeCreatorTaskId =
   | "production:weather-particle-time-progression-lock"
   | "production:panel-border-gutter-tension-lock"
   | "production:hand-prop-grip-anatomy-continuity-lock"
-  // 3. Next-Gen Suite (6)
+  | "production:hair-silhouette-ahoge-parting-lock"
+  | "production:eyewear-jewelry-reflection-rig-lock"
+  | "production:vehicle-steed-carriage-harness-lock"
+  | "production:magic-aura-elemental-sigil-geometry-lock"
+  | "production:food-tableware-banquet-prop-continuity"
+  | "production:mirror-water-window-reflection-axis-lock"
+  | "production:combat-bloodstain-dust-tatter-decay-lock"
+  // 3. Next-Gen Suite (8)
   | "nextgen:retention-simulator"
   | "nextgen:ooc-voice-doctor"
   | "nextgen:audio-cuesheet-director"
   | "nextgen:3d-asset-placement"
   | "nextgen:visual-continuity-linter"
   | "nextgen:multi-episode-canon-vault"
+  | "nextgen:footwear-floor-contact-stride-lock"
+  | "nextgen:crowd-silhouette-depth-fog-lock"
   // 4. Phase 5 Competitor Full Suite (7)
   | "competitor:beluga-clipstudio-production"
   | "competitor:onoma-kakaopage-ip"
@@ -223,78 +232,22 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   ),
 
   // 2. Storyboard & Production Suite
-  "production:storyboard-cut-breakdown": defineRoute(
-    "production:storyboard-cut-breakdown",
-    "웹툰 컷 콘티 브레이크다운",
-    "storyboard-production",
-    "creative-production",
-    "대본→컷 구도·카메라·조명·말풍선 분해는 Sonnet 5.5 표준 연출 티어",
-    2_560,
-  ),
-  "production:scroll-rhythm-doctor": defineRoute(
-    "production:scroll-rhythm-doctor",
-    "모바일 스크롤 호흡·시선 유도 닥터",
-    "storyboard-production",
-    "creative-production",
-    "390×844 뷰포트 여백·시선 S-curve 진단은 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "production:color-mood-script": defineRoute(
-    "production:color-mood-script",
-    "컬러·조명 무드 스크립트 디렉터",
-    "storyboard-production",
-    "creative-production",
-    "감정선 기반 HEX 팔레트·4레이어 조명 설계는 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "production:continuity-foreshadow": defineRoute(
-    "production:continuity-foreshadow",
-    "설정 연속성·복선 감수 어시스턴트",
-    "storyboard-production",
-    "deep-architecture",
-    "다중 컷 의상·소품 연속성 및 복선 회수 감수는 Opus 5.5 심층 추론 적용",
-    3_072,
-  ),
-  "production:sfx-typo-director": defineRoute(
-    "production:sfx-typo-director",
-    "효과음(SFX)·타이포 연출 디렉터",
-    "storyboard-production",
-    "creative-production",
-    "의성어/의태어 타이포그래피·워프·배치 연출은 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "production:multi-character-crowd-wardrobe-lock": defineRoute(
-    "production:multi-character-crowd-wardrobe-lock",
-    "다중 등장인물·조연·엑스트라 제복/문장(Crest)/계급장 복식 규율 일관성 디렉터",
-    "storyboard-production",
-    "creative-production",
-    "학원·황궁·기사단·길드 제복 컬러코드·견장/휘장 위치·신분별 소품 혼선 차단은 Sonnet 5.5 적용",
-    3_072,
-  ),
-  "production:weather-particle-time-progression-lock": defineRoute(
-    "production:weather-particle-time-progression-lock",
-    "컷간 날씨(비·눈·안개)·젖은 머리카락/의상 투과도·시간 경과(그림자 길이·노을→야간) 물리 연속성 고정기",
-    "storyboard-production",
-    "fast-inline",
-    "컷간 강우/강설 파티클 밀도·젖은 의상/모발 광택 지속 시간·태양 고도각에 따른 그림자 비율 잠금은 Haiku 5.5 적용",
-    2_560,
-  ),
-  "production:panel-border-gutter-tension-lock": defineRoute(
-    "production:panel-border-gutter-tension-lock",
-    "컷 테두리(사선·오버랩·프레임리스 블리드) 두께 & 컷간 여백(Gutter) 배경색 그라데이션 연속성 디렉터",
-    "storyboard-production",
-    "fast-inline",
-    "긴장도에 따른 컷 테두리 두께/기울기(Deg)·프레임 돌파(Pop-out) 레이어·컷간 여백(Gutter) 그라데이션 색상 잠금은 Haiku 5.5 적용",
-    2_560,
-  ),
-  "production:hand-prop-grip-anatomy-continuity-lock": defineRoute(
-    "production:hand-prop-grip-anatomy-continuity-lock",
-    "손가락 관절 해부학·소품 파지법(검자루·찻잔·스마트폰 Grip) & 양손 교대 연속성 고정기",
-    "storyboard-production",
-    "creative-production",
-    "AI 작화에서 가장 흔한 육손/관절 역꺾임 방지·소품별 정밀 파지(Grip) 해부학·컷간 주손(왼손/오른손) 반전 차단은 Sonnet 5.5 적용",
-    3_584,
-  ),
+  "production:storyboard-cut-breakdown": defineRoute("production:storyboard-cut-breakdown", "웹툰 컷 콘티 브레이크다운", "storyboard-production", "creative-production", "대본→컷 구도·카메라·조명·말풍선 분해는 Sonnet 5.5 표준 연출 티어", 2_560),
+  "production:scroll-rhythm-doctor": defineRoute("production:scroll-rhythm-doctor", "모바일 스크롤 호흡·시선 유도 닥터", "storyboard-production", "creative-production", "390×844 뷰포트 여백·시선 S-curve 진단은 Sonnet 5.5 적용", 2_048),
+  "production:color-mood-script": defineRoute("production:color-mood-script", "컬러·조명 무드 스크립트 디렉터", "storyboard-production", "creative-production", "감정선 기반 HEX 팔레트·4레이어 조명 설계는 Sonnet 5.5 적용", 2_048),
+  "production:continuity-foreshadow": defineRoute("production:continuity-foreshadow", "설정 연속성·복선 감수 어시스턴트", "storyboard-production", "deep-architecture", "다중 컷 의상·소품 연속성 및 복선 회수 감수는 Opus 5.5 심층 추론 적용", 3_072),
+  "production:sfx-typo-director": defineRoute("production:sfx-typo-director", "효과음(SFX)·타이포 연출 디렉터", "storyboard-production", "creative-production", "의성어/의태어 타이포그래피·워프·배치 연출은 Sonnet 5.5 적용", 2_048),
+  "production:multi-character-crowd-wardrobe-lock": defineRoute("production:multi-character-crowd-wardrobe-lock", "다중 등장인물·조연·엑스트라 제복/문장(Crest)/계급장 복식 규율 일관성 디렉터", "storyboard-production", "creative-production", "학원·황궁·기사단·길드 제복 컬러코드·견장/휘장 위치·신분별 소품 혼선 차단은 Sonnet 5.5 적용", 3_072),
+  "production:weather-particle-time-progression-lock": defineRoute("production:weather-particle-time-progression-lock", "컷간 날씨(비·눈·안개)·젖은 머리카락/의상 투과도·시간 경과(그림자 길이·노을→야간) 물리 연속성 고정기", "storyboard-production", "fast-inline", "컷간 강우/강설 파티클 밀도·젖은 의상/모발 광택 지속 시간·태양 고도각에 따른 그림자 비율 잠금은 Haiku 5.5 적용", 2_560),
+  "production:panel-border-gutter-tension-lock": defineRoute("production:panel-border-gutter-tension-lock", "컷 테두리(사선·오버랩·프레임리스 블리드) 두께 & 컷간 여백(Gutter) 배경색 그라데이션 연속성 디렉터", "storyboard-production", "fast-inline", "긴장도에 따른 컷 테두리 두께/기울기(Deg)·프레임 돌파(Pop-out) 레이어·컷간 여백(Gutter) 그라데이션 색상 잠금은 Haiku 5.5 적용", 2_560),
+  "production:hand-prop-grip-anatomy-continuity-lock": defineRoute("production:hand-prop-grip-anatomy-continuity-lock", "손가락 관절 해부학·소품 파지법(검자루·찻잔·스마트폰 Grip) & 양손 교대 연속성 고정기", "storyboard-production", "creative-production", "AI 작화에서 가장 흔한 육손/관절 역꺾임 방지·소품별 정밀 파지(Grip) 해부학·컷간 주손(왼손/오른손) 반전 차단은 Sonnet 5.5 적용", 3_584),
+  "production:hair-silhouette-ahoge-parting-lock": defineRoute("production:hair-silhouette-ahoge-parting-lock", "캐릭터 헤어 실루엣·가르마(좌/우 Parting)·바보털(Ahoge)·뒷머리 기장 & 바람 탄성 일관성 고정기", "storyboard-production", "fast-inline", "컷간 앞머리 가르마 좌우 반전 방지·시그니처 바보털(Ahoge)/옆머리 가닥 수·뒷머리 기장 비율 고정은 Haiku 5.5 적용", 2_560),
+  "production:eyewear-jewelry-reflection-rig-lock": defineRoute("production:eyewear-jewelry-reflection-rig-lock", "안경테·모노클·귀걸이·티아라·목걸이 금속 반사율(Specular) & 귀/콧대 착용 접점(Anchor) 연속성 고정기", "storyboard-production", "fast-inline", "모노클 체인 위치·안경다리 귀걸이 접점 증발 방지·보석 굴절/금박 하이라이트 레이어 잠금은 Haiku 5.5 적용", 2_560),
+  "production:vehicle-steed-carriage-harness-lock": defineRoute("production:vehicle-steed-carriage-harness-lock", "말(마필)·마차·자동차·메카닉 탑승물 스케일 & 고삐/안장/운전석 착석 자세(Seated Posture) 연속성 감독", "storyboard-production", "creative-production", "로판 마차/전투마 등자·고삐 파지·차량 좌핸들/우핸들 규격 및 탑승자 상체 비례 일관성은 Sonnet 5.5 적용", 3_584),
+  "production:magic-aura-elemental-sigil-geometry-lock": defineRoute("production:magic-aura-elemental-sigil-geometry-lock", "마법진(Sigil) 기하 문양·오러(Aura) 색상/파티클 궤적·속성 이펙트 발광 레이어(Add/Glow) 일관성 디렉터", "storyboard-production", "creative-production", "캐릭터 고유 마법진 다각형 꼭짓점 수·룬 문자 링·검기/오러 코어-글로우 HEX 색온도 고정은 Sonnet 5.5 적용", 3_584),
+  "production:food-tableware-banquet-prop-continuity": defineRoute("production:food-tableware-banquet-prop-continuity", "로판 다과회·현대 카페·주점 식기(찻잔/커틀러리/디저트) 배치 & 섭취 진행도(음료 수위) 연속성 고정기", "storyboard-production", "fast-inline", "대화 컷 사이 찻잔/와인잔 수위 역전 방지·포크/나이프 좌우 위치·테이블 소품 증발 차단은 Haiku 5.5 적용", 2_560),
+  "production:mirror-water-window-reflection-axis-lock": defineRoute("production:mirror-water-window-reflection-axis-lock", "거울·유리창·수면 반사상(Reflection) 시점 벡터·좌우 대칭축 & 반투명 프레넬(Fresnel) 물리 일관성 감독", "storyboard-production", "deep-architecture", "거울/유리창/수면에 비친 인물의 시점 법선 벡터·비대칭 흉터/가르마의 반사 대칭 규칙·프레넬 투과율 감사는 Opus 5.5 적용", 4_096),
+  "production:combat-bloodstain-dust-tatter-decay-lock": defineRoute("production:combat-bloodstain-dust-tatter-decay-lock", "전투 혈흔(Blood Spatter)·먼지/그을음·의상 찢어짐(Tatter) 비가역 누적 & 세탁/치유 시점 타임라인 원장 감독", "storyboard-production", "creative-production", "전투 컷 진행에 따른 혈흔/그을음/소매 파열의 비가역 누적 및 치유/환복 전 자동 초기화 방지는 Sonnet 5.5 적용", 3_584),
 
   // 3. Next-Gen Suite
   "nextgen:retention-simulator": defineRoute(
@@ -345,6 +298,8 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
     "회차 간 시간 경과·인물 호칭·복장/외형 변천사·미회수 떡밥 캐논 볼트 동기화는 Sonnet 5.5 적용",
     4_096,
   ),
+  "nextgen:footwear-floor-contact-stride-lock": defineRoute("nextgen:footwear-floor-contact-stride-lock", "구두·부츠·군화 굽 높이(Heel Height) & 계단/경사로/바닥 접지 보폭(Stride Mechanics) 연속성 감독", "nextgen-studio", "fast-inline", "컷간 신발 굽 높이·부츠 버클/끈 디테일 증발 방지 및 계단/경사로 발바닥 접지 각도 고정은 Haiku 5.5 적용", 2_560),
+  "nextgen:crowd-silhouette-depth-fog-lock": defineRoute("nextgen:crowd-silhouette-depth-fog-lock", "전경·중경·원경 군중(Crowd) 실루엣 밀도 & 대기 원근(Atmospheric Depth Fog)·선 굵기 감쇠 일관성 감독", "nextgen-studio", "creative-production", "주연(1.0x)·중경 엑스트라(0.65x)·원경 군중(0.35x) 선 굵기 계층 및 대기 원근 안개 채도 감쇠 고정은 Sonnet 5.5 적용", 3_584),
 
   // 4. Phase 5 Competitor Full Suite
   "competitor:beluga-clipstudio-production": defineRoute(

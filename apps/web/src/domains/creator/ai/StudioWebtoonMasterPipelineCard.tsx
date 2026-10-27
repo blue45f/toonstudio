@@ -23,8 +23,14 @@ import type { CharacterVoiceArchetype } from "../lettering/studio-dialogue-sugge
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
+  buildDeterministicHandPropGripLock,
+  buildDeterministicPanelBorderGutterLock,
   buildDeterministicStoryboardAssistFallback,
+  runClaudeHandPropGripAnatomyDirector,
+  runClaudePanelBorderGutterTensionDirector,
   runClaudeWebtoonStoryboardAssist,
+  type ClaudeHandPropGripLockView,
+  type ClaudePanelBorderGutterLockView,
   type ClaudeStoryboardAssistView,
 } from "./claude/claude-webtoon-storyboard-assist";
 import type { StoryboardArtistStyleBinding } from "./studio-ai-storyboard-director";
@@ -183,6 +189,12 @@ export function StudioWebtoonMasterPipelineCard({
   const [claudeAssistOverride, setClaudeAssistOverride] = useState<ClaudeStoryboardAssistView | null>(
     null,
   );
+  const [borderGutterLock, setBorderGutterLock] = useState<ClaudePanelBorderGutterLockView>(() =>
+    buildDeterministicPanelBorderGutterLock({ sceneSummaryKo: coreConflict || "클라이맥스 결투 컷" }),
+  );
+  const [handPropGripLock, setHandPropGripLock] = useState<ClaudeHandPropGripLockView>(() =>
+    buildDeterministicHandPropGripLock({ characterName: "서진", propNameKo: "청류검(장검)" }),
+  );
   const [isRunningClaudeAssist, setIsRunningClaudeAssist] = useState(false);
 
   const defaultClaudeAssist = useMemo(
@@ -211,16 +223,30 @@ export function StudioWebtoonMasterPipelineCard({
   const handleRunClaudeStoryboardAssist = async (): Promise<void> => {
     setIsRunningClaudeAssist(true);
     try {
-      const res = await runClaudeWebtoonStoryboardAssist({
-        scriptText: scriptInput,
-        genre: storyGenre,
-        coreConflict,
-        relationshipDynamic,
-        posePresetId,
-        artistLabel: activeArtistStyle?.artistLabel,
-        triggerWord: activeArtistStyle?.triggerWord,
-      });
+      const [res, nextBorder, nextGrip] = await Promise.all([
+        runClaudeWebtoonStoryboardAssist({
+          scriptText: scriptInput,
+          genre: storyGenre,
+          coreConflict,
+          relationshipDynamic,
+          posePresetId,
+          artistLabel: activeArtistStyle?.artistLabel,
+          triggerWord: activeArtistStyle?.triggerWord,
+        }),
+        runClaudePanelBorderGutterTensionDirector({
+          sceneSummaryKo: coreConflict || "클라이맥스 결투 시퀀스",
+          cutCount: 3,
+          peakTensionCutIndex: 2,
+        }),
+        runClaudeHandPropGripAnatomyDirector({
+          characterName: "서진",
+          propNameKo: "청류검(장검)",
+          dominantHand: "right-hand",
+        }),
+      ]);
       setClaudeAssistOverride(res);
+      setBorderGutterLock(nextBorder);
+      setHandPropGripLock(nextGrip);
     } finally {
       setIsRunningClaudeAssist(false);
     }
@@ -630,6 +656,21 @@ export function StudioWebtoonMasterPipelineCard({
           카메라: {activeClaudeAssist.cutDirectingNotes[0]?.poseAndCameraNote ?? "50mm 표준 렌즈"} · 현지화:{" "}
           {activeClaudeAssist.globalLocalizationNotes[0] ?? "번역 팽창률 여유 확보"}
         </p>
+        <div
+          data-testid="storyboard-border-grip-consistency-strip"
+          className="grid grid-cols-1 gap-1 border-t border-line pt-1.5 text-[0.58rem] sm:grid-cols-2"
+        >
+          <div className="rounded bg-raised px-2 py-1 text-fg-2">
+            <strong className="text-accent">컷 테두리·여백(Gutter) 연속성 ({borderGutterLock.overallTensionCurveScore}점):</strong>{" "}
+            컷#2 {borderGutterLock.panelBorderSpecs[1]?.frameStyle} ({borderGutterLock.panelBorderSpecs[1]?.diagonalTiltDeg}°) · 여백{" "}
+            {borderGutterLock.panelBorderSpecs[1]?.gutterHeightPx}px ({borderGutterLock.panelBorderSpecs[1]?.gutterGradientFromHex}→
+            {borderGutterLock.panelBorderSpecs[1]?.gutterGradientToHex})
+          </div>
+          <div className="rounded bg-raised px-2 py-1 text-fg-2">
+            <strong className="text-accent">손가락 관절·파지법 고정 ({handPropGripLock.anatomyConsistencyScore}점):</strong>{" "}
+            {handPropGripLock.characterName} ({handPropGripLock.dominantHand}) · {handPropGripLock.propNameKo} ({handPropGripLock.cutGripDirectives[0]?.gripArchetype})
+          </div>
+        </div>
       </div>
 
       <StudioWebtoonProductionAssistPanel

@@ -34,6 +34,7 @@ import { computeCspAiliaHanukeEnclosedGapMap } from "./studio-csp-osqp-sharpyuv-
 import {
   CspPwEditSliderJoint,
   StudioCspCompleteArchiveFoilShortcutsSection,
+  StudioCspLipPreviewScanSkShaperFiltersSection,
   StudioCspPwuiBentoToonSection,
 } from "./StudioCspPwuiBentoToonSection";
 
@@ -97,7 +98,8 @@ export type StudioCspUnifiedUxTabId =
   | "brush_3d_hand"
   | "icc_audio_ailia"
   | "pwui_bento_3d_toon"
-  | "cs3o_foil_shortcuts_wkbridge";
+  | "cs3o_foil_shortcuts_wkbridge"
+  | "lippreview_scan_skshaper_filters";
 
 export type StudioCspWorkspacePresetId =
   | "presetMac_1_illustration"
@@ -122,6 +124,7 @@ const UX_TABS: readonly { readonly id: StudioCspUnifiedUxTabId; readonly labelKo
   { id: "icc_audio_ailia", labelKo: "ICC CMYK 프루프·립싱크·선화 틈새" },
   { id: "pwui_bento_3d_toon", labelKo: "PW* 디자인 시스템·벤토 런처·3D 툰(.fto)" },
   { id: "cs3o_foil_shortcuts_wkbridge", labelKo: ".cs3o 두상·금박(Foil) 셰이더·단축키(870/258)·WKBridge" },
+  { id: "lippreview_scan_skshaper_filters", labelKo: "QuickLook(.clip)·TGTos(.tos)·scan.app·SkShaper·32필터" },
 ] as const;
 
 const WORKSPACE_PRESETS: readonly {
@@ -771,6 +774,9 @@ export function StudioClipStudioUnifiedUxPanel({
 
       {activeTab === "cs3o_foil_shortcuts_wkbridge" && (
         <StudioCspCompleteArchiveFoilShortcutsSection />
+      )}
+      {activeTab === "lippreview_scan_skshaper_filters" && (
+        <StudioCspLipPreviewScanSkShaperFiltersSection />
       )}
     </section>
   );

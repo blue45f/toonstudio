@@ -27,18 +27,24 @@ import {
   buildDeterministicBg3dLightingAssetReport,
   buildDeterministicBgmAudioToonReport,
   buildDeterministicCharacterOocRadarReport,
+  buildDeterministicCrowdDepthFogLockReport,
+  buildDeterministicFootwearStrideLockReport,
   buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
   buildDeterministicVisualContinuityLinterReport,
   runClaudeBg3dLightingAssetDirector,
   runClaudeBgmAudioToonCuesheet,
   runClaudeCharacterOocRadar,
+  runClaudeCrowdDepthFogLockDirector,
+  runClaudeFootwearStrideLockDirector,
   runClaudeMultiEpisodeCanonVault,
   runClaudeReaderRetentionSimulator,
   runClaudeVisualContinuityLinter,
   type ClaudeBg3dLightingAssetView,
   type ClaudeBgmAudioToonView,
   type ClaudeCharacterOocRadarView,
+  type ClaudeCrowdDepthFogLockView,
+  type ClaudeFootwearStrideLockView,
   type ClaudeMultiEpisodeCanonVaultView,
   type ClaudeReaderRetentionView,
   type ClaudeVisualContinuityLinterView,
@@ -83,6 +89,16 @@ const EPISODIC_DOCTOR_TABS: readonly {
     labelKo: "장편 연재(1~100화) 캐논 볼트",
     benchmarkBadgeKo: "Sonnet 5.5 · 외형·호칭·떡밥",
   },
+  {
+    id: "episodic-footwear-floor-contact-stride-lock",
+    labelKo: "신발 굽 · 계단 접지 보폭 잠금",
+    benchmarkBadgeKo: "Haiku 5.5 · 공중부양 작붕 차단",
+  },
+  {
+    id: "episodic-crowd-silhouette-depth-fog-lock",
+    labelKo: "군중 엑스트라 · 대기원근 안개 잠금",
+    benchmarkBadgeKo: "Sonnet 5.5 · 3단 선굵기 분리",
+  },
 ];
 
 export interface StudioWebtoonEpisodicDoctorPanelProps {
@@ -108,6 +124,10 @@ export function StudioWebtoonEpisodicDoctorPanel({
     useState<ClaudeVisualContinuityLinterView | null>(null);
   const [liveCanonVaultView, setLiveCanonVaultView] =
     useState<ClaudeMultiEpisodeCanonVaultView | null>(null);
+  const [liveFootwearView, setLiveFootwearView] =
+    useState<ClaudeFootwearStrideLockView | null>(null);
+  const [liveCrowdDepthView, setLiveCrowdDepthView] =
+    useState<ClaudeCrowdDepthFogLockView | null>(null);
 
   const retentionView = useMemo(
     () => liveRetentionView ?? buildDeterministicReaderRetentionReport(assistInput),
@@ -133,6 +153,14 @@ export function StudioWebtoonEpisodicDoctorPanel({
     () => liveCanonVaultView ?? buildDeterministicMultiEpisodeCanonVaultReport(assistInput),
     [assistInput, liveCanonVaultView],
   );
+  const footwearView = useMemo(
+    () => liveFootwearView ?? buildDeterministicFootwearStrideLockReport(assistInput),
+    [assistInput, liveFootwearView],
+  );
+  const crowdDepthView = useMemo(
+    () => liveCrowdDepthView ?? buildDeterministicCrowdDepthFogLockReport(assistInput),
+    [assistInput, liveCrowdDepthView],
+  );
 
   const handleRunLiveClaudeDoctor = async () => {
     if (isRunningClaude) return;
@@ -148,8 +176,12 @@ export function StudioWebtoonEpisodicDoctorPanel({
         setLiveBgmView(await runClaudeBgmAudioToonCuesheet(assistInput));
       } else if (activeMode === "episodic-visual-continuity-linter") {
         setLiveLinterView(await runClaudeVisualContinuityLinter(assistInput));
-      } else {
+      } else if (activeMode === "multi-episode-canon-memory-vault") {
         setLiveCanonVaultView(await runClaudeMultiEpisodeCanonVault(assistInput));
+      } else if (activeMode === "episodic-footwear-floor-contact-stride-lock") {
+        setLiveFootwearView(await runClaudeFootwearStrideLockDirector(assistInput));
+      } else {
+        setLiveCrowdDepthView(await runClaudeCrowdDepthFogLockDirector(assistInput));
       }
     } finally {
       setIsRunningClaude(false);
@@ -167,7 +199,11 @@ export function StudioWebtoonEpisodicDoctorPanel({
             ? bgmView.source
             : activeMode === "episodic-visual-continuity-linter"
               ? linterView.source
-              : canonVaultView.source;
+              : activeMode === "multi-episode-canon-memory-vault"
+                ? canonVaultView.source
+                : activeMode === "episodic-footwear-floor-contact-stride-lock"
+                  ? footwearView.source
+                  : crowdDepthView.source;
 
   return (
     <div
@@ -598,6 +634,74 @@ export function StudioWebtoonEpisodicDoctorPanel({
               </div>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {/* 탭 7: 신발 굽 · 계단 접지 보폭 잠금 */}
+      {activeMode === "episodic-footwear-floor-contact-stride-lock" ? (
+        <div
+          data-testid="episodic-panel-episodic-footwear-floor-contact-stride-lock"
+          className="space-y-2 rounded-lg border border-line/70 bg-raised/25 p-2.5 text-[0.62rem]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 font-bold text-fg">
+              <ShieldCheck className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+              신발·부츠 굽 높이 · 밑창/버클 · 계단 디딤판(Tread) 접지 보폭 고정
+            </span>
+            <span className="rounded bg-good/15 px-2 py-0.5 font-bold text-good">
+              접지 일관성 {footwearView.footwearIntegrityScore}점 · 굽 {footwearView.heelHeightCm}cm
+            </span>
+          </div>
+          <p className="text-fg-2">{footwearView.strideSummaryKo}</p>
+          <p className="text-[0.58rem] text-fg-3">
+            밑창·버클: {footwearView.soleAndBuckleSpecKo} · 계단 접지: {footwearView.stairSlopeContactRuleKo}
+          </p>
+          <button
+            type="button"
+            data-testid="episodic-footwear-insert-btn"
+            onClick={() => onAppendDirectionLine(footwearView.readyFootwearGuardLine)}
+            className={cn(
+              "rounded border border-line bg-raised px-2 py-0.5 text-[0.57rem] font-semibold text-fg-2 hover:bg-card",
+              STUDIO_EASE,
+              STUDIO_FOCUS_RING,
+            )}
+          >
+            신발·계단 접지 지문 삽입
+          </button>
+        </div>
+      ) : null}
+
+      {/* 탭 8: 군중 엑스트라 · 대기원근 안개 잠금 */}
+      {activeMode === "episodic-crowd-silhouette-depth-fog-lock" ? (
+        <div
+          data-testid="episodic-panel-episodic-crowd-silhouette-depth-fog-lock"
+          className="space-y-2 rounded-lg border border-line/70 bg-raised/25 p-2.5 text-[0.62rem]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 font-bold text-fg">
+              <Box className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+              전경 주연 vs 중경·원경 군중 엑스트라 선굵기 감쇠 · 대기원근 안개 잠금
+            </span>
+            <span className="rounded bg-accent/15 px-2 py-0.5 font-bold text-accent">
+              계층 분리 {crowdDepthView.depthHierarchyScore}점 · 원경 안개 {crowdDepthView.backgroundSilhouetteFogPct}%
+            </span>
+          </div>
+          <p className="text-fg-2">{crowdDepthView.crowdAtmosphereSummaryKo}</p>
+          <p className="text-[0.58rem] text-fg-3">
+            주연 선굵기 {crowdDepthView.heroLineWeightMultiplier}x · 중경 군중 {crowdDepthView.midgroundCrowdLineMultiplier}x · 원경 안개 감쇠 {crowdDepthView.backgroundSilhouetteFogPct}%
+          </p>
+          <button
+            type="button"
+            data-testid="episodic-crowd-depth-insert-btn"
+            onClick={() => onAppendDirectionLine(crowdDepthView.readyCrowdDepthGuardLine)}
+            className={cn(
+              "rounded border border-line bg-raised px-2 py-0.5 text-[0.57rem] font-semibold text-fg-2 hover:bg-card",
+              STUDIO_EASE,
+              STUDIO_FOCUS_RING,
+            )}
+          >
+            군중 대기원근 지문 삽입
+          </button>
         </div>
       ) : null}
     </div>

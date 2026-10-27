@@ -1,7 +1,7 @@
 {
-  "schema_version": "2.0.0",
+  "schema_version": "3.0.0",
   "generated_at": "2026-10-27",
-  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 8대 서비스 REA 역공학 증거 원장",
+  "title": "ToonStudio 협업·분업화(Division of Labor) 특화 12대 서비스 REA 역공학 증거 원장",
   "toolchain": {
     "mcp_server": "rea",
     "provider_browser": "rea-playwright-browser-scenario",
@@ -14,11 +14,11 @@
     ],
     "native_binary_policy": "ghidra_only_no_hopper",
     "session_bundle": {
-      "records": 148,
+      "records": 173,
       "unknowns": 36,
-      "total_visited_ast_nodes": 1277705,
-      "total_findings": 7858,
-      "total_exported_scripts": 363
+      "total_visited_ast_nodes": 1773515,
+      "total_findings": 10023,
+      "total_exported_scripts": 505
     }
   },
   "targets": [
@@ -394,6 +394,137 @@
           "wishket_guide.js"
         ]
       }
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "url": "https://www.notion.com/",
+      "domain_role": "동기화 블록(Synced Blocks) 기반 협업 브리프·가이드 공유, 최소 권한(Least-Privilege) 서브페이지 격리 및 프로젝트/위키 연동",
+      "evidence": {
+        "capture_evidence_id": "ev_9a41d9f3ce446c5c3a3d6994bc1958d0a2ff3fc2a5a929fed96d60ae6157971f",
+        "scenario_sha256": "19e6679a45b0502f9dd72188ac9d871f91c4d4776b7b250de05eaac17887b0a5",
+        "export_evidence_id": "ev_c63aee7099ebf7fc82ee762c39f304251c056f58bd50ce6820c96805f565cc52",
+        "manifest_sha256": "9e9c2a3fd1febb38fd39482559550284cf32befaee9be7bf1f2724e2116580e2",
+        "ast_parent_evidence_id": "ev_9c1fe9f307fab4a776a3f5b003d22c83836de889a4791d143eebc6aa84f2f7a8",
+        "ast_summary_evidence_id": "ev_61519886a6fc85077570ffe2e75f72a1fc0b97e46e7cbb77598f464a048bfcf9",
+        "root_artifact_sha256": "5c3c3fed972a7017a983653d7d215db4e109905b90034023e30d69d81a5683d2",
+        "route_evidence_id": "ev_59552ef946cd5f45357c0059defbfdea1a08107097a4fefa4d17869d19178830"
+      },
+      "metrics": {
+        "total_scripts_observed": 53,
+        "exported_scripts": 24,
+        "text_bytes_read": 692598,
+        "visited_ast_nodes": 175219,
+        "findings": 176,
+        "recovered_routes_count": 54,
+        "semantic_relations": {
+          "data_flow": 58332,
+          "object_flow": 5745,
+          "closure": 3297,
+          "call_flow": 2614
+        }
+      }
+    },
+    {
+      "id": "asana",
+      "name": "Asana",
+      "url": "https://asana.com/",
+      "domain_role": "멀티호밍(Multi-Homing) 단일 과업 다중 보드(공고·채용·프로덕션·스튜디오 좌석) 동시 귀속 및 크로스팀 승인 규칙",
+      "evidence": {
+        "capture_evidence_id": "ev_1e36166f9555a8630e139cf365d71a13029f9db9e0e707fd0858d628dc7a9009",
+        "scenario_sha256": "fc9e7648055ff74624e49777bc5c685571d6d2055087c24feed857989f529873",
+        "export_evidence_id": "ev_78fcc9a379952d707598d6ba7c8e8b14ca56d7e37e6cf45f207d6a97a4d41686",
+        "manifest_sha256": "3fd094a81a6a2c59af57b297f1cd878181747b7b0e50e86b92cb6a43c3af0fa7",
+        "ast_parent_evidence_id": "ev_a246de3154967483500e152e9f8ae0d2c3d012975149d280e86a8141bf554d4a",
+        "ast_summary_evidence_id": "ev_19fb242eaa5f7a5689c4fdc6e00f3e63eba1fe3d4abe7da929f58fe76db8a17c",
+        "root_artifact_sha256": "c0363d32e34488dcfec9bb6081fe6cac8f8fb903346c5fa974772181c769a284",
+        "route_evidence_id": "ev_67dca97978d32304508646711b7db6a074b9598853bfe9751272eb0a6f20e08d"
+      },
+      "metrics": {
+        "total_scripts_observed": 123,
+        "exported_scripts": 66,
+        "text_bytes_read": 830954,
+        "visited_ast_nodes": 179224,
+        "findings": 1396,
+        "modules": 197,
+        "semantic_relations": {
+          "data_flow": 39694,
+          "object_flow": 3771,
+          "closure": 2632,
+          "call_flow": 1272
+        }
+      }
+    },
+    {
+      "id": "artmug",
+      "name": "아트머그 (Artmug)",
+      "url": "https://artmug.kr/",
+      "domain_role": "창작 커미션·웹툰 어시스턴트 4단계 공정 컨펌(러프→선화→밑색→마감) 승인 잠금 및 이전 공정 역주행(Upstream Rollback) 재작업 할증 가드",
+      "evidence": {
+        "capture_evidence_id": "ev_c6273c7f6f28017fb115d6d02a58f81f16a01801079f156f7857099f6ed8122d",
+        "scenario_sha256": "0606d5fb13bcf3150c2e60902365ac9f19ab896f55929e577e1dbc529ae9476b",
+        "export_evidence_id": "ev_bb61fb95b93d6c44c5ae78722db139edb043dddfeeab3a2e4bf80adcc56a58e9",
+        "manifest_sha256": "0a2c1e6e5b878c250298025af892d473839484be5a7d8c6471dd57229055657e",
+        "ast_parent_evidence_id": "ev_ca6dba26cbaca6c2677428d1cd92eca57c0ac920da923a250193a44b96df5640",
+        "ast_summary_evidence_id": "ev_96caabb22e940a61e8eee52e18aee5397ed1bbb1cd6a4a632e46b10be96ee041",
+        "root_artifact_sha256": "24994f21ec8173fe98144444b9b619664a29a4caa7ee1c102ebaf1507daec285",
+        "route_evidence_id": "ev_a5c8398107255a599d5a02ac23a91646da23e50ac398cbaab9c8d4e3c94ecd25"
+      },
+      "metrics": {
+        "total_scripts_observed": 15,
+        "exported_scripts": 10,
+        "text_bytes_read": 166761,
+        "visited_ast_nodes": 39450,
+        "findings": 38,
+        "semantic_relations": {
+          "data_flow": 20988,
+          "call_flow": 2616,
+          "closure": 2436,
+          "boundary": 70
+        },
+        "key_observed_bundles": [
+          "lib.Function.js",
+          "lib.lightBox.js",
+          "lib.popupBox.js",
+          "lib.messageBox.js",
+          "lib.ckForm.js",
+          "lib.ajax.js"
+        ]
+      }
+    },
+    {
+      "id": "loudsourcing",
+      "name": "라우드소싱 (Loudsourcing)",
+      "url": "https://www.loud.kr/",
+      "domain_role": "전문 크리에이터 1:1 의뢰·콘테스트 시안 심사, 상업적 라이선스 범위 및 원본 PSD/CLIP 레이어 분리 규격 검수",
+      "evidence": {
+        "capture_evidence_id": "ev_9b4a78c0a73a2121c89f87511310bd5ebaae4037e42b7c0b706d8b2df4ef96d7",
+        "scenario_sha256": "14cd605ea246102f293969ce2fdffb1f39e165b9ccdbadb174776e3062b775e3",
+        "export_evidence_id": "ev_d24ec0c394ed2200258223ebd9b93094b7acdcbf95927ad56ab5ffbccb5a03d8",
+        "manifest_sha256": "ce1eee23db6a70f1f521b64861515b027a99a199f65d1cbecd8ac1641a2792f0",
+        "ast_parent_evidence_id": "ev_5e29c631ad5118111293c2419150e49fa0cbec8264ffb41fbb186037572ca1a8",
+        "ast_summary_evidence_id": "ev_b7a7442db7846367a664924dc531568f259a4fe578a2e935e0abf9430d75986e",
+        "root_artifact_sha256": "38312d24c3395294dd4946458ec6c6e9ec9671810400060dd4c3a646652d00f7",
+        "route_evidence_id": "ev_2d9ad91165bf29bdb6b517b09e2a66926a2626fe5840ce6f52e378b7e0477feb"
+      },
+      "metrics": {
+        "total_scripts_observed": 56,
+        "exported_scripts": 42,
+        "text_bytes_read": 472458,
+        "visited_ast_nodes": 101917,
+        "findings": 555,
+        "semantic_relations": {
+          "data_flow": 32677,
+          "call_flow": 5298,
+          "closure": 3372,
+          "object_flow": 3009
+        },
+        "key_observed_bundles": [
+          "SearchDesignerSlider.BK6Z8GW8.chunk.js",
+          "ExpertCard.DHAP_Lt5.chunk.js",
+          "_recommend.evxQjwjx.chunk.js"
+        ]
+      }
     }
   ],
   "internalized_modules": [
@@ -444,6 +575,18 @@
       "model": "apps/web/src/domains/creator/production-hub/production-crew-workload-contract-matrix-model.ts",
       "component": "apps/web/src/domains/creator/production-hub/ProductionCrewWorkloadContractMatrixSuite.tsx",
       "mounted_surface": "apps/web/src/domains/creator/production-hub/ProductionTeamSurface.tsx"
+    },
+    {
+      "id": "collaboration-step-confirm-spec-guard",
+      "model": "apps/web/src/domains/collaboration/hiring/collaboration-step-confirm-spec-model.ts",
+      "component": "apps/web/src/domains/collaboration/hiring/CollaborationStepConfirmSpecSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/collaboration/hiring/HiringPositionsPage.tsx, apps/web/src/domains/collaboration/hiring/HiringWorkspacePage.tsx"
+    },
+    {
+      "id": "collaboration-multi-homing-brief-sync",
+      "model": "apps/web/src/domains/collaboration/collaboration-multi-homing-brief-model.ts",
+      "component": "apps/web/src/domains/collaboration/CollaborationMultiHomingBriefSuite.tsx",
+      "mounted_surface": "apps/web/src/domains/collaboration/CollaborationPostPage.tsx"
     }
   ]
 }

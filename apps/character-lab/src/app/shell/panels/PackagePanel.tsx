@@ -616,7 +616,7 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
         SHAPER 에셋 버전 진단 (`CheckAsset` 0x0600028a): 검사 {shaperAssetCheck.length}건 · 진행률 {shaperAssetCheck[shaperAssetCheck.length - 1]?.progressPercent ?? 100}% · 상태 코드 {shaperAssetCheck[0]?.update ?? 0} (v{shaperAssetCheck[0]?.normalizedVersion ?? 1})
       </p>
       <p className="cl-package-hint" data-testid="tripo3d-mcp-character-lab-summary">
-        Tripo3D MCP 파츠 ({TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.labelKo}: {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.triangles.toLocaleString("ko-KR")} Tri · {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.drawCalls} DC · GLBForge {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbforgeScore}/100) · VRM Toolkit MCP 검증 ({VRM_TOOLKIT_MCP_BASELINES.map((b) => `${b.name} ${b.mappedBones}본/${b.triangles.toLocaleString("ko-KR")} Tri`).join(", ")})
+        Tripo3D MCP 커스터마이징 파츠 {TRIPO3D_CHARACTER_LAB_MCP_ASSETS.length}종 ({TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.labelKo}: {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.triangles.toLocaleString("ko-KR")} Tri · 파츠 [{TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.customizableParts.join(", ")}] · GLBForge {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbforgeScore}/100) · VRM Toolkit MCP 검증 ({VRM_TOOLKIT_MCP_BASELINES.map((b) => `${b.name} ${b.mappedBones}본/${b.triangles.toLocaleString("ko-KR")} Tri`).join(", ")})
       </p>
       <section className="cl-package-kit" aria-labelledby={`${ids}-kit-title`}>
         <h3 id={`${ids}-kit-title`}>모듈식 키트(기본 소스)</h3>

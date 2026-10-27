@@ -55,9 +55,58 @@ export interface Tripo3dCharacterLabMcpAsset {
   readonly triangles: number;
   readonly drawCalls: number;
   readonly glbforgeScore: number;
+  readonly customizableParts: readonly string[];
 }
 
 export const TRIPO3D_CHARACTER_LAB_MCP_ASSETS: readonly Tripo3dCharacterLabMcpAsset[] = [
+  {
+    id: "tripo3d-seg-character-lab-knight-outfit",
+    labelKo: "판타지 기사단 파츠 분할 커스터마이징 의상 세트 (Tripo 부분별 생성 무료 체험 #1)",
+    slot: "accessory",
+    glbUrl: "/models/tripo3d-mcp/tripo_seg_fantasy_knight_outfit_set.glb",
+    sha256: "39e631b15beacbd183486a986c7b96364f2a410e696eaa7838c98710474ba0bc",
+    fileSizeBytes: 174_136,
+    triangles: 23_988,
+    drawCalls: 1,
+    glbforgeScore: 80,
+    customizableParts: ["왕관·헤드기어", "문장 견갑", "로열 망토", "튜닉 상의 갑주", "벨트·타셋", "그리브 부츠"],
+  },
+  {
+    id: "tripo3d-seg-character-lab-school-uniform",
+    labelKo: "로판/아카데미 여주인공 파츠 분할 교복·케이프 세트 (Tripo Segmented)",
+    slot: "accessory",
+    glbUrl: "/models/tripo3d-mcp/tripo_seg_school_uniform_outfit_set.glb",
+    sha256: "002fc45754046521259278fad56a64263509764b6f3a8b987319aab1d40ba4ad",
+    fileSizeBytes: 170_648,
+    triangles: 23_996,
+    drawCalls: 1,
+    glbforgeScore: 80,
+    customizableParts: ["헤어 리본", "케이프 블레이저", "칼라·보타이", "플리츠 스커트", "로퍼·니삭스"],
+  },
+  {
+    id: "tripo3d-h31-character-lab-hair-headgear-kit",
+    labelKo: "트윈테일 헤어·헤일로 왕관·사이버펑크 헤드셋 커스터마이징 키트",
+    slot: "accessory",
+    glbUrl: "/models/tripo3d-mcp/tripo_h31_character_hair_headgear_kit.glb",
+    sha256: "c817f3ed624bb32392798b04116c6a1ef96f29b3655a36f33e3e9a0bf819d247",
+    fileSizeBytes: 1_575_056,
+    triangles: 23_999,
+    drawCalls: 1,
+    glbforgeScore: 85,
+    customizableParts: ["트윈테일 헤어 가발", "헤일로 크라운", "사이버펑크 헤드셋", "전시 거치대"],
+  },
+  {
+    id: "tripo3d-p2-character-lab-anime-head-bust",
+    labelKo: "스마트 메시 쿼드 & Smart UV 애니메 헤드·헤어 버스트 (Smart UV 무료 체험 #1)",
+    slot: "accessory",
+    glbUrl: "/models/tripo3d-mcp/tripo_p2_quad_anime_head_bust.glb",
+    sha256: "b5da0c3b5a3613170538e7f82d3e5051d9a338c474b6d1f851210fde6c2da6ff",
+    fileSizeBytes: 73_796,
+    triangles: 10_250,
+    drawCalls: 1,
+    glbforgeScore: 95,
+    customizableParts: ["안면 쿼드 메시", "앞머리 레이어", "양갈래 사이드 락", "목·칼라 베이스"],
+  },
   {
     id: "tripo3d-h31-character-lab-protagonist",
     labelKo: "웹툰 주인공 전신 T-Pose + 스마트 메시 리토폴로지 (Tripo H3.1 8K)",
@@ -68,6 +117,7 @@ export const TRIPO3D_CHARACTER_LAB_MCP_ASSETS: readonly Tripo3dCharacterLabMcpAs
     triangles: 17_733,
     drawCalls: 1,
     glbforgeScore: 85,
+    customizableParts: ["주인공 헤어", "레이어드 재킷", "슬랙스·팬츠", "워커 부츠"],
   },
   {
     id: "tripo3d-h31-character-lab-archmage-regalia",
@@ -79,6 +129,7 @@ export const TRIPO3D_CHARACTER_LAB_MCP_ASSETS: readonly Tripo3dCharacterLabMcpAs
     triangles: 24_342,
     drawCalls: 1,
     glbforgeScore: 85,
+    customizableParts: ["대마법사 벨벳 케이프", "황금 필리그리 칼라", "부유 마도서", "아케인 크리스탈 스태프"],
   },
   {
     id: "tripo3d-h31-character-lab-knight-arms",
@@ -90,6 +141,7 @@ export const TRIPO3D_CHARACTER_LAB_MCP_ASSETS: readonly Tripo3dCharacterLabMcpAs
     triangles: 24_000,
     drawCalls: 1,
     glbforgeScore: 85,
+    customizableParts: ["성기사 롱소드", "황실 문장 방패", "보석 크로스 가드", "무기 거치대"],
   },
   {
     id: "tripo3d-mcp-character-lab-pauldron",
@@ -101,6 +153,7 @@ export const TRIPO3D_CHARACTER_LAB_MCP_ASSETS: readonly Tripo3dCharacterLabMcpAs
     triangles: 1_856,
     drawCalls: 3,
     glbforgeScore: 95,
+    customizableParts: ["네이비 장갑 돔", "골드 가드 트림", "스타 엠블럼 코어 젬"],
   },
 ] as const;
 

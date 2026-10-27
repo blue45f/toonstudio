@@ -3,6 +3,7 @@ import { useMemo, useState, type ReactElement } from "react";
 import type { ShaperBodySliderValues } from "./studio-shaper-model";
 import {
   BLEND_AI_SCALE_GUIDES,
+  buildTripo3dCustomizationRecipe,
   evaluateTripoStudioWorkspaceGuard,
   GLBFORGE_EXTRUDE_PRESETS,
   GLBFORGE_PROFILES,
@@ -10,12 +11,17 @@ import {
   MESHY_SLICERS,
   planWebtoonSignageReliefExtrusion,
   simulateGlbForgeAuditAndOptimization,
+  TRIPO3D_CUSTOMIZER_PALETTES,
+  TRIPO3D_HAND_POSE_VARIANTS,
   TRIPO3D_MCP_GENERATED_MODELS,
   TRIPO_STUDIO_12_WORKSPACES,
+  TRIPO_STUDIO_FREE_TRIAL_LEDGER,
   TRIPO_TEXT_TO_MOTION_PRESETS,
   VRM_TOOLKIT_MCP_INSPECTED_AVATARS,
   type GlbForgeBudgetProfileId,
   type ReliefExtrudePresetId,
+  type Tripo3dCustomizerPaletteId,
+  type Tripo3dHandPoseVariantId,
   type Tripo3dMcpGeneratedModelDomain,
   type TripoStudioWorkspaceId,
 } from "./studio-tripo3d-ecosystem-engine";
@@ -60,8 +66,20 @@ export function StudioTripo3dEcosystemExtensionPanel({
     "all",
   );
   const [selectedMcpModelId, setSelectedMcpModelId] = useState<string>(
-    TRIPO3D_MCP_GENERATED_MODELS[0]?.id ?? "tripo3d-mcp-bg-korean-alley-stairway",
+    TRIPO3D_MCP_GENERATED_MODELS[0]?.id ?? "tripo3d-p2-bg-street-cafe-kit",
   );
+
+  // ── Section 5: Interactive Part-by-Part / Shader / Proportion Customizer State ──
+  const [disabledPartIdsByModel, setDisabledPartIdsByModel] = useState<
+    Readonly<Record<string, readonly string[]>>
+  >({});
+  const [paletteId, setPaletteId] = useState<Tripo3dCustomizerPaletteId>("webtoon-cel-day");
+  const [toonRampSteps, setToonRampSteps] = useState<2 | 3 | 4>(3);
+  const [outlineWidthMm, setOutlineWidthMm] = useState<number>(1.5);
+  const [scaleMultiplier, setScaleMultiplier] = useState<number>(1.0);
+  const [mannequinHeadRatio, setMannequinHeadRatio] = useState<number>(8.0);
+  const [handPoseVariantId, setHandPoseVariantId] = useState<Tripo3dHandPoseVariantId>("relaxed");
+  const [customGlbUrl, setCustomGlbUrl] = useState<string>("");
 
   const visibleMcpModels = useMemo(
     () =>
@@ -77,6 +95,39 @@ export function StudioTripo3dEcosystemExtensionPanel({
       visibleMcpModels[0] ??
       TRIPO3D_MCP_GENERATED_MODELS[0]!,
     [selectedMcpModelId, visibleMcpModels],
+  );
+
+  const enabledPartIds = useMemo(() => {
+    const disabled = new Set(disabledPartIdsByModel[activeMcpModel.id] ?? []);
+    return activeMcpModel.customizableParts
+      .filter((p) => !disabled.has(p.id))
+      .map((p) => p.id);
+  }, [activeMcpModel, disabledPartIdsByModel]);
+
+  const customizationRecipe = useMemo(
+    () =>
+      buildTripo3dCustomizationRecipe({
+        modelId: activeMcpModel.id,
+        customGlbUrl,
+        enabledPartIds,
+        paletteId,
+        toonRampSteps,
+        outlineWidthMm,
+        scaleMultiplier,
+        mannequinHeadRatio,
+        handPoseVariantId,
+      }),
+    [
+      activeMcpModel.id,
+      customGlbUrl,
+      enabledPartIds,
+      paletteId,
+      toonRampSteps,
+      outlineWidthMm,
+      scaleMultiplier,
+      mannequinHeadRatio,
+      handPoseVariantId,
+    ],
   );
 
   const workspaceGuard = useMemo(
@@ -126,6 +177,19 @@ export function StudioTripo3dEcosystemExtensionPanel({
     [meshyProductId],
   );
 
+  function togglePart(partId: string): void {
+    const currentDisabled = new Set(disabledPartIdsByModel[activeMcpModel.id] ?? []);
+    if (currentDisabled.has(partId)) {
+      currentDisabled.delete(partId);
+    } else if (currentDisabled.size < activeMcpModel.customizableParts.length - 1) {
+      currentDisabled.add(partId);
+    }
+    setDisabledPartIdsByModel((prev) => ({
+      ...prev,
+      [activeMcpModel.id]: [...currentDisabled],
+    }));
+  }
+
   return (
     <details
       name={accordionGroupName}
@@ -134,7 +198,7 @@ export function StudioTripo3dEcosystemExtensionPanel({
     >
       <summary className="cursor-pointer font-semibold text-fg">
         3D MCP 생태계 확장 허브 (Tripo 12-Workspace · GLBForge 17-Rule 린터 & 2D→3D 간판 압출 ·
-        Meshy 7 크리에이티브 랩 · VRM/Blend-AI 스케일)
+        Meshy 7 크리에이티브 랩 · 22종 GLB 파츠별 커스터마이저)
       </summary>
       <div className="mt-2 grid grid-cols-1 gap-3 text-[0.72rem] text-fg-2 md:grid-cols-3">
         {/* Column 1: Tripo Studio 12-Workspace Hub & Text-to-Motion */}
@@ -396,23 +460,23 @@ export function StudioTripo3dEcosystemExtensionPanel({
         </div>
       </div>
 
-      {/* Section 4: Real Tripo3D MCP + GLBForge + VRM Toolkit Generated 3D Models */}
+      {/* Section 4: Real Tripo3D MCP + GLBForge + VRM Toolkit Generated 3D Models (22 GLBs) */}
       <div
         data-testid="tripo3d-mcp-generated-models-section"
         className="mt-2.5 rounded-lg border border-line/70 bg-panel/70 p-2 text-[0.68rem]"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-semibold text-fg">
-            4. Tripo3D MCP · GLBForge · VRM Toolkit 실생성 3D 모델 팩 ({TRIPO3D_MCP_GENERATED_MODELS.length}종 GLB +{" "}
+            4. Tripo Studio 무료 체험 전량 소진 & MCP 실생성 3D 모델 팩 ({TRIPO3D_MCP_GENERATED_MODELS.length}종 GLB +{" "}
             {VRM_TOOLKIT_MCP_INSPECTED_AVATARS.length}종 VRM 검증)
           </span>
           <div className="flex flex-wrap gap-1" role="group" aria-label="Tripo3D MCP 생성 3D 모델 도메인 필터">
             {(
               [
                 { id: "all", labelKo: `전체 (${TRIPO3D_MCP_GENERATED_MODELS.length})` },
-                { id: "bg3d", labelKo: "3D 배경 (3)" },
-                { id: "mannequin", labelKo: "3D 데생인형 (2)" },
-                { id: "character-lab", labelKo: "3D 캐릭터 랩 (1)" },
+                { id: "bg3d", labelKo: "3D 배경 (8)" },
+                { id: "mannequin", labelKo: "3D 데생인형 (6)" },
+                { id: "character-lab", labelKo: "3D 캐릭터 랩 (8)" },
               ] as const
             ).map((tab) => (
               <button
@@ -460,12 +524,17 @@ export function StudioTripo3dEcosystemExtensionPanel({
                   GLBForge {model.glbforgeScore}/100
                 </span>
               </div>
+              {model.freeTrialBadgeKo ? (
+                <span className="mt-0.5 rounded bg-accent/15 px-1.5 py-0.5 text-[0.57rem] font-semibold text-accent">
+                  {model.freeTrialBadgeKo} · {model.topologyMode}
+                </span>
+              ) : null}
               <span className="mt-0.5 line-clamp-2 text-[0.61rem] text-fg-3">
                 {model.descriptionKo}
               </span>
               <span className="mt-1 text-[0.59rem] text-fg-2">
-                <code>{model.url}</code> · {model.triangles.toLocaleString()} Tri · {model.drawCalls} DC ·{" "}
-                {Math.round(model.byteSize / 1024)}KB
+                <code>{model.url}</code> · {model.triangles.toLocaleString()} Tri · 파츠{" "}
+                {model.customizableParts.length}개 · {Math.round(model.byteSize / 1024)}KB
               </span>
             </button>
           ))}
@@ -487,6 +556,204 @@ export function StudioTripo3dEcosystemExtensionPanel({
                 `${v.nameKo} (${v.specFamily.toUpperCase()} · ${v.mappedBoneCount}본 · ${v.totalTriangles.toLocaleString()} Tri)`,
             ).join(" / ")}
           </div>
+        </div>
+      </div>
+
+      {/* Section 5: Interactive Part-by-Part, Toon Shader, Proportion & Custom GLB Customizer */}
+      <div
+        data-testid="tripo3d-customizer-workbench"
+        className="mt-2.5 rounded-lg border border-accent/50 bg-panel/80 p-2.5 text-[0.68rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-semibold text-fg">
+            5. 파츠별 ON/OFF · 웹툰 셀셰이더 · 등신 비례 · 커스텀 GLB 실시간 커스터마이저
+          </span>
+          <span
+            data-testid="tripo3d-free-trial-ledger-readout"
+            className="rounded border border-accent/40 bg-accent-soft/30 px-2 py-0.5 text-[0.6rem] font-semibold text-fg"
+          >
+            무료 체험 소진 원장:{" "}
+            {TRIPO_STUDIO_FREE_TRIAL_LEDGER.map(
+              (item) => `${item.id} ${item.usedCount}/${item.totalCount}`,
+            ).join(" · ")}{" "}
+            (잔여 무료 체험{" "}
+            {TRIPO_STUDIO_FREE_TRIAL_LEDGER.reduce((acc, item) => acc + item.remainingCount, 0)}건)
+          </span>
+        </div>
+
+        <div className="mt-2 grid grid-cols-1 gap-2.5 md:grid-cols-3">
+          {/* Sub-col A: Semantic Part Toggles + Custom GLB URL */}
+          <div className="flex flex-col gap-1.5 rounded border border-line/60 bg-card p-2">
+            <span className="font-medium text-fg">
+              A. 시맨틱 서브메시 파츠 ON/OFF ({customizationRecipe.activePartCount}/
+              {customizationRecipe.totalPartCount} 활성 ·{" "}
+              {customizationRecipe.estimatedActiveTriangles.toLocaleString()} Tri)
+            </span>
+            <div className="flex flex-wrap gap-1" role="group" aria-label="3D 모델 시맨틱 파츠 토글">
+              {activeMcpModel.customizableParts.map((part) => {
+                const enabled = customizationRecipe.activePartIds.includes(part.id);
+                return (
+                  <button
+                    key={part.id}
+                    type="button"
+                    data-testid={`tripo3d-part-toggle-${part.id}`}
+                    aria-pressed={enabled}
+                    onClick={() => togglePart(part.id)}
+                    className={`rounded border px-1.5 py-0.5 text-[0.62rem] transition-colors ${
+                      enabled
+                        ? "border-accent bg-accent-soft font-semibold text-fg"
+                        : "border-line bg-panel text-fg-3 line-through opacity-75"
+                    }`}
+                  >
+                    {enabled ? "✓ " : "✕ "}
+                    {part.labelKo}
+                  </button>
+                );
+              })}
+            </div>
+            <label className="mt-1 flex flex-col gap-0.5 text-[0.62rem]">
+              <span className="text-fg-3">사용자 커스텀 .glb / .vrm URL 오버라이드</span>
+              <input
+                type="text"
+                data-testid="tripo3d-custom-glb-url-input"
+                value={customGlbUrl}
+                onChange={(e) => setCustomGlbUrl(e.target.value)}
+                placeholder="/models/tripo3d-mcp/custom_asset.glb"
+                className="rounded border border-line bg-panel px-2 py-0.5 text-[0.63rem] text-fg"
+              />
+            </label>
+          </div>
+
+          {/* Sub-col B: Color Palette + Toon Ramp + Outline Width */}
+          <div className="flex flex-col gap-1.5 rounded border border-line/60 bg-card p-2">
+            <span className="font-medium text-fg">
+              B. 웹툰 컬러 팔레트 · 셀셰이딩 단계 · 먹선 외곽선
+            </span>
+            <div className="flex flex-wrap gap-1" role="group" aria-label="웹툰 컬러 팔레트 프리셋">
+              {TRIPO3D_CUSTOMIZER_PALETTES.map((pal) => (
+                <button
+                  key={pal.id}
+                  type="button"
+                  data-testid={`tripo3d-palette-${pal.id}`}
+                  aria-pressed={paletteId === pal.id}
+                  onClick={() => {
+                    setPaletteId(pal.id);
+                    setToonRampSteps(pal.defaultToonRampSteps);
+                    setOutlineWidthMm(pal.defaultOutlineWidthMm);
+                  }}
+                  className={`rounded border px-1.5 py-0.5 text-[0.61rem] ${
+                    paletteId === pal.id
+                      ? "border-accent bg-accent-soft font-semibold text-fg"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {pal.labelKo}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-between gap-2 text-[0.63rem]">
+              <span>툰 램프 단수</span>
+              <div className="flex gap-1">
+                {([2, 3, 4] as const).map((steps) => (
+                  <button
+                    key={steps}
+                    type="button"
+                    data-testid={`tripo3d-toon-ramp-${steps}`}
+                    aria-pressed={toonRampSteps === steps}
+                    onClick={() => setToonRampSteps(steps)}
+                    className={`rounded border px-2 py-0.5 text-[0.61rem] ${
+                      toonRampSteps === steps
+                        ? "border-accent bg-accent-soft font-semibold text-fg"
+                        : "border-line bg-panel text-fg-2"
+                    }`}
+                  >
+                    {steps}단
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center justify-between gap-2 text-[0.63rem]">
+              <span>외곽선 두께 ({outlineWidthMm.toFixed(1)}mm)</span>
+              <input
+                type="range"
+                data-testid="tripo3d-outline-width-slider"
+                min={0}
+                max={5}
+                step={0.1}
+                value={outlineWidthMm}
+                onChange={(e) => setOutlineWidthMm(Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          {/* Sub-col C: Scale Multiplier + Mannequin Head Ratio + Hand Pose Grips */}
+          <div className="flex flex-col gap-1.5 rounded border border-line/60 bg-card p-2">
+            <span className="font-medium text-fg">
+              C. 등신 비례 ({mannequinHeadRatio.toFixed(1)}등신) · 스케일 ({scaleMultiplier.toFixed(2)}x) · 손 그립
+            </span>
+            <label className="flex items-center justify-between gap-2 text-[0.63rem]">
+              <span>등신비 (5~9등신)</span>
+              <input
+                type="range"
+                data-testid="tripo3d-mannequin-head-ratio-slider"
+                min={5.0}
+                max={9.0}
+                step={0.5}
+                value={mannequinHeadRatio}
+                onChange={(e) => setMannequinHeadRatio(Number(e.target.value))}
+              />
+            </label>
+            <label className="flex items-center justify-between gap-2 text-[0.63rem]">
+              <span>배경·소품 배율 ({scaleMultiplier.toFixed(2)}x)</span>
+              <input
+                type="range"
+                data-testid="tripo3d-scale-multiplier-slider"
+                min={0.4}
+                max={2.5}
+                step={0.05}
+                value={scaleMultiplier}
+                onChange={(e) => setScaleMultiplier(Number(e.target.value))}
+              />
+            </label>
+            <div className="flex flex-wrap gap-1" role="group" aria-label="손 포즈 그립 프리셋">
+              {TRIPO3D_HAND_POSE_VARIANTS.map((hp) => (
+                <button
+                  key={hp.id}
+                  type="button"
+                  data-testid={`tripo3d-hand-pose-${hp.id}`}
+                  aria-pressed={handPoseVariantId === hp.id}
+                  onClick={() => {
+                    setHandPoseVariantId(hp.id);
+                    onApplyMannequinBodySliders?.(customizationRecipe.mannequinBodySliders, {
+                      posePresetId: hp.mannequinPosePresetId,
+                      archetypeLabelKo: `${mannequinHeadRatio.toFixed(1)}등신 커스텀`,
+                      motionLabelKo: hp.labelKo,
+                    });
+                  }}
+                  className={`rounded border px-1.5 py-0.5 text-[0.61rem] ${
+                    handPoseVariantId === hp.id
+                      ? "border-accent bg-accent-soft font-semibold text-fg"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {hp.labelKo}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-col gap-1 rounded border border-line/70 bg-card px-2 py-1.5 text-[0.62rem]">
+          <div data-testid="tripo3d-customizer-shader-summary" className="font-medium text-fg">
+            셰이더·파츠 요약: {customizationRecipe.shaderSummaryKo} · 유효 GLB{" "}
+            <code>{customizationRecipe.effectiveGlbUrl}</code>
+          </div>
+          <code
+            data-testid="tripo3d-customizer-recipe-readout"
+            className="block truncate text-[0.58rem] text-fg-3"
+          >
+            {customizationRecipe.exportableJson}
+          </code>
         </div>
       </div>
     </details>

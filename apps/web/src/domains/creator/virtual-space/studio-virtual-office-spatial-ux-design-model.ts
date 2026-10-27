@@ -130,7 +130,8 @@ export interface SpatialQuickCommandItem {
     | "host-canvas-pulse-matrix"
     | "pairing-xr-floor-coaching"
     | "stage-sprint-holo-lounge"
-    | "warroom-async-stage";
+    | "warroom-async-stage"
+    | "holistic-master-command";
 }
 
 export const SPATIAL_QUICK_COMMANDS: readonly SpatialQuickCommandItem[] = [

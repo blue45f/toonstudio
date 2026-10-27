@@ -1,6 +1,6 @@
-# 협업·분업화(Division of Labor) 특화 8대 서비스 REA 역공학 분석 및 ToonStudio 내재화·고도화 설계서 (2026-10-27)
+# 협업·분업화(Division of Labor) 특화 12대 서비스 REA 역공학 분석 및 ToonStudio 내재화·고도화 설계서 (2026-10-27)
 
-- **문서 상태**: `current` (2026-10-27 REA 8대 서비스 역공학 분석 및 8대 클린룸 모듈 내재화·고도화 완료)
+- **문서 상태**: `current` (2026-10-27 REA 12대 서비스 역공학 분석 및 10대 클린룸 모듈 내재화·고도화 완료)
 - **증거 원장**: [`docs/evidence/rea-collaboration-division-of-labor-20261027.json`](../evidence/rea-collaboration-division-of-labor-20261027.json)
 - **분석 도구**: `rea` (`reverse-engineer-anything` MCP 서버 — `capture_browser_scenario`, `export_web_scripts`, `analyze_javascript_application`, `inspect_analysis_view`, `export_evidence_bundle`)
 
@@ -10,13 +10,13 @@
 
 웹툰·디지털 코믹스 스튜디오 및 창작 크루는 단일 작가 체계에서 **8단계 공정(글콘티 → 그림콘티 → 3D배경/소품 → 선화/펜선 → 밑색 → 명암/채색 → 후보정/이펙트 → 식자/최종 검수)** 및 **17개 세부 직무**가 동시에 맞물리는 고밀도 분업 파이프라인으로 진화했다.
 
-본 문서는 글로벌·국내 대표 협업 및 분업화 특화 플랫폼 8종(**Linear**, **Frame.io**, **Figma**, **크몽(Kmong)**, **Miro**, **ClickUp**, **숨고(Soomgo)**, **위시켓(Wishket)**)을 REA 도구체인으로 직접 캡처·역공학(총 **1,277,705개 AST 노드**, **7,858건 정적 분석 Finding**, **363개 추출 스크립트**, **148개 REA 세션 Evidence 레코드**)한 증거를 기록하고, 이를 ToonStudio의 핵심 스튜디오·프로덕션·협업 서피스 8곳에 클린룸 내재화·고도화한 아키텍처를 정의한다.
+본 문서는 글로벌·국내 대표 협업 및 분업화 특화 플랫폼 12종(**Linear**, **Frame.io**, **Figma**, **크몽(Kmong)**, **Miro**, **ClickUp**, **숨고(Soomgo)**, **위시켓(Wishket)**, **Notion**, **Asana**, **아트머그(Artmug)**, **라우드소싱(Loudsourcing)**)을 REA 도구체인으로 직접 캡처·역공학(총 **1,773,515개 AST 노드**, **10,023건 정적 분석 Finding**, **505개 추출 스크립트**, **173개 REA 세션 Evidence 레코드**)한 증거를 기록하고, 이를 ToonStudio의 핵심 스튜디오·프로덕션·협업·채용 서피스 10곳에 클린룸 내재화·고도화한 아키텍처를 정의한다.
 
 ---
 
 ## 2. REA 역공학 증거 요약 (Observed Facts / Inferences / Unknowns)
 
-### 2.1 대상별 REA 정적·동적 캡처 메트릭 (Wave 1 + Wave 2 총 8대 서비스)
+### 2.1 대상별 REA 정적·동적 캡처 메트릭 (Wave 1 + Wave 2 + Wave 3 총 12대 서비스)
 
 | 분석 대상 | `capture_browser_scenario` Evidence ID | `export_web_scripts` Evidence ID | `analyze_javascript_application` Parent / Summary ID | 추출 스크립트 (Bytes) | 방문 AST 노드 / Findings | 핵심 Semantic Relations |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -28,6 +28,10 @@
 | **ClickUp** (`https://clickup.com/`) | `ev_548ee1cfa869325174d8bff08aaf0fcc862f6e6350aa21010d6bf0a07dfe9344` | `ev_176a122fff9e85db54c40f53cf343b36c0f9593324de0f56448a17c9f9cac1eb` | Parent: `ev_a1657be0a6ae3a404ce33b320a38df2ab0d7066c099db67bdd2a4ae17e50b9a0`<br/>Summary: `ev_219f3160b7e0eb5807f9b1868e787d9911157cbec169ff92223131259537238b` | 24 / 50개 (676,653 B) | **166,433 노드** / 1,076건 | `data-flow`: 55,805, `object-flow`: 5,036, `closure`: 3,634, `call-flow`: 1,848 |
 | **숨고 (Soomgo)** (`https://soomgo.com/`) | `ev_1c7658a2bbc76c3936dd3dcdf892ca6cbf26fcd7c74cd00018dd1c04485f7490` | `ev_301edc86d7f4f7295822bee0509045d3b5578972098eb0a1130e47fda3048267` | Parent: `ev_ded0c49dbc09eef52b4824a471e0306097e38bdf51fd9e9048a09355cd45b81d`<br/>Summary: `ev_b1b1e5d459b74c9ea77826c57d49eb0570a48bf9373f2c172f79cf43c7703794` | 25 / 51개 (471,402 B) | **99,296 노드** / 873건 | `data-flow`: 53,840, `object-flow`: 4,560, `closure`: 3,706, `call-flow`: 2,286 |
 | **위시켓 (Wishket)** (`https://www.wishket.com/`) | `ev_e7229ce61c2690e50b7dae607da2d0a52b6435180bb3f43997108a2eb3587765` | `ev_7a5b3d1b8b6dcf8467ad22fba02ef990c3f9c6f43ec80e4a56f74e688c5df3a5` | Parent: `ev_1bc528214eda099e91c4628cbc4a874c0f509e8027c81c8d0b70f588605aed1c`<br/>Summary: `ev_5349f3be63bd7585acd4a48d1076d329b208dc0642347803c55f104d679a7f6f` | 18 / 31개 (247,786 B) | **50,153 노드** / 41건 | `data-flow`: 29,222, `call-flow`: 3,576, `object-flow`: 2,878, `event`: 58 |
+| **Notion** (`https://www.notion.com/`) | `ev_9a41d9f3ce446c5c3a3d6994bc1958d0a2ff3fc2a5a929fed96d60ae6157971f` | `ev_c63aee7099ebf7fc82ee762c39f304251c056f58bd50ce6820c96805f565cc52` | Parent: `ev_9c1fe9f307fab4a776a3f5b003d22c83836de889a4791d143eebc6aa84f2f7a8`<br/>Summary: `ev_61519886a6fc85077570ffe2e75f72a1fc0b97e46e7cbb77598f464a048bfcf9` | 24 / 53개 (692,598 B) | **175,219 노드** / 176건 | `data-flow`: 58,332, `object-flow`: 5,745, `closure`: 3,297, `call-flow`: 2,614 |
+| **Asana** (`https://asana.com/`) | `ev_1e36166f9555a8630e139cf365d71a13029f9db9e0e707fd0858d628dc7a9009` | `ev_78fcc9a379952d707598d6ba7c8e8b14ca56d7e37e6cf45f207d6a97a4d41686` | Parent: `ev_a246de3154967483500e152e9f8ae0d2c3d012975149d280e86a8141bf554d4a`<br/>Summary: `ev_19fb242eaa5f7a5689c4fdc6e00f3e63eba1fe3d4abe7da929f58fe76db8a17c` | 66 / 123개 (830,954 B) | **179,224 노드** / 1,396건 | `data-flow`: 39,694, `object-flow`: 3,771, `closure`: 2,632, `call-flow`: 1,272 |
+| **아트머그 (Artmug)** (`https://artmug.kr/`) | `ev_c6273c7f6f28017fb115d6d02a58f81f16a01801079f156f7857099f6ed8122d` | `ev_bb61fb95b93d6c44c5ae78722db139edb043dddfeeab3a2e4bf80adcc56a58e9` | Parent: `ev_ca6dba26cbaca6c2677428d1cd92eca57c0ac920da923a250193a44b96df5640`<br/>Summary: `ev_96caabb22e940a61e8eee52e18aee5397ed1bbb1cd6a4a632e46b10be96ee041` | 10 / 15개 (166,761 B) | **39,450 노드** / 38건 | `data-flow`: 20,988, `call-flow`: 2,616, `closure`: 2,436, `boundary`: 70 |
+| **라우드소싱 (Loudsourcing)** (`https://www.loud.kr/`) | `ev_9b4a78c0a73a2121c89f87511310bd5ebaae4037e42b7c0b706d8b2df4ef96d7` | `ev_d24ec0c394ed2200258223ebd9b93094b7acdcbf95927ad56ab5ffbccb5a03d8` | Parent: `ev_5e29c631ad5118111293c2419150e49fa0cbec8264ffb41fbb186037572ca1a8`<br/>Summary: `ev_b7a7442db7846367a664924dc531568f259a4fe578a2e935e0abf9430d75986e` | 42 / 56개 (472,458 B) | **101,917 노드** / 555건 | `data-flow`: 32,677, `call-flow`: 5,298, `closure`: 3,372, `object-flow`: 3,009 |
 
 ### 2.2 Observed Facts (관찰된 사실)
 
@@ -50,6 +54,14 @@
    - 25개 스크립트(158개 모듈, 99,296 AST 노드)에서 `/search/globals/[keyword]`, `/search/pro` (전문 고수 탐색·견적 매칭), `/store` (마켓 상품), `/profile`, `/setting/notification` 등 7개 핵심 라우트와 53,840건의 `data-flow`가 복원되었다.
 8. **위시켓 Wishket (`ev_5349f3be63bd7585acd4a48d1076d329b208dc0642347803c55f104d679a7f6f`)**:
    - 18개 스크립트(`wishket_utility.js`, `wishket_component.js`, `wishket-multiselect.js`, `wishket_guide.js` 등 50,153 AST 노드)에서 58건의 DOM/컴포넌트 `event` 바인딩과 3,576건의 `call-flow`가 확인되었다.
+9. **Notion (`ev_61519886a6fc85077570ffe2e75f72a1fc0b97e46e7cbb77598f464a048bfcf9`)**:
+   - 24개 스크립트(루트 아티팩트 SHA-256 `5c3c3fed972a7017a983653d7d215db4e109905b90034023e30d69d81a5683d2`, 175,219 AST 노드)에서 54개 라우트와 58,332건의 `data-flow`, 5,745건의 `object-flow`가 추출되었으며, 블록 단위 동기화(Synced Blocks)와 워크스페이스·서브페이지 권한 격리 구조를 갖는다.
+10. **Asana (`ev_19fb242eaa5f7a5689c4fdc6e00f3e63eba1fe3d4abe7da929f58fe76db8a17c`)**:
+    - 66개 스크립트(루트 아티팩트 SHA-256 `c0363d32e34488dcfec9bb6081fe6cac8f8fb903346c5fa974772181c769a284`, 197개 모듈, 179,224 AST 노드)에서 1,396건의 Finding과 39,694건의 `data-flow`가 확인되었으며, 단일 태스크를 여러 프로젝트 보드에 복제 없이 동시 귀속하는 멀티호밍(Multi-Homing) 그래프 구조를 사용한다.
+11. **아트머그 Artmug (`ev_96caabb22e940a61e8eee52e18aee5397ed1bbb1cd6a4a632e46b10be96ee041`)**:
+    - `lib.Function.js`, `lib.lightBox.js`, `lib.popupBox.js`, `lib.messageBox.js`, `lib.ckForm.js`, `lib.ajax.js` 등 10개 핵심 번들(39,450 AST 노드)에서 20,988건의 `data-flow`와 70건의 폼·모달 `boundary` 검증이 확인되었다.
+12. **라우드소싱 Loudsourcing (`ev_b7a7442db7846367a664924dc531568f259a4fe578a2e935e0abf9430d75986e`)**:
+    - `SearchDesignerSlider.BK6Z8GW8.chunk.js`, `ExpertCard.DHAP_Lt5.chunk.js`, `_recommend.evxQjwjx.chunk.js` 등 42개 Nuxt/Vite 청크(101,917 AST 노드)에서 32,677건의 `data-flow`와 5,298건의 `call-flow`가 확인되었다.
 
 ### 2.3 Inferences (역공학 추론 및 도메인 결합 원리)
 
@@ -67,14 +79,18 @@
    - 기획 서피스(`ProductionPlanningSurface`)에서 선행·후행 공정 의존성 그래프의 최장 경로(Critical Path)와 여유 시간(Slack Hours), 추정 시간 대비 실측 시간을 계산하고 팀원 클러스터 투표(`Dot Voting`)와 병렬 버퍼 재배치를 지원한다.
 7. **크루 가용성(Workload Capacity) & 표준 계약·크레딧·2차적저작물 권리 보호 매트릭스 (ClickUp `/features/sync-up` + 위시켓 계약 보호)**:
    - 팀 서피스(`ProductionTeamSurface`)에서 참여자별 주간 가용 시간 대비 배정 부하율(85% 경고·100% 과부하 차단)과 표준 계약서·크레딧 표기·2차적저작물 별도 정산 합의 상태를 한눈에 점검하고 과부하 컷을 여유 인원에게 즉시 재배정한다.
+8. **4단계 컨펌(러프→선화→밑색→마감) 이전 공정 역주행(Upstream Rollback) 할증 가드 & 원본 PSD/CLIP 납품 규격 검수 (아트머그 + 라우드소싱 + Notion)**:
+   - 채용·지원 서피스(`HiringPositionsPage`, `HiringWorkspacePage`)에서 단계별 컨펌 잠금 이후 이전 공정(예: 채색 단계에서 선화/콘티 수정) 역주행 요청 시 자동 할증 비용을 산출하고, 원본 PSD/CLIP 레이어 분리·해상도·컬러 프로파일 5대 규격 및 유급 샘플 3컷 테스트를 게이트로 강제한다.
+9. **공고 ↔ 채용 ↔ 프로덕션 ↔ 스튜디오 좌석 멀티호밍(Multi-Homing) 브리프 동기화 & 최소 권한 원고 격리 (Asana + Notion)**:
+   - 구인·의뢰 상세 페이지(`CollaborationPostPage`)에서 합의된 브리프 블록을 복제 없이 4개 보드(`/collaborate/:id`, `/team/recruiting`, `/production`, `/studio`)에 동시 귀속(Multi-Home)하되, 전체 비공개 원고 대신 담당 레이어 좌석(`layer:p1:<role>`)만 최소 권한으로 개방한다.
 
 ### 2.4 Explicit Unknowns (명시적 미확정 영역)
 
-- 인증 세션 이후의 서버 측 비공개 Mutation 페이로드(Linear 내부 동기화 델타, Frame.io C2PA 서명 키 교환, 크몽/숨고/위시켓 내부 에스크로 PG 웹훅, Miro/ClickUp 비공개 보드 소켓 프레임)는 공개 캡처 범위에서 실행되지 않았으므로 `unknown`으로 분리 기록하며, ToonStudio 내재화 시에는 자체 클린룸 결정론적 TypeScript 도메인 모델로 구현한다.
+- 인증 세션 이후의 서버 측 비공개 Mutation 페이로드(Linear 내부 동기화 델타, Frame.io C2PA 서명 키 교환, 크몽/숨고/위시켓/아트머그/라우드소싱 내부 에스크로 PG 웹훅, Miro/ClickUp/Notion/Asana 비공개 보드 소켓 프레임)는 공개 캡처 범위에서 실행되지 않았으므로 `unknown`으로 분리 기록하며, ToonStudio 내재화 시에는 자체 클린룸 결정론적 TypeScript 도메인 모델로 구현한다.
 
 ---
 
-## 3. ToonStudio 클린룸 내재화·고도화 아키텍처 (총 8대 모듈)
+## 3. ToonStudio 클린룸 내재화·고도화 아키텍처 (총 10대 모듈)
 
 | 모듈 | 도메인 모델 | UI 컴포넌트 스위트 | 마운트 서피스 (라우트) |
 | --- | --- | --- | --- |
@@ -86,3 +102,5 @@
 | **Module 6: 공정별 즉시 견적 비교·유료 파일럿 테스트·저작권 조건 매칭 스위트** | `apps/web/src/domains/collaboration/collaboration-instant-quote-matcher-model.ts` | `apps/web/src/domains/collaboration/CollaborationInstantQuoteMatcherSuite.tsx` | `CollaborationBoardPage.tsx` (`/collaborate`) |
 | **Module 7: 컷·장면 공정 의존성 화이트보드 & 시간 추정 크리티컬 패스 분석기** | `apps/web/src/domains/creator/production-hub/production-cut-dependency-time-estimator-model.ts` | `apps/web/src/domains/creator/production-hub/ProductionCutDependencyTimeEstimatorSuite.tsx` | `ProductionPlanningSurface.tsx` (`/production/projects/:projectId/planning`) |
 | **Module 8: 스튜디오 크루 가용성(Workload) & 표준 계약·크레딧·권리 보호 매트릭스** | `apps/web/src/domains/creator/production-hub/production-crew-workload-contract-matrix-model.ts` | `apps/web/src/domains/creator/production-hub/ProductionCrewWorkloadContractMatrixSuite.tsx` | `ProductionTeamSurface.tsx` (`/production/projects/:projectId/team`) |
+| **Module 9: 4단계 컨펌(러프·선화·밑색·마감) 역주행 할증 가드 & PSD/CLIP 규격 검수 스위트** | `apps/web/src/domains/collaboration/hiring/collaboration-step-confirm-spec-model.ts` | `apps/web/src/domains/collaboration/hiring/CollaborationStepConfirmSpecSuite.tsx` | `HiringPositionsPage.tsx`, `HiringWorkspacePage.tsx` (`/collaborate/:id/positions`, `/team/recruiting`) |
+| **Module 10: 멀티호밍(Multi-Homing) 브리프 4대 보드 동기화 & 최소 권한 원고 격리 스위트** | `apps/web/src/domains/collaboration/collaboration-multi-homing-brief-model.ts` | `apps/web/src/domains/collaboration/CollaborationMultiHomingBriefSuite.tsx` | `CollaborationPostPage.tsx` (`/collaborate/:id`) |

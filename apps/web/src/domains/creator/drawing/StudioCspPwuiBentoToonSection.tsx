@@ -26,6 +26,23 @@ import {
   CSP_MENUV3_KOREAN_BENTO_ITEMS,
   CSP_PW_UI_WIDGET_CLASSES,
 } from "../../../../../../packages/studio-format-gateway/src/csp-fto-pwui-bento-design";
+import {
+  CSP_LIP_QUICKLOOK_PLUGIN_SPECS,
+  CSP_SKSHAPER_UNICODE_SPEC,
+  CSP_SYSTEM_HELPER_APP_MANIFEST,
+  CSP_TG_TOS_PLUGIN_SPEC,
+   applyCspScanAppLineArtBinarization,
+  convertCspTosLegacyToolToSutSpec,
+  encodeCspLipQuickLookPreviewSqliteStub,
+  extractCspLipQuickLookPreview,
+  layoutCspSkShaperMangaVerticalText,
+  type CspTosLegacyTonePatternType,
+} from "../../../../../../packages/studio-format-gateway/src/csp-lippreview-tos-scan-skshaper";
+import {
+  executeCspUnifiedFilterPlugIn,
+  getCspCompleteInternalizationManifest,
+  type CspUnifiedDispatchedFilterId,
+} from "./studio-csp-unified-runtime-hub";
 
 function rgb01ToHex(rgb: readonly [number, number, number]): string {
   const c = (v: number): string =>
@@ -499,6 +516,252 @@ export function StudioCspCompleteArchiveFoilShortcutsSection(): ReactElement {
           {CSP_REMAINING_RESOURCE_ARCHIVE_SPECS.length}종 · 프리셋{" "}
           {CSP_CROSS_PLATFORM_SPWS_PRESET_SPECS.length}종 · WKBridge URL:{" "}
           <code>{wkBridgeState.currentUrl.slice(0, 36)}</code>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DISPATCHABLE_FILTER_IDS: readonly CspUnifiedDispatchedFilterId[] = [
+  "TPPFilmCameraStyle",
+  "LineWidth",
+  "Sphere",
+  "Waveform",
+  "Zigzag",
+  "GeometricDistortionPanorama",
+  "PencilArtFilter",
+  "FlowBasedAbstraction",
+  "Smoothing",
+  "GaussBlur",
+  "MotionBlur",
+  "RadialBlur",
+  "TPPRotationBlur",
+  "UnSharpMask",
+  "Sharp",
+  "SharpStrong",
+  "SharpOff",
+  "SharpOffStrong",
+  "Mosaic",
+  "Pinch",
+  "LensDistortion",
+  "GeometricDistortionFishEye",
+  "TPPChromaticAberration",
+  "TPPNormalMap",
+  "TPReduceNoiseFilter",
+  "TPPAddNoise",
+  "SimpleWave",
+  "Spiral",
+  "Dust",
+  "PolarCd",
+  "PerlinNoise",
+  "ColorTransfer",
+] as const;
+
+/**
+ * 7번째 탭(`lippreview_scan_skshaper_filters`):
+ * `LipPreview.qlgenerator` (.clip/.lip QuickLook) · `TGTosPlugIn.cfpi` (.tos 툴셋/톤) ·
+ * `scan.app` 원고 스캔 이진화 · `libskshaper.dylib` 세로쓰기(금칙·TCY·루비) · 32종 FilterPlugIn 디스패처
+ */
+export function StudioCspLipPreviewScanSkShaperFiltersSection(): ReactElement {
+  const [lipFormat, setLipFormat] = useState<"clip_csfchunk" | "lip_sqlite3">("clip_csfchunk");
+  const [selectedTosTone, setSelectedTosTone] = useState<CspTosLegacyTonePatternType>(
+    CSP_TG_TOS_PLUGIN_SPEC.builtInTonePatterns[0],
+  );
+  const [scanThresholdPercent, setScanThresholdPercent] = useState<number>(55);
+  const [verticalTextInput, setVerticalTextInput] = useState<string>(
+    "{만화|망가}15화!?（특집）。",
+  );
+  const [selectedFilterId, setSelectedFilterId] =
+    useState<CspUnifiedDispatchedFilterId>("TPPFilmCameraStyle");
+
+  const lipPreviewResult = useMemo(() => {
+    const stub = encodeCspLipQuickLookPreviewSqliteStub({
+      containerFormat: lipFormat,
+      widthPx: 512,
+      heightPx: 724,
+    });
+    return extractCspLipQuickLookPreview(stub);
+  }, [lipFormat]);
+
+  const convertedTosSut = useMemo(
+    () =>
+      convertCspTosLegacyToolToSutSpec({
+        kindName: "IllustStudio Pen",
+        innerName: "G-Pen Tos",
+        brushStyle: "stamp",
+        brushSizePx: 14,
+        brushSizeMinimumPercent: 25,
+        inOutDrawLine: true,
+        vectorByTrace: true,
+        vectorSmoothPower: 60,
+        tonePattern: selectedTosTone,
+      }),
+    [selectedTosTone],
+  );
+
+  const scanBinarizationPreview = useMemo(() => {
+    const samplePaper = new Uint8ClampedArray([
+      248, 246, 242, 255, 25, 22, 20, 255, 245, 244, 240, 255,
+      30, 28, 25, 255, 18, 16, 15, 255, 250, 249, 245, 255,
+      246, 245, 240, 255, 28, 26, 24, 255, 249, 248, 244, 255,
+    ]);
+    return applyCspScanAppLineArtBinarization(samplePaper, 3, 3, {
+      threshold01: scanThresholdPercent / 100,
+      despeckle3x3: false,
+      convertPaperToTransparent: true,
+    });
+  }, [scanThresholdPercent]);
+
+  const verticalLayout = useMemo(
+    () =>
+      layoutCspSkShaperMangaVerticalText(verticalTextInput, {
+        maxRowsPerColumn: 4,
+        fontSizePx: 20,
+        enableTateChuYoko: true,
+        enableKinsokuShori: true,
+      }),
+    [verticalTextInput],
+  );
+
+  const dispatchedFilterPreview = useMemo(() => {
+    const sampleCanvas = new Uint8ClampedArray([
+      220, 80, 60, 255, 40, 160, 220, 255, 240, 210, 70, 255, 30, 30, 40, 255,
+      50, 190, 120, 255, 250, 110, 150, 255, 90, 70, 210, 255, 200, 200, 210, 255,
+      180, 60, 190, 255, 70, 210, 180, 255, 230, 130, 50, 255, 60, 90, 140, 255,
+      110, 140, 230, 255, 210, 75, 95, 255, 85, 195, 95, 255, 245, 240, 230, 255,
+    ]);
+    const out = executeCspUnifiedFilterPlugIn(selectedFilterId, sampleCanvas, 4, 4);
+    const hex0 = `#${(out[0] ?? 0).toString(16).padStart(2, "0")}${(out[1] ?? 0)
+      .toString(16)
+      .padStart(2, "0")}${(out[2] ?? 0).toString(16).padStart(2, "0")}`;
+    return {
+      firstPixelHex: hex0,
+      byteLength: out.byteLength,
+      manifest: getCspCompleteInternalizationManifest(),
+    };
+  }, [selectedFilterId]);
+
+  return (
+    <div
+      role="tabpanel"
+      id="csp-ux-panel-lippreview_scan_skshaper_filters"
+      aria-labelledby="csp-ux-tab-lippreview_scan_skshaper_filters"
+      className="grid grid-cols-1 gap-3 md:grid-cols-3"
+    >
+      <div className="rounded border border-line bg-panel p-2">
+        <div className="mb-1.5 font-medium">
+          LipPreview.qlgenerator (.clip/.lip) · TGTosPlugIn (.tos) · InitInfo
+        </div>
+        <div className="mb-1.5 flex gap-1">
+          <button
+            type="button"
+            onClick={() => setLipFormat("clip_csfchunk")}
+            className={`rounded px-2 py-0.5 text-[0.65rem] ${
+              lipFormat === "clip_csfchunk" ? "bg-accent text-fg" : "border border-line bg-card"
+            }`}
+          >
+            .clip (CSFCHUNK→CHNKSQLi)
+          </button>
+          <button
+            type="button"
+            onClick={() => setLipFormat("lip_sqlite3")}
+            className={`rounded px-2 py-0.5 text-[0.65rem] ${
+              lipFormat === "lip_sqlite3" ? "bg-accent text-fg" : "border border-line bg-card"
+            }`}
+          >
+            .lip (SQLite 3.30.1)
+          </button>
+        </div>
+        <select
+          aria-label="TGTosPlugIn 레거시 톤 패턴 선택"
+          value={selectedTosTone}
+          onChange={(e) => setSelectedTosTone(e.target.value as CspTosLegacyTonePatternType)}
+          className="mb-1.5 w-full rounded border border-line bg-card px-2 py-1 text-[0.68rem]"
+        >
+          {CSP_TG_TOS_PLUGIN_SPEC.builtInTonePatterns.map((pat) => (
+            <option key={pat} value={pat}>
+              TGTos 톤 패턴: {pat}
+            </option>
+          ))}
+        </select>
+        <div
+          data-testid="csp-lippreview-tos-readout"
+          className="rounded bg-card p-1.5 text-[0.64rem]"
+        >
+          QuickLook ({CSP_LIP_QUICKLOOK_PLUGIN_SPECS.length}번들):{" "}
+          <strong>{lipPreviewResult.containerFormat}</strong> ({lipPreviewResult.previewWidthPx}×
+          {lipPreviewResult.previewHeightPx}px) · TGTos→SUT:{" "}
+          <strong>{convertedTosSut.mappedToneTextureId}</strong> · 헬퍼 앱:{" "}
+          {CSP_SYSTEM_HELPER_APP_MANIFEST.length}종
+        </div>
+      </div>
+
+      <div className="rounded border border-line bg-panel p-2">
+        <div className="mb-1.5 font-medium">
+          scan.app 스캔 선화 이진화 &amp; libskshaper 만화 세로쓰기(금칙·TCY·루비)
+        </div>
+        <CspPwEditSliderJoint
+          label="스캔 선화 임계값 (scan.app)"
+          value={scanThresholdPercent}
+          min={10}
+          max={90}
+          onChange={setScanThresholdPercent}
+        />
+        <input
+          type="text"
+          aria-label="만화 세로쓰기 대사 입력 (libskshaper)"
+          value={verticalTextInput}
+          onChange={(e) => setVerticalTextInput(e.target.value)}
+          className="my-1.5 w-full rounded border border-line bg-card px-2 py-1 text-[0.68rem]"
+        />
+        <div
+          data-testid="csp-scan-skshaper-readout"
+          className="rounded bg-card p-1.5 text-[0.64rem]"
+        >
+          스캔 선화 잉크: <strong>{scanBinarizationPreview.inkPixelCount}px</strong> / 투명 배경:{" "}
+          {scanBinarizationPreview.transparentPaperPixelCount}px · SkShaper (
+          {CSP_SKSHAPER_UNICODE_SPEC.libraries.length} dylib): {verticalLayout.columnCount}열 · TCY{" "}
+          <strong>{verticalLayout.tateChuYokoCount}개</strong> · 루비{" "}
+          <strong>{verticalLayout.rubyAnnotationCount}개</strong> · 금칙조정{" "}
+          <strong>{verticalLayout.kinsokuAdjustmentCount}회</strong>
+        </div>
+      </div>
+
+      <div className="rounded border border-line bg-panel p-2">
+        <div className="mb-1.5 font-medium">
+          App/PlugIn/PAINT 32종 네이티브 필터 통합 디스패처 (143 Mach-O 완비)
+        </div>
+        <select
+          aria-label="클립스튜디오 네이티브 필터 플러그인 선택"
+          value={selectedFilterId}
+          onChange={(e) =>
+            setSelectedFilterId(e.target.value as CspUnifiedDispatchedFilterId)
+          }
+          className="mb-1.5 w-full rounded border border-line bg-card px-2 py-1 text-[0.68rem]"
+        >
+          {DISPATCHABLE_FILTER_IDS.map((fid) => (
+            <option key={fid} value={fid}>
+              FilterPlugIn: {fid}.bundle
+            </option>
+          ))}
+        </select>
+        <div
+          data-testid="csp-all-32-filters-readout"
+          className="flex items-center justify-between rounded bg-card p-1.5 text-[0.64rem]"
+        >
+          <span>
+            실행 필터: <strong>{selectedFilterId}</strong> ({dispatchedFilterPreview.byteLength}B ·{" "}
+            {dispatchedFilterPreview.firstPixelHex.toUpperCase()}) · 총 바이너리:{" "}
+            {dispatchedFilterPreview.manifest.totalMachOBinaryCount}개 / 필터{" "}
+            {dispatchedFilterPreview.manifest.dispatchedFilterPlugInCount}종
+          </span>
+          <span
+            style={{
+              backgroundColor: dispatchedFilterPreview.firstPixelHex,
+              forcedColorAdjust: "none",
+            }}
+            className="inline-block h-5 w-7 rounded border border-line"
+          />
         </div>
       </div>
     </div>

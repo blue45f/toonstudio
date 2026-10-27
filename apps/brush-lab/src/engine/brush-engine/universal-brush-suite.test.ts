@@ -14,6 +14,7 @@ import {
   evaluateLabSaiWatercolorPressure,
   evaluateLabSculptGlCreaseAndKlecksCatchUp,
   evaluateLabSculptGlQuarticFalloff01,
+  evaluateLabWebGpuVelloEulerAndIndirectCull,
   evaluateLabWickCroquisPressure01,
   filterLabPixelPerfectCells,
   fitLabSchneiderCubicBezier,
@@ -335,5 +336,16 @@ describe("universal-brush-suite (Sumi 클린룸 범용 브러시 커널 Wave 21 
     });
     expect(creaseCatch.quinticCreaseDisp).toBeGreaterThan(0.5);
     expect(creaseCatch.caughtUpX).toBe(70);
+
+    const webgpuVello = evaluateLabWebGpuVelloEulerAndIndirectCull({
+      fractX01: 0.5,
+      gaussianSigmaDist: 0.4,
+      visibleInstances: 1024,
+      uboFloats: 24,
+    });
+    expect(webgpuVello.velloParabolaIntegral).toBeGreaterThan(0.5);
+    expect(webgpuVello.velloErf7Alpha01).toBeGreaterThan(0.2);
+    expect(webgpuVello.indirectInstanceCount).toBe(1024);
+    expect(webgpuVello.alignedUboBytes).toBe(256);
   });
 });

@@ -218,6 +218,48 @@ export const REA15_PLATFORM_IDS = [
   "sandoll-cloud-webtoon-font",
   "rixfont-comic-sfx-type",
   "paletton-color-scheme-lab",
+  // Wave 13 (20개 플랫폼 — 총 220개 플랫폼 완성)
+  "webtoon-factory-dupuis",
+  "delitoon-france-studio",
+  "verytoon-editions-delcourt",
+  "izneo-bd-eu-player",
+  "mangamo-subscription-reader",
+  "azuki-digital-manga",
+  "globalcomix-creator-hub",
+  "inkr-comics-localization",
+  "bato-v4-panel-inspector",
+  "bookwalker-kadokawa-vertical",
+  "cmoa-ntt-solmare-studio",
+  "mechacomic-amutus-strip",
+  "rensa-ai-manga-translator",
+  "deep-manga-colorizer-v2",
+  "orx-ornatrix-hair-groom",
+  "xgen-maya-toon-groom",
+  "clo3d-fashion-pattern",
+  "style3d-digital-garment",
+  "metahuman-animator-facs",
+  "audio2face-omniverse-lip",
+  // Wave 14 (20개 플랫폼 — 총 240개 플랫폼 완성)
+  "ic-light-lllyasviel",
+  "beeble-switchlight-studio",
+  "wonder-dynamics-wonder-studio",
+  "move-ai-multicam-mocap",
+  "rokoko-vision-dualcam",
+  "deepmotion-animate-3d",
+  "radical-3d-live-mocap",
+  "kinetix-emote-3d-studio",
+  "davinci-resolve-color-lut",
+  "dehancer-film-bloom-grain",
+  "borisfx-sapphire-glow-rays",
+  "knoll-light-factory-flare",
+  "trapcode-particular-vfx",
+  "embergen-realtime-fire-smoke",
+  "liquigen-realtime-water-splash",
+  "world-creator-terrain-3d",
+  "gaea-quadspinner-erosion",
+  "speedtree-stylized-foliage",
+  "yoondesign-font-cloud",
+  "morisawa-fonts-manga-jp",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -230,6 +272,8 @@ export const REA140_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA160_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA180_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA200_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA220_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA240_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -570,3 +614,5 @@ export const REA140_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA160_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA180_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA200_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA220_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA240_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

@@ -479,7 +479,7 @@ export function buildDeterministicPanelBorderGutterLock(
     source: "deterministic-fallback",
     model: "claude-haiku-5-5",
     taskId: "production:panel-border-gutter-tension-lock",
-    sequenceTitleKo: cleanSingleLineText(input.sceneSummaryKo) || "클라이맥스 사선 컷 & 여백 암전 시퀀스",
+    sequenceTitleKo: cleanSingleLineText(input.sceneSummaryKo, 120) || "클라이맥스 사선 컷 & 여백 암전 시퀀스",
     overallTensionCurveScore: 95,
     panelBorderSpecs,
     scrollTransitionNoteKo:
@@ -617,8 +617,8 @@ export function buildDeterministicHandPropGripLock(
     source: "deterministic-fallback",
     model: "claude-sonnet-5-5",
     taskId: "production:hand-prop-grip-anatomy-continuity-lock",
-    characterName: cleanSingleLineText(input.characterName) || "강하준",
-    propNameKo: cleanSingleLineText(input.propNameKo) || "청류검(장검)",
+    characterName: cleanSingleLineText(input.characterName, 80) || "강하준",
+    propNameKo: cleanSingleLineText(input.propNameKo, 80) || "청류검(장검)",
     dominantHand,
     anatomyConsistencyScore: 97,
     cutGripDirectives: actions.slice(0, 4).map((action, idx) => ({

@@ -36,12 +36,21 @@ import {
   evaluateRichCanvasTypographyLayout,
   evaluateSculptGlCreaseFlattenAndTangentSmooth,
   evaluateSculptGlTwistAndDynamicTopology,
+  evaluateGpuDrivenFrustumHiZIndirectCull,
+  evaluatePixiV8RenderBundleAndUboBatcher,
+  evaluateVelloEulerSpiralFlattenAndAnalyticAa,
+  evaluateWasmLinearMemoryBvhAndWorkerRing,
+  evaluateWebGpuHighSpeedArchitectureTelemetry,
+  evaluateZeroCopyComputeToVertexAndRadixStateSort,
   executeHolisticFloodFillAndMagicErase,
   HOLISTIC_STUDIO_TOOL_PRESETS,
   measureUniversalBrushTaxonomyEngineBenchmark,
   MONOLITHIC_TOTAL_ECOSYSTEM_REA_LEDGER,
   MONOLITHIC_TOTAL_TOOL_PRESETS,
   WAVE28_HOLISTIC_ECOSYSTEM_REA_LEDGER,
+  WEBGPU_HIGHSPEED_ARCHITECTURE_PRESETS,
+  WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER,
+  WEBGPU_ZERO_COPY_INDIRECT_BRUSH_WGSL,
 } from "../studio-universal-brush-taxonomy-engine";
 
 describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 검증)", () => {
@@ -139,7 +148,7 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(procreateBench.hoverAltitudeFootprintRatio).toBeGreaterThan(1.1);
 
     const universalBench = measureUniversalBrushTaxonomyEngineBenchmark();
-    expect(universalBench.reaEvidenceTargetCount).toBe(53);
+    expect(universalBench.reaEvidenceTargetCount).toBe(58);
     expect(universalBench.wave22ReaEvidenceTargetCount).toBe(4);
     expect(universalBench.wave23ReaSemanticTargetCount).toBe(4);
     expect(universalBench.wave24ReaEvidenceCount).toBe(4);
@@ -149,9 +158,11 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(universalBench.wave28HolisticReaEvidenceCount).toBe(6);
     expect(universalBench.unfragmentedEcosystemReaEvidenceCount).toBe(7);
     expect(universalBench.monolithicTotalReaEvidenceCount).toBe(8);
+    expect(universalBench.webGpuHighSpeedReaEvidenceCount).toBe(5);
     expect(universalBench.holisticToolPresetCount).toBe(12);
     expect(universalBench.completeEcosystemToolPresetCount).toBe(14);
     expect(universalBench.monolithicTotalToolPresetCount).toBe(20);
+    expect(universalBench.webGpuHighSpeedPresetCount).toBe(12);
     expect(universalBench.harmonyBrushKindCount).toBe(11);
     expect(universalBench.p5BrushPresetCount).toBe(11);
     expect(universalBench.p5BrushVectorFieldCount).toBe(7);
@@ -601,6 +612,108 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     expect(telemetry.otsuOptimalThreshold).toBe(31);
     expect(telemetry.sculptCreaseZ).toBeGreaterThan(0.5);
     expect(telemetry.klecksCatchUpX).toBeGreaterThan(20);
+  });
+
+  it("Wave 33 215개 파일 WebGPU 초고속 브러시 아키텍처(Vello WGSL·Orillusion Indirect·PixiJS v8 RenderBundle/UBO·Three.js Zero-Copy·WASM Morton LBVH) REA 원장(5개 엔트리·12개 프리셋)과 커널을 검증한다", () => {
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER).toHaveLength(5);
+    expect(WEBGPU_HIGHSPEED_ARCHITECTURE_PRESETS).toHaveLength(12);
+    expect(WEBGPU_ZERO_COPY_INDIRECT_BRUSH_WGSL).toContain("atomicAdd(&indirect_args.instance_count, 1u)");
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.parentEvidenceId).toBe(
+      "ev_c8f3c2e349c2ec10d5e86761c2414b5b260185090f10d835f9e767f90eeb7f9b",
+    );
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.evidenceId).toBe(
+      "ev_346020a1c98a9a75accd29be7d1a2be8690cd59e2ca60ea0eaa42f712c42de8b",
+    );
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.relevantFiles).toBe(215);
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.visitedAstNodes).toBe(133090);
+    expect(WEBGPU_HIGHSPEED_BRUSH_REA_LEDGER[0]?.dataFlowRelations).toBe(29090);
+
+    const vello = evaluateVelloEulerSpiralFlattenAndAnalyticAa({
+      p0: { x: 10, y: 12 },
+      p1: { x: 74, y: 36 },
+      th0Rad: 0.42,
+      th1Rad: -0.28,
+      strokeHalfWidthPx: 8,
+      flattenTolerancePx: 0.25,
+      pixelOrigin: { x: 20, y: 12.2 },
+      evenOddRule: false,
+      sampleFract01: 0.35,
+      gaussianSigmaDistance: 0.5,
+    });
+    expect(vello.parabolaIntegral01).toBeGreaterThan(0);
+    expect(vello.subdivisionCount).toBeGreaterThanOrEqual(2);
+    expect(vello.analyticPixelCoverage4[0]).toBeGreaterThan(0);
+    expect(vello.erf7GaussianAlpha01).toBeGreaterThan(0.2);
+    expect(vello.mitchellBicubicWeights.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 5);
+
+    const cull = evaluateGpuDrivenFrustumHiZIndirectCull({
+      instances: [
+        { minX: -20, minY: -20, maxX: 30, maxY: 30, depth01: 0.2, enabled: true },
+        { minX: 400, minY: 400, maxX: 450, maxY: 450, depth01: 0.2, enabled: true },
+        { minX: 10, minY: 10, maxX: 40, maxY: 40, depth01: 0.85, enabled: true },
+      ],
+      frustumRect: { minX: -100, minY: -100, maxX: 100, maxY: 100 },
+      hizMaxOccluderDepth01: 0.6,
+      indexCountPerQuad: 6,
+    });
+    expect(cull.visibleInstanceCount).toBe(1);
+    expect(cull.culledInstanceCount).toBe(2);
+    expect(Array.from(cull.drawIndexedIndirectBufferU32)).toEqual([6, 1, 0, 0, 0]);
+    expect(cull.cpuDrawCallsSubmitted).toBe(1);
+
+    const pixi = evaluatePixiV8RenderBundleAndUboBatcher({
+      colorFormatId: 1,
+      depthStencilFormatId: 2,
+      msaaSampleCount: 4,
+      flipYParity: false,
+      deviceEpochId: 1,
+      cachedBundleStateKeys: [1082369, 1082369],
+      uniformGroupFloatCounts: [16, 40, 64, 80],
+      minUniformOffsetAlignmentBytes: 256,
+    });
+    expect(pixi.validBundleCount).toBe(2);
+    expect(pixi.executeBundlesCallCount).toBe(1);
+    expect(pixi.uboAlignedOffsetsBytes).toEqual([0, 256, 512, 768]);
+    expect(pixi.totalUboBatchBytes).toBe(1280);
+
+    const zeroCopy = evaluateZeroCopyComputeToVertexAndRadixStateSort({
+      dabs: [
+        { x: 10, y: 10, radiusPx: 8, angleRad: 0, pipelineId: 3, blendModeId: 2, textureArraySlice: 5 },
+        { x: 20, y: 15, radiusPx: 9, angleRad: 0.1, pipelineId: 1, blendModeId: 1, textureArraySlice: 2 },
+        { x: 30, y: 20, radiusPx: 10, angleRad: 0.2, pipelineId: 3, blendModeId: 2, textureArraySlice: 5 },
+      ],
+    });
+    expect(zeroCopy.perFrameMapAsyncCalls).toBe(0);
+    expect(zeroCopy.unsortedPipelineSwitches).toBe(2);
+    expect(zeroCopy.sortedPipelineSwitches).toBe(1);
+    expect(zeroCopy.usesTexture2DArray).toBe(true);
+
+    const wasm = evaluateWasmLinearMemoryBvhAndWorkerRing({
+      normalizedX01: 0.5,
+      normalizedY01: 0.5,
+      wasmLinearByteOffset: 300,
+      bucketPoints: [
+        { x: 30, y: 22 },
+        { x: 35, y: 45 },
+        { x: 40, y: 25 },
+      ],
+      prevSelectedPoint: { x: 20, y: 20 },
+      nextBucketAverage: { x: 55, y: 24 },
+      mainThreadJankMs: 25,
+    });
+    expect(wasm.mortonCode32).toBeGreaterThan(0);
+    expect(wasm.alignedWasmWriteBufferOffset).toBe(512);
+    expect(wasm.lttbSelectedCandidateIndex).toBe(1);
+    expect(wasm.workerDroppedFramesUnderMainJank).toBe(0);
+
+    const archTel = evaluateWebGpuHighSpeedArchitectureTelemetry({
+      presetId: "webgpu-vello-euler-flatten-aa",
+      indirectCullingEnabled: true,
+      strokeQuality01: 0.85,
+    });
+    expect(archTel.indirectVisibleInstances).toBe(2);
+    expect(archTel.renderBundleValidCount).toBe(3);
+    expect(archTel.indirectDrawCalls).toBe(1);
   });
 });
 

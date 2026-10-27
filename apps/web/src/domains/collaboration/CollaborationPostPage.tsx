@@ -29,6 +29,7 @@ import { useApp } from "@/shared/lib/store";
 import { HiringPublicPositions } from "./hiring/HiringPositionsPage";
 
 import { HiringPostPanel } from "./hiring/HiringPostPanel";
+import { CollaborationMultiHomingBriefSuite } from "./CollaborationMultiHomingBriefSuite";
 
 const SCOPE = "domains.collaboration.CollaborationPostPage";
 
@@ -162,6 +163,7 @@ function PostContent({ id, userId }: { id: string; userId: string | null }) {
           [bt("보수·지급 조건", "Pay & terms"), post.details.compensation],
           [bt("저작권·크레딧·수정 범위", "Rights · credits · revisions"), post.details.terms],
         ].map(([sectionTitle, text]) => <section key={sectionTitle} className="rounded-2xl border border-line bg-panel p-6"><h2 className="text-lg font-bold text-fg">{sectionTitle}</h2><p className="mt-4 whitespace-pre-wrap break-words text-sm leading-8 text-fg-2">{text}</p></section>)}
+        <CollaborationMultiHomingBriefSuite postId={id} roleKey={post.role} />
         <div id="collaboration-application" className="scroll-mt-24">
           {data.canManage ? <ApplicationsPanel key={reload} id={id} busy={busy} act={act} /> : <ApplicationPanel data={data} userId={userId} busy={busy} act={act} />}
         </div>

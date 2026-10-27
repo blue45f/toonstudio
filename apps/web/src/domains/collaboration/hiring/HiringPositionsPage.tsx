@@ -6,6 +6,7 @@ import { CollabField, CollabNotice, collabButton, collabInput, collabPrimary } f
 import { compensationLabels, optionsOf } from "./hiring-form-values";
 import { HiringTermsView } from "./HiringSlotEditor";
 import { parseHiringPositionPage } from "./hiring-position-response";
+import { CollaborationStepConfirmSpecSuite } from "./CollaborationStepConfirmSpecSuite";
 import { WebtoonAssistantOutsourcingSuite } from "./WebtoonAssistantOutsourcingSuite";
 
 import type { HiringPositionPage } from "../../../../../../packages/contracts/src/creator-hiring";
@@ -175,5 +176,6 @@ export function HiringPositionsPage() {
     </header>
     <HiringPublicPositions />
     <WebtoonAssistantOutsourcingSuite />
+    <CollaborationStepConfirmSpecSuite />
   </Container>;
 }

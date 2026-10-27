@@ -730,9 +730,7 @@ export function evaluateLabHolisticHomographyAndToneCurve(params: {
   const cb = clamp01(params.baseChannel01);
   const cs = hr;
   const d = cb <= 0.25 ? ((16 * cb - 12) * cb + 4) * cb : Math.sqrt(cb);
-  const softLightBlended01 = clamp01(
-    cs <= 0.5 ? cb - (1 - 2 * cs) * cb * (1 - cb) : cb + (2 * cs - 1) * (d - cb),
-  );
+  const softLightBlended01 = clamp01(cs <= 0.5 ? cb - (1 - 2 * cs) * cb * (1 - cb) : cb + (2 * cs - 1) * (d - cb));
   return { rotatedRgb01: [hr, hg, hb], curveMidpoint255, softLightBlended01 };
 }
 
@@ -741,12 +739,9 @@ export function evaluateLabBernsteinFfdAndVibrance(params: {
   readonly u01: number; readonly v01: number; readonly centerDeltaX: number; readonly centerDeltaY: number;
   readonly rgb01: readonly [number, number, number]; readonly vibranceMinus1To1: number;
 }): { readonly bernsteinCenterWeight01: number; readonly warpedDeltaX: number; readonly warpedDeltaY: number; readonly vibranceRgb01: readonly [number, number, number] } {
-  const u = clamp01(params.u01);
-  const v = clamp01(params.v01);
+  const u = clamp01(params.u01), v = clamp01(params.v01);
   const bernsteinCenterWeight01 = Math.round(36 * u * u * (1 - u) * (1 - u) * v * v * (1 - v) * (1 - v) * 10000) / 10000;
-  const [r, g, b] = params.rgb01;
-  const mx = Math.max(r, g, b);
-  const amt = (mx - (r + g + b) / 3) * (-params.vibranceMinus1To1 * 3);
+  const [r, g, b] = params.rgb01, mx = Math.max(r, g, b), amt = (mx - (r + g + b) / 3) * (-params.vibranceMinus1To1 * 3);
   return {
     bernsteinCenterWeight01,
     warpedDeltaX: Math.round(params.centerDeltaX * bernsteinCenterWeight01 * 1000) / 1000,
@@ -760,21 +755,18 @@ export function evaluateLabKonvaKaleidoscopeAndEmboss(params: {
   readonly width: number; readonly thetaIndex: number; readonly power: number;
   readonly sobelX: number; readonly sobelY: number; readonly directionRad: number; readonly strength01: number;
 }): { readonly mirroredThetaIndex: number; readonly reliefGray255: number } {
-  const w = Math.max(8, Math.floor(params.width));
-  const sectionSize = Math.max(8, Math.ceil(w / Math.pow(2, Math.max(1, Math.min(8, params.power)))));
+  const sectionSize = Math.max(8, Math.ceil(Math.max(8, Math.floor(params.width)) / Math.pow(2, Math.max(1, Math.min(8, params.power)))));
   const local = ((params.thetaIndex % (sectionSize * 2)) + sectionSize * 2) % (sectionSize * 2);
   const mirroredThetaIndex = local >= sectionSize ? sectionSize * 2 - local - 1 : local;
   const response = Math.cos(params.directionRad) * params.sobelX - Math.sin(params.directionRad) * params.sobelY;
-  const reliefGray255 = Math.min(255, Math.max(0, Math.round(128 + response * (128 / 1020) * (clamp01(params.strength01) * 10))));
-  return { mirroredThetaIndex, reliefGray255 };
+  return { mirroredThetaIndex, reliefGray255: Math.min(255, Math.max(0, Math.round(128 + response * (128 / 1020) * (clamp01(params.strength01) * 10)))) };
 }
 
 /** Wave 31 Total 767-File REA (`ev_13bbde3494001044d31ebdb3d481f0cd91c96f6dc995f78b17c1cf9984ea2d28`): ag-psd PackBits RLE + Otsu Bimodal Threshold. */
 export function evaluateLabPsdPackBitsAndOtsuThreshold(params: {
   readonly runValue: number; readonly runLength: number; readonly darkClassMean: number; readonly lightClassMean: number; readonly darkWeight01: number;
 }): { readonly packBitsHeaderByte: number; readonly betweenClassVariance: number } {
-  const clampedRun = Math.min(128, Math.max(2, Math.round(params.runLength)));
-  const w0 = clamp01(params.darkWeight01);
+  const clampedRun = Math.min(128, Math.max(2, Math.round(params.runLength))), w0 = clamp01(params.darkWeight01);
   return { packBitsHeaderByte: 257 - clampedRun, betweenClassVariance: Math.round(w0 * (1 - w0) * Math.pow(params.darkClassMean - params.lightClassMean, 2) * 100) / 100 };
 }
 
@@ -782,10 +774,22 @@ export function evaluateLabPsdPackBitsAndOtsuThreshold(params: {
 export function evaluateLabSculptGlCreaseAndKlecksCatchUp(params: {
   readonly distRatio01: number; readonly radius: number; readonly intensity01: number; readonly targetX: number; readonly prevX: number; readonly smoothing01: number;
 }): { readonly quinticCreaseDisp: number; readonly caughtUpX: number } {
-  const d = clamp01(params.distRatio01);
-  const f = d >= 1 ? 0 : 3 * Math.pow(d, 4) - 4 * Math.pow(d, 3) + 1;
-  const s = clamp01(params.smoothing01);
+  const d = clamp01(params.distRatio01), f = d >= 1 ? 0 : 3 * Math.pow(d, 4) - 4 * Math.pow(d, 3) + 1, s = clamp01(params.smoothing01);
   return { quinticCreaseDisp: Math.pow(f, 5) * clamp01(params.intensity01) * 0.07 * params.radius, caughtUpX: params.targetX * (1 - s) + params.prevX * s };
+}
+
+/** Wave 33 215-File WebGPU High-Speed REA (`ev_346020a1c98a9a75accd29be7d1a2be8690cd59e2ca60ea0eaa42f712c42de8b`): Vello Parabola + erf7 + Indirect + Pixi v8 UBO. */
+export function evaluateLabWebGpuVelloEulerAndIndirectCull(params: {
+  readonly fractX01: number; readonly gaussianSigmaDist: number; readonly visibleInstances: number; readonly uboFloats: number;
+}): { readonly velloParabolaIntegral: number; readonly velloErf7Alpha01: number; readonly indirectInstanceCount: number; readonly alignedUboBytes: number } {
+  const x = clamp01(params.fractX01), D = 0.67, y = Math.min(100, Math.max(-100, params.gaussianSigmaDist * 1.1283791671)), yy = y * y;
+  const z = y + (0.24295 + (0.03395 + 0.0104 * yy) * yy) * (y * yy);
+  return {
+    velloParabolaIntegral: x / Math.sqrt(Math.sqrt(1 - D + (D * D * D * D + 0.25 * x * x))),
+    velloErf7Alpha01: clamp01(0.5 * (1 - z / Math.sqrt(1 + z * z))),
+    indirectInstanceCount: Math.max(0, Math.floor(params.visibleInstances)),
+    alignedUboBytes: Math.ceil(Math.max(16, params.uboFloats * 4) / 256) * 256,
+  };
 }
 
 

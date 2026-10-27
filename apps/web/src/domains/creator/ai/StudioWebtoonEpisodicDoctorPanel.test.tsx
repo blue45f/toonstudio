@@ -66,5 +66,25 @@ describe("StudioWebtoonEpisodicDoctorPanel", () => {
     const applyCanonButtons = screen.getAllByText("장편 캐논 볼트 지문 삽입");
     fireEvent.click(applyCanonButtons[0]!);
     expect(onAppendDirectionLine).toHaveBeenCalledTimes(6);
+
+    // 탭 7: 신발 굽 · 계단 접지 보폭 잠금
+    fireEvent.click(
+      screen.getByTestId("episodic-doctor-tab-episodic-footwear-floor-contact-stride-lock"),
+    );
+    expect(
+      screen.getByTestId("episodic-panel-episodic-footwear-floor-contact-stride-lock"),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByTestId("episodic-footwear-insert-btn"));
+    expect(onAppendDirectionLine).toHaveBeenCalledTimes(7);
+
+    // 탭 8: 군중 엑스트라 · 대기원근 안개 잠금
+    fireEvent.click(
+      screen.getByTestId("episodic-doctor-tab-episodic-crowd-silhouette-depth-fog-lock"),
+    );
+    expect(
+      screen.getByTestId("episodic-panel-episodic-crowd-silhouette-depth-fog-lock"),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByTestId("episodic-crowd-depth-insert-btn"));
+    expect(onAppendDirectionLine).toHaveBeenCalledTimes(8);
   });
 });

@@ -99,14 +99,18 @@ describe("authored/vrm-extension-parser", () => {
     expect(budgetWarn.glbForgeTier).toBe("over-budget");
     expect(budgetWarn.score).toBeLessThan(100);
 
-    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS).toHaveLength(4);
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS).toHaveLength(8);
     expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbUrl).toBe(
-      "/models/tripo3d-mcp/tripo_h31_webtoon_protagonist_character.glb",
+      "/models/tripo3d-mcp/tripo_seg_fantasy_knight_outfit_set.glb",
     );
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.customizableParts).toContain("왕관·헤드기어");
     expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[3]?.glbUrl).toBe(
+      "/models/tripo3d-mcp/tripo_p2_quad_anime_head_bust.glb",
+    );
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[7]?.glbUrl).toBe(
       "/models/tripo3d-mcp/character_lab_crest_shoulder_pauldron.glb",
     );
-    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[3]?.glbforgeScore).toBe(95);
+    expect(TRIPO3D_CHARACTER_LAB_MCP_ASSETS[7]?.glbforgeScore).toBe(95);
     expect(VRM_TOOLKIT_MCP_BASELINES).toHaveLength(2);
   });
 });

@@ -46,12 +46,19 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 14대 창의 AI 작업을 포함한 총 65개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 23대 창의 AI 작업을 포함한 총 74개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(65);
-    expect(summary.byProfile["fast-inline"]).toBe(14);
-    expect(summary.byProfile["creative-production"]).toBe(33);
-    expect(summary.byProfile["deep-architecture"]).toBe(18);
+    expect(summary.totalTasks).toBe(74);
+    expect(summary.byProfile["fast-inline"]).toBe(18);
+    expect(summary.byProfile["creative-production"]).toBe(37);
+    expect(summary.byProfile["deep-architecture"]).toBe(19);
+
+    expect(
+      resolveCreatorTaskModelRoute("nextgen:footwear-floor-contact-stride-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("nextgen:crowd-silhouette-depth-fog-lock").model,
+    ).toBe("claude-sonnet-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("ecosystem:asymmetric-costume-prop-wound-ledger").model,
@@ -94,6 +101,27 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     ).toBe("claude-haiku-5-5");
     expect(
       resolveCreatorTaskModelRoute("production:hand-prop-grip-anatomy-continuity-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:hair-silhouette-ahoge-parting-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:eyewear-jewelry-reflection-rig-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:vehicle-steed-carriage-harness-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:magic-aura-elemental-sigil-geometry-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:food-tableware-banquet-prop-continuity").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:mirror-water-window-reflection-axis-lock").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("production:combat-bloodstain-dust-tatter-decay-lock").model,
     ).toBe("claude-sonnet-5-5");
   });
 });

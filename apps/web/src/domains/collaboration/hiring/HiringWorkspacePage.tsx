@@ -14,6 +14,7 @@ import { hiringClient } from "./hiring-client";
 import { ResumeEditor } from "./ResumeEditor";
 import { emptyResume } from "./hiring-form-values";
 import { ResumePreview } from "./ResumePreview";
+import { CollaborationStepConfirmSpecSuite } from "./CollaborationStepConfirmSpecSuite";
 import { WebtoonAssistantOutsourcingSuite } from "./WebtoonAssistantOutsourcingSuite";
 import "./hiring.css";
 
@@ -107,7 +108,12 @@ function WorkspaceContent({ actor }: { actor: string }) {
     {panel === "rooms" && <CreatorMeetingPanel actor={actor} />}
     {panel === "career" && <CreatorCareerPanel onResumeCreated={() => navigate("resumes")} />}
     {panel === "activity" && <CreatorActivityPanel />}
-    {panel === "outsourcing" && <WebtoonAssistantOutsourcingSuite />}
+    {panel === "outsourcing" && (
+      <div className="space-y-6">
+        <WebtoonAssistantOutsourcingSuite />
+        <CollaborationStepConfirmSpecSuite />
+      </div>
+    )}
   </div>;
 }
 
