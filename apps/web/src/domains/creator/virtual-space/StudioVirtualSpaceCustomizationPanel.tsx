@@ -35,6 +35,7 @@ import { DEFAULT_STUDIO_VIRTUAL_ART_STYLE, type StudioVirtualArtStyleKey } from 
 import { studioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
 import { StudioVirtualSpaceThemePicker } from "./StudioVirtualSpaceThemePicker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
+import { StudioVirtualSpaceNanoBananaLobbyShowcase } from "./StudioVirtualSpaceNanoBananaStageHud";
 import { STUDIO_VIRTUAL_CHARACTER_PRESETS } from "./studio-virtual-space-customization";
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 import "./studio-virtual-space-decoration-editor.css";
@@ -222,6 +223,7 @@ export function StudioVirtualSpaceCustomizationPanel({
         {bt(`${activeTheme.labelKo} 맞춤 캐릭터·오피스 원클릭 코디`, `Apply ${activeTheme.labelEn} character & office harmony`)}
       </button>
     </div> : null}
+    <StudioVirtualSpaceNanoBananaLobbyShowcase />
     <fieldset className="studio-vspace-customization-identity">
       <legend>{bt("내 닉네임", "My nickname")}</legend>
       <form onSubmit={(event) => {

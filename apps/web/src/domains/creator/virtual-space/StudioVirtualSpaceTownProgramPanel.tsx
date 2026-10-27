@@ -95,7 +95,7 @@ export function StudioVirtualSpaceTownProgramPanel({
 }) {
   const bt = useBilingual("StudioVirtualSpaceTownProgramPanel");
   const [requestedTab, setTab] = useState<Tab>("quests");
-  const tabs: readonly Tab[] = personal ? TABS.filter((item) => item !== "desks" && item !== "companion" && item !== "office-suite") : TABS;
+  const tabs: readonly Tab[] = personal ? TABS.filter((item) => item !== "desks" && item !== "companion") : TABS;
   const tab = tabs.includes(requestedTab) ? requestedTab : "quests";
   const [round, setRound] = useState<StudioMiniGameRound | null>(null);
   const [result, setResult] = useState<StudioMiniGameResult | null>(null);
