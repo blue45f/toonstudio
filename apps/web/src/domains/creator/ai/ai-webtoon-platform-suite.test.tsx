@@ -292,5 +292,6 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
       />,
     );
     expect(screen.getByTestId("wave57-59-domain-consistency-bar")).toBeTruthy();
+    expect(screen.getByTestId("wave60-62-domain-consistency-bar")).toBeTruthy();
   });
 });

@@ -247,7 +247,16 @@ export type ClaudeCreatorTaskId =
   | "alt-text:marshaller-lighthouse-antarctic-observatory-clock-lock"
   | "alt-text:glassblowing-luthier-diamond-loupe-shoemaker-lock"
   | "alt-text:3dgs-nerf-controlnet4-facs-sfx3d-saccade-director"
-  | "alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director";
+  | "alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director"
+  // 24. Wave 60~62 EnigmaMorseDarkroom/OceanLinerBiplane/DavyLampSwitchboard/JangdokdaeHanjiOnggi/WineCheesePotStill/BangpaeyeonSsireumMaedeup/Crossover1000EpWrinkleBaker/GrandMillennium1200Simulpub AI Engines (8 — Total 196 Tasks)
+  | "alt-text:enigma-morse-darkroom-letterpress-phonograph-lock"
+  | "alt-text:ocean-liner-4funnel-streetcar-biplane-semaphore-lock"
+  | "alt-text:davy-lamp-rickshaw-diving-dress-switchboard-sundial-lock"
+  | "alt-text:jangdokdae-kimjang-hanji-onggi-najeonchilgi-lock"
+  | "alt-text:wine-barrique-cheese-jamon-chocolate-pot-still-lock"
+  | "alt-text:bangpaeyeon-ssireum-satba-taekkyeon-maedeup-lock"
+  | "alt-text:crossover-1000ep-paradox-wrinkle-baker-sfx-redraw-director"
+  | "alt-text:toonstudio-1200-grand-millennium-simulpub-chroma-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -373,194 +382,31 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "competitor:action-weapon-motion-arc-smear-lock": defineRoute("competitor:action-weapon-motion-arc-smear-lock", "검격·마법·타격 궤적(Motion Arc) 연속성 · 잔상(Smear Frame) · 타격 역경직(Hit-Stop) 물리 일관성 감독", "competitor-suite", "creative-production", "연속 전투 컷 사이의 검기 궤적 벡터 일치·잔상(Smear) 왜곡률·집중선 수렴점·역경직 연출은 Sonnet 5.5 적용", 3_584),
 
   // 5. Phase 6 Global & Domestic 20-Competitor + Webtoon Consistency Ecosystem Suite
-  "ecosystem:novelai-multi-char-vibe": defineRoute(
-    "ecosystem:novelai-multi-char-vibe",
-    "NovelAI V4.5/V5 다중 캐릭터 공간 좌표 & Vibe Transfer 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "2인 이상 캐릭터 X/Y 바운딩박스 분리·속성 혼선 차단·Vibe Transfer·로어북 트리거는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "ecosystem:mangaflow-identity-verification": defineRoute(
-    "ecosystem:mangaflow-identity-verification",
-    "MangaFlow & DiffSensei 캐릭터 동일성 검증·말풍선 꼬리 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "Grounding DINO + ArcFace 동일성 점수 진단 및 화자 입 위치 벡터 꼬리 배치는 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "ecosystem:glimnavi-color-hint-stroke": defineRoute(
-    "ecosystem:glimnavi-color-hint-stroke",
-    "그림나비(Glimnavi) 브러시 컬러 힌트 스트로크 자동 채색 디렉터",
-    "phase6-ecosystem",
-    "fast-inline",
-    "선화 끊김(Gap) 허용치 및 영역별 브러시 색상 힌트 스트로크 좌표 추천은 Haiku 5.5로 즉각 응답",
-    3_072,
-  ),
-  "ecosystem:snaptoon-3d-environment-shader": defineRoute(
-    "ecosystem:snaptoon-3d-environment-shader",
-    "스냅툰(Snaptoon) & 에이콘3D 배경 툰셰이더·환경광 디렉터",
-    "phase6-ecosystem",
-    "fast-inline",
-    "3D 배경 시간대별 태양광·창문 발광·블룸·안개·저장 카메라 북마크 매칭은 Haiku 5.5로 즉각 응답",
-    3_072,
-  ),
-  "ecosystem:novel-adaptation-ip-expansion": defineRoute(
-    "ecosystem:novel-adaptation-ip-expansion",
-    "더컬쳐툰·마이닝5000·Storyflow 웹소설 각색 & 2차 IP OSMU 디렉터",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "웹소설 산문 압축 각색·서사 아키타입 매핑·드라마/애니/게임/오디오웹툰 OSMU 스코어카드는 Opus 5.5 적용",
-    6_144,
-  ),
-  "ecosystem:tooncrafter-inbetween-stitch": defineRoute(
-    "ecosystem:tooncrafter-inbetween-stitch",
-    "ToonCrafter 인비트윈 동화 보간 & Krita/Comistitch 무한 캔버스 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "시작·끝 키프레임 중간 동화 보간·Krita 인페인팅 마스크·Comistitch 안전 분할선 계산은 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "ecosystem:asymmetric-costume-prop-wound-ledger": defineRoute(
-    "ecosystem:asymmetric-costume-prop-wound-ledger",
-    "비대칭 복식·흉터·무기 파지 비례·부상 누적 연속성 원장 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "신체 좌우(Anatomical L/R) 기준 비대칭 흉터·견장·검집 미러링 방지 및 손 대비 무기 스케일·부상 누적 락은 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "ecosystem:camera-axis-eyeline-height-lock": defineRoute(
-    "ecosystem:camera-axis-eyeline-height-lock",
-    "180도 시선 축(180° Rule)·다중 인물 키 차이(Height Delta)·원근 소실점 일관성 감독",
-    "phase6-ecosystem",
-    "deep-architecture",
-    "컷간 180도 카메라 축 침범 방지·로우/하이앵글 신장 차이 원근 보정·오버더숄더 시선 벡터 감사는 Opus 5.5 적용",
-    4_096,
-  ),
-  "ecosystem:cross-cut-color-script-albedo-lock": defineRoute(
-    "ecosystem:cross-cut-color-script-albedo-lock",
-    "컷간 피부톤·의상 고유색(Albedo) 드리프트 방지 & 시간대 환경광(LUT) 일관성 고정기",
-    "phase6-ecosystem",
-    "fast-inline",
-    "컷간 캐릭터 고유색(Albedo HEX)과 역광/야간 색온도(Kelvin) 분리 및 Delta-E 색상 흔들림 제어는 Haiku 5.5 적용",
-    3_072,
-  ),
-  "ecosystem:micro-expression-acting-continuity": defineRoute(
-    "ecosystem:micro-expression-acting-continuity",
-    "컷간 미세 표정(FACS 근육)·시선 궤적·호흡 감정선 연속성 디렉터",
-    "phase6-ecosystem",
-    "creative-production",
-    "연속된 대화/액션 컷 사이의 안면 근육(FACS)·동공 수축·시선 이동 궤적·감정 관성 설계는 Sonnet 5.5 적용",
-    4_096,
-  ),
-
+  "ecosystem:novelai-multi-char-vibe": defineRoute("ecosystem:novelai-multi-char-vibe", "NovelAI V4.5/V5 다중 캐릭터 공간 좌표 & Vibe Transfer 디렉터", "phase6-ecosystem", "creative-production", "2인 이상 캐릭터 X/Y 바운딩박스 분리·속성 혼선 차단·Vibe Transfer·로어북 트리거는 Sonnet 5.5 적용", 4_096),
+  "ecosystem:mangaflow-identity-verification": defineRoute("ecosystem:mangaflow-identity-verification", "MangaFlow & DiffSensei 캐릭터 동일성 검증·말풍선 꼬리 디렉터", "phase6-ecosystem", "creative-production", "Grounding DINO + ArcFace 동일성 점수 진단 및 화자 입 위치 벡터 꼬리 배치는 Sonnet 5.5 적용", 4_096),
+  "ecosystem:glimnavi-color-hint-stroke": defineRoute("ecosystem:glimnavi-color-hint-stroke", "그림나비(Glimnavi) 브러시 컬러 힌트 스트로크 자동 채색 디렉터", "phase6-ecosystem", "fast-inline", "선화 끊김(Gap) 허용치 및 영역별 브러시 색상 힌트 스트로크 좌표 추천은 Haiku 5.5로 즉각 응답", 3_072),
+  "ecosystem:snaptoon-3d-environment-shader": defineRoute("ecosystem:snaptoon-3d-environment-shader", "스냅툰(Snaptoon) & 에이콘3D 배경 툰셰이더·환경광 디렉터", "phase6-ecosystem", "fast-inline", "3D 배경 시간대별 태양광·창문 발광·블룸·안개·저장 카메라 북마크 매칭은 Haiku 5.5로 즉각 응답", 3_072),
+  "ecosystem:novel-adaptation-ip-expansion": defineRoute("ecosystem:novel-adaptation-ip-expansion", "더컬쳐툰·마이닝5000·Storyflow 웹소설 각색 & 2차 IP OSMU 디렉터", "phase6-ecosystem", "deep-architecture", "웹소설 산문 압축 각색·서사 아키타입 매핑·드라마/애니/게임/오디오웹툰 OSMU 스코어카드는 Opus 5.5 적용", 6_144),
+  "ecosystem:tooncrafter-inbetween-stitch": defineRoute("ecosystem:tooncrafter-inbetween-stitch", "ToonCrafter 인비트윈 동화 보간 & Krita/Comistitch 무한 캔버스 디렉터", "phase6-ecosystem", "creative-production", "시작·끝 키프레임 중간 동화 보간·Krita 인페인팅 마스크·Comistitch 안전 분할선 계산은 Sonnet 5.5 적용", 4_096),
+  "ecosystem:asymmetric-costume-prop-wound-ledger": defineRoute("ecosystem:asymmetric-costume-prop-wound-ledger", "비대칭 복식·흉터·무기 파지 비례·부상 누적 연속성 원장 디렉터", "phase6-ecosystem", "creative-production", "신체 좌우(Anatomical L/R) 기준 비대칭 흉터·견장·검집 미러링 방지 및 손 대비 무기 스케일·부상 누적 락은 Sonnet 5.5 적용", 4_096),
+  "ecosystem:camera-axis-eyeline-height-lock": defineRoute("ecosystem:camera-axis-eyeline-height-lock", "180도 시선 축(180° Rule)·다중 인물 키 차이(Height Delta)·원근 소실점 일관성 감독", "phase6-ecosystem", "deep-architecture", "컷간 180도 카메라 축 침범 방지·로우/하이앵글 신장 차이 원근 보정·오버더숄더 시선 벡터 감사는 Opus 5.5 적용", 4_096),
+  "ecosystem:cross-cut-color-script-albedo-lock": defineRoute("ecosystem:cross-cut-color-script-albedo-lock", "컷간 피부톤·의상 고유색(Albedo) 드리프트 방지 & 시간대 환경광(LUT) 일관성 고정기", "phase6-ecosystem", "fast-inline", "컷간 캐릭터 고유색(Albedo HEX)과 역광/야간 색온도(Kelvin) 분리 및 Delta-E 색상 흔들림 제어는 Haiku 5.5 적용", 3_072),
+  "ecosystem:micro-expression-acting-continuity": defineRoute("ecosystem:micro-expression-acting-continuity", "컷간 미세 표정(FACS 근육)·시선 궤적·호흡 감정선 연속성 디렉터", "phase6-ecosystem", "creative-production", "연속된 대화/액션 컷 사이의 안면 근육(FACS)·동공 수축·시선 이동 궤적·감정 관성 설계는 Sonnet 5.5 적용", 4_096),
   // 6. Phase 6 Domain Engine Fusion
-  "fusion:localization-qa-copyfit": defineRoute(
-    "fusion:localization-qa-copyfit",
-    "MQM 다국어 번역 품질 감사 & 말풍선 넘침 무손실 카피피팅 어시스턴트",
-    "engine-fusion",
-    "creative-production",
-    "결정적 MQM/Overflow 게이트 위에서 넘침·금칙 위반 대사만 정밀 카피피팅하므로 Sonnet 5.5가 최적",
-    4_096,
-  ),
-  "fusion:sfx-envelope-warp": defineRoute(
-    "fusion:sfx-envelope-warp",
-    "웹툰 효과음(SFX) 렉시콘 & Catmull-Rom 엔벨로프 왜곡 디렉터",
-    "engine-fusion",
-    "fast-inline",
-    "48종 SFX 사전 검색 + 10종 Catmull-Rom 엔벨로프 왜곡 파라미터 생성은 Haiku 5.5로 초고속 처리",
-    3_072,
-  ),
-  "fusion:tension-pacing-doctor": defineRoute(
-    "fusion:tension-pacing-doctor",
-    "텐션 맵 & 모바일 스크롤 페이싱 시뮬레이터 연동 연출 닥터",
-    "engine-fusion",
-    "creative-production",
-    "drag/rush/climax 구간 여백·컷 높이·포즈 프리셋 보정 및 전후 재시뮬레이션은 Sonnet 5.5 적용",
-    4_096,
-  ),
-  "fusion:lore-foreshadow-integrity": defineRoute(
-    "fusion:lore-foreshadow-integrity",
-    "홀로크론 세계관 로어·복선 장부·콩코던스 통합 무결성 감사관",
-    "engine-fusion",
-    "deep-architecture",
-    "세계관 선점 충돌·만기 미회수 복선 회수 대사·원고 교정 패치 생성은 Opus 5.5 심층 추론 적용",
-    6_144,
-  ),
-
+  "fusion:localization-qa-copyfit": defineRoute("fusion:localization-qa-copyfit", "MQM 다국어 번역 품질 감사 & 말풍선 넘침 무손실 카피피팅 어시스턴트", "engine-fusion", "creative-production", "결정적 MQM/Overflow 게이트 위에서 넘침·금칙 위반 대사만 정밀 카피피팅하므로 Sonnet 5.5가 최적", 4_096),
+  "fusion:sfx-envelope-warp": defineRoute("fusion:sfx-envelope-warp", "웹툰 효과음(SFX) 렉시콘 & Catmull-Rom 엔벨로프 왜곡 디렉터", "engine-fusion", "fast-inline", "48종 SFX 사전 검색 + 10종 Catmull-Rom 엔벨로프 왜곡 파라미터 생성은 Haiku 5.5로 초고속 처리", 3_072),
+  "fusion:tension-pacing-doctor": defineRoute("fusion:tension-pacing-doctor", "텐션 맵 & 모바일 스크롤 페이싱 시뮬레이터 연동 연출 닥터", "engine-fusion", "creative-production", "drag/rush/climax 구간 여백·컷 높이·포즈 프리셋 보정 및 전후 재시뮬레이션은 Sonnet 5.5 적용", 4_096),
+  "fusion:lore-foreshadow-integrity": defineRoute("fusion:lore-foreshadow-integrity", "홀로크론 세계관 로어·복선 장부·콩코던스 통합 무결성 감사관", "engine-fusion", "deep-architecture", "세계관 선점 충돌·만기 미회수 복선 회수 대사·원고 교정 패치 생성은 Opus 5.5 심층 추론 적용", 6_144),
   // 7. N7 & Master Storyboard Runners
-  "runner:master-storyboard-pipeline": defineRoute(
-    "runner:master-storyboard-pipeline",
-    "6사 벤치마크 통합 마스터 콘티 파이프라인",
-    "n7-llm-runner",
-    "deep-architecture",
-    "6대 경쟁사 통합 마스터 콘티·세계관·레이어 설계는 Opus 5.5 심층 추론 적용",
-    3_584,
-  ),
-  "runner:story-seed": defineRoute(
-    "runner:story-seed",
-    "기획 스토리 씨앗(로그라인·훅·아크) 생성",
-    "n7-llm-runner",
-    "deep-architecture",
-    "작품 초기 핵심 로그라인·상업적 차별화 훅·초반 아크 설계는 Opus 5.5 적용",
-    2_560,
-  ),
-  "runner:plot-development": defineRoute(
-    "runner:plot-development",
-    "기승전결 플롯 디벨롭먼트",
-    "n7-llm-runner",
-    "deep-architecture",
-    "기승전결 4단 아크·전환점·클리프행어 설계는 Opus 5.5 적용",
-    2_560,
-  ),
-  "runner:writer-room": defineRoute(
-    "runner:writer-room",
-    "작가실 6보조 에이전트(브레인스토밍·대사·페이싱·전환·클리프행어)",
-    "n7-llm-runner",
-    "creative-production",
-    "작가실 대화형 씬/대사/전환 제안은 반응성과 품질 균형이 뛰어난 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "runner:canon-consistency": defineRoute(
-    "runner:canon-consistency",
-    "캐릭터·세계관 캐논 일관성 판정",
-    "n7-llm-runner",
-    "deep-architecture",
-    "스토리 바이블 사실 대조 및 모순 검출은 Opus 5.5 심층 추론 적용",
-    2_560,
-  ),
-  "runner:dialogue-suggest": defineRoute(
-    "runner:dialogue-suggest",
-    "말풍선 대사 3톤 윤문 추천",
-    "n7-llm-runner",
-    "fast-inline",
-    "선택된 말풍선의 즉각적인 대사 3종 윤문은 Haiku 5.5로 지연 없이 응답",
-    1_200,
-  ),
-  "runner:dialogue-translate": defineRoute(
-    "runner:dialogue-translate",
-    "다국어 대사 일괄 번역",
-    "n7-llm-runner",
-    "creative-production",
-    "용어집·화자 레지스터 준수 다국어 번역은 Sonnet 5.5 적용",
-    2_048,
-  ),
-  "runner:prompt-enhancer": defineRoute(
-    "runner:prompt-enhancer",
-    "작화 생성 프롬프트 고도화",
-    "n7-llm-runner",
-    "fast-inline",
-    "카메라·조명·화풍 태그 보강 프롬프트 생성은 Haiku 5.5로 즉시 처리",
-    1_200,
-  ),
-  "runner:shading-assist": defineRoute(
-    "runner:shading-assist",
-    "4레이어 채색·조명 셰이딩 어시스트",
-    "n7-llm-runner",
-    "fast-inline",
-    "광원 방위각·고도각·림라이트 수치 추천은 Haiku 5.5로 즉시 처리",
-    1_200,
-  ),
+  "runner:master-storyboard-pipeline": defineRoute("runner:master-storyboard-pipeline", "6사 벤치마크 통합 마스터 콘티 파이프라인", "n7-llm-runner", "deep-architecture", "6대 경쟁사 통합 마스터 콘티·세계관·레이어 설계는 Opus 5.5 심층 추론 적용", 3_584),
+  "runner:story-seed": defineRoute("runner:story-seed", "기획 스토리 씨앗(로그라인·훅·아크) 생성", "n7-llm-runner", "deep-architecture", "작품 초기 핵심 로그라인·상업적 차별화 훅·초반 아크 설계는 Opus 5.5 적용", 2_560),
+  "runner:plot-development": defineRoute("runner:plot-development", "기승전결 플롯 디벨롭먼트", "n7-llm-runner", "deep-architecture", "기승전결 4단 아크·전환점·클리프행어 설계는 Opus 5.5 적용", 2_560),
+  "runner:writer-room": defineRoute("runner:writer-room", "작가실 6보조 에이전트(브레인스토밍·대사·페이싱·전환·클리프행어)", "n7-llm-runner", "creative-production", "작가실 대화형 씬/대사/전환 제안은 반응성과 품질 균형이 뛰어난 Sonnet 5.5 적용", 2_048),
+  "runner:canon-consistency": defineRoute("runner:canon-consistency", "캐릭터·세계관 캐논 일관성 판정", "n7-llm-runner", "deep-architecture", "스토리 바이블 사실 대조 및 모순 검출은 Opus 5.5 심층 추론 적용", 2_560),
+  "runner:dialogue-suggest": defineRoute("runner:dialogue-suggest", "말풍선 대사 3톤 윤문 추천", "n7-llm-runner", "fast-inline", "선택된 말풍선의 즉각적인 대사 3종 윤문은 Haiku 5.5로 지연 없이 응답", 1_200),
+  "runner:dialogue-translate": defineRoute("runner:dialogue-translate", "다국어 대사 일괄 번역", "n7-llm-runner", "creative-production", "용어집·화자 레지스터 준수 다국어 번역은 Sonnet 5.5 적용", 2_048),
+  "runner:prompt-enhancer": defineRoute("runner:prompt-enhancer", "작화 생성 프롬프트 고도화", "n7-llm-runner", "fast-inline", "카메라·조명·화풍 태그 보강 프롬프트 생성은 Haiku 5.5로 즉시 처리", 1_200),
+  "runner:shading-assist": defineRoute("runner:shading-assist", "4레이어 채색·조명 셰이딩 어시스트", "n7-llm-runner", "fast-inline", "광원 방위각·고도각·림라이트 수치 추천은 Haiku 5.5로 즉시 처리", 1_200),
 
   // 8. Phase 7 REA 15-Platform Deep Internalization & Creative AI Suite
   "rea15:glimnavi-relight-lineart-v23": defineRoute("rea15:glimnavi-relight-lineart-v23", "그림나비(GlimNavi) Studio v2.3 5종 선화·6종 프리셋·컬러 분리·Relight 디렉터", "phase6-ecosystem", "fast-inline", "선화 v1.0~v2.3 버전·6종 선화 프리셋·컬러 레이어 분리·AI 그림자/조명/명암 파라미터 산출은 Haiku 5.5로 즉각 처리", 3_072),
@@ -706,6 +552,15 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "alt-text:glassblowing-luthier-diamond-loupe-shoemaker-lock": defineRoute("alt-text:glassblowing-luthier-diamond-loupe-shoemaker-lock", "유리공예 파이프 회전·바이올린 루시어 썸플레인/사운드포스트·보석 감정 10배율 루페 눈가 밀착·수제화 구두골/고서 제책 디렉터", "core-dialog", "creative-production", "유리공예 파이프·루시어 사운드포스트·보석 루페 눈가 밀착·수제화 구두골·고서 제책 고증은 Sonnet 5.5 적용", 4_096),
   "alt-text:3dgs-nerf-controlnet4-facs-sfx3d-saccade-director": defineRoute("alt-text:3dgs-nerf-controlnet4-facs-sfx3d-saccade-director", "3D 가우시안 스플래팅(3DGS)/NeRF 다중 컷 조명·4채널 ControlNet·FACS 뒤센 미소·3D SFX 워프·도약 안구운동(Saccade) 히트맵 총괄 감독", "core-dialog", "deep-architecture", "3DGS/NeRF 조명장·ControlNet 4중 믹서·FACS 안면 근육·독자 시선 히트맵/스크롤 텐션 설계는 Opus 5.5 심층 추론 적용", 6_144),
   "alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director": defineRoute("alt-text:toonstudio-1140-hyper-synthesis-legal-ost-director", "1,140대 웹툰 AI 플랫폼 하이퍼 신세시스·188대 스마트 라우팅·70컷 게이지·PSD 차분 백업·계약서 독소조항 AI 법률 스캐너 총괄 감독", "core-dialog", "deep-architecture", "1,140대 플랫폼 UI/UX 초융합·188개 스마트 라우팅·PSD 차분 백업·계약서 독소조항 법률 스캐너는 Opus 5.5 심층 추론 적용", 6_144),
+  // 24. Wave 60~62 EnigmaMorseDarkroom/OceanLinerBiplane/DavyLampSwitchboard/JangdokdaeHanjiOnggi/WineCheesePotStill/BangpaeyeonSsireumMaedeup/Crossover1000EpWrinkleBaker/GrandMillennium1200Simulpub AI Engines (8)
+  "alt-text:enigma-morse-darkroom-letterpress-phonograph-lock": defineRoute("alt-text:enigma-morse-darkroom-letterpress-phonograph-lock", "참호 잠망경·에니그마 3로터/플러그보드·모스 전건·암실 적색등/3트레이·납활자 좌우반전·진공관·축음기 우측 크랭크 고정기", "core-dialog", "fast-inline", "참호 잠망경·에니그마·모스 전건·암실 3트레이·활판 인쇄 좌우반전·축음기 우측 크랭크 고정은 Haiku 5.5로 즉각 검증", 2_560),
+  "alt-text:ocean-liner-4funnel-streetcar-biplane-semaphore-lock": defineRoute("alt-text:ocean-liner-4funnel-streetcar-biplane-semaphore-lock", "비행선 계류탑·4굴뚝 여객선(4번 더미 무연)·노면전차 트롤리 폴·복엽기 지주/X자 강선·철도 완목신호기·전서구 발목 통신통 고정기", "core-dialog", "fast-inline", "비행선 계류탑·4굴뚝 여객선 4번 무연·전차 트롤리 폴·복엽기 지주·완목신호기·전서구 고증은 Haiku 5.5 적용", 2_560),
+  "alt-text:davy-lamp-rickshaw-diving-dress-switchboard-sundial-lock": defineRoute("alt-text:davy-lamp-rickshaw-diving-dress-switchboard-sundial-lock", "탄광 데이비 안전등/카나리아·인력거 평행 채·가스 가로등·복싱 턴버클/아이언 스웰·12볼트 잠수복·수동 전화교환대·해시계 디렉터", "core-dialog", "creative-production", "탄광 안전등·인력거·복싱 턴버클·12볼트 황동 잠수모·수동 전화교환대·해시계 영침 위도 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:jangdokdae-kimjang-hanji-onggi-najeonchilgi-lock": defineRoute("alt-text:jangdokdae-kimjang-hanji-onggi-najeonchilgi-lock", "한국 장독대 금줄(숯/고추)·겨울 김장독 반매립·한지 외발뜨기·대장간 풀무·옹기 수레/도개비·나전칠기 자개·전주 합죽선 디렉터", "core-dialog", "creative-production", "장독대 왼새끼 금줄·김장독 반매립·한지 외발뜨기·옹기 수레/도개비·나전칠기·합죽선 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:wine-barrique-cheese-jamon-chocolate-pot-still-lock": defineRoute("alt-text:wine-barrique-cheese-jamon-chocolate-pot-still-lock", "225L 오크 와인 배럴/시음관·치즈 타음 해머·이베리코 하모네로 검은 발굽·초콜릿 대리석 템퍼링·구리 당화조·위스키 포트 스틸 디렉터", "core-dialog", "creative-production", "오크 와인 배럴·파르미지아노 치즈 해머·이베리코 하모네로·초콜릿 템퍼링·위스키 단식 증류기 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:bangpaeyeon-ssireum-satba-taekkyeon-maedeup-lock": defineRoute("alt-text:bangpaeyeon-ssireum-satba-taekkyeon-maedeup-lock", "방패연 방구멍/8각 얼레·팽이/얼음 썰매·단오 그네 입승·씨름 샅바(오른다리 루프)·택견 역삼각형 품밟기·전통 매듭 대칭 디렉터", "core-dialog", "creative-production", "방패연 방구멍·단오 그네·씨름 오른다리 샅바·택견 품밟기·전통 매듭 좌우 대칭 고증은 Sonnet 5.5 적용", 4_096),
+  "alt-text:crossover-1000ep-paradox-wrinkle-baker-sfx-redraw-director": defineRoute("alt-text:crossover-1000ep-paradox-wrinkle-baker-sfx-redraw-director", "멀티 스튜디오 크로스오버 브릿지·1,000화 연대기 패러독스 검증·3D 관절 주름 베이커·색맹 보정·SFX 분리 배경 복원·숏폼 휩팬 총괄 감독", "core-dialog", "deep-architecture", "이종 웹툰 크로스오버·1000화 연대기 패러독스·3D 주름 베이킹·SFX 배경 인페인팅 복원은 Opus 5.5 심층 추론 적용", 6_144),
+  "alt-text:toonstudio-1200-grand-millennium-simulpub-chroma-director": defineRoute("alt-text:toonstudio-1200-grand-millennium-simulpub-chroma-director", "1,200대 웹툰 AI 플랫폼 그랜드 밀레니엄·196대 스마트 라우팅·테마파크/홀로그램·6개국 동시연재·Chroma 4:4:4 무손실 슬라이서 총괄 감독", "core-dialog", "deep-architecture", "1,200대 플랫폼 UI/UX 통합·196개 스마트 라우팅·6개국 동시연재·Chroma 4:4:4 무손실 슬라이서는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

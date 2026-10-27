@@ -24,13 +24,21 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
   runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector,
+  runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector,
+  runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector,
+  runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector,
+  runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector,
   runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector,
   runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector,
   runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector,
+  runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector,
   runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector,
   runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector,
+  runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector,
   runClaudePipeOrganPedalHarpAccordionBagpipeDirector,
   runClaudeToonstudio1140HyperSynthesisLegalOstDirector,
+  runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector,
+  runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector,
 } from "./claude/claude-localize";
 import {
   buildDeterministicHandPropGripLock,
@@ -704,6 +712,28 @@ export function StudioWebtoonMasterPipelineCard({
               onClick={() => void act()}
               className="rounded border border-line bg-panel px-1.5 py-0.5 text-fg-2 hover:border-accent hover:text-accent"
             >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div
+          data-testid="wave60-62-domain-consistency-bar"
+          className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line pt-1.5 text-[0.58rem]"
+        >
+          <span className="font-semibold text-accent">Wave 60~62 (1,200대 플랫폼 · 196태스크):</span>
+          {(
+            [
+              ["에니그마·암실·활판", () => runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "에니그마" }).then((r) => onApplyScript(`${scriptInput}\n[근대통신/인쇄] ${r.data.trenchPeriscopeAndEnigma3RotorPlugboardKo}`))],
+              ["4굴뚝여객선·복엽기", () => runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "여객선" }).then((r) => onApplyScript(`${scriptInput}\n[근대교통] ${r.data.airshipMooringMastAndOceanLiner4thDummyFunnelKo}`))],
+              ["안전등·인력거·잠수모", () => runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "탄광" }).then((r) => onApplyScript(`${scriptInput}\n[근대소품] ${r.data.divingDress12BoltSwitchboardPatchAndSundialGnomonKo}`))],
+              ["장독대·한지·나전칠기", () => runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "전통공예" }).then((r) => onApplyScript(`${scriptInput}\n[전통발효/공예] ${r.data.jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo}`))],
+              ["와인배럴·하몽·증류기", () => runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "양조" }).then((r) => onApplyScript(`${scriptInput}\n[미식/양조] ${r.data.oakWineBarrique225LAndParmigianoSoundingHammerKo}`))],
+              ["방패연·씨름샅바·택견", () => runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "민속" }).then((r) => onApplyScript(`${scriptInput}\n[민속/무예] ${r.data.danoSwingStandingWaitAndSsireumSatbaRightLoopKo}`))],
+              ["1000화패러독스·SFX복원", () => runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "패러독스" }).then((r) => onApplyScript(`${scriptInput}\n[패러독스/SFX] ${r.data.multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo}`))],
+              ["1200밀레니엄·4:4:4무손실", () => runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "밀레니엄" }).then((r) => onApplyScript(`${scriptInput}\n[1200밀레니엄] ${r.data.simulpub6PlatformRoyaltySplitAndChroma444LosslessKo}`))],
+            ] as const
+          ).map(([label, act]) => (
+            <button key={label} type="button" onClick={() => void act()} className="rounded border border-line bg-panel px-1.5 py-0.5 text-fg-2 hover:border-accent hover:text-accent">
               {label}
             </button>
           ))}

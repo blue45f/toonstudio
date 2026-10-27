@@ -430,3 +430,293 @@ export async function runClaudeToonstudio1140HyperSynthesisLegalOstDirector(
     }),
   });
 }
+
+// ── Wave 60~62: Modern History Hardware, Traditional Fermentation/Folk Games & 1,200-Platform Grand Millennium Directors (8 Tasks) ──
+
+export interface ClaudeEnigmaMorseDarkroomLetterpressPhonograph {
+  readonly trenchPeriscopeAndEnigma3RotorPlugboardKo: string;
+  readonly morseStraightKeyAndDarkroom3TraySafelightKo: string;
+  readonly letterpressMirrorTypeVacuumTubeAndPhonographCrankKo: string;
+  readonly vintageHardwareAccuracyScore: number;
+  readonly overallPromptKo: string;
+}
+const EnigmaMorseDarkroomSchema = z.object({ trenchPeriscopeAndEnigma3RotorPlugboardKo: z.string(), morseStraightKeyAndDarkroom3TraySafelightKo: z.string(), letterpressMirrorTypeVacuumTubeAndPhonographCrankKo: z.string(), vintageHardwareAccuracyScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeEnigmaMorseDarkroomLetterpressPhonograph>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:enigma-morse-darkroom-letterpress-phonograph-lock",
+    systemPrompt: "당신은 근현대사·시대극 웹툰의 참호 잠망경·에니그마 암호기·모스 전건·필름 암실·활판 인쇄·진공관·축음기 기구학 고증 감독입니다.",
+    userInstruction: "1차대전 참호 잠망경 45도 상하 거울과 에니그마 3로터/전면 플러그보드/상단 램프보드(자기 치환 불가) 구조, 모스 전건 2지 파지와 흑백 필름 암실 적색 안전등·3트레이(현상→정지→정착) 집게 분리, 활판 인쇄 납활자 좌우 반전(Mirror-reversed) 조판·진공관 주황색 히터 필라멘트·축음기 우측 태엽 크랭크를 고정하세요.",
+    input,
+    schema: EnigmaMorseDarkroomSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      trenchPeriscopeAndEnigma3RotorPlugboardKo: cleanSingleLineText(p.trenchPeriscopeAndEnigma3RotorPlugboardKo, 220),
+      morseStraightKeyAndDarkroom3TraySafelightKo: cleanSingleLineText(p.morseStraightKeyAndDarkroom3TraySafelightKo, 220),
+      letterpressMirrorTypeVacuumTubeAndPhonographCrankKo: cleanSingleLineText(p.letterpressMirrorTypeVacuumTubeAndPhonographCrankKo, 220),
+      vintageHardwareAccuracyScore: clampWave57(p.vintageHardwareAccuracyScore, 0, 100, 96),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      trenchPeriscopeAndEnigma3RotorPlugboardKo: "참호 잠망경 45° 상하 반사경 시야각 및 에니그마 상단 3~4로터·중단 램프보드·하단 키보드·전면 플러그보드(자기자신 치환 불가) 고증",
+      morseStraightKeyAndDarkroom3TraySafelightKo: "모스 전건(Straight Key) 엄지·검지·중지 손목 스냅 타전 및 암실 620nm 적색 안전등·현상→정지→정착 3트레이 전용 집게 분리 고정",
+      letterpressMirrorTypeVacuumTubeAndPhonographCrankKo: "활판 인쇄 납활자 좌우 거울상(Mirror-reversed) 조판·진공관 하단 주황색 필라멘트/녹색 매직아이·축음기 본체 우측 태엽 크랭크 고정",
+      vintageHardwareAccuracyScore: 96,
+      overallPromptKo: "참호 잠망경·에니그마·모스 전건·암실 3트레이·좌우반전 납활자·축음기 완료",
+    }),
+  });
+}
+
+export interface ClaudeOceanLiner4FunnelStreetcarBiplaneSemaphore {
+  readonly airshipMooringMastAndOceanLiner4thDummyFunnelKo: string;
+  readonly vintageStreetcarTrolleyPoleAndBiplaneStrutWireKo: string;
+  readonly railwaySemaphore45DegAndPigeonLegCapsuleKo: string;
+  readonly earlyAviationTransportScore: number;
+  readonly overallPromptKo: string;
+}
+const OceanLinerBiplaneSchema = z.object({ airshipMooringMastAndOceanLiner4thDummyFunnelKo: z.string(), vintageStreetcarTrolleyPoleAndBiplaneStrutWireKo: z.string(), railwaySemaphore45DegAndPigeonLegCapsuleKo: z.string(), earlyAviationTransportScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeOceanLiner4FunnelStreetcarBiplaneSemaphore>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:ocean-liner-4funnel-streetcar-biplane-semaphore-lock",
+    systemPrompt: "당신은 근대 교통·항공·철도·통신 웹툰의 비행선 계류탑·4굴뚝 호화여객선·노면전차·복엽기·철도 완목신호기·전서구 고증 감독입니다.",
+    userInstruction: "경식 비행선 기수 콘(Nose Cone) 계류탑 도킹과 20세기 초 4굴뚝 여객선의 1~3번 보일러 매연 및 4번 더미 환기 굴뚝 무연 원칙, 노면전차 후방 경사 트롤리 폴과 복엽기 상하 주익 지주(Strut)/X자 장선(Flying Wire)·동조 기관총, 철도 완목신호기 각도(수평 정지/45도 진행)와 전서구 발목 알루미늄 통신통을 고정하세요.",
+    input,
+    schema: OceanLinerBiplaneSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      airshipMooringMastAndOceanLiner4thDummyFunnelKo: cleanSingleLineText(p.airshipMooringMastAndOceanLiner4thDummyFunnelKo, 220),
+      vintageStreetcarTrolleyPoleAndBiplaneStrutWireKo: cleanSingleLineText(p.vintageStreetcarTrolleyPoleAndBiplaneStrutWireKo, 220),
+      railwaySemaphore45DegAndPigeonLegCapsuleKo: cleanSingleLineText(p.railwaySemaphore45DegAndPigeonLegCapsuleKo, 220),
+      earlyAviationTransportScore: clampWave57(p.earlyAviationTransportScore, 0, 100, 95),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      airshipMooringMastAndOceanLiner4thDummyFunnelKo: "경식 비행선 기수 콘 계류탑 풍향 360° 회전 도킹 및 4굴뚝 호화여객선 1~3번 보일러 매연·4번 더미 환기 굴뚝 무연(No-Smoke) 고증",
+      vintageStreetcarTrolleyPoleAndBiplaneStrutWireKo: "근대 노면전차 후방 경사 트롤리 폴 가선 접촉 및 복엽기 상하 주익 수직 지주(Strut)·X자 강선(Flying/Landing Wire)·프로펠러 동조 사격 고정",
+      railwaySemaphore45DegAndPigeonLegCapsuleKo: "철도 완목신호기 수평(적색 정지)·45°(녹색 진행) 블레이드 각도 및 군용 전서구 발목 초경량 알루미늄 캡슐(부리 물기 금지) 고정",
+      earlyAviationTransportScore: 95,
+      overallPromptKo: "비행선 계류탑·4굴뚝 여객선 4번 무연·전차 트롤리폴·복엽기 지주·완목신호기 완료",
+    }),
+  });
+}
+
+export interface ClaudeDavyLampRickshawDivingDressSwitchboardSundial {
+  readonly coalMineDavyLampCanaryAndRickshawShaftsKo: string;
+  readonly gasStreetlightMantleAndVintageBoxingTurnbuckleKo: string;
+  readonly divingDress12BoltSwitchboardPatchAndSundialGnomonKo: string;
+  readonly industrialAgePropScore: number;
+  readonly overallPromptKo: string;
+}
+const DavyLampSwitchboardSchema = z.object({ coalMineDavyLampCanaryAndRickshawShaftsKo: z.string(), gasStreetlightMantleAndVintageBoxingTurnbuckleKo: z.string(), divingDress12BoltSwitchboardPatchAndSundialGnomonKo: z.string(), industrialAgePropScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeDavyLampRickshawDivingDressSwitchboardSundial>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:davy-lamp-rickshaw-diving-dress-switchboard-sundial-lock",
+    systemPrompt: "당신은 근대 산업·시대극 웹툰의 탄광 데이비 안전등·인력거·가스 가로등·클래식 복싱 링·12볼트 잠수복·수동 전화교환대·해시계 고증 감독입니다.",
+    userInstruction: "탄광 데이비 철망 안전등(메탄 푸른 불꽃)과 카나리아 새장·개화기 인력거 평행 채(Shafts)와 대구경 바퀴, 가스 가로등 점등 장대와 클래식 복싱 링 3~4줄 로프 턴버클·아이언 스웰(Enswell), 12볼트 황동 잠수 헬멧 4창/2인 핸드펌프·수동 전화교환대 1/4인치 패치코드·해시계 영침(Gnomon) 위도 각도를 설계하세요.",
+    input,
+    schema: DavyLampSwitchboardSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      coalMineDavyLampCanaryAndRickshawShaftsKo: cleanSingleLineText(p.coalMineDavyLampCanaryAndRickshawShaftsKo, 220),
+      gasStreetlightMantleAndVintageBoxingTurnbuckleKo: cleanSingleLineText(p.gasStreetlightMantleAndVintageBoxingTurnbuckleKo, 220),
+      divingDress12BoltSwitchboardPatchAndSundialGnomonKo: cleanSingleLineText(p.divingDress12BoltSwitchboardPatchAndSundialGnomonKo, 220),
+      industrialAgePropScore: clampWave57(p.industrialAgePropScore, 0, 100, 96),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      coalMineDavyLampCanaryAndRickshawShaftsKo: "탄광 데이비 철망 안전등 메탄 감지 푸른 불꽃·카나리아 새장 및 개화기 인력거 전면 평행 손잡이 채(Shafts)·대구경 살바퀴·접이식 차양 고정",
+      gasStreetlightMantleAndVintageBoxingTurnbuckleKo: "가스 가로등 백열 맨틀 점등 장대·황혼 노출계 및 클래식 복싱 링 코너 턴버클·가죽 글러브 손목 끈·세컨드 금속 아이언 스웰(Enswell) 고증",
+      divingDress12BoltSwitchboardPatchAndSundialGnomonKo: "12볼트 황동 잠수모 4관측창·17kg 납 구두·2인 트윈 실린더 공기펌프 및 수동 전화교환대 1/4인치 잭 패치·해시계 영침 위도(37.5°) 정렬",
+      industrialAgePropScore: 96,
+      overallPromptKo: "탄광 안전등·인력거·복싱 턴버클·12볼트 잠수복·수동 교환대·해시계 완료",
+    }),
+  });
+}
+
+export interface ClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgi {
+  readonly jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo: string;
+  readonly hanjiOebalTteugiBellowsAndOnggiPaddleAnvilKo: string;
+  readonly najeonchilgiMotherOfPearlAndHapjukseonFanKo: string;
+  readonly koreanTraditionalCraftScore: number;
+  readonly overallPromptKo: string;
+}
+const JangdokdaeHanjiOnggiSchema = z.object({ jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo: z.string(), hanjiOebalTteugiBellowsAndOnggiPaddleAnvilKo: z.string(), najeonchilgiMotherOfPearlAndHapjukseonFanKo: z.string(), koreanTraditionalCraftScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgi>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:jangdokdae-kimjang-hanji-onggi-najeonchilgi-lock",
+    systemPrompt: "당신은 한국 전통 발효·공예 웹툰의 장독대(금줄·숯·고추)·김장독·한지 외발뜨기·대장간 풀무·옹기 수레/도개비·나전칠기·합죽선 고증 감독입니다.",
+    userInstruction: "한국 장독대 옹기 배흘림 곡선·왼새끼 금줄(숯·붉은 고추·한지)과 겨울 땅속 김장독 반매립(목 부분 노출)·짚 주저리, 전통 한지 외발뜨기 전후 좌우 흘림 물질·대장간 상자형 풀무(풍구) 왕복 피스톤·옹기 타래 쌓기(외벽 수레+내벽 도개비), 나전칠기 자개 무지개 간섭광과 전주 합죽선 살대/선추를 설계하세요.",
+    input,
+    schema: JangdokdaeHanjiOnggiSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo: cleanSingleLineText(p.jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo, 220),
+      hanjiOebalTteugiBellowsAndOnggiPaddleAnvilKo: cleanSingleLineText(p.hanjiOebalTteugiBellowsAndOnggiPaddleAnvilKo, 220),
+      najeonchilgiMotherOfPearlAndHapjukseonFanKo: cleanSingleLineText(p.najeonchilgiMotherOfPearlAndHapjukseonFanKo, 220),
+      koreanTraditionalCraftScore: clampWave57(p.koreanTraditionalCraftScore, 0, 100, 97),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo: "장독대 옹기 배흘림·왼새끼 금줄(숯·건고추·한지) 결속·메주 짚 끈 매달기 및 겨울 김장독 어깨선 땅속 반매립·원추형 짚 주저리 덮개 고정",
+      hanjiOebalTteugiBellowsAndOnggiPaddleAnvilKo: "한지 외발뜨기 외줄 걸이 앞뒤·좌우 교차 물질(섬유 무방향 교직)·대장간 상자형 목제 풀무 피스톤·옹기 외벽 수레(방망이)+내벽 도개비(맞벽돌) 성형",
+      najeonchilgiMotherOfPearlAndHapjukseonFanKo: "나전칠기 흑색 정제 옻칠 위 전복 자개 줄음질/끊음질 각도별 청록·자주 이리데선스 및 전주 합죽선 대나무 마디 살대·고리 선추(Fan Pendant) 고정",
+      koreanTraditionalCraftScore: 97,
+      overallPromptKo: "장독대 금줄·김장독 반매립·한지 외발뜨기·옹기 수레/도개비·나전칠기·합죽선 완료",
+    }),
+  });
+}
+
+export interface ClaudeWineBarriqueCheeseJamonChocolatePotStill {
+  readonly oakWineBarrique225LAndParmigianoSoundingHammerKo: string;
+  readonly jamoneroBlackHoofClampAndChocolateMarbleTemperingKo: string;
+  readonly copperMashTunHydrometerAndWhiskyPotStillSwanNeckKo: string;
+  readonly gastronomyFermentationCraftScore: number;
+  readonly overallPromptKo: string;
+}
+const WineCheesePotStillSchema = z.object({ oakWineBarrique225LAndParmigianoSoundingHammerKo: z.string(), jamoneroBlackHoofClampAndChocolateMarbleTemperingKo: z.string(), copperMashTunHydrometerAndWhiskyPotStillSwanNeckKo: z.string(), gastronomyFermentationCraftScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeWineBarriqueCheeseJamonChocolatePotStill>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:wine-barrique-cheese-jamon-chocolate-pot-still-lock",
+    systemPrompt: "당신은 미식·양조·로판 웹툰의 오크 와인 배럴·치즈 숙성고·이베리코 하몽 카빙·쇼콜라티에 템퍼링·맥주 당화조·위스키 단식 증류기 고증 감독입니다.",
+    userInstruction: "225L 오크 와인 배럴(바리크) 6~8줄 철제 후프·상단 마개구멍(Bunghole)/글라스 시음 피펫과 파르미지아노 치즈 휠 타음 해머·아몬드형 치즈 나이프, 이베리코 하몽 흑색 발굽(Pata Negra) 거치대(하모네로)·유연한 장검형 칼(Cuchillo Jamonero)과 초콜릿 대리석 판 템퍼링, 맥주 당화조 비중계와 위스키 구리 포트 스틸 백조목(Swan Neck)·스피릿 세이프를 설계하세요.",
+    input,
+    schema: WineCheesePotStillSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      oakWineBarrique225LAndParmigianoSoundingHammerKo: cleanSingleLineText(p.oakWineBarrique225LAndParmigianoSoundingHammerKo, 220),
+      jamoneroBlackHoofClampAndChocolateMarbleTemperingKo: cleanSingleLineText(p.jamoneroBlackHoofClampAndChocolateMarbleTemperingKo, 220),
+      copperMashTunHydrometerAndWhiskyPotStillSwanNeckKo: cleanSingleLineText(p.copperMashTunHydrometerAndWhiskyPotStillSwanNeckKo, 220),
+      gastronomyFermentationCraftScore: clampWave57(p.gastronomyFermentationCraftScore, 0, 100, 96),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      oakWineBarrique225LAndParmigianoSoundingHammerKo: "225L 보르도 오크 배럴 6~8줄 철제 후프·상단 마개(Bunghole)·유리 시음관(Wine Thief) 및 파르미지아노 치즈 타음 해머·물방울형 치즈 나이프 고정",
+      jamoneroBlackHoofClampAndChocolateMarbleTemperingKo: "이베리코 하몽 검은 발굽(Pata Negra) 하모네로 클램프 거치·좁고 긴 쿠치요 하모네로 수평 슬라이싱 및 쇼콜라티에 대리석 템퍼링(31~32°C) 고증",
+      copperMashTunHydrometerAndWhiskyPotStillSwanNeckKo: "크래프트 브루어리 구리 당화조·비중계(Hydrometer) 눈금 및 싱글몰트 구리 단식 증류기(Pot Still) 백조목(Swan Neck) 경사각·황동 스피릿 세이프 고정",
+      gastronomyFermentationCraftScore: 96,
+      overallPromptKo: "오크 와인배럴·치즈 해머·이베리코 하모네로·초콜릿 템퍼링·위스키 증류기 완료",
+    }),
+  });
+}
+
+export interface ClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeup {
+  readonly bangpaeyeonCenterHoleReelAndPaengiSsolmaeKo: string;
+  readonly danoSwingStandingWaitAndSsireumSatbaRightLoopKo: string;
+  readonly taekkyeonPumbalkiTriangleAndTraditionalMaedeupKo: string;
+  readonly koreanFolkSportCraftScore: number;
+  readonly overallPromptKo: string;
+}
+const BangpaeyeonSsireumSchema = z.object({ bangpaeyeonCenterHoleReelAndPaengiSsolmaeKo: z.string(), danoSwingStandingWaitAndSsireumSatbaRightLoopKo: z.string(), taekkyeonPumbalkiTriangleAndTraditionalMaedeupKo: z.string(), koreanFolkSportCraftScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeup>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:bangpaeyeon-ssireum-satba-taekkyeon-maedeup-lock",
+    systemPrompt: "당신은 한국 전통 민속놀이·무예·장신구 웹툰의 방패연·팽이·썰매·단오 그네·씨름 샅바·택견 품밟기·전통 매듭 고증 감독입니다.",
+    userInstruction: "방패연 중앙 방구멍(풍속 조절 홀)·5대나무 살(머릿살/허릿살/장살/중살)·8각 얼레와 얼음 팽이/양손 송곳 썰매, 단오 그네 두 줄 동아줄 입승(선 자세) 구르기·치마폭 역포물선과 전통 씨름 샅바(허리+오른쪽 허벅지 루프, 오른어깨 맞대기), 택견 역삼각형 품밟기(이크에크)·능청거리기 및 한국 전통 매듭(국화·매화·잠자리 좌우대칭)을 설계하세요.",
+    input,
+    schema: BangpaeyeonSsireumSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      bangpaeyeonCenterHoleReelAndPaengiSsolmaeKo: cleanSingleLineText(p.bangpaeyeonCenterHoleReelAndPaengiSsolmaeKo, 220),
+      danoSwingStandingWaitAndSsireumSatbaRightLoopKo: cleanSingleLineText(p.danoSwingStandingWaitAndSsireumSatbaRightLoopKo, 220),
+      taekkyeonPumbalkiTriangleAndTraditionalMaedeupKo: cleanSingleLineText(p.taekkyeonPumbalkiTriangleAndTraditionalMaedeupKo, 220),
+      koreanFolkSportCraftScore: clampWave57(p.koreanFolkSportCraftScore, 0, 100, 97),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      bangpaeyeonCenterHoleReelAndPaengiSsolmaeKo: "방패연 중앙 원형 방구멍·5대나무 살·4가닥 목줄·8각 얼레 및 겨울 팽이 강철 축 촉·전통 얼음 썰매 양손 송곳(얼음지치기) 추진 자세 고정",
+      danoSwingStandingWaitAndSsireumSatbaRightLoopKo: "단오 그네 두 줄 동아줄 입승(서서 타기) 무릎 굽힘-폄 펌핑 및 전통 씨름 샅바(허리+오른쪽 다리 루프) 착용·오른어깨 맞대기 파지 고정",
+      taekkyeonPumbalkiTriangleAndTraditionalMaedeupKo: "택견 역삼각형(品) 품밟기 3점 스텝·유연한 손바닥 활개짓 및 한국 전통 매듭(동심결·국화·잠자리) 외줄 양끝 좌우 100% 대칭 구조 고정",
+      koreanFolkSportCraftScore: 97,
+      overallPromptKo: "방패연 방구멍/얼레·단오 그네·씨름 오른다리 샅바·택견 품밟기·전통 매듭 완료",
+    }),
+  });
+}
+
+export interface ClaudeCrossover1000EpParadoxWrinkleBakerSfxRedraw {
+  readonly multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo: string;
+  readonly skeletonDraperyWrinkleBakerAndDaltonizationShaderKo: string;
+  readonly sfxStrokeInpaintRedrawAndShortformWhipPanKeyframerKo: string;
+  readonly advancedPipelineIntelligenceScore: number;
+  readonly overallPromptKo: string;
+}
+const CrossoverParadoxWrinkleSchema = z.object({ multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo: z.string(), skeletonDraperyWrinkleBakerAndDaltonizationShaderKo: z.string(), sfxStrokeInpaintRedrawAndShortformWhipPanKeyframerKo: z.string(), advancedPipelineIntelligenceScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeCrossover1000EpParadoxWrinkleBakerSfxRedraw>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:crossover-1000ep-paradox-wrinkle-baker-sfx-redraw-director",
+    systemPrompt: "당신은 멀티 스튜디오 세계관 크로스오버·1,000화 연대기 패러독스 검증·3D 관절 주름 베이커·색각 이상 보정·글로벌 SFX 배경 복원·숏폼 휩팬 총괄 감독입니다.",
+    userInstruction: "다작품 크로스오버 등신비/선화/전투력 밸런스 정규화와 1,000화 장편 연재 타임라인 패러독스(나이·계절·사망 시점 충돌) 자동 검출, 3D 리깅 관절 회전각 기반 의상 주름 노멀맵 베이킹과 적록 색맹(Deuteranopia) 달토니제이션 보정, 손글씨 효과음(SFX) 분리 후 가려진 배경 자동 인페인팅 복원 및 숏폼 휩팬(Whip-Pan)/크래시 줌 키프레이머를 설계하세요.",
+    input,
+    schema: CrossoverParadoxWrinkleSchema,
+    options,
+    normalize: (p) => Object.freeze({
+      multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo: cleanSingleLineText(p.multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo, 220),
+      skeletonDraperyWrinkleBakerAndDaltonizationShaderKo: cleanSingleLineText(p.skeletonDraperyWrinkleBakerAndDaltonizationShaderKo, 220),
+      sfxStrokeInpaintRedrawAndShortformWhipPanKeyframerKo: cleanSingleLineText(p.sfxStrokeInpaintRedrawAndShortformWhipPanKeyframerKo, 220),
+      advancedPipelineIntelligenceScore: clampWave57(p.advancedPipelineIntelligenceScore, 0, 100, 98),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo: "이종 웹툰 IP 크로스오버 등신비/선화 두께/파워 밸런스 정규화 및 1,000화 장편 회귀·타임슬립 연대기 DAG 패러독스(연령·생사 충돌) 무결성 검증",
+      skeletonDraperyWrinkleBakerAndDaltonizationShaderKo: "3D 스켈레톤 관절 굴곡각 연동 의상 주름(지그재그·나선) 벡터 베이킹 및 모바일 뷰어 거리 적응형 식자·적록 색각이상 달토니제이션 명도 대비 보장",
+      sfxStrokeInpaintRedrawAndShortformWhipPanKeyframerKo: "글로벌 로컬라이징용 원작 손글씨 SFX 알파 분리·하부 배경 투시선 인페인팅 복원 및 9:16 숏폼 휩팬(Whip-Pan)·크래시 줌 모션블러 키프레임 자동화",
+      advancedPipelineIntelligenceScore: 98,
+      overallPromptKo: "멀티IP 크로스오버·1000화 패러독스 검증·3D 주름 베이커·SFX 배경 복원 완료",
+    }),
+  });
+}
+
+export interface ClaudeToonstudio1200GrandMillenniumSimulpubChroma {
+  readonly grandMillennium1200PlatformAnd196TaskRoutingKo: string;
+  readonly themePark6DofHologramConcertAndTankobonSprayedEdgeKo: string;
+  readonly simulpub6PlatformRoyaltySplitAndChroma444LosslessKo: string;
+  readonly grandMillenniumMasterScore: number;
+  readonly overallPromptKo: string;
+}
+const GrandMillennium1200Schema = z.object({ grandMillennium1200PlatformAnd196TaskRoutingKo: z.string(), themePark6DofHologramConcertAndTankobonSprayedEdgeKo: z.string(), simulpub6PlatformRoyaltySplitAndChroma444LosslessKo: z.string(), grandMillenniumMasterScore: z.number(), overallPromptKo: z.string() });
+export async function runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeToonstudio1200GrandMillenniumSimulpubChroma>> {
+  return executeWave57AltTextDirector({
+    taskId: "alt-text:toonstudio-1200-grand-millennium-simulpub-chroma-director",
+    systemPrompt: "당신은 ToonStudio 1,200대 글로벌 웹툰 AI 플랫폼 그랜드 밀레니엄 마스터 엔진·테마파크/홀로그램 OSMU·6대 플랫폼 동시연재·Chroma 4:4:4 무손실 출고 총괄 감독입니다.",
+    userInstruction: "1,200대 글로벌·국내 웹툰 AI 보조 플랫폼 UI/UX 디자인 토큰과 196대 태스크 스마트 라우팅(Haiku 50 · Sonnet 98 · Opus 48) 그랜드 밀레니엄 통합, 테마파크 6축 다크라이드·45도 페퍼스 고스트 홀로그램 콘서트·단행본 3면 분사 인쇄(Sprayed Edge)·4면 프로젝션 매핑, 한미일중태인니 6개국 동시연재 대시보드·지분 정산 원장·선화 컬러 번짐 없는 YUV 4:4:4 무손실 슬라이서를 설계하세요.",
+    input,
+    schema: GrandMillennium1200Schema,
+    options,
+    normalize: (p) => Object.freeze({
+      grandMillennium1200PlatformAnd196TaskRoutingKo: cleanSingleLineText(p.grandMillennium1200PlatformAnd196TaskRoutingKo, 220),
+      themePark6DofHologramConcertAndTankobonSprayedEdgeKo: cleanSingleLineText(p.themePark6DofHologramConcertAndTankobonSprayedEdgeKo, 220),
+      simulpub6PlatformRoyaltySplitAndChroma444LosslessKo: cleanSingleLineText(p.simulpub6PlatformRoyaltySplitAndChroma444LosslessKo, 220),
+      grandMillenniumMasterScore: clampWave57(p.grandMillenniumMasterScore, 0, 100, 99),
+      overallPromptKo: cleanSingleLineText(p.overallPromptKo, 240),
+    }),
+    fallback: () => Object.freeze({
+      grandMillennium1200PlatformAnd196TaskRoutingKo: "글로벌·국내 1,200대 웹툰 AI 보조 플랫폼 UI/UX 디자인 토큰 및 196개 태스크(Haiku 50 · Sonnet 98 · Opus 48) 그랜드 밀레니엄 아키텍처 완성",
+      themePark6DofHologramConcertAndTankobonSprayedEdgeKo: "테마파크 6-DOF 다크라이드 동선·45° 페퍼스 고스트 홀로그램 콘서트·초판 홀로그램 넘버링/3면 분사 인쇄(Sprayed Edge)·4면 프로젝션 매핑",
+      simulpub6PlatformRoyaltySplitAndChroma444LosslessKo: "한·미·일·중·태·인니 6개국 동시연재 KPI·작가 멘탈케어 악플 필터·스마트 컨트랙트 지분 정산·붉은 선화 번짐 0% YUV 4:4:4 무손실 슬라이서 고정",
+      grandMillenniumMasterScore: 99,
+      overallPromptKo: "1,200대 그랜드 밀레니엄 엔진·196개 스마트 라우팅·Chroma 4:4:4 무손실 완성",
+    }),
+  });
+}

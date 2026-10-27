@@ -80,13 +80,21 @@ import {
 } from "./claude-art-director-run";
 import {
   runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector,
+  runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector,
+  runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector,
+  runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector,
+  runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector,
   runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector,
   runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector,
   runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector,
+  runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector,
   runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector,
   runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector,
+  runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector,
   runClaudePipeOrganPedalHarpAccordionBagpipeDirector,
   runClaudeToonstudio1140HyperSynthesisLegalOstDirector,
+  runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector,
+  runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector,
 } from "./claude-alt-text-run";
 
 describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
@@ -128,12 +136,21 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 137대 창의 AI 작업을 포함한 총 188개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 145대 창의 AI 작업을 포함한 총 196개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(188);
-    expect(summary.byProfile["fast-inline"]).toBe(48);
-    expect(summary.byProfile["creative-production"]).toBe(94);
-    expect(summary.byProfile["deep-architecture"]).toBe(46);
+    expect(summary.totalTasks).toBe(196);
+    expect(summary.byProfile["fast-inline"]).toBe(50);
+    expect(summary.byProfile["creative-production"]).toBe(98);
+    expect(summary.byProfile["deep-architecture"]).toBe(48);
+
+    expect(resolveCreatorTaskModelRoute("alt-text:enigma-morse-darkroom-letterpress-phonograph-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:ocean-liner-4funnel-streetcar-biplane-semaphore-lock").model).toBe("claude-haiku-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:davy-lamp-rickshaw-diving-dress-switchboard-sundial-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:jangdokdae-kimjang-hanji-onggi-najeonchilgi-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:wine-barrique-cheese-jamon-chocolate-pot-still-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:bangpaeyeon-ssireum-satba-taekkyeon-maedeup-lock").model).toBe("claude-sonnet-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:crossover-1000ep-paradox-wrinkle-baker-sfx-redraw-director").model).toBe("claude-opus-5-5");
+    expect(resolveCreatorTaskModelRoute("alt-text:toonstudio-1200-grand-millennium-simulpub-chroma-director").model).toBe("claude-opus-5-5");
 
     expect(resolveCreatorTaskModelRoute("alt-text:jongmyo-gayageum-geomungo-daegeum-janggu-lock").model).toBe("claude-haiku-5-5");
     expect(resolveCreatorTaskModelRoute("alt-text:hahoe-mask-lianpu-kabuki-toga-thurible-lock").model).toBe("claude-haiku-5-5");
@@ -650,5 +667,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(q6.data.masterArtisanCraftScore).toBeGreaterThanOrEqual(95);
     expect(q7.data.neuralRenderingPipelineScore).toBeGreaterThanOrEqual(95);
     expect(q8.data.hyperSynthesisMasterScore).toBeGreaterThanOrEqual(95);
+
+    const s1 = await runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector(sample, { route: null });
+    const s2 = await runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector(sample, { route: null });
+    const s3 = await runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector(sample, { route: null });
+    const s4 = await runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector(sample, { route: null });
+    const s5 = await runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector(sample, { route: null });
+    const s6 = await runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector(sample, { route: null });
+    const s7 = await runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector(sample, { route: null });
+    const s8 = await runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector(sample, { route: null });
+
+    expect(s1.data.vintageHardwareAccuracyScore).toBeGreaterThanOrEqual(95);
+    expect(s2.data.earlyAviationTransportScore).toBeGreaterThanOrEqual(95);
+    expect(s3.data.industrialAgePropScore).toBeGreaterThanOrEqual(95);
+    expect(s4.data.koreanTraditionalCraftScore).toBeGreaterThanOrEqual(95);
+    expect(s5.data.gastronomyFermentationCraftScore).toBeGreaterThanOrEqual(95);
+    expect(s6.data.koreanFolkSportCraftScore).toBeGreaterThanOrEqual(95);
+    expect(s7.data.advancedPipelineIntelligenceScore).toBeGreaterThanOrEqual(95);
+    expect(s8.data.grandMillenniumMasterScore).toBeGreaterThanOrEqual(95);
   });
 });
