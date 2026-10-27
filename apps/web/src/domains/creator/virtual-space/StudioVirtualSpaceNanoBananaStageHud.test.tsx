@@ -52,10 +52,11 @@ describe("StudioVirtualSpaceNanoBananaLobbyShowcase & StageHud", () => {
     );
   });
 
-  it("메인 스테이지 HUD에서 테마·보행 방향을 순환하고 원클릭으로 나노바나나 2.5D 스튜디오 & 실무 워크벤치 오버레이를 연다", () => {
-    render(<StudioVirtualSpaceNanoBananaStageHud />);
+  it("메인 스테이지 HUD에서 테마·보행 방향을 순환하고 원클릭으로 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 오버레이를 연다", () => {
+    const { container } = render(<StudioVirtualSpaceNanoBananaStageHud />);
 
     expect(screen.getByTestId("main-stage-nano-banana-hud")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/나노\s*바나나|Nano\s*Banana/iu);
 
     fireEvent.click(screen.getByTestId("main-stage-cycle-theme-btn"));
     fireEvent.click(screen.getByTestId("main-stage-cycle-walk-btn"));
