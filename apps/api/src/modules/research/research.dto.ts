@@ -2,9 +2,9 @@
  * research.dto.ts — 리서치 API 입력 스키마 (controller 경계에서 검증).
  * studio-ai.dto.ts와 같은 nestjs-zod 방식을 쓴다.
  *
- * 길이 제한은 DeepSeek 쿼리 상한(128자)과 일치한다. 이 제한이 곧
+ * 길이 제한은 검색 프로바이더 쿼리 상한(128자)과 일치한다. 이 제한이 곧
  * 개인정보 보호 가드레일이다: 128자를 넘는 미공개 원고는 이 API로
- * DeepSeek에 전달될 수 없다.
+ * 검색 프로바이더에 전달될 수 없다.
  */
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";

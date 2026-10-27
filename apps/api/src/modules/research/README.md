@@ -1,7 +1,11 @@
-# 리서치 모듈 (DeepSeek Search/Fetch)
+# 리서치 모듈 (범용 검색 프로바이더)
 
 창작자가 짧은 질문으로 공개 웹 자료를 조사하는 리서치 기능이다.
 검색·fetch·요약·존재 확인·트렌드 다이제스트·크레딧 미터링을 제공한다.
+특정 검색 API에 종속되지 않는다. 서비스·브리프·존재 확인·다이제스트·크레딧
+코드는 `SearchProvider` 인터페이스에만 의존하고, 프로바이더별 세부 사항은
+설정 계층(`search-provider-config.ts`)과 호환 HTTP 구현
+(`http-search-provider.ts`)에만 있다.
 
 ## 엔드포인트
 
@@ -11,7 +15,7 @@
 
 | 메서드·경로 | 설명 |
 | --- | --- |
-| `GET /research/status` | 기능 설정 여부(`configured`)와 단가·질의 상한 반환. 키 존재 여부 외 정보는 노출하지 않는다. |
+| `GET /research/status` | 기능 설정 여부(`configured`)와 프로바이더 이름(`provider`)·단가·질의 상한 반환. 키 존재 여부 외 정보는 노출하지 않는다. |
 | `POST /research/brief` | `{ question, fetchSources?, maxFetchSources? }` → 검색 결과 요약 개요 + 출처 링크 + (선택) 원문 짧은 발췌 |
 | `POST /research/existence-check` | `{ title, maxResults? }` → 공개 검색에 걸린 유사 제목·소재 목록 + 법적 의견 아님 고지 |
 | `POST /research/trend-digest` | `{ queries[], fetchSources? }` → 질의별 섹션 + Markdown 다이제스트. 질의 목록은 호출부가 정한다. |
@@ -20,24 +24,55 @@
 
 ```env
 # 필수. 없으면 기능이 비활성화되고 status.configured=false, 요청 시 503을 반환한다.
-DEEPSEEK_API_KEY=
-# 선택. 기본값 https://api.deepseek.com, 15000(ms)
-# DEEPSEEK_BASE_URL=
-# DEEPSEEK_TIMEOUT_MS=15000
+RESEARCH_SEARCH_API_KEY=
+# 선택. 기본값 deepseek. status.provider에 표시되는 이름이다.
+# RESEARCH_SEARCH_PROVIDER=deepseek
+# 선택. deepseek 기본값 https://api.deepseek.com.
+# 다른 프로바이더를 쓸 때는 필수다.
+# RESEARCH_SEARCH_BASE_URL=
+# 선택. 기본값 15000(ms)
+# RESEARCH_SEARCH_TIMEOUT_MS=15000
 # 선택. 기본값 각 1크레딧
-# DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH=1
-# DEEPSEEK_RESEARCH_CREDITS_PER_FETCH=1
+# RESEARCH_CREDITS_PER_SEARCH=1
+# RESEARCH_CREDITS_PER_FETCH=1
 ```
 
-`.env.example`에는 이 항목들을 직접 추가해야 한다. 이 모듈의 README가 정본 스니펫이다.
+하위 호환 폴백: 범용 변수가 없으면 기존 변수(`DEEPSEEK_API_KEY`,
+`DEEPSEEK_BASE_URL`, `DEEPSEEK_TIMEOUT_MS`,
+`DEEPSEEK_RESEARCH_CREDITS_PER_SEARCH/_FETCH`)를 대신 읽는다. 기존 배포는
+환경변수를 바꾸지 않아도 그대로 동작한다.
+
+`.env.example`에는 위 항목들을 직접 추가해야 한다. 이 모듈의 README가 정본 스니펫이다.
+
+## 다른 검색 API로 바꾸는 방법 (코드 변경 없음)
+
+이 모듈이 말하는 와이어는 `POST /v1/tools/search` + `POST /v1/tools/fetch`
+JSON 형태(DeepSeek 호환 검색 API)다. 같은 와이어를 말하는 다른 검색 API는
+아래 세 가지만 바꾸면 된다.
+
+```env
+RESEARCH_SEARCH_PROVIDER=<프로바이더 이름>
+RESEARCH_SEARCH_BASE_URL=<해당 API의 기본 URL, https://...>
+RESEARCH_SEARCH_API_KEY=<해당 API의 키>
+```
+
+주의할 점:
+
+- `RESEARCH_SEARCH_PROVIDER`가 `deepseek`가 아닐 때는 기본 URL이 필수다.
+  기본 URL이 없으면 기능이 비활성화된다.
+- 기본 프리셋(`deepseek`)은 기존 응답의 오류 코드(`DEEPSEEK_*`)를 그대로
+  유지한다. 다른 프로바이더는 범용 코드(`SEARCH_*`)를 쓴다.
+- 속도 제한은 프로바이더마다 다르다. 클라이언트는 요청 시작 간격을 최소
+  200ms로 벌리는 보수적 직렬 큐를 쓰므로, 제한이 더 빡빡한 프로바이더라면
+  호출량을 별도로 조절해야 한다.
 
 ## 크레딧
 
-- 단가: 기본 검색 1크레딧, fetch 1크레딧. DeepSeek 요금(성공 호출 1,000건당 $0.75)과
+- 단가: 기본 검색 1크레딧, fetch 1크레딧. 호환 검색 API 요금(성공 호출 1,000건당 $0.75 수준)과
   1크레딧 = 10원 환산을 대조하면 크레딧 1개가 약 10건 호출 원가를 충당하는 보수적 단가다.
 - 차감: 지갑 예약 → 성공 시 실제 사용량 캡처 / 실패 시 해제 (studio-ai 차감과 동일 패턴).
   단가 키는 전용 키를 신설하지 않고 기존 `ai.text.generate`를 재사용하며,
-  `metadata.source="deepseek-research"`로 구분한다. 전용 `ai.research` 키 신설은
+  `metadata.source="research"`로 구분한다. 전용 `ai.research` 키 신설은
   core 단가표·가격 페이지와 함께 검토하는 후속 정책 과제다.
 - 유료 운영 게이트가 OFF면 차감 없이 미터링만 기록하고 요청은 계속 처리한다.
   응답의 `credits` 필드로 비용이 항상 투명하게 보인다.
@@ -46,8 +81,8 @@ DEEPSEEK_API_KEY=
 
 ## 개인정보·저작권 가드레일
 
-- 모든 질의는 최대 128자(DeepSeek 쿼리 상한)로 제한된다. 긴 미공개 원고는
-  이 API로 DeepSeek에 전달될 수 없다. 원고 원문은 절대 쿼리에 넣지 않는다.
+- 모든 질의는 최대 128자(검색 쿼리 상한)로 제한된다. 긴 미공개 원고는
+  이 API로 검색 프로바이더에 전달될 수 없다. 원고 원문은 절대 쿼리에 넣지 않는다.
 - API 키는 환경변수에서만 읽고 로그·오류 메시지에 포함하지 않는다.
 - 검색 결과 요약은 출처당 최대 300자, fetch 원문 발췌는 건당 최대 500자까지만
   반환한다. 원문 전체가 필요하면 출처 URL로 이동해야 한다.
@@ -56,14 +91,13 @@ DEEPSEEK_API_KEY=
 
 ## 속도 제한·비용 주의
 
-- DeepSeek 계정당 제한은 5 QPS이며, 클라이언트는 요청 시작 간격을 최소 200ms로
-  벌리는 직렬 큐로 이를 지킨다.
+- 클라이언트는 요청 시작 간격을 최소 200ms로 벌리는 직렬 큐로 속도 제한을 지킨다.
 - 검색료보다 모델이 요약을 읽는 토큰 비용이 더 커질 수 있으므로, 결과 수는
   작게(브리프 5건, 다이제스트 섹션당 5건) 유지하고 fetch는 필요할 때만 켠다.
 
 ## 미검증 항목 (2026-10-27 기준)
 
-- 실제 DeepSeek API 키로 호출한 적은 없다. 키 발급 후 `GET /research/status`와
+- 실제 검색 API 키로 호출한 적은 없다. 키 발급 후 `GET /research/status`와
   브리프 1건으로 실연동을 확인해야 한다.
 - CI는 계정의 GitHub Actions 분이 소진(2,000/2,000, 2026-11-01 초기화)되어
   실패하거나 대기할 수 있다. 코드 원인과 무관하며, 초기화 후 재확인한다.
