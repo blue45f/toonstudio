@@ -544,6 +544,7 @@ function HeaderPrimaryNavigationEntry({
     : undefined;
   const label = siteNavigationText(item.label, locale);
   const [open, setOpen] = useState(false);
+  const submenuId = useId();
   // Escape로 닫은 직후에는 트리거로 돌아온 포커스가 패널을 다시 열지 않게 한다.
   const escapeClosedRef = useRef(false);
   const entryRef = useRef<HTMLDivElement>(null);
@@ -573,7 +574,8 @@ function HeaderPrimaryNavigationEntry({
       aria-current={highlighted ? (isActive(item.href, true) ? "page" : "true") : undefined}
       aria-haspopup={item.children ? "true" : undefined}
       aria-expanded={item.children ? open : undefined}
-      title={item.children ? undefined : siteNavigationText(item.description, locale)}
+      aria-controls={item.children ? submenuId : undefined}
+      title={siteNavigationText(item.description, locale)}
       data-navigation-entry={item.id}
       className="site-header__primary-link group"
     >
@@ -596,10 +598,15 @@ function HeaderPrimaryNavigationEntry({
   return (
     <div
       ref={entryRef}
-      data-app-tooltip-exclude="true"
       className="group relative"
       onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => {
+      onMouseLeave={(event) => {
+        if (
+          event.relatedTarget instanceof Element &&
+          event.relatedTarget.closest('[data-app-tooltip-layer="true"]')
+        ) {
+          return;
+        }
         escapeClosedRef.current = false;
         setOpen(false);
       }}
@@ -617,6 +624,7 @@ function HeaderPrimaryNavigationEntry({
     >
       {link}
       <div
+        data-app-tooltip-exclude="true"
         className={cx(
           "absolute left-0 top-full z-50 w-64 pt-1 transition-[opacity,transform,visibility] duration-150 motion-reduce:transition-none",
           open
@@ -625,6 +633,7 @@ function HeaderPrimaryNavigationEntry({
         )}
       >
         <ul
+          id={submenuId}
           aria-label={label}
           className="rounded-xl border border-line bg-panel p-1.5 shadow-2xl"
         >

@@ -35,17 +35,9 @@ const GAP = 10;
 const TOUCH_HOLD_DELAY_MS = 520;
 const TOUCH_MOVE_TOLERANCE_PX = 10;
 const CANDIDATE_SELECTOR = [
-  "[data-tooltip]",
-  "[data-app-tooltip]",
-  "[title]",
-  "button[aria-label]",
-  "a[aria-label]",
-  '[role="button"][aria-label]',
-  '[role="tab"][aria-label]',
-  '[role="menuitem"][aria-label]',
-  '[role="switch"][aria-label]',
-  '[role="checkbox"][aria-label]',
-  '[role="radio"][aria-label]',
+  "[data-tooltip]", "[data-app-tooltip]", "[title]", "button[aria-label]", "a[aria-label]",
+  '[role="button"][aria-label]', '[role="tab"][aria-label]', '[role="menuitem"][aria-label]',
+  '[role="switch"][aria-label]', '[role="checkbox"][aria-label]', '[role="radio"][aria-label]',
   '[role="option"][aria-label]',
 ].join(",");
 
@@ -60,11 +52,7 @@ function cleanCopy(value: string | null | undefined): string | undefined {
 
 function hasUsableArea(rect: DOMRect | null | undefined): rect is DOMRect {
   return Boolean(
-    rect &&
-      Number.isFinite(rect.left) &&
-      Number.isFinite(rect.top) &&
-      rect.width > 0 &&
-      rect.height > 0,
+    rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 0 && rect.height > 0,
   );
 }
 
@@ -87,10 +75,7 @@ function hasVisibleText(target: HTMLElement): boolean {
     acceptNode(node) {
       if (!cleanCopy(node.textContent)) return NodeFilter.FILTER_REJECT;
       const parent = node.parentElement;
-      if (
-        !parent ||
-        parent.closest('[aria-hidden="true"], [hidden], .sr-only')
-      ) {
+      if (!parent || parent.closest('[aria-hidden="true"], [hidden], .sr-only')) {
         return NodeFilter.FILTER_REJECT;
       }
       return NodeFilter.FILTER_ACCEPT;
@@ -112,18 +97,14 @@ function targetPrefersReducedMotion(target: HTMLElement): boolean {
 
 function contextualDescription(target: HTMLElement): string | undefined {
   const explicit = cleanCopy(
-    target.getAttribute("data-tooltip-description") ??
-      target.getAttribute("aria-description"),
+    target.getAttribute("data-tooltip-description") ?? target.getAttribute("aria-description"),
   );
   if (explicit) return explicit;
 
   const korean = isKoreanDocument();
   const disabledReason = cleanCopy(target.getAttribute("data-tooltip-disabled-reason"));
   if (disabledReason) return disabledReason;
-  if (
-    target.hasAttribute("disabled") ||
-    target.getAttribute("aria-disabled") === "true"
-  ) {
+  if (target.hasAttribute("disabled") || target.getAttribute("aria-disabled") === "true") {
     return korean ? "현재 사용할 수 없습니다." : "Unavailable right now.";
   }
 
@@ -144,10 +125,11 @@ function contextualDescription(target: HTMLElement): string | undefined {
   }
 
   const expanded = target.getAttribute("aria-expanded");
-  if (expanded === "true") {
+  const isNavigationLink = target instanceof HTMLAnchorElement && target.hasAttribute("href");
+  if (!isNavigationLink && expanded === "true") {
     return korean ? "현재 열려 있습니다. 누르면 닫습니다." : "Open. Activate to close.";
   }
-  if (expanded === "false") {
+  if (!isNavigationLink && expanded === "false") {
     return korean ? "누르면 관련 메뉴나 패널을 엽니다." : "Activate to open the related menu or panel.";
   }
 
@@ -165,19 +147,25 @@ function contextualDescription(target: HTMLElement): string | undefined {
 const EXCLUDED_SURFACE_SELECTOR =
   '[data-app-tooltip-exclude="true"], [data-studio-tool-hint-target="true"], [data-studio-tool-hint="true"], [data-studio-tool-hint-mode="off"]';
 
-function hasExpandedPopup(element: Element): boolean {
-  const hasPopup = element.getAttribute("aria-haspopup");
-  return (
-    Boolean(hasPopup && hasPopup !== "false") &&
-    element.getAttribute("aria-expanded") === "true"
-  );
+function isTooltipSuppressedTarget(eventTarget: EventTarget | null): boolean {
+  return eventTarget instanceof Element && eventTarget.closest(EXCLUDED_SURFACE_SELECTOR) !== null;
 }
 
-function isTooltipSuppressedTarget(eventTarget: EventTarget | null): boolean {
-  if (!(eventTarget instanceof Element)) return false;
-  if (eventTarget.closest(EXCLUDED_SURFACE_SELECTOR)) return true;
-  const popupTrigger = eventTarget.closest('[aria-haspopup][aria-expanded="true"]');
-  return Boolean(popupTrigger && hasExpandedPopup(popupTrigger));
+function controlledPopupElement(target: HTMLElement): HTMLElement | null {
+  if (target.getAttribute("aria-expanded") !== "true") return null;
+  const ids = (target.getAttribute("aria-controls") ?? "").split(/\s+/u).filter(Boolean);
+  for (const id of ids) {
+    const panel = document.getElementById(id);
+    if (!panel || panel.hidden || panel.closest('[hidden], [inert], [aria-hidden="true"]')) continue;
+    return panel;
+  }
+  return null;
+}
+
+function controlledPopupRect(target: HTMLElement): DOMRect | null {
+  const panel = controlledPopupElement(target);
+  const rect = panel?.getBoundingClientRect();
+  return hasUsableArea(rect) ? rect : null;
 }
 
 function tooltipSourceFromEventTarget(eventTarget: EventTarget | null): TooltipSource | null {
@@ -233,6 +221,7 @@ function resolvePlacement(
   const anchor = tooltipAnchorRect(target);
   if (!anchor) return null;
 
+  const controlledPopup = controlledPopupRect(target);
   const popup = bubble.getBoundingClientRect();
   const visualViewport = globalThis.visualViewport;
   const viewportLeft = visualViewport?.offsetLeft ?? 0;
@@ -241,12 +230,26 @@ function resolvePlacement(
   const viewportHeight = visualViewport?.height ?? globalThis.innerHeight;
   const viewportRight = viewportLeft + viewportWidth;
   const viewportBottom = viewportTop + viewportHeight;
-  const popupWidth = Math.max(popup.width, 1);
-  const popupHeight = Math.max(popup.height, 1);
-  const spaceAbove = anchor.top - viewportTop;
-  const spaceBelow = viewportBottom - anchor.bottom;
-  const side: TooltipSide =
-    spaceBelow >= popupHeight + GAP || spaceBelow >= spaceAbove ? "bottom" : "top";
+  const popupWidth = popup.width > 0 ? popup.width : 160;
+  const popupHeight = popup.height > 0 ? popup.height : 36;
+  const topObstacle =
+    controlledPopup && controlledPopup.top < anchor.top
+      ? Math.min(anchor.top, controlledPopup.top)
+      : anchor.top;
+  const bottomObstacle =
+    controlledPopup && controlledPopup.bottom > anchor.bottom
+      ? Math.max(anchor.bottom, controlledPopup.bottom)
+      : anchor.bottom;
+  const spaceAbove = topObstacle - viewportTop - VIEWPORT_PADDING;
+  const spaceBelow = viewportBottom - VIEWPORT_PADDING - bottomObstacle;
+  const popupCoversBelow = Boolean(controlledPopup && controlledPopup.bottom > anchor.bottom);
+  const side: TooltipSide = popupCoversBelow
+    ? spaceAbove >= popupHeight + GAP
+      ? "top"
+      : "bottom"
+    : spaceBelow >= popupHeight + GAP || spaceBelow >= spaceAbove
+      ? "bottom"
+      : "top";
   const idealLeft = anchor.left + anchor.width / 2 - popupWidth / 2;
   const left = clamp(
     idealLeft,
@@ -254,7 +257,7 @@ function resolvePlacement(
     viewportRight - popupWidth - VIEWPORT_PADDING,
   );
   const top = clamp(
-    side === "bottom" ? anchor.bottom + GAP : anchor.top - popupHeight - GAP,
+    side === "bottom" ? bottomObstacle + GAP : topObstacle - popupHeight - GAP,
     viewportTop + VIEWPORT_PADDING,
     viewportBottom - popupHeight - VIEWPORT_PADDING,
   );
@@ -658,8 +661,14 @@ export function AccessibleTooltipLayer(): ReactElement | null {
     const mutationObserver = typeof MutationObserver === "function"
       ? new MutationObserver(() => {
           const current = activeRef.current;
-          if (current && (!current.target.isConnected || isTooltipSuppressedTarget(current.target))) {
+          if (!current) return;
+          if (!current.target.isConnected || isTooltipSuppressedTarget(current.target)) {
             close(true);
+            return;
+          }
+          if (bubbleRef.current) {
+            const next = resolvePlacement(current.target, bubbleRef.current);
+            if (next) setPlacement(next);
           }
         })
       : null;
@@ -718,6 +727,8 @@ export function AccessibleTooltipLayer(): ReactElement | null {
     const observer = new ResizeObserver(updatePlacement);
     observer.observe(observedTarget);
     observer.observe(observedBubble);
+    const controlled = controlledPopupElement(observedTarget);
+    if (controlled) observer.observe(controlled);
     return () => observer.disconnect();
   }, [active]);
 

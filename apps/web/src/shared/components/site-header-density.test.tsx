@@ -209,7 +209,7 @@ describe("단일 창작 헤더", () => {
       .toBe("/production");
   });
 
-  it("서브메뉴가 열리는 GNB 항목은 툴팁을 동시에 띄우지 않고 하위 항목 이동 시 열린 상태를 유지한다", () => {
+  it("서브메뉴가 열리는 GNB 항목도 툴팁을 유지하되 서브메뉴와 겹치지 않고 하위 항목 이동 시 닫히지 않는다", () => {
     vi.useFakeTimers();
     try {
       render(
@@ -225,26 +225,40 @@ describe("단일 창작 헤더", () => {
       const learn = within(navigation).getByRole("link", { name: "배우기" });
       const community = within(navigation).getByRole("link", { name: "커뮤니티" });
 
-      // 서브메뉴가 있는 1차 항목은 네이티브 title을 두지 않고 툴팁 제외 영역으로 감싼다.
+      // 서브메뉴가 있는 1차 항목도 설명 title과 aria-controls 연결을 유지한다.
       for (const trigger of [studio, explore, learn]) {
-        expect(trigger.hasAttribute("title")).toBe(false);
-        expect(trigger.closest('[data-app-tooltip-exclude="true"]')).not.toBeNull();
+        expect(trigger.getAttribute("title")).toBeTruthy();
+        const controlsId = trigger.getAttribute("aria-controls");
+        expect(controlsId).toBeTruthy();
+        expect(document.getElementById(controlsId!)).not.toBeNull();
       }
-      // 서브메뉴가 없는 단일 목적지는 설명 title을 유지한다.
       expect(community.getAttribute("title")).toBeTruthy();
+
+      const exploreSubmenu = document.getElementById(explore.getAttribute("aria-controls")!)!;
+      vi.spyOn(explore, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(180, 12, 56, 36),
+      );
+      vi.spyOn(exploreSubmenu, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(180, 56, 224, 152),
+      );
 
       fireEvent.mouseEnter(explore.parentElement!);
       fireEvent.pointerOver(explore, { pointerType: "mouse" });
       act(() => vi.advanceTimersByTime(600));
 
       expect(explore.getAttribute("aria-expanded")).toBe("true");
-      expect(screen.queryByRole("tooltip")).toBeNull();
+      const tooltip = screen.getByRole("tooltip");
+      expect(tooltip.textContent).toContain("검색·취향·추천에서 원하는 작품 발견");
+      expect(Number.parseFloat(tooltip.style.top)).toBeGreaterThanOrEqual(56 + 152 + 10);
 
-      // 하위 서브메뉴 항목으로 포인터를 내려도 툴팁 간섭 없이 드롭다운이 열린 채로 유지된다.
+      // 포인터가 포털 툴팁을 스쳐도 GNB 서브메뉴는 닫히지 않는다.
+      fireEvent.mouseLeave(explore.parentElement!, { relatedTarget: tooltip });
+      expect(explore.getAttribute("aria-expanded")).toBe("true");
+
+      // 하위 서브메뉴 항목으로 포인터를 내리면 상위 툴팁은 즉시 닫히고 드롭다운은 열린 채로 유지된다.
       const ranking = within(explore.parentElement!).getByRole("link", { name: /^랭킹/u });
       fireEvent.pointerOut(explore, { pointerType: "mouse", relatedTarget: ranking });
       fireEvent.pointerOver(ranking, { pointerType: "mouse", relatedTarget: explore });
-      act(() => vi.advanceTimersByTime(600));
 
       expect(explore.getAttribute("aria-expanded")).toBe("true");
       expect(screen.queryByRole("tooltip")).toBeNull();
