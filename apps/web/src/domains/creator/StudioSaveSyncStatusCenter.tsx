@@ -25,7 +25,7 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { resolveSaveRecoveryView } from "./studio-save-recovery-ux";
 import {
@@ -88,10 +88,42 @@ export function StudioSaveSyncStatusCenter({
   onRecheckConnection,
 }: StudioSaveSyncStatusCenterProps) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const peakPendingRef = useRef(0);
   const diagnosticsCopy = useStudioCopyFeedback(2000);
   const diagnosticsCopyStatus = diagnosticsCopy.statusFor("save-sync-diagnostics");
 
   const status = statusOverride ?? resolveSaveSyncStatus(journal, isOnline, isOpfsActive);
+  if (status.pendingOperationsCount > 0) {
+    peakPendingRef.current = Math.max(peakPendingRef.current, status.pendingOperationsCount);
+  } else {
+    peakPendingRef.current = 0;
+  }
+  const peakPendingCount = Math.max(peakPendingRef.current, status.pendingOperationsCount);
+  const drainedPendingCount = Math.max(0, peakPendingCount - status.pendingOperationsCount);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && containerRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
   const view = resolveSaveRecoveryView(status, connectivity);
   // 필 라벨은 복구 모델(view.kind)을 정본으로 삼는다 (C6, 2026-10-22):
   // 연결 모듈이 offline인데 저장 신호의 cloudSyncStatus가 아직 synced인
@@ -133,17 +165,22 @@ export function StudioSaveSyncStatusCenter({
         : "text-success";
 
   return (
-    <div data-studio-save-sync-status-center className="relative inline-block text-xs">
+    <div
+      ref={containerRef}
+      data-studio-save-sync-status-center
+      className="relative inline-block text-xs"
+    >
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={`저장 상태 열기: ${saveLabel}`}
-        className="flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
+        className="flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
       >
         <StatusIcon
-          className={`size-3.5 ${statusTone} ${view.kind === "reconnecting" ? "animate-spin" : ""}`}
+          className={`size-3.5 ${statusTone} ${view.kind === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`}
           aria-hidden
         />
         <span>{saveLabel}</span>
@@ -153,7 +190,7 @@ export function StudioSaveSyncStatusCenter({
         <div
           role="dialog"
           aria-label="저장 상태 상세"
-          className="absolute right-0 top-full z-50 mt-1.5 w-[min(22rem,calc(100vw-1rem))] rounded-xl border border-line bg-card p-3.5 text-fg shadow-xl"
+          className="absolute right-0 top-full z-50 mt-1.5 max-h-[calc(100dvh-4rem)] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain rounded-xl border border-line bg-card p-3.5 text-fg shadow-xl"
         >
           <div className="flex items-center justify-between border-b border-line/50 pb-2">
             <div>
@@ -194,7 +231,7 @@ export function StudioSaveSyncStatusCenter({
                 ) : (
                   <Cloud className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-fg">서버</p>
                   <p className="mt-0.5 leading-relaxed text-fg-3">
                     {cloudStatusCopy(status.cloudSyncStatus, connectivity)}
@@ -202,6 +239,14 @@ export function StudioSaveSyncStatusCenter({
                       ? ` 서버에 아직 반영되지 않은 변경 ${status.pendingOperationsCount}개가 있어요.`
                       : ""}
                   </p>
+                  {status.pendingOperationsCount > 0 ? (
+                    <progress
+                      aria-label="서버 동기화 대기열 진행률"
+                      className="mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-accent"
+                      max={peakPendingCount}
+                      value={drainedPendingCount}
+                    />
+                  ) : null}
                 </div>
               </div>
             </section>
@@ -272,7 +317,7 @@ export function StudioSaveSyncStatusCenter({
               </p>
               <p className="flex items-center justify-between gap-3">
                 <span>복구 지점 이후 변경</span>
-                <span>{status.pendingOperationsCount}개</span>
+                <span className="tabular-nums">{status.pendingOperationsCount}개</span>
               </p>
               <button
                 type="button"

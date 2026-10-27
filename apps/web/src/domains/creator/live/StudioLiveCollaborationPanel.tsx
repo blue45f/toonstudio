@@ -415,15 +415,14 @@ export function StudioLiveCollaborationPanelView({
             </div>
             <div className="flex min-w-0 items-center justify-between gap-2 sm:block">
               <dt className="text-fg-3">서버 승인</dt>
-              <dd className="truncate font-semibold text-fg-2">
-                {formatStudioLiveLastAck(syncSnapshot.lastAckAt)}
-              </dd>
+              <dd className="truncate font-semibold text-fg-2">{formatStudioLiveLastAck(syncSnapshot.lastAckAt)}</dd>
             </div>
           </dl>
           {syncSnapshot.pendingCount > 0 ? (
-            <p className="mt-2 text-[0.7rem] font-semibold text-warn">
-              아직 서버 승인을 기다리는 변경 {syncSnapshot.pendingCount.toLocaleString("ko-KR")}개
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-[0.7rem] font-semibold tabular-nums text-warn">아직 서버 승인을 기다리는 변경 {syncSnapshot.pendingCount.toLocaleString("ko-KR")}개</p>
+              <progress aria-label="서버 동기화 대기열 진행률" className="block h-1.5 w-full overflow-hidden rounded-full accent-accent" data-studio-sync-pending-progress="true" />
+            </div>
           ) : null}
             </div>
           </details>
@@ -667,9 +666,7 @@ export function StudioLiveCollaborationPanelView({
           </p>
         )}
         <form className="mt-2 flex items-center gap-2" onSubmit={handleChatSubmit}>
-          <label className="sr-only" htmlFor="studio-live-chat-input">
-            채팅 메시지
-          </label>
+          <label className="sr-only" htmlFor="studio-live-chat-input">채팅 메시지</label>
           <input
             autoComplete="off"
             className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-3 text-xs text-fg placeholder:text-fg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
@@ -680,6 +677,7 @@ export function StudioLiveCollaborationPanelView({
             type="text"
             value={chatDraft}
             onChange={(event) => onChatDraftChange(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }}
           />
           <Button
             aria-label="채팅 메시지 보내기"

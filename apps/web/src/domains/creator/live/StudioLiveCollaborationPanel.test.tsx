@@ -179,6 +179,7 @@ describe("StudioLiveCollaborationPanelView", () => {
     expect(html).toContain("보호됨");
     expect(html).toContain("아직 서버 승인 없음");
     expect(html).toContain("서버 승인을 기다리는 변경 4개");
+    expect(html).toContain('data-studio-sync-pending-progress="true"');
     expect(html).not.toContain("private-sequence-never-render");
   });
 

@@ -214,4 +214,57 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
     fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
     expect(screen.getByText(/아직 만들어진 복구 지점이 없어요/u)).not.toBeNull();
   });
+
+  it("supports Escape dismissal and outside pointerdown light-dismiss", () => {
+    const journal = createEmptyOperationJournal("doc-g2");
+    render(<StudioSaveSyncStatusCenter journal={journal} statusOverride={baseStatus} />);
+
+    const trigger = screen.getByRole("button", { name: /저장 상태 열기/u });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: "저장 상태 상세" })).not.toBeNull();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "저장 상태 상세" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: "저장 상태 상세" })).not.toBeNull();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog", { name: "저장 상태 상세" })).toBeNull();
+  });
+
+  it("renders a native progress bar that tracks pending sync queue drain", () => {
+    const journal = createEmptyOperationJournal("doc-g2");
+    const { rerender } = render(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={{ ...baseStatus, pendingOperationsCount: 81, cloudSyncStatus: "pending" }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
+    const progress = screen.getByRole("progressbar", {
+      name: "서버 동기화 대기열 진행률",
+    }) as HTMLProgressElement;
+    expect(progress.max).toBe(81);
+    expect(progress.value).toBe(0);
+
+    rerender(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={{ ...baseStatus, pendingOperationsCount: 31, cloudSyncStatus: "pending" }}
+      />
+    );
+    expect(progress.max).toBe(81);
+    expect(progress.value).toBe(50);
+
+    rerender(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={{ ...baseStatus, pendingOperationsCount: 0, cloudSyncStatus: "synced" }}
+      />
+    );
+    expect(screen.queryByRole("progressbar", { name: "서버 동기화 대기열 진행률" })).toBeNull();
+  });
 });

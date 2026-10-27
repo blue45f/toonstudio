@@ -47,4 +47,16 @@ describe("StudioSaveStatusBar", () => {
     );
     expect(screen.getByText(/5분 전|5 min ago/)).toBeTruthy();
   });
+
+  it("applies tabular-nums and motion-reduce:animate-none during active saving", () => {
+    const { container } = render(
+      <StudioSaveStatusBar
+        status={status({ pendingOperationsCount: 3, cloudSyncStatus: "pending" })}
+      />,
+    );
+    const bar = container.querySelector("[data-studio-save-status-bar]");
+    expect(bar?.getAttribute("data-save-state")).toBe("saving");
+    expect(bar?.innerHTML).toContain("tabular-nums");
+    expect(bar?.innerHTML).toContain("motion-reduce:animate-none");
+  });
 });

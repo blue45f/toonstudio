@@ -180,8 +180,8 @@ export function StudioSaveStatusBar({
 
   return (
     <div className="flex items-center gap-2" data-studio-save-status-bar data-save-state={state}>
-      <span className={`flex min-h-8 items-center gap-1.5 text-[0.75rem] font-medium ${tone}`} aria-hidden="true">
-        <Icon className={`size-3.5 ${state === "saving" || state === "reconnecting" ? "animate-spin" : ""}`} aria-hidden="true" />
+      <span className={`flex min-h-8 items-center gap-1.5 text-[0.75rem] font-medium tabular-nums ${tone}`} aria-hidden="true">
+        <Icon className={`size-3.5 ${state === "saving" || state === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" />
         <span>{label}</span>
       </span>
       {state === "failed" && onRetrySave ? (
