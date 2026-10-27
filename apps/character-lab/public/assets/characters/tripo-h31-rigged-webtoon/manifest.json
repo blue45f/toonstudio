@@ -1,0 +1,401 @@
+{
+  "schema": "toonstudio.character-lab.authored-character/1",
+  "id": "tripo-h31-rigged-webtoon",
+  "displayName": "Tripo Studio H3.1 · SHAPER Rigged Webtoon",
+  "role": "tripo-rigged",
+  "license": "CC0-1.0",
+  "generatedAt": "2026-10-27",
+  "generator": {
+    "pipeline": "Tripo Web Studio H3.1 + Mixamo Auto-Rigging (pipelineVersion 1)"
+  },
+  "pipelineRun": {
+    "pipelineManifestConfigDigest": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d",
+    "toonstudioPackageKind": "toonstudio.character-package"
+  },
+  "sourceProvenance": {
+    "path": "apps/web/public/assets/3d/shaper/tripo_studio_h31_rigged_character.glb",
+    "sha256": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d",
+    "bytes": 1726300,
+    "license": "CC0-1.0",
+    "author": "ToonStudio Tripo H3.1"
+  },
+  "files": {
+    "glb": {
+      "path": "tripo-h31-rigged-webtoon.glb",
+      "bytes": 1726300,
+      "sha256": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d"
+    },
+    "slotMapping": {
+      "path": "slot-mapping.json"
+    }
+  },
+  "skeleton": {
+    "present": true,
+    "rootNode": "Armature",
+    "skins": [
+      {
+        "name": "Armature",
+        "jointCount": 65,
+        "joints": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:LeftLeg",
+          "mixamorig:LeftFoot",
+          "mixamorig:LeftToeBase",
+          "mixamorig:LeftToe_End",
+          "mixamorig:RightUpLeg",
+          "mixamorig:RightLeg",
+          "mixamorig:RightFoot",
+          "mixamorig:RightToeBase",
+          "mixamorig:RightToe_End",
+          "mixamorig:Spine",
+          "mixamorig:Spine1",
+          "mixamorig:Spine2",
+          "mixamorig:LeftShoulder",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftForeArm",
+          "mixamorig:LeftHand",
+          "mixamorig:LeftHandIndex1",
+          "mixamorig:LeftHandIndex2",
+          "mixamorig:LeftHandIndex3",
+          "mixamorig:LeftHandIndex4",
+          "mixamorig:LeftHandMiddle1",
+          "mixamorig:LeftHandMiddle2",
+          "mixamorig:LeftHandMiddle3",
+          "mixamorig:LeftHandMiddle4",
+          "mixamorig:LeftHandPinky1",
+          "mixamorig:LeftHandPinky2",
+          "mixamorig:LeftHandPinky3",
+          "mixamorig:LeftHandPinky4",
+          "mixamorig:LeftHandRing1",
+          "mixamorig:LeftHandRing2",
+          "mixamorig:LeftHandRing3",
+          "mixamorig:LeftHandRing4",
+          "mixamorig:LeftHandThumb1",
+          "mixamorig:LeftHandThumb2",
+          "mixamorig:LeftHandThumb3",
+          "mixamorig:LeftHandThumb4",
+          "mixamorig:Neck",
+          "mixamorig:Head",
+          "mixamorig:HeadTop_End",
+          "mixamorig:RightShoulder",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:RightHand",
+          "mixamorig:RightHandIndex1",
+          "mixamorig:RightHandIndex2",
+          "mixamorig:RightHandIndex3",
+          "mixamorig:RightHandIndex4",
+          "mixamorig:RightHandMiddle1",
+          "mixamorig:RightHandMiddle2",
+          "mixamorig:RightHandMiddle3",
+          "mixamorig:RightHandMiddle4",
+          "mixamorig:RightHandPinky1",
+          "mixamorig:RightHandPinky2",
+          "mixamorig:RightHandPinky3",
+          "mixamorig:RightHandPinky4",
+          "mixamorig:RightHandRing1",
+          "mixamorig:RightHandRing2",
+          "mixamorig:RightHandRing3",
+          "mixamorig:RightHandRing4",
+          "mixamorig:RightHandThumb1",
+          "mixamorig:RightHandThumb2",
+          "mixamorig:RightHandThumb3",
+          "mixamorig:RightHandThumb4"
+        ]
+      }
+    ],
+    "boneNaming": "mixamorig"
+  },
+  "humanoidBones": [
+    {
+      "vrm": "hips",
+      "node": "mixamorig:Hips",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "spine",
+      "node": "mixamorig:Spine",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "chest",
+      "node": "mixamorig:Spine1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "upperChest",
+      "node": "mixamorig:Spine2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "neck",
+      "node": "mixamorig:Neck",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "head",
+      "node": "mixamorig:Head",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftShoulder",
+      "node": "mixamorig:LeftShoulder",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftUpperArm",
+      "node": "mixamorig:LeftArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLowerArm",
+      "node": "mixamorig:LeftForeArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftHand",
+      "node": "mixamorig:LeftHand",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightShoulder",
+      "node": "mixamorig:RightShoulder",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightUpperArm",
+      "node": "mixamorig:RightArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLowerArm",
+      "node": "mixamorig:RightForeArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightHand",
+      "node": "mixamorig:RightHand",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftUpperLeg",
+      "node": "mixamorig:LeftUpLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLowerLeg",
+      "node": "mixamorig:LeftLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftFoot",
+      "node": "mixamorig:LeftFoot",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftToes",
+      "node": "mixamorig:LeftToeBase",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightUpperLeg",
+      "node": "mixamorig:RightUpLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLowerLeg",
+      "node": "mixamorig:RightLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightFoot",
+      "node": "mixamorig:RightFoot",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightToes",
+      "node": "mixamorig:RightToeBase",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftThumbMetacarpal",
+      "node": "mixamorig:LeftHandThumb1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftThumbProximal",
+      "node": "mixamorig:LeftHandThumb2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftThumbDistal",
+      "node": "mixamorig:LeftHandThumb3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftIndexProximal",
+      "node": "mixamorig:LeftHandIndex1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftIndexIntermediate",
+      "node": "mixamorig:LeftHandIndex2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftIndexDistal",
+      "node": "mixamorig:LeftHandIndex3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftMiddleProximal",
+      "node": "mixamorig:LeftHandMiddle1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftMiddleIntermediate",
+      "node": "mixamorig:LeftHandMiddle2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftMiddleDistal",
+      "node": "mixamorig:LeftHandMiddle3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftRingProximal",
+      "node": "mixamorig:LeftHandRing1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftRingIntermediate",
+      "node": "mixamorig:LeftHandRing2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftRingDistal",
+      "node": "mixamorig:LeftHandRing3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLittleProximal",
+      "node": "mixamorig:LeftHandPinky1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLittleIntermediate",
+      "node": "mixamorig:LeftHandPinky2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLittleDistal",
+      "node": "mixamorig:LeftHandPinky3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightThumbMetacarpal",
+      "node": "mixamorig:RightHandThumb1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightThumbProximal",
+      "node": "mixamorig:RightHandThumb2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightThumbDistal",
+      "node": "mixamorig:RightHandThumb3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightIndexProximal",
+      "node": "mixamorig:RightHandIndex1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightIndexIntermediate",
+      "node": "mixamorig:RightHandIndex2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightIndexDistal",
+      "node": "mixamorig:RightHandIndex3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightMiddleProximal",
+      "node": "mixamorig:RightHandMiddle1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightMiddleIntermediate",
+      "node": "mixamorig:RightHandMiddle2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightMiddleDistal",
+      "node": "mixamorig:RightHandMiddle3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightRingProximal",
+      "node": "mixamorig:RightHandRing1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightRingIntermediate",
+      "node": "mixamorig:RightHandRing2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightRingDistal",
+      "node": "mixamorig:RightHandRing3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLittleProximal",
+      "node": "mixamorig:RightHandPinky1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLittleIntermediate",
+      "node": "mixamorig:RightHandPinky2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLittleDistal",
+      "node": "mixamorig:RightHandPinky3",
+      "presentInGlb": true
+    }
+  ],
+  "shapeKeys": [],
+  "expressions": {
+    "vrmPresets": [],
+    "vrmCustom": []
+  },
+  "partMeshes": [
+    {
+      "node": "Mesh_0",
+      "part": "body",
+      "lod": 0,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 17733,
+      "morphTargets": []
+    }
+  ],
+  "quality": {
+    "score": 92,
+    "passed": true,
+    "minimumScore": 70,
+    "issues": []
+  },
+  "gaps": [
+    {
+      "id": "tripo-single-mesh",
+      "severity": "info",
+      "summary": "Tripo Studio H3.1 일체형 스킨 메시(Mesh_0) + 65개 Mixamo 본 리깅 모델로 전신 포즈(15 필수 본)와 손가락 포즈(30 본) 및 본 스케일 체형 조절을 지원합니다."
+    }
+  ]
+}

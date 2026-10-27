@@ -1,0 +1,90 @@
+{
+  "schema": "toonstudio.character-lab.slot-mapping/1",
+  "characterId": "tripo-h31-rigged-webtoon",
+  "generatedAt": "2026-10-27",
+  "capabilities": {
+    "face-shape": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 턱 너비(jawWidth), 턱 길이(chinLength), 볼 볼륨(cheekVolume) shape key가 없습니다."
+    },
+    "eyes": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 눈 크기(eyeSize), 눈 간격(eyeSpacing), 눈매 기울기(eyeTilt) shape key가 없습니다."
+    },
+    "irises": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 눈동자(iris/pupil) 메시가 없습니다."
+    },
+    "nose": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 코 높이(noseHeight), 코 너비(noseWidth), 코 깊이(noseDepth) shape key가 없습니다."
+    },
+    "mouth": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 입 너비(mouthWidth), 입술 두께(lipFullness) shape key가 없습니다."
+    },
+    "ears": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 귀 크기(earSize) shape key가 없습니다."
+    },
+    "hair": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 제작 헤어 메시가 없습니다."
+    },
+    "body": {
+      "status": "partial",
+      "reasonKo": "파이프라인 v1은 체형 shape key를 만들지 않아 본 스케일 근사만 가능합니다."
+    },
+    "top": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 상의 메시가 없습니다(제작 패키지는 교체형 의상을 제공하지 않습니다)."
+    },
+    "bottom": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 하의 메시가 없습니다(제작 패키지는 교체형 의상을 제공하지 않습니다)."
+    },
+    "shoes": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 신발 메시가 없습니다(제작 패키지는 교체형 의상을 제공하지 않습니다)."
+    },
+    "accessory": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 액세서리 메시가 없습니다(제작 패키지는 교체형 의상을 제공하지 않습니다)."
+    },
+    "expression": {
+      "status": "unavailable",
+      "reasonKo": "패키지에 표정 shape key·VRM 표정 프리셋이 없습니다."
+    },
+    "pose": {
+      "status": "available"
+    },
+    "hand-pose": {
+      "status": "available"
+    }
+  },
+  "slots": [
+    {
+      "slot": "body",
+      "labelKo": "체형",
+      "status": "partial",
+      "mechanism": "52개 휴머노이드 본 스케일 근사",
+      "missing": [
+        "체형 shape key"
+      ]
+    },
+    {
+      "slot": "pose",
+      "labelKo": "포즈",
+      "status": "available",
+      "mechanism": "Mixamo 65본 스켈레톤 중 VRM 필수 15본 전체 매핑",
+      "missing": []
+    },
+    {
+      "slot": "hand-pose",
+      "labelKo": "손 포즈",
+      "status": "available",
+      "mechanism": "Mixamo 양손 손가락 30본 전체 매핑",
+      "missing": []
+    }
+  ]
+}
