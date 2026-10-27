@@ -497,7 +497,7 @@ export const LEARN_CURRICULUM_ROADMAP_TRACKS: readonly LearnCurriculumTrack[] = 
   {
     id: "story-novelcomics",
     label: "스토리텔링 · 노블코믹스 각색",
-    badge: "MUNPIA · LARC",
+    badge: "STORY · AI SCRIPT",
     description: "웹소설 원작 기승전결 설계부터 화별 스크립트·콘티 컷 배분까지 실습하는 입문·심화 트랙",
     practiceHref: "/story-lab",
     practiceLabel: "스토리 랩 실습",
@@ -506,7 +506,7 @@ export const LEARN_CURRICULUM_ROADMAP_TRACKS: readonly LearnCurriculumTrack[] = 
   {
     id: "drawing-coloring",
     label: "드로잉 · 선화 · 채색 마스터",
-    badge: "COLOSO · CSP",
+    badge: "DRAW · AI COLOR",
     description: "인체 데생, 펜선 필압, 셀 채색 및 웹툰 조명 후보정 워크플로를 단계별로 마스터하는 트랙",
     practiceHref: "/studio/comic",
     practiceLabel: "원고 에디터 실습",
@@ -515,8 +515,8 @@ export const LEARN_CURRICULUM_ROADMAP_TRACKS: readonly LearnCurriculumTrack[] = 
   {
     id: "3d-character-scene",
     label: "3D 캐릭터 · 배경 연출",
-    badge: "3D · VROID · ACON",
-    description: "VRoid 캐릭터 커스터마이징과 3D 배경 투시·카메라 앵글·툰 셰이더 합성을 익히는 실전 트랙",
+    badge: "3D · STAGE · TOON",
+    description: "3D 캐릭터 커스터마이징과 배경 투시·카메라 앵글·툰 셰이더 합성을 익히는 실전 트랙",
     practiceHref: "/studio/assets/characters/new",
     practiceLabel: "3D 캐릭터 셰이퍼",
     derivedFrom: ["coloso-academy", "vroid-studio", "acon3d", "sketchfab-3d"],
@@ -552,8 +552,8 @@ export const STORY_TO_WEBTOON_PIPELINE_MODES: readonly StoryToWebtoonPipelineMod
   {
     id: "worldbuilding-synopsis",
     step: "STEP 01 · WORLD",
-    label: "세계관 · 로그라인 · 회귀/빙의/환생 플롯",
-    description: "문피아·카카오페이지 검증 흥행 코드와 캐릭터 아크를 구조화하고 시놉시스를 설계합니다.",
+    label: "세계관 · 로그라인 · 장르 서사 플롯",
+    description: "웹툰·노블코믹스 핵심 서사 구조와 캐릭터 아크를 체계화하고 시놉시스를 설계합니다.",
     targetHref: "/story-lab",
     ctaLabel: "플롯 보드 열기",
     derivedFrom: ["munpia-novel", "kakaopage"],
@@ -607,7 +607,7 @@ export const SHOWCASE_COLLABORATION_TRACKS: readonly ShowcaseCollaborationTrack[
   {
     id: "portfolio-curation",
     label: "크리에이터 아트워크 · 캐릭터 쇼케이스",
-    badge: "NOTEFOLIO · PIXIV",
+    badge: "ARTWORK · PORTFOLIO",
     description: "일러스트·선화·3D 캐릭터·배경 아트워크를 작업 공정별로 공개하고 피드백을 받는 갤러리",
     route: "/showcase",
     ctaLabel: "갤러리 탐색",
@@ -625,7 +625,7 @@ export const SHOWCASE_COLLABORATION_TRACKS: readonly ShowcaseCollaborationTrack[
   {
     id: "contest-pitch",
     label: "신작 공모전 · 노블코믹스 각색 피칭",
-    badge: "LOUD · CONTEST",
+    badge: "PITCH · CONTEST",
     description: "원작 IP 웹툰화 피칭 및 시즌별 창작 콘테스트에 참가해 연재 계약과 상금을 확보하는 트랙",
     route: "/opportunities",
     ctaLabel: "공모·기회 보기",

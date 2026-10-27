@@ -19,6 +19,12 @@ import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav
 import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { SHOWCASE_COLLABORATION_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
+const SHOWCASE_TRACK_IMAGES: Readonly<Record<string, string>> = {
+  "portfolio-curation": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp",
+  "team-recruiting": "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp",
+  "contest-pitch": "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
+};
+
 export function ShowcasePage() {
   const bt = useBilingual("ShowcasePage");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,7 +52,7 @@ export function ShowcasePage() {
               PORTFOLIO · RECRUITING · CONTEST
             </p>
             <h2 className="text-sm font-bold text-fg">
-              {bt("노트폴리오 · 픽시브 · 라우드소싱 방식 크리에이터 쇼케이스 & 협업 허브", "Creator Portfolio, Team Matching & Pitch Hub")}
+              {bt("아트워크 전시 · 분업 팀 매칭 · 신작 피칭 통합 허브", "Creator Portfolio, Team Matching & Pitch Hub")}
             </h2>
           </div>
           <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
@@ -60,6 +66,11 @@ export function ShowcasePage() {
               className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/80 p-3.5 transition-colors hover:border-accent/50"
             >
               <div>
+                <span
+                  aria-hidden="true"
+                  className="mb-3 block h-24 w-full rounded-lg border border-line/60 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${SHOWCASE_TRACK_IMAGES[track.id] ?? "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp"})` }}
+                />
                 <span className="inline-block rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
                   {track.badge}
                 </span>

@@ -102,10 +102,21 @@ const CHOICE_ICON_CLASS =
 export function CreateStartPage() {
   const bt = useBilingual("CreateStartPage");
   const userId = useApp((state) => state.userId);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const language = useI18n((state) => state.lang);
   const locale = studioProjectLibraryLocale(language);
   const recentProjects = useRecentStudioProjects(locale);
+  const activeSection = searchParams.get("section") ?? "all";
+  const showLanes = activeSection === "all" || activeSection === "lanes";
+  const showPipeline = activeSection === "all" || activeSection === "pipeline";
+  const showContinue = activeSection === "all" || activeSection === "continue";
+
+  const selectSection = (section: "all" | "lanes" | "pipeline" | "continue") => {
+    const next = new URLSearchParams(searchParams);
+    if (section === "all") next.delete("section");
+    else next.set("section", section);
+    setSearchParams(next, { replace: true });
+  };
 
   // 갤러리 보기 조건을 단 옛 /create 공유 주소는 같은 조건의 /showcase로 넘긴다.
   if (GALLERY_VIEW_PARAM_KEYS.some((key) => searchParams.has(key))) {
@@ -134,19 +145,46 @@ export function CreateStartPage() {
   return (
     <Container size="wide" className="py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/create" className="mb-5" />
-      <header className="max-w-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
-          {bt("시작하기", "Start")}
-        </p>
-        <h1 className="mt-2 text-3xl font-black leading-tight text-fg sm:text-4xl">
-          {bt("작품 시작하기", "Start a work")}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
-          {bt(
-            "무엇을 먼저 할지만 고르세요 — 이야기부터, 콘티부터, 빈 캔버스, 템플릿에서, 가져오기. 하던 작품은 아래 이어가기에서 바로 열 수 있어요.",
-            "Just choose what comes first — the story, boards, a blank canvas, a template, or an import. Works in progress wait below.",
-          )}
-        </p>
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
+            {bt("시작하기", "Start")}
+          </p>
+          <h1 className="mt-2 text-3xl font-black leading-tight text-fg sm:text-4xl">
+            {bt("작품 시작하기", "Start a work")}
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
+            {bt(
+              "무엇을 먼저 할지만 고르세요 — 이야기부터, 콘티부터, 빈 캔버스, 템플릿에서, 가져오기. 하던 작품은 아래 이어가기에서 바로 열 수 있어요.",
+              "Just choose what comes first — the story, boards, a blank canvas, a template, or an import. Works in progress wait below.",
+            )}
+          </p>
+        </div>
+        <div role="group" aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")} className="flex flex-wrap gap-1.5">
+          {([
+            ["all", "전체 보기", "All views"],
+            ["lanes", "5대 시작 레인", "5 Start Lanes"],
+            ["pipeline", "스토리 · AI 보조", "Story & AI Assist"],
+            ["continue", "이어서 작업", "Continue Work"],
+          ] as const).map(([id, ko, en]) => {
+            const active = activeSection === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => selectSection(id)}
+                className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors ${
+                  active
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
+                }`}
+              >
+                {bt(ko, en)}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       <section
@@ -210,6 +248,7 @@ export function CreateStartPage() {
         </div>
       </section>
 
+      {showPipeline ? (
       <section
         aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
         data-testid="create-rea-story-pipeline"
@@ -218,15 +257,18 @@ export function CreateStartPage() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
-              MUNPIA · MANTA · CLIP STUDIO PIPELINE
+              TOONSTUDIO SMART CREATION PIPELINE
             </p>
             <h2 className="text-sm font-bold text-fg">
               {bt("원작 세계관 · 웹소설 대본 → 콘티 · 3D 블로킹 · 연재 4단계 파이프라인", "Worldbuilding & Novel Script to Storyboard, 3D Blocking & Serial Launch")}
             </h2>
           </div>
-          <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
-            {bt("문피아 · 만타 · 클립스튜디오 제작 동선 내재화", "Munpia · Manta · CSP Workflow")}
-          </span>
+          <Link
+            href="/studio/ai-lab"
+            className="rounded-full border border-accent/40 bg-accent-soft px-3 py-1 text-[11px] font-bold text-accent hover:border-accent"
+          >
+            {bt("✦ 스마트 AI 창작 보조 허브 열기 →", "✦ Open Smart AI Assist Hub →")}
+          </Link>
         </div>
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => (
@@ -249,9 +291,11 @@ export function CreateStartPage() {
           ))}
         </div>
       </section>
+      ) : null}
 
       <NanoBananaSurfaceSpotlight cardId="nb-create-canvas" compact className="mt-6" />
 
+      {showPipeline ? (
       <section
         aria-labelledby="create-start-my-story-title"
         className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:p-6"
@@ -295,9 +339,16 @@ export function CreateStartPage() {
           ))}
         </ul>
       </section>
+      ) : null}
 
+      {showLanes ? (
       <StaggerReveal className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
         <Link href="/studio/new?lane=idea&start=idea" className={CHOICE_CARD_CLASS}>
+          <span
+            aria-hidden="true"
+            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp)" }}
+          />
           <span className={CHOICE_ICON_CLASS}>
             <BookOpen size={22} aria-hidden />
           </span>
@@ -317,6 +368,11 @@ export function CreateStartPage() {
         </Link>
 
         <Link href="/studio/new?lane=storyboard&start=storyboard" className={CHOICE_CARD_CLASS}>
+          <span
+            aria-hidden="true"
+            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-640.webp)" }}
+          />
           <span className={CHOICE_ICON_CLASS}>
             <Clapperboard size={22} aria-hidden />
           </span>
@@ -336,6 +392,11 @@ export function CreateStartPage() {
         </Link>
 
         <Link href="/studio/new?lane=blank" className={CHOICE_CARD_CLASS}>
+          <span
+            aria-hidden="true"
+            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp)" }}
+          />
           <span className={CHOICE_ICON_CLASS}>
             <Plus size={22} aria-hidden />
           </span>
@@ -355,6 +416,11 @@ export function CreateStartPage() {
         </Link>
 
         <Link href="/studio/templates" className={CHOICE_CARD_CLASS}>
+          <span
+            aria-hidden="true"
+            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-market-atelier-640.webp)" }}
+          />
           <span className={CHOICE_ICON_CLASS}>
             <LayoutTemplate size={22} aria-hidden />
           </span>
@@ -374,6 +440,11 @@ export function CreateStartPage() {
         </Link>
 
         <Link href="/studio/import" className={CHOICE_CARD_CLASS}>
+          <span
+            aria-hidden="true"
+            className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
+            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp)" }}
+          />
           <span className={CHOICE_ICON_CLASS}>
             <Upload size={22} aria-hidden />
           </span>
@@ -392,7 +463,9 @@ export function CreateStartPage() {
           </span>
         </Link>
       </StaggerReveal>
+      ) : null}
 
+      {showContinue ? (
       <section aria-labelledby="create-start-continue-title" className="mt-8 rounded-2xl border border-line bg-panel/40 p-5 sm:p-6">
         <span className={CHOICE_ICON_CLASS}>
           <Clock3 size={22} aria-hidden />
@@ -468,6 +541,7 @@ export function CreateStartPage() {
               )}
         </p>
       </section>
+      ) : null}
 
       <section
         aria-labelledby="create-start-browse-title"

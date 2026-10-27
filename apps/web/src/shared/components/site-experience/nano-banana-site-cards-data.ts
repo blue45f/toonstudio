@@ -617,7 +617,7 @@ export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBanan
         label: { ko: "맞춤 환경설정", en: "Workspace Settings" },
         headline: { ko: "테마·글자 크기·모션 감도와 역할별 기본 작업 화면을 내 스타일에 맞게 조정하세요", en: "Customize theme, text scale, motion sensitivity, and role-based workspace defaults" },
         detail: { ko: "독자 중심·창작자 중심 렌즈 전환과 접근성 옵션을 언제든 손쉽게 바꿀 수 있습니다.", en: "Switch between reader and creator lenses or fine-tune accessibility preferences anytime." },
-        promptSeed: { ko: "AI 보조: 자동 무료 AI와 내 외부 API 키(BYOK)의 기능별 호출 우선순위 및 작업실 테마를 최적화합니다", en: "AI Assist: Optimizes automatic free AI and optional BYOK key routing alongside workspace themes" },
+        promptSeed: { ko: "AI 보조: 기본 제공 AI와 내 외부 API 키(BYOK)의 기능별 호출 우선순위 및 작업실 테마를 최적화합니다", en: "AI Assist: Optimizes built-in AI and optional BYOK key routing alongside workspace themes" },
         ctaLabel: { ko: "환경설정 열기", en: "Open Settings" },
         ctaHref: "/settings",
       },

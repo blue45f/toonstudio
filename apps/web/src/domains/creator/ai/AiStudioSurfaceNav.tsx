@@ -23,6 +23,13 @@ const SURFACE_ICONS: Readonly<Record<AiStudioSurfaceId, LucideIcon>> = {
   settings: SlidersHorizontal,
 };
 
+const SURFACE_PREVIEW_IMAGES: Readonly<Record<AiStudioSurfaceId, string>> = {
+  director: "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
+  generate: "/assets/site-experience/nano-banana-site-v1/cards/nb-spatial-stage-640.webp",
+  runtime: "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
+  settings: "/assets/site-experience/nano-banana-site-v1/cards/nb-manage-vault-640.webp",
+};
+
 const CONDITION_ICONS: Readonly<Record<AiStudioConditionKind, LucideIcon>> = {
   cost: WalletCards,
   key: KeyRound,
@@ -122,6 +129,11 @@ export function AiStudioSurfaceCards({ current }: { readonly current: AiStudioSu
                 here ? "border-accent/60 bg-accent-soft/60" : "border-line bg-card/80",
               )}
             >
+              <span
+                aria-hidden="true"
+                className="mb-3.5 block h-24 w-full rounded-2xl border border-line/60 bg-cover bg-center"
+                style={{ backgroundImage: `url(${SURFACE_PREVIEW_IMAGES[surface.id]})` }}
+              />
               <div className="flex items-start gap-3">
                 <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-accent/30 bg-panel text-accent">
                   <Icon size={19} aria-hidden="true" />

@@ -7,6 +7,7 @@ import {
   Sparkles,
   UsersRound,
 } from "lucide-react";
+import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 
 import { CommunityScopeDirectory } from "./components/community-scope-directory";
@@ -186,10 +187,22 @@ function parseScope(raw: string | undefined): Exclude<FanCafeScopeFilter, "all" 
   return SCOPES.find((scope) => scope === raw) ?? null;
 }
 
+const LEAGUE_TIER_IMAGES: Readonly<Record<string, string>> = {
+  challenge: "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
+  "best-challenge": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp",
+  originals: "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-calendar-640.webp",
+  "creator-101": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
+};
+
 export function CommunityPage() {
   useBilingualI18nRevision();
   const t = useT();
   useDocumentTitle(t(COPY.docTitle));
+  const [sectionView, setSectionView] = useState<"all" | "league" | "feed" | "promote">("all");
+  const showLeague = sectionView === "all" || sectionView === "league";
+  const showFeed = sectionView === "all" || sectionView === "feed";
+  const showPromote = sectionView === "all" || sectionView === "promote";
+
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
       <SiteContextualSubNav pathnameOverride="/community" className="mb-5" />
@@ -222,12 +235,38 @@ export function CommunityPage() {
         }
       />
 
-      <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
-        {t(COPY.tagline)}
-      </p>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
+          {t(COPY.tagline)}
+        </p>
+        <div role="group" aria-label="커뮤니티 구역 보기 전환" className="flex flex-wrap gap-1.5">
+          {([
+            ["all", "전체 보기"],
+            ["league", "승격 리그 · 활동"],
+            ["feed", "대화방 · 통합 피드"],
+            ["promote", "작품 홍보 · 예고편"],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={sectionView === id}
+              onClick={() => setSectionView(id)}
+              className={`min-h-8 rounded-full border px-3 text-xs font-bold transition-colors ${
+                sectionView === id
+                  ? "border-accent bg-accent text-on-accent"
+                  : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <NanoBananaSurfaceSpotlight cardId="nb-community-plaza" compact className="mt-6" />
 
+      {showLeague ? (
+      <>
       <section
         aria-label="오픈 연재 승격 리그 및 창작자 성장 트랙"
         data-testid="community-promotion-league-strip"
@@ -257,6 +296,11 @@ export function CommunityPage() {
               className="flex flex-col justify-between gap-2 rounded-2xl border border-line bg-panel/65 p-3.5 transition-colors hover:border-accent/45"
             >
               <div>
+                <span
+                  aria-hidden="true"
+                  className="mb-2.5 block h-20 w-full rounded-xl border border-line/60 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp"})` }}
+                />
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
                   <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
@@ -279,7 +323,11 @@ export function CommunityPage() {
       </section>
 
       <CommunityActivityPreview />
+      </>
+      ) : null}
 
+      {showFeed ? (
+      <>
       <Section
         className="mt-10 sm:mt-12"
         eyebrow={t(COPY.directoriesEyebrow)}
@@ -362,7 +410,10 @@ export function CommunityPage() {
       <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
         <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
       </section>
+      </>
+      ) : null}
 
+      {showPromote ? (
       <Section
         className="mt-12 sm:mt-14"
         eyebrow={t(COPY.promoteEyebrow)}
@@ -400,6 +451,7 @@ export function CommunityPage() {
           />
         </div>
       </Section>
+      ) : null}
     </Container>
   );
 }

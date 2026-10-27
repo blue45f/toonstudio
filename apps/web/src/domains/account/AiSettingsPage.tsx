@@ -9,6 +9,7 @@ import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 export function AiSettingsPage() {
@@ -46,6 +47,7 @@ export function AiSettingsPage() {
         }
         asideClassName="hidden lg:block"
       />
+      <NanoBananaSurfaceSpotlight cardId="nb-manage-vault" defaultLensId="curation" compact className="mb-6" />
       <Suspense
         fallback={
           <LoadingState

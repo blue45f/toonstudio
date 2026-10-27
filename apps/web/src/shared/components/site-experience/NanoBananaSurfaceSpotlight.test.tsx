@@ -52,6 +52,11 @@ describe("NanoBananaSurfaceSpotlight", () => {
     const stepCards = container.querySelectorAll(".nb-site-spotlight__step-card");
     expect(stepCards).toHaveLength(3);
 
+    // In-Service Smart AI Assist bar is rendered and updates with the active lens
+    const aiAssist = container.querySelector(".nb-site-spotlight__ai-assist");
+    expect(aiAssist?.textContent).toContain("✦ 스마트 AI 보조");
+    expect(aiAssist?.textContent).toContain("AI 보조:");
+
     // Switch to 3rd lens and verify both the hero illustration and CTA update
     fireEvent.click(recipeBtn);
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("true");

@@ -2,6 +2,7 @@ import { Box, Download, FileVideo, History, ImageIcon, LoaderCircle, Play, Plus,
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Container } from "@/shared/components/section";
+import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -169,6 +170,8 @@ export function StudioGenerativePage() {
           title={bt("캐릭터에서, 움직이는 이야기로", "From characters to moving stories")}
           lede={bt("원본은 그대로 두고 영상·3D·2D 결과를 별도 파일로 만들어요. 준비되지 않은 기능은 가짜 결과 대신 이유와 대안을 먼저 보여 드려요.", "Your original stays untouched while video, 3D and 2D results are saved as separate files. Anything not ready shows the reason and an alternative instead of a fake result.")}
         />
+
+        <NanoBananaSurfaceSpotlight cardId="nb-spatial-stage" defaultLensId="workflow" compact />
 
         <GenerativeModePicker selected={kind} readinessOf={readinessOf} disabled={inference.busy || active} onSelect={chooseMode} />
 

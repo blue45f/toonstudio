@@ -219,7 +219,16 @@ export type ClaudeCreatorTaskId =
   | "localize:supercar-door-f1-halo-yacht-jet-lock"
   | "localize:deep-sea-submersible-spacesuit-cryopod-lock"
   | "localize:volcano-lava-glacier-crevasse-desert-director"
-  | "localize:aircraft-carrier-catapult-bunker-bsl4-director";
+  | "localize:aircraft-carrier-catapult-bunker-bsl4-director"
+  // 21. Wave 51~53 AncientMythology/KoreanMilitary/SteampunkAirship/FloatingIslandDragon/KoreanMarketBbq/KoreanWeddingHwatu/Autonomous7StagePipeline/Supreme1020Meta AI Engines (8 — Total 172 Tasks)
+  | "art-director:ancient-mythology-trireme-khopesh-rune-lock"
+  | "art-director:korean-military-beret-k2-rifle-dogtag-lock"
+  | "art-director:steampunk-airship-automaton-diving-plague-lock"
+  | "art-director:floating-island-world-tree-dragon-mimic-lock"
+  | "art-director:korean-market-bunsik-bbq-jjimjilbang-lock"
+  | "art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock"
+  | "art-director:autonomous-7stage-pipeline-dna-hash-psd-director"
+  | "art-director:toonstudio-1020-platform-supreme-meta-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -649,6 +658,16 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "localize:deep-sea-submersible-spacesuit-cryopod-lock": defineRoute("localize:deep-sea-submersible-spacesuit-cryopod-lock", "심해 잠수정 반구형 아크릴창/생물발광·우주정거장 7면 큐폴라/EVA 금도금 바이저·동면 포드 성에/체렌코프 광 디렉터", "core-dialog", "creative-production", "심해 잠수정 관측창·ISS 큐폴라/EVA 우주복·동면 캡슐 성에·체렌코프 청색광은 Sonnet 5.5 적용", 4_096),
   "localize:volcano-lava-glacier-crevasse-desert-director": defineRoute("localize:volcano-lava-glacier-crevasse-desert-director", "화산 용암 냉각 흑각/백열 균열·빙하 크레바스 청색 산란광/피켈 제동·사막 사구 34도 안식각/쇄빙선 총괄 감독", "core-dialog", "deep-architecture", "화산 용암 흑체복사·빙하 크레바스 다중산란·사막 사구 경사각·쇄빙선 물리는 Opus 5.5 심층 추론 적용", 6_144),
   "localize:aircraft-carrier-catapult-bunker-bsl4-director": defineRoute("localize:aircraft-carrier-catapult-bunker-bsl4-director", "항공모함 캐터펄트/어레스팅 와이어·수송기 강하 신호등·지하 벙커 방폭문 핸드휠·BSL-4 양압복/냉각탑 총괄 감독", "core-dialog", "deep-architecture", "항모 이착함 장치·수송기 정적줄·방공호 방폭문 기구학·BSL-4 양압복 감리는 Opus 5.5 심층 추론 적용", 6_144),
+
+  // 21. Wave 51~53 AncientMythology/KoreanMilitary/SteampunkAirship/FloatingIslandDragon/KoreanMarketBbq/KoreanWeddingHwatu/Autonomous7StagePipeline/Supreme1020Meta AI Engines (8)
+  "art-director:ancient-mythology-trireme-khopesh-rune-lock": defineRoute("art-director:ancient-mythology-trireme-khopesh-rune-lock", "그리스 삼단노선/코린트 주두·바이킹 롱쉽/룬 문자·이집트 코페시(외측 날)/우레우스·아즈텍 마쿠아후이틀 고정기", "core-dialog", "fast-inline", "고대 신화 선박·주두 양식·코페시 외측 날·룬 문자/히에로글리프 고증은 Haiku 5.5로 즉각 검증", 2_560),
+  "art-director:korean-military-beret-k2-rifle-dogtag-lock": defineRoute("art-director:korean-military-beret-k2-rifle-dogtag-lock", "한국 육군 베레모 모표(왼눈 위)/우측 풀림·군번줄 2개(긴줄+짧은줄)·K2 소총 좌측 조정간/우측 장전손잡이 고정기", "core-dialog", "fast-inline", "한국군 베레모 기울기·군번줄 2매 구조·K2 소총 좌우 부품 반전 차단은 Haiku 5.5 적용", 2_560),
+  "art-director:steampunk-airship-automaton-diving-plague-lock": defineRoute("art-director:steampunk-airship-automaton-diving-plague-lock", "스팀펑크 비행선 하부 곤돌라·부르동 압력계/보일러 수위관·태엽 오토마타·12볼트 구리 잠수모·흑사병 부리 마스크 디렉터", "core-dialog", "creative-production", "스팀펑크 비행선/압력계·태엽 오토마타·고전 잠수복·흑사병 의사 복식 고증은 Sonnet 5.5 적용", 4_096),
+  "art-director:floating-island-world-tree-dragon-mimic-lock": defineRoute("art-director:floating-island-world-tree-dragon-mimic-lock", "부유섬 역원추 암반/폭포·세계수 판근/발광 잎맥·드래곤 레어 금화 34도 안식각·미믹 사슬 방향(앞쪽=미믹)·골렘 디렉터", "core-dialog", "creative-production", "부유섬 하부 지형·세계수 판근·드래곤 금화 산·미믹 사슬 식별법·골렘 관절은 Sonnet 5.5 적용", 4_096),
+  "art-director:korean-market-bunsik-bbq-jjimjilbang-lock": defineRoute("art-director:korean-market-bunsik-bbq-jjimjilbang-lock", "전통시장 빨간 다라이/접시저울·분식집 사각 철판·고깃집 자바라 동파이프 후드·찜질방 양머리/식혜·코인세탁소 디렉터", "core-dialog", "creative-production", "한국 전통시장/분식집/고깃집 후드/찜질방 양머리/코인세탁소 생활 소품 고증은 Sonnet 5.5 적용", 4_096),
+  "art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock": defineRoute("art-director:korean-wedding-paebaek-jesa-hwatu-transit-lock", "전통 폐백 연지곤지/돌잡이·제사상 홍동백서/어동육서·화투 12월 패(5광/고도리)·지하철 우측 개찰구 태그/KTX 디렉터", "core-dialog", "creative-production", "폐백/제사상 진설 방위·화투 12월 화초/광·지하철 우측 단말기/KTX 좌석 고증은 Sonnet 5.5 적용", 4_096),
+  "art-director:autonomous-7stage-pipeline-dna-hash-psd-director": defineRoute("art-director:autonomous-7stage-pipeline-dna-hash-psd-director", "7단 자율 에이전트 파이프라인·100화 캐릭터 DNA 해시 원장·인접 컷 3D 카메라 프러스텀·시맨틱 5그룹 PSD 총괄 감독", "core-dialog", "deep-architecture", "웹툰 7단 자율 파이프라인·100화 캐릭터 DNA 원장·카메라 프러스텀·Trapped-Ball 밑색 분리는 Opus 5.5 심층 추론 적용", 6_144),
+  "art-director:toonstudio-1020-platform-supreme-meta-director": defineRoute("art-director:toonstudio-1020-platform-supreme-meta-director", "1,020대 글로벌 웹툰 AI 플랫폼 UI/UX 메타 오케스트레이터·12개국 동시연재 용어집·주파수 워터마크·쇼츠 PV 총괄 감독", "core-dialog", "deep-architecture", "1,020대 플랫폼 UI/UX 통합·12개국 용어집·비가시 워터마크·9:16 쇼츠 PV 설계는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {
