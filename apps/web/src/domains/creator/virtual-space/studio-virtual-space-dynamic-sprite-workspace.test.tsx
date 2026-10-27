@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualSpaceCollaborationHub } from "./StudioVirtualSpaceCollaborationHub";
+import { StudioVirtualSpaceWorkstationLiveModal } from "./StudioVirtualSpaceWorkstationLiveModal";
+import { NANO_BANANA_2D_WORKSTATIONS } from "./studio-virtual-space-nano-banana-2d-runtime";
 import {
   DYNAMIC_CREATOR_SPRITE_CAST,
   DYNAMIC_SPRITE_ACTIONS,
@@ -151,14 +153,29 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     );
   });
 
-  it("integrates into StudioVirtualSpaceCollaborationHub via the dynamic-sprite-workspace tab", () => {
+  it("integrates into StudioVirtualSpaceCollaborationHub via the dynamic-sprite-workspace tab and renders StudioVirtualSpaceWorkstationLiveModal", () => {
+    cleanup();
     render(<StudioVirtualSpaceCollaborationHub />);
     const tabBtn = screen.getByRole("tab", {
       name: /소두 다중프레임 스프라이트·VFX·협업/,
     });
     fireEvent.click(tabBtn);
     expect(
-      screen.getByTestId("studio-virtual-dynamic-sprite-workspace"),
-    ).toBeTruthy();
+      screen.getAllByTestId("studio-virtual-dynamic-sprite-workspace").length,
+    ).toBeGreaterThanOrEqual(1);
+
+    cleanup();
+    render(
+      <StudioVirtualSpaceWorkstationLiveModal
+        station={NANO_BANANA_2D_WORKSTATIONS[0]}
+        onClose={() => undefined}
+        onSelectStation={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId("workstation-live-collab-modal")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("workstation-tab-kanban"));
+    fireEvent.click(screen.getByTestId("kanban-advance-cut-18-btn"));
+    fireEvent.click(screen.getByTestId("workstation-tab-turntable-sfx"));
+    fireEvent.click(screen.getByTestId("sfx-pad-boom-btn"));
   });
 });

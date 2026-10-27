@@ -7,6 +7,7 @@ import { StudioVirtualDynamicSpriteAvatar } from "./StudioVirtualDynamicSpriteAv
 import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualOfficeNextGenEnginePanel } from "./StudioVirtualOfficeNextGenEnginePanel";
 import { StudioVirtualOfficeSpatialCanvasHud } from "./StudioVirtualOfficeSpatialCanvasHud";
+import { StudioVirtualSpaceWorkstationLiveModal } from "./StudioVirtualSpaceWorkstationLiveModal";
 import { getDynamicCreatorPersonaSpec } from "./studio-virtual-space-dynamic-sprite-engine";
 import {
   NANO_BANANA_V11_CREATOR_PERSONAS,
@@ -23,9 +24,13 @@ import {
 } from "./studio-virtual-space-engine-bridge";
 import {
   NANO_BANANA_2D_WORKSTATIONS,
+  NANO_BANANA_V15_ACTION_SPRITES,
+  subscribeNanoBananaWorkstationModal,
   triggerNanoBanana2dEmote,
+  triggerNanoBanana2dVfxBurst,
   triggerNanoBanana2dWalkPreview,
   updateNanoBanana2dRuntimeState,
+  type NanoBananaV15ActionId,
 } from "./studio-virtual-space-nano-banana-2d-runtime";
 import { writeStudioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
 
@@ -408,6 +413,8 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
     readNanoBananaPersistedSelection,
   );
   const [workbenchOpen, setWorkbenchOpen] = useState(false);
+  const [workstationModalOpen, setWorkstationModalOpen] = useState(false);
+  const [activeV15Action, setActiveV15Action] = useState<NanoBananaV15ActionId>("stride-draw");
   const [activeWorkstationId, setActiveWorkstationId] = useState<string>(
     NANO_BANANA_2D_WORKSTATIONS[0]?.id ?? "nb-plaza-cintiq-pod",
   );
@@ -419,6 +426,17 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
       personaId: selection.personaId,
     });
   }, [selection.personaId, selection.themeId]);
+
+  useEffect(() => {
+    return subscribeNanoBananaWorkstationModal((stationId) => {
+      setActiveWorkstationId(stationId);
+      setWorkstationModalOpen(true);
+    });
+  }, []);
+
+  const activeStation =
+    NANO_BANANA_2D_WORKSTATIONS.find((s) => s.id === activeWorkstationId) ??
+    NANO_BANANA_2D_WORKSTATIONS[0];
 
   const activeTheme =
     NANO_BANANA_V11_STUDIO_THEMES.find((t) => t.id === selection.themeId) ??
@@ -490,6 +508,12 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
     if (!station) return;
     setActiveWorkstationId(station.id);
     requestStudioActiveBridgeTeleport(station.spawnPoint);
+    triggerNanoBanana2dVfxBurst(`${station.titleKo} 이동! ✨`, station.accentColor);
+  };
+
+  const triggerSleekActionVfx = (actionId: NanoBananaV15ActionId, label: string, color: number) => {
+    setActiveV15Action(actionId);
+    triggerNanoBanana2dVfxBurst(label, color, actionId);
   };
 
   return (
@@ -497,7 +521,7 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
       <div
         data-testid="main-stage-nano-banana-hud"
         data-space-interactive="true"
-        className="pointer-events-auto absolute right-3 top-[17.25rem] z-10 flex w-[min(27.5rem,calc(100vw-1.5rem))] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
+        className="pointer-events-auto absolute right-3 top-[17.25rem] z-10 flex w-[min(28.5rem,calc(100vw-1.5rem))] flex-col gap-1.5 rounded-2xl border border-accent bg-panel/95 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur-md"
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -507,9 +531,9 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
               className="h-8 w-11 shrink-0 rounded-lg border border-line object-cover"
             />
             <img
-              src={activePersona.workSpriteUrl}
+              src={NANO_BANANA_V15_ACTION_SPRITES[activeV15Action]}
               alt={activePersona.nameKo}
-              className="h-8 w-8 shrink-0 rounded-lg border border-line bg-card object-contain p-0.5"
+              className="h-8 w-8 shrink-0 rounded-lg border border-accent bg-card object-contain p-0.5"
             />
             <img
               src={activeWalk.spriteUrl}
@@ -522,22 +546,30 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
                 <span className="truncate">{activeTheme.titleKo}</span>
               </span>
               <span className="truncate text-[10px] text-fg-2">
-                {activePersona.nameKo.split(" (")[0]} · 보행 {selection.walkDirection.toUpperCase()} · {activeEmote.labelKo}
+                {activePersona.nameKo.split(" (")[0]} · 소두 다중프레임(v15) · 보행 {selection.walkDirection.toUpperCase()}
               </span>
             </div>
           </div>
 
-          <button
-            type="button"
-            data-testid="main-stage-open-nano-banana-workbench-btn"
-            onClick={() => setWorkbenchOpen((prev) => !prev)}
-            className="flex shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent-soft px-2.5 py-1.5 text-[11px] font-bold text-accent shadow-sm transition hover:opacity-95"
-          >
-            <Layers className="h-3.5 w-3.5" />
-            {workbenchOpen
-              ? "워크벤치 닫기"
-              : "✦ 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 열기"}
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              data-testid="main-stage-open-workstation-modal-btn"
+              onClick={() => setWorkstationModalOpen((prev) => !prev)}
+              className="flex shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent px-2.5 py-1.5 text-[11px] font-bold text-on-accent shadow-sm transition hover:opacity-95"
+            >
+              ⚡ 실무 협업창
+            </button>
+            <button
+              type="button"
+              data-testid="main-stage-open-nano-banana-workbench-btn"
+              onClick={() => setWorkbenchOpen((prev) => !prev)}
+              className="flex shrink-0 items-center gap-1 rounded-xl border border-accent bg-accent-soft px-2 py-1.5 text-[11px] font-bold text-accent shadow-sm transition hover:opacity-95"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              {workbenchOpen ? "워크벤치 닫기" : "✦ 스마트 AI 2.5D 스튜디오 & 실무 워크벤치 열기"}
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
@@ -577,11 +609,40 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
           </button>
         </div>
 
-        {/* 2D 월드 내 2.5D 웹툰 워크스테이션 즉시 이동 바 */}
-        <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap border-t border-line/70 pt-1.5 [scrollbar-width:none]">
+        {/* v15 슬림 5.5등신 다중 표정·액션 & 2D 특수효과(VFX) 즉시 발동 바 */}
+        <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap border-t border-line/70 pt-1 [scrollbar-width:none]">
+          <span className="mr-1 shrink-0 text-[10px] font-bold text-accent">✦ 표정·VFX:</span>
+          {(
+            [
+              ["stride-draw", "😄 스케치보행", 0x38bdf8],
+              ["action-slash", "😉 펜슬래시⚡", 0xfbbf24],
+              ["focus-overdrive", "🔥 초집중각성", 0xa855f7],
+              ["cheer-coffee", "☕ 라떼치어스", 0x34d399],
+              ["pd-approve", "✅ PD승인도장", 0x60a5fa],
+              ["colorist-magic", "🌈 컬러마법", 0xf472b6],
+            ] as const
+          ).map(([actId, label, color]) => (
+            <button
+              key={actId}
+              type="button"
+              data-testid={`main-stage-v15-action-${actId}-btn`}
+              onClick={() => triggerSleekActionVfx(actId, `${label} 발동!`, color)}
+              className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold transition ${
+                activeV15Action === actId
+                  ? "border-accent bg-accent-soft font-bold text-accent"
+                  : "border-line bg-card text-fg-2 hover:border-accent hover:text-fg"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* 2D 월드 내 2.5D 웹툰 워크스테이션 즉시 이동 & 협업 오픈 바 */}
+        <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap border-t border-line/70 pt-1 [scrollbar-width:none]">
           <span className="mr-1 flex shrink-0 items-center gap-1 text-[10px] font-bold text-accent">
             <MapPin className="h-3 w-3" />
-            2D 워크스테이션 이동:
+            2D 워크스테이션:
           </span>
           {NANO_BANANA_2D_WORKSTATIONS.slice(0, 8).map((station) => (
             <button
@@ -600,6 +661,16 @@ export function StudioVirtualSpaceNanoBananaStageHud() {
           ))}
         </div>
       </div>
+
+      {workstationModalOpen && activeStation ? (
+        <StudioVirtualSpaceWorkstationLiveModal
+          station={activeStation}
+          onClose={() => setWorkstationModalOpen(false)}
+          onSelectStation={(nextId) => {
+            teleportToWorkstation(nextId);
+          }}
+        />
+      ) : null}
 
       {workbenchOpen ? (
         <div
