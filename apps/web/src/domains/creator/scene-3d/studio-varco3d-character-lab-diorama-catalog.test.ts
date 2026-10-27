@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -5,6 +7,7 @@ import {
   STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS,
   STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS,
   STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_VARCO3D_LOCAL_GLB_ASSETS,
   STUDIO_VARCO3D_RETARGETED_MOTION_TASKS,
   STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES,
   STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
@@ -13,6 +16,7 @@ import {
   findVarco3dTurnaroundForReferenceImage,
   mapVarco3dDioramaToBg3dTemplateId,
   resolveVarco3dArchetypeMannequinApplication,
+  resolveVarco3dLocalGlbAsset,
   resolveVarco3dTurnaroundViewUrl,
 } from "./studio-varco3d-character-lab-diorama-catalog";
 
@@ -132,5 +136,21 @@ describe("studio-varco3d-character-lab-diorama-catalog", () => {
     expect(applied.archetype.id).toBe("char_inkwash_wandering_swordsman_rigged");
     expect(applied.posePresetId).toBe("running");
     expect(applied.mannequinSliders.heightCm).toBeGreaterThan(165);
+  });
+
+  it("verifies all 26 downloaded and optimized VARCO 3D .glb files exist in public/models/varco3d with valid glTF magic headers", () => {
+    expect(STUDIO_VARCO3D_LOCAL_GLB_ASSETS).toHaveLength(26);
+    const publicDir = path.resolve(__dirname, "../../../../public");
+    for (const asset of STUDIO_VARCO3D_LOCAL_GLB_ASSETS) {
+      const filePath = path.join(publicDir, asset.publicUrl);
+      expect(fs.existsSync(filePath)).toBe(true);
+      const buf = fs.readFileSync(filePath);
+      expect(buf.subarray(0, 4).toString("utf8")).toBe("glTF");
+    }
+    expect(
+      resolveVarco3dLocalGlbAsset(
+        "6df9274b69f28be22edcb31cccf53d6a7115eb6ddaaa12223b5bd462826c0c9e",
+      ).id,
+    ).toBe("varco_char_student_council_rigged");
   });
 });

@@ -705,3 +705,59 @@ export function resolveVarco3dArchetypeMannequinApplication(input: {
     },
   };
 }
+
+export interface StudioVarco3dLocalGlbAsset {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly publicUrl: `/models/varco3d/${string}.glb`;
+  readonly source: "3d.varco.ai/api/models" | "varco3d-worldbuild";
+  readonly modelId: string;
+  readonly category:
+    | "character_pipeline"
+    | "character_featured"
+    | "character_shaper"
+    | "diorama"
+    | "prop"
+    | "worldbuild_diorama"
+    | "showcase";
+  readonly stage: string;
+}
+
+export const STUDIO_VARCO3D_LOCAL_GLB_ASSETS: readonly StudioVarco3dLocalGlbAsset[] = [
+  { id: "varco_char_student_council_coarse", labelKo: "학원물 학생회장 (Coarse 메쉬)", publicUrl: "/models/varco3d/varco_char_student_council_coarse.glb", source: "3d.varco.ai/api/models", modelId: "462f9a1fbc40957845144b044459b1f2c5d9888a7a47eaa80ae41f8a1f202e4b", category: "character_pipeline", stage: "coarse" },
+  { id: "varco_char_student_council_remesh_quad", labelKo: "학원물 학생회장 (Quad 리메쉬)", publicUrl: "/models/varco3d/varco_char_student_council_remesh_quad.glb", source: "3d.varco.ai/api/models", modelId: "502e0f6ca423eea9bd03458c81016396ed8d276dbef077308103143a85f3651c", category: "character_pipeline", stage: "remesh_quad" },
+  { id: "varco_char_student_council_remesh_tri", labelKo: "학원물 학생회장 (Tri 리메쉬)", publicUrl: "/models/varco3d/varco_char_student_council_remesh_tri.glb", source: "3d.varco.ai/api/models", modelId: "3da8b9c8310ff93db24635ed7826f86ee4542c912f3b7c1fb5caeec1d35b29d0", category: "character_pipeline", stage: "remesh_tri" },
+  { id: "varco_char_student_council_highpoly", labelKo: "학원물 학생회장 (HighPoly)", publicUrl: "/models/varco3d/varco_char_student_council_highpoly.glb", source: "3d.varco.ai/api/models", modelId: "ece362870eecb83390d1d84022f0d28bb5ccf796fb3b367c5d62d6376a3d6212", category: "character_pipeline", stage: "highpoly" },
+  { id: "varco_char_student_council_pbr", labelKo: "학원물 학생회장 (4K PBR 텍스처)", publicUrl: "/models/varco3d/varco_char_student_council_pbr.glb", source: "3d.varco.ai/api/models", modelId: "b583069f434b589a491857c45ca5b76f32d2eb99e5aee3bf0bfc86e784df959d", category: "character_pipeline", stage: "pbr_textured" },
+  { id: "varco_char_student_council_rigged", labelKo: "학원물 학생회장 (mixamo52 AI 리깅)", publicUrl: "/models/varco3d/varco_char_student_council_rigged.glb", source: "3d.varco.ai/api/models", modelId: "6df9274b69f28be22edcb31cccf53d6a7115eb6ddaaa12223b5bd462826c0c9e", category: "character_pipeline", stage: "rigged_mixamo52" },
+  { id: "varco_char_student_council_standing_idle", labelKo: "학원물 학생회장 (Standing Idle 모션)", publicUrl: "/models/varco3d/varco_char_student_council_standing_idle.glb", source: "3d.varco.ai/api/models", modelId: "2ca3bd80793e92c40b8a4943d64f7301b815780cab6a9e2e4a2c2f1fc993f635", category: "character_pipeline", stage: "animated_standing_idle_1" },
+  { id: "varco_diorama_hallway_remesh_quad", labelKo: "고등학교 복도 디오라마 (Quad 리메쉬)", publicUrl: "/models/varco3d/varco_diorama_hallway_remesh_quad.glb", source: "3d.varco.ai/api/models", modelId: "240d44460015d3733d6033cfd6e479acabd11a73083ce404e61853dc1d5fae65", category: "diorama", stage: "remesh_quad" },
+  { id: "varco_prop_school_desk_remesh_quad", labelKo: "교실 책걸상 프롭 (Quad 리메쉬)", publicUrl: "/models/varco3d/varco_prop_school_desk_remesh_quad.glb", source: "3d.varco.ai/api/models", modelId: "037e45ce67daa757286a9ea5a4cfb75680abc2654995239482c12d96b78c14b9", category: "prop", stage: "remesh_quad" },
+  { id: "varco_featured_character_pbr_a", labelKo: "VARCO 피처드 캐릭터 A (PBR)", publicUrl: "/models/varco3d/varco_featured_character_pbr_a.glb", source: "3d.varco.ai/api/models", modelId: "454118c968415f270ddf25cdadaa449e74c66cb7c1f2472426e4a3e5811a6094", category: "character_featured", stage: "pbr_textured" },
+  { id: "varco_featured_character_pbr_b", labelKo: "VARCO 피처드 캐릭터 B (PBR)", publicUrl: "/models/varco3d/varco_featured_character_pbr_b.glb", source: "3d.varco.ai/api/models", modelId: "43731d1bf6fbbd054df3c887c8a9901737d2cecd41a301baeba6b26154c86409", category: "character_featured", stage: "pbr_textured" },
+  { id: "varco_showcase_mesh_a", labelKo: "VARCO 쇼케이스 메쉬 A", publicUrl: "/models/varco3d/varco_showcase_mesh_a.glb", source: "3d.varco.ai/api/models", modelId: "f9f3ddb72db71d977ebdb1e34058c48b4139ac7f0a5f710f090532ae17ff8d44", category: "showcase", stage: "highpoly" },
+  { id: "varco_showcase_mesh_b", labelKo: "VARCO 쇼케이스 메쉬 B", publicUrl: "/models/varco3d/varco_showcase_mesh_b.glb", source: "3d.varco.ai/api/models", modelId: "0bc4ab20be8941d38bc82d9af5cc9a12a1f3a25da0160c2a4020842452810fb5", category: "showcase", stage: "highpoly" },
+  { id: "varco_showcase_mesh_c", labelKo: "VARCO 쇼케이스 메쉬 C", publicUrl: "/models/varco3d/varco_showcase_mesh_c.glb", source: "3d.varco.ai/api/models", modelId: "b440ca03db8242161ffa308b7deb217a37af9eebb99189672e7d2d0bd38d5092", category: "showcase", stage: "highpoly" },
+  { id: "cafe-espresso-bar", labelKo: "카페 에스프레소 바 월드빌드", publicUrl: "/models/varco3d/cafe-espresso-bar.glb", source: "varco3d-worldbuild", modelId: "cafe-espresso-bar", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "classroom-podium-desk", labelKo: "교실 교탁·칠판 월드빌드", publicUrl: "/models/varco3d/classroom-podium-desk.glb", source: "varco3d-worldbuild", modelId: "classroom-podium-desk", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "cyberpunk-holo-kiosk", labelKo: "사이버펑크 홀로그램 키오스크", publicUrl: "/models/varco3d/cyberpunk-holo-kiosk.glb", source: "varco3d-worldbuild", modelId: "cyberpunk-holo-kiosk", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "hunter-awakening-altar", labelKo: "헌터 각성 제단 월드빌드", publicUrl: "/models/varco3d/hunter-awakening-altar.glb", source: "varco3d-worldbuild", modelId: "hunter-awakening-altar", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "medical-iv-monitor", labelKo: "응급실 바이탈 모니터·폴대", publicUrl: "/models/varco3d/medical-iv-monitor.glb", source: "varco3d-worldbuild", modelId: "medical-iv-monitor", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "murim-sword-rack", labelKo: "무림 연무장 검가대", publicUrl: "/models/varco3d/murim-sword-rack.glb", source: "varco3d-worldbuild", modelId: "murim-sword-rack", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "noir-neon-streetlamp", labelKo: "느와르 뒷골목 네온 가로등", publicUrl: "/models/varco3d/noir-neon-streetlamp.glb", source: "varco3d-worldbuild", modelId: "noir-neon-streetlamp", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "rofan-golden-throne", labelKo: "로판 황금 알현실 왕좌", publicUrl: "/models/varco3d/rofan-golden-throne.glb", source: "varco3d-worldbuild", modelId: "rofan-golden-throne", category: "worldbuild_diorama", stage: "pbr_ready" },
+  { id: "shaper-cyber-visor", labelKo: "캐릭터 셰이퍼: 사이버 바이저", publicUrl: "/models/varco3d/shaper-cyber-visor.glb", source: "varco3d-worldbuild", modelId: "shaper-cyber-visor", category: "character_shaper", stage: "pbr_ready" },
+  { id: "shaper-hunter-mana-gauntlet", labelKo: "캐릭터 셰이퍼: 마나 건틀릿", publicUrl: "/models/varco3d/shaper-hunter-mana-gauntlet.glb", source: "varco3d-worldbuild", modelId: "shaper-hunter-mana-gauntlet", category: "character_shaper", stage: "pbr_ready" },
+  { id: "shaper-murim-jade-sword", labelKo: "캐릭터 셰이퍼: 비취 보검", publicUrl: "/models/varco3d/shaper-murim-jade-sword.glb", source: "varco3d-worldbuild", modelId: "shaper-murim-jade-sword", category: "character_shaper", stage: "pbr_ready" },
+  { id: "shaper-rofan-tiara", labelKo: "캐릭터 셰이퍼: 황실 티아라", publicUrl: "/models/varco3d/shaper-rofan-tiara.glb", source: "varco3d-worldbuild", modelId: "shaper-rofan-tiara", category: "character_shaper", stage: "pbr_ready" },
+] as const;
+
+export function resolveVarco3dLocalGlbAsset(
+  idOrModelId: string,
+): StudioVarco3dLocalGlbAsset {
+  return (
+    STUDIO_VARCO3D_LOCAL_GLB_ASSETS.find(
+      (item) => item.id === idOrModelId || item.modelId === idOrModelId,
+    ) ?? STUDIO_VARCO3D_LOCAL_GLB_ASSETS[5]!
+  );
+}

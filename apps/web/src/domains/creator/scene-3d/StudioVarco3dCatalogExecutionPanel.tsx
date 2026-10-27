@@ -5,12 +5,14 @@ import {
   STUDIO_VARCO3D_CHARACTER_LAB_MODULAR_ITEMS,
   STUDIO_VARCO3D_COMPLETED_TURNAROUND_SHEETS,
   STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_VARCO3D_LOCAL_GLB_ASSETS,
   STUDIO_VARCO3D_RETARGETED_MOTION_TASKS,
   STUDIO_VARCO3D_RIGGED_CHARACTER_ARCHETYPES,
   STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
   composeVarco3dCharacterLabLoadout,
   evaluateVarco3dDioramaScenePlacement,
   resolveVarco3dArchetypeMannequinApplication,
+  resolveVarco3dLocalGlbAsset,
   resolveVarco3dTurnaroundViewUrl,
   type StudioVarco3dMannequinPosePresetId,
   type StudioVarco3dTurnaroundAngle,
@@ -96,6 +98,13 @@ export function StudioVarco3dCatalogExecutionPanel({
   const [selectedPolicyKey, setSelectedPolicyKey] = useState<string>("task:AI_RIG");
   const [selectedZeroPointTaskId, setSelectedZeroPointTaskId] = useState<string>(
     STUDIO_VARCO3D_ZERO_POINT_OPTIMIZATION_TASKS[0]?.taskId ?? "",
+  );
+  const [selectedLocalGlbId, setSelectedLocalGlbId] = useState<string>(
+    STUDIO_VARCO3D_LOCAL_GLB_ASSETS[5]?.id ?? "varco_char_student_council_rigged",
+  );
+  const selectedLocalGlb = useMemo(
+    () => resolveVarco3dLocalGlbAsset(selectedLocalGlbId),
+    [selectedLocalGlbId],
   );
 
   const wigOptions = useMemo(
@@ -661,6 +670,38 @@ export function StudioVarco3dCatalogExecutionPanel({
               <strong>{pointReservationEval.errorCode}</strong> · 가용 워커:{" "}
               <strong>{pointReservationEval.availableParallelSlots}/30</strong>
             </span>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="font-medium text-fg">
+              로컬 번들링 완료 VARCO 3D .glb 에셋 ({STUDIO_VARCO3D_LOCAL_GLB_ASSETS.length}종 · /models/varco3d/)
+            </span>
+            <select
+              aria-label="로컬 번들링 VARCO 3D GLB 에셋 선택"
+              data-testid="varco3d-local-glb-select"
+              value={selectedLocalGlbId}
+              onChange={(e) => setSelectedLocalGlbId(e.target.value)}
+              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] text-fg"
+            >
+              {STUDIO_VARCO3D_LOCAL_GLB_ASSETS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  [{item.category}/{item.stage}] {item.labelKo}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center justify-between gap-2 text-[0.65rem] text-fg-3">
+              <code data-testid="varco3d-local-glb-url-readout" className="truncate">
+                {selectedLocalGlb.publicUrl}
+              </code>
+              <a
+                href={selectedLocalGlb.publicUrl}
+                download
+                data-testid="varco3d-local-glb-download-link"
+                className="shrink-0 rounded border border-accent bg-accent-soft px-1.5 py-0.5 font-semibold text-fg"
+              >
+                GLB 다운로드
+              </a>
+            </div>
           </div>
         </div>
       </details>
