@@ -190,7 +190,7 @@ function parseScope(raw: string | undefined): Exclude<FanCafeScopeFilter, "all" 
 const LEAGUE_TIER_IMAGES: Readonly<Record<string, string>> = {
   challenge: "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
   "best-challenge": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp",
-  originals: "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-calendar-640.webp",
+  originals: "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-constellation-640.webp",
   "creator-101": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
 };
 

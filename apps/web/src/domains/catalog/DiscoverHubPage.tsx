@@ -319,14 +319,14 @@ export function DiscoverHubPage() {
               <img
                 src={
                   activeTrack.id === "originals"
-                    ? "/assets/site-ui-pack/nano-banana-v1/nb-ranking-calendar-640.webp"
+                    ? "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-constellation-640.webp"
                     : activeTrack.id === "canvas"
-                      ? "/assets/site-ui-pack/nano-banana-v1/nb-community-plaza-640.webp"
+                      ? "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp"
                       : activeTrack.id === "wait-free"
-                        ? "/assets/site-ui-pack/nano-banana-v1/nb-library-archive-640.webp"
+                        ? "/assets/site-experience/nano-banana-site-v1/cards/nb-library-archive-640.webp"
                         : activeTrack.id === "cuts-short"
-                          ? "/assets/site-ui-pack/nano-banana-v1/nb-showcase-premiere-640.webp"
-                          : "/assets/site-ui-pack/nano-banana-v1/nb-discover-spotlight-640.webp"
+                          ? "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp"
+                          : "/assets/site-experience/nano-banana-site-v1/cards/nb-discover-spotlight-640.webp"
                 }
                 alt=""
                 aria-hidden="true"

@@ -397,10 +397,16 @@ export async function buildPersonaSeedPayloads(personas = ORGANIC_PERSONA_ACCOUN
     const password = passwordBySlug.get(persona.slug);
     if (!password) throw new Error(`Missing password for persona ${persona.slug}`);
     const passwordHash = await hashPasswordV2(password);
+    const updatedAt =
+      persona.updatedAt ??
+      persona.creatorRoleProfile?.onboarding?.updatedAt ??
+      persona.creatorRoleProfile?.updatedAt ??
+      persona.createdAt;
     payloads.push({
       ...persona,
+      updatedAt,
       passwordHash,
-      regionSettings: { ...DEFAULT_KR_REGION_SETTINGS, updatedAt: persona.creatorRoleProfile.updatedAt },
+      regionSettings: { ...DEFAULT_KR_REGION_SETTINGS, updatedAt },
     });
   }
   return payloads;
@@ -415,39 +421,36 @@ async function ensureWalletWelcomeGrant(client, { userId, asset, amount, reason,
   );
   if (existingLedger.rowCount && existingLedger.rowCount > 0) return false;
 
-  const accountRes = await client.query(
-    `INSERT INTO public.wallet_account (
-      "userId", "asset", "availableBalance", "reservedBalance",
-      "lifetimeGranted", "lifetimePurchased", "lifetimeSpent", "lifetimeExpired", "createdAt", "updatedAt"
-    ) VALUES ($1, $2, $3, 0, $3, 0, 0, 0, $4::timestamptz, $4::timestamptz)
-    ON CONFLICT ("userId", "asset") DO UPDATE SET
-      "availableBalance" = public.wallet_account."availableBalance" + EXCLUDED."availableBalance",
-      "lifetimeGranted" = public.wallet_account."lifetimeGranted" + EXCLUDED."lifetimeGranted",
-      "updatedAt" = EXCLUDED."updatedAt"
-    RETURNING "availableBalance"`,
-    [userId, asset, amount, createdAt],
-  );
-  const balanceAfter = Number(accountRes.rows[0]?.availableBalance ?? amount);
+  const accountId = `wa_${userId}_${asset}`;
+  const lotId = `wl_${userId}_${asset}`;
+  const ledgerId = `wle_${userId}_${asset}`;
 
-  const lotRes = await client.query(
-    `INSERT INTO public.wallet_lot (
-      "userId", "asset", "sourceType", "sourceId", "originalAmount", "remainingAmount",
-      "expiresAt", "metadata", "createdAt", "updatedAt"
-    ) VALUES ($1, $2, 'welcome_grant', $3, $4, $4, NULL, $5::jsonb, $6::timestamptz, $6::timestamptz)
-    RETURNING id`,
-    [userId, asset, idempotencyKey, amount, JSON.stringify({ channel: "onboarding", organicInit: true }), createdAt],
+  const existingAccount = await client.query(
+    `SELECT id FROM public.wallet_account WHERE "userId" = $1 AND "asset" = $2 LIMIT 1`,
+    [userId, asset],
   );
-  const lotId = lotRes.rows[0]?.id ?? null;
+  let resolvedAccountId = accountId;
+  if (existingAccount.rowCount && existingAccount.rows?.[0]?.id) {
+    resolvedAccountId = existingAccount.rows[0].id;
+    await client.query(
+      `UPDATE public.wallet_account SET "availableAmount" = "availableAmount" + $2, "lifetimeGranted" = "lifetimeGranted" + $2, "updatedAt" = $3::timestamptz WHERE id = $1`,
+      [resolvedAccountId, amount, createdAt],
+    );
+  } else {
+    await client.query(
+      `INSERT INTO public.wallet_account (id, "userId", "asset", "availableAmount", "reservedAmount", "lifetimeGranted", "lifetimeSpent", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, 0, $4, 0, $5::timestamptz, $5::timestamptz)`,
+      [resolvedAccountId, userId, asset, amount, createdAt],
+    );
+  }
 
   await client.query(
-    `INSERT INTO public.wallet_ledger_entry (
-      "userId", "asset", "entryType", "delta", "balanceAfter", "lotId",
-      "referenceType", "referenceId", "idempotencyKey", "reason", "actorId", "metadata", "createdAt"
-    ) VALUES ($1, $2, 'grant', $3, $4, $5, 'onboarding', $6, $7, $8, NULL, $9::jsonb, $10::timestamptz)`,
-    [
-      userId, asset, amount, balanceAfter, lotId, `welcome:${userId}`,
-      idempotencyKey, reason, JSON.stringify({ channel: "onboarding" }), createdAt,
-    ],
+    `INSERT INTO public.wallet_lot (id, "accountId", "userId", "asset", "source", "sourceKey", "sourceRef", "grantedAmount", "remainingAmount", "reservedAmount", "spendPriority", "expiresAt", "metadata", "createdAt") VALUES ($1, $2, $3, $4, 'welcome_grant', $5, NULL, $6, $6, 0, 50, NULL, $7::jsonb, $8::timestamptz) ON CONFLICT (id) DO NOTHING`,
+    [lotId, resolvedAccountId, userId, asset, idempotencyKey, amount, JSON.stringify({ channel: "onboarding", organicInit: true }), createdAt],
+  );
+
+  await client.query(
+    `INSERT INTO public.wallet_ledger_entry (id, "accountId", "userId", "lotId", "reservationId", "entryType", "amount", "deltaAvailable", "deltaReserved", "reason", "referenceKey", "idempotencyKey", "metadata", "createdAt") VALUES ($1, $2, $3, $4, NULL, 'grant', $5, $5, 0, $6, $7, $8, $9::jsonb, $10::timestamptz)`,
+    [ledgerId, resolvedAccountId, userId, lotId, amount, reason, `welcome:${userId}`, idempotencyKey, JSON.stringify({ channel: "onboarding" }), createdAt],
   );
   return true;
 }
@@ -476,39 +479,16 @@ export async function seedPersonaAccounts(client, payloads, { dryRun = false } =
       );
 
       let userId = payload.id;
-      if (existingUser.rowCount && existingUser.rowCount > 0) {
+      if (existingUser.rowCount && existingUser.rows?.[0]?.id) {
         userId = existingUser.rows[0].id;
         await client.query(
-          `UPDATE public."user" SET
-             name = $2, email = lower(btrim($3)),
-             "emailVerified" = COALESCE("emailVerified", $4::timestamptz),
-             "passwordHash" = $5, avatar = $6, bio = $7,
-             role = 'user', status = 'active',
-             "suspendedUntil" = NULL, "suspensionReason" = NULL,
-             "deletedAt" = NULL, "mergedIntoUserId" = NULL,
-             "creatorRoleProfile" = $8::jsonb, "regionSettings" = $9::jsonb
-           WHERE id = $1`,
-          [
-            userId, payload.name, payload.email, payload.emailVerified,
-            payload.passwordHash, payload.avatar, payload.bio,
-            JSON.stringify(payload.creatorRoleProfile), JSON.stringify(payload.regionSettings),
-          ],
+          `UPDATE public."user" SET name = $2, email = lower(btrim($3)), "emailVerified" = COALESCE("emailVerified", $4::timestamptz), "passwordHash" = $5, avatar = $6, bio = $7, role = 'user', status = 'active', "suspendedAt" = NULL, "suspensionReason" = NULL, "deletedAt" = NULL, "mergedIntoUserId" = NULL, "creatorRoleProfile" = $8::jsonb, "regionSettings" = $9::jsonb WHERE id = $1`,
+          [userId, payload.name, payload.email, payload.emailVerified, payload.passwordHash, payload.avatar, payload.bio, JSON.stringify(payload.creatorRoleProfile), JSON.stringify(payload.regionSettings)],
         );
       } else {
         await client.query(
-          `INSERT INTO public."user" (
-            id, name, email, "emailVerified", "passwordHash", avatar, bio,
-            role, status, "sessionVersion", "creatorRoleProfile", "regionSettings", "createdAt"
-          ) VALUES (
-            $1, $2, lower(btrim($3)), $4::timestamptz, $5, $6, $7,
-            'user', 'active', 1, $8::jsonb, $9::jsonb, $10::timestamptz
-          )`,
-          [
-            userId, payload.name, payload.email, payload.emailVerified,
-            payload.passwordHash, payload.avatar, payload.bio,
-            JSON.stringify(payload.creatorRoleProfile), JSON.stringify(payload.regionSettings),
-            payload.createdAt,
-          ],
+          `INSERT INTO public."user" (id, name, email, "emailVerified", "passwordHash", avatar, bio, role, status, "sessionVersion", "creatorRoleProfile", "regionSettings", "createdAt") VALUES ($1, $2, lower(btrim($3)), $4::timestamptz, $5, $6, $7, 'user', 'active', 1, $8::jsonb, $9::jsonb, $10::timestamptz)`,
+          [userId, payload.name, payload.email, payload.emailVerified, payload.passwordHash, payload.avatar, payload.bio, JSON.stringify(payload.creatorRoleProfile), JSON.stringify(payload.regionSettings), payload.createdAt],
         );
       }
 
@@ -516,62 +496,42 @@ export async function seedPersonaAccounts(client, payloads, { dryRun = false } =
       await client.query(`DELETE FROM public.admin_member_test_accounts WHERE "userId" = $1`, [userId]);
 
       if (payload.creatorProfile) {
-        await client.query(
-          `INSERT INTO public.creator_profile (
-            "userId", title, summary, "supportMessage", "accentColor",
-            layout, "isPublic", links, "featuredProjectIds", "updatedAt"
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::timestamptz)
-          ON CONFLICT ("userId") DO UPDATE SET
-            title = EXCLUDED.title, summary = EXCLUDED.summary,
-            "supportMessage" = EXCLUDED."supportMessage", "accentColor" = EXCLUDED."accentColor",
-            layout = EXCLUDED.layout, "isPublic" = EXCLUDED."isPublic",
-            links = EXCLUDED.links, "updatedAt" = EXCLUDED."updatedAt"`,
-          [
-            userId, payload.creatorProfile.title, payload.creatorProfile.summary,
-            payload.creatorProfile.supportMessage, payload.creatorProfile.accentColor,
-            payload.creatorProfile.layout, payload.creatorProfile.isPublic,
-            JSON.stringify(payload.creatorProfile.links),
-            JSON.stringify(payload.creatorProfile.featuredProjectIds),
-            payload.creatorRoleProfile.updatedAt,
-          ],
-        );
+        const cpId = `cp_${userId}`;
+        const existingCp = await client.query(`SELECT id FROM public.creator_profile WHERE "userId" = $1 OR id = $2 LIMIT 1`, [userId, cpId]);
+        const isVerifiedCreator = payload.memberLevel.creatorLevel !== "new";
+        if (existingCp.rowCount && existingCp.rows?.[0]?.id) {
+          await client.query(
+            `UPDATE public.creator_profile SET "displayName" = $2, profile = $3, "isVerifiedCreator" = $4, "updatedAt" = $5::timestamp WHERE id = $1`,
+            [existingCp.rows[0].id, payload.name, JSON.stringify(payload.creatorProfile), isVerifiedCreator, payload.updatedAt],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO public.creator_profile (id, "userId", "displayName", profile, "payoutChannel", "payoutHandle", "isVerifiedCreator", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, '', '', $5, $6::timestamp, $7::timestamp)`,
+            [cpId, userId, payload.name, JSON.stringify(payload.creatorProfile), isVerifiedCreator, payload.createdAt, payload.updatedAt],
+          );
+        }
       }
 
       await client.query(
-        `INSERT INTO public.member_level (
-          "userId", "creatorLevel", "trustLevel", "sellerLevel", "trustScore",
-          "emailVerified", "identityVerified", "paymentVerified", "metrics", "createdAt", "updatedAt"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::timestamptz, $11::timestamptz)
-        ON CONFLICT ("userId") DO UPDATE SET
-          "creatorLevel" = EXCLUDED."creatorLevel", "trustLevel" = EXCLUDED."trustLevel",
-          "sellerLevel" = EXCLUDED."sellerLevel", "trustScore" = EXCLUDED."trustScore",
-          "emailVerified" = EXCLUDED."emailVerified", "identityVerified" = EXCLUDED."identityVerified",
-          "paymentVerified" = EXCLUDED."paymentVerified", "updatedAt" = EXCLUDED."updatedAt"`,
-        [
-          userId, payload.memberLevel.creatorLevel, payload.memberLevel.trustLevel,
-          payload.memberLevel.sellerLevel, payload.memberLevel.trustScore,
-          payload.memberLevel.emailVerified, payload.memberLevel.identityVerified,
-          payload.memberLevel.paymentVerified, JSON.stringify({}),
-          payload.createdAt, payload.creatorRoleProfile.updatedAt,
-        ],
+        `INSERT INTO public.member_level ("userId", "creatorLevel", "trustLevel", "sellerLevel", "trustScore", "updatedBy", "updatedAt") VALUES ($1, $2, $3, $4, $5, NULL, $6::timestamptz) ON CONFLICT ("userId") DO UPDATE SET "creatorLevel" = EXCLUDED."creatorLevel", "trustLevel" = EXCLUDED."trustLevel", "sellerLevel" = EXCLUDED."sellerLevel", "trustScore" = EXCLUDED."trustScore", "updatedAt" = EXCLUDED."updatedAt"`,
+        [userId, payload.memberLevel.creatorLevel, payload.memberLevel.trustLevel, payload.memberLevel.sellerLevel, payload.memberLevel.trustScore, payload.updatedAt],
       );
 
       if (payload.planId !== "free") {
-        await client.query(
-          `INSERT INTO public.membership_grant (
-            "userId", "grantKey", "planId", source, status, "startsAt", "endsAt",
-            reason, "grantedBy", metadata, "createdAt", "updatedAt"
-          ) VALUES (
-            $1, $2, $3, 'promotion', 'active', $4::timestamptz, NULL,
-            '창작 워크스페이스 멤버십 이용권', NULL, $5::jsonb, $4::timestamptz, $6::timestamptz
-          )
-          ON CONFLICT ("userId", "grantKey") DO UPDATE SET
-            "planId" = EXCLUDED."planId", status = 'active', "updatedAt" = EXCLUDED."updatedAt"`,
-          [
-            userId, `organic_membership_${payload.planId}`, payload.planId,
-            payload.createdAt, JSON.stringify({ tier: payload.planId }), payload.creatorRoleProfile.updatedAt,
-          ],
-        );
+        const grantId = `mg_${userId}_${payload.planId}`;
+        const grantKey = `organic_membership_${payload.planId}`;
+        const existingGrant = await client.query(`SELECT id FROM public.membership_grant WHERE "userId" = $1 AND "grantKey" = $2 LIMIT 1`, [userId, grantKey]);
+        if (existingGrant.rowCount && existingGrant.rows?.[0]?.id) {
+          await client.query(
+            `UPDATE public.membership_grant SET "planId" = $2, status = 'active', "updatedAt" = $3::timestamptz WHERE id = $1`,
+            [existingGrant.rows[0].id, payload.planId, payload.updatedAt],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO public.membership_grant (id, "userId", "planId", source, "grantKey", "sourceRef", status, "startsAt", "endsAt", "autoRenew", "createdBy", "createdAt", "updatedAt") VALUES ($1, $2, $3, 'promotion', $4, NULL, 'active', $5::timestamptz, NULL, false, NULL, $5::timestamptz, $6::timestamptz) ON CONFLICT (id) DO UPDATE SET "planId" = EXCLUDED."planId", status = 'active', "updatedAt" = EXCLUDED."updatedAt"`,
+            [grantId, userId, payload.planId, grantKey, payload.createdAt, payload.updatedAt],
+          );
+        }
       }
 
       const creditGranted = await ensureWalletWelcomeGrant(client, {
@@ -612,7 +572,11 @@ export async function verifyPersonaLogins({
 
     const loginRes = await fetch(`${normalizedBase}/api/auth/login`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: normalizedBase },
+      headers: {
+        "content-type": "application/json",
+        origin: normalizedBase,
+        "x-toonstudio-csrf": "1",
+      },
       body: JSON.stringify({ email: persona.email, password }),
     });
     if (!loginRes.ok) {
@@ -640,14 +604,32 @@ export async function verifyPersonaLogins({
     const sessionUser = sessionJson?.data?.user ?? sessionJson?.user;
     if (!sessionUser || sessionUser.id !== user.id) throw new Error(`Session user mismatch for ${slug}`);
 
+    const meRes = await fetch(`${normalizedBase}/api/me`, {
+      method: "GET",
+      headers: { cookie: cookiePair, origin: normalizedBase },
+    });
+    if (!meRes.ok) throw new Error(`/api/me check failed for ${slug} (${meRes.status})`);
+    const meJson = await meRes.json();
+    const meProfile = meJson?.data?.profile ?? meJson?.profile ?? meJson?.data ?? meJson;
+    const actualPrimaryRole = meProfile?.creatorRoleProfile?.primaryRole ?? null;
+    if (actualPrimaryRole !== persona.creatorRoleProfile.primaryRole) {
+      throw new Error(
+        `creatorRoleProfile.primaryRole mismatch for ${slug}: expected ${persona.creatorRoleProfile.primaryRole}, got ${actualPrimaryRole}`,
+      );
+    }
+
     await fetch(`${normalizedBase}/api/auth/logout`, {
       method: "POST",
-      headers: { cookie: cookiePair, origin: normalizedBase },
+      headers: {
+        cookie: cookiePair,
+        origin: normalizedBase,
+        "x-toonstudio-csrf": "1",
+      },
     });
 
     verified.push({
       slug, userId: user.id, name: user.name, role: user.role,
-      primaryCreatorRole: user.creatorRoleProfile?.primaryRole ?? "reader",
+      primaryCreatorRole: actualPrimaryRole ?? "reader",
     });
   }
   return verified;
@@ -668,6 +650,7 @@ function loadPgClient() {
     path.resolve(process.cwd(), "apps/api/package.json"),
     "/app/apps/api/package.json",
     path.resolve(process.cwd(), "package.json"),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../apps/api/package.json"),
   ];
   for (const candidate of candidates) {
     if (existsSync(candidate)) {

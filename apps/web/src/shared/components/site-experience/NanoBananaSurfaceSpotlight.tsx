@@ -60,6 +60,7 @@ export function NanoBananaSurfaceSpotlight({
       className={`nb-site-spotlight-shell ${className}`.trim()}
       data-smart-ai-spotlight={card.cardId}
       data-smart-ai-domain={card.domain}
+      data-own-control-size="true"
       aria-label={
         isEn
           ? `${card.title.en} Atelier Guide`

@@ -24,6 +24,7 @@
 [data-site-experience] .site-creation-compass summary > svg { flex-shrink: 0; }
 [data-site-experience] .site-creation-compass summary > svg:last-child { margin-left: auto; transition: transform 180ms ease; }
 [data-site-experience] .site-creation-compass details[open] summary > svg:last-child { transform: rotate(180deg); }
+[data-site-experience] .site-creation-compass details:not([open]) .site-creation-compass__brief { display: none; }
 [data-site-experience] .site-creation-compass__action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; min-height: 44px; margin-top: 9px; padding: 10px 14px; border: 1px solid var(--color-line-strong); border-radius: 10px; color: var(--color-accent); font-size: 0.76rem; font-weight: 650; }
 [data-site-experience] .site-creation-compass__brief { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 20px; padding: 18px 0 22px; border-top: 1px solid var(--color-line); }
 [data-site-experience] .site-creation-compass__image { min-height: 116px; overflow: hidden; border-radius: 10px; }
@@ -31,6 +32,7 @@
 [data-site-experience] .site-creation-compass__brief p { margin-block: 8px; color: var(--color-fg-2); font-size: 0.8rem; line-height: 1.85; word-break: keep-all; overflow-wrap: anywhere; }
 [data-site-experience] .site-creation-compass__brief small { color: var(--color-fg-2); font-size: 0.75rem; line-height: 1.6; }
 [data-site-experience] .site-next-steps__card { grid-template-columns: 44px minmax(0, 1fr) 20px; grid-template-rows: 160px auto; padding: 0 20px 24px; gap: 20px 14px; overflow: hidden; }
+[data-site-experience] .site-next-steps__art { margin: 0 -20px 0; height: 160px; }
 [data-site-experience] .site-next-steps__visual { position: relative; grid-column: 1 / -1; grid-row: 1; height: 160px; margin-inline: -20px; overflow: hidden; }
 [data-site-experience] .site-next-steps__visual::after { content: ""; position: absolute; inset: 35% 0 0; background: linear-gradient(transparent, oklch(0.16 0.01 68 / 0.85)); pointer-events: none; }
 [data-site-experience] .site-next-steps__number { position: absolute; z-index: 1; bottom: 14px; left: 20px; color: oklch(0.95 0.01 85); font: 600 0.64rem var(--font-display); letter-spacing: 0.15em; }

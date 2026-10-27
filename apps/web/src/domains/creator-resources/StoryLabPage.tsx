@@ -27,10 +27,10 @@ const SCOPE = "domains.creator.resources.StoryLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
 const STORY_PIPELINE_ART_MAP: Readonly<Record<string, string>> = {
-  "worldbuilding-synopsis": "/assets/site-ui-pack/nano-banana-v1/nb-planning-storylab-640.webp",
-  "novel-to-script": "/assets/site-ui-pack/nano-banana-v1/nb-workflow-bridge-640.webp",
-  "storyboard-3d-blocking": "/assets/site-ui-pack/nano-banana-v1/nb-create-canvas-640.webp",
-  "ink-render-publish": "/assets/site-ui-pack/nano-banana-v1/nb-production-control-640.webp",
+  "worldbuilding-synopsis": "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
+  "novel-to-script": "/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-640.webp",
+  "storyboard-3d-blocking": "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
+  "ink-render-publish": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
 };
 
 export function StoryLabPage() {
@@ -193,7 +193,7 @@ export function StoryLabPage() {
           >
             <div className="relative h-24 w-full overflow-hidden border-b border-line/60 bg-panel">
               <img
-                src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-ui-pack/nano-banana-v1/nb-planning-storylab-640.webp"}
+                src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp"}
                 alt=""
                 aria-hidden="true"
                 loading="lazy"

@@ -201,12 +201,12 @@ export function MarketHomePage() {
                 <img
                   src={
                     activePreset.id === "brush-2d"
-                      ? "/assets/site-ui-pack/nano-banana-v1/nb-create-canvas-640.webp"
+                      ? "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp"
                       : activePreset.id === "bg-3d" || activePreset.id === "char-pose-3d"
-                        ? "/assets/site-ui-pack/nano-banana-v1/nb-spatial-stage-640.webp"
+                        ? "/assets/site-experience/nano-banana-site-v1/cards/nb-spatial-stage-640.webp"
                         : activePreset.id === "tone-sfx"
-                          ? "/assets/site-ui-pack/nano-banana-v1/nb-production-control-640.webp"
-                          : "/assets/site-ui-pack/nano-banana-v1/nb-market-atelier-640.webp"
+                          ? "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp"
+                          : "/assets/site-experience/nano-banana-site-v1/cards/nb-market-atelier-640.webp"
                   }
                   alt=""
                   aria-hidden="true"
