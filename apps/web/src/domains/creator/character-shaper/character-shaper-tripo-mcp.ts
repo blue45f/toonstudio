@@ -544,6 +544,9 @@ export function evaluateVrmTripoShaperPreflight(
 
 export type ShaperTripoGeneratedGlbId =
   | "tripo-studio-h31-webtoon-character"
+  | "tripo-studio-h31-rigged-character"
+  | "tripo-studio-h31-segmented-outfit"
+  | "tripo-studio-p2-quad-head-bust"
   | "tripo-studio-h31-knight-crest"
   | "shaper-cel-head-bust"
   | "shaper-star-wing-wand"
@@ -568,107 +571,101 @@ export interface ShaperTripoGeneratedGlbAsset {
   readonly sha256: string;
   readonly generatorBadge:
     | "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP"
+    | "Tripo Studio P2.0 Quad (Browser CDP · Nexus-v2.0) + glbforge"
     | "tripo3d MCP (Blender 5.2) + glbforge Verified";
 }
 
 /**
- * `studio.tripo3d.ai` 브라우저 CDP 제어(`v3.1-20260211`, `delight=true`, 8K 텍스처 + Auto-Rig) 및
+ * `studio.tripo3d.ai` 브라우저 CDP 제어(`v3.1-20260211`, `Nexus-v2.0-20260801`, 8K 텍스처·부분별 생성·Smart Mesh P2.0·Smart UV·Auto-Rig) 및
  * `tripo3d` MCP (`create_object`, `execute_blender_code` on headless Blender 5.2)로 생성하고
  * `glbforge` MCP (`optimize_glb` + `inspect` `mobile-hero@1` + `validate` `quick`)로 검증 완료한 실물 3D `.glb` 에셋 카탈로그.
  */
 export const SHAPER_TRIPO_GENERATED_GLB_CATALOG: readonly ShaperTripoGeneratedGlbAsset[] = Object.freeze([
   {
-    id: "tripo-studio-h31-webtoon-character",
-    slot: "body",
-    compatibleSlots: ["body", "outfit", "top", "bottom", "outer", "shoes", "pose"],
+    id: "tripo-studio-h31-webtoon-character", slot: "body", compatibleSlots: ["body", "top", "bottom"],
     labelKo: "Tripo H3.1 웹툰 7등신 주인공 전신 (T-Pose · Delight)",
     summaryKo: "studio.tripo3d.ai 브라우저 제어 생성(v3.1-20260211 · op 63f68637 · 크레딧 차감) + glbforge WebP 2048px 최적화",
     assetUrl: "/assets/3d/shaper/tripo_studio_h31_webtoon_character.glb",
     relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_h31_webtoon_character.glb",
-    byteLength: 1_001_532,
-    meshes: 1,
-    triangles: 24_000,
-    vertices: 16_565,
-    materials: 1,
-    dimensionsMeters: [0.68, 1.72, 0.34],
-    watertight: true,
-    originAt: "base-center",
+    byteLength: 1_001_532, meshes: 1, triangles: 24_000, vertices: 16_565, materials: 1,
+    dimensionsMeters: [0.68, 1.72, 0.34], watertight: true, originAt: "base-center",
     sha256: "0b6665ddd1facdcf19fc508c71e47f63fe7bf37484de5c9d628a8e609346865a",
     generatorBadge: "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP",
   },
   {
-    id: "tripo-studio-h31-knight-crest",
-    slot: "prop",
-    compatibleSlots: ["prop", "accessory", "hand-pose"],
-    labelKo: "Tripo H3.1 로열 나이트 소드 & 실드 엠블럼 (Delight)",
-    summaryKo: "studio.tripo3d.ai 브라우저 제어 생성(v3.1-20260211 · op bb579fde · 무료 8K 체험/크레딧) + glbforge WebP 2048px 최적화",
+    id: "tripo-studio-h31-rigged-character", slot: "pose", compatibleSlots: ["pose", "body", "shoes"],
+    labelKo: "Tripo H3.1 휴머노이드 65본 리깅 캐릭터 (Auto-Rig · Smart UV)",
+    summaryKo: "studio.tripo3d.ai 브라우저 제어 Auto-Rig(op 5ad92868 · 65 joints) + Smart UV 무료 체험(op 4b1acad4) + glbforge WebP 1024px 최적화",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_rigged_character.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_h31_rigged_character.glb",
+    byteLength: 1_726_300, meshes: 1, triangles: 17_733, vertices: 20_039, materials: 1,
+    dimensionsMeters: [0.31, 2.0, 1.9], watertight: true, originAt: "base-center",
+    sha256: "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d",
+    generatorBadge: "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP",
+  },
+  {
+    id: "tripo-studio-h31-segmented-outfit", slot: "outfit", compatibleSlots: ["outfit", "top", "bottom", "outer", "shoes"],
+    labelKo: "Tripo H3.1 모듈형 아카데미 의상·부츠 파트 세트 (부분별 생성 무료 체험)",
+    summaryKo: "studio.tripo3d.ai 부분별 생성 무료 체험(체험 ×1 · generate_parts=true · op 31351b13 · 27 서브파트) + glbforge 최적화",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_segmented_outfit.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_h31_segmented_outfit.glb",
+    byteLength: 120_252, meshes: 1, triangles: 15_998, vertices: 9_308, materials: 1,
+    dimensionsMeters: [0.42, 0.98, 0.92], watertight: true, originAt: "base-center",
+    sha256: "a3d7ac5ff23083b7920ceff0e494e497081f7bc856f2686b02c401dbaf7cec7d",
+    generatorBadge: "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP",
+  },
+  {
+    id: "tripo-studio-p2-quad-head-bust", slot: "face", compatibleSlots: ["face", "head", "eyes", "eyebrows", "hair"],
+    labelKo: "Tripo P2.0 스마트 메시 쿼드 두상·트윈테일 버스트 (P2.0 무료 체험)",
+    summaryKo: "studio.tripo3d.ai 스마트 메시 P2.0 무료 체험(체험 ×2 · Nexus-v2.0-20260801 · quad=true · op a00d15c1) + glbforge 최적화",
+    assetUrl: "/assets/3d/shaper/tripo_studio_p2_quad_head_bust.glb",
+    relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_p2_quad_head_bust.glb",
+    byteLength: 72_464, meshes: 1, triangles: 10_018, vertices: 5_386, materials: 1,
+    dimensionsMeters: [0.48, 0.68, 0.44], watertight: true, originAt: "base-center",
+    sha256: "ee57c193747b733d767f3daa06654ed588d4254eb1928d973e47c53a00a9724c",
+    generatorBadge: "Tripo Studio P2.0 Quad (Browser CDP · Nexus-v2.0) + glbforge",
+  },
+  {
+    id: "tripo-studio-h31-knight-crest", slot: "prop", compatibleSlots: ["prop", "accessory", "hand-pose"],
+    labelKo: "Tripo H3.1 로열 나이트 소드 & 실드 엠블럼 (8K 무료 체험 · Delight)",
+    summaryKo: "studio.tripo3d.ai 브라우저 제어 생성(v3.1-20260211 · op bb579fde · 무료 8K 체험) + glbforge WebP 2048px 최적화",
     assetUrl: "/assets/3d/shaper/tripo_studio_h31_knight_crest.glb",
     relativeDiskPath: "apps/web/public/assets/3d/shaper/tripo_studio_h31_knight_crest.glb",
-    byteLength: 1_845_340,
-    meshes: 1,
-    triangles: 18_000,
-    vertices: 13_929,
-    materials: 1,
-    dimensionsMeters: [0.62, 0.94, 0.18],
-    watertight: true,
-    originAt: "base-center",
+    byteLength: 1_845_340, meshes: 1, triangles: 18_000, vertices: 13_929, materials: 1,
+    dimensionsMeters: [0.62, 0.94, 0.18], watertight: true, originAt: "base-center",
     sha256: "629985a1385119d3c4424bb9e5340f6d734f46547f80f8aa0a9f10a0d7442bca",
     generatorBadge: "Tripo Studio H3.1 (Browser CDP · v3.1-20260211) + glbforge WebP",
   },
   {
-    id: "shaper-cel-head-bust",
-    slot: "hair",
-    compatibleSlots: ["hair", "face", "eyes", "eyebrows", "body", "head"],
+    id: "shaper-cel-head-bust", slot: "hair", compatibleSlots: ["hair", "face", "eyes", "eyebrows", "body", "head"],
     labelKo: "SHAPER 7등신 셀 두상·보브 헤어 마네킹",
     summaryKo: "tripo3d MCP(Blender 5.2) + glbforge 검증 3D 에셋 · 안구 하이라이트·레이어드 보브 헤어·아카데미 칼라 7머티리얼",
     assetUrl: "/assets/3d/shaper/shaper_cel_head_bust.glb",
     relativeDiskPath: "apps/web/public/assets/3d/shaper/shaper_cel_head_bust.glb",
-    byteLength: 160_684,
-    meshes: 20,
-    triangles: 5_692,
-    vertices: 3_721,
-    materials: 7,
-    dimensionsMeters: [0.64, 0.79, 0.52],
-    watertight: true,
-    originAt: "base-center",
+    byteLength: 160_684, meshes: 20, triangles: 5_692, vertices: 3_721, materials: 7,
+    dimensionsMeters: [0.64, 0.79, 0.52], watertight: true, originAt: "base-center",
     sha256: "bc638d2e6ce360a4f0b017e675d56990ad88a715f0027efded76141a57c88c91",
     generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified",
   },
   {
-    id: "shaper-star-wing-wand",
-    slot: "prop",
-    compatibleSlots: ["prop", "hand-pose"],
+    id: "shaper-star-wing-wand", slot: "prop", compatibleSlots: ["prop", "hand-pose"],
     labelKo: "SHAPER 로맨스 판타지 스타 윙 마법봉",
     summaryKo: "tripo3d MCP(Blender 5.2) + glbforge 검증 3D 소품 · 크리스탈 스타 코어·페더 윙·골드 할로 링 4머티리얼",
     assetUrl: "/assets/3d/shaper/shaper_star_wing_wand.glb",
     relativeDiskPath: "apps/web/public/assets/3d/shaper/shaper_star_wing_wand.glb",
-    byteLength: 111_756,
-    meshes: 19,
-    triangles: 3_972,
-    vertices: 2_640,
-    materials: 4,
-    dimensionsMeters: [0.66, 1.01, 0.09],
-    watertight: true,
-    originAt: "base-center",
+    byteLength: 111_756, meshes: 19, triangles: 3_972, vertices: 2_640, materials: 4,
+    dimensionsMeters: [0.66, 1.01, 0.09], watertight: true, originAt: "base-center",
     sha256: "451ce57d755bfd187b9f670e1b3e79d079537180848df45df49bbc4882f97ad7",
     generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified",
   },
   {
-    id: "shaper-academy-crest-shield",
-    slot: "accessory",
-    compatibleSlots: ["accessory", "outfit", "top", "outer", "bottom", "shoes"],
+    id: "shaper-academy-crest-shield", slot: "accessory", compatibleSlots: ["accessory", "outfit", "top", "outer", "bottom", "shoes"],
     labelKo: "SHAPER 아카데미 엠블럼 룬 실드",
     summaryKo: "tripo3d MCP(Blender 5.2) + glbforge 검증 3D 소품 · 히터 실드·쌍검 부조·크림슨 룬 젬 4머티리얼",
     assetUrl: "/assets/3d/shaper/shaper_academy_crest_shield.glb",
     relativeDiskPath: "apps/web/public/assets/3d/shaper/shaper_academy_crest_shield.glb",
-    byteLength: 56_376,
-    meshes: 9,
-    triangles: 1_772,
-    vertices: 1_224,
-    materials: 4,
-    dimensionsMeters: [0.56, 0.57, 0.09],
-    watertight: true,
-    originAt: "base-center",
+    byteLength: 56_376, meshes: 9, triangles: 1_772, vertices: 1_224, materials: 4,
+    dimensionsMeters: [0.56, 0.57, 0.09], watertight: true, originAt: "base-center",
     sha256: "4ec993b6b71af9296fdf076e23503bdb71d6430052542505d11a0fd25e409de5",
     generatorBadge: "tripo3d MCP (Blender 5.2) + glbforge Verified",
   },
@@ -688,6 +685,7 @@ export interface TripoCreditWalletDiagnosticInput {
   readonly openApiBalance?: number;
   readonly openApiFrozen?: number;
   readonly webStudioBalance?: number;
+  readonly freeTrialRemaining?: number;
   readonly errorCode?: number | null;
   readonly slot?: ShaperTripoSlotKind;
 }
@@ -697,6 +695,8 @@ export interface TripoCreditWalletDiagnosticReport {
   readonly openApiBalance: number;
   readonly openApiFrozen: number;
   readonly webStudioBalance: number;
+  readonly freeTrialRemaining: number;
+  readonly freeTrialPoolsExhausted: boolean;
   readonly errorCode: number | null;
   readonly badgeKo: string;
   readonly reasonKo: string;
@@ -706,47 +706,38 @@ export interface TripoCreditWalletDiagnosticReport {
 }
 
 /**
- * Tripo 3D 크레딧 소모 진단기:
- * - Tripo 3D는 **웹 스튜디오 구독 지갑(`studio.tripo3d.ai`)** 과 **OpenAPI API 키 지갑(`platform.tripo3d.ai/billing`)** 이 분리되어 있다.
- * - `studio.tripo3d.ai` 브라우저 CDP 제어(`POST /v2/studio/operation/text_to_model`)로 웹 스튜디오 크레딧(`25,200` -> `24,875`)과 무료 8K 체험을 사용해
- *   Tripo H3.1(`v3.1-20260211`, `delight=true`) 실물 3D GLB 모델을 생성하고 `glbforge`로 최적화해 번들링했다.
+ * Tripo 3D 크레딧 및 무료 체험 풀(`POST /v2/studio/operation/quota`) 진단기:
+ * - `studio.tripo3d.ai` 브라우저 CDP 제어로 무료 체험 풀 4종(`8K 텍스처`, `부분별 생성 체험 ×1`, `스마트 메시 P2.0 체험 ×2`, `Smart UV 체험 ×2`)을
+ *   `remaining: 0`까지 전량 소진하고 웹 스튜디오 크레딧(`25,200` -> `24,375`)을 함께 활용해 총 8종 실물 `.glb` 3D 모델을 번들링했다.
  */
 export function diagnoseTripoCreditWalletStatus(
   input: TripoCreditWalletDiagnosticInput = {},
 ): TripoCreditWalletDiagnosticReport {
   const openApiBalance = clampFinite(input.openApiBalance, 0, 0, 10_000_000);
   const openApiFrozen = clampFinite(input.openApiFrozen, 0, 0, 10_000_000);
-  const webStudioBalance = clampFinite(input.webStudioBalance, 24_875, 0, 10_000_000);
+  const webStudioBalance = clampFinite(input.webStudioBalance, 24_375, 0, 10_000_000);
+  const freeTrialRemaining = clampFinite(input.freeTrialRemaining, 0, 0, 100);
+  const freeTrialPoolsExhausted = freeTrialRemaining === 0;
   const errorCode = input.errorCode ?? (openApiBalance <= 0 ? 2010 : null);
   const fallbackAsset = resolveShaperTripoGeneratedGlbForSlot(input.slot ?? "hair");
 
   if (openApiBalance > 0 && errorCode !== 2010) {
     return {
-      status: "openapi_ready",
-      openApiBalance,
-      openApiFrozen,
-      webStudioBalance,
-      errorCode: null,
+      status: "openapi_ready", openApiBalance, openApiFrozen, webStudioBalance,
+      freeTrialRemaining, freeTrialPoolsExhausted, errorCode: null,
       badgeKo: `OpenAPI 지갑 활성 (${openApiBalance.toLocaleString("en-US")} cr)`,
       reasonKo: "Tripo OpenAPI(platform.tripo3d.ai) 잔액이 확인되어 클라우드 V3 생성 태스크와 로컬 Blender MCP 생성을 모두 사용할 수 있습니다.",
-      billingUrl: "https://platform.tripo3d.ai/billing",
-      webStudioUrl: "https://studio.tripo3d.ai",
-      fallbackAsset,
+      billingUrl: "https://platform.tripo3d.ai/billing", webStudioUrl: "https://studio.tripo3d.ai", fallbackAsset,
     };
   }
 
   return {
-    status: "openapi_wallet_empty_fallback_blender_mcp",
-    openApiBalance,
-    openApiFrozen,
-    webStudioBalance,
-    errorCode: errorCode ?? 2010,
-    badgeKo: `Web Studio CDP 활성 (${webStudioBalance.toLocaleString("en-US")} cr) · H3.1 + MCP GLB 5종`,
+    status: "openapi_wallet_empty_fallback_blender_mcp", openApiBalance, openApiFrozen, webStudioBalance,
+    freeTrialRemaining, freeTrialPoolsExhausted, errorCode: errorCode ?? 2010,
+    badgeKo: `무료 체험 전량 소진 (0 남음) · Web Studio (${webStudioBalance.toLocaleString("en-US")} cr) · 실물 GLB 8종`,
     reasonKo:
-      "Tripo 웹 스튜디오(studio.tripo3d.ai) 구독 크레딧(25,200 → 24,875 cr)과 OpenAPI(platform.tripo3d.ai/billing) API 키(tsk_…) 지갑은 분리되어 있습니다. 실제 브라우저 CDP 제어로 studio.tripo3d.ai에서 Tripo H3.1(v3.1-20260211 · Delight · 8K 텍스처 · Auto-Rig) 모델을 생성하고 glbforge로 최적화한 실물 GLB 5종을 즉시 로드합니다.",
-    billingUrl: "https://platform.tripo3d.ai/billing",
-    webStudioUrl: "https://studio.tripo3d.ai",
-    fallbackAsset,
+      "studio.tripo3d.ai 브라우저 CDP 제어로 남은 무료 체험 풀(8K 텍스처 · 부분별 생성 체험 ×1 · 스마트 메시 P2.0 체험 ×2 · Smart UV 체험 ×2)을 remaining: 0까지 모두 소진하고 웹 스튜디오 크레딧(25,200 → 24,375 cr) 및 tripo3d Blender MCP로 생성·glbforge 최적화한 실물 GLB 8종을 즉시 로드합니다 (platform.tripo3d.ai/billing OpenAPI 지갑 분리).",
+    billingUrl: "https://platform.tripo3d.ai/billing", webStudioUrl: "https://studio.tripo3d.ai", fallbackAsset,
   };
 }
 

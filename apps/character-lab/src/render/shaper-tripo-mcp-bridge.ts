@@ -170,6 +170,9 @@ export function buildLabShaperTripoPipelineSpec(input: {
 export interface LabShaperTripoGeneratedGlbAsset {
   readonly id:
     | "tripo-studio-h31-webtoon-character"
+    | "tripo-studio-h31-rigged-character"
+    | "tripo-studio-h31-segmented-outfit"
+    | "tripo-studio-p2-quad-head-bust"
     | "tripo-studio-h31-knight-crest"
     | "shaper-cel-head-bust"
     | "shaper-star-wing-wand"
@@ -199,8 +202,44 @@ export const LAB_SHAPER_TRIPO_GENERATED_GLB_ASSETS: readonly LabShaperTripoGener
     sha256: "0b6665ddd1facdcf19fc508c71e47f63fe7bf37484de5c9d628a8e609346865a",
   },
   {
+    id: "tripo-studio-h31-rigged-character",
+    labelKo: "Tripo H3.1 휴머노이드 65본 리깅 캐릭터 (Auto-Rig · Smart UV)",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_rigged_character.glb",
+    byteLength: 1_726_300,
+    meshes: 1,
+    triangles: 17_733,
+    vertices: 20_039,
+    materials: 1,
+    watertight: true,
+    sha256: "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d",
+  },
+  {
+    id: "tripo-studio-h31-segmented-outfit",
+    labelKo: "Tripo H3.1 모듈형 아카데미 의상·부츠 파트 세트 (부분별 생성 무료 체험)",
+    assetUrl: "/assets/3d/shaper/tripo_studio_h31_segmented_outfit.glb",
+    byteLength: 120_252,
+    meshes: 1,
+    triangles: 15_998,
+    vertices: 9_308,
+    materials: 1,
+    watertight: true,
+    sha256: "a3d7ac5ff23083b7920ceff0e494e497081f7bc856f2686b02c401dbaf7cec7d",
+  },
+  {
+    id: "tripo-studio-p2-quad-head-bust",
+    labelKo: "Tripo P2.0 스마트 메시 쿼드 두상·트윈테일 버스트 (P2.0 무료 체험)",
+    assetUrl: "/assets/3d/shaper/tripo_studio_p2_quad_head_bust.glb",
+    byteLength: 72_464,
+    meshes: 1,
+    triangles: 10_018,
+    vertices: 5_386,
+    materials: 1,
+    watertight: true,
+    sha256: "ee57c193747b733d767f3daa06654ed588d4254eb1928d973e47c53a00a9724c",
+  },
+  {
     id: "tripo-studio-h31-knight-crest",
-    labelKo: "Tripo H3.1 로열 나이트 소드 & 실드 엠블럼 (Delight)",
+    labelKo: "Tripo H3.1 로열 나이트 소드 & 실드 엠블럼 (8K 무료 체험 · Delight)",
     assetUrl: "/assets/3d/shaper/tripo_studio_h31_knight_crest.glb",
     byteLength: 1_845_340,
     meshes: 1,
