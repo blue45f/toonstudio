@@ -17,6 +17,7 @@ export * from "./csp-tomd-spws-palette-dock";
 export * from "./csp-fto-pwui-bento-design";
 export * from "./csp-complete-archive-cs3o-foil-shortcuts";
 export * from "./csp-lippreview-tos-scan-skshaper";
+export * from "./csp-tgcxs-certmdul-mobile-companion";
 export * from "./openraster";
 export * from "./artcraft-suite-formats";
 

@@ -198,7 +198,7 @@ export function StudioTripo3dEcosystemExtensionPanel({
     >
       <summary className="cursor-pointer font-semibold text-fg">
         3D MCP 생태계 확장 허브 (Tripo 12-Workspace · GLBForge 17-Rule 린터 & 2D→3D 간판 압출 ·
-        Meshy 7 크리에이티브 랩 · 22종 GLB 파츠별 커스터마이저)
+        Meshy 7 크리에이티브 랩 · {TRIPO3D_MCP_GENERATED_MODELS.length}종 GLB 파츠별 커스터마이저)
       </summary>
       <div className="mt-2 grid grid-cols-1 gap-3 text-[0.72rem] text-fg-2 md:grid-cols-3">
         {/* Column 1: Tripo Studio 12-Workspace Hub & Text-to-Motion */}
@@ -474,9 +474,9 @@ export function StudioTripo3dEcosystemExtensionPanel({
             {(
               [
                 { id: "all", labelKo: `전체 (${TRIPO3D_MCP_GENERATED_MODELS.length})` },
-                { id: "bg3d", labelKo: "3D 배경 (8)" },
-                { id: "mannequin", labelKo: "3D 데생인형 (6)" },
-                { id: "character-lab", labelKo: "3D 캐릭터 랩 (8)" },
+                { id: "bg3d", labelKo: `3D 배경 (${TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").length})` },
+                { id: "mannequin", labelKo: `3D 데생인형 (${TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin").length})` },
+                { id: "character-lab", labelKo: `3D 캐릭터 랩 (${TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab").length})` },
               ] as const
             ).map((tab) => (
               <button

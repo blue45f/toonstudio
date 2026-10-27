@@ -169,4 +169,29 @@ describe("StudioClipStudioUnifiedUxPanel", () => {
     expect(filterReadout.textContent).toContain("TPPFilmCameraStyle");
     expect(filterReadout.textContent).toContain("총 바이너리: 143개 / 필터 32종");
   });
+
+  it("renders TGCxsPlugIn vector intersection cutter/thinning (.cxs), CertMdul ICC PCS steps, Companion Mode (G#1:2022.12), and AI Disturbance filter", () => {
+    render(
+      <StudioClipStudioUnifiedUxPanel initialTab="tgcxs_certmdul_mobile_companion" />,
+    );
+
+    const tgcxsReadout = screen.getByTestId("csp-tgcxs-readout");
+    expect(tgcxsReadout.textContent).toContain("CSVec4Cut 결과: 입력 3선 → 출력 4선");
+    expect(tgcxsReadout.textContent).toContain("ComicStudio-PGA");
+
+    fireEvent.click(screen.getByTestId("csp-vec4-cut-mode-whole_line"));
+    expect(screen.getByTestId("csp-tgcxs-readout").textContent).toContain("출력 2선");
+
+    const certReadout = screen.getByTestId("csp-certmdul-pcs-readout");
+    expect(certReadout.textContent).toContain("CIccPcsStepLabToXYZ");
+    expect(certReadout.textContent).toContain("MRU HIT");
+
+    fireEvent.click(screen.getByTestId("csp-companion-tab-WebtoonPreview"));
+    fireEvent.click(screen.getByTestId("csp-companion-nav-ZoomIn"));
+    const companionReadout = screen.getByTestId("csp-companion-ai-readout");
+    expect(companionReadout.textContent).toContain("G#1:2022.12");
+    expect(companionReadout.textContent).toContain("WebtoonPreview");
+    expect(companionReadout.textContent).toContain("배율 125%");
+    expect(companionReadout.textContent).toContain("PWTimeLapseAiDisturbanceFilter");
+  });
 });

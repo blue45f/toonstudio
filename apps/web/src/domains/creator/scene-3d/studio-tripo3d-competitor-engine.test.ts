@@ -242,10 +242,10 @@ describe("studio-tripo3d-competitor-engine", () => {
     expect(relief.watertightStlReady).toBe(true);
     expect(relief.summaryKo).toContain("야경 네온사인 간판");
 
-    expect(TRIPO3D_MCP_GENERATED_MODELS).toHaveLength(22);
-    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d")).toHaveLength(8);
-    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin")).toHaveLength(6);
-    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab")).toHaveLength(8);
+    expect(TRIPO3D_MCP_GENERATED_MODELS).toHaveLength(25);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d")).toHaveLength(9);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin")).toHaveLength(7);
+    expect(TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab")).toHaveLength(9);
     expect(VRM_TOOLKIT_MCP_INSPECTED_AVATARS).toHaveLength(2);
 
     expect(TRIPO_STUDIO_FREE_TRIAL_LEDGER).toHaveLength(4);

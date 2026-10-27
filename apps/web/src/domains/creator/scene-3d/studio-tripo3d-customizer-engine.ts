@@ -93,7 +93,29 @@ function makeParts(entries: readonly [string, string][]): readonly Tripo3dCustom
 }
 
 export const TRIPO3D_MCP_GENERATED_MODELS: readonly Tripo3dMcpGeneratedModelEntry[] = Object.freeze([
-  // ── 3D 배경 (bg3d: 8종) ──
+  // ── 3D 배경 (bg3d: 9종) ──
+  {
+    id: "tripo3d-h31-bg-bus-stop-vending-shelter",
+    domain: "bg3d",
+    topologyMode: "h31-pbr",
+    uvUnwrapped: true,
+    freeTrialBadgeKo: "Tripo v3.1 실생성 #신규",
+    nameKo: "웹툰 한국 버스 정류장 쉘터 & 야간 음료 자판기 세트 (Tripo v3.1 PBR)",
+    descriptionKo: "Tripo v3.1(v3.1-20260211) PBR + Detailed 텍스처로 실생성하고 GLBForge Meshopt·WebP로 최적화한 버스 정류장 부스·벤치·발광 음료 자판기 배경 키트",
+    url: "/models/tripo3d-mcp/tripo_h31_korean_bus_stop_vending_shelter.glb",
+    fileName: "tripo_h31_korean_bus_stop_vending_shelter.glb",
+    byteSize: 1_245_944,
+    sha256: "sha256:b7f68a5e941d31bf0c0a8f5cecd206573fe01c77599fdac390cf5b6fa80e67c4",
+    triangles: 25_000,
+    vertices: 21_420,
+    drawCalls: 1,
+    materials: 1,
+    glbforgeScore: 90,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "tripo-cli(v3.1-20260211 task 0dc4fcac) → glbforge.optimize_glb(25k Tri, -97.4%)",
+    recommendedPosePresetId: "sitting",
+    customizableParts: makeParts([["bus-shelter-roof", "정류장 캐노피 지붕"], ["waiting-bench", "대기석 벤치"], ["vending-machine", "발광 음료 자판기"], ["route-signpost", "노선 안내판"]]),
+  },
   {
     id: "tripo3d-p2-bg-street-cafe-kit",
     domain: "bg3d",
@@ -265,7 +287,29 @@ export const TRIPO3D_MCP_GENERATED_MODELS: readonly Tripo3dMcpGeneratedModelEntr
     customizableParts: makeParts([["neon-tube-front", "전면 네온 릴리프"], ["backing-frame-plate", "후면 베벨 프레임"]]),
   },
 
-  // ── 3D 데생인형 (mannequin: 6종) ──
+  // ── 3D 데생인형 (mannequin: 7종) ──
+  {
+    id: "tripo3d-h31-mannequin-artist-easel-kit",
+    domain: "mannequin",
+    topologyMode: "h31-pbr",
+    uvUnwrapped: true,
+    freeTrialBadgeKo: "Tripo v3.1 실생성 #신규",
+    nameKo: "3D 데생인형 화실 원목 이젤·캔버스·포즈 교정 소품 키트 (Tripo v3.1 PBR)",
+    descriptionKo: "Tripo v3.1(v3.1-20260211) PBR로 실생성한 화실 원목 이젤·캔버스·팔레트 및 듀얼 포즈 캘리브레이션 데생인형 소품 키트",
+    url: "/models/tripo3d-mcp/tripo_h31_mannequin_artist_easel_prop_kit.glb",
+    fileName: "tripo_h31_mannequin_artist_easel_prop_kit.glb",
+    byteSize: 1_652_776,
+    sha256: "sha256:038e3bfba90407baea20b28252ffa97c4f28dfd7f654066773485d1d578f210c",
+    triangles: 24_998,
+    vertices: 20_840,
+    drawCalls: 1,
+    materials: 1,
+    glbforgeScore: 90,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "tripo-cli(v3.1-20260211 task 755bc3b4) → glbforge.optimize_glb(25k Tri, -96.5%)",
+    recommendedPosePresetId: "standing",
+    customizableParts: makeParts([["wooden-easel-frame", "화실 원목 이젤"], ["canvas-board", "드로잉 캔버스"], ["artist-palette", "물감 팔레트"], ["pose-prop-stand", "포즈 교정 거치대"]]),
+  },
   {
     id: "tripo3d-p2-mannequin-quad-body",
     domain: "mannequin",
@@ -394,7 +438,29 @@ export const TRIPO3D_MCP_GENERATED_MODELS: readonly Tripo3dMcpGeneratedModelEntr
     customizableParts: makeParts([["angle-turntable-disc", "45° 앵글 턴테이블"], ["step-riser-low", "저단 스텝 블록"], ["step-riser-high", "고단 스텝 블록"], ["height-ruler-pillar", "8등신 신장 눈금 기둥"]]),
   },
 
-  // ── 3D 캐릭터 랩 (character-lab: 8종) ──
+  // ── 3D 캐릭터 랩 (character-lab: 9종) ──
+  {
+    id: "tripo3d-h31-character-lab-crystal-crown-halo-kit",
+    domain: "character-lab",
+    topologyMode: "h31-pbr",
+    uvUnwrapped: true,
+    freeTrialBadgeKo: "Tripo v3.1 실생성 #신규",
+    nameKo: "3D 캐릭터 랩 로열 크리스탈 크라운 헤일로 & 날개 브로치 키트 (Tripo v3.1 PBR)",
+    descriptionKo: "Tripo v3.1(v3.1-20260211) PBR로 실생성한 로열 크리스탈 왕관·헤일로 링·날개 숄더 브로치 캐릭터 소품 키트",
+    url: "/models/tripo3d-mcp/tripo_h31_character_crystal_crown_halo_kit.glb",
+    fileName: "tripo_h31_character_crystal_crown_halo_kit.glb",
+    byteSize: 2_844_784,
+    sha256: "sha256:a765d9eb04ad79c9ee889ce4b3a5dccc8df26b58f39588330b3da117202901f4",
+    triangles: 24_999,
+    vertices: 22_110,
+    drawCalls: 1,
+    materials: 1,
+    glbforgeScore: 90,
+    glbforgeProfile: "mobile-hero@1",
+    mcpPipelineKo: "tripo-cli(v3.1-20260211 task e108ef66) → glbforge.optimize_glb(25k Tri, -94.3%)",
+    recommendedPosePresetId: "dramatic",
+    customizableParts: makeParts([["crystal-crown-tiara", "크리스탈 티아라 왕관"], ["radiant-halo-ring", "성광 헤일로 링"], ["winged-shoulder-brooch", "날개 숄더 브로치"], ["gem-pendant-chain", "보석 펜던트 체인"]]),
+  },
   {
     id: "tripo3d-seg-character-lab-knight-outfit",
     domain: "character-lab",
@@ -592,13 +658,7 @@ export const TRIPO3D_CUSTOMIZER_PALETTES: readonly Tripo3dCustomizerPalette[] = 
   { id: "noir-monochrome", labelKo: "스릴러·느와르 먹선", primaryHex: "#E2E8F0", secondaryHex: "#1E293B", accentHex: "#EF4444", defaultToonRampSteps: 2, defaultOutlineWidthMm: 2.8 },
 ]);
 
-export type Tripo3dHandPoseVariantId =
-  | "relaxed"
-  | "sword-grip"
-  | "arcane-cast"
-  | "clenched-fist"
-  | "peace-sign"
-  | "smartphone-hold";
+export type Tripo3dHandPoseVariantId = "relaxed" | "sword-grip" | "arcane-cast" | "clenched-fist" | "peace-sign" | "smartphone-hold";
 
 export const TRIPO3D_HAND_POSE_VARIANTS: readonly {
   readonly id: Tripo3dHandPoseVariantId;
@@ -648,63 +708,37 @@ export interface Tripo3dCustomizationRecipe {
   readonly mannequinHeadRatio: number;
   readonly handPoseVariantId: Tripo3dHandPoseVariantId;
   readonly mannequinBodySliders: {
-    readonly heightCm: number;
-    readonly headCount: number;
-    readonly build: number;
-    readonly shoulderWidth: number;
-    readonly hipWidth: number;
-    readonly height: number;
-    readonly muscle: number;
-    readonly chest: number;
-    readonly pelvis: number;
-    readonly legRatio: number;
+    readonly heightCm: number; readonly headCount: number; readonly build: number;
+    readonly shoulderWidth: number; readonly hipWidth: number; readonly height: number;
+    readonly muscle: number; readonly chest: number; readonly pelvis: number; readonly legRatio: number;
   };
   readonly shaderSummaryKo: string;
   readonly exportableJson: string;
 }
 
-export function buildTripo3dCustomizationRecipe(
-  input: Tripo3dCustomizationInput,
-): Tripo3dCustomizationRecipe {
-  const model =
-    TRIPO3D_MCP_GENERATED_MODELS.find((m) => m.id === input.modelId) ??
-    TRIPO3D_MCP_GENERATED_MODELS[0]!;
-  const palette =
-    TRIPO3D_CUSTOMIZER_PALETTES.find((p) => p.id === input.paletteId) ??
-    TRIPO3D_CUSTOMIZER_PALETTES[0]!;
-
+export function buildTripo3dCustomizationRecipe(input: Tripo3dCustomizationInput): Tripo3dCustomizationRecipe {
+  const model = TRIPO3D_MCP_GENERATED_MODELS.find((m) => m.id === input.modelId) ?? TRIPO3D_MCP_GENERATED_MODELS[0]!;
+  const palette = TRIPO3D_CUSTOMIZER_PALETTES.find((p) => p.id === input.paletteId) ?? TRIPO3D_CUSTOMIZER_PALETTES[0]!;
   const trimmedCustomUrl = (input.customGlbUrl ?? "").trim();
   const isCustomUrlOverride =
     trimmedCustomUrl.length > 0 &&
-    (trimmedCustomUrl.endsWith(".glb") ||
-      trimmedCustomUrl.endsWith(".vrm") ||
-      trimmedCustomUrl.startsWith("/models/") ||
-      trimmedCustomUrl.startsWith("https://"));
+    (trimmedCustomUrl.endsWith(".glb") || trimmedCustomUrl.endsWith(".vrm") || trimmedCustomUrl.startsWith("/models/") || trimmedCustomUrl.startsWith("https://"));
   const effectiveGlbUrl = isCustomUrlOverride ? trimmedCustomUrl : model.url;
-
   const validPartIds = new Set(model.customizableParts.map((p) => p.id));
   const filteredParts = input.enabledPartIds.filter((id) => validPartIds.has(id));
-  const activePartIds =
-    filteredParts.length > 0 ? filteredParts : model.customizableParts.map((p) => p.id);
+  const activePartIds = filteredParts.length > 0 ? filteredParts : model.customizableParts.map((p) => p.id);
   const totalPartCount = Math.max(1, model.customizableParts.length);
   const activePartCount = activePartIds.length;
-  const partRatio = activePartCount / totalPartCount;
-  const estimatedActiveTriangles = Math.max(120, Math.round(model.triangles * partRatio));
+  const estimatedActiveTriangles = Math.max(120, Math.round(model.triangles * (activePartCount / totalPartCount)));
 
   const primaryColorHex = input.primaryColorHex ?? palette.primaryHex;
   const accentColorHex = input.accentColorHex ?? palette.accentHex;
   const toonRampSteps = input.toonRampSteps ?? palette.defaultToonRampSteps;
-  const outlineWidthMm = Number(
-    Math.min(5, Math.max(0, input.outlineWidthMm ?? palette.defaultOutlineWidthMm)).toFixed(2),
-  );
+  const outlineWidthMm = Number(Math.min(5, Math.max(0, input.outlineWidthMm ?? palette.defaultOutlineWidthMm)).toFixed(2));
   const roughness = Number(Math.min(1, Math.max(0, input.roughness ?? 0.38)).toFixed(2));
   const metallic = Number(Math.min(1, Math.max(0, input.metallic ?? 0.12)).toFixed(2));
-  const scaleMultiplier = Number(
-    Math.min(2.5, Math.max(0.4, input.scaleMultiplier ?? 1.0)).toFixed(2),
-  );
-  const mannequinHeadRatio = Number(
-    Math.min(9.0, Math.max(5.0, input.mannequinHeadRatio ?? 7.5)).toFixed(1),
-  );
+  const scaleMultiplier = Number(Math.min(2.5, Math.max(0.4, input.scaleMultiplier ?? 1.0)).toFixed(2));
+  const mannequinHeadRatio = Number(Math.min(9.0, Math.max(5.0, input.mannequinHeadRatio ?? 7.5)).toFixed(1));
   const handPoseVariantId = input.handPoseVariantId ?? "relaxed";
 
   const ratioDelta = (mannequinHeadRatio - 7.5) / 1.5;
@@ -720,48 +754,18 @@ export function buildTripo3dCustomizationRecipe(
     pelvis: 48,
     legRatio: Math.round(Math.min(100, Math.max(0, 58 + ratioDelta * 22))),
   };
-
   const shaderSummaryKo = `${palette.labelKo} (${primaryColorHex}/${accentColorHex}) · ${toonRampSteps}단 셀셰이딩 · 외곽선 ${outlineWidthMm}mm · PBR R${roughness}/M${metallic} · 활성 파츠 ${activePartCount}/${totalPartCount} (${estimatedActiveTriangles.toLocaleString("ko-KR")} Tri)`;
-
   const exportableJson = JSON.stringify({
     schema: "toonstudio.tripo3d-customization-recipe.v1",
-    modelId: model.id,
-    domain: model.domain,
-    topologyMode: model.topologyMode,
-    effectiveGlbUrl,
-    activePartIds,
-    paletteId: palette.id,
-    primaryColorHex,
-    accentColorHex,
-    toonRampSteps,
-    outlineWidthMm,
-    roughness,
-    metallic,
-    scaleMultiplier,
-    mannequinHeadRatio,
-    handPoseVariantId,
+    modelId: model.id, domain: model.domain, topologyMode: model.topologyMode, effectiveGlbUrl,
+    activePartIds, paletteId: palette.id, primaryColorHex, accentColorHex, toonRampSteps,
+    outlineWidthMm, roughness, metallic, scaleMultiplier, mannequinHeadRatio, handPoseVariantId,
   });
 
   return {
-    model,
-    effectiveGlbUrl,
-    isCustomUrlOverride,
-    activePartIds,
-    activePartCount,
-    totalPartCount,
-    estimatedActiveTriangles,
-    palette,
-    primaryColorHex,
-    accentColorHex,
-    toonRampSteps,
-    outlineWidthMm,
-    roughness,
-    metallic,
-    scaleMultiplier,
-    mannequinHeadRatio,
-    handPoseVariantId,
-    mannequinBodySliders,
-    shaderSummaryKo,
-    exportableJson,
+    model, effectiveGlbUrl, isCustomUrlOverride, activePartIds, activePartCount, totalPartCount,
+    estimatedActiveTriangles, palette, primaryColorHex, accentColorHex, toonRampSteps, outlineWidthMm,
+    roughness, metallic, scaleMultiplier, mannequinHeadRatio, handPoseVariantId, mannequinBodySliders,
+    shaderSummaryKo, exportableJson,
   };
 }

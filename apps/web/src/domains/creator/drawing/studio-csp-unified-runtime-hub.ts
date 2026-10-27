@@ -24,6 +24,11 @@ import {
 	CSP_TG_TOS_PLUGIN_SPEC,
 } from "../../../../../../packages/studio-format-gateway/src/csp-lippreview-tos-scan-skshaper";
 import {
+	CSP_COMPANION_NAVIGATOR_COMMANDS,
+	CSP_COMPANION_REMOTE_TAB_KINDS,
+	CSP_TGCXS_DEFAULT_CONSTANTS,
+} from "../../../../../../packages/studio-format-gateway/src/csp-tgcxs-certmdul-mobile-companion";
+import {
 	CSP_NATIVE_PLUGIN_BINARY_MANIFEST,
 	CSP_UX_EDIT_IMAGE_TOOL_CATALOG,
 	applyCspGaussBlurFilter,
@@ -740,5 +745,10 @@ export function getCspCompleteInternalizationManifest() {
 		tgTosTonePatternCount: CSP_TG_TOS_PLUGIN_SPEC.builtInTonePatterns.length,
 		systemHelperAppCount: CSP_SYSTEM_HELPER_APP_MANIFEST.length,
 		skShaperLibraryCount: CSP_SKSHAPER_UNICODE_SPEC.libraries.length,
+		companionRemoteTabCount: CSP_COMPANION_REMOTE_TAB_KINDS.length,
+		companionNavigatorCommandCount: CSP_COMPANION_NAVIGATOR_COMMANDS.length,
+		tgCxsDefaultFontSizePt: CSP_TGCXS_DEFAULT_CONSTANTS.defaultFontSizePt,
 	} as const;
 }
+
+export * from "../../../../../../packages/studio-format-gateway/src/csp-tgcxs-certmdul-mobile-companion";

@@ -37,6 +37,7 @@ import {
   StudioCspLipPreviewScanSkShaperFiltersSection,
   StudioCspPwuiBentoToonSection,
 } from "./StudioCspPwuiBentoToonSection";
+import { StudioCspTgcxsCertMdulCompanionSection } from "./StudioCspTgcxsCertMdulCompanionSection";
 
 function parseHexToRgb255(hex: string): [number, number, number] {
   const clean = hex.replace(/^#/, "").padEnd(6, "0");
@@ -99,7 +100,8 @@ export type StudioCspUnifiedUxTabId =
   | "icc_audio_ailia"
   | "pwui_bento_3d_toon"
   | "cs3o_foil_shortcuts_wkbridge"
-  | "lippreview_scan_skshaper_filters";
+  | "lippreview_scan_skshaper_filters"
+  | "tgcxs_certmdul_mobile_companion";
 
 export type StudioCspWorkspacePresetId =
   | "presetMac_1_illustration"
@@ -125,6 +127,7 @@ const UX_TABS: readonly { readonly id: StudioCspUnifiedUxTabId; readonly labelKo
   { id: "pwui_bento_3d_toon", labelKo: "PW* 디자인 시스템·벤토 런처·3D 툰(.fto)" },
   { id: "cs3o_foil_shortcuts_wkbridge", labelKo: ".cs3o 두상·금박(Foil) 셰이더·단축키(870/258)·WKBridge" },
   { id: "lippreview_scan_skshaper_filters", labelKo: "QuickLook(.clip)·TGTos(.tos)·scan.app·SkShaper·32필터" },
+  { id: "tgcxs_certmdul_mobile_companion", labelKo: "TGCxs(.cxs/벡터교차)·CertMdul(ICC PCS)·컴패니언·AI교란" },
 ] as const;
 
 const WORKSPACE_PRESETS: readonly {
@@ -777,6 +780,9 @@ export function StudioClipStudioUnifiedUxPanel({
       )}
       {activeTab === "lippreview_scan_skshaper_filters" && (
         <StudioCspLipPreviewScanSkShaperFiltersSection />
+      )}
+      {activeTab === "tgcxs_certmdul_mobile_companion" && (
+        <StudioCspTgcxsCertMdulCompanionSection />
       )}
     </section>
   );
