@@ -27,6 +27,20 @@ import {
   type GenToonStyleFamilyId,
 } from "./all-in-one-webtoon-accelerator-suite";
 import {
+  buildDeterministicBinauralSpatialAudioFoleyLufsView,
+  buildDeterministicBreathFrostSmokePlumeLockView,
+  buildDeterministicCastShadowSundialAzimuthLockView,
+  buildDeterministicGazeSaccadePupilHighlightLockView,
+  buildDeterministicImpactDebrisCraterPersistenceLockView,
+  buildDeterministicWetFabricRainTranslucencyLockView,
+  runClaudeBinauralSpatialAudioFoleyLufsDirector,
+  runClaudeBreathFrostSmokePlumeLockDirector,
+  runClaudeCastShadowSundialAzimuthLockDirector,
+  runClaudeGazeSaccadePupilHighlightLockDirector,
+  runClaudeImpactDebrisCraterPersistenceLockDirector,
+  runClaudeWetFabricRainTranslucencyLockDirector,
+} from "./claude/claude-n7-and-llm-runners";
+import {
   DEFAULT_NAVER_AI_PAINTER_HINTS,
   runAidStudioPipeline,
   runClipStudioPaintAiAssist,
@@ -88,6 +102,55 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
   onApplyScript,
 }: StudioAiWebtoonEcosystemWorkbenchPanelProps): ReactElement {
   const [activeTab, setActiveTab] = useState<EcosystemCategoryTabId>("cat-1-all-in-one");
+  const [wave21SummaryKo, setWave21SummaryKo] = useState<string>(() => {
+    const init = buildDeterministicGazeSaccadePupilHighlightLockView(scriptInput);
+    return `[동공 캐치라이트/시선 고정 · ${init.model}] ${init.catchlightClockHour}시 방향 · ${init.binocularVergenceRuleKo}`;
+  });
+  const [wave21Loading, setWave21Loading] = useState<boolean>(false);
+
+  async function handleRunWave21Engine(
+    kind: "gaze" | "plume" | "wet" | "shadow" | "crater" | "binaural",
+  ): Promise<void> {
+    setWave21Loading(true);
+    const seed = scriptInput.trim() || `${storyGenre} 클라이맥스 전투 및 감정 대치 씬`;
+    try {
+      if (kind === "gaze") {
+        const res = await runClaudeGazeSaccadePupilHighlightLockDirector(seed);
+        setWave21SummaryKo(`[동공/시선 · ${res.model}] ${res.catchlightClockHour}시 캐치라이트 · ${res.binocularVergenceRuleKo}`);
+      } else if (kind === "plume") {
+        const res = await runClaudeBreathFrostSmokePlumeLockDirector(seed);
+        setWave21SummaryKo(`[입김/연기 플룸 · ${res.model}] 풍향 ${res.windDriftAngleDeg}° · ${res.opacityDecayRuleKo}`);
+      } else if (kind === "wet") {
+        const res = await runClaudeWetFabricRainTranslucencyLockDirector(seed);
+        setWave21SummaryKo(`[젖은 의상/투과도 · ${res.model}] 수분 ${res.wetnessStagePct}% · ${res.irreversibleDryingGuardKo}`);
+      } else if (kind === "shadow") {
+        const res = await runClaudeCastShadowSundialAzimuthLockDirector(seed);
+        setWave21SummaryKo(`[태양각/바닥그림자 · ${res.model}] 방위각 ${res.solarAzimuthDeg}°/고도 ${res.solarElevationDeg}° · ${res.shadowLengthMultiplier}`);
+      } else if (kind === "crater") {
+        const res = await runClaudeImpactDebrisCraterPersistenceLockDirector(seed);
+        setWave21SummaryKo(`[파괴 크레이터 지속 · ${res.model}] 직경 ${res.craterDiameterCm}cm / 균열 ${res.radialCrackBranchCount}갈래 · ${res.backgroundResetPreventionKo}`);
+      } else {
+        const res = await runClaudeBinauralSpatialAudioFoleyLufsDirector(seed);
+        setWave21SummaryKo(`[3D 바이노럴 폴리 · ${res.model}] 더킹 ${res.dialogueSidechainDuckingDb}dB / ${res.targetIntegratedLufs} LUFS · ${res.binauralPanningMapKo}`);
+      }
+    } catch {
+      const fb =
+        kind === "gaze"
+          ? buildDeterministicGazeSaccadePupilHighlightLockView(seed).directorNoteKo
+          : kind === "plume"
+            ? buildDeterministicBreathFrostSmokePlumeLockView(seed).directorNoteKo
+            : kind === "wet"
+              ? buildDeterministicWetFabricRainTranslucencyLockView(seed).directorNoteKo
+              : kind === "shadow"
+                ? buildDeterministicCastShadowSundialAzimuthLockView(seed).directorNoteKo
+                : kind === "crater"
+                  ? buildDeterministicImpactDebrisCraterPersistenceLockView(seed).directorNoteKo
+                  : buildDeterministicBinauralSpatialAudioFoleyLufsView(seed).directorNoteKo;
+      setWave21SummaryKo(`[폴백] ${fb}`);
+    } finally {
+      setWave21Loading(false);
+    }
+  }
 
   // Category 1 States (GenToon, Tooning, ComicAI, Dashtoon)
   const [gentoonMode, setGentoonMode] = useState<GenToonInputMode>("anecdote-1600");
@@ -575,6 +638,44 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
       {activeTab === "cat-4-style-transfer" ? (
         <StudioAiWebtoonCategory4Panel storyGenre={storyGenre} />
       ) : null}
+
+      {/* Wave 21~23 웹툰 시선·환경 물리·파괴 지속성·바이노럴 오디오 6대 엔진 퀵 실행 바 */}
+      <div
+        data-testid="wave21-23-ecosystem-consistency-bar"
+        className="mt-2.5 space-y-1.5 rounded border border-accent bg-raised p-2 text-[0.62rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <span className="font-bold text-fg">
+            Wave 21~23 시선·환경 물리·배경 파괴 지속성·3D 바이노럴 폴리 6대 AI 감독 (420개 플랫폼 REA 내재화)
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                ["gaze", "동공 캐치라이트·시선 고정"],
+                ["plume", "겨울 입김·연기 풍향 고정"],
+                ["wet", "우중 젖은 의상·투과 고정"],
+                ["shadow", "태양각·바닥 그림자 고정"],
+                ["crater", "전투 크레이터·잔해 지속"],
+                ["binaural", "3D 바이노럴 폴리·LUFS"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                disabled={wave21Loading}
+                data-testid={`wave21-run-${id}`}
+                onClick={() => void handleRunWave21Engine(id)}
+                className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 hover:border-accent hover:text-accent"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div data-testid="wave21-summary-output" className="text-[0.6rem] text-fg-2">
+          {wave21Loading ? "Claude 멀티모델 추론 중..." : wave21SummaryKo}
+        </div>
+      </div>
     </section>
   );
 }

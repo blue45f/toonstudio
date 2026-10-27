@@ -129,7 +129,14 @@ export type ClaudeCreatorTaskId =
   | "domain:cape-cloak-hem-lining-wind-flutter-lock"
   | "domain:sword-hilt-guard-gem-scabbard-engraving-lock"
   | "domain:character-age-flashback-growth-proportion-lock"
-  | "domain:multi-plane-parallax-depth-blur-bokeh-lock";
+  | "domain:multi-plane-parallax-depth-blur-bokeh-lock"
+  // 11. Wave 21~23 Webtoon Consistency & Audio/Physics AI Engines (6 — Total 92 Tasks)
+  | "runner:gaze-saccade-pupil-highlight-lock"
+  | "runner:breath-frost-cigarette-smoke-plume-lock"
+  | "runner:wet-fabric-rain-translucency-drape-lock"
+  | "runner:cast-shadow-sundial-azimuth-elevation-lock"
+  | "runner:impact-debris-crater-shatter-persistence-lock"
+  | "runner:binaural-spatial-audio-foley-lufs-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -697,6 +704,12 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "domain:sword-hilt-guard-gem-scabbard-engraving-lock": defineRoute("domain:sword-hilt-guard-gem-scabbard-engraving-lock", "도검 코등이(Crossguard)·자루 보석·칼집(Scabbard) 패용 위치·룬 각인 고정기", "n7-llm-runner", "creative-production", "검 코등이 비대칭 장식·폼멜 보석·칼집 패용 좌우 허리 위치·도신 룬 각인 방향 고정은 Sonnet 5.5 적용", 4_096),
   "domain:character-age-flashback-growth-proportion-lock": defineRoute("domain:character-age-flashback-growth-proportion-lock", "과거 회상(유년기/소년기)·현재·타임스킵 연령대별 두신비·하관·흉터 타임라인 고정기", "n7-llm-runner", "creative-production", "유년기 회상과 현재 시점 전환 시 두신비(5.5~8등신)·안면 하관 비율·시대별 흉터 유무 고정은 Sonnet 5.5 적용", 4_096),
   "domain:multi-plane-parallax-depth-blur-bokeh-lock": defineRoute("domain:multi-plane-parallax-depth-blur-bokeh-lock", "전경(Out-of-focus)·중경(인물)·원경(보케) 3평면 피사계 심도(DoF) 블러 감독", "n7-llm-runner", "deep-architecture", "전경 나뭇잎/창살·중경 인물·원경 도시 야경 보케 3평면 조리개(f-stop) 블러 반경 및 색수차 일관성 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "runner:gaze-saccade-pupil-highlight-lock": defineRoute("runner:gaze-saccade-pupil-highlight-lock", "동공 하이라이트(Catchlight) 광원 각도·사시 방지·시선 도약(Saccade) 궤적 고정기", "n7-llm-runner", "fast-inline", "양안 동공 수렴각(Vergence) 사시 작붕 방지 및 주광원 방향 캐치라이트 시계방향 각도 고정은 Haiku 5.5 적용", 3_072),
+  "runner:breath-frost-cigarette-smoke-plume-lock": defineRoute("runner:breath-frost-cigarette-smoke-plume-lock", "겨울 입김(Breath Frost)·담배 연기·찻잔 수증기 확산 농도·풍향 드리프트 연속성 고정기", "n7-llm-runner", "fast-inline", "겨울 야외 입김·담배 연기·온천 수증기의 컷 간 풍향 드리프트 각도와 투명도 감쇠율 고정은 Haiku 5.5 적용", 3_072),
+  "runner:wet-fabric-rain-translucency-drape-lock": defineRoute("runner:wet-fabric-rain-translucency-drape-lock", "우중(비/수중) 젖은 셔츠·의상 피부 밀착 주름·반투명 투과도·건조 단계 비가역 고정기", "n7-llm-runner", "creative-production", "비를 맞거나 물에 젖은 의상의 피부 밀착 텐션 주름·피부톤 비침(Translucency)·다음 컷 급속 건조 작붕 방지는 Sonnet 5.5 적용", 4_096),
+  "runner:cast-shadow-sundial-azimuth-elevation-lock": defineRoute("runner:cast-shadow-sundial-azimuth-elevation-lock", "야외 태양 방위각(Azimuth)·고도각(Elevation) 기반 인물·건물 바닥 그림자 길이·방향 고정기", "n7-llm-runner", "creative-production", "동일 시간대 야외 씬에서 태양 방위각/고도각에 따른 인물·건물 바닥 투영 그림자(Cast Shadow) 길이 배율과 각도 고정은 Sonnet 5.5 적용", 4_096),
+  "runner:impact-debris-crater-shatter-persistence-lock": defineRoute("runner:impact-debris-crater-shatter-persistence-lock", "전투 타격 바닥 크레이터·벽면 균열·유리 파편 잔해 위치 지속성(원상복구 방지) 고정기", "n7-llm-runner", "creative-production", "전투 중 파손된 바닥 크레이터·기둥 균열·깨진 유리창 파편이 다음 컷에서 멀쩡히 원상복구되는 배경 작붕 차단은 Sonnet 5.5 적용", 4_096),
+  "runner:binaural-spatial-audio-foley-lufs-director": defineRoute("runner:binaural-spatial-audio-foley-lufs-director", "무빙툰·오디오툰 3D 바이노럴 폴리(발소리/옷깃/검풍)·대사 사이드체인 더킹(-8dB)·-14 LUFS 마스터 감독", "n7-llm-runner", "deep-architecture", "컷 내 화자/타격 좌우 패닝(Binaural Panning)·폴리 사운드 레이어·성우 대사 -8dB 사이드체인 더킹·-14 LUFS 음량 마스터링 설계는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

@@ -21,15 +21,27 @@ import {
   runClaudeSwordHiltGuardScabbardLockDirector,
 } from "./claude-creator-domain-assist";
 import {
+  buildDeterministicBinauralSpatialAudioFoleyLufsView,
+  buildDeterministicBreathFrostSmokePlumeLockView,
+  buildDeterministicCastShadowSundialAzimuthLockView,
+  buildDeterministicGazeSaccadePupilHighlightLockView,
+  buildDeterministicImpactDebrisCraterPersistenceLockView,
+  buildDeterministicWetFabricRainTranslucencyLockView,
   runClaudeAuthorHandoverSummary,
   runClaudeBgmPlacementPlan,
+  runClaudeBinauralSpatialAudioFoleyLufsDirector,
+  runClaudeBreathFrostSmokePlumeLockDirector,
+  runClaudeCastShadowSundialAzimuthLockDirector,
   runClaudeCutDialogueSuggest,
   runClaudeDirectionPlan,
+  runClaudeGazeSaccadePupilHighlightLockDirector,
+  runClaudeImpactDebrisCraterPersistenceLockDirector,
   runClaudeN7OrchestrationPipeline,
   runClaudePlotSummaryAndSynopsis,
   runClaudeReviewCommentInterpreter,
   runClaudeStoryboardCutPlan,
   runClaudeSupportFaqAnswer,
+  runClaudeWetFabricRainTranslucencyLockDirector,
   stripJsonCodeFence,
 } from "./claude-n7-and-llm-runners";
 
@@ -193,6 +205,26 @@ describe("claude-creator-domain-assist & claude-n7-and-llm-runners", () => {
     expect((await runClaudeSwordHiltGuardScabbardLockDirector("성검")).source).toBe("deterministic-fallback");
     expect((await runClaudeCharacterAgeFlashbackProportionLockDirector("타임스킵")).source).toBe("deterministic-fallback");
     expect((await runClaudeMultiPlaneParallaxBokehLockDirector("3평면 심도")).source).toBe("deterministic-fallback");
+
+    const gazeFb = buildDeterministicGazeSaccadePupilHighlightLockView("10시 캐치라이트");
+    expect(gazeFb.catchlightClockHour).toBe(10);
+    const plumeFb = buildDeterministicBreathFrostSmokePlumeLockView("겨울 입김");
+    expect(plumeFb.windDriftAngleDeg).toBe(28);
+    const wetFb = buildDeterministicWetFabricRainTranslucencyLockView("젖은 셔츠");
+    expect(wetFb.wetnessStagePct).toBe(85);
+    const shadowFb = buildDeterministicCastShadowSundialAzimuthLockView("오후 5시 석양");
+    expect(shadowFb.solarAzimuthDeg).toBe(245);
+    const craterFb = buildDeterministicImpactDebrisCraterPersistenceLockView("대리석 크레이터");
+    expect(craterFb.craterDiameterCm).toBe(280);
+    const binauralFb = buildDeterministicBinauralSpatialAudioFoleyLufsView("대성당 폴리");
+    expect(binauralFb.targetIntegratedLufs).toBe(-14);
+
+    expect((await runClaudeGazeSaccadePupilHighlightLockDirector("시선")).source).toBe("deterministic-fallback");
+    expect((await runClaudeBreathFrostSmokePlumeLockDirector("입김")).source).toBe("deterministic-fallback");
+    expect((await runClaudeWetFabricRainTranslucencyLockDirector("우중")).source).toBe("deterministic-fallback");
+    expect((await runClaudeCastShadowSundialAzimuthLockDirector("그림자")).source).toBe("deterministic-fallback");
+    expect((await runClaudeImpactDebrisCraterPersistenceLockDirector("크레이터")).source).toBe("deterministic-fallback");
+    expect((await runClaudeBinauralSpatialAudioFoleyLufsDirector("바이노럴")).source).toBe("deterministic-fallback");
 
     parseSpy.mockRestore();
   });

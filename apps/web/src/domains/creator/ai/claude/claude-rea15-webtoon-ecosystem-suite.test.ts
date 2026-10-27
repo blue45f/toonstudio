@@ -65,9 +65,18 @@ const TEST_ROUTE = {
 };
 
 describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
-  it("0. 360대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+  it("0. 420대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(360);
+    expect(themes).toHaveLength(420);
+
+    const kreaWan = getRea15PlatformTheme("krea-wan-14b-toon-motion");
+    expect(kreaWan.accentPrimaryHex).toBe("#a855f7");
+
+    const worldLabs = getRea15PlatformTheme("world-labs-marble-3d-scene");
+    expect(worldLabs.accentPrimaryHex).toBe("#0ea5e9");
+
+    const qwenVl = getRea15PlatformTheme("qwen-2-5-vl-manga-ocr");
+    expect(qwenVl.accentPrimaryHex).toBe("#8b5cf6");
 
     const vrayToon = getRea15PlatformTheme("vray-toon-cel-material");
     expect(vrayToon.accentPrimaryHex).toBe("#00a8ff");
@@ -80,6 +89,9 @@ describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫�
 
     const warudoStage = getRea15PlatformTheme("warudo-3d-stage-camera");
     expect(warudoStage.accentPrimaryHex).toBe("#38bdf8");
+
+    const typeNetwork = getRea15PlatformTheme("type-network-variable-balloon");
+    expect(typeNetwork.accentPrimaryHex).toBe("#38bdf8");
 
     const naverPainter = getRea15PlatformTheme("naver-webtoon-ai-painter");
     expect(naverPainter.accentPrimaryHex).toBe("#00dc64");

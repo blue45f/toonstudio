@@ -17,6 +17,7 @@ import {
   recommendTooningCutFromSentence,
   synthesizeGenToonShortFormReelTimeline,
 } from "./ai-webtoon-platform-suite";
+import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
 import { StudioAiWebtoonPlatformSuitePanel } from "./StudioAiWebtoonPlatformSuitePanel";
 
 afterEach(() => {
@@ -219,5 +220,15 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave18-20-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave18-run-sword"));
     expect(screen.getByTestId("wave18-summary-output").textContent).toBeTruthy();
+
+    render(
+      <StudioAiWebtoonEcosystemWorkbenchPanel
+        scriptInput="1컷 대성당 결투 씬"
+        onApplyScript={onApplyScript}
+      />,
+    );
+    expect(screen.getByTestId("wave21-23-ecosystem-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave21-run-crater"));
+    expect(screen.getByTestId("wave21-summary-output").textContent).toBeTruthy();
   });
 });
