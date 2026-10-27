@@ -97,13 +97,13 @@
       "files": {
         "glb": {
           "path": "tripo-h31-rigged-webtoon/tripo-h31-rigged-webtoon.glb",
-          "bytes": 1726300,
-          "sha256": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d"
+          "bytes": 2137120,
+          "sha256": "944ec0180beafee1d936ea721b6234d4b18c0ea97fbd1013061d5758489fe95c"
         },
         "manifest": {
           "path": "tripo-h31-rigged-webtoon/manifest.json",
           "bytes": 10155,
-          "sha256": "fcfd12812e33cedd4609651a666a584415d52d457eeab54f472552b1ad3da551"
+          "sha256": "b069656d838666d54d2d29bd63f2be7ec6258a73eedf8cc5cafdbf07de983038"
         },
         "slotMapping": {
           "path": "tripo-h31-rigged-webtoon/slot-mapping.json",

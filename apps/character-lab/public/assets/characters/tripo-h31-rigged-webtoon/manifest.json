@@ -9,21 +9,21 @@
     "pipeline": "Tripo Web Studio H3.1 + Mixamo Auto-Rigging (pipelineVersion 1)"
   },
   "pipelineRun": {
-    "pipelineManifestConfigDigest": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d",
+    "pipelineManifestConfigDigest": "944ec0180beafee1d936ea721b6234d4b18c0ea97fbd1013061d5758489fe95c",
     "toonstudioPackageKind": "toonstudio.character-package"
   },
   "sourceProvenance": {
     "path": "apps/web/public/assets/3d/shaper/tripo_studio_h31_rigged_character.glb",
-    "sha256": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d",
-    "bytes": 1726300,
+    "sha256": "944ec0180beafee1d936ea721b6234d4b18c0ea97fbd1013061d5758489fe95c",
+    "bytes": 2137120,
     "license": "CC0-1.0",
     "author": "ToonStudio Tripo H3.1"
   },
   "files": {
     "glb": {
       "path": "tripo-h31-rigged-webtoon.glb",
-      "bytes": 1726300,
-      "sha256": "6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d"
+      "bytes": 2137120,
+      "sha256": "944ec0180beafee1d936ea721b6234d4b18c0ea97fbd1013061d5758489fe95c"
     },
     "slotMapping": {
       "path": "slot-mapping.json"

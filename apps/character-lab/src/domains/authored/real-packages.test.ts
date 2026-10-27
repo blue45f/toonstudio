@@ -165,8 +165,8 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     const { plan, detail } = loaded;
-    expect(detail.observedSha256).toBe("6ef1ec0169056817029d38d37d814a03f09eef25a014fa51cdea5a6ed3024a9d");
-    expect(plan.glbBytes).toBe(1_726_300);
+    expect(detail.observedSha256).toBe("944ec0180beafee1d936ea721b6234d4b18c0ea97fbd1013061d5758489fe95c");
+    expect(plan.glbBytes).toBe(2_137_120);
     expect(detail.judgement.mappings.bones.required.missing).toEqual([]);
     expect(detail.judgement.mappings.bones.fingers.missing).toEqual([]);
     expect(plan.capabilities.pose.status).toBe("available");

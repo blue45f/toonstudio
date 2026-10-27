@@ -1,26 +1,5 @@
 /**
- * ViewportPane: 엔진 캔버스 + 도구 막대 + HUD 오버레이 + 관절 핸들(SVG) + 모델 위 드로잉 오버레이.
- *
- * - 캔버스는 뷰포트 레지스트리에 등록한다(TopBar의 엔진 선택 버튼이 `claim()`으로 꺼내 `engineSession.select(backend, canvas)`에 넘긴다).
- *   WebGPU·WebGL2 컨텍스트는 캔버스에 잠기므로 이미 엔진 생성에 쓴 캔버스를 다시 요청받으면 `<canvas key>`를 올려 새로 마운트한다.
- *   엔진이 없거나 실패·손실이면 그 상태를 화면에 적는다(빈 캔버스로 숨기지 않는다, ADR-0018).
- * - HUD: `engine.readHud()`를 주기적으로 읽어 프레임 ms·p95·GPU ms(미지원이면 '미지원')·드로 콜·backend·어댑터·물리를 표시한다.
- * - 관절 핸들: `engine.jointHandles()`(렌더 픽셀)를 SVG로 겹쳐 그린다. 핸들을 끌면 부모 관절이 시선 둘레로 돌고(`viewport-interactions`),
- *   드래그 중에는 `engine.applyPlan`으로 미리보기만 하며 **포인터를 놓을 때 `pose/set`(scope "full")을 정확히 1번** dispatch한다
- *   (1 드래그 = history 1단계). Escape·pointercancel은 미리보기를 되돌리고 기록하지 않는다. 엔진이 스켈레톤을 주지 않으면
- *   핸들 드래그는 비활성이며 사유를 보인다.
- * - 드로잉 모드: 오버레이가 포인터를 가로채 `paint/paint-bridge`의 `createPointerPaintDriver`로 pick → UV 스트로크 →
- *   `updatePaintTexture`를 구동하고 포인터를 놓을 때 undo 토큰 1개를 `paint/stroke`로 dispatch한다. 이 모드에서는 카메라 조작이 꺼진다.
- *   투영 페인트(베타)가 켜져 있으면 `projection-paint-driver`가 같은 계약(스트로크당 `paint/stroke` 1개)으로 투영 브러시를 구동한다.
- *
- * - 오버레이 기본값(A-03): 관절 핸들·HUD는 기본 꺼짐(HUD가 캐릭터 팔을 가렸다). 도구 막대 버튼으로 켠다.
- * - 카메라(F-01·H-03): 휠·팬·키보드는 엔진 뷰포트 입력(render/babylon/viewport-controls)이 처리한다. 캔버스는 `tabIndex=0`이라 Tab으로 포커스되고
- *   포커스가 있으면 방향키 회전·+/- 줌·0(Home) 시점 초기화가 된다. "시점 초기화" 버튼·캔버스 더블클릭은 현재 프레이밍을 다시 적용한다.
- * - 백버퍼 크기(F-03): 컨테이너 CSS 크기 × devicePixelRatio(상한 2, render/viewport-math `viewportPixelRatio`).
- *
- * 구조적 배치(position·inset·pointer-events)는 인라인으로 두어 공유 CSS 없이도 동작하고, 모양은 `cl-viewport-*` 클래스로 core CSS가 입힌다.
- * 관절 핸들은 포인터 전용이다(SVG 원에 키보드 동작이 없어 role·tabIndex를 주지 않는다). 키보드·수치 입력 대안은 PosePanel(IK 목표·스코프)이다.
- * Babylon 객체는 React state에 넣지 않는다 — 엔진은 `engineSession.engine()` ref로만 접근한다.
+ * ViewportPane: 엔진 캔버스 + 도구 막대 + HUD 오버레이 + 관절 핸들(SVG) + SHAPER 형상 제어점(ControlPoint) + 모델 위 드로잉 오버레이.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -39,6 +18,17 @@ import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, 
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
 import {
+  SHAPER_BUILTIN_ARCHETYPE_PRESETS,
+  SHAPER_BUILTIN_PART_PRESETS,
+  SHAPER_BUILTIN_POSE_PRESETS,
+  SHAPER_GIZMO_MODES,
+  buildShaperPresetCommands,
+  computeShaperBoneScaleDrag,
+  computeShaperControlPointDrag,
+  computeShaperControlPoints,
+  computeShaperIkHandleDrag,
+} from "./shaper-control-points";
+import {
   SHAPER_BUILTIN_BODY_PRESETS,
   SHAPER_BUILTIN_FACE_PRESETS,
   applySymmetryToPose,
@@ -52,32 +42,29 @@ import {
   visibleHandles,
 } from "./viewport-interactions";
 
+import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, JointDragHandle, Pose, SkeletonData } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 
 export interface ViewportPaneProps {
-  /** 드로잉 세션(기본: 앱 단일 세션). 테스트가 주입한다. */
   readonly paintSession?: PaintSession;
-  /** HUD 갱신 주기(ms). 0 이하면 폴링하지 않는다. */
   readonly hudIntervalMs?: number;
-  /** 처음 켜 둘 오버레이(기본: 관절 핸들·HUD 모두 꺼짐, A-03). 테스트·임베드가 켠 상태로 시작할 때 쓴다. */
-  readonly initialOverlays?: { readonly handles?: boolean; readonly hud?: boolean };
+  readonly initialOverlays?: { readonly handles?: boolean; readonly hud?: boolean; readonly controlPoints?: boolean };
 }
 
 export const DEFAULT_HUD_INTERVAL_MS = 250;
-
 const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; readonly label: string }> = [
   { mode: "full-body", label: "전신" },
   { mode: "bust", label: "상반신" },
   { mode: "face", label: "얼굴" },
 ];
-
 const FILL: CSSProperties = { position: "absolute", inset: 0 };
 const NO_POINTER: CSSProperties = { ...FILL, width: "100%", height: "100%", pointerEvents: "none" };
+const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
 
 interface DragSession {
   readonly pointerId: number;
@@ -88,15 +75,23 @@ interface DragSession {
   readonly startPose: Pose;
   readonly startPixel: readonly [number, number];
   readonly basePlan: ApplyPlan | null;
+  readonly mode: ShaperGizmoMode;
+  readonly baseBody: ParamValues<BodyParamKey>;
   outcome: JointDragOutcome | null;
+  ikOutcome: { readonly pose: Pose; readonly labelKo: string } | null;
+}
+
+interface ControlPointDragSession {
+  readonly pointerId: number;
+  readonly controlPoint: ShaperProjectedControlPoint;
+  readonly startPixel: readonly [number, number];
+  readonly baseFace: ParamValues<FaceParamKey>;
+  readonly baseBody: ParamValues<BodyParamKey>;
 }
 
 function failureText(error: unknown, fallback: string): string {
   return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
 }
-
-/** 캔버스 키보드 조작(H-03) — aria-keyshortcuts 값 */
-const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
 
 export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVAL_MS, initialOverlays }: ViewportPaneProps) {
   const labState = useLabState();
@@ -108,7 +103,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const { setDrawingMode } = useUiActions();
   const plan = useApplyPlan();
   const paint = paintSession ?? getDefaultPaintSession();
-  // 스트로크의 dab마다 세션 상태가 바뀌므로 필요한 원시값만 구독한다(뷰포트가 dab마다 다시 그려지지 않도록).
   const activePart = useSyncExternalStore(paint.subscribe, () => paint.getState().activePart, () => paint.getState().activePart);
   const brushRadius = useSyncExternalStore(paint.subscribe, () => Math.round(paint.getState().brush.radiusPx), () => Math.round(paint.getState().brush.radiusPx));
 
@@ -117,26 +111,27 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
   const [showHandles, setShowHandles] = useState(initialOverlays?.handles ?? false);
   const [showFingers, setShowFingers] = useState(false);
+  const [showControlPoints, setShowControlPoints] = useState(initialOverlays?.controlPoints ?? false);
   const [showHud, setShowHud] = useState(initialOverlays?.hud ?? false);
   const [framing, setFraming] = useState<CameraFraming["mode"]>(DEFAULT_FRAMING.mode);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
   const [pivotMode, setPivotMode] = useState<ShaperPivotMode>("parent");
-  const [gizmoMode, setGizmoMode] = useState<0 | 1 | 2 | 3>(2);
+  const [gizmoMode, setGizmoMode] = useState<ShaperGizmoMode>(2);
   const [shaperPresetId, setShaperPresetId] = useState("");
   const [hud, setHud] = useState<HudSample | null>(null);
   const [handles, setHandles] = useState<readonly JointDragHandle[]>([]);
   const [renderSize, setRenderSize] = useState<{ readonly width: number; readonly height: number } | null>(null);
   const [draggingBone, setDraggingBone] = useState<string | null>(null);
+  const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  /** 캔버스 세대. 엔진을 다시 만들 때마다 올려 `<canvas key>`를 새로 마운트한다(컨텍스트가 잠긴 캔버스 재사용 방지). */
   const [canvasGeneration, setCanvasGeneration] = useState(0);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<DragSession | null>(null);
+  const cpDragRef = useRef<ControlPointDragSession | null>(null);
   const driverRef = useRef<PointerPaintDriver | null>(null);
   const planRef = useRef<ApplyPlan | null>(plan);
   const poseRef = useRef<Pose>(labState.recipe.pose);
@@ -144,17 +139,17 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const fingersRef = useRef(showFingers);
   const symmetryRef = useRef(symmetryMode);
   const pivotModeRef = useRef<ShaperPivotMode>(pivotMode);
+  const gizmoModeRef = useRef<ShaperGizmoMode>(gizmoMode);
 
-  // 렌더마다 최신 값을 ref에 둔다(이벤트 핸들러가 stale closure를 읽지 않도록).
   useEffect(() => {
     planRef.current = plan;
     poseRef.current = labState.recipe.pose;
     fingersRef.current = showFingers;
     symmetryRef.current = symmetryMode;
     pivotModeRef.current = pivotMode;
+    gizmoModeRef.current = gizmoMode;
   });
 
-  // ---- 캔버스 등록(TopBar가 `registry.claim()`으로 꺼내 엔진 생성에 쓴다). ref 콜백이라 새 캔버스는 마운트 커밋 안에서 바로 등록된다.
   const registerCanvas = useCallback(
     (canvas: HTMLCanvasElement | null) => {
       canvasElRef.current = canvas;
@@ -169,11 +164,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     if (canvasElRef.current) setCanvasCameraInputStyle(canvasElRef.current, cameraInputStyle);
   }, [cameraInputStyle]);
 
-  // WebGPU·WebGL2 컨텍스트는 한 번 얻으면 캔버스에 잠겨 다른 종류의 getContext가 null이다. 이미 엔진 생성에 쓴 캔버스를 다시 요청받으면
-  // 캔버스를 새로 마운트한다(동기: claim()을 부른 클릭 핸들러가 곧바로 새 캔버스를 받아야 한다).
   useEffect(() => registry.setRenewer(() => flushSync(() => setCanvasGeneration((generation) => generation + 1))), [registry]);
 
-  // ---- 크기: 컨테이너 크기를 엔진 렌더 크기에 반영(DPR 포함, 상한 2 — 엔진 하드웨어 스케일과 같은 배율)
   useEffect(() => {
     if (!engine) return undefined;
     const container = containerRef.current;
@@ -191,7 +183,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     return () => observer.disconnect();
   }, [engine]);
 
-  // ---- HUD 폴링
   useEffect(() => {
     if (!engine || !showHud) {
       setHud(null);
@@ -211,7 +202,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     return () => window.clearInterval(timer);
   }, [engine, showHud, hudIntervalMs]);
 
-  // ---- 관절 핸들 폴링(rAF, 화면 좌표가 바뀔 때만 상태 갱신)
   const syncHandles = useCallback((target: CharacterEngine): void => {
     const next = visibleHandles(target.jointHandles(), { fingers: fingersRef.current });
     const camera = readViewportCamera(target);
@@ -224,7 +214,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
   useEffect(() => {
     handlesKeyRef.current = "";
-    if (!engine || !showHandles) {
+    if (!engine || (!showHandles && !showControlPoints)) {
       setHandles([]);
       return undefined;
     }
@@ -240,15 +230,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       alive = false;
       window.cancelAnimationFrame(frame);
     };
-  }, [engine, showHandles, showFingers, syncHandles]);
+  }, [engine, showHandles, showControlPoints, showFingers, syncHandles]);
 
-  // ---- 드로잉 드라이버(엔진·모드가 바뀌면 진행 중 스트로크를 취소)
   useEffect(() => {
     if (!engine || !ui.drawingMode) {
       driverRef.current = null;
       return undefined;
     }
-    // 투영 페인트(베타)가 켜져 있고 능력이 되면 그 스트로크는 투영 경로, 아니면 기존 UV 스탬프(`projection-paint-driver.ts`가 스트로크마다 고른다).
     const driver = createSwitchingPaintDriver(paint, {
       pick: (ndcX, ndcY) => engine.pick(ndcX, ndcY),
       upload: (layer) => engine.updatePaintTexture(layer),
@@ -263,7 +251,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     };
   }, [engine, ui.drawingMode, paint, dispatch]);
 
-  // ---- 카메라 프레이밍
   const onFraming = useCallback(
     (mode: CameraFraming["mode"]): void => {
       if (!engine) return;
@@ -278,7 +265,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     [engine],
   );
 
-  // ---- 빠른 시작 카드에서 엔진 명시 선택(자동 폴백 금지, ADR-0018)
   const selectBackend = useCallback(
     (backend: EngineBackend): void => {
       const canvas = registry.claim();
@@ -294,7 +280,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     [registry, store, engineSession],
   );
 
-  // ---- 시점 초기화(현재 프레이밍을 다시 적용 — 휠·팬·회전으로 바뀐 시점을 되돌린다). 캔버스 더블클릭·0 키·F5 키는 엔진 입력이 같은 일을 한다.
   const onResetView = useCallback((): void => {
     if (!engine) return;
     try {
@@ -305,43 +290,32 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     }
   }, [engine, framing]);
 
-  // ---- 카메라 프레이밍 및 SHAPER 뷰포트 단축키(F: 전신, B: 상반신, C: 얼굴, F5: 시점 초기화, Ctrl+Z/Y: 실행 취소/다시 실행)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target;
-      const isTextInput =
-        target instanceof HTMLElement &&
-        (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
-      if (isTextInput) return;
-
+      if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
       const ctrlOrMeta = event.ctrlKey || event.metaKey;
       const lowerKey = event.key.toLowerCase();
       if (ctrlOrMeta && !event.altKey) {
         if (lowerKey === "z" && !event.shiftKey) {
           event.preventDefault();
           dispatch({ type: "history/undo" });
-          return;
-        }
-        if ((lowerKey === "z" && event.shiftKey) || lowerKey === "y") {
+        } else if ((lowerKey === "z" && event.shiftKey) || lowerKey === "y") {
           event.preventDefault();
           dispatch({ type: "history/redo" });
-          return;
         }
         return;
       }
-
       if (!engine || event.altKey) return;
-      const shaperAction = resolveShaperViewportKeyShortcut(event.key, {
-        shift: event.shiftKey,
-        ctrl: ctrlOrMeta,
-        alt: event.altKey,
-      });
+      const shaperAction = resolveShaperViewportKeyShortcut(event.key, { shift: event.shiftKey, ctrl: ctrlOrMeta, alt: event.altKey });
       if (shaperAction?.kind === "reset-camera") {
         onResetView();
         return;
       }
       if (shaperAction?.kind === "gizmo-mode") {
         setGizmoMode(shaperAction.mode);
+        const modeInfo = SHAPER_GIZMO_MODES.find((m) => m.mode === shaperAction.mode);
+        if (modeInfo) setNotice(`기즈모 모드 전환: ${modeInfo.labelKo}`);
         return;
       }
       if (shaperAction?.kind === "camera-view") {
@@ -369,12 +343,16 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     (presetKey: string): void => {
       setShaperPresetId(presetKey);
       if (!presetKey) return;
+      const batch = buildShaperPresetCommands(presetKey);
+      if (batch) {
+        for (const cmd of batch.commands) dispatch(cmd);
+        setNotice(batch.noticeKo);
+        return;
+      }
       if (presetKey in SHAPER_BUILTIN_BODY_PRESETS) {
         const entry = SHAPER_BUILTIN_BODY_PRESETS[presetKey as keyof typeof SHAPER_BUILTIN_BODY_PRESETS];
         for (const [key, value] of Object.entries(entry.bodyParams)) {
-          if (typeof value === "number") {
-            dispatch({ type: "param/set", group: "body", key: key as BodyParamKey, value, coalesceKey: `shaper-preset:${entry.id}` });
-          }
+          if (typeof value === "number") dispatch({ type: "param/set", group: "body", key: key as BodyParamKey, value, coalesceKey: `shaper-preset:${entry.id}` });
         }
         setNotice(`${entry.labelKo} 체형 비율을 적용했습니다.`);
         return;
@@ -382,9 +360,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       if (presetKey in SHAPER_BUILTIN_FACE_PRESETS) {
         const entry = SHAPER_BUILTIN_FACE_PRESETS[presetKey as keyof typeof SHAPER_BUILTIN_FACE_PRESETS];
         for (const [key, value] of Object.entries(entry.faceParams)) {
-          if (typeof value === "number") {
-            dispatch({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey: `shaper-preset:${entry.id}` });
-          }
+          if (typeof value === "number") dispatch({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey: `shaper-preset:${entry.id}` });
         }
         setNotice(`${entry.labelKo} 두상 비율을 적용했습니다.`);
       }
@@ -392,9 +368,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     [dispatch],
   );
 
-  // ---- 관절 드래그
   const cancelDrag = useCallback((): void => {
     const session = dragRef.current;
+    cpDragRef.current = null;
+    setDraggingCp(null);
     if (!session) return;
     dragRef.current = null;
     setDraggingBone(null);
@@ -409,26 +386,22 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   }, [syncHandles]);
 
   useEffect(() => {
-    if (!draggingBone) return undefined;
+    if (!draggingBone && !draggingCp) return undefined;
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") cancelDrag();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [draggingBone, cancelDrag]);
+  }, [draggingBone, draggingCp, cancelDrag]);
 
-  // 엔진이 바뀌거나 언마운트되면 진행 중 드래그를 정리한다.
   useEffect(() => cancelDrag, [engine, cancelDrag]);
-
-  // 핸들 오버레이를 끄면 진행 중 드래그도 취소한다(핸들 요소가 사라져 pointerup을 못 받는다).
   useEffect(() => {
-    if (!showHandles) cancelDrag();
-  }, [showHandles, cancelDrag]);
+    if (!showHandles && !showControlPoints) cancelDrag();
+  }, [showHandles, showControlPoints, cancelDrag]);
 
   const pixelOf = (event: ReactPointerEvent<Element>, camera: ViewportCameraInfo): readonly [number, number] | null => {
     const svg = svgRef.current;
-    if (!svg) return null;
-    return clientToRenderPixel(event.clientX, event.clientY, svg.getBoundingClientRect(), camera);
+    return svg ? clientToRenderPixel(event.clientX, event.clientY, svg.getBoundingClientRect(), camera) : null;
   };
 
   const onHandleDown = (event: ReactPointerEvent<SVGCircleElement>, handle: JointDragHandle): void => {
@@ -440,15 +413,21 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       setNotice("관절 드래그를 쓸 수 없습니다: 이 엔진·소스는 스켈레톤(포즈 프레임)을 제공하지 않습니다.");
       return;
     }
+    const mode = gizmoModeRef.current;
+    if (mode === 0) {
+      setDraggingBone(handle.bone);
+      setNotice(`${jointLabelKo(handle.bone)} 선택됨 (Q 선택 모드 — W: IK 이동, E: FK 회전, R: 체형 스케일)`);
+      return;
+    }
     const startPose = planRef.current?.boneRotations ?? poseRef.current;
-    const pivot = resolveDragPivotWithMode(skeleton, startPose, handle.bone, pivotModeRef.current);
+    const pivot = resolveDragPivotWithMode(skeleton, startPose, handle.bone as HumanoidBoneName, pivotModeRef.current);
     const startPixel = pixelOf(event, camera);
     if (!pivot || !startPixel) {
       setNotice(`${jointLabelKo(handle.bone)} 핸들은 회전 관절을 찾지 못해 끌 수 없습니다.`);
       return;
     }
     if (typeof event.currentTarget.setPointerCapture === "function") event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { pointerId: event.pointerId, engine, skeleton, handle, pivot, startPose, startPixel, basePlan: planRef.current, outcome: null };
+    dragRef.current = { pointerId: event.pointerId, engine, skeleton, handle, pivot, startPose, startPixel, basePlan: planRef.current, mode, baseBody: labState.recipe.body, outcome: null, ikOutcome: null };
     setDraggingBone(handle.bone);
     setNotice(null);
   };
@@ -459,6 +438,30 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     const camera = readViewportCamera(session.engine);
     const currentPixel = camera ? pixelOf(event, camera) : null;
     if (!camera || !currentPixel) return;
+
+    if (session.mode === 3) {
+      const scaleOut = computeShaperBoneScaleDrag({ handleBone: session.handle.bone as HumanoidBoneName, startPixel: session.startPixel, currentPixel, renderWidth: camera.width, renderHeight: camera.height, baseBody: session.baseBody });
+      dispatch({ type: "param/set", group: "body", key: scaleOut.key, value: scaleOut.value, coalesceKey: `shaper-bone-scale:${session.handle.bone}` });
+      setNotice(scaleOut.labelKo);
+      return;
+    }
+
+    if (session.mode === 1) {
+      const ikOut = computeShaperIkHandleDrag({ skeleton: session.skeleton, startPose: session.startPose, handleBone: session.handle.bone as HumanoidBoneName, camera, startPixel: session.startPixel, currentPixel, symmetryEnabled: symmetryRef.current || event.altKey, pivotMode: pivotModeRef.current });
+      if (!ikOut) return;
+      session.ikOutcome = { pose: ikOut.pose, labelKo: ikOut.labelKo };
+      setNotice(ikOut.reasonKo ?? `${ikOut.labelKo} 미리보기`);
+      if (session.basePlan) {
+        try {
+          session.engine.applyPlan({ ...session.basePlan, boneRotations: ikOut.pose });
+          syncHandles(session.engine);
+        } catch (error) {
+          setNotice(failureText(error, "IK 미리보기를 적용하지 못했습니다."));
+        }
+      }
+      return;
+    }
+
     let outcome: JointDragOutcome | null;
     try {
       outcome = computeJointDrag({ skeleton: session.skeleton, startPose: session.startPose, pivot: session.pivot, camera, startPixel: session.startPixel, currentPixel });
@@ -468,16 +471,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     }
     if (!outcome) return;
     const rotation = outcome.pose[outcome.pivotBone];
-    const effectivePose =
-      rotation && (symmetryRef.current || event.altKey)
-        ? applySymmetryToPose(outcome.pose, outcome.pivotBone, rotation, true)
-        : outcome.pose;
+    const effectivePose = rotation && (symmetryRef.current || event.altKey) ? applySymmetryToPose(outcome.pose, outcome.pivotBone, rotation, true) : outcome.pose;
     session.outcome = { ...outcome, pose: effectivePose };
     setNotice(outcome.clamped ? `${jointLabelKo(outcome.pivotBone)}: 관절 제한에 닿아 요청(${Math.abs(outcome.requestedDeg).toFixed(0)}°)보다 덜 회전합니다.` : null);
-    const base = session.basePlan;
-    if (base) {
+    if (session.basePlan) {
       try {
-        session.engine.applyPlan({ ...base, boneRotations: effectivePose });
+        session.engine.applyPlan({ ...session.basePlan, boneRotations: effectivePose });
         syncHandles(session.engine);
       } catch (error) {
         setNotice(failureText(error, "드래그 미리보기를 적용하지 못했습니다."));
@@ -490,6 +489,22 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     if (!session || session.pointerId !== event.pointerId) return;
     if (typeof event.currentTarget.releasePointerCapture === "function" && event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (session.mode === 3) {
+      dragRef.current = null;
+      setDraggingBone(null);
+      return;
+    }
+    if (session.mode === 1) {
+      const ikOutcome = session.ikOutcome;
+      if (!commit || !ikOutcome) {
+        cancelDrag();
+        return;
+      }
+      dragRef.current = null;
+      setDraggingBone(null);
+      dispatch({ type: "pose/set", pose: ikOutcome.pose, scope: "full", labelKo: ikOutcome.labelKo });
+      return;
     }
     const outcome = session.outcome;
     if (!commit || !outcome) {
@@ -504,11 +519,44 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       return;
     }
     const nextPose = applySymmetryToPose(poseRef.current, outcome.pivotBone, rotation, symmetryRef.current || event.altKey);
-    // 레시피 포즈만 갱신한다(플랜에는 손 포즈 등이 합쳐져 있다). 1 드래그 = history 1단계.
     dispatch({ type: "pose/set", pose: nextPose, scope: "full", labelKo: `관절 드래그: ${jointLabelKo(outcome.pivotBone)}` });
   };
 
-  // ---- 드로잉 포인터
+  const onControlPointDown = (event: ReactPointerEvent<SVGCircleElement>, cp: ShaperProjectedControlPoint): void => {
+    if (!engine || event.button !== 0) return;
+    event.preventDefault();
+    const camera = readViewportCamera(engine);
+    const startPixel = camera ? pixelOf(event, camera) : null;
+    if (!camera || !startPixel) return;
+    if (typeof event.currentTarget.setPointerCapture === "function") event.currentTarget.setPointerCapture(event.pointerId);
+    cpDragRef.current = { pointerId: event.pointerId, controlPoint: cp, startPixel, baseFace: labState.recipe.face, baseBody: labState.recipe.body };
+    setDraggingCp(cp.id);
+    setNotice(`${cp.labelKo} 드래그 성형 시작`);
+  };
+
+  const onControlPointMove = (event: ReactPointerEvent<SVGCircleElement>): void => {
+    const session = cpDragRef.current;
+    if (!session || !engine || session.pointerId !== event.pointerId) return;
+    const camera = readViewportCamera(engine);
+    const currentPixel = camera ? pixelOf(event, camera) : null;
+    if (!camera || !currentPixel) return;
+    const outcome = computeShaperControlPointDrag({ controlPoint: session.controlPoint, startPixel: session.startPixel, currentPixel, renderWidth: camera.width, renderHeight: camera.height, baseFace: session.baseFace, baseBody: session.baseBody });
+    for (const change of outcome.changes) {
+      dispatch({ type: "param/set", group: change.group, key: change.key, value: change.value, coalesceKey: `shaper-cp:${session.controlPoint.id}:${change.key}` });
+    }
+    setNotice(outcome.summaryKo);
+  };
+
+  const finishControlPointDrag = (event: ReactPointerEvent<SVGCircleElement>): void => {
+    const session = cpDragRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    if (typeof event.currentTarget.releasePointerCapture === "function" && event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    cpDragRef.current = null;
+    setDraggingCp(null);
+  };
+
   const onDrawDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
     const driver = driverRef.current;
     if (!driver || event.button !== 0) return;
@@ -542,152 +590,85 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const viewBox = renderSize ? `0 0 ${renderSize.width} ${renderSize.height}` : undefined;
   const ratio = typeof window !== "undefined" ? viewportPixelRatio(window.devicePixelRatio) : 1;
   const noHandleReason = engine && showHandles && handles.length === 0 ? "이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다." : null;
-  const boneLinks = engine && showHandles && handles.length > 0 ? computeVisibleBoneLinks(handles, readPoseSkeleton(engine)) : [];
+  const poseSkeleton = engine && (showHandles || showControlPoints) ? readPoseSkeleton(engine) : null;
+  const activeCamera = engine && showControlPoints ? readViewportCamera(engine) : null;
+  const boneLinks = engine && showHandles && handles.length > 0 ? computeVisibleBoneLinks(handles, poseSkeleton) : [];
+  const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
 
   return (
     <div ref={containerRef} className="cl-viewport" style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
-      <canvas
-        key={canvasGeneration}
-        ref={registerCanvas}
-        className="cl-viewport-canvas"
-        aria-label="캐릭터 뷰포트"
-        aria-keyshortcuts={CANVAS_KEY_SHORTCUTS}
-        tabIndex={0}
-      />
+      <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} />
 
       <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "absolute", top: 8, left: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
         <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
           {FRAMING_MODES.map((entry) => (
-            <button key={entry.mode} type="button" className="cl-viewport-button" aria-pressed={framing === entry.mode} disabled={!engine} onClick={() => onFraming(entry.mode)}>
-              {entry.label}
-            </button>
+            <button key={entry.mode} type="button" className="cl-viewport-button" aria-pressed={framing === entry.mode} disabled={!engine} onClick={() => onFraming(entry.mode)}>{entry.label}</button>
           ))}
-          <button type="button" className="cl-viewport-button" disabled={!engine} onClick={onResetView} title="현재 프레이밍으로 시점을 되돌립니다(캔버스 더블클릭·0 키·F5 키와 같음)">
-            시점 초기화
-          </button>
-          <select
-            className="cl-viewport-select"
-            aria-label="카메라 조작 방식"
-            value={cameraInputStyle}
-            title={formatShaperInputStyleGuide(cameraInputStyle).camControlToolTipText}
-            onChange={(event) => setCameraInputStyle(event.target.value as ShaperCameraInputStyle)}
-          >
+          <button type="button" className="cl-viewport-button" disabled={!engine} onClick={onResetView} title="현재 프레이밍으로 시점을 되돌립니다(캔버스 더블클릭·0 키·F5 키와 같음)">시점 초기화</button>
+          <select className="cl-viewport-select" aria-label="카메라 조작 방식" value={cameraInputStyle} title={formatShaperInputStyleGuide(cameraInputStyle).camControlToolTipText} onChange={(event) => setCameraInputStyle(event.target.value as ShaperCameraInputStyle)}>
             <option value="unity">Unity 조작</option>
             <option value="blender">Blender 조작</option>
             <option value="max">3ds Max 조작</option>
           </select>
         </span>
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
-          <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>
-            관절 핸들
-          </button>
-          <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>
-            손가락 핸들
-          </button>
-          <button
-            type="button"
-            className="cl-viewport-button"
-            aria-pressed={symmetryMode}
-            disabled={!showHandles}
-            title="SHAPER 대칭 포즈 조작(켜거나 Alt+드래그 시 좌우 관절을 대칭으로 함께 회전)"
-            onClick={() => setSymmetryMode((value) => !value)}
-          >
-            대칭 조작
-          </button>
-          <button
-            type="button"
-            className="cl-viewport-button"
-            aria-pressed={pivotMode === "direct"}
-            disabled={!showHandles}
-            title="SHAPER BoneManager.pivotIKMode 전환: 부모 관절 피벗(기본) ↔ 선택 본 직접 회전"
-            onClick={() => setPivotMode((mode) => (mode === "parent" ? "direct" : "parent"))}
-          >
-            직접 피벗
-          </button>
-          <select
-            className="cl-viewport-select"
-            aria-label="SHAPER 내장 프리셋"
-            value={shaperPresetId}
-            title="SHAPER BuiltInData 정본 체형(여성1·남성1·소년) 및 두상(얼굴형1..6) 비율을 즉시 적용합니다"
-            onChange={(event) => applyShaperBuiltInPreset(event.target.value)}
-          >
+          <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
+          <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>손가락 핸들</button>
+          <button type="button" className="cl-viewport-button" aria-pressed={showControlPoints} title="SHAPER ControlPoint(초록색 구체): 3D 뷰포트에서 얼굴·체형 제어점을 직접 끌어 성형" onClick={() => setShowControlPoints((value) => !value)}>형상 제어점</button>
+          <button type="button" className="cl-viewport-button" aria-pressed={symmetryMode} disabled={!showHandles} title="SHAPER 대칭 포즈 조작(좌우 관절 대칭 회전/IK)" onClick={() => setSymmetryMode((value) => !value)}>대칭 조작</button>
+          <button type="button" className="cl-viewport-button" aria-pressed={pivotMode === "direct"} disabled={!showHandles} title="SHAPER BoneManager.pivotIKMode 전환" onClick={() => setPivotMode((mode) => (mode === "parent" ? "direct" : "parent"))}>직접 피벗</button>
+          <select className="cl-viewport-select" aria-label="기즈모 조작 모드" value={gizmoMode} disabled={!showHandles} title="SHAPER PivotManager 기즈모 모드 전환 (단축키 Q / W / E / R)" onChange={(event) => setGizmoMode(Number(event.target.value) as ShaperGizmoMode)}>
+            {SHAPER_GIZMO_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.shortLabelKo}</option>)}
+          </select>
+          <select className="cl-viewport-select" aria-label="SHAPER 내장 프리셋" value={shaperPresetId} title="SHAPER BuiltInData 풀세트 아키타입·체형·두상·이목구비·포즈를 즉시 적용합니다" onChange={(event) => applyShaperBuiltInPreset(event.target.value)}>
             <option value="">SHAPER 프리셋 적용…</option>
+            <optgroup label="SHAPER 풀세트 아키타입 (헤어+의상+체형+포즈)">
+              {Object.values(SHAPER_BUILTIN_ARCHETYPE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
+            </optgroup>
             <optgroup label="SHAPER 정본 체형 (BuiltInData/body)">
-              {Object.values(SHAPER_BUILTIN_BODY_PRESETS).map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.labelKo}
-                </option>
-              ))}
+              {Object.values(SHAPER_BUILTIN_BODY_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
             </optgroup>
             <optgroup label="SHAPER 정본 두상 (BuiltInData/head)">
-              {Object.values(SHAPER_BUILTIN_FACE_PRESETS).map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.labelKo}
-                </option>
-              ))}
+              {Object.values(SHAPER_BUILTIN_FACE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
+            </optgroup>
+            <optgroup label="SHAPER 이목구비 파츠 (BuiltInData/parts)">
+              {Object.values(SHAPER_BUILTIN_PART_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
+            </optgroup>
+            <optgroup label="SHAPER 정본 포즈 (BuiltInData/pose)">
+              {Object.values(SHAPER_BUILTIN_POSE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
             </optgroup>
           </select>
-          <button type="button" className="cl-viewport-button" aria-pressed={showHud} onClick={() => setShowHud((value) => !value)}>
-            HUD
-          </button>
-          <button type="button" className="cl-viewport-button" aria-pressed={ui.drawingMode} disabled={!engine} onClick={() => setDrawingMode(!ui.drawingMode)}>
-            드로잉
-          </button>
+          <button type="button" className="cl-viewport-button" aria-pressed={showHud} onClick={() => setShowHud((value) => !value)}>HUD</button>
+          <button type="button" className="cl-viewport-button" aria-pressed={ui.drawingMode} disabled={!engine} onClick={() => setDrawingMode(!ui.drawingMode)}>드로잉</button>
         </span>
       </div>
 
       {labState.engine.phase === "idle" ? (
-        <div
-          className="cl-viewport-onboarding"
-          data-testid="viewport-onboarding-card"
-          style={{ position: "absolute", inset: "52px 16px 56px 16px", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
-        >
+        <div className="cl-viewport-onboarding" data-testid="viewport-onboarding-card" style={{ position: "absolute", inset: "52px 16px 56px 16px", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
           <div className="cl-viewport-onboarding-inner" style={{ pointerEvents: "auto" }}>
             <h2 className="cl-viewport-onboarding-title">빠른 시작 3단계 가이드</h2>
-            <p className="cl-viewport-onboarding-desc">
-              렌더 엔진은 자동으로 시작되거나 대체되지 않습니다(ADR-0018). 아래 1단계 버튼으로 엔진을 먼저 시작하세요.
-            </p>
+            <p className="cl-viewport-onboarding-desc">렌더 엔진은 자동으로 시작되거나 대체되지 않습니다(ADR-0018). 아래 1단계 버튼으로 엔진을 먼저 시작하세요.</p>
             <ol className="cl-viewport-onboarding-steps">
               <li>
                 <strong>1단계: 렌더 엔진 선택</strong> — 환경에 맞는 그래픽 백엔드를 직접 선택합니다.
                 <div className="cl-viewport-onboarding-actions" role="group" aria-label="빠른 엔진 시작">
-                  <button
-                    type="button"
-                    className="cl-button cl-button--primary"
-                    data-testid="onboarding-start-webgpu"
-                    onClick={() => selectBackend("webgpu")}
-                  >
-                    WebGPU로 시작
-                  </button>
-                  <button
-                    type="button"
-                    className="cl-button"
-                    data-testid="onboarding-start-webgl2"
-                    onClick={() => selectBackend("webgl2")}
-                  >
-                    WebGL2로 시작
-                  </button>
+                  <button type="button" className="cl-button cl-button--primary" data-testid="onboarding-start-webgpu" onClick={() => selectBackend("webgpu")}>WebGPU로 시작</button>
+                  <button type="button" className="cl-button" data-testid="onboarding-start-webgl2" onClick={() => selectBackend("webgl2")}>WebGL2로 시작</button>
                 </div>
               </li>
-              <li>
-                <strong>2단계: 좌측 15슬롯 외형 조합 &amp; 상단 빠른 테마 프리셋 적용</strong> — 체형·얼굴·헤어·의상 슬롯을 고르고 상단 스타일 프리셋으로 셰이딩 분위기를 바꿉니다.
-              </li>
-              <li>
-                <strong>3단계: 우측 인스펙터에서 체형·표정·포즈·렌더 조절 및 PNG/PSD/GLB 내보내기</strong> — 세부 슬라이더·관절 핸들·페인트 조절 후 결과물을 저장합니다.
-              </li>
+              <li><strong>2단계: 좌측 15슬롯 외형 조합 &amp; 상단 빠른 테마 프리셋 적용</strong> — 체형·얼굴·헤어·의상 슬롯을 고르고 상단 스타일 프리셋으로 셰이딩 분위기를 바꿉니다.</li>
+              <li><strong>3단계: 우측 인스펙터에서 체형·표정·포즈·렌더 조절 및 PNG/PSD/GLB 내보내기</strong> — 세부 슬라이더·관절 핸들·페인트 조절 후 결과물을 저장합니다.</li>
             </ol>
           </div>
         </div>
       ) : null}
 
       {labState.engine.phase !== "ready" ? (
-        <p className="cl-viewport-status" role="status" data-tone={engineText.tone} style={{ position: "absolute", left: 12, right: 12, bottom: 12, margin: 0 }}>
-          {engineText.text}
-        </p>
+        <p className="cl-viewport-status" role="status" data-tone={engineText.tone} style={{ position: "absolute", left: 12, right: 12, bottom: 12, margin: 0 }}>{engineText.text}</p>
       ) : null}
 
-      {engine && showHandles ? (
+      {engine && (showHandles || showControlPoints) ? (
         <svg ref={svgRef} className="cl-viewport-handles" role="group" aria-label="관절 핸들" data-gizmo-mode={gizmoMode} viewBox={viewBox} preserveAspectRatio="none" style={NO_POINTER}>
           {boneLinks.map((link) => (
             <line
@@ -706,51 +687,59 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
             />
           ))}
           {activeHandle ? (
-            <circle
-              className="cl-viewport-gizmo-ring"
-              data-gizmo-ring={activeHandle.bone}
-              cx={activeHandle.screen[0]}
-              cy={activeHandle.screen[1]}
-              r={22 * Math.max(1, ratio)}
-              fill="none"
-              stroke="rgba(255, 212, 59, 0.9)"
-              strokeWidth={Math.max(1.5, 2 * ratio)}
-              strokeDasharray="4 3"
-            />
+            <circle className="cl-viewport-gizmo-ring" data-gizmo-ring={activeHandle.bone} cx={activeHandle.screen[0]} cy={activeHandle.screen[1]} r={22 * Math.max(1, ratio)} fill="none" stroke="rgba(255, 212, 59, 0.9)" strokeWidth={Math.max(1.5, 2 * ratio)} strokeDasharray="4 3" />
           ) : null}
-          {handles.map((handle) => (
-            <circle
-              key={handle.bone}
-              className="cl-viewport-handle"
-              data-bone={handle.bone}
-              data-dragging={draggingBone === handle.bone ? "true" : undefined}
-              aria-label={`${jointLabelKo(handle.bone)} 관절 핸들`}
-              cx={handle.screen[0]}
-              cy={handle.screen[1]}
-              r={(draggingBone === handle.bone ? 8 : 6) * Math.max(1, ratio)}
-              style={{ pointerEvents: "all", cursor: draggingBone === handle.bone ? "grabbing" : "grab", touchAction: "none" }}
-              onPointerDown={(event) => onHandleDown(event, handle)}
-              onPointerMove={onHandleMove}
-              onPointerUp={(event) => finishDrag(event, true)}
-              onPointerCancel={(event) => finishDrag(event, false)}
-            >
-              <title>{jointLabelKo(handle.bone)}</title>
-            </circle>
-          ))}
+          {showHandles
+            ? handles.map((handle) => (
+                <circle
+                  key={handle.bone}
+                  className="cl-viewport-handle"
+                  data-bone={handle.bone}
+                  data-dragging={draggingBone === handle.bone ? "true" : undefined}
+                  aria-label={`${jointLabelKo(handle.bone)} 관절 핸들`}
+                  cx={handle.screen[0]}
+                  cy={handle.screen[1]}
+                  r={(draggingBone === handle.bone ? 8 : 6) * Math.max(1, ratio)}
+                  style={{ pointerEvents: "all", cursor: draggingBone === handle.bone ? "grabbing" : "grab", touchAction: "none" }}
+                  onPointerDown={(event) => onHandleDown(event, handle)}
+                  onPointerMove={onHandleMove}
+                  onPointerUp={(event) => finishDrag(event, true)}
+                  onPointerCancel={(event) => finishDrag(event, false)}
+                >
+                  <title>{jointLabelKo(handle.bone)}</title>
+                </circle>
+              ))
+            : null}
+          {showControlPoints
+            ? controlPoints.map((cp) => (
+                <circle
+                  key={cp.id}
+                  className="cl-viewport-control-point"
+                  data-control-point={cp.id}
+                  data-category={cp.category}
+                  data-dragging={draggingCp === cp.id ? "true" : undefined}
+                  aria-label={cp.labelKo}
+                  cx={cp.screen[0]}
+                  cy={cp.screen[1]}
+                  r={(draggingCp === cp.id ? 7.5 : 5.5) * Math.max(1, ratio)}
+                  fill={cp.category === "face" ? "rgba(64, 224, 128, 0.9)" : "rgba(56, 217, 169, 0.88)"}
+                  stroke="#0b2e13"
+                  strokeWidth={Math.max(1.2, 1.5 * ratio)}
+                  style={{ pointerEvents: "all", cursor: "move", touchAction: "none" }}
+                  onPointerDown={(event) => onControlPointDown(event, cp)}
+                  onPointerMove={onControlPointMove}
+                  onPointerUp={finishControlPointDrag}
+                  onPointerCancel={finishControlPointDrag}
+                >
+                  <title>{cp.labelKo}</title>
+                </circle>
+              ))
+            : null}
         </svg>
       ) : null}
 
       {engine && ui.drawingMode ? (
-        <div
-          className="cl-viewport-draw-layer"
-          role="application"
-          aria-label="모델 위 드로잉 영역"
-          style={{ ...FILL, cursor: "crosshair", touchAction: "none" }}
-          onPointerDown={onDrawDown}
-          onPointerMove={onDrawMove}
-          onPointerUp={onDrawUp}
-          onPointerCancel={() => driverRef.current?.cancel()}
-        />
+        <div className="cl-viewport-draw-layer" role="application" aria-label="모델 위 드로잉 영역" style={{ ...FILL, cursor: "crosshair", touchAction: "none" }} onPointerDown={onDrawDown} onPointerMove={onDrawMove} onPointerUp={onDrawUp} onPointerCancel={() => driverRef.current?.cancel()} />
       ) : null}
 
       {engine && ui.drawingMode ? (

@@ -232,9 +232,16 @@ export function headSurfacePoint(dir: Vec3): Vec3 {
   // 턱 끝
   f *= 1 + 0.045 * gaussian(angleBetween(dir, CHIN_DIR), 0.24);
   const r = base * f;
-  // SHAPER BuiltInData (얼굴형1..6.preset) 하악관절→턱끝 V라인 측면 폭 테이퍼링
-  const vLineTaper = 1 - 0.24 * smooth01(-y, 0.34, 0.92) * smooth01(Math.abs(x), 0.14, 0.68);
-  return [x * r * vLineTaper, y * r, z * r];
+  // SHAPER BuiltInData (head0.obj · 얼굴형1..6.preset) 하악 V라인 테이퍼링 + 관자놀이(temple) 인덴테이션
+  const vLineTaper = 1 - 0.25 * smooth01(-y, 0.32, 0.92) * smooth01(Math.abs(x), 0.14, 0.68);
+  const templeTaper =
+    1 -
+    0.045 *
+      smooth01(y, 0.08, 0.28) *
+      (1 - smooth01(y, 0.44, 0.68)) *
+      smooth01(Math.abs(x), 0.34, 0.68) *
+      smooth01(z, 0.05, 0.45);
+  return [x * r * vLineTaper * templeTaper, y * r, z * r];
 }
 
 /** 위도 링(경도 c=0 뒤, c=n/2 앞), x는 c ↔ n−c가 정확히 부호만 다르다. */

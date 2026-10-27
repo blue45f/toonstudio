@@ -732,11 +732,45 @@ describe("접근성", () => {
       expect(poseCmd.pose.rightUpperArm).toBeDefined();
     }
 
-    // SHAPER 내장 프리셋 선택기(여성1.preset / 얼굴형2.preset) 적용 확인
+    // SHAPER 내장 프리셋 선택기(여성1.preset / 얼굴형2.preset / 생존남 풀세트 아키타입) 적용 확인
     const presetSelect = screen.getByLabelText("SHAPER 내장 프리셋") as HTMLSelectElement;
     fireEvent.change(presetSelect, { target: { value: "shaper-female-1" } });
     expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "body" && c.key === "waist")).toBe(true);
     fireEvent.change(presetSelect, { target: { value: "shaper-face-2" } });
     expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "face" && c.key === "jawWidth")).toBe(true);
+    fireEvent.change(presetSelect, { target: { value: "shaper-archetype-survivor-male" } });
+    expect(view.dispatched.some((c) => c.type === "slot/apply" && c.slot === "hair" && c.presetId === "hair/wolf-layered")).toBe(true);
+    expect(view.dispatched.some((c) => c.type === "color/set" && c.key === "skin" && c.value === "#ffecce")).toBe(true);
+
+    // SHAPER 형상 제어점(ControlPoint) 토글 및 직접 드래그 성형 확인
+    fireEvent.click(screen.getByRole("button", { name: "형상 제어점" }));
+    flushFrames();
+    const jawCp = document.querySelector('circle[data-control-point="cp-face-jaw"]');
+    expect(jawCp).not.toBeNull();
+    if (jawCp) {
+      fireEvent.pointerDown(jawCp, { clientX: 200, clientY: 120, pointerId: 11, button: 0 });
+      fireEvent.pointerMove(jawCp, { clientX: 235, clientY: 95, pointerId: 11 });
+      fireEvent.pointerUp(jawCp, { clientX: 235, clientY: 95, pointerId: 11 });
+    }
+    expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "face" && c.key === "jawWidth")).toBe(true);
+
+    // SHAPER 기즈모 모드 W(IK 이동: 1) 및 R(체형 스케일: 3) 전환 후 드래그 확인
+    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
+    fireEvent.change(gizmoSelect, { target: { value: "1" } });
+    const handStart = projectToPixel(CAMERA, worldOf(basePlan.boneRotations, "leftHand"));
+    const handEnd = projectToPixel(CAMERA, [pivotWorld[0] - 0.1, pivotWorld[1] + 0.1, pivotWorld[2]]);
+    if (!handStart || !handEnd) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("leftHand"), { ...toClient(handStart), pointerId: 12, button: 0 });
+    fireEvent.pointerMove(handle("leftHand"), { ...toClient(handEnd), pointerId: 12 });
+    fireEvent.pointerUp(handle("leftHand"), { ...toClient(handEnd), pointerId: 12 });
+    expect(view.dispatched.some((c) => c.type === "pose/set" && c.labelKo.includes("IK 이동"))).toBe(true);
+
+    fireEvent.change(gizmoSelect, { target: { value: "3" } });
+    const spineStart = projectToPixel(CAMERA, worldOf(basePlan.boneRotations, "spine"));
+    if (!spineStart) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("spine"), { ...toClient(spineStart), pointerId: 13, button: 0 });
+    fireEvent.pointerMove(handle("spine"), { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: 13 });
+    fireEvent.pointerUp(handle("spine"), { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: 13 });
+    expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "body" && c.key === "waist")).toBe(true);
   });
 });
