@@ -334,7 +334,7 @@ async function executeWave30LocalizeTask<TSchema extends z.ZodTypeAny, TOut>(par
   readonly fallback: () => TOut;
 }): Promise<Wave30LocalizeAssistResult<TOut>> {
   const { taskId, systemPrompt, userInstruction, input, schema, options, normalize, fallback } = params;
-  const activeRoute = options.route ?? (hydrateDefaultEnvClaudeConnection(), resolveClaudeRoute());
+  const activeRoute = options.route !== undefined ? options.route : (hydrateDefaultEnvClaudeConnection(), resolveClaudeRoute());
   const taskRoute = resolveCreatorTaskModelRoute(taskId, { model: options.model as never });
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
@@ -566,5 +566,201 @@ export async function runClaudeGlobalIpMgRsRoyaltyWaterfallDirector(
     options,
     normalize: (p) => Object.freeze({ contractSafetyScore: clampWave30(p.contractSafetyScore, 0, 100, 98), mgDeductionMethodComparisonKo: cleanSingleLineText(p.mgDeductionMethodComparisonKo, 180), netRevenueShareWaterfallKo: cleanSingleLineText(p.netRevenueShareWaterfallKo, 180), unfairClauseGuardNoteKo: cleanSingleLineText(p.unfairClauseGuardNoteKo, 180) }),
     fallback: () => Object.freeze({ contractSafetyScore: 98, mgDeductionMethodComparisonKo: "작가 지분에서 MG를 차감하는 '후차감(Recoup from Artist Share)' 기준 적용 (총매출 선차감 대비 작가 실수령액 보호)", netRevenueShareWaterfallKo: "총매출(Gross) - 앱스토어 결제수수료(15~30%) = 순매출(Net) → 작가:CP 배분 후 누적 MG 초과분 즉시 지급", unfairClauseGuardNoteKo: "해외 번역비·마케팅비를 작가 정산금에서 상한 없이 공제하거나 2차 판권 포괄 위임하는 조항 차단" }),
+  });
+}
+
+// ============================================================================
+// Wave 42~44: 치과안과X-ray·다이얼턴테이블·화학현미경·승마시계보석·촬영장방송·수능TCG마작·유원지캠핑·모래시계유료결제 8대 감독
+// ============================================================================
+
+export const ClaudeDentalOphthalXrayMarkerSchema = z.object({
+  medicalSpecialtyScore: z.number().int().min(0).max(100),
+  dentalMirrorAndSlitLampRuleKo: z.string(),
+  xrayLeadMarkerAndCastSlingKo: z.string(),
+  ambulanceStretcherAndAedPaddleKo: z.string(),
+});
+export type ClaudeDentalOphthalXrayMarker = z.infer<typeof ClaudeDentalOphthalXrayMarkerSchema>;
+
+export async function runClaudeDentalOphthalmologyXrayMarkerDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeDentalOphthalXrayMarker>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:dental-ophthalmology-xray-marker-lock",
+    systemPrompt: "당신은 의학 웹툰의 치과 치열/치경 반사·안과 세극등·정형외과 X-ray 좌우 납 마커(L/R)·구급차 제세동기 패들 위치를 감리하는 전문의 감독입니다.",
+    userInstruction: "치과 치경 간접시야와 안과 세극등 구조, X-ray L/R 마커 반전 방지와 팔걸이 삼각건, 구급차 들것 및 제세동기 패들 위치를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeDentalOphthalXrayMarkerSchema,
+    options,
+    normalize: (p) => Object.freeze({ medicalSpecialtyScore: clampWave30(p.medicalSpecialtyScore, 0, 100, 99), dentalMirrorAndSlitLampRuleKo: cleanSingleLineText(p.dentalMirrorAndSlitLampRuleKo, 180), xrayLeadMarkerAndCastSlingKo: cleanSingleLineText(p.xrayLeadMarkerAndCastSlingKo, 180), ambulanceStretcherAndAedPaddleKo: cleanSingleLineText(p.ambulanceStretcherAndAedPaddleKo, 180) }),
+    fallback: () => Object.freeze({ medicalSpecialtyScore: 99, dentalMirrorAndSlitLampRuleKo: "치과 씬 중절치·측절치·견치 치열 비례와 치경(Dental Mirror) 간접시야 반사 일치, 안과 세극등 현미경 이마·턱받침 동시 밀착 고정", xrayLeadMarkerAndCastSlingKo: "정형외과 X-ray 판독등 필름의 납 마커('L'/'R') 좌우 반전 원천 차단 및 쇄골/전완 골절 삼각건(Sling) 손목 수평 지지 고증", ambulanceStretcherAndAedPaddleKo: "제세동기(AED/패들)는 환자 우측 쇄골 아래(Sternum)와 좌측 유두 바깥 아래(Apex) 대각선 부착 원칙 고정" }),
+  });
+}
+
+export const ClaudeRotaryPhoneTurntableCameraSchema = z.object({
+  retroHardwareScore: z.number().int().min(0).max(100),
+  rotaryDialAndTypewriterReturnKo: z.string(),
+  vinylTurntableTonearmAndCassetteKo: z.string(),
+  slrAdvanceLeverAndPolaroidBorderKo: z.string(),
+});
+export type ClaudeRotaryPhoneTurntableCamera = z.infer<typeof ClaudeRotaryPhoneTurntableCameraSchema>;
+
+export async function runClaudeRotaryPhoneTurntableCameraInstantDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeRotaryPhoneTurntableCamera>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:rotary-phone-turntable-camera-instant-lock",
+    systemPrompt: "당신은 레트로 소품(다이얼 전화기·수동 타자기·LP 턴테이블 우측 톤암·필름 카메라 와인딩 레버·폴라로이드 하단 여백) 고증 감독입니다.",
+    userInstruction: "다이얼 전화기 핑거스톱과 타자기 리턴 레버, LP 턴테이블 우측 톤암 회전, 필름 SLR 와인딩 레버와 폴라로이드 하단 여백을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeRotaryPhoneTurntableCameraSchema,
+    options,
+    normalize: (p) => Object.freeze({ retroHardwareScore: clampWave30(p.retroHardwareScore, 0, 100, 99), rotaryDialAndTypewriterReturnKo: cleanSingleLineText(p.rotaryDialAndTypewriterReturnKo, 180), vinylTurntableTonearmAndCassetteKo: cleanSingleLineText(p.vinylTurntableTonearmAndCassetteKo, 180), slrAdvanceLeverAndPolaroidBorderKo: cleanSingleLineText(p.slrAdvanceLeverAndPolaroidBorderKo, 180) }),
+    fallback: () => Object.freeze({ retroHardwareScore: 99, rotaryDialAndTypewriterReturnKo: "다이얼 전화기 4시 방향 금속 핑거스톱(Finger Stop) 고정 및 수동 타자기 좌측 캐리지 리턴 레버(줄바꿈 손잡이) 위치 고정", vinylTurntableTonearmAndCassetteKo: "LP 턴테이블 톤암은 반드시 플래터 우측에 배치해 시계 방향 회전 레코드 외곽→내측으로 재생하며 카세트 좌우 릴 감김량 연동", slrAdvanceLeverAndPolaroidBorderKo: "35mm 필름 카메라 우측 상단 오른손 엄지 와인딩 레버 고정 및 폴라로이드 즉석사진의 넓은 흰 여백이 하단에 오도록 고정" }),
+  });
+}
+
+export const ClaudeChemistryMicroscopeAstronomySchema = z.object({
+  labScienceScore: z.number().int().min(0).max(100),
+  buretteMeniscusAndFumeHoodRuleKo: z.string(),
+  microscopeObjectiveAndCentrifugeKo: z.string(),
+  equatorialMountAndWeatherIsobarKo: z.string(),
+});
+export type ClaudeChemistryMicroscopeAstronomy = z.infer<typeof ClaudeChemistryMicroscopeAstronomySchema>;
+
+export async function runClaudeChemistryMicroscopeCentrifugeAstronomyDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeChemistryMicroscopeAstronomy>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:chemistry-microscope-centrifuge-astronomy-lock",
+    systemPrompt: "당신은 화학 실험실(뷰렛/흄후드)·생물 현미경 대물렌즈 색띠/원심분리기 대칭 밸런스·적도의 천체망원경 및 기상 일기도 고증 감독입니다.",
+    userInstruction: "뷰렛 적정과 흄후드 안전창, 현미경 배율 색띠와 원심분리기 대칭 배치, 적도의 망원경 추봉 및 일기도 바람 방향을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeChemistryMicroscopeAstronomySchema,
+    options,
+    normalize: (p) => Object.freeze({ labScienceScore: clampWave30(p.labScienceScore, 0, 100, 99), buretteMeniscusAndFumeHoodRuleKo: cleanSingleLineText(p.buretteMeniscusAndFumeHoodRuleKo, 180), microscopeObjectiveAndCentrifugeKo: cleanSingleLineText(p.microscopeObjectiveAndCentrifugeKo, 180), equatorialMountAndWeatherIsobarKo: cleanSingleLineText(p.equatorialMountAndWeatherIsobarKo, 180) }),
+    fallback: () => Object.freeze({ labScienceScore: 99, buretteMeniscusAndFumeHoodRuleKo: "뷰렛 적정 시 왼손 코크 조절·오른손 삼각플라스크 흔들기 정통 파지 및 흄후드(Fume Hood) 새시 유리창 얼굴 아래 안전 높이 고정", microscopeObjectiveAndCentrifugeKo: "광학현미경 대물렌즈 배율 색띠(4x 적·10x 황·40x 청·100x 백) 순서와 마이크로원심분리기 로터 180° 대칭 튜브 밸런스 고정", equatorialMountAndWeatherIsobarKo: "적도의식 천체망원경 경통 반대편 무게추(Counterweight) 균형 및 북반구 저기압 반시계 방향 수렴 일기도 화살표 고증" }),
+  });
+}
+
+export const ClaudeEquestrianHorologyGemstoneSchema = z.object({
+  nobilityCraftScore: z.number().int().min(0).max(100),
+  stirrupBallOfFootAndFalconryKo: z.string(),
+  watchGearMeshRotationRuleKo: z.string(),
+  gemProngCountAndPerfumerOrganKo: z.string(),
+});
+export type ClaudeEquestrianHorologyGemstone = z.infer<typeof ClaudeEquestrianHorologyGemstoneSchema>;
+
+export async function runClaudeEquestrianFalconryHorologyGemstoneDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeEquestrianHorologyGemstone>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:equestrian-falconry-horology-gemstone-lock",
+    systemPrompt: "당신은 승마 발볼 등자 밟기·매사냥 왼손 시치·시계공방 맞물린 기어 반대 회전·보석 프롱(4발/6발) 수량 및 조향사 오르간 고증 감독입니다.",
+    userInstruction: "승마 등자 발볼 지지와 매사냥 왼손 가죽 장갑, 맞물린 톱니바퀴 회전 방향 물리, 보석 반지 프롱 개수와 시향지 매너를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeEquestrianHorologyGemstoneSchema,
+    options,
+    normalize: (p) => Object.freeze({ nobilityCraftScore: clampWave30(p.nobilityCraftScore, 0, 100, 99), stirrupBallOfFootAndFalconryKo: cleanSingleLineText(p.stirrupBallOfFootAndFalconryKo, 180), watchGearMeshRotationRuleKo: cleanSingleLineText(p.watchGearMeshRotationRuleKo, 180), gemProngCountAndPerfumerOrganKo: cleanSingleLineText(p.gemProngCountAndPerfumerOrganKo, 180) }),
+    fallback: () => Object.freeze({ nobilityCraftScore: 99, stirrupBallOfFootAndFalconryKo: "기마 씬에서 부츠 뒤꿈치가 아닌 발볼(Ball of Foot) 앞부분으로 등자를 밟고 뒤꿈치를 내리는 승마 자세 및 매사냥 왼손 가죽 토시(Gauntlet) 고정", watchGearMeshRotationRuleKo: "스팀펑크·시계 무브먼트에서 맞물린 인접 두 기어는 반드시 반대 방향(CW↔CCW)으로 회전하며 3개 기어 삼각형 폐루프 잠김 작붕 차단", gemProngCountAndPerfumerOrganKo: "보석 반지 난집 프롱(4발 vs 6발) 수량 컷 간 불변 고정 및 조향사 계단식 향료 오르간 앞 시향지(Blotter) 부채꼴 파지 고증" }),
+  });
+}
+
+export const ClaudeFilmSetBroadcastSwitchSchema = z.object({
+  broadcastSetScore: z.number().int().min(0).max(100),
+  clapperboardSlateAndBoomMicRuleKo: z.string(),
+  cStandRightHandAndDollyTrackKo: z.string(),
+  switcherPreviewProgramTallyKo: z.string(),
+});
+export type ClaudeFilmSetBroadcastSwitch = z.infer<typeof ClaudeFilmSetBroadcastSwitchSchema>;
+
+export async function runClaudeFilmSetClapperboardBroadcastSwitchDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeFilmSetBroadcastSwitch>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:film-slate-boom-cstand-broadcast-tally-lock",
+    systemPrompt: "당신은 연예계/방송국 웹툰의 촬영장 슬레이트(Scene/Take)·붐마이크 데드캣·C-스탠드 우측 조임 법칙·부조정실 프리뷰/본방 탈리 램프 감독입니다.",
+    userInstruction: "슬레이트 줄무늬와 Scene/Take 번호 일치, 붐마이크와 C-스탠드 모래주머니 배치, 부조정실 녹색 프리뷰/적색 프로그램 모니터를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeFilmSetBroadcastSwitchSchema,
+    options,
+    normalize: (p) => Object.freeze({ broadcastSetScore: clampWave30(p.broadcastSetScore, 0, 100, 99), clapperboardSlateAndBoomMicRuleKo: cleanSingleLineText(p.clapperboardSlateAndBoomMicRuleKo, 180), cStandRightHandAndDollyTrackKo: cleanSingleLineText(p.cStandRightHandAndDollyTrackKo, 180), switcherPreviewProgramTallyKo: cleanSingleLineText(p.switcherPreviewProgramTallyKo, 180) }),
+    fallback: () => Object.freeze({ broadcastSetScore: 99, clapperboardSlateAndBoomMicRuleKo: "촬영 슬레이트 상단 사선 줄무늬가 대칭 맞물리고 적힌 Scene/Cut 번호가 카메라 뷰파인더 UI와 일치하며 붐마이크 프레임 침범 차단", cStandRightHandAndDollyTrackKo: "조명 C-스탠드 너클은 조명 무게로 잠기도록 우측 조임 법칙(Right-Hand Rule) 배치 및 가장 높은 다리 위 모래주머니 거치 고정", switcherPreviewProgramTallyKo: "방송 부조정실 멀티뷰 모니터에서 대기 화면(Preview)은 녹색 테두리, 송출 화면(Program)은 적색 테두리+카메라 적색 탈리 LED 점등 일치" }),
+  });
+}
+
+export const ClaudeSchoolCsatTcgMahjongSchema = z.object({
+  campusTabletopScore: z.number().int().min(0).max(100),
+  koreanCsatOmrAndMortarboardRuleKo: z.string(),
+  tcgPlaymatTapAndDiceOppositeSumKo: z.string(),
+  mahjong13TileAndRouletteWheelKo: z.string(),
+});
+export type ClaudeSchoolCsatTcgMahjong = z.infer<typeof ClaudeSchoolCsatTcgMahjongSchema>;
+
+export async function runClaudeSchoolCsatOmrTcgDiceMahjongDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeSchoolCsatTcgMahjong>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:school-csat-omr-tcg-dice-mahjong-lock",
+    systemPrompt: "당신은 한국 수능 OMR 답안지/학사모 술 위치·TCG 카드 90도 탭/묘지 존·주사위 마주보는 면 합(7/21)·마작 13패 및 룰렛 배열 감독입니다.",
+    userInstruction: "수능 OMR 카드와 아날로그 시계·졸업 학사모 술 방향, TCG 카드 탭 상태와 주사위 마주보는 면 규칙, 마작 손패 13장 고정 규칙을 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeSchoolCsatTcgMahjongSchema,
+    options,
+    normalize: (p) => Object.freeze({ campusTabletopScore: clampWave30(p.campusTabletopScore, 0, 100, 99), koreanCsatOmrAndMortarboardRuleKo: cleanSingleLineText(p.koreanCsatOmrAndMortarboardRuleKo, 180), tcgPlaymatTapAndDiceOppositeSumKo: cleanSingleLineText(p.tcgPlaymatTapAndDiceOppositeSumKo, 180), mahjong13TileAndRouletteWheelKo: cleanSingleLineText(p.mahjong13TileAndRouletteWheelKo, 180) }),
+    fallback: () => Object.freeze({ campusTabletopScore: 99, koreanCsatOmrAndMortarboardRuleKo: "수능 시험장 분홍 세로선 5지선다 OMR 카드·컴퓨터용 사인펜·전자표시 없는 아날로그 시계 고정 및 졸업 학사모 술(우→좌 이동) 고증", tcgPlaymatTapAndDiceOppositeSumKo: "TCG 배틀 매트 덱/묘지/필드 위치 고정·90도 가로 탭(Tap) 상태 유지 및 육면체 주사위 마주보는 면의 합(7)이 인접 면에 동시 노출되는 작붕 차단", mahjong13TileAndRouletteWheelKo: "리치 마작 기본 손패 13장(쯔모 시 14장) 수량 불변·버림패 6열 정렬 및 룰렛 휠 녹색 0번 좌우 적/흑 교대 배열 고정" }),
+  });
+}
+
+export const ClaudeAmusementCoasterCampingSkiSchema = z.object({
+  leisurePhysicsScore: z.number().int().min(0).max(100),
+  rollercoasterUpstopAndFerrisGondolaKo: z.string(),
+  clawMachineGantryAndTentPeg45DegKo: z.string(),
+  skiSnowboardStanceAndBasketRuleKo: z.string(),
+});
+export type ClaudeAmusementCoasterCampingSki = z.infer<typeof ClaudeAmusementCoasterCampingSkiSchema>;
+
+export async function runClaudeAmusementCoasterFerrisCampingSkiDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeAmusementCoasterCampingSki>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:amusement-coaster-ferris-camping-ski-director",
+    systemPrompt: "당신은 유원지 롤러코스터 3륜 업스톱 휠·관람차 곤돌라 중력 수평·인형뽑기 3발 집게·캠핑 텐트 45도 팩·스키/스노보드 스탠스 총괄 감독입니다.",
+    userInstruction: "롤러코스터 업스톱 휠과 관람차 곤돌라 수평 물리, 인형뽑기 X-Y 레일과 텐트 45도 팩, 스노보드 레귤러/구피 스탠스를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeAmusementCoasterCampingSkiSchema,
+    options,
+    normalize: (p) => Object.freeze({ leisurePhysicsScore: clampWave30(p.leisurePhysicsScore, 0, 100, 99), rollercoasterUpstopAndFerrisGondolaKo: cleanSingleLineText(p.rollercoasterUpstopAndFerrisGondolaKo, 180), clawMachineGantryAndTentPeg45DegKo: cleanSingleLineText(p.clawMachineGantryAndTentPeg45DegKo, 180), skiSnowboardStanceAndBasketRuleKo: cleanSingleLineText(p.skiSnowboardStanceAndBasketRuleKo, 180) }),
+    fallback: () => Object.freeze({ leisurePhysicsScore: 99, rollercoasterUpstopAndFerrisGondolaKo: "롤러코스터 레일 상·측·하단 3륜 보지(Upstop Wheel) 결속과 대관람차 회전 각도에 상관없이 곤돌라 객실 바닥이 항상 지구 중력 수평을 유지하도록 고정", clawMachineGantryAndTentPeg45DegKo: "인형뽑기 상부 X-Y 갠트리 레일 수직 아래 3발 집게 정렬 및 캠핑 텐트 가이라인 팩(Peg) 지면 반대 45도 타격 고정", skiSnowboardStanceAndBasketRuleKo: "스노보드 레귤러(왼발 앞)/구피(오른발 앞) 바인딩 방향 컷 간 반전 차단 및 스키폴 하단 원형 바스켓이 눈 속으로 파묻히지 않도록 지지" }),
+  });
+}
+
+export const ClaudeHourglassScaleBookPaywallSchema = z.object({
+  propPhysicsPaywallScore: z.number().int().min(0).max(100),
+  hourglassReposeAndCandleVerticalFlameKo: z.string(),
+  balanceScaleUmbrellaAndWellRopeKo: z.string(),
+  bookGutterCurveAndPaywallCliffhangerKo: z.string(),
+});
+export type ClaudeHourglassScaleBookPaywall = z.infer<typeof ClaudeHourglassScaleBookPaywallSchema>;
+
+export async function runClaudeHourglassCandleScaleBookGutterPaywallDirector(
+  input: Wave30LocalizeAssistInput,
+  options: RunWave30LocalizeAssistOptions = {},
+): Promise<Wave30LocalizeAssistResult<ClaudeHourglassScaleBookPaywall>> {
+  return executeWave30LocalizeTask({
+    taskId: "localize:hourglass-candle-scale-book-paywall-director",
+    systemPrompt: "당신은 모래시계 34도 안식각·기울어진 촛대 수직 불꽃·천칭 저울·우산 8살 러너·펼친 책 M자 제본 곡면 왜곡 및 유료 미리보기(쿠키) 전환율 총괄 감독입니다.",
+    userInstruction: "모래시계 상하 모래 형태와 기울어진 촛불 수직성, 천칭 저울 바늘과 우산살/우물 밧줄 장력, 펼친 책 곡면 왜곡 및 쿠키 결제 클리프행어를 JSON으로 작성하세요.",
+    input,
+    schema: ClaudeHourglassScaleBookPaywallSchema,
+    options,
+    normalize: (p) => Object.freeze({ propPhysicsPaywallScore: clampWave30(p.propPhysicsPaywallScore, 0, 100, 99), hourglassReposeAndCandleVerticalFlameKo: cleanSingleLineText(p.hourglassReposeAndCandleVerticalFlameKo, 180), balanceScaleUmbrellaAndWellRopeKo: cleanSingleLineText(p.balanceScaleUmbrellaAndWellRopeKo, 180), bookGutterCurveAndPaywallCliffhangerKo: cleanSingleLineText(p.bookGutterCurveAndPaywallCliffhangerKo, 180) }),
+    fallback: () => Object.freeze({ propPhysicsPaywallScore: 99, hourglassReposeAndCandleVerticalFlameKo: "모래시계 상단은 가운데가 움푹 파인 깔때기형·하단은 34° 안식각 원뿔형으로 쌓이며, 손에 든 촛대가 기울어져도 촛불 불꽃은 항상 중력 반대 수직 상승", balanceScaleUmbrellaAndWellRopeKo: "양팔 천칭 저울 무거운 쪽 하강 시 중앙 지침 바늘 기울기 연동, 우산 내부 8살 받침살 러너 결합 및 두레박을 매단 우물 밧줄 직선 장력 고정", bookGutterCurveAndPaywallCliffhangerKo: "펼친 고서/마도서 페이지가 중앙 제본선(Gutter)으로 들어가는 M자 곡면 굴곡에 맞춰 텍스트를 왜곡 투영하고 에피소드 마지막 3컷 유료 쿠키 전환 훅 배치" }),
   });
 }

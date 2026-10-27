@@ -36,6 +36,16 @@ import {
   type MangotoonLibraryTabId,
 } from "./ai-webtoon-platform-suite";
 import {
+  runClaudeAmusementCoasterFerrisCampingSkiDirector,
+  runClaudeChemistryMicroscopeCentrifugeAstronomyDirector,
+  runClaudeDentalOphthalmologyXrayMarkerDirector,
+  runClaudeEquestrianFalconryHorologyGemstoneDirector,
+  runClaudeFilmSetClapperboardBroadcastSwitchDirector,
+  runClaudeHourglassCandleScaleBookGutterPaywallDirector,
+  runClaudeRotaryPhoneTurntableCameraInstantDirector,
+  runClaudeSchoolCsatOmrTcgDiceMahjongDirector,
+} from "./claude/claude-alt-text";
+import {
   buildDeterministicBraidPonytailAccessoryKnotLockView,
   buildDeterministicCapeCloakHemLiningFlutterLockView,
   buildDeterministicCharacterAgeFlashbackProportionLockView,
@@ -98,6 +108,32 @@ export function StudioAiWebtoonPlatformSuitePanel({
     return `[UI/홀로그램 연속성 · ${init.model}] ${init.uiDeviceType} — ${init.clockAndBatteryBadgeRuleKo}`;
   });
   const [wave18Loading, setWave18Loading] = useState<boolean>(false);
+  const [wave42SummaryKo, setWave42SummaryKo] = useState<string>(
+    "Wave 42~44 (840개 플랫폼 REA · 148개 스마트 라우팅): 치과/X-ray·다이얼/턴테이블·화학현미경·승마/시계기어·촬영장/부조정실·수능/TCG/마작·유원지/캠핑·모래시계/쿠키전환 감독 대기",
+  );
+  const [wave42Loading, setWave42Loading] = useState<boolean>(false);
+
+  async function handleRunWave42Engine(
+    kind: "dental" | "retro" | "lab" | "horology" | "filmset" | "campus" | "coaster" | "paywall",
+  ): Promise<void> {
+    setWave42Loading(true);
+    const seed = { episodeTitle: "01화", genre: "현대 판타지", scriptSummary: scriptInput.trim() || tooningSentence };
+    const map: Record<typeof kind, () => Promise<string>> = {
+      dental: async () => { const r = await runClaudeDentalOphthalmologyXrayMarkerDirector(seed); return `[치과/X-ray/AED · ${r.model}] ${r.data.xrayLeadMarkerAndCastSlingKo} / ${r.data.ambulanceStretcherAndAedPaddleKo}`; },
+      retro: async () => { const r = await runClaudeRotaryPhoneTurntableCameraInstantDirector(seed); return `[다이얼/턴테이블/카메라 · ${r.model}] ${r.data.vinylTurntableTonearmAndCassetteKo} / ${r.data.slrAdvanceLeverAndPolaroidBorderKo}`; },
+      lab: async () => { const r = await runClaudeChemistryMicroscopeCentrifugeAstronomyDirector(seed); return `[화학/현미경/망원경 · ${r.model}] ${r.data.buretteMeniscusAndFumeHoodRuleKo} / ${r.data.microscopeObjectiveAndCentrifugeKo}`; },
+      horology: async () => { const r = await runClaudeEquestrianFalconryHorologyGemstoneDirector(seed); return `[승마/시계기어/보석 · ${r.model}] ${r.data.stirrupBallOfFootAndFalconryKo} / ${r.data.watchGearMeshRotationRuleKo}`; },
+      filmset: async () => { const r = await runClaudeFilmSetClapperboardBroadcastSwitchDirector(seed); return `[촬영슬레이트/부조정실 · ${r.model}] ${r.data.clapperboardSlateAndBoomMicRuleKo} / ${r.data.switcherPreviewProgramTallyKo}`; },
+      campus: async () => { const r = await runClaudeSchoolCsatOmrTcgDiceMahjongDirector(seed); return `[수능OMR/TCG/마작 · ${r.model}] ${r.data.koreanCsatOmrAndMortarboardRuleKo} / ${r.data.tcgPlaymatTapAndDiceOppositeSumKo}`; },
+      coaster: async () => { const r = await runClaudeAmusementCoasterFerrisCampingSkiDirector(seed); return `[롤러코스터/관람차/스키 · ${r.model}] ${r.data.rollercoasterUpstopAndFerrisGondolaKo} / ${r.data.skiSnowboardStanceAndBasketRuleKo}`; },
+      paywall: async () => { const r = await runClaudeHourglassCandleScaleBookGutterPaywallDirector(seed); return `[모래시계/촛불/쿠키전환 · ${r.model}] ${r.data.hourglassReposeAndCandleVerticalFlameKo} / ${r.data.bookGutterCurveAndPaywallCliffhangerKo}`; },
+    };
+    try {
+      setWave42SummaryKo(await map[kind]());
+    } finally {
+      setWave42Loading(false);
+    }
+  }
 
   async function handleRunWave18Engine(
     kind: "screen" | "braid" | "cape" | "sword" | "age" | "bokeh",
@@ -646,6 +682,46 @@ export function StudioAiWebtoonPlatformSuitePanel({
         </div>
         <div data-testid="wave18-summary-output" className="text-[0.6rem] text-fg-2">
           {wave18Loading ? "Claude 멀티모델 추론 중..." : wave18SummaryKo}
+        </div>
+      </div>
+
+      {/* 6. Wave 42~44 치과/X-ray·레트로소품·화학현미경·승마시계·촬영장·수능TCG·유원지·모래시계/쿠키전환 8대 감독 */}
+      <div
+        data-testid="wave42-44-domain-consistency-bar"
+        className="mt-2 space-y-1.5 rounded border border-accent/40 bg-raised/30 p-2 text-[0.62rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <span className="font-bold text-fg">
+            Wave 42~44 치과X-ray·턴테이블·현미경·승마기어·촬영장탈리·수능TCG·롤러코스터·모래시계쿠키 8대 감독 (840개 플랫폼 REA · 148개 스마트 라우팅)
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                ["dental", "치과·X-ray·AED"],
+                ["retro", "다이얼·턴테이블·SLR"],
+                ["lab", "뷰렛·현미경·망원경"],
+                ["horology", "승마등자·시계기어"],
+                ["filmset", "슬레이트·부조정실"],
+                ["campus", "수능OMR·TCG·마작"],
+                ["coaster", "롤러코스터·관람차"],
+                ["paywall", "모래시계·쿠키전환"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                disabled={wave42Loading}
+                data-testid={`wave42-run-${id}`}
+                onClick={() => void handleRunWave42Engine(id)}
+                className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 hover:border-accent hover:text-accent"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div data-testid="wave42-summary-output" className="text-[0.6rem] text-fg-2">
+          {wave42Loading ? "Claude 멀티모델 추론 중..." : wave42SummaryKo}
         </div>
       </div>
     </div>

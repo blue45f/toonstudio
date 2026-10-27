@@ -7,6 +7,16 @@ import {
   summarizeCreatorModelRouterCatalog,
 } from "./claude-creator-model-router";
 import {
+  runClaudeAmusementCoasterFerrisCampingSkiDirector,
+  runClaudeChemistryMicroscopeCentrifugeAstronomyDirector,
+  runClaudeDentalOphthalmologyXrayMarkerDirector,
+  runClaudeEquestrianFalconryHorologyGemstoneDirector,
+  runClaudeFilmSetClapperboardBroadcastSwitchDirector,
+  runClaudeHourglassCandleScaleBookGutterPaywallDirector,
+  runClaudeRotaryPhoneTurntableCameraInstantDirector,
+  runClaudeSchoolCsatOmrTcgDiceMahjongDirector,
+} from "./claude-alt-text";
+import {
   runClaudeAnamorphicFisheyeLensOpticsDirector,
   runClaudeArcheryFencingCombatStanceCueDirector,
   runClaudeAudiotoonAdrTactileErgonomicsDirector,
@@ -72,12 +82,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 89대 창의 AI 작업을 포함한 총 140개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 97대 창의 AI 작업을 포함한 총 148개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(140);
-    expect(summary.byProfile["fast-inline"]).toBe(36);
-    expect(summary.byProfile["creative-production"]).toBe(70);
-    expect(summary.byProfile["deep-architecture"]).toBe(34);
+    expect(summary.totalTasks).toBe(148);
+    expect(summary.byProfile["fast-inline"]).toBe(38);
+    expect(summary.byProfile["creative-production"]).toBe(74);
+    expect(summary.byProfile["deep-architecture"]).toBe(36);
+
+    expect(
+      resolveCreatorTaskModelRoute("localize:dental-ophthalmology-xray-marker-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:rotary-phone-turntable-camera-instant-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:chemistry-microscope-centrifuge-astronomy-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:equestrian-falconry-horology-gemstone-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:film-slate-boom-cstand-broadcast-tally-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:school-csat-omr-tcg-dice-mahjong-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:amusement-coaster-ferris-camping-ski-director").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:hourglass-candle-scale-book-paywall-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("cost-cap:esports-hud-gamer-keyboard-mouse-lock").model,
@@ -416,5 +451,23 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(x6.data.fineArtsRigorScore).toBeGreaterThanOrEqual(95);
     expect(x7.data.craftBotanyScore).toBeGreaterThanOrEqual(95);
     expect(x8.data.industrialErpScore).toBeGreaterThanOrEqual(95);
+
+    const y1 = await runClaudeDentalOphthalmologyXrayMarkerDirector(sample, { route: null });
+    const y2 = await runClaudeRotaryPhoneTurntableCameraInstantDirector(sample, { route: null });
+    const y3 = await runClaudeChemistryMicroscopeCentrifugeAstronomyDirector(sample, { route: null });
+    const y4 = await runClaudeEquestrianFalconryHorologyGemstoneDirector(sample, { route: null });
+    const y5 = await runClaudeFilmSetClapperboardBroadcastSwitchDirector(sample, { route: null });
+    const y6 = await runClaudeSchoolCsatOmrTcgDiceMahjongDirector(sample, { route: null });
+    const y7 = await runClaudeAmusementCoasterFerrisCampingSkiDirector(sample, { route: null });
+    const y8 = await runClaudeHourglassCandleScaleBookGutterPaywallDirector(sample, { route: null });
+
+    expect(y1.data.medicalSpecialtyScore).toBeGreaterThanOrEqual(95);
+    expect(y2.data.retroHardwareScore).toBeGreaterThanOrEqual(95);
+    expect(y3.data.labScienceScore).toBeGreaterThanOrEqual(95);
+    expect(y4.data.nobilityCraftScore).toBeGreaterThanOrEqual(95);
+    expect(y5.data.broadcastSetScore).toBeGreaterThanOrEqual(95);
+    expect(y6.data.campusTabletopScore).toBeGreaterThanOrEqual(95);
+    expect(y7.data.leisurePhysicsScore).toBeGreaterThanOrEqual(95);
+    expect(y8.data.propPhysicsPaywallScore).toBeGreaterThanOrEqual(95);
   });
 });

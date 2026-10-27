@@ -65,9 +65,18 @@ const TEST_ROUTE = {
 };
 
 describe("claude-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫폼 REA 내재화 & 16대 창의적 AI 스위트)", () => {
-  it("0. 780대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
+  it("0. 840대 플랫폼 UI/UX 테마 토큰 카탈로그 및 CSS 변수 생성을 검증한다", () => {
     const themes = listRea15PlatformThemes();
-    expect(themes).toHaveLength(780);
+    expect(themes).toHaveLength(840);
+
+    const dentalChart = getRea15PlatformTheme("dental-fdi-tooth-chart-mirror-handpiece");
+    expect(dentalChart.accentPrimaryHex).toBe("#38bdf8");
+
+    const csatOmr = getRea15PlatformTheme("korean-csat-omr-card-computer-pen-clock");
+    expect(csatOmr.accentPrimaryHex).toBe("#ec4899");
+
+    const paywallRoi = getRea15PlatformTheme("webtoon-episode-cliffhanger-paywall-conversion");
+    expect(paywallRoi.accentPrimaryHex).toBe("#10b981");
 
     const esportsHud = getRea15PlatformTheme("esports-moba-hud-minimap-killfeed");
     expect(esportsHud.accentPrimaryHex).toBe("#3b82f6");

@@ -220,6 +220,9 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave18-20-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave18-run-sword"));
     expect(screen.getByTestId("wave18-summary-output").textContent).toBeTruthy();
+    expect(screen.getByTestId("wave42-44-domain-consistency-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave42-run-dental"));
+    expect(screen.getByTestId("wave42-summary-output").textContent).toBeTruthy();
 
     render(
       <StudioAiWebtoonEcosystemWorkbenchPanel

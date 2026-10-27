@@ -192,7 +192,16 @@ export type ClaudeCreatorTaskId =
   | "cost-cap:archery-fencing-boxing-stance-cue-lock"
   | "cost-cap:orchestra-piano-guitar-tea-calligraphy-lock"
   | "cost-cap:botanical-flora-blacksmith-alchemy-director"
-  | "cost-cap:heavy-machinery-signboard-tax-erp-director";
+  | "cost-cap:heavy-machinery-signboard-tax-erp-director"
+  // 18. Wave 42~44 DentalXray/RetroHardware/LabScience/EquestrianHorology/FilmBroadcast/CampusTabletop/AmusementSki/PropPaywall AI Engines (8 — Total 148 Tasks)
+  | "localize:dental-ophthalmology-xray-marker-lock"
+  | "localize:rotary-phone-turntable-camera-instant-lock"
+  | "localize:chemistry-microscope-centrifuge-astronomy-lock"
+  | "localize:equestrian-falconry-horology-gemstone-lock"
+  | "localize:film-slate-boom-cstand-broadcast-tally-lock"
+  | "localize:school-csat-omr-tcg-dice-mahjong-lock"
+  | "localize:amusement-coaster-ferris-camping-ski-director"
+  | "localize:hourglass-candle-scale-book-paywall-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -620,6 +629,16 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "cost-cap:orchestra-piano-guitar-tea-calligraphy-lock": defineRoute("cost-cap:orchestra-piano-guitar-tea-calligraphy-lock", "88건반 피아노 검은건반(2-3 주기)·기타 프렛/드럼 교차 팔·오케스트라 지휘·다도 다완 회전·서예 쌍구법 디렉터", "core-dialog", "creative-production", "피아노/기타/드럼 연주 해부학·동양 다도/소믈리에 매너·서예 쌍구법/물레 반시계 회전 고증은 Sonnet 5.5 적용", 4_096),
   "cost-cap:botanical-flora-blacksmith-alchemy-director": defineRoute("cost-cap:botanical-flora-blacksmith-alchemy-director", "벚꽃 5꽃잎 끝 홈/단풍잎·대나무 빈 단면·대장간 왼손 집게/오른손 해머·스테인드글라스 투영광·연금술 총괄 감독", "core-dialog", "deep-architecture", "식물 계절 해부학·대장간 담금질/테일러 가봉·성당 색수차 투영광·마탑 연금술 기구 감리는 Opus 5.5 심층 추론 적용", 6_144),
   "cost-cap:heavy-machinery-signboard-tax-erp-director": defineRoute("cost-cap:heavy-machinery-signboard-tax-erp-director", "굴착기 3절 유압 링크/전철 팬터그래프·네온사인 유리관/간판 외계어 차단·여권 MRZ·웹툰 3.3% 세무/어시 ERP 총괄 감독", "core-dialog", "deep-architecture", "중장비 기구학·배경 한글 간판 외계어 방지·여권/화폐 소품·웹툰 스튜디오 세무/어시 정산 ERP는 Opus 5.5 심층 추론 적용", 6_144),
+
+  // 18. Wave 42~44 DentalXray/RetroHardware/LabScience/EquestrianHorology/FilmBroadcast/CampusTabletop/AmusementSki/PropPaywall AI Engines (8)
+  "localize:dental-ophthalmology-xray-marker-lock": defineRoute("localize:dental-ophthalmology-xray-marker-lock", "치과 치경 반사·안과 세극등·정형외과 X-ray 좌우 납 마커(L/R) 반전 차단 및 구급차 제세동기 패들 위치 고정기", "core-dialog", "fast-inline", "치과/안과 검진 기구·X-ray 좌우 마커·AED 패들 대각선 부착 위치 고정은 Haiku 5.5로 즉각 검증", 2_560),
+  "localize:rotary-phone-turntable-camera-instant-lock": defineRoute("localize:rotary-phone-turntable-camera-instant-lock", "다이얼 전화기 4시 핑거스톱·LP 턴테이블 우측 톤암·필름 카메라 우측 와인딩 레버·폴라로이드 하단 여백 고정기", "core-dialog", "fast-inline", "다이얼 전화기·타자기·LP 턴테이블 톤암·필름 카메라·즉석사진 하단 여백 좌우/상하 반전 방지는 Haiku 5.5 적용", 2_560),
+  "localize:chemistry-microscope-centrifuge-astronomy-lock": defineRoute("localize:chemistry-microscope-centrifuge-astronomy-lock", "화학 뷰렛 적정/흄후드·현미경 대물렌즈 배율 색띠·원심분리기 대칭 밸런스·적도의 망원경 추봉/일기도 디렉터", "core-dialog", "creative-production", "이공계 실험실 초자류·현미경 배율·원심분리기 대칭·천체망원경 및 일기도 고저기압 고증은 Sonnet 5.5 적용", 4_096),
+  "localize:equestrian-falconry-horology-gemstone-lock": defineRoute("localize:equestrian-falconry-horology-gemstone-lock", "승마 발볼 등자 밟기·매사냥 왼손 시치·시계 맞물린 기어 반대 회전·보석 프롱(4발/6발) 수량·조향사 디렉터", "core-dialog", "creative-production", "승마 등자 발볼 지지·매사냥 토시·스팀펑크 기어 회전 물리·보석 프롱 수량 고정은 Sonnet 5.5 적용", 4_096),
+  "localize:film-slate-boom-cstand-broadcast-tally-lock": defineRoute("localize:film-slate-boom-cstand-broadcast-tally-lock", "영화 촬영장 슬레이트 Scene/Take 일치·붐마이크·C-스탠드 우측 조임 법칙·부조정실 녹색 프리뷰/적색 탈리 디렉터", "core-dialog", "creative-production", "촬영장 슬레이트·C-스탠드 모래주머니·방송국 부조정실 프리뷰/프로그램 모니터 일치는 Sonnet 5.5 적용", 4_096),
+  "localize:school-csat-omr-tcg-dice-mahjong-lock": defineRoute("localize:school-csat-omr-tcg-dice-mahjong-lock", "한국 수능 OMR 답안지/학사모 술 방향·TCG 카드 90도 탭·주사위 마주보는 면 합(7/21)·마작 13패 고정 디렉터", "core-dialog", "creative-production", "수능 OMR/아날로그 시계·TCG 매트/탭 상태·주사위 마주보는 면 규칙·마작 손패 13장 고정은 Sonnet 5.5 적용", 4_096),
+  "localize:amusement-coaster-ferris-camping-ski-director": defineRoute("localize:amusement-coaster-ferris-camping-ski-director", "롤러코스터 3륜 업스톱 휠·대관람차 곤돌라 중력 수평·인형뽑기 3발 집게·캠핑 텐트 45도 팩·스노보드 스탠스 총괄 감독", "core-dialog", "deep-architecture", "유원지 어트랙션 기구학·관람차 중력 수평·캠핑/설상 스포츠 장비 고증은 Opus 5.5 심층 추론 적용", 6_144),
+  "localize:hourglass-candle-scale-book-paywall-director": defineRoute("localize:hourglass-candle-scale-book-paywall-director", "모래시계 34도 안식각·기울어진 촛대 수직 불꽃·천칭 저울·펼친 책 M자 곡면 왜곡 및 유료 쿠키 전환율 총괄 감독", "core-dialog", "deep-architecture", "모래시계/촛불/천칭/우산 물리·펼친 책 제본선 왜곡 투영·유료 미리보기 전환 훅 설계는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {
