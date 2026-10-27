@@ -194,4 +194,23 @@ describe("StudioClipStudioUnifiedUxPanel", () => {
     expect(companionReadout.textContent).toContain("배율 125%");
     expect(companionReadout.textContent).toContain("PWTimeLapseAiDisturbanceFilter");
   });
+
+  it("renders URML* Machine Learning, Puppet Warp ARAP, Layer Comp, 2D Cel Animation, .cmc 3D Bookbinding Flatplan, Dual-Brush LMS Mix, and PWRokuLib 61 modules", () => {
+    render(
+      <StudioClipStudioUnifiedUxPanel initialTab="urml_puppet_story_anim_roku" />,
+    );
+
+    expect(screen.getByTestId("csp-urml-hand-readout").textContent).toContain(
+      "21관절 키포인트: 21개",
+    );
+    expect(screen.getByTestId("csp-puppet-layercomp-readout").textContent).toContain(
+      "Comp_NightVariant",
+    );
+    expect(screen.getByTestId("csp-anim-story-readout").textContent).toContain(
+      "어니언스킨: 4장",
+    );
+    expect(screen.getByTestId("csp-dualbrush-roku-readout").textContent).toContain(
+      "클라우드 동기화: 4채널",
+    );
+  });
 });

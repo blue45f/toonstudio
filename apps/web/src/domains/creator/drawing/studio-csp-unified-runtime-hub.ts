@@ -748,7 +748,10 @@ export function getCspCompleteInternalizationManifest() {
 		companionRemoteTabCount: CSP_COMPANION_REMOTE_TAB_KINDS.length,
 		companionNavigatorCommandCount: CSP_COMPANION_NAVIGATOR_COMMANDS.length,
 		tgCxsDefaultFontSizePt: CSP_TGCXS_DEFAULT_CONSTANTS.defaultFontSizePt,
+		koreanStudioToolNodeCount: 255,
+		pwRokuLib3DModuleCount: 61,
 	} as const;
 }
 
 export * from "../../../../../../packages/studio-format-gateway/src/csp-tgcxs-certmdul-mobile-companion";
+export * from "../../../../../../packages/studio-format-gateway/src/csp-urml-puppet-story-animation-roku";

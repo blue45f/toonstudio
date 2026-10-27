@@ -38,33 +38,22 @@ import {
   StudioCspPwuiBentoToonSection,
 } from "./StudioCspPwuiBentoToonSection";
 import { StudioCspTgcxsCertMdulCompanionSection } from "./StudioCspTgcxsCertMdulCompanionSection";
+import { StudioCspUrmlPuppetStoryAnimationSection } from "./StudioCspUrmlPuppetStoryAnimationSection";
 
 function parseHexToRgb255(hex: string): [number, number, number] {
   const clean = hex.replace(/^#/, "").padEnd(6, "0");
-  return [
-    Number.parseInt(clean.slice(0, 2), 16) || 0,
-    Number.parseInt(clean.slice(2, 4), 16) || 0,
-    Number.parseInt(clean.slice(4, 6), 16) || 0,
-  ];
+  return [Number.parseInt(clean.slice(0, 2), 16) || 0, Number.parseInt(clean.slice(2, 4), 16) || 0, Number.parseInt(clean.slice(4, 6), 16) || 0];
 }
 
 function rgb255ToHex(r: number, g: number, b: number): string {
-  const clamp = (v: number): string =>
-    Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  const clamp = (v: number): string => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
   return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
 }
 
 function buildBilinearIntermediateColorGrid(
-  topLeftHex: string,
-  topRightHex: string,
-  bottomLeftHex: string,
-  bottomRightHex: string,
-  gridSize = 5,
+  topLeftHex: string, topRightHex: string, bottomLeftHex: string, bottomRightHex: string, gridSize = 5,
 ): readonly string[] {
-  const tl = parseHexToRgb255(topLeftHex);
-  const tr = parseHexToRgb255(topRightHex);
-  const bl = parseHexToRgb255(bottomLeftHex);
-  const br = parseHexToRgb255(bottomRightHex);
+  const [tl, tr, bl, br] = [parseHexToRgb255(topLeftHex), parseHexToRgb255(topRightHex), parseHexToRgb255(bottomLeftHex), parseHexToRgb255(bottomRightHex)];
   const cells: string[] = [];
   for (let row = 0; row < gridSize; row += 1) {
     const v = gridSize > 1 ? row / (gridSize - 1) : 0;
@@ -101,7 +90,8 @@ export type StudioCspUnifiedUxTabId =
   | "pwui_bento_3d_toon"
   | "cs3o_foil_shortcuts_wkbridge"
   | "lippreview_scan_skshaper_filters"
-  | "tgcxs_certmdul_mobile_companion";
+  | "tgcxs_certmdul_mobile_companion"
+  | "urml_puppet_story_anim_roku";
 
 export type StudioCspWorkspacePresetId =
   | "presetMac_1_illustration"
@@ -128,6 +118,7 @@ const UX_TABS: readonly { readonly id: StudioCspUnifiedUxTabId; readonly labelKo
   { id: "cs3o_foil_shortcuts_wkbridge", labelKo: ".cs3o 두상·금박(Foil) 셰이더·단축키(870/258)·WKBridge" },
   { id: "lippreview_scan_skshaper_filters", labelKo: "QuickLook(.clip)·TGTos(.tos)·scan.app·SkShaper·32필터" },
   { id: "tgcxs_certmdul_mobile_companion", labelKo: "TGCxs(.cxs/벡터교차)·CertMdul(ICC PCS)·컴패니언·AI교란" },
+  { id: "urml_puppet_story_anim_roku", labelKo: "URML*·퍼핏변형·레이어콤프·2D애니·.cmc제본·듀얼브러시·PWRokuLib" },
 ] as const;
 
 const WORKSPACE_PRESETS: readonly {
@@ -783,6 +774,9 @@ export function StudioClipStudioUnifiedUxPanel({
       )}
       {activeTab === "tgcxs_certmdul_mobile_companion" && (
         <StudioCspTgcxsCertMdulCompanionSection />
+      )}
+      {activeTab === "urml_puppet_story_anim_roku" && (
+        <StudioCspUrmlPuppetStoryAnimationSection />
       )}
     </section>
   );
