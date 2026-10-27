@@ -1,3 +1,4 @@
+successfully downloaded text file (SHA: b22c245bc4ab6e19e2533691e21ee7474ad9630e)
 import { Module } from "@nestjs/common";
 import { OperationPolicyModule } from "./modules/operation-policy/operation-policy.module";
 
@@ -37,6 +38,7 @@ import { ProductionCollaborationModule } from "./modules/production-collaboratio
 import { CareerConfirmationModule } from "./modules/recruitment/career-confirmation.module";
 import { SupporterPaymentModule } from "./modules/supporter-payment/supporter-payment.module";
 import { StudioAiModule } from "./modules/studio-ai/studio-ai.module";
+import { ResearchModule } from "./modules/research/research.module";
 import { StudioMusicModule } from "./modules/studio-music/studio-music.module";
 import { StudioProjectGraphModule } from "./modules/studio-project-graph/studio-project-graph.module";
 import { createStudioRealtimeTicketDynamicModule } from "./modules/studio-realtime-ticket/studio-realtime-ticket.integration";
@@ -93,8 +95,10 @@ const studioRealtimeTicketModule =
     LearningModule,
     FortuneModule,
     StudioAiModule,
+    ResearchModule,
     StudioMusicModule,
     StudioProjectGraphModule,
   ],
 })
 export class AppModule {}
+
