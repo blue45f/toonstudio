@@ -267,6 +267,42 @@
   text-overflow: ellipsis;
 }
 
+.nb-site-spotlight__ai-assist {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.625rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--nb-accent) 16%, rgba(15, 23, 42, 0.85)),
+    color-mix(in srgb, var(--nb-secondary) 12%, rgba(15, 23, 42, 0.78))
+  );
+  border: 1px solid color-mix(in srgb, var(--nb-accent) 38%, rgba(255, 255, 255, 0.14));
+}
+
+.nb-site-spotlight__ai-assist-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.14rem 0.48rem;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  background: linear-gradient(135deg, #fde68a, var(--nb-accent));
+  flex-shrink: 0;
+}
+
+.nb-site-spotlight__ai-assist-copy {
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #f1f5f9;
+}
+
 .nb-site-spotlight__footer {
   display: flex;
   flex-wrap: wrap;

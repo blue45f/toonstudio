@@ -344,11 +344,11 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         setGizmoMode(shaperAction.mode);
         return;
       }
-      if (shaperAction?.kind === "view-preset") {
+      if (shaperAction?.kind === "camera-view") {
         if (shaperAction.view === "front") {
           onFraming("full-body");
           if (canvasElRef.current) applyCanvasShaperViewPreset(canvasElRef.current, "front");
-        } else if (shaperAction.view === "back" || shaperAction.view === "bottom") {
+        } else if (shaperAction.view === "bottom") {
           onFraming("bust");
         } else if (shaperAction.view === "left") {
           if (canvasElRef.current) applyCanvasShaperViewPreset(canvasElRef.current, "left");

@@ -140,6 +140,7 @@ export function NanoBananaSurfaceSpotlight({
                 return (
                   <div
                     key={lens.id}
+                    role="presentation"
                     className={`nb-site-spotlight__step-card ${isSelected ? "nb-site-spotlight__step-card--active" : ""}`.trim()}
                     data-nb-step-card={lens.id}
                     onClick={() => {
@@ -164,6 +165,18 @@ export function NanoBananaSurfaceSpotlight({
                   </div>
                 );
               })}
+            </div>
+
+            <div
+              className="nb-site-spotlight__ai-assist"
+              data-nb-ai-assist={activeLens.id}
+            >
+              <span className="nb-site-spotlight__ai-assist-badge">
+                {isEn ? "✦ SMART AI ASSIST" : "✦ 스마트 AI 보조"}
+              </span>
+              <span className="nb-site-spotlight__ai-assist-copy">
+                {pick(activeLens.promptSeed)}
+              </span>
             </div>
           </div>
 

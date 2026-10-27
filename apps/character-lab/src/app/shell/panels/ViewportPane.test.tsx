@@ -702,4 +702,41 @@ describe("접근성", () => {
     fireEvent.keyDown(window, { key: "y", ctrlKey: true });
     expect(view.dispatched).toContainEqual({ type: "history/redo" });
   });
+
+  it("SHAPER 골격 연결선·대칭 조작(Symmetry)·직접 피벗(pivotIKMode)·내장 프리셋 선택기가 동작한다", () => {
+    const basePlan = applyPlanFixture({ revision: 4 });
+    const engine = createTestEngine();
+    const view = renderPane({ engine, plan: basePlan });
+    flushFrames();
+
+    // 골격 연결선(BoneLinkSegment) 렌더링 확인
+    const links = document.querySelectorAll("line.cl-viewport-bone-link");
+    expect(links.length).toBeGreaterThanOrEqual(5);
+
+    // 대칭 조작 토글 후 팔꿈치 드래그 시 좌우 위팔(leftUpperArm + rightUpperArm) 동시 회전 확인
+    fireEvent.click(screen.getByRole("button", { name: "대칭 조작" }));
+    const pivotWorld = worldOf(basePlan.boneRotations, "leftUpperArm");
+    const elbowWorld = worldOf(basePlan.boneRotations, "leftLowerArm");
+    const start = projectToPixel(CAMERA, elbowWorld);
+    const end = projectToPixel(CAMERA, [pivotWorld[0], pivotWorld[1] - 0.25, pivotWorld[2]]);
+    if (!start || !end) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(start), pointerId: 9, button: 0 });
+    fireEvent.pointerMove(handle("leftLowerArm"), { ...toClient(end), pointerId: 9 });
+    expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+    fireEvent.pointerUp(handle("leftLowerArm"), { ...toClient(end), pointerId: 9 });
+
+    const poseCmd = view.dispatched.find((c) => c.type === "pose/set");
+    expect(poseCmd?.type).toBe("pose/set");
+    if (poseCmd?.type === "pose/set") {
+      expect(poseCmd.pose.leftUpperArm).toBeDefined();
+      expect(poseCmd.pose.rightUpperArm).toBeDefined();
+    }
+
+    // SHAPER 내장 프리셋 선택기(여성1.preset / 얼굴형2.preset) 적용 확인
+    const presetSelect = screen.getByLabelText("SHAPER 내장 프리셋") as HTMLSelectElement;
+    fireEvent.change(presetSelect, { target: { value: "shaper-female-1" } });
+    expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "body" && c.key === "waist")).toBe(true);
+    fireEvent.change(presetSelect, { target: { value: "shaper-face-2" } });
+    expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "face" && c.key === "jawWidth")).toBe(true);
+  });
 });
