@@ -1,18 +1,6 @@
 import {
   ArrowRight,
-  Box,
-  BriefcaseBusiness,
-  Clapperboard,
-  FileImage,
-  FileText,
-  LayoutTemplate,
-  Lightbulb,
-  Presentation,
   Sparkles,
-  Upload,
-  UserRound,
-  UsersRound,
-  type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -51,7 +39,6 @@ import {
   STUDIO_PROJECT_START_POINT_OPTIONS,
   studioProjectDefinitionFromSelection,
   studioProjectFormatDocumentTitle,
-  studioProjectFormatFromLegacy,
   studioProjectFormatProfile,
   studioProjectFormatTemplate,
   type StudioAuxiliaryWorkspaceOption,
@@ -73,189 +60,39 @@ import {
 } from "../studio-create-lane";
 import { buildStudioModeLaunchHref, resolveStudioModeCreationPlan } from "../studio-mode-creation-plan";
 import { createStudioProjectWithInitialDocument } from "../studio-project-creation";
-import type { StudioProjectKind } from "../studio-project-library-store";
 import { STUDIO_PROJECT_CREATE_TEMPLATES } from "../save-first/studio-project-create-options";
 import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
+import {
+  AUXILIARY_ICONS,
+  CANVAS_DIMENSION_MAX,
+  CANVAS_DIMENSION_MIN,
+  CANVAS_HEIGHT_INPUT_ID,
+  CANVAS_WIDTH_INPUT_ID,
+  COLLABORATION_ICONS,
+  CREATE_DISABLED_REASON_ID,
+  CREATE_SIZE_REASON_ID,
+  OnboardingSelect,
+  PROJECT_TITLE_INPUT_ID,
+  START_POINT_ICONS,
+  focusProjectTitle,
+  hrefWithFormat,
+  normalizedRequestedTemplate,
+  onboardingStartPointFromProject,
+  parseCanvasDimension,
+  projectCollaborationFromOnboarding,
+  projectPurposeFromOnboarding,
+  projectStartPointFromOnboarding,
+  requestedAuxiliary,
+  requestedFormat,
+  requestedStartPoint,
+  standaloneDocumentTitle,
+  type AuxiliaryKind,
+} from "./studio-mode-project-create-helpers";
 import { StudioModeWorkspacePreview } from "./StudioModeWorkspacePreview";
 import { StudioProjectFormatPreview, StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
 import { DisabledReason } from "./StudioTaskFlow";
 import { STUDIO_PROJECT_TITLE_MAX_LENGTH, normalizeStudioProjectTitleDraft } from "./studio-project-title";
 import "./studio-illustrated-project-surfaces.css";
-
-type Choice<T extends string> = {
-  readonly id: T;
-  readonly labelKo: string;
-  readonly labelEn: string;
-};
-
-type AuxiliaryKind = StudioAuxiliaryWorkspaceOption["id"];
-
-const AUXILIARY_ICONS: Readonly<Record<AuxiliaryKind, LucideIcon>> = {
-  storyboard: Clapperboard,
-  image: FileImage,
-  "three-d": Box,
-  design: LayoutTemplate,
-  slides: Presentation,
-};
-
-const START_POINT_ICONS: Readonly<Record<StudioProjectStartPoint, LucideIcon>> = {
-  idea: Lightbulb,
-  script: FileText,
-  storyboard: Clapperboard,
-  files: Upload,
-};
-
-const COLLABORATION_ICONS: Readonly<Record<StudioProjectCollaboration, LucideIcon>> = {
-  solo: UserRound,
-  team: UsersRound,
-  client: BriefcaseBusiness,
-};
-
-const CREATE_DISABLED_REASON_ID = "studio-create-disabled-reason";
-const CREATE_SIZE_REASON_ID = "studio-create-size-reason";
-const PROJECT_TITLE_INPUT_ID = "studio-mode-project-title";
-const CANVAS_WIDTH_INPUT_ID = "studio-mode-canvas-width";
-const CANVAS_HEIGHT_INPUT_ID = "studio-mode-canvas-height";
-/** 문서 저장소가 허용하는 캔버스 한 변의 범위(studio-project-document-store의 positiveDimension과 동일). */
-const CANVAS_DIMENSION_MIN = 1;
-const CANVAS_DIMENSION_MAX = 1_000_000;
-
-function parseCanvasDimension(raw: string): number | null {
-  const value = Number(raw.trim());
-  if (!Number.isSafeInteger(value) || value < CANVAS_DIMENSION_MIN || value > CANVAS_DIMENSION_MAX) {
-    return null;
-  }
-  return value;
-}
-
-/** 가져온 아이디어 칩에서 제목 입력칸으로 바로 이동한다(모션 감소 설정을 따른다). */
-function focusProjectTitle(): void {
-  const input = document.getElementById(PROJECT_TITLE_INPUT_ID);
-  if (!(input instanceof HTMLInputElement)) return;
-  const reduceMotion = typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  input.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-  input.focus({ preventScroll: true });
-  input.select();
-}
-
-function requestedFormat(
-  format: string | null,
-  kind: string | null,
-  templateId: string | null,
-): StudioProjectFormat {
-  const explicit = STUDIO_PROJECT_FORMAT_PROFILES.find((profile) => profile.id === format)?.id;
-  return explicit ?? studioProjectFormatFromLegacy(kind, templateId) ?? "vertical-webtoon";
-}
-
-function requestedAuxiliary(
-  format: string | null,
-  kind: string | null,
-  templateId: string | null,
-): StudioAuxiliaryWorkspaceOption | null {
-  if (format || studioProjectFormatFromLegacy(kind, templateId)) return null;
-  return STUDIO_AUXILIARY_WORKSPACE_OPTIONS.find((option) => option.id === kind) ?? null;
-}
-
-function normalizedRequestedTemplate(
-  format: StudioProjectFormat,
-  templateId: string | null,
-): string | null {
-  if (format === "cuttoon" && templateId === "webtoon-four-cut") return "cuttoon-square-4";
-  if (format === "page-comic" && templateId === "webtoon-page") return "page-comic-digital-8";
-  if (format === "motion-toon" && (templateId === "motion-webtoon" || templateId === "animation-short")) {
-    return "motion-toon-vertical";
-  }
-  return templateId;
-}
-
-/** `?start=`로 넘어온 시작점(작품 홈의 한 줄 아이디어 등). 모르는 값은 무시한다. */
-function requestedStartPoint(value: string | null): StudioProjectStartPoint | null {
-  return STUDIO_PROJECT_START_POINT_OPTIONS.find((option) => option.id === value)?.id ?? null;
-}
-
-function projectStartPointFromOnboarding(
-  value: WebtoonStartingPointId | undefined,
-): StudioProjectStartPoint {
-  if (value === "script") return "script";
-  if (value === "storyboard") return "storyboard";
-  if (value === "finished-art" || value === "serializing") return "files";
-  return "idea";
-}
-
-function onboardingStartPointFromProject(
-  value: StudioProjectStartPoint,
-): WebtoonStartingPointId {
-  if (value === "script") return "script";
-  if (value === "storyboard") return "storyboard";
-  if (value === "files") return "finished-art";
-  return "idea";
-}
-
-function projectPurposeFromOnboarding(
-  value: WebtoonOnboardingGoalId | undefined,
-): StudioProjectPurpose {
-  if (value === "pitch") return "portfolio";
-  if (value === "contracted") return "client-work";
-  return "serial";
-}
-
-function projectCollaborationFromOnboarding(
-  value: WebtoonTeamModelId | undefined,
-): StudioProjectCollaboration {
-  return value && value !== "solo" ? "team" : "solo";
-}
-
-function standaloneDocumentTitle(
-  kind: StudioProjectKind,
-  title: string,
-  locale: "ko" | "en",
-): string {
-  if (kind === "slides") return locale === "ko" ? "발표 자료" : "Presentation";
-  if (kind === "storyboard") return locale === "ko" ? "첫 스토리보드" : "First storyboard";
-  if (kind === "three-d") return locale === "ko" ? "첫 3D 장면" : "First 3D scene";
-  return locale === "ko" ? `${title} 작업 문서` : `${title} working document`;
-}
-
-function hrefWithFormat(href: string, format: StudioProjectFormat): string {
-  const [pathname = href, rawSearch = ""] = href.split("?", 2);
-  const search = new URLSearchParams(rawSearch);
-  search.set("format", format);
-  return `${pathname}?${search.toString()}`;
-}
-
-function OnboardingSelect<T extends string>({
-  id,
-  label,
-  value,
-  choices,
-  onChange,
-}: {
-  readonly id: string;
-  readonly label: string;
-  readonly value: T;
-  readonly choices: readonly Choice<T>[];
-  readonly onChange: (next: T) => void;
-}) {
-  const bt = useBilingual("StudioModeProjectCreatePage.onboardingSelect");
-  return (
-    <label className="text-xs font-bold text-fg-2" htmlFor={id}>
-      {label}
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value as T)}
-        className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
-      >
-        {choices.map((choice) => (
-          <option key={choice.id} value={choice.id}>
-            {bt(choice.labelKo, choice.labelEn)}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
 
 export function StudioModeProjectCreatePage() {
   const bt = useBilingual("StudioModeProjectCreatePage");
@@ -264,37 +101,22 @@ export function StudioModeProjectCreatePage() {
   const locale = useI18n((state) => state.lang) === "ko" ? "ko" : "en";
   const requestedTemplateId = searchParams.get("template");
   const requestedSelection = webtoonOnboardingSelectionFromSearchParams(searchParams);
-  const initialFormatId = requestedFormat(
-    searchParams.get("format"),
-    searchParams.get("kind"),
-    requestedTemplateId,
-  );
+  const initialFormatId = requestedFormat(searchParams.get("format"), searchParams.get("kind"), requestedTemplateId);
   const initialFormat = studioProjectFormatProfile(initialFormatId);
-  const initialAuxiliary = requestedAuxiliary(
-    searchParams.get("format"),
-    searchParams.get("kind"),
-    requestedTemplateId,
-  );
+  const initialAuxiliary = requestedAuxiliary(searchParams.get("format"), searchParams.get("kind"), requestedTemplateId);
   const normalizedTemplateId = normalizedRequestedTemplate(initialFormatId, requestedTemplateId);
   const initialMainTemplate = studioProjectFormatTemplate(initialFormat, normalizedTemplateId);
   const initialAuxiliaryTemplate = initialAuxiliary
-    ? STUDIO_PROJECT_CREATE_TEMPLATES[initialAuxiliary.id]
-      .find((candidate) => candidate.id === requestedTemplateId)?.id ?? initialAuxiliary.templateId
+    ? STUDIO_PROJECT_CREATE_TEMPLATES[initialAuxiliary.id].find((candidate) => candidate.id === requestedTemplateId)?.id ?? initialAuxiliary.templateId
     : null;
 
   const [formatId, setFormatId] = useState<StudioProjectFormat>(initialFormatId);
   const [auxiliaryKind, setAuxiliaryKind] = useState<AuxiliaryKind | null>(initialAuxiliary?.id ?? null);
   const [templateId, setTemplateId] = useState(initialAuxiliaryTemplate ?? initialMainTemplate.id);
-  // 작품 홈의 한 줄 아이디어(`?title=`)는 제목 초안으로 채우고, 형식을 바꿔도 덮어쓰지 않는다.
   const requestedTitle = normalizeStudioProjectTitleDraft(searchParams.get("title"));
-  const [title, setTitle] = useState(() => requestedTitle ?? (initialAuxiliary
-    ? bt(initialAuxiliary.defaultTitleKo, initialAuxiliary.defaultTitleEn)
-    : bt(initialFormat.defaultTitleKo, initialFormat.defaultTitleEn)));
+  const [title, setTitle] = useState(() => requestedTitle ?? (initialAuxiliary ? bt(initialAuxiliary.defaultTitleKo, initialAuxiliary.defaultTitleEn) : bt(initialFormat.defaultTitleKo, initialFormat.defaultTitleEn)));
   const [titleEdited, setTitleEdited] = useState(requestedTitle !== null);
   const requestedStart = requestedStartPoint(searchParams.get("start"));
-  // 시작 레인 (BLUEPRINT §2.3, S2-7): /create 관문이 넘긴 레인이 양식의 초기값(첫 단계)과
-  // 생성 후 착지를 결정한다. 명시 레인이 없으면 template·start 파라미터에서 추론하고,
-  // 레인이 없는 딥링크는 null이라 기존 시작점 기반 동작을 그대로 유지한다.
   const entryLane = resolveStudioCreateLane(searchParams);
   const explicitEntryLane = studioCreateExplicitLane(searchParams);
   const [lane, setLane] = useState<StudioCreateLane | null>(entryLane);
