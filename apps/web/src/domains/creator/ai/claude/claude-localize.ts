@@ -606,3 +606,25 @@ export {
   type Wave30LocalizeAssistInput,
   type Wave30LocalizeAssistResult,
 } from "./claude-alt-text";
+
+export {
+  runClaudeAnamorphicFisheyeLensOpticsDirector,
+  runClaudeAudiotoonAdrTactileErgonomicsDirector,
+  runClaudeDrapery7FoldsMaterialBrdfDirector,
+  runClaudeGachaSsrSplashRpgSkillCutsceneDirector,
+  runClaudeScreentoneMoireGpenHierarchyDirector,
+  runClaudeSportsBiomechanicsGaitGripDirector,
+  runClaudeVehicleCockpitSeatbeltDrivetrainDirector,
+  runClaudeVtuberArkit52VnSpriteMerchDirector,
+  type ClaudeAnamorphicFisheyeLens,
+  type ClaudeAudiotoonAdrTactileErgo,
+  type ClaudeDrapery7FoldsBrdf,
+  type ClaudeGachaSsrRpgCutscene,
+  type ClaudeScreentoneMoireGpen,
+  type ClaudeSportsBiomechanics,
+  type ClaudeVehicleCockpitDrivetrain,
+  type ClaudeVtuberVnSpriteMerch,
+  type RunWave33CostCapAssistOptions,
+  type Wave33CostCapAssistInput,
+  type Wave33CostCapAssistResult,
+} from "./claude-feature-cost-cap";

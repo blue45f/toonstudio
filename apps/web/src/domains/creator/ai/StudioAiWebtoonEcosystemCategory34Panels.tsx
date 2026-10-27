@@ -21,14 +21,22 @@ import {
   runClaudeTraditionalClothingCollarGoreumLockDirector,
 } from "./claude/claude-art-director";
 import {
+  runClaudeAnamorphicFisheyeLensOpticsDirector,
   runClaudeAnimeSettei3ToneModelSheetDirector,
+  runClaudeAudiotoonAdrTactileErgonomicsDirector,
+  runClaudeDrapery7FoldsMaterialBrdfDirector,
   runClaudeEmoticon24PackChibiSpecDirector,
+  runClaudeGachaSsrSplashRpgSkillCutsceneDirector,
   runClaudeGlobalIpMgRsRoyaltyWaterfallDirector,
   runClaudeKoreanUrbanEverydayGeographyDirector,
   runClaudeLunarPhaseStarSkyLockDirector,
   runClaudeOttLiveActionShowrunnerBibleDirector,
   runClaudeQuadrupedCreatureWingAnatomyDirector,
+  runClaudeScreentoneMoireGpenHierarchyDirector,
+  runClaudeSportsBiomechanicsGaitGripDirector,
   runClaudeThaiVietnameseArabicRtlShapingDirector,
+  runClaudeVehicleCockpitSeatbeltDrivetrainDirector,
+  runClaudeVtuberArkit52VnSpriteMerchDirector,
 } from "./claude/claude-localize";
 import {
   runClaudeEyetrackScrollVelocityAoiDirector,
@@ -433,6 +441,48 @@ export function StudioAiWebtoonCategory4Panel({
     }
   }
 
+  async function handleRunWave33Tool(toolId: string): Promise<void> {
+    setWave27Tool(toolId);
+    const input = {
+      episodeTitle: `${storyGenre} 렌즈·주름·게임화`,
+      genre: storyGenre,
+      scriptSummary: "아나모픽 야간 추격전 후 벨벳 망토를 휘날리며 궁극기 컷신으로 보스를 격파한다.",
+    };
+    if (toolId === "vehicle") {
+      const res = await runClaudeVehicleCockpitSeatbeltDrivetrainDirector(input);
+      setWave27Badge(`${res.model} · 차량좌우핸들·구동계 ${res.data.vehicleContinuityScore}점`);
+      setWave27Summary(`${res.data.lhdRhdSteeringAndShifterRuleKo} | ${res.data.seatbeltDiagonalStrapRuleKo}`);
+    } else if (toolId === "screentone") {
+      const res = await runClaudeScreentoneMoireGpenHierarchyDirector(input);
+      setWave27Badge(`${res.model} · 망점모아레·G펜위계 ${res.data.inkingIntegrityScore}점`);
+      setWave27Summary(`${res.data.screentoneLpiAndAngleRuleKo} | ${res.data.gpenThreeTierLineWeightKo}`);
+    } else if (toolId === "lens") {
+      const res = await runClaudeAnamorphicFisheyeLensOpticsDirector(input);
+      setWave27Badge(`${res.model} · 시네마틱렌즈광학 ${res.data.lensOpticsScore}점`);
+      setWave27Summary(`${res.data.anamorphicBokehAndFlareKo} | ${res.data.dutchTiltAndSplitDiopterKo}`);
+    } else if (toolId === "drapery") {
+      const res = await runClaudeDrapery7FoldsMaterialBrdfDirector(input);
+      setWave27Badge(`${res.model} · 7대주름·벨벳BRDF ${res.data.fabricPhysicsScore}점`);
+      setWave27Summary(`${res.data.hogarthFoldTensionOriginKo} | ${res.data.velvetAndSilkBrdfSpecKo}`);
+    } else if (toolId === "biomech") {
+      const res = await runClaudeSportsBiomechanicsGaitGripDirector(input);
+      setWave27Badge(`${res.model} · 스포츠인체역학 ${res.data.biomechanicsScore}점`);
+      setWave27Summary(`${res.data.contraLateralSprintGaitKo} | ${res.data.ballSportsGripAndReleaseKo}`);
+    } else if (toolId === "vtuber") {
+      const res = await runClaudeVtuberArkit52VnSpriteMerchDirector(input);
+      setWave27Badge(`${res.model} · 버튜버·캔배지 ${res.data.ipAssetReadinessScore}점`);
+      setWave27Summary(`${res.data.vtuberArkitBlendshapeSpecKo} | ${res.data.canBadgeAndLenticularSpecKo}`);
+    } else if (toolId === "gacha-rpg") {
+      const res = await runClaudeGachaSsrSplashRpgSkillCutsceneDirector(input);
+      setWave27Badge(`${res.model} · SSR스플래시·궁극기 ${res.data.gameAdaptationScore}점`);
+      setWave27Summary(`${res.data.fivePlaneSplashArtParallaxKo} | ${res.data.ultimateSkillCutsceneCameraKo}`);
+    } else {
+      const res = await runClaudeAudiotoonAdrTactileErgonomicsDirector(input);
+      setWave27Badge(`${res.model} · ADR대본·촉각점자·손목보호 ${res.data.productionAccessibilityScore}점`);
+      setWave27Summary(`${res.data.adrTimecodeAndBreathCueKo} | ${res.data.artistWristStrokeBudgetKo}`);
+    }
+  }
+
   const filmoraResult = useMemo(
     () => runFilmoraMediaToWebtoonPipeline({ filterPresetId: filmoraPresetId }),
     [filmoraPresetId],
@@ -614,6 +664,42 @@ export function StudioAiWebtoonCategory4Panel({
               data-testid={`wave30-tool-btn-${btn.id}`}
               aria-pressed={wave27Tool === btn.id}
               onClick={() => void handleRunWave30Tool(btn.id)}
+              className={cn(
+                "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
+                STUDIO_FOCUS_RING,
+                wave27Tool === btn.id
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-card text-fg-2",
+              )}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+        <div
+          data-testid="wave33-35-category4-optics-bar"
+          className="flex flex-wrap gap-1 pt-1"
+          role="group"
+          aria-label="Wave 33~35 660대 플랫폼 렌즈광학·주름BRDF·인체역학·게임화 도구"
+        >
+          {(
+            [
+              { id: "vehicle", label: "좌우핸들·안전벨트·체인링" },
+              { id: "screentone", label: "망점모아레·G펜선위계" },
+              { id: "lens", label: "아나모픽·어안·더치틸트" },
+              { id: "drapery", label: "7대주름·벨벳실크BRDF" },
+              { id: "biomech", label: "질주교차보행·스포츠그립" },
+              { id: "vtuber", label: "버튜버ARKit·캔배지도련" },
+              { id: "gacha-rpg", label: "SSR스플래시·3초궁극기" },
+              { id: "adr-ergo", label: "ADR대본·촉각점자·손목보호" },
+            ] as const
+          ).map((btn) => (
+            <button
+              key={btn.id}
+              type="button"
+              data-testid={`wave33-tool-btn-${btn.id}`}
+              aria-pressed={wave27Tool === btn.id}
+              onClick={() => void handleRunWave33Tool(btn.id)}
               className={cn(
                 "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
                 STUDIO_FOCUS_RING,

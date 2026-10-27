@@ -6,6 +6,16 @@ import {
   resolveCreatorTaskModelRoute,
   summarizeCreatorModelRouterCatalog,
 } from "./claude-creator-model-router";
+import {
+  runClaudeAnamorphicFisheyeLensOpticsDirector,
+  runClaudeAudiotoonAdrTactileErgonomicsDirector,
+  runClaudeDrapery7FoldsMaterialBrdfDirector,
+  runClaudeGachaSsrSplashRpgSkillCutsceneDirector,
+  runClaudeScreentoneMoireGpenHierarchyDirector,
+  runClaudeSportsBiomechanicsGaitGripDirector,
+  runClaudeVehicleCockpitSeatbeltDrivetrainDirector,
+  runClaudeVtuberArkit52VnSpriteMerchDirector,
+} from "./claude-feature-cost-cap";
 
 describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
   it("3단계 프로필(fast-inline, creative-production, deep-architecture)을 정의하고 전체 AI 작업을 최적 모델로 매핑한다", () => {
@@ -46,12 +56,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 65대 창의 AI 작업을 포함한 총 116개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 73대 창의 AI 작업을 포함한 총 124개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(116);
-    expect(summary.byProfile["fast-inline"]).toBe(30);
-    expect(summary.byProfile["creative-production"]).toBe(58);
-    expect(summary.byProfile["deep-architecture"]).toBe(28);
+    expect(summary.totalTasks).toBe(124);
+    expect(summary.byProfile["fast-inline"]).toBe(32);
+    expect(summary.byProfile["creative-production"]).toBe(62);
+    expect(summary.byProfile["deep-architecture"]).toBe(30);
+
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:lhd-rhd-cockpit-seatbelt-drivetrain-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:screentone-lpi-moire-gpen-hierarchy-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:anamorphic-fisheye-dutch-lens-optics-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:drapery-7folds-velvet-satin-brdf-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:sports-biomechanics-gait-grip-edge-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("cost-cap:audiotoon-adr-timecode-tactile-ergo-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("localize:lunar-phase-star-conjunction-sky-lock").model,
@@ -254,5 +289,30 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(
       resolveCreatorTaskModelRoute("production:combat-bloodstain-dust-tatter-decay-lock").model,
     ).toBe("claude-sonnet-5-5");
+  });
+
+  it("Wave 33~35 8대 렌즈광학·7대주름BRDF·인체역학·망점G펜·버튜버·SSR스플래시·ADR촉각점자 감독 폴백 동작을 검증한다", async () => {
+    const sample = {
+      episodeTitle: "황궁 추격전과 각성",
+      genre: "판타지 액션",
+      scriptSummary: "아나모픽 야간 추격전 후 벨벳 망토를 휘날리며 3초 궁극기 컷신으로 보스를 격파한다.",
+    };
+    const r1 = await runClaudeVehicleCockpitSeatbeltDrivetrainDirector(sample, { route: null });
+    const r2 = await runClaudeScreentoneMoireGpenHierarchyDirector(sample, { route: null });
+    const r3 = await runClaudeAnamorphicFisheyeLensOpticsDirector(sample, { route: null });
+    const r4 = await runClaudeDrapery7FoldsMaterialBrdfDirector(sample, { route: null });
+    const r5 = await runClaudeSportsBiomechanicsGaitGripDirector(sample, { route: null });
+    const r6 = await runClaudeVtuberArkit52VnSpriteMerchDirector(sample, { route: null });
+    const r7 = await runClaudeGachaSsrSplashRpgSkillCutsceneDirector(sample, { route: null });
+    const r8 = await runClaudeAudiotoonAdrTactileErgonomicsDirector(sample, { route: null });
+
+    expect(r1.data.vehicleContinuityScore).toBeGreaterThanOrEqual(95);
+    expect(r2.data.inkingIntegrityScore).toBeGreaterThanOrEqual(95);
+    expect(r3.data.lensOpticsScore).toBeGreaterThanOrEqual(95);
+    expect(r4.data.fabricPhysicsScore).toBeGreaterThanOrEqual(95);
+    expect(r5.data.biomechanicsScore).toBeGreaterThanOrEqual(95);
+    expect(r6.data.ipAssetReadinessScore).toBeGreaterThanOrEqual(95);
+    expect(r7.data.gameAdaptationScore).toBeGreaterThanOrEqual(95);
+    expect(r8.data.productionAccessibilityScore).toBeGreaterThanOrEqual(95);
   });
 });

@@ -31,7 +31,9 @@ export type ClaudeCreatorTaskDomain =
   | "competitor-suite"
   | "phase6-ecosystem"
   | "engine-fusion"
-  | "n7-llm-runner";
+  | "n7-llm-runner"
+  | "art-director"
+  | "localize";
 
 export type ClaudeCreatorTaskId =
   // 1. Core Dialogs (4)
@@ -163,7 +165,16 @@ export type ClaudeCreatorTaskId =
   | "localize:thai-vietnamese-arabic-rtl-balloon-shaping-lock"
   | "localize:anime-settei-3tone-color-model-sheet-lock"
   | "localize:ott-live-action-8ep-showrunner-pitch-director"
-  | "localize:global-ip-mg-rs-royalty-waterfall-director";
+  | "localize:global-ip-mg-rs-royalty-waterfall-director"
+  // 15. Wave 33~35 LensOptics/DraperyBRDF/SportsBiomech/ScreentoneGpen/VTuberRPG/AudiotoonErgo AI Engines (8 — Total 124 Tasks)
+  | "cost-cap:lhd-rhd-cockpit-seatbelt-drivetrain-lock"
+  | "cost-cap:screentone-lpi-moire-gpen-hierarchy-lock"
+  | "cost-cap:anamorphic-fisheye-dutch-lens-optics-lock"
+  | "cost-cap:drapery-7folds-velvet-satin-brdf-lock"
+  | "cost-cap:sports-biomechanics-gait-grip-edge-lock"
+  | "cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock"
+  | "cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director"
+  | "cost-cap:audiotoon-adr-timecode-tactile-ergo-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -656,6 +667,14 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "localize:anime-settei-3tone-color-model-sheet-lock": defineRoute("localize:anime-settei-3tone-color-model-sheet-lock", "웹툰 그라데이션 원고 → TV 애니메이션 3단 셀 채색 지정표(Normal/1-Shadow/Hi HEX) 변환 디렉터", "localize", "creative-production", "웹툰 원작 애니메이션화 시 브러시 그라데이션을 셀 작화용 노멀/그림자/하이라이트 3단 색지정표로 변환은 Sonnet 5.5 적용", 4_096),
   "localize:ott-live-action-8ep-showrunner-pitch-director": defineRoute("localize:ott-live-action-8ep-showrunner-pitch-director", "웹툰 원작 넷플릭스/OTT 8부작 실사 드라마 각색 쇼러너 바이블·세트장 압축·VFX 예산 총괄 감독", "localize", "deep-architecture", "웹툰 70화 분량을 8부작 드라마 회차별 엔딩 훅과 로케이션/VFX 예산 티어로 재설계하는 바이블은 Opus 5.5 심층 추론 적용", 6_144),
   "localize:global-ip-mg-rs-royalty-waterfall-director": defineRoute("localize:global-ip-mg-rs-royalty-waterfall-director", "글로벌 연재·출판·영상화 계약 미니멈 개런티(MG 선차감/후차감)·러닝개런티(RS) 워터폴 정산 감사 감독", "localize", "deep-architecture", "MG 선차감/후차감 수식 비교와 2차 저작물 권리 귀속·RS 정산 워터폴 시뮬레이션은 Opus 5.5 심층 추론 적용", 6_144),
+  "cost-cap:lhd-rhd-cockpit-seatbelt-drivetrain-lock": defineRoute("cost-cap:lhd-rhd-cockpit-seatbelt-drivetrain-lock", "차량 좌우핸들(LHD/RHD)·3점식 안전벨트 대각선·오토바이 스로틀/클러치·자전거 우측 체인링 고정기", "core-dialog", "fast-inline", "운전석 좌우핸들·안전벨트 어깨 대각선·오토바이/자전거 구동계 좌우 반전 차단은 Haiku 5.5 적용", 3_072),
+  "cost-cap:screentone-lpi-moire-gpen-hierarchy-lock": defineRoute("cost-cap:screentone-lpi-moire-gpen-hierarchy-lock", "만화 망점 스크린톤(60L 45° 모아레 방지)·G펜(실루엣 4.5px)/마루펜(내부 1.4px) 선굵기 위계 고정기", "core-dialog", "fast-inline", "모바일 축소 시 망점 모아레 간섭 방지 및 G펜/마루펜 3단 선굵기 위계 고정은 Haiku 5.5 적용", 3_072),
+  "cost-cap:anamorphic-fisheye-dutch-lens-optics-lock": defineRoute("cost-cap:anamorphic-fisheye-dutch-lens-optics-lock", "시네마틱 렌즈 광학(아나모픽 2x 타원 보케·8mm 어안 5점 투시·200mm 망원 압축·스플릿 디옵터) 디렉터", "core-dialog", "creative-production", "아나모픽 수평 플레어·어안 구면 격자·망원 공간 압축·더치 틸트 중력 분리는 Sonnet 5.5 적용", 4_096),
+  "cost-cap:drapery-7folds-velvet-satin-brdf-lock": defineRoute("cost-cap:drapery-7folds-velvet-satin-brdf-lock", "번 호가스 7대 의상 주름(파이프·지그재그·나선·반잠금) 인장 기점 및 벨벳·실크·시스루 재질 BRDF 디렉터", "core-dialog", "creative-production", "관절 굴곡 주름 기점과 벨벳 역프레넬·실크 이방성 하이라이트·시스루 접선 불투명도 설계는 Sonnet 5.5 적용", 4_096),
+  "cost-cap:sports-biomechanics-gait-grip-edge-lock": defineRoute("cost-cap:sports-biomechanics-gait-grip-edge-lock", "스포츠·액션 인체역학(질주 교차보행·배구 활시위 스파이크·농구 가이드핸드·피겨 에지·볼링 그립) 고증 디렉터", "core-dialog", "creative-production", "질주 시 같은 쪽 팔다리 동시 전진 작붕 차단 및 구기/빙상/무도 종목별 파지·축발 고증은 Sonnet 5.5 적용", 4_096),
+  "cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock": defineRoute("cost-cap:vtuber-arkit52-vn-sprite-canbadge-lock", "웹툰 IP 버튜버(Live2D ARKit 52)·비주얼노벨 스탠딩(3단 눈깜빡임/5모음)·58mm 캔배지/렌티큘러 디렉터", "core-dialog", "creative-production", "버튜버 블렌드셰이프·비주얼노벨 표정 파츠 시트·캔배지 6mm 말림 도련·렌티큘러 설계는 Sonnet 5.5 적용", 4_096),
+  "cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director": defineRoute("cost-cap:gacha-ssr-splash-rpg-skill-cutscene-director", "웹툰 원작 수집형 RPG 게임 SSR 5평면 스플래시 아트·3초 궁극기 컷신·타격 히트스톱 총괄 감독", "core-dialog", "deep-architecture", "웹툰 캐릭터의 모바일 RPG SSR 가챠 일러스트 5평면 레이어 분리와 3초 필살기 연출 설계는 Opus 5.5 심층 추론 적용", 6_144),
+  "cost-cap:audiotoon-adr-timecode-tactile-ergo-director": defineRoute("cost-cap:audiotoon-adr-timecode-tactile-ergo-director", "오디오웹툰 성우 ADR 타임코드 대본·시각장애인 촉각 그래픽 양각선(2.5mm)·작가 손목 필압 피로도 총괄 감독", "core-dialog", "deep-architecture", "성우 호흡/마이크 거리 타임코드 대본·점자 촉각 그래픽 단순화·주간 70컷 펜 터치 예산 관리는 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {
